@@ -3,7 +3,7 @@ import { useRoleStore } from '../stores/roleStore'
 import { useUiStore } from '../stores/uiStore'
 import { resolveUserNarrativeSceneId } from './narrativeScene'
 
-/** 在 `refreshRoleInfo` 等拿到 DB 快照后，将 `uiStore.sceneId` 与 `user_presence_scene` 对齐 */
+/** After `refreshRoleInfo` etc., align `uiStore.sceneId` with `user_presence_scene`. */
 export function useNarrativeScene() {
   const chatStore = useChatStore()
   const roleStore = useRoleStore()

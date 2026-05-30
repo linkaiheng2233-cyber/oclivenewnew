@@ -1,4 +1,4 @@
-/** 使用浏览器下载（Tauri WebView 下通常进入用户下载目录或触发系统保存流程），无需额外 Rust 权限 */
+/** Browser download (under Tauri WebView usually lands in Downloads or system save flow); no extra Rust permission. */
 export function downloadTextFile(
   filename: string,
   content: string,
@@ -8,7 +8,7 @@ export function downloadTextFile(
   triggerBlobDownload(filename, blob)
 }
 
-/** 下载 base64 编码的二进制（如 ZIP 导出） */
+/** Download base64-encoded binary (e.g. ZIP export). */
 export function downloadBase64File(
   filename: string,
   base64: string,

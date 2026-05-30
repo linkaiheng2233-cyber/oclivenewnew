@@ -1,10 +1,10 @@
 /**
- * 将模型整段回复拆成「对白」与「旁白/内心/动作」，供主聊天区与左侧叙事条分流展示。
+ * Split a full model reply into dialogue vs aside/narration/action for main chat vs left narrative strip.
  *
- * 约定（可在角色包 system / few-shot 中引导模型）：
- * - 独立行以 `【内心】` `【动作】` `【场景】` `【旁白】` `【独白】` 开头 → 归入旁白；
- * - 括号短句 `（…）` 且内含 心里/内心/默默/暗想/小声/嘀咕 等 → 从对白移出，归入旁白；
- * - 其余括号（如「笑」「点头」）保留在对白中。
+ * Conventions (guide model via role pack system / few-shot):
+ * - Standalone lines starting with `【内心】` `【动作】` `【场景】` `【旁白】` `【独白】` → aside;
+ * - Parenthetical `（…）` containing 心里/内心/默默/暗想/小声/嘀咕 etc. → move from dialogue to aside;
+ * - Other parentheses (e.g. 「笑」「点头」) stay in dialogue.
  */
 import { rt } from '../i18n/runtimeT'
 
@@ -17,7 +17,7 @@ export interface RoleplaySplit {
   aside: string
 }
 
-/** 与 `chatStore` 中助手气泡正文规则一致（仅旁白时占位为「…」） */
+/** Matches `chatStore` assistant bubble body rule (aside-only placeholder is 「…」). */
 export function assistantDialogueFromSplit(raw: string, split: RoleplaySplit): string {
   const d = split.dialogue.trim()
   if (d.length > 0)

@@ -1,6 +1,6 @@
 /**
- * 插件管理架构图：三层自动连线 + 环上初始排列顺序。
- * 与 KERNEL_AND_MODULES / PLUGIN_V1 编排示意一致（非 co_present 逐步时序，而是拓扑层级）。
+ * Plugin manager architecture graph: three-layer auto-wiring + initial ring order.
+ * Matches KERNEL_AND_MODULES / PLUGIN_V1 orchestration sketch (topology layers, not co-present step timing).
  */
 
 import type { Edge } from '@vue-flow/core'
@@ -17,7 +17,7 @@ import {
   sortedSlotRegistryEntries,
 } from './slotRegistry'
 
-/** 环上从顶部起顺时针：上弧 memory/emotion/event，下弧 prompt/llm/agent，complex 靠上。 */
+/** Ring clockwise from top: upper arc memory/emotion/event, lower prompt/llm/agent, complex_emotion upper. */
 export const ARCHITECTURE_RING_TYPE_ORDER = [
   'memory',
   'emotion',
@@ -37,7 +37,7 @@ export function ringTypeIndex(slotType: string): number {
   return i >= 0 ? i : ARCHITECTURE_RING_TYPE_ORDER.length
 }
 
-/** 架构图环上槽位顺序：先按模块类型（编排拓扑），再按 position。 */
+/** Architecture ring slot order: module type (orchestration topology) first, then position. */
 export function sortSlotsForArchitectureRing(
   registry: SlotRegistryMap,
 ): Array<[string, SlotRegistryEntry]> {
@@ -50,12 +50,12 @@ export function sortSlotsForArchitectureRing(
   })
 }
 
-/** 设施总线右侧输出口 id（complex_emotion 固定 fac-complex）。 */
+/** Facility bus right-side output handle id (complex_emotion fixed fac-complex). */
 export function busFacHandleForType(slotType: string): string {
   return slotType === 'complex_emotion' ? 'fac-complex' : `fac-${slotType}`
 }
 
-/** 总线节点上要绘制的 fac 口顺序（与环上一致）。 */
+/** Fac handle draw order on bus node (matches ring). */
 export function orderedBusFacTypes(registry: SlotRegistryMap): string[] {
   const present = new Set<string>()
   for (const e of Object.values(registry)) present.add(e.type)
@@ -69,10 +69,10 @@ export function registryHasComplexEmotionSlot(registry: SlotRegistryMap): boolea
 type VisiblePluginsFn = (slotKey: string, entry: SlotRegistryEntry) => string[]
 
 /**
- * 三层自动连线（只读系统边）：
- * 1. 编排中心 → 设施总线（pipeline）
- * 2. 设施总线 → 各 slot_registry 实例（fac-{type}）
- * 3. directory 槽位 → 目录插件子节点（plugin-out → plugin-in）
+ * Three-layer auto-wiring (read-only system edges):
+ * 1. Orchestration center → facility bus (pipeline)
+ * 2. Facility bus → each slot_registry instance (fac-{type})
+ * 3. directory slot → directory plugin child nodes (plugin-out → plugin-in)
  */
 export function buildBlueprintArchitectureEdges(
   registry: SlotRegistryMap,

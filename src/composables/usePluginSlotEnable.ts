@@ -32,7 +32,7 @@ function declaredUiSlotIds(entry: DirectoryPluginCatalogEntry): string[] {
 }
 
 /**
- * 启用目录插件：无 UI 插槽声明则直接启用；有声明则先弹出插槽位置选择。
+ * Enable directory plugin: enable directly when no UI slot declarations; otherwise open slot placement picker first.
  */
 export function usePluginSlotEnable() {
   const { t } = useI18n()
@@ -110,7 +110,7 @@ export function usePluginSlotEnable() {
     closeSelector()
   }
 
-  /** 设置启用/停用；启用且含 UI 插槽时返回 true 表示已打开选择器（尚未 persist）。 */
+  /** Set enabled/disabled; returns true when enable opens selector (not yet persisted). */
   async function setPluginEnabled(
     pluginId: string,
     enabled: boolean,

@@ -15,7 +15,7 @@ function sleep(ms: number): Promise<void> {
 export type ShowToast = (type: ToastType, message: string) => void
 
 /**
- * 顶栏/位移条「前往」：同行则 `switchScene`；仅叙事则 `setUserPresenceScene`。
+ * Top-bar / travel-bar "Go": co-present uses `switchScene`; narrative-only uses `setUserPresenceScene`.
  */
 export function useSceneDestination(showToast: ShowToast) {
   const { t } = useI18n()

@@ -5,7 +5,7 @@ import { readPluginAssetText } from '../api'
 
 const SCHEME = 'oclive-plugin://'
 
-/** `vue3-sfc-loader` 编译失败时的可读错误（供插槽 UI 展示）。 */
+/** Human-readable error when `vue3-sfc-loader` compile fails (for slot UI). */
 export class PluginVueCompileError extends Error {
   readonly pluginId: string
   readonly componentPath: string
@@ -70,13 +70,13 @@ function buildCompileError(
 }
 
 export interface LoadPluginVueOptions {
-  /** 入口 `.vue` 已读入的源码（如安全扫描后），避免对同一文件二次 `read_plugin_asset_text`。 */
+  /** Entry `.vue` source already loaded (e.g. after security scan); avoids second `read_plugin_asset_text`. */
   preloadedEntrySource?: string
 }
 
 /**
- * 从目录插件根编译并加载 `.vue`（运行时 `vue3-sfc-loader`）。
- * 编译失败抛出 {@link PluginVueCompileError}；读盘/网络问题返回 `null` 以便回退 iframe。
+ * Compile and load `.vue` from directory plugin root (runtime `vue3-sfc-loader`).
+ * Compile failure throws {@link PluginVueCompileError}; disk/network issues return `null` for iframe fallback.
  */
 export async function loadPluginVueComponent(
   pluginId: string,

@@ -8,7 +8,7 @@ const SCALE_STORAGE_KEY = 'oclive-runtime-ui-scale'
 
 export type ThemePreference = 'light' | 'dark' | 'system'
 
-/** 与 pack-editor / launcher 相同的字号档位 */
+/** Same font-size steps as pack-editor / launcher. */
 const UI_SCALE_STEPS = [0.8, 0.88, 0.96, 1, 1.08, 1.16, 1.24] as const
 
 function resolveEffectiveTheme(pref: ThemePreference): 'light' | 'dark' {

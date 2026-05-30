@@ -9,12 +9,12 @@ import { useRoleStore } from '../stores/roleStore'
 import { useKeyedPluginErrors } from './usePluginError'
 
 /**
- * 目录插件「嵌入插槽」共用逻辑：从 `pluginStore.bootstrapUiSlots` 过滤、Vue/iframe 回退、iframe 错误文案。
- * 错误状态由 {@link useKeyedPluginErrors} 统一管理。
+ * Shared directory-plugin slot embed logic: filter from `pluginStore.bootstrapUiSlots`, Vue/iframe fallback, iframe error copy.
+ * Error state is centralized via {@link useKeyedPluginErrors}.
  */
 export function useDirectoryPluginSlotEmbed(options: {
   slot: MaybeRefOrGetter<string>
-  /** 与插件保存/刷新联动（如 `pluginStore.bootstrapEpoch`） */
+  /** Tied to plugin save/refresh (e.g. `pluginStore.bootstrapEpoch`). */
   bootstrapEpoch: MaybeRefOrGetter<number>
 }) {
   const { t } = useI18n()
@@ -36,7 +36,7 @@ export function useDirectoryPluginSlotEmbed(options: {
   )
 
   const vueFallback = ref<Record<string, boolean>>({})
-  /** 递增以强制重挂 iframe / Vue */
+  /** Increment to force remount of iframe / Vue. */
   const reloadEpoch = ref<Record<string, number>>({})
 
   watch(
@@ -71,7 +71,7 @@ export function useDirectoryPluginSlotEmbed(options: {
     setKeyedError(pluginId, err.friendlyMessage, err.rawMessage)
   }
 
-  /** 重置错误状态并重新加载该插槽条目（Vue / iframe）。 */
+  /** Reset error state and reload this slot entry (Vue / iframe). */
   function retrySlot(s: PluginUiSlotInfo): void {
     const id = s.pluginId
     reloadEpoch.value = {

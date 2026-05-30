@@ -1,10 +1,10 @@
 /**
- * 情绪展示资源：与后端 `Emotion` 小写标签及 `roles/{roleId}/assets/images/` 下文件名对齐。
- * 新增后端情绪枚举时，须同步更新本文件并补充角色包图片（可用占位图）。
- * 已支持：happy / sad / angry / shy / confused / disgust* / neutral / excited 等。
+ * Emotion display assets: aligned with backend `Emotion` lowercase tags and filenames under `roles/{roleId}/assets/images/`.
+ * When adding backend emotion enums, sync this file and add role pack images (placeholders OK).
+ * Supported: happy / sad / angry / shy / confused / disgust* / neutral / excited, etc.
  */
 
-/** 小写 key；未知键由 UI 回退为原文或默认图标 */
+/** Lowercase key; unknown keys fall back to raw label or default icon in UI. */
 export const emotionToEmoji: Record<string, string> = {
   happy: '😊',
   sad: '😢',
@@ -13,11 +13,11 @@ export const emotionToEmoji: Record<string, string> = {
   confused: '😕',
   disgust: '🙄',
   neutral: '😐',
-  /** 后端若未来扩展 `Emotion::Excited` 等，可在此与图片一并补齐 */
+  /** When backend adds e.g. `Emotion::Excited`, extend here with image. */
   excited: '🤩',
 }
 
-/** 文件名（不含路径）；缺省回退为 `{emotion}.png` */
+/** Filename (no path); default fallback `{emotion}.png`. */
 export const emotionToImage: Record<string, string> = {
   happy: 'happy.png',
   sad: 'sad.png',

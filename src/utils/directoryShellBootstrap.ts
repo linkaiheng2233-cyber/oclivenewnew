@@ -13,16 +13,16 @@ export function isTauriRuntime(): boolean {
   )
 }
 
-/** 开发/排障：跳过整壳目录插件，强制挂载主界面（`.env` 设 `VITE_OCLIVE_DISABLE_DIRECTORY_SHELL=1`）。 */
+/** Dev/troubleshooting: skip full-shell directory plugin and force main UI (set `VITE_OCLIVE_DISABLE_DIRECTORY_SHELL=1` in `.env`). */
 export function isDirectoryShellDisabled(): boolean {
   return import.meta.env.VITE_OCLIVE_DISABLE_DIRECTORY_SHELL === '1'
 }
 
 /**
- * 若配置了整壳目录插件：优先在 **`shell.vueEntry` + 非强制 iframe** 时用宿主 Vue 挂载整壳；
- * 否则在 **`shellUrl`** 与当前页不同时执行 `location.replace(shellUrl)`（HTML 整壳）。
+ * When a full-shell directory plugin is configured: prefer host Vue mount when **`shell.vueEntry` + non-forced iframe**;
+ * otherwise `location.replace(shellUrl)` when **`shellUrl`** differs from current page (HTML full shell).
  *
- * @returns 若已处理整壳（Vue 已挂载或已发起 HTML 跳转）则为 true，调用方不应再挂载应用根组件。
+ * @returns true if full shell was handled (Vue mounted or HTML navigation started); caller must not mount app root.
  */
 export async function tryReplaceWithDirectoryShell(): Promise<boolean> {
   if (!isTauriRuntime() || isDirectoryShellDisabled())

@@ -30,7 +30,7 @@ export interface LoraNodeFormValues {
   pluginId: string
 }
 
-/** 专家路由 steps 中引用的 slot_registry 键（`slot.<key>.<method>`）。 */
+/** slot_registry keys referenced in expert routing steps (`slot.<key>.<method>`). */
 export function expertReferencedSlotKeys(
   doc: ExpertRoutingDoc | null | undefined,
 ): Set<string> {
@@ -155,7 +155,7 @@ function ensureEditingRoute(
   return ensureFacilityRoute(doc, slotKey)
 }
 
-/** 将 LLM 槽位一键加入专家路由（若尚未存在 generate 步骤）。 */
+/** One-click add LLM slot to expert routing (if generate step not already present). */
 export function ensureExpertRouteForLlmSlot(
   doc: ExpertRoutingDoc | null | undefined,
   slotKey: string,

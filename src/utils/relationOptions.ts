@@ -5,8 +5,8 @@ import { OCLIVE_DEFAULT_RELATION_SENTINEL } from '../api'
 export interface RelationOptionRow { id: string, name: string }
 
 /**
- * 身份下拉选项：首项为「默认身份」，与后端 `set_user_relation` 哨兵一致。
- * 供顶栏、运行时面板等共用，避免多处复制粘贴。
+ * Relation dropdown options: first row is default relation, aligned with backend `set_user_relation` sentinel.
+ * Shared by top bar, runtime panel, etc., to avoid copy-paste.
  */
 export function buildRelationDropdownOptions(
   userRelations: UserRelationDto[],

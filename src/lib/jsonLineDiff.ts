@@ -10,7 +10,7 @@ export function formatJson(value: unknown): string {
   return JSON.stringify(value, null, 2)
 }
 
-/** 简易行级 diff（用于蓝图 JSON 预览）。 */
+/** Simple line-level diff (for blueprint JSON preview). */
 export function computeLineDiff(before: string, after: string): DiffLine[] {
   const a = before.split('\n')
   const b = after.split('\n')

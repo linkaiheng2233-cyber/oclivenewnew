@@ -471,7 +471,7 @@ export function useArchitectureGraphModel() {
     }
   }
 
-  /** 架构图：展开所有 directory 槽位下的目录插件链（第三层连线可见）。 */
+  /** Architecture graph: expand all directory-plugin chains under directory slots (layer-3 edges visible). */
   function expandAllDirectoryPlugins(registry: SlotRegistryMap) {
     const next = { ...expandedPlugins.value }
     for (const [slotKey, entry] of Object.entries(registry)) {

@@ -18,7 +18,7 @@ function unknownToMessage(e: unknown, fallback: string): string {
   return fallback
 }
 
-/** 单块区域（如整壳）的加载错误 + 详情。 */
+/** Single-region (e.g. full shell) load error + detail. */
 export function useSinglePluginError() {
   const message = ref<string | null>(null)
   const detail = ref<string | null>(null)
@@ -61,7 +61,7 @@ export function useSinglePluginError() {
   }
 }
 
-/** 多插件 id → 文案 / 详情（插槽 iframe + Vue 共用）。 */
+/** Per plugin id → message / detail (shared by slot iframe + Vue). */
 export function useKeyedPluginErrors() {
   const messages = ref<Record<string, string>>({})
   const details = ref<Record<string, string>>({})
@@ -110,7 +110,7 @@ export function useKeyedPluginErrors() {
   }
 }
 
-/** 异步包装：失败时写入 `messages` / `details`（按 pluginId）。 */
+/** Async wrapper: on failure write to `messages` / `details` (by pluginId). */
 export async function wrapKeyedAsync<T>(
   pluginId: string,
   messages: Ref<Record<string, string>>,

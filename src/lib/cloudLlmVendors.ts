@@ -1,4 +1,4 @@
-/** 云端模型供应商预设（OpenAI 兼容接口） */
+/** Cloud LLM vendor presets (OpenAI-compatible APIs). */
 export type CloudLlmVendorId
   = | 'deepseek'
     | 'openai'
@@ -14,7 +14,7 @@ export interface CloudLlmVendorPreset {
   labelKey: string
   baseUrl: string
   models: string[]
-  /** 默认 OpenAI 兼容；仅 OCLIVE 侧车选 oclive_jsonrpc */
+  /** Default OpenAI-compatible; use oclive_jsonrpc only for OCLIVE sidecar. */
   apiStyle: 'openai' | 'oclive_jsonrpc'
 }
 

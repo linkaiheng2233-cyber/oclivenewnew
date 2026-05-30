@@ -1,4 +1,4 @@
-/** localStorage：置为 `"1"` 时跳过 Sentry 初始化（与设置页「禁用崩溃上报」同步）。 */
+/** localStorage: set to `"1"` to skip Sentry init (synced with settings "disable crash reporting"). */
 export const SENTRY_OPT_OUT_STORAGE_KEY = 'oclive.telemetry.sentryOptOut'
 
 export function isSentryOptOut(): boolean {
@@ -24,7 +24,7 @@ export function setSentryOptOut(optOut: boolean): void {
   }
 }
 
-/** 构建期注入 DSN 且用户未选择退出时，才加载 Sentry。 */
+/** Load Sentry only when build-time DSN is set and user has not opted out. */
 export function shouldLoadSentry(dsn: string | undefined): boolean {
   return typeof dsn === 'string' && dsn.length > 0 && !isSentryOptOut()
 }

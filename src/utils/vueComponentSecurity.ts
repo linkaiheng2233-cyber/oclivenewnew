@@ -1,7 +1,7 @@
 /**
- * Vue 插槽源码静态扫描（黑名单）。
- * 扩展规则时：优先在 `DANGEROUS_PATTERNS` 增加 token，再按需补充 AST 规则，保持文案可读。
- * acorn / acorn-walk 仅在命中黑名单 token 后动态加载，避免进入主屏 bundle。
+ * Static scan of Vue slot source (denylist).
+ * When extending rules: add tokens to `DANGEROUS_PATTERNS` first, then AST rules as needed; keep messages readable.
+ * acorn / acorn-walk load dynamically only after a denylist token hit, avoiding main-screen bundle cost.
  */
 
 export interface ScanResult {
@@ -156,7 +156,7 @@ async function scanScriptAst(
   })
 }
 
-/** 对 `.vue` 或纯脚本片段做静态扫描（黑名单）；不保证零误报/漏报。 */
+/** Static scan of `.vue` or plain script snippet (denylist); no zero false positive/negative guarantee. */
 export async function scanVueComponentSource(source: string): Promise<ScanResult> {
   const warnings: string[] = []
   const dedupe = new Set<string>()

@@ -1,6 +1,6 @@
 import { rt } from '../i18n/runtimeT'
 
-/** 与后端 `RelationState::as_str` 一致（好感度关系阶段） */
+/** Matches backend `RelationState::as_str` (affection relation stage). */
 const RELATION_ORDER = [
   'Stranger',
   'Acquaintance',
@@ -21,7 +21,7 @@ function rankOf(state: string): number {
   return i >= 0 ? i : -1
 }
 
-/** 仅当新阶段高于旧阶段时返回提示文案，否则 `null`（不提示降级）。 */
+/** Return upgrade message only when new stage is higher than old; otherwise `null` (no downgrade toast). */
 export function getRelationUpgradeMessage(
   newState: string,
   oldState: string,

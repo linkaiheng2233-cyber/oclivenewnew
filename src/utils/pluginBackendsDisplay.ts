@@ -9,7 +9,7 @@ const SLOT_KEYS: (keyof DirectoryPluginSlots)[] = [
   'agent',
 ]
 
-/** 将 `directory_plugins` 槽位格式化为单行调试文本；全空返回 `none`。 */
+/** Format `directory_plugins` slots as one-line debug text; returns `none` when all empty. */
 export function formatDirectoryPluginSlots(
   slots: DirectoryPluginSlots | undefined | null,
 ): string {
@@ -25,7 +25,7 @@ export function formatDirectoryPluginSlots(
   return parts.length ? parts.join(', ') : 'none'
 }
 
-/** 任一模块使用 `directory` 或槽位非空时用于决定是否展示「目录插件」行。 */
+/** True when any module uses `directory` or a slot is non-empty; controls "directory plugin" row visibility. */
 export function usesDirectoryPlugins(pb: PluginBackends): boolean {
   if (
     pb.memory === 'directory'

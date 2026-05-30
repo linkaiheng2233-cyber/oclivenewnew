@@ -1,25 +1,25 @@
 /**
- * 与 Rust `SendMessageResponse`（`src-tauri/src/models/dto.rs`）对齐的回复展示策略。
- * 主文案字段名为 **`reply`**（不是 `response`）。
- * 知识包本回合命中条数见 `knowledge_chunks_in_prompt`（开发面板用 `debugStore` 记录）。
+ * Reply presentation aligned with Rust `SendMessageResponse` (`src-tauri/src/models/dto.rs`).
+ * Primary text field is **`reply`** (not `response`).
+ * Knowledge pack hits this turn: `knowledge_chunks_in_prompt` (dev panel via `debugStore`).
  */
 import type { PresenceMode, SendMessageResponse } from '../api'
 
-/** 从后端快照推导的 UI 展示提示（不替代 Pinia 中的 ChatMessage，仅作派生） */
+/** UI presentation hints derived from backend snapshot (does not replace Pinia ChatMessage; derived only). */
 export interface ReplyPresentation {
-  /** 主对话文本（与 `reply` 一致） */
+  /** Main dialogue text (same as `reply`). */
   replyText: string
-  /** 共景 / 异地占位 / 异地心声 */
+  /** Co-present / remote stub / remote inner voice */
   presenceMode: PresenceMode
-  /** `send_message` 契约版本（调试） */
+  /** `send_message` contract version (debug). */
   apiVersion: number
-  /** DTO 结构版本（调试 / 迁移） */
+  /** DTO schema version (debug / migration). */
   schemaVersion: number
-  /** 主 LLM 失败时使用了备用短句 */
+  /** Fallback short line used when primary LLM failed. */
   replyIsFallback: boolean
-  /** 用于气泡样式的 presence（与 ChatMessage / ChatMessageList 一致） */
+  /** Presence for bubble styling (matches ChatMessage / ChatMessageList). */
   presenceVariant: PresenceMode
-  /** 助手气泡用情绪：remote_stub 用立绘情绪，否则 bot_emotion */
+  /** Assistant bubble emotion: remote_stub uses portrait emotion, else bot_emotion. */
   assistantEmotionLabel: string
 }
 

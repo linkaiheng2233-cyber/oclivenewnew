@@ -1,6 +1,6 @@
 import type { SlotRegistryMap } from './slotRegistry'
 
-/** 写盘：更新某实例键的 `backend`（其余字段保留）。 */
+/** Persist: update `backend` for one instance key (other fields preserved). */
 export function patchSlotRegistryBackend(
   pack: SlotRegistryMap,
   slotKey: string,

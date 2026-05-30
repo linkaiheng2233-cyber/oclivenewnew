@@ -3,10 +3,10 @@ import { readHostAppearance } from '../lib/hostAppearance'
 import { hostEventBus } from '../lib/hostEventBus'
 import { pluginBridgeInvoke } from '../api'
 
-/** 事件名须为 `命名空间:后缀`；命名空间为 `[a-zA-Z0-9.-]+`（与 manifest id 字符集一致）。 */
+/** Event names must be `namespace:suffix`; namespace is `[a-zA-Z0-9.-]+` (same charset as manifest id). */
 const PLUGIN_EVENT_NS = /^([a-z0-9.-]+):(.+)$/i
 
-/** `pluginId:event` → 请求-响应处理器（与 mitt 分离，支持返回值）。 */
+/** `pluginId:event` → request-response handlers (separate from mitt; supports return values). */
 const requestHandlers = new Map<
   string,
   Set<(data: unknown) => unknown | Promise<unknown>>
@@ -17,8 +17,8 @@ export interface OcliveEvents {
   on: (event: string, handler: (data: unknown) => void) => void
   off: (event: string, handler: (data: unknown) => void) => void
   /**
-   * 向已用 `onRequest` 注册的监听方发起请求，返回首个 fulfilled 的结果（多监听方时为 `Promise.race`）。
-   * 事件名须为 `某插件ID:名称`（可跨插件调用，不要求与调用方 ID 一致）。
+   * Request listeners registered via `onRequest`; returns the first fulfilled result (`Promise.race` when multiple).
+   * Event name must be `somePluginId:name` (cross-plugin OK; need not match caller id).
    */
   request: (event: string, data?: unknown, timeoutMs?: number) => Promise<unknown>
   onRequest: (
@@ -35,7 +35,7 @@ export interface OcliveApi {
   pluginId: string
   bridgeAssetRel: string
   invoke: (command: string, params?: unknown) => Promise<unknown>
-  /** 与顶栏外观一致：有效深浅色、`html` 根字号缩放系数（`--oclive-ui-scale`） */
+  /** Matches top-bar appearance: effective light/dark and root font scale (`--oclive-ui-scale`). */
   getAppearance: () => ReturnType<typeof readHostAppearance>
   events: OcliveEvents
 }
@@ -62,7 +62,7 @@ function validateEmitEvent(pluginId: string, raw: string): boolean {
   return true
 }
 
-/** `oclive:role:switched` → `role:switched`；`oclive:appearance:changed` → `appearance:changed`；否则须为完整 `pluginId:…` 名。 */
+/** `oclive:role:switched` → `role:switched`; `oclive:appearance:changed` → `appearance:changed`; otherwise full `pluginId:…` name required. */
 function resolveListenEventName(raw: string): string | null {
   const t = raw.trim()
   if (!t) {
@@ -197,7 +197,7 @@ function makeEvents(pluginId: string): OcliveEvents {
   }
 }
 
-/** 供 `provide('oclive', …)`；`bridgeAssetRel` 为 manifest 资源路径（插槽 `entry`、或整壳 `shell.vueEntry` 等），与 `plugin_bridge_invoke` 的 `assetRel` 一致。 */
+/** For `provide('oclive', …)`; `bridgeAssetRel` is manifest asset path (slot `entry`, full shell `shell.vueEntry`, etc.), same as `plugin_bridge_invoke` `assetRel`. */
 export function createOcliveApi(
   pluginId: string,
   bridgeAssetRel: string,

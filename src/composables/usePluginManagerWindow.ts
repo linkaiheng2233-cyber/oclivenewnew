@@ -3,11 +3,11 @@ import { ensurePluginWorkbenchI18n } from '../i18n/loadPluginWorkbench'
 import { usePluginMarketStore } from '../stores/pluginMarketStore'
 
 export interface UsePluginManagerWindowOptions {
-  /** 每次打开/切换插件管理入口后收起顶栏「更多」 */
+  /** Collapse the top-bar "More" menu after each plugin manager open/switch. */
   closeMoreMenu: () => void
 }
 
-/** 极简已安装插件列表与市场入口。 */
+/** Minimal installed-plugin list and market entry. */
 export function usePluginManagerWindow(opts: UsePluginManagerWindowOptions) {
   const marketStore = usePluginMarketStore()
   const simplePluginManagerOpen = ref(false)

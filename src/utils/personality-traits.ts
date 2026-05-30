@@ -1,4 +1,4 @@
-/** 与后端 `personality_vector` 七维顺序及 oclive-new 开发面板一致 */
+/** Matches backend `personality_vector` seven-dimension order and oclive-new dev panel. */
 export const PERSONALITY_TRAIT_KEYS = [
   'stubbornness',
   'clinginess',

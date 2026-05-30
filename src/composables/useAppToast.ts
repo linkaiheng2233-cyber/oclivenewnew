@@ -23,7 +23,7 @@ function toastDurationMs(type: ToastType): number {
   return TOAST_MS_DEFAULT
 }
 
-/** 全局轻提示（与 `Toast.vue` 绑定；单例，任意组件调用同一套状态） */
+/** Global lightweight toast (bound to `Toast.vue`; singleton shared by all callers). */
 export function useAppToast() {
   function showToast(type: ToastType, message: string): void {
     toast.value = { show: true, type, message }

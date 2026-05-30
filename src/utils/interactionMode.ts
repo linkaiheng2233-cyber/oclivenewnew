@@ -1,14 +1,14 @@
-/** 与后端 `InteractionMode` / DTO 一致 */
+/** Matches backend `InteractionMode` / DTO. */
 export type InteractionMode = 'immersive' | 'pure_chat'
 
-/** 将 API 字符串规范为联合类型（未知则沉浸） */
+/** Normalize API string to union type (unknown → immersive). */
 export function normalizeInteractionMode(
   raw: string | undefined | null,
 ): InteractionMode {
   return raw === 'pure_chat' ? 'pure_chat' : 'immersive'
 }
 
-/** `interaction_mode_pack_default`：仅合法值保留 */
+/** `interaction_mode_pack_default`: keep only valid values. */
 export function packDefaultFromApi(
   raw: string | null | undefined,
 ): InteractionMode | null {

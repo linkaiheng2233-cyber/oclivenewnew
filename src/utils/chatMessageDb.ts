@@ -36,7 +36,7 @@ function messagesForBucket(
   return roleBucket[sceneId] ?? []
 }
 
-/** 将旧版 messageMap[roleId] 为数组的结构迁入分桶 map。 */
+/** Migrate legacy messageMap[roleId] array shape into bucketed map. */
 export function migrateMessageMapShape(raw: unknown): RoleSceneMessageMap {
   if (!raw || typeof raw !== 'object')
     return {}
@@ -135,7 +135,7 @@ export async function saveDirtyBucketsToIdb(
 }
 
 /**
- * 从 pinia-plugin-persistedstate 遗留的 localStorage 迁移消息；成功后剥离 messageMap 避免重复体积。
+ * Migrate messages from pinia-plugin-persistedstate legacy localStorage; strip messageMap on success to avoid duplicate size.
  */
 export async function loadBucketFromIdb(
   roleId: string,

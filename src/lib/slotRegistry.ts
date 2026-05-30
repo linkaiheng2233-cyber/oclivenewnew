@@ -1,4 +1,4 @@
-/** 与 `pipeline.ocblueprint` v2 `slot_registry` 条目一致（serde `type` 字段）。 */
+/** Matches `pipeline.ocblueprint` v2 `slot_registry` entry (serde `type` field). */
 export interface SlotRegistryEntry {
   type: string
   label: string
@@ -9,11 +9,11 @@ export interface SlotRegistryEntry {
   model?: string | null
   url?: string | null
   local_memory_provider_id?: string | null
-  /** v3 可选：`stable` / `experimental` 或数组 */
+  /** v3 optional: `stable` / `experimental` or array. */
   zone?: string | string[] | null
 }
 
-/** 将蓝图 `zone` 规范为展示用短标签。 */
+/** Normalize blueprint `zone` to short display label. */
 export function formatSlotZoneLabel(zone: SlotRegistryEntry['zone']): string | null {
   if (zone == null)
     return null
@@ -54,7 +54,7 @@ export const SLOT_TYPE_GROUP_COLORS: Record<string, string> = {
   agent: '#8b9db8',
 }
 
-/** 校验/列表排序；架构图环上顺序见 `archGraphTopology.ARCHITECTURE_RING_TYPE_ORDER`。 */
+/** Validation/list sort order; ring order in architecture graph: `archGraphTopology.ARCHITECTURE_RING_TYPE_ORDER`. */
 export const SLOT_TYPE_ORDER = [
   'memory',
   'emotion',
@@ -122,7 +122,7 @@ export function uniqueSlotTypes(registry: SlotRegistryMap): string[] {
   return [...set].sort((a, b) => slotTypeOrderIndex(a) - slotTypeOrderIndex(b))
 }
 
-/** 新实例键：优先用 type 名，冲突时 `type_2`、`type_3`… */
+/** New instance key: prefer type name; on conflict use `type_2`, `type_3`, … */
 export function nextUniqueSlotKey(registry: SlotRegistryMap, slotType: string): string {
   if (!registry[slotType])
     return slotType
@@ -158,7 +158,7 @@ export function countSlotsOfType(registry: SlotRegistryMap, slotType: string): n
   return Object.values(registry).filter(e => e.type === slotType).length
 }
 
-/** 最后一个 `llm` 实例不可删。 */
+/** Last remaining `llm` instance cannot be removed. */
 export function canRemoveSlotKey(registry: SlotRegistryMap, key: string): boolean {
   const entry = registry[key]
   if (!entry)

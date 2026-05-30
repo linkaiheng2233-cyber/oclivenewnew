@@ -1,7 +1,7 @@
 import { nextTick, ref, watch, type Ref } from 'vue'
 
 /**
- * 对话框 / 面板关闭（含 Escape）后，将焦点还原到打开前的活动元素。
+ * After a dialog / panel closes (including Escape), restore focus to the element active before open.
  */
 export function useReturnFocusOnClose(visibleRef: Ref<boolean>) {
   const focusReturn = ref<HTMLElement | null>(null)

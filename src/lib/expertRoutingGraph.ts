@@ -63,7 +63,7 @@ function triggerMatchesClient(
   return true
 }
 
-/** 与后端 `select_expert_route` 一致的简化匹配（前端预览，不含情绪/关系/时段）。 */
+/** Simplified match aligned with backend `select_expert_route` (frontend preview; no emotion/relation/time-of-day). */
 export function selectActiveExpertRoute(
   doc: ExpertRoutingDoc | null | undefined,
   sceneId: string,
@@ -89,7 +89,7 @@ export function selectActiveExpertRoute(
   return best?.route
 }
 
-/** 专家路由引用的 LLM 槽位 → tooltip 文案 */
+/** LLM slots referenced by expert routing → tooltip copy. */
 export function expertLlmHighlights(
   doc: ExpertRoutingDoc | null | undefined,
   registry: Record<string, { type: string }> | null | undefined,

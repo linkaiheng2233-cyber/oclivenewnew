@@ -4,7 +4,7 @@ import { hostEventBus } from '../lib/hostEventBus'
 import { useRoleStore } from '../stores/roleStore'
 
 /**
- * 将角色包 `ui.json` → `theme` 映射到 Fluent / oclive CSS 变量；切换角色或清空字段时移除内联覆盖以回退内置主题。
+ * Map role pack `ui.json` → `theme` to Fluent / oclive CSS variables; remove inline overrides on role switch or cleared fields to fall back to built-in theme.
  */
 export function usePackUiTheme(): void {
   const roleStore = useRoleStore()

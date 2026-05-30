@@ -1,6 +1,6 @@
 /**
- * 叙事场景 id 解析：与 DB `user_presence_scene` 对齐（覆盖本地持久化顶栏 id）。
- * 若 DB 存了已不在 manifest 中的 id，则回退为 current_scene → 本地持久化 → 列表首项。
+ * Narrative scene id resolution: align with DB `user_presence_scene` (overrides locally persisted top-bar id).
+ * If DB holds an id no longer in manifest, fall back: current_scene → local persistence → first list item.
  */
 export function resolveUserNarrativeSceneId(
   userPresence: string | null,
