@@ -10,7 +10,7 @@ impl DirectoryPluginRuntime {
     /// # Errors
     ///
     /// Returns [`Err`] with a human-readable message when the operation fails.
-    /// 与 [`Self::ensure_rpc_url`] 相同，但不拒绝「停用插件」，并可选注入 `OCLIVE_DEBUG_PLUGIN_CONFIG`。
+    /// Same as [`Self::ensure_rpc_url`] but does not reject disabled plugins; may inject `OCLIVE_DEBUG_PLUGIN_CONFIG`.
     pub fn ensure_rpc_url_for_debug(
         &self,
         plugin_id: &str,
@@ -22,7 +22,7 @@ impl DirectoryPluginRuntime {
     /// # Errors
     ///
     /// Returns [`Err`] with a human-readable message when the operation fails.
-    /// 开发者调试：确保子进程已握手并返回进程信息（已运行时直接返回快照）。
+    /// Developer debug: ensure child handshake and return process info (returns snapshot if already running).
     pub fn spawn_plugin_for_test(
         &self,
         plugin_id: &str,

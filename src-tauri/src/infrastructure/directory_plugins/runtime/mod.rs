@@ -1,4 +1,4 @@
-//! 扫描根目录、解析 manifest、懒启动子进程并缓存 RPC URL。
+//! Scan plugin roots, parse manifests, lazy-start child processes, and cache RPC URLs.
 
 use parking_lot::{Mutex, RwLock};
 use serde::{Deserialize, Serialize};
@@ -15,7 +15,7 @@ use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
 use crate::infrastructure::plugin_state::{PluginStateFile, PluginStateStore, RolePluginState};
 use crate::models::ui_config::UiConfig;
 
-/// 目录插件根路径与其 canonical 形式（同一次 rescan 写入，单次锁读取）。
+/// Directory plugin root path and its canonical form (written on each rescan, read under one lock).
 #[derive(Debug, Clone)]
 pub struct PluginRootEntry {
     pub root: PathBuf,
@@ -153,7 +153,7 @@ fn collect_plugin_dirs(root: &Path, out: &mut HashMap<String, PathBuf>) {
     }
 }
 
-/// 插件包所在容器目录（`plugins/` 等），用于扫描与（开发者模式）文件监听。
+/// Container directories holding plugin packages (`plugins/`, etc.) for scan and (developer mode) file watching.
 #[must_use]
 pub fn plugin_scan_container_roots(
     roles_dir: &Path,
@@ -229,7 +229,7 @@ impl DebugLogRing {
     }
 }
 
-/// 宿主为目录插件拉起的 RPC 子进程快照（开发者调试面板）。
+/// Snapshot of host-spawned RPC child process for a directory plugin (developer debug panel).
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PluginProcessDebugInfo {
@@ -253,24 +253,24 @@ pub(crate) fn parse_ready_line(line: &str, prefix: &str) -> Option<String> {
     }
 }
 
-/// 目录插件运行时：根路径表 + 懒启动 RPC。
+/// Directory plugin runtime: root path table + lazy RPC startup.
 pub struct DirectoryPluginRuntime {
     pub plugin_roots: Arc<RwLock<HashMap<String, PluginRootEntry>>>,
     rpc_urls: Mutex<HashMap<String, String>>,
     children: Mutex<HashMap<String, std::process::Child>>,
-    /// 同一 `plugin_id` 仅允许一处执行 spawn + 握手，避免并发 `ensure_rpc_url` 拉起重复子进程。
+    /// Only one spawn + handshake per `plugin_id` to avoid duplicate children from concurrent `ensure_rpc_url`.
     startup_locks: Mutex<HashMap<String, Arc<Mutex<()>>>>,
-    /// 子进程 stdout/stderr 环形缓冲（开发者调试）。
+    /// Child stdout/stderr ring buffer (developer debugging).
     debug_log_rings: Mutex<HashMap<String, Arc<Mutex<DebugLogRing>>>>,
-    /// 子进程启动时刻（Unix 毫秒）。
+    /// Child process start time (Unix milliseconds).
     process_started_ms: Mutex<HashMap<String, u64>>,
     host: HostPluginsFile,
     app_data_dir: PathBuf,
-    /// `app_data_dir/plugin_state.json`（v2：按 `role_id` 隔离）
+    /// `app_data_dir/plugin_state.json` (v2: isolated per `role_id`)
     plugin_state_store: Arc<RwLock<PluginStateStore>>,
-    /// 当前主界面所加载的角色（用于插槽/禁用解析；资产网关与 RPC 共用）。
+    /// Role loaded in the main UI (slot/disable resolution; shared by asset gateway and RPC).
     active_role_id: Arc<RwLock<Option<String>>>,
-    /// 与 `get_directory_plugin_catalog` 短时缓存联动；`rescan_plugin_roots` 时递增使缓存失效。
+    /// Tied to `get_directory_plugin_catalog` short cache; incremented on `rescan_plugin_roots` to invalidate.
     catalog_invalidate_gen: AtomicU64,
     high_risk_grants: Arc<HighRiskGrantStore>,
     /// `plugin_id` → (`manifest.json` mtime ms, parsed manifest).
@@ -286,7 +286,7 @@ impl DirectoryPluginRuntime {
         Self::bootstrap_inner(roles_dir, app_data, high_risk_grants, true)
     }
 
-    /// 跳过目录扫描，供启动后后台 [`Self::rescan_plugin_roots`] 懒加载。
+    /// Skip directory scan; background [`Self::rescan_plugin_roots`] lazy-loads after startup.
     pub fn bootstrap_deferred_scan(
         roles_dir: &Path,
         app_data: &Path,
@@ -376,7 +376,7 @@ impl DirectoryPluginRuntime {
         store.save(&self.plugin_state_path())
     }
 
-    /// 无活跃角色时回退旧版全局状态（迁移），否则空默认。
+    /// When no active role, fall back to legacy global state (migration); otherwise empty defaults.
     #[must_use]
     pub fn effective_slots(&self) -> PluginStateFile {
         let store = self.plugin_state_store.read();
@@ -399,14 +399,14 @@ impl DirectoryPluginRuntime {
         self.effective_slots()
     }
 
-    /// 磁盘上按 `role_id` 存储的原始状态（不含 `global` 合并）。
+    /// Raw on-disk state per `role_id` (without `global` merge).
     #[must_use]
     pub fn role_plugin_state_stored_for(&self, role_id: &str) -> RolePluginState {
         let store = self.plugin_state_store.read();
         store.roles.get(role_id).cloned().unwrap_or_default()
     }
 
-    /// 将 `global` 默认与按角色存储合并后的有效状态（整壳 / 插槽 / 禁用等）。
+    /// Effective state after merging `global` defaults with per-role storage (shell / slots / disables, etc.).
     #[must_use]
     pub fn role_plugin_state_for(&self, role_id: &str) -> RolePluginState {
         let store = self.plugin_state_store.read();
@@ -449,7 +449,7 @@ impl DirectoryPluginRuntime {
         self.persist_plugin_state_store()
     }
 
-    /// 角色加载后：若本地尚无该角色的用户记录，则用 `ui.json`（或 legacy 全局）初始化。
+    /// After role load: if no local user record for this role, initialize from `ui.json` (or legacy global).
     pub fn ensure_role_plugin_state(&self, role_id: &str, ui: &UiConfig) {
         {
             let store = self.plugin_state_store.read();
@@ -488,7 +488,7 @@ impl DirectoryPluginRuntime {
     /// # Errors
     ///
     /// Returns [`Err`] with a human-readable message when the operation fails.
-    /// 用磁盘上的 `ui.json` 覆盖该角色的用户记录（「重置为角色包推荐」）。
+    /// Overwrite this role's user record from on-disk `ui.json` ("reset to role pack defaults").
     pub fn reset_role_plugin_state_from_ui(
         &self,
         role_id: &str,
@@ -510,7 +510,7 @@ impl DirectoryPluginRuntime {
     /// # Errors
     ///
     /// Returns [`Err`] with a human-readable message when the operation fails.
-    /// 删除某角色的插件 UI 状态；若当前活跃角色相同则清空活跃标记。
+    /// Remove plugin UI state for a role; clears active marker if it matches the current role.
     pub fn remove_role_plugin_state(&self, role_id: &str) -> Result<(), String> {
         let rid = role_id.trim();
         if rid.is_empty() {
@@ -611,7 +611,7 @@ impl DirectoryPluginRuntime {
         &self.app_data_dir
     }
 
-    /// 终止子进程并丢弃 RPC 缓存（插件目录被替换后应调用，再 `rescan_plugin_roots`）。
+    /// Kill child process and drop RPC cache (call after plugin dir replacement, then `rescan_plugin_roots`).
     pub fn clear_plugin_process(&self, plugin_id: &str) {
         let id = plugin_id.trim();
         if id.is_empty() {
@@ -627,7 +627,7 @@ impl DirectoryPluginRuntime {
         self.debug_log_rings.lock().remove(id);
     }
 
-    /// 重新扫描 `plugins/` 等根目录并替换内存中的 `plugin_roots`。
+    /// Rescan `plugins/` and other roots and replace in-memory `plugin_roots`.
     pub fn rescan_plugin_roots(&self, roles_dir: &Path) {
         for id in self.rpc_urls.lock().keys().cloned().collect::<Vec<_>>() {
             self.clear_plugin_process(&id);
@@ -644,7 +644,7 @@ impl DirectoryPluginRuntime {
         );
     }
 
-    /// 目录插件 manifest `provides` 是否声明某能力（如 `complex_emotion`）。
+    /// Whether directory plugin manifest `provides` declares a capability (e.g. `complex_emotion`).
     #[must_use]
     pub fn manifest_provides_capability(&self, plugin_id: &str, capability: &str) -> bool {
         let id = plugin_id.trim();
@@ -670,7 +670,7 @@ impl DirectoryPluginRuntime {
         if entry.is_empty() {
             return None;
         }
-        // Windows WebView2 使用 https://scheme.localhost/…
+        // Windows WebView2 uses https://scheme.localhost/…
         Some(format!(
             "https://ocliveplugin.localhost/{}/{}",
             plugin_id, entry

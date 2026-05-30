@@ -1,4 +1,4 @@
-//! 角色包 `manifest.json` 加载前校验，给出可读中文错误。
+//! Pre-load validation for role pack `manifest.json` with human-readable errors.
 //!
 //! `validate_disk_manifest` 与共享 crate [`oclive_validation`] 一致。
 
@@ -13,12 +13,12 @@ pub use oclive_validation::validate_disk_manifest;
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
-/// 校验 `settings.json` 合并后的 `interaction_mode`（若有）。
+/// Validate merged `interaction_mode` from `settings.json` when present.
 pub fn validate_role_interaction_mode(role: &Role) -> Result<(), String> {
     InteractionMode::validate_optional_pack_field(role.interaction_mode.as_deref())
 }
 
-/// `plugin_backends` 含 `remote` 但未配置对应环境变量时记一条警告（不阻止加载；运行时仍按 PLUGIN_V1 回退）。
+/// Log a warning when `plugin_backends` includes `remote` but env vars are unset (does not block load; runtime still falls back per PLUGIN_V1).
 pub fn log_plugin_backends_remote_missing_env(role: &Role) {
     let pb = &role.plugin_backends;
     let plugin_url_ok = RemotePluginHttpConfig::from_env_plugin().is_some();

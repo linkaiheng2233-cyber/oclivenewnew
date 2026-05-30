@@ -1,4 +1,4 @@
-//! `.ocpak` / `.zip`：ZIP 容器，内容为角色目录（与 `roles/{id}/` 一致）；亦可从**已解压目录**导入（布局相同）。
+//! `.ocpak` / `.zip`: ZIP container whose contents mirror a role directory (same as `roles/{id}/`); may also import from an **extracted directory** (same layout).
 
 use crate::error::{AppError, Result};
 use crate::infrastructure::storage::RoleStorage;
@@ -16,7 +16,7 @@ fn safe_zip_path(name: &str) -> bool {
     !name.contains("..") && !name.starts_with('/') && !name.starts_with('\\')
 }
 
-/// ZIP 内 `manifest.json` 路径优先级：根目录优先，其次单段子目录，最后更深路径（与标准导出一致）。
+/// `manifest.json` path priority inside ZIP: pack root first, then single top-level folder, then deeper paths (matches standard export).
 fn zip_manifest_path_priority(name: &str) -> Option<u8> {
     if !safe_zip_path(name) {
         return None;
@@ -39,10 +39,11 @@ fn zip_manifest_path_priority(name: &str) -> Option<u8> {
         Some(2)
     }
 }
+/// Pack `roles/{role_id}/` into `.ocpak` (ZIP).
+///
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
-/// 将 `roles/{role_id}/` 打成 `.ocpak`（ZIP）。
 pub fn export_role_pack(storage: &RoleStorage, role_id: &str, dest: &Path) -> Result<()> {
     let src = storage.roles_dir().join(role_id);
     if !src.is_dir() {
@@ -72,7 +73,7 @@ pub fn export_role_pack(storage: &RoleStorage, role_id: &str, dest: &Path) -> Re
     Ok(())
 }
 
-/// 从已解压目录读取 `manifest.json`（与 zip 解压后结构一致）。
+/// Read `manifest.json` from an extracted directory (same layout as after zip extract).
 fn peek_role_folder_manifest(dir: &Path) -> Result<(String, String, String)> {
     let root = resolve_extracted_role_root(dir)?;
     let manifest_path = root.join("manifest.json");
@@ -87,10 +88,11 @@ fn peek_role_folder_manifest(dir: &Path) -> Result<(String, String, String)> {
     })?;
     Ok((disk.id, disk.name, disk.version))
 }
+/// Read `manifest.json` from `.ocpak` / `.zip` or an **extracted directory** for pre-import preview and conflict checks.
+///
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
-/// 从 `.ocpak` / `.zip` 或**已解压目录**读取 `manifest.json`，用于导入前预览与冲突判断。
 pub fn peek_role_pack_manifest(src: &Path) -> Result<(String, String, String)> {
     if src.is_dir() {
         return peek_role_folder_manifest(src);
@@ -194,7 +196,7 @@ fn load_role_for_pack_import(storage: &RoleStorage, root: &Path) -> Result<Role>
     })
 }
 
-/// 将已解析的 `root`（含 `manifest.json`）安装到 `roles/{id}/`。
+/// Install parsed `root` (with `manifest.json`) into `roles/{id}/`.
 fn install_role_from_resolved_root<F, P>(
     storage: &RoleStorage,
     root: &Path,
@@ -260,7 +262,7 @@ fn copy_role_tree(src: &Path, dest: &Path, mut on_file: impl FnMut(usize, usize,
     Ok(())
 }
 
-/// 从已解压目录复制到 `roles/{id}/`（结构与 zip 解压一致）。
+/// Copy from extracted directory to `roles/{id}/` (same structure as zip extract).
 fn import_role_from_directory<F: FnMut(ImportProgress)>(
     storage: &RoleStorage,
     src: &Path,
@@ -279,12 +281,13 @@ fn import_role_from_directory<F: FnMut(ImportProgress)>(
         ((cur as i64 * 100) / tot as i64).min(99) as i32
     })
 }
+/// Extract `.ocpak` / `.zip` to `roles/{id}/`, or copy from an **extracted directory** (same layout as `roles/{id}/`).
+/// Returns [`AppError::RolePackExists`] when the directory exists and `overwrite == false`.
+/// `on_progress` is invoked during extract/copy; caller should emit 100% when finished.
+///
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
-/// 解压 `.ocpak` / `.zip` 到 `roles/{id}/`，或从**已解压目录**复制（与 `roles/{id}/` 布局一致）。
-/// 若目录已存在且 `overwrite == false` 则返回 [`AppError::RolePackExists`]。
-/// `on_progress` 在解压与复制阶段多次调用，结束时由调用方再发 100%。
 pub fn import_role_pack<F: FnMut(ImportProgress)>(
     storage: &RoleStorage,
     src: &Path,

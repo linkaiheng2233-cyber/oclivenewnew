@@ -1,4 +1,4 @@
-//! 进程内会话级缓存（细粒度锁，与 [`crate::state::AppState`] 解耦）。
+//! In-process session cache (fine-grained locks, decoupled from [`crate::state::AppState`]).
 
 use crate::infrastructure::cache::Cache;
 use crate::models::{PersonalityVector, PluginBackendsOverride};
@@ -15,16 +15,16 @@ const CLEANUP_INTERVAL: Duration = Duration::from_millis(10);
 #[cfg(not(test))]
 const CLEANUP_INTERVAL: Duration = Duration::from_secs(300);
 
-/// 按用途分锁的会话缓存；各 [`RwLock`] / [`DashMap`] / [`Cache`] 互不阻塞。
+/// Session cache with per-purpose locks; [`RwLock`] / [`DashMap`] / [`Cache`] do not block each other.
 pub struct SessionCache {
     plugin_overrides: RwLock<HashMap<String, PluginBackendsOverride>>,
     slot_overrides: RwLock<HashMap<String, BTreeMap<String, SlotOverridePatch>>>,
     complex_emotion_narrative_hint: DashMap<String, String>,
-    /// 专家 `slot.prompt_enhance.apply` 注入的 Prompt 片段（本回合 assemble 时追加）。
+    /// Expert `slot.prompt_enhance.apply` prompt fragment (appended during this turn's assemble).
     expert_prompt_enhance: DashMap<String, String>,
-    /// 专家 `slot.memory.inject` 写入的临时记忆 id（失败回滚时删除）。
+    /// Expert `slot.memory.inject` temporary memory ids (removed on failed rollback).
     expert_injected_memory_ids: DashMap<String, Vec<String>>,
-    /// 专家 `slot.lora.apply` 已应用的 directory 插件 id（失败时清除会话标记）。
+    /// Expert `slot.lora.apply` applied directory plugin id (session marker cleared on failure).
     expert_lora_plugin_id: DashMap<String, String>,
     personality_snapshots: Cache<PersonalityVector>,
 }
@@ -87,7 +87,7 @@ impl SessionCache {
         }
     }
 
-    /// 仅清除进程内缓存（用于测试「重启后从 DB 恢复」场景）。
+    /// Clears in-process cache only (for tests simulating restart + DB restore).
     pub fn clear_complex_emotion_narrative_hint_cache(&self, srid: &str) {
         self.complex_emotion_narrative_hint.remove(srid);
     }

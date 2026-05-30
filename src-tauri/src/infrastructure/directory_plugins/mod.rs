@@ -1,6 +1,6 @@
-//! 目录式插件：扫描 `plugins/*/manifest.json`、懒启动子进程、缓存 JSON-RPC 根 URL。
+//! Directory plugins: scan `plugins/*/manifest.json`, lazy-start child processes, cache JSON-RPC base URL.
 //!
-//! 契约见 `creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md`。
+//! Contract: `creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md`.
 
 mod dependency;
 mod manifest;

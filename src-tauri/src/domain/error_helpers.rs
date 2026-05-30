@@ -1,20 +1,20 @@
-//! 领域层错误映射辅助：集中 `AppError` 构造与 `map_err` 模式。
+//! Domain-layer error mapping helpers: centralized `AppError` construction and `map_err` patterns.
 
 use crate::error::AppError;
 
-/// `serde_json` 编码/解码失败 → [`AppError::Unknown`]。
+/// `serde_json` encode/decode failure → [`AppError::Unknown`].
 #[must_use]
 pub fn serde_to_unknown(context: &str, e: serde_json::Error) -> AppError {
     AppError::Unknown(format!("{context}: {e}"))
 }
 
-/// `serde_json` 失败 → [`AppError::OllamaError`]（Remote LLM / 侧车 wire）。
+/// `serde_json` failure → [`AppError::OllamaError`] (remote LLM / sidecar wire).
 #[must_use]
 pub fn serde_to_ollama(context: &str, e: serde_json::Error) -> AppError {
     AppError::OllamaError(format!("{context}: {e}"))
 }
 
-/// 带上下文的 LLM/Remote 侧车错误文案。
+/// LLM/remote sidecar error message with context.
 #[must_use]
 pub fn ollama_msg(context: &str, detail: impl std::fmt::Display) -> AppError {
     AppError::OllamaError(format!("{context}: {detail}"))
@@ -46,7 +46,7 @@ macro_rules! map_err_unknown {
     };
 }
 
-/// 共景路径阶段错误（`process_message` 请用 [`co_present_stage`](crate::domain::chat_engine::staged::co_present_stage) / [`process_message_stage`](crate::domain::chat_engine::staged::process_message_stage)）。
+/// Co-present path stage errors (`process_message` should use [`co_present_stage`](crate::domain::chat_engine::staged::co_present_stage) / [`process_message_stage`](crate::domain::chat_engine::staged::process_message_stage)).
 #[macro_export]
 macro_rules! kernel_stage {
     (@co_present $stage:expr, $e:expr) => {
@@ -64,7 +64,7 @@ macro_rules! map_plugin_err {
     };
 }
 
-/// Tauri 命令边界：`AppError` → 前端可读 `String`（`KernelErrorBody` JSON）。
+/// Tauri command boundary: `AppError` → frontend-readable `String` (`KernelErrorBody` JSON).
 #[macro_export]
 macro_rules! map_frontend_err {
     ($expr:expr) => {

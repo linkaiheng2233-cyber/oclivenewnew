@@ -1,4 +1,4 @@
-//! 专家路由匹配与步骤执行（`slot.expert.invoke`）。
+//! Expert routing match and step execution (`slot.expert.invoke`).
 
 #![cfg(feature = "dual_core")]
 
@@ -22,11 +22,11 @@ fn map_db_err(e: AppError) -> ProcessMessageError {
     ProcessMessageError::dual_core(e)
 }
 
-/// 触发条件：无路由匹配时静默跳过（非执行失败）。
+/// Trigger miss: no route matched; skip silently (not an execution failure).
 #[derive(Debug, Clone)]
 pub struct ExpertTriggerMiss;
 
-/// 专家步骤执行前快照（失败回滚）。
+/// Snapshot before expert step execution (rollback on failure).
 #[derive(Debug, Clone, Default)]
 pub struct ExpertExecSnapshot {
     pub personality_before: Option<PersonalityVector>,
@@ -123,11 +123,11 @@ fn log_exec_fallback(route_id: &str, reason: &str, fallback: ExpertFallback) {
     );
 }
 
-/// 执行专家子流程；无匹配路由返回 `TriggerMiss`。
+/// Run expert sub-pipeline; returns `TriggerMiss` when no route matches.
 ///
 /// # Errors
 ///
-/// 匹配上下文构建失败或专家步骤执行返回 `ProcessMessageError` 时向上传播。
+/// Propagates when match context build fails or an expert step returns `ProcessMessageError`.
 pub async fn execute_expert_route(
     step_ctx: &mut ExperimentalStepCtx<'_>,
     doc: &ExpertRoutingDoc,

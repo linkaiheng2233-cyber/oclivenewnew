@@ -5,25 +5,25 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::path::Path;
 
-/// 整壳 / UI 插槽页可调用的宿主能力白名单（`plugin_bridge_invoke`）。
+/// Host capability whitelist for shell / UI slot pages (`plugin_bridge_invoke`).
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct BridgeConfig {
-    /// 允许的 Tauri command 名（与 `invoke_handler` 注册名一致，如 `get_role_info`）。
+    /// Allowed Tauri command names (match `invoke_handler` registration, e.g. `get_role_info`).
     #[serde(default)]
     pub invoke: Vec<String>,
-    /// 允许的 `event.listen` 事件名（可选；未实现时列表可为空）。
+    /// Allowed `event.listen` event names (optional; may be empty if unimplemented).
     #[serde(default)]
     pub events: Vec<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct ShellSection {
-    /// 相对插件根，如 `ui/index.html`
+    /// Relative to plugin root, e.g. `ui/index.html`
     pub entry: String,
-    /// 可选：整壳主界面用原生 Vue 渲染（相对插件根的 `.vue`）；与 `entry` 二选一优先时见宿主引导逻辑。
+    /// Optional: native Vue shell entry (`.vue` relative to plugin root); host picks vs `entry` per bootstrap rules.
     #[serde(default, rename = "vueEntry")]
     pub vue_entry: Option<String>,
-    /// 非空时由宿主向该 HTML 注入 `window.OclivePluginBridge`。
+    /// When non-empty, host injects `window.OclivePluginBridge` into that HTML.
     #[serde(default)]
     pub bridge: Option<BridgeConfig>,
 }
@@ -33,16 +33,16 @@ pub struct ProcessSection {
     pub command: String,
     #[serde(default)]
     pub args: Vec<String>,
-    /// 相对插件根的工作目录；缺省为插件根
+    /// Working directory relative to plugin root; defaults to plugin root
     #[serde(default)]
     pub cwd: Option<String>,
 }
 
-/// 非整壳模式下在主界面挂载的 UI（官方语义插槽名见宿主 `EMBEDDED_UI_SLOT_NAMES`）。
+/// UI mounted in the main window when not in shell mode (official slot names: host `EMBEDDED_UI_SLOT_NAMES`).
 ///
-/// **同一 `slot` 多条声明**：每条须有唯一 `appearance_id`（空字符串表示「默认」变体，同一 `slot` 至多一条）。
-/// `label` 为管理界面展示用，可选。
-/// 插件管理「设置」页动态表单字段（与 `PLUGIN_INDEX.md` / 前端 `PluginSettings.vue` 契约一致）。
+/// **Multiple declarations per `slot`**: each must have a unique `appearance_id` (empty string = default variant; at most one per `slot`).
+/// `label` is optional display text for the manager UI.
+/// Dynamic form fields for plugin settings (contract with `PLUGIN_INDEX.md` / frontend `PluginSettings.vue`).
 #[derive(Debug, Clone, Deserialize)]
 pub struct UiSchemaField {
     pub key: String,
@@ -64,14 +64,14 @@ pub struct UiSchemaSection {
 #[derive(Debug, Clone, Deserialize)]
 pub struct UiSlotDecl {
     pub slot: String,
-    /// 同一 `slot` 多外观时用于区分；缺省或空字符串表示默认单外观。
+    /// Distinguishes multiple appearances for the same `slot`; empty = default single appearance.
     #[serde(default)]
     pub appearance_id: String,
-    /// 管理界面、目录等展示用名称。
+    /// Display name for manager UI, catalog, etc.
     #[serde(default)]
     pub label: Option<String>,
     pub entry: String,
-    /// 可选：相对插件根的 `.vue` 路径，由主界面原生渲染（失败则回退 `entry` iframe）。
+    /// Optional: `.vue` path relative to plugin root; host renders natively (falls back to `entry` iframe on failure).
     #[serde(default, rename = "vueComponent")]
     pub vue_component: Option<String>,
     #[serde(default)]
@@ -83,49 +83,49 @@ pub struct OclivePluginManifest {
     pub schema_version: u32,
     pub id: String,
     pub version: String,
-    /// 宿主扩展用：整壳深度集成插件建议设为 **`"ocliveplugin"`**（见 `plugin_bridge` 敏感命令门禁）。
+    /// Host extension: deep-integration shell plugins should use **`"ocliveplugin"`** (see `plugin_bridge` sensitive-command gate).
     #[serde(default, rename = "type")]
     pub plugin_type: Option<String>,
     #[serde(default)]
     pub shell: Option<ShellSection>,
-    /// 若存在 `shell`，按约定不参与插槽，避免与整壳重复。
+    /// When `shell` is set, excluded from slots by convention to avoid duplication.
     #[serde(default)]
     pub ui_slots: Vec<UiSlotDecl>,
-    /// 可选：声明本插件提供的目录后端能力（如 `memory` / `emotion` / `event` / `prompt` / `llm`）。未声明时编写器视为全部可用。
+    /// Optional: directory backend capabilities this plugin provides (e.g. `memory` / `emotion` / `event` / `prompt` / `llm`). Unset = all available in editor.
     #[serde(default)]
     pub provides: Vec<String>,
     #[serde(default)]
     pub process: Option<ProcessSection>,
-    /// stdout 就绪行前缀，默认 `OCLIVE_READY`
+    /// stdout ready-line prefix, default `OCLIVE_READY`
     #[serde(default = "default_ready_prefix")]
     pub ready_prefix: String,
-    /// 可选：声明 JSON-RPC 方法名（供开发者调试面板降级展示；可与运行时 `rpc.discover` 合并）。
+    /// Optional: declared JSON-RPC method names (developer debug panel fallback; may merge with runtime `rpc.discover`).
     #[serde(default, rename = "rpcMethods")]
     pub rpc_methods: Vec<String>,
-    /// 可选：依赖的其他目录插件 id → semver 范围（如 `^2.0.0`、`>=1.0.0`）。
+    /// Optional: other directory plugin ids → semver range (e.g. `^2.0.0`, `>=1.0.0`).
     #[serde(default)]
     pub dependencies: Option<HashMap<String, String>>,
-    /// 可选：`endpoint-config` / `provider-selector` / `slot-selector` / `switch-toggle`。
+    /// Optional: `endpoint-config` / `provider-selector` / `slot-selector` / `switch-toggle`.
     #[serde(default, rename = "uiTemplate")]
     pub ui_template: Option<String>,
-    /// 可选：动态表单 schema（`fields` 数组）。
+    /// Optional: dynamic form schema (`fields` array).
     #[serde(default, rename = "uiSchema")]
     pub ui_schema: Option<UiSchemaSection>,
-    /// 可选：高危能力声明（见 PLUGIN_V1 §权限规范）；省略视为 `[]`。
+    /// Optional: high-risk capability declarations (PLUGIN_V1 permissions); omitted = `[]`.
     #[serde(default)]
     pub permissions: Vec<String>,
-    /// 可选：插件描述（简单管理列表展开详情）。
+    /// Optional: plugin description (simple manager list detail).
     #[serde(default)]
     pub description: Option<String>,
-    /// 可选：作者或组织名。
+    /// Optional: author or organization.
     #[serde(default)]
     pub author: Option<String>,
-    /// 可选：安装时自动写入角色包 `slot_registry`（见 PLUGIN_V1 · `slot_attachment`）。
+    /// Optional: auto-write role pack `slot_registry` on install (PLUGIN_V1 · `slot_attachment`).
     #[serde(default, rename = "slot_attachment")]
     pub slot_attachment: Option<serde_json::Value>,
 }
 
-/// 规范化 manifest 内相对路径，与请求 URI 中 `rel` 比较。
+/// Normalize relative paths in manifest for comparison with request URI `rel`.
 #[must_use]
 pub fn normalize_plugin_rel(s: &str) -> String {
     s.replace('\\', "/")
@@ -139,7 +139,7 @@ fn default_ready_prefix() -> String {
 }
 
 impl OclivePluginManifest {
-    /// 当前资源相对路径（插件根下）是否配置了 bridge，返回 `BridgeConfig`。
+    /// Whether the given asset `rel` (under plugin root) has bridge config; returns `BridgeConfig` when set.
     #[must_use]
     pub fn bridge_for_asset_rel(&self, rel: &str) -> Option<&BridgeConfig> {
         let n = normalize_plugin_rel(rel);
@@ -167,7 +167,7 @@ impl OclivePluginManifest {
         None
     }
 
-    /// 是否应注入桥接脚本：有 bridge 且 invoke 或 events 非空。
+    /// Whether to inject bridge script: bridge present and invoke or events non-empty.
     #[must_use]
     pub fn should_inject_bridge(&self, rel: &str) -> bool {
         let Some(b) = self.bridge_for_asset_rel(rel) else {
@@ -222,7 +222,7 @@ impl OclivePluginManifest {
     }
 }
 
-/// 与持久化、`plugin_state` 比较时使用的 `appearance_id` 规范化（trim）。
+/// Normalized `appearance_id` for persistence and `plugin_state` comparison (trim).
 #[must_use]
 pub fn normalize_ui_slot_appearance_id(s: &str) -> String {
     s.trim().to_string()
@@ -232,7 +232,7 @@ fn normalize_appearance_id(s: &str) -> String {
     normalize_ui_slot_appearance_id(s)
 }
 
-/// 同一 manifest 内：每个 `(slot, appearance_id)` 至多出现一次（`appearance_id` 按 trim 后比较；空为默认键）。
+/// Within one manifest: each `(slot, appearance_id)` at most once (`appearance_id` compared after trim; empty = default key).
 fn validate_ui_slot_appearance_ids(m: &OclivePluginManifest) -> Result<(), String> {
     use std::collections::HashSet;
     let mut seen: HashSet<(String, String)> = HashSet::new();

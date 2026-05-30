@@ -1,4 +1,4 @@
-//! 沉浸模式虚拟时钟同步、跳转与遗忘梯度。
+//! Immersive-mode virtual clock sync, jumps, and forgetting gradient.
 
 use crate::error::Result;
 use crate::infrastructure::db::DbManager;
@@ -12,11 +12,11 @@ use oclive_kernel_runtime::domain::virtual_time::{
     virtual_days_from_real_elapsed_ms,
 };
 
-/// 同步并持久化虚拟时间；返回对齐后的虚拟毫秒时间戳。
+/// Sync and persist virtual time; returns aligned virtual timestamp in milliseconds.
 ///
 /// # Errors
 ///
-/// 锚点或虚拟时间持久化失败时返回 [`crate::error::AppError`].
+/// Returns [`crate::error::AppError`] when anchor or virtual time persistence fails.
 pub async fn sync_and_persist_virtual_time(
     db: &DbManager,
     role: &Role,
@@ -51,11 +51,11 @@ pub async fn sync_and_persist_virtual_time(
     Ok(virtual_now)
 }
 
-/// 手动跳转后重设锚点；可选叠加跳转区间的遗忘。
+/// Reset anchors after a manual jump; optionally apply forgetting over the jump interval.
 ///
 /// # Errors
 ///
-/// 锚点持久化或跳转区间性格衰减失败时返回 [`crate::error::AppError`].
+/// Returns [`crate::error::AppError`] when anchor persistence or jump-interval personality decay fails.
 pub async fn apply_virtual_time_jump(
     state: &AppState,
     role: &Role,
@@ -81,11 +81,11 @@ pub async fn apply_virtual_time_jump(
     Ok(ms)
 }
 
-/// 自上次互动（现实 `last_interaction_at`）起按流速折算虚拟日，衰减性格 delta。
+/// From last interaction (real `last_interaction_at`), convert elapsed time to virtual days at flow rate and decay personality delta.
 ///
 /// # Errors
 ///
-/// 读取互动时间或持久化性格 delta 失败时返回 [`crate::error::AppError`].
+/// Returns [`crate::error::AppError`] when reading interaction time or persisting personality delta fails.
 pub async fn apply_idle_personality_decay(
     state: &AppState,
     role: &Role,

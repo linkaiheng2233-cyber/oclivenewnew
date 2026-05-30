@@ -1,4 +1,4 @@
-//! 长时间未互动：亲密值疏远衰减与关系阶段降级。
+//! Long idle periods: favorability estrangement decay and relation state downgrade.
 
 use crate::error::Result;
 use crate::infrastructure::db::DbManager;
@@ -7,7 +7,7 @@ use chrono::Utc;
 use oclive_kernel_runtime::domain::relation_engine::{RelationEngine, RelationState};
 use oclive_kernel_runtime::domain::virtual_time::virtual_days_from_real_elapsed_ms;
 
-/// 在可变性格档案中追加或更新小节（纯文本，供 profile 模式）。
+/// Append or update a section in the mutable personality profile (plain text, for profile mode).
 #[must_use]
 pub fn append_mutable_profile_section(existing: &str, title: &str, line: &str) -> String {
     let header = format!("## {title}");
@@ -24,11 +24,11 @@ pub fn append_mutable_profile_section(existing: &str, title: &str, line: &str) -
     }
 }
 
-/// 对话开始前：按距上次互动的虚拟日数衰减亲密值，必要时降级关系阶段。
+/// Before a turn starts: decay favorability by virtual days since last interaction; downgrade relation state when needed.
 ///
 /// # Errors
 ///
-/// 数据库读写或可变档案更新失败时返回 [`crate::error::AppError`].
+/// Returns [`crate::error::AppError`] on database read/write or mutable profile update failure.
 pub async fn apply_estrangement_at_turn_start(
     db: &DbManager,
     role: &Role,

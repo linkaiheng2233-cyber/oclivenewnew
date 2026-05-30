@@ -730,7 +730,7 @@ impl DbManager {
         let events = rows
             .into_iter()
             .map(|(event_type, user_emotion, bot_emotion, _resolution)| {
-                // 简化事件类型解析，实际应更完善
+                // Simplified event-type parsing; production should be more complete
                 let event_type = match event_type.as_str() {
                     "Quarrel" => EventType::Quarrel,
                     "Apology" => EventType::Apology,
@@ -739,7 +739,7 @@ impl DbManager {
                     "Confession" => EventType::Confession,
                     "Joke" => EventType::Joke,
                     "Ignore" => EventType::Ignore,
-                    _ => EventType::Ignore, // 默认值
+                    _ => EventType::Ignore, // default
                 };
 
                 Event {

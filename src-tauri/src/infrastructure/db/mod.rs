@@ -315,7 +315,7 @@ mod tests {
     async fn setup_test_db() -> Result<SqlitePool> {
         let pool = test_db::connect_memory_migrated().await;
 
-        // 为测试创建角色运行时记录
+        // Create role_runtime row for tests
         sqlx::query("INSERT INTO role_runtime (role_id, current_favorability) VALUES (?, ?)")
             .bind("test_role")
             .bind(0.0)
@@ -337,7 +337,7 @@ mod tests {
             .unwrap();
         assert!(!memory_id.is_empty());
 
-        // 简化查询，只获取基本字段
+        // Simplified query: basic fields only
         let rows =
             sqlx::query("SELECT id, content, importance FROM long_term_memory WHERE role_id = ?")
                 .bind("test_role")

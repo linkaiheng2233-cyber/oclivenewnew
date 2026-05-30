@@ -1,10 +1,10 @@
-//! [`DbManager`] 子集 trait，便于 domain / 测试按表注入 mock。
+//! [`DbManager`] subset trait for per-table mocks in domain / tests.
 
 use super::DbManager;
 use crate::error::Result;
 use async_trait::async_trait;
 
-/// `role_runtime` 表常用读路径（好感 / 情绪 / 场景）。
+/// Common `role_runtime` read paths (favorability / emotion / scene).
 #[async_trait]
 pub trait RoleRuntimeRepo: Send + Sync {
     async fn get_favorability(&self, role_id: &str) -> Result<Option<f64>>;

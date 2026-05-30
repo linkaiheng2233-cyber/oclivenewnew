@@ -1,4 +1,4 @@
-//! 开发者模式：监听插件容器目录，防抖后重新扫描并发出 `plugin:changed`。
+//! Developer mode: watch plugin container dirs, debounced rescan, emit `plugin:changed`.
 
 use super::runtime::{plugin_scan_container_roots, HostPluginsFile};
 use crate::state::AppState;
@@ -9,7 +9,7 @@ use std::sync::mpsc::channel;
 use std::time::Duration;
 use tauri::Manager;
 
-/// 在独立线程中监听 `plugin_scan_container_roots` 返回的目录；失败仅打日志。
+/// Watch directories from `plugin_scan_container_roots` on a dedicated thread; failures are logged only.
 pub fn start_plugin_fs_watcher(app: tauri::AppHandle, state: &AppState, roles_dir: PathBuf) {
     let app_data = state.directory_plugins.app_data_dir().to_path_buf();
     let host: HostPluginsFile = state.directory_plugins.host().clone();

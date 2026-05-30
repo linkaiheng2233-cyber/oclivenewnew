@@ -1,10 +1,10 @@
-//! 目录插件 manifest `dependencies` 与已安装版本比对。
+//! Directory plugin manifest `dependencies` vs installed versions.
 
 use super::manifest::OclivePluginManifest;
 use semver::{Version, VersionReq};
 use std::collections::HashMap;
 
-/// 返回 `(dependency_status, dependency_issues)`，`status` 为 `ok` / `missing` / `mismatch`。
+/// Returns `(dependency_status, dependency_issues)` where `status` is `ok` / `missing` / `mismatch`.
 #[must_use]
 pub fn dependency_report(
     manifest: &OclivePluginManifest,

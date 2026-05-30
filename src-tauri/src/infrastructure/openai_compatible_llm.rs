@@ -1,4 +1,4 @@
-//! OpenAI-compatible `POST /v1/chat/completions` client (DeepSeek, 中转站, OpenAI 等).
+//! OpenAI-compatible `POST /v1/chat/completions` client (DeepSeek, relay endpoints, OpenAI, etc.).
 
 use crate::domain::ports::LlmClient;
 use crate::error::{AppError, Result};

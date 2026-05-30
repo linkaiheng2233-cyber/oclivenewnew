@@ -49,7 +49,7 @@ pub struct PluginIndexFile {
 pub const DEFAULT_PLUGIN_INDEX_URL: &str =
     "https://raw.githubusercontent.com/linkaiheng2233-cyber/awesome-oclive-plugins/main/plugins.json";
 
-/// 主仓 `data/plugins.json` raw（awesome 列表为空或开发覆盖时用）。
+/// Main repo `data/plugins.json` raw URL (when awesome list is empty or dev override applies).
 pub const FALLBACK_PLUGIN_INDEX_URL: &str =
     "https://raw.githubusercontent.com/linkaiheng2233-cyber/oclivenewnew/main/data/plugins.json";
 

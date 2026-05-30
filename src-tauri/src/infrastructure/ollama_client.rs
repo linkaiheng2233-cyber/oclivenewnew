@@ -148,7 +148,7 @@ impl OllamaClient {
             .map_err(|e| AppError::OllamaError(format!("Failed to read response body: {}", e)))?;
 
         if !status.is_success() {
-            // 404 多为模型不存在或 URL 错误；body 里常有 {"error":"..."}
+            // 404 often means missing model or wrong URL; body often contains {"error":"..."}
             return Err(AppError::OllamaError(format!(
                 "HTTP {} — {} (请求: POST {}/api/generate, model={})",
                 status,
@@ -210,7 +210,7 @@ impl OllamaClient {
             .await
             .map_err(|e| AppError::OllamaError(format!("Failed to read response: {}", e)))?;
 
-        // 解析流式响应，合并所有 response 字段
+        // Parse streaming response lines and merge all `response` fields
         let mut full_response = String::new();
         for line in text.lines() {
             if let Ok(json) = serde_json::from_str::<OllamaResponse>(line) {
@@ -288,7 +288,7 @@ mod tests {
         assert!(json.contains("\"model\":\"llama2\""));
         assert!(json.contains("\"prompt\":\"Hello\""));
         assert!(json.contains("\"temperature\":0.7"));
-        assert!(!json.contains("\"top_p\"")); // 应该被跳过
+        assert!(!json.contains("\"top_p\"")); // should be omitted
     }
 
     #[test]
@@ -308,7 +308,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_health_check_offline() {
-        let client = OllamaClient::new("http://localhost:9999"); // 不存在的端口
+        let client = OllamaClient::new("http://localhost:9999"); // unused port
         let result = client.health_check().await;
         assert!(result.is_ok());
         assert!(!result.unwrap());
