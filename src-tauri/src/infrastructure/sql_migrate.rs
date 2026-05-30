@@ -1,6 +1,7 @@
 //! Runtime SQLite migrations without the `sqlx` umbrella `migrate` feature (avoids mysql/postgres in the lockfile).
 
 use sqlx::sqlite::SqlitePool;
+use std::collections::HashSet;
 use std::path::Path;
 
 /// Apply `migrations/*.sql` in lexical order; compatible with existing `_sqlx_migrations` rows.
@@ -30,6 +31,16 @@ pub async fn run_sql_migrations(db: &SqlitePool, migrations_dir: &Path) -> Resul
         .collect();
     entries.sort_by_key(|e| e.file_name());
 
+    // Avoid one round trip per migration file.
+    let applied_versions: HashSet<i64> = sqlx::query_scalar(
+        "SELECT version FROM _sqlx_migrations WHERE success = 1",
+    )
+    .fetch_all(db)
+    .await
+    .map_err(|e| e.to_string())?
+    .into_iter()
+    .collect();
+
     for entry in entries {
         let file_name = entry.file_name().to_string_lossy().into_owned();
         let version: i64 = file_name
@@ -38,14 +49,7 @@ pub async fn run_sql_migrations(db: &SqlitePool, migrations_dir: &Path) -> Resul
             .and_then(|p| p.parse().ok())
             .ok_or_else(|| format!("migration file name must start with version: {file_name}"))?;
 
-        let applied: Option<(i64,)> = sqlx::query_as(
-            "SELECT version FROM _sqlx_migrations WHERE version = ? AND success = 1 LIMIT 1",
-        )
-        .bind(version)
-        .fetch_optional(db)
-        .await
-        .map_err(|e| e.to_string())?;
-        if applied.is_some() {
+        if applied_versions.contains(&version) {
             continue;
         }
 
@@ -75,10 +79,69 @@ pub async fn run_sql_migrations(db: &SqlitePool, migrations_dir: &Path) -> Resul
     Ok(())
 }
 
+/// Strip `--` line comments first, then split on `;`.
+///
+/// Naively splitting on `;` would break when a `;` appears in a comment line
+/// (e.g. `-- foo; bar.`) because the loose tail would be sent to SQLite as a
+/// statement and fail. We strip comments line-by-line first; we do **not**
+/// attempt to handle string-literal `;` because our migrations don't use them
+/// in DDL — if that ever changes, replace with a real tokenizer.
 fn split_sql_statements(sql: &str) -> Vec<String> {
-    sql.split(';')
+    let stripped: String = sql
+        .lines()
+        .map(strip_line_comment)
+        .collect::<Vec<_>>()
+        .join("\n");
+
+    stripped
+        .split(';')
         .map(str::trim)
-        .filter(|s| !s.is_empty() && !s.lines().all(|l| l.trim().is_empty() || l.trim().starts_with("--")))
-        .map(|s| s.to_string())
+        .filter(|s| !s.is_empty())
+        .map(str::to_string)
         .collect()
+}
+
+/// Drop everything after `--` on a single line; preserves leading whitespace
+/// so multi-line statements still parse correctly.
+fn strip_line_comment(line: &str) -> String {
+    match line.find("--") {
+        Some(idx) => line[..idx].trim_end().to_string(),
+        None => line.to_string(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn split_drops_pure_comment_line() {
+        let sql = "-- only a comment";
+        assert!(split_sql_statements(sql).is_empty());
+    }
+
+    #[test]
+    fn split_handles_semicolon_inside_comment() {
+        let sql = "-- chat history (kernel-owned; independent from memory).\nCREATE TABLE foo (id INT);";
+        let stmts = split_sql_statements(sql);
+        assert_eq!(stmts.len(), 1);
+        assert!(stmts[0].starts_with("CREATE TABLE foo"));
+    }
+
+    #[test]
+    fn split_keeps_trailing_inline_comment() {
+        let sql = "CREATE TABLE foo (id INT); -- trailing\nCREATE TABLE bar (id INT);";
+        let stmts = split_sql_statements(sql);
+        assert_eq!(stmts.len(), 2);
+        assert!(stmts[0].contains("foo"));
+        assert!(stmts[1].contains("bar"));
+    }
+
+    #[test]
+    fn split_preserves_multiline_statement() {
+        let sql = "CREATE TABLE foo (\n  id INT,\n  name TEXT\n);";
+        let stmts = split_sql_statements(sql);
+        assert_eq!(stmts.len(), 1);
+        assert!(stmts[0].contains("name TEXT"));
+    }
 }

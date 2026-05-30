@@ -1,4 +1,4 @@
--- Chat history (kernel-owned; independent from long_term_memory / short_term_memory).
+-- Chat history (kernel-owned, independent from long_term_memory / short_term_memory).
 
 CREATE TABLE IF NOT EXISTS chat_sessions (
     session_id TEXT PRIMARY KEY NOT NULL,
