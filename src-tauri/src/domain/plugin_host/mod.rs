@@ -198,22 +198,24 @@ impl PluginHost {
     /// # Errors
     ///
     /// Returns [`Err`] with a human-readable message when the operation fails.
-    pub fn list_mcp_tools(
+    pub async fn list_mcp_tools(
         &self,
         server_id: &str,
     ) -> std::result::Result<Vec<crate::infrastructure::mcp_client::McpToolManifest>, String> {
-        self.registry.list_mcp_tools(server_id)
+        self.registry.list_mcp_tools(server_id).await
     }
     /// # Errors
     ///
     /// Returns [`Err`] with a human-readable message when the operation fails.
-    pub fn call_mcp_tool(
+    pub async fn call_mcp_tool(
         &self,
         server_id: &str,
         tool_name: &str,
         params: Value,
     ) -> std::result::Result<McpToolCallResult, String> {
-        self.registry.call_mcp_tool(server_id, tool_name, params)
+        self.registry
+            .call_mcp_tool(server_id, tool_name, params)
+            .await
     }
 
     #[must_use]

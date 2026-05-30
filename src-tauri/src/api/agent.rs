@@ -27,13 +27,14 @@ pub fn list_mcp_servers(state: State<'_, AppState>) -> Result<Value, CommandErro
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
-pub fn list_mcp_tools(
+pub async fn list_mcp_tools(
     req: ListMcpToolsRequest,
     state: State<'_, AppState>,
 ) -> Result<Value, CommandError> {
     let tools = state
         .plugins
         .list_mcp_tools(req.server_id.as_str())
+        .await
         .map_err(CommandError::from)?;
     Ok(serde_json::to_value(tools)?)
 }
@@ -41,10 +42,14 @@ pub fn list_mcp_tools(
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
-pub fn call_mcp_tool(req: CallMcpToolRequest, state: State<'_, AppState>) -> Result<Value, CommandError> {
+pub async fn call_mcp_tool(
+    req: CallMcpToolRequest,
+    state: State<'_, AppState>,
+) -> Result<Value, CommandError> {
     let result = state
         .plugins
         .call_mcp_tool(req.server_id.as_str(), req.tool_name.as_str(), req.params)
+        .await
         .map_err(CommandError::from)?;
     Ok(serde_json::to_value(result)?)
 }

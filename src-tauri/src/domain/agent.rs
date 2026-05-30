@@ -74,29 +74,29 @@ impl BuiltinReActAgent {
     /// # Errors
     ///
     /// Returns [`Err`] with a human-readable message when the operation fails.
-    pub fn list_mcp_tools(
+    pub async fn list_mcp_tools(
         &self,
         server_id: &str,
     ) -> Result<Vec<crate::infrastructure::mcp_client::McpToolManifest>> {
-        self.mcp.list_tools(server_id)
+        self.mcp.list_tools(server_id).await
     }
     /// # Errors
     ///
     /// Returns [`Err`] with a human-readable message when the operation fails.
-    pub fn call_tool_direct(
+    pub async fn call_tool_direct(
         &self,
         server_id: &str,
         tool_name: &str,
         params: Value,
     ) -> Result<McpToolCallResult> {
-        self.mcp.call_tool(server_id, tool_name, params)
+        self.mcp.call_tool(server_id, tool_name, params).await
     }
 
-    fn list_tools_for_server(
+    async fn list_tools_for_server(
         &self,
         s: &McpServerManifest,
     ) -> Vec<crate::infrastructure::mcp_client::McpToolManifest> {
-        match self.mcp.list_tools(s.id.as_str()) {
+        match self.mcp.list_tools(s.id.as_str()).await {
             Ok(t) => t,
             Err(AppError::HighRiskCapabilityNotGranted { .. }) => {
                 tracing::info!(
@@ -110,10 +110,10 @@ impl BuiltinReActAgent {
         }
     }
 
-    fn collect_tool_schema_inputs(&self) -> Vec<ToolSchemaInput> {
+    async fn collect_tool_schema_inputs(&self) -> Vec<ToolSchemaInput> {
         let mut out: Vec<ToolSchemaInput> = Vec::new();
         for s in self.mcp.list_servers() {
-            let tools = self.list_tools_for_server(&s);
+            let tools = self.list_tools_for_server(&s).await;
             for t in tools {
                 let name = t.name.trim().to_string();
                 if name.is_empty() {
@@ -135,9 +135,9 @@ impl BuiltinReActAgent {
         out
     }
 
-    fn server_for_tool(&self, tool_name: &str) -> Option<McpServerManifest> {
+    async fn server_for_tool(&self, tool_name: &str) -> Option<McpServerManifest> {
         for s in self.mcp.list_servers() {
-            let listed = self.list_tools_for_server(&s);
+            let listed = self.list_tools_for_server(&s).await;
             if listed.iter().any(|t| t.name.trim() == tool_name) {
                 return Some(s);
             }
@@ -173,7 +173,7 @@ impl AgentProvider for BuiltinReActAgent {
                 reply: String::new(),
             });
         }
-        let tool_schema_inputs = self.collect_tool_schema_inputs();
+        let tool_schema_inputs = self.collect_tool_schema_inputs().await;
         if tool_schema_inputs.is_empty() {
             return Ok(AgentOutput {
                 handled: false,
@@ -235,17 +235,21 @@ impl AgentProvider for BuiltinReActAgent {
                 if tool_name.is_empty() {
                     continue;
                 }
-                let Some(server) = self.server_for_tool(tool_name.as_str()) else {
+                let Some(server) = self.server_for_tool(tool_name.as_str()).await else {
                     let msg = format!("tool {} has no mapped server", tool_name);
                     trace.error = Some(msg.clone());
                     observations.push(msg);
                     continue;
                 };
-                match self.mcp.call_tool(
-                    server.id.as_str(),
-                    tool_name.as_str(),
-                    call.function.arguments.clone(),
-                ) {
+                match self
+                    .mcp
+                    .call_tool(
+                        server.id.as_str(),
+                        tool_name.as_str(),
+                        call.function.arguments.clone(),
+                    )
+                    .await
+                {
                     Ok(result) => {
                         trace.tool_calls.push(AgentToolCallTrace {
                             server_id: result.server_id.clone(),

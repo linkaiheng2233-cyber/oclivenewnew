@@ -214,23 +214,27 @@ impl BackendRegistry {
     /// # Errors
     ///
     /// Returns [`Err`] with a human-readable message when the operation fails.
-    pub fn list_mcp_tools(
+    pub async fn list_mcp_tools(
         &self,
         server_id: &str,
     ) -> std::result::Result<Vec<crate::infrastructure::mcp_client::McpToolManifest>, String> {
-        crate::map_frontend_err!(self.agent_builtin.list_mcp_tools(server_id))
+        crate::map_frontend_err!(self.agent_builtin.list_mcp_tools(server_id).await)
     }
 
     /// # Errors
     ///
     /// Returns [`Err`] with a human-readable message when the operation fails.
-    pub fn call_mcp_tool(
+    pub async fn call_mcp_tool(
         &self,
         server_id: &str,
         tool_name: &str,
         params: Value,
     ) -> std::result::Result<McpToolCallResult, String> {
-        crate::map_frontend_err!(self.agent_builtin.call_tool_direct(server_id, tool_name, params))
+        crate::map_frontend_err!(
+            self.agent_builtin
+                .call_tool_direct(server_id, tool_name, params)
+                .await
+        )
     }
 
     pub fn recent_agent_traces(&self) -> Vec<AgentDebugTrace> {
@@ -252,10 +256,13 @@ impl BackendRegistry {
         let mcp = Arc::new(McpClient::new(app_data_dir, high_risk_grants.clone()));
         let agent_builtin = Arc::new(BuiltinReActAgent::new(llm_ollama.clone(), mcp));
         // TODO(agent-directory): replace placeholder with directory-plugin Agent dispatch (see creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md).
-        tracing::warn!(
-            target: "oclive_plugin",
-            "agent_directory uses BuiltinReActAgent placeholder; directory plugin agent routing not implemented yet",
-        );
+        static AGENT_DIRECTORY_PLACEHOLDER_WARN: std::sync::Once = std::sync::Once::new();
+        AGENT_DIRECTORY_PLACEHOLDER_WARN.call_once(|| {
+            tracing::warn!(
+                target: "oclive_plugin",
+                "agent_directory uses BuiltinReActAgent placeholder; directory plugin agent routing not implemented yet",
+            );
+        });
         let agent_directory: Arc<dyn AgentProvider> = agent_builtin.clone();
         let remote_http_client = remote_plugin::build_shared_remote_http_client();
         Self {

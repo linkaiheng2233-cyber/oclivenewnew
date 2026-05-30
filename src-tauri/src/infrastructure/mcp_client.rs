@@ -54,6 +54,7 @@ pub struct McpClient {
     root_dir: PathBuf,
     servers_cache: RwLock<Vec<McpServerManifest>>,
     grants: Arc<HighRiskGrantStore>,
+    http_client: reqwest::Client,
 }
 
 impl McpClient {
@@ -65,6 +66,9 @@ impl McpClient {
             root_dir: root,
             servers_cache: RwLock::new(Vec::new()),
             grants,
+            http_client: reqwest::Client::builder()
+                .build()
+                .unwrap_or_else(|_| reqwest::Client::new()),
         }
     }
 
@@ -154,7 +158,7 @@ impl McpClient {
     /// # Errors
     ///
     /// Returns [`Err`] with a human-readable message when the operation fails.
-    pub fn list_tools(&self, server_id: &str) -> Result<Vec<McpToolManifest>> {
+    pub async fn list_tools(&self, server_id: &str) -> Result<Vec<McpToolManifest>> {
         let server = self.find_server(server_id)?;
         let payload = json!({
             "method": "list_tools",
@@ -162,8 +166,13 @@ impl McpClient {
         });
         self.require_mcp_transport_granted(&server)?;
         let dynamic = match server.transport.trim().to_ascii_lowercase().as_str() {
-            "stdio" => self.call_raw_stdio(&server, payload),
-            _ => self.call_raw_http(&server, payload),
+            "stdio" => {
+                let server = server.clone();
+                tokio::task::spawn_blocking(move || Self::call_raw_stdio_sync(&server, payload))
+                    .await
+                    .map_err(|e| AppError::Unknown(format!("mcp stdio join failed: {e}")))?
+            }
+            _ => self.call_raw_http(&server, payload).await,
         };
         match dynamic {
             Ok(v) => {
@@ -200,7 +209,7 @@ impl McpClient {
     /// # Errors
     ///
     /// Returns [`Err`] with a human-readable message when the operation fails.
-    pub fn call_tool(
+    pub async fn call_tool(
         &self,
         server_id: &str,
         tool_name: &str,
@@ -217,8 +226,8 @@ impl McpClient {
         });
         self.require_mcp_transport_granted(&server)?;
         let result = match server.transport.trim().to_ascii_lowercase().as_str() {
-            "stdio" => self.call_tool_stdio(&server, payload)?,
-            _ => self.call_tool_http(&server, payload)?,
+            "stdio" => self.call_tool_stdio(&server, payload).await?,
+            _ => self.call_tool_http(&server, payload).await?,
         };
         Ok(McpToolCallResult {
             server_id: server.id,
@@ -227,30 +236,30 @@ impl McpClient {
         })
     }
 
-    fn call_tool_http(&self, server: &McpServerManifest, payload: Value) -> Result<Value> {
-        let body = self.call_raw_http(server, payload)?;
+    async fn call_tool_http(&self, server: &McpServerManifest, payload: Value) -> Result<Value> {
+        let body = self.call_raw_http(server, payload).await?;
         Ok(body.get("result").cloned().unwrap_or(body))
     }
 
-    fn call_raw_http(&self, server: &McpServerManifest, payload: Value) -> Result<Value> {
+    async fn call_raw_http(&self, server: &McpServerManifest, payload: Value) -> Result<Value> {
         let Some(url) = server.url.as_ref() else {
             return Err(AppError::InvalidParameter(format!(
                 "mcp server {} missing url",
                 server.id
             )));
         };
-        let cli = reqwest::Client::builder()
+        let resp = self
+            .http_client
+            .post(url.as_str())
             .timeout(self.timeout_for(server))
-            .build()
-            .map_err(|e| AppError::Unknown(format!("mcp http client error: {}", e)))?;
-        let resp = crate::utils::block_on::block_on(async {
-            cli.post(url).json(&payload).send().await
-        })
-        .map_err(|e| AppError::Unknown(format!("mcp http call failed ({}): {}", server.id, e)))?;
+            .json(&payload)
+            .send()
+            .await
+            .map_err(|e| AppError::Unknown(format!("mcp http call failed ({}): {}", server.id, e)))?;
         let status = resp.status();
-        let body: Value = crate::utils::block_on::block_on(async { resp.json().await }).map_err(
-            |e| AppError::Unknown(format!("mcp http json decode failed ({}): {}", server.id, e)),
-        )?;
+        let body: Value = resp.json().await.map_err(|e| {
+            AppError::Unknown(format!("mcp http json decode failed ({}): {}", server.id, e))
+        })?;
         if !status.is_success() {
             return Err(AppError::Unknown(format!(
                 "mcp http protocol error server={} status={} body={}",
@@ -260,12 +269,15 @@ impl McpClient {
         Ok(body)
     }
 
-    fn call_tool_stdio(&self, server: &McpServerManifest, payload: Value) -> Result<Value> {
-        let v = self.call_raw_stdio(server, payload)?;
+    async fn call_tool_stdio(&self, server: &McpServerManifest, payload: Value) -> Result<Value> {
+        let server = server.clone();
+        let v = tokio::task::spawn_blocking(move || Self::call_raw_stdio_sync(&server, payload))
+            .await
+            .map_err(|e| AppError::Unknown(format!("mcp stdio join failed: {e}")))??;
         Ok(v.get("result").cloned().unwrap_or(v))
     }
 
-    fn call_raw_stdio(&self, server: &McpServerManifest, payload: Value) -> Result<Value> {
+    fn call_raw_stdio_sync(server: &McpServerManifest, payload: Value) -> Result<Value> {
         let Some(cmd) = server.command.as_ref() else {
             return Err(AppError::InvalidParameter(format!(
                 "mcp server {} missing command",
@@ -287,7 +299,7 @@ impl McpClient {
                 AppError::Unknown(format!("mcp stdin write failed ({}): {}", server.id, e))
             })?;
         }
-        let timeout = self.timeout_for(server);
+        let timeout = Duration::from_millis(server.timeout_ms.unwrap_or(12_000).max(500));
         let start = Instant::now();
         loop {
             if let Some(_status) = child.try_wait().map_err(|e| {
