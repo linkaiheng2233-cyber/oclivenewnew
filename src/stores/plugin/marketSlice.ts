@@ -36,13 +36,13 @@ function writeStoredShareUrl(url: string): void {
 
 export function marketState() {
   return {
-    /** 最近一次 `get_cached_plugin_index` / `sync_plugin_index_command` 快照 */
+    /** Latest snapshot from `get_cached_plugin_index` / `sync_plugin_index_command` */
     pluginMarketSnapshot: null as PluginMarketSnapshotDto | null,
     pluginMarketSyncing: false,
     pluginMarketError: null as string | null,
-    /** 分享链接输入框（打开市场时恢复上次粘贴的 URL） */
+    /** Share link input (restores last pasted URL when opening market) */
     shareCatalogUrl: readStoredShareUrl(),
-    /** 当前按 git 仓库分享的插件（单条安装，无 plugins.json 列表） */
+    /** Current git-repo shared plugin (single install; no plugins.json list) */
     pendingGitShareUrl: null as string | null,
   }
 }

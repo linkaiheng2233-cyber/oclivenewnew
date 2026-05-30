@@ -1,9 +1,9 @@
-//! 目录插件页 `OclivePluginBridge` → 受控调用宿主 Tauri 命令（manifest `shell.bridge.invoke` 权限白名单）。
+//! Directory plugin page `OclivePluginBridge` → controlled host Tauri commands (manifest `shell.bridge.invoke` permission whitelist).
 //!
-//! - **权限令牌**：部分命令使用 `read:*` 形式（见 `required_permission_token`）；`invoke` 数组中声明 **命令名或对应权限名** 均可通过校验。
-//! - **整壳深度集成**：`send_message` / `get_conversation` / `switch_role` / `get_roles` / `get_current_role` /
-//!   `export_conversation` / `import_role` 以及写入类命令还要求
-//!   `manifest.type == "ocliveplugin"` 且请求来自 **`shell.entry`** 对应 HTML 或 **`shell.vueEntry`** 宿主 Vue 入口（非 `ui_slots` 页）。
+//! - **Permission tokens**: some commands use `read:*` form (see `required_permission_token`); declaring **command name or matching permission** in the `invoke` array passes validation.
+//! - **Full-shell deep integration**: `send_message` / `get_conversation` / `switch_role` / `get_roles` / `get_current_role` /
+//!   `export_conversation` / `import_role` and write commands also require
+//!   `manifest.type == "ocliveplugin"` and the request from **`shell.entry`** HTML or **`shell.vueEntry`** host Vue entry (not `ui_slots` pages).
 
 use crate::api::conversation::get_conversation_list_impl;
 use crate::api::directory_plugin::directory_plugin_bootstrap_dto;
@@ -36,7 +36,7 @@ pub struct PluginBridgeInvokeRequest {
     pub params: Value,
 }
 
-/// 桥接命令名 → manifest `bridge.invoke` 中需声明的权限串（与命令名不同则二者任一命中即可）。
+/// Bridge command name → permission string required in manifest `bridge.invoke` (when different from command name, either match suffices).
 fn required_permission_token(cmd: &str) -> String {
     match cmd {
         "get_conversation" => "read:conversation".to_string(),
@@ -93,7 +93,7 @@ fn invoke_list_allows(invoke: &[String], cmd: &str) -> bool {
     })
 }
 
-/// 仅允许自 **`type: "ocliveplugin"`** 的整壳 **`shell.entry`** 调用的敏感命令。
+/// Sensitive commands allowed only from full-shell **`type: "ocliveplugin"`** **`shell.entry`**.
 fn requires_typed_shell(cmd: &str) -> bool {
     matches!(
         cmd,

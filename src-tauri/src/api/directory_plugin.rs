@@ -1,4 +1,4 @@
-//! 目录式插件：启动引导与 JSON-RPC 透传（B2）。
+//! Directory plugins: bootstrap and JSON-RPC passthrough (B2).
 
 use crate::api::error::ApiError;
 use crate::infrastructure::directory_plugins::{
@@ -27,22 +27,22 @@ use crate::api::error::{map_directory_rpc_url_error, CommandError};
 #[serde(rename_all = "camelCase")]
 pub struct PluginUiSlotDto {
     pub plugin_id: String,
-    /// 官方语义插槽名（见 `EMBEDDED_UI_SLOT_NAMES`）。
+    /// Official semantic slot name (see `EMBEDDED_UI_SLOT_NAMES`).
     pub slot: String,
-    /// 与 manifest `ui_slots[].appearance_id` 一致；空字符串表示默认变体。
+    /// Matches manifest `ui_slots[].appearance_id`; empty string means default variant.
     pub appearance_id: String,
-    /// 展示用标签（来自 manifest，可选）。
+    /// Display label (from manifest, optional).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub label: Option<String>,
-    /// 相对插件根，与 manifest `ui_slots[].entry` 一致（iframe 与 `plugin_bridge` 校验）。
+    /// Relative to plugin root; matches manifest `ui_slots[].entry` (iframe and `plugin_bridge` validation).
     pub entry: String,
-    /// 可选：相对插件根的 `.vue` 路径（`manifest.vueComponent`）。
+    /// Optional `.vue` path relative to plugin root (`manifest.vueComponent`).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub vue_component: Option<String>,
     pub url: String,
 }
 
-/// 非整壳插件可声明的嵌入 UI 插槽（与前端消费一致）。
+/// Embedded UI slots that non-shell plugins may declare (aligned with frontend consumption).
 const EMBEDDED_UI_SLOT_NAMES: &[&str] = &[
     "chat_toolbar",
     "settings.panel",
@@ -111,20 +111,20 @@ fn plugin_ui_slot_dto_from_decl(pid: &str, decl: &UiSlotDecl) -> Option<PluginUi
 pub struct DirectoryPluginBootstrapDto {
     pub shell_url: Option<String>,
     pub shell_plugin_id: Option<String>,
-    /// 整壳 `manifest.shell.vueEntry`（相对插件根）；与 `force_iframe_mode` 共同决定是否走宿主 Vue 入口。
+    /// Full-shell `manifest.shell.vueEntry` (relative to plugin root); with `force_iframe_mode`, decides host Vue vs iframe entry.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub shell_vue_entry: Option<String>,
-    /// 来自 `plugin_state`：为真时整壳与插槽均仅用 iframe，忽略 Vue 入口。
+    /// From `plugin_state`: when true, full-shell and slots use iframe only; Vue entry is ignored.
     pub force_iframe_mode: bool,
     pub plugin_ids: Vec<String>,
     pub developer_mode: bool,
-    /// 当前角色下、已启用插件在 manifest `bridge.events` 中声明的宿主事件名（去重排序）。
+    /// Host event names declared in enabled plugins' manifest `bridge.events` for the current role (deduped, sorted).
     pub subscribed_host_events: Vec<String>,
-    /// 非整壳插件在 `manifest.ui_slots` 中声明的嵌入 UI（主界面消费）。
+    /// Embedded UI declared in non-shell plugins' `manifest.ui_slots` (consumed by main UI).
     pub ui_slots: Vec<PluginUiSlotDto>,
 }
 
-/// 将 manifest 内 `shell.bridge` / `ui_slots[].bridge` 的 `events` 并入集合（与 `is_host_event_subscribed` 语义一致）。
+/// Merge `events` from manifest `shell.bridge` / `ui_slots[].bridge` into a set (same semantics as `is_host_event_subscribed`).
 fn merge_manifest_bridge_events(manifest: &OclivePluginManifest, set: &mut HashSet<String>) {
     if let Some(sh) = &manifest.shell {
         if let Some(b) = &sh.bridge {
@@ -154,7 +154,7 @@ fn subscribed_events_sorted_vec(set: HashSet<String>) -> Vec<String> {
     v
 }
 
-/// 收集「未全局禁用」的插件在 `shell.bridge` / `ui_slots[].bridge` 中声明的 `events`。
+/// Collect `events` from plugins not globally disabled in `shell.bridge` / `ui_slots[].bridge`.
 fn collect_subscribed_host_events(state: &AppState, pst: &PluginStateFile) -> Vec<String> {
     let mut set = HashSet::new();
     let roots = state.directory_plugins.plugin_roots.read();
@@ -170,7 +170,7 @@ fn collect_subscribed_host_events(state: &AppState, pst: &PluginStateFile) -> Ve
     subscribed_events_sorted_vec(set)
 }
 
-/// 对**同一插槽**的条目按 `plugin_state.slot_order[slot]` 排序。
+/// Sort entries for the **same slot** by `plugin_state.slot_order[slot]`.
 fn order_plugin_slots(mut slots: Vec<PluginUiSlotDto>, order: &[String]) -> Vec<PluginUiSlotDto> {
     let mut by_id: HashMap<String, PluginUiSlotDto> =
         slots.drain(..).map(|s| (s.plugin_id.clone(), s)).collect();
@@ -186,8 +186,8 @@ fn order_plugin_slots(mut slots: Vec<PluginUiSlotDto>, order: &[String]) -> Vec<
     out
 }
 
-/// 供 `get_directory_plugin_bootstrap` 与 `plugin_bridge_invoke` 共用。
-/// `role_id`：当前角色；省略时尝试 `oclive_last_role_id.txt`，再回退旧版全局插件状态。
+/// Shared by `get_directory_plugin_bootstrap` and `plugin_bridge_invoke`.
+/// `role_id`: current role; when omitted, try `oclive_last_role_id.txt`, then fall back to legacy global plugin state.
 pub fn directory_plugin_bootstrap_dto(
     state: &AppState,
     role_id: Option<String>,
@@ -341,7 +341,7 @@ pub fn get_directory_plugin_bootstrap(
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
-/// 读取目录插件根下文本文件（用于宿主侧编译 `.vue` 等）；路径不得越出插件目录。
+/// Read a text file under the directory plugin root (e.g. host-side `.vue` compile); path must not escape the plugin directory.
 #[tauri::command]
 pub fn read_plugin_asset_text(
     plugin_id: String,
@@ -402,7 +402,7 @@ pub fn read_plugin_asset_text(
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
-/// 查询某宿主内置事件名是否被当前角色下已启用插件订阅（与 `subscribed_host_events` 一致）。
+/// Whether a built-in host event name is subscribed by an enabled plugin for the current role (same as `subscribed_host_events`).
 #[tauri::command]
 pub fn is_host_event_subscribed(
     event: String,
@@ -479,16 +479,16 @@ pub struct DirectoryPluginCatalogEntry {
     pub version: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub plugin_type: Option<String>,
-    /// manifest 含 `uiTemplate` 或 `uiSchema.fields` 时可在宿主编辑私有 `config.json`。
+    /// When manifest has `uiTemplate` or `uiSchema.fields`, host may edit private `config.json`.
     pub has_ui_settings: bool,
-    /// manifest 是否声明 `process`（可在此面板「启动」JSON-RPC 子进程）。
+    /// Whether manifest declares `process` (JSON-RPC subprocess can be started from this panel).
     pub has_rpc_process: bool,
-    /// manifest 是否声明了 `rpcMethods`（便于调试面板预填方法；无 `process` 时仍可手填 RPC 测已运行实例）。
+    /// Whether manifest declares `rpcMethods` (prefill debug panel; RPC to running instance still works without `process`).
     pub declares_rpc_methods: bool,
     pub is_shell: bool,
-    /// 声明的 UI 插槽名（如 `chat_toolbar`）；同一槽多外观时仍只出现一次槽名。
+    /// Declared UI slot names (e.g. `chat_toolbar`); slot name appears once even with multiple appearances.
     pub ui_slot_names: Vec<String>,
-    /// 每条 manifest `ui_slots`（嵌入槽）对应一条，含 `appearance_id` / `label`。
+    /// One entry per manifest `ui_slots` embed slot, with `appearance_id` / `label`.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub ui_slot_variants: Vec<UiSlotVariantDto>,
     pub provides: Vec<String>,
@@ -602,7 +602,7 @@ fn build_directory_plugin_catalog(state: &AppState) -> Vec<DirectoryPluginCatalo
     out
 }
 
-/// 与 [`get_directory_plugin_catalog`] 同逻辑，供集成测不经 `State` 包装直接调用。
+/// Same logic as [`get_directory_plugin_catalog`]; for integration tests without `State` wrapper.
 ///
 /// # Errors
 ///
@@ -673,17 +673,17 @@ impl From<RolePluginStateDto> for RolePluginState {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PluginStateGetResponse {
-    /// 当前角色在 `plugin_state.json` 中单独保存的状态（未与全局默认合并）。
+    /// Per-role state saved alone in `plugin_state.json` (not merged with global default).
     pub role: RolePluginStateDto,
-    /// 全局默认（插件管理「全局默认」）；与 `role` 合并后驱动实际嵌入与整壳。
+    /// Global default (plugin manager "global default"); merged with `role` to drive actual embeds and full-shell.
     pub global_defaults: RolePluginStateDto,
 }
 
-/// 与 [`get_plugin_state`] 同逻辑，供集成测不经 `State` 包装直接调用。
+/// Same logic as [`get_plugin_state`]; for integration tests without `State` wrapper.
 ///
 /// # Errors
 ///
-/// 目录插件运行时状态读取失败时返回 `Err(String)`。
+/// Returns `Err(String)` when directory plugin runtime state cannot be read.
 pub fn get_plugin_state_impl(
     role_id: &str,
     state: &AppState,

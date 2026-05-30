@@ -1,4 +1,4 @@
-//! 目录插件本地更新（zip 覆盖）；在线版本检查预留。
+//! Directory plugin local updates (zip overwrite); online version check reserved.
 
 use crate::error::AppError;
 use crate::infrastructure::directory_plugins::OclivePluginManifest;
@@ -25,7 +25,7 @@ pub struct PluginUpdateInfo {
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
-/// 预留：未来对接社区站 `GET /api/plugins/versions`；当前返回无更新 + 说明文案。
+/// Reserved: future hook to community site `GET /api/plugins/versions`; currently returns no update + explanatory message.
 #[tauri::command]
 pub fn check_plugin_updates(
     plugin_ids: Vec<String>,
@@ -136,7 +136,7 @@ fn resolve_install_dir(state: &AppState, plugin_id: &str) -> PathBuf {
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
-/// 解压 zip 到临时目录，校验 `manifest.json` 的 `id` 与 `plugin_id` 一致后覆盖安装目录。
+/// Extract zip to a temp dir, verify `manifest.json` `id` matches `plugin_id`, then overwrite the install directory.
 #[tauri::command]
 pub fn extract_plugin_zip(
     zip_path: String,
@@ -203,7 +203,7 @@ fn install_staged_directory_plugin(
     Ok(())
 }
 
-/// 从 zip 安装目录插件：读取包内 `manifest.id`，无需调用方预先传入 `plugin_id`。
+/// Install directory plugin from zip: reads `manifest.id` from the package; caller need not pass `plugin_id` upfront.
 ///
 /// # Errors
 ///

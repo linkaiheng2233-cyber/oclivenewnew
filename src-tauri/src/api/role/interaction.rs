@@ -1,4 +1,4 @@
-//! 交互模式与「此刻日程」DTO 的编排（单入口，避免 load_role / get_role_info 重复）。
+//! Interaction mode and "current schedule" DTO orchestration (single entry to avoid duplication in load_role / get_role_info).
 
 use crate::domain::life_schedule::resolve_life_state;
 use crate::models::dto::LifeStateDto;
@@ -7,14 +7,14 @@ use crate::models::Role;
 use crate::state::AppState;
 use crate::api::error::CommandError;
 
-/// 已 seed、已读 DB、含 pack 建议值与日程推断。
+/// Seeded, read from DB, includes pack suggested values and schedule inference.
 pub(super) struct InteractionUiSnapshot {
     pub mode_str: String,
     pub pack_default: Option<String>,
     pub current_life: Option<LifeStateDto>,
 }
 
-/// `ensure_interaction_mode_seeded` + 有效模式字符串 + pack 建议 + `current_life`。
+/// `ensure_interaction_mode_seeded` + effective mode string + pack suggestion + `current_life`.
 pub(super) async fn resolve_interaction_ui_snapshot(
     state: &AppState,
     role_id: &str,

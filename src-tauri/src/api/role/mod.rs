@@ -1,7 +1,7 @@
-//! 角色 API：清单加载、运行时快照、身份与进化系数等 Tauri 命令。
+//! Role API: manifest loading, runtime snapshots, identity, evolution factors, and related Tauri commands.
 //!
-//! 蓝图 v2 写盘走 [`save_role_slot_registry`]；**无**仅写 `manifest.json`/`settings.json`
-//! `plugin_backends` 的遗留 Tauri 命令（旧包仅 [`RoleStorage::load_role_from_legacy_manifest_dir`] 只读兼容）。
+//! Blueprint v2 disk writes go through [`save_role_slot_registry`]; there is **no** legacy Tauri command that only writes
+//! `manifest.json`/`settings.json` `plugin_backends` (old packs are read-only via [`RoleStorage::load_role_from_legacy_manifest_dir`]).
 
 pub mod display;
 pub mod expert;
@@ -78,7 +78,7 @@ fn blueprint_groups_pack(role: &Role) -> Option<std::collections::BTreeMap<Strin
         .cloned()
 }
 
-/// 从会话 `slot_registry` 覆盖折叠为 C1 兼容的六槽 `PluginBackendsOverride`（只读展示）。
+/// Folds session `slot_registry` overrides into a C1-compatible six-slot `PluginBackendsOverride` (read-only display).
 fn plugin_backends_override_from_slot_session(
     state: &AppState,
     role: &Role,
@@ -158,7 +158,7 @@ fn parse_backend_wire<T: DeserializeOwned>(module: &str, value: &str) -> Result<
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
-/// `reset_portrait_emotion`：为 `true` 时（应用启动 `load_role`）立绘重置为 `neutral`；切换角色时为 `false` 以保留各角色上次立绘状态。
+/// When `reset_portrait_emotion` is `true` (app startup `load_role`), portrait emotion resets to `neutral`; when switching roles it is `false` to preserve each role's last portrait state.
 pub async fn load_role_impl(
     state: &AppState,
     role_id: &str,
@@ -530,7 +530,7 @@ pub async fn switch_role(role_id: String, state: State<'_, AppState>) -> Result<
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
-/// 删除本地角色目录及该 manifest 角色（含 `__sess__` 会话命名空间）的 DB 状态。
+/// Deletes the local role directory and DB state for that manifest role (including `__sess__` session namespaces).
 pub async fn delete_role_impl(state: &AppState, role_id: String) -> Result<Value, CommandError> {
     let rid = role_id.trim();
     if rid.is_empty() {
@@ -579,7 +579,7 @@ pub async fn delete_role_impl(state: &AppState, role_id: String) -> Result<Value
     Ok(json!({ "ok": true, "role_id": rid }))
 }
 
-/// 去掉 Windows 冗长路径前缀 `\\?\`，避免前端路径异常。
+/// Strips the Windows verbatim path prefix `\\?\` to avoid frontend path issues.
 fn path_string_for_frontend(p: &std::path::Path) -> String {
     let s = p.to_string_lossy();
     const VERBATIM: &str = "\\\\?\\";
@@ -590,7 +590,7 @@ fn path_string_for_frontend(p: &std::path::Path) -> String {
     }
 }
 
-/// 读取角色包内资源文件字节（`roles/{role_id}/{relative}`）；不存在时返回 `None`。
+/// Reads role pack asset bytes (`roles/{role_id}/{relative}`); returns `None` when the file does not exist.
 ///
 /// # Errors
 ///
@@ -608,7 +608,7 @@ pub fn read_role_asset_bytes(
     Ok(Some(std::fs::read(&p)?))
 }
 
-/// 解析 `roles/{role_id}/{relative}` 的绝对路径；文件存在时供前端 `convertFileSrc` 加载。
+/// Resolves the absolute path for `roles/{role_id}/{relative}`; when the file exists, the frontend can load it via `convertFileSrc`.
 #[tauri::command]
 #[must_use]
 pub fn resolve_role_asset_path(

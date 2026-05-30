@@ -1,4 +1,4 @@
-//! 应用级设置（`app_settings`），供受控桥接更新。
+//! App-level settings (`app_settings`), updatable via controlled bridge.
 
 use crate::error::AppError;
 use crate::models::interaction_mode::InteractionMode;

@@ -40,17 +40,17 @@ export interface ChatMessage {
   role: 'user' | 'assistant' | 'system'
   content: string
   timestamp: number
-  /** assistant：本回合 bot 情绪（小写）；user 通常不传 */
+  /** assistant: bot emotion this turn (lowercase); usually omitted for user */
   emotion?: string
-  /** assistant：异地模式（用于样式） */
+  /** assistant: remote presence mode (for styling) */
   presenceVariant?: PresenceMode
-  /** 主 LLM 失败时的备用短回复（与后端 `reply_is_fallback` 一致） */
+  /** Fallback short reply when primary LLM fails (matches backend `reply_is_fallback`) */
   replyIsFallback?: boolean
-  /** 从主回复拆出的旁白/内心/动作（仅 assistant；主 content 为对白） */
+  /** Narration/inner thought/action split from main reply (assistant only; main content is dialogue) */
   aside?: string
 }
 
-/** 与后端默认单会话上限对齐（角色包可覆盖） */
+/** Aligns with backend default per-session message cap (role pack may override) */
 const MAX_MESSAGES_PER_CONVERSATION = 500
 
 const CHAT_STORAGE_MIGRATED_KEY = 'chat_storage_migrated'
@@ -103,7 +103,7 @@ function storedMessageToChatMessage(m: StoredMessage): ChatMessage {
   return base
 }
 
-/** 进入某场景时，该桶内已有消息条数；索引小于该值的视为「历史」折叠区（按角色×场景） */
+/** Message count already in bucket when entering a scene; indices below this are folded "history" (per role × scene) */
 export type SceneHistorySplitIndex = Record<string, Record<string, number>>
 
 function isLegacyRoleBucket(
@@ -172,13 +172,13 @@ function rebuildLastAssistantAsideMap(messageMap: RoleSceneMessageMap): Record<s
 let persistMessagesTimer: ReturnType<typeof setTimeout> | null = null
 const dirtyBuckets = new Set<string>()
 
-/** 防止 split ≥ 条数导致主聊天区空白（新消息全进折叠历史） */
+/** Prevent split ≥ count from blanking main chat (all new messages folded into history) */
 function clampSceneHistorySplitForBucket(
   splitIndex: SceneHistorySplitIndex,
   roleId: string,
   sceneId: string,
   messageCount: number,
-  /** 本回合发送前的条数：若 split 挡住刚发的消息，回退到此 */
+  /** Count before this turn's send; fallback if split hides just-sent messages */
   sessionFloor?: number,
 ): void {
   const sid = sceneId || 'default'
@@ -211,7 +211,7 @@ function adjustSplitAfterTrim(
   splitIndex[roleId][sid] = Math.max(0, splitIndex[roleId][sid] - removedFromHead)
 }
 
-/** 重启后若 split 把全部消息划入「折叠历史」，主聊天区会空白；恢复为直接展示。 */
+/** After restart, if split folds all messages into history, main chat is blank; restore direct display. */
 function repairSplitsSoCurrentSessionVisible(
   splitIndex: SceneHistorySplitIndex,
   messageMap: RoleSceneMessageMap,
@@ -310,7 +310,7 @@ export const useChatStore = defineStore(
       },
     },
     actions: {
-      /** 启动：迁移 IndexedDB → 后端，再从 API 加载当前角色×场景（失败则 IDB 缓存兜底）。 */
+      /** Startup: migrate IndexedDB → backend, then load current role×scene from API (IDB cache fallback on failure). */
       async hydrateFromStorage() {
         if (this.messagesHydrated)
           return
@@ -379,7 +379,7 @@ export const useChatStore = defineStore(
         )
       },
 
-      /** 退出前刷盘 IndexedDB（避免 300ms 防抖未写入）。 */
+      /** Flush IndexedDB before exit (avoid 300ms debounce not yet written). */
       async flushPendingPersist() {
         if (persistMessagesTimer) {
           clearTimeout(persistMessagesTimer)
@@ -392,7 +392,7 @@ export const useChatStore = defineStore(
         await saveDirtyBucketsToIdb(this.messageMap, pending)
       },
 
-      /** 将旧版 messageMap[roleId] 为数组的结构迁入分桶（全表扫描，仅在 init / 单角色路径调用）。 */
+      /** Migrate legacy messageMap[roleId] array shape into buckets (full scan; init / single-role path only). */
       ensureLegacyMigrated(roleId: string) {
         const roleBucket = this.messageMap[roleId]
         if (isLegacyRoleBucket(roleBucket)) {

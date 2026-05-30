@@ -1,4 +1,4 @@
-//! 高风险能力授权：`list` / `grant` / `revoke`（持久化 `{app_data}/high_risk_grants.json`）。
+//! High-risk capability grants: `list` / `grant` / `revoke` (persisted `{app_data}/high_risk_grants.json`).
 
 use crate::infrastructure::high_risk_grants::{normalize_grant_kind, GrantKind};
 use crate::state::AppState;
@@ -16,14 +16,14 @@ pub struct MutateHighRiskGrantRequest {
 
 /// # Errors
 ///
-/// JSON 序列化失败时返回 `String`。
+/// Returns `String` when JSON serialization fails.
 pub fn list_high_risk_grants_impl(state: &AppState) -> Result<Value, CommandError> {
     Ok(serde_json::to_value(state.high_risk_grants.snapshot())?)
 }
 
 /// # Errors
 ///
-/// 未知 `kind` 或磁盘写入失败。
+/// Unknown `kind` or disk write failure.
 pub fn grant_high_risk_capability_impl(
     state: &AppState,
     req: &MutateHighRiskGrantRequest,
@@ -40,7 +40,7 @@ pub fn grant_high_risk_capability_impl(
 
 /// # Errors
 ///
-/// 未知 `kind` 或磁盘写入失败。
+/// Unknown `kind` or disk write failure.
 pub fn revoke_high_risk_capability_impl(
     state: &AppState,
     req: &MutateHighRiskGrantRequest,
@@ -57,7 +57,7 @@ pub fn revoke_high_risk_capability_impl(
 
 /// # Errors
 ///
-/// JSON 序列化失败时返回 `String`。
+/// Returns `String` when JSON serialization fails.
 #[tauri::command]
 pub fn list_high_risk_grants(state: State<'_, AppState>) -> Result<Value, CommandError> {
     list_high_risk_grants_impl(&state)
@@ -65,7 +65,7 @@ pub fn list_high_risk_grants(state: State<'_, AppState>) -> Result<Value, Comman
 
 /// # Errors
 ///
-/// 未知 `kind` 或磁盘写入失败。
+/// Unknown `kind` or disk write failure.
 #[tauri::command]
 pub fn grant_high_risk_capability(
     req: MutateHighRiskGrantRequest,
@@ -76,7 +76,7 @@ pub fn grant_high_risk_capability(
 
 /// # Errors
 ///
-/// 未知 `kind` 或磁盘写入失败。
+/// Unknown `kind` or disk write failure.
 #[tauri::command]
 pub fn revoke_high_risk_capability(
     req: MutateHighRiskGrantRequest,

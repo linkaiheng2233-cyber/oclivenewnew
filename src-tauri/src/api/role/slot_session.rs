@@ -210,7 +210,7 @@ pub struct ApplyAuthorSuggestedBackendsRequest {
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
-/// 将 `author.json` → `suggested_plugin_backends` 写入当前会话命名空间的后端覆盖（不写回角色包）。
+/// Writes `author.json` → `suggested_plugin_backends` into session-namespace backend override (does not write back to role pack).
 #[tauri::command]
 pub async fn apply_author_suggested_plugin_backends(
     req: ApplyAuthorSuggestedBackendsRequest,

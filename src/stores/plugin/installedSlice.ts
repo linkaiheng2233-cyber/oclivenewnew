@@ -18,19 +18,19 @@ import {
 export function installedState() {
   return {
     pluginState: emptyState() as RolePluginState,
-    /** 最近一次 `get_plugin_state` 的按角色 / 全局原始行（切换「保存到」时回填）。 */
+    /** Latest raw `get_plugin_state` rows per role / global (refill when switching "save to") */
     pluginStateBundle: null as {
       role: RolePluginState
       globalDefaults: RolePluginState
     } | null,
-    /** 保存目标：`role` 写入当前角色；`global` 写入跨角色默认。 */
+    /** Persist target: `role` writes current role; `global` writes cross-role default */
     persistScope: 'role' as PluginPersistScope,
     slotOrderMemoBySlot: {} as Record<string, SlotOrderMemo>,
   }
 }
 
 export const installedActions = {
-  /** 下拉布局：设置某 UI 插槽的插件顺序（不含已禁用贡献的过滤，由 UI 传入有效 id 列表）。 */
+  /** Dropdown layout: set plugin order for a UI slot (UI passes effective ids; disabled contributions not filtered here) */
   setSlotPluginIds(this: InstalledSliceStore, slot: string, orderedIds: string[]) {
     const candidates = this.catalogCandidatesBySlot[slot] ?? []
     const candidateSet = new Set(candidates)
@@ -140,7 +140,7 @@ export const installedActions = {
     }
     this.pluginState.disabled_plugins = [...set].sort()
   },
-  /** 对「检测到有更新」的插件提示需 zip 导入（在线静默更新未接入）。 */
+  /** Plugins with detected updates require zip import (silent online update not wired) */
   async batchUpdatePluginIds(
     this: InstalledSliceStore,
     ids: string[],
@@ -152,7 +152,7 @@ export const installedActions = {
     }
     return { count: targets.length, targets }
   },
-  /** 某插槽下、按 manifest 声明了该槽的非整壳插件 id 顺序（含未在 slot_order 中的，字典序补全）。 */
+  /** Non-shell plugin ids for a slot, ordered by manifest declaration (missing from slot_order appended lexicographically) */
   pluginsOrderedForSlot(this: InstalledSliceStore, slot: string): string[] {
     const candidates = this.catalogCandidatesBySlot[slot] ?? []
     const order = this.pluginState.slot_order[slot] ?? []
@@ -201,7 +201,7 @@ export const installedActions = {
       [slot]: cur,
     }
   },
-  /** 设置某插件在某槽的选中外观（`appearance_id`）；空字符串表示清除为 manifest 默认。 */
+  /** Set selected appearance for a plugin in a slot (`appearance_id`); empty string clears to manifest default */
   setSlotAppearance(
     this: InstalledSliceStore,
     pluginId: string,
@@ -254,7 +254,7 @@ export const installedActions = {
       [slot]: ids,
     }
   },
-  // --- 兼容旧名（chat_toolbar）---
+  // --- Legacy alias (chat_toolbar) ---
   toolbarPluginsOrdered(this: InstalledSliceStore): string[] {
     return this.pluginsOrderedForSlot(SLOT_CHAT_TOOLBAR)
   },

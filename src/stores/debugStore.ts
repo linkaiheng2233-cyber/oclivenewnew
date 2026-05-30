@@ -14,16 +14,16 @@ export const useDebugStore = defineStore('debug', {
     visible: false,
     events: [] as unknown[],
     memories: [] as unknown[],
-    /** 最近一次 `send_message` 注入 Prompt 的知识块条数 */
+    /** Knowledge chunks injected into Prompt on last `send_message` */
     lastKnowledgeChunksInPrompt: 0,
-    /** 与上一项同一次响应的 presence（便于区分共景/异地） */
+    /** Presence from the same response as above (co-present vs remote-presence) */
     lastKnowledgePresenceMode: null as PresenceMode | null,
   }),
   actions: {
     toggle() {
       this.visible = !this.visible
     },
-    /** 主对话返回后写入，供开发面板展示「本回合」知识命中 */
+    /** Written after main dialogue returns; dev panel shows knowledge hits for this turn */
     recordKnowledgeFromSend(res: SendMessageResponse) {
       this.lastKnowledgeChunksInPrompt = res.knowledge_chunks_in_prompt ?? 0
       this.lastKnowledgePresenceMode = res.presence_mode

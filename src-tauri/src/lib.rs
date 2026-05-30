@@ -198,7 +198,7 @@ fn serve_ocliveplugin_asset(
         .body(data)
 }
 
-/// 独立 HTTP API 入口（`--api` 子进程）；无 Tauri 窗口与 IPC。
+/// Standalone HTTP API entry (`--api` subprocess); no Tauri window or IPC.
 pub fn run_api_server(port: u16) {
     let worker_threads = std::thread::available_parallelism()
         .map(|n| (n.get() / 2).max(2))
@@ -223,7 +223,7 @@ pub fn run_api_server(port: u16) {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    // 与 `tauri.conf.json` 中 `bundle.identifier` 对齐；`tauri-plugin-deep-link` 须在 setup 前注册。
+    // Align with `bundle.identifier` in `tauri.conf.json`; `tauri-plugin-deep-link` must register before setup.
     #[cfg(desktop)]
     tauri_plugin_deep_link::prepare("com.oclivenewnew.app");
     tauri::Builder::default()

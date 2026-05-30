@@ -1,9 +1,9 @@
-//! 身份选项的展示文案（与前端下拉 `UserRelationDto.name` 对齐）。
+//! Display labels for identity options (aligned with frontend dropdown `UserRelationDto.name`).
 
 use crate::models::dto::UserRelationDto;
 use crate::models::role::Role;
 
-/// manifest 里 `display_name` 已映射到 `UserRelation.name`，若与 `id` 相同则视为未自定义，对常见英文键给中文 fallback。
+/// In manifest, `display_name` maps to `UserRelation.name`; when equal to `id`, treat as unset and apply Chinese fallback for common English keys.
 pub(crate) fn user_relation_display_label(id: &str, name: &str) -> String {
     let t = name.trim();
     if !t.is_empty() && t != id {

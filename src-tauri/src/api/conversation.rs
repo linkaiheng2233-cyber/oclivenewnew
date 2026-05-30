@@ -1,4 +1,4 @@
-//! 对话会话列表（短期记忆命名空间聚合）。
+//! Conversation session list (short-term memory namespace aggregation).
 
 use crate::state::AppState;
 use serde_json::{json, Value};

@@ -1,4 +1,4 @@
-//! 轻量环境自检（A2.2）：Ollama 可达性、角色根目录、应用数据目录可写。
+//! Lightweight environment self-check (A2.2): Ollama reachability, roles root, app data dir writable.
 
 use crate::state::AppState;
 use serde::Serialize;
@@ -14,7 +14,7 @@ const PROBE_TIMEOUT_SECS: u64 = 8;
 pub struct EnvironmentDiagnostics {
     pub ollama_base_url: String,
     pub ollama_reachable: bool,
-    /// 失败时的简要原因（英文/reqwest 原文，供排障；主文案由前端 i18n）。
+    /// Brief failure reason when check fails (English/reqwest raw text for troubleshooting; UI copy from frontend i18n).
     pub ollama_detail: String,
     pub roles_dir: String,
     pub roles_dir_exists: bool,

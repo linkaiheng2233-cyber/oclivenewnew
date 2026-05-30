@@ -10,8 +10,8 @@ use oclive_kernel_runtime::domain::virtual_time::round_to_minute_ms;
 use tauri::State;
 use crate::api::error::CommandError;
 
-/// 角色包 `settings.json` → `autonomous_scene`：虚拟时间变化后尝试匹配首条规则并更新 `current_scene`。
-/// 若发生切换，返回 `(from_scene_id, to_scene_id)`。
+/// Role pack `settings.json` → `autonomous_scene`: after virtual time changes, try matching the first rule and update `current_scene`.
+/// Returns `(from_scene_id, to_scene_id)` when a switch occurs.
 async fn apply_autonomous_scene_after_jump(
     state: &AppState,
     role_id: &str,
@@ -255,7 +255,7 @@ mod tests {
         assert_eq!(round_to_minute_ms(60_001), 60_000);
         assert_eq!(round_to_minute_ms(119_999), 60_000);
         assert_eq!(round_to_minute_ms(0), 0);
-        // 负时间戳：整除向 0 截断，与 Rust `/` 一致
+        // Negative timestamps: integer division truncates toward zero, consistent with Rust `/`
         assert_eq!(round_to_minute_ms(-60_001), -60_000);
     }
 

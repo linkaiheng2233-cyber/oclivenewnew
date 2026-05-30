@@ -5,7 +5,7 @@ use crate::api::error::CommandError;
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
-/// 时间跳转后批量生成独白（使用已算好的虚拟时间，避免循环依赖 `time` ↔ `monologue`）
+/// Batch-generate monologue lines after time jump (uses precomputed virtual time to avoid circular `time` ↔ `monologue` dependency).
 pub async fn generate_monologue_lines(
     state: &AppState,
     role_id: &str,

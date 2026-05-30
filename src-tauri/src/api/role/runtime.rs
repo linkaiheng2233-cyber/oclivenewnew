@@ -1,4 +1,4 @@
-//! 运行时身份解析：`load_role` / `get_role_info` / 对话引擎共用同一套规则。
+//! Runtime identity resolution: shared rules for `load_role`, `get_role_info`, and the chat engine.
 
 use crate::domain::user_identity::resolve_effective_user_relation_key;
 use crate::models::dto::UserRelationDto;
@@ -8,7 +8,7 @@ use crate::state::AppState;
 use super::display::user_relations_to_dto;
 use crate::api::error::CommandError;
 
-/// `load_role` / `get_role_info` 共用的运行时字段，避免两处漂移。
+/// Runtime fields shared by `load_role` / `get_role_info` to avoid drift between the two paths.
 pub(crate) struct RoleRuntimeExtras {
     pub user_relations: Vec<UserRelationDto>,
     pub default_relation: String,
@@ -59,8 +59,8 @@ pub(crate) async fn role_runtime_extras(
     })
 }
 
-/// 尚无对话记忆且好感为 0 时，用当前身份对应的初始好感度写入 DB（仅一次）。
-/// 调用方须先解析 `role_runtime_extras`（与 `current_favorability` 同源），避免同一次请求内重复查场景与身份。
+/// When there is no dialogue memory yet and favorability is 0, write initial favorability for the current identity to DB (once only).
+/// Caller must resolve `role_runtime_extras` first (same source as `current_favorability`) to avoid duplicate scene/identity lookups in one request.
 pub(crate) async fn maybe_seed_initial_favorability_with_extras(
     state: &AppState,
     role_id: &str,
@@ -96,7 +96,7 @@ pub(crate) async fn maybe_seed_initial_favorability_with_extras(
     Ok(())
 }
 
-/// 与对话引擎一致：`role_identity_stats` 按有效身份键，缺失则回退全局 `role_runtime.favorability`。
+/// Same as chat engine: `role_identity_stats` keyed by effective identity; falls back to global `role_runtime.favorability` when missing.
 pub(crate) async fn current_favorability_for_effective_identity(
     state: &AppState,
     role_id: &str,
@@ -108,7 +108,7 @@ pub(crate) async fn current_favorability_for_effective_identity(
         .await?)
 }
 
-/// 优先按身份键读 `role_identity_stats`，否则回退到全局 `role_runtime`（兼容旧数据）。
+/// Prefer `role_identity_stats` by identity key; otherwise fall back to global `role_runtime` (legacy data compatibility).
 pub(crate) async fn resolve_relation_state_for_ui(
     state: &AppState,
     role_id: &str,

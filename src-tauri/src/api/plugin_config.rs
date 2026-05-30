@@ -1,4 +1,4 @@
-//! 目录插件私有配置：`get_plugin_settings_ui` / `set_plugin_settings_config`。
+//! Directory plugin private config: `get_plugin_settings_ui` / `set_plugin_settings_config`.
 
 use crate::api::error::ApiError;
 use crate::infrastructure::directory_plugins::OclivePluginManifest;

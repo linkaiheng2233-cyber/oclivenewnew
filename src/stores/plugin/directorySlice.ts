@@ -27,15 +27,15 @@ export function directoryState() {
     loading: false,
     error: null as string | null,
     catalog: [] as DirectoryPluginCatalogEntry[],
-    /** 目录插件 catalog 预计算：各 slot 对应的非整壳插件 id（已排序）。 */
+    /** Precomputed catalog: non-shell plugin ids per slot (sorted) */
     catalogCandidatesBySlot: {} as Record<string, string[]>,
-    /** 与 `get_directory_plugin_bootstrap.developer_mode` 一致（扫描额外插件根等）。 */
+    /** Matches `get_directory_plugin_bootstrap.developer_mode` (extra plugin roots scan, etc.) */
     developerMode: false,
-    /** 最近一次 bootstrap 的嵌入插槽列表（与 `get_directory_plugin_bootstrap.uiSlots` 一致）。 */
+    /** Latest bootstrap embed slot list (matches `get_directory_plugin_bootstrap.uiSlots`) */
     bootstrapUiSlots: [] as PluginUiSlotInfo[],
-    /** 变更后嵌入插槽组件会重新拉 bootstrap */
+    /** Embed slot components re-fetch bootstrap after this changes */
     bootstrapEpoch: 0,
-    /** `check_plugin_updates` 最近一次结果（按插件 id）。 */
+    /** Latest `check_plugin_updates` result (by plugin id) */
     pluginUpdateById: {} as Record<string, PluginUpdateInfo>,
     pluginUpdatesCheckLoading: false,
     extractingPluginId: null as string | null,
@@ -43,13 +43,13 @@ export function directoryState() {
 }
 
 export const directoryActions = {
-  /** 由 bootstrap DTO 更新宿主事件订阅与开发者模式（插槽与 `refresh` / `sync` 共用）。 */
+  /** Update host event subscriptions and developer mode from bootstrap DTO (shared by slots, `refresh`, `sync`) */
   applyDirectoryBootstrap(this: DirectorySliceStore, boot: DirectoryPluginBootstrap) {
     setHostEventSubscribedEvents(boot.subscribedHostEvents ?? [])
     this.developerMode = boot.developerMode ?? false
     this.bootstrapUiSlots = boot.uiSlots ?? []
   },
-  /** 角色切换或插件启用状态变更后更新宿主事件订阅与开发者模式（不拉 catalog）。 */
+  /** After role switch or plugin enable change: update host events and developer mode (no catalog fetch) */
   async syncDirectoryPluginBootstrap(this: DirectorySliceStore) {
     const roleId = useRoleStore().currentRoleId
     try {
@@ -145,7 +145,7 @@ export const directoryActions = {
       this.extractingPluginId = null
     }
   },
-  /** 开发者模式：文件监听触发后刷新 catalog 与 bootstrap（整壳/插槽热重载）。 */
+  /** Developer mode: refresh catalog and bootstrap after file watcher fires (full-shell / slot hot reload) */
   async onPluginFilesChanged(this: DirectorySliceStore) {
     await this.refresh()
     this.bootstrapEpoch += 1

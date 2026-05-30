@@ -1,4 +1,4 @@
-//! 目录插件等 Tauri 命令的统一错误码；载荷与内核同源：**单行 `KernelErrorBody` JSON**（与 `AppError::to_kernel_json` 一致）。
+//! Unified error codes for directory-plugin and other Tauri commands; payload matches the kernel: **single-line `KernelErrorBody` JSON** (same as `AppError::to_kernel_json`).
 
 use oclive_kernel_runtime::KernelErrorBody;
 use std::fmt;
@@ -14,7 +14,7 @@ pub enum ApiError {
     PermissionDenied {
         message: String,
     },
-    /// 与内核 [`oclive_kernel_runtime::AppError::HighRiskCapabilityNotGranted`] 同码，供目录插件纯文本错误映射。
+    /// Same code as kernel [`oclive_kernel_runtime::AppError::HighRiskCapabilityNotGranted`]; used to map plain-text directory-plugin errors.
     HighRiskCapabilityNotGranted {
         message: String,
     },
@@ -135,7 +135,7 @@ impl fmt::Display for CommandError {
     }
 }
 
-/// 将 `DirectoryPluginRuntime::ensure_rpc_url` 等返回的纯文本失败映射为 **`KernelErrorBody` JSON 单行**。
+/// Maps plain-text failures from `DirectoryPluginRuntime::ensure_rpc_url` and similar to a **single-line `KernelErrorBody` JSON** string.
 #[must_use]
 pub fn map_directory_rpc_url_error(plugin_id: &str, err: String) -> String {
     let id = plugin_id.trim().to_string();

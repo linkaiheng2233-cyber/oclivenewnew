@@ -1,4 +1,4 @@
-//! 专家路由配置读写（`blueprint/includes/expert_routing.json`）。
+//! Expert routing config read/write (`blueprint/includes/expert_routing.json`).
 
 use crate::api::error::CommandError;
 use crate::error::AppError;
@@ -18,11 +18,11 @@ fn expert_routing_path(state: &AppState, role_id: &str) -> Result<PathBuf, Comma
     Ok(role_dir.join(DEFAULT_EXPERT_ROUTING_PATH))
 }
 
-/// 列出角色包 `blueprint/includes/` 下文件名（仅一层）。
+/// Lists filenames under the role pack `blueprint/includes/` directory (single level only).
 ///
 /// # Errors
 ///
-/// 目录读取失败时返回 `CommandError`。
+/// Returns `CommandError` when the directory cannot be read.
 #[tauri::command]
 pub fn list_blueprint_includes(
     state: State<'_, AppState>,
@@ -49,11 +49,11 @@ pub fn list_blueprint_includes(
     Ok(names)
 }
 
-/// 读取专家路由 JSON。
+/// Reads expert routing JSON.
 ///
 /// # Errors
 ///
-/// 角色不存在、文件不可读或 JSON 非法时返回 `CommandError`。
+/// Returns `CommandError` when the role is missing, the file is unreadable, or JSON is invalid.
 #[tauri::command]
 pub fn get_expert_routing(
     state: State<'_, AppState>,
@@ -70,11 +70,11 @@ pub fn get_expert_routing(
     Ok(Some(doc))
 }
 
-/// 保存专家路由 JSON（自动创建 `blueprint/includes/`）。
+/// Saves expert routing JSON (creates `blueprint/includes/` automatically).
 ///
 /// # Errors
 ///
-/// 校验失败、目录创建或写入失败时返回 `CommandError`。
+/// Returns `CommandError` on validation failure, directory creation failure, or write failure.
 #[tauri::command]
 pub fn save_expert_routing(
     state: State<'_, AppState>,

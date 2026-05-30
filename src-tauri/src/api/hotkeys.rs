@@ -1,4 +1,4 @@
-//! 全局快捷键：注册/注销与事件派发（`hotkey-action`）。
+//! Global hotkeys: register/unregister and event dispatch (`hotkey-action`).
 
 use crate::infrastructure::hotkey_bindings::{HotkeyAction, HotkeyBindingsFile};
 use crate::state::AppState;
@@ -32,7 +32,7 @@ fn validate_hotkey_bindings(file: &HotkeyBindingsFile) -> Result<(), CommandErro
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
-/// 注销全部后按配置注册；仅 `enabled` 为真且 `accelerator` 非空的条目会注册。
+/// Unregister all, then register from config; only entries with `enabled` true and non-empty `accelerator` are registered.
 pub fn apply_global_hotkeys(app: &AppHandle, file: &HotkeyBindingsFile) -> Result<(), CommandError> {
     validate_hotkey_bindings(file)?;
     let mut mgr = app.global_shortcut_manager();
@@ -61,11 +61,11 @@ pub fn apply_global_hotkeys(app: &AppHandle, file: &HotkeyBindingsFile) -> Resul
     Ok(())
 }
 
-/// 与 [`get_hotkey_bindings`] 同逻辑，供集成测不经 `State` 包装直接调用。
+/// Same logic as [`get_hotkey_bindings`]; for integration tests without `State` wrapper.
 ///
 /// # Errors
 ///
-/// 快捷键配置文件读盘或解析失败时返回 `Err(String)`。
+/// Returns `Err(String)` when the hotkey config file cannot be read or parsed.
 pub fn get_hotkey_bindings_impl(state: &AppState) -> Result<HotkeyBindingsFile, CommandError> {
     Ok(HotkeyBindingsFile::load(
         state.directory_plugins.app_data_dir(),

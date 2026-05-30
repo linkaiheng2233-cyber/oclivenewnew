@@ -3,12 +3,12 @@ import type { PluginPanelMainTab } from './constants'
 export function traceState() {
   return {
     panelVisible: false,
-    /** 递增后由 App 打开极简插件管理（市场等入口） */
+    /** Incremented to open minimal plugin manager from App (market and other entry points) */
     simpleManagerOpenNonce: 0,
     panelMainTab: 'graph' as PluginPanelMainTab,
-    /** 架构图等入口请求聚焦的已安装插件 id */
+    /** Installed plugin id to focus from architecture graph and similar entry points */
     focusPluginId: null as string | null,
-    /** V2 / 外部入口请求在架构图中高亮的 slot_registry 实例键 */
+    /** V2 / external entry: slot_registry instance key to highlight in architecture graph */
     focusSlotKey: null as string | null,
   }
 }

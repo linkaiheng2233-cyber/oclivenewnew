@@ -35,45 +35,45 @@ interface RoleInfoState {
   scenes: string[]
   sceneLabels: Array<{ id: string, label: string }>
   currentScene: string | null
-  /** 用户叙事场景（与 currentScene 可不同） */
+  /** User narrative scene (may differ from currentScene) */
   userPresenceScene: string | null
   virtualTimeMs: number
   userRelations: UserRelationDto[]
   defaultRelation: string
   currentUserRelation: string
-  /** 是否选中「默认身份」（manifest `default_relation`） */
+  /** Whether "default identity" is selected (manifest `default_relation`) */
   useManifestDefault: boolean
-  /** 好感度关系阶段，与后端 `RelationState` 一致 */
+  /** Favorability relation stage; matches backend `RelationState` */
   relationState: string
   eventImpactFactor: number
   /** `evolution.personality_source` */
   personalitySource: 'vector' | 'profile'
   effectiveOllamaModel: string
-  /** 与 manifest `identity_binding` 一致 */
+  /** Matches manifest `identity_binding` */
   identityBinding: 'global' | 'per_scene'
   remoteLifeEnabled: boolean
   remoteLifePackDefault: boolean | null
-  /** 当前交互模式（每角色 DB） */
+  /** Current interaction mode (per-role DB) */
   interactionMode: 'immersive' | 'pure_chat'
-  /** 角色包 settings 建议默认 */
+  /** Suggested default from role pack settings */
   interactionModePackDefault: 'immersive' | 'pure_chat' | null
-  /** 虚拟时间日程推断，无则为 null */
+  /** Virtual-time schedule inference; null when none */
   currentLife: LifeStateDto | null
-  /** 与角色包 `settings.json` → `plugin_backends` 一致 */
+  /** Matches role pack `settings.json` → `plugin_backends` */
   pluginBackends: PluginBackends
-  /** 会话级覆盖（null 表示无覆盖） */
+  /** Session-level override (null = no override) */
   pluginBackendsSessionOverride: PluginBackendsOverride | null
-  /** 叠加会话覆盖后的有效后端 */
+  /** Effective backends after session override */
   pluginBackendsEffective: PluginBackends
-  /** 叠加会话覆盖后的来源快照（pack/session/env） */
+  /** Source snapshot after session override (pack/session/env) */
   pluginBackendsEffectiveSources: PluginBackendsSourceMap
-  /** 是否已加载世界观知识索引（`get_role_info`） */
+  /** Whether worldview knowledge index is loaded (`get_role_info`) */
   knowledgeEnabled: boolean
-  /** 知识块条数 */
+  /** Knowledge chunk count */
   knowledgeChunkCount: number
-  /** 角色包 `ui.json` 规范化快照（主题 / 布局 / 插槽） */
+  /** Normalized role pack `ui.json` snapshot (theme / layout / slots) */
   packUiConfig: PackUiConfig
-  /** 可选 `author.json`（推荐插件、建议后端等） */
+  /** Optional `author.json` (recommended plugins, suggested backends, etc.) */
   authorPack: AuthorPackFile | null
   slotRegistryPack: import('../lib/slotRegistry').SlotRegistryMap | null
   slotRegistryEffective: import('../lib/slotRegistry').SlotRegistryMap | null
@@ -233,7 +233,7 @@ export const useRoleStore = defineStore(
         const info = await getRoleInfo(this.currentRoleId)
         this.applyRoleInfo(info)
       },
-      /** 使用已拿到的 `RoleInfo`（如 `switch_scene`）避免多余请求 */
+      /** Apply already-fetched `RoleInfo` (e.g. from `switch_scene`) to avoid an extra request */
       applyRoleInfo(info: RoleInfo) {
         this.roleInfo = mapRoleInfo(info)
         const rid = (info.role_id ?? this.currentRoleId ?? '').trim()
@@ -258,8 +258,8 @@ export const useRoleStore = defineStore(
         return info
       },
       /**
-       * 选择「默认身份」：跟随 manifest `default_relation`。
-       * 若传入 `clearSceneId`，先移除该场景的身份覆盖（顶栏场景身份与全局默认一致时使用）。
+       * Select "default identity": follow manifest `default_relation`.
+       * When `clearSceneId` is passed, remove identity override for that scene first (top-bar scene identity aligned with global default).
        */
       async setManifestDefaultIdentity(clearSceneId?: string) {
         if (clearSceneId) {
@@ -275,13 +275,13 @@ export const useRoleStore = defineStore(
     },
     persist: true,
     getters: {
-      /** 身份下拉框 `:value`：默认身份选项用哨兵，否则用当前解析后的关系键 */
+      /** Identity dropdown `:value`: sentinel for default identity option, else resolved relation key */
       relationSelectValue(): string {
         return this.roleInfo.useManifestDefault
           ? OCLIVE_DEFAULT_RELATION_SENTINEL
           : this.roleInfo.currentUserRelation
       },
-      /** 沉浸模式：虚拟时间、日程、位移条等 */
+      /** Immersive mode: virtual time, schedule, movement bar, etc. */
       interactionImmersive(): boolean {
         return this.roleInfo.interactionMode === 'immersive'
       },

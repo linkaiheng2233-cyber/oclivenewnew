@@ -1,4 +1,4 @@
-//! V1 专业模式：目录插件「开发者调试面板」后端命令。
+//! V1 pro mode: directory plugin developer debug panel backend commands.
 
 use crate::api::error::ApiError;
 use crate::infrastructure::directory_plugins::{OclivePluginManifest, PluginProcessDebugInfo};

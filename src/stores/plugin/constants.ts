@@ -5,35 +5,35 @@ export interface SlotOrderMemo {
   value: string[]
 }
 
-/** 并发 `refresh()` 合并为单次执行（共享 Promise）。 */
+/** Coalesce concurrent `refresh()` into a single run (shared Promise). */
 export let refreshPromise: Promise<void> | null = null
 
 export function setRefreshPromise(p: Promise<void> | null): void {
   refreshPromise = p
 }
 
-/** 聊天输入区上方工具栏 */
+/** Toolbar above chat input */
 export const SLOT_CHAT_TOOLBAR = 'chat_toolbar'
-/** 应用内「设置 → 插件扩展」页嵌入 */
+/** Embed on in-app Settings → Plugin extensions page */
 export const SLOT_SETTINGS_PANEL = 'settings.panel'
-/** 左侧角色详情区底部（立绘与名称下方） */
+/** Bottom of left role detail (below portrait and name) */
 export const SLOT_ROLE_DETAIL = 'role.detail'
-/** 左侧栏角色块下方（好感度条上方），整列侧栏扩展区 */
+/** Below left sidebar role block (above favorability bar); full sidebar extension area */
 export const SLOT_SIDEBAR = 'sidebar'
-/** 右侧聊天列顶部（消息列表上方） */
+/** Top of right chat column (above message list) */
 export const SLOT_CHAT_HEADER = 'chat.header'
-/** 插件管理面板内嵌 */
+/** Embed in plugin manager panel */
 export const SLOT_SETTINGS_PLUGINS = 'settings.plugins'
-/** 设置对话框 · 扩展区（常规） */
+/** Settings dialog · extensions area (regular) */
 export const SLOT_SETTINGS_ADVANCED = 'settings.advanced'
-/** 全局浮层模板区 */
+/** Global overlay template area */
 export const SLOT_OVERLAY_FLOATING = 'overlay.floating'
-/** 快捷键说明 / 启动器聚合 */
+/** Shortcut help / launcher palette */
 export const SLOT_LAUNCHER_PALETTE = 'launcher.palette'
-/** 调试面板扩展 */
+/** Debug panel extension */
 export const SLOT_DEBUG_DOCK = 'debug.dock'
 
-/** 与后端 `EMBEDDED_UI_SLOT_NAMES` 顺序一致（用于遍历）。 */
+/** Same order as backend `EMBEDDED_UI_SLOT_NAMES` (for iteration). */
 export const ALL_EMBEDDED_SLOT_NAMES: readonly string[] = [
   SLOT_CHAT_TOOLBAR,
   SLOT_SETTINGS_PANEL,
