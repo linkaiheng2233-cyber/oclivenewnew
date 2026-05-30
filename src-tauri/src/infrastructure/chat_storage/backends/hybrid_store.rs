@@ -9,7 +9,7 @@ use super::super::export::{export_chat_session, export_role_chats};
 use super::super::mirror;
 use super::super::replay::{run_memory_replay, ReplayTaskRegistry};
 use super::super::shared::{cap_limit, normalize_scene_id, rows_to_stored, timestamp_ms_to_rfc3339};
-use super::super::stats::{collect_chat_storage_stats, collect_file_chat_storage_stats};
+use super::super::stats::collect_chat_storage_stats;
 use super::super::store_trait::ConversationStore;
 use super::super::types::{
     AppendTurnResult, AutoCleanupResult, ChatExportResponse, ChatSearchResult,

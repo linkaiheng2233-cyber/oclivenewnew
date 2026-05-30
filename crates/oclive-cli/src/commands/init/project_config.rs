@@ -4,6 +4,7 @@ use super::preset_config::{InitTemplateArg, MonolithPresetArg, RolePackKind};
 use super::InitArgs;
 use serde::{Deserialize, Serialize};
 
+#[must_use]
 pub fn default_storage_location() -> String {
     "global".to_string()
 }

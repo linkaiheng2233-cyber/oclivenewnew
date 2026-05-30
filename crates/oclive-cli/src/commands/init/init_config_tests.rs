@@ -63,6 +63,7 @@ mod template_tests {
             json: false,
             dry_run: false,
             check: false,
+            chat_storage_location: None,
         };
         let preset = args.preset.as_deref().unwrap_or("minimal");
         let mut cfg = preset_config("t", preset);
@@ -111,6 +112,7 @@ mod template_tests {
             json: false,
             dry_run: false,
             check: false,
+            chat_storage_location: None,
         };
         let mut cfg = preset_config("t", "minimal");
         apply_template_layer(&args, &mut cfg);
@@ -159,6 +161,7 @@ mod template_tests {
             json: false,
             dry_run: false,
             check: false,
+            chat_storage_location: None,
         };
         assert_eq!(resolve_role_pack_kind(&args), RolePackKind::DefaultExample);
     }
@@ -212,6 +215,7 @@ mod template_tests {
             json: false,
             dry_run: false,
             check: false,
+            chat_storage_location: None,
         };
         let mut cfg = preset_config("t", "minimal");
         apply_backend_cli_overrides(&mut cfg, &args);
