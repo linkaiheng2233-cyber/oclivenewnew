@@ -32,28 +32,28 @@ export type PresenceMode = 'co_present' | 'remote_stub' | 'remote_life'
 export interface SendMessageResponse {
   api_version: number
   schema: number
-  /** �?��?� / �?�?�占位 / �?�?��?声 */
+  /** co-present / remote stub / remote life */
   presence_mode: PresenceMode
-  /** �?��??�?�?�?�?�??�?�系�?�段�?�?`role_runtime.relation_state` �?�?��? */
+  /** Favorability relation stage; from `role_runtime.relation_state` */
   relation_state: string
   reply: string
   emotion: EmotionDto
-  /** �?��??�?bot �??绪�?签�?小�??�?��??�? */
+  /** Bot emotion label (lowercase) for this turn */
   bot_emotion: string
-  /** �?�?�?��?�?DB current_emotion �?�?��?�?对话语�?见 bot_emotion */
+  /** Portrait DB `current_emotion`; dialogue styling uses `bot_emotion` */
   portrait_emotion: string
   favorability_delta: number
   favorability_current: number
   events: DetectedEventDto[]
   scene_id: string
-  /** �?端�?��?�?��?��??�?��?/位移�?��?��?�置 true�?�?�??�??换�?�??�? switch_scene */
+  /** Frontend shows destination picker on movement intent; confirm via `switch_scene` */
   offer_destination_picker: boolean
-  /** �?�?�?��??�?起�?�/�?�??来�?��?�??请�?�?语�?�?��?true�?确认�? `switch_scene`�?�?�?�?�??�?�?�?�??换 */
+  /** User invited character to travel together; confirm via `switch_scene` instead of scene-only switch */
   offer_together_travel: boolean
-  /** �?LLM 失败�?�使�?��?�?��?��??复 */
+  /** Fallback short reply when primary LLM failed */
   reply_is_fallback?: boolean
   llm_fallback_reason?: string | null
-  /** �?��??�?注�??Prompt �??�?��?�?条�?��?�?��??�?�?��?声�?占位为 0�?*/
+  /** Knowledge chunks injected into Prompt this turn (remote stub placeholder is 0) */
   knowledge_chunks_in_prompt?: number
   timestamp: number
   user_message_id?: string | null
@@ -62,7 +62,7 @@ export interface SendMessageResponse {
   assistant_message_timestamp?: string | null
 }
 
-/** 身份�?�??�??�??�?�??manifest �?认身份�?��??项�??�?��?�?�?�?`OCLIVE_DEFAULT_RELATION_SENTINEL` �?�?��? */
+/** Identity dropdown sentinel for manifest default identity option; value is `OCLIVE_DEFAULT_RELATION_SENTINEL` */
 
 export type SwitchSceneResponse = RoleInfo & {
   scene_welcome?: string | null
@@ -81,7 +81,7 @@ export interface JumpTimeResponse {
   monologues: string[]
   favorability_delta: number
   favorability_current: number
-  /** �??�??�?��?��?�??�?�否�?�?�??current_scene �?from �??�?� to */
+  /** Autonomous scene switch after time jump: `current_scene` from → to */
   autonomous_scene_from?: string | null
   autonomous_scene_to?: string | null
 }
@@ -178,7 +178,7 @@ export async function reloadPolicyPlugins(): Promise<string> {
 export async function switchScene(
   roleId: string,
   sceneId: string,
-  /** `true`�?�?�?��?�?��?��?�?��?��?`false`�?�?�?��?��?��?��?�?�?��?� */
+  /** `true`: write `current_scene` and co-present with role; `false`: update `user_presence_scene` only (solo narrative) */
   together: boolean = true,
 ): Promise<SwitchSceneResponse> {
   return invokeWithFriendlyError<SwitchSceneResponse>('switch_scene', {
@@ -223,7 +223,7 @@ export async function generateMonologue(roleId: string): Promise<string> {
   return res.text
 }
 
-/** `.ocpak`�?ZIP �??�??�??`roles/{id}/` �?��?�?�? `.zip` �?��?容�?��?亦可导�?�已解�??�?��?路�?�?*/
+/** `.ocpak` is ZIP packaging `roles/{id}/`; `.zip` with same layout also works; can export from extracted directory path */
 
 export async function exportChatLogs(params: {
   roleId?: string
@@ -243,14 +243,14 @@ export async function exportChatLogs(params: {
   })
 }
 
-/** �?�?�主�??面�?槽�?`chat_toolbar` / `settings.panel`�?�?�??bootstrap �?�??�??*/
+/** Main UI embed slots (`chat_toolbar` / `settings.panel`, etc.) from bootstrap DTO */
 
 export interface PluginBridgeSendMessageParams {
   role_id: string
   user_message: string
   scene_id?: string | null
   session_id?: string | null
-  /** �?`user_message` �?�??�? */
+  /** Alias for `user_message` */
   text?: string
 }
 

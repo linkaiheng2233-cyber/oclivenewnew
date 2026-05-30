@@ -12,11 +12,11 @@ export interface UserRelationDto {
   name: string
   prompt_hint: string
   favor_multiplier: number
-  /** �?�?��??�?�置�??�?��?好�??度�?0�?00�?�?�??换顶栏身份�?��?�?步�?��?�?�好�??*/
+  /** Role pack configured initial favorability (0–100); switching top-bar identity re-seeds favorability */
   initial_favorability: number
 }
 
-/** �??�??�?��?� + manifest `life_schedule` �?��?��??�?�?�活�??*/
+/** Virtual-time schedule inference from manifest `life_schedule` */
 
 export interface LifeStateDto {
   label: string
@@ -25,11 +25,11 @@ export interface LifeStateDto {
   preferred_scene_id: string | null
 }
 
-/** �?`plugin_backends.directory_plugins` �?�?��?snake_case JSON �?段�?*/
+/** Matches `plugin_backends.directory_plugins` snake_case JSON fields */
 
 export type PersonalitySource = 'vector' | 'profile'
 
-/** �?�?��??根�?��? `ui.json`�?�?�?端 `UiConfig` 对齐�?�?槽�?�含�?�号�? */
+/** Normalized role pack root `ui.json`; aligned with frontend `UiConfig`; slot keys use dots */
 
 export interface PackUiSlotConfig {
   order: string[]
@@ -102,40 +102,40 @@ export interface RoleData {
   default_relation: string
   relation_state: string
   current_user_relation: string
-  /** �?�否�??中�??�?认身份�?��?�?�?� manifest `default_relation`�?*/
+  /** Whether "default identity" is selected (manifest `default_relation`) */
   use_manifest_default: boolean
-  /** �?�?��?声�?�?��?DB�?*/
+  /** Remote life enabled (DB) */
   remote_life_enabled: boolean
-  /** �?�?��??建议�?认�?�否�?启�?�?��?声�?settings.json �??remote_presence.default_enabled�?*/
+  /** Role pack suggested default for remote life (`settings.json` → `remote_presence.default_enabled`) */
   remote_life_pack_default: boolean | null
   event_impact_factor: number
-  /** `evolution.personality_source`�?缺�?�为 vector */
+  /** `evolution.personality_source`; defaults to vector */
   personality_source?: PersonalitySource
-  /** manifest �??OLLAMA_MODEL �??�?��?�?认 */
+  /** Effective model: manifest `OLLAMA_MODEL` or user default */
   effective_ollama_model: string
-  /** �?��?�?�?身份 vs �??�?��?��?�??�?manifest `identity_binding`�?*/
+  /** Global identity vs per-scene (`manifest identity_binding`) */
   identity_binding: 'global' | 'per_scene'
-  /** �?�?�交�?模式�?DB�?�?`immersive` | `pure_chat` */
+  /** Interaction mode in DB: `immersive` | `pure_chat` */
   interaction_mode: 'immersive' | 'pure_chat'
-  /** �?�?��??settings.json 建议�?认�?可�??�? */
+  /** Suggested default from role pack settings; may be null */
   interaction_mode_pack_default: 'immersive' | 'pure_chat' | null
-  /** �?�?��?��?�?��?��?�?��?�置�??�?��?�中�?�段�?�为 null�?*/
+  /** Virtual-time schedule inference from life placement; null when none */
   current_life: LifeStateDto | null
-  /** 模�?�??子系�?�?端�?�? `PluginHost` 解�?��?�?��? */
+  /** Module subsystem backends resolved by `PluginHost` */
   plugin_backends: PluginBackends
-  /** �?�?��?话�?�??�?�?��?�??�?�为 null�?*/
+  /** Session conversation override; null when none */
   plugin_backends_session_override?: PluginBackendsOverride | null
-  /** 叠�?��?话�?�??�?�??�??�??�?端 */
+  /** Effective backends after session override */
   plugin_backends_effective?: PluginBackends
-  /** 叠�?��?�??�?端来源�?pack/session/env�?*/
+  /** Effective backend sources (pack/session/env) */
   plugin_backends_effective_sources?: PluginBackendsSourceMap
-  /** �?�?��??`ui.json`�?主�?�?��?�?�?��?槽�? */
+  /** Role pack `ui.json` shell / theme / layout / slots */
   pack_ui_config: PackUiConfig
-  /** `author.suggested_ui` �?�??�?��??�??�?? UI �?�线�?�?�?端 `pack_ui_baseline` �?�?��? */
+  /** `author.suggested_ui` or role pack baseline UI; frontend `pack_ui_baseline` */
   pack_ui_baseline?: PackUiConfig
-  /** 可�??`author.json` */
+  /** Optional `author.json` */
   author_pack?: AuthorPackFile | null
-  /** v2 �?��?� `slot_registry`�?legacy �?null�?*/
+  /** v2 blueprint `slot_registry`; null for legacy */
   slot_registry_pack?: import('../lib/slotRegistry').SlotRegistryMap | null
   slot_registry_effective?: import('../lib/slotRegistry').SlotRegistryMap | null
   slot_session_overridden_keys?: string[]
@@ -148,7 +148,7 @@ export interface SceneLabelEntry {
   label: string
 }
 
-/** `get_role_info` / `switch_scene` �?�? UI �?步�??快�?��?身份�?段语�?�?{@link RoleData}�??*/
+/** Flat UI snapshot from `get_role_info` / `switch_scene`; identity fields match {@link RoleData} */
 
 export interface RoleInfo {
   role_id: string
@@ -159,47 +159,47 @@ export interface RoleInfo {
   current_favorability: number
   current_emotion: string
   personality_vector: number[]
-  /** `evolution.personality_source`�?缺�?�为 vector */
+  /** `evolution.personality_source`; defaults to vector */
   personality_source?: PersonalitySource
   last_interaction?: string | null
   scenes: string[]
-  /** �?scenes 顺序�?�?��?label 来�?��?�?��??scene.json �??�??置�?��?*/
+  /** Labels in `scenes` order; from role pack `scene.json` or manifest */
   scene_labels: SceneLabelEntry[]
   current_scene: string | null
-  /** �?��?��?�?�?��?��?DB�?�?�?current_scene 可不�?*/
+  /** User narrative scene in DB; may differ from `current_scene` */
   user_presence_scene: string | null
   virtual_time_ms: number
   user_relations: UserRelationDto[]
   default_relation: string
   current_user_relation: string
-  /** �?�否�??中�??�?认身份�?��?�?�??�?�?��?`OCLIVE_DEFAULT_RELATION_SENTINEL`�?*/
+  /** Whether "default identity" is selected; sentinel is `OCLIVE_DEFAULT_RELATION_SENTINEL` */
   use_manifest_default: boolean
-  /** �?�系�?�段�?`role_runtime.relation_state`�?*/
+  /** Relation stage from `role_runtime.relation_state` */
   relation_state: string
   remote_life_enabled: boolean
   remote_life_pack_default: boolean | null
   event_impact_factor: number
-  /** manifest �??OLLAMA_MODEL �??�?��?�?认 */
+  /** Effective model: manifest `OLLAMA_MODEL` or user default */
   effective_ollama_model: string
-  /** �?��?�?�?身份 vs �??�?��?��?�??�?manifest `identity_binding`�?*/
+  /** Global identity vs per-scene (`manifest identity_binding`) */
   identity_binding: 'global' | 'per_scene'
   interaction_mode: 'immersive' | 'pure_chat'
   interaction_mode_pack_default: 'immersive' | 'pure_chat' | null
-  /** �?�?��?��?�?��?��?�?��?�置�??�?��?�中�?�段�?�为 null�?*/
+  /** Virtual-time schedule inference; null when none */
   current_life: LifeStateDto | null
-  /** 模�?�??子系�?�?端�?�? `load_role` �?�?��? */
+  /** Module subsystem backends from `load_role` snapshot */
   plugin_backends: PluginBackends
-  /** �?�?��?话�?�??�?�?��?�??�?�为 null�?*/
+  /** Session override; null when none */
   plugin_backends_session_override?: PluginBackendsOverride | null
-  /** 叠�?��?话�?�??�?�??�??�??�?端 */
+  /** Effective backends after session override */
   plugin_backends_effective?: PluginBackends
-  /** 叠�?��?�??�?端来源�?pack/session/env�?*/
+  /** Effective backend sources (pack/session/env) */
   plugin_backends_effective_sources?: PluginBackendsSourceMap
-  /** �?�否已�?磁�??�??建�?�??�?�?��?索�?*/
+  /** Whether worldview knowledge index is loaded from disk */
   knowledge_enabled?: boolean
-  /** �?��?�?条�?��?�?��?�载索�?�?��?0 */
+  /** Knowledge chunk count in loaded index; 0 when disabled */
   knowledge_chunk_count?: number
-  /** �?�?��??`ui.json`�?主�?�?��?�?�?��?槽�? */
+  /** Role pack `ui.json` shell / theme / layout / slots */
   pack_ui_config: PackUiConfig
   pack_ui_baseline?: PackUiConfig
   author_pack?: AuthorPackFile | null
@@ -211,13 +211,13 @@ export interface RoleInfo {
   pipeline_experimental_actions?: string[]
 }
 
-/** `switch_scene` �?�平�??�?�??�?RoleInfo �?段 + 可�??�?��?�欢�?语 */
+/** `switch_scene` flattened `RoleInfo` fields plus optional scene welcome line */
 
 export async function loadRole(roleId: string): Promise<RoleData> {
   return invokeWithFriendlyError<RoleData>('load_role', { roleId })
 }
 
-/** �?��??件�?�?��??�?�??绝对路�?�?否�??`null`�?不�??�??�?�??*/
+/** Resolve role asset absolute path; returns `null` when missing (does not throw) */
 
 export async function resolveRoleAssetPath(
   roleId: string,
@@ -239,7 +239,7 @@ export async function readRoleAssetBytes(
   })
 }
 
-/** `sessionId` �?�?�?息�??�?�?id �?�?��?��?�?�??该�?�名空�?��?�?? `plugin_backends_*` �?快�?��??*/
+/** When `sessionId` is passed, scopes `get_role_info` to that conversation namespace for faster `plugin_backends_*` */
 
 export async function getRoleInfo(
   roleId: string,
@@ -317,7 +317,7 @@ export async function setSceneUserRelation(
   })
 }
 
-/** 移�?��?�?��?��?��??身份�?�??�?�?��? `set_user_relation` �?��?可恢复�??�?认身份�?��?��?�?��??*/
+/** Remove per-scene identity override; use `set_user_relation` sentinel to restore default identity option */
 
 export async function clearSceneUserRelation(
   roleId: string,
@@ -346,7 +346,7 @@ export interface RolePackPeek {
   version: string
 }
 
-/** �?�?�?�?��??�?`srcPath` 可为 `.ocpak` / `.zip` �??已解�??�?��?�?�? `roles/{id}/` �?�?��?�??*/
+/** Import role pack: `srcPath` may be `.ocpak`, `.zip`, or extracted directory matching `roles/{id}/` layout */
 
 export async function peekRolePack(srcPath: string): Promise<RolePackPeek> {
   return invokeWithFriendlyError<RolePackPeek>('peek_role_pack_command', {
@@ -354,7 +354,7 @@ export async function peekRolePack(srcPath: string): Promise<RolePackPeek> {
   })
 }
 
-/** 导�?��?�?��??�?�?�?�?�?��?��??缩�??�??已解�??�?��?�??*/
+/** Export role pack to path (ZIP archive or extracted directory) */
 
 export async function importRolePack(
   srcPath: string,

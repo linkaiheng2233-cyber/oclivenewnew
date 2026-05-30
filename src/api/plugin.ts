@@ -20,7 +20,7 @@ export function emptyPackUiConfig(): PackUiConfig {
   }
 }
 
-/** �?�?�?`models::author_pack::AuthorPackFile` 对齐�?snake_case �?段�?�??*/
+/** Aligned with `models::author_pack::AuthorPackFile` (snake_case fields). */
 
 export function normalizePackUiConfig(
   raw: PackUiConfig | undefined | null,
@@ -61,18 +61,18 @@ export function normalizePackUiConfig(
 export interface PluginUiSlotInfo {
   pluginId: string
   slot: string
-  /** manifest `ui_slots[].appearance_id`�?空�?符串为�?认�?�? */
+  /** manifest `ui_slots[].appearance_id`; empty string is default appearance */
   appearanceId?: string
   /** manifest `ui_slots[].label` */
   label?: string | null
-  /** manifest `ui_slots[].entry`�?�?�对�?件根�?*/
+  /** manifest `ui_slots[].entry`, path relative to plugin root */
   entry: string
-  /** manifest `vueComponent`�?�?�?��?��?�??�??�?? Vue�?失败�??�??�?? `url` iframe */
+  /** manifest `vueComponent`; host compiles Vue when set; on failure falls back to `url` iframe */
   vueComponent?: string | null
   url: string
 }
 
-/** 读�?�?��?�?件根�?�??�?��??件�?宿主�?�?`.vue` �?�?�??*/
+/** Read a text asset from plugin root (e.g. host-compiled `.vue` source). */
 
 export async function readPluginAssetText(
   pluginId: string,
@@ -84,23 +84,23 @@ export async function readPluginAssetText(
   })
 }
 
-/** �?��?�?件启�?��?导�?�?��?URL�?�已�?�描�?件 id�?��?�?�??模式�?�UI �?槽�?�??*/
+/** Directory-plugin bootstrap: shell URL, scanned plugin ids, dev mode, UI slot list. */
 
 export interface DirectoryPluginBootstrap {
   shellUrl?: string | null
   shellPluginId?: string | null
-  /** �?�壳 `manifest.shell.vueEntry`�?�?�对�?件根�?�?�?`forceIframeMode` �?��?�?�否走宿�?Vue �?�壳�??*/
+  /** Shell `manifest.shell.vueEntry`, path relative to plugin root; skipped when `forceIframeMode` */
   shellVueEntry?: string | null
-  /** �?`plugin_state.force_iframe_mode` �?�?��?为�??�?�忽�??Vue �?�壳�?�?�?Vue�??*/
+  /** From `plugin_state.force_iframe_mode`; when true, skip Vue shell and use iframe */
   forceIframeMode?: boolean
   pluginIds: string[]
   developerMode: boolean
-  /** �?�?��?�?��?已启�?��?件�??manifest `bridge.events` 中声�??�??宿主�?件名�??*/
+  /** Union of enabled plugins' `manifest.bridge.events` host event names */
   subscribedHostEvents: string[]
   uiSlots: PluginUiSlotInfo[]
 }
 
-/** `check_plugin_updates` �?�?件�?�??�?�?�线�?�?��?�??�?�??*/
+/** `check_plugin_updates` per-plugin online update probe result. */
 
 export interface PluginUpdateInfo {
   hasUpdate: boolean
@@ -129,7 +129,7 @@ export async function extractPluginZip(
   })
 }
 
-/** �?zip �?�?�?��?�?件�?�?�??manifest.id�??*/
+/** Install from zip; returns `manifest.id`. */
 
 export async function installPluginFromZip(zipPath: string): Promise<string> {
   return invokeWithFriendlyError<string>('install_plugin_from_zip', {
@@ -137,7 +137,7 @@ export async function installPluginFromZip(zipPath: string): Promise<string> {
   })
 }
 
-/** �?�? `role_id` �?并�?�?? bootstrap �?并为�?�?IPC�?避�?��?�?槽�?�?��??载�?��?�复�??�?端�??*/
+/** Per `role_id` in-flight coalescing for bootstrap IPC (avoids duplicate slot loads on rapid remount). */
 const directoryBootstrapInflight = new Map<
   string,
   Promise<DirectoryPluginBootstrap>
@@ -169,19 +169,19 @@ export async function getDirectoryPluginBootstrap(
   return p
 }
 
-/** �?`app_data/plugin_state.json` 中�?�?�?� slots 段�?�?��?snake_case�?�??*/
+/** `app_data/plugin_state.json` slot sections (serde snake_case on disk). */
 
 export interface PluginStateFile {
   disabled_plugins: string[]
   slot_order: Record<string, string[]>
   disabled_slot_contributions: Record<string, string[]>
-  /** `plugin_id` �??`slot` �??`appearance_id` */
+  /** `plugin_id` → `slot` → `appearance_id` */
   slot_appearance?: Record<string, Record<string, string>>
-  /** 为�??�?�忽�??`vueComponent`�?�?�?��?槽�?�??iframe�??*/
+  /** When true, ignore `vueComponent` and force iframe for all slot embeds */
   force_iframe_mode?: boolean
 }
 
-/** �?�?�?��??�?��?�?件 UI �?��?��?含�?��?id�?�?�?端 `RolePluginStateDto` �?�?��?�??*/
+/** Role-scoped plugin UI state; extends file shape with shell id (backend `RolePluginStateDto`). */
 
 export interface RolePluginState extends PluginStateFile {
   shellPluginId: string
@@ -190,11 +190,11 @@ export interface RolePluginState extends PluginStateFile {
 
 export interface PluginStateGetResponse {
   role: RolePluginState
-  /** �?端 `serde(rename_all = "camelCase")` �??`globalDefaults` */
+  /** Backend `serde(rename_all = "camelCase")` → `globalDefaults` */
   globalDefaults: RolePluginState
 }
 
-/** 并�? `get_plugin_state(role_id)` �?并为�?�?IPC�?�?? role_id 维度�?�??*/
+/** Coalesce `get_plugin_state(role_id)` per role_id dimension. */
 const pluginStateInflight = new Map<string, Promise<PluginStateGetResponse>>()
 
 function pluginStateCacheKey(roleId: string): string {
@@ -202,12 +202,12 @@ function pluginStateCacheKey(roleId: string): string {
   return t.length > 0 ? t : '__default__'
 }
 
-/** �?�?��??根�?��? `ui.json`�?�?�?�??�??/ �?端 `UiConfig` �?�?��?�??*/
+/** Role-pack root `ui.json` slot order/visibility (backend `UiConfig` shape). */
 
 export interface SlotConfig {
   order: string[]
   visible: string[]
-  /** �?件 id �??�?认 `appearance_id`�?该槽�??�?*/
+  /** plugin id → default `appearance_id` for that slot */
   appearance?: Record<string, string>
 }
 
@@ -240,15 +240,15 @@ export interface DirectoryPluginCatalogEntry {
   id: string
   version: string
   pluginType?: string | null
-  /** manifest �?`uiTemplate` �??`uiSchema.fields` */
+  /** manifest has `uiTemplate` or `uiSchema.fields` */
   hasUiSettings?: boolean
-  /** manifest �?�否�?`process`�?可�?�此面板启�?� JSON-RPC 子�?�?�? */
+  /** manifest declares `process`; settings panel can spawn JSON-RPC child process */
   hasRpcProcess: boolean
-  /** manifest �?�否声�?? `rpcMethods`�?�?�?面板可�?填�?��?名�? */
+  /** manifest declares `rpcMethods`; settings panel can fill method names */
   declaresRpcMethods?: boolean
   isShell: boolean
   uiSlotNames: string[]
-  /** 每条 manifest `ui_slots`�?�?�?�槽�?�?�?*/
+  /** One entry per manifest `ui_slots` variant (slot + appearance) */
   uiSlotVariants?: UiSlotVariantInfo[]
   provides: string[]
   description?: string | null
@@ -259,7 +259,7 @@ export interface DirectoryPluginCatalogEntry {
   dependencyIssues: string[]
 }
 
-/** 并�? `get_directory_plugin_catalog` �?并为�?�?IPC�?�?� role �?�?��?�?��?�?��?��?�?in-flight�?�??*/
+/** Coalesce `get_directory_plugin_catalog` IPC (global in-flight dedup). */
 const directoryCatalogInflight = new Map<
   string,
   Promise<DirectoryPluginCatalogEntry[]>
@@ -326,7 +326,7 @@ export async function saveGlobalPluginState(
   })
 }
 
-/** �?�磁�??�?�??`ui.json` �?�??该�?�?��??�?��?��?件 UI �?��?��??*/
+/** Reset persisted state to role-pack default `ui.json` (clears per-role plugin UI overrides). */
 
 export async function resetPluginStateToRoleDefault(
   roleId: string,
@@ -337,7 +337,7 @@ export async function resetPluginStateToRoleDefault(
   })
 }
 
-/** �?页索�?中�??�?条�?件�?�? `plugin_installer::PluginIndexEntry` �?�?��?camelCase�?�??*/
+/** One plugin row from index (`plugin_installer::PluginIndexEntry`, camelCase DTO). */
 
 export interface PluginIndexEntryDto {
   id: string
@@ -504,7 +504,7 @@ export async function directoryPluginInvoke(
   })
 }
 
-/** �?�?�??�?�?�?�?��?�?件 RPC 子�?�?快�?��?�?�?�?`PluginProcessDebugInfo` �?�?��?�??*/
+/** Spawn directory-plugin RPC child for quick test (`PluginProcessDebugInfo` DTO). */
 
 export interface PluginProcessDebugInfo {
   pluginId: string
@@ -515,7 +515,7 @@ export interface PluginProcessDebugInfo {
   memoryKb?: number | null
 }
 
-/** �?�平 Tauri command �?�?��??IPC �?为 camelCase�?�? Rust �?`snake_case` 形�?对�?�?�??*/
+/** Flat Tauri command args use camelCase IPC keys; Rust handlers use `snake_case` params. */
 
 export async function spawnPluginForTest(
   pluginId: string,
@@ -628,8 +628,9 @@ export async function packPlugin(
 }
 
 /**
- * manifest `shell.bridge.invoke` 可声�??**�?�令�?* �??**�?�?��?�名**�?�?�??�?��?`get_conversation` �??`read:conversation` �?�?�??
- * �?��??�?�令�?�?�?�?�?��??换�?�?要�? **`type`: `"ocliveplugin"`** �?来源为 **`shell.entry`** HTML �??**`shell.vueEntry`** Vue �?�壳�??
+ * manifest `shell.bridge.invoke` may declare **command tokens** or **legacy method names**
+ * (e.g. `get_conversation` vs `read:conversation`).
+ * Bridge dispatch requires **`type`: `"ocliveplugin"`** and source **`shell.entry`** (HTML) or **`shell.vueEntry`** (Vue shell).
  */
 
 export type PluginBridgeManifestToken
@@ -665,12 +666,12 @@ export type PluginBridgeManifestToken
     | 'write:settings'
     | 'read:conversations'
 
-/** �?�壳 `OclivePluginBridge.invoke('update_memory', params)` */
+/** Shell `OclivePluginBridge.invoke('update_memory', params)` */
 
 export interface PluginBridgeUpdateMemoryParams {
   role_id: string
   content: string
-  /** 0�??�?�?�?0.5 */
+  /** 0–1, default 0.5 */
   importance?: number
 }
 
@@ -693,16 +694,16 @@ export interface PluginBridgeUpdateEventParams {
   description?: string | null
 }
 
-/** �?�??�?宿主�?��?�?��?��?�提示词�??段�?��?�??`not_implemented`�??*/
+/** Host prompt fragment update; may return `not_implemented`. */
 
 export interface PluginBridgeUpdatePromptParams {
   role_id: string
-  /** �?��?续宿主�?约�?�?*/
+  /** Optional host contract key */
   fragment_key?: string
   content?: string
 }
 
-/** `plugin_bridge_invoke` �??`send_message`�?�?段�? {@link SendMessageRequest} �?�?��?可提�?`text` 代�?� `user_message`�?*/
+/** `plugin_bridge_invoke` for `send_message`; params may use `text` instead of `user_message`. */
 
 export interface PluginBridgeGetConversationParams {
   role_id: string
@@ -730,7 +731,7 @@ export interface PluginBridgeGetConversationResult {
   items: PluginBridgeConversationTurn[]
 }
 
-/** `export_conversation` �??�?`export_chat_logs` �?�?�?�导�?��?�?��?`format`: `json` | `txt`�?�??*/
+/** `export_conversation` / `export_chat_logs`; `format`: `json` | `txt`. */
 
 export interface PluginBridgeExportConversationParams {
   role_id: string
@@ -744,11 +745,11 @@ export interface PluginBridgeExportConversationResult {
   suggested_filename: string
 }
 
-/** `import_role`�?�? `.zip` / `.ocpak` �??已解�??�?��?导�?��?�?��??�??*/
+/** `import_role` from `.zip` / `.ocpak` or extracted directory path. */
 
 export interface PluginBridgeImportRoleParams {
   path: string
-  /** �?`src_path` �?�??�? */
+  /** Alias for `src_path` */
   src_path?: string
   overwrite?: boolean
 }
@@ -759,7 +760,7 @@ export interface PluginBridgeImportRoleResult {
   ok: boolean
 }
 
-/** `delete_role`�?�?��?��?��?��?�?��??�?�?��?��?�据�??*/
+/** `delete_role`; removes role pack and associated data. */
 
 export interface PluginBridgeDeleteRoleParams {
   role_id?: string
@@ -772,19 +773,19 @@ export interface PluginBridgeDeleteRoleResult {
   role_id: string
 }
 
-/** `update_settings`�?�?��?��?�许�??�?�?�设置�?�?�壳�?�名�?�?段�?�??*/
+/** `update_settings`; allowed keys include theme and shell-renamed fields. */
 
 export interface PluginBridgeUpdateSettingsParams {
-  /** �?`ui_theme` �?�??�? */
+  /** Alias for `ui_theme` */
   theme?: 'light' | 'dark' | 'system'
   ui_theme?: 'light' | 'dark' | 'system'
   interaction_mode?: string
-  /** �?主�?�?�设置�??�?端失败�?��?��?�级�??置�?��?�?��?`"0"` / `"1"`�??*/
+  /** App-level remote fallback; backend stores `"0"` / `"1"` strings */
   remote_fallback_to_builtin?: string
   [key: string]: unknown
 }
 
-/** `get_conversation_list`�?�??�?��?��?��?话�??�?�据�??*/
+/** `get_conversation_list`; session list metadata. */
 
 export interface PluginBridgeConversationListItem {
   session_namespace: string
@@ -797,7 +798,7 @@ export interface PluginBridgeGetConversationListResult {
   items: PluginBridgeConversationListItem[]
 }
 
-/** �?��?�?件�?`OclivePluginBridge.invoke` 对�?�??�?端�?�口�?�?�?��?��??�?�主 UI �?�?��?�??*/
+/** Directory-plugin `OclivePluginBridge.invoke` passthrough to host commands (same surface as main UI). */
 
 export async function pluginBridgeInvoke(req: {
   pluginId: string
@@ -814,5 +815,3 @@ export async function pluginBridgeInvoke(req: {
     },
   })
 }
-
-/** A2.2�?�?��?�?��?�?Ollama�?��?�?�根�?��?�?��?�?��?�据可�??�?�??*/

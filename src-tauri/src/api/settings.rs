@@ -130,9 +130,9 @@ pub async fn set_remote_fallback_to_builtin(
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RemoteFallbackAppSettings {
-    /// 数据库中的 `app_settings.remote_fallback_to_builtin`（`"0"` / `"1"`）。
+    /// `app_settings.remote_fallback_to_builtin` in DB (`"0"` / `"1"`).
     pub remote_fallback_to_builtin: String,
-    /// 若设置了 `OCLIVE_REMOTE_FALLBACK_TO_BUILTIN`，进程内有效值由环境变量决定，UI 应锁定开关。
+    /// When `OCLIVE_REMOTE_FALLBACK_TO_BUILTIN` is set, env drives in-process value; UI should lock the toggle.
     pub remote_fallback_env_override_active: bool,
 }
 

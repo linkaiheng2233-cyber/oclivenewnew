@@ -9,7 +9,7 @@ function translateApiError(code: string): string | undefined {
   return undefined
 }
 
-/** �?`oclive_kernel_runtime::KernelErrorBody` / HTTP `error` 对象同形（内核权�?JSON）�?*/
+/** Same shape as `oclive_kernel_runtime::KernelErrorBody` / HTTP `error` object (kernel-authoritative JSON) */
 export interface KernelErrorPayload {
   code: string
   message: string
@@ -42,7 +42,7 @@ export interface FriendlyError {
   code?: string
   message: string
   raw: string
-  /** �?`invoke` 失败载荷为内�?JSON 时填充，便于 UI/遥测�?HTTP 对齐�?*/
+  /** Filled when `invoke` failure payload is inner JSON; aligns UI/telemetry with HTTP */
   kernel?: KernelErrorPayload
 }
 
@@ -54,12 +54,12 @@ export function setErrorReporter(reporter: ErrorReporter | null): void {
   errorReporter = reporter
 }
 
-/** �?`invoke` 抛出的字符串中解析机器码：优先内�?JSON `code`，否�?legacy `[CODE]`�?*/
+/** Parse machine code from `invoke` error string: prefer inner JSON `code`, else legacy `[CODE]` */
 export function parseApiErrorCode(err: unknown): string | undefined {
   return parseBackendError(err).code
 }
 
-/** 是否为目录插件未找到类错误（便于 UI 分支）�?*/
+/** Whether error is directory-plugin-not-found class (for UI branching) */
 export function isPluginNotFoundError(err: unknown): boolean {
   return parseApiErrorCode(err) === 'API_PLUGIN_NOT_FOUND'
 }
@@ -170,7 +170,7 @@ export async function invokeWithFriendlyError<T>(
   }
   catch (err) {
     const friendly = toFriendlyError(err)
-    // 友好文案会盖住后端细节；开发排查时看控制台完整 raw
+    // Friendly message may hide backend detail; see console for full raw when debugging
     console.error(`[tauri:${command}]`, friendly.code ?? '?', friendly.raw)
     if (errorReporter) {
       errorReporter(friendly)
@@ -181,7 +181,7 @@ export async function invokeWithFriendlyError<T>(
     throw new Error(friendly.message)
   }
 }
-/** snake_case �?camelCase for a single key (Tauri IPC top-level args). */
+/** snake_case → camelCase for a single key (Tauri IPC top-level args). */
 export function snakeToCamelKey(key: string): string {
   return key.replace(/_([a-z0-9])/g, (_, c) => c.toUpperCase())
 }

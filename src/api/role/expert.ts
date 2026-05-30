@@ -11,9 +11,9 @@ export interface TimeOfDayWindow {
 }
 
 export interface ExpertTrigger {
-  /** 新字段 */
+  /** New field */
   scenes?: string[]
-  /** 兼容旧字段 */
+  /** Legacy field alias */
   scene_ids?: string[]
   keywords?: string[]
   user_emotion?: string[]
