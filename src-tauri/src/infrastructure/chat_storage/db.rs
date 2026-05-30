@@ -3,6 +3,7 @@
 use crate::error::{AppError, Result};
 use crate::infrastructure::db::DbManager;
 use chrono::Utc;
+use sqlx::sqlite::SqliteRow;
 use sqlx::Row;
 
 #[derive(Debug, Clone)]
@@ -24,6 +25,38 @@ pub struct MessageRow {
     pub content: String,
     pub metadata: Option<String>,
     pub created_at: String,
+}
+
+fn session_row_from_tuple(
+    (session_id, role_id, scene_id, created_at, updated_at, message_count): (
+        String,
+        String,
+        String,
+        String,
+        String,
+        i64,
+    ),
+) -> SessionRow {
+    SessionRow {
+        session_id,
+        role_id,
+        scene_id,
+        created_at,
+        updated_at,
+        message_count,
+    }
+}
+
+fn message_row_from_row(row: &SqliteRow) -> MessageRow {
+    MessageRow {
+        id: row.get("id"),
+        session_id: row.get("session_id"),
+        turn_index: row.get::<i32, _>("turn_index"),
+        sender: row.get("sender"),
+        content: row.get("content"),
+        metadata: row.get("metadata"),
+        created_at: row.get("created_at"),
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -170,16 +203,7 @@ impl DbManager {
         .fetch_optional(&self.pool)
         .await
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-        Ok(row.map(
-            |(session_id, role_id, scene_id, created_at, updated_at, message_count)| SessionRow {
-                session_id,
-                role_id,
-                scene_id,
-                created_at,
-                updated_at,
-                message_count,
-            },
-        ))
+        Ok(row.map(session_row_from_tuple))
     }
 
     /// # Errors
@@ -220,21 +244,7 @@ impl DbManager {
         .fetch_all(&self.pool)
         .await
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-        Ok(rows
-            .into_iter()
-            .map(
-                |(session_id, role_id, scene_id, created_at, updated_at, message_count)| {
-                    SessionRow {
-                        session_id,
-                        role_id,
-                        scene_id,
-                        created_at,
-                        updated_at,
-                        message_count,
-                    }
-                },
-            )
-            .collect())
+        Ok(rows.into_iter().map(session_row_from_tuple).collect())
     }
 
     /// # Errors
@@ -262,15 +272,7 @@ impl DbManager {
 
         Ok(rows
             .into_iter()
-            .map(|row| MessageRow {
-                id: row.get("id"),
-                session_id: row.get("session_id"),
-                turn_index: row.get::<i32, _>("turn_index"),
-                sender: row.get("sender"),
-                content: row.get("content"),
-                metadata: row.get("metadata"),
-                created_at: row.get("created_at"),
-            })
+            .map(|row| message_row_from_row(&row))
             .collect())
     }
 
@@ -460,21 +462,7 @@ impl DbManager {
         .fetch_all(&self.pool)
         .await
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-        Ok(rows
-            .into_iter()
-            .map(
-                |(session_id, role_id, scene_id, created_at, updated_at, message_count)| {
-                    SessionRow {
-                        session_id,
-                        role_id,
-                        scene_id,
-                        created_at,
-                        updated_at,
-                        message_count,
-                    }
-                },
-            )
-            .collect())
+        Ok(rows.into_iter().map(session_row_from_tuple).collect())
     }
 
     /// # Errors
@@ -489,15 +477,7 @@ impl DbManager {
         .fetch_optional(&self.pool)
         .await
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-        Ok(row.map(|row| MessageRow {
-            id: row.get("id"),
-            session_id: row.get("session_id"),
-            turn_index: row.get::<i32, _>("turn_index"),
-            sender: row.get("sender"),
-            content: row.get("content"),
-            metadata: row.get("metadata"),
-            created_at: row.get("created_at"),
-        }))
+        Ok(row.map(|row| message_row_from_row(&row)))
     }
 
     /// # Errors
@@ -682,15 +662,7 @@ impl DbManager {
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         let mut before_msgs: Vec<MessageRow> = before_rows
             .into_iter()
-            .map(|row| MessageRow {
-                id: row.get("id"),
-                session_id: row.get("session_id"),
-                turn_index: row.get::<i32, _>("turn_index"),
-                sender: row.get("sender"),
-                content: row.get("content"),
-                metadata: row.get("metadata"),
-                created_at: row.get("created_at"),
-            })
+            .map(|row| message_row_from_row(&row))
             .collect();
         before_msgs.reverse();
 
@@ -710,15 +682,7 @@ impl DbManager {
 
         let after_msgs = after_rows
             .into_iter()
-            .map(|row| MessageRow {
-                id: row.get("id"),
-                session_id: row.get("session_id"),
-                turn_index: row.get::<i32, _>("turn_index"),
-                sender: row.get("sender"),
-                content: row.get("content"),
-                metadata: row.get("metadata"),
-                created_at: row.get("created_at"),
-            })
+            .map(|row| message_row_from_row(&row))
             .collect();
 
         Ok((before_msgs, after_msgs))
