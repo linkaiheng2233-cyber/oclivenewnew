@@ -1,6 +1,6 @@
 # OOCP 协议测试套件（HTTP 黑盒）
 
-本目录对 **`oclivenewnew-tauri --api`** 暴露的 **HTTP 表面契约** 做黑盒校验（`GET /health`、`POST /chat`）。**默认 13 场景（S0–S12）**；可选 **S13** 双核降级。与 [`../../creator-docs/testing/OOCP_TEST_SUITE.md`](../../creator-docs/testing/OOCP_TEST_SUITE.md) 一致。
+本目录对 **`oclivenewnew-tauri --api`** 暴露的 **HTTP 表面契约** 做黑盒校验（`GET /health`、`POST /chat`）。**默认 13 场景（S0–S12）**；可选 **S13/S14** 双核场景（降级与成功路径）。与 [`../../creator-docs/testing/OOCP_TEST_SUITE.md`](../../creator-docs/testing/OOCP_TEST_SUITE.md) 一致。
 
 > **说明**：当前主程序 HTTP API **未实现 WebSocket**；若完整 OOCP 需 WS 方法链，应在内核增加路由后再扩展本套件。
 
@@ -37,6 +37,9 @@ CI 在 **`oocp-test-suite`** job 中于 **`node run.mjs`** 之后执行仓库根
 | `OCLIVE_API_BASE` | 默认 `http://127.0.0.1:8420` |
 | `OCLIVE_OOCP_ROLE_PATH` | 角色包目录绝对路径；默认 `<repo>/roles/mumu` |
 | `OCLIVE_HTTP_API_MOCK_LLM` | 设为 `1` 或 `true` 时，`--api` 使用 Mock LLM（无 Ollama） |
+| `OCLIVE_OOCP_INCLUDE_S13` | 设为 `1` 时追加 S13（实验核失败后静默降级） |
+| `OCLIVE_OOCP_INCLUDE_S14` | 设为 `1` 时追加 S14（实验核成功路径） |
+| `OCLIVE_OOCP_INCLUDE_DUAL_CORE` | 设为 `1` 时同时开启 S13 + S14（等价 `--include-dual-core`） |
 
 ## JSON 报告
 
@@ -45,3 +48,10 @@ npm run test:json > report.json
 ```
 
 输出符合 `schemas/oclive.protocol_conformance_report.v1.schema.json`。
+
+报告包含：
+
+- `dual_core` 摘要块（是否启用双核场景、S13/S14 开关与执行列表）
+- `ci_context` 元信息块（生成时间、API 基址、GitHub Actions run id / sha / ref）
+
+便于直接读取 CI 产物并用于对外演示材料。

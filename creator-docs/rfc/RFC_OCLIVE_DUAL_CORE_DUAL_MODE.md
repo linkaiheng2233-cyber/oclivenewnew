@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |--------|-----|
-| 状态 | **Proposed（未来演进）** — **不阻塞**当前 v2 交付与发布 |
+| 状态 | **Opt-in Beta（默认关闭）** — P2–P5 主链路已入库，仍以 Stable 为默认交付面 |
 | 入口 | **`oclive init --dual-core`**（显式开启；**默认关闭**） |
 | 与 Monolith | **正交**：Monolith 是**编译期**焊接；双核是**运行时**双编排 + 降级 |
 | 与 v2 蓝图 | **扩展**同一 `pipeline.ocblueprint`；新增 `zone` + `pipeline` 段（见 §4） |

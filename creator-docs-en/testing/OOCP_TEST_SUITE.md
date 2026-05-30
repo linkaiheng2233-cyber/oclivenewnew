@@ -1,6 +1,6 @@
-# OOCP protocol test suite (S0–S12, 13 scenarios; optional S13)
+# OOCP protocol test suite (S0–S12, 13 scenarios; optional S13 / S14)
 
-**Status (`main`)**: Checked in under **`examples/oocp-test-suite/`** (`run.mjs` + JSON schema); CI workflow **`.github/workflows/ci.yml`** job **`oocp-test-suite`** builds `oclivenewnew-tauri`, starts the **`--api` HTTP** service, polls **`GET /health`**, runs **`node run.mjs`**, then runs **`scripts/e2e-core-api-restart.mjs`** (restart process, chat again; failure fails the job). The **`frontend`** job runs **Playwright + `vite preview` first-screen smoke** (**A1.1b**) on **Ubuntu** after **`npm run build`** (Windows `frontend` skips Playwright).
+**Status (`main`)**: Checked in under **`examples/oocp-test-suite/`** (`run.mjs` + JSON schema); CI workflow **`.github/workflows/ci.yml`** job **`oocp-test-suite`** builds `oclivenewnew-tauri --features dual_core`, starts the **`--api` HTTP** service, polls **`GET /health`**, runs **`node run.mjs --include-dual-core`** (S13/S14), then runs **`scripts/e2e-core-api-restart.mjs`** (restart process, chat again; failure fails the job). The **`frontend`** job runs **Playwright + `vite preview` first-screen smoke** (**A1.1b**) on **Ubuntu** after **`npm run build`** (Windows `frontend` skips Playwright).
 
 ## A1.1 PoC: core HTTP restart smoke
 
@@ -41,17 +41,22 @@
 | S11 | Success body includes `api_version`, `schema`, `timestamp` |
 | S12 | Error body `error.code` is a **string** (`KernelErrorBody`), not a JSON-RPC integer code |
 
-**Default suite:** `run.mjs` runs **S0–S12** (**13** scenarios). **S13** (dual-core experimental failure silently falls back to Stable with `reply`) is optional: `--include-s13` or `OCLIVE_OOCP_INCLUDE_S13=1`.
+**Default suite:** `run.mjs` runs **S0–S12** (**13** scenarios). Dual-core scenarios are optional: **S13** (experimental failure silently falls back to Stable and still returns `reply`) and **S14** (experimental pipeline happy path with supported method DAG still returns `reply`). Enable them with `--include-s13` / `--include-s14`, `OCLIVE_OOCP_INCLUDE_S13=1` / `OCLIVE_OOCP_INCLUDE_S14=1`, or both at once via `--include-dual-core` / `OCLIVE_OOCP_INCLUDE_DUAL_CORE=1`.
 
 ## Conformance report
 
-`npm run test:json` emits JSON; field set is defined in `examples/oocp-test-suite/schemas/oclive.protocol_conformance_report.v1.schema.json`.
+`npm run test:json` emits JSON; field set is defined in `examples/oocp-test-suite/schemas/oclive.protocol_conformance_report.v1.schema.json`. The report includes:
+
+- a `dual_core` summary section (enabled flag, S13/S14 switches, executed dual-core scenarios),
+- a `ci_context` section (generation timestamp plus CI metadata: `github_run_id` / `github_sha` / `github_ref`).
+
+This makes CI artifacts directly usable for audit trails and external presentation.
 
 ## Relationship to full OOCP
 
 The main app **`--api`** mode is **HTTP** (`GET /health`, `POST /chat`), **without** a WebSocket method chain. This suite validates the **HTTP try-chat contract** and orchestration results; if WS semantics from the spec land later, extend scripts and CI steps under this directory.
 
-**Doc alignment**: Matches root **`README.md`** / **`AGENTS.md`**: **OOCP 13 scenarios (S0–S12)**, plus optional **S13** dual-core fallback; CI job **`oocp-test-suite`**; directory **`examples/oocp-test-suite/`**.
+**Doc alignment**: Matches root **`README.md`** / **`AGENTS.md`**: **OOCP 13 scenarios (S0–S12)**, plus optional **S13/S14** dual-core scenarios; CI job **`oocp-test-suite`**; directory **`examples/oocp-test-suite/`**.
 
 ## Test stack overview
 

@@ -1,7 +1,7 @@
 # 角色包与蓝图 · 职责边界（SSOT）
 
 **读者**：创作者、宿主集成方、Cursor / Agent。  
-**状态**：与 **v2 已交付** 对齐；**双核** 字段见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)（Proposed）。
+**状态**：与 **v2 已交付** 对齐；**双核** 字段见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)（Opt-in Beta，默认关）。
 
 | 文档 | 用途 |
 |------|------|

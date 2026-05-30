@@ -4,9 +4,14 @@
 
 ## [Unreleased]
 
+### Changed
+
+- **Dual-core status wording**: runtime dual-core docs now use **Opt-in Beta (default off)**; Stable remains the default delivery path.
+
 ### Added
 
 - **Forgetting curve & relation evolution (`config.json`)**: Ebbinghaus long-term memory decay; mention reinforcement (`mention_count` + `reinforcement_factor`); immersive-mode favorability estrangement and relation-stage downgrade; virtual time ratio (`time.speed`) and first-immersion anchor aligned to `life_schedule`; reinforced memories nudge personality / mutable profile “memory shaping”. See [ROLE_PACK_SPEC §9](creator-docs/role-pack/ROLE_PACK_SPEC.md).
+- **Dual-core quality hardening**: added optional **S14** OOCP scenario (experimental happy path with valid DAG); CI `oocp-test-suite` now builds with `--features dual_core` and runs `run.mjs --include-dual-core` (covers S13 fallback + S14 happy path); added integration test `src-tauri/tests/dual_core_happy_path.rs` to validate `DualPipelineRunner::run_experimental` success path.
 
 #### Chat Storage (phase 3)
 

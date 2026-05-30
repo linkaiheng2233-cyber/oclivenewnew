@@ -8,6 +8,42 @@
     "schema": { "const": "oclive.protocol_conformance_report.v1" },
     "passed": { "type": "boolean" },
     "base_url": { "type": "string" },
+    "ci_context": {
+      "type": "object",
+      "required": [
+        "generated_at_utc",
+        "api_base",
+        "github_actions",
+        "github_run_id",
+        "github_sha",
+        "github_ref"
+      ],
+      "properties": {
+        "generated_at_utc": { "type": "string", "format": "date-time" },
+        "api_base": { "type": "string" },
+        "github_actions": { "type": "boolean" },
+        "github_run_id": { "type": ["string", "null"] },
+        "github_sha": { "type": ["string", "null"] },
+        "github_ref": { "type": ["string", "null"] }
+      }
+    },
+    "dual_core": {
+      "type": "object",
+      "required": ["enabled", "include_s13", "include_s14", "scenarios_requested", "scenarios_executed"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "include_s13": { "type": "boolean" },
+        "include_s14": { "type": "boolean" },
+        "scenarios_requested": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "scenarios_executed": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
     "scenarios": {
       "type": "array",
       "items": {

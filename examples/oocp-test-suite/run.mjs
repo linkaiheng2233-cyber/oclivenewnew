@@ -1,5 +1,5 @@
 /**
- * OOCP 对齐 HTTP 黑盒：S0–S12（13 场景）；可选 S13（见 ../../creator-docs/testing/OOCP_TEST_SUITE.md）
+ * OOCP 对齐 HTTP 黑盒：S0–S12（13 场景）；可选 S13/S14（见 ../../creator-docs/testing/OOCP_TEST_SUITE.md）
  * 使用 Node 20+ 内置 fetch，无额外 npm 依赖。
  */
 
@@ -16,6 +16,21 @@ function argFlag(name) {
 function env(name, fallback) {
   const v = process.env[name]
   return v != null && String(v).trim() !== '' ? String(v).trim() : fallback
+}
+
+function ciContext(baseUrl) {
+  const githubActions = env('GITHUB_ACTIONS', '').toLowerCase() === 'true'
+  const runId = env('GITHUB_RUN_ID', '')
+  const sha = env('GITHUB_SHA', '')
+  const ref = env('GITHUB_REF', '')
+  return {
+    generated_at_utc: new Date().toISOString(),
+    api_base: baseUrl,
+    github_actions: githubActions,
+    github_run_id: runId || null,
+    github_sha: sha || null,
+    github_ref: ref || null,
+  }
 }
 
 function repoRoot() {
@@ -93,6 +108,21 @@ async function scenarioHandlers(base, rolePath) {
       if (!res.ok) throw new Error(`S13 status ${res.status} ${JSON.stringify(body)}`)
       if (typeof body?.reply !== 'string' || !body.reply.length) {
         throw new Error('S13 missing reply after experimental fallback')
+      }
+    },
+    S14_dual_core_happy_path: async () => {
+      const dualRole = join(__dirname, 'fixtures', 'dual-core-success')
+      const { res, body } = await fetchJson(`${base}/chat`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          role_path: dualRole,
+          message: 'OOCP S14 dual-core happy path',
+        }),
+      })
+      if (!res.ok) throw new Error(`S14 status ${res.status} ${JSON.stringify(body)}`)
+      if (typeof body?.reply !== 'string' || !body.reply.length) {
+        throw new Error('S14 missing reply after experimental happy path')
       }
     },
     S2: async () => {
@@ -218,8 +248,12 @@ async function main() {
   }
 
   const handlers = await scenarioHandlers(base, rolePath)
+  const includeDualCore =
+    argFlag('--include-dual-core') || process.env.OCLIVE_OOCP_INCLUDE_DUAL_CORE === '1'
   const includeS13 =
-    argFlag('--include-s13') || process.env.OCLIVE_OOCP_INCLUDE_S13 === '1'
+    includeDualCore || argFlag('--include-s13') || process.env.OCLIVE_OOCP_INCLUDE_S13 === '1'
+  const includeS14 =
+    includeDualCore || argFlag('--include-s14') || process.env.OCLIVE_OOCP_INCLUDE_S14 === '1'
   const order = [
     'S0',
     'S1',
@@ -235,6 +269,7 @@ async function main() {
     'S11',
     'S12',
     ...(includeS13 ? ['S13_dual_core_fallback'] : []),
+    ...(includeS14 ? ['S14_dual_core_happy_path'] : []),
   ]
 
   const scenarios = []
@@ -254,6 +289,14 @@ async function main() {
     schema: 'oclive.protocol_conformance_report.v1',
     passed: !failed,
     base_url: base,
+    ci_context: ciContext(base),
+    dual_core: {
+      enabled: includeS13 || includeS14,
+      include_s13: includeS13,
+      include_s14: includeS14,
+      scenarios_requested: ['S13_dual_core_fallback', 'S14_dual_core_happy_path'],
+      scenarios_executed: order.filter((id) => id.startsWith('S13_') || id.startsWith('S14_')),
+    },
     scenarios,
   }
 

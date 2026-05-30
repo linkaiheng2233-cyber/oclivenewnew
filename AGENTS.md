@@ -33,7 +33,7 @@
 
 ### 架构 RFC
 
-- **运行时双核双态（Stable / Experimental，Proposed，默认关）**：[RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md) · **Cursor 对齐进度** [handoff/DUAL_CORE_CURSOR_HANDOFF.md](handoff/DUAL_CORE_CURSOR_HANDOFF.md) · 速查 [handoff/DUAL_CORE_ALIGNMENT.md](handoff/DUAL_CORE_ALIGNMENT.md)（与 Monolith **构建态** 正交；**不阻塞**当前 v2 交付）。
+- **运行时双核双态（Stable / Experimental，Opt-in Beta，默认关）**：[RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md) · **Cursor 对齐进度** [handoff/DUAL_CORE_CURSOR_HANDOFF.md](handoff/DUAL_CORE_CURSOR_HANDOFF.md) · 速查 [handoff/DUAL_CORE_ALIGNMENT.md](handoff/DUAL_CORE_ALIGNMENT.md)（与 Monolith **构建态** 正交；**不阻塞**当前 v2 交付）。
 - **高耦合编译模式（Monolith）**：[RFC_OCLIVE_MONOLITH_MODE.md](creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md)（路线图见 RFC §9，已与 `oclive-cli` 实现对齐）。**`oclive-cli`**：`init --monolith` 或交互「开发者编译选项」生成 **`monolith.toml`**、`vendor/oclive_monolith_builtin/`（**七焊接键焊接桩唯一模板源**）、**`process_message_monolith.rs`**、双 **`[[bin]]`**（`main.rs` / `main_monolith.rs`）；**`cargo run -p oclive-cli -- build|bench`** 再生成与对比；**`bench --save` / `--compare`** 用于本地性能历史与对比（见 [OCLIVE_CLI_GUIDE.md](creator-docs/cli/OCLIVE_CLI_GUIDE.md)）。**`oclive dev`**：监听脚手架或内核项目下 **`roles/`** 中 `manifest.json` / `settings.json` 变更，便于热重载脚本对接。
 
 ### 内核架构（主应用 `src-tauri`）
@@ -47,7 +47,7 @@
 
 ### 测试体系（三层归属）
 
-- **协议层 → 本仓**：**OOCP HTTP 黑盒（S0–S12，共 13 场景；可选 S13）** 已入库且 **CI 已集成**——场景与 CI 说明见 [`creator-docs/testing/OOCP_TEST_SUITE.md`](creator-docs/testing/OOCP_TEST_SUITE.md)；可执行脚本在 [`examples/oocp-test-suite/`](examples/oocp-test-suite/)（`node run.mjs`）。CI **`.github/workflows/ci.yml`** 的 **`oocp-test-suite`** job（Ubuntu）会 `cargo build -p oclivenewnew-tauri`、拉起 **`oclivenewnew-tauri --api`**（默认 **`OCLIVE_HTTP_API_MOCK_LLM=1`**）、轮询 **`GET /health`** 后执行 **`node run.mjs`**，再执行根目录 **`scripts/e2e-core-api-restart.mjs`**（**进程重启后再对话** 烟测，A1.1a）。**Ubuntu `frontend`** job 在 **`npm run build`** 后另跑 **Playwright + `vite preview` 首屏**（A1.1b；Windows `frontend` 不跑 Playwright）。另含 **`src-tauri`** 下 **`cargo test`**、`tests/` 集成测与 HTTP 路由单测等。
+- **协议层 → 本仓**：**OOCP HTTP 黑盒（S0–S12，共 13 场景；可选 S13/S14）** 已入库且 **CI 已集成**——场景与 CI 说明见 [`creator-docs/testing/OOCP_TEST_SUITE.md`](creator-docs/testing/OOCP_TEST_SUITE.md)；可执行脚本在 [`examples/oocp-test-suite/`](examples/oocp-test-suite/)（`node run.mjs`）。CI **`.github/workflows/ci.yml`** 的 **`oocp-test-suite`** job（Ubuntu）会 `cargo build -p oclivenewnew-tauri --features dual_core`、拉起 **`oclivenewnew-tauri --api`**（默认 **`OCLIVE_HTTP_API_MOCK_LLM=1`**）、轮询 **`GET /health`** 后执行 **`node run.mjs --include-dual-core`**（S13/S14），再执行根目录 **`scripts/e2e-core-api-restart.mjs`**（**进程重启后再对话** 烟测，A1.1a）。**Ubuntu `frontend`** job 在 **`npm run build`** 后另跑 **Playwright + `vite preview` 首屏**（A1.1b；Windows `frontend` 不跑 Playwright）。另含 **`src-tauri`** 下 **`cargo test`**、`tests/` 集成测与 HTTP 路由单测等。
 - **`invoke` 热路径集成（A1.2）**：矩阵 [`handoff/INVOKE_HOTPATH_MATRIX.md`](handoff/INVOKE_HOTPATH_MATRIX.md)，集成测 [`src-tauri/tests/invoke_hotpath_matrix.rs`](src-tauri/tests/invoke_hotpath_matrix.rs)（**9** 条 `*_impl`；`cargo test -p oclivenewnew-tauri --test invoke_hotpath_matrix`）。
 - **组件层 → oclive-pack-editor**：编写器 UI、Vitest、Playwright E2E 等（不在本仓重复维护用例树）。
 - **插件层 → oclive-pack-editor**：目录插件范式、**`official-vue-test-runner`** 等；主仓不复制该树。

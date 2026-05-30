@@ -7,7 +7,7 @@
 | 层级 | 内容 | 位置 / 命令 |
 |------|------|----------------|
 | Rust 单元与集成测试 | 编排、`--api` HTTP 路由、`process_message`、**`invoke` 热路径（11 条 `*_impl` 烟测）**（[`invoke_hotpath_matrix.rs`](../../src-tauri/tests/invoke_hotpath_matrix.rs)，对照 [`handoff/INVOKE_HOTPATH_MATRIX.md`](../../handoff/INVOKE_HOTPATH_MATRIX.md)）、蓝图写盘 [`save_role_slot_registry.rs`](../../src-tauri/tests/save_role_slot_registry.rs) 等 | `src-tauri/` 下 `cargo test`；集成测在 `src-tauri/tests/` |
-| OOCP 对齐 HTTP 黑盒 | **13 场景（S0–S12）**；可选 **S13** 双核降级（见 [`OOCP_TEST_SUITE.md`](./OOCP_TEST_SUITE.md)） | `examples/oocp-test-suite/run.mjs`；CI job **`oocp-test-suite`**；另跑 **`scripts/e2e-core-api-restart.mjs`**（进程重启烟测，**A1.1a**） |
+| OOCP 对齐 HTTP 黑盒 | **13 场景（S0–S12）**；可选 **S13/S14** 双核场景（降级与成功路径，见 [`OOCP_TEST_SUITE.md`](./OOCP_TEST_SUITE.md)） | `examples/oocp-test-suite/run.mjs`；CI job **`oocp-test-suite`**；另跑 **`scripts/e2e-core-api-restart.mjs`**（进程重启烟测，**A1.1a**） |
 | 前端烟测 | Vitest 守门 + **`vite preview` + Playwright** 首屏（**A1.1b**；**CI 仅 Ubuntu `frontend`**） | `npm run test:unit`；`npm run build && npm run test:e2e:preview`（[`e2e/preview-shell.spec.ts`](../../e2e/preview-shell.spec.ts)；见 CONTRIBUTING **Windows** 说明） |
 
 ## 组件与插件壳（编写器 `oclive-pack-editor`）

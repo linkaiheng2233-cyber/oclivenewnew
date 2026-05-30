@@ -1,6 +1,6 @@
-# OOCP 协议测试套件（S0–S12，共 13 场景；可选 S13）
+# OOCP 协议测试套件（S0–S12，共 13 场景；可选 S13 / S14）
 
-**状态（`main`）**：已入库 **`examples/oocp-test-suite/`**（`run.mjs` + JSON schema）；CI 工作流 **`.github/workflows/ci.yml`** 中的 **`oocp-test-suite`** job 会构建 `oclivenewnew-tauri`、拉起 **`--api` HTTP 服务**、轮询 **`GET /health`**、执行 **`node run.mjs`**，随后执行 **`scripts/e2e-core-api-restart.mjs`**（**进程重启后再对话** 烟测；失败则 job 失败）。**`frontend`** job 在 **Ubuntu** 上在 **`npm run build`** 后另跑 **Playwright + `vite preview` 首屏**（**A1.1b**；Windows `frontend` 不跑 Playwright）。
+**状态（`main`）**：已入库 **`examples/oocp-test-suite/`**（`run.mjs` + JSON schema）；CI 工作流 **`.github/workflows/ci.yml`** 中的 **`oocp-test-suite`** job 会构建 `oclivenewnew-tauri --features dual_core`、拉起 **`--api` HTTP 服务**、轮询 **`GET /health`**、执行 **`node run.mjs --include-dual-core`**（S13/S14），随后执行 **`scripts/e2e-core-api-restart.mjs`**（**进程重启后再对话** 烟测；失败则 job 失败）。**`frontend`** job 在 **Ubuntu** 上在 **`npm run build`** 后另跑 **Playwright + `vite preview` 首屏**（**A1.1b**；Windows `frontend` 不跑 Playwright）。
 
 ## A1.1 PoC：核心 HTTP 进程重启烟测
 
@@ -41,17 +41,22 @@
 | S11 | 成功体含 `api_version`、`schema`、`timestamp` |
 | S12 | 错误体 `error.code` 为 **字符串**（`KernelErrorBody`），非 JSON-RPC 整数码 |
 
-**默认套件**：`run.mjs` 按序执行 **S0–S12**（**13** 项）。**S13**（双核 experimental 失败静默降级 Stable 仍返回 `reply`）为可选：`--include-s13` 或 `OCLIVE_OOCP_INCLUDE_S13=1`。
+**默认套件**：`run.mjs` 按序执行 **S0–S12**（**13** 项）。双核场景为可选：**S13**（experimental 失败静默降级 Stable 仍返回 `reply`）与 **S14**（experimental 合法 method DAG 成功路径仍返回 `reply`）。可通过 `--include-s13` / `--include-s14`、`OCLIVE_OOCP_INCLUDE_S13=1` / `OCLIVE_OOCP_INCLUDE_S14=1` 单独开启，或 `--include-dual-core` / `OCLIVE_OOCP_INCLUDE_DUAL_CORE=1` 一次开启两者。
 
 ## 协议符合性报告
 
-`npm run test:json` 输出 JSON，字段集合见 `examples/oocp-test-suite/schemas/oclive.protocol_conformance_report.v1.schema.json`。
+`npm run test:json` 输出 JSON，字段集合见 `examples/oocp-test-suite/schemas/oclive.protocol_conformance_report.v1.schema.json`。其中：
+
+- `dual_core` 段给出双核场景开关与执行列表（S13/S14）；
+- `ci_context` 段给出生成时间与 CI 元信息（`github_run_id` / `github_sha` / `github_ref`）。
+
+便于在 CI 产物中核对双核覆盖并直接引用到发布材料。
 
 ## 与完整 OOCP 的关系
 
 当前主程序 **`--api`** 为 **HTTP**（`GET /health`、`POST /chat`），**无 WebSocket 方法链**。本套件校验的是 **HTTP 试聊契约** 与编排结果；若规范中的 WS 语义落地，应在本目录扩展脚本与 CI 步骤。
 
-**文档口径**：与本仓库根 **`README.md`**、**`AGENTS.md`** 一致：**OOCP 13 场景（S0–S12）**，另有可选 **S13** 双核降级场景；CI job **`oocp-test-suite`**；目录 **`examples/oocp-test-suite/`**。
+**文档口径**：与本仓库根 **`README.md`**、**`AGENTS.md`** 一致：**OOCP 13 场景（S0–S12）**，另有可选 **S13/S14** 双核场景；CI job **`oocp-test-suite`**；目录 **`examples/oocp-test-suite/`**。
 
 ## 测试体系统览
 

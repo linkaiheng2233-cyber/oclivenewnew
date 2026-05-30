@@ -145,7 +145,7 @@
 | 文档 | 说明 |
 |------|------|
 | **[RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md)** | **高耦合编译模式（Monolith）**：`monolith.toml`、`--monolith`、双 `[[bin]]`；**`build` / `bench`** 子命令与部分焊接（见 RFC 与 CLI 指南）。 |
-| **[RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)** | **运行时双核（Proposed）**：Stable 六槽 + Experimental 开放 type；`depends_on` DAG；`DualPipelineRunner` 快照降级；**`init --dual-core`** 默认关。Cursor 进度见 [DUAL_CORE_CURSOR_HANDOFF.md](../../handoff/DUAL_CORE_CURSOR_HANDOFF.md)。 |
+| **[RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)** | **运行时双核（Opt-in Beta）**：Stable 六槽 + Experimental 开放 type；`depends_on` DAG；`DualPipelineRunner` 快照降级；**`init --dual-core`** 默认关。Cursor 进度见 [DUAL_CORE_CURSOR_HANDOFF.md](../../handoff/DUAL_CORE_CURSOR_HANDOFF.md)。 |
 | **[RFC_STUDIO_MERGE.md](../rfc/RFC_STUDIO_MERGE.md)** | **工作室（合并启动器 + 编写器）**：新仓 `oclive-studio`、两安装物叙事、配置与验收。 |
 
 ---

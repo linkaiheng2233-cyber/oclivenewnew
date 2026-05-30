@@ -182,7 +182,7 @@ cargo run -p oclive-cli -- learn -o ./oclive-learn-demo
 | 命令 | 作用 |
 |------|------|
 | `bench --matrix` | Monolith 档位（none/latency/memory/embedded）× preset（minimal/mixed/full）矩阵；各 3 轮 |
-| `test` | `cargo check`、clippy、角色包 `pack validate`；**`--oocp`** 自动起内核并跑 OOCP **S0–S12（13 场景；可选 S13）**（`--skip-oocp` 仅提示路径） |
+| `test` | `cargo check`、clippy、角色包 `pack validate`；**`--oocp`** 自动起内核并跑 OOCP **S0–S12（13 场景；可选 S13/S14）**（`--skip-oocp` 仅提示路径） |
 | `lint` | 目录结构、`Cargo.toml` 元数据、`settings.json` 第 1–6 模块、`monolith.toml`、Git 脏检查 |
 
 ```bash

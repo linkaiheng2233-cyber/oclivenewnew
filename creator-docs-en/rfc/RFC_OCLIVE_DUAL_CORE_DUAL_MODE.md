@@ -2,7 +2,7 @@
 
 | Field | Value |
 |-------|--------|
-| Status | **Proposed (future)** — does **not** block current v2 release |
+| Status | **Opt-in Beta (default off)** — P2–P5 path is merged; Stable remains the default delivery path |
 | Entry | **`oclive init --dual-core`** (opt-in; **off by default**) |
 | vs Monolith | **Orthogonal**: Monolith = compile-time weld; dual-core = runtime dual pipelines + rollback |
 
@@ -15,7 +15,7 @@
 | Term | Layer | Today |
 |------|--------|--------|
 | **Single-kernel dual-mode build** | Compile-time | **Yes** — PluginHost vs `monolith` feature ([RFC_OCLIVE_MONOLITH_MODE.md](RFC_OCLIVE_MONOLITH_MODE.md)) |
-| **Dual-core dual-mode (this RFC)** | **Runtime** | **No** — Stable + Experimental pipelines |
+| **Dual-core dual-mode (this RFC)** | **Runtime** | **Opt-in Beta** — Stable + Experimental pipelines (default off) |
 
 Do not conflate **build modes** with **runtime cores**.
 
