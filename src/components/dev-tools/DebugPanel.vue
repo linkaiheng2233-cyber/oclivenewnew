@@ -347,7 +347,7 @@ function presenceLabel(mode: string): string {
   padding: 0;
 }
 
-/* 对齐 oclive-new updateDevPanel 内联样式 */
+/* Match oclive-new updateDevPanel inline styles */
 .dev-card {
   background: var(--bg-primary);
   border-radius: 16px;
@@ -449,7 +449,7 @@ function presenceLabel(mode: string): string {
   line-height: 1.4;
 }
 
-/* 对齐 oclive-new #devPanel */
+/* Match oclive-new #devPanel */
 .debug {
   position: fixed;
   top: 50%;

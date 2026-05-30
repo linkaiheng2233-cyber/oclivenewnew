@@ -53,7 +53,7 @@ defineExpose({ focusInput })
 function onKeydown(e: KeyboardEvent) {
   if (e.key !== 'Enter')
     return
-  /* 与 oclive-new Enter 发送一致；Shift+Enter 保留换行 */
+  /* Same as oclive-new Enter to send; Shift+Enter keeps newline */
   if (e.shiftKey)
     return
   e.preventDefault()
@@ -98,7 +98,7 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-/* 对齐 oclive-new #userInput + #sendBtn */
+/* Match oclive-new #userInput + #sendBtn */
 .input-row {
   display: flex;
   gap: 10px;
@@ -139,7 +139,7 @@ onBeforeUnmount(() => {
     0 0 0 2px color-mix(in srgb, var(--focus-ring-color) 28%, transparent),
     0 0 0 4px color-mix(in srgb, var(--focus-ring-color) 12%, transparent);
 }
-/* 仅屏幕阅读器可见，消除「无关联 label」告警 */
+/* Screen-reader only; satisfies associated-label a11y checks */
 .sr-only {
   position: absolute;
   width: 1px;

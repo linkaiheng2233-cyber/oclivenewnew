@@ -156,7 +156,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <!-- 对齐 oclive-new .main-content：大图 + 名称 + 情绪（好感度在底部 .status-bar） -->
+  <!-- Match oclive-new .main-content: hero image + name + emotion (affinity in bottom .status-bar) -->
   <div class="hero" :class="{ 'hero--sidebar': props.layout === 'sidebar' }">
     <div class="avatar-wrap">
       <img
@@ -195,7 +195,7 @@ onBeforeUnmount(() => {
   justify-content: center;
   flex-shrink: 0;
   margin-bottom: 12px;
-  /* 完整展示立绘：无圆形/固定方框裁切 */
+  /* Full portrait: no circular/fixed box crop */
   border-radius: 0;
   overflow: visible;
   background: transparent;

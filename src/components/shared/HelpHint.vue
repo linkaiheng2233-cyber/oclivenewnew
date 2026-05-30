@@ -158,7 +158,7 @@ onUnmounted(() => {
   left: 0;
   top: calc(100% + 8px);
   z-index: 901;
-  /* 舒适阅读宽度：约 55–65 字符一行，随视口缩放 */
+  /* Comfortable reading width: ~55–65 chars per line, scales with viewport */
   width: min(65ch, calc(100vw - 2rem));
   max-width: min(40rem, calc(100vw - 1.25rem));
   min-width: min(14rem, calc(100vw - 2rem));

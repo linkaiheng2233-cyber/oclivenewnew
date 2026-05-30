@@ -93,8 +93,8 @@ function hhmm(ts: number): string {
 
 <style scoped>
 /*
- * 垂直间距用 padding 而非 margin：虚拟列表用父级 offsetHeight 测量，
- * 子项 margin 常不计入 DynamicScrollerItem 外框，会导致 item-wrapper overflow:hidden 裁掉底部时间。
+ * Vertical spacing via padding not margin: virtual list measures parent offsetHeight;
+ * child margins often sit outside DynamicScrollerItem box, so item-wrapper overflow:hidden clips bottom timestamps.
  */
 .row {
   display: flex;
@@ -129,7 +129,7 @@ function hhmm(ts: number): string {
     inset 0 1px 0 color-mix(in srgb, var(--text-primary) 4%, transparent);
 }
 
-/* 一列：气泡 + 底部时间，对齐方式随角色 */
+/* Column: bubble + timestamp below; alignment follows role */
 .bubble-column {
   display: flex;
   flex-direction: column;
@@ -165,7 +165,7 @@ function hhmm(ts: number): string {
   position: relative;
 }
 
-/* 聊天气泡：一角略尖，朝向对话中部 */
+/* Chat bubble: one corner slightly pointed toward conversation center */
 .bubble.user {
   border-radius: 20px 20px 6px 20px;
   color: var(--text-primary);
@@ -213,7 +213,7 @@ function hhmm(ts: number): string {
   background: var(--bubble-bot-bg);
   box-shadow: var(--shadow-bubble);
 }
-/* 长回复：限制可视高度，在气泡内滚动，避免一条消息占满窗口 */
+/* Long replies: cap visible height; scroll inside bubble instead of filling the window */
 .content {
   white-space: pre-wrap;
   word-break: break-word;

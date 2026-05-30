@@ -226,7 +226,7 @@ defineExpose({ scrollToBottom })
   margin-bottom: 10px;
 }
 
-/* 未展开：易发现、低张扬的入口卡片 */
+/* Collapsed: discoverable, low-key entry card */
 .history-cta-card {
   display: flex;
   align-items: flex-start;
@@ -309,7 +309,7 @@ defineExpose({ scrollToBottom })
   font-variant-numeric: tabular-nums;
 }
 
-/* 已展开：紧凑状态条 */
+/* Expanded: compact status bar */
 .history-toolbar-active {
   padding: 10px 12px;
   border-radius: var(--radius-card);
@@ -385,7 +385,7 @@ defineExpose({ scrollToBottom })
   background: color-mix(in srgb, var(--accent) 14%, var(--bg-elevated) 86%);
 }
 
-/* 内联历史块：与主聊天一致的气泡 + 轻分区 */
+/* Inline history block: same bubbles as main chat with light separation */
 .history-inline-chat {
   flex-shrink: 0;
   max-height: min(42vh, 360px);
@@ -453,7 +453,7 @@ defineExpose({ scrollToBottom })
     transparent
   );
 }
-/* 虚拟列表内部留白：滚到底时最后一条与输入栏留出空隙 */
+/* Virtual list bottom padding: gap between last message and input bar */
 .virtual-scroller {
   flex: 1;
   min-height: 0;
@@ -461,7 +461,7 @@ defineExpose({ scrollToBottom })
   box-sizing: border-box;
 }
 
-/* 计入 DynamicScrollerItem 的测量高度，避免子项外缘被裁 */
+/* Included in DynamicScrollerItem measured height to avoid clipping item edges */
 .chat-scroller-slot {
   min-height: min-content;
   padding-bottom: 8px;

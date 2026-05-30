@@ -63,7 +63,7 @@ const mapRows = computed(() =>
           {{ t("pluginWorkbench.layout.mockCaption") }}
         </p>
 
-        <!-- 对齐 App.vue：app-frame → top-bar + main-content + app-floating-slot -->
+        <!-- Match App.vue: app-frame → top-bar + main-content + app-floating-slot -->
         <div class="sld-app-frame">
           <header class="sld-top-bar">
             <div class="sld-top-bar-row">

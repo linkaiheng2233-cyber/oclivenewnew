@@ -52,7 +52,7 @@ const showRelation = () => props.sections.includes('relation')
 </template>
 
 <style scoped>
-/* 对齐 oclive-new #roleSelector */
+/* Match oclive-new #roleSelector */
 .selector-row {
   margin: 0;
   padding: 8px 18px 14px;
