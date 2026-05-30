@@ -9,6 +9,15 @@ use chrono::Utc;
 use sqlx::Row;
 use std::time::Instant;
 
+/// One-row read of frequently accessed `role_runtime` columns.
+#[derive(Debug, Clone, Default)]
+pub struct RoleRuntimeSnapshot {
+    pub favorability: Option<f64>,
+    pub emotion: Option<String>,
+    pub relation_state: Option<String>,
+    pub scene: Option<String>,
+}
+
 impl DbManager {
     pub async fn save_personality_vector(
         &self,
@@ -305,6 +314,26 @@ impl DbManager {
                 .await
                 .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(row.and_then(|(s,)| s))
+    }
+
+    pub async fn get_role_runtime_snapshot(
+        &self,
+        role_id: &str,
+    ) -> Result<Option<RoleRuntimeSnapshot>> {
+        let row = sqlx::query_as::<_, (f64, Option<String>, Option<String>, Option<String>)>(
+            "SELECT current_favorability, current_emotion, relation_state, current_scene
+             FROM role_runtime WHERE role_id = ?",
+        )
+        .bind(role_id)
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(row.map(|(favorability, emotion, relation_state, scene)| RoleRuntimeSnapshot {
+            favorability: Some(favorability),
+            emotion,
+            relation_state,
+            scene,
+        }))
     }
 
     pub async fn set_current_scene(&self, role_id: &str, scene_id: &str) -> Result<()> {

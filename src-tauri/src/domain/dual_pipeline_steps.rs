@@ -14,8 +14,8 @@ use crate::domain::chat_engine::context::load_recent_context;
 use crate::domain::chat_engine::favor::{compute_favor_and_relation, FavorRelationInput};
 use crate::domain::chat_engine::message_error::ProcessMessageError;
 use crate::domain::chat_engine::plugin_resolve::resolve_plugins_for_session;
+use crate::domain::chat_engine::turn_pipeline::common::build_complex_emotion_turn_input;
 use crate::domain::chat_turn::relation_favor_for_key;
-use crate::domain::complex_emotion::affect_metrics_from_seven_dim;
 use crate::domain::emotion_analyzer::{EmotionAnalyzer, EmotionResult};
 use crate::domain::memory_retrieval::MemoryRetrievalInput;
 use crate::domain::plugin_host::ResolvedRolePlugins;
@@ -394,27 +394,17 @@ impl<'a> ExperimentalStepCtx<'a> {
         let (recent_turns, _a, _b) = load_recent_context(self.state, self.srid)
             .await
             .map_err(map_db_err)?;
-        let (prev_user, prev_bot) = recent_turns
-            .last()
-            .map(|(u, b)| (Some(u.clone()), b.clone()))
-            .unwrap_or((None, String::new()));
-        let (uv, ud) = affect_metrics_from_seven_dim(&er);
+        let ce_input = build_complex_emotion_turn_input(
+            self.mrid,
+            self.scene_id.as_str(),
+            self.user_message,
+            &er,
+            prev_hint,
+            &recent_turns,
+        );
         let _out = self
             .slot_runner
-            .resolve_complex_emotion(
-                &self.pl,
-                &crate::domain::complex_emotion::ComplexEmotionInput {
-                    role_id: self.mrid.to_string(),
-                    scene_id: self.scene_id.clone(),
-                    user_message: self.user_message.to_string(),
-                    bot_reply: prev_bot,
-                    recent_dialogue_summary: None,
-                    previous_narrative_hint: prev_hint,
-                    user_valence: Some(uv),
-                    user_dominance: Some(ud),
-                    previous_user_message: prev_user,
-                },
-            )
+            .resolve_complex_emotion(&self.pl, &ce_input)
             .map_err(map_slot_err)?;
         Ok(())
     }
@@ -458,12 +448,13 @@ impl<'a> ExperimentalStepCtx<'a> {
             .get_relation_state_for_identity(self.srid, user_relation_key.as_str())
             .await
             .map_err(map_db_err)?;
-        let rel_global = self
+        let runtime = self
             .state
             .db_manager
-            .get_relation_state(self.srid)
+            .get_role_runtime_snapshot(self.srid)
             .await
             .map_err(map_db_err)?;
+        let rel_global = runtime.as_ref().and_then(|r| r.relation_state.clone());
         let relation_state = rel_id
             .or(rel_global)
             .unwrap_or_else(|| "Stranger".to_string());
@@ -473,12 +464,9 @@ impl<'a> ExperimentalStepCtx<'a> {
             .favorability_for_identity_with_runtime_fallback(self.srid, user_relation_key.as_str())
             .await
             .map_err(map_db_err)?;
-        let portrait_emotion = self
-            .state
-            .db_manager
-            .get_current_emotion(self.srid)
-            .await
-            .map_err(map_db_err)?
+        let portrait_emotion = runtime
+            .as_ref()
+            .and_then(|r| r.emotion.clone())
             .unwrap_or_else(|| "neutral".to_string());
         let scene_id = self.scene_id.clone();
         Ok(StepOutcome::AgentComplete(Box::new(SendMessageResponse {
