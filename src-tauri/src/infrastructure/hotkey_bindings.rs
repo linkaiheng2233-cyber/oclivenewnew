@@ -1,4 +1,4 @@
-//! 用户自定义全局快捷键：`app_data/hotkey_bindings.json`。
+//! User-defined global hotkeys: `app_data/hotkey_bindings.json`.
 
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
@@ -21,7 +21,7 @@ fn hotkey_schema_v1() -> u32 {
 pub struct HotkeyBinding {
     pub id: String,
     pub accelerator: String,
-    /// 为 `false` 时不注册系统全局快捷键（默认关闭，避免误触）。
+    /// When `false`, the system global hotkey is not registered (off by default to avoid accidental triggers).
     #[serde(default)]
     pub enabled: bool,
     pub action: HotkeyAction,

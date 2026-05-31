@@ -1,4 +1,4 @@
-//! 主对话与标签类调用的 Ollama 采样参数；可通过环境变量覆盖，默认值与历史实现一致。
+//! Ollama sampling params for main-chat and tag-style calls; overridable via env vars, with defaults matching the historical implementation.
 
 fn parse_env_f32(key: &str, default: f32) -> f32 {
     std::env::var(key)
@@ -7,7 +7,7 @@ fn parse_env_f32(key: &str, default: f32) -> f32 {
         .unwrap_or(default)
 }
 
-/// 主对话生成：`OCLIVE_LLM_TEMPERATURE`（默认 `0.8`）、`OCLIVE_LLM_TOP_P`（默认 `0.9`）。
+/// Main-chat generation: `OCLIVE_LLM_TEMPERATURE` (default `0.8`), `OCLIVE_LLM_TOP_P` (default `0.9`).
 #[must_use]
 pub fn main_chat_options() -> (Option<f32>, Option<f32>) {
     (
@@ -16,7 +16,7 @@ pub fn main_chat_options() -> (Option<f32>, Option<f32>) {
     )
 }
 
-/// 低温度短输出（立绘标签、结构化字段等）：`OCLIVE_LLM_TAG_TEMPERATURE`（默认 `0.28`）、`OCLIVE_LLM_TAG_TOP_P`（默认 `0.85`）。
+/// Low-temperature short outputs (portrait tags, structured fields, etc.): `OCLIVE_LLM_TAG_TEMPERATURE` (default `0.28`), `OCLIVE_LLM_TAG_TOP_P` (default `0.85`).
 #[must_use]
 pub fn tag_task_options() -> (Option<f32>, Option<f32>) {
     (

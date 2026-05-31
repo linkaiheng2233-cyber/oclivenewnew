@@ -1,6 +1,7 @@
-//! 应用级布尔环境开关（与按数值读取的 `infrastructure/llm_params`、`ollama_timeouts` 等区分）。
+//! Application-level boolean env switches (distinct from numeric readers such as
+//! `infrastructure/llm_params`, `ollama_timeouts`).
 
-/// `1` / `true` / `yes` / `on`（ASCII 不区分大小写）视为开启；未设置或其它值视为关闭。
+/// `1` / `true` / `yes` / `on` (ASCII case-insensitive) count as enabled; unset or any other value counts as disabled.
 #[must_use]
 pub fn env_flag_enabled(key: &str) -> bool {
     match std::env::var(key) {
@@ -15,7 +16,7 @@ pub fn env_flag_enabled(key: &str) -> bool {
     }
 }
 
-/// `list_roles` 是否包含 `manifest.dev_only == true` 的包（`OCLIVE_LIST_DEV_ROLES`）。
+/// Whether `list_roles` includes packs with `manifest.dev_only == true` (`OCLIVE_LIST_DEV_ROLES`).
 #[must_use]
 pub fn list_dev_roles_enabled() -> bool {
     env_flag_enabled("OCLIVE_LIST_DEV_ROLES")
