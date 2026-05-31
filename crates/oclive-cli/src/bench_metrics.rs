@@ -1,11 +1,11 @@
-//! Monolith bench 子进程峰值内存采样（跨平台）。
+//! Monolith bench child-process peak memory sampling (cross-platform).
 
 use anyhow::{bail, Context, Result};
 use std::path::Path;
 use std::process::{Child, Command};
 use std::time::{Duration, Instant};
 
-/// 运行 bench 子进程并返回（耗时 ms, 峰值 RSS MiB）。
+/// Run the bench child process and return (elapsed ms, peak RSS MiB).
 pub fn run_bench_child_with_peak(bin: &Path, inner_iters: u32) -> Result<(f64, u64)> {
     if !bin.is_file() {
         bail!("Binary not found: {}", bin.display());

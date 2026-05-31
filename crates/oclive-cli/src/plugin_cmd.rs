@@ -1,4 +1,4 @@
-//! `oclive plugin create` — 目录 / Remote 插件脚手架。
+//! `oclive plugin create` — directory / Remote plugin scaffold.
 
 use anyhow::{bail, Context, Result};
 use clap::{Parser, Subcommand, ValueEnum};

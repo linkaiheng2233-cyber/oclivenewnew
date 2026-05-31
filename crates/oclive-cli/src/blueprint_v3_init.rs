@@ -1,9 +1,9 @@
-//! `oclive init --dual-core`：生成 schema v3 蓝图（含 `runtime_config` 与双 pipeline）。
+//! `oclive init --dual-core`: generate a schema v3 blueprint (including `runtime_config` and the dual pipeline).
 
 use crate::commands::init::{BackendImpl, ProjectConfig};
 use serde_json::json;
 
-/// 六槽固定顺序的 `pipeline.stable` / 默认 `pipeline.experimental`（Stable 核运行时**不执行**此段，仅供文档与校验）。
+/// Fixed six-slot order for `pipeline.stable` / the default `pipeline.experimental` (the Stable core does **not** execute this section at runtime; it is only for documentation and validation).
 #[must_use]
 pub fn default_dual_core_pipeline_steps() -> serde_json::Value {
     json!([
@@ -34,7 +34,7 @@ fn llm_backend_token(b: BackendImpl) -> &'static str {
     }
 }
 
-/// 由 `ProjectConfig` 构建 v3 `pipeline.ocblueprint` JSON 值。
+/// Build the v3 `pipeline.ocblueprint` JSON value from a `ProjectConfig`.
 #[must_use]
 pub fn build_blueprint_v3_value(cfg: &ProjectConfig, role_id: &str, name: &str) -> serde_json::Value {
     let stable = default_dual_core_pipeline_steps();

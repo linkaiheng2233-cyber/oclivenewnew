@@ -1,4 +1,4 @@
-//! `oclive dashboard` — 本地 Web 仪表盘（嵌入式 HTML，默认 :8420）。
+//! `oclive dashboard` — local web dashboard (embedded HTML, default :8420).
 
 use crate::registry::load_registry;
 use crate::template_catalog::CATALOG;

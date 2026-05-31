@@ -1,4 +1,4 @@
-//! `oclive test` 人类可读报告（颜色 / 通过率 / 耗时）。
+//! `oclive test` human-readable report (color / pass rate / elapsed time).
 
 use crate::test_cmd::CheckResult;
 use std::io::{IsTerminal, stdout};

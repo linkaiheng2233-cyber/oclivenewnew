@@ -1,4 +1,4 @@
-//! `oclive init --tui` 模板可视化选择器（ratatui）。
+//! `oclive init --tui` visual template selector (ratatui).
 
 use crate::init::InitTemplateArg;
 use crate::template_catalog::{project_config_from_template, template_from_id, CATALOG};
@@ -115,7 +115,7 @@ fn run_loop(project_name: &str) -> Result<Option<InitTemplateArg>> {
     Ok(chosen)
 }
 
-/// Monolith 自定义焊接：空格切换槽位，Enter 确认，Esc 跳过（回退 preset 默认焊接）。
+/// Monolith custom welding: Space toggles a slot, Enter confirms, Esc skips (falls back to the preset default welding).
 pub fn pick_weld_modules_tui() -> Result<Option<Vec<String>>> {
     use crate::monolith_config::SLOT_IDS;
     enable_raw_mode().context("enable_raw_mode")?;

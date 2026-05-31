@@ -1,4 +1,4 @@
-//! `oclive plugin manage --tui` — 槽位与插件映射的简易 TUI 总览。
+//! `oclive plugin manage --tui` — a simple TUI overview of slot-to-plugin mappings.
 
 use crate::init_tui::terminal_supports_tui;
 use crate::plugin_manage_cmd::{load_registry, resolve_role_dir};

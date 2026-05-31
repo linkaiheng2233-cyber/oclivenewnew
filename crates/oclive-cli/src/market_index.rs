@@ -1,4 +1,4 @@
-//! 插件 / 模板 / 角色包市场索引（在线 + `~/.oclive/plugin_index_cache.json`）。
+//! Plugin / template / role-pack market index (online + `~/.oclive/plugin_index_cache.json`).
 
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
@@ -8,11 +8,11 @@ use std::path::PathBuf;
 use crate::registry::oclive_home;
 use crate::template_catalog::CATALOG;
 
-/// 与桌面端 `DEFAULT_PLUGIN_INDEX_URL` 一致（目录插件 `plugins.json`）。
+/// Consistent with the desktop `DEFAULT_PLUGIN_INDEX_URL` (directory plugin `plugins.json`).
 pub const DEFAULT_MARKET_INDEX_URL: &str =
     "https://raw.githubusercontent.com/linkaiheng2233-cyber/awesome-oclive-plugins/main/plugins.json";
 
-/// 主仓 SSOT 镜像（含 `gitSubdir` 的官方示例；开发可 `OCLIVE_PLUGIN_INDEX_URL` 覆盖）。
+/// Main-repo SSOT mirror (official examples with `gitSubdir`; can be overridden via `OCLIVE_PLUGIN_INDEX_URL` during development).
 pub const FALLBACK_MARKET_INDEX_URL: &str =
     "https://raw.githubusercontent.com/linkaiheng2233-cyber/oclivenewnew/main/data/plugins.json";
 
@@ -139,7 +139,7 @@ pub fn index_url() -> String {
         .unwrap_or_else(|| DEFAULT_MARKET_INDEX_URL.to_string())
 }
 
-/// 拉取市场索引；失败时回退缓存。
+/// Fetch the market index; fall back to the cache on failure.
 pub fn fetch_market_index() -> Result<MarketIndexFile> {
     let url = index_url();
     match fetch_online(&url) {
@@ -191,7 +191,7 @@ pub fn parse_index_json(body: &str) -> Result<MarketIndexFile> {
         }
         return Ok(file);
     }
-    // 兼容仅含 plugins 的旧 plugin-index.json
+    // Compatibility with the legacy plugin-index.json that only contains plugins
     #[derive(Deserialize)]
     struct Legacy {
         plugins: Vec<LegacyPlugin>,

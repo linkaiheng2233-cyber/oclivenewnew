@@ -1,4 +1,4 @@
-//! `oclive publish` 与远程模板 `init --template-url`。
+//! `oclive publish` and remote templates via `init --template-url`.
 
 use anyhow::{bail, Context, Result};
 use clap::Parser;
@@ -54,7 +54,7 @@ const EXCLUDE_DIRS: &[&str] = &[
 
 const EXCLUDE_FILES: &[&str] = &["bench_history.json", ".oclive-compose.pids.json"];
 
-/// `oclive template pack`：将工程打包为 `.oclive-template.tar.gz`。
+/// `oclive template pack`: package the project into `.oclive-template.tar.gz`.
 pub fn run_template_pack(path: PathBuf, output: Option<PathBuf>) -> Result<()> {
     publish_template(&PublishArgs {
         r#type: PublishTypeArg::Template,
@@ -63,7 +63,7 @@ pub fn run_template_pack(path: PathBuf, output: Option<PathBuf>) -> Result<()> {
     })
 }
 
-/// 将工程根目录打包为 `.oclive-template.tar.gz`（供 registry push 等复用）。
+/// Package the project root into `.oclive-template.tar.gz` (reused by registry push, etc.).
 pub fn pack_template_tarball(root: &Path, out: &Path) -> Result<()> {
     let cargo_toml = root.join("Cargo.toml");
     if !cargo_toml.is_file() {

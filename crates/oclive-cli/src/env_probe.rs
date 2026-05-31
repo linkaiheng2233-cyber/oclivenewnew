@@ -1,4 +1,4 @@
-//! 轻量环境探测（`init --smart` / 推荐预设，不等同完整 `doctor`）。
+//! Lightweight environment probe (`init --smart` / recommended presets; not equivalent to a full `doctor`).
 
 use std::process::Command;
 use std::time::Duration;

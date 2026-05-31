@@ -1,4 +1,4 @@
-//! `oclive build`：读取 `monolith.toml`，落盘 vendor 与 `process_message_monolith.rs`，可选执行 `cargo build`（标准 + Monolith）。
+//! `oclive build`: read `monolith.toml`, write the vendor and `process_message_monolith.rs`, and optionally run `cargo build` (standard + Monolith).
 
 use crate::monolith_codegen::{
     copy_monolith_vendor, generate_monolith_source_with_dual_core,
@@ -87,7 +87,7 @@ pub fn run_cargo_build(
     Ok(())
 }
 
-/// 读取 `monolith.toml` 并写入 vendor + `process_message_monolith.rs`（不调用 cargo）。
+/// Read `monolith.toml` and write the vendor + `process_message_monolith.rs` (without invoking cargo).
 pub fn regenerate_monolith_from_disk(root: &Path) -> Result<MonolithFile> {
     regenerate_monolith_from_disk_inner(root, true)
 }
@@ -121,14 +121,14 @@ fn regenerate_monolith_from_disk_inner(root: &Path, log_written: bool) -> Result
     Ok(file)
 }
 
-/// 标准 / Monolith 两次 `cargo build` 的耗时（秒）。
+/// Timings (in seconds) of the standard and Monolith `cargo build` runs.
 #[derive(Debug, Clone, Copy)]
 pub struct DualBuildTimings {
     pub standard_secs: f64,
     pub monolith_secs: f64,
 }
 
-/// 在已有 `monolith.toml` 且 enabled 时分别计时两次 release 构建。
+/// Separately time two release builds when `monolith.toml` exists and is enabled.
 pub fn run_timed_dual_build(
     root: &Path,
     release: bool,

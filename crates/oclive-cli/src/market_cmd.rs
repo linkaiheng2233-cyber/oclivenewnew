@@ -1,4 +1,4 @@
-//! `oclive market` — 浏览 / 搜索 / 安装插件与模板。
+//! `oclive market` — browse / search / install plugins and templates.
 
 use anyhow::{bail, Context, Result};
 use clap::{Parser, Subcommand};

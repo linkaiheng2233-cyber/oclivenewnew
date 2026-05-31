@@ -1,4 +1,4 @@
-//! 端到端：非交互生成项目并 `cargo build`。
+//! End-to-end: non-interactively generate a project and `cargo build` it.
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 

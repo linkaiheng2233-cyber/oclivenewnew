@@ -1,4 +1,4 @@
-//! `oclive registry` 子命令。
+//! `oclive registry` subcommands.
 
 use anyhow::{bail, Context, Result};
 use clap::{Parser, Subcommand};

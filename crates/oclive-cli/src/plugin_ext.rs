@@ -1,4 +1,4 @@
-//! 插件 install / test / uninstall。
+//! Plugin install / test / uninstall.
 
 use anyhow::{bail, Context, Result};
 use clap::Parser;
@@ -170,7 +170,7 @@ pub fn run_uninstall(args: PluginUninstallArgs) -> Result<()> {
     Ok(())
 }
 
-/// 目录插件 RPC 契约烟测（health / list_methods / 槽位 generate）。
+/// Directory plugin RPC contract smoke test (health / list_methods / slot generate).
 pub fn run_test(args: PluginTestArgs) -> Result<()> {
     let path = args.plugin_path.canonicalize().unwrap_or(args.plugin_path);
     let manifest_path = path.join("manifest.json");
@@ -280,7 +280,7 @@ struct RpcResult {
 }
 
 fn rpc_call(child: &mut std::process::Child, method: &str, _params: Value) -> RpcResult {
-    // 简化：仅检查子进程仍存活（完整 JSON-RPC 需读 OCLIVE_READY 行与 HTTP 端口）
+    // Simplified: only check the child process is still alive (full JSON-RPC would read the OCLIVE_READY line and HTTP port)
     let alive = child.try_wait().ok().flatten().is_none();
     RpcResult {
         method: method.into(),

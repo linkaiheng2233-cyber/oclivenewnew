@@ -1,4 +1,4 @@
-//! `oclive blueprint validate` 集成烟测。
+//! `oclive blueprint validate` integration smoke test.
 
 use std::process::Command;
 

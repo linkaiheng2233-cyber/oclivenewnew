@@ -1,4 +1,4 @@
-//! `oclive plugin manage` — 高级槽位 / 蓝图管理（CLI）。
+//! `oclive plugin manage` — advanced slot / blueprint management (CLI).
 
 use anyhow::{bail, Context, Result};
 use clap::{Parser, Subcommand};

@@ -1,4 +1,4 @@
-//! 本地内核工程注册表（`~/.oclive/registry.json`）。
+//! Local kernel project registry (`~/.oclive/registry.json`).
 
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};

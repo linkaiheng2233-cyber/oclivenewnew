@@ -210,7 +210,7 @@ pub(crate) fn print_bench_history(root: &Path, json_out: bool) -> Result<()> {
     Ok(())
 }
 
-/// UTC 日历日期（`YYYY-MM-DD`），无额外依赖。
+/// UTC calendar date (`YYYY-MM-DD`), with no extra dependencies.
 fn unix_ts_to_date(ts: u64) -> String {
     let z = ts / 86_400 + 719_468;
     let era = z / 146_097;

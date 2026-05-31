@@ -1,4 +1,4 @@
-//! `oclive init` Cargo 元数据参数。
+//! `oclive init` Cargo metadata arguments.
 
 use std::process::Command;
 

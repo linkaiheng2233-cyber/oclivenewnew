@@ -23,7 +23,7 @@ pub struct BenchReport {
     pub build_time: StandardMonolithPair<f64>,
 }
 
-/// 标准版 vs Monolith 成对指标（字节 / MiB / 秒等由字段语义区分）。
+/// Paired standard vs Monolith metrics (units like bytes / MiB / seconds are distinguished by field semantics).
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct StandardMonolithPair<T> {
     pub standard: T,

@@ -1,4 +1,4 @@
-//! `oclive doctor` — 一键环境诊断。
+//! `oclive doctor` — one-click environment diagnostics.
 
 use anyhow::{Context, Result};
 use clap::Parser;

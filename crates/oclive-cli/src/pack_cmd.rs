@@ -1,4 +1,4 @@
-//! `pack` 子命令：角色包校验、创建、打包（分发向）。
+//! `pack` subcommand: role pack validation, creation, and packaging (for distribution).
 
 use std::fs;
 use std::path::{Path, PathBuf};

@@ -1,4 +1,4 @@
-//! `oclive template create` — 从现有工程反向生成模板。
+//! `oclive template create` — reverse-generate a template from an existing project.
 
 use anyhow::{bail, Context, Result};
 use clap::{Parser, Subcommand};

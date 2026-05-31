@@ -1,4 +1,4 @@
-//! 示例角色包生成（`--with-role-pack` / 模板默认）。
+//! Example role pack generation (`--with-role-pack` / template default).
 
 use crate::blueprint_v3_init::build_blueprint_v3_value;
 use crate::generator::render_settings_json;

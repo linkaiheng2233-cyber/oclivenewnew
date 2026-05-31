@@ -1,4 +1,4 @@
-//! `oclive blueprint` — 蓝图读取与校验。
+//! `oclive blueprint` — blueprint reading and validation.
 
 use crate::blueprint::{load_blueprint_text, validate_blueprint_file};
 use anyhow::Result;

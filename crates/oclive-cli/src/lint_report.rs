@@ -1,4 +1,4 @@
-//! `oclive lint` 人类可读报告（颜色 / 通过率 / 耗时）。
+//! `oclive lint` human-readable report (color / pass rate / elapsed time).
 
 use crate::commands::lint::LintItem;
 use std::io::{IsTerminal, stdout};

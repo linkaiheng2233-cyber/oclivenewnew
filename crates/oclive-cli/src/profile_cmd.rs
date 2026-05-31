@@ -1,4 +1,4 @@
-//! `oclive profile` — 内核工程性能画像。
+//! `oclive profile` — kernel project performance profiling.
 
 use anyhow::{Context, Result};
 use clap::Parser;

@@ -1,7 +1,7 @@
-//! 脚手架用「真实 crate 边界」占位：每个槽一个 `invoke`，供 `process_message_monolith.rs` 静态链接。
-//! 接入正式宿主时，将依赖替换为 `oclive_*_builtin` 或 `oclive_kernel_runtime` 中的等价符号。
+//! Placeholder providing a "real crate boundary" for the scaffold: one `invoke` per slot, for `process_message_monolith.rs` to statically link against.
+//! When integrating with the production host, replace the dependency with the equivalent symbols from `oclive_*_builtin` or `oclive_kernel_runtime`.
 
-/// 保证本 crate 被链接（即使当前焊接集合为空）。
+/// Ensures this crate is linked (even when the current weld set is empty).
 pub fn ensure_linked() {}
 
 macro_rules! slot {

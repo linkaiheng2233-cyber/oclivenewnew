@@ -1,4 +1,4 @@
-//! `oclive collab` — 基于 Git 的角色包协作。
+//! `oclive collab` — Git-based role pack collaboration.
 
 use anyhow::{bail, Context, Result};
 use clap::{Parser, Subcommand};

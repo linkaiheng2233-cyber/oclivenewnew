@@ -1,4 +1,4 @@
-//! `oclive doctor` 蓝图专项检查（`roles/*/pipeline.ocblueprint`，按 `schema_version` 分流 v2 / v3）。
+//! `oclive doctor` blueprint-specific checks (`roles/*/pipeline.ocblueprint`, routed by `schema_version` to v2 / v3).
 
 use crate::doctor_cmd::DoctorCheck;
 use oclive_validation::{
@@ -46,7 +46,7 @@ pub fn blueprint_checks(root: &Path) -> Vec<DoctorCheck> {
     out
 }
 
-/// 兼容旧调用点。
+/// Compatibility with legacy call sites.
 pub fn blueprint_v2_checks(root: &Path) -> Vec<DoctorCheck> {
     blueprint_checks(root)
 }

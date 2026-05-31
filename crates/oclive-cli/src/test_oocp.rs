@@ -1,4 +1,4 @@
-//! `oclive test --oocp`：自动拉起内核、跑 OOCP 黑盒、清理进程。
+//! `oclive test --oocp`: automatically launch the kernel, run the OOCP black-box suite, and clean up processes.
 
 use anyhow::{bail, Context, Result};
 use std::path::{Path, PathBuf};

@@ -1,4 +1,4 @@
-//! `oclive dev`：监听角色包目录变更，便于开发时手动或脚本触发热重载。
+//! `oclive dev`: watch role pack directories for changes, making it easy to trigger hot reload manually or via scripts during development.
 
 use anyhow::{Context, Result};
 use clap::Parser;
@@ -42,7 +42,7 @@ fn is_role_pack_hot_file(path: &Path) -> bool {
         .is_some_and(|n| n == "manifest.json" || n == "settings.json")
 }
 
-/// 从 `roles/<id>/manifest.json` 或 `roles/<id>/settings.json` 解析角色包 id。
+/// Resolve the role pack id from `roles/<id>/manifest.json` or `roles/<id>/settings.json`.
 fn role_pack_id_from_hot_file(path: &Path, roles_root: &Path) -> Option<String> {
     let rel = path.strip_prefix(roles_root).ok()?;
     if rel.components().count() < 2 {

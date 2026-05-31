@@ -1,20 +1,20 @@
-//! 高耦合（Monolith）：由 `monolith.toml` 焊接计划生成 `process_message_monolith.rs`。
+//! High-coupling (Monolith): generate `process_message_monolith.rs` from the `monolith.toml` weld plan.
 //!
-//! 已焊接槽静态调用 `oclive_monolith_builtin`（脚手架 vendor crate，可替换为真实 `oclive_*_builtin`）；
-//! 未焊接槽保留 `PluginHost`/trait 风格占位调用链。
+//! Welded slots statically call `oclive_monolith_builtin` (the scaffold vendor crate, replaceable with a real `oclive_*_builtin`);
+//! unwelded slots keep a `PluginHost`/trait-style placeholder dispatch chain.
 
 use crate::monolith_config::{WeldPlan, SLOT_IDS};
 use anyhow::Context;
 use std::fs;
 use std::path::Path;
 
-/// 与 RFC 及校验器一致的第一阶段默认模板（`weld_modules` / `exclude` 互斥说明）。
-#[allow(dead_code)] // 供 `cargo test` 与文档示例；`cargo clippy` 对 bin 目标不启用 `cfg(test)` 消费者
+/// Phase-one default template consistent with the RFC and validator (notes on `weld_modules` / `exclude` being mutually exclusive).
+#[allow(dead_code)] // for `cargo test` and doc examples; `cargo clippy` does not enable `cfg(test)` consumers for bin targets
 pub fn render_monolith_toml_phase_one() -> String {
     render_monolith_toml_default()
 }
 
-/// 按性能档位预填 `weld_modules`（`exclude` 为空；与 [`crate::init::MonolithPresetArg`] 对应）。
+/// Pre-fill `weld_modules` by performance preset (`exclude` left empty; corresponds to [`crate::init::MonolithPresetArg`]).
 pub fn weld_modules_for_preset(preset: crate::init::MonolithPresetArg) -> Vec<&'static str> {
     use crate::init::MonolithPresetArg;
     match preset {
@@ -59,8 +59,8 @@ exclude = []
     )
 }
 
-/// 根据焊接列表生成 TOML 与 [`WeldPlan`]（供 init 与测试）。
-#[allow(dead_code)] // 对外 API / 测试；init 路径使用 `monolith_toml_and_plan_dual`
+/// Generate the TOML and [`WeldPlan`] from a weld list (for init and tests).
+#[allow(dead_code)] // public API / tests; the init path uses `monolith_toml_and_plan_dual`
 pub fn monolith_toml_and_plan(weld_modules: &[&str]) -> (String, WeldPlan) {
     monolith_toml_and_plan_dual(weld_modules, false)
 }
@@ -100,7 +100,7 @@ exclude = []
     .to_string()
 }
 
-/// 将脚手架内置的 `oclive_monolith_builtin` vendor crate 写入目标项目（覆盖更新）。
+/// Write the scaffold's bundled `oclive_monolith_builtin` vendor crate into the target project (overwrite update).
 pub fn copy_monolith_vendor(project_root: &Path) -> anyhow::Result<()> {
     let dir = project_root.join("vendor/oclive_monolith_builtin");
     fs::create_dir_all(&dir).with_context(|| format!("mkdir {}", dir.display()))?;
@@ -127,13 +127,13 @@ fn rust_mod_token(slot: &str) -> String {
     slot.replace('-', "_")
 }
 
-/// 根据焊接计划生成 `src/process_message_monolith.rs` 源码。
-#[allow(dead_code)] // 对外 API / 测试；`oclive build` 使用 `generate_monolith_source_with_dual_core`
+/// Generate the `src/process_message_monolith.rs` source from the weld plan.
+#[allow(dead_code)] // public API / tests; `oclive build` uses `generate_monolith_source_with_dual_core`
 pub fn generate_monolith_source(plan: &WeldPlan) -> String {
     generate_monolith_source_with_dual_core(plan, false)
 }
 
-/// 当 `dual_core` 为 true 时，在生成文件头注明保留运行时双核调度器（链入主仓时由 `DualPipelineRunner` 承担）。
+/// When `dual_core` is true, note in the generated file header that the runtime dual-core scheduler is preserved (handled by `DualPipelineRunner` when linked into the main repo).
 pub fn generate_monolith_source_with_dual_core(plan: &WeldPlan, dual_core: bool) -> String {
     let dual_note = if dual_core {
         r#"// [dual_core] 运行时：实验核 pipeline.experimental + 稳定核 co_present，由 DualPipelineRunner 调度（见主仓 dual_pipeline.rs）。

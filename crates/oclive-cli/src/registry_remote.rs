@@ -1,4 +1,4 @@
-//! 云端注册表 REST 客户端（`OCLIVE_REGISTRY_URL` + `~/.oclive/auth.json`）。
+//! Cloud registry REST client (`OCLIVE_REGISTRY_URL` + `~/.oclive/auth.json`).
 
 use anyhow::{bail, Context, Result};
 use clap::Parser;

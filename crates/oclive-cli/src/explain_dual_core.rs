@@ -1,4 +1,4 @@
-//! `oclive explain slot.emotion.analyze` / `DUAL_CORE` — 实验核 method 说明。
+//! `oclive explain slot.emotion.analyze` / `DUAL_CORE` — experimental-core method documentation.
 
 use anyhow::{bail, Result};
 use serde::Serialize;
@@ -137,7 +137,7 @@ pub fn explain_dual_core_query(code: &str, json: bool) -> Result<()> {
     Ok(())
 }
 
-/// 解析 `slot.<key>.<method>` 或 `<type>.<method>`。
+/// Parse `slot.<key>.<method>` or `<type>.<method>`.
 pub fn parse_action_query(raw: &str) -> Result<(String, String)> {
     if let Some(rest) = raw.strip_prefix("slot.") {
         let parts: Vec<&str> = rest.split('.').collect();

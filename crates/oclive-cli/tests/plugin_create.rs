@@ -1,4 +1,4 @@
-//! `oclive plugin create` 脚手架与 manifest 校验。
+//! `oclive plugin create` scaffold and manifest validation.
 
 use std::process::Command;
 

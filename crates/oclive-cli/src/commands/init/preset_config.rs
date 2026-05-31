@@ -107,7 +107,7 @@ fn backend_slots(llm: BackendImpl, agent: BackendImpl, complex_emotion: BackendI
     }
 }
 
-/// 与 `PRESET_MATRIX_HELP` / `CONFIG_REFERENCE.md` 完全一致。
+/// Fully consistent with `PRESET_MATRIX_HELP` / `CONFIG_REFERENCE.md`.
 #[must_use]
 pub fn preset_config(name: &str, preset: &str) -> ProjectConfig {
     let project_name = if name.trim().is_empty() {

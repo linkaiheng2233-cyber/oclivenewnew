@@ -1,4 +1,4 @@
-//! LLM 生成端口：编排层与策略只依赖此 trait，实现由宿主 `infrastructure` 提供。
+//! LLM generation port: orchestration and policy depend only on this trait; implementations are provided by the host `infrastructure`.
 
 use async_trait::async_trait;
 use oclive_kernel_types::Result;
@@ -7,13 +7,13 @@ use oclive_kernel_types::Result;
 ///
 /// ## When to implement
 ///
-/// - **谁**：LLM 后端集成方（Ollama 客户端、Remote HTTP LLM、测试 `MockLlmClient`）。
-/// - **何时**：编排需要调用语言模型生成回复或 `generate_tag` 分类输出时。
+/// - **Who**: LLM backend integrators (Ollama client, Remote HTTP LLM, test `MockLlmClient`).
+/// - **When**: when orchestration needs to call a language model to generate a reply or `generate_tag` classification output.
 ///
 /// ## When not to implement
 ///
-/// - 仅使用宿主内置 Ollama / 已配置的 Remote，且不改推理路径时，**不必**自定义实现。
-/// - 不做任何 LLM 调用的工具链（纯规则回复）可跳过。
+/// - When only the host's builtin Ollama / a configured Remote is used and the inference path is unchanged, a custom implementation is **not** required.
+/// - Toolchains that make no LLM calls (pure rule-based replies) can skip this.
 ///
 /// # Examples
 ///
@@ -29,37 +29,37 @@ use oclive_kernel_types::Result;
 /// ```
 #[async_trait]
 pub trait LlmClient: Send + Sync {
-    /// 主对话生成（温度由实现默认）。
+    /// Main dialogue generation (temperature defaulted by the implementation).
     ///
     /// # Errors
     ///
-    /// 网络失败、上游 4xx/5xx、超时或响应体无法解析时返回 `Err`。
+    /// Returns `Err` on network failure, upstream 4xx/5xx, timeout, or when the response body cannot be parsed.
     ///
     /// # Panics
     ///
-    /// 不 panic。
+    /// Does not panic.
     async fn generate(&self, model: &str, prompt: &str) -> Result<String>;
 
-    /// 低温度短输出（立绘标签等分类任务）。
+    /// Low-temperature short output (classification tasks such as portrait tags).
     ///
     /// # Errors
     ///
-    /// 与 [`generate`](Self::generate) 相同；额外约束由实现保证（更低温度 / 更短输出）。
+    /// Same as [`generate`](Self::generate); additional constraints (lower temperature / shorter output) are guaranteed by the implementation.
     ///
     /// # Panics
     ///
-    /// 不 panic。
+    /// Does not panic.
     async fn generate_tag(&self, model: &str, prompt: &str) -> Result<String>;
 
     /// Optional startup probe (default succeeds; hosts may ping remote LLM).
     ///
     /// # Errors
     ///
-    /// 当探测请求失败且宿主配置为「启动必须可用」时返回 `Err`；默认实现恒为 `Ok(())`。
+    /// Returns `Err` when the probe request fails and the host is configured to require availability at startup; the default implementation always returns `Ok(())`.
     ///
     /// # Panics
     ///
-    /// 不 panic。
+    /// Does not panic.
     async fn startup_probe(&self) -> Result<()> {
         Ok(())
     }

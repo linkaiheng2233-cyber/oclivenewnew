@@ -1,4 +1,4 @@
-//! registry 自动注册与 list。
+//! registry auto-registration and list.
 
 use std::process::Command;
 

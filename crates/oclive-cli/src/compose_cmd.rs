@@ -1,4 +1,4 @@
-//! `oclive compose` 多内核编排。
+//! `oclive compose` multi-kernel orchestration.
 
 use anyhow::{bail, Context, Result};
 use clap::{Parser, Subcommand};

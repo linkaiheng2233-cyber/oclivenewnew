@@ -1,4 +1,4 @@
-//! 角色包蓝图（`pipeline.ocblueprint` v2）读取与校验。
+//! Reading and validation of role pack blueprints (`pipeline.ocblueprint` v2).
 
 use anyhow::{Context, Result};
 use oclive_validation::{validate_blueprint_v2_json_with_context, BlueprintV2ValidateContext};
@@ -40,12 +40,12 @@ impl ValidationReport {
     }
 }
 
-/// 从磁盘读取蓝图 JSON 文本。
+/// Reads the blueprint JSON text from disk.
 pub fn load_blueprint_text(path: &Path) -> Result<String> {
     fs::read_to_string(path).with_context(|| format!("read blueprint: {}", path.display()))
 }
 
-/// 校验 `pipeline.ocblueprint`（仅 schema_version 2；废弃 steps[] DSL）。
+/// Validates `pipeline.ocblueprint` (schema_version 2 only; the steps[] DSL is deprecated).
 pub fn validate_blueprint_file(raw: &str) -> ValidationReport {
     let v: Value = match serde_json::from_str(raw) {
         Ok(x) => x,

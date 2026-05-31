@@ -1,4 +1,4 @@
-//! `oclive ci` — 生成与检查 GitHub Actions CI。
+//! `oclive ci` — generate and check GitHub Actions CI.
 
 use anyhow::{bail, Context, Result};
 use clap::{Parser, Subcommand};

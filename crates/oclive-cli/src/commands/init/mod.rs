@@ -1,7 +1,7 @@
 //! `oclive init`: scaffold kernel projects.
 //!
-//! 非交互模式下 **`--preset`** 决定基线；可选 **`--backend-*`** 逐项覆盖。
-//! 预设与 `plugin_backends` 矩阵见 **`init --help` 末尾**（与生成项目根目录 **`CONFIG_REFERENCE.md`** 一致）。
+//! In non-interactive mode, **`--preset`** sets the baseline; optional **`--backend-*`** flags override individual entries.
+//! The preset and `plugin_backends` matrix is documented at the **end of `init --help`** (consistent with the generated project's root **`CONFIG_REFERENCE.md`**).
 
 mod init_config;
 mod init_interactive;

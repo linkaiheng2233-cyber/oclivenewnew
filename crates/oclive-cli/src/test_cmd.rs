@@ -1,4 +1,4 @@
-//! `oclive test` — 内核工程回归检查。
+//! `oclive test` — kernel project regression checks.
 
 use anyhow::{bail, Result};
 use clap::Parser;

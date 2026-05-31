@@ -1,4 +1,4 @@
-//! `oclive plugin search` — 扫描本地已安装目录插件（manifest `provides` / 关键词）。
+//! `oclive plugin search` — scan locally installed directory plugins (manifest `provides` / keywords).
 
 use anyhow::{bail, Result};
 use clap::Parser;

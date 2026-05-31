@@ -1,4 +1,4 @@
-//! Agent 调度可替换门面 trait。
+//! Replaceable facade trait for agent dispatch.
 
 use async_trait::async_trait;
 use oclive_kernel_types::{AgentInput, AgentOutput, Result};
@@ -7,13 +7,13 @@ use oclive_kernel_types::{AgentInput, AgentOutput, Result};
 ///
 /// ## When to implement
 ///
-/// - **谁**：Agent / 工具调用后端（内置 ReAct、Remote、目录插件组合）。
-/// - **何时**：需要 **MCP / 函数调用 / 多步任务** 并在 `process_message` 入口短路处理时。
+/// - **Who**: agent / tool-calling backends (builtin ReAct, Remote, directory-plugin combinations).
+/// - **When**: when **MCP / function calling / multi-step tasks** are needed and handled as a short-circuit at the `process_message` entry.
 ///
 /// ## When not to implement
 ///
-/// - 角色将 `agent` 槽设为 `none` 或仅走普通共景 LLM 对话时。
-/// - 不需要工具能力的角色包无需实现。
+/// - When the role sets the `agent` slot to `none` or only uses plain co-present LLM dialogue.
+/// - Role packs that need no tool capabilities do not need to implement this.
 ///
 /// # Examples
 ///
@@ -35,14 +35,14 @@ use oclive_kernel_types::{AgentInput, AgentOutput, Result};
 /// ```
 #[async_trait]
 pub trait AgentProvider: Send + Sync {
-    /// 处理单轮 Agent 任务（工具调用、多步推理等）。
+    /// Processes a single-turn agent task (tool calls, multi-step reasoning, etc.).
     ///
     /// # Errors
     ///
-    /// 当工具调用被拒绝、MCP/HTTP 失败、LLM 返回非法结构或超时时返回 `Err`。
+    /// Returns `Err` when a tool call is denied, MCP/HTTP fails, the LLM returns an invalid structure, or a timeout occurs.
     ///
     /// # Panics
     ///
-    /// 不 panic。
+    /// Does not panic.
     async fn process(&self, input: AgentInput) -> Result<AgentOutput>;
 }

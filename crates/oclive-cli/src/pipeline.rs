@@ -1,4 +1,4 @@
-//! 自定义编排 `--pipeline` 文档生成。
+//! Custom orchestration `--pipeline` documentation generation.
 
 use clap::ValueEnum;
 use serde::{Deserialize, Serialize};

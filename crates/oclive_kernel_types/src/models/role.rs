@@ -294,9 +294,9 @@ impl Default for Role {
 }
 
 impl Role {
-    /// 双核门控（纯谓词）：`runtime_config.dual_core.enabled` 且 `pipeline.experimental` 非空。
+    /// Dual-core gate (pure predicate): `runtime_config.dual_core.enabled` and `pipeline.experimental` is non-empty.
     ///
-    /// 宿主据此选择双核调度或单路径 `co_present`；**不**执行实验步骤。
+    /// The host uses this to choose dual-core scheduling or the single-path `co_present`; it does **not** execute experimental steps.
     #[must_use]
     pub fn dual_core_gated(&self) -> bool {
         self.runtime_config
@@ -321,7 +321,7 @@ fn slot_groups_is_empty(m: &Option<BTreeMap<String, oclive_validation::SlotGroup
 }
 
 impl Role {
-    /// 插件 `plugin_state` 种子/重置时使用的 UI 基线：`author.suggested_ui`（非空）优先，否则 `ui.json`。
+    /// UI baseline used when seeding/resetting a plugin's `plugin_state`: `author.suggested_ui` (if non-empty) takes precedence, otherwise `ui.json`.
     #[must_use]
     pub fn plugin_state_ui_baseline(&self) -> &UiConfig {
         if let Some(ref ap) = self.author_pack {

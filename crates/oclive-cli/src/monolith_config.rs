@@ -1,10 +1,10 @@
-//! `monolith.toml` 解析、校验与焊接集合求解。
+//! `monolith.toml` parsing, validation, and weld-set resolution.
 
 use anyhow::{bail, Context, Result};
 use serde::Deserialize;
 use std::collections::HashSet;
 
-/// 与 `plugin_backends` / RFC 对齐的七焊接键顺序（第 1–6 模块 + `complex_emotion`，编排演示顺序）。
+/// Seven weld keys in the order aligned with `plugin_backends` / RFC (modules 1–6 + `complex_emotion`, the orchestration demo order).
 pub const SLOT_IDS: [&str; 7] = [
     "memory",
     "emotion",
@@ -38,7 +38,7 @@ pub struct MonolithSection {
     pub exclude: Vec<String>,
 }
 
-/// 每个槽是否走静态焊接（`true`）或保留 trait/PluginHost 风格占位（`false`）。
+/// Whether each slot uses static welding (`true`) or keeps a trait/PluginHost-style placeholder (`false`).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WeldPlan {
     pub welded: [bool; 7],
@@ -49,7 +49,7 @@ impl WeldPlan {
         Self { welded: [true; 7] }
     }
 
-    /// 是否存在仍走 PluginHost / trait 占位的槽位。
+    /// Whether any slot still uses a PluginHost / trait placeholder.
     pub fn any_dynamic_slot(&self) -> bool {
         self.welded.iter().any(|&w| !w)
     }
@@ -59,7 +59,7 @@ pub fn parse_monolith_toml(text: &str) -> Result<MonolithFile> {
     toml::from_str(text).context("parse monolith.toml as TOML")
 }
 
-/// `weld_modules` 与 `exclude` 不得同时非空；键名必须在七焊接键集合内。
+/// `weld_modules` and `exclude` must not both be non-empty; keys must be within the seven weld keys.
 pub fn validate_monolith_section(m: &MonolithSection) -> Result<()> {
     let known: HashSet<&str> = SLOT_IDS.iter().copied().collect();
     if !m.weld_modules.is_empty() && !m.exclude.is_empty() {
@@ -81,7 +81,7 @@ pub fn validate_monolith_section(m: &MonolithSection) -> Result<()> {
     Ok(())
 }
 
-/// 在已通过 [`validate_monolith_section`] 后调用。
+/// Called after [`validate_monolith_section`] has already passed.
 pub fn resolve_weld_plan(m: &MonolithSection) -> WeldPlan {
     if !m.weld_modules.is_empty() {
         let mut welded = [false; 7];

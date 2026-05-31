@@ -196,7 +196,7 @@ enum MatrixMonolithTier {
     Embedded,
 }
 
-/// Monolith 档位 × settings preset 矩阵（各组合 `--runs` 次，默认 3）。
+/// Monolith tier x settings preset matrix (each combination runs `--runs` times, default 3).
 pub(crate) fn run_bench_matrix(root: &Path, base: &BenchArgs) -> Result<()> {
     let presets = ["minimal", "mixed", "full"];
     let tiers = [

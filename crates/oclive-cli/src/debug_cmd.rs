@@ -1,4 +1,4 @@
-//! `oclive debug` — 启动内核并展示 `OCLIVE_DEBUG_TRACE` 步骤摘要。
+//! `oclive debug` — launch the kernel and display the `OCLIVE_DEBUG_TRACE` step summary.
 
 use anyhow::{bail, Context, Result};
 use clap::Parser;

@@ -32,7 +32,7 @@ pub fn run_soak(root: &Path, args: &BenchArgs) -> Result<()> {
         bail!("missing Cargo.toml");
     }
     let hours = args.soak_duration.max(1) as f64;
-    // Accelerated wall clock: ~2s per nominal hour (cap 120s) so local/CI can finish; see PERFORMANCE.md §长稳.
+    // Accelerated wall clock: ~2s per nominal hour (cap 120s) so local/CI can finish; see PERFORMANCE.md soak section.
     let wall_secs = (hours * 2.0).clamp(8.0, 120.0) as u64;
     let wall_duration = Duration::from_secs(wall_secs);
     let n_samples = hours as u32;

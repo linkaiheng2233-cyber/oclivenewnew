@@ -1,4 +1,4 @@
-//! 模板渲染与落盘。
+//! Template rendering and writing to disk.
 
 use crate::init::{BackendImpl, InitTemplateArg, ProjectConfig, ProjectType};
 use crate::monolith_codegen;
@@ -8,7 +8,7 @@ use serde_json::{json, Map, Value};
 use std::fs;
 use std::path::{Path, PathBuf};
 
-/// 用于 `Cargo.toml` package 名、二进制名与终端提示。
+/// Used for the `Cargo.toml` package name, binary name, and terminal prompts.
 pub fn project_slug(cfg: &ProjectConfig) -> String {
     slugify(&cfg.project_name)
 }
@@ -73,7 +73,7 @@ fn template_context(cfg: &ProjectConfig, out: &Path) -> serde_json::Value {
     ctx
 }
 
-/// `--kernel-source` 须为 oclivenewnew 仓库根。
+/// `--kernel-source` must point to the oclivenewnew repository root.
 pub fn validate_kernel_source(root: &Path) -> Result<()> {
     let tauri = root.join("src-tauri").join("Cargo.toml");
     let runtime = root
@@ -137,7 +137,7 @@ const COMMENT_AGENT: &str = "Agent / 工具编排 (ReAct)。常用: builtin | re
 
 const COMMENT_COMPLEX_EMOTION: &str = "复杂情感扩展（路线图）。可写 builtin | remote | directory | none 作团队约定；当前桌面 PluginBackends 不含此槽，宿主加载时会忽略。remote 时需侧车并实现协议（见 REMOTE_PLUGIN_PROTOCOL.md）。";
 
-/// 构建 `roles/default/settings.json` 根对象（含 `_comment_*` 与完整 `plugin_backends`）。
+/// Build the `roles/default/settings.json` root object (including `_comment_*` and the full `plugin_backends`).
 pub fn build_settings_value(cfg: &ProjectConfig) -> Value {
     let mut root = Map::new();
     root.insert(
