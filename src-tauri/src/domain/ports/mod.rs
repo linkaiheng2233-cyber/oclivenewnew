@@ -1,7 +1,7 @@
-//! 领域端口：**纯 re-export 与宿主 `impl` 层**。
+//! Domain ports: **pure re-exports plus the host `impl` layer**.
 //!
-//! 所有 trait 定义在 [`oclive_kernel_contracts`]；本目录不含任何 `trait` 定义。
-//! 新代码请优先 `use oclive_kernel_contracts::…` 或 `oclive_kernel_runtime::…`。
+//! All trait definitions live in [`oclive_kernel_contracts`]; this directory contains no `trait` definitions.
+//! New code should prefer `use oclive_kernel_contracts::…` or `oclive_kernel_runtime::…`.
 
 pub mod llm;
 pub mod plugin_host;

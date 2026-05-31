@@ -20,7 +20,7 @@ pub fn ollama_msg(context: &str, detail: impl std::fmt::Display) -> AppError {
     AppError::OllamaError(format!("{context}: {detail}"))
 }
 
-/// `Result` → [`AppError::OllamaError`]。
+/// `Result` → [`AppError::OllamaError`].
 ///
 /// # Errors
 ///
@@ -56,7 +56,7 @@ macro_rules! kernel_stage {
     };
 }
 
-/// 插件宿主注册错误：`String` / `Display` → [`PluginHostError`].
+/// Plugin host registration error: `String` / `Display` → [`PluginHostError`].
 #[macro_export]
 macro_rules! map_plugin_err {
     ($expr:expr) => {

@@ -1,4 +1,4 @@
-//! 插件宿主解析端口（定义见 [`oclive_kernel_contracts::PluginHostPort`]）。
+//! Plugin host resolution port (definition in [`oclive_kernel_contracts::PluginHostPort`]).
 
 pub use oclive_kernel_runtime::PluginHostPort;
 

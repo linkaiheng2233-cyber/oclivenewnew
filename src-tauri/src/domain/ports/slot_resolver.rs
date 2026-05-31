@@ -1,4 +1,4 @@
-//! 蓝图 slot 解析端口（定义见 [`oclive_kernel_contracts::SlotRegistryResolver`]）。
+//! Blueprint slot resolution port (definition in [`oclive_kernel_contracts::SlotRegistryResolver`]).
 
 pub use oclive_kernel_runtime::SlotRegistryResolver;
 

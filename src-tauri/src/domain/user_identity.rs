@@ -1,4 +1,4 @@
-//! 解析「当前用户身份键」：`load_role` / `get_role_info` / 对话引擎共用，避免与场景逻辑分叉。
+//! Resolve the "current user identity key": shared by `load_role` / `get_role_info` / the chat engine to avoid forking scene logic.
 
 use crate::error::Result;
 use crate::models::role::{IdentityBinding, Role};
@@ -6,7 +6,7 @@ use crate::state::AppState;
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
-/// 与 [`crate::api::role::runtime::role_runtime_extras`]、对话回合一致的有效身份键。
+/// Effective identity key consistent with [`crate::api::role::runtime::role_runtime_extras`] and the chat turn.
 pub async fn resolve_effective_user_relation_key(
     state: &AppState,
     role: &Role,
