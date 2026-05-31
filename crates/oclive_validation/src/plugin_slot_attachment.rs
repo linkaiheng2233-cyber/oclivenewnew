@@ -1,4 +1,4 @@
-//! 目录插件 `manifest.json` 的 `slot_attachment` 声明与蓝图自动装配。
+//! Directory plugin `manifest.json` `slot_attachment` declarations and blueprint auto-attachment.
 
 use std::collections::BTreeMap;
 
@@ -17,7 +17,7 @@ const SLOT_ATTACHMENT_TYPES: &[&str] = &[
     "complex_emotion",
 ];
 
-/// 单条槽位挂载声明（`manifest.slot_attachment` 对象或数组元素）。
+/// One slot attachment declaration (`manifest.slot_attachment` object or array element).
 #[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
 pub struct SlotAttachmentDecl {
     #[serde(rename = "type")]
@@ -30,7 +30,7 @@ pub struct SlotAttachmentDecl {
     pub position: Option<i64>,
 }
 
-/// 从 manifest JSON 解析 `slot_attachment`（对象或数组）；无字段时返回空 Vec。
+/// Parses `slot_attachment` from manifest JSON (object or array); returns empty Vec when absent.
 ///
 /// # Errors
 ///
@@ -66,7 +66,7 @@ fn parse_slot_attachment_value(v: &Value) -> Result<Vec<SlotAttachmentDecl>, Str
     }
 }
 
-/// 校验单条 `slot_attachment` 声明。
+/// Validates one `slot_attachment` declaration.
 ///
 /// # Errors
 ///
@@ -100,9 +100,9 @@ fn is_allowed_backend(b: &str) -> bool {
     )
 }
 
-/// 将插件的 `slot_attachment` 合并进角色包 `slot_registry`（按 `type` 匹配或新建实例键）。
+/// Merges plugin `slot_attachment` entries into role pack `slot_registry` (match by `type` or create instance key).
 ///
-/// 返回人类可读提示（已更新的槽位描述）。
+/// Returns human-readable notes (updated slot descriptions).
 pub fn apply_slot_attachments_to_registry(
     registry: &mut BTreeMap<String, SlotRegistryEntry>,
     plugin_id: &str,

@@ -1,4 +1,4 @@
-//! 性格引擎：旧七维向量演化（倔强、黏人、敏感、强势、宽容、话多、温暖）
+//! Personality engine: legacy seven-dimension vector evolution (stubbornness, clinginess, sensitivity, assertiveness, forgiveness, talkativeness, warmth).
 
 use crate::models::{EvolutionBounds, PersonalityVector};
 
@@ -27,7 +27,7 @@ impl PersonalityEngine {
         personality
     }
 
-    /// 虚拟时间阶段性沉淀：在 **delta** 上按经过的虚拟小时微调（长期、小于单轮事件）。
+    /// Virtual-time gradual drift: nudges **delta** by elapsed virtual hours (long-term, smaller than per-turn events).
     #[must_use]
     pub fn evolve_by_time_lapse(mut delta: PersonalityVector, lapse_hours: f64) -> PersonalityVector {
         let unit = (lapse_hours / 6.0).clamp(0.0, 8.0);
@@ -43,7 +43,7 @@ impl PersonalityEngine {
         delta
     }
 
-    /// 被反复提及（`mention_count` 达阈值）的记忆：按情感与话题关键词微调七维，幅度约为事件驱动的 10–20%。
+    /// Memories mentioned repeatedly (`mention_count` at threshold): nudge seven dimensions by emotion/topic keywords (~10–20% of event-driven deltas).
     #[must_use]
     pub fn evolve_by_reinforced_memory(
         mut personality: PersonalityVector,

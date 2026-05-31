@@ -1,26 +1,26 @@
-//! 事件检测模块
+//! Event detection module
 //!
-//! 基于文本和情绪的事件类型检测
+//! Event-type detection from text and emotions
 
 use crate::error::Result;
 use crate::models::knowledge::KnowledgeEventAugment;
 use crate::models::{Emotion, Event, EventType};
 
-/// 事件检测器
+/// Event detector
 pub struct EventDetector;
 
 impl EventDetector {
     /// # Errors
     ///
     /// Returns [`Err`] with a human-readable message when the operation fails.
-    /// 检测事件类型
+    /// Detects event type
     pub fn detect(text: &str, user_emotion: &Emotion, bot_emotion: &Emotion) -> Result<Event> {
         Self::detect_with_augment(text, user_emotion, bot_emotion, None)
     }
     /// # Errors
     ///
     /// Returns [`Err`] with a human-readable message when the operation fails.
-    /// 与 [`detect`] 相同，但合并世界观知识块提供的额外关键词（B1）。
+    /// Same as [`detect`], but merges extra keywords from worldview knowledge blocks (B1).
     pub fn detect_with_augment(
         text: &str,
         user_emotion: &Emotion,
@@ -144,7 +144,7 @@ impl EventDetector {
             .unwrap_or(false)
     }
 
-    /// 获取事件影响因子（用于性格演化）
+    /// Returns the event impact factor (for personality evolution)
     #[must_use]
     pub fn get_impact_factor(event_type: &EventType) -> f64 {
         match event_type {
@@ -158,7 +158,7 @@ impl EventDetector {
         }
     }
 
-    /// 事件置信度（用于前端展示/日志分析）
+    /// Event confidence (for frontend display / log analysis)
     #[must_use]
     pub fn get_confidence(event_type: &EventType) -> f32 {
         match event_type {

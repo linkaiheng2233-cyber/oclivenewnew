@@ -1,4 +1,4 @@
-//! `pack validate --profile creator`：仅校验角色包（创作者）子集。
+//! `pack validate --profile creator`: validates role pack (creator) subset only.
 
 use std::fs;
 use std::path::Path;
@@ -20,11 +20,11 @@ const CREATOR_META_KEYS: &[&str] = &[
     "scenes",
 ];
 
-/// 校验角色包目录（创作者 profile）：`meta` 子集 + `prompts/` 存在。
+/// Validates role pack directory (creator profile): `meta` subset + `prompts/` present.
 ///
 /// # Errors
 ///
-/// 缺少蓝图、meta 不合规或 `prompts/` 不存在时返回 `Err(Vec<String>)`。
+/// Returns `Err(Vec<String>)` when blueprint is missing, meta is invalid, or `prompts/` is absent.
 pub fn validate_role_pack_creator_directory(role_dir: &Path) -> Result<(), Vec<String>> {
     let mut errs = Vec::new();
 

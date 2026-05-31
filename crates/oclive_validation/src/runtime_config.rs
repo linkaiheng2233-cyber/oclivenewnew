@@ -1,4 +1,4 @@
-//! 蓝图 `runtime_config` 段（v3 目标 SSOT；v2 出现时不报错、宿主仍读 `meta` 过渡期字段）。
+//! Blueprint `runtime_config` section (v3 target SSOT; v2 presence is non-fatal—host still reads transitional `meta` fields).
 
 use serde::{Deserialize, Serialize};
 
@@ -6,14 +6,14 @@ use crate::disk_role_settings::{AutonomousSceneConfig, RemotePresenceConfig};
 use crate::manifest::{EvolutionConfigDisk, MemoryConfigDisk};
 use crate::validate::validate_interaction_mode_pack_setting;
 
-/// 双核开关（仅蓝图；默认关）。
+/// Dual-core toggle (blueprint only; off by default).
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
 pub struct DualCoreConfig {
     #[serde(default)]
     pub enabled: bool,
 }
 
-/// 系统运行时配置（蓝图专属，非角色包创作者视图）。
+/// System runtime configuration (blueprint-only; not the role-pack creator view).
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct RuntimeConfig {
     #[serde(default)]
@@ -22,7 +22,7 @@ pub struct RuntimeConfig {
     pub memory_config: Option<MemoryConfigDisk>,
     #[serde(default)]
     pub reply_quality_anchor: Option<String>,
-    /// 与宿主 `app_settings.remote_fallback_to_builtin` 对齐的**包级建议**（可选）。
+    /// Optional pack-level hint aligned with host `app_settings.remote_fallback_to_builtin`.
     #[serde(default)]
     pub remote_fallback_to_builtin: Option<bool>,
     #[serde(default)]
@@ -39,11 +39,11 @@ pub struct RuntimeConfig {
     pub autonomous_scene: Option<AutonomousSceneConfig>,
 }
 
-/// 校验 `runtime_config` 子字段（v3 蓝图加载前）。
+/// Validate `runtime_config` sub-fields (before v3 blueprint load).
 ///
 /// # Errors
 ///
-/// 子字段契约不符时返回 `Err(Vec<String>)`。
+/// Returns `Err(Vec<String>)` when sub-field contracts are violated.
 pub fn validate_runtime_config(rc: &RuntimeConfig) -> Result<(), Vec<String>> {
     let mut errs = Vec::new();
     if let Some(ref m) = rc.interaction_mode {

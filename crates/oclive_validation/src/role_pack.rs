@@ -1,4 +1,4 @@
-//! 角色包目录级校验（与 `RoleStorage::load_role_from_dir` 磁盘阶段对齐，不构建完整 `Role`）。
+//! Role pack directory validation (aligned with `RoleStorage::load_role_from_dir` disk phase; does not build full `Role`).
 
 use std::collections::BTreeSet;
 use std::fs;
@@ -22,17 +22,17 @@ use crate::validate::{
     validate_settings_schema_version,
 };
 
-/// 角色包目录校验的扩展策略（在标准磁盘校验通过后追加规则）。
+/// Extended role pack directory validation profile (rules appended after standard disk validation passes).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum RolePackValidationProfile {
-    /// `pipeline.ocblueprint` v2 SSOT（`pack validate` 默认）。
+    /// `pipeline.ocblueprint` v2 SSOT (`pack validate` default).
     #[default]
     BlueprintV2,
-    /// legacy：`manifest.json` + `settings.json`（`--profile legacy`）。
+    /// Legacy: `manifest.json` + `settings.json` (`--profile legacy`).
     Legacy,
-    /// 仅角色包（创作者）：`meta` 子集 + `prompts/`，不校验 `slot_registry` / `runtime_config`。
+    /// Role pack only (creator): `meta` subset + `prompts/`; skips `slot_registry` / `runtime_config`.
     Creator,
-    /// 机器人 / 无头交付最小「灵魂包」：在 legacy 磁盘校验通过后追加规则。
+    /// Robot / headless minimal soul pack: extra rules after legacy disk validation passes.
     RobotSoul,
 }
 
@@ -126,11 +126,11 @@ fn robot_soul_profile_errors(
     errs
 }
 
-/// 合并 `manifest.scenes` 与磁盘 `scenes/` 子目录，得到场景 id 列表（至少含 `default`）。
+/// Merges `manifest.scenes` with on-disk `scenes/` subdirectory into scene id list (always includes `default` when empty).
 ///
 /// # Errors
 ///
-/// 读取 `scenes/` 目录失败时返回 `Err`。
+/// Returns `Err` when reading `scenes/` fails.
 pub fn merge_role_pack_scene_ids(
     role_dir: &Path,
     manifest_scenes: &[String],
@@ -164,11 +164,11 @@ pub fn merge_role_pack_scene_ids(
     Ok(ids.into_iter().collect())
 }
 
-/// `manifest.json` 中 `default_personality`：非空时须 **7** 个有限数，且每维在 \[0, 1\]（与运行时 `PersonalityDefaults` 一致）。
+/// `manifest.json` `default_personality`: when non-empty, must be **7** finite values in \[0, 1\] (matches runtime `PersonalityDefaults`).
 ///
 /// # Errors
 ///
-/// 维度数量或取值不合法时返回 `Err`。
+/// Returns `Err` when dimension count or values are invalid.
 pub fn validate_default_personality_vector(values: &[f32]) -> Result<(), String> {
     if values.is_empty() {
         return Ok(());
@@ -193,12 +193,12 @@ pub fn validate_default_personality_vector(values: &[f32]) -> Result<(), String>
     Ok(())
 }
 
-/// manifest + 可选 settings 解析、顶层键、七维、`settings` 合并进 `disk`（与目录加载顺序一致）。
-/// 不含 `validate_disk_manifest` / `min_runtime`（需调用方提供合并后的场景 id）。
+/// Parses manifest + optional settings, top-level keys, seven-dim vector, merges `settings` into `disk` (same order as directory load).
+/// Does not run `validate_disk_manifest` / `min_runtime` (caller must supply merged scene ids).
 ///
 /// # Errors
 ///
-/// JSON 解析失败、契约不符或 settings 校验失败时返回 `Err(Vec<String>)`。
+/// Returns `Err(Vec<String>)` on JSON parse failure, contract violation, or settings validation failure.
 pub fn validate_role_pack_manifest_settings_core(
     manifest_json: &str,
     settings_json: Option<&str>,
@@ -279,11 +279,11 @@ pub fn validate_role_pack_manifest_settings_core(
     }
 }
 
-/// 在已合并场景列表上跑 `validate_disk_manifest` 与 `min_runtime`。
+/// Run `validate_disk_manifest` and `min_runtime` on the merged scene list.
 ///
 /// # Errors
 ///
-/// 任一子校验失败时返回 `Err(Vec<String>)`。
+/// Returns `Err(Vec<String>)` when any sub-validation fails.
 pub fn validate_role_pack_tail(
     disk: &DiskRoleManifest,
     merged_scene_ids: &[String],
@@ -304,11 +304,11 @@ pub fn validate_role_pack_tail(
     }
 }
 
-/// 与目录校验同源，供 wasm / 编写器在内存中校验（调用方提供合并后的场景 id，通常含 `scenes/` 扫描结果）。
+/// Same source as directory validation; for in-memory checks in wasm / pack editor (caller supplies merged scene ids, usually including `scenes/` scan).
 ///
 /// # Errors
 ///
-/// 解析或尾部校验失败时返回 `Err(Vec<String>)`。
+/// Returns `Err(Vec<String>)` on parse or tail validation failure.
 pub fn validate_role_pack_loaded(
     manifest_json: &str,
     settings_json: Option<&str>,
@@ -326,11 +326,11 @@ pub fn validate_role_pack_loaded(
     )
 }
 
-/// 与 [`validate_role_pack_loaded`] 相同，并支持 `robot-soul` 扩展规则（内存校验无 `core_personality.txt` 路径时仅认七维向量）。
+/// Same as [`validate_role_pack_loaded`], plus `robot-soul` extension rules (in-memory validation without `core_personality.txt` accepts only the seven-dimension vector).
 ///
 /// # Errors
 ///
-/// manifest/settings/场景/宿主版本或 profile 扩展规则未通过时返回 `Err(Vec<String>)`。
+/// Returns `Err(Vec<String>)` when manifest/settings/scene/host version or profile extension rules fail.
 pub fn validate_role_pack_loaded_with_profile(
     manifest_json: &str,
     settings_json: Option<&str>,
@@ -354,14 +354,14 @@ pub fn validate_role_pack_loaded_with_profile(
     Ok(())
 }
 
-/// 校验角色包目录（与宿主加载前磁盘校验一致；标准路径不跑 DB）。
-/// `profile = robot-soul` 时会读取 `core_personality.txt` 以检查「人格载体」规则。
+/// Validate a role pack directory (matches host pre-load disk validation; standard path does not touch DB).
+/// When `profile = robot-soul`, reads `core_personality.txt` to check persona-carrier rules.
 ///
-/// `settings_schema_supported`：与宿主 `CURRENT_SETTINGS_SCHEMA_VERSION` 一致（当前为 1）。
+/// `settings_schema_supported`: must match host `CURRENT_SETTINGS_SCHEMA_VERSION` (currently 1).
 ///
 /// # Errors
 ///
-/// 缺少文件、读盘失败或校验未通过时返回 `Err(Vec<String>)`。
+/// Returns `Err(Vec<String>)` on missing files, read failure, or validation failure.
 pub fn validate_role_pack_directory(
     role_dir: &Path,
     host_version: &str,
@@ -375,11 +375,11 @@ pub fn validate_role_pack_directory(
     )
 }
 
-/// 与 [`validate_role_pack_directory`] 相同，并支持 `--profile robot-soul` 扩展规则。
+/// Same as [`validate_role_pack_directory`], plus `--profile robot-soul` extension rules.
 ///
 /// # Errors
 ///
-/// 缺少文件、读盘失败或校验未通过时返回 `Err(Vec<String>)`。
+/// Returns `Err(Vec<String>)` on missing files, read failure, or validation failure.
 pub fn validate_role_pack_directory_with_profile(
     role_dir: &Path,
     host_version: &str,
@@ -394,7 +394,7 @@ pub fn validate_role_pack_directory_with_profile(
         return validate_role_pack_blueprint_directory(role_dir, host_version);
     }
 
-    // Legacy + RobotSoul：manifest/settings 路径
+    // Legacy + RobotSoul: manifest/settings path
     let mut errs: Vec<String> = Vec::new();
     let manifest_path = role_dir.join("manifest.json");
     if !manifest_path.is_file() {

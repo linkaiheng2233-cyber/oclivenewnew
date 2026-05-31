@@ -1,4 +1,4 @@
-//! 与运行时原 `role_manifest_validate::validate_disk_manifest` 行为一致。
+//! Matches runtime `role_manifest_validate::validate_disk_manifest` behavior.
 
 use crate::manifest::{DiskRoleManifest, KnowledgePackConfigDisk, LifeScheduleDisk};
 use semver::Version;
@@ -60,11 +60,11 @@ fn validate_min_runtime_version_for_source(
     Ok(())
 }
 
-/// 比较角色包要求的最低宿主版本与当前 oclive 版本（`min_req` 为 `None` 或空则跳过）。
+/// Compares role pack minimum host version with current oclive version (`min_req` `None` or empty skips).
 ///
 /// # Errors
 ///
-/// 版本字符串非法或宿主低于要求时返回 `Err`。
+/// Returns `Err` when version string is invalid or host is below requirement.
 pub fn validate_min_runtime_version(
     min_req: Option<&str>,
     host_version: &str,
@@ -76,11 +76,11 @@ pub fn validate_min_runtime_version(
     )
 }
 
-/// 本地插件描述中的 `min_runtime_version` 与宿主版本比较（`min_req` 为 `None` 或空则跳过；语义与 [`validate_min_runtime_version`] 一致，错误文案指向本地插件）。
+/// Compares local plugin descriptor `min_runtime_version` with host version (`min_req` `None` or empty skips; same semantics as [`validate_min_runtime_version`], error text refers to local plugin).
 ///
 /// # Errors
 ///
-/// 版本字符串非法或宿主低于要求时返回 `Err`。
+/// Returns `Err` when version string is invalid or host is below requirement.
 pub fn validate_min_runtime_version_for_local_plugin(
     min_req: Option<&str>,
     host_version: &str,
@@ -92,11 +92,11 @@ pub fn validate_min_runtime_version_for_local_plugin(
     )
 }
 
-/// 校验 `settings.json.schema_version` 与宿主支持范围（当前只接受 `<= current_supported`）。
+/// Validates `settings.json.schema_version` against host support range (currently accepts only `<= current_supported`).
 ///
 /// # Errors
 ///
-/// `schema_version` 为 0 或高于宿主支持时返回 `Err`。
+/// Returns `Err` when `schema_version` is 0 or above host support.
 pub fn validate_settings_schema_version(
     schema_version: u32,
     current_supported: u32,
@@ -113,7 +113,7 @@ pub fn validate_settings_schema_version(
     Ok(())
 }
 
-/// 解析 `HH:MM` 为自午夜起的分钟数 \[0, 24*60)（与 `domain/life_schedule` 一致）
+/// Parses `HH:MM` as minutes since midnight \[0, 24*60) (matches `domain/life_schedule`)
 #[must_use]
 pub fn parse_hhmm(s: &str) -> Option<u16> {
     let t = s.trim();
@@ -133,11 +133,11 @@ pub fn parse_hhmm(s: &str) -> Option<u16> {
     Some(total as u16)
 }
 
-/// 供校验层调用：仅校验 `KnowledgePackConfigDisk` 字段合理性（不读文件）。
+/// Validation-layer helper: checks `KnowledgePackConfigDisk` field sanity only (does not read files).
 ///
 /// # Errors
 ///
-/// `glob` 为空等字段不合法时返回 `Err`。
+/// Returns `Err` when fields such as empty `glob` are invalid.
 pub fn validate_knowledge_manifest_disk(k: &KnowledgePackConfigDisk) -> Result<(), String> {
     if k.glob.trim().is_empty() {
         return Err("manifest / settings：knowledge.glob 不能为空".to_string());
@@ -145,11 +145,11 @@ pub fn validate_knowledge_manifest_disk(k: &KnowledgePackConfigDisk) -> Result<(
     Ok(())
 }
 
-/// 校验磁盘 manifest 与合并后的场景 id 列表（`manifest.scenes` + `scenes/` 子目录）。
+/// Validates disk manifest with merged scene id list (`manifest.scenes` + `scenes/` subdirectory).
 ///
 /// # Errors
 ///
-/// 必填字段、场景、日程或知识块配置不合法时返回 `Err`。
+/// Returns `Err` when required fields, scenes, schedule, or knowledge block config is invalid.
 pub fn validate_disk_manifest(
     disk: &DiskRoleManifest,
     merged_scene_ids: &[String],
@@ -281,11 +281,11 @@ fn validate_life_schedule(
     Ok(())
 }
 
-/// `settings.json` → `interaction_mode`：`immersive` | `pure_chat`；空或省略合法。
+/// `settings.json` → `interaction_mode`: `immersive` | `pure_chat`; empty or omitted is valid.
 ///
 /// # Errors
 ///
-/// 取值不在允许集合时返回 `Err`。
+/// Returns `Err` when value is not in the allowed set.
 pub fn validate_interaction_mode_pack_setting(raw: Option<&str>) -> Result<(), String> {
     const IMMERSIVE: &str = "immersive";
     const PURE_CHAT: &str = "pure_chat";

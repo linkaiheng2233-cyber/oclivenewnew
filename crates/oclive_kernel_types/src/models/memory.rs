@@ -10,10 +10,10 @@ pub struct Memory {
     pub importance: f64,
     pub weight: f64,
     pub created_at: DateTime<Utc>,
-    /// 写入时的场景 id；旧数据为 `None`
+    /// Scene id at write time; legacy rows may be `None`.
     #[serde(default)]
     pub scene_id: Option<String>,
-    /// 被相似话题强化（提及）次数；新写入默认为 1。
+    /// Times reinforced by similar-topic mentions; defaults to 1 on new writes.
     #[serde(default = "default_mention_count")]
     pub mention_count: i32,
 }
@@ -23,7 +23,7 @@ fn default_mention_count() -> i32 {
 }
 
 impl Memory {
-    /// 用于排序与遗忘曲线的有效强度（importance × weight）。
+    /// Effective strength for sorting and forgetting curves (`importance × weight`).
     #[must_use]
     pub fn effective_strength(&self) -> f64 {
         (self.importance * self.weight).clamp(0.0, 1.0)

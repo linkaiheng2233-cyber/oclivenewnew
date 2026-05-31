@@ -1,4 +1,4 @@
-//! `pipeline.ocblueprint` schema_version 2 校验（角色包 SSOT）。
+//! `pipeline.ocblueprint` schema_version 2 validation (role pack SSOT).
 
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fs;
@@ -27,7 +27,7 @@ use crate::validate::{
 pub const BLUEPRINT_V2_SCHEMA_VERSION: u32 = 2;
 pub const PIPELINE_BLUEPRINT_FILENAME: &str = "pipeline.ocblueprint";
 
-/// 禁止落盘：`module_relations` 仅由宿主/前端从 `slot_registry` 派生示意边，勿手改 JSON。
+/// Do not persist: `module_relations` is derived at runtime by the host/frontend from `slot_registry` for diagram edges only — do not hand-edit JSON.
 const FORBIDDEN_ROOT_KEYS: &[&str] = &["module_relations", "steps", "entry"];
 
 const SLOT_TYPES: &[&str] = &[
@@ -40,7 +40,7 @@ const SLOT_TYPES: &[&str] = &[
     "complex_emotion",
 ];
 
-/// 六种可编排模块类型（`groups.type` 仅允许此集合，不含 `complex_emotion`）。
+/// Six orchestratable module types (`groups.type` allows only this set; excludes `complex_emotion`).
 pub const GROUP_SLOT_TYPES: &[&str] = &[
     "memory", "emotion", "event", "prompt", "llm", "agent",
 ];
@@ -55,7 +55,7 @@ const PERSONALITY_OBJECT_KEYS: &[&str] = &[
     "warmth",
 ];
 
-/// 蓝图 `groups` 单条：同 `type` 的 `slot_registry` 实例逻辑分组。
+/// One blueprint `groups` entry: logical grouping of `slot_registry` instances sharing a `type`.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct SlotGroupEntry {
     pub label: String,
@@ -66,7 +66,7 @@ pub struct SlotGroupEntry {
     pub members: Vec<String>,
 }
 
-/// 蓝图 `slot_registry` 单实例（与 `pipeline.ocblueprint` v2 文件一致）。
+/// One blueprint `slot_registry` instance (matches `pipeline.ocblueprint` v2 on disk).
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct SlotRegistryEntry {
     #[serde(rename = "type")]
@@ -84,15 +84,15 @@ pub struct SlotRegistryEntry {
     pub url: Option<String>,
     #[serde(default)]
     pub local_memory_provider_id: Option<String>,
-    /// v3 可选：`stable` / `experimental`（架构图分区）。
+    /// v3 optional: `stable` / `experimental` (architecture diagram zone).
     #[serde(default)]
     pub zone: Option<serde_json::Value>,
-    /// 多实例合并策略：`fastest` | `fallback` | `ensemble`（默认，LLM 等为 last-wins）。
+    /// Multi-instance merge policy: `fastest` | `fallback` | `ensemble` (default; LLM etc. use last-wins).
     #[serde(default)]
     pub policy: Option<String>,
 }
 
-/// 校验通过后的 v2 蓝图加载结果（供宿主 `RoleStorage` 映射为 `Role`）。
+/// Validated v2 blueprint load result (for host `RoleStorage` to map into `Role`).
 #[derive(Debug, Clone)]
 pub struct BlueprintV2LoadResult {
     pub disk: DiskRoleManifest,
@@ -111,14 +111,14 @@ struct BlueprintV2File {
     slot_registry: BTreeMap<String, SlotRegistryEntry>,
     #[serde(default)]
     groups: BTreeMap<String, SlotGroupEntry>,
-    /// 卫星文件拉取清单（合并后再校验 meta / slot_registry）。
+    /// Satellite file include list (validated after merge for meta / slot_registry).
     #[serde(default)]
     includes: Vec<crate::blueprint_includes::BlueprintIncludeEntry>,
-    /// 专家设施指针（可选；不含长文）。
+    /// Expert facility pointer (optional; no long-form content).
     #[serde(default)]
     #[allow(dead_code)]
     expert_overlay: Option<serde_json::Value>,
-    /// v3 目标段；v2 校验通过但不参与 v2 加载（见 `validate_blueprint_json_by_schema_version` 警告）。
+    /// v3 target segment; passes v2 validation but is not loaded on the v2 path (see `validate_blueprint_json_by_schema_version` warning).
     #[serde(default)]
     #[allow(dead_code)]
     runtime_config: Option<RuntimeConfig>,
@@ -163,31 +163,31 @@ pub struct BlueprintMeta {
     pub reply_quality_anchor: Option<String>,
 }
 
-/// 可选上下文：目录名校验、`scenes/` 合并、`min_runtime_version` 与宿主比较。
+/// Optional context: folder name check, `scenes/` merge, `min_runtime_version` vs host.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct BlueprintV2ValidateContext<'a> {
-    /// 角色包目录名，与 `meta.id` 比对（R4）。
+    /// Role pack folder name, compared with `meta.id` (R4).
     pub folder_name: Option<&'a str>,
-    /// 提供时合并 `scenes/` 子目录并跑完整 `validate_disk_manifest`。
+    /// When set, merges `scenes/` subdirectory and runs full `validate_disk_manifest`.
     pub role_dir: Option<&'a Path>,
-    /// 提供时校验 `meta.min_runtime_version`。
+    /// When set, validates `meta.min_runtime_version`.
     pub host_version: Option<&'a str>,
 }
 
-/// 校验 v2 蓝图 JSON 文本（槽位 + meta 结构；不含宿主版本时可省略 `min_runtime`）。
+/// Validates v2 blueprint JSON text (slots + meta shape; `min_runtime` optional when host version omitted).
 ///
 /// # Errors
 ///
-/// 契约不符时返回 `Err(Vec<String>)`。
+/// Returns `Err(Vec<String>)` when the contract is violated.
 pub fn validate_blueprint_v2_json(raw: &str) -> Result<(), Vec<String>> {
     validate_blueprint_v2_json_with_context(raw, BlueprintV2ValidateContext::default())
 }
 
-/// 带上下文的 v2 蓝图 JSON 校验（CLI / 目录校验共用）。
+/// v2 blueprint JSON validation with context (shared by CLI / directory validation).
 ///
 /// # Errors
 ///
-/// 契约不符时返回 `Err(Vec<String>)`。
+/// Returns `Err(Vec<String>)` when the contract is violated.
 pub fn validate_blueprint_v2_json_with_context(
     raw: &str,
     ctx: BlueprintV2ValidateContext<'_>,
@@ -279,11 +279,11 @@ fn merged_scenes_for_validate(
     }
 }
 
-/// 校验角色包目录（v2 SSOT：`pipeline.ocblueprint`；不得含 manifest/settings）。
+/// Validates role pack directory (v2 SSOT: `pipeline.ocblueprint`; must not contain manifest/settings).
 ///
 /// # Errors
 ///
-/// 缺少文件、读盘失败或校验未通过时返回 `Err(Vec<String>)`。
+/// Returns `Err(Vec<String>)` on missing files, read failures, or validation failure.
 pub fn validate_role_pack_blueprint_v2_directory(
     role_dir: &Path,
     host_version: &str,
@@ -340,11 +340,11 @@ pub fn validate_role_pack_blueprint_v2_directory(
     )
 }
 
-/// 将 `slot_registry` 写回 `pipeline.ocblueprint`（保留 `meta` 等其余字段），写前全量校验。
+/// Writes `slot_registry` back to `pipeline.ocblueprint` (keeps `meta` and other fields); full validation before write.
 ///
 /// # Errors
 ///
-/// 缺少蓝图、JSON 非法或校验未通过时返回 `Err(Vec<String>)`。
+/// Returns `Err(Vec<String>)` when blueprint is missing, JSON is invalid, or validation fails.
 pub fn write_role_pack_blueprint_slot_registry(
     role_dir: &Path,
     slot_registry: &BTreeMap<String, SlotRegistryEntry>,
@@ -388,11 +388,11 @@ pub fn write_role_pack_blueprint_slot_registry(
     Ok(())
 }
 
-/// 读取并校验角色包目录中的 v2 蓝图，返回宿主加载用结构。
+/// Reads and validates v2 blueprint in role pack directory; returns host load structure.
 ///
 /// # Errors
 ///
-/// 与 [`validate_role_pack_blueprint_v2_directory`] 相同。
+/// Same as [`validate_role_pack_blueprint_v2_directory`].
 pub fn load_blueprint_v2_for_role_dir(
     role_dir: &Path,
     host_version: &str,
@@ -415,7 +415,7 @@ pub fn load_blueprint_v2_for_role_dir(
     Ok(blueprint_v2_file_to_load_result(&bp))
 }
 
-/// 将 `slot_registry` 折叠为现网六槽 `PluginBackends`（同 type **last-wins**，按 `position`）。
+/// Folds `slot_registry` into production six-slot `PluginBackends` (same type **last-wins**, by `position`).
 #[must_use]
 pub fn slot_registry_to_plugin_backends(
     registry: &BTreeMap<String, SlotRegistryEntry>,
@@ -576,7 +576,7 @@ fn b_is_local(backend: &str) -> bool {
     backend.trim() == "local"
 }
 
-/// 会话级对单实例的覆盖（不落盘）。
+/// Session-level override for a single instance (not persisted).
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
 pub struct SlotOverridePatch {
     #[serde(default)]
@@ -592,7 +592,7 @@ pub struct SlotOverridePatch {
 }
 
 impl SlotOverridePatch {
-    /// 会话内对同一 `slot_key` 的多次 C1/槽位 API 调用合并为一条覆盖（后写非空字段覆盖先写）。
+    /// Merges multiple C1/slot API calls for the same `slot_key` in a session into one override (later non-empty fields win).
     pub fn merge_into(&self, base: &mut SlotOverridePatch) {
         if let Some(ref b) = self.backend {
             base.backend = Some(b.clone());
@@ -621,7 +621,7 @@ impl SlotOverridePatch {
     }
 }
 
-/// 将包默认 `slot_registry` 与命名空间覆盖合并为 effective 视图。
+/// Merges package-default `slot_registry` with namespace overrides into an effective view.
 #[must_use]
 pub fn effective_slot_registry(
     pack: &BTreeMap<String, SlotRegistryEntry>,
@@ -639,7 +639,7 @@ pub fn effective_slot_registry(
     out
 }
 
-/// 默认六槽模块名 → `slot_registry` 键（C1 薄包装）。
+/// Default six-slot module name → `slot_registry` key (C1 thin wrapper).
 #[must_use]
 pub fn default_slot_key_for_module(module: &str) -> Option<&'static str> {
     match module.trim().to_ascii_lowercase().as_str() {
@@ -683,7 +683,7 @@ fn single_plugin_id(entry: &SlotRegistryEntry) -> Option<String> {
         .filter(|s| !s.is_empty())
 }
 
-/// 同 `type` 内按 `position` 升序排列的实例列表（P3 多实例解析）。
+/// Instances of the same `type` sorted ascending by `position` (P3 multi-instance resolution).
 #[must_use]
 pub fn slot_registry_instances_sorted(
     registry: &BTreeMap<String, SlotRegistryEntry>,
@@ -699,7 +699,7 @@ pub fn slot_registry_instances_sorted(
     v
 }
 
-/// 单实例 → 折叠后的六槽 `PluginBackends`（仅该实例 `type` 对应槽非默认）。
+/// Single instance → folded six-slot `PluginBackends` (only the slot matching this instance's `type` is non-default).
 #[must_use]
 pub fn plugin_backends_for_slot_entry(entry: &SlotRegistryEntry) -> PluginBackends {
     let mut one = BTreeMap::new();
@@ -707,7 +707,7 @@ pub fn plugin_backends_for_slot_entry(entry: &SlotRegistryEntry) -> PluginBacken
     slot_registry_to_plugin_backends(&one)
 }
 
-/// 所有 `type: agent` 且 `backend: directory` 的 `plugin` / `plugins[]` 合并（去重、字典序）。
+/// Merges all `type: agent` with `backend: directory` `plugin` / `plugins[]` (deduped, lexicographic order).
 #[must_use]
 pub fn merged_agent_directory_plugin_ids(
     registry: &BTreeMap<String, SlotRegistryEntry>,
@@ -842,11 +842,11 @@ fn validate_blueprint_v2_parsed(
     }
 }
 
-/// 校验 `meta.personality` 对象或七维数组。
+/// Validates `meta.personality` object or seven-dimensional array.
 ///
 /// # Errors
 ///
-/// 维度非法或超出 0.0～1.0 时返回 `Err` 说明字符串。
+/// Returns an `Err` message when a dimension is invalid or outside 0.0–1.0.
 pub fn validate_meta_personality(value: &Value) -> Result<(), String> {
     match value {
         Value::Array(arr) => {
@@ -954,7 +954,7 @@ fn allowed_backends_for_type(slot_type: &str) -> &'static [&'static str] {
     }
 }
 
-/// 将蓝图 `meta` 转为磁盘 manifest（v2/v3 共用）。
+/// Converts blueprint `meta` to disk manifest (shared by v2/v3).
 #[must_use]
 pub fn meta_to_disk_manifest(meta: &BlueprintMeta) -> DiskRoleManifest {
     let default_personality = meta

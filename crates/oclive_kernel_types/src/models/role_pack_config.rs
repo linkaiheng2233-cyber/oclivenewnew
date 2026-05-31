@@ -1,4 +1,4 @@
-//! 角色包 `config.json`（虚拟时间、记忆遗忘、关系疏远）。
+//! Role pack `config.json` (virtual time, memory decay, relation estrangement).
 
 use serde::{Deserialize, Serialize};
 
@@ -44,12 +44,12 @@ fn default_replay_similarity_threshold() -> f64 {
     0.6
 }
 
-/// 默认聊天记录存储位置为全局路径（向后兼容）。
+/// Default chat log storage location is the global path (backward compatible).
 fn default_chat_storage_location() -> String {
     "global".to_string()
 }
 
-/// `config.json` → `evolution`（虚拟时间驱动的阶段性性格沉淀）
+/// `config.json` → `evolution` (virtual-time-driven staged personality sedimentation)
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct RolePackEvolutionConfig {
     #[serde(default = "default_personality_evolution_interval_hours")]
@@ -98,7 +98,7 @@ pub struct RolePackRelationConfig {
     pub decay_halflife_days: f64,
     #[serde(default = "default_estrangement_threshold")]
     pub estrangement_threshold: f64,
-    /// 每次实际互动时，在疏远衰减后按 `(1 + recovery)` 回升亲密值。
+    /// On each real interaction, intimacy recovers by `(1 + recovery)` after estrangement decay.
     #[serde(default = "default_interaction_recovery")]
     pub interaction_recovery: f64,
 }
@@ -140,20 +140,20 @@ pub struct RolePackChatStorageConfig {
     /// Storage backend; default `hybrid`.
     #[serde(default)]
     pub backend: Option<ChatStorageBackendKind>,
-    /// 单会话最多保留消息条数（user+assistant 合计）；未设则用宿主默认 500。
+    /// Max messages per session (user + assistant combined); host default 500 when unset.
     #[serde(default)]
     pub max_messages_per_session: Option<u32>,
-    /// 保留最近 N 天内更新的会话；超出自动清理。未设则不启用。
+    /// Keep sessions updated within the last N days; older ones are auto-cleaned. Disabled when unset.
     #[serde(default)]
     pub auto_cleanup_days: Option<u32>,
-    /// 每个角色最多保留 N 个会话；超出删除最旧。未设则不启用。
+    /// Max N sessions per role; oldest removed when exceeded. Disabled when unset.
     #[serde(default)]
     pub auto_cleanup_max_sessions: Option<u32>,
-    /// 记忆回放去重相似度阈值（0.0–1.0）；未设则默认 0.6。
+    /// Memory replay dedup similarity threshold (0.0–1.0); default 0.6 when unset.
     #[serde(default = "default_replay_similarity_threshold")]
     pub replay_similarity_threshold: f64,
-    /// `"role_pack"` 则聊天记录存储在角色包目录下的 `chats/` 子目录；
-    /// `"global"` 或不配置则使用默认 `{app_data}/chats/`。
+    /// `"role_pack"` stores chat logs under `chats/` in the role pack directory;
+    /// `"global"` or unset uses the default `{app_data}/chats/`.
     #[serde(default = "default_chat_storage_location")]
     pub location: String,
 }

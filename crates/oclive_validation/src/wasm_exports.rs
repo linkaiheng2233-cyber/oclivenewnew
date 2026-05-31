@@ -1,4 +1,4 @@
-//! wasm-bindgen 导出（仅 `wasm32` + `feature = "wasm"`）。
+//! wasm-bindgen exports (only `wasm32` + `feature = "wasm"`).
 
 use crate::manifest::DiskRoleManifest;
 use crate::role_pack::validate_role_pack_loaded;
@@ -6,9 +6,9 @@ use crate::validate::{validate_disk_manifest, validate_min_runtime_version};
 use serde_json;
 use wasm_bindgen::prelude::*;
 
-/// 校验合并后的 manifest JSON、场景 id 列表，以及（可选）最低宿主版本。
-/// `host_runtime_version` 传与 oclivenewnew `Cargo.toml` 对齐的 semver（如 `0.2.0`）；空字符串则跳过 `min_runtime_version` 检查。
-/// 错误时返回与运行时一致的中文 `Err` 字符串。
+/// Validate merged manifest JSON, scene id list, and (optionally) minimum host version.
+/// Pass `host_runtime_version` as semver aligned with oclivenewnew `Cargo.toml` (e.g. `0.2.0`); empty string skips `min_runtime_version` check.
+/// On error, returns Chinese `Err` strings consistent with runtime.
 #[wasm_bindgen(js_name = validateManifestWasm)]
 pub fn validate_manifest_wasm(
     manifest_json: &str,
@@ -30,8 +30,8 @@ pub fn validate_manifest_wasm(
     Ok(())
 }
 
-/// 内存中校验角色包（`manifest` + 可选 `settings` + 已合并场景 id 列表）。
-/// `settings_json` 为空字符串表示无 `settings.json`；`merged_scene_ids_json` 为 JSON 字符串数组。
+/// In-memory role pack validation (`manifest` + optional `settings` + merged scene id list).
+/// Empty `settings_json` means no `settings.json`; `merged_scene_ids_json` is a JSON string array.
 #[wasm_bindgen(js_name = validateRolePackWasm)]
 pub fn validate_role_pack_wasm(
     manifest_json: &str,

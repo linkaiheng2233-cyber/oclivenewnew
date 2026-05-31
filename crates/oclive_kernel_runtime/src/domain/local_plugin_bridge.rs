@@ -1,4 +1,4 @@
-//! 本地插件桥接抽象（Phase 2 骨架）：统一 provider 注册与版本门禁。
+//! Local plugin bridge abstraction (Phase 2 skeleton): unified provider registration and version gating.
 
 pub use crate::local_plugin::{
     LocalPluginCapability, LocalPluginProviderDescriptor, LOCAL_PLUGIN_SCHEMA_VERSION,
@@ -11,9 +11,9 @@ use std::sync::Arc;
 
 pub use oclive_kernel_contracts::LocalPluginBridge;
 
-/// 文件清单桥接：从目录中的 JSON 描述文件发现本地 provider。
+/// File-manifest bridge: discovers local providers from JSON descriptor files in a directory.
 ///
-/// 约定：扫描目录下 `*.json`，每个文件应是 `LocalPluginProviderDescriptor`。
+/// Convention: scan `*.json` under the directory; each file must be a `LocalPluginProviderDescriptor`.
 pub struct FileManifestLocalPluginBridge {
     manifest_dir: PathBuf,
 }

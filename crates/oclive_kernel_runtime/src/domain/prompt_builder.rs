@@ -1,9 +1,9 @@
-//! 提示词构建：角色、记忆、关系与场景话题提示
+//! Prompt construction: role, memory, relation, and scene topic hints.
 
 use crate::models::{EventType, Memory, PersonalitySource, PersonalityVector, Role};
 pub use oclive_kernel_types::PromptInput;
 
-/// 引擎默认：固定「质量 + 边界」段（角色包 `reply_quality_anchor` 可整段覆盖）；与下文【回复结构】呼应。
+/// Engine default: fixed quality + boundary section (role pack `reply_quality_anchor` may replace the whole block); aligns with the reply-structure section below.
 pub const DEFAULT_REPLY_QUALITY_ANCHOR: &str = "【回复质量锚点】（每轮须遵守）\n\
 - **禁止复述用户**：不得以复述、照搬、仅替换少量词的方式重复用户刚说的话（包括把用户整句改述后当作你的开场）；用**全新措辞**接内容或情绪。\n\
 - **不替用户说话**：不要替用户拟定其尚未说出的具体台词、内心独白或整段立场；可共情、追问或邀请对方自己表达。\n\
@@ -29,7 +29,7 @@ pub fn effective_reply_quality_anchor(role: &crate::models::Role) -> &str {
 pub struct PromptBuilder;
 
 impl PromptBuilder {
-    /// 是否在【用户身份】中追加家人向长约束（好友/同学等默认不注入，以免冲淡角色包 `prompt_hint`）。
+    /// Whether to append a long family-oriented guardrail under user identity (friends/classmates etc. skip by default so role pack `prompt_hint` is not diluted).
     fn should_inject_family_long_guardrail(user_relation_id: &str, relation_hint: &str) -> bool {
         let family_id = user_relation_id.eq_ignore_ascii_case("family")
             || user_relation_id.eq_ignore_ascii_case("parent")
@@ -41,7 +41,7 @@ impl PromptBuilder {
         family_id || hint_suggests_family
     }
 
-    /// 【用户身份】：须优先于人设中与身份冲突的笼统描述（如同居文案 vs 用户扮演父母）。
+    /// User identity section: must override generic persona lines that conflict with the chosen identity (e.g. cohabitation copy vs user playing a parent).
     fn push_user_identity_section(prompt: &mut String, input: &PromptInput<'_>) {
         if !input.user_relation_id.is_empty() {
             let label = input
@@ -249,7 +249,7 @@ impl PromptBuilder {
     }
 
     fn build_memory_context(memories: &[Memory]) -> String {
-        // 不向模型暴露 importance 数值，避免被复述进用户可见回复造成「脱戏」
+        // Do not expose importance scores to the model, to avoid them leaking into user-visible replies and breaking immersion
         let mut context = String::from(
             "关于用户的记忆（已按相关性排序；请勿在回复中复述编号、括号或「重要性」等系统字样）:\n",
         );
@@ -440,7 +440,7 @@ impl PromptBuilder {
         )
     }
 
-    /// 从 `memory_config.topic_weights` 取当前场景下权重最高的话题，用于 prompt 一句提示
+    /// Picks the highest-weight topic for the current scene from `memory_config.topic_weights` for a one-line prompt hint.
     #[must_use]
     pub fn top_topic_hint(role: &Role, scene_id: &str) -> Option<String> {
         let mc = role.memory_config.as_ref()?;

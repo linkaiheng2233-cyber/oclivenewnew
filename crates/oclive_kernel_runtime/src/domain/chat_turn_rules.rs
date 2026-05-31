@@ -160,7 +160,7 @@ pub fn soft_append_guard(
     out
 }
 
-/// 去掉模型偶发输出的无意义英文碎片（如 `uppyuppy`），避免污染对话。
+/// Strips meaningless English fragments occasionally emitted by the model (e.g. `uppyuppy`) to avoid polluting dialogue.
 #[must_use]
 pub fn strip_hallucination_tokens(reply: &str) -> String {
     const JUNK: &str = "uppyuppy";

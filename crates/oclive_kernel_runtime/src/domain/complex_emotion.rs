@@ -1,4 +1,4 @@
-//! 复杂情感：内置关键词模式 + 可选 Remote/Directory 侧车（见 `creator-docs/.../COMPLEX_EMOTION_PLUGIN.md`）。
+//! Complex emotion: built-in keyword patterns + optional Remote/Directory sidecar (see `creator-docs/.../COMPLEX_EMOTION_PLUGIN.md`).
 
 use crate::domain::emotion_analyzer::EmotionResult;
 use crate::error::Result;
@@ -6,7 +6,7 @@ pub use oclive_kernel_types::{ComplexEmotionInput, ComplexEmotionOutput};
 
 pub use oclive_kernel_contracts::ComplexEmotionProvider;
 
-/// 由七维分数推导效价 / 掌控感近似（[-1, 1]），供宿主未显式传入 `user_valence`/`user_dominance` 时使用。
+/// Derives approximate valence / dominance ([-1, 1]) from seven-dimension scores when the host does not pass `user_valence`/`user_dominance`.
 #[must_use]
 pub fn affect_metrics_from_seven_dim(er: &EmotionResult) -> (f64, f64) {
     let v = er.joy + er.surprise * 0.25
@@ -26,7 +26,7 @@ fn contains_any(hay: &str, needles: &[&str]) -> bool {
     needles.iter().any(|n| hay.contains(n))
 }
 
-/// 内置关键词规则（离线可用）。
+/// Built-in keyword rules (available offline).
 pub struct BuiltinKeywordComplexEmotionProvider;
 
 impl BuiltinKeywordComplexEmotionProvider {
@@ -72,14 +72,14 @@ impl ComplexEmotionProvider for BuiltinKeywordComplexEmotionProvider {
 }
 
 impl BuiltinKeywordComplexEmotionProvider {
-    /// 供 Remote 降级路径直接调用（不经过 `Result` 包装）。
+    /// For Remote fallback paths to call directly (without `Result` wrapping).
     #[must_use]
     pub fn resolve_turn_inner(&self, input: &ComplexEmotionInput) -> ComplexEmotionOutput {
         let u = input.user_message.as_str();
         let v = input.user_valence.unwrap_or(0.0);
         let d = input.user_dominance.unwrap_or(0.0);
 
-        // 连续两轮用户回复≤2 字（需上一轮存在且本轮亦短）
+        // Two consecutive user replies of ≤2 chars (requires a previous turn and a short current turn)
         if let Some(prev) = input.previous_user_message.as_deref() {
             if user_text_len_chars(prev) <= 2 && user_text_len_chars(u) <= 2 {
                 return Self::base_output(

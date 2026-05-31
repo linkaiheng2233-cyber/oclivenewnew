@@ -334,7 +334,7 @@ impl Role {
         &self.ui_config
     }
 
-    /// 某身份 id 在角色包中配置的初始好感度；未知身份回退 50。
+    /// Initial favorability configured in the role pack for an identity id; unknown identities fall back to 50.
     #[must_use]
     pub fn initial_favorability_for_relation(&self, relation_id: &str) -> f64 {
         self.user_relations
@@ -344,7 +344,7 @@ impl Role {
             .unwrap_or(50.0)
     }
 
-    /// 解析本角色应使用的 Ollama 模型名（无网络 I/O）：**manifest** → **`OLLAMA_MODEL`** → **全局默认**。
+    /// Resolve the Ollama model name for this role (no network I/O): **manifest** → **`OLLAMA_MODEL`** → **global default**.
     #[must_use]
     pub fn resolve_ollama_model(&self, global_fallback: &str) -> String {
         if let Some(ref m) = self.ollama_model {

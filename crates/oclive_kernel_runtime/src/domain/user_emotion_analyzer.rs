@@ -1,4 +1,4 @@
-//! 用户/文本情绪分析可替换门面；默认委托 [`EmotionAnalyzer`](super::emotion_analyzer::EmotionAnalyzer)。
+//! Swappable user/text emotion-analysis facade; default delegates to [`EmotionAnalyzer`](super::emotion_analyzer::EmotionAnalyzer).
 
 use crate::domain::emotion_analyzer::{EmotionAnalyzer, EmotionResult};
 use crate::error::Result;
@@ -14,7 +14,7 @@ impl UserEmotionAnalyzer for BuiltinUserEmotionAnalyzer {
     }
 }
 
-/// 第二套内置：任意非空输入均返回 **纯中性** 七维分布（与 `BuiltinUserEmotionAnalyzer` 可区分，用于验证后端枚举）。
+/// Second builtin: any non-empty input returns a **fully neutral** seven-dimension distribution (distinct from `BuiltinUserEmotionAnalyzer`; used to verify backend enum wiring).
 pub struct BuiltinUserEmotionAnalyzerV2;
 
 impl UserEmotionAnalyzer for BuiltinUserEmotionAnalyzerV2 {

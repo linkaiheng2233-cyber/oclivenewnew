@@ -1,10 +1,10 @@
-//! 角色包根目录 `ui.json`：创作者推荐的前端布局（整壳、主题、布局与嵌入插槽）。
+//! Role pack root `ui.json`: creator-recommended frontend layout (shell, theme, layout, and embedded slots).
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::Path;
 
-/// 角色包建议的主题变量（供内置界面与插槽 iframe 通过 CSS 变量参考）。
+/// Role pack suggested theme variables (for the built-in UI and slot iframes via CSS variables).
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct ThemeConfig {
@@ -16,7 +16,7 @@ pub struct ThemeConfig {
     pub font_family: String,
 }
 
-/// 主界面布局偏好（内置 Vue 壳）。
+/// Main UI layout preferences (built-in Vue shell).
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct LayoutConfig {
@@ -28,7 +28,7 @@ pub struct LayoutConfig {
     pub chat_input: String,
 }
 
-/// 与磁盘 JSON 对齐（`settings.panel` / `role.detail` 键名）。
+/// Aligned with on-disk JSON keys (`settings.panel` / `role.detail`).
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
 pub struct UiConfig {
     #[serde(default)]
@@ -71,13 +71,13 @@ pub struct SlotConfig {
     pub order: Vec<String>,
     #[serde(default)]
     pub visible: Vec<String>,
-    /// 该插槽内按插件 id 指定的默认外观（`appearance_id`，与 manifest `ui_slots[].appearance_id` 一致）。
+    /// Default appearance per plugin id in this slot (`appearance_id`; matches manifest `ui_slots[].appearance_id`).
     #[serde(default)]
     pub appearance: HashMap<String, String>,
 }
 
 impl UiConfig {
-    /// 从角色包目录读取 `ui.json`；不存在或解析失败时返回默认空配置。
+    /// Read `ui.json` from a role pack directory; returns default empty config if missing or parse fails.
     #[must_use]
     pub fn load_from_path(path: &Path) -> Self {
         let raw = std::fs::read_to_string(path).ok();
@@ -87,7 +87,7 @@ impl UiConfig {
         serde_json::from_str(&s).unwrap_or_default()
     }
 
-    /// 无任何推荐（与缺省文件等价）：不触发「从包初始化」逻辑，可走 legacy 迁移或空状态。
+    /// No recommendations (equivalent to a missing file): skip pack-init logic; legacy migration or empty state may apply.
     #[must_use]
     pub fn is_effectively_empty(&self) -> bool {
         self.shell.trim().is_empty()

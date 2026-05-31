@@ -1,6 +1,6 @@
-//! 交互模式（沉浸 vs 纯聊）：解析、校验与 API 字符串，单点维护。
+//! Interaction mode (immersive vs pure chat): parsing, validation, and API strings in one place.
 
-/// 与 `role_runtime.interaction_mode`、DTO、`settings.json` 约定一致。
+/// Aligned with `role_runtime.interaction_mode`, DTOs, and `settings.json` conventions.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum InteractionMode {
     Immersive,
@@ -19,7 +19,7 @@ impl InteractionMode {
         }
     }
 
-    /// 任意来源（DB / 旧数据）→ 规范值；未知或空视为沉浸。
+    /// Any source (DB / legacy data) → canonical value; unknown or empty defaults to immersive.
     #[must_use]
     pub fn normalize(raw: Option<&str>) -> Self {
         match raw.map(str::trim).filter(|s| !s.is_empty()) {
@@ -36,7 +36,7 @@ impl InteractionMode {
     /// # Errors
     ///
     /// Returns [`Err`] with a human-readable message when the operation fails.
-    /// 校验角色包 `settings.json` 可选字段。
+    /// Validates the optional role pack `settings.json` field.
     pub fn validate_optional_pack_field(raw: Option<&str>) -> Result<(), String> {
         if let Some(s) = raw {
             let t = s.trim();
@@ -60,7 +60,7 @@ impl InteractionMode {
         }
     }
 
-    /// 供 API `interaction_mode_pack_default`：仅合法值原样透出。
+    /// For API `interaction_mode_pack_default`: pass through only valid values unchanged.
     #[must_use]
     pub fn pack_default_for_api(raw: Option<&str>) -> Option<String> {
         raw.and_then(|s| Self::parse_exact(s).map(|m| m.as_str().to_string()))

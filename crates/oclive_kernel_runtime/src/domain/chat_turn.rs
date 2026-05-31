@@ -1,9 +1,9 @@
-//! 单轮对话中的可复用步骤（纯函数或小结构），减轻 `chat_engine::process_message` 体量，
-//! 便于单测与后续扩展（例如替换记忆加权策略）。
+//! Reusable per-turn steps (pure functions or small structs) to slim `chat_engine::process_message`,
+//! ease unit tests, and allow extensions (e.g. swapping memory weighting).
 
 use crate::models::{Memory, Role};
 
-/// 同场景记忆按 manifest `scene_weight_multiplier` 加权（在检索相关记忆之前调用）。
+/// Weights same-scene memories by manifest `scene_weight_multiplier` (call before relevant-memory retrieval).
 pub fn weight_memories_for_scene(memories: &mut [Memory], scene_id: &str, multiplier: f64) {
     if (multiplier - 1.0).abs() < f64::EPSILON {
         return;
@@ -15,7 +15,7 @@ pub fn weight_memories_for_scene(memories: &mut [Memory], scene_id: &str, multip
     }
 }
 
-/// 当前用户关系键对应的提示文案与好感倍率（来自角色包 `user_relations`）。
+/// Prompt hint and favor multiplier for the current user relation key (from role pack `user_relations`).
 pub struct RelationFavorContext<'a> {
     pub relation_hint: &'a str,
     pub favor_mult: f64,

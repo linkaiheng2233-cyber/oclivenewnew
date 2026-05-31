@@ -31,6 +31,6 @@ mod tests {
         fav.add(50.0);
         assert_eq!(fav.value, 50.0);
         fav.add(100.0);
-        assert_eq!(fav.value, 100.0); // 应该被 clamp 到 100
+        assert_eq!(fav.value, 100.0); // should be clamped to 100
     }
 }

@@ -1,20 +1,20 @@
-//! 记忆引擎模块
-//! 管理短期和长期记忆，支持记忆检索和更新
+//! Memory engine module.
+//! Manages short- and long-term memory; supports retrieval and updates.
 
 use crate::models::{Memory, MemoryContext, RolePackMemoryConfig};
 use std::collections::HashSet;
 use std::collections::VecDeque;
 
-/// 短期记忆缓冲区（最多保留最近N条对话）
+/// Short-term buffer (keeps at most the last N conversation turns).
 const SHORT_TERM_CAPACITY: usize = 10;
 
-/// 记忆引擎
+/// Memory engine.
 pub struct MemoryEngine {
     short_term: VecDeque<Memory>,
 }
 
 impl MemoryEngine {
-    /// 创建新的记忆引擎
+    /// Creates a new memory engine.
     #[must_use]
     pub fn new() -> Self {
         Self {
@@ -22,7 +22,7 @@ impl MemoryEngine {
         }
     }
 
-    /// 添加短期记忆
+    /// Adds a short-term memory entry.
     pub fn add_short_term(&mut self, memory: Memory) {
         if self.short_term.len() >= SHORT_TERM_CAPACITY {
             self.short_term.pop_front();
@@ -89,8 +89,8 @@ impl MemoryEngine {
         memory
     }
 
-    /// 艾宾浩斯指数衰减：剩余强度 = 初始强度 × e^(-λ × 虚拟天数)。
-    /// 有效半衰期随 `mention_count` 延长（复习强化）。
+    /// Ebbinghaus exponential decay: remaining strength = initial × e^(-λ × virtual days).
+    /// Effective half-life grows with `mention_count` (reinforcement on review).
     #[must_use]
     pub fn apply_time_decay(
         mut memory: Memory,
@@ -110,7 +110,7 @@ impl MemoryEngine {
         memory
     }
 
-    /// 对一批记忆按虚拟时钟年龄衰减，并剔除低于 Prompt 阈值的条目。
+    /// Decays a batch by virtual-clock age and drops entries below the prompt threshold.
     pub fn apply_time_decay_batch(
         memories: &mut Vec<Memory>,
         virtual_now_ms: i64,
@@ -125,7 +125,7 @@ impl MemoryEngine {
         });
     }
 
-    /// 提取用于相似度比较的关键词（空白/标点分词 + 中文双字片段）。
+    /// Extracts keywords for similarity (whitespace/punctuation tokens + CJK bigram fragments).
     fn keyword_tokens(text: &str) -> HashSet<String> {
         let lower = text.to_lowercase();
         let mut set = HashSet::new();
@@ -146,7 +146,7 @@ impl MemoryEngine {
         set
     }
 
-    /// 双方关键词 Jaccard 重叠度 \[0, 1\]；中文内容额外用 4 字连续片段加权。
+    /// Keyword Jaccard overlap \[0, 1\] for both sides; CJK text also weights 4-character contiguous chunks.
     #[must_use]
     pub fn keyword_overlap_similarity(content_a: &str, content_b: &str) -> f64 {
         let clean = |s: &str| {
@@ -212,7 +212,7 @@ impl MemoryEngine {
         }
     }
 
-    /// 衰减记忆权重（旧 API，保留兼容测试）。
+    /// Decays memory weight (legacy API kept for compatibility tests).
     #[must_use]
     pub fn decay_weight(mut memory: Memory, days_passed: f64) -> Memory {
         let decay_factor = 0.95_f64.powf(days_passed);

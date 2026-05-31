@@ -1,27 +1,27 @@
-//! 目录插件 `manifest.json` → `permissions` 字段：与宿主运行时门禁、PLUGIN_V1 权限规范一致。
+//! Directory plugin `manifest.json` → `permissions` field: aligned with host runtime gates and PLUGIN_V1 permission spec.
 
-/// 允许插件 spawn 子进程（须用户授权 `process:spawn`）。
+/// Allows plugin to spawn child processes (requires user grant `process:spawn`).
 pub const PROCESS_SPAWN: &str = "process:spawn";
-/// 允许插件或 Remote 后端发起出站 HTTP（须用户授权 `network:*`）。
+/// Allows plugin or Remote backend outbound HTTP (requires user grant `network:*`).
 pub const NETWORK_WILDCARD: &str = "network:*";
-/// MCP over HTTP 传输（须用户授权 `mcp:http`，按 server `id` 粒度）。
+/// MCP over HTTP transport (requires user grant `mcp:http`, per server `id`).
 pub const MCP_HTTP: &str = "mcp:http";
-/// MCP over stdio 传输（须用户授权 `mcp:stdio`，按 server `id` 粒度）。
+/// MCP over stdio transport (requires user grant `mcp:stdio`, per server `id`).
 pub const MCP_STDIO: &str = "mcp:stdio";
 
-/// 规范允许的全部权限标识（顺序固定，供校验与文档对照）。
+/// All permission identifiers allowed by spec (fixed order, for validation and doc cross-reference).
 pub const ALLOWED: &[&str] = &[PROCESS_SPAWN, NETWORK_WILDCARD, MCP_HTTP, MCP_STDIO];
 
-/// Remote 侧车（`OCLIVE_REMOTE_PLUGIN_URL`）在 `network:*` 下的 grant `id`。
+/// Remote sidecar (`OCLIVE_REMOTE_PLUGIN_URL`) grant `id` under `network:*`.
 pub const NETWORK_GRANT_REMOTE_PLUGIN: &str = "remote:plugin";
-/// Remote LLM（`OCLIVE_REMOTE_LLM_URL`）在 `network:*` 下的 grant `id`。
+/// Remote LLM (`OCLIVE_REMOTE_LLM_URL`) grant `id` under `network:*`.
 pub const NETWORK_GRANT_REMOTE_LLM: &str = "remote:llm";
 
-/// 校验 `permissions` 数组：未知值报错；空数组合法。
+/// Validate `permissions` array: unknown values error; empty array is valid.
 ///
 /// # Errors
 ///
-/// 含不在 [`ALLOWED`] 内的条目时返回 `Err`。
+/// Returns `Err` when any entry is not in [`ALLOWED`].
 pub fn validate_permissions_list(permissions: &[String]) -> Result<(), String> {
     for p in permissions {
         let t = p.trim();
@@ -39,11 +39,11 @@ pub fn validate_permissions_list(permissions: &[String]) -> Result<(), String> {
     Ok(())
 }
 
-/// 从 manifest JSON 根对象解析并校验 `permissions`（缺省视为 `[]`）。
+/// Parse and validate `permissions` from manifest JSON root object (defaults to `[]`).
 ///
 /// # Errors
 ///
-/// JSON 非法或 `permissions` 校验失败。
+/// Invalid JSON or `permissions` validation failure.
 pub fn validate_directory_plugin_manifest_permissions(manifest_json: &str) -> Result<(), String> {
     let v: serde_json::Value = serde_json::from_str(manifest_json)
         .map_err(|e| format!("目录插件 manifest.json JSON 语法错误: {}", e))?;
@@ -73,7 +73,7 @@ fn parse_permissions_from_map(
     }
 }
 
-/// 是否声明需要 `process:spawn`（含旧版兼容：省略 `permissions` 且存在 `process` 块）。
+/// Whether `process:spawn` is declared (legacy compat: omitted `permissions` with a `process` block).
 #[must_use]
 pub fn manifest_declares_process_spawn(permissions: &[String], has_process_section: bool) -> bool {
     if permissions.iter().any(|p| p.trim() == PROCESS_SPAWN) {

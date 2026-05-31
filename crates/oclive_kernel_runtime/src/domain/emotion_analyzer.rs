@@ -1,25 +1,25 @@
-//! 情绪分析模块
+//! Emotion analysis module.
 //!
-//! 基于关键词匹配的7维度情绪分析
+//! Seven-dimension emotion analysis via keyword matching.
 
 use crate::error::Result;
 use crate::models::Emotion;
 pub use oclive_kernel_types::EmotionResult;
 
-/// 情绪分析器
+/// Emotion analyzer.
 pub struct EmotionAnalyzer;
 
 impl EmotionAnalyzer {
     /// # Errors
     ///
     /// Returns [`Err`] with a human-readable message when the operation fails.
-    /// 分析文本情绪
+    /// Analyzes text emotion.
     ///
     /// # Arguments
-    /// * `text` - 输入文本
+    /// * `text` - Input text
     ///
     /// # Returns
-    /// 情绪分析结果
+    /// Emotion analysis result
     ///
     /// # Examples
     /// ```
@@ -44,10 +44,10 @@ impl EmotionAnalyzer {
         }
 
         let text_lower = text.to_lowercase();
-        // 英文 token 用首尾空格包裹，避免 glove→love、made→mad 等子串误匹配
+        // Pad English tokens with spaces to avoid substring false positives (e.g. glove→love, made→mad).
         let padded_en = format!(" {text_lower} ");
 
-        // 快乐关键词（中 + 常见英/网语，便于日常聊天识别）
+        // Joy keywords (Chinese + common English/internet slang for everyday chat).
         let joy_keywords = [
             "开心",
             "高兴",
@@ -92,7 +92,7 @@ impl EmotionAnalyzer {
             }
         }
 
-        // 悲伤关键词
+        // Sadness keywords
         let sadness_keywords = [
             "难过",
             "伤心",
@@ -130,7 +130,7 @@ impl EmotionAnalyzer {
             }
         }
 
-        // 愤怒关键词（「讨厌」以愤怒通道为主，避免与厌恶双计）
+        // Anger keywords (routes the dislike keyword to anger to avoid double-counting with disgust).
         let anger_keywords = [
             "生气",
             "愤怒",
@@ -158,7 +158,7 @@ impl EmotionAnalyzer {
             }
         }
 
-        // 恐惧 / 焦虑
+        // Fear / anxiety
         let fear_keywords = ["害怕", "恐惧", "担心", "紧张", "焦虑", "慌", "不安", "吓人"];
         for keyword in &fear_keywords {
             if text_lower.contains(keyword) {
@@ -179,7 +179,7 @@ impl EmotionAnalyzer {
             }
         }
 
-        // 惊讶
+        // Surprise
         let surprise_keywords = [
             "惊讶",
             "意外",
@@ -203,7 +203,7 @@ impl EmotionAnalyzer {
             }
         }
 
-        // 厌恶（不与「讨厌」重复）
+        // Disgust (does not duplicate the dislike keyword used for anger)
         let disgust_keywords = ["厌恶", "恶心", "反感", "厌烦", "作呕"];
         for keyword in &disgust_keywords {
             if text_lower.contains(keyword) {
@@ -217,7 +217,7 @@ impl EmotionAnalyzer {
             }
         }
 
-        // 归一化
+        // Normalize
         let total: f64 = result.joy
             + result.sadness
             + result.anger
@@ -239,19 +239,19 @@ impl EmotionAnalyzer {
         Ok(result)
     }
 
-    /// 获取主导情绪
+    /// Returns the dominant emotion.
     ///
     /// # Arguments
-    /// * `result` - 情绪分析结果
+    /// * `result` - Emotion analysis result
     ///
     /// # Returns
-    /// 主导情绪类型
+    /// Dominant emotion type
     #[must_use]
     pub fn get_dominant_emotion(result: &EmotionResult) -> Emotion {
         result.dominant_emotion()
     }
 
-    /// 非中性情绪维度的最大分量（归一化后，与 `neutral` 互补）
+    /// Max non-neutral dimension after normalization (complements `neutral`).
     fn max_affective(result: &EmotionResult) -> f64 {
         result
             .joy
@@ -262,7 +262,7 @@ impl EmotionAnalyzer {
             .max(result.disgust)
     }
 
-    /// 写入主对话 prompt 的一行中文语气线索（含内部标签便于调试与插件对齐）。
+    /// One-line Chinese tone hint for the main dialogue prompt (includes internal labels for debugging and plugin alignment).
     #[must_use]
     pub fn format_for_prompt(result: &EmotionResult) -> String {
         let dom = Self::get_dominant_emotion(result);
@@ -290,13 +290,13 @@ impl EmotionAnalyzer {
         format!("{}（标签 {}，信号强度：{}）", hint_zh, dom, intensity)
     }
 
-    /// 计算情绪强度
+    /// Computes emotion intensity.
     ///
     /// # Arguments
-    /// * `emotion` - 情绪类型
+    /// * `emotion` - Emotion type
     ///
     /// # Returns
-    /// 情绪强度 [0.0, 1.0]
+    /// Emotion intensity [0.0, 1.0]
     #[must_use]
     pub fn calculate_intensity(emotion: &Emotion) -> f64 {
         match emotion {

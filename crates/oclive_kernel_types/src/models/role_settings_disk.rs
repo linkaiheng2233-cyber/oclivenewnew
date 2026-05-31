@@ -1,11 +1,11 @@
-//! 磁盘 `settings.json`：引擎相关字段，加载后合并进 `DiskRoleManifest` 再校验与转 `Role`。
+//! On-disk `settings.json`: engine fields merged into `DiskRoleManifest` before validation and `Role` conversion.
 //!
-//! 结构体定义见 [`oclive_validation::DiskRoleSettings`]。
+//! Struct definitions live in [`oclive_validation::DiskRoleSettings`].
 
 use super::role::{RemotePresenceConfig, Role};
 pub use oclive_validation::{DiskRoleSettings, CURRENT_SETTINGS_SCHEMA_VERSION};
 
-/// 从运行时 `Role` 生成完整 `settings.json` 内容（与旧版单文件 manifest 中引擎段一致）。
+/// Build full `settings.json` content from a runtime `Role` (matches the engine section of the legacy single-file manifest).
 #[must_use]
 pub fn disk_role_settings_from_role(role: &Role) -> DiskRoleSettings {
     use super::role_manifest_disk::EvolutionConfigDisk;

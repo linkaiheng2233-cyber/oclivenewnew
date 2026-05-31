@@ -1,6 +1,6 @@
-//! 磁盘 `manifest.json`（新角色包规范），反序列化后与内部 `Role` 映射。
+//! On-disk `manifest.json` (new role pack spec); maps to internal `Role` after deserialization.
 //!
-//! 结构体定义见共享 crate [`oclive_validation`]；此处提供 `Role` ↔ 磁盘 的转换函数。
+//! Struct definitions live in the shared crate [`oclive_validation`]; this module provides `Role` ↔ disk conversion helpers.
 
 use std::collections::HashMap;
 
@@ -14,7 +14,7 @@ use super::role::{
     UserRelation,
 };
 
-/// 从运行时 `Role` 生成可写回磁盘的 manifest（用于测试或导出）
+/// Build a disk-writable manifest from a runtime `Role` (for tests or export).
 #[must_use]
 pub fn disk_manifest_from_role(role: &Role) -> DiskRoleManifest {
     let mut default_personality: Vec<f32> = vec![

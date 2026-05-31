@@ -399,7 +399,7 @@ fn find_cycle(steps: &[PipelineStep]) -> Option<String> {
     None
 }
 
-/// 宿主加载 v3 蓝图后的结构化结果。
+/// Structured result after the host loads a v3 blueprint.
 #[derive(Debug, Clone)]
 pub struct BlueprintV3LoadResult {
     pub disk: crate::manifest::DiskRoleManifest,
@@ -413,7 +413,7 @@ pub struct BlueprintV3LoadResult {
     pub reply_quality_anchor: Option<String>,
 }
 
-/// 从蓝图 JSON 读取 `schema_version`（解析失败时返回 `None`）。
+/// Read `schema_version` from blueprint JSON (`None` when parsing fails).
 #[must_use]
 pub fn blueprint_schema_version_from_raw(raw: &str) -> Option<u32> {
     serde_json::from_str::<Value>(raw)
@@ -511,11 +511,11 @@ fn blueprint_v3_file_to_load_result(bp: &BlueprintV3File) -> BlueprintV3LoadResu
     }
 }
 
-/// 校验并加载 v3 角色目录下的 `pipeline.ocblueprint`。
+/// Validate and load `pipeline.ocblueprint` under a v3 role directory.
 ///
 /// # Errors
 ///
-/// 契约或磁盘校验失败时返回 `Err(Vec<String>)`。
+/// Returns `Err(Vec<String>)` when contract or on-disk validation fails.
 pub fn validate_role_pack_blueprint_v3_directory(
     role_dir: &Path,
     host_version: &str,
@@ -552,11 +552,11 @@ pub fn validate_role_pack_blueprint_v3_directory(
     Ok(())
 }
 
-/// 从角色目录加载 v3 蓝图（含 `runtime_config` 与 `pipeline.experimental`）。
+/// Load v3 blueprint from a role directory (includes `runtime_config` and `pipeline.experimental`).
 ///
 /// # Errors
 ///
-/// 契约或磁盘校验失败时返回 `Err(Vec<String>)`。
+/// Returns `Err(Vec<String>)` when contract or on-disk validation fails.
 pub fn load_blueprint_v3_for_role_dir(
     role_dir: &Path,
     host_version: &str,

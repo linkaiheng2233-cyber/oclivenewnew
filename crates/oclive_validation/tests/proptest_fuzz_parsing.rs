@@ -1,4 +1,4 @@
-//! AB5：proptest 模糊输入（manifest / settings / OOCP 形 JSON）；本地等价 `cargo fuzz` 烟测。
+//! AB5: proptest fuzz inputs (manifest / settings / OOCP-shaped JSON); local smoke equivalent to `cargo fuzz`.
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 

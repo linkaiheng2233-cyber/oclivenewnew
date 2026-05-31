@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use super::role::PersonalityDefaults;
 
-/// 运行时性格向量（旧七维，与 `PersonalityDefaults` 同序）
+/// Runtime personality vector (legacy seven dimensions; same order as `PersonalityDefaults`).
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct PersonalityVector {
     pub stubbornness: f64,
@@ -42,7 +42,7 @@ impl PersonalityVector {
         }
     }
 
-    /// 七维数组顺序：倔强…温暖
+    /// Seven-dimension array order: stubbornness … warmth.
     #[must_use]
     pub fn to_vec7(&self) -> Vec<f64> {
         vec![
@@ -70,7 +70,7 @@ impl PersonalityVector {
         }
     }
 
-    /// effective = clamp(core + delta) 各维到 evolution_bounds
+    /// `effective = clamp(core + delta)` per dimension to `evolution_bounds`.
     #[must_use]
     pub fn effective_from_core_delta(
         core: &PersonalityDefaults,
@@ -101,7 +101,7 @@ impl PersonalityVector {
         Ok(Self::from_vec7(&v))
     }
 
-    /// 分量差（用于从有效向量反推 delta）
+    /// Component-wise difference (used to infer delta from an effective vector).
     #[must_use]
     pub fn sub_components(a: &Self, b: &Self) -> Self {
         Self {
@@ -115,7 +115,7 @@ impl PersonalityVector {
         }
     }
 
-    /// 各维乘以 `factor`（用于时间遗忘：delta 向 0 收缩）。
+    /// Scale each dimension by `factor` (time forgetting: delta shrinks toward 0).
     pub fn scale_components(&mut self, factor: f64) {
         let f = factor.clamp(0.0, 1.0);
         self.stubbornness *= f;

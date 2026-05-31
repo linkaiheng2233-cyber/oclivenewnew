@@ -1,4 +1,4 @@
-//! 记忆检索可替换门面；默认实现委托 [`MemoryEngine`](super::memory_engine::MemoryEngine)。
+//! Swappable memory-retrieval facade; default delegates to [`MemoryEngine`](super::memory_engine::MemoryEngine).
 
 use crate::domain::memory_engine::MemoryEngine;
 use crate::error::Result;
@@ -8,7 +8,7 @@ pub use oclive_kernel_types::MemoryRetrievalInput;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
-/// 内置：按重要性 × 权重排序（与历史行为一致）
+/// Builtin: sort by importance × weight (matches historical behavior).
 pub struct BuiltinMemoryRetrieval;
 
 impl MemoryRetrieval for BuiltinMemoryRetrieval {
@@ -28,7 +28,7 @@ impl MemoryRetrieval for BuiltinMemoryRetrieval {
     }
 }
 
-/// 第二套内置：在 builtin 分数上叠加与用户查询的正文重合度
+/// Second builtin: adds query–content overlap on top of builtin scores.
 pub struct BuiltinMemoryRetrievalV2;
 
 fn query_overlap_boost(query: &str, content: &str) -> f64 {
@@ -81,7 +81,7 @@ impl MemoryRetrieval for BuiltinMemoryRetrievalV2 {
     }
 }
 
-/// Remote 占位：回退 builtin 并记一次警告
+/// Remote placeholder: falls back to builtin and logs a one-time warning.
 pub struct RemoteMemoryRetrievalPlaceholder {
     inner: BuiltinMemoryRetrieval,
     warned: AtomicBool,
@@ -133,7 +133,7 @@ impl Default for RemoteMemoryRetrievalPlaceholder {
     }
 }
 
-/// `plugin_backends.memory = local`：按注册表选中的本地 provider（当前仅用于观测与后续接入；排序委托 `fallback`）。
+/// `plugin_backends.memory = local`: registry-selected local provider (observability + future hook; ranking delegates to `fallback`).
 pub struct LocalPluginMemoryRetrieval {
     fallback: Arc<dyn MemoryRetrieval>,
     resolved_provider_id: Option<String>,

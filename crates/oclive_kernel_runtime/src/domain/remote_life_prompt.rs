@@ -1,12 +1,12 @@
-//! 异地「生活轨迹 / 心声」专用 prompt（与独白、同场景主对话语义不同）
+//! Remote inner-voice prompt for away-from-scene "life trajectory / inner thoughts" (distinct from monologue and co-present main dialogue).
 
 use crate::models::role::Role;
 
-/// 未配置占位时使用的整段默认（阻断错位共景 RP）
+/// Full default stub when nothing is configured (blocks mismatched co-present RP).
 pub const DEFAULT_REMOTE_STUB_MESSAGE: &str =
     "（你们此刻不在同一场景；切换到角色所在场景后再继续聊天吧。）";
 
-/// 配置了 `stub_ooc` 但未配置任何旁白句时的兜底旁白
+/// Fallback narrative tail when `stub_ooc` is set but no narrative lines are configured
 pub const DEFAULT_STUB_NARRATIVE_TAIL: &str = "她这会儿忙着呢，心里却忍不住瞄了一眼手机。";
 
 fn collect_stub_lines(role: &Role) -> Vec<&str> {
@@ -43,7 +43,7 @@ fn stub_rotation_index(len: usize) -> usize {
         % len
 }
 
-/// 轮换或单条选取占位文案（优先 manifest `life_trajectory.stub_messages`，其次 settings 遗留字段）。**未配置 `stub_ooc` 时**表示整段占位。
+/// Rotates or picks a single stub line (prefers manifest `life_trajectory.stub_messages`, then legacy settings fields). When **`stub_ooc` is not configured**, this is the full stub reply.
 #[must_use]
 pub fn pick_stub_message(role: &Role) -> String {
     let msgs = collect_stub_lines(role);
@@ -54,7 +54,7 @@ pub fn pick_stub_message(role: &Role) -> String {
     msgs[idx].to_string()
 }
 
-/// 关闭异地心声且异地时的完整回复：`stub_ooc` + 中文逗号 + 旁白句（旁白来自 `stub_messages` 轮换）；未配置 `stub_ooc` 时回退为 [`pick_stub_message`]。
+/// Full reply when remote inner voice is off and users are apart: `stub_ooc` + Chinese comma + narrative tail (from rotating `stub_messages`); falls back to [`pick_stub_message`] when `stub_ooc` is not configured.
 #[must_use]
 pub fn compose_remote_stub_reply(role: &Role) -> String {
     let Some(ref lt) = role.life_trajectory else {
@@ -93,11 +93,11 @@ pub fn compose_remote_stub_reply(role: &Role) -> String {
     format!("{}，{}", ooc, tail)
 }
 
-/// 组装异地心声主 LLM 提示（中文）
+/// Assembles the main remote inner-voice LLM prompt (Chinese output).
 ///
-/// `worldview_snippet` 为 [`crate::models::knowledge::KnowledgeIndex::format_for_prompt`] 的输出；空则跳过【世界观设定】段（与共景主对话语义对齐）。
+/// `worldview_snippet` is output from [`crate::models::knowledge::KnowledgeIndex::format_for_prompt`]; when empty, skips the worldview section (aligned with co-present main dialogue semantics).
 #[allow(clippy::too_many_arguments)]
-/// `mutable_personality`：人设优先模式下由 LLM 维护的「可变性格档案」全文；空则跳过该段。
+/// `mutable_personality`: full mutable personality profile maintained by the LLM in persona-first mode; skipped when empty.
 #[must_use]
 pub fn build_remote_life_prompt(
     role: &Role,

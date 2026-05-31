@@ -1,4 +1,4 @@
-//! 虚拟时间 + manifest `life_schedule` → 当前活动态（不修改好感等业务数值）
+//! Virtual time + manifest `life_schedule` → current activity state (does not change favorability or other business values).
 
 use crate::models::role::{LifeAvailability, LifeScheduleDisk, LifeState};
 use chrono::{DateTime, Datelike, Duration, FixedOffset, NaiveDate, Timelike};
@@ -21,7 +21,7 @@ fn minute_in_window(cur: u16, start: u16, end: u16) -> bool {
     }
 }
 
-/// 由虚拟时间戳（UTC 毫秒）与创作者日程解析当前态；无匹配片段时返回 `None`（保持对话行为与未配置一致）。
+/// Resolves the current state from a virtual timestamp (UTC ms) and the creator schedule; returns `None` when no segment matches (same behavior as unconfigured).
 #[must_use]
 pub fn resolve_life_state(virtual_time_ms: i64, schedule: &LifeScheduleDisk) -> Option<LifeState> {
     if virtual_time_ms <= 0 || schedule.entries.is_empty() {
@@ -60,7 +60,7 @@ pub fn resolve_life_state(virtual_time_ms: i64, schedule: &LifeScheduleDisk) -> 
     None
 }
 
-/// 供主对话 / 异地心声注入的一行短约束（中文）
+/// One-line short constraint for main dialogue / remote inner-voice injection (Chinese output).
 #[must_use]
 pub fn format_life_prompt_line(state: &LifeState, user_remote_from_character: bool) -> String {
     let busy = if state.busy_level >= 0.65 {
@@ -93,7 +93,7 @@ pub fn format_life_prompt_line(state: &LifeState, user_remote_from_character: bo
     }
 }
 
-/// 沉浸模式首次锚点：取日程表**第一条**片段的星期与 `time_start`（角色包本地时区）。
+/// Immersive-mode first anchor: weekday and `time_start` from the **first** schedule segment (role-pack local timezone).
 #[must_use]
 pub fn virtual_start_ms_from_schedule(
     anchor_real_ms: i64,

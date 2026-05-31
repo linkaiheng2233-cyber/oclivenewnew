@@ -1,8 +1,8 @@
-//! 人格轴与表达驱动：事件影响与立绘纠偏共用，避免两处公式漂移。
+//! Personality axes and expression drives: shared by event impact and portrait correction to keep formulas in sync.
 
 use crate::models::PersonalityVector;
 
-/// 轻量三轴：softness / coldness / volatility（与立绘纠偏一致）。
+/// Lightweight three axes: softness / coldness / volatility (aligned with portrait correction).
 #[inline]
 #[must_use]
 pub fn softness_coldness_volatility(personality: &PersonalityVector) -> (f64, f64, f64) {
@@ -19,7 +19,7 @@ pub fn softness_coldness_volatility(personality: &PersonalityVector) -> (f64, f6
     (softness, coldness, volatility)
 }
 
-/// 戒备态驱动（不新增标签，仅细化中间态）。
+/// Guarded-state drive (no new labels; refines intermediate states only).
 #[inline]
 #[must_use]
 pub fn guarded_drive(personality: &PersonalityVector) -> f64 {
@@ -30,7 +30,7 @@ pub fn guarded_drive(personality: &PersonalityVector) -> f64 {
         .clamp(0.0, 1.0)
 }
 
-/// 受伤态驱动。
+/// Hurt-state drive.
 #[inline]
 #[must_use]
 pub fn hurt_drive(personality: &PersonalityVector) -> f64 {
@@ -41,7 +41,7 @@ pub fn hurt_drive(personality: &PersonalityVector) -> f64 {
         .clamp(0.0, 1.0)
 }
 
-/// 试探态驱动。
+/// Probing-state drive.
 #[inline]
 #[must_use]
 pub fn probing_drive(personality: &PersonalityVector) -> f64 {

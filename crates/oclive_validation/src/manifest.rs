@@ -1,9 +1,9 @@
-//! 磁盘 `manifest.json` 结构体：与 `oclivenewnew` 运行时 serde 形状一致（单一事实来源在本 crate）。
+//! Disk `manifest.json` structs: serde shape aligned with `oclivenewnew` runtime (SSOT in this crate).
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-/// manifest 中 `knowledge` 块（与 `models/knowledge.rs` 对齐）
+/// `knowledge` block in manifest (aligned with `models/knowledge.rs`).
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct KnowledgePackConfigDisk {
     #[serde(default = "default_knowledge_enabled")]
@@ -124,7 +124,7 @@ pub struct DiskRoleManifest {
     pub dev_only: bool,
     #[serde(default)]
     pub knowledge: Option<KnowledgePackConfigDisk>,
-    /// 最低 oclive 宿主版本（semver，如 `"0.2.0"`）；省略则不检查。
+    /// Minimum oclive host version (semver, e.g. `"0.2.0"`); omitted means no check.
     #[serde(default)]
     pub min_runtime_version: Option<String>,
 }
@@ -133,7 +133,7 @@ fn is_false(b: &bool) -> bool {
     !*b
 }
 
-/// 性格驱动方式：`vector` 为历史七维增量演化；`profile` 以人设正文（核心 + 可变档案）为准，七维由正文归纳。
+/// Personality source: `vector` uses legacy seven-dimensional incremental evolution; `profile` derives dimensions from persona text (core + mutable profile).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum PersonalitySource {

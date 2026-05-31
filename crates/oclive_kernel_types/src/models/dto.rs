@@ -24,7 +24,7 @@ pub struct SendMessageRequest {
     pub user_message: String,
     #[serde(default)]
     pub scene_id: Option<String>,
-    /// 可选：区分同角色的多路会话（如 HTTP 试聊「新会话」）；与 `role_id` 组合为内部 DB 命名空间。
+    /// Optional: distinguishes multiple sessions for the same role (e.g. HTTP trial chat "new session"); combined with `role_id` as the internal DB namespace.
     #[serde(default)]
     pub session_id: Option<String>,
 }
@@ -48,7 +48,7 @@ pub struct DetectedEventDto {
     pub confidence: f32,
 }
 
-/// `send_message` 的共景 / 异地占位 / 异地心声 模式（供 UI 样式与调试）
+/// `send_message` co-present / remote-presence stub / remote inner-voice modes (for UI styling and debugging).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum PresenceMode {
@@ -62,37 +62,37 @@ pub enum PresenceMode {
 pub struct SendMessageResponse {
     pub api_version: u32,
     pub schema: u32,
-    /// 共景 / 异地占位 / 异地心声
+    /// Co-present / remote-presence stub / remote inner voice.
     pub presence_mode: PresenceMode,
-    /// 本回合结束后的关系阶段（`role_runtime.relation_state`）
+    /// Relation state after this turn (`role_runtime.relation_state`).
     pub relation_state: String,
     pub reply: String,
-    /// 用户输入侧情绪分析（七维），供调试或 UI 高级展示
+    /// User-input emotion analysis (seven dimensions); for debugging or advanced UI display.
     pub emotion: EmotionDto,
-    /// 本回合解析后的 bot 情绪标签（小写英文，与 `Emotion::Display` 一致）
+    /// Bot emotion label parsed this turn (lowercase English; matches `Emotion::Display`).
     pub bot_emotion: String,
-    /// 立绘用表情（LLM+人设+事件综合；`role_runtime.current_emotion` 与此一致）
+    /// Portrait expression (LLM + persona + events combined; matches `role_runtime.current_emotion`).
     pub portrait_emotion: String,
     pub favorability_delta: f32,
     pub favorability_current: f32,
     pub events: Vec<DetectedEventDto>,
     pub scene_id: String,
-    /// 用户表达了位移/前往意图时由后端置 true；实际切换仅通过 `switch_scene`。
+    /// Set by the backend when the user expresses travel/move intent; actual scene switch only via `switch_scene`.
     pub offer_destination_picker: bool,
-    /// 规则/模型判定用户邀请角色「同行前往」时置 true；确认后应 `switch_scene`（`together: true`）。
+    /// Set when rules/model detect the user inviting the role to travel together; confirm via `switch_scene` (`together: true`).
     #[serde(default)]
     pub offer_together_travel: bool,
-    /// 主对话 LLM 失败时是否使用了备用短回复（共景 / 异地心声均可能）。
+    /// Whether a fallback short reply was used after main dialogue LLM failure (co-present or remote inner voice).
     #[serde(default)]
     pub reply_is_fallback: bool,
-    /// `reply_is_fallback = true` 时可选：主 LLM 失败原因（供 UI 提示，不含完整 Prompt）。
+    /// When `reply_is_fallback = true`, optional main LLM failure reason (for UI hint; no full prompt).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub llm_fallback_reason: Option<String>,
-    /// 本回合写入主/异地 Prompt 的检索到的知识块条数（0 表示未注入或未命中）。
+    /// Knowledge chunks retrieved and injected into main/remote prompt this turn (0 = none injected or no hit).
     #[serde(default)]
     pub knowledge_chunks_in_prompt: u32,
     pub timestamp: i64,
-    /// CoPresent 写入 `chat_messages` 后的 user 行 id；未写入时为 `None`。
+    /// User row id after CoPresent writes to `chat_messages`; `None` if not written.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub user_message_id: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -103,9 +103,9 @@ pub struct SendMessageResponse {
     pub assistant_message_timestamp: Option<String>,
 }
 
-// ----- WEEK3-004：角色 / 记忆 / 事件查询 -----
+// ----- WEEK3-004: role / memory / event queries -----
 
-/// 身份下拉里「跟随创作者 manifest 默认身份」选项提交该常量（非 manifest 键名）。
+/// Sentinel submitted for the identity dropdown option "follow creator manifest default identity" (not a manifest key).
 pub const OCLIVE_DEFAULT_RELATION_SENTINEL: &str = "__oclive_default__";
 
 /// Manifest-defined user identity option (`get_role_info` / relation pickers).
@@ -115,7 +115,7 @@ pub struct UserRelationDto {
     pub name: String,
     pub prompt_hint: String,
     pub favor_multiplier: f32,
-    /// 角色包为该身份配置的初始好感度（0～100）；切换身份时会同步到当前好感。
+    /// Initial favorability configured for this identity in the role pack (0–100); synced to current favorability on identity switch.
     pub initial_favorability: f64,
 }
 
@@ -129,58 +129,58 @@ pub struct RoleData {
     pub description: String,
     pub personality_vector: Vec<f64>,
     pub current_favorability: f64,
-    /// 占位；持久化 bot 情绪见后续里程碑
+    /// Placeholder; persisted bot emotion deferred to a later milestone.
     pub current_emotion: String,
     pub memory_count: i32,
     pub event_count: i32,
-    /// 角色包内定义的关系选项
+    /// Relation options defined in the role pack.
     pub user_relations: Vec<UserRelationDto>,
-    /// manifest 默认关系键
+    /// Manifest default relation key.
     pub default_relation: String,
-    /// 关系阶段（好感度驱动的阶段，如 Stranger / Friend）
+    /// Relation state (favorability-driven stage, e.g. Stranger / Friend).
     pub relation_state: String,
-    /// 当前运行时关系（解析后的 manifest 键）
+    /// Current runtime relation (resolved manifest key).
     pub current_user_relation: String,
     pub use_manifest_default: bool,
-    /// 异地时是否生成「生活轨迹与心声」（用户开关，持久化于 `role_runtime`）
+    /// When remote-presence: whether to generate life trajectory and inner voice (user toggle; persisted in `role_runtime`).
     pub remote_life_enabled: bool,
-    /// 角色包 `settings.json` 中 `remote_presence.default_enabled`（模式开关建议值），仅作 UI 默认提示
+    /// Role pack `settings.json` → `remote_presence.default_enabled` (suggested mode default); UI hint only.
     pub remote_life_pack_default: Option<bool>,
-    /// 有效事件影响系数（DB 覆盖 manifest 默认值）
+    /// Effective event impact factor (DB overrides manifest default).
     pub event_impact_factor: f64,
     /// `evolution.personality_source`：`vector` | `profile`
     #[serde(default)]
     pub personality_source: PersonalitySource,
-    /// 本角色实际使用的 Ollama 模型（manifest → `OLLAMA_MODEL` → 全局默认）
+    /// Ollama model used by this role (manifest → `OLLAMA_MODEL` → global default).
     pub effective_ollama_model: String,
-    /// 身份是否与场景绑定（manifest `identity_binding`）
+    /// Whether identity is scene-bound (manifest `identity_binding`).
     pub identity_binding: IdentityBinding,
-    /// 当前交互模式（`role_runtime`）
+    /// Current interaction mode (`role_runtime`).
     pub interaction_mode: String,
-    /// 角色包 `settings.json` 建议默认（可选）
+    /// Suggested role pack default from `settings.json` (optional).
     pub interaction_mode_pack_default: Option<String>,
-    /// 当前日程推断（无配置或未命中时段时为 `null`）
+    /// Current schedule inference (`null` when unconfigured or no matching time slot).
     #[serde(default)]
     pub current_life: Option<LifeStateDto>,
-    /// `settings.json` → `plugin_backends`（与运行时 `PluginHost` 解析一致）
+    /// `settings.json` → `plugin_backends` (matches runtime `PluginHost` resolution).
     #[serde(default)]
     pub plugin_backends: PluginBackends,
-    /// 会话级覆盖（仅当前会话命名空间；无覆盖为 `null`）。
+    /// Session-level override (current session namespace only; `null` when none).
     #[serde(default)]
     pub plugin_backends_session_override: Option<PluginBackendsOverride>,
-    /// 会话级覆盖叠加后的有效后端（供运行时面板展示与切换回显）。
+    /// Effective backends after session override (runtime panel display and toggle echo).
     #[serde(default)]
     pub plugin_backends_effective: PluginBackends,
-    /// 有效后端来源（pack/session/env）。
+    /// Effective backend source (pack/session/env).
     #[serde(default)]
     pub plugin_backends_effective_sources: PluginBackendsSourceMap,
-    /// 角色包根目录 `ui.json`（主题、布局、插槽等）。
+    /// Role pack root `ui.json` (theme, layout, slots, etc.).
     #[serde(default)]
     pub pack_ui_config: UiConfig,
-    /// `author.suggested_ui`（若非空）否则与 `pack_ui_config` 相同；插件 UI 种子/重置基线。
+    /// `author.suggested_ui` when non-empty, else same as `pack_ui_config`; plugin UI seed/reset baseline.
     #[serde(default)]
     pub pack_ui_baseline: UiConfig,
-    /// 可选 `author.json` 全文（推荐插件、建议后端等）。
+    /// Optional full `author.json` (recommended plugins, suggested backends, etc.).
     #[serde(default)]
     pub author_pack: Option<AuthorPackFile>,
     #[serde(default)]
@@ -189,7 +189,7 @@ pub struct RoleData {
     pub slot_registry_effective: Option<BTreeMap<String, oclive_validation::SlotRegistryEntry>>,
     #[serde(default)]
     pub slot_session_overridden_keys: Vec<String>,
-    /// v2 蓝图 `groups`（架构图逻辑分组；legacy 为 `null`）。
+    /// v2 blueprint `groups` (architecture diagram logical grouping; `null` for legacy).
     #[serde(default)]
     pub blueprint_groups_pack: Option<BTreeMap<String, oclive_validation::SlotGroupEntry>>,
 }
@@ -210,7 +210,7 @@ pub struct SceneLabelEntry {
     pub label: String,
 }
 
-/// 虚拟时间 + manifest `life_schedule` 推断的当前活动（供 UI / 调试）
+/// Current activity inferred from virtual time + manifest `life_schedule` (UI / debug).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LifeStateDto {
     pub label: String,
@@ -245,81 +245,81 @@ pub struct RoleInfo {
     #[serde(default)]
     pub personality_source: PersonalitySource,
     pub last_interaction: Option<String>,
-    /// 可用场景 id（manifest + `scenes/` 目录）
+    /// Available scene ids (manifest + `scenes/` directory).
     pub scenes: Vec<String>,
-    /// 与 `scenes` 顺序一致；`label` 来自 `scenes/{id}/scene.json` 的 `name` 或内置映射
+    /// Same order as `scenes`; `label` from `scenes/{id}/scene.json` `name` or built-in mapping.
     pub scene_labels: Vec<SceneLabelEntry>,
     pub current_scene: Option<String>,
-    /// 用户叙事/发消息上下文场景（持久化）；与 `current_scene` 可不同。
+    /// User narrative / send-message context scene (persisted); may differ from `current_scene`.
     pub user_presence_scene: Option<String>,
-    /// 虚拟世界时间（UTC 毫秒）；0 表示尚未通过 `get_time_state` 初始化
+    /// Virtual world time (UTC ms); 0 if not yet initialized via `get_time_state`.
     pub virtual_time_ms: i64,
     pub user_relations: Vec<UserRelationDto>,
     pub default_relation: String,
     pub current_user_relation: String,
-    /// 用户是否选择「默认身份」（跟随 manifest `default_relation`）；为 true 时下拉应选中 `OCLIVE_DEFAULT_RELATION_SENTINEL`。
+    /// Whether the user selected "default identity" (follows manifest `default_relation`); when true the dropdown should show `OCLIVE_DEFAULT_RELATION_SENTINEL`.
     pub use_manifest_default: bool,
-    /// 关系阶段（`role_runtime.relation_state`）
+    /// Relation state (`role_runtime.relation_state`).
     pub relation_state: String,
-    /// 异地心声开关
+    /// Remote inner voice toggle.
     pub remote_life_enabled: bool,
-    /// 角色包建议默认是否开启异地心声（`settings.json` → `remote_presence.default_enabled`）
+    /// Role pack suggested default for remote inner voice (`settings.json` → `remote_presence.default_enabled`).
     pub remote_life_pack_default: Option<bool>,
     pub event_impact_factor: f64,
-    /// 本角色实际使用的 Ollama 模型（manifest → `OLLAMA_MODEL` → 全局默认）
+    /// Ollama model actually used by this role (manifest → `OLLAMA_MODEL` → global default).
     pub effective_ollama_model: String,
-    /// 身份是否与场景绑定（manifest `identity_binding`）
+    /// Whether identity is scene-bound (manifest `identity_binding`).
     pub identity_binding: IdentityBinding,
-    /// 当前交互模式（`role_runtime`）
+    /// Current interaction mode (`role_runtime`).
     pub interaction_mode: String,
-    /// 角色包 `settings.json` 建议默认（可选）
+    /// Suggested role pack default from `settings.json` (optional).
     pub interaction_mode_pack_default: Option<String>,
-    /// 当前日程推断（无配置或未命中时段时为 `null`）
+    /// Current schedule inference (`null` when unconfigured or no time window matches).
     #[serde(default)]
     pub current_life: Option<LifeStateDto>,
-    /// `settings.json` → `plugin_backends`（与 `load_role` / 编排层一致）
+    /// `settings.json` → `plugin_backends` (consistent with `load_role` / orchestration layer).
     #[serde(default)]
     pub plugin_backends: PluginBackends,
-    /// 会话级覆盖（仅当前会话命名空间；无覆盖为 `null`）。
+    /// Session-level override (current session namespace only; `null` when none).
     #[serde(default)]
     pub plugin_backends_session_override: Option<PluginBackendsOverride>,
-    /// 会话级覆盖叠加后的有效后端（供运行时面板展示与切换回显）。
+    /// Effective backends after session override (runtime panel display and toggle echo).
     #[serde(default)]
     pub plugin_backends_effective: PluginBackends,
-    /// 有效后端来源（pack/session/env）。
+    /// Effective backend source (pack/session/env).
     #[serde(default)]
     pub plugin_backends_effective_sources: PluginBackendsSourceMap,
-    /// 当前磁盘加载的角色是否含世界观知识索引（`knowledge_index` 已构建）
+    /// Whether the currently loaded role has a worldview knowledge index built (`knowledge_index`).
     #[serde(default)]
     pub knowledge_enabled: bool,
-    /// `knowledge_index.chunks` 条数；未加载索引时为 0
+    /// `knowledge_index.chunks` count; 0 when index not loaded.
     #[serde(default)]
     pub knowledge_chunk_count: i32,
-    /// 角色包根目录 `ui.json`（主题、布局、插槽等）。
+    /// Role pack root `ui.json` (theme, layout, slots, etc.).
     #[serde(default)]
     pub pack_ui_config: UiConfig,
-    /// `author.suggested_ui`（若非空）否则与 `pack_ui_config` 相同；插件 UI 种子/重置基线。
+    /// `author.suggested_ui` when non-empty, else same as `pack_ui_config`; plugin UI seed/reset baseline.
     #[serde(default)]
     pub pack_ui_baseline: UiConfig,
-    /// 可选 `author.json`。
+    /// Optional `author.json`.
     #[serde(default)]
     pub author_pack: Option<AuthorPackFile>,
-    /// 角色包 `slot_registry`（v2 蓝图；legacy 包为 `null`）。
+    /// Role pack `slot_registry` (v2 blueprint; `null` for legacy packs).
     #[serde(default)]
     pub slot_registry_pack: Option<BTreeMap<String, oclive_validation::SlotRegistryEntry>>,
-    /// 会话覆盖叠加后的 effective `slot_registry`。
+    /// Effective `slot_registry` after session overrides.
     #[serde(default)]
     pub slot_registry_effective: Option<BTreeMap<String, oclive_validation::SlotRegistryEntry>>,
-    /// 当前会话中存在覆盖的实例键列表。
+    /// Instance keys with overrides in the current session.
     #[serde(default)]
     pub slot_session_overridden_keys: Vec<String>,
-    /// v2 蓝图 `groups`（架构图逻辑分组；legacy 为 `null`）。
+    /// v2 blueprint `groups` (architecture diagram logical grouping; `null` for legacy).
     #[serde(default)]
     pub blueprint_groups_pack: Option<BTreeMap<String, oclive_validation::SlotGroupEntry>>,
-    /// `runtime_config.dual_core.enabled` 且 `pipeline.experimental` 非空。
+    /// `runtime_config.dual_core.enabled` and `pipeline.experimental` is non-empty.
     #[serde(default)]
     pub dual_core_enabled: bool,
-    /// `pipeline.experimental` action 列表（架构图 / 调试只读）。
+    /// `pipeline.experimental` action list (architecture diagram / debug read-only).
     #[serde(default)]
     pub pipeline_experimental_actions: Vec<String>,
 }
@@ -328,7 +328,7 @@ pub struct RoleInfo {
 #[derive(Debug, Clone, Deserialize)]
 pub struct SetSessionSlotOverrideRequest {
     pub role_id: String,
-    /// `slot_registry` 实例键（如 `memory`、`llm`）。
+    /// `slot_registry` instance key (e.g. `memory`, `llm`).
     pub slot_key: String,
     #[serde(default)]
     pub backend: Option<String>,
@@ -359,7 +359,7 @@ pub struct ClearAllSessionSlotOverridesRequest {
     pub session_id: Option<String>,
 }
 
-/// 将完整 `slot_registry` 写回角色包 `pipeline.ocblueprint`（架构图 R2 写盘）。
+/// Write full `slot_registry` back to role pack `pipeline.ocblueprint` (architecture diagram R2 disk write).
 #[derive(Debug, Clone, Deserialize)]
 pub struct SaveRoleSlotRegistryRequest {
     pub role_id: String,
@@ -392,7 +392,7 @@ pub struct SetSceneUserRelationRequest {
     pub relation: String,
 }
 
-/// 移除当前场景的身份覆盖，使对话身份回退到全局有效身份（`use_manifest_default` / `user_relation`）。
+/// Remove scene identity override so conversation identity falls back to global effective identity (`use_manifest_default` / `user_relation`).
 #[derive(Debug, Clone, Deserialize)]
 pub struct ClearSceneUserRelationRequest {
     pub role_id: String,
@@ -416,22 +416,22 @@ pub struct SetSessionPluginBackendRequest {
     pub role_id: String,
     /// `memory` | `emotion` | `event` | `prompt` | `llm` | `agent`
     pub module: String,
-    /// 后端值（snake_case）三态：
-    /// - 字段缺省：不修改该模块覆盖；
-    /// - `null`：移除该模块会话覆盖并回退角色包默认；
-    /// - `"xxx"`：设置为指定后端。
+    /// Backend value (snake_case) tri-state:
+    /// - field omitted: do not change this module override;
+    /// - `null`: remove session override for this module and revert to role pack default;
+    /// - `"xxx"`: set to specified backend.
     #[serde(default)]
     pub backend: Option<Option<String>>,
-    /// 仅当 `module = memory` 时生效：trim 后非空则设置本会话 `local_memory_provider_id`；
-    /// 空串表示清除该字段的会话覆盖。字段缺省表示不修改该字段。
+    /// Only when `module = memory`: non-empty after trim sets session `local_memory_provider_id`;
+    /// empty string clears session override for this field. Omitted field means no change.
     #[serde(default)]
     pub local_memory_provider_id: Option<String>,
-    /// 可选：HTTP 试聊等多会话场景下指定会话 id；缺省表示角色默认会话。
+    /// Optional session id for HTTP trial chat and other multi-session scenarios; omitted means role default session.
     #[serde(default)]
     pub session_id: Option<String>,
 }
 
-/// 查询运行时快照；`session_id` 与 `SendMessageRequest` 中同名字段同语义（多路试聊等）。
+/// Query runtime snapshot; `session_id` same semantics as the same-named field in `SendMessageRequest` (multi-path trial chat, etc.).
 #[derive(Debug, Clone, Deserialize)]
 pub struct GetRoleInfoRequest {
     pub role_id: String,
@@ -492,11 +492,11 @@ pub struct JumpTimeRequest {
 pub struct JumpTimeResponse {
     pub virtual_time_ms: i64,
     pub iso_datetime: String,
-    /// 时间跳转后生成的独白（通常 2 条，供前端插入聊天）
+    /// Monologues generated after time jump (typically 2; for frontend chat insertion).
     pub monologues: Vec<String>,
     pub favorability_delta: f32,
     pub favorability_current: f32,
-    /// 若 `autonomous_scene` 规则将角色 `current_scene` 从 `from` 切到 `to`
+    /// When `autonomous_scene` rule switches role `current_scene` from `from` to `to`.
     #[serde(default)]
     pub autonomous_scene_from: Option<String>,
     #[serde(default)]
@@ -511,7 +511,7 @@ fn default_switch_together() -> bool {
 pub struct SwitchSceneRequest {
     pub role_id: String,
     pub scene_id: String,
-    /// `true`：写入 `current_scene` 并视为与角色同场景；`false`：仅更新 `user_presence_scene`（叙事独处）。
+    /// `true`: write `current_scene` and treat as co-present with role; `false`: only update `user_presence_scene` (narrative solitude).
     #[serde(default = "default_switch_together")]
     pub together: bool,
 }
@@ -522,7 +522,7 @@ pub struct SetUserPresenceSceneRequest {
     pub scene_id: String,
 }
 
-/// `.ocpak` 导入前预览（manifest）。
+/// Pre-import preview for `.ocpak` (manifest).
 #[derive(Debug, Clone, Serialize)]
 pub struct RolePackPeekResponse {
     pub id: String,
@@ -530,7 +530,7 @@ pub struct RolePackPeekResponse {
     pub version: String,
 }
 
-/// `switch_scene` 返回：角色信息与场景欢迎语（供前端插入聊天）。
+/// `switch_scene` response: role info and scene welcome message (for frontend chat insertion).
 #[derive(Debug, Clone, Serialize)]
 pub struct SwitchSceneResponse {
     #[serde(flatten)]
@@ -555,10 +555,10 @@ pub struct ExportChatLogsRequest {
     #[serde(default)]
     pub all_roles: bool,
     pub format: String,
-    /// 可选：在导出内容中附加插件后端解析诊断（默认关闭；`all_roles=true` 时忽略）。
+    /// Optional: attach plugin backend resolution diagnostics to export (default off; ignored when `all_roles=true`).
     #[serde(default)]
     pub include_plugin_resolution_debug: bool,
-    /// 可选：诊断命名空间使用的会话 id（仅 `include_plugin_resolution_debug=true` 且单角色导出时生效）。
+    /// Optional session id for diagnostic namespace (only when `include_plugin_resolution_debug=true` and single-role export).
     #[serde(default)]
     pub session_id: Option<String>,
 }
@@ -581,7 +581,7 @@ pub struct MemoryItem {
     pub id: String,
     pub role_id: String,
     pub content: String,
-    /// 当前库仅为长期记忆表，固定为 `long_term`
+    /// Current store is long-term memory table only; fixed as `long_term`.
     pub memory_type: String,
     pub timestamp: String,
     pub importance: f64,

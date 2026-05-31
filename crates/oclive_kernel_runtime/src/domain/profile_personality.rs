@@ -1,5 +1,5 @@
-//! **人设档案**（设计核心）= 核心性格档案（manifest，人控）+ 可变性格档案（DB，模型在约束下自维护）。
-//! 本模块从两份正文**归纳七维向量**，该向量仅作**视图**，辅助理解，不是性格的主数据源。
+//! **Persona profile** (design core) = core personality archive (manifest, human-controlled) + mutable profile (DB, model-maintained under constraints).
+//! This module **derives the seven-dimension vector** from both bodies; that vector is a **view** for interpretation only, not the primary personality source.
 
 use crate::models::PersonalityVector;
 use crate::models::Role;
@@ -24,7 +24,7 @@ fn dim_from_keywords(text: &str, keywords: &[&str]) -> f64 {
     ((n as f64) * KW_STEP).min(KW_CAP)
 }
 
-/// 由「核心人设 + 可变档案」中的关键词归纳对默认七维的增量，再与默认值相加并限幅。
+/// Derives seven-dimension deltas from keywords in core persona + mutable profile, adds to defaults, then clamps.
 #[must_use]
 pub fn effective_vector_from_profile(role: &Role, mutable_personality: &str) -> PersonalityVector {
     let mut combined = String::new();
@@ -54,13 +54,13 @@ pub fn effective_vector_from_profile(role: &Role, mutable_personality: &str) -> 
     e
 }
 
-/// 长期记忆摘要截断（与回合管线一致）。
+/// Truncates long-term memory snippets (aligned with turn pipeline).
 #[must_use]
 pub fn memory_snippet_for_profile(content: &str) -> String {
     content.chars().take(MEMORY_SNIPPET_CHARS).collect()
 }
 
-/// 去重键：去掉「（首次…，强化…次）」后缀后的摘要文本。
+/// Dedup key: summary text with the 「（首次…，强化…次）」 suffix stripped.
 #[must_use]
 pub fn normalize_summary_key(text: &str) -> String {
     let t = text.trim();
@@ -73,7 +73,7 @@ pub fn normalize_summary_key(text: &str) -> String {
     key.to_string()
 }
 
-/// 「重要记忆」单条格式。
+/// Single-line format for an 「重要记忆」 entry.
 #[must_use]
 pub fn format_important_memory_line(summary: &str, first_date: &str, mention_count: i32) -> String {
     format!(
@@ -81,7 +81,7 @@ pub fn format_important_memory_line(summary: &str, first_date: &str, mention_cou
     )
 }
 
-/// 解析「重要记忆」条目；返回 (摘要, 首次日期, 强化次数)。
+/// Parses an 「重要记忆」 bullet; returns (summary, first date, reinforcement count).
 #[must_use]
 pub fn parse_important_memory_bullet(line: &str) -> Option<(String, Option<String>, Option<i32>)> {
     let rest = line.trim().strip_prefix("- ")?;
@@ -166,7 +166,7 @@ fn joined_char_count(preamble: &str, sections: &[(String, String)]) -> usize {
     join_mutable_sections(preamble, sections).chars().count()
 }
 
-/// 将强化记忆写入「## 重要记忆」；同摘要去重并更新强化次数。
+/// Writes reinforced memory into 「## 重要记忆」; dedupes by summary and updates reinforcement count.
 #[must_use]
 pub fn upsert_important_memory_section(
     existing: &str,
@@ -304,7 +304,7 @@ fn trim_preamble_from_start(preamble: &mut String) -> bool {
     true
 }
 
-/// 超长时优先裁掉非结构化尾部，并保护「重要记忆」「时间演化」等小节（各至少保留最新 3 条）。
+/// When over limit, trims unstructured tail first and protects sections like 「重要记忆」/「时间演化」 (keeps at least the 3 newest bullets each).
 #[must_use]
 pub fn trim_mutable_storage(s: &str) -> String {
     if s.chars().count() <= MUTABLE_MAX_CHARS {

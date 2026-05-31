@@ -90,7 +90,7 @@ impl RelationEngine {
             RelationState::Stranger
         };
 
-        // 关系跃迁也参考 AI 给出的 impact 强弱，避免“事件类型正确但升降过硬”。
+        // Relation transitions also weigh AI impact strength to avoid correct event type but harsh jumps.
         let confidence_weight = Self::confidence_weight(confidence);
         let impact = impact_factor.clamp(-1.0, 1.0) * confidence_weight;
         let promote_threshold = Self::PROMOTION_TRIGGER_THRESHOLD
@@ -109,7 +109,7 @@ impl RelationEngine {
         if c >= Self::LOW_CONFIDENCE_THRESHOLD {
             1.0
         } else {
-            // 低置信不会完全失效，但会显著减弱关系跃迁触发。
+            // Low confidence does not fully disable transitions but strongly dampens them.
             (0.25 + 0.75 * (c / Self::LOW_CONFIDENCE_THRESHOLD)).clamp(0.25, 1.0)
         }
     }
@@ -162,7 +162,7 @@ impl RelationEngine {
         }
     }
 
-    /// 长时间未互动：亲密值指数衰减（半衰期默认 30 虚拟日）。
+    /// Long idle periods: exponential intimacy decay (default half-life 30 virtual days).
     #[must_use]
     pub fn apply_estrangement_favor(
         favorability: f64,
@@ -177,19 +177,19 @@ impl RelationEngine {
         (favorability * (-mu * virtual_days).exp()).clamp(0.0, 100.0)
     }
 
-    /// 本回合实际互动后小幅回升，避免「一开口就被衰减抵消」。
+    /// Small recovery after actual interaction this turn to avoid decay wiping out the first reply.
     #[must_use]
     pub fn apply_interaction_recovery(favorability: f64, recovery: f64) -> f64 {
         (favorability * (1.0 + recovery.max(0.0))).clamp(0.0, 100.0)
     }
 
-    /// 归一化亲密值是否低于疏远阈值（默认 0.3 → 好感 30）。
+    /// Whether normalized intimacy is below the estrangement threshold (default 0.3 → favor 30).
     #[must_use]
     pub fn is_estranged(favorability: f64, estrangement_threshold: f64) -> bool {
         (favorability / 100.0) < estrangement_threshold.clamp(0.0, 1.0)
     }
 
-    /// 低于疏远阈值时关系阶段降一级（Partner 不会越过 Stranger 以下）。
+    /// Downgrades relation stage by one when below estrangement threshold (Partner never drops below Stranger).
     #[must_use]
     pub fn estrangement_downgrade(current: RelationState) -> RelationState {
         Self::demote_one(current)

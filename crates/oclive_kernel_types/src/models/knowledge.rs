@@ -1,6 +1,6 @@
-//! 角色包「世界观知识」：`roles/{id}/knowledge/**/*.md`，YAML front matter + 正文。
+//! Role pack worldview knowledge: `roles/{id}/knowledge/**/*.md`, YAML front matter + body.
 //!
-//! 目录名固定为 **`knowledge/`**（不用 `worldview/`，与计划及 manifest 字段一致）。
+//! Directory name is fixed as **`knowledge/`** (not `worldview/`; aligned with the plan and manifest fields).
 
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -10,39 +10,39 @@ use super::EventType;
 
 pub use oclive_validation::KnowledgePackConfigDisk;
 
-/// 单条 front matter 中的 `event_hints` 子表（键为事件类型 snake_name）。
+/// `event_hints` sub-table in a single front matter entry (keys are event-type snake_names).
 #[derive(Debug, Clone, Deserialize)]
 pub struct EventHintEntryDisk {
     #[serde(default)]
     pub keywords: Vec<String>,
-    /// 预留：用于后续加权排序；当前仅解析校验。
+    /// Reserved for future weighted ranking; currently parsed and validated only.
     #[serde(default)]
     pub weight: Option<f64>,
 }
 
-/// 内存中的一条知识块
+/// A single in-memory knowledge chunk.
 #[derive(Debug, Clone)]
 pub struct KnowledgeChunk {
     pub id: String,
     pub source_path: PathBuf,
     #[allow(dead_code)]
     pub tags: Vec<String>,
-    /// `None` 表示不限场景；否则仅在这些 `scene_id` 参与检索。
+    /// `None` means all scenes; otherwise only these `scene_id` values participate in retrieval.
     pub scenes: Option<Vec<String>>,
     pub weight: f64,
     pub body: String,
-    /// 自 front matter 解析；键为 [`EventType`]
+    /// Parsed from front matter; keys are [`EventType`].
     pub event_hints: HashMap<EventType, Vec<String>>,
 }
 
-/// 按角色加载后的知识索引（仅内存；随 `load_role` 刷新）。
+/// Knowledge index loaded per role (in-memory only; refreshed on `load_role`).
 #[derive(Debug, Clone, Default)]
 pub struct KnowledgeIndex {
     pub chunks: Vec<KnowledgeChunk>,
 }
 
 impl KnowledgeIndex {
-    /// 对用户句做轻量重合打分 + 场景过滤，取 Top-K（确定性排序：分数降序，`id` 升序）。
+    /// Lightweight overlap scoring on the user sentence + scene filter; returns Top-K (deterministic sort: score desc, `id` asc).
     #[must_use]
     pub fn retrieve<'a>(
         &'a self,
@@ -110,7 +110,7 @@ impl KnowledgeIndex {
         (hits as f64 * 0.2).min(1.0)
     }
 
-    /// 将检索到的块合并为 Prompt 用纯文本（已截断）。
+    /// Merge retrieved chunks into plain text for the prompt (truncated).
     #[must_use]
     pub fn format_for_prompt(chunks: &[&KnowledgeChunk], max_chars: usize) -> String {
         let mut out = String::new();
@@ -132,7 +132,7 @@ impl KnowledgeIndex {
         out
     }
 
-    /// 从检索结果合并事件关键词，供 [`crate::domain::event_detector::EventDetector`] 使用。
+    /// Merge event keywords from retrieval results for [`crate::domain::event_detector::EventDetector`].
     #[must_use]
     pub fn merge_event_augment(chunks: &[&KnowledgeChunk]) -> KnowledgeEventAugment {
         let mut by_event: HashMap<EventType, Vec<String>> = HashMap::new();
@@ -151,7 +151,7 @@ impl KnowledgeIndex {
     }
 }
 
-/// 知识驱动的额外事件关键词（B1：作为 `EventDetector` 的补充输入）。
+/// Knowledge-driven extra event keywords (B1: supplementary input to `EventDetector`).
 #[derive(Debug, Clone, Default)]
 pub struct KnowledgeEventAugment {
     pub by_event: HashMap<EventType, Vec<String>>,

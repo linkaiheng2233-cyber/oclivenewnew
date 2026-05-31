@@ -1,4 +1,4 @@
-//! Prompt 组装可替换门面；默认委托 [`PromptBuilder`](super::prompt_builder::PromptBuilder)。
+//! Swappable prompt-assembler facade; default delegates to [`PromptBuilder`](super::prompt_builder::PromptBuilder).
 
 use crate::domain::prompt_builder::{PromptBuilder, PromptInput};
 use crate::error::Result;
@@ -19,7 +19,7 @@ impl PromptAssembler for BuiltinPromptAssembler {
     }
 }
 
-/// 第二套内置：与 [`BuiltinPromptAssembler`] 相同逻辑，但在正文前追加固定前缀（可测差异）。
+/// Second builtin: same logic as [`BuiltinPromptAssembler`] but prepends a fixed prefix (testable difference).
 pub struct BuiltinPromptAssemblerV2;
 
 const PROMPT_BACKEND_V2_PREFIX: &str = "[oclive:prompt:builtin_v2]\n";

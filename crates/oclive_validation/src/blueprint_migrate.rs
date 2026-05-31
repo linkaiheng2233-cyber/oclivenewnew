@@ -1,4 +1,4 @@
-//! manifest.json + settings.json → `pipeline.ocblueprint` v2（P6 迁移）。
+//! manifest.json + settings.json → `pipeline.ocblueprint` v2 (P6 migration).
 
 use std::collections::BTreeMap;
 use std::fs;
@@ -13,11 +13,11 @@ use crate::disk_role_settings::DiskRoleSettings;
 use crate::manifest::DiskRoleManifest;
 use crate::plugin_backends::{DirectoryPluginSlots, PluginBackends};
 
-/// 将磁盘上的 legacy 角色包转为 v2 蓝图 JSON 值（不写盘）。
+/// Converts a legacy role pack on disk to a v2 blueprint JSON value (does not write to disk).
 ///
 /// # Errors
 ///
-/// 缺少 `manifest.json` 或解析失败时返回 `Err(Vec<String>)`。
+/// Returns `Err(Vec<String>)` when `manifest.json` is missing or parsing fails.
 pub fn build_blueprint_v2_from_legacy_dir(role_dir: &Path) -> Result<Value, Vec<String>> {
     let manifest_path = role_dir.join("manifest.json");
     if !manifest_path.is_file() {
@@ -118,11 +118,11 @@ pub fn build_blueprint_v2_from_legacy_dir(role_dir: &Path) -> Result<Value, Vec<
     }))
 }
 
-/// 写入 `pipeline.ocblueprint`；`remove_legacy` 为 true 时删除 manifest/settings。
+/// Writes `pipeline.ocblueprint`; when `remove_legacy` is true, deletes manifest/settings.
 ///
 /// # Errors
 ///
-/// 构建或写盘失败时返回 `Err(Vec<String>)`。
+/// Returns `Err(Vec<String>)` on build or write failure.
 pub fn migrate_role_pack_dir_to_blueprint_v2(
     role_dir: &Path,
     remove_legacy: bool,

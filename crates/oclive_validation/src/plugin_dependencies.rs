@@ -1,13 +1,13 @@
-//! 目录插件 manifest `plugin_dependencies` 字段校验。
+//! Directory plugin manifest `plugin_dependencies` field validation.
 
 use serde_json::Value;
 use std::collections::HashSet;
 
-/// 从 manifest JSON 解析 `plugin_dependencies`（缺省 `[]`）。
+/// Parses `plugin_dependencies` from manifest JSON (defaults to `[]`).
 ///
 /// # Errors
 ///
-/// manifest 非对象、字段类型错误或空字符串依赖 id 时返回描述性 `String`。
+/// Returns descriptive `String` when manifest is not an object, field type is wrong, or dependency id is empty.
 pub fn parse_plugin_dependencies(manifest_json: &str) -> Result<Vec<String>, String> {
     let v: Value =
         serde_json::from_str(manifest_json).map_err(|e| format!("manifest JSON 错误: {e}"))?;
@@ -33,11 +33,11 @@ pub fn parse_plugin_dependencies(manifest_json: &str) -> Result<Vec<String>, Str
     }
 }
 
-/// 拓扑排序安装顺序；`available` 为已安装/可解析的 id 集合。
+/// Topologically sorted install order; `available` is the set of installed/resolvable ids.
 ///
 /// # Errors
 ///
-/// `load_deps` 失败或依赖图存在环时返回 `Err`。
+/// Returns `Err` when `load_deps` fails or the dependency graph has a cycle.
 pub fn resolve_install_order(
     root_id: &str,
     load_deps: impl Fn(&str) -> Result<Vec<String>, String>,
@@ -72,7 +72,7 @@ pub fn resolve_install_order(
     Ok(order)
 }
 
-/// 哪些已安装插件声明依赖 `target_id`。
+/// Which installed plugins declare a dependency on `target_id`.
 #[must_use]
 pub fn dependents_of(installed: &[(String, String)], target_id: &str) -> Vec<String> {
     installed

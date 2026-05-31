@@ -1,4 +1,4 @@
-//! 磁盘 `settings.json` 引擎段：与宿主 `DiskRoleSettings` serde 一致，合并进 `DiskRoleManifest` 后再走 `validate_disk_manifest`。
+//! Disk `settings.json` engine section: serde aligned with host `DiskRoleSettings`; merged into `DiskRoleManifest` then `validate_disk_manifest`.
 
 use serde::{Deserialize, Serialize};
 
@@ -14,7 +14,7 @@ fn default_schema_version() -> u32 {
     CURRENT_SETTINGS_SCHEMA_VERSION
 }
 
-/// 虚拟时间跳转后的自主换场景规则（`settings.json` → `autonomous_scene`）。
+/// Autonomous scene-change rules after virtual time jumps (`settings.json` → `autonomous_scene`).
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct AutonomousSceneConfig {
     #[serde(default)]
@@ -29,7 +29,7 @@ pub struct AutonomousSceneRule {
     pub to_scene: String,
 }
 
-/// 异地心声模式开关（`settings.json` → `remote_presence`）。
+/// Remote-presence inner-voice mode toggle (`settings.json` → `remote_presence`).
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct RemotePresenceConfig {
     #[serde(default)]
@@ -38,7 +38,7 @@ pub struct RemotePresenceConfig {
     pub stub_messages: Vec<String>,
 }
 
-/// 角色包引擎设置（可与 `manifest.json` 分文件存放）。
+/// Role pack engine settings (may live in a separate file from `manifest.json`).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DiskRoleSettings {
     #[serde(default = "default_schema_version")]
@@ -66,7 +66,7 @@ pub struct DiskRoleSettings {
 }
 
 impl DiskRoleSettings {
-    /// 将本文件中出现的字段覆盖到已解析的 manifest（仅 `Some` 项）。
+    /// Overwrites parsed manifest with fields present in this file (`Some` entries only).
     pub fn apply_to_manifest(&self, manifest: &mut DiskRoleManifest) {
         if let Some(ref m) = self.ollama_model {
             manifest.ollama_model = Some(m.clone());
