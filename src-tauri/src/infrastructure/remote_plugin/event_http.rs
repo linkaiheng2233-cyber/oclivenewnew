@@ -1,5 +1,5 @@
-//! JSON-RPC：`event.estimate` — 侧车返回 [`EventImpactEstimate`](crate::domain::event_impact_ai::EventImpactEstimate)。
-//! `params` 含 `personality_source`（`vector`|`profile`），与包内 `evolution` 一致；侧车可忽略。
+//! JSON-RPC: `event.estimate` — the sidecar returns [`EventImpactEstimate`](crate::domain::event_impact_ai::EventImpactEstimate).
+//! `params` includes `personality_source` (`vector`|`profile`), consistent with the pack's `evolution`; the sidecar may ignore it.
 
 use crate::domain::error_helpers::serde_to_ollama;
 use crate::domain::event_estimator::EventEstimator;

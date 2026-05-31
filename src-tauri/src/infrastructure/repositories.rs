@@ -1,4 +1,4 @@
-//! Repository 具体实现（SQLx / DbManager）
+//! Concrete repository implementations (SQLx / DbManager)
 
 use crate::domain::repository::{FavorabilityRepository, MemoryRepository};
 use crate::error::Result;
@@ -7,7 +7,7 @@ use crate::models::Memory;
 use async_trait::async_trait;
 use std::sync::Arc;
 
-/// 基于 `DbManager` 的长期记忆仓库
+/// Long-term memory repository backed by `DbManager`
 pub struct SqliteMemoryRepository {
     inner: Arc<DbManager>,
 }
@@ -43,7 +43,7 @@ impl MemoryRepository for SqliteMemoryRepository {
     }
 }
 
-/// 基于 `DbManager` 的好感度仓库
+/// Favorability repository backed by `DbManager`
 pub struct SqliteFavorabilityRepository {
     inner: Arc<DbManager>,
 }

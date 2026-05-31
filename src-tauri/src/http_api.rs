@@ -1,12 +1,12 @@
-//! 本地 HTTP API（`--api`）：供编写器试聊等工具调用，不经 Tauri IPC。
+//! Local HTTP API (`--api`): for tools such as the pack editor's try-chat to call, bypassing Tauri IPC.
 //!
-//! 仅绑定 `127.0.0.1`；生产环境请自行评估暴露面。
+//! Binds only to `127.0.0.1`; evaluate the exposure surface yourself for production environments.
 //!
-//! `POST /chat` 成功响应在扁平化的 `SendMessageResponse` 字段之外另含 **`personality_source`**
-//!（与包内 `settings.json` → `evolution.personality_source` 一致：`vector` | `profile`），便于试聊工具区分人格模式。
+//! Beyond the flattened `SendMessageResponse` fields, a successful `POST /chat` response also includes **`personality_source`**
+//! (consistent with the pack's `settings.json` → `evolution.personality_source`: `vector` | `profile`), so try-chat tools can distinguish personality modes.
 //!
-//! **错误体**：`{ "error": KernelErrorBody }` 与 Tauri `invoke` 失败字符串 **同源**（见 `oclive_kernel_runtime::KernelErrorBody`），
-//! `code` 与 [`AppError::code`] 一致（`SCREAMING_SNAKE_CASE`）；HTTP 专有错误使用 [`oclive_kernel_runtime::http_chat_codes`] 常量（与内核 crate 同源，避免字面量漂移）。
+//! **Error body**: `{ "error": KernelErrorBody }` shares the same source as the Tauri `invoke` failure string (see `oclive_kernel_runtime::KernelErrorBody`);
+//! `code` is consistent with [`AppError::code`] (`SCREAMING_SNAKE_CASE`); HTTP-specific errors use [`oclive_kernel_runtime::http_chat_codes`] constants (same source as the kernel crate, avoiding literal drift).
 
 use crate::domain::chat_engine::process_message;
 use crate::error::AppError;
@@ -27,7 +27,7 @@ use tokio::net::TcpListener;
 use tokio::task::spawn_blocking;
 use tower_http::cors::{Any, CorsLayer};
 
-/// `spawn_blocking` 内：`load_role_from_dir` 与目录探测均为阻塞 I/O，勿在异步线程直接调用。
+/// Inside `spawn_blocking`: `load_role_from_dir` and directory probing are both blocking I/O; do not call them directly on an async thread.
 enum ChatRoleLoadError {
     NotDirectory(String),
     Load(crate::error::AppError),
@@ -39,19 +39,19 @@ pub struct ChatApiRequest {
     pub message: String,
     #[serde(default)]
     pub session_id: Option<String>,
-    /// 可选：与主应用 `send_message` 一致；未传则由引擎按会话状态推断。
+    /// Optional: consistent with the main app's `send_message`; if omitted, the engine infers it from session state.
     #[serde(default)]
     pub scene_id: Option<String>,
 }
 
-/// 与 `SendMessageResponse` 字段一致，并额外回显 `session_id`、`personality_source`；供编写器试聊展示状态条。
+/// Mirrors the `SendMessageResponse` fields and additionally echoes back `session_id` and `personality_source`; used by the pack editor's try-chat to display a status bar.
 #[derive(Debug, Serialize)]
 pub struct ChatApiResponse {
     #[serde(flatten)]
     pub data: SendMessageResponse,
-    /// `evolution.personality_source`：与 `get_role_info` / 包内 settings 对齐。
+    /// `evolution.personality_source`: aligned with `get_role_info` / the pack's settings.
     pub personality_source: PersonalitySource,
-    /// 回显客户端提交的会话 id（便于编写器与日志对齐；未提交则为 `null`）。
+    /// Echoes back the session id submitted by the client (helps align the pack editor with logs; `null` if not submitted).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub session_id: Option<String>,
 }
@@ -180,7 +180,7 @@ async fn chat(
     }))
 }
 
-/// 与 [`serve_api`] 相同的路由树，供集成测试 `tower::ServiceExt::oneshot` 使用（无需绑端口）。
+/// The same route tree as [`serve_api`], for integration tests to use via `tower::ServiceExt::oneshot` (no port binding required).
 pub fn api_router(app_state: Arc<AppState>) -> Router {
     let cors = CorsLayer::new()
         .allow_origin(Any)
@@ -196,9 +196,9 @@ pub fn api_router(app_state: Arc<AppState>) -> Router {
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
-/// 阻塞运行 HTTP 服务，直到进程结束。
+/// Runs the HTTP service in a blocking manner until the process exits.
 ///
-/// CI / 协议黑盒：设置 `OCLIVE_HTTP_API_MOCK_LLM=1` 时使用内存库 + [`MockLlmClient`]，不依赖本机 Ollama。
+/// CI / protocol black-box: when `OCLIVE_HTTP_API_MOCK_LLM=1` is set, uses an in-memory DB + [`MockLlmClient`], not depending on a local Ollama.
 pub async fn serve_api(port: u16) -> Result<(), String> {
     let db_path = std::env::temp_dir().join(format!("oclive_api_{}.db", port));
     let roles_dir = crate::state::resolve_roles_dir(None);

@@ -1,6 +1,6 @@
 //! Pre-load validation for role pack `manifest.json` with human-readable errors.
 //!
-//! `validate_disk_manifest` 与共享 crate [`oclive_validation`] 一致。
+//! `validate_disk_manifest` matches the shared crate [`oclive_validation`].
 
 use crate::infrastructure::remote_plugin::RemotePluginHttpConfig;
 use crate::models::plugin_backends::{

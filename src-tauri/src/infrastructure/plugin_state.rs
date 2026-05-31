@@ -1,4 +1,4 @@
-//! 持久化：`app_data/plugin_state.json`（按角色隔离：整壳、禁用插件、插槽顺序、按插槽隐藏某插件贡献）。
+//! Persistence: `app_data/plugin_state.json` (isolated per role: shell, disabled plugins, slot order, per-slot hiding of a plugin's contribution).
 
 use crate::models::ui_config::{SlotConfig, UiConfig};
 use serde::{Deserialize, Serialize};
@@ -9,24 +9,24 @@ use std::path::Path;
 pub struct PluginStateFile {
     #[serde(default)]
     pub disabled_plugins: Vec<String>,
-    /// 如 `chat_toolbar` → 插件 id 顺序（未列出的 id 按字典序排在后面）。
+    /// E.g. `chat_toolbar` → plugin id order (ids not listed are sorted lexicographically afterward).
     #[serde(default)]
     pub slot_order: HashMap<String, Vec<String>>,
-    /// 某插槽内不渲染的插件 id（整插件仍可在其他插槽或 RPC 中使用，除非同时列入 `disabled_plugins`）。
+    /// Plugin ids not rendered within a given slot (the whole plugin can still be used in other slots or via RPC, unless also listed in `disabled_plugins`).
     #[serde(default)]
     pub disabled_slot_contributions: HashMap<String, Vec<String>>,
-    /// 按插件与插槽选中的外观：`plugin_id` → `slot` → `appearance_id`（与 manifest 中 `appearance_id` 一致）。
+    /// Appearance selected per plugin and slot: `plugin_id` → `slot` → `appearance_id` (consistent with `appearance_id` in the manifest).
     #[serde(default)]
     pub slot_appearance: HashMap<String, HashMap<String, String>>,
-    /// 为真时忽略 `vueComponent`，全部插槽仅用 iframe（用户可在设置中开启）。
+    /// When true, ignore `vueComponent` and use iframe only for all slots (users can enable this in settings).
     #[serde(default)]
     pub force_iframe_mode: bool,
 }
 
-/// 单角色下的插件 UI 状态（含整壳选择）。
+/// Plugin UI state for a single role (including shell selection).
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
 pub struct RolePluginState {
-    /// 整壳插件 id；空字符串表示使用内置主界面。
+    /// Shell plugin id; an empty string means use the builtin main UI.
     #[serde(default)]
     pub shell_plugin_id: String,
     #[serde(flatten)]
@@ -34,7 +34,7 @@ pub struct RolePluginState {
 }
 
 impl RolePluginState {
-    /// 由角色包 `ui.json` 生成初始状态（`visible` 必须为 `order` 子集；此处再过滤一遍）。
+    /// Generate the initial state from the role pack's `ui.json` (`visible` must be a subset of `order`; filtered again here).
     #[must_use]
     pub fn from_ui_config(cfg: &UiConfig) -> Self {
         let mut slots = PluginStateFile::default();
@@ -106,10 +106,10 @@ fn apply_slot(slot: &str, sc: &SlotConfig, out: &mut PluginStateFile) {
 pub struct PluginStateStore {
     #[serde(default = "schema_v3")]
     pub schema_version: u32,
-    /// 旧版全局 `plugin_state.json` 迁移用；首次按角色落库后可清空。
+    /// For migrating the legacy global `plugin_state.json`; can be cleared once data is first persisted per role.
     #[serde(default)]
     pub legacy_v1: Option<PluginStateFile>,
-    /// 跨角色默认（插件管理「全局默认」）；与 `roles` 合并时按字段以角色层为准（见 [`RolePluginState::merge_global_defaults`]）。
+    /// Cross-role defaults (the "global default" in plugin management); when merged with `roles`, the role layer wins field by field (see [`RolePluginState::merge_global_defaults`]).
     #[serde(default)]
     pub global: Option<RolePluginState>,
     #[serde(default)]
@@ -169,7 +169,7 @@ impl PluginStateStore {
 }
 
 impl PluginStateFile {
-    /// 全局默认与按角色存储合并：**按插槽**与禁用列表以角色层覆盖全局；`disabled_plugins` 为并集。
+    /// Merge global defaults with per-role storage: **per slot** and the disabled list are overridden by the role layer over global; `disabled_plugins` is the union.
     #[must_use]
     pub fn merge_global_and_role(global: &PluginStateFile, role: &PluginStateFile) -> Self {
         let mut disabled_plugins: BTreeSet<String> = BTreeSet::new();
@@ -305,7 +305,7 @@ impl PluginStateFile {
 }
 
 impl RolePluginState {
-    /// 将 `store.global` 作为默认值，与 `role` 中已保存的按角色状态合并（整壳 id 以角色非空为准）。
+    /// Use `store.global` as defaults and merge with the saved per-role state in `role` (the shell id uses the role's value when non-empty).
     #[must_use]
     pub fn merge_global_defaults(global: Option<&RolePluginState>, role: &RolePluginState) -> Self {
         let empty_global = RolePluginState::default();

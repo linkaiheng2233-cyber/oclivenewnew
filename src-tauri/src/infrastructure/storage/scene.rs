@@ -7,7 +7,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 impl RoleStorage {
-    /// 场景切换欢迎语：`welcome_message` 优先；否则从 `monologues` 按 role+scene 稳定选一条。
+    /// Scene-switch welcome line: `welcome_message` takes priority; otherwise stably pick one from `monologues` by role+scene.
     #[must_use]
     pub fn scene_welcome_line(&self, role_id: &str, scene_id: &str) -> Option<String> {
         let cfg = self.load_scene_config(role_id, scene_id)?;
@@ -28,7 +28,7 @@ impl RoleStorage {
         Some(templates[idx].clone())
     }
 
-    /// `scenes/{scene_id}/scene.json` 中可选 `monologues: string[]`，用于独白模板或 LLM 失败兜底。
+    /// Optional `monologues: string[]` in `scenes/{scene_id}/scene.json`, used as monologue templates or as a fallback when the LLM fails.
     #[must_use]
     pub fn scene_monologue_templates(&self, role_id: &str, scene_id: &str) -> Vec<String> {
         let Some(cfg) = self.load_scene_config(role_id, scene_id) else {
@@ -39,7 +39,7 @@ impl RoleStorage {
 
 
 
-    /// 从磁盘读取 `scenes/{scene_id}/scene.json`（无缓存；API 冷路径用）。
+    /// Read `scenes/{scene_id}/scene.json` from disk (no caching; for the API cold path).
     #[must_use]
     pub fn load_scene_config(&self, role_id: &str, scene_id: &str) -> Option<DiskSceneConfig> {
         let path = self.scene_json_path(role_id, scene_id);
@@ -55,7 +55,7 @@ impl RoleStorage {
         role.scene_text_cache.write().insert(key, value);
     }
 
-    /// 带 Role 内缓存的场景配置：每 scene id 至多读盘一次直至 `invalidate_role_cache`。
+    /// Scene config with an in-`Role` cache: each scene id reads from disk at most once until `invalidate_role_cache`.
     #[must_use]
     pub fn get_scene_config(&self, role: &Role, scene_id: &str) -> Option<Arc<DiskSceneConfig>> {
         {
@@ -247,7 +247,7 @@ impl RoleStorage {
             .join("away_life.txt")
     }
 
-    /// `scenes/<scene_id>/away_life.txt`（角色位于本场景时的异地生活长文素材）
+    /// `scenes/<scene_id>/away_life.txt` (long-form remote-presence life material for when the character is in this scene)
     #[must_use]
     pub fn away_life_txt_file(&self, role_id: &str, scene_id: &str) -> Option<String> {
         let path = self.away_life_txt_path(role_id, scene_id);
@@ -260,7 +260,7 @@ impl RoleStorage {
         }
     }
 
-    /// `scenes/<scene_id>/description.txt` 全文（创作者可自行增删，无需改程序）。
+    /// Full text of `scenes/<scene_id>/description.txt` (creators can add or remove content freely, without changing the program).
     #[must_use]
     pub fn scene_description_file(&self, role_id: &str, scene_id: &str) -> Option<String> {
         let path = self.scene_description_path(role_id, scene_id);
@@ -273,7 +273,7 @@ impl RoleStorage {
         }
     }
 
-    /// 场景切换 LLM 判定用的一行摘要（description 首行非空行，或 名称+首个关键词）。
+    /// One-line summary used for the scene-switch LLM decision (first non-empty line of the description, or name + first keyword).
     pub fn scene_switch_hint_line(&self, role: &Role, scene_id: &str) -> String {
         const MAX_HINT: usize = 200;
         if let Some(desc) = self.scene_description_file(role.id.as_str(), scene_id) {

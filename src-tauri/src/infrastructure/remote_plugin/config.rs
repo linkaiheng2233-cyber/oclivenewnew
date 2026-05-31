@@ -1,8 +1,8 @@
-//! HTTP 侧车配置：通过环境变量启用，与角色包 `plugin_backends.* = remote` 配合。
+//! HTTP sidecar configuration: enabled via environment variables, works with the role pack's `plugin_backends.* = remote`.
 
 use std::time::Duration;
 
-/// 通用 JSON-RPC 单端点（记忆 / 情绪 / 事件 / Prompt 等共用）。
+/// Generic single JSON-RPC endpoint (shared by memory / emotion / event / prompt, etc.).
 #[derive(Debug, Clone)]
 pub struct RemotePluginHttpConfig {
     pub endpoint: String,
@@ -11,7 +11,7 @@ pub struct RemotePluginHttpConfig {
 }
 
 impl RemotePluginHttpConfig {
-    /// 连接阶段超时：约为总超时的 1/4，夹在 500ms～15s，避免 TCP 握手长时间挂死。
+    /// Connect-phase timeout: roughly 1/4 of the total timeout, clamped to 500ms–15s, to avoid the TCP handshake hanging for a long time.
     #[must_use]
     pub fn connect_timeout(&self) -> Duration {
         let ms = self.timeout.as_millis() as u64;
@@ -19,7 +19,7 @@ impl RemotePluginHttpConfig {
         Duration::from_millis(quarter.clamp(500, 15_000))
     }
 
-    /// `OCLIVE_REMOTE_PLUGIN_URL`：非空则启用远程插件 HTTP 客户端（与 `memory`/`emotion`/`event`/`prompt` 的 remote 配合）。
+    /// `OCLIVE_REMOTE_PLUGIN_URL`: when non-empty, enables the remote plugin HTTP client (works with the remote backends for `memory`/`emotion`/`event`/`prompt`).
     #[must_use]
     pub fn from_env_plugin() -> Option<Self> {
         let endpoint = std::env::var("OCLIVE_REMOTE_PLUGIN_URL").ok()?;
@@ -42,7 +42,7 @@ impl RemotePluginHttpConfig {
         })
     }
 
-    /// `OCLIVE_REMOTE_LLM_URL`：非空则 `plugin_backends.llm = remote` 时走该端点（JSON-RPC `llm.generate` / `llm.generate_tag`）。
+    /// `OCLIVE_REMOTE_LLM_URL`: when non-empty, this endpoint is used when `plugin_backends.llm = remote` (JSON-RPC `llm.generate` / `llm.generate_tag`).
     #[must_use]
     pub fn from_env_llm() -> Option<Self> {
         let endpoint = std::env::var("OCLIVE_REMOTE_LLM_URL").ok()?;
@@ -65,8 +65,8 @@ impl RemotePluginHttpConfig {
         })
     }
 
-    /// `OCLIVE_COMPLEX_EMOTION_URL`：复杂情感 Remote 侧车（`complex_emotion.resolve_turn`）。
-    /// 兼容旧名 `OCLIVE_REMOTE_COMPLEX_EMOTION_URL`。
+    /// `OCLIVE_COMPLEX_EMOTION_URL`: complex-emotion Remote sidecar (`complex_emotion.resolve_turn`).
+    /// Backward-compatible with the old name `OCLIVE_REMOTE_COMPLEX_EMOTION_URL`.
     #[must_use]
     pub fn from_env_complex_emotion() -> Option<Self> {
         let endpoint = std::env::var("OCLIVE_COMPLEX_EMOTION_URL")
@@ -96,7 +96,7 @@ impl RemotePluginHttpConfig {
         })
     }
 
-    /// 目录插件懒启动后得到的 JSON-RPC 根 URL（与 env 侧车共用超时 / 鉴权环境变量名前缀 `OCLIVE_DIRECTORY_*`）。
+    /// JSON-RPC root URL obtained after a directory plugin lazily starts (shares timeout / auth env var name prefix `OCLIVE_DIRECTORY_*` with env sidecars).
     pub fn for_directory_plugin_rpc(endpoint: impl Into<String>, is_llm: bool) -> Self {
         let endpoint = endpoint.into();
         let timeout_ms = if is_llm {

@@ -4,7 +4,7 @@
 use crate::infrastructure::directory_plugins::OclivePluginManifest;
 use std::path::Path;
 
-/// 在 HTML 中注入 `window.OclivePluginBridge`；manifest 含 `bridge` 且资产路径匹配时启用。
+/// Inject `window.OclivePluginBridge` into the HTML; enabled when the manifest contains `bridge` and the asset path matches.
 pub fn inject_plugin_bridge_script(
     html: &str,
     plugin_id: &str,

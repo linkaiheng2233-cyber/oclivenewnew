@@ -1,4 +1,4 @@
-//! 解析启动参数中的 `oclive://install?...`（系统协议注册后由 OS 传入 argv）。
+//! Parse `oclive://install?...` from launch arguments (passed in argv by the OS once the system protocol is registered).
 
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;

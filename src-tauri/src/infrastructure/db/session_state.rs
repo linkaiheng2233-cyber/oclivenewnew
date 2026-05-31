@@ -1,4 +1,4 @@
-//! `session state` 相关 [`DbManager`](super::DbManager) 方法。
+//! `session state`-related [`DbManager`](super::DbManager) methods.
 
 #![allow(clippy::missing_errors_doc, unused_imports)]
 

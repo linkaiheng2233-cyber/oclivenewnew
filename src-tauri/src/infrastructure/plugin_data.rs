@@ -1,4 +1,4 @@
-//! 插件私有配置：`{app_data}/plugin-data/{plugin_id}/config.json`。
+//! Plugin private configuration: `{app_data}/plugin-data/{plugin_id}/config.json`.
 
 use crate::infrastructure::directory_plugins::{OclivePluginManifest, UiSchemaField};
 use crate::state::AppState;
@@ -39,7 +39,7 @@ fn default_object_from_schema(fields: &[UiSchemaField]) -> Value {
     Value::Object(m)
 }
 
-/// 安装后若尚无配置文件，则按 `ui_schema.fields[].default` 写入默认 JSON。
+/// If no configuration file exists after installation, write default JSON based on `ui_schema.fields[].default`.
 pub fn ensure_default_config_for_manifest(state: &AppState, manifest: &OclivePluginManifest) {
     let pid = manifest.id.trim();
     if pid.is_empty() {

@@ -1,4 +1,4 @@
-//! 统一 Remote JSON-RPC HTTP 传输：reqwest 客户端构建、网络授权与 `jsonrpc` 调用。
+//! Unified Remote JSON-RPC HTTP transport: reqwest client construction, network authorization, and `jsonrpc` calls.
 
 use super::config::RemotePluginHttpConfig;
 use super::jsonrpc::{self, RemoteRpcChannel};
@@ -7,7 +7,7 @@ use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
 use serde_json::Value;
 use std::sync::Arc;
 
-/// 插件侧车（`OCLIVE_REMOTE_PLUGIN_URL`）共用端点 — sync API over async reqwest。
+/// Plugin sidecar (`OCLIVE_REMOTE_PLUGIN_URL`) shared endpoint — sync API over async reqwest.
 pub struct RemoteHttpClientBlocking {
     client: Arc<reqwest::Client>,
     cfg: RemotePluginHttpConfig,
@@ -31,7 +31,7 @@ impl RemoteHttpClientBlocking {
         }
     }
 
-    /// 目录插件等一次性 RPC：独立连接池，不占用 [`BackendRegistry`](crate::domain::plugin_host::BackendRegistry) 共享客户端。
+    /// One-off RPC (e.g. for directory plugins): independent connection pool, does not use the [`BackendRegistry`](crate::domain::plugin_host::BackendRegistry) shared client.
     ///
     /// # Errors
     ///
@@ -100,7 +100,7 @@ impl RemoteHttpClientBlocking {
         self.call(RemoteRpcChannel::Plugin, method, params)
     }
 
-    /// 与 [`Self::call_plugin`] 相同，但远端/解析失败时返回 `Ok(None)`（仍传播未授权）。
+    /// Same as [`Self::call_plugin`], but returns `Ok(None)` on remote/parse failure (still propagates "not authorized").
     ///
     /// # Errors
     ///
@@ -114,7 +114,7 @@ impl RemoteHttpClientBlocking {
     }
 }
 
-/// 主对话 LLM 侧车（`OCLIVE_REMOTE_LLM_URL`）— **async** 客户端。
+/// Main-conversation LLM sidecar (`OCLIVE_REMOTE_LLM_URL`) — **async** client.
 pub struct RemoteHttpClientAsync {
     client: Arc<reqwest::Client>,
     cfg: RemotePluginHttpConfig,

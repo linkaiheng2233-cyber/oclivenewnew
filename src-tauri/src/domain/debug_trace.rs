@@ -1,4 +1,4 @@
-//! `OCLIVE_DEBUG_TRACE=1` 时向 stderr 输出 JSON-RPC 风格步骤追踪（供 `oclive debug` 解析）。
+//! When `OCLIVE_DEBUG_TRACE=1`, emits JSON-RPC-style step traces to stderr (parsed by `oclive debug`).
 
 use serde::Serialize;
 use serde_json::Value;

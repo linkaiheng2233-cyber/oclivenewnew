@@ -1,4 +1,4 @@
-//! 最小 JSON-RPC 2.0 over HTTP POST（与 `creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md` 一致）。
+//! Minimal JSON-RPC 2.0 over HTTP POST (consistent with `creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md`).
 
 use crate::error::{AppError, Result};
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
@@ -10,10 +10,10 @@ static NEXT_ID: AtomicU64 = AtomicU64::new(1);
 const PROTOCOL_HEADER_NAME: &str = "x-oclive-remote-protocol";
 const PROTOCOL_HEADER_VALUE: &str = "oclive-remote-jsonrpc-v1";
 const CLIENT_VERSION_HEADER_NAME: &str = "x-oclive-client-version";
-/// 错误信息里原始响应体的最大长度（避免反向代理 HTML 把日志撑爆）。
+/// Maximum length of the raw response body included in error messages (prevents reverse-proxy HTML from blowing up the logs).
 const BODY_PREVIEW_MAX: usize = 512;
 
-/// 日志与 `AppError` 文案中的通道标签（`call_async` 同时服务于 plugin 端点与 LLM 端点）。
+/// Channel label used in logs and `AppError` messages (`call_async` serves both the plugin endpoint and the LLM endpoint).
 #[derive(Clone, Copy, Debug)]
 pub enum RemoteRpcChannel {
     Plugin,

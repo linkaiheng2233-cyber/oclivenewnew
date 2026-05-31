@@ -1,4 +1,4 @@
-//! JSON-RPC：`prompt.build_prompt` — 参数为可序列化的上下文快照（含完整 `Role`）。
+//! JSON-RPC: `prompt.build_prompt` — params are a serializable context snapshot (including the full `Role`).
 
 use crate::domain::prompt_assembler::PromptAssembler;
 use crate::domain::prompt_builder::PromptInput;
@@ -146,7 +146,7 @@ struct PromptInputSnapshot<'a> {
 #[derive(serde::Serialize)]
 struct PromptInputFlat<'a> {
     role: &'a Role,
-    /// 与 `role.evolution_config.personality_source` 一致；便于侧车不必从嵌套 `role` 解析。
+    /// Consistent with `role.evolution_config.personality_source`; lets the sidecar avoid parsing it from the nested `role`.
     personality_source: PersonalitySource,
     personality: &'a crate::models::PersonalityVector,
     memories: &'a [crate::models::Memory],
