@@ -204,4 +204,37 @@ docs(comments): translate <module/area> comments to English (no logic change)
 
 ---
 
+## 9. 执行状态（2026-06-01）
+
+**已完成（已提交）**
+
+| 范围 | 提交示例 |
+|------|----------|
+| 根目录文档整理 + 冻结标注 | `533bb0e2` |
+| `src-tauri` 注释（infra/domain/api/叶子） | `f11cf7a2` … `e2f8b7b8` |
+| `oclive-cli` + 部分 kernel crates | `ec74fd17`, `fc5f8a8d` |
+| `kernel_types` / `kernel_runtime` / `validation` | `95379e7f` |
+| 前端 TS/Vue（更早批次） | `cedc66db` 等 |
+
+**验证**：`cargo check --workspace` 绿；`src/` 前端无中文注释行。
+
+**刻意保留中文的注释行（非漂移，勿再改）**
+
+| 位置 | 原因 |
+|------|------|
+| `src-tauri/.../function_call_parser.rs` `///` 示例 JSON 含 `深圳` | 文档内嵌示例数据，与测试用例一致 |
+| `crates/oclive-cli/.../monolith_codegen.rs` `r#"..."#` 生成模板内的 `//` 行 | 写入生成文件的模板文案，非维护者注释 |
+| `oclive_kernel_contracts` 部分 `///` 代码示例（`你好`、`查一下北京天气` 等） | doc 内嵌**示例字符串字面量**，非注释正文 |
+| `oclive_kernel_runtime/.../emotion_analyzer.rs` 示例输入 `"我很开心"` | 同上 |
+| `profile_personality.rs` 注释中的 `重要记忆` 等小节名 | 与运行时 `const` 段标题字符串一致 |
+
+**仍含中文的代码（预期，不在本计划范围）**
+
+- LLM Prompt 模板字符串（`prompt_builder.rs` 等）
+- CLI 用户可见输出、clap `help`/`about`
+- 校验/错误/日志/测试数据中的中文字符串
+- i18n、`roles/**` 人设文本
+
+---
+
 *本计划仅约束代码注释英文化；业务功能、契约语义、用户可见文案一律不变。*
