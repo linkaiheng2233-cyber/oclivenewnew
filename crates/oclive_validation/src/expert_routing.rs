@@ -1,13 +1,13 @@
-//! 专家路由 JSON（`expert_routing` 或 `blueprint/includes/expert_routing.json`）。
+//! Expert routing JSON (`expert_routing` or `blueprint/includes/expert_routing.json`).
 
 use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 
-/// 默认卫星路径（相对角色包根）。
+/// Default satellite path (relative to the role pack root).
 pub const DEFAULT_EXPERT_ROUTING_PATH: &str = "blueprint/includes/expert_routing.json";
 
-/// 专家流程失败时的降级策略。
+/// Fallback policy when the expert flow fails.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ExpertFallback {
@@ -26,7 +26,7 @@ impl ExpertFallback {
     }
 }
 
-/// 消息长度范围（`message_length` 或兼容顶层 `min/max_message_length`）。
+/// Message length range (`message_length` or the legacy-compatible top-level `min/max_message_length`).
 #[derive(Debug, Clone, Default, Deserialize, Serialize, PartialEq, Eq)]
 pub struct MessageLengthRange {
     #[serde(default)]
@@ -35,7 +35,7 @@ pub struct MessageLengthRange {
     pub max: Option<u32>,
 }
 
-/// 时间段窗口（`HH:MM` 24h，含端点；跨午夜时 `after > before` 表示夜间区间）。
+/// Time-of-day window (`HH:MM` 24h, endpoints inclusive; across midnight, `after > before` denotes an overnight interval).
 #[derive(Debug, Clone, Default, Deserialize, Serialize, PartialEq, Eq)]
 pub struct TimeOfDayWindow {
     #[serde(default)]
@@ -44,7 +44,7 @@ pub struct TimeOfDayWindow {
     pub before: Option<String>,
 }
 
-/// 专家路由触发条件（全部**已设置**的字段须同时满足）。
+/// Expert routing trigger condition (all **set** fields must be satisfied simultaneously).
 pub type TriggerCondition = ExpertTrigger;
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize, PartialEq, Eq)]
@@ -57,10 +57,10 @@ pub struct ExpertTrigger {
     pub user_emotion: Option<Vec<String>>,
     #[serde(default)]
     pub message_length: Option<MessageLengthRange>,
-    /// 兼容旧字段：映射到 `message_length.min`。
+    /// Legacy-compatible field: maps to `message_length.min`.
     #[serde(default)]
     pub min_message_length: Option<u32>,
-    /// 兼容旧字段：映射到 `message_length.max`。
+    /// Legacy-compatible field: maps to `message_length.max`.
     #[serde(default)]
     pub max_message_length: Option<u32>,
     #[serde(default)]
@@ -70,7 +70,7 @@ pub struct ExpertTrigger {
 }
 
 impl TriggerCondition {
-    /// 是否满足本回合匹配上下文。
+    /// Whether this turn's match context is satisfied.
     #[must_use]
     pub fn matches(&self, ctx: &ExpertMatchContext) -> bool {
         trigger_matches(self, ctx)
@@ -109,7 +109,7 @@ pub struct ExpertRoute {
     pub id: Option<String>,
     #[serde(default = "default_true")]
     pub enabled: bool,
-    /// 数值越大优先级越高；相同则按 `routes` 数组顺序取首个匹配。
+    /// Higher values mean higher priority; ties pick the first match in `routes` array order.
     #[serde(default)]
     pub priority: Option<i32>,
     #[serde(default)]
@@ -142,7 +142,7 @@ impl ExpertRoutingDoc {
     }
 }
 
-/// 校验专家路由文档（结构 + 步骤 action 白名单）。
+/// Validate the expert routing document (structure + step action allowlist).
 ///
 /// # Errors
 pub fn validate_expert_routing_doc(doc: &ExpertRoutingDoc) -> Result<(), Vec<String>> {
@@ -167,7 +167,7 @@ pub fn validate_expert_routing_doc(doc: &ExpertRoutingDoc) -> Result<(), Vec<Str
     }
 }
 
-/// 从角色包目录读取专家路由（文件缺失返回 `None`）。
+/// Read the expert routing from the role pack directory (returns `None` if the file is missing).
 #[must_use]
 pub fn load_expert_routing_from_role_dir(role_dir: &Path) -> Option<ExpertRoutingDoc> {
     let path = role_dir.join(DEFAULT_EXPERT_ROUTING_PATH);
@@ -178,20 +178,20 @@ pub fn load_expert_routing_from_role_dir(role_dir: &Path) -> Option<ExpertRoutin
     serde_json::from_str(&raw).ok()
 }
 
-/// 匹配上下文（宿主在 `TurnContext` / 实验步上下文上填充）。
+/// Match context (the host populates it from `TurnContext` / experimental step context).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExpertMatchContext {
     pub scene_id: String,
     pub user_message: String,
     pub user_emotion: Option<String>,
     pub user_relation: Option<String>,
-    /// 虚拟时间毫秒；0 表示未设置（`time_of_day` 用墙钟）。
+    /// Virtual time in milliseconds; 0 means unset (`time_of_day` uses the wall clock).
     pub virtual_time_ms: i64,
-    /// 墙钟 `(hour, minute)`，用于无虚拟时间时的 `time_of_day`。
+    /// Wall clock `(hour, minute)`, used for `time_of_day` when there is no virtual time.
     pub wall_clock_hour_minute: (u32, u32),
 }
 
-/// 触发条件是否全部满足。
+/// Whether all trigger conditions are satisfied.
 #[must_use]
 pub fn trigger_matches(trigger: &ExpertTrigger, ctx: &ExpertMatchContext) -> bool {
     if let Some(ref scenes) = trigger.scenes {
@@ -290,7 +290,7 @@ fn parse_hhmm(s: &str) -> Option<u32> {
     Some(h * 60 + m)
 }
 
-/// 按 `priority` 降序选取**首个**完全匹配的路由（同优先级保留定义顺序）。
+/// Select the **first** fully matching route by descending `priority` (ties keep definition order).
 #[must_use]
 pub fn select_expert_route<'a>(
     doc: &'a ExpertRoutingDoc,
@@ -313,7 +313,7 @@ pub fn select_expert_route<'a>(
     best.map(|(r, _, _)| r)
 }
 
-/// 兼容旧 API。
+/// Legacy-compatible API.
 #[must_use]
 pub fn match_expert_route<'a>(
     doc: &'a ExpertRoutingDoc,

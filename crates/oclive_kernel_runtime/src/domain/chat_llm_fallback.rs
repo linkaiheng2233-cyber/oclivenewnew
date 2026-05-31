@@ -1,4 +1,4 @@
-//! 主对话 LLM 不可用时的应急回复：长度受「话多」维度（talkativeness）影响，略拟人。
+//! Emergency reply when the main chat LLM is unavailable: length is influenced by the "talkativeness" dimension, slightly anthropomorphized.
 
 use crate::models::{EventType, PersonalityVector, Role};
 
@@ -10,7 +10,7 @@ pub struct FallbackReplyContext<'a> {
     pub impact_factor: f64,
 }
 
-/// `talkativeness` 0~1：越低越短句，越高可稍长（约 28~220 字量级）。
+/// `talkativeness` 0~1: lower means shorter sentences, higher allows slightly longer (roughly 28~220 characters).
 #[must_use]
 pub fn fallback_reply_for_llm_failure(
     role: &Role,
@@ -30,7 +30,7 @@ pub fn fallback_reply_for_llm_failure(
     let low_intimacy = ctx.favorability_before < 35.0
         || matches!(ctx.relation_before, "Stranger" | "Acquaintance" | "Friend");
     let preview_upward = ctx.relation_before != ctx.relation_preview;
-    // 仅作台词，不出现「语气/升阶」等幕后提示语（否则会像系统提示泄露到聊天里）。
+    // Dialogue only; no behind-the-scenes hints like "tone/escalation" (otherwise it would leak into the chat like a system prompt).
     let body = if conflict_mode {
         "我们先把这件事说清楚，你慢慢讲。"
     } else if low_intimacy {

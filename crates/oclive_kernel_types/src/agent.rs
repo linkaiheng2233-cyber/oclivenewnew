@@ -1,4 +1,4 @@
-//! Agent 模块输入/输出（纯数据结构）。
+//! Agent module input/output (pure data structures).
 
 use serde::{Deserialize, Serialize};
 

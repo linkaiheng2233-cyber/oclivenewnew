@@ -1,4 +1,4 @@
-//! 记忆检索可替换门面 trait。
+//! Replaceable facade trait for memory retrieval.
 
 use oclive_kernel_types::{Memory, MemoryContext, MemoryRetrievalInput, Result};
 
@@ -6,22 +6,22 @@ use oclive_kernel_types::{Memory, MemoryContext, MemoryRetrievalInput, Result};
 ///
 /// ## When to implement
 ///
-/// - **谁**：记忆检索后端（内置排序、本地目录插件、Remote HTTP）。
-/// - **何时**：角色启用记忆系统并需在 Prompt 中注入相关记忆时。
+/// - **Who**: memory retrieval backends (builtin ranking, local directory plugin, Remote HTTP).
+/// - **When**: when a role enables the memory system and needs relevant memories injected into the prompt.
 ///
 /// ## When not to implement
 ///
-/// - 无长期记忆、或固定使用内置 `BuiltinMemoryRetrieval` 且行为已满足需求时。
+/// - When there is no long-term memory, or the builtin `BuiltinMemoryRetrieval` is used as-is and its behavior already meets the requirements.
 pub trait MemoryRetrieval: Send + Sync {
-    /// 按相关性对记忆排序。
+    /// Ranks memories by relevance.
     ///
     /// # Errors
     ///
-    /// 实现方在检索/排序失败时返回 [`Result`] 的 `Err` 变体。
+    /// The implementation returns the `Err` variant of [`Result`] when retrieval/ranking fails.
     ///
     /// # Panics
     ///
-    /// 不 panic。
+    /// Does not panic.
     fn rank_memories(&self, input: MemoryRetrievalInput<'_>) -> Result<Vec<Memory>>;
 
     /// 将记忆列表格式化为可注入 Prompt 的上下文。

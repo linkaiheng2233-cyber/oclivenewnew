@@ -1,4 +1,4 @@
-//! 策略配置与上下文（纯数据结构）。
+//! Policy configuration and context (pure data structures).
 
 use crate::models::Event;
 use serde::Deserialize;

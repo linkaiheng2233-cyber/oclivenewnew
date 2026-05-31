@@ -1,8 +1,8 @@
-//! 本地插件发现描述符（纯数据结构）。
+//! Local-plugin discovery descriptors (pure data structures).
 
 use serde::{Deserialize, Serialize};
 
-/// 本地插件规范版本（`schema_version`）当前支持值。
+/// Currently supported value of the local-plugin spec version (`schema_version`).
 pub const LOCAL_PLUGIN_SCHEMA_VERSION: u32 = 1;
 
 /// Capability slot a local plugin provider can implement.
@@ -20,7 +20,7 @@ pub enum LocalPluginCapability {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct LocalPluginProviderDescriptor {
     pub provider_id: String,
-    /// `schema_version` / `min_runtime_version` 与文档规范保持一致，用于宿主门禁。
+    /// `schema_version` / `min_runtime_version` stay consistent with the documented spec, used for host gating.
     pub schema_version: u32,
     #[serde(default)]
     pub min_runtime_version: Option<String>,

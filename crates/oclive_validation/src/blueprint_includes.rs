@@ -1,11 +1,11 @@
-//! `pipeline.ocblueprint` → `includes[]` 卫星文件拉取与合并。
+//! `pipeline.ocblueprint` → `includes[]` satellite file fetching and merging.
 
 use std::path::{Component, Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-/// 单条 include：相对角色包根的路径与合并目标。
+/// A single include: a path relative to the role pack root and its merge target.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct BlueprintIncludeEntry {
     #[serde(default)]
@@ -15,7 +15,7 @@ pub struct BlueprintIncludeEntry {
     pub mode: String,
 }
 
-/// 允许的 `target`（点分路径，相对蓝图根对象）。
+/// Allowed `target` values (dot-separated paths relative to the blueprint root object).
 const ALLOWED_TARGETS: &[&str] = &[
     "meta.personality",
     "meta.life_trajectory",
@@ -27,7 +27,7 @@ const ALLOWED_TARGETS: &[&str] = &[
 
 const ALLOWED_MODES: &[&str] = &["merge", "replace"];
 
-/// 校验 `includes` 条目（路径安全 + 目标 + mode；文件须存在）。
+/// Validate `includes` entries (path safety + target + mode; the file must exist).
 ///
 /// # Errors
 pub fn validate_includes(role_dir: &Path, includes: &[BlueprintIncludeEntry]) -> Result<(), Vec<String>> {
@@ -85,11 +85,11 @@ fn is_allowed_target(target: &str) -> bool {
     if ALLOWED_TARGETS.contains(&target) {
         return true;
     }
-    // 高级：允许 slot_registry 子路径（如 slot_registry.llm.model）
+    // Advanced: allow slot_registry sub-paths (e.g. slot_registry.llm.model).
     target.starts_with("slot_registry.")
 }
 
-/// 合并 includes 到蓝图 JSON 文本；缺失或非法条目仅 warn，不阻塞（供宿主加载）。
+/// Merge includes into the blueprint JSON text; missing or invalid entries only warn and do not block (for host loading).
 #[must_use]
 pub fn resolve_blueprint_includes_lenient(role_dir: &Path, raw: &str) -> String {
     let mut root: Value = match serde_json::from_str(raw) {
@@ -108,7 +108,7 @@ pub fn resolve_blueprint_includes_lenient(role_dir: &Path, raw: &str) -> String 
     serde_json::to_string_pretty(&root).unwrap_or_else(|_| raw.to_string())
 }
 
-/// 严格合并：includes 须通过 [`validate_includes`]。
+/// Strict merge: includes must pass [`validate_includes`].
 ///
 /// # Errors
 pub fn resolve_blueprint_includes_strict(

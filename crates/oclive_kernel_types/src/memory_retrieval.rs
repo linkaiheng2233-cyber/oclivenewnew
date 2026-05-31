@@ -1,8 +1,8 @@
-//! 记忆检索门面输入（纯数据结构）。
+//! Memory-retrieval facade input (pure data structures).
 
 use crate::models::Memory;
 
-/// 与 `creator-docs/plugin-and-architecture/PLUGIN_V1.md` 对齐的检索输入
+/// Retrieval input aligned with `creator-docs/plugin-and-architecture/PLUGIN_V1.md`
 pub struct MemoryRetrievalInput<'a> {
     pub memories: &'a [Memory],
     pub user_query: &'a str,

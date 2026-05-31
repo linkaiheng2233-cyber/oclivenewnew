@@ -1,4 +1,4 @@
-//! `pipeline.ocblueprint` schema_version 3（双核 P1 契约校验）。
+//! `pipeline.ocblueprint` schema_version 3 (dual-core P1 contract validation).
 
 use std::collections::{HashMap, HashSet};
 
@@ -21,12 +21,12 @@ use crate::runtime_config::{validate_runtime_config, RuntimeConfig};
 
 pub const BLUEPRINT_V3_SCHEMA_VERSION: u32 = 3;
 
-/// Stable 核 `pipeline.stable` 引用的实例，其 `type` 须为六槽之一。
+/// Instances referenced by the stable core `pipeline.stable`; their `type` must be one of the six slots.
 pub const STABLE_PIPELINE_SLOT_TYPES: &[&str] = &[
     "memory", "emotion", "event", "prompt", "llm", "agent",
 ];
 
-/// P4 运行时：`PluginHost` 已有门面的七种 `type`（含 `complex_emotion` 设施）。
+/// P4 runtime: the seven `type` values the `PluginHost` facade supports (including the `complex_emotion` facility).
 pub const PLUGIN_HOST_SLOT_TYPES: &[&str] = &[
     "memory", "emotion", "event", "prompt", "llm", "agent", "complex_emotion",
 ];
@@ -64,7 +64,7 @@ pub struct BlueprintV3File {
     expert_overlay: Option<serde_json::Value>,
 }
 
-/// v3 `slot_registry` 实例（在 v2 字段上扩展 `zone`）。
+/// v3 `slot_registry` instance (extends the v2 fields with `zone`).
 #[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
 pub struct SlotRegistryEntryV3 {
     #[serde(rename = "type")]
@@ -86,11 +86,11 @@ pub struct SlotRegistryEntryV3 {
     pub zone: Option<Value>,
 }
 
-/// 按 `schema_version` 分流：2 → v2 校验；3 → v3 校验。
+/// Dispatch by `schema_version`: 2 → v2 validation; 3 → v3 validation.
 ///
 /// # Errors
 ///
-/// 未知版本或契约失败时返回 `Err(Vec<String>)`。
+/// Returns `Err(Vec<String>)` on an unknown version or contract failure.
 pub fn validate_blueprint_json_by_schema_version(
     raw: &str,
     folder_name: Option<&str>,
@@ -128,11 +128,11 @@ fn warnings_for_v2_runtime_config(root: &Value) -> Vec<String> {
     }
 }
 
-/// 校验 v3 蓝图 JSON。
+/// Validate v3 blueprint JSON.
 ///
 /// # Errors
 ///
-/// 契约不符时返回 `Err(Vec<String>)`。
+/// Returns `Err(Vec<String>)` when the contract is not satisfied.
 pub fn validate_blueprint_v3_json(raw: &str, folder_name: Option<&str>) -> Result<(), Vec<String>> {
     let bp: BlueprintV3File = serde_json::from_str(raw)
         .map_err(|e| vec![format!("pipeline.ocblueprint v3 结构不符合契约: {}", e)])?;

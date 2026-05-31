@@ -1,4 +1,4 @@
-//! `manifest.json` / `settings.json` 顶层键收紧：未知键报错；`_` 前缀说明键保留（见 roles/README_MANIFEST.md）。
+//! `manifest.json` / `settings.json` top-level key tightening: unknown keys are errors; `_`-prefixed annotation keys are preserved (see roles/README_MANIFEST.md).
 
 use serde_json::{Map, Value};
 
@@ -40,20 +40,20 @@ const SETTINGS_KEYS: &[&str] = &[
     "reply_quality_anchor",
 ];
 
-/// 校验 `manifest.json` 根对象键名。
+/// Validate the `manifest.json` root object key names.
 ///
 /// # Errors
 ///
-/// 存在未允许的顶层键时返回 `Err`（说明见错误字符串）。
+/// Returns `Err` when a disallowed top-level key is present (details in the error string).
 pub fn validate_manifest_top_level_keys(map: &Map<String, Value>) -> Result<(), String> {
     validate_keys(map, MANIFEST_KEYS, "manifest.json")
 }
 
-/// 校验 `settings.json` 根对象键名。
+/// Validate the `settings.json` root object key names.
 ///
 /// # Errors
 ///
-/// 存在未允许的顶层键时返回 `Err`（说明见错误字符串）。
+/// Returns `Err` when a disallowed top-level key is present (details in the error string).
 pub fn validate_settings_top_level_keys(map: &Map<String, Value>) -> Result<(), String> {
     validate_keys(map, SETTINGS_KEYS, "settings.json")
 }

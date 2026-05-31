@@ -1,8 +1,8 @@
-//! 角色包 `settings.json` → `plugin_backends`：与宿主 `PluginBackends` serde 形状一致（见 `PLUGIN_V1.md`）。
+//! Role pack `settings.json` → `plugin_backends`: matches the host `PluginBackends` serde shape (see `PLUGIN_V1.md`).
 
 use serde::{Deserialize, Serialize};
 
-/// 记忆检索后端
+/// Memory retrieval backend
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum MemoryBackend {
@@ -10,13 +10,13 @@ pub enum MemoryBackend {
     Builtin,
     BuiltinV2,
     Remote,
-    /// 本地已注册的 memory provider（见 `_local_plugins`）
+    /// Locally registered memory provider (see `_local_plugins`)
     Local,
-    /// 目录插件子进程 JSON-RPC
+    /// Directory plugin subprocess JSON-RPC
     Directory,
 }
 
-/// 用户情绪分析后端
+/// User emotion analysis backend
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum EmotionBackend {
@@ -27,7 +27,7 @@ pub enum EmotionBackend {
     Directory,
 }
 
-/// 事件影响估计后端
+/// Event impact estimation backend
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum EventBackend {
@@ -38,7 +38,7 @@ pub enum EventBackend {
     Directory,
 }
 
-/// Prompt 组装后端
+/// Prompt assembly backend
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum PromptBackend {
@@ -49,7 +49,7 @@ pub enum PromptBackend {
     Directory,
 }
 
-/// Agent 任务编排后端
+/// Agent task orchestration backend
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum AgentBackend {
@@ -59,7 +59,7 @@ pub enum AgentBackend {
     Directory,
 }
 
-/// 主对话 LLM 调用后端
+/// Main conversation LLM call backend
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum LlmBackend {
@@ -69,7 +69,7 @@ pub enum LlmBackend {
     Directory,
 }
 
-/// 各模块使用 `*_backend = directory` 时对应的插件 manifest `id`。
+/// Plugin manifest `id` for each module when it uses `*_backend = directory`.
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
 pub struct DirectoryPluginSlots {
     #[serde(default)]
@@ -98,7 +98,7 @@ impl DirectoryPluginSlots {
     }
 }
 
-/// 与 `DiskRoleSettings.plugin_backends` / 运行时 `Role.plugin_backends` 一致
+/// Matches `DiskRoleSettings.plugin_backends` / the runtime `Role.plugin_backends`
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
 pub struct PluginBackends {
     #[serde(default)]
@@ -119,7 +119,7 @@ pub struct PluginBackends {
     pub directory_plugins: DirectoryPluginSlots,
 }
 
-/// 有效后端来源（会话 / 包默认等；宿主运行时扩展用）
+/// Effective backend source (session / pack default, etc.; for host runtime extension)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum PluginBackendSource {
@@ -145,7 +145,7 @@ pub struct PluginBackendsSourceMap {
     pub agent: PluginBackendSource,
 }
 
-/// 会话级覆盖
+/// Session-level override
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
 pub struct PluginBackendsOverride {
     #[serde(default)]

@@ -1,15 +1,15 @@
-//! 现实锚点 + 流速比的虚拟时钟。
+//! Virtual clock based on a real-world anchor plus a flow-rate ratio.
 
-/// 对齐到分钟（毫秒）。
+/// Align to the minute (in milliseconds).
 #[must_use]
 pub fn round_to_minute_ms(ts_ms: i64) -> i64 {
     const M: i64 = 60_000;
     (ts_ms / M) * M
 }
 
-/// 由锚点与流速计算当前虚拟时间。
+/// Compute the current virtual time from the anchor and flow rate.
 ///
-/// `anchor_real_ms` / `anchor_virtual_ms` 为 0 时表示未初始化，返回对齐后的 `real_now_ms`。
+/// When `anchor_real_ms` / `anchor_virtual_ms` are 0 it means uninitialized, and the aligned `real_now_ms` is returned.
 #[must_use]
 pub fn compute_virtual_now_ms(
     anchor_real_ms: i64,
@@ -30,7 +30,7 @@ pub fn compute_virtual_now_ms(
     round_to_minute_ms(anchor_virtual_ms.saturating_add(virtual_elapsed))
 }
 
-/// 两时间戳之间的虚拟小时数（基于毫秒差）。
+/// Virtual hours between two timestamps (based on the millisecond difference).
 #[must_use]
 pub fn virtual_hours_between_ms(from_ms: i64, to_ms: i64) -> f64 {
     if to_ms <= from_ms {
@@ -39,7 +39,7 @@ pub fn virtual_hours_between_ms(from_ms: i64, to_ms: i64) -> f64 {
     (to_ms - from_ms) as f64 / 3_600_000.0
 }
 
-/// 两时间戳之间的虚拟日数（基于毫秒差）。
+/// Virtual days between two timestamps (based on the millisecond difference).
 #[must_use]
 pub fn virtual_days_between_ms(from_ms: i64, to_ms: i64) -> f64 {
     if to_ms <= from_ms {
@@ -48,7 +48,7 @@ pub fn virtual_days_between_ms(from_ms: i64, to_ms: i64) -> f64 {
     (to_ms - from_ms) as f64 / 86_400_000.0
 }
 
-/// 现实经过时间折算为虚拟日数（`real_elapsed_ms * ratio / 一天`）。
+/// Convert elapsed real time into virtual days (`real_elapsed_ms * ratio / one day`).
 #[must_use]
 pub fn virtual_days_from_real_elapsed_ms(real_elapsed_ms: i64, real_to_virtual_ratio: f64) -> f64 {
     if real_elapsed_ms <= 0 {

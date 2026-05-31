@@ -1,9 +1,9 @@
-//! 双核 `pipeline.*.steps[].action` 解析。
+//! Dual-core `pipeline.*.steps[].action` parsing.
 
-/// 实验/稳定 pipeline 支持的专家设施 action。
+/// Expert facility action supported by the experimental/stable pipeline.
 pub const PIPELINE_ACTION_EXPERT_INVOKE: &str = "slot.expert.invoke";
 
-/// 解析后的 pipeline action。
+/// A parsed pipeline action.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PipelineActionKind {
     /// `slot.<registry_key>.<method>`
@@ -11,15 +11,15 @@ pub enum PipelineActionKind {
         registry_key: String,
         method: String,
     },
-    /// `slot.expert.invoke`（不占用 `slot_registry` 键）
+    /// `slot.expert.invoke` (does not occupy a `slot_registry` key)
     ExpertInvoke,
 }
 
-/// 解析 `action` 字符串。
+/// Parse an `action` string.
 ///
 /// # Errors
 ///
-/// 格式非法时返回说明字符串。
+/// Returns a descriptive string when the format is invalid.
 pub fn parse_pipeline_action_kind(action: &str) -> Result<PipelineActionKind, String> {
     let trimmed = action.trim();
     if trimmed == PIPELINE_ACTION_EXPERT_INVOKE {
@@ -32,7 +32,7 @@ pub fn parse_pipeline_action_kind(action: &str) -> Result<PipelineActionKind, St
     })
 }
 
-/// 兼容旧 API：`slot.<key>.<method>`；`slot.expert.invoke` 映射为 `("expert", "invoke")`。
+/// Legacy-compatible API: `slot.<key>.<method>`; `slot.expert.invoke` maps to `("expert", "invoke")`.
 ///
 /// # Errors
 pub fn parse_pipeline_action(action: &str) -> Result<(String, String), String> {

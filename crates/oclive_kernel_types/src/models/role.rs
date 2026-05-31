@@ -18,7 +18,7 @@ pub use oclive_validation::{
 use parking_lot::RwLock;
 use std::sync::Arc;
 
-/// 角色包内人设默认值（旧七维，与 `PersonalityVector` 字段一致）
+/// Default persona values inside a role pack (legacy seven dimensions, matching the `PersonalityVector` fields)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PersonalityDefaults {
     pub stubbornness: f32,
@@ -63,7 +63,7 @@ pub struct EvolutionConfig {
     pub ai_analysis_interval: i32,
     pub max_change_per_event: f64,
     pub max_total_change: f64,
-    /// `vector`：沿用七维增量；`profile`：以核心性格档案 + 运行时「可变性格档案」（**仅由 LLM 根据对话维护**）为准；七维为由正文归纳的**视图**，仅供理解与 UI。
+    /// `vector`: keep using the seven-dimension deltas; `profile`: use the core personality profile + the runtime "mutable personality profile" (**maintained only by the LLM from the dialogue**); the seven dimensions are a **view** induced from the text, for understanding and UI only.
     #[serde(default)]
     pub personality_source: PersonalitySource,
 }
@@ -108,7 +108,7 @@ pub struct UserRelation {
     pub prompt_hint: String,
     #[serde(default = "default_favor_mult")]
     pub favor_multiplier: f32,
-    /// 选择该身份时的起始好感度（0～100）；未写则 50。
+    /// Starting favorability when this identity is selected (0–100); defaults to 50 if omitted.
     #[serde(default = "default_initial_favorability")]
     pub initial_favorability: f64,
 }
@@ -128,7 +128,7 @@ impl UserRelation {
     }
 }
 
-/// 由虚拟时间解析得到的当前生活态（引擎内部）
+/// Current life state derived from virtual time (engine-internal)
 #[derive(Debug, Clone, PartialEq)]
 pub struct LifeState {
     pub label: String,
@@ -145,7 +145,7 @@ pub struct Role {
     pub description: String,
     pub version: String,
     pub author: String,
-    /// **核心性格档案**：创作者与用户设定的固定人设；运行时 **AI 不得改写**（见 `mutable_profile_llm`），与可变档案共同构成完整人设。
+    /// **Core personality profile**: the fixed persona set by the creator and user; the **AI must not rewrite** it at runtime (see `mutable_profile_llm`), and together with the mutable profile it forms the complete persona.
     pub core_personality: String,
     pub default_personality: PersonalityDefaults,
     pub evolution_bounds: EvolutionBounds,
@@ -156,82 +156,82 @@ pub struct Role {
     pub memory_config: Option<MemoryConfig>,
     #[serde(default)]
     pub default_relation: String,
-    /// 角色包 `manifest` 中的 Ollama 模型名（与 `model` 键互通）；空则回退环境变量与全局默认
+    /// Ollama model name from the role pack `manifest` (interchangeable with the `model` key); if empty, falls back to the environment variable and global default
     #[serde(default)]
     pub ollama_model: Option<String>,
-    /// 身份是否与场景绑定；默认 `per_scene` 与历史行为一致。
+    /// Whether identity is bound to the scene; the default `per_scene` matches historical behavior.
     #[serde(default)]
     pub identity_binding: IdentityBinding,
-    /// `manifest.json` 中 `life_trajectory`（可选）
+    /// `life_trajectory` in `manifest.json` (optional)
     #[serde(default)]
     pub life_trajectory: Option<LifeTrajectoryDisk>,
-    /// `manifest.json` 中 `life_schedule`（可选）：虚拟时间下的日常片段，与 `life_trajectory`（异地文案气质）并存
+    /// `life_schedule` in `manifest.json` (optional): daily fragments under virtual time, coexisting with `life_trajectory` (the remote-presence tone)
     #[serde(default)]
     pub life_schedule: Option<LifeScheduleDisk>,
-    /// `settings.json` 中 `remote_presence`（可选，主要为 `default_enabled`）
+    /// `remote_presence` in `settings.json` (optional, mainly `default_enabled`)
     #[serde(default)]
     pub remote_presence: Option<RemotePresenceConfig>,
-    /// `settings.json` 中 `autonomous_scene`（可选，虚拟时间驱动角色位移）
+    /// `autonomous_scene` in `settings.json` (optional, virtual-time-driven character movement)
     #[serde(default)]
     pub autonomous_scene: Option<AutonomousSceneConfig>,
-    /// `settings.json` 可选：`immersive` | `pure_chat`；运行时持久化见 `role_runtime.interaction_mode`
+    /// Optional in `settings.json`: `immersive` | `pure_chat`; runtime persistence is in `role_runtime.interaction_mode`
     #[serde(default)]
     pub interaction_mode: Option<String>,
-    /// 角色包 `manifest.min_runtime_version`：要求的最低 oclive 版本；省略表示不检查。
+    /// Role pack `manifest.min_runtime_version`: the minimum required oclive version; omitting it means no check.
     #[serde(default)]
     pub min_runtime_version: Option<String>,
-    /// 为 true 时默认不出现在 `list_roles`（仓库内调试/身份示例包）；`load_role` 仍可按 id 加载。见环境变量 `OCLIVE_LIST_DEV_ROLES`。
+    /// When true, by default this does not appear in `list_roles` (in-repo debug/identity example packs); `load_role` can still load it by id. See the `OCLIVE_LIST_DEV_ROLES` environment variable.
     #[serde(default)]
     pub dev_only: bool,
-    /// `settings.json` → `plugin_backends`（可选；默认全 builtin）
+    /// `settings.json` → `plugin_backends` (optional; defaults to all builtin)
     #[serde(default = "default_plugin_backends")]
     pub plugin_backends: Arc<PluginBackends>,
-    /// `pipeline.ocblueprint` v2 → `slot_registry`（多实例；P2+ 编排用；序列化供调试/导出）
+    /// `pipeline.ocblueprint` v2 → `slot_registry` (multi-instance; used by P2+ orchestration; serialized for debug/export)
     #[serde(default, skip_serializing_if = "slot_registry_is_empty")]
     pub slot_registry: Option<BTreeMap<String, oclive_validation::SlotRegistryEntry>>,
-    /// `pipeline.ocblueprint` v2 → `groups`（架构图分组；可选）
+    /// `pipeline.ocblueprint` v2 → `groups` (architecture-diagram grouping; optional)
     #[serde(default, skip_serializing_if = "slot_groups_is_empty")]
     pub slot_groups: Option<BTreeMap<String, oclive_validation::SlotGroupEntry>>,
-    /// `knowledge/` 加载后的索引（仅内存；由 [`crate::infrastructure::storage::RoleStorage`] 填充）
+    /// Index after loading `knowledge/` (in-memory only; populated by [`crate::infrastructure::storage::RoleStorage`])
     #[serde(skip)]
     pub knowledge_index: Option<Arc<KnowledgeIndex>>,
-    /// 角色包 `ui.json`（仅内存；由 [`crate::infrastructure::storage::RoleStorage`] 填充）
+    /// Role pack `ui.json` (in-memory only; populated by [`crate::infrastructure::storage::RoleStorage`])
     #[serde(skip)]
     pub ui_config: UiConfig,
-    /// 角色包 `author.json`（可选；仅内存）
+    /// Role pack `author.json` (optional; in-memory only)
     #[serde(skip)]
     pub author_pack: Option<AuthorPackFile>,
-    /// `settings.json` 可选：主对话「质量锚点」全文；非空则替换引擎默认（见 `prompt_builder::DEFAULT_REPLY_QUALITY_ANCHOR`）。
+    /// Optional in `settings.json`: the full text of the main-dialogue "quality anchor"; if non-empty it replaces the engine default (see `prompt_builder::DEFAULT_REPLY_QUALITY_ANCHOR`).
     #[serde(default)]
     pub reply_quality_anchor: Option<String>,
-    /// `config.json` → `time`（虚拟时钟流速）；未提供则用默认 1:5。
+    /// `config.json` → `time` (virtual-clock flow rate); if not provided, uses the default 1:5.
     #[serde(default)]
     pub time_config: RoleTimeConfig,
-    /// `config.json` → `memory`（艾宾浩斯衰减与强化）。
+    /// `config.json` → `memory` (Ebbinghaus decay and reinforcement).
     #[serde(default)]
     pub pack_memory_config: RolePackMemoryConfig,
-    /// `config.json` → `relation`（疏远衰减）。
+    /// `config.json` → `relation` (estrangement decay).
     #[serde(default)]
     pub pack_relation_config: RolePackRelationConfig,
-    /// `config.json` → `evolution`（虚拟时间阶段性性格演化间隔）。
+    /// `config.json` → `evolution` (virtual-time phased personality-evolution interval).
     #[serde(default)]
     pub pack_evolution_config: RolePackEvolutionConfig,
-    /// `config.json` → `chat_storage`（聊天记录单会话上限等）。
+    /// `config.json` → `chat_storage` (per-session chat-history cap, etc.).
     #[serde(default)]
     pub pack_chat_storage_config: RolePackChatStorageConfig,
-    /// v3 蓝图 `runtime_config`（宿主加载；创作者包通常不含或未开双核）。
+    /// v3 blueprint `runtime_config` (loaded by the host; creator packs usually omit it or leave dual-core off).
     #[serde(default)]
     pub runtime_config: Option<RuntimeConfig>,
-    /// v3 蓝图 `pipeline.experimental`（`pipeline.stable` 不参与运行时执行）。
+    /// v3 blueprint `pipeline.experimental` (`pipeline.stable` does not participate in runtime execution).
     #[serde(default)]
     pub pipeline_experimental: Option<Vec<PipelineStep>>,
-    /// 场景 id 列表（manifest `scenes` + `scenes/` 子目录）；由 [`RoleStorage::finish_role_pack_load`] 填充。
+    /// Scene id list (manifest `scenes` + the `scenes/` subdirectory); populated by [`RoleStorage::finish_role_pack_load`].
     #[serde(skip)]
     pub scene_ids: Arc<[String]>,
-    /// 按 scene id 缓存的 `scene.json` 解析结果；由 [`RoleStorage::get_scene_config`] 填充。
+    /// `scene.json` parse results cached by scene id; populated by [`RoleStorage::get_scene_config`].
     #[serde(skip)]
     pub scene_config_cache: Arc<RwLock<HashMap<String, Arc<DiskSceneConfig>>>>,
-    /// 场景文本素材缓存（`desc:{scene}` / `away:{char}:{user}`）；由 [`RoleStorage`] 填充。
+    /// Scene text-material cache (`desc:{scene}` / `away:{char}:{user}`); populated by [`RoleStorage`].
     #[serde(skip)]
     pub scene_text_cache: Arc<RwLock<HashMap<String, Arc<str>>>>,
 }

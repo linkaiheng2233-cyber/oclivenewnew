@@ -1,4 +1,4 @@
-//! 数据访问端口（trait），由宿主 `infrastructure` 实现。
+//! Data access ports (traits), implemented by the host `infrastructure`.
 
 use async_trait::async_trait;
 use oclive_kernel_types::{Memory, Result};
@@ -7,56 +7,56 @@ use oclive_kernel_types::{Memory, Result};
 ///
 /// ## When to implement
 ///
-/// - **谁**：宿主持久化层（如 `SqliteMemoryRepository`）。
-/// - **何时**：需要替换 SQLite / 换存储后端时。
+/// - **Who**: the host persistence layer (e.g. `SqliteMemoryRepository`).
+/// - **When**: when SQLite needs to be replaced or the storage backend swapped.
 ///
 /// ## When not to implement
 ///
-/// - 插件作者通常**不**实现；记忆**检索**见 [`MemoryRetrieval`](crate::MemoryRetrieval)。
+/// - Plugin authors usually do **not** implement this; for memory **retrieval** see [`MemoryRetrieval`](crate::MemoryRetrieval).
 #[async_trait]
 pub trait MemoryRepository: Send + Sync {
-    /// 持久化一条长期记忆并返回其 ID。
+    /// Persists a single long-term memory and returns its ID.
     ///
     /// # Errors
     ///
-    /// 数据库 I/O 失败、约束冲突或序列化失败时返回 `Err`。
+    /// Returns `Err` on database I/O failure, constraint conflict, or serialization failure.
     ///
     /// # Panics
     ///
-    /// 不 panic。
+    /// Does not panic.
     async fn save_memory(&self, role_id: &str, content: &str, importance: f64) -> Result<String>;
 
-    /// 按角色加载最近若干条记忆。
+    /// Loads the most recent memories for a role.
     ///
     /// # Errors
     ///
-    /// 数据库查询失败或行反序列化失败时返回 `Err`。
+    /// Returns `Err` on database query failure or row deserialization failure.
     ///
     /// # Panics
     ///
-    /// 不 panic。
+    /// Does not panic.
     async fn load_memories(&self, role_id: &str, limit: i32) -> Result<Vec<Memory>>;
 
-    /// 统计角色下记忆条数。
+    /// Counts the number of memories under a role.
     ///
     /// # Errors
     ///
-    /// 数据库查询失败时返回 `Err`。
+    /// Returns `Err` on database query failure.
     ///
     /// # Panics
     ///
-    /// 不 panic。
+    /// Does not panic.
     async fn count_memories(&self, role_id: &str) -> Result<i64>;
 
-    /// 分页加载角色记忆。
+    /// Loads a role's memories with pagination.
     ///
     /// # Errors
     ///
-    /// 数据库查询失败或行反序列化失败时返回 `Err`。
+    /// Returns `Err` on database query failure or row deserialization failure.
     ///
     /// # Panics
     ///
-    /// 不 panic。
+    /// Does not panic.
     async fn load_memories_paged(
         &self,
         role_id: &str,
@@ -69,33 +69,33 @@ pub trait MemoryRepository: Send + Sync {
 ///
 /// ## When to implement
 ///
-/// - **谁**：宿主持久化层（SQLite 等）。
-/// - **何时**：替换好感度存储或增加新字段时。
+/// - **Who**: the host persistence layer (SQLite, etc.).
+/// - **When**: when replacing favorability storage or adding new fields.
 ///
 /// ## When not to implement
 ///
-/// - 插件 / Remote 后端一般不实现本 trait。
+/// - Plugin / Remote backends generally do not implement this trait.
 #[async_trait]
 pub trait FavorabilityRepository: Send + Sync {
-    /// 读取角色当前好感度。
+    /// Reads a role's current favorability.
     ///
     /// # Errors
     ///
-    /// 数据库查询失败时返回 `Err`。
+    /// Returns `Err` on database query failure.
     ///
     /// # Panics
     ///
-    /// 不 panic。
+    /// Does not panic.
     async fn get(&self, role_id: &str) -> Result<Option<f64>>;
 
-    /// 对角色好感度应用增量变更。
+    /// Applies a delta change to a role's favorability.
     ///
     /// # Errors
     ///
-    /// 数据库读写失败或更新约束冲突时返回 `Err`。
+    /// Returns `Err` on database read/write failure or update constraint conflict.
     ///
     /// # Panics
     ///
-    /// 不 panic。
+    /// Does not panic.
     async fn apply_delta(&self, role_id: &str, delta: f64) -> Result<()>;
 }

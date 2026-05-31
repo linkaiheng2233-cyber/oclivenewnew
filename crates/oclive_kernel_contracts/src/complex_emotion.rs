@@ -1,4 +1,4 @@
-//! 复杂情感解析可替换门面 trait。
+//! Replaceable facade trait for complex emotion resolution.
 
 use oclive_kernel_types::{ComplexEmotionInput, ComplexEmotionOutput, Result};
 
@@ -6,14 +6,14 @@ use oclive_kernel_types::{ComplexEmotionInput, ComplexEmotionOutput, Result};
 ///
 /// ## When to implement
 ///
-/// - **谁**：复杂情感 / `narrative_hint` 提供方（内置关键词、Remote、目录插件）。
-/// - **何时**：角色需要**抽象情感叙事提示**写入下一轮 Prompt 时。
+/// - **Who**: complex emotion / `narrative_hint` providers (builtin keyword, Remote, directory plugin).
+/// - **When**: when a role needs an **abstract emotional narrative hint** written into the next turn's prompt.
 ///
 /// ## When not to implement
 ///
-/// - `complex_emotion` 槽为 `none` 或不需要 `narrative_hint` 的简单角色。
+/// - Simple roles whose `complex_emotion` slot is `none`, or that do not need a `narrative_hint`.
 pub trait ComplexEmotionProvider: Send + Sync {
-    /// 解析本回合复杂情感标签与叙事提示。
+    /// Resolves this turn's complex emotion labels and narrative hint.
     ///
     /// # Errors
     ///
@@ -21,6 +21,6 @@ pub trait ComplexEmotionProvider: Send + Sync {
     ///
     /// # Panics
     ///
-    /// 不 panic。
+    /// Does not panic.
     fn resolve_turn(&self, input: &ComplexEmotionInput) -> Result<ComplexEmotionOutput>;
 }

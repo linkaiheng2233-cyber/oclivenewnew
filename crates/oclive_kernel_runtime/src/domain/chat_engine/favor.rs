@@ -1,4 +1,4 @@
-//! 好感与关系阶段计算（本回合）
+//! Favorability and relation-state computation (for this turn)
 
 use crate::domain::chat_turn_rules::{
     avoid_fast_promote_score, confidence_decay_weight, smooth_favor_delta_for_short_streak,

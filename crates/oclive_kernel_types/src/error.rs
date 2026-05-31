@@ -1,11 +1,11 @@
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-/// 无头内核与宿主共用的 **JSON 错误体**（Tauri `invoke` 失败字符串、HTTP `error` 对象同源字段）。
+/// **JSON error body** shared by the headless kernel and hosts (the Tauri `invoke` failure string and the HTTP `error` object share these fields).
 ///
-/// - `code`：与 [`AppError::code`] 一致的机器码（`SCREAMING_SNAKE_CASE`），供壳层 i18n 与黑盒断言。
-/// - `message`：[`AppError`] 的 `Display` 文本（默认英文技术句）；本地化由发行版用 `code` 映射。
-/// - `hint`：可选「下一步」；HTTP 路由可为试聊等场景附加，内核默认 `None`。
+/// - `code`: machine code consistent with [`AppError::code`] (`SCREAMING_SNAKE_CASE`), for shell-layer i18n and black-box assertions.
+/// - `message`: the `Display` text of [`AppError`] (technical English by default); localization is mapped by the distribution via `code`.
+/// - `hint`: optional "next step"; HTTP routes may attach it for cases such as trial chat, while the kernel defaults to `None`.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct KernelErrorBody {
     pub code: String,
@@ -14,9 +14,9 @@ pub struct KernelErrorBody {
     pub hint: Option<String>,
 }
 
-/// `POST /chat`（及同类 HTTP 边界）专有 **`code`**：无对应 [`AppError`] 变体，但命名规则与 [`AppError::code`] 相同（`SCREAMING_SNAKE_CASE`）。
+/// **`code`** values specific to `POST /chat` (and similar HTTP boundaries): they have no corresponding [`AppError`] variant, but follow the same naming rule as [`AppError::code`] (`SCREAMING_SNAKE_CASE`).
 ///
-/// 宿主在构造 [`KernelErrorBody`] 时应引用本模块常量，避免字面量漂移。
+/// Hosts should reference the constants in this module when constructing a [`KernelErrorBody`] to avoid literal drift.
 pub mod http_chat_codes {
     pub const EMPTY_MESSAGE: &str = "EMPTY_MESSAGE";
     pub const INVALID_ROLE_PATH: &str = "INVALID_ROLE_PATH";
@@ -25,58 +25,58 @@ pub mod http_chat_codes {
 
 /// Unified kernel error type mapped to [`KernelErrorBody`] and machine `code` strings.
 ///
-/// 前端应优先用 [`Self::code`] 映射 i18n（`apiErrors` / `UNKNOWN_WITH_CODE`），勿解析英文 `message`。
+/// The frontend should prefer mapping i18n via [`Self::code`] (`apiErrors` / `UNKNOWN_WITH_CODE`) rather than parsing the English `message`.
 #[derive(Error, Debug)]
 pub enum AppError {
-    /// **何时**：SQLx / 迁移 / 事务失败。**展示**：可重试或联系支持。**用户**：一般无需改配置。
+    /// **When**: SQLx / migration / transaction failure. **Show**: retry or contact support. **User**: usually no config change needed.
     #[error("Database error: {0}")]
     DatabaseError(String),
 
-    /// **何时**：读写角色包、日志、授权文件失败。**展示**：检查路径与磁盘权限。
+    /// **When**: failure reading/writing role packs, logs, or grant files. **Show**: check the path and disk permissions.
     #[error("IO error: {0}")]
     IoError(#[from] std::io::Error),
 
-    /// **何时**：Ollama 或目录 LLM 插件调用失败。**展示**：检查模型是否拉取、服务是否运行。
+    /// **When**: an Ollama or directory LLM plugin call fails. **Show**: check whether the model is pulled and the service is running.
     #[error("Ollama error: {0}")]
     OllamaError(String),
 
-    /// **何时**：`role_id` 不存在或未导入。**展示**：引导选择/导入角色包。
+    /// **When**: the `role_id` does not exist or has not been imported. **Show**: guide the user to select/import a role pack.
     #[error("Role not found: {0}")]
     RoleNotFound(String),
 
-    /// **何时**：尚未 `load_role` 或 `role_runtime` 行缺失。**展示**：提示先加载角色或重启会话。
+    /// **When**: `load_role` has not run yet, or the `role_runtime` row is missing. **Show**: prompt to load the role first or restart the session.
     #[error("Role runtime not initialized; call load_role first")]
     RoleRuntimeNotReady,
 
-    /// **何时**：宿主 `startup_health` 首轮检查失败（槽位/DB/可选 LLM）。**展示**：设置页环境自检。
+    /// **When**: the host's `startup_health` first-turn check fails (slots / DB / optional LLM). **Show**: the environment self-check on the settings page.
     #[error("Startup health failed: {0}")]
     StartupHealthFailed(String),
 
-    /// **何时**：导入角色包目标已存在且未 `overwrite`。**展示**：确认覆盖或换目录。
+    /// **When**: the role-pack import target already exists and `overwrite` is not set. **Show**: confirm overwrite or choose another directory.
     #[error("Role already exists; overwrite required: {0}")]
     RolePackExists(String),
 
-    /// **何时**：请求参数、蓝图、场景 id 等校验失败。**展示**：具体文案；创作者修包后重试。
+    /// **When**: validation of request params, blueprint, scene id, etc. fails. **Show**: a specific message; the creator fixes the pack and retries.
     #[error("Invalid parameter: {0}")]
     InvalidParameter(String),
 
-    /// **何时**：MCP / 目录 `process:spawn` / `network:*` 未授权。**展示**：插件管理授权弹窗；**用户**：需显式授予。
+    /// **When**: MCP / directory `process:spawn` / `network:*` is not granted. **Show**: the plugin-management permission dialog; **User**: must grant explicitly.
     #[error("High-risk capability not granted: {capability} (id={id})")]
     HighRiskCapabilityNotGranted { capability: String, id: String },
 
-    /// **何时**：Remote 后端不可用且未开启自动降级。**展示**：网络/URL/插件日志；可改回 builtin。
+    /// **When**: the Remote backend is unavailable and auto-fallback is disabled. **Show**: network / URL / plugin logs; can switch back to builtin.
     #[error("Remote service unavailable: {0}")]
     RemoteServiceUnavailable(String),
 
-    /// **何时**：JSON/YAML 解析失败。**展示**：检查配置或角色包格式。
+    /// **When**: JSON/YAML parsing fails. **Show**: check the config or role-pack format.
     #[error("Serialization error: {0}")]
     SerializationError(#[from] serde_json::Error),
 
-    /// **何时**：未分类内部错误。**展示**：带 `code` 上报；避免暴露堆栈。
+    /// **When**: an unclassified internal error. **Show**: report with `code`; avoid exposing the stack.
     #[error("Unknown error: {0}")]
     Unknown(String),
 
-    /// **何时**：多表原子写入失败（带稳定 `code`）。**展示**：按 `code` 映射；可重试发消息。
+    /// **When**: a multi-table atomic write fails (carries a stable `code`). **Show**: map by `code`; sending the message can be retried.
     #[error("Transaction failed ({code}): {message}")]
     TransactionError { code: &'static str, message: String },
 }
@@ -103,7 +103,7 @@ impl AppError {
         }
     }
 
-    /// 构造与 HTTP `error` 对象字段一致的 JSON 错误体（不含外层 `{ "error": … }`）。
+    /// Build a JSON error body whose fields match the HTTP `error` object (without the outer `{ "error": … }` wrapper).
     #[must_use]
     pub fn kernel_error_body(&self) -> KernelErrorBody {
         KernelErrorBody {
@@ -113,7 +113,7 @@ impl AppError {
         }
     }
 
-    /// JSON 单行字符串，供 Tauri `invoke` 失败载荷与日志使用（与 HTTP 内层 `error` 同形）。
+    /// Single-line JSON string for Tauri `invoke` failure payloads and logs (same shape as the HTTP inner `error`).
     #[must_use]
     pub fn to_kernel_json(&self) -> String {
         serde_json::to_string(&self.kernel_error_body()).unwrap_or_else(|_| {
@@ -129,7 +129,7 @@ impl AppError {
         })
     }
 
-    /// 与 [`Self::to_kernel_json`] 相同（历史命名：「前端」泛指任意宿主壳）。
+    /// Same as [`Self::to_kernel_json`] (legacy name: "frontend" here refers to any host shell).
     #[must_use]
     pub fn to_frontend_error(&self) -> String {
         self.to_kernel_json()

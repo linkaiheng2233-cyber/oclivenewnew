@@ -1,19 +1,19 @@
-//! # oclive_kernel_runtime — 编排实现与兼容 re-export
+//! # oclive_kernel_runtime — orchestration implementation and compatibility re-exports
 //!
-//! **角色**：承载可在**无头 / 嵌入式**复用的领域引擎片段与 HTTP 常量；**桌面主编排**仍在 `oclivenewnew-tauri` 的 `chat_engine::process_message`。
+//! **Role**: hosts domain engine fragments and HTTP constants reusable in **headless / embedded** scenarios; the **desktop main orchestration** still lives in `oclivenewnew-tauri`'s `chat_engine::process_message`.
 //!
-//! **上游**：[`oclive_kernel_contracts`](https://docs.rs/oclive_kernel_contracts)、[`oclive_kernel_types`](https://docs.rs/oclive_kernel_types)。
-//! **下游**：`oclive_kernel_server`、`src-tauri`（经 re-export 保持旧路径可用）。
+//! **Upstream**: [`oclive_kernel_contracts`](https://docs.rs/oclive_kernel_contracts), [`oclive_kernel_types`](https://docs.rs/oclive_kernel_types).
+//! **Downstream**: `oclive_kernel_server`, `src-tauri` (kept working on old paths via re-export).
 //!
-//! **关键决策**：新代码应直接依赖 `kernel_types` / `kernel_contracts`；本 crate `pub use *` 为**过渡期**，后续将收紧 surface。
+//! **Key decision**: new code should depend directly on `kernel_types` / `kernel_contracts`; this crate's `pub use *` is a **transitional** measure, and the surface will be tightened later.
 
 pub mod domain;
 pub(crate) mod utils;
 
 pub use oclive_validation as validation;
 
-// 过渡期兼容层：下游可继续 `use oclive_kernel_runtime::AppError` 等旧路径；
-// 计划在后续次要版本收紧 surface，请新代码优先依赖 `oclive_kernel_types` / `oclive_kernel_contracts`。
+// Transitional compatibility layer: downstream can keep using old paths like `use oclive_kernel_runtime::AppError`;
+// the surface is planned to be tightened in a later minor version, so new code should prefer depending on `oclive_kernel_types` / `oclive_kernel_contracts`.
 pub use oclive_kernel_types::*;
 pub use oclive_kernel_contracts::{
     self as kernel_contracts, AgentProvider, ComplexEmotionProvider, EmotionPolicy,

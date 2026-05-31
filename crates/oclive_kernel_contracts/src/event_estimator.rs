@@ -1,4 +1,4 @@
-//! 事件影响估计可替换门面 trait。
+//! Replaceable facade trait for event impact estimation.
 
 #![allow(clippy::too_many_arguments)]
 
@@ -14,13 +14,13 @@ use std::sync::Arc;
 ///
 /// ## When to implement
 ///
-/// - **谁**：事件检测后端（内置规则 + LLM、Remote HTTP 插件）。
-/// - **何时**：角色需要**事件系统**（影响性格演化、记忆权重等）时。
+/// - **Who**: event detection backends (builtin rules + LLM, Remote HTTP plugin).
+/// - **When**: when a role needs the **event system** (affecting personality evolution, memory weighting, etc.).
 ///
 /// ## When not to implement
 ///
-/// - 角色包关闭 event 槽或始终使用内置估计且无需替换时。
-/// - 仅做短回复、不持久化事件影响的实验角色可省略自定义实现。
+/// - When the role pack disables the event slot, or always uses the builtin estimate and needs no replacement.
+/// - Experimental roles that only produce short replies and do not persist event impact may omit a custom implementation.
 ///
 /// # Examples
 ///
@@ -52,15 +52,15 @@ use std::sync::Arc;
 /// ```
 #[async_trait]
 pub trait EventEstimator: Send + Sync {
-    /// 估计本回合事件影响（可调用 LLM 或规则引擎）。
+    /// Estimates this turn's event impact (may call an LLM or a rules engine).
     ///
     /// # Errors
     ///
-    /// 当 LLM 调用失败、输入上下文不合法或估计结果无法反序列化时返回 `Err`。
+    /// Returns `Err` when the LLM call fails, the input context is invalid, or the estimate result cannot be deserialized.
     ///
     /// # Panics
     ///
-    /// 不 panic。
+    /// Does not panic.
     async fn estimate(
         &self,
         llm: &Arc<dyn LlmClient>,

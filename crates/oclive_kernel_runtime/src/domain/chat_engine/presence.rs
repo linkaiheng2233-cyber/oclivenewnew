@@ -1,6 +1,6 @@
-//! 用户叙事场景与角色所在场景是否一致（异地判定）。
+//! Whether the user's narrative scene matches the character's current scene (remote-presence check).
 
-/// `user_presence_scene` 与 `character_current_scene` 不同时为异地；角色尚未有场景时不算异地。
+/// Remote-presence when `user_presence_scene` differs from `character_current_scene`; not remote when the character has no scene yet.
 #[must_use]
 pub fn user_is_remote_from_character(
     user_presence_scene: &str,

@@ -1,37 +1,37 @@
-//! 本地插件发现桥接 trait。
+//! Local plugin discovery bridge trait.
 
 use oclive_kernel_types::LocalPluginProviderDescriptor;
 
-/// Provider 发现桥接接口（后续可由 WASM / Native Process 两种实现提供）。
+/// Provider discovery bridge interface (may later be backed by WASM / Native Process implementations).
 ///
 /// ## When to implement
 ///
-/// - **谁**：宿主本地插件运行时（扫描 `plugins/` 目录、WASM / 子进程桥）。
-/// - **何时**：需要发现目录插件并注册为 `LocalPluginProviderDescriptor` 时。
+/// - **Who**: the host's local plugin runtime (scanning the `plugins/` directory, WASM / subprocess bridge).
+/// - **When**: when directory plugins need to be discovered and registered as `LocalPluginProviderDescriptor`.
 ///
 /// ## When not to implement
 ///
-/// - 仅使用 builtin / Remote 槽、不启用目录插件时。
+/// - When only builtin / Remote slots are used and directory plugins are not enabled.
 pub trait LocalPluginBridge: Send + Sync {
-    /// 返回桥接实现名称（用于诊断与日志）。
+    /// Returns the bridge implementation name (for diagnostics and logging).
     ///
     /// # Errors
     ///
-    /// 无；本方法不返回 `Result`。
+    /// None; this method does not return a `Result`.
     ///
     /// # Panics
     ///
-    /// 不 panic。
+    /// Does not panic.
     fn bridge_name(&self) -> &'static str;
 
-    /// 扫描并返回可用的本地插件 Provider 描述符列表。
+    /// Scans and returns the list of available local plugin Provider descriptors.
     ///
     /// # Errors
     ///
-    /// 无；本方法不返回 `Result`；发现失败时实现应返回空列表或跳过无效项。
+    /// None; this method does not return a `Result`; on discovery failure the implementation should return an empty list or skip invalid entries.
     ///
     /// # Panics
     ///
-    /// 不 panic。
+    /// Does not panic.
     fn discover_providers(&self) -> Vec<LocalPluginProviderDescriptor>;
 }

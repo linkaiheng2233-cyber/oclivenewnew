@@ -1,4 +1,4 @@
-//! oclive-cli — 官方内核项目脚手架入口。
+//! oclive-cli — official kernel project scaffolding entry point.
 
 #![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 

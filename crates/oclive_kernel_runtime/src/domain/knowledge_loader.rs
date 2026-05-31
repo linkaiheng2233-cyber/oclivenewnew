@@ -1,4 +1,4 @@
-//! 从角色包目录加载 [`KnowledgeIndex`](crate::models::knowledge::KnowledgeIndex)：Markdown + YAML front matter。
+//! Load [`KnowledgeIndex`](crate::models::knowledge::KnowledgeIndex) from the role pack directory: Markdown + YAML front matter.
 
 use crate::error::{AppError, Result};
 use crate::models::knowledge::{EventHintEntryDisk, KnowledgeChunk, KnowledgeIndex};
@@ -120,7 +120,7 @@ fn parse_markdown_chunk(path: &Path, raw: &str) -> Result<KnowledgeChunk> {
     })
 }
 
-/// 是否应在本次加载中读取知识（manifest 省略时仅当存在 `knowledge/` 目录）。
+/// Whether knowledge should be read in this load (when the manifest omits it, only if a `knowledge/` directory exists).
 #[must_use]
 pub fn should_load_knowledge(disk: &DiskRoleManifest, role_dir: &Path) -> bool {
     match &disk.knowledge {
@@ -129,7 +129,7 @@ pub fn should_load_knowledge(disk: &DiskRoleManifest, role_dir: &Path) -> bool {
     }
 }
 
-/// 解析 manifest 中的知识配置；`None` 表示不加载（未启用或自动模式下无目录）。
+/// Resolve the knowledge config in the manifest; `None` means do not load (disabled, or no directory in auto mode).
 #[must_use]
 pub fn resolved_knowledge_glob(disk: &DiskRoleManifest, role_dir: &Path) -> Option<String> {
     if !should_load_knowledge(disk, role_dir) {
@@ -145,8 +145,8 @@ pub fn resolved_knowledge_glob(disk: &DiskRoleManifest, role_dir: &Path) -> Opti
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
-/// 枚举 `roles/{id}/knowledge/` 下（递归）所有 `.md` 文件。
-/// `glob` 仅支持约定形式 `knowledge/**/*.md` 或 `knowledge/**`（忽略末尾片段，行为一致）。
+/// Enumerate all `.md` files under `roles/{id}/knowledge/` (recursively).
+/// `glob` only supports the conventional forms `knowledge/**/*.md` or `knowledge/**` (the trailing fragment is ignored; behavior is the same).
 pub fn collect_knowledge_files(role_dir: &Path, glob_pat: &str) -> Result<Vec<PathBuf>> {
     let g = glob_pat.trim();
     if !g.starts_with("knowledge/") {
@@ -174,7 +174,7 @@ pub fn collect_knowledge_files(role_dir: &Path, glob_pat: &str) -> Result<Vec<Pa
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
-/// 加载并校验整包知识；任一文件失败则返回错误（避免半包静默）。
+/// Load and validate the entire pack's knowledge; if any file fails, return an error (avoids a silent half-loaded pack).
 pub fn load_knowledge_index(role_dir: &Path, disk: &DiskRoleManifest) -> Result<KnowledgeIndex> {
     let Some(glob_pat) = resolved_knowledge_glob(disk, role_dir) else {
         return Ok(KnowledgeIndex::default());

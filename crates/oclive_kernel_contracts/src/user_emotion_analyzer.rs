@@ -1,4 +1,4 @@
-//! 用户/文本情绪分析可替换门面 trait。
+//! Replaceable facade trait for user/text emotion analysis.
 
 use oclive_kernel_types::{EmotionResult, Result};
 
@@ -6,14 +6,14 @@ use oclive_kernel_types::{EmotionResult, Result};
 ///
 /// ## When to implement
 ///
-/// - **谁**：情绪分析后端（内置关键词 / LLM、Remote）。
-/// - **何时**：共景路径需要分析**用户消息情绪**以驱动事件与 Prompt 时。
+/// - **Who**: emotion analysis backends (builtin keyword / LLM, Remote).
+/// - **When**: when the co-present path needs to analyze **user message emotion** to drive events and the prompt.
 ///
 /// ## When not to implement
 ///
-/// - 使用默认 builtin 分析且无需替换时；或角色禁用 emotion 相关能力时。
+/// - When the default builtin analysis is used and needs no replacement; or when the role disables emotion-related capabilities.
 pub trait UserEmotionAnalyzer: Send + Sync {
-    /// 分析用户文本并产出七维情绪结果。
+    /// Analyzes user text and produces a seven-dimensional emotion result.
     ///
     /// # Errors
     ///
@@ -21,6 +21,6 @@ pub trait UserEmotionAnalyzer: Send + Sync {
     ///
     /// # Panics
     ///
-    /// 不 panic。
+    /// Does not panic.
     fn analyze(&self, text: &str) -> Result<EmotionResult>;
 }

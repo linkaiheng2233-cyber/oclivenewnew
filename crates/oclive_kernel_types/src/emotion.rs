@@ -1,8 +1,8 @@
-//! 情绪分析结果（七维分布）。
+//! Emotion-analysis result (seven-dimension distribution).
 
 use crate::models::Emotion;
 
-/// 情绪分析结果
+/// Emotion-analysis result
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct EmotionResult {
     pub joy: f64,
@@ -15,7 +15,7 @@ pub struct EmotionResult {
 }
 
 impl EmotionResult {
-    /// 取七维中最大值对应的情绪标签（与内置 `EmotionAnalyzer::get_dominant_emotion` 规则一致）。
+    /// Returns the emotion label corresponding to the largest of the seven dimensions (matching the builtin `EmotionAnalyzer::get_dominant_emotion` rule).
     #[must_use]
     pub fn dominant_emotion(&self) -> Emotion {
         let emotions = [
@@ -39,7 +39,7 @@ impl EmotionResult {
         }
     }
 
-    /// 转为 `models::Emotion`（兼容旧 API 命名）。
+    /// Convert to `models::Emotion` (kept for compatibility with the legacy API name).
     #[must_use]
     pub fn to_emotion(&self) -> Emotion {
         self.dominant_emotion()

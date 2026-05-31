@@ -1,6 +1,6 @@
-//! 专家设施步骤 `action` 解析与校验。
+//! Expert facility step `action` parsing and validation.
 
-/// 专家设施专用 action（非 `slot_registry` 键）。
+/// Expert-facility-specific actions (not `slot_registry` keys).
 pub const EXPERT_ACTION_PERSONALITY_ADJUST: &str = "slot.personality.adjust";
 pub const EXPERT_ACTION_PROMPT_ENHANCE: &str = "slot.prompt_enhance.apply";
 pub const EXPERT_ACTION_MEMORY_INJECT: &str = "slot.memory.inject";
@@ -15,7 +15,7 @@ const FACILITY_ACTIONS: &[&str] = &[
     EXPERT_ACTION_EXPERT_FALLBACK,
 ];
 
-/// 专家子步骤 action 种类。
+/// Kinds of expert sub-step actions.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ExpertStepActionKind {
     Slot {
@@ -29,7 +29,7 @@ pub enum ExpertStepActionKind {
     ExpertFallback,
 }
 
-/// 解析专家路由单步 `action`。
+/// Parse a single expert routing step `action`.
 ///
 /// # Errors
 pub fn parse_expert_step_action(action: &str) -> Result<ExpertStepActionKind, String> {
@@ -77,14 +77,14 @@ fn parse_slot_step(action: &str) -> Result<(String, String), String> {
     Ok((key.to_string(), method))
 }
 
-/// 校验步骤 action 是否合法（slot 或设施）。
+/// Validate whether a step action is valid (slot or facility).
 ///
 /// # Errors
 pub fn validate_expert_step_action(action: &str) -> Result<(), String> {
     parse_expert_step_action(action).map(|_| ())
 }
 
-/// 是否为已知专家设施 action 常量。
+/// Whether this is a known expert facility action constant.
 #[must_use]
 pub fn is_facility_action(action: &str) -> bool {
     FACILITY_ACTIONS.contains(&action.trim())

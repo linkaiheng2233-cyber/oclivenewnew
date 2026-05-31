@@ -1,23 +1,23 @@
-//! # oclive_kernel_types — 纯数据结构层
+//! # oclive_kernel_types — pure data-structure layer
 //!
-//! **角色**：内核共享的 **DTO、错误类型、配置结构**（`Role`、`SendMessageRequest`、`AppError` 等）；**不包含业务逻辑或 I/O**。
+//! **Role**: kernel-shared **DTOs, error types, and config structs** (`Role`, `SendMessageRequest`, `AppError`, etc.); **contains no business logic or I/O**.
 //!
-//! **上游**：[`oclive_validation`](https://docs.rs/oclive_validation)（蓝图 / manifest 校验类型如 `SlotRegistryEntry`）。
-//! **下游**：`oclive_kernel_contracts`、`oclive_kernel_runtime`、`src-tauri` 模型再导出。
+//! **Upstream**: [`oclive_validation`](https://docs.rs/oclive_validation) (blueprint / manifest validation types such as `SlotRegistryEntry`).
+//! **Downstream**: `oclive_kernel_contracts`, `oclive_kernel_runtime`, and `src-tauri` model re-exports.
 //!
-//! **关键决策**：类型与行为分离，保证契约 crate 可独立版本化；优先从本 crate 根或 [`models`] / [`error`] 导入。
+//! **Key decision**: types and behavior are kept separate so the contract crate can be versioned independently; prefer importing from this crate root or from [`models`] / [`error`].
 //!
-//! ## 公开导出审计（维护约定）
+//! ## Public-export audit (maintenance convention)
 //!
-//! | 允许 | 禁止 |
+//! | Allowed | Forbidden |
 //! |------|------|
-//! | `struct` / `enum` DTO、`Default`、`From`/`Into` 映射 | 数据库、HTTP、子进程、目录 I/O |
-//! | `impl Role` 上的**只读派生**（门控布尔、配置解析、manifest 往返） | 编排顺序、插件解析、会话副作用 |
-//! | [`AppError`] 与 [`KernelErrorBody`] | 在 types 内调用 `PluginHost` 或 LLM |
+//! | `struct` / `enum` DTOs, `Default`, `From`/`Into` mappings | database, HTTP, subprocess, or directory I/O |
+//! | **read-only derivations** on `impl Role` (gating booleans, config parsing, manifest round-trip) | orchestration ordering, plugin resolution, session side effects |
+//! | [`AppError`] and [`KernelErrorBody`] | calling `PluginHost` or an LLM inside types |
 //!
-//! `Role::resolve_ollama_model` 仅解析 manifest / 环境变量 / 全局默认的**字符串优先级**，不发起网络请求。
-//! 双核门控 [`Role::dual_core_gated`](models::role::Role::dual_core_gated) 只读取已加载蓝图字段。
-//! 磁盘 ↔ 内存转换见 [`models::role_manifest_disk`] / [`models::role_settings_disk`]。
+//! `Role::resolve_ollama_model` only resolves the **string priority** of manifest / environment variable / global default; it does not issue network requests.
+//! The dual-core gate [`Role::dual_core_gated`](models::role::Role::dual_core_gated) only reads already-loaded blueprint fields.
+//! For disk ↔ memory conversion see [`models::role_manifest_disk`] / [`models::role_settings_disk`].
 
 pub mod agent;
 pub mod complex_emotion;

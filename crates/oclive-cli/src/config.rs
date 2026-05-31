@@ -1,4 +1,4 @@
-//! 全局 / 工程级配置（`~/.oclive/config.toml`、`.oclive.toml`）。
+//! Global / project-level config (`~/.oclive/config.toml`, `.oclive.toml`).
 
 use anyhow::{Context, Result};
 use std::collections::BTreeMap;
@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 
 use crate::registry::oclive_home;
 
-/// 可在配置文件中管理的键（亦支持 `oclive config set` 任意 `OCLIVE_*` 键）。
+/// Keys manageable in the config file (also supports `oclive config set` for any `OCLIVE_*` key).
 pub const KNOWN_KEYS: &[&str] = &[
     "OCLIVE_REGISTRY_URL",
     "OCLIVE_REGISTRY_TOKEN",
@@ -65,7 +65,7 @@ fn save_toml_map(path: &Path, map: &BTreeMap<String, String>) -> Result<()> {
     Ok(())
 }
 
-/// 解析配置：进程环境变量 > 工程 `.oclive.toml` > 用户 `config.toml`。
+/// Resolve config: process env vars > project `.oclive.toml` > user `config.toml`.
 pub fn resolve(key: &str, project_root: Option<&Path>) -> Option<String> {
     if let Ok(v) = std::env::var(key) {
         if !v.trim().is_empty() {
@@ -144,7 +144,7 @@ pub fn list_keys(global: bool, project_root: Option<&Path>) -> Result<BTreeMap<S
     Ok(merged)
 }
 
-/// 将当前进程中已设置的 `OCLIVE_*` 环境变量导入全局配置（不覆盖已有文件键）。
+/// Import `OCLIVE_*` env vars set in the current process into the global config (without overwriting existing file keys).
 pub fn import_env_to_global() -> Result<usize> {
     let path = global_config_path();
     let mut map = load_toml_map(&path)?;

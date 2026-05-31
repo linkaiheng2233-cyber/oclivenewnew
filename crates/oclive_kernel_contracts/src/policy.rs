@@ -1,4 +1,4 @@
-//! 情绪 / 事件 / 记忆策略 trait。
+//! Emotion / event / memory policy traits.
 
 use oclive_kernel_types::{
     Emotion, EmotionResult, Event, EventType, PolicyContext, Result,
@@ -8,22 +8,22 @@ use oclive_kernel_types::{
 ///
 /// ## When to implement
 ///
-/// - **谁**：替换默认性格/情绪映射规则的引擎作者。
-/// - **何时**：需要自定义「分析情绪 → 角色展示情绪」映射时。
+/// - **Who**: engine authors replacing the default personality/emotion mapping rules.
+/// - **When**: when a custom "analyzed emotion → displayed role emotion" mapping is needed.
 ///
 /// ## When not to implement
 ///
-/// - 使用内置 `DefaultEmotionPolicy` 且行为已满足需求时。
+/// - When the builtin `DefaultEmotionPolicy` is used and its behavior already meets the requirements.
 pub trait EmotionPolicy: Send + Sync {
-    /// 将分析得到的用户情绪映射为角色当前展示情绪。
+    /// Maps the analyzed user emotion into the role's currently displayed emotion.
     ///
     /// # Errors
     ///
-    /// 无；本方法不返回 `Result`。
+    /// None; this method does not return a `Result`.
     ///
     /// # Panics
     ///
-    /// 不 panic。
+    /// Does not panic.
     fn resolve_current_emotion(&self, previous: Option<&str>, analyzed: &EmotionResult) -> Emotion;
 }
 
@@ -31,14 +31,14 @@ pub trait EmotionPolicy: Send + Sync {
 ///
 /// ## When to implement
 ///
-/// - **谁**：自定义事件检测 / 影响权重策略的作者。
-/// - **何时**：与 [`EventEstimator`](crate::EventEstimator) 配合，需改事件分类或权重表时。
+/// - **Who**: authors of custom event detection / impact weighting policies.
+/// - **When**: when working with [`EventEstimator`](crate::EventEstimator) and needing to change event classification or the weight table.
 ///
 /// ## When not to implement
 ///
-/// - 完全依赖内置 `DefaultEventPolicy` + `BuiltinEventEstimator` 时。
+/// - When relying entirely on the builtin `DefaultEventPolicy` + `BuiltinEventEstimator`.
 pub trait EventPolicy: Send + Sync {
-    /// 检测本回合对话事件类型。
+    /// Detects this turn's dialogue event type.
     ///
     /// # Errors
     ///
@@ -46,29 +46,29 @@ pub trait EventPolicy: Send + Sync {
     ///
     /// # Panics
     ///
-    /// 不 panic。
+    /// Does not panic.
     fn detect(&self, text: &str, user_emotion: &Emotion, bot_emotion: &Emotion) -> Result<Event>;
 
-    /// 返回指定事件类型的叙事影响权重。
+    /// Returns the narrative impact weight for the given event type.
     ///
     /// # Errors
     ///
-    /// 无；本方法不返回 `Result`。
+    /// None; this method does not return a `Result`.
     ///
     /// # Panics
     ///
-    /// 不 panic。
+    /// Does not panic.
     fn impact(&self, event_type: &EventType) -> f64;
 
-    /// 返回指定事件类型的检测置信度。
+    /// Returns the detection confidence for the given event type.
     ///
     /// # Errors
     ///
-    /// 无；本方法不返回 `Result`。
+    /// None; this method does not return a `Result`.
     ///
     /// # Panics
     ///
-    /// 不 panic。
+    /// Does not panic.
     fn confidence(&self, event_type: &EventType) -> f32;
 }
 
@@ -76,54 +76,54 @@ pub trait EventPolicy: Send + Sync {
 ///
 /// ## When to implement
 ///
-/// - **谁**：自定义「哪些内容写入长期记忆、重要性打分」的策略作者。
-/// - **何时**：需要按角色/场景改变记忆持久化规则时。
+/// - **Who**: authors of policies that customize "which content is written to long-term memory and its importance scoring".
+/// - **When**: when memory persistence rules need to change per role/scene.
 ///
 /// ## When not to implement
 ///
-/// - 默认 `DefaultMemoryPolicy` 已满足角色设计时。
+/// - When the default `DefaultMemoryPolicy` already satisfies the role design.
 pub trait MemoryPolicy: Send + Sync {
-    /// 根据策略上下文构建待持久化的记忆正文。
+    /// Builds the memory body to persist based on the policy context.
     ///
     /// # Errors
     ///
-    /// 无；本方法不返回 `Result`。
+    /// None; this method does not return a `Result`.
     ///
     /// # Panics
     ///
-    /// 不 panic。
+    /// Does not panic.
     fn build_memory_entry(&self, ctx: &PolicyContext<'_>) -> String;
 
-    /// 判断本回合是否应写入长期记忆。
+    /// Decides whether this turn should be written to long-term memory.
     ///
     /// # Errors
     ///
-    /// 无；本方法不返回 `Result`。
+    /// None; this method does not return a `Result`.
     ///
     /// # Panics
     ///
-    /// 不 panic。
+    /// Does not panic.
     fn should_persist(&self, ctx: &PolicyContext<'_>) -> bool;
 
-    /// 计算本回合记忆的重要性分数。
+    /// Computes the importance score of this turn's memory.
     ///
     /// # Errors
     ///
-    /// 无；本方法不返回 `Result`。
+    /// None; this method does not return a `Result`.
     ///
     /// # Panics
     ///
-    /// 不 panic。
+    /// Does not panic.
     fn importance(&self, ctx: &PolicyContext<'_>) -> f64;
 
-    /// 返回 FIFO 淘汰上限（条数）。
+    /// Returns the FIFO eviction limit (number of entries).
     ///
     /// # Errors
     ///
-    /// 无；本方法不返回 `Result`。
+    /// None; this method does not return a `Result`.
     ///
     /// # Panics
     ///
-    /// 不 panic。
+    /// Does not panic.
     fn fifo_limit(&self) -> i32;
 }

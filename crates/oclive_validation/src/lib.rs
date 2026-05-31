@@ -1,7 +1,7 @@
-//! 角色包 manifest 校验与磁盘 DTO（与 oclivenewnew 运行时 serde 一致）。
+//! Role pack manifest validation and on-disk DTOs (matching the oclivenewnew runtime serde).
 //!
-//! - **native**：`validate_disk_manifest` 等。
-//! - **wasm**（`--features wasm`，目标 `wasm32-unknown-unknown`）：`validate_manifest_wasm`。
+//! - **native**: `validate_disk_manifest`, etc.
+//! - **wasm** (`--features wasm`, target `wasm32-unknown-unknown`): `validate_manifest_wasm`.
 
 #![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 

@@ -1,8 +1,8 @@
-//! 复杂情感解析输入/输出（纯数据结构）。
+//! Complex-emotion resolution input/output (pure data structures).
 
 use serde::{Deserialize, Serialize};
 
-/// 与 JSON-RPC `complex_emotion.resolve_turn` 的 `params` 对齐（snake_case）。
+/// Aligned with the `params` of the JSON-RPC `complex_emotion.resolve_turn` (snake_case).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ComplexEmotionInput {
     pub role_id: String,
@@ -13,17 +13,17 @@ pub struct ComplexEmotionInput {
     pub recent_dialogue_summary: Option<String>,
     #[serde(default)]
     pub previous_narrative_hint: String,
-    /// 宿主从用户句七维情绪推导；缺省按 0 处理关键词条件。
+    /// Derived by the host from the user message's seven-dimension emotion; when absent, keyword conditions treat it as 0.
     #[serde(default)]
     pub user_valence: Option<f64>,
     #[serde(default)]
     pub user_dominance: Option<f64>,
-    /// 上一轮用户句（纯文本）；用于「连续两轮用户回复≤2字」判定。
+    /// Previous-turn user message (plain text); used for the "two consecutive user replies of ≤2 characters" check.
     #[serde(default)]
     pub previous_user_message: Option<String>,
 }
 
-/// 与侧车 / Prompt 注入一致。
+/// Consistent with the sidecar / prompt injection.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ComplexEmotionOutput {
     pub source: String,

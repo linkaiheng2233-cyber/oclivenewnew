@@ -1,4 +1,4 @@
-//! Prompt 组装可替换门面 trait。
+//! Replaceable facade trait for prompt assembly.
 
 use oclive_kernel_types::{PromptInput, Result, Role};
 
@@ -6,32 +6,32 @@ use oclive_kernel_types::{PromptInput, Result, Role};
 ///
 /// ## When to implement
 ///
-/// - **谁**：Prompt 组装后端（内置模板、Remote、目录插件）。
-/// - **何时**：需要**自定义** Prompt 结构（段落顺序、条件块、top_topic）时。
+/// - **Who**: prompt assembly backends (builtin templates, Remote, directory plugin).
+/// - **When**: when a **custom** prompt structure is needed (section ordering, conditional blocks, top_topic).
 ///
 /// ## When not to implement
 ///
-/// - 默认 `BuiltinPromptAssembler` / `PromptBuilder` 已满足角色需求时，无需新实现。
+/// - When the default `BuiltinPromptAssembler` / `PromptBuilder` already meets the role's needs, no new implementation is required.
 pub trait PromptAssembler: Send + Sync {
-    /// 组装本回合 Prompt 正文。
+    /// Assembles this turn's prompt body.
     ///
     /// # Errors
     ///
-    /// 模板或输入校验失败时返回 [`Result`] 的 `Err` 变体。
+    /// Returns the `Err` variant of [`Result`] when template or input validation fails.
     ///
     /// # Panics
     ///
-    /// 不 panic。
+    /// Does not panic.
     fn build_prompt(&self, input: &PromptInput<'_>) -> Result<String>;
 
-    /// 返回当前场景下的主题提示（可选）。
+    /// Returns the topic hint for the current scene (optional).
     ///
     /// # Errors
     ///
-    /// 无；本方法不返回 `Result`。
+    /// None; this method does not return a `Result`.
     ///
     /// # Panics
     ///
-    /// 不 panic。
+    /// Does not panic.
     fn top_topic_hint(&self, role: &Role, scene_id: &str) -> Option<String>;
 }

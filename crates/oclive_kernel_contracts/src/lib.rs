@@ -1,29 +1,29 @@
-//! # oclive_kernel_contracts — 内核端口（trait）层
+//! # oclive_kernel_contracts — kernel port (trait) layer
 //!
-//! **角色**：定义编排层依赖的**全部抽象接口**（LLM、记忆、插件宿主、Agent 等）；**不含任何实现代码**。
+//! **Role**: defines **all abstract interfaces** the orchestration layer depends on (LLM, memory, plugin host, Agent, etc.); contains **no implementation code**.
 //!
-//! **上游**：仅依赖 [`oclive_kernel_types`](https://docs.rs/oclive_kernel_types)（DTO / 错误）。
-//! **下游**：`oclivenewnew-tauri` 的 `domain` / `infrastructure` 提供实现；`oclive_kernel_runtime` 过渡期 re-export。
+//! **Upstream**: depends only on [`oclive_kernel_types`](https://docs.rs/oclive_kernel_types) (DTO / errors).
+//! **Downstream**: implementations are provided by `oclivenewnew-tauri`'s `domain` / `infrastructure`; `oclive_kernel_runtime` re-exports during the transition period.
 //!
-//! **关键决策**：trait 与 Tauri 解耦，便于无头服务、嵌入式或测试注入 mock；插件作者实现本 crate 中的 trait，而非直接改编排代码。
+//! **Key decision**: decoupling the traits from Tauri makes it easy to inject mocks for headless services, embedded use, or tests; plugin authors implement the traits in this crate rather than editing the orchestration code directly.
 //!
-//! ## Trait 职责一览（单一职责）
+//! ## Trait responsibilities at a glance (single responsibility)
 //!
-//! | Trait | 职责 | 典型实现方 |
+//! | Trait | Responsibility | Typical implementer |
 //! |-------|------|------------|
-//! | [`LlmClient`] | 文本生成 / 流式 | Ollama、Remote HTTP、目录插件 |
-//! | [`MemoryRetrieval`] | 近期记忆排序与筛选 | Builtin、Remote |
-//! | [`UserEmotionAnalyzer`] | 用户消息情绪 | Builtin、Remote |
-//! | [`EventEstimator`] | 事件类型与 impact | Builtin + LLM、Remote |
-//! | [`PromptAssembler`] | Prompt 片段组装 | Builtin、Remote |
-//! | [`ComplexEmotionProvider`] | `narrative_hint` 解析 | Builtin 关键词、Remote |
-//! | [`AgentProvider`] | Agent 回合短路 | Builtin ReAct、目录 |
-//! | [`PluginHostPort`] | 解析 `plugin_backends` → `dyn` 句柄 | `PluginHost`（Tauri / 无头） |
-//! | [`SlotRegistryResolver`] | `slot_registry` 多实例 → `ResolvedRoleSlots` | `SlotResolver` |
-//! | [`MemoryRepository`] / [`FavorabilityRepository`] | 持久化端口 | SQL 实现 |
-//! | [`EmotionPolicy`] / [`MemoryPolicy`] / [`EventPolicy`] | 回合后策略（持有/过滤） | Builtin 规则 |
+//! | [`LlmClient`] | Text generation / streaming | Ollama, Remote HTTP, directory plugin |
+//! | [`MemoryRetrieval`] | Recent memory ranking and filtering | Builtin, Remote |
+//! | [`UserEmotionAnalyzer`] | User message emotion | Builtin, Remote |
+//! | [`EventEstimator`] | Event type and impact | Builtin + LLM, Remote |
+//! | [`PromptAssembler`] | Prompt fragment assembly | Builtin, Remote |
+//! | [`ComplexEmotionProvider`] | `narrative_hint` resolution | Builtin keyword, Remote |
+//! | [`AgentProvider`] | Agent turn short-circuit | Builtin ReAct, directory |
+//! | [`PluginHostPort`] | Resolve `plugin_backends` → `dyn` handles | `PluginHost` (Tauri / headless) |
+//! | [`SlotRegistryResolver`] | `slot_registry` multi-instance → `ResolvedRoleSlots` | `SlotResolver` |
+//! | [`MemoryRepository`] / [`FavorabilityRepository`] | Persistence ports | SQL implementation |
+//! | [`EmotionPolicy`] / [`MemoryPolicy`] / [`EventPolicy`] | Post-turn policies (retain/filter) | Builtin rules |
 //!
-//! 各 trait 方法均应有编排调用方或文档中的预留说明；新增方法前请对照 `co_present` / `process_message` 热路径。
+//! Every trait method should have an orchestration caller or a documented reservation note; before adding a method, cross-check the `co_present` / `process_message` hot path.
 
 pub(crate) mod agent_provider;
 pub(crate) mod complex_emotion;

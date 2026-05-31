@@ -1,12 +1,12 @@
-//! `plugin_backends.memory = local` 时，从已注册 provider id 列表中解析目标 `provider_id`（纯逻辑，便于单测与 `plugin_host` 复用）。
+//! When `plugin_backends.memory = local`, resolve the target `provider_id` from the list of registered provider ids (pure logic, convenient for unit tests and `plugin_host` reuse).
 
-/// 解析结果：`provider_id` 为 `None` 表示注册表无 memory 能力 provider。
+/// Resolution result: a `None` `provider_id` means the registry has no memory-capable provider.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LocalMemoryPick {
     pub provider_id: Option<String>,
-    /// `local_memory_provider_id` 非空但未命中任一已注册 id。
+    /// `local_memory_provider_id` is non-empty but matches none of the registered ids.
     pub hint_missed: bool,
-    /// 多个 memory provider 且未给出有效 preferred（或 preferred 未命中后仍存在多候选时的字典序回退）。
+    /// Multiple memory providers with no valid preferred given (or a lexicographic fallback when multiple candidates remain after a preferred miss).
     pub ambiguous_lexicographic: bool,
 }
 
@@ -43,7 +43,7 @@ fn pick_sorted_str_ids(ids: &[&str], preferred: Option<&str>) -> LocalMemoryPick
     }
 }
 
-/// 从已注册 id 的借用切片解析；内部排序去重，**仅克隆最终选中的** `provider_id`。
+/// Resolve from a borrowed slice of registered ids; sorts and dedups internally, **cloning only the finally selected** `provider_id`.
 #[must_use]
 pub fn pick_local_memory_provider_refs(
     mut ids: Vec<&str>,
@@ -54,7 +54,7 @@ pub fn pick_local_memory_provider_refs(
     pick_sorted_str_ids(&ids, preferred)
 }
 
-/// `ids` 可为任意顺序；内部会排序去重。`preferred` 为 trim 后非空则优先精确匹配。
+/// `ids` may be in any order; sorted and deduped internally. If `preferred` is non-empty after trimming, an exact match is preferred.
 pub fn pick_local_memory_provider(
     mut ids: Vec<String>,
     preferred: Option<&str>,

@@ -1,4 +1,4 @@
-//! 事件影响估计输出（纯数据结构）。
+//! Event-impact estimate output (pure data structures).
 
 use crate::models::EventType;
 
