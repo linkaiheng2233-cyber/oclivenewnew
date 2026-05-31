@@ -9,7 +9,7 @@
 
 | 文件 | 说明 |
 |------|------|
-| [CHANGELOG.md](CHANGELOG.md) | 版本变更记录（**仍以本文件为发布说明准**） |
+| [CHANGELOG.md](../../CHANGELOG.md) | 版本变更记录（**仍以本文件为发布说明准**） |
 
 **已清理（避免与 `handoff/` 重复）**：根目录曾有的 `DEVELOPMENT_REPORT_HANDOFF.md`、`DEVELOPMENT_PLAN_v3.8.md` 与体量较大的笔记文件 `Rust.txt` 已删除。开发报告与执行计划请以 **`handoff/01_DEVELOPMENT_REPORT.md`**、**`handoff/02_DEVELOPMENT_PLAN_v3.8.md`** 为准；早期周总结若需可查 git 历史。
 
@@ -17,7 +17,7 @@
 
 ## 2. `handoff/` 交接包（清单）
 
-目录说明见 [handoff/README.md](handoff/README.md)。以下为文件索引表（与 handoff 内 README 对齐并略有补充）：
+目录说明见 [handoff/README.md](../README.md)。以下为文件索引表（与 handoff 内 README 对齐并略有补充）：
 
 | 文件 | 摘要 |
 |------|------|
@@ -50,7 +50,7 @@
 
 ## 3. 文档体系演进（摘要）
 
-- **创作者与插件契约**：现以根目录 **`creator-docs/`** 为权威（分 `getting-started`、`plugin-and-architecture`、`role-pack`、`roadmap`），旧 **`docs/*.md`** 已迁移，见 [docs/README.md](docs/README.md)。  
+- **创作者与插件契约**：现以根目录 **`creator-docs/`** 为权威（分 `getting-started`、`plugin-and-architecture`、`role-pack`、`roadmap`），旧 **`docs/*.md`** 已迁移，见 [docs/README.md](../../docs/README.md)。  
 - **HTTP Remote 侧车**：宿主实现于 `src-tauri/src/infrastructure/remote_plugin/`；协议见 `creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md`。  
 - **产品愿景**：`creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md`。
 
@@ -60,9 +60,9 @@
 
 | 读者 | 应读 |
 |------|------|
-| 角色作者 / 侧车开发者 | **[creator-docs/README.md](creator-docs/README.md)** |
+| 角色作者 / 侧车开发者 | **[creator-docs/README.md](../../creator-docs/README.md)** |
 | 接手仓库的工程师 | `handoff/00_HANDOFF_SUMMARY.md` → 本归档 §2 按需深入 |
-| 版本发布说明 | **[CHANGELOG.md](CHANGELOG.md)** |
+| 版本发布说明 | **[CHANGELOG.md](../../CHANGELOG.md)** |
 
 ---
 

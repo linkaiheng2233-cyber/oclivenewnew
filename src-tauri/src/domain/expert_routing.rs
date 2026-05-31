@@ -1,4 +1,8 @@
 //! Expert routing match and step execution (`slot.expert.invoke`).
+//!
+//! FROZEN (2026-06-01, see handoff/TECHNICAL_DEBT_INVENTORY.md「冻结决定」):
+//! gated behind `dual_core`, not compiled by default. Do not extend until a
+//! real "route-by-intent to expert models" need appears (unfreezes with dual_core).
 
 #![cfg(feature = "dual_core")]
 

@@ -102,7 +102,7 @@
   - [`src-tauri/src/infrastructure/mcp_client.rs`](src-tauri/src/infrastructure/mcp_client.rs)：扫描 `{app_data}/mcp-servers/*.json`、列出 server、调用工具（http/stdio）。
   - [`src-tauri/src/api/agent.rs`](src-tauri/src/api/agent.rs)：`list_mcp_servers` / `call_mcp_tool` / `get_agent_debug_traces` / `clear_agent_debug_traces`。
 - **调试 UI**：[`src/components/AgentDebugPanel.vue`](src/components/AgentDebugPanel.vue) 原挂在高级插件面板；主路径 Agent 调试可经目录插件或后续专用入口接入。
-- **示例 Skill**：[`examples/weather_skill/`](examples/weather_skill/) 提供最小 Node MCP server（`get_weather(city)`）与示例 server manifest。
+- **示例 Skill / MCP**：MCP server 接入形状见 [`src-tauri/src/infrastructure/mcp_client.rs`](src-tauri/src/infrastructure/mcp_client.rs) 与运行期 `{app_data}/mcp-servers/*.json`；在库可参考的最小 RPC server 示例为 [`examples/directory-plugin-minimal/`](examples/directory-plugin-minimal/) 与 [`examples/common/jsonrpc_http.py`](examples/common/jsonrpc_http.py)。（`examples/weather_skill/`（`get_weather(city)` 最小 MCP server）**尚未入库，为计划中的示例**。）
 
 ### Agent / Skill 通用接入标准（v1）
 

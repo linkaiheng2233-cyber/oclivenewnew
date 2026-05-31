@@ -13,7 +13,7 @@
 | `docs/PACK_VERSIONING.md` | `creator-docs/role-pack/PACK_VERSIONING.md` |
 | `docs/VISION_ROADMAP_MONTHLY.md` | `creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md` |
 
-开发过程日志与交接材料归档见根目录 **[ARCHIVE_PROJECT_HISTORY.md](../ARCHIVE_PROJECT_HISTORY.md)**。
+开发过程日志与交接材料归档见根目录 **[ARCHIVE_PROJECT_HISTORY.md](../handoff/archive/ARCHIVE_PROJECT_HISTORY.md)**。
 
 ## 性格档案（设计轴心）
 

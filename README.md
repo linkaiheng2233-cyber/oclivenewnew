@@ -96,7 +96,7 @@
 | **设计思路演进记录** | [docs/design-axis-evolution.md](docs/design-axis-evolution.md) |
 | 角色包导入 — 手工测试清单 | [roles/TESTING_ROLE_PACK_IMPORT.md](roles/TESTING_ROLE_PACK_IMPORT.md) |
 
-**说明**：旧路径 `docs/*.md` 已迁移至 `creator-docs/`，见 [docs/README.md](docs/README.md)。**开发史料归档**（交接日志索引）：[ARCHIVE_PROJECT_HISTORY.md](ARCHIVE_PROJECT_HISTORY.md)。
+**说明**：旧路径 `docs/*.md` 已迁移至 `creator-docs/`，见 [docs/README.md](docs/README.md)。**开发史料归档**（交接日志索引）：[ARCHIVE_PROJECT_HISTORY.md](handoff/archive/ARCHIVE_PROJECT_HISTORY.md)。
 
 ## 仓库结构（心智模型）
 

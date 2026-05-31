@@ -60,7 +60,7 @@
 | 位置 | 说明 |
 |------|------|
 | 根目录 **[README.md](../README.md)** | 项目简介、构建命令 |
-| 根目录 **[ARCHIVE_PROJECT_HISTORY.md](../ARCHIVE_PROJECT_HISTORY.md)** | 开发日志与交接材料归档索引（非创作者必读） |
+| 根目录 **[ARCHIVE_PROJECT_HISTORY.md](../handoff/archive/ARCHIVE_PROJECT_HISTORY.md)** | 开发日志与交接材料归档索引（非创作者必读） |
 | **[CONTRIBUTING.md](../CONTRIBUTING.md)** / **[SECURITY.md](../SECURITY.md)** | 贡献与安全 |
 | **[CHANGELOG.md](../CHANGELOG.md)** | 版本变更 |
 
