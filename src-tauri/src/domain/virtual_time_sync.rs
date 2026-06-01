@@ -20,9 +20,9 @@ use oclive_kernel_runtime::domain::virtual_time::{
 pub async fn sync_and_persist_virtual_time(
     db: &DbManager,
     role: &Role,
+    db_role_id: &str,
     immersive: bool,
 ) -> Result<i64> {
-    let role_id = role.id.as_str();
     let time_cfg = &role.time_config;
     let real_now = round_to_minute_ms(Utc::now().timestamp_millis());
     if !immersive {
@@ -30,7 +30,7 @@ pub async fn sync_and_persist_virtual_time(
     }
     let ratio = time_cfg.effective_ratio();
     let (anchor_real, anchor_virtual, stored_virtual) =
-        db.get_virtual_time_anchors(role_id).await?;
+        db.get_virtual_time_anchors(db_role_id).await?;
     let (anchor_real, anchor_virtual) = if anchor_real <= 0 {
         let init_virtual = if stored_virtual > 0 {
             stored_virtual
@@ -39,7 +39,7 @@ pub async fn sync_and_persist_virtual_time(
         } else {
             real_now
         };
-        db.set_virtual_time_anchors(role_id, real_now, init_virtual)
+        db.set_virtual_time_anchors(db_role_id, real_now, init_virtual)
             .await?;
         (real_now, init_virtual)
     } else {
@@ -47,7 +47,7 @@ pub async fn sync_and_persist_virtual_time(
     };
     let virtual_now =
         compute_virtual_now_ms(anchor_real, anchor_virtual, real_now, ratio);
-    db.set_virtual_time_ms(role_id, virtual_now).await?;
+    db.set_virtual_time_ms(db_role_id, virtual_now).await?;
     Ok(virtual_now)
 }
 

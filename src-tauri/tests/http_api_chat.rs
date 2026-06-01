@@ -109,3 +109,38 @@ async fn http_api_chat_ok_includes_personality_source_and_reply() {
     assert_eq!(v["personality_source"], "vector");
     assert!(v["reply"].as_str().is_some());
 }
+
+#[tokio::test]
+async fn http_api_chat_with_session_id_ok() {
+    let llm = Arc::new(MockLlmClient {
+        reply: "模拟回复".to_string(),
+    });
+    let state = Arc::new(
+        AppState::new_in_memory_with_llm(llm, roles_dir())
+            .await
+            .expect("state"),
+    );
+    let app = api_router(state);
+    let mumu = roles_dir().join("mumu");
+    let body = json!({
+        "role_path": mumu.to_string_lossy(),
+        "message": "你好",
+        "session_id": "http-api-session-smoke",
+        "scene_id": "vscode",
+    });
+    let res = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/chat")
+                .header("content-type", "application/json")
+                .body(Body::from(serde_json::to_vec(&body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .expect("oneshot");
+    assert_eq!(res.status(), StatusCode::OK);
+    let v = response_json(res).await;
+    assert_eq!(v["session_id"], "http-api-session-smoke");
+    assert!(v["reply"].as_str().is_some());
+}

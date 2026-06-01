@@ -113,7 +113,12 @@ pub async fn get_time_state_impl(
         .await
         ?
         .is_immersive();
-    let ms = sync_and_persist_virtual_time(state.db_manager.as_ref(), role.as_ref(), immersive)
+    let ms = sync_and_persist_virtual_time(
+        state.db_manager.as_ref(),
+        role.as_ref(),
+        role_id,
+        immersive,
+    )
         .await?;
     let dt = DateTime::from_timestamp_millis(ms).unwrap_or_else(Utc::now);
     Ok(TimeStateResponse {
@@ -182,8 +187,13 @@ pub async fn jump_time_impl(
         });
     }
 
-    let base_ms =
-        sync_and_persist_virtual_time(state.db_manager.as_ref(), role.as_ref(), true).await?;
+    let base_ms = sync_and_persist_virtual_time(
+        state.db_manager.as_ref(),
+        role.as_ref(),
+        &req.role_id,
+        true,
+    )
+    .await?;
     let target_ms = match (req.timestamp_ms, req.preset.as_deref()) {
         (Some(ts), _) => ts,
         (None, Some(preset)) => resolve_preset_target_ms(base_ms, preset).ok_or_else(|| {

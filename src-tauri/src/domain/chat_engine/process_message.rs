@@ -198,6 +198,7 @@ async fn run(
         crate::domain::virtual_time_sync::sync_and_persist_virtual_time(
             state.db_manager.as_ref(),
             role.as_ref(),
+            srid,
             immersive,
         ),
     )

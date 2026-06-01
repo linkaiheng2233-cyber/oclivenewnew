@@ -46,6 +46,9 @@ plugins/com.oclive.example.minimal/
 # Playwright (A1.1b preview E2E)
 playwright-report/
 test-results/
+
+# Local Codex / agent test reports (see test-reports/README.md)
+test-reports/
 blob-report/
 playwright/.cache/
 

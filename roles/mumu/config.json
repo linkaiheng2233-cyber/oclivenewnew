@@ -18,5 +18,8 @@
     },
     "evolution": {
         "personality_evolution_interval_hours": 6
+    },
+    "chat_storage": {
+        "location": "global"
     }
 }
