@@ -2,7 +2,8 @@
 
 use crate::infrastructure::MockLlmClient;
 use crate::kernel_lifecycle::{
-    ensure_kernel_ready, start_kernel_watchdog, EnsureKernelOptions, SharedKernelConnection,
+    ensure_kernel_ready, start_kernel_watchdog, DesktopKernelMode, EnsureKernelOptions,
+    KernelConnection, SharedKernelConnection,
 };
 use crate::state::{AppState, SharedAppState};
 use oclive_kernel_runtime::{resolve_api_port, shared_kernel_binary_path};
@@ -51,14 +52,27 @@ pub async fn bootstrap_desktop(
     let anchors = discovery_anchors(resource_dir);
     let bundled = bundled_kernel_binary(resource_dir);
 
-    let kernel = ensure_kernel_ready(EnsureKernelOptions {
+    let kernel = match ensure_kernel_ready(EnsureKernelOptions {
         port,
         roles_dir: roles_dir.clone(),
         anchors: anchors.clone(),
         bundled_binary: bundled.clone(),
     })
     .await
-    .map_err(|e| -> Box<dyn std::error::Error + Send + Sync> { e.into() })?;
+    {
+        Ok(k) => k,
+        Err(e) => {
+            tracing::warn!(
+                target: "oclive_desktop",
+                error = %e,
+                "kernel not ready at startup; UI will run offline until reconnect"
+            );
+            let base_url = format!("http://127.0.0.1:{port}");
+            let conn = Arc::new(KernelConnection::new(base_url, port));
+            conn.set_mode(DesktopKernelMode::Offline);
+            conn
+        }
+    };
 
     tracing::info!(
         target: "oclive_desktop",

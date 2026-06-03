@@ -8,7 +8,7 @@ use crate::kernel_lifecycle::{
 };
 use crate::state::SharedAppState;
 use oclive_kernel_runtime::{
-    discover_kernel_candidates, pick_best_kernel, promote_to_shared_runtime, should_promote,
+    discover_spawn_kernel_candidates, pick_best_kernel, promote_to_shared_runtime, should_promote,
     KernelCandidate, KernelTier,
 };
 use tauri::{AppHandle, Manager, State};
@@ -63,7 +63,7 @@ pub async fn reconnect_kernel(
         anchors.push(cwd);
     }
 
-    let candidates = discover_kernel_candidates(&anchors, None, None);
+    let candidates = discover_spawn_kernel_candidates(&anchors, None, None);
     let Some(best) = pick_best_kernel(&candidates) else {
         conn.set_mode(DesktopKernelMode::Offline);
         return Err(CommandError(crate::error::AppError::KernelOffline));

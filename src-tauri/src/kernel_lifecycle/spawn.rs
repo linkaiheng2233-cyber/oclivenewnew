@@ -67,8 +67,8 @@ pub async fn spawn_kernel(
         .arg("--port")
         .arg(port.to_string())
         .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped());
+        .stdout(Stdio::null())
+        .stderr(Stdio::null());
     for (k, v) in spawn_env(port, roles_dir, &app_data) {
         cmd.env(k, v);
     }

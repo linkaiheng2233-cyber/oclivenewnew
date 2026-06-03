@@ -153,6 +153,35 @@ fn dev_kernel_candidates(repo_root: &Path) -> Vec<KernelCandidate> {
     out
 }
 
+fn is_headless_kernel_binary(path: &Path) -> bool {
+    path.file_name()
+        .and_then(|n| n.to_str())
+        .map(|n| n.to_ascii_lowercase())
+        .is_some_and(|n| n.contains("oclive-kernel-server") || n.contains("kernel-server"))
+}
+
+/// Binaries safe to spawn as a headless HTTP daemon (never the desktop Tauri host).
+#[must_use]
+pub fn is_spawnable_kernel_binary(path: &Path, tier: KernelTier) -> bool {
+    if tier == KernelTier::Env {
+        return is_executable(path);
+    }
+    is_headless_kernel_binary(path)
+}
+
+/// Like [`discover_kernel_candidates`] but excludes full Tauri desktop hosts from spawn.
+#[must_use]
+pub fn discover_spawn_kernel_candidates(
+    anchors: &[PathBuf],
+    settings_binary: Option<&Path>,
+    bundled_binary: Option<&Path>,
+) -> Vec<KernelCandidate> {
+    discover_kernel_candidates(anchors, settings_binary, bundled_binary)
+        .into_iter()
+        .filter(|c| is_spawnable_kernel_binary(&c.binary, c.tier))
+        .collect()
+}
+
 /// Collect kernel binary candidates (deduped by path, highest score wins).
 #[must_use]
 pub fn discover_kernel_candidates(
@@ -248,6 +277,7 @@ pub fn promote_to_shared_runtime(binary: &Path) -> Result<PathBuf, String> {
 pub fn should_promote(candidate: &KernelCandidate) -> bool {
     candidate.score >= PROMOTE_SCORE_THRESHOLD
         && !matches!(candidate.tier, KernelTier::Shared | KernelTier::Bundled)
+        && is_headless_kernel_binary(&candidate.binary)
 }
 
 #[cfg(test)]
@@ -260,8 +290,22 @@ mod tests {
     }
 
     #[test]
-    fn shared_kernel_name() {
-        let p = shared_kernel_binary_path();
-        assert!(p.to_string_lossy().contains("runtime"));
+    fn spawn_candidates_exclude_tauri_host() {
+        let repo = std::env::current_dir().unwrap();
+        let all = discover_kernel_candidates(&[repo.clone()], None, None);
+        let spawn = discover_spawn_kernel_candidates(&[repo], None, None);
+        for c in &spawn {
+            assert!(
+                is_spawnable_kernel_binary(&c.binary, c.tier),
+                "spawn candidate must be headless: {}",
+                c.binary.display()
+            );
+        }
+        if all.iter().any(|c| c.tier == KernelTier::DevFull) {
+            assert!(
+                spawn.iter().all(|c| c.tier != KernelTier::DevFull),
+                "DevFull tauri must not appear in spawn list"
+            );
+        }
     }
 }

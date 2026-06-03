@@ -3,7 +3,7 @@
 use super::connection::{DesktopKernelMode, KernelConnection, SharedKernelConnection};
 use super::spawn::{spawn_kernel, wait_for_health};
 use oclive_kernel_runtime::{
-    discover_kernel_candidates, pick_best_kernel, promote_to_shared_runtime, should_promote,
+    discover_spawn_kernel_candidates, pick_best_kernel, promote_to_shared_runtime, should_promote,
     KernelCandidate, KernelTier,
 };
 use std::path::PathBuf;
@@ -37,7 +37,7 @@ pub async fn ensure_kernel_ready(
         return Ok(conn);
     }
 
-    let candidates = discover_kernel_candidates(
+    let candidates = discover_spawn_kernel_candidates(
         &opts.anchors,
         None,
         opts.bundled_binary.as_deref(),
