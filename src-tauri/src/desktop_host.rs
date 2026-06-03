@@ -38,6 +38,29 @@ fn bundled_kernel_binary(resource_dir: Option<&std::path::Path>) -> Option<PathB
     })
 }
 
+/// Run [`bootstrap_desktop`] on a dedicated Tokio runtime (safe inside Tauri `.setup`).
+///
+/// # Errors
+///
+/// Returns bootstrap errors when the worker thread panics or bootstrap fails.
+pub fn bootstrap_desktop_blocking(
+    resource_dir: Option<PathBuf>,
+) -> Result<(SharedAppState, SharedKernelConnection, u16), Box<dyn std::error::Error + Send + Sync>>
+{
+    std::thread::spawn(move || {
+        let rt = tokio::runtime::Builder::new_multi_thread()
+            .enable_all()
+            .thread_name("oclive-desktop-bootstrap")
+            .build()
+            .map_err(|e| -> Box<dyn std::error::Error + Send + Sync> { Box::new(e) })?;
+        rt.block_on(bootstrap_desktop(resource_dir.as_deref()))
+    })
+    .join()
+    .map_err(|_| -> Box<dyn std::error::Error + Send + Sync> {
+        "desktop bootstrap thread panicked".into()
+    })?
+}
+
 /// Bootstrap desktop: attach or spawn loopback kernel; UI shell has no persistent DB writer.
 ///
 /// # Errors
@@ -49,6 +72,10 @@ pub async fn bootstrap_desktop(
 {
     let port = resolve_api_port(None);
     let roles_dir = crate::state::resolve_roles_dir(resource_dir);
+    let canonical_models = crate::state::ensure_models_dir_for_roles(&roles_dir);
+    let app_data = oclive_kernel_runtime::resolve_app_data_dir_for_host();
+    crate::state::reconcile_legacy_models_layout(&canonical_models, &app_data);
+    crate::api::llm_settings::sync_canonical_db_models_dir(&canonical_models, &app_data).await;
     let anchors = discovery_anchors(resource_dir);
     let bundled = bundled_kernel_binary(resource_dir);
 
@@ -80,6 +107,7 @@ pub async fn bootstrap_desktop(
         port,
         shared_runtime = %shared_kernel_binary_path().display(),
         roles = %roles_dir.display(),
+        models = %canonical_models.display(),
         "desktop kernel client ready"
     );
 
@@ -87,6 +115,14 @@ pub async fn bootstrap_desktop(
         reply: String::new(),
     });
     let shell = AppState::new_in_memory_with_llm(llm, roles_dir).await?;
+    crate::api::llm_settings::seed_shell_llm_from_canonical(&shell).await;
+    if let Err(e) = crate::kernel_attach::KernelHttpClient::reload_llm_via_http(&kernel).await {
+        tracing::warn!(
+            target: "oclive_llm",
+            error = %e,
+            "kernel LLM reload at desktop bootstrap failed"
+        );
+    }
     Ok((Arc::new(shell), kernel, port))
 }
 

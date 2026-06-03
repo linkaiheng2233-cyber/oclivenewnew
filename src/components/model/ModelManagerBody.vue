@@ -4,11 +4,6 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppToast } from '../../composables/useAppToast'
 import {
-  CLOUD_LLM_VENDORS,
-  findCloudVendor,
-  type CloudLlmVendorId,
-} from '../../lib/cloudLlmVendors'
-import {
   getLlmUserSettings,
   importGgufToOllama,
   listOllamaModels,
@@ -25,7 +20,7 @@ const emit = defineEmits<{
 }>()
 
 const roleStore = useRoleStore()
-const { t, te } = useI18n()
+const { t } = useI18n()
 const { showToast } = useAppToast()
 
 const loading = ref(false)
@@ -40,24 +35,9 @@ const providerTab = ref<'local' | 'cloud'>('local')
 const ollamaBaseUrl = ref('')
 const localModelsDir = ref('')
 const selectedLocalModel = ref('')
-const cloudVendorId = ref<CloudLlmVendorId>('deepseek')
-const cloudApiStyle = ref<'openai' | 'oclive_jsonrpc'>('openai')
 const remoteUrl = ref('')
 const remoteToken = ref('')
 const remoteModel = ref('')
-const tokenTouched = ref(false)
-
-const cloudVendorOptions = computed(() =>
-  CLOUD_LLM_VENDORS.map(v => ({
-    id: v.id,
-    label: te(v.labelKey) ? t(v.labelKey) : v.id,
-  })),
-)
-
-const cloudModelOptions = computed(() => {
-  const preset = findCloudVendor(cloudVendorId.value)
-  return preset?.models ?? []
-})
 
 const localModelSelectOptions = computed(() => {
   const ollama = ollamaModels.value.map(id => ({
@@ -79,27 +59,6 @@ const effectiveModel = computed(
   () => settings.value?.effectiveModel?.trim() || roleStore.roleInfo.effectiveOllamaModel?.trim() || '',
 )
 
-function vendorLabel(id: string): string {
-  const key = `modelManager.vendors.${id}`
-  return te(key) ? t(key) : id
-}
-
-function onCloudVendorChange(ev: Event): void {
-  const id = (ev.target as HTMLSelectElement).value as CloudLlmVendorId
-  cloudVendorId.value = id
-  const preset = findCloudVendor(id)
-  if (!preset) {
-    return
-  }
-  cloudApiStyle.value = preset.apiStyle
-  if (preset.baseUrl) {
-    remoteUrl.value = preset.baseUrl
-  }
-  if (preset.models.length > 0 && !remoteModel.value) {
-    remoteModel.value = preset.models[0]
-  }
-}
-
 async function loadSettings(): Promise<void> {
   loading.value = true
   try {
@@ -109,12 +68,9 @@ async function loadSettings(): Promise<void> {
     ollamaBaseUrl.value = s.ollamaBaseUrl
     localModelsDir.value = s.localModelsDir
     folderModelFiles.value = s.localModelFiles ?? []
-    cloudVendorId.value = (findCloudVendor(s.cloudVendor)?.id ?? 'custom') as CloudLlmVendorId
-    cloudApiStyle.value = s.cloudApiStyle === 'oclive_jsonrpc' ? 'oclive_jsonrpc' : 'openai'
     remoteUrl.value = s.remoteUrl
     remoteModel.value = s.remoteModel || s.sessionOllamaModel || ''
     remoteToken.value = ''
-    tokenTouched.value = false
 
     const session = s.sessionOllamaModel?.trim()
     if (session && folderModelFiles.value.some(f => f.path === session)) {
@@ -254,8 +210,7 @@ async function onSave(): Promise<void> {
       const req: Parameters<typeof saveLlmUserSettings>[0] = {
         roleId: roleStore.currentRoleId,
         provider: 'cloud',
-        cloudVendor: cloudVendorId.value,
-        cloudApiStyle: cloudApiStyle.value,
+        cloudApiStyle: 'openai',
         remoteUrl: remoteUrl.value.trim(),
         remoteModel: remoteModel.value.trim(),
       }
@@ -436,30 +391,16 @@ watch(
           {{ t("modelManager.cloudLead") }}
         </p>
 
-        <label class="mm-field">
-          <span>{{ t("modelManager.cloudVendorLabel") }}</span>
-          <select
-            class="mm-select"
-            :value="cloudVendorId"
-            @change="onCloudVendorChange"
-          >
-            <option v-for="v in cloudVendorOptions" :key="v.id" :value="v.id">
-              {{ v.label }}
-            </option>
-          </select>
-        </label>
-
-        <label class="mm-field">
-          <span>{{ t("modelManager.cloudApiStyleLabel") }}</span>
-          <select v-model="cloudApiStyle" class="mm-select">
-            <option value="openai">
-              {{ t("modelManager.apiStyleOpenai") }}
-            </option>
-            <option value="oclive_jsonrpc">
-              {{ t("modelManager.apiStyleJsonRpc") }}
-            </option>
-          </select>
-        </label>
+        <div class="mm-help" role="note">
+          <p class="mm-help-title">
+            {{ t("modelManager.cloudFieldsTitle") }}
+          </p>
+          <ul class="mm-help-list">
+            <li>{{ t("modelManager.cloudFieldUrl") }}</li>
+            <li>{{ t("modelManager.cloudFieldKey") }}</li>
+            <li>{{ t("modelManager.cloudFieldModel") }}</li>
+          </ul>
+        </div>
 
         <label class="mm-field">
           <span>{{ t("modelManager.remoteUrlLabel") }}</span>
@@ -469,6 +410,7 @@ watch(
             class="mm-input"
             :placeholder="t('modelManager.remoteUrlPlaceholder')"
           >
+          <span class="mm-field-hint">{{ t("modelManager.remoteUrlHint") }}</span>
         </label>
 
         <label class="mm-field">
@@ -482,8 +424,8 @@ watch(
                 ? t('modelManager.remoteTokenPlaceholderSet')
                 : t('modelManager.remoteTokenPlaceholder')
             "
-            @input="tokenTouched = true"
           >
+          <span class="mm-field-hint">{{ t("modelManager.remoteTokenHint") }}</span>
         </label>
         <p v-if="settings?.remoteTokenEnvActive" class="mm-hint">
           {{ t("modelManager.envTokenNote") }}
@@ -491,26 +433,14 @@ watch(
 
         <label class="mm-field">
           <span>{{ t("modelManager.remoteModelLabel") }}</span>
-          <select
-            v-if="cloudModelOptions.length > 0"
-            v-model="remoteModel"
-            class="mm-select"
-          >
-            <option v-for="m in cloudModelOptions" :key="m" :value="m">
-              {{ m }}
-            </option>
-          </select>
           <input
-            v-else
             v-model="remoteModel"
             type="text"
             class="mm-input"
             :placeholder="t('modelManager.remoteModelPlaceholder')"
           >
+          <span class="mm-field-hint">{{ t("modelManager.remoteModelHint") }}</span>
         </label>
-        <p class="mm-muted mm-small">
-          {{ vendorLabel(cloudVendorId) }} · {{ cloudApiStyle === 'openai' ? 'OpenAI' : 'JSON-RPC' }}
-        </p>
       </section>
 
       <footer class="mm-footer">
@@ -595,6 +525,31 @@ watch(
   font-size: 0.95rem;
   font-weight: 600;
 }
+.mm-help {
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
+  background: var(--panel-bg-soft, var(--bg-elevated));
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+.mm-help-title {
+  margin: 0 0 6px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.mm-help-list {
+  margin: 0;
+  padding-left: 1.2em;
+}
+.mm-help-list li {
+  margin-bottom: 4px;
+}
+.mm-help-list li:last-child {
+  margin-bottom: 0;
+}
 .mm-field {
   display: flex;
   flex-direction: column;
@@ -602,6 +557,12 @@ watch(
   margin-bottom: 12px;
   font-size: 12px;
   color: var(--text-secondary);
+}
+.mm-field-hint {
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+  opacity: 0.9;
 }
 .mm-input,
 .mm-select {

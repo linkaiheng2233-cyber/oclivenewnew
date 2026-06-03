@@ -3,11 +3,45 @@
 use crate::error::AppError;
 use crate::infrastructure::chat_storage::{SessionMeta, StoredMessage};
 use crate::kernel_lifecycle::KernelConnection;
-use crate::models::dto::{GetRoleInfoRequest, RoleInfo, SendMessageRequest, SendMessageResponse};
+use crate::models::dto::{GetRoleInfoRequest, RoleInfo, SendMessageRequest, SendMessageResponse, TimeStateResponse};
 use crate::state::AppState;
+use oclive_kernel_runtime::KernelErrorBody;
 use serde::Deserialize;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
+
+#[derive(Deserialize)]
+struct ApiErrorEnvelope {
+    error: KernelErrorBody,
+}
+
+/// Map kernel HTTP `{"error": KernelErrorBody}` (or bare body) to [`AppError`].
+pub(crate) fn app_error_from_http_response(status: reqwest::StatusCode, text: &str) -> AppError {
+    let trimmed = text.trim();
+    if let Ok(env) = serde_json::from_str::<ApiErrorEnvelope>(trimmed) {
+        return app_error_from_kernel_body(&env.error);
+    }
+    if let Ok(body) = serde_json::from_str::<KernelErrorBody>(trimmed) {
+        return app_error_from_kernel_body(&body);
+    }
+    if status.as_u16() == 503 {
+        return AppError::KernelOffline;
+    }
+    AppError::OllamaError(format!("HTTP {status}: {trimmed}"))
+}
+
+fn app_error_from_kernel_body(body: &KernelErrorBody) -> AppError {
+    match body.code.as_str() {
+        "ROLE_RUNTIME_NOT_READY" => AppError::RoleRuntimeNotReady,
+        "KERNEL_OFFLINE" => AppError::KernelOffline,
+        "ROLE_NOT_FOUND" => AppError::RoleNotFound(body.message.clone()),
+        "INVALID_PARAMETER" => AppError::InvalidParameter(body.message.clone()),
+        "DB_ERROR" => AppError::DatabaseError(body.message.clone()),
+        "LLM_ERROR" => AppError::OllamaError(body.message.clone()),
+        "STARTUP_HEALTH_FAILED" => AppError::StartupHealthFailed(body.message.clone()),
+        _ => AppError::Unknown(body.message.clone()),
+    }
+}
 
 /// Lightweight UI snapshot from `GET /role_snapshot`.
 #[derive(Debug, Clone, Deserialize)]
@@ -27,9 +61,13 @@ pub struct KernelHttpClient;
 
 impl KernelHttpClient {
     pub async fn probe_health(base_url: &str) -> bool {
+        Self::probe_health_timeout(base_url, Duration::from_secs(3)).await
+    }
+
+    pub async fn probe_health_timeout(base_url: &str, timeout: Duration) -> bool {
         let url = format!("{}/health", base_url.trim_end_matches('/'));
         let client = reqwest::Client::builder()
-            .timeout(Duration::from_secs(3))
+            .timeout(timeout)
             .build()
             .unwrap_or_else(|_| reqwest::Client::new());
         let Ok(res) = client.get(&url).send().await else {
@@ -77,9 +115,7 @@ impl KernelHttpClient {
             .await
             .map_err(|e| AppError::OllamaError(format!("remote chat body: {e}")))?;
         if !status.is_success() {
-            return Err(AppError::OllamaError(format!(
-                "remote chat HTTP {status}: {text}"
-            )));
+            return Err(app_error_from_http_response(status, &text));
         }
         serde_json::from_str(&text)
             .map_err(|e| AppError::OllamaError(format!("remote chat JSON: {e}")))
@@ -108,16 +144,37 @@ impl KernelHttpClient {
             .text()
             .await
             .map_err(|e| AppError::OllamaError(format!("role_info body: {e}")))?;
-        if status.as_u16() == 503 {
-            return Err(Self::offline_err());
-        }
         if !status.is_success() {
-            return Err(AppError::OllamaError(format!(
-                "role_info HTTP {status}: {text}"
-            )));
+            return Err(app_error_from_http_response(status, &text));
         }
         serde_json::from_str(&text)
             .map_err(|e| AppError::OllamaError(format!("role_info JSON: {e}")))
+    }
+
+    pub async fn get_time_state_via_http(
+        conn: &KernelConnection,
+        role_id: &str,
+    ) -> Result<TimeStateResponse, AppError> {
+        if !Self::probe_health(&conn.base_url).await {
+            return Err(Self::offline_err());
+        }
+        let res = conn
+            .http_client()
+            .get(format!("{}/time/state", conn.base_url))
+            .query(&[("role_id", role_id.trim())])
+            .send()
+            .await
+            .map_err(|e| AppError::OllamaError(format!("time/state request: {e}")))?;
+        let status = res.status();
+        let text = res
+            .text()
+            .await
+            .map_err(|e| AppError::OllamaError(format!("time/state body: {e}")))?;
+        if !status.is_success() {
+            return Err(app_error_from_http_response(status, &text));
+        }
+        serde_json::from_str(&text)
+            .map_err(|e| AppError::OllamaError(format!("time/state JSON: {e}")))
     }
 
     pub async fn load_role_via_http(conn: &KernelConnection, role_id: &str) -> Result<(), AppError> {
@@ -132,11 +189,12 @@ impl KernelHttpClient {
             .send()
             .await
             .map_err(|e| AppError::OllamaError(format!("role/load request: {e}")))?;
-        if res.status().is_success() {
+        let status = res.status();
+        if status.is_success() {
             Ok(())
         } else {
             let text = res.text().await.unwrap_or_default();
-            Err(AppError::OllamaError(format!("role/load: {text}")))
+            Err(app_error_from_http_response(status, &text))
         }
     }
 
@@ -164,13 +222,8 @@ impl KernelHttpClient {
             .text()
             .await
             .map_err(|e| AppError::OllamaError(format!("role_snapshot body: {e}")))?;
-        if status.as_u16() == 503 {
-            return Err(Self::offline_err());
-        }
         if !status.is_success() {
-            return Err(AppError::OllamaError(format!(
-                "role_snapshot HTTP {status}: {text}"
-            )));
+            return Err(app_error_from_http_response(status, &text));
         }
         serde_json::from_str(&text)
             .map_err(|e| AppError::OllamaError(format!("role_snapshot JSON: {e}")))
@@ -210,6 +263,27 @@ impl KernelHttpClient {
         }
         serde_json::from_str(&text)
             .map_err(|e| AppError::OllamaError(format!("chat/sessions JSON: {e}")))
+    }
+
+    /// Tell the kernel process to re-read LLM settings from canonical DB.
+    pub async fn reload_llm_via_http(conn: &KernelConnection) -> Result<(), AppError> {
+        if !Self::probe_health(&conn.base_url).await {
+            return Err(Self::offline_err());
+        }
+        let res = conn
+            .http_client()
+            .post(format!("{}/llm/reload", conn.base_url))
+            .json(&serde_json::json!({}))
+            .send()
+            .await
+            .map_err(|e| AppError::OllamaError(format!("llm/reload request: {e}")))?;
+        let status = res.status();
+        if status.is_success() {
+            Ok(())
+        } else {
+            let text = res.text().await.unwrap_or_default();
+            Err(app_error_from_http_response(status, &text))
+        }
     }
 
     pub async fn fetch_chat_messages_via_http(

@@ -1,7 +1,7 @@
 //! Relation / identity API commands.
 #![allow(clippy::missing_errors_doc)]
 
-use super::get_role_info_impl;
+use super::{ensure_manifest_role_ready, get_role_info_impl};
 use crate::error::AppError;
 use crate::models::dto::{ClearSceneUserRelationRequest, RoleInfo, SetSceneUserRelationRequest, SetUserRelationRequest, OCLIVE_DEFAULT_RELATION_SENTINEL};
 use crate::models::role::IdentityBinding;
@@ -12,14 +12,7 @@ pub async fn set_user_relation_impl(
     state: &AppState,
     req: &SetUserRelationRequest,
 ) -> Result<RoleInfo, CommandError> {
-    if !state
-        .db_manager
-        .role_runtime_exists(&req.role_id)
-        .await
-        ?
-    {
-        return Err(AppError::RoleRuntimeNotReady.into());
-    }
+    ensure_manifest_role_ready(state, &req.role_id).await?;
     let role = state
         .load_role_cached_async(&req.role_id)
         .await
@@ -88,14 +81,7 @@ pub async fn clear_scene_user_relation_impl(
     state: &AppState,
     req: &ClearSceneUserRelationRequest,
 ) -> Result<RoleInfo, CommandError> {
-    if !state
-        .db_manager
-        .role_runtime_exists(&req.role_id)
-        .await
-        ?
-    {
-        return Err(AppError::RoleRuntimeNotReady.into());
-    }
+    ensure_manifest_role_ready(state, &req.role_id).await?;
     let role = state
         .load_role_cached_async(&req.role_id)
         .await
@@ -129,14 +115,7 @@ pub async fn set_scene_user_relation_impl(
     state: &AppState,
     req: &SetSceneUserRelationRequest,
 ) -> Result<RoleInfo, CommandError> {
-    if !state
-        .db_manager
-        .role_runtime_exists(&req.role_id)
-        .await
-        ?
-    {
-        return Err(AppError::RoleRuntimeNotReady.into());
-    }
+    ensure_manifest_role_ready(state, &req.role_id).await?;
     let role = state
         .load_role_cached_async(&req.role_id)
         .await

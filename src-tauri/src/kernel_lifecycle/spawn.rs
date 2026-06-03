@@ -11,8 +11,27 @@ use std::time::Duration;
 
 const HEALTH_POLL_MS: u64 = 500;
 const HEALTH_POLL_MAX: u32 = 30;
+const ATTACH_PROBE_MS: u64 = 300;
+const ATTACH_PROBE_MAX: u32 = 6;
+const ATTACH_POLL_MS: u64 = 100;
 
-/// Poll `GET /health` until success or timeout.
+/// Fast attach probe before spawn (avoid blocking Tauri setup on an idle port).
+pub async fn probe_existing_kernel(base_url: &str) -> bool {
+    for _ in 0..ATTACH_PROBE_MAX {
+        if crate::kernel_attach::KernelHttpClient::probe_health_timeout(
+            base_url,
+            Duration::from_millis(ATTACH_PROBE_MS),
+        )
+        .await
+        {
+            return true;
+        }
+        tokio::time::sleep(Duration::from_millis(ATTACH_POLL_MS)).await;
+    }
+    false
+}
+
+/// Poll `GET /health` until success or timeout (post-spawn readiness).
 pub async fn wait_for_health(base_url: &str) -> bool {
     for _ in 0..HEALTH_POLL_MAX {
         if crate::kernel_attach::KernelHttpClient::probe_health(base_url).await {

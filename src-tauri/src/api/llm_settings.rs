@@ -10,7 +10,10 @@ use crate::infrastructure::user_llm_secrets::{
 };
 use crate::models::dto::RoleInfo;
 use crate::models::plugin_backends::LlmBackend;
-use crate::state::{AppState, SharedAppState};
+use crate::state::{
+    ensure_models_dir_for_roles, is_managed_legacy_models_path, migrate_and_cleanup_models,
+    paths_equal, reconcile_legacy_models_layout, AppState, SharedAppState,
+};
 use oclive_validation::NETWORK_GRANT_REMOTE_LLM;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
@@ -25,6 +28,155 @@ const KEY_CLOUD_STYLE: &str = "user_llm_cloud_api_style";
 const KEY_CLOUD_VENDOR: &str = "user_llm_cloud_vendor";
 pub(crate) const KEY_LLM_PROVIDER: &str = "user_llm_provider";
 const KEY_LOCAL_MODELS_DIR: &str = "user_local_models_dir";
+
+const LLM_APP_SETTING_KEYS: &[&str] = &[
+    KEY_LLM_PROVIDER,
+    KEY_OLLAMA_BASE,
+    KEY_REMOTE_URL,
+    KEY_REMOTE_TOKEN,
+    KEY_REMOTE_MODEL,
+    KEY_CLOUD_STYLE,
+    KEY_CLOUD_VENDOR,
+    KEY_LOCAL_MODELS_DIR,
+];
+
+async fn open_canonical_pool() -> Option<(sqlx::SqlitePool, PathBuf)> {
+    use oclive_kernel_runtime::{resolve_app_data_dir_for_host, resolve_db_path};
+
+    let app_data = resolve_app_data_dir_for_host();
+    let db_path = resolve_db_path(&app_data);
+    if !db_path.is_file() {
+        return None;
+    }
+    let url = format!("sqlite:{}?mode=rwc", db_path.display());
+    let pool = sqlx::SqlitePool::connect(&url).await.ok()?;
+    Some((pool, app_data))
+}
+
+async fn upsert_canonical_app_setting(
+    pool: &sqlx::SqlitePool,
+    key: &str,
+    value: &str,
+) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        "INSERT INTO app_settings (key, value) VALUES (?, ?)
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+    )
+    .bind(key)
+    .bind(value)
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
+/// Copy UI shell LLM settings into canonical `OCLive/data/app.db` (kernel single writer).
+pub async fn sync_shell_llm_settings_to_canonical(state: &AppState) {
+    let Some((pool, app_data)) = open_canonical_pool().await else {
+        return;
+    };
+    for key in LLM_APP_SETTING_KEYS {
+        let Ok(Some(v)) = state.db_manager.get_app_setting(key).await else {
+            continue;
+        };
+        let t = v.trim();
+        if t.is_empty() {
+            continue;
+        }
+        let _ = upsert_canonical_app_setting(&pool, key, t).await;
+    }
+    if let Ok(Some(t)) =
+        resolve_remote_token(state.db_manager.as_ref(), state.directory_plugins.app_data_dir()).await
+    {
+        let _ = write_token_file(&app_data, t.trim());
+        let _ = upsert_canonical_app_setting(&pool, KEY_REMOTE_TOKEN, t.trim()).await;
+    }
+    pool.close().await;
+    tracing::info!(
+        target: "oclive_llm",
+        "synced LLM app_settings to canonical kernel DB"
+    );
+}
+
+/// Mirror session model override into canonical `role_runtime`.
+pub async fn sync_session_ollama_model_to_canonical(session_ns: &str, model: Option<&str>) {
+    use chrono::Utc;
+
+    let Some((pool, _)) = open_canonical_pool().await else {
+        return;
+    };
+    let now = Utc::now().to_rfc3339();
+    let _ = sqlx::query(
+        "INSERT OR IGNORE INTO role_runtime (role_id, current_favorability, updated_at) VALUES (?, 0.0, ?)",
+    )
+    .bind(session_ns)
+    .bind(&now)
+    .execute(&pool)
+    .await;
+    if let Some(m) = model.filter(|s| !s.trim().is_empty()) {
+        let _ = sqlx::query(
+            "UPDATE role_runtime SET session_ollama_model_override = ?, updated_at = ? WHERE role_id = ?",
+        )
+        .bind(m.trim())
+        .bind(&now)
+        .bind(session_ns)
+        .execute(&pool)
+        .await;
+    } else {
+        let _ = sqlx::query(
+            "UPDATE role_runtime SET session_ollama_model_override = NULL, updated_at = ? WHERE role_id = ?",
+        )
+        .bind(&now)
+        .bind(session_ns)
+        .execute(&pool)
+        .await;
+    }
+    pool.close().await;
+}
+
+/// Seed in-memory UI shell from canonical DB on desktop bootstrap.
+pub async fn seed_shell_llm_from_canonical(state: &AppState) {
+    let Some((pool, app_data)) = open_canonical_pool().await else {
+        return;
+    };
+    let mut copied = 0usize;
+    for key in LLM_APP_SETTING_KEYS {
+        let Ok(Some(v)) = sqlx::query_scalar::<_, String>(
+            "SELECT value FROM app_settings WHERE key = ? LIMIT 1",
+        )
+        .bind(key)
+        .fetch_optional(&pool)
+        .await
+        else {
+            continue;
+        };
+        let t = v.trim();
+        if t.is_empty() {
+            continue;
+        }
+        if state.db_manager.upsert_app_setting(key, t).await.is_ok() {
+            copied += 1;
+        }
+    }
+    if let Some(token) = read_token_file(&app_data) {
+        let t = token.trim();
+        if !t.is_empty() {
+            let _ = state
+                .db_manager
+                .upsert_app_setting(KEY_REMOTE_TOKEN, t)
+                .await;
+        }
+    }
+    pool.close().await;
+    if copied > 0 {
+        state.mark_user_llm_env_dirty();
+        let _ = apply_user_llm_env(state).await;
+        tracing::info!(
+            target: "oclive_llm",
+            copied,
+            "seeded UI shell LLM settings from canonical DB"
+        );
+    }
+}
 
 async fn ollama_base_from_db_or_env(state: &AppState) -> String {
     if let Ok(Some(v)) = state.db_manager.get_app_setting(KEY_OLLAMA_BASE).await {
@@ -277,6 +429,95 @@ pub struct ImportGgufToOllamaRequest {
     pub ollama_base_url: Option<String>,
 }
 
+fn canonical_models_dir(state: &AppState) -> PathBuf {
+    ensure_models_dir_for_roles(state.storage.roles_dir())
+}
+
+async fn persist_local_models_dir(
+    state: &AppState,
+    path: &str,
+) -> Result<(), CommandError> {
+    state
+        .db_manager
+        .upsert_app_setting(KEY_LOCAL_MODELS_DIR, path.trim())
+        .await?;
+    Ok(())
+}
+
+/// Update canonical `OCLive/data/app.db` when it still points at legacy model folders.
+pub async fn sync_canonical_db_models_dir(canonical: &Path, app_data: &Path) {
+    use oclive_kernel_runtime::resolve_db_path;
+
+    let db_path = resolve_db_path(app_data);
+    if !db_path.is_file() {
+        return;
+    }
+    let url = format!("sqlite:{}?mode=rwc", db_path.display());
+    let Ok(pool) = sqlx::SqlitePool::connect(&url).await else {
+        return;
+    };
+    let stored = sqlx::query_scalar::<_, String>(
+        "SELECT value FROM app_settings WHERE key = ? LIMIT 1",
+    )
+    .bind(KEY_LOCAL_MODELS_DIR)
+    .fetch_optional(&pool)
+    .await
+    .ok()
+    .flatten();
+    let canonical_str = canonical.to_string_lossy().into_owned();
+    let should_patch = stored.as_deref().is_none_or(|s| {
+        let t = s.trim();
+        t.is_empty()
+            || is_managed_legacy_models_path(Path::new(t), canonical, app_data)
+    });
+    if should_patch {
+        if sqlx::query(
+            "INSERT INTO app_settings (key, value) VALUES (?, ?)
+             ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+        )
+        .bind(KEY_LOCAL_MODELS_DIR)
+        .bind(canonical_str.trim())
+        .execute(&pool)
+        .await
+        .is_ok()
+        {
+            tracing::info!(
+                target: "oclive_models",
+                path = %canonical.display(),
+                "patched canonical app.db local models dir"
+            );
+        }
+    }
+    pool.close().await;
+}
+
+/// Effective GGUF folder: repo-root `models/` (like `roles/`), migrating legacy app-data paths.
+async fn local_models_dir_for_state(state: &AppState) -> Result<String, CommandError> {
+    let canonical = canonical_models_dir(state);
+    let canonical_str = canonical.to_string_lossy().into_owned();
+    let app_data = state.directory_plugins.app_data_dir().to_path_buf();
+    reconcile_legacy_models_layout(&canonical, &app_data);
+
+    if let Ok(Some(v)) = state.db_manager.get_app_setting(KEY_LOCAL_MODELS_DIR).await {
+        let t = v.trim();
+        if !t.is_empty() {
+            let stored = PathBuf::from(t);
+            if paths_equal(&stored, &canonical) {
+                return Ok(canonical_str);
+            }
+            if is_managed_legacy_models_path(&stored, &canonical, &app_data) {
+                migrate_and_cleanup_models(&stored, &canonical);
+                persist_local_models_dir(state, &canonical_str).await?;
+                return Ok(canonical_str);
+            }
+            return Ok(t.to_string());
+        }
+    }
+
+    persist_local_models_dir(state, &canonical_str).await?;
+    Ok(canonical_str)
+}
+
 fn scan_local_model_files_in(dir: &Path) -> Vec<LocalModelFileDto> {
     let mut out = Vec::new();
     let Ok(rd) = std::fs::read_dir(dir) else {
@@ -398,16 +639,8 @@ pub async fn get_llm_user_settings(
         .get_app_setting(KEY_CLOUD_STYLE)
         .await?
         .unwrap_or_else(|| "openai".to_string());
-    let local_models_dir = state
-        .db_manager
-        .get_app_setting(KEY_LOCAL_MODELS_DIR)
-        .await?
-        .unwrap_or_default();
-    let local_model_files = if local_models_dir.trim().is_empty() {
-        Vec::new()
-    } else {
-        scan_local_model_files_in(Path::new(local_models_dir.trim()))
-    };
+    let local_models_dir = local_models_dir_for_state(state.inner()).await?;
+    let local_model_files = scan_local_model_files_in(Path::new(local_models_dir.trim()));
 
     Ok(LlmUserSettingsDto {
         provider: provider.to_string(),
@@ -466,15 +699,8 @@ pub async fn scan_local_model_files(
     let dir = if let Some(d) = directory.filter(|s| !s.trim().is_empty()) {
         d
     } else {
-        state
-            .db_manager
-            .get_app_setting(KEY_LOCAL_MODELS_DIR)
-            .await?
-            .unwrap_or_default()
+        local_models_dir_for_state(state.inner()).await?
     };
-    if dir.trim().is_empty() {
-        return Ok(Vec::new());
-    }
     Ok(scan_local_model_files_in(Path::new(dir.trim())))
 }
 
@@ -546,6 +772,7 @@ pub async fn probe_cloud_llm(
 /// Returns [`Err`] when persistence or role reload fails.
 #[tauri::command]
 pub async fn save_llm_user_settings(
+    app: AppHandle,
     state: State<'_, SharedAppState>,
     req: SaveLlmUserSettingsRequest,
 ) -> Result<RoleInfo, CommandError> {
@@ -594,10 +821,21 @@ pub async fn save_llm_user_settings(
             .await?;
     }
     if let Some(ref dir) = req.local_models_dir {
-        state
-            .db_manager
-            .upsert_app_setting(KEY_LOCAL_MODELS_DIR, dir.trim())
-            .await?;
+        let trimmed = dir.trim();
+        let canonical = canonical_models_dir(state.inner());
+        let canonical_str = canonical.to_string_lossy().into_owned();
+        let app_data = state.directory_plugins.app_data_dir();
+        if trimmed.is_empty() {
+            persist_local_models_dir(state.inner(), &canonical_str).await?;
+        } else {
+            let stored = PathBuf::from(trimmed);
+            if is_managed_legacy_models_path(&stored, &canonical, app_data) {
+                migrate_and_cleanup_models(&stored, &canonical);
+                persist_local_models_dir(state.inner(), &canonical_str).await?;
+            } else {
+                persist_local_models_dir(state.inner(), trimmed).await?;
+            }
+        }
     }
     if let Some(ref url) = req.remote_url {
         state
@@ -734,6 +972,22 @@ pub async fn save_llm_user_settings(
             req.session_id.as_deref(),
         )
         .await?;
+    }
+
+    let session_model = model_for_session
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+        .map(str::to_string);
+    sync_shell_llm_settings_to_canonical(state.inner()).await;
+    sync_session_ollama_model_to_canonical(ns.as_str(), session_model.as_deref()).await;
+    if let Some(conn) = app.try_state::<crate::kernel_lifecycle::SharedKernelConnection>() {
+        if let Err(e) = crate::kernel_attach::KernelHttpClient::reload_llm_via_http(&conn).await {
+            tracing::warn!(
+                target: "oclive_llm",
+                error = %e,
+                "kernel LLM reload after save failed"
+            );
+        }
     }
 
     Ok(info)

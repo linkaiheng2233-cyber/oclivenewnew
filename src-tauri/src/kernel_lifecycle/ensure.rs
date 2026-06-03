@@ -1,7 +1,7 @@
 //! Attach-first kernel bring-up for the desktop host.
 
 use super::connection::{DesktopKernelMode, KernelConnection, SharedKernelConnection};
-use super::spawn::{spawn_kernel, wait_for_health};
+use super::spawn::{probe_existing_kernel, spawn_kernel};
 use oclive_kernel_runtime::{
     discover_spawn_kernel_candidates, pick_best_kernel, promote_to_shared_runtime, should_promote,
     KernelCandidate, KernelTier,
@@ -27,7 +27,13 @@ pub async fn ensure_kernel_ready(
     let base_url = format!("http://127.0.0.1:{}", opts.port);
     let conn = Arc::new(KernelConnection::new(base_url.clone(), opts.port));
 
-    if wait_for_health(&base_url).await {
+    tracing::info!(
+        target: "oclive_desktop",
+        port = opts.port,
+        "probing for existing kernel on loopback"
+    );
+
+    if probe_existing_kernel(&base_url).await {
         conn.set_mode(DesktopKernelMode::Attached);
         tracing::info!(
             target: "oclive_desktop",

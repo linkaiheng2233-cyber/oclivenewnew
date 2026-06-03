@@ -31,9 +31,15 @@ use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 
 mod app_state_builder;
+mod models_dir;
 mod roles_dir;
 mod session_backends;
 mod session_cache;
+pub use models_dir::{
+    ensure_models_dir, ensure_models_dir_for_roles, is_managed_legacy_models_path,
+    legacy_models_dir_candidates, migrate_and_cleanup_models, paths_equal,
+    reconcile_legacy_models_layout, resource_dir_from_roles, resolve_models_dir, ENV_MODELS_DIR,
+};
 pub use roles_dir::resolve_roles_dir;
 pub use session_cache::SessionCache;
 

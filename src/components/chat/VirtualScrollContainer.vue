@@ -39,6 +39,10 @@ const viewportHeight = ref(0)
 const heights = ref<number[]>([])
 const userPinnedUp = ref(false)
 
+/** Hysteresis: avoid pin/unpin flicker when row heights remeasure near the bottom. */
+const PIN_UP_THRESHOLD_PX = 120
+const PIN_DOWN_THRESHOLD_PX = 32
+
 const resizeObservers = new Map<number, ResizeObserver>()
 
 function keyOf(item: T, index: number): string | number {
@@ -146,7 +150,24 @@ function onScroll() {
     return
   scrollTop.value = el.scrollTop
   emit('scroll', el.scrollTop)
-  userPinnedUp.value = distanceFromBottom() > 48
+  updatePinnedFromDistance()
+}
+
+function updatePinnedFromDistance() {
+  const dist = distanceFromBottom()
+  if (dist > PIN_UP_THRESHOLD_PX) {
+    userPinnedUp.value = true
+  }
+  else if (dist <= PIN_DOWN_THRESHOLD_PX) {
+    userPinnedUp.value = false
+  }
+}
+
+function onWheel(e: WheelEvent) {
+  // User intent: scrolling up to read history must not fight auto stick-to-bottom.
+  if (e.deltaY < 0) {
+    userPinnedUp.value = true
+  }
 }
 
 function measureViewport() {
@@ -216,17 +237,24 @@ watch(
       return
     if (userPinnedUp.value)
       return
-    await scrollToBottom(true)
+    await scrollToBottom(false)
   },
   { flush: 'post' },
 )
 
 watch(
-  () => props.items[props.items.length - 1],
-  async () => {
+  () => {
+    const n = props.items.length
+    if (n === 0)
+      return null
+    return keyOf(props.items[n - 1]!, n - 1)
+  },
+  async (id, prevId) => {
+    if (id == null || id === prevId)
+      return
     if (!props.stickToBottom || userPinnedUp.value)
       return
-    await scrollToBottom(true)
+    await scrollToBottom(false)
   },
   { flush: 'post' },
 )
@@ -256,7 +284,12 @@ defineExpose({ scrollToBottom, userPinnedUp })
 </script>
 
 <template>
-  <div ref="rootRef" class="virtual-scroll-root" @scroll.passive="onScroll">
+  <div
+    ref="rootRef"
+    class="virtual-scroll-root"
+    @scroll.passive="onScroll"
+    @wheel.passive="onWheel"
+  >
     <div class="virtual-scroll-inner" :style="innerStyle">
       <div class="virtual-scroll-window" :style="windowStyle">
         <div
@@ -280,6 +313,8 @@ defineExpose({ scrollToBottom, userPinnedUp })
   height: 100%;
   min-height: 0;
   position: relative;
+  overscroll-behavior: contain;
+  overflow-anchor: none;
 }
 .virtual-scroll-inner {
   width: 100%;

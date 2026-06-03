@@ -306,6 +306,39 @@ pub async fn load_role_impl(
         blueprint_groups_pack: blueprint_groups_pack(role.as_ref()),
     })
 }
+/// Ensure manifest `role_id` has `role_runtime` (auto [`load_role_impl`] when missing).
+pub(crate) async fn ensure_manifest_role_ready(
+    state: &AppState,
+    role_id: &str,
+) -> Result<(), CommandError> {
+    ensure_role_info_ready(state, role_id, None).await
+}
+
+/// Ensure manifest or session namespace has `role_runtime` before building [`RoleInfo`].
+async fn ensure_role_info_ready(
+    state: &AppState,
+    role_id: &str,
+    session_id: Option<&str>,
+) -> Result<(), CommandError> {
+    let session_ns = session_namespace(role_id, session_id);
+    if state
+        .db_manager
+        .role_runtime_exists(session_ns.as_str())
+        .await?
+    {
+        return Ok(());
+    }
+    if session_id.map(str::trim).filter(|s| !s.is_empty()).is_some() {
+        state
+            .db_manager
+            .ensure_role_runtime(session_ns.as_str())
+            .await?;
+        return Ok(());
+    }
+    load_role_impl(state, role_id, false).await?;
+    Ok(())
+}
+
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
@@ -314,15 +347,8 @@ pub async fn get_role_info_impl(
     role_id: &str,
     session_id: Option<&str>,
 ) -> Result<RoleInfo, CommandError> {
+    ensure_role_info_ready(state, role_id, session_id).await?;
     let session_ns = session_namespace(role_id, session_id);
-    if !state
-        .db_manager
-        .role_runtime_exists(session_ns.as_str())
-        .await
-        ?
-    {
-        return Err(AppError::RoleRuntimeNotReady.into());
-    }
 
     let role = state
         .load_role_cached_async(role_id)
@@ -520,9 +546,20 @@ pub async fn get_role_info(
     state: State<'_, SharedAppState>,
 ) -> Result<RoleInfo, CommandError> {
     if let Some(conn) = app.try_state::<crate::kernel_lifecycle::SharedKernelConnection>() {
-        return crate::kernel_attach::KernelHttpClient::get_role_info_via_http(&conn, &req)
-            .await
-            .map_err(Into::into);
+        match crate::kernel_attach::KernelHttpClient::get_role_info_via_http(&conn, &req).await {
+            Ok(info) => return Ok(info),
+            Err(AppError::RoleRuntimeNotReady) => {
+                crate::kernel_attach::KernelHttpClient::load_role_via_http(
+                    &conn,
+                    req.role_id.trim(),
+                )
+                .await?;
+                return crate::kernel_attach::KernelHttpClient::get_role_info_via_http(&conn, &req)
+                    .await
+                    .map_err(Into::into);
+            }
+            Err(e) => return Err(e.into()),
+        }
     }
     get_role_info_impl(&state, &req.role_id, req.session_id.as_deref()).await
 }

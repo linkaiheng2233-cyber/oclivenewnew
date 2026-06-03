@@ -48,6 +48,7 @@ pub use prompt_assembler::{
 };
 pub use prompt_builder::{
     effective_reply_quality_anchor, PromptBuilder, PromptInput, DEFAULT_REPLY_QUALITY_ANCHOR,
+    KERNEL_DIALOGUE_GUARDRAILS,
 };
 pub use relation_engine::{RelationEngine, RelationState};
 pub use repository::{FavorabilityRepository, MemoryRepository};

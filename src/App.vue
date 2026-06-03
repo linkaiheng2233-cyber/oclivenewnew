@@ -406,14 +406,14 @@ async function onReloadPolicy() {
   }
 }
 
-/** Stick to bottom only when a new message arrives; avoid shallow message updates pulling scroll while user reads above */
+/** Stick to bottom only when a new message arrives; VirtualScrollContainer handles stick internally. */
 watch(
   () => messages.value.length,
   async (len, prev) => {
     if (prev !== undefined && len <= prev)
       return
     await nextTick()
-    chatListRef.value?.scrollToBottom?.()
+    chatListRef.value?.scrollToBottom?.(false)
   },
   { flush: 'post' },
 )

@@ -1,14 +1,67 @@
 use crate::api::jump_monologue::generate_monologue_lines;
+use crate::api::role::ensure_manifest_role_ready;
 use crate::domain::user_identity::resolve_effective_user_relation_key;
 use crate::domain::virtual_time_sync::{apply_virtual_time_jump, sync_and_persist_virtual_time};
 use crate::error::AppError;
+use crate::kernel_attach::KernelHttpClient;
+use crate::kernel_lifecycle::SharedKernelConnection;
 use crate::models::dto::{JumpTimeRequest, JumpTimeResponse, TimeStateResponse};
 use crate::models::Role;
 use crate::state::{AppState, SharedAppState};
 use chrono::{DateTime, Timelike, Utc};
 use oclive_kernel_runtime::domain::virtual_time::round_to_minute_ms;
-use tauri::State;
+use tauri::{AppHandle, Manager, State};
 use crate::api::error::CommandError;
+
+async fn get_time_state_via_kernel(
+    conn: &SharedKernelConnection,
+    role_id: &str,
+) -> Result<TimeStateResponse, AppError> {
+    match KernelHttpClient::get_time_state_via_http(conn, role_id).await {
+        Ok(ts) => Ok(ts),
+        Err(e) if time_state_route_unavailable(&e) => {
+            get_time_state_via_role_info(conn, role_id).await
+        }
+        Err(AppError::RoleRuntimeNotReady) => {
+            KernelHttpClient::load_role_via_http(conn, role_id.trim()).await?;
+            match KernelHttpClient::get_time_state_via_http(conn, role_id).await {
+                Ok(ts) => Ok(ts),
+                Err(e) if time_state_route_unavailable(&e) => {
+                    get_time_state_via_role_info(conn, role_id).await
+                }
+                Err(e) => Err(e),
+            }
+        }
+        Err(e) => Err(e),
+    }
+}
+
+fn time_state_route_unavailable(err: &AppError) -> bool {
+    match err {
+        AppError::OllamaError(msg) => {
+            msg.contains("404") || msg.contains("Not Found") || msg.contains("not found")
+        }
+        _ => false,
+    }
+}
+
+async fn get_time_state_via_role_info(
+    conn: &SharedKernelConnection,
+    role_id: &str,
+) -> Result<TimeStateResponse, AppError> {
+    use crate::models::dto::GetRoleInfoRequest;
+    let req = GetRoleInfoRequest {
+        role_id: role_id.to_string(),
+        session_id: None,
+    };
+    let info = KernelHttpClient::get_role_info_via_http(conn, &req).await?;
+    let ms = info.virtual_time_ms;
+    let dt = DateTime::from_timestamp_millis(ms).unwrap_or_else(Utc::now);
+    Ok(TimeStateResponse {
+        virtual_time_ms: ms,
+        iso_datetime: dt.to_rfc3339(),
+    })
+}
 
 /// Role pack `settings.json` → `autonomous_scene`: after virtual time changes, try matching the first rule and update `current_scene`.
 /// Returns `(from_scene_id, to_scene_id)` when a switch occurs.
@@ -97,14 +150,7 @@ pub async fn get_time_state_impl(
     state: &AppState,
     role_id: &str,
 ) -> Result<TimeStateResponse, CommandError> {
-    if !state
-        .db_manager
-        .role_runtime_exists(role_id)
-        .await
-        ?
-    {
-        return Err(AppError::RoleRuntimeNotReady.into());
-    }
+    ensure_manifest_role_ready(state, role_id).await?;
 
     let role = state.load_role_cached_async(role_id).await?;
     let immersive = state
@@ -133,14 +179,7 @@ pub async fn jump_time_impl(
     state: &AppState,
     req: &JumpTimeRequest,
 ) -> Result<JumpTimeResponse, CommandError> {
-    if !state
-        .db_manager
-        .role_runtime_exists(&req.role_id)
-        .await
-        ?
-    {
-        return Err(AppError::RoleRuntimeNotReady.into());
-    }
+    ensure_manifest_role_ready(state, &req.role_id).await?;
 
     let role = state
         .load_role_cached_async(&req.role_id)
@@ -239,8 +278,14 @@ pub async fn jump_time_impl(
 #[tauri::command]
 pub async fn get_time_state(
     role_id: String,
+    app: AppHandle,
     state: State<'_, SharedAppState>,
 ) -> Result<TimeStateResponse, CommandError> {
+    if let Some(conn) = app.try_state::<SharedKernelConnection>() {
+        return get_time_state_via_kernel(&conn, role_id.trim())
+            .await
+            .map_err(Into::into);
+    }
     get_time_state_impl(&state, &role_id).await
 }
 /// # Errors

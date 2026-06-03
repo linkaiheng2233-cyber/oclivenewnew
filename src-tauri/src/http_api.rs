@@ -20,8 +20,9 @@ use axum::routing::{get, post};
 use axum::Json;
 use axum::Router;
 use crate::api::role::{get_role_info_impl, load_role_impl};
+use crate::api::time::get_time_state_impl;
 use crate::infrastructure::chat_storage::{SessionMeta, StoredMessage};
-use crate::models::dto::{GetRoleInfoRequest, RoleInfo};
+use crate::models::dto::{GetRoleInfoRequest, RoleInfo, TimeStateResponse};
 use oclive_kernel_runtime::{
     ensure_app_data_dir, http_chat_codes, resolve_app_data_dir_for_api, resolve_db_path,
     temp_api_db_path, AppDataMode, KernelErrorBody,
@@ -375,6 +376,42 @@ async fn chat_messages_route(
         })
 }
 
+async fn time_state_route(
+    State(state): State<Arc<AppState>>,
+    Query(q): Query<RoleIdQuery>,
+) -> Result<Json<TimeStateResponse>, ApiError> {
+    get_time_state_impl(&state, q.role_id.trim())
+        .await
+        .map(Json)
+        .map_err(|e| {
+            let k = e.0.kernel_error_body();
+            api_error(axum::http::StatusCode::BAD_REQUEST, k)
+        })
+}
+
+#[derive(Serialize)]
+struct LlmReloadResponse {
+    ok: bool,
+    provider: String,
+}
+
+async fn llm_reload_route(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<LlmReloadResponse>, ApiError> {
+    state.mark_user_llm_env_dirty();
+    crate::api::llm_settings::apply_user_llm_env(state.as_ref())
+        .await
+        .map_err(|e| {
+            let k = e.kernel_error_body();
+            api_error(axum::http::StatusCode::INTERNAL_SERVER_ERROR, k)
+        })?;
+    let provider = state.user_llm_provider.read().clone();
+    Ok(Json(LlmReloadResponse {
+        ok: true,
+        provider,
+    }))
+}
+
 /// The same route tree as [`serve_api`], for integration tests to use via `tower::ServiceExt::oneshot` (no port binding required).
 pub fn api_router(app_state: Arc<AppState>) -> Router {
     let cors = CorsLayer::new()
@@ -390,6 +427,8 @@ pub fn api_router(app_state: Arc<AppState>) -> Router {
         .route("/role/load", post(load_role_route))
         .route("/chat/sessions", get(chat_sessions_route))
         .route("/chat/messages", get(chat_messages_route))
+        .route("/time/state", get(time_state_route))
+        .route("/llm/reload", post(llm_reload_route))
         .layer(cors)
         .with_state(app_state)
 }

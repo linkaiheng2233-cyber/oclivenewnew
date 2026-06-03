@@ -257,10 +257,16 @@ pub fn run() {
                 state::resolve_roles_dir(resource_dir.as_deref());
             let roles_for_watcher = roles_dir.clone();
             let (app_state, kernel_conn, _api_port) =
-                tauri::async_runtime::block_on(desktop_host::bootstrap_desktop(
-                    resource_dir.as_deref(),
-                ))
-                    .map_err(|e| -> Box<dyn std::error::Error> { e })?;
+                desktop_host::bootstrap_desktop_blocking(resource_dir.clone()).map_err(
+                    |e| -> Box<dyn std::error::Error> {
+                        tracing::error!(
+                            target: "oclive_desktop",
+                            error = %e,
+                            "desktop bootstrap failed"
+                        );
+                        e
+                    },
+                )?;
             app.manage(kernel_conn.clone());
             app.manage(app_state);
             desktop_host::finish_desktop_setup(

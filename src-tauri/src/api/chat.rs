@@ -40,9 +40,16 @@ pub async fn send_message(
 ) -> Result<SendMessageResponse, crate::api::error::CommandError> {
     if let Some(conn) = app.try_state::<SharedKernelConnection>() {
         let role_path = role_dir_for_id(state.as_ref(), &req.role_id);
-        return KernelHttpClient::send_message_via_http(&conn, &role_path, &req)
-            .await
-            .map_err(Into::into);
+        match KernelHttpClient::send_message_via_http(&conn, &role_path, &req).await {
+            Ok(res) => return Ok(res),
+            Err(crate::error::AppError::RoleRuntimeNotReady) => {
+                KernelHttpClient::load_role_via_http(&conn, req.role_id.trim()).await?;
+                return KernelHttpClient::send_message_via_http(&conn, &role_path, &req)
+                    .await
+                    .map_err(Into::into);
+            }
+            Err(e) => return Err(e.into()),
+        }
     }
     process_message(state.as_ref(), &req).await.map_err(Into::into)
 }

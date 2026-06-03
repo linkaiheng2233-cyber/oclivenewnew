@@ -18,6 +18,12 @@ pub const DEFAULT_REPLY_QUALITY_ANCHOR: &str = "【回复质量锚点】（每�
 - 避免连续多句同一套话或同一问法；勿重复用户已经回答过的问题。\n\
 - 勿机械模仿用户消息里的颜文字密度或句式；用户未大量使用时保持自然口语。\n";
 
+/// Always appended after pack/engine quality anchor; creators cannot disable (preserves freedom elsewhere).
+pub const KERNEL_DIALOGUE_GUARDRAILS: &str = "【对话硬约束】（引擎预设，与上文锚点叠加；其余风格仍由人设发挥）\n\
+- **禁止复读开场**：勿把用户刚说的句子、称呼或口头禅原样当作你的起句或主体。例：用户「晚上好哦沐沐」→ 勿以「晚上好哦」起句；改为你自己的措辞接情绪或话题（如先答「嗯，晚上了」再展开）。\n\
+- **禁止学舌式模仿**：勿逐句复制用户句式、口癖、昵称链或颜文字密度；保持本角色惯常说话方式，可回应内容但不用用户的说法包装。\n\
+- **篇幅随人设与用户输入**：用户仅寒暄/极短句时，宜 1–2 句精炼回复；用户倾诉或追问时再展开；勿为显得热情而重复同一关心或Proposal。\n";
+
 #[must_use]
 pub fn effective_reply_quality_anchor(role: &crate::models::Role) -> &str {
     match role.reply_quality_anchor.as_deref() {
@@ -149,6 +155,8 @@ impl PromptBuilder {
             prompt.push_str(input.reply_quality_anchor.trim());
             prompt.push_str("\n\n");
         }
+        prompt.push_str(KERNEL_DIALOGUE_GUARDRAILS);
+        prompt.push_str("\n\n");
         if !input
             .previous_complex_emotion_narrative_hint
             .trim()
@@ -164,7 +172,7 @@ impl PromptBuilder {
         prompt.push_str("\n\n");
         prompt.push_str("【回复结构】\n");
         prompt.push_str(
-            "- 须与上文【回复质量锚点】一致：先接住用户本句；出现倾诉信号时先回应遭遇与情绪，再视需要延伸或反问；勿与用户本句基本同义的复述式开场。\n",
+            "- 须与上文【回复质量锚点】【对话硬约束】一致：先接住用户本句；出现倾诉信号时先回应遭遇与情绪，再视需要延伸或反问；勿与用户本句基本同义的复述式开场。\n",
         );
         prompt.push_str(
             "- 展开程度与篇幅须遵守锚点中的「篇幅与节奏」与「状态延续」：用户极短时勿强行写成长段或重复上文已交代内容。\n",
@@ -273,8 +281,20 @@ impl PromptBuilder {
             "偏硬、易较真"
         };
         state.push_str(&format!("我的心情倾向: {}\n", mood));
+        state.push_str(Self::reply_pacing_hint(personality));
+        state.push_str("\n");
         state.push_str(Self::listening_style_hint(personality));
         state
+    }
+
+    fn reply_pacing_hint(personality: &PersonalityVector) -> &'static str {
+        if personality.talkativeness >= 0.65 {
+            "回复篇幅倾向: 可适度展开（通常 1–4 句），须先接住用户本句；用户仅「嗯/好/在吗」等极短句时仍宜短答。\n"
+        } else if personality.talkativeness <= 0.35 {
+            "回复篇幅倾向: 宜精炼（常 1–2 句），嘴硬但不灌水；用户寒暄时勿写成长段。\n"
+        } else {
+            "回复篇幅倾向: 随用户信息量调节——寒暄短答，深聊或提问再展开；勿与用户消息字数盲目攀比。\n"
+        }
     }
 
     fn listening_style_hint(personality: &PersonalityVector) -> &'static str {
@@ -586,6 +606,8 @@ mod tests {
         assert!(prompt.contains("篇幅与节奏"));
         assert!(prompt.contains("倾诉优先"));
         assert!(prompt.contains("倾诉应对倾向"));
+        assert!(prompt.contains("【对话硬约束】"));
+        assert!(prompt.contains("回复篇幅倾向"));
     }
 
     #[test]
@@ -881,6 +903,8 @@ mod tests {
         });
         assert!(prompt.contains("【包级质量锚点】仅测试覆盖用。"));
         assert!(!prompt.contains("【回复质量锚点】（每轮须遵守）"));
+        assert!(prompt.contains("【对话硬约束】"));
+        assert!(prompt.contains("禁止复读开场"));
     }
 
     #[test]

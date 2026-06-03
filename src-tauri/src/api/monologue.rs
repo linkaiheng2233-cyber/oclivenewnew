@@ -1,3 +1,4 @@
+use crate::api::role::ensure_manifest_role_ready;
 use crate::api::time::get_time_state_impl;
 use crate::error::AppError;
 use crate::models::dto::{GenerateMonologueRequest, GenerateMonologueResponse};
@@ -11,14 +12,7 @@ pub async fn generate_monologue_impl(
     state: &AppState,
     role_id: &str,
 ) -> Result<GenerateMonologueResponse, CommandError> {
-    if !state
-        .db_manager
-        .role_runtime_exists(role_id)
-        .await
-        ?
-    {
-        return Err(AppError::RoleRuntimeNotReady.into());
-    }
+    ensure_manifest_role_ready(state, role_id).await?;
 
     let role = state
         .load_role_cached_async(role_id)
