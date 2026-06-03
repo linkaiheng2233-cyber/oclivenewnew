@@ -1,0 +1,115 @@
+//! Kernel connection state shared by HTTP client and watchdog.
+
+use oclive_kernel_runtime::KernelTier;
+use parking_lot::RwLock;
+use serde::Serialize;
+use std::process::Child;
+use std::sync::Arc;
+use std::time::Duration;
+
+/// How the desktop host reached the loopback kernel.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum DesktopKernelMode {
+    Attached,
+    Spawned,
+    Offline,
+    Reconnecting,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct KernelConnectionStatus {
+    pub mode: DesktopKernelMode,
+    pub base_url: String,
+    pub port: u16,
+    pub binary_path: Option<String>,
+    pub kernel_tier: Option<String>,
+    pub healthy: bool,
+}
+
+/// Active kernel HTTP upstream; optionally owns a spawned child process.
+pub struct KernelConnection {
+    pub mode: RwLock<DesktopKernelMode>,
+    pub base_url: String,
+    pub port: u16,
+    pub binary_path: RwLock<Option<String>>,
+    pub kernel_tier: RwLock<Option<KernelTier>>,
+    client: reqwest::Client,
+    spawned_child: parking_lot::Mutex<Option<Child>>,
+}
+
+impl KernelConnection {
+    #[must_use]
+    pub fn new(base_url: impl Into<String>, port: u16) -> Self {
+        let client = reqwest::Client::builder()
+            .timeout(Duration::from_secs(120))
+            .build()
+            .unwrap_or_else(|_| reqwest::Client::new());
+        Self {
+            mode: RwLock::new(DesktopKernelMode::Offline),
+            base_url: base_url.into().trim_end_matches('/').to_string(),
+            port,
+            binary_path: RwLock::new(None),
+            kernel_tier: RwLock::new(None),
+            client,
+            spawned_child: parking_lot::Mutex::new(None),
+        }
+    }
+
+    pub fn http_client(&self) -> &reqwest::Client {
+        &self.client
+    }
+
+    pub fn set_mode(&self, mode: DesktopKernelMode) {
+        *self.mode.write() = mode;
+    }
+
+    pub fn mode_snapshot(&self) -> DesktopKernelMode {
+        *self.mode.read()
+    }
+
+    pub fn set_spawn_metadata(
+        &self,
+        binary: impl Into<String>,
+        tier: KernelTier,
+        child: Child,
+    ) {
+        *self.binary_path.write() = Some(binary.into());
+        *self.kernel_tier.write() = Some(tier);
+        *self.spawned_child.lock() = Some(child);
+    }
+
+    pub fn clear_spawned_child(&self) {
+        *self.spawned_child.lock() = None;
+    }
+
+    pub fn has_spawned_child(&self) -> bool {
+        self.spawned_child.lock().is_some()
+    }
+
+    /// Kill only a child this host spawned; never touch an external daemon.
+    pub fn kill_spawned_child(&self) {
+        if let Some(mut child) = self.spawned_child.lock().take() {
+            let _ = child.kill();
+            let _ = child.wait();
+        }
+    }
+
+    #[must_use]
+    pub fn status(&self, healthy: bool) -> KernelConnectionStatus {
+        KernelConnectionStatus {
+            mode: self.mode_snapshot(),
+            base_url: self.base_url.clone(),
+            port: self.port,
+            binary_path: self.binary_path.read().clone(),
+            kernel_tier: self
+                .kernel_tier
+                .read()
+                .map(|t| format!("{t:?}").to_lowercase().replace('_', "-")),
+            healthy,
+        }
+    }
+}
+
+pub type SharedKernelConnection = Arc<KernelConnection>;

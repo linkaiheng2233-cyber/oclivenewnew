@@ -14,11 +14,14 @@ use crate::infrastructure::MockLlmClient;
 use crate::models::dto::{SendMessageRequest, SendMessageResponse};
 use crate::models::role::PersonalitySource;
 use crate::state::AppState;
-use axum::extract::State;
+use axum::extract::{Query, State};
 use axum::http::Method;
 use axum::routing::{get, post};
 use axum::Json;
 use axum::Router;
+use crate::api::role::{get_role_info_impl, load_role_impl};
+use crate::infrastructure::chat_storage::{SessionMeta, StoredMessage};
+use crate::models::dto::{GetRoleInfoRequest, RoleInfo};
 use oclive_kernel_runtime::{
     ensure_app_data_dir, http_chat_codes, resolve_app_data_dir_for_api, resolve_db_path,
     temp_api_db_path, AppDataMode, KernelErrorBody,
@@ -236,6 +239,142 @@ async fn chat(
     }))
 }
 
+#[derive(Debug, Deserialize)]
+struct RoleIdQuery {
+    role_id: String,
+    session_id: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct RoleSnapshotQuery {
+    role_id: String,
+    #[serde(default)]
+    scene_id: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+struct RoleSnapshotResponse {
+    role_id: String,
+    current_favorability: f64,
+    current_emotion: String,
+    portrait_emotion: String,
+    relation_state: String,
+    personality_source: PersonalitySource,
+    current_scene: Option<String>,
+    user_presence_scene: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct LoadRoleBody {
+    role_id: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct ChatSessionsQuery {
+    role_id: String,
+    scene_id: String,
+    limit: Option<u32>,
+    offset: Option<u32>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ChatMessagesQuery {
+    session_id: String,
+    limit: Option<u32>,
+    offset: Option<u32>,
+}
+
+async fn role_info_route(
+    State(state): State<Arc<AppState>>,
+    Query(q): Query<RoleIdQuery>,
+) -> Result<Json<RoleInfo>, ApiError> {
+    let req = GetRoleInfoRequest {
+        role_id: q.role_id.trim().to_string(),
+        session_id: q.session_id,
+    };
+    get_role_info_impl(&state, &req.role_id, req.session_id.as_deref())
+        .await
+        .map(Json)
+        .map_err(|e| {
+            let k = e.0.kernel_error_body();
+            api_error(axum::http::StatusCode::BAD_REQUEST, k)
+        })
+}
+
+async fn role_snapshot_route(
+    State(state): State<Arc<AppState>>,
+    Query(q): Query<RoleSnapshotQuery>,
+) -> Result<Json<RoleSnapshotResponse>, ApiError> {
+    let role_id = q.role_id.trim();
+    let info = get_role_info_impl(&state, role_id, None).await.map_err(|e| {
+        let k = e.0.kernel_error_body();
+        api_error(axum::http::StatusCode::BAD_REQUEST, k)
+    })?;
+    let _scene = q.scene_id.as_deref();
+    Ok(Json(RoleSnapshotResponse {
+        role_id: info.role_id,
+        current_favorability: info.current_favorability,
+        current_emotion: info.current_emotion.clone(),
+        portrait_emotion: info.current_emotion,
+        relation_state: info.relation_state,
+        personality_source: info.personality_source,
+        current_scene: info.current_scene,
+        user_presence_scene: info.user_presence_scene,
+    }))
+}
+
+async fn load_role_route(
+    State(state): State<Arc<AppState>>,
+    Json(body): Json<LoadRoleBody>,
+) -> Result<axum::http::StatusCode, ApiError> {
+    load_role_impl(&state, body.role_id.trim(), false)
+        .await
+        .map(|_| axum::http::StatusCode::NO_CONTENT)
+        .map_err(|e| {
+            let k = e.0.kernel_error_body();
+            api_error(axum::http::StatusCode::BAD_REQUEST, k)
+        })
+}
+
+async fn chat_sessions_route(
+    State(state): State<Arc<AppState>>,
+    Query(q): Query<ChatSessionsQuery>,
+) -> Result<Json<Vec<SessionMeta>>, ApiError> {
+    state
+        .conversation_store
+        .list_sessions(
+            q.role_id.trim(),
+            q.scene_id.trim(),
+            q.limit.unwrap_or(50),
+            q.offset.unwrap_or(0),
+        )
+        .await
+        .map(Json)
+        .map_err(|e| {
+            let k = e.kernel_error_body();
+            api_error(axum::http::StatusCode::INTERNAL_SERVER_ERROR, k)
+        })
+}
+
+async fn chat_messages_route(
+    State(state): State<Arc<AppState>>,
+    Query(q): Query<ChatMessagesQuery>,
+) -> Result<Json<Vec<StoredMessage>>, ApiError> {
+    state
+        .conversation_store
+        .fetch_messages(
+            q.session_id.trim(),
+            q.limit.unwrap_or(500),
+            q.offset.unwrap_or(0),
+        )
+        .await
+        .map(Json)
+        .map_err(|e| {
+            let k = e.kernel_error_body();
+            api_error(axum::http::StatusCode::INTERNAL_SERVER_ERROR, k)
+        })
+}
+
 /// The same route tree as [`serve_api`], for integration tests to use via `tower::ServiceExt::oneshot` (no port binding required).
 pub fn api_router(app_state: Arc<AppState>) -> Router {
     let cors = CorsLayer::new()
@@ -246,10 +385,15 @@ pub fn api_router(app_state: Arc<AppState>) -> Router {
     Router::new()
         .route("/health", get(health_route))
         .route("/chat", post(chat))
+        .route("/role_info", get(role_info_route))
+        .route("/role_snapshot", get(role_snapshot_route))
+        .route("/role/load", post(load_role_route))
+        .route("/chat/sessions", get(chat_sessions_route))
+        .route("/chat/messages", get(chat_messages_route))
         .layer(cors)
         .with_state(app_state)
 }
-/// Build [`AppState`] for HTTP API (shared by `serve_api` and desktop in-process bind).
+/// Build [`AppState`] for headless `--api` / `oclive-kernel-server` (single DB writer).
 ///
 /// # Errors
 ///

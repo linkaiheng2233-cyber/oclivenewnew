@@ -196,6 +196,36 @@ jobs:
             kill "$(cat /tmp/vite-preview.pid)" || true
           fi
 
+  cross-host-e2e:
+    runs-on: ubuntu-22.04
+    continue-on-error: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Build oclive-kernel-server
+        run: cargo build -p oclive_kernel_server
+      - name: Cross-host memory + distro kernel smoke
+        run: |
+          set -euo pipefail
+          TARGET="$(python - <<'PY'
+          import json, os, subprocess
+          root = os.environ["GITHUB_WORKSPACE"]
+          out = subprocess.check_output(
+              ["cargo", "metadata", "--format-version=1", "--no-deps"],
+              cwd=root,
+          )
+          print(json.loads(out)["target_directory"])
+          PY
+          )"
+          export OCLIVE_E2E_KERNEL="$TARGET/debug/oclive-kernel-server"
+          test -x "$OCLIVE_E2E_KERNEL"
+          node scripts/e2e-cross-host-memory.mjs
+          node scripts/e2e-distro-kernel.mjs --scenario all
+
   oocp-test-suite:
     runs-on: ubuntu-22.04
     continue-on-error: false

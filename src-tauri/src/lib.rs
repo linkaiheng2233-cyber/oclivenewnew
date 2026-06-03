@@ -19,6 +19,7 @@ pub mod desktop_host;
 pub mod http_api;
 pub mod infrastructure;
 pub mod kernel_attach;
+pub mod kernel_lifecycle;
 pub mod models;
 pub mod state;
 pub mod utils;
@@ -251,16 +252,23 @@ pub fn run() {
                 }
             }
             seed_pending_install_urls_from_args(std::env::args());
+            let resource_dir = app.path_resolver().resource_dir();
             let roles_dir =
-                state::resolve_roles_dir(app.path_resolver().resource_dir().as_deref());
+                state::resolve_roles_dir(resource_dir.as_deref());
             let roles_for_watcher = roles_dir.clone();
-            let (app_state, kernel_attach, _api_port) =
-                tauri::async_runtime::block_on(desktop_host::bootstrap_desktop())
+            let (app_state, kernel_conn, _api_port) =
+                tauri::async_runtime::block_on(desktop_host::bootstrap_desktop(
+                    resource_dir.as_deref(),
+                ))
                     .map_err(|e| -> Box<dyn std::error::Error> { e })?;
-            if let Some(attach) = kernel_attach {
-                app.manage(attach);
-            }
+            app.manage(kernel_conn.clone());
             app.manage(app_state);
+            desktop_host::finish_desktop_setup(
+                &app.handle(),
+                kernel_conn,
+                roles_for_watcher.clone(),
+                resource_dir,
+            );
             let roles_bg = roles_for_watcher.clone();
             let directory_plugins = app.state::<state::SharedAppState>().directory_plugins.clone();
             tauri::async_runtime::spawn(async move {
@@ -298,6 +306,9 @@ pub fn run() {
 
             // ── diagnostics ──
             api::diagnostics::run_environment_diagnostics,
+            api::kernel::get_kernel_connection_status,
+            api::kernel::get_kernel_diagnostics,
+            api::kernel::reconnect_kernel,
             api::llm_settings::get_llm_user_settings,
             api::llm_settings::list_ollama_models,
             api::llm_settings::save_llm_user_settings,
@@ -438,9 +449,15 @@ pub fn run() {
             api::plugin_config::get_plugin_settings_ui,
             api::plugin_config::set_plugin_settings_config,
         ])
-        .run(tauri::generate_context!())
-        .unwrap_or_else(|e| {
-            eprintln!("error while running tauri application: {}", e);
-            std::process::exit(1);
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app_handle, event| {
+            if let tauri::RunEvent::ExitRequested { .. } = event {
+                if let Some(conn) =
+                    app_handle.try_state::<kernel_lifecycle::SharedKernelConnection>()
+                {
+                    conn.kill_spawned_child();
+                }
+            }
         });
 }

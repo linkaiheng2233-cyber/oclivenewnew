@@ -37,7 +37,7 @@ use crate::models::plugin_backends::{
 use crate::models::role::Role;
 use crate::state::{AppState, SharedAppState};
 use std::sync::Arc;
-use tauri::State;
+use tauri::{AppHandle, Manager, State};
 
 use interaction::resolve_interaction_ui_snapshot;
 use runtime::{
@@ -499,7 +499,15 @@ pub async fn switch_role_impl(state: &AppState, role_id: &str) -> Result<RoleInf
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
-pub async fn load_role(role_id: String, state: State<'_, SharedAppState>) -> Result<RoleData, CommandError> {
+pub async fn load_role(
+    role_id: String,
+    app: AppHandle,
+    state: State<'_, SharedAppState>,
+) -> Result<RoleData, CommandError> {
+    if let Some(conn) = app.try_state::<crate::kernel_lifecycle::SharedKernelConnection>() {
+        crate::kernel_attach::KernelHttpClient::load_role_via_http(&conn, role_id.trim())
+            .await?;
+    }
     load_role_impl(&state, &role_id, true).await
 }
 /// # Errors
@@ -508,8 +516,14 @@ pub async fn load_role(role_id: String, state: State<'_, SharedAppState>) -> Res
 #[tauri::command]
 pub async fn get_role_info(
     req: GetRoleInfoRequest,
+    app: AppHandle,
     state: State<'_, SharedAppState>,
 ) -> Result<RoleInfo, CommandError> {
+    if let Some(conn) = app.try_state::<crate::kernel_lifecycle::SharedKernelConnection>() {
+        return crate::kernel_attach::KernelHttpClient::get_role_info_via_http(&conn, &req)
+            .await
+            .map_err(Into::into);
+    }
     get_role_info_impl(&state, &req.role_id, req.session_id.as_deref()).await
 }
 /// # Errors
@@ -523,7 +537,22 @@ pub async fn list_roles(state: State<'_, SharedAppState>) -> Result<Vec<RoleSumm
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
-pub async fn switch_role(role_id: String, state: State<'_, SharedAppState>) -> Result<RoleInfo, CommandError> {
+pub async fn switch_role(
+    role_id: String,
+    app: AppHandle,
+    state: State<'_, SharedAppState>,
+) -> Result<RoleInfo, CommandError> {
+    if let Some(conn) = app.try_state::<crate::kernel_lifecycle::SharedKernelConnection>() {
+        crate::kernel_attach::KernelHttpClient::load_role_via_http(&conn, role_id.trim())
+            .await?;
+        let req = GetRoleInfoRequest {
+            role_id: role_id.clone(),
+            session_id: None,
+        };
+        return crate::kernel_attach::KernelHttpClient::get_role_info_via_http(&conn, &req)
+            .await
+            .map_err(Into::into);
+    }
     switch_role_impl(&state, &role_id).await
 }
 

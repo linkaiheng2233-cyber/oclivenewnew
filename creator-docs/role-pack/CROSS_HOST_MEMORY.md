@@ -76,7 +76,7 @@ roles/{id}/  ──load_role──►  桌面 / VS Code / kernel_server
 | **HTTP 表面** | `GET /health` + `POST /chat` |
 | **测试** | OOCP / Codex 轨道 A（[`CODEX_测试指南.md`](../../dev-notes/codex-testing/CODEX_测试指南.md)） |
 
-**Phase 1 注意**：~~桌面 Tauri **未**暴露 `--api`~~ **已更新（Phase 2a）**：桌面同进程绑定 `:8420` 并使用 canonical `OCLive/data`；VS Code spawn 时传 `OCLIVE_APP_DATA`。若 `:8420` 已被占用，桌面进入 **attach** 模式（`send_message` 走 HTTP）。仍须避免两进程同时 **写** 同一 `app.db`。
+**Phase 1 注意**：桌面与 VS Code 均为 **HTTP 客户端**（spawn-only / attach-first），唯一写者为 `oclive-kernel-server @ :8420`。详见 [`DISTRO_KERNEL_LIFECYCLE.md`](../kernel/DISTRO_KERNEL_LIFECYCLE.md)。
 
 **不在 Phase 1**：WebSocket 状态推送、~~调度层~~（Phase 3 `oclive-runtimed` 可选）、赌场 POC、`memories/` 包内加载、scene 级 memory 过滤。
 
@@ -104,11 +104,12 @@ roles/{id}/  ──load_role──►  桌面 / VS Code / kernel_server
 
 ## 7. 路线图
 
-### Phase 2：单 daemon 多宿主（**部分已落地**）
+### Phase 2：单 daemon 多宿主（**已落地 spawn-only 桌面**）
 
-- 桌面 **同进程** `api_router` @ `:8420` + canonical `OCLive/data`；VS Code **attach 优先**。
-- 桌面检测到已有 `:8420` → **HTTP attach**（不打开第二写库）。
-- 通过 **WebSocket 或 IPC** 推送状态（好感、记忆摘要等）仍留后续；**内核编排不改**。
+- 桌面 **spawn / attach** 外部 `oclive-kernel-server`；**不再**同进程 `api_router` 写库；VS Code **attach 优先**。
+- P0 IPC（chat / role / 会话读）经 HTTP 代理；`/role_snapshot` 供跨宿主 UI 轮询。
+- 规范：[`DISTRO_KERNEL_LIFECYCLE.md`](../kernel/DISTRO_KERNEL_LIFECYCLE.md)。
+- WebSocket 推送仍留后续；**内核编排不改**。
 
 ### Phase 3：极薄调度层（**`oclive-runtimed`**）
 

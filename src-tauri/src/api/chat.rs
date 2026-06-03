@@ -10,7 +10,8 @@ use crate::infrastructure::chat_storage::{
 };
 use crate::models::dto::{SendMessageRequest, SendMessageResponse};
 use crate::models::RolePackChatStorageConfig;
-use crate::kernel_attach::{role_dir_for_id, KernelAttach};
+use crate::kernel_attach::{role_dir_for_id, KernelHttpClient};
+use crate::kernel_lifecycle::SharedKernelConnection;
 use crate::state::SharedAppState;
 use std::path::PathBuf;
 use tauri::{Manager, State};
@@ -37,14 +38,11 @@ pub async fn send_message(
     app: tauri::AppHandle,
     state: State<'_, SharedAppState>,
 ) -> Result<SendMessageResponse, crate::api::error::CommandError> {
-    if let Some(attach) = app.try_state::<KernelAttach>() {
+    if let Some(conn) = app.try_state::<SharedKernelConnection>() {
         let role_path = role_dir_for_id(state.as_ref(), &req.role_id);
-        return attach
-            .send_message_via_http(&role_path, &req)
+        return KernelHttpClient::send_message_via_http(&conn, &role_path, &req)
             .await
-            .map_err(|e| {
-                crate::api::error::CommandError(crate::error::AppError::OllamaError(e))
-            });
+            .map_err(Into::into);
     }
     process_message(state.as_ref(), &req).await.map_err(Into::into)
 }
@@ -60,8 +58,20 @@ pub async fn list_chat_sessions(
     scene_id: String,
     limit: Option<u32>,
     offset: Option<u32>,
+    app: tauri::AppHandle,
     state: State<'_, SharedAppState>,
 ) -> Result<Vec<SessionMeta>, crate::api::error::CommandError> {
+    if let Some(conn) = app.try_state::<SharedKernelConnection>() {
+        return KernelHttpClient::list_chat_sessions_via_http(
+            &conn,
+            role_id.trim(),
+            scene_id.trim(),
+            limit.unwrap_or(50),
+            offset.unwrap_or(0),
+        )
+        .await
+        .map_err(Into::into);
+    }
     state
         .conversation_store
         .list_sessions(
@@ -84,8 +94,19 @@ pub async fn fetch_chat_messages(
     session_id: String,
     limit: Option<u32>,
     offset: Option<u32>,
+    app: tauri::AppHandle,
     state: State<'_, SharedAppState>,
 ) -> Result<Vec<StoredMessage>, crate::api::error::CommandError> {
+    if let Some(conn) = app.try_state::<SharedKernelConnection>() {
+        return KernelHttpClient::fetch_chat_messages_via_http(
+            &conn,
+            session_id.trim(),
+            limit.unwrap_or(500),
+            offset.unwrap_or(0),
+        )
+        .await
+        .map_err(Into::into);
+    }
     state
         .conversation_store
         .fetch_messages(

@@ -15,10 +15,12 @@ import RoleplayAsidePanel from './components/RoleplayAsidePanel.vue'
 import RoleSelector from './components/role/RoleSelector.vue'
 import SceneTravelBars from './components/SceneTravelBars.vue'
 import ShortcutHelp from './components/ShortcutHelp.vue'
+import KernelStatusBar from './components/KernelStatusBar.vue'
 import TopBarMorePanel from './components/TopBarMorePanel.vue'
 import Toast from './components/Toast.vue'
 import TopBarSceneModeDialog from './components/scene/TopBarSceneModeDialog.vue'
 import { useAppToast } from './composables/useAppToast'
+import { useRoleSnapshotPoll } from './composables/useKernelStatus'
 import { useNarrativeScene } from './composables/useNarrativeScene'
 import { useGlobalHotkeys } from './composables/useGlobalHotkeys'
 import { usePluginEvents } from './composables/usePluginEvents'
@@ -75,6 +77,7 @@ function syncBrowserChromeFromLocale(): void {
 const localePreference = ref<LocalePreference>(getLocalePreference())
 
 const { toast, showToast } = useAppToast()
+useRoleSnapshotPoll()
 const { applyResolvedNarrativeScene } = useNarrativeScene()
 const {
   sceneTransition,
@@ -542,6 +545,7 @@ onBeforeUnmount(() => {
               @change-role="onSwitchRole"
               @change-relation="onChangeRelation"
             />
+            <KernelStatusBar class="top-bar-kernel-status" />
           </template>
         </TopBarMorePanel>
       </header>

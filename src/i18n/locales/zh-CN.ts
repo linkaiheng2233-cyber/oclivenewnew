@@ -7,6 +7,7 @@ import devTools from './fragments/devTools.zh'
 import editorBundle from './fragments/editor.zh'
 import emotionUi from './fragments/emotionUi.zh'
 import { expertConfigZh } from './fragments/expert.zh'
+import kernelBundle from './fragments/kernel.zh'
 import pluginManagerBundle from './fragments/pluginManager.zh'
 import roleRuntimeBundle from './fragments/roleRuntime.zh'
 import settingsBundle from './fragments/settings.zh'
@@ -24,6 +25,7 @@ export default {
   editor: editorBundle.editor,
   emotionUi,
   ...expertConfigZh,
+  ...kernelBundle,
   pluginManager: pluginManagerBundle.pluginManager,
   pluginTerms: pluginManagerBundle.pluginTerms,
   relation: commonBundle.relation,

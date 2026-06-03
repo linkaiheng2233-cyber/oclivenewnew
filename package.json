@@ -34,6 +34,8 @@
     "lint": "eslint src vite.config.ts e2e-mock",
     "format": "prettier --write .",
     "test:e2e:core-api-restart": "node scripts/e2e-core-api-restart.mjs",
+    "test:e2e:cross-host": "node scripts/e2e-cross-host-memory.mjs",
+    "test:e2e:distro-kernel": "node scripts/e2e-distro-kernel.mjs --scenario all",
     "test:e2e:preview": "playwright test",
     "test:e2e:tauri-native": "playwright test e2e/tauri-native.spec.ts"
   },

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { EnvironmentDiagnostics } from '../api'
+import type { EnvironmentDiagnostics, KernelDiagnostics } from '../api'
 import { nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import HelpHint from '../components/shared/HelpHint.vue'
@@ -12,6 +12,8 @@ import { SLOT_SETTINGS_ADVANCED, usePluginStore } from '../stores/pluginStore'
 import {
 
   getRemoteFallbackAppSettings,
+  getKernelDiagnostics,
+  reconnectKernel,
   runEnvironmentDiagnostics,
   setRemoteFallbackToBuiltin,
 } from '../api'
@@ -58,6 +60,9 @@ const tab = ref<SettingsTab>('general')
 
 const envDiagLoading = ref(false)
 const envDiag = ref<EnvironmentDiagnostics | null>(null)
+
+const kernelDiagLoading = ref(false)
+const kernelDiag = ref<KernelDiagnostics | null>(null)
 
 const remoteFallbackLoading = ref(false)
 const remoteFallbackChecked = ref(true)
@@ -106,6 +111,37 @@ async function onRemoteFallbackToggle(e: Event) {
   catch (err) {
     remoteFallbackChecked.value = prev
     showToast('error', err instanceof Error ? err.message : String(err))
+  }
+}
+
+async function onRunKernelDiagnostics() {
+  kernelDiagLoading.value = true
+  kernelDiag.value = null
+  try {
+    kernelDiag.value = await getKernelDiagnostics()
+  }
+  catch (err) {
+    showToast('error', err instanceof Error ? err.message : String(err))
+  }
+  finally {
+    kernelDiagLoading.value = false
+  }
+}
+
+async function onReconnectKernelFromSettings() {
+  kernelDiagLoading.value = true
+  try {
+    const status = await reconnectKernel()
+    kernelDiag.value = kernelDiag.value
+      ? { ...kernelDiag.value, status }
+      : await getKernelDiagnostics()
+    showToast('info', t('kernel.status.reconnect'))
+  }
+  catch (err) {
+    showToast('error', err instanceof Error ? err.message : String(err))
+  }
+  finally {
+    kernelDiagLoading.value = false
   }
 }
 
@@ -279,6 +315,62 @@ async function onToggleForceIframe(e: Event) {
                 </span>
                 <code class="sv-code">{{ envDiag.appDataDir }}</code>
               </p>
+            </div>
+          </section>
+          <section class="sv-section">
+            <div class="sv-row-h">
+              <span class="sv-label">{{ t("kernel.diagnostics.title") }}</span>
+            </div>
+            <div class="sv-row-actions">
+              <button
+                type="button"
+                class="sv-btn"
+                :disabled="kernelDiagLoading"
+                @click="onRunKernelDiagnostics"
+              >
+                {{ kernelDiagLoading ? t("settings.envCheckRunning") : t("kernel.diagnostics.refresh") }}
+              </button>
+              <button
+                type="button"
+                class="sv-btn sv-btn--secondary"
+                :disabled="kernelDiagLoading"
+                @click="onReconnectKernelFromSettings"
+              >
+                {{ t("kernel.diagnostics.reconnect") }}
+              </button>
+            </div>
+            <div v-if="kernelDiag" class="sv-env-results" role="status">
+              <p>
+                <strong>{{ t("kernel.diagnostics.mode") }}</strong>
+                {{ kernelDiag.status.mode }}
+                · :{{ kernelDiag.status.port }}
+                ·
+                <span :class="kernelDiag.status.healthy ? 'sv-ok' : 'sv-bad'">
+                  {{
+                    kernelDiag.status.healthy
+                      ? t("kernel.diagnostics.healthyYes")
+                      : t("kernel.diagnostics.healthyNo")
+                  }}
+                </span>
+              </p>
+              <p v-if="kernelDiag.status.binaryPath">
+                <strong>{{ t("kernel.diagnostics.binary") }}</strong>
+                <code class="sv-code">{{ kernelDiag.status.binaryPath }}</code>
+              </p>
+              <p v-if="kernelDiag.status.kernelTier">
+                <strong>{{ t("kernel.diagnostics.tier") }}</strong> {{ kernelDiag.status.kernelTier }}
+              </p>
+              <p>
+                <strong>{{ t("kernel.diagnostics.sharedRuntime") }}</strong>
+                <code class="sv-code">{{ kernelDiag.sharedRuntimePath }}</code>
+                <span v-if="kernelDiag.sharedRuntimeModifiedMs" class="sv-muted">
+                  ({{ t("kernel.diagnostics.sharedRuntimeMtime") }}:
+                  {{ new Date(kernelDiag.sharedRuntimeModifiedMs).toLocaleString() }})
+                </span>
+              </p>
+              <pre v-if="kernelDiag.healthJson" class="sv-code sv-pre">{{
+                JSON.stringify(kernelDiag.healthJson, null, 2)
+              }}</pre>
             </div>
           </section>
           <section v-if="hasSentryDsn" class="sv-section">

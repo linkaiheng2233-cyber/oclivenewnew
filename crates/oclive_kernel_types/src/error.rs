@@ -72,6 +72,10 @@ pub enum AppError {
     #[error("Serialization error: {0}")]
     SerializationError(#[from] serde_json::Error),
 
+    /// **When**: the shared kernel HTTP API is unreachable (desktop / VS Code attach mode).
+    #[error("Kernel is offline")]
+    KernelOffline,
+
     /// **When**: an unclassified internal error. **Show**: report with `code`; avoid exposing the stack.
     #[error("Unknown error: {0}")]
     Unknown(String),
@@ -98,6 +102,7 @@ impl AppError {
             AppError::HighRiskCapabilityNotGranted { .. } => "HIGH_RISK_CAPABILITY_NOT_GRANTED",
             AppError::RemoteServiceUnavailable(_) => "REMOTE_SERVICE_UNAVAILABLE",
             AppError::SerializationError(_) => "SERDE_ERROR",
+            AppError::KernelOffline => "KERNEL_OFFLINE",
             AppError::Unknown(_) => "UNKNOWN_ERROR",
             AppError::TransactionError { code, .. } => code,
         }

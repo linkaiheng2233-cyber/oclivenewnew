@@ -26,8 +26,6 @@ SQLite 真源：`{OCLIVE_APP_DATA}/app.db`（或通过 `resolve_db_path`）。
 | `OCLIVE_USE_CANONICAL_APP_DATA=1` | headless `--api` 使用品牌目录（未设 `OCLIVE_APP_DATA` 时） |
 | `OCLIVE_API_USE_TEMP_APP_DATA=1` | 强制 temp 库（**CI / OOCP 默认**） |
 | `OCLIVE_SKIP_APP_DATA_MIGRATION=1` | 跳过 Tauri 旧目录 → canonical 一次性复制（测试） |
-| `OCLIVE_ATTACH_REMOTE_KERNEL=1` | 桌面强制 attach `:8420`（不打开本地写库） |
-| `OCLIVE_FORCE_LOCAL_KERNEL=1` | 桌面忽略已有 `:8420`，始终本地 canonical |
 
 ---
 
@@ -62,7 +60,7 @@ CLI：`cargo run -p oclive-cli -- migrate-app-data [--target PATH] [--dry-run]`
 
 同一 `app.db` 仅一个进程以写者打开；其它发行版 **attach** `GET http://127.0.0.1:8420/health`。
 
-桌面 Phase 2：同进程绑定 `:8420` + canonical 数据；若端口已被占用则 attach HTTP 模式（`send_message` 走 `POST /chat`）。
+桌面 Phase 2（**spawn-only 薄客户端**）：启动时 attach 或 spawn 独立 `oclive-kernel-server`；**不**内嵌写库。P0 对话经 `POST /chat`（见 [`DISTRO_KERNEL_LIFECYCLE.md`](DISTRO_KERNEL_LIFECYCLE.md)）。
 
 ---
 

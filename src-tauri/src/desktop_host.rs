@@ -1,85 +1,95 @@
-//! Desktop startup: canonical app data, optional remote attach, in-process `:8420`.
+//! Desktop startup: spawn-only kernel client + in-memory UI shell (no local DB writer).
 
-use crate::http_api;
-use crate::infrastructure::app_data_migration;
 use crate::infrastructure::MockLlmClient;
-use crate::kernel_attach::KernelAttach;
-use crate::state::{AppState, SharedAppState};
-use oclive_kernel_runtime::{
-    ensure_app_data_dir, resolve_api_port, resolve_app_data_dir_for_host, resolve_db_path,
+use crate::kernel_lifecycle::{
+    ensure_kernel_ready, start_kernel_watchdog, EnsureKernelOptions, SharedKernelConnection,
 };
+use crate::state::{AppState, SharedAppState};
+use oclive_kernel_runtime::{resolve_api_port, shared_kernel_binary_path};
+use std::path::PathBuf;
 use std::sync::Arc;
+use tauri::AppHandle;
 
-fn env_force_local_kernel() -> bool {
-    std::env::var("OCLIVE_FORCE_LOCAL_KERNEL")
-        .ok()
-        .is_some_and(|v| v == "1" || v.eq_ignore_ascii_case("true"))
+fn discovery_anchors(resource_dir: Option<&std::path::Path>) -> Vec<PathBuf> {
+    let mut anchors = Vec::new();
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(parent) = exe.parent() {
+            anchors.push(parent.to_path_buf());
+        }
+    }
+    if let Ok(cwd) = std::env::current_dir() {
+        anchors.push(cwd);
+    }
+    if let Some(res) = resource_dir {
+        anchors.push(res.to_path_buf());
+    }
+    anchors
 }
 
-fn env_attach_remote() -> bool {
-    std::env::var("OCLIVE_ATTACH_REMOTE_KERNEL")
-        .ok()
-        .is_some_and(|v| v == "1" || v.eq_ignore_ascii_case("true"))
+fn bundled_kernel_binary(resource_dir: Option<&std::path::Path>) -> Option<PathBuf> {
+    resource_dir.map(|res| {
+        let name = if cfg!(windows) {
+            "oclive-kernel-server.exe"
+        } else {
+            "oclive-kernel-server"
+        };
+        res.join(name)
+    })
 }
 
-async fn loopback_kernel_healthy(port: u16) -> bool {
-    KernelAttach::new(format!("http://127.0.0.1:{port}")).healthy().await
-}
-
-/// Bootstrap desktop host state and optionally bind the HTTP API on `127.0.0.1:port`.
+/// Bootstrap desktop: attach or spawn loopback kernel; UI shell has no persistent DB writer.
 ///
 /// # Errors
 ///
-/// Returns I/O or DB bootstrap errors as `Box<dyn Error>`.
+/// Returns bootstrap errors when kernel cannot start and shell cannot be created.
 pub async fn bootstrap_desktop(
-) -> Result<(SharedAppState, Option<KernelAttach>, u16), Box<dyn std::error::Error + Send + Sync>> {
+    resource_dir: Option<&std::path::Path>,
+) -> Result<(SharedAppState, SharedKernelConnection, u16), Box<dyn std::error::Error + Send + Sync>>
+{
     let port = resolve_api_port(None);
-    let attach_auto = env_attach_remote()
-        || (!env_force_local_kernel() && loopback_kernel_healthy(port).await);
+    let roles_dir = crate::state::resolve_roles_dir(resource_dir);
+    let anchors = discovery_anchors(resource_dir);
+    let bundled = bundled_kernel_binary(resource_dir);
 
-    if attach_auto {
-        let attach = KernelAttach::new(format!("http://127.0.0.1:{port}"));
-        tracing::info!(
-            target: "oclive_desktop",
-            %port,
-            "remote kernel attach mode (existing HTTP API)"
-        );
-        let roles_dir = crate::state::resolve_roles_dir(None);
-        let llm = Arc::new(MockLlmClient {
-            reply: String::new(),
-        });
-        let shell = AppState::new_in_memory_with_llm(llm, roles_dir).await?;
-        return Ok((Arc::new(shell), Some(attach), port));
-    }
+    let kernel = ensure_kernel_ready(EnsureKernelOptions {
+        port,
+        roles_dir: roles_dir.clone(),
+        anchors: anchors.clone(),
+        bundled_binary: bundled.clone(),
+    })
+    .await
+    .map_err(|e| -> Box<dyn std::error::Error + Send + Sync> { e.into() })?;
 
-    let app_dir = resolve_app_data_dir_for_host();
-    ensure_app_data_dir(&app_dir)?;
-    app_data_migration::ensure_canonical_app_data_ready(&app_dir)?;
-    let db_path = resolve_db_path(&app_dir);
-    let roles_dir = crate::state::resolve_roles_dir(None);
     tracing::info!(
         target: "oclive_desktop",
-        app_data = %app_dir.display(),
-        db = %db_path.display(),
-        "desktop canonical app data"
-    );
-    let app_state = Arc::new(
-        AppState::new(&db_path, Some(roles_dir), &app_dir)
-            .await
-            .map_err(|e| -> Box<dyn std::error::Error + Send + Sync> { Box::new(e) })?,
+        mode = ?kernel.mode_snapshot(),
+        port,
+        shared_runtime = %shared_kernel_binary_path().display(),
+        roles = %roles_dir.display(),
+        "desktop kernel client ready"
     );
 
-    let state_bind = Arc::clone(&app_state);
-    tauri::async_runtime::spawn(async move {
-        if let Err(e) = http_api::serve_api_with_state(state_bind, port).await {
-            tracing::warn!(
-                target: "oclive_api",
-                %port,
-                error = %e,
-                "in-process HTTP API stopped or failed to bind"
-            );
-        }
+    let llm = Arc::new(MockLlmClient {
+        reply: String::new(),
     });
+    let shell = AppState::new_in_memory_with_llm(llm, roles_dir).await?;
+    Ok((Arc::new(shell), kernel, port))
+}
 
-    Ok((app_state, None, port))
+/// Wire watchdog and exit cleanup after Tauri manages state.
+pub fn finish_desktop_setup(
+    app: &AppHandle,
+    kernel: SharedKernelConnection,
+    roles_dir: PathBuf,
+    resource_dir: Option<PathBuf>,
+) {
+    let anchors = discovery_anchors(resource_dir.as_deref());
+    let bundled = bundled_kernel_binary(resource_dir.as_deref());
+    start_kernel_watchdog(
+        app.clone(),
+        Arc::clone(&kernel),
+        roles_dir,
+        anchors,
+        bundled,
+    );
 }
