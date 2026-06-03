@@ -96,6 +96,8 @@
 | **v2 蓝图字段与 legacy `plugin_backends` 对照（权威）** | **[../cli/SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)** |
 | **角色包磁盘格式、多发行版对齐、`oclive pack validate`** | **[../role-pack/ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)** |
 | **跨宿主记忆 · 角色包携带数据 · VS Code 等集成前确认清单** | **[../role-pack/CROSS_HOST_MEMORY.md](../role-pack/CROSS_HOST_MEMORY.md)** |
+| **VS Code 发行版契约** | **[../role-pack/VSCODE_DISTRIBUTION.md](../role-pack/VSCODE_DISTRIBUTION.md)** |
+| **编写器路线图（情绪图编辑 · 分级导出）** | **[../../handoff/PACK_EDITOR_ROADMAP.md](../../handoff/PACK_EDITOR_ROADMAP.md)** |
 | **蓝图 v2（`pipeline.ocblueprint` · P0–P8 收口）** | **[../../handoff/RFC_ROLE_BLUEPRINT_V2.md](../../handoff/RFC_ROLE_BLUEPRINT_V2.md)** · **[../../handoff/BLUEPRINT_V2_IMPLEMENTATION_PLAN.md](../../handoff/BLUEPRINT_V2_IMPLEMENTATION_PLAN.md)** · **[../../handoff/BLUEPRINT_V2_DECISIONS.md](../../handoff/BLUEPRINT_V2_DECISIONS.md)** |
 | **内核分层纪律（domain / infrastructure / api）** | **[../../handoff/ARCHITECTURE_LAYERING.md](../../handoff/ARCHITECTURE_LAYERING.md)** |
 | **社区角色包索引 JSON 格式** | **[../role-pack/ROLE_PACK_INDEX.md](../role-pack/ROLE_PACK_INDEX.md)** |
