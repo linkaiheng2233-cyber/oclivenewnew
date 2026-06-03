@@ -12,6 +12,7 @@
 | 对标内核模式 | **`pure_chat`**（建议蓝图 `runtime_config.interaction_mode` 或包级默认） |
 | 场景 | `scene_id=vscode`（须在包 `meta.scenes` 中声明） |
 | 记忆 / 好感 | 与桌面 **共用 `app.db`**（单内核写库） |
+| **数据目录** | spawn 时设 `OCLIVE_APP_DATA` → `%LOCALAPPDATA%/OCLive/data`（与 `OCLive/runtime` 并列） |
 | 渗透能力 | **扩展设置默认关闭**（信、心声、idle 聚焦、终端展示行） |
 
 桌面 **沉浸模式**（`immersive`）的虚拟时间、位移、异地心声 UI **不要求** VS Code 侧实现。
@@ -53,3 +54,4 @@
 
 - CLI：`oclive-vscode` 下 `npm run smoke`
 - 协议：主仓 `examples/oocp-test-suite/run.mjs`（Codex 轨道 A）
+- 跨宿主数据：主仓 `node scripts/e2e-cross-host-memory.mjs`（canonical `OCLIVE_APP_DATA` smoke）

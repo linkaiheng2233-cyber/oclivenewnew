@@ -1,4 +1,4 @@
-﻿//! Session slot override API commands.
+//! Session slot override API commands.
 #![allow(clippy::missing_errors_doc)]
 
 use super::{get_role_info_impl, load_role_impl, session_namespace, plugin_backends_override_from_slot_session};
@@ -6,7 +6,7 @@ use crate::error::AppError;
 use crate::infrastructure::storage::resolve_llm_backend_env_override;
 use crate::models::dto::*;
 use crate::models::plugin_backends::LlmBackend;
-use crate::state::AppState;
+use crate::state::{AppState, SharedAppState};
 use oclive_validation::{default_slot_key_for_module, SlotOverridePatch};
 use serde_json::json;
 use tauri::State;
@@ -152,7 +152,7 @@ pub async fn save_role_slot_registry_impl(
 #[tauri::command]
 pub async fn save_role_slot_registry(
     req: SaveRoleSlotRegistryRequest,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<RoleInfo, CommandError> {
     save_role_slot_registry_impl(&state, &req).await
 }
@@ -163,7 +163,7 @@ pub async fn save_role_slot_registry(
 #[tauri::command]
 pub async fn set_session_plugin_backend(
     req: SetSessionPluginBackendRequest,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<RoleInfo, CommandError> {
     set_session_plugin_backend_impl(&state, &req).await
 }
@@ -174,7 +174,7 @@ pub async fn set_session_plugin_backend(
 #[tauri::command]
 pub async fn set_session_slot_override(
     req: SetSessionSlotOverrideRequest,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<RoleInfo, CommandError> {
     set_session_slot_override_impl(&state, &req).await
 }
@@ -185,7 +185,7 @@ pub async fn set_session_slot_override(
 #[tauri::command]
 pub async fn clear_session_slot_override(
     req: ClearSessionSlotOverrideRequest,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<RoleInfo, CommandError> {
     clear_session_slot_override_impl(&state, &req).await
 }
@@ -196,7 +196,7 @@ pub async fn clear_session_slot_override(
 #[tauri::command]
 pub async fn clear_all_session_slot_overrides(
     req: ClearAllSessionSlotOverridesRequest,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<RoleInfo, CommandError> {
     clear_all_session_slot_overrides_impl(&state, &req).await
 }
@@ -214,7 +214,7 @@ pub struct ApplyAuthorSuggestedBackendsRequest {
 #[tauri::command]
 pub async fn apply_author_suggested_plugin_backends(
     req: ApplyAuthorSuggestedBackendsRequest,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<RoleInfo, CommandError> {
     let role_id = req.role_id.trim();
     if role_id.is_empty() {
@@ -334,7 +334,7 @@ pub async fn get_plugin_resolution_debug_impl(
 #[tauri::command]
 pub async fn get_plugin_resolution_debug(
     req: GetPluginResolutionDebugRequest,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<PluginResolutionDebugInfo, CommandError> {
     get_plugin_resolution_debug_impl(&state, &req).await
 }

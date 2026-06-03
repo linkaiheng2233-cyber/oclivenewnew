@@ -1,6 +1,6 @@
 use crate::infrastructure::{export_role_pack, import_role_pack, peek_role_pack_manifest};
 use crate::models::dto::RolePackPeekResponse;
-use crate::state::AppState;
+use crate::state::SharedAppState;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tauri::Manager;
@@ -13,7 +13,7 @@ use crate::api::error::CommandError;
 pub async fn export_role_pack_command(
     role_id: String,
     dest_path: String,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<(), CommandError> {
     let p = PathBuf::from(dest_path);
     export_role_pack(&state.storage, &role_id, &p).map_err(Into::into)
@@ -24,7 +24,7 @@ pub async fn export_role_pack_command(
 #[tauri::command]
 pub async fn peek_role_pack_command(
     src_path: String,
-    _state: State<'_, AppState>,
+    _state: State<'_, SharedAppState>,
 ) -> Result<RolePackPeekResponse, CommandError> {
     let p = PathBuf::from(src_path);
     let (id, name, version) = tokio::task::spawn_blocking(move || peek_role_pack_manifest(&p))
@@ -41,7 +41,7 @@ pub async fn import_role_pack_command(
     app: tauri::AppHandle,
     src_path: String,
     overwrite: bool,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<String, CommandError> {
     let storage = state.storage.clone();
     let path = PathBuf::from(src_path);

@@ -2,7 +2,7 @@
 
 use crate::error::AppError;
 use crate::infrastructure::directory_plugins::OclivePluginManifest;
-use crate::state::AppState;
+use crate::state::{AppState, SharedAppState};
 use serde::Serialize;
 use std::collections::HashMap;
 use std::fs::{self, File};
@@ -29,7 +29,7 @@ pub struct PluginUpdateInfo {
 #[tauri::command]
 pub fn check_plugin_updates(
     plugin_ids: Vec<String>,
-    _state: State<'_, AppState>,
+    _state: State<'_, SharedAppState>,
 ) -> Result<HashMap<String, PluginUpdateInfo>, CommandError> {
     let mut out = HashMap::new();
     for id in plugin_ids {
@@ -141,7 +141,7 @@ fn resolve_install_dir(state: &AppState, plugin_id: &str) -> PathBuf {
 pub fn extract_plugin_zip(
     zip_path: String,
     plugin_id: String,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<(), CommandError> {
     let pid = plugin_id.trim();
     if pid.is_empty() {
@@ -209,7 +209,7 @@ fn install_staged_directory_plugin(
 ///
 /// Returns [`Err`] when the zip is missing, invalid, or `manifest.id` cannot be read.
 #[tauri::command]
-pub fn install_plugin_from_zip(zip_path: String, state: State<'_, AppState>) -> Result<String, CommandError> {
+pub fn install_plugin_from_zip(zip_path: String, state: State<'_, SharedAppState>) -> Result<String, CommandError> {
     let zip_path = PathBuf::from(zip_path.trim());
     if !zip_path.is_file() {
         return Err(AppError::InvalidParameter(format!(

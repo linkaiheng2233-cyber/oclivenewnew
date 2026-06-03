@@ -2,7 +2,7 @@
 
 use crate::api::error::CommandError;
 use crate::error::AppError;
-use crate::state::AppState;
+use crate::state::{AppState, SharedAppState};
 use oclive_validation::{
     validate_expert_routing_doc, ExpertRoutingDoc, DEFAULT_EXPERT_ROUTING_PATH,
 };
@@ -25,7 +25,7 @@ fn expert_routing_path(state: &AppState, role_id: &str) -> Result<PathBuf, Comma
 /// Returns `CommandError` when the directory cannot be read.
 #[tauri::command]
 pub fn list_blueprint_includes(
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
     role_id: String,
 ) -> Result<Vec<String>, CommandError> {
     let includes_dir = state
@@ -56,7 +56,7 @@ pub fn list_blueprint_includes(
 /// Returns `CommandError` when the role is missing, the file is unreadable, or JSON is invalid.
 #[tauri::command]
 pub fn get_expert_routing(
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
     role_id: String,
 ) -> Result<Option<ExpertRoutingDoc>, CommandError> {
     let path = expert_routing_path(&state, &role_id)?;
@@ -77,7 +77,7 @@ pub fn get_expert_routing(
 /// Returns `CommandError` on validation failure, directory creation failure, or write failure.
 #[tauri::command]
 pub fn save_expert_routing(
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
     role_id: String,
     doc: ExpertRoutingDoc,
 ) -> Result<(), CommandError> {

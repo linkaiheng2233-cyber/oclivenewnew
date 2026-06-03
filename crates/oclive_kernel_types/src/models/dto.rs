@@ -30,7 +30,7 @@ pub struct SendMessageRequest {
 }
 
 /// Seven-dimensional emotion snapshot returned to the UI.
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct EmotionDto {
     pub joy: f32,
     pub sadness: f32,
@@ -42,7 +42,7 @@ pub struct EmotionDto {
 }
 
 /// Serialized detected event for the chat response payload.
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct DetectedEventDto {
     pub event_type: String,
     pub confidence: f32,
@@ -58,7 +58,7 @@ pub enum PresenceMode {
 }
 
 /// Primary chat invoke result (`send_message`); field `reply` is the assistant text.
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct SendMessageResponse {
     pub api_version: u32,
     pub schema: u32,

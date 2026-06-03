@@ -10,11 +10,12 @@ use crate::infrastructure::chat_storage::{
 };
 use crate::models::dto::{SendMessageRequest, SendMessageResponse};
 use crate::models::RolePackChatStorageConfig;
-use crate::state::AppState;
+use crate::kernel_attach::{role_dir_for_id, KernelAttach};
+use crate::state::SharedAppState;
 use std::path::PathBuf;
-use tauri::State;
+use tauri::{Manager, State};
 
-async fn role_mirror_root(state: &AppState, role_id: &str) -> PathBuf {
+async fn role_mirror_root(state: &crate::state::AppState, role_id: &str) -> PathBuf {
     let location = match state.load_role_cached_async(role_id).await {
         Ok(role) => role.pack_chat_storage_config.location.clone(),
         Err(_) => "global".to_string(),
@@ -33,9 +34,19 @@ async fn role_mirror_root(state: &AppState, role_id: &str) -> PathBuf {
 #[tauri::command]
 pub async fn send_message(
     req: SendMessageRequest,
-    state: State<'_, AppState>,
+    app: tauri::AppHandle,
+    state: State<'_, SharedAppState>,
 ) -> Result<SendMessageResponse, crate::api::error::CommandError> {
-    process_message(&state, &req).await.map_err(Into::into)
+    if let Some(attach) = app.try_state::<KernelAttach>() {
+        let role_path = role_dir_for_id(state.as_ref(), &req.role_id);
+        return attach
+            .send_message_via_http(&role_path, &req)
+            .await
+            .map_err(|e| {
+                crate::api::error::CommandError(crate::error::AppError::OllamaError(e))
+            });
+    }
+    process_message(state.as_ref(), &req).await.map_err(Into::into)
 }
 
 /// List chat sessions for a role + scene (SQLite authoritative).
@@ -49,7 +60,7 @@ pub async fn list_chat_sessions(
     scene_id: String,
     limit: Option<u32>,
     offset: Option<u32>,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<Vec<SessionMeta>, crate::api::error::CommandError> {
     state
         .conversation_store
@@ -73,7 +84,7 @@ pub async fn fetch_chat_messages(
     session_id: String,
     limit: Option<u32>,
     offset: Option<u32>,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<Vec<StoredMessage>, crate::api::error::CommandError> {
     state
         .conversation_store
@@ -94,7 +105,7 @@ pub async fn fetch_chat_messages(
 #[tauri::command]
 pub async fn rebuild_chat_mirror(
     session_id: String,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<String, crate::api::error::CommandError> {
     let session_id = session_id.trim().to_string();
     let max = match state.db_manager.get_chat_session(&session_id).await {
@@ -121,7 +132,7 @@ pub async fn rebuild_chat_mirror(
 #[tauri::command]
 pub async fn migrate_indexeddb_to_backend(
     buckets: Vec<ImportChatBucket>,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<ImportChatBucketsResult, crate::api::error::CommandError> {
     state
         .conversation_store
@@ -137,7 +148,7 @@ pub async fn migrate_indexeddb_to_backend(
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub async fn get_chat_storage_stats(
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<Vec<RoleStorageStat>, crate::api::error::CommandError> {
     state
         .conversation_store
@@ -154,7 +165,7 @@ pub async fn get_chat_storage_stats(
 #[tauri::command]
 pub async fn delete_role_chats(
     role_id: String,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<DeleteChatsResult, crate::api::error::CommandError> {
     let rid = role_id.trim();
     let mirror_root = role_mirror_root(state.inner(), rid).await;
@@ -180,7 +191,7 @@ pub async fn delete_role_chats(
 pub async fn delete_scene_chats(
     role_id: String,
     scene_id: String,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<DeleteChatsResult, crate::api::error::CommandError> {
     let rid = role_id.trim();
     let sid = scene_id.trim();
@@ -202,7 +213,7 @@ pub async fn delete_scene_chats(
 pub async fn export_chat_session(
     session_id: String,
     format: String,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<ChatExportResponse, crate::api::error::CommandError> {
     let session_id = session_id.trim().to_string();
     let (max, role_name) = match state.db_manager.get_chat_session(&session_id).await {
@@ -240,7 +251,7 @@ pub async fn export_chat_session(
 pub async fn export_role_chats(
     role_id: String,
     format: String,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<ChatExportResponse, crate::api::error::CommandError> {
     let rid = role_id.trim();
     let (max, role_name) = match state.load_role_cached_async(rid).await {
@@ -268,7 +279,7 @@ pub async fn search_chat_messages(
     role_id: Option<String>,
     limit: Option<u32>,
     offset: Option<u32>,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<Vec<ChatSearchResult>, crate::api::error::CommandError> {
     let cap = limit.unwrap_or(100).min(100);
     state
@@ -291,7 +302,7 @@ pub async fn search_chat_messages(
 #[tauri::command]
 pub async fn delete_chat_message(
     message_id: String,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<(), crate::api::error::CommandError> {
     state
         .conversation_store
@@ -309,7 +320,7 @@ pub async fn delete_chat_message(
 pub async fn edit_chat_message(
     message_id: String,
     new_content: String,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<(), crate::api::error::CommandError> {
     state
         .conversation_store
@@ -326,7 +337,7 @@ pub async fn edit_chat_message(
 #[tauri::command]
 pub async fn get_role_chat_storage_config(
     role_id: String,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<RolePackChatStorageConfig, crate::api::error::CommandError> {
     let role = state.load_role_cached_async(role_id.trim()).await?;
     Ok(role.pack_chat_storage_config.clone())
@@ -341,7 +352,7 @@ pub async fn get_role_chat_storage_config(
 pub async fn save_role_chat_storage_config_cmd(
     role_id: String,
     config: RolePackChatStorageConfig,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<(), crate::api::error::CommandError> {
     let rid = role_id.trim();
     save_role_chat_storage_config(state.storage.roles_dir(), rid, &config)?;
@@ -357,7 +368,7 @@ pub async fn save_role_chat_storage_config_cmd(
 #[tauri::command]
 pub async fn run_chat_auto_cleanup(
     role_id: String,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<AutoCleanupResult, crate::api::error::CommandError> {
     let role = state.load_role_cached_async(role_id.trim()).await?;
     let cfg = AutoCleanupConfig::from_role_config(&role.pack_chat_storage_config);
@@ -377,7 +388,7 @@ pub async fn run_chat_auto_cleanup(
 pub async fn replay_memory_extraction(
     source: String,
     target: ReplayTarget,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<String, crate::api::error::CommandError> {
     let task_id = spawn_memory_replay(
         state.db_manager.clone(),
@@ -397,7 +408,7 @@ pub async fn replay_memory_extraction(
 #[tauri::command]
 pub async fn get_replay_progress(
     task_id: String,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<ReplayProgress, crate::api::error::CommandError> {
     state
         .replay_tasks
@@ -418,7 +429,7 @@ pub async fn get_replay_progress(
 /// Never fails for known backends; reserved for future dynamic backends.
 #[tauri::command]
 pub async fn get_chat_storage_capabilities(
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<ChatStorageCapabilities, crate::api::error::CommandError> {
     Ok(ChatStorageCapabilities {
         backend_kind: state.conversation_store.backend_kind().to_string(),
@@ -435,7 +446,7 @@ pub async fn get_chat_storage_capabilities(
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub async fn get_chat_storage_root(
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<String, crate::api::error::CommandError> {
     let app_data = state.directory_plugins.app_data_dir();
     Ok(resolve_storage_root(app_data).to_string_lossy().into_owned())
@@ -450,7 +461,7 @@ pub async fn get_chat_storage_root(
 pub async fn set_chat_storage_root(
     path: String,
     migrate: Option<bool>,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<String, crate::api::error::CommandError> {
     let app_data = state.directory_plugins.app_data_dir();
     let trimmed = path.trim();

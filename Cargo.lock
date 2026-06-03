@@ -2960,6 +2960,7 @@ dependencies = [
  "fs2",
  "handlebars",
  "notify",
+ "oclive_kernel_runtime",
  "oclive_validation",
  "ratatui",
  "serde",
@@ -3031,6 +3032,21 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 1.0.69",
+]
+
+[[package]]
+name = "oclive_runtimed"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "dashmap",
+ "oclive_kernel_runtime",
+ "reqwest",
+ "serde_json",
+ "tokio",
+ "tower 0.4.13",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]

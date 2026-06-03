@@ -1,7 +1,7 @@
 use crate::error::AppError;
 use crate::models::dto::{CreateEventRequest, CreateEventResponse, EventItem, QueryEventsRequest};
 use crate::models::EventType;
-use crate::state::AppState;
+use crate::state::{AppState, SharedAppState};
 use tauri::State;
 use crate::api::error::CommandError;
 
@@ -90,7 +90,7 @@ pub async fn create_event_impl(
 #[tauri::command]
 pub async fn query_events(
     req: QueryEventsRequest,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<Vec<EventItem>, CommandError> {
     query_events_impl(&state, &req).await
 }
@@ -100,7 +100,7 @@ pub async fn query_events(
 #[tauri::command]
 pub async fn create_event(
     req: CreateEventRequest,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<CreateEventResponse, CommandError> {
     create_event_impl(&state, &req).await
 }

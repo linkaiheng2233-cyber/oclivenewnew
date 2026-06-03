@@ -10,7 +10,7 @@ use crate::infrastructure::user_llm_secrets::{
 };
 use crate::models::dto::RoleInfo;
 use crate::models::plugin_backends::LlmBackend;
-use crate::state::AppState;
+use crate::state::{AppState, SharedAppState};
 use oclive_validation::NETWORK_GRANT_REMOTE_LLM;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
@@ -331,7 +331,7 @@ fn model_name_from_gguf_path(path: &Path) -> String {
 /// Returns [`Err`] when persistence or role reload fails.
 #[tauri::command]
 pub async fn get_llm_user_settings(
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
     role_id: String,
     session_id: Option<String>,
 ) -> Result<LlmUserSettingsDto, CommandError> {
@@ -438,7 +438,7 @@ pub async fn get_llm_user_settings(
 /// Returns [`Err`] when Ollama list fails.
 #[tauri::command]
 pub async fn list_ollama_models(
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
     ollama_base_url: Option<String>,
 ) -> Result<Vec<String>, CommandError> {
     let base = ollama_base_url
@@ -460,7 +460,7 @@ pub async fn list_ollama_models(
 /// Returns [`Err`] when the directory cannot be read.
 #[tauri::command]
 pub async fn scan_local_model_files(
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
     directory: Option<String>,
 ) -> Result<Vec<LocalModelFileDto>, CommandError> {
     let dir = if let Some(d) = directory.filter(|s| !s.trim().is_empty()) {
@@ -501,7 +501,7 @@ pub async fn open_path_in_file_manager(
 /// Returns [`Err`] when Ollama create fails.
 #[tauri::command]
 pub async fn import_gguf_to_ollama(
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
     req: ImportGgufToOllamaRequest,
 ) -> Result<String, CommandError> {
     let path = PathBuf::from(req.file_path.trim());
@@ -533,7 +533,7 @@ pub async fn import_gguf_to_ollama(
 /// Returns [`Err`] when cloud LLM is misconfigured or the probe request fails.
 #[tauri::command]
 pub async fn probe_cloud_llm(
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
     role_id: String,
     session_id: Option<String>,
 ) -> Result<String, CommandError> {
@@ -546,7 +546,7 @@ pub async fn probe_cloud_llm(
 /// Returns [`Err`] when persistence or role reload fails.
 #[tauri::command]
 pub async fn save_llm_user_settings(
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
     req: SaveLlmUserSettingsRequest,
 ) -> Result<RoleInfo, CommandError> {
     let provider = req.provider.trim().to_ascii_lowercase();

@@ -7,7 +7,9 @@
 //!
 //! **Key decision**: new code should depend directly on `kernel_types` / `kernel_contracts`; this crate's `pub use *` is a **transitional** measure, and the surface will be tightened later.
 
+pub mod app_data_migration;
 pub mod domain;
+pub mod paths;
 pub(crate) mod utils;
 
 pub use oclive_validation as validation;
@@ -39,6 +41,15 @@ pub const ENV_HTTP_API_MOCK_LLM: &str = "OCLIVE_HTTP_API_MOCK_LLM";
 
 /// Roles directory override (same semantics as desktop host).
 pub const ENV_ROLES_DIR: &str = "OCLIVE_ROLES_DIR";
+
+pub use app_data_migration::ensure_canonical_app_data_ready;
+pub use paths::{
+    canonical_brand_app_data_dir, ensure_app_data_dir, resolve_app_data_dir_for_api,
+    resolve_app_data_dir_for_host, resolve_db_path, tauri_legacy_app_data_dir, temp_api_db_path,
+    AppDataMode,
+    ENV_APP_DATA, ENV_APP_DATA_LEGACY_TEMP, ENV_SKIP_APP_DATA_MIGRATION,
+    ENV_USE_CANONICAL_APP_DATA, TAURI_APP_IDENTIFIER,
+};
 
 /// Resolve listen port: CLI `--port` wins, then `OCLIVE_API_PORT`, then [`DEFAULT_API_PORT`].
 #[must_use]

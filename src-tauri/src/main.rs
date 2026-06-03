@@ -23,9 +23,11 @@ fn main() {
 
     if api {
         let port = oclive_kernel_runtime::resolve_api_port(cli_port);
-        let app_data = std::env::temp_dir().join("oclive_api_app_data");
+        let (app_data, _) = oclive_kernel_runtime::resolve_app_data_dir_for_api(port);
+        let _ = oclive_kernel_runtime::ensure_app_data_dir(&app_data);
+        let log_dir = app_data.join("logs");
         let _log_guard =
-            oclivenewnew_tauri::init_tracing_with_log_dir(Some(app_data.as_path()));
+            oclivenewnew_tauri::init_tracing_with_log_dir(Some(log_dir.as_path()));
         oclivenewnew_tauri::run_api_server(port);
     } else {
         let _log_guard = oclivenewnew_tauri::init_tracing();

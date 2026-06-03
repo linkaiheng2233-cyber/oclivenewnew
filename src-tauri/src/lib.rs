@@ -15,8 +15,10 @@ pub mod error {
     }
 }
 
+pub mod desktop_host;
 pub mod http_api;
 pub mod infrastructure;
+pub mod kernel_attach;
 pub mod models;
 pub mod state;
 pub mod utils;
@@ -120,14 +122,13 @@ use crate::infrastructure::directory_plugins::{resolve_plugin_asset_path, start_
 use crate::infrastructure::plugin_protocol::{
     inject_plugin_bridge_script, mime_for_plugin_asset, plugin_asset_from_request_uri,
 };
-use crate::state::AppState;
 
 fn serve_ocliveplugin_asset(
     app: &AppHandle,
     request: &Request,
 ) -> Result<Response, Box<dyn std::error::Error>> {
     let state = app
-        .try_state::<state::AppState>()
+        .try_state::<state::SharedAppState>()
         .ok_or_else(|| Box::<dyn std::error::Error>::from("app state not ready"))?;
     let uri = request.uri().to_string();
     let Some((plugin_id, rel)) = plugin_asset_from_request_uri(&uri) else {
@@ -250,38 +251,32 @@ pub fn run() {
                 }
             }
             seed_pending_install_urls_from_args(std::env::args());
-            let app_dir = app.path_resolver().app_data_dir().ok_or_else(|| {
-                std::io::Error::new(
-                    std::io::ErrorKind::NotFound,
-                    "failed to resolve app_data_dir (Tauri path_resolver returned None)",
-                )
-            })?;
-            fs::create_dir_all(&app_dir).map_err(|e| {
-                std::io::Error::other(format!("create app_data_dir {}: {}", app_dir.display(), e))
-            })?;
-            let db_path = app_dir.join("app.db");
-            let roles_dir = state::resolve_roles_dir(app.path_resolver().resource_dir().as_deref());
+            let roles_dir =
+                state::resolve_roles_dir(app.path_resolver().resource_dir().as_deref());
             let roles_for_watcher = roles_dir.clone();
-            let app_state = tauri::async_runtime::block_on(async {
-                state::AppState::new(&db_path, Some(roles_dir), &app_dir).await
-            })
-            .map_err(|e| -> Box<dyn std::error::Error> { Box::new(e) })?;
-
+            let (app_state, kernel_attach, _api_port) =
+                tauri::async_runtime::block_on(desktop_host::bootstrap_desktop())
+                    .map_err(|e| -> Box<dyn std::error::Error> { e })?;
+            if let Some(attach) = kernel_attach {
+                app.manage(attach);
+            }
             app.manage(app_state);
             let roles_bg = roles_for_watcher.clone();
-            let directory_plugins = app.state::<AppState>().directory_plugins.clone();
+            let directory_plugins = app.state::<state::SharedAppState>().directory_plugins.clone();
             tauri::async_runtime::spawn(async move {
                 directory_plugins.rescan_plugin_roots(roles_bg.as_path());
             });
             let hk = crate::infrastructure::hotkey_bindings::HotkeyBindingsFile::load(
-                app.state::<AppState>().directory_plugins.app_data_dir(),
+                app.state::<state::SharedAppState>()
+                    .directory_plugins
+                    .app_data_dir(),
             );
             if let Err(e) = crate::api::hotkeys::apply_global_hotkeys(&app.handle(), &hk) {
                 tracing::warn!(target: "oclive_hotkey", "initial global shortcuts: {}", e);
             }
             start_plugin_fs_watcher(
                 app.handle().clone(),
-                &app.state::<AppState>(),
+                app.state::<state::SharedAppState>().as_ref(),
                 roles_for_watcher,
             );
             crate::infrastructure::chat_storage::spawn_auto_cleanup_scheduler(app.handle());

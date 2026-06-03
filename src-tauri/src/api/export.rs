@@ -3,7 +3,7 @@ use crate::error::AppError;
 use crate::models::dto::{
     ExportChatLogsRequest, ExportChatLogsResponse, PluginResolutionDebugInfo,
 };
-use crate::state::AppState;
+use crate::state::{AppState, SharedAppState};
 use chrono::Local;
 use serde::Serialize;
 use tauri::State;
@@ -242,7 +242,7 @@ pub async fn export_chat_logs_impl(
 #[tauri::command]
 pub async fn export_chat_logs(
     req: ExportChatLogsRequest,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<ExportChatLogsResponse, CommandError> {
     export_chat_logs_impl(&state, &req).await
 }

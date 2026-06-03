@@ -1,6 +1,6 @@
 //! Lightweight environment self-check (A2.2): Ollama reachability, roles root, app data dir writable.
 
-use crate::state::AppState;
+use crate::state::SharedAppState;
 use serde::Serialize;
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -70,7 +70,7 @@ async fn probe_ollama(base: &str) -> (bool, String) {
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub async fn run_environment_diagnostics(
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<EnvironmentDiagnostics, CommandError> {
     let ollama_base_url =
         std::env::var("OLLAMA_BASE_URL").unwrap_or_else(|_| "http://localhost:11434".to_string());

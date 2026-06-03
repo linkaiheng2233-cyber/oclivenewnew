@@ -19,7 +19,10 @@ use axum::http::Method;
 use axum::routing::{get, post};
 use axum::Json;
 use axum::Router;
-use oclive_kernel_runtime::{http_chat_codes, KernelErrorBody};
+use oclive_kernel_runtime::{
+    ensure_app_data_dir, http_chat_codes, resolve_app_data_dir_for_api, resolve_db_path,
+    temp_api_db_path, AppDataMode, KernelErrorBody,
+};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -92,8 +95,61 @@ fn kernel_http_error(
     }
 }
 
-async fn health() -> &'static str {
+#[derive(Debug, Serialize)]
+struct HealthJson {
+    ok: bool,
+    runtime_api_version: &'static str,
+    schema_migration_version: Option<i64>,
+}
+
+async fn health(State(state): State<Arc<AppState>>) -> axum::response::Response {
+    use axum::http::header::CONTENT_TYPE;
+    use axum::http::StatusCode;
+    use axum::response::IntoResponse;
+    use oclive_kernel_runtime::RUNTIME_API_VERSION;
+
+    let version = state
+        .db_manager
+        .max_applied_migration_version()
+        .await
+        .ok()
+        .flatten();
+    let json = HealthJson {
+        ok: true,
+        runtime_api_version: RUNTIME_API_VERSION,
+        schema_migration_version: version,
+    };
+    (
+        StatusCode::OK,
+        [(CONTENT_TYPE, "application/json")],
+        axum::Json(json),
+    )
+        .into_response()
+}
+
+async fn health_plain() -> &'static str {
     "ok"
+}
+
+async fn health_route(
+    State(state): State<Arc<AppState>>,
+    headers: axum::http::HeaderMap,
+) -> axum::response::Response {
+    use axum::http::header::ACCEPT;
+    use axum::response::IntoResponse;
+
+    let wants_json = headers
+        .get(ACCEPT)
+        .and_then(|v| v.to_str().ok())
+        .is_some_and(|a| a.contains("application/json"))
+        || std::env::var("OCLIVE_HEALTH_JSON")
+            .ok()
+            .is_some_and(|v| v == "1" || v.eq_ignore_ascii_case("true"));
+    if wants_json {
+        health(State(state)).await
+    } else {
+        (axum::http::StatusCode::OK, health_plain().await).into_response()
+    }
 }
 
 async fn chat(
@@ -188,11 +244,80 @@ pub fn api_router(app_state: Arc<AppState>) -> Router {
         .allow_headers(Any);
 
     Router::new()
-        .route("/health", get(health))
+        .route("/health", get(health_route))
         .route("/chat", post(chat))
         .layer(cors)
         .with_state(app_state)
 }
+/// Build [`AppState`] for HTTP API (shared by `serve_api` and desktop in-process bind).
+///
+/// # Errors
+///
+/// Returns a human-readable message on migration or DB bootstrap failure.
+pub async fn build_api_app_state(port: u16) -> Result<Arc<AppState>, String> {
+    let roles_dir = crate::state::resolve_roles_dir(None);
+    let mock_llm = std::env::var("OCLIVE_HTTP_API_MOCK_LLM")
+        .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
+        .unwrap_or(false);
+
+    if mock_llm {
+        tracing::warn!(target: "oclive_api", "OCLIVE_HTTP_API_MOCK_LLM enabled: using in-memory DB + mock LLM");
+        let llm = Arc::new(MockLlmClient {
+            reply: "OOCP mock reply".to_string(),
+        });
+        let app_state = AppState::new_in_memory_with_llm(llm, roles_dir)
+            .await
+            .map_err(|e| e.to_string())?;
+        crate::domain::startup_health::run_global_db_ping(&app_state.db_manager)
+            .await
+            .map_err(|e| e.to_string())?;
+        return Ok(Arc::new(app_state));
+    }
+
+    let (app_data_dir, mode) = resolve_app_data_dir_for_api(port);
+    ensure_app_data_dir(&app_data_dir)?;
+    if mode == AppDataMode::Persistent {
+        crate::infrastructure::app_data_migration::ensure_canonical_app_data_ready(&app_data_dir)?;
+    }
+    let db_path = if mode == AppDataMode::Temp {
+        temp_api_db_path(port)
+    } else {
+        resolve_db_path(&app_data_dir)
+    };
+    tracing::info!(
+        target: "oclive_api",
+        app_data = %app_data_dir.display(),
+        db = %db_path.display(),
+        mode = ?mode,
+        "resolved HTTP API app data"
+    );
+    let app_state = AppState::new(&db_path, Some(roles_dir), &app_data_dir)
+        .await
+        .map_err(|e| e.to_string())?;
+    crate::domain::startup_health::run_global_db_ping(&app_state.db_manager)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(Arc::new(app_state))
+}
+
+/// Bind `api_router` on `127.0.0.1:port` until the process exits.
+///
+/// # Errors
+///
+/// Returns [`Err`] when listen or serve fails.
+pub async fn serve_api_with_state(app_state: Arc<AppState>, port: u16) -> Result<(), String> {
+    let app = api_router(app_state);
+    let addr = format!("127.0.0.1:{port}");
+    let listener = TcpListener::bind(&addr)
+        .await
+        .map_err(|e| format!("绑定 {} 失败：{}", addr, e))?;
+    tracing::info!(target: "oclive_api", "HTTP API listening http://{addr}");
+    axum::serve(listener, app)
+        .await
+        .map_err(|e| format!("HTTP 服务异常：{e}"))?;
+    Ok(())
+}
+
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
@@ -200,49 +325,17 @@ pub fn api_router(app_state: Arc<AppState>) -> Router {
 ///
 /// CI / protocol black-box: when `OCLIVE_HTTP_API_MOCK_LLM=1` is set, uses an in-memory DB + [`MockLlmClient`], not depending on a local Ollama.
 pub async fn serve_api(port: u16) -> Result<(), String> {
-    let db_path = std::env::temp_dir().join(format!("oclive_api_{}.db", port));
-    let roles_dir = crate::state::resolve_roles_dir(None);
-    let app_data_dir = db_path
-        .parent()
-        .map(|p| p.join("oclive_api_app_data"))
-        .unwrap_or_else(|| std::env::temp_dir().join("oclive_api_app_data"));
-    let _ = std::fs::create_dir_all(&app_data_dir);
-    let _api_temp_cleanup = ApiTempCleanup {
-        db_path: db_path.clone(),
-        app_data_dir: app_data_dir.clone(),
-    };
-    let mock_llm = std::env::var("OCLIVE_HTTP_API_MOCK_LLM")
-        .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
-        .unwrap_or(false);
-    let app_state = if mock_llm {
-        tracing::warn!(target: "oclive_api", "OCLIVE_HTTP_API_MOCK_LLM enabled: using in-memory DB + mock LLM");
-        let llm = Arc::new(MockLlmClient {
-            reply: "OOCP mock reply".to_string(),
-        });
-        AppState::new_in_memory_with_llm(llm, roles_dir.clone())
-            .await
-            .map_err(|e| e.to_string())?
+    let (app_data_dir, mode) = resolve_app_data_dir_for_api(port);
+    let _api_temp_cleanup = if mode == AppDataMode::Temp {
+        Some(ApiTempCleanup {
+            db_path: temp_api_db_path(port),
+            app_data_dir: app_data_dir.clone(),
+        })
     } else {
-        AppState::new(&db_path, Some(roles_dir), &app_data_dir)
-            .await
-            .map_err(|e| e.to_string())?
+        None
     };
-    crate::domain::startup_health::run_global_db_ping(&app_state.db_manager)
-        .await
-        .map_err(|e| e.to_string())?;
-    let app_state = Arc::new(app_state);
-
-    let app = api_router(app_state);
-
-    let addr = format!("127.0.0.1:{}", port);
-    let listener = TcpListener::bind(&addr)
-        .await
-        .map_err(|e| format!("绑定 {} 失败：{}", addr, e))?;
-    tracing::info!(target: "oclive_api", "HTTP API listening http://{}", addr);
-    axum::serve(listener, app)
-        .await
-        .map_err(|e| format!("HTTP 服务异常：{}", e))?;
-    Ok(())
+    let app_state = build_api_app_state(port).await?;
+    serve_api_with_state(app_state, port).await
 }
 
 #[cfg(test)]

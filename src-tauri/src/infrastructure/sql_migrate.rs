@@ -2,7 +2,68 @@
 
 use sqlx::sqlite::SqlitePool;
 use std::collections::HashSet;
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use std::time::{SystemTime, UNIX_EPOCH};
+
+/// Copy `db_file` to `app_data/app.db.bak.{unix_secs}` before migrations (file DB only).
+///
+/// # Errors
+///
+/// Returns an error when the backup copy fails.
+pub fn backup_db_file(db_file: &Path, app_data_dir: &Path) -> Result<PathBuf, String> {
+    if !db_file.is_file() {
+        return Ok(PathBuf::new());
+    }
+    let ts = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    let dest = app_data_dir.join(format!("app.db.bak.{ts}"));
+    std::fs::create_dir_all(app_data_dir)
+        .map_err(|e| format!("backup mkdir {}: {e}", app_data_dir.display()))?;
+    std::fs::copy(db_file, &dest)
+        .map_err(|e| format!("backup {} -> {}: {e}", db_file.display(), dest.display()))?;
+    tracing::info!(
+        target: "oclive_migrate",
+        from = %db_file.display(),
+        to = %dest.display(),
+        "database backup before migration"
+    );
+    Ok(dest)
+}
+
+/// Restore `db_file` from a backup path after a failed migration attempt.
+///
+/// # Errors
+///
+/// Returns an error when restore copy fails.
+pub fn restore_db_from_backup(db_file: &Path, backup: &Path) -> Result<(), String> {
+    if !backup.is_file() {
+        return Ok(());
+    }
+    if let Some(parent) = db_file.parent() {
+        std::fs::create_dir_all(parent)
+            .map_err(|e| format!("restore mkdir {}: {e}", parent.display()))?;
+    }
+    std::fs::copy(backup, db_file)
+        .map_err(|e| format!("restore {} <- {}: {e}", db_file.display(), backup.display()))?;
+    Ok(())
+}
+
+/// Write `migration_failed.json` under app data when migrations fail.
+///
+/// # Errors
+///
+/// Returns an error when the marker file cannot be written.
+pub fn write_migration_failed_marker(app_data_dir: &Path, message: &str) -> Result<(), String> {
+    let path = app_data_dir.join("migration_failed.json");
+    let body = serde_json::json!({
+        "failed_at": chrono::Utc::now().to_rfc3339(),
+        "message": message,
+    });
+    std::fs::write(&path, serde_json::to_string_pretty(&body).unwrap_or_default())
+        .map_err(|e| format!("write {}: {e}", path.display()))
+}
 
 /// Apply `migrations/*.sql` in lexical order; compatible with existing `_sqlx_migrations` rows.
 ///

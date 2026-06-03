@@ -1,6 +1,6 @@
 use crate::error::AppError;
 use crate::models::dto::{MemoryItem, QueryMemoriesRequest};
-use crate::state::AppState;
+use crate::state::{AppState, SharedAppState};
 use tauri::State;
 use crate::api::error::CommandError;
 /// # Errors
@@ -41,7 +41,7 @@ pub async fn query_memories_impl(
 #[tauri::command]
 pub async fn query_memories(
     req: QueryMemoriesRequest,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<Vec<MemoryItem>, CommandError> {
     query_memories_impl(&state, &req).await
 }

@@ -9,7 +9,8 @@ fn print_usage() {
     eprintln!(
         "oclive-kernel-server {RUNTIME_API_VERSION}\n\
          Usage: oclive-kernel-server [--api] [--port PORT]\n\
-         Env: OCLIVE_API_PORT, OCLIVE_HTTP_API_MOCK_LLM, OCLIVE_ROLES_DIR, RUST_LOG"
+         Env: OCLIVE_API_PORT, OCLIVE_HTTP_API_MOCK_LLM, OCLIVE_ROLES_DIR,\n\
+         OCLIVE_APP_DATA, OCLIVE_USE_CANONICAL_APP_DATA, OCLIVE_API_USE_TEMP_APP_DATA, RUST_LOG"
     );
 }
 

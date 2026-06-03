@@ -1,7 +1,7 @@
 //! Global hotkeys: register/unregister and event dispatch (`hotkey-action`).
 
 use crate::infrastructure::hotkey_bindings::{HotkeyAction, HotkeyBindingsFile};
-use crate::state::AppState;
+use crate::state::{AppState, SharedAppState};
 use serde::Serialize;
 use tauri::{AppHandle, GlobalShortcutManager, Manager, State};
 use crate::api::error::CommandError;
@@ -76,7 +76,7 @@ pub fn get_hotkey_bindings_impl(state: &AppState) -> Result<HotkeyBindingsFile, 
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
-pub fn get_hotkey_bindings(state: State<'_, AppState>) -> Result<HotkeyBindingsFile, CommandError> {
+pub fn get_hotkey_bindings(state: State<'_, SharedAppState>) -> Result<HotkeyBindingsFile, CommandError> {
     get_hotkey_bindings_impl(&state)
 }
 /// # Errors
@@ -86,7 +86,7 @@ pub fn get_hotkey_bindings(state: State<'_, AppState>) -> Result<HotkeyBindingsF
 pub fn save_hotkey_bindings(
     bindings: HotkeyBindingsFile,
     app: AppHandle,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<(), CommandError> {
     validate_hotkey_bindings(&bindings)?;
     bindings.save(state.directory_plugins.app_data_dir())?;

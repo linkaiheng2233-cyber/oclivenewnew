@@ -2,6 +2,7 @@
 //!
 //! Provides foundational services and data access.
 
+pub mod app_data_migration;
 pub mod cache;
 pub mod chat_storage;
 pub mod db;

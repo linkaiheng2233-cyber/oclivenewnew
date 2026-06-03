@@ -1,4 +1,4 @@
-use crate::state::AppState;
+use crate::state::SharedAppState;
 use serde::Deserialize;
 use serde_json::Value;
 use tauri::State;
@@ -20,7 +20,7 @@ pub struct ListMcpToolsRequest {
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
-pub fn list_mcp_servers(state: State<'_, AppState>) -> Result<Value, CommandError> {
+pub fn list_mcp_servers(state: State<'_, SharedAppState>) -> Result<Value, CommandError> {
     Ok(serde_json::to_value(state.plugins.list_mcp_servers())?)
 }
 /// # Errors
@@ -29,7 +29,7 @@ pub fn list_mcp_servers(state: State<'_, AppState>) -> Result<Value, CommandErro
 #[tauri::command]
 pub async fn list_mcp_tools(
     req: ListMcpToolsRequest,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<Value, CommandError> {
     let tools = state
         .plugins
@@ -44,7 +44,7 @@ pub async fn list_mcp_tools(
 #[tauri::command]
 pub async fn call_mcp_tool(
     req: CallMcpToolRequest,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<Value, CommandError> {
     let result = state
         .plugins
@@ -57,14 +57,14 @@ pub async fn call_mcp_tool(
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
-pub fn get_agent_debug_traces(state: State<'_, AppState>) -> Result<Value, CommandError> {
+pub fn get_agent_debug_traces(state: State<'_, SharedAppState>) -> Result<Value, CommandError> {
     Ok(serde_json::to_value(state.plugins.recent_agent_traces())?)
 }
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
-pub fn clear_agent_debug_traces(state: State<'_, AppState>) -> Result<(), CommandError> {
+pub fn clear_agent_debug_traces(state: State<'_, SharedAppState>) -> Result<(), CommandError> {
     state.plugins.clear_agent_traces();
     Ok(())
 }

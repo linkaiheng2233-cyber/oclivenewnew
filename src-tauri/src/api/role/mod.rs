@@ -35,7 +35,7 @@ use crate::models::plugin_backends::{
     PromptBackend,
 };
 use crate::models::role::Role;
-use crate::state::AppState;
+use crate::state::{AppState, SharedAppState};
 use std::sync::Arc;
 use tauri::State;
 
@@ -499,7 +499,7 @@ pub async fn switch_role_impl(state: &AppState, role_id: &str) -> Result<RoleInf
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
-pub async fn load_role(role_id: String, state: State<'_, AppState>) -> Result<RoleData, CommandError> {
+pub async fn load_role(role_id: String, state: State<'_, SharedAppState>) -> Result<RoleData, CommandError> {
     load_role_impl(&state, &role_id, true).await
 }
 /// # Errors
@@ -508,7 +508,7 @@ pub async fn load_role(role_id: String, state: State<'_, AppState>) -> Result<Ro
 #[tauri::command]
 pub async fn get_role_info(
     req: GetRoleInfoRequest,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<RoleInfo, CommandError> {
     get_role_info_impl(&state, &req.role_id, req.session_id.as_deref()).await
 }
@@ -516,14 +516,14 @@ pub async fn get_role_info(
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
-pub async fn list_roles(state: State<'_, AppState>) -> Result<Vec<RoleSummary>, CommandError> {
+pub async fn list_roles(state: State<'_, SharedAppState>) -> Result<Vec<RoleSummary>, CommandError> {
     list_roles_impl(&state).await
 }
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
-pub async fn switch_role(role_id: String, state: State<'_, AppState>) -> Result<RoleInfo, CommandError> {
+pub async fn switch_role(role_id: String, state: State<'_, SharedAppState>) -> Result<RoleInfo, CommandError> {
     switch_role_impl(&state, &role_id).await
 }
 
@@ -599,7 +599,7 @@ fn path_string_for_frontend(p: &std::path::Path) -> String {
 pub fn read_role_asset_bytes(
     role_id: String,
     relative: String,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<Option<Vec<u8>>, CommandError> {
     let p = state.storage.role_asset_path(&role_id, &relative);
     if !p.is_file() {
@@ -614,7 +614,7 @@ pub fn read_role_asset_bytes(
 pub fn resolve_role_asset_path(
     role_id: String,
     relative: String,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Option<String> {
     let p = state.storage.role_asset_path(&role_id, &relative);
     if p.is_file() {

@@ -1,10 +1,10 @@
-﻿//! Evolution / interaction-mode API commands.
+//! Evolution / interaction-mode API commands.
 #![allow(clippy::missing_errors_doc)]
 
 use super::{get_role_info_impl, EVENT_IMPACT_MAX, EVENT_IMPACT_MIN};
 use crate::error::AppError;
 use crate::models::dto::{RoleInfo, SetEvolutionFactorRequest, SetRemoteLifeEnabledRequest, SetRoleInteractionModeRequest};
-use crate::state::AppState;
+use crate::state::{AppState, SharedAppState};
 use tauri::State;
 use crate::api::error::CommandError;
 pub async fn set_evolution_factor_impl(
@@ -41,7 +41,7 @@ pub async fn set_evolution_factor_impl(
 #[tauri::command]
 pub async fn set_evolution_factor(
     req: SetEvolutionFactorRequest,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<RoleInfo, CommandError> {
     set_evolution_factor_impl(&state, &req).await
 }
@@ -71,7 +71,7 @@ pub async fn set_remote_life_enabled_impl(
 #[tauri::command]
 pub async fn set_remote_life_enabled(
     req: SetRemoteLifeEnabledRequest,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<RoleInfo, CommandError> {
     set_remote_life_enabled_impl(&state, &req).await
 }
@@ -104,7 +104,7 @@ pub async fn set_role_interaction_mode_impl(
 #[tauri::command]
 pub async fn set_role_interaction_mode(
     req: SetRoleInteractionModeRequest,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<RoleInfo, CommandError> {
     set_role_interaction_mode_impl(&state, &req).await
 }

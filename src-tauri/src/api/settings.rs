@@ -2,7 +2,7 @@
 
 use crate::error::AppError;
 use crate::models::interaction_mode::InteractionMode;
-use crate::state::AppState;
+use crate::state::{AppState, SharedAppState};
 use serde::Serialize;
 use serde_json::{json, Value};
 use tauri::State;
@@ -109,7 +109,7 @@ pub async fn update_settings_impl(state: &AppState, params: &Value) -> Result<Va
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub async fn set_remote_fallback_to_builtin(
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
     allow: bool,
 ) -> Result<(), CommandError> {
     let raw = if allow { "1" } else { "0" };
@@ -141,7 +141,7 @@ pub struct RemoteFallbackAppSettings {
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub async fn get_remote_fallback_app_settings(
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<RemoteFallbackAppSettings, CommandError> {
     let remote_fallback_to_builtin = state
         .db_manager

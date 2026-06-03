@@ -3,7 +3,7 @@ use crate::error::AppError;
 use crate::models::dto::{
     RoleInfo, SetUserPresenceSceneRequest, SwitchSceneRequest, SwitchSceneResponse,
 };
-use crate::state::AppState;
+use crate::state::{AppState, SharedAppState};
 use tauri::State;
 use crate::api::error::CommandError;
 /// # Errors
@@ -81,7 +81,7 @@ pub async fn set_user_presence_scene_impl(
 #[tauri::command]
 pub async fn switch_scene(
     req: SwitchSceneRequest,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<SwitchSceneResponse, CommandError> {
     switch_scene_impl(&state, &req).await
 }
@@ -91,7 +91,7 @@ pub async fn switch_scene(
 #[tauri::command]
 pub async fn set_user_presence_scene(
     req: SetUserPresenceSceneRequest,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<RoleInfo, CommandError> {
     set_user_presence_scene_impl(&state, &req).await
 }

@@ -5,7 +5,7 @@ use crate::infrastructure::directory_plugins::{OclivePluginManifest, PluginProce
 use crate::infrastructure::remote_plugin::{
     invoke_directory_plugin_rpc_blocking, RemoteRpcChannel,
 };
-use crate::state::AppState;
+use crate::state::SharedAppState;
 use serde::Deserialize;
 use serde_json::{json, Value};
 use tauri::State;
@@ -17,7 +17,7 @@ use crate::api::error::CommandError;
 pub fn spawn_plugin_for_test(
     plugin_id: String,
     config_json: Option<String>,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<PluginProcessDebugInfo, CommandError> {
     let cfg = config_json.as_deref();
     state
@@ -29,7 +29,7 @@ pub fn spawn_plugin_for_test(
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
-pub fn kill_plugin_process(plugin_id: String, state: State<'_, AppState>) -> Result<(), CommandError> {
+pub fn kill_plugin_process(plugin_id: String, state: State<'_, SharedAppState>) -> Result<(), CommandError> {
     let id = plugin_id.trim();
     if id.is_empty() {
         return Err(ApiError::InvalidParameter {
@@ -43,13 +43,13 @@ pub fn kill_plugin_process(plugin_id: String, state: State<'_, AppState>) -> Res
 
 #[tauri::command]
 #[must_use]
-pub fn list_plugin_processes(state: State<'_, AppState>) -> Vec<PluginProcessDebugInfo> {
+pub fn list_plugin_processes(state: State<'_, SharedAppState>) -> Vec<PluginProcessDebugInfo> {
     state.directory_plugins.list_managed_plugin_processes()
 }
 
 #[tauri::command]
 #[must_use]
-pub fn get_plugin_logs(plugin_id: String, lines: usize, state: State<'_, AppState>) -> Vec<String> {
+pub fn get_plugin_logs(plugin_id: String, lines: usize, state: State<'_, SharedAppState>) -> Vec<String> {
     state
         .directory_plugins
         .get_plugin_log_tail(plugin_id.trim(), lines.max(1))
@@ -58,7 +58,7 @@ pub fn get_plugin_logs(plugin_id: String, lines: usize, state: State<'_, AppStat
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
-pub fn clear_plugin_logs(plugin_id: String, state: State<'_, AppState>) -> Result<(), CommandError> {
+pub fn clear_plugin_logs(plugin_id: String, state: State<'_, SharedAppState>) -> Result<(), CommandError> {
     let id = plugin_id.trim();
     if id.is_empty() {
         return Err(ApiError::InvalidParameter {
@@ -84,7 +84,7 @@ pub struct TestPluginMethodDto {
 #[tauri::command]
 pub fn test_plugin_method(
     req: TestPluginMethodDto,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<Value, CommandError> {
     let pid = req.plugin_id.trim();
     if pid.is_empty() {
@@ -111,7 +111,7 @@ pub fn test_plugin_method(
 #[tauri::command]
 pub fn discover_plugin_methods(
     plugin_id: String,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<Vec<String>, CommandError> {
     let pid = plugin_id.trim();
     if pid.is_empty() {

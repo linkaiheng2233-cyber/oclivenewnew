@@ -88,7 +88,27 @@ impl AppStateBuilder {
     /// Database connect/migrate, policy load, or plugin bootstrap failures.
     pub async fn build(self) -> Result<AppState> {
         let db = connect_db(&self.db_path).await?;
-        run_migrations(&db).await?;
+        let backup = if self.db_path != Path::new(":memory:") && self.db_path.is_file() {
+            crate::infrastructure::sql_migrate::backup_db_file(&self.db_path, &self.app_data_dir)
+                .ok()
+        } else {
+            None
+        };
+        if let Err(e) = run_migrations(&db).await {
+            if let Some(ref bak) = backup {
+                if bak.is_file() {
+                    let _ = crate::infrastructure::sql_migrate::restore_db_from_backup(
+                        &self.db_path,
+                        bak,
+                    );
+                }
+            }
+            let _ = crate::infrastructure::sql_migrate::write_migration_failed_marker(
+                &self.app_data_dir,
+                &e.to_string(),
+            );
+            return Err(e);
+        }
 
         let db_manager = Arc::new(DbManager::new(db));
         let user_llm_provider = parking_lot::RwLock::new(String::new());

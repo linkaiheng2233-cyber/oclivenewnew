@@ -37,6 +37,9 @@ mod session_cache;
 pub use roles_dir::resolve_roles_dir;
 pub use session_cache::SessionCache;
 
+/// Tauri-managed application state (shared with in-process HTTP API).
+pub type SharedAppState = Arc<AppState>;
+
 use app_state_builder::AppStateBuilder;
 
 pub struct AppState {
@@ -52,7 +55,8 @@ pub struct AppState {
     /// - `role_cache` / `role_load_inflight`: dedupe role reads;
     /// - `session_cache`: session overrides;
     /// - `user_llm_*`: in-process LLM config mirror;
-    /// none nested—avoids lock-order cycles.
+    ///
+    ///   none nested—avoids lock-order cycles.
     pub role_cache: Arc<RwLock<HashMap<String, Arc<Role>>>>,
     /// Dedupe cold loads for the same `role_id` ([`OnceCell`]); after load, write [`Self::role_cache`] and remove this entry.
     role_load_inflight: DashMap<String, Arc<OnceCell<Arc<Role>>>>,

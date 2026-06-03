@@ -1,7 +1,7 @@
 use crate::api::time::get_time_state_impl;
 use crate::error::AppError;
 use crate::models::dto::{GenerateMonologueRequest, GenerateMonologueResponse};
-use crate::state::AppState;
+use crate::state::{AppState, SharedAppState};
 use tauri::State;
 use crate::api::error::CommandError;
 /// # Errors
@@ -78,7 +78,7 @@ pub async fn generate_monologue_impl(
 #[tauri::command]
 pub async fn generate_monologue(
     req: GenerateMonologueRequest,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<GenerateMonologueResponse, CommandError> {
     generate_monologue_impl(&state, &req.role_id).await
 }

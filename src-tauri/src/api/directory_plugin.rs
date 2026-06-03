@@ -10,7 +10,7 @@ use crate::infrastructure::plugin_state::{PluginStateFile, RolePluginState};
 use crate::infrastructure::remote_plugin::{
     invoke_directory_plugin_rpc_blocking, RemoteRpcChannel,
 };
-use crate::state::AppState;
+use crate::state::{AppState, SharedAppState};
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use semver::Version;
@@ -334,7 +334,7 @@ fn shell_plugin_id_resolved(
 #[tauri::command]
 pub fn get_directory_plugin_bootstrap(
     role_id: Option<String>,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<DirectoryPluginBootstrapDto, CommandError> {
     Ok(directory_plugin_bootstrap_dto(&state, role_id))
 }
@@ -346,7 +346,7 @@ pub fn get_directory_plugin_bootstrap(
 pub fn read_plugin_asset_text(
     plugin_id: String,
     rel: String,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<String, CommandError> {
     let pid = plugin_id.trim();
     if pid.is_empty() {
@@ -407,7 +407,7 @@ pub fn read_plugin_asset_text(
 pub fn is_host_event_subscribed(
     event: String,
     role_id: Option<String>,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<bool, CommandError> {
     let ev = event.trim();
     if ev.is_empty() {
@@ -442,7 +442,7 @@ pub struct DirectoryPluginInvokeDto {
 #[tauri::command]
 pub fn directory_plugin_invoke(
     req: DirectoryPluginInvokeDto,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<Value, CommandError> {
     let pid = req.plugin_id.trim();
     if pid.is_empty() {
@@ -638,7 +638,7 @@ pub fn get_directory_plugin_catalog_impl(
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub fn get_directory_plugin_catalog(
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<Vec<DirectoryPluginCatalogEntry>, CommandError> {
     get_directory_plugin_catalog_impl(&state)
 }
@@ -702,7 +702,7 @@ pub fn get_plugin_state_impl(
 #[tauri::command]
 pub fn get_plugin_state(
     role_id: String,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<PluginStateGetResponse, CommandError> {
     get_plugin_state_impl(&role_id, &state)
 }
@@ -713,7 +713,7 @@ pub fn get_plugin_state(
 pub fn save_plugin_state(
     role_id: String,
     state: RolePluginStateDto,
-    app: State<'_, AppState>,
+    app: State<'_, SharedAppState>,
 ) -> Result<(), CommandError> {
     app.directory_plugins
         .save_role_plugin_state(role_id.trim(), state.into())
@@ -725,7 +725,7 @@ pub fn save_plugin_state(
 #[tauri::command]
 pub fn save_global_plugin_state(
     state: RolePluginStateDto,
-    app: State<'_, AppState>,
+    app: State<'_, SharedAppState>,
 ) -> Result<(), CommandError> {
     app.directory_plugins
         .save_global_plugin_state(state.into())
@@ -737,7 +737,7 @@ pub fn save_global_plugin_state(
 #[tauri::command]
 pub fn reset_plugin_state_to_role_default(
     role_id: String,
-    app: State<'_, AppState>,
+    app: State<'_, SharedAppState>,
 ) -> Result<(), CommandError> {
     let role = app
         .storage

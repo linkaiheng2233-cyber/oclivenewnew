@@ -6,7 +6,7 @@ use crate::infrastructure::plugin_installer::{
     install_plugin, load_cached_index, missing_dependencies, sync_plugin_index_online,
     uninstall_plugin, update_plugin, PluginIndexEntry, PluginIndexFile,
 };
-use crate::state::AppState;
+use crate::state::{AppState, SharedAppState};
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -110,7 +110,7 @@ fn build_snapshot(
 #[tauri::command]
 pub fn sync_plugin_index_command(
     index_url: Option<String>,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<PluginMarketSnapshot, CommandError> {
     match sync_plugin_index_online(&state, index_url.as_deref()) {
         Ok(index) => Ok(build_snapshot(&state, index, false, "online", None)),
@@ -133,7 +133,7 @@ pub fn sync_plugin_index_command(
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
-pub fn get_cached_plugin_index(state: State<'_, AppState>) -> Result<PluginMarketSnapshot, CommandError> {
+pub fn get_cached_plugin_index(state: State<'_, SharedAppState>) -> Result<PluginMarketSnapshot, CommandError> {
     let index = load_cached_index(&state)?;
     Ok(build_snapshot(&state, index, true, "cache", None))
 }
@@ -144,7 +144,7 @@ pub fn get_cached_plugin_index(state: State<'_, AppState>) -> Result<PluginMarke
 pub fn install_plugin_from_market(
     plugin_id: String,
     git_url: Option<String>,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<InstallPluginFromMarketResponse, CommandError> {
     let pid = plugin_id.trim();
     if pid.is_empty() {
@@ -191,7 +191,7 @@ pub fn install_plugin_from_market(
 #[tauri::command]
 pub fn install_plugin_from_git(
     req: InstallPluginFromGitRequest,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<InstallPluginFromMarketResponse, CommandError> {
     let git = req.git_url.trim();
     if git.is_empty() {
@@ -217,7 +217,7 @@ pub fn install_plugin_from_git(
 #[tauri::command]
 pub fn update_plugin_from_market(
     plugin_id: String,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<(), CommandError> {
     update_plugin(&state, &plugin_id).map_err(Into::into)
 }
@@ -227,7 +227,7 @@ pub fn update_plugin_from_market(
 #[tauri::command]
 pub fn uninstall_plugin_from_market(
     plugin_id: String,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<(), CommandError> {
     uninstall_plugin(&state, &plugin_id).map_err(Into::into)
 }
@@ -237,7 +237,7 @@ pub fn uninstall_plugin_from_market(
 #[tauri::command]
 pub fn batch_update_plugins(
     plugin_ids: Vec<String>,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<(), CommandError> {
     for pid in plugin_ids {
         let t = pid.trim();
@@ -254,7 +254,7 @@ pub fn batch_update_plugins(
 #[tauri::command]
 pub fn batch_uninstall_plugins(
     plugin_ids: Vec<String>,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<(), CommandError> {
     for pid in plugin_ids {
         let t = pid.trim();

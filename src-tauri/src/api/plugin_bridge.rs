@@ -18,7 +18,7 @@ use crate::infrastructure::directory_plugins::{normalize_plugin_rel, OclivePlugi
 use crate::infrastructure::import_role_pack;
 use crate::models::dto::CreateEventRequest;
 use crate::models::dto::{ExportChatLogsRequest, GetRoleInfoRequest, SendMessageRequest};
-use crate::state::AppState;
+use crate::state::{AppState, SharedAppState};
 use serde::Deserialize;
 use serde_json::{json, Value};
 use std::path::PathBuf;
@@ -512,7 +512,7 @@ async fn dispatch_bridge_command(
 #[tauri::command]
 pub async fn plugin_bridge_invoke(
     req: PluginBridgeInvokeRequest,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<Value, CommandError> {
     let pid = req.plugin_id.trim();
     let asset = normalize_plugin_rel(req.asset_rel.trim());

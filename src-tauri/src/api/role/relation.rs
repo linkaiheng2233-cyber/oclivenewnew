@@ -1,11 +1,11 @@
-﻿//! Relation / identity API commands.
+//! Relation / identity API commands.
 #![allow(clippy::missing_errors_doc)]
 
 use super::get_role_info_impl;
 use crate::error::AppError;
 use crate::models::dto::{ClearSceneUserRelationRequest, RoleInfo, SetSceneUserRelationRequest, SetUserRelationRequest, OCLIVE_DEFAULT_RELATION_SENTINEL};
 use crate::models::role::IdentityBinding;
-use crate::state::AppState;
+use crate::state::{AppState, SharedAppState};
 use tauri::State;
 use crate::api::error::CommandError;
 pub async fn set_user_relation_impl(
@@ -181,14 +181,14 @@ pub async fn set_scene_user_relation_impl(
 #[tauri::command]
 pub async fn set_user_relation(
     req: SetUserRelationRequest,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<RoleInfo, CommandError> {
     set_user_relation_impl(&state, &req).await
 }
 #[tauri::command]
 pub async fn set_scene_user_relation(
     req: SetSceneUserRelationRequest,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<RoleInfo, CommandError> {
     set_scene_user_relation_impl(&state, &req).await
 }
@@ -198,7 +198,7 @@ pub async fn set_scene_user_relation(
 #[tauri::command]
 pub async fn clear_scene_user_relation(
     req: ClearSceneUserRelationRequest,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<RoleInfo, CommandError> {
     clear_scene_user_relation_impl(&state, &req).await
 }

@@ -1,7 +1,7 @@
 //! High-risk capability grants: `list` / `grant` / `revoke` (persisted `{app_data}/high_risk_grants.json`).
 
 use crate::infrastructure::high_risk_grants::{normalize_grant_kind, GrantKind};
-use crate::state::AppState;
+use crate::state::{AppState, SharedAppState};
 use serde::Deserialize;
 use serde_json::Value;
 use tauri::State;
@@ -59,7 +59,7 @@ pub fn revoke_high_risk_capability_impl(
 ///
 /// Returns `String` when JSON serialization fails.
 #[tauri::command]
-pub fn list_high_risk_grants(state: State<'_, AppState>) -> Result<Value, CommandError> {
+pub fn list_high_risk_grants(state: State<'_, SharedAppState>) -> Result<Value, CommandError> {
     list_high_risk_grants_impl(&state)
 }
 
@@ -69,7 +69,7 @@ pub fn list_high_risk_grants(state: State<'_, AppState>) -> Result<Value, Comman
 #[tauri::command]
 pub fn grant_high_risk_capability(
     req: MutateHighRiskGrantRequest,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<(), CommandError> {
     grant_high_risk_capability_impl(&state, &req)
 }
@@ -80,7 +80,7 @@ pub fn grant_high_risk_capability(
 #[tauri::command]
 pub fn revoke_high_risk_capability(
     req: MutateHighRiskGrantRequest,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<(), CommandError> {
     revoke_high_risk_capability_impl(&state, &req)
 }

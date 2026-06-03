@@ -1,5 +1,5 @@
 use crate::error::AppError;
-use crate::state::AppState;
+use crate::state::{AppState, SharedAppState};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -113,7 +113,7 @@ fn write_template_files(
 #[tauri::command]
 pub fn create_plugin_scaffold(
     req: CreatePluginScaffoldRequest,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
     app: tauri::AppHandle,
 ) -> Result<CreatePluginScaffoldResponse, CommandError> {
     let plugin_id = safe_file_stem(req.plugin_id.trim());

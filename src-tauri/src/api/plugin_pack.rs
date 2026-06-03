@@ -1,5 +1,5 @@
 use crate::error::AppError;
-use crate::state::AppState;
+use crate::state::{AppState, SharedAppState};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::fs;
@@ -58,7 +58,7 @@ fn ensure_manifest_valid(manifest_path: &Path) -> Result<(), AppError> {
 #[tauri::command]
 pub fn pack_plugin(
     req: PackPluginRequest,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<PackPluginResponse, CommandError> {
     let pid = req.plugin_id.trim();
     if pid.is_empty() {

@@ -5,6 +5,7 @@ members = [
     "crates/oclive_kernel_contracts",
     "crates/oclive_kernel_runtime",
     "crates/oclive_kernel_server",
+    "crates/oclive_runtimed",
     "crates/oclive-cli",
     "src-tauri",
     "fuzz",

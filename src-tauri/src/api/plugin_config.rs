@@ -8,7 +8,7 @@ use crate::infrastructure::plugin_data::{
 use crate::infrastructure::remote_plugin::{
     invoke_directory_plugin_rpc_blocking, RemoteRpcChannel,
 };
-use crate::state::AppState;
+use crate::state::{AppState, SharedAppState};
 use serde::Serialize;
 use serde_json::{json, Value};
 use std::path::PathBuf;
@@ -59,7 +59,7 @@ fn plugin_root(state: &AppState, plugin_id: &str) -> Result<PathBuf, CommandErro
 #[tauri::command]
 pub fn get_plugin_settings_ui(
     plugin_id: String,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<PluginUiSettingsDto, CommandError> {
     let root = plugin_root(&state, &plugin_id)?;
     let manifest = OclivePluginManifest::load_from_dir(&root)?;
@@ -95,7 +95,7 @@ pub fn get_plugin_settings_ui(
 pub fn set_plugin_settings_config(
     plugin_id: String,
     config: Value,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<(), CommandError> {
     let pid = plugin_id.trim();
     if pid.is_empty() {

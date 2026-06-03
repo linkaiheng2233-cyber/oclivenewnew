@@ -114,6 +114,17 @@ impl DbManager {
         }
     }
 
+    /// Highest successfully applied migration version, if the tracking table exists.
+    pub async fn max_applied_migration_version(&self) -> Result<Option<i64>> {
+        let v: Option<i64> = sqlx::query_scalar(
+            "SELECT MAX(version) FROM _sqlx_migrations WHERE success = 1",
+        )
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(format!("max migration version: {e}")))?;
+        Ok(v)
+    }
+
     pub async fn health_ping(&self) -> Result<()> {
         const TTL: Duration = Duration::from_secs(5);
         {

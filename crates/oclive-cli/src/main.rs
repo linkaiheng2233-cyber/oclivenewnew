@@ -47,6 +47,7 @@ mod lint_audit_ci;
 mod lint_report;
 mod market_cmd;
 mod market_index;
+mod migrate_app_data_cmd;
 mod monolith_codegen;
 mod monolith_config;
 mod pack_cmd;
@@ -142,6 +143,8 @@ enum Commands {
     Kernel(kernel_cmd::KernelCli),
     /// Explain a kernel error code (from ERROR_CODES.md)
     Explain(explain_cmd::ExplainArgs),
+    /// Copy legacy Tauri app data into canonical `OCLive/data`
+    MigrateAppData(migrate_app_data_cmd::MigrateAppDataArgs),
     /// Shell completion scripts (install to your shell profile)
     Completions(completions_cmd::CompletionsArgs),
 }
@@ -187,6 +190,7 @@ fn main() -> Result<()> {
         Commands::Template(cli) => template_cmd::run(cli),
         Commands::Kernel(cli) => kernel_cmd::run(cli),
         Commands::Explain(args) => explain_cmd::run(args),
+        Commands::MigrateAppData(args) => migrate_app_data_cmd::run(args),
         Commands::Completions(args) => completions_cmd::run(args),
     }
 }

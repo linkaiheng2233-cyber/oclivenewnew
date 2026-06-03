@@ -4,7 +4,7 @@ use crate::domain::virtual_time_sync::{apply_virtual_time_jump, sync_and_persist
 use crate::error::AppError;
 use crate::models::dto::{JumpTimeRequest, JumpTimeResponse, TimeStateResponse};
 use crate::models::Role;
-use crate::state::AppState;
+use crate::state::{AppState, SharedAppState};
 use chrono::{DateTime, Timelike, Utc};
 use oclive_kernel_runtime::domain::virtual_time::round_to_minute_ms;
 use tauri::State;
@@ -239,7 +239,7 @@ pub async fn jump_time_impl(
 #[tauri::command]
 pub async fn get_time_state(
     role_id: String,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<TimeStateResponse, CommandError> {
     get_time_state_impl(&state, &role_id).await
 }
@@ -249,7 +249,7 @@ pub async fn get_time_state(
 #[tauri::command]
 pub async fn jump_time(
     req: JumpTimeRequest,
-    state: State<'_, AppState>,
+    state: State<'_, SharedAppState>,
 ) -> Result<JumpTimeResponse, CommandError> {
     jump_time_impl(&state, &req).await
 }

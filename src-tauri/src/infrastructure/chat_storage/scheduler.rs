@@ -20,7 +20,7 @@ pub fn spawn_auto_cleanup_scheduler(app: AppHandle) {
 }
 
 async fn run_if_ready(app: &AppHandle) {
-    let Some(state) = app.try_state::<AppState>() else {
+    let Some(state) = app.try_state::<crate::state::SharedAppState>() else {
         return;
     };
     run_global_auto_cleanup(state.inner()).await;

@@ -67,6 +67,8 @@ roles/{id}/  ──load_role──►  桌面 / VS Code / kernel_server
 | **attach vs spawn** | `GET /health:8420` 成功 → **附着**，不 spawn；失败且仅 VS Code → **spawn** `kernel_server --api` |
 | **端口** | 固定 **`8420`**（`OCLIVE_API_PORT`） |
 | **`OCLIVE_ROLES_DIR`** | 桌面与扩展 **相同路径** |
+| **`OCLIVE_APP_DATA`** | 品牌目录 `%LOCALAPPDATA%/OCLive/data`（spawn 必传；见 [`OCLIVE_APP_DATA.md`](../kernel/OCLIVE_APP_DATA.md)） |
+| **Tauri 迁移** | 首次 canonical 启动时 **复制** 旧 `%APPDATA%/com.oclivenewnew.app` → `OCLive/data` |
 | **`scene_id`** | 扩展 **`vscode`**；桌面 **`default`**（或包内场景 id） |
 | **`session_id`** | 各宿主 **独立**，不双写同一会话 |
 | **`chat_storage.location`** | **`global`** |
@@ -74,9 +76,9 @@ roles/{id}/  ──load_role──►  桌面 / VS Code / kernel_server
 | **HTTP 表面** | `GET /health` + `POST /chat` |
 | **测试** | OOCP / Codex 轨道 A（[`CODEX_测试指南.md`](../../dev-notes/codex-testing/CODEX_测试指南.md)） |
 
-**Phase 1 注意**：桌面 Tauri **未**暴露 `--api` 时，与 VS Code 同时开且 `8420` 无响应 → 扩展会 spawn，可能产生 **双写库**。产品侧建议：同时使用时由用户先起 daemon，或关闭其一；**Phase 2** 桌面改连 `--api` 后消除。
+**Phase 1 注意**：~~桌面 Tauri **未**暴露 `--api`~~ **已更新（Phase 2a）**：桌面同进程绑定 `:8420` 并使用 canonical `OCLive/data`；VS Code spawn 时传 `OCLIVE_APP_DATA`。若 `:8420` 已被占用，桌面进入 **attach** 模式（`send_message` 走 HTTP）。仍须避免两进程同时 **写** 同一 `app.db`。
 
-**不在 Phase 1**：WebSocket 状态推送、调度层、赌场 POC、`memories/` 包内加载、scene 级 memory 过滤。
+**不在 Phase 1**：WebSocket 状态推送、~~调度层~~（Phase 3 `oclive-runtimed` 可选）、赌场 POC、`memories/` 包内加载、scene 级 memory 过滤。
 
 ---
 
@@ -102,15 +104,16 @@ roles/{id}/  ──load_role──►  桌面 / VS Code / kernel_server
 
 ## 7. 路线图
 
-### Phase 2：单 daemon 多宿主
+### Phase 2：单 daemon 多宿主（**部分已落地**）
 
-- 唯一 `kernel_server --api`；桌面、VS Code 等均 **连接** 同一端口。
-- 通过 **WebSocket 或 IPC** 推送状态（好感、记忆摘要等）；**内核编排不改**。
+- 桌面 **同进程** `api_router` @ `:8420` + canonical `OCLive/data`；VS Code **attach 优先**。
+- 桌面检测到已有 `:8420` → **HTTP attach**（不打开第二写库）。
+- 通过 **WebSocket 或 IPC** 推送状态（好感、记忆摘要等）仍留后续；**内核编排不改**。
 
-### Phase 3：极薄调度层
+### Phase 3：极薄调度层（**`oclive-runtimed`**）
 
-- 内核前加调度服务：请求排队、冲突仲裁、安全与配额。
-- **不碰 AI 逻辑**；内核保持纯粹，不绑定多宿主管理。
+- 可选二进制：health 监督 + **per-role** `POST /chat` 队列，转发至上游 `:8420`。
+- **不碰 AI 逻辑**；发行版仍可调 `http://127.0.0.1:8420`（或经 scheduler 端口）。
 
 ### 赌场 POC（Phase 2+）
 
