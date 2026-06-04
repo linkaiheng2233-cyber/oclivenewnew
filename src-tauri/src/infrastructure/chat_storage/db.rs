@@ -4,7 +4,7 @@ use crate::error::{AppError, Result};
 use crate::infrastructure::db::DbManager;
 use chrono::Utc;
 use sqlx::sqlite::SqliteRow;
-use sqlx::Row;
+use sqlx::{Row, Sqlite, Transaction};
 
 #[derive(Debug, Clone)]
 pub struct SessionRow {
@@ -322,9 +322,10 @@ impl DbManager {
     /// # Errors
     ///
     /// Database errors propagate as [`AppError::DatabaseError`].
-    pub async fn delete_chat_data_for_manifest_role(
+    pub async fn delete_chat_data_for_manifest_role_in_tx(
         &self,
         manifest_role_id: &str,
+        tx: &mut Transaction<'_, Sqlite>,
     ) -> Result<()> {
         let pattern = format!("{manifest_role_id}__sess__*");
         sqlx::query(
@@ -336,7 +337,7 @@ impl DbManager {
         .bind(manifest_role_id)
         .bind(manifest_role_id)
         .bind(&pattern)
-        .execute(&self.pool)
+        .execute(tx.as_mut())
         .await
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         sqlx::query(
@@ -345,9 +346,29 @@ impl DbManager {
         .bind(manifest_role_id)
         .bind(manifest_role_id)
         .bind(&pattern)
-        .execute(&self.pool)
+        .execute(tx.as_mut())
         .await
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(())
+    }
+
+    /// # Errors
+    ///
+    /// Database errors propagate as [`AppError::DatabaseError`].
+    pub async fn delete_chat_data_for_manifest_role(
+        &self,
+        manifest_role_id: &str,
+    ) -> Result<()> {
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        self.delete_chat_data_for_manifest_role_in_tx(manifest_role_id, &mut tx)
+            .await?;
+        tx.commit()
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(())
     }
 

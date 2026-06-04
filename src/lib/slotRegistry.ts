@@ -54,7 +54,7 @@ export const SLOT_TYPE_GROUP_COLORS: Record<string, string> = {
   agent: '#8b9db8',
 }
 
-/** Validation/list sort order; ring order in architecture graph: `archGraphTopology.ARCHITECTURE_RING_TYPE_ORDER`. */
+/** Validation/list sort order for backend slot types (memory → agent). */
 export const SLOT_TYPE_ORDER = [
   'memory',
   'emotion',

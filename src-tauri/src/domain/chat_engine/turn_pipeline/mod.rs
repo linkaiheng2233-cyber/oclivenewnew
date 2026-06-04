@@ -18,6 +18,9 @@ pub enum TurnMode {
 }
 
 pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> TurnResult<SendMessageResponse> {
+    let turn_lock = ctx.state.turn_lock_for(ctx.srid);
+    let _turn_guard = turn_lock.lock().await;
+
     let path_label = match mode {
         TurnMode::CoPresent => "co_present",
         TurnMode::RemoteLife => "remote_life",

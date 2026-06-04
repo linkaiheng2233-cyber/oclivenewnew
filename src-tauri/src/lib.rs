@@ -226,14 +226,14 @@ pub fn run_api_server(port: u16) {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Align with `bundle.identifier` in `tauri.conf.json`; `tauri-plugin-deep-link` must register before setup.
-    #[cfg(desktop)]
+    #[cfg(all(desktop, feature = "desktop"))]
     tauri_plugin_deep_link::prepare("com.oclivenewnew.app");
     tauri::Builder::default()
         .register_uri_scheme_protocol("ocliveplugin", |app, request| {
             serve_ocliveplugin_asset(app, request)
         })
         .setup(|app| -> Result<(), Box<dyn std::error::Error>> {
-            #[cfg(desktop)]
+            #[cfg(all(desktop, feature = "desktop"))]
             {
                 let app_h = app.handle().clone();
                 if let Err(e) = tauri_plugin_deep_link::register("oclive", move |url: String| {

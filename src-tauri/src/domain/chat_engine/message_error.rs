@@ -6,10 +6,6 @@ use crate::domain::chat_engine::turn_error::TurnError;
 use crate::error::AppError;
 use thiserror::Error;
 
-/// Main-path stage name for `process_message` (aligned with tracing / OOCP; reserved for unified wrapping).
-#[allow(dead_code)]
-pub const STAGE_SEND_MESSAGE: &str = "send_message";
-
 /// Stage name for experimental core [`DualPipelineRunner`](crate::domain::dual_pipeline::DualPipelineRunner).
 pub const STAGE_DUAL_CORE_EXPERIMENTAL: &str = "dual_core_experimental";
 

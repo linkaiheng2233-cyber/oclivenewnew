@@ -32,7 +32,7 @@
 | **`file`** | JSON only under mirror roots | Same (authoritative) | ✅ directory scan (`role_id` required) | ❌ | ✅ | search + replay only |
 | **`sqlite`** | SQLite only | None | ✅ SQLite LIKE | ✅ | ✅ | all enabled |
 
-Implementation: `src-tauri/src/infrastructure/chat_storage/backends/{hybrid_store,file_store,sqlite_store}.rs`, factory in `factory.rs`.
+Implementation: `src-tauri/src/infrastructure/chat_storage/backends/hybrid_store.rs` (always constructed by `factory.rs`; `file` / `sqlite` backend kinds only toggle JSON mirror via `resolve_mirror_enabled`).
 
 Shared trait: `store_trait.rs` — `append_turn`, `list_sessions`, `fetch_messages`, `list_sessions_by_role`, plus optional methods with default `NotImplemented` (search, export, cleanup, delete/edit, stats, replay, `supports_*`).
 

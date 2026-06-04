@@ -1,4 +1,4 @@
-use crate::domain::chat_engine::process_message;
+use crate::api::chat_backend::ChatBackend;
 use crate::infrastructure::chat_storage::{
     delete_mirror_scene_dir, delete_mirror_tree_for_role, migrate_mirror_tree,
     resolve_export_max_messages, resolve_max_messages_per_session, resolve_role_chat_storage_root,
@@ -10,11 +10,10 @@ use crate::infrastructure::chat_storage::{
 };
 use crate::models::dto::{SendMessageRequest, SendMessageResponse};
 use crate::models::RolePackChatStorageConfig;
-use crate::kernel_attach::{role_dir_for_id, KernelHttpClient};
-use crate::kernel_lifecycle::SharedKernelConnection;
+use crate::kernel_attach::role_dir_for_id;
 use crate::state::SharedAppState;
 use std::path::PathBuf;
-use tauri::{Manager, State};
+use tauri::State;
 
 async fn role_mirror_root(state: &crate::state::AppState, role_id: &str) -> PathBuf {
     let location = match state.load_role_cached_async(role_id).await {
@@ -47,20 +46,11 @@ pub async fn send_message(
     }
     let mut req = req;
     req.user_message = user_message;
-    if let Some(conn) = app.try_state::<SharedKernelConnection>() {
-        let role_path = role_dir_for_id(state.as_ref(), &req.role_id);
-        match KernelHttpClient::send_message_via_http(&conn, &role_path, &req).await {
-            Ok(res) => return Ok(res),
-            Err(crate::error::AppError::RoleRuntimeNotReady) => {
-                KernelHttpClient::load_role_via_http(&conn, req.role_id.trim()).await?;
-                return KernelHttpClient::send_message_via_http(&conn, &role_path, &req)
-                    .await
-                    .map_err(Into::into);
-            }
-            Err(e) => return Err(e.into()),
-        }
-    }
-    process_message(state.as_ref(), &req).await.map_err(Into::into)
+    let role_path = role_dir_for_id(state.as_ref(), &req.role_id);
+    ChatBackend::from_app(&app, state.inner().clone())
+        .send_message(&role_path, &req)
+        .await
+        .map_err(Into::into)
 }
 
 /// List chat sessions for a role + scene (SQLite authoritative).
@@ -77,20 +67,8 @@ pub async fn list_chat_sessions(
     app: tauri::AppHandle,
     state: State<'_, SharedAppState>,
 ) -> Result<Vec<SessionMeta>, crate::api::error::CommandError> {
-    if let Some(conn) = app.try_state::<SharedKernelConnection>() {
-        return KernelHttpClient::list_chat_sessions_via_http(
-            &conn,
-            role_id.trim(),
-            scene_id.trim(),
-            limit.unwrap_or(50),
-            offset.unwrap_or(0),
-        )
-        .await
-        .map_err(Into::into);
-    }
-    state
-        .conversation_store
-        .list_sessions(
+    ChatBackend::from_app(&app, state.inner().clone())
+        .list_chat_sessions(
             role_id.trim(),
             scene_id.trim(),
             limit.unwrap_or(50),
@@ -113,19 +91,8 @@ pub async fn fetch_chat_messages(
     app: tauri::AppHandle,
     state: State<'_, SharedAppState>,
 ) -> Result<Vec<StoredMessage>, crate::api::error::CommandError> {
-    if let Some(conn) = app.try_state::<SharedKernelConnection>() {
-        return KernelHttpClient::fetch_chat_messages_via_http(
-            &conn,
-            session_id.trim(),
-            limit.unwrap_or(500),
-            offset.unwrap_or(0),
-        )
-        .await
-        .map_err(Into::into);
-    }
-    state
-        .conversation_store
-        .fetch_messages(
+    ChatBackend::from_app(&app, state.inner().clone())
+        .fetch_chat_messages(
             session_id.trim(),
             limit.unwrap_or(500),
             offset.unwrap_or(0),

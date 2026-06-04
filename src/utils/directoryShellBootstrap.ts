@@ -29,7 +29,7 @@ export async function tryReplaceWithDirectoryShell(): Promise<boolean> {
     return false
   try {
     const boot = await invoke<DirectoryPluginBootstrap>('get_directory_plugin_bootstrap', {
-      role_id: null,
+      roleId: null,
     })
     const shellUrl
       = typeof boot?.shellUrl === 'string' && boot.shellUrl.length > 0

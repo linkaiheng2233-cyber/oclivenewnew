@@ -24,10 +24,11 @@ use crate::models::{
 use arc_swap::ArcSwap;
 use dashmap::DashMap;
 use parking_lot::RwLock;
-use tokio::sync::OnceCell;
+use tokio::sync::{Mutex, OnceCell};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::time::{SystemTime, UNIX_EPOCH};
 use std::sync::Arc;
 
 mod app_state_builder;
@@ -44,10 +45,26 @@ pub use models_dir::{
 pub use roles_dir::resolve_roles_dir;
 pub use session_cache::SessionCache;
 
+/// Per-`srid` turn mutex with last-touch time for eviction of idle entries.
+struct TurnLockEntry {
+    lock: Arc<Mutex<()>>,
+    last_touch_ms: AtomicU64,
+}
+
+const TURN_LOCK_SOFT_CAP: usize = 512;
+const TURN_LOCK_TARGET: usize = 256;
+
+fn turn_lock_now_ms() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_or(0, |d| d.as_millis() as u64)
+}
+
 /// Tauri-managed application state (shared with in-process HTTP API).
 pub type SharedAppState = Arc<AppState>;
 
 use app_state_builder::AppStateBuilder;
+use crate::domain::startup_health::StartupHealthCache;
 
 pub struct AppState {
     pub db_manager: Arc<DbManager>,
@@ -80,8 +97,10 @@ pub struct AppState {
     pub directory_plugins: Arc<DirectoryPluginRuntime>,
     /// MCP transport / directory plugin subprocess etc. high-risk capability grants (`high_risk_grants.json`).
     pub high_risk_grants: Arc<HighRiskGrantStore>,
-    /// First `process_message` startup self-check result (`OnceLock` cache, lock-free hot path).
-    pub(crate) startup_health: std::sync::OnceLock<std::result::Result<(), String>>,
+    /// Per-session (`srid`) mutex: serializes concurrent turns on the same namespace (`--api` / parallel invoke).
+    turn_locks: DashMap<String, TurnLockEntry>,
+    /// Startup self-check cache (success is permanent; failures retry per role with TTL).
+    pub(crate) startup_health: parking_lot::RwLock<StartupHealthCache>,
     /// Read `OCLIVE_REMOTE_FALLBACK_TO_BUILTIN` once at startup; `sync_remote_fallback_from_db_value` does not re-read env.
     remote_fallback_env_override: Option<bool>,
     /// Whether remote HTTP plugin failure may silently fall back to builtin (aligned with `app_settings.remote_fallback_to_builtin` and `OCLIVE_REMOTE_FALLBACK_TO_BUILTIN`).
@@ -350,6 +369,45 @@ impl AppState {
     /// Tests or telemetry: backend set declared by current role pack.
     pub fn plugin_backends_snapshot(&self, role: &Role) -> PluginBackends {
         role.plugin_backends.as_ref().clone()
+    }
+
+    /// Serialize all turns for one session namespace (`srid`).
+    #[must_use]
+    pub fn turn_lock_for(&self, srid: &str) -> Arc<Mutex<()>> {
+        let now = turn_lock_now_ms();
+        let entry = self.turn_locks.entry(srid.to_string()).or_insert_with(|| TurnLockEntry {
+            lock: Arc::new(Mutex::new(())),
+            last_touch_ms: AtomicU64::new(now),
+        });
+        entry.last_touch_ms.store(now, Ordering::Relaxed);
+        if self.turn_locks.len() > TURN_LOCK_SOFT_CAP {
+            self.prune_idle_turn_locks();
+        }
+        entry.lock.clone()
+    }
+
+    /// Drop idle, unlocked `srid` locks when the map grows too large (HTTP trial sessions).
+    fn prune_idle_turn_locks(&self) {
+        if self.turn_locks.len() <= TURN_LOCK_SOFT_CAP {
+            return;
+        }
+        let mut idle: Vec<(String, u64)> = Vec::new();
+        for item in self.turn_locks.iter() {
+            if item.value().lock.try_lock().is_ok() {
+                idle.push((
+                    item.key().clone(),
+                    item.value().last_touch_ms.load(Ordering::Relaxed),
+                ));
+            }
+        }
+        if idle.is_empty() {
+            return;
+        }
+        idle.sort_by_key(|(_, touched)| *touched);
+        let remove_n = self.turn_locks.len().saturating_sub(TURN_LOCK_TARGET);
+        for (key, _) in idle.into_iter().take(remove_n) {
+            self.turn_locks.remove(&key);
+        }
     }
 
     /// # Errors

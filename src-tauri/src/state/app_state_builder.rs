@@ -226,7 +226,10 @@ impl AppStateBuilder {
             plugins,
             directory_plugins,
             high_risk_grants,
-            startup_health: std::sync::OnceLock::new(),
+            turn_locks: dashmap::DashMap::new(),
+            startup_health: parking_lot::RwLock::new(
+                crate::domain::startup_health::StartupHealthCache::default(),
+            ),
             remote_fallback_env_override: remote_fallback_env_override(),
             remote_fallback_allowed,
             policy_file_applied: AtomicBool::new(policy_file_applied),

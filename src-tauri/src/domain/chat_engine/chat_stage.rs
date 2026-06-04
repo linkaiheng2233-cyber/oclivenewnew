@@ -3,12 +3,10 @@
 /// Kernel chat pipeline stage (tracing / OOCP / error prefixes).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ChatStage {
-    ValidateSceneId,
     EnsureRoleRuntime,
     EnsureRoleLoaded,
     EnsureInteractionModeSeeded,
     ApplyUserLlmEnv,
-    ReadRemoteFallbackSetting,
     StartupHealth,
     AgentProcess,
     AgentMinimalResponse,
@@ -18,10 +16,6 @@ pub enum ChatStage {
     GetRemoteLifeEnabled,
     RemoteStub,
     RemoteLife,
-    DualCoreExperimental,
-    CurrentScene,
-    ImmersiveFlag,
-    RemoteLifeEnabled,
     EventImpactFactor,
     MutablePersonality,
     CurrentPersonality,
@@ -34,9 +28,7 @@ pub enum ChatStage {
     ResolveUserRelationKey,
     RelationStateForIdentity,
     RelationStateGlobal,
-    EnsureIdentityStats,
     EnsureIdentityStatsRow,
-    FavorabilityBefore,
     FavorabilityForIdentity,
     IdlePersonalityDecay,
     VirtualTimeMs,
@@ -45,9 +37,7 @@ pub enum ChatStage {
     GetCurrentEmotion,
     PortraitEmotionLlm,
     ApplyChatTurnAtomic,
-    GetMutablePersonality,
     SetMutablePersonality,
-    SetCoreDeltaPersonalityJsonProfile,
     SetCoreDeltaPersonalityJsonNonProfile,
 }
 
@@ -55,12 +45,10 @@ impl ChatStage {
     #[must_use]
     pub const fn as_str(self) -> &'static str {
         match self {
-            Self::ValidateSceneId => "validate_scene_id",
             Self::EnsureRoleRuntime => "ensure_role_runtime",
             Self::EnsureRoleLoaded => "ensure_role_loaded",
             Self::EnsureInteractionModeSeeded => "ensure_interaction_mode_seeded",
             Self::ApplyUserLlmEnv => "apply_user_llm_env",
-            Self::ReadRemoteFallbackSetting => "read_remote_fallback_setting",
             Self::StartupHealth => "startup_health",
             Self::AgentProcess => "agent_process",
             Self::AgentMinimalResponse => "agent_minimal_response",
@@ -70,10 +58,6 @@ impl ChatStage {
             Self::GetRemoteLifeEnabled => "get_remote_life_enabled",
             Self::RemoteStub => "remote_stub",
             Self::RemoteLife => "remote_life",
-            Self::DualCoreExperimental => "dual_core_experimental",
-            Self::CurrentScene => "current_scene",
-            Self::ImmersiveFlag => "immersive_flag",
-            Self::RemoteLifeEnabled => "remote_life_enabled",
             Self::EventImpactFactor => "event_impact_factor",
             Self::MutablePersonality => "mutable_personality",
             Self::CurrentPersonality => "current_personality",
@@ -86,9 +70,7 @@ impl ChatStage {
             Self::ResolveUserRelationKey => "resolve_user_relation_key",
             Self::RelationStateForIdentity => "relation_state_for_identity",
             Self::RelationStateGlobal => "relation_state_global",
-            Self::EnsureIdentityStats => "ensure_identity_stats",
             Self::EnsureIdentityStatsRow => "ensure_identity_stats_row",
-            Self::FavorabilityBefore => "favorability_before",
             Self::FavorabilityForIdentity => "favorability_for_identity",
             Self::IdlePersonalityDecay => "idle_personality_decay",
             Self::VirtualTimeMs => "virtual_time_ms",
@@ -97,11 +79,7 @@ impl ChatStage {
             Self::GetCurrentEmotion => "get_current_emotion",
             Self::PortraitEmotionLlm => "portrait_emotion_llm",
             Self::ApplyChatTurnAtomic => "apply_chat_turn_atomic",
-            Self::GetMutablePersonality => "get_mutable_personality",
             Self::SetMutablePersonality => "set_mutable_personality",
-            Self::SetCoreDeltaPersonalityJsonProfile => {
-                "set_core_delta_personality_json_profile"
-            }
             Self::SetCoreDeltaPersonalityJsonNonProfile => {
                 "set_core_delta_personality_json_non_profile"
             }

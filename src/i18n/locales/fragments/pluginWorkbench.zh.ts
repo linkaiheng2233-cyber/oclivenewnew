@@ -1,4 +1,4 @@
-/** Plugin manager V1 (PluginManagerPanel) — zh-CN. */
+/** Legacy plugin workbench strings (SimplePluginManager) — zh-CN. */
 export default {
   toast: {
     batchEnable: '已启用 {count} 个插件；保存后生效，建议重启应用。',

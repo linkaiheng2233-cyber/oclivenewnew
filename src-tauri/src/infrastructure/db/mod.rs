@@ -271,19 +271,20 @@ impl DbManager {
             let placeholders = std::iter::repeat_n("?", ids.len())
                 .collect::<Vec<_>>()
                 .join(", ");
-            for table in [
-                "short_term_memory",
-                "long_term_memory",
-                "events",
-                "favorability_history",
-                "personality_vector",
-                "operation_logs",
-                "role_scene_identity",
-                "role_identity_stats",
-                "complex_emotion_hint",
-                "role_runtime",
+            for (table, key_column) in [
+                ("short_term_memory", "role_id"),
+                ("long_term_memory", "role_id"),
+                ("events", "role_id"),
+                ("favorability_history", "role_id"),
+                ("personality_vector", "role_id"),
+                ("operation_logs", "role_id"),
+                ("role_scene_identity", "role_id"),
+                ("role_identity_stats", "role_id"),
+                ("role_feedback", "role_id"),
+                ("complex_emotion_hint", "srid"),
+                ("role_runtime", "role_id"),
             ] {
-                let sql = format!("DELETE FROM {table} WHERE role_id IN ({placeholders})");
+                let sql = format!("DELETE FROM {table} WHERE {key_column} IN ({placeholders})");
                 let mut q = sqlx::query(&sql);
                 for id in &ids {
                     q = q.bind(id);
@@ -298,11 +299,12 @@ impl DbManager {
             }
         }
 
+        self.delete_chat_data_for_manifest_role_in_tx(mid, &mut tx)
+            .await?;
+
         tx.commit()
             .await
             .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-
-        self.delete_chat_data_for_manifest_role(mid).await?;
 
         Ok(ids)
     }
@@ -458,6 +460,83 @@ mod tests {
         assert_eq!(memories.len(), 1);
         assert_eq!(events.len(), 1);
         assert_eq!(events[0].event_type, EventType::Joke);
+    }
+
+    #[tokio::test]
+    async fn delete_manifest_role_data_clears_hint_and_chat_tables() {
+        let pool = test_db::connect_memory_migrated().await;
+        let db = DbManager::new(pool);
+        let mid = "role_del_test";
+        let sess = format!("{mid}__sess__abc");
+
+        for rid in [mid, sess.as_str()] {
+            sqlx::query(
+                "INSERT INTO role_runtime (role_id, current_favorability) VALUES (?, 0)",
+            )
+            .bind(rid)
+            .execute(&db.pool)
+            .await
+            .unwrap();
+            sqlx::query(
+                "INSERT INTO complex_emotion_hint (srid, narrative_hint, updated_at) VALUES (?, 'hint', datetime('now'))",
+            )
+            .bind(rid)
+            .execute(&db.pool)
+            .await
+            .unwrap();
+            sqlx::query("INSERT INTO role_feedback (role_id, message) VALUES (?, 'fb')")
+                .bind(rid)
+                .execute(&db.pool)
+                .await
+                .unwrap();
+        }
+
+        let session_id = sess.clone();
+        sqlx::query(
+            "INSERT INTO chat_sessions (session_id, role_id, scene_id, created_at, updated_at)
+             VALUES (?, ?, 'default', datetime('now'), datetime('now'))",
+        )
+        .bind(&session_id)
+        .bind(mid)
+        .execute(&db.pool)
+        .await
+        .unwrap();
+        sqlx::query(
+            "INSERT INTO chat_messages (id, session_id, turn_index, sender, content, created_at)
+             VALUES ('m1', ?, 0, 'user', 'hi', datetime('now'))",
+        )
+        .bind(&session_id)
+        .execute(&db.pool)
+        .await
+        .unwrap();
+
+        let removed = db.delete_all_data_for_manifest_role(mid).await.unwrap();
+        assert!(removed.iter().any(|id| id == mid));
+        assert!(removed.iter().any(|id| id == &sess));
+
+        let hint_n: i64 =
+            sqlx::query_scalar("SELECT COUNT(*) FROM complex_emotion_hint WHERE srid IN (?, ?)")
+                .bind(mid)
+                .bind(&sess)
+                .fetch_one(&db.pool)
+                .await
+                .unwrap();
+        assert_eq!(hint_n, 0);
+
+        let chat_n: i64 =
+            sqlx::query_scalar("SELECT COUNT(*) FROM chat_messages WHERE session_id = ?")
+                .bind(&session_id)
+                .fetch_one(&db.pool)
+                .await
+                .unwrap();
+        assert_eq!(chat_n, 0);
+
+        let fb_n: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM role_feedback WHERE role_id = ?")
+            .bind(mid)
+            .fetch_one(&db.pool)
+            .await
+            .unwrap();
+        assert_eq!(fb_n, 0);
     }
 
     #[tokio::test]

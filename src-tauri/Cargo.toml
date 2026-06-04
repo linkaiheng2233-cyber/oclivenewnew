@@ -17,8 +17,10 @@ workspace = true
 doctest = false
 
 [features]
-default = ["custom-protocol"]
+default = ["custom-protocol", "desktop"]
 custom-protocol = ["tauri/custom-protocol"]
+desktop = ["dep:tauri-plugin-deep-link"]
+headless = []
 dual_core = []
 
 [dependencies]
@@ -53,7 +55,7 @@ axum = "0.7"
 tower-http = { version = "0.5", features = ["cors"] }
 sha2 = "0.10"
 indexmap = "2"
-tauri-plugin-deep-link = "0.1.2"
+tauri-plugin-deep-link = { version = "0.1.2", optional = true }
 
 [dev-dependencies]
 tower = { version = "0.4", features = ["util"] }

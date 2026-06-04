@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api/tauri'
+import { invokeWithFriendlyError } from '../helpers'
 
 export interface MessageLengthRange {
   min?: number
@@ -65,13 +65,13 @@ export const EXPERT_FACILITY_ACTIONS = [
 ] as const
 
 export function listBlueprintIncludes(roleId: string): Promise<string[]> {
-  return invoke('list_blueprint_includes', { roleId })
+  return invokeWithFriendlyError<string[]>('list_blueprint_includes', { roleId })
 }
 
 export function getExpertRouting(roleId: string): Promise<ExpertRoutingDoc | null> {
-  return invoke('get_expert_routing', { roleId })
+  return invokeWithFriendlyError<ExpertRoutingDoc | null>('get_expert_routing', { roleId })
 }
 
 export function saveExpertRouting(roleId: string, doc: ExpertRoutingDoc): Promise<void> {
-  return invoke('save_expert_routing', { roleId, doc })
+  return invokeWithFriendlyError<void>('save_expert_routing', { roleId, doc })
 }

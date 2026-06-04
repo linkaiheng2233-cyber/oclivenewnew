@@ -15,7 +15,7 @@ fn print_usage() {
 }
 
 fn main() {
-    let _log_guard = oclivenewnew_tauri::init_tracing();
+    let _log_guard = oclive_kernel_host::init_tracing();
 
     let args: Vec<String> = std::env::args().collect();
     if args.iter().any(|a| a == "-h" || a == "--help") {
@@ -57,7 +57,7 @@ fn main() {
             port,
             "starting headless HTTP API"
         );
-        oclivenewnew_tauri::run_api_server(port);
+        oclive_kernel_host::run_api_server(port);
     } else {
         print_usage();
         std::process::exit(2);

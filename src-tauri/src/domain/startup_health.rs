@@ -1,4 +1,4 @@
-//! One-time integrity self-check before the first `process_message` (fatal errors short-circuit so config issues surface before the first message).
+//! Integrity self-check before `process_message` (fatal errors short-circuit so config issues surface before the first message).
 
 use crate::error::{AppError, Result};
 use crate::models::plugin_backends::{
@@ -7,10 +7,48 @@ use crate::models::plugin_backends::{
 };
 use crate::models::Role;
 use crate::state::AppState;
+use std::collections::HashMap;
+use std::time::{Duration, Instant};
+
+const FAILURE_RETRY_TTL: Duration = Duration::from_secs(120);
+
+/// Per-role startup health cache: successes are permanent; failures retry after TTL.
+#[derive(Default)]
+pub(crate) struct StartupHealthCache {
+    successes: HashMap<String, ()>,
+    failures: HashMap<String, (String, Instant)>,
+}
+
+impl StartupHealthCache {
+    fn cached_outcome(&self, role_id: &str) -> Option<std::result::Result<(), String>> {
+        if self.successes.contains_key(role_id) {
+            return Some(Ok(()));
+        }
+        if let Some((msg, at)) = self.failures.get(role_id) {
+            if at.elapsed() < FAILURE_RETRY_TTL {
+                return Some(Err(msg.clone()));
+            }
+        }
+        None
+    }
+
+    fn record(&mut self, role_id: &str, outcome: std::result::Result<(), String>) {
+        self.failures.remove(role_id);
+        match outcome {
+            Ok(()) => {
+                self.successes.insert(role_id.to_string(), ());
+            }
+            Err(msg) => {
+                self.failures
+                    .insert(role_id.to_string(), (msg, Instant::now()));
+            }
+        }
+    }
+}
+
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
-/// Used with [`AppState::startup_health`]: runs only on the first conversation (`OnceLock`, lock-free hot path).
 pub async fn ensure_once(state: &AppState, role: &Role, effective: &PluginBackends) -> Result<()> {
     if std::env::var("OCLIVE_SKIP_STARTUP_HEALTH")
         .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
@@ -18,20 +56,18 @@ pub async fn ensure_once(state: &AppState, role: &Role, effective: &PluginBacken
     {
         return Ok(());
     }
-    if let Some(cached) = state.startup_health.get() {
-        return cached
-            .clone()
-            .map_err(|msg| AppError::StartupHealthFailed(msg.clone()));
+    let role_id = role.id.as_str();
+    if let Some(cached) = state.startup_health.read().cached_outcome(role_id) {
+        return cached.map_err(|msg| AppError::StartupHealthFailed(msg));
     }
     let outcome = run_checks(state, role, effective)
         .await
         .map_err(|e| e.to_string());
-    let cached = state
+    state
         .startup_health
-        .get_or_init(|| outcome.clone());
-    cached
-        .clone()
-        .map_err(AppError::StartupHealthFailed)
+        .write()
+        .record(role_id, outcome.clone());
+    outcome.map_err(AppError::StartupHealthFailed)
 }
 
 async fn run_checks(state: &AppState, role: &Role, effective: &PluginBackends) -> Result<()> {

@@ -2995,6 +2995,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "oclive_kernel_host"
+version = "0.2.0"
+dependencies = [
+ "oclive_kernel_runtime",
+ "oclivenewnew-tauri",
+]
+
+[[package]]
 name = "oclive_kernel_runtime"
 version = "0.2.0"
 dependencies = [
@@ -3017,8 +3025,8 @@ dependencies = [
 name = "oclive_kernel_server"
 version = "0.2.0"
 dependencies = [
+ "oclive_kernel_host",
  "oclive_kernel_runtime",
- "oclivenewnew-tauri",
  "serde_json",
  "tracing",
 ]

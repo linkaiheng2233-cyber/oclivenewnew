@@ -572,9 +572,24 @@ impl DbManager {
         Ok(())
     }
 
+    /// Global favorability delta (non-turn paths: settings, admin tools).
+    ///
+    /// Updates both `role_runtime` and **all** `role_identity_stats` rows for `role_id`.
+    /// Rows are created by `ensure_identity_stats_row` during chat turns; if none exist,
+    /// the identity-stats UPDATE is a no-op while runtime still receives the delta.
     pub async fn apply_favorability_delta(&self, role_id: &str, delta: f64) -> Result<()> {
         let now = Utc::now();
         let now_str = now.to_rfc3339();
+
+        sqlx::query(
+            "UPDATE role_identity_stats SET favorability = favorability + ?, updated_at = ? WHERE role_id = ?",
+        )
+        .bind(delta)
+        .bind(&now_str)
+        .bind(role_id)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
         let res = sqlx::query(
             "UPDATE role_runtime SET current_favorability = current_favorability + ?, updated_at = ? WHERE role_id = ?",
@@ -603,7 +618,7 @@ impl DbManager {
         )
         .bind(role_id)
         .bind(delta)
-        .bind("chat")
+        .bind("apply_delta")
         .bind(now_str)
         .execute(&self.pool)
         .await
