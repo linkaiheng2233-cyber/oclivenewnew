@@ -79,6 +79,7 @@ impl KernelBinaryManifest {
     }
 
     /// Read sidecar if present.
+    #[must_use]
     pub fn read_sidecar(binary: &Path) -> Option<Self> {
         let p = Self::sidecar_path_for_binary(binary);
         let raw = std::fs::read_to_string(p).ok()?;

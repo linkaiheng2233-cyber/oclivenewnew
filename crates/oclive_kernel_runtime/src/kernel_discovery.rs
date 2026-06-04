@@ -248,7 +248,7 @@ pub fn discover_kernel_candidates(
             .or_insert(c);
     }
     let mut out: Vec<_> = by_path.into_values().collect();
-    out.sort_by(|a, b| b.score.cmp(&a.score));
+    out.sort_by_key(|b| std::cmp::Reverse(b.score));
     out
 }
 

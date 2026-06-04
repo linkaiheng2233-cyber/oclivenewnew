@@ -123,12 +123,17 @@ pub fn load_host_profile_from_env() -> HostProfile {
             "failed to load OCLIVE_DISTRO_PROFILE; using defaults"
         );
     }
-    let mut profile = HostProfile::default();
-    profile.distro_id = distro_id;
-    profile
+    HostProfile {
+        distro_id,
+        ..HostProfile::default()
+    }
 }
 
 /// Parse a distro profile TOML file.
+///
+/// # Errors
+///
+/// Returns I/O or TOML parse errors, or unknown `plugin_backends` enum values.
 pub fn load_host_profile_file(path: &Path) -> Result<HostProfile, String> {
     let raw = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
     let file: DistroProfileFile = toml::from_str(&raw).map_err(|e| e.to_string())?;

@@ -282,7 +282,7 @@ impl PromptBuilder {
         };
         state.push_str(&format!("我的心情倾向: {}\n", mood));
         state.push_str(Self::reply_pacing_hint(personality));
-        state.push_str("\n");
+        state.push('\n');
         state.push_str(Self::listening_style_hint(personality));
         state
     }

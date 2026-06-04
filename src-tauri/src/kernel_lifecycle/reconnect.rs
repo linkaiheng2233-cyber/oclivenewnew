@@ -88,6 +88,10 @@ pub fn emit_kernel_status(
 }
 
 /// One reconnect cycle: attach probe → discover/spawn → final health probe.
+///
+/// # Errors
+///
+/// Returns a human-readable message when no kernel becomes healthy.
 pub async fn reconnect_once(
     app: &AppHandle,
     conn: &KernelConnection,

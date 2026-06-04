@@ -80,6 +80,13 @@ Each distribution may ship `distro.oclive.toml` at its install root (alongside b
 
 Kernel binary manifest and `/health` fields: P2a (`KernelBinaryManifest`, `--version-json`).
 
+## Deferred (post P1–P4)
+
+| Item | Description |
+|------|-------------|
+| **P2b** | Richer per-distro manifest fields (hardware SKU, feature flags beyond `feature_set`) |
+| **P3b** | In-process kernel self-upgrade / connection handoff (v1: **host-coordinated** `promote_with_backup` only) |
+
 ## Related
 
 - [DISTRO_CAPABILITY_PROFILE.md](./DISTRO_CAPABILITY_PROFILE.md)
