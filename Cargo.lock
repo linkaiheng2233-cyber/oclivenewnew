@@ -3019,6 +3019,7 @@ version = "0.2.0"
 dependencies = [
  "oclive_kernel_runtime",
  "oclivenewnew-tauri",
+ "serde_json",
  "tracing",
 ]
 

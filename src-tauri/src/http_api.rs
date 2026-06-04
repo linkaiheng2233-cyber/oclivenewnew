@@ -104,6 +104,8 @@ struct HealthJson {
     ok: bool,
     runtime_api_version: &'static str,
     schema_migration_version: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    kernel_manifest: Option<oclive_kernel_runtime::KernelBinaryManifest>,
 }
 
 async fn health(State(state): State<Arc<AppState>>) -> axum::response::Response {
@@ -122,6 +124,7 @@ async fn health(State(state): State<Arc<AppState>>) -> axum::response::Response 
         ok: true,
         runtime_api_version: RUNTIME_API_VERSION,
         schema_migration_version: version,
+        kernel_manifest: Some(oclive_kernel_runtime::KernelBinaryManifest::from_compile_time_env()),
     };
     (
         StatusCode::OK,

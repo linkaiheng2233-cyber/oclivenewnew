@@ -3,12 +3,12 @@
 //! Same orchestration as `oclivenewnew-tauri --api`; use this binary for robots,
 //! gateways, and CI without pulling a GUI entrypoint.
 
-use oclive_kernel_runtime::{resolve_api_port, RUNTIME_API_VERSION};
+use oclive_kernel_runtime::{resolve_api_port, KernelBinaryManifest, RUNTIME_API_VERSION};
 
 fn print_usage() {
     eprintln!(
         "oclive-kernel-server {RUNTIME_API_VERSION}\n\
-         Usage: oclive-kernel-server [--api] [--port PORT]\n\
+         Usage: oclive-kernel-server [--api] [--port PORT] [--version-json]\n\
          Env: OCLIVE_API_PORT, OCLIVE_HTTP_API_MOCK_LLM, OCLIVE_ROLES_DIR,\n\
          OCLIVE_APP_DATA, OCLIVE_USE_CANONICAL_APP_DATA, OCLIVE_API_USE_TEMP_APP_DATA, RUST_LOG"
     );
@@ -23,6 +23,12 @@ fn main() {
         return;
     }
 
+    if args.iter().any(|a| a == "--version-json") {
+        let manifest = KernelBinaryManifest::from_compile_time_env();
+        println!("{}", serde_json::to_string_pretty(&manifest).unwrap_or_default());
+        return;
+    }
+
     let mut cli_port: Option<u16> = None;
     let mut api = false;
     let mut i = 1usize;
@@ -33,6 +39,7 @@ fn main() {
                 cli_port = args[i + 1].parse().ok();
                 i += 1;
             }
+            "--version-json" => {}
             _ => {}
         }
         i += 1;
