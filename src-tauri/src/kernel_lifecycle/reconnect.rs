@@ -4,8 +4,7 @@ use super::connection::{DesktopKernelMode, KernelConnection, KernelConnectionSta
 use super::spawn::{spawn_kernel, wait_for_health};
 use super::status::{build_ui_status, probe_health_status};
 use oclive_kernel_runtime::{
-    discover_spawn_kernel_candidates, pick_best_kernel, promote_to_shared_runtime, should_promote,
-    KernelCandidate, KernelTier,
+    apply_promote_to_candidate, discover_spawn_kernel_candidates, pick_best_kernel,
 };
 use parking_lot::Mutex;
 use std::path::PathBuf;
@@ -120,16 +119,7 @@ pub async fn reconnect_once(
     };
 
     let mut candidate = best.clone();
-    if should_promote(&candidate) {
-        if let Ok(promoted) = promote_to_shared_runtime(&candidate.binary) {
-            candidate = KernelCandidate {
-                binary: promoted,
-                tier: KernelTier::Shared,
-                score: oclive_kernel_runtime::SCORE_SHARED,
-                extra_args: vec![],
-            };
-        }
-    }
+    apply_promote_to_candidate(&mut candidate);
 
     spawn_kernel(conn, &candidate, opts.port, &opts.roles_dir).await?;
     conn.set_mode(DesktopKernelMode::Spawned);

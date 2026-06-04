@@ -11,6 +11,7 @@ pub mod app_data_migration;
 pub mod domain;
 pub mod kernel_discovery;
 pub mod kernel_manifest;
+pub mod kernel_runtime_ops;
 pub mod paths;
 pub(crate) mod utils;
 
@@ -53,6 +54,10 @@ pub use kernel_discovery::{
     SCORE_DEV_HEADLESS_RELEASE, SCORE_ENV, SCORE_SETTINGS, SCORE_SHARED,
 };
 pub use kernel_manifest::{KernelBinaryManifest, KernelBuildProfile};
+pub use kernel_runtime_ops::{
+    apply_promote_to_candidate, list_runtime_backups, promote_with_backup, rollback_shared_kernel,
+    should_promote_binary, PromoteReport,
+};
 pub use paths::{
     canonical_brand_app_data_dir, ensure_app_data_dir, resolve_app_data_dir_for_api,
     resolve_app_data_dir_for_host, resolve_db_path, tauri_legacy_app_data_dir, temp_api_db_path,
