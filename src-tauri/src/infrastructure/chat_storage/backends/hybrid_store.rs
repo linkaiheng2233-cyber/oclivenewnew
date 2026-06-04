@@ -9,7 +9,7 @@ use super::super::export::{export_chat_session, export_role_chats};
 use super::super::mirror;
 use super::super::replay::{run_memory_replay, ReplayTaskRegistry};
 use super::super::shared::{cap_limit, normalize_scene_id, rows_to_stored, timestamp_ms_to_rfc3339};
-use super::super::stats::collect_chat_storage_stats;
+use super::super::stats::{collect_chat_storage_stats, collect_chat_storage_stats_from_db};
 use super::super::store_trait::ConversationStore;
 use super::super::types::{
     AppendTurnResult, AutoCleanupResult, ChatExportResponse, ChatSearchResult,
@@ -31,6 +31,7 @@ pub struct HybridConversationStore {
     roles_dir: PathBuf,
     storage_root: PathBuf,
     replay_tasks: Arc<ReplayTaskRegistry>,
+    mirror_enabled: bool,
 }
 
 impl HybridConversationStore {
@@ -41,6 +42,7 @@ impl HybridConversationStore {
         roles_dir: PathBuf,
         storage_root: PathBuf,
         replay_tasks: Arc<ReplayTaskRegistry>,
+        mirror_enabled: bool,
     ) -> Self {
         Self {
             db,
@@ -48,6 +50,7 @@ impl HybridConversationStore {
             roles_dir,
             storage_root,
             replay_tasks,
+            mirror_enabled,
         }
     }
 
@@ -136,14 +139,16 @@ impl HybridConversationStore {
                 turns_imported = turns_imported.saturating_add(1);
             }
             buckets_imported = buckets_imported.saturating_add(1);
-            let storage_root = self.role_storage_root(&bucket.role_id, None);
-            let _ = mirror::rebuild_mirror(
-                self.db.as_ref(),
-                &storage_root,
-                &session_id,
-                max,
-            )
-            .await;
+            if self.mirror_enabled {
+                let storage_root = self.role_storage_root(&bucket.role_id, None);
+                let _ = mirror::rebuild_mirror(
+                    self.db.as_ref(),
+                    &storage_root,
+                    &session_id,
+                    max,
+                )
+                .await;
+            }
         }
         Ok(ImportChatBucketsResult {
             buckets_imported,
@@ -231,26 +236,39 @@ impl ConversationStore for HybridConversationStore {
         let role_id_spawn = input.role_id.clone();
         let cleanup_cfg = input.auto_cleanup_config.clone();
         let db_spawn = Arc::clone(&self.db);
+        let mirror_enabled = self.mirror_enabled;
         tokio::spawn(async move {
-            if let Err(e) =
-                mirror::sync_mirror_append(&storage_root, &session_after, &new_rows, max_spawn).await
-            {
-                tracing::warn!(
-                    target: "oclive_chat_storage",
-                    session_id = %session_after.session_id,
-                    error = %e,
-                    "sync_mirror_append failed"
-                );
+            if mirror_enabled {
+                if let Err(e) =
+                    mirror::sync_mirror_append(&storage_root, &session_after, &new_rows, max_spawn)
+                        .await
+                {
+                    tracing::warn!(
+                        target: "oclive_chat_storage",
+                        session_id = %session_after.session_id,
+                        error = %e,
+                        "sync_mirror_append failed"
+                    );
+                }
             }
             if cleanup_cfg.is_enabled() {
-                if let Err(e) = super::super::cleanup::apply_auto_cleanup(
-                    db_spawn.as_ref(),
-                    &storage_root,
-                    &role_id_spawn,
-                    &cleanup_cfg,
-                )
-                .await
-                {
+                let cleanup_result = if mirror_enabled {
+                    super::super::cleanup::apply_auto_cleanup(
+                        db_spawn.as_ref(),
+                        &storage_root,
+                        &role_id_spawn,
+                        &cleanup_cfg,
+                    )
+                    .await
+                } else {
+                    super::super::cleanup::apply_auto_cleanup_sqlite(
+                        db_spawn.as_ref(),
+                        &role_id_spawn,
+                        &cleanup_cfg,
+                    )
+                    .await
+                };
+                if let Err(e) = cleanup_result {
                     tracing::warn!(
                         target: "oclive_chat_storage",
                         role_id = %role_id_spawn,
@@ -327,6 +345,9 @@ impl ConversationStore for HybridConversationStore {
     }
 
     async fn rebuild_mirror(&self, session_id: &str, max_messages: i64) -> Result<String> {
+        if !self.mirror_enabled {
+            return Ok(String::new());
+        }
         let root = self.session_storage_root(session_id).await?;
         let path =
             mirror::rebuild_mirror(self.db.as_ref(), &root, session_id, max_messages).await?;
@@ -396,8 +417,10 @@ impl ConversationStore for HybridConversationStore {
                 crate::error::AppError::InvalidParameter(format!("message not found: {message_id}"))
             })?;
         let max = resolve_max_messages_per_session(None);
-        let root = self.session_storage_root(&session_id).await?;
-        let _ = mirror::rebuild_mirror(self.db.as_ref(), &root, &session_id, max).await?;
+        if self.mirror_enabled {
+            let root = self.session_storage_root(&session_id).await?;
+            let _ = mirror::rebuild_mirror(self.db.as_ref(), &root, &session_id, max).await?;
+        }
         Ok(())
     }
 
@@ -410,21 +433,25 @@ impl ConversationStore for HybridConversationStore {
                 crate::error::AppError::InvalidParameter(format!("message not found: {message_id}"))
             })?;
         let max = resolve_max_messages_per_session(None);
-        let root = self.session_storage_root(&session_id).await?;
-        let _ = mirror::rebuild_mirror(self.db.as_ref(), &root, &session_id, max).await?;
+        if self.mirror_enabled {
+            let root = self.session_storage_root(&session_id).await?;
+            let _ = mirror::rebuild_mirror(self.db.as_ref(), &root, &session_id, max).await?;
+        }
         Ok(())
     }
 
     async fn delete_session(&self, session_id: &str) -> Result<()> {
-        if let Some(session) = self.db.get_chat_session(session_id).await? {
-            let root = self.role_storage_root(&session.role_id, None);
-            let _ = mirror::delete_mirror(
-                &root,
-                &session.role_id,
-                &session.scene_id,
-                session_id,
-            )
-            .await;
+        if self.mirror_enabled {
+            if let Some(session) = self.db.get_chat_session(session_id).await? {
+                let root = self.role_storage_root(&session.role_id, None);
+                let _ = mirror::delete_mirror(
+                    &root,
+                    &session.role_id,
+                    &session.scene_id,
+                    session_id,
+                )
+                .await;
+            }
         }
         self.db.delete_chat_session(session_id).await
     }
@@ -436,7 +463,11 @@ impl ConversationStore for HybridConversationStore {
         max_messages: i64,
         role_name: Option<&str>,
     ) -> Result<ChatExportResponse> {
-        let root = self.session_storage_root(session_id).await?;
+        let root = if self.mirror_enabled {
+            self.session_storage_root(session_id).await?
+        } else {
+            PathBuf::from(".")
+        };
         export_chat_session(
             self.db.as_ref(),
             &root,
@@ -455,7 +486,11 @@ impl ConversationStore for HybridConversationStore {
         max_messages: i64,
         role_name: Option<&str>,
     ) -> Result<ChatExportResponse> {
-        let root = self.role_storage_root(role_id, None);
+        let root = if self.mirror_enabled {
+            self.role_storage_root(role_id, None)
+        } else {
+            PathBuf::from(".")
+        };
         export_role_chats(
             self.db.as_ref(),
             &root,
@@ -468,12 +503,16 @@ impl ConversationStore for HybridConversationStore {
     }
 
     async fn get_storage_stats(&self) -> Result<Vec<RoleStorageStat>> {
-        collect_chat_storage_stats(
-            &self.app_data_dir,
-            &self.roles_dir,
-            self.db.as_ref(),
-        )
-        .await
+        if self.mirror_enabled {
+            collect_chat_storage_stats(
+                &self.app_data_dir,
+                &self.roles_dir,
+                self.db.as_ref(),
+            )
+            .await
+        } else {
+            collect_chat_storage_stats_from_db(self.db.as_ref()).await
+        }
     }
 
     async fn apply_auto_cleanup(
@@ -481,13 +520,17 @@ impl ConversationStore for HybridConversationStore {
         role_id: &str,
         cfg: &AutoCleanupConfig,
     ) -> Result<AutoCleanupResult> {
-        super::super::cleanup::apply_auto_cleanup(
-            self.db.as_ref(),
-            &self.role_storage_root(role_id, Some(&cfg.chat_storage_location)),
-            role_id,
-            cfg,
-        )
-        .await
+        if self.mirror_enabled {
+            super::super::cleanup::apply_auto_cleanup(
+                self.db.as_ref(),
+                &self.role_storage_root(role_id, Some(&cfg.chat_storage_location)),
+                role_id,
+                cfg,
+            )
+            .await
+        } else {
+            super::super::cleanup::apply_auto_cleanup_sqlite(self.db.as_ref(), role_id, cfg).await
+        }
     }
 
     async fn replay_memory_extraction(
@@ -510,7 +553,11 @@ impl ConversationStore for HybridConversationStore {
     }
 
     fn backend_kind(&self) -> &'static str {
-        "hybrid"
+        if self.mirror_enabled {
+            "hybrid"
+        } else {
+            "sqlite"
+        }
     }
 
     async fn supports_search(&self) -> bool {
@@ -534,6 +581,7 @@ impl HybridConversationStore {
             roles_dir: self.roles_dir.clone(),
             storage_root: self.storage_root.clone(),
             replay_tasks: Arc::clone(&self.replay_tasks),
+            mirror_enabled: self.mirror_enabled,
         })
     }
 }
@@ -556,6 +604,7 @@ mod tests {
             roles_dir,
             storage_root,
             Arc::new(ReplayTaskRegistry::new()),
+            true,
         )) as Arc<dyn ConversationStore>
     }
 

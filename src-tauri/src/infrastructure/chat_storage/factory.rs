@@ -1,8 +1,6 @@
 //! Construct [`ConversationStore`] from backend kind.
 
-use super::backends::{
-    FileConversationStore, HybridConversationStore, SqliteConversationStore,
-};
+use super::backends::HybridConversationStore;
 use super::replay::ReplayTaskRegistry;
 use super::store_trait::ConversationStore;
 use crate::models::RolePackChatStorageConfig;
@@ -14,6 +12,8 @@ pub const ENV_CHAT_STORAGE_BACKEND: &str = "OCLIVE_CHAT_STORAGE_BACKEND";
 
 /// Resolve backend kind: env [`ENV_CHAT_STORAGE_BACKEND`] (`hybrid`|`file`|`sqlite`) >
 /// role `config.json` → `chat_storage.backend` > default [`ChatStorageBackendKind::Hybrid`].
+///
+/// `file` and `sqlite` remain deserializable for migration; [`resolve_mirror_enabled`] maps them.
 #[must_use]
 pub fn resolve_backend_kind(config: Option<&RolePackChatStorageConfig>) -> ChatStorageBackendKind {
     if let Ok(raw) = std::env::var(ENV_CHAT_STORAGE_BACKEND) {
@@ -29,7 +29,30 @@ pub fn resolve_backend_kind(config: Option<&RolePackChatStorageConfig>) -> ChatS
         .unwrap_or_default()
 }
 
-/// Build conversation store for the resolved backend.
+/// Whether JSON mirror files are written. Explicit `chat_storage.mirror` wins; else legacy `backend`.
+#[must_use]
+pub fn resolve_mirror_enabled(
+    config: &RolePackChatStorageConfig,
+    kind: ChatStorageBackendKind,
+) -> bool {
+    if let Some(mirror) = config.mirror {
+        return mirror;
+    }
+    match kind {
+        ChatStorageBackendKind::Hybrid | ChatStorageBackendKind::File => {
+            if kind == ChatStorageBackendKind::File {
+                tracing::warn!(
+                    target: "oclive_chat_storage",
+                    "chat_storage.backend=file is deprecated; using hybrid store with mirror:on"
+                );
+            }
+            true
+        }
+        ChatStorageBackendKind::Sqlite => false,
+    }
+}
+
+/// Build conversation store (always [`HybridConversationStore`] with mirror flag).
 #[must_use]
 pub fn build_conversation_store(
     kind: ChatStorageBackendKind,
@@ -42,21 +65,13 @@ pub fn build_conversation_store(
 ) -> Arc<dyn ConversationStore> {
     let storage_root =
         super::config::resolve_storage_root_with_role(&app_data_dir, role_config, role_pack_dir);
-    match kind {
-        ChatStorageBackendKind::Hybrid => Arc::new(HybridConversationStore::new(
-            db,
-            app_data_dir,
-            roles_dir,
-            storage_root,
-            replay_tasks,
-        )),
-        ChatStorageBackendKind::File => Arc::new(FileConversationStore::new(
-            db,
-            app_data_dir,
-            roles_dir,
-            storage_root,
-            replay_tasks,
-        )),
-        ChatStorageBackendKind::Sqlite => Arc::new(SqliteConversationStore::new(db, replay_tasks)),
-    }
+    let mirror_enabled = resolve_mirror_enabled(role_config, kind);
+    Arc::new(HybridConversationStore::new(
+        db,
+        app_data_dir,
+        roles_dir,
+        storage_root,
+        replay_tasks,
+        mirror_enabled,
+    ))
 }

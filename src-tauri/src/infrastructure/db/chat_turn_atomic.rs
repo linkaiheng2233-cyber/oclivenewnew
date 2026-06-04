@@ -167,7 +167,7 @@ async fn record_memory_and_event(
     scene_id: &str,
     now: &str,
     started: &Instant,
-) -> Result<()> {
+) -> Result<i64> {
     if memory_importance > 0.0 && !memory_content.trim().is_empty() {
         let trimmed = memory_content.trim();
         let candidates: Vec<(i64, String)> = sqlx::query_as(
@@ -243,7 +243,9 @@ async fn record_memory_and_event(
     if memory_importance > 0.0 && !memory_content.trim().is_empty() {
         memory_count += 1;
     }
-    db.set_long_term_count(role_id, memory_count);
+    // Compute the final count but defer the in-memory cache write until after the
+    // transaction commits, so a rollback cannot leave the cached counter drifted.
+    let mut final_memory_count = memory_count;
     if memory_count > i64::from(memory_fifo_limit) {
         crate::txn_step!(
             role_id,
@@ -255,7 +257,7 @@ async fn record_memory_and_event(
                  WHERE id IN (
                     SELECT id FROM long_term_memory
                     WHERE role_id = ?
-                    ORDER BY created_at DESC
+                    ORDER BY id DESC
                     LIMIT -1 OFFSET ?
                  )",
             )
@@ -263,7 +265,7 @@ async fn record_memory_and_event(
             .bind(memory_fifo_limit)
             .execute(tx.as_mut())
         );
-        db.set_long_term_count(role_id, i64::from(memory_fifo_limit));
+        final_memory_count = i64::from(memory_fifo_limit);
     }
 
     crate::txn_step!(
@@ -283,7 +285,7 @@ async fn record_memory_and_event(
         .execute(tx.as_mut())
     );
 
-    Ok(())
+    Ok(final_memory_count)
 }
 
 async fn record_short_term(
@@ -297,7 +299,7 @@ async fn record_short_term(
     memory_fifo_limit: i32,
     now: &str,
     started: &Instant,
-) -> Result<()> {
+) -> Result<i64> {
     crate::txn_step!(
         role_id,
         started,
@@ -332,8 +334,9 @@ async fn record_short_term(
             })?;
     }
     short_term_count += 1;
-    db.set_short_term_count(role_id, short_term_count);
+    // Defer the in-memory cache write until after commit to avoid drift on rollback.
     let short_term_limit = i64::from(memory_fifo_limit);
+    let mut final_short_term_count = short_term_count;
     if short_term_count > short_term_limit {
         crate::txn_step!(
             role_id,
@@ -354,10 +357,10 @@ async fn record_short_term(
             .bind(short_term_limit)
             .execute(tx.as_mut())
         );
-        db.set_short_term_count(role_id, short_term_limit);
+        final_short_term_count = short_term_limit;
     }
 
-    Ok(())
+    Ok(final_short_term_count)
 }
 
 async fn commit_chat_turn(
@@ -419,7 +422,7 @@ pub async fn apply_chat_turn_atomic(db: &DbManager, input: ChatTurnTxInput<'_>) 
         &started,
     )
     .await?;
-    record_memory_and_event(
+    let final_long_term_count = record_memory_and_event(
         db,
         &mut tx,
         role_id,
@@ -433,7 +436,7 @@ pub async fn apply_chat_turn_atomic(db: &DbManager, input: ChatTurnTxInput<'_>) 
         &started,
     )
     .await?;
-    record_short_term(
+    let final_short_term_count = record_short_term(
         db,
         &mut tx,
         role_id,
@@ -447,5 +450,10 @@ pub async fn apply_chat_turn_atomic(db: &DbManager, input: ChatTurnTxInput<'_>) 
     )
     .await?;
 
-    commit_chat_turn(tx, role_id, favor_current, started).await
+    let favor = commit_chat_turn(tx, role_id, favor_current, started).await?;
+    // Only mutate the in-memory row-count caches once the transaction has
+    // committed, so a failed commit/rollback cannot drift the cached counters.
+    db.set_long_term_count(role_id, final_long_term_count);
+    db.set_short_term_count(role_id, final_short_term_count);
+    Ok(favor)
 }

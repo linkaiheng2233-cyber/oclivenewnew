@@ -5,7 +5,7 @@ use crate::domain::complex_emotion::ComplexEmotionOutput;
 use crate::domain::host_profile::{PromptProfile, DISTRO_CONCISE_PROMPT_OVERLAY};
 use crate::domain::personality_engine::PersonalityEngine;
 use crate::domain::prompt_builder::{effective_reply_quality_anchor, PromptInput};
-use crate::domain::slot_runner::{CoPresentSlotRunner, SlotRunner};
+use crate::domain::slot_runner::SlotRunner;
 use crate::domain::life_schedule::{format_life_prompt_line, resolve_life_state};
 use crate::models::knowledge::KnowledgeIndex;
 use crate::models::{PersonalitySource};
@@ -30,7 +30,6 @@ pub(crate) async fn run_middle(
     let virtual_time_ms = ctx.virtual_time_ms;
     let immersive = ctx.immersive;
     let pl = &ctx.pl;
-    let slot_runner = SlotRunner;
     let user_message = req.user_message.as_str();
 
     let complex_emotion_input = build_complex_emotion_turn_input(
@@ -57,7 +56,7 @@ pub(crate) async fn run_middle(
             .stage(
                 ChatStage::ComplexEmotionResolveTurn,
                 async {
-                    slot_runner.resolve_complex_emotion(pl, &complex_emotion_input)
+                    SlotRunner::resolve_complex_emotion(pl, &complex_emotion_input)
                 },
             )
             .await?
@@ -81,7 +80,7 @@ pub(crate) async fn run_middle(
     let estimate = STAGES
         .stage(
             ChatStage::EventEstimate,
-            slot_runner.estimate_event(
+            SlotRunner::estimate_event(
                 pl,
                 pre.ollama_model.as_str(),
                 user_message,
@@ -120,7 +119,7 @@ pub(crate) async fn run_middle(
 
     let scene_label = state.storage.scene_display_name_for_role(role, scene_id);
     let scene_detail_buf = state.storage.scene_prompt_enrichment_for_role(role, scene_id);
-    let top_topic = slot_runner.top_topic_hint(pl, role, scene_id);
+    let top_topic = SlotRunner::top_topic_hint(pl, role, scene_id);
     let topic_line = top_topic
         .map(|t| format!("在「{}」下，你们可能会多聊「{}」相关的事。", scene_label, t))
         .unwrap_or_default();
@@ -137,7 +136,7 @@ pub(crate) async fn run_middle(
         .stage(
             ChatStage::BuildPrompt,
             async {
-                slot_runner.build_prompt(
+                SlotRunner::build_prompt(
                     pl,
                     &PromptInput {
                         role,

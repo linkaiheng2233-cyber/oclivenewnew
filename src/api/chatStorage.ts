@@ -38,8 +38,10 @@ export interface ChatExportResponse {
 }
 
 export interface RoleChatStorageConfig {
-  /** Role pack `config.json` → `chat_storage.backend` (`hybrid` | `file` | `sqlite`). */
+  /** Role pack `config.json` → `chat_storage.backend` (`hybrid`|`file`|`sqlite`; file/sqlite deprecated). */
   backend?: 'hybrid' | 'file' | 'sqlite' | null
+  /** JSON mirror files; default follows backend. Explicit value wins. */
+  mirror?: boolean | null
   max_messages_per_session?: number | null
   auto_cleanup_days?: number | null
   auto_cleanup_max_sessions?: number | null
@@ -256,6 +258,8 @@ export async function getReplayProgress(taskId: string): Promise<ReplayProgress>
 
 export interface ChatStorageCapabilities {
   backend_kind: string
+  /** Host default per-session cap; role pack may override via config. */
+  default_max_messages_per_session: number
   supports_search: boolean
   supports_replay: boolean
   supports_cleanup: boolean

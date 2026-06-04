@@ -184,7 +184,7 @@ async fn run(
     let immersive = interaction_mode.is_immersive();
     if immersive {
         process_message_stage(
-            ChatStage::VirtualTimeMs,
+            ChatStage::IdlePersonalityDecay,
             crate::domain::virtual_time_sync::apply_idle_personality_decay(
                 state,
                 role.as_ref(),

@@ -9,28 +9,19 @@ import {
   type RoleplaySplit,
 } from '../utils/roleplayReplySplit'
 import {
-  fetchChatMessages,
-  migrateIndexeddbToBackend,
+  getChatStorageCapabilities,
 } from '../api/chatStorage'
-import type { StoredMessage } from '../api/chatStorage'
+import { runChatStorageMigrationIfNeeded } from '../utils/chatStorageMigration'
 import {
   bucketMapKey,
-  loadBucketFromIdb,
-  loadMessageMapFromIdb,
-  messageMapToImportBuckets,
-  migrateMessageMapFromLocalStorage,
-  migrateMessageMapShape,
-  migrateMonolithBlobToBuckets,
-  saveBucketToIdb,
   saveDirtyBucketsToIdb,
+  migrateMessageMapShape,
   type RoleSceneMessageMap,
 } from '../utils/chatMessageDb'
-import { conversationSessionId } from '../utils/conversationSessionId'
 import {
-
   sendMessage,
-
 } from '../api'
+import { loadRoleSceneMessages, parseMessageTimestamp } from './chatStoreLoad'
 import { useDebugStore } from './debugStore'
 import { useRoleStore } from './roleStore'
 import { useUiStore } from './uiStore'
@@ -50,58 +41,8 @@ export interface ChatMessage {
   aside?: string
 }
 
-/** Aligns with backend default per-session message cap (role pack may override) */
-const MAX_MESSAGES_PER_CONVERSATION = 500
-
-const CHAT_STORAGE_MIGRATED_KEY = 'chat_storage_migrated'
-
-function parseMessageTimestamp(iso?: string | null): number {
-  if (!iso)
-    return Date.now()
-  const ms = Date.parse(iso)
-  return Number.isFinite(ms) ? ms : Date.now()
-}
-
-function storedMessageToChatMessage(m: StoredMessage): ChatMessage {
-  let emotion: string | undefined
-  let replyIsFallback: boolean | undefined
-  if (m.metadata) {
-    try {
-      const meta = JSON.parse(m.metadata) as Record<string, unknown>
-      if (m.sender === 'assistant') {
-        if (typeof meta.bot_emotion === 'string')
-          emotion = meta.bot_emotion
-        if (typeof meta.reply_is_fallback === 'boolean')
-          replyIsFallback = meta.reply_is_fallback
-      }
-    }
-    catch {
-      /* ignore */
-    }
-  }
-  const role = m.sender === 'assistant'
-    ? 'assistant'
-    : m.sender === 'user'
-      ? 'user'
-      : 'system'
-  const base: ChatMessage = {
-    id: m.id,
-    role,
-    content: m.content,
-    timestamp: parseMessageTimestamp(m.created_at),
-    emotion,
-    replyIsFallback,
-  }
-  if (role === 'assistant') {
-    const split = splitRoleplayReply(m.content)
-    return {
-      ...base,
-      content: assistantDialogueFromSplit(m.content, split),
-      ...(split.aside.trim() ? { aside: split.aside.trim() } : {}),
-    }
-  }
-  return base
-}
+/** Populated from `get_chat_storage_capabilities` on hydrate; backend SSOT is `DEFAULT_MAX_MESSAGES`. */
+const FALLBACK_MAX_MESSAGES_PER_CONVERSATION = 500
 
 /** Message count already in bucket when entering a scene; indices below this are folded "history" (per role × scene) */
 export type SceneHistorySplitIndex = Record<string, Record<string, number>>
@@ -287,6 +228,8 @@ export const useChatStore = defineStore(
       sceneHistorySplitIndex: {} as SceneHistorySplitIndex,
       lastAssistantAside: {} as Record<string, string>,
       messagesHydrated: false,
+      /** Per-session UI cap; synced from backend capabilities on hydrate. */
+      messageCapPerSession: FALLBACK_MAX_MESSAGES_PER_CONVERSATION,
     }),
     getters: {
       messagesForRoleScene: (state) => {
@@ -315,6 +258,14 @@ export const useChatStore = defineStore(
         if (this.messagesHydrated)
           return
         await this.runIdbMigrationIfNeeded()
+        try {
+          const caps = await getChatStorageCapabilities()
+          if (caps.default_max_messages_per_session > 0)
+            this.messageCapPerSession = caps.default_max_messages_per_session
+        }
+        catch {
+          // keep fallback cap
+        }
         const roleStore = useRoleStore()
         const uiStore = useUiStore()
         await this.loadMessagesForRoleScene(
@@ -325,52 +276,13 @@ export const useChatStore = defineStore(
       },
 
       async runIdbMigrationIfNeeded() {
-        if (localStorage.getItem(CHAT_STORAGE_MIGRATED_KEY) === 'true')
-          return
-        const fromLegacy = migrateMessageMapFromLocalStorage()
-        const fromIdb = fromLegacy ?? (await loadMessageMapFromIdb())
-        const map = fromIdb ? migrateMessageMapShape(fromIdb) : null
-        if (fromLegacy && map)
-          await migrateMonolithBlobToBuckets(map)
-        if (map && Object.keys(map).length > 0) {
-          try {
-            const buckets = messageMapToImportBuckets(map)
-            await migrateIndexeddbToBackend(buckets)
-            localStorage.setItem(CHAT_STORAGE_MIGRATED_KEY, 'true')
-          }
-          catch (err) {
-            console.warn('[chatStore] IndexedDB migration failed; will retry', err)
-            return
-          }
-        }
-        else {
-          localStorage.setItem(CHAT_STORAGE_MIGRATED_KEY, 'true')
-        }
+        await runChatStorageMigrationIfNeeded()
       },
 
       async loadMessagesForRoleScene(roleId: string, sceneId: string) {
         const sid = sceneId || 'default'
         this.ensureLegacyMigrated(roleId)
-        const sessionId = conversationSessionId(roleId, null)
-        try {
-          const stored = await fetchChatMessages(sessionId, 500, 0)
-          const messages = stored
-            .filter(m => m.sender === 'user' || m.sender === 'assistant')
-            .map(storedMessageToChatMessage)
-          if (!this.messageMap[roleId])
-            this.messageMap[roleId] = {}
-          this.messageMap[roleId]![sid] = messages
-          await saveBucketToIdb(roleId, sid, messages)
-        }
-        catch (err) {
-          console.warn('[chatStore] fetch_chat_messages failed; using IDB cache', err)
-          const cached = await loadBucketFromIdb(roleId, sid)
-          if (cached) {
-            if (!this.messageMap[roleId])
-              this.messageMap[roleId] = {}
-            this.messageMap[roleId]![sid] = cached
-          }
-        }
+        await loadRoleSceneMessages(this.messageMap, roleId, sid)
         this.lastAssistantAside = rebuildLastAssistantAsideMap(this.messageMap)
         sanitizeAllSceneHistorySplits(this.sceneHistorySplitIndex, this.messageMap)
         repairSplitsSoCurrentSessionVisible(
@@ -499,8 +411,8 @@ export const useChatStore = defineStore(
         const current = roleSceneBucket(this.messageMap, roleId, sid)
         const next = [...current, msg]
         const trimmed
-          = next.length > MAX_MESSAGES_PER_CONVERSATION
-            ? next.slice(-MAX_MESSAGES_PER_CONVERSATION)
+          = next.length > this.messageCapPerSession
+            ? next.slice(-this.messageCapPerSession)
             : next
         const removedFromHead = next.length - trimmed.length
         if (removedFromHead > 0) {
@@ -534,7 +446,9 @@ export const useChatStore = defineStore(
         const idx = bucket.findIndex(m => m.id === localId)
         if (idx === -1)
           return
-        bucket[idx] = { ...bucket[idx], ...patch }
+        const next = [...bucket]
+        next[idx] = { ...next[idx], ...patch }
+        this.messageMap[roleId]![sid] = next
       },
 
       editMessage(
@@ -644,6 +558,10 @@ export const useChatStore = defineStore(
             countBeforeTurn,
           )
           return res
+        }
+        catch (err) {
+          this.deleteMessage(roleId, sid, userLocalId)
+          throw err
         }
         finally {
           this.isLoading = false

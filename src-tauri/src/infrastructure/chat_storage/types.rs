@@ -174,6 +174,7 @@ pub struct ReplayProgress {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChatStorageCapabilities {
     pub backend_kind: String,
+    pub default_max_messages_per_session: u32,
     pub supports_search: bool,
     pub supports_replay: bool,
     pub supports_cleanup: bool,

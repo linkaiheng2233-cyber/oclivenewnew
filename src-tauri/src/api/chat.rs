@@ -38,6 +38,15 @@ pub async fn send_message(
     app: tauri::AppHandle,
     state: State<'_, SharedAppState>,
 ) -> Result<SendMessageResponse, crate::api::error::CommandError> {
+    let user_message = req.user_message.trim().to_string();
+    if user_message.is_empty() {
+        return Err(crate::error::AppError::InvalidParameter(
+            "message must not be empty or whitespace-only".into(),
+        )
+        .into());
+    }
+    let mut req = req;
+    req.user_message = user_message;
     if let Some(conn) = app.try_state::<SharedKernelConnection>() {
         let role_path = role_dir_for_id(state.as_ref(), &req.role_id);
         match KernelHttpClient::send_message_via_http(&conn, &role_path, &req).await {
@@ -461,6 +470,8 @@ pub async fn get_chat_storage_capabilities(
 ) -> Result<ChatStorageCapabilities, crate::api::error::CommandError> {
     Ok(ChatStorageCapabilities {
         backend_kind: state.conversation_store.backend_kind().to_string(),
+        default_max_messages_per_session: crate::infrastructure::chat_storage::DEFAULT_MAX_MESSAGES
+            as u32,
         supports_search: state.conversation_store.supports_search().await,
         supports_replay: state.conversation_store.supports_replay().await,
         supports_cleanup: state.conversation_store.supports_cleanup().await,

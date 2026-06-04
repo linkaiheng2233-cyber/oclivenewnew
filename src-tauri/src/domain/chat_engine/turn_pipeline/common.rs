@@ -12,12 +12,14 @@ use crate::domain::memory_engine::MemoryEngine;
 use crate::domain::personality_engine::PersonalityEngine;
 use crate::domain::policy::PolicyContext;
 use crate::domain::portrait_emotion_engine::resolve_portrait_emotion;
-use crate::domain::slot_runner::{CoPresentSlotRunner, SlotRunner};
+use crate::domain::slot_runner::SlotRunner;
 use crate::domain::user_identity::resolve_effective_user_relation_key;
 use crate::models::dto::SendMessageResponse;
 use crate::models::knowledge::KnowledgeChunk;
 use crate::models::{Emotion, Event, EventType, Memory, PersonalitySource, PersonalityVector, Role};
+use crate::state::SessionCache;
 use oclive_kernel_runtime::domain::relation_engine::RelationState;
+use std::sync::Arc;
 use std::time::Instant;
 
 use super::super::context::load_recent_context;
@@ -31,6 +33,99 @@ use super::super::turn_error::TurnResult;
 use super::TurnMode;
 
 pub(crate) const STAGES: StageRunner = StageRunner;
+
+/// Profile mutable-personality LLM + DB writes run off the critical path; next turn reads from DB.
+#[allow(clippy::too_many_arguments)]
+fn spawn_mutable_profile_evolution(
+    db: Arc<crate::infrastructure::db::DbManager>,
+    session_cache: Arc<SessionCache>,
+    primary_llm: Arc<dyn crate::domain::ports::LlmClient>,
+    role: Role,
+    srid: String,
+    path_label: String,
+    ollama_model: String,
+    user_message: String,
+    reply: String,
+    user_emotion: String,
+    event_type: EventType,
+    impact_scaled: f64,
+) {
+    tokio::spawn(async move {
+        let prev = match db.get_mutable_personality(&srid).await {
+            Ok(p) => p,
+            Err(e) => {
+                tracing::warn!(
+                    target: "oclive_chat",
+                    role_id = %srid,
+                    error = %e,
+                    "background mutable_profile: get_mutable_personality failed"
+                );
+                return;
+            }
+        };
+        let next = match crate::domain::mutable_profile_llm::evolve_mutable_personality_with_llm(
+            &primary_llm,
+            ollama_model.as_str(),
+            crate::domain::mutable_profile_llm::MutableEvolutionInput {
+                role_name: role.name.as_str(),
+                core_personality: role.core_personality.as_str(),
+                prev_mutable: prev.as_str(),
+                user_message: user_message.as_str(),
+                bot_reply: reply.as_str(),
+                user_emotion: user_emotion.as_str(),
+                event_type: &event_type,
+                impact_scaled,
+                evolution: &role.evolution_config,
+            },
+        )
+        .await
+        {
+            Ok(s) => s,
+            Err(e) => {
+                tracing::warn!(
+                    target: "oclive_chat",
+                    path_label = %path_label,
+                    role_id = %srid,
+                    error = %e,
+                    "background mutable_profile_llm failed; keeping previous archive"
+                );
+                return;
+            }
+        };
+        if let Err(e) = db.set_mutable_personality(&srid, &next).await {
+            tracing::warn!(
+                target: "oclive_chat",
+                role_id = %srid,
+                error = %e,
+                "background mutable_profile: set_mutable_personality failed"
+            );
+            return;
+        }
+        let core_v = PersonalityVector::from(&role.default_personality);
+        let personality_after =
+            crate::domain::profile_personality::effective_vector_from_profile(&role, &next);
+        let delta_out = PersonalityVector::sub_components(&personality_after, &core_v);
+        if let Err(e) = db
+            .set_core_delta_personality_json(
+                &srid,
+                &core_v.to_json_vec(),
+                &delta_out.to_json_vec(),
+            )
+            .await
+        {
+            tracing::warn!(
+                target: "oclive_chat",
+                role_id = %srid,
+                error = %e,
+                "background mutable_profile: set_core_delta_personality_json failed"
+            );
+            return;
+        }
+        session_cache
+            .personality_cache()
+            .set(srid, personality_after);
+    });
+}
 
 pub(crate) fn latest_recent_turn_pair(
     recent_turns: &[(String, String)],
@@ -123,8 +218,6 @@ pub(crate) async fn pre_llm(ctx: &TurnContext<'_>) -> TurnResult<PreLlmOutput> {
     let srid = ctx.srid;
     let user_message = req.user_message.as_str();
     let pl = &ctx.pl;
-    let slot_runner = SlotRunner;
-
     let (
         event_impact_opt,
         mut mutable_for_prompt,
@@ -185,7 +278,7 @@ pub(crate) async fn pre_llm(ctx: &TurnContext<'_>) -> TurnResult<PreLlmOutput> {
     let emotion_result = STAGES
         .stage(
             ChatStage::UserEmotionAnalyze,
-            async { slot_runner.analyze_emotion(pl, user_message) },
+            async { SlotRunner::analyze_emotion(pl, user_message) },
         )
         .await?;
     let user_emotion = emotion_result.to_emotion();
@@ -311,7 +404,7 @@ pub(crate) async fn pre_llm(ctx: &TurnContext<'_>) -> TurnResult<PreLlmOutput> {
         .stage(
             ChatStage::MemoryRank,
             async {
-                slot_runner.rank_memories(
+                SlotRunner::rank_memories(
                     pl,
                     MemoryRetrievalInput {
                         memories: &memories,
@@ -439,13 +532,10 @@ pub(crate) async fn run_main_llm(
     let role = ctx.role;
     let user_message = ctx.req.user_message.as_str();
     let pl = &ctx.pl;
-    let slot_runner = SlotRunner;
-
     let t_main_llm = Instant::now();
     let mut main_llm_fallback = false;
     let mut llm_fallback_reason = None;
-    let reply_raw = match slot_runner
-        .generate_llm(pl, pre.ollama_model.as_str(), &middle.prompt)
+    let reply_raw = match SlotRunner::generate_llm(pl, pre.ollama_model.as_str(), &middle.prompt)
         .await
     {
         Ok(s) => s,
@@ -508,10 +598,9 @@ pub(crate) async fn post_llm(
     let preflight_ms = ctx.preflight_ms;
     let immersive = ctx.immersive;
     let pl = &ctx.pl;
-    let slot_runner = SlotRunner;
     let user_message = req.user_message.as_str();
     let policies = state.policies_for_scene(Some(scene_id));
-    let primary_llm = slot_runner.primary_llm(pl);
+    let primary_llm = SlotRunner::primary_llm(pl);
 
     let t_post_llm = Instant::now();
     let reply = llm.reply.clone();
@@ -519,7 +608,7 @@ pub(crate) async fn post_llm(
     let bot_emotion_result = STAGES
         .stage(
             ChatStage::BotReplyEmotionAnalyze,
-            async { slot_runner.analyze_emotion(pl, &reply) },
+            async { SlotRunner::analyze_emotion(pl, &reply) },
         )
         .await?;
     let previous_emotion = STAGES
@@ -556,92 +645,90 @@ pub(crate) async fn post_llm(
         .chain(pre.recent_events_for_event.clone())
         .collect::<Vec<_>>();
     let core_v = PersonalityVector::from(&role.default_personality);
-    let portrait_fut = STAGES.stage(
-        ChatStage::PortraitEmotionLlm,
-        resolve_portrait_emotion(
-            &primary_llm,
-            pre.ollama_model.as_str(),
-            role,
-            &core_v,
-            &middle.personality,
-            pre.favorability_before,
-            user_message,
-            &reply,
-            pre.user_emotion_str.as_str(),
-            &bot_emotion,
-            &recent_events,
-            &pre.recent_turns,
-        ),
+
+    if role.evolution_config.personality_source == PersonalitySource::Profile {
+        let impact_scaled =
+            (middle.ai_impact_factor_final * pre.event_runtime).clamp(-1.0, 1.0);
+        spawn_mutable_profile_evolution(
+            Arc::clone(&state.db_manager),
+            Arc::clone(&state.session_cache),
+            Arc::clone(&primary_llm),
+            role.clone(),
+            srid.to_string(),
+            path_label.to_string(),
+            pre.ollama_model.clone(),
+            user_message.to_string(),
+            reply.clone(),
+            pre.user_emotion_str.clone(),
+            middle.ai_event_type,
+            impact_scaled,
+        );
+    }
+
+    let movement_fut = detect_movement_intent(
+        state,
+        &primary_llm,
+        role,
+        srid,
+        scene_id,
+        &scenes,
+        user_message,
+        pre.ollama_model.as_str(),
     );
 
-    let (portrait_emotion_str, profile_evolve) =
-        if role.evolution_config.personality_source == PersonalitySource::Profile {
-            let impact_scaled =
-                (middle.ai_impact_factor_final * pre.event_runtime).clamp(-1.0, 1.0);
-            let evolve_fut = async {
-                let prev = STAGES
-                    .stage(
-                        ChatStage::GetMutablePersonality,
-                        state.db_manager.get_mutable_personality(srid),
-                    )
-                    .await?;
-                let next = match crate::domain::mutable_profile_llm::evolve_mutable_personality_with_llm(
-                    &primary_llm,
-                    pre.ollama_model.as_str(),
-                    crate::domain::mutable_profile_llm::MutableEvolutionInput {
-                        role_name: role.name.as_str(),
-                        core_personality: role.core_personality.as_str(),
-                        prev_mutable: prev.as_str(),
-                        user_message,
-                        bot_reply: reply.as_str(),
-                        user_emotion: pre.user_emotion_str.as_str(),
-                        event_type: &middle.ai_event_type,
-                        impact_scaled,
-                        evolution: &role.evolution_config,
-                    },
-                )
-                .await
-                {
-                    Ok(s) => s,
-                    Err(e) => {
-                        tracing::warn!(
-                            target: "oclive_chat",
-                            "mutable_profile_llm {path_label} failed role_id={srid} err={e}; keeping previous archive",
-                        );
-                        prev.clone()
-                    }
-                };
-                Ok((prev, next))
-            };
-            let (portrait_res, evolve_res) = tokio::join!(portrait_fut, evolve_fut);
-            (portrait_res?, Some(evolve_res?))
-        } else {
-            (portrait_fut.await?, None)
-        };
+    let reply_for_portrait = reply.clone();
+    let portrait_fut = if matches!(mode, TurnMode::CoPresent) {
+        None
+    } else {
+        Some(STAGES.stage(
+            ChatStage::PortraitEmotionLlm,
+            resolve_portrait_emotion(
+                &primary_llm,
+                pre.ollama_model.as_str(),
+                role,
+                &core_v,
+                &middle.personality,
+                pre.favorability_before,
+                user_message,
+                &reply_for_portrait,
+                pre.user_emotion_str.as_str(),
+                &bot_emotion,
+                &recent_events,
+                &pre.recent_turns,
+            ),
+        ))
+    };
 
-    let favor_current = STAGES
-        .stage(
-            ChatStage::ApplyChatTurnAtomic,
-            state
-                .db_manager
-                .apply_chat_turn_atomic(crate::infrastructure::db::ChatTurnTxInput {
-                    role_id: srid,
-                    personality: &middle.personality,
-                    current_emotion: bot_emotion_str.as_str(),
-                    relation_state: middle.relation_after.as_str(),
-                    user_relation_key: pre.user_relation_key.as_str(),
-                    favor_delta: middle.favor_delta,
-                    memory_content: &memory_line,
-                    memory_importance,
-                    memory_fifo_limit: policies.memory.fifo_limit(),
-                    memory_similarity_threshold: role.pack_memory_config.similarity_threshold,
-                    event: &event,
-                    user_message,
-                    bot_reply: &reply,
-                    scene_id,
-                }),
-        )
-        .await?;
+    let atomic_fut = STAGES.stage(
+        ChatStage::ApplyChatTurnAtomic,
+        state
+            .db_manager
+            .apply_chat_turn_atomic(crate::infrastructure::db::ChatTurnTxInput {
+                role_id: srid,
+                personality: &middle.personality,
+                current_emotion: bot_emotion_str.as_str(),
+                relation_state: middle.relation_after.as_str(),
+                user_relation_key: pre.user_relation_key.as_str(),
+                favor_delta: middle.favor_delta,
+                memory_content: &memory_line,
+                memory_importance,
+                memory_fifo_limit: policies.memory.fifo_limit(),
+                memory_similarity_threshold: role.pack_memory_config.similarity_threshold,
+                event: &event,
+                user_message,
+                bot_reply: &reply,
+                scene_id,
+            }),
+    );
+
+    let (favor_current, movement, portrait_emotion_str) = if let Some(portrait_fut) = portrait_fut {
+        let (favor_current, movement, portrait_res) =
+            tokio::join!(atomic_fut, movement_fut, portrait_fut);
+        (favor_current?, movement, portrait_res?)
+    } else {
+        let (favor_current, movement) = tokio::join!(atomic_fut, movement_fut);
+        (favor_current?, movement, bot_emotion_str.clone())
+    };
 
     if matches!(mode, TurnMode::CoPresent) {
         crate::domain::complex_emotion_store::persist_stored_narrative_hint(
@@ -692,29 +779,7 @@ pub(crate) async fn post_llm(
         }
     }
 
-    if let Some((_, next)) = profile_evolve {
-        STAGES
-            .stage(
-                ChatStage::SetMutablePersonality,
-                state.db_manager.set_mutable_personality(srid, &next),
-            )
-            .await?;
-        let personality_after =
-            crate::domain::profile_personality::effective_vector_from_profile(role, &next);
-        let delta_out = PersonalityVector::sub_components(&personality_after, &core_v);
-        STAGES
-            .stage(
-                ChatStage::SetCoreDeltaPersonalityJsonProfile,
-                state
-                    .db_manager
-                    .set_core_delta_personality_json(srid, &core_v.to_json_vec(), &delta_out.to_json_vec()),
-            )
-            .await?;
-        state
-            .session_cache
-            .personality_cache()
-            .set(srid.to_string(), personality_after);
-    } else if role.evolution_config.personality_source != PersonalitySource::Profile {
+    if role.evolution_config.personality_source != PersonalitySource::Profile {
         let delta_out = PersonalityVector::sub_components(&middle.personality, &core_v);
         STAGES
             .stage(
@@ -730,17 +795,6 @@ pub(crate) async fn post_llm(
             .set(srid.to_string(), middle.personality.clone());
     }
 
-    let movement = detect_movement_intent(
-        state,
-        &primary_llm,
-        role,
-        srid,
-        scene_id,
-        &scenes,
-        user_message,
-        pre.ollama_model.as_str(),
-    )
-    .await;
     let (mut offer_destination_picker, mut offer_together_travel) =
         movement_ui_flags(movement, user_message);
     if matches!(mode, TurnMode::CoPresent) && !immersive {

@@ -753,7 +753,7 @@ defineExpose({ refreshStats })
           <p class="css-msg-body">
             {{ msg.content }}
           </p>
-          <div v-if="msg.sender === 'user' && capabilities.backend_kind !== 'file'" class="css-msg-actions">
+          <div v-if="msg.sender === 'user'" class="css-msg-actions">
             <button type="button" class="css-action" @click="startEditMessage(msg)">
               {{ t('chatStorage.edit') }}
             </button>

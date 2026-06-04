@@ -5,7 +5,7 @@
 //! (emotion analysis, memory ranking, prompt assembly, etc.); does not reimplement business rules—reuses [`SlotRunner`](super::slot_runner::SlotRunner) and existing engines.
 //!
 //! **Upstream**: [`DualPipelineRunner`](super::dual_pipeline::DualPipelineRunner) calls [`ExperimentalStepCtx::run_method`] step by step after topological sort.
-//! **Downstream**: co-present stage logic (via `CoPresentSlotRunner`, etc.).
+//! **Downstream**: co-present stage logic (via [`SlotRunner`](super::slot_runner::SlotRunner)).
 //!
 //! Allowed methods: see [`dual_pipeline_registry`](super::dual_pipeline_registry).
 
@@ -20,7 +20,7 @@ use crate::domain::emotion_analyzer::{EmotionAnalyzer, EmotionResult};
 use crate::domain::memory_retrieval::MemoryRetrievalInput;
 use crate::domain::plugin_host::ResolvedRolePlugins;
 use crate::domain::prompt_builder::{effective_reply_quality_anchor, PromptInput};
-use crate::domain::slot_runner::{CoPresentSlotRunner, SlotRunner};
+use crate::domain::slot_runner::SlotRunner;
 use crate::domain::user_identity::resolve_effective_user_relation_key;
 use crate::error::AppError;
 use crate::models::dto::{
@@ -147,9 +147,7 @@ impl<'a> ExperimentalStepCtx<'a> {
 
     async fn ensure_emotion(&mut self) -> Result<&EmotionResult, ProcessMessageError> {
         if self.emotion_result.is_none() {
-            let er = self
-                .slot_runner
-                .analyze_emotion(&self.pl, self.user_message)
+            let er = SlotRunner::analyze_emotion(&self.pl, self.user_message)
                 .map_err(map_slot_err)?;
             self.emotion_result = Some(er);
         }
@@ -189,9 +187,7 @@ impl<'a> ExperimentalStepCtx<'a> {
             self.scene_id.as_str(),
             scene_m,
         );
-        let ranked = self
-            .slot_runner
-            .rank_memories(
+        let ranked = SlotRunner::rank_memories(
                 &self.pl,
                 MemoryRetrievalInput {
                     memories: &memories,
@@ -224,9 +220,7 @@ impl<'a> ExperimentalStepCtx<'a> {
             .map(|chunks| KnowledgeIndex::merge_event_augment(chunks.as_slice()))
             .filter(|aug| !aug.is_empty());
 
-        let _estimate = self
-            .slot_runner
-            .estimate_event(
+        let _estimate = SlotRunner::estimate_event(
                 &self.pl,
                 ollama_model.as_str(),
                 self.user_message,
@@ -266,8 +260,7 @@ impl<'a> ExperimentalStepCtx<'a> {
                 self.scene_id.as_str(),
                 scene_m,
             );
-            self.slot_runner
-                .rank_memories(
+            SlotRunner::rank_memories(
                     &self.pl,
                     MemoryRetrievalInput {
                         memories: &mem,
@@ -335,9 +328,7 @@ impl<'a> ExperimentalStepCtx<'a> {
             .state
             .storage
             .scene_prompt_enrichment_for_role(self.role, self.scene_id.as_str());
-        let top_topic = self
-            .slot_runner
-            .top_topic_hint(&self.pl, self.role, self.scene_id.as_str());
+        let top_topic = SlotRunner::top_topic_hint(&self.pl, self.role, self.scene_id.as_str());
         let mut topic_line = top_topic
             .map(|t| format!("在「{scene_label}」下，你们可能会多聊「{t}」相关的事。"))
             .unwrap_or_default();
@@ -355,9 +346,7 @@ impl<'a> ExperimentalStepCtx<'a> {
             .await
             .map_err(map_db_err)?;
         let prev_hint = self.state.session_cache.stored_complex_emotion_narrative_hint(self.srid);
-        let prompt = self
-            .slot_runner
-            .build_prompt(
+        let prompt = SlotRunner::build_prompt(
                 &self.pl,
                 &PromptInput {
                     role: self.role,
@@ -402,9 +391,7 @@ impl<'a> ExperimentalStepCtx<'a> {
             prev_hint,
             &recent_turns,
         );
-        let _out = self
-            .slot_runner
-            .resolve_complex_emotion(&self.pl, &ce_input)
+        let _out = SlotRunner::resolve_complex_emotion(&self.pl, &ce_input)
             .map_err(map_slot_err)?;
         Ok(())
     }

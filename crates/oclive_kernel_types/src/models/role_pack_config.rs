@@ -120,9 +120,9 @@ impl Default for RolePackRelationConfig {
 ///
 /// | Variant | Storage | Search | Cleanup | Memory replay |
 /// |---------|---------|--------|---------|---------------|
-/// | `Hybrid` (default) | SQLite + JSON mirror | yes | yes | yes |
-/// | `File` | JSON files only | yes | no | yes |
-/// | `Sqlite` | SQLite only | yes | yes | yes |
+/// | `Hybrid` (default) | SQLite + JSON mirror (`mirror: true`) | yes | yes | yes |
+/// | `File` (deprecated) | Treated as `hybrid` with `mirror: true` | yes | yes | yes |
+/// | `Sqlite` (deprecated) | Treated as `hybrid` with `mirror: false` | yes | yes | yes |
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum ChatStorageBackendKind {
@@ -156,6 +156,10 @@ pub struct RolePackChatStorageConfig {
     /// `"global"` or unset uses the default `{app_data}/chats/`.
     #[serde(default = "default_chat_storage_location")]
     pub location: String,
+    /// JSON mirror under `location` / global chats root. Default follows `backend`:
+    /// `hybrid`/`file` → `true`, `sqlite` → `false`. Explicit `mirror` wins.
+    #[serde(default)]
+    pub mirror: Option<bool>,
 }
 
 impl Default for RolePackChatStorageConfig {
@@ -167,6 +171,7 @@ impl Default for RolePackChatStorageConfig {
             auto_cleanup_max_sessions: None,
             replay_similarity_threshold: default_replay_similarity_threshold(),
             location: default_chat_storage_location(),
+            mirror: None,
         }
     }
 }
