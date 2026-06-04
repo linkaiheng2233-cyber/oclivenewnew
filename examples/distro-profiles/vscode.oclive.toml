@@ -1,0 +1,32 @@
+# OCLive VS Code extension — capability profile (example)
+# Install copy: <extension-root>/distro.oclive.toml
+# SSOT mirror: oclivenewnew/examples/distro-profiles/vscode.oclive.toml
+# See creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md
+
+schema_version = 1
+distro_id = "vscode"
+display_name = "OCLive VS Code"
+
+[host_flags]
+skip_agent = true
+skip_complex_emotion = true
+
+[slots]
+complex_emotion = "off"
+
+[prompt]
+profile = "concise"
+
+[memory]
+retrieval = "light"
+
+[post_process]
+chain = "minimal"
+
+[plugin_backends]
+memory = "builtin"
+emotion = "builtin"
+event = "builtin"
+prompt = "builtin"
+llm = "ollama"
+# agent ignored when skip_agent = true

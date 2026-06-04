@@ -65,7 +65,23 @@ node scripts/e2e-distro-kernel.mjs --scenario role-snapshot
 
 See also `scripts/e2e-cross-host-memory.mjs` for canonical app-data chat smoke.
 
+## Distro capability profile (P1 contract)
+
+Each distribution may ship `distro.oclive.toml` at its install root (alongside bundled `bin/`). The file declares **capability ceiling** and defaults for when that host connects to the kernel (P4: `HostProfile` merge). It is **not** role-pack `settings.json`.
+
+- Spec: [DISTRO_CAPABILITY_PROFILE.md](./DISTRO_CAPABILITY_PROFILE.md)
+- Examples: `examples/distro-profiles/desktop.oclive.toml`, `examples/distro-profiles/vscode.oclive.toml`
+
+## Logical seed (bundled binary)
+
+- **Definition**: The distro-bundled **full** `oclive-kernel-server` binary (`SCORE_BUNDLED = 50`) acts as a **logical seed** on first install—not a smaller “seed build.”
+- **Lifecycle**: First launch spawns bundled when nothing listens on `:8420` and shared runtime is empty. When a stronger binary is discovered (manifest newer or score ≥ 88), the **host** runs `promote_with_backup` into `%LOCALAPPDATA%/OCLive/runtime/` (P3a). Later hosts attach to the shared copy.
+- **Not in scope**: In-process seed self-upgrade or connection handoff (hosts coordinate; single writer on `:8420`).
+
+Kernel binary manifest and `/health` fields: P2a (`KernelBinaryManifest`, `--version-json`).
+
 ## Related
 
+- [DISTRO_CAPABILITY_PROFILE.md](./DISTRO_CAPABILITY_PROFILE.md)
 - [CROSS_HOST_MEMORY.md](../role-pack/CROSS_HOST_MEMORY.md)
 - VS Code Phase 1: `oclive-vscode/AGENTS.md`

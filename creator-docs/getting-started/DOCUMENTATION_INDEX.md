@@ -99,6 +99,7 @@
 | **VS Code 发行版契约** | **[../role-pack/VSCODE_DISTRIBUTION.md](../role-pack/VSCODE_DISTRIBUTION.md)** |
 | **跨宿主数据目录 `OCLIVE_APP_DATA`** | **[../kernel/OCLIVE_APP_DATA.md](../kernel/OCLIVE_APP_DATA.md)** |
 | **发行版内核 attach/spawn SSOT** | **[../kernel/DISTRO_KERNEL_LIFECYCLE.md](../kernel/DISTRO_KERNEL_LIFECYCLE.md)** |
+| **发行版能力配置 `distro.oclive.toml`（P1 Schema）** | **[../kernel/DISTRO_CAPABILITY_PROFILE.md](../kernel/DISTRO_CAPABILITY_PROFILE.md)** · 示例 `examples/distro-profiles/` |
 | **编写器路线图（情绪图编辑 · 分级导出）** | **[../../handoff/PACK_EDITOR_ROADMAP.md](../../handoff/PACK_EDITOR_ROADMAP.md)** |
 | **蓝图 v2（`pipeline.ocblueprint` · P0–P8 收口）** | **[../../handoff/RFC_ROLE_BLUEPRINT_V2.md](../../handoff/RFC_ROLE_BLUEPRINT_V2.md)** · **[../../handoff/BLUEPRINT_V2_IMPLEMENTATION_PLAN.md](../../handoff/BLUEPRINT_V2_IMPLEMENTATION_PLAN.md)** · **[../../handoff/BLUEPRINT_V2_DECISIONS.md](../../handoff/BLUEPRINT_V2_DECISIONS.md)** |
 | **内核分层纪律（domain / infrastructure / api）** | **[../../handoff/ARCHITECTURE_LAYERING.md](../../handoff/ARCHITECTURE_LAYERING.md)** |
