@@ -1,6 +1,9 @@
 //! Spawn `oclive-kernel-server --api` with canonical cross-host env.
 
 use crate::kernel_lifecycle::connection::KernelConnection;
+use crate::domain::host_profile::{
+    load_host_profile_from_env, HostProfile, ENV_DISTRO_ID, ENV_DISTRO_PROFILE,
+};
 use oclive_kernel_runtime::{
     ensure_app_data_dir, resolve_app_data_dir_for_host, KernelCandidate, KernelTier,
     ENV_HTTP_API_MOCK_LLM, ENV_ROLES_DIR,
@@ -61,7 +64,25 @@ fn spawn_env(port: u16, roles_dir: &Path, app_data: &Path) -> Vec<(String, Strin
     {
         pairs.push((ENV_HTTP_API_MOCK_LLM.into(), "1".into()));
     }
+    append_distro_env(&mut pairs, &load_host_profile_from_env());
     pairs
+}
+
+fn append_distro_env(pairs: &mut Vec<(String, String)>, host: &HostProfile) {
+    if host.distro_id != "default" {
+        pairs.push((ENV_DISTRO_ID.into(), host.distro_id.clone()));
+    }
+    if let Some(ref p) = host.profile_path {
+        pairs.push((
+            ENV_DISTRO_PROFILE.into(),
+            p.to_string_lossy().into_owned(),
+        ));
+    } else if let Ok(p) = std::env::var(ENV_DISTRO_PROFILE) {
+        let t = p.trim().to_string();
+        if !t.is_empty() {
+            pairs.push((ENV_DISTRO_PROFILE.into(), t));
+        }
+    }
 }
 
 /// Spawn kernel binary; store child on `conn` when successful.

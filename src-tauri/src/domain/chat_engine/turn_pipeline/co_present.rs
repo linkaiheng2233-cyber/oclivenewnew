@@ -2,6 +2,7 @@
 
 use crate::domain::chat_turn::relation_favor_for_key;
 use crate::domain::complex_emotion::ComplexEmotionOutput;
+use crate::domain::host_profile::{PromptProfile, DISTRO_CONCISE_PROMPT_OVERLAY};
 use crate::domain::personality_engine::PersonalityEngine;
 use crate::domain::prompt_builder::{effective_reply_quality_anchor, PromptInput};
 use crate::domain::slot_runner::{CoPresentSlotRunner, SlotRunner};
@@ -40,14 +41,27 @@ pub(crate) async fn run_middle(
         pre.prev_stored_narrative_hint.clone(),
         &pre.recent_turns,
     );
-    let complex_emotion_out: ComplexEmotionOutput = STAGES
-        .stage(
-            ChatStage::ComplexEmotionResolveTurn,
-            async {
-                slot_runner.resolve_complex_emotion(pl, &complex_emotion_input)
-            },
-        )
-        .await?;
+    let complex_emotion_out: ComplexEmotionOutput = if state.host_profile.skip_complex_emotion {
+        ComplexEmotionOutput {
+            source: "host_skipped".into(),
+            narrative_hint: String::new(),
+            labels: vec![],
+            pattern: None,
+            confidence: 0.0,
+            intensity: 0.0,
+            dissonance_score: 0.0,
+            degraded_to_builtin: false,
+        }
+    } else {
+        STAGES
+            .stage(
+                ChatStage::ComplexEmotionResolveTurn,
+                async {
+                    slot_runner.resolve_complex_emotion(pl, &complex_emotion_input)
+                },
+            )
+            .await?
+    };
 
     let knowledge_chunks = role
         .knowledge_index
@@ -119,7 +133,7 @@ pub(crate) async fn run_middle(
     } else {
         String::new()
     };
-    let prompt = STAGES
+    let mut prompt = STAGES
         .stage(
             ChatStage::BuildPrompt,
             async {
@@ -155,6 +169,9 @@ pub(crate) async fn run_middle(
             },
         )
         .await?;
+    if state.host_profile.prompt_profile == PromptProfile::Concise {
+        prompt = format!("{DISTRO_CONCISE_PROMPT_OVERLAY}{prompt}");
+    }
 
     Ok(MiddleOutput {
         complex_emotion_out,

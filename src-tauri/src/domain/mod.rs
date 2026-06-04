@@ -44,6 +44,7 @@ pub mod time_driven_evolution;
 pub mod virtual_time_sync;
 
 pub mod agent;
+pub mod host_profile;
 pub mod chat_engine;
 #[cfg(feature = "dual_core")]
 pub mod dual_pipeline;

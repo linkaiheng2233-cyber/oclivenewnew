@@ -33,6 +33,7 @@ use std::sync::Arc;
 mod app_state_builder;
 mod models_dir;
 mod roles_dir;
+pub(crate) mod host_backends;
 mod session_backends;
 mod session_cache;
 pub use models_dir::{
@@ -94,6 +95,8 @@ pub struct AppState {
     pub(crate) user_llm_env_applied_version: AtomicU64,
     /// Fast dirty flag: skip redundant `apply_user_llm_env` when unchanged.
     pub(crate) user_llm_env_dirty: AtomicBool,
+    /// Distro capability profile (P4); loaded once at kernel startup from env.
+    pub host_profile: Arc<crate::domain::host_profile::HostProfile>,
 }
 
 impl AppState {
@@ -134,6 +137,7 @@ impl AppState {
         policy_file: Option<&Path>,
     ) -> Result<Self> {
         AppStateBuilder::in_memory_test(llm, roles_dir, policy_file)
+            .with_host_profile(crate::domain::host_profile::load_host_profile_from_env())
             .build()
             .await
     }

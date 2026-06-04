@@ -23,6 +23,7 @@ use crate::infrastructure::remote_fallback_policy::{
 };
 use crate::infrastructure::repositories::{SqliteFavorabilityRepository, SqliteMemoryRepository};
 use crate::infrastructure::sqlite_pool;
+use crate::domain::host_profile::{self, HostProfile};
 use crate::infrastructure::storage::RoleStorage;
 use arc_swap::ArcSwap;
 use dashmap::DashMap;
@@ -44,6 +45,7 @@ pub struct AppStateBuilder {
     ollama_model: Option<String>,
     high_risk_strict: bool,
     use_test_policy_default: bool,
+    host_profile: Option<HostProfile>,
 }
 
 impl AppStateBuilder {
@@ -61,6 +63,7 @@ impl AppStateBuilder {
             ollama_model: None,
             high_risk_strict: true,
             use_test_policy_default: false,
+            host_profile: None,
         }
     }
 
@@ -80,7 +83,14 @@ impl AppStateBuilder {
             ollama_model: Some("test-model".to_string()),
             high_risk_strict: false,
             use_test_policy_default: policy_file.is_none(),
+            host_profile: None,
         }
+    }
+
+    #[must_use]
+    pub fn with_host_profile(mut self, profile: HostProfile) -> Self {
+        self.host_profile = Some(profile);
+        self
     }
 
     /// # Errors
@@ -194,6 +204,11 @@ impl AppStateBuilder {
             None,
         );
 
+        let host_profile = Arc::new(
+            self.host_profile
+                .unwrap_or_else(host_profile::load_host_profile_from_env),
+        );
+
         let state = AppState {
             db_manager,
             conversation_store,
@@ -219,6 +234,7 @@ impl AppStateBuilder {
             user_llm_env_version: AtomicU64::new(1),
             user_llm_env_applied_version: AtomicU64::new(0),
             user_llm_env_dirty: AtomicBool::new(true),
+            host_profile,
         };
         if let Err(e) = crate::api::llm_settings::apply_user_llm_env(&state).await {
             tracing::warn!(target: "oclive_llm", "apply user llm settings: {e}");

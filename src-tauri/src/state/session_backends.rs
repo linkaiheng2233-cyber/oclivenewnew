@@ -163,6 +163,8 @@ impl AppState {
         {
             backends.llm = crate::models::plugin_backends::LlmBackend::Remote;
         }
+        let backends =
+            super::host_backends::apply_host_ceiling(&backends, self.host_profile.as_ref());
         Arc::new(backends)
     }
 

@@ -9,7 +9,7 @@
 //!
 //! See [`domain/README.md`](../README.md).
 
-use crate::domain::agent::AgentInput;
+use crate::domain::agent::{AgentInput, AgentOutput};
 use crate::domain::chat_engine::chat_stage::ChatStage;
 use crate::domain::chat_engine::turn_pipeline::{execute_turn, TurnMode};
 use crate::domain::chat_engine::message_error::ProcessMessageError;
@@ -127,16 +127,23 @@ async fn run(
             .effective_slot_registry_for_session(role.as_ref(), srid)
             .as_ref(),
     );
-    let agent_out = process_message_stage(
-        ChatStage::AgentProcess,
-        pl.agent.process(AgentInput {
-            role_id: mrid.to_string(),
-            session_namespace: srid.to_string(),
-            message: req.user_message.clone(),
-            model: role.resolve_ollama_model(state.ollama_model.as_str()),
-        }),
-    )
-    .await?;
+    let agent_out: AgentOutput = if state.host_profile.skip_agent {
+        AgentOutput {
+            handled: false,
+            reply: String::new(),
+        }
+    } else {
+        process_message_stage(
+            ChatStage::AgentProcess,
+            pl.agent.process(AgentInput {
+                role_id: mrid.to_string(),
+                session_namespace: srid.to_string(),
+                message: req.user_message.clone(),
+                model: role.resolve_ollama_model(state.ollama_model.as_str()),
+            }),
+        )
+        .await?
+    };
     if agent_out.handled {
         return build_minimal_response(
             state,
