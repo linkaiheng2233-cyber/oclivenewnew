@@ -46,6 +46,21 @@ export interface FriendlyError {
   kernel?: KernelErrorPayload
 }
 
+/** Thrown by [`invokeWithFriendlyError`]; preserves machine `code` and kernel payload for branching. */
+export class ApiInvokeError extends Error {
+  readonly code?: string
+  readonly raw: string
+  readonly kernel?: KernelErrorPayload
+
+  constructor(friendly: FriendlyError) {
+    super(friendly.message)
+    this.name = 'ApiInvokeError'
+    this.code = friendly.code
+    this.raw = friendly.raw
+    this.kernel = friendly.kernel
+  }
+}
+
 type ErrorReporter = (err: FriendlyError) => void
 
 let errorReporter: ErrorReporter | null = null
@@ -178,7 +193,7 @@ export async function invokeWithFriendlyError<T>(
     else if (friendly.code) {
       console.warn(`[api-error] code=${friendly.code} msg=${friendly.message}`)
     }
-    throw new Error(friendly.message)
+    throw new ApiInvokeError(friendly)
   }
 }
 /** snake_case → camelCase for a single key (Tauri IPC top-level args). */

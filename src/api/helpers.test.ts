@@ -1,5 +1,30 @@
+import { readFileSync, readdirSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { snakeToCamelKey, toCamelPayload } from './helpers'
+
+const API_DIR = join(import.meta.dirname)
+
+/** Top-level invoke payload keys must be camelCase (Tauri v1 IPC). */
+function collectInvokeTopLevelKeys(filePath: string): string[] {
+  const src = readFileSync(filePath, 'utf8')
+  const keys: string[] = []
+  const re = /invokeWithFriendlyError(?:<[^>]*>)?\(\s*['"`][^'"`]+['"`]\s*,\s*\{([^}]*)\}/gs
+  for (const m of src.matchAll(re)) {
+    const body = m[1] ?? ''
+    for (const km of body.matchAll(/(?:^|[,{]\s*)(['"`])([a-zA-Z_][\w]*)\1\s*:/g)) {
+      keys.push(km[2]!)
+    }
+  }
+  const bareRe = /invoke(?:WithFriendlyError)?(?:<[^>]*>)?\(\s*['"`][^'"`]+['"`]\s*,\s*\{([^}]*)\}/gs
+  for (const m of src.matchAll(bareRe)) {
+    const body = m[1] ?? ''
+    for (const km of body.matchAll(/(?:^|[,{]\s*)(['"`])([a-zA-Z_][\w]*)\1\s*:/g)) {
+      keys.push(km[2]!)
+    }
+  }
+  return keys
+}
 
 describe('api/helpers', () => {
   it('snakeToCamelKey converts ipc keys', () => {
@@ -12,5 +37,18 @@ describe('api/helpers', () => {
       roleId: 'r1',
       nested: { sessionId: 's1' },
     })
+  })
+
+  it('src/api invoke top-level keys are camelCase', () => {
+    const files = readdirSync(API_DIR).filter(f => f.endsWith('.ts') && !f.endsWith('.test.ts'))
+    const offenders: string[] = []
+    for (const file of files) {
+      for (const key of collectInvokeTopLevelKeys(join(API_DIR, file))) {
+        if (key.includes('_')) {
+          offenders.push(`${file}: ${key}`)
+        }
+      }
+    }
+    expect(offenders).toEqual([])
   })
 })

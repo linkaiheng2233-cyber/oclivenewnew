@@ -141,20 +141,27 @@ function makeEvents(pluginId: string): OcliveEvents {
       const runners = [...set].map(h =>
         Promise.resolve().then(() => h(data)),
       )
-      return Promise.race([
-        Promise.race(runners),
-        new Promise((_, reject) => {
-          setTimeout(
-            () =>
-              reject(
-                new Error(
-                  `[oclive.events.request] timeout after ${timeoutMs}ms (${resolved})`,
+      let timeoutId: ReturnType<typeof setTimeout> | undefined
+      try {
+        return await Promise.race([
+          Promise.race(runners),
+          new Promise((_, reject) => {
+            timeoutId = setTimeout(
+              () =>
+                reject(
+                  new Error(
+                    `[oclive.events.request] timeout after ${timeoutMs}ms (${resolved})`,
+                  ),
                 ),
-              ),
-            timeoutMs,
-          )
-        }),
-      ])
+              timeoutMs,
+            )
+          }),
+        ])
+      }
+      finally {
+        if (timeoutId !== undefined)
+          clearTimeout(timeoutId)
+      }
     },
     onRequest(
       event: string,
@@ -167,16 +174,22 @@ function makeEvents(pluginId: string): OcliveEvents {
         requestHandlers.set(resolved, new Set())
       }
       requestHandlers.get(resolved)!.add(handler)
+      const unregister = () => {
+        const s = requestHandlers.get(resolved)
+        if (!s)
+          return
+        s.delete(handler)
+        if (s.size === 0) {
+          requestHandlers.delete(resolved)
+        }
+      }
       if (inst) {
-        onUnmounted(() => {
-          const s = requestHandlers.get(resolved)
-          if (!s)
-            return
-          s.delete(handler)
-          if (s.size === 0) {
-            requestHandlers.delete(resolved)
-          }
-        }, inst)
+        onUnmounted(unregister, inst)
+      }
+      else {
+        // Non-component callers (e.g. plugin bootstrap) must unregister explicitly.
+        const tagged = handler as typeof handler & { __ocliveUnregister?: () => void }
+        tagged.__ocliveUnregister = unregister
       }
     },
     offRequest(

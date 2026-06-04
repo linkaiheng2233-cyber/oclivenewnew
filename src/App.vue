@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { LocalePreference } from './i18n'
-import { listen } from '@tauri-apps/api/event'
 import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AutonomousSceneNotice from './components/AutonomousSceneNotice.vue'
@@ -19,6 +18,8 @@ import KernelStatusBar from './components/KernelStatusBar.vue'
 import TopBarMorePanel from './components/TopBarMorePanel.vue'
 import Toast from './components/Toast.vue'
 import TopBarSceneModeDialog from './components/scene/TopBarSceneModeDialog.vue'
+import { useAppBootstrap } from './composables/useAppBootstrap'
+import { useChatSend } from './composables/useChatSend'
 import { useAppToast } from './composables/useAppToast'
 import { useRoleSnapshotPoll } from './composables/useKernelStatus'
 import { useNarrativeScene } from './composables/useNarrativeScene'
@@ -43,12 +44,8 @@ import { useRoleStore } from './stores/roleStore'
 import { useUiStore } from './stores/uiStore'
 import { buildRelationDropdownOptions } from './utils/relationOptions'
 import {
-  consumePendingProtocolInstalls,
-  installPluginFromGit,
-
   loadRole,
   OCLIVE_DEFAULT_RELATION_SENTINEL,
-  setErrorReporter,
   setRoleInteractionMode,
   setUserRelation,
 } from './api'
@@ -281,49 +278,23 @@ async function onInteractionModeChange(ev: Event) {
   }
 }
 
-async function initialize() {
-  try {
-    await roleStore.loadRoles()
-    if (!roleStore.currentRoleId.trim()) {
-      showToast('error', t('app.toast.noRolesScanned'))
-      return
-    }
-    await loadRole(roleStore.currentRoleId)
-    await pluginStore.refresh()
-    await roleStore.refreshRoleInfo()
-    hostEventBus.emitBuiltin('role:switched', { roleId: roleStore.currentRoleId })
-    applyResolvedNarrativeScene()
-    await debugStore.loadDebugData()
-  }
-  catch (err) {
-    showToast('error', err instanceof Error ? err.message : String(err))
-  }
-}
+useAppBootstrap({
+  showToast,
+  t,
+  openPluginManagerPanel,
+  localePreference,
+  syncBrowserChromeFromLocale,
+  scheduleRefreshSplitLayout,
+  refreshSplitLayout,
+})
 
-async function onSend(payload: { content: string }) {
-  clearSceneBarsBeforeSend()
-  const userText = payload.content
-  try {
-    const res = await chatStore.sendMessage(userText, uiStore.sceneId)
-    await roleStore.refreshRoleInfo()
-    applyResolvedNarrativeScene()
-    await debugStore.loadDebugData()
-    if (res.reply_is_fallback) {
-      const detail = res.llm_fallback_reason?.trim()
-      showToast('info', detail || t('app.toast.fallbackReply'))
-    }
-    offerSceneBarsAfterReply(
-      res.offer_together_travel ?? false,
-      res.offer_destination_picker ?? false,
-    )
-  }
-  catch (err) {
-    showToast('error', err instanceof Error ? err.message : String(err))
-  }
-  finally {
-    chatInputRef.value?.focusInput?.()
-  }
-}
+const { onSend } = useChatSend({
+  showToast,
+  t,
+  chatInputRef,
+  clearSceneBarsBeforeSend,
+  offerSceneBarsAfterReply,
+})
 
 async function onSwitchRole(nextRoleId: string) {
   const savedLeftScroll = leftPaneRef.value?.scrollTop ?? 0
@@ -426,45 +397,6 @@ watch(
   },
 )
 
-let unlistenPluginFs: (() => void) | Promise<(() => void)> | undefined
-let unlistenProtocolInstall: (() => void) | Promise<(() => void)> | undefined
-
-async function disposeTauriListener(
-  handle: (() => void) | Promise<(() => void)> | undefined,
-): Promise<void> {
-  if (!handle)
-    return
-  if (typeof handle === 'function') {
-    handle()
-    return
-  }
-  const unlisten = await handle
-  unlisten()
-}
-
-async function runPendingProtocolInstallsFromQueue(): Promise<void> {
-  try {
-    const pending = await consumePendingProtocolInstalls()
-    for (const p of pending) {
-      const git = p.gitUrl?.trim()
-      if (!git)
-        continue
-      try {
-        const r = await installPluginFromGit(git)
-        showToast('success', t('app.toast.pluginInstalledFromWeb', { id: r.installedPluginId }))
-        await pluginStore.refresh()
-        openPluginManagerPanel()
-      }
-      catch (e) {
-        showToast('error', e instanceof Error ? e.message : String(e))
-      }
-    }
-  }
-  catch (e) {
-    console.warn('consume_pending_protocol_installs', e)
-  }
-}
-
 watch(locale, () => {
   syncBrowserChromeFromLocale()
 })
@@ -473,28 +405,6 @@ onMounted(() => {
   hostEventBus.on('ui:open_model_manager', onHostOpenModelManager)
   hostEventBus.on('ui:open_plugin_manager', onHostOpenPluginManager)
   localePreference.value = getLocalePreference()
-  syncBrowserChromeFromLocale()
-  setErrorReporter((err) => {
-    showToast('error', err.message)
-  })
-  window.addEventListener('resize', scheduleRefreshSplitLayout)
-  refreshSplitLayout()
-  initialize()
-  void listen('plugin:changed', () => {
-    void pluginStore.onPluginFilesChanged().then(() => {
-      showToast('success', t('app.toast.pluginFilesChanged'))
-    })
-  }).then((u) => {
-    unlistenPluginFs = u
-  })
-
-  void listen('protocol:pending_install', () => {
-    void runPendingProtocolInstallsFromQueue()
-  }).then((u) => {
-    unlistenProtocolInstall = u
-  })
-
-  void runPendingProtocolInstallsFromQueue()
 })
 
 onBeforeUnmount(() => {
@@ -504,10 +414,6 @@ onBeforeUnmount(() => {
     cancelAnimationFrame(splitLayoutResizeRaf)
     splitLayoutResizeRaf = 0
   }
-  setErrorReporter(null)
-  window.removeEventListener('resize', scheduleRefreshSplitLayout)
-  void disposeTauriListener(unlistenPluginFs)
-  void disposeTauriListener(unlistenProtocolInstall)
 })
 </script>
 

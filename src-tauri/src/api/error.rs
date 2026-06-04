@@ -82,74 +82,136 @@ impl From<ApiError> for String {
     }
 }
 
-/// Tauri command error newtype (orphan-safe bridge to [`tauri::InvokeError`]).
+/// Tauri command error bridge (orphan-safe mapping to [`tauri::InvokeError`]).
 #[derive(Debug)]
-pub struct CommandError(pub crate::error::AppError);
+pub enum CommandError {
+    App(crate::error::AppError),
+    Api(ApiError),
+}
+
+impl CommandError {
+    #[must_use]
+    pub fn kernel_error_body(&self) -> KernelErrorBody {
+        match self {
+            Self::App(e) => e.kernel_error_body(),
+            Self::Api(e) => e.kernel_error_body(),
+        }
+    }
+
+    #[must_use]
+    pub fn to_kernel_json(&self) -> String {
+        match self {
+            Self::App(e) => e.to_kernel_json(),
+            Self::Api(e) => e.to_kernel_json(),
+        }
+    }
+}
 
 impl From<crate::error::AppError> for CommandError {
     fn from(e: crate::error::AppError) -> Self {
-        Self(e)
-    }
-}
-
-impl From<CommandError> for tauri::InvokeError {
-    fn from(e: CommandError) -> Self {
-        tauri::InvokeError::from(e.0.to_kernel_json())
-    }
-}
-
-impl From<serde_json::Error> for CommandError {
-    fn from(e: serde_json::Error) -> Self {
-        Self(crate::error::AppError::SerializationError(e))
-    }
-}
-
-impl From<String> for CommandError {
-    fn from(s: String) -> Self {
-        Self(crate::error::AppError::Unknown(s))
+        Self::App(e)
     }
 }
 
 impl From<ApiError> for CommandError {
     fn from(e: ApiError) -> Self {
-        Self(crate::error::AppError::InvalidParameter(e.to_string()))
+        Self::Api(e)
+    }
+}
+
+impl From<CommandError> for tauri::InvokeError {
+    fn from(e: CommandError) -> Self {
+        tauri::InvokeError::from(e.to_kernel_json())
+    }
+}
+
+impl From<serde_json::Error> for CommandError {
+    fn from(e: serde_json::Error) -> Self {
+        Self::App(crate::error::AppError::SerializationError(e))
+    }
+}
+
+impl From<String> for CommandError {
+    fn from(s: String) -> Self {
+        let trimmed = s.trim();
+        if trimmed.starts_with('{') {
+            if let Ok(body) = serde_json::from_str::<KernelErrorBody>(trimmed) {
+                if body.code == "HIGH_RISK_CAPABILITY_NOT_GRANTED" {
+                    return Self::Api(ApiError::HighRiskCapabilityNotGranted {
+                        message: body.message,
+                    });
+                }
+                if body.code == "API_PLUGIN_NOT_FOUND" {
+                    return Self::Api(ApiError::PluginNotFound {
+                        plugin_id: body.message,
+                    });
+                }
+                if body.code == "API_PERMISSION_DENIED" {
+                    return Self::Api(ApiError::PermissionDenied {
+                        message: body.message,
+                    });
+                }
+                if body.code == "API_INVALID_MANIFEST" {
+                    return Self::Api(ApiError::InvalidManifest {
+                        message: body.message,
+                    });
+                }
+                if body.code == "IO_ERROR" {
+                    return Self::Api(ApiError::Io {
+                        message: body.message,
+                    });
+                }
+                if body.code == "INVALID_PARAMETER" {
+                    return Self::Api(ApiError::InvalidParameter {
+                        message: body.message,
+                    });
+                }
+            }
+        }
+        Self::App(crate::error::AppError::Unknown(s))
     }
 }
 
 impl From<std::io::Error> for CommandError {
     fn from(e: std::io::Error) -> Self {
-        Self(crate::error::AppError::from(e))
+        Self::App(crate::error::AppError::from(e))
     }
 }
 
 /// Bridge for API helpers not yet migrated off `Result<_, String>`.
 impl From<CommandError> for String {
     fn from(e: CommandError) -> Self {
-        e.0.to_frontend_error()
+        match e {
+            CommandError::App(a) => a.to_frontend_error(),
+            CommandError::Api(api) => api.to_string(),
+        }
     }
 }
 
 impl fmt::Display for CommandError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0.to_frontend_error())
+        match self {
+            Self::App(a) => write!(f, "{}", a.to_frontend_error()),
+            Self::Api(api) => write!(f, "{api}"),
+        }
     }
 }
 
-/// Maps plain-text failures from `DirectoryPluginRuntime::ensure_rpc_url` and similar to a **single-line `KernelErrorBody` JSON** string.
+/// Maps plain-text failures from `DirectoryPluginRuntime::ensure_rpc_url` and similar to [`ApiError`].
 #[must_use]
-pub fn map_directory_rpc_url_error(plugin_id: &str, err: String) -> String {
+pub fn map_directory_rpc_url_error(plugin_id: &str, err: String) -> ApiError {
     let id = plugin_id.trim().to_string();
     if err.contains("unknown directory plugin_id=") {
-        return ApiError::PluginNotFound { plugin_id: id }.to_kernel_json();
+        return ApiError::PluginNotFound { plugin_id: id };
     }
     if err.starts_with("plugin disabled:") {
-        return ApiError::PermissionDenied { message: err }.to_kernel_json();
+        return ApiError::PermissionDenied { message: err };
     }
     if err.contains("directory plugin spawn not granted") {
-        return ApiError::HighRiskCapabilityNotGranted { message: err }.to_kernel_json();
+        return ApiError::HighRiskCapabilityNotGranted { message: err };
     }
     if err.contains(" has no process section") {
-        return ApiError::InvalidManifest { message: err }.to_kernel_json();
+        return ApiError::InvalidManifest { message: err };
     }
     if err.contains("manifest.json")
         || err.contains("unsupported schema_version")
@@ -157,40 +219,90 @@ pub fn map_directory_rpc_url_error(plugin_id: &str, err: String) -> String {
         || err.contains(": version empty")
         || err.contains("shell.entry required")
     {
-        return ApiError::InvalidManifest { message: err }.to_kernel_json();
+        return ApiError::InvalidManifest { message: err };
     }
-    ApiError::Io { message: err }.to_kernel_json()
+    ApiError::Io { message: err }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::map_directory_rpc_url_error;
+    use super::{map_directory_rpc_url_error, ApiError, CommandError};
     use oclive_kernel_runtime::KernelErrorBody;
+
+    fn invoke_code(err: CommandError) -> String {
+        let j: KernelErrorBody =
+            serde_json::from_str(&err.to_kernel_json()).expect("kernel json");
+        j.code
+    }
+
+    #[test]
+    fn api_error_variants_preserve_code_through_invoke() {
+        let cases: Vec<(&str, ApiError)> = vec![
+            (
+                "API_PLUGIN_NOT_FOUND",
+                ApiError::PluginNotFound {
+                    plugin_id: "p1".into(),
+                },
+            ),
+            (
+                "INVALID_PARAMETER",
+                ApiError::InvalidParameter {
+                    message: "bad".into(),
+                },
+            ),
+            (
+                "API_PERMISSION_DENIED",
+                ApiError::PermissionDenied {
+                    message: "denied".into(),
+                },
+            ),
+            (
+                "HIGH_RISK_CAPABILITY_NOT_GRANTED",
+                ApiError::HighRiskCapabilityNotGranted {
+                    message: "spawn".into(),
+                },
+            ),
+            (
+                "API_INVALID_MANIFEST",
+                ApiError::InvalidManifest {
+                    message: "manifest".into(),
+                },
+            ),
+            (
+                "IO_ERROR",
+                ApiError::Io {
+                    message: "disk".into(),
+                },
+            ),
+        ];
+        for (expected_code, api_err) in cases {
+            assert_eq!(invoke_code(CommandError::from(api_err)), expected_code);
+        }
+    }
 
     #[test]
     fn map_rpc_spawn_not_granted_uses_high_risk_code() {
-        let s = map_directory_rpc_url_error(
+        let api = map_directory_rpc_url_error(
             "my_plug",
             "directory plugin spawn not granted: plugin_id=my_plug".into(),
         );
-        let j: KernelErrorBody = serde_json::from_str(&s).expect("json");
-        assert_eq!(j.code, "HIGH_RISK_CAPABILITY_NOT_GRANTED");
-        assert!(j.message.contains("my_plug"));
+        assert_eq!(api.code(), "HIGH_RISK_CAPABILITY_NOT_GRANTED");
+        assert_eq!(invoke_code(api.into()), "HIGH_RISK_CAPABILITY_NOT_GRANTED");
     }
 
     #[test]
     fn map_rpc_unknown_plugin_is_kernel_json() {
-        let s =
+        let api =
             map_directory_rpc_url_error("my_plug", "unknown directory plugin_id=my_plug".into());
-        let j: KernelErrorBody = serde_json::from_str(&s).expect("json");
+        let j: KernelErrorBody = serde_json::from_str(&api.to_kernel_json()).expect("json");
         assert_eq!(j.code, "API_PLUGIN_NOT_FOUND");
         assert!(j.message.contains("my_plug"));
     }
 
     #[test]
     fn map_rpc_disabled_is_kernel_json() {
-        let s = map_directory_rpc_url_error("x", "plugin disabled: x".into());
-        let j: KernelErrorBody = serde_json::from_str(&s).expect("json");
+        let api = map_directory_rpc_url_error("x", "plugin disabled: x".into());
+        let j: KernelErrorBody = serde_json::from_str(&api.to_kernel_json()).expect("json");
         assert_eq!(j.code, "API_PERMISSION_DENIED");
     }
 }

@@ -114,7 +114,7 @@ export async function checkPluginUpdates(
 ): Promise<Record<string, PluginUpdateInfo>> {
   return invokeWithFriendlyError<Record<string, PluginUpdateInfo>>(
     'check_plugin_updates',
-    { plugin_ids: pluginIds },
+    { pluginIds },
   )
 }
 
@@ -124,8 +124,8 @@ export async function extractPluginZip(
   pluginId: string,
 ): Promise<void> {
   return invokeWithFriendlyError<void>('extract_plugin_zip', {
-    zip_path: zipPath,
-    plugin_id: pluginId,
+    zipPath,
+    pluginId,
   })
 }
 
@@ -159,7 +159,7 @@ export async function getDirectoryPluginBootstrap(
   }
   const p = invokeWithFriendlyError<DirectoryPluginBootstrap>(
     'get_directory_plugin_bootstrap',
-    { role_id: roleId ?? null },
+    { roleId: roleId ?? null },
   ).finally(() => {
     if (directoryBootstrapInflight.get(key) === p) {
       directoryBootstrapInflight.delete(key)

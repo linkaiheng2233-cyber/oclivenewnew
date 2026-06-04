@@ -300,7 +300,7 @@ async fn role_info_route(
         .await
         .map(Json)
         .map_err(|e| {
-            let k = e.0.kernel_error_body();
+            let k = e.kernel_error_body();
             api_error(axum::http::StatusCode::BAD_REQUEST, k)
         })
 }
@@ -311,7 +311,7 @@ async fn role_snapshot_route(
 ) -> Result<Json<RoleSnapshotResponse>, ApiError> {
     let role_id = q.role_id.trim();
     let info = get_role_info_impl(&state, role_id, None).await.map_err(|e| {
-        let k = e.0.kernel_error_body();
+        let k = e.kernel_error_body();
         api_error(axum::http::StatusCode::BAD_REQUEST, k)
     })?;
     let _scene = q.scene_id.as_deref();
@@ -335,7 +335,7 @@ async fn load_role_route(
         .await
         .map(|_| axum::http::StatusCode::NO_CONTENT)
         .map_err(|e| {
-            let k = e.0.kernel_error_body();
+            let k = e.kernel_error_body();
             api_error(axum::http::StatusCode::BAD_REQUEST, k)
         })
 }
@@ -387,7 +387,7 @@ async fn time_state_route(
         .await
         .map(Json)
         .map_err(|e| {
-            let k = e.0.kernel_error_body();
+            let k = e.kernel_error_body();
             api_error(axum::http::StatusCode::BAD_REQUEST, k)
         })
 }

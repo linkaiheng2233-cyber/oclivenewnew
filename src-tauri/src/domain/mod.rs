@@ -38,6 +38,7 @@ pub mod role_manifest_validate;
 pub mod startup_health;
 pub mod user_identity;
 pub mod effective_llm_model;
+pub mod role_snapshot;
 pub mod relation_estrangement;
 pub mod complex_emotion_store;
 pub mod time_driven_evolution;

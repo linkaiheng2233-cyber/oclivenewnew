@@ -334,8 +334,8 @@ export async function exportRolePack(
   destPath: string,
 ): Promise<void> {
   return invokeWithFriendlyError<void>('export_role_pack_command', {
-    role_id: roleId,
-    dest_path: destPath,
+    roleId,
+    destPath,
   })
 }
 
@@ -350,7 +350,7 @@ export interface RolePackPeek {
 
 export async function peekRolePack(srcPath: string): Promise<RolePackPeek> {
   return invokeWithFriendlyError<RolePackPeek>('peek_role_pack_command', {
-    src_path: srcPath,
+    srcPath,
   })
 }
 
@@ -361,7 +361,7 @@ export async function importRolePack(
   overwrite: boolean,
 ): Promise<string> {
   return invokeWithFriendlyError<string>('import_role_pack_command', {
-    src_path: srcPath,
+    srcPath,
     overwrite,
   })
 }

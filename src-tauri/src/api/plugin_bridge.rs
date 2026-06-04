@@ -166,10 +166,9 @@ fn validate_bridge(
         ApiError::PluginNotFound {
             plugin_id: plugin_id.to_string(),
         }
-        .to_kernel_json()
     })?;
     let manifest = OclivePluginManifest::load_from_dir(root)
-        .map_err(|e| ApiError::InvalidManifest { message: e }.to_kernel_json())?;
+        .map_err(|e| ApiError::InvalidManifest { message: e })?;
     let rel = normalize_plugin_rel(asset_rel);
     let Some(b) = manifest.bridge_for_asset_rel(&rel) else {
         return Err(ApiError::PermissionDenied {

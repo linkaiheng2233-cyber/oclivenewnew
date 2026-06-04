@@ -8,14 +8,14 @@ use crate::state::AppState;
 use crate::api::error::CommandError;
 
 /// Seeded, read from DB, includes pack suggested values and schedule inference.
-pub(super) struct InteractionUiSnapshot {
+pub(crate) struct InteractionUiSnapshot {
     pub mode_str: String,
     pub pack_default: Option<String>,
     pub current_life: Option<LifeStateDto>,
 }
 
 /// `ensure_interaction_mode_seeded` + effective mode string + pack suggestion + `current_life`.
-pub(super) async fn resolve_interaction_ui_snapshot(
+pub(crate) async fn resolve_interaction_ui_snapshot(
     state: &AppState,
     role_id: &str,
     role: &Role,

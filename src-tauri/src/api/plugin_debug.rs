@@ -10,21 +10,29 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 use tauri::State;
 use crate::api::error::CommandError;
+
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
-pub fn spawn_plugin_for_test(
+pub async fn spawn_plugin_for_test(
     plugin_id: String,
     config_json: Option<String>,
     state: State<'_, SharedAppState>,
 ) -> Result<PluginProcessDebugInfo, CommandError> {
-    let cfg = config_json.as_deref();
-    state
-        .directory_plugins
-        .spawn_plugin_for_test(plugin_id.trim(), cfg)
-        .map_err(Into::into)
+    let pid = plugin_id.trim().to_string();
+    let cfg = config_json;
+    let shared = state.inner().clone();
+    tokio::task::spawn_blocking(move || {
+        shared
+            .directory_plugins
+            .spawn_plugin_for_test(&pid, cfg.as_deref())
+            .map_err(Into::into)
+    })
+    .await
+    .map_err(|e| crate::error::AppError::Unknown(format!("spawn_plugin_for_test join: {e}")))?
 }
+
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
@@ -54,6 +62,7 @@ pub fn get_plugin_logs(plugin_id: String, lines: usize, state: State<'_, SharedA
         .directory_plugins
         .get_plugin_log_tail(plugin_id.trim(), lines.max(1))
 }
+
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
@@ -78,11 +87,12 @@ pub struct TestPluginMethodDto {
     #[serde(default)]
     pub params: Value,
 }
+
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
-pub fn test_plugin_method(
+pub async fn test_plugin_method(
     req: TestPluginMethodDto,
     state: State<'_, SharedAppState>,
 ) -> Result<Value, CommandError> {
@@ -100,16 +110,26 @@ pub fn test_plugin_method(
         }
         .into());
     }
-    let url = state
-        .directory_plugins
-        .ensure_rpc_url_for_debug(pid, None)?;
-    Ok(invoke_directory_plugin_rpc_blocking(&url, method, req.params, RemoteRpcChannel::Plugin)?)
+    let pid_owned = pid.to_string();
+    let method_owned = method.to_string();
+    let params = req.params;
+    let shared = state.inner().clone();
+    tokio::task::spawn_blocking(move || {
+        let url = shared
+            .directory_plugins
+            .ensure_rpc_url_for_debug(&pid_owned, None)?;
+        invoke_directory_plugin_rpc_blocking(&url, &method_owned, params, RemoteRpcChannel::Plugin)
+            .map_err(Into::into)
+    })
+    .await
+    .map_err(|e| crate::error::AppError::Unknown(format!("test_plugin_method join: {e}")))?
 }
+
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
-pub fn discover_plugin_methods(
+pub async fn discover_plugin_methods(
     plugin_id: String,
     state: State<'_, SharedAppState>,
 ) -> Result<Vec<String>, CommandError> {
@@ -120,14 +140,25 @@ pub fn discover_plugin_methods(
         }
         .into());
     }
+    let pid_owned = pid.to_string();
+    let shared = state.inner().clone();
+    tokio::task::spawn_blocking(move || discover_plugin_methods_blocking(&shared, &pid_owned))
+        .await
+        .map_err(|e| crate::error::AppError::Unknown(format!("discover_plugin_methods join: {e}")))?
+}
+
+fn discover_plugin_methods_blocking(
+    state: &crate::state::AppState,
+    pid: &str,
+) -> Result<Vec<String>, CommandError> {
     let root = {
         let roots = state.directory_plugins.plugin_roots.read();
-        roots.get(pid).map(|entry| entry.root.clone()).ok_or_else(|| {
-            ApiError::PluginNotFound {
+        roots
+            .get(pid)
+            .map(|entry| entry.root.clone())
+            .ok_or_else(|| ApiError::PluginNotFound {
                 plugin_id: pid.to_string(),
-            }
-            .to_kernel_json()
-        })?
+            })?
     };
     let manifest = OclivePluginManifest::load_from_dir(&root)?;
     let mut out: Vec<String> = manifest
@@ -137,7 +168,10 @@ pub fn discover_plugin_methods(
         .filter(|s| !s.is_empty())
         .collect();
 
-    let url = match state.directory_plugins.ensure_rpc_url_for_debug(pid, None) {
+    let url = match state
+        .directory_plugins
+        .ensure_rpc_url_for_debug(pid, None)
+    {
         Ok(u) => u,
         Err(_) => {
             out.sort_unstable();

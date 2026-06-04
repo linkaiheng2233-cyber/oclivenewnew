@@ -373,31 +373,23 @@ pub fn read_plugin_asset_text(
         ApiError::PluginNotFound {
             plugin_id: pid.to_string(),
         }
-        .to_kernel_json()
     })?;
     let path_canon = resolve_plugin_asset_path(entry, &rel).map_err(|e| {
         if e == "path escapes plugin directory" {
             ApiError::PermissionDenied {
                 message: "path escapes plugin directory".into(),
             }
-            .into()
         } else {
-            CommandError::from(
-                ApiError::Io {
-                    message: format!("read_plugin_asset_text: {}", e),
-                }
-                .to_string(),
-            )
+            ApiError::Io {
+                message: format!("read_plugin_asset_text: {}", e),
+            }
         }
     })?;
-    std::fs::read_to_string(&path_canon).map_err(|e| {
-        CommandError::from(
-            ApiError::Io {
-                message: e.to_string(),
-            }
-            .to_string(),
-        )
-    })
+    Ok(std::fs::read_to_string(&path_canon).map_err(|e| {
+        ApiError::Io {
+            message: e.to_string(),
+        }
+    })?)
 }
 /// # Errors
 ///
@@ -440,27 +432,30 @@ pub struct DirectoryPluginInvokeDto {
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
-pub fn directory_plugin_invoke(
+pub async fn directory_plugin_invoke(
     req: DirectoryPluginInvokeDto,
     state: State<'_, SharedAppState>,
 ) -> Result<Value, CommandError> {
-    let pid = req.plugin_id.trim();
+    let pid = req.plugin_id.trim().to_string();
     if pid.is_empty() {
         return Err(ApiError::InvalidParameter {
             message: "plugin_id required".into(),
         }
         .into());
     }
-    let url = state
-        .directory_plugins
-        .ensure_rpc_url(pid)
-        .map_err(|e| CommandError::from(map_directory_rpc_url_error(pid, e)))?;
-    Ok(invoke_directory_plugin_rpc_blocking(
-        &url,
-        req.method.trim(),
-        req.params,
-        RemoteRpcChannel::Plugin,
-    )?)
+    let method = req.method.trim().to_string();
+    let params = req.params;
+    let shared = state.inner().clone();
+    tokio::task::spawn_blocking(move || {
+        let url = shared
+            .directory_plugins
+            .ensure_rpc_url(&pid)
+            .map_err(|e| map_directory_rpc_url_error(&pid, e))?;
+        invoke_directory_plugin_rpc_blocking(&url, &method, params, RemoteRpcChannel::Plugin)
+            .map_err(Into::into)
+    })
+    .await
+    .map_err(|e| crate::error::AppError::Unknown(format!("directory_plugin_invoke join: {e}")))?
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -614,7 +609,6 @@ pub fn get_directory_plugin_catalog_impl(
         ApiError::Io {
             message: e.to_string(),
         }
-        .to_kernel_json()
     })?;
     {
         let lock = PLUGIN_CATALOG_CACHE.lock();
