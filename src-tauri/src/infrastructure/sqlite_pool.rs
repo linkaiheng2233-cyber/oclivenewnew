@@ -39,10 +39,15 @@ pub async fn connect_file(path: impl AsRef<Path>) -> Result<SqlitePool, sqlx::Er
 ///
 /// Returns [`sqlx::Error`] when the in-memory pool cannot be created.
 pub async fn connect_memory() -> Result<SqlitePool, sqlx::Error> {
+    let opts = SqliteConnectOptions::new()
+        .filename(":memory:")
+        .create_if_missing(true)
+        .foreign_keys(true);
+    // Single connection: SQLite `:memory:` is per-connection unless shared-cache URI is used.
     SqlitePoolOptions::new()
         .min_connections(1)
-        .max_connections(POOL_MAX_CONNECTIONS)
+        .max_connections(1)
         .acquire_timeout(Duration::from_secs(10))
-        .connect("sqlite::memory:")
+        .connect_with(opts)
         .await
 }

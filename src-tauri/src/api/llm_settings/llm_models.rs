@@ -1,6 +1,6 @@
 //! Local GGUF model directory discovery and persistence.
 
-use super::user_llm_env::KEY_LOCAL_MODELS_DIR;
+use crate::domain::user_llm_env::KEY_LOCAL_MODELS_DIR;
 use crate::api::error::CommandError;
 use crate::state::{
     ensure_models_dir_for_roles, is_managed_legacy_models_path, migrate_and_cleanup_models,

@@ -1,6 +1,6 @@
 //! Sync UI-shell LLM settings with canonical kernel `app.db`.
 
-use super::user_llm_env::{
+use crate::domain::user_llm_env::{
     apply_user_llm_env, LLM_APP_SETTING_KEYS, KEY_LOCAL_MODELS_DIR, KEY_REMOTE_TOKEN,
 };
 use crate::infrastructure::user_llm_secrets::{read_token_file, write_token_file};
@@ -51,7 +51,7 @@ pub async fn sync_shell_llm_settings_to_canonical(state: &AppState) {
         }
         let _ = upsert_canonical_app_setting(&pool, key, t).await;
     }
-    if let Ok(Some(t)) = super::user_llm_env::resolve_remote_token(
+    if let Ok(Some(t)) = crate::domain::user_llm_env::resolve_remote_token(
         state.db_manager.as_ref(),
         state.directory_plugins.app_data_dir(),
     )

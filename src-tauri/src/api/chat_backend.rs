@@ -1,5 +1,6 @@
 //! Chat command backend: HTTP kernel attach vs in-process [`ConversationStore`].
 
+use crate::api::chat_storage_proxy::{execute_chat_storage_proxy, ChatStorageProxyOp};
 use crate::error::AppError;
 use crate::infrastructure::chat_storage::{SessionMeta, StoredMessage};
 use crate::kernel_attach::KernelHttpClient;
@@ -84,6 +85,17 @@ impl ChatBackend {
                     .fetch_messages(session_id, limit, offset)
                     .await
             }
+        }
+    }
+
+    /// Run a chat-storage admin op on the kernel HTTP writer or local store.
+    pub async fn storage_proxy(
+        &self,
+        op: ChatStorageProxyOp,
+    ) -> Result<serde_json::Value, AppError> {
+        match self {
+            Self::Http(conn) => KernelHttpClient::chat_storage_proxy_via_http(conn, &op).await,
+            Self::Local(state) => execute_chat_storage_proxy(state.as_ref(), op).await,
         }
     }
 }

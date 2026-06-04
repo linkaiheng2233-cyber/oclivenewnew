@@ -5,7 +5,6 @@ import { installedActions, installedState } from './plugin/installedSlice'
 export * from './plugin/constants'
 export { usePluginMarketStore } from './pluginMarketStore'
 export { usePluginMcpStore } from './pluginMcpStore'
-export { usePluginTraceStore } from './pluginTraceStore'
 
 export const usePluginStore = defineStore('plugin', {
   state: () => ({

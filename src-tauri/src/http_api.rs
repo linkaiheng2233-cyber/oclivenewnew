@@ -398,6 +398,19 @@ struct LlmReloadResponse {
     provider: String,
 }
 
+async fn chat_storage_proxy_route(
+    State(state): State<Arc<AppState>>,
+    Json(op): Json<crate::api::chat_storage_proxy::ChatStorageProxyOp>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    crate::api::chat_storage_proxy::execute_chat_storage_proxy(state.as_ref(), op)
+        .await
+        .map(Json)
+        .map_err(|e| {
+            let k = e.kernel_error_body();
+            api_error(axum::http::StatusCode::INTERNAL_SERVER_ERROR, k)
+        })
+}
+
 async fn llm_reload_route(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<LlmReloadResponse>, ApiError> {
@@ -430,6 +443,7 @@ pub fn api_router(app_state: Arc<AppState>) -> Router {
         .route("/role/load", post(load_role_route))
         .route("/chat/sessions", get(chat_sessions_route))
         .route("/chat/messages", get(chat_messages_route))
+        .route("/chat/storage", post(chat_storage_proxy_route))
         .route("/time/state", get(time_state_route))
         .route("/llm/reload", post(llm_reload_route))
         .layer(cors)

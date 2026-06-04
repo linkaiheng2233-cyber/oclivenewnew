@@ -7,10 +7,11 @@ use super::llm_models::{
     canonical_models_dir, local_models_dir_for_state, model_name_from_gguf_path,
     persist_local_models_dir, scan_local_model_files_in, LocalModelFileDto,
 };
-use super::user_llm_env::{
+use super::user_llm_env::probe_cloud_llm_inner;
+use crate::domain::user_llm_env::{
     apply_user_llm_env, cloud_api_token_configured, ollama_base_from_db_or_env,
-    probe_cloud_llm_inner, resolve_remote_token, KEY_CLOUD_STYLE, KEY_CLOUD_VENDOR,
-    KEY_LLM_PROVIDER, KEY_REMOTE_MODEL, KEY_REMOTE_TOKEN, KEY_REMOTE_URL,
+    resolve_remote_token, KEY_CLOUD_STYLE, KEY_CLOUD_VENDOR, KEY_LLM_PROVIDER, KEY_REMOTE_MODEL,
+    KEY_REMOTE_TOKEN, KEY_REMOTE_URL,
 };
 use crate::api::error::CommandError;
 use crate::api::role::{get_role_info_impl, session_namespace};
@@ -313,7 +314,7 @@ pub async fn save_llm_user_settings(
     if let Some(ref url) = req.ollama_base_url {
         state
             .db_manager
-            .upsert_app_setting(super::user_llm_env::KEY_OLLAMA_BASE, url.trim())
+            .upsert_app_setting(crate::domain::user_llm_env::KEY_OLLAMA_BASE, url.trim())
             .await?;
     }
     if let Some(ref dir) = req.local_models_dir {

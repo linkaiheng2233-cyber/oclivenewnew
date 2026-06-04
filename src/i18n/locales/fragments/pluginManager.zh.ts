@@ -143,12 +143,7 @@ export default {
       chatHeaderStrip: '聊天页顶部插件插槽',
       chatToolbar: '插件工具栏',
     },
-    v2PanelAria: '插件与后端管理 V2',
     v2: {
-      archGraphBanner:
-        '轻量卡片视图：数据与架构图一致。多实例、分组与写盘请用专业模式（V1）→ 架构图（Ctrl+Shift+F）。',
-      openArchGraph: '在架构图中打开此槽位',
-      noBlueprintHint: '当前角色无 v2 蓝图；请用 V1 专业模式或迁移到 pipeline.ocblueprint。',
       slotKey: '实例键',
       packBackend: '包默认后端',
     },

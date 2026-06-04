@@ -295,11 +295,13 @@ impl ConversationStore for HybridConversationStore {
         offset: u32,
     ) -> Result<Vec<SessionMeta>> {
         let scene_id = normalize_scene_id(scene_id);
-        let rows = self.db.list_chat_sessions(role_id, &scene_id, limit, offset).await?;
-        let mut out = Vec::with_capacity(rows.len());
-        for row in rows {
-            let snippet = self.db.last_chat_message_snippet(&row.session_id).await?;
-            out.push(SessionMeta {
+        let rows = self
+            .db
+            .list_chat_sessions_with_snippets(role_id, &scene_id, limit, offset)
+            .await?;
+        Ok(rows
+            .into_iter()
+            .map(|(row, snippet)| SessionMeta {
                 session_id: row.session_id,
                 role_id: row.role_id,
                 scene_id: row.scene_id,
@@ -307,20 +309,19 @@ impl ConversationStore for HybridConversationStore {
                 updated_at: row.updated_at,
                 message_count: row.message_count,
                 last_message_snippet: snippet,
-            });
-        }
-        Ok(out)
+            })
+            .collect())
     }
 
     async fn list_sessions_by_role(&self, role_id: &str) -> Result<Vec<SessionMeta>> {
         let rows = self
             .db
-            .list_chat_sessions_for_manifest_role(role_id)
+            .list_chat_sessions_for_manifest_role_with_snippets(role_id)
             .await?;
-        let mut out = Vec::with_capacity(rows.len().min(500));
-        for row in rows.into_iter().take(500) {
-            let snippet = self.db.last_chat_message_snippet(&row.session_id).await?;
-            out.push(SessionMeta {
+        Ok(rows
+            .into_iter()
+            .take(500)
+            .map(|(row, snippet)| SessionMeta {
                 session_id: row.session_id,
                 role_id: row.role_id,
                 scene_id: row.scene_id,
@@ -328,9 +329,8 @@ impl ConversationStore for HybridConversationStore {
                 updated_at: row.updated_at,
                 message_count: row.message_count,
                 last_message_snippet: snippet,
-            });
-        }
-        Ok(out)
+            })
+            .collect())
     }
 
     async fn fetch_messages(

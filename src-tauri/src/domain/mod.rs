@@ -2,42 +2,20 @@ pub mod ports;
 
 pub mod error_helpers;
 
-/// Kernel domain shims (consolidated from one-line `*.rs` re-export files).
-macro_rules! kernel_domain_reexport {
-    ($name:ident) => {
-        pub mod $name {
-            pub use oclive_kernel_runtime::domain::$name::*;
-        }
-    };
-}
-
-kernel_domain_reexport!(affect_policy);
-kernel_domain_reexport!(chat_llm_fallback);
-kernel_domain_reexport!(chat_turn);
-kernel_domain_reexport!(chat_turn_rules);
-kernel_domain_reexport!(complex_emotion);
-kernel_domain_reexport!(emotion_analyzer);
-kernel_domain_reexport!(event_detector);
-kernel_domain_reexport!(knowledge_loader);
-kernel_domain_reexport!(life_schedule);
-kernel_domain_reexport!(local_plugin_bridge);
-kernel_domain_reexport!(local_plugin_memory_pick);
-kernel_domain_reexport!(memory_engine);
-kernel_domain_reexport!(memory_retrieval);
-kernel_domain_reexport!(personality_engine);
-kernel_domain_reexport!(policy);
-kernel_domain_reexport!(profile_personality);
-kernel_domain_reexport!(prompt_assembler);
-kernel_domain_reexport!(prompt_builder);
-kernel_domain_reexport!(relation_engine);
-kernel_domain_reexport!(remote_life_prompt);
-kernel_domain_reexport!(repository);
-kernel_domain_reexport!(user_emotion_analyzer);
+/// Kernel domain modules (re-exported from `oclive_kernel_runtime` for stable `crate::domain::*` paths).
+pub use oclive_kernel_runtime::domain::{
+    affect_policy, chat_llm_fallback, chat_turn, chat_turn_rules, complex_emotion,
+    emotion_analyzer, event_detector, knowledge_loader, life_schedule, local_plugin_bridge,
+    local_plugin_memory_pick, memory_engine, memory_retrieval, personality_engine, policy,
+    profile_personality, prompt_assembler, prompt_builder, relation_engine, remote_life_prompt,
+    repository, user_emotion_analyzer,
+};
 
 pub mod role_manifest_validate;
 pub mod startup_health;
 pub mod user_identity;
 pub mod effective_llm_model;
+pub mod user_llm_env;
 pub mod role_snapshot;
 pub mod relation_estrangement;
 pub mod complex_emotion_store;

@@ -228,6 +228,8 @@ export const useChatStore = defineStore(
       sceneHistorySplitIndex: {} as SceneHistorySplitIndex,
       lastAssistantAside: {} as Record<string, string>,
       messagesHydrated: false,
+      /** Bumped on each scene load; stale async results are ignored. */
+      messageLoadGeneration: 0,
       /** Per-session UI cap; synced from backend capabilities on hydrate. */
       messageCapPerSession: FALLBACK_MAX_MESSAGES_PER_CONVERSATION,
     }),
@@ -281,8 +283,11 @@ export const useChatStore = defineStore(
 
       async loadMessagesForRoleScene(roleId: string, sceneId: string) {
         const sid = sceneId || 'default'
+        const gen = ++this.messageLoadGeneration
         this.ensureLegacyMigrated(roleId)
         await loadRoleSceneMessages(this.messageMap, roleId, sid)
+        if (gen !== this.messageLoadGeneration)
+          return
         this.lastAssistantAside = rebuildLastAssistantAsideMap(this.messageMap)
         sanitizeAllSceneHistorySplits(this.sceneHistorySplitIndex, this.messageMap)
         repairSplitsSoCurrentSessionVisible(

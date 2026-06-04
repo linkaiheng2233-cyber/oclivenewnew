@@ -95,7 +95,7 @@ async fn run(
 
     stage_process_message(
         ChatStage::ApplyUserLlmEnv,
-        crate::api::llm_settings::apply_user_llm_env(state).await,
+        crate::domain::user_llm_env::apply_user_llm_env(state).await,
     )?;
 
     let effective_backends =

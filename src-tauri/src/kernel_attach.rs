@@ -319,6 +319,32 @@ impl KernelHttpClient {
         serde_json::from_str(&text)
             .map_err(|e| AppError::OllamaError(format!("chat/messages JSON: {e}")))
     }
+
+    pub async fn chat_storage_proxy_via_http(
+        conn: &KernelConnection,
+        op: &crate::api::chat_storage_proxy::ChatStorageProxyOp,
+    ) -> Result<serde_json::Value, AppError> {
+        if !Self::probe_health(&conn.base_url).await {
+            return Err(Self::offline_err());
+        }
+        let res = conn
+            .http_client()
+            .post(format!("{}/chat/storage", conn.base_url))
+            .json(op)
+            .send()
+            .await
+            .map_err(|e| AppError::OllamaError(format!("chat/storage request: {e}")))?;
+        let status = res.status();
+        let text = res
+            .text()
+            .await
+            .map_err(|e| AppError::OllamaError(format!("chat/storage body: {e}")))?;
+        if !status.is_success() {
+            return Err(app_error_from_http_response(status, &text));
+        }
+        serde_json::from_str(&text)
+            .map_err(|e| AppError::OllamaError(format!("chat/storage JSON: {e}")))
+    }
 }
 
 /// Resolve on-disk role directory for `role_id`.

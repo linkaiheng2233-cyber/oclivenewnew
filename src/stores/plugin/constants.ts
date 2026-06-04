@@ -207,4 +207,3 @@ export function clonePluginState(s: RolePluginState): RolePluginState {
   }
 }
 
-export type PluginPanelMainTab = 'graph' | 'layout'

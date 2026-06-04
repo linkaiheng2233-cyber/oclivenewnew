@@ -39,7 +39,6 @@ import { useDebugStore } from './stores/debugStore'
 import { useModelManagerWindow } from './composables/useModelManagerWindow'
 import { usePluginMarketStore } from './stores/pluginMarketStore'
 import { usePluginStore } from './stores/pluginStore'
-import { usePluginTraceStore } from './stores/pluginTraceStore'
 import { useRoleStore } from './stores/roleStore'
 import { useUiStore } from './stores/uiStore'
 import { buildRelationDropdownOptions } from './utils/relationOptions'
@@ -63,7 +62,6 @@ const chatStore = useChatStore()
 const debugStore = useDebugStore()
 const uiStore = useUiStore()
 const pluginStore = usePluginStore()
-const traceStore = usePluginTraceStore()
 const pluginMarketStore = usePluginMarketStore()
 const { t, locale } = useI18n()
 
@@ -220,13 +218,6 @@ useReturnFocusOnClose(settingsViewOpen)
 useReturnFocusOnClose(simplePluginManagerOpen)
 useReturnFocusOnClose(modelManagerOpen)
 useReturnFocusOnClose(shortcutHelpOpen)
-
-watch(
-  () => traceStore.simpleManagerOpenNonce,
-  () => {
-    openSimplePluginManager(true)
-  },
-)
 
 function onHostOpenModelManager(): void {
   openModelManager(true)

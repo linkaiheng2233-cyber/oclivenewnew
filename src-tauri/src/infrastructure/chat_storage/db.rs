@@ -230,11 +230,30 @@ impl DbManager {
         limit: u32,
         offset: u32,
     ) -> Result<Vec<SessionRow>> {
-        let rows = sqlx::query_as::<_, (String, String, String, String, String, i64)>(
-            "SELECT session_id, role_id, scene_id, created_at, updated_at, message_count
-             FROM chat_sessions
-             WHERE role_id = ? AND scene_id = ?
-             ORDER BY updated_at DESC
+        Ok(self
+            .list_chat_sessions_with_snippets(role_id, scene_id, limit, offset)
+            .await?
+            .into_iter()
+            .map(|(row, _)| row)
+            .collect())
+    }
+
+    /// List sessions with last-message snippet in one query (avoids N+1).
+    pub async fn list_chat_sessions_with_snippets(
+        &self,
+        role_id: &str,
+        scene_id: &str,
+        limit: u32,
+        offset: u32,
+    ) -> Result<Vec<(SessionRow, String)>> {
+        let rows = sqlx::query_as::<_, (String, String, String, String, String, i64, Option<String>)>(
+            "SELECT s.session_id, s.role_id, s.scene_id, s.created_at, s.updated_at, s.message_count,
+                    (SELECT m.content FROM chat_messages m
+                     WHERE m.session_id = s.session_id
+                     ORDER BY m.created_at DESC, m.id DESC LIMIT 1) AS snippet
+             FROM chat_sessions s
+             WHERE s.role_id = ? AND s.scene_id = ?
+             ORDER BY s.updated_at DESC
              LIMIT ? OFFSET ?",
         )
         .bind(role_id)
@@ -244,7 +263,52 @@ impl DbManager {
         .fetch_all(&self.pool)
         .await
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-        Ok(rows.into_iter().map(session_row_from_tuple).collect())
+        Ok(rows
+            .into_iter()
+            .map(|(a, b, c, d, e, f, snippet)| {
+                (
+                    session_row_from_tuple((a, b, c, d, e, f)),
+                    snippet
+                        .map(|s| truncate_snippet(&s, 96))
+                        .unwrap_or_default(),
+                )
+            })
+            .collect())
+    }
+
+    /// Manifest role sessions with snippets (single query per page).
+    pub async fn list_chat_sessions_for_manifest_role_with_snippets(
+        &self,
+        manifest_role_id: &str,
+    ) -> Result<Vec<(SessionRow, String)>> {
+        let mid = manifest_role_id.trim();
+        let pattern = format!("{mid}__sess__*");
+        let rows = sqlx::query_as::<_, (String, String, String, String, String, i64, Option<String>)>(
+            "SELECT s.session_id, s.role_id, s.scene_id, s.created_at, s.updated_at, s.message_count,
+                    (SELECT m.content FROM chat_messages m
+                     WHERE m.session_id = s.session_id
+                     ORDER BY m.created_at DESC, m.id DESC LIMIT 1) AS snippet
+             FROM chat_sessions s
+             WHERE s.role_id = ? OR s.session_id = ? OR s.session_id GLOB ?
+             ORDER BY s.updated_at DESC",
+        )
+        .bind(mid)
+        .bind(mid)
+        .bind(&pattern)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(rows
+            .into_iter()
+            .map(|(a, b, c, d, e, f, snippet)| {
+                (
+                    session_row_from_tuple((a, b, c, d, e, f)),
+                    snippet
+                        .map(|s| truncate_snippet(&s, 96))
+                        .unwrap_or_default(),
+                )
+            })
+            .collect())
     }
 
     /// # Errors

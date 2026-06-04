@@ -1,31 +1,38 @@
 use crate::api::chat_backend::ChatBackend;
+use crate::api::chat_storage_proxy::ChatStorageProxyOp;
 use crate::infrastructure::chat_storage::{
-    delete_mirror_scene_dir, delete_mirror_tree_for_role, migrate_mirror_tree,
-    resolve_export_max_messages, resolve_max_messages_per_session, resolve_role_chat_storage_root,
-    resolve_storage_root, role_mirror_tree_bytes, save_role_chat_storage_config,
-    set_persisted_storage_root, spawn_memory_replay, APP_SETTING_CHAT_STORAGE_ROOT,
-    AutoCleanupConfig, AutoCleanupResult, ChatExportResponse, ChatSearchResult,
-    ChatStorageCapabilities, DeleteChatsResult, ImportChatBucket, ImportChatBucketsResult,
-    ReplayProgress, ReplayTarget, RoleStorageStat, SessionMeta, StoredMessage,
+    AutoCleanupResult, ChatExportResponse, ChatSearchResult, ChatStorageCapabilities,
+    DeleteChatsResult, ImportChatBucket, ImportChatBucketsResult, ReplayProgress, ReplayTarget,
+    SessionMeta, StoredMessage,
 };
 use crate::models::dto::{SendMessageRequest, SendMessageResponse};
 use crate::models::RolePackChatStorageConfig;
 use crate::kernel_attach::role_dir_for_id;
 use crate::state::SharedAppState;
-use std::path::PathBuf;
-use tauri::State;
+use serde::de::DeserializeOwned;
+use tauri::{AppHandle, State};
 
-async fn role_mirror_root(state: &crate::state::AppState, role_id: &str) -> PathBuf {
-    let location = match state.load_role_cached_async(role_id).await {
-        Ok(role) => role.pack_chat_storage_config.location.clone(),
-        Err(_) => "global".to_string(),
-    };
-    resolve_role_chat_storage_root(
-        state.directory_plugins.app_data_dir(),
-        state.storage.roles_dir(),
-        role_id,
-        Some(&location),
-    )
+async fn storage_proxy_json<T: DeserializeOwned>(
+    app: &AppHandle,
+    state: &SharedAppState,
+    op: ChatStorageProxyOp,
+) -> Result<T, crate::api::error::CommandError> {
+    let v = ChatBackend::from_app(app, state.clone())
+        .storage_proxy(op)
+        .await
+        .map_err(crate::api::error::CommandError::from)?;
+    serde_json::from_value(v).map_err(|e| {
+        crate::error::AppError::InvalidParameter(format!("chat storage proxy decode: {e}")).into()
+    })
+}
+
+async fn storage_proxy_ok(
+    app: &AppHandle,
+    state: &SharedAppState,
+    op: ChatStorageProxyOp,
+) -> Result<(), crate::api::error::CommandError> {
+    let _: serde_json::Value = storage_proxy_json(app, state, op).await?;
+    Ok(())
 }
 
 /// # Errors
@@ -34,7 +41,7 @@ async fn role_mirror_root(state: &crate::state::AppState, role_id: &str) -> Path
 #[tauri::command]
 pub async fn send_message(
     req: SendMessageRequest,
-    app: tauri::AppHandle,
+    app: AppHandle,
     state: State<'_, SharedAppState>,
 ) -> Result<SendMessageResponse, crate::api::error::CommandError> {
     let user_message = req.user_message.trim().to_string();
@@ -53,8 +60,6 @@ pub async fn send_message(
         .map_err(Into::into)
 }
 
-/// List chat sessions for a role + scene (SQLite authoritative).
-///
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
@@ -64,7 +69,7 @@ pub async fn list_chat_sessions(
     scene_id: String,
     limit: Option<u32>,
     offset: Option<u32>,
-    app: tauri::AppHandle,
+    app: AppHandle,
     state: State<'_, SharedAppState>,
 ) -> Result<Vec<SessionMeta>, crate::api::error::CommandError> {
     ChatBackend::from_app(&app, state.inner().clone())
@@ -78,8 +83,6 @@ pub async fn list_chat_sessions(
         .map_err(Into::into)
 }
 
-/// Fetch paginated messages for a chat session.
-///
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
@@ -88,7 +91,7 @@ pub async fn fetch_chat_messages(
     session_id: String,
     limit: Option<u32>,
     offset: Option<u32>,
-    app: tauri::AppHandle,
+    app: AppHandle,
     state: State<'_, SharedAppState>,
 ) -> Result<Vec<StoredMessage>, crate::api::error::CommandError> {
     ChatBackend::from_app(&app, state.inner().clone())
@@ -101,93 +104,78 @@ pub async fn fetch_chat_messages(
         .map_err(Into::into)
 }
 
-/// Rebuild JSON mirror for one session from SQLite (admin / repair).
-///
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub async fn rebuild_chat_mirror(
     session_id: String,
+    app: AppHandle,
     state: State<'_, SharedAppState>,
 ) -> Result<String, crate::api::error::CommandError> {
-    let session_id = session_id.trim().to_string();
-    let max = match state.db_manager.get_chat_session(&session_id).await {
-        Ok(Some(session)) => match state.load_role_cached_async(&session.role_id).await {
-            Ok(role) => resolve_max_messages_per_session(
-                role.pack_chat_storage_config.max_messages_per_session,
-            ),
-            Err(_) => resolve_max_messages_per_session(None),
+    #[derive(serde::Deserialize)]
+    struct Out {
+        path: String,
+    }
+    let out: Out = storage_proxy_json(
+        &app,
+        state.inner(),
+        ChatStorageProxyOp::RebuildMirror {
+            session_id: session_id.trim().to_string(),
         },
-        _ => resolve_max_messages_per_session(None),
-    };
-    state
-        .conversation_store
-        .rebuild_mirror(&session_id, max)
-        .await
-        .map_err(Into::into)
+    )
+    .await?;
+    Ok(out.path)
 }
 
-/// Import chat buckets from frontend IndexedDB (one-time migration).
-///
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub async fn migrate_indexeddb_to_backend(
     buckets: Vec<ImportChatBucket>,
+    app: AppHandle,
     state: State<'_, SharedAppState>,
 ) -> Result<ImportChatBucketsResult, crate::api::error::CommandError> {
-    state
-        .conversation_store
-        .import_chat_buckets(buckets)
-        .await
-        .map_err(Into::into)
+    storage_proxy_json(
+        &app,
+        state.inner(),
+        ChatStorageProxyOp::ImportBuckets { buckets },
+    )
+    .await
 }
 
-/// Storage usage grouped by role and scene (mirror files + SQLite session metadata).
-///
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub async fn get_chat_storage_stats(
+    app: AppHandle,
     state: State<'_, SharedAppState>,
-) -> Result<Vec<RoleStorageStat>, crate::api::error::CommandError> {
-    state
-        .conversation_store
-        .get_storage_stats()
-        .await
-        .map_err(Into::into)
+) -> Result<Vec<crate::infrastructure::chat_storage::RoleStorageStat>, crate::api::error::CommandError>
+{
+    storage_proxy_json(&app, state.inner(), ChatStorageProxyOp::StorageStats).await
 }
 
-/// Delete all chat history for a manifest role (SQLite + mirror tree).
-///
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub async fn delete_role_chats(
     role_id: String,
+    app: AppHandle,
     state: State<'_, SharedAppState>,
 ) -> Result<DeleteChatsResult, crate::api::error::CommandError> {
-    let rid = role_id.trim();
-    let mirror_root = role_mirror_root(state.inner(), rid).await;
-    let bytes = role_mirror_tree_bytes(&mirror_root, rid).await?;
-    let sessions_deleted = state
-        .db_manager
-        .count_chat_sessions_for_manifest_role(rid)
-        .await?;
-    state.db_manager.delete_chat_data_for_manifest_role(rid).await?;
-    delete_mirror_tree_for_role(&mirror_root, rid).await?;
-    Ok(DeleteChatsResult {
-        sessions_deleted,
-        bytes_freed: bytes,
-    })
+    storage_proxy_json(
+        &app,
+        state.inner(),
+        ChatStorageProxyOp::DeleteRoleChats {
+            role_id: role_id.trim().to_string(),
+        },
+    )
+    .await
 }
 
-/// Delete chat history for one role + scene.
-///
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
@@ -195,21 +183,20 @@ pub async fn delete_role_chats(
 pub async fn delete_scene_chats(
     role_id: String,
     scene_id: String,
+    app: AppHandle,
     state: State<'_, SharedAppState>,
 ) -> Result<DeleteChatsResult, crate::api::error::CommandError> {
-    let rid = role_id.trim();
-    let sid = scene_id.trim();
-    let mirror_root = role_mirror_root(state.inner(), rid).await;
-    let bytes = delete_mirror_scene_dir(&mirror_root, rid, sid).await?;
-    let sessions_deleted = state.db_manager.delete_chat_data_for_role_scene(rid, sid).await?;
-    Ok(DeleteChatsResult {
-        sessions_deleted,
-        bytes_freed: bytes,
-    })
+    storage_proxy_json(
+        &app,
+        state.inner(),
+        ChatStorageProxyOp::DeleteSceneChats {
+            role_id: role_id.trim().to_string(),
+            scene_id: scene_id.trim().to_string(),
+        },
+    )
+    .await
 }
 
-/// Export one session as Markdown or JSON (`format`: `markdown` | `json`).
-///
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
@@ -217,37 +204,20 @@ pub async fn delete_scene_chats(
 pub async fn export_chat_session(
     session_id: String,
     format: String,
+    app: AppHandle,
     state: State<'_, SharedAppState>,
 ) -> Result<ChatExportResponse, crate::api::error::CommandError> {
-    let session_id = session_id.trim().to_string();
-    let (max, role_name) = match state.db_manager.get_chat_session(&session_id).await {
-        Ok(Some(session)) => {
-            let role_result = state.load_role_cached_async(&session.role_id).await;
-            let max = match &role_result {
-                Ok(role) => resolve_max_messages_per_session(
-                    role.pack_chat_storage_config.max_messages_per_session,
-                ),
-                Err(_) => resolve_max_messages_per_session(None),
-            };
-            let role_name = role_result.ok().map(|r| r.name.clone());
-            (max, role_name)
-        }
-        _ => (resolve_max_messages_per_session(None), None),
-    };
-    state
-        .conversation_store
-        .export_session(
-            &session_id,
-            &format,
-            max,
-            role_name.as_deref(),
-        )
-        .await
-        .map_err(Into::into)
+    storage_proxy_json(
+        &app,
+        state.inner(),
+        ChatStorageProxyOp::ExportSession {
+            session_id: session_id.trim().to_string(),
+            format,
+        },
+    )
+    .await
 }
 
-/// Export all sessions for a role (`format`: `markdown` | `json`; JSON is one combined document).
-///
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
@@ -255,25 +225,20 @@ pub async fn export_chat_session(
 pub async fn export_role_chats(
     role_id: String,
     format: String,
+    app: AppHandle,
     state: State<'_, SharedAppState>,
 ) -> Result<ChatExportResponse, crate::api::error::CommandError> {
-    let rid = role_id.trim();
-    let (max, role_name) = match state.load_role_cached_async(rid).await {
-        Ok(role) => (
-            resolve_export_max_messages(role.pack_chat_storage_config.max_messages_per_session),
-            Some(role.name.clone()),
-        ),
-        Err(_) => (resolve_export_max_messages(None), None),
-    };
-    state
-        .conversation_store
-        .export_role(rid, &format, max, role_name.as_deref())
-        .await
-        .map_err(Into::into)
+    storage_proxy_json(
+        &app,
+        state.inner(),
+        ChatStorageProxyOp::ExportRole {
+            role_id: role_id.trim().to_string(),
+            format,
+        },
+    )
+    .await
 }
 
-/// Search stored chat messages (SQLite LIKE; not memory tables).
-///
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
@@ -283,40 +248,41 @@ pub async fn search_chat_messages(
     role_id: Option<String>,
     limit: Option<u32>,
     offset: Option<u32>,
+    app: AppHandle,
     state: State<'_, SharedAppState>,
 ) -> Result<Vec<ChatSearchResult>, crate::api::error::CommandError> {
-    let cap = limit.unwrap_or(100).min(100);
-    state
-        .conversation_store
-        .search_messages(
-            query.trim(),
-            role_id.as_deref().map(str::trim),
-            cap,
-            offset.unwrap_or(0),
-        )
-        .await
-        .map_err(Into::into)
+    storage_proxy_json(
+        &app,
+        state.inner(),
+        ChatStorageProxyOp::SearchMessages {
+            query,
+            role_id,
+            limit: limit.unwrap_or(100),
+            offset: offset.unwrap_or(0),
+        },
+    )
+    .await
 }
 
-/// Delete one chat message and refresh mirror for its session.
-///
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub async fn delete_chat_message(
     message_id: String,
+    app: AppHandle,
     state: State<'_, SharedAppState>,
 ) -> Result<(), crate::api::error::CommandError> {
-    state
-        .conversation_store
-        .delete_message(message_id.trim())
-        .await
-        .map_err(Into::into)
+    storage_proxy_ok(
+        &app,
+        state.inner(),
+        ChatStorageProxyOp::DeleteMessage {
+            message_id: message_id.trim().to_string(),
+        },
+    )
+    .await
 }
 
-/// Edit a user chat message and refresh mirror.
-///
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
@@ -324,16 +290,21 @@ pub async fn delete_chat_message(
 pub async fn edit_chat_message(
     message_id: String,
     new_content: String,
+    app: AppHandle,
     state: State<'_, SharedAppState>,
 ) -> Result<(), crate::api::error::CommandError> {
-    state
-        .conversation_store
-        .edit_message(message_id.trim(), new_content.trim())
-        .await
-        .map_err(Into::into)
+    storage_proxy_ok(
+        &app,
+        state.inner(),
+        ChatStorageProxyOp::EditMessage {
+            message_id: message_id.trim().to_string(),
+            new_content,
+        },
+    )
+    .await
 }
 
-/// Read `config.json` → `chat_storage` for a role.
+/// Role pack `config.json` → `chat_storage` (local roles dir; shared with kernel).
 ///
 /// # Errors
 ///
@@ -347,8 +318,6 @@ pub async fn get_role_chat_storage_config(
     Ok(role.pack_chat_storage_config.clone())
 }
 
-/// Persist `config.json` → `chat_storage` and invalidate role cache.
-///
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
@@ -359,32 +328,34 @@ pub async fn save_role_chat_storage_config_cmd(
     state: State<'_, SharedAppState>,
 ) -> Result<(), crate::api::error::CommandError> {
     let rid = role_id.trim();
-    save_role_chat_storage_config(state.storage.roles_dir(), rid, &config)?;
+    crate::infrastructure::chat_storage::save_role_chat_storage_config(
+        state.storage.roles_dir(),
+        rid,
+        &config,
+    )?;
     state.invalidate_role_cache(rid);
     Ok(())
 }
 
-/// Run auto-cleanup immediately for one role (manual trigger / after settings save).
-///
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub async fn run_chat_auto_cleanup(
     role_id: String,
+    app: AppHandle,
     state: State<'_, SharedAppState>,
 ) -> Result<AutoCleanupResult, crate::api::error::CommandError> {
-    let role = state.load_role_cached_async(role_id.trim()).await?;
-    let cfg = AutoCleanupConfig::from_role_config(&role.pack_chat_storage_config);
-    state
-        .conversation_store
-        .apply_auto_cleanup(role.id.as_str(), &cfg)
-        .await
-        .map_err(Into::into)
+    storage_proxy_json(
+        &app,
+        state.inner(),
+        ChatStorageProxyOp::AutoCleanup {
+            role_id: role_id.trim().to_string(),
+        },
+    )
+    .await
 }
 
-/// Re-extract AI memories from stored chat history (merge, idempotent; runs in background).
-///
 /// # Errors
 ///
 /// Returns [`Err`] when the task cannot be started.
@@ -392,74 +363,68 @@ pub async fn run_chat_auto_cleanup(
 pub async fn replay_memory_extraction(
     source: String,
     target: ReplayTarget,
+    app: AppHandle,
     state: State<'_, SharedAppState>,
 ) -> Result<String, crate::api::error::CommandError> {
-    let task_id = spawn_memory_replay(
-        state.db_manager.clone(),
-        state.conversation_store.clone(),
-        source,
-        target,
-        state.replay_tasks.clone(),
-    );
-    Ok(task_id)
+    #[derive(serde::Deserialize)]
+    struct Out {
+        task_id: String,
+    }
+    let out: Out = storage_proxy_json(
+        &app,
+        state.inner(),
+        ChatStorageProxyOp::ReplayMemory { source, target },
+    )
+    .await?;
+    Ok(out.task_id)
 }
 
-/// Poll progress for a memory replay task started by [`replay_memory_extraction`].
-///
 /// # Errors
 ///
 /// Returns [`Err`] when the task id is unknown.
 #[tauri::command]
 pub async fn get_replay_progress(
     task_id: String,
+    app: AppHandle,
     state: State<'_, SharedAppState>,
 ) -> Result<ReplayProgress, crate::api::error::CommandError> {
-    state
-        .replay_tasks
-        .get(task_id.trim())
-        .ok_or_else(|| {
-            crate::error::AppError::InvalidParameter(format!(
-                "replay task not found: {}",
-                task_id.trim()
-            ))
-        })
-        .map_err(Into::into)
+    storage_proxy_json(
+        &app,
+        state.inner(),
+        ChatStorageProxyOp::ReplayProgress {
+            task_id: task_id.trim().to_string(),
+        },
+    )
+    .await
 }
 
-/// Query chat storage backend capabilities (search, replay, cleanup).
-///
 /// # Errors
 ///
 /// Never fails for known backends; reserved for future dynamic backends.
 #[tauri::command]
 pub async fn get_chat_storage_capabilities(
+    app: AppHandle,
     state: State<'_, SharedAppState>,
 ) -> Result<ChatStorageCapabilities, crate::api::error::CommandError> {
-    Ok(ChatStorageCapabilities {
-        backend_kind: state.conversation_store.backend_kind().to_string(),
-        default_max_messages_per_session: crate::infrastructure::chat_storage::DEFAULT_MAX_MESSAGES
-            as u32,
-        supports_search: state.conversation_store.supports_search().await,
-        supports_replay: state.conversation_store.supports_replay().await,
-        supports_cleanup: state.conversation_store.supports_cleanup().await,
-    })
+    storage_proxy_json(&app, state.inner(), ChatStorageProxyOp::Capabilities).await
 }
 
-/// Effective chat JSON mirror root (env > app setting > default).
-///
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub async fn get_chat_storage_root(
+    app: AppHandle,
     state: State<'_, SharedAppState>,
 ) -> Result<String, crate::api::error::CommandError> {
-    let app_data = state.directory_plugins.app_data_dir();
-    Ok(resolve_storage_root(app_data).to_string_lossy().into_owned())
+    #[derive(serde::Deserialize)]
+    struct Out {
+        path: String,
+    }
+    let out: Out = storage_proxy_json(&app, state.inner(), ChatStorageProxyOp::GetStorageRoot).await?;
+    Ok(out.path)
 }
 
-/// Persist custom chat mirror root; optionally copy existing mirror tree.
-///
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
@@ -467,27 +432,18 @@ pub async fn get_chat_storage_root(
 pub async fn set_chat_storage_root(
     path: String,
     migrate: Option<bool>,
+    app: AppHandle,
     state: State<'_, SharedAppState>,
 ) -> Result<String, crate::api::error::CommandError> {
-    let app_data = state.directory_plugins.app_data_dir();
-    let trimmed = path.trim();
-    if trimmed.is_empty() {
-        state
-            .db_manager
-            .upsert_app_setting(APP_SETTING_CHAT_STORAGE_ROOT, "")
-            .await?;
-        set_persisted_storage_root(None);
-        return Ok(resolve_storage_root(app_data).to_string_lossy().into_owned());
+    #[derive(serde::Deserialize)]
+    struct Out {
+        path: String,
     }
-    let new_root = PathBuf::from(trimmed);
-    let old_root = resolve_storage_root(app_data);
-    if migrate.unwrap_or(true) && old_root != new_root {
-        migrate_mirror_tree(&old_root, &new_root).await?;
-    }
-    state
-        .db_manager
-        .upsert_app_setting(APP_SETTING_CHAT_STORAGE_ROOT, trimmed)
-        .await?;
-    set_persisted_storage_root(Some(new_root.clone()));
-    Ok(new_root.to_string_lossy().into_owned())
+    let out: Out = storage_proxy_json(
+        &app,
+        state.inner(),
+        ChatStorageProxyOp::SetStorageRoot { path, migrate },
+    )
+    .await?;
+    Ok(out.path)
 }

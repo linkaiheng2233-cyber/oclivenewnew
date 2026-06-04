@@ -13,9 +13,12 @@ pub use commands::{
     ImportGgufToOllamaRequest, LlmUserSettingsDto, SaveLlmUserSettingsRequest,
 };
 pub use llm_models::LocalModelFileDto;
-pub use user_llm_env::{apply_user_llm_env, apply_user_llm_env_from_db};
-#[allow(unused_imports)]
-pub(crate) use user_llm_env::{KEY_LLM_PROVIDER, KEY_REMOTE_MODEL, KEY_REMOTE_URL};
+pub use crate::domain::user_llm_env::{apply_user_llm_env, apply_user_llm_env_from_db};
+pub(crate) use crate::domain::user_llm_env::{
+    cloud_api_token_configured, ollama_base_from_db_or_env, resolve_remote_token, KEY_CLOUD_STYLE,
+    KEY_CLOUD_VENDOR, KEY_LLM_PROVIDER, KEY_LOCAL_MODELS_DIR, KEY_OLLAMA_BASE, KEY_REMOTE_MODEL,
+    KEY_REMOTE_URL, LLM_APP_SETTING_KEYS,
+};
 
 #[tauri::command]
 pub async fn get_llm_user_settings(

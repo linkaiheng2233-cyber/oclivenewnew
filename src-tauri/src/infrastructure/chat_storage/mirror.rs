@@ -109,7 +109,15 @@ pub async fn sync_mirror_append(
 
     let mut doc = if path.is_file() {
         let raw = fs::read_to_string(&path).await.map_err(AppError::IoError)?;
-        serde_json::from_str(&raw).unwrap_or_else(|_| MirrorDocument::from_session_and_rows(session, &[]))
+        serde_json::from_str(&raw).unwrap_or_else(|e| {
+            tracing::warn!(
+                target: "oclive_chat_storage",
+                path = %path.display(),
+                error = %e,
+                "corrupt chat mirror JSON; rebuilding from SQLite rows on append"
+            );
+            MirrorDocument::from_session_and_rows(session, &[])
+        })
     } else {
         MirrorDocument::from_session_and_rows(session, &[])
     };

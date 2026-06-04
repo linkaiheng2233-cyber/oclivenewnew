@@ -143,13 +143,7 @@ export default {
       chatHeaderStrip: 'Chat header plugin slots',
       chatToolbar: 'Plugin toolbar',
     },
-    v2PanelAria: 'Plugins & backends (V2)',
     v2: {
-      archGraphBanner:
-        'Lightweight cards synced with the architecture graph. Use V1 → Architecture graph (Ctrl+Shift+F) for multi-instance editing on disk.',
-      openArchGraph: 'Open this slot in the graph',
-      noBlueprintHint:
-        'No v2 blueprint on this role; use V1 advanced mode or migrate to pipeline.ocblueprint.',
       slotKey: 'Instance key',
       packBackend: 'Pack default backend',
     },
