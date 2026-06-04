@@ -1,15 +1,38 @@
-//! Developer mode: watch plugin container dirs, debounced rescan, emit `plugin:changed`.
+//! Tauri-desktop-only hooks (plugin FS watcher, chat auto-cleanup scheduler).
 
-use super::runtime::{plugin_scan_container_roots, HostPluginsFile};
-use crate::state::AppState;
+use oclive_kernel_host::infrastructure::chat_storage::run_global_auto_cleanup;
+use oclive_kernel_host::infrastructure::directory_plugins::{
+    plugin_scan_container_roots, HostPluginsFile,
+};
+use oclive_kernel_host::state::{AppState, SharedAppState};
 use notify::{Config, RecommendedWatcher, RecursiveMode, Watcher};
 use serde_json::json;
 use std::path::PathBuf;
 use std::sync::mpsc::channel;
 use std::time::Duration;
-use tauri::Manager;
+use tauri::{AppHandle, Manager};
 
-/// Watch directories from `plugin_scan_container_roots` on a dedicated thread; failures are logged only.
+const CLEANUP_INTERVAL: Duration = Duration::from_secs(24 * 60 * 60);
+
+/// Spawn startup + periodic auto-cleanup for all roles with policy enabled.
+pub fn spawn_auto_cleanup_scheduler(app: AppHandle) {
+    tauri::async_runtime::spawn(async move {
+        run_if_ready(&app).await;
+        loop {
+            tokio::time::sleep(CLEANUP_INTERVAL).await;
+            run_if_ready(&app).await;
+        }
+    });
+}
+
+async fn run_if_ready(app: &AppHandle) {
+    let Some(state) = app.try_state::<SharedAppState>() else {
+        return;
+    };
+    run_global_auto_cleanup(state.inner()).await;
+}
+
+/// Watch plugin container dirs in developer mode; debounced rescan + `plugin:changed` emit.
 pub fn start_plugin_fs_watcher(app: tauri::AppHandle, state: &AppState, roles_dir: PathBuf) {
     let app_data = state.directory_plugins.app_data_dir().to_path_buf();
     let host: HostPluginsFile = state.directory_plugins.host().clone();
@@ -38,8 +61,7 @@ pub fn start_plugin_fs_watcher(app: tauri::AppHandle, state: &AppState, roles_di
         Err(e) => {
             tracing::warn!(
                 target: "oclive_plugin",
-                "plugin fs watcher: create failed: {}",
-                e
+                "plugin fs watcher: create failed: {e}"
             );
             return;
         }
@@ -49,9 +71,8 @@ pub fn start_plugin_fs_watcher(app: tauri::AppHandle, state: &AppState, roles_di
         if let Err(e) = watcher.watch(r, RecursiveMode::Recursive) {
             tracing::warn!(
                 target: "oclive_plugin",
-                "plugin fs watcher: watch {:?}: {}",
-                r,
-                e
+                "plugin fs watcher: watch {:?}: {e}",
+                r
             );
         }
     }

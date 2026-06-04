@@ -66,7 +66,7 @@ pub(super) fn backend_resolution_summary(
 }
 
 /// Session-scoped SQLite namespace: HTTP trial chat with `session_id` is isolated from the default conversation without one.
-pub(crate) fn conversation_state_role_id(
+pub fn conversation_state_role_id(
     manifest_role_id: &str,
     session_id: Option<&str>,
 ) -> String {

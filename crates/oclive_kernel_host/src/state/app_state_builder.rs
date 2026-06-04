@@ -239,7 +239,7 @@ impl AppStateBuilder {
             user_llm_env_dirty: AtomicBool::new(true),
             host_profile,
         };
-        if let Err(e) = crate::api::llm_settings::apply_user_llm_env(&state).await {
+        if let Err(e) = crate::domain::user_llm_env::apply_user_llm_env(&state).await {
             tracing::warn!(target: "oclive_llm", "apply user llm settings: {e}");
         }
         Ok(state)

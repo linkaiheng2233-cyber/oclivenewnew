@@ -8,16 +8,16 @@ use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use std::sync::atomic::Ordering;
 
-pub(crate) const KEY_OLLAMA_BASE: &str = "user_ollama_base_url";
-pub(crate) const KEY_REMOTE_URL: &str = "user_remote_llm_url";
-pub(crate) const KEY_REMOTE_TOKEN: &str = "user_remote_llm_token";
-pub(crate) const KEY_REMOTE_MODEL: &str = "user_remote_llm_model";
-pub(crate) const KEY_CLOUD_STYLE: &str = "user_llm_cloud_api_style";
-pub(crate) const KEY_CLOUD_VENDOR: &str = "user_llm_cloud_vendor";
-pub(crate) const KEY_LLM_PROVIDER: &str = "user_llm_provider";
-pub(crate) const KEY_LOCAL_MODELS_DIR: &str = "user_local_models_dir";
+pub const KEY_OLLAMA_BASE: &str = "user_ollama_base_url";
+pub const KEY_REMOTE_URL: &str = "user_remote_llm_url";
+pub const KEY_REMOTE_TOKEN: &str = "user_remote_llm_token";
+pub const KEY_REMOTE_MODEL: &str = "user_remote_llm_model";
+pub const KEY_CLOUD_STYLE: &str = "user_llm_cloud_api_style";
+pub const KEY_CLOUD_VENDOR: &str = "user_llm_cloud_vendor";
+pub const KEY_LLM_PROVIDER: &str = "user_llm_provider";
+pub const KEY_LOCAL_MODELS_DIR: &str = "user_local_models_dir";
 
-pub(crate) const LLM_APP_SETTING_KEYS: &[&str] = &[
+pub const LLM_APP_SETTING_KEYS: &[&str] = &[
     KEY_LLM_PROVIDER,
     KEY_OLLAMA_BASE,
     KEY_REMOTE_URL,
@@ -30,7 +30,7 @@ pub(crate) const LLM_APP_SETTING_KEYS: &[&str] = &[
 
 static USER_LLM_ENV: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
 
-pub(crate) async fn ollama_base_from_db_or_env(state: &AppState) -> String {
+pub async fn ollama_base_from_db_or_env(state: &AppState) -> String {
     if let Ok(Some(v)) = state.db_manager.get_app_setting(KEY_OLLAMA_BASE).await {
         let t = v.trim();
         if !t.is_empty() {
@@ -97,7 +97,7 @@ pub async fn apply_user_llm_env_from_db(
     Ok(provider)
 }
 
-pub(crate) async fn resolve_remote_token(
+pub async fn resolve_remote_token(
     db: &crate::infrastructure::db::DbManager,
     app_data: &std::path::Path,
 ) -> crate::error::Result<Option<String>> {
@@ -155,7 +155,7 @@ pub async fn apply_user_llm_env(state: &AppState) -> crate::error::Result<()> {
     Ok(())
 }
 
-pub(crate) async fn cloud_api_token_configured(
+pub async fn cloud_api_token_configured(
     db: &crate::infrastructure::db::DbManager,
     req_token: Option<&str>,
 ) -> crate::error::Result<bool> {

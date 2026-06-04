@@ -1,8 +1,8 @@
 //! Role read-model assembly for `RoleData` / `RoleInfo` (shared by load_role and get_role_info).
 
-use crate::api::error::CommandError;
-use crate::api::role::interaction::resolve_interaction_ui_snapshot;
-use crate::api::role::runtime::{
+use crate::command_error::CommandError;
+use crate::service::role::interaction::resolve_interaction_ui_snapshot;
+use crate::service::role::runtime::{
     current_favorability_for_effective_identity, maybe_seed_initial_favorability_with_extras,
     resolve_relation_state_for_ui, role_runtime_extras,
 };
@@ -50,7 +50,7 @@ fn blueprint_groups_pack(
 }
 
 /// Folds session `slot_registry` overrides into a C1-compatible six-slot `PluginBackendsOverride` (read-only display).
-pub(crate) fn plugin_backends_override_from_slot_session(
+pub fn plugin_backends_override_from_slot_session(
     state: &AppState,
     role: &Role,
     session_namespace: &str,

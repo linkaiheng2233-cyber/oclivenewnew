@@ -1,5 +1,5 @@
 use crate::api::chat_backend::ChatBackend;
-use crate::api::chat_storage_proxy::ChatStorageProxyOp;
+use oclive_kernel_host::service::ChatStorageProxyOp;
 use crate::infrastructure::chat_storage::{
     AutoCleanupResult, ChatExportResponse, ChatSearchResult, ChatStorageCapabilities,
     DeleteChatsResult, ImportChatBucket, ImportChatBucketsResult, ReplayProgress, ReplayTarget,

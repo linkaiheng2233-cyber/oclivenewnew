@@ -1,6 +1,6 @@
 //! Chat command backend: HTTP kernel attach vs in-process [`ConversationStore`].
 
-use crate::api::chat_storage_proxy::{execute_chat_storage_proxy, ChatStorageProxyOp};
+use oclive_kernel_host::service::{execute_chat_storage_proxy, ChatStorageProxyOp};
 use crate::error::AppError;
 use crate::infrastructure::chat_storage::{SessionMeta, StoredMessage};
 use crate::kernel_attach::KernelHttpClient;

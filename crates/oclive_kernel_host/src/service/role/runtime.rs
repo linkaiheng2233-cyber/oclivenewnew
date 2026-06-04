@@ -6,7 +6,7 @@ use crate::models::role::Role;
 use crate::state::AppState;
 
 use super::display::user_relations_to_dto;
-use crate::api::error::CommandError;
+use crate::command_error::CommandError;
 
 /// Runtime fields shared by `load_role` / `get_role_info` to avoid drift between the two paths.
 pub(crate) struct RoleRuntimeExtras {

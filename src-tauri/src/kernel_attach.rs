@@ -322,7 +322,7 @@ impl KernelHttpClient {
 
     pub async fn chat_storage_proxy_via_http(
         conn: &KernelConnection,
-        op: &crate::api::chat_storage_proxy::ChatStorageProxyOp,
+        op: &oclive_kernel_host::service::ChatStorageProxyOp,
     ) -> Result<serde_json::Value, AppError> {
         if !Self::probe_health(&conn.base_url).await {
             return Err(Self::offline_err());

@@ -19,8 +19,7 @@ use axum::http::Method;
 use axum::routing::{get, post};
 use axum::Json;
 use axum::Router;
-use crate::api::role::{get_role_info_impl, load_role_impl};
-use crate::api::time::get_time_state_impl;
+use crate::service::{execute_chat_storage_proxy, get_role_info_impl, get_time_state_impl, load_role_impl, ChatStorageProxyOp};
 use crate::infrastructure::chat_storage::{SessionMeta, StoredMessage};
 use crate::models::dto::{GetRoleInfoRequest, RoleInfo, TimeStateResponse};
 use oclive_kernel_runtime::{
@@ -400,9 +399,9 @@ struct LlmReloadResponse {
 
 async fn chat_storage_proxy_route(
     State(state): State<Arc<AppState>>,
-    Json(op): Json<crate::api::chat_storage_proxy::ChatStorageProxyOp>,
+    Json(op): Json<ChatStorageProxyOp>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    crate::api::chat_storage_proxy::execute_chat_storage_proxy(state.as_ref(), op)
+    execute_chat_storage_proxy(state.as_ref(), op)
         .await
         .map(Json)
         .map_err(|e| {
@@ -415,7 +414,7 @@ async fn llm_reload_route(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<LlmReloadResponse>, ApiError> {
     state.mark_user_llm_env_dirty();
-    crate::api::llm_settings::apply_user_llm_env(state.as_ref())
+    crate::domain::user_llm_env::apply_user_llm_env(state.as_ref())
         .await
         .map_err(|e| {
             let k = e.kernel_error_body();

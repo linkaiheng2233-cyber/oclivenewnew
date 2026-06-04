@@ -6,8 +6,6 @@ mod dependency;
 mod manifest;
 mod runtime;
 mod version;
-mod watcher;
-
 pub use dependency::dependency_report;
 pub use manifest::{
     normalize_plugin_rel, normalize_ui_slot_appearance_id, BridgeConfig, OclivePluginManifest,
@@ -18,4 +16,3 @@ pub use runtime::{
     PluginProcessDebugInfo, PluginRootEntry, PluginScanSummary,
 };
 pub use version::parse_manifest_version;
-pub use watcher::start_plugin_fs_watcher;

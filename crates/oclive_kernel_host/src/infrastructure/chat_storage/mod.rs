@@ -32,7 +32,7 @@ pub use store_trait::ConversationStore;
 pub use mirror::delete_mirror_tree_for_role;
 pub use replay::{spawn_memory_replay, ReplayTaskRegistry};
 pub use role_config::save_role_chat_storage_config;
-pub use scheduler::spawn_auto_cleanup_scheduler;
+pub use scheduler::run_global_auto_cleanup;
 pub use stats::{
     collect_chat_storage_stats, collect_chat_storage_stats_from_db,
     collect_file_chat_storage_stats, delete_mirror_scene_dir, enumerate_chat_mirror_roots,

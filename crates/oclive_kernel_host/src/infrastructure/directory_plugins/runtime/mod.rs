@@ -537,7 +537,7 @@ impl DirectoryPluginRuntime {
             .filter(|s| !s.is_empty())
     }
 
-    pub(crate) fn sanitize_role_shell(&self, state: &mut RolePluginState) {
+    pub fn sanitize_role_shell(&self, state: &mut RolePluginState) {
         let sid = state.shell_plugin_id.trim();
         if sid.is_empty() {
             state.shell_plugin_id.clear();

@@ -27,8 +27,8 @@ fn main() {
         let _ = oclive_kernel_runtime::ensure_app_data_dir(&app_data);
         let log_dir = app_data.join("logs");
         let _log_guard =
-            oclivenewnew_tauri::init_tracing_with_log_dir(Some(log_dir.as_path()));
-        oclivenewnew_tauri::run_api_server(port);
+            oclive_kernel_host::init_tracing_with_log_dir(Some(log_dir.as_path()));
+        oclive_kernel_host::run_api_server(port);
     } else {
         let _log_guard = oclivenewnew_tauri::init_tracing();
         oclivenewnew_tauri::run();

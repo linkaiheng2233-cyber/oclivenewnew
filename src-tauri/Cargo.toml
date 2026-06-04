@@ -21,9 +21,10 @@ default = ["custom-protocol", "desktop"]
 custom-protocol = ["tauri/custom-protocol"]
 desktop = ["dep:tauri-plugin-deep-link"]
 headless = []
-dual_core = []
+dual_core = ["oclive_kernel_host/dual_core"]
 
 [dependencies]
+oclive_kernel_host = { path = "../crates/oclive_kernel_host", features = ["tauri-commands"] }
 oclive_validation = { path = "../crates/oclive_validation" }
 oclive_kernel_runtime = { path = "../crates/oclive_kernel_runtime" }
 tauri = { version = "1.5", features = [ "protocol-asset", "shell-open", "dialog-open", "dialog-save", "global-shortcut"] }

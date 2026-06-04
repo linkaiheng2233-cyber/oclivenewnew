@@ -5,7 +5,7 @@ use crate::models::dto::LifeStateDto;
 use crate::models::InteractionMode;
 use crate::models::Role;
 use crate::state::AppState;
-use crate::api::error::CommandError;
+use crate::command_error::CommandError;
 
 /// Seeded, read from DB, includes pack suggested values and schedule inference.
 pub(crate) struct InteractionUiSnapshot {
