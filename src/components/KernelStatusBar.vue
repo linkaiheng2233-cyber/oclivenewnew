@@ -1,72 +1,34 @@
 <script setup lang="ts">
-import type { DesktopKernelMode, KernelConnectionStatus } from '../api/kernel'
-import { listen } from '@tauri-apps/api/event'
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { getKernelConnectionStatus, reconnectKernel } from '../api/kernel'
+import { useKernelConnectionStore } from '../stores/kernelConnectionStore'
 
 const { t } = useI18n()
+const kernelStore = useKernelConnectionStore()
 
-const status = ref<KernelConnectionStatus | null>(null)
-const busy = ref(false)
+const label = computed(() => t(kernelStore.display.labelKey))
 
-function labelForMode(mode: DesktopKernelMode): string {
-  switch (mode) {
-    case 'attached':
-      return t('kernel.status.attached')
-    case 'spawned':
-      return t('kernel.status.spawned')
-    case 'reconnecting':
-      return t('kernel.status.reconnecting')
-    default:
-      return t('kernel.status.offline')
-  }
-}
-
-async function refresh() {
-  try {
-    status.value = await getKernelConnectionStatus()
-  }
-  catch {
-    status.value = null
-  }
-}
-
-async function onReconnect() {
-  if (busy.value) {
+async function onClick() {
+  if (!kernelStore.display.clickable || kernelStore.disabled) {
     return
   }
-  busy.value = true
   try {
-    status.value = await reconnectKernel()
+    await kernelStore.reconnect()
   }
   catch {
-    await refresh()
-  }
-  finally {
-    busy.value = false
+    // lastError set in store
   }
 }
 
-let unlistenLost: (() => void) | undefined
-let unlistenOk: (() => void) | undefined
-
 onMounted(() => {
-  void refresh()
-  void listen<KernelConnectionStatus>('kernel:upstream_lost', (e) => {
-    status.value = e.payload
-  }).then(u => { unlistenLost = u })
-  void listen<KernelConnectionStatus>('kernel:reconnected', (e) => {
-    status.value = e.payload
-  }).then(u => { unlistenOk = u })
+  void kernelStore.init()
 })
 
 onBeforeUnmount(() => {
-  unlistenLost?.()
-  unlistenOk?.()
+  // Keep listeners for app lifetime; only tear down if this is the sole consumer.
 })
 
-defineExpose({ refresh })
+defineExpose({ refresh: () => kernelStore.refresh() })
 </script>
 
 <template>
@@ -74,18 +36,20 @@ defineExpose({ refresh })
     type="button"
     class="kernel-status"
     :class="{
-      'kernel-status--ok': status?.healthy,
-      'kernel-status--warn': status && !status.healthy,
+      'kernel-status--ok': kernelStore.display.ok,
+      'kernel-status--warn': kernelStore.phase === 'ready' && !kernelStore.display.ok && !kernelStore.display.checking,
+      'kernel-status--checking': kernelStore.display.checking,
+      'kernel-status--clickable': kernelStore.display.clickable,
     }"
     :aria-label="t('kernel.status.aria')"
-    :disabled="busy"
-    @click="onReconnect"
+    :disabled="kernelStore.disabled"
+    @click="onClick"
   >
     <span class="kernel-status__dot" aria-hidden="true" />
     <span class="kernel-status__text">
-      {{ status ? labelForMode(status.mode) : t('kernel.status.offline') }}
-      <template v-if="status?.port">
-        :{{ status.port }}
+      {{ label }}
+      <template v-if="kernelStore.status?.port">
+        :{{ kernelStore.status.port }}
       </template>
     </span>
   </button>
@@ -102,7 +66,19 @@ defineExpose({ refresh })
   background: var(--bg-elevated, rgba(0, 0, 0, 0.04));
   color: inherit;
   font-size: 0.75rem;
+  cursor: default;
+}
+
+.kernel-status--clickable {
   cursor: pointer;
+}
+
+.kernel-status--clickable:hover:not(:disabled) {
+  border-color: var(--border-strong, rgba(127, 127, 127, 0.55));
+}
+
+.kernel-status:disabled {
+  opacity: 0.85;
 }
 
 .kernel-status--ok .kernel-status__dot {
@@ -111,6 +87,10 @@ defineExpose({ refresh })
 
 .kernel-status--warn .kernel-status__dot {
   background: #f59e0b;
+}
+
+.kernel-status--checking .kernel-status__dot {
+  background: #94a3b8;
 }
 
 .kernel-status__dot {

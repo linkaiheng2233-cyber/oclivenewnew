@@ -1,0 +1,185 @@
+import type { KernelConnectionStatus } from '../api/kernel'
+import { listen, type UnlistenFn } from '@tauri-apps/api/event'
+import { defineStore } from 'pinia'
+import { getKernelConnectionStatus, reconnectKernel } from '../api/kernel'
+import { i18n } from '../i18n'
+import { useChatStore } from './chatStore'
+
+export type KernelPhase = 'checking' | 'ready'
+
+export interface KernelDisplay {
+  labelKey: string
+  clickable: boolean
+  ok: boolean
+  checking: boolean
+}
+
+let unlistenFns: UnlistenFn[] = []
+let eventsBound = false
+
+export const useKernelConnectionStore = defineStore('kernelConnection', {
+  state: () => ({
+    phase: 'checking' as KernelPhase,
+    status: null as KernelConnectionStatus | null,
+    lastError: null as string | null,
+    busy: false,
+    initialized: false,
+    wasHealthy: false as boolean,
+  }),
+
+  getters: {
+    display(state): KernelDisplay {
+      if (state.phase === 'checking') {
+        return {
+          labelKey: 'kernel.status.checking',
+          clickable: false,
+          ok: false,
+          checking: true,
+        }
+      }
+      if (state.busy || state.status?.mode === 'reconnecting') {
+        return {
+          labelKey: 'kernel.status.reconnecting',
+          clickable: false,
+          ok: false,
+          checking: false,
+        }
+      }
+      if (!state.status?.healthy) {
+        if (state.lastError) {
+          return {
+            labelKey: 'kernel.status.offlineRetryFailed',
+            clickable: true,
+            ok: false,
+            checking: false,
+          }
+        }
+        return {
+          labelKey: 'kernel.status.offlineTapReconnect',
+          clickable: true,
+          ok: false,
+          checking: false,
+        }
+      }
+      if (state.status.mode === 'spawned') {
+        return {
+          labelKey: 'kernel.status.spawned',
+          clickable: false,
+          ok: true,
+          checking: false,
+        }
+      }
+      if (state.status.mode === 'attached') {
+        return {
+          labelKey: 'kernel.status.attached',
+          clickable: false,
+          ok: true,
+          checking: false,
+        }
+      }
+      return {
+        labelKey: 'kernel.status.offlineTapReconnect',
+        clickable: true,
+        ok: false,
+        checking: false,
+      }
+    },
+
+    disabled(state): boolean {
+      return (
+        state.busy
+        || state.phase === 'checking'
+        || Boolean(state.status?.healthy)
+      )
+    },
+  },
+
+  actions: {
+    applyStatus(status: KernelConnectionStatus) {
+      const prevHealthy = this.wasHealthy
+      this.status = status
+      this.wasHealthy = status.healthy
+      if (prevHealthy && !status.healthy) {
+        const chatStore = useChatStore()
+        chatStore.addSystemMessage(i18n.global.t('kernel.chat.disconnected'))
+      }
+    },
+
+    async refresh() {
+      try {
+        const status = await getKernelConnectionStatus()
+        this.applyStatus(status)
+        if (status.healthy) {
+          this.lastError = null
+        }
+      }
+      catch {
+        this.status = null
+        this.wasHealthy = false
+      }
+    },
+
+    async init() {
+      if (this.initialized) {
+        return
+      }
+      this.initialized = true
+      this.phase = 'checking'
+      await this.refresh()
+      this.phase = 'ready'
+      await this.bindEvents()
+    },
+
+    async bindEvents() {
+      if (eventsBound) {
+        return
+      }
+      eventsBound = true
+      const handler = (payload: KernelConnectionStatus) => {
+        this.applyStatus(payload)
+        if (payload.healthy) {
+          this.lastError = null
+        }
+      }
+      for (const event of [
+        'kernel:status_changed',
+        'kernel:upstream_lost',
+        'kernel:reconnected',
+      ] as const) {
+        const unlisten = await listen<KernelConnectionStatus>(event, (e) => {
+          handler(e.payload)
+        })
+        unlistenFns.push(unlisten)
+      }
+    },
+
+    teardownEvents() {
+      for (const fn of unlistenFns) {
+        fn()
+      }
+      unlistenFns = []
+      eventsBound = false
+    },
+
+    async reconnect() {
+      if (this.busy) {
+        return this.status
+      }
+      this.busy = true
+      this.lastError = null
+      try {
+        const status = await reconnectKernel()
+        this.applyStatus(status)
+        return status
+      }
+      catch (err) {
+        this.lastError = err instanceof Error ? err.message : String(err)
+        await this.refresh()
+        throw err
+      }
+      finally {
+        this.busy = false
+      }
+    },
+  },
+})

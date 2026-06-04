@@ -70,7 +70,17 @@ export function useRoleSnapshotPoll() {
   return { tick, start, stop }
 }
 
-export function kernelModeLabel(mode: DesktopKernelMode, t: (k: string) => string): string {
+export function kernelModeLabel(
+  mode: DesktopKernelMode,
+  healthy: boolean,
+  t: (k: string) => string,
+): string {
+  if (!healthy) {
+    if (mode === 'reconnecting') {
+      return t('kernel.status.reconnecting')
+    }
+    return t('kernel.status.offlineTapReconnect')
+  }
   switch (mode) {
     case 'attached':
       return t('kernel.status.attached')
@@ -79,6 +89,6 @@ export function kernelModeLabel(mode: DesktopKernelMode, t: (k: string) => strin
     case 'reconnecting':
       return t('kernel.status.reconnecting')
     default:
-      return t('kernel.status.offline')
+      return t('kernel.status.offlineTapReconnect')
   }
 }

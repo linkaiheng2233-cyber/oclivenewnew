@@ -1,7 +1,9 @@
 //! Kernel connection state shared by HTTP client and watchdog.
 
+use super::reconnect::AutoReconnectPolicy;
+use super::status::build_ui_status;
 use oclive_kernel_runtime::KernelTier;
-use parking_lot::RwLock;
+use parking_lot::{Mutex, RwLock};
 use serde::Serialize;
 use std::process::Child;
 use std::sync::Arc;
@@ -36,7 +38,8 @@ pub struct KernelConnection {
     pub binary_path: RwLock<Option<String>>,
     pub kernel_tier: RwLock<Option<KernelTier>>,
     client: reqwest::Client,
-    spawned_child: parking_lot::Mutex<Option<Child>>,
+    spawned_child: Mutex<Option<Child>>,
+    pub auto_reconnect: Mutex<AutoReconnectPolicy>,
 }
 
 impl KernelConnection {
@@ -53,7 +56,8 @@ impl KernelConnection {
             binary_path: RwLock::new(None),
             kernel_tier: RwLock::new(None),
             client,
-            spawned_child: parking_lot::Mutex::new(None),
+            spawned_child: Mutex::new(None),
+            auto_reconnect: Mutex::new(AutoReconnectPolicy::default()),
         }
     }
 
@@ -88,6 +92,21 @@ impl KernelConnection {
         self.spawned_child.lock().is_some()
     }
 
+    /// Returns `true` when a spawned child has exited (clears handle).
+    pub fn try_wait_spawned_child(&self) -> bool {
+        let mut guard = self.spawned_child.lock();
+        if let Some(child) = guard.as_mut() {
+            match child.try_wait() {
+                Ok(Some(_)) | Err(_) => {
+                    guard.take();
+                    return true;
+                }
+                Ok(None) => {}
+            }
+        }
+        false
+    }
+
     /// Kill only a child this host spawned; never touch an external daemon.
     pub fn kill_spawned_child(&self) {
         if let Some(mut child) = self.spawned_child.lock().take() {
@@ -98,17 +117,7 @@ impl KernelConnection {
 
     #[must_use]
     pub fn status(&self, healthy: bool) -> KernelConnectionStatus {
-        KernelConnectionStatus {
-            mode: self.mode_snapshot(),
-            base_url: self.base_url.clone(),
-            port: self.port,
-            binary_path: self.binary_path.read().clone(),
-            kernel_tier: self
-                .kernel_tier
-                .read()
-                .map(|t| format!("{t:?}").to_lowercase().replace('_', "-")),
-            healthy,
-        }
+        build_ui_status(self, healthy)
     }
 }
 

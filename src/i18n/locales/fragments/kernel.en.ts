@@ -5,9 +5,15 @@ export default {
       attached: 'Shared kernel connected',
       spawned: 'Local kernel started',
       offline: 'Kernel offline · retry',
+      checking: 'Checking connection…',
+      offlineTapReconnect: 'Offline · tap to reconnect',
+      offlineRetryFailed: 'Reconnect failed · tap to retry',
       reconnecting: 'Reconnecting to kernel…',
       reconnect: 'Reconnect kernel',
       aria: 'Kernel connection status',
+    },
+    chat: {
+      disconnected: 'Connection to the kernel was lost. Use the status bar above to reconnect.',
     },
     diagnostics: {
       title: 'Kernel diagnostics',

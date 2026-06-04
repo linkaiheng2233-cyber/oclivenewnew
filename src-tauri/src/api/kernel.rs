@@ -1,16 +1,12 @@
 //! Kernel connection status and reconnect for the desktop host.
 
 use crate::api::error::CommandError;
-use crate::kernel_attach::KernelHttpClient;
 use crate::kernel_lifecycle::{
-    spawn::{spawn_kernel, wait_for_health},
-    DesktopKernelMode, KernelConnectionStatus, SharedKernelConnection,
+    probe_health_status, reconnect_once, ReconnectOptions, KernelConnectionStatus,
+    SharedKernelConnection,
 };
 use crate::state::SharedAppState;
-use oclive_kernel_runtime::{
-    discover_spawn_kernel_candidates, pick_best_kernel, promote_to_shared_runtime, should_promote,
-    KernelCandidate, KernelTier,
-};
+use oclive_kernel_runtime::shared_kernel_binary_path;
 use tauri::{AppHandle, Manager, State};
 
 /// # Errors
@@ -23,8 +19,7 @@ pub async fn get_kernel_connection_status(
     let conn = app
         .try_state::<SharedKernelConnection>()
         .ok_or_else(|| CommandError(crate::error::AppError::KernelOffline))?;
-    let healthy = KernelHttpClient::probe_health(&conn.base_url).await;
-    Ok(conn.status(healthy))
+    Ok(probe_health_status(&conn).await)
 }
 
 /// Re-attach or respawn the loopback kernel.
@@ -41,16 +36,8 @@ pub async fn reconnect_kernel(
         .try_state::<SharedKernelConnection>()
         .ok_or_else(|| CommandError(crate::error::AppError::KernelOffline))?;
 
-    conn.kill_spawned_child();
+    conn.auto_reconnect.lock().reset();
 
-    if wait_for_health(&conn.base_url).await {
-        conn.set_mode(DesktopKernelMode::Attached);
-        let status = conn.status(true);
-        let _ = app.emit_all("kernel:reconnected", &status);
-        return Ok(status);
-    }
-
-    conn.set_mode(DesktopKernelMode::Reconnecting);
     let port = conn.port;
     let roles_dir = state.storage.roles_dir().to_path_buf();
     let mut anchors = Vec::new();
@@ -63,30 +50,20 @@ pub async fn reconnect_kernel(
         anchors.push(cwd);
     }
 
-    let candidates = discover_spawn_kernel_candidates(&anchors, None, None);
-    let Some(best) = pick_best_kernel(&candidates) else {
-        conn.set_mode(DesktopKernelMode::Offline);
-        return Err(CommandError(crate::error::AppError::KernelOffline));
-    };
-    let mut candidate = best.clone();
-    if should_promote(&candidate) {
-        if let Ok(promoted) = promote_to_shared_runtime(&candidate.binary) {
-            candidate = KernelCandidate {
-                binary: promoted,
-                tier: KernelTier::Shared,
-                score: oclive_kernel_runtime::SCORE_SHARED,
-                extra_args: vec![],
-            };
-        }
-    }
+    let bundled_binary = std::env::var("OCLIVE_KERNEL_BINARY")
+        .ok()
+        .map(std::path::PathBuf::from);
 
-    spawn_kernel(&conn, &candidate, port, &roles_dir)
+    let opts = ReconnectOptions {
+        port,
+        roles_dir,
+        anchors,
+        bundled_binary,
+    };
+
+    reconnect_once(&app, &conn, &opts)
         .await
-        .map_err(|e| CommandError(crate::error::AppError::OllamaError(e)))?;
-    conn.set_mode(DesktopKernelMode::Spawned);
-    let status = conn.status(true);
-    let _ = app.emit_all("kernel:reconnected", &status);
-    Ok(status)
+        .map_err(|e| CommandError(crate::error::AppError::OllamaError(e)))
 }
 
 /// Extended kernel diagnostics for settings UI.
@@ -105,13 +82,10 @@ pub struct KernelDiagnostics {
 /// Returns [`Err`] when kernel state is missing.
 #[tauri::command]
 pub async fn get_kernel_diagnostics(app: AppHandle) -> Result<KernelDiagnostics, CommandError> {
-    use oclive_kernel_runtime::shared_kernel_binary_path;
-
     let conn = app
         .try_state::<SharedKernelConnection>()
         .ok_or_else(|| CommandError(crate::error::AppError::KernelOffline))?;
-    let healthy = KernelHttpClient::probe_health(&conn.base_url).await;
-    let status = conn.status(healthy);
+    let status = probe_health_status(&conn).await;
 
     let shared = shared_kernel_binary_path();
     let shared_runtime_exists = shared.is_file();
@@ -122,7 +96,7 @@ pub async fn get_kernel_diagnostics(app: AppHandle) -> Result<KernelDiagnostics,
             .map(|d| d.as_millis() as i64)
     });
 
-    let health_json = if healthy {
+    let health_json = if status.healthy {
         match conn
             .http_client()
             .get(format!("{}/health", conn.base_url))

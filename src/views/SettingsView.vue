@@ -8,12 +8,12 @@ import HotkeySettingsSection from '../components/hotkey/HotkeySettingsSection.vu
 import PluginSettingsPanelSlots from '../components/PluginSettingsPanelSlots.vue'
 import PluginSlotEmbed from '../components/PluginSlotEmbed.vue'
 import { useAppToast } from '../composables/useAppToast'
+import { useKernelConnectionStore } from '../stores/kernelConnectionStore'
 import { SLOT_SETTINGS_ADVANCED, usePluginStore } from '../stores/pluginStore'
 import {
 
   getRemoteFallbackAppSettings,
   getKernelDiagnostics,
-  reconnectKernel,
   runEnvironmentDiagnostics,
   setRemoteFallbackToBuiltin,
 } from '../api'
@@ -29,6 +29,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const pluginStore = usePluginStore()
+const kernelConnectionStore = useKernelConnectionStore()
 const { showToast } = useAppToast()
 
 const hasSentryDsn
@@ -131,10 +132,12 @@ async function onRunKernelDiagnostics() {
 async function onReconnectKernelFromSettings() {
   kernelDiagLoading.value = true
   try {
-    const status = await reconnectKernel()
-    kernelDiag.value = kernelDiag.value
-      ? { ...kernelDiag.value, status }
-      : await getKernelDiagnostics()
+    const status = await kernelConnectionStore.reconnect()
+    if (status) {
+      kernelDiag.value = kernelDiag.value
+        ? { ...kernelDiag.value, status }
+        : await getKernelDiagnostics()
+    }
     showToast('info', t('kernel.status.reconnect'))
   }
   catch (err) {
