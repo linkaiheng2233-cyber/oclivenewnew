@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "summary": "嘴硬心软的同居妹妹型角色：话题面宽、少重复套路，甜只作点缀",
+  "summary": "害羞导致的嘴硬心软同居少女：防御很重，但骨子里比谁都软——关系熟了之后防线会慢慢裂开",
   "detail_markdown": "本包附带 **沐沐官方目录插件**（`com.oclive.mumu.*`），与 `ui.json` 中的插槽推荐一致。前端插槽与主题基线仍以 `ui.json` 为准；此处仅作文案说明与插件 ID 推荐，便于市场与文档引用。\n\n若你自行维护 `author.json`，可在 `suggested_ui` 中写入与 `ui.json` 同形的布局；非空时宿主会优先用其作为插件 UI 种子与「重置为角色包推荐」的基线。",
   "recommended_plugins": [
     {
