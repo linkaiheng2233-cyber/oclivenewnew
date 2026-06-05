@@ -22,8 +22,14 @@ impl DirectoryPluginRuntime {
         if !ignore_disabled && self.effective_slots().is_plugin_disabled(id) {
             return Err(format!("plugin disabled: {}", id));
         }
+        if self.rpc_urls.lock().contains_key(id) {
+            self.invalidate_rpc_if_child_dead(id);
+        }
         if let Some(u) = self.rpc_urls.lock().get(id) {
-            return Ok(u.clone());
+            if self.validate_rpc_endpoint(id, u) {
+                return Ok(u.clone());
+            }
+            self.clear_plugin_process(id);
         }
         let lock = {
             let mut map = self.startup_locks.lock();
@@ -32,8 +38,14 @@ impl DirectoryPluginRuntime {
                 .clone()
         };
         let _startup = lock.lock();
+        if self.rpc_urls.lock().contains_key(id) {
+            self.invalidate_rpc_if_child_dead(id);
+        }
         if let Some(u) = self.rpc_urls.lock().get(id) {
-            return Ok(u.clone());
+            if self.validate_rpc_endpoint(id, u) {
+                return Ok(u.clone());
+            }
+            self.clear_plugin_process(id);
         }
         let root = self
             .plugin_roots
@@ -184,7 +196,9 @@ impl DirectoryPluginRuntime {
                 ));
             }
             for line in handshake.lock().iter() {
-                if let Some(u) = parse_ready_line(line, prefix) {
+                if let Some(u) =
+                    parse_ready_line(line, prefix, plugin_id, &self.high_risk_grants)
+                {
                     break 'wait u;
                 }
             }

@@ -60,6 +60,10 @@ pub enum AppError {
     #[error("Invalid parameter: {0}")]
     InvalidParameter(String),
 
+    /// **When**: chat message is empty or whitespace-only. **Show**: prompt user to enter visible characters.
+    #[error("Message must not be empty or whitespace-only")]
+    EmptyMessage,
+
     /// **When**: MCP / directory `process:spawn` / `network:*` is not granted. **Show**: the plugin-management permission dialog; **User**: must grant explicitly.
     #[error("High-risk capability not granted: {capability} (id={id})")]
     HighRiskCapabilityNotGranted { capability: String, id: String },
@@ -99,6 +103,7 @@ impl AppError {
             AppError::StartupHealthFailed(_) => "STARTUP_HEALTH_FAILED",
             AppError::RolePackExists(_) => "ROLE_PACK_EXISTS",
             AppError::InvalidParameter(_) => "INVALID_PARAMETER",
+            AppError::EmptyMessage => http_chat_codes::EMPTY_MESSAGE,
             AppError::HighRiskCapabilityNotGranted { .. } => "HIGH_RISK_CAPABILITY_NOT_GRANTED",
             AppError::RemoteServiceUnavailable(_) => "REMOTE_SERVICE_UNAVAILABLE",
             AppError::SerializationError(_) => "SERDE_ERROR",

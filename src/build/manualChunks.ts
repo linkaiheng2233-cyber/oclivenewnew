@@ -10,7 +10,6 @@ export const MANUAL_CHUNK_RULES: ManualChunkRule[] = [
   { pattern: /vue-i18n/, chunk: 'vendor-i18n' },
   { pattern: /pinia-plugin-persistedstate/, chunk: 'vendor-pinia-persist' },
   { pattern: /pinia/, chunk: 'vendor-pinia' },
-  { pattern: /@vue-flow/, chunk: 'vendor-vue-flow' },
   { pattern: /vue3-sfc-loader/, chunk: 'vendor-sfc-loader' },
   { pattern: /acorn/, chunk: 'vendor-acorn' },
   { pattern: /idb-keyval/, chunk: 'vendor-idb' },

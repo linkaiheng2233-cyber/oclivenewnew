@@ -1,26 +1,29 @@
 import type { PresenceMode, SendMessageResponse } from '../api'
+import type { RoleSceneMessageMap } from '../utils/chatMessageDb'
+import type { RoleplaySplit } from '../utils/roleplayReplySplit'
 import { defineStore } from 'pinia'
+import {
+  sendMessage,
+} from '../api'
+import {
+  getChatStorageCapabilities,
+} from '../api/chatStorage'
 import { hostEventBus } from '../lib/hostEventBus'
+import {
+  bucketMapKey,
+  migrateMessageMapShape,
+
+  saveDirtyBucketsToIdb,
+} from '../utils/chatMessageDb'
+
+import { isChatStorageMigrated, runChatStorageMigrationIfNeeded } from '../utils/chatStorageMigration'
 import { getRelationUpgradeMessage } from '../utils/relation'
 import { presentationFromSendResponse } from '../utils/replyPresentation'
 import {
   assistantDialogueFromSplit,
+
   splitRoleplayReply,
-  type RoleplaySplit,
 } from '../utils/roleplayReplySplit'
-import {
-  getChatStorageCapabilities,
-} from '../api/chatStorage'
-import { runChatStorageMigrationIfNeeded } from '../utils/chatStorageMigration'
-import {
-  bucketMapKey,
-  saveDirtyBucketsToIdb,
-  migrateMessageMapShape,
-  type RoleSceneMessageMap,
-} from '../utils/chatMessageDb'
-import {
-  sendMessage,
-} from '../api'
 import { loadRoleSceneMessages, parseMessageTimestamp } from './chatStoreLoad'
 import { useDebugStore } from './debugStore'
 import { useRoleStore } from './roleStore'
@@ -208,6 +211,8 @@ function schedulePersistMessages(
   roleId: string,
   sceneId: string,
 ) {
+  if (isChatStorageMigrated())
+    return
   dirtyBuckets.add(bucketMapKey(roleId, sceneId || 'default'))
   if (persistMessagesTimer)
     clearTimeout(persistMessagesTimer)
@@ -230,6 +235,8 @@ export const useChatStore = defineStore(
       messagesHydrated: false,
       /** Bumped on each scene load; stale async results are ignored. */
       messageLoadGeneration: 0,
+      /** Role×scene bucket currently loading (avoids showing another scene's messages). */
+      messagesLoadingKey: null as string | null,
       /** Per-session UI cap; synced from backend capabilities on hydrate. */
       messageCapPerSession: FALLBACK_MAX_MESSAGES_PER_CONVERSATION,
     }),
@@ -252,6 +259,10 @@ export const useChatStore = defineStore(
       lastAssistantAsideFor: (state) => {
         return (roleId: string, sceneId: string): string =>
           state.lastAssistantAside[roleSceneAsideKey(roleId, sceneId)] ?? ''
+      },
+      isMessagesLoadingFor: (state) => {
+        return (roleId: string, sceneId: string): boolean =>
+          state.messagesLoadingKey === bucketMapKey(roleId, sceneId || 'default')
       },
     },
     actions: {
@@ -283,9 +294,17 @@ export const useChatStore = defineStore(
 
       async loadMessagesForRoleScene(roleId: string, sceneId: string) {
         const sid = sceneId || 'default'
+        const loadKey = bucketMapKey(roleId, sid)
         const gen = ++this.messageLoadGeneration
+        this.messagesLoadingKey = loadKey
         this.ensureLegacyMigrated(roleId)
-        await loadRoleSceneMessages(this.messageMap, roleId, sid)
+        try {
+          await loadRoleSceneMessages(this.messageMap, roleId, sid)
+        }
+        finally {
+          if (this.messagesLoadingKey === loadKey)
+            this.messagesLoadingKey = null
+        }
         if (gen !== this.messageLoadGeneration)
           return
         this.lastAssistantAside = rebuildLastAssistantAsideMap(this.messageMap)
@@ -343,10 +362,18 @@ export const useChatStore = defineStore(
           const count = this.getMessageCountForRoleScene(roleId, next)
           this.sceneHistorySplitIndex[roleId][next] = count
         }
-        uiStore.setScene(next)
         if (prev !== next) {
+          this.messagesLoadingKey = bucketMapKey(roleStore.currentRoleId, next)
+          uiStore.setScene(next)
           void this.loadMessagesForRoleScene(roleStore.currentRoleId, next)
         }
+        else {
+          uiStore.setScene(next)
+        }
+      },
+
+      messagesForDisplay(roleId: string, sceneId: string): ChatMessage[] {
+        return this.messagesForRoleScene(roleId, sceneId)
       },
 
       addSystemMessage(content: string, sceneId?: string) {

@@ -17,22 +17,17 @@ pub use relation::{
     clear_scene_user_relation_impl, set_scene_user_relation_impl, set_user_relation_impl,
 };
 pub use expert::{get_expert_routing, list_blueprint_includes, save_expert_routing};
-pub use slot_session::{
-    clear_all_session_slot_overrides_impl, clear_session_slot_override_impl,
-    get_plugin_resolution_debug_impl, save_role_slot_registry_impl,
+pub use oclive_kernel_host::service::role::{
+    apply_author_suggested_plugin_backends_impl, clear_all_session_slot_overrides_impl,
+    clear_session_slot_override_impl, get_plugin_resolution_debug_impl, save_role_slot_registry_impl,
     set_session_plugin_backend_impl, set_session_slot_override_impl,
 };
-pub(crate) use slot_session::build_plugin_resolution_debug_info;
 
 use crate::error::AppError;
 use crate::api::error::CommandError;
 use crate::models::dto::{GetRoleInfoRequest, RoleData, RoleInfo, RoleSummary};
-use crate::state::{AppState, SharedAppState};
+use crate::state::SharedAppState;
 use tauri::{AppHandle, Manager, State};
-
-use serde_json::{json, Value};
-
-pub(crate) use crate::domain::role_snapshot::plugin_backends_override_from_slot_session;
 
 pub use oclive_kernel_host::service::role::{
     ensure_manifest_role_ready, get_role_info_impl, list_roles_impl, load_role_impl,
@@ -113,57 +108,7 @@ pub async fn switch_role(
     switch_role_impl(&state, &role_id).await
 }
 
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
-/// Deletes the local role directory and DB state for that manifest role (including `__sess__` session namespaces).
-pub async fn delete_role_impl(state: &AppState, role_id: String) -> Result<Value, CommandError> {
-    let rid = role_id.trim();
-    if rid.is_empty() {
-        return Err(AppError::InvalidParameter("role_id required".into()).into());
-    }
-    let removed_ns = state
-        .db_manager
-        .delete_all_data_for_manifest_role(rid)
-        .await
-        ?;
-    let chat_location = state
-        .load_role_cached_async(rid)
-        .await
-        .ok()
-        .map(|r| r.pack_chat_storage_config.location.clone());
-    let mirror_root = crate::infrastructure::chat_storage::resolve_role_chat_storage_root(
-        state.directory_plugins.app_data_dir(),
-        state.storage.roles_dir(),
-        rid,
-        chat_location.as_deref(),
-    );
-    if let Err(e) =
-        crate::infrastructure::chat_storage::delete_mirror_tree_for_role(&mirror_root, rid).await
-    {
-        tracing::warn!(
-            target: "oclive_chat_storage",
-            role_id = %rid,
-            error = %e,
-            "delete_mirror_tree_for_role failed"
-        );
-    }
-    for ns in &removed_ns {
-        state.clear_all_session_slot_overrides(ns);
-    }
-    let dir = state.storage.roles_dir().join(rid);
-    if dir.exists() {
-        let dir_owned = dir.clone();
-        tokio::task::spawn_blocking(move || std::fs::remove_dir_all(&dir_owned))
-            .await
-            .map_err(|e| format!("delete_role: join {e}"))?
-            .map_err(|e: std::io::Error| e.to_string())?;
-    }
-    state.directory_plugins.remove_role_plugin_state(rid)?;
-    state.role_cache.write().remove(rid);
-    state.invalidate_personality_cache_for_role(rid);
-    Ok(json!({ "ok": true, "role_id": rid }))
-}
+pub use oclive_kernel_host::service::delete_role_impl;
 
 /// Strips the Windows verbatim path prefix `\\?\` to avoid frontend path issues.
 fn path_string_for_frontend(p: &std::path::Path) -> String {

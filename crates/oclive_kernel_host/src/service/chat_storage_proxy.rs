@@ -4,9 +4,9 @@ use crate::error::{AppError, Result};
 use crate::infrastructure::chat_storage::{
     delete_mirror_scene_dir, delete_mirror_tree_for_role, resolve_export_max_messages,
     resolve_max_messages_per_session, resolve_role_chat_storage_root, resolve_storage_root,
-    role_mirror_tree_bytes, save_role_chat_storage_config, set_persisted_storage_root,
-    spawn_memory_replay, APP_SETTING_CHAT_STORAGE_ROOT, AutoCleanupConfig, AutoCleanupResult,
-    ChatStorageCapabilities, DeleteChatsResult, ImportChatBucket, ImportChatBucketsResult,
+    role_mirror_tree_bytes, set_persisted_storage_root,
+    spawn_memory_replay, APP_SETTING_CHAT_STORAGE_ROOT, AutoCleanupConfig,
+    ChatStorageCapabilities, DeleteChatsResult, ImportChatBucket,
     ReplayTarget,
 };
 use crate::state::AppState;
@@ -234,13 +234,16 @@ pub async fn execute_chat_storage_proxy(
             Ok(serde_json::to_value(progress).map_err(|e| AppError::InvalidParameter(format!("chat storage proxy encode: {e}")))?)
         }
         ChatStorageProxyOp::Capabilities => {
+            let backend_kind = state.conversation_store.backend_kind().to_string();
+            let mirror_enabled = backend_kind == "hybrid";
             let caps = ChatStorageCapabilities {
-                backend_kind: state.conversation_store.backend_kind().to_string(),
+                backend_kind,
+                mirror_enabled,
                 default_max_messages_per_session: crate::infrastructure::chat_storage::DEFAULT_MAX_MESSAGES
                     as u32,
-                supports_search: state.conversation_store.supports_search().await,
-                supports_replay: state.conversation_store.supports_replay().await,
-                supports_cleanup: state.conversation_store.supports_cleanup().await,
+                supports_search: state.conversation_store.supports_search(),
+                supports_replay: state.conversation_store.supports_replay(),
+                supports_cleanup: state.conversation_store.supports_cleanup(),
             };
             Ok(serde_json::to_value(caps).map_err(|e| AppError::InvalidParameter(format!("chat storage proxy encode: {e}")))?)
         }

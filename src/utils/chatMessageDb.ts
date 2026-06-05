@@ -1,5 +1,16 @@
-import { del, get, set, setMany } from 'idb-keyval'
 import type { ChatMessage } from '../stores/chatStore'
+import { del, get, set, setMany } from 'idb-keyval'
+
+const CHAT_STORAGE_MIGRATED_KEY = 'chat_storage_migrated'
+
+function idbHotPathWritesEnabled(): boolean {
+  try {
+    return localStorage.getItem(CHAT_STORAGE_MIGRATED_KEY) !== 'true'
+  }
+  catch {
+    return true
+  }
+}
 
 export type RoleSceneMessageMap = Record<string, Record<string, ChatMessage[]>>
 
@@ -98,25 +109,13 @@ export async function loadMessageMapFromIdb(): Promise<RoleSceneMessageMap | nul
   return Object.keys(out).length > 0 ? out : null
 }
 
-/** @deprecated Prefer {@link saveDirtyBucketsToIdb} for incremental writes. */
-export async function saveMessageMapToIdb(map: RoleSceneMessageMap): Promise<void> {
-  const keys = new Set<string>()
-  for (const [roleId, roleBucket] of Object.entries(map)) {
-    if (Array.isArray(roleBucket))
-      keys.add(bucketMapKey(roleId, 'default'))
-    else {
-      for (const sceneId of Object.keys(roleBucket))
-        keys.add(bucketMapKey(roleId, sceneId))
-    }
-  }
-  await saveDirtyBucketsToIdb(map, keys)
-}
-
 /** Persist only dirty role×scene buckets; returns number of bucket writes (setMany calls). */
 export async function saveDirtyBucketsToIdb(
   map: RoleSceneMessageMap,
   dirtyKeys: ReadonlySet<string>,
 ): Promise<number> {
+  if (!idbHotPathWritesEnabled())
+    return 0
   if (dirtyKeys.size === 0)
     return 0
   const existing = new Set(await get<string[]>(IDB_BUCKET_INDEX_KEY) ?? [])
@@ -150,6 +149,8 @@ export async function saveBucketToIdb(
   sceneId: string,
   messages: ChatMessage[],
 ): Promise<void> {
+  if (!idbHotPathWritesEnabled())
+    return
   const mapKey = bucketMapKey(roleId, sceneId || 'default')
   const map: RoleSceneMessageMap = { [roleId]: { [sceneId || 'default']: messages } }
   await saveDirtyBucketsToIdb(map, new Set([mapKey]))

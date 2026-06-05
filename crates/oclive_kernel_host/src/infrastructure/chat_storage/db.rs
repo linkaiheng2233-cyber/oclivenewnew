@@ -60,10 +60,15 @@ fn message_row_from_row(row: &SqliteRow) -> MessageRow {
 }
 
 #[derive(Debug, Clone)]
+pub struct InsertTurnResult {
+    pub message_count: i64,
+    pub turn_index: i32,
+}
+
+#[derive(Debug, Clone)]
 pub struct NewTurnMessages {
     pub user_id: String,
     pub assistant_id: String,
-    pub turn_index: i32,
     pub user_content: String,
     pub assistant_content: String,
     pub user_metadata: Option<String>,
@@ -123,7 +128,7 @@ impl DbManager {
         session_id: &str,
         turn: NewTurnMessages,
         max_messages: i64,
-    ) -> Result<i64> {
+    ) -> Result<InsertTurnResult> {
         let cap = max_messages.max(2);
         let mut tx = self
             .pool
@@ -140,6 +145,14 @@ impl DbManager {
         .map_err(|e| AppError::DatabaseError(e.to_string()))?
         .unwrap_or(0);
 
+        let turn_index: i32 = sqlx::query_scalar(
+            "SELECT COALESCE(MAX(turn_index), -1) + 1 FROM chat_messages WHERE session_id = ?",
+        )
+        .bind(session_id)
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+
         let overflow = count.saturating_add(2).saturating_sub(cap);
         if overflow > 0 {
             trim_oldest_chat_messages(&mut tx, session_id, overflow).await?;
@@ -151,7 +164,7 @@ impl DbManager {
         )
         .bind(&turn.user_id)
         .bind(session_id)
-        .bind(turn.turn_index)
+        .bind(turn_index)
         .bind(&turn.user_content)
         .bind(&turn.user_metadata)
         .bind(&turn.user_created_at)
@@ -165,7 +178,7 @@ impl DbManager {
         )
         .bind(&turn.assistant_id)
         .bind(session_id)
-        .bind(turn.turn_index)
+        .bind(turn_index)
         .bind(&turn.assistant_content)
         .bind(&turn.assistant_metadata)
         .bind(&turn.assistant_created_at)
@@ -188,7 +201,10 @@ impl DbManager {
         tx.commit()
             .await
             .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-        Ok(new_count)
+        Ok(InsertTurnResult {
+            message_count: new_count,
+            turn_index,
+        })
     }
 
     /// # Errors
@@ -344,14 +360,22 @@ impl DbManager {
     ///
     /// Database errors propagate as [`AppError::DatabaseError`].
     pub async fn delete_chat_session(&self, session_id: &str) -> Result<()> {
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         sqlx::query("DELETE FROM chat_messages WHERE session_id = ?")
             .bind(session_id)
-            .execute(&self.pool)
+            .execute(&mut *tx)
             .await
             .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         sqlx::query("DELETE FROM chat_sessions WHERE session_id = ?")
             .bind(session_id)
-            .execute(&self.pool)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        tx.commit()
             .await
             .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(())
@@ -569,20 +593,33 @@ impl DbManager {
     ///
     /// Database errors propagate as [`AppError::DatabaseError`].
     pub async fn delete_chat_message(&self, message_id: &str) -> Result<Option<String>> {
-        let msg = self.get_chat_message(message_id).await?;
-        let Some(m) = msg else {
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        let row = sqlx::query(
+            "SELECT session_id FROM chat_messages WHERE id = ?",
+        )
+        .bind(message_id)
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        let Some(row) = row else {
+            tx.rollback().await.ok();
             return Ok(None);
         };
+        let session_id: String = row.get("session_id");
         sqlx::query("DELETE FROM chat_messages WHERE id = ?")
             .bind(message_id)
-            .execute(&self.pool)
+            .execute(&mut *tx)
             .await
             .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         let count: i64 = sqlx::query_scalar(
             "SELECT COUNT(*) FROM chat_messages WHERE session_id = ?",
         )
-        .bind(&m.session_id)
-        .fetch_one(&self.pool)
+        .bind(&session_id)
+        .fetch_one(&mut *tx)
         .await
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         let now = Utc::now().to_rfc3339();
@@ -591,11 +628,14 @@ impl DbManager {
         )
         .bind(count)
         .bind(&now)
-        .bind(&m.session_id)
-        .execute(&self.pool)
+        .bind(&session_id)
+        .execute(&mut *tx)
         .await
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-        Ok(Some(m.session_id))
+        tx.commit()
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(Some(session_id))
     }
 
     /// # Errors
@@ -606,23 +646,38 @@ impl DbManager {
         message_id: &str,
         new_content: &str,
     ) -> Result<Option<String>> {
-        let msg = self.get_chat_message(message_id).await?;
-        let Some(m) = msg else {
-            return Ok(None);
-        };
-        if m.sender != "user" {
-            return Err(AppError::InvalidParameter(
-                "only user messages can be edited".into(),
-            ));
-        }
         let trimmed = new_content.trim();
         if trimmed.is_empty() {
             return Err(AppError::InvalidParameter(
                 "message content cannot be empty".into(),
             ));
         }
-        let mut meta: serde_json::Value = m
-            .metadata
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        let row = sqlx::query(
+            "SELECT session_id, sender, metadata FROM chat_messages WHERE id = ?",
+        )
+        .bind(message_id)
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        let Some(row) = row else {
+            tx.rollback().await.ok();
+            return Ok(None);
+        };
+        let session_id: String = row.get("session_id");
+        let sender: String = row.get("sender");
+        if sender != "user" {
+            tx.rollback().await.ok();
+            return Err(AppError::InvalidParameter(
+                "only user messages can be edited".into(),
+            ));
+        }
+        let metadata: Option<String> = row.get("metadata");
+        let mut meta: serde_json::Value = metadata
             .as_deref()
             .and_then(|s| serde_json::from_str(s).ok())
             .unwrap_or_else(|| serde_json::json!({}));
@@ -640,16 +695,19 @@ impl DbManager {
         .bind(trimmed)
         .bind(&meta_str)
         .bind(message_id)
-        .execute(&self.pool)
+        .execute(&mut *tx)
         .await
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         sqlx::query("UPDATE chat_sessions SET updated_at = ? WHERE session_id = ?")
             .bind(&now)
-            .bind(&m.session_id)
-            .execute(&self.pool)
+            .bind(&session_id)
+            .execute(&mut *tx)
             .await
             .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-        Ok(Some(m.session_id))
+        tx.commit()
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(Some(session_id))
     }
 
     /// LIKE search on `chat_messages.content` (FTS5 upgrade path reserved).
@@ -773,6 +831,76 @@ impl DbManager {
         Ok((before_msgs, after_msgs))
     }
 
+    /// Batch before/after context for search hits (one query per distinct `session_id`).
+    ///
+    /// # Errors
+    ///
+    /// Database errors propagate as [`AppError::DatabaseError`].
+    pub async fn fetch_search_message_contexts_batch(
+        &self,
+        hits: &[(String, i32)],
+        before: u32,
+        after: u32,
+    ) -> Result<std::collections::HashMap<(String, i32), (Vec<MessageRow>, Vec<MessageRow>)>> {
+        use std::collections::{HashMap, HashSet};
+
+        let mut out = HashMap::new();
+        if hits.is_empty() {
+            return Ok(out);
+        }
+        let session_ids: Vec<String> = hits
+            .iter()
+            .map(|(s, _)| s.clone())
+            .collect::<HashSet<_>>()
+            .into_iter()
+            .collect();
+        let placeholders = session_ids.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+        let sql = format!(
+            "SELECT id, session_id, turn_index, sender, content, metadata, created_at
+             FROM chat_messages WHERE session_id IN ({placeholders})
+             ORDER BY session_id, turn_index"
+        );
+        let mut query = sqlx::query(&sql);
+        for sid in &session_ids {
+            query = query.bind(sid);
+        }
+        let rows = query
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        let mut by_session: HashMap<String, Vec<MessageRow>> = HashMap::new();
+        for row in rows {
+            let msg = message_row_from_row(&row);
+            by_session
+                .entry(msg.session_id.clone())
+                .or_default()
+                .push(msg);
+        }
+        let before_n = before.max(1) as usize;
+        let after_n = after.max(1) as usize;
+        for (session_id, turn_index) in hits {
+            let Some(msgs) = by_session.get(session_id) else {
+                out.insert((session_id.clone(), *turn_index), (Vec::new(), Vec::new()));
+                continue;
+            };
+            let mut before_msgs: Vec<MessageRow> = msgs
+                .iter()
+                .filter(|m| m.turn_index < *turn_index)
+                .cloned()
+                .collect();
+            let take_from = before_msgs.len().saturating_sub(before_n);
+            before_msgs = before_msgs.split_off(take_from);
+            let after_msgs: Vec<MessageRow> = msgs
+                .iter()
+                .filter(|m| m.turn_index > *turn_index)
+                .take(after_n)
+                .cloned()
+                .collect();
+            out.insert((session_id.clone(), *turn_index), (before_msgs, after_msgs));
+        }
+        Ok(out)
+    }
+
     /// Distinct manifest `role_id` values with at least one chat session.
     ///
     /// # Errors
@@ -871,13 +999,12 @@ mod tests {
         db.upsert_chat_session("mumu", "mumu", "default")
             .await
             .expect("session");
-        let count = db
+        let inserted = db
             .insert_chat_turn_messages(
                 "mumu",
                 NewTurnMessages {
                     user_id: uuid::Uuid::new_v4().to_string(),
                     assistant_id: uuid::Uuid::new_v4().to_string(),
-                    turn_index: 0,
                     user_content: "hi".into(),
                     assistant_content: "hello".into(),
                     user_metadata: None,
@@ -889,7 +1016,8 @@ mod tests {
             )
             .await
             .expect("insert");
-        assert_eq!(count, 2);
+        assert_eq!(inserted.message_count, 2);
+        assert_eq!(inserted.turn_index, 0);
         let msgs = db.fetch_chat_messages("mumu", 10, 0).await.expect("fetch");
         assert_eq!(msgs.len(), 2);
         assert_eq!(msgs[0].sender, "user");

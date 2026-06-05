@@ -1,16 +1,14 @@
 //! JSON-RPC: `event.estimate` — the sidecar returns [`EventImpactEstimate`](crate::domain::event_impact_ai::EventImpactEstimate).
 //! `params` includes `personality_source` (`vector`|`profile`), consistent with the pack's `evolution`; the sidecar may ignore it.
 
-use crate::domain::error_helpers::serde_to_ollama;
 use crate::domain::event_estimator::EventEstimator;
 use crate::domain::event_impact_ai::EventImpactEstimate;
-use crate::domain::BuiltinEventEstimator;
 use crate::domain::ports::LlmClient;
-use crate::error::{AppError, Result};
+use crate::domain::BuiltinEventEstimator;
+use crate::error::Result;
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
-use crate::infrastructure::remote_fallback_policy::remote_fallback_load;
+use crate::infrastructure::remote_plugin::adapter::{decode_serde_value, RemotePluginAdapterAsync};
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
-use crate::infrastructure::remote_plugin::RemoteHttpClientAsync;
 use crate::models::knowledge::KnowledgeEventAugment;
 use crate::models::{Emotion, Event, PersonalitySource, PersonalityVector};
 use async_trait::async_trait;
@@ -21,9 +19,8 @@ use std::sync::Arc;
 const METHOD_EVENT_ESTIMATE: &str = "event.estimate";
 
 pub struct RemoteEventEstimatorHttp {
-    http: RemoteHttpClientAsync,
+    adapter: RemotePluginAdapterAsync,
     fallback: BuiltinEventEstimator,
-    remote_fallback_allowed: Arc<AtomicBool>,
 }
 
 impl RemoteEventEstimatorHttp {
@@ -35,16 +32,15 @@ impl RemoteEventEstimatorHttp {
         high_risk_grants: Arc<HighRiskGrantStore>,
         network_grant_id: Option<String>,
     ) -> Self {
-        let http = RemoteHttpClientAsync::new(
-            http_client,
-            cfg,
-            high_risk_grants,
-            network_grant_id,
-        );
         Self {
-            http,
+            adapter: RemotePluginAdapterAsync::new(
+                http_client,
+                cfg,
+                remote_fallback_allowed,
+                high_risk_grants,
+                network_grant_id,
+            ),
             fallback: BuiltinEventEstimator,
-            remote_fallback_allowed,
         }
     }
 }
@@ -73,49 +69,26 @@ impl EventEstimator for RemoteEventEstimatorHttp {
             "recent_events": recent_events,
             "knowledge_augment": knowledge_augment.map(|a| &a.by_event),
         });
-        match self
-            .http
-            .call_plugin(METHOD_EVENT_ESTIMATE, params)
+        self.adapter
+            .call_with_async_builtin_fallback(
+                METHOD_EVENT_ESTIMATE,
+                params,
+                |v| decode_serde_value(v, "event.estimate decode"),
+                || {
+                    self.fallback.estimate(
+                        llm,
+                        ollama_model,
+                        user_message,
+                        user_emotion,
+                        personality,
+                        personality_source,
+                        recent_turns,
+                        recent_events,
+                        knowledge_augment,
+                    )
+                },
+            )
             .await
-        {
-            Ok(v) => {
-                let est: EventImpactEstimate = serde_json::from_value(v)
-                    .map_err(|e| serde_to_ollama("event.estimate decode", e))?;
-                Ok(est)
-            }
-            Err(e) => {
-                if matches!(e, AppError::HighRiskCapabilityNotGranted { .. }) {
-                    return Err(e);
-                }
-                if remote_fallback_load(&self.remote_fallback_allowed) {
-                    tracing::warn!(
-                        target: "oclive_plugin",
-                        "event.estimate remote failed endpoint={} err={}; fallback=builtin",
-                        self.http.config().endpoint,
-                        e
-                    );
-                    self.fallback
-                        .estimate(
-                            llm,
-                            ollama_model,
-                            user_message,
-                            user_emotion,
-                            personality,
-                            personality_source,
-                            recent_turns,
-                            recent_events,
-                            knowledge_augment,
-                        )
-                        .await
-                } else {
-                    Err(AppError::RemoteServiceUnavailable(format!(
-                        "event.estimate remote failed endpoint={} err={}",
-                        self.http.config().endpoint,
-                        e
-                    )))
-                }
-            }
-        }
     }
 }
 

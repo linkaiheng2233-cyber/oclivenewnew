@@ -101,6 +101,12 @@ pub struct SendMessageResponse {
     pub user_message_timestamp: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub assistant_message_timestamp: Option<String>,
+    /// `true` when CoPresent chat row persistence failed (SQLite authoritative store).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub chat_persist_failed: Option<bool>,
+    /// Human-readable chat persistence error when `chat_persist_failed` is set.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub chat_persist_error: Option<String>,
 }
 
 // ----- WEEK3-004: role / memory / event queries -----
@@ -479,7 +485,7 @@ pub struct SetRoleInteractionModeRequest {
     pub mode: String,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JumpTimeRequest {
     pub role_id: String,
     #[serde(default)]

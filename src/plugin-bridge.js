@@ -16,10 +16,10 @@ const CMD_PERM = {
 }
 
 function bridgeAllowed(n, inv) {
-  if (inv.indexOf(n) >= 0)
+  if (inv.includes(n))
     return true
   const p = CMD_PERM[n]
-  return p && inv.indexOf(p) >= 0
+  return p && inv.includes(p)
 }
 
 function injectOclivePluginBridge(pluginId, assetRel, inv, ev) {
@@ -35,7 +35,7 @@ function injectOclivePluginBridge(pluginId, assetRel, inv, ev) {
         pluginId,
         assetRel,
         command: n,
-        params: p != null ? p : {},
+        params: p ?? {},
       },
     })
   }

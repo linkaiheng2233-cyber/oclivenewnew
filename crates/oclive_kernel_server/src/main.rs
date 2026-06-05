@@ -2,6 +2,10 @@
 //!
 //! Same orchestration as `oclivenewnew-tauri --api`; use this binary for robots,
 //! gateways, and CI without pulling a GUI entrypoint.
+//!
+//! **Dual-core**: this crate does not enable `oclive_kernel_host/dual_core`. Experimental
+//! blueprint scheduling requires the desktop host built with `oclivenewnew-tauri --features dual_core`.
+//! See `crates/oclive_kernel_host/src/domain/dual_pipeline.rs` and `dual_pipeline_registry.rs`.
 
 use oclive_kernel_runtime::{resolve_api_port, KernelBinaryManifest, RUNTIME_API_VERSION};
 

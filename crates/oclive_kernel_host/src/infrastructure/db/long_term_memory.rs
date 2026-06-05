@@ -3,6 +3,7 @@
 #![allow(clippy::missing_errors_doc, unused_imports)]
 
 use super::{DbManager, parse_memory_created_at};
+use super::memory_merge::{merge_long_term_memory_line, TxOrPool};
 use crate::error::{AppError, Result};
 use crate::models::*;
 use chrono::{DateTime, Utc};
@@ -14,21 +15,40 @@ impl DbManager {
         content: &str,
         importance: f64,
     ) -> Result<String> {
-        let now = Utc::now();
+        self.save_memory_merged(role_id, content, importance, 0.6, "default")
+            .await
+    }
 
-        let result = sqlx::query(
-            "INSERT INTO long_term_memory (role_id, content, importance, weight, created_at)
-             VALUES (?, ?, ?, ?, ?)",
+    pub async fn save_memory_merged(
+        &self,
+        role_id: &str,
+        content: &str,
+        importance: f64,
+        similarity_threshold: f64,
+        scene_id: &str,
+    ) -> Result<String> {
+        let trimmed = content.trim();
+        if importance <= 0.0 || trimmed.is_empty() {
+            return Ok(String::new());
+        }
+        merge_long_term_memory_line(
+            TxOrPool::Pool(&self.pool),
+            role_id,
+            scene_id,
+            trimmed,
+            importance,
+            similarity_threshold,
+        )
+        .await?;
+        let row: Option<(i64,)> = sqlx::query_as(
+            "SELECT id FROM long_term_memory WHERE role_id = ? AND content = ? ORDER BY id DESC LIMIT 1",
         )
         .bind(role_id)
-        .bind(content)
-        .bind(importance)
-        .bind(1.0)
-        .bind(now.to_rfc3339())
-        .execute(&self.pool)
+        .bind(trimmed)
+        .fetch_optional(&self.pool)
         .await
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-        Ok(result.last_insert_rowid().to_string())
+        Ok(row.map(|(id,)| id.to_string()).unwrap_or_default())
     }
 
     pub async fn load_memories(&self, role_id: &str, limit: i32) -> Result<Vec<Memory>> {

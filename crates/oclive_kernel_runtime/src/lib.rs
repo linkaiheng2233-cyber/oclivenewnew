@@ -1,6 +1,6 @@
 //! # oclive_kernel_runtime — orchestration implementation and compatibility re-exports
 //!
-//! **Role**: hosts domain engine fragments and HTTP constants reusable in **headless / embedded** scenarios; the **desktop main orchestration** still lives in `oclivenewnew-tauri`'s `chat_engine::process_message`.
+//! **Role**: hosts domain engine fragments and HTTP constants reusable in **headless / embedded** scenarios; the **main orchestration** lives in [`oclive_kernel_host`](https://docs.rs/oclive_kernel_host)'s `chat_engine::process_message` (re-exported by `oclivenewnew-tauri`).
 //!
 //! **Upstream**: [`oclive_kernel_contracts`](https://docs.rs/oclive_kernel_contracts), [`oclive_kernel_types`](https://docs.rs/oclive_kernel_types).
 //! **Downstream**: `oclive_kernel_server`, `src-tauri` (kept working on old paths via re-export).

@@ -19,9 +19,9 @@ use axum::http::Method;
 use axum::routing::{get, post};
 use axum::Json;
 use axum::Router;
-use crate::service::{execute_chat_storage_proxy, get_role_info_impl, get_time_state_impl, load_role_impl, ChatStorageProxyOp};
+use crate::service::{dispatch_bridge_command, execute_chat_storage_proxy, get_role_info_impl, get_time_state_impl, jump_time_impl, load_role_impl, ChatStorageProxyOp};
 use crate::infrastructure::chat_storage::{SessionMeta, StoredMessage};
-use crate::models::dto::{GetRoleInfoRequest, RoleInfo, TimeStateResponse};
+use crate::models::dto::{GetRoleInfoRequest, JumpTimeRequest, JumpTimeResponse, RoleInfo, TimeStateResponse};
 use oclive_kernel_runtime::{
     ensure_app_data_dir, http_chat_codes, resolve_app_data_dir_for_api, resolve_db_path,
     temp_api_db_path, AppDataMode, KernelErrorBody,
@@ -391,6 +391,48 @@ async fn time_state_route(
         })
 }
 
+async fn jump_time_route(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<JumpTimeRequest>,
+) -> Result<Json<JumpTimeResponse>, ApiError> {
+    jump_time_impl(&state, &req)
+        .await
+        .map(Json)
+        .map_err(|e| {
+            let k = e.kernel_error_body();
+            api_error(axum::http::StatusCode::BAD_REQUEST, k)
+        })
+}
+
+#[derive(Debug, Deserialize)]
+struct BridgeDispatchRequest {
+    command: String,
+    #[serde(default)]
+    params: serde_json::Value,
+}
+
+async fn bridge_dispatch_route(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<BridgeDispatchRequest>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    let cmd = req.command.trim();
+    if cmd.is_empty() {
+        let k = KernelErrorBody {
+            code: "INVALID_PARAMETER".to_string(),
+            message: "bridge dispatch: command required".into(),
+            hint: None,
+        };
+        return Err(api_error(axum::http::StatusCode::BAD_REQUEST, k));
+    }
+    dispatch_bridge_command(state.as_ref(), cmd, req.params)
+        .await
+        .map(Json)
+        .map_err(|e| {
+            let k = e.kernel_error_body();
+            api_error(axum::http::StatusCode::BAD_REQUEST, k)
+        })
+}
+
 #[derive(Serialize)]
 struct LlmReloadResponse {
     ok: bool,
@@ -444,6 +486,8 @@ pub fn api_router(app_state: Arc<AppState>) -> Router {
         .route("/chat/messages", get(chat_messages_route))
         .route("/chat/storage", post(chat_storage_proxy_route))
         .route("/time/state", get(time_state_route))
+        .route("/time/jump", post(jump_time_route))
+        .route("/bridge/dispatch", post(bridge_dispatch_route))
         .route("/llm/reload", post(llm_reload_route))
         .layer(cors)
         .with_state(app_state)
@@ -505,6 +549,7 @@ pub async fn build_api_app_state(port: u16) -> Result<Arc<AppState>, String> {
 ///
 /// Returns [`Err`] when listen or serve fails.
 pub async fn serve_api_with_state(app_state: Arc<AppState>, port: u16) -> Result<(), String> {
+    let plugins = Arc::clone(&app_state.directory_plugins);
     let app = api_router(app_state);
     let addr = format!("127.0.0.1:{port}");
     let listener = TcpListener::bind(&addr)
@@ -512,6 +557,12 @@ pub async fn serve_api_with_state(app_state: Arc<AppState>, port: u16) -> Result
         .map_err(|e| format!("绑定 {} 失败：{}", addr, e))?;
     tracing::info!(target: "oclive_api", "HTTP API listening http://{addr}");
     axum::serve(listener, app)
+        .with_graceful_shutdown(async move {
+            if tokio::signal::ctrl_c().await.is_ok() {
+                tracing::info!(target: "oclive_api", "shutdown signal received");
+            }
+            plugins.shutdown_all();
+        })
         .await
         .map_err(|e| format!("HTTP 服务异常：{e}"))?;
     Ok(())

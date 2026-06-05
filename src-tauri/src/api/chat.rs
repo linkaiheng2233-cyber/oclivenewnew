@@ -46,10 +46,7 @@ pub async fn send_message(
 ) -> Result<SendMessageResponse, crate::api::error::CommandError> {
     let user_message = req.user_message.trim().to_string();
     if user_message.is_empty() {
-        return Err(crate::error::AppError::InvalidParameter(
-            "message must not be empty or whitespace-only".into(),
-        )
-        .into());
+        return Err(crate::error::AppError::EmptyMessage.into());
     }
     let mut req = req;
     req.user_message = user_message;

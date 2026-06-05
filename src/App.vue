@@ -1,175 +1,60 @@
 <script setup lang="ts">
-import type { LocalePreference } from './i18n'
-import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 import AutonomousSceneNotice from './components/AutonomousSceneNotice.vue'
 import ChatInput from './components/chat/ChatInput.vue'
 import ChatMessageList from './components/chat/ChatMessageList.vue'
 import ChatPluginToolbarSlots from './components/ChatPluginToolbarSlots.vue'
 import HotkeyHost from './components/hotkey/HotkeyHost.vue'
+import KernelStatusBar from './components/KernelStatusBar.vue'
 import PluginChatHeaderSlots from './components/PluginChatHeaderSlots.vue'
 import PluginSidebarSlots from './components/PluginSidebarSlots.vue'
 import PluginSlotEmbed from './components/PluginSlotEmbed.vue'
-import RoleplayAsidePanel from './components/RoleplayAsidePanel.vue'
 import RoleSelector from './components/role/RoleSelector.vue'
+import RoleplayAsidePanel from './components/RoleplayAsidePanel.vue'
+import TopBarSceneModeDialog from './components/scene/TopBarSceneModeDialog.vue'
 import SceneTravelBars from './components/SceneTravelBars.vue'
 import ShortcutHelp from './components/ShortcutHelp.vue'
-import KernelStatusBar from './components/KernelStatusBar.vue'
-import TopBarMorePanel from './components/TopBarMorePanel.vue'
 import Toast from './components/Toast.vue'
-import TopBarSceneModeDialog from './components/scene/TopBarSceneModeDialog.vue'
-import { useAppBootstrap } from './composables/useAppBootstrap'
-import { useChatSend } from './composables/useChatSend'
-import { useAppToast } from './composables/useAppToast'
-import { useRoleSnapshotPoll } from './composables/useKernelStatus'
-import { useNarrativeScene } from './composables/useNarrativeScene'
-import { useGlobalHotkeys } from './composables/useGlobalHotkeys'
-import { usePluginEvents } from './composables/usePluginEvents'
-import { usePluginManagerWindow } from './composables/usePluginManagerWindow'
-import { useReturnFocusOnClose } from './composables/useReturnFocusOnClose'
-import { useSceneTravelBars } from './composables/useSceneTravelBars'
-import { useSceneDestination } from './composables/useSceneDestination'
-import { usePackUiTheme } from './composables/useTheme'
+import TopBarMorePanel from './components/TopBarMorePanel.vue'
 import {
-  getLocalePreference,
-} from './i18n'
-import { hostEventBus } from './lib/hostEventBus'
-import { useChatStore } from './stores/chatStore'
-import { useDebugStore } from './stores/debugStore'
-import { useModelManagerWindow } from './composables/useModelManagerWindow'
-import { usePluginMarketStore } from './stores/pluginMarketStore'
-import { usePluginStore } from './stores/pluginStore'
-import { useRoleStore } from './stores/roleStore'
-import { useUiStore } from './stores/uiStore'
-import { buildRelationDropdownOptions } from './utils/relationOptions'
-import {
-  loadRole,
-  OCLIVE_DEFAULT_RELATION_SENTINEL,
-  setRoleInteractionMode,
-  setUserRelation,
-} from './api'
+  DebugPanel,
+  MarketView,
+  ModelManagerPanel,
+  SettingsView,
+  SimplePluginManagerPanel,
+  useMainShell,
+} from './composables/useMainShell'
 import RoleDetailView from './views/RoleDetailView.vue'
 
-const DebugPanel = defineAsyncComponent(() => import('./components/dev-tools/DebugPanel.vue'))
-const MarketView = defineAsyncComponent(() => import('./views/MarketView.vue'))
-const SettingsView = defineAsyncComponent(() => import('./views/SettingsView.vue'))
-const ModelManagerPanel = defineAsyncComponent(() => import('./views/ModelManagerPanel.vue'))
-const SimplePluginManagerPanel = defineAsyncComponent(() => import('./views/SimplePluginManagerPanel.vue'))
-
-const roleStore = useRoleStore()
-usePackUiTheme()
-const chatStore = useChatStore()
-const debugStore = useDebugStore()
-const uiStore = useUiStore()
-const pluginStore = usePluginStore()
-const pluginMarketStore = usePluginMarketStore()
-const { t, locale } = useI18n()
-
-function syncBrowserChromeFromLocale(): void {
-  document.title = t('app.documentTitle')
-  document.documentElement.setAttribute('lang', locale.value === 'en-US' ? 'en' : 'zh-CN')
-}
-const localePreference = ref<LocalePreference>(getLocalePreference())
-
-const { toast, showToast } = useAppToast()
-useRoleSnapshotPoll()
-const { applyResolvedNarrativeScene } = useNarrativeScene()
 const {
-  sceneTransition,
-  applySceneDestination,
-  sceneLabelForId,
-} = useSceneDestination(showToast)
-
-const chatListRef = ref<InstanceType<typeof ChatMessageList> | null>(null)
-const chatInputRef = ref<{ focusInput?: () => void } | null>(null)
-const leftPaneRef = ref<HTMLElement | null>(null)
-const roleSwitching = ref(false)
-
-/** Wide: side-by-side panes; narrow: stacked with portrait in stack layout for readability */
-const wideSplitLayout = ref(typeof window !== 'undefined' && window.innerWidth > 720)
-function refreshSplitLayout(): void {
-  wideSplitLayout.value = typeof window !== 'undefined' && window.innerWidth > 720
-}
-
-let splitLayoutResizeRaf = 0
-function scheduleRefreshSplitLayout(): void {
-  if (splitLayoutResizeRaf !== 0)
-    return
-  splitLayoutResizeRaf = requestAnimationFrame(() => {
-    splitLayoutResizeRaf = 0
-    refreshSplitLayout()
-  })
-}
-
-const relationOptions = computed(() =>
-  buildRelationDropdownOptions(
-    roleStore.roleInfo.userRelations ?? [],
-    roleStore.roleInfo.defaultRelation,
-  ),
-)
-
-const connectivityPluginIndexDetail = computed(() => {
-  const b = uiStore.connectivityBanner
-  if (!b || b.kind !== 'plugin_index_offline' || !b.detail)
-    return ''
-  const d = b.detail
-  return d.length > 200 ? `${d.slice(0, 200)}…` : d
-})
-
-const messages = computed(() =>
-  chatStore.messagesForRoleScene(roleStore.currentRoleId, uiStore.sceneId),
-)
-
-/** Latest assistant aside/inner monologue in this scene (O(1); see chatStore.lastAssistantAside) */
-const latestRoleplayAside = computed(() => {
-  const roleId = roleStore.currentRoleId
-  const sceneId = uiStore.sceneId || 'default'
-  return chatStore.lastAssistantAsideFor(roleId, sceneId)
-})
-
-const topMoreOpen = ref(false)
-const settingsViewOpen = ref(false)
-
-const {
+  t,
+  localePreference,
+  toast,
+  showToast,
+  roleStore,
+  chatStore,
+  debugStore,
+  uiStore,
+  pluginStore,
+  pluginMarketStore,
+  chatListRef,
+  chatInputRef,
+  leftPaneRef,
+  roleSwitching,
+  wideSplitLayout,
+  relationOptions,
+  connectivityPluginIndexDetail,
+  messages,
+  chatListLoading,
+  latestRoleplayAside,
+  topMoreOpen,
+  settingsViewOpen,
   simplePluginManagerOpen,
   openPluginManagerPanel,
   openSimplePluginManager,
   openPluginMarket,
-} = usePluginManagerWindow({
-  closeMoreMenu: () => {
-    topMoreOpen.value = false
-  },
-})
-
-const {
   modelManagerOpen,
   openModelManager,
   closeModelManager,
-} = useModelManagerWindow({
-  closeMoreMenu: () => {
-    topMoreOpen.value = false
-  },
-})
-
-watch(simplePluginManagerOpen, (open) => {
-  if (open) {
-    modelManagerOpen.value = false
-  }
-})
-watch(modelManagerOpen, (open) => {
-  if (open) {
-    simplePluginManagerOpen.value = false
-    pluginMarketStore.closeMarketPanel()
-  }
-})
-watch(() => pluginMarketStore.marketPanelVisible, (open) => {
-  if (open) {
-    simplePluginManagerOpen.value = false
-    modelManagerOpen.value = false
-  }
-})
-
-const {
   allSceneOptions,
   sceneDestinationOptions,
   postReplySceneBarVisible,
@@ -179,7 +64,6 @@ const {
   topBarSceneDialogVisible,
   pendingTopBarSceneId,
   autonomousSceneNotice,
-  resetPureChatSceneUi,
   dismissPostReplySceneBar,
   dismissTogetherTravelBar,
   confirmPostReplyScene,
@@ -190,228 +74,29 @@ const {
   onPluginQuickActionTravel,
   onVirtualTimeJumpComplete,
   dismissAutonomousSceneNotice,
-  offerSceneBarsAfterReply,
-  clearSceneBarsBeforeSend,
-} = useSceneTravelBars({ applySceneDestination, sceneLabelForId })
-
-const { shortcutHelpOpen, openShortcutHelp, openSettingsView } = useGlobalHotkeys({
-  simplePluginManagerOpen,
-  settingsViewOpen,
-  topMoreOpen,
-  marketPanelVisible: computed(() => pluginMarketStore.marketPanelVisible),
-  modelManagerOpen,
-  debugVisible: computed(() => debugStore.visible),
-  openPluginManagerPanel,
-  openModelManager: () => openModelManager(),
-  toggleDebug: () => debugStore.toggle(),
-  closeMarketPanel: () => pluginMarketStore.closeMarketPanel(),
-  closeModelManager,
-})
-
-usePluginEvents({
-  showToast,
-  onQuickActionTravel: onPluginQuickActionTravel,
-  onPureChatMode: resetPureChatSceneUi,
-})
-
-useReturnFocusOnClose(settingsViewOpen)
-useReturnFocusOnClose(simplePluginManagerOpen)
-useReturnFocusOnClose(modelManagerOpen)
-useReturnFocusOnClose(shortcutHelpOpen)
-
-function onHostOpenModelManager(): void {
-  openModelManager(true)
-}
-
-function onHostOpenPluginManager(): void {
-  openSimplePluginManager(true)
-}
-
-const sceneHistorySplitIndex = computed(() =>
-  chatStore.sceneHistorySplitForRoleScene(roleStore.currentRoleId, uiStore.sceneId),
-)
-
-/** Role pack `ui.json` → layout; empty fields default to left / bottom */
-const packLayoutResolved = computed(() => {
-  const l = roleStore.roleInfo.packUiConfig?.layout ?? {
-    sidebar: '',
-    chatInput: '',
-  }
-  const sidebar = l.sidebar === 'right' ? 'right' : 'left'
-  const chatInput = l.chatInput === 'top' ? 'top' : 'bottom'
-  return { sidebar, chatInput }
-})
-const sidebarRight = computed(() => packLayoutResolved.value.sidebar === 'right')
-const chatInputTop = computed(() => packLayoutResolved.value.chatInput === 'top')
-const roleName = computed(() => roleStore.roleInfo.name || t('app.defaultRoleName'))
-const emotion = computed(() => roleStore.roleInfo.currentEmotion || 'neutral')
-
-/** Match oclive-new bottom status-bar heart icon */
-const statusHeart = computed(() => {
-  const f = roleStore.roleInfo.favorability
-  if (f >= 60)
-    return '💖'
-  if (f >= 30)
-    return '💕'
-  return '🤍'
-})
-
-async function onInteractionModeChange(ev: Event) {
-  const v = (ev.target as HTMLSelectElement).value as 'immersive' | 'pure_chat'
-  try {
-    const info = await setRoleInteractionMode(roleStore.currentRoleId, v)
-    roleStore.applyRoleInfo(info)
-    if (v === 'pure_chat')
-      resetPureChatSceneUi()
-  }
-  catch (err) {
-    showToast('error', err instanceof Error ? err.message : String(err))
-  }
-}
-
-useAppBootstrap({
-  showToast,
-  t,
-  openPluginManagerPanel,
-  localePreference,
-  syncBrowserChromeFromLocale,
-  scheduleRefreshSplitLayout,
-  refreshSplitLayout,
-})
-
-const { onSend } = useChatSend({
-  showToast,
-  t,
-  chatInputRef,
-  clearSceneBarsBeforeSend,
-  offerSceneBarsAfterReply,
-})
-
-async function onSwitchRole(nextRoleId: string) {
-  const savedLeftScroll = leftPaneRef.value?.scrollTop ?? 0
-  try {
-    roleSwitching.value = true
-    await roleStore.switchRole(nextRoleId)
-    await chatStore.loadMessagesForRoleScene(nextRoleId, uiStore.sceneId || 'default')
-    await pluginStore.syncDirectoryPluginBootstrap()
-    hostEventBus.emitBuiltin('role:switched', { roleId: nextRoleId })
-    applyResolvedNarrativeScene()
-    await debugStore.loadDebugData()
-    showToast('success', t('app.toast.roleSwitched', { id: nextRoleId }))
-  }
-  catch (err) {
-    showToast('error', err instanceof Error ? err.message : String(err))
-  }
-  finally {
-    window.setTimeout(() => {
-      roleSwitching.value = false
-      void nextTick(() => {
-        const pane = leftPaneRef.value
-        if (pane) {
-          pane.scrollTop = savedLeftScroll
-        }
-      })
-    }, 220)
-  }
-}
-
-async function onChangeRelation(nextRelation: string) {
-  try {
-    const perScene = roleStore.roleInfo.identityBinding === 'per_scene'
-    if (nextRelation === OCLIVE_DEFAULT_RELATION_SENTINEL) {
-      if (perScene) {
-        await roleStore.setManifestDefaultIdentity(uiStore.sceneId)
-      }
-      else {
-        await roleStore.setManifestDefaultIdentity()
-      }
-    }
-    else if (perScene) {
-      await roleStore.setSceneUserRelation(uiStore.sceneId, nextRelation)
-    }
-    else {
-      const info = await setUserRelation(roleStore.currentRoleId, nextRelation)
-      roleStore.applyRoleInfo(info)
-    }
-    const relationName
-      = relationOptions.value.find(r => r.id === nextRelation)?.name ?? nextRelation
-    const scopeKey = perScene ? 'app.toast.relationSetPerScene' : 'app.toast.relationSetGlobal'
-    showToast('success', t(scopeKey, { name: relationName }))
-  }
-  catch (err) {
-    showToast('error', err instanceof Error ? err.message : String(err))
-  }
-}
-
-async function onPackImported(roleId: string) {
-  try {
-    roleStore.currentRoleId = roleId
-    await loadRole(roleId)
-    await pluginStore.refresh()
-    await roleStore.refreshRoleInfo()
-    await roleStore.loadRoles()
-    applyResolvedNarrativeScene()
-    await debugStore.loadDebugData()
-  }
-  catch (err) {
-    showToast('error', err instanceof Error ? err.message : String(err))
-  }
-}
-
-async function onReloadPolicy() {
-  try {
-    const msg = await debugStore.reloadPolicy()
-    showToast('success', msg)
-  }
-  catch (err) {
-    showToast('error', err instanceof Error ? err.message : String(err))
-  }
-}
-
-/** Stick to bottom only when a new message arrives; VirtualScrollContainer handles stick internally. */
-watch(
-  () => messages.value.length,
-  async (len, prev) => {
-    if (prev !== undefined && len <= prev)
-      return
-    await nextTick()
-    chatListRef.value?.scrollToBottom?.(false)
-  },
-  { flush: 'post' },
-)
-
-watch(
-  () => debugStore.visible,
-  (v) => {
-    if (v)
-      void debugStore.loadDebugData()
-  },
-)
-
-watch(locale, () => {
-  syncBrowserChromeFromLocale()
-})
-
-onMounted(() => {
-  hostEventBus.on('ui:open_model_manager', onHostOpenModelManager)
-  hostEventBus.on('ui:open_plugin_manager', onHostOpenPluginManager)
-  localePreference.value = getLocalePreference()
-})
-
-onBeforeUnmount(() => {
-  hostEventBus.off('ui:open_model_manager', onHostOpenModelManager)
-  hostEventBus.off('ui:open_plugin_manager', onHostOpenPluginManager)
-  if (splitLayoutResizeRaf !== 0) {
-    cancelAnimationFrame(splitLayoutResizeRaf)
-    splitLayoutResizeRaf = 0
-  }
-})
+  shortcutHelpOpen,
+  openShortcutHelp,
+  openSettingsView,
+  sceneTransition,
+  sceneLabelForId,
+  sceneHistorySplitIndex,
+  sidebarRight,
+  chatInputTop,
+  roleName,
+  emotion,
+  statusHeart,
+  onInteractionModeChange,
+  onSend,
+  onSwitchRole,
+  onChangeRelation,
+  onPackImported,
+  onReloadPolicy,
+} = useMainShell()
 </script>
 
 <template>
   <main class="layout">
     <div class="app-frame">
-      <!-- Match oclive-new: top bar role + time/scene -->
       <header class="top-bar">
         <TopBarMorePanel
           v-model="topMoreOpen"
@@ -438,7 +123,7 @@ onBeforeUnmount(() => {
               :current-relation="roleStore.relationSelectValue"
               :roles="roleStore.roles"
               :relations="relationOptions"
-              :loading="chatStore.isLoading"
+              :loading="chatListLoading"
               @change-role="onSwitchRole"
               @change-relation="onChangeRelation"
             />
@@ -532,7 +217,7 @@ onBeforeUnmount(() => {
                   :key="`${roleStore.currentRoleId}-${uiStore.sceneId}`"
                   :messages="messages"
                   :history-split-index="sceneHistorySplitIndex"
-                  :loading="chatStore.isLoading"
+                  :loading="chatListLoading"
                   :role-switching="roleSwitching"
                 />
               </transition>
@@ -612,7 +297,6 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-/* Fill viewport width; stretch with window to avoid side gutters */
 .layout {
   flex: 1;
   min-height: 0;
@@ -625,7 +309,6 @@ onBeforeUnmount(() => {
   box-sizing: border-box;
   overflow: hidden;
 }
-/* Single card shell: keep radius/shadow; span available horizontal space */
 .app-frame {
   width: 100%;
   max-width: 100%;
@@ -705,50 +388,6 @@ onBeforeUnmount(() => {
   border-left: 3px solid var(--rail-accent-runtime);
   box-shadow: 0 1px 0 color-mix(in srgb, var(--accent) 12%, transparent);
 }
-.time-section {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-.scene-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-.scene-row-label {
-  color: var(--text-secondary);
-  font-weight: 600;
-  white-space: nowrap;
-}
-.scene-select {
-  min-width: 120px;
-  max-width: 200px;
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius-btn);
-  padding: 4px 8px;
-  font-size: 12px;
-  color: var(--text-primary);
-  background: var(--bg-elevated);
-}
-.scene-select:focus {
-  outline: none;
-}
-.scene-select:focus-visible {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus-ring-color) 35%, transparent);
-}
-.scene-row-hint {
-  font-size: 11px;
-  opacity: 0.9;
-  max-width: 140px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 .main-content {
   flex: 1;
   min-height: 0;
@@ -757,7 +396,6 @@ onBeforeUnmount(() => {
   overflow: hidden;
   background: var(--bg-primary);
 }
-/* Left: portrait + affinity; right: history + input (history column wider) */
 .split-row {
   flex: 1;
   min-height: 0;
@@ -769,7 +407,6 @@ onBeforeUnmount(() => {
 .split-row--narrow {
   flex-direction: column;
 }
-/* Wide: portrait on right; narrow: chat above, portrait below */
 .split-row--sidebar-right:not(.split-row--narrow) {
   flex-direction: row-reverse;
 }
@@ -836,7 +473,6 @@ onBeforeUnmount(() => {
 .right-pane--input-top {
   flex-direction: column-reverse;
 }
-/* Scroll lives in ChatMessageList VirtualScrollContainer; avoid nested scroll wheel fights */
 .chat-scroll-wrap {
   flex: 1;
   min-height: 0;
@@ -857,7 +493,6 @@ onBeforeUnmount(() => {
   z-index: 1;
   border-top: 1px solid var(--border-light);
   background: var(--bg-primary);
-  /* Softer shadow to reduce illusion of covering the last bubble */
   box-shadow: 0 -2px 14px color-mix(in srgb, var(--text-primary) 8%, transparent);
 }
 .fade-enter-active,

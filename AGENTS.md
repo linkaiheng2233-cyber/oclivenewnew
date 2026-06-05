@@ -39,10 +39,10 @@
 ### 内核架构（主应用 `src-tauri`）
 
 - **架构总述（对外）**：契约型薄核 + **单核双态**；**第 1–6 模块** / **第 N 设施子模块** / **后端模块插件模块** — [`creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md`](creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)。
-- **主编排入口**：Tauri IPC 与 **`--api` HTTP** 均在 **`src-tauri/src/domain/chat_engine/mod.rs`** 的 **`process_message`**（及 `co_present` / `scene` 等子模块）内顺序编排。角色包 **v2** 以 **`pipeline.ocblueprint`** 为磁盘 SSOT；**不以**蓝图 `steps[]` 作首轮调度 DSL。运行时行为以本仓库 `process_message` 为准。
+- **主编排入口**：Tauri IPC 与 **`--api` HTTP** 均在 **`crates/oclive_kernel_host/src/domain/chat_engine/mod.rs`** 的 **`process_message`**（及 `co_present` / `scene` 等子模块）内顺序编排（`oclivenewnew-tauri` 经 `lib.rs` re-export）。角色包 **v2** 以 **`pipeline.ocblueprint`** 为磁盘 SSOT；**不以**蓝图 `steps[]` 作首轮调度 DSL。运行时行为以本仓库 `process_message` 为准。
 - **角色包与蓝图边界**：**角色包** = 身份、人格、关系、**`prompts/`**、**`reply_quality_anchor`**（初级创作者）。**蓝图** = **`slot_registry`**、**`groups`**、后端/模型/交互模式/记忆策略、**`runtime_config.dual_core`**（管理员；默认关）。逻辑分责见 **[handoff/ROLE_PACK_BOUNDARY.md](handoff/ROLE_PACK_BOUNDARY.md)** · [ROLE_PACK_SPEC.md](creator-docs/role-pack/ROLE_PACK_SPEC.md) §0 · [SETTINGS_REFERENCE.md](creator-docs/cli/SETTINGS_REFERENCE.md) §零。勿让 Agent 在「角色」任务中改 `slot_registry`。
 - **错误与日志**：统一错误类型见 **`src-tauri/src/lib.rs`** 内联 `error` 模块（re-export `oclive_kernel_runtime::error`）；Tauri 命令层见 **`src-tauri/src/api/error.rs`**（`ApiError` / `CommandError`）；**机器 `code` 与 JSON 体**以 **`oclive_kernel_runtime::KernelErrorBody`** 与 **`creator-docs/getting-started/KERNEL_ERROR_CODE_CONVENTION.md`** 为准（与 `AppError::code()`、`http_chat_codes`、目录插件 **`ApiError` JSON** 对齐；**Sentry / 用户可见错误扫尾**见 **`handoff/A3_CLOSURE_SUMMARY.md`** / **`handoff/A3_CLOSURE_SUMMARY.en.md`**）。结构化日志为 **`tracing`**：`init_tracing()` / `init_tracing_with_log_dir()`（`lib.rs`）默认 `info`，受 **`RUST_LOG`** 控制；设置 **`OCLIVE_LOG_DIR`** 或 **`--api`** 模式（`main.rs` → `temp/oclive_api_app_data/logs/`）可同时写入 rolling 文件；**`RUST_LOG` 含 `json`** 时 stdout/文件使用 JSON 行格式。
-- **启动健康检查**：首轮对话前 **`startup_health::ensure_once`**（槽位、`plugin_backends`、角色包文件、**`DbManager::health_ping`**、可选 LLM 探测）；环境变量 **`OCLIVE_SKIP_STARTUP_HEALTH`** / **`OCLIVE_SKIP_LLM_STARTUP_PROBE`** 可跳过。实现：**`src-tauri/src/domain/startup_health.rs`**。
+- **启动健康检查**：首轮对话前 **`startup_health::ensure_once`**（槽位、`plugin_backends`、角色包文件、**`DbManager::health_ping`**、可选 LLM 探测）；环境变量 **`OCLIVE_SKIP_STARTUP_HEALTH`** / **`OCLIVE_SKIP_LLM_STARTUP_PROBE`** 可跳过。实现：**`crates/oclive_kernel_host/src/domain/startup_health.rs`**。
 - **实验性双核运行时（feature）**：`oclivenewnew-tauri` 的 Cargo feature **`dual_core`**（**默认关闭**）。未启用时 `dual_pipeline*` 不参与编译，`role.dual_core_gated()` 走常规 `CoPresent` 路径。本地实验：`cargo build -p oclivenewnew-tauri --features dual_core`。见 [`handoff/DUAL_CORE_CURSOR_HANDOFF.md`](handoff/DUAL_CORE_CURSOR_HANDOFF.md)。
 - **多发行版单写者（Phase 2）**：桌面与 VS Code **平等**——`GET :8420/health` attach 优先，否则 spawn `oclive-kernel-server`；数据目录 **`OCLIVE_APP_DATA`** → `%LOCALAPPDATA%/OCLive/data`。桌面 **`kernel_lifecycle/`** + **`kernel_attach`** 为 HTTP 薄客户端，**不**内嵌 `api_router` 写库。无头 HTTP 入口 crate：**[`crates/oclive_kernel_host/`](crates/oclive_kernel_host/)**（`init_tracing` / `run_api_server` / `http_api` re-export）；**`oclive-kernel-server`** 依赖该 crate 而非直接依赖 `oclivenewnew-tauri`。规范：[`creator-docs/kernel/DISTRO_KERNEL_LIFECYCLE.md`](creator-docs/kernel/DISTRO_KERNEL_LIFECYCLE.md) · [`OCLIVE_APP_DATA.md`](creator-docs/kernel/OCLIVE_APP_DATA.md) · [`CROSS_HOST_MEMORY.md`](creator-docs/role-pack/CROSS_HOST_MEMORY.md)。
 - **内核自举与发行版适配（P1–P4）**：各发行版可在安装根提供 **`distro.oclive.toml`**（契约 [`DISTRO_CAPABILITY_PROFILE.md`](creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md) · 示例 `examples/distro-profiles/`）。**P2a** `KernelBinaryManifest` + sidecar + `GET /health` 的 `kernel_manifest` + `oclive-kernel-server --version-json`。**P3a** `promote_with_backup` / `rollback_shared_kernel`（`crates/oclive_kernel_runtime/src/kernel_runtime_ops.rs`）+ `cargo run -p oclive-cli -- kernel status|promote|rollback`；桌面 `ensure`/`reconnect` 经 `apply_promote_to_candidate`。**P4** `HostProfile`（`src-tauri/src/domain/host_profile.rs`）：`OCLIVE_DISTRO_ID` / `OCLIVE_DISTRO_PROFILE` 加载 profile，合并 `plugin_backends` 上限，按 `host_flags` 跳过 Agent / 复杂情感，简洁 Prompt overlay；spawn 子进程时传递 distro 环境变量。延后：**P2b** 多发行版差异化 manifest 字段；**P3b** 内核进程内自升级（当前由宿主协调 promote）。
@@ -68,7 +68,7 @@
 编号与分层见 [`creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md`](creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)（**不是**第 1–6 后端模块；**不是**后端模块插件模块）。
 
 - **类型与内置规则**：[`src-tauri/src/domain/complex_emotion.rs`](src-tauri/src/domain/complex_emotion.rs)（`ComplexEmotionInput` / `ComplexEmotionOutput`、`BuiltinKeywordComplexEmotionProvider::resolve_turn_inner`）；可选 Remote 见 [`src-tauri/src/infrastructure/remote_plugin/complex_emotion_http.rs`](src-tauri/src/infrastructure/remote_plugin/complex_emotion_http.rs)。
-- **主路径 wiring**：[`src-tauri/src/domain/chat_engine/turn_pipeline/`](src-tauri/src/domain/chat_engine/turn_pipeline/) 在 `load_recent_context` 之后、**`build_prompt` 之前**解析本回合复杂情感；上一轮 `narrative_hint` 经 **`SessionCache`** / DB（`complex_emotion_hint` 表）按 `srid` 读取；通过 **`PromptInput::previous_complex_emotion_narrative_hint`** 传入 [`PromptBuilder::build_prompt`](src-tauri/src/domain/prompt_builder.rs)（段落标题为「复杂情感叙事提示」）。
+- **主路径 wiring**：[`crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/`](crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/) 在 `load_recent_context` 之后、**`build_prompt` 之前**解析本回合复杂情感；上一轮 `narrative_hint` 经 **`SessionCache`** / DB（`complex_emotion_hint` 表）按 `srid` 读取；通过 **`PromptInput::previous_complex_emotion_narrative_hint`** 传入 [`PromptBuilder::build_prompt`](crates/oclive_kernel_host/src/domain/prompt_builder.rs)（段落标题为「复杂情感叙事提示」）。
 - **集成测试**：[`src-tauri/tests/narrative_hint_prompt_roundtrip.rs`](src-tauri/tests/narrative_hint_prompt_roundtrip.rs)。
 
 ### 聊天记录混合存储（SQLite 真源 + JSON 镜像 · phase 1–3 架构完整）
@@ -103,7 +103,7 @@
   - [`src-tauri/src/domain/agent.rs`](src-tauri/src/domain/agent.rs)：`AgentProvider` trait 与 `BuiltinReActAgent`。
   - [`src-tauri/src/infrastructure/mcp_client.rs`](src-tauri/src/infrastructure/mcp_client.rs)：扫描 `{app_data}/mcp-servers/*.json`、列出 server、调用工具（http/stdio）。
   - [`src-tauri/src/api/agent.rs`](src-tauri/src/api/agent.rs)：`list_mcp_servers` / `call_mcp_tool` / `get_agent_debug_traces` / `clear_agent_debug_traces`。
-- **调试 UI**：[`src/components/AgentDebugPanel.vue`](src/components/AgentDebugPanel.vue) 原挂在高级插件面板；主路径 Agent 调试可经目录插件或后续专用入口接入。
+- **调试 UI**：Agent 调试可经目录插件 [`examples/directory-plugin-minimal/`](examples/directory-plugin-minimal/) 或后续专用入口接入（主应用已移除独立 `AgentDebugPanel` 面板）。
 - **示例 Skill / MCP**：MCP server 接入形状见 [`src-tauri/src/infrastructure/mcp_client.rs`](src-tauri/src/infrastructure/mcp_client.rs) 与运行期 `{app_data}/mcp-servers/*.json`；在库可参考的最小 RPC server 示例为 [`examples/directory-plugin-minimal/`](examples/directory-plugin-minimal/) 与 [`examples/common/jsonrpc_http.py`](examples/common/jsonrpc_http.py)。（`examples/weather_skill/`（`get_weather(city)` 最小 MCP server）**尚未入库，为计划中的示例**。）
 
 ### Agent / Skill 通用接入标准（v1）
@@ -122,9 +122,8 @@
 
 ### 创作者工具链（v1）
 
-- **脚手架**：`create_plugin_scaffold`（后端）+ `PluginScaffoldWizard.vue`（前端）生成 `manifest.json` + 语言模板 + README，并打开目标目录。
+- **脚手架**：`create_plugin_scaffold`（Tauri 命令，见 [`src-tauri/src/api/plugin_scaffold.rs`](src-tauri/src/api/plugin_scaffold.rs)）生成 `manifest.json` + 语言模板 + README，并打开目标目录。
 - **一键打包**：`pack_plugin` 校验 manifest 后输出 `.oclive-plugin` 与 `*.signature.json`（SHA-256）。
 - **调试体验**：
-  - `AgentDebugPanel.vue` 支持模板库（含 localStorage 自定义模板）、请求历史与 Diff 对比；
   - `EnvVarManager.vue` 管理 `OCLIVE_*` 会话草稿并复制 PowerShell 设置命令；
-  - `PluginScaffoldWizard.vue` 内置 manifest 实时校验（必填字段与权限枚举约束）。
+  - 目录插件 `shell.bridge.invoke` 经 [`plugin_bridge_invoke`](src-tauri/src/api/plugin_bridge.rs) 调用宿主命令（attach 模式下 `send_message` 等与主 UI 一致走 kernel HTTP）。

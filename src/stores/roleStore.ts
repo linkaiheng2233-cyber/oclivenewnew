@@ -1,11 +1,5 @@
 import type { AuthorPackFile, LifeStateDto, PackUiConfig, PluginBackends, PluginBackendsOverride, PluginBackendsSourceMap, RoleInfo, UserRelationDto } from '../api'
 import { defineStore } from 'pinia'
-import { rt } from '../i18n/runtimeT'
-import { hostEventBus } from '../lib/hostEventBus'
-import {
-  normalizeInteractionMode,
-  packDefaultFromApi,
-} from '../utils/interactionMode'
 import {
 
   clearSceneUserRelation,
@@ -21,6 +15,12 @@ import {
   setUserRelation,
 
 } from '../api'
+import { rt } from '../i18n/runtimeT'
+import { hostEventBus } from '../lib/hostEventBus'
+import {
+  normalizeInteractionMode,
+  packDefaultFromApi,
+} from '../utils/interactionMode'
 
 interface RoleOption { id: string, name: string }
 
@@ -273,7 +273,9 @@ export const useRoleStore = defineStore(
         return info
       },
     },
-    persist: true,
+    persist: {
+      pick: ['currentRoleId'],
+    },
     getters: {
       /** Identity dropdown `:value`: sentinel for default identity option, else resolved relation key */
       relationSelectValue(): string {

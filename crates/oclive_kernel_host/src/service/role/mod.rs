@@ -1,8 +1,18 @@
 //! Role load / snapshot impls shared by HTTP routes and Tauri invoke.
 
+pub mod delete;
 pub mod display;
 pub mod interaction;
 pub mod runtime;
+pub mod slot_session;
+
+pub use delete::delete_role_impl;
+pub use slot_session::{
+    apply_author_suggested_plugin_backends_impl, build_plugin_resolution_debug_info,
+    clear_all_session_slot_overrides_impl, clear_session_slot_override_impl,
+    get_plugin_resolution_debug_impl, save_role_slot_registry_impl,
+    set_session_plugin_backend_impl, set_session_slot_override_impl,
+};
 
 use crate::command_error::CommandError;
 use crate::domain::role_snapshot::{assemble_role_data, assemble_role_info};

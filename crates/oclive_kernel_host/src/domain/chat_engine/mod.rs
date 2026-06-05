@@ -9,6 +9,7 @@ pub mod message_error;
 pub(crate) mod context;
 pub(crate) mod favor;
 pub(crate) mod minimal_response;
+pub(crate) mod relation_snapshot;
 pub mod plugin_resolve;
 pub mod turn_context;
 pub(crate) mod staged;
@@ -22,6 +23,7 @@ pub use process_message::process_message;
 use turn_context::TurnContext;
 use turn_pipeline::{execute_turn, TurnMode};
 
+use crate::domain::chat_engine::relation_snapshot::load_relation_snapshot;
 use crate::domain::remote_life_prompt::compose_remote_stub_reply;
 use crate::domain::user_identity::resolve_effective_user_relation_key;
 use crate::error::Result;
@@ -112,21 +114,10 @@ pub(super) async fn process_remote_stub(
     let emotion_result = pl.emotion.analyze(user_message)?;
     let user_relation_key: String =
         resolve_effective_user_relation_key(state, role, srid, Some(scene_id)).await?;
-    let relation_before = state
-        .db_manager
-        .get_relation_state_for_identity(srid, user_relation_key.as_str())
-        .await?
-        .or(state.db_manager.get_relation_state(srid).await?)
-        .unwrap_or_else(|| "Stranger".to_string());
-    let favorability_before = state
-        .db_manager
-        .favorability_for_identity_with_runtime_fallback(srid, user_relation_key.as_str())
-        .await?;
-    let portrait_emotion_str = state
-        .db_manager
-        .get_current_emotion(srid)
-        .await?
-        .unwrap_or_else(|| "neutral".to_string());
+    let snapshot = load_relation_snapshot(state, srid, user_relation_key.as_str()).await?;
+    let relation_before = snapshot.relation_state;
+    let favorability_before = snapshot.favorability;
+    let portrait_emotion_str = snapshot.portrait_emotion;
     let reply = compose_remote_stub_reply(role);
     let duration_ms = t0.elapsed().as_millis() as u64;
     tracing::info!(
@@ -165,6 +156,8 @@ pub(super) async fn process_remote_stub(
         assistant_message_id: None,
         user_message_timestamp: None,
         assistant_message_timestamp: None,
+        chat_persist_failed: None,
+        chat_persist_error: None,
     })
 }
 

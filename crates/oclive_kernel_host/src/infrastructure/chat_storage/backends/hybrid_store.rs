@@ -117,15 +117,12 @@ impl HybridConversationStore {
                 };
                 let user_ts = timestamp_ms_to_rfc3339(user_ts_ms);
                 let assistant_ts = timestamp_ms_to_rfc3339(msg.timestamp);
-                let session = self
-                    .db
+                self.db
                     .upsert_chat_session(&session_id, &bucket.role_id, &scene_id)
                     .await?;
-                let turn_index = (session.message_count / 2) as i32;
                 let turn = NewTurnMessages {
                     user_id: user_id.unwrap_or_else(|| Uuid::new_v4().to_string()),
                     assistant_id: msg.id.clone().unwrap_or_else(|| Uuid::new_v4().to_string()),
-                    turn_index,
                     user_content,
                     assistant_content: msg.content.clone(),
                     user_metadata: None,
@@ -167,7 +164,6 @@ impl ConversationStore for HybridConversationStore {
             .upsert_chat_session(&input.session_id, &input.role_id, &scene_id)
             .await?;
 
-        let turn_index = (session.message_count / 2) as i32;
         let user_ts = Utc::now().to_rfc3339();
         let assistant_ts = Utc::now().to_rfc3339();
 
@@ -189,7 +185,6 @@ impl ConversationStore for HybridConversationStore {
         let turn = NewTurnMessages {
             user_id: user_id.clone(),
             assistant_id: assistant_id.clone(),
-            turn_index,
             user_content: input.user_message.clone(),
             assistant_content: input.assistant_reply.clone(),
             user_metadata: Some(user_meta_str.clone()),
@@ -198,9 +193,11 @@ impl ConversationStore for HybridConversationStore {
             assistant_created_at: assistant_ts.clone(),
         };
 
-        self.db
+        let inserted = self
+            .db
             .insert_chat_turn_messages(&input.session_id, turn, max)
             .await?;
+        let turn_index = inserted.turn_index;
 
         let user_row = MessageRow {
             id: user_id.clone(),
@@ -372,12 +369,20 @@ impl ConversationStore for HybridConversationStore {
             .db
             .search_chat_messages(query, role_id, limit, offset)
             .await?;
+        let context_keys: Vec<(String, i32)> = rows
+            .iter()
+            .map(|r| (r.session_id.clone(), r.turn_index))
+            .collect();
+        let contexts = self
+            .db
+            .fetch_search_message_contexts_batch(&context_keys, 2, 2)
+            .await?;
         let mut out = Vec::with_capacity(rows.len());
         for r in rows {
-            let (before_rows, after_rows) = self
-                .db
-                .fetch_message_context(&r.session_id, r.turn_index, 2, 2)
-                .await?;
+            let (before_rows, after_rows) = contexts
+                .get(&(r.session_id.clone(), r.turn_index))
+                .cloned()
+                .unwrap_or_default();
             let to_stored = |row: MessageRow| StoredMessage {
                 id: row.id,
                 session_id: row.session_id,
@@ -441,8 +446,14 @@ impl ConversationStore for HybridConversationStore {
     }
 
     async fn delete_session(&self, session_id: &str) -> Result<()> {
+        let mirror_session = if self.mirror_enabled {
+            self.db.get_chat_session(session_id).await?
+        } else {
+            None
+        };
+        self.db.delete_chat_session(session_id).await?;
         if self.mirror_enabled {
-            if let Some(session) = self.db.get_chat_session(session_id).await? {
+            if let Some(session) = mirror_session {
                 let root = self.role_storage_root(&session.role_id, None);
                 let _ = mirror::delete_mirror(
                     &root,
@@ -453,7 +464,7 @@ impl ConversationStore for HybridConversationStore {
                 .await;
             }
         }
-        self.db.delete_chat_session(session_id).await
+        Ok(())
     }
 
     async fn export_session(
@@ -560,15 +571,15 @@ impl ConversationStore for HybridConversationStore {
         }
     }
 
-    async fn supports_search(&self) -> bool {
+    fn supports_search(&self) -> bool {
         true
     }
 
-    async fn supports_replay(&self) -> bool {
+    fn supports_replay(&self) -> bool {
         true
     }
 
-    async fn supports_cleanup(&self) -> bool {
+    fn supports_cleanup(&self) -> bool {
         true
     }
 }

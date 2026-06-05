@@ -3,13 +3,12 @@
 use super::shared::normalize_scene_id;
 use super::store_trait::ConversationStore;
 use super::types::{ReplayProgress, ReplayResult, ReplayTarget, StoredMessage};
-use crate::domain::memory_engine::MemoryEngine;
 use crate::error::{AppError, Result};
+use crate::infrastructure::db::{merge_long_term_memory_line, MergeOutcome, TxOrPool};
 use crate::infrastructure::db::DbManager;
 use crate::infrastructure::policy_registry::{build_policy_sets_from_registry, PolicyRegistryFile};
 use oclive_kernel_runtime::policy::PolicyContext;
 use crate::models::{Event, EventType};
-use chrono::Utc;
 use dashmap::DashMap;
 use std::sync::Arc;
 use uuid::Uuid;
@@ -44,66 +43,6 @@ impl ReplayTaskRegistry {
     pub fn get(&self, task_id: &str) -> Option<ReplayProgress> {
         self.inner.get(task_id).map(|v| v.clone())
     }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum MergeOutcome {
-    New,
-    Updated,
-    Skipped,
-}
-
-/// Merge one memory line into `long_term_memory` (dedupe by keyword overlap).
-async fn merge_memory_line(
-    db: &DbManager,
-    role_id: &str,
-    scene_id: &str,
-    content: &str,
-    importance: f64,
-    similarity_threshold: f64,
-) -> Result<MergeOutcome> {
-    let trimmed = content.trim();
-    if importance <= 0.0 || trimmed.is_empty() {
-        return Ok(MergeOutcome::Skipped);
-    }
-    let candidates: Vec<(i64, String)> = sqlx::query_as(
-        "SELECT id, content FROM long_term_memory WHERE role_id = ? ORDER BY created_at DESC LIMIT 40",
-    )
-    .bind(role_id)
-    .fetch_all(&db.pool)
-    .await
-    .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-
-    for (id, existing) in candidates {
-        let sim = MemoryEngine::keyword_overlap_similarity(trimmed, existing.as_str());
-        if sim >= similarity_threshold {
-            sqlx::query(
-                "UPDATE long_term_memory SET mention_count = mention_count + 1 WHERE id = ? AND role_id = ?",
-            )
-            .bind(id)
-            .bind(role_id)
-            .execute(&db.pool)
-            .await
-            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-            return Ok(MergeOutcome::Updated);
-        }
-    }
-
-    let now = Utc::now().to_rfc3339();
-    sqlx::query(
-        "INSERT INTO long_term_memory (role_id, content, importance, weight, created_at, scene_id, mention_count)
-         VALUES (?, ?, ?, ?, ?, ?, 1)",
-    )
-    .bind(role_id)
-    .bind(trimmed)
-    .bind(importance)
-    .bind(1.0)
-    .bind(&now)
-    .bind(scene_id)
-    .execute(&db.pool)
-    .await
-    .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-    Ok(MergeOutcome::New)
 }
 
 fn pair_turns(messages: &[StoredMessage]) -> Vec<(String, String)> {
@@ -210,8 +149,8 @@ pub async fn run_memory_replay(
                 continue;
             }
             let importance = memory_policy.importance(&ctx);
-            match merge_memory_line(
-                db.as_ref(),
+            match merge_long_term_memory_line(
+                TxOrPool::Pool(&db.pool),
                 role_id,
                 scene_id.as_str(),
                 &memory_line,

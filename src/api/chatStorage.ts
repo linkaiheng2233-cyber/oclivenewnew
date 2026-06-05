@@ -258,6 +258,8 @@ export async function getReplayProgress(taskId: string): Promise<ReplayProgress>
 
 export interface ChatStorageCapabilities {
   backend_kind: string
+  /** JSON mirror alongside SQLite (`hybrid` when true). */
+  mirror_enabled: boolean
   /** Host default per-session cap; role pack may override via config. */
   default_max_messages_per_session: number
   supports_search: boolean

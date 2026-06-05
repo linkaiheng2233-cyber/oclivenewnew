@@ -86,6 +86,10 @@ use clap::{Parser, Subcommand};
     about = "Oclive official kernel project scaffolding"
 )]
 pub struct Cli {
+    /// Enable experimental / unstable subcommands (`build`, `bench`, `market`, `collab`, `dashboard`, `init --monolith`).
+    #[arg(long, global = true)]
+    experimental: bool,
+
     /// Verbosity: `-v` count or `RUST_LOG` (0=INFO, 1=DEBUG, 2+=TRACE)
     #[arg(short = 'v', long, action = clap::ArgAction::Count, global = true)]
     verbose: u8,
@@ -163,28 +167,72 @@ fn init_tracing(verbose: u8) {
         .try_init();
 }
 
+fn require_experimental(experimental: bool, label: &str) -> Result<()> {
+    if !experimental {
+        anyhow::bail!(
+            "'{label}' requires --experimental (unfinished or unstable feature)"
+        );
+    }
+    Ok(())
+}
+
 fn main() -> Result<()> {
     let cli = Cli::parse();
     init_tracing(cli.verbose);
     match cli.command {
-        Commands::Init(args) => commands::init::run(args),
-        Commands::Build(args) => build_cmd::run(args),
-        Commands::Bench(args) => commands::bench::run(args),
+        Commands::Init(args) => {
+            if args.monolith {
+                require_experimental(cli.experimental, "init --monolith")?;
+            }
+            commands::init::run(args)
+        }
+        Commands::Build(args) => {
+            require_experimental(cli.experimental, "build")?;
+            build_cmd::run(args)
+        }
+        Commands::Bench(args) => {
+            require_experimental(cli.experimental, "bench")?;
+            commands::bench::run(args)
+        }
         Commands::Dev(args) => dev_cmd::run(args),
         Commands::Pack(args) => pack_cmd::run_pack(args),
-        Commands::Blueprint(cli) => blueprint_cmd::run(cli),
+        Commands::Blueprint(cli) => {
+            require_experimental(cli.experimental, "blueprint")?;
+            blueprint_cmd::run(cli)
+        }
         Commands::Doctor(args) => doctor_cmd::run(args),
         Commands::Plugin(cli) => plugin_cmd::run(cli),
         Commands::Registry(cli) => registry_cmd::run(cli),
-        Commands::Compose(cli) => compose_cmd::run(cli),
-        Commands::Debug(args) => debug_cmd::run(args),
-        Commands::Dashboard(args) => dashboard_cmd::run(args),
-        Commands::Learn(args) => learn_cmd::run(args),
-        Commands::Test(args) => test_cmd::run(args),
+        Commands::Compose(cli) => {
+            require_experimental(cli.experimental, "compose")?;
+            compose_cmd::run(cli)
+        }
+        Commands::Debug(args) => {
+            require_experimental(cli.experimental, "debug")?;
+            debug_cmd::run(args)
+        }
+        Commands::Dashboard(args) => {
+            require_experimental(cli.experimental, "dashboard")?;
+            dashboard_cmd::run(args)
+        }
+        Commands::Learn(args) => {
+            require_experimental(cli.experimental, "learn")?;
+            learn_cmd::run(args)
+        }
+        Commands::Test(args) => {
+            require_experimental(cli.experimental, "test")?;
+            test_cmd::run(args)
+        }
         Commands::Lint(args) => commands::lint::run(args),
         Commands::Profile(args) => profile_cmd::run(args),
-        Commands::Market(cli) => market_cmd::run(cli),
-        Commands::Collab(cli) => collab_cmd::run(cli),
+        Commands::Market(market_cli) => {
+            require_experimental(cli.experimental, "market")?;
+            market_cmd::run(market_cli)
+        }
+        Commands::Collab(collab_cli) => {
+            require_experimental(cli.experimental, "collab")?;
+            collab_cmd::run(collab_cli)
+        }
         Commands::Config(cli) => config_cmd::run(cli),
         Commands::Ci(cli) => ci_cmd::run(cli),
         Commands::Template(cli) => template_cmd::run(cli),

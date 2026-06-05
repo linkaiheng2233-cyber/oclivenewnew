@@ -1,4 +1,4 @@
-//! Pure domain logic (no `AppState`, Tauri, or SQL). Orchestration glue stays in `oclivenewnew-tauri`.
+//! Pure domain logic (no `AppState`, Tauri, or SQL). Orchestration glue stays in `oclive_kernel_host` (`chat_engine::process_message`).
 
 pub mod affect_policy;
 pub mod chat_engine;

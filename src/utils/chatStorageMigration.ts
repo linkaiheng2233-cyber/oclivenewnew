@@ -1,3 +1,4 @@
+import type { RoleSceneMessageMap } from './chatMessageDb'
 /**
  * One-time IndexedDB / localStorage chat migration (runs before backend is SSOT).
  * After `chat_storage_migrated` is set, this module is not used on the hot path.
@@ -9,12 +10,17 @@ import {
   migrateMessageMapFromLocalStorage,
   migrateMessageMapShape,
   migrateMonolithBlobToBuckets,
-  type RoleSceneMessageMap,
+
 } from './chatMessageDb'
 
 const CHAT_STORAGE_MIGRATED_KEY = 'chat_storage_migrated'
 
 export { CHAT_STORAGE_MIGRATED_KEY }
+
+/** True after one-time IDB/localStorage → backend migration (hot-path IDB writes are gated). */
+export function isChatStorageMigrated(): boolean {
+  return localStorage.getItem(CHAT_STORAGE_MIGRATED_KEY) === 'true'
+}
 
 /** Returns true when legacy local/IDB data was migrated to the backend this session. */
 export async function runChatStorageMigrationIfNeeded(): Promise<boolean> {

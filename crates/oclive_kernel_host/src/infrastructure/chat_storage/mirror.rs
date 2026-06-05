@@ -91,6 +91,52 @@ pub fn mirror_path_for_session(
     Ok(dir.join(mirror_filename(session)))
 }
 
+fn quarantine_corrupt_mirror(path: &Path) {
+    let corrupt_path = path.with_extension("json.corrupt");
+    match std::fs::rename(path, &corrupt_path) {
+        Ok(()) => tracing::warn!(
+            target: "oclive_chat_storage",
+            from = %path.display(),
+            to = %corrupt_path.display(),
+            "quarantined corrupt chat mirror JSON"
+        ),
+        Err(e) => tracing::warn!(
+            target: "oclive_chat_storage",
+            path = %path.display(),
+            error = %e,
+            "failed to quarantine corrupt chat mirror JSON"
+        ),
+    }
+}
+
+async fn read_mirror_document(path: &Path, session: &SessionRow) -> MirrorDocument {
+    let raw = match fs::read_to_string(path).await {
+        Ok(r) => r,
+        Err(e) => {
+            tracing::warn!(
+                target: "oclive_chat_storage",
+                path = %path.display(),
+                error = %e,
+                "chat mirror read failed; starting fresh"
+            );
+            return MirrorDocument::from_session_and_rows(session, &[]);
+        }
+    };
+    match serde_json::from_str::<MirrorDocument>(&raw) {
+        Ok(doc) => doc,
+        Err(e) => {
+            tracing::warn!(
+                target: "oclive_chat_storage",
+                path = %path.display(),
+                error = %e,
+                "corrupt chat mirror JSON; quarantining file"
+            );
+            quarantine_corrupt_mirror(path);
+            MirrorDocument::from_session_and_rows(session, &[])
+        }
+    }
+}
+
 /// Append new messages to mirror (or create file). Truncates to [`DEFAULT_MAX_MESSAGES`].
 ///
 /// # Errors
@@ -108,16 +154,7 @@ pub async fn sync_mirror_append(
     }
 
     let mut doc = if path.is_file() {
-        let raw = fs::read_to_string(&path).await.map_err(AppError::IoError)?;
-        serde_json::from_str(&raw).unwrap_or_else(|e| {
-            tracing::warn!(
-                target: "oclive_chat_storage",
-                path = %path.display(),
-                error = %e,
-                "corrupt chat mirror JSON; rebuilding from SQLite rows on append"
-            );
-            MirrorDocument::from_session_and_rows(session, &[])
-        })
+        read_mirror_document(&path, session).await
     } else {
         MirrorDocument::from_session_and_rows(session, &[])
     };
@@ -179,7 +216,7 @@ pub async fn rebuild_mirror(
     Ok(path)
 }
 
-/// Remove mirror JSON for one session (best-effort).
+/// Remove mirror JSON for one session (exact `session_id` match in file contents).
 ///
 /// # Errors
 ///
@@ -194,12 +231,30 @@ pub async fn delete_mirror(
     if !dir.is_dir() {
         return Ok(());
     }
-    let prefix: String = session_id.chars().take(8).collect();
     let mut entries = fs::read_dir(&dir).await.map_err(AppError::IoError)?;
     while let Some(entry) = entries.next_entry().await.map_err(AppError::IoError)? {
-        let name = entry.file_name().to_string_lossy().to_string();
-        if name.contains(&prefix) && name.ends_with(".json") {
-            let _ = fs::remove_file(entry.path()).await;
+        let path = entry.path();
+        let ext = path.extension().and_then(|e| e.to_str());
+        if ext != Some("json") {
+            continue;
+        }
+        let Ok(raw) = fs::read_to_string(&path).await else {
+            continue;
+        };
+        match serde_json::from_str::<MirrorDocument>(&raw) {
+            Ok(doc) if doc.session_id == session_id => {
+                let _ = fs::remove_file(&path).await;
+            }
+            Err(e) => {
+                tracing::warn!(
+                    target: "oclive_chat_storage",
+                    path = %path.display(),
+                    error = %e,
+                    "corrupt chat mirror JSON during delete; quarantining"
+                );
+                quarantine_corrupt_mirror(&path);
+            }
+            _ => {}
         }
     }
     Ok(())

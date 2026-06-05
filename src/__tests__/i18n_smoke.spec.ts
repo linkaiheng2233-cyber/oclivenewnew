@@ -7,12 +7,12 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 
 import { useI18n } from 'vue-i18n'
-import ChatPanel from '../components/ChatPanel.vue'
 import PmSlotRow from '../components/PmSlotRow.vue'
 import { i18n, LOCALE_PREF_KEY, setLocalePreference } from '../i18n/index'
 import enUS from '../i18n/locales/en-US'
 import zhCN from '../i18n/locales/zh-CN'
 import { usePluginStore } from '../stores/pluginStore'
+import ChatPanel from './fixtures/ChatPanel.vue'
 
 const SettingsTitleProbe = defineComponent({
   name: 'SettingsTitleProbe',

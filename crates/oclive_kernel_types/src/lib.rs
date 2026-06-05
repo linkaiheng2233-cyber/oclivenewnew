@@ -5,6 +5,10 @@
 //! **Upstream**: [`oclive_validation`](https://docs.rs/oclive_validation) (blueprint / manifest validation types such as `SlotRegistryEntry`).
 //! **Downstream**: `oclive_kernel_contracts`, `oclive_kernel_runtime`, and `src-tauri` model re-exports.
 //!
+//! **Decoupling note**: `oclive_validation` is a path dependency today; some manifest/blueprint types are
+//! re-exported for convenience. A future split may move validation-only types behind a narrower boundary
+//! so `oclive_kernel_types` can version independently without pulling the full validation crate surface.
+//!
 //! **Key decision**: types and behavior are kept separate so the contract crate can be versioned independently; prefer importing from this crate root or from [`models`] / [`error`].
 //!
 //! ## Public-export audit (maintenance convention)

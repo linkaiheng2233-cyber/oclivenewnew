@@ -430,7 +430,7 @@ pub async fn save_llm_user_settings(
     } else {
         "ollama"
     };
-    let info = match crate::api::role::slot_session::set_session_plugin_backend_impl(
+    let info = match crate::api::role::set_session_plugin_backend_impl(
         state.inner(),
         &crate::models::dto::SetSessionPluginBackendRequest {
             role_id: req.role_id.clone(),

@@ -18,25 +18,28 @@
 
 **Do not** route `MemoryEngine` or archive LLM through chat JSON files. **Deleting chat logs never clears memory tables.**
 
-## Pluggable backends
+## Pluggable storage (SQLite + optional JSON mirror)
 
-`AppState::conversation_store` is `Arc<dyn ConversationStore>`. Selection order:
+Runtime always constructs **`HybridConversationStore`** (SQLite authoritative). Legacy `chat_storage.backend` values (`hybrid` / `file` / `sqlite`) and env `OCLIVE_CHAT_STORAGE_BACKEND` map to an internal **`mirror: bool`** via [`resolve_mirror_enabled`](../../crates/oclive_kernel_host/src/infrastructure/chat_storage/factory.rs); explicit `chat_storage.mirror` in role `config.json` wins.
 
-1. Env `OCLIVE_CHAT_STORAGE_BACKEND` (`hybrid` \| `file` \| `sqlite`)
-2. Role pack `config.json` → `chat_storage.backend` (scaffold / per-project default)
-3. Default **`hybrid`**
+Selection order:
 
-| Backend | Chat data | Mirror files | Search | Auto cleanup | Memory replay | Capability UI |
-|---------|-----------|--------------|--------|--------------|---------------|---------------|
-| **`hybrid`** (default) | SQLite `chat_sessions` / `chat_messages` | `{app_data}/chats/` best-effort | ✅ SQLite LIKE | ✅ | ✅ | all enabled |
-| **`file`** | JSON only under mirror roots | Same (authoritative) | ✅ directory scan (`role_id` required) | ❌ | ✅ | search + replay only |
-| **`sqlite`** | SQLite only | None | ✅ SQLite LIKE | ✅ | ✅ | all enabled |
+1. Env `OCLIVE_CHAT_STORAGE_BACKEND` (`hybrid`|`file`|`sqlite`) — legacy; `file`/`sqlite` only affect mirror default
+2. Role pack `config.json` → `chat_storage.backend` or `chat_storage.mirror`
+3. Default **`mirror: true`** (hybrid)
 
-Implementation: `src-tauri/src/infrastructure/chat_storage/backends/hybrid_store.rs` (always constructed by `factory.rs`; `file` / `sqlite` backend kinds only toggle JSON mirror via `resolve_mirror_enabled`).
+| Config | SQLite chat tables | JSON mirror under `{app_data}/chats/` | Search | Auto cleanup | Memory replay |
+|--------|-------------------|----------------------------------------|--------|--------------|---------------|
+| **`mirror: true`** (default) | ✅ authoritative | ✅ best-effort | ✅ | ✅ | ✅ |
+| **`mirror: false`** (`sqlite` legacy) | ✅ authoritative | ❌ | ✅ | ✅ | ✅ |
 
-Shared trait: `store_trait.rs` — `append_turn`, `list_sessions`, `fetch_messages`, `list_sessions_by_role`, plus optional methods with default `NotImplemented` (search, export, cleanup, delete/edit, stats, replay, `supports_*`).
+`get_chat_storage_capabilities.backend_kind` still reports `hybrid`|`file`|`sqlite` for UI compatibility; internally only mirror differs.
 
-Conformance tests: `store_trait_tests.rs` (all three backends).
+Implementation: `hybrid_store.rs` + `factory.rs::resolve_mirror_enabled`.
+
+## Legacy “three backends” note
+
+Older docs described independent `file` / `sqlite` store implementations. Phase 3+ uses a **single hybrid store**; `file`/`sqlite` backend enum values remain deserializable for migration and only toggle mirror behavior.
 
 ## Capability detection (PATCH-1)
 

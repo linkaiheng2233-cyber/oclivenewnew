@@ -14,7 +14,7 @@ use crate::domain::chat_engine::context::load_recent_context;
 use crate::domain::chat_engine::favor::{compute_favor_and_relation, FavorRelationInput};
 use crate::domain::chat_engine::message_error::ProcessMessageError;
 use crate::domain::chat_engine::plugin_resolve::resolve_plugins_for_session;
-use crate::domain::chat_engine::turn_pipeline::common::build_complex_emotion_turn_input;
+use crate::domain::chat_engine::turn_pipeline::build_complex_emotion_turn_input;
 use crate::domain::chat_turn::relation_favor_for_key;
 use crate::domain::emotion_analyzer::{EmotionAnalyzer, EmotionResult};
 use crate::domain::memory_retrieval::MemoryRetrievalInput;
@@ -479,6 +479,8 @@ impl<'a> ExperimentalStepCtx<'a> {
             assistant_message_id: None,
             user_message_timestamp: None,
             assistant_message_timestamp: None,
+            chat_persist_failed: None,
+            chat_persist_error: None,
         })))
     }
 

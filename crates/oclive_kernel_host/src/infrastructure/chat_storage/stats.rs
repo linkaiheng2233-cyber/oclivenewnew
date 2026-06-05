@@ -143,14 +143,24 @@ async fn accumulate_file_sessions_from_root(
                 agg.file_bytes = agg.file_bytes.saturating_add(bytes);
                 agg.session_count = agg.session_count.saturating_add(1);
                 if let Ok(raw) = fs::read_to_string(&p).await {
-                    if let Ok(doc) = serde_json::from_str::<MirrorDocument>(&raw) {
-                        let newer = agg
-                            .last_active
-                            .as_ref()
-                            .map(|cur| doc.updated_at.as_str() > cur.as_str())
-                            .unwrap_or(true);
-                        if newer {
-                            agg.last_active = Some(doc.updated_at);
+                    match serde_json::from_str::<MirrorDocument>(&raw) {
+                        Ok(doc) => {
+                            let newer = agg
+                                .last_active
+                                .as_ref()
+                                .map(|cur| doc.updated_at.as_str() > cur.as_str())
+                                .unwrap_or(true);
+                            if newer {
+                                agg.last_active = Some(doc.updated_at);
+                            }
+                        }
+                        Err(e) => {
+                            tracing::warn!(
+                                target: "oclive_chat_storage",
+                                path = %p.display(),
+                                error = %e,
+                                "corrupt chat mirror JSON in stats scan; skipping"
+                            );
                         }
                     }
                 }
@@ -240,6 +250,7 @@ pub async fn collect_chat_storage_stats(
 /// # Errors
 ///
 /// IO errors propagate.
+#[allow(dead_code)]
 pub async fn collect_file_chat_storage_stats(
     app_data_dir: &Path,
     roles_dir: &Path,

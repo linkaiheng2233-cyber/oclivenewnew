@@ -1,7 +1,7 @@
 //! High-risk capability permission grants (persisted): permission ids align with PLUGIN_V1 / `oclive_validation::plugin_permissions`.
 //!
 //! - Production enforces grants by default; integration tests / in-memory DB fixtures use [`HighRiskGrantStore::load`] `enforce` parameter.
-//! - Automation or CI may set `OCLIVE_SKIP_HIGH_RISK_GRANTS=1` to skip (same class of troubleshooting switch as `OCLIVE_SKIP_STARTUP_HEALTH`).
+//! - **`OCLIVE_SKIP_HIGH_RISK_GRANTS=1`** is a **dev-only** escape hatch (honored only in debug builds, same class as `OCLIVE_SKIP_STARTUP_HEALTH`). Release builds ignore it.
 
 use crate::env_flags;
 use oclive_kernel_runtime::AppError;
@@ -29,8 +29,8 @@ pub struct HighRiskGrantsFile {
 }
 
 impl HighRiskGrantsFile {
-    fn from_json_str(raw: &str) -> Self {
-        serde_json::from_str(raw).unwrap_or_default()
+    fn from_json_str(raw: &str) -> Result<Self, String> {
+        serde_json::from_str(raw).map_err(|e| format!("parse {FILE_NAME}: {e}"))
     }
 }
 
@@ -39,16 +39,19 @@ pub struct HighRiskGrantStore {
     inner: RwLock<HighRiskGrantsFile>,
     /// When `false`, enforcement is disabled (`AppState::new_in_memory*` and similar test fixtures).
     enforce: bool,
+    /// Corrupt on-disk grants: fail-closed (empty grants, enforcement still active).
+    grants_corrupt: bool,
 }
 
 impl HighRiskGrantStore {
     #[must_use]
     pub fn load(app_data: PathBuf, enforce: bool) -> Arc<Self> {
-        let data = Self::read_disk(&app_data);
+        let (data, grants_corrupt) = Self::read_disk(&app_data);
         Arc::new(Self {
             app_data,
             inner: RwLock::new(data),
             enforce,
+            grants_corrupt,
         })
     }
 
@@ -56,12 +59,23 @@ impl HighRiskGrantStore {
         app_data.join(FILE_NAME)
     }
 
-    fn read_disk(app_data: &Path) -> HighRiskGrantsFile {
+    fn read_disk(app_data: &Path) -> (HighRiskGrantsFile, bool) {
         let p = Self::file_path(app_data);
-        if let Ok(raw) = fs::read_to_string(&p) {
-            return HighRiskGrantsFile::from_json_str(&raw);
+        let Ok(raw) = fs::read_to_string(&p) else {
+            return (HighRiskGrantsFile::default(), false);
+        };
+        match HighRiskGrantsFile::from_json_str(&raw) {
+            Ok(data) => (data, false),
+            Err(e) => {
+                tracing::error!(
+                    target: "oclive_grants",
+                    path = %p.display(),
+                    error = %e,
+                    "corrupt high_risk_grants.json; fail-closed (all grants denied)"
+                );
+                (HighRiskGrantsFile::default(), true)
+            }
         }
-        HighRiskGrantsFile::default()
     }
 
     fn persist(&self, data: &HighRiskGrantsFile) -> Result<(), String> {
@@ -75,7 +89,15 @@ impl HighRiskGrantStore {
     }
 
     fn enforcement_active(&self) -> bool {
-        self.enforce && !env_flags::env_flag_enabled("OCLIVE_SKIP_HIGH_RISK_GRANTS")
+        self.enforce && !Self::skip_high_risk_grants_allowed()
+    }
+
+    fn skip_high_risk_grants_allowed() -> bool {
+        if cfg!(debug_assertions) {
+            env_flags::env_flag_enabled("OCLIVE_SKIP_HIGH_RISK_GRANTS")
+        } else {
+            false
+        }
     }
 
     #[must_use]
@@ -87,14 +109,21 @@ impl HighRiskGrantStore {
         set.contains(id.trim())
     }
 
+    fn grant_allowed(&self, set: &HashSet<String>, id: &str) -> bool {
+        if self.grants_corrupt {
+            return false;
+        }
+        !self.enforcement_active() || Self::granted(set, id)
+    }
+
     #[must_use]
     pub fn is_mcp_http_granted(&self, server_id: &str) -> bool {
-        !self.enforcement_active() || Self::granted(&self.inner.read().mcp_http, server_id)
+        self.grant_allowed(&self.inner.read().mcp_http, server_id)
     }
 
     #[must_use]
     pub fn is_mcp_stdio_granted(&self, server_id: &str) -> bool {
-        !self.enforcement_active() || Self::granted(&self.inner.read().mcp_stdio, server_id)
+        self.grant_allowed(&self.inner.read().mcp_stdio, server_id)
     }
 
     #[must_use]
@@ -104,12 +133,12 @@ impl HighRiskGrantStore {
 
     #[must_use]
     pub fn is_process_spawn_granted(&self, plugin_id: &str) -> bool {
-        !self.enforcement_active() || Self::granted(&self.inner.read().process_spawn, plugin_id)
+        self.grant_allowed(&self.inner.read().process_spawn, plugin_id)
     }
 
     #[must_use]
     pub fn is_network_granted(&self, grant_id: &str) -> bool {
-        !self.enforcement_active() || Self::granted(&self.inner.read().network, grant_id)
+        self.grant_allowed(&self.inner.read().network, grant_id)
     }
 
     /// Call before Remote / outbound HTTP; returns [`AppError::HighRiskCapabilityNotGranted`] when not granted.
@@ -276,5 +305,15 @@ mod tests {
             Some(GrantKind::ProcessSpawn)
         );
         assert_eq!(normalize_grant_kind("network:*"), Some(GrantKind::Network));
+    }
+
+    #[test]
+    fn corrupt_grants_file_fail_closed() {
+        let dir = tempdir().unwrap();
+        let path = dir.path().join(FILE_NAME);
+        fs::write(&path, "{not-json").unwrap();
+        let store = HighRiskGrantStore::load(dir.path().to_path_buf(), true);
+        assert!(!store.is_network_granted("any"));
+        assert!(!store.is_process_spawn_granted("plug"));
     }
 }

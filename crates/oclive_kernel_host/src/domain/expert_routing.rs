@@ -323,8 +323,14 @@ async fn run_memory_inject(
         .unwrap_or(0.85);
     let id = ctx
         .state
-        .memory_repo
-        .save_memory(ctx.srid, content.as_str(), importance)
+        .db_manager
+        .save_memory_merged(
+            ctx.srid,
+            content.as_str(),
+            importance,
+            ctx.role.pack_memory_config.similarity_threshold,
+            ctx.scene_id.as_str(),
+        )
         .await
         .map_err(map_db_err)?;
     snap.injected_memory_ids.push(id.clone());

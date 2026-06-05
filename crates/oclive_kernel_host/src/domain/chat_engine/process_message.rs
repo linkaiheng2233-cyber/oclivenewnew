@@ -77,6 +77,8 @@ async fn run(
     )?;
 
     let scene_id = validate_scene_id(mrid, &role.scene_ids, requested_scene_id);
+    let turn_lock = state.turn_lock_for(srid);
+    let _turn_guard = turn_lock.lock().await;
     tracing::debug!(
         target: "oclive_chat",
         role_id = %mrid,
@@ -149,6 +151,7 @@ async fn run(
             state,
             &pl,
             role.as_ref(),
+            mrid,
             srid,
             scene_id.clone(),
             req.user_message.as_str(),

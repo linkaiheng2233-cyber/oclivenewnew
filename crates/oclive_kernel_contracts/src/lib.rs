@@ -3,7 +3,7 @@
 //! **Role**: defines **all abstract interfaces** the orchestration layer depends on (LLM, memory, plugin host, Agent, etc.); contains **no implementation code**.
 //!
 //! **Upstream**: depends only on [`oclive_kernel_types`](https://docs.rs/oclive_kernel_types) (DTO / errors).
-//! **Downstream**: implementations are provided by `oclivenewnew-tauri`'s `domain` / `infrastructure`; `oclive_kernel_runtime` re-exports during the transition period.
+//! **Downstream**: implementations are provided by `oclive_kernel_host`'s `domain` / `infrastructure` (re-exported by `oclivenewnew-tauri`); `oclive_kernel_runtime` re-exports during the transition period.
 //!
 //! **Key decision**: decoupling the traits from Tauri makes it easy to inject mocks for headless services, embedded use, or tests; plugin authors implement the traits in this crate rather than editing the orchestration code directly.
 //!

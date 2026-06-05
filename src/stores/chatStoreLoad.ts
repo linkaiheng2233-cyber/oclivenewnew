@@ -1,16 +1,18 @@
 import type { StoredMessage } from '../api/chatStorage'
-import { fetchChatMessages } from '../api/chatStorage'
+import type { RoleSceneMessageMap } from '../utils/chatMessageDb'
+import type { ChatMessage } from './chatStore'
+import { fetchChatMessages, listChatSessions } from '../api/chatStorage'
+import {
+  loadBucketFromIdb,
+
+  saveBucketToIdb,
+} from '../utils/chatMessageDb'
+import { isChatStorageMigrated } from '../utils/chatStorageMigration'
+import { conversationSessionId } from '../utils/conversationSessionId'
 import {
   assistantDialogueFromSplit,
   splitRoleplayReply,
 } from '../utils/roleplayReplySplit'
-import { conversationSessionId } from '../utils/conversationSessionId'
-import {
-  loadBucketFromIdb,
-  saveBucketToIdb,
-  type RoleSceneMessageMap,
-} from '../utils/chatMessageDb'
-import type { ChatMessage } from './chatStore'
 
 export function parseMessageTimestamp(iso?: string | null): number {
   if (!iso)
@@ -60,6 +62,57 @@ export function storedMessageToChatMessage(m: StoredMessage): ChatMessage {
   return base
 }
 
+/** Resolve backend `session_id` for a role×scene bucket; null when the scene has no session yet. */
+export async function resolveChatSessionId(
+  roleId: string,
+  sceneId: string,
+): Promise<string | null> {
+  const sid = sceneId || 'default'
+  try {
+    const sessions = await listChatSessions(roleId, sid, 10, 0)
+    if (sessions.length > 0)
+      return sessions[0]!.session_id
+    return null
+  }
+  catch {
+    /* offline / API error: legacy default-scene namespace only */
+    if (sid === 'default')
+      return conversationSessionId(roleId, null)
+    return null
+  }
+}
+
+/** Merge server-fetched messages with local bucket, keeping optimistic rows absent from server. */
+export function mergeMessagesFromServer(
+  serverMessages: ChatMessage[],
+  localMessages: ChatMessage[],
+): ChatMessage[] {
+  if (localMessages.length === 0)
+    return serverMessages
+  const serverIds = new Set(serverMessages.map(m => m.id))
+  const localOnly = localMessages.filter(m => !serverIds.has(m.id))
+  if (localOnly.length === 0)
+    return serverMessages
+  const merged = [...serverMessages, ...localOnly]
+  merged.sort((a, b) => {
+    const dt = a.timestamp - b.timestamp
+    return dt !== 0 ? dt : a.id.localeCompare(b.id)
+  })
+  return merged
+}
+
+function writeBucket(
+  messageMap: RoleSceneMessageMap,
+  roleId: string,
+  sid: string,
+  messages: ChatMessage[],
+): ChatMessage[] {
+  if (!messageMap[roleId])
+    messageMap[roleId] = {}
+  messageMap[roleId]![sid] = messages
+  return messages
+}
+
 /** Load messages for a role+scene bucket from backend (SQLite) with IDB fallback. */
 export async function loadRoleSceneMessages(
   messageMap: RoleSceneMessageMap,
@@ -67,27 +120,33 @@ export async function loadRoleSceneMessages(
   sceneId: string,
 ): Promise<ChatMessage[]> {
   const sid = sceneId || 'default'
-  const sessionId = conversationSessionId(roleId, null)
+  const previousLocal = messageMap[roleId]?.[sid] ?? []
+  const sessionId = await resolveChatSessionId(roleId, sid)
+  if (!sessionId) {
+    const empty: ChatMessage[] = []
+    return writeBucket(messageMap, roleId, sid, empty)
+  }
   try {
     const stored = await fetchChatMessages(sessionId, 500, 0)
-    const messages = stored
+    const serverMessages = stored
       .filter(m => m.sender === 'user' || m.sender === 'assistant')
       .map(storedMessageToChatMessage)
-    if (!messageMap[roleId])
-      messageMap[roleId] = {}
-    messageMap[roleId]![sid] = messages
-    await saveBucketToIdb(roleId, sid, messages)
+    const messages = mergeMessagesFromServer(serverMessages, previousLocal)
+    writeBucket(messageMap, roleId, sid, messages)
+    if (!isChatStorageMigrated())
+      await saveBucketToIdb(roleId, sid, messages)
     return messages
   }
   catch (err) {
     console.warn('[chatStore] fetch_chat_messages failed; using IDB cache', err)
     const cached = await loadBucketFromIdb(roleId, sid)
     if (cached) {
-      if (!messageMap[roleId])
-        messageMap[roleId] = {}
-      messageMap[roleId]![sid] = cached
-      return cached
+      const messages = mergeMessagesFromServer(cached, previousLocal)
+      writeBucket(messageMap, roleId, sid, messages)
+      return messages
     }
+    if (previousLocal.length > 0)
+      return previousLocal
     return []
   }
 }

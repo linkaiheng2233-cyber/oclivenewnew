@@ -1,4 +1,4 @@
-//! Shared [`ConversationStore`] conformance tests for all backends.
+//! [`HybridConversationStore`] conformance tests (mirror on/off).
 
 #[cfg(test)]
 mod tests {

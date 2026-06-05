@@ -1,9 +1,11 @@
+use crate::env_flags;
 use crate::error::AppError;
 use crate::infrastructure::directory_plugins::{parse_manifest_version, OclivePluginManifest};
 use crate::infrastructure::plugin_state::PluginStateStore;
 use crate::state::AppState;
 use semver::VersionReq;
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -288,10 +290,81 @@ pub fn install_plugin(
         })?;
         let _ = fs::remove_dir_all(&clone_dir);
     }
+    verify_plugin_signature_strict(&final_dir, &pid)?;
     state
         .directory_plugins
         .rescan_plugin_roots(state.storage.roles_dir());
     Ok(pid)
+}
+
+fn plugin_signature_strict_enabled() -> bool {
+    env_flags::env_flag_enabled("OCLIVE_PLUGIN_SIGNATURE_STRICT")
+}
+
+#[derive(Debug, Deserialize)]
+struct PluginSignatureFile {
+    plugin_id: String,
+    sha256: String,
+    #[serde(default)]
+    archive: String,
+}
+
+/// When `OCLIVE_PLUGIN_SIGNATURE_STRICT=1`, require a sidecar `{plugin_id}.signature.json` and matching `{plugin_id}.oclive-plugin` SHA-256.
+///
+/// # Errors
+///
+/// Returns [`AppError::InvalidParameter`] when strict mode is on and verification fails.
+fn verify_plugin_signature_strict(plugin_dir: &Path, plugin_id: &str) -> Result<(), AppError> {
+    if !plugin_signature_strict_enabled() {
+        return Ok(());
+    }
+    let parent = plugin_dir
+        .parent()
+        .ok_or_else(|| AppError::InvalidParameter("plugin install parent missing".into()))?;
+    let sig_path = parent.join(format!("{plugin_id}.signature.json"));
+    if !sig_path.is_file() {
+        return Err(AppError::InvalidParameter(format!(
+            "OCLIVE_PLUGIN_SIGNATURE_STRICT: missing signature file {}",
+            sig_path.display()
+        )));
+    }
+    let raw = fs::read_to_string(&sig_path).map_err(AppError::IoError)?;
+    let sig: PluginSignatureFile = serde_json::from_str(&raw).map_err(|e| {
+        AppError::InvalidParameter(format!("invalid signature json: {e}"))
+    })?;
+    if sig.plugin_id.trim() != plugin_id {
+        return Err(AppError::InvalidParameter(format!(
+            "signature plugin_id mismatch: expected {plugin_id}, got {}",
+            sig.plugin_id.trim()
+        )));
+    }
+    let archive_name = if sig.archive.trim().is_empty() {
+        format!("{plugin_id}.oclive-plugin")
+    } else {
+        sig.archive.trim().to_string()
+    };
+    let archive_path = parent.join(&archive_name);
+    if !archive_path.is_file() {
+        return Err(AppError::InvalidParameter(format!(
+            "signature archive not found: {}",
+            archive_path.display()
+        )));
+    }
+    let blob = fs::read(&archive_path).map_err(AppError::IoError)?;
+    let mut hasher = Sha256::new();
+    hasher.update(&blob);
+    let digest = hasher
+        .finalize()
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect::<String>();
+    let expected = sig.sha256.trim().to_lowercase();
+    if digest != expected {
+        return Err(AppError::InvalidParameter(format!(
+            "plugin archive sha256 mismatch for {plugin_id}: expected {expected}, got {digest}"
+        )));
+    }
+    Ok(())
 }
 
 fn resolve_git_clone_url(https_git: &str) -> String {
@@ -375,7 +448,7 @@ fn resolve_plugin_root_after_clone(
     let root = match sub {
         None => clone_dir.to_path_buf(),
         Some(rel) => {
-            let rel = rel.replace('\\', "/").trim_matches('/').to_string();
+            let rel = normalize_git_subdir(rel)?;
             let p = clone_dir.join(&rel);
             if !p.is_dir() {
                 let _ = fs::remove_dir_all(clone_dir);
@@ -384,10 +457,41 @@ fn resolve_plugin_root_after_clone(
                     rel
                 )));
             }
-            p
+            let clone_canon = fs::canonicalize(clone_dir).map_err(|e| {
+                AppError::InvalidParameter(format!("clone dir canonicalize failed: {e}"))
+            })?;
+            let joined_canon = fs::canonicalize(&p).map_err(|e| {
+                AppError::InvalidParameter(format!("gitSubdir canonicalize failed: {e}"))
+            })?;
+            if !joined_canon.starts_with(&clone_canon) {
+                let _ = fs::remove_dir_all(clone_dir);
+                return Err(AppError::InvalidParameter(
+                    "gitSubdir escapes clone root (path traversal rejected)".into(),
+                ));
+            }
+            joined_canon
         }
     };
     Ok(root)
+}
+
+fn normalize_git_subdir(rel: &str) -> Result<String, AppError> {
+    let rel = rel.replace('\\', "/");
+    let rel = rel.trim().trim_matches('/');
+    if rel.is_empty() {
+        return Ok(String::new());
+    }
+    if rel.contains("..") {
+        return Err(AppError::InvalidParameter(
+            "gitSubdir must not contain '..'".into(),
+        ));
+    }
+    if Path::new(rel).is_absolute() {
+        return Err(AppError::InvalidParameter(
+            "gitSubdir must be a relative path".into(),
+        ));
+    }
+    Ok(rel.to_string())
 }
 
 fn cleanup_clone_dir(clone_dir: &Path, plugin_root: &Path) {

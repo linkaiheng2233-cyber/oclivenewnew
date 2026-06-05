@@ -10,7 +10,7 @@ use oclive_validation::{
     RolePackValidationProfile, CURRENT_SETTINGS_SCHEMA_VERSION, PIPELINE_BLUEPRINT_FILENAME,
 };
 use serde_json::json;
-use zip::write::FileOptions;
+use zip::write::SimpleFileOptions;
 use zip::ZipWriter;
 
 #[derive(Parser, Debug)]
@@ -319,7 +319,7 @@ fn walk_pack(
             walk_pack(zip, base, &path, role_id)?;
         } else {
             let mut f = fs::File::open(&path)?;
-            let file_opts = FileOptions::default()
+            let file_opts = SimpleFileOptions::default()
                 .compression_method(zip::CompressionMethod::Deflated)
                 .unix_permissions(0o644);
             zip.start_file(zip_path, file_opts)

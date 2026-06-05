@@ -1,71 +1,11 @@
-use crate::api::role::ensure_manifest_role_ready;
-use crate::api::time::get_time_state_impl;
-use crate::error::AppError;
 use crate::models::dto::{GenerateMonologueRequest, GenerateMonologueResponse};
-use crate::state::{AppState, SharedAppState};
+use crate::state::SharedAppState;
+use oclive_kernel_host::service::generate_monologue_impl;
 use tauri::State;
 use crate::api::error::CommandError;
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
-pub async fn generate_monologue_impl(
-    state: &AppState,
-    role_id: &str,
-) -> Result<GenerateMonologueResponse, CommandError> {
-    ensure_manifest_role_ready(state, role_id).await?;
 
-    let role = state
-        .load_role_cached_async(role_id)
-        .await
-        ?;
-    let scene = state
-        .db_manager
-        .get_current_scene(role_id)
-        .await
-        ?
-        .unwrap_or_else(|| "default".to_string());
-    let ts = get_time_state_impl(state, role_id).await?;
+pub use oclive_kernel_host::service::time::generate_monologue_lines;
 
-    let templates = state.storage.scene_monologue_templates(role_id, &scene);
-    let hint = if templates.is_empty() {
-        String::new()
-    } else {
-        format!(
-            "\n可参考场景独白模板（可化用语气，不必照抄）：\n{}\n",
-            templates.join("\n")
-        )
-    };
-
-    let prompt = format!(
-        "你是「{}」。当前虚拟时间：{}。当前场景 id：{}{}\
-        \n请用第一人称写一句简短的内心独白（中文，35 字以内），不要加引号或前缀。",
-        role.name, ts.iso_datetime, scene, hint
-    );
-
-    let pl = state.resolved_plugins_for_session(&role, Some(role_id));
-    let ollama_model = role.resolve_ollama_model(state.ollama_model.as_str());
-    let text = match pl.llm.generate(ollama_model.as_str(), &prompt).await {
-        Ok(s) => s,
-        Err(e) => {
-            if !templates.is_empty() {
-                let idx =
-                    (ts.virtual_time_ms as usize).wrapping_add(templates.len()) % templates.len();
-                tracing::warn!(
-                    "monologue LLM failed, using scene template [{}]: {}",
-                    idx,
-                    e
-                );
-                templates[idx].clone()
-            } else {
-                return Err(AppError::OllamaError(e.to_string()).into());
-            }
-        }
-    };
-
-    Ok(GenerateMonologueResponse {
-        text: text.trim().to_string(),
-    })
-}
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.

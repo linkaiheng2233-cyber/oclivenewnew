@@ -6,7 +6,6 @@ import type {
   RoleStorageStat,
   SceneStorageStat,
   SessionMeta,
-  StoredMessage,
 } from '../../api/chatStorage'
 import { open } from '@tauri-apps/api/dialog'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
@@ -31,9 +30,14 @@ import {
   searchChatMessages,
   setChatStorageRoot,
 } from '../../api/chatStorage'
-import { useAppToast } from '../../composables/useAppToast'
 import { listRoles } from '../../api/role'
+import { useAppToast } from '../../composables/useAppToast'
 import { downloadBase64File, downloadTextFile } from '../../utils/download'
+import { formatStorageBytes } from './chat-storage/chatStorageFormat'
+import ChatStorageMessageEditor from './chat-storage/ChatStorageMessageEditor.vue'
+import ChatStorageReplayBar from './chat-storage/ChatStorageReplayBar.vue'
+import ChatStorageSessionList from './chat-storage/ChatStorageSessionList.vue'
+import ChatStorageStatsPanel from './chat-storage/ChatStorageStatsPanel.vue'
 
 const { t } = useI18n()
 const { showToast } = useAppToast()
@@ -48,7 +52,7 @@ const selectedRole = ref<RoleStorageStat | null>(null)
 const selectedScene = ref<SceneStorageStat | null>(null)
 const selectedSession = ref<SessionMeta | null>(null)
 const sessions = ref<SessionMeta[]>([])
-const messages = ref<StoredMessage[]>([])
+const messages = ref<import('../../api/chatStorage').StoredMessage[]>([])
 const statsLoadedAt = ref(0)
 const storageRoot = ref('')
 const CACHE_MS = 5 * 60 * 1000
@@ -92,13 +96,7 @@ const backendLabel = computed(() => {
   return t(`chatStorage.backends.${kind}`) ?? kind
 })
 
-function formatBytes(n: number): string {
-  if (n < 1024)
-    return `${n} B`
-  if (n < 1024 * 1024)
-    return `${(n / 1024).toFixed(1)} KB`
-  return `${(n / (1024 * 1024)).toFixed(2)} MB`
-}
+const replayActive = computed(() => replayTaskId.value !== null)
 
 async function loadStorageRoot() {
   try {
@@ -322,15 +320,17 @@ async function startMemoryReplay(
             clearInterval(replayPolling.value)
           replayPolling.value = null
           replayTaskId.value = null
-          if (p.errors.length)
+          if (p.errors.length) {
             showToast('error', p.errors.join('; '))
-          else
+          }
+          else {
             showToast('info', t('chatStorage.replayDone', {
               turns: p.processed_turns,
               newMem: p.new_memories,
               updated: p.updated_memories,
               skipped: p.skipped_memories,
             }))
+          }
         }
       }
       catch (err) {
@@ -349,8 +349,6 @@ async function startMemoryReplay(
     loading.value = false
   }
 }
-
-const replayActive = computed(() => replayTaskId.value !== null)
 
 async function handleExportRole(roleId: string, format: 'markdown' | 'json') {
   loading.value = true
@@ -394,7 +392,7 @@ async function saveCleanupSettings() {
     showCleanupModal.value = false
     showToast('info', t('chatStorage.cleanupSaved', {
       sessions: result.sessions_deleted,
-      size: formatBytes(result.bytes_freed),
+      size: formatStorageBytes(result.bytes_freed),
     }))
     await refreshStats(true)
   }
@@ -414,7 +412,7 @@ async function confirmDeleteRole(roleId: string) {
     const res = await deleteRoleChats(roleId)
     showToast('info', t('chatStorage.deletedToast', {
       sessions: res.sessions_deleted,
-      size: formatBytes(res.bytes_freed),
+      size: formatStorageBytes(res.bytes_freed),
     }))
     level.value = 'roles'
     selectedRole.value = null
@@ -437,7 +435,7 @@ async function confirmDeleteScene(roleId: string, sceneId: string) {
     const res = await deleteSceneChats(roleId, sceneId)
     showToast('info', t('chatStorage.deletedToast', {
       sessions: res.sessions_deleted,
-      size: formatBytes(res.bytes_freed),
+      size: formatStorageBytes(res.bytes_freed),
     }))
     selectedScene.value = null
     level.value = 'scenes'
@@ -456,7 +454,7 @@ async function confirmDeleteScene(roleId: string, sceneId: string) {
   }
 }
 
-function startEditMessage(msg: StoredMessage) {
+function startEditMessage(msg: import('../../api/chatStorage').StoredMessage) {
   if (msg.sender !== 'user')
     return
   editingMessageId.value = msg.id
@@ -487,7 +485,7 @@ async function confirmEditMessage() {
   }
 }
 
-async function confirmDeleteMessage(msg: StoredMessage) {
+async function confirmDeleteMessage(msg: import('../../api/chatStorage').StoredMessage) {
   if (!window.confirm(t('chatStorage.deleteMessageConfirm')))
     return
   loading.value = true
@@ -609,177 +607,54 @@ defineExpose({ refreshStats })
       </li>
     </ul>
 
-    <div v-if="replayActive" class="css-replay-bar">
-      <div class="css-replay-track">
-        <div class="css-replay-fill" :style="{ width: `${replayProgress}%` }" />
-      </div>
-      <span class="css-muted">{{ t('chatStorage.replayRunning', { percent: replayProgress }) }}</span>
-    </div>
+    <ChatStorageReplayBar :active="replayActive" :percent="replayProgress" />
 
-    <div v-if="loading" class="css-muted">
-      {{ t('chatStorage.loading') }}
-    </div>
+    <ChatStorageStatsPanel
+      v-if="level === 'roles'"
+      :stats="stats"
+      :role-names="roleNames"
+      :loading="loading"
+      :supports-cleanup="capabilities.supports_cleanup"
+      :supports-replay="capabilities.supports_replay"
+      @open-role="openRole"
+      @export-role="handleExportRole"
+      @cleanup="openCleanupSettings"
+      @replay-role="(id) => startMemoryReplay('role', id)"
+      @delete-role="confirmDeleteRole"
+    />
 
-    <ul v-else-if="level === 'roles'" class="css-list">
-      <li
-        v-for="row in stats"
-        :key="row.role_id"
-        class="css-row"
-      >
-        <button type="button" class="css-row-main" @click="openRole(row)">
-          <span class="css-row-title">{{ roleNames[row.role_id] ?? row.role_id }}</span>
-          <span class="css-row-meta">
-            {{ t('chatStorage.scenesCount', { n: row.scene_count }) }}
-            · {{ formatBytes(row.total_size_bytes) }}
-            <template v-if="row.last_active">
-              · {{ row.last_active }}
-            </template>
-          </span>
-        </button>
-        <div class="css-actions">
-          <button type="button" class="css-action" @click.stop="handleExportRole(row.role_id, 'markdown')">
-            {{ t('chatStorage.exportMd') }}
-          </button>
-          <button type="button" class="css-action" @click.stop="handleExportRole(row.role_id, 'json')">
-            {{ t('chatStorage.exportJson') }}
-          </button>
-          <button
-            v-if="capabilities.supports_cleanup"
-            type="button"
-            class="css-action"
-            @click.stop="openCleanupSettings(row.role_id)"
-          >
-            {{ t('chatStorage.autoCleanup') }}
-          </button>
-          <button
-            v-if="capabilities.supports_replay"
-            type="button"
-            class="css-action"
-            @click.stop="startMemoryReplay('role', row.role_id)"
-          >
-            {{ t('chatStorage.replayMemory') }}
-          </button>
-          <button type="button" class="css-danger" @click.stop="confirmDeleteRole(row.role_id)">
-            {{ t('chatStorage.delete') }}
-          </button>
-        </div>
-      </li>
-      <li v-if="stats.length === 0" class="css-muted">
-        {{ t('chatStorage.empty') }}
-      </li>
-    </ul>
+    <ChatStorageSessionList
+      v-else-if="level === 'scenes' || level === 'sessions'"
+      :level="level === 'scenes' ? 'scenes' : 'sessions'"
+      :selected-role="selectedRole"
+      :selected-scene="selectedScene"
+      :selected-role-label="selectedRoleLabel"
+      :sessions="sessions"
+      :supports-replay="capabilities.supports_replay"
+      @open-scene="openScene"
+      @open-session="openSession"
+      @export-session="(id) => handleExportSession(id, 'markdown')"
+      @replay-scene="(roleId, sceneId) => startMemoryReplay('scene', roleId, sceneId)"
+      @delete-scene="confirmDeleteScene"
+    />
 
-    <ul v-else-if="level === 'scenes' && selectedRole" class="css-list">
-      <li
-        v-for="scene in selectedRole.scenes"
-        :key="scene.scene_id"
-        class="css-row"
-      >
-        <button type="button" class="css-row-main" @click="openScene(scene)">
-          <span class="css-row-title">{{ scene.scene_id }}</span>
-          <span class="css-row-meta">
-            {{ t('chatStorage.sessionsCount', { n: scene.session_count }) }}
-            · {{ formatBytes(scene.total_size_bytes) }}
-          </span>
-        </button>
-        <button
-          v-if="capabilities.supports_replay"
-          type="button"
-          class="css-action"
-          @click.stop="startMemoryReplay('scene', selectedRole.role_id, scene.scene_id)"
-        >
-          {{ t('chatStorage.replayMemory') }}
-        </button>
-        <button
-          type="button"
-          class="css-danger"
-          @click.stop="confirmDeleteScene(selectedRole.role_id, scene.scene_id)"
-        >
-          {{ t('chatStorage.delete') }}
-        </button>
-      </li>
-    </ul>
-
-    <ul v-else-if="level === 'sessions' && selectedRole && selectedScene" class="css-list">
-      <li class="css-breadcrumb">
-        {{ selectedRoleLabel }} / {{ selectedScene.scene_id }}
-      </li>
-      <li
-        v-for="sess in sessions"
-        :key="sess.session_id"
-        class="css-row"
-      >
-        <button type="button" class="css-row-main" @click="openSession(sess)">
-          <span class="css-row-title">{{ sess.session_id.slice(0, 24) }}…</span>
-          <span class="css-row-meta">{{ sess.last_message_snippet || t('chatStorage.emptyPreview') }}</span>
-        </button>
-        <div class="css-actions">
-          <button type="button" class="css-action" @click.stop="handleExportSession(sess.session_id, 'markdown')">
-            {{ t('chatStorage.export') }}
-          </button>
-        </div>
-      </li>
-      <li v-if="sessions.length === 0" class="css-muted">
-        {{ t('chatStorage.empty') }}
-      </li>
-    </ul>
-
-    <ul v-else-if="level === 'messages' && selectedSession" class="css-list css-messages">
-      <li class="css-breadcrumb">
-        {{ selectedSession.session_id.slice(0, 32) }}…
-      </li>
-      <li
-        v-for="msg in messages"
-        :key="msg.id"
-        class="css-msg"
-        :class="{ 'css-msg-user': msg.sender === 'user' }"
-      >
-        <div class="css-msg-head">
-          <span>{{ msg.sender }}</span>
-          <span class="css-msg-time">{{ msg.created_at }}</span>
-        </div>
-        <template v-if="editingMessageId === msg.id">
-          <textarea v-model="editingContent" class="css-edit-area" rows="3" />
-          <div class="css-msg-actions">
-            <button type="button" class="css-action" @click="confirmEditMessage">
-              {{ t('chatStorage.save') }}
-            </button>
-            <button type="button" class="css-action" @click="cancelEdit">
-              {{ t('chatStorage.cancel') }}
-            </button>
-          </div>
-        </template>
-        <template v-else>
-          <p class="css-msg-body">
-            {{ msg.content }}
-          </p>
-          <div v-if="msg.sender === 'user'" class="css-msg-actions">
-            <button type="button" class="css-action" @click="startEditMessage(msg)">
-              {{ t('chatStorage.edit') }}
-            </button>
-            <button type="button" class="css-danger-inline" @click="confirmDeleteMessage(msg)">
-              {{ t('chatStorage.delete') }}
-            </button>
-          </div>
-        </template>
-      </li>
-      <li class="css-export-row css-row">
-        <button type="button" class="css-action" @click="handleExportSession(selectedSession.session_id, 'markdown')">
-          {{ t('chatStorage.exportMd') }}
-        </button>
-        <button type="button" class="css-action" @click="handleExportSession(selectedSession.session_id, 'json')">
-          {{ t('chatStorage.exportJson') }}
-        </button>
-        <button
-          v-if="capabilities.supports_replay && selectedRole"
-          type="button"
-          class="css-action"
-          @click="startMemoryReplay('session', selectedRole.role_id, selectedScene?.scene_id, selectedSession.session_id)"
-        >
-          {{ t('chatStorage.replayMemory') }}
-        </button>
-      </li>
-    </ul>
+    <ChatStorageMessageEditor
+      v-else-if="level === 'messages' && selectedSession"
+      :selected-session="selectedSession"
+      :selected-role="selectedRole"
+      :selected-scene="selectedScene"
+      :messages="messages"
+      :editing-message-id="editingMessageId"
+      :editing-content="editingContent"
+      :supports-replay="capabilities.supports_replay"
+      @update:editing-content="editingContent = $event"
+      @start-edit="startEditMessage"
+      @cancel-edit="cancelEdit"
+      @confirm-edit="confirmEditMessage"
+      @delete-message="confirmDeleteMessage"
+      @export-session="handleExportSession"
+      @replay-session="(roleId, sceneId, sessionId) => startMemoryReplay('session', roleId, sceneId, sessionId)"
+    />
 
     <div v-if="showCleanupModal" class="css-modal-backdrop" @click.self="showCleanupModal = false">
       <div class="css-modal">
@@ -828,22 +703,6 @@ defineExpose({ refreshStats })
 </template>
 
 <style scoped>
-.css-replay-bar {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-.css-replay-track {
-  height: 6px;
-  border-radius: 3px;
-  background: var(--oc-border, #333);
-  overflow: hidden;
-}
-.css-replay-fill {
-  height: 100%;
-  background: var(--oc-accent, #6cf);
-  transition: width 0.3s ease;
-}
 .css-panel {
   display: flex;
   flex-direction: column;
@@ -959,12 +818,6 @@ defineExpose({ refreshStats })
   opacity: 0.75;
   margin-top: 0.2rem;
 }
-.css-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  border-left: 1px solid var(--oc-border, #333);
-}
 .css-action {
   padding: 0 0.6rem;
   border: none;
@@ -972,25 +825,6 @@ defineExpose({ refreshStats })
   color: inherit;
   cursor: pointer;
   font-size: 0.75rem;
-  white-space: nowrap;
-}
-.css-danger {
-  padding: 0 0.75rem;
-  border: none;
-  border-left: 1px solid var(--oc-border, #333);
-  background: rgba(180, 40, 40, 0.15);
-  color: inherit;
-  cursor: pointer;
-  font-size: 0.8rem;
-}
-.css-danger-inline {
-  padding: 0.2rem 0.5rem;
-  border: none;
-  background: rgba(180, 40, 40, 0.15);
-  color: inherit;
-  cursor: pointer;
-  font-size: 0.75rem;
-  border-radius: 4px;
 }
 .css-muted {
   opacity: 0.7;
@@ -1005,46 +839,6 @@ defineExpose({ refreshStats })
   padding: 0.25rem 0.5rem;
   font-size: 0.8rem;
   opacity: 0.8;
-}
-.css-msg {
-  padding: 0.6rem 0.75rem;
-  border: 1px solid var(--oc-border, #333);
-  border-radius: 8px;
-}
-.css-msg-user {
-  border-color: rgba(80, 120, 200, 0.35);
-}
-.css-msg-head {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.75rem;
-  opacity: 0.8;
-  margin-bottom: 0.35rem;
-}
-.css-msg-body {
-  margin: 0;
-  white-space: pre-wrap;
-  font-size: 0.875rem;
-}
-.css-msg-actions {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 0.4rem;
-}
-.css-edit-area {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 0.4rem;
-  border-radius: 6px;
-  border: 1px solid var(--oc-border, #333);
-  background: transparent;
-  color: inherit;
-  font: inherit;
-}
-.css-export-row {
-  justify-content: flex-start;
-  padding: 0.5rem;
-  gap: 0.5rem;
 }
 .css-modal-backdrop {
   position: fixed;

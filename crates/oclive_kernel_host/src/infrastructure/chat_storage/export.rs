@@ -260,7 +260,6 @@ mod tests {
             super::super::db::NewTurnMessages {
                 user_id: uuid::Uuid::new_v4().to_string(),
                 assistant_id: uuid::Uuid::new_v4().to_string(),
-                turn_index: 0,
                 user_content: "hello".into(),
                 assistant_content: "hi".into(),
                 user_metadata: None,

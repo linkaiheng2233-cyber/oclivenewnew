@@ -243,14 +243,39 @@ pub struct PluginProcessDebugInfo {
     pub memory_kb: Option<u64>,
 }
 
-pub(crate) fn parse_ready_line(line: &str, prefix: &str) -> Option<String> {
+pub(crate) fn parse_ready_line(
+    line: &str,
+    prefix: &str,
+    plugin_id: &str,
+    grants: &HighRiskGrantStore,
+) -> Option<String> {
     let t = line.trim();
     let rest = t.strip_prefix(prefix)?.trim();
-    if rest.starts_with("http://") || rest.starts_with("https://") {
-        Some(rest.to_string())
-    } else {
-        None
+    if !(rest.starts_with("http://") || rest.starts_with("https://")) {
+        return None;
     }
+    if !rpc_url_is_loopback(rest) && !grants.is_network_granted(plugin_id) {
+        tracing::warn!(
+            target: "oclive_plugin",
+            plugin_id = %plugin_id,
+            url = %rest,
+            "directory plugin ready URL is not loopback and network:* is not granted"
+        );
+        return None;
+    }
+    Some(rest.to_string())
+}
+
+fn rpc_url_is_loopback(url: &str) -> bool {
+    let rest = match url.strip_prefix("http://").or_else(|| url.strip_prefix("https://")) {
+        Some(r) => r,
+        None => return false,
+    };
+    let host = match rest.split('/').next() {
+        Some(h) => h.split(':').next().unwrap_or(h),
+        None => return false,
+    };
+    matches!(host, "127.0.0.1" | "localhost" | "[::1]") || host.eq_ignore_ascii_case("localhost")
 }
 
 /// Directory plugin runtime: root path table + lazy RPC startup.
@@ -611,6 +636,44 @@ impl DirectoryPluginRuntime {
         &self.app_data_dir
     }
 
+    /// Kill all managed directory-plugin child processes and clear RPC caches.
+    pub fn shutdown_all(&self) {
+        let ids: Vec<String> = self.children.lock().keys().cloned().collect();
+        for id in ids {
+            self.clear_plugin_process(&id);
+        }
+    }
+
+    /// Returns `true` when a cached child process is still running.
+    fn child_process_alive(&self, plugin_id: &str) -> bool {
+        let mut children = self.children.lock();
+        let Some(child) = children.get_mut(plugin_id) else {
+            return false;
+        };
+        match child.try_wait() {
+            Ok(Some(_status)) => false,
+            Ok(None) => true,
+            Err(_) => false,
+        }
+    }
+
+    /// Revalidate cached RPC URL before reuse (child must still be running).
+    pub(crate) fn validate_rpc_endpoint(&self, plugin_id: &str, _url: &str) -> bool {
+        self.child_process_alive(plugin_id)
+    }
+
+    /// Invalidate cached RPC URL when the child has exited (caller may respawn).
+    pub(crate) fn invalidate_rpc_if_child_dead(&self, plugin_id: &str) {
+        if self.rpc_urls.lock().contains_key(plugin_id) && !self.child_process_alive(plugin_id) {
+            tracing::info!(
+                target: "oclive_plugin",
+                plugin_id = %plugin_id,
+                "directory plugin child exited; clearing RPC cache"
+            );
+            self.clear_plugin_process(plugin_id);
+        }
+    }
+
     /// Kill child process and drop RPC cache (call after plugin dir replacement, then `rescan_plugin_roots`).
     pub fn clear_plugin_process(&self, plugin_id: &str) {
         let id = plugin_id.trim();
@@ -675,6 +738,12 @@ impl DirectoryPluginRuntime {
             "https://ocliveplugin.localhost/{}/{}",
             plugin_id, entry
         ))
+    }
+}
+
+impl Drop for DirectoryPluginRuntime {
+    fn drop(&mut self) {
+        self.shutdown_all();
     }
 }
 

@@ -174,6 +174,8 @@ pub struct ReplayProgress {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChatStorageCapabilities {
     pub backend_kind: String,
+    /// Whether JSON mirror files are written alongside SQLite (`hybrid` vs mirror-off `sqlite`).
+    pub mirror_enabled: bool,
     pub default_max_messages_per_session: u32,
     pub supports_search: bool,
     pub supports_replay: bool,

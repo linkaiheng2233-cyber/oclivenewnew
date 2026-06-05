@@ -14,7 +14,7 @@ Hotspots (user-visible; comments / locale files / tests may still match):
 
 - Views: `PluginManagerPanel.vue`, `PluginManagerV2Panel.vue`, `SettingsView.vue`
 - Chat / time: `ChatMessageList.vue`, `ChatMessage.vue`, `VirtualTimeBar.vue`, `TimeDial.vue`
-- Dev / plugin: `AgentDebugPanel.vue`, `RpcTester.vue`, `ProcessMonitor.vue`, `PluginScaffoldWizard.vue`, `DirectoryShellApp.vue`, `EnvVarManager.vue`, `PluginDebugPanel.vue`, `HotkeyHost.vue`, …
+- Dev / plugin: `RpcTester.vue`, `ProcessMonitor.vue`, `DirectoryShellApp.vue`, `EnvVarManager.vue`, `PluginDebugPanel.vue`, `HotkeyHost.vue`, …（`AgentDebugPanel.vue` / `PluginScaffoldWizard.vue` 已移除）
 - Infra: `utils/tauri-api.ts` (API error strings → `apiErrors.*` + `toFriendlyErrorMessage`)
 
 **2026-05-15 核对**：上述热点路径中，**模板内用户可见串**多数已走 `t()` / `virtualTime.*` / `apiErrors`；`rg` 命中汉字仍以 **注释与样式说明** 为主。后续改文案优先搜不带 `t(` 的引号串。

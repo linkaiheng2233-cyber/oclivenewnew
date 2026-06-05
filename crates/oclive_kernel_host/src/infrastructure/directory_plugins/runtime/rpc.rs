@@ -32,22 +32,27 @@ impl DirectoryPluginRuntime {
         if id.is_empty() {
             return Err("plugin_id required".to_string());
         }
-        if self.rpc_urls.lock().contains_key(id) && self.children.lock().contains_key(id) {
-            let ch = self.children.lock();
-            let child = ch
-                .get(id)
-                .ok_or_else(|| "internal: child map inconsistent".to_string())?;
-            let pid = child.id();
-            let url = self.rpc_urls.lock().get(id).cloned().unwrap_or_default();
-            let started_ms = self.process_started_ms.lock().get(id).copied().unwrap_or(0);
-            return Ok(PluginProcessDebugInfo {
-                plugin_id: id.to_string(),
-                pid,
-                rpc_url: url,
-                started_at_ms: started_ms,
-                cpu_percent: None,
-                memory_kb: None,
-            });
+        if self.rpc_urls.lock().contains_key(id) {
+            self.invalidate_rpc_if_child_dead(id);
+        }
+        if let Some(url) = self.rpc_urls.lock().get(id).cloned() {
+            if self.validate_rpc_endpoint(id, &url) {
+                let ch = self.children.lock();
+                let child = ch
+                    .get(id)
+                    .ok_or_else(|| "internal: child map inconsistent".to_string())?;
+                let pid = child.id();
+                let started_ms = self.process_started_ms.lock().get(id).copied().unwrap_or(0);
+                return Ok(PluginProcessDebugInfo {
+                    plugin_id: id.to_string(),
+                    pid,
+                    rpc_url: url,
+                    started_at_ms: started_ms,
+                    cpu_percent: None,
+                    memory_kb: None,
+                });
+            }
+            self.clear_plugin_process(id);
         }
         let url = self.ensure_rpc_url_for_debug(id, config_json)?;
         let (pid, started_ms) = {

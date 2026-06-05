@@ -1,4 +1,4 @@
-//! Chat history: pluggable backends (hybrid / file / sqlite).
+//! Chat history: Hybrid-only backend (SQLite + optional JSON mirror).
 
 mod backends;
 mod config;
@@ -34,9 +34,8 @@ pub use replay::{spawn_memory_replay, ReplayTaskRegistry};
 pub use role_config::save_role_chat_storage_config;
 pub use scheduler::run_global_auto_cleanup;
 pub use stats::{
-    collect_chat_storage_stats, collect_chat_storage_stats_from_db,
-    collect_file_chat_storage_stats, delete_mirror_scene_dir, enumerate_chat_mirror_roots,
-    role_mirror_tree_bytes,
+    collect_chat_storage_stats, collect_chat_storage_stats_from_db, delete_mirror_scene_dir,
+    enumerate_chat_mirror_roots, role_mirror_tree_bytes,
 };
 pub use types::{
     AppendTurnResult, AutoCleanupResult, ChatExportResponse, ChatSearchResult,

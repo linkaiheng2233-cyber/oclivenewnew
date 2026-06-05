@@ -1,6 +1,6 @@
 [package]
 name = "oclive_kernel_types"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 description = "Pure data structures for OCLIVE kernel (DTOs, errors, enums)"
 license = "AGPL-3.0-or-later"
@@ -12,9 +12,9 @@ categories = ["development-tools"]
 workspace = true
 
 [dependencies]
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-thiserror = "1.0"
-chrono = { version = "0.4", features = ["serde"] }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+chrono = { workspace = true, features = ["serde"] }
 oclive_validation = { path = "../oclive_validation" }
-parking_lot = "0.12"
+parking_lot = { workspace = true }

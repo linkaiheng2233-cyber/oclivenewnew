@@ -7,6 +7,12 @@
 //!
 //! **Design**: experiment first, rollback-capable, degradable—experimental steps only mutate snapshot-able session in-memory state; on failure restore snapshot then take the stable path.
 //!
+//! **Feature freeze (2026-06)**: dual-core scheduling is compiled only with the `dual_core` Cargo feature.
+//! Production stable pipeline execution for gated roles runs on **`oclivenewnew-tauri --features dual_core`**.
+//! `oclive-kernel-server` and default host builds keep `dual_core` off—experimental steps are not scheduled there.
+//! Allow-list SSOT: [`dual_pipeline_registry::EXPERIMENTAL_METHOD_SPECS`](super::dual_pipeline_registry::EXPERIMENTAL_METHOD_SPECS);
+//! `oclive-cli explain DUAL_CORE` keeps a separate table—sync both when changing methods (see registry module docs).
+//!
 //! **Upstream**: [`process_message`](crate::domain::chat_engine::process_message).
 //! **Downstream**: [`ExperimentalStepCtx`](super::dual_pipeline_steps::ExperimentalStepCtx),
 //! [`dual_pipeline_registry`](super::dual_pipeline_registry).

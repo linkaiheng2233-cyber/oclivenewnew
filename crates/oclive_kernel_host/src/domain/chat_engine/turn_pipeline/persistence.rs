@@ -1,0 +1,370 @@
+//! Post-LLM persistence: atomic DB writes, chat storage, profile evolution.
+
+use crate::domain::portrait_emotion_engine::resolve_portrait_emotion;
+use crate::models::{Event, PersonalitySource, PersonalityVector, Role};
+use std::sync::{Arc, LazyLock};
+use tokio::sync::Semaphore;
+
+use super::pre::{MainLlmOutput, MiddleOutput, PreLlmOutput, STAGES};
+use super::super::scene::detect_movement_intent;
+use super::super::turn_error::TurnResult;
+use crate::domain::chat_engine::chat_stage::ChatStage;
+use super::TurnMode;
+
+static MUTABLE_PROFILE_EVOLUTION_SEM: LazyLock<Semaphore> = LazyLock::new(|| Semaphore::new(2));
+
+/// Profile mutable-personality LLM + DB writes run off the critical path; next turn reads from DB.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn spawn_mutable_profile_evolution(
+    db: Arc<crate::infrastructure::db::DbManager>,
+    session_cache: Arc<crate::state::SessionCache>,
+    primary_llm: Arc<dyn crate::domain::ports::LlmClient>,
+    role: Role,
+    srid: String,
+    path_label: String,
+    ollama_model: String,
+    user_message: String,
+    reply: String,
+    user_emotion: String,
+    event_type: crate::models::EventType,
+    impact_scaled: f64,
+) {
+    tokio::spawn(async move {
+        let Ok(_permit) = MUTABLE_PROFILE_EVOLUTION_SEM.acquire().await else {
+            return;
+        };
+        let prev = match db.get_mutable_personality(&srid).await {
+            Ok(p) => p,
+            Err(e) => {
+                tracing::warn!(
+                    target: "oclive_chat",
+                    role_id = %srid,
+                    error = %e,
+                    "background mutable_profile: get_mutable_personality failed"
+                );
+                return;
+            }
+        };
+        let next = match crate::domain::mutable_profile_llm::evolve_mutable_personality_with_llm(
+            &primary_llm,
+            ollama_model.as_str(),
+            crate::domain::mutable_profile_llm::MutableEvolutionInput {
+                role_name: role.name.as_str(),
+                core_personality: role.core_personality.as_str(),
+                prev_mutable: prev.as_str(),
+                user_message: user_message.as_str(),
+                bot_reply: reply.as_str(),
+                user_emotion: user_emotion.as_str(),
+                event_type: &event_type,
+                impact_scaled,
+                evolution: &role.evolution_config,
+            },
+        )
+        .await
+        {
+            Ok(s) => s,
+            Err(e) => {
+                tracing::warn!(
+                    target: "oclive_chat",
+                    path_label = %path_label,
+                    role_id = %srid,
+                    error = %e,
+                    "background mutable_profile_llm failed; keeping previous archive"
+                );
+                return;
+            }
+        };
+        if let Err(e) = db.set_mutable_personality(&srid, &next).await {
+            tracing::warn!(
+                target: "oclive_chat",
+                role_id = %srid,
+                error = %e,
+                "background mutable_profile: set_mutable_personality failed"
+            );
+            return;
+        }
+        let core_v = PersonalityVector::from(&role.default_personality);
+        let personality_after =
+            crate::domain::profile_personality::effective_vector_from_profile(&role, &next);
+        let delta_out = PersonalityVector::sub_components(&personality_after, &core_v);
+        if let Err(e) = db
+            .set_core_delta_personality_json(
+                &srid,
+                &core_v.to_json_vec(),
+                &delta_out.to_json_vec(),
+            )
+            .await
+        {
+            tracing::warn!(
+                target: "oclive_chat",
+                role_id = %srid,
+                error = %e,
+                "background mutable_profile: set_core_delta_personality_json failed"
+            );
+            return;
+        }
+        session_cache
+            .personality_cache()
+            .set(srid, personality_after);
+    });
+}
+
+pub(crate) struct PostTurnPolicy {
+    pub bot_emotion: crate::models::Emotion,
+    pub bot_emotion_str: String,
+    pub event: Event,
+    pub memory_line: String,
+    pub memory_importance: f64,
+    pub recent_events: Vec<Event>,
+}
+
+pub(crate) struct PostPersistOutcome {
+    pub favor_current: f64,
+    pub movement: bool,
+    pub portrait_emotion_str: String,
+}
+
+pub(crate) struct ChatAppendIds {
+    pub user_message_id: Option<String>,
+    pub assistant_message_id: Option<String>,
+    pub user_message_timestamp: Option<String>,
+    pub assistant_message_timestamp: Option<String>,
+    pub chat_persist_failed: Option<bool>,
+    pub chat_persist_error: Option<String>,
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(crate) async fn persist_atomic_movement_portrait(
+    state: &crate::state::AppState,
+    mode: TurnMode,
+    policies: std::sync::Arc<crate::infrastructure::policy_registry::PolicySet>,
+    primary_llm: Arc<dyn crate::domain::ports::LlmClient>,
+    role: &Role,
+    scene_id: &str,
+    scenes: Arc<[String]>,
+    srid: &str,
+    user_message: &str,
+    pre: &PreLlmOutput,
+    middle: &MiddleOutput,
+    policy: &PostTurnPolicy,
+    reply: &str,
+) -> TurnResult<PostPersistOutcome> {
+    let core_v = PersonalityVector::from(&role.default_personality);
+    let reply_for_portrait = reply.to_string();
+    let movement_fut = detect_movement_intent(
+        state,
+        &primary_llm,
+        role,
+        srid,
+        scene_id,
+        &scenes,
+        user_message,
+        pre.ollama_model.as_str(),
+    );
+    let portrait_fut = if matches!(mode, TurnMode::CoPresent) {
+        None
+    } else {
+        Some(STAGES.stage(
+            ChatStage::PortraitEmotionLlm,
+            resolve_portrait_emotion(
+                &primary_llm,
+                pre.ollama_model.as_str(),
+                role,
+                &core_v,
+                &middle.personality,
+                pre.favorability_before,
+                user_message,
+                &reply_for_portrait,
+                pre.user_emotion_str.as_str(),
+                &policy.bot_emotion,
+                &policy.recent_events,
+                &pre.recent_turns,
+            ),
+        ))
+    };
+    let atomic_fut = STAGES.stage(
+        ChatStage::ApplyChatTurnAtomic,
+        state.db_manager.apply_chat_turn_atomic(crate::infrastructure::db::ChatTurnTxInput {
+            role_id: srid,
+            personality: &middle.personality,
+            current_emotion: policy.bot_emotion_str.as_str(),
+            relation_state: middle.relation_after.as_str(),
+            user_relation_key: pre.user_relation_key.as_str(),
+            favor_delta: middle.favor_delta,
+            memory_content: &policy.memory_line,
+            memory_importance: policy.memory_importance,
+            memory_fifo_limit: policies.memory.fifo_limit(),
+            memory_similarity_threshold: role.pack_memory_config.similarity_threshold,
+            event: &policy.event,
+            user_message,
+            bot_reply: reply,
+            scene_id,
+        }),
+    );
+    if let Some(portrait_fut) = portrait_fut {
+        let (favor_current, movement, portrait_res) =
+            tokio::join!(atomic_fut, movement_fut, portrait_fut);
+        Ok(PostPersistOutcome {
+            favor_current: favor_current?,
+            movement,
+            portrait_emotion_str: portrait_res?,
+        })
+    } else {
+        let (favor_current, movement) = tokio::join!(atomic_fut, movement_fut);
+        Ok(PostPersistOutcome {
+            favor_current: favor_current?,
+            movement,
+            portrait_emotion_str: policy.bot_emotion_str.clone(),
+        })
+    }
+}
+
+pub(crate) async fn append_turn_to_chat_storage(
+    state: &crate::state::AppState,
+    mode: TurnMode,
+    mrid: &str,
+    srid: &str,
+    scene_id: &str,
+    role: &Role,
+    pre: &PreLlmOutput,
+    llm: &MainLlmOutput,
+    policy: &PostTurnPolicy,
+    user_message: &str,
+    reply: &str,
+) -> ChatAppendIds {
+    let mut ids = ChatAppendIds {
+        user_message_id: None,
+        assistant_message_id: None,
+        user_message_timestamp: None,
+        assistant_message_timestamp: None,
+        chat_persist_failed: None,
+        chat_persist_error: None,
+    };
+    if !matches!(mode, TurnMode::CoPresent) || reply.trim().is_empty() {
+        return ids;
+    }
+    let persist = crate::infrastructure::chat_storage::TurnPersistInput {
+        session_id: srid.to_string(),
+        role_id: mrid.to_string(),
+        scene_id: scene_id.to_string(),
+        user_message: user_message.to_string(),
+        assistant_reply: reply.to_string(),
+        reply_is_fallback: llm.main_llm_fallback,
+        model_name: Some(pre.ollama_model.clone()),
+        response_ms: llm.main_llm_ms,
+        user_emotion: Some(pre.user_emotion_str.clone()),
+        bot_emotion: Some(policy.bot_emotion_str.clone()),
+        max_messages_per_session: role.pack_chat_storage_config.max_messages_per_session,
+        auto_cleanup_config: crate::infrastructure::chat_storage::AutoCleanupConfig::from_role_config(
+            &role.pack_chat_storage_config,
+        ),
+        chat_storage_location: role.pack_chat_storage_config.location.clone(),
+    };
+    match state.conversation_store.append_turn(persist).await {
+        Ok(stored) => {
+            ids.user_message_id = Some(stored.user_message_id);
+            ids.assistant_message_id = Some(stored.assistant_message_id);
+            ids.user_message_timestamp = Some(stored.user_message_timestamp);
+            ids.assistant_message_timestamp = Some(stored.assistant_message_timestamp);
+        }
+        Err(e) => {
+            tracing::warn!(
+                target: "oclive_chat_storage",
+                session_id = %srid,
+                error = %e,
+                "append_turn failed"
+            );
+            ids.chat_persist_failed = Some(true);
+            ids.chat_persist_error = Some(e.to_string());
+        }
+    }
+    ids
+}
+
+pub(crate) async fn append_agent_turn_to_chat_storage(
+    state: &crate::state::AppState,
+    mrid: &str,
+    srid: &str,
+    scene_id: &str,
+    role: &Role,
+    user_message: &str,
+    reply: &str,
+    user_emotion: &str,
+    bot_emotion: &str,
+) -> ChatAppendIds {
+    let mut ids = ChatAppendIds {
+        user_message_id: None,
+        assistant_message_id: None,
+        user_message_timestamp: None,
+        assistant_message_timestamp: None,
+        chat_persist_failed: None,
+        chat_persist_error: None,
+    };
+    if reply.trim().is_empty() {
+        return ids;
+    }
+    let persist = crate::infrastructure::chat_storage::TurnPersistInput {
+        session_id: srid.to_string(),
+        role_id: mrid.to_string(),
+        scene_id: scene_id.to_string(),
+        user_message: user_message.to_string(),
+        assistant_reply: reply.to_string(),
+        reply_is_fallback: false,
+        model_name: None,
+        response_ms: 0,
+        user_emotion: Some(user_emotion.to_string()),
+        bot_emotion: Some(bot_emotion.to_string()),
+        max_messages_per_session: role.pack_chat_storage_config.max_messages_per_session,
+        auto_cleanup_config: crate::infrastructure::chat_storage::AutoCleanupConfig::from_role_config(
+            &role.pack_chat_storage_config,
+        ),
+        chat_storage_location: role.pack_chat_storage_config.location.clone(),
+    };
+    match state.conversation_store.append_turn(persist).await {
+        Ok(stored) => {
+            ids.user_message_id = Some(stored.user_message_id);
+            ids.assistant_message_id = Some(stored.assistant_message_id);
+            ids.user_message_timestamp = Some(stored.user_message_timestamp);
+            ids.assistant_message_timestamp = Some(stored.assistant_message_timestamp);
+        }
+        Err(e) => {
+            tracing::warn!(
+                target: "oclive_chat_storage",
+                session_id = %srid,
+                error = %e,
+                "append_turn (agent) failed"
+            );
+            ids.chat_persist_failed = Some(true);
+            ids.chat_persist_error = Some(e.to_string());
+        }
+    }
+    ids
+}
+
+pub(crate) async fn persist_non_profile_personality_delta(
+    state: &crate::state::AppState,
+    role: &Role,
+    srid: &str,
+    middle: &MiddleOutput,
+) -> TurnResult<()> {
+    if role.evolution_config.personality_source == PersonalitySource::Profile {
+        return Ok(());
+    }
+    let core_v = PersonalityVector::from(&role.default_personality);
+    let delta_out = PersonalityVector::sub_components(&middle.personality, &core_v);
+    STAGES
+        .stage(
+            ChatStage::SetCoreDeltaPersonalityJsonNonProfile,
+            state.db_manager.set_core_delta_personality_json(
+                srid,
+                &core_v.to_json_vec(),
+                &delta_out.to_json_vec(),
+            ),
+        )
+        .await?;
+    state
+        .session_cache
+        .personality_cache()
+        .set(srid.to_string(), middle.personality.clone());
+    Ok(())
+}

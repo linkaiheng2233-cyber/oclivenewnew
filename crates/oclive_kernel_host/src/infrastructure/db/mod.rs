@@ -1,8 +1,11 @@
 #![allow(clippy::missing_errors_doc)]
 
 mod chat_turn_atomic;
+pub mod memory_merge;
 #[macro_use]
 mod helpers;
+
+pub use memory_merge::{merge_in_tx, merge_long_term_memory_line, MergeOutcome, TxOrPool};
 
 use crate::error::{AppError, Result};
 use crate::models::*;

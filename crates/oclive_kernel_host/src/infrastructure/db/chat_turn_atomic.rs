@@ -1,7 +1,7 @@
 #![allow(clippy::too_many_arguments)]
 
 use super::{ChatTurnTxInput, DbManager, log_txn_finish};
-use crate::domain::memory_engine::MemoryEngine;
+use super::memory_merge::{merge_in_tx, MergeOutcome};
 use crate::error::{AppError, Result};
 use crate::models::PersonalityVector;
 use chrono::Utc;
@@ -168,60 +168,21 @@ async fn record_memory_and_event(
     now: &str,
     started: &Instant,
 ) -> Result<i64> {
-    if memory_importance > 0.0 && !memory_content.trim().is_empty() {
-        let trimmed = memory_content.trim();
-        let candidates: Vec<(i64, String)> = sqlx::query_as(
-            "SELECT id, content FROM long_term_memory WHERE role_id = ? ORDER BY created_at DESC LIMIT 40",
-        )
-        .bind(role_id)
-        .fetch_all(tx.as_mut())
-        .await
-        .map_err(|e| AppError::TransactionError {
-            code: "TXN_MEMORY_LOAD_FOR_REINFORCE_FAILED",
-            message: e.to_string(),
-        })?;
-
-        let mut reinforced = false;
-        for (id, existing) in candidates {
-            let sim = MemoryEngine::keyword_overlap_similarity(trimmed, existing.as_str());
-            if sim >= memory_similarity_threshold {
-                crate::txn_step!(
-                    role_id,
-                    started,
-                    "TXN_MEMORY_REINFORCE_FAILED",
-                    "reinforce_long_term_memory",
-                    sqlx::query(
-                        "UPDATE long_term_memory SET mention_count = mention_count + 1 WHERE id = ? AND role_id = ?",
-                    )
-                    .bind(id)
-                    .bind(role_id)
-                    .execute(tx.as_mut())
-                );
-                reinforced = true;
-                break;
-            }
-        }
-
-        if !reinforced {
-            crate::txn_step!(
-                role_id,
-                started,
-                "TXN_MEMORY_INSERT_FAILED",
-                "insert_long_term_memory",
-                sqlx::query(
-                    "INSERT INTO long_term_memory (role_id, content, importance, weight, created_at, scene_id, mention_count)
-                     VALUES (?, ?, ?, ?, ?, ?, 1)",
-                )
-                .bind(role_id)
-                .bind(trimmed)
-                .bind(memory_importance)
-                .bind(1.0)
-                .bind(now)
-                .bind(scene_id)
-                .execute(tx.as_mut())
-            );
-        }
-    } else {
+    let merge_outcome = merge_in_tx(
+        tx,
+        role_id,
+        scene_id,
+        memory_content,
+        memory_importance,
+        memory_similarity_threshold,
+    )
+    .await
+    .map_err(|e| AppError::TransactionError {
+        code: "TXN_MEMORY_MERGE_FAILED",
+        message: e.to_string(),
+    })?;
+    let inserted_new_memory = merge_outcome == MergeOutcome::New;
+    if memory_importance <= 0.0 || memory_content.trim().is_empty() {
         tracing::info!(role_id = role_id, reason = "low_value", "tx memory skipped");
     }
 
@@ -240,7 +201,7 @@ async fn record_memory_and_event(
                 message: e.to_string(),
             })?;
     }
-    if memory_importance > 0.0 && !memory_content.trim().is_empty() {
+    if inserted_new_memory {
         memory_count += 1;
     }
     // Compute the final count but defer the in-memory cache write until after the

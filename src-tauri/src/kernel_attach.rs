@@ -3,7 +3,7 @@
 use crate::error::AppError;
 use crate::infrastructure::chat_storage::{SessionMeta, StoredMessage};
 use crate::kernel_lifecycle::KernelConnection;
-use crate::models::dto::{GetRoleInfoRequest, RoleInfo, SendMessageRequest, SendMessageResponse, TimeStateResponse};
+use crate::models::dto::{GetRoleInfoRequest, JumpTimeRequest, JumpTimeResponse, RoleInfo, SendMessageRequest, SendMessageResponse, TimeStateResponse};
 use crate::state::AppState;
 use oclive_kernel_runtime::KernelErrorBody;
 use serde::Deserialize;
@@ -31,7 +31,13 @@ pub(crate) fn app_error_from_http_response(status: reqwest::StatusCode, text: &s
 }
 
 fn app_error_from_kernel_body(body: &KernelErrorBody) -> AppError {
+    use oclive_kernel_runtime::error::http_chat_codes;
     match body.code.as_str() {
+        http_chat_codes::EMPTY_MESSAGE => AppError::EmptyMessage,
+        http_chat_codes::INVALID_ROLE_PATH => {
+            AppError::InvalidParameter(body.message.clone())
+        }
+        http_chat_codes::LOAD_ROLE_TASK_PANIC => AppError::Unknown(body.message.clone()),
         "ROLE_RUNTIME_NOT_READY" => AppError::RoleRuntimeNotReady,
         "KERNEL_OFFLINE" => AppError::KernelOffline,
         "ROLE_NOT_FOUND" => AppError::RoleNotFound(body.message.clone()),
@@ -39,6 +45,17 @@ fn app_error_from_kernel_body(body: &KernelErrorBody) -> AppError {
         "DB_ERROR" => AppError::DatabaseError(body.message.clone()),
         "LLM_ERROR" => AppError::OllamaError(body.message.clone()),
         "STARTUP_HEALTH_FAILED" => AppError::StartupHealthFailed(body.message.clone()),
+        "IO_ERROR" => AppError::Unknown(format!("IO_ERROR: {}", body.message)),
+        "SERDE_ERROR" => AppError::Unknown(format!("SERDE_ERROR: {}", body.message)),
+        "HIGH_RISK_CAPABILITY_NOT_GRANTED" => AppError::HighRiskCapabilityNotGranted {
+            capability: body.message.clone(),
+            id: String::new(),
+        },
+        "REMOTE_SERVICE_UNAVAILABLE" => {
+            AppError::RemoteServiceUnavailable(body.message.clone())
+        }
+        "ROLE_PACK_EXISTS" => AppError::RolePackExists(body.message.clone()),
+        code if code.starts_with("API_") => AppError::Unknown(format!("{code}: {}", body.message)),
         _ => AppError::Unknown(body.message.clone()),
     }
 }
@@ -175,6 +192,62 @@ impl KernelHttpClient {
         }
         serde_json::from_str(&text)
             .map_err(|e| AppError::OllamaError(format!("time/state JSON: {e}")))
+    }
+
+    pub async fn jump_time_via_http(
+        conn: &KernelConnection,
+        req: &JumpTimeRequest,
+    ) -> Result<JumpTimeResponse, AppError> {
+        if !Self::probe_health(&conn.base_url).await {
+            return Err(Self::offline_err());
+        }
+        let res = conn
+            .http_client()
+            .post(format!("{}/time/jump", conn.base_url))
+            .json(req)
+            .send()
+            .await
+            .map_err(|e| AppError::OllamaError(format!("time/jump request: {e}")))?;
+        let status = res.status();
+        let text = res
+            .text()
+            .await
+            .map_err(|e| AppError::OllamaError(format!("time/jump body: {e}")))?;
+        if !status.is_success() {
+            return Err(app_error_from_http_response(status, &text));
+        }
+        serde_json::from_str(&text)
+            .map_err(|e| AppError::OllamaError(format!("time/jump JSON: {e}")))
+    }
+
+    pub async fn bridge_dispatch_via_http(
+        conn: &KernelConnection,
+        command: &str,
+        params: serde_json::Value,
+    ) -> Result<serde_json::Value, AppError> {
+        if !Self::probe_health(&conn.base_url).await {
+            return Err(Self::offline_err());
+        }
+        let res = conn
+            .http_client()
+            .post(format!("{}/bridge/dispatch", conn.base_url))
+            .json(&serde_json::json!({
+                "command": command,
+                "params": params,
+            }))
+            .send()
+            .await
+            .map_err(|e| AppError::OllamaError(format!("bridge/dispatch request: {e}")))?;
+        let status = res.status();
+        let text = res
+            .text()
+            .await
+            .map_err(|e| AppError::OllamaError(format!("bridge/dispatch body: {e}")))?;
+        if !status.is_success() {
+            return Err(app_error_from_http_response(status, &text));
+        }
+        serde_json::from_str(&text)
+            .map_err(|e| AppError::OllamaError(format!("bridge/dispatch JSON: {e}")))
     }
 
     pub async fn load_role_via_http(conn: &KernelConnection, role_id: &str) -> Result<(), AppError> {

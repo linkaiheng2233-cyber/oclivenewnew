@@ -357,6 +357,9 @@ pub fn run() {
         .expect("error while building tauri application")
         .run(|app_handle, event| {
             if let tauri::RunEvent::ExitRequested { .. } = event {
+                if let Some(state) = app_handle.try_state::<state::SharedAppState>() {
+                    state.directory_plugins.shutdown_all();
+                }
                 if let Some(conn) =
                     app_handle.try_state::<kernel_lifecycle::SharedKernelConnection>()
                 {

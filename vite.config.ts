@@ -43,11 +43,6 @@ export default defineConfig(({ mode }) => ({
       "mitt",
       "pinia-plugin-persistedstate",
       "pinia",
-      "@vue-flow/core",
-      "@vue-flow/background",
-      "@vue-flow/controls",
-      "@vue-flow/minimap",
-      "@vue-flow/node-resizer",
     ],
   },
 

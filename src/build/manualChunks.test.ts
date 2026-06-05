@@ -6,10 +6,6 @@ describe('resolveManualChunk', () => {
     expect(resolveManualChunk('/node_modules/vue-i18n/dist/vue-i18n.mjs')).toBe('vendor-i18n')
   })
 
-  it('routes @vue-flow before vendor-vue', () => {
-    expect(resolveManualChunk('/node_modules/@vue-flow/core/dist/index.js')).toBe('vendor-vue-flow')
-  })
-
   it('routes pinia-plugin-persistedstate before pinia', () => {
     expect(resolveManualChunk('/node_modules/pinia-plugin-persistedstate/dist/index.js')).toBe(
       'vendor-pinia-persist',

@@ -4,7 +4,8 @@
 //! **Role**: declares allowed `(slot type, method)` in `pipeline.experimental` and matching co-present stage names;
 //! used by [`dual_pipeline_steps`](super::dual_pipeline_steps) validation, unit tests, and alignment with `creator-docs/dual-core/METHOD_REGISTRY.md`.
 //!
-//! CLI `oclive explain DUAL_CORE` keeps a separate constant table (avoids CLI depending on Tauri); keep both in sync on change.
+//! CLI `oclive explain DUAL_CORE` keeps a separate constant table (avoids CLI depending on Tauri);
+//! **keep both in sync** when adding/removing methods — see `crates/oclive-cli/src/main.rs` DUAL_CORE table.
 
 /// Description of one experimental core method.
 #[derive(Debug, Clone, Copy)]

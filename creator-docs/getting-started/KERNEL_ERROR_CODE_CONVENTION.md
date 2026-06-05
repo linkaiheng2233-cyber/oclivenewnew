@@ -8,7 +8,7 @@
 - **来源**：
   - 绝大多数错误对应 [`AppError`](../../crates/oclive_kernel_runtime/src/error.rs) 变体，**`code` 必须与 `AppError::code()` 返回值一致**（如 `ROLE_NOT_FOUND`、`LLM_ERROR`、`TXN_*`）。
   - **目录插件宿主 `ApiError`**（`src-tauri/src/api/error.rs`）：与 `KernelErrorBody` **同形 JSON 单行**（`code` 仍为 `SCREAMING_SNAKE_CASE`，如 **`API_PLUGIN_NOT_FOUND`**）。
-  - **HTTP `POST /chat` 路由边界**（请求校验、`spawn_blocking` panic 等）无单独 `AppError` 变体时，使用 crate 内常量模块 **`http_chat_codes`**（与实现同仓，避免字面量漂移）：
+  - **HTTP `POST /chat` 路由边界**（请求校验、`spawn_blocking` panic 等）与 **`AppError::EmptyMessage`**（Tauri `send_message` / HTTP 空消息校验共用 **`EMPTY_MESSAGE`**）使用 crate 内常量模块 **`http_chat_codes`**（与实现同仓，避免字面量漂移）：
     - `EMPTY_MESSAGE`
     - `INVALID_ROLE_PATH`
     - `LOAD_ROLE_TASK_PANIC`
@@ -43,7 +43,7 @@
 ## 6. 相关实现与补丁说明
 
 - Rust：`crates/oclive_kernel_runtime/src/error.rs`（`KernelErrorBody`、`AppError`、`http_chat_codes`）。
-- HTTP：`src-tauri/src/http_api.rs`。
+- HTTP：`crates/oclive_kernel_host/src/http_api.rs`。
 - 补丁摘要：`handoff/A2_KERNEL_JSON_ERROR_PATCH.md`。
 - **A3（崩溃上报与用户可见错误扫尾）**：[`handoff/A3_CLOSURE_SUMMARY.md`](../../handoff/A3_CLOSURE_SUMMARY.md) · [`handoff/A3_CLOSURE_SUMMARY.en.md`](../../handoff/A3_CLOSURE_SUMMARY.en.md)。
 

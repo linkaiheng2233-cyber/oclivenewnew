@@ -1,7 +1,8 @@
 //! Runtime SQLite migrations without the `sqlx` umbrella `migrate` feature (avoids mysql/postgres in the lockfile).
 
+use sha2::{Digest, Sha256};
 use sqlx::sqlite::SqlitePool;
-use std::collections::HashSet;
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -65,6 +66,12 @@ pub fn write_migration_failed_marker(app_data_dir: &Path, message: &str) -> Resu
         .map_err(|e| format!("write {}: {e}", path.display()))
 }
 
+fn migration_checksum(sql: &str) -> Vec<u8> {
+    let mut hasher = Sha256::new();
+    hasher.update(sql.as_bytes());
+    hasher.finalize().to_vec()
+}
+
 /// Apply `migrations/*.sql` in lexical order; compatible with existing `_sqlx_migrations` rows.
 ///
 /// # Errors
@@ -92,15 +99,13 @@ pub async fn run_sql_migrations(db: &SqlitePool, migrations_dir: &Path) -> Resul
         .collect();
     entries.sort_by_key(|e| e.file_name());
 
-    // Avoid one round trip per migration file.
-    let applied_versions: HashSet<i64> = sqlx::query_scalar(
-        "SELECT version FROM _sqlx_migrations WHERE success = 1",
+    let applied_rows: Vec<(i64, Vec<u8>)> = sqlx::query_as(
+        "SELECT version, checksum FROM _sqlx_migrations WHERE success = 1",
     )
     .fetch_all(db)
     .await
-    .map_err(|e| e.to_string())?
-    .into_iter()
-    .collect();
+    .map_err(|e| e.to_string())?;
+    let applied_checksums: HashMap<i64, Vec<u8>> = applied_rows.into_iter().collect();
 
     for entry in entries {
         let file_name = entry.file_name().to_string_lossy().into_owned();
@@ -110,32 +115,43 @@ pub async fn run_sql_migrations(db: &SqlitePool, migrations_dir: &Path) -> Resul
             .and_then(|p| p.parse().ok())
             .ok_or_else(|| format!("migration file name must start with version: {file_name}"))?;
 
-        if applied_versions.contains(&version) {
+        let sql = std::fs::read_to_string(entry.path())
+            .map_err(|e| format!("read {}: {e}", entry.path().display()))?;
+        let checksum = migration_checksum(&sql);
+
+        if let Some(stored) = applied_checksums.get(&version) {
+            if stored != &checksum {
+                tracing::warn!(
+                    target: "oclive_migrate",
+                    version = version,
+                    file = %file_name,
+                    "applied migration checksum drift detected (file changed after install)"
+                );
+            }
             continue;
         }
 
-        let sql = std::fs::read_to_string(entry.path())
-            .map_err(|e| format!("read {}: {e}", entry.path().display()))?;
         let started = std::time::Instant::now();
+        let mut tx = db.begin().await.map_err(|e| e.to_string())?;
         for statement in split_sql_statements(&sql) {
             sqlx::query(&statement)
-                .execute(db)
+                .execute(&mut *tx)
                 .await
                 .map_err(|e| format!("migration {file_name}: {e}\nSQL: {statement}"))?;
         }
         let elapsed_ms = started.elapsed().as_millis() as i64;
-        let checksum: Vec<u8> = sql.as_bytes().to_vec();
         sqlx::query(
             "INSERT INTO _sqlx_migrations (version, description, success, checksum, execution_time)
              VALUES (?, ?, 1, ?, ?)",
         )
         .bind(version)
         .bind(&file_name)
-        .bind(checksum)
+        .bind(&checksum)
         .bind(elapsed_ms)
-        .execute(db)
+        .execute(&mut *tx)
         .await
         .map_err(|e| e.to_string())?;
+        tx.commit().await.map_err(|e| e.to_string())?;
     }
     Ok(())
 }
@@ -204,5 +220,12 @@ mod tests {
         let stmts = split_sql_statements(sql);
         assert_eq!(stmts.len(), 1);
         assert!(stmts[0].contains("name TEXT"));
+    }
+
+    #[test]
+    fn checksum_is_sha256() {
+        let sql = "CREATE TABLE t (id INT);";
+        let digest = migration_checksum(sql);
+        assert_eq!(digest.len(), 32);
     }
 }
