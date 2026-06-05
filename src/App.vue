@@ -91,6 +91,7 @@ const {
   onChangeRelation,
   onPackImported,
   onReloadPolicy,
+  onDebugRefresh,
 } = useMainShell()
 </script>
 
@@ -252,7 +253,7 @@ const {
         :events="debugStore.events"
         :memories="debugStore.memories"
         @reload="onReloadPolicy"
-        @refresh="debugStore.loadDebugData"
+        @refresh="onDebugRefresh"
         @close="debugStore.toggle"
         @notify="(p) => showToast(p.type, p.message)"
         @imported="onPackImported"

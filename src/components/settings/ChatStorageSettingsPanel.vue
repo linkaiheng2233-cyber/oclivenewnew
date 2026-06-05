@@ -45,7 +45,19 @@ const { showToast } = useAppToast()
 type Level = 'roles' | 'scenes' | 'sessions' | 'messages'
 
 const level = ref<Level>('roles')
-const loading = ref(false)
+const loadingStats = ref(false)
+const loadingSearch = ref(false)
+const loadingSessions = ref(false)
+const loadingMessages = ref(false)
+const loadingMutating = ref(false)
+const loading = computed(
+  () =>
+    loadingStats.value
+    || loadingSearch.value
+    || loadingSessions.value
+    || loadingMessages.value
+    || loadingMutating.value,
+)
 const stats = ref<RoleStorageStat[]>([])
 const roleNames = ref<Record<string, string>>({})
 const selectedRole = ref<RoleStorageStat | null>(null)
@@ -66,6 +78,7 @@ const cleanupDraft = ref<RoleChatStorageConfig>({})
 const cleanupRoleId = ref('')
 
 const roleStorageConfig = ref<RoleChatStorageConfig | null>(null)
+let openRoleGeneration = 0
 
 const editingMessageId = ref<string | null>(null)
 const editingContent = ref('')
@@ -138,7 +151,7 @@ async function refreshStats(force = false) {
   const now = Date.now()
   if (!force && stats.value.length > 0 && now - statsLoadedAt.value < CACHE_MS)
     return
-  loading.value = true
+  loadingStats.value = true
   try {
     stats.value = await getChatStorageStats()
     statsLoadedAt.value = Date.now()
@@ -151,7 +164,7 @@ async function refreshStats(force = false) {
       showToast('error', msg)
   }
   finally {
-    loading.value = false
+    loadingStats.value = false
   }
 }
 
@@ -161,7 +174,7 @@ async function runSearch() {
     searchResults.value = []
     return
   }
-  loading.value = true
+  loadingSearch.value = true
   try {
     searchResults.value = await searchChatMessages(
       q,
@@ -174,7 +187,7 @@ async function runSearch() {
     showToast('error', err instanceof Error ? err.message : String(err))
   }
   finally {
-    loading.value = false
+    loadingSearch.value = false
   }
 }
 
@@ -195,6 +208,7 @@ async function jumpToSearchResult(row: ChatSearchResult) {
 }
 
 function openRole(row: RoleStorageStat) {
+  const gen = ++openRoleGeneration
   selectedRole.value = row
   selectedScene.value = null
   selectedSession.value = null
@@ -204,10 +218,15 @@ function openRole(row: RoleStorageStat) {
   level.value = 'scenes'
   void getRoleChatStorageConfig(row.role_id)
     .then((cfg) => {
+      if (gen !== openRoleGeneration)
+        return
       roleStorageConfig.value = cfg
     })
-    .catch(() => {
+    .catch((err) => {
+      if (gen !== openRoleGeneration)
+        return
       roleStorageConfig.value = null
+      showToast('error', err instanceof Error ? err.message : String(err))
     })
 }
 
@@ -224,7 +243,7 @@ async function loadSessions() {
   const scene = selectedScene.value
   if (!role || !scene)
     return
-  loading.value = true
+  loadingSessions.value = true
   try {
     sessions.value = await listChatSessions(role.role_id, scene.scene_id, 50, 0)
   }
@@ -232,14 +251,14 @@ async function loadSessions() {
     showToast('error', err instanceof Error ? err.message : String(err))
   }
   finally {
-    loading.value = false
+    loadingSessions.value = false
   }
 }
 
 async function openSession(session: SessionMeta) {
   selectedSession.value = session
   level.value = 'messages'
-  loading.value = true
+  loadingMessages.value = true
   try {
     messages.value = await fetchChatMessages(session.session_id, 500, 0)
   }
@@ -247,7 +266,7 @@ async function openSession(session: SessionMeta) {
     showToast('error', err instanceof Error ? err.message : String(err))
   }
   finally {
-    loading.value = false
+    loadingMessages.value = false
   }
 }
 
@@ -270,7 +289,7 @@ function goBack() {
 }
 
 async function handleExportSession(sessionId: string, format: 'markdown' | 'json') {
-  loading.value = true
+  loadingMutating.value = true
   try {
     const res = await exportChatSession(sessionId, format)
     if (res.content_encoding === 'base64')
@@ -283,7 +302,7 @@ async function handleExportSession(sessionId: string, format: 'markdown' | 'json
     showToast('error', err instanceof Error ? err.message : String(err))
   }
   finally {
-    loading.value = false
+    loadingMutating.value = false
   }
 }
 
@@ -295,7 +314,7 @@ async function startMemoryReplay(
 ) {
   if (!window.confirm(t('chatStorage.replayConfirm')))
     return
-  loading.value = true
+  loadingMutating.value = true
   try {
     const roleCfg = await getRoleChatStorageConfig(roleId)
     const target: ReplayTarget = {
@@ -346,12 +365,12 @@ async function startMemoryReplay(
     showToast('error', err instanceof Error ? err.message : t('chatStorage.replayFailed'))
   }
   finally {
-    loading.value = false
+    loadingMutating.value = false
   }
 }
 
 async function handleExportRole(roleId: string, format: 'markdown' | 'json') {
-  loading.value = true
+  loadingMutating.value = true
   try {
     const res = await exportRoleChats(roleId, format)
     if (res.content_encoding === 'base64')
@@ -364,13 +383,13 @@ async function handleExportRole(roleId: string, format: 'markdown' | 'json') {
     showToast('error', err instanceof Error ? err.message : String(err))
   }
   finally {
-    loading.value = false
+    loadingMutating.value = false
   }
 }
 
 async function openCleanupSettings(roleId: string) {
   cleanupRoleId.value = roleId
-  loading.value = true
+  loadingMutating.value = true
   try {
     cleanupDraft.value = await getRoleChatStorageConfig(roleId)
     showCleanupModal.value = true
@@ -379,13 +398,13 @@ async function openCleanupSettings(roleId: string) {
     showToast('error', err instanceof Error ? err.message : String(err))
   }
   finally {
-    loading.value = false
+    loadingMutating.value = false
   }
 }
 
 async function saveCleanupSettings() {
   const roleId = cleanupRoleId.value
-  loading.value = true
+  loadingMutating.value = true
   try {
     await saveRoleChatStorageConfig(roleId, cleanupDraft.value)
     const result = await runChatAutoCleanup(roleId)
@@ -400,14 +419,14 @@ async function saveCleanupSettings() {
     showToast('error', err instanceof Error ? err.message : String(err))
   }
   finally {
-    loading.value = false
+    loadingMutating.value = false
   }
 }
 
 async function confirmDeleteRole(roleId: string) {
   if (!window.confirm(t('chatStorage.deleteRoleConfirm')))
     return
-  loading.value = true
+  loadingMutating.value = true
   try {
     const res = await deleteRoleChats(roleId)
     showToast('info', t('chatStorage.deletedToast', {
@@ -423,14 +442,14 @@ async function confirmDeleteRole(roleId: string) {
     showToast('error', err instanceof Error ? err.message : String(err))
   }
   finally {
-    loading.value = false
+    loadingMutating.value = false
   }
 }
 
 async function confirmDeleteScene(roleId: string, sceneId: string) {
   if (!window.confirm(t('chatStorage.deleteSceneConfirm')))
     return
-  loading.value = true
+  loadingMutating.value = true
   try {
     const res = await deleteSceneChats(roleId, sceneId)
     showToast('info', t('chatStorage.deletedToast', {
@@ -450,7 +469,7 @@ async function confirmDeleteScene(roleId: string, sceneId: string) {
     showToast('error', err instanceof Error ? err.message : String(err))
   }
   finally {
-    loading.value = false
+    loadingMutating.value = false
   }
 }
 
@@ -470,7 +489,7 @@ async function confirmEditMessage() {
   const id = editingMessageId.value
   if (!id)
     return
-  loading.value = true
+  loadingMutating.value = true
   try {
     await editChatMessage(id, editingContent.value)
     cancelEdit()
@@ -481,14 +500,14 @@ async function confirmEditMessage() {
     showToast('error', err instanceof Error ? err.message : String(err))
   }
   finally {
-    loading.value = false
+    loadingMutating.value = false
   }
 }
 
 async function confirmDeleteMessage(msg: import('../../api/chatStorage').StoredMessage) {
   if (!window.confirm(t('chatStorage.deleteMessageConfirm')))
     return
-  loading.value = true
+  loadingMutating.value = true
   try {
     await deleteChatMessage(msg.id)
     if (selectedSession.value)
@@ -498,7 +517,7 @@ async function confirmDeleteMessage(msg: import('../../api/chatStorage').StoredM
     showToast('error', err instanceof Error ? err.message : String(err))
   }
   finally {
-    loading.value = false
+    loadingMutating.value = false
   }
 }
 

@@ -5,6 +5,7 @@ import {
   queryEvents,
   queryMemories,
   reloadPolicyPlugins,
+  toastAsyncError,
 
 } from '../api'
 import { useRoleStore } from './roleStore'
@@ -31,13 +32,19 @@ export const useDebugStore = defineStore('debug', {
     async loadDebugData() {
       const roleStore = useRoleStore()
       const roleId = roleStore.currentRoleId
-      const [events, memories] = await Promise.all([
-        queryEvents({ role_id: roleId, limit: 10, offset: 0 }),
-        queryMemories({ role_id: roleId, limit: 10, offset: 0 }),
-        roleStore.refreshRoleInfo(),
-      ])
-      this.events = events
-      this.memories = memories
+      try {
+        const [events, memories] = await Promise.all([
+          queryEvents({ role_id: roleId, limit: 10, offset: 0 }),
+          queryMemories({ role_id: roleId, limit: 10, offset: 0 }),
+          roleStore.refreshRoleInfo(),
+        ])
+        this.events = events
+        this.memories = memories
+      }
+      catch (err) {
+        toastAsyncError(err)
+        throw err
+      }
     },
     async reloadPolicy() {
       return reloadPolicyPlugins()

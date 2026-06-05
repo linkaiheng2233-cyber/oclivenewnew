@@ -1,7 +1,25 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { describe, expect, it } from 'vitest'
-import { snakeToCamelKey, toCamelPayload } from './helpers'
+import { describe, expect, it, vi } from 'vitest'
+
+const { showToastMock } = vi.hoisted(() => ({
+  showToastMock: vi.fn(),
+}))
+
+vi.mock('../composables/useAppToast', () => ({
+  useAppToast: () => ({
+    showToast: showToastMock,
+    toast: { value: { show: false, type: 'info', message: '' } },
+  }),
+}))
+
+vi.stubGlobal('window', {
+  setTimeout: (fn: () => void) => {
+    fn()
+  },
+})
+
+import { ApiInvokeError, snakeToCamelKey, toastAsyncError, toCamelPayload } from './helpers'
 
 const API_DIR = join(import.meta.dirname)
 
@@ -50,5 +68,15 @@ describe('api/helpers', () => {
       }
     }
     expect(offenders).toEqual([])
+  })
+
+  it('toastAsyncError surfaces ApiInvokeError message via showToast', () => {
+    showToastMock.mockClear()
+    toastAsyncError(new ApiInvokeError({
+      message: 'role not found',
+      raw: '[ROLE_NOT_FOUND] Role not found: x',
+      code: 'ROLE_NOT_FOUND',
+    }))
+    expect(showToastMock).toHaveBeenCalledWith('error', 'role not found')
   })
 })

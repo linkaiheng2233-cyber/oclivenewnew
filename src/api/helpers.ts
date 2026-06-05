@@ -1,5 +1,6 @@
 import { invoke } from '@tauri-apps/api/tauri'
 
+import { useAppToast } from '../composables/useAppToast'
 import { i18n } from '../i18n/index'
 
 function translateApiError(code: string): string | undefined {
@@ -174,6 +175,18 @@ export function toFriendlyError(err: unknown): FriendlyError {
     kernel,
     message: toFriendlyErrorMessage(err),
   }
+}
+
+/** Show a user-visible toast for an async failure (safe inside Pinia actions). */
+export function toastAsyncError(err: unknown): void {
+  const { showToast } = useAppToast()
+  const message
+    = err instanceof ApiInvokeError
+      ? err.message
+      : err instanceof Error
+        ? err.message
+        : String(err)
+  showToast('error', message)
 }
 
 export async function invokeWithFriendlyError<T>(

@@ -1,18 +1,20 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { hostEventBus } from '../../lib/hostEventBus'
-import { useRoleStore } from '../../stores/roleStore'
-import { useUiStore } from '../../stores/uiStore'
-import { buildRelationDropdownOptions } from '../../utils/relationOptions'
 import {
   OCLIVE_DEFAULT_RELATION_SENTINEL,
   setEvolutionFactor,
   setUserRelation,
 } from '../../api'
+import { useAppToast } from '../../composables/useAppToast'
+import { hostEventBus } from '../../lib/hostEventBus'
+import { useRoleStore } from '../../stores/roleStore'
+import { useUiStore } from '../../stores/uiStore'
+import { buildRelationDropdownOptions } from '../../utils/relationOptions'
 import HelpHint from '../shared/HelpHint.vue'
 
 const { t } = useI18n()
+const { showToast } = useAppToast()
 const roleStore = useRoleStore()
 const uiStore = useUiStore()
 const localFactor = ref(roleStore.roleInfo.eventImpactFactor)
@@ -59,6 +61,9 @@ async function onRelationChange(ev: Event) {
       const info = await setUserRelation(roleStore.currentRoleId, next)
       roleStore.applyRoleInfo(info)
     }
+  }
+  catch (err) {
+    showToast('error', err instanceof Error ? err.message : String(err))
   }
   finally {
     busy.value = false

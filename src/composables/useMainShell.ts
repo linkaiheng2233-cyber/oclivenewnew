@@ -347,6 +347,15 @@ export function useMainShell() {
     }
   }
 
+  async function onDebugRefresh() {
+    try {
+      await debugStore.loadDebugData()
+    }
+    catch {
+      // toastAsyncError already surfaced in debugStore.loadDebugData
+    }
+  }
+
   watch(
     () => messages.value.length,
     async (len, prev) => {
@@ -362,7 +371,7 @@ export function useMainShell() {
     () => debugStore.visible,
     (v) => {
       if (v)
-        void debugStore.loadDebugData()
+        void onDebugRefresh()
     },
   )
 
@@ -452,5 +461,6 @@ export function useMainShell() {
     onChangeRelation,
     onPackImported,
     onReloadPolicy,
+    onDebugRefresh,
   }
 }

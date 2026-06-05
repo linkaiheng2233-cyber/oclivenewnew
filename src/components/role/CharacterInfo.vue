@@ -2,11 +2,11 @@
 import { convertFileSrc } from '@tauri-apps/api/tauri'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { readRoleAssetBytes, resolveRoleAssetPath } from '../../api'
 import {
   emotionToAssetFilename,
   emotionToEmoji,
 } from '../../utils/emotion-assets'
-import { readRoleAssetBytes, resolveRoleAssetPath } from '../../api'
 
 const props = withDefaults(
   defineProps<{
@@ -24,6 +24,7 @@ const { t, te } = useI18n()
 const portraitSrc = ref<string | null>(null)
 const portraitBlobUrl = ref<string | null>(null)
 const portraitLoadFailed = ref(false)
+let portraitGeneration = 0
 
 function isTauri(): boolean {
   return typeof window !== 'undefined' && '__TAURI__' in window
@@ -75,6 +76,7 @@ function emotionAssetCandidates(key: string): string[] {
 }
 
 async function refreshPortrait(): Promise<void> {
+  const gen = ++portraitGeneration
   portraitLoadFailed.value = false
   revokeBlob()
   portraitSrc.value = null
@@ -82,12 +84,16 @@ async function refreshPortrait(): Promise<void> {
   const key = emotionKey()
   let loaded = false
   for (const filename of emotionAssetCandidates(key)) {
+    if (gen !== portraitGeneration)
+      return
     const rel = `assets/images/${filename}`
     let path: string | null
     try {
       path = await resolveRoleAssetPath(props.roleId, rel)
     }
     catch (e) {
+      if (gen !== portraitGeneration)
+        return
       console.warn('[CharacterInfo] resolve_role_asset_path failed', e)
       portraitLoadFailed.value = true
       return
@@ -99,6 +105,8 @@ async function refreshPortrait(): Promise<void> {
     if (isTauri()) {
       try {
         const bytes = await readRoleAssetBytes(props.roleId, rel)
+        if (gen !== portraitGeneration)
+          return
         if (!bytes)
           continue
         const mime = filename.endsWith('.webp')
@@ -124,6 +132,8 @@ async function refreshPortrait(): Promise<void> {
     }
 
     try {
+      if (gen !== portraitGeneration)
+        return
       portraitSrc.value = convertFileSrc(path)
       loaded = true
       break
@@ -133,6 +143,8 @@ async function refreshPortrait(): Promise<void> {
     }
   }
 
+  if (gen !== portraitGeneration)
+    return
   if (!loaded) {
     portraitLoadFailed.value = true
   }

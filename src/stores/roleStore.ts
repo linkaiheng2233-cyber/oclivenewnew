@@ -14,6 +14,7 @@ import {
 
   setUserRelation,
 
+  toastAsyncError,
 } from '../api'
 import { rt } from '../i18n/runtimeT'
 import { hostEventBus } from '../lib/hostEventBus'
@@ -230,8 +231,14 @@ export const useRoleStore = defineStore(
         this.applyRoleInfo(info)
       },
       async refreshRoleInfo() {
-        const info = await getRoleInfo(this.currentRoleId)
-        this.applyRoleInfo(info)
+        try {
+          const info = await getRoleInfo(this.currentRoleId)
+          this.applyRoleInfo(info)
+        }
+        catch (err) {
+          toastAsyncError(err)
+          throw err
+        }
       },
       /** Apply already-fetched `RoleInfo` (e.g. from `switch_scene`) to avoid an extra request */
       applyRoleInfo(info: RoleInfo) {
