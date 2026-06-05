@@ -10,6 +10,7 @@ use crate::state::AppState;
 
 use super::emotion_to_dto;
 use super::relation_snapshot::load_relation_snapshot;
+use super::turn_context::TurnIds;
 use super::turn_pipeline::persistence::append_agent_turn_to_chat_storage;
 
 /// Loads relation / favorability / portrait emotion in parallel and builds a minimal [`SendMessageResponse`] for Agent shortcut, etc.
@@ -66,9 +67,11 @@ pub(crate) async fn build_minimal_response(
 
     let chat_ids = append_agent_turn_to_chat_storage(
         state,
-        mrid,
-        srid,
-        scene_id.as_str(),
+        TurnIds {
+            mrid,
+            srid,
+            scene_id: scene_id.as_str(),
+        },
         role,
         user_message,
         reply.as_str(),

@@ -15,14 +15,12 @@ use crate::domain::chat_engine::message_error::ProcessMessageError;
 use crate::domain::chat_engine::minimal_response::build_minimal_response;
 use crate::domain::chat_engine::presence::user_is_remote_from_character;
 use crate::domain::chat_engine::staged::{process_message_stage, stage_process_message};
+use crate::domain::chat_engine::dispatch::{dispatch_turn, resolve_dual_core_degraded};
 use crate::domain::chat_engine::turn_context::TurnContext;
-use crate::domain::chat_engine::turn_pipeline::{execute_turn, TurnMode};
 use crate::domain::chat_engine::{
     backend_resolution_summary, context::validate_scene_id, conversation_state_role_id,
-    ensure_role_loaded, process_remote_life, process_remote_stub,
+    ensure_role_loaded,
 };
-#[cfg(feature = "dual_core")]
-use crate::domain::dual_pipeline::DualPipelineRunner;
 use crate::domain::startup_health;
 use crate::error::Result;
 use crate::models::dto::{SendMessageRequest, SendMessageResponse};
@@ -209,18 +207,7 @@ async fn run(
     )
     .await?;
     let scenes = Arc::clone(&role.scene_ids);
-    #[cfg(not(feature = "dual_core"))]
-    let dual_core_degraded = role.dual_core_gated();
-    #[cfg(not(feature = "dual_core"))]
-    if dual_core_degraded {
-        tracing::warn!(
-            target: "oclive_dual_core",
-            role_id = %role.id,
-            "dual_core feature disabled; role blueprint has dual_core enabled — co_present fallback"
-        );
-    }
-    #[cfg(feature = "dual_core")]
-    let dual_core_degraded = false;
+    let dual_core_degraded = resolve_dual_core_degraded(role.as_ref());
     let turn = TurnContext {
         state,
         req,
@@ -238,17 +225,5 @@ async fn run(
         virtual_time_ms,
         dual_core_degraded,
     };
-    if is_remote {
-        if !remote_life_enabled {
-            return stage_process_message(ChatStage::RemoteStub, process_remote_stub(&turn).await);
-        }
-        return stage_process_message(ChatStage::RemoteLife, process_remote_life(&turn).await);
-    }
-
-    #[cfg(feature = "dual_core")]
-    if role.dual_core_gated() {
-        return DualPipelineRunner::run_with_fallback(&turn).await;
-    }
-
-    Ok(execute_turn(&turn, TurnMode::CoPresent).await?)
+    dispatch_turn(&turn, is_remote, remote_life_enabled).await
 }

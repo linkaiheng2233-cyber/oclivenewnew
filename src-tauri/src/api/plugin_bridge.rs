@@ -11,6 +11,7 @@ use crate::api::error::ApiError;
 use crate::api::error::CommandError;
 use crate::infrastructure::directory_plugins::{normalize_plugin_rel, OclivePluginManifest};
 use crate::infrastructure::import_role_pack;
+use crate::infrastructure::role_pack::validate_bridge_import_role_source;
 use crate::kernel_attach::{role_dir_for_id, KernelHttpClient};
 use crate::state::{AppState, SharedAppState};
 use oclive_kernel_host::service::{
@@ -18,7 +19,7 @@ use oclive_kernel_host::service::{
 };
 use serde::Deserialize;
 use serde_json::{json, Value};
-use std::path::PathBuf;
+use std::path::Path;
 use std::sync::Arc;
 use tauri::{AppHandle, State};
 
@@ -221,7 +222,9 @@ async fn dispatch_local_bridge_command(
             .and_then(|v| v.as_bool())
             .unwrap_or(false);
         let storage = state.storage.clone();
-        let path_buf = PathBuf::from(path);
+        let app_data_dir = oclive_kernel_runtime::resolve_app_data_dir_for_host();
+        let path_buf = validate_bridge_import_role_source(&storage, &app_data_dir, Path::new(path))
+            .map_err(|e| e.to_string())?;
         let role_id = tokio::task::spawn_blocking(move || {
             import_role_pack(&storage, &path_buf, overwrite, |_| {})
         })

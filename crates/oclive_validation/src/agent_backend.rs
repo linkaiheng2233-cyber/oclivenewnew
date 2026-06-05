@@ -36,6 +36,19 @@ fn agent_backend_label(b: AgentBackend) -> &'static str {
     }
 }
 
+/// Returns a validation error when `plugin_backends.agent` is an unimplemented backend.
+#[must_use]
+pub fn validate_implemented_agent_backend(backends: &PluginBackends) -> Option<String> {
+    if matches!(backends.agent, AgentBackend::Directory | AgentBackend::Remote) {
+        Some(format!(
+            "settings.json plugin_backends.agent={} 尚未实现（请使用 builtin）",
+            agent_backend_label(backends.agent)
+        ))
+    } else {
+        None
+    }
+}
+
 /// Collect validation warnings for agent slots in a blueprint `slot_registry`.
 #[must_use]
 pub fn validate_agent_slot_backends(
@@ -47,7 +60,7 @@ pub fn validate_agent_slot_backends(
         let backend = entry.backend.trim().to_ascii_lowercase();
         if backend == "directory" || backend == "remote" {
             warnings.push(format!(
-                "slot_registry.{key} agent backend={backend} 尚未实现，运行时将使用 builtin"
+                "slot_registry.{key} agent backend={backend} 尚未实现（请使用 builtin）"
             ));
         }
     }
@@ -58,6 +71,16 @@ pub fn validate_agent_slot_backends(
 mod tests {
     use super::*;
     use crate::plugin_backends::DirectoryPluginSlots;
+
+    #[test]
+    fn validate_implemented_agent_backend_rejects_remote() {
+        let pb = PluginBackends {
+            agent: AgentBackend::Remote,
+            ..Default::default()
+        };
+        let err = validate_implemented_agent_backend(&pb).expect("err");
+        assert!(err.contains("remote"));
+    }
 
     #[test]
     fn agent_directory_downgrades_to_builtin() {

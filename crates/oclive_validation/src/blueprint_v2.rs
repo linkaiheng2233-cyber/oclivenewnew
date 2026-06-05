@@ -933,6 +933,12 @@ fn validate_slot_backend_and_fields(key: &str, slot: &SlotRegistryEntry) -> Resu
         ));
     }
 
+    if t == "agent" && (b == "remote" || b == "directory") {
+        return Err(format!(
+            "slot_registry[{key}]：agent backend「{b}」尚未实现（请使用 builtin）"
+        ));
+    }
+
     if t == "llm" && b == "ollama" {
         if let Some(ref m) = slot.model {
             if m.trim().is_empty() {

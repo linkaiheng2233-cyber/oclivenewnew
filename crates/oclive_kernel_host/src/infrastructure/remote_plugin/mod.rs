@@ -33,6 +33,7 @@ use crate::domain::user_emotion_analyzer::{
     RemoteUserEmotionAnalyzerPlaceholder, UserEmotionAnalyzer,
 };
 use crate::error::{AppError, Result};
+use crate::infrastructure::directory_plugins::rpc_url_is_loopback;
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
 use crate::infrastructure::llm::{LlmClient, RemoteLlmPlaceholder};
 use serde_json::Value;
@@ -41,7 +42,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 pub use jsonrpc::RemoteRpcChannel;
-use oclive_validation::{NETWORK_GRANT_REMOTE_LLM, NETWORK_GRANT_REMOTE_PLUGIN};
+use oclive_validation::{NETWORK_GRANT_REMOTE_LLM, NETWORK_GRANT_REMOTE_PLUGIN, NETWORK_WILDCARD};
 pub use remote_client::{RemoteHttpClientAsync, RemoteHttpClientBlocking};
 
 /// Shared Remote HTTP connection pool (no global request timeout; per-RPC timeout in [`jsonrpc`] layer).
@@ -169,6 +170,7 @@ pub fn llm_remote_backend(
         remote_fallback_allowed,
     ))
 }
+
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
@@ -179,6 +181,12 @@ pub fn invoke_directory_plugin_rpc_blocking(
     params: Value,
     channel: RemoteRpcChannel,
 ) -> Result<Value> {
+    if !rpc_url_is_loopback(url) {
+        return Err(AppError::HighRiskCapabilityNotGranted {
+            capability: NETWORK_WILDCARD.into(),
+            id: url.to_string(),
+        });
+    }
     let cfg = RemotePluginHttpConfig::for_directory_plugin_rpc(
         url,
         matches!(channel, RemoteRpcChannel::Llm),
@@ -195,4 +203,24 @@ pub fn invoke_directory_plugin_rpc_blocking(
         ))
     })?;
     http.call(channel, method, params)
+}
+
+#[cfg(test)]
+mod invoke_rpc_tests {
+    use super::*;
+
+    #[test]
+    fn directory_rpc_rejects_non_loopback_url() {
+        let err = invoke_directory_plugin_rpc_blocking(
+            "http://evil.example/rpc",
+            "test.method",
+            serde_json::json!({}),
+            RemoteRpcChannel::Plugin,
+        )
+        .unwrap_err();
+        assert!(matches!(
+            err,
+            AppError::HighRiskCapabilityNotGranted { .. }
+        ));
+    }
 }

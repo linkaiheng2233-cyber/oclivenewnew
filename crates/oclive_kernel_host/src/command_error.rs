@@ -211,6 +211,9 @@ pub fn map_directory_rpc_url_error(plugin_id: &str, err: String) -> ApiError {
     if err.contains("directory plugin spawn not granted") {
         return ApiError::HighRiskCapabilityNotGranted { message: err };
     }
+    if err.contains("directory plugin spawn not permitted") {
+        return ApiError::HighRiskCapabilityNotGranted { message: err };
+    }
     if err.contains(" has no process section") {
         return ApiError::InvalidManifest { message: err };
     }
@@ -278,6 +281,17 @@ mod tests {
         for (expected_code, api_err) in cases {
             assert_eq!(invoke_code(CommandError::from(api_err)), expected_code);
         }
+    }
+
+    #[test]
+    fn map_rpc_spawn_not_permitted_uses_high_risk_code() {
+        let api = map_directory_rpc_url_error(
+            "my_plug",
+            "directory plugin spawn not permitted: plugin_id=my_plug missing process:spawn in manifest permissions"
+                .into(),
+        );
+        assert_eq!(api.code(), "HIGH_RISK_CAPABILITY_NOT_GRANTED");
+        assert_eq!(invoke_code(api.into()), "HIGH_RISK_CAPABILITY_NOT_GRANTED");
     }
 
     #[test]

@@ -17,3 +17,8 @@ pub use runtime::{
     HostPluginsFile, PluginProcessDebugInfo, PluginRootEntry, PluginScanSummary,
 };
 pub use version::parse_manifest_version;
+
+#[must_use]
+pub(crate) fn rpc_url_is_loopback(url: &str) -> bool {
+    runtime::rpc_url_is_loopback(url)
+}

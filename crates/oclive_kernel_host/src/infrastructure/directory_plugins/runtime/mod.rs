@@ -268,7 +268,7 @@ pub(crate) fn parse_ready_line(
     Some(rest.to_string())
 }
 
-fn rpc_url_is_loopback(url: &str) -> bool {
+pub(crate) fn rpc_url_is_loopback(url: &str) -> bool {
     let rest = match url
         .strip_prefix("http://")
         .or_else(|| url.strip_prefix("https://"))
@@ -395,6 +395,11 @@ impl DirectoryPluginRuntime {
     #[must_use]
     pub fn catalog_cache_invalidation_gen(&self) -> u64 {
         self.catalog_invalidate_gen.load(Ordering::Relaxed)
+    }
+
+    #[must_use]
+    pub fn developer_effective(&self) -> bool {
+        self.host.developer_effective()
     }
 
     fn plugin_state_path(&self) -> PathBuf {

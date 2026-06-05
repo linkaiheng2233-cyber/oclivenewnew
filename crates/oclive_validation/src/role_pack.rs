@@ -269,6 +269,11 @@ pub fn validate_role_pack_manifest_settings_core(
         {
             errs.push(e);
         }
+        if let Some(ref pb) = settings.plugin_backends {
+            if let Some(e) = crate::agent_backend::validate_implemented_agent_backend(pb) {
+                errs.push(e);
+            }
+        }
     }
 
     if errs.is_empty() {

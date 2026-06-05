@@ -47,4 +47,15 @@
 - 补丁摘要：`handoff/A2_KERNEL_JSON_ERROR_PATCH.md`。
 - **A3（崩溃上报与用户可见错误扫尾）**：[`handoff/A3_CLOSURE_SUMMARY.md`](../../handoff/A3_CLOSURE_SUMMARY.md) · [`handoff/A3_CLOSURE_SUMMARY.en.md`](../../handoff/A3_CLOSURE_SUMMARY.en.md)。
 
+## 7. 目录插件 RPC 字符串 → `ApiError` 映射
+
+`map_directory_rpc_url_error`（`oclive_kernel_host::command_error`）将目录插件 spawn 相关 plain-text 失败映射为：
+
+| 子串 / 前缀 | `ApiError` → `code` |
+|-------------|---------------------|
+| `directory plugin spawn not granted` | `HIGH_RISK_CAPABILITY_NOT_GRANTED` |
+| `directory plugin spawn not permitted` | `HIGH_RISK_CAPABILITY_NOT_GRANTED` |
+| `plugin disabled:` | `API_PERMISSION_DENIED` |
+| `unknown directory plugin_id=` | `API_PLUGIN_NOT_FOUND` |
+
 [English mirror](../../creator-docs-en/getting-started/KERNEL_ERROR_CODE_CONVENTION.md)

@@ -18,6 +18,7 @@ use super::super::types::{
     ImportChatBucketsResult, ReplayProgress, ReplayResult, ReplayTarget, RoleStorageStat,
     SessionMeta, StoredMessage, TurnPersistInput,
 };
+use super::super::chat_sessions::MANIFEST_SESSION_LIST_CAP;
 use crate::domain::chat_engine::conversation_state_role_id;
 use crate::error::Result;
 use crate::infrastructure::db::DbManager;
@@ -298,7 +299,7 @@ impl ConversationStore for HybridConversationStore {
             .await?;
         Ok(rows
             .into_iter()
-            .take(500)
+            .take(MANIFEST_SESSION_LIST_CAP as usize)
             .map(|(row, snippet)| SessionMeta {
                 session_id: row.session_id,
                 role_id: row.role_id,

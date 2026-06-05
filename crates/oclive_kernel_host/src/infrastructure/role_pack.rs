@@ -329,6 +329,73 @@ pub fn import_role_pack<F: FnMut(ImportProgress)>(
     })
 }
 
+fn canonical_allowed_root(path: &Path) -> Option<PathBuf> {
+    path.canonicalize().ok().or_else(|| {
+        if path.exists() {
+            Some(path.to_path_buf())
+        } else {
+            None
+        }
+    })
+}
+
+fn path_under_root(candidate: &Path, root: &Path) -> bool {
+    let Some(root_canon) = canonical_allowed_root(root) else {
+        return false;
+    };
+    let Some(candidate_canon) = canonical_allowed_root(candidate) else {
+        return false;
+    };
+    candidate_canon.starts_with(&root_canon)
+}
+
+/// Validates `import_role` sources from directory-plugin bridge (not native file-picker imports).
+///
+/// # Errors
+///
+/// Returns [`AppError::InvalidParameter`] when the path escapes allowed roots.
+pub fn validate_bridge_import_role_source(
+    storage: &RoleStorage,
+    app_data_dir: &Path,
+    src: &Path,
+) -> Result<PathBuf> {
+    if src.as_os_str().is_empty() {
+        return Err(AppError::InvalidParameter("import path required".into()));
+    }
+    if !src.exists() {
+        return Err(AppError::InvalidParameter(format!(
+            "import path not found: {}",
+            src.display()
+        )));
+    }
+    let roles_root = storage.roles_dir();
+    if !path_under_root(src, roles_root) && !path_under_root(src, app_data_dir) {
+        return Err(AppError::InvalidParameter(format!(
+            "import_role: path must be under roles dir ({}) or app data ({})",
+            roles_root.display(),
+            app_data_dir.display()
+        )));
+    }
+    let canonical = src
+        .canonicalize()
+        .map_err(|e| AppError::InvalidParameter(format!("import path: {e}")))?;
+    if canonical.is_dir() {
+        resolve_extracted_role_root(&canonical)?;
+    } else {
+        let ext = canonical
+            .extension()
+            .and_then(|e| e.to_str())
+            .unwrap_or("")
+            .to_ascii_lowercase();
+        if ext != "ocpak" && ext != "zip" {
+            return Err(AppError::InvalidParameter(
+                "import_role: path must be .ocpak, .zip, or a role directory".into(),
+            ));
+        }
+    }
+    Ok(canonical)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -396,5 +463,21 @@ mod tests {
         assert_eq!(id, "right");
         assert_eq!(name, "R");
         assert_eq!(ver, "2");
+    }
+
+    #[test]
+    fn bridge_import_rejects_path_outside_allowed_roots() {
+        let roles = tempdir().unwrap();
+        let app = tempdir().unwrap();
+        let outside = tempdir().unwrap();
+        fs::write(outside.path().join("pack.zip"), b"fake").unwrap();
+        let st = RoleStorage::new(roles.path());
+        let err = validate_bridge_import_role_source(
+            &st,
+            app.path(),
+            &outside.path().join("pack.zip"),
+        )
+        .unwrap_err();
+        assert!(matches!(err, AppError::InvalidParameter(_)));
     }
 }

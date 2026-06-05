@@ -119,23 +119,40 @@ impl BuiltinReActAgent {
                 if name.is_empty() {
                     continue;
                 }
+                let qualified = format!("{}::{}", s.id.trim(), name);
                 let desc = t
                     .description
                     .as_ref()
                     .map(|d| format!("server={} {}", s.id, d))
                     .or_else(|| Some(format!("server={}", s.id)));
                 out.push(ToolSchemaInput {
-                    name,
+                    name: qualified,
                     description: desc,
                 });
             }
         }
         out.sort_by(|a, b| a.name.cmp(&b.name));
-        out.dedup_by(|a, b| a.name == b.name);
         out
     }
 
     async fn server_for_tool(&self, tool_name: &str) -> Option<McpServerManifest> {
+        if let Some((server_id, bare)) = tool_name.split_once("::") {
+            let server_id = server_id.trim();
+            let bare = bare.trim();
+            if server_id.is_empty() || bare.is_empty() {
+                return None;
+            }
+            let server = self
+                .mcp
+                .list_servers()
+                .into_iter()
+                .find(|s| s.id.trim() == server_id)?;
+            let listed = self.list_tools_for_server(&server).await;
+            if listed.iter().any(|t| t.name.trim() == bare) {
+                return Some(server);
+            }
+            return None;
+        }
         for s in self.mcp.list_servers() {
             let listed = self.list_tools_for_server(&s).await;
             if listed.iter().any(|t| t.name.trim() == tool_name) {
@@ -213,11 +230,18 @@ impl AgentProvider for BuiltinReActAgent {
                 msg = message,
                 obs = observations.join(" | ")
             );
-            let llm_raw = self
+            let llm_raw = match self
                 .llm
                 .generate(input.model.as_str(), prompt.as_str())
                 .await
-                .unwrap_or_else(|_| "{}".to_string());
+            {
+                Ok(s) => s,
+                Err(e) => {
+                    trace.error = Some(e.to_string());
+                    self.push_trace(trace);
+                    return Err(e);
+                }
+            };
             if let Some(answer) = Self::extract_final_answer(&llm_raw) {
                 trace.reply = answer.clone();
                 self.push_trace(trace);
@@ -241,11 +265,15 @@ impl AgentProvider for BuiltinReActAgent {
                     observations.push(msg);
                     continue;
                 };
+                let bare_tool = tool_name
+                    .split_once("::")
+                    .map(|(_, bare)| bare.trim())
+                    .unwrap_or(tool_name.as_str());
                 match self
                     .mcp
                     .call_tool(
                         server.id.as_str(),
-                        tool_name.as_str(),
+                        bare_tool,
                         call.function.arguments.clone(),
                     )
                     .await

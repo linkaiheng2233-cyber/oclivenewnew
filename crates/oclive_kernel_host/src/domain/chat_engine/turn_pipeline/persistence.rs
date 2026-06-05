@@ -6,6 +6,7 @@ use std::sync::{Arc, LazyLock};
 use tokio::sync::Semaphore;
 
 use super::super::scene::detect_movement_intent;
+use super::super::turn_context::TurnIds;
 use super::super::turn_error::TurnResult;
 use super::pre::{MainLlmOutput, MiddleOutput, PreLlmOutput, STAGES};
 use super::TurnMode;
@@ -137,15 +138,19 @@ pub(crate) async fn persist_atomic_movement_portrait(
     policies: std::sync::Arc<crate::infrastructure::policy_registry::PolicySet>,
     primary_llm: Arc<dyn crate::domain::ports::LlmClient>,
     role: &Role,
-    scene_id: &str,
+    ids: TurnIds<'_>,
     scenes: Arc<[String]>,
-    srid: &str,
     user_message: &str,
     pre: &PreLlmOutput,
     middle: &MiddleOutput,
     policy: &PostTurnPolicy,
     reply: &str,
 ) -> TurnResult<PostPersistOutcome> {
+    let TurnIds {
+        srid,
+        scene_id,
+        ..
+    } = ids;
     let core_v = PersonalityVector::from(&role.default_personality);
     let reply_for_portrait = reply.to_string();
     let movement_fut = detect_movement_intent(
@@ -250,9 +255,7 @@ async fn append_turn_inner(
 pub(crate) async fn append_turn_to_chat_storage(
     state: &crate::state::AppState,
     mode: TurnMode,
-    mrid: &str,
-    srid: &str,
-    scene_id: &str,
+    ids: TurnIds<'_>,
     role: &Role,
     pre: &PreLlmOutput,
     llm: &MainLlmOutput,
@@ -260,6 +263,11 @@ pub(crate) async fn append_turn_to_chat_storage(
     user_message: &str,
     reply: &str,
 ) -> ChatAppendIds {
+    let TurnIds {
+        mrid,
+        srid,
+        scene_id,
+    } = ids;
     if !matches!(mode, TurnMode::CoPresent) || reply.trim().is_empty() {
         return ChatAppendIds::default();
     }
@@ -284,18 +292,20 @@ pub(crate) async fn append_turn_to_chat_storage(
     append_turn_inner(state, srid, persist, "append_turn failed").await
 }
 
-#[allow(clippy::too_many_arguments)]
 pub(crate) async fn append_agent_turn_to_chat_storage(
     state: &crate::state::AppState,
-    mrid: &str,
-    srid: &str,
-    scene_id: &str,
+    ids: TurnIds<'_>,
     role: &Role,
     user_message: &str,
     reply: &str,
     user_emotion: &str,
     bot_emotion: &str,
 ) -> ChatAppendIds {
+    let TurnIds {
+        mrid,
+        srid,
+        scene_id,
+    } = ids;
     if reply.trim().is_empty() {
         return ChatAppendIds::default();
     }
@@ -325,13 +335,13 @@ pub(crate) async fn persist_non_profile_personality_delta(
     role: &Role,
     srid: &str,
     middle: &MiddleOutput,
-) -> TurnResult<()> {
+) {
     if role.evolution_config.personality_source == PersonalitySource::Profile {
-        return Ok(());
+        return;
     }
     let core_v = PersonalityVector::from(&role.default_personality);
     let delta_out = PersonalityVector::sub_components(&middle.personality, &core_v);
-    STAGES
+    let db_result = STAGES
         .stage(
             ChatStage::SetCoreDeltaPersonalityJsonNonProfile,
             state.db_manager.set_core_delta_personality_json(
@@ -340,10 +350,154 @@ pub(crate) async fn persist_non_profile_personality_delta(
                 &delta_out.to_json_vec(),
             ),
         )
-        .await?;
+        .await;
+    if let Err(e) = db_result {
+        tracing::warn!(
+            target: "oclive_chat",
+            role_id = %srid,
+            error = %e,
+            "set_core_delta_personality_json_non_profile failed; chat turn already committed"
+        );
+        return;
+    }
     state
         .session_cache
         .personality_cache()
         .set(srid.to_string(), middle.personality.clone());
-    Ok(())
+}
+
+#[cfg(test)]
+mod persist_non_profile_tests {
+    use super::*;
+    use crate::domain::complex_emotion::ComplexEmotionOutput;
+    use crate::models::{EvolutionBounds, EventType, EvolutionConfig, PersonalityDefaults};
+    use oclive_kernel_runtime::domain::relation_engine::RelationState;
+    use std::sync::Arc;
+
+    fn vector_role() -> Role {
+        Role {
+            id: "test".to_string(),
+            name: "Test".to_string(),
+            description: String::new(),
+            version: "1".to_string(),
+            author: String::new(),
+            core_personality: String::new(),
+            default_personality: PersonalityDefaults {
+                stubbornness: 0.5,
+                clinginess: 0.5,
+                sensitivity: 0.5,
+                assertiveness: 0.5,
+                forgiveness: 0.5,
+                talkativeness: 0.5,
+                warmth: 0.5,
+            },
+            evolution_bounds: EvolutionBounds::full_01(),
+            user_relations: vec![],
+            evolution_config: EvolutionConfig {
+                personality_source: PersonalitySource::Vector,
+                ..EvolutionConfig::default()
+            },
+            memory_config: None,
+            default_relation: "friend".to_string(),
+            ollama_model: None,
+            identity_binding: crate::models::role::IdentityBinding::default(),
+            life_trajectory: None,
+            life_schedule: None,
+            remote_presence: None,
+            autonomous_scene: None,
+            interaction_mode: None,
+            min_runtime_version: None,
+            dev_only: false,
+            plugin_backends: Arc::new(crate::models::PluginBackends::default()),
+            slot_registry: None,
+            slot_groups: None,
+            ui_config: crate::models::UiConfig::default(),
+            knowledge_index: None,
+            author_pack: None,
+            reply_quality_anchor: None,
+            time_config: crate::models::RoleTimeConfig::default(),
+            pack_memory_config: crate::models::RolePackMemoryConfig::default(),
+            pack_relation_config: crate::models::RolePackRelationConfig::default(),
+            pack_evolution_config: crate::models::RolePackEvolutionConfig::default(),
+            pack_chat_storage_config: crate::models::RolePackChatStorageConfig::default(),
+            runtime_config: None,
+            pipeline_experimental: None,
+            scene_ids: Arc::from(Vec::<String>::new()),
+            scene_config_cache: Arc::new(parking_lot::RwLock::new(std::collections::HashMap::new())),
+            scene_text_cache: Arc::new(parking_lot::RwLock::new(std::collections::HashMap::new())),
+        }
+    }
+
+    fn middle_with_personality(personality: PersonalityVector) -> MiddleOutput {
+        MiddleOutput {
+            complex_emotion_out: ComplexEmotionOutput {
+                source: "builtin".to_string(),
+                narrative_hint: String::new(),
+                labels: vec![],
+                pattern: None,
+                confidence: 0.0,
+                intensity: 0.0,
+                dissonance_score: 0.0,
+                degraded_to_builtin: false,
+            },
+            knowledge_chunk_count: 0,
+            ai_event_type: EventType::Praise,
+            ai_impact_factor_final: 0.0,
+            ai_event_confidence: 0.0,
+            personality,
+            prompt: String::new(),
+            favor_delta: 0.0,
+            relation_after: RelationState::Stranger,
+        }
+    }
+
+    #[tokio::test]
+    async fn persist_non_profile_personality_delta_db_failure_is_non_fatal() {
+        let state = crate::state::AppState::new_in_memory_with_llm(
+            Arc::new(crate::infrastructure::llm::MockLlmClient {
+                reply: "ok".to_string(),
+            }),
+            "./roles",
+        )
+        .await
+        .expect("state");
+        let srid = "role_delta_fail";
+        state
+            .db_manager
+            .ensure_role_runtime(srid)
+            .await
+            .expect("ensure runtime");
+
+        let old = PersonalityVector::from(&vector_role().default_personality);
+        let new_warmth = 0.9;
+        let new_personality = PersonalityVector {
+            warmth: new_warmth,
+            ..old
+        };
+        state
+            .session_cache
+            .personality_cache()
+            .set(srid.to_string(), old.clone());
+
+        sqlx::query("DROP TABLE role_runtime")
+            .execute(&state.db_manager.pool)
+            .await
+            .expect("drop role_runtime");
+
+        persist_non_profile_personality_delta(
+            &state,
+            &vector_role(),
+            srid,
+            &middle_with_personality(new_personality),
+        )
+        .await;
+
+        let cached = state
+            .session_cache
+            .personality_cache()
+            .get(srid)
+            .expect("cache entry");
+        assert_eq!(cached.warmth, old.warmth);
+        assert_ne!(cached.warmth, new_warmth);
+    }
 }

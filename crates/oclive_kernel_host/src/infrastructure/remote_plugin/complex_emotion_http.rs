@@ -45,14 +45,3 @@ impl RemoteComplexEmotionHttp {
         resolve_turn_rpc(&self.adapter, &self.fallback, input)
     }
 }
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn method_name_matches_doc() {
-        assert_eq!(
-            "complex_emotion.resolve_turn",
-            "complex_emotion.resolve_turn"
-        );
-    }
-}

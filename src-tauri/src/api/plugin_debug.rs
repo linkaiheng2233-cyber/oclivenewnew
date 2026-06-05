@@ -11,6 +11,17 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 use tauri::State;
 
+fn require_developer_mode(state: &crate::state::AppState) -> Result<(), CommandError> {
+    if !state.directory_plugins.developer_effective() {
+        return Err(ApiError::PermissionDenied {
+            message: "plugin debug commands require developer mode (settings or OCLIVE_DEVELOPER=1)"
+                .into(),
+        }
+        .into());
+    }
+    Ok(())
+}
+
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
@@ -20,6 +31,7 @@ pub async fn spawn_plugin_for_test(
     config_json: Option<String>,
     state: State<'_, SharedAppState>,
 ) -> Result<PluginProcessDebugInfo, CommandError> {
+    require_developer_mode(state.as_ref())?;
     let pid = plugin_id.trim().to_string();
     let cfg = config_json;
     let shared = state.inner().clone();
@@ -41,6 +53,7 @@ pub fn kill_plugin_process(
     plugin_id: String,
     state: State<'_, SharedAppState>,
 ) -> Result<(), CommandError> {
+    require_developer_mode(state.as_ref())?;
     let id = plugin_id.trim();
     if id.is_empty() {
         return Err(ApiError::InvalidParameter {
@@ -53,21 +66,21 @@ pub fn kill_plugin_process(
 }
 
 #[tauri::command]
-#[must_use]
-pub fn list_plugin_processes(state: State<'_, SharedAppState>) -> Vec<PluginProcessDebugInfo> {
-    state.directory_plugins.list_managed_plugin_processes()
+pub fn list_plugin_processes(state: State<'_, SharedAppState>) -> Result<Vec<PluginProcessDebugInfo>, CommandError> {
+    require_developer_mode(state.as_ref())?;
+    Ok(state.directory_plugins.list_managed_plugin_processes())
 }
 
 #[tauri::command]
-#[must_use]
 pub fn get_plugin_logs(
     plugin_id: String,
     lines: usize,
     state: State<'_, SharedAppState>,
-) -> Vec<String> {
-    state
+) -> Result<Vec<String>, CommandError> {
+    require_developer_mode(state.as_ref())?;
+    Ok(state
         .directory_plugins
-        .get_plugin_log_tail(plugin_id.trim(), lines.max(1))
+        .get_plugin_log_tail(plugin_id.trim(), lines.max(1)))
 }
 
 /// # Errors
@@ -78,6 +91,7 @@ pub fn clear_plugin_logs(
     plugin_id: String,
     state: State<'_, SharedAppState>,
 ) -> Result<(), CommandError> {
+    require_developer_mode(state.as_ref())?;
     let id = plugin_id.trim();
     if id.is_empty() {
         return Err(ApiError::InvalidParameter {
@@ -106,6 +120,7 @@ pub async fn test_plugin_method(
     req: TestPluginMethodDto,
     state: State<'_, SharedAppState>,
 ) -> Result<Value, CommandError> {
+    require_developer_mode(state.as_ref())?;
     let pid = req.plugin_id.trim();
     if pid.is_empty() {
         return Err(ApiError::InvalidParameter {
@@ -143,6 +158,7 @@ pub async fn discover_plugin_methods(
     plugin_id: String,
     state: State<'_, SharedAppState>,
 ) -> Result<Vec<String>, CommandError> {
+    require_developer_mode(state.as_ref())?;
     let pid = plugin_id.trim();
     if pid.is_empty() {
         return Err(ApiError::InvalidParameter {

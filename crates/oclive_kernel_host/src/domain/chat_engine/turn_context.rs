@@ -7,6 +7,14 @@ use crate::state::AppState;
 use std::sync::Arc;
 use std::time::Instant;
 
+/// Manifest role id, session namespace, and scene — passed together to avoid `&str` parameter swaps.
+#[derive(Clone, Copy)]
+pub struct TurnIds<'a> {
+    pub mrid: &'a str,
+    pub srid: &'a str,
+    pub scene_id: &'a str,
+}
+
 /// Shared inputs for `process_co_present`, remote branches, and dual-core paths.
 pub struct TurnContext<'a> {
     pub state: &'a AppState,
@@ -28,4 +36,15 @@ pub struct TurnContext<'a> {
     pub virtual_time_ms: i64,
     /// `true` when blueprint requests dual-core but the host was built without `dual_core` feature.
     pub dual_core_degraded: bool,
+}
+
+impl<'a> TurnContext<'a> {
+    #[must_use]
+    pub fn ids(&self) -> TurnIds<'a> {
+        TurnIds {
+            mrid: self.mrid,
+            srid: self.srid,
+            scene_id: self.scene_id,
+        }
+    }
 }

@@ -1,5 +1,8 @@
 //! [`DbManager`] methods for `chat_sessions`.
 
+/// Cap for manifest-role session list queries (SQL `LIMIT` + hybrid store safety `take`).
+pub(crate) const MANIFEST_SESSION_LIST_CAP: i64 = 500;
+
 use super::db::{
     manifest_sess_glob_pattern, session_row_from_tuple, truncate_snippet, SessionRow,
 };
@@ -155,11 +158,13 @@ impl DbManager {
                      ORDER BY m.created_at DESC, m.id DESC LIMIT 1) AS snippet
              FROM chat_sessions s
              WHERE s.role_id = ? OR s.session_id = ? OR s.session_id GLOB ?
-             ORDER BY s.updated_at DESC",
+             ORDER BY s.updated_at DESC
+             LIMIT ?",
         )
         .bind(mid)
         .bind(mid)
         .bind(&pattern)
+        .bind(MANIFEST_SESSION_LIST_CAP)
         .fetch_all(&self.pool)
         .await
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;

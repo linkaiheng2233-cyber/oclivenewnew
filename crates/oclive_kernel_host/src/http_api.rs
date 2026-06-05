@@ -458,7 +458,11 @@ async fn create_event_route(
 
 async fn list_high_risk_grants_route(
     State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
 ) -> Result<Json<serde_json::Value>, ApiError> {
+    if !bridge_dispatch_authorized(&headers) {
+        return Err(bridge_token_unauthorized());
+    }
     list_high_risk_grants_impl(&state).map(Json).map_err(|e| {
         let k = e.kernel_error_body();
         api_error(axum::http::StatusCode::INTERNAL_SERVER_ERROR, k)
@@ -467,8 +471,12 @@ async fn list_high_risk_grants_route(
 
 async fn grant_high_risk_route(
     State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
     Json(req): Json<MutateHighRiskGrantRequest>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
+    if !bridge_dispatch_authorized(&headers) {
+        return Err(bridge_token_unauthorized());
+    }
     grant_high_risk_capability_impl(&state, &req)
         .map(|_| Json(serde_json::json!({ "ok": true })))
         .map_err(|e| {
@@ -479,8 +487,12 @@ async fn grant_high_risk_route(
 
 async fn revoke_high_risk_route(
     State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
     Json(req): Json<MutateHighRiskGrantRequest>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
+    if !bridge_dispatch_authorized(&headers) {
+        return Err(bridge_token_unauthorized());
+    }
     revoke_high_risk_capability_impl(&state, &req)
         .map(|_| Json(serde_json::json!({ "ok": true })))
         .map_err(|e| {
@@ -511,18 +523,22 @@ fn bridge_dispatch_authorized(headers: &HeaderMap) -> bool {
         .is_some_and(|t| t == expected)
 }
 
+fn bridge_token_unauthorized() -> ApiError {
+    let k = kernel_http_error(
+        "INVALID_PARAMETER",
+        "missing or invalid x-oclive-bridge-token",
+        Some("Set OCLIVE_BRIDGE_TOKEN on kernel and pass the same value in the header.".into()),
+    );
+    api_error(axum::http::StatusCode::UNAUTHORIZED, k)
+}
+
 async fn bridge_dispatch_route(
     State(state): State<Arc<AppState>>,
     headers: HeaderMap,
     Json(req): Json<BridgeDispatchRequest>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     if !bridge_dispatch_authorized(&headers) {
-        let k = kernel_http_error(
-            "INVALID_PARAMETER",
-            "bridge dispatch: missing or invalid x-oclive-bridge-token",
-            Some("Set OCLIVE_BRIDGE_TOKEN on kernel and pass the same value in the header.".into()),
-        );
-        return Err(api_error(axum::http::StatusCode::UNAUTHORIZED, k));
+        return Err(bridge_token_unauthorized());
     }
     let cmd = req.command.trim();
     if cmd.is_empty() {

@@ -5,6 +5,7 @@
 
 pub mod chat_stage;
 pub(crate) mod context;
+pub(crate) mod dispatch;
 pub(crate) mod favor;
 pub mod message_error;
 pub(crate) mod minimal_response;

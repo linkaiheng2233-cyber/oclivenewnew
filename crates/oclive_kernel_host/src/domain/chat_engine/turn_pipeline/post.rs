@@ -278,9 +278,8 @@ pub(crate) async fn post_llm(
         policies,
         primary_llm,
         role,
-        scene_id,
+        ctx.ids(),
         scenes,
-        srid,
         user_message,
         pre,
         middle,
@@ -301,9 +300,7 @@ pub(crate) async fn post_llm(
     let chat_ids = append_turn_to_chat_storage(
         state,
         mode,
-        mrid,
-        srid,
-        scene_id,
+        ctx.ids(),
         role,
         pre,
         llm,
@@ -313,7 +310,7 @@ pub(crate) async fn post_llm(
     )
     .await;
 
-    persist_non_profile_personality_delta(state, role, srid, middle).await?;
+    persist_non_profile_personality_delta(state, role, srid, middle).await;
 
     let response = assemble_send_message_response(
         mode,
