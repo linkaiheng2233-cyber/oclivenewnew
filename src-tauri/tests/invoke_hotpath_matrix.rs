@@ -7,17 +7,16 @@
 use oclivenewnew_tauri::api::directory_plugin::{
     get_directory_plugin_catalog_impl, get_plugin_state_impl,
 };
-use oclivenewnew_tauri::api::high_risk::{
-    grant_high_risk_capability_impl, list_high_risk_grants_impl, revoke_high_risk_capability_impl,
-    MutateHighRiskGrantRequest,
-};
 use oclivenewnew_tauri::api::hotkeys::get_hotkey_bindings_impl;
 use oclivenewnew_tauri::api::memory::query_memories_impl;
 use oclivenewnew_tauri::api::role::{
     get_role_info_impl, list_roles_impl, load_role_impl, set_session_slot_override_impl,
 };
-use oclivenewnew_tauri::api::scene::switch_scene_impl;
 use oclivenewnew_tauri::api::time::get_time_state_impl;
+use oclive_kernel_host::service::{
+    grant_high_risk_capability_impl, list_high_risk_grants_impl, revoke_high_risk_capability_impl,
+    switch_scene_impl, MutateHighRiskGrantRequest,
+};
 use oclivenewnew_tauri::domain::chat_engine::process_message;
 use oclivenewnew_tauri::infrastructure::MockLlmClient;
 use oclivenewnew_tauri::models::dto::SetSessionSlotOverrideRequest;
