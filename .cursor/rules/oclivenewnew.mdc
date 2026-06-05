@@ -6,7 +6,7 @@ alwaysApply: true
 
 # oclivenewnew
 
-1. **编排**：对话主流程在 `crates/oclive_kernel_host/src/domain/chat_engine/mod.rs` 的 `process_message`；业务公式留在各 `*_engine` / analyzer，避免 API 层堆逻辑。Tauri 壳经 `src-tauri/src/lib.rs` re-export `oclive_kernel_host::domain`。
+1. **编排**：对话主流程在 `crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs` 的 `process_message`（经 `chat_engine/mod.rs` re-export）；业务公式留在各 `*_engine` / analyzer，避免 API 层堆逻辑。Tauri 壳经 `src-tauri/src/lib.rs` re-export `oclive_kernel_host::domain`。
 
 2. **持久化**：通过 `domain/repository.rs` 的 trait 与 `infrastructure/repositories.rs` 实现；SQL 与表结构以 `crates/oclive_kernel_host/migrations/001_init.sql` 为准（如 `role_runtime`、`long_term_memory`）；禁止虚构表名。
 
@@ -14,6 +14,6 @@ alwaysApply: true
 
 4. **DTO**：前后端契约以 `crates/oclive_kernel_types/src/models/dto.rs` 为准；回复字段为 **`reply`**，不是 `response`；`Emotion` 枚举见 `models/emotion.rs`（无 Joy/Fearful 等未定义变体）。
 
-5. **Prompt**：`PromptBuilder::build_prompt` 共五个参数，返回 `String`，最后一参为 `&str`，不要用 `?`。
+5. **Prompt**：`PromptBuilder::build_prompt` 定义在 `crates/oclive_kernel_runtime/src/domain/prompt_builder.rs`（经 `oclive_kernel_host::domain` re-export）；共五个参数，返回 `String`，最后一参为 `&str`，不要用 `?`。
 
 6. **周节奏与验收**：见 `handoff/WEEKLY_DEV_GUIDE.md`；认知清单见 `handoff/04_4.6_PROJECT_TRUTH_CHECKLIST.md`。

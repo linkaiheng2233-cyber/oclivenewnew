@@ -73,6 +73,15 @@ jobs:
       - name: Validate data/plugins.json
         run: node scripts/validate-plugins-index.mjs
 
+  kernel-host-dual-core:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: test oclive_kernel_host with dual_core feature
+        run: cargo test -p oclive_kernel_host --features dual_core
+
   cli:
     runs-on: ubuntu-latest
     steps:
