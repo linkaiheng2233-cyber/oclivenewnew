@@ -159,7 +159,8 @@ pub fn load_policy_registry_from_path(path: &Path, strict: bool) -> Result<Polic
 #[must_use]
 pub fn load_policy_registry() -> PolicyRegistryFile {
     let path = Path::new("./config/policy.toml");
-    load_policy_registry_from_path(path, false).unwrap_or_else(|_| PolicyRegistryFile::with_defaults())
+    load_policy_registry_from_path(path, false)
+        .unwrap_or_else(|_| PolicyRegistryFile::with_defaults())
 }
 
 fn build_policy_set(config: &PolicyConfig) -> Arc<PolicySet> {

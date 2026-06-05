@@ -1,11 +1,11 @@
 //! Interaction mode and "current schedule" DTO orchestration (single entry to avoid duplication in load_role / get_role_info).
 
+use crate::command_error::CommandError;
 use crate::domain::life_schedule::resolve_life_state;
 use crate::models::dto::LifeStateDto;
 use crate::models::InteractionMode;
 use crate::models::Role;
 use crate::state::AppState;
-use crate::command_error::CommandError;
 
 /// Seeded, read from DB, includes pack suggested values and schedule inference.
 pub(crate) struct InteractionUiSnapshot {
@@ -24,13 +24,8 @@ pub(crate) async fn resolve_interaction_ui_snapshot(
     state
         .db_manager
         .ensure_interaction_mode_seeded(role_id, role.interaction_mode.as_deref())
-        .await
-        ?;
-    let mode = state
-        .db_manager
-        .get_interaction_mode(role_id)
-        .await
-        ?;
+        .await?;
+    let mode = state.db_manager.get_interaction_mode(role_id).await?;
     let mode_str = mode.as_str().to_string();
     let pack_default = InteractionMode::pack_default_for_api(role.interaction_mode.as_deref());
     let current_life = if mode.is_immersive() {

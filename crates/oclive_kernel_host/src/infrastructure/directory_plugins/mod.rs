@@ -2,6 +2,7 @@
 //!
 //! Contract: `creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md`.
 
+pub mod bootstrap_dto;
 mod dependency;
 mod manifest;
 mod runtime;
@@ -12,7 +13,7 @@ pub use manifest::{
     ShellSection, UiSchemaField, UiSchemaSection, UiSlotDecl,
 };
 pub use runtime::{
-    plugin_scan_container_roots, resolve_plugin_asset_path, DirectoryPluginRuntime, HostPluginsFile,
-    PluginProcessDebugInfo, PluginRootEntry, PluginScanSummary,
+    plugin_scan_container_roots, resolve_plugin_asset_path, DirectoryPluginRuntime,
+    HostPluginsFile, PluginProcessDebugInfo, PluginRootEntry, PluginScanSummary,
 };
 pub use version::parse_manifest_version;

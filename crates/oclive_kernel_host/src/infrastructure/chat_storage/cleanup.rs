@@ -91,10 +91,7 @@ fn sessions_to_delete(
     if let Some(max_n) = cfg.auto_cleanup_max_sessions {
         let n = max_n.max(1) as usize;
         let mut sorted = sessions.to_vec();
-        sorted.sort_by(|a, b| {
-            updated_at_sort_key(&b.3)
-                .cmp(&updated_at_sort_key(&a.3))
-        });
+        sorted.sort_by(|a, b| updated_at_sort_key(&b.3).cmp(&updated_at_sort_key(&a.3)));
         let set: HashSet<String> = sorted
             .iter()
             .take(n)
@@ -149,13 +146,8 @@ pub async fn apply_auto_cleanup(
             if let Ok(n) = super::stats::mirror_file_bytes_for_session(storage_root, row).await {
                 bytes_freed = bytes_freed.saturating_add(n);
             }
-            let _ = super::mirror::delete_mirror(
-                storage_root,
-                &row.role_id,
-                &row.scene_id,
-                sid,
-            )
-            .await;
+            let _ =
+                super::mirror::delete_mirror(storage_root, &row.role_id, &row.scene_id, sid).await;
         }
         db.delete_chat_session(sid).await?;
     }
@@ -217,9 +209,24 @@ mod tests {
     #[test]
     fn max_sessions_deletes_oldest() {
         let sessions = vec![
-            ("a".into(), "r".into(), "d".into(), "2026-05-03T00:00:00Z".into()),
-            ("b".into(), "r".into(), "d".into(), "2026-05-02T00:00:00Z".into()),
-            ("c".into(), "r".into(), "d".into(), "2026-05-01T00:00:00Z".into()),
+            (
+                "a".into(),
+                "r".into(),
+                "d".into(),
+                "2026-05-03T00:00:00Z".into(),
+            ),
+            (
+                "b".into(),
+                "r".into(),
+                "d".into(),
+                "2026-05-02T00:00:00Z".into(),
+            ),
+            (
+                "c".into(),
+                "r".into(),
+                "d".into(),
+                "2026-05-01T00:00:00Z".into(),
+            ),
         ];
         let cfg = AutoCleanupConfig {
             auto_cleanup_days: None,

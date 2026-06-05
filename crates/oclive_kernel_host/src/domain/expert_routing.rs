@@ -11,8 +11,8 @@ use std::collections::HashMap;
 
 use chrono::Timelike;
 use oclive_validation::{
-    parse_expert_step_action, select_expert_route, ExpertFallback, ExpertMatchContext,
-    ExpertRoute, ExpertRouteStep, ExpertRoutingDoc, ExpertStepActionKind, PipelineStep,
+    parse_expert_step_action, select_expert_route, ExpertFallback, ExpertMatchContext, ExpertRoute,
+    ExpertRouteStep, ExpertRoutingDoc, ExpertStepActionKind, PipelineStep,
 };
 
 use crate::domain::chat_engine::message_error::ProcessMessageError;
@@ -170,11 +170,8 @@ pub async fn execute_expert_route(
         }
     };
 
-    let step_by_action: HashMap<&str, &ExpertRouteStep> = route
-        .steps
-        .iter()
-        .map(|s| (s.action.as_str(), s))
-        .collect();
+    let step_by_action: HashMap<&str, &ExpertRouteStep> =
+        route.steps.iter().map(|s| (s.action.as_str(), s)).collect();
 
     let fallback = doc.fallback_mode();
     let mut wants_stable_completion = false;
@@ -188,21 +185,29 @@ pub async fn execute_expert_route(
         match outcome {
             Ok(StepOutcome::Continue) => {}
             Ok(StepOutcome::NeedsStableCompletion) => wants_stable_completion = true,
-            Ok(StepOutcome::AgentComplete(resp)) => return Ok(Ok(StepOutcome::AgentComplete(resp))),
+            Ok(StepOutcome::AgentComplete(resp)) => {
+                return Ok(Ok(StepOutcome::AgentComplete(resp)))
+            }
             Ok(StepOutcome::Failed(msg)) => {
-                snapshot.restore(step_ctx.state, step_ctx.srid, step_ctx.role.id.as_str()).await;
+                snapshot
+                    .restore(step_ctx.state, step_ctx.srid, step_ctx.role.id.as_str())
+                    .await;
                 log_exec_fallback(&route_id, &msg, fallback);
-                return Ok(Ok(
-                    apply_expert_fallback(step_ctx, fallback, &route_id, &msg).await?,
-                ));
+                return Ok(Ok(apply_expert_fallback(
+                    step_ctx, fallback, &route_id, &msg,
+                )
+                .await?));
             }
             Err(e) => {
                 let msg = e.to_string();
-                snapshot.restore(step_ctx.state, step_ctx.srid, step_ctx.role.id.as_str()).await;
+                snapshot
+                    .restore(step_ctx.state, step_ctx.srid, step_ctx.role.id.as_str())
+                    .await;
                 log_exec_fallback(&route_id, &msg, fallback);
-                return Ok(Ok(
-                    apply_expert_fallback(step_ctx, fallback, &route_id, &msg).await?,
-                ));
+                return Ok(Ok(apply_expert_fallback(
+                    step_ctx, fallback, &route_id, &msg,
+                )
+                .await?));
             }
         }
     }
@@ -235,9 +240,13 @@ async fn run_expert_step(
             Ok(StepOutcome::Continue)
         }
         ExpertStepActionKind::LoraApply => run_lora_apply(ctx, step, snap).await,
-        ExpertStepActionKind::ExpertFallback => {
-            Ok(apply_expert_fallback(ctx, ExpertFallback::Skip, "expert-route", "slot.expert.fallback").await?)
-        }
+        ExpertStepActionKind::ExpertFallback => Ok(apply_expert_fallback(
+            ctx,
+            ExpertFallback::Skip,
+            "expert-route",
+            "slot.expert.fallback",
+        )
+        .await?),
         ExpertStepActionKind::Slot {
             registry_key,
             method,
@@ -372,7 +381,9 @@ async fn run_lora_apply(
     Ok(StepOutcome::Continue)
 }
 
-fn parse_trait_delta(params: Option<&serde_json::Value>) -> Result<(String, f64), ProcessMessageError> {
+fn parse_trait_delta(
+    params: Option<&serde_json::Value>,
+) -> Result<(String, f64), ProcessMessageError> {
     let Some(p) = params else {
         return Err(ProcessMessageError::dual_core_invalid(
             "slot.personality.adjust 需要 params.trait 与 params.delta",

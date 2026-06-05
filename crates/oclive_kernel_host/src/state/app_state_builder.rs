@@ -2,12 +2,13 @@
 
 use super::session_cache::SessionCache;
 use super::AppState;
+use crate::domain::host_profile::{self, HostProfile};
 use crate::domain::plugin_host::PluginHost;
 use crate::domain::repository::{FavorabilityRepository, MemoryRepository};
 use crate::error::Result;
 use crate::infrastructure::chat_storage::{
-    build_conversation_store, resolve_backend_kind, set_persisted_storage_root,
-    ReplayTaskRegistry, APP_SETTING_CHAT_STORAGE_ROOT,
+    build_conversation_store, resolve_backend_kind, set_persisted_storage_root, ReplayTaskRegistry,
+    APP_SETTING_CHAT_STORAGE_ROOT,
 };
 use crate::infrastructure::db::DbManager;
 use crate::infrastructure::directory_plugins::DirectoryPluginRuntime;
@@ -23,7 +24,6 @@ use crate::infrastructure::remote_fallback_policy::{
 };
 use crate::infrastructure::repositories::{SqliteFavorabilityRepository, SqliteMemoryRepository};
 use crate::infrastructure::sqlite_pool;
-use crate::domain::host_profile::{self, HostProfile};
 use crate::infrastructure::storage::RoleStorage;
 use arc_swap::ArcSwap;
 use dashmap::DashMap;
@@ -186,7 +186,10 @@ impl AppStateBuilder {
         AppState::bootstrap_local_plugin_providers(&plugins, storage.roles_dir());
 
         let replay_tasks = Arc::new(ReplayTaskRegistry::new());
-        if let Ok(Some(raw)) = db_manager.get_app_setting(APP_SETTING_CHAT_STORAGE_ROOT).await {
+        if let Ok(Some(raw)) = db_manager
+            .get_app_setting(APP_SETTING_CHAT_STORAGE_ROOT)
+            .await
+        {
             let trimmed = raw.trim();
             if !trimmed.is_empty() {
                 set_persisted_storage_root(Some(PathBuf::from(trimmed)));
@@ -272,9 +275,7 @@ async fn run_migrations(db: &SqlitePool) -> Result<()> {
     .map_err(crate::error::AppError::DatabaseError)
 }
 
-async fn remote_fallback_switch(
-    db_manager: &DbManager,
-) -> Result<Arc<AtomicBool>> {
+async fn remote_fallback_switch(db_manager: &DbManager) -> Result<Arc<AtomicBool>> {
     let remote_raw = db_manager
         .get_app_setting("remote_fallback_to_builtin")
         .await?;

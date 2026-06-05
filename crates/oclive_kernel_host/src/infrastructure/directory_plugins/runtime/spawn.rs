@@ -1,5 +1,5 @@
 use super::super::manifest::OclivePluginManifest;
-use super::{DebugLogRing, DirectoryPluginRuntime, parse_ready_line};
+use super::{parse_ready_line, DebugLogRing, DirectoryPluginRuntime};
 use parking_lot::Mutex;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
@@ -196,9 +196,7 @@ impl DirectoryPluginRuntime {
                 ));
             }
             for line in handshake.lock().iter() {
-                if let Some(u) =
-                    parse_ready_line(line, prefix, plugin_id, &self.high_risk_grants)
-                {
+                if let Some(u) = parse_ready_line(line, prefix, plugin_id, &self.high_risk_grants) {
                     break 'wait u;
                 }
             }

@@ -4,12 +4,12 @@ use super::shared::normalize_scene_id;
 use super::store_trait::ConversationStore;
 use super::types::{ReplayProgress, ReplayResult, ReplayTarget, StoredMessage};
 use crate::error::{AppError, Result};
-use crate::infrastructure::db::{merge_long_term_memory_line, MergeOutcome, TxOrPool};
 use crate::infrastructure::db::DbManager;
+use crate::infrastructure::db::{merge_long_term_memory_line, MergeOutcome, TxOrPool};
 use crate::infrastructure::policy_registry::{build_policy_sets_from_registry, PolicyRegistryFile};
-use oclive_kernel_runtime::policy::PolicyContext;
 use crate::models::{Event, EventType};
 use dashmap::DashMap;
+use oclive_kernel_runtime::policy::PolicyContext;
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -79,9 +79,7 @@ async fn collect_session_ids(
             sessions.push((sid.to_string(), scene));
         }
         "scene" => {
-            let scene = normalize_scene_id(
-                target.scene_id.as_deref().unwrap_or("default"),
-            );
+            let scene = normalize_scene_id(target.scene_id.as_deref().unwrap_or("default"));
             let rows = store.list_sessions(role_id, &scene, 500, 0).await?;
             for s in rows {
                 sessions.push((s.session_id, s.scene_id));

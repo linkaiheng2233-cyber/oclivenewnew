@@ -60,15 +60,12 @@ fn parse_event_type(s: &str) -> Result<EventType, CommandError> {
     }
 }
 
-async fn create_event_impl(
+pub async fn create_event_impl(
     state: &AppState,
     req: &CreateEventRequest,
 ) -> Result<crate::models::dto::CreateEventResponse, CommandError> {
     let event_type = parse_event_type(&req.event_type)?;
-    state
-        .db_manager
-        .ensure_role_runtime(&req.role_id)
-        .await?;
+    state.db_manager.ensure_role_runtime(&req.role_id).await?;
 
     let (id, timestamp) = state
         .db_manager
@@ -324,13 +321,11 @@ pub async fn dispatch_bridge_command(
             "error": "not_implemented",
             "message": "dynamic prompt template fragments are not wired in the host yet"
         })),
-        _ => Err(
-            ApiError::InvalidParameter {
-                message: format!("unsupported bridge command: {}", command),
-            }
-            .to_string()
-            .into(),
-        ),
+        _ => Err(ApiError::InvalidParameter {
+            message: format!("unsupported bridge command: {}", command),
+        }
+        .to_string()
+        .into()),
     }
 }
 

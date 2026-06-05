@@ -3,18 +3,18 @@
 use crate::domain::chat_turn::relation_favor_for_key;
 use crate::domain::complex_emotion::ComplexEmotionOutput;
 use crate::domain::host_profile::{PromptProfile, DISTRO_CONCISE_PROMPT_OVERLAY};
+use crate::domain::life_schedule::{format_life_prompt_line, resolve_life_state};
 use crate::domain::personality_engine::PersonalityEngine;
 use crate::domain::prompt_builder::{effective_reply_quality_anchor, PromptInput};
 use crate::domain::slot_runner::SlotRunner;
-use crate::domain::life_schedule::{format_life_prompt_line, resolve_life_state};
 use crate::models::knowledge::KnowledgeIndex;
-use crate::models::{PersonalitySource};
+use crate::models::PersonalitySource;
 
 use super::super::turn_context::TurnContext;
 use super::super::turn_error::TurnResult;
 use super::{
-    build_complex_emotion_turn_input, compute_turn_favor, worldview_snippet_from_chunks, MiddleOutput,
-    PreLlmOutput, STAGES,
+    build_complex_emotion_turn_input, compute_turn_favor, worldview_snippet_from_chunks,
+    MiddleOutput, PreLlmOutput, STAGES,
 };
 use crate::domain::chat_engine::chat_stage::ChatStage;
 
@@ -53,12 +53,9 @@ pub(crate) async fn run_middle(
         }
     } else {
         STAGES
-            .stage(
-                ChatStage::ComplexEmotionResolveTurn,
-                async {
-                    SlotRunner::resolve_complex_emotion(pl, &complex_emotion_input)
-                },
-            )
+            .stage(ChatStage::ComplexEmotionResolveTurn, async {
+                SlotRunner::resolve_complex_emotion(pl, &complex_emotion_input)
+            })
             .await?
     };
 
@@ -118,7 +115,9 @@ pub(crate) async fn run_middle(
     let rf = relation_favor_for_key(role, pre.user_relation_key.as_str());
 
     let scene_label = state.storage.scene_display_name_for_role(role, scene_id);
-    let scene_detail_buf = state.storage.scene_prompt_enrichment_for_role(role, scene_id);
+    let scene_detail_buf = state
+        .storage
+        .scene_prompt_enrichment_for_role(role, scene_id);
     let top_topic = SlotRunner::top_topic_hint(pl, role, scene_id);
     let topic_line = top_topic
         .map(|t| format!("在「{}」下，你们可能会多聊「{}」相关的事。", scene_label, t))
@@ -133,40 +132,36 @@ pub(crate) async fn run_middle(
         String::new()
     };
     let mut prompt = STAGES
-        .stage(
-            ChatStage::BuildPrompt,
-            async {
-                SlotRunner::build_prompt(
-                    pl,
-                    &PromptInput {
-                        role,
-                        personality: &personality,
-                        memories: &pre.relevant,
-                        user_input: user_message,
-                        user_emotion: pre.user_emotion_prompt.as_str(),
-                        user_relation_id: pre.user_relation_key.as_str(),
-                        relation_hint: rf.relation_hint,
-                        relation_before: pre.relation_before.as_str(),
-                        favorability_before: pre.favorability_before,
-                        relation_preview: relation_after.as_str(),
-                        favorability_preview: (pre.favorability_before + favor_delta)
-                            .clamp(0.0, 100.0),
-                        event_type: &ai_event_type,
-                        impact_factor: ai_impact_factor_final,
-                        scene_label: &scene_label,
-                        scene_detail: scene_detail_buf.as_str(),
-                        topic_hint_line: &topic_line,
-                        life_context_line: life_context_line.as_str(),
-                        worldview_snippet: worldview_snippet.as_str(),
-                        mutable_personality: pre.mutable_for_prompt.as_str(),
-                        reply_quality_anchor: effective_reply_quality_anchor(role),
-                        previous_complex_emotion_narrative_hint: pre
-                            .prev_stored_narrative_hint
-                            .as_str(),
-                    },
-                )
-            },
-        )
+        .stage(ChatStage::BuildPrompt, async {
+            SlotRunner::build_prompt(
+                pl,
+                &PromptInput {
+                    role,
+                    personality: &personality,
+                    memories: &pre.relevant,
+                    user_input: user_message,
+                    user_emotion: pre.user_emotion_prompt.as_str(),
+                    user_relation_id: pre.user_relation_key.as_str(),
+                    relation_hint: rf.relation_hint,
+                    relation_before: pre.relation_before.as_str(),
+                    favorability_before: pre.favorability_before,
+                    relation_preview: relation_after.as_str(),
+                    favorability_preview: (pre.favorability_before + favor_delta).clamp(0.0, 100.0),
+                    event_type: &ai_event_type,
+                    impact_factor: ai_impact_factor_final,
+                    scene_label: &scene_label,
+                    scene_detail: scene_detail_buf.as_str(),
+                    topic_hint_line: &topic_line,
+                    life_context_line: life_context_line.as_str(),
+                    worldview_snippet: worldview_snippet.as_str(),
+                    mutable_personality: pre.mutable_for_prompt.as_str(),
+                    reply_quality_anchor: effective_reply_quality_anchor(role),
+                    previous_complex_emotion_narrative_hint: pre
+                        .prev_stored_narrative_hint
+                        .as_str(),
+                },
+            )
+        })
         .await?;
     if state.host_profile.prompt_profile == PromptProfile::Concise {
         prompt = format!("{DISTRO_CONCISE_PROMPT_OVERLAY}{prompt}");

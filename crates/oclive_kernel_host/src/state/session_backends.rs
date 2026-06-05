@@ -2,7 +2,9 @@
 
 use super::AppState;
 use crate::infrastructure::storage::resolve_llm_backend_env_override;
-use crate::models::{PluginBackendSource, PluginBackends, PluginBackendsOverride, PluginBackendsSourceMap, Role};
+use crate::models::{
+    PluginBackendSource, PluginBackends, PluginBackendsOverride, PluginBackendsSourceMap, Role,
+};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
@@ -141,12 +143,12 @@ impl AppState {
         role: &Role,
         session_namespace: &str,
     ) -> Arc<PluginBackends> {
-        let mut backends = if let Some(eff) = self.effective_slot_registry_for_session(role, session_namespace)
-        {
-            oclive_validation::slot_registry_to_plugin_backends(&eff)
-        } else {
-            (*role.plugin_backends).clone()
-        };
+        let mut backends =
+            if let Some(eff) = self.effective_slot_registry_for_session(role, session_namespace) {
+                oclive_validation::slot_registry_to_plugin_backends(&eff)
+            } else {
+                (*role.plugin_backends).clone()
+            };
         let provider = self.user_llm_provider.read().trim().to_ascii_lowercase();
         if provider == "cloud" {
             backends.llm = crate::models::plugin_backends::LlmBackend::Remote;

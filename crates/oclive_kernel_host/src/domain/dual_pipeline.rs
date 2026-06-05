@@ -21,9 +21,9 @@
 
 use std::collections::{HashMap, HashSet};
 
-use crate::domain::chat_engine::turn_pipeline::{execute_turn, TurnMode};
 use crate::domain::chat_engine::message_error::ProcessMessageError;
 use crate::domain::chat_engine::turn_context::TurnContext;
+use crate::domain::chat_engine::turn_pipeline::{execute_turn, TurnMode};
 use crate::domain::dual_pipeline_steps::{ExperimentalStepCtx, StepOutcome};
 use crate::models::dto::SendMessageResponse;
 use crate::state::AppState;
@@ -52,7 +52,9 @@ pub struct DualPipelineRunner;
 impl DualPipelineRunner {
     /// Call before any experimental step; used by [`rollback`](Self::rollback) to restore state.
     pub async fn take_snapshot(state: &AppState, srid: &str) -> TurnRollbackSnapshot {
-        let hint = state.session_cache.stored_complex_emotion_narrative_hint(srid);
+        let hint = state
+            .session_cache
+            .stored_complex_emotion_narrative_hint(srid);
         let emotion_state = state
             .db_manager
             .get_current_emotion(srid)
@@ -113,17 +115,16 @@ impl DualPipelineRunner {
     ) -> Result<SendMessageResponse, ProcessMessageError> {
         let role = turn.role;
         let srid = turn.srid;
-        let steps = role
-            .pipeline_experimental
-            .as_ref()
-            .ok_or_else(|| ProcessMessageError::dual_core_invalid("missing pipeline.experimental"))?;
+        let steps = role.pipeline_experimental.as_ref().ok_or_else(|| {
+            ProcessMessageError::dual_core_invalid("missing pipeline.experimental")
+        })?;
         if steps.is_empty() {
             return Err(ProcessMessageError::dual_core_invalid(
                 "empty pipeline.experimental",
             ));
         }
-        let ordered = topological_sort(steps)
-            .map_err(|e| ProcessMessageError::dual_core_invalid(e.0))?;
+        let ordered =
+            topological_sort(steps).map_err(|e| ProcessMessageError::dual_core_invalid(e.0))?;
 
         tracing::info!(
             target: "oclive_dual_core",
@@ -335,20 +336,16 @@ mod tests {
     async fn rollback_restores_narrative_hint_emotion_and_scene() {
         let tmp = tempfile::tempdir().unwrap();
         let state = AppState::new_in_memory_with_llm(
-            Arc::new(crate::infrastructure::llm::MockLlmClient {
-                reply: "ok".into(),
-            }),
+            Arc::new(crate::infrastructure::llm::MockLlmClient { reply: "ok".into() }),
             tmp.path().to_path_buf(),
         )
         .await
         .unwrap();
         let srid = "role:demo:default";
+        state.db_manager.ensure_role_runtime(srid).await.unwrap();
         state
-            .db_manager
-            .ensure_role_runtime(srid)
-            .await
-            .unwrap();
-        state.session_cache.set_stored_complex_emotion_narrative_hint(srid, "hint-a".into());
+            .session_cache
+            .set_stored_complex_emotion_narrative_hint(srid, "hint-a".into());
         state
             .db_manager
             .set_current_emotion(srid, "happy")
@@ -362,7 +359,9 @@ mod tests {
 
         let snap = DualPipelineRunner::take_snapshot(&state, srid).await;
 
-        state.session_cache.set_stored_complex_emotion_narrative_hint(srid, "hint-b".into());
+        state
+            .session_cache
+            .set_stored_complex_emotion_narrative_hint(srid, "hint-b".into());
         state
             .db_manager
             .set_current_emotion(srid, "sad")
@@ -377,7 +376,9 @@ mod tests {
         DualPipelineRunner::rollback(&state, srid, snap).await;
 
         assert_eq!(
-            state.session_cache.stored_complex_emotion_narrative_hint(srid),
+            state
+                .session_cache
+                .stored_complex_emotion_narrative_hint(srid),
             "hint-a"
         );
         assert_eq!(
@@ -385,7 +386,11 @@ mod tests {
             Some("happy".to_string())
         );
         assert_eq!(
-            state.db_manager.get_user_presence_scene(srid).await.unwrap(),
+            state
+                .db_manager
+                .get_user_presence_scene(srid)
+                .await
+                .unwrap(),
             Some("park".to_string())
         );
     }

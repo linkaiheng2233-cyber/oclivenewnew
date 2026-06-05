@@ -11,31 +11,31 @@ pub use oclive_kernel_runtime::domain::{
     repository, user_emotion_analyzer,
 };
 
-pub mod role_manifest_validate;
-pub mod startup_health;
-pub mod user_identity;
-pub mod effective_llm_model;
-pub mod user_llm_env;
-pub mod role_snapshot;
-pub mod relation_estrangement;
 pub mod complex_emotion_store;
+pub mod effective_llm_model;
+pub mod relation_estrangement;
+pub mod role_manifest_validate;
+pub mod role_snapshot;
+pub mod startup_health;
 pub mod time_driven_evolution;
+pub mod user_identity;
+pub mod user_llm_env;
 pub mod virtual_time_sync;
 
 pub mod agent;
-pub mod host_profile;
 pub mod chat_engine;
+pub mod debug_trace;
 #[cfg(feature = "dual_core")]
 pub mod dual_pipeline;
 #[cfg(feature = "dual_core")]
 pub mod dual_pipeline_registry;
 #[cfg(feature = "dual_core")]
 pub mod dual_pipeline_steps;
-#[cfg(feature = "dual_core")]
-pub mod expert_routing;
-pub mod debug_trace;
 pub mod event_estimator;
 pub mod event_impact_ai;
+#[cfg(feature = "dual_core")]
+pub mod expert_routing;
+pub mod host_profile;
 pub mod mutable_profile_llm;
 pub mod plugin_host;
 pub mod portrait_emotion_engine;
@@ -48,13 +48,13 @@ pub use agent::{AgentDebugTrace, AgentInput, AgentOutput, AgentProvider, Builtin
 pub use chat_engine::process_message;
 pub use event_detector::EventDetector;
 pub use event_estimator::{BuiltinEventEstimator, EventEstimator, RemoteEventEstimatorPlaceholder};
-pub use memory_engine::MemoryEngine;
-pub use memory_retrieval::{
-    BuiltinMemoryRetrieval, MemoryRetrieval, RemoteMemoryRetrievalPlaceholder,
-};
 pub use local_plugin_bridge::{
     FileManifestLocalPluginBridge, LocalPluginBridge, LocalPluginCapability,
     LocalPluginProviderDescriptor, LocalPluginRegistry, LOCAL_PLUGIN_SCHEMA_VERSION,
+};
+pub use memory_engine::MemoryEngine;
+pub use memory_retrieval::{
+    BuiltinMemoryRetrieval, MemoryRetrieval, RemoteMemoryRetrievalPlaceholder,
 };
 pub use personality_engine::PersonalityEngine;
 pub use plugin_host::{PluginHost, ResolvedRolePlugins};

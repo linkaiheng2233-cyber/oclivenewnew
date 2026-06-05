@@ -329,9 +329,8 @@ fn verify_plugin_signature_strict(plugin_dir: &Path, plugin_id: &str) -> Result<
         )));
     }
     let raw = fs::read_to_string(&sig_path).map_err(AppError::IoError)?;
-    let sig: PluginSignatureFile = serde_json::from_str(&raw).map_err(|e| {
-        AppError::InvalidParameter(format!("invalid signature json: {e}"))
-    })?;
+    let sig: PluginSignatureFile = serde_json::from_str(&raw)
+        .map_err(|e| AppError::InvalidParameter(format!("invalid signature json: {e}")))?;
     if sig.plugin_id.trim() != plugin_id {
         return Err(AppError::InvalidParameter(format!(
             "signature plugin_id mismatch: expected {plugin_id}, got {}",

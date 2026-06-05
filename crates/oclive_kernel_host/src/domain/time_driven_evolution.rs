@@ -16,11 +16,7 @@ pub struct TimeEvolutionApply {
 
 /// Counts full evolution stages elapsed since `last_ms` (one stage per `interval_hours` virtual hours).
 #[must_use]
-pub fn count_evolution_stages(
-    virtual_now_ms: i64,
-    last_ms: i64,
-    interval_hours: f64,
-) -> u32 {
+pub fn count_evolution_stages(virtual_now_ms: i64, last_ms: i64, interval_hours: f64) -> u32 {
     let interval_h = interval_hours.max(0.25);
     let interval_ms = (interval_h * 3_600_000.0).round() as i64;
     if interval_ms <= 0 || virtual_now_ms <= last_ms {
@@ -38,9 +34,7 @@ pub fn time_evolution_profile_line(lapse_hours: f64) -> String {
             "约 {h:.0} 虚拟小时未见面对话后，气质明显沉淀：更沉稳、更少外露情绪，习惯以简短回应代替长篇倾诉。"
         )
     } else {
-        format!(
-            "约 {h:.1} 虚拟小时的流逝里，相处气质略有沉淀：话稍少、心结稍淡，态度更稳一些。"
-        )
+        format!("约 {h:.1} 虚拟小时的流逝里，相处气质略有沉淀：话稍少、心结稍淡，态度更稳一些。")
     }
 }
 
@@ -67,7 +61,9 @@ pub async fn check_and_evolve_by_time(
         .max(0.25);
     let interval_ms = (interval_h * 3_600_000.0).round() as i64;
 
-    let mut last_ms = db.get_last_personality_evolution_virtual_ms(role_id).await?;
+    let mut last_ms = db
+        .get_last_personality_evolution_virtual_ms(role_id)
+        .await?;
     if last_ms <= 0 {
         db.set_last_personality_evolution_virtual_ms(role_id, virtual_now_ms)
             .await?;
@@ -92,7 +88,10 @@ pub async fn check_and_evolve_by_time(
             let next = append_mutable_profile_section(&existing, "时间演化", &line);
             db.set_mutable_personality(role_id, &next).await?;
             out.mutable_for_prompt = Some(next);
-            out.personality = Some(effective_vector_from_profile(role, out.mutable_for_prompt.as_deref().unwrap_or("")));
+            out.personality = Some(effective_vector_from_profile(
+                role,
+                out.mutable_for_prompt.as_deref().unwrap_or(""),
+            ));
         } else {
             let core_v = PersonalityVector::from(&role.default_personality);
             let (_, delta_s) = db.get_core_delta_personality_json(role_id).await?;

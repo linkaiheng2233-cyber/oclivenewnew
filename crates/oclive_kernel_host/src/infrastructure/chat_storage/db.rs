@@ -136,14 +136,13 @@ impl DbManager {
             .await
             .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
-        let count: i64 = sqlx::query_scalar(
-            "SELECT message_count FROM chat_sessions WHERE session_id = ?",
-        )
-        .bind(session_id)
-        .fetch_optional(&mut *tx)
-        .await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?
-        .unwrap_or(0);
+        let count: i64 =
+            sqlx::query_scalar("SELECT message_count FROM chat_sessions WHERE session_id = ?")
+                .bind(session_id)
+                .fetch_optional(&mut *tx)
+                .await
+                .map_err(|e| AppError::DatabaseError(e.to_string()))?
+                .unwrap_or(0);
 
         let turn_index: i32 = sqlx::query_scalar(
             "SELECT COALESCE(MAX(turn_index), -1) + 1 FROM chat_messages WHERE session_id = ?",
@@ -226,13 +225,12 @@ impl DbManager {
     ///
     /// Database errors propagate as [`AppError::DatabaseError`].
     pub async fn get_chat_message_count(&self, session_id: &str) -> Result<i64> {
-        let n: Option<i64> = sqlx::query_scalar(
-            "SELECT message_count FROM chat_sessions WHERE session_id = ?",
-        )
-        .bind(session_id)
-        .fetch_optional(&self.pool)
-        .await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        let n: Option<i64> =
+            sqlx::query_scalar("SELECT message_count FROM chat_sessions WHERE session_id = ?")
+                .bind(session_id)
+                .fetch_optional(&self.pool)
+                .await
+                .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(n.unwrap_or(0))
     }
 
@@ -391,7 +389,10 @@ impl DbManager {
     /// # Errors
     ///
     /// Database errors propagate as [`AppError::DatabaseError`].
-    pub async fn count_chat_sessions_for_manifest_role(&self, manifest_role_id: &str) -> Result<u32> {
+    pub async fn count_chat_sessions_for_manifest_role(
+        &self,
+        manifest_role_id: &str,
+    ) -> Result<u32> {
         let mid = manifest_role_id.trim();
         let pattern = format!("{mid}__sess__*");
         let n: i64 = sqlx::query_scalar(
@@ -443,10 +444,7 @@ impl DbManager {
     /// # Errors
     ///
     /// Database errors propagate as [`AppError::DatabaseError`].
-    pub async fn delete_chat_data_for_manifest_role(
-        &self,
-        manifest_role_id: &str,
-    ) -> Result<()> {
+    pub async fn delete_chat_data_for_manifest_role(&self, manifest_role_id: &str) -> Result<()> {
         let mut tx = self
             .pool
             .begin()
@@ -484,6 +482,11 @@ impl DbManager {
         .fetch_one(&self.pool)
         .await
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         sqlx::query(
             "DELETE FROM chat_messages WHERE session_id IN (
                 SELECT session_id FROM chat_sessions WHERE role_id = ? AND scene_id = ?
@@ -491,13 +494,16 @@ impl DbManager {
         )
         .bind(role_id)
         .bind(scene)
-        .execute(&self.pool)
+        .execute(&mut *tx)
         .await
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         sqlx::query("DELETE FROM chat_sessions WHERE role_id = ? AND scene_id = ?")
             .bind(role_id)
             .bind(scene)
-            .execute(&self.pool)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        tx.commit()
             .await
             .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(count.max(0) as u32)
@@ -598,13 +604,11 @@ impl DbManager {
             .begin()
             .await
             .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-        let row = sqlx::query(
-            "SELECT session_id FROM chat_messages WHERE id = ?",
-        )
-        .bind(message_id)
-        .fetch_optional(&mut *tx)
-        .await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        let row = sqlx::query("SELECT session_id FROM chat_messages WHERE id = ?")
+            .bind(message_id)
+            .fetch_optional(&mut *tx)
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         let Some(row) = row else {
             tx.rollback().await.ok();
             return Ok(None);
@@ -615,13 +619,12 @@ impl DbManager {
             .execute(&mut *tx)
             .await
             .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-        let count: i64 = sqlx::query_scalar(
-            "SELECT COUNT(*) FROM chat_messages WHERE session_id = ?",
-        )
-        .bind(&session_id)
-        .fetch_one(&mut *tx)
-        .await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        let count: i64 =
+            sqlx::query_scalar("SELECT COUNT(*) FROM chat_messages WHERE session_id = ?")
+                .bind(&session_id)
+                .fetch_one(&mut *tx)
+                .await
+                .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         let now = Utc::now().to_rfc3339();
         sqlx::query(
             "UPDATE chat_sessions SET message_count = ?, updated_at = ? WHERE session_id = ?",
@@ -657,13 +660,12 @@ impl DbManager {
             .begin()
             .await
             .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-        let row = sqlx::query(
-            "SELECT session_id, sender, metadata FROM chat_messages WHERE id = ?",
-        )
-        .bind(message_id)
-        .fetch_optional(&mut *tx)
-        .await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        let row =
+            sqlx::query("SELECT session_id, sender, metadata FROM chat_messages WHERE id = ?")
+                .bind(message_id)
+                .fetch_optional(&mut *tx)
+                .await
+                .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         let Some(row) = row else {
             tx.rollback().await.ok();
             return Ok(None);
@@ -689,15 +691,13 @@ impl DbManager {
         }
         let meta_str = meta.to_string();
         let now = Utc::now().to_rfc3339();
-        sqlx::query(
-            "UPDATE chat_messages SET content = ?, metadata = ? WHERE id = ?",
-        )
-        .bind(trimmed)
-        .bind(&meta_str)
-        .bind(message_id)
-        .execute(&mut *tx)
-        .await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        sqlx::query("UPDATE chat_messages SET content = ?, metadata = ? WHERE id = ?")
+            .bind(trimmed)
+            .bind(&meta_str)
+            .bind(message_id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         sqlx::query("UPDATE chat_sessions SET updated_at = ? WHERE session_id = ?")
             .bind(&now)
             .bind(&session_id)
@@ -854,7 +854,11 @@ impl DbManager {
             .collect::<HashSet<_>>()
             .into_iter()
             .collect();
-        let placeholders = session_ids.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+        let placeholders = session_ids
+            .iter()
+            .map(|_| "?")
+            .collect::<Vec<_>>()
+            .join(",");
         let sql = format!(
             "SELECT id, session_id, turn_index, sender, content, metadata, created_at
              FROM chat_messages WHERE session_id IN ({placeholders})
@@ -1022,5 +1026,63 @@ mod tests {
         assert_eq!(msgs.len(), 2);
         assert_eq!(msgs[0].sender, "user");
         assert_eq!(msgs[1].sender, "assistant");
+    }
+
+    fn assert_messages_paired(msgs: &[MessageRow]) {
+        use std::collections::HashMap;
+        let mut by_turn: HashMap<i32, (bool, bool)> = HashMap::new();
+        for m in msgs {
+            let entry = by_turn.entry(m.turn_index).or_insert((false, false));
+            match m.sender.as_str() {
+                "user" => entry.0 = true,
+                "assistant" => entry.1 = true,
+                other => panic!("unexpected sender: {other}"),
+            }
+        }
+        for (turn, (has_user, has_assistant)) in by_turn {
+            assert!(
+                has_user && has_assistant,
+                "turn {turn} missing user or assistant pair"
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn odd_configured_cap_keeps_user_assistant_pairs() {
+        use crate::infrastructure::chat_storage::config::resolve_max_messages_per_session;
+
+        let cap = resolve_max_messages_per_session(Some(5));
+        assert_eq!(cap, 4);
+
+        let db = mem_db().await;
+        db.upsert_chat_session("pair_test", "pair_test", "default")
+            .await
+            .expect("session");
+
+        for i in 0..3 {
+            db.insert_chat_turn_messages(
+                "pair_test",
+                NewTurnMessages {
+                    user_id: uuid::Uuid::new_v4().to_string(),
+                    assistant_id: uuid::Uuid::new_v4().to_string(),
+                    user_content: format!("user turn {i}"),
+                    assistant_content: format!("assistant turn {i}"),
+                    user_metadata: None,
+                    assistant_metadata: None,
+                    user_created_at: Utc::now().to_rfc3339(),
+                    assistant_created_at: Utc::now().to_rfc3339(),
+                },
+                cap,
+            )
+            .await
+            .expect("insert");
+        }
+
+        let msgs = db
+            .fetch_chat_messages("pair_test", 20, 0)
+            .await
+            .expect("fetch");
+        assert!(!msgs.is_empty());
+        assert_messages_paired(&msgs);
     }
 }

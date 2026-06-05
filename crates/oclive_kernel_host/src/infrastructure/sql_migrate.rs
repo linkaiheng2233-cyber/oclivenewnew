@@ -62,8 +62,11 @@ pub fn write_migration_failed_marker(app_data_dir: &Path, message: &str) -> Resu
         "failed_at": chrono::Utc::now().to_rfc3339(),
         "message": message,
     });
-    std::fs::write(&path, serde_json::to_string_pretty(&body).unwrap_or_default())
-        .map_err(|e| format!("write {}: {e}", path.display()))
+    std::fs::write(
+        &path,
+        serde_json::to_string_pretty(&body).unwrap_or_default(),
+    )
+    .map_err(|e| format!("write {}: {e}", path.display()))
 }
 
 fn migration_checksum(sql: &str) -> Vec<u8> {
@@ -99,12 +102,11 @@ pub async fn run_sql_migrations(db: &SqlitePool, migrations_dir: &Path) -> Resul
         .collect();
     entries.sort_by_key(|e| e.file_name());
 
-    let applied_rows: Vec<(i64, Vec<u8>)> = sqlx::query_as(
-        "SELECT version, checksum FROM _sqlx_migrations WHERE success = 1",
-    )
-    .fetch_all(db)
-    .await
-    .map_err(|e| e.to_string())?;
+    let applied_rows: Vec<(i64, Vec<u8>)> =
+        sqlx::query_as("SELECT version, checksum FROM _sqlx_migrations WHERE success = 1")
+            .fetch_all(db)
+            .await
+            .map_err(|e| e.to_string())?;
     let applied_checksums: HashMap<i64, Vec<u8>> = applied_rows.into_iter().collect();
 
     for entry in entries {
@@ -199,7 +201,8 @@ mod tests {
 
     #[test]
     fn split_handles_semicolon_inside_comment() {
-        let sql = "-- chat history (kernel-owned; independent from memory).\nCREATE TABLE foo (id INT);";
+        let sql =
+            "-- chat history (kernel-owned; independent from memory).\nCREATE TABLE foo (id INT);";
         let stmts = split_sql_statements(sql);
         assert_eq!(stmts.len(), 1);
         assert!(stmts[0].starts_with("CREATE TABLE foo"));

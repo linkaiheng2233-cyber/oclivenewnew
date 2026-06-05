@@ -27,8 +27,8 @@ pub fn save_role_chat_storage_config(
     let raw = std::fs::read_to_string(&config_path).map_err(AppError::IoError)?;
     let mut root: serde_json::Value =
         serde_json::from_str(&raw).map_err(|e| AppError::InvalidParameter(e.to_string()))?;
-    let chat_storage = serde_json::to_value(config)
-        .map_err(|e| AppError::InvalidParameter(e.to_string()))?;
+    let chat_storage =
+        serde_json::to_value(config).map_err(|e| AppError::InvalidParameter(e.to_string()))?;
     if let Some(obj) = root.as_object_mut() {
         obj.insert("chat_storage".into(), chat_storage);
     } else {

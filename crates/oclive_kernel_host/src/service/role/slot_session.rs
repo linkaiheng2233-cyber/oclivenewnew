@@ -6,10 +6,10 @@ use crate::domain::role_snapshot::plugin_backends_override_from_slot_session;
 use crate::error::AppError;
 use crate::infrastructure::storage::resolve_llm_backend_env_override;
 use crate::models::dto::{
-    API_VERSION, ClearAllSessionSlotOverridesRequest, ClearSessionSlotOverrideRequest,
+    ClearAllSessionSlotOverridesRequest, ClearSessionSlotOverrideRequest,
     GetPluginResolutionDebugRequest, PluginResolutionDebugInfo, RoleInfo,
-    SaveRoleSlotRegistryRequest, SCHEMA_VERSION, SetSessionPluginBackendRequest,
-    SetSessionSlotOverrideRequest,
+    SaveRoleSlotRegistryRequest, SetSessionPluginBackendRequest, SetSessionSlotOverrideRequest,
+    API_VERSION, SCHEMA_VERSION,
 };
 use crate::models::plugin_backends::LlmBackend;
 use crate::state::AppState;
@@ -78,10 +78,7 @@ pub async fn set_session_slot_override_impl(
     }
     state.load_role_cached_async(&req.role_id).await?;
     let ns = session_namespace(&req.role_id, req.session_id.as_deref());
-    state
-        .db_manager
-        .ensure_role_runtime(ns.as_str())
-        .await?;
+    state.db_manager.ensure_role_runtime(ns.as_str()).await?;
 
     let patch = SlotOverridePatch {
         backend: req.backend.clone(),
@@ -169,10 +166,7 @@ pub async fn apply_author_suggested_plugin_backends_impl(
         .into());
     };
     let ns = session_namespace(role_id, session_id);
-    state
-        .db_manager
-        .ensure_role_runtime(ns.as_str())
-        .await?;
+    state.db_manager.ensure_role_runtime(ns.as_str()).await?;
     let role_cached = state.load_role_cached_async(role_id).await?;
     let Some(reg) = role_cached.slot_registry.as_ref() else {
         return Err(AppError::InvalidParameter(

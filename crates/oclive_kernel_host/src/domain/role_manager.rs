@@ -9,12 +9,12 @@
 
 use crate::domain::memory_retrieval::MemoryRetrievalInput;
 use crate::domain::plugin_host::{PluginHost, ResolvedRolePlugins};
+use crate::domain::ports::LlmClient;
 use crate::domain::{
     prompt_builder::effective_reply_quality_anchor, EventDetector, MemoryEngine, PersonalityEngine,
     PromptInput,
 };
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
-use crate::domain::ports::LlmClient;
 use crate::infrastructure::llm::MockLlmClient;
 use crate::infrastructure::remote_fallback_policy::new_remote_fallback_switch;
 use crate::models::{
@@ -288,8 +288,12 @@ mod tests {
             runtime_config: None,
             pipeline_experimental: None,
             scene_ids: std::sync::Arc::from(Vec::<String>::new()),
-            scene_config_cache: std::sync::Arc::new(parking_lot::RwLock::new(std::collections::HashMap::new())),
-            scene_text_cache: std::sync::Arc::new(parking_lot::RwLock::new(std::collections::HashMap::new())),
+            scene_config_cache: std::sync::Arc::new(parking_lot::RwLock::new(
+                std::collections::HashMap::new(),
+            )),
+            scene_text_cache: std::sync::Arc::new(parking_lot::RwLock::new(
+                std::collections::HashMap::new(),
+            )),
         }
     }
 

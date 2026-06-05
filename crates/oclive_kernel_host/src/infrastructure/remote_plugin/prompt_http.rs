@@ -1,12 +1,12 @@
 //! JSON-RPC: `prompt.build_prompt` — params are a serializable context snapshot (including the full `Role`).
 
+use crate::domain::error_helpers::serde_to_ollama;
 use crate::domain::prompt_assembler::PromptAssembler;
 use crate::domain::prompt_builder::PromptInput;
 use crate::domain::BuiltinPromptAssembler;
 use crate::error::{AppError, Result};
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
 use crate::infrastructure::remote_fallback_policy::remote_fallback_load;
-use crate::domain::error_helpers::serde_to_ollama;
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
 use crate::infrastructure::remote_plugin::RemoteHttpClientBlocking;
 use crate::models::{PersonalitySource, Role};
@@ -32,12 +32,8 @@ impl RemotePromptAssemblerHttp {
         high_risk_grants: Arc<HighRiskGrantStore>,
         network_grant_id: Option<String>,
     ) -> Self {
-        let http = RemoteHttpClientBlocking::new(
-            http_client,
-            cfg,
-            high_risk_grants,
-            network_grant_id,
-        );
+        let http =
+            RemoteHttpClientBlocking::new(http_client, cfg, high_risk_grants, network_grant_id);
         Self {
             http,
             fallback: BuiltinPromptAssembler,

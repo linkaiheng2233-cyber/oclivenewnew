@@ -18,11 +18,7 @@ pub fn emit_step(step: &str, input: impl Serialize, output: impl Serialize) {
 }
 
 /// Like [`emit_step`], but builds `input` / `output` only when trace is enabled.
-pub fn emit_step_lazy(
-    step: &str,
-    input: impl FnOnce() -> Value,
-    output: impl FnOnce() -> Value,
-) {
+pub fn emit_step_lazy(step: &str, input: impl FnOnce() -> Value, output: impl FnOnce() -> Value) {
     if !enabled() {
         return;
     }

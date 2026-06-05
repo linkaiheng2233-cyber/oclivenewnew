@@ -51,12 +51,10 @@ mod tests {
         let app_data = dir.path().to_path_buf();
         let roles_dir = app_data.join("roles");
         let _ = std::fs::create_dir_all(&roles_dir);
-        let storage_root = app_data.join("chats");
         Arc::new(HybridConversationStore::new(
             Arc::new(DbManager::new(pool)),
             app_data,
             roles_dir,
-            storage_root,
             Arc::new(ReplayTaskRegistry::new()),
             mirror_enabled,
         ))

@@ -4,8 +4,8 @@ use crate::domain::ports::LlmClient;
 use crate::error::{AppError, Result};
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
 use crate::infrastructure::llm_params;
-use oclive_validation::NETWORK_GRANT_REMOTE_LLM;
 use async_trait::async_trait;
+use oclive_validation::NETWORK_GRANT_REMOTE_LLM;
 use reqwest::Client;
 use serde::Deserialize;
 use std::sync::Arc;
@@ -45,10 +45,7 @@ impl OpenAiCompatibleLlm {
         &self.chat_url
     }
 
-    pub fn from_env(
-        http: Client,
-        grants: Arc<HighRiskGrantStore>,
-    ) -> Option<Self> {
+    pub fn from_env(http: Client, grants: Arc<HighRiskGrantStore>) -> Option<Self> {
         let base = std::env::var("OCLIVE_REMOTE_LLM_URL")
             .ok()
             .filter(|s| !s.trim().is_empty())
@@ -82,7 +79,13 @@ impl OpenAiCompatibleLlm {
         self.grants.require_network(&self.network_grant_id)
     }
 
-    async fn chat(&self, model: &str, prompt: &str, temperature: f32, top_p: f32) -> Result<String> {
+    async fn chat(
+        &self,
+        model: &str,
+        prompt: &str,
+        temperature: f32,
+        top_p: f32,
+    ) -> Result<String> {
         self.ensure_network_grant()?;
         let body = serde_json::json!({
             "model": model,
@@ -99,11 +102,10 @@ impl OpenAiCompatibleLlm {
         if let Some(ref token) = self.bearer_token {
             req = req.bearer_auth(token);
         }
-        let response = req
-            .json(&body)
-            .send()
-            .await
-            .map_err(|e| AppError::RemoteServiceUnavailable(format!("OpenAI API request: {e}")))?;
+        let response =
+            req.json(&body).send().await.map_err(|e| {
+                AppError::RemoteServiceUnavailable(format!("OpenAI API request: {e}"))
+            })?;
         let status = response.status();
         let text = response
             .text()
@@ -135,9 +137,8 @@ struct ChatMessage {
 }
 
 fn parse_chat_response(body: &str) -> Result<String> {
-    let parsed: ChatCompletionResponse = serde_json::from_str(body).map_err(|e| {
-        AppError::RemoteServiceUnavailable(format!("OpenAI API JSON parse: {e}"))
-    })?;
+    let parsed: ChatCompletionResponse = serde_json::from_str(body)
+        .map_err(|e| AppError::RemoteServiceUnavailable(format!("OpenAI API JSON parse: {e}")))?;
     parsed
         .choices
         .and_then(|c| c.into_iter().next())
@@ -156,24 +157,14 @@ fn parse_chat_response(body: &str) -> Result<String> {
 impl LlmClient for OpenAiCompatibleLlm {
     async fn generate(&self, model: &str, prompt: &str) -> Result<String> {
         let (t, p) = llm_params::main_chat_options();
-        self.chat(
-            model,
-            prompt,
-            t.unwrap_or(0.8),
-            p.unwrap_or(0.9),
-        )
-        .await
+        self.chat(model, prompt, t.unwrap_or(0.8), p.unwrap_or(0.9))
+            .await
     }
 
     async fn generate_tag(&self, model: &str, prompt: &str) -> Result<String> {
         let (t, p) = llm_params::tag_task_options();
-        self.chat(
-            model,
-            prompt,
-            t.unwrap_or(0.28),
-            p.unwrap_or(0.85),
-        )
-        .await
+        self.chat(model, prompt, t.unwrap_or(0.28), p.unwrap_or(0.85))
+            .await
     }
 
     async fn startup_probe(&self) -> Result<()> {

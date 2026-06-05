@@ -190,9 +190,7 @@ pub async fn export_chat_logs_impl(
     let turns = load_turns(state, rid).await?;
     blocks.push((role.id.clone(), role.name.clone(), turns));
     let plugin_debug = if include_plugin_debug {
-        Some(
-            build_plugin_resolution_debug_info(state, rid, req.session_id.as_deref()).await?,
-        )
+        Some(build_plugin_resolution_debug_info(state, rid, req.session_id.as_deref()).await?)
     } else {
         None
     };

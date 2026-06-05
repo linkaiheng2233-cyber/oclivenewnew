@@ -136,7 +136,11 @@ pub fn peek_role_pack_manifest(src: &Path) -> Result<(String, String, String)> {
     ))
 }
 
-fn unzip_to(src: &Path, dest: &Path, mut on_entry: impl FnMut(usize, usize, Option<&str>)) -> Result<()> {
+fn unzip_to(
+    src: &Path,
+    dest: &Path,
+    mut on_entry: impl FnMut(usize, usize, Option<&str>),
+) -> Result<()> {
     let file = File::open(src).map_err(|e| {
         AppError::InvalidParameter(format!("Role pack format: cannot open file ({e})"))
     })?;
@@ -238,7 +242,11 @@ where
     Ok(id)
 }
 
-fn copy_role_tree(src: &Path, dest: &Path, mut on_file: impl FnMut(usize, usize, Option<&str>)) -> Result<()> {
+fn copy_role_tree(
+    src: &Path,
+    dest: &Path,
+    mut on_file: impl FnMut(usize, usize, Option<&str>),
+) -> Result<()> {
     let files: Vec<PathBuf> = WalkDir::new(src)
         .min_depth(1)
         .into_iter()

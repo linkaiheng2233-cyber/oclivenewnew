@@ -2,8 +2,8 @@
 
 #![allow(clippy::missing_errors_doc, unused_imports)]
 
-use super::{DbManager, parse_memory_created_at};
 use super::memory_merge::{merge_long_term_memory_line, TxOrPool};
+use super::{parse_memory_created_at, DbManager};
 use crate::error::{AppError, Result};
 use crate::models::*;
 use chrono::{DateTime, Utc};
@@ -77,7 +77,16 @@ impl DbManager {
         let memories = rows
             .into_iter()
             .map(
-                |(id, role_id, content, importance, weight, created_at, scene_id, mention_count)| {
+                |(
+                    id,
+                    role_id,
+                    content,
+                    importance,
+                    weight,
+                    created_at,
+                    scene_id,
+                    mention_count,
+                )| {
                     Memory {
                         id: id.to_string(),
                         role_id,
@@ -152,7 +161,16 @@ impl DbManager {
         let memories = rows
             .into_iter()
             .map(
-                |(id, role_id, content, importance, weight, created_at, scene_id, mention_count)| {
+                |(
+                    id,
+                    role_id,
+                    content,
+                    importance,
+                    weight,
+                    created_at,
+                    scene_id,
+                    mention_count,
+                )| {
                     Memory {
                         id: id.to_string(),
                         role_id,

@@ -15,7 +15,11 @@ pub fn resolve_plugins_for_session(
     effective_backends: &PluginBackends,
     slot_registry: Option<&BTreeMap<String, SlotRegistryEntry>>,
 ) -> ResolvedRolePlugins {
-    if session_namespace.map(str::trim).filter(|s| !s.is_empty()).is_none() {
+    if session_namespace
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .is_none()
+    {
         return host.resolve_for_role(role);
     }
     host.resolve_for_effective_backends(effective_backends, slot_registry, None)

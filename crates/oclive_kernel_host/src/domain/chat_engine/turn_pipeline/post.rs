@@ -9,18 +9,18 @@ use crate::models::{Event, PersonalitySource, Role};
 use std::sync::Arc;
 use std::time::Instant;
 
+use super::super::emotion_to_dto;
+use super::super::scene::movement_ui_flags;
+use super::super::turn_context::TurnContext;
+use super::super::turn_error::TurnResult;
 use super::persistence::{
     append_turn_to_chat_storage, persist_atomic_movement_portrait,
     persist_non_profile_personality_delta, spawn_mutable_profile_evolution, ChatAppendIds,
     PostPersistOutcome, PostTurnPolicy,
 };
 use super::pre::{MainLlmOutput, MiddleOutput, PreLlmOutput, STAGES};
-use super::super::emotion_to_dto;
-use super::super::scene::movement_ui_flags;
-use super::super::turn_context::TurnContext;
-use super::super::turn_error::TurnResult;
-use crate::domain::chat_engine::chat_stage::ChatStage;
 use super::TurnMode;
+use crate::domain::chat_engine::chat_stage::ChatStage;
 
 pub(crate) async fn run_main_llm(
     ctx: &TurnContext<'_>,
@@ -34,29 +34,28 @@ pub(crate) async fn run_main_llm(
     let t_main_llm = Instant::now();
     let mut main_llm_fallback = false;
     let mut llm_fallback_reason = None;
-    let reply_raw = match SlotRunner::generate_llm(pl, pre.ollama_model.as_str(), &middle.prompt)
-        .await
-    {
-        Ok(s) => s,
-        Err(e) => {
-            let reason = e.to_frontend_error();
-            tracing::warn!("{path_label} LLM generate failed, fallback: {reason}");
-            main_llm_fallback = true;
-            llm_fallback_reason = Some(reason);
-            fallback_reply_for_llm_failure(
-                role,
-                &middle.personality,
-                user_message,
-                &FallbackReplyContext {
-                    relation_before: pre.relation_before.as_str(),
-                    relation_preview: middle.relation_after.as_str(),
-                    favorability_before: pre.favorability_before,
-                    event_type: &middle.ai_event_type,
-                    impact_factor: middle.ai_impact_factor_final,
-                },
-            )
-        }
-    };
+    let reply_raw =
+        match SlotRunner::generate_llm(pl, pre.ollama_model.as_str(), &middle.prompt).await {
+            Ok(s) => s,
+            Err(e) => {
+                let reason = e.to_frontend_error();
+                tracing::warn!("{path_label} LLM generate failed, fallback: {reason}");
+                main_llm_fallback = true;
+                llm_fallback_reason = Some(reason);
+                fallback_reply_for_llm_failure(
+                    role,
+                    &middle.personality,
+                    user_message,
+                    &FallbackReplyContext {
+                        relation_before: pre.relation_before.as_str(),
+                        relation_preview: middle.relation_after.as_str(),
+                        favorability_before: pre.favorability_before,
+                        event_type: &middle.ai_event_type,
+                        impact_factor: middle.ai_impact_factor_final,
+                    },
+                )
+            }
+        };
     let main_llm_ms = t_main_llm.elapsed().as_millis() as u64;
     let reply = strip_hallucination_tokens(&soft_append_guard(
         &reply_raw,
@@ -85,10 +84,9 @@ async fn analyze_bot_emotion_and_policy(
 ) -> TurnResult<PostTurnPolicy> {
     let previous_emotion_fut = state.db_manager.get_current_emotion(srid);
     let bot_emotion_result = STAGES
-        .stage(
-            ChatStage::BotReplyEmotionAnalyze,
-            async { SlotRunner::analyze_emotion(pl, reply) },
-        )
+        .stage(ChatStage::BotReplyEmotionAnalyze, async {
+            SlotRunner::analyze_emotion(pl, reply)
+        })
         .await?;
     let previous_emotion = STAGES
         .stage(ChatStage::GetCurrentEmotion, previous_emotion_fut)
@@ -174,10 +172,9 @@ fn assemble_send_message_response(
     movement: bool,
     user_message: &str,
     reply: String,
+    dual_core_degraded: bool,
 ) -> SendMessageResponse {
-    use crate::models::dto::{
-        DetectedEventDto, PresenceMode, API_VERSION, SCHEMA_VERSION,
-    };
+    use crate::models::dto::{DetectedEventDto, PresenceMode, API_VERSION, SCHEMA_VERSION};
 
     let (mut offer_destination_picker, mut offer_together_travel) =
         movement_ui_flags(movement, user_message);
@@ -220,6 +217,7 @@ fn assemble_send_message_response(
         assistant_message_timestamp: chat_ids.assistant_message_timestamp.clone(),
         chat_persist_failed: chat_ids.chat_persist_failed,
         chat_persist_error: chat_ids.chat_persist_error.clone(),
+        dual_core_degraded: dual_core_degraded.then_some(true),
     }
 }
 
@@ -300,21 +298,37 @@ pub(crate) async fn post_llm(
     }
 
     let chat_ids = append_turn_to_chat_storage(
-        state, mode, mrid, srid, scene_id, role, pre, llm, &policy, user_message, &reply,
+        state,
+        mode,
+        mrid,
+        srid,
+        scene_id,
+        role,
+        pre,
+        llm,
+        &policy,
+        user_message,
+        &reply,
     )
     .await;
 
     persist_non_profile_personality_delta(state, role, srid, middle).await?;
 
-    let (offer_destination_picker, offer_together_travel) =
-        movement_ui_flags(persist_out.movement, user_message);
-    let (offer_destination_picker, offer_together_travel) = if matches!(mode, TurnMode::CoPresent)
-        && !immersive
-    {
-        (false, false)
-    } else {
-        (offer_destination_picker, offer_together_travel)
-    };
+    let response = assemble_send_message_response(
+        mode,
+        immersive,
+        scene_id,
+        middle,
+        pre,
+        llm,
+        &policy,
+        &persist_out,
+        &chat_ids,
+        persist_out.movement,
+        user_message,
+        reply,
+        ctx.dual_core_degraded,
+    );
 
     let post_llm_ms = t_post_llm.elapsed().as_millis() as u64;
     let duration_ms = t0.elapsed().as_millis() as u64;
@@ -325,8 +339,8 @@ pub(crate) async fn post_llm(
         scene_id = %scene_id,
         duration_ms = duration_ms,
         main_llm_fallback = llm.main_llm_fallback,
-        offer_destination_picker = offer_destination_picker,
-        offer_together_travel = offer_together_travel,
+        offer_destination_picker = response.offer_destination_picker,
+        offer_together_travel = response.offer_together_travel,
         "send_message end",
     );
     tracing::debug!(
@@ -340,18 +354,5 @@ pub(crate) async fn post_llm(
         "send_message stage timing",
     );
 
-    Ok(assemble_send_message_response(
-        mode,
-        immersive,
-        scene_id,
-        middle,
-        pre,
-        llm,
-        &policy,
-        &persist_out,
-        &chat_ids,
-        persist_out.movement,
-        user_message,
-        reply,
-    ))
+    Ok(response)
 }

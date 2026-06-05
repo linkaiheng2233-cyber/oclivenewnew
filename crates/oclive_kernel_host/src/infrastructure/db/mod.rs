@@ -105,7 +105,6 @@ pub(crate) fn log_txn_finish(tx_name: &str, role_id: &str, elapsed_ms: u128) {
     }
 }
 
-
 impl DbManager {
     #[must_use]
     pub fn new(pool: SqlitePool) -> Self {
@@ -119,12 +118,11 @@ impl DbManager {
 
     /// Highest successfully applied migration version, if the tracking table exists.
     pub async fn max_applied_migration_version(&self) -> Result<Option<i64>> {
-        let v: Option<i64> = sqlx::query_scalar(
-            "SELECT MAX(version) FROM _sqlx_migrations WHERE success = 1",
-        )
-        .fetch_optional(&self.pool)
-        .await
-        .map_err(|e| AppError::DatabaseError(format!("max migration version: {e}")))?;
+        let v: Option<i64> =
+            sqlx::query_scalar("SELECT MAX(version) FROM _sqlx_migrations WHERE success = 1")
+                .fetch_optional(&self.pool)
+                .await
+                .map_err(|e| AppError::DatabaseError(format!("max migration version: {e}")))?;
         Ok(v)
     }
 
@@ -132,10 +130,7 @@ impl DbManager {
         const TTL: Duration = Duration::from_secs(5);
         {
             let guard = self.health_ping_cache.lock();
-            if guard
-                .ok_until
-                .is_some_and(|until| Instant::now() < until)
-            {
+            if guard.ok_until.is_some_and(|until| Instant::now() < until) {
                 return Ok(());
             }
         }
@@ -473,13 +468,11 @@ mod tests {
         let sess = format!("{mid}__sess__abc");
 
         for rid in [mid, sess.as_str()] {
-            sqlx::query(
-                "INSERT INTO role_runtime (role_id, current_favorability) VALUES (?, 0)",
-            )
-            .bind(rid)
-            .execute(&db.pool)
-            .await
-            .unwrap();
+            sqlx::query("INSERT INTO role_runtime (role_id, current_favorability) VALUES (?, 0)")
+                .bind(rid)
+                .execute(&db.pool)
+                .await
+                .unwrap();
             sqlx::query(
                 "INSERT INTO complex_emotion_hint (srid, narrative_hint, updated_at) VALUES (?, 'hint', datetime('now'))",
             )

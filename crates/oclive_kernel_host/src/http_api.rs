@@ -10,18 +10,30 @@
 
 use crate::domain::chat_engine::process_message;
 use crate::error::AppError;
+use crate::infrastructure::chat_storage::{SessionMeta, StoredMessage};
 use crate::infrastructure::MockLlmClient;
+use crate::models::dto::{
+    CreateEventRequest, CreateEventResponse, SetUserPresenceSceneRequest, SwitchSceneRequest,
+    SwitchSceneResponse,
+};
+use crate::models::dto::{
+    GetRoleInfoRequest, JumpTimeRequest, JumpTimeResponse, RoleInfo, TimeStateResponse,
+};
 use crate::models::dto::{SendMessageRequest, SendMessageResponse};
 use crate::models::role::PersonalitySource;
+use crate::service::{
+    dispatch_bridge_command, execute_chat_storage_proxy, get_role_info_impl, get_time_state_impl,
+    grant_high_risk_capability_impl, jump_time_impl, list_high_risk_grants_impl, load_role_impl,
+    revoke_high_risk_capability_impl, set_user_presence_scene_impl, switch_scene_impl,
+    ChatStorageProxyOp, MutateHighRiskGrantRequest,
+};
 use crate::state::AppState;
 use axum::extract::{Query, State};
+use axum::http::HeaderMap;
 use axum::http::Method;
 use axum::routing::{get, post};
 use axum::Json;
 use axum::Router;
-use crate::service::{dispatch_bridge_command, execute_chat_storage_proxy, get_role_info_impl, get_time_state_impl, jump_time_impl, load_role_impl, ChatStorageProxyOp};
-use crate::infrastructure::chat_storage::{SessionMeta, StoredMessage};
-use crate::models::dto::{GetRoleInfoRequest, JumpTimeRequest, JumpTimeResponse, RoleInfo, TimeStateResponse};
 use oclive_kernel_runtime::{
     ensure_app_data_dir, http_chat_codes, resolve_app_data_dir_for_api, resolve_db_path,
     temp_api_db_path, AppDataMode, KernelErrorBody,
@@ -220,7 +232,9 @@ async fn chat(
 
     state.invalidate_personality_cache_for_role(role.id.as_str());
 
-    state.http_api_roles.insert(role.id.clone(), Arc::clone(&role));
+    state
+        .http_api_roles
+        .insert(role.id.clone(), Arc::clone(&role));
 
     let req = SendMessageRequest {
         role_id: role.id.clone(),
@@ -309,10 +323,12 @@ async fn role_snapshot_route(
     Query(q): Query<RoleSnapshotQuery>,
 ) -> Result<Json<RoleSnapshotResponse>, ApiError> {
     let role_id = q.role_id.trim();
-    let info = get_role_info_impl(&state, role_id, None).await.map_err(|e| {
-        let k = e.kernel_error_body();
-        api_error(axum::http::StatusCode::BAD_REQUEST, k)
-    })?;
+    let info = get_role_info_impl(&state, role_id, None)
+        .await
+        .map_err(|e| {
+            let k = e.kernel_error_body();
+            api_error(axum::http::StatusCode::BAD_REQUEST, k)
+        })?;
     let _scene = q.scene_id.as_deref();
     Ok(Json(RoleSnapshotResponse {
         role_id: info.role_id,
@@ -395,9 +411,78 @@ async fn jump_time_route(
     State(state): State<Arc<AppState>>,
     Json(req): Json<JumpTimeRequest>,
 ) -> Result<Json<JumpTimeResponse>, ApiError> {
-    jump_time_impl(&state, &req)
+    jump_time_impl(&state, &req).await.map(Json).map_err(|e| {
+        let k = e.kernel_error_body();
+        api_error(axum::http::StatusCode::BAD_REQUEST, k)
+    })
+}
+
+async fn switch_scene_route(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<SwitchSceneRequest>,
+) -> Result<Json<SwitchSceneResponse>, ApiError> {
+    switch_scene_impl(&state, &req)
         .await
         .map(Json)
+        .map_err(|e| {
+            let k = e.kernel_error_body();
+            api_error(axum::http::StatusCode::BAD_REQUEST, k)
+        })
+}
+
+async fn set_user_presence_scene_route(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<SetUserPresenceSceneRequest>,
+) -> Result<Json<crate::models::dto::RoleInfo>, ApiError> {
+    set_user_presence_scene_impl(&state, &req)
+        .await
+        .map(Json)
+        .map_err(|e| {
+            let k = e.kernel_error_body();
+            api_error(axum::http::StatusCode::BAD_REQUEST, k)
+        })
+}
+
+async fn create_event_route(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<CreateEventRequest>,
+) -> Result<Json<CreateEventResponse>, ApiError> {
+    crate::service::plugin_bridge::create_event_impl(&state, &req)
+        .await
+        .map(Json)
+        .map_err(|e| {
+            let k = e.kernel_error_body();
+            api_error(axum::http::StatusCode::BAD_REQUEST, k)
+        })
+}
+
+async fn list_high_risk_grants_route(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    list_high_risk_grants_impl(&state).map(Json).map_err(|e| {
+        let k = e.kernel_error_body();
+        api_error(axum::http::StatusCode::INTERNAL_SERVER_ERROR, k)
+    })
+}
+
+async fn grant_high_risk_route(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<MutateHighRiskGrantRequest>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    grant_high_risk_capability_impl(&state, &req)
+        .map(|_| Json(serde_json::json!({ "ok": true })))
+        .map_err(|e| {
+            let k = e.kernel_error_body();
+            api_error(axum::http::StatusCode::BAD_REQUEST, k)
+        })
+}
+
+async fn revoke_high_risk_route(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<MutateHighRiskGrantRequest>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    revoke_high_risk_capability_impl(&state, &req)
+        .map(|_| Json(serde_json::json!({ "ok": true })))
         .map_err(|e| {
             let k = e.kernel_error_body();
             api_error(axum::http::StatusCode::BAD_REQUEST, k)
@@ -411,10 +496,34 @@ struct BridgeDispatchRequest {
     params: serde_json::Value,
 }
 
+const BRIDGE_TOKEN_HEADER: &str = "x-oclive-bridge-token";
+
+fn bridge_dispatch_authorized(headers: &HeaderMap) -> bool {
+    let Some(expected) = std::env::var("OCLIVE_BRIDGE_TOKEN")
+        .ok()
+        .filter(|s| !s.trim().is_empty())
+    else {
+        return true;
+    };
+    headers
+        .get(BRIDGE_TOKEN_HEADER)
+        .and_then(|v| v.to_str().ok())
+        .is_some_and(|t| t == expected)
+}
+
 async fn bridge_dispatch_route(
     State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
     Json(req): Json<BridgeDispatchRequest>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
+    if !bridge_dispatch_authorized(&headers) {
+        let k = kernel_http_error(
+            "INVALID_PARAMETER",
+            "bridge dispatch: missing or invalid x-oclive-bridge-token",
+            Some("Set OCLIVE_BRIDGE_TOKEN on kernel and pass the same value in the header.".into()),
+        );
+        return Err(api_error(axum::http::StatusCode::UNAUTHORIZED, k));
+    }
     let cmd = req.command.trim();
     if cmd.is_empty() {
         let k = KernelErrorBody {
@@ -463,10 +572,7 @@ async fn llm_reload_route(
             api_error(axum::http::StatusCode::INTERNAL_SERVER_ERROR, k)
         })?;
     let provider = state.user_llm_provider.read().clone();
-    Ok(Json(LlmReloadResponse {
-        ok: true,
-        provider,
-    }))
+    Ok(Json(LlmReloadResponse { ok: true, provider }))
 }
 
 /// The same route tree as [`serve_api`], for integration tests to use via `tower::ServiceExt::oneshot` (no port binding required).
@@ -487,6 +593,12 @@ pub fn api_router(app_state: Arc<AppState>) -> Router {
         .route("/chat/storage", post(chat_storage_proxy_route))
         .route("/time/state", get(time_state_route))
         .route("/time/jump", post(jump_time_route))
+        .route("/scene/switch", post(switch_scene_route))
+        .route("/scene/user_presence", post(set_user_presence_scene_route))
+        .route("/event/create", post(create_event_route))
+        .route("/high_risk/grants", get(list_high_risk_grants_route))
+        .route("/high_risk/grant", post(grant_high_risk_route))
+        .route("/high_risk/revoke", post(revoke_high_risk_route))
         .route("/bridge/dispatch", post(bridge_dispatch_route))
         .route("/llm/reload", post(llm_reload_route))
         .layer(cors)

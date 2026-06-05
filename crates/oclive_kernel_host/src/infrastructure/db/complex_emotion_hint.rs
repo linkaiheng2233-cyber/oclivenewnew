@@ -31,10 +31,7 @@ impl DbManager {
     /// # Errors
     ///
     /// Returns [`AppError::DatabaseError`] on SQL failure.
-    pub async fn get_complex_emotion_hint(
-        &self,
-        srid: &str,
-    ) -> Result<Option<(String, String)>> {
+    pub async fn get_complex_emotion_hint(&self, srid: &str) -> Result<Option<(String, String)>> {
         let row: Option<(String, String)> = sqlx::query_as(
             "SELECT narrative_hint, updated_at FROM complex_emotion_hint WHERE srid = ?",
         )

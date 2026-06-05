@@ -11,12 +11,12 @@
 
 use crate::domain::agent::{AgentInput, AgentOutput};
 use crate::domain::chat_engine::chat_stage::ChatStage;
-use crate::domain::chat_engine::turn_pipeline::{execute_turn, TurnMode};
 use crate::domain::chat_engine::message_error::ProcessMessageError;
 use crate::domain::chat_engine::minimal_response::build_minimal_response;
 use crate::domain::chat_engine::presence::user_is_remote_from_character;
 use crate::domain::chat_engine::staged::{process_message_stage, stage_process_message};
 use crate::domain::chat_engine::turn_context::TurnContext;
+use crate::domain::chat_engine::turn_pipeline::{execute_turn, TurnMode};
 use crate::domain::chat_engine::{
     backend_resolution_summary, context::validate_scene_id, conversation_state_role_id,
     ensure_role_loaded, process_remote_life, process_remote_stub,
@@ -100,10 +100,8 @@ async fn run(
         crate::domain::user_llm_env::apply_user_llm_env(state).await,
     )?;
 
-    let effective_backends =
-        state.effective_plugin_backends_for_session(role.as_ref(), srid);
-    let effective_sources =
-        state.effective_plugin_backend_sources_for_session(role.as_ref(), srid);
+    let effective_backends = state.effective_plugin_backends_for_session(role.as_ref(), srid);
+    let effective_sources = state.effective_plugin_backend_sources_for_session(role.as_ref(), srid);
     tracing::debug!(
         target: "oclive_chat",
         role_id = %mrid,
@@ -199,10 +197,7 @@ async fn run(
     let is_remote =
         immersive && user_is_remote_from_character(scene_id.as_str(), current_scene.as_deref());
     let preflight_ms = t0.elapsed().as_millis() as u64;
-    let char_scene = current_scene
-        .as_deref()
-        .unwrap_or("default")
-        .to_string();
+    let char_scene = current_scene.as_deref().unwrap_or("default").to_string();
     let virtual_time_ms = process_message_stage(
         ChatStage::VirtualTimeMs,
         crate::domain::virtual_time_sync::sync_and_persist_virtual_time(
@@ -214,6 +209,18 @@ async fn run(
     )
     .await?;
     let scenes = Arc::clone(&role.scene_ids);
+    #[cfg(not(feature = "dual_core"))]
+    let dual_core_degraded = role.dual_core_gated();
+    #[cfg(not(feature = "dual_core"))]
+    if dual_core_degraded {
+        tracing::warn!(
+            target: "oclive_dual_core",
+            role_id = %role.id,
+            "dual_core feature disabled; role blueprint has dual_core enabled — co_present fallback"
+        );
+    }
+    #[cfg(feature = "dual_core")]
+    let dual_core_degraded = false;
     let turn = TurnContext {
         state,
         req,
@@ -227,24 +234,15 @@ async fn run(
         effective_backends,
         pl: pl.clone(),
         immersive,
-        character_scene_id: if is_remote {
-            Some(char_scene)
-        } else {
-            None
-        },
+        character_scene_id: if is_remote { Some(char_scene) } else { None },
         virtual_time_ms,
+        dual_core_degraded,
     };
     if is_remote {
         if !remote_life_enabled {
-            return stage_process_message(
-                ChatStage::RemoteStub,
-                process_remote_stub(&turn).await,
-            );
+            return stage_process_message(ChatStage::RemoteStub, process_remote_stub(&turn).await);
         }
-        return stage_process_message(
-            ChatStage::RemoteLife,
-            process_remote_life(&turn).await,
-        );
+        return stage_process_message(ChatStage::RemoteLife, process_remote_life(&turn).await);
     }
 
     #[cfg(feature = "dual_core")]

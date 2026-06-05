@@ -6,7 +6,9 @@ use crate::domain::complex_emotion::{
 };
 use crate::error::Result;
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
-use crate::infrastructure::remote_plugin::adapter::{resolve_turn_rpc, RemotePluginAdapterBlocking};
+use crate::infrastructure::remote_plugin::adapter::{
+    resolve_turn_rpc, RemotePluginAdapterBlocking,
+};
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
 use crate::infrastructure::remote_plugin::RemoteHttpClientBlocking;
 use std::sync::atomic::AtomicBool;

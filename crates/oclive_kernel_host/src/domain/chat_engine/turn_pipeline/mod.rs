@@ -24,7 +24,10 @@ pub enum TurnMode {
     RemoteLife,
 }
 
-pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> TurnResult<SendMessageResponse> {
+pub async fn execute_turn(
+    ctx: &TurnContext<'_>,
+    mode: TurnMode,
+) -> TurnResult<SendMessageResponse> {
     let path_label = match mode {
         TurnMode::CoPresent => "co_present",
         TurnMode::RemoteLife => "remote_life",

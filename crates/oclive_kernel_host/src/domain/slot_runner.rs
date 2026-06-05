@@ -21,12 +21,12 @@ use crate::domain::event_estimator::EventEstimator;
 use crate::domain::event_impact_ai::EventImpactEstimate;
 use crate::domain::memory_retrieval::{MemoryRetrieval, MemoryRetrievalInput};
 use crate::domain::plugin_host::ResolvedRolePlugins;
+use crate::domain::ports::LlmClient;
 use crate::domain::prompt_assembler::PromptAssembler;
 use crate::domain::prompt_builder::PromptInput;
 use crate::domain::slot_resolver::{LlmMergePolicy, ResolvedRoleSlots};
 use crate::domain::user_emotion_analyzer::UserEmotionAnalyzer;
 use crate::error::Result;
-use crate::domain::ports::LlmClient;
 use crate::models::knowledge::KnowledgeEventAugment;
 use crate::models::{Emotion, Event, Memory, PersonalitySource, PersonalityVector, Role};
 use std::collections::HashSet;
@@ -307,9 +307,7 @@ impl SlotRunner {
                 let instances = clone_instances(instances);
                 let ollama_model = ollama_model.to_string();
                 let prompt = prompt.to_string();
-                async move {
-                    Self::llm_serial_last_wins(&instances, &ollama_model, &prompt).await
-                }
+                async move { Self::llm_serial_last_wins(&instances, &ollama_model, &prompt).await }
             },
             |llm| {
                 let llm = Arc::clone(llm);

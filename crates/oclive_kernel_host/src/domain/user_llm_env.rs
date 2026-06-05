@@ -62,14 +62,10 @@ pub async fn apply_user_llm_env_from_db(
         .get(KEY_LLM_PROVIDER)
         .map(|s| s.trim().to_ascii_lowercase())
         .unwrap_or_default();
-    if provider.is_empty()
-        && !remote_url.is_empty()
-        && cloud_api_token_configured(db, None).await?
+    if provider.is_empty() && !remote_url.is_empty() && cloud_api_token_configured(db, None).await?
     {
         provider = "cloud".to_string();
-        let _ = db
-            .upsert_app_setting(KEY_LLM_PROVIDER, "cloud")
-            .await;
+        let _ = db.upsert_app_setting(KEY_LLM_PROVIDER, "cloud").await;
     }
     let backend_env = match provider.as_str() {
         "cloud" if !remote_url.is_empty() => Some("remote"),
@@ -84,7 +80,11 @@ pub async fn apply_user_llm_env_from_db(
         (KEY_CLOUD_STYLE, "OCLIVE_LLM_CLOUD_API_STYLE"),
     ];
     for (db_key, env_key) in env_pairs {
-        match settings.get(db_key).map(|s| s.trim()).filter(|s| !s.is_empty()) {
+        match settings
+            .get(db_key)
+            .map(|s| s.trim())
+            .filter(|s| !s.is_empty())
+        {
             Some(t) => std::env::set_var(env_key, t),
             None => std::env::remove_var(env_key),
         }
@@ -102,10 +102,7 @@ pub async fn resolve_remote_token(
     app_data: &std::path::Path,
 ) -> crate::error::Result<Option<String>> {
     let from_db = db.get_app_setting(KEY_REMOTE_TOKEN).await?;
-    if from_db
-        .as_ref()
-        .is_some_and(|s| !s.trim().is_empty())
-    {
+    if from_db.as_ref().is_some_and(|s| !s.trim().is_empty()) {
         return Ok(from_db);
     }
     Ok(read_token_file(app_data))

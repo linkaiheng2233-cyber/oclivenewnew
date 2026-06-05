@@ -1,5 +1,9 @@
 //! OCLIVE plugin asset protocol helpers (MIME, URI parsing, HTML bridge injection).
-#![allow(clippy::missing_errors_doc, clippy::missing_panics_doc, clippy::must_use_candidate)]
+#![allow(
+    clippy::missing_errors_doc,
+    clippy::missing_panics_doc,
+    clippy::must_use_candidate
+)]
 
 use crate::infrastructure::directory_plugins::OclivePluginManifest;
 use std::path::Path;
@@ -21,8 +25,7 @@ pub fn inject_plugin_bridge_script(
     let ev = serde_json::to_string(&b.events).unwrap_or_else(|_| "[]".to_string());
     let pid = serde_json::to_string(plugin_id).expect("serialize plugin_id");
     let arel = serde_json::to_string(asset_rel).expect("serialize asset_rel");
-    static BRIDGE_CORE: &str =
-        include_str!("../../../../src-tauri/assets/plugin-bridge.iife.js");
+    static BRIDGE_CORE: &str = include_str!("../../../../src-tauri/assets/plugin-bridge.iife.js");
     let script = format!(
         "<script>{core}window.__oclivSetupPluginBridge({pid},{arel},{inv},{ev});</script>",
         core = BRIDGE_CORE,

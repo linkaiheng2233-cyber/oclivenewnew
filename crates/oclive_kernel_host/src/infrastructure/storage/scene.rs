@@ -37,8 +37,6 @@ impl RoleStorage {
         Self::normalize_string_vec(cfg.monologues)
     }
 
-
-
     /// Read `scenes/{scene_id}/scene.json` from disk (no caching; for the API cold path).
     #[must_use]
     pub fn load_scene_config(&self, role_id: &str, scene_id: &str) -> Option<DiskSceneConfig> {

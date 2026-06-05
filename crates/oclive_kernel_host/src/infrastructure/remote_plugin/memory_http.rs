@@ -1,9 +1,9 @@
 //! `memory.rank` JSON-RPC — see REMOTE_PLUGIN_PROTOCOL.md
 
+use crate::domain::error_helpers::serde_to_unknown;
 use crate::domain::memory_engine::MemoryEngine;
 use crate::domain::memory_retrieval::{MemoryRetrieval, MemoryRetrievalInput};
 use crate::domain::BuiltinMemoryRetrieval;
-use crate::domain::error_helpers::serde_to_unknown;
 use crate::error::{AppError, Result};
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
 use crate::infrastructure::remote_fallback_policy::remote_fallback_load;
@@ -55,7 +55,11 @@ impl RemoteMemoryRetrievalHttp {
             "scene_id": input.scene_id,
             "limit": input.limit,
         });
-        let result = match self.adapter.http.call_plugin_soft(METHOD_MEMORY_RANK, params)? {
+        let result = match self
+            .adapter
+            .http
+            .call_plugin_soft(METHOD_MEMORY_RANK, params)?
+        {
             Some(v) => v,
             None => return Ok(None),
         };

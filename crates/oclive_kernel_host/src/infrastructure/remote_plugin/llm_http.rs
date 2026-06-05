@@ -45,10 +45,7 @@ impl LlmClient for RemoteLlmHttp {
             "model": model,
             "prompt": prompt,
         });
-        let v = self
-            .http
-            .call_llm(METHOD_LLM_GENERATE, params)
-            .await?;
+        let v = self.http.call_llm(METHOD_LLM_GENERATE, params).await?;
         Self::text_from_result(v, METHOD_LLM_GENERATE)
     }
 
@@ -57,10 +54,7 @@ impl LlmClient for RemoteLlmHttp {
             "model": model,
             "prompt": prompt,
         });
-        let v = self
-            .http
-            .call_llm(METHOD_LLM_GENERATE_TAG, params)
-            .await?;
+        let v = self.http.call_llm(METHOD_LLM_GENERATE_TAG, params).await?;
         Self::text_from_result(v, METHOD_LLM_GENERATE_TAG)
     }
 

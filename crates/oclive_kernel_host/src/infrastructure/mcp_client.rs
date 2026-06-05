@@ -255,10 +255,15 @@ impl McpClient {
             .json(&payload)
             .send()
             .await
-            .map_err(|e| AppError::Unknown(format!("mcp http call failed ({}): {}", server.id, e)))?;
+            .map_err(|e| {
+                AppError::Unknown(format!("mcp http call failed ({}): {}", server.id, e))
+            })?;
         let status = resp.status();
         let body: Value = resp.json().await.map_err(|e| {
-            AppError::Unknown(format!("mcp http json decode failed ({}): {}", server.id, e))
+            AppError::Unknown(format!(
+                "mcp http json decode failed ({}): {}",
+                server.id, e
+            ))
         })?;
         if !status.is_success() {
             return Err(AppError::Unknown(format!(

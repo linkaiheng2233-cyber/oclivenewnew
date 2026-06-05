@@ -328,12 +328,14 @@ impl DbManager {
         .fetch_optional(&self.pool)
         .await
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-        Ok(row.map(|(favorability, emotion, relation_state, scene)| RoleRuntimeSnapshot {
-            favorability: Some(favorability),
-            emotion,
-            relation_state,
-            scene,
-        }))
+        Ok(row.map(
+            |(favorability, emotion, relation_state, scene)| RoleRuntimeSnapshot {
+                favorability: Some(favorability),
+                emotion,
+                relation_state,
+                scene,
+            },
+        ))
     }
 
     pub async fn set_current_scene(&self, role_id: &str, scene_id: &str) -> Result<()> {
@@ -390,10 +392,7 @@ impl DbManager {
             .map_err(|e| AppError::DatabaseError(e.to_string()))
     }
 
-    pub async fn get_virtual_time_anchors(
-        &self,
-        role_id: &str,
-    ) -> Result<(i64, i64, i64)> {
+    pub async fn get_virtual_time_anchors(&self, role_id: &str) -> Result<(i64, i64, i64)> {
         let row: Option<(i64, i64, i64)> = sqlx::query_as(
             "SELECT virtual_time_anchor_real_ms, virtual_time_anchor_virtual_ms, virtual_time_ms
              FROM role_runtime WHERE role_id = ?",
@@ -440,7 +439,11 @@ impl DbManager {
                 .fetch_optional(&self.pool)
                 .await
                 .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-        Ok(raw.and_then(|s| chrono::DateTime::parse_from_rfc3339(s.trim()).ok().map(|d| d.with_timezone(&Utc))))
+        Ok(raw.and_then(|s| {
+            chrono::DateTime::parse_from_rfc3339(s.trim())
+                .ok()
+                .map(|d| d.with_timezone(&Utc))
+        }))
     }
 
     pub async fn set_virtual_time_ms(&self, role_id: &str, ms: i64) -> Result<()> {
@@ -768,10 +771,7 @@ impl DbManager {
         Ok(events)
     }
 
-    pub async fn get_session_ollama_model_override(
-        &self,
-        role_id: &str,
-    ) -> Result<Option<String>> {
+    pub async fn get_session_ollama_model_override(&self, role_id: &str) -> Result<Option<String>> {
         let row: Option<(Option<String>,)> = sqlx::query_as(
             "SELECT session_ollama_model_override FROM role_runtime WHERE role_id = ?",
         )

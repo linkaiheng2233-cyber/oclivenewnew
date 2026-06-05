@@ -98,12 +98,8 @@ async fn accumulate_role_pack_mirror_trees(
         if read_role_chat_storage_location(roles_dir, &role_id) != "role_pack" {
             continue;
         }
-        let role_root = resolve_role_chat_storage_root(
-            app_data_dir,
-            roles_dir,
-            &role_id,
-            Some("role_pack"),
-        );
+        let role_root =
+            resolve_role_chat_storage_root(app_data_dir, roles_dir, &role_id, Some("role_pack"));
         accumulate_mirror_tree_bytes(&role_root, by_role).await?;
     }
     Ok(())
@@ -139,7 +135,11 @@ async fn accumulate_file_sessions_from_root(
                 if p.extension().and_then(|e| e.to_str()) != Some("json") {
                     continue;
                 }
-                let bytes = file_entry.metadata().await.map_err(AppError::IoError)?.len();
+                let bytes = file_entry
+                    .metadata()
+                    .await
+                    .map_err(AppError::IoError)?
+                    .len();
                 agg.file_bytes = agg.file_bytes.saturating_add(bytes);
                 agg.session_count = agg.session_count.saturating_add(1);
                 if let Ok(raw) = fs::read_to_string(&p).await {

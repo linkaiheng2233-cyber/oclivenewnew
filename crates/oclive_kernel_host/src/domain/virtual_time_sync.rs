@@ -3,9 +3,9 @@
 use crate::error::Result;
 use crate::infrastructure::db::DbManager;
 use crate::models::{PersonalitySource, PersonalityVector, Role};
-use oclive_kernel_runtime::domain::life_schedule::virtual_start_ms_from_schedule;
 use crate::state::AppState;
 use chrono::Utc;
+use oclive_kernel_runtime::domain::life_schedule::virtual_start_ms_from_schedule;
 use oclive_kernel_runtime::domain::time_decay::decay_personality_delta;
 use oclive_kernel_runtime::domain::virtual_time::{
     compute_virtual_now_ms, round_to_minute_ms, virtual_days_between_ms,
@@ -45,8 +45,7 @@ pub async fn sync_and_persist_virtual_time(
     } else {
         (anchor_real, anchor_virtual)
     };
-    let virtual_now =
-        compute_virtual_now_ms(anchor_real, anchor_virtual, real_now, ratio);
+    let virtual_now = compute_virtual_now_ms(anchor_real, anchor_virtual, real_now, ratio);
     db.set_virtual_time_ms(db_role_id, virtual_now).await?;
     Ok(virtual_now)
 }
@@ -133,4 +132,3 @@ async fn apply_personality_time_decay(
     state.invalidate_personality_cache_for_role(role_id);
     Ok(())
 }
-

@@ -44,12 +44,7 @@ impl RemoteHttpClientBlocking {
         let client = reqwest::Client::builder()
             .connect_timeout(cfg.connect_timeout())
             .build()?;
-        Ok(Self::new(
-            Arc::new(client),
-            cfg,
-            grants,
-            network_grant_id,
-        ))
+        Ok(Self::new(Arc::new(client), cfg, grants, network_grant_id))
     }
 
     #[must_use]
@@ -73,12 +68,7 @@ impl RemoteHttpClientBlocking {
     /// # Errors
     ///
     /// Propagates network grant denial and JSON-RPC transport/parse failures as [`AppError`].
-    pub fn call(
-        &self,
-        channel: RemoteRpcChannel,
-        method: &str,
-        params: Value,
-    ) -> Result<Value> {
+    pub fn call(&self, channel: RemoteRpcChannel, method: &str, params: Value) -> Result<Value> {
         jsonrpc::call_blocking(
             channel,
             self.client.as_ref(),

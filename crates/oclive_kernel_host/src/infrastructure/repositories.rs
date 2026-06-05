@@ -41,6 +41,23 @@ impl MemoryRepository for SqliteMemoryRepository {
     ) -> Result<Vec<Memory>> {
         self.inner.load_memories_paged(role_id, limit, offset).await
     }
+
+    async fn save_memory_merged(
+        &self,
+        role_id: &str,
+        content: &str,
+        importance: f64,
+        similarity_threshold: f64,
+        scene_id: &str,
+    ) -> Result<String> {
+        self.inner
+            .save_memory_merged(role_id, content, importance, similarity_threshold, scene_id)
+            .await
+    }
+
+    async fn delete_memory_for_role(&self, role_id: &str, memory_id: &str) -> Result<bool> {
+        self.inner.delete_memory_for_role(role_id, memory_id).await
+    }
 }
 
 /// Favorability repository backed by `DbManager`

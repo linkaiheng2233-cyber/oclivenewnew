@@ -24,20 +24,18 @@
 use crate::domain::agent::{AgentDebugTrace, AgentProvider};
 use crate::domain::complex_emotion::ComplexEmotionProvider;
 use crate::domain::event_estimator::EventEstimator;
-use crate::domain::local_plugin_bridge::{
-    LocalPluginCapability, LocalPluginProviderDescriptor,
-};
+use crate::domain::local_plugin_bridge::{LocalPluginCapability, LocalPluginProviderDescriptor};
 use crate::domain::memory_retrieval::MemoryRetrieval;
+use crate::domain::ports::LlmClient;
 use crate::domain::prompt_assembler::PromptAssembler;
 use crate::domain::slot_resolver::ResolvedRoleSlots;
 use crate::domain::user_emotion_analyzer::UserEmotionAnalyzer;
 use crate::infrastructure::directory_plugins::DirectoryPluginRuntime;
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
-use crate::domain::ports::LlmClient;
 use crate::infrastructure::mcp_client::{McpServerManifest, McpToolCallResult};
 use crate::models::{
-    AgentBackend, EmotionBackend, EventBackend, LlmBackend, MemoryBackend,
-    PluginBackends, PluginBackendsOverride, PromptBackend, Role,
+    AgentBackend, EmotionBackend, EventBackend, LlmBackend, MemoryBackend, PluginBackends,
+    PluginBackendsOverride, PromptBackend, Role,
 };
 use oclive_validation::SlotRegistryEntry;
 use serde_json::Value;
@@ -76,7 +74,6 @@ pub struct ResolvedRolePlugins {
     /// Merged plugin ids from multiple `agent` directory slots (observability / P4).
     pub merged_agent_directory_plugin_ids: Vec<String>,
 }
-
 
 mod registry;
 mod resolver;

@@ -7,8 +7,8 @@
 //!   relationship-side changes within limited autonomy, bounded by `EvolutionConfig`.
 //! - Creators cannot hand-write the running mutable profile process; they tune influence strength via config only.
 
-use crate::error::Result;
 use crate::domain::ports::LlmClient;
+use crate::error::Result;
 use crate::models::{EventType, EvolutionConfig};
 use std::sync::Arc;
 

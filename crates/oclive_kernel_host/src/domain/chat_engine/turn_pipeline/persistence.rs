@@ -5,11 +5,11 @@ use crate::models::{Event, PersonalitySource, PersonalityVector, Role};
 use std::sync::{Arc, LazyLock};
 use tokio::sync::Semaphore;
 
-use super::pre::{MainLlmOutput, MiddleOutput, PreLlmOutput, STAGES};
 use super::super::scene::detect_movement_intent;
 use super::super::turn_error::TurnResult;
-use crate::domain::chat_engine::chat_stage::ChatStage;
+use super::pre::{MainLlmOutput, MiddleOutput, PreLlmOutput, STAGES};
 use super::TurnMode;
+use crate::domain::chat_engine::chat_stage::ChatStage;
 
 static MUTABLE_PROFILE_EVOLUTION_SEM: LazyLock<Semaphore> = LazyLock::new(|| Semaphore::new(2));
 
@@ -88,11 +88,7 @@ pub(crate) fn spawn_mutable_profile_evolution(
             crate::domain::profile_personality::effective_vector_from_profile(&role, &next);
         let delta_out = PersonalityVector::sub_components(&personality_after, &core_v);
         if let Err(e) = db
-            .set_core_delta_personality_json(
-                &srid,
-                &core_v.to_json_vec(),
-                &delta_out.to_json_vec(),
-            )
+            .set_core_delta_personality_json(&srid, &core_v.to_json_vec(), &delta_out.to_json_vec())
             .await
         {
             tracing::warn!(
@@ -124,6 +120,7 @@ pub(crate) struct PostPersistOutcome {
     pub portrait_emotion_str: String,
 }
 
+#[derive(Debug, Default)]
 pub(crate) struct ChatAppendIds {
     pub user_message_id: Option<String>,
     pub assistant_message_id: Option<String>,
@@ -184,22 +181,24 @@ pub(crate) async fn persist_atomic_movement_portrait(
     };
     let atomic_fut = STAGES.stage(
         ChatStage::ApplyChatTurnAtomic,
-        state.db_manager.apply_chat_turn_atomic(crate::infrastructure::db::ChatTurnTxInput {
-            role_id: srid,
-            personality: &middle.personality,
-            current_emotion: policy.bot_emotion_str.as_str(),
-            relation_state: middle.relation_after.as_str(),
-            user_relation_key: pre.user_relation_key.as_str(),
-            favor_delta: middle.favor_delta,
-            memory_content: &policy.memory_line,
-            memory_importance: policy.memory_importance,
-            memory_fifo_limit: policies.memory.fifo_limit(),
-            memory_similarity_threshold: role.pack_memory_config.similarity_threshold,
-            event: &policy.event,
-            user_message,
-            bot_reply: reply,
-            scene_id,
-        }),
+        state
+            .db_manager
+            .apply_chat_turn_atomic(crate::infrastructure::db::ChatTurnTxInput {
+                role_id: srid,
+                personality: &middle.personality,
+                current_emotion: policy.bot_emotion_str.as_str(),
+                relation_state: middle.relation_after.as_str(),
+                user_relation_key: pre.user_relation_key.as_str(),
+                favor_delta: middle.favor_delta,
+                memory_content: &policy.memory_line,
+                memory_importance: policy.memory_importance,
+                memory_fifo_limit: policies.memory.fifo_limit(),
+                memory_similarity_threshold: role.pack_memory_config.similarity_threshold,
+                event: &policy.event,
+                user_message,
+                bot_reply: reply,
+                scene_id,
+            }),
     );
     if let Some(portrait_fut) = portrait_fut {
         let (favor_current, movement, portrait_res) =
@@ -219,6 +218,34 @@ pub(crate) async fn persist_atomic_movement_portrait(
     }
 }
 
+async fn append_turn_inner(
+    state: &crate::state::AppState,
+    srid: &str,
+    persist: crate::infrastructure::chat_storage::TurnPersistInput,
+    log_label: &str,
+) -> ChatAppendIds {
+    let mut ids = ChatAppendIds::default();
+    match state.conversation_store.append_turn(persist).await {
+        Ok(stored) => {
+            ids.user_message_id = Some(stored.user_message_id);
+            ids.assistant_message_id = Some(stored.assistant_message_id);
+            ids.user_message_timestamp = Some(stored.user_message_timestamp);
+            ids.assistant_message_timestamp = Some(stored.assistant_message_timestamp);
+        }
+        Err(e) => {
+            tracing::warn!(
+                target: "oclive_chat_storage",
+                session_id = %srid,
+                error = %e,
+                "{log_label}"
+            );
+            ids.chat_persist_failed = Some(true);
+            ids.chat_persist_error = Some(e.to_string());
+        }
+    }
+    ids
+}
+
 pub(crate) async fn append_turn_to_chat_storage(
     state: &crate::state::AppState,
     mode: TurnMode,
@@ -232,16 +259,8 @@ pub(crate) async fn append_turn_to_chat_storage(
     user_message: &str,
     reply: &str,
 ) -> ChatAppendIds {
-    let mut ids = ChatAppendIds {
-        user_message_id: None,
-        assistant_message_id: None,
-        user_message_timestamp: None,
-        assistant_message_timestamp: None,
-        chat_persist_failed: None,
-        chat_persist_error: None,
-    };
     if !matches!(mode, TurnMode::CoPresent) || reply.trim().is_empty() {
-        return ids;
+        return ChatAppendIds::default();
     }
     let persist = crate::infrastructure::chat_storage::TurnPersistInput {
         session_id: srid.to_string(),
@@ -255,30 +274,13 @@ pub(crate) async fn append_turn_to_chat_storage(
         user_emotion: Some(pre.user_emotion_str.clone()),
         bot_emotion: Some(policy.bot_emotion_str.clone()),
         max_messages_per_session: role.pack_chat_storage_config.max_messages_per_session,
-        auto_cleanup_config: crate::infrastructure::chat_storage::AutoCleanupConfig::from_role_config(
-            &role.pack_chat_storage_config,
-        ),
+        auto_cleanup_config:
+            crate::infrastructure::chat_storage::AutoCleanupConfig::from_role_config(
+                &role.pack_chat_storage_config,
+            ),
         chat_storage_location: role.pack_chat_storage_config.location.clone(),
     };
-    match state.conversation_store.append_turn(persist).await {
-        Ok(stored) => {
-            ids.user_message_id = Some(stored.user_message_id);
-            ids.assistant_message_id = Some(stored.assistant_message_id);
-            ids.user_message_timestamp = Some(stored.user_message_timestamp);
-            ids.assistant_message_timestamp = Some(stored.assistant_message_timestamp);
-        }
-        Err(e) => {
-            tracing::warn!(
-                target: "oclive_chat_storage",
-                session_id = %srid,
-                error = %e,
-                "append_turn failed"
-            );
-            ids.chat_persist_failed = Some(true);
-            ids.chat_persist_error = Some(e.to_string());
-        }
-    }
-    ids
+    append_turn_inner(state, srid, persist, "append_turn failed").await
 }
 
 pub(crate) async fn append_agent_turn_to_chat_storage(
@@ -292,16 +294,8 @@ pub(crate) async fn append_agent_turn_to_chat_storage(
     user_emotion: &str,
     bot_emotion: &str,
 ) -> ChatAppendIds {
-    let mut ids = ChatAppendIds {
-        user_message_id: None,
-        assistant_message_id: None,
-        user_message_timestamp: None,
-        assistant_message_timestamp: None,
-        chat_persist_failed: None,
-        chat_persist_error: None,
-    };
     if reply.trim().is_empty() {
-        return ids;
+        return ChatAppendIds::default();
     }
     let persist = crate::infrastructure::chat_storage::TurnPersistInput {
         session_id: srid.to_string(),
@@ -315,30 +309,13 @@ pub(crate) async fn append_agent_turn_to_chat_storage(
         user_emotion: Some(user_emotion.to_string()),
         bot_emotion: Some(bot_emotion.to_string()),
         max_messages_per_session: role.pack_chat_storage_config.max_messages_per_session,
-        auto_cleanup_config: crate::infrastructure::chat_storage::AutoCleanupConfig::from_role_config(
-            &role.pack_chat_storage_config,
-        ),
+        auto_cleanup_config:
+            crate::infrastructure::chat_storage::AutoCleanupConfig::from_role_config(
+                &role.pack_chat_storage_config,
+            ),
         chat_storage_location: role.pack_chat_storage_config.location.clone(),
     };
-    match state.conversation_store.append_turn(persist).await {
-        Ok(stored) => {
-            ids.user_message_id = Some(stored.user_message_id);
-            ids.assistant_message_id = Some(stored.assistant_message_id);
-            ids.user_message_timestamp = Some(stored.user_message_timestamp);
-            ids.assistant_message_timestamp = Some(stored.assistant_message_timestamp);
-        }
-        Err(e) => {
-            tracing::warn!(
-                target: "oclive_chat_storage",
-                session_id = %srid,
-                error = %e,
-                "append_turn (agent) failed"
-            );
-            ids.chat_persist_failed = Some(true);
-            ids.chat_persist_error = Some(e.to_string());
-        }
-    }
-    ids
+    append_turn_inner(state, srid, persist, "append_turn (agent) failed").await
 }
 
 pub(crate) async fn persist_non_profile_personality_delta(

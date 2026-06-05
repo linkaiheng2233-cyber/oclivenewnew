@@ -5,7 +5,9 @@ use crate::domain::complex_emotion::{
 };
 use crate::error::Result;
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
-use crate::infrastructure::remote_plugin::adapter::{resolve_turn_rpc, RemotePluginAdapterBlocking};
+use crate::infrastructure::remote_plugin::adapter::{
+    resolve_turn_rpc, RemotePluginAdapterBlocking,
+};
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
 use oclive_validation::NETWORK_GRANT_REMOTE_PLUGIN;
 use std::sync::atomic::AtomicBool;
@@ -48,6 +50,9 @@ impl RemoteComplexEmotionHttp {
 mod tests {
     #[test]
     fn method_name_matches_doc() {
-        assert_eq!("complex_emotion.resolve_turn", "complex_emotion.resolve_turn");
+        assert_eq!(
+            "complex_emotion.resolve_turn",
+            "complex_emotion.resolve_turn"
+        );
     }
 }

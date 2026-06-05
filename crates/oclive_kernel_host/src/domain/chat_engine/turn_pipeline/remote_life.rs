@@ -25,10 +25,7 @@ pub(crate) async fn run_middle(
 
     let complex_emotion_out = skipped_complex_emotion();
 
-    let character_scene_id = ctx
-        .character_scene_id
-        .as_deref()
-        .unwrap_or("default");
+    let character_scene_id = ctx.character_scene_id.as_deref().unwrap_or("default");
     let knowledge_chunks = role
         .knowledge_index
         .as_ref()
@@ -59,11 +56,14 @@ pub(crate) async fn run_middle(
 
     let worldview_snippet = worldview_snippet_from_chunks(knowledge_chunks.as_slice());
 
-    let char_label = state.storage.scene_display_name_for_role(role, character_scene_id);
-    let user_label = state.storage.scene_display_name_for_role(role, scene_id);
-    let away_material = state
+    let char_label = state
         .storage
-        .away_life_material_for_role(role, character_scene_id, scene_id);
+        .scene_display_name_for_role(role, character_scene_id);
+    let user_label = state.storage.scene_display_name_for_role(role, scene_id);
+    let away_material =
+        state
+            .storage
+            .away_life_material_for_role(role, character_scene_id, scene_id);
     let vt_label = if virtual_time_ms > 0 {
         chrono::DateTime::from_timestamp_millis(virtual_time_ms)
             .map(|d| d.format("%Y-%m-%d %H:%M").to_string())
@@ -77,12 +77,11 @@ pub(crate) async fn run_middle(
         .and_then(|s| resolve_life_state(virtual_time_ms, s))
         .map(|st| format_life_prompt_line(&st, true))
         .unwrap_or_default();
-    let remote_mutable =
-        if role.evolution_config.personality_source == PersonalitySource::Profile {
-            pre.mutable_for_prompt.as_str()
-        } else {
-            ""
-        };
+    let remote_mutable = if role.evolution_config.personality_source == PersonalitySource::Profile {
+        pre.mutable_for_prompt.as_str()
+    } else {
+        ""
+    };
     let prompt = build_remote_life_prompt(
         role,
         away_material.as_str(),

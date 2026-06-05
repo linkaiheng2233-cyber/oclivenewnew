@@ -83,10 +83,7 @@ pub fn mirror_filename(session: &SessionRow) -> String {
     format!("{compact}_{prefix}.json")
 }
 
-pub fn mirror_path_for_session(
-    storage_root: &Path,
-    session: &SessionRow,
-) -> Result<PathBuf> {
+pub fn mirror_path_for_session(storage_root: &Path, session: &SessionRow) -> Result<PathBuf> {
     let dir = resolve_session_dir(storage_root, &session.role_id, &session.scene_id)?;
     Ok(dir.join(mirror_filename(session)))
 }
@@ -150,7 +147,9 @@ pub async fn sync_mirror_append(
 ) -> Result<()> {
     let path = mirror_path_for_session(storage_root, session)?;
     if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent).await.map_err(AppError::IoError)?;
+        fs::create_dir_all(parent)
+            .await
+            .map_err(AppError::IoError)?;
     }
 
     let mut doc = if path.is_file() {
@@ -194,13 +193,10 @@ pub async fn rebuild_mirror(
     session_id: &str,
     max_messages: i64,
 ) -> Result<PathBuf> {
-    let session = db
-        .get_chat_session(session_id)
-        .await?
-        .ok_or_else(|| AppError::InvalidParameter(format!("chat session not found: {session_id}")))?;
-    let rows = db
-        .fetch_chat_messages(session_id, u32::MAX, 0)
-        .await?;
+    let session = db.get_chat_session(session_id).await?.ok_or_else(|| {
+        AppError::InvalidParameter(format!("chat session not found: {session_id}"))
+    })?;
+    let rows = db.fetch_chat_messages(session_id, u32::MAX, 0).await?;
     let doc = MirrorDocument::from_session_and_rows(&session, &rows);
     let max = max_messages.max(2) as usize;
     let mut doc = doc;
@@ -210,7 +206,9 @@ pub async fn rebuild_mirror(
     }
     let path = mirror_path_for_session(storage_root, &session)?;
     if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent).await.map_err(AppError::IoError)?;
+        fs::create_dir_all(parent)
+            .await
+            .map_err(AppError::IoError)?;
     }
     write_mirror_atomic(&path, &doc).await?;
     Ok(path)
@@ -268,14 +266,16 @@ pub async fn delete_mirror(
 pub async fn delete_mirror_tree_for_role(storage_root: &Path, role_id: &str) -> Result<()> {
     let role_dir = storage_root.join(super::config::sanitize_path_segment(role_id)?);
     if role_dir.is_dir() {
-        fs::remove_dir_all(&role_dir).await.map_err(AppError::IoError)?;
+        fs::remove_dir_all(&role_dir)
+            .await
+            .map_err(AppError::IoError)?;
     }
     Ok(())
 }
 
 async fn write_mirror_atomic(path: &Path, doc: &MirrorDocument) -> Result<()> {
-    let json = serde_json::to_string_pretty(doc)
-        .map_err(|e| AppError::InvalidParameter(e.to_string()))?;
+    let json =
+        serde_json::to_string_pretty(doc).map_err(|e| AppError::InvalidParameter(e.to_string()))?;
     let tmp = path.with_extension("json.tmp");
     fs::write(&tmp, json).await.map_err(AppError::IoError)?;
     fs::rename(&tmp, path).await.map_err(AppError::IoError)?;
@@ -317,8 +317,8 @@ mod tests {
             std::slice::from_ref(&row),
             crate::infrastructure::chat_storage::config::DEFAULT_MAX_MESSAGES,
         )
-            .await
-            .expect("sync");
+        .await
+        .expect("sync");
         let path = mirror_path_for_session(&storage_root, &session).expect("path");
         assert!(path.is_file());
         let raw = std::fs::read_to_string(path).expect("read");

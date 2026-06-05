@@ -3,17 +3,19 @@
 use super::backends::HybridConversationStore;
 use super::replay::ReplayTaskRegistry;
 use super::store_trait::ConversationStore;
-use crate::models::RolePackChatStorageConfig;
 use crate::models::role_pack_config::ChatStorageBackendKind;
+use crate::models::RolePackChatStorageConfig;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 pub const ENV_CHAT_STORAGE_BACKEND: &str = "OCLIVE_CHAT_STORAGE_BACKEND";
 
-/// Resolve backend kind: env [`ENV_CHAT_STORAGE_BACKEND`] (`hybrid`|`file`|`sqlite`) >
+/// Resolve legacy backend kind: env [`ENV_CHAT_STORAGE_BACKEND`] (`hybrid`|`file`|`sqlite`) >
 /// role `config.json` → `chat_storage.backend` > default [`ChatStorageBackendKind::Hybrid`].
 ///
-/// `file` and `sqlite` remain deserializable for migration; [`resolve_mirror_enabled`] maps them.
+/// **Semantics (phase 3):** runtime always builds [`HybridConversationStore`] (SQLite authoritative).
+/// `file` / `sqlite` / `hybrid` only influence the JSON **mirror** flag via [`resolve_mirror_enabled`];
+/// prefer explicit `chat_storage.mirror` in role `config.json` when possible.
 #[must_use]
 pub fn resolve_backend_kind(config: Option<&RolePackChatStorageConfig>) -> ChatStorageBackendKind {
     if let Ok(raw) = std::env::var(ENV_CHAT_STORAGE_BACKEND) {
@@ -24,9 +26,7 @@ pub fn resolve_backend_kind(config: Option<&RolePackChatStorageConfig>) -> ChatS
             _ => ChatStorageBackendKind::Hybrid,
         };
     }
-    config
-        .and_then(|c| c.backend)
-        .unwrap_or_default()
+    config.and_then(|c| c.backend).unwrap_or_default()
 }
 
 /// Whether JSON mirror files are written. Explicit `chat_storage.mirror` wins; else legacy `backend`.
@@ -63,14 +63,12 @@ pub fn build_conversation_store(
     role_config: &RolePackChatStorageConfig,
     role_pack_dir: Option<&Path>,
 ) -> Arc<dyn ConversationStore> {
-    let storage_root =
-        super::config::resolve_storage_root_with_role(&app_data_dir, role_config, role_pack_dir);
     let mirror_enabled = resolve_mirror_enabled(role_config, kind);
+    let _ = role_pack_dir;
     Arc::new(HybridConversationStore::new(
         db,
         app_data_dir,
         roles_dir,
-        storage_root,
         replay_tasks,
         mirror_enabled,
     ))

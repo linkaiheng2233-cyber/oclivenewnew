@@ -10,7 +10,9 @@ use std::time::UNIX_EPOCH;
 
 use dashmap::DashMap;
 
-use super::manifest::{normalize_plugin_rel, normalize_ui_slot_appearance_id, OclivePluginManifest};
+use super::manifest::{
+    normalize_plugin_rel, normalize_ui_slot_appearance_id, OclivePluginManifest,
+};
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
 use crate::infrastructure::plugin_state::{PluginStateFile, PluginStateStore, RolePluginState};
 use crate::models::ui_config::UiConfig;
@@ -267,7 +269,10 @@ pub(crate) fn parse_ready_line(
 }
 
 fn rpc_url_is_loopback(url: &str) -> bool {
-    let rest = match url.strip_prefix("http://").or_else(|| url.strip_prefix("https://")) {
+    let rest = match url
+        .strip_prefix("http://")
+        .or_else(|| url.strip_prefix("https://"))
+    {
         Some(r) => r,
         None => return false,
     };
@@ -749,7 +754,7 @@ impl Drop for DirectoryPluginRuntime {
 
 #[cfg(test)]
 mod asset_path_tests {
-    use super::{PluginRootEntry, resolve_plugin_asset_path};
+    use super::{resolve_plugin_asset_path, PluginRootEntry};
     use std::fs;
     use tempfile::TempDir;
 
@@ -758,8 +763,11 @@ mod asset_path_tests {
         let tmp = TempDir::new().expect("temp");
         let root = tmp.path().join("plugin");
         fs::create_dir_all(&root).expect("mkdir");
-        fs::write(root.join("manifest.json"), r#"{"schema_version":1,"id":"p","version":"1.0.0"}"#)
-            .expect("write manifest");
+        fs::write(
+            root.join("manifest.json"),
+            r#"{"schema_version":1,"id":"p","version":"1.0.0"}"#,
+        )
+        .expect("write manifest");
         let entry = PluginRootEntry::from_root(root.clone());
         let err = resolve_plugin_asset_path(&entry, "../secret.txt").expect_err("traversal");
         assert!(err.contains("invalid") || err.contains("escapes"));

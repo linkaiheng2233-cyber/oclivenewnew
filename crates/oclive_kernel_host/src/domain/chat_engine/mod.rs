@@ -3,20 +3,20 @@
 //! Pure turn logic lives in [`super::chat_turn`]; this module handles async orchestration and `AppState`.
 //! Scene and favorability sub-logic: [`context`], [`scene`], [`favor`].
 
-pub(crate) mod turn_error;
 pub mod chat_stage;
-pub mod message_error;
 pub(crate) mod context;
 pub(crate) mod favor;
+pub mod message_error;
 pub(crate) mod minimal_response;
-pub(crate) mod relation_snapshot;
 pub mod plugin_resolve;
-pub mod turn_context;
-pub(crate) mod staged;
-pub(crate) mod turn_pipeline;
 mod presence;
 mod process_message;
+pub(crate) mod relation_snapshot;
 mod scene;
+pub(crate) mod staged;
+pub mod turn_context;
+pub(crate) mod turn_error;
+pub(crate) mod turn_pipeline;
 
 pub use process_message::process_message;
 
@@ -68,10 +68,7 @@ pub(super) fn backend_resolution_summary(
 }
 
 /// Session-scoped SQLite namespace: HTTP trial chat with `session_id` is isolated from the default conversation without one.
-pub fn conversation_state_role_id(
-    manifest_role_id: &str,
-    session_id: Option<&str>,
-) -> String {
+pub fn conversation_state_role_id(manifest_role_id: &str, session_id: Option<&str>) -> String {
     /// Caps SQLite key and log length so abnormally long `session_id` values cannot blow storage.
     const MAX_SUFFIX_CHARS: usize = 64;
     const MAX_TOTAL_CHARS: usize = 256;
@@ -98,9 +95,7 @@ pub fn conversation_state_role_id(
 }
 
 /// Remote-presence + off: stub reply; **does not** write short-term memory / events / favorability (avoids favor gain without dialogue).
-pub(super) async fn process_remote_stub(
-    ctx: &TurnContext<'_>,
-) -> Result<SendMessageResponse> {
+pub(super) async fn process_remote_stub(ctx: &TurnContext<'_>) -> Result<SendMessageResponse> {
     let state = ctx.state;
     let req = ctx.req;
     let role = ctx.role;
@@ -158,6 +153,7 @@ pub(super) async fn process_remote_stub(
         assistant_message_timestamp: None,
         chat_persist_failed: None,
         chat_persist_error: None,
+        dual_core_degraded: None,
     })
 }
 

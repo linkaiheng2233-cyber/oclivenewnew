@@ -81,7 +81,11 @@ async fn ensure_role_info_ready(
     {
         return Ok(());
     }
-    if session_id.map(str::trim).filter(|s| !s.is_empty()).is_some() {
+    if session_id
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .is_some()
+    {
         state
             .db_manager
             .ensure_role_runtime(session_ns.as_str())

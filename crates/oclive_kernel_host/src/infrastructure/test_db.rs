@@ -4,8 +4,8 @@ use sqlx::SqlitePool;
 use std::path::Path;
 
 use crate::infrastructure::db::DbManager;
-use crate::infrastructure::sqlite_pool;
 use crate::infrastructure::sql_migrate;
+use crate::infrastructure::sqlite_pool;
 
 /// Open an in-memory pool and apply all migrations (same runner as production; FK on).
 pub async fn connect_memory_migrated() -> SqlitePool {

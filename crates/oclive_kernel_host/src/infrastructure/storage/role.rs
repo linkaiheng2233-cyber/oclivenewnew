@@ -5,15 +5,14 @@ use crate::domain::role_manifest_validate::{
 use crate::error::{AppError, Result};
 use crate::models::role_manifest_disk::disk_manifest_to_role;
 use crate::models::{
-    author_pack::AuthorPackFile,
-    role_settings_disk::CURRENT_SETTINGS_SCHEMA_VERSION, DiskRoleManifest, DiskRoleSettings, Role,
-    RolePackConfigFile, UiConfig,
+    author_pack::AuthorPackFile, role_settings_disk::CURRENT_SETTINGS_SCHEMA_VERSION,
+    DiskRoleManifest, DiskRoleSettings, Role, RolePackConfigFile, UiConfig,
 };
 use oclive_validation::{
     blueprint_schema_version_from_raw, load_blueprint_v2_for_role_dir,
     load_blueprint_v3_for_role_dir, slot_registry_to_plugin_backends, validate_min_runtime_version,
-    validate_settings_schema_version,
-    validate_settings_top_level_keys, BLUEPRINT_V3_SCHEMA_VERSION, PIPELINE_BLUEPRINT_FILENAME,
+    validate_settings_schema_version, validate_settings_top_level_keys,
+    BLUEPRINT_V3_SCHEMA_VERSION, PIPELINE_BLUEPRINT_FILENAME,
 };
 use serde_json;
 use std::collections::BTreeSet;
@@ -212,10 +211,8 @@ impl RoleStorage {
 
         let manifest_content = fs::read_to_string(&manifest_path).map_err(AppError::IoError)?;
 
-        let mut disk: DiskRoleManifest =
-            serde_json::from_str(&manifest_content).map_err(|e| {
-                AppError::InvalidParameter(format!("manifest.json: {e}"))
-            })?;
+        let mut disk: DiskRoleManifest = serde_json::from_str(&manifest_content)
+            .map_err(|e| AppError::InvalidParameter(format!("manifest.json: {e}")))?;
 
         let mut settings_opt: Option<DiskRoleSettings> = None;
         let settings_path = role_dir.join("settings.json");

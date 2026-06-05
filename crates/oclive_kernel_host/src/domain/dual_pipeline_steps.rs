@@ -68,7 +68,9 @@ impl<'a> ExperimentalStepCtx<'a> {
             role,
             Some(srid),
             &state.effective_plugin_backends_for_session(role, srid),
-            state.effective_slot_registry_for_session(role, srid).as_ref(),
+            state
+                .effective_slot_registry_for_session(role, srid)
+                .as_ref(),
         );
         Ok(Self {
             state,
@@ -147,8 +149,8 @@ impl<'a> ExperimentalStepCtx<'a> {
 
     async fn ensure_emotion(&mut self) -> Result<&EmotionResult, ProcessMessageError> {
         if self.emotion_result.is_none() {
-            let er = SlotRunner::analyze_emotion(&self.pl, self.user_message)
-                .map_err(map_slot_err)?;
+            let er =
+                SlotRunner::analyze_emotion(&self.pl, self.user_message).map_err(map_slot_err)?;
             self.emotion_result = Some(er);
         }
         self.emotion_result.as_ref().ok_or_else(|| {
@@ -188,15 +190,15 @@ impl<'a> ExperimentalStepCtx<'a> {
             scene_m,
         );
         let ranked = SlotRunner::rank_memories(
-                &self.pl,
-                MemoryRetrievalInput {
-                    memories: &memories,
-                    user_query: self.user_message,
-                    scene_id: Some(self.scene_id.as_str()),
-                    limit: 8,
-                },
-            )
-            .map_err(map_slot_err)?;
+            &self.pl,
+            MemoryRetrievalInput {
+                memories: &memories,
+                user_query: self.user_message,
+                scene_id: Some(self.scene_id.as_str()),
+                limit: 8,
+            },
+        )
+        .map_err(map_slot_err)?;
         self.ranked_memories = Some(ranked);
         Ok(())
     }
@@ -205,7 +207,9 @@ impl<'a> ExperimentalStepCtx<'a> {
         let er = self.ensure_emotion().await?;
         let user_emotion = er.to_emotion();
         let personality = self.ensure_personality().await?;
-        let ollama_model = self.role.resolve_ollama_model(self.state.ollama_model.as_str());
+        let ollama_model = self
+            .role
+            .resolve_ollama_model(self.state.ollama_model.as_str());
         let (_turns, recent_turns_for_event, recent_events_for_event) =
             load_recent_context(self.state, self.srid)
                 .await
@@ -214,25 +218,23 @@ impl<'a> ExperimentalStepCtx<'a> {
             .role
             .knowledge_index
             .as_ref()
-            .map(|idx| {
-                idx.retrieve(self.user_message, Some(self.scene_id.as_str()), 8)
-            })
+            .map(|idx| idx.retrieve(self.user_message, Some(self.scene_id.as_str()), 8))
             .map(|chunks| KnowledgeIndex::merge_event_augment(chunks.as_slice()))
             .filter(|aug| !aug.is_empty());
 
         let _estimate = SlotRunner::estimate_event(
-                &self.pl,
-                ollama_model.as_str(),
-                self.user_message,
-                &user_emotion,
-                &personality,
-                self.role.evolution_config.personality_source,
-                &recent_turns_for_event,
-                &recent_events_for_event,
-                knowledge_augment_opt.as_ref(),
-            )
-            .await
-            .map_err(map_slot_err)?;
+            &self.pl,
+            ollama_model.as_str(),
+            self.user_message,
+            &user_emotion,
+            &personality,
+            self.role.evolution_config.personality_source,
+            &recent_turns_for_event,
+            &recent_events_for_event,
+            knowledge_augment_opt.as_ref(),
+        )
+        .await
+        .map_err(map_slot_err)?;
         Ok(())
     }
 
@@ -261,15 +263,15 @@ impl<'a> ExperimentalStepCtx<'a> {
                 scene_m,
             );
             SlotRunner::rank_memories(
-                    &self.pl,
-                    MemoryRetrievalInput {
-                        memories: &mem,
-                        user_query: self.user_message,
-                        scene_id: Some(self.scene_id.as_str()),
-                        limit: 8,
-                    },
-                )
-                .map_err(map_slot_err)?
+                &self.pl,
+                MemoryRetrievalInput {
+                    memories: &mem,
+                    user_query: self.user_message,
+                    scene_id: Some(self.scene_id.as_str()),
+                    limit: 8,
+                },
+            )
+            .map_err(map_slot_err)?
         };
         let user_relation_key = resolve_effective_user_relation_key(
             self.state,
@@ -345,41 +347,47 @@ impl<'a> ExperimentalStepCtx<'a> {
             .get_mutable_personality(self.srid)
             .await
             .map_err(map_db_err)?;
-        let prev_hint = self.state.session_cache.stored_complex_emotion_narrative_hint(self.srid);
+        let prev_hint = self
+            .state
+            .session_cache
+            .stored_complex_emotion_narrative_hint(self.srid);
         let prompt = SlotRunner::build_prompt(
-                &self.pl,
-                &PromptInput {
-                    role: self.role,
-                    personality: &personality,
-                    memories: &memories,
-                    user_input: self.user_message,
-                    user_emotion: user_emotion_prompt.as_str(),
-                    user_relation_id: user_relation_key.as_str(),
-                    relation_hint: rf.relation_hint,
-                    relation_before: relation_before.as_str(),
-                    favorability_before,
-                    relation_preview: relation_after.as_str(),
-                    favorability_preview: favorability_before,
-                    event_type: &neutral_event,
-                    impact_factor: 0.0,
-                    scene_label: scene_label.as_str(),
-                    scene_detail: scene_detail_buf.as_str(),
-                    topic_hint_line: topic_line.as_str(),
-                    life_context_line: "",
-                    worldview_snippet: "",
-                    mutable_personality: mutable_for_prompt.as_str(),
-                    reply_quality_anchor: effective_reply_quality_anchor(self.role),
-                    previous_complex_emotion_narrative_hint: prev_hint.as_str(),
-                },
-            )
-            .map_err(map_slot_err)?;
+            &self.pl,
+            &PromptInput {
+                role: self.role,
+                personality: &personality,
+                memories: &memories,
+                user_input: self.user_message,
+                user_emotion: user_emotion_prompt.as_str(),
+                user_relation_id: user_relation_key.as_str(),
+                relation_hint: rf.relation_hint,
+                relation_before: relation_before.as_str(),
+                favorability_before,
+                relation_preview: relation_after.as_str(),
+                favorability_preview: favorability_before,
+                event_type: &neutral_event,
+                impact_factor: 0.0,
+                scene_label: scene_label.as_str(),
+                scene_detail: scene_detail_buf.as_str(),
+                topic_hint_line: topic_line.as_str(),
+                life_context_line: "",
+                worldview_snippet: "",
+                mutable_personality: mutable_for_prompt.as_str(),
+                reply_quality_anchor: effective_reply_quality_anchor(self.role),
+                previous_complex_emotion_narrative_hint: prev_hint.as_str(),
+            },
+        )
+        .map_err(map_slot_err)?;
         self.assembled_prompt = Some(prompt);
         Ok(())
     }
 
     async fn run_resolve_turn(&mut self) -> Result<(), ProcessMessageError> {
         let er = self.ensure_emotion().await?.clone();
-        let prev_hint = self.state.session_cache.stored_complex_emotion_narrative_hint(self.srid);
+        let prev_hint = self
+            .state
+            .session_cache
+            .stored_complex_emotion_narrative_hint(self.srid);
         let (recent_turns, _a, _b) = load_recent_context(self.state, self.srid)
             .await
             .map_err(map_db_err)?;
@@ -391,8 +399,8 @@ impl<'a> ExperimentalStepCtx<'a> {
             prev_hint,
             &recent_turns,
         );
-        let _out = SlotRunner::resolve_complex_emotion(&self.pl, &ce_input)
-            .map_err(map_slot_err)?;
+        let _out =
+            SlotRunner::resolve_complex_emotion(&self.pl, &ce_input).map_err(map_slot_err)?;
         Ok(())
     }
 
@@ -404,7 +412,9 @@ impl<'a> ExperimentalStepCtx<'a> {
                 role_id: self.mrid.to_string(),
                 session_namespace: self.srid.to_string(),
                 message: self.req.user_message.clone(),
-                model: self.role.resolve_ollama_model(self.state.ollama_model.as_str()),
+                model: self
+                    .role
+                    .resolve_ollama_model(self.state.ollama_model.as_str()),
             })
             .await
             .map_err(map_slot_err)?;
@@ -481,6 +491,7 @@ impl<'a> ExperimentalStepCtx<'a> {
             assistant_message_timestamp: None,
             chat_persist_failed: None,
             chat_persist_error: None,
+            dual_core_degraded: None,
         })))
     }
 
@@ -527,8 +538,10 @@ mod tests {
 
     #[test]
     fn registry_covers_seven_slot_types() {
-        let types: std::collections::HashSet<_> =
-            EXPERIMENTAL_METHOD_SPECS.iter().map(|s| s.slot_type).collect();
+        let types: std::collections::HashSet<_> = EXPERIMENTAL_METHOD_SPECS
+            .iter()
+            .map(|s| s.slot_type)
+            .collect();
         for t in [
             "memory",
             "emotion",
@@ -544,10 +557,7 @@ mod tests {
 
     #[test]
     fn required_slot_type_matches_registry() {
-        assert_eq!(
-            required_slot_type_for_method("detect"),
-            Some("event")
-        );
+        assert_eq!(required_slot_type_for_method("detect"), Some("event"));
         assert_eq!(required_slot_type_for_method("nope"), None);
     }
 

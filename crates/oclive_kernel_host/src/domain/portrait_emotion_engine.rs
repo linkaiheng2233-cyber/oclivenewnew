@@ -5,8 +5,8 @@
 use crate::domain::affect_policy::{
     guarded_drive, hurt_drive, probing_drive, softness_coldness_volatility,
 };
-use crate::error::Result;
 use crate::domain::ports::LlmClient;
+use crate::error::Result;
 use crate::models::{Emotion, Event, EventType, PersonalityVector, Role};
 use std::sync::Arc;
 

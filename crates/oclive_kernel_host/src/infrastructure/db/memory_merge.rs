@@ -18,6 +18,20 @@ pub enum TxOrPool<'a> {
     Pool(&'a SqlitePool),
 }
 
+fn matching_memory_id(
+    candidates: &[(i64, String)],
+    trimmed: &str,
+    similarity_threshold: f64,
+) -> Option<i64> {
+    for (id, existing) in candidates {
+        let sim = MemoryEngine::keyword_overlap_similarity(trimmed, existing.as_str());
+        if sim >= similarity_threshold {
+            return Some(*id);
+        }
+    }
+    None
+}
+
 pub async fn merge_in_tx(
     tx: &mut Transaction<'_, Sqlite>,
     role_id: &str,
@@ -34,19 +48,16 @@ pub async fn merge_in_tx(
     .await
     .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
-    for (id, existing) in candidates {
-        let sim = MemoryEngine::keyword_overlap_similarity(trimmed, existing.as_str());
-        if sim >= similarity_threshold {
-            sqlx::query(
-                "UPDATE long_term_memory SET mention_count = mention_count + 1 WHERE id = ? AND role_id = ?",
-            )
-            .bind(id)
-            .bind(role_id)
-            .execute(&mut **tx)
-            .await
-            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-            return Ok(MergeOutcome::Updated);
-        }
+    if let Some(id) = matching_memory_id(&candidates, trimmed, similarity_threshold) {
+        sqlx::query(
+            "UPDATE long_term_memory SET mention_count = mention_count + 1 WHERE id = ? AND role_id = ?",
+        )
+        .bind(id)
+        .bind(role_id)
+        .execute(&mut **tx)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        return Ok(MergeOutcome::Updated);
     }
 
     let now = Utc::now().to_rfc3339();
@@ -82,19 +93,16 @@ async fn merge_in_pool(
     .await
     .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
-    for (id, existing) in candidates {
-        let sim = MemoryEngine::keyword_overlap_similarity(trimmed, existing.as_str());
-        if sim >= similarity_threshold {
-            sqlx::query(
-                "UPDATE long_term_memory SET mention_count = mention_count + 1 WHERE id = ? AND role_id = ?",
-            )
-            .bind(id)
-            .bind(role_id)
-            .execute(pool)
-            .await
-            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-            return Ok(MergeOutcome::Updated);
-        }
+    if let Some(id) = matching_memory_id(&candidates, trimmed, similarity_threshold) {
+        sqlx::query(
+            "UPDATE long_term_memory SET mention_count = mention_count + 1 WHERE id = ? AND role_id = ?",
+        )
+        .bind(id)
+        .bind(role_id)
+        .execute(pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        return Ok(MergeOutcome::Updated);
     }
 
     let now = Utc::now().to_rfc3339();
@@ -130,10 +138,26 @@ pub async fn merge_long_term_memory_line(
 
     match conn {
         TxOrPool::Tx(tx) => {
-            merge_in_tx(tx, role_id, scene_id, trimmed, importance, similarity_threshold).await
+            merge_in_tx(
+                tx,
+                role_id,
+                scene_id,
+                trimmed,
+                importance,
+                similarity_threshold,
+            )
+            .await
         }
         TxOrPool::Pool(pool) => {
-            merge_in_pool(pool, role_id, scene_id, trimmed, importance, similarity_threshold).await
+            merge_in_pool(
+                pool,
+                role_id,
+                scene_id,
+                trimmed,
+                importance,
+                similarity_threshold,
+            )
+            .await
         }
     }
 }

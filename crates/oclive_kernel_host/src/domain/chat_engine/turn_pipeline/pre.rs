@@ -3,8 +3,8 @@
 use crate::domain::chat_turn::{relation_favor_for_key, weight_memories_for_scene};
 use crate::domain::complex_emotion::{affect_metrics_from_seven_dim, ComplexEmotionInput};
 use crate::domain::emotion_analyzer::EmotionResult;
-use crate::domain::memory_retrieval::MemoryRetrievalInput;
 use crate::domain::memory_engine::MemoryEngine;
+use crate::domain::memory_retrieval::MemoryRetrievalInput;
 use crate::domain::personality_engine::PersonalityEngine;
 use crate::domain::slot_runner::SlotRunner;
 use crate::domain::user_identity::resolve_effective_user_relation_key;
@@ -16,9 +16,9 @@ use super::super::context::load_recent_context;
 use super::super::favor::{compute_favor_and_relation, FavorRelationInput};
 use super::super::relation_snapshot::load_relation_snapshot;
 use super::super::staged::StageRunner;
-use crate::domain::chat_engine::chat_stage::ChatStage;
 use super::super::turn_context::TurnContext;
 use super::super::turn_error::TurnResult;
+use crate::domain::chat_engine::chat_stage::ChatStage;
 
 pub(crate) const STAGES: StageRunner = StageRunner;
 
@@ -147,7 +147,10 @@ async fn prefetch_context(
         },
         async {
             STAGES
-                .stage(ChatStage::LoadRecentContext, load_recent_context(state, srid))
+                .stage(
+                    ChatStage::LoadRecentContext,
+                    load_recent_context(state, srid),
+                )
                 .await
         },
     )?;
@@ -156,7 +159,11 @@ async fn prefetch_context(
         event_runtime,
         mutable_for_prompt,
         personality,
-        (recent_turns, recent_turns_for_event, recent_events_for_event),
+        (
+            recent_turns,
+            recent_turns_for_event,
+            recent_events_for_event,
+        ),
     ))
 }
 
@@ -194,10 +201,9 @@ async fn resolve_user_emotion_for_turn(
     user_message: &str,
 ) -> TurnResult<(EmotionResult, Emotion, String, String)> {
     let emotion_result = STAGES
-        .stage(
-            ChatStage::UserEmotionAnalyze,
-            async { SlotRunner::analyze_emotion(pl, user_message) },
-        )
+        .stage(ChatStage::UserEmotionAnalyze, async {
+            SlotRunner::analyze_emotion(pl, user_message)
+        })
         .await?;
     let user_emotion = emotion_result.to_emotion();
     let user_emotion_str = user_emotion.to_string();
@@ -292,23 +298,25 @@ async fn apply_memory_reinforcement(
                 let snippet =
                     crate::domain::profile_personality::memory_snippet_for_profile(&m.content);
                 let first_date = m.created_at.format("%Y-%m-%d").to_string();
-                let next_archive = crate::domain::profile_personality::upsert_important_memory_section(
-                    &mutable_for_prompt,
-                    &snippet,
-                    &first_date,
-                    m.mention_count,
-                );
+                let next_archive =
+                    crate::domain::profile_personality::upsert_important_memory_section(
+                        &mutable_for_prompt,
+                        &snippet,
+                        &first_date,
+                        m.mention_count,
+                    );
                 if next_archive != mutable_for_prompt {
                     mutable_for_prompt = next_archive;
                     important_memory_archive_dirty = true;
                 }
 
                 let line = format!("因反复提及「{snippet}」，相关性格倾向略有沉淀。");
-                mutable_for_prompt = crate::domain::relation_estrangement::append_mutable_profile_section(
-                    &mutable_for_prompt,
-                    "记忆塑造",
-                    &line,
-                );
+                mutable_for_prompt =
+                    crate::domain::relation_estrangement::append_mutable_profile_section(
+                        &mutable_for_prompt,
+                        "记忆塑造",
+                        &line,
+                    );
             }
         }
         if important_memory_archive_dirty {
@@ -341,20 +349,17 @@ async fn rank_relevant_memories(
     scene_id: &str,
 ) -> TurnResult<Vec<Memory>> {
     STAGES
-        .stage(
-            ChatStage::MemoryRank,
-            async {
-                SlotRunner::rank_memories(
-                    pl,
-                    MemoryRetrievalInput {
-                        memories: &memories,
-                        user_query: user_message,
-                        scene_id: Some(scene_id),
-                        limit: 8,
-                    },
-                )
-            },
-        )
+        .stage(ChatStage::MemoryRank, async {
+            SlotRunner::rank_memories(
+                pl,
+                MemoryRetrievalInput {
+                    memories: &memories,
+                    user_query: user_message,
+                    scene_id: Some(scene_id),
+                    limit: 8,
+                },
+            )
+        })
         .await
 }
 
@@ -421,13 +426,10 @@ pub(crate) async fn pre_llm(ctx: &TurnContext<'_>) -> TurnResult<PreLlmOutput> {
     .await?;
     let (emotion_result, user_emotion, user_emotion_str, user_emotion_prompt) =
         resolve_user_emotion_for_turn(pl, user_message).await?;
-    let ollama_model = crate::domain::effective_llm_model::resolve_effective_ollama_model(
-        state,
-        role,
-        srid,
-    )
-    .await
-    .map_err(|e| super::super::turn_error::TurnError::wrap("resolve_llm_model", e))?;
+    let ollama_model =
+        crate::domain::effective_llm_model::resolve_effective_ollama_model(state, role, srid)
+            .await
+            .map_err(|e| super::super::turn_error::TurnError::wrap("resolve_llm_model", e))?;
     let prev_stored_narrative_hint = load_prev_narrative_hint(state, srid).await;
     if role.evolution_config.personality_source != PersonalitySource::Profile {
         personality = PersonalityEngine::adjust_by_user_emotion(
@@ -436,18 +438,17 @@ pub(crate) async fn pre_llm(ctx: &TurnContext<'_>) -> TurnResult<PreLlmOutput> {
             &role.evolution_bounds,
         );
     }
-    let (memories, user_relation_key) =
-        load_memories_and_relation_key(
-            state,
-            role,
-            srid,
-            scene_id,
-            pl,
-            user_message,
-            ctx.immersive,
-            ctx.virtual_time_ms,
-        )
-        .await?;
+    let (memories, user_relation_key) = load_memories_and_relation_key(
+        state,
+        role,
+        srid,
+        scene_id,
+        pl,
+        user_message,
+        ctx.immersive,
+        ctx.virtual_time_ms,
+    )
+    .await?;
     (personality, mutable_for_prompt) = apply_memory_reinforcement(
         state,
         role,
@@ -460,14 +461,9 @@ pub(crate) async fn pre_llm(ctx: &TurnContext<'_>) -> TurnResult<PreLlmOutput> {
     )
     .await?;
     let relevant = rank_relevant_memories(pl, &memories, user_message, scene_id).await?;
-    let (relation_before, favorability_before) = resolve_relation_before_turn(
-        state,
-        role,
-        srid,
-        user_relation_key.as_str(),
-        ctx.immersive,
-    )
-    .await?;
+    let (relation_before, favorability_before) =
+        resolve_relation_before_turn(state, role, srid, user_relation_key.as_str(), ctx.immersive)
+            .await?;
 
     Ok(PreLlmOutput {
         event_runtime,

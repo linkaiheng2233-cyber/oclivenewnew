@@ -26,9 +26,7 @@ pub fn cap_limit(limit: u32) -> u32 {
     }
 }
 
-pub fn rows_to_stored(
-    rows: Vec<super::db::MessageRow>,
-) -> Vec<super::types::StoredMessage> {
+pub fn rows_to_stored(rows: Vec<super::db::MessageRow>) -> Vec<super::types::StoredMessage> {
     rows.into_iter()
         .map(|r| super::types::StoredMessage {
             id: r.id,

@@ -1,20 +1,22 @@
 //! Hybrid store: SQLite authoritative + async JSON mirror.
 
+use super::super::cleanup::AutoCleanupConfig;
 use super::super::config::{
     resolve_max_messages_per_session, resolve_role_chat_storage_root, DEFAULT_MAX_MESSAGES,
 };
-use super::super::cleanup::AutoCleanupConfig;
 use super::super::db::{highlight_snippet, MessageRow, NewTurnMessages};
 use super::super::export::{export_chat_session, export_role_chats};
 use super::super::mirror;
 use super::super::replay::{run_memory_replay, ReplayTaskRegistry};
-use super::super::shared::{cap_limit, normalize_scene_id, rows_to_stored, timestamp_ms_to_rfc3339};
+use super::super::shared::{
+    cap_limit, normalize_scene_id, rows_to_stored, timestamp_ms_to_rfc3339,
+};
 use super::super::stats::{collect_chat_storage_stats, collect_chat_storage_stats_from_db};
 use super::super::store_trait::ConversationStore;
 use super::super::types::{
-    AppendTurnResult, AutoCleanupResult, ChatExportResponse, ChatSearchResult,
-    ImportChatBucket, ImportChatBucketsResult, ReplayProgress, ReplayResult, ReplayTarget,
-    RoleStorageStat, SessionMeta, StoredMessage, TurnPersistInput,
+    AppendTurnResult, AutoCleanupResult, ChatExportResponse, ChatSearchResult, ImportChatBucket,
+    ImportChatBucketsResult, ReplayProgress, ReplayResult, ReplayTarget, RoleStorageStat,
+    SessionMeta, StoredMessage, TurnPersistInput,
 };
 use crate::domain::chat_engine::conversation_state_role_id;
 use crate::error::Result;
@@ -29,7 +31,6 @@ pub struct HybridConversationStore {
     db: Arc<DbManager>,
     app_data_dir: PathBuf,
     roles_dir: PathBuf,
-    storage_root: PathBuf,
     replay_tasks: Arc<ReplayTaskRegistry>,
     mirror_enabled: bool,
 }
@@ -40,7 +41,6 @@ impl HybridConversationStore {
         db: Arc<DbManager>,
         app_data_dir: PathBuf,
         roles_dir: PathBuf,
-        storage_root: PathBuf,
         replay_tasks: Arc<ReplayTaskRegistry>,
         mirror_enabled: bool,
     ) -> Self {
@@ -48,31 +48,21 @@ impl HybridConversationStore {
             db,
             app_data_dir,
             roles_dir,
-            storage_root,
             replay_tasks,
             mirror_enabled,
         }
     }
 
     fn role_storage_root(&self, role_id: &str, location: Option<&str>) -> PathBuf {
-        resolve_role_chat_storage_root(
-            &self.app_data_dir,
-            &self.roles_dir,
-            role_id,
-            location,
-        )
+        resolve_role_chat_storage_root(&self.app_data_dir, &self.roles_dir, role_id, location)
     }
 
     async fn session_storage_root(&self, session_id: &str) -> Result<PathBuf> {
-        let session = self
-            .db
-            .get_chat_session(session_id)
-            .await?
-            .ok_or_else(|| {
-                crate::error::AppError::InvalidParameter(format!(
-                    "chat session not found: {session_id}"
-                ))
-            })?;
+        let session = self.db.get_chat_session(session_id).await?.ok_or_else(|| {
+            crate::error::AppError::InvalidParameter(format!(
+                "chat session not found: {session_id}"
+            ))
+        })?;
         Ok(self.role_storage_root(&session.role_id, None))
     }
     ///
@@ -95,9 +85,7 @@ impl HybridConversationStore {
                 .as_deref()
                 .filter(|s| !s.trim().is_empty())
                 .map(|s| s.to_string())
-                .unwrap_or_else(|| {
-                    conversation_state_role_id(bucket.role_id.as_str(), None)
-                });
+                .unwrap_or_else(|| conversation_state_role_id(bucket.role_id.as_str(), None));
             let max = DEFAULT_MAX_MESSAGES;
             let mut pending_user: Option<(String, i64, Option<String>)> = None;
             for msg in &bucket.messages {
@@ -138,13 +126,8 @@ impl HybridConversationStore {
             buckets_imported = buckets_imported.saturating_add(1);
             if self.mirror_enabled {
                 let storage_root = self.role_storage_root(&bucket.role_id, None);
-                let _ = mirror::rebuild_mirror(
-                    self.db.as_ref(),
-                    &storage_root,
-                    &session_id,
-                    max,
-                )
-                .await;
+                let _ =
+                    mirror::rebuild_mirror(self.db.as_ref(), &storage_root, &session_id, max).await;
             }
         }
         Ok(ImportChatBucketsResult {
@@ -225,10 +208,8 @@ impl ConversationStore for HybridConversationStore {
             .await?
             .unwrap_or(session);
 
-        let storage_root = self.role_storage_root(
-            &input.role_id,
-            Some(&input.chat_storage_location),
-        );
+        let storage_root =
+            self.role_storage_root(&input.role_id, Some(&input.chat_storage_location));
         let max_spawn = max;
         let role_id_spawn = input.role_id.clone();
         let cleanup_cfg = input.auto_cleanup_config.clone();
@@ -455,13 +436,9 @@ impl ConversationStore for HybridConversationStore {
         if self.mirror_enabled {
             if let Some(session) = mirror_session {
                 let root = self.role_storage_root(&session.role_id, None);
-                let _ = mirror::delete_mirror(
-                    &root,
-                    &session.role_id,
-                    &session.scene_id,
-                    session_id,
-                )
-                .await;
+                let _ =
+                    mirror::delete_mirror(&root, &session.role_id, &session.scene_id, session_id)
+                        .await;
             }
         }
         Ok(())
@@ -515,12 +492,7 @@ impl ConversationStore for HybridConversationStore {
 
     async fn get_storage_stats(&self) -> Result<Vec<RoleStorageStat>> {
         if self.mirror_enabled {
-            collect_chat_storage_stats(
-                &self.app_data_dir,
-                &self.roles_dir,
-                self.db.as_ref(),
-            )
-            .await
+            collect_chat_storage_stats(&self.app_data_dir, &self.roles_dir, self.db.as_ref()).await
         } else {
             collect_chat_storage_stats_from_db(self.db.as_ref()).await
         }
@@ -590,7 +562,6 @@ impl HybridConversationStore {
             db: Arc::clone(&self.db),
             app_data_dir: self.app_data_dir.clone(),
             roles_dir: self.roles_dir.clone(),
-            storage_root: self.storage_root.clone(),
             replay_tasks: Arc::clone(&self.replay_tasks),
             mirror_enabled: self.mirror_enabled,
         })
@@ -608,12 +579,10 @@ mod tests {
         let app_data = dir.path().to_path_buf();
         let roles_dir = app_data.join("roles");
         let _ = std::fs::create_dir_all(&roles_dir);
-        let storage_root = app_data.join("chats");
         Arc::new(HybridConversationStore::new(
             Arc::new(DbManager::new(pool)),
             app_data,
             roles_dir,
-            storage_root,
             Arc::new(ReplayTaskRegistry::new()),
             true,
         )) as Arc<dyn ConversationStore>
@@ -636,7 +605,7 @@ mod tests {
                 bot_emotion: None,
                 max_messages_per_session: None,
                 auto_cleanup_config: Default::default(),
-            chat_storage_location: "global".into(),
+                chat_storage_location: "global".into(),
             })
             .await
             .expect("append");

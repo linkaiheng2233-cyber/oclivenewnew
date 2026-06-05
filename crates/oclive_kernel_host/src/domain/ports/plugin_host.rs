@@ -20,11 +20,6 @@ impl PluginHostPort for PluginHost {
         slot_registry: Option<&BTreeMap<String, SlotRegistryEntry>>,
         backend_override: Option<&PluginBackendsOverride>,
     ) -> Self::Resolved {
-        PluginHost::resolve_for_effective_backends(
-            self,
-            effective,
-            slot_registry,
-            backend_override,
-        )
+        PluginHost::resolve_for_effective_backends(self, effective, slot_registry, backend_override)
     }
 }

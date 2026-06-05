@@ -1,7 +1,14 @@
+//! Atomic SQLite transaction for one chat turn's **memory / runtime / events** tables.
+//!
+//! **Intentionally separate from chat transcript storage** (`chat_sessions` / `chat_messages` via
+//! [`HybridConversationStore`](crate::infrastructure::chat_storage::HybridConversationStore)):
+//! memory commit succeeds even when JSON mirror append fails (`chat_persist_failed` on the response).
+//! Cross-store single-commit would require outbox/compensation (see handoff `CHAT_STORAGE_ARCHITECTURE.md`).
+
 #![allow(clippy::too_many_arguments)]
 
-use super::{ChatTurnTxInput, DbManager, log_txn_finish};
 use super::memory_merge::{merge_in_tx, MergeOutcome};
+use super::{log_txn_finish, ChatTurnTxInput, DbManager};
 use crate::error::{AppError, Result};
 use crate::models::PersonalityVector;
 use chrono::Utc;
@@ -192,14 +199,15 @@ async fn record_memory_and_event(
         .map(|n| n.load(Ordering::Relaxed))
         .unwrap_or(-1);
     if memory_count < 0 {
-        memory_count = sqlx::query_scalar("SELECT COUNT(*) FROM long_term_memory WHERE role_id = ?")
-            .bind(role_id)
-            .fetch_one(tx.as_mut())
-            .await
-            .map_err(|e| AppError::TransactionError {
-                code: "TXN_MEMORY_COUNT_FAILED",
-                message: e.to_string(),
-            })?;
+        memory_count =
+            sqlx::query_scalar("SELECT COUNT(*) FROM long_term_memory WHERE role_id = ?")
+                .bind(role_id)
+                .fetch_one(tx.as_mut())
+                .await
+                .map_err(|e| AppError::TransactionError {
+                    code: "TXN_MEMORY_COUNT_FAILED",
+                    message: e.to_string(),
+                })?;
     }
     if inserted_new_memory {
         memory_count += 1;
@@ -285,14 +293,15 @@ async fn record_short_term(
         .map(|n| n.load(Ordering::Relaxed))
         .unwrap_or(-1);
     if short_term_count < 0 {
-        short_term_count = sqlx::query_scalar("SELECT COUNT(*) FROM short_term_memory WHERE role_id = ?")
-            .bind(role_id)
-            .fetch_one(tx.as_mut())
-            .await
-            .map_err(|e| AppError::TransactionError {
-                code: "TXN_SHORT_TERM_COUNT_FAILED",
-                message: e.to_string(),
-            })?;
+        short_term_count =
+            sqlx::query_scalar("SELECT COUNT(*) FROM short_term_memory WHERE role_id = ?")
+                .bind(role_id)
+                .fetch_one(tx.as_mut())
+                .await
+                .map_err(|e| AppError::TransactionError {
+                    code: "TXN_SHORT_TERM_COUNT_FAILED",
+                    message: e.to_string(),
+                })?;
     }
     short_term_count += 1;
     // Defer the in-memory cache write until after commit to avoid drift on rollback.

@@ -25,8 +25,7 @@ async fn effective_event_impact(
     Ok(state
         .db_manager
         .get_event_impact_factor(role_id)
-        .await
-        ?
+        .await?
         .unwrap_or(role.evolution_config.event_impact_factor))
 }
 
@@ -45,11 +44,7 @@ pub(crate) async fn role_runtime_extras(
     scene_id: Option<&str>,
     role: &Role,
 ) -> Result<RoleRuntimeExtras, CommandError> {
-    let use_manifest_default = state
-        .db_manager
-        .get_use_manifest_default(role_id)
-        .await
-        ?;
+    let use_manifest_default = state.db_manager.get_use_manifest_default(role_id).await?;
     Ok(RoleRuntimeExtras {
         user_relations: user_relations_to_dto(role),
         default_relation: role.default_relation.clone(),
@@ -67,23 +62,17 @@ pub(crate) async fn maybe_seed_initial_favorability_with_extras(
     role: &Role,
     rt: &RoleRuntimeExtras,
 ) -> Result<(), CommandError> {
-    let memory_count = state
-        .memory_repo
-        .count_memories(role_id)
-        .await
-        ?;
+    let memory_count = state.memory_repo.count_memories(role_id).await?;
     let eff = rt.current_user_relation.as_str();
     let seed = role.initial_favorability_for_relation(eff);
     state
         .db_manager
         .ensure_identity_stats_row(role_id, eff, seed)
-        .await
-        ?;
+        .await?;
     let fav = state
         .db_manager
         .get_favorability_for_identity(role_id, eff)
-        .await
-        ?
+        .await?
         .unwrap_or(0.0);
     if memory_count > 0 || fav != 0.0 {
         return Ok(());
@@ -91,8 +80,7 @@ pub(crate) async fn maybe_seed_initial_favorability_with_extras(
     state
         .db_manager
         .set_identity_favorability_value(role_id, eff, seed)
-        .await
-        ?;
+        .await?;
     Ok(())
 }
 
@@ -117,14 +105,9 @@ pub(crate) async fn resolve_relation_state_for_ui(
     let mut relation_state = state
         .db_manager
         .get_relation_state_for_identity(role_id, effective_relation_key)
-        .await
-        ?;
+        .await?;
     if relation_state.is_none() {
-        relation_state = state
-            .db_manager
-            .get_relation_state(role_id)
-            .await
-            ?;
+        relation_state = state.db_manager.get_relation_state(role_id).await?;
     }
     Ok(relation_state.unwrap_or_else(|| "Stranger".to_string()))
 }

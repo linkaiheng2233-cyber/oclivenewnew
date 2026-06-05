@@ -15,9 +15,7 @@
 //! - **`module_relations`**: not written to the blueprint file; frontend `buildBlueprintEdges(slot_registry)` **derives edges read-only**.
 //! - **legacy**: when `pipeline.ocblueprint` is absent, fall back to the six-slot `manifest.json` + `settings.json` path.
 
-use crate::models::{
-    LlmBackend, Role,
-};
+use crate::models::{LlmBackend, Role};
 use std::path::PathBuf;
 
 /// Role pack storage manager.
@@ -155,8 +153,12 @@ mod tests {
             runtime_config: None,
             pipeline_experimental: None,
             scene_ids: std::sync::Arc::from(Vec::<String>::new()),
-            scene_config_cache: std::sync::Arc::new(parking_lot::RwLock::new(std::collections::HashMap::new())),
-            scene_text_cache: std::sync::Arc::new(parking_lot::RwLock::new(std::collections::HashMap::new())),
+            scene_config_cache: std::sync::Arc::new(parking_lot::RwLock::new(
+                std::collections::HashMap::new(),
+            )),
+            scene_text_cache: std::sync::Arc::new(parking_lot::RwLock::new(
+                std::collections::HashMap::new(),
+            )),
         };
 
         let role_dir = temp_dir.path().join("test_role");

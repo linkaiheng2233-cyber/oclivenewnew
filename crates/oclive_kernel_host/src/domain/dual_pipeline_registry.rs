@@ -64,4 +64,3 @@ pub fn required_slot_type_for_method(method: &str) -> Option<&'static str> {
         .find(|s| s.method == method)
         .map(|s| s.slot_type)
 }
-

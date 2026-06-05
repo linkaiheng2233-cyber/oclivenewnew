@@ -9,6 +9,7 @@ use crate::domain::local_plugin_memory_pick::pick_local_memory_provider_refs;
 use crate::domain::memory_retrieval::{
     BuiltinMemoryRetrieval, BuiltinMemoryRetrievalV2, LocalPluginMemoryRetrieval, MemoryRetrieval,
 };
+use crate::domain::ports::LlmClient;
 use crate::domain::prompt_assembler::{
     BuiltinPromptAssembler, BuiltinPromptAssemblerV2, PromptAssembler,
 };
@@ -17,7 +18,6 @@ use crate::domain::user_emotion_analyzer::{
 };
 use crate::infrastructure::directory_plugins::DirectoryPluginRuntime;
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
-use crate::domain::ports::LlmClient;
 use crate::infrastructure::mcp_client::{McpClient, McpServerManifest, McpToolCallResult};
 use crate::infrastructure::remote_plugin::{
     self, PluginRemoteGroup, RemoteEventEstimatorHttp, RemoteLlmHttp, RemoteMemoryRetrievalHttp,
@@ -350,11 +350,9 @@ impl BackendRegistry {
             .local_plugins
             .read()
             .providers_for_capability(LocalPluginCapability::Memory);
-        let ids: Vec<&str> = providers
-            .iter()
-            .map(|p| p.provider_id.as_str())
-            .collect();
-        let pick = pick_local_memory_provider_refs(ids, backends.local_memory_provider_id.as_deref());
+        let ids: Vec<&str> = providers.iter().map(|p| p.provider_id.as_str()).collect();
+        let pick =
+            pick_local_memory_provider_refs(ids, backends.local_memory_provider_id.as_deref());
         if pick.provider_id.is_none() {
             tracing::warn!(
                 target: "oclive_plugin",

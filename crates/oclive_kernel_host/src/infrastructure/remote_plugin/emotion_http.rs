@@ -47,10 +47,7 @@ impl UserEmotionAnalyzer for RemoteUserEmotionAnalyzerHttp {
         self.adapter.call_with_builtin_fallback(
             METHOD_EMOTION_ANALYZE,
             params,
-            |v| {
-                serde_json::from_value(v)
-                    .map_err(|e| serde_to_ollama("emotion.analyze decode", e))
-            },
+            |v| serde_json::from_value(v).map_err(|e| serde_to_ollama("emotion.analyze decode", e)),
             || self.fallback.analyze(text),
         )
     }

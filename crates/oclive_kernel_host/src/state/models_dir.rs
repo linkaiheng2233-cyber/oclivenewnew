@@ -1,4 +1,4 @@
-﻿//! Resolve the on-disk `models/` directory (GGUF/BIN for local import), mirroring [`resolve_roles_dir`].
+//! Resolve the on-disk `models/` directory (GGUF/BIN for local import), mirroring [`resolve_roles_dir`].
 
 use oclive_kernel_runtime::{
     canonical_brand_app_data_dir, tauri_legacy_app_data_dir, TAURI_APP_IDENTIFIER,
@@ -176,19 +176,19 @@ pub fn ensure_models_dir_for_roles(roles_dir: &Path) -> PathBuf {
 pub fn paths_equal(a: &Path, b: &Path) -> bool {
     match (a.canonicalize(), b.canonicalize()) {
         (Ok(a), Ok(b)) => a == b,
-        _ => a == b
-            || a.to_string_lossy()
-                .eq_ignore_ascii_case(&b.to_string_lossy()),
+        _ => {
+            a == b
+                || a.to_string_lossy()
+                    .eq_ignore_ascii_case(&b.to_string_lossy())
+        }
     }
 }
 
 fn is_model_weight_file(path: &Path) -> bool {
-    path.extension()
-        .and_then(|e| e.to_str())
-        .is_some_and(|e| {
-            let e = e.to_ascii_lowercase();
-            e == "gguf" || e == "bin"
-        })
+    path.extension().and_then(|e| e.to_str()).is_some_and(|e| {
+        let e = e.to_ascii_lowercase();
+        e == "gguf" || e == "bin"
+    })
 }
 
 /// Move/copy `*.gguf` / `*.bin` from `from` into `to` (skip when destination already exists).
@@ -278,7 +278,10 @@ pub fn legacy_models_dir_candidates(app_data: &Path) -> Vec<PathBuf> {
         }
     }
     out.sort();
-    out.dedup_by(|a, b| a.to_string_lossy().eq_ignore_ascii_case(&b.to_string_lossy()));
+    out.dedup_by(|a, b| {
+        a.to_string_lossy()
+            .eq_ignore_ascii_case(&b.to_string_lossy())
+    });
     out
 }
 
@@ -360,9 +363,7 @@ mod tests {
         let legacy = tmp.path().join("OCLive").join("models");
         fs::create_dir_all(&legacy).unwrap();
         assert!(is_managed_legacy_models_path(
-            &legacy,
-            &canonical,
-            &app_data
+            &legacy, &canonical, &app_data
         ));
     }
 }

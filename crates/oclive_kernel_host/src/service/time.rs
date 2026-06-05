@@ -2,9 +2,7 @@
 
 use crate::command_error::CommandError;
 use crate::domain::user_identity::resolve_effective_user_relation_key;
-use crate::domain::virtual_time_sync::{
-    apply_virtual_time_jump, sync_and_persist_virtual_time,
-};
+use crate::domain::virtual_time_sync::{apply_virtual_time_jump, sync_and_persist_virtual_time};
 use crate::error::AppError;
 use crate::models::dto::{
     GenerateMonologueResponse, JumpTimeRequest, JumpTimeResponse, TimeStateResponse,
@@ -30,13 +28,9 @@ pub async fn get_time_state_impl(
         .get_interaction_mode(role_id)
         .await?
         .is_immersive();
-    let ms = sync_and_persist_virtual_time(
-        state.db_manager.as_ref(),
-        role.as_ref(),
-        role_id,
-        immersive,
-    )
-    .await?;
+    let ms =
+        sync_and_persist_virtual_time(state.db_manager.as_ref(), role.as_ref(), role_id, immersive)
+            .await?;
     let dt = DateTime::from_timestamp_millis(ms).unwrap_or_else(Utc::now);
     Ok(TimeStateResponse {
         virtual_time_ms: ms,
@@ -99,10 +93,11 @@ async fn apply_autonomous_scene_after_jump(
         if !scenes.iter().any(|s| s == &rule.to_scene) {
             continue;
         }
-        if !state
-            .storage
-            .is_scene_time_allowed_for_role(role, rule.to_scene.as_str(), virtual_time_ms)
-        {
+        if !state.storage.is_scene_time_allowed_for_role(
+            role,
+            rule.to_scene.as_str(),
+            virtual_time_ms,
+        ) {
             continue;
         }
         state
@@ -249,13 +244,9 @@ pub async fn jump_time_impl(
         });
     }
 
-    let base_ms = sync_and_persist_virtual_time(
-        state.db_manager.as_ref(),
-        role.as_ref(),
-        &req.role_id,
-        true,
-    )
-    .await?;
+    let base_ms =
+        sync_and_persist_virtual_time(state.db_manager.as_ref(), role.as_ref(), &req.role_id, true)
+            .await?;
     let target_ms = match (req.timestamp_ms, req.preset.as_deref()) {
         (Some(ts), _) => ts,
         (None, Some(preset)) => resolve_preset_target_ms(base_ms, preset).ok_or_else(|| {
@@ -268,7 +259,8 @@ pub async fn jump_time_impl(
             .into());
         }
     };
-    let ms = apply_virtual_time_jump(state, role.as_ref(), &req.role_id, base_ms, target_ms).await?;
+    let ms =
+        apply_virtual_time_jump(state, role.as_ref(), &req.role_id, base_ms, target_ms).await?;
     let autonomous_scene =
         apply_autonomous_scene_after_jump(state, &req.role_id, role.as_ref(), ms).await?;
     let ts = get_time_state_impl(state, &req.role_id).await?;

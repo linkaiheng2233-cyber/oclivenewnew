@@ -33,10 +33,7 @@ pub async fn update_settings_impl(state: &AppState, params: &Value) -> Result<Va
                     ))
                     .into());
                 }
-                state
-                    .db_manager
-                    .upsert_app_setting("ui_theme", &t)
-                    .await?;
+                state.db_manager.upsert_app_setting("ui_theme", &t).await?;
             }
             "interaction_mode" => {
                 let s = v.as_str().ok_or_else(|| {

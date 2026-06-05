@@ -4,8 +4,8 @@
 use crate::domain::affect_policy::softness_coldness_volatility;
 use crate::domain::event_detector::EventDetector;
 use crate::domain::personality_engine::PersonalityEngine;
-use crate::error::Result;
 use crate::domain::ports::LlmClient;
+use crate::error::Result;
 use crate::models::knowledge::KnowledgeEventAugment;
 use crate::models::{Emotion, Event, EventType, PersonalityVector};
 use crate::utils::json_loose::extract_json_object;

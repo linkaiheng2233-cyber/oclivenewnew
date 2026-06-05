@@ -41,8 +41,8 @@ use std::sync::Arc;
 use std::time::Duration;
 
 pub use jsonrpc::RemoteRpcChannel;
-pub use remote_client::{RemoteHttpClientAsync, RemoteHttpClientBlocking};
 use oclive_validation::{NETWORK_GRANT_REMOTE_LLM, NETWORK_GRANT_REMOTE_PLUGIN};
+pub use remote_client::{RemoteHttpClientAsync, RemoteHttpClientBlocking};
 
 /// Shared Remote HTTP connection pool (no global request timeout; per-RPC timeout in [`jsonrpc`] layer).
 pub(crate) fn build_shared_remote_http_client() -> Arc<reqwest::Client> {
@@ -137,10 +137,12 @@ pub fn llm_remote_backend(
     grants: Arc<HighRiskGrantStore>,
 ) -> Arc<dyn LlmClient> {
     if cloud_api_style_is_openai() {
-        if let Some(openai) = crate::infrastructure::openai_compatible_llm::OpenAiCompatibleLlm::from_env(
-            (*http_client).clone(),
-            grants.clone(),
-        ) {
+        if let Some(openai) =
+            crate::infrastructure::openai_compatible_llm::OpenAiCompatibleLlm::from_env(
+                (*http_client).clone(),
+                grants.clone(),
+            )
+        {
             tracing::info!(
                 target: "oclive_plugin",
                 "remote LLM OpenAI-compatible active -> {}",
@@ -186,11 +188,11 @@ pub fn invoke_directory_plugin_rpc_blocking(
         HighRiskGrantStore::load(std::env::temp_dir(), false),
         None,
     )
-        .map_err(|e| {
-            AppError::OllamaError(format!(
-                "directory plugin reqwest client build failed: {}",
-                e
-            ))
-        })?;
+    .map_err(|e| {
+        AppError::OllamaError(format!(
+            "directory plugin reqwest client build failed: {}",
+            e
+        ))
+    })?;
     http.call(channel, method, params)
 }

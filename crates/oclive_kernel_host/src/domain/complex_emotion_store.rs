@@ -28,12 +28,8 @@ pub fn is_complex_emotion_hint_expired(updated_at: &str, now: DateTime<Utc>) -> 
 ///
 /// Returns [`crate::error::AppError`] on DB read failure (caller may degrade to empty in `pre_llm`).
 pub async fn load_stored_narrative_hint(state: &AppState, srid: &str) -> Result<String> {
-    load_stored_narrative_hint_from_parts(
-        &state.session_cache,
-        state.db_manager.as_ref(),
-        srid,
-    )
-    .await
+    load_stored_narrative_hint_from_parts(&state.session_cache, state.db_manager.as_ref(), srid)
+        .await
 }
 
 pub(crate) async fn load_stored_narrative_hint_from_parts(
@@ -136,10 +132,9 @@ mod tests {
         db.set_complex_emotion_hint(srid, "用户可能缺乏兴致", &now)
             .await
             .expect("set");
-        let hint =
-            load_stored_narrative_hint_from_parts(&cache, &db, srid)
-                .await
-                .expect("load");
+        let hint = load_stored_narrative_hint_from_parts(&cache, &db, srid)
+            .await
+            .expect("load");
         assert!(hint.contains("用户可能缺乏兴致"));
         assert!(cache.has_stored_complex_emotion_narrative_hint(srid));
     }
@@ -153,16 +148,14 @@ mod tests {
         db.set_complex_emotion_hint(srid, "stale hint", &old)
             .await
             .expect("set");
-        let hint =
-            load_stored_narrative_hint_from_parts(&cache, &db, srid)
-                .await
-                .expect("load");
+        let hint = load_stored_narrative_hint_from_parts(&cache, &db, srid)
+            .await
+            .expect("load");
         assert!(hint.is_empty());
-        assert!(
-            db.get_complex_emotion_hint(srid)
-                .await
-                .expect("get")
-                .is_none()
-        );
+        assert!(db
+            .get_complex_emotion_hint(srid)
+            .await
+            .expect("get")
+            .is_none());
     }
 }

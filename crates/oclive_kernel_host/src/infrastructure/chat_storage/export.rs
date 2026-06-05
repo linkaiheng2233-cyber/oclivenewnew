@@ -58,10 +58,9 @@ async fn load_session_messages(
     session_id: &str,
     max_messages: i64,
 ) -> Result<(SessionRow, Vec<super::types::StoredMessage>)> {
-    let session = db
-        .get_chat_session(session_id)
-        .await?
-        .ok_or_else(|| AppError::InvalidParameter(format!("chat session not found: {session_id}")))?;
+    let session = db.get_chat_session(session_id).await?.ok_or_else(|| {
+        AppError::InvalidParameter(format!("chat session not found: {session_id}"))
+    })?;
     let rows = db.fetch_chat_messages(session_id, u32::MAX, 0).await?;
     let messages = rows
         .into_iter()
@@ -100,10 +99,9 @@ async fn session_json_from_db(
     session_id: &str,
     max_messages: i64,
 ) -> Result<String> {
-    let session = db
-        .get_chat_session(session_id)
-        .await?
-        .ok_or_else(|| AppError::InvalidParameter(format!("chat session not found: {session_id}")))?;
+    let session = db.get_chat_session(session_id).await?.ok_or_else(|| {
+        AppError::InvalidParameter(format!("chat session not found: {session_id}"))
+    })?;
     let rows = db.fetch_chat_messages(session_id, u32::MAX, 0).await?;
     let doc = mirror::MirrorDocument::from_session_and_rows(&session, &rows);
     let max = max_messages.max(2) as usize;
@@ -134,7 +132,10 @@ pub async fn export_chat_session(
     match fmt.as_str() {
         "markdown" | "md" => {
             let mut body = String::new();
-            body.push_str(&format!("# Chat export — {}\n\n", role_name.unwrap_or(&session.role_id)));
+            body.push_str(&format!(
+                "# Chat export — {}\n\n",
+                role_name.unwrap_or(&session.role_id)
+            ));
             body.push_str(&format!("Exported at: {}\n\n", Utc::now().to_rfc3339()));
             body.push_str(&format_markdown_session(&session, role_name, &messages));
             Ok(ChatExportResponse {
@@ -193,7 +194,8 @@ pub async fn export_role_chats(
             ));
             body.push_str(&format!("Exported at: {}\n\n", Utc::now().to_rfc3339()));
             for session in &sessions {
-                let (_, messages) = load_session_messages(db, &session.session_id, max_messages).await?;
+                let (_, messages) =
+                    load_session_messages(db, &session.session_id, max_messages).await?;
                 body.push_str(&format_markdown_session(session, role_name, &messages));
                 body.push('\n');
             }
@@ -271,16 +273,9 @@ mod tests {
         )
         .await
         .expect("insert");
-        let out = export_chat_session(
-            &db,
-            dir.path(),
-            "mumu",
-            "markdown",
-            500,
-            Some("Mumu"),
-        )
-        .await
-        .expect("export");
+        let out = export_chat_session(&db, dir.path(), "mumu", "markdown", 500, Some("Mumu"))
+            .await
+            .expect("export");
         assert!(out.content.contains("**user**"));
         assert!(out.content.contains("hello"));
     }

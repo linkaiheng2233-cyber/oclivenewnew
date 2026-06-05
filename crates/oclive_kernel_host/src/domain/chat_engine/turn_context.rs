@@ -1,8 +1,8 @@
 //! Turn-scoped context for chat orchestration (avoids repeating ids / backends across branches).
 
 use crate::domain::plugin_host::ResolvedRolePlugins;
-use crate::models::{PluginBackends, Role};
 use crate::models::dto::SendMessageRequest;
+use crate::models::{PluginBackends, Role};
 use crate::state::AppState;
 use std::sync::Arc;
 use std::time::Instant;
@@ -26,4 +26,6 @@ pub struct TurnContext<'a> {
     pub character_scene_id: Option<String>,
     /// Virtual time (ms) prefetched once per turn for prompt / life schedule; 0 if unset.
     pub virtual_time_ms: i64,
+    /// `true` when blueprint requests dual-core but the host was built without `dual_core` feature.
+    pub dual_core_degraded: bool,
 }

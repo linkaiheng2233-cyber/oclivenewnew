@@ -1,11 +1,6 @@
 //! Role read-model assembly for `RoleData` / `RoleInfo` (shared by load_role and get_role_info).
 
 use crate::command_error::CommandError;
-use crate::service::role::interaction::resolve_interaction_ui_snapshot;
-use crate::service::role::runtime::{
-    current_favorability_for_effective_identity, maybe_seed_initial_favorability_with_extras,
-    resolve_relation_state_for_ui, role_runtime_extras,
-};
 use crate::domain::chat_engine::conversation_state_role_id;
 use crate::domain::effective_llm_model::resolve_effective_ollama_model;
 use crate::error::AppError;
@@ -15,6 +10,11 @@ use crate::models::plugin_backends::{
     PromptBackend,
 };
 use crate::models::role::Role;
+use crate::service::role::interaction::resolve_interaction_ui_snapshot;
+use crate::service::role::runtime::{
+    current_favorability_for_effective_identity, maybe_seed_initial_favorability_with_extras,
+    resolve_relation_state_for_ui, role_runtime_extras,
+};
 use crate::state::AppState;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
@@ -43,10 +43,7 @@ fn slot_registry_role_info_fields(
 fn blueprint_groups_pack(
     role: &Role,
 ) -> Option<std::collections::BTreeMap<String, oclive_validation::SlotGroupEntry>> {
-    role.slot_groups
-        .as_ref()
-        .filter(|m| !m.is_empty())
-        .cloned()
+    role.slot_groups.as_ref().filter(|m| !m.is_empty()).cloned()
 }
 
 /// Folds session `slot_registry` overrides into a C1-compatible six-slot `PluginBackendsOverride` (read-only display).
@@ -119,12 +116,14 @@ fn parse_backend_wire<T: DeserializeOwned>(module: &str, value: &str) -> Result<
         ))
         .into());
     }
-    Ok(serde_json::from_value::<T>(Value::String(t.to_string())).map_err(|_| {
-        AppError::InvalidParameter(format!(
-            "session backend override: module={} backend={} is invalid",
-            module, t
-        ))
-    })?)
+    Ok(
+        serde_json::from_value::<T>(Value::String(t.to_string())).map_err(|_| {
+            AppError::InvalidParameter(format!(
+                "session backend override: module={} backend={} is invalid",
+                module, t
+            ))
+        })?,
+    )
 }
 
 /// Gathers runtime fields and builds [`RoleData`] (no load-role side effects).
@@ -137,14 +136,9 @@ pub async fn assemble_role_data(
     role_id: &str,
     role: &Role,
 ) -> Result<RoleData, CommandError> {
-    let personality = state
-        .get_current_personality(role_id, role)
-        .await?;
+    let personality = state.get_current_personality(role_id, role).await?;
 
-    let current_scene = state
-        .db_manager
-        .get_current_scene(role_id)
-        .await?;
+    let current_scene = state.db_manager.get_current_scene(role_id).await?;
     let rt = role_runtime_extras(state, role_id, current_scene.as_deref(), role).await?;
     maybe_seed_initial_favorability_with_extras(state, role_id, role, &rt).await?;
     let current_favorability = current_favorability_for_effective_identity(
@@ -154,24 +148,15 @@ pub async fn assemble_role_data(
     )
     .await?;
 
-    let memory_count = state
-        .memory_repo
-        .count_memories(role_id)
-        .await?;
+    let memory_count = state.memory_repo.count_memories(role_id).await?;
 
-    let event_count = state
-        .db_manager
-        .count_events(role_id)
-        .await?;
+    let event_count = state.db_manager.count_events(role_id).await?;
     let session_ns = session_namespace(role_id, None);
     let effective_ollama_model =
         resolve_effective_ollama_model(state, role, session_ns.as_str()).await?;
     let relation_state =
         resolve_relation_state_for_ui(state, role_id, rt.current_user_relation.as_str()).await?;
-    let remote_life_enabled = state
-        .db_manager
-        .get_remote_life_enabled(role_id)
-        .await?;
+    let remote_life_enabled = state.db_manager.get_remote_life_enabled(role_id).await?;
     let remote_life_pack_default = role
         .remote_presence
         .as_ref()
@@ -187,8 +172,8 @@ pub async fn assemble_role_data(
 
     let plugin_backends_session_override =
         plugin_backends_override_from_slot_session(state, role, session_ns.as_str());
-    let plugin_backends_effective = state
-        .effective_plugin_backends_for_session(role, session_ns.as_str());
+    let plugin_backends_effective =
+        state.effective_plugin_backends_for_session(role, session_ns.as_str());
     let plugin_backends_effective_sources =
         state.effective_plugin_backend_sources_for_session(role, session_ns.as_str());
     let (slot_registry_pack, slot_registry_effective, slot_session_overridden_keys) =
@@ -252,25 +237,17 @@ pub async fn assemble_role_info(
 
     let plugin_backends_session_override =
         plugin_backends_override_from_slot_session(state, role, session_ns.as_str());
-    let plugin_backends_effective = state
-        .effective_plugin_backends_for_session(role, session_ns.as_str());
+    let plugin_backends_effective =
+        state.effective_plugin_backends_for_session(role, session_ns.as_str());
     let plugin_backends_effective_sources =
         state.effective_plugin_backend_sources_for_session(role, session_ns.as_str());
 
-    let current_scene = state
-        .db_manager
-        .get_current_scene(role_id)
-        .await?;
-    let user_presence_scene = state
-        .db_manager
-        .get_user_presence_scene(role_id)
-        .await?;
+    let current_scene = state.db_manager.get_current_scene(role_id).await?;
+    let user_presence_scene = state.db_manager.get_user_presence_scene(role_id).await?;
     let rt = role_runtime_extras(state, role_id, current_scene.as_deref(), role).await?;
     maybe_seed_initial_favorability_with_extras(state, role_id, role, &rt).await?;
 
-    let personality = state
-        .get_current_personality(role_id, role)
-        .await?;
+    let personality = state.get_current_personality(role_id, role).await?;
 
     let last_interaction = state
         .db_manager
@@ -278,9 +255,7 @@ pub async fn assemble_role_info(
         .await?
         .map(|t| t.to_rfc3339());
 
-    let scenes = state
-        .storage
-        .list_scene_ids(role_id)?;
+    let scenes = state.storage.list_scene_ids(role_id)?;
     let scene_labels: Vec<SceneLabelEntry> = scenes
         .iter()
         .map(|id| SceneLabelEntry {
@@ -303,10 +278,7 @@ pub async fn assemble_role_info(
         resolve_effective_ollama_model(state, role, session_ns.as_str()).await?;
     let relation_state =
         resolve_relation_state_for_ui(state, role_id, rt.current_user_relation.as_str()).await?;
-    let remote_life_enabled = state
-        .db_manager
-        .get_remote_life_enabled(role_id)
-        .await?;
+    let remote_life_enabled = state.db_manager.get_remote_life_enabled(role_id).await?;
     let remote_life_pack_default = role
         .remote_presence
         .as_ref()

@@ -37,12 +37,8 @@ impl RemotePluginAdapterBlocking {
         high_risk_grants: Arc<HighRiskGrantStore>,
         network_grant_id: Option<String>,
     ) -> Self {
-        let http = RemoteHttpClientBlocking::new(
-            http_client,
-            cfg,
-            high_risk_grants,
-            network_grant_id,
-        );
+        let http =
+            RemoteHttpClientBlocking::new(http_client, cfg, high_risk_grants, network_grant_id);
         Self {
             http,
             remote_fallback_allowed,
@@ -109,12 +105,7 @@ impl RemotePluginAdapterAsync {
         high_risk_grants: Arc<HighRiskGrantStore>,
         network_grant_id: Option<String>,
     ) -> Self {
-        let http = RemoteHttpClientAsync::new(
-            http_client,
-            cfg,
-            high_risk_grants,
-            network_grant_id,
-        );
+        let http = RemoteHttpClientAsync::new(http_client, cfg, high_risk_grants, network_grant_id);
         Self {
             http,
             remote_fallback_allowed,
@@ -177,8 +168,8 @@ pub fn resolve_turn_rpc(
     fallback: &BuiltinKeywordComplexEmotionProvider,
     input: &ComplexEmotionInput,
 ) -> Result<ComplexEmotionOutput> {
-    let params =
-        serde_json::to_value(input).map_err(|e| serde_to_ollama("complex_emotion params json", e))?;
+    let params = serde_json::to_value(input)
+        .map_err(|e| serde_to_ollama("complex_emotion params json", e))?;
     adapter.call_with_builtin_fallback(
         METHOD_COMPLEX_EMOTION_RESOLVE_TURN,
         params,
