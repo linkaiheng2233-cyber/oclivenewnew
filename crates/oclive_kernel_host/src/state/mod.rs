@@ -14,33 +14,29 @@ use crate::infrastructure::llm::LlmClient;
 use crate::infrastructure::policy_registry::{
     build_policy_sets_from_registry, load_policy_registry_from_path, PolicyRuntime, PolicySet,
 };
-use crate::infrastructure::remote_fallback_policy::{
-    remote_fallback_from_db_value,
-};
+use crate::infrastructure::remote_fallback_policy::remote_fallback_from_db_value;
 use crate::infrastructure::storage::RoleStorage;
-use crate::models::{
-    PersonalitySource, PersonalityVector, PluginBackends, Role,
-};
+use crate::models::{PersonalitySource, PersonalityVector, PluginBackends, Role};
 use arc_swap::ArcSwap;
 use dashmap::DashMap;
 use parking_lot::RwLock;
-use tokio::sync::{Mutex, OnceCell};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::time::{SystemTime, UNIX_EPOCH};
 use std::sync::Arc;
+use std::time::{SystemTime, UNIX_EPOCH};
+use tokio::sync::{Mutex, OnceCell};
 
 mod app_state_builder;
+pub(crate) mod host_backends;
 mod models_dir;
 mod roles_dir;
-pub(crate) mod host_backends;
 mod session_backends;
 mod session_cache;
 pub use models_dir::{
     ensure_models_dir, ensure_models_dir_for_roles, is_managed_legacy_models_path,
     legacy_models_dir_candidates, migrate_and_cleanup_models, paths_equal,
-    reconcile_legacy_models_layout, resource_dir_from_roles, resolve_models_dir, ENV_MODELS_DIR,
+    reconcile_legacy_models_layout, resolve_models_dir, resource_dir_from_roles, ENV_MODELS_DIR,
 };
 pub use roles_dir::resolve_roles_dir;
 pub use session_cache::SessionCache;
@@ -63,8 +59,8 @@ fn turn_lock_now_ms() -> u64 {
 /// Tauri-managed application state (shared with in-process HTTP API).
 pub type SharedAppState = Arc<AppState>;
 
-use app_state_builder::AppStateBuilder;
 use crate::domain::startup_health::StartupHealthCache;
+use app_state_builder::AppStateBuilder;
 
 pub struct AppState {
     pub db_manager: Arc<DbManager>,
@@ -375,25 +371,31 @@ impl AppState {
     #[must_use]
     pub fn turn_lock_for(&self, srid: &str) -> Arc<Mutex<()>> {
         let now = turn_lock_now_ms();
-        let entry = self.turn_locks.entry(srid.to_string()).or_insert_with(|| TurnLockEntry {
-            lock: Arc::new(Mutex::new(())),
-            last_touch_ms: AtomicU64::new(now),
-        });
-        entry.last_touch_ms.store(now, Ordering::Relaxed);
+        let lock = {
+            let entry = self
+                .turn_locks
+                .entry(srid.to_string())
+                .or_insert_with(|| TurnLockEntry {
+                    lock: Arc::new(Mutex::new(())),
+                    last_touch_ms: AtomicU64::new(now),
+                });
+            entry.last_touch_ms.store(now, Ordering::Relaxed);
+            entry.lock.clone()
+        };
         if self.turn_locks.len() > TURN_LOCK_SOFT_CAP {
             self.prune_idle_turn_locks();
         }
-        entry.lock.clone()
+        lock
     }
 
-    /// Drop idle, unlocked `srid` locks when the map grows too large (HTTP trial sessions).
+    /// Drop idle `srid` locks with no external `Arc` holders when the map grows too large.
     fn prune_idle_turn_locks(&self) {
         if self.turn_locks.len() <= TURN_LOCK_SOFT_CAP {
             return;
         }
         let mut idle: Vec<(String, u64)> = Vec::new();
         for item in self.turn_locks.iter() {
-            if item.value().lock.try_lock().is_ok() {
+            if Arc::strong_count(&item.value().lock) == 1 {
                 idle.push((
                     item.key().clone(),
                     item.value().last_touch_ms.load(Ordering::Relaxed),
@@ -539,5 +541,33 @@ mod tests {
         let providers = state.local_plugin_providers(LocalPluginCapability::Memory);
         assert_eq!(providers.len(), 1);
         assert_eq!(providers[0].provider_id, "demo.local");
+    }
+
+    #[tokio::test]
+    async fn turn_lock_prune_preserves_arc_with_external_holder() {
+        let state = AppState::new_in_memory_with_llm(
+            Arc::new(crate::infrastructure::llm::MockLlmClient {
+                reply: "ok".to_string(),
+            }),
+            "./roles",
+        )
+        .await
+        .expect("state should build");
+
+        let held_srid = "held-session";
+        let held_lock = state.turn_lock_for(held_srid);
+
+        for i in 0..=TURN_LOCK_SOFT_CAP {
+            let srid = format!("session-{i}");
+            if srid != held_srid {
+                let _ = state.turn_lock_for(&srid);
+            }
+        }
+
+        let lock_after = state.turn_lock_for(held_srid);
+        assert!(
+            Arc::ptr_eq(&held_lock, &lock_after),
+            "prune must not drop a turn lock while an external Arc holder exists"
+        );
     }
 }
