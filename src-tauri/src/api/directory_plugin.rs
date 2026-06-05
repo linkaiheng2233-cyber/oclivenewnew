@@ -6,7 +6,6 @@ use crate::infrastructure::directory_plugins::{
     bootstrap_dto::{self, collect_subscribed_host_events},
     dependency_report, normalize_plugin_rel, normalize_ui_slot_appearance_id,
     parse_manifest_version, plugin_scan_container_roots, resolve_plugin_asset_path,
-    HostPluginsFile, OclivePluginManifest, UiSlotDecl,
 };
 use crate::infrastructure::plugin_state::{PluginStateFile, RolePluginState};
 use crate::infrastructure::remote_plugin::{

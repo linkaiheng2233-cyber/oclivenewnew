@@ -194,16 +194,16 @@ fn main() -> Result<()> {
         }
         Commands::Dev(args) => dev_cmd::run(args),
         Commands::Pack(args) => pack_cmd::run_pack(args),
-        Commands::Blueprint(cli) => {
+        Commands::Blueprint(blueprint_cli) => {
             require_experimental(cli.experimental, "blueprint")?;
-            blueprint_cmd::run(cli)
+            blueprint_cmd::run(blueprint_cli)
         }
         Commands::Doctor(args) => doctor_cmd::run(args),
         Commands::Plugin(cli) => plugin_cmd::run(cli),
         Commands::Registry(cli) => registry_cmd::run(cli),
-        Commands::Compose(cli) => {
+        Commands::Compose(compose_cli) => {
             require_experimental(cli.experimental, "compose")?;
-            compose_cmd::run(cli)
+            compose_cmd::run(compose_cli)
         }
         Commands::Debug(args) => {
             require_experimental(cli.experimental, "debug")?;

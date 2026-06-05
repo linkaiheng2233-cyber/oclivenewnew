@@ -6,7 +6,7 @@ use crate::models::dto::{
     RoleInfo, SetUserPresenceSceneRequest, SwitchSceneRequest, SwitchSceneResponse,
 };
 use crate::state::SharedAppState;
-use oclive_kernel_host::service::{set_user_presence_scene_impl, switch_scene_impl};
+pub use oclive_kernel_host::service::{set_user_presence_scene_impl, switch_scene_impl};
 use tauri::{AppHandle, Manager, State};
 
 /// # Errors

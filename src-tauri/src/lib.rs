@@ -34,7 +34,6 @@ fn sanitize_plugin_id_for_log(plugin_id: &str) -> String {
 }
 
 use std::fs;
-use std::path::PathBuf;
 use tauri::http::{Request, Response, ResponseBuilder};
 use tauri::{AppHandle, Manager};
 

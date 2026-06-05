@@ -78,6 +78,7 @@ async fn dual_pipeline_run_experimental_happy_path_returns_ok() {
         immersive: false,
         character_scene_id: None,
         virtual_time_ms: 0,
+        dual_core_degraded: false,
     };
 
     let res = DualPipelineRunner::run_experimental(&turn)
