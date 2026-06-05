@@ -6,6 +6,7 @@ import PluginUiSlotSelectorDialog from '../PluginUiSlotSelectorDialog.vue'
 import { useAppToast } from '../../composables/useAppToast'
 import { usePluginSlotEnable } from '../../composables/usePluginSlotEnable'
 import { usePluginStore } from '../../stores/pluginStore'
+import { usePluginMarketStore } from '../../stores/pluginMarketStore'
 import { installPluginFromZip } from '../../api'
 
 const props = defineProps<{
@@ -19,6 +20,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const pluginStore = usePluginStore()
+const marketStore = usePluginMarketStore()
 const { showToast } = useAppToast()
 const {
   selector,
@@ -83,7 +85,7 @@ async function onUninstall(id: string): Promise<void> {
     return
   busyId.value = id
   try {
-    await pluginStore.uninstallPluginFromGitIndex(id)
+    await marketStore.uninstallPluginFromGitIndex(id)
     showToast('success', t('simplePluginManager.uninstalled', { id }))
   }
   catch (e) {

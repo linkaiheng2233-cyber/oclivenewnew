@@ -32,6 +32,13 @@ export function useChatSend(options: {
         const detail = res.llm_fallback_reason?.trim()
         options.showToast('info', detail || options.t('app.toast.fallbackReply'))
       }
+      if (res.chat_persist_failed) {
+        const detail = res.chat_persist_error?.trim()
+        options.showToast(
+          'warning',
+          detail || options.t('app.toast.chatPersistFailed'),
+        )
+      }
       options.offerSceneBarsAfterReply(
         res.offer_together_travel ?? false,
         res.offer_destination_picker ?? false,

@@ -1,4 +1,3 @@
-import { invoke } from '@tauri-apps/api/tauri'
 import { invokeWithFriendlyError } from './helpers'
 import type { PackUiConfig, PackUiSlotConfig, PackUiSlots } from './role'
 
@@ -597,11 +596,11 @@ export async function createPluginScaffold(
     'create_plugin_scaffold',
     {
       req: {
-        plugin_id: req.pluginId,
-        plugin_name: req.pluginName,
+        pluginId: req.pluginId,
+        pluginName: req.pluginName,
         language: req.language,
-        plugin_type: req.pluginType,
-        base_dir: req.baseDir ?? null,
+        pluginType: req.pluginType,
+        baseDir: req.baseDir ?? null,
       },
     },
   )
@@ -621,8 +620,8 @@ export async function packPlugin(
 ): Promise<PackPluginResponse> {
   return invokeWithFriendlyError<PackPluginResponse>('pack_plugin', {
     req: {
-      plugin_id: pluginId,
-      output_dir: outputDir ?? null,
+      pluginId,
+      outputDir: outputDir ?? null,
     },
   })
 }

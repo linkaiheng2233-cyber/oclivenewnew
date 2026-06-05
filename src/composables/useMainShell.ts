@@ -98,7 +98,7 @@ export function useMainShell() {
   })
 
   const messages = computed(() =>
-    chatStore.messagesForDisplay(roleStore.currentRoleId, uiStore.sceneId),
+    chatStore.messagesForRoleScene(roleStore.currentRoleId, uiStore.sceneId),
   )
 
   const chatListLoading = computed(() =>

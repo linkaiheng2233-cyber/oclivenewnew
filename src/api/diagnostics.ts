@@ -1,4 +1,3 @@
-import { invoke } from '@tauri-apps/api/tauri'
 import { invokeWithFriendlyError } from './helpers'
 
 export interface EnvironmentDiagnostics {

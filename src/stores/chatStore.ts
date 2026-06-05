@@ -372,10 +372,6 @@ export const useChatStore = defineStore(
         }
       },
 
-      messagesForDisplay(roleId: string, sceneId: string): ChatMessage[] {
-        return this.messagesForRoleScene(roleId, sceneId)
-      },
-
       addSystemMessage(content: string, sceneId?: string) {
         const roleStore = useRoleStore()
         const uiStore = useUiStore()

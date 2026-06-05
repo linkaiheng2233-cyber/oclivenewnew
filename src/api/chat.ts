@@ -1,4 +1,3 @@
-import { invoke } from '@tauri-apps/api/tauri'
 import { invokeWithFriendlyError } from './helpers'
 import type { RoleInfo } from './role'
 
@@ -60,6 +59,10 @@ export interface SendMessageResponse {
   assistant_message_id?: string | null
   user_message_timestamp?: string | null
   assistant_message_timestamp?: string | null
+  /** True when CoPresent chat row persistence failed (SQLite authoritative store). */
+  chat_persist_failed?: boolean | null
+  /** Human-readable chat persistence error when `chat_persist_failed` is set. */
+  chat_persist_error?: string | null
 }
 
 /** Identity dropdown sentinel for manifest default identity option; value is `OCLIVE_DEFAULT_RELATION_SENTINEL` */

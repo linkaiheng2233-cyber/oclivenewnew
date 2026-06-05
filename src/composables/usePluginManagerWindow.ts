@@ -1,6 +1,6 @@
-import { ref } from 'vue'
 import { ensurePluginWorkbenchI18n } from '../i18n/loadPluginWorkbench'
 import { usePluginMarketStore } from '../stores/pluginMarketStore'
+import { useOverlayWindow } from './useOverlayWindow'
 
 export interface UsePluginManagerWindowOptions {
   /** Collapse the top-bar "More" menu after each plugin manager open/switch. */
@@ -10,18 +10,16 @@ export interface UsePluginManagerWindowOptions {
 /** Minimal installed-plugin list and market entry. */
 export function usePluginManagerWindow(opts: UsePluginManagerWindowOptions) {
   const marketStore = usePluginMarketStore()
-  const simplePluginManagerOpen = ref(false)
+  const { open: simplePluginManagerOpen, toggle } = useOverlayWindow({
+    closeMoreMenu: opts.closeMoreMenu,
+    onOpen: () => {
+      void ensurePluginWorkbenchI18n()
+      marketStore.closeMarketPanel()
+    },
+  })
 
   function openSimplePluginManager(forceOpen = false): void {
-    void ensurePluginWorkbenchI18n()
-    marketStore.closeMarketPanel()
-    if (forceOpen) {
-      simplePluginManagerOpen.value = true
-    }
-    else {
-      simplePluginManagerOpen.value = !simplePluginManagerOpen.value
-    }
-    opts.closeMoreMenu()
+    toggle(forceOpen)
   }
 
   function openPluginManagerPanel(): void {

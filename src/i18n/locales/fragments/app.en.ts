@@ -79,6 +79,8 @@ export default {
         'No usable role packs found (roles folder empty or validation failed). Check the roles path; for dev, set OCLIVE_ROLES_DIR to the repo roles folder.',
       fallbackReply:
         'Fallback reply (LLM unreachable). Check API key and model in Model Manager, grant outbound network if prompted, then try again.',
+      chatPersistFailed:
+        'Reply was sent but saving chat history failed. Your message may not appear after reload.',
       roleSwitched: 'Switched role: {id}',
       relationSetPerScene: 'Scene identity set: {name}',
       relationSetGlobal: 'Identity set: {name}',

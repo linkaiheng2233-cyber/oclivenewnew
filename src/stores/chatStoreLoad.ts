@@ -123,8 +123,7 @@ export async function loadRoleSceneMessages(
   const previousLocal = messageMap[roleId]?.[sid] ?? []
   const sessionId = await resolveChatSessionId(roleId, sid)
   if (!sessionId) {
-    const empty: ChatMessage[] = []
-    return writeBucket(messageMap, roleId, sid, empty)
+    return writeBucket(messageMap, roleId, sid, previousLocal)
   }
   try {
     const stored = await fetchChatMessages(sessionId, 500, 0)
