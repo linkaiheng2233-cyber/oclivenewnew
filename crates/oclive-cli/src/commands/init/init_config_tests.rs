@@ -1,8 +1,8 @@
 mod template_tests {
     use std::path::PathBuf;
 
-    use super::super::*;
     use super::super::super::InitArgs;
+    use super::super::*;
     use crate::pipeline::PipelineArg;
 
     #[test]

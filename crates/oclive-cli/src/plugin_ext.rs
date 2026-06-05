@@ -3,9 +3,9 @@
 use anyhow::{bail, Context, Result};
 use clap::Parser;
 use oclive_validation::{
-    apply_slot_attachments_to_registry, load_blueprint_v2_for_role_dir,
-    parse_plugin_dependencies, parse_slot_attachments_from_manifest_json,
-    resolve_install_order, write_role_pack_blueprint_slot_registry, PIPELINE_BLUEPRINT_FILENAME,
+    apply_slot_attachments_to_registry, load_blueprint_v2_for_role_dir, parse_plugin_dependencies,
+    parse_slot_attachments_from_manifest_json, resolve_install_order,
+    write_role_pack_blueprint_slot_registry, PIPELINE_BLUEPRINT_FILENAME,
 };
 use serde_json::Value;
 use std::fs;
@@ -124,8 +124,8 @@ fn auto_assemble_slot_attachment(role_dir: &Path, manifest_raw: &str) -> Result<
         .get("id")
         .and_then(|v| v.as_str())
         .ok_or_else(|| anyhow::anyhow!("manifest.id missing"))?;
-    let attachments = parse_slot_attachments_from_manifest_json(manifest_raw)
-        .map_err(|e| anyhow::anyhow!(e))?;
+    let attachments =
+        parse_slot_attachments_from_manifest_json(manifest_raw).map_err(|e| anyhow::anyhow!(e))?;
     if attachments.is_empty() {
         return Ok(vec![]);
     }

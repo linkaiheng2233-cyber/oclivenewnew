@@ -13,8 +13,8 @@ mod bench_metrics;
 mod bench_soak;
 mod bench_stress;
 mod blueprint;
-mod blueprint_v3_init;
 mod blueprint_cmd;
+mod blueprint_v3_init;
 mod build_cmd;
 mod cargo_hints;
 mod ci_cmd;
@@ -30,8 +30,8 @@ mod dev_cmd;
 mod doctor_blueprint;
 mod doctor_cmd;
 mod doctor_kernel_contracts;
-mod env_probe;
 mod doctor_sbom;
+mod env_probe;
 mod explain_cmd;
 mod explain_dual_core;
 mod generator;
@@ -70,10 +70,10 @@ mod test_ci_parity;
 mod test_cmd;
 mod test_coverage;
 mod test_equivalence_check;
+mod test_json_report;
 mod test_loom;
 mod test_miri;
 mod test_oocp;
-mod test_json_report;
 mod test_report;
 
 use anyhow::Result;
@@ -169,9 +169,7 @@ fn init_tracing(verbose: u8) {
 
 fn require_experimental(experimental: bool, label: &str) -> Result<()> {
     if !experimental {
-        anyhow::bail!(
-            "'{label}' requires --experimental (unfinished or unstable feature)"
-        );
+        anyhow::bail!("'{label}' requires --experimental (unfinished or unstable feature)");
     }
     Ok(())
 }

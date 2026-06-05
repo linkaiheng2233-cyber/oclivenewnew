@@ -1,7 +1,7 @@
 //! `oclive lint`: static project health checks.
 
-use super::lint_deps::run_deps_audit;
 use super::lint_deny::run_deny_check;
+use super::lint_deps::run_deps_audit;
 use crate::lint_report::{self, LintCheck};
 use anyhow::Result;
 use clap::Parser;
@@ -75,10 +75,7 @@ pub fn run(args: LintArgs) -> Result<()> {
                 fail(
                     &format!("dir_{dir}"),
                     format!("missing {name}"),
-                    Some(format!(
-                        "re-run oclive init or mkdir -p {}",
-                        p.display()
-                    )),
+                    Some(format!("re-run oclive init or mkdir -p {}", p.display())),
                 )
             }
         });
@@ -95,10 +92,7 @@ pub fn run(args: LintArgs) -> Result<()> {
         return Ok(());
     }
     lint_report::print_human_report(&root, &checks, started.elapsed());
-    let fail_n = checks
-        .iter()
-        .filter(|c| c.item.level == "fail")
-        .count();
+    let fail_n = checks.iter().filter(|c| c.item.level == "fail").count();
     if fail_n > 0 {
         anyhow::bail!("lint: {fail_n} failed check(s)");
     }
@@ -213,36 +207,33 @@ fn lint_monolith(root: &Path, checks: &mut Vec<LintCheck>) {
             "monolith",
             "no monolith.toml (standard mode)",
             Some(
-                "cargo run -p oclive-cli -- init --monolith --monolith-preset latency -o ."
-                    .into(),
+                "cargo run -p oclive-cli -- init --monolith --monolith-preset latency -o .".into(),
             ),
         ));
         return;
     }
     match std::fs::read_to_string(&p) {
-        Ok(raw) => match crate::monolith_config::parse_monolith_toml(&raw) {
-            Ok(f) => {
-                if let Err(e) = crate::monolith_config::validate_monolith_section(&f.monolith) {
-                    items.push(fail(
+        Ok(raw) => {
+            match crate::monolith_config::parse_monolith_toml(&raw) {
+                Ok(f) => {
+                    if let Err(e) = crate::monolith_config::validate_monolith_section(&f.monolith) {
+                        items.push(fail(
                         "monolith",
                         e.to_string(),
                         Some("edit monolith.toml weld_modules / preset per RFC_OCLIVE_MONOLITH_MODE".into()),
                     ));
-                } else {
-                    items.push(pass("monolith", "monolith.toml format OK", None));
+                    } else {
+                        items.push(pass("monolith", "monolith.toml format OK", None));
+                    }
                 }
+                Err(e) => items.push(fail(
+                    "monolith",
+                    e.to_string(),
+                    Some("fix monolith.toml TOML syntax".into()),
+                )),
             }
-            Err(e) => items.push(fail(
-                "monolith",
-                e.to_string(),
-                Some("fix monolith.toml TOML syntax".into()),
-            )),
-        },
-        Err(e) => items.push(fail(
-            "monolith",
-            e.to_string(),
-            None,
-        )),
+        }
+        Err(e) => items.push(fail("monolith", e.to_string(), None)),
     }
     append_lint_items(checks, items, started.elapsed());
 }
@@ -280,17 +271,17 @@ fn lint_git_dirty(root: &Path, checks: &mut Vec<LintCheck>) {
     append_lint_items(checks, items, started.elapsed());
 }
 
-fn append_lint_items(checks: &mut Vec<LintCheck>, items: Vec<LintItem>, elapsed: std::time::Duration) {
+fn append_lint_items(
+    checks: &mut Vec<LintCheck>,
+    items: Vec<LintItem>,
+    elapsed: std::time::Duration,
+) {
     let n = items.len().max(1) as u32;
     let share = elapsed / n;
-    checks.extend(
-        items
-            .into_iter()
-            .map(|item| LintCheck {
-                item,
-                duration: share,
-            }),
-    );
+    checks.extend(items.into_iter().map(|item| LintCheck {
+        item,
+        duration: share,
+    }));
 }
 
 fn walk_role_roots(roles: &Path) -> Vec<PathBuf> {
@@ -332,4 +323,3 @@ pub(super) fn fail(check: &str, msg: impl ToString, fix: Option<String>) -> Lint
         fix,
     }
 }
-

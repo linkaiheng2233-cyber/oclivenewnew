@@ -33,10 +33,7 @@ pub fn run_oocp_integration(repo_root: &Path) -> Result<()> {
                 eprintln!("oclive test --oocp: all OOCP scenarios passed");
                 Ok(())
             } else {
-                bail!(
-                    "OOCP suite failed (exit {:?})",
-                    st.code()
-                );
+                bail!("OOCP suite failed (exit {:?})", st.code());
             }
         }
         Err(e) => {
@@ -87,9 +84,7 @@ fn wait_for_health(url: &str) -> Result<()> {
         }
         std::thread::sleep(Duration::from_millis(HEALTH_POLL_MS));
     }
-    bail!(
-        "kernel did not become healthy within {HEALTH_TIMEOUT_SECS}s ({url})"
-    );
+    bail!("kernel did not become healthy within {HEALTH_TIMEOUT_SECS}s ({url})");
 }
 
 fn health_ok(url: &str) -> bool {

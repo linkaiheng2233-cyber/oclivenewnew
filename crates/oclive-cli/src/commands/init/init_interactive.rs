@@ -1,9 +1,9 @@
 //! Interactive and quick init flows.
 
 use super::init_config::{
-    apply_backend_cli_overrides, apply_cargo_metadata_cli, apply_template_layer, ensure_cargo_license_default,
-    preset_config, quick_project_config, resolve_monolith, resolve_role_pack_kind, ProjectConfig, ProjectType,
-    ProjectTypeArg, RolePackKind,
+    apply_backend_cli_overrides, apply_cargo_metadata_cli, apply_template_layer,
+    ensure_cargo_license_default, preset_config, quick_project_config, resolve_monolith,
+    resolve_role_pack_kind, ProjectConfig, ProjectType, ProjectTypeArg, RolePackKind,
 };
 use super::InitArgs;
 use crate::generator;

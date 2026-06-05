@@ -127,7 +127,11 @@ pub(crate) fn run_bench_regression(
 }
 
 /// Runs N bench rounds against the specified Git ref and outputs a comparison matrix (`git stash` / `checkout` / restore).
-pub(crate) fn run_bench_compare_versions(root: &Path, git_ref: &str, base: &BenchArgs) -> Result<()> {
+pub(crate) fn run_bench_compare_versions(
+    root: &Path,
+    git_ref: &str,
+    base: &BenchArgs,
+) -> Result<()> {
     let root = root.canonicalize()?;
     let mut args_other = base.clone();
     args_other.compare_versions = None;

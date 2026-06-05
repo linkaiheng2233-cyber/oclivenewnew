@@ -95,7 +95,11 @@ pub fn template_defaults(t: InitTemplateArg) -> TemplateDefaults {
     }
 }
 
-fn backend_slots(llm: BackendImpl, agent: BackendImpl, complex_emotion: BackendImpl) -> BackendSlots {
+fn backend_slots(
+    llm: BackendImpl,
+    agent: BackendImpl,
+    complex_emotion: BackendImpl,
+) -> BackendSlots {
     BackendSlots {
         memory: BackendImpl::Builtin,
         emotion: BackendImpl::Builtin,

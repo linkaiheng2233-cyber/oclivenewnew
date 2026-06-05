@@ -112,7 +112,8 @@ pub fn recommend_init(probe: &EnvironmentProbe, project_name: &str) -> InitPrese
         preset = "mixed";
         monolith = false;
         monolith_preset = None;
-        rationale = "Ollama 在运行但尚未 pull 模型：mixed 预设；请先 ollama pull，或配置 remote LLM";
+        rationale =
+            "Ollama 在运行但尚未 pull 模型：mixed 预设；请先 ollama pull，或配置 remote LLM";
     } else {
         preset = "minimal";
         monolith = false;

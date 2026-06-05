@@ -1,7 +1,7 @@
 //! `oclive lint` human-readable report (color / pass rate / elapsed time).
 
 use crate::commands::lint::LintItem;
-use std::io::{IsTerminal, stdout};
+use std::io::{stdout, IsTerminal};
 use std::time::{Duration, Instant};
 
 pub struct LintCheck {
@@ -19,14 +19,8 @@ pub fn print_human_report(root: &std::path::Path, checks: &[LintCheck], elapsed:
     let reset = if use_color { "\x1b[0m" } else { "" };
 
     let total = checks.len();
-    let passed = checks
-        .iter()
-        .filter(|c| c.item.level == "pass")
-        .count();
-    let failed = checks
-        .iter()
-        .filter(|c| c.item.level == "fail")
-        .count();
+    let passed = checks.iter().filter(|c| c.item.level == "pass").count();
+    let failed = checks.iter().filter(|c| c.item.level == "fail").count();
     let pct = if total == 0 {
         100.0
     } else {
@@ -60,9 +54,7 @@ pub fn print_human_report(root: &std::path::Path, checks: &[LintCheck], elapsed:
     if failed == 0 {
         println!("{green}{bold}lint result: ok{reset}. {passed} passed. 0 failed.");
     } else {
-        println!(
-            "{red}{bold}lint result: FAILED{reset}. {passed} passed. {failed} failed."
-        );
+        println!("{red}{bold}lint result: FAILED{reset}. {passed} passed. {failed} failed.");
     }
 }
 

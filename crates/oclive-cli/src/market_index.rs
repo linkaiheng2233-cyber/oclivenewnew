@@ -181,8 +181,7 @@ pub fn fetch_online(url: &str) -> Result<MarketIndexFile> {
 
 pub fn parse_index_json(body: &str) -> Result<MarketIndexFile> {
     let v: serde_json::Value = serde_json::from_str(body).context("parse index JSON")?;
-    if v.get("plugins").is_some() || v.get("templates").is_some() || v.get("role_packs").is_some()
-    {
+    if v.get("plugins").is_some() || v.get("templates").is_some() || v.get("role_packs").is_some() {
         let mut file: MarketIndexFile = serde_json::from_value(v)?;
         normalize_plugin_git_fields(&mut file.plugins);
         tag_kind_on_sections(&mut file);
@@ -334,6 +333,10 @@ mod tests {
         let f = parse_index_json(raw).unwrap();
         assert!(f.plugins.len() >= 4);
         assert!(f.plugins[0].git.as_deref().unwrap_or("").contains("github"));
-        assert!(f.plugins[0].git_subdir.as_deref().unwrap_or("").contains("examples/"));
+        assert!(f.plugins[0]
+            .git_subdir
+            .as_deref()
+            .unwrap_or("")
+            .contains("examples/"));
     }
 }

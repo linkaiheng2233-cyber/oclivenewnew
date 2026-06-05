@@ -2,7 +2,7 @@
 
 use crate::blueprint_v3_init::build_blueprint_v3_value;
 use crate::generator::render_settings_json;
-use crate::init::{ProjectConfig, RolePackKind, ChatStorageBackend};
+use crate::init::{ChatStorageBackend, ProjectConfig, RolePackKind};
 use anyhow::{Context, Result};
 use oclive_validation::PIPELINE_BLUEPRINT_FILENAME;
 use serde_json::json;
@@ -107,12 +107,7 @@ fn write_robot_soul_minimal(cfg: &ProjectConfig, out: &Path) -> Result<()> {
     fs::create_dir_all(role_root.join("scenes").join("default"))
         .context("create scenes/default")?;
     if cfg.dual_core_enabled {
-        write_dual_core_v3_role(
-            cfg,
-            &role_root,
-            "default",
-            "Robot Soul Minimal (dual-core)",
-        )?;
+        write_dual_core_v3_role(cfg, &role_root, "default", "Robot Soul Minimal (dual-core)")?;
         fs::write(
             role_root.join("prompts").join("system.md"),
             include_str!(concat!(

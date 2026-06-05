@@ -186,7 +186,11 @@ fn install_plugin_item(item: &MarketItem, plugins_dir: &Path) -> Result<()> {
             .trim_end_matches(".git");
         let clone_dir = plugins_dir.join(format!(".clone-{label}"));
         git_clone_plugin_repo(git, &clone_dir)?;
-        let sub = item.git_subdir.as_deref().map(str::trim).filter(|s| !s.is_empty());
+        let sub = item
+            .git_subdir
+            .as_deref()
+            .map(str::trim)
+            .filter(|s| !s.is_empty());
         let src = match sub {
             None => clone_dir.clone(),
             Some(rel) => {

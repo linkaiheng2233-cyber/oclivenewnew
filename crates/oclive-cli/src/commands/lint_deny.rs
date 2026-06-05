@@ -38,7 +38,10 @@ pub(super) fn run_deny_check(root: &Path, json: bool) -> Result<()> {
         ));
     }
 
-    for (check, label) in [("licenses", "license compliance"), ("bans", "duplicate deps / bans")] {
+    for (check, label) in [
+        ("licenses", "license compliance"),
+        ("bans", "duplicate deps / bans"),
+    ] {
         let st = Command::new("cargo")
             .args(["deny", "check", check])
             .current_dir(root)

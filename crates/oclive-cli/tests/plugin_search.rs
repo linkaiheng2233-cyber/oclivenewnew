@@ -32,7 +32,11 @@ fn plugin_search_filters_provides() {
         ])
         .output()
         .expect("spawn");
-    assert!(out.status.success(), "stderr={}", String::from_utf8_lossy(&out.stderr));
+    assert!(
+        out.status.success(),
+        "stderr={}",
+        String::from_utf8_lossy(&out.stderr)
+    );
     let text = String::from_utf8_lossy(&out.stdout);
     assert!(text.contains("com.test.llm"));
     assert!(!text.contains("com.test.shell"));

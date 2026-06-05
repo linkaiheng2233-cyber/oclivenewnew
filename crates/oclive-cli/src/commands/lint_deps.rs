@@ -38,11 +38,7 @@ pub(super) fn run_deps_audit(root: &Path, json: bool) -> Result<()> {
         Ok(o) => {
             let stdout = String::from_utf8_lossy(&o.stdout);
             if o.status.success() && stdout.trim().is_empty() {
-                items.push(pass(
-                    "cargo_audit",
-                    "no vulnerabilities reported",
-                    None,
-                ));
+                items.push(pass("cargo_audit", "no vulnerabilities reported", None));
             } else {
                 let vuln_count = stdout.matches("\"id\":").count();
                 if vuln_count == 0 && o.status.success() {

@@ -34,7 +34,11 @@ struct PluginSearchHit {
 }
 
 pub fn run_search(args: PluginSearchArgs) -> Result<()> {
-    let kw = args.keyword.as_deref().map(str::trim).filter(|s| !s.is_empty());
+    let kw = args
+        .keyword
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty());
     let slot = args
         .provides
         .as_deref()
@@ -106,7 +110,11 @@ fn matches_keyword(v: &Value, id: &str, kw: &str) -> bool {
     false
 }
 
-fn collect_hits(plugins_dir: &Path, kw: Option<&str>, slot: Option<&str>) -> Result<Vec<PluginSearchHit>> {
+fn collect_hits(
+    plugins_dir: &Path,
+    kw: Option<&str>,
+    slot: Option<&str>,
+) -> Result<Vec<PluginSearchHit>> {
     let mut hits = Vec::new();
     for entry in fs::read_dir(plugins_dir)? {
         let entry = entry?;

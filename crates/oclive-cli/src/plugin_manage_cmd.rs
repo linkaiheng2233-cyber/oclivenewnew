@@ -44,19 +44,11 @@ pub enum ManageSubcommand {
         key: String,
     },
     /// Set backend for a slot key
-    SetBackend {
-        key: String,
-        backend: String,
-    },
+    SetBackend { key: String, backend: String },
     /// Link directory plugin id to a slot key
-    Link {
-        key: String,
-        plugin_id: String,
-    },
+    Link { key: String, plugin_id: String },
     /// Clear plugin link on a slot key
-    Unlink {
-        key: String,
-    },
+    Unlink { key: String },
 }
 
 const HOST_VERSION: &str = "999.0.0";
@@ -121,7 +113,10 @@ pub fn load_registry(role_dir: &std::path::Path) -> Result<BTreeMap<String, Slot
     Ok(loaded.slot_registry)
 }
 
-fn save_registry(role_dir: &std::path::Path, reg: &BTreeMap<String, SlotRegistryEntry>) -> Result<()> {
+fn save_registry(
+    role_dir: &std::path::Path,
+    reg: &BTreeMap<String, SlotRegistryEntry>,
+) -> Result<()> {
     write_role_pack_blueprint_slot_registry(role_dir, reg, HOST_VERSION)
         .map_err(|e| anyhow::anyhow!(e.join("; ")))
 }

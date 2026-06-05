@@ -1,8 +1,6 @@
 //! `oclive build`: read `monolith.toml`, write the vendor and `process_message_monolith.rs`, and optionally run `cargo build` (standard + Monolith).
 
-use crate::monolith_codegen::{
-    copy_monolith_vendor, generate_monolith_source_with_dual_core,
-};
+use crate::monolith_codegen::{copy_monolith_vendor, generate_monolith_source_with_dual_core};
 use crate::monolith_config::{
     parse_monolith_toml, resolve_weld_plan, validate_monolith_section, MonolithFile,
 };
@@ -114,7 +112,7 @@ fn regenerate_monolith_from_disk_inner(root: &Path, log_written: bool) -> Result
         &out_rs,
         generate_monolith_source_with_dual_core(&plan, file.dual_core.enabled),
     )
-        .with_context(|| format!("write {}", out_rs.display()))?;
+    .with_context(|| format!("write {}", out_rs.display()))?;
     if log_written {
         eprintln!("Generated {}", out_rs.display());
     }

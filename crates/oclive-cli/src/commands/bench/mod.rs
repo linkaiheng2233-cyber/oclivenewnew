@@ -5,13 +5,14 @@ mod bench_runner;
 
 pub use bench_core::{
     cargo_build_dual, collect_bench_report, print_bench_comparison, read_package_name,
-    release_bin_path, resolve_project_root, stats, BenchReport, BENCH_REPORT_SCHEMA_VERSION,
-    SampleStats, StandardMonolithPair,
+    release_bin_path, resolve_project_root, stats, BenchReport, SampleStats, StandardMonolithPair,
+    BENCH_REPORT_SCHEMA_VERSION,
 };
 
 use super::bench_history::{append_history, compare_history, history_path, print_bench_history};
 use super::bench_stress::{
-    run_bench_compare_versions, run_bench_live, run_bench_matrix, run_bench_regression, run_bench_watch,
+    run_bench_compare_versions, run_bench_live, run_bench_matrix, run_bench_regression,
+    run_bench_watch,
 };
 use anyhow::Result;
 use clap::Parser;

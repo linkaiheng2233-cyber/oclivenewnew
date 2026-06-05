@@ -36,7 +36,11 @@ fn llm_backend_token(b: BackendImpl) -> &'static str {
 
 /// Build the v3 `pipeline.ocblueprint` JSON value from a `ProjectConfig`.
 #[must_use]
-pub fn build_blueprint_v3_value(cfg: &ProjectConfig, role_id: &str, name: &str) -> serde_json::Value {
+pub fn build_blueprint_v3_value(
+    cfg: &ProjectConfig,
+    role_id: &str,
+    name: &str,
+) -> serde_json::Value {
     let stable = default_dual_core_pipeline_steps();
     json!({
         "schema_version": 3,

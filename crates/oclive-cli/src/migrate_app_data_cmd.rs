@@ -4,7 +4,7 @@ use anyhow::Result;
 use clap::Args;
 use oclive_kernel_runtime::{
     ensure_app_data_dir, ensure_canonical_app_data_ready, resolve_app_data_dir_for_host,
-    resolve_db_path, ENV_SKIP_APP_DATA_MIGRATION, tauri_legacy_app_data_dir,
+    resolve_db_path, tauri_legacy_app_data_dir, ENV_SKIP_APP_DATA_MIGRATION,
 };
 use std::path::PathBuf;
 
@@ -19,9 +19,7 @@ pub struct MigrateAppDataArgs {
 }
 
 pub fn run(args: MigrateAppDataArgs) -> Result<()> {
-    let target = args
-        .target
-        .unwrap_or_else(resolve_app_data_dir_for_host);
+    let target = args.target.unwrap_or_else(resolve_app_data_dir_for_host);
     let legacy = tauri_legacy_app_data_dir();
     println!("legacy: {}", legacy.display());
     println!("target: {}", target.display());

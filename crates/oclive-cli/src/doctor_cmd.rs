@@ -114,7 +114,9 @@ pub fn run(args: DoctorArgs) -> Result<()> {
         check_workspace_writable(&root),
     ];
     checks.extend(crate::doctor_blueprint::blueprint_v2_checks(&root));
-    checks.extend(crate::doctor_kernel_contracts::kernel_contract_impl_checks(&root));
+    checks.extend(crate::doctor_kernel_contracts::kernel_contract_impl_checks(
+        &root,
+    ));
     if args.fix {
         apply_fixes(&checks, args.yes)?;
         checks = vec![

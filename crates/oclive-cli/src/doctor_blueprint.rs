@@ -28,13 +28,19 @@ pub fn blueprint_checks(root: &Path) -> Vec<DoctorCheck> {
     let packs = collect_blueprint_packs(&roles);
     if packs.is_empty() {
         return vec![
-            DoctorCheck::ok("blueprint_file_format", "no pipeline.ocblueprint under roles/"),
+            DoctorCheck::ok(
+                "blueprint_file_format",
+                "no pipeline.ocblueprint under roles/",
+            ),
             DoctorCheck::ok("slot_registry_llm", "skipped (no blueprint packs)"),
             DoctorCheck::ok("slot_position_unique", "skipped (no blueprint packs)"),
         ];
     }
 
-    let v2: Vec<_> = packs.iter().filter(|p| p.schema_version != BLUEPRINT_V3_SCHEMA_VERSION).collect();
+    let v2: Vec<_> = packs
+        .iter()
+        .filter(|p| p.schema_version != BLUEPRINT_V3_SCHEMA_VERSION)
+        .collect();
     let v3: Vec<_> = packs
         .iter()
         .filter(|p| p.schema_version == BLUEPRINT_V3_SCHEMA_VERSION)
@@ -65,7 +71,11 @@ fn collect_blueprint_packs(roles: &Path) -> Vec<PackDir> {
         if !bp.is_file() {
             continue;
         }
-        let name = p.file_name().and_then(|s| s.to_str()).unwrap_or("?").to_string();
+        let name = p
+            .file_name()
+            .and_then(|s| s.to_str())
+            .unwrap_or("?")
+            .to_string();
         let schema_version = fs::read_to_string(&bp)
             .ok()
             .and_then(|raw| serde_json::from_str::<serde_json::Value>(&raw).ok())
@@ -83,7 +93,10 @@ fn collect_blueprint_packs(roles: &Path) -> Vec<PackDir> {
 fn run_v2_checks(packs: &[&PackDir]) -> Vec<DoctorCheck> {
     if packs.is_empty() {
         return vec![
-            DoctorCheck::ok("blueprint_file_format", "no v2 blueprint packs under roles/"),
+            DoctorCheck::ok(
+                "blueprint_file_format",
+                "no v2 blueprint packs under roles/",
+            ),
             DoctorCheck::ok("slot_registry_llm", "skipped (no v2 blueprint packs)"),
             DoctorCheck::ok("slot_position_unique", "skipped (no v2 blueprint packs)"),
         ];
@@ -132,7 +145,10 @@ fn run_v2_checks(packs: &[&PackDir]) -> Vec<DoctorCheck> {
 fn run_v3_checks(packs: &[&PackDir]) -> Vec<DoctorCheck> {
     if packs.is_empty() {
         return vec![
-            DoctorCheck::ok("blueprint_v3_file_format", "no v3 blueprint packs under roles/"),
+            DoctorCheck::ok(
+                "blueprint_v3_file_format",
+                "no v3 blueprint packs under roles/",
+            ),
             DoctorCheck::ok("slot_registry_v3_llm", "skipped (no v3 blueprint packs)"),
             DoctorCheck::ok("slot_position_v3_unique", "skipped (no v3 blueprint packs)"),
         ];
@@ -180,7 +196,10 @@ fn run_v3_checks(packs: &[&PackDir]) -> Vec<DoctorCheck> {
 
 fn format_check(id: &str, label: &str, count: usize, errs: &[String]) -> DoctorCheck {
     if errs.is_empty() {
-        DoctorCheck::ok(id, format!("{count} {label} blueprint pack(s) — JSON valid"))
+        DoctorCheck::ok(
+            id,
+            format!("{count} {label} blueprint pack(s) — JSON valid"),
+        )
     } else {
         DoctorCheck::fail(
             id,
@@ -194,11 +213,7 @@ fn llm_check(id: &str, errs: &[String]) -> DoctorCheck {
     if errs.is_empty() {
         DoctorCheck::ok(id, "each pack has at least one type: llm slot")
     } else {
-        DoctorCheck::fail(
-            id,
-            "missing or invalid llm slot",
-            Some(errs.join("\n    ")),
-        )
+        DoctorCheck::fail(id, "missing or invalid llm slot", Some(errs.join("\n    ")))
     }
 }
 
@@ -246,7 +261,9 @@ fn check_llm_and_position_local(
         let _ = key;
     }
     if llm == 0 {
-        llm_errs.push(format!("{name}: slot_registry needs at least one type: llm"));
+        llm_errs.push(format!(
+            "{name}: slot_registry needs at least one type: llm"
+        ));
     }
 }
 
@@ -279,7 +296,10 @@ mod tests {
         assert!(ids.contains(&"slot_registry_v3_llm"));
         assert!(ids.contains(&"slot_position_v3_unique"));
         for c in &checks {
-            if c.id.starts_with("blueprint_v3") || c.id.starts_with("slot_registry_v3") || c.id.starts_with("slot_position_v3") {
+            if c.id.starts_with("blueprint_v3")
+                || c.id.starts_with("slot_registry_v3")
+                || c.id.starts_with("slot_position_v3")
+            {
                 assert!(c.status == "ok", "{}: {}", c.id, c.message);
             }
         }
@@ -301,7 +321,11 @@ mod tests {
         fs::write(v2dir.join("core_personality.txt"), "test").unwrap();
         write_v3_pack(&tmp.path().join("roles/v3role"));
         let checks = blueprint_checks(tmp.path());
-        assert!(checks.iter().any(|c| c.id == "blueprint_file_format" && c.status == "ok"));
-        assert!(checks.iter().any(|c| c.id == "blueprint_v3_file_format" && c.status == "ok"));
+        assert!(checks
+            .iter()
+            .any(|c| c.id == "blueprint_file_format" && c.status == "ok"));
+        assert!(checks
+            .iter()
+            .any(|c| c.id == "blueprint_v3_file_format" && c.status == "ok"));
     }
 }

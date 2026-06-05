@@ -37,11 +37,8 @@ fn run_loop(
 ) -> Result<()> {
     let mut terminal = ratatui::init();
     let keys: Vec<String> = reg.keys().cloned().collect();
-    let mut list_state = ListState::default().with_selected(if keys.is_empty() {
-        None
-    } else {
-        Some(0)
-    });
+    let mut list_state =
+        ListState::default().with_selected(if keys.is_empty() { None } else { Some(0) });
 
     loop {
         terminal.draw(|f| {

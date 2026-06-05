@@ -1,7 +1,7 @@
 //! `oclive test` human-readable report (color / pass rate / elapsed time).
 
 use crate::test_cmd::CheckResult;
-use std::io::{IsTerminal, stdout};
+use std::io::{stdout, IsTerminal};
 use std::time::Duration;
 
 pub fn print_human_report(root: &std::path::Path, checks: &[CheckResult], elapsed: Duration) {
@@ -29,11 +29,7 @@ pub fn print_human_report(root: &std::path::Path, checks: &[CheckResult], elapse
     println!();
 
     for c in checks {
-        let (icon, status_color) = if c.ok {
-            ("✅", green)
-        } else {
-            ("❌", red)
-        };
+        let (icon, status_color) = if c.ok { ("✅", green) } else { ("❌", red) };
         let dur = c
             .duration_ms
             .map(|ms| format!(" {dim}{ms}ms{reset}"))
@@ -48,8 +44,6 @@ pub fn print_human_report(root: &std::path::Path, checks: &[CheckResult], elapse
     if failed == 0 {
         println!("{green}{bold}test result: ok{reset}. {passed} passed; 0 failed");
     } else {
-        println!(
-            "{red}{bold}test result: FAILED{reset}. {passed} passed; {failed} failed"
-        );
+        println!("{red}{bold}test result: FAILED{reset}. {passed} passed; {failed} failed");
     }
 }

@@ -142,9 +142,8 @@ pub fn generate_monolith_source_with_dual_core(plan: &WeldPlan, dual_core: bool)
     } else {
         ""
     };
-    let mut out = String::from(
-        &format!(
-            r#"#![allow(dead_code)]
+    let mut out = String::from(&format!(
+        r#"#![allow(dead_code)]
 // 此文件由 oclive-cli 根据 monolith.toml 生成。
 // 请勿手改焊接逻辑；修改 monolith.toml 后请运行 `oclive build`（或重新 `oclive init`）再生成。
 //
@@ -155,8 +154,7 @@ pub fn generate_monolith_source_with_dual_core(plan: &WeldPlan, dual_core: bool)
 pub fn run_monolith_pipeline_demo() {{
     oclive_monolith_builtin::ensure_linked();
 "#
-        ),
-    );
+    ));
 
     for slot in SLOT_IDS {
         let m = rust_mod_token(slot);

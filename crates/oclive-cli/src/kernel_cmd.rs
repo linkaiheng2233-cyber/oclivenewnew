@@ -233,7 +233,15 @@ fn run_status(args: KernelStatusArgs) -> Result<()> {
     }
 
     println!("oclive kernel status");
-    println!("  shared:   {} ({})", report.shared_binary, if report.shared_exists { "present" } else { "missing" });
+    println!(
+        "  shared:   {} ({})",
+        report.shared_binary,
+        if report.shared_exists {
+            "present"
+        } else {
+            "missing"
+        }
+    );
     if let Some(ref m) = report.manifest {
         println!("  version:  {} profile={}", m.version, m.build_profile);
         if let Some(ref g) = m.git_commit {
@@ -252,7 +260,9 @@ fn run_status(args: KernelStatusArgs) -> Result<()> {
 
 fn probe_health(port: u16) -> Option<bool> {
     let url = format!("http://127.0.0.1:{port}/health");
-    let agent = ureq::AgentBuilder::new().timeout(std::time::Duration::from_secs(3)).build();
+    let agent = ureq::AgentBuilder::new()
+        .timeout(std::time::Duration::from_secs(3))
+        .build();
     agent.get(&url).call().ok().map(|r| r.status() == 200)
 }
 
@@ -274,8 +284,7 @@ fn run_promote(args: KernelPromoteArgs) -> Result<()> {
     };
 
     let manifest = KernelBinaryManifest::read_sidecar(&binary);
-    let report = promote_with_backup(&binary, manifest.as_ref())
-        .map_err(|e| anyhow::anyhow!(e))?;
+    let report = promote_with_backup(&binary, manifest.as_ref()).map_err(|e| anyhow::anyhow!(e))?;
     println!("promoted to {}", report.dest.display());
     if let Some(ref b) = report.backup_dir {
         println!("backup at {}", b.display());

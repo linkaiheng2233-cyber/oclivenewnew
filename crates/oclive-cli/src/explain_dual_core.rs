@@ -17,12 +17,7 @@ pub struct DualCoreMethodExplain {
 }
 
 const SPECS: &[(&str, &str, &str, &str)] = &[
-    (
-        "memory",
-        "retrieve",
-        "memory_rank",
-        "slot.memory.retrieve",
-    ),
+    ("memory", "retrieve", "memory_rank", "slot.memory.retrieve"),
     (
         "emotion",
         "analyze",
@@ -30,12 +25,7 @@ const SPECS: &[(&str, &str, &str, &str)] = &[
         "slot.emotion.analyze",
     ),
     ("event", "detect", "event_estimate", "slot.event.detect"),
-    (
-        "prompt",
-        "assemble",
-        "build_prompt",
-        "slot.prompt.assemble",
-    ),
+    ("prompt", "assemble", "build_prompt", "slot.prompt.assemble"),
     ("llm", "generate", "llm_generate", "slot.llm.generate"),
     ("agent", "process", "agent_process", "slot.agent.process"),
     (
@@ -96,11 +86,11 @@ pub fn explain_dual_core_query(code: &str, json: bool) -> Result<()> {
     }
 
     let (slot_type, method) = parse_action_query(raw)?;
-    let Some((t, m, stage, ex)) = SPECS.iter().find(|(st, sm, _, _)| *st == slot_type && *sm == method)
+    let Some((t, m, stage, ex)) = SPECS
+        .iter()
+        .find(|(st, sm, _, _)| *st == slot_type && *sm == method)
     else {
-        bail!(
-            "unknown experimental method: {slot_type}.{method} (try `oclive explain DUAL_CORE`)"
-        );
+        bail!("unknown experimental method: {slot_type}.{method} (try `oclive explain DUAL_CORE`)");
     };
 
     let entry = DualCoreMethodExplain {
@@ -152,7 +142,10 @@ pub fn parse_action_query(raw: &str) -> Result<(String, String)> {
             }
         }
     }
-    if let Some((t, m, _, _)) = SPECS.iter().find(|(st, sm, _, _)| format!("{st}.{sm}") == raw) {
+    if let Some((t, m, _, _)) = SPECS
+        .iter()
+        .find(|(st, sm, _, _)| format!("{st}.{sm}") == raw)
+    {
         return Ok(((*t).to_string(), (*m).to_string()));
     }
     bail!("expected slot.<registry_key>.<method> or <type>.<method> (e.g. slot.emotion.analyze)");

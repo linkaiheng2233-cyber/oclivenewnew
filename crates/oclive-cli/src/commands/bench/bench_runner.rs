@@ -2,11 +2,13 @@
 
 use super::bench_core::{
     cargo_build_dual, read_package_name, release_bin_path, stats, BenchReport,
-    BENCH_REPORT_SCHEMA_VERSION, StandardMonolithPair,
+    StandardMonolithPair, BENCH_REPORT_SCHEMA_VERSION,
 };
 use super::BenchArgs;
 use crate::bench_metrics::{binary_file_size, run_bench_child_with_peak};
-use crate::build_cmd::{regenerate_monolith_from_disk, regenerate_monolith_from_disk_quiet, run_timed_dual_build};
+use crate::build_cmd::{
+    regenerate_monolith_from_disk, regenerate_monolith_from_disk_quiet, run_timed_dual_build,
+};
 use anyhow::{bail, Context, Result};
 use std::fs;
 use std::path::Path;
