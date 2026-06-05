@@ -1,6 +1,8 @@
 [workspace]
 members = [
     "crates/oclive_validation",
+    "crates/oclive_validation_wasm",
+    "crates/oclive_schema",
     "crates/oclive_kernel_types",
     "crates/oclive_kernel_contracts",
     "crates/oclive_kernel_runtime",

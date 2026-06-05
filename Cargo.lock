@@ -3089,6 +3089,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "oclive_schema"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "oclive_validation"
 version = "0.1.0"
 dependencies = [
@@ -3097,6 +3105,14 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
+ "wasm-bindgen",
+]
+
+[[package]]
+name = "oclive_validation_wasm"
+version = "0.1.0"
+dependencies = [
+ "oclive_validation",
  "wasm-bindgen",
 ]
 
