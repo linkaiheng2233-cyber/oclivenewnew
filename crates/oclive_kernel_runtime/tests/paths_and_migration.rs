@@ -1,8 +1,8 @@
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use oclive_kernel_runtime::{
-    ensure_app_data_dir, resolve_app_data_dir_for_api, resolve_db_path, AppDataMode,
-    ENV_APP_DATA, ENV_USE_CANONICAL_APP_DATA,
+    ensure_app_data_dir, resolve_app_data_dir_for_api, resolve_db_path, AppDataMode, ENV_APP_DATA,
+    ENV_USE_CANONICAL_APP_DATA,
 };
 use std::env;
 

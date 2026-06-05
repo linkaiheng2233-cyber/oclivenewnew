@@ -63,6 +63,27 @@ pub trait MemoryRepository: Send + Sync {
         limit: i32,
         offset: i32,
     ) -> Result<Vec<Memory>>;
+
+    /// Merge-save with keyword dedupe (same semantics as turn pipeline / bridge `update_memory`).
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err` on database I/O failure.
+    async fn save_memory_merged(
+        &self,
+        role_id: &str,
+        content: &str,
+        importance: f64,
+        similarity_threshold: f64,
+        scene_id: &str,
+    ) -> Result<String>;
+
+    /// Delete one memory row scoped to a role; returns whether a row was removed.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err` on database I/O failure.
+    async fn delete_memory_for_role(&self, role_id: &str, memory_id: &str) -> Result<bool>;
 }
 
 /// Persistence port for role favorability scores.

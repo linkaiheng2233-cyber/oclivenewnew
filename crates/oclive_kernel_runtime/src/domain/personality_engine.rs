@@ -29,7 +29,10 @@ impl PersonalityEngine {
 
     /// Virtual-time gradual drift: nudges **delta** by elapsed virtual hours (long-term, smaller than per-turn events).
     #[must_use]
-    pub fn evolve_by_time_lapse(mut delta: PersonalityVector, lapse_hours: f64) -> PersonalityVector {
+    pub fn evolve_by_time_lapse(
+        mut delta: PersonalityVector,
+        lapse_hours: f64,
+    ) -> PersonalityVector {
         let unit = (lapse_hours / 6.0).clamp(0.0, 8.0);
         let s = unit * 0.025;
         if s <= 0.0 {

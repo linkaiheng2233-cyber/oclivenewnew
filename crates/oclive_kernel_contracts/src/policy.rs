@@ -1,8 +1,6 @@
 //! Emotion / event / memory policy traits.
 
-use oclive_kernel_types::{
-    Emotion, EmotionResult, Event, EventType, PolicyContext, Result,
-};
+use oclive_kernel_types::{Emotion, EmotionResult, Event, EventType, PolicyContext, Result};
 
 /// Maps analyzed user emotion into the role's displayed [`Emotion`].
 ///

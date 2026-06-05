@@ -23,8 +23,8 @@ pub mod relation_engine;
 pub mod remote_life_prompt;
 pub mod repository;
 pub mod time_decay;
-pub mod virtual_time;
 pub mod user_emotion_analyzer;
+pub mod virtual_time;
 
 pub use emotion_analyzer::EmotionAnalyzer;
 pub use event_detector::EventDetector;

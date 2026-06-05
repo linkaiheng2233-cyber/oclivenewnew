@@ -231,8 +231,7 @@ mod tests {
     use oclive_kernel_runtime::KernelErrorBody;
 
     fn invoke_code(err: CommandError) -> String {
-        let j: KernelErrorBody =
-            serde_json::from_str(&err.to_kernel_json()).expect("kernel json");
+        let j: KernelErrorBody = serde_json::from_str(&err.to_kernel_json()).expect("kernel json");
         j.code
     }
 

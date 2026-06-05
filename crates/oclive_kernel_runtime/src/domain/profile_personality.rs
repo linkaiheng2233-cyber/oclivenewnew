@@ -76,9 +76,7 @@ pub fn normalize_summary_key(text: &str) -> String {
 /// Single-line format for an 「重要记忆」 entry.
 #[must_use]
 pub fn format_important_memory_line(summary: &str, first_date: &str, mention_count: i32) -> String {
-    format!(
-        "- {summary}（首次{first_date}，强化{mention_count}次）"
-    )
+    format!("- {summary}（首次{first_date}，强化{mention_count}次）")
 }
 
 /// Parses an 「重要记忆」 bullet; returns (summary, first date, reinforcement count).
@@ -228,9 +226,7 @@ pub fn upsert_important_memory_section(
 }
 
 fn count_bullet_lines(body: &str) -> usize {
-    body.lines()
-        .filter(|l| l.trim().starts_with("- "))
-        .count()
+    body.lines().filter(|l| l.trim().starts_with("- ")).count()
 }
 
 fn remove_first_bullet_line(body: &str) -> Option<String> {
@@ -455,12 +451,10 @@ mod tests {
         assert!(trimmed.contains("## 重要记忆"));
         assert!(trimmed.contains("## 时间演化"));
         assert!(trimmed.chars().count() <= MUTABLE_MAX_CHARS);
-        assert!(count_bullet_lines(
-            trimmed
-                .split("## 重要记忆")
-                .nth(1)
-                .unwrap_or("")
-        ) >= MIN_PROTECTED_SECTION_BULLETS);
+        assert!(
+            count_bullet_lines(trimmed.split("## 重要记忆").nth(1).unwrap_or(""))
+                >= MIN_PROTECTED_SECTION_BULLETS
+        );
     }
 
     #[test]

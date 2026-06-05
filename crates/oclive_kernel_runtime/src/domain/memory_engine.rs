@@ -400,10 +400,8 @@ mod tests {
 
     #[test]
     fn keyword_overlap_detects_similar_topics() {
-        let sim = MemoryEngine::keyword_overlap_similarity(
-            "用户谈到冒险旅行",
-            "他又谈到冒险旅行计划",
-        );
+        let sim =
+            MemoryEngine::keyword_overlap_similarity("用户谈到冒险旅行", "他又谈到冒险旅行计划");
         assert!(sim >= 0.6, "sim={sim}");
     }
 

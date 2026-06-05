@@ -71,13 +71,8 @@ fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<(), String> {
                 fs::create_dir_all(parent)
                     .map_err(|e| format!("mkdir parent {}: {e}", parent.display()))?;
             }
-            fs::copy(&from, &to).map_err(|e| {
-                format!(
-                    "copy {} -> {}: {e}",
-                    from.display(),
-                    to.display()
-                )
-            })?;
+            fs::copy(&from, &to)
+                .map_err(|e| format!("copy {} -> {}: {e}", from.display(), to.display()))?;
         }
     }
     Ok(())

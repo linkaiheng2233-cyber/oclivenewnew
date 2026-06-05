@@ -107,6 +107,9 @@ pub struct SendMessageResponse {
     /// Human-readable chat persistence error when `chat_persist_failed` is set.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub chat_persist_error: Option<String>,
+    /// `true` when role blueprint enables dual-core but host fell back to co-present path.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dual_core_degraded: Option<bool>,
 }
 
 // ----- WEEK3-004: role / memory / event queries -----
@@ -513,7 +516,7 @@ fn default_switch_together() -> bool {
     true
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SwitchSceneRequest {
     pub role_id: String,
     pub scene_id: String,
@@ -522,7 +525,7 @@ pub struct SwitchSceneRequest {
     pub together: bool,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SetUserPresenceSceneRequest {
     pub role_id: String,
     pub scene_id: String,
@@ -537,7 +540,7 @@ pub struct RolePackPeekResponse {
 }
 
 /// `switch_scene` response: role info and scene welcome message (for frontend chat insertion).
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SwitchSceneResponse {
     #[serde(flatten)]
     pub role: RoleInfo,
@@ -611,7 +614,7 @@ pub struct EventItem {
     pub description: Option<String>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateEventRequest {
     pub role_id: String,
     pub event_type: String,

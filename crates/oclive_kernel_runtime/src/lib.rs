@@ -9,6 +9,7 @@
 
 pub mod app_data_migration;
 pub mod domain;
+pub mod http_error;
 pub mod kernel_discovery;
 pub mod kernel_manifest;
 pub mod kernel_runtime_ops;
@@ -19,13 +20,13 @@ pub use oclive_validation as validation;
 
 // Transitional compatibility layer: downstream can keep using old paths like `use oclive_kernel_runtime::AppError`;
 // the surface is planned to be tightened in a later minor version, so new code should prefer depending on `oclive_kernel_types` / `oclive_kernel_contracts`.
-pub use oclive_kernel_types::*;
 pub use oclive_kernel_contracts::{
-    self as kernel_contracts, AgentProvider, ComplexEmotionProvider, EmotionPolicy,
-    EventEstimator, EventPolicy, FavorabilityRepository, LlmClient, LocalPluginBridge, MemoryPolicy,
+    self as kernel_contracts, AgentProvider, ComplexEmotionProvider, EmotionPolicy, EventEstimator,
+    EventPolicy, FavorabilityRepository, LlmClient, LocalPluginBridge, MemoryPolicy,
     MemoryRepository, MemoryRetrieval, PluginHostPort, PromptAssembler, SlotRegistryResolver,
     UserEmotionAnalyzer,
 };
+pub use oclive_kernel_types::*;
 pub use oclive_kernel_types::{self as kernel_types};
 
 pub use utils::json_loose::extract_json_object;
@@ -46,6 +47,7 @@ pub const ENV_HTTP_API_MOCK_LLM: &str = "OCLIVE_HTTP_API_MOCK_LLM";
 pub const ENV_ROLES_DIR: &str = "OCLIVE_ROLES_DIR";
 
 pub use app_data_migration::ensure_canonical_app_data_ready;
+pub use http_error::{app_error_from_http_response, app_error_from_kernel_body};
 pub use kernel_discovery::{
     discover_kernel_candidates, discover_spawn_kernel_candidates, find_monorepo_root,
     pick_best_kernel, promote_to_shared_runtime, shared_kernel_binary_path, shared_runtime_dir,
@@ -61,8 +63,7 @@ pub use kernel_runtime_ops::{
 pub use paths::{
     canonical_brand_app_data_dir, ensure_app_data_dir, resolve_app_data_dir_for_api,
     resolve_app_data_dir_for_host, resolve_db_path, tauri_legacy_app_data_dir, temp_api_db_path,
-    AppDataMode,
-    ENV_APP_DATA, ENV_APP_DATA_LEGACY_TEMP, ENV_SKIP_APP_DATA_MIGRATION,
+    AppDataMode, ENV_APP_DATA, ENV_APP_DATA_LEGACY_TEMP, ENV_SKIP_APP_DATA_MIGRATION,
     ENV_USE_CANONICAL_APP_DATA, TAURI_APP_IDENTIFIER,
 };
 

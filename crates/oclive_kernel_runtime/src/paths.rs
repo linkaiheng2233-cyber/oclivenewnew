@@ -187,10 +187,7 @@ pub fn resolve_app_data_dir_for_api(port: u16) -> (PathBuf, AppDataMode) {
         return (temp_api_app_data_dir(port), AppDataMode::Temp);
     }
     if env_is_truthy(ENV_USE_CANONICAL_APP_DATA) {
-        return (
-            canonical_brand_app_data_dir(),
-            AppDataMode::Persistent,
-        );
+        return (canonical_brand_app_data_dir(), AppDataMode::Persistent);
     }
     (temp_api_app_data_dir(port), AppDataMode::Temp)
 }
@@ -201,12 +198,8 @@ pub fn resolve_app_data_dir_for_api(port: u16) -> (PathBuf, AppDataMode) {
 ///
 /// Returns I/O error message when the directory cannot be created.
 pub fn ensure_app_data_dir(path: &Path) -> Result<PathBuf, String> {
-    std::fs::create_dir_all(path).map_err(|e| {
-        format!(
-            "create app_data_dir {}: {e}",
-            path.display()
-        )
-    })?;
+    std::fs::create_dir_all(path)
+        .map_err(|e| format!("create app_data_dir {}: {e}", path.display()))?;
     Ok(path.to_path_buf())
 }
 

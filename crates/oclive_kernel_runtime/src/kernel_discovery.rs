@@ -128,7 +128,11 @@ fn dev_kernel_candidates(repo_root: &Path) -> Vec<KernelCandidate> {
     for root in target_roots {
         for (profile, tauri_score, headless_score) in [
             ("debug", SCORE_DEV_FULL_DEBUG, SCORE_DEV_HEADLESS_DEBUG),
-            ("release", SCORE_DEV_FULL_RELEASE, SCORE_DEV_HEADLESS_RELEASE),
+            (
+                "release",
+                SCORE_DEV_FULL_RELEASE,
+                SCORE_DEV_HEADLESS_RELEASE,
+            ),
         ] {
             let tauri = root.join(profile).join(kernel_exe("oclivenewnew-tauri"));
             let headless = root.join(profile).join(kernel_exe("oclive-kernel-server"));

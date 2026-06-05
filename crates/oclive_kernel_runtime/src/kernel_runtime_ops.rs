@@ -100,7 +100,10 @@ fn prune_old_backups() {
 
 /// Whether `candidate` should replace the shared runtime binary (manifest first, always promote if no shared).
 #[must_use]
-pub fn should_promote_binary(_candidate: &Path, candidate_manifest: Option<&KernelBinaryManifest>) -> bool {
+pub fn should_promote_binary(
+    _candidate: &Path,
+    candidate_manifest: Option<&KernelBinaryManifest>,
+) -> bool {
     let shared = shared_kernel_binary_path();
     if !shared.is_file() {
         return true;
@@ -111,7 +114,10 @@ pub fn should_promote_binary(_candidate: &Path, candidate_manifest: Option<&Kern
     let Some(shared_m) = KernelBinaryManifest::read_sidecar(&shared) else {
         return true;
     };
-    matches!(cand_m.cmp_for_promote(&shared_m), std::cmp::Ordering::Greater)
+    matches!(
+        cand_m.cmp_for_promote(&shared_m),
+        std::cmp::Ordering::Greater
+    )
 }
 
 /// Copy `binary` into shared runtime after backing up the previous file.

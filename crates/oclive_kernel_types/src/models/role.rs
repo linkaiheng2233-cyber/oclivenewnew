@@ -5,15 +5,16 @@ use super::author_pack::AuthorPackFile;
 use super::knowledge::KnowledgeIndex;
 use super::plugin_backends::PluginBackends;
 use super::role_pack_config::{
-    RolePackChatStorageConfig, RolePackEvolutionConfig, RolePackMemoryConfig, RolePackRelationConfig,
+    RolePackChatStorageConfig, RolePackEvolutionConfig, RolePackMemoryConfig,
+    RolePackRelationConfig,
 };
 use super::role_time_config::RoleTimeConfig;
 use super::scene_disk::DiskSceneConfig;
 use super::ui_config::UiConfig;
 pub use oclive_validation::{
     AutonomousSceneConfig, AutonomousSceneRule, IdentityBinding, LifeAvailability,
-    LifeScheduleDisk, LifeScheduleEntryDisk, LifeTrajectoryDisk, PersonalitySource,
-    PipelineStep, RemotePresenceConfig, RuntimeConfig,
+    LifeScheduleDisk, LifeScheduleEntryDisk, LifeTrajectoryDisk, PersonalitySource, PipelineStep,
+    RemotePresenceConfig, RuntimeConfig,
 };
 use parking_lot::RwLock;
 use std::sync::Arc;
