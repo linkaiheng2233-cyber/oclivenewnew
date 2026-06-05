@@ -168,6 +168,7 @@ pub fn ensure_models_dir(resource_dir: Option<&Path>) -> PathBuf {
 }
 
 /// Canonical models folder aligned with the given `roles/` root.
+#[must_use]
 pub fn ensure_models_dir_for_roles(roles_dir: &Path) -> PathBuf {
     ensure_models_dir(resource_dir_from_roles(roles_dir).as_deref())
 }

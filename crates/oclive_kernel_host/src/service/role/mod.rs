@@ -20,6 +20,7 @@ use crate::models::dto::{RoleData, RoleInfo, RoleSummary};
 use crate::state::AppState;
 use std::sync::Arc;
 
+#[must_use]
 pub fn session_namespace(role_id: &str, session_id: Option<&str>) -> String {
     crate::domain::chat_engine::conversation_state_role_id(role_id, session_id)
 }
@@ -61,6 +62,10 @@ pub async fn load_role_impl(
 }
 
 /// Ensure manifest `role_id` has `role_runtime` (auto [`load_role_impl`] when missing).
+///
+/// # Errors
+///
+/// Returns [`Err`] when role loading or runtime initialization fails.
 pub async fn ensure_manifest_role_ready(
     state: &AppState,
     role_id: &str,

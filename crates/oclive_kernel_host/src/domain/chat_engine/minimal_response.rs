@@ -13,6 +13,7 @@ use super::relation_snapshot::load_relation_snapshot;
 use super::turn_pipeline::persistence::append_agent_turn_to_chat_storage;
 
 /// Loads relation / favorability / portrait emotion in parallel and builds a minimal [`SendMessageResponse`] for Agent shortcut, etc.
+#[allow(clippy::too_many_arguments)]
 pub(crate) async fn build_minimal_response(
     state: &AppState,
     pl: &ResolvedRolePlugins,

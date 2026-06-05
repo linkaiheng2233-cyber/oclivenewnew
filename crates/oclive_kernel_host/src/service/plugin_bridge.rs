@@ -60,6 +60,9 @@ fn parse_event_type(s: &str) -> Result<EventType, CommandError> {
     }
 }
 
+/// # Errors
+///
+/// Returns [`Err`] when the event type is invalid or persistence fails.
 pub async fn create_event_impl(
     state: &AppState,
     req: &CreateEventRequest,

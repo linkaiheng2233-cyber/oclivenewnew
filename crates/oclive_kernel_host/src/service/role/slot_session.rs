@@ -253,6 +253,9 @@ pub async fn get_plugin_resolution_debug_impl(
     build_plugin_resolution_debug_info(state, &req.role_id, req.session_id.as_deref()).await
 }
 
+/// # Errors
+///
+/// Returns [`Err`] when the role cannot be loaded or runtime initialization fails.
 pub async fn build_plugin_resolution_debug_info(
     state: &AppState,
     role_id: &str,

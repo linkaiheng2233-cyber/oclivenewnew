@@ -31,6 +31,7 @@ mod role;
 mod scene;
 
 /// Matches values injected by oclive-launcher: `ollama` / `remote` (case-insensitive).
+#[must_use]
 pub fn resolve_llm_backend_env_override() -> Option<LlmBackend> {
     let Ok(v) = std::env::var("OCLIVE_LLM_BACKEND") else {
         return None;

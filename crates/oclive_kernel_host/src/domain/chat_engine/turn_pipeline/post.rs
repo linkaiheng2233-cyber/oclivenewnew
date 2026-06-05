@@ -72,6 +72,7 @@ pub(crate) async fn run_main_llm(
     })
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn analyze_bot_emotion_and_policy(
     state: &crate::state::AppState,
     pl: &crate::domain::plugin_host::ResolvedRolePlugins,

@@ -58,7 +58,7 @@ pub async fn ensure_once(state: &AppState, role: &Role, effective: &PluginBacken
     }
     let role_id = role.id.as_str();
     if let Some(cached) = state.startup_health.read().cached_outcome(role_id) {
-        return cached.map_err(|msg| AppError::StartupHealthFailed(msg));
+        return cached.map_err(AppError::StartupHealthFailed);
     }
     let outcome = run_checks(state, role, effective)
         .await

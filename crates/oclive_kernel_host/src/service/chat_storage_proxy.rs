@@ -83,6 +83,10 @@ pub enum ChatStorageProxyOp {
 }
 
 /// Execute a chat storage operation on the authoritative [`AppState`] (kernel or full desktop).
+///
+/// # Errors
+///
+/// Returns [`Err`] when the underlying storage or role lookup operation fails.
 pub async fn execute_chat_storage_proxy(
     state: &AppState,
     op: ChatStorageProxyOp,

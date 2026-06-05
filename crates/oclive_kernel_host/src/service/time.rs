@@ -110,6 +110,10 @@ async fn apply_autonomous_scene_after_jump(
 }
 
 /// Batch-generate monologue lines after time jump.
+///
+/// # Errors
+///
+/// Returns [`Err`] when role/scene lookup or LLM generation fails.
 pub async fn generate_monologue_lines(
     state: &AppState,
     role_id: &str,

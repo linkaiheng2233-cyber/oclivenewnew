@@ -246,6 +246,7 @@ async fn append_turn_inner(
     ids
 }
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) async fn append_turn_to_chat_storage(
     state: &crate::state::AppState,
     mode: TurnMode,
@@ -283,6 +284,7 @@ pub(crate) async fn append_turn_to_chat_storage(
     append_turn_inner(state, srid, persist, "append_turn failed").await
 }
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) async fn append_agent_turn_to_chat_storage(
     state: &crate::state::AppState,
     mrid: &str,

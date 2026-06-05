@@ -232,6 +232,7 @@ async fn load_prev_narrative_hint(state: &crate::state::AppState, srid: &str) ->
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn load_memories_and_relation_key(
     state: &crate::state::AppState,
     role: &Role,
@@ -268,6 +269,7 @@ async fn load_memories_and_relation_key(
     Ok((memories, user_relation_key))
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn apply_memory_reinforcement(
     state: &crate::state::AppState,
     role: &Role,
@@ -285,7 +287,7 @@ async fn apply_memory_reinforcement(
                 personality = PersonalityEngine::evolve_by_reinforced_memory(
                     personality,
                     &m.content,
-                    &user_emotion_str,
+                    user_emotion_str,
                     event_runtime,
                     &role.evolution_bounds,
                 );
@@ -353,7 +355,7 @@ async fn rank_relevant_memories(
             SlotRunner::rank_memories(
                 pl,
                 MemoryRetrievalInput {
-                    memories: &memories,
+                    memories,
                     user_query: user_message,
                     scene_id: Some(scene_id),
                     limit: 8,

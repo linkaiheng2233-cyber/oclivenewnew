@@ -97,6 +97,9 @@ pub async fn apply_user_llm_env_from_db(
     Ok(provider)
 }
 
+/// # Errors
+///
+/// Database or settings read failures propagate as [`crate::error::AppError`].
 pub async fn resolve_remote_token(
     db: &crate::infrastructure::db::DbManager,
     app_data: &std::path::Path,
@@ -152,6 +155,9 @@ pub async fn apply_user_llm_env(state: &AppState) -> crate::error::Result<()> {
     Ok(())
 }
 
+/// # Errors
+///
+/// Database read failures propagate as [`crate::error::AppError`].
 pub async fn cloud_api_token_configured(
     db: &crate::infrastructure::db::DbManager,
     req_token: Option<&str>,
