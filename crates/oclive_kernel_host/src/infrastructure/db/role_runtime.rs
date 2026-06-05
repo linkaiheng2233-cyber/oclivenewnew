@@ -581,8 +581,12 @@ impl DbManager {
     /// Rows are created by `ensure_identity_stats_row` during chat turns; if none exist,
     /// the identity-stats UPDATE is a no-op while runtime still receives the delta.
     pub async fn apply_favorability_delta(&self, role_id: &str, delta: f64) -> Result<()> {
-        let now = Utc::now();
-        let now_str = now.to_rfc3339();
+        let now_str = Utc::now().to_rfc3339();
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
         sqlx::query(
             "UPDATE role_identity_stats SET favorability = favorability + ?, updated_at = ? WHERE role_id = ?",
@@ -590,7 +594,7 @@ impl DbManager {
         .bind(delta)
         .bind(&now_str)
         .bind(role_id)
-        .execute(&self.pool)
+        .execute(&mut *tx)
         .await
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
@@ -600,7 +604,7 @@ impl DbManager {
         .bind(delta)
         .bind(&now_str)
         .bind(role_id)
-        .execute(&self.pool)
+        .execute(&mut *tx)
         .await
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
@@ -611,7 +615,7 @@ impl DbManager {
             .bind(role_id)
             .bind(delta)
             .bind(&now_str)
-            .execute(&self.pool)
+            .execute(&mut *tx)
             .await
             .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         }
@@ -622,11 +626,14 @@ impl DbManager {
         .bind(role_id)
         .bind(delta)
         .bind("apply_delta")
-        .bind(now_str)
-        .execute(&self.pool)
+        .bind(&now_str)
+        .execute(&mut *tx)
         .await
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
+        tx.commit()
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(())
     }
 
@@ -638,7 +645,7 @@ impl DbManager {
              VALUES (?, ?, ?, ?, ?)",
         )
         .bind(role_id)
-        .bind(format!("{:?}", event.event_type))
+        .bind(event.event_type.as_ref())
         .bind(&event.user_emotion)
         .bind(&event.bot_emotion)
         .bind(now.to_rfc3339())
@@ -720,7 +727,7 @@ impl DbManager {
              VALUES (?, ?, ?, ?, ?, ?)",
         )
         .bind(role_id)
-        .bind(format!("{:?}", event_type))
+        .bind(event_type.as_ref())
         .bind(user_emotion)
         .bind(bot_emotion)
         .bind(resolution)

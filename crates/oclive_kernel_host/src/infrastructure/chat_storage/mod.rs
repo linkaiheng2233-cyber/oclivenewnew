@@ -3,6 +3,9 @@
 mod backends;
 mod cleanup;
 mod config;
+mod chat_messages;
+mod chat_search;
+mod chat_sessions;
 mod db;
 mod export;
 mod factory;
@@ -25,7 +28,7 @@ pub use config::{
     resolve_storage_root, resolve_storage_root_with_role, set_persisted_storage_root,
     APP_SETTING_CHAT_STORAGE_ROOT, DEFAULT_MAX_MESSAGES, ENV_CHAT_STORAGE_ROOT,
 };
-pub use db::{highlight_snippet, ChatSearchRow};
+pub use db::{highlight_snippet, manifest_sess_glob_pattern, ChatSearchRow};
 pub use export::{export_chat_session, export_role_chats, resolve_export_max_messages};
 pub use factory::{build_conversation_store, resolve_backend_kind, ENV_CHAT_STORAGE_BACKEND};
 pub use mirror::delete_mirror_tree_for_role;

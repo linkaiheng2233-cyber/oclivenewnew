@@ -91,7 +91,7 @@ fn sessions_to_delete(
     if let Some(max_n) = cfg.auto_cleanup_max_sessions {
         let n = max_n.max(1) as usize;
         let mut sorted = sessions.to_vec();
-        sorted.sort_by(|a, b| updated_at_sort_key(&b.3).cmp(&updated_at_sort_key(&a.3)));
+        sorted.sort_by_key(|b| std::cmp::Reverse(updated_at_sort_key(&b.3)));
         let set: HashSet<String> = sorted
             .iter()
             .take(n)
