@@ -35,7 +35,9 @@ pub struct SlotAttachmentDecl {
 /// # Errors
 ///
 /// Returns an error when JSON is invalid or `slot_attachment` shape/fields fail validation.
-pub fn parse_slot_attachments_from_manifest_json(raw: &str) -> Result<Vec<SlotAttachmentDecl>, String> {
+pub fn parse_slot_attachments_from_manifest_json(
+    raw: &str,
+) -> Result<Vec<SlotAttachmentDecl>, String> {
     let v: Value = serde_json::from_str(raw).map_err(|e| format!("manifest JSON: {e}"))?;
     let Some(att) = v.get("slot_attachment") else {
         return Ok(vec![]);
@@ -57,8 +59,8 @@ fn parse_slot_attachment_value(v: &Value) -> Result<Vec<SlotAttachmentDecl>, Str
             Ok(out)
         }
         Value::Object(_) => {
-            let one: SlotAttachmentDecl = serde_json::from_value(v.clone())
-                .map_err(|e| format!("slot_attachment: {e}"))?;
+            let one: SlotAttachmentDecl =
+                serde_json::from_value(v.clone()).map_err(|e| format!("slot_attachment: {e}"))?;
             validate_slot_attachment_decl(&one)?;
             Ok(vec![one])
         }
@@ -129,19 +131,21 @@ pub fn apply_slot_attachments_to_registry(
         let position = att.position.unwrap_or(0);
 
         let key = find_or_create_slot_key(registry, slot_type, position);
-        let entry = registry.entry(key.clone()).or_insert_with(|| SlotRegistryEntry {
-            slot_type: slot_type.to_string(),
-            label: label.clone(),
-            backend: backend.clone(),
-            position,
-            plugin: None,
-            plugins: None,
-            model: None,
-            url: None,
-            local_memory_provider_id: None,
-            zone: None,
-            policy: None,
-        });
+        let entry = registry
+            .entry(key.clone())
+            .or_insert_with(|| SlotRegistryEntry {
+                slot_type: slot_type.to_string(),
+                label: label.clone(),
+                backend: backend.clone(),
+                position,
+                plugin: None,
+                plugins: None,
+                model: None,
+                url: None,
+                local_memory_provider_id: None,
+                zone: None,
+                policy: None,
+            });
         entry.slot_type = slot_type.to_string();
         entry.label = label.clone();
         entry.backend = backend.clone();
@@ -223,7 +227,10 @@ mod tests {
         }];
         let notes = apply_slot_attachments_to_registry(&mut reg, "com.test.llm", &att);
         assert!(!notes.is_empty());
-        assert_eq!(reg.get("llm").unwrap().plugin.as_deref(), Some("com.test.llm"));
+        assert_eq!(
+            reg.get("llm").unwrap().plugin.as_deref(),
+            Some("com.test.llm")
+        );
         assert_eq!(reg.get("llm").unwrap().backend, "directory");
     }
 }

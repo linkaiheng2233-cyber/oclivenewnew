@@ -2,8 +2,7 @@
 
 use libfuzzer_sys::fuzz_target;
 use oclive_validation::{
-    validate_blueprint_v2_json, validate_manifest_top_level_keys,
-    validate_settings_top_level_keys,
+    validate_blueprint_v2_json, validate_manifest_top_level_keys, validate_settings_top_level_keys,
 };
 use serde_json::Map;
 

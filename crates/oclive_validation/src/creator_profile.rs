@@ -40,8 +40,12 @@ pub fn validate_role_pack_creator_directory(role_dir: &Path) -> Result<(), Vec<S
     let raw = fs::read_to_string(&blueprint_path)
         .map_err(|e| vec![format!("读取 {} 失败: {}", PIPELINE_BLUEPRINT_FILENAME, e)])?;
 
-    let root: Value = serde_json::from_str(&raw)
-        .map_err(|e| vec![format!("{} JSON 语法错误: {}", PIPELINE_BLUEPRINT_FILENAME, e)])?;
+    let root: Value = serde_json::from_str(&raw).map_err(|e| {
+        vec![format!(
+            "{} JSON 语法错误: {}",
+            PIPELINE_BLUEPRINT_FILENAME, e
+        )]
+    })?;
 
     let meta = root.get("meta").ok_or_else(|| {
         vec![format!(
@@ -50,9 +54,9 @@ pub fn validate_role_pack_creator_directory(role_dir: &Path) -> Result<(), Vec<S
         )]
     })?;
 
-    let meta_obj = meta.as_object().ok_or_else(|| {
-        vec!["creator profile：meta 须为 JSON 对象".into()]
-    })?;
+    let meta_obj = meta
+        .as_object()
+        .ok_or_else(|| vec!["creator profile：meta 须为 JSON 对象".into()])?;
 
     for key in meta_obj.keys() {
         if key.starts_with('_') {

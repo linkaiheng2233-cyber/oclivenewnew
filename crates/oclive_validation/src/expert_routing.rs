@@ -218,7 +218,10 @@ pub fn trigger_matches(trigger: &ExpertTrigger, ctx: &ExpertMatchContext) -> boo
                 .unwrap_or("")
                 .trim()
                 .to_ascii_lowercase();
-            if !emotions.iter().any(|e| e.trim().eq_ignore_ascii_case(cur.as_str())) {
+            if !emotions
+                .iter()
+                .any(|e| e.trim().eq_ignore_ascii_case(cur.as_str()))
+            {
                 return false;
             }
         }
@@ -248,7 +251,10 @@ pub fn trigger_matches(trigger: &ExpertTrigger, ctx: &ExpertMatchContext) -> boo
                 .unwrap_or("")
                 .trim()
                 .to_ascii_lowercase();
-            if !rels.iter().any(|r| r.trim().eq_ignore_ascii_case(cur.as_str())) {
+            if !rels
+                .iter()
+                .any(|r| r.trim().eq_ignore_ascii_case(cur.as_str()))
+            {
                 return false;
             }
         }

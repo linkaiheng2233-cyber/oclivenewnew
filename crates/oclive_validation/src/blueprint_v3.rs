@@ -9,26 +9,31 @@ use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
 
+use crate::blueprint_includes::validate_includes;
 use crate::blueprint_v2::{
     meta_to_disk_manifest, BlueprintMeta, SlotGroupEntry, SlotRegistryEntry,
     BLUEPRINT_V2_SCHEMA_VERSION, PIPELINE_BLUEPRINT_FILENAME,
 };
-use crate::blueprint_includes::validate_includes;
 use crate::pipeline_action::{parse_pipeline_action_kind, PipelineActionKind};
-use crate::validate::{validate_disk_manifest, validate_min_runtime_version};
 use crate::role_pack::merge_role_pack_scene_ids;
 use crate::runtime_config::{validate_runtime_config, RuntimeConfig};
+use crate::validate::{validate_disk_manifest, validate_min_runtime_version};
 
 pub const BLUEPRINT_V3_SCHEMA_VERSION: u32 = 3;
 
 /// Instances referenced by the stable core `pipeline.stable`; their `type` must be one of the six slots.
-pub const STABLE_PIPELINE_SLOT_TYPES: &[&str] = &[
-    "memory", "emotion", "event", "prompt", "llm", "agent",
-];
+pub const STABLE_PIPELINE_SLOT_TYPES: &[&str] =
+    &["memory", "emotion", "event", "prompt", "llm", "agent"];
 
 /// P4 runtime: the seven `type` values the `PluginHost` facade supports (including the `complex_emotion` facility).
 pub const PLUGIN_HOST_SLOT_TYPES: &[&str] = &[
-    "memory", "emotion", "event", "prompt", "llm", "agent", "complex_emotion",
+    "memory",
+    "emotion",
+    "event",
+    "prompt",
+    "llm",
+    "agent",
+    "complex_emotion",
 ];
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -152,40 +157,13 @@ fn validate_blueprint_v3_parsed(
         ));
     }
 
-    if bp.meta.id.trim().is_empty() {
-        errs.push("meta.id 不能为空".into());
-    }
-    if let Some(dir) = folder_name {
-        if bp.meta.id.trim() != dir {
-            errs.push(format!(
-                "meta.id「{}」与角色包目录名「{}」不一致",
-                bp.meta.id.trim(),
-                dir
-            ));
-        }
-    }
-    if let Some(ref p) = bp.meta.personality {
-        if let Err(e) = crate::blueprint_v2::validate_meta_personality(p) {
-            errs.push(e);
-        }
-    }
-    if bp.meta.relations.is_empty() {
-        errs.push("meta.relations 至少需要配置一种用户身份".into());
-    }
-    if bp.meta.name.trim().is_empty() {
-        errs.push("meta.name 不能为空".into());
-    }
+    crate::blueprint_v2::validate_blueprint_meta_core(&bp.meta, folder_name, &mut errs);
 
     if let Some(ref rc) = bp.runtime_config {
         if let Err(e) = validate_runtime_config(rc) {
             errs.extend(e);
         }
-        if rc
-            .dual_core
-            .as_ref()
-            .is_some_and(|d| d.enabled)
-            && bp.pipeline.is_none()
-        {
+        if rc.dual_core.as_ref().is_some_and(|d| d.enabled) && bp.pipeline.is_none() {
             errs.push(
                 "runtime_config.dual_core.enabled 为 true 时须提供 pipeline.stable 和/或 pipeline.experimental"
                     .into(),
@@ -323,7 +301,11 @@ fn validate_pipeline_steps(
         if matches!(kind, PipelineActionKind::ExpertInvoke) {
             continue;
         }
-        let PipelineActionKind::Slot { registry_key: key, method: _ } = kind else {
+        let PipelineActionKind::Slot {
+            registry_key: key,
+            method: _,
+        } = kind
+        else {
             continue;
         };
         let Some(entry) = registry.get(&key) else {
@@ -447,10 +429,7 @@ fn v3_registry_to_btree(
         .collect()
 }
 
-fn apply_runtime_config_to_disk(
-    disk: &mut crate::manifest::DiskRoleManifest,
-    rc: &RuntimeConfig,
-) {
+fn apply_runtime_config_to_disk(disk: &mut crate::manifest::DiskRoleManifest, rc: &RuntimeConfig) {
     if let Some(ref m) = rc.memory_config {
         disk.memory_config = m.clone();
     }
@@ -501,7 +480,11 @@ fn blueprint_v3_file_to_load_result(bp: &BlueprintV3File) -> BlueprintV3LoadResu
     BlueprintV3LoadResult {
         disk,
         slot_registry: v3_registry_to_btree(&bp.slot_registry),
-        groups: bp.groups.iter().map(|(k, v)| (k.clone(), v.clone())).collect(),
+        groups: bp
+            .groups
+            .iter()
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect(),
         runtime_config: bp.runtime_config.clone(),
         pipeline_experimental,
         interaction_mode,
@@ -544,8 +527,7 @@ pub fn validate_role_pack_blueprint_v3_directory(
     if let Some(ref rc) = bp.runtime_config {
         apply_runtime_config_to_disk(&mut disk, rc);
     }
-    let merged_scenes = merge_role_pack_scene_ids(role_dir, &disk.scenes)
-        .map_err(|e| vec![e])?;
+    let merged_scenes = merge_role_pack_scene_ids(role_dir, &disk.scenes).map_err(|e| vec![e])?;
     validate_disk_manifest(&disk, &merged_scenes).map_err(|e| vec![e])?;
     validate_min_runtime_version(disk.min_runtime_version.as_deref(), host_version)
         .map_err(|e| vec![e])?;
@@ -564,8 +546,7 @@ pub fn load_blueprint_v3_for_role_dir(
     validate_role_pack_blueprint_v3_directory(role_dir, host_version)?;
     let raw = fs::read_to_string(role_dir.join(PIPELINE_BLUEPRINT_FILENAME))
         .map_err(|e| vec![format!("读取 {} 失败: {}", PIPELINE_BLUEPRINT_FILENAME, e)])?;
-    let resolved =
-        crate::blueprint_includes::resolve_blueprint_includes_lenient(role_dir, &raw);
+    let resolved = crate::blueprint_includes::resolve_blueprint_includes_lenient(role_dir, &raw);
     let folder_name = role_dir.file_name().and_then(|s| s.to_str()).unwrap_or("");
     validate_blueprint_v3_json(&resolved, Some(folder_name))?;
     let bp: BlueprintV3File = serde_json::from_str(&resolved)
@@ -573,7 +554,11 @@ pub fn load_blueprint_v3_for_role_dir(
     Ok(blueprint_v3_file_to_load_result(&bp))
 }
 
-fn dfs_cycle(node: &str, graph: &HashMap<String, Vec<String>>, state: &mut HashMap<String, u8>) -> bool {
+fn dfs_cycle(
+    node: &str,
+    graph: &HashMap<String, Vec<String>>,
+    state: &mut HashMap<String, u8>,
+) -> bool {
     match state.get(node).copied().unwrap_or(0) {
         1 => return true,
         2 => return false,

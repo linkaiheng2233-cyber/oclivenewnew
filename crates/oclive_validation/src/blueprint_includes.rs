@@ -30,7 +30,10 @@ const ALLOWED_MODES: &[&str] = &["merge", "replace"];
 /// Validate `includes` entries (path safety + target + mode; the file must exist).
 ///
 /// # Errors
-pub fn validate_includes(role_dir: &Path, includes: &[BlueprintIncludeEntry]) -> Result<(), Vec<String>> {
+pub fn validate_includes(
+    role_dir: &Path,
+    includes: &[BlueprintIncludeEntry],
+) -> Result<(), Vec<String>> {
     let mut errs = Vec::new();
     for (idx, inc) in includes.iter().enumerate() {
         let label = inc
@@ -50,10 +53,7 @@ pub fn validate_includes(role_dir: &Path, includes: &[BlueprintIncludeEntry]) ->
         }
         let file_path = role_dir.join(&inc.path);
         if !file_path.is_file() {
-            errs.push(format!(
-                "{label}: 文件不存在: {}",
-                file_path.display()
-            ));
+            errs.push(format!("{label}: 文件不存在: {}", file_path.display()));
         }
 
         let target = inc.target.trim();
@@ -121,12 +121,10 @@ pub fn resolve_blueprint_includes_strict(
     if !includes.is_empty() {
         validate_includes(role_dir, &includes)?;
         for inc in &includes {
-            apply_include_strict(role_dir, &mut root, inc)
-                .map_err(|e| vec![e])?;
+            apply_include_strict(role_dir, &mut root, inc).map_err(|e| vec![e])?;
         }
     }
-    serde_json::to_string_pretty(&root)
-        .map_err(|e| vec![format!("合并后序列化失败: {e}")])
+    serde_json::to_string_pretty(&root).map_err(|e| vec![format!("合并后序列化失败: {e}")])
 }
 
 fn take_includes(root: &mut Value) -> Option<Vec<BlueprintIncludeEntry>> {
@@ -203,7 +201,12 @@ fn normalize_path(path: &Path) -> PathBuf {
     out
 }
 
-fn apply_at_target(root: &mut Value, target: &str, fragment: &Value, mode: &str) -> Result<(), String> {
+fn apply_at_target(
+    root: &mut Value,
+    target: &str,
+    fragment: &Value,
+    mode: &str,
+) -> Result<(), String> {
     if !is_allowed_target(target) {
         return Err(format!("非法 target: {target}"));
     }

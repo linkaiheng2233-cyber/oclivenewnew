@@ -61,12 +61,7 @@ fn parse_slot_step(action: &str) -> Result<(String, String), String> {
     if key.is_empty() || key == "expert" {
         return Err(format!("action「{action}」非法 registry_key"));
     }
-    let reserved = [
-        "personality",
-        "prompt_enhance",
-        "memory",
-        "lora",
-    ];
+    let reserved = ["personality", "prompt_enhance", "memory", "lora"];
     if reserved.contains(&key) {
         return Err(format!("action「{action}」请使用专家设施专用 action"));
     }

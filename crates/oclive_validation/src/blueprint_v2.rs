@@ -7,8 +7,8 @@ use std::path::Path;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use crate::blueprint_includes::validate_includes;
 use crate::disk_role_settings::{AutonomousSceneConfig, RemotePresenceConfig};
-use crate::runtime_config::RuntimeConfig;
 use crate::manifest::{
     DiskRoleManifest, EvolutionConfigDisk, IdentityBinding, KnowledgePackConfigDisk,
     MemoryConfigDisk, UserRelationDisk,
@@ -18,7 +18,7 @@ use crate::plugin_backends::{
     PluginBackends, PromptBackend,
 };
 use crate::role_pack::{merge_role_pack_scene_ids, validate_default_personality_vector};
-use crate::blueprint_includes::validate_includes;
+use crate::runtime_config::RuntimeConfig;
 use crate::validate::{
     validate_disk_manifest, validate_interaction_mode_pack_setting,
     validate_knowledge_manifest_disk, validate_min_runtime_version,
@@ -41,9 +41,7 @@ const SLOT_TYPES: &[&str] = &[
 ];
 
 /// Six orchestratable module types (`groups.type` allows only this set; excludes `complex_emotion`).
-pub const GROUP_SLOT_TYPES: &[&str] = &[
-    "memory", "emotion", "event", "prompt", "llm", "agent",
-];
+pub const GROUP_SLOT_TYPES: &[&str] = &["memory", "emotion", "event", "prompt", "llm", "agent"];
 
 const PERSONALITY_OBJECT_KEYS: &[&str] = &[
     "stubbornness",
@@ -400,8 +398,7 @@ pub fn load_blueprint_v2_for_role_dir(
     validate_role_pack_blueprint_v2_directory(role_dir, host_version)?;
     let raw = fs::read_to_string(role_dir.join(PIPELINE_BLUEPRINT_FILENAME))
         .map_err(|e| vec![format!("读取 {} 失败: {}", PIPELINE_BLUEPRINT_FILENAME, e)])?;
-    let resolved =
-        crate::blueprint_includes::resolve_blueprint_includes_lenient(role_dir, &raw);
+    let resolved = crate::blueprint_includes::resolve_blueprint_includes_lenient(role_dir, &raw);
     let folder_name = role_dir.file_name().and_then(|s| s.to_str()).unwrap_or("");
     validate_blueprint_v2_json_with_context(
         &resolved,
@@ -734,6 +731,37 @@ pub fn merged_agent_directory_plugin_ids(
     ids
 }
 
+/// Shared meta.id / name / relations / personality checks for blueprint v2 and v3.
+pub fn validate_blueprint_meta_core(
+    meta: &BlueprintMeta,
+    folder_name: Option<&str>,
+    errs: &mut Vec<String>,
+) {
+    if meta.id.trim().is_empty() {
+        errs.push("meta.id 不能为空".into());
+    }
+    if let Some(dir) = folder_name {
+        if meta.id.trim() != dir {
+            errs.push(format!(
+                "meta.id「{}」与角色包目录名「{}」不一致（R4：ERROR）",
+                meta.id.trim(),
+                dir
+            ));
+        }
+    }
+    if let Some(ref p) = meta.personality {
+        if let Err(e) = validate_meta_personality(p) {
+            errs.push(e);
+        }
+    }
+    if meta.relations.is_empty() {
+        errs.push("meta.relations 至少需要配置一种用户身份".into());
+    }
+    if meta.name.trim().is_empty() {
+        errs.push("meta.name 不能为空".into());
+    }
+}
+
 fn validate_blueprint_v2_parsed(
     bp: &BlueprintV2File,
     folder_name: Option<&str>,
@@ -747,32 +775,7 @@ fn validate_blueprint_v2_parsed(
         ));
     }
 
-    if bp.meta.id.trim().is_empty() {
-        errs.push("meta.id 不能为空".into());
-    }
-    if let Some(dir) = folder_name {
-        if bp.meta.id.trim() != dir {
-            errs.push(format!(
-                "meta.id「{}」与角色包目录名「{}」不一致（R4：ERROR）",
-                bp.meta.id.trim(),
-                dir
-            ));
-        }
-    }
-
-    if let Some(ref p) = bp.meta.personality {
-        if let Err(e) = validate_meta_personality(p) {
-            errs.push(e);
-        }
-    }
-
-    if bp.meta.relations.is_empty() {
-        errs.push("meta.relations 至少需要配置一种用户身份".into());
-    }
-
-    if bp.meta.name.trim().is_empty() {
-        errs.push("meta.name 不能为空".into());
-    }
+    validate_blueprint_meta_core(&bp.meta, folder_name, &mut errs);
 
     if bp.slot_registry.is_empty() {
         errs.push("slot_registry 不能为空".into());
@@ -1248,7 +1251,9 @@ mod tests {
           }
         }"#;
         let errs2 = validate_blueprint_v2_json(raw2).unwrap_err();
-        assert!(errs2.iter().any(|e| e.contains("不一致") || e.contains("type")));
+        assert!(errs2
+            .iter()
+            .any(|e| e.contains("不一致") || e.contains("type")));
     }
 
     #[test]
