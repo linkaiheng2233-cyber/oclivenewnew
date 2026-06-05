@@ -248,7 +248,9 @@ impl RoleStorage {
             role.autonomous_scene = s.autonomous_scene.clone();
             role.interaction_mode = s.interaction_mode.clone();
             if let Some(ref pb) = s.plugin_backends {
-                role.plugin_backends = Arc::new(pb.clone());
+                role.plugin_backends = Arc::new(
+                    oclive_validation::sanitize_unimplemented_agent_backend(pb.clone()).backends,
+                );
             }
             role.reply_quality_anchor = s.reply_quality_anchor.clone();
         }

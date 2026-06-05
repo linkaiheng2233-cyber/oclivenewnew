@@ -29,6 +29,7 @@ use crate::models::{
 };
 use parking_lot::RwLock;
 use serde_json::Value;
+use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, OnceLock};
@@ -60,6 +61,11 @@ pub struct BackendRegistry {
     remote_fallback_allowed: Arc<AtomicBool>,
     high_risk_grants: Arc<HighRiskGrantStore>,
     remote_http_client: Arc<reqwest::Client>,
+    directory_memory_cache: RwLock<BTreeMap<String, Arc<dyn MemoryRetrieval>>>,
+    directory_emotion_cache: RwLock<BTreeMap<String, Arc<dyn UserEmotionAnalyzer>>>,
+    directory_event_cache: RwLock<BTreeMap<String, Arc<dyn EventEstimator>>>,
+    directory_prompt_cache: RwLock<BTreeMap<String, Arc<dyn PromptAssembler>>>,
+    directory_llm_cache: RwLock<BTreeMap<String, Arc<dyn LlmClient>>>,
 }
 
 fn directory_slot_id(
@@ -154,6 +160,7 @@ impl BackendRegistry {
         &self,
         module: &'static str,
         backends: &PluginBackends,
+        cache: &RwLock<BTreeMap<String, T>>,
         pick: Pick,
         fallback: T,
         build: Build,
@@ -161,7 +168,7 @@ impl BackendRegistry {
     where
         Pick: FnOnce(&DirectoryPluginSlots) -> &Option<String>,
         Build: FnOnce(&Self, &str, &str) -> T,
-        T: Clone,
+        T: Clone + Send + Sync + 'static,
     {
         let Some(_rt) = self.directory_runtime.as_ref() else {
             tracing::warn!(
@@ -177,8 +184,15 @@ impl BackendRegistry {
             );
             return fallback;
         };
+        if let Some(cached) = cache.read().get(&pid).cloned() {
+            return cached;
+        }
         match _rt.ensure_rpc_url(pid.as_str()) {
-            Ok(url) => build(self, pid.as_str(), url.as_str()),
+            Ok(url) => {
+                let built = build(self, pid.as_str(), url.as_str());
+                cache.write().insert(pid, built.clone());
+                built
+            }
             Err(e) => {
                 tracing::error!(
                     target: "oclive_plugin",
@@ -289,6 +303,11 @@ impl BackendRegistry {
             remote_fallback_allowed,
             high_risk_grants,
             remote_http_client,
+            directory_memory_cache: RwLock::new(BTreeMap::new()),
+            directory_emotion_cache: RwLock::new(BTreeMap::new()),
+            directory_event_cache: RwLock::new(BTreeMap::new()),
+            directory_prompt_cache: RwLock::new(BTreeMap::new()),
+            directory_llm_cache: RwLock::new(BTreeMap::new()),
         }
     }
 
@@ -311,6 +330,7 @@ impl BackendRegistry {
         self.resolve_directory_slot(
             "llm",
             backends,
+            &self.directory_llm_cache,
             |s| &s.llm,
             self.llm_ollama.clone(),
             |reg, _pid, url| {
@@ -382,6 +402,7 @@ impl BackendRegistry {
         self.resolve_directory_slot(
             "memory",
             backends,
+            &self.directory_memory_cache,
             |s| &s.memory,
             self.memory_builtin.clone(),
             |reg, _pid, url| {
@@ -420,6 +441,7 @@ impl BackendRegistry {
         self.resolve_directory_slot(
             "emotion",
             backends,
+            &self.directory_emotion_cache,
             |s| &s.emotion,
             self.emotion_builtin.clone(),
             |reg, _pid, url| {
@@ -458,6 +480,7 @@ impl BackendRegistry {
         self.resolve_directory_slot(
             "event",
             backends,
+            &self.directory_event_cache,
             |s| &s.event,
             self.event_builtin.clone(),
             |reg, _pid, url| {
@@ -496,6 +519,7 @@ impl BackendRegistry {
         self.resolve_directory_slot(
             "prompt",
             backends,
+            &self.directory_prompt_cache,
             |s| &s.prompt,
             self.prompt_builtin.clone(),
             |reg, _pid, url| {

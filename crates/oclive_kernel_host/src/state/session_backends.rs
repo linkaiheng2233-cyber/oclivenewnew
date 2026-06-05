@@ -167,7 +167,11 @@ impl AppState {
         }
         let backends =
             super::host_backends::apply_host_ceiling(&backends, self.host_profile.as_ref());
-        Arc::new(backends)
+        let sanitized = oclive_validation::sanitize_unimplemented_agent_backend(backends);
+        for msg in &sanitized.warnings {
+            tracing::warn!(target: "oclive_plugin", "session={session_namespace} {msg}");
+        }
+        Arc::new(sanitized.backends)
     }
 
     #[must_use]

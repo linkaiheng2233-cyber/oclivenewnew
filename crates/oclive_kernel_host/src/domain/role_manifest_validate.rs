@@ -4,7 +4,7 @@
 
 use crate::infrastructure::remote_plugin::RemotePluginHttpConfig;
 use crate::models::plugin_backends::{
-    EmotionBackend, EventBackend, LlmBackend, MemoryBackend, PromptBackend,
+    AgentBackend, EmotionBackend, EventBackend, LlmBackend, MemoryBackend, PromptBackend,
 };
 use crate::models::role::Role;
 use crate::models::InteractionMode;
@@ -85,5 +85,18 @@ pub fn log_plugin_backends_remote_missing_env(role: &Role) {
             "role_id={} plugin_backends.llm=directory 但未配置 directory_plugins.llm；运行时回退 Ollama",
             role.id
         );
+    }
+    if matches!(pb.agent, AgentBackend::Directory | AgentBackend::Remote) {
+        tracing::warn!(
+            target: "oclive_plugin",
+            "role_id={} plugin_backends.agent={:?} 尚未实现；运行时使用 builtin ReAct agent",
+            role.id,
+            pb.agent
+        );
+    }
+    if let Some(reg) = role.slot_registry.as_ref() {
+        for msg in oclive_validation::validate_agent_slot_backends(reg) {
+            tracing::warn!(target: "oclive_plugin", "role_id={} {}", role.id, msg);
+        }
     }
 }

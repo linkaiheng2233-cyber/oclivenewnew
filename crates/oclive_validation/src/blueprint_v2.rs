@@ -491,7 +491,7 @@ pub fn slot_registry_to_plugin_backends(
     }
 
     pb.directory_plugins = dir;
-    pb
+    crate::agent_backend::sanitize_unimplemented_agent_backend(pb).backends
 }
 
 fn validate_blueprint_groups(

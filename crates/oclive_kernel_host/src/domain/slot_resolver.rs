@@ -44,8 +44,7 @@ use crate::infrastructure::remote_plugin::{
 };
 use crate::models::PluginBackends;
 use oclive_validation::{
-    merged_agent_directory_plugin_ids, plugin_backends_for_slot_entry,
-    slot_registry_instances_sorted, SlotRegistryEntry,
+    plugin_backends_for_slot_entry, slot_registry_instances_sorted, SlotRegistryEntry,
 };
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -71,22 +70,6 @@ impl ComplexEmotionProvider for RemoteComplexEmotionArc {
         input: &ComplexEmotionInput,
     ) -> crate::error::Result<ComplexEmotionOutput> {
         self.0.resolve_turn(input)
-    }
-}
-
-/// Multi-`agent` slot / `plugins[]` merge metadata; `process` still delegates to `inner` (tool merge deepened in P4).
-pub struct CompositeAgentProvider {
-    pub inner: Arc<dyn AgentProvider>,
-    pub merged_directory_plugin_ids: Vec<String>,
-}
-
-#[async_trait::async_trait]
-impl AgentProvider for CompositeAgentProvider {
-    async fn process(
-        &self,
-        input: crate::domain::agent::AgentInput,
-    ) -> crate::error::Result<crate::domain::agent::AgentOutput> {
-        self.inner.process(input).await
     }
 }
 
@@ -288,26 +271,12 @@ impl SlotResolver {
         }
     }
 
-    /// **Multi agent instances**: merge multiple directory plugin IDs into a composite Agent (tool set exposed in parallel, not serial inside SlotRunner).
-    ///
-    /// **Why merge at resolve layer**: multi Agent slots have no LLM context dependency; only a unified tool list is needed for the `process_message` entry shortcut.
+    /// Agent directory multi-instance merge is not implemented; returns `inner` unchanged.
     #[must_use]
     pub fn wrap_agent_if_merged(
         inner: Arc<dyn AgentProvider>,
-        slot_registry: &BTreeMap<String, SlotRegistryEntry>,
+        _slot_registry: &BTreeMap<String, SlotRegistryEntry>,
     ) -> Arc<dyn AgentProvider> {
-        let merged = merged_agent_directory_plugin_ids(slot_registry);
-        if merged.len() <= 1 {
-            return inner;
-        }
-        tracing::info!(
-            target: "oclive_plugin",
-            "composite agent: merged {} directory plugin ids from slot_registry",
-            merged.len()
-        );
-        Arc::new(CompositeAgentProvider {
-            inner,
-            merged_directory_plugin_ids: merged,
-        })
+        inner
     }
 }

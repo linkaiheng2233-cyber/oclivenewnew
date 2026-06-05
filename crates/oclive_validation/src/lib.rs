@@ -5,6 +5,7 @@
 
 #![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 
+pub mod agent_backend;
 pub mod blueprint_includes;
 pub mod blueprint_migrate;
 pub mod blueprint_v2;
@@ -25,6 +26,10 @@ pub mod role_pack;
 pub mod runtime_config;
 pub mod validate;
 
+pub use agent_backend::{
+    sanitize_unimplemented_agent_backend, validate_agent_slot_backends,
+    AgentBackendSanitizeResult,
+};
 pub use blueprint_includes::{
     resolve_blueprint_includes_lenient, resolve_blueprint_includes_strict, validate_includes,
     BlueprintIncludeEntry,
