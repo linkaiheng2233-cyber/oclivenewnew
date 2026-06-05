@@ -8,6 +8,7 @@
 use crate::api::chat_backend::ChatBackend;
 use crate::api::directory_plugin::directory_plugin_bootstrap_dto;
 use crate::api::error::ApiError;
+use crate::api::error::CommandError;
 use crate::infrastructure::directory_plugins::{normalize_plugin_rel, OclivePluginManifest};
 use crate::infrastructure::import_role_pack;
 use crate::kernel_attach::{role_dir_for_id, KernelHttpClient};
@@ -20,7 +21,6 @@ use serde_json::{json, Value};
 use std::path::PathBuf;
 use std::sync::Arc;
 use tauri::{AppHandle, State};
-use crate::api::error::CommandError;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -138,11 +138,12 @@ fn validate_bridge(
     command: &str,
 ) -> Result<(), CommandError> {
     let roots = state.directory_plugins.plugin_roots.read();
-    let root = roots.get(plugin_id).map(|entry| &entry.root).ok_or_else(|| {
-        ApiError::PluginNotFound {
+    let root = roots
+        .get(plugin_id)
+        .map(|entry| &entry.root)
+        .ok_or_else(|| ApiError::PluginNotFound {
             plugin_id: plugin_id.to_string(),
-        }
-    })?;
+        })?;
     let manifest = OclivePluginManifest::load_from_dir(root)
         .map_err(|e| ApiError::InvalidManifest { message: e })?;
     let rel = normalize_plugin_rel(asset_rel);
@@ -230,8 +231,7 @@ async fn dispatch_local_bridge_command(
                 message: format!("import_role join: {}", e),
             }
             .to_string()
-        })?
-        ?;
+        })??;
         state.invalidate_personality_cache_for_role(&role_id);
         let role = state.storage.load_role(&role_id)?;
         state

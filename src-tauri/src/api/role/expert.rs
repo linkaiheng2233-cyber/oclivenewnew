@@ -64,9 +64,8 @@ pub fn get_expert_routing(
         return Ok(None);
     }
     let raw = fs::read_to_string(&path)?;
-    let doc: ExpertRoutingDoc = serde_json::from_str(&raw).map_err(|e| {
-        AppError::InvalidParameter(format!("expert_routing.json: {e}"))
-    })?;
+    let doc: ExpertRoutingDoc = serde_json::from_str(&raw)
+        .map_err(|e| AppError::InvalidParameter(format!("expert_routing.json: {e}")))?;
     Ok(Some(doc))
 }
 

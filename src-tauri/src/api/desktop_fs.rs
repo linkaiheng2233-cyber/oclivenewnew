@@ -1,8 +1,8 @@
 //! Desktop file helpers exposed via Tauri commands (replaces direct `@tauri-apps/api/fs` IPC).
 
+use crate::api::error::CommandError;
 use std::fs;
 use std::path::Path;
-use crate::api::error::CommandError;
 
 /// Write UTF-8 text to a user-selected absolute path (e.g. export save dialog).
 ///

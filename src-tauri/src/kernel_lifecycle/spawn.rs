@@ -1,9 +1,9 @@
 //! Spawn `oclive-kernel-server --api` with canonical cross-host env.
 
-use crate::kernel_lifecycle::connection::KernelConnection;
 use crate::domain::host_profile::{
     load_host_profile_from_env, HostProfile, ENV_DISTRO_ID, ENV_DISTRO_PROFILE,
 };
+use crate::kernel_lifecycle::connection::KernelConnection;
 use oclive_kernel_runtime::{
     ensure_app_data_dir, resolve_app_data_dir_for_host, KernelCandidate, KernelTier,
     ENV_HTTP_API_MOCK_LLM, ENV_ROLES_DIR,
@@ -73,10 +73,7 @@ fn append_distro_env(pairs: &mut Vec<(String, String)>, host: &HostProfile) {
         pairs.push((ENV_DISTRO_ID.into(), host.distro_id.clone()));
     }
     if let Some(ref p) = host.profile_path {
-        pairs.push((
-            ENV_DISTRO_PROFILE.into(),
-            p.to_string_lossy().into_owned(),
-        ));
+        pairs.push((ENV_DISTRO_PROFILE.into(), p.to_string_lossy().into_owned()));
     } else if let Ok(p) = std::env::var(ENV_DISTRO_PROFILE) {
         let t = p.trim().to_string();
         if !t.is_empty() {

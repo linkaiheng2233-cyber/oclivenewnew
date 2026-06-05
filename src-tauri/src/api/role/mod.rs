@@ -3,8 +3,8 @@
 //! Blueprint v2 disk writes go through [`save_role_slot_registry`]; there is **no** legacy Tauri command that only writes
 //! `manifest.json`/`settings.json` `plugin_backends` (old packs are read-only via [`RoleStorage::load_role_from_legacy_manifest_dir`]).
 
-pub mod expert;
 pub mod evolution;
+pub mod expert;
 pub mod relation;
 pub mod slot_session;
 
@@ -13,18 +13,18 @@ pub use oclive_kernel_host::service::role::{display, interaction, runtime};
 pub use evolution::{
     set_evolution_factor_impl, set_remote_life_enabled_impl, set_role_interaction_mode_impl,
 };
-pub use relation::{
-    clear_scene_user_relation_impl, set_scene_user_relation_impl, set_user_relation_impl,
-};
 pub use expert::{get_expert_routing, list_blueprint_includes, save_expert_routing};
 pub use oclive_kernel_host::service::role::{
     apply_author_suggested_plugin_backends_impl, clear_all_session_slot_overrides_impl,
-    clear_session_slot_override_impl, get_plugin_resolution_debug_impl, save_role_slot_registry_impl,
-    set_session_plugin_backend_impl, set_session_slot_override_impl,
+    clear_session_slot_override_impl, get_plugin_resolution_debug_impl,
+    save_role_slot_registry_impl, set_session_plugin_backend_impl, set_session_slot_override_impl,
+};
+pub use relation::{
+    clear_scene_user_relation_impl, set_scene_user_relation_impl, set_user_relation_impl,
 };
 
-use crate::error::AppError;
 use crate::api::error::CommandError;
+use crate::error::AppError;
 use crate::models::dto::{GetRoleInfoRequest, RoleData, RoleInfo, RoleSummary};
 use crate::state::SharedAppState;
 use tauri::{AppHandle, Manager, State};
@@ -46,8 +46,7 @@ pub async fn load_role(
     state: State<'_, SharedAppState>,
 ) -> Result<RoleData, CommandError> {
     if let Some(conn) = app.try_state::<crate::kernel_lifecycle::SharedKernelConnection>() {
-        crate::kernel_attach::KernelHttpClient::load_role_via_http(&conn, role_id.trim())
-            .await?;
+        crate::kernel_attach::KernelHttpClient::load_role_via_http(&conn, role_id.trim()).await?;
     }
     load_role_impl(&state, &role_id, true).await
 }
@@ -82,7 +81,9 @@ pub async fn get_role_info(
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
-pub async fn list_roles(state: State<'_, SharedAppState>) -> Result<Vec<RoleSummary>, CommandError> {
+pub async fn list_roles(
+    state: State<'_, SharedAppState>,
+) -> Result<Vec<RoleSummary>, CommandError> {
     list_roles_impl(&state).await
 }
 /// # Errors
@@ -95,8 +96,7 @@ pub async fn switch_role(
     state: State<'_, SharedAppState>,
 ) -> Result<RoleInfo, CommandError> {
     if let Some(conn) = app.try_state::<crate::kernel_lifecycle::SharedKernelConnection>() {
-        crate::kernel_attach::KernelHttpClient::load_role_via_http(&conn, role_id.trim())
-            .await?;
+        crate::kernel_attach::KernelHttpClient::load_role_via_http(&conn, role_id.trim()).await?;
         let req = GetRoleInfoRequest {
             role_id: role_id.clone(),
             session_id: None,

@@ -85,19 +85,22 @@ async fn health(State(st): State<Arc<SchedulerState>>) -> impl IntoResponse {
     )
 }
 
-async fn proxy(State(st): State<Arc<SchedulerState>>, req: axum::http::Request<Body>) -> impl IntoResponse {
+async fn proxy(
+    State(st): State<Arc<SchedulerState>>,
+    req: axum::http::Request<Body>,
+) -> impl IntoResponse {
     let method = req.method().clone();
     let uri = req.uri().path().to_string();
-    let query = req.uri().query().map(|q| format!("?{q}")).unwrap_or_default();
+    let query = req
+        .uri()
+        .query()
+        .map(|q| format!("?{q}"))
+        .unwrap_or_default();
     let headers = req.headers().clone();
     let body_bytes = match axum::body::to_bytes(req.into_body(), 8 * 1024 * 1024).await {
         Ok(b) => b,
         Err(e) => {
-            return (
-                StatusCode::BAD_REQUEST,
-                format!("read body: {e}"),
-            )
-                .into_response();
+            return (StatusCode::BAD_REQUEST, format!("read body: {e}")).into_response();
         }
     };
 
@@ -123,11 +126,7 @@ async fn proxy(State(st): State<Arc<SchedulerState>>, req: axum::http::Request<B
             let bytes = res.bytes().await.unwrap_or_default();
             (status, bytes).into_response()
         }
-        Err(e) => (
-            StatusCode::BAD_GATEWAY,
-            format!("upstream error: {e}"),
-        )
-            .into_response(),
+        Err(e) => (StatusCode::BAD_GATEWAY, format!("upstream error: {e}")).into_response(),
     }
 }
 

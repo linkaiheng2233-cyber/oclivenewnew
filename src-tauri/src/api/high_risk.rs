@@ -1,57 +1,62 @@
-//! High-risk capability grants: `list` / `grant` / `revoke` (persisted `{app_data}/high_risk_grants.json`).
+//! High-risk capability grants: `list` / `grant` / `revoke` (kernel writer when attached).
 
-use crate::infrastructure::high_risk_grants::{normalize_grant_kind, GrantKind};
-use crate::state::{AppState, SharedAppState};
-use serde::Deserialize;
-use serde_json::Value;
-use tauri::State;
 use crate::api::error::CommandError;
+use crate::error::AppError;
+use crate::kernel_attach::KernelHttpClient;
+use crate::kernel_lifecycle::SharedKernelConnection;
+use crate::state::SharedAppState;
+use oclive_kernel_host::service::{
+    grant_high_risk_capability_impl, list_high_risk_grants_impl, revoke_high_risk_capability_impl,
+    MutateHighRiskGrantRequest,
+};
+use serde_json::Value;
+use tauri::{AppHandle, Manager, State};
 
-#[derive(Debug, Deserialize)]
-pub struct MutateHighRiskGrantRequest {
-    /// `mcp:http` | `mcp:stdio` | `process:spawn` | `network:*` (legacy snake_case aliases still accepted)
-    pub kind: String,
-    pub id: String,
-}
-
-/// # Errors
-///
-/// Returns `String` when JSON serialization fails.
-pub fn list_high_risk_grants_impl(state: &AppState) -> Result<Value, CommandError> {
-    Ok(serde_json::to_value(state.high_risk_grants.snapshot())?)
-}
-
-/// # Errors
-///
-/// Unknown `kind` or disk write failure.
-pub fn grant_high_risk_capability_impl(
-    state: &AppState,
-    req: &MutateHighRiskGrantRequest,
-) -> Result<(), CommandError> {
-    let id = req.id.as_str();
-    match normalize_grant_kind(&req.kind) {
-        Some(GrantKind::McpHttp) => state.high_risk_grants.grant_mcp_http(id).map_err(Into::into),
-        Some(GrantKind::McpStdio) => state.high_risk_grants.grant_mcp_stdio(id).map_err(Into::into),
-        Some(GrantKind::ProcessSpawn) => state.high_risk_grants.grant_process_spawn(id).map_err(Into::into),
-        Some(GrantKind::Network) => state.high_risk_grants.grant_network(id).map_err(Into::into),
-        None => Err(format!("unknown high_risk grant kind: {}", req.kind.trim()).into()),
+async fn list_high_risk_via_kernel(conn: &SharedKernelConnection) -> Result<Value, CommandError> {
+    if !KernelHttpClient::probe_health(&conn.base_url).await {
+        return Err(AppError::KernelOffline.into());
     }
+    let res = conn
+        .http_client()
+        .get(format!("{}/high_risk/grants", conn.base_url))
+        .send()
+        .await
+        .map_err(|e| CommandError::from(AppError::OllamaError(e.to_string())))?;
+    let status = res.status();
+    let text = res
+        .text()
+        .await
+        .map_err(|e| CommandError::from(AppError::OllamaError(e.to_string())))?;
+    if !status.is_success() {
+        return Err(
+            oclive_kernel_runtime::app_error_from_http_response(status.as_u16(), &text).into(),
+        );
+    }
+    serde_json::from_str(&text)
+        .map_err(|e| CommandError::from(AppError::OllamaError(e.to_string())))
 }
 
-/// # Errors
-///
-/// Unknown `kind` or disk write failure.
-pub fn revoke_high_risk_capability_impl(
-    state: &AppState,
+async fn mutate_high_risk_via_kernel(
+    conn: &SharedKernelConnection,
+    path: &str,
     req: &MutateHighRiskGrantRequest,
 ) -> Result<(), CommandError> {
-    let id = req.id.as_str();
-    match normalize_grant_kind(&req.kind) {
-        Some(GrantKind::McpHttp) => state.high_risk_grants.revoke_mcp_http(id).map_err(Into::into),
-        Some(GrantKind::McpStdio) => state.high_risk_grants.revoke_mcp_stdio(id).map_err(Into::into),
-        Some(GrantKind::ProcessSpawn) => state.high_risk_grants.revoke_process_spawn(id).map_err(Into::into),
-        Some(GrantKind::Network) => state.high_risk_grants.revoke_network(id).map_err(Into::into),
-        None => Err(format!("unknown high_risk grant kind: {}", req.kind.trim()).into()),
+    if !KernelHttpClient::probe_health(&conn.base_url).await {
+        return Err(AppError::KernelOffline.into());
+    }
+    let res = conn
+        .http_client()
+        .post(format!("{}/high_risk/{path}", conn.base_url))
+        .json(req)
+        .send()
+        .await
+        .map_err(|e| CommandError::from(AppError::OllamaError(e.to_string())))?;
+    let status = res.status();
+    if status.is_success() {
+        Ok(())
+    } else {
+        let text = res.text().await.unwrap_or_default();
+        Err(oclive_kernel_runtime::app_error_from_http_response(status.as_u16(), &text).into())
     }
 }
 
@@ -59,7 +64,13 @@ pub fn revoke_high_risk_capability_impl(
 ///
 /// Returns `String` when JSON serialization fails.
 #[tauri::command]
-pub fn list_high_risk_grants(state: State<'_, SharedAppState>) -> Result<Value, CommandError> {
+pub async fn list_high_risk_grants(
+    app: AppHandle,
+    state: State<'_, SharedAppState>,
+) -> Result<Value, CommandError> {
+    if let Some(conn) = app.try_state::<SharedKernelConnection>() {
+        return list_high_risk_via_kernel(&conn).await;
+    }
     list_high_risk_grants_impl(&state)
 }
 
@@ -67,10 +78,14 @@ pub fn list_high_risk_grants(state: State<'_, SharedAppState>) -> Result<Value, 
 ///
 /// Unknown `kind` or disk write failure.
 #[tauri::command]
-pub fn grant_high_risk_capability(
+pub async fn grant_high_risk_capability(
     req: MutateHighRiskGrantRequest,
+    app: AppHandle,
     state: State<'_, SharedAppState>,
 ) -> Result<(), CommandError> {
+    if let Some(conn) = app.try_state::<SharedKernelConnection>() {
+        return mutate_high_risk_via_kernel(&conn, "grant", &req).await;
+    }
     grant_high_risk_capability_impl(&state, &req)
 }
 
@@ -78,9 +93,13 @@ pub fn grant_high_risk_capability(
 ///
 /// Unknown `kind` or disk write failure.
 #[tauri::command]
-pub fn revoke_high_risk_capability(
+pub async fn revoke_high_risk_capability(
     req: MutateHighRiskGrantRequest,
+    app: AppHandle,
     state: State<'_, SharedAppState>,
 ) -> Result<(), CommandError> {
+    if let Some(conn) = app.try_state::<SharedKernelConnection>() {
+        return mutate_high_risk_via_kernel(&conn, "revoke", &req).await;
+    }
     revoke_high_risk_capability_impl(&state, &req)
 }

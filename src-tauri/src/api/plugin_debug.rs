@@ -1,6 +1,7 @@
 //! V1 pro mode: directory plugin developer debug panel backend commands.
 
 use crate::api::error::ApiError;
+use crate::api::error::CommandError;
 use crate::infrastructure::directory_plugins::{OclivePluginManifest, PluginProcessDebugInfo};
 use crate::infrastructure::remote_plugin::{
     invoke_directory_plugin_rpc_blocking, RemoteRpcChannel,
@@ -9,7 +10,6 @@ use crate::state::SharedAppState;
 use serde::Deserialize;
 use serde_json::{json, Value};
 use tauri::State;
-use crate::api::error::CommandError;
 
 /// # Errors
 ///
@@ -37,7 +37,10 @@ pub async fn spawn_plugin_for_test(
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
-pub fn kill_plugin_process(plugin_id: String, state: State<'_, SharedAppState>) -> Result<(), CommandError> {
+pub fn kill_plugin_process(
+    plugin_id: String,
+    state: State<'_, SharedAppState>,
+) -> Result<(), CommandError> {
     let id = plugin_id.trim();
     if id.is_empty() {
         return Err(ApiError::InvalidParameter {
@@ -57,7 +60,11 @@ pub fn list_plugin_processes(state: State<'_, SharedAppState>) -> Vec<PluginProc
 
 #[tauri::command]
 #[must_use]
-pub fn get_plugin_logs(plugin_id: String, lines: usize, state: State<'_, SharedAppState>) -> Vec<String> {
+pub fn get_plugin_logs(
+    plugin_id: String,
+    lines: usize,
+    state: State<'_, SharedAppState>,
+) -> Vec<String> {
     state
         .directory_plugins
         .get_plugin_log_tail(plugin_id.trim(), lines.max(1))
@@ -67,7 +74,10 @@ pub fn get_plugin_logs(plugin_id: String, lines: usize, state: State<'_, SharedA
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
-pub fn clear_plugin_logs(plugin_id: String, state: State<'_, SharedAppState>) -> Result<(), CommandError> {
+pub fn clear_plugin_logs(
+    plugin_id: String,
+    state: State<'_, SharedAppState>,
+) -> Result<(), CommandError> {
     let id = plugin_id.trim();
     if id.is_empty() {
         return Err(ApiError::InvalidParameter {
@@ -144,7 +154,9 @@ pub async fn discover_plugin_methods(
     let shared = state.inner().clone();
     tokio::task::spawn_blocking(move || discover_plugin_methods_blocking(&shared, &pid_owned))
         .await
-        .map_err(|e| crate::error::AppError::Unknown(format!("discover_plugin_methods join: {e}")))?
+        .map_err(|e| {
+            crate::error::AppError::Unknown(format!("discover_plugin_methods join: {e}"))
+        })?
 }
 
 fn discover_plugin_methods_blocking(
@@ -168,10 +180,7 @@ fn discover_plugin_methods_blocking(
         .filter(|s| !s.is_empty())
         .collect();
 
-    let url = match state
-        .directory_plugins
-        .ensure_rpc_url_for_debug(pid, None)
-    {
+    let url = match state.directory_plugins.ensure_rpc_url_for_debug(pid, None) {
         Ok(u) => u,
         Err(_) => {
             out.sort_unstable();

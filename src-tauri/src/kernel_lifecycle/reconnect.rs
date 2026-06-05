@@ -70,11 +70,7 @@ pub enum StatusEmit {
 }
 
 /// Emit UI-safe status; keeps legacy event names for older frontends.
-pub fn emit_kernel_status(
-    app: &AppHandle,
-    status: &KernelConnectionStatus,
-    kind: StatusEmit,
-) {
+pub fn emit_kernel_status(app: &AppHandle, status: &KernelConnectionStatus, kind: StatusEmit) {
     let _ = app.emit_all("kernel:status_changed", status);
     match kind {
         StatusEmit::UpstreamLost => {
@@ -110,11 +106,8 @@ pub async fn reconnect_once(
         return Ok(status);
     }
 
-    let candidates = discover_spawn_kernel_candidates(
-        &opts.anchors,
-        None,
-        opts.bundled_binary.as_deref(),
-    );
+    let candidates =
+        discover_spawn_kernel_candidates(&opts.anchors, None, opts.bundled_binary.as_deref());
     let Some(best) = pick_best_kernel(&candidates) else {
         conn.set_mode(DesktopKernelMode::Offline);
         let status = build_ui_status(conn, false);

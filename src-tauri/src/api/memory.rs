@@ -1,8 +1,8 @@
+use crate::api::error::CommandError;
 use crate::error::AppError;
 use crate::models::dto::{MemoryItem, QueryMemoriesRequest};
 use crate::state::{AppState, SharedAppState};
 use tauri::State;
-use crate::api::error::CommandError;
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
@@ -11,7 +11,9 @@ pub async fn query_memories_impl(
     req: &QueryMemoriesRequest,
 ) -> Result<Vec<MemoryItem>, CommandError> {
     if req.limit <= 0 || req.limit > 100 {
-        return Err(AppError::InvalidParameter("limit must be between 1 and 100".to_string()).into());
+        return Err(
+            AppError::InvalidParameter("limit must be between 1 and 100".to_string()).into(),
+        );
     }
     if req.offset < 0 {
         return Err(AppError::InvalidParameter("offset must be >= 0".to_string()).into());
@@ -20,8 +22,7 @@ pub async fn query_memories_impl(
     let memories = state
         .memory_repo
         .load_memories_paged(&req.role_id, req.limit, req.offset)
-        .await
-        ?;
+        .await?;
 
     Ok(memories
         .into_iter()

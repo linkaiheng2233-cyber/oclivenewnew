@@ -594,7 +594,9 @@ async fn week3_004_set_user_relation_and_evolution_factor() {
     )
     .await
     .expect_err("factor too low");
-    assert!(err.to_string().contains("INVALID_PARAMETER") || err.to_string().contains("event_impact"));
+    assert!(
+        err.to_string().contains("INVALID_PARAMETER") || err.to_string().contains("event_impact")
+    );
 
     let err2 = set_user_relation_impl(
         &state,

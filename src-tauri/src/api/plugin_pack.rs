@@ -1,3 +1,4 @@
+use crate::api::error::CommandError;
 use crate::error::AppError;
 use crate::state::{AppState, SharedAppState};
 use serde::{Deserialize, Serialize};
@@ -7,7 +8,6 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use tauri::State;
 use walkdir::WalkDir;
-use crate::api::error::CommandError;
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -98,17 +98,14 @@ pub fn pack_plugin(
             Err(_) => continue,
         };
         let name = rel.to_string_lossy().replace('\\', "/");
-        zip.start_file(name, opt).map_err(|e| {
-            AppError::Unknown(format!("zip start file failed: {}", e))
-        })?;
+        zip.start_file(name, opt)
+            .map_err(|e| AppError::Unknown(format!("zip start file failed: {}", e)))?;
         let bytes = fs::read(p).map_err(AppError::IoError)?;
-        zip.write_all(&bytes).map_err(|e| {
-            AppError::Unknown(format!("zip write failed: {}", e))
-        })?;
+        zip.write_all(&bytes)
+            .map_err(|e| AppError::Unknown(format!("zip write failed: {}", e)))?;
     }
-    zip.finish().map_err(|e| {
-        AppError::Unknown(format!("zip finalize failed: {}", e))
-    })?;
+    zip.finish()
+        .map_err(|e| AppError::Unknown(format!("zip finalize failed: {}", e)))?;
     let blob = fs::read(&archive_path).map_err(AppError::IoError)?;
     let mut hasher = Sha256::new();
     hasher.update(&blob);
@@ -126,9 +123,7 @@ pub fn pack_plugin(
     let signature_path = out_dir.join(format!("{}.signature.json", pid));
     fs::write(
         &signature_path,
-        serde_json::to_string_pretty(&sig)
-            .map_err(AppError::from)
-            ?,
+        serde_json::to_string_pretty(&sig).map_err(AppError::from)?,
     )
     .map_err(AppError::IoError)?;
     Ok(PackPluginResponse {

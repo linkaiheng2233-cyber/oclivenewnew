@@ -1,14 +1,14 @@
 use crate::api::chat_backend::ChatBackend;
-use oclive_kernel_host::service::ChatStorageProxyOp;
 use crate::infrastructure::chat_storage::{
     AutoCleanupResult, ChatExportResponse, ChatSearchResult, ChatStorageCapabilities,
     DeleteChatsResult, ImportChatBucket, ImportChatBucketsResult, ReplayProgress, ReplayTarget,
     SessionMeta, StoredMessage,
 };
+use crate::kernel_attach::role_dir_for_id;
 use crate::models::dto::{SendMessageRequest, SendMessageResponse};
 use crate::models::RolePackChatStorageConfig;
-use crate::kernel_attach::role_dir_for_id;
 use crate::state::SharedAppState;
+use oclive_kernel_host::service::ChatStorageProxyOp;
 use serde::de::DeserializeOwned;
 use tauri::{AppHandle, State};
 
@@ -92,11 +92,7 @@ pub async fn fetch_chat_messages(
     state: State<'_, SharedAppState>,
 ) -> Result<Vec<StoredMessage>, crate::api::error::CommandError> {
     ChatBackend::from_app(&app, state.inner().clone())
-        .fetch_chat_messages(
-            session_id.trim(),
-            limit.unwrap_or(500),
-            offset.unwrap_or(0),
-        )
+        .fetch_chat_messages(session_id.trim(), limit.unwrap_or(500), offset.unwrap_or(0))
         .await
         .map_err(Into::into)
 }
@@ -149,8 +145,10 @@ pub async fn migrate_indexeddb_to_backend(
 pub async fn get_chat_storage_stats(
     app: AppHandle,
     state: State<'_, SharedAppState>,
-) -> Result<Vec<crate::infrastructure::chat_storage::RoleStorageStat>, crate::api::error::CommandError>
-{
+) -> Result<
+    Vec<crate::infrastructure::chat_storage::RoleStorageStat>,
+    crate::api::error::CommandError,
+> {
     storage_proxy_json(&app, state.inner(), ChatStorageProxyOp::StorageStats).await
 }
 
@@ -418,7 +416,8 @@ pub async fn get_chat_storage_root(
     struct Out {
         path: String,
     }
-    let out: Out = storage_proxy_json(&app, state.inner(), ChatStorageProxyOp::GetStorageRoot).await?;
+    let out: Out =
+        storage_proxy_json(&app, state.inner(), ChatStorageProxyOp::GetStorageRoot).await?;
     Ok(out.path)
 }
 

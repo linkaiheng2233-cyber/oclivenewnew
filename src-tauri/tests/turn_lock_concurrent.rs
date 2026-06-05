@@ -75,6 +75,12 @@ async fn concurrent_turns_same_srid_both_persist_stm() {
     );
 
     let inputs: Vec<&str> = turns.iter().map(|(u, _, _, _, _)| u.as_str()).collect();
-    assert!(inputs.iter().any(|s| s.contains("并发消息A")), "missing user A in STM");
-    assert!(inputs.iter().any(|s| s.contains("并发消息B")), "missing user B in STM");
+    assert!(
+        inputs.iter().any(|s| s.contains("并发消息A")),
+        "missing user A in STM"
+    );
+    assert!(
+        inputs.iter().any(|s| s.contains("并发消息B")),
+        "missing user B in STM"
+    );
 }

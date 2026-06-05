@@ -1,7 +1,7 @@
 //! Sync UI-shell LLM settings with canonical kernel `app.db`.
 
 use crate::domain::user_llm_env::{
-    apply_user_llm_env, LLM_APP_SETTING_KEYS, KEY_LOCAL_MODELS_DIR, KEY_REMOTE_TOKEN,
+    apply_user_llm_env, KEY_LOCAL_MODELS_DIR, KEY_REMOTE_TOKEN, LLM_APP_SETTING_KEYS,
 };
 use crate::infrastructure::user_llm_secrets::{read_token_file, write_token_file};
 use crate::state::{is_managed_legacy_models_path, AppState};
@@ -110,12 +110,11 @@ pub async fn seed_shell_llm_from_canonical(state: &AppState) {
     };
     let mut copied = 0usize;
     for key in LLM_APP_SETTING_KEYS {
-        let Ok(Some(v)) = sqlx::query_scalar::<_, String>(
-            "SELECT value FROM app_settings WHERE key = ? LIMIT 1",
-        )
-        .bind(key)
-        .fetch_optional(&pool)
-        .await
+        let Ok(Some(v)) =
+            sqlx::query_scalar::<_, String>("SELECT value FROM app_settings WHERE key = ? LIMIT 1")
+                .bind(key)
+                .fetch_optional(&pool)
+                .await
         else {
             continue;
         };
@@ -160,19 +159,17 @@ pub async fn sync_canonical_db_models_dir(canonical: &Path, app_data: &Path) {
     let Ok(pool) = sqlx::SqlitePool::connect(&url).await else {
         return;
     };
-    let stored = sqlx::query_scalar::<_, String>(
-        "SELECT value FROM app_settings WHERE key = ? LIMIT 1",
-    )
-    .bind(KEY_LOCAL_MODELS_DIR)
-    .fetch_optional(&pool)
-    .await
-    .ok()
-    .flatten();
+    let stored =
+        sqlx::query_scalar::<_, String>("SELECT value FROM app_settings WHERE key = ? LIMIT 1")
+            .bind(KEY_LOCAL_MODELS_DIR)
+            .fetch_optional(&pool)
+            .await
+            .ok()
+            .flatten();
     let canonical_str = canonical.to_string_lossy().into_owned();
     let should_patch = stored.as_deref().is_none_or(|s| {
         let t = s.trim();
-        t.is_empty()
-            || is_managed_legacy_models_path(Path::new(t), canonical, app_data)
+        t.is_empty() || is_managed_legacy_models_path(Path::new(t), canonical, app_data)
     });
     if should_patch {
         if sqlx::query(

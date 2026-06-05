@@ -2,11 +2,13 @@
 #![allow(clippy::missing_errors_doc)]
 
 use super::{ensure_manifest_role_ready, get_role_info_impl, EVENT_IMPACT_MAX, EVENT_IMPACT_MIN};
+use crate::api::error::CommandError;
 use crate::error::AppError;
-use crate::models::dto::{RoleInfo, SetEvolutionFactorRequest, SetRemoteLifeEnabledRequest, SetRoleInteractionModeRequest};
+use crate::models::dto::{
+    RoleInfo, SetEvolutionFactorRequest, SetRemoteLifeEnabledRequest, SetRoleInteractionModeRequest,
+};
 use crate::state::{AppState, SharedAppState};
 use tauri::State;
-use crate::api::error::CommandError;
 pub async fn set_evolution_factor_impl(
     state: &AppState,
     req: &SetEvolutionFactorRequest,
@@ -19,16 +21,12 @@ pub async fn set_evolution_factor_impl(
         ))
         .into());
     }
-    state
-        .load_role_cached_async(&req.role_id)
-        .await
-        ?;
+    state.load_role_cached_async(&req.role_id).await?;
     ensure_manifest_role_ready(state, &req.role_id).await?;
     state
         .db_manager
         .set_event_impact_factor(&req.role_id, f)
-        .await
-        ?;
+        .await?;
     get_role_info_impl(state, &req.role_id, None).await
 }
 #[tauri::command]
@@ -42,16 +40,12 @@ pub async fn set_remote_life_enabled_impl(
     state: &AppState,
     req: &SetRemoteLifeEnabledRequest,
 ) -> Result<RoleInfo, CommandError> {
-    state
-        .load_role_cached_async(&req.role_id)
-        .await
-        ?;
+    state.load_role_cached_async(&req.role_id).await?;
     ensure_manifest_role_ready(state, &req.role_id).await?;
     state
         .db_manager
         .set_remote_life_enabled(&req.role_id, req.enabled)
-        .await
-        ?;
+        .await?;
     get_role_info_impl(state, &req.role_id, None).await
 }
 #[tauri::command]
@@ -65,16 +59,12 @@ pub async fn set_role_interaction_mode_impl(
     state: &AppState,
     req: &SetRoleInteractionModeRequest,
 ) -> Result<RoleInfo, CommandError> {
-    state
-        .load_role_cached_async(&req.role_id)
-        .await
-        ?;
+    state.load_role_cached_async(&req.role_id).await?;
     ensure_manifest_role_ready(state, &req.role_id).await?;
     state
         .db_manager
         .set_interaction_mode_for_role(&req.role_id, req.mode.trim())
-        .await
-        ?;
+        .await?;
     get_role_info_impl(state, &req.role_id, None).await
 }
 /// # Errors

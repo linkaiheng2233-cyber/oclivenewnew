@@ -1,12 +1,12 @@
 //! Chat command backend: HTTP kernel attach vs in-process [`ConversationStore`].
 
-use oclive_kernel_host::service::{execute_chat_storage_proxy, ChatStorageProxyOp};
 use crate::error::AppError;
 use crate::infrastructure::chat_storage::{SessionMeta, StoredMessage};
 use crate::kernel_attach::KernelHttpClient;
 use crate::kernel_lifecycle::SharedKernelConnection;
 use crate::models::dto::{SendMessageRequest, SendMessageResponse};
 use crate::state::AppState;
+use oclive_kernel_host::service::{execute_chat_storage_proxy, ChatStorageProxyOp};
 use std::sync::Arc;
 use tauri::{AppHandle, Manager};
 
@@ -56,8 +56,10 @@ impl ChatBackend {
     ) -> Result<Vec<SessionMeta>, AppError> {
         match self {
             Self::Http(conn) => {
-                KernelHttpClient::list_chat_sessions_via_http(conn, role_id, scene_id, limit, offset)
-                    .await
+                KernelHttpClient::list_chat_sessions_via_http(
+                    conn, role_id, scene_id, limit, offset,
+                )
+                .await
             }
             Self::Local(state) => {
                 state

@@ -73,12 +73,7 @@ impl KernelConnection {
         *self.mode.read()
     }
 
-    pub fn set_spawn_metadata(
-        &self,
-        binary: impl Into<String>,
-        tier: KernelTier,
-        child: Child,
-    ) {
+    pub fn set_spawn_metadata(&self, binary: impl Into<String>, tier: KernelTier, child: Child) {
         *self.binary_path.write() = Some(binary.into());
         *self.kernel_tier.write() = Some(tier);
         *self.spawned_child.lock() = Some(child);

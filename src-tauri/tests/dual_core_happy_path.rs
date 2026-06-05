@@ -12,8 +12,7 @@ use std::sync::Arc;
 use std::time::Instant;
 
 fn dual_core_fixture_root() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../examples/oocp-test-suite/fixtures")
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../examples/oocp-test-suite/fixtures")
 }
 
 #[tokio::test]
@@ -87,4 +86,3 @@ async fn dual_pipeline_run_experimental_happy_path_returns_ok() {
     assert_eq!(res.reply, "dual-core-happy-path");
     assert_eq!(res.scene_id, "default");
 }
-

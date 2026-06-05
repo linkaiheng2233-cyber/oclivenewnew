@@ -8,14 +8,14 @@ use super::llm_models::{
     persist_local_models_dir, scan_local_model_files_in, LocalModelFileDto,
 };
 use super::user_llm_env::probe_cloud_llm_inner;
+use crate::api::error::CommandError;
+use crate::api::role::{get_role_info_impl, session_namespace};
+use crate::domain::effective_llm_model::resolve_effective_ollama_model;
 use crate::domain::user_llm_env::{
     apply_user_llm_env, cloud_api_token_configured, ollama_base_from_db_or_env,
     resolve_remote_token, KEY_CLOUD_STYLE, KEY_CLOUD_VENDOR, KEY_LLM_PROVIDER, KEY_REMOTE_MODEL,
     KEY_REMOTE_TOKEN, KEY_REMOTE_URL,
 };
-use crate::api::error::CommandError;
-use crate::api::role::{get_role_info_impl, session_namespace};
-use crate::domain::effective_llm_model::resolve_effective_ollama_model;
 use crate::error::AppError;
 use crate::infrastructure::ollama_client::OllamaClient;
 use crate::infrastructure::user_llm_secrets::{set_cached_remote_llm_token, write_token_file};
@@ -209,17 +209,13 @@ pub async fn scan_local_model_files(
 /// # Errors
 ///
 /// Returns [`Err`] when the shell cannot open the path.
-pub async fn open_path_in_file_manager(
-    path: String,
-    app: AppHandle,
-) -> Result<(), CommandError> {
+pub async fn open_path_in_file_manager(path: String, app: AppHandle) -> Result<(), CommandError> {
     let p = path.trim();
     if p.is_empty() {
         return Err(AppError::InvalidParameter("empty path".into()).into());
     }
-    tauri::api::shell::open(&app.shell_scope(), p, None).map_err(|e| {
-        CommandError::from(AppError::InvalidParameter(format!("shell open: {e}")))
-    })?;
+    tauri::api::shell::open(&app.shell_scope(), p, None)
+        .map_err(|e| CommandError::from(AppError::InvalidParameter(format!("shell open: {e}"))))?;
     Ok(())
 }
 
@@ -276,10 +272,7 @@ pub async fn save_llm_user_settings(
 ) -> Result<RoleInfo, CommandError> {
     let provider = req.provider.trim().to_ascii_lowercase();
     if provider != "local" && provider != "cloud" {
-        return Err(AppError::InvalidParameter(
-            "provider must be local or cloud".into(),
-        )
-        .into());
+        return Err(AppError::InvalidParameter("provider must be local or cloud".into()).into());
     }
 
     state
@@ -301,10 +294,7 @@ pub async fn save_llm_user_settings(
             return Err(AppError::InvalidParameter("云端 Base URL 不能为空".into()).into());
         }
         if !cloud_api_token_configured(&state.db_manager, req.remote_token.as_deref()).await? {
-            return Err(AppError::InvalidParameter(
-                "请填写云端 API Key 后再保存".into(),
-            )
-            .into());
+            return Err(AppError::InvalidParameter("请填写云端 API Key 后再保存".into()).into());
         }
         state
             .high_risk_grants
@@ -404,9 +394,7 @@ pub async fn save_llm_user_settings(
     state.db_manager.ensure_role_runtime(ns.as_str()).await?;
 
     let model_for_session = if provider == "cloud" {
-        req.remote_model
-            .as_deref()
-            .or(req.ollama_model.as_deref())
+        req.remote_model.as_deref().or(req.ollama_model.as_deref())
     } else {
         req.ollama_model.as_deref()
     };

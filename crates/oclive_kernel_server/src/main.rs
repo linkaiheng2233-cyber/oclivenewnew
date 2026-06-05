@@ -29,7 +29,10 @@ fn main() {
 
     if args.iter().any(|a| a == "--version-json") {
         let manifest = KernelBinaryManifest::from_compile_time_env();
-        println!("{}", serde_json::to_string_pretty(&manifest).unwrap_or_default());
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&manifest).unwrap_or_default()
+        );
         return;
     }
 

@@ -2,7 +2,7 @@
 
 use crate::api::error::CommandError;
 use crate::kernel_lifecycle::{
-    probe_health_status, reconnect_once, ReconnectOptions, KernelConnectionStatus,
+    probe_health_status, reconnect_once, KernelConnectionStatus, ReconnectOptions,
     SharedKernelConnection,
 };
 use crate::state::SharedAppState;

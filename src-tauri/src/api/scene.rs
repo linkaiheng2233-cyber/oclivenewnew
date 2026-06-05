@@ -1,97 +1,58 @@
-use crate::api::role::get_role_info_impl;
+use crate::api::error::CommandError;
 use crate::error::AppError;
+use crate::kernel_attach::KernelHttpClient;
+use crate::kernel_lifecycle::SharedKernelConnection;
 use crate::models::dto::{
     RoleInfo, SetUserPresenceSceneRequest, SwitchSceneRequest, SwitchSceneResponse,
 };
-use crate::state::{AppState, SharedAppState};
-use tauri::State;
-use crate::api::error::CommandError;
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
-pub async fn switch_scene_impl(
-    state: &AppState,
-    req: &SwitchSceneRequest,
-) -> Result<SwitchSceneResponse, CommandError> {
-    let scenes = state
-        .storage
-        .list_scene_ids(&req.role_id)
-        ?;
-    if !scenes.iter().any(|s| s == &req.scene_id) {
-        return Err(AppError::InvalidParameter(format!(
-            "scene_id not in role pack: {}",
-            req.scene_id
-        ))
-        .into());
-    }
+use crate::state::SharedAppState;
+use oclive_kernel_host::service::{set_user_presence_scene_impl, switch_scene_impl};
+use tauri::{AppHandle, Manager, State};
 
-    if req.together {
-        state
-            .db_manager
-            .set_current_scene(&req.role_id, &req.scene_id)
-            .await
-            ?;
-    }
-    state
-        .db_manager
-        .set_user_presence_scene(&req.role_id, &req.scene_id)
-        .await
-        ?;
-    let role = get_role_info_impl(state, &req.role_id, None).await?;
-    let scene_welcome = if req.together {
-        state
-            .storage
-            .scene_welcome_line(&req.role_id, &req.scene_id)
-    } else {
-        None
-    };
-    Ok(SwitchSceneResponse {
-        role,
-        scene_welcome,
-    })
-}
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
-pub async fn set_user_presence_scene_impl(
-    state: &AppState,
-    req: &SetUserPresenceSceneRequest,
-) -> Result<RoleInfo, CommandError> {
-    let scenes = state
-        .storage
-        .list_scene_ids(&req.role_id)
-        ?;
-    if !scenes.iter().any(|s| s == &req.scene_id) {
-        return Err(AppError::InvalidParameter(format!(
-            "scene_id not in role pack: {}",
-            req.scene_id
-        ))
-        .into());
-    }
-    state
-        .db_manager
-        .set_user_presence_scene(&req.role_id, &req.scene_id)
-        .await
-        ?;
-    get_role_info_impl(state, &req.role_id, None).await
-}
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub async fn switch_scene(
     req: SwitchSceneRequest,
+    app: AppHandle,
     state: State<'_, SharedAppState>,
 ) -> Result<SwitchSceneResponse, CommandError> {
+    if let Some(conn) = app.try_state::<SharedKernelConnection>() {
+        match KernelHttpClient::switch_scene_via_http(&conn, &req).await {
+            Ok(res) => return Ok(res),
+            Err(AppError::RoleRuntimeNotReady) => {
+                KernelHttpClient::load_role_via_http(&conn, req.role_id.trim()).await?;
+                return KernelHttpClient::switch_scene_via_http(&conn, &req)
+                    .await
+                    .map_err(Into::into);
+            }
+            Err(e) => return Err(e.into()),
+        }
+    }
     switch_scene_impl(&state, &req).await
 }
+
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub async fn set_user_presence_scene(
     req: SetUserPresenceSceneRequest,
+    app: AppHandle,
     state: State<'_, SharedAppState>,
 ) -> Result<RoleInfo, CommandError> {
+    if let Some(conn) = app.try_state::<SharedKernelConnection>() {
+        match KernelHttpClient::set_user_presence_scene_via_http(&conn, &req).await {
+            Ok(res) => return Ok(res),
+            Err(AppError::RoleRuntimeNotReady) => {
+                KernelHttpClient::load_role_via_http(&conn, req.role_id.trim()).await?;
+                return KernelHttpClient::set_user_presence_scene_via_http(&conn, &req)
+                    .await
+                    .map_err(Into::into);
+            }
+            Err(e) => return Err(e.into()),
+        }
+    }
     set_user_presence_scene_impl(&state, &req).await
 }

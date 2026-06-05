@@ -1,5 +1,6 @@
 //! Directory plugin local updates (zip overwrite); online version check reserved.
 
+use crate::api::error::CommandError;
 use crate::error::AppError;
 use crate::infrastructure::directory_plugins::OclivePluginManifest;
 use crate::state::{AppState, SharedAppState};
@@ -11,7 +12,6 @@ use std::path::{Path, PathBuf};
 use tauri::State;
 use walkdir::WalkDir;
 use zip::ZipArchive;
-use crate::api::error::CommandError;
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -50,14 +50,14 @@ pub fn check_plugin_updates(
 }
 
 fn unzip_archive(zip_path: &Path, dst: &Path) -> Result<(), CommandError> {
-    let file = File::open(zip_path)
-        .map_err(|e| AppError::InvalidParameter(format!("open zip: {e}")))?;
-    let mut archive = ZipArchive::new(file)
-        .map_err(|e| AppError::InvalidParameter(format!("parse zip: {e}")))?;
+    let file =
+        File::open(zip_path).map_err(|e| AppError::InvalidParameter(format!("open zip: {e}")))?;
+    let mut archive =
+        ZipArchive::new(file).map_err(|e| AppError::InvalidParameter(format!("parse zip: {e}")))?;
     for i in 0..archive.len() {
-        let mut entry = archive.by_index(i).map_err(|e| {
-            AppError::InvalidParameter(format!("zip entry {i}: {e}"))
-        })?;
+        let mut entry = archive
+            .by_index(i)
+            .map_err(|e| AppError::InvalidParameter(format!("zip entry {i}: {e}")))?;
         let rel = match entry.enclosed_name() {
             Some(p) => p.to_path_buf(),
             None => {
@@ -162,8 +162,8 @@ pub fn extract_plugin_zip(
     let tmp = tempfile::tempdir().map_err(AppError::from)?;
     unzip_archive(&zip_path, tmp.path())?;
     let staged = find_manifest_root(tmp.path())?;
-    let manifest = OclivePluginManifest::load_from_dir(&staged)
-        .map_err(AppError::InvalidParameter)?;
+    let manifest =
+        OclivePluginManifest::load_from_dir(&staged).map_err(AppError::InvalidParameter)?;
     if manifest.id.trim() != pid {
         return Err(AppError::InvalidParameter(format!(
             "manifest id={} does not match target plugin {}",
@@ -190,9 +190,8 @@ fn install_staged_directory_plugin(
 
     state.directory_plugins.clear_plugin_process(pid);
     if target.exists() {
-        fs::remove_dir_all(&target).map_err(|e| {
-            AppError::InvalidParameter(format!("remove old plugin dir: {e}"))
-        })?;
+        fs::remove_dir_all(&target)
+            .map_err(|e| AppError::InvalidParameter(format!("remove old plugin dir: {e}")))?;
     }
     fs::create_dir_all(&target).map_err(AppError::from)?;
     copy_dir_all(staged, &target)?;
@@ -209,7 +208,10 @@ fn install_staged_directory_plugin(
 ///
 /// Returns [`Err`] when the zip is missing, invalid, or `manifest.id` cannot be read.
 #[tauri::command]
-pub fn install_plugin_from_zip(zip_path: String, state: State<'_, SharedAppState>) -> Result<String, CommandError> {
+pub fn install_plugin_from_zip(
+    zip_path: String,
+    state: State<'_, SharedAppState>,
+) -> Result<String, CommandError> {
     let zip_path = PathBuf::from(zip_path.trim());
     if !zip_path.is_file() {
         return Err(AppError::InvalidParameter(format!(
@@ -225,8 +227,8 @@ pub fn install_plugin_from_zip(zip_path: String, state: State<'_, SharedAppState
     let tmp = tempfile::tempdir().map_err(AppError::from)?;
     unzip_archive(&zip_path, tmp.path())?;
     let staged = find_manifest_root(tmp.path())?;
-    let manifest = OclivePluginManifest::load_from_dir(&staged)
-        .map_err(AppError::InvalidParameter)?;
+    let manifest =
+        OclivePluginManifest::load_from_dir(&staged).map_err(AppError::InvalidParameter)?;
     let pid = manifest.id.trim().to_string();
     install_staged_directory_plugin(&state, &staged, &pid)?;
     Ok(pid)

@@ -1,9 +1,11 @@
+use crate::api::error::CommandError;
 use crate::error::AppError;
+use crate::kernel_attach::KernelHttpClient;
+use crate::kernel_lifecycle::SharedKernelConnection;
 use crate::models::dto::{CreateEventRequest, CreateEventResponse, EventItem, QueryEventsRequest};
 use crate::models::EventType;
 use crate::state::{AppState, SharedAppState};
-use tauri::State;
-use crate::api::error::CommandError;
+use tauri::{AppHandle, Manager, State};
 
 fn parse_event_type(s: &str) -> Result<EventType, CommandError> {
     match s {
@@ -17,6 +19,7 @@ fn parse_event_type(s: &str) -> Result<EventType, CommandError> {
         _ => Err(AppError::InvalidParameter(format!("Invalid event_type: {}", s)).into()),
     }
 }
+
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
@@ -25,7 +28,9 @@ pub async fn query_events_impl(
     req: &QueryEventsRequest,
 ) -> Result<Vec<EventItem>, CommandError> {
     if req.limit <= 0 || req.limit > 100 {
-        return Err(AppError::InvalidParameter("limit must be between 1 and 100".to_string()).into());
+        return Err(
+            AppError::InvalidParameter("limit must be between 1 and 100".to_string()).into(),
+        );
     }
     if req.offset < 0 {
         return Err(AppError::InvalidParameter("offset must be >= 0".to_string()).into());
@@ -34,8 +39,7 @@ pub async fn query_events_impl(
     let rows = state
         .db_manager
         .list_events_paged(&req.role_id, req.limit, req.offset)
-        .await
-        ?;
+        .await?;
 
     Ok(rows
         .into_iter()
@@ -50,6 +54,7 @@ pub async fn query_events_impl(
         })
         .collect())
 }
+
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
@@ -58,11 +63,7 @@ pub async fn create_event_impl(
     req: &CreateEventRequest,
 ) -> Result<CreateEventResponse, CommandError> {
     let event_type = parse_event_type(&req.event_type)?;
-    state
-        .db_manager
-        .ensure_role_runtime(&req.role_id)
-        .await
-        ?;
+    state.db_manager.ensure_role_runtime(&req.role_id).await?;
 
     let (id, timestamp) = state
         .db_manager
@@ -73,8 +74,7 @@ pub async fn create_event_impl(
             "manual",
             req.description.as_deref(),
         )
-        .await
-        ?;
+        .await?;
 
     Ok(CreateEventResponse {
         id,
@@ -84,6 +84,7 @@ pub async fn create_event_impl(
         description: req.description.clone(),
     })
 }
+
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
@@ -94,13 +95,27 @@ pub async fn query_events(
 ) -> Result<Vec<EventItem>, CommandError> {
     query_events_impl(&state, &req).await
 }
+
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub async fn create_event(
     req: CreateEventRequest,
+    app: AppHandle,
     state: State<'_, SharedAppState>,
 ) -> Result<CreateEventResponse, CommandError> {
+    if let Some(conn) = app.try_state::<SharedKernelConnection>() {
+        match KernelHttpClient::create_event_via_http(&conn, &req).await {
+            Ok(res) => return Ok(res),
+            Err(AppError::RoleRuntimeNotReady) => {
+                KernelHttpClient::load_role_via_http(&conn, req.role_id.trim()).await?;
+                return KernelHttpClient::create_event_via_http(&conn, &req)
+                    .await
+                    .map_err(Into::into);
+            }
+            Err(e) => return Err(e.into()),
+        }
+    }
     create_event_impl(&state, &req).await
 }

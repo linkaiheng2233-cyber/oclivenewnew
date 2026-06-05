@@ -21,7 +21,9 @@ use oclivenewnew_tauri::api::time::get_time_state_impl;
 use oclivenewnew_tauri::domain::chat_engine::process_message;
 use oclivenewnew_tauri::infrastructure::MockLlmClient;
 use oclivenewnew_tauri::models::dto::SetSessionSlotOverrideRequest;
-use oclivenewnew_tauri::models::dto::{QueryMemoriesRequest, SendMessageRequest, SwitchSceneRequest};
+use oclivenewnew_tauri::models::dto::{
+    QueryMemoriesRequest, SendMessageRequest, SwitchSceneRequest,
+};
 use oclivenewnew_tauri::state::AppState;
 use serde_json::Value;
 use std::path::PathBuf;
@@ -143,7 +145,9 @@ async fn invoke_hotpath_smoke_list_load_info_time_chat_memories_catalog_plugin_h
 #[tokio::test]
 async fn invoke_hotpath_role_info_full_shape() {
     let state = hotpath_state().await;
-    load_role_impl(&state, "mumu", true).await.expect("load_role");
+    load_role_impl(&state, "mumu", true)
+        .await
+        .expect("load_role");
 
     let info = get_role_info_impl(&state, "mumu", None)
         .await
@@ -174,7 +178,9 @@ async fn invoke_hotpath_list_roles_returns_catalog() {
 #[tokio::test]
 async fn invoke_hotpath_switch_scene_updates_presence() {
     let state = hotpath_state().await;
-    load_role_impl(&state, "mumu", true).await.expect("load_role");
+    load_role_impl(&state, "mumu", true)
+        .await
+        .expect("load_role");
 
     let target = "school";
     let resp = switch_scene_impl(

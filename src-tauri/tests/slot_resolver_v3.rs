@@ -5,11 +5,11 @@
 use oclive_kernel_runtime::domain::complex_emotion::ComplexEmotionInput;
 use oclive_validation::{SlotOverridePatch, SlotRegistryEntry};
 use oclivenewnew_tauri::domain::plugin_host::PluginHost;
+use oclivenewnew_tauri::domain::slot_runner::SlotRunner;
 use oclivenewnew_tauri::infrastructure::high_risk_grants::HighRiskGrantStore;
 use oclivenewnew_tauri::infrastructure::llm::LlmClient;
 use oclivenewnew_tauri::infrastructure::remote_fallback_policy::new_remote_fallback_switch;
 use oclivenewnew_tauri::infrastructure::MockLlmClient;
-use oclivenewnew_tauri::domain::slot_runner::SlotRunner;
 use oclivenewnew_tauri::models::plugin_backends::LlmBackend;
 use oclivenewnew_tauri::models::{MemoryBackend, Role};
 use oclivenewnew_tauri::state::AppState;
@@ -114,7 +114,9 @@ async fn session_slot_override_changes_folded_memory_backend() {
     );
     let role = Role {
         id: "test-role".into(),
-        plugin_backends: std::sync::Arc::new(oclive_validation::slot_registry_to_plugin_backends(&reg)),
+        plugin_backends: std::sync::Arc::new(oclive_validation::slot_registry_to_plugin_backends(
+            &reg,
+        )),
         slot_registry: Some(reg),
         ..Default::default()
     };
@@ -139,9 +141,10 @@ async fn user_cloud_provider_overrides_blueprint_ollama_llm_slot() {
     let llm: Arc<dyn LlmClient> = Arc::new(MockLlmClient {
         reply: String::new(),
     });
-    let state = AppState::new_in_memory_with_llm(llm, std::env::temp_dir().join("roles-p3-llm-cloud"))
-        .await
-        .expect("state");
+    let state =
+        AppState::new_in_memory_with_llm(llm, std::env::temp_dir().join("roles-p3-llm-cloud"))
+            .await
+            .expect("state");
     let mut reg = BTreeMap::new();
     reg.insert(
         "llm".into(),

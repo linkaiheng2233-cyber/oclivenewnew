@@ -1,3 +1,4 @@
+use crate::api::error::CommandError;
 use crate::infrastructure::{export_role_pack, import_role_pack, peek_role_pack_manifest};
 use crate::models::dto::RolePackPeekResponse;
 use crate::state::SharedAppState;
@@ -5,7 +6,6 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tauri::Manager;
 use tauri::State;
-use crate::api::error::CommandError;
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
@@ -29,8 +29,7 @@ pub async fn peek_role_pack_command(
     let p = PathBuf::from(src_path);
     let (id, name, version) = tokio::task::spawn_blocking(move || peek_role_pack_manifest(&p))
         .await
-        .map_err(|e| format!("预览任务异常: {}", e))?
-        ?;
+        .map_err(|e| format!("预览任务异常: {}", e))??;
     Ok(RolePackPeekResponse { id, name, version })
 }
 /// # Errors
@@ -52,13 +51,9 @@ pub async fn import_role_pack_command(
         })
     })
     .await
-    .map_err(|e| format!("导入任务异常: {}", e))?
-    ?;
+    .map_err(|e| format!("导入任务异常: {}", e))??;
 
-    let role = state
-        .storage
-        .load_role(&role_id)
-        ?;
+    let role = state.storage.load_role(&role_id)?;
     state.invalidate_personality_cache_for_role(&role_id);
 
     state

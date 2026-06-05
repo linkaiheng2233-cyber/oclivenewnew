@@ -108,9 +108,13 @@ fn serve_ocliveplugin_asset(
         }
     };
     if mime_for_plugin_asset(&rel).starts_with("text/html") {
-        if let Ok(manifest) = state.directory_plugins.load_manifest_cached(&plugin_id, root) {
+        if let Ok(manifest) = state
+            .directory_plugins
+            .load_manifest_cached(&plugin_id, root)
+        {
             if let Ok(html) = String::from_utf8(std::mem::take(&mut data)) {
-                let injected = inject_plugin_bridge_script(&html, &plugin_id, &rel, manifest.as_ref());
+                let injected =
+                    inject_plugin_bridge_script(&html, &plugin_id, &rel, manifest.as_ref());
                 data = injected.into_bytes();
             }
         }
@@ -151,20 +155,19 @@ pub fn run() {
             }
             seed_pending_install_urls_from_args(std::env::args());
             let resource_dir = app.path_resolver().resource_dir();
-            let roles_dir =
-                state::resolve_roles_dir(resource_dir.as_deref());
+            let roles_dir = state::resolve_roles_dir(resource_dir.as_deref());
             let roles_for_watcher = roles_dir.clone();
-            let (app_state, kernel_conn, _api_port) =
-                desktop_host::bootstrap_desktop_blocking(resource_dir.clone()).map_err(
-                    |e| -> Box<dyn std::error::Error> {
-                        tracing::error!(
-                            target: "oclive_desktop",
-                            error = %e,
-                            "desktop bootstrap failed"
-                        );
-                        e
-                    },
-                )?;
+            let (app_state, kernel_conn, _api_port) = desktop_host::bootstrap_desktop_blocking(
+                resource_dir.clone(),
+            )
+            .map_err(|e| -> Box<dyn std::error::Error> {
+                tracing::error!(
+                    target: "oclive_desktop",
+                    error = %e,
+                    "desktop bootstrap failed"
+                );
+                e
+            })?;
             app.manage(kernel_conn.clone());
             app.manage(app_state);
             desktop_host::finish_desktop_setup(
@@ -174,7 +177,10 @@ pub fn run() {
                 resource_dir,
             );
             let roles_bg = roles_for_watcher.clone();
-            let directory_plugins = app.state::<state::SharedAppState>().directory_plugins.clone();
+            let directory_plugins = app
+                .state::<state::SharedAppState>()
+                .directory_plugins
+                .clone();
             tauri::async_runtime::spawn(async move {
                 directory_plugins.rescan_plugin_roots(roles_bg.as_path());
             });
@@ -202,12 +208,10 @@ pub fn run() {
             api::agent::call_mcp_tool,
             api::agent::get_agent_debug_traces,
             api::agent::clear_agent_debug_traces,
-
             // ── high-risk capabilities ──
             api::high_risk::grant_high_risk_capability,
             api::high_risk::list_high_risk_grants,
             api::high_risk::revoke_high_risk_capability,
-
             // ── diagnostics ──
             api::diagnostics::run_environment_diagnostics,
             api::kernel::get_kernel_connection_status,
@@ -220,11 +224,9 @@ pub fn run() {
             api::llm_settings::scan_local_model_files,
             api::llm_settings::open_path_in_file_manager,
             api::llm_settings::import_gguf_to_ollama,
-
             // ── app settings ──
             api::settings::get_remote_fallback_app_settings,
             api::settings::set_remote_fallback_to_builtin,
-
             // ── chat ──
             api::chat::send_message,
             api::chat::list_chat_sessions,
@@ -247,7 +249,6 @@ pub fn run() {
             api::chat::get_replay_progress,
             api::chat::get_chat_storage_root,
             api::chat::set_chat_storage_root,
-
             // ── role / session / slot registry ──
             api::role::load_role,
             api::role::get_role_info,
@@ -271,37 +272,28 @@ pub fn run() {
             api::role::expert::list_blueprint_includes,
             api::role::expert::get_expert_routing,
             api::role::expert::save_expert_routing,
-
             // ── desktop filesystem (replaces `@tauri-apps/api/fs` IPC) ──
             api::desktop_fs::write_user_text_file,
-
             // ── role pack import/export ──
             api::role_pack::export_role_pack_command,
             api::role_pack::peek_role_pack_command,
             api::role_pack::import_role_pack_command,
-
             // ── scene / presence ──
             api::scene::switch_scene,
             api::scene::set_user_presence_scene,
-
             // ── virtual time ──
             api::time::get_time_state,
             api::time::jump_time,
-
             // ── monologue ──
             api::monologue::generate_monologue,
-
             // ── chat export ──
             api::export::export_chat_logs,
-
             // ── memory / events ──
             api::memory::query_memories,
             api::event::query_events,
             api::event::create_event,
-
             // ── policy plugins ──
             api::policy::reload_policy_plugins,
-
             // ── directory plugins (runtime + catalog) ──
             api::directory_plugin::get_directory_plugin_bootstrap,
             api::directory_plugin::read_plugin_asset_text,
@@ -312,15 +304,12 @@ pub fn run() {
             api::directory_plugin::save_global_plugin_state,
             api::directory_plugin::reset_plugin_state_to_role_default,
             api::directory_plugin::directory_plugin_invoke,
-
             // ── global hotkeys ──
             api::hotkeys::get_hotkey_bindings,
             api::hotkeys::save_hotkey_bindings,
-
             // ── plugin scaffold / pack ──
             api::plugin_scaffold::create_plugin_scaffold,
             api::plugin_pack::pack_plugin,
-
             // ── plugin debug / test runner ──
             api::plugin_debug::spawn_plugin_for_test,
             api::plugin_debug::kill_plugin_process,
@@ -329,15 +318,12 @@ pub fn run() {
             api::plugin_debug::clear_plugin_logs,
             api::plugin_debug::test_plugin_method,
             api::plugin_debug::discover_plugin_methods,
-
             // ── plugin HTML bridge ──
             api::plugin_bridge::plugin_bridge_invoke,
-
             // ── plugin install / update (local zip) ──
             api::plugin_update::check_plugin_updates,
             api::plugin_update::extract_plugin_zip,
             api::plugin_update::install_plugin_from_zip,
-
             // ── plugin market / index ──
             api::plugin_index::sync_plugin_index_command,
             api::plugin_index::get_cached_plugin_index,
@@ -348,7 +334,6 @@ pub fn run() {
             api::plugin_index::batch_update_plugins,
             api::plugin_index::batch_uninstall_plugins,
             api::plugin_index::consume_pending_protocol_installs,
-
             // ── plugin settings UI ──
             api::plugin_config::get_plugin_settings_ui,
             api::plugin_config::set_plugin_settings_config,

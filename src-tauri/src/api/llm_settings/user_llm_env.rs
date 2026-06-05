@@ -19,9 +19,7 @@ pub(crate) async fn probe_cloud_llm_inner(
         .filter(|s| !s.trim().is_empty())
         .is_none()
     {
-        return Err(AppError::InvalidParameter(
-            "云端 Base URL 未配置".into(),
-        ));
+        return Err(AppError::InvalidParameter("云端 Base URL 未配置".into()));
     }
     if std::env::var("OCLIVE_REMOTE_LLM_TOKEN")
         .ok()
@@ -54,9 +52,6 @@ pub(crate) async fn probe_cloud_llm_inner(
         .await
         .map(|_| ())
         .map_err(|e| {
-            AppError::InvalidParameter(format!(
-                "云端模型连通性测试失败：{}",
-                e.to_frontend_error()
-            ))
+            AppError::InvalidParameter(format!("云端模型连通性测试失败：{}", e.to_frontend_error()))
         })
 }

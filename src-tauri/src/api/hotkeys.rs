@@ -1,10 +1,10 @@
 //! Global hotkeys: register/unregister and event dispatch (`hotkey-action`).
 
+use crate::api::error::CommandError;
 use crate::infrastructure::hotkey_bindings::{HotkeyAction, HotkeyBindingsFile};
 use crate::state::{AppState, SharedAppState};
 use serde::Serialize;
 use tauri::{AppHandle, GlobalShortcutManager, Manager, State};
-use crate::api::error::CommandError;
 
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -33,10 +33,14 @@ fn validate_hotkey_bindings(file: &HotkeyBindingsFile) -> Result<(), CommandErro
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 /// Unregister all, then register from config; only entries with `enabled` true and non-empty `accelerator` are registered.
-pub fn apply_global_hotkeys(app: &AppHandle, file: &HotkeyBindingsFile) -> Result<(), CommandError> {
+pub fn apply_global_hotkeys(
+    app: &AppHandle,
+    file: &HotkeyBindingsFile,
+) -> Result<(), CommandError> {
     validate_hotkey_bindings(file)?;
     let mut mgr = app.global_shortcut_manager();
-    mgr.unregister_all().map_err(|e| CommandError::from(e.to_string()))?;
+    mgr.unregister_all()
+        .map_err(|e| CommandError::from(e.to_string()))?;
     for b in &file.bindings {
         if !b.enabled {
             continue;
@@ -76,7 +80,9 @@ pub fn get_hotkey_bindings_impl(state: &AppState) -> Result<HotkeyBindingsFile, 
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
-pub fn get_hotkey_bindings(state: State<'_, SharedAppState>) -> Result<HotkeyBindingsFile, CommandError> {
+pub fn get_hotkey_bindings(
+    state: State<'_, SharedAppState>,
+) -> Result<HotkeyBindingsFile, CommandError> {
     get_hotkey_bindings_impl(&state)
 }
 /// # Errors

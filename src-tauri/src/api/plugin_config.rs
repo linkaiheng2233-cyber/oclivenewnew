@@ -1,6 +1,7 @@
 //! Directory plugin private config: `get_plugin_settings_ui` / `set_plugin_settings_config`.
 
 use crate::api::error::ApiError;
+use crate::api::error::CommandError;
 use crate::infrastructure::directory_plugins::OclivePluginManifest;
 use crate::infrastructure::plugin_data::{
     ensure_default_config_for_manifest, read_config_json, write_config_json,
@@ -13,7 +14,6 @@ use serde::Serialize;
 use serde_json::{json, Value};
 use std::path::PathBuf;
 use tauri::State;
-use crate::api::error::CommandError;
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -46,12 +46,15 @@ fn plugin_root(state: &AppState, plugin_id: &str) -> Result<PathBuf, CommandErro
         .into());
     }
     let roots = state.directory_plugins.plugin_roots.read();
-    roots.get(pid).map(|entry| entry.root.clone()).ok_or_else(|| {
-        ApiError::PluginNotFound {
-            plugin_id: pid.to_string(),
-        }
-        .into()
-    })
+    roots
+        .get(pid)
+        .map(|entry| entry.root.clone())
+        .ok_or_else(|| {
+            ApiError::PluginNotFound {
+                plugin_id: pid.to_string(),
+            }
+            .into()
+        })
 }
 /// # Errors
 ///

@@ -87,17 +87,14 @@ pub fn start_kernel_watchdog(
                 }
             }
 
-            if internal == DesktopKernelMode::Reconnecting {
-                tokio::time::sleep(Duration::from_secs(interval_secs)).await;
-                continue;
-            }
-
             if was_connected(internal) {
                 tracing::warn!(target: "oclive_desktop", "kernel upstream lost");
                 conn.set_mode(DesktopKernelMode::Reconnecting);
                 let status = build_ui_status(&conn, false);
                 emit_kernel_status(&app, &status, StatusEmit::UpstreamLost);
-            } else if internal != DesktopKernelMode::Offline {
+            } else if internal != DesktopKernelMode::Offline
+                && internal != DesktopKernelMode::Reconnecting
+            {
                 conn.set_mode(DesktopKernelMode::Offline);
             }
 

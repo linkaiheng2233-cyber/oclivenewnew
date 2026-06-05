@@ -3,61 +3,22 @@
 use crate::error::AppError;
 use crate::infrastructure::chat_storage::{SessionMeta, StoredMessage};
 use crate::kernel_lifecycle::KernelConnection;
-use crate::models::dto::{GetRoleInfoRequest, JumpTimeRequest, JumpTimeResponse, RoleInfo, SendMessageRequest, SendMessageResponse, TimeStateResponse};
+use crate::models::dto::{
+    CreateEventRequest, CreateEventResponse, GetRoleInfoRequest, JumpTimeRequest, JumpTimeResponse,
+    RoleInfo, SendMessageRequest, SendMessageResponse, SetUserPresenceSceneRequest,
+    SwitchSceneRequest, SwitchSceneResponse, TimeStateResponse,
+};
 use crate::state::AppState;
-use oclive_kernel_runtime::KernelErrorBody;
+pub(crate) use oclive_kernel_runtime::app_error_from_http_response;
+use oclive_kernel_runtime::RUNTIME_API_VERSION;
 use serde::Deserialize;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-#[derive(Deserialize)]
-struct ApiErrorEnvelope {
-    error: KernelErrorBody,
-}
-
-/// Map kernel HTTP `{"error": KernelErrorBody}` (or bare body) to [`AppError`].
-pub(crate) fn app_error_from_http_response(status: reqwest::StatusCode, text: &str) -> AppError {
-    let trimmed = text.trim();
-    if let Ok(env) = serde_json::from_str::<ApiErrorEnvelope>(trimmed) {
-        return app_error_from_kernel_body(&env.error);
-    }
-    if let Ok(body) = serde_json::from_str::<KernelErrorBody>(trimmed) {
-        return app_error_from_kernel_body(&body);
-    }
-    if status.as_u16() == 503 {
-        return AppError::KernelOffline;
-    }
-    AppError::OllamaError(format!("HTTP {status}: {trimmed}"))
-}
-
-fn app_error_from_kernel_body(body: &KernelErrorBody) -> AppError {
-    use oclive_kernel_runtime::error::http_chat_codes;
-    match body.code.as_str() {
-        http_chat_codes::EMPTY_MESSAGE => AppError::EmptyMessage,
-        http_chat_codes::INVALID_ROLE_PATH => {
-            AppError::InvalidParameter(body.message.clone())
-        }
-        http_chat_codes::LOAD_ROLE_TASK_PANIC => AppError::Unknown(body.message.clone()),
-        "ROLE_RUNTIME_NOT_READY" => AppError::RoleRuntimeNotReady,
-        "KERNEL_OFFLINE" => AppError::KernelOffline,
-        "ROLE_NOT_FOUND" => AppError::RoleNotFound(body.message.clone()),
-        "INVALID_PARAMETER" => AppError::InvalidParameter(body.message.clone()),
-        "DB_ERROR" => AppError::DatabaseError(body.message.clone()),
-        "LLM_ERROR" => AppError::OllamaError(body.message.clone()),
-        "STARTUP_HEALTH_FAILED" => AppError::StartupHealthFailed(body.message.clone()),
-        "IO_ERROR" => AppError::Unknown(format!("IO_ERROR: {}", body.message)),
-        "SERDE_ERROR" => AppError::Unknown(format!("SERDE_ERROR: {}", body.message)),
-        "HIGH_RISK_CAPABILITY_NOT_GRANTED" => AppError::HighRiskCapabilityNotGranted {
-            capability: body.message.clone(),
-            id: String::new(),
-        },
-        "REMOTE_SERVICE_UNAVAILABLE" => {
-            AppError::RemoteServiceUnavailable(body.message.clone())
-        }
-        "ROLE_PACK_EXISTS" => AppError::RolePackExists(body.message.clone()),
-        code if code.starts_with("API_") => AppError::Unknown(format!("{code}: {}", body.message)),
-        _ => AppError::Unknown(body.message.clone()),
-    }
+#[derive(Debug, Deserialize)]
+struct HealthProbeJson {
+    ok: bool,
+    runtime_api_version: String,
 }
 
 /// Lightweight UI snapshot from `GET /role_snapshot`.
@@ -97,7 +58,25 @@ impl KernelHttpClient {
             return false;
         };
         let t = text.trim();
-        t == "ok" || t.contains("\"ok\":true") || t.contains("\"ok\": true")
+        if t == "ok" {
+            return true;
+        }
+        let Ok(parsed) = serde_json::from_str::<HealthProbeJson>(t) else {
+            return t.contains("\"ok\":true") || t.contains("\"ok\": true");
+        };
+        if !parsed.ok {
+            return false;
+        }
+        if parsed.runtime_api_version != RUNTIME_API_VERSION {
+            tracing::warn!(
+                target: "oclive_desktop",
+                expected = RUNTIME_API_VERSION,
+                actual = %parsed.runtime_api_version,
+                "kernel health runtime_api_version mismatch"
+            );
+            return false;
+        }
+        true
     }
 
     fn offline_err() -> AppError {
@@ -132,7 +111,7 @@ impl KernelHttpClient {
             .await
             .map_err(|e| AppError::OllamaError(format!("remote chat body: {e}")))?;
         if !status.is_success() {
-            return Err(app_error_from_http_response(status, &text));
+            return Err(app_error_from_http_response(status.as_u16(), &text));
         }
         serde_json::from_str(&text)
             .map_err(|e| AppError::OllamaError(format!("remote chat JSON: {e}")))
@@ -162,7 +141,7 @@ impl KernelHttpClient {
             .await
             .map_err(|e| AppError::OllamaError(format!("role_info body: {e}")))?;
         if !status.is_success() {
-            return Err(app_error_from_http_response(status, &text));
+            return Err(app_error_from_http_response(status.as_u16(), &text));
         }
         serde_json::from_str(&text)
             .map_err(|e| AppError::OllamaError(format!("role_info JSON: {e}")))
@@ -188,7 +167,7 @@ impl KernelHttpClient {
             .await
             .map_err(|e| AppError::OllamaError(format!("time/state body: {e}")))?;
         if !status.is_success() {
-            return Err(app_error_from_http_response(status, &text));
+            return Err(app_error_from_http_response(status.as_u16(), &text));
         }
         serde_json::from_str(&text)
             .map_err(|e| AppError::OllamaError(format!("time/state JSON: {e}")))
@@ -214,10 +193,88 @@ impl KernelHttpClient {
             .await
             .map_err(|e| AppError::OllamaError(format!("time/jump body: {e}")))?;
         if !status.is_success() {
-            return Err(app_error_from_http_response(status, &text));
+            return Err(app_error_from_http_response(status.as_u16(), &text));
         }
         serde_json::from_str(&text)
             .map_err(|e| AppError::OllamaError(format!("time/jump JSON: {e}")))
+    }
+
+    pub async fn switch_scene_via_http(
+        conn: &KernelConnection,
+        req: &SwitchSceneRequest,
+    ) -> Result<SwitchSceneResponse, AppError> {
+        if !Self::probe_health(&conn.base_url).await {
+            return Err(Self::offline_err());
+        }
+        let res = conn
+            .http_client()
+            .post(format!("{}/scene/switch", conn.base_url))
+            .json(req)
+            .send()
+            .await
+            .map_err(|e| AppError::OllamaError(format!("scene/switch request: {e}")))?;
+        let status = res.status();
+        let text = res
+            .text()
+            .await
+            .map_err(|e| AppError::OllamaError(format!("scene/switch body: {e}")))?;
+        if !status.is_success() {
+            return Err(app_error_from_http_response(status.as_u16(), &text));
+        }
+        serde_json::from_str(&text)
+            .map_err(|e| AppError::OllamaError(format!("scene/switch JSON: {e}")))
+    }
+
+    pub async fn set_user_presence_scene_via_http(
+        conn: &KernelConnection,
+        req: &SetUserPresenceSceneRequest,
+    ) -> Result<RoleInfo, AppError> {
+        if !Self::probe_health(&conn.base_url).await {
+            return Err(Self::offline_err());
+        }
+        let res = conn
+            .http_client()
+            .post(format!("{}/scene/user_presence", conn.base_url))
+            .json(req)
+            .send()
+            .await
+            .map_err(|e| AppError::OllamaError(format!("scene/user_presence request: {e}")))?;
+        let status = res.status();
+        let text = res
+            .text()
+            .await
+            .map_err(|e| AppError::OllamaError(format!("scene/user_presence body: {e}")))?;
+        if !status.is_success() {
+            return Err(app_error_from_http_response(status.as_u16(), &text));
+        }
+        serde_json::from_str(&text)
+            .map_err(|e| AppError::OllamaError(format!("scene/user_presence JSON: {e}")))
+    }
+
+    pub async fn create_event_via_http(
+        conn: &KernelConnection,
+        req: &CreateEventRequest,
+    ) -> Result<CreateEventResponse, AppError> {
+        if !Self::probe_health(&conn.base_url).await {
+            return Err(Self::offline_err());
+        }
+        let res = conn
+            .http_client()
+            .post(format!("{}/event/create", conn.base_url))
+            .json(req)
+            .send()
+            .await
+            .map_err(|e| AppError::OllamaError(format!("event/create request: {e}")))?;
+        let status = res.status();
+        let text = res
+            .text()
+            .await
+            .map_err(|e| AppError::OllamaError(format!("event/create body: {e}")))?;
+        if !status.is_success() {
+            return Err(app_error_from_http_response(status.as_u16(), &text));
+        }
+        serde_json::from_str(&text)
+            .map_err(|e| AppError::OllamaError(format!("event/create JSON: {e}")))
     }
 
     pub async fn bridge_dispatch_via_http(
@@ -244,13 +301,16 @@ impl KernelHttpClient {
             .await
             .map_err(|e| AppError::OllamaError(format!("bridge/dispatch body: {e}")))?;
         if !status.is_success() {
-            return Err(app_error_from_http_response(status, &text));
+            return Err(app_error_from_http_response(status.as_u16(), &text));
         }
         serde_json::from_str(&text)
             .map_err(|e| AppError::OllamaError(format!("bridge/dispatch JSON: {e}")))
     }
 
-    pub async fn load_role_via_http(conn: &KernelConnection, role_id: &str) -> Result<(), AppError> {
+    pub async fn load_role_via_http(
+        conn: &KernelConnection,
+        role_id: &str,
+    ) -> Result<(), AppError> {
         if !Self::probe_health(&conn.base_url).await {
             return Err(Self::offline_err());
         }
@@ -267,7 +327,7 @@ impl KernelHttpClient {
             Ok(())
         } else {
             let text = res.text().await.unwrap_or_default();
-            Err(app_error_from_http_response(status, &text))
+            Err(app_error_from_http_response(status.as_u16(), &text))
         }
     }
 
@@ -296,7 +356,7 @@ impl KernelHttpClient {
             .await
             .map_err(|e| AppError::OllamaError(format!("role_snapshot body: {e}")))?;
         if !status.is_success() {
-            return Err(app_error_from_http_response(status, &text));
+            return Err(app_error_from_http_response(status.as_u16(), &text));
         }
         serde_json::from_str(&text)
             .map_err(|e| AppError::OllamaError(format!("role_snapshot JSON: {e}")))
@@ -355,7 +415,7 @@ impl KernelHttpClient {
             Ok(())
         } else {
             let text = res.text().await.unwrap_or_default();
-            Err(app_error_from_http_response(status, &text))
+            Err(app_error_from_http_response(status.as_u16(), &text))
         }
     }
 
@@ -413,7 +473,7 @@ impl KernelHttpClient {
             .await
             .map_err(|e| AppError::OllamaError(format!("chat/storage body: {e}")))?;
         if !status.is_success() {
-            return Err(app_error_from_http_response(status, &text));
+            return Err(app_error_from_http_response(status.as_u16(), &text));
         }
         serde_json::from_str(&text)
             .map_err(|e| AppError::OllamaError(format!("chat/storage JSON: {e}")))

@@ -1,3 +1,4 @@
+use crate::api::error::CommandError;
 use crate::error::AppError;
 use crate::infrastructure::deep_link::take_pending_install_git_urls;
 use crate::infrastructure::directory_plugins::{parse_manifest_version, OclivePluginManifest};
@@ -11,7 +12,6 @@ use semver::Version;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use tauri::State;
-use crate::api::error::CommandError;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -133,7 +133,9 @@ pub fn sync_plugin_index_command(
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
-pub fn get_cached_plugin_index(state: State<'_, SharedAppState>) -> Result<PluginMarketSnapshot, CommandError> {
+pub fn get_cached_plugin_index(
+    state: State<'_, SharedAppState>,
+) -> Result<PluginMarketSnapshot, CommandError> {
     let index = load_cached_index(&state)?;
     Ok(build_snapshot(&state, index, true, "cache", None))
 }
@@ -157,7 +159,6 @@ pub fn install_plugin_from_market(
     } else {
         index_item.as_ref().map(|p| p.git.clone()).ok_or_else(|| {
             AppError::InvalidParameter(format!("plugin not found in index: {}", pid))
-                
         })?
     };
     let git_subdir = index_item
@@ -170,11 +171,12 @@ pub fn install_plugin_from_market(
         &resolved,
         git_subdir,
         index_item.as_ref().map(|x| &x.dependencies),
-    )
-    ?;
+    )?;
     let root_opt = {
         let roots = state.directory_plugins.plugin_roots.read();
-        roots.get(installed_id.as_str()).map(|entry| entry.root.clone())
+        roots
+            .get(installed_id.as_str())
+            .map(|entry| entry.root.clone())
     };
     if let Some(root) = root_opt {
         if let Ok(m) = OclivePluginManifest::load_from_dir(&root) {
@@ -200,7 +202,9 @@ pub fn install_plugin_from_git(
     let installed_id = install_plugin(&state, git, None, None)?;
     let root_opt = {
         let roots = state.directory_plugins.plugin_roots.read();
-        roots.get(installed_id.as_str()).map(|entry| entry.root.clone())
+        roots
+            .get(installed_id.as_str())
+            .map(|entry| entry.root.clone())
     };
     if let Some(root) = root_opt {
         if let Ok(m) = OclivePluginManifest::load_from_dir(&root) {

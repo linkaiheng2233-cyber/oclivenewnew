@@ -1,11 +1,11 @@
 //! Tauri-desktop-only hooks (plugin FS watcher, chat auto-cleanup scheduler).
 
+use notify::{Config, RecommendedWatcher, RecursiveMode, Watcher};
 use oclive_kernel_host::infrastructure::chat_storage::run_global_auto_cleanup;
 use oclive_kernel_host::infrastructure::directory_plugins::{
     plugin_scan_container_roots, HostPluginsFile,
 };
 use oclive_kernel_host::state::{AppState, SharedAppState};
-use notify::{Config, RecommendedWatcher, RecursiveMode, Watcher};
 use serde_json::json;
 use std::path::PathBuf;
 use std::sync::mpsc::channel;

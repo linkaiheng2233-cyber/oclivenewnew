@@ -12,14 +12,9 @@ use std::sync::Arc;
 
 async fn in_memory_state() -> AppState {
     let roles_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../roles");
-    AppState::new_in_memory_with_llm(
-        Arc::new(MockLlmClient {
-            reply: "ok".into(),
-        }),
-        roles_dir,
-    )
-    .await
-    .expect("state")
+    AppState::new_in_memory_with_llm(Arc::new(MockLlmClient { reply: "ok".into() }), roles_dir)
+        .await
+        .expect("state")
 }
 
 #[tokio::test]

@@ -42,11 +42,8 @@ pub async fn ensure_kernel_ready(
         return Ok(conn);
     }
 
-    let candidates = discover_spawn_kernel_candidates(
-        &opts.anchors,
-        None,
-        opts.bundled_binary.as_deref(),
-    );
+    let candidates =
+        discover_spawn_kernel_candidates(&opts.anchors, None, opts.bundled_binary.as_deref());
     let Some(best) = pick_best_kernel(&candidates) else {
         conn.set_mode(DesktopKernelMode::Offline);
         return Err(format!(

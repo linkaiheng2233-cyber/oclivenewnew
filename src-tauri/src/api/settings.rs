@@ -1,9 +1,9 @@
 //! App-level settings (`app_settings`), updatable via controlled bridge.
 
+use crate::api::error::CommandError;
 use crate::state::SharedAppState;
 use serde::Serialize;
 use tauri::State;
-use crate::api::error::CommandError;
 
 pub use oclive_kernel_host::service::settings_bridge::update_settings_impl;
 
@@ -19,13 +19,11 @@ pub async fn set_remote_fallback_to_builtin(
     state
         .db_manager
         .upsert_app_setting("remote_fallback_to_builtin", raw)
-        .await
-        ?;
+        .await?;
     let fresh = state
         .db_manager
         .get_app_setting("remote_fallback_to_builtin")
-        .await
-        ?;
+        .await?;
     state.sync_remote_fallback_from_db_value(fresh);
     Ok(())
 }
@@ -49,8 +47,7 @@ pub async fn get_remote_fallback_app_settings(
     let remote_fallback_to_builtin = state
         .db_manager
         .get_app_setting("remote_fallback_to_builtin")
-        .await
-        ?
+        .await?
         .unwrap_or_else(|| "1".to_string());
     let remote_fallback_env_override_active =
         crate::infrastructure::remote_fallback_policy::remote_fallback_env_override().is_some();
