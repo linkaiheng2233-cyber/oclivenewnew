@@ -1,4 +1,8 @@
 //! Shared long-term memory dedupe / merge (keyword overlap similarity).
+//!
+//! Single-connection merges run inside a transaction to avoid read-modify-write races.
+//! Cross-host concurrent writers (HTTP kernel + desktop) may still produce near-duplicate rows
+//! because dedupe is similarity-based without a unique `(role_id, content)` constraint.
 
 use crate::domain::memory_engine::MemoryEngine;
 use crate::error::{AppError, Result};
@@ -85,41 +89,23 @@ async fn merge_in_pool(
     importance: f64,
     similarity_threshold: f64,
 ) -> Result<MergeOutcome> {
-    let candidates: Vec<(i64, String)> = sqlx::query_as(
-        "SELECT id, content FROM long_term_memory WHERE role_id = ? ORDER BY created_at DESC LIMIT 40",
-    )
-    .bind(role_id)
-    .fetch_all(pool)
-    .await
-    .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-
-    if let Some(id) = matching_memory_id(&candidates, trimmed, similarity_threshold) {
-        sqlx::query(
-            "UPDATE long_term_memory SET mention_count = mention_count + 1 WHERE id = ? AND role_id = ?",
-        )
-        .bind(id)
-        .bind(role_id)
-        .execute(pool)
+    let mut tx = pool
+        .begin()
         .await
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-        return Ok(MergeOutcome::Updated);
-    }
-
-    let now = Utc::now().to_rfc3339();
-    sqlx::query(
-        "INSERT INTO long_term_memory (role_id, content, importance, weight, created_at, scene_id, mention_count)
-         VALUES (?, ?, ?, ?, ?, ?, 1)",
+    let outcome = merge_in_tx(
+        &mut tx,
+        role_id,
+        scene_id,
+        trimmed,
+        importance,
+        similarity_threshold,
     )
-    .bind(role_id)
-    .bind(trimmed)
-    .bind(importance)
-    .bind(1.0)
-    .bind(&now)
-    .bind(scene_id)
-    .execute(pool)
-    .await
-    .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-    Ok(MergeOutcome::New)
+    .await?;
+    tx.commit()
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+    Ok(outcome)
 }
 
 /// Merge one memory line into `long_term_memory` (dedupe by keyword overlap).

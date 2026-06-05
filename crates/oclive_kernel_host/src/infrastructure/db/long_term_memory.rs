@@ -8,6 +8,8 @@ use crate::error::{AppError, Result};
 use crate::models::*;
 use chrono::{DateTime, Utc};
 
+type MemoryRowTuple = (i64, String, String, f64, f64, String, Option<String>, i32);
+
 impl DbManager {
     pub async fn save_memory(
         &self,
@@ -52,30 +54,11 @@ impl DbManager {
     }
 
     pub async fn load_memories(&self, role_id: &str, limit: i32) -> Result<Vec<Memory>> {
-        let rows = sqlx::query_as::<_, (
-            i64,
-            String,
-            String,
-            f64,
-            f64,
-            String,
-            Option<String>,
-            i32,
-        )>(
-            "SELECT id, role_id, content, importance, weight, created_at, scene_id, mention_count
-             FROM long_term_memory
-             WHERE role_id = ?
-             ORDER BY created_at DESC
-             LIMIT ?",
-        )
-        .bind(role_id)
-        .bind(limit)
-        .fetch_all(&self.pool)
-        .await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        self.load_memories_paged(role_id, limit, 0).await
+    }
 
-        let memories = rows
-            .into_iter()
+    fn memory_rows_to_models(rows: Vec<MemoryRowTuple>) -> Vec<Memory> {
+        rows.into_iter()
             .map(
                 |(
                     id,
@@ -99,9 +82,7 @@ impl DbManager {
                     }
                 },
             )
-            .collect();
-
-        Ok(memories)
+            .collect()
     }
 
     pub async fn increment_memory_mention_count(
@@ -135,16 +116,7 @@ impl DbManager {
         limit: i32,
         offset: i32,
     ) -> Result<Vec<Memory>> {
-        let rows = sqlx::query_as::<_, (
-            i64,
-            String,
-            String,
-            f64,
-            f64,
-            String,
-            Option<String>,
-            i32,
-        )>(
+        let rows = sqlx::query_as::<_, MemoryRowTuple>(
             "SELECT id, role_id, content, importance, weight, created_at, scene_id, mention_count
              FROM long_term_memory
              WHERE role_id = ?
@@ -158,34 +130,7 @@ impl DbManager {
         .await
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
-        let memories = rows
-            .into_iter()
-            .map(
-                |(
-                    id,
-                    role_id,
-                    content,
-                    importance,
-                    weight,
-                    created_at,
-                    scene_id,
-                    mention_count,
-                )| {
-                    Memory {
-                        id: id.to_string(),
-                        role_id,
-                        content,
-                        importance,
-                        weight,
-                        created_at: parse_memory_created_at(&created_at),
-                        scene_id,
-                        mention_count: mention_count.max(1),
-                    }
-                },
-            )
-            .collect();
-
-        Ok(memories)
+        Ok(Self::memory_rows_to_models(rows))
     }
 
     pub async fn get_latest_memory_created_at(

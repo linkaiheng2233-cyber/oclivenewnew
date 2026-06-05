@@ -175,23 +175,28 @@ async fn record_memory_and_event(
     now: &str,
     started: &Instant,
 ) -> Result<i64> {
-    let merge_outcome = merge_in_tx(
-        tx,
-        role_id,
-        scene_id,
-        memory_content,
-        memory_importance,
-        memory_similarity_threshold,
-    )
-    .await
-    .map_err(|e| AppError::TransactionError {
-        code: "TXN_MEMORY_MERGE_FAILED",
-        message: e.to_string(),
-    })?;
-    let inserted_new_memory = merge_outcome == MergeOutcome::New;
-    if memory_importance <= 0.0 || memory_content.trim().is_empty() {
+    // Low-value or empty memory must not pollute `long_term_memory`; skip the merge entirely
+    // (mirrors the guard in `merge_long_term_memory_line`). Previously `merge_in_tx` ran
+    // unconditionally, so the "skipped" log fired *after* the row was already inserted/updated.
+    let inserted_new_memory = if memory_importance <= 0.0 || memory_content.trim().is_empty() {
         tracing::info!(role_id = role_id, reason = "low_value", "tx memory skipped");
-    }
+        false
+    } else {
+        let merge_outcome = merge_in_tx(
+            tx,
+            role_id,
+            scene_id,
+            memory_content,
+            memory_importance,
+            memory_similarity_threshold,
+        )
+        .await
+        .map_err(|e| AppError::TransactionError {
+            code: "TXN_MEMORY_MERGE_FAILED",
+            message: e.to_string(),
+        })?;
+        merge_outcome == MergeOutcome::New
+    };
 
     let mut memory_count = db
         .long_term_row_counts

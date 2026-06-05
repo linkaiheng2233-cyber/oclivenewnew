@@ -8,6 +8,7 @@ mod helpers;
 pub use memory_merge::{merge_in_tx, merge_long_term_memory_line, MergeOutcome, TxOrPool};
 
 use crate::error::{AppError, Result};
+use crate::infrastructure::chat_storage::manifest_sess_glob_pattern;
 use crate::models::*;
 use chrono::{DateTime, Utc};
 use dashmap::DashMap;
@@ -249,7 +250,7 @@ impl DbManager {
                 "manifest role_id empty".to_string(),
             ));
         }
-        let pattern = format!("{mid}__sess__*");
+        let pattern = manifest_sess_glob_pattern(mid);
         let ids: Vec<String> = sqlx::query_scalar::<_, String>(
             "SELECT role_id FROM role_runtime WHERE role_id = ? OR role_id GLOB ?",
         )
