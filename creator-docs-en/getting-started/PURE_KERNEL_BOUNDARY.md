@@ -12,7 +12,7 @@ The **pure kernel** is the runtime layer that is **independent of UI**, **indepe
 
 | Responsibility | Anchor in main repo |
 |----------------|---------------------|
-| **Turn orchestration** | `src-tauri/src/domain/chat_engine/` · `process_message` |
+| **Turn orchestration** | `crates/oclive_kernel_host/src/domain/chat_engine/` · `process_message` |
 | **Slot resolution** | `SlotResolver` / `PluginHost::resolve_for_role` · **`slot_registry` → six-slot fold** |
 | **Contracts & persistence shape** | `oclive_kernel_runtime` (DTOs / pure domain) · `migrations/001_init.sql` · `oclive_validation` |
 | **Headless entry (transition)** | `http_api` · **`oclive-kernel-server`** · **`oclivenewnew-tauri --api`** |

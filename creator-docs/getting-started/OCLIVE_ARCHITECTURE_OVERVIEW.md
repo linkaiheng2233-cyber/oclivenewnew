@@ -202,6 +202,46 @@ flowchart TB
 
 ---
 
+## 正交能力单元（非六槽 · 非设施子模块编号）
+
+与 [NAMING_CONVENTIONS.md](../NAMING_CONVENTIONS.md) §1.2 对齐：**User Identity Prompt Template** 与 **Reply Post-Processor Plugin** 不占 `plugin_backends` 六键，也不登记为「第 N 设施子模块」。
+
+```mermaid
+flowchart TB
+  subgraph pre [turn_pipeline/pre · build_prompt 前]
+    UI[user_identities/ · resolve_active_user_identity]
+    PB[PromptBuilder.push_user_identity_section]
+    UI --> PB
+  end
+  subgraph slots [第 1–6 模块]
+    LLM[llm.generate → raw reply]
+  end
+  subgraph builtin_post [post_llm · 现有 turn_pipeline/post.rs]
+    PERSIST[记忆/好感/chat_storage 等内置持久化]
+  end
+  subgraph pp [Reply Post-Processor]
+    PROC[ReplyPostProcessor.process_reply]
+    OUT[SendMessageResponse.reply]
+    PROC --> OUT
+  end
+  PB --> slots
+  LLM --> PERSIST
+  PERSIST --> PROC
+```
+
+| 能力 | 配置落点 | 编排锚点 | 时机 |
+|------|----------|----------|------|
+| **User Identity** | 角色包 `user_identities/`；发行版 `[user_identity]` | `resolve_active_user_identity` → `PromptBuilder.build_prompt` | **LLM 之前**（pre-LLM Prompt 注入） |
+| **Reply Post-Processor** | 角色包 `config.json` → `reply_post_processor`；发行版 `[post_process].chain` | `resolve_reply_post_processor` → `process_reply` | **内置 post_llm 之后**、返回 `reply` 之前 |
+
+- **用户身份** ≠ **角色身份**（`prompts/`、`core_personality.txt`）。
+- **Reply Post-Processor** ≠ **post-process chain profile**（发行版策略枚举）本身；chain 仅合并 effective builtin `profile`。
+- **Reply Post-Processor** ≠ 第 4 模块 Prompt 槽（槽拼 Prompt；后处理改 LLM 输出字句）。
+
+RFC 与验收：[RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md](../rfc/RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md) · Phase 2 handoff：[USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md](../../handoff/USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md)。
+
+---
+
 ## 特点（摘要）
 
 - **契约型薄核** + **六宿主槽** + **设施模块**（无编号设施 + **`{专名}设施子模块`**）
@@ -225,3 +265,4 @@ flowchart TB
 | 总览图 | [KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md) |
 | 纯净内核边界 | [PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md) |
 | Monolith | [RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md) |
+| User Identity & Reply Post-Processor | [RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md](../rfc/RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md) · [ROLE_PACK_SPEC §1.1 / §9.7](../role-pack/ROLE_PACK_SPEC.md) |

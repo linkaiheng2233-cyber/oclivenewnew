@@ -10,6 +10,37 @@ use std::path::{Path, PathBuf};
 pub const ENV_DISTRO_ID: &str = "OCLIVE_DISTRO_ID";
 pub const ENV_DISTRO_PROFILE: &str = "OCLIVE_DISTRO_PROFILE";
 
+/// Distro default User Identity Prompt Template id (when session has no explicit choice).
+#[derive(Debug, Clone, Default)]
+pub struct UserIdentityProfile {
+    pub default_id: Option<String>,
+    pub allowed_ids: Option<Vec<String>>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum PostProcessChain {
+    #[default]
+    Standard,
+    Minimal,
+}
+
+impl PostProcessChain {
+    #[must_use]
+    pub fn parse(s: &str) -> Self {
+        if s.eq_ignore_ascii_case("minimal") {
+            Self::Minimal
+        } else {
+            Self::Standard
+        }
+    }
+}
+
+/// Distro reply post-processor chain policy (`standard` respects role pack; `minimal` forces builtin minimal profile).
+#[derive(Debug, Clone, Default)]
+pub struct PostProcessChainProfile {
+    pub chain: PostProcessChain,
+}
+
 /// Effective host policy for kernel runtime (process-level, v1).
 #[derive(Debug, Clone)]
 pub struct HostProfile {
@@ -18,6 +49,8 @@ pub struct HostProfile {
     pub skip_complex_emotion: bool,
     pub prompt_profile: PromptProfile,
     pub backends_ceiling: Option<PluginBackends>,
+    pub user_identity: UserIdentityProfile,
+    pub post_process: PostProcessChainProfile,
     /// Path passed to child kernel via `OCLIVE_DISTRO_PROFILE` when spawned.
     pub profile_path: Option<PathBuf>,
 }
@@ -49,6 +82,8 @@ struct DistroProfileFile {
     host_flags: Option<HostFlagsToml>,
     slots: Option<SlotsToml>,
     prompt: Option<PromptToml>,
+    user_identity: Option<UserIdentityToml>,
+    post_process: Option<PostProcessToml>,
     plugin_backends: Option<PluginBackendsToml>,
 }
 
@@ -69,6 +104,17 @@ struct PromptToml {
 }
 
 #[derive(Debug, Default, Deserialize)]
+struct UserIdentityToml {
+    default_id: Option<String>,
+    allowed_ids: Option<Vec<String>>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+struct PostProcessToml {
+    chain: Option<String>,
+}
+
+#[derive(Debug, Default, Deserialize)]
 struct PluginBackendsToml {
     memory: Option<String>,
     emotion: Option<String>,
@@ -86,6 +132,8 @@ impl Default for HostProfile {
             skip_complex_emotion: false,
             prompt_profile: PromptProfile::Full,
             backends_ceiling: None,
+            user_identity: UserIdentityProfile::default(),
+            post_process: PostProcessChainProfile::default(),
             profile_path: None,
         }
     }
@@ -161,6 +209,24 @@ pub fn load_host_profile_file(path: &Path) -> Result<HostProfile, String> {
     }
     if let Some(ref pb) = file.plugin_backends {
         profile.backends_ceiling = Some(parse_plugin_backends_toml(pb)?);
+    }
+    if let Some(ref ui) = file.user_identity {
+        profile.user_identity.default_id = ui
+            .default_id
+            .as_ref()
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty());
+        profile.user_identity.allowed_ids = ui.allowed_ids.as_ref().map(|ids| {
+            ids.iter()
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect()
+        });
+    }
+    if let Some(ref pp) = file.post_process {
+        if let Some(ref chain) = pp.chain {
+            profile.post_process.chain = PostProcessChain::parse(chain);
+        }
     }
     Ok(profile)
 }
@@ -324,5 +390,31 @@ llm = "ollama"
         let eff = apply_host_ceiling(&role, &host);
         assert_eq!(eff.memory, MemoryBackend::Builtin);
         assert_eq!(eff.llm, LlmBackend::Ollama);
+    }
+
+    #[test]
+    fn parse_user_identity_and_post_process_sections() {
+        let dir = std::env::temp_dir().join(format!("oclive_host_profile2_{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let file = dir.join("distro.oclive.toml");
+        let raw = r#"
+distro_id = "vscode"
+[user_identity]
+default_id = "classmate"
+allowed_ids = ["classmate", "friend"]
+[post_process]
+chain = "minimal"
+"#;
+        let mut f = std::fs::File::create(&file).unwrap();
+        f.write_all(raw.as_bytes()).unwrap();
+        let p = load_host_profile_file(&file).unwrap();
+        assert_eq!(p.distro_id, "vscode");
+        assert_eq!(p.user_identity.default_id.as_deref(), Some("classmate"));
+        assert_eq!(
+            p.user_identity.allowed_ids.as_ref().map(|v| v.len()),
+            Some(2)
+        );
+        assert_eq!(p.post_process.chain, PostProcessChain::Minimal);
+        let _ = std::fs::remove_dir_all(dir);
     }
 }

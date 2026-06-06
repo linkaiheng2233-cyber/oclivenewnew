@@ -49,6 +49,26 @@ impl PromptBuilder {
 
     /// User identity section: must override generic persona lines that conflict with the chosen identity (e.g. cohabitation copy vs user playing a parent).
     fn push_user_identity_section(prompt: &mut String, input: &PromptInput<'_>) {
+        if !input.user_identity_template.is_empty() {
+            prompt.push_str("【用户身份】（本轮必须遵守；与人设冲突时以本段为准）\n");
+            prompt.push_str(input.user_identity_template.trim());
+            prompt.push_str("\n\n");
+            if !input.user_relation_id.is_empty() {
+                let label = input
+                    .role
+                    .user_relations
+                    .iter()
+                    .find(|r| r.id == input.user_relation_id)
+                    .map(|r| r.name.as_str())
+                    .unwrap_or(input.user_relation_id);
+                prompt.push_str(&format!(
+                    "当前关系：{}（关系键 {}）\n",
+                    label, input.user_relation_id
+                ));
+            }
+            prompt.push('\n');
+            return;
+        }
         if !input.user_relation_id.is_empty() {
             let label = input
                 .role
@@ -587,6 +607,8 @@ mod tests {
             mutable_personality: "",
             reply_quality_anchor: effective_reply_quality_anchor(&role),
             previous_complex_emotion_narrative_hint: "",
+            user_identity_template: "",
+            user_identity_id: "",
         });
 
         assert!(prompt.contains("Test Role"));
@@ -640,6 +662,8 @@ mod tests {
             mutable_personality: "",
             reply_quality_anchor: effective_reply_quality_anchor(&role),
             previous_complex_emotion_narrative_hint: "",
+            user_identity_template: "",
+            user_identity_id: "",
         });
 
         assert!(prompt.contains("家人/长辈场景补充"));
@@ -693,6 +717,8 @@ mod tests {
             mutable_personality: "",
             reply_quality_anchor: effective_reply_quality_anchor(&role),
             previous_complex_emotion_narrative_hint: "",
+            user_identity_template: "",
+            user_identity_id: "",
         });
 
         assert!(prompt.contains("倔强"));
@@ -725,6 +751,8 @@ mod tests {
             mutable_personality: "",
             reply_quality_anchor: effective_reply_quality_anchor(&role),
             previous_complex_emotion_narrative_hint: "",
+            user_identity_template: "",
+            user_identity_id: "",
         });
 
         assert!(prompt.contains("用户说"));
@@ -765,6 +793,8 @@ mod tests {
             mutable_personality: "",
             reply_quality_anchor: effective_reply_quality_anchor(&role),
             previous_complex_emotion_narrative_hint: "",
+            user_identity_template: "",
+            user_identity_id: "",
         });
 
         assert!(prompt.contains("边界语气控制指引"));
@@ -805,6 +835,8 @@ mod tests {
             mutable_personality: "",
             reply_quality_anchor: effective_reply_quality_anchor(&role),
             previous_complex_emotion_narrative_hint: "",
+            user_identity_template: "",
+            user_identity_id: "",
         });
 
         assert!(prompt.contains("边界语气控制指引"));
@@ -838,6 +870,8 @@ mod tests {
             mutable_personality: "",
             reply_quality_anchor: effective_reply_quality_anchor(&role),
             previous_complex_emotion_narrative_hint: "",
+            user_identity_template: "",
+            user_identity_id: "",
         });
 
         assert!(!prompt.contains("边界语气控制指引"));
@@ -870,6 +904,8 @@ mod tests {
             mutable_personality: "最近更黏人了。",
             reply_quality_anchor: effective_reply_quality_anchor(&role),
             previous_complex_emotion_narrative_hint: "",
+            user_identity_template: "",
+            user_identity_id: "",
         });
         assert!(prompt.contains("【可变性格档案】"));
         assert!(prompt.contains("更黏人"));
@@ -904,6 +940,8 @@ mod tests {
             mutable_personality: "",
             reply_quality_anchor: effective_reply_quality_anchor(&role),
             previous_complex_emotion_narrative_hint: "",
+            user_identity_template: "",
+            user_identity_id: "",
         });
         assert!(prompt.contains("【包级质量锚点】仅测试覆盖用。"));
         assert!(!prompt.contains("【回复质量锚点】（每轮须遵守）"));

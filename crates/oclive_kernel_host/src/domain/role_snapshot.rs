@@ -3,6 +3,7 @@
 use crate::command_error::CommandError;
 use crate::domain::chat_engine::conversation_state_role_id;
 use crate::domain::effective_llm_model::resolve_effective_ollama_model;
+use crate::domain::reply_post_processor::apply_effective_post_processor_config;
 use crate::error::AppError;
 use crate::models::dto::{RoleData, RoleInfo, SceneLabelEntry};
 use crate::models::plugin_backends::{
@@ -10,6 +11,7 @@ use crate::models::plugin_backends::{
     PromptBackend,
 };
 use crate::models::role::Role;
+use crate::models::ReplyPostProcessorBackendKind;
 use crate::service::role::interaction::resolve_interaction_ui_snapshot;
 use crate::service::role::runtime::{
     current_favorability_for_effective_identity, maybe_seed_initial_favorability_with_extras,
@@ -20,6 +22,26 @@ use serde::de::DeserializeOwned;
 use serde_json::Value;
 
 type SlotRegistryMap = std::collections::BTreeMap<String, oclive_validation::SlotRegistryEntry>;
+
+fn reply_post_processor_role_info_fields(
+    state: &AppState,
+    role: &Role,
+) -> (bool, String, Option<String>) {
+    let eff = apply_effective_post_processor_config(
+        state.host_profile.as_ref(),
+        &role.pack_reply_post_processor_config,
+    );
+    if !eff.enabled {
+        return (false, "off".into(), None);
+    }
+    let backend = match eff.backend {
+        ReplyPostProcessorBackendKind::Builtin => "builtin",
+        ReplyPostProcessorBackendKind::Remote => "remote",
+        ReplyPostProcessorBackendKind::Directory => "directory",
+    }
+    .to_string();
+    (true, backend, Some(eff.builtin.profile))
+}
 
 fn session_namespace(role_id: &str, session_id: Option<&str>) -> String {
     conversation_state_role_id(role_id, session_id)
@@ -295,6 +317,9 @@ pub async fn assemble_role_info(
     let (slot_registry_pack, slot_registry_effective, slot_session_overridden_keys) =
         slot_registry_role_info_fields(state, role, session_ns.as_str());
 
+    let (reply_post_processor_enabled, reply_post_processor_backend, reply_post_processor_profile) =
+        reply_post_processor_role_info_fields(state, role);
+
     Ok(RoleInfo {
         role_id: role_id.to_string(),
         role_name: role.name.clone(),
@@ -347,5 +372,8 @@ pub async fn assemble_role_info(
             .as_ref()
             .map(|steps| steps.iter().map(|s| s.action.clone()).collect())
             .unwrap_or_default(),
+        reply_post_processor_enabled,
+        reply_post_processor_backend,
+        reply_post_processor_profile,
     })
 }

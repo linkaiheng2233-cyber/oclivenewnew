@@ -21,17 +21,17 @@
 | **长期记忆存储** | 读写 SQLite 中的记忆行 | `MemoryRepository` | *（未挂 plugin_backends，换库需改基础设施）* | `SqliteMemoryRepository` |
 | **策略（情感/事件/记忆条）** | 是否写入、重要性等 | `EmotionPolicy` 等 | `config/policy.toml` 场景 profile | `Default*` |
 
-**聚合入口**：[`PluginHost`](../../src-tauri/src/domain/plugin_host.rs) 按枚举挂具体实现；对话内用 **`ResolvedRolePlugins`**（`AppState::resolved_plugins_for`）一次取齐 **memory / emotion / event / prompt / llm / agent** 六条子系统线。`AppState.llm` 仍为进程级默认句柄（与 `plugin_backends.llm = ollama` 指向同一实现）。
+**聚合入口**：[`PluginHost`](../../crates/oclive_kernel_host/src/domain/ports/plugin_host.rs) 按枚举挂具体实现；对话内用 **`ResolvedRolePlugins`**（`AppState::resolved_plugins_for`）一次取齐 **memory / emotion / event / prompt / llm / agent** 六条子系统线。`AppState.llm` 仍为进程级默认句柄（与 `plugin_backends.llm = ollama` 指向同一实现）。
 
 ---
 
 ## 二、替换「内置」实现（编译期，推荐先做）
 
 1. **实现 trait**  
-   在 `src-tauri/src/domain/` 下新增 `your_memory_retrieval.rs`（示例），实现 `MemoryRetrieval`（或其它对应 trait）。
+   在 `crates/oclive_kernel_host/src/domain/` 下新增 `your_memory_retrieval.rs`（示例），实现 `MemoryRetrieval`（或其它对应 trait）。
 
 2. **注册到 `PluginHost`**  
-   在 [`plugin_host.rs`](../../src-tauri/src/domain/plugin_host.rs) 里：
+   在 [`plugin_host.rs`](../../crates/oclive_kernel_host/src/domain/ports/plugin_host.rs) 里：
    - 增加字段，如 `memory_foo: Arc<dyn MemoryRetrieval>`；
    - 在 `new()` 里 `Arc::new(YourMemoryRetrieval)`；
    - 在 `memory_retrieval()` 的 `match` 中增加新枚举分支。
@@ -75,9 +75,9 @@
 
 | 用途 | 路径 |
 |------|------|
-| 宿主聚合 | `src-tauri/src/domain/plugin_host.rs` |
+| 宿主聚合 | `crates/oclive_kernel_host/src/domain/ports/plugin_host.rs` |
 | Remote HTTP 客户端 | `src-tauri/src/infrastructure/remote_plugin/` |
 | 目录插件扫描 / 子进程 / RPC URL | `src-tauri/src/infrastructure/directory_plugins/` |
 | 运行时解析 | `AppState::resolved_plugins_for` — `src-tauri/src/state/mod.rs` |
-| 对话主链 | `src-tauri/src/domain/chat_engine/turn_pipeline.rs` 等 |
-| 测试用演示 | `RoleManager::with_memory_retrieval` — `src-tauri/src/domain/role_manager.rs` |
+| 对话主链 | `crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/mod.rs` 等 |
+| 测试用演示 | `RoleManager::with_memory_retrieval` — `crates/oclive_kernel_host/src/domain/role_manager.rs` |

@@ -1,5 +1,6 @@
 //! Hybrid store: SQLite authoritative + async JSON mirror.
 
+use super::super::chat_sessions::MANIFEST_SESSION_LIST_CAP;
 use super::super::cleanup::AutoCleanupConfig;
 use super::super::config::{
     resolve_max_messages_per_session, resolve_role_chat_storage_root, DEFAULT_MAX_MESSAGES,
@@ -18,7 +19,6 @@ use super::super::types::{
     ImportChatBucketsResult, ReplayProgress, ReplayResult, ReplayTarget, RoleStorageStat,
     SessionMeta, StoredMessage, TurnPersistInput,
 };
-use super::super::chat_sessions::MANIFEST_SESSION_LIST_CAP;
 use crate::domain::chat_engine::conversation_state_role_id;
 use crate::error::Result;
 use crate::infrastructure::db::DbManager;

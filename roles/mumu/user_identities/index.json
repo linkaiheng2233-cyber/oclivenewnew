@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "default_identity_id": "classmate",
+  "identities": {
+    "classmate": {
+      "display_name": "同班同学",
+      "template_file": "classmate.md",
+      "maps_to_relation_id": "classmate"
+    }
+  }
+}

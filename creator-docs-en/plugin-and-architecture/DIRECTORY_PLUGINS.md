@@ -247,7 +247,7 @@ Front‑end `invoke` wraps args under **`req`** (same as other commands):
 |------|------|
 | scan / manifest / lazy / shell URL | `src-tauri/src/infrastructure/directory_plugins/` |
 | enums + `directory_plugins` | `src-tauri/src/models/plugin_backends.rs` |
-| six‑slot resolve + HTTP reuse | `src-tauri/src/domain/plugin_host.rs`, `remote_plugin/` |
+| six‑slot resolve + HTTP reuse | `crates/oclive_kernel_host/src/domain/ports/plugin_host.rs`, `remote_plugin/` |
 | Tauri APIs | `api/directory_plugin.rs`, `api/plugin_bridge.rs`, `api/plugin_update.rs`, … |
 | custom protocol | `src-tauri/src/lib.rs` |
 | Vue bootstrap | `src/main.js`, `src/utils/directoryShellBootstrap.ts`, `src/DirectoryShellApp.vue` |

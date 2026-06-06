@@ -22,6 +22,12 @@ retrieval = "default"
 [post_process]
 chain = "standard"
 
+# Optional User Identity defaults (catalog still comes from role pack user_identities/).
+# Desktop typically follows catalog default_identity_id; omit default_id unless tightening UX.
+# [user_identity]
+# default_id = "classmate"
+# allowed_ids = ["classmate", "friend"]
+
 # Desktop does not tighten plugin_backends here — full capability from role packs.
 # Optional explicit defaults (same as engine defaults):
 # [plugin_backends]

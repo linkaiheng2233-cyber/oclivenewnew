@@ -108,6 +108,7 @@ roles/{id}/  ──load_role──►  桌面 / VS Code / kernel_server
 
 - 桌面 **spawn / attach** 外部 `oclive-kernel-server`；**不再**同进程 `api_router` 写库；VS Code **attach 优先**。
 - P0 IPC（chat / role / 会话读）经 HTTP 代理；`/role_snapshot` 供跨宿主 UI 轮询。
+- **User Identity HTTP**（Phase 2）：`GET /user_identity/state?role_id=&scene_id=`、`POST /user_identity/set`、`POST /user_identity/scene_set` — 与 Tauri `set_user_identity` / `get_user_identity_state` 同 impl；VS Code / attach 模式必走 HTTP。
 - 规范：[`DISTRO_KERNEL_LIFECYCLE.md`](../kernel/DISTRO_KERNEL_LIFECYCLE.md)。
 - WebSocket 推送仍留后续；**内核编排不改**。
 

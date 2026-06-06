@@ -191,7 +191,7 @@ More HTTP/JSON detail: [REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md).
 
 | Topic | Path |
 |-------|------|
-| Host aggregation | `src-tauri/src/domain/plugin_host.rs` |
+| Host aggregation | `crates/oclive_kernel_host/src/domain/ports/plugin_host.rs` |
 | Remote HTTP client | `src-tauri/src/infrastructure/remote_plugin/` |
 | Directory scan / lazy start | `src-tauri/src/infrastructure/directory_plugins/` |
 | Runtime resolve | `AppState::resolved_plugins_for` — `src-tauri/src/state/mod.rs` |

@@ -57,7 +57,7 @@
 |----|------|
 | `oclive_kernel_types`（DTO / `AppError` / 纯结构） | 已落实 |
 | `oclive_kernel_contracts`（`MemoryRepository`、`MemoryRetrieval` 等 trait） | 已落实 |
-| `oclive_kernel_runtime` 编排实现 + 过渡期 re-export | 已落实；详见 [KERNEL_CRATE_SPLIT_PLAN.md](KERNEL_CRATE_SPLIT_PLAN.md) |
+| `oclive_kernel_runtime` 编排实现 + 过渡期 re-export | 已落实；详见 [../crates/README.md](../crates/README.md) |
 
 ## 防腐层补全（2026-05-20）
 
@@ -240,7 +240,7 @@
 
 ```bash
 # domain 不得引用 api
-rg "use crate::api" src-tauri/src/domain
+rg "use crate::api" crates/oclive_kernel_host/src/domain
 
 # infrastructure 不得引用 api
 rg "use crate::api" src-tauri/src/infrastructure

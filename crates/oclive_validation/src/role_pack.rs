@@ -498,6 +498,7 @@ fn validate_role_pack_blueprint_directory(
         if !warnings.is_empty() {
             print_pack_warnings(&warnings);
         }
+        validate_role_pack_optional_extensions(role_dir)?;
         return Ok(());
     }
 
@@ -511,6 +512,24 @@ fn validate_role_pack_blueprint_directory(
     )?;
     if !warnings.is_empty() {
         print_pack_warnings(&warnings);
+    }
+    validate_role_pack_optional_extensions(role_dir)?;
+    Ok(())
+}
+
+fn validate_role_pack_optional_extensions(role_dir: &Path) -> Result<(), Vec<String>> {
+    let mut warns = Vec::new();
+    let identities_dir = role_dir.join("user_identities");
+    if !identities_dir.is_dir() {
+        warns.push("可选目录 user_identities/ 未配置；将回退 meta.relations.prompt_hint".into());
+    } else {
+        crate::user_identities::validate_user_identities_directory(role_dir)?;
+    }
+    crate::reply_post_processor::validate_reply_post_processor_config_file(
+        &role_dir.join("config.json"),
+    )?;
+    if !warns.is_empty() {
+        print_pack_warnings(&warns);
     }
     Ok(())
 }

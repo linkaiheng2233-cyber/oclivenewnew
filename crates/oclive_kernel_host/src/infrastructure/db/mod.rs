@@ -316,6 +316,7 @@ mod relation_state;
 mod role_runtime;
 mod role_runtime_repo;
 mod session_state;
+mod user_identity_state;
 
 pub use role_runtime_repo::RoleRuntimeRepo;
 

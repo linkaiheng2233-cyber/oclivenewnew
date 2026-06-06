@@ -22,8 +22,10 @@ pub mod plugin_dependencies;
 pub mod plugin_permissions;
 pub mod plugin_slot_attachment;
 pub mod protocol_boundary;
+pub mod reply_post_processor;
 pub mod role_pack;
 pub mod runtime_config;
+pub mod user_identities;
 pub mod validate;
 
 pub use agent_backend::{
@@ -98,6 +100,9 @@ pub use protocol_boundary::{
     assert_layers_do_not_overlap, validate_jsonrpc_error_response, validate_kernel_error_body,
     ProtocolValidationError,
 };
+pub use reply_post_processor::{
+    validate_reply_post_processor_config, validate_reply_post_processor_config_file,
+};
 pub use role_pack::{
     merge_role_pack_scene_ids, validate_default_personality_vector, validate_role_pack_directory,
     validate_role_pack_directory_with_profile, validate_role_pack_loaded,
@@ -105,6 +110,9 @@ pub use role_pack::{
     validate_role_pack_tail, RolePackValidationProfile,
 };
 pub use runtime_config::{DualCoreConfig, RuntimeConfig};
+pub use user_identities::validate_user_identities_directory;
+#[doc(hidden)]
+pub use user_identities::validate_user_identities_index;
 pub use validate::{
     parse_hhmm, validate_disk_manifest, validate_interaction_mode_pack_setting,
     validate_knowledge_manifest_disk, validate_min_runtime_version,

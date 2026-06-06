@@ -23,15 +23,15 @@ Which **pieces the host already splits**, and **what to touch** to swap one. Con
 | **Long‑term memory store** | SQLite rows | `MemoryRepository` | *(not on `plugin_backends`; swap via infra)* | `SqliteMemoryRepository` |
 | **Policies** | write gates, importance, … | `EmotionPolicy`, … | `config/policy.toml` scene profiles | `Default*` |
 
-**Aggregate**: [`PluginHost`](../../src-tauri/src/domain/plugin_host.rs) wires concrete impls per enum; per turn use **`ResolvedRolePlugins`** from **`AppState::resolved_plugins_for`** for **memory / emotion / event / prompt / llm / agent**. `AppState.llm` remains the process‑wide default handle (same impl as `plugin_backends.llm = ollama`).
+**Aggregate**: [`PluginHost`](../../crates/oclive_kernel_host/src/domain/ports/plugin_host.rs) wires concrete impls per enum; per turn use **`ResolvedRolePlugins`** from **`AppState::resolved_plugins_for`** for **memory / emotion / event / prompt / llm / agent**. `AppState.llm` remains the process‑wide default handle (same impl as `plugin_backends.llm = ollama`).
 
 ---
 
 ## 2. Replace a **built‑in** (compile time — do this first)
 
-1. **Implement the trait** — e.g. `src-tauri/src/domain/your_memory_retrieval.rs` implementing `MemoryRetrieval` (or the matching trait).
+1. **Implement the trait** — e.g. `crates/oclive_kernel_host/src/domain/your_memory_retrieval.rs` implementing `MemoryRetrieval` (or the matching trait).
 
-2. **Register in `PluginHost`** — in [`plugin_host.rs`](../../src-tauri/src/domain/plugin_host.rs):
+2. **Register in `PluginHost`** — in [`plugin_host.rs`](../../crates/oclive_kernel_host/src/domain/ports/plugin_host.rs):
    - add a field, e.g. `memory_foo: Arc<dyn MemoryRetrieval>`;
    - construct `Arc::new(YourMemoryRetrieval)` in `new()`;
    - add a `match` arm in `memory_retrieval()`.
@@ -72,9 +72,9 @@ Which **pieces the host already splits**, and **what to touch** to swap one. Con
 
 | Purpose | Path |
 |---------|------|
-| Host aggregate | `src-tauri/src/domain/plugin_host.rs` |
+| Host aggregate | `crates/oclive_kernel_host/src/domain/ports/plugin_host.rs` |
 | Remote HTTP client | `src-tauri/src/infrastructure/remote_plugin/` |
 | Directory scan / child / RPC URL | `src-tauri/src/infrastructure/directory_plugins/` |
 | Runtime resolve | `AppState::resolved_plugins_for` — `src-tauri/src/state/mod.rs` |
-| Chat orchestration | `src-tauri/src/domain/chat_engine/turn_pipeline.rs`, … |
-| Test hook | `RoleManager::with_memory_retrieval` — `src-tauri/src/domain/role_manager.rs` |
+| Chat orchestration | `crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/mod.rs`, … |
+| Test hook | `RoleManager::with_memory_retrieval` — `crates/oclive_kernel_host/src/domain/role_manager.rs` |

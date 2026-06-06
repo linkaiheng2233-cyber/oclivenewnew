@@ -1,6 +1,6 @@
 //! Blueprint slot resolution port (definition in [`oclive_kernel_contracts::SlotRegistryResolver`]).
 
-pub use oclive_kernel_runtime::SlotRegistryResolver;
+pub use oclive_kernel_contracts::SlotRegistryResolver;
 
 use crate::domain::plugin_host::BackendRegistry;
 use crate::domain::slot_resolver::{ResolvedRoleSlots, SlotResolver};

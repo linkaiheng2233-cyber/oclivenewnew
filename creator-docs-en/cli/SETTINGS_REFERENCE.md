@@ -39,7 +39,7 @@ On **schema_version 2**, `runtime_config` triggers a **pack validate warning** a
 This document describes configuration semantics shared by the **desktop host (Tauri)** and **`oclive-cli` scaffolds**. Single sources of truth remain code:
 
 - Enums and structs: [`src-tauri/src/models/plugin_backends.rs`](../../src-tauri/src/models/plugin_backends.rs)
-- Resolution and binding: [`src-tauri/src/domain/plugin_host.rs`](../../src-tauri/src/domain/plugin_host.rs)
+- Resolution and binding: [`crates/oclive_kernel_host/src/domain/ports/plugin_host.rs`](../../crates/oclive_kernel_host/src/domain/ports/plugin_host.rs)
 - Protocol and tables: [`creator-docs/plugin-and-architecture/PLUGIN_V1.md`](../plugin-and-architecture/PLUGIN_V1.md)
 
 **Standard JSON has no comments**: use **`_`-prefixed keys** for prose (ignored at load), or out-of-pack docs. `oclive-cli` sample packs use `_comment_*` keys per slot.
@@ -52,12 +52,12 @@ The runtime struct **`PluginBackends`** has these **6** fields (Serde **ignores 
 
 | Field | Facade trait (orchestration entry) | Common built-in (in-process) |
 |-------|-----------------------------------|-------------------------------|
-| `memory` | [`MemoryRetrieval`](../../src-tauri/src/domain/memory_retrieval.rs) | default `MemoryBackend::Builtin` |
+| `memory` | [`MemoryRetrieval`](../../crates/oclive_kernel_runtime/src/domain/memory_retrieval.rs) | default `MemoryBackend::Builtin` |
 | `emotion` | user emotion analysis (see `plugin_host` / `EmotionAnalyzer`) | `EmotionBackend::Builtin` |
 | `event` | event impact estimation (`EventEstimator`) | `EventBackend::Builtin` |
 | `prompt` | `PromptAssembler` / `PromptBuilder` | `PromptBackend::Builtin` |
 | `llm` | `LlmClient` | **`LlmBackend::Ollama`** (default local client; **no `builtin` literal**) |
-| `agent` | [`AgentProvider`](../../src-tauri/src/domain/agent.rs) | `AgentBackend::Builtin` |
+| `agent` | [`AgentProvider`](../../crates/oclive_kernel_host/src/domain/agent.rs) | `AgentBackend::Builtin` |
 
 When the whole `plugin_backends` block is omitted: memory / emotion / event / prompt / agent behave as **`builtin`**, **`llm` is `ollama`** (see PLUGIN_V1 examples).
 

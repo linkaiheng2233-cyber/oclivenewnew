@@ -1,11 +1,11 @@
-﻿# RFC：运行时双核双态（Stable 核 · Experimental 核）
+# RFC：运行时双核双态（Stable 核 · Experimental 核）
 
 | 元数据 | 值 |
 |--------|-----|
 | 状态 | **Opt-in Beta（默认关闭）** — P2–P5 主链路已入库，仍以 Stable 为默认交付面 |
 | 入口 | **`oclive init --dual-core`**（显式开启；**默认关闭**） |
 | 与 Monolith | **正交**：Monolith 是**编译期**焊接；双核是**运行时**双编排 + 降级 |
-| 与 v2 蓝图 | **扩展**同一 `pipeline.ocblueprint`；新增 `zone` + `pipeline` 段（见 §4） |
+| 与 v2 蓝图 | **扩展**同一蓝图文件 **`pipeline.ocblueprint`**（**不以** `steps[]` 作主路径调度）；新增 `zone` + `pipeline` 段（见 §4） |
 | 受众 | 创作者 / 集成方 / 内核开发者；**普通终端用户无感**（未开启 `--dual-core` 时行为与今日一致） |
 
 **相关文档**：[RFC_OCLIVE_MONOLITH_MODE.md](RFC_OCLIVE_MONOLITH_MODE.md)（构建宏核态）、[RFC_ROLE_BLUEPRINT_V2.md](../../handoff/RFC_ROLE_BLUEPRINT_V2.md)（已落地的 v2 蓝图）、[OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)、[handoff/DUAL_CORE_CURSOR_HANDOFF.md](../../handoff/DUAL_CORE_CURSOR_HANDOFF.md)（**给 Cursor：设计总结与对齐进度**）、[handoff/DUAL_CORE_ALIGNMENT.md](../../handoff/DUAL_CORE_ALIGNMENT.md)（术语速查）。
@@ -146,7 +146,7 @@ flowchart TD
 | 可观测性 | 结构化日志可带 `degraded_from=experimental`（**仅日志**） |
 | 用户可见 | **完全静默**（已决，与 Remote 降级一致）；**不得**破坏 `reply` 契约 |
 
-实现落点（规划）：`src-tauri/src/domain/chat_engine/dual_pipeline.rs`（新模块）、`SlotResolver` 扩展按 `zone` 过滤视图。
+实现落点（规划）：`crates/oclive_kernel_host/src/domain/dual_pipeline.rs`（新模块）、`SlotResolver` 扩展按 `zone` 过滤视图。
 
 ---
 

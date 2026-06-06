@@ -5,8 +5,8 @@ use crate::infrastructure::function_call_parser::{
 };
 use crate::infrastructure::mcp_client::{McpClient, McpServerManifest, McpToolCallResult};
 use async_trait::async_trait;
-pub use oclive_kernel_runtime::AgentProvider;
-pub use oclive_kernel_runtime::{AgentInput, AgentOutput};
+pub use oclive_kernel_contracts::AgentProvider;
+pub use oclive_kernel_types::{AgentInput, AgentOutput};
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;

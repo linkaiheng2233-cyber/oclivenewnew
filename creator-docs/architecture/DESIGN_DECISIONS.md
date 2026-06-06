@@ -11,7 +11,7 @@
 | 决策 | 为什么这样做 |
 |------|----------------|
 | **`pipeline.ocblueprint` 不解释执行 DSL** | 避免「文件里写的流程」与 `process_message` / `co_present` **实际执行顺序**不一致；编排顺序由 **Rust 代码**审计，蓝图只提供配置（`slot_registry`、`groups`）。 |
-| **入口** | [`src-tauri/src/domain/chat_engine/process_message.rs`](../../src-tauri/src/domain/chat_engine/process_message.rs) |
+| **入口** | [`crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs`](../../crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs) |
 
 ---
 
@@ -49,7 +49,7 @@
 | emotion / event / prompt / complex_emotion | 串行 **last-wins** | 状态类或「最终文本」语义，后次覆盖前次 |
 | agent（多目录插件） | **PluginHost** 合并目录 ID | 多工具无强顺序依赖时合并工具集；执行逻辑见 `plugin_host` / `SlotResolver::wrap_agent_if_merged` |
 
-实现与注释：[`src-tauri/src/domain/slot_runner.rs`](../../src-tauri/src/domain/slot_runner.rs)。
+实现与注释：[`crates/oclive_kernel_host/src/domain/slot_runner.rs`](../../crates/oclive_kernel_host/src/domain/slot_runner.rs)。
 
 ---
 

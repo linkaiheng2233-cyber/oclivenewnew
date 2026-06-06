@@ -7,7 +7,7 @@ use crate::error::Result;
 use crate::models::knowledge::KnowledgeEventAugment;
 use crate::models::{Emotion, Event, PersonalitySource, PersonalityVector};
 use async_trait::async_trait;
-pub use oclive_kernel_runtime::EventEstimator;
+pub use oclive_kernel_contracts::EventEstimator;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 

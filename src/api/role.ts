@@ -209,6 +209,10 @@ export interface RoleInfo {
   blueprint_groups_pack?: import('../lib/slotRegistry').SlotGroupsMap | null
   dual_core_enabled?: boolean
   pipeline_experimental_actions?: string[]
+  /** Effective reply post-processor (role pack + distro merge) */
+  reply_post_processor_enabled?: boolean
+  reply_post_processor_backend?: string
+  reply_post_processor_profile?: string | null
 }
 
 /** `switch_scene` flattened `RoleInfo` fields plus optional scene welcome line */
@@ -325,6 +329,55 @@ export async function clearSceneUserRelation(
 ): Promise<RoleInfo> {
   return invokeWithFriendlyError<RoleInfo>('clear_scene_user_relation', {
     req: { role_id: roleId, scene_id: sceneId },
+  })
+}
+
+/** Sentinel for User Identity picker "follow pack default" (matches backend). */
+export const OCLIVE_DEFAULT_IDENTITY_SENTINEL = '__oclive_default__'
+
+export interface UserIdentityDto {
+  id: string
+  display_name: string
+  maps_to_relation_id?: string | null
+}
+
+export interface UserIdentityStateResponse {
+  role_id: string
+  identities: UserIdentityDto[]
+  default_identity_id: string
+  current_identity_id: string
+  use_manifest_default: boolean
+  effective_relation_key: string
+}
+
+export async function getUserIdentityState(
+  roleId: string,
+  sceneId?: string | null,
+): Promise<UserIdentityStateResponse> {
+  return invokeWithFriendlyError<UserIdentityStateResponse>('get_user_identity_state', {
+    req: {
+      role_id: roleId,
+      scene_id: sceneId ?? null,
+    },
+  })
+}
+
+export async function setUserIdentity(
+  roleId: string,
+  identityId: string,
+): Promise<UserIdentityStateResponse> {
+  return invokeWithFriendlyError<UserIdentityStateResponse>('set_user_identity', {
+    req: { role_id: roleId, identity_id: identityId },
+  })
+}
+
+export async function setSceneUserIdentity(
+  roleId: string,
+  sceneId: string,
+  identityId: string,
+): Promise<UserIdentityStateResponse> {
+  return invokeWithFriendlyError<UserIdentityStateResponse>('set_scene_user_identity', {
+    req: { role_id: roleId, scene_id: sceneId, identity_id: identityId },
   })
 }
 

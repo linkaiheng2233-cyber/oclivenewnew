@@ -9,6 +9,7 @@ pub mod knowledge;
 pub mod memory;
 pub mod personality;
 pub mod plugin_backends;
+pub mod reply_post_processor_config;
 pub mod role;
 pub mod role_manifest_disk;
 pub mod role_pack_config;
@@ -16,6 +17,7 @@ pub mod role_settings_disk;
 pub mod role_time_config;
 pub mod scene_disk;
 pub mod ui_config;
+pub mod user_identity;
 
 pub use author_pack::{AuthorPackFile, AuthorRecommendedPlugin};
 pub use chat::*;
@@ -28,6 +30,11 @@ pub use knowledge::{KnowledgeEventAugment, KnowledgeIndex, KnowledgePackConfigDi
 pub use memory::*;
 pub use personality::*;
 pub use plugin_backends::*;
+pub use reply_post_processor_config::{
+    ReplyPostProcessorBackendKind, RolePackBuiltinReplyPostProcessorConfig,
+    RolePackDirectoryReplyPostProcessorConfig, RolePackRemoteReplyPostProcessorConfig,
+    RolePackReplyPostProcessorConfig,
+};
 pub use role::*;
 pub use role_manifest_disk::DiskRoleManifest;
 pub use role_pack_config::{
@@ -38,3 +45,6 @@ pub use role_settings_disk::{disk_role_settings_from_role, DiskRoleSettings};
 pub use role_time_config::{RoleTimeConfig, DEFAULT_REAL_TO_VIRTUAL_RATIO};
 pub use scene_disk::{DiskSceneConfig, DiskSceneTimeWindow};
 pub use ui_config::{LayoutConfig, SlotConfig, ThemeConfig, UiConfig, UiSlots};
+pub use user_identity::{
+    UserIdentityCatalog, UserIdentityCatalogEntry, UserIdentityIndex, UserIdentityIndexEntry,
+};

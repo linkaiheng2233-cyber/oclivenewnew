@@ -15,7 +15,7 @@ use super::ui_config::UiConfig;
 use serde::{Deserialize, Serialize};
 
 pub const API_VERSION: u32 = 1;
-pub const SCHEMA_VERSION: u32 = 13;
+pub const SCHEMA_VERSION: u32 = 14;
 
 /// Primary chat invoke payload (`send_message`).
 #[derive(Debug, Deserialize)]
@@ -27,6 +27,21 @@ pub struct SendMessageRequest {
     /// Optional: distinguishes multiple sessions for the same role (e.g. HTTP trial chat "new session"); combined with `role_id` as the internal DB namespace.
     #[serde(default)]
     pub session_id: Option<String>,
+    /// When `true`, response may include `raw_reply` if post-processor changed the LLM text.
+    #[serde(default)]
+    pub include_raw_reply: Option<bool>,
+}
+
+impl Default for SendMessageRequest {
+    fn default() -> Self {
+        Self {
+            role_id: String::new(),
+            user_message: String::new(),
+            scene_id: None,
+            session_id: None,
+            include_raw_reply: None,
+        }
+    }
 }
 
 /// Seven-dimensional emotion snapshot returned to the UI.
@@ -110,12 +125,59 @@ pub struct SendMessageResponse {
     /// `true` when role blueprint enables dual-core but host fell back to co-present path.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub dual_core_degraded: Option<bool>,
+    /// Pre–post-processor LLM text; only when `include_raw_reply` was requested and text changed.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub raw_reply: Option<String>,
 }
 
 // ----- WEEK3-004: role / memory / event queries -----
 
 /// Sentinel submitted for the identity dropdown option "follow creator manifest default identity" (not a manifest key).
 pub const OCLIVE_DEFAULT_RELATION_SENTINEL: &str = "__oclive_default__";
+
+/// Sentinel for User Identity Prompt Template picker "follow pack default" (same value as relation sentinel).
+pub const OCLIVE_DEFAULT_IDENTITY_SENTINEL: &str = "__oclive_default__";
+
+/// One entry from `user_identities/index.json` (`get_user_identity_state`).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UserIdentityDto {
+    pub id: String,
+    pub display_name: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub maps_to_relation_id: Option<String>,
+}
+
+/// Switch active User Identity Prompt Template (`set_user_identity`).
+#[derive(Debug, Clone, Deserialize)]
+pub struct SetUserIdentityRequest {
+    pub role_id: String,
+    pub identity_id: String,
+}
+
+/// Per-scene identity override when `identity_binding = per_scene`.
+#[derive(Debug, Clone, Deserialize)]
+pub struct SetSceneUserIdentityRequest {
+    pub role_id: String,
+    pub scene_id: String,
+    pub identity_id: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct GetUserIdentityStateRequest {
+    pub role_id: String,
+    #[serde(default)]
+    pub scene_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UserIdentityStateResponse {
+    pub role_id: String,
+    pub identities: Vec<UserIdentityDto>,
+    pub default_identity_id: String,
+    pub current_identity_id: String,
+    pub use_manifest_default: bool,
+    pub effective_relation_key: String,
+}
 
 /// Manifest-defined user identity option (`get_role_info` / relation pickers).
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -331,6 +393,15 @@ pub struct RoleInfo {
     /// `pipeline.experimental` action list (architecture diagram / debug read-only).
     #[serde(default)]
     pub pipeline_experimental_actions: Vec<String>,
+    /// Effective reply post-processor enabled (role pack + distro merge).
+    #[serde(default)]
+    pub reply_post_processor_enabled: bool,
+    /// `builtin` | `remote` | `directory` | `off` when disabled.
+    #[serde(default)]
+    pub reply_post_processor_backend: String,
+    /// Effective builtin profile (`standard` | `minimal`) when enabled.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reply_post_processor_profile: Option<String>,
 }
 
 /// Per-session `slot_registry` backend override (`set_session_slot_override`).

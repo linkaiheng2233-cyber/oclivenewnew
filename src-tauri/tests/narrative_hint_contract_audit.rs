@@ -43,6 +43,7 @@ async fn run_turn(state: &AppState, user_message: &str) {
             user_message: user_message.to_string(),
             scene_id: None,
             session_id: Some("contract-audit".to_string()),
+            ..Default::default()
         },
     )
     .await

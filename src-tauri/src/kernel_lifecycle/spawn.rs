@@ -69,9 +69,12 @@ fn spawn_env(port: u16, roles_dir: &Path, app_data: &Path) -> Vec<(String, Strin
 }
 
 fn append_distro_env(pairs: &mut Vec<(String, String)>, host: &HostProfile) {
-    if host.distro_id != "default" {
-        pairs.push((ENV_DISTRO_ID.into(), host.distro_id.clone()));
-    }
+    let distro_id = if host.distro_id != "default" {
+        host.distro_id.clone()
+    } else {
+        "desktop".into()
+    };
+    pairs.push((ENV_DISTRO_ID.into(), distro_id));
     if let Some(ref p) = host.profile_path {
         pairs.push((ENV_DISTRO_PROFILE.into(), p.to_string_lossy().into_owned()));
     } else if let Ok(p) = std::env::var(ENV_DISTRO_PROFILE) {

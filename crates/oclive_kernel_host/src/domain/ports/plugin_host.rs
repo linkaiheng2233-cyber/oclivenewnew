@@ -1,6 +1,6 @@
 //! Plugin host resolution port (definition in [`oclive_kernel_contracts::PluginHostPort`]).
 
-pub use oclive_kernel_runtime::PluginHostPort;
+pub use oclive_kernel_contracts::PluginHostPort;
 
 use crate::domain::plugin_host::{PluginHost, ResolvedRolePlugins};
 use crate::models::{PluginBackends, PluginBackendsOverride, Role};

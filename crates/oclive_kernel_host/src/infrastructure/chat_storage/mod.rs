@@ -1,11 +1,11 @@
 //! Chat history: Hybrid-only backend (SQLite + optional JSON mirror).
 
 mod backends;
-mod cleanup;
-mod config;
 mod chat_messages;
 mod chat_search;
 mod chat_sessions;
+mod cleanup;
+mod config;
 mod db;
 mod export;
 mod factory;

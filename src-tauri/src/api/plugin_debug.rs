@@ -14,8 +14,9 @@ use tauri::State;
 fn require_developer_mode(state: &crate::state::AppState) -> Result<(), CommandError> {
     if !state.directory_plugins.developer_effective() {
         return Err(ApiError::PermissionDenied {
-            message: "plugin debug commands require developer mode (settings or OCLIVE_DEVELOPER=1)"
-                .into(),
+            message:
+                "plugin debug commands require developer mode (settings or OCLIVE_DEVELOPER=1)"
+                    .into(),
         }
         .into());
     }
@@ -66,7 +67,9 @@ pub fn kill_plugin_process(
 }
 
 #[tauri::command]
-pub fn list_plugin_processes(state: State<'_, SharedAppState>) -> Result<Vec<PluginProcessDebugInfo>, CommandError> {
+pub fn list_plugin_processes(
+    state: State<'_, SharedAppState>,
+) -> Result<Vec<PluginProcessDebugInfo>, CommandError> {
     require_developer_mode(state.as_ref())?;
     Ok(state.directory_plugins.list_managed_plugin_processes())
 }

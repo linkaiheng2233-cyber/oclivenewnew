@@ -43,7 +43,7 @@
 
 | 项目 | 说明 |
 |------|------|
-| **对外入口** | `src-tauri/src/domain/chat_engine/mod.rs` 再导出 `process_message`；实现主体在 **`src-tauri/src/domain/chat_engine/process_message.rs`**。 |
+| **对外入口** | `crates/oclive_kernel_host/src/domain/chat_engine/mod.rs` 再导出 `process_message`；实现主体在 **`crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs`**。 |
 | **HTTP / Tauri** | 与 OOCP / `invoke` 对齐的请求体见 `oclive_kernel_runtime` DTO（宿主经 `src-tauri/src/models/mod.rs` 再导出）。 |
 | **主语义（概念六段）** | 文件头注释：**分析情绪 → 检测事件 → 演化性格 → 构建 Prompt → 调用 LLM → 持久化**；实际执行会根据 **Agent 短路**、**异地 / 远程人生** 分支到 `process_remote_stub` / `process_remote_life`，否则进入 **`co_present::process_co_present`**。 |
 | **阶段标注** | `ProcessMessageError` / `pm!` 宏带 `stage` 字符串（如 `ensure_role_loaded`、`startup_health`），日志检索用 `target: "oclive_chat"`。 |
@@ -64,7 +64,7 @@
 
 | 项目 | 说明 |
 |------|------|
-| **装配与解析** | **`src-tauri/src/domain/plugin_host.rs`**：`PluginHost::resolve_for_role` 按角色包 + 会话覆盖解析 **第 1–6 模块**（见 [OCLIVE_ARCHITECTURE_OVERVIEW.md](../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)），得到 `ResolvedRolePlugins`（各槽 `Arc<dyn …Provider>`）。 |
+| **装配与解析** | **`crates/oclive_kernel_host/src/domain/ports/plugin_host.rs`**：`PluginHost::resolve_for_role` 按角色包 + 会话覆盖解析 **第 1–6 模块**（见 [OCLIVE_ARCHITECTURE_OVERVIEW.md](../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)），得到 `ResolvedRolePlugins`（各槽 `Arc<dyn …Provider>`）。 |
 | **配置来源** | v2：**`pipeline.ocblueprint` → `slot_registry`**（折叠六槽）+ DB 会话覆盖；legacy：`settings.json` → `plugin_backends`。有效值：`effective_plugin_backends_for_session`（`AppState`）。 |
 | **模块编号与枚举** | **[`OCLIVE_ARCHITECTURE_OVERVIEW.md`](../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)**、**[`SETTINGS_REFERENCE.md`](../creator-docs/cli/SETTINGS_REFERENCE.md)**、**[`PLUGIN_V1.md`](../creator-docs/plugin-and-architecture/PLUGIN_V1.md)**。 |
 | **降级策略** | 目录插件 / Remote 失败时主对话路径尽量 **记日志 + 回退内置或 Ollama**（具体分支见 `co_present`、remote 子模块与插件运行时；错误码见 ERROR_CODES）。 |
@@ -105,7 +105,7 @@
 
 | 项目 | 说明 |
 |------|------|
-| **Trait / 类型** | **`src-tauri/src/domain/complex_emotion.rs`** 再导出内核 `ComplexEmotionInput` / `ComplexEmotionOutput` 等；内置 **`BuiltinKeywordComplexEmotionProvider`**。 |
+| **Trait / 类型** | **`crates/oclive_kernel_runtime/src/domain/complex_emotion.rs`** 再导出内核 `ComplexEmotionInput` / `ComplexEmotionOutput` 等；内置 **`BuiltinKeywordComplexEmotionProvider`**。 |
 | **Remote 可选** | **`src-tauri/src/infrastructure/remote_plugin/complex_emotion_http.rs`**。 |
 | **注入 Prompt 链路** | **`turn_pipeline.rs`**：在 **`load_recent_context` 之后、`build_prompt` 之前** 调用解析；上一轮 hint 缓存在 **`AppState`**（按会话 `srid`）；经 **`PromptInput::previous_complex_emotion_narrative_hint`** 传入 **`PromptBuilder::build_prompt`**（`prompt_builder.rs`）。 |
 | **测试** | **`src-tauri/tests/narrative_hint_prompt_roundtrip.rs`**。 |
@@ -158,11 +158,11 @@
 
 | 模块路径 | 核心文件 | 关键概念 | 修改时注意 |
 |----------|----------|----------|------------|
-| 主编排 | `src-tauri/src/domain/chat_engine/process_message.rs` | 单消息入口、Agent/异地分支 | 不改业务顺序请先读 [`DESIGN_DECISIONS.md`](../creator-docs/architecture/DESIGN_DECISIONS.md) |
-| 共景 | `src-tauri/src/domain/chat_engine/turn_pipeline.rs` | 回合阶段、`narrative_hint` | 槽位调用走 `SlotRunner`，勿直连 `pl.llm` |
-| 多实例合并 | `src-tauri/src/domain/slot_runner.rs` | last-wins / memory 去重 | 新策略需补「为何」注释；Agent 合并在 `plugin_host` |
-| 插件装配 | `src-tauri/src/domain/plugin_host.rs` | `ResolvedRolePlugins`、`PluginHostPort` | Remote 需 env；目录插件权限见 `high_risk_grants` |
-| 蓝图解析 | `src-tauri/src/domain/slot_resolver.rs` | `slot_registry` → `ResolvedRoleSlots` | 不手写 `module_relations` |
+| 主编排 | `crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs` | 单消息入口、Agent/异地分支 | 不改业务顺序请先读 [`DESIGN_DECISIONS.md`](../creator-docs/architecture/DESIGN_DECISIONS.md) |
+| 共景 | `crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/mod.rs` | 回合阶段、`narrative_hint` | 槽位调用走 `SlotRunner`，勿直连 `pl.llm` |
+| 多实例合并 | `crates/oclive_kernel_host/src/domain/slot_runner.rs` | last-wins / memory 去重 | 新策略需补「为何」注释；Agent 合并在 `plugin_host` |
+| 插件装配 | `crates/oclive_kernel_host/src/domain/ports/plugin_host.rs` | `ResolvedRolePlugins`、`PluginHostPort` | Remote 需 env；目录插件权限见 `high_risk_grants` |
+| 蓝图解析 | `crates/oclive_kernel_host/src/domain/slot_resolver.rs` | `slot_registry` → `ResolvedRoleSlots` | 不手写 `module_relations` |
 | 蓝图加载 | `src-tauri/src/infrastructure/storage.rs` | `load_blueprint_v2_for_role_dir` | 校验失败看 `oclive_validation` 报错拼接 |
 | 端口 trait | `crates/oclive_kernel_contracts/src/` | `LlmClient`、`MemoryRetrieval`… | 插件作者实现 trait，见各文件 **When to implement** |
 | 纯类型 | `crates/oclive_kernel_types/` | DTO、`AppError` | 无 I/O；契约变更同步 validation |

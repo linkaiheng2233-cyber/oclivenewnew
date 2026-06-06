@@ -15,6 +15,14 @@ export default {
     modelManagerLink: 'Model management',
     backendHintAfter: '(Ctrl+Shift+M)',
     relation: 'Relation',
+    userIdentity: 'User identity',
+    identityFollowDefault: 'Follow pack default ({name})',
     eventImpact: 'Event impact',
+    postProcessorOff: 'Post-process: off',
+    postProcessorOn: 'Post-process: {backend} · {profile}',
+    backendBuiltin: 'builtin',
+    backendRemote: 'remote',
+    backendDirectory: 'directory',
+    currentIdentity: 'Identity: {name}',
   }
 }

@@ -332,6 +332,6 @@
 
 ## 校验与维护提示
 
-- 在 **merge `settings.json` 之后** 执行 `validate_disk_manifest`（见 `src-tauri/src/domain/role_manifest_validate.rs`）：如 `default_relation` 不在 `user_relations` 中、`topic_weights` 出现未声明场景等会**报错**。  
+- 在 **merge `settings.json` 之后** 执行 `validate_disk_manifest`（见 `crates/oclive_kernel_host/src/domain/role_manifest_validate.rs`）：如 `default_relation` 不在 `user_relations` 中、`topic_weights` 出现未声明场景等会**报错**。  
 - 修改字段后建议本地跑一次应用或 `cargo test` 相关用例，确认能通过。  
 - 身份模式与玩家侧行为：见 **`handoff/21_CREATOR_IDENTITY_BINDING.md`**。

@@ -9,7 +9,7 @@ use crate::infrastructure::db::{merge_long_term_memory_line, MergeOutcome, TxOrP
 use crate::infrastructure::policy_registry::{build_policy_sets_from_registry, PolicyRegistryFile};
 use crate::models::{Event, EventType};
 use dashmap::DashMap;
-use oclive_kernel_runtime::policy::PolicyContext;
+use oclive_kernel_types::PolicyContext;
 use std::sync::Arc;
 use uuid::Uuid;
 

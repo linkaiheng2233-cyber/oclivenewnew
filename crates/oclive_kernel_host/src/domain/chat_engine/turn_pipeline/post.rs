@@ -21,6 +21,8 @@ use super::persistence::{
 use super::pre::{MainLlmOutput, MiddleOutput, PreLlmOutput, STAGES};
 use super::TurnMode;
 use crate::domain::chat_engine::chat_stage::ChatStage;
+use crate::domain::reply_post_processor::resolve_reply_post_processor;
+use oclive_kernel_contracts::reply_post_processor::PostProcessInput;
 
 pub(crate) async fn run_main_llm(
     ctx: &TurnContext<'_>,
@@ -173,6 +175,7 @@ fn assemble_send_message_response(
     movement: bool,
     user_message: &str,
     reply: String,
+    raw_reply: Option<String>,
     dual_core_degraded: bool,
 ) -> SendMessageResponse {
     use crate::models::dto::{DetectedEventDto, PresenceMode, API_VERSION, SCHEMA_VERSION};
@@ -219,6 +222,7 @@ fn assemble_send_message_response(
         chat_persist_failed: chat_ids.chat_persist_failed,
         chat_persist_error: chat_ids.chat_persist_error.clone(),
         dual_core_degraded: dual_core_degraded.then_some(true),
+        raw_reply,
     }
 }
 
@@ -297,6 +301,36 @@ pub(crate) async fn post_llm(
         .await;
     }
 
+    let raw_reply_before = reply.clone();
+    let display_reply = {
+        let processor = resolve_reply_post_processor(state, role);
+        match processor.process_reply(PostProcessInput {
+            raw_reply: reply.as_str(),
+            user_message,
+            role_id: mrid,
+            scene_id,
+            srid,
+            locale: "zh",
+        }) {
+            Ok(out) => out.display_reply,
+            Err(e) => {
+                tracing::warn!(
+                    target: "oclive_reply_post_processor",
+                    role_id = %mrid,
+                    error = %e,
+                    "reply post-processor failed; using raw reply"
+                );
+                reply.clone()
+            }
+        }
+    };
+    let raw_reply = if ctx.req.include_raw_reply == Some(true) && display_reply != raw_reply_before
+    {
+        Some(raw_reply_before)
+    } else {
+        None
+    };
+
     let chat_ids = append_turn_to_chat_storage(
         state,
         mode,
@@ -306,7 +340,7 @@ pub(crate) async fn post_llm(
         llm,
         &policy,
         user_message,
-        &reply,
+        &display_reply,
     )
     .await;
 
@@ -324,7 +358,8 @@ pub(crate) async fn post_llm(
         &chat_ids,
         persist_out.movement,
         user_message,
-        reply,
+        display_reply,
+        raw_reply,
         ctx.dual_core_degraded,
     );
 

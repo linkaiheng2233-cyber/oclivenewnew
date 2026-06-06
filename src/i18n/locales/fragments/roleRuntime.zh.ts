@@ -15,6 +15,14 @@ export default {
     modelManagerLink: '模型管理',
     backendHintAfter: '（Ctrl+Shift+M）',
     relation: '关系',
+    userIdentity: '用户身份',
+    identityFollowDefault: '跟随包默认（{name}）',
     eventImpact: '事件影响',
+    postProcessorOff: '后处理：未启用',
+    postProcessorOn: '后处理：{backend} · {profile}',
+    backendBuiltin: '内置',
+    backendRemote: '远程',
+    backendDirectory: '目录插件',
+    currentIdentity: '身份：{name}',
   }
 }

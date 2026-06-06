@@ -28,7 +28,7 @@ async fn process_message_golden_path_mock_llm() {
             role_id: "mumu".to_string(),
             user_message: "你好".to_string(),
             scene_id: None,
-            session_id: None,
+            ..Default::default()
         },
     )
     .await

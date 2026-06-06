@@ -2,6 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
+use super::reply_post_processor_config::RolePackReplyPostProcessorConfig;
 use super::role_time_config::RoleTimeConfig;
 
 fn default_memory_halflife() -> f64 {
@@ -188,4 +189,6 @@ pub struct RolePackConfigFile {
     pub evolution: RolePackEvolutionConfig,
     #[serde(default)]
     pub chat_storage: RolePackChatStorageConfig,
+    #[serde(default)]
+    pub reply_post_processor: RolePackReplyPostProcessorConfig,
 }

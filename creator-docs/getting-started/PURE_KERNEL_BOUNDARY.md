@@ -12,7 +12,7 @@
 
 | 职责 | 实现锚点（主仓） |
 |------|------------------|
-| **回合编排** | `src-tauri/src/domain/chat_engine/` · `process_message` |
+| **回合编排** | `crates/oclive_kernel_host/src/domain/chat_engine/` · `process_message` |
 | **槽位解析** | `SlotResolver` / `PluginHost::resolve_for_role` · **`slot_registry` → 六槽折叠** |
 | **契约与持久化形状** | `oclive_kernel_runtime`（DTO / 纯 domain）· `migrations/001_init.sql` · `oclive_validation` |
 | **无头入口（过渡）** | `http_api` · **`oclive-kernel-server`** · **`oclivenewnew-tauri --api`** |

@@ -4,6 +4,7 @@ use std::collections::{BTreeMap, HashMap};
 use super::author_pack::AuthorPackFile;
 use super::knowledge::KnowledgeIndex;
 use super::plugin_backends::PluginBackends;
+use super::reply_post_processor_config::RolePackReplyPostProcessorConfig;
 use super::role_pack_config::{
     RolePackChatStorageConfig, RolePackEvolutionConfig, RolePackMemoryConfig,
     RolePackRelationConfig,
@@ -11,6 +12,7 @@ use super::role_pack_config::{
 use super::role_time_config::RoleTimeConfig;
 use super::scene_disk::DiskSceneConfig;
 use super::ui_config::UiConfig;
+use super::user_identity::UserIdentityCatalog;
 pub use oclive_validation::{
     AutonomousSceneConfig, AutonomousSceneRule, IdentityBinding, LifeAvailability,
     LifeScheduleDisk, LifeScheduleEntryDisk, LifeTrajectoryDisk, PersonalitySource, PipelineStep,
@@ -220,6 +222,12 @@ pub struct Role {
     /// `config.json` → `chat_storage` (per-session chat-history cap, etc.).
     #[serde(default)]
     pub pack_chat_storage_config: RolePackChatStorageConfig,
+    /// `config.json` → `reply_post_processor` (builtin post-LLM text polish; default disabled).
+    #[serde(default)]
+    pub pack_reply_post_processor_config: RolePackReplyPostProcessorConfig,
+    /// `user_identities/` catalog (in-memory only; populated by [`RoleStorage::finish_role_pack_load`]).
+    #[serde(skip)]
+    pub user_identity_catalog: Option<Arc<UserIdentityCatalog>>,
     /// v3 blueprint `runtime_config` (loaded by the host; creator packs usually omit it or leave dual-core off).
     #[serde(default)]
     pub runtime_config: Option<RuntimeConfig>,
@@ -285,6 +293,8 @@ impl Default for Role {
             pack_relation_config: RolePackRelationConfig::default(),
             pack_evolution_config: RolePackEvolutionConfig::default(),
             pack_chat_storage_config: RolePackChatStorageConfig::default(),
+            pack_reply_post_processor_config: RolePackReplyPostProcessorConfig::default(),
+            user_identity_catalog: None,
             runtime_config: None,
             pipeline_experimental: None,
             scene_ids: Arc::from(Vec::<String>::new()),

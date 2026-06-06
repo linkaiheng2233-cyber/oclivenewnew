@@ -148,6 +148,9 @@ pub fn disk_manifest_to_role(d: &DiskRoleManifest) -> Role {
         pack_relation_config: super::role_pack_config::RolePackRelationConfig::default(),
         pack_evolution_config: super::role_pack_config::RolePackEvolutionConfig::default(),
         pack_chat_storage_config: super::role_pack_config::RolePackChatStorageConfig::default(),
+        pack_reply_post_processor_config:
+            super::reply_post_processor_config::RolePackReplyPostProcessorConfig::default(),
+        user_identity_catalog: None,
         runtime_config: None,
         pipeline_experimental: None,
         scene_ids: std::sync::Arc::from(Vec::<String>::new()),

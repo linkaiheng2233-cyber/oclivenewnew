@@ -82,6 +82,9 @@ interface RoleInfoState {
   blueprintGroupsPack: import('../lib/slotRegistry').SlotGroupsMap | null
   dualCoreEnabled: boolean
   pipelineExperimentalActions: string[]
+  replyPostProcessorEnabled: boolean
+  replyPostProcessorBackend: string
+  replyPostProcessorProfile: string | null
 }
 
 function mapRoleInfo(info: RoleInfo): RoleInfoState {
@@ -139,6 +142,9 @@ function mapRoleInfo(info: RoleInfo): RoleInfoState {
     blueprintGroupsPack: info.blueprint_groups_pack ?? null,
     dualCoreEnabled: info.dual_core_enabled ?? false,
     pipelineExperimentalActions: info.pipeline_experimental_actions ?? [],
+    replyPostProcessorEnabled: info.reply_post_processor_enabled ?? false,
+    replyPostProcessorBackend: info.reply_post_processor_backend ?? 'off',
+    replyPostProcessorProfile: info.reply_post_processor_profile ?? null,
   }
 }
 
@@ -212,6 +218,9 @@ export const useRoleStore = defineStore(
         blueprintGroupsPack: null,
         dualCoreEnabled: false,
         pipelineExperimentalActions: [],
+        replyPostProcessorEnabled: false,
+        replyPostProcessorBackend: 'off',
+        replyPostProcessorProfile: null,
       } as RoleInfoState,
     }),
     actions: {

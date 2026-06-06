@@ -1,3 +1,3 @@
-//! DTOs and role-pack models (see `oclive_kernel_runtime::models`).
+//! DTOs and role-pack models (see `oclive_kernel_types::models`).
 
-pub use oclive_kernel_runtime::models::*;
+pub use oclive_kernel_types::models::*;

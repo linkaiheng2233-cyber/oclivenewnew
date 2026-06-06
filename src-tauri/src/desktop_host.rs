@@ -114,6 +114,7 @@ pub async fn bootstrap_desktop(
     let llm = Arc::new(MockLlmClient {
         reply: String::new(),
     });
+    // UI-only in-memory shell — not an authoritative DB/chat writer; kernel HTTP owns persistence.
     let shell = AppState::new_in_memory_with_llm(llm, roles_dir).await?;
     crate::api::llm_settings::seed_shell_llm_from_canonical(&shell).await;
     if let Err(e) = crate::kernel_attach::KernelHttpClient::reload_llm_via_http(&kernel).await {

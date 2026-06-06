@@ -11,7 +11,9 @@ pub struct AgentBackendSanitizeResult {
 
 /// Agent `directory` / `remote` backends are not implemented yet; downgrade to `builtin`.
 #[must_use]
-pub fn sanitize_unimplemented_agent_backend(backends: PluginBackends) -> AgentBackendSanitizeResult {
+pub fn sanitize_unimplemented_agent_backend(
+    backends: PluginBackends,
+) -> AgentBackendSanitizeResult {
     let mut warnings = Vec::new();
     let mut out = backends;
     if matches!(out.agent, AgentBackend::Directory | AgentBackend::Remote) {
@@ -39,7 +41,10 @@ fn agent_backend_label(b: AgentBackend) -> &'static str {
 /// Returns a validation error when `plugin_backends.agent` is an unimplemented backend.
 #[must_use]
 pub fn validate_implemented_agent_backend(backends: &PluginBackends) -> Option<String> {
-    if matches!(backends.agent, AgentBackend::Directory | AgentBackend::Remote) {
+    if matches!(
+        backends.agent,
+        AgentBackend::Directory | AgentBackend::Remote
+    ) {
         Some(format!(
             "settings.json plugin_backends.agent={} 尚未实现（请使用 builtin）",
             agent_backend_label(backends.agent)

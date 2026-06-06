@@ -284,7 +284,7 @@
 |------|------|
 | 扫描 / manifest / 懒启动 / shell URL | `src-tauri/src/infrastructure/directory_plugins/` |
 | 枚举与 `directory_plugins` 槽位 | `src-tauri/src/models/plugin_backends.rs` |
-| 六模块解析与 HTTP 复用 | `src-tauri/src/domain/plugin_host.rs`、`src-tauri/src/infrastructure/remote_plugin/` |
+| 六模块解析与 HTTP 复用 | `crates/oclive_kernel_host/src/domain/ports/plugin_host.rs`、`src-tauri/src/infrastructure/remote_plugin/` |
 | Tauri 命令 | `src-tauri/src/api/directory_plugin.rs`、`src-tauri/src/api/plugin_bridge.rs`、`src-tauri/src/api/plugin_update.rs`（本地 zip 覆盖 / 更新检查预留） |
 | 自定义协议 + 启动 | `src-tauri/src/lib.rs` |
 | 内置 UI 启动引导 | `src/main.js`、`src/utils/directoryShellBootstrap.ts`、`src/DirectoryShellApp.vue` |

@@ -50,7 +50,7 @@ async fn prior_narrative_hint_injected_into_second_turn_main_prompt() {
             role_id: "mumu".to_string(),
             user_message: "随便啦都行".to_string(),
             scene_id: None,
-            session_id: None,
+            ..Default::default()
         },
     )
     .await
@@ -62,7 +62,7 @@ async fn prior_narrative_hint_injected_into_second_turn_main_prompt() {
             role_id: "mumu".to_string(),
             user_message: "接着说正事".to_string(),
             scene_id: None,
-            session_id: None,
+            ..Default::default()
         },
     )
     .await

@@ -156,7 +156,7 @@ Architecture-level design converges in RFCs (**drafts do not imply merged code o
 
 1. [EXTENSION_POINTS.md](../plugin-and-architecture/EXTENSION_POINTS.md)  
 2. [HOW_TO_REPLACE_MODULES.md](../plugin-and-architecture/HOW_TO_REPLACE_MODULES.md)  
-3. Source: `src-tauri/src/domain/plugin_host.rs`, `src-tauri/src/infrastructure/remote_plugin/`, **`src-tauri/src/infrastructure/directory_plugins/`**  
+3. Source: `crates/oclive_kernel_host/src/domain/ports/plugin_host.rs`, `src-tauri/src/infrastructure/remote_plugin/`, **`src-tauri/src/infrastructure/directory_plugins/`**  
 4. Integration smoke: [`src-tauri/tests/plugin_backends_v2_resolve.rs`](../../src-tauri/tests/plugin_backends_v2_resolve.rs) (`cargo test --test plugin_backends_v2_resolve`)
 
 ---

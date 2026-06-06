@@ -3006,7 +3006,9 @@ dependencies = [
  "dashmap",
  "indexmap 2.14.0",
  "notify",
+ "oclive_kernel_contracts",
  "oclive_kernel_runtime",
+ "oclive_kernel_types",
  "oclive_validation",
  "once_cell",
  "parking_lot",
@@ -3103,7 +3105,7 @@ dependencies = [
 
 [[package]]
 name = "oclivenewnew-tauri"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "arc-swap",
@@ -3115,6 +3117,7 @@ dependencies = [
  "notify",
  "oclive_kernel_host",
  "oclive_kernel_runtime",
+ "oclive_kernel_types",
  "oclive_validation",
  "once_cell",
  "parking_lot",

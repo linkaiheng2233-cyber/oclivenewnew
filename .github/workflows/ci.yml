@@ -73,6 +73,17 @@ jobs:
       - name: Validate data/plugins.json
         run: node scripts/validate-plugins-index.mjs
 
+  stale-paths:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Warn on legacy doc paths / banned aliases
+        run: node scripts/check-stale-paths.mjs
+
   kernel-host-dual-core:
     runs-on: ubuntu-latest
     steps:

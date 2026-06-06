@@ -5,16 +5,17 @@
 //! Beyond the flattened `SendMessageResponse` fields, a successful `POST /chat` response also includes **`personality_source`**
 //! (consistent with the pack's `settings.json` → `evolution.personality_source`: `vector` | `profile`), so try-chat tools can distinguish personality modes.
 //!
-//! **Error body**: `{ "error": KernelErrorBody }` shares the same source as the Tauri `invoke` failure string (see `oclive_kernel_runtime::KernelErrorBody`);
-//! `code` is consistent with [`AppError::code`] (`SCREAMING_SNAKE_CASE`); HTTP-specific errors use [`oclive_kernel_runtime::http_chat_codes`] constants (same source as the kernel crate, avoiding literal drift).
+//! **Error body**: `{ "error": KernelErrorBody }` shares the same source as the Tauri `invoke` failure string (see `oclive_kernel_types::KernelErrorBody`);
+//! `code` is consistent with [`AppError::code`] (`SCREAMING_SNAKE_CASE`); HTTP-specific errors use [`oclive_kernel_types::http_chat_codes`] constants (same source as the kernel crate, avoiding literal drift).
 
 use crate::domain::chat_engine::process_message;
-use crate::error::AppError;
+use crate::error::{http_chat_codes, AppError};
 use crate::infrastructure::chat_storage::{SessionMeta, StoredMessage};
 use crate::infrastructure::MockLlmClient;
 use crate::models::dto::{
-    CreateEventRequest, CreateEventResponse, SetUserPresenceSceneRequest, SwitchSceneRequest,
-    SwitchSceneResponse,
+    CreateEventRequest, CreateEventResponse, GetUserIdentityStateRequest,
+    SetSceneUserIdentityRequest, SetUserIdentityRequest, SetUserPresenceSceneRequest,
+    SwitchSceneRequest, SwitchSceneResponse, UserIdentityStateResponse,
 };
 use crate::models::dto::{
     GetRoleInfoRequest, JumpTimeRequest, JumpTimeResponse, RoleInfo, TimeStateResponse,
@@ -23,9 +24,10 @@ use crate::models::dto::{SendMessageRequest, SendMessageResponse};
 use crate::models::role::PersonalitySource;
 use crate::service::{
     dispatch_bridge_command, execute_chat_storage_proxy, get_role_info_impl, get_time_state_impl,
-    grant_high_risk_capability_impl, jump_time_impl, list_high_risk_grants_impl, load_role_impl,
-    revoke_high_risk_capability_impl, set_user_presence_scene_impl, switch_scene_impl,
-    ChatStorageProxyOp, MutateHighRiskGrantRequest,
+    get_user_identity_state_impl, grant_high_risk_capability_impl, jump_time_impl,
+    list_high_risk_grants_impl, load_role_impl, revoke_high_risk_capability_impl,
+    set_scene_user_identity_impl, set_user_identity_impl, set_user_presence_scene_impl,
+    switch_scene_impl, ChatStorageProxyOp, MutateHighRiskGrantRequest,
 };
 use crate::state::AppState;
 use axum::extract::{Query, State};
@@ -35,9 +37,10 @@ use axum::routing::{get, post};
 use axum::Json;
 use axum::Router;
 use oclive_kernel_runtime::{
-    ensure_app_data_dir, http_chat_codes, resolve_app_data_dir_for_api, resolve_db_path,
-    temp_api_db_path, AppDataMode, KernelErrorBody,
+    ensure_app_data_dir, resolve_app_data_dir_for_api, resolve_db_path, temp_api_db_path,
+    AppDataMode,
 };
+use oclive_kernel_types::KernelErrorBody;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -60,6 +63,8 @@ pub struct ChatApiRequest {
     /// Optional: consistent with the main app's `send_message`; if omitted, the engine infers it from session state.
     #[serde(default)]
     pub scene_id: Option<String>,
+    #[serde(default)]
+    pub include_raw_reply: Option<bool>,
 }
 
 /// Mirrors the `SendMessageResponse` fields and additionally echoes back `session_id` and `personality_source`; used by the pack editor's try-chat to display a status bar.
@@ -241,6 +246,7 @@ async fn chat(
         user_message,
         scene_id: body.scene_id,
         session_id: body.session_id,
+        include_raw_reply: body.include_raw_reply,
     };
 
     let res: SendMessageResponse = process_message(&state, &req).await.map_err(|e: AppError| {
@@ -430,6 +436,58 @@ async fn switch_scene_route(
         })
 }
 
+async fn set_user_identity_route(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<SetUserIdentityRequest>,
+) -> Result<Json<UserIdentityStateResponse>, ApiError> {
+    set_user_identity_impl(&state, &req)
+        .await
+        .map(Json)
+        .map_err(|e| {
+            let k = e.kernel_error_body();
+            api_error(axum::http::StatusCode::BAD_REQUEST, k)
+        })
+}
+
+async fn set_scene_user_identity_route(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<SetSceneUserIdentityRequest>,
+) -> Result<Json<UserIdentityStateResponse>, ApiError> {
+    set_scene_user_identity_impl(&state, &req)
+        .await
+        .map(Json)
+        .map_err(|e| {
+            let k = e.kernel_error_body();
+            api_error(axum::http::StatusCode::BAD_REQUEST, k)
+        })
+}
+
+#[derive(Debug, Deserialize)]
+struct UserIdentityStateQuery {
+    role_id: String,
+    #[serde(default)]
+    scene_id: Option<String>,
+}
+
+async fn get_user_identity_state_route(
+    State(state): State<Arc<AppState>>,
+    Query(q): Query<UserIdentityStateQuery>,
+) -> Result<Json<UserIdentityStateResponse>, ApiError> {
+    get_user_identity_state_impl(
+        &state,
+        &GetUserIdentityStateRequest {
+            role_id: q.role_id.trim().to_string(),
+            scene_id: q.scene_id.filter(|s| !s.trim().is_empty()),
+        },
+    )
+    .await
+    .map(Json)
+    .map_err(|e| {
+        let k = e.kernel_error_body();
+        api_error(axum::http::StatusCode::BAD_REQUEST, k)
+    })
+}
+
 async fn set_user_presence_scene_route(
     State(state): State<Arc<AppState>>,
     Json(req): Json<SetUserPresenceSceneRequest>,
@@ -610,6 +668,12 @@ pub fn api_router(app_state: Arc<AppState>) -> Router {
         .route("/time/state", get(time_state_route))
         .route("/time/jump", post(jump_time_route))
         .route("/scene/switch", post(switch_scene_route))
+        .route("/user_identity/set", post(set_user_identity_route))
+        .route(
+            "/user_identity/scene_set",
+            post(set_scene_user_identity_route),
+        )
+        .route("/user_identity/state", get(get_user_identity_state_route))
         .route("/scene/user_presence", post(set_user_presence_scene_route))
         .route("/event/create", post(create_event_route))
         .route("/high_risk/grants", get(list_high_risk_grants_route))

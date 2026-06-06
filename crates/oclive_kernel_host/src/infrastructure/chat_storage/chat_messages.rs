@@ -283,8 +283,8 @@ async fn trim_oldest_chat_messages(
 
 #[cfg(test)]
 mod tests {
-    use crate::infrastructure::chat_storage::db::{MessageRow, NewTurnMessages};
     use crate::infrastructure::chat_storage::config::DEFAULT_MAX_MESSAGES;
+    use crate::infrastructure::chat_storage::db::{MessageRow, NewTurnMessages};
     use crate::infrastructure::db::DbManager;
     use crate::infrastructure::test_db;
     use chrono::Utc;

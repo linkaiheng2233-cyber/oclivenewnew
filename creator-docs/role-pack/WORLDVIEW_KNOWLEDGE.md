@@ -1,6 +1,6 @@
 # 世界观知识（角色包资源）
 
-本页说明 **共景主对话** 如何加载 `roles/{role_id}/knowledge/` 下的 Markdown、注入 Prompt，以及 **`event_hints`** 如何补充 [`EventDetector`](../../src-tauri/src/domain/event_detector.rs) 的关键词（与 Remote 插件 `plugin_backends` **无关**）。
+本页说明 **共景主对话** 如何加载 `roles/{role_id}/knowledge/` 下的 Markdown、注入 Prompt，以及 **`event_hints`** 如何补充 [`EventDetector`](../../crates/oclive_kernel_host/src/domain/event_detector.rs) 的关键词（与 Remote 插件 `plugin_backends` **无关**）。
 
 ## 目录与启用规则
 
@@ -52,8 +52,8 @@ event_hints:
 ## 运行时行为（摘要）
 
 1. **加载**：[`RoleStorage::load_role_from_dir`](../../src-tauri/src/infrastructure/storage.rs) 在校验通过后解析知识，写入 **`Role::knowledge_index`**（`Arc`，仅内存）。
-2. **检索**：对用户句做轻量重合打分 + `scenes` 过滤，取 Top-K；拼接为 **【世界观设定】** 段。**共景**见 [`PromptBuilder::build_prompt`](../../src-tauri/src/domain/prompt_builder.rs)（位于日程推断之后、长期记忆之前）。**异地心声**（`remote_life`）见 [`build_remote_life_prompt`](../../src-tauri/src/domain/remote_life_prompt.rs)：检索时以**角色所在场景** `character_scene_id` 过滤，与共景下用当前同场景 `scene_id` 的规则对称。
-3. **事件**：检索到的块合并为 [`KnowledgeEventAugment`](../../src-tauri/src/models/knowledge.rs)，传入 [`EventDetector::detect_with_augment`](../../src-tauri/src/domain/event_detector.rs) 与 `estimate_event_impact` 的规则回退路径（B1：补充关键词，不替换内置情绪门控逻辑）。异地心声路径固定 `Ignore` 事件估计，不因知识块再跑一轮事件管线。
+2. **检索**：对用户句做轻量重合打分 + `scenes` 过滤，取 Top-K；拼接为 **【世界观设定】** 段。**共景**见 [`PromptBuilder::build_prompt`](../../crates/oclive_kernel_runtime/src/domain/prompt_builder.rs)（位于日程推断之后、长期记忆之前）。**异地心声**（`remote_life`）见 [`build_remote_life_prompt`](../../crates/oclive_kernel_host/src/domain/remote_life_prompt.rs)：检索时以**角色所在场景** `character_scene_id` 过滤，与共景下用当前同场景 `scene_id` 的规则对称。
+3. **事件**：检索到的块合并为 [`KnowledgeEventAugment`](../../src-tauri/src/models/knowledge.rs)，传入 [`EventDetector::detect_with_augment`](../../crates/oclive_kernel_host/src/domain/event_detector.rs) 与 `estimate_event_impact` 的规则回退路径（B1：补充关键词，不替换内置情绪门控逻辑）。异地心声路径固定 `Ignore` 事件估计，不因知识块再跑一轮事件管线。
 
 ## 调试建议
 

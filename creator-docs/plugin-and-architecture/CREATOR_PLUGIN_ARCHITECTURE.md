@@ -198,7 +198,7 @@ export OCLIVE_REMOTE_LLM_URL="http://127.0.0.1:8765/rpc"
 
 | 内容 | 路径 |
 |------|------|
-| 宿主聚合 | `src-tauri/src/domain/plugin_host.rs` |
+| 宿主聚合 | `crates/oclive_kernel_host/src/domain/ports/plugin_host.rs` |
 | Remote HTTP 客户端 | `src-tauri/src/infrastructure/remote_plugin/` |
 | 目录插件扫描 / 懒启动 | `src-tauri/src/infrastructure/directory_plugins/` |
 | 运行时解析 | `AppState::resolved_plugins_for` — `src-tauri/src/state/mod.rs` |

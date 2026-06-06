@@ -146,11 +146,7 @@ pub(crate) async fn persist_atomic_movement_portrait(
     policy: &PostTurnPolicy,
     reply: &str,
 ) -> TurnResult<PostPersistOutcome> {
-    let TurnIds {
-        srid,
-        scene_id,
-        ..
-    } = ids;
+    let TurnIds { srid, scene_id, .. } = ids;
     let core_v = PersonalityVector::from(&role.default_personality);
     let reply_for_portrait = reply.to_string();
     let movement_fut = detect_movement_intent(
@@ -370,7 +366,7 @@ pub(crate) async fn persist_non_profile_personality_delta(
 mod persist_non_profile_tests {
     use super::*;
     use crate::domain::complex_emotion::ComplexEmotionOutput;
-    use crate::models::{EvolutionBounds, EventType, EvolutionConfig, PersonalityDefaults};
+    use crate::models::{EventType, EvolutionBounds, EvolutionConfig, PersonalityDefaults};
     use oclive_kernel_runtime::domain::relation_engine::RelationState;
     use std::sync::Arc;
 
@@ -423,8 +419,12 @@ mod persist_non_profile_tests {
             runtime_config: None,
             pipeline_experimental: None,
             scene_ids: Arc::from(Vec::<String>::new()),
-            scene_config_cache: Arc::new(parking_lot::RwLock::new(std::collections::HashMap::new())),
+            scene_config_cache: Arc::new(
+                parking_lot::RwLock::new(std::collections::HashMap::new()),
+            ),
             scene_text_cache: Arc::new(parking_lot::RwLock::new(std::collections::HashMap::new())),
+            user_identity_catalog: None,
+            pack_reply_post_processor_config: Default::default(),
         }
     }
 

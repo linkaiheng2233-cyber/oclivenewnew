@@ -1,11 +1,11 @@
-//! # oclive_kernel_runtime — orchestration implementation and compatibility re-exports
+//! # oclive_kernel_runtime — domain engines, paths, and kernel discovery
 //!
 //! **Role**: hosts domain engine fragments and HTTP constants reusable in **headless / embedded** scenarios; the **main orchestration** lives in [`oclive_kernel_host`](https://docs.rs/oclive_kernel_host)'s `chat_engine::process_message` (re-exported by `oclivenewnew-tauri`).
 //!
 //! **Upstream**: [`oclive_kernel_contracts`](https://docs.rs/oclive_kernel_contracts), [`oclive_kernel_types`](https://docs.rs/oclive_kernel_types).
-//! **Downstream**: `oclive_kernel_server`, `src-tauri` (kept working on old paths via re-export).
+//! **Downstream**: `oclive_kernel_server`, `src-tauri` (paths / kernel discovery only).
 //!
-//! **Key decision**: new code should depend directly on `kernel_types` / `kernel_contracts`; this crate's `pub use *` is a **transitional** measure, and the surface will be tightened later.
+//! **Key decision**: DTOs and port traits live in `oclive_kernel_types` / `oclive_kernel_contracts`; import them directly — this crate does not re-export them.
 
 pub mod app_data_migration;
 pub mod domain;
@@ -18,18 +18,13 @@ pub(crate) mod utils;
 
 pub use oclive_validation as validation;
 
-// Transitional compatibility layer: downstream can keep using old paths like `use oclive_kernel_runtime::AppError`;
-// the surface is planned to be tightened in a later minor version, so new code should prefer depending on `oclive_kernel_types` / `oclive_kernel_contracts`.
-pub use oclive_kernel_contracts::{
-    self as kernel_contracts, AgentProvider, ComplexEmotionProvider, EmotionPolicy, EventEstimator,
-    EventPolicy, FavorabilityRepository, LlmClient, LocalPluginBridge, MemoryPolicy,
-    MemoryRepository, MemoryRetrieval, PluginHostPort, PromptAssembler, SlotRegistryResolver,
-    UserEmotionAnalyzer,
-};
-pub use oclive_kernel_types::*;
-pub use oclive_kernel_types::{self as kernel_types};
-
 pub use utils::json_loose::extract_json_object;
+
+// Internal aliases for `domain/*` (not public API — downstream uses `oclive_kernel_types` directly).
+pub(crate) use oclive_kernel_types::error;
+pub(crate) use oclive_kernel_types::local_plugin;
+pub(crate) use oclive_kernel_types::models;
+pub(crate) use oclive_kernel_types::KernelErrorBody;
 
 /// Runtime API / contract revision (bump when HTTP or DTO breaking changes ship).
 pub const RUNTIME_API_VERSION: &str = "0.2.0";

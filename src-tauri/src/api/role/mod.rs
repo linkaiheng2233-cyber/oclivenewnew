@@ -5,6 +5,7 @@
 
 pub mod evolution;
 pub mod expert;
+pub mod identity;
 pub mod relation;
 pub mod slot_session;
 
@@ -14,6 +15,7 @@ pub use evolution::{
     set_evolution_factor_impl, set_remote_life_enabled_impl, set_role_interaction_mode_impl,
 };
 pub use expert::{get_expert_routing, list_blueprint_includes, save_expert_routing};
+pub use identity::{get_user_identity_state, set_scene_user_identity, set_user_identity};
 pub use oclive_kernel_host::service::role::{
     apply_author_suggested_plugin_backends_impl, clear_all_session_slot_overrides_impl,
     clear_session_slot_override_impl, get_plugin_resolution_debug_impl,

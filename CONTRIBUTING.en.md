@@ -67,7 +67,7 @@ npm run build
 | Area | Path | Owner | Notes |
 |------|------|-------|-------|
 | Desktop host | `src-tauri/` | @linkaiheng2233-cyber | Tauri IPC, HTTP `--api` |
-| Orchestration | `src-tauri/src/domain/chat_engine/` | same | `process_message` / `co_present` |
+| Orchestration | `crates/oclive_kernel_host/src/domain/chat_engine/` | same | `process_message` / `co_present` |
 | Kernel crates | `crates/oclive_kernel_{types,contracts,runtime}` | same | DTOs, traits, runtime |
 | Validation | `crates/oclive_validation` | same | manifest / v2 blueprint |
 | CLI | `crates/oclive-cli` | same | `init`, `bench`, `test`, `doctor` |
@@ -80,8 +80,8 @@ See **[`handoff/BUS_FACTOR_NOTES.md`](handoff/BUS_FACTOR_NOTES.md)** for entry p
 
 | Goal | Start here |
 |------|------------|
-| One message end-to-end | `src-tauri/src/domain/chat_engine/process_message.rs` → `turn_pipeline.rs` |
-| Multi-instance merge rules | `src-tauri/src/domain/slot_runner.rs` |
+| One message end-to-end | `crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs` → `turn_pipeline.rs` |
+| Multi-instance merge rules | `crates/oclive_kernel_host/src/domain/slot_runner.rs` |
 | Plugin backend resolution | `plugin_host.rs` + `slot_resolver.rs` |
 | Blueprint load / save | `infrastructure/storage.rs` + `crates/oclive_validation` |
 | Plugin implementation | `PLUGIN_V1.md` + traits in `oclive_kernel_contracts` |

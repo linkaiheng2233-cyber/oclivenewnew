@@ -21,7 +21,7 @@ use crate::domain::memory_retrieval::MemoryRetrievalInput;
 use crate::domain::plugin_host::ResolvedRolePlugins;
 use crate::domain::prompt_builder::{effective_reply_quality_anchor, PromptInput};
 use crate::domain::slot_runner::SlotRunner;
-use crate::domain::user_identity::resolve_effective_user_relation_key;
+use crate::domain::user_identity_loader::resolve_active_user_identity;
 use crate::error::AppError;
 use crate::models::dto::{
     PresenceMode, SendMessageRequest, SendMessageResponse, API_VERSION, SCHEMA_VERSION,
@@ -273,7 +273,7 @@ impl<'a> ExperimentalStepCtx<'a> {
             )
             .map_err(map_slot_err)?
         };
-        let user_relation_key = resolve_effective_user_relation_key(
+        let resolved_identity = resolve_active_user_identity(
             self.state,
             self.role,
             self.srid,
@@ -281,6 +281,7 @@ impl<'a> ExperimentalStepCtx<'a> {
         )
         .await
         .map_err(map_db_err)?;
+        let user_relation_key = resolved_identity.relation_key.clone();
         let rf = relation_favor_for_key(self.role, user_relation_key.as_str());
         let rel_id = self
             .state
@@ -360,7 +361,9 @@ impl<'a> ExperimentalStepCtx<'a> {
                 user_input: self.user_message,
                 user_emotion: user_emotion_prompt.as_str(),
                 user_relation_id: user_relation_key.as_str(),
-                relation_hint: rf.relation_hint,
+                relation_hint: resolved_identity.relation_hint.as_str(),
+                user_identity_template: resolved_identity.template_body.as_str(),
+                user_identity_id: resolved_identity.identity_id.as_str(),
                 relation_before: relation_before.as_str(),
                 favorability_before,
                 relation_preview: relation_after.as_str(),
@@ -431,7 +434,7 @@ impl<'a> ExperimentalStepCtx<'a> {
             .emotion
             .analyze(self.user_message)
             .map_err(map_slot_err)?;
-        let user_relation_key = resolve_effective_user_relation_key(
+        let resolved_identity = resolve_active_user_identity(
             self.state,
             self.role,
             self.srid,
@@ -439,6 +442,7 @@ impl<'a> ExperimentalStepCtx<'a> {
         )
         .await
         .map_err(map_db_err)?;
+        let user_relation_key = resolved_identity.relation_key.clone();
         let rel_id = self
             .state
             .db_manager
@@ -492,10 +496,11 @@ impl<'a> ExperimentalStepCtx<'a> {
             chat_persist_failed: None,
             chat_persist_error: None,
             dual_core_degraded: None,
+            raw_reply: None,
         })))
     }
 
-    /// Run expert routing sub-flow (`slot.expert.invoke`); skip when no route matches.
+    /// Expert sub-route via `slot.expert.invoke`; skip when no route matches.
     ///
     /// # Errors
     ///

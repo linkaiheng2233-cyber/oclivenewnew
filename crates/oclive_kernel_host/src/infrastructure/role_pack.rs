@@ -472,12 +472,9 @@ mod tests {
         let outside = tempdir().unwrap();
         fs::write(outside.path().join("pack.zip"), b"fake").unwrap();
         let st = RoleStorage::new(roles.path());
-        let err = validate_bridge_import_role_source(
-            &st,
-            app.path(),
-            &outside.path().join("pack.zip"),
-        )
-        .unwrap_err();
+        let err =
+            validate_bridge_import_role_source(&st, app.path(), &outside.path().join("pack.zip"))
+                .unwrap_err();
         assert!(matches!(err, AppError::InvalidParameter(_)));
     }
 }

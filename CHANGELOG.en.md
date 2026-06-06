@@ -4,23 +4,39 @@
 
 ## [Unreleased]
 
+（Next release entries go here.）
+
+---
+
+## [0.3.0] - 2026-06-07
+
+**Desktop host `0.3.0`** · **VS Code extension `0.3.0`** · **`SendMessageResponse.schema` 14**
+
+### Breaking
+
+- **`SendMessageResponse.schema`** bumped to **14**: optional `raw_reply` when `include_raw_reply: true` and post-processor changed the LLM text.
+- **`high_risk_grants.json`**: only canonical permission keys (`mcp:http`, `mcp:stdio`, `process:spawn`, `network:*`); legacy aliases no longer read — migrate files and re-grant.
+
 ### Changed
 
+- **Experimental dual-core runtime**: `oclivenewnew-tauri` Cargo feature **`dual_core`** (default off); build with `cargo build -p oclivenewnew-tauri --features dual_core`.
 - **Dual-core status wording**: runtime dual-core docs now use **Opt-in Beta (default off)**; Stable remains the default delivery path.
 
 ### Added
 
-- **Forgetting curve & relation evolution (`config.json`)**: Ebbinghaus long-term memory decay; mention reinforcement (`mention_count` + `reinforcement_factor`); immersive-mode favorability estrangement and relation-stage downgrade; virtual time ratio (`time.speed`) and first-immersion anchor aligned to `life_schedule`; reinforced memories nudge personality / mutable profile “memory shaping”. See [ROLE_PACK_SPEC §9](creator-docs/role-pack/ROLE_PACK_SPEC.md).
-- **Dual-core quality hardening**: added optional **S14** OOCP scenario (experimental happy path with valid DAG); CI `oocp-test-suite` now builds with `--features dual_core` and runs `run.mjs --include-dual-core` (covers S13 fallback + S14 happy path); added integration test `src-tauri/tests/dual_core_happy_path.rs` to validate `DualPipelineRunner::run_experimental` success path.
+- **User Identity & Reply Post-Processor Phase 2 (closure)**: HostProfile merge; remote/directory backends; HTTP `/user_identity/*`; desktop & VS Code identity switch; `RoleInfo` / `GET /role_info` read-only post-processor fields; debug panel status line. See [handoff/USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md](handoff/USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md).
+- **Docs**: ROLE_PACK_SPEC §1.1 / §9.7, architecture overview orthogonal units, USER_MANUAL §3.4–3.5, RFC Phase 2 acceptance checked.
+- **Forgetting curve & relation evolution (`config.json`)**: Ebbinghaus long-term memory decay; mention reinforcement; immersive favorability estrangement; virtual time ratio; memory-shaped personality nudges. See [ROLE_PACK_SPEC §9](creator-docs/role-pack/ROLE_PACK_SPEC.md).
+- **Dual-core quality hardening**: optional **S14** OOCP scenario; CI dual-core build + `--include-dual-core`; `dual_core_happy_path.rs` integration test.
 
 #### Chat Storage (phase 3)
 
-- **Pluggable backends**: `hybrid` (default, SQLite + JSON mirror), `file` (JSON only), `sqlite` (DB only); select via `OCLIVE_CHAT_STORAGE_BACKEND` or role pack `config.json` → `chat_storage.backend`; `oclive-cli init` interactive step added.
-- **Memory replay**: `replay_memory_extraction` / `get_replay_progress` — merge re-extract AI memories from chat history (dedupe by keyword similarity; configurable `replay_similarity_threshold`, default 0.6); storage settings UI supports role / scene / session scopes with progress polling.
-- **File backend**: `search_messages` (JSON directory scan); `replay_memory_extraction` (chat from files, memories to SQLite); `list_sessions_by_role` for role-scoped replay.
-- **Capability detection & UI**: `get_chat_storage_capabilities` exposes `supports_search` / `supports_replay` / `supports_cleanup` / `backend_kind`; storage panel gates actions and shows backend label (i18n).
-- **Config**: optional `chat_storage.backend`, `chat_storage.replay_similarity_threshold` (backward compatible).
-- **Developers**: `ConversationStore` gains `list_sessions_by_role`, `supports_*`; `replay.rs` role scope uses trait instead of direct DB. See [handoff/CHAT_STORAGE_ARCHITECTURE.md](handoff/CHAT_STORAGE_ARCHITECTURE.md).
+- **Pluggable backends**: `hybrid`, `file`, `sqlite`; env or `config.json` → `chat_storage.backend`.
+- **Memory replay**: `replay_memory_extraction` / `get_replay_progress` with configurable similarity threshold.
+- **File backend**: search, replay, `list_sessions_by_role`.
+- **Capability detection & UI**: `get_chat_storage_capabilities`; gated storage panel.
+- **Config**: optional `chat_storage.backend`, `replay_similarity_threshold`.
+- **Developers**: extended `ConversationStore` trait. See [handoff/CHAT_STORAGE_ARCHITECTURE.md](handoff/CHAT_STORAGE_ARCHITECTURE.md).
 
 ---
 

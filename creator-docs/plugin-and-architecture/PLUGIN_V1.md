@@ -95,9 +95,9 @@ flowchart TB
 
 ## `send_message` 编排顺序（与 `chat_engine`）
 
-共景主路径见源码 [`chat_engine/turn_pipeline.rs`](../../src-tauri/src/domain/chat_engine/turn_pipeline.rs) 的 `process_co_present`。入口为 [`chat_engine::process_message`](../../src-tauri/src/domain/chat_engine/mod.rs)（异地分支为 `process_remote_stub` / `process_remote_life`，事件链有简化）。与 **PLUGIN_V1** 子系统相关的顺序如下（与 DTO 流一致）：
+共景主路径见源码 [`chat_engine/turn_pipeline.rs`](../../crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/mod.rs) 的 `process_co_present`。入口为 [`chat_engine::process_message`](../../crates/oclive_kernel_host/src/domain/chat_engine/mod.rs)（异地分支为 `process_remote_stub` / `process_remote_life`，事件链有简化）。与 **PLUGIN_V1** 子系统相关的顺序如下（与 DTO 流一致）：
 
-1. **`PluginHost`**：[`state::resolved_plugins_for`](../../src-tauri/src/state/mod.rs) → [`PluginHost::resolve_for_role`](../../src-tauri/src/domain/plugin_host.rs)，按 `role.plugin_backends` 绑定 **`memory` / `emotion` / `event` / `prompt` / `llm` / `agent`** 六条**后端模块**线。宿主构造 [`PluginHost::new`](../../src-tauri/src/domain/plugin_host.rs) 需传入 **应用数据根目录**（`PathBuf`），用于扫描 **`{app_data}/mcp-servers/*.json`** 等；集成烟测见 [`src-tauri/tests/plugin_backends_v2_resolve.rs`](../../src-tauri/tests/plugin_backends_v2_resolve.rs)。
+1. **`PluginHost`**：[`state::resolved_plugins_for`](../../src-tauri/src/state/mod.rs) → [`PluginHost::resolve_for_role`](../../crates/oclive_kernel_host/src/domain/ports/plugin_host.rs)，按 `role.plugin_backends` 绑定 **`memory` / `emotion` / `event` / `prompt` / `llm` / `agent`** 六条**后端模块**线。宿主构造 [`PluginHost::new`](../../crates/oclive_kernel_host/src/domain/ports/plugin_host.rs) 需传入 **应用数据根目录**（`PathBuf`），用于扫描 **`{app_data}/mcp-servers/*.json`** 等；集成烟测见 [`src-tauri/tests/plugin_backends_v2_resolve.rs`](../../src-tauri/tests/plugin_backends_v2_resolve.rs)。
 2. **用户情绪（后端模块）**：`pl.emotion.analyze` → `EmotionResult`，对外为响应中的 `emotion`（`EmotionDto`）。
 3. **人格微调（设施）**：`PersonalityEngine::adjust_by_user_emotion`（消费用户情绪，非后端模块）。
 4. **复杂情感设施子模块**（第 1 号）：`co_present` 内 `BuiltinKeywordComplexEmotionProvider`（或将来 Remote）；产出 `narrative_hint` 供后续 Prompt（**不经** `PluginHost`；见 [OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)）。
@@ -235,7 +235,7 @@ flowchart TB
 
 | 值 | 含义 |
 |----|------|
-| `builtin` | 进程内 [`BuiltinReActAgent`](../../src-tauri/src/domain/agent.rs)；可配合 MCP 工具（配置目录见上节 `PluginHost::new` 的 app data 根） |
+| `builtin` | 进程内 [`BuiltinReActAgent`](../../crates/oclive_kernel_host/src/domain/agent.rs)；可配合 MCP 工具（配置目录见上节 `PluginHost::new` 的 app data 根） |
 | `remote` | HTTP JSON-RPC 侧车（与其它 `remote` 子系统同一套 wire 约定；需环境变量与侧车可用，否则回退/降级行为以源码为准） |
 | `directory` | 子进程 JSON-RPC，槽位 **`directory_plugins.agent`**（失败回退 builtin；见 [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)） |
 
@@ -361,8 +361,9 @@ TypeScript 侧 `SendMessageResponse`（`src/utils/tauri-api.ts`）必须与 `mod
 | `llm` | 主 LLM |
 | `agent` | Agent / MCP 工具链 |
 | **`complex_emotion`** | **复杂情感**（共景 `narrative_hint`）；蓝图 v2 中对应 `slot_registry` 的 `type: complex_emotion`，`backend: directory` 时须在 `provides` 中含此项 |
+| **`reply_post_process`** | **Reply Post-Processor**（非六槽）；`config.json` → `reply_post_processor.backend=directory` 时须在 `provides` 中含此项；RPC `reply_post_process.process` |
 
-解析时 [`SlotResolver`](../../src-tauri/src/domain/slot_resolver.rs) 会校验 directory 插件是否声明 `provides` 含目标能力（含 `complex_emotion`）。
+解析时 [`SlotResolver`](../../crates/oclive_kernel_host/src/domain/slot_resolver.rs) 会校验 directory 插件是否声明 `provides` 含目标能力（含 `complex_emotion`）。Reply Post-Processor 由 [`resolve_reply_post_processor`](../../crates/oclive_kernel_host/src/domain/reply_post_processor.rs) 独立解析，同样校验 `reply_post_process`。
 
 **`category`**（单值，可选）：供插件工作台左栏分类，建议与 `provides` 主槽一致，例如 `llm`、`complex_emotion`。
 

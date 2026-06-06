@@ -21,7 +21,7 @@
 | **角色包** | 身份、七维人格、关系、**`prompts/`** 系统提示词与开场白、场景文案 | — |
 | **蓝图** | **不要改**（除非你是集成方） | **`slot_registry`**、**`groups`**、后端 **`backend`**、**`model`**、**`interaction_mode`**、**`memory_config`**、远程/自主场景策略、**`dual_core.enabled`**（RFC）等 |
 
-v2 磁盘上常为 **同一文件** `pipeline.ocblueprint`：`meta` 中仅上表「角色包」字段由编写器默认暴露；**`slot_registry` 及引擎向 `meta` 键** 归蓝图（见 [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md) §零）。
+v2 磁盘上常为 **同一蓝图文件 `pipeline.ocblueprint`**（**不以** `steps[]` 作主路径调度）：`meta` 中仅上表「角色包」字段由编写器默认暴露；**`slot_registry` 及引擎向 `meta` 键** 归蓝图（见 [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md) §零）。
 
 **创作者可编辑（`meta` 子集）**：`id`、`name`、`version`、`author`、`description`、`personality`、`relations`、`default_relation`、`scenes`；可选剧情向 `life_*`、`evolution.personality_source`。
 
@@ -35,10 +35,13 @@ v2 磁盘上常为 **同一文件** `pipeline.ocblueprint`：`meta` 中仅上表
 
 ```text
 roles/{role_id}/
-├── pipeline.ocblueprint    # **v2 SSOT（瘦）**：meta + slot_registry + includes；见 [BLUEPRINT_FOLDER_LAYOUT.md](../../handoff/BLUEPRINT_FOLDER_LAYOUT.md)
+├── pipeline.ocblueprint    # **蓝图文件（v2 SSOT · 瘦）**：meta + slot_registry + includes；**不以** steps[] 调度；见 [BLUEPRINT_FOLDER_LAYOUT.md](../../handoff/BLUEPRINT_FOLDER_LAYOUT.md)
 ├── blueprint/              # 可选：includes/、overlays/、revisions/、docs/（卫星，不替代本体路径）
 ├── config.json             # 可选；遗忘曲线、虚拟时间（沉浸模式）；见 §9
 ├── prompts/                # **角色包**：系统提示词、开场白等（推荐）
+├── user_identities/        # **可选**：User Identity Prompt Template（`index.json` + `*.md` 模板；见 RFC）
+│   ├── index.json
+│   └── {identity_id}.md
 ├── manifest.json           # **已废弃（legacy）**：勿与 v2 蓝图并存
 ├── settings.json           # **已废弃（legacy）**：勿与 v2 蓝图并存
 ├── core_personality.txt    # 可选；profile 模式长文
@@ -52,6 +55,39 @@ roles/{role_id}/
 ```
 
 **说明**：v2 包 **不得** 同时存在 `manifest.json` / `settings.json` 与 `pipeline.ocblueprint`。七维人格在 v2 写入 **`meta.personality`**（对象或 7 元数组）。`prompts/*.md` 非宿主必需路径。
+
+### 1.1 `user_identities/`（User Identity Prompt Template · 可选）
+
+定义 **用户是谁**（与角色 `prompts/` 正交），在 **`build_prompt` 前** 注入 Prompt 段落「【用户身份】」。**不是**六宿主槽、**不是**蓝图字段。
+
+| 文件 | 必填 | 说明 |
+|------|------|------|
+| `index.json` | 是（目录存在时） | 目录索引与默认 id |
+| `{identity_id}.md` | 是（每条身份） | Markdown 模板正文；由 `index.json` 引用 |
+
+**`index.json` 字段**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `schema_version` | integer | 是 | 当前 **1** |
+| `default_identity_id` | string | 是 | 须在 `identities` 中存在 |
+| `identities` | object | 是 | 键为身份 id；值见下表 |
+
+**`identities.{id}`**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `display_name` | string | 是 | UI 下拉展示名 |
+| `template_file` | string | 是 | 相对 `user_identities/` 的 `*.md` 文件名 |
+| `maps_to_relation_id` | string | 否 | 映射到 `meta.relations` 键，用于好感初值与关系阶段 |
+
+**兼容层**：无 `user_identities/` 时，宿主仍可使用蓝图 **`meta.relations`** 中各关系的 **`prompt_hint`**（legacy）。有 catalog 时以 catalog 模板为准；发行版可通过 `distro.oclive.toml` → `[user_identity].default_id` 覆盖会话默认（见 [DISTRO_CAPABILITY_PROFILE.md](../kernel/DISTRO_CAPABILITY_PROFILE.md)）。
+
+**示例**：`roles/mumu/user_identities/`（演示 identity；**未**默认开启 `reply_post_processor`）。
+
+**API / UI**：Tauri `get_user_identity_state` / `set_user_identity`；HTTP `GET /user_identity/state`、`POST /user_identity/set`。详见 [RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md](../rfc/RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md) §3。
+
+**校验**：`oclive pack validate` 对 `index.json` 做基本形状检查；缺失模板文件时 **warn**，不阻塞 `load_role`。
 
 ---
 
@@ -306,6 +342,7 @@ auto_sync: false
 | `memory` | object | 否 | 长期记忆艾宾浩斯衰减与强化 |
 | `relation` | object | 否 | 亲密值疏远与关系降级 |
 | `chat_storage` | object | 否 | 聊天记录存储后端、FIFO、自动清理、记忆回放阈值 |
+| `reply_post_processor` | object | 否 | 回复后处理（**默认 `enabled: false`**）；见 §9.7 |
 
 ### 9.3 `time`（虚拟时间）
 
@@ -361,6 +398,41 @@ auto_sync: false
 | 虚拟时间锚点 | `time.speed` 等 | `role_runtime.virtual_time_*` 列 |
 
 校验：`config.json` 解析失败时宿主 **warn 并回退默认**，不阻塞 `load_role`。类型定义见 `oclive_kernel_types::RolePackConfigFile`。
+
+### 9.7 `reply_post_processor`（Reply Post-Processor · 默认关闭）
+
+在 **内置 `post_llm` 持久化之后**、返回 `SendMessageResponse.reply` 之前，对 LLM 原文做可选修饰。**独立 trait**，**不是**六槽、**不在** `slot_registry` 或蓝图中配置。
+
+| 字段 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `enabled` | bool | **`false`** | `false` 时 pass-through，用户无感 |
+| `backend` | string | `"builtin"` | `builtin` \| `remote` \| `directory` |
+| `builtin` | object | — | `profile`（`standard` \| `minimal`）、`max_chars`、`strip_leading_quote` |
+| `remote` | object | — | `url`、`timeout_ms`；JSON-RPC `reply_post_process.process` |
+| `directory` | object | — | `plugin_id`；插件 `provides` 须含 `reply_post_process` |
+
+**发行版合并**：`distro.oclive.toml` → `[post_process].chain=minimal` 时，effective `builtin.profile` 强制为 `minimal`（`enabled=false` 仍关闭）。见 [DISTRO_CAPABILITY_PROFILE.md](../kernel/DISTRO_CAPABILITY_PROFILE.md)。
+
+**示例**（本地 dev 可启用；**勿**提交进 golden 包默认）：
+
+```json
+{
+  "reply_post_processor": {
+    "enabled": true,
+    "backend": "builtin",
+    "builtin": {
+      "profile": "standard",
+      "max_chars": 2000
+    }
+  }
+}
+```
+
+**校验**：`oclive pack validate` 在 `enabled=true` 且 `backend=remote` 时要求非空 `remote.url`；directory 要求非空 `plugin_id`。
+
+**DTO**：请求 `include_raw_reply: true` 且后处理改变文本时，响应可选 `raw_reply`（`SendMessageResponse.schema` **14**）。
+
+编排与 RPC 见 [RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md](../rfc/RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md) · [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) `reply_post_process` 能力。
 
 ---
 

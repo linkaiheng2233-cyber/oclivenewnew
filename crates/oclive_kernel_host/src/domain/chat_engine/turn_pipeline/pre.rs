@@ -7,7 +7,7 @@ use crate::domain::memory_engine::MemoryEngine;
 use crate::domain::memory_retrieval::MemoryRetrievalInput;
 use crate::domain::personality_engine::PersonalityEngine;
 use crate::domain::slot_runner::SlotRunner;
-use crate::domain::user_identity::resolve_effective_user_relation_key;
+use crate::domain::user_identity_loader::resolve_active_user_identity;
 use crate::models::knowledge::KnowledgeChunk;
 use crate::models::{Emotion, Event, Memory, PersonalitySource, PersonalityVector, Role};
 use oclive_kernel_runtime::domain::relation_engine::RelationState;
@@ -82,6 +82,9 @@ pub(crate) struct PreLlmOutput {
     pub prev_stored_narrative_hint: String,
     pub relevant: Vec<Memory>,
     pub user_relation_key: String,
+    pub user_identity_id: String,
+    pub user_identity_template: String,
+    pub relation_hint: String,
     pub relation_before: String,
     pub favorability_before: f64,
 }
@@ -242,15 +245,18 @@ async fn load_memories_and_relation_key(
     _user_message: &str,
     immersive: bool,
     virtual_time_ms: i64,
-) -> TurnResult<(Vec<Memory>, String)> {
-    let (mut memories, user_relation_key) = tokio::try_join!(
+) -> TurnResult<(
+    Vec<Memory>,
+    crate::domain::user_identity_loader::ResolvedUserIdentity,
+)> {
+    let (mut memories, resolved_identity) = tokio::try_join!(
         STAGES.stage(
             ChatStage::LoadMemories,
             state.memory_repo.load_memories(srid, 10),
         ),
         STAGES.stage(
             ChatStage::ResolveUserRelationKey,
-            resolve_effective_user_relation_key(state, role, srid, Some(scene_id)),
+            resolve_active_user_identity(state, role, srid, Some(scene_id)),
         ),
     )?;
     let scene_m = role
@@ -266,7 +272,7 @@ async fn load_memories_and_relation_key(
             &role.pack_memory_config,
         );
     }
-    Ok((memories, user_relation_key))
+    Ok((memories, resolved_identity))
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -440,7 +446,7 @@ pub(crate) async fn pre_llm(ctx: &TurnContext<'_>) -> TurnResult<PreLlmOutput> {
             &role.evolution_bounds,
         );
     }
-    let (memories, user_relation_key) = load_memories_and_relation_key(
+    let (memories, resolved_identity) = load_memories_and_relation_key(
         state,
         role,
         srid,
@@ -451,6 +457,7 @@ pub(crate) async fn pre_llm(ctx: &TurnContext<'_>) -> TurnResult<PreLlmOutput> {
         ctx.virtual_time_ms,
     )
     .await?;
+    let user_relation_key = resolved_identity.relation_key.clone();
     (personality, mutable_for_prompt) = apply_memory_reinforcement(
         state,
         role,
@@ -482,6 +489,9 @@ pub(crate) async fn pre_llm(ctx: &TurnContext<'_>) -> TurnResult<PreLlmOutput> {
         prev_stored_narrative_hint,
         relevant,
         user_relation_key,
+        user_identity_id: resolved_identity.identity_id,
+        user_identity_template: resolved_identity.template_body,
+        relation_hint: resolved_identity.relation_hint,
         relation_before,
         favorability_before,
     })

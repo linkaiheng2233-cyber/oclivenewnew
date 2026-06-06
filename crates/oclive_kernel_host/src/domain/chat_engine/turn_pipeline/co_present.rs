@@ -1,6 +1,5 @@
 //! Co-present turn path: complex emotion, event estimate, prompt build.
 
-use crate::domain::chat_turn::relation_favor_for_key;
 use crate::domain::complex_emotion::ComplexEmotionOutput;
 use crate::domain::host_profile::{PromptProfile, DISTRO_CONCISE_PROMPT_OVERLAY};
 use crate::domain::life_schedule::{format_life_prompt_line, resolve_life_state};
@@ -112,8 +111,6 @@ pub(crate) async fn run_middle(
     );
 
     let worldview_snippet = worldview_snippet_from_chunks(knowledge_chunks.as_slice());
-    let rf = relation_favor_for_key(role, pre.user_relation_key.as_str());
-
     let scene_label = state.storage.scene_display_name_for_role(role, scene_id);
     let scene_detail_buf = state
         .storage
@@ -142,7 +139,9 @@ pub(crate) async fn run_middle(
                     user_input: user_message,
                     user_emotion: pre.user_emotion_prompt.as_str(),
                     user_relation_id: pre.user_relation_key.as_str(),
-                    relation_hint: rf.relation_hint,
+                    relation_hint: pre.relation_hint.as_str(),
+                    user_identity_template: pre.user_identity_template.as_str(),
+                    user_identity_id: pre.user_identity_id.as_str(),
                     relation_before: pre.relation_before.as_str(),
                     favorability_before: pre.favorability_before,
                     relation_preview: relation_after.as_str(),

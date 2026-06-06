@@ -118,7 +118,7 @@ $env:RUST_LOG = "info,oclive_dual_core=info"
 
 ## 贡献新 method 映射
 
-1. 在 `src-tauri/src/domain/dual_pipeline_registry.rs` 注册 `(type, method)`。
+1. 在 `crates/oclive_kernel_host/src/domain/dual_pipeline_registry.rs` 注册 `(type, method)`。
 2. 在 `dual_pipeline_steps.rs` 实现与共景子步骤对齐的调用。
 3. 更新 [METHOD_REGISTRY.md](./METHOD_REGISTRY.md) 与 `oclive explain`。
 4. 补充单元测试。

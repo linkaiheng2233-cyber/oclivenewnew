@@ -17,3 +17,5 @@ alwaysApply: true
 5. **Prompt**：`PromptBuilder::build_prompt` 定义在 `crates/oclive_kernel_runtime/src/domain/prompt_builder.rs`（经 `oclive_kernel_host::domain` re-export）；共五个参数，返回 `String`，最后一参为 `&str`，不要用 `?`。
 
 6. **周节奏与验收**：见 `handoff/WEEKLY_DEV_GUIDE.md`；认知清单见 `handoff/04_4.6_PROJECT_TRUTH_CHECKLIST.md`。
+
+7. **命名 SSOT**：canonical import 与禁止别名见 [`creator-docs/NAMING_CONVENTIONS.md`](creator-docs/NAMING_CONVENTIONS.md) §4.2（DTO → `oclive_kernel_types`；trait → `oclive_kernel_contracts`；编排 → `oclive_kernel_host`）。回复字段为 **`reply`**（非 `response`）；六槽键用 `plugin_backends` / `slot_registry.type`（非 `memory_backend` 等自造别名）。

@@ -70,7 +70,7 @@ async fn run_scene(scene_id: &str) -> RunMetrics {
             role_id: role_id.clone(),
             user_message: text.to_string(),
             scene_id: Some(scene_id.to_string()),
-            session_id: None,
+            ..Default::default()
         };
         let res = process_message(&state, &req)
             .await

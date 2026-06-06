@@ -268,7 +268,7 @@ fn derive_confidence(
     ((rule_base + impact_hint) / 2.0).clamp(0.0, 1.0)
 }
 
-pub use oclive_kernel_runtime::EventImpactEstimate;
+pub use oclive_kernel_types::EventImpactEstimate;
 
 fn build_event_impact_prompt(
     user_message: &str,

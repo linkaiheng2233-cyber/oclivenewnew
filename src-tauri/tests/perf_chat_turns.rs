@@ -44,7 +44,7 @@ async fn perf_chat_turn_distribution() {
             role_id: "mumu".to_string(),
             user_message: format!("第{}轮对话，今天心情不错。", i),
             scene_id: None,
-            session_id: None,
+            ..Default::default()
         };
         let started = Instant::now();
         let result = process_message(&state, &req).await;

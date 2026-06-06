@@ -1,4 +1,4 @@
-﻿# 贡献指南
+# 贡献指南
 
 [English](CONTRIBUTING.en.md)
 
@@ -70,7 +70,7 @@ npm run build
 | Crate / 区域 | 路径 | 负责人 | 说明 |
 |--------------|------|--------|------|
 | 桌面宿主 | `src-tauri/` | @linkaiheng2233-cyber | Tauri IPC、HTTP `--api`、`AppState` |
-| 内核编排 | `src-tauri/src/domain/chat_engine/` | 同上 | `process_message` / `co_present` |
+| 内核编排 | `crates/oclive_kernel_host/src/domain/chat_engine/` | 同上 | `process_message` / `co_present` |
 | 内核 crate | `crates/oclive_kernel_types` | 同上 | DTO、`AppError` |
 | 内核 crate | `crates/oclive_kernel_contracts` | 同上 | 端口 trait |
 | 内核 crate | `crates/oclive_kernel_runtime` | 同上 | 编排与 re-export |
@@ -81,13 +81,26 @@ npm run build
 
 更细入口见 **[`handoff/BUS_FACTOR_NOTES.md`](handoff/BUS_FACTOR_NOTES.md)**（含 crate 拆分后路径）。
 
+## Rust import 纪律
+
+新 Rust 代码应使用 **canonical crate**，勿经 `oclive_kernel_runtime` 绕路取 DTO / trait（runtime 仅保留路径、内核发现、引擎 `domain/*` 等合法用途）：
+
+| 需要什么 | 从哪 import |
+|----------|-------------|
+| DTO、`AppError`、`SendMessageRequest/Response` | `oclive_kernel_types` |
+| 端口 trait（`LlmClient`、`MemoryRetrieval`、`PluginHostPort`…） | `oclive_kernel_contracts`（host 内可用 `crate::domain::ports`） |
+| 回合编排、`process_message`、持久化 | `oclive_kernel_host::domain::…` |
+| 路径 / `kernel_discovery` / `RUNTIME_API_VERSION` | `oclive_kernel_runtime` |
+
+完整表与禁止别名（`reply` 非 `response` 等）见 **[creator-docs/NAMING_CONVENTIONS.md §4.2](creator-docs/NAMING_CONVENTIONS.md#42-canonical-import-路径)**。
+
 ## 代码导航（按问题域）
 
 | 你想… | 从这里开始 |
 |--------|------------|
-| 理解一条消息如何走完 | `src-tauri/src/domain/chat_engine/process_message.rs` → `turn_pipeline.rs` |
-| 改多实例槽合并规则 | `src-tauri/src/domain/slot_runner.rs`（读函数头「为何」注释） |
-| 改插件后端解析 | `src-tauri/src/domain/plugin_host.rs` + `slot_resolver.rs` |
+| 理解一条消息如何走完 | `crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs` → `turn_pipeline.rs` |
+| 改多实例槽合并规则 | `crates/oclive_kernel_host/src/domain/slot_runner.rs`（读函数头「为何」注释） |
+| 改插件后端解析 | `crates/oclive_kernel_host/src/domain/ports/plugin_host.rs` + `slot_resolver.rs` |
 | 改蓝图加载 / 写盘 | `src-tauri/src/infrastructure/storage.rs`；校验在 `crates/oclive_validation` |
 | 实现目录 / Remote 插件 | `creator-docs/plugin-and-architecture/PLUGIN_V1.md` + `crates/oclive_kernel_contracts` 对应 trait |
 | 改 HTTP / Tauri 契约 | `src-tauri/src/models/`、`src-tauri/src/api/`、`creator-docs/getting-started/ERROR_CODES.md` |

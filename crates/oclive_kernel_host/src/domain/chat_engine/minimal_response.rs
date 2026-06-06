@@ -106,5 +106,6 @@ pub(crate) async fn build_minimal_response(
         chat_persist_failed: chat_ids.chat_persist_failed,
         chat_persist_error: chat_ids.chat_persist_error,
         dual_core_degraded: None,
+        raw_reply: None,
     })
 }

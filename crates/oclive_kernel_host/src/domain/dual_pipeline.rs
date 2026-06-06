@@ -13,8 +13,12 @@
 //! Allow-list SSOT: [`dual_pipeline_registry::EXPERIMENTAL_METHOD_SPECS`](super::dual_pipeline_registry::EXPERIMENTAL_METHOD_SPECS);
 //! `oclive-cli explain DUAL_CORE` keeps a separate table—sync both when changing methods (see registry module docs).
 //!
-//! **Upstream**: [`process_message`](crate::domain::chat_engine::process_message).
-//! **Downstream**: [`ExperimentalStepCtx`](super::dual_pipeline_steps::ExperimentalStepCtx),
+//! **Disambiguation**: `dual_pipeline` is the **runtime orchestrator** (this module). The blueprint JSON keys
+//! `pipeline.experimental` / `pipeline.stable` are **config only** — not the on-disk blueprint file
+//! `pipeline.ocblueprint`, and not a step-scheduling DSL.
+//!
+//! **Downstream**: [`process_message`](crate::domain::chat_engine::process_message),
+//! [`ExperimentalStepCtx`](super::dual_pipeline_steps::ExperimentalStepCtx),
 //! [`dual_pipeline_registry`](super::dual_pipeline_registry).
 //!
 //! **Key decision**: does not execute `pipeline.stable`; stable core is always hard-coded `co_present`.

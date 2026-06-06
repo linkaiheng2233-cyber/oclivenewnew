@@ -1,29 +1,33 @@
-﻿# `src-tauri/src/domain` 依赖规则
+﻿# `oclive_kernel_host/src/domain` dependency rules
 
-编排与业务策略层。新代码应遵守下列方向（与 [ARCHITECTURE_LAYERING.md](../../../handoff/ARCHITECTURE_LAYERING.md) 一致）。
+Orchestration and business-policy layer. New code should follow these directions (aligned with [ARCHITECTURE_LAYERING.md](../../../../handoff/ARCHITECTURE_LAYERING.md)).
 
-## 允许 / 禁止
+Chinese handoff notes: [COMMENT_ENGLISH_MIGRATION_PLAN.md](../../../../handoff/COMMENT_ENGLISH_MIGRATION_PLAN.md).
 
-| 模块 | 可依赖 | 不可依赖 |
-|------|--------|----------|
-| `domain/` | `domain/`、`models/`、`error/`、`domain/ports/`、`oclive_kernel_*` | `api/` |
-| `infrastructure/` | `domain/`、`infrastructure/`、`models/` | `api/` |
-| `api/` | `domain/`、`infrastructure/`、`state/` | — |
+## Allowed / forbidden
 
-## 已知适配层（逐步收口）
+| Module | May depend on | Must not depend on |
+|--------|---------------|-------------------|
+| `domain/` | `domain/`, `models/`, `error/`, `domain/ports/`, `oclive_kernel_*` | `api/` |
+| `infrastructure/` | `domain/`, `infrastructure/`, `models/` | `api/` |
+| `api/` | `domain/`, `infrastructure/`, `state/` | — |
 
-以下文件仍直接 `use crate::infrastructure::…`（构造 `PluginHost`、Remote HTTP、目录子进程等）：
+## Known adapter layer (being tightened)
 
-- `plugin_host.rs`、`role_manager.rs`、`agent.rs`、`slot_resolver.rs`、`role_manifest_validate.rs`
+These files still call `use crate::infrastructure::…` directly (constructing `PluginHost`, Remote HTTP, directory child processes, etc.):
 
-**原因**：实现尚未全部迁入 `infrastructure/*_wiring` + `ports` 工厂。**新功能**请优先扩展 `domain/ports` trait，勿新增 `domain → api` 引用。
+- `ports/plugin_host/`、`role_manager.rs`、`agent.rs`、`slot_resolver.rs`、`role_manifest_validate.rs`
 
-## 编排入口
+**Reason**: implementations are not fully moved into `infrastructure/*_wiring` + port factories yet. **Prefer extending `domain/ports` traits** for new features; do not add new `domain → api` references.
 
-| 文件 | 职责 |
+## Orchestration entry points
+
+| File | Role |
 |------|------|
-| `chat_engine/process_message.rs` | 单条消息总调度（健康检查、双核门控、异地分支） |
-| `chat_engine/turn_pipeline.rs` | 共景同屏回合执行 |
-| `dual_pipeline.rs` | 双核实验核 + 稳定核降级 |
-| `slot_runner.rs` | 多实例槽位合并与调用 |
-| `plugin_host.rs` | `plugin_backends` → `Arc<dyn …>` |
+| `chat_engine/process_message.rs` | Single-message dispatch (health check, dual-core gate, remote branches) |
+| `chat_engine/turn_pipeline/` | Co-present turn execution |
+| `dual_pipeline.rs` | Dual-core experimental + stable fallback |
+| `slot_runner.rs` | Multi-instance slot merge and invocation |
+| `ports/plugin_host/` | `plugin_backends` → `Arc<dyn …>` |
+
+Naming SSOT: [NAMING_CONVENTIONS.md](../../../../creator-docs/NAMING_CONVENTIONS.md).

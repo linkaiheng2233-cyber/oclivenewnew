@@ -14,7 +14,7 @@
 | **角色包** | `roles/<id>/settings.json` | 在发行版上限内微调 `plugin_backends` |
 | **会话** | 宿主 DB / 会话覆盖 | 临时覆盖，**不可突破**发行版上限 |
 
-**不承载于**：`pipeline.ocblueprint` / blueprint v3 `runtime_config`（v3 冻结，见 handoff）。**不替代** Monolith `monolith.toml`（仅编译期）。
+**不承载于**：蓝图文件 `pipeline.ocblueprint` / blueprint v3 `runtime_config`（v3 冻结，见 handoff）。**不替代** Monolith `monolith.toml`（仅编译期）。后处理链扩展点 RFC（预留）：[RFC_OCLIVE_POST_PROCESS_CHAIN.md](../rfc/RFC_OCLIVE_POST_PROCESS_CHAIN.md)。
 
 **与内核二进制的关系**：配置文件描述「连接方需要什么」；二进制进化见 [DISTRO_KERNEL_LIFECYCLE.md](./DISTRO_KERNEL_LIFECYCLE.md)（discovery / promote / attach）。
 
@@ -69,6 +69,10 @@ retrieval = "default"         # default | light
 
 [post_process]
 chain = "standard"            # standard | minimal
+
+[user_identity]
+default_id = "classmate"      # optional; used when session has no explicit identity
+allowed_ids = ["classmate"]   # optional whitelist for set_user_identity API
 ```
 
 ### 3.1 `plugin_backends` 枚举
@@ -100,7 +104,13 @@ chain = "standard"            # standard | minimal
 |------|-------------------|---------------------------|
 | `prompt.profile` | 角色包 + 引擎锚点完整叠加 | 额外叠加「简洁回复」overlay，不删减包级人设 |
 | `memory.retrieval` | 默认检索深度 |  lighter 检索（更少上下文条数） |
-| `post_process.chain` | `standard` | `minimal`（跳过非必要后处理） |
+| `post_process.chain` | `standard` | `minimal`（强制 builtin `profile=minimal`；`enabled=false` 仍关闭） |
+| `user_identity.default_id` | 未设 | 会话无显式身份且非 sentinel 时作为默认 catalog id |
+| `user_identity.allowed_ids` | 未设（不限制） | API 层拒绝列表外 id |
+
+**合并优先级（User Identity）**：DB 会话/场景覆盖 → `HostProfile.user_identity.default_id` → catalog `default_identity_id` → legacy `user_relations.prompt_hint`。
+
+**合并规则（Reply Post-Processor）**：`post_process.chain=minimal` 时 effective `builtin.profile=minimal`；remote/directory 仍可按角色包配置解析，失败降级 builtin → raw。
 
 ---
 

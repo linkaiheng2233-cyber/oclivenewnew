@@ -1,6 +1,6 @@
 [package]
 name = "oclivenewnew-tauri"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 license = "AGPL-3.0-or-later"
 description = "oclive desktop companion ? Tauri + Vue + Rust dialogue engine"
@@ -25,6 +25,7 @@ dual_core = ["oclive_kernel_host/dual_core"]
 
 [dependencies]
 oclive_kernel_host = { path = "../crates/oclive_kernel_host", features = ["tauri-commands"] }
+oclive_kernel_types = { path = "../crates/oclive_kernel_types" }
 oclive_validation = { path = "../crates/oclive_validation" }
 oclive_kernel_runtime = { path = "../crates/oclive_kernel_runtime" }
 tauri = { version = "1.5", features = [ "protocol-asset", "shell-open", "dialog-open", "dialog-save", "global-shortcut"] }

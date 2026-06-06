@@ -4,8 +4,8 @@
 
 | 模块 | 位置 | 约行数 | 编译门控 |
 |------|------|--------|----------|
-| `dual_pipeline*` | `src-tauri/src/domain/dual_pipeline*.rs` | ~800+ | `#[cfg(feature = "dual_core")]` |
-| `expert_routing` | `src-tauri/src/domain/expert_routing.rs` | ~200+ | 部分路径随 dual_core |
+| `dual_pipeline*` | `crates/oclive_kernel_host/src/domain/dual_pipeline*.rs` | ~800+ | `#[cfg(feature = "dual_core")]` |
+| `expert_routing` | `crates/oclive_kernel_host/src/domain/expert_routing.rs` | ~200+ | 部分路径随 dual_core |
 | 集成测 | `src-tauri/tests/dual_core_happy_path.rs` | — | CI `--features dual_core` + OOCP S13/S14 |
 
 ## 路线对齐

@@ -1,6 +1,6 @@
 //! Unified error codes for directory-plugin and other Tauri commands; payload matches the kernel: **single-line `KernelErrorBody` JSON** (same as `AppError::to_kernel_json`).
 
-use oclive_kernel_runtime::KernelErrorBody;
+use oclive_kernel_types::KernelErrorBody;
 use std::fmt;
 
 #[derive(Debug, Clone)]
@@ -14,7 +14,7 @@ pub enum ApiError {
     PermissionDenied {
         message: String,
     },
-    /// Same code as kernel [`oclive_kernel_runtime::AppError::HighRiskCapabilityNotGranted`]; used to map plain-text directory-plugin errors.
+    /// Same code as kernel [`oclive_kernel_types::AppError::HighRiskCapabilityNotGranted`]; used to map plain-text directory-plugin errors.
     HighRiskCapabilityNotGranted {
         message: String,
     },
@@ -231,7 +231,7 @@ pub fn map_directory_rpc_url_error(plugin_id: &str, err: String) -> ApiError {
 #[cfg(test)]
 mod tests {
     use super::{map_directory_rpc_url_error, ApiError, CommandError};
-    use oclive_kernel_runtime::KernelErrorBody;
+    use oclive_kernel_types::KernelErrorBody;
 
     fn invoke_code(err: CommandError) -> String {
         let j: KernelErrorBody = serde_json::from_str(&err.to_kernel_json()).expect("kernel json");

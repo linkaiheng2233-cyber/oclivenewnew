@@ -20,8 +20,8 @@ For **headless HTTP**, **embedded**, and **hardware** teams shipping an oclive-c
 
 | Topic | Read |
 |-------|------|
-| **`process_message` flow** | Reference host: **`src-tauri/src/domain/chat_engine/process_message.rs`**, **`turn_pipeline.rs`**; summary [BUS_FACTOR_NOTES](../../handoff/BUS_FACTOR_NOTES.md) |
-| **`PluginHost` slots** | **`src-tauri/src/domain/plugin_host.rs`** · [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) |
+| **`process_message` flow** | Reference host: **`crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs`**, **`turn_pipeline.rs`**; summary [BUS_FACTOR_NOTES](../../handoff/BUS_FACTOR_NOTES.md) |
+| **`PluginHost` slots** | **`crates/oclive_kernel_host/src/domain/ports/plugin_host.rs`** · [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) |
 | **Backends & fallback** | [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md) · [CONFIGURATION_FILES.md](../guides/CONFIGURATION_FILES.md) |
 
 **Done when:** You can name the main `send_message` stages you expect in logs.

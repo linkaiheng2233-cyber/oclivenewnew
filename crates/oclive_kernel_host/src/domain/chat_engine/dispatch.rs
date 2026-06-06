@@ -1,15 +1,15 @@
 //! Turn dispatch after [`TurnContext`] is built: remote stub / remote life / dual-core / co-present.
 
+use crate::domain::chat_engine::chat_stage::ChatStage;
 use crate::domain::chat_engine::message_error::ProcessMessageError;
 use crate::domain::chat_engine::staged::stage_process_message;
 use crate::domain::chat_engine::turn_context::TurnContext;
 use crate::domain::chat_engine::turn_pipeline::{execute_turn, TurnMode};
 use crate::domain::chat_engine::{process_remote_life, process_remote_stub};
-use crate::domain::chat_engine::chat_stage::ChatStage;
-use crate::models::dto::SendMessageResponse;
-use crate::models::Role;
 #[cfg(feature = "dual_core")]
 use crate::domain::dual_pipeline::DualPipelineRunner;
+use crate::models::dto::SendMessageResponse;
+use crate::models::Role;
 
 /// Whether dual-core is requested by blueprint but unavailable in this build.
 pub(crate) fn resolve_dual_core_degraded(role: &Role) -> bool {

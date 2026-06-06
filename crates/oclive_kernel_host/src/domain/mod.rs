@@ -4,21 +4,23 @@ pub mod error_helpers;
 
 /// Kernel domain modules (re-exported from `oclive_kernel_runtime` for stable `crate::domain::*` paths).
 pub use oclive_kernel_runtime::domain::{
-    affect_policy, chat_llm_fallback, chat_turn, chat_turn_rules, complex_emotion,
-    emotion_analyzer, event_detector, knowledge_loader, life_schedule, local_plugin_bridge,
-    local_plugin_memory_pick, memory_engine, memory_retrieval, personality_engine, policy,
-    profile_personality, prompt_assembler, prompt_builder, relation_engine, remote_life_prompt,
-    repository, user_emotion_analyzer,
+    affect_policy, builtin_reply_post_processor, chat_llm_fallback, chat_turn, chat_turn_rules,
+    complex_emotion, emotion_analyzer, event_detector, knowledge_loader, life_schedule,
+    local_plugin_bridge, local_plugin_memory_pick, memory_engine, memory_retrieval,
+    personality_engine, policy, profile_personality, prompt_assembler, prompt_builder,
+    relation_engine, remote_life_prompt, repository, user_emotion_analyzer,
 };
 
 pub mod complex_emotion_store;
 pub mod effective_llm_model;
 pub mod relation_estrangement;
+pub mod reply_post_processor;
 pub mod role_manifest_validate;
 pub mod role_snapshot;
 pub mod startup_health;
 pub mod time_driven_evolution;
 pub mod user_identity;
+pub mod user_identity_loader;
 pub mod user_llm_env;
 pub mod virtual_time_sync;
 

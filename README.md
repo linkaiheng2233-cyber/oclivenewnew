@@ -14,10 +14,10 @@
 
 | 领域 | 状态 |
 |------|------|
-| **内核编排** | 主编排在 **`src-tauri/src/domain/chat_engine/mod.rs`** 的 **`process_message`**；无独立入口蓝图 DSL 主路径；子系统经 **`PluginHost`** 解析（含 **`agent`**）。 |
+| **内核编排** | 主编排在 **`crates/oclive_kernel_host/src/domain/chat_engine/mod.rs`** 的 **`process_message`**；无独立入口蓝图 DSL 主路径；子系统经 **`PluginHost`** 解析（含 **`agent`**）。 |
 | **测试（三层）** | **协议层（本仓）**：`src-tauri` 的 **`cargo test`** + `tests/` 集成测；**OOCP HTTP 黑盒 S0–S12（13 场景；可选 S13/S14）** 已入库 [`examples/oocp-test-suite/`](examples/oocp-test-suite/)，**CI 已集成** job **`oocp-test-suite`**（Ubuntu，构建 `--features dual_core` 并运行 `run.mjs --include-dual-core`）。**A1.1b**：**`vite preview` + Playwright** 首屏烟测（[`e2e/preview-shell.spec.ts`](e2e/preview-shell.spec.ts)），**CI 仅 Ubuntu `frontend`**（Windows `frontend` 跑 Vitest + build）。**组件层（编写器）**：**oclive-pack-editor** 仓库 Vitest / Playwright 等（与本仓 CI 分工）。**插件层（编写器）**：目录插件 / `official-vue-test-runner` 等范式与用例在 **oclive-pack-editor**。**前端最小烟测**：CI **`npm ci` + `npm run test:unit`（Vitest）+ `npm run build`**；Playwright 见上。总览见 [creator-docs/testing/OVERVIEW.md](creator-docs/testing/OVERVIEW.md)、[creator-docs/testing/OOCP_TEST_SUITE.md](creator-docs/testing/OOCP_TEST_SUITE.md)。 |
 | **oclive-cli** | Workspace crate **`oclive-cli`**：**`oclive dev`**（监听 `roles/`）；**`bench`**（`--save` / `--compare` / **`--cold-start`**）；**`test --coverage`** / **`--miri`**；**`explain`** / **`completions`**；**`init --dry-run`** / **`--check`**；**`lint --audit-ci`**；**`doctor --sbom`**；**`pack`** 与 **Monolith** 流程见 [creator-docs/cli/OCLIVE_CLI_GUIDE.md](creator-docs/cli/OCLIVE_CLI_GUIDE.md)。 |
-| **启动健康检查** | 首轮 **`process_message`** 前一次性自检（槽位、角色包文件、SQLite **`health_ping`**、可选 LLM 探测）；可用 **`OCLIVE_SKIP_STARTUP_HEALTH`** / **`OCLIVE_SKIP_LLM_STARTUP_PROBE`** 跳过。实现见 `src-tauri/src/domain/startup_health.rs`。 |
+| **启动健康检查** | 首轮 **`process_message`** 前一次性自检（槽位、角色包文件、SQLite **`health_ping`**、可选 LLM 探测）；可用 **`OCLIVE_SKIP_STARTUP_HEALTH`** / **`OCLIVE_SKIP_LLM_STARTUP_PROBE`** 跳过。实现见 `crates/oclive_kernel_host/src/domain/startup_health.rs`。 |
 | **Monolith（高耦合编译）** | 无头脚手架在编译期按 **七焊接键**（第 1–6 模块 + `complex_emotion`）焊接静态路径；RFC 与 CLI 四阶段（`init` → `build` → 双二进制 `bench`）见 [creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md](creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md) 与上文 CLI 指南。 |
 | **安全** | 已跑 **`cargo audit`（0.22.1）**；**已知漏洞跟踪中**（当前锁文件 **5** 条漏洞级命中），见 [creator-docs/security/KNOWN_VULNERABILITIES.md](creator-docs/security/KNOWN_VULNERABILITIES.md)；审查边界见 [creator-docs/security/SECURITY_AUDIT_SCOPE.md](creator-docs/security/SECURITY_AUDIT_SCOPE.md)。 |
 | **CI 守门** | **`rustfmt` + `clippy`（`-D warnings`）+ `cargo test`**（`src-tauri`）+ **`npm ci` / `npm run test:unit` / `npm run build`**；另含 **`oocp-test-suite`**（HTTP 协议黑盒）、**`cargo-audit`** job（**允许失败**）与 **remote-plugin-demo** 烟测。 |
@@ -114,7 +114,7 @@
 
 1. **安装依赖**：Node.js、Ollama（本地对话默认路径）。详见 [CREATOR_WORKFLOW.md](creator-docs/getting-started/CREATOR_WORKFLOW.md)。
 2. **克隆两仓**（同级目录最省事）：**本仓库**（A.I.Live 运行时）与 **[oclive-pack-editor](https://github.com/oclive-app/oclive-pack-editor)**（角色包编写器）。
-3. **制作角色包**：在编写器中编辑并 **导出 zip / 写入文件夹**，或复制 `roles/mumu/` 等示例；使 **`roles/{角色id}/pipeline.ocblueprint`** 位于 **roles 根**（本项目内 `roles/`，或设置 **`OCLIVE_ROLES_DIR`**）。
+3. **制作角色包**：在编写器中编辑并 **导出 zip / 写入文件夹**，或复制 `roles/mumu/` 等示例；使 **蓝图文件 `roles/{角色id}/pipeline.ocblueprint`** 位于 **roles 根**（**不以** `steps[]` 作主路径调度；本项目内 `roles/`，或设置 **`OCLIVE_ROLES_DIR`**）。
 4. **运行本应用**：`npm run tauri:dev`（或 Release 安装包）；加载角色并开始对话。
 5. **（可选）高级能力**：在本应用 **插件与后端管理 → 架构图** 配置 **专家路由**（`expert_routing.json`）、`groups` 等；之后在编写器保存人设时，编写器会保留这些蓝图扩展字段。
 

@@ -23,6 +23,10 @@ retrieval = "light"
 [post_process]
 chain = "minimal"
 
+# VS Code: default identity when session has no explicit choice (matches mumu catalog).
+[user_identity]
+default_id = "classmate"
+
 [plugin_backends]
 memory = "builtin"
 emotion = "builtin"

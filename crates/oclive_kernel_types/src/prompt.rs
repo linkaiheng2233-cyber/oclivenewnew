@@ -32,4 +32,8 @@ pub struct PromptInput<'a> {
     pub reply_quality_anchor: &'a str,
     /// The `narrative_hint` output by the builtin complex-emotion module in the previous turn; if empty the [Complex-Emotion Narrative Hint] section is skipped.
     pub previous_complex_emotion_narrative_hint: &'a str,
+    /// Full User Identity Prompt Template body (host-loaded); when non-empty it replaces legacy `relation_hint` as the section body.
+    pub user_identity_template: &'a str,
+    /// Current User Identity Prompt Template id (audit / debug).
+    pub user_identity_id: &'a str,
 }

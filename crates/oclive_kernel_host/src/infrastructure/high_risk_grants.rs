@@ -4,7 +4,7 @@
 //! - **`OCLIVE_SKIP_HIGH_RISK_GRANTS=1`** is a **dev-only** escape hatch (honored only in debug builds, same class as `OCLIVE_SKIP_STARTUP_HEALTH`). Release builds ignore it.
 
 use crate::env_flags;
-use oclive_kernel_runtime::AppError;
+use oclive_kernel_types::AppError;
 use oclive_validation::{MCP_HTTP, MCP_STDIO, NETWORK_WILDCARD, PROCESS_SPAWN};
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};

@@ -1,0 +1,12 @@
+{
+  "id": "reply-post-process-minimal",
+  "name": "Reply Post-Process Minimal",
+  "version": "0.1.0",
+  "description": "Minimal directory plugin for reply_post_process.process (Phase 2 example)",
+  "provides": ["reply_post_process"],
+  "process": {
+    "command": "node",
+    "args": ["rpc_server.mjs"],
+    "cwd": "."
+  }
+}

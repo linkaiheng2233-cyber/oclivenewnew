@@ -2,11 +2,15 @@
 
 pub mod delete;
 pub mod display;
+pub mod identity;
 pub mod interaction;
 pub mod runtime;
 pub mod slot_session;
 
 pub use delete::delete_role_impl;
+pub use identity::{
+    get_user_identity_state_impl, set_scene_user_identity_impl, set_user_identity_impl,
+};
 pub use slot_session::{
     apply_author_suggested_plugin_backends_impl, build_plugin_resolution_debug_info,
     clear_all_session_slot_overrides_impl, clear_session_slot_override_impl,

@@ -20,6 +20,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
+use super::user_identities::load_user_identity_catalog;
 use super::{apply_llm_backend_env_override, RoleStorage};
 
 impl RoleStorage {
@@ -302,6 +303,7 @@ impl RoleStorage {
                         role.pack_relation_config = cfg.relation;
                         role.pack_evolution_config = cfg.evolution;
                         role.pack_chat_storage_config = cfg.chat_storage;
+                        role.pack_reply_post_processor_config = cfg.reply_post_processor;
                     }
                     Err(e) => tracing::warn!(
                         target: "oclive_role",
@@ -330,6 +332,8 @@ impl RoleStorage {
             role.core_personality =
                 fs::read_to_string(&core_personality_path).map_err(AppError::IoError)?;
         }
+
+        role.user_identity_catalog = load_user_identity_catalog(role_dir)?;
 
         Ok(role)
     }

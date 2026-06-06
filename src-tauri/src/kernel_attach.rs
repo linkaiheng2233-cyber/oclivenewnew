@@ -12,8 +12,12 @@ use crate::state::AppState;
 pub(crate) use oclive_kernel_runtime::app_error_from_http_response;
 use oclive_kernel_runtime::RUNTIME_API_VERSION;
 use serde::Deserialize;
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::time::Duration;
+use std::sync::{Mutex, OnceLock};
+use std::time::{Duration, Instant};
+
+const HEALTH_GATE_TTL: Duration = Duration::from_millis(1500);
 
 #[derive(Debug, Deserialize)]
 struct HealthProbeJson {
@@ -34,6 +38,53 @@ pub struct RoleSnapshot {
     pub user_presence_scene: Option<String>,
 }
 
+/// TTL cache for successful `/health` probes on the IPC hot path.
+struct HealthGate;
+
+impl HealthGate {
+    fn cache() -> &'static Mutex<HashMap<String, Instant>> {
+        static GATE: OnceLock<Mutex<HashMap<String, Instant>>> = OnceLock::new();
+        GATE.get_or_init(|| Mutex::new(HashMap::new()))
+    }
+
+    fn normalize(base_url: &str) -> String {
+        base_url.trim_end_matches('/').to_string()
+    }
+
+    fn is_fresh(base_url: &str) -> bool {
+        let key = Self::normalize(base_url);
+        let Ok(guard) = Self::cache().lock() else {
+            return false;
+        };
+        guard
+            .get(&key)
+            .is_some_and(|t| t.elapsed() < HEALTH_GATE_TTL)
+    }
+
+    fn mark_ok(base_url: &str) {
+        let key = Self::normalize(base_url);
+        if let Ok(mut guard) = Self::cache().lock() {
+            guard.insert(key, Instant::now());
+        }
+    }
+
+    fn invalidate(base_url: &str) {
+        let key = Self::normalize(base_url);
+        if let Ok(mut guard) = Self::cache().lock() {
+            guard.remove(&key);
+        }
+    }
+}
+
+fn probe_http_client() -> &'static reqwest::Client {
+    static CLIENT: OnceLock<reqwest::Client> = OnceLock::new();
+    CLIENT.get_or_init(|| {
+        reqwest::Client::builder()
+            .build()
+            .unwrap_or_else(|_| reqwest::Client::new())
+    })
+}
+
 /// HTTP proxy for kernel routes when desktop is a thin client.
 pub struct KernelHttpClient;
 
@@ -44,11 +95,7 @@ impl KernelHttpClient {
 
     pub async fn probe_health_timeout(base_url: &str, timeout: Duration) -> bool {
         let url = format!("{}/health", base_url.trim_end_matches('/'));
-        let client = reqwest::Client::builder()
-            .timeout(timeout)
-            .build()
-            .unwrap_or_else(|_| reqwest::Client::new());
-        let Ok(res) = client.get(&url).send().await else {
+        let Ok(res) = probe_http_client().get(&url).timeout(timeout).send().await else {
             return false;
         };
         if !res.status().is_success() {
@@ -79,6 +126,23 @@ impl KernelHttpClient {
         true
     }
 
+    async fn ensure_healthy(conn: &KernelConnection) -> bool {
+        let base = &conn.base_url;
+        if HealthGate::is_fresh(base) {
+            return true;
+        }
+        let ok = Self::probe_health_timeout(base, Duration::from_secs(3)).await;
+        if ok {
+            HealthGate::mark_ok(base);
+        }
+        ok
+    }
+
+    fn map_send_err(base_url: &str, context: &str, e: reqwest::Error) -> AppError {
+        HealthGate::invalidate(base_url);
+        AppError::OllamaError(format!("{context}: {e}"))
+    }
+
     fn offline_err() -> AppError {
         AppError::KernelOffline
     }
@@ -88,7 +152,7 @@ impl KernelHttpClient {
         role_path: &Path,
         req: &SendMessageRequest,
     ) -> Result<SendMessageResponse, AppError> {
-        if !Self::probe_health(&conn.base_url).await {
+        if !Self::ensure_healthy(conn).await {
             return Err(Self::offline_err());
         }
         let url = format!("{}/chat", conn.base_url);
@@ -104,7 +168,7 @@ impl KernelHttpClient {
             .json(&body)
             .send()
             .await
-            .map_err(|e| AppError::OllamaError(format!("remote chat request: {e}")))?;
+            .map_err(|e| Self::map_send_err(&conn.base_url, "remote chat request", e))?;
         let status = res.status();
         let text = res
             .text()
@@ -121,7 +185,7 @@ impl KernelHttpClient {
         conn: &KernelConnection,
         req: &GetRoleInfoRequest,
     ) -> Result<RoleInfo, AppError> {
-        if !Self::probe_health(&conn.base_url).await {
+        if !Self::ensure_healthy(conn).await {
             return Err(Self::offline_err());
         }
         let mut req_builder = conn
@@ -134,7 +198,7 @@ impl KernelHttpClient {
         let res = req_builder
             .send()
             .await
-            .map_err(|e| AppError::OllamaError(format!("role_info request: {e}")))?;
+            .map_err(|e| Self::map_send_err(&conn.base_url, "role_info request", e))?;
         let status = res.status();
         let text = res
             .text()
@@ -151,7 +215,7 @@ impl KernelHttpClient {
         conn: &KernelConnection,
         role_id: &str,
     ) -> Result<TimeStateResponse, AppError> {
-        if !Self::probe_health(&conn.base_url).await {
+        if !Self::ensure_healthy(conn).await {
             return Err(Self::offline_err());
         }
         let res = conn
@@ -160,7 +224,7 @@ impl KernelHttpClient {
             .query(&[("role_id", role_id.trim())])
             .send()
             .await
-            .map_err(|e| AppError::OllamaError(format!("time/state request: {e}")))?;
+            .map_err(|e| Self::map_send_err(&conn.base_url, "time/state request", e))?;
         let status = res.status();
         let text = res
             .text()
@@ -177,7 +241,7 @@ impl KernelHttpClient {
         conn: &KernelConnection,
         req: &JumpTimeRequest,
     ) -> Result<JumpTimeResponse, AppError> {
-        if !Self::probe_health(&conn.base_url).await {
+        if !Self::ensure_healthy(conn).await {
             return Err(Self::offline_err());
         }
         let res = conn
@@ -186,7 +250,7 @@ impl KernelHttpClient {
             .json(req)
             .send()
             .await
-            .map_err(|e| AppError::OllamaError(format!("time/jump request: {e}")))?;
+            .map_err(|e| Self::map_send_err(&conn.base_url, "time/jump request", e))?;
         let status = res.status();
         let text = res
             .text()
@@ -203,7 +267,7 @@ impl KernelHttpClient {
         conn: &KernelConnection,
         req: &SwitchSceneRequest,
     ) -> Result<SwitchSceneResponse, AppError> {
-        if !Self::probe_health(&conn.base_url).await {
+        if !Self::ensure_healthy(conn).await {
             return Err(Self::offline_err());
         }
         let res = conn
@@ -212,7 +276,7 @@ impl KernelHttpClient {
             .json(req)
             .send()
             .await
-            .map_err(|e| AppError::OllamaError(format!("scene/switch request: {e}")))?;
+            .map_err(|e| Self::map_send_err(&conn.base_url, "scene/switch request", e))?;
         let status = res.status();
         let text = res
             .text()
@@ -229,7 +293,7 @@ impl KernelHttpClient {
         conn: &KernelConnection,
         req: &SetUserPresenceSceneRequest,
     ) -> Result<RoleInfo, AppError> {
-        if !Self::probe_health(&conn.base_url).await {
+        if !Self::ensure_healthy(conn).await {
             return Err(Self::offline_err());
         }
         let res = conn
@@ -238,7 +302,7 @@ impl KernelHttpClient {
             .json(req)
             .send()
             .await
-            .map_err(|e| AppError::OllamaError(format!("scene/user_presence request: {e}")))?;
+            .map_err(|e| Self::map_send_err(&conn.base_url, "scene/user_presence request", e))?;
         let status = res.status();
         let text = res
             .text()
@@ -255,7 +319,7 @@ impl KernelHttpClient {
         conn: &KernelConnection,
         req: &CreateEventRequest,
     ) -> Result<CreateEventResponse, AppError> {
-        if !Self::probe_health(&conn.base_url).await {
+        if !Self::ensure_healthy(conn).await {
             return Err(Self::offline_err());
         }
         let res = conn
@@ -264,7 +328,7 @@ impl KernelHttpClient {
             .json(req)
             .send()
             .await
-            .map_err(|e| AppError::OllamaError(format!("event/create request: {e}")))?;
+            .map_err(|e| Self::map_send_err(&conn.base_url, "event/create request", e))?;
         let status = res.status();
         let text = res
             .text()
@@ -282,7 +346,7 @@ impl KernelHttpClient {
         command: &str,
         params: serde_json::Value,
     ) -> Result<serde_json::Value, AppError> {
-        if !Self::probe_health(&conn.base_url).await {
+        if !Self::ensure_healthy(conn).await {
             return Err(Self::offline_err());
         }
         let res = conn
@@ -294,7 +358,7 @@ impl KernelHttpClient {
             }))
             .send()
             .await
-            .map_err(|e| AppError::OllamaError(format!("bridge/dispatch request: {e}")))?;
+            .map_err(|e| Self::map_send_err(&conn.base_url, "bridge/dispatch request", e))?;
         let status = res.status();
         let text = res
             .text()
@@ -311,7 +375,7 @@ impl KernelHttpClient {
         conn: &KernelConnection,
         role_id: &str,
     ) -> Result<(), AppError> {
-        if !Self::probe_health(&conn.base_url).await {
+        if !Self::ensure_healthy(conn).await {
             return Err(Self::offline_err());
         }
         let url = format!("{}/role/load", conn.base_url);
@@ -321,7 +385,7 @@ impl KernelHttpClient {
             .json(&serde_json::json!({ "role_id": role_id }))
             .send()
             .await
-            .map_err(|e| AppError::OllamaError(format!("role/load request: {e}")))?;
+            .map_err(|e| Self::map_send_err(&conn.base_url, "role/load request", e))?;
         let status = res.status();
         if status.is_success() {
             Ok(())
@@ -336,7 +400,7 @@ impl KernelHttpClient {
         role_id: &str,
         scene_id: Option<&str>,
     ) -> Result<RoleSnapshot, AppError> {
-        if !Self::probe_health(&conn.base_url).await {
+        if !Self::ensure_healthy(conn).await {
             return Err(Self::offline_err());
         }
         let mut req_builder = conn
@@ -349,7 +413,7 @@ impl KernelHttpClient {
         let res = req_builder
             .send()
             .await
-            .map_err(|e| AppError::OllamaError(format!("role_snapshot request: {e}")))?;
+            .map_err(|e| Self::map_send_err(&conn.base_url, "role_snapshot request", e))?;
         let status = res.status();
         let text = res
             .text()
@@ -369,7 +433,7 @@ impl KernelHttpClient {
         limit: u32,
         offset: u32,
     ) -> Result<Vec<SessionMeta>, AppError> {
-        if !Self::probe_health(&conn.base_url).await {
+        if !Self::ensure_healthy(conn).await {
             return Err(Self::offline_err());
         }
         let res = conn
@@ -383,7 +447,7 @@ impl KernelHttpClient {
             ])
             .send()
             .await
-            .map_err(|e| AppError::OllamaError(format!("chat/sessions request: {e}")))?;
+            .map_err(|e| Self::map_send_err(&conn.base_url, "chat/sessions request", e))?;
         let status = res.status();
         let text = res
             .text()
@@ -400,7 +464,7 @@ impl KernelHttpClient {
 
     /// Tell the kernel process to re-read LLM settings from canonical DB.
     pub async fn reload_llm_via_http(conn: &KernelConnection) -> Result<(), AppError> {
-        if !Self::probe_health(&conn.base_url).await {
+        if !Self::ensure_healthy(conn).await {
             return Err(Self::offline_err());
         }
         let res = conn
@@ -409,7 +473,7 @@ impl KernelHttpClient {
             .json(&serde_json::json!({}))
             .send()
             .await
-            .map_err(|e| AppError::OllamaError(format!("llm/reload request: {e}")))?;
+            .map_err(|e| Self::map_send_err(&conn.base_url, "llm/reload request", e))?;
         let status = res.status();
         if status.is_success() {
             Ok(())
@@ -425,7 +489,7 @@ impl KernelHttpClient {
         limit: u32,
         offset: u32,
     ) -> Result<Vec<StoredMessage>, AppError> {
-        if !Self::probe_health(&conn.base_url).await {
+        if !Self::ensure_healthy(conn).await {
             return Err(Self::offline_err());
         }
         let res = conn
@@ -438,7 +502,7 @@ impl KernelHttpClient {
             ])
             .send()
             .await
-            .map_err(|e| AppError::OllamaError(format!("chat/messages request: {e}")))?;
+            .map_err(|e| Self::map_send_err(&conn.base_url, "chat/messages request", e))?;
         let status = res.status();
         let text = res
             .text()
@@ -457,7 +521,7 @@ impl KernelHttpClient {
         conn: &KernelConnection,
         op: &oclive_kernel_host::service::ChatStorageProxyOp,
     ) -> Result<serde_json::Value, AppError> {
-        if !Self::probe_health(&conn.base_url).await {
+        if !Self::ensure_healthy(conn).await {
             return Err(Self::offline_err());
         }
         let res = conn
@@ -466,7 +530,7 @@ impl KernelHttpClient {
             .json(op)
             .send()
             .await
-            .map_err(|e| AppError::OllamaError(format!("chat/storage request: {e}")))?;
+            .map_err(|e| Self::map_send_err(&conn.base_url, "chat/storage request", e))?;
         let status = res.status();
         let text = res
             .text()

@@ -12,19 +12,19 @@ Same model as [PLUGIN_V1.md](PLUGIN_V1.md): **v1 uses compile‑time enums** sel
 
 ## Host aggregation
 
-- **`PluginHost`**: holds `Arc<dyn Trait>` per backend and dispatches by enum — [`src-tauri/src/domain/plugin_host.rs`](../../src-tauri/src/domain/plugin_host.rs). **Remote** slots use the HTTP client under [`src-tauri/src/infrastructure/remote_plugin/`](../../src-tauri/src/infrastructure/remote_plugin/) when `OCLIVE_REMOTE_*` URLs are set. **Directory** slots call [`DirectoryPluginRuntime::ensure_rpc_url`](../../src-tauri/src/infrastructure/directory_plugins/runtime.rs) to lazily spawn a child, then reuse the same HTTP client stack.
+- **`PluginHost`**: holds `Arc<dyn Trait>` per backend and dispatches by enum — [`crates/oclive_kernel_host/src/domain/ports/plugin_host.rs`](../../crates/oclive_kernel_host/src/domain/ports/plugin_host.rs). **Remote** slots use the HTTP client under [`src-tauri/src/infrastructure/remote_plugin/`](../../src-tauri/src/infrastructure/remote_plugin/) when `OCLIVE_REMOTE_*` URLs are set. **Directory** slots call [`DirectoryPluginRuntime::ensure_rpc_url`](../../src-tauri/src/infrastructure/directory_plugins/runtime.rs) to lazily spawn a child, then reuse the same HTTP client stack.
 - **`ResolvedRolePlugins`**: `PluginHost::resolve_for_role(role)` resolves **memory / emotion / event / prompt / llm / agent** once per role and is **reused for a whole `send_message` / `RoleManager` turn** to avoid repeated matching.
 
 ## Rust traits and source files
 
 | Capability | Trait / type | Default impl | Source |
 |------------|--------------|--------------|--------|
-| Memory ranking / context | `MemoryRetrieval` | `BuiltinMemoryRetrieval`, `BuiltinMemoryRetrievalV2` | `src-tauri/src/domain/memory_retrieval.rs` |
-| User‑sentence emotion | `UserEmotionAnalyzer` | `BuiltinUserEmotionAnalyzer`, … | `src-tauri/src/domain/user_emotion_analyzer.rs` |
-| Event impact | `EventEstimator` | `BuiltinEventEstimator`, … | `src-tauri/src/domain/event_estimator.rs` |
-| Prompt assembly | `PromptAssembler` | `BuiltinPromptAssembler`, … | `src-tauri/src/domain/prompt_assembler.rs` |
+| Memory ranking / context | `MemoryRetrieval` | `BuiltinMemoryRetrieval`, `BuiltinMemoryRetrievalV2` | `crates/oclive_kernel_runtime/src/domain/memory_retrieval.rs` |
+| User‑sentence emotion | `UserEmotionAnalyzer` | `BuiltinUserEmotionAnalyzer`, … | `crates/oclive_kernel_runtime/src/domain/user_emotion_analyzer.rs` |
+| Event impact | `EventEstimator` | `BuiltinEventEstimator`, … | `crates/oclive_kernel_host/src/domain/event_estimator.rs` |
+| Prompt assembly | `PromptAssembler` | `BuiltinPromptAssembler`, … | `crates/oclive_kernel_runtime/src/domain/prompt_assembler.rs` |
 | LLM | `LlmClient` (`plugin_backends.llm`: `ollama` / `remote` / `directory`) | Injected `OllamaClient`; `remote` when `OCLIVE_REMOTE_LLM_URL` set; **`directory`** uses **`directory_plugins.llm`** URL (see [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)); else built‑in fallback | `src-tauri/src/infrastructure/llm.rs`, `remote_plugin/` |
-| Agent | `AgentProvider` (`builtin` / `remote` / `directory`) | `BuiltinReActAgent`; `directory` needs `directory_plugins.agent`; MCP roots under `app_data_dir` | `src-tauri/src/domain/agent.rs`, `mcp_client.rs` |
+| Agent | `AgentProvider` (`builtin` / `remote` / `directory`) | `BuiltinReActAgent`; `directory` needs `directory_plugins.agent`; MCP roots under `app_data_dir` | `crates/oclive_kernel_host/src/domain/agent.rs`, `mcp_client.rs` |
 | Long‑term memory persistence | `MemoryRepository` | SQLite | `domain/repository.rs`, `infrastructure/repositories` |
 | Policies | `EmotionPolicy`, … | `Default*` | `domain/policy.rs`, state loading |
 
@@ -34,7 +34,7 @@ Same model as [PLUGIN_V1.md](PLUGIN_V1.md): **v1 uses compile‑time enums** sel
 
 - **`AppState::resolved_plugins_for(role)`**: resolves all six subsystems; **`chat_engine` prefers this** — [`src-tauri/src/state/mod.rs`](../../src-tauri/src/state/mod.rs).
 - **`memory_retrieval_for` / …**: single‑slot helpers still parse full `role.plugin_backends` (including **`directory`** ids).
-- **`RoleManager`**: holds [`ResolvedRolePlugins`](../../src-tauri/src/domain/plugin_host.rs); see [`role_manager.rs`](../../src-tauri/src/domain/role_manager.rs).
+- **`RoleManager`**: holds [`ResolvedRolePlugins`](../../crates/oclive_kernel_host/src/domain/ports/plugin_host.rs); see [`role_manager.rs`](../../crates/oclive_kernel_host/src/domain/role_manager.rs).
 
 ## Frontend
 

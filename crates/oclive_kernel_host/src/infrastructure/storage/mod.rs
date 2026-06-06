@@ -29,6 +29,7 @@ pub struct RoleStorage {
 mod blueprint;
 mod role;
 mod scene;
+mod user_identities;
 
 /// Matches values injected by oclive-launcher: `ollama` / `remote` (case-insensitive).
 #[must_use]
@@ -160,6 +161,8 @@ mod tests {
             scene_text_cache: std::sync::Arc::new(parking_lot::RwLock::new(
                 std::collections::HashMap::new(),
             )),
+            user_identity_catalog: None,
+            pack_reply_post_processor_config: Default::default(),
         };
 
         let role_dir = temp_dir.path().join("test_role");

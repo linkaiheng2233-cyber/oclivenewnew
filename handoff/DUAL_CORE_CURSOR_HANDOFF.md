@@ -107,7 +107,7 @@
 
 ## 四、调度器与降级机制
 
-**`DualPipelineRunner`**（规划模块：`src-tauri/src/domain/chat_engine/dual_pipeline.rs`）：
+**`DualPipelineRunner`**（规划模块：`crates/oclive_kernel_host/src/domain/dual_pipeline.rs`）：
 
 1. 若未启用双核 → 仅跑 **Stable**（= 今日）。
 2. 启用双核 → **优先 Experimental**：
@@ -178,11 +178,11 @@ flowchart TD
 
 | 区域 | 路径 |
 |------|------|
-| 编排 | `src-tauri/src/domain/chat_engine/mod.rs`、`turn_pipeline.rs` |
-| 槽位 | `src-tauri/src/domain/slot_resolver.rs` |
+| 编排 | `crates/oclive_kernel_host/src/domain/chat_engine/mod.rs`、`turn_pipeline.rs` |
+| 槽位 | `crates/oclive_kernel_host/src/domain/slot_resolver.rs` |
 | 蓝图 | `crates/oclive_validation/src/blueprint_v2.rs` |
 | 契约 | `crates/oclive_kernel_contracts/` |
-| Remote 降级参考 | `src-tauri/src/domain/chat_engine/`、`remote_fallback` 相关、`api/settings.rs` |
+| Remote 降级参考 | `crates/oclive_kernel_host/src/domain/chat_engine/`、`remote_fallback` 相关、`api/settings.rs` |
 | CLI | `crates/oclive-cli/` |
 
 ---

@@ -1,4 +1,8 @@
 //! Chat command backend: HTTP kernel attach vs in-process [`ConversationStore`].
+//!
+//! **Desktop production** always routes through [`ChatBackend::Http`] (loopback kernel is the
+//! single authoritative writer). [`ChatBackend::Local`] and the in-memory [`AppState`] shadow
+//! exist for tests and alternate hosts only — they must not be treated as authoritative writers.
 
 use crate::error::AppError;
 use crate::infrastructure::chat_storage::{SessionMeta, StoredMessage};
@@ -12,6 +16,7 @@ use tauri::{AppHandle, Manager};
 
 pub enum ChatBackend {
     Http(SharedKernelConnection),
+    /// In-process shadow store — **non-authoritative** on desktop; kernel HTTP owns writes.
     Local(Arc<AppState>),
 }
 
@@ -21,6 +26,11 @@ impl ChatBackend {
         if let Some(conn) = app.try_state::<SharedKernelConnection>() {
             Self::Http(Arc::clone(&conn))
         } else {
+            // Desktop `.setup` always registers `SharedKernelConnection`; Local is test-only.
+            debug_assert!(
+                cfg!(test),
+                "desktop shell should use Http backend; Local AppState is not an authoritative writer"
+            );
             Self::Local(state)
         }
     }
@@ -42,6 +52,10 @@ impl ChatBackend {
                 }
             }
             Self::Local(state) => {
+                debug_assert!(
+                    cfg!(test),
+                    "Local chat backend must not be used for authoritative desktop writes"
+                );
                 crate::domain::chat_engine::process_message(state.as_ref(), req).await
             }
         }

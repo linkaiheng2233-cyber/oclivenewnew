@@ -13,6 +13,7 @@
 | **Breaking 变更流程**（定义、六步、兼容层、PR/迁移模板） | **[../../handoff/BREAKING_CHANGE_PROCESS.md](../../handoff/BREAKING_CHANGE_PROCESS.md)** |
 | **关键路径交接笔记**（Bus factor：`process_message`、`PluginHost`、错误码、DB、测试/CI 等入口） | **[../../handoff/BUS_FACTOR_NOTES.md](../../handoff/BUS_FACTOR_NOTES.md)** |
 | **`handoff/` 活跃 vs 归档**（closure、旧周报、编号计划已迁入 `archive/`） | **[../../handoff/README.md](../../handoff/README.md)** · 认知清单 **[../../handoff/04_4.6_PROJECT_TRUTH_CHECKLIST.md](../../handoff/04_4.6_PROJECT_TRUTH_CHECKLIST.md)** |
+| **命名规范与 canonical import**（概念 SSOT、crate 边界、禁止别名） | **[../NAMING_CONVENTIONS.md](../NAMING_CONVENTIONS.md)** · [English summary](../../creator-docs-en/getting-started/NAMING_CONVENTIONS.md) · crate 速查 **[../../crates/README.md](../../crates/README.md)** §Canonical import |
 
 ---
 
@@ -22,7 +23,7 @@
 
 | 角色 | 文档 |
 |------|------|
-| **普通用户**（安装 → 导入角色包 → 对话；不写包/插件） | **[USER_MANUAL.md](USER_MANUAL.md)**（[English](../../creator-docs-en/getting-started/USER_MANUAL.md)） |
+| **普通用户**（安装 → 导入角色包 → 对话；不写包/插件） | **[USER_MANUAL.md](USER_MANUAL.md)**（[English](../../creator-docs-en/getting-started/USER_MANUAL.md)）— 含 **§3.4 用户身份**、**§3.5 回复后处理** 说明 |
 | **角色包创作者** | **[../role-pack/CREATOR_LEARNING_PATH.md](../role-pack/CREATOR_LEARNING_PATH.md)**（[English](../../creator-docs-en/role-pack/CREATOR_LEARNING_PATH.md)） |
 | **插件作者** | **[../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md](../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)**（[English](../../creator-docs-en/plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)） |
 | **内核 / 硬件集成方** | **[KERNEL_INTEGRATOR_LEARNING_PATH.md](KERNEL_INTEGRATOR_LEARNING_PATH.md)**（[English](../../creator-docs-en/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md)） |
@@ -50,6 +51,7 @@
 | **`slot_registry` / 六槽编排契约** | **[../plugin-and-architecture/PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)** · 蓝图字段 **[ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)** · 编号 **[OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)** |
 | Remote HTTP JSON-RPC | **[../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)** |
 | 角色包磁盘格式 / `schema_version` | **[../role-pack/ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)** · **[../role-pack/PACK_VERSIONING.md](../role-pack/PACK_VERSIONING.md)** |
+| **用户身份模板 & 回复后处理（v0.3）** | **[../rfc/RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md](../rfc/RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md)** · Phase 2 **[../../handoff/USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md](../../handoff/USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md)** |
 | **角色包 vs 蓝图职责边界** | **[../../handoff/ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md)** · ROLE_PACK_SPEC §0 · SETTINGS_REFERENCE §零 |
 | **v1 → v2 蓝图迁移（v1 已废弃，仅迁移用）** | **[../role-pack/V1_TO_V2_MIGRATION.md](../role-pack/V1_TO_V2_MIGRATION.md)**（[English](../../creator-docs-en/role-pack/V1_TO_V2_MIGRATION.md)） |
 | **v2 → v3 蓝图迁移（runtime_config / 可选双核）** | **[../role-pack/V2_TO_V3_MIGRATION.md](../role-pack/V2_TO_V3_MIGRATION.md)**（[English](../../creator-docs-en/role-pack/V2_TO_V3_MIGRATION.md)） |
@@ -70,6 +72,7 @@
 | **已有 v2 蓝图：迁到 v3（runtime_config / 双核，约 10 分钟）** | **[../role-pack/V2_TO_V3_MIGRATION.md](../role-pack/V2_TO_V3_MIGRATION.md)**（[English](../../creator-docs-en/role-pack/V2_TO_V3_MIGRATION.md)） |
 | **插件作者：目录 / Remote / 市场（学习路径）** | **[../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md](../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)**（[English](../../creator-docs-en/plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)） |
 | **LLM 目录插件 + llama.cpp（不经 Ollama，按角色切换）** | **[examples/directory-plugin-llamacpp/README.md](../../examples/directory-plugin-llamacpp/README.md)**（[English](../../examples/directory-plugin-llamacpp/README.en.md)） |
+| **改 Rust 内核：该动哪个 crate？** | **[../../crates/README.md](../../crates/README.md)** |
 | **内核 / 硬件集成方：脚手架到设备（学习路径）** | **[KERNEL_INTEGRATOR_LEARNING_PATH.md](KERNEL_INTEGRATOR_LEARNING_PATH.md)**（[English](../../creator-docs-en/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md)） |
 | **项目现状（版本、交付面、变更日志入口，短快照）** | **[PROJECT_CURRENT_STATUS.md](PROJECT_CURRENT_STATUS.md)** |
 | **对齐进度与目标（一页：摘要 + 按用途分类的文档地图）** | **[PROJECT_STATUS_AND_ALIGNMENT.md](PROJECT_STATUS_AND_ALIGNMENT.md)** |
@@ -177,7 +180,7 @@
 
 1. [../plugin-and-architecture/EXTENSION_POINTS.md](../plugin-and-architecture/EXTENSION_POINTS.md)  
 2. [../plugin-and-architecture/HOW_TO_REPLACE_MODULES.md](../plugin-and-architecture/HOW_TO_REPLACE_MODULES.md)  
-3. 源码：`src-tauri/src/domain/plugin_host.rs`、`src-tauri/src/infrastructure/remote_plugin/`、**`src-tauri/src/infrastructure/directory_plugins/`**（目录插件扫描与懒启动）  
+3. 源码：`crates/oclive_kernel_host/src/domain/plugin_host/`、`crates/oclive_kernel_host/src/infrastructure/remote_plugin/`、**`crates/oclive_kernel_host/src/infrastructure/directory_plugins/`**（目录插件扫描与懒启动）  
 4. 集成烟测（`PluginHost::resolve_for_role` + `builtin_v2` 枚举）：[`src-tauri/tests/plugin_backends_v2_resolve.rs`](../../src-tauri/tests/plugin_backends_v2_resolve.rs)（`cargo test --test plugin_backends_v2_resolve`）
 
 ---

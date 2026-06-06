@@ -125,6 +125,21 @@ impl RemotePluginHttpConfig {
             bearer_token,
         }
     }
+
+    /// Role pack `reply_post_processor.remote.url` endpoint.
+    #[must_use]
+    pub fn for_reply_post_processor_remote(url: &str, timeout_ms: Option<u32>) -> Option<Self> {
+        let t = url.trim();
+        if t.is_empty() {
+            return None;
+        }
+        let ms = timeout_ms.unwrap_or(8_000).clamp(500, 120_000) as u64;
+        Some(Self {
+            endpoint: t.to_string(),
+            timeout: Duration::from_millis(ms),
+            bearer_token: None,
+        })
+    }
 }
 
 #[cfg(test)]

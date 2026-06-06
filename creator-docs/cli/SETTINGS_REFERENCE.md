@@ -1,6 +1,6 @@
 # 蓝图与系统配置参考（SETTINGS_REFERENCE）
 
-> **蓝图 `pipeline.ocblueprint` 是系统配置的唯一来源。** 下列字段为**蓝图 / 宿主管理员**专属，**不应**由初级创作者在「角色包」视图中修改。角色身份与人格见 **[ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) §0** · 职责边界 **[handoff/ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md)**。
+> **蓝图文件 `pipeline.ocblueprint`** 是系统配置的唯一来源（**不以** `steps[]` 作主路径调度）。下列字段为**蓝图 / 宿主管理员**专属，**不应**由初级创作者在「角色包」视图中修改。角色身份与人格见 **[ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) §0** · 职责边界 **[handoff/ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md)**。
 
 ## 零、蓝图专属字段（非角色包）
 
@@ -58,7 +58,7 @@
 本文档描述 **桌面宿主（Tauri）** 与 **`oclive-cli` 脚手架** 共用的配置语义。单一事实来源以源码为准：
 
 - 枚举与结构体：[`src-tauri/src/models/plugin_backends.rs`](../../src-tauri/src/models/plugin_backends.rs)
-- 解析与绑定：[`src-tauri/src/domain/plugin_host.rs`](../../src-tauri/src/domain/plugin_host.rs)
+- 解析与绑定：[`crates/oclive_kernel_host/src/domain/ports/plugin_host.rs`](../../crates/oclive_kernel_host/src/domain/ports/plugin_host.rs)
 - 协议与表格：[`creator-docs/plugin-and-architecture/PLUGIN_V1.md`](../plugin-and-architecture/PLUGIN_V1.md)
 
 **标准 JSON 无注释**：说明性文字请用 **`_` 前缀的键**（加载时忽略），或写在包外文档。`oclive-cli` 生成的示例包使用 `_comment_*` 键解释各槽。
@@ -71,12 +71,12 @@
 
 | 字段 | 门面 trait（编排入口） | 常用内置实现（进程内） |
 |------|-------------------------|-------------------------|
-| `memory` | [`MemoryRetrieval`](../../src-tauri/src/domain/memory_retrieval.rs) | 默认 `MemoryBackend::Builtin` |
+| `memory` | [`MemoryRetrieval`](../../crates/oclive_kernel_runtime/src/domain/memory_retrieval.rs) | 默认 `MemoryBackend::Builtin` |
 | `emotion` | 用户情绪分析（见 `plugin_host` / `EmotionAnalyzer`） | `EmotionBackend::Builtin` |
 | `event` | 事件影响估计（`EventEstimator`） | `EventBackend::Builtin` |
 | `prompt` | `PromptAssembler` / `PromptBuilder` | `PromptBackend::Builtin` |
 | `llm` | `LlmClient` | **`LlmBackend::Ollama`**（默认本地客户端；**无 `builtin` 字面量**） |
-| `agent` | [`AgentProvider`](../../src-tauri/src/domain/agent.rs) | `AgentBackend::Builtin` |
+| `agent` | [`AgentProvider`](../../crates/oclive_kernel_host/src/domain/agent.rs) | `AgentBackend::Builtin` |
 
 省略整段 `plugin_backends` 时：记忆 / 情绪 / 事件 / Prompt / Agent 为 **`builtin`**，**`llm` 为 `ollama`**（见 PLUGIN_V1 示例）。
 

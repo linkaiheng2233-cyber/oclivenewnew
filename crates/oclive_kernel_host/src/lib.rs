@@ -9,7 +9,7 @@ pub mod command_error;
 pub mod domain;
 pub mod env_flags;
 pub mod error {
-    pub use oclive_kernel_runtime::error::*;
+    pub use oclive_kernel_types::error::*;
 }
 pub mod http_api;
 pub mod infrastructure;

@@ -172,6 +172,8 @@ mod tests {
             mutable_personality: "",
             reply_quality_anchor: effective_reply_quality_anchor(&role),
             previous_complex_emotion_narrative_hint: "",
+            user_identity_template: "",
+            user_identity_id: "",
         };
         let a = BuiltinPromptAssembler.build_prompt(&input).expect("prompt");
         let b = BuiltinPromptAssemblerV2

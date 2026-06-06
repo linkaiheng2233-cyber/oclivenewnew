@@ -78,6 +78,14 @@ Treat the in-app shortcut overlay as authoritative.
 - **Scroll up** in the thread; if **“older messages”** blocks exist, expand per UI hints.  
 - Limits depend on product settings and scene.
 
+### 3.4 User identity (v0.3)
+
+When a role pack includes **`user_identities/`** (e.g. `mumu`), open the **debug panel** (**Ctrl+Shift+D**) → **Runtime** section → **User identity** dropdown to switch who the user is in the prompt (e.g. “classmate”). Takes effect on the **next** message; independent of the **Relation** dropdown.
+
+### 3.5 Reply post-processor (creators · off by default)
+
+Optional text shaping after the LLM reply (`config.json` → `reply_post_processor`). **Disabled by default**; when enabled, the debug runtime panel shows a read-only status line. See [ROLE_PACK_SPEC §9.7](../role-pack/ROLE_PACK_SPEC.md).
+
 ---
 
 ## 4. Settings

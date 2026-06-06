@@ -1,10 +1,15 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
+  getUserIdentityState,
+  OCLIVE_DEFAULT_IDENTITY_SENTINEL,
   OCLIVE_DEFAULT_RELATION_SENTINEL,
   setEvolutionFactor,
+  setSceneUserIdentity,
+  setUserIdentity,
   setUserRelation,
+  type UserIdentityStateResponse,
 } from '../../api'
 import { useAppToast } from '../../composables/useAppToast'
 import { hostEventBus } from '../../lib/hostEventBus'
@@ -13,12 +18,97 @@ import { useUiStore } from '../../stores/uiStore'
 import { buildRelationDropdownOptions } from '../../utils/relationOptions'
 import HelpHint from '../shared/HelpHint.vue'
 
-const { t } = useI18n()
+const { t, te } = useI18n()
 const { showToast } = useAppToast()
 const roleStore = useRoleStore()
 const uiStore = useUiStore()
 const localFactor = ref(roleStore.roleInfo.eventImpactFactor)
 const busy = ref(false)
+const identityState = ref<UserIdentityStateResponse | null>(null)
+
+const identityRows = computed(() => {
+  const rows = identityState.value?.identities ?? []
+  if (!rows.length)
+    return []
+  const defaultId = identityState.value?.default_identity_id ?? ''
+  const defaultLabel = rows.find(r => r.id === defaultId)?.display_name ?? defaultId
+  return [
+    { id: OCLIVE_DEFAULT_IDENTITY_SENTINEL, name: t('roleRuntime.identityFollowDefault', { name: defaultLabel || '—' }) },
+    ...rows.map(r => ({ id: r.id, name: r.display_name || r.id })),
+  ]
+})
+
+const identitySelectValue = computed(() => {
+  if (!identityState.value)
+    return ''
+  if (identityState.value.use_manifest_default)
+    return OCLIVE_DEFAULT_IDENTITY_SENTINEL
+  return identityState.value.current_identity_id
+})
+
+const postProcessorVisible = computed(() => true)
+
+const postProcessorStatusText = computed(() => {
+  const info = roleStore.roleInfo
+  if (!info.replyPostProcessorEnabled) {
+    return t('roleRuntime.postProcessorOff')
+  }
+  const backendKey = `roleRuntime.backend${info.replyPostProcessorBackend.charAt(0).toUpperCase()}${info.replyPostProcessorBackend.slice(1)}`
+  const backendLabel = te(backendKey) ? t(backendKey) : info.replyPostProcessorBackend
+  const profile = info.replyPostProcessorProfile ?? '—'
+  return t('roleRuntime.postProcessorOn', { backend: backendLabel, profile })
+})
+
+async function refreshIdentityState(): Promise<void> {
+  const roleId = roleStore.currentRoleId
+  if (!roleId) {
+    identityState.value = null
+    return
+  }
+  try {
+    identityState.value = await getUserIdentityState(
+      roleId,
+      roleStore.roleInfo.identityBinding === 'per_scene' ? uiStore.sceneId : null,
+    )
+  }
+  catch {
+    identityState.value = null
+  }
+}
+
+onMounted(() => {
+  void refreshIdentityState()
+})
+
+watch(
+  () => [roleStore.currentRoleId, uiStore.sceneId, roleStore.roleInfo.identityBinding] as const,
+  () => {
+    void refreshIdentityState()
+  },
+)
+
+async function onIdentityChange(ev: Event) {
+  const next = (ev.target as HTMLSelectElement).value
+  if (next === identitySelectValue.value)
+    return
+  busy.value = true
+  try {
+    const perScene = roleStore.roleInfo.identityBinding === 'per_scene'
+    if (perScene && next !== OCLIVE_DEFAULT_IDENTITY_SENTINEL) {
+      identityState.value = await setSceneUserIdentity(roleStore.currentRoleId, uiStore.sceneId, next)
+    }
+    else {
+      identityState.value = await setUserIdentity(roleStore.currentRoleId, next)
+    }
+    await roleStore.refreshRoleInfo()
+  }
+  catch (err) {
+    showToast('error', err instanceof Error ? err.message : String(err))
+  }
+  finally {
+    busy.value = false
+  }
+}
 
 const personalitySourceLabel = computed(() =>
   roleStore.roleInfo.personalitySource === 'profile'
@@ -126,6 +216,25 @@ function openModelManager(): void {
         {{ t("roleRuntime.backendHintAfter") }}
       </p>
     </div>
+    <template v-if="identityRows.length > 0">
+      <div class="row">
+        <label for="identity-select">{{ t("roleRuntime.userIdentity") }}</label>
+        <select
+          id="identity-select"
+          class="select"
+          :disabled="busy"
+          :value="identitySelectValue"
+          @change="onIdentityChange"
+        >
+          <option v-for="r in identityRows" :key="r.id" :value="r.id">
+            {{ r.name || r.id }}
+          </option>
+        </select>
+      </div>
+      <p v-if="postProcessorVisible" class="sub post-processor-status">
+        {{ postProcessorStatusText }}
+      </p>
+    </template>
     <template v-if="roleStore.roleInfo.userRelations.length > 0">
       <div class="row">
         <label for="rel-select">{{ t("roleRuntime.relation") }}</label>

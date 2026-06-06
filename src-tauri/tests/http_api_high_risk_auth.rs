@@ -72,7 +72,11 @@ async fn high_risk_routes_bridge_token_auth_matrix() {
         } else {
             Body::empty()
         };
-        let res = app.clone().oneshot(req.body(body).unwrap()).await.expect("oneshot");
+        let res = app
+            .clone()
+            .oneshot(req.body(body).unwrap())
+            .await
+            .expect("oneshot");
         assert_eq!(
             res.status(),
             StatusCode::UNAUTHORIZED,

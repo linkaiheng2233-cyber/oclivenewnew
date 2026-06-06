@@ -44,13 +44,13 @@ async fn concurrent_turns_same_srid_both_persist_stm() {
         role_id: role_id.to_string(),
         user_message: "并发消息A".to_string(),
         scene_id: None,
-        session_id: None,
+        ..Default::default()
     };
     let req_b = SendMessageRequest {
         role_id: role_id.to_string(),
         user_message: "并发消息B".to_string(),
         scene_id: None,
-        session_id: None,
+        ..Default::default()
     };
 
     let state_a = Arc::clone(&state);

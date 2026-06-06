@@ -4,8 +4,17 @@
 
 ## [Unreleased]
 
+（下一发版条目写在此处。）
+
+---
+
+## [0.3.0] - 2026-06-07
+
+**桌面宿主 `0.3.0`** · **VS Code 扩展 `0.3.0`** · **`SendMessageResponse.schema` 14**
+
 ### Breaking
 
+- **`SendMessageResponse.schema`** 升至 **14**：可选字段 `raw_reply`（仅当请求 `include_raw_reply: true` 且 post-processor 改变文本时返回）。
 - **`high_risk_grants.json`**：仅接受规范权限键（`mcp:http`、`mcp:stdio`、`process:spawn`、`network:*`）。旧版 `mcp_http` / `directory_plugin_process_spawn` 等别名不再读取；请手动迁移文件后重授。
 
 ### Changed
@@ -15,6 +24,8 @@
 
 ### Added
 
+- **User Identity & Reply Post-Processor Phase 2（收尾）**：HostProfile `[user_identity]` / `[post_process]` 合并；remote/directory 后处理后端；HTTP `/user_identity/*`；桌面与 VS Code 身份切换；`RoleInfo` / `GET /role_info` 后处理只读字段；调试面板后处理状态行。见 [handoff/USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md](handoff/USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md)。
+- **文档**：ROLE_PACK_SPEC §1.1 / §9.7、架构总览「正交能力单元」、USER_MANUAL §3.4–3.5、RFC Phase 2 验收勾选。
 - **遗忘曲线与关系演化（`config.json`）**：艾宾浩斯长期记忆衰减（`memory.decay_halflife_days`）；重复提及强化（`mention_count` + `reinforcement_factor`）；沉浸模式下亲密值疏远与关系阶段降级（`relation.*`）；虚拟时间流速（`time.speed`）与首次沉浸对齐 `life_schedule` 起点；强化记忆微幅推动七维人格 / 可变档案「记忆塑造」。规范见 [ROLE_PACK_SPEC §9](creator-docs/role-pack/ROLE_PACK_SPEC.md)。
 - **双核质量验收补强**：OOCP 新增可选 **S14**（experimental 合法 DAG 成功路径）；`oocp-test-suite` CI job 现以 `--features dual_core` 构建并执行 `run.mjs --include-dual-core`（覆盖 S13 降级 + S14 成功路径）；新增 `src-tauri/tests/dual_core_happy_path.rs` 集成测验证 `DualPipelineRunner::run_experimental` 成功路径。
 
@@ -26,8 +37,6 @@
 - **能力探测与 UI**：`get_chat_storage_capabilities` 返回 `supports_search` / `supports_replay` / `supports_cleanup` / `backend_kind`；存储管理面板按后端动态显示搜索、清理、回放入口，并展示当前后端友好名称（i18n）。
 - **可配置项**：`config.json` 新增 `chat_storage.backend`、`chat_storage.replay_similarity_threshold`（可选，向后兼容）。
 - **开发者**：`ConversationStore` trait 扩展 `list_sessions_by_role`、`supports_*`；`replay.rs` 的 role 范围收集改走 trait 而非直接查 DB。架构见 [handoff/CHAT_STORAGE_ARCHITECTURE.md](handoff/CHAT_STORAGE_ARCHITECTURE.md)。
-
-（下一发版条目写在此处。）
 
 ---
 

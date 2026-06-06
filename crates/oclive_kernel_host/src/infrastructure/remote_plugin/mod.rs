@@ -16,6 +16,8 @@ mod llm_http;
 mod memory_http;
 mod prompt_http;
 mod remote_client;
+mod reply_post_process_directory_http;
+mod reply_post_process_http;
 
 pub use complex_emotion_directory_http::DirectoryComplexEmotionHttp;
 pub use complex_emotion_http::RemoteComplexEmotionHttp;
@@ -25,6 +27,8 @@ pub use event_http::RemoteEventEstimatorHttp;
 pub use llm_http::RemoteLlmHttp;
 pub use memory_http::RemoteMemoryRetrievalHttp;
 pub use prompt_http::RemotePromptAssemblerHttp;
+pub use reply_post_process_directory_http::DirectoryReplyPostProcessor;
+pub use reply_post_process_http::RemoteReplyPostProcessorHttp;
 
 use crate::domain::event_estimator::{EventEstimator, RemoteEventEstimatorPlaceholder};
 use crate::domain::memory_retrieval::{MemoryRetrieval, RemoteMemoryRetrievalPlaceholder};
@@ -218,9 +222,6 @@ mod invoke_rpc_tests {
             RemoteRpcChannel::Plugin,
         )
         .unwrap_err();
-        assert!(matches!(
-            err,
-            AppError::HighRiskCapabilityNotGranted { .. }
-        ));
+        assert!(matches!(err, AppError::HighRiskCapabilityNotGranted { .. }));
     }
 }

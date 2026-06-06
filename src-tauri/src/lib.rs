@@ -14,9 +14,9 @@ pub use oclive_kernel_host::{
     init_tracing_with_log_dir, models, run_api_server, service, state, utils,
 };
 
-/// Host error bridge: core types live in `oclive_kernel_runtime`.
+/// Host error bridge: core types live in `oclive_kernel_types`.
 pub mod error {
-    pub use oclive_kernel_runtime::error::*;
+    pub use oclive_kernel_types::error::*;
 
     /// Map kernel [`AppError`] to Tauri invoke failure (orphan-safe helper).
     #[must_use]
@@ -256,6 +256,9 @@ pub fn run() {
             api::role::relation::set_user_relation,
             api::role::relation::set_scene_user_relation,
             api::role::relation::clear_scene_user_relation,
+            api::role::identity::set_user_identity,
+            api::role::identity::set_scene_user_identity,
+            api::role::identity::get_user_identity_state,
             api::role::evolution::set_evolution_factor,
             api::role::evolution::set_remote_life_enabled,
             api::role::evolution::set_role_interaction_mode,

@@ -164,6 +164,8 @@ struct PromptInputFlat<'a> {
     mutable_personality: &'a str,
     reply_quality_anchor: &'a str,
     previous_complex_emotion_narrative_hint: &'a str,
+    user_identity_template: &'a str,
+    user_identity_id: &'a str,
 }
 
 impl<'a> PromptInputSnapshot<'a> {
@@ -193,6 +195,8 @@ impl<'a> PromptInputSnapshot<'a> {
                 reply_quality_anchor: input.reply_quality_anchor,
                 previous_complex_emotion_narrative_hint: input
                     .previous_complex_emotion_narrative_hint,
+                user_identity_template: input.user_identity_template,
+                user_identity_id: input.user_identity_id,
             },
         }
     }

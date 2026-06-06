@@ -3,9 +3,7 @@
 /// Cap for manifest-role session list queries (SQL `LIMIT` + hybrid store safety `take`).
 pub(crate) const MANIFEST_SESSION_LIST_CAP: i64 = 500;
 
-use super::db::{
-    manifest_sess_glob_pattern, session_row_from_tuple, truncate_snippet, SessionRow,
-};
+use super::db::{manifest_sess_glob_pattern, session_row_from_tuple, truncate_snippet, SessionRow};
 use crate::error::{AppError, Result};
 use crate::infrastructure::db::DbManager;
 use chrono::Utc;

@@ -1,4 +1,4 @@
-﻿# 内核调试（`oclive debug`）
+# 内核调试（`oclive debug`）
 
 在工程根目录使用主仓 **`oclivenewnew`** 内核（推荐 `oclive init --kernel-source <仓库根>`）时，可逐步观察 **`process_message`** 各阶段输入/输出摘要。
 
@@ -26,4 +26,4 @@ cargo run -p oclive-cli -- debug -o . --json --message "测试"
 | `llm_generate` | 主 LLM 生成 |
 | `postprocess` | 回复后处理与 bot 情绪 |
 
-详见主仓 `src-tauri/src/domain/debug_trace.rs` 与 `chat_engine/turn_pipeline.rs`。
+详见主仓 `crates/oclive_kernel_host/src/domain/debug_trace.rs` 与 `chat_engine/turn_pipeline/`。

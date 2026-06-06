@@ -7,11 +7,14 @@ use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::Router;
 use dashmap::DashMap;
-use oclive_kernel_runtime::{resolve_api_port, DEFAULT_API_PORT, RUNTIME_API_VERSION};
+use oclive_kernel_runtime::{resolve_api_port, RUNTIME_API_VERSION};
 use serde_json::Value;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Mutex;
+
+/// Default listen port for the per-role scheduler (distinct from kernel [`DEFAULT_API_PORT`] 8420).
+const DEFAULT_SCHEDULER_PORT: u16 = 8430;
 
 const ENV_KERNEL_UPSTREAM: &str = "OCLIVE_KERNEL_UPSTREAM";
 const ENV_SCHEDULER_PORT: &str = "OCLIVE_SCHEDULER_PORT";
@@ -28,7 +31,30 @@ fn listen_port() -> u16 {
         .ok()
         .and_then(|s| s.parse().ok())
         .filter(|p| *p > 0)
-        .unwrap_or(DEFAULT_API_PORT)
+        .unwrap_or(DEFAULT_SCHEDULER_PORT)
+}
+
+fn parse_upstream_host_port(upstream: &str) -> Option<(String, u16)> {
+    let trimmed = upstream.trim().trim_end_matches('/');
+    let (scheme, rest) = trimmed
+        .strip_prefix("https://")
+        .map(|r| ("https", r))
+        .or_else(|| trimmed.strip_prefix("http://").map(|r| ("http", r)))?;
+    if let Some((host, port_str)) = rest.rsplit_once(':') {
+        if !host.is_empty() && !host.contains(']') {
+            let port = port_str.parse().ok()?;
+            return Some((host.to_string(), port));
+        }
+    }
+    let default_port = if scheme == "https" { 443 } else { 80 };
+    Some((rest.to_string(), default_port))
+}
+
+fn listen_equals_upstream(listen_host: &str, listen_port: u16, upstream: &str) -> bool {
+    let Some((up_host, up_port)) = parse_upstream_host_port(upstream) else {
+        return false;
+    };
+    listen_host == up_host && listen_port == up_port
 }
 
 #[derive(Clone)]
@@ -167,6 +193,17 @@ async fn main() {
 
     let upstream = upstream_base();
     let port = listen_port();
+    let listen_host = "127.0.0.1";
+    if listen_equals_upstream(listen_host, port, &upstream) {
+        tracing::error!(
+            target: "oclive_runtimed",
+            listen = %format!("{listen_host}:{port}"),
+            %upstream,
+            "scheduler listen address equals kernel upstream (self-proxy loop); \
+             set {ENV_SCHEDULER_PORT} or {ENV_KERNEL_UPSTREAM} to different values"
+        );
+        std::process::exit(2);
+    }
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(120))
         .build()
@@ -186,7 +223,7 @@ async fn main() {
         .fallback(proxy)
         .with_state(st);
 
-    let addr = format!("127.0.0.1:{port}");
+    let addr = format!("{listen_host}:{port}");
     tracing::info!(
         target: "oclive_runtimed",
         %addr,

@@ -1,6 +1,7 @@
 //! Pure domain logic (no `AppState`, Tauri, or SQL). Orchestration glue stays in `oclive_kernel_host` (`chat_engine::process_message`).
 
 pub mod affect_policy;
+pub mod builtin_reply_post_processor;
 pub mod chat_engine;
 pub mod chat_llm_fallback;
 pub mod chat_turn;
@@ -26,6 +27,7 @@ pub mod time_decay;
 pub mod user_emotion_analyzer;
 pub mod virtual_time;
 
+pub use builtin_reply_post_processor::{BuiltinReplyPostProcessor, PassthroughReplyPostProcessor};
 pub use emotion_analyzer::EmotionAnalyzer;
 pub use event_detector::EventDetector;
 pub use local_plugin_bridge::{

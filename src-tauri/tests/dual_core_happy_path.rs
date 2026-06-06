@@ -33,6 +33,7 @@ async fn dual_pipeline_run_experimental_happy_path_returns_ok() {
         user_message: "dual-core success integration".to_string(),
         scene_id: Some("default".to_string()),
         session_id: Some("dual-core-success-session".to_string()),
+        ..Default::default()
     };
     let mrid = req.role_id.as_str();
     let srid = "dual-core-success-session";

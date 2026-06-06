@@ -188,6 +188,8 @@ impl RoleManager {
                 mutable_personality: "",
                 reply_quality_anchor: effective_reply_quality_anchor(&self.role),
                 previous_complex_emotion_narrative_hint: "",
+                user_identity_template: "",
+                user_identity_id: "",
             })
             .expect("build_prompt");
 
@@ -294,6 +296,8 @@ mod tests {
             scene_text_cache: std::sync::Arc::new(parking_lot::RwLock::new(
                 std::collections::HashMap::new(),
             )),
+            user_identity_catalog: None,
+            pack_reply_post_processor_config: Default::default(),
         }
     }
 

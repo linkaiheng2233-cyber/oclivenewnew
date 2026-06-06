@@ -100,23 +100,25 @@
 
 > 每个文件的操作见第 5 节。完成一个阶段→验证→提交→下一阶段。
 
+> **Note (2026-06)**: Paths below live under **`crates/oclive_kernel_host/src/domain/`** (migrated from legacy `src-tauri/src/domain/`). Comment migration targets **`kernel_host`**, not the Tauri shell.
+
 ### 阶段 A：后端主链路模块顶部 `//!` 与公共 `///`
 优先级最高，是读代码的人最先看的「地图」。建议顺序：
 
-1. `src-tauri/src/domain/chat_engine/mod.rs`（主编排入口 `process_message`）
-2. `src-tauri/src/domain/chat_engine/turn_pipeline/`（`mod.rs`、`common.rs`、`co_present.rs`、`context.rs` 等）
-3. `src-tauri/src/domain/slot_runner.rs` 及 `slot_runner/llm_merge.rs`
-4. `src-tauri/src/domain/slot_resolver.rs`
-5. `src-tauri/src/domain/dual_pipeline.rs`、`dual_pipeline_steps.rs`、`dual_pipeline_registry.rs`
-6. `src-tauri/src/domain/complex_emotion.rs`、`complex_emotion_store.rs`
-7. `src-tauri/src/domain/prompt_builder.rs`、`prompt_assembler.rs`
-8. `src-tauri/src/domain/memory_retrieval.rs`、`emotion_analyzer.rs`、`event_estimator.rs`
+1. `crates/oclive_kernel_host/src/domain/chat_engine/mod.rs`（主编排入口 `process_message`）
+2. `crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/`（`mod.rs`、`common.rs`、`co_present.rs`、`context.rs` 等）
+3. `crates/oclive_kernel_host/src/domain/slot_runner.rs` 及 `slot_runner/llm_merge.rs`
+4. `crates/oclive_kernel_host/src/domain/slot_resolver.rs`
+5. `crates/oclive_kernel_host/src/domain/dual_pipeline.rs`、`dual_pipeline_steps.rs`、`dual_pipeline_registry.rs`
+6. `crates/oclive_kernel_runtime/src/domain/complex_emotion.rs`、`complex_emotion_store.rs`
+7. `crates/oclive_kernel_runtime/src/domain/prompt_builder.rs`、`prompt_assembler.rs`
+8. `crates/oclive_kernel_runtime/src/domain/memory_retrieval.rs`、`emotion_analyzer.rs`、`event_estimator.rs`
 9. `src-tauri/src/state/mod.rs`、`state/app_state_builder.rs`
-10. `src-tauri/src/domain/startup_health.rs`、`error.rs`
+10. `crates/oclive_kernel_host/src/domain/startup_health.rs`、`error.rs`
 
 ### 阶段 B：后端其余 `domain/` 与 `infrastructure/`
 - `src-tauri/src/infrastructure/**`（`db/**`、`chat_storage/**`、`mcp_client.rs`、`remote_plugin/**` 等）
-- `src-tauri/src/domain/plugin_host/**`、`agent.rs`、其余 `domain/*.rs`
+- `crates/oclive_kernel_host/src/domain/ports/plugin_host/`、`agent.rs`、其余 `domain/*.rs`
 
 ### 阶段 C：后端 API 层与其余
 - `src-tauri/src/api/**`
