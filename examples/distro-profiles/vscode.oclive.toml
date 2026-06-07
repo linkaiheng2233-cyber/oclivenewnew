@@ -17,7 +17,13 @@ complex_emotion = "off"
 [prompt]
 profile = "concise"
 
+[state_expression]
+favor_high = "更信任用户的技术判断，少寒暄"
+favor_mid  = "保持友好但不越界"
+favor_low  = "保持距离与礼貌"
+
 [memory]
+# retrieval: reserved, not parsed in v0.3
 retrieval = "light"
 
 [post_process]

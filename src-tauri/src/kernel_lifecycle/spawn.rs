@@ -1,6 +1,6 @@
 //! Spawn `oclive-kernel-server --api` with canonical cross-host env.
 
-use crate::domain::host_profile::{
+use oclive_kernel_host::domain::host_profile::{
     load_host_profile_from_env, HostProfile, ENV_DISTRO_ID, ENV_DISTRO_PROFILE,
 };
 use crate::kernel_lifecycle::connection::KernelConnection;
@@ -98,7 +98,7 @@ pub async fn spawn_kernel(
 ) -> Result<(), String> {
     let app_data = resolve_app_data_dir_for_host();
     ensure_app_data_dir(&app_data).map_err(|e| e.to_string())?;
-    crate::infrastructure::app_data_migration::ensure_canonical_app_data_ready(&app_data)
+    oclive_kernel_host::infrastructure::app_data_migration::ensure_canonical_app_data_ready(&app_data)
         .map_err(|e| e.to_string())?;
 
     let mut cmd = Command::new(&candidate.binary);

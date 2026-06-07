@@ -1,6 +1,6 @@
 //! 仓库黄金包 `roles/mumu`（v2 蓝图）可经 `RoleStorage` 加载。
 
-use oclivenewnew_tauri::infrastructure::storage::RoleStorage;
+use oclive_kernel_host::infrastructure::storage::RoleStorage;
 
 #[test]
 fn load_migrated_mumu_blueprint_pack() {

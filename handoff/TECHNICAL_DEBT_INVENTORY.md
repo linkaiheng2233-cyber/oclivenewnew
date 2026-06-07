@@ -1,6 +1,25 @@
 # Technical debt inventory
 
-**Last updated:** 2026-06-01 (freeze decision · 见末节「冻结决定」)
+**Last updated:** 2026-06-07 (Phase 2 legacy closure batch)
+
+**Verification (2026-06-07, Phase 2 closure):** `cargo check --workspace`; `cargo test --workspace --lib`; `cargo test -p oclivenewnew-tauri --tests` (Windows: `-j 1` if parallel link hits paging-file limits); `cargo clippy --workspace --all-targets --all-features -- -D warnings` (Windows: `-j 1` if needed); `npm run test:unit` (oclivenewnew); `npm run compile` (oclive-vscode).
+
+### Phase 2 (2026-06-07)
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Six-slot `none` + MODULE_NONE_SEMANTICS | **Done** | Noop backends; co-present blocks `llm`/`prompt=none` |
+| Agent remote/directory | **Done** | Host-orchestrated `agent.process` + `FallbackAgentProvider` → builtin |
+| Memory decay persist (`weight` / `accessed_at`) | **Done** | Wall-clock + immersive decay; ranked touch |
+| `HostProfile [memory].retrieval` | **Done** | `default`=8 / `light`=4 |
+| Remote LLM JSON-RPC client | **Done** | `remote_llm_jsonrpc_roundtrip.rs` |
+| Remote LLM `process_message` E2E | **Done** | `remote_llm_process_message_roundtrip.rs` |
+| dual_pipeline hints wiring | **Done** | `host_state_expression_hint` + `relation_transition_hint` |
+| pack-editor config + user_identities UI | **Done** | RolePackEditorPanel JSON sections |
+| Canonical re-export cleanup (Tauri P1) | **Done** | `src-tauri` imports → `oclive_kernel_host` / `oclive_kernel_types` |
+| Host/runtime engine re-export (P3) | **Pending** | `oclive_kernel_host::domain` still `pub use runtime::domain::*` |
+| `ExplicitUnsupportedAgentProvider` dead code | **Done** | Removed from `agent.rs` |
+| VS Code per_scene identity (`scene_set`) | **Done** | `kernelClient.setSceneUserIdentity` → `POST /user_identity/scene_set` |
 
 This file tracks **mid/long-term** engineering debt, activation criteria, and batch status. Short-term slices live in [PRODUCT_LINE_TASK_BUCKETS.md](./PRODUCT_LINE_TASK_BUCKETS.md) and [PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](./PRODUCT_AND_KERNEL_GAP_CHECKLIST.md).
 

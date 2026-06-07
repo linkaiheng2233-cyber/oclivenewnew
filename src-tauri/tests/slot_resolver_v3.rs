@@ -1,18 +1,18 @@
-//! P3：`SlotResolver` 多实例解析与 `resolved_plugins_for_session` 走 effective registry。
+//! P3：`SlotResolver` 多实例解枝与 `resolved_plugins_for_session` 走 effective registry。
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use oclive_kernel_runtime::domain::complex_emotion::ComplexEmotionInput;
 use oclive_validation::{SlotOverridePatch, SlotRegistryEntry};
-use oclivenewnew_tauri::domain::plugin_host::PluginHost;
-use oclivenewnew_tauri::domain::slot_runner::SlotRunner;
-use oclivenewnew_tauri::infrastructure::high_risk_grants::HighRiskGrantStore;
-use oclivenewnew_tauri::infrastructure::llm::LlmClient;
-use oclivenewnew_tauri::infrastructure::remote_fallback_policy::new_remote_fallback_switch;
-use oclivenewnew_tauri::infrastructure::MockLlmClient;
-use oclivenewnew_tauri::models::plugin_backends::LlmBackend;
-use oclivenewnew_tauri::models::{MemoryBackend, Role};
-use oclivenewnew_tauri::state::AppState;
+use oclive_kernel_host::domain::plugin_host::PluginHost;
+use oclive_kernel_host::domain::slot_runner::SlotRunner;
+use oclive_kernel_host::infrastructure::high_risk_grants::HighRiskGrantStore;
+use oclive_kernel_host::infrastructure::llm::LlmClient;
+use oclive_kernel_host::infrastructure::remote_fallback_policy::new_remote_fallback_switch;
+use oclive_kernel_host::infrastructure::MockLlmClient;
+use oclive_kernel_types::models::plugin_backends::LlmBackend;
+use oclive_kernel_types::models::{MemoryBackend, Role};
+use oclive_kernel_host::state::AppState;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
@@ -171,12 +171,13 @@ async fn user_cloud_provider_overrides_blueprint_ollama_llm_slot() {
         ..Default::default()
     };
     let ns = "srid-cloud-llm";
+    state.mark_user_llm_env_dirty();
     state
         .db_manager
         .upsert_app_setting("user_llm_provider", "cloud")
         .await
         .expect("provider");
-    oclivenewnew_tauri::api::llm_settings::apply_user_llm_env(&state)
+    oclive_kernel_host::domain::user_llm_env::apply_user_llm_env(&state)
         .await
         .expect("apply env");
     let eff = state.effective_plugin_backends_for_session(&role, ns);

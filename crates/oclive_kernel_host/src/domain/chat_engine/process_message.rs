@@ -9,7 +9,8 @@
 //!
 //! See [`domain/README.md`](../README.md).
 
-use crate::domain::agent::{AgentInput, AgentOutput};
+use crate::domain::agent::{AgentOutput};
+use crate::domain::agent_context::build_agent_input;
 use crate::domain::chat_engine::chat_stage::ChatStage;
 use crate::domain::chat_engine::dispatch::{dispatch_turn, resolve_dual_core_degraded};
 use crate::domain::chat_engine::message_error::ProcessMessageError;
@@ -131,14 +132,24 @@ async fn run(
             reply: String::new(),
         }
     } else {
+        let model = role.resolve_ollama_model(state.ollama_model.as_str());
+        let agent_input = build_agent_input(
+            state,
+            role.as_ref(),
+            srid,
+            scene_id.as_str(),
+            req.user_message.as_str(),
+            model.as_str(),
+            state.plugins.agent_mcp_bridge().as_ref(),
+        )
+        .await
+        .map_err(|source| ProcessMessageError::Stage {
+            stage: ChatStage::AgentProcess.as_str(),
+            source,
+        })?;
         process_message_stage(
             ChatStage::AgentProcess,
-            pl.agent.process(AgentInput {
-                role_id: mrid.to_string(),
-                session_namespace: srid.to_string(),
-                message: req.user_message.clone(),
-                model: role.resolve_ollama_model(state.ollama_model.as_str()),
-            }),
+            pl.agent.process(agent_input),
         )
         .await?
     };

@@ -1,9 +1,10 @@
+use crate::domain::agent_mcp_bridge::AgentMcpBridge;
 use crate::domain::ports::LlmClient;
-use crate::error::{AppError, Result};
+use crate::error::Result;
 use crate::infrastructure::function_call_parser::{
-    parse_from_llm_response, to_function_calling_schema, ToolSchemaInput,
+    parse_from_llm_response, to_function_calling_schema,
 };
-use crate::infrastructure::mcp_client::{McpClient, McpServerManifest, McpToolCallResult};
+use crate::infrastructure::mcp_client::{McpServerManifest, McpToolCallResult};
 use async_trait::async_trait;
 pub use oclive_kernel_contracts::AgentProvider;
 pub use oclive_kernel_types::{AgentInput, AgentOutput};
@@ -34,16 +35,16 @@ pub struct AgentDebugTrace {
 
 pub struct BuiltinReActAgent {
     llm: Arc<dyn LlmClient>,
-    mcp: Arc<McpClient>,
+    bridge: Arc<AgentMcpBridge>,
     traces: RwLock<Vec<AgentDebugTrace>>,
 }
 
 impl BuiltinReActAgent {
     #[must_use]
-    pub fn new(llm: Arc<dyn LlmClient>, mcp: Arc<McpClient>) -> Self {
+    pub fn new(llm: Arc<dyn LlmClient>, bridge: Arc<AgentMcpBridge>) -> Self {
         Self {
             llm,
-            mcp,
+            bridge,
             traces: RwLock::new(Vec::new()),
         }
     }
@@ -69,7 +70,7 @@ impl BuiltinReActAgent {
 
     #[must_use]
     pub fn list_mcp_servers(&self) -> Vec<McpServerManifest> {
-        self.mcp.list_servers()
+        self.bridge.list_mcp_servers()
     }
     /// # Errors
     ///
@@ -78,7 +79,7 @@ impl BuiltinReActAgent {
         &self,
         server_id: &str,
     ) -> Result<Vec<crate::infrastructure::mcp_client::McpToolManifest>> {
-        self.mcp.list_tools(server_id).await
+        self.bridge.list_mcp_tools(server_id).await
     }
     /// # Errors
     ///
@@ -89,77 +90,7 @@ impl BuiltinReActAgent {
         tool_name: &str,
         params: Value,
     ) -> Result<McpToolCallResult> {
-        self.mcp.call_tool(server_id, tool_name, params).await
-    }
-
-    async fn list_tools_for_server(
-        &self,
-        s: &McpServerManifest,
-    ) -> Vec<crate::infrastructure::mcp_client::McpToolManifest> {
-        match self.mcp.list_tools(s.id.as_str()).await {
-            Ok(t) => t,
-            Err(AppError::HighRiskCapabilityNotGranted { .. }) => {
-                tracing::info!(
-                    target: "oclive_plugin",
-                    "mcp server {} omitted from agent tool schema (transport not granted)",
-                    s.id
-                );
-                Vec::new()
-            }
-            Err(_) => s.tools.clone(),
-        }
-    }
-
-    async fn collect_tool_schema_inputs(&self) -> Vec<ToolSchemaInput> {
-        let mut out: Vec<ToolSchemaInput> = Vec::new();
-        for s in self.mcp.list_servers() {
-            let tools = self.list_tools_for_server(&s).await;
-            for t in tools {
-                let name = t.name.trim().to_string();
-                if name.is_empty() {
-                    continue;
-                }
-                let qualified = format!("{}::{}", s.id.trim(), name);
-                let desc = t
-                    .description
-                    .as_ref()
-                    .map(|d| format!("server={} {}", s.id, d))
-                    .or_else(|| Some(format!("server={}", s.id)));
-                out.push(ToolSchemaInput {
-                    name: qualified,
-                    description: desc,
-                });
-            }
-        }
-        out.sort_by(|a, b| a.name.cmp(&b.name));
-        out
-    }
-
-    async fn server_for_tool(&self, tool_name: &str) -> Option<McpServerManifest> {
-        if let Some((server_id, bare)) = tool_name.split_once("::") {
-            let server_id = server_id.trim();
-            let bare = bare.trim();
-            if server_id.is_empty() || bare.is_empty() {
-                return None;
-            }
-            let server = self
-                .mcp
-                .list_servers()
-                .into_iter()
-                .find(|s| s.id.trim() == server_id)?;
-            let listed = self.list_tools_for_server(&server).await;
-            if listed.iter().any(|t| t.name.trim() == bare) {
-                return Some(server);
-            }
-            return None;
-        }
-        for s in self.mcp.list_servers() {
-            let listed = self.list_tools_for_server(&s).await;
-            if listed.iter().any(|t| t.name.trim() == tool_name) {
-                return Some(s);
-            }
-        }
-        None
+        self.bridge.call_tool(server_id, tool_name, params).await
     }
 
     fn extract_final_answer(raw: &str) -> Option<String> {
@@ -190,7 +121,7 @@ impl AgentProvider for BuiltinReActAgent {
                 reply: String::new(),
             });
         }
-        let tool_schema_inputs = self.collect_tool_schema_inputs().await;
+        let tool_schema_inputs = self.bridge.list_tool_schema_inputs().await;
         if tool_schema_inputs.is_empty() {
             return Ok(AgentOutput {
                 handled: false,
@@ -259,23 +190,9 @@ impl AgentProvider for BuiltinReActAgent {
                 if tool_name.is_empty() {
                     continue;
                 }
-                let Some(server) = self.server_for_tool(tool_name.as_str()).await else {
-                    let msg = format!("tool {} has no mapped server", tool_name);
-                    trace.error = Some(msg.clone());
-                    observations.push(msg);
-                    continue;
-                };
-                let bare_tool = tool_name
-                    .split_once("::")
-                    .map(|(_, bare)| bare.trim())
-                    .unwrap_or(tool_name.as_str());
                 match self
-                    .mcp
-                    .call_tool(
-                        server.id.as_str(),
-                        bare_tool,
-                        call.function.arguments.clone(),
-                    )
+                    .bridge
+                    .call_tool_qualified(tool_name.as_str(), call.function.arguments.clone())
                     .await
                 {
                     Ok(result) => {

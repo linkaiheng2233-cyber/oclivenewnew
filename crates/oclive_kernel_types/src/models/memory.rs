@@ -16,6 +16,9 @@ pub struct Memory {
     /// Times reinforced by similar-topic mentions; defaults to 1 on new writes.
     #[serde(default = "default_mention_count")]
     pub mention_count: i32,
+    /// Last retrieval / decay anchor; legacy rows may be `None` (falls back to `created_at`).
+    #[serde(default)]
+    pub accessed_at: Option<DateTime<Utc>>,
 }
 
 fn default_mention_count() -> i32 {

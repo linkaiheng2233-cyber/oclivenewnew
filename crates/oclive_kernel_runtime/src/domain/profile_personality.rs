@@ -395,6 +395,8 @@ mod tests {
             pack_relation_config: Default::default(),
             pack_evolution_config: Default::default(),
             pack_chat_storage_config: Default::default(),
+            pack_reply_post_processor_config: Default::default(),
+            user_identity_catalog: None,
             runtime_config: None,
             pipeline_experimental: None,
             scene_ids: std::sync::Arc::from(Vec::<String>::new()),

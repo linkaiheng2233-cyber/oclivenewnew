@@ -2,6 +2,14 @@
 
 **实现状态**：宿主在 `src-tauri/src/infrastructure/remote_plugin/` 中实现 **HTTP POST + JSON-RPC 2.0** 客户端。角色包将子系统设为 `remote` 且配置环境变量后，请求发往侧车；**网络错误、HTTP 非 2xx、JSON-RPC `error`、或 result 无法反序列化**时，宿主**回退内置实现**并写日志（`target: oclive_plugin`），对话一般仍可继续。
 
+### 测试覆盖（2026-06-07）
+
+| 范围 | 状态 | 说明 |
+|------|------|------|
+| `RemoteLlmHttp` JSON-RPC 客户端 | **Done** | [`remote_llm_jsonrpc_roundtrip.rs`](../../src-tauri/tests/remote_llm_jsonrpc_roundtrip.rs) |
+| `plugin_backends.llm = remote` 经 `process_message` | **Done** | [`remote_llm_process_message_roundtrip.rs`](../../src-tauri/tests/remote_llm_process_message_roundtrip.rs) |
+| OpenAI-compatible（`OCLIVE_LLM_CLOUD_API_STYLE`） | **未覆盖** | 走 `OpenAiCompatibleLlm`，与 JSON-RPC 侧车 wire 不同 |
+
 ---
 
 ## 1. 传输层
@@ -344,6 +352,15 @@
 - **或** `result` **本身为字符串**  
 
 `generate_tag` 用于低温度短输出（立绘标签、位移意图等）。
+
+---
+
+### 4.7 `agent.process`
+
+Agent 槽 remote/directory 专用；**host-orchestrated MCP**（侧车返回 `tool_calls[]`，宿主本机执行工具后再发起下一轮 RPC）。
+
+- **环境变量**：优先 `OCLIVE_REMOTE_AGENT_URL` / `OCLIVE_REMOTE_AGENT_TOKEN` / `OCLIVE_REMOTE_AGENT_TIMEOUT_MS`；未设 Agent URL 时回退 `OCLIVE_REMOTE_PLUGIN_URL`（方法仍为 `agent.process`）。
+- **params / result / 多轮语义**：见 [AGENT_REMOTE_PROTOCOL.md](./AGENT_REMOTE_PROTOCOL.md)。
 
 ---
 

@@ -236,8 +236,8 @@ flowchart TB
 | 值 | 含义 |
 |----|------|
 | `builtin` | 进程内 [`BuiltinReActAgent`](../../crates/oclive_kernel_host/src/domain/agent.rs)；可配合 MCP 工具（配置目录见上节 `PluginHost::new` 的 app data 根） |
-| `remote` | HTTP JSON-RPC 侧车（与其它 `remote` 子系统同一套 wire 约定；需环境变量与侧车可用，否则回退/降级行为以源码为准） |
-| `directory` | 子进程 JSON-RPC，槽位 **`directory_plugins.agent`**（失败回退 builtin；见 [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)） |
+| `remote` | HTTP JSON-RPC 侧车 **`agent.process`**（`OCLIVE_REMOTE_AGENT_URL` 或回退 `OCLIVE_REMOTE_PLUGIN_URL`）；协议见 [AGENT_REMOTE_PROTOCOL.md](AGENT_REMOTE_PROTOCOL.md)；失败 **降级 builtin** |
+| `directory` | 子进程 JSON-RPC，槽位 **`directory_plugins.agent`**（失败 **降级 builtin**；见 [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)） |
 
 ---
 

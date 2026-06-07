@@ -41,6 +41,28 @@ pub struct PostProcessChainProfile {
     pub chain: PostProcessChain,
 }
 
+/// Favor-tier expression hints for Prompt status summary (optional distro overlay).
+#[derive(Debug, Clone, Default)]
+pub struct StateExpressionProfile {
+    pub favor_high: Option<String>,
+    pub favor_mid: Option<String>,
+    pub favor_low: Option<String>,
+}
+
+impl StateExpressionProfile {
+    #[must_use]
+    pub fn hint_for_favor(&self, favorability: f64) -> &str {
+        let score = favorability.clamp(0.0, 100.0);
+        if score >= 65.0 {
+            self.favor_high.as_deref().unwrap_or("")
+        } else if score >= 40.0 {
+            self.favor_mid.as_deref().unwrap_or("")
+        } else {
+            self.favor_low.as_deref().unwrap_or("")
+        }
+    }
+}
+
 /// Effective host policy for kernel runtime (process-level, v1).
 #[derive(Debug, Clone)]
 pub struct HostProfile {
@@ -51,8 +73,37 @@ pub struct HostProfile {
     pub backends_ceiling: Option<PluginBackends>,
     pub user_identity: UserIdentityProfile,
     pub post_process: PostProcessChainProfile,
+    pub state_expression: Option<StateExpressionProfile>,
     /// Path passed to child kernel via `OCLIVE_DISTRO_PROFILE` when spawned.
     pub profile_path: Option<PathBuf>,
+    /// Distro memory retrieval density (`default` = 8, `light` = 4 relevant memories).
+    pub memory_retrieval: MemoryRetrievalMode,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum MemoryRetrievalMode {
+    #[default]
+    Default,
+    Light,
+}
+
+impl MemoryRetrievalMode {
+    #[must_use]
+    pub fn parse(s: &str) -> Self {
+        if s.eq_ignore_ascii_case("light") {
+            Self::Light
+        } else {
+            Self::Default
+        }
+    }
+
+    #[must_use]
+    pub fn retrieval_limit(&self) -> usize {
+        match self {
+            Self::Default => 8,
+            Self::Light => 4,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -84,6 +135,8 @@ struct DistroProfileFile {
     prompt: Option<PromptToml>,
     user_identity: Option<UserIdentityToml>,
     post_process: Option<PostProcessToml>,
+    state_expression: Option<StateExpressionToml>,
+    memory: Option<MemoryToml>,
     plugin_backends: Option<PluginBackendsToml>,
 }
 
@@ -115,6 +168,18 @@ struct PostProcessToml {
 }
 
 #[derive(Debug, Default, Deserialize)]
+struct StateExpressionToml {
+    favor_high: Option<String>,
+    favor_mid: Option<String>,
+    favor_low: Option<String>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+struct MemoryToml {
+    retrieval: Option<String>,
+}
+
+#[derive(Debug, Default, Deserialize)]
 struct PluginBackendsToml {
     memory: Option<String>,
     emotion: Option<String>,
@@ -134,8 +199,20 @@ impl Default for HostProfile {
             backends_ceiling: None,
             user_identity: UserIdentityProfile::default(),
             post_process: PostProcessChainProfile::default(),
+            state_expression: None,
             profile_path: None,
+            memory_retrieval: MemoryRetrievalMode::Default,
         }
+    }
+}
+
+impl HostProfile {
+    #[must_use]
+    pub fn state_expression_hint(&self, favorability: f64) -> &str {
+        self.state_expression
+            .as_ref()
+            .map(|s| s.hint_for_favor(favorability))
+            .unwrap_or("")
     }
 }
 
@@ -228,6 +305,30 @@ pub fn load_host_profile_file(path: &Path) -> Result<HostProfile, String> {
             profile.post_process.chain = PostProcessChain::parse(chain);
         }
     }
+    if let Some(ref se) = file.state_expression {
+        profile.state_expression = Some(StateExpressionProfile {
+            favor_high: se
+                .favor_high
+                .as_ref()
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty()),
+            favor_mid: se
+                .favor_mid
+                .as_ref()
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty()),
+            favor_low: se
+                .favor_low
+                .as_ref()
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty()),
+        });
+    }
+    if let Some(ref mem) = file.memory {
+        if let Some(ref mode) = mem.retrieval {
+            profile.memory_retrieval = MemoryRetrievalMode::parse(mode);
+        }
+    }
     Ok(profile)
 }
 
@@ -252,6 +353,7 @@ fn parse_memory(s: Option<&str>) -> Result<MemoryBackend, String> {
             "remote" => Ok(MemoryBackend::Remote),
             "local" => Ok(MemoryBackend::Local),
             "directory" => Ok(MemoryBackend::Directory),
+            "none" => Ok(MemoryBackend::None),
             other => Err(format!("unknown memory backend: {other}")),
         },
     }
@@ -265,6 +367,7 @@ fn parse_emotion(s: Option<&str>) -> Result<EmotionBackend, String> {
             "builtin_v2" => Ok(EmotionBackend::BuiltinV2),
             "remote" => Ok(EmotionBackend::Remote),
             "directory" => Ok(EmotionBackend::Directory),
+            "none" => Ok(EmotionBackend::None),
             other => Err(format!("unknown emotion backend: {other}")),
         },
     }
@@ -278,6 +381,7 @@ fn parse_event(s: Option<&str>) -> Result<EventBackend, String> {
             "builtin_v2" => Ok(EventBackend::BuiltinV2),
             "remote" => Ok(EventBackend::Remote),
             "directory" => Ok(EventBackend::Directory),
+            "none" => Ok(EventBackend::None),
             other => Err(format!("unknown event backend: {other}")),
         },
     }
@@ -291,6 +395,7 @@ fn parse_prompt(s: Option<&str>) -> Result<PromptBackend, String> {
             "builtin_v2" => Ok(PromptBackend::BuiltinV2),
             "remote" => Ok(PromptBackend::Remote),
             "directory" => Ok(PromptBackend::Directory),
+            "none" => Ok(PromptBackend::None),
             other => Err(format!("unknown prompt backend: {other}")),
         },
     }
@@ -303,6 +408,7 @@ fn parse_llm(s: Option<&str>) -> Result<LlmBackend, String> {
             "ollama" => Ok(LlmBackend::Ollama),
             "remote" => Ok(LlmBackend::Remote),
             "directory" => Ok(LlmBackend::Directory),
+            "none" => Ok(LlmBackend::None),
             other => Err(format!("unknown llm backend: {other}")),
         },
     }
@@ -315,6 +421,7 @@ fn parse_agent(s: Option<&str>) -> Result<AgentBackend, String> {
             "builtin" => Ok(AgentBackend::Builtin),
             "remote" => Ok(AgentBackend::Remote),
             "directory" => Ok(AgentBackend::Directory),
+            "none" => Ok(AgentBackend::None),
             other => Err(format!("unknown agent backend: {other}")),
         },
     }
@@ -416,5 +523,43 @@ chain = "minimal"
         );
         assert_eq!(p.post_process.chain, PostProcessChain::Minimal);
         let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn parse_state_expression_section() {
+        let dir = std::env::temp_dir().join(format!("oclive_host_profile3_{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let file = dir.join("distro.oclive.toml");
+        let raw = r#"
+distro_id = "vscode"
+[state_expression]
+favor_high = "更信任用户的技术判断，少寒暄"
+favor_mid = "保持友好但不越界"
+favor_low = "保持距离与礼貌"
+"#;
+        let mut f = std::fs::File::create(&file).unwrap();
+        f.write_all(raw.as_bytes()).unwrap();
+        let p = load_host_profile_file(&file).unwrap();
+        let se = p.state_expression.as_ref().unwrap();
+        assert_eq!(
+            se.hint_for_favor(70.0),
+            "更信任用户的技术判断，少寒暄"
+        );
+        assert_eq!(se.hint_for_favor(50.0), "保持友好但不越界");
+        assert_eq!(se.hint_for_favor(20.0), "保持距离与礼貌");
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn desktop_and_vscode_state_expression_differ_at_same_favor() {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../examples/distro-profiles");
+        let vscode = load_host_profile_file(&root.join("vscode.oclive.toml")).unwrap();
+        let desktop = load_host_profile_file(&root.join("desktop.oclive.toml")).unwrap();
+        let favor = 70.0;
+        assert_ne!(
+            vscode.state_expression_hint(favor),
+            desktop.state_expression_hint(favor)
+        );
     }
 }

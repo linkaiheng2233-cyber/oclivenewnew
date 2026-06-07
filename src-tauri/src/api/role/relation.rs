@@ -4,12 +4,12 @@
 use super::{ensure_manifest_role_ready, get_role_info_impl};
 use crate::api::error::CommandError;
 use crate::error::AppError;
-use crate::models::dto::{
+use oclive_kernel_types::models::dto::{
     ClearSceneUserRelationRequest, RoleInfo, SetSceneUserRelationRequest, SetUserRelationRequest,
     OCLIVE_DEFAULT_RELATION_SENTINEL,
 };
-use crate::models::role::IdentityBinding;
-use crate::state::{AppState, SharedAppState};
+use oclive_kernel_types::models::role::IdentityBinding;
+use oclive_kernel_host::state::{AppState, SharedAppState};
 use tauri::State;
 pub async fn set_user_relation_impl(
     state: &AppState,

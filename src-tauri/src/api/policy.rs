@@ -1,5 +1,5 @@
 use crate::api::error::CommandError;
-use crate::state::SharedAppState;
+use oclive_kernel_host::state::SharedAppState;
 use tauri::State;
 /// # Errors
 ///

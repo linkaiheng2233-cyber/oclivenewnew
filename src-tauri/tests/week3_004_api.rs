@@ -15,19 +15,19 @@ use oclivenewnew_tauri::api::role::{
     set_user_relation_impl, switch_role_impl,
 };
 use oclivenewnew_tauri::api::scene::switch_scene_impl;
-use oclivenewnew_tauri::domain::chat_engine::process_message;
-use oclivenewnew_tauri::infrastructure::MockLlmClient;
-use oclivenewnew_tauri::models::dto::{
+use oclive_kernel_host::domain::chat_engine::process_message;
+use oclive_kernel_host::infrastructure::MockLlmClient;
+use oclive_kernel_types::models::dto::{
     CreateEventRequest, ExportChatLogsRequest, GetPluginResolutionDebugRequest, QueryEventsRequest,
     QueryMemoriesRequest, SendMessageRequest, SetEvolutionFactorRequest,
     SetSceneUserRelationRequest, SetSessionPluginBackendRequest, SetUserRelationRequest,
     SwitchSceneRequest,
 };
-use oclivenewnew_tauri::models::dto::{API_VERSION, SCHEMA_VERSION};
-use oclivenewnew_tauri::models::{
+use oclive_kernel_types::models::dto::{API_VERSION, SCHEMA_VERSION};
+use oclive_kernel_types::models::{
     role::IdentityBinding, MemoryBackend, PersonalitySource, PluginBackendSource,
 };
-use oclivenewnew_tauri::state::AppState;
+use oclive_kernel_host::state::AppState;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -74,7 +74,7 @@ async fn week3_004_load_role_and_get_info() {
 }
 
 #[tokio::test]
-async fn week3_004_get_role_info_before_runtime_fails() {
+async fn week3_004_get_role_info_auto_loads_when_runtime_missing() {
     let llm = Arc::new(MockLlmClient {
         reply: "ok".to_string(),
     });
@@ -82,8 +82,10 @@ async fn week3_004_get_role_info_before_runtime_fails() {
         .await
         .expect("state");
 
-    let err = get_role_info_impl(&state, "mumu", None).await.unwrap_err();
-    assert!(err.to_string().contains("load_role"));
+    let info = get_role_info_impl(&state, "mumu", None)
+        .await
+        .expect("get_role_info auto-loads role runtime");
+    assert_eq!(info.role_id, "mumu");
 }
 
 #[tokio::test]

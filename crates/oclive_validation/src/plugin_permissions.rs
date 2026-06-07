@@ -16,6 +16,8 @@ pub const ALLOWED: &[&str] = &[PROCESS_SPAWN, NETWORK_WILDCARD, MCP_HTTP, MCP_ST
 pub const NETWORK_GRANT_REMOTE_PLUGIN: &str = "remote:plugin";
 /// Remote LLM (`OCLIVE_REMOTE_LLM_URL`) grant `id` under `network:*`.
 pub const NETWORK_GRANT_REMOTE_LLM: &str = "remote:llm";
+/// Remote Agent (`OCLIVE_REMOTE_AGENT_URL`) grant `id` under `network:*`.
+pub const NETWORK_GRANT_REMOTE_AGENT: &str = "remote:agent";
 
 /// Validate `permissions` array: unknown values error; empty array is valid.
 ///

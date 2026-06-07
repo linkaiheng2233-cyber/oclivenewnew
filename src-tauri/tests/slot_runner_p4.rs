@@ -3,12 +3,12 @@
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use oclive_validation::SlotRegistryEntry;
-use oclivenewnew_tauri::domain::plugin_host::PluginHost;
-use oclivenewnew_tauri::domain::slot_runner::SlotRunner;
-use oclivenewnew_tauri::infrastructure::high_risk_grants::HighRiskGrantStore;
-use oclivenewnew_tauri::infrastructure::llm::{LlmClient, MockLlmClient};
-use oclivenewnew_tauri::infrastructure::remote_fallback_policy::new_remote_fallback_switch;
-use oclivenewnew_tauri::models::{Memory, PluginBackends};
+use oclive_kernel_host::domain::plugin_host::PluginHost;
+use oclive_kernel_host::domain::slot_runner::SlotRunner;
+use oclive_kernel_host::infrastructure::high_risk_grants::HighRiskGrantStore;
+use oclive_kernel_host::infrastructure::llm::{LlmClient, MockLlmClient};
+use oclive_kernel_host::infrastructure::remote_fallback_policy::new_remote_fallback_switch;
+use oclive_kernel_types::models::{Memory, PluginBackends};
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
@@ -95,10 +95,11 @@ fn dual_memory_slots_merge_without_panic() {
         created_at: chrono::Utc::now(),
         scene_id: None,
         mention_count: 1,
+        accessed_at: None,
     }];
     let ranked = SlotRunner::rank_memories(
         &pl,
-        oclivenewnew_tauri::domain::memory_retrieval::MemoryRetrievalInput {
+        oclive_kernel_host::domain::memory_retrieval::MemoryRetrievalInput {
             memories: &mems,
             user_query: "q",
             scene_id: None,

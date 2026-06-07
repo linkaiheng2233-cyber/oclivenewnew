@@ -1,7 +1,7 @@
 use crate::api::error::CommandError;
 use crate::error::AppError;
-use crate::models::dto::{MemoryItem, QueryMemoriesRequest};
-use crate::state::{AppState, SharedAppState};
+use oclive_kernel_types::models::dto::{MemoryItem, QueryMemoriesRequest};
+use oclive_kernel_host::state::{AppState, SharedAppState};
 use tauri::State;
 /// # Errors
 ///

@@ -1,13 +1,13 @@
 use crate::api::error::CommandError;
 use crate::error::AppError;
-use crate::infrastructure::deep_link::take_pending_install_git_urls;
-use crate::infrastructure::directory_plugins::{parse_manifest_version, OclivePluginManifest};
-use crate::infrastructure::plugin_data::ensure_default_config_for_manifest;
-use crate::infrastructure::plugin_installer::{
+use oclive_kernel_host::infrastructure::deep_link::take_pending_install_git_urls;
+use oclive_kernel_host::infrastructure::directory_plugins::{parse_manifest_version, OclivePluginManifest};
+use oclive_kernel_host::infrastructure::plugin_data::ensure_default_config_for_manifest;
+use oclive_kernel_host::infrastructure::plugin_installer::{
     install_plugin, load_cached_index, missing_dependencies, sync_plugin_index_online,
     uninstall_plugin, update_plugin, PluginIndexEntry, PluginIndexFile,
 };
-use crate::state::{AppState, SharedAppState};
+use oclive_kernel_host::state::{AppState, SharedAppState};
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

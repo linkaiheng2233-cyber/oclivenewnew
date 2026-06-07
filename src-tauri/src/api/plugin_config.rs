@@ -2,14 +2,14 @@
 
 use crate::api::error::ApiError;
 use crate::api::error::CommandError;
-use crate::infrastructure::directory_plugins::OclivePluginManifest;
-use crate::infrastructure::plugin_data::{
+use oclive_kernel_host::infrastructure::directory_plugins::OclivePluginManifest;
+use oclive_kernel_host::infrastructure::plugin_data::{
     ensure_default_config_for_manifest, read_config_json, write_config_json,
 };
-use crate::infrastructure::remote_plugin::{
+use oclive_kernel_host::infrastructure::remote_plugin::{
     invoke_directory_plugin_rpc_blocking, RemoteRpcChannel,
 };
-use crate::state::{AppState, SharedAppState};
+use oclive_kernel_host::state::{AppState, SharedAppState};
 use serde::Serialize;
 use serde_json::{json, Value};
 use std::path::PathBuf;

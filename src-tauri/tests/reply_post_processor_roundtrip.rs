@@ -3,11 +3,11 @@
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use async_trait::async_trait;
-use oclivenewnew_tauri::domain::chat_engine::process_message;
+use oclive_kernel_host::domain::chat_engine::process_message;
 use oclivenewnew_tauri::error::Result;
-use oclivenewnew_tauri::infrastructure::llm::LlmClient;
-use oclivenewnew_tauri::models::dto::SendMessageRequest;
-use oclivenewnew_tauri::state::AppState;
+use oclive_kernel_host::infrastructure::llm::LlmClient;
+use oclive_kernel_types::models::dto::SendMessageRequest;
+use oclive_kernel_host::state::AppState;
 use std::sync::Arc;
 use tempfile::TempDir;
 

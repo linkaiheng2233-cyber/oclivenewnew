@@ -24,6 +24,59 @@ pub const KERNEL_DIALOGUE_GUARDRAILS: &str = "【对话硬约束】（引擎预�
 - **禁止学舌式模仿**：勿逐句复制用户句式、口癖、昵称链或颜文字密度；保持本角色惯常说话方式，可回应内容但不用用户的说法包装。\n\
 - **篇幅随人设与用户输入**：用户仅寒暄/极短句时，宜 1–2 句精炼回复；用户倾诉或追问时再展开；勿为显得热情而重复同一关心或Proposal。\n";
 
+const PROMPT_BLOCK_GUIDE: &str = "以下为语气/内容层次，请按序理解";
+
+#[must_use]
+pub fn relation_rank(s: &str) -> i32 {
+    match s {
+        "Stranger" => 0,
+        "Acquaintance" => 1,
+        "Friend" => 2,
+        "CloseFriend" => 3,
+        "Partner" => 4,
+        _ => 0,
+    }
+}
+
+/// Multi-turn transition hint when relation rank or favor shifts meaningfully.
+#[must_use]
+pub fn relation_transition_hint(from: &str, to: &str, favor_delta: f64) -> String {
+    let before_rank = relation_rank(from);
+    let after_rank = relation_rank(to);
+    let favor_delta = favor_delta.clamp(-100.0, 100.0);
+    if after_rank > before_rank {
+        if favor_delta > 2.0 {
+            format!(
+                "正在从 {from} 向 {to} 过渡，表现出试探性亲近；勿一次跳到过热语气。"
+            )
+        } else {
+            format!("正在从 {from} 向 {to} 缓慢过渡，保持克制与礼貌。")
+        }
+    } else if after_rank < before_rank {
+        format!("正在从 {from} 向 {to} 过渡，表现出克制与边界感。")
+    } else if favor_delta >= 3.0 {
+        format!(
+            "好感正在上升（Δ{:.1}），语气宜渐进缓和，勿突升亲密。",
+            favor_delta
+        )
+    } else if favor_delta <= -3.0 {
+        format!(
+            "好感正在下降（Δ{:.1}），语气宜更克制，勿强行亲昵。",
+            favor_delta.abs()
+        )
+    } else {
+        String::new()
+    }
+}
+
+/// Remaining turns for a multi-turn relation transition buffer (cap 8).
+#[must_use]
+pub fn relation_transition_duration(rank_delta: i32, favor_delta: f64) -> u32 {
+    let rank_extra = rank_delta.unsigned_abs().saturating_mul(2);
+    let favor_extra = if favor_delta.abs() >= 8.0 { 2 } else { 0 };
+    (2 + rank_extra + favor_extra).min(8)
+}
+
 #[must_use]
 pub fn effective_reply_quality_anchor(role: &crate::models::Role) -> &str {
     match role.reply_quality_anchor.as_deref() {
@@ -109,44 +162,48 @@ impl PromptBuilder {
     #[must_use]
     pub fn build_prompt(input: &PromptInput<'_>) -> String {
         let mut prompt = String::new();
-        prompt.push_str(&Self::build_role_definition(
+
+        // Tier 0 — highest priority
+        prompt.push_str(&Self::build_core_hard_constraint(input.role));
+        let scene_block = Self::build_scene_constraint_block(input);
+        if !scene_block.is_empty() {
+            prompt.push_str("\n\n");
+            prompt.push_str(&scene_block);
+        }
+
+        // Block 1 — baseline (personality supplement + worldview)
+        prompt.push_str("\n\n---\n底线区块\n");
+        prompt.push_str(PROMPT_BLOCK_GUIDE);
+        prompt.push_str("\n\n");
+        let supplement = Self::build_personality_supplement(
             input.role,
             input.personality,
             input.mutable_personality,
-        ));
-        prompt.push_str("\n\n");
-        Self::push_user_identity_section(&mut prompt, input);
-        if !input.scene_label.is_empty()
-            || !input.scene_detail.is_empty()
-            || !input.topic_hint_line.is_empty()
-        {
-            prompt.push_str("【场景与话题】\n");
-            if !input.scene_label.is_empty() {
-                prompt.push_str(&format!("当前场景：{}\n", input.scene_label));
-            }
-            if !input.scene_detail.trim().is_empty() {
-                prompt.push_str("场景设定（来自角色包，请在此氛围内自然发挥）：\n");
-                prompt.push_str(input.scene_detail.trim());
-                prompt.push_str("\n\n");
-            }
-            if !input.topic_hint_line.is_empty() {
-                prompt.push_str(input.topic_hint_line);
-                prompt.push('\n');
-            }
-            prompt.push('\n');
-        }
-        if !input.life_context_line.is_empty() {
-            prompt.push_str("【日程推断】\n");
-            prompt.push_str(input.life_context_line.trim());
+        );
+        if !supplement.is_empty() {
+            prompt.push_str(&supplement);
             prompt.push_str("\n\n");
         }
         if !input.worldview_snippet.trim().is_empty() {
-            prompt.push_str("【世界观设定】（角色包知识；与闲聊记忆冲突时以本段为权威事实，但不得覆盖【用户身份】与安全红线。）\n");
+            prompt.push_str(
+                "【世界观设定】（角色包知识；与闲聊记忆冲突时以本段为权威事实，但不得覆盖【用户身份】与安全红线。）\n",
+            );
             prompt.push_str(input.worldview_snippet.trim());
             prompt.push_str("\n\n");
         }
-        if !input.memories.is_empty() {
-            prompt.push_str(&Self::build_memory_context(input.memories));
+
+        // Block 2 — tone (status, transition, relation FSM, boundary, current state, CE hint)
+        prompt.push_str("---\n语气区块\n");
+        prompt.push_str(PROMPT_BLOCK_GUIDE);
+        prompt.push_str("\n\n");
+        let status = Self::build_character_status_summary(input);
+        if !status.is_empty() {
+            prompt.push_str(&status);
+            prompt.push_str("\n\n");
+        }
+        if !input.relation_transition_hint.trim().is_empty() {
+            prompt.push_str("【关系过渡】\n");
+            prompt.push_str(input.relation_transition_hint.trim());
             prompt.push_str("\n\n");
         }
         prompt.push_str(&Self::build_event_relation_state(
@@ -171,12 +228,6 @@ impl PromptBuilder {
             input.user_emotion,
         ));
         prompt.push_str("\n\n");
-        if !input.reply_quality_anchor.trim().is_empty() {
-            prompt.push_str(input.reply_quality_anchor.trim());
-            prompt.push_str("\n\n");
-        }
-        prompt.push_str(KERNEL_DIALOGUE_GUARDRAILS);
-        prompt.push_str("\n\n");
         if !input
             .previous_complex_emotion_narrative_hint
             .trim()
@@ -188,6 +239,29 @@ impl PromptBuilder {
             prompt.push_str(input.previous_complex_emotion_narrative_hint.trim());
             prompt.push_str("\n\n");
         }
+
+        // Block 3 — content (memory + user identity + schedule)
+        prompt.push_str("---\n内容区块\n");
+        prompt.push_str(PROMPT_BLOCK_GUIDE);
+        prompt.push_str("\n\n");
+        if !input.memories.is_empty() {
+            prompt.push_str(&Self::build_memory_context(input.memories));
+            prompt.push_str("\n\n");
+        }
+        Self::push_user_identity_section(&mut prompt, input);
+        if !input.life_context_line.is_empty() {
+            prompt.push_str("【日程推断】\n");
+            prompt.push_str(input.life_context_line.trim());
+            prompt.push_str("\n\n");
+        }
+
+        // Footer — order unchanged
+        if !input.reply_quality_anchor.trim().is_empty() {
+            prompt.push_str(input.reply_quality_anchor.trim());
+            prompt.push_str("\n\n");
+        }
+        prompt.push_str(KERNEL_DIALOGUE_GUARDRAILS);
+        prompt.push_str("\n\n");
         prompt.push_str(&format!("用户说: {}", input.user_input));
         prompt.push_str("\n\n");
         prompt.push_str("【回复结构】\n");
@@ -201,6 +275,133 @@ impl PromptBuilder {
         prompt
     }
 
+    #[must_use]
+    fn build_core_hard_constraint(role: &Role) -> String {
+        let mut core = String::new();
+        core.push_str(&format!("你是{}。\n", role.name));
+        core.push_str("【核心设定·不可违背】以下是你不可违背的核心设定\n");
+        if !role.core_personality.trim().is_empty() {
+            if role.evolution_config.personality_source == PersonalitySource::Profile {
+                core.push_str(&format!(
+                    "核心性格档案（创作者与用户设定，运行时 AI 不得改写；与可变档案冲突时以本段为准）:\n{}\n",
+                    role.core_personality.trim()
+                ));
+            } else {
+                core.push_str(&format!("核心人设:\n{}\n", role.core_personality.trim()));
+            }
+        }
+        core
+    }
+
+    #[must_use]
+    fn build_scene_constraint_block(input: &PromptInput<'_>) -> String {
+        let has_scene = !input.scene_label.is_empty()
+            || !input.scene_detail.is_empty()
+            || !input.topic_hint_line.is_empty()
+            || !input.host_prompt_overlay.trim().is_empty();
+        if !has_scene {
+            return String::new();
+        }
+        let mut block = String::from("【当前场景约束】（当前在什么场景、应如何表现）\n");
+        if !input.host_prompt_overlay.trim().is_empty() {
+            block.push_str(input.host_prompt_overlay.trim());
+            block.push_str("\n\n");
+        }
+        if !input.scene_label.is_empty() {
+            block.push_str(&format!("当前场景：{}\n", input.scene_label));
+        }
+        if !input.scene_detail.trim().is_empty() {
+            block.push_str("场景设定（来自角色包，请在此氛围内自然发挥）：\n");
+            block.push_str(input.scene_detail.trim());
+            block.push_str("\n\n");
+        }
+        if !input.topic_hint_line.is_empty() {
+            block.push_str(input.topic_hint_line);
+            block.push('\n');
+        }
+        block
+    }
+
+    #[must_use]
+    fn build_personality_supplement(
+        role: &Role,
+        personality: &PersonalityVector,
+        mutable_personality: &str,
+    ) -> String {
+        let profile_primary =
+            role.evolution_config.personality_source == PersonalitySource::Profile;
+        let mut supplement = String::new();
+        if !role.description.trim().is_empty() {
+            supplement.push_str(&format!("描述: {}\n", role.description));
+        }
+        if profile_primary {
+            let m = mutable_personality.trim();
+            if !m.is_empty() {
+                supplement.push_str(
+                    "【可变性格档案】（由模型在规则内根据对话维护，用于抓住相处中的有限变化；创作者不可手写本条；与核心档案冲突时以核心为准）\n",
+                );
+                supplement.push_str(m);
+                supplement.push_str("\n\n");
+            }
+            supplement.push_str(
+                "【七维视图】（仅由「核心 + 可变档案」正文经规则归纳的辅助读数，帮助把握语气松紧；**不是**性格主数据源；与上文档案冲突时以档案正文为准）\n",
+            );
+        } else {
+            supplement.push_str("\n当前性格（自然语言）:\n");
+        }
+        supplement.push_str(&format!(
+            "- 倔强: {}\n",
+            Self::dim_label(personality.stubbornness, "偏低", "一般", "偏高")
+        ));
+        supplement.push_str(&format!(
+            "- 黏人: {}\n",
+            Self::dim_label(personality.clinginess, "偏低", "一般", "偏高")
+        ));
+        supplement.push_str(&format!(
+            "- 敏感: {}\n",
+            Self::dim_label(personality.sensitivity, "偏低", "一般", "偏高")
+        ));
+        supplement.push_str(&format!(
+            "- 强势: {}\n",
+            Self::dim_label(personality.assertiveness, "偏低", "一般", "偏高")
+        ));
+        supplement.push_str(&format!(
+            "- 宽容: {}\n",
+            Self::dim_label(personality.forgiveness, "偏低", "一般", "偏高")
+        ));
+        supplement.push_str(&format!(
+            "- 话多: {}\n",
+            Self::dim_label(personality.talkativeness, "偏低", "一般", "偏高")
+        ));
+        supplement.push_str(&format!(
+            "- 温暖: {}",
+            Self::dim_label(personality.warmth, "偏低", "一般", "偏高")
+        ));
+        supplement
+    }
+
+    #[must_use]
+    fn build_character_status_summary(input: &PromptInput<'_>) -> String {
+        let mut parts = vec![format!(
+            "你当前对用户好感约 {:.0}/100，关系处于 {}。",
+            input.favorability_before.clamp(0.0, 100.0),
+            input.relation_before
+        )];
+        if !input.user_emotion.trim().is_empty() {
+            parts.push(format!(
+                "用户语气线索：{}。",
+                input.user_emotion.trim()
+            ));
+        }
+        if !input.scene_label.is_empty() {
+            parts.push(format!("场景为 {}。", input.scene_label));
+        }
+        if !input.host_state_expression_hint.trim().is_empty() {
+            parts.push(input.host_state_expression_hint.trim().to_string());
+        }
+        format!("【角色当前状态】{}\n", parts.join(""))
+    }
+
     fn dim_label(v: f64, low: &str, mid: &str, high: &str) -> String {
         if v < 0.35 {
             low.to_string()
@@ -209,71 +410,6 @@ impl PromptBuilder {
         } else {
             high.to_string()
         }
-    }
-
-    fn build_role_definition(
-        role: &Role,
-        personality: &PersonalityVector,
-        mutable_personality: &str,
-    ) -> String {
-        let profile_primary =
-            role.evolution_config.personality_source == PersonalitySource::Profile;
-        let mut definition = String::new();
-        definition.push_str(&format!("你是{}。\n", role.name));
-        definition.push_str(&format!("描述: {}\n", role.description));
-        if profile_primary {
-            if !role.core_personality.trim().is_empty() {
-                definition.push_str(&format!(
-                    "核心性格档案（创作者与用户设定，运行时 AI 不得改写；与可变档案冲突时以本段为准）:\n{}\n",
-                    role.core_personality.trim()
-                ));
-            }
-            let m = mutable_personality.trim();
-            if !m.is_empty() {
-                definition.push_str(
-                    "【可变性格档案】（由模型在规则内根据对话维护，用于抓住相处中的有限变化；创作者不可手写本条；与核心档案冲突时以核心为准）\n",
-                );
-                definition.push_str(m);
-                definition.push_str("\n\n");
-            }
-            definition.push_str(
-                "【七维视图】（仅由「核心 + 可变档案」正文经规则归纳的辅助读数，帮助把握语气松紧；**不是**性格主数据源；与上文档案冲突时以档案正文为准）\n",
-            );
-        } else if !role.core_personality.trim().is_empty() {
-            definition.push_str(&format!("核心人设:\n{}\n", role.core_personality.trim()));
-        }
-        if !profile_primary {
-            definition.push_str("\n当前性格（自然语言）:\n");
-        }
-        definition.push_str(&format!(
-            "- 倔强: {}\n",
-            Self::dim_label(personality.stubbornness, "偏低", "一般", "偏高")
-        ));
-        definition.push_str(&format!(
-            "- 黏人: {}\n",
-            Self::dim_label(personality.clinginess, "偏低", "一般", "偏高")
-        ));
-        definition.push_str(&format!(
-            "- 敏感: {}\n",
-            Self::dim_label(personality.sensitivity, "偏低", "一般", "偏高")
-        ));
-        definition.push_str(&format!(
-            "- 强势: {}\n",
-            Self::dim_label(personality.assertiveness, "偏低", "一般", "偏高")
-        ));
-        definition.push_str(&format!(
-            "- 宽容: {}\n",
-            Self::dim_label(personality.forgiveness, "偏低", "一般", "偏高")
-        ));
-        definition.push_str(&format!(
-            "- 话多: {}\n",
-            Self::dim_label(personality.talkativeness, "偏低", "一般", "偏高")
-        ));
-        definition.push_str(&format!(
-            "- 温暖: {}",
-            Self::dim_label(personality.warmth, "偏低", "一般", "偏高")
-        ));
-        definition
     }
 
     fn build_memory_context(memories: &[Memory]) -> String {
@@ -379,8 +515,8 @@ impl PromptBuilder {
         favorability_preview: f64,
         impact_factor: f64,
     ) -> String {
-        let before_rank = Self::relation_rank(relation_before);
-        let preview_rank = Self::relation_rank(relation_preview);
+        let before_rank = relation_rank(relation_before);
+        let preview_rank = relation_rank(relation_preview);
         let favor_delta = (favorability_preview - favorability_before).clamp(-100.0, 100.0);
         let impact = impact_factor.clamp(-1.0, 1.0);
         let line = if preview_rank > before_rank {
@@ -395,17 +531,6 @@ impl PromptBuilder {
             "本轮过渡语气：延续当前阶段语气，避免突然升阶或突然疏离。"
         };
         format!("{line}\n")
-    }
-
-    fn relation_rank(s: &str) -> i32 {
-        match s {
-            "Stranger" => 0,
-            "Acquaintance" => 1,
-            "Friend" => 2,
-            "CloseFriend" => 3,
-            "Partner" => 4,
-            _ => 0,
-        }
     }
 
     fn seven_dim_equal_weight_score(personality: &PersonalityVector) -> f64 {
@@ -424,8 +549,8 @@ impl PromptBuilder {
         relation_before: &str,
         relation_preview: &str,
     ) -> Option<String> {
-        let before_rank = Self::relation_rank(relation_before);
-        let preview_rank = Self::relation_rank(relation_preview);
+        let before_rank = relation_rank(relation_before);
+        let preview_rank = relation_rank(relation_preview);
         let is_low_stage = before_rank <= 1 || preview_rank <= 1;
         let is_low_to_friend_boundary = before_rank <= 1 && preview_rank == 2;
         if !(is_low_stage || is_low_to_friend_boundary) {
@@ -542,6 +667,8 @@ mod tests {
             pack_relation_config: Default::default(),
             pack_evolution_config: Default::default(),
             pack_chat_storage_config: Default::default(),
+            pack_reply_post_processor_config: Default::default(),
+            user_identity_catalog: None,
             runtime_config: None,
             pipeline_experimental: None,
             scene_ids: std::sync::Arc::from(Vec::<String>::new()),
@@ -576,6 +703,7 @@ mod tests {
             created_at: Utc::now(),
             scene_id: None,
             mention_count: 1,
+            accessed_at: None,
         }
     }
 
@@ -609,6 +737,9 @@ mod tests {
             previous_complex_emotion_narrative_hint: "",
             user_identity_template: "",
             user_identity_id: "",
+            host_prompt_overlay: "",
+            host_state_expression_hint: "",
+            relation_transition_hint: "",
         });
 
         assert!(prompt.contains("Test Role"));
@@ -664,6 +795,9 @@ mod tests {
             previous_complex_emotion_narrative_hint: "",
             user_identity_template: "",
             user_identity_id: "",
+            host_prompt_overlay: "",
+            host_state_expression_hint: "",
+            relation_transition_hint: "",
         });
 
         assert!(prompt.contains("家人/长辈场景补充"));
@@ -719,6 +853,9 @@ mod tests {
             previous_complex_emotion_narrative_hint: "",
             user_identity_template: "",
             user_identity_id: "",
+            host_prompt_overlay: "",
+            host_state_expression_hint: "",
+            relation_transition_hint: "",
         });
 
         assert!(prompt.contains("倔强"));
@@ -753,6 +890,9 @@ mod tests {
             previous_complex_emotion_narrative_hint: "",
             user_identity_template: "",
             user_identity_id: "",
+            host_prompt_overlay: "",
+            host_state_expression_hint: "",
+            relation_transition_hint: "",
         });
 
         assert!(prompt.contains("用户说"));
@@ -795,6 +935,9 @@ mod tests {
             previous_complex_emotion_narrative_hint: "",
             user_identity_template: "",
             user_identity_id: "",
+            host_prompt_overlay: "",
+            host_state_expression_hint: "",
+            relation_transition_hint: "",
         });
 
         assert!(prompt.contains("边界语气控制指引"));
@@ -837,6 +980,9 @@ mod tests {
             previous_complex_emotion_narrative_hint: "",
             user_identity_template: "",
             user_identity_id: "",
+            host_prompt_overlay: "",
+            host_state_expression_hint: "",
+            relation_transition_hint: "",
         });
 
         assert!(prompt.contains("边界语气控制指引"));
@@ -872,6 +1018,9 @@ mod tests {
             previous_complex_emotion_narrative_hint: "",
             user_identity_template: "",
             user_identity_id: "",
+            host_prompt_overlay: "",
+            host_state_expression_hint: "",
+            relation_transition_hint: "",
         });
 
         assert!(!prompt.contains("边界语气控制指引"));
@@ -906,6 +1055,9 @@ mod tests {
             previous_complex_emotion_narrative_hint: "",
             user_identity_template: "",
             user_identity_id: "",
+            host_prompt_overlay: "",
+            host_state_expression_hint: "",
+            relation_transition_hint: "",
         });
         assert!(prompt.contains("【可变性格档案】"));
         assert!(prompt.contains("更黏人"));
@@ -942,6 +1094,9 @@ mod tests {
             previous_complex_emotion_narrative_hint: "",
             user_identity_template: "",
             user_identity_id: "",
+            host_prompt_overlay: "",
+            host_state_expression_hint: "",
+            relation_transition_hint: "",
         });
         assert!(prompt.contains("【包级质量锚点】仅测试覆盖用。"));
         assert!(!prompt.contains("【回复质量锚点】（每轮须遵守）"));
@@ -975,6 +1130,11 @@ mod tests {
             mutable_personality: "",
             reply_quality_anchor: effective_reply_quality_anchor(&role),
             previous_complex_emotion_narrative_hint: "   \n  ",
+            user_identity_template: "",
+            user_identity_id: "",
+            host_prompt_overlay: "",
+            host_state_expression_hint: "",
+            relation_transition_hint: "",
         });
         assert!(!prompt.contains("【复杂情感叙事提示】"));
         assert!(prompt.contains("用户说: hi"));
@@ -1007,6 +1167,11 @@ mod tests {
             mutable_personality: "",
             reply_quality_anchor: effective_reply_quality_anchor(&role),
             previous_complex_emotion_narrative_hint: hint,
+            user_identity_template: "",
+            user_identity_id: "",
+            host_prompt_overlay: "",
+            host_state_expression_hint: "",
+            relation_transition_hint: "",
         });
         assert!(prompt.contains("【复杂情感叙事提示】"));
         assert!(prompt.contains("引号\""));
@@ -1017,5 +1182,260 @@ mod tests {
             section_idx < user_idx,
             "narrative section must precede user line"
         );
+    }
+
+    #[test]
+    fn prompt_section_order_core_first() {
+        let role = create_test_role();
+        let personality = create_test_personality();
+        let prompt = PromptBuilder::build_prompt(&PromptInput {
+            role: &role,
+            personality: &personality,
+            memories: &[],
+            user_input: "hi",
+            user_emotion: "neutral",
+            user_relation_id: "friend",
+            relation_hint: "朋友",
+            relation_before: "Friend",
+            favorability_before: 55.0,
+            relation_preview: "Friend",
+            favorability_preview: 55.0,
+            event_type: &EventType::Ignore,
+            impact_factor: 0.0,
+            scene_label: "家",
+            scene_detail: "客厅",
+            topic_hint_line: "话题",
+            life_context_line: "",
+            worldview_snippet: "",
+            mutable_personality: "",
+            reply_quality_anchor: effective_reply_quality_anchor(&role),
+            previous_complex_emotion_narrative_hint: "",
+            user_identity_template: "",
+            user_identity_id: "",
+            host_prompt_overlay: "",
+            host_state_expression_hint: "",
+            relation_transition_hint: "",
+        });
+        let core_idx = prompt
+            .find("【核心设定·不可违背】")
+            .expect("core section");
+        for title in [
+            "【当前场景约束】",
+            "【用户身份】",
+            "【角色当前状态】",
+            "【回复质量锚点】",
+        ] {
+            if let Some(idx) = prompt.find(title) {
+                assert!(
+                    core_idx < idx,
+                    "{title} must follow core; core={core_idx} other={idx}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn prompt_three_blocks_present() {
+        let role = create_test_role();
+        let personality = create_test_personality();
+        let prompt = PromptBuilder::build_prompt(&PromptInput {
+            role: &role,
+            personality: &personality,
+            memories: &[],
+            user_input: "hi",
+            user_emotion: "neutral",
+            user_relation_id: "",
+            relation_hint: "",
+            relation_before: "Stranger",
+            favorability_before: 0.0,
+            relation_preview: "Stranger",
+            favorability_preview: 0.0,
+            event_type: &EventType::Ignore,
+            impact_factor: 0.0,
+            scene_label: "",
+            scene_detail: "",
+            topic_hint_line: "",
+            life_context_line: "",
+            worldview_snippet: "",
+            mutable_personality: "",
+            reply_quality_anchor: effective_reply_quality_anchor(&role),
+            previous_complex_emotion_narrative_hint: "",
+            user_identity_template: "",
+            user_identity_id: "",
+            host_prompt_overlay: "",
+            host_state_expression_hint: "",
+            relation_transition_hint: "",
+        });
+        let bottom = prompt.find("底线区块").expect("bottom block");
+        let tone = prompt.find("语气区块").expect("tone block");
+        let content = prompt.find("内容区块").expect("content block");
+        assert!(bottom < tone && tone < content);
+    }
+
+    #[test]
+    fn prompt_scene_constraint_after_core() {
+        let role = create_test_role();
+        let personality = create_test_personality();
+        let prompt = PromptBuilder::build_prompt(&PromptInput {
+            role: &role,
+            personality: &personality,
+            memories: &[],
+            user_input: "hi",
+            user_emotion: "neutral",
+            user_relation_id: "",
+            relation_hint: "",
+            relation_before: "Stranger",
+            favorability_before: 0.0,
+            relation_preview: "Stranger",
+            favorability_preview: 0.0,
+            event_type: &EventType::Ignore,
+            impact_factor: 0.0,
+            scene_label: "VS Code",
+            scene_detail: "结对编程",
+            topic_hint_line: "",
+            life_context_line: "",
+            worldview_snippet: "",
+            mutable_personality: "",
+            reply_quality_anchor: effective_reply_quality_anchor(&role),
+            previous_complex_emotion_narrative_hint: "",
+            user_identity_template: "",
+            user_identity_id: "",
+            host_prompt_overlay: "",
+            host_state_expression_hint: "",
+            relation_transition_hint: "",
+        });
+        let core_idx = prompt.find("【核心设定·不可违背】").unwrap();
+        let scene_idx = prompt.find("【当前场景约束】").unwrap();
+        let bottom_idx = prompt.find("底线区块").unwrap();
+        assert!(core_idx < scene_idx && scene_idx < bottom_idx);
+        assert!(prompt.contains("结对编程"));
+    }
+
+    #[test]
+    fn prompt_concise_overlay_in_scene_block() {
+        let role = create_test_role();
+        let personality = create_test_personality();
+        let overlay = "【发行版简洁模式】回复宜短。";
+        let prompt = PromptBuilder::build_prompt(&PromptInput {
+            role: &role,
+            personality: &personality,
+            memories: &[],
+            user_input: "hi",
+            user_emotion: "neutral",
+            user_relation_id: "",
+            relation_hint: "",
+            relation_before: "Stranger",
+            favorability_before: 0.0,
+            relation_preview: "Stranger",
+            favorability_preview: 0.0,
+            event_type: &EventType::Ignore,
+            impact_factor: 0.0,
+            scene_label: "VS Code",
+            scene_detail: "",
+            topic_hint_line: "",
+            life_context_line: "",
+            worldview_snippet: "",
+            mutable_personality: "",
+            reply_quality_anchor: effective_reply_quality_anchor(&role),
+            previous_complex_emotion_narrative_hint: "",
+            user_identity_template: "",
+            user_identity_id: "",
+            host_prompt_overlay: overlay,
+            host_state_expression_hint: "",
+            relation_transition_hint: "",
+        });
+        assert!(!prompt.starts_with(overlay));
+        let scene_idx = prompt.find("【当前场景约束】").unwrap();
+        let overlay_idx = prompt.find(overlay).unwrap();
+        assert!(scene_idx < overlay_idx);
+    }
+
+    #[test]
+    fn relation_transition_duration_respects_cap_and_rank() {
+        assert_eq!(relation_transition_duration(0, 2.0), 2);
+        assert_eq!(relation_transition_duration(1, 2.0), 4);
+        assert_eq!(relation_transition_duration(2, 9.0), 8);
+        assert_eq!(relation_transition_duration(0, 9.0), 4);
+    }
+
+    #[test]
+    fn build_character_status_summary_includes_scene_and_host_hint() {
+        let role = create_test_role();
+        let personality = create_test_personality();
+        let prompt = PromptBuilder::build_prompt(&PromptInput {
+            role: &role,
+            personality: &personality,
+            memories: &[],
+            user_input: "hi",
+            user_emotion: "低落",
+            user_relation_id: "",
+            relation_hint: "",
+            relation_before: "Friend",
+            favorability_before: 62.0,
+            relation_preview: "Friend",
+            favorability_preview: 62.0,
+            event_type: &EventType::Ignore,
+            impact_factor: 0.0,
+            scene_label: "VS Code 结对编程",
+            scene_detail: "",
+            topic_hint_line: "",
+            life_context_line: "",
+            worldview_snippet: "",
+            mutable_personality: "",
+            reply_quality_anchor: effective_reply_quality_anchor(&role),
+            previous_complex_emotion_narrative_hint: "",
+            user_identity_template: "",
+            user_identity_id: "",
+            host_prompt_overlay: "",
+            host_state_expression_hint: "更信任用户的技术判断，少寒暄",
+            relation_transition_hint: "",
+        });
+        assert!(prompt.contains("【角色当前状态】"));
+        assert!(prompt.contains("好感约 62/100"));
+        assert!(prompt.contains("Friend"));
+        assert!(prompt.contains("低落"));
+        assert!(prompt.contains("VS Code 结对编程"));
+        assert!(prompt.contains("更信任用户的技术判断"));
+    }
+
+    #[test]
+    fn relation_transition_hint_in_tone_block() {
+        let role = create_test_role();
+        let personality = create_test_personality();
+        let hint = "正在从 Acquaintance 向 Friend 过渡";
+        let prompt = PromptBuilder::build_prompt(&PromptInput {
+            role: &role,
+            personality: &personality,
+            memories: &[],
+            user_input: "hi",
+            user_emotion: "neutral",
+            user_relation_id: "",
+            relation_hint: "",
+            relation_before: "Acquaintance",
+            favorability_before: 42.0,
+            relation_preview: "Friend",
+            favorability_preview: 45.0,
+            event_type: &EventType::Praise,
+            impact_factor: 0.5,
+            scene_label: "",
+            scene_detail: "",
+            topic_hint_line: "",
+            life_context_line: "",
+            worldview_snippet: "",
+            mutable_personality: "",
+            reply_quality_anchor: effective_reply_quality_anchor(&role),
+            previous_complex_emotion_narrative_hint: "",
+            user_identity_template: "",
+            user_identity_id: "",
+            host_prompt_overlay: "",
+            host_state_expression_hint: "",
+            relation_transition_hint: hint,
+        });
+        assert!(prompt.contains("【关系过渡】"));
+        assert!(prompt.contains(hint));
+        let tone_idx = prompt.find("语气区块").unwrap();
+        let content_idx = prompt.find("内容区块").unwrap();
+        let hint_idx = prompt.find("【关系过渡】").unwrap();
+        assert!(tone_idx < hint_idx && hint_idx < content_idx);
     }
 }

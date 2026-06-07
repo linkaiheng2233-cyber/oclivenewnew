@@ -8,6 +8,10 @@ use crate::infrastructure::sql_migrate;
 use crate::infrastructure::sqlite_pool;
 
 /// Open an in-memory pool and apply all migrations (same runner as production; FK on).
+///
+/// # Panics
+///
+/// Panics if the in-memory pool or migration runner fails (test fixture only).
 pub async fn connect_memory_migrated() -> SqlitePool {
     let pool = sqlite_pool::connect_memory()
         .await

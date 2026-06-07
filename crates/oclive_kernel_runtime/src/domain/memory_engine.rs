@@ -117,12 +117,51 @@ impl MemoryEngine {
         cfg: &RolePackMemoryConfig,
     ) {
         use super::virtual_time::virtual_days_between_ms;
-        memories.retain_mut(|m| {
+        Self::decay_memories_in_place(memories, |m| {
             let created_ms = m.created_at.timestamp_millis();
-            let days = virtual_days_between_ms(created_ms, virtual_now_ms);
+            virtual_days_between_ms(created_ms, virtual_now_ms)
+        }, cfg);
+        memories.retain(|m| m.effective_strength() >= cfg.min_strength_for_prompt);
+    }
+
+    /// Applies decay in place without filtering (for persistence before threshold filter).
+    pub fn decay_memories_in_place(
+        memories: &mut [Memory],
+        virtual_days_for: impl Fn(&Memory) -> f64,
+        cfg: &RolePackMemoryConfig,
+    ) {
+        for m in memories.iter_mut() {
+            let days = virtual_days_for(m);
             *m = Self::apply_time_decay(m.clone(), days, cfg);
-            m.effective_strength() >= cfg.min_strength_for_prompt
-        });
+        }
+    }
+
+    /// Wall-clock decay using `accessed_at` (or `created_at`) as the reference instant.
+    pub fn apply_wall_clock_decay_batch(
+        memories: &mut Vec<Memory>,
+        now_ms: i64,
+        cfg: &RolePackMemoryConfig,
+    ) {
+        use super::virtual_time::virtual_days_between_ms;
+        Self::decay_memories_in_place(memories, |m| {
+            let ref_ms = m
+                .accessed_at
+                .unwrap_or(m.created_at)
+                .timestamp_millis();
+            virtual_days_between_ms(ref_ms, now_ms)
+        }, cfg);
+        memories.retain(|m| m.effective_strength() >= cfg.min_strength_for_prompt);
+    }
+
+    #[must_use]
+    pub fn filter_for_prompt_threshold(
+        memories: Vec<Memory>,
+        cfg: &RolePackMemoryConfig,
+    ) -> Vec<Memory> {
+        memories
+            .into_iter()
+            .filter(|m| m.effective_strength() >= cfg.min_strength_for_prompt)
+            .collect()
     }
 
     /// Extracts keywords for similarity (whitespace/punctuation tokens + CJK bigram fragments).
@@ -279,6 +318,7 @@ mod tests {
             created_at: Utc::now(),
             scene_id: None,
             mention_count: 1,
+            accessed_at: None,
         }
     }
 

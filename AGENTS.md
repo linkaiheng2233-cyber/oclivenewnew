@@ -27,6 +27,7 @@
 
 - **Breaking 变更流程**（识别、审阅、兼容层、`oclive_validation` 与契约文档同步、PR/迁移模板）：[`handoff/BREAKING_CHANGE_PROCESS.md`](handoff/BREAKING_CHANGE_PROCESS.md)。贡献者摘要见 [`CONTRIBUTING.md`](CONTRIBUTING.md)「破坏性变更」。
 - **关键路径交接（Bus factor）**（编排入口、`PluginHost`、错误码、迁移、OOCP/CI 定位）：[`handoff/BUS_FACTOR_NOTES.md`](handoff/BUS_FACTOR_NOTES.md)。索引入口见 [`creator-docs/getting-started/DOCUMENTATION_INDEX.md`](creator-docs/getting-started/DOCUMENTATION_INDEX.md)「工程纪律」。
+- **Phase 2 加固收尾**（六槽 `none`、memory decay、HostProfile retrieval、Agent remote/directory、Tauri canonical import）：[`handoff/TECHNICAL_DEBT_INVENTORY.md`](handoff/TECHNICAL_DEBT_INVENTORY.md) Phase 2 表。
 
 ### 脚手架（`oclive-cli`）
 
@@ -82,6 +83,13 @@
 - **主路径 wiring**：[`crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/`](crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/) 在 `load_recent_context` 之后、**`build_prompt` 之前**解析本回合复杂情感；上一轮 `narrative_hint` 经 **`SessionCache`** / DB（`complex_emotion_hint` 表）按 `srid` 读取；通过 **`PromptInput::previous_complex_emotion_narrative_hint`** 传入 [`PromptBuilder::build_prompt`](crates/oclive_kernel_runtime/src/domain/prompt_builder.rs)（定义在 `oclive_kernel_runtime`，经 `oclive_kernel_host::domain` re-export；段落标题为「复杂情感叙事提示」）。
 - **集成测试**：[`src-tauri/tests/narrative_hint_prompt_roundtrip.rs`](src-tauri/tests/narrative_hint_prompt_roundtrip.rs)。
 
+### Prompt 注入分层 + 状态机联动
+
+- **Tier0 / 三区块**：`PromptBuilder::build_prompt`（[`crates/oclive_kernel_runtime/src/domain/prompt_builder.rs`](crates/oclive_kernel_runtime/src/domain/prompt_builder.rs)）按顺序组装 **系统 / 角色 / 用户** 三层；用户身份（`push_user_identity_section`）、复杂情感叙事提示、专家路由等作为独立段落注入，不占用六槽。
+- **角色当前状态**：`build_character_status_summary` 汇总场景、好感、情绪、host overlay（发行版 `state_expression`）等，写入 Prompt 中段。
+- **关系跃迁**：`relation_transition_hint` / `relation_transition_duration` 在关系变更时生成过渡提示，经 `PromptInput.relation_transition_hint` 进入 tone 区块；主路径 **`co_present`** 在 `setUserRelation` / 场景关系切换后下一回合生效。
+- **dual_pipeline preview**：Experimental 核 step 预览路径 **尚未** 接线 relation transition / 复杂情感 hint；Stable 主路径以 `process_message` → `co_present` 为准。
+
 ### 聊天记录混合存储（SQLite 真源 + JSON 镜像 · phase 1–3 架构完整）
 
 - **架构**：[`handoff/CHAT_STORAGE_ARCHITECTURE.md`](handoff/CHAT_STORAGE_ARCHITECTURE.md) · 创作者选型 [`creator-docs/storage/STORAGE_BACKEND_GUIDE.md`](creator-docs/storage/STORAGE_BACKEND_GUIDE.md) — `chat_sessions` / `chat_messages` 与 `short_term_memory` / `long_term_memory` **完全解耦**；删聊天记录**不**清记忆表。
@@ -109,7 +117,7 @@
 
 ### Agent / Skill（最小闭环）
 
-- **agent 后端模块**（产品亦称扩展槽）：`plugin_backends.agent`（`builtin` / `remote` / `directory`）；会话覆盖与来源快照包含 `agent`。（`none` 语义见 `creator-docs/kernel/MODULE_NONE_SEMANTICS.md` §7（若存在）。）
+- **agent 后端模块**（产品亦称扩展槽）：`plugin_backends.agent`（`builtin` / `remote` / `directory` / `none`）；remote/directory 经 host-orchestrated `agent.process` + 本机 MCP（见 [`creator-docs/plugin-and-architecture/AGENT_REMOTE_PROTOCOL.md`](creator-docs/plugin-and-architecture/AGENT_REMOTE_PROTOCOL.md)）；失败降级 builtin。会话覆盖与来源快照包含 `agent`。（`none` 语义见 `creator-docs/kernel/MODULE_NONE_SEMANTICS.md`。）
 - **后端骨架**：
   - [`crates/oclive_kernel_host/src/domain/agent.rs`](crates/oclive_kernel_host/src/domain/agent.rs)：`AgentProvider` trait 与 `BuiltinReActAgent`。
   - [`src-tauri/src/infrastructure/mcp_client.rs`](src-tauri/src/infrastructure/mcp_client.rs)：扫描 `{app_data}/mcp-servers/*.json`、列出 server、调用工具（http/stdio）。

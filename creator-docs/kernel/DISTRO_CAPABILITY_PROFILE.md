@@ -44,12 +44,12 @@ display_name = "OCLive VS Code"
 
 # --- 模块上限（可选；省略 = 不额外收紧，仅用 host_flags / slots）---
 [plugin_backends]
-memory = "builtin"            # builtin | builtin_v2 | remote | local | directory
-emotion = "builtin"
-event = "builtin"
-prompt = "builtin"
-llm = "ollama"                # ollama | remote | directory
-agent = "builtin"             # 若 host_flags.skip_agent = true，运行时忽略此项
+memory = "builtin"            # builtin | builtin_v2 | remote | local | directory | none
+emotion = "builtin"           # … | none
+event = "builtin"             # … | none
+prompt = "builtin"            # … | none（共景路径禁止 none，见 MODULE_NONE_SEMANTICS.md）
+llm = "ollama"                # ollama | remote | directory | none（共景路径禁止 none）
+agent = "builtin"             # builtin | remote | directory | none；若 host_flags.skip_agent = true，运行时强制 agent = none
 
 # --- 槽位（第 7 模块等，非 plugin_backends 字段）---
 [slots]
@@ -73,6 +73,11 @@ chain = "standard"            # standard | minimal
 [user_identity]
 default_id = "classmate"      # optional; used when session has no explicit identity
 allowed_ids = ["classmate"]   # optional whitelist for set_user_identity API
+
+[state_expression]
+favor_high = "…"              # optional; appended to 【角色当前状态】 when favor ≥ 65
+favor_mid  = "…"              # optional; 40 ≤ favor < 65
+favor_low  = "…"              # optional; favor < 40
 ```
 
 ### 3.1 `plugin_backends` 枚举
@@ -92,21 +97,22 @@ allowed_ids = ["classmate"]   # optional whitelist for set_user_identity API
 
 ### 3.2 `host_flags` 与 `slots`
 
-- **`host_flags.skip_agent`**：为 `true` 时，内核不执行 Agent 编排（第七模块产品槽）。
+- **`host_flags.skip_agent`**：为 `true` 时，运行时强制 `plugin_backends.agent = none`（与角色包声明 `agent: none` 等效）。
 - **`host_flags.skip_complex_emotion`**：为 `true` 时，跳过共景复杂情感解析（`co_present` 阶段）。
 - **`slots.complex_emotion`**：`off` 等价于 `skip_complex_emotion`（二者任一为 off 即关闭）。
 
-> 说明：`AgentBackend` 尚无 `none` 枚举；发行版「不要 Agent」必须用 `host_flags`，见 AGENTS.md 与后续 `MODULE_NONE_SEMANTICS` 文档。
+> 说明：六槽 `none` 语义见 [MODULE_NONE_SEMANTICS.md](./MODULE_NONE_SEMANTICS.md)。发行版关闭 Agent 可用 `host_flags.skip_agent` 或 `[plugin_backends] agent = "none"`。
 
 ### 3.3 Prompt / 记忆 / 后处理（P4 映射表）
 
 | 字段 | `full`（桌面默认） | `concise`（VS Code 示例） |
 |------|-------------------|---------------------------|
 | `prompt.profile` | 角色包 + 引擎锚点完整叠加 | 额外叠加「简洁回复」overlay，不删减包级人设 |
-| `memory.retrieval` | 默认检索深度 |  lighter 检索（更少上下文条数） |
+| `memory.retrieval` | 默认 8 条相关记忆 | `light`：4 条（`HostProfile.memory_retrieval`） |
 | `post_process.chain` | `standard` | `minimal`（强制 builtin `profile=minimal`；`enabled=false` 仍关闭） |
 | `user_identity.default_id` | 未设 | 会话无显式身份且非 sentinel 时作为默认 catalog id |
 | `user_identity.allowed_ids` | 未设（不限制） | API 层拒绝列表外 id |
+| `state_expression.favor_*` | 未设 | 按好感分档追加一句语气调节到 Prompt「角色当前状态」 |
 
 **合并优先级（User Identity）**：DB 会话/场景覆盖 → `HostProfile.user_identity.default_id` → catalog `default_identity_id` → legacy `user_relations.prompt_hint`。
 

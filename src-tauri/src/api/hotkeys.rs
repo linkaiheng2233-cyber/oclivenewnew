@@ -1,8 +1,8 @@
 //! Global hotkeys: register/unregister and event dispatch (`hotkey-action`).
 
 use crate::api::error::CommandError;
-use crate::infrastructure::hotkey_bindings::{HotkeyAction, HotkeyBindingsFile};
-use crate::state::{AppState, SharedAppState};
+use oclive_kernel_host::infrastructure::hotkey_bindings::{HotkeyAction, HotkeyBindingsFile};
+use oclive_kernel_host::state::{AppState, SharedAppState};
 use serde::Serialize;
 use tauri::{AppHandle, GlobalShortcutManager, Manager, State};
 

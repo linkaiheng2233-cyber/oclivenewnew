@@ -72,6 +72,7 @@ pub async fn ensure_once(state: &AppState, role: &Role, effective: &PluginBacken
 
 async fn run_checks(state: &AppState, role: &Role, effective: &PluginBackends) -> Result<()> {
     validate_plugin_backends_slots(effective)?;
+    validate_co_present_dialogue_backends(effective)?;
     verify_role_pack_files(state, role)?;
     state.db_manager.health_ping().await?;
     if std::env::var("OCLIVE_SKIP_LLM_STARTUP_PROBE")
@@ -130,6 +131,25 @@ pub fn validate_plugin_backends_slots(pb: &PluginBackends) -> Result<()> {
     }
     if matches!(pb.agent, AgentBackend::Directory) {
         non_empty_slot(&pb.directory_plugins.agent, "agent")?;
+    }
+    Ok(())
+}
+
+/// Co-present dialogue requires prompt assembly and LLM generation.
+///
+/// # Errors
+///
+/// Returns [`Err`] when `prompt` or `llm` is set to `none`.
+pub fn validate_co_present_dialogue_backends(pb: &PluginBackends) -> Result<()> {
+    if matches!(pb.llm, LlmBackend::None) {
+        return Err(AppError::InvalidParameter(
+            "plugin_backends.llm=none is not allowed on the co-present dialogue path".into(),
+        ));
+    }
+    if matches!(pb.prompt, PromptBackend::None) {
+        return Err(AppError::InvalidParameter(
+            "plugin_backends.prompt=none is not allowed on the co-present dialogue path".into(),
+        ));
     }
     Ok(())
 }

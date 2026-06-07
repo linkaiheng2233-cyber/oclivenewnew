@@ -1,13 +1,13 @@
 use crate::api::chat_backend::ChatBackend;
-use crate::infrastructure::chat_storage::{
+use oclive_kernel_host::infrastructure::chat_storage::{
     AutoCleanupResult, ChatExportResponse, ChatSearchResult, ChatStorageCapabilities,
     DeleteChatsResult, ImportChatBucket, ImportChatBucketsResult, ReplayProgress, ReplayTarget,
     SessionMeta, StoredMessage,
 };
 use crate::kernel_attach::role_dir_for_id;
-use crate::models::dto::{SendMessageRequest, SendMessageResponse};
-use crate::models::RolePackChatStorageConfig;
-use crate::state::SharedAppState;
+use oclive_kernel_types::models::dto::{SendMessageRequest, SendMessageResponse};
+use oclive_kernel_types::models::RolePackChatStorageConfig;
+use oclive_kernel_host::state::SharedAppState;
 use oclive_kernel_host::service::ChatStorageProxyOp;
 use serde::de::DeserializeOwned;
 use tauri::{AppHandle, State};
@@ -146,7 +146,7 @@ pub async fn get_chat_storage_stats(
     app: AppHandle,
     state: State<'_, SharedAppState>,
 ) -> Result<
-    Vec<crate::infrastructure::chat_storage::RoleStorageStat>,
+    Vec<oclive_kernel_host::infrastructure::chat_storage::RoleStorageStat>,
     crate::api::error::CommandError,
 > {
     storage_proxy_json(&app, state.inner(), ChatStorageProxyOp::StorageStats).await
@@ -323,7 +323,7 @@ pub async fn save_role_chat_storage_config_cmd(
     state: State<'_, SharedAppState>,
 ) -> Result<(), crate::api::error::CommandError> {
     let rid = role_id.trim();
-    crate::infrastructure::chat_storage::save_role_chat_storage_config(
+    oclive_kernel_host::infrastructure::chat_storage::save_role_chat_storage_config(
         state.storage.roles_dir(),
         rid,
         &config,

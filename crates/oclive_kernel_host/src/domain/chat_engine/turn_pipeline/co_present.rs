@@ -128,7 +128,15 @@ pub(crate) async fn run_middle(
     } else {
         String::new()
     };
-    let mut prompt = STAGES
+    let host_overlay = if state.host_profile.prompt_profile == PromptProfile::Concise {
+        DISTRO_CONCISE_PROMPT_OVERLAY
+    } else {
+        ""
+    };
+    let host_state_hint = state
+        .host_profile
+        .state_expression_hint(pre.favorability_before);
+    let prompt = STAGES
         .stage(ChatStage::BuildPrompt, async {
             SlotRunner::build_prompt(
                 pl,
@@ -158,13 +166,13 @@ pub(crate) async fn run_middle(
                     previous_complex_emotion_narrative_hint: pre
                         .prev_stored_narrative_hint
                         .as_str(),
+                    host_prompt_overlay: host_overlay,
+                    host_state_expression_hint: host_state_hint,
+                    relation_transition_hint: pre.relation_transition_hint.as_str(),
                 },
             )
         })
         .await?;
-    if state.host_profile.prompt_profile == PromptProfile::Concise {
-        prompt = format!("{DISTRO_CONCISE_PROMPT_OVERLAY}{prompt}");
-    }
 
     Ok(MiddleOutput {
         complex_emotion_out,

@@ -1,6 +1,6 @@
 use crate::api::error::CommandError;
-use crate::models::dto::{GenerateMonologueRequest, GenerateMonologueResponse};
-use crate::state::SharedAppState;
+use oclive_kernel_types::models::dto::{GenerateMonologueRequest, GenerateMonologueResponse};
+use oclive_kernel_host::state::SharedAppState;
 use oclive_kernel_host::service::generate_monologue_impl;
 use tauri::State;
 

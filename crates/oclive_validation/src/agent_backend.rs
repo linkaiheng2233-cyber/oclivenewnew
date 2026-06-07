@@ -9,24 +9,14 @@ pub struct AgentBackendSanitizeResult {
     pub warnings: Vec<String>,
 }
 
-/// Agent `directory` / `remote` backends are not implemented yet; downgrade to `builtin`.
+/// Pass-through: agent remote/directory are implemented (host-orchestrated MCP bridge).
 #[must_use]
 pub fn sanitize_unimplemented_agent_backend(
     backends: PluginBackends,
 ) -> AgentBackendSanitizeResult {
-    let mut warnings = Vec::new();
-    let mut out = backends;
-    if matches!(out.agent, AgentBackend::Directory | AgentBackend::Remote) {
-        warnings.push(format!(
-            "plugin_backends.agent={} 尚未实现，已降级为 builtin",
-            agent_backend_label(out.agent)
-        ));
-        out.agent = AgentBackend::Builtin;
-        out.directory_plugins.agent = None;
-    }
     AgentBackendSanitizeResult {
-        backends: out,
-        warnings,
+        backends,
+        warnings: Vec::new(),
     }
 }
 
@@ -35,41 +25,23 @@ fn agent_backend_label(b: AgentBackend) -> &'static str {
         AgentBackend::Builtin => "builtin",
         AgentBackend::Remote => "remote",
         AgentBackend::Directory => "directory",
+        AgentBackend::None => "none",
     }
 }
 
-/// Returns a validation error when `plugin_backends.agent` is an unimplemented backend.
+/// Returns a validation error when `plugin_backends.agent` is invalid.
 #[must_use]
 pub fn validate_implemented_agent_backend(backends: &PluginBackends) -> Option<String> {
-    if matches!(
-        backends.agent,
-        AgentBackend::Directory | AgentBackend::Remote
-    ) {
-        Some(format!(
-            "settings.json plugin_backends.agent={} 尚未实现（请使用 builtin）",
-            agent_backend_label(backends.agent)
-        ))
-    } else {
-        None
-    }
+    let _ = agent_backend_label(backends.agent);
+    None
 }
 
 /// Collect validation warnings for agent slots in a blueprint `slot_registry`.
 #[must_use]
 pub fn validate_agent_slot_backends(
-    registry: &std::collections::BTreeMap<String, crate::blueprint_v2::SlotRegistryEntry>,
+    _registry: &std::collections::BTreeMap<String, crate::blueprint_v2::SlotRegistryEntry>,
 ) -> Vec<String> {
-    use crate::blueprint_v2::slot_registry_instances_sorted;
-    let mut warnings = Vec::new();
-    for (key, entry) in slot_registry_instances_sorted(registry, "agent") {
-        let backend = entry.backend.trim().to_ascii_lowercase();
-        if backend == "directory" || backend == "remote" {
-            warnings.push(format!(
-                "slot_registry.{key} agent backend={backend} 尚未实现（请使用 builtin）"
-            ));
-        }
-    }
-    warnings
+    Vec::new()
 }
 
 #[cfg(test)]
@@ -78,17 +50,16 @@ mod tests {
     use crate::plugin_backends::DirectoryPluginSlots;
 
     #[test]
-    fn validate_implemented_agent_backend_rejects_remote() {
+    fn validate_implemented_agent_backend_allows_remote() {
         let pb = PluginBackends {
             agent: AgentBackend::Remote,
             ..Default::default()
         };
-        let err = validate_implemented_agent_backend(&pb).expect("err");
-        assert!(err.contains("remote"));
+        assert!(validate_implemented_agent_backend(&pb).is_none());
     }
 
     #[test]
-    fn agent_directory_downgrades_to_builtin() {
+    fn agent_directory_keeps_backend_without_warning() {
         let pb = PluginBackends {
             agent: AgentBackend::Directory,
             directory_plugins: DirectoryPluginSlots {
@@ -98,9 +69,12 @@ mod tests {
             ..Default::default()
         };
         let res = sanitize_unimplemented_agent_backend(pb);
-        assert_eq!(res.backends.agent, AgentBackend::Builtin);
-        assert!(res.backends.directory_plugins.agent.is_none());
-        assert_eq!(res.warnings.len(), 1);
+        assert_eq!(res.backends.agent, AgentBackend::Directory);
+        assert_eq!(
+            res.backends.directory_plugins.agent.as_deref(),
+            Some("my-agent")
+        );
+        assert!(res.warnings.is_empty());
     }
 
     #[test]

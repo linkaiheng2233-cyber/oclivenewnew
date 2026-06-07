@@ -4,7 +4,7 @@ use crate::api::error::CommandError;
 use crate::error::AppError;
 use crate::kernel_attach::KernelHttpClient;
 use crate::kernel_lifecycle::SharedKernelConnection;
-use crate::state::SharedAppState;
+use oclive_kernel_host::state::SharedAppState;
 use oclive_kernel_host::service::{
     grant_high_risk_capability_impl, list_high_risk_grants_impl, revoke_high_risk_capability_impl,
     MutateHighRiskGrantRequest,

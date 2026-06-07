@@ -1,7 +1,7 @@
 //! Lightweight environment self-check (A2.2): Ollama reachability, roles root, app data dir writable.
 
 use crate::api::error::CommandError;
-use crate::state::SharedAppState;
+use oclive_kernel_host::state::SharedAppState;
 use serde::Serialize;
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};

@@ -4,8 +4,8 @@
 
 use oclive_validation::load_blueprint_v2_for_role_dir;
 use oclivenewnew_tauri::api::role::{get_role_info_impl, save_role_slot_registry_impl};
-use oclivenewnew_tauri::models::dto::SaveRoleSlotRegistryRequest;
-use oclivenewnew_tauri::state::AppState;
+use oclive_kernel_types::models::dto::SaveRoleSlotRegistryRequest;
+use oclive_kernel_host::state::AppState;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -20,7 +20,7 @@ async fn save_role_slot_registry_writes_and_reloads() {
     let role_dir = tmp.path().join("mumu");
     copy_dir_all(&src, &role_dir);
 
-    let llm = Arc::new(oclivenewnew_tauri::infrastructure::MockLlmClient {
+    let llm = Arc::new(oclive_kernel_host::infrastructure::MockLlmClient {
         reply: "ok".to_string(),
     });
     let state = AppState::new_in_memory_with_llm(llm, tmp.path().to_path_buf())

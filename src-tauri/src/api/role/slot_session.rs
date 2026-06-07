@@ -3,8 +3,8 @@
 #![allow(clippy::missing_errors_doc)]
 
 use crate::api::error::CommandError;
-use crate::models::dto::*;
-use crate::state::SharedAppState;
+use oclive_kernel_types::models::dto::*;
+use oclive_kernel_host::state::SharedAppState;
 use tauri::State;
 
 pub use oclive_kernel_host::service::role::{

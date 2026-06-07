@@ -204,15 +204,43 @@ pub(crate) async fn persist_atomic_movement_portrait(
     if let Some(portrait_fut) = portrait_fut {
         let (favor_current, movement, portrait_res) =
             tokio::join!(atomic_fut, movement_fut, portrait_fut);
+        let favor_current = favor_current?;
+        if matches!(mode, TurnMode::CoPresent) {
+            crate::domain::relation_transition::maybe_start_relation_transition(
+                &state.session_cache,
+                state.db_manager.as_ref(),
+                role,
+                srid,
+                pre.relation_before.as_str(),
+                middle.relation_after.as_str(),
+                middle.favor_delta,
+            )
+            .await
+            .map_err(|e| super::super::turn_error::TurnError::wrap("relation_transition", e))?;
+        }
         Ok(PostPersistOutcome {
-            favor_current: favor_current?,
+            favor_current,
             movement,
             portrait_emotion_str: portrait_res?,
         })
     } else {
         let (favor_current, movement) = tokio::join!(atomic_fut, movement_fut);
+        let favor_current = favor_current?;
+        if matches!(mode, TurnMode::CoPresent) {
+            crate::domain::relation_transition::maybe_start_relation_transition(
+                &state.session_cache,
+                state.db_manager.as_ref(),
+                role,
+                srid,
+                pre.relation_before.as_str(),
+                middle.relation_after.as_str(),
+                middle.favor_delta,
+            )
+            .await
+            .map_err(|e| super::super::turn_error::TurnError::wrap("relation_transition", e))?;
+        }
         Ok(PostPersistOutcome {
-            favor_current: favor_current?,
+            favor_current,
             movement,
             portrait_emotion_str: policy.bot_emotion_str.clone(),
         })

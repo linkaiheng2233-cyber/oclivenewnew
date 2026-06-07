@@ -91,7 +91,7 @@
 | event | `builtin` / `builtin_v2` / `remote` / `directory` | 同上 |
 | prompt | `builtin` / `builtin_v2` / `remote` / `directory` | 同上 |
 | llm | **`ollama`** / `remote` / `directory` | **`remote`**：`OCLIVE_REMOTE_LLM_URL`；可用 **`OCLIVE_LLM_BACKEND`** 在加载时覆盖 |
-| agent | `builtin` / `remote` / `directory` | `remote`：侧车 JSON-RPC；`directory`：配置 `directory_plugins.agent` |
+| agent | `builtin` / `remote` / `directory` / `none` | `remote`：侧车 `agent.process`（`OCLIVE_REMOTE_AGENT_URL` 或回退 `OCLIVE_REMOTE_PLUGIN_URL`）；`directory`：配置 `directory_plugins.agent`；协议见 [AGENT_REMOTE_PROTOCOL.md](../plugin-and-architecture/AGENT_REMOTE_PROTOCOL.md) |
 
 **不存在于 v1 枚举的字符串**（如字面量 `none`）会导致 **角色包解析失败**。若脚手架或文档写「none」，表示**逻辑上关闭/不声明**；写入主应用可加载的 JSON 时请 **省略该键**（回退默认）或改为合法枚举。
 
@@ -105,12 +105,12 @@
 
 **架构定位**：**第 1 设施子模块**（规范全名：**复杂情感设施子模块**）。编号与命名见 **[OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)**（[English](../../creator-docs-en/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)）。**专家模型**专名仅指 **第 2 设施子模块**（专家模型设施子模块 / 专家路由），见同文档 § 第 2 设施子模块。
 
-**当前 `PluginBackends` 不含 `complex_emotion` 字段。** `oclive-cli` 将 `complex_emotion` 写在 **`plugin_backends` 对象内** 便于工厂预设与文档对齐；宿主 Serde **忽略**该键，不影响 `load_role`。主路径在 `co_present` 内调用内置关键词实现（`BuiltinKeywordComplexEmotionProvider`），**不经** `PluginHost`。
+**当前 `PluginBackends` 不含 `complex_emotion` 字段。** `oclive-cli` 将 `complex_emotion` 写在 **`plugin_backends` 对象内** 便于工厂预设与文档对齐；宿主 Serde **忽略**该键，不影响 `load_role`。主路径在 `co_present` 内经 **`PluginHost` / `SlotRunner`** 解析：默认 `BuiltinKeywordComplexEmotionProvider`；蓝图 **`slot_registry`** 中 `type: complex_emotion` + `backend: builtin|remote|directory` 时 **last-wins**（`resolve_complex_emotion_winner`）。
 
 | 项 | 说明 |
 |----|------|
 | 与 **emotion 后端模块** | emotion 产出 `EmotionResult`；本设施消费其推导指标，产出 `narrative_hint` 供 **prompt 后端模块** |
-| 与 **后端模块插件模块** | 侧车方法 `complex_emotion.resolve_turn`（`OCLIVE_COMPLEX_EMOTION_URL`）已存在；**尚未**按本 JSON 键切换（路线图）；**不**占第 7 模块号 |
+| 与 **后端模块插件模块** | 侧车方法 `complex_emotion.resolve_turn`（`OCLIVE_COMPLEX_EMOTION_URL` 或 `slot_registry` remote/directory）；**不**占第 7 模块号；**不**经 `plugin_backends.complex_emotion` 六槽键切换 |
 | 与 **Monolith** | 焊接键名 `complex_emotion`（七焊接键之一），≠ 宿主槽位 |
 
 - 侧车 wire：[REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)。

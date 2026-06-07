@@ -276,6 +276,7 @@ pub async fn build_plugin_resolution_debug_info(
         LlmBackend::Ollama => "ollama".to_string(),
         LlmBackend::Remote => "remote".to_string(),
         LlmBackend::Directory => "directory".to_string(),
+        LlmBackend::None => "none".to_string(),
     });
     let remote_plugin_url_configured = std::env::var("OCLIVE_REMOTE_PLUGIN_URL")
         .ok()

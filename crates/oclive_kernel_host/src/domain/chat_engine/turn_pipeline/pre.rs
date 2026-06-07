@@ -87,6 +87,7 @@ pub(crate) struct PreLlmOutput {
     pub relation_hint: String,
     pub relation_before: String,
     pub favorability_before: f64,
+    pub relation_transition_hint: String,
 }
 
 pub(crate) struct MiddleOutput {
@@ -265,13 +266,37 @@ async fn load_memories_and_relation_key(
         .map(|m| m.scene_weight_multiplier)
         .unwrap_or(1.0);
     weight_memories_for_scene(&mut memories, scene_id, scene_m);
+    let cfg = &role.pack_memory_config;
     if immersive && virtual_time_ms > 0 {
-        MemoryEngine::apply_time_decay_batch(
-            &mut memories,
-            virtual_time_ms,
-            &role.pack_memory_config,
+        MemoryEngine::decay_memories_in_place(&mut memories, |m| {
+            oclive_kernel_runtime::domain::virtual_time::virtual_days_between_ms(
+                m.created_at.timestamp_millis(),
+                virtual_time_ms,
+            )
+        }, cfg);
+    } else {
+        let now_ms = chrono::Utc::now().timestamp_millis();
+        MemoryEngine::decay_memories_in_place(&mut memories, |m| {
+            let ref_ms = m
+                .accessed_at
+                .unwrap_or(m.created_at)
+                .timestamp_millis();
+            oclive_kernel_runtime::domain::virtual_time::virtual_days_between_ms(ref_ms, now_ms)
+        }, cfg);
+    }
+    if let Err(e) = state
+        .db_manager
+        .persist_memory_decay_batch(srid, &memories, &[])
+        .await
+    {
+        tracing::warn!(
+            target: "oclive_memory",
+            role_id = %srid,
+            error = %e,
+            "persist_memory_decay_batch failed"
         );
     }
+    memories = MemoryEngine::filter_for_prompt_threshold(memories, cfg);
     Ok((memories, resolved_identity))
 }
 
@@ -351,12 +376,15 @@ async fn apply_memory_reinforcement(
 }
 
 async fn rank_relevant_memories(
+    state: &crate::state::AppState,
+    srid: &str,
     pl: &crate::domain::plugin_host::ResolvedRolePlugins,
     memories: &[Memory],
     user_message: &str,
     scene_id: &str,
 ) -> TurnResult<Vec<Memory>> {
-    STAGES
+    let limit = state.host_profile.memory_retrieval.retrieval_limit();
+    let mut relevant = STAGES
         .stage(ChatStage::MemoryRank, async {
             SlotRunner::rank_memories(
                 pl,
@@ -364,11 +392,28 @@ async fn rank_relevant_memories(
                     memories,
                     user_query: user_message,
                     scene_id: Some(scene_id),
-                    limit: 8,
+                    limit,
                 },
             )
         })
+        .await?;
+    let now = chrono::Utc::now();
+    for m in &mut relevant {
+        m.accessed_at = Some(now);
+    }
+    if let Err(e) = state
+        .db_manager
+        .persist_memory_decay_batch(srid, &relevant, &relevant)
         .await
+    {
+        tracing::warn!(
+            target: "oclive_memory",
+            role_id = %srid,
+            error = %e,
+            "persist accessed_at for ranked memories failed"
+        );
+    }
+    Ok(relevant)
 }
 
 async fn resolve_relation_before_turn(
@@ -469,10 +514,36 @@ pub(crate) async fn pre_llm(ctx: &TurnContext<'_>) -> TurnResult<PreLlmOutput> {
         mutable_for_prompt,
     )
     .await?;
-    let relevant = rank_relevant_memories(pl, &memories, user_message, scene_id).await?;
+    let relevant = rank_relevant_memories(
+        state,
+        srid,
+        pl,
+        &memories,
+        user_message,
+        scene_id,
+    )
+    .await?;
     let (relation_before, favorability_before) =
         resolve_relation_before_turn(state, role, srid, user_relation_key.as_str(), ctx.immersive)
             .await?;
+    let transition = crate::domain::relation_transition::consume_relation_transition_at_turn_start(
+        &state.session_cache,
+        state.db_manager.as_ref(),
+        role,
+        srid,
+    )
+    .await
+    .map_err(|e| super::super::turn_error::TurnError::wrap("relation_transition", e))?;
+    if transition.profile_strip_needed
+        && role.evolution_config.personality_source == PersonalitySource::Profile
+    {
+        mutable_for_prompt = STAGES
+            .stage(
+                ChatStage::MutablePersonality,
+                state.db_manager.get_mutable_personality(srid),
+            )
+            .await?;
+    }
 
     Ok(PreLlmOutput {
         event_runtime,
@@ -494,6 +565,7 @@ pub(crate) async fn pre_llm(ctx: &TurnContext<'_>) -> TurnResult<PreLlmOutput> {
         relation_hint: resolved_identity.relation_hint,
         relation_before,
         favorability_before,
+        relation_transition_hint: transition.hint,
     })
 }
 

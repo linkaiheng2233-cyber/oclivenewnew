@@ -2,10 +2,10 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
-use oclivenewnew_tauri::domain::chat_engine::process_message;
-use oclivenewnew_tauri::infrastructure::MockLlmClient;
-use oclivenewnew_tauri::models::dto::SendMessageRequest;
-use oclivenewnew_tauri::state::AppState;
+use oclive_kernel_host::domain::chat_engine::process_message;
+use oclive_kernel_host::infrastructure::MockLlmClient;
+use oclive_kernel_types::models::dto::SendMessageRequest;
+use oclive_kernel_host::state::AppState;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::fs;

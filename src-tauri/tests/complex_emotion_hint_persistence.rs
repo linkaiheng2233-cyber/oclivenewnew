@@ -3,11 +3,11 @@
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use chrono::{Duration, Utc};
-use oclivenewnew_tauri::domain::complex_emotion_store::{
+use oclive_kernel_host::domain::complex_emotion_store::{
     load_stored_narrative_hint, persist_stored_narrative_hint, COMPLEX_EMOTION_HINT_TTL_HOURS,
 };
-use oclivenewnew_tauri::infrastructure::MockLlmClient;
-use oclivenewnew_tauri::state::AppState;
+use oclive_kernel_host::infrastructure::MockLlmClient;
+use oclive_kernel_host::state::AppState;
 use std::sync::Arc;
 
 async fn in_memory_state() -> AppState {

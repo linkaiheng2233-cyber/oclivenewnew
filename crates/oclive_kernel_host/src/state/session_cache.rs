@@ -26,7 +26,23 @@ pub struct SessionCache {
     expert_injected_memory_ids: DashMap<String, Vec<String>>,
     /// Expert `slot.lora.apply` applied directory plugin id (session marker cleared on failure).
     expert_lora_plugin_id: DashMap<String, String>,
+    /// Multi-turn relation transition buffer per session role id.
+    relation_transitions: DashMap<String, RelationTransition>,
     personality_snapshots: Cache<PersonalityVector>,
+}
+
+/// In-process relation transition frame (consumed each turn until `remaining_turns` reaches zero).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RelationTransition {
+    pub hint: String,
+    pub remaining_turns: u32,
+}
+
+/// Result of consuming one transition turn.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RelationTransitionConsumed {
+    pub hint: String,
+    pub expired: bool,
 }
 
 async fn run_personality_cleanup(weak: Weak<SessionCache>) {
@@ -55,6 +71,7 @@ impl SessionCache {
             expert_prompt_enhance: DashMap::new(),
             expert_injected_memory_ids: DashMap::new(),
             expert_lora_plugin_id: DashMap::new(),
+            relation_transitions: DashMap::new(),
             personality_snapshots: Cache::with_capacity(PERSONALITY_CACHE_CAPACITY),
         }
     }
@@ -157,6 +174,45 @@ impl SessionCache {
 
     pub fn expert_lora_plugin_id(&self, srid: &str) -> Option<String> {
         self.expert_lora_plugin_id.get(srid).map(|v| v.clone())
+    }
+
+    #[must_use]
+    pub fn has_relation_transition(&self, srid: &str) -> bool {
+        self.relation_transitions.contains_key(srid)
+    }
+
+    pub fn set_relation_transition(&self, srid: &str, hint: String, remaining_turns: u32) {
+        if hint.trim().is_empty() || remaining_turns == 0 {
+            self.relation_transitions.remove(srid);
+            return;
+        }
+        self.relation_transitions.insert(
+            srid.to_string(),
+            RelationTransition {
+                hint,
+                remaining_turns,
+            },
+        );
+    }
+
+    pub fn consume_relation_transition(&self, srid: &str) -> Option<RelationTransitionConsumed> {
+        let mut entry = self.relation_transitions.get_mut(srid)?;
+        let hint = entry.hint.clone();
+        let expired = if entry.remaining_turns > 0 {
+            entry.remaining_turns -= 1;
+            entry.remaining_turns == 0
+        } else {
+            true
+        };
+        if expired {
+            drop(entry);
+            self.relation_transitions.remove(srid);
+        }
+        Some(RelationTransitionConsumed { hint, expired })
+    }
+
+    pub fn clear_relation_transition(&self, srid: &str) {
+        self.relation_transitions.remove(srid);
     }
 }
 

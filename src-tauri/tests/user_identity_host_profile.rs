@@ -6,12 +6,12 @@ use async_trait::async_trait;
 use oclive_kernel_types::models::{
     RolePackBuiltinReplyPostProcessorConfig, RolePackReplyPostProcessorConfig,
 };
-use oclivenewnew_tauri::domain::host_profile::load_host_profile_file;
-use oclivenewnew_tauri::domain::reply_post_processor::apply_effective_post_processor_config;
-use oclivenewnew_tauri::domain::user_identity_loader::resolve_active_user_identity;
+use oclive_kernel_host::domain::host_profile::load_host_profile_file;
+use oclive_kernel_host::domain::reply_post_processor::apply_effective_post_processor_config;
+use oclive_kernel_host::domain::user_identity_loader::resolve_active_user_identity;
 use oclivenewnew_tauri::error::Result;
-use oclivenewnew_tauri::infrastructure::llm::LlmClient;
-use oclivenewnew_tauri::state::AppState;
+use oclive_kernel_host::infrastructure::llm::LlmClient;
+use oclive_kernel_host::state::AppState;
 use std::io::Write;
 use std::sync::Arc;
 use tempfile::TempDir;
@@ -66,7 +66,7 @@ default_id = "classmate"
 
 #[test]
 fn minimal_post_process_chain_merge() {
-    use oclivenewnew_tauri::domain::host_profile::{
+    use oclive_kernel_host::domain::host_profile::{
         HostProfile, PostProcessChain, PostProcessChainProfile, UserIdentityProfile,
     };
 

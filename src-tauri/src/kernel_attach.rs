@@ -1,14 +1,14 @@
 //! Remote kernel HTTP client (desktop → `:8420` single writer).
 
 use crate::error::AppError;
-use crate::infrastructure::chat_storage::{SessionMeta, StoredMessage};
+use oclive_kernel_host::infrastructure::chat_storage::{SessionMeta, StoredMessage};
 use crate::kernel_lifecycle::KernelConnection;
-use crate::models::dto::{
+use oclive_kernel_types::models::dto::{
     CreateEventRequest, CreateEventResponse, GetRoleInfoRequest, JumpTimeRequest, JumpTimeResponse,
     RoleInfo, SendMessageRequest, SendMessageResponse, SetUserPresenceSceneRequest,
     SwitchSceneRequest, SwitchSceneResponse, TimeStateResponse,
 };
-use crate::state::AppState;
+use oclive_kernel_host::state::AppState;
 pub(crate) use oclive_kernel_runtime::app_error_from_http_response;
 use oclive_kernel_runtime::RUNTIME_API_VERSION;
 use serde::Deserialize;

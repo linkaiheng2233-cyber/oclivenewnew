@@ -24,6 +24,35 @@ pub fn append_mutable_profile_section(existing: &str, title: &str, line: &str) -
     }
 }
 
+/// Replace a profile section title with a single new line (removes prior section body first).
+#[must_use]
+pub fn replace_mutable_profile_section(existing: &str, title: &str, line: &str) -> String {
+    let stripped = strip_mutable_profile_section(existing, title);
+    append_mutable_profile_section(&stripped, title, line)
+}
+
+/// Remove a titled section from the mutable personality profile.
+#[must_use]
+pub fn strip_mutable_profile_section(existing: &str, title: &str) -> String {
+    let header = format!("## {title}");
+    let Some(start) = existing.find(&header) else {
+        return existing.to_string();
+    };
+    let before = existing[..start].trim_end();
+    let after_header = &existing[start + header.len()..];
+    let next_section = after_header.find("\n## ");
+    let tail = match next_section {
+        Some(idx) => after_header[idx + 1..].trim_start(),
+        None => "",
+    };
+    match (before.is_empty(), tail.is_empty()) {
+        (true, true) => String::new(),
+        (true, false) => tail.to_string(),
+        (false, true) => before.to_string(),
+        (false, false) => format!("{before}\n\n{tail}"),
+    }
+}
+
 /// Before a turn starts: decay favorability by virtual days since last interaction; downgrade relation state when needed.
 ///
 /// # Errors

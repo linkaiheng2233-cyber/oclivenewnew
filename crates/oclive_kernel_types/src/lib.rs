@@ -34,7 +34,10 @@ pub mod models;
 pub mod policy;
 pub mod prompt;
 
-pub use agent::{AgentInput, AgentOutput};
+pub use agent::{
+    AgentInput, AgentOutput, AgentProcessRpcResult, AgentRoleConstraints, AgentRpcToolCall,
+    AgentToolResult, AgentToolSchema, AgentTurnContext,
+};
 pub use complex_emotion::{ComplexEmotionInput, ComplexEmotionOutput};
 pub use emotion::EmotionResult;
 pub use error::{http_chat_codes, AppError, KernelErrorBody, Result};

@@ -126,6 +126,44 @@ impl RemotePluginHttpConfig {
         }
     }
 
+    /// `OCLIVE_REMOTE_AGENT_URL`: agent sidecar JSON-RPC (`agent.process`).
+    /// When unset, falls back to `OCLIVE_REMOTE_PLUGIN_URL` (shared endpoint, method differs).
+    #[must_use]
+    pub fn from_env_agent() -> Option<Self> {
+        let endpoint = std::env::var("OCLIVE_REMOTE_AGENT_URL")
+            .ok()
+            .filter(|s| !s.trim().is_empty())
+            .or_else(|| std::env::var("OCLIVE_REMOTE_PLUGIN_URL").ok())?;
+        let t = endpoint.trim();
+        if t.is_empty() {
+            return None;
+        }
+        let timeout_ms = std::env::var("OCLIVE_REMOTE_AGENT_TIMEOUT_MS")
+            .ok()
+            .and_then(|s| s.parse::<u64>().ok())
+            .or_else(|| {
+                std::env::var("OCLIVE_REMOTE_PLUGIN_TIMEOUT_MS")
+                    .ok()
+                    .and_then(|s| s.parse::<u64>().ok())
+            })
+            .unwrap_or(120_000);
+        let bearer_token = std::env::var("OCLIVE_REMOTE_AGENT_TOKEN")
+            .ok()
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .or_else(|| {
+                std::env::var("OCLIVE_REMOTE_PLUGIN_TOKEN")
+                    .ok()
+                    .map(|s| s.trim().to_string())
+                    .filter(|s| !s.is_empty())
+            });
+        Some(Self {
+            endpoint: t.to_string(),
+            timeout: Duration::from_millis(timeout_ms.clamp(1_000, 600_000)),
+            bearer_token,
+        })
+    }
+
     /// Role pack `reply_post_processor.remote.url` endpoint.
     #[must_use]
     pub fn for_reply_post_processor_remote(url: &str, timeout_ms: Option<u32>) -> Option<Self> {

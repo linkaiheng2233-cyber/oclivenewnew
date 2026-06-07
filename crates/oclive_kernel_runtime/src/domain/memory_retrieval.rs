@@ -192,6 +192,7 @@ mod tests {
             created_at: t,
             scene_id: None,
             mention_count: 1,
+            accessed_at: None,
         };
         let m_match = Memory {
             id: "match".into(),
@@ -202,6 +203,7 @@ mod tests {
             created_at: t,
             scene_id: None,
             mention_count: 1,
+            accessed_at: None,
         };
         let slice = &[m_high.clone(), m_match.clone()];
         let input_v1 = MemoryRetrievalInput {
@@ -239,6 +241,7 @@ mod tests {
             created_at: t,
             scene_id: None,
             mention_count: 1,
+            accessed_at: None,
         };
         let m_b = Memory {
             id: "b".into(),
@@ -249,6 +252,7 @@ mod tests {
             created_at: t,
             scene_id: None,
             mention_count: 1,
+            accessed_at: None,
         };
         let slice = &[m_a.clone(), m_b.clone()];
         let mk_input = || MemoryRetrievalInput {

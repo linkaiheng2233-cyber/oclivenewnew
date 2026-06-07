@@ -68,6 +68,12 @@ export default {
     pluginsPanelHint2:
       'Same loading rules as chat_toolbar: https://ocliveplugin.localhost/<id>/<entry>; order/hide in plugin manager.',
     iframeSavedInfo: 'Saved. Restart the app for forced iframe to apply fully.',
+    userIdentitySectionTitle: 'User identity',
+    userIdentitySectionLead:
+      'Switch the User Identity Prompt Template (role pack user_identities/); the next turn injects the matching identity section into the prompt.',
+    postProcessorSectionTitle: 'Reply post-processor',
+    noIdentityCatalogHint:
+      'This role pack has no user_identities/ catalog; post-processor status is still shown below.',
   },
   hotkeys: {
     title: 'Global shortcuts',

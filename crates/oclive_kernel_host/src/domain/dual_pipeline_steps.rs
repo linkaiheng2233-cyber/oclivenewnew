@@ -9,7 +9,7 @@
 //!
 //! Allowed methods: see [`dual_pipeline_registry`](super::dual_pipeline_registry).
 
-use crate::domain::agent::AgentInput;
+use crate::domain::agent_context::build_agent_input;
 use crate::domain::chat_engine::context::load_recent_context;
 use crate::domain::chat_engine::favor::{compute_favor_and_relation, FavorRelationInput};
 use crate::domain::chat_engine::message_error::ProcessMessageError;
@@ -268,7 +268,7 @@ impl<'a> ExperimentalStepCtx<'a> {
                     memories: &mem,
                     user_query: self.user_message,
                     scene_id: Some(self.scene_id.as_str()),
-                    limit: 8,
+                    limit: self.state.host_profile.memory_retrieval.retrieval_limit(),
                 },
             )
             .map_err(map_slot_err)?
@@ -352,6 +352,18 @@ impl<'a> ExperimentalStepCtx<'a> {
             .state
             .session_cache
             .stored_complex_emotion_narrative_hint(self.srid);
+        let transition = crate::domain::relation_transition::consume_relation_transition_at_turn_start(
+            &self.state.session_cache,
+            self.state.db_manager.as_ref(),
+            self.role,
+            self.srid,
+        )
+        .await
+        .map_err(map_db_err)?;
+        let host_state_hint = self
+            .state
+            .host_profile
+            .state_expression_hint(favorability_before);
         let prompt = SlotRunner::build_prompt(
             &self.pl,
             &PromptInput {
@@ -378,6 +390,9 @@ impl<'a> ExperimentalStepCtx<'a> {
                 mutable_personality: mutable_for_prompt.as_str(),
                 reply_quality_anchor: effective_reply_quality_anchor(self.role),
                 previous_complex_emotion_narrative_hint: prev_hint.as_str(),
+                host_prompt_overlay: "",
+                host_state_expression_hint: host_state_hint,
+                relation_transition_hint: transition.hint.as_str(),
             },
         )
         .map_err(map_slot_err)?;
@@ -408,17 +423,27 @@ impl<'a> ExperimentalStepCtx<'a> {
     }
 
     async fn run_agent_process(&mut self) -> Result<StepOutcome, ProcessMessageError> {
+        if self.state.host_profile.skip_agent {
+            return Ok(StepOutcome::Continue);
+        }
+        let model = self
+            .role
+            .resolve_ollama_model(self.state.ollama_model.as_str());
+        let agent_input = build_agent_input(
+            self.state,
+            self.role,
+            self.srid,
+            self.scene_id.as_str(),
+            self.user_message,
+            model.as_str(),
+            self.state.plugins.agent_mcp_bridge().as_ref(),
+        )
+        .await
+        .map_err(map_db_err)?;
         let agent_out = self
             .pl
             .agent
-            .process(AgentInput {
-                role_id: self.mrid.to_string(),
-                session_namespace: self.srid.to_string(),
-                message: self.req.user_message.clone(),
-                model: self
-                    .role
-                    .resolve_ollama_model(self.state.ollama_model.as_str()),
-            })
+            .process(agent_input)
             .await
             .map_err(map_slot_err)?;
         if !agent_out.handled {

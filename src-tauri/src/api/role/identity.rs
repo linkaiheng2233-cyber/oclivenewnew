@@ -3,11 +3,11 @@
 #![allow(clippy::missing_errors_doc)]
 
 use crate::api::error::CommandError;
-use crate::models::dto::{
+use oclive_kernel_types::models::dto::{
     GetUserIdentityStateRequest, SetSceneUserIdentityRequest, SetUserIdentityRequest,
     UserIdentityStateResponse,
 };
-use crate::state::SharedAppState;
+use oclive_kernel_host::state::SharedAppState;
 use oclive_kernel_host::service::role::{
     get_user_identity_state_impl, set_scene_user_identity_impl, set_user_identity_impl,
 };

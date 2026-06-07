@@ -1,7 +1,7 @@
 use crate::api::error::CommandError;
-use crate::infrastructure::{export_role_pack, import_role_pack, peek_role_pack_manifest};
-use crate::models::dto::RolePackPeekResponse;
-use crate::state::SharedAppState;
+use oclive_kernel_host::infrastructure::{export_role_pack, import_role_pack, peek_role_pack_manifest};
+use oclive_kernel_types::models::dto::RolePackPeekResponse;
+use oclive_kernel_host::state::SharedAppState;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tauri::Manager;

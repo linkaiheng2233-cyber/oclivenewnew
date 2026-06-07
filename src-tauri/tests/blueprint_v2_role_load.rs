@@ -1,7 +1,7 @@
 //! `pipeline.ocblueprint` v2 经 `RoleStorage::load_role_from_dir` 加载。
 
 use oclive_validation::PIPELINE_BLUEPRINT_FILENAME;
-use oclivenewnew_tauri::infrastructure::storage::RoleStorage;
+use oclive_kernel_host::infrastructure::storage::RoleStorage;
 use std::fs;
 use std::io::Write;
 

@@ -154,6 +154,7 @@ mod tests {
             created_at: Utc::now(),
             scene_id: None,
             mention_count: 1,
+            accessed_at: None,
         };
         let memories = vec![m("a"), m("b"), m("c")];
         let out = apply_ordered_ids(&memories, &["c".into(), "a".into()], 2);

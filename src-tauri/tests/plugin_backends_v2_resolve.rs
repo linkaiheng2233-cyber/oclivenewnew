@@ -5,12 +5,12 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
-use oclivenewnew_tauri::domain::plugin_host::PluginHost;
-use oclivenewnew_tauri::infrastructure::high_risk_grants::HighRiskGrantStore;
-use oclivenewnew_tauri::infrastructure::llm::LlmClient;
-use oclivenewnew_tauri::infrastructure::remote_fallback_policy::new_remote_fallback_switch;
-use oclivenewnew_tauri::infrastructure::MockLlmClient;
-use oclivenewnew_tauri::models::{
+use oclive_kernel_host::domain::plugin_host::PluginHost;
+use oclive_kernel_host::infrastructure::high_risk_grants::HighRiskGrantStore;
+use oclive_kernel_host::infrastructure::llm::LlmClient;
+use oclive_kernel_host::infrastructure::remote_fallback_policy::new_remote_fallback_switch;
+use oclive_kernel_host::infrastructure::MockLlmClient;
+use oclive_kernel_types::models::{
     EmotionBackend, EventBackend, LlmBackend, MemoryBackend, PluginBackends, PromptBackend, Role,
 };
 use std::sync::Arc;

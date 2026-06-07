@@ -27,8 +27,8 @@ pub use relation::{
 
 use crate::api::error::CommandError;
 use crate::error::AppError;
-use crate::models::dto::{GetRoleInfoRequest, RoleData, RoleInfo, RoleSummary};
-use crate::state::SharedAppState;
+use oclive_kernel_types::models::dto::{GetRoleInfoRequest, RoleData, RoleInfo, RoleSummary};
+use oclive_kernel_host::state::SharedAppState;
 use tauri::{AppHandle, Manager, State};
 
 pub use oclive_kernel_host::service::role::{

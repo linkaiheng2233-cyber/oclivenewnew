@@ -933,12 +933,6 @@ fn validate_slot_backend_and_fields(key: &str, slot: &SlotRegistryEntry) -> Resu
         ));
     }
 
-    if t == "agent" && (b == "remote" || b == "directory") {
-        return Err(format!(
-            "slot_registry[{key}]：agent backend「{b}」尚未实现（请使用 builtin）"
-        ));
-    }
-
     if t == "llm" && b == "ollama" {
         if let Some(ref m) = slot.model {
             if m.trim().is_empty() {
@@ -954,10 +948,12 @@ fn validate_slot_backend_and_fields(key: &str, slot: &SlotRegistryEntry) -> Resu
 
 fn allowed_backends_for_type(slot_type: &str) -> &'static [&'static str] {
     match slot_type {
-        "memory" => &["builtin", "builtin_v2", "remote", "directory", "local"],
-        "emotion" | "event" | "prompt" => &["builtin", "builtin_v2", "remote", "directory"],
-        "llm" => &["ollama", "remote", "directory"],
-        "agent" => &["builtin", "remote", "directory"],
+        "memory" => &["builtin", "builtin_v2", "remote", "directory", "local", "none"],
+        "emotion" | "event" | "prompt" => {
+            &["builtin", "builtin_v2", "remote", "directory", "none"]
+        }
+        "llm" => &["ollama", "remote", "directory", "none"],
+        "agent" => &["builtin", "remote", "directory", "none"],
         "complex_emotion" => &["builtin", "remote", "directory"],
         _ => &[],
     }

@@ -113,7 +113,7 @@ mod tests {
                 locale: "zh",
             })
             .expect("ok");
-        assert_eq!(out.display_reply, "hello \n\n world");
+        assert_eq!(out.display_reply, "hello\n\n world");
     }
 
     #[test]

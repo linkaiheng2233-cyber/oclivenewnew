@@ -9,11 +9,11 @@ use crate::api::chat_backend::ChatBackend;
 use crate::api::directory_plugin::directory_plugin_bootstrap_dto;
 use crate::api::error::ApiError;
 use crate::api::error::CommandError;
-use crate::infrastructure::directory_plugins::{normalize_plugin_rel, OclivePluginManifest};
-use crate::infrastructure::import_role_pack;
-use crate::infrastructure::role_pack::validate_bridge_import_role_source;
+use oclive_kernel_host::infrastructure::directory_plugins::{normalize_plugin_rel, OclivePluginManifest};
+use oclive_kernel_host::infrastructure::import_role_pack;
+use oclive_kernel_host::infrastructure::role_pack::validate_bridge_import_role_source;
 use crate::kernel_attach::{role_dir_for_id, KernelHttpClient};
-use crate::state::{AppState, SharedAppState};
+use oclive_kernel_host::state::{AppState, SharedAppState};
 use oclive_kernel_host::service::{
     bridge_command_needs_kernel_writer, dispatch_bridge_command, parse_send_message_request,
 };

@@ -237,6 +237,16 @@ pub fn sanitize_path_segment(raw: &str) -> Result<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Mutex;
+
+    /// `OCLIVE_CHAT_STORAGE_ROOT` is process-global; serialize env-sensitive tests.
+    static ENV_ROOT_TEST_LOCK: Mutex<()> = Mutex::new(());
+
+    fn env_root_test_guard() -> std::sync::MutexGuard<'static, ()> {
+        ENV_ROOT_TEST_LOCK
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
 
     #[test]
     fn resolve_max_messages_rounds_down_to_even() {
@@ -248,15 +258,21 @@ mod tests {
 
     #[test]
     fn env_root_overrides_default() {
+        let _guard = env_root_test_guard();
+        let prev = std::env::var(ENV_CHAT_STORAGE_ROOT).ok();
         let tmp = std::env::temp_dir().join("oclive_chat_storage_test");
         std::env::set_var(ENV_CHAT_STORAGE_ROOT, tmp.to_string_lossy().as_ref());
         let root = resolve_storage_root(Path::new("/app_data"));
         assert_eq!(root, tmp);
-        std::env::remove_var(ENV_CHAT_STORAGE_ROOT);
+        match prev {
+            Some(v) => std::env::set_var(ENV_CHAT_STORAGE_ROOT, v),
+            None => std::env::remove_var(ENV_CHAT_STORAGE_ROOT),
+        }
     }
 
     #[test]
     fn default_root_under_app_data() {
+        let _guard = env_root_test_guard();
         std::env::remove_var(ENV_CHAT_STORAGE_ROOT);
         let root = resolve_storage_root(Path::new("/app_data"));
         assert_eq!(root, Path::new("/app_data/chats"));
@@ -270,6 +286,8 @@ mod tests {
 
     #[test]
     fn role_pack_location_resolves_to_role_dir_chats() {
+        let _guard = env_root_test_guard();
+        std::env::remove_var(ENV_CHAT_STORAGE_ROOT);
         let role_dir = std::env::temp_dir().join("oclive_chat_storage_role_test");
         let _ = std::fs::create_dir_all(&role_dir);
         let config = crate::models::RolePackChatStorageConfig {
@@ -283,6 +301,8 @@ mod tests {
 
     #[test]
     fn global_location_uses_default_app_data() {
+        let _guard = env_root_test_guard();
+        std::env::remove_var(ENV_CHAT_STORAGE_ROOT);
         let role_dir = std::env::temp_dir().join("oclive_chat_storage_global_test");
         let _ = std::fs::create_dir_all(&role_dir);
         let config = crate::models::RolePackChatStorageConfig {
@@ -296,6 +316,8 @@ mod tests {
 
     #[test]
     fn missing_location_defaults_to_global() {
+        let _guard = env_root_test_guard();
+        std::env::remove_var(ENV_CHAT_STORAGE_ROOT);
         let config = crate::models::RolePackChatStorageConfig::default();
         let root = resolve_storage_root_with_role(Path::new("/app_data"), &config, None);
         assert_eq!(root, Path::new("/app_data/chats"));
@@ -303,6 +325,8 @@ mod tests {
 
     #[test]
     fn role_pack_unwritable_falls_back_to_global() {
+        let _guard = env_root_test_guard();
+        std::env::remove_var(ENV_CHAT_STORAGE_ROOT);
         let nonexistent = std::path::PathBuf::from("/nonexistent_readonly_oclive_test/role");
         let config = crate::models::RolePackChatStorageConfig {
             location: "role_pack".to_string(),

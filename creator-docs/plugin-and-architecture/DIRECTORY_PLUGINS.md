@@ -63,7 +63,7 @@
 
 - `memory` / `emotion` / `event` / `prompt` 为 **`directory`** 时，使用 **`directory_plugins.<slot>`** 中的插件 `id` 懒启动后，对该 URL 走与 env-remote 相同的 HTTP 客户端（方法名分别为 `memory.rank` 等）。
 - `llm` 为 **`directory`** 时，使用 **`directory_plugins.llm`** 指向的插件 URL，须实现 **`llm.generate` / `llm.generate_tag`**（超时默认按 LLM 档读取，见环境变量）。
-- `agent` 为 **`directory`** 时，使用 **`directory_plugins.agent`** 指向的插件 URL；wire 与其它 Remote/Directory 子系统一致（具体 JSON-RPC 方法以 [REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md) 与宿主实现为准）。
+- `agent` 为 **`directory`** 时，使用 **`directory_plugins.agent`** 指向的插件 URL，须实现 **`agent.process`**（host-orchestrated MCP，见 [AGENT_REMOTE_PROTOCOL.md](AGENT_REMOTE_PROTOCOL.md)）。
 
 若对应槽位 **id 缺失**、**运行时未注入目录插件**、**spawn 或握手失败**，宿主记日志并回退：**memory/emotion/event/prompt → builtin**，**llm → Ollama**，**agent → builtin**。
 

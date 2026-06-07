@@ -2,9 +2,9 @@ use crate::api::error::CommandError;
 use crate::error::AppError;
 use crate::kernel_attach::KernelHttpClient;
 use crate::kernel_lifecycle::SharedKernelConnection;
-use crate::models::dto::{CreateEventRequest, CreateEventResponse, EventItem, QueryEventsRequest};
-use crate::models::EventType;
-use crate::state::{AppState, SharedAppState};
+use oclive_kernel_types::models::dto::{CreateEventRequest, CreateEventResponse, EventItem, QueryEventsRequest};
+use oclive_kernel_types::models::EventType;
+use oclive_kernel_host::state::{AppState, SharedAppState};
 use tauri::{AppHandle, Manager, State};
 
 fn parse_event_type(s: &str) -> Result<EventType, CommandError> {

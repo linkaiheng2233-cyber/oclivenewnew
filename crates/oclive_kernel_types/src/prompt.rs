@@ -36,4 +36,10 @@ pub struct PromptInput<'a> {
     pub user_identity_template: &'a str,
     /// Current User Identity Prompt Template id (audit / debug).
     pub user_identity_id: &'a str,
+    /// Distro concise overlay (e.g. VS Code); injected inside the scene-constraint block when non-empty.
+    pub host_prompt_overlay: &'a str,
+    /// HostProfile `[state_expression]` hint for current favor tier; empty when unset.
+    pub host_state_expression_hint: &'a str,
+    /// Multi-turn relation transition hint from SessionCache; empty when inactive.
+    pub relation_transition_hint: &'a str,
 }

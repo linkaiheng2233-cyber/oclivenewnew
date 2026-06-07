@@ -1,6 +1,6 @@
 use crate::api::error::CommandError;
 use crate::error::AppError;
-use crate::state::{AppState, SharedAppState};
+use oclive_kernel_host::state::{AppState, SharedAppState};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::fs;

@@ -1,12 +1,12 @@
 #![cfg(feature = "dual_core")]
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
-use oclivenewnew_tauri::domain::chat_engine::plugin_resolve::resolve_plugins_for_session;
-use oclivenewnew_tauri::domain::chat_engine::turn_context::TurnContext;
-use oclivenewnew_tauri::domain::dual_pipeline::DualPipelineRunner;
-use oclivenewnew_tauri::infrastructure::MockLlmClient;
-use oclivenewnew_tauri::models::dto::SendMessageRequest;
-use oclivenewnew_tauri::state::AppState;
+use oclive_kernel_host::domain::chat_engine::plugin_resolve::resolve_plugins_for_session;
+use oclive_kernel_host::domain::chat_engine::turn_context::TurnContext;
+use oclive_kernel_host::domain::dual_pipeline::DualPipelineRunner;
+use oclive_kernel_host::infrastructure::MockLlmClient;
+use oclive_kernel_types::models::dto::SendMessageRequest;
+use oclive_kernel_host::state::AppState;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Instant;

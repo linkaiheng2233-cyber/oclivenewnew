@@ -10,18 +10,18 @@ use super::llm_models::{
 use super::user_llm_env::probe_cloud_llm_inner;
 use crate::api::error::CommandError;
 use crate::api::role::{get_role_info_impl, session_namespace};
-use crate::domain::effective_llm_model::resolve_effective_ollama_model;
-use crate::domain::user_llm_env::{
+use oclive_kernel_host::domain::effective_llm_model::resolve_effective_ollama_model;
+use oclive_kernel_host::domain::user_llm_env::{
     apply_user_llm_env, cloud_api_token_configured, ollama_base_from_db_or_env,
     resolve_remote_token, KEY_CLOUD_STYLE, KEY_CLOUD_VENDOR, KEY_LLM_PROVIDER, KEY_REMOTE_MODEL,
     KEY_REMOTE_TOKEN, KEY_REMOTE_URL,
 };
 use crate::error::AppError;
-use crate::infrastructure::ollama_client::OllamaClient;
-use crate::infrastructure::user_llm_secrets::{set_cached_remote_llm_token, write_token_file};
-use crate::models::dto::RoleInfo;
-use crate::models::plugin_backends::LlmBackend;
-use crate::state::{is_managed_legacy_models_path, migrate_and_cleanup_models, SharedAppState};
+use oclive_kernel_host::infrastructure::ollama_client::OllamaClient;
+use oclive_kernel_host::infrastructure::user_llm_secrets::{set_cached_remote_llm_token, write_token_file};
+use oclive_kernel_types::models::dto::RoleInfo;
+use oclive_kernel_types::models::plugin_backends::LlmBackend;
+use oclive_kernel_host::state::{is_managed_legacy_models_path, migrate_and_cleanup_models, SharedAppState};
 use oclive_validation::NETWORK_GRANT_REMOTE_LLM;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
@@ -304,7 +304,7 @@ pub async fn save_llm_user_settings(
     if let Some(ref url) = req.ollama_base_url {
         state
             .db_manager
-            .upsert_app_setting(crate::domain::user_llm_env::KEY_OLLAMA_BASE, url.trim())
+            .upsert_app_setting(oclive_kernel_host::domain::user_llm_env::KEY_OLLAMA_BASE, url.trim())
             .await?;
     }
     if let Some(ref dir) = req.local_models_dir {
@@ -420,7 +420,7 @@ pub async fn save_llm_user_settings(
     };
     let info = match crate::api::role::set_session_plugin_backend_impl(
         state.inner(),
-        &crate::models::dto::SetSessionPluginBackendRequest {
+        &oclive_kernel_types::models::dto::SetSessionPluginBackendRequest {
             role_id: req.role_id.clone(),
             module: "llm".to_string(),
             backend: Some(Some(backend.to_string())),
@@ -440,7 +440,7 @@ pub async fn save_llm_user_settings(
             };
             state.set_session_backend_override(
                 ns.as_str(),
-                crate::models::PluginBackendsOverride {
+                oclive_kernel_types::models::PluginBackendsOverride {
                     llm: Some(llm_backend),
                     ..Default::default()
                 },

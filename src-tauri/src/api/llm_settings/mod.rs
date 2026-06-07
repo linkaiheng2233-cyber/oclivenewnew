@@ -5,7 +5,7 @@ mod commands;
 mod llm_models;
 mod user_llm_env;
 
-pub use crate::domain::user_llm_env::{apply_user_llm_env, apply_user_llm_env_from_db};
+pub use oclive_kernel_host::domain::user_llm_env::{apply_user_llm_env, apply_user_llm_env_from_db};
 pub use canonical_llm_sync::{
     seed_shell_llm_from_canonical, sync_canonical_db_models_dir,
     sync_session_ollama_model_to_canonical, sync_shell_llm_settings_to_canonical,
@@ -15,7 +15,7 @@ pub use llm_models::LocalModelFileDto;
 
 #[tauri::command]
 pub async fn get_llm_user_settings(
-    state: tauri::State<'_, crate::state::SharedAppState>,
+    state: tauri::State<'_, oclive_kernel_host::state::SharedAppState>,
     role_id: String,
     session_id: Option<String>,
 ) -> Result<LlmUserSettingsDto, crate::api::error::CommandError> {
@@ -24,7 +24,7 @@ pub async fn get_llm_user_settings(
 
 #[tauri::command]
 pub async fn list_ollama_models(
-    state: tauri::State<'_, crate::state::SharedAppState>,
+    state: tauri::State<'_, oclive_kernel_host::state::SharedAppState>,
     ollama_base_url: Option<String>,
 ) -> Result<Vec<String>, crate::api::error::CommandError> {
     commands::list_ollama_models(state, ollama_base_url).await
@@ -32,7 +32,7 @@ pub async fn list_ollama_models(
 
 #[tauri::command]
 pub async fn scan_local_model_files(
-    state: tauri::State<'_, crate::state::SharedAppState>,
+    state: tauri::State<'_, oclive_kernel_host::state::SharedAppState>,
     directory: Option<String>,
 ) -> Result<Vec<LocalModelFileDto>, crate::api::error::CommandError> {
     commands::scan_local_model_files(state, directory).await
@@ -48,7 +48,7 @@ pub async fn open_path_in_file_manager(
 
 #[tauri::command]
 pub async fn import_gguf_to_ollama(
-    state: tauri::State<'_, crate::state::SharedAppState>,
+    state: tauri::State<'_, oclive_kernel_host::state::SharedAppState>,
     req: ImportGgufToOllamaRequest,
 ) -> Result<String, crate::api::error::CommandError> {
     commands::import_gguf_to_ollama(state, req).await
@@ -56,7 +56,7 @@ pub async fn import_gguf_to_ollama(
 
 #[tauri::command]
 pub async fn probe_cloud_llm(
-    state: tauri::State<'_, crate::state::SharedAppState>,
+    state: tauri::State<'_, oclive_kernel_host::state::SharedAppState>,
     role_id: String,
     session_id: Option<String>,
 ) -> Result<String, crate::api::error::CommandError> {
@@ -66,8 +66,8 @@ pub async fn probe_cloud_llm(
 #[tauri::command]
 pub async fn save_llm_user_settings(
     app: tauri::AppHandle,
-    state: tauri::State<'_, crate::state::SharedAppState>,
+    state: tauri::State<'_, oclive_kernel_host::state::SharedAppState>,
     req: SaveLlmUserSettingsRequest,
-) -> Result<crate::models::dto::RoleInfo, crate::api::error::CommandError> {
+) -> Result<oclive_kernel_types::models::dto::RoleInfo, crate::api::error::CommandError> {
     commands::save_llm_user_settings(app, state, req).await
 }

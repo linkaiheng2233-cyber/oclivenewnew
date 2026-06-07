@@ -3,6 +3,7 @@ import type { EnvironmentDiagnostics, KernelDiagnostics } from '../api'
 import { nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import HelpHint from '../components/shared/HelpHint.vue'
+import RoleIdentityControls from '../components/role/RoleIdentityControls.vue'
 import ChatStorageSettingsPanel from '../components/settings/ChatStorageSettingsPanel.vue'
 import HotkeySettingsSection from '../components/hotkey/HotkeySettingsSection.vue'
 import PluginSettingsPanelSlots from '../components/PluginSettingsPanelSlots.vue'
@@ -247,6 +248,9 @@ async function onToggleForceIframe(e: Event) {
             <p class="sv-muted">
               {{ t("settings.immersiveOnlyNote") }}
             </p>
+          </section>
+          <section class="sv-section">
+            <RoleIdentityControls variant="full" settings-layout />
           </section>
           <section class="sv-section">
             <div class="sv-row-h">

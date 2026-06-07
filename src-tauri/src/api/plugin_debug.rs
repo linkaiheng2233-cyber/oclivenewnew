@@ -2,16 +2,16 @@
 
 use crate::api::error::ApiError;
 use crate::api::error::CommandError;
-use crate::infrastructure::directory_plugins::{OclivePluginManifest, PluginProcessDebugInfo};
-use crate::infrastructure::remote_plugin::{
+use oclive_kernel_host::infrastructure::directory_plugins::{OclivePluginManifest, PluginProcessDebugInfo};
+use oclive_kernel_host::infrastructure::remote_plugin::{
     invoke_directory_plugin_rpc_blocking, RemoteRpcChannel,
 };
-use crate::state::SharedAppState;
+use oclive_kernel_host::state::SharedAppState;
 use serde::Deserialize;
 use serde_json::{json, Value};
 use tauri::State;
 
-fn require_developer_mode(state: &crate::state::AppState) -> Result<(), CommandError> {
+fn require_developer_mode(state: &oclive_kernel_host::state::AppState) -> Result<(), CommandError> {
     if !state.directory_plugins.developer_effective() {
         return Err(ApiError::PermissionDenied {
             message:
@@ -179,7 +179,7 @@ pub async fn discover_plugin_methods(
 }
 
 fn discover_plugin_methods_blocking(
-    state: &crate::state::AppState,
+    state: &oclive_kernel_host::state::AppState,
     pid: &str,
 ) -> Result<Vec<String>, CommandError> {
     let root = {

@@ -16,7 +16,13 @@ complex_emotion = "on"
 [prompt]
 profile = "full"
 
+[state_expression]
+favor_high = "可更自然地分享日常与情绪，但仍遵守关系阶段"
+favor_mid  = "保持温暖、有分寸的闲聊节奏"
+favor_low  = "礼貌克制，勿过度主动"
+
 [memory]
+# retrieval: reserved, not parsed in v0.3
 retrieval = "default"
 
 [post_process]

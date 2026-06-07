@@ -5,7 +5,7 @@ use crate::kernel_lifecycle::{
     probe_health_status, reconnect_once, KernelConnectionStatus, ReconnectOptions,
     SharedKernelConnection,
 };
-use crate::state::SharedAppState;
+use oclive_kernel_host::state::SharedAppState;
 use oclive_kernel_runtime::shared_kernel_binary_path;
 use tauri::{AppHandle, Manager, State};
 
@@ -18,7 +18,7 @@ pub async fn get_kernel_connection_status(
 ) -> Result<KernelConnectionStatus, CommandError> {
     let conn = app
         .try_state::<SharedKernelConnection>()
-        .ok_or_else(|| crate::error::AppError::KernelOffline)?;
+        .ok_or(crate::error::AppError::KernelOffline)?;
     Ok(probe_health_status(&conn).await)
 }
 
@@ -34,7 +34,7 @@ pub async fn reconnect_kernel(
 ) -> Result<KernelConnectionStatus, CommandError> {
     let conn = app
         .try_state::<SharedKernelConnection>()
-        .ok_or_else(|| crate::error::AppError::KernelOffline)?;
+        .ok_or(crate::error::AppError::KernelOffline)?;
 
     conn.auto_reconnect.lock().reset();
 
@@ -63,7 +63,7 @@ pub async fn reconnect_kernel(
 
     Ok(reconnect_once(&app, &conn, &opts)
         .await
-        .map_err(|e| crate::error::AppError::OllamaError(e))?)
+        .map_err(crate::error::AppError::OllamaError)?)
 }
 
 /// Extended kernel diagnostics for settings UI.
@@ -84,7 +84,7 @@ pub struct KernelDiagnostics {
 pub async fn get_kernel_diagnostics(app: AppHandle) -> Result<KernelDiagnostics, CommandError> {
     let conn = app
         .try_state::<SharedKernelConnection>()
-        .ok_or_else(|| crate::error::AppError::KernelOffline)?;
+        .ok_or(crate::error::AppError::KernelOffline)?;
     let status = probe_health_status(&conn).await;
 
     let shared = shared_kernel_binary_path();

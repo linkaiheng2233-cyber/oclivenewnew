@@ -141,6 +141,7 @@ impl RoleManager {
             created_at: chrono::Utc::now(),
             scene_id: None,
             mention_count: 1,
+            accessed_at: None,
         };
         self.memory_engine.add_short_term(memory);
 
@@ -190,6 +191,9 @@ impl RoleManager {
                 previous_complex_emotion_narrative_hint: "",
                 user_identity_template: "",
                 user_identity_id: "",
+                host_prompt_overlay: "",
+                host_state_expression_hint: "",
+                relation_transition_hint: "",
             })
             .expect("build_prompt");
 

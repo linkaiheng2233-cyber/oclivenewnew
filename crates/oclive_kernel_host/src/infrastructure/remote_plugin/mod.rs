@@ -6,6 +6,7 @@
 //! See `docs/REMOTE_PLUGIN_PROTOCOL.md`.
 
 mod adapter;
+mod agent_http;
 mod complex_emotion_directory_http;
 mod complex_emotion_http;
 mod config;
@@ -19,6 +20,7 @@ mod remote_client;
 mod reply_post_process_directory_http;
 mod reply_post_process_http;
 
+pub use agent_http::AgentRpcProvider;
 pub use complex_emotion_directory_http::DirectoryComplexEmotionHttp;
 pub use complex_emotion_http::RemoteComplexEmotionHttp;
 pub use config::RemotePluginHttpConfig;
@@ -46,7 +48,10 @@ use std::sync::Arc;
 use std::time::Duration;
 
 pub use jsonrpc::RemoteRpcChannel;
-use oclive_validation::{NETWORK_GRANT_REMOTE_LLM, NETWORK_GRANT_REMOTE_PLUGIN, NETWORK_WILDCARD};
+use oclive_validation::{
+    NETWORK_GRANT_REMOTE_AGENT, NETWORK_GRANT_REMOTE_LLM, NETWORK_GRANT_REMOTE_PLUGIN,
+    NETWORK_WILDCARD,
+};
 pub use remote_client::{RemoteHttpClientAsync, RemoteHttpClientBlocking};
 
 /// Shared Remote HTTP connection pool (no global request timeout; per-RPC timeout in [`jsonrpc`] layer).
@@ -133,6 +138,37 @@ fn cloud_api_style_is_openai() -> bool {
             .as_deref(),
         Some("oclive_jsonrpc")
     )
+}
+
+/// `plugin_backends.agent = remote` when `OCLIVE_REMOTE_AGENT_URL` or `OCLIVE_REMOTE_PLUGIN_URL` is set.
+pub fn agent_remote_backend(
+    http_client: Arc<reqwest::Client>,
+    agent_builtin: Arc<dyn crate::domain::agent::AgentProvider>,
+    agent_bridge: Arc<crate::domain::agent_mcp_bridge::AgentMcpBridge>,
+    remote_fallback_allowed: Arc<AtomicBool>,
+    grants: Arc<HighRiskGrantStore>,
+) -> Arc<dyn crate::domain::agent::AgentProvider> {
+    let Some(cfg) = RemotePluginHttpConfig::from_env_agent() else {
+        tracing::info!(
+            target: "oclive_plugin",
+            "agent remote selected but OCLIVE_REMOTE_AGENT_URL / OCLIVE_REMOTE_PLUGIN_URL unset; using builtin"
+        );
+        return agent_builtin;
+    };
+    tracing::info!(
+        target: "oclive_plugin",
+        "remote agent HTTP active -> {}",
+        cfg.endpoint
+    );
+    let primary = Arc::new(AgentRpcProvider::new(
+        http_client,
+        cfg,
+        remote_fallback_allowed,
+        grants,
+        Some(NETWORK_GRANT_REMOTE_AGENT.to_string()),
+        agent_bridge,
+    )) as Arc<dyn crate::domain::agent::AgentProvider>;
+    crate::domain::fallback_agent::FallbackAgentProvider::new(primary, agent_builtin, "remote")
 }
 
 pub fn llm_remote_backend(

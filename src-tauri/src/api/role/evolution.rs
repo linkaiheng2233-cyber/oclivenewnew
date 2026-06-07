@@ -4,10 +4,10 @@
 use super::{ensure_manifest_role_ready, get_role_info_impl, EVENT_IMPACT_MAX, EVENT_IMPACT_MIN};
 use crate::api::error::CommandError;
 use crate::error::AppError;
-use crate::models::dto::{
+use oclive_kernel_types::models::dto::{
     RoleInfo, SetEvolutionFactorRequest, SetRemoteLifeEnabledRequest, SetRoleInteractionModeRequest,
 };
-use crate::state::{AppState, SharedAppState};
+use oclive_kernel_host::state::{AppState, SharedAppState};
 use tauri::State;
 pub async fn set_evolution_factor_impl(
     state: &AppState,

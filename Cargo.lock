@@ -2981,6 +2981,7 @@ name = "oclive-fuzz"
 version = "0.0.0"
 dependencies = [
  "libfuzzer-sys",
+ "oclive_kernel_host",
  "oclive_validation",
  "oclivenewnew-tauri",
  "serde_json",

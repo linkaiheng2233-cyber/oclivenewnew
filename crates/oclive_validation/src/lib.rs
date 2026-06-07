@@ -90,7 +90,7 @@ pub use plugin_dependencies::{parse_plugin_dependencies, resolve_install_order};
 pub use plugin_permissions::{
     manifest_declares_process_spawn, validate_directory_plugin_manifest_permissions,
     validate_permissions_list, ALLOWED as PLUGIN_PERMISSIONS_ALLOWED, MCP_HTTP, MCP_STDIO,
-    NETWORK_GRANT_REMOTE_LLM, NETWORK_GRANT_REMOTE_PLUGIN, NETWORK_WILDCARD, PROCESS_SPAWN,
+    NETWORK_GRANT_REMOTE_AGENT, NETWORK_GRANT_REMOTE_LLM, NETWORK_GRANT_REMOTE_PLUGIN, NETWORK_WILDCARD, PROCESS_SPAWN,
 };
 pub use plugin_slot_attachment::{
     apply_slot_attachments_to_registry, parse_slot_attachments_from_manifest_json,

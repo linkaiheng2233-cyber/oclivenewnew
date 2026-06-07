@@ -1,10 +1,10 @@
-//! API-layer cloud probe; core env apply lives in [`crate::domain::user_llm_env`].
+//! API-layer cloud probe; core env apply lives in [`oclive_kernel_host::domain::user_llm_env`].
 
-use crate::domain::effective_llm_model::resolve_effective_ollama_model;
-use crate::domain::user_llm_env::apply_user_llm_env;
+use oclive_kernel_host::domain::effective_llm_model::resolve_effective_ollama_model;
+use oclive_kernel_host::domain::user_llm_env::apply_user_llm_env;
 use crate::error::AppError;
-use crate::models::plugin_backends::LlmBackend;
-use crate::state::AppState;
+use oclive_kernel_types::models::plugin_backends::LlmBackend;
+use oclive_kernel_host::state::AppState;
 use oclive_validation::NETWORK_GRANT_REMOTE_LLM;
 
 /// Ping cloud LLM with current DB/env settings (after [`apply_user_llm_env`]).

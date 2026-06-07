@@ -2,13 +2,13 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
-use oclivenewnew_tauri::domain::knowledge_loader::load_knowledge_index;
-use oclivenewnew_tauri::domain::prompt_builder::{
+use oclive_kernel_host::domain::knowledge_loader::load_knowledge_index;
+use oclive_kernel_host::domain::prompt_builder::{
     effective_reply_quality_anchor, PromptBuilder, PromptInput,
 };
-use oclivenewnew_tauri::models::knowledge::KnowledgeIndex;
-use oclivenewnew_tauri::models::role_manifest_disk::DiskRoleManifest;
-use oclivenewnew_tauri::models::{EventType, PersonalityVector};
+use oclive_kernel_types::models::knowledge::KnowledgeIndex;
+use oclive_kernel_types::models::role_manifest_disk::DiskRoleManifest;
+use oclive_kernel_types::models::{EventType, PersonalityVector};
 use std::fs;
 use tempfile::tempdir;
 
@@ -57,7 +57,7 @@ fn load_knowledge_index_parses_front_matter_and_merge_hints() {
     );
 
     let snippet = KnowledgeIndex::format_for_prompt(chunks.as_slice(), 2000);
-    let disk_role = oclivenewnew_tauri::models::role_manifest_disk::disk_manifest_to_role(&disk);
+    let disk_role = oclive_kernel_types::models::role_manifest_disk::disk_manifest_to_role(&disk);
     let personality = PersonalityVector::from(&disk_role.default_personality);
     let prompt = PromptBuilder::build_prompt(&PromptInput {
         role: &disk_role,
@@ -81,6 +81,9 @@ fn load_knowledge_index_parses_front_matter_and_merge_hints() {
         mutable_personality: "",
         reply_quality_anchor: effective_reply_quality_anchor(&disk_role),
         previous_complex_emotion_narrative_hint: "",
+        host_prompt_overlay: "",
+        host_state_expression_hint: "",
+        relation_transition_hint: "",
         user_identity_template: "",
         user_identity_id: "",
     });

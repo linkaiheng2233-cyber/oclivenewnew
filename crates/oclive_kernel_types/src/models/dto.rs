@@ -18,7 +18,7 @@ pub const API_VERSION: u32 = 1;
 pub const SCHEMA_VERSION: u32 = 14;
 
 /// Primary chat invoke payload (`send_message`).
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Default, Deserialize)]
 pub struct SendMessageRequest {
     pub role_id: String,
     pub user_message: String,
@@ -30,18 +30,6 @@ pub struct SendMessageRequest {
     /// When `true`, response may include `raw_reply` if post-processor changed the LLM text.
     #[serde(default)]
     pub include_raw_reply: Option<bool>,
-}
-
-impl Default for SendMessageRequest {
-    fn default() -> Self {
-        Self {
-            role_id: String::new(),
-            user_message: String::new(),
-            scene_id: None,
-            session_id: None,
-            include_raw_reply: None,
-        }
-    }
 }
 
 /// Seven-dimensional emotion snapshot returned to the UI.

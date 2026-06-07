@@ -643,6 +643,7 @@ mod tests {
                 created_at: Utc::now(),
                 scene_id: None,
                 mention_count: 1,
+                accessed_at: None,
             },
             Memory {
                 id: "b".into(),
@@ -653,6 +654,7 @@ mod tests {
                 created_at: Utc::now(),
                 scene_id: None,
                 mention_count: 1,
+                accessed_at: None,
             },
         ]
     }

@@ -8,7 +8,17 @@ use crate::error::{AppError, Result};
 use crate::models::*;
 use chrono::{DateTime, Utc};
 
-type MemoryRowTuple = (i64, String, String, f64, f64, String, Option<String>, i32);
+type MemoryRowTuple = (
+    i64,
+    String,
+    String,
+    f64,
+    f64,
+    String,
+    Option<String>,
+    i32,
+    Option<String>,
+);
 
 impl DbManager {
     pub async fn save_memory(
@@ -69,6 +79,7 @@ impl DbManager {
                     created_at,
                     scene_id,
                     mention_count,
+                    accessed_at,
                 )| {
                     Memory {
                         id: id.to_string(),
@@ -79,10 +90,62 @@ impl DbManager {
                         created_at: parse_memory_created_at(&created_at),
                         scene_id,
                         mention_count: mention_count.max(1),
+                        accessed_at: accessed_at.and_then(|s| {
+                            DateTime::parse_from_rfc3339(&s)
+                                .ok()
+                                .map(|dt| dt.with_timezone(&Utc))
+                        }),
                     }
                 },
             )
             .collect()
+    }
+
+    pub async fn update_memory_weight_and_accessed(
+        &self,
+        memory_id: i64,
+        role_id: &str,
+        weight: f64,
+        accessed_at: DateTime<Utc>,
+    ) -> Result<()> {
+        let accessed = accessed_at.to_rfc3339();
+        sqlx::query(
+            "UPDATE long_term_memory SET weight = ?, accessed_at = ? WHERE id = ? AND role_id = ?",
+        )
+        .bind(weight)
+        .bind(accessed)
+        .bind(memory_id)
+        .bind(role_id)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(())
+    }
+
+    pub async fn persist_memory_decay_batch(
+        &self,
+        role_id: &str,
+        memories: &[Memory],
+        touch_accessed: &[Memory],
+    ) -> Result<()> {
+        let touch_ids: std::collections::HashSet<&str> = touch_accessed
+            .iter()
+            .map(|m| m.id.as_str())
+            .collect();
+        let now = Utc::now();
+        for m in memories {
+            let Ok(id) = m.id.parse::<i64>() else {
+                continue;
+            };
+            let accessed = if touch_ids.contains(m.id.as_str()) {
+                now
+            } else {
+                m.accessed_at.unwrap_or(now)
+            };
+            self.update_memory_weight_and_accessed(id, role_id, m.weight, accessed)
+                .await?;
+        }
+        Ok(())
     }
 
     pub async fn increment_memory_mention_count(
@@ -117,7 +180,7 @@ impl DbManager {
         offset: i32,
     ) -> Result<Vec<Memory>> {
         let rows = sqlx::query_as::<_, MemoryRowTuple>(
-            "SELECT id, role_id, content, importance, weight, created_at, scene_id, mention_count
+            "SELECT id, role_id, content, importance, weight, created_at, scene_id, mention_count, accessed_at
              FROM long_term_memory
              WHERE role_id = ?
              ORDER BY created_at DESC

@@ -8,6 +8,7 @@ import KernelStatusBar from './components/KernelStatusBar.vue'
 import PluginChatHeaderSlots from './components/PluginChatHeaderSlots.vue'
 import PluginSidebarSlots from './components/PluginSidebarSlots.vue'
 import PluginSlotEmbed from './components/PluginSlotEmbed.vue'
+import RoleIdentityControls from './components/role/RoleIdentityControls.vue'
 import RoleSelector from './components/role/RoleSelector.vue'
 import RoleplayAsidePanel from './components/RoleplayAsidePanel.vue'
 import TopBarSceneModeDialog from './components/scene/TopBarSceneModeDialog.vue'
@@ -24,8 +25,6 @@ import {
   useMainShell,
 } from './composables/useMainShell'
 import RoleDetailView from './views/RoleDetailView.vue'
-import { useCurrentIdentityLabel } from './composables/useCurrentIdentityLabel'
-
 const {
   t,
   localePreference,
@@ -94,8 +93,6 @@ const {
   onReloadPolicy,
   onDebugRefresh,
 } = useMainShell()
-
-const { currentIdentityLabel, hasIdentityCatalog } = useCurrentIdentityLabel()
 </script>
 
 <template>
@@ -197,13 +194,7 @@ const { currentIdentityLabel, hasIdentityCatalog } = useCurrentIdentityLabel()
             <div class="left-pane-status" :aria-label="t('app.sidebar.favorability')">
               {{ t("app.sidebar.favorability") }} {{ Math.round(roleStore.roleInfo.favorability) }} {{ statusHeart }}
             </div>
-            <div
-              v-if="hasIdentityCatalog && currentIdentityLabel"
-              class="left-pane-identity"
-              :aria-label="t('roleRuntime.currentIdentity', { name: currentIdentityLabel })"
-            >
-              {{ t("roleRuntime.currentIdentity", { name: currentIdentityLabel }) }}
-            </div>
+            <RoleIdentityControls variant="compact" />
             <div
               v-if="roleStore.interactionImmersive && roleStore.roleInfo.currentLife?.label"
               class="left-pane-life"
@@ -220,12 +211,7 @@ const { currentIdentityLabel, hasIdentityCatalog } = useCurrentIdentityLabel()
             />
           </aside>
           <div class="right-pane" :class="{ 'right-pane--input-top': chatInputTop }">
-            <div
-              v-if="hasIdentityCatalog && currentIdentityLabel"
-              class="chat-identity-bar"
-            >
-              {{ t("roleRuntime.currentIdentity", { name: currentIdentityLabel }) }}
-            </div>
+            <RoleIdentityControls variant="compact" class="chat-identity-bar" />
             <PluginChatHeaderSlots :bootstrap-epoch="pluginStore.bootstrapEpoch" />
             <div class="chat-scroll-wrap chat-list">
               <transition name="fade">
@@ -470,14 +456,6 @@ const { currentIdentityLabel, hasIdentityCatalog } = useCurrentIdentityLabel()
   border-top: 1px solid var(--border-light);
   background: var(--bg-status);
 }
-.left-pane-identity {
-  flex-shrink: 0;
-  padding: 6px 12px 10px;
-  font-size: 12px;
-  color: var(--text-secondary);
-  text-align: center;
-  border-top: 1px solid var(--border-light);
-}
 .chat-identity-bar {
   flex-shrink: 0;
   padding: 6px 14px;
@@ -485,6 +463,11 @@ const { currentIdentityLabel, hasIdentityCatalog } = useCurrentIdentityLabel()
   color: var(--text-secondary);
   border-bottom: 1px solid var(--border-light);
   background: color-mix(in srgb, var(--bg-secondary) 92%, var(--accent) 8%);
+  border-top: none;
+  text-align: left;
+}
+.chat-identity-bar.role-identity-controls--compact {
+  padding: 6px 14px;
 }
 .left-pane-life {
   flex-shrink: 0;

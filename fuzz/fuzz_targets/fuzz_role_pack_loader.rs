@@ -1,7 +1,7 @@
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use oclivenewnew_tauri::infrastructure::role_pack::peek_role_pack_manifest;
+use oclive_kernel_host::infrastructure::role_pack::peek_role_pack_manifest;
 use std::io::Write;
 
 fuzz_target!(|data: &[u8]| {

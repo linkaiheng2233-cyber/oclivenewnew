@@ -94,6 +94,10 @@ async fn sync_relation_for_identity(
 /// # Errors
 ///
 /// Returns [`Err`] when the role pack or identity id is invalid.
+///
+/// # Panics
+///
+/// Panics only if the catalog is missing after an earlier guard; that path is unreachable for valid callers.
 pub async fn set_user_identity_impl(
     state: &AppState,
     req: &SetUserIdentityRequest,
@@ -154,6 +158,10 @@ pub async fn set_user_identity_impl(
 /// # Errors
 ///
 /// Returns [`Err`] when the role pack, scene, or identity id is invalid.
+///
+/// # Panics
+///
+/// Panics only if the identity entry is missing after validation; that path is unreachable for valid callers.
 pub async fn set_scene_user_identity_impl(
     state: &AppState,
     req: &SetSceneUserIdentityRequest,

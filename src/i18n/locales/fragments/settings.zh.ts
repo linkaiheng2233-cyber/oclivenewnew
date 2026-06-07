@@ -66,6 +66,11 @@ export default {
     pluginsPanelHint2:
       '与 chat_toolbar 相同，使用 https://ocliveplugin.localhost/<id>/<entry> 加载；可在插件管理中调整顺序或隐藏。',
     iframeSavedInfo: '已保存。重启应用后强制 iframe 模式将完全生效。',
+    userIdentitySectionTitle: '用户身份',
+    userIdentitySectionLead:
+      '切换 User Identity Prompt Template（角色包 user_identities/）；下一轮对话 Prompt 会注入对应身份段落。',
+    postProcessorSectionTitle: '回复后处理',
+    noIdentityCatalogHint: '当前角色包未提供 user_identities/ 目录；仍可查看后处理状态。',
   },
   hotkeys: {
     title: '全局快捷键',

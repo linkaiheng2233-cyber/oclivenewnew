@@ -2,16 +2,16 @@
 
 use crate::api::error::ApiError;
 use crate::api::error::{map_directory_rpc_url_error, CommandError};
-use crate::infrastructure::directory_plugins::{
+use oclive_kernel_host::infrastructure::directory_plugins::{
     bootstrap_dto::{self, collect_subscribed_host_events},
     dependency_report, normalize_plugin_rel, normalize_ui_slot_appearance_id,
     parse_manifest_version, plugin_scan_container_roots, resolve_plugin_asset_path,
 };
-use crate::infrastructure::plugin_state::{PluginStateFile, RolePluginState};
-use crate::infrastructure::remote_plugin::{
+use oclive_kernel_host::infrastructure::plugin_state::{PluginStateFile, RolePluginState};
+use oclive_kernel_host::infrastructure::remote_plugin::{
     invoke_directory_plugin_rpc_blocking, RemoteRpcChannel,
 };
-use crate::state::{AppState, SharedAppState};
+use oclive_kernel_host::state::{AppState, SharedAppState};
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use semver::Version;
@@ -23,7 +23,7 @@ use std::hash::{Hash, Hasher};
 use std::time::{Duration, Instant};
 use tauri::State;
 
-pub use crate::infrastructure::directory_plugins::bootstrap_dto::{
+pub use oclive_kernel_host::infrastructure::directory_plugins::bootstrap_dto::{
     directory_plugin_bootstrap_dto, DirectoryPluginBootstrapDto, PluginUiSlotDto,
 };
 /// # Errors

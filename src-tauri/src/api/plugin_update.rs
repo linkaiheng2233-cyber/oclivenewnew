@@ -2,8 +2,8 @@
 
 use crate::api::error::CommandError;
 use crate::error::AppError;
-use crate::infrastructure::directory_plugins::OclivePluginManifest;
-use crate::state::{AppState, SharedAppState};
+use oclive_kernel_host::infrastructure::directory_plugins::OclivePluginManifest;
+use oclive_kernel_host::state::{AppState, SharedAppState};
 use serde::Serialize;
 use std::collections::HashMap;
 use std::fs::{self, File};

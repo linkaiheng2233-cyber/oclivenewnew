@@ -14,6 +14,8 @@ pub enum MemoryBackend {
     Local,
     /// Directory plugin subprocess JSON-RPC
     Directory,
+    /// Skip memory retrieval for this slot
+    None,
 }
 
 /// User emotion analysis backend
@@ -25,6 +27,7 @@ pub enum EmotionBackend {
     BuiltinV2,
     Remote,
     Directory,
+    None,
 }
 
 /// Event impact estimation backend
@@ -36,6 +39,7 @@ pub enum EventBackend {
     BuiltinV2,
     Remote,
     Directory,
+    None,
 }
 
 /// Prompt assembly backend
@@ -47,6 +51,7 @@ pub enum PromptBackend {
     BuiltinV2,
     Remote,
     Directory,
+    None,
 }
 
 /// Agent task orchestration backend
@@ -57,6 +62,7 @@ pub enum AgentBackend {
     Builtin,
     Remote,
     Directory,
+    None,
 }
 
 /// Main conversation LLM call backend
@@ -67,6 +73,7 @@ pub enum LlmBackend {
     Ollama,
     Remote,
     Directory,
+    None,
 }
 
 /// Plugin manifest `id` for each module when it uses `*_backend = directory`.

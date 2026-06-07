@@ -1,5 +1,5 @@
 use crate::api::error::CommandError;
-use crate::state::SharedAppState;
+use oclive_kernel_host::state::SharedAppState;
 use serde::Deserialize;
 use serde_json::Value;
 use tauri::State;

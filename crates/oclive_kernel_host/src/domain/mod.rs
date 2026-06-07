@@ -14,6 +14,7 @@ pub use oclive_kernel_runtime::domain::{
 pub mod complex_emotion_store;
 pub mod effective_llm_model;
 pub mod relation_estrangement;
+pub mod relation_transition;
 pub mod reply_post_processor;
 pub mod role_manifest_validate;
 pub mod role_snapshot;
@@ -25,8 +26,12 @@ pub mod user_llm_env;
 pub mod virtual_time_sync;
 
 pub mod agent;
+pub mod agent_context;
+pub mod agent_mcp_bridge;
 pub mod chat_engine;
 pub mod debug_trace;
+pub mod fallback_agent;
+pub mod noop_slot_backends;
 #[cfg(feature = "dual_core")]
 pub mod dual_pipeline;
 #[cfg(feature = "dual_core")]

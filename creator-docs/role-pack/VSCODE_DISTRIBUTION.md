@@ -55,3 +55,4 @@
 - CLI：`oclive-vscode` 下 `npm run smoke`
 - 协议：主仓 `examples/oocp-test-suite/run.mjs`（Codex 轨道 A）
 - 跨宿主数据：主仓 `node scripts/e2e-cross-host-memory.mjs`（canonical `OCLIVE_APP_DATA` smoke）
+- **离线 / bundled kernel**：扩展仓库 [`oclive-vscode/bin/README.md`](../../../oclive-vscode/bin/README.md)（与扩展 `README.md` §Offline 一致）

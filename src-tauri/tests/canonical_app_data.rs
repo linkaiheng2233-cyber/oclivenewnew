@@ -3,8 +3,8 @@
 use axum::body::{to_bytes, Body};
 use axum::http::{Request, StatusCode};
 use oclivenewnew_tauri::http_api::api_router;
-use oclivenewnew_tauri::infrastructure::MockLlmClient;
-use oclivenewnew_tauri::state::AppState;
+use oclive_kernel_host::infrastructure::MockLlmClient;
+use oclive_kernel_host::state::AppState;
 use serde_json::json;
 use std::path::PathBuf;
 use std::sync::Arc;

@@ -2,7 +2,7 @@
 
 use crate::api::error::CommandError;
 use crate::error::AppError;
-use crate::state::{AppState, SharedAppState};
+use oclive_kernel_host::state::{AppState, SharedAppState};
 use oclive_validation::{
     validate_expert_routing_doc, ExpertRoutingDoc, DEFAULT_EXPERT_ROUTING_PATH,
 };

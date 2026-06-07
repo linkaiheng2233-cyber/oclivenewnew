@@ -152,6 +152,11 @@ impl PluginHost {
         self.registry.agent_for_plugin_backends(backends)
     }
 
+    #[must_use]
+    pub fn agent_mcp_bridge(&self) -> Arc<crate::domain::agent_mcp_bridge::AgentMcpBridge> {
+        self.registry.agent_mcp_bridge()
+    }
+
     pub fn memory_retrieval_for_plugin_backends(
         &self,
         backends: &PluginBackends,
@@ -420,6 +425,7 @@ mod tests {
             created_at: t,
             scene_id: None,
             mention_count: 1,
+            accessed_at: None,
         };
         let slice = &[m];
         let mk = || MemoryRetrievalInput {

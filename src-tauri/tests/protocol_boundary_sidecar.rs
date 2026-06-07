@@ -2,7 +2,7 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
-use oclive_kernel_runtime::{AppError, KernelErrorBody};
+use oclive_kernel_types::{AppError, KernelErrorBody};
 use oclive_validation::{
     assert_layers_do_not_overlap, validate_jsonrpc_error_response, validate_kernel_error_body,
 };

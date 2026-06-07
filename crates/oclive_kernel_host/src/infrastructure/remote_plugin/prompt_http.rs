@@ -166,6 +166,9 @@ struct PromptInputFlat<'a> {
     previous_complex_emotion_narrative_hint: &'a str,
     user_identity_template: &'a str,
     user_identity_id: &'a str,
+    host_prompt_overlay: &'a str,
+    host_state_expression_hint: &'a str,
+    relation_transition_hint: &'a str,
 }
 
 impl<'a> PromptInputSnapshot<'a> {
@@ -197,6 +200,9 @@ impl<'a> PromptInputSnapshot<'a> {
                     .previous_complex_emotion_narrative_hint,
                 user_identity_template: input.user_identity_template,
                 user_identity_id: input.user_identity_id,
+                host_prompt_overlay: input.host_prompt_overlay,
+                host_state_expression_hint: input.host_state_expression_hint,
+                relation_transition_hint: input.relation_transition_hint,
             },
         }
     }

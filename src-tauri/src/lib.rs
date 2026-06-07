@@ -1,4 +1,5 @@
 #![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
+#![allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
 
 //! Tauri desktop shell: IPC commands, deep links, kernel attach/lifecycle.
 //! Headless HTTP kernel lives in [`oclive_kernel_host`].
@@ -10,8 +11,7 @@ pub mod kernel_attach;
 pub mod kernel_lifecycle;
 
 pub use oclive_kernel_host::{
-    command_error, domain, env_flags, http_api, infrastructure, init_tracing,
-    init_tracing_with_log_dir, models, run_api_server, service, state, utils,
+    command_error, env_flags, http_api, init_tracing, init_tracing_with_log_dir, run_api_server,
 };
 
 /// Host error bridge: core types live in `oclive_kernel_types`.
@@ -38,11 +38,12 @@ use tauri::http::{Request, Response, ResponseBuilder};
 use tauri::{AppHandle, Manager};
 
 use crate::desktop_integration::start_plugin_fs_watcher;
-use crate::infrastructure::deep_link::seed_pending_install_urls_from_args;
-use crate::infrastructure::directory_plugins::resolve_plugin_asset_path;
-use crate::infrastructure::plugin_protocol::{
+use oclive_kernel_host::infrastructure::deep_link::seed_pending_install_urls_from_args;
+use oclive_kernel_host::infrastructure::directory_plugins::resolve_plugin_asset_path;
+use oclive_kernel_host::infrastructure::plugin_protocol::{
     inject_plugin_bridge_script, mime_for_plugin_asset, plugin_asset_from_request_uri,
 };
+use oclive_kernel_host::state;
 
 fn serve_ocliveplugin_asset(
     app: &AppHandle,
@@ -183,7 +184,7 @@ pub fn run() {
             tauri::async_runtime::spawn(async move {
                 directory_plugins.rescan_plugin_roots(roles_bg.as_path());
             });
-            let hk = crate::infrastructure::hotkey_bindings::HotkeyBindingsFile::load(
+            let hk = oclive_kernel_host::infrastructure::hotkey_bindings::HotkeyBindingsFile::load(
                 app.state::<state::SharedAppState>()
                     .directory_plugins
                     .app_data_dir(),
@@ -199,19 +200,19 @@ pub fn run() {
             crate::desktop_integration::spawn_auto_cleanup_scheduler(app.handle());
             Ok(())
         })
-        // Tauri invoke commands — grouped by domain (see `src-tauri/src/api/`).
+        // Tauri invoke commands ? grouped by domain (see `src-tauri/src/api/`).
         .invoke_handler(tauri::generate_handler![
-            // ── agent / MCP ──
+            // ?? agent / MCP ??
             api::agent::list_mcp_servers,
             api::agent::list_mcp_tools,
             api::agent::call_mcp_tool,
             api::agent::get_agent_debug_traces,
             api::agent::clear_agent_debug_traces,
-            // ── high-risk capabilities ──
+            // ?? high-risk capabilities ??
             api::high_risk::grant_high_risk_capability,
             api::high_risk::list_high_risk_grants,
             api::high_risk::revoke_high_risk_capability,
-            // ── diagnostics ──
+            // ?? diagnostics ??
             api::diagnostics::run_environment_diagnostics,
             api::kernel::get_kernel_connection_status,
             api::kernel::get_kernel_diagnostics,
@@ -223,10 +224,10 @@ pub fn run() {
             api::llm_settings::scan_local_model_files,
             api::llm_settings::open_path_in_file_manager,
             api::llm_settings::import_gguf_to_ollama,
-            // ── app settings ──
+            // ?? app settings ??
             api::settings::get_remote_fallback_app_settings,
             api::settings::set_remote_fallback_to_builtin,
-            // ── chat ──
+            // ?? chat ??
             api::chat::send_message,
             api::chat::list_chat_sessions,
             api::chat::fetch_chat_messages,
@@ -248,7 +249,7 @@ pub fn run() {
             api::chat::get_replay_progress,
             api::chat::get_chat_storage_root,
             api::chat::set_chat_storage_root,
-            // ── role / session / slot registry ──
+            // ?? role / session / slot registry ??
             api::role::load_role,
             api::role::get_role_info,
             api::role::list_roles,
@@ -274,29 +275,29 @@ pub fn run() {
             api::role::expert::list_blueprint_includes,
             api::role::expert::get_expert_routing,
             api::role::expert::save_expert_routing,
-            // ── desktop filesystem (replaces `@tauri-apps/api/fs` IPC) ──
+            // ?? desktop filesystem (replaces `@tauri-apps/api/fs` IPC) ??
             api::desktop_fs::write_user_text_file,
-            // ── role pack import/export ──
+            // ?? role pack import/export ??
             api::role_pack::export_role_pack_command,
             api::role_pack::peek_role_pack_command,
             api::role_pack::import_role_pack_command,
-            // ── scene / presence ──
+            // ?? scene / presence ??
             api::scene::switch_scene,
             api::scene::set_user_presence_scene,
-            // ── virtual time ──
+            // ?? virtual time ??
             api::time::get_time_state,
             api::time::jump_time,
-            // ── monologue ──
+            // ?? monologue ??
             api::monologue::generate_monologue,
-            // ── chat export ──
+            // ?? chat export ??
             api::export::export_chat_logs,
-            // ── memory / events ──
+            // ?? memory / events ??
             api::memory::query_memories,
             api::event::query_events,
             api::event::create_event,
-            // ── policy plugins ──
+            // ?? policy plugins ??
             api::policy::reload_policy_plugins,
-            // ── directory plugins (runtime + catalog) ──
+            // ?? directory plugins (runtime + catalog) ??
             api::directory_plugin::get_directory_plugin_bootstrap,
             api::directory_plugin::read_plugin_asset_text,
             api::directory_plugin::is_host_event_subscribed,
@@ -306,13 +307,13 @@ pub fn run() {
             api::directory_plugin::save_global_plugin_state,
             api::directory_plugin::reset_plugin_state_to_role_default,
             api::directory_plugin::directory_plugin_invoke,
-            // ── global hotkeys ──
+            // ?? global hotkeys ??
             api::hotkeys::get_hotkey_bindings,
             api::hotkeys::save_hotkey_bindings,
-            // ── plugin scaffold / pack ──
+            // ?? plugin scaffold / pack ??
             api::plugin_scaffold::create_plugin_scaffold,
             api::plugin_pack::pack_plugin,
-            // ── plugin debug / test runner ──
+            // ?? plugin debug / test runner ??
             api::plugin_debug::spawn_plugin_for_test,
             api::plugin_debug::kill_plugin_process,
             api::plugin_debug::list_plugin_processes,
@@ -320,13 +321,13 @@ pub fn run() {
             api::plugin_debug::clear_plugin_logs,
             api::plugin_debug::test_plugin_method,
             api::plugin_debug::discover_plugin_methods,
-            // ── plugin HTML bridge ──
+            // ?? plugin HTML bridge ??
             api::plugin_bridge::plugin_bridge_invoke,
-            // ── plugin install / update (local zip) ──
+            // ?? plugin install / update (local zip) ??
             api::plugin_update::check_plugin_updates,
             api::plugin_update::extract_plugin_zip,
             api::plugin_update::install_plugin_from_zip,
-            // ── plugin market / index ──
+            // ?? plugin market / index ??
             api::plugin_index::sync_plugin_index_command,
             api::plugin_index::get_cached_plugin_index,
             api::plugin_index::install_plugin_from_market,
@@ -336,7 +337,7 @@ pub fn run() {
             api::plugin_index::batch_update_plugins,
             api::plugin_index::batch_uninstall_plugins,
             api::plugin_index::consume_pending_protocol_installs,
-            // ── plugin settings UI ──
+            // ?? plugin settings UI ??
             api::plugin_config::get_plugin_settings_ui,
             api::plugin_config::set_plugin_settings_config,
         ])

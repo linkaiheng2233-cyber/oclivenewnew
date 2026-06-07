@@ -1,11 +1,11 @@
 //! Desktop startup: spawn-only kernel client + in-memory UI shell (no local DB writer).
 
-use crate::infrastructure::MockLlmClient;
+use oclive_kernel_host::infrastructure::MockLlmClient;
 use crate::kernel_lifecycle::{
     ensure_kernel_ready, start_kernel_watchdog, DesktopKernelMode, EnsureKernelOptions,
     KernelConnection, SharedKernelConnection,
 };
-use crate::state::{AppState, SharedAppState};
+use oclive_kernel_host::state::{AppState, SharedAppState};
 use oclive_kernel_runtime::{resolve_api_port, shared_kernel_binary_path};
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -71,10 +71,10 @@ pub async fn bootstrap_desktop(
 ) -> Result<(SharedAppState, SharedKernelConnection, u16), Box<dyn std::error::Error + Send + Sync>>
 {
     let port = resolve_api_port(None);
-    let roles_dir = crate::state::resolve_roles_dir(resource_dir);
-    let canonical_models = crate::state::ensure_models_dir_for_roles(&roles_dir);
+    let roles_dir = oclive_kernel_host::state::resolve_roles_dir(resource_dir);
+    let canonical_models = oclive_kernel_host::state::ensure_models_dir_for_roles(&roles_dir);
     let app_data = oclive_kernel_runtime::resolve_app_data_dir_for_host();
-    crate::state::reconcile_legacy_models_layout(&canonical_models, &app_data);
+    oclive_kernel_host::state::reconcile_legacy_models_layout(&canonical_models, &app_data);
     crate::api::llm_settings::sync_canonical_db_models_dir(&canonical_models, &app_data).await;
     let anchors = discovery_anchors(resource_dir);
     let bundled = bundled_kernel_binary(resource_dir);

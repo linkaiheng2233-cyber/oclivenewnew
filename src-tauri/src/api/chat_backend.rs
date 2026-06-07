@@ -5,11 +5,11 @@
 //! exist for tests and alternate hosts only — they must not be treated as authoritative writers.
 
 use crate::error::AppError;
-use crate::infrastructure::chat_storage::{SessionMeta, StoredMessage};
+use oclive_kernel_host::infrastructure::chat_storage::{SessionMeta, StoredMessage};
 use crate::kernel_attach::KernelHttpClient;
 use crate::kernel_lifecycle::SharedKernelConnection;
-use crate::models::dto::{SendMessageRequest, SendMessageResponse};
-use crate::state::AppState;
+use oclive_kernel_types::models::dto::{SendMessageRequest, SendMessageResponse};
+use oclive_kernel_host::state::AppState;
 use oclive_kernel_host::service::{execute_chat_storage_proxy, ChatStorageProxyOp};
 use std::sync::Arc;
 use tauri::{AppHandle, Manager};
@@ -21,6 +21,7 @@ pub enum ChatBackend {
 }
 
 impl ChatBackend {
+    #[allow(clippy::assertions_on_constants)]
     #[must_use]
     pub fn from_app(app: &AppHandle, state: Arc<AppState>) -> Self {
         if let Some(conn) = app.try_state::<SharedKernelConnection>() {
@@ -35,6 +36,7 @@ impl ChatBackend {
         }
     }
 
+    #[allow(clippy::assertions_on_constants)]
     pub async fn send_message(
         &self,
         role_path: &std::path::Path,
@@ -56,7 +58,7 @@ impl ChatBackend {
                     cfg!(test),
                     "Local chat backend must not be used for authoritative desktop writes"
                 );
-                crate::domain::chat_engine::process_message(state.as_ref(), req).await
+                oclive_kernel_host::domain::chat_engine::process_message(state.as_ref(), req).await
             }
         }
     }

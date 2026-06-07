@@ -1,10 +1,10 @@
 //! Sync UI-shell LLM settings with canonical kernel `app.db`.
 
-use crate::domain::user_llm_env::{
+use oclive_kernel_host::domain::user_llm_env::{
     apply_user_llm_env, KEY_LOCAL_MODELS_DIR, KEY_REMOTE_TOKEN, LLM_APP_SETTING_KEYS,
 };
-use crate::infrastructure::user_llm_secrets::{read_token_file, write_token_file};
-use crate::state::{is_managed_legacy_models_path, AppState};
+use oclive_kernel_host::infrastructure::user_llm_secrets::{read_token_file, write_token_file};
+use oclive_kernel_host::state::{is_managed_legacy_models_path, AppState};
 use std::path::{Path, PathBuf};
 
 async fn open_canonical_pool() -> Option<(sqlx::SqlitePool, PathBuf)> {
@@ -51,7 +51,7 @@ pub async fn sync_shell_llm_settings_to_canonical(state: &AppState) {
         }
         let _ = upsert_canonical_app_setting(&pool, key, t).await;
     }
-    if let Ok(Some(t)) = crate::domain::user_llm_env::resolve_remote_token(
+    if let Ok(Some(t)) = oclive_kernel_host::domain::user_llm_env::resolve_remote_token(
         state.db_manager.as_ref(),
         state.directory_plugins.app_data_dir(),
     )
@@ -171,8 +171,8 @@ pub async fn sync_canonical_db_models_dir(canonical: &Path, app_data: &Path) {
         let t = s.trim();
         t.is_empty() || is_managed_legacy_models_path(Path::new(t), canonical, app_data)
     });
-    if should_patch {
-        if sqlx::query(
+    if should_patch
+        && sqlx::query(
             "INSERT INTO app_settings (key, value) VALUES (?, ?)
              ON CONFLICT(key) DO UPDATE SET value = excluded.value",
         )
@@ -181,13 +181,12 @@ pub async fn sync_canonical_db_models_dir(canonical: &Path, app_data: &Path) {
         .execute(&pool)
         .await
         .is_ok()
-        {
-            tracing::info!(
-                target: "oclive_models",
-                path = %canonical.display(),
-                "patched canonical app.db local models dir"
-            );
-        }
+    {
+        tracing::info!(
+            target: "oclive_models",
+            path = %canonical.display(),
+            "patched canonical app.db local models dir"
+        );
     }
     pool.close().await;
 }

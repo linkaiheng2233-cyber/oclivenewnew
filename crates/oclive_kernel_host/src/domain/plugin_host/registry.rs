@@ -1,4 +1,10 @@
 use crate::domain::agent::{AgentDebugTrace, AgentProvider, BuiltinReActAgent};
+use crate::domain::agent_mcp_bridge::AgentMcpBridge;
+use crate::domain::fallback_agent::FallbackAgentProvider;
+use crate::domain::noop_slot_backends::{
+    NoopAgentProvider, NoopEventEstimator, NoopLlmClient, NoopMemoryRetrieval,
+    NoopPromptAssembler, NoopUserEmotionAnalyzer,
+};
 use crate::domain::event_estimator::{
     BuiltinEventEstimator, BuiltinEventEstimatorV2, EventEstimator,
 };
@@ -20,8 +26,9 @@ use crate::infrastructure::directory_plugins::DirectoryPluginRuntime;
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
 use crate::infrastructure::mcp_client::{McpClient, McpServerManifest, McpToolCallResult};
 use crate::infrastructure::remote_plugin::{
-    self, PluginRemoteGroup, RemoteEventEstimatorHttp, RemoteLlmHttp, RemoteMemoryRetrievalHttp,
-    RemotePluginHttpConfig, RemotePromptAssemblerHttp, RemoteUserEmotionAnalyzerHttp,
+    self, agent_remote_backend, AgentRpcProvider, PluginRemoteGroup, RemoteEventEstimatorHttp,
+    RemoteLlmHttp, RemoteMemoryRetrievalHttp, RemotePluginHttpConfig, RemotePromptAssemblerHttp,
+    RemoteUserEmotionAnalyzerHttp,
 };
 use crate::models::{
     AgentBackend, DirectoryPluginSlots, EmotionBackend, EventBackend, LlmBackend, MemoryBackend,
@@ -53,8 +60,14 @@ pub struct BackendRegistry {
     llm_remote: OnceLock<Arc<dyn LlmClient>>,
     llm_ollama: Arc<dyn LlmClient>,
     agent_builtin: Arc<BuiltinReActAgent>,
+    agent_mcp_bridge: Arc<AgentMcpBridge>,
     agent_remote: OnceLock<Arc<dyn AgentProvider>>,
-    agent_directory: Arc<dyn AgentProvider>,
+    agent_none: Arc<dyn AgentProvider>,
+    memory_none: Arc<dyn MemoryRetrieval>,
+    emotion_none: Arc<dyn UserEmotionAnalyzer>,
+    event_none: Arc<dyn EventEstimator>,
+    prompt_none: Arc<dyn PromptAssembler>,
+    llm_none: Arc<dyn LlmClient>,
     remote_plugin_group: OnceLock<PluginRemoteGroup>,
     local_plugins: RwLock<LocalPluginRegistry>,
     directory_runtime: Option<Arc<DirectoryPluginRuntime>>,
@@ -66,6 +79,7 @@ pub struct BackendRegistry {
     directory_event_cache: RwLock<BTreeMap<String, Arc<dyn EventEstimator>>>,
     directory_prompt_cache: RwLock<BTreeMap<String, Arc<dyn PromptAssembler>>>,
     directory_llm_cache: RwLock<BTreeMap<String, Arc<dyn LlmClient>>>,
+    directory_agent_cache: RwLock<BTreeMap<String, Arc<dyn AgentProvider>>>,
 }
 
 fn directory_slot_id(
@@ -152,8 +166,39 @@ impl BackendRegistry {
 
     fn agent_remote(&self) -> Arc<dyn AgentProvider> {
         self.agent_remote
-            .get_or_init(|| self.agent_builtin.clone())
+            .get_or_init(|| {
+                agent_remote_backend(
+                    self.remote_http_client.clone(),
+                    self.agent_builtin.clone() as Arc<dyn AgentProvider>,
+                    self.agent_mcp_bridge.clone(),
+                    self.remote_fallback_allowed.clone(),
+                    self.high_risk_grants.clone(),
+                )
+            })
             .clone()
+    }
+
+    fn agent_directory_slot(&self, backends: &PluginBackends) -> Arc<dyn AgentProvider> {
+        let builtin = self.agent_builtin.clone() as Arc<dyn AgentProvider>;
+        self.resolve_directory_slot(
+            "agent",
+            backends,
+            &self.directory_agent_cache,
+            |s| &s.agent,
+            builtin.clone(),
+            |reg, _pid, url| {
+                let cfg = RemotePluginHttpConfig::for_directory_plugin_rpc(url.to_string(), false);
+                let primary = Arc::new(AgentRpcProvider::new(
+                    reg.remote_http_client.clone(),
+                    cfg,
+                    reg.remote_fallback_allowed.clone(),
+                    reg.high_risk_grants.clone(),
+                    None,
+                    reg.agent_mcp_bridge.clone(),
+                )) as Arc<dyn AgentProvider>;
+                FallbackAgentProvider::new(primary, reg.agent_builtin.clone() as Arc<dyn AgentProvider>, "directory")
+            },
+        )
     }
 
     fn resolve_directory_slot<T, Pick, Build>(
@@ -210,7 +255,8 @@ impl BackendRegistry {
         match backends.agent {
             AgentBackend::Builtin => self.agent_builtin.clone(),
             AgentBackend::Remote => self.agent_remote(),
-            AgentBackend::Directory => self.agent_directory.clone(),
+            AgentBackend::Directory => self.agent_directory_slot(backends),
+            AgentBackend::None => self.agent_none.clone(),
         }
     }
 
@@ -268,16 +314,17 @@ impl BackendRegistry {
     ) -> Self {
         let llm_ollama = llm;
         let mcp = Arc::new(McpClient::new(app_data_dir, high_risk_grants.clone()));
-        let agent_builtin = Arc::new(BuiltinReActAgent::new(llm_ollama.clone(), mcp));
-        // TODO(agent-directory): replace placeholder with directory-plugin Agent dispatch (see creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md).
-        static AGENT_DIRECTORY_PLACEHOLDER_WARN: std::sync::Once = std::sync::Once::new();
-        AGENT_DIRECTORY_PLACEHOLDER_WARN.call_once(|| {
-            tracing::warn!(
-                target: "oclive_plugin",
-                "agent_directory uses BuiltinReActAgent placeholder; directory plugin agent routing not implemented yet",
-            );
-        });
-        let agent_directory: Arc<dyn AgentProvider> = agent_builtin.clone();
+        let agent_mcp_bridge = Arc::new(AgentMcpBridge::new(mcp));
+        let agent_builtin = Arc::new(BuiltinReActAgent::new(
+            llm_ollama.clone(),
+            agent_mcp_bridge.clone(),
+        ));
+        let agent_none: Arc<dyn AgentProvider> = Arc::new(NoopAgentProvider);
+        let memory_none: Arc<dyn MemoryRetrieval> = Arc::new(NoopMemoryRetrieval);
+        let emotion_none: Arc<dyn UserEmotionAnalyzer> = Arc::new(NoopUserEmotionAnalyzer);
+        let event_none: Arc<dyn EventEstimator> = Arc::new(NoopEventEstimator);
+        let prompt_none: Arc<dyn PromptAssembler> = Arc::new(NoopPromptAssembler);
+        let llm_none: Arc<dyn LlmClient> = Arc::new(NoopLlmClient);
         let remote_http_client = remote_plugin::build_shared_remote_http_client();
         Self {
             memory_builtin: Arc::new(BuiltinMemoryRetrieval),
@@ -295,8 +342,14 @@ impl BackendRegistry {
             llm_remote: OnceLock::new(),
             llm_ollama,
             agent_builtin,
+            agent_mcp_bridge,
             agent_remote: OnceLock::new(),
-            agent_directory,
+            agent_none,
+            memory_none,
+            emotion_none,
+            event_none,
+            prompt_none,
+            llm_none,
             remote_plugin_group: OnceLock::new(),
             local_plugins: RwLock::new(LocalPluginRegistry::default()),
             directory_runtime,
@@ -308,7 +361,13 @@ impl BackendRegistry {
             directory_event_cache: RwLock::new(BTreeMap::new()),
             directory_prompt_cache: RwLock::new(BTreeMap::new()),
             directory_llm_cache: RwLock::new(BTreeMap::new()),
+            directory_agent_cache: RwLock::new(BTreeMap::new()),
         }
+    }
+
+    #[must_use]
+    pub fn agent_mcp_bridge(&self) -> Arc<AgentMcpBridge> {
+        self.agent_mcp_bridge.clone()
     }
 
     pub(crate) fn llm_for_plugin_backends(&self, backends: &PluginBackends) -> Arc<dyn LlmClient> {
@@ -316,6 +375,7 @@ impl BackendRegistry {
             LlmBackend::Ollama => self.llm_ollama.clone(),
             LlmBackend::Remote => self.llm_remote(),
             LlmBackend::Directory => self.llm_directory_slot(backends),
+            LlmBackend::None => self.llm_none.clone(),
         }
     }
 
@@ -355,6 +415,7 @@ impl BackendRegistry {
             MemoryBackend::Remote => self.memory_remote(),
             MemoryBackend::Local => self.memory_local_slot_for(backends),
             MemoryBackend::Directory => self.memory_directory_slot(backends),
+            MemoryBackend::None => self.memory_none.clone(),
         }
     }
 
@@ -427,6 +488,7 @@ impl BackendRegistry {
             EmotionBackend::BuiltinV2 => self.emotion_builtin_v2(),
             EmotionBackend::Remote => self.emotion_remote(),
             EmotionBackend::Directory => self.emotion_directory_slot(backends),
+            EmotionBackend::None => self.emotion_none.clone(),
         }
     }
 
@@ -466,6 +528,7 @@ impl BackendRegistry {
             EventBackend::BuiltinV2 => self.event_builtin_v2(),
             EventBackend::Remote => self.event_remote(),
             EventBackend::Directory => self.event_directory_slot(backends),
+            EventBackend::None => self.event_none.clone(),
         }
     }
 
@@ -505,6 +568,7 @@ impl BackendRegistry {
             PromptBackend::BuiltinV2 => self.prompt_builtin_v2(),
             PromptBackend::Remote => self.prompt_remote(),
             PromptBackend::Directory => self.prompt_directory_slot(backends),
+            PromptBackend::None => self.prompt_none.clone(),
         }
     }
 

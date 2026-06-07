@@ -158,7 +158,7 @@ This page is the **naming SSOT** for OCLive. Key rules:
 | DTO / `AppError` | `oclive_kernel_types` | `oclive_kernel_runtime::*`、`host::error::*`、`tauri::error::*` | runtime `lib.rs` 标明 **transitional** |
 | Trait 端口 | `oclive_kernel_contracts` | `oclive_kernel_runtime::…`、`host::domain::ports::*` | ports **无 trait 定义** |
 | 引擎模块 | `oclive_kernel_runtime::domain::*` | `oclive_kernel_host::domain::*`（`pub use`） | host 内可用 `crate::domain::` |
-| 编排入口 | `oclive_kernel_host::domain::chat_engine::process_message` | `oclivenewnew_tauri::domain::process_message` | tauri `lib.rs` re-export 整个 `domain` |
+| 编排入口 | `oclive_kernel_host::domain::chat_engine::process_message` | ~~`oclivenewnew_tauri::domain::process_message`~~（**P1 Done**：tauri 不再 re-export `domain`） |
 | HTTP API | `oclive_kernel_host::http_api` | `oclivenewnew_tauri::http_api` | attach 模式共用 |
 | 校验 | `oclive_validation` | `oclive_kernel_types`（`SlotRegistryEntry` 等）、`oclive_validation_wasm` | 类型级 re-export 少量 |
 
@@ -178,7 +178,7 @@ This page is the **naming SSOT** for OCLive. Key rules:
 | 阶段 | 目标 | 完成判据 |
 |------|------|----------|
 | **P0（当前）** | 新 PR 遵循 §4.2；`rg` 不再新增 `runtime` 直引 DTO | CR / clippy 注释 + Agent 规则 |
-| **P1** | `src-tauri` 去除仅因 re-export 存在的 `oclive_kernel_runtime` 依赖 | `src-tauri/Cargo.toml` 不直接依赖 runtime |
+| **P1** | `src-tauri` 去除仅因 re-export 存在的 `oclive_kernel_runtime` 依赖 | **Done（2026-06-07）**：`src-tauri` 经 `oclive_kernel_host` / `oclive_kernel_types` canonical import；`rg 'oclivenewnew_tauri::domain' src-tauri` 零命中 |
 | **P2** | `oclive_kernel_runtime` 移除 `pub use oclive_kernel_types::*` | runtime `lib.rs` 仅导出引擎 + 常量 |
 | **P3** | `domain/ports` 改为 `pub use oclive_kernel_contracts::*` 直连 | 删除经 runtime 绕路 |
 

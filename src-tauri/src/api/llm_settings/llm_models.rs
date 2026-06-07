@@ -1,8 +1,8 @@
 //! Local GGUF model directory discovery and persistence.
 
 use crate::api::error::CommandError;
-use crate::domain::user_llm_env::KEY_LOCAL_MODELS_DIR;
-use crate::state::{
+use oclive_kernel_host::domain::user_llm_env::KEY_LOCAL_MODELS_DIR;
+use oclive_kernel_host::state::{
     ensure_models_dir_for_roles, is_managed_legacy_models_path, migrate_and_cleanup_models,
     paths_equal, reconcile_legacy_models_layout, AppState,
 };

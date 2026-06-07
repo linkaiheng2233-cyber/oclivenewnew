@@ -50,6 +50,10 @@ fn catalog_entry_for_id<'a>(
 }
 
 /// Priority: session identity id → catalog `default_identity_id` → legacy `user_relations.prompt_hint`.
+///
+/// # Errors
+///
+/// Returns [`Err`] when DB reads for scene/global identity state fail.
 pub async fn resolve_active_user_identity(
     state: &AppState,
     role: &Role,

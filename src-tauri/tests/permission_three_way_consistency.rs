@@ -4,9 +4,9 @@ use oclive_validation::{
     manifest_declares_process_spawn, validate_directory_plugin_manifest_permissions,
     validate_permissions_list, NETWORK_GRANT_REMOTE_PLUGIN, PROCESS_SPAWN,
 };
-use oclivenewnew_tauri::infrastructure::directory_plugins::OclivePluginManifest;
-use oclivenewnew_tauri::infrastructure::high_risk_grants::HighRiskGrantStore;
-use oclivenewnew_tauri::infrastructure::remote_plugin::{
+use oclive_kernel_host::infrastructure::directory_plugins::OclivePluginManifest;
+use oclive_kernel_host::infrastructure::high_risk_grants::HighRiskGrantStore;
+use oclive_kernel_host::infrastructure::remote_plugin::{
     RemoteMemoryRetrievalHttp, RemotePluginHttpConfig,
 };
 use std::fs;
@@ -116,7 +116,7 @@ fn remote_http_requires_network_grant() {
         grants.clone(),
         Some(NETWORK_GRANT_REMOTE_PLUGIN.to_string()),
     );
-    use oclivenewnew_tauri::domain::memory_retrieval::{MemoryRetrieval, MemoryRetrievalInput};
+    use oclive_kernel_host::domain::memory_retrieval::{MemoryRetrieval, MemoryRetrievalInput};
     use oclivenewnew_tauri::error::AppError;
 
     let err = client

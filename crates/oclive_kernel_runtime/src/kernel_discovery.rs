@@ -296,7 +296,7 @@ mod tests {
     #[test]
     fn spawn_candidates_exclude_tauri_host() {
         let repo = std::env::current_dir().unwrap();
-        let all = discover_kernel_candidates(&[repo.clone()], None, None);
+        let all = discover_kernel_candidates(std::slice::from_ref(&repo), None, None);
         let spawn = discover_spawn_kernel_candidates(&[repo], None, None);
         for c in &spawn {
             assert!(

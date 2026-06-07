@@ -53,6 +53,7 @@ mod tests {
                 created_at: Utc::now(),
                 scene_id: Some("home".into()),
                 mention_count: 1,
+                accessed_at: None,
             },
             Memory {
                 id: "2".into(),
@@ -63,6 +64,7 @@ mod tests {
                 created_at: Utc::now(),
                 scene_id: Some("school".into()),
                 mention_count: 1,
+                accessed_at: None,
             },
         ];
         weight_memories_for_scene(&mut memories, "home", 2.0);

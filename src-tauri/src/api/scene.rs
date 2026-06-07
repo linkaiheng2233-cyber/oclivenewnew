@@ -2,10 +2,10 @@ use crate::api::error::CommandError;
 use crate::error::AppError;
 use crate::kernel_attach::KernelHttpClient;
 use crate::kernel_lifecycle::SharedKernelConnection;
-use crate::models::dto::{
+use oclive_kernel_types::models::dto::{
     RoleInfo, SetUserPresenceSceneRequest, SwitchSceneRequest, SwitchSceneResponse,
 };
-use crate::state::SharedAppState;
+use oclive_kernel_host::state::SharedAppState;
 pub use oclive_kernel_host::service::{set_user_presence_scene_impl, switch_scene_impl};
 use tauri::{AppHandle, Manager, State};
 

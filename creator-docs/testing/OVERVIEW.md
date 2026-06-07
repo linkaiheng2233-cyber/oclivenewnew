@@ -10,6 +10,14 @@
 | OOCP 对齐 HTTP 黑盒 | **13 场景（S0–S12）**；可选 **S13/S14** 双核场景（降级与成功路径，见 [`OOCP_TEST_SUITE.md`](./OOCP_TEST_SUITE.md)） | `examples/oocp-test-suite/run.mjs`；CI job **`oocp-test-suite`**；另跑 **`scripts/e2e-core-api-restart.mjs`**（进程重启烟测，**A1.1a**） |
 | 前端烟测 | Vitest 守门 + **`vite preview` + Playwright** 首屏（**A1.1b**；**CI 仅 Ubuntu `frontend`**） | `npm run test:unit`；`npm run build && npm run test:e2e:preview`（[`e2e/preview-shell.spec.ts`](../../e2e/preview-shell.spec.ts)；见 CONTRIBUTING **Windows** 说明） |
 
+### Remote LLM 测试覆盖
+
+| 层级 | 状态 | 位置 |
+|------|------|------|
+| JSON-RPC 客户端（`RemoteLlmHttp`） | **已覆盖** | [`remote_llm_jsonrpc_roundtrip.rs`](../../src-tauri/tests/remote_llm_jsonrpc_roundtrip.rs) |
+| 完整 `process_message`（`plugin_backends.llm = remote`） | **已覆盖** | [`remote_llm_process_message_roundtrip.rs`](../../src-tauri/tests/remote_llm_process_message_roundtrip.rs) |
+| OpenAI-compatible 路径（`OCLIVE_LLM_CLOUD_API_STYLE`） | **未覆盖** | 见 [REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) §测试覆盖 |
+
 ## 组件与插件壳（编写器 `oclive-pack-editor`）
 
 | 范围 | 说明 |
