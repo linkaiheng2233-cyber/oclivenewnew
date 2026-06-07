@@ -9,8 +9,10 @@ export default {
     tabPlugins: 'Plugins',
     tabStorage: 'Storage',
     generalLeadHtml:
-      'The top bar <strong>“More”</strong> groups entry points; <strong>Ctrl+Shift+S</strong> settings; '
-      + '<strong>Ctrl+Shift+F</strong> installed plugins; <strong>Ctrl+Shift+M</strong> model management.',
+      'Use the Activity Bar or <strong>Ctrl+Shift+S / F / M</strong> for settings, plugins, and models; '
+      + 'appearance and locale live under Settings → General; the plugin market is in the Plugins side panel.',
+    appearanceSectionTitle: 'Appearance',
+    appearanceSectionHelp: 'Locale, interaction mode, theme, and UI scale; stored on this device.',
     shortcutsLabel: 'Shortcuts',
     shortcutsHelp:
       'Ctrl+Shift+S settings; Ctrl+Shift+F installed plugins; Ctrl+Shift+M model management; Ctrl+Shift+D debug panel.',
@@ -70,10 +72,22 @@ export default {
     iframeSavedInfo: 'Saved. Restart the app for forced iframe to apply fully.',
     userIdentitySectionTitle: 'User identity',
     userIdentitySectionLead:
-      'Switch the User Identity Prompt Template (role pack user_identities/); the next turn injects the matching identity section into the prompt.',
+      'Choose who you are in the story; the character will treat you accordingly on the next turn.',
+    userIdentitySectionLeadSecondary:
+      'Different from the top-bar Relation: relation affects favor and distance; if an identity maps to a relation, switching identity syncs relation automatically.',
     postProcessorSectionTitle: 'Reply post-processor',
     noIdentityCatalogHint:
-      'This role pack has no user_identities/ catalog; post-processor status is still shown below.',
+      'This role pack has no selectable identities; reply post-processor status is still shown below.',
+    layoutSectionTitle: 'Layout',
+    layoutSectionHelp:
+      'Drag the divider on the role rail or settings/plugins/models side panel to resize; preferences are stored locally.',
+    layoutSectionLead: 'Left rail and side panel widths are separate from the role pack ui.json layout keys.',
+    layoutCurrentWidths: 'Current: left rail {left}px · side panel {side}px',
+    layoutResetWidths: 'Reset panel widths',
+    layoutResetWidthsDone: 'Default panel widths restored.',
+    layoutResizeLeftRail: 'Resize role sidebar',
+    layoutResizeSidePanel: 'Resize side panel',
+    advancedFoldTitle: 'Advanced & diagnostics',
   },
   hotkeys: {
     title: 'Global shortcuts',

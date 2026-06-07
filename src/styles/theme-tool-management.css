@@ -1,0 +1,309 @@
+/**
+ * Tool Shell — management panels (Settings / Plugins / Models).
+ * Cursor / VS Code settings layout: section dividers, field rows, compact controls.
+ */
+:root[data-shell="tool"] {
+  --tool-control-h: 28px;
+  --tool-control-h-sm: 24px;
+  --tool-section-gap: 20px;
+  --tool-field-label-w: 112px;
+}
+
+[data-shell="tool"] .ui-section {
+  padding-top: var(--tool-section-gap);
+  border-top: 1px solid var(--tool-divider, var(--tool-border));
+}
+
+[data-shell="tool"] .ui-section:first-child,
+[data-shell="tool"] .sv-embedded .sv-body > .ui-section:first-child,
+[data-shell="tool"] .sv-embedded .sv-body > .sv-lead + .ui-section {
+  border-top: none;
+  padding-top: 0;
+}
+
+[data-shell="tool"] .ui-section__head {
+  margin-bottom: var(--tool-space-3, 12px);
+}
+
+[data-shell="tool"] .ui-section__title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--tool-space-2, 8px);
+  flex-wrap: wrap;
+}
+
+[data-shell="tool"] .ui-section__title {
+  margin: 0;
+  font-size: var(--tool-fs-md, 13px);
+  font-weight: 600;
+  color: var(--tool-text);
+  line-height: var(--tool-line, 1.5);
+}
+
+[data-shell="tool"] .ui-section__desc {
+  margin: var(--tool-space-1, 4px) 0 0;
+  font-size: var(--tool-fs-sm, 12px);
+  color: var(--tool-text-muted);
+  line-height: 1.45;
+}
+
+[data-shell="tool"] .ui-section__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tool-space-2, 8px);
+}
+
+[data-shell="tool"] .ui-field-row {
+  display: grid;
+  grid-template-columns: minmax(0, var(--tool-field-label-w)) 1fr;
+  align-items: center;
+  gap: var(--tool-space-3, 12px);
+  min-height: var(--tool-row-h, 32px);
+}
+
+@media (max-width: 360px) {
+  [data-shell="tool"] .ui-field-row {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    gap: var(--tool-space-1, 4px);
+  }
+}
+
+[data-shell="tool"] .ui-field-row__label {
+  font-size: var(--tool-fs-md, 13px);
+  color: var(--tool-text);
+  line-height: var(--tool-line, 1.5);
+}
+
+[data-shell="tool"] .ui-field-row__control {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--tool-space-2, 8px);
+  min-width: 0;
+}
+
+[data-shell="tool"] .ui-select,
+[data-shell="tool"] .ui-input {
+  width: 100%;
+  max-width: 100%;
+  min-height: var(--tool-control-h);
+  padding: 0 var(--tool-space-2, 8px);
+  border: 1px solid var(--tool-border);
+  border-radius: var(--tool-radius, 4px);
+  background: var(--tool-chrome-editor, var(--tool-elevated));
+  color: var(--tool-text);
+  font-size: var(--tool-fs-md, 13px);
+  font-family: var(--font-ui, inherit);
+  line-height: var(--tool-line, 1.5);
+  box-sizing: border-box;
+  transition: var(--tool-transition, border-color 0.12s ease);
+}
+
+[data-shell="tool"] .ui-select:hover:not(:disabled),
+[data-shell="tool"] .ui-input:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--tool-text) 22%, var(--tool-border));
+}
+
+[data-shell="tool"] .ui-select:focus,
+[data-shell="tool"] .ui-input:focus {
+  outline: none;
+  border-color: var(--tool-accent);
+  box-shadow: 0 0 0 1px var(--tool-accent);
+}
+
+[data-shell="tool"] .ui-btn-group {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--tool-space-1, 4px);
+}
+
+[data-shell="tool"] .ui-btn-group__sep {
+  padding: 0 var(--tool-space-1, 4px);
+  font-size: var(--tool-fs-sm, 12px);
+  color: var(--tool-text-muted);
+  user-select: none;
+}
+
+[data-shell="tool"] .tool-mgmt-subtabs {
+  display: flex;
+  flex-shrink: 0;
+  gap: 0;
+  min-height: 32px;
+  padding: 0 var(--tool-space-3, 12px);
+  border-bottom: 1px solid var(--tool-divider, var(--tool-border));
+  background: var(--tool-chrome-editor, var(--tool-elevated));
+}
+
+[data-shell="tool"] .tool-mgmt-subtabs__btn {
+  position: relative;
+  margin-bottom: -1px;
+  padding: 6px 12px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  font-size: var(--tool-fs-sm, 12px);
+  font-weight: 500;
+  color: var(--tool-text-muted);
+  cursor: pointer;
+  transition: var(--tool-transition);
+}
+
+[data-shell="tool"] .tool-mgmt-subtabs__btn:hover {
+  color: var(--tool-text);
+}
+
+[data-shell="tool"] .tool-mgmt-subtabs__btn--active {
+  color: var(--tool-text);
+  border-bottom-color: var(--tool-accent);
+}
+
+[data-shell="tool"] .sv-embedded .sv-nav--vertical {
+  flex: 0 0 148px;
+  padding: var(--tool-space-2, 8px);
+  gap: 2px;
+}
+
+[data-shell="tool"] .sv-embedded .sv-nav--vertical .sv-nav-btn {
+  padding: 6px 10px;
+  border-left: 2px solid transparent;
+  border-radius: var(--tool-radius, 4px);
+  font-weight: 500;
+  color: var(--tool-text-muted);
+}
+
+[data-shell="tool"] .sv-embedded .sv-nav--vertical .sv-nav-btn:hover {
+  background: color-mix(in srgb, var(--tool-text) 6%, transparent);
+  color: var(--tool-text);
+}
+
+[data-shell="tool"] .sv-embedded .sv-nav--vertical .sv-nav-btn[aria-current="page"] {
+  border-left-color: var(--tool-accent);
+  background: color-mix(in srgb, var(--tool-accent) 10%, transparent);
+  color: var(--tool-text);
+}
+
+[data-shell="tool"] .mm-root.tool-mgmt-panel .mm-tabs {
+  gap: 0;
+  margin-bottom: var(--tool-space-4, 16px);
+  padding: 2px;
+  border: 1px solid var(--tool-border);
+  border-radius: var(--tool-radius, 4px);
+  background: var(--tool-chrome-sidebar, var(--tool-bg));
+}
+
+[data-shell="tool"] .mm-root.tool-mgmt-panel .mm-tab {
+  flex: 1;
+  padding: 5px 10px;
+  border: none;
+  border-radius: calc(var(--tool-radius, 4px) - 1px);
+  background: transparent;
+  font-size: var(--tool-fs-sm, 12px);
+  font-weight: 500;
+  color: var(--tool-text-muted);
+}
+
+[data-shell="tool"] .mm-root.tool-mgmt-panel .mm-tab.is-active {
+  background: var(--tool-chrome-editor, var(--tool-elevated));
+  color: var(--tool-text);
+  box-shadow: 0 0 0 1px var(--tool-border);
+}
+
+[data-shell="tool"] .mm-root.tool-mgmt-panel .mm-h3 {
+  margin: 0 0 var(--tool-space-2, 8px);
+  font-size: var(--tool-fs-md, 13px);
+  font-weight: 600;
+}
+
+[data-shell="tool"] .mm-root.tool-mgmt-panel .mm-help,
+[data-shell="tool"] .mm-root.tool-mgmt-panel .mm-effective {
+  border-radius: var(--tool-radius, 4px);
+  border-color: var(--tool-border);
+  background: var(--tool-chrome-sidebar, var(--tool-bg));
+}
+
+[data-shell="tool"] .mm-root.tool-mgmt-panel .mm-input,
+[data-shell="tool"] .mm-root.tool-mgmt-panel .mm-select {
+  min-height: var(--tool-control-h);
+  padding: 0 var(--tool-space-2, 8px);
+  border-radius: var(--tool-radius, 4px);
+}
+
+[data-shell="tool"] .mm-root.tool-mgmt-panel .mm-btn {
+  min-height: var(--tool-control-h);
+  padding: 0 var(--tool-space-3, 12px);
+  border-radius: var(--tool-radius, 4px);
+  font-size: var(--tool-fs-sm, 12px);
+}
+
+[data-shell="tool"] .mm-root.tool-mgmt-panel .mm-btn--primary {
+  background: var(--tool-accent);
+  border-color: var(--tool-accent);
+  color: #fff;
+}
+
+[data-shell="tool"] .ui-list-row + .ui-list-row {
+  border-top-color: var(--tool-divider, var(--tool-border));
+}
+
+/* Shared panel chrome for embedded side panel content */
+[data-shell="tool"] .tool-mgmt-panel {
+  flex: 1;
+  min-height: 0;
+  box-sizing: border-box;
+}
+
+[data-shell="tool"] .tool-mgmt-panel:not(.mm-root):not(.spm-root) {
+  padding: var(--tool-space-4, 16px);
+}
+
+[data-shell="tool"] .spm-root.tool-mgmt-panel,
+[data-shell="tool"] .mm-root.tool-mgmt-panel {
+  padding: var(--tool-space-4, 16px);
+  overflow: auto;
+}
+
+[data-shell="tool"] .css-panel.tool-mgmt-panel .css-head {
+  display: flex;
+  align-items: center;
+  gap: var(--tool-space-2, 8px);
+  flex-wrap: wrap;
+  margin-bottom: var(--tool-space-2, 8px);
+}
+
+[data-shell="tool"] .css-panel.tool-mgmt-panel .css-title {
+  margin: 0;
+  flex: 1;
+  font-size: var(--tool-fs-md, 13px);
+  font-weight: 600;
+  color: var(--tool-text);
+}
+
+[data-shell="tool"] .css-panel.tool-mgmt-panel .css-lead,
+[data-shell="tool"] .css-panel.tool-mgmt-panel .css-muted {
+  font-size: var(--tool-fs-sm, 12px);
+  color: var(--tool-text-muted);
+  line-height: 1.45;
+}
+
+[data-shell="tool"] .css-panel.tool-mgmt-panel .css-search-input {
+  min-height: var(--tool-control-h);
+  padding: 0 var(--tool-space-2, 8px);
+  border: 1px solid var(--tool-border);
+  border-radius: var(--tool-radius, 4px);
+  background: var(--tool-chrome-editor, var(--tool-elevated));
+  color: var(--tool-text);
+  font-size: var(--tool-fs-md, 13px);
+}
+
+[data-shell="tool"] .css-panel.tool-mgmt-panel .css-row {
+  border-color: var(--tool-border);
+  border-radius: var(--tool-radius, 4px);
+}
+
+[data-shell="tool"] .reply-post-processor-status .rpp-text {
+  font-size: var(--tool-fs-sm, 12px);
+  color: var(--tool-text-muted);
+}

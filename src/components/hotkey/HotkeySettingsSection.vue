@@ -2,12 +2,15 @@
 import type { HotkeyBinding, HotkeyBindingsFile } from '../../api'
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useAppToast } from '../../composables/useAppToast'
 import {
   getHotkeyBindings,
-
   saveHotkeyBindings,
 } from '../../api'
+import { useAppToast } from '../../composables/useAppToast'
+import UiButton from '../ui/UiButton.vue'
+import UiFieldRow from '../ui/UiFieldRow.vue'
+import UiSection from '../ui/UiSection.vue'
+import UiSelect from '../ui/UiSelect.vue'
 
 const { t } = useI18n()
 const { showToast } = useAppToast()
@@ -86,151 +89,106 @@ async function onSave(): Promise<void> {
 </script>
 
 <template>
-  <section class="hkset">
-    <h3 class="hkset-h">
-      {{ t("hotkeys.title") }}
-    </h3>
-    <p class="hkset-lead">
-      {{ t("hotkeys.lead") }}
-    </p>
+  <UiSection :title="t('hotkeys.title')" :description="t('hotkeys.lead')">
     <p v-if="loading" class="hkset-muted">
       {{ t("common.loading") }}
     </p>
     <form v-else class="hkset-form" @submit.prevent="onSave">
-      <div v-for="(b, i) in file.bindings" :key="b.id" class="hkset-row">
-        <label class="hkset-field">
-          <span>{{ t("hotkeys.fieldAccelerator") }}</span>
-          <input v-model="b.accelerator" type="text" :placeholder="t('hotkeys.accelPlaceholder')">
-        </label>
-        <label class="hkset-chk">
-          <input v-model="b.enabled" type="checkbox">
-          {{ t("hotkeys.enabled") }}
-        </label>
-        <label class="hkset-field">
-          <span>{{ t("hotkeys.action") }}</span>
-          <select
-            :value="b.action.type"
-            @change="
-              setActionType(i, ($event.target as HTMLSelectElement).value)
-            "
+      <div v-for="(b, i) in file.bindings" :key="b.id" class="hkset-card">
+        <UiFieldRow :label="t('hotkeys.fieldAccelerator')">
+          <input
+            v-model="b.accelerator"
+            type="text"
+            class="ui-input hkset-input"
+            :placeholder="t('hotkeys.accelPlaceholder')"
           >
-            <option value="openLauncherList">{{ t("hotkeys.actionOpenLauncher") }}</option>
-            <option value="openPluginSlot">{{ t("hotkeys.actionOpenSlot") }}</option>
-          </select>
-        </label>
+        </UiFieldRow>
+        <UiFieldRow :label="t('hotkeys.enabled')">
+          <label class="hkset-chk">
+            <input v-model="b.enabled" type="checkbox">
+          </label>
+        </UiFieldRow>
+        <UiFieldRow :label="t('hotkeys.action')">
+          <UiSelect
+            :model-value="b.action.type"
+            @change="setActionType(i, ($event.target as HTMLSelectElement).value)"
+          >
+            <option value="openLauncherList">
+              {{ t("hotkeys.actionOpenLauncher") }}
+            </option>
+            <option value="openPluginSlot">
+              {{ t("hotkeys.actionOpenSlot") }}
+            </option>
+          </UiSelect>
+        </UiFieldRow>
         <template v-if="b.action.type === 'openPluginSlot'">
-          <label class="hkset-field">
-            <span>{{ t("hotkeys.pluginId") }}</span>
-            <input v-model="b.action.pluginId" type="text">
-          </label>
-          <label class="hkset-field">
-            <span>{{ t("hotkeys.slotName") }}</span>
-            <input v-model="b.action.slot" type="text">
-          </label>
-          <label class="hkset-field">
-            <span>{{ t("hotkeys.appearanceOptional") }}</span>
-            <input v-model="b.action.appearanceId" type="text">
-          </label>
+          <UiFieldRow :label="t('hotkeys.pluginId')">
+            <input v-model="b.action.pluginId" type="text" class="ui-input hkset-input">
+          </UiFieldRow>
+          <UiFieldRow :label="t('hotkeys.slotName')">
+            <input v-model="b.action.slot" type="text" class="ui-input hkset-input">
+          </UiFieldRow>
+          <UiFieldRow :label="t('hotkeys.appearanceOptional')">
+            <input v-model="b.action.appearanceId" type="text" class="ui-input hkset-input">
+          </UiFieldRow>
         </template>
-        <button type="button" class="hkset-remove" @click="removeAt(i)">
-          {{ t("hotkeys.remove") }}
-        </button>
+        <div class="hkset-card__foot">
+          <UiButton size="sm" variant="ghost" type="button" @click="removeAt(i)">
+            {{ t("hotkeys.remove") }}
+          </UiButton>
+        </div>
       </div>
       <div class="hkset-actions">
-        <button type="button" class="hkset-btn" @click="addBinding">
+        <UiButton size="sm" variant="secondary" type="button" @click="addBinding">
           {{ t("hotkeys.addRow") }}
-        </button>
-        <button type="submit" class="hkset-btn hkset-btn--primary">
+        </UiButton>
+        <UiButton size="sm" variant="primary" type="submit">
           {{ t("hotkeys.save") }}
-        </button>
+        </UiButton>
       </div>
     </form>
-  </section>
+  </UiSection>
 </template>
 
 <style scoped>
-.hkset {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.hkset-h {
-  margin: 0;
-  font-size: 15px;
-}
-.hkset-lead {
-  margin: 0;
-  font-size: 12px;
-  color: var(--text-secondary);
-  line-height: 1.45;
-}
 .hkset-muted {
-  font-size: 13px;
-  color: var(--text-secondary);
+  margin: 0;
+  font-size: var(--tool-fs-md, 13px);
+  color: var(--tool-text-muted, var(--text-secondary));
 }
 .hkset-form {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--tool-space-3, 12px);
 }
-.hkset-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: flex-end;
-  padding: 10px;
-  border: 1px solid var(--border-light);
-  border-radius: 8px;
-  background: var(--bg-elevated);
-}
-.hkset-field {
+.hkset-card {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  font-size: 12px;
-  color: var(--text-secondary);
+  gap: var(--tool-space-2, 8px);
+  padding: var(--tool-space-3, 12px);
+  border: 1px solid var(--tool-border, var(--border-light));
+  border-radius: var(--tool-radius, 4px);
+  background: var(--tool-chrome-sidebar, var(--tool-bg, var(--bg-secondary)));
 }
-.hkset-field input,
-.hkset-field select {
-  min-width: 140px;
-  padding: 6px 8px;
-  font-size: 13px;
-  border-radius: 6px;
-  border: 1px solid var(--border-light);
-  background: var(--bg-primary);
+.hkset-card__foot {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: var(--tool-space-1, 4px);
+}
+.hkset-input {
+  width: 100%;
 }
 .hkset-chk {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 13px;
+  gap: var(--tool-space-2, 8px);
+  font-size: var(--tool-fs-md, 13px);
   user-select: none;
-}
-.hkset-remove {
-  margin-left: auto;
-  font-size: 12px;
-  padding: 6px 10px;
-  border-radius: 6px;
-  border: 1px solid var(--border-light);
-  background: transparent;
   cursor: pointer;
 }
 .hkset-actions {
   display: flex;
-  gap: 10px;
+  gap: var(--tool-space-2, 8px);
   flex-wrap: wrap;
-}
-.hkset-btn {
-  padding: 8px 14px;
-  font-size: 13px;
-  border-radius: var(--radius-btn);
-  border: 1px solid var(--border-light);
-  background: transparent;
-  cursor: pointer;
-}
-.hkset-btn--primary {
-  background: var(--accent, #3b82f6);
-  color: #fff;
-  border-color: transparent;
 }
 </style>

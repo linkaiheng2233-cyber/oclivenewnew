@@ -1,22 +1,16 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import {
-  getUserIdentityState,
-  OCLIVE_DEFAULT_IDENTITY_SENTINEL,
-  setSceneUserIdentity,
-  setUserIdentity,
-  type UserIdentityStateResponse,
-} from '../../api'
+import { OCLIVE_DEFAULT_IDENTITY_SENTINEL } from '../../api'
 import { useAppToast } from '../../composables/useAppToast'
-import { useRoleStore } from '../../stores/roleStore'
-import { useUiStore } from '../../stores/uiStore'
-import HelpHint from '../shared/HelpHint.vue'
+import { useUserIdentityState } from '../../composables/useUserIdentityState'
+import UiFieldRow from '../ui/UiFieldRow.vue'
+import UiSelect from '../ui/UiSelect.vue'
 
-const props = withDefaults(
+withDefaults(
   defineProps<{
     variant?: 'full' | 'compact'
-    /** Settings → General: show section titles and catalog-empty hint */
+    /** Settings → General: field row layout without duplicate section chrome */
     settingsLayout?: boolean
   }>(),
   {
@@ -25,12 +19,15 @@ const props = withDefaults(
   },
 )
 
-const { t, te } = useI18n()
+const { t } = useI18n()
 const { showToast } = useAppToast()
-const roleStore = useRoleStore()
-const uiStore = useUiStore()
-const busy = ref(false)
-const identityState = ref<UserIdentityStateResponse | null>(null)
+const {
+  loading,
+  hasCatalog,
+  identitySelectValue,
+  identityState,
+  setIdentity,
+} = useUserIdentityState()
 
 const identityRows = computed(() => {
   const rows = identityState.value?.identities ?? []
@@ -44,75 +41,13 @@ const identityRows = computed(() => {
   ]
 })
 
-const identitySelectValue = computed(() => {
-  if (!identityState.value)
-    return ''
-  if (identityState.value.use_manifest_default)
-    return OCLIVE_DEFAULT_IDENTITY_SENTINEL
-  return identityState.value.current_identity_id
-})
-
-const hasIdentityCatalog = computed(() => identityRows.value.length > 0)
-
-const postProcessorStatusText = computed(() => {
-  const info = roleStore.roleInfo
-  if (!info.replyPostProcessorEnabled) {
-    return t('roleRuntime.postProcessorOff')
-  }
-  const backendKey = `roleRuntime.backend${info.replyPostProcessorBackend.charAt(0).toUpperCase()}${info.replyPostProcessorBackend.slice(1)}`
-  const backendLabel = te(backendKey) ? t(backendKey) : info.replyPostProcessorBackend
-  const profile = info.replyPostProcessorProfile ?? '—'
-  return t('roleRuntime.postProcessorOn', { backend: backendLabel, profile })
-})
-
-async function refreshIdentityState(): Promise<void> {
-  const roleId = roleStore.currentRoleId
-  if (!roleId) {
-    identityState.value = null
-    return
-  }
-  try {
-    identityState.value = await getUserIdentityState(
-      roleId,
-      roleStore.roleInfo.identityBinding === 'per_scene' ? uiStore.sceneId : null,
-    )
-  }
-  catch {
-    identityState.value = null
-  }
-}
-
-onMounted(() => {
-  void refreshIdentityState()
-})
-
-watch(
-  () => [roleStore.currentRoleId, uiStore.sceneId, roleStore.roleInfo.identityBinding] as const,
-  () => {
-    void refreshIdentityState()
-  },
-)
-
 async function onIdentityChange(ev: Event) {
   const next = (ev.target as HTMLSelectElement).value
-  if (next === identitySelectValue.value)
-    return
-  busy.value = true
   try {
-    const perScene = roleStore.roleInfo.identityBinding === 'per_scene'
-    if (perScene && next !== OCLIVE_DEFAULT_IDENTITY_SENTINEL) {
-      identityState.value = await setSceneUserIdentity(roleStore.currentRoleId, uiStore.sceneId, next)
-    }
-    else {
-      identityState.value = await setUserIdentity(roleStore.currentRoleId, next)
-    }
-    await roleStore.refreshRoleInfo()
+    await setIdentity(next)
   }
   catch (err) {
     showToast('error', err instanceof Error ? err.message : String(err))
-  }
-  finally {
-    busy.value = false
   }
 }
 </script>
@@ -126,44 +61,27 @@ async function onIdentityChange(ev: Event) {
     }"
   >
     <template v-if="settingsLayout">
-      <div class="ric-settings-block">
-        <div v-if="variant === 'full'" class="ric-settings-head">
-          <span class="ric-label">{{ t('settings.userIdentitySectionTitle') }}</span>
-          <HelpHint :text="t('settings.userIdentitySectionLead')" />
-        </div>
-        <p v-if="!hasIdentityCatalog" class="ric-hint">
-          {{ t('settings.noIdentityCatalogHint') }}
-        </p>
-        <div v-if="hasIdentityCatalog" class="row">
-          <label :for="`identity-select-${variant}`">{{ t('roleRuntime.userIdentity') }}</label>
-          <select
-            :id="`identity-select-${variant}`"
-            class="select"
-            :disabled="busy"
-            :value="identitySelectValue"
-            @change="onIdentityChange"
-          >
-            <option v-for="r in identityRows" :key="r.id" :value="r.id">
-              {{ r.name || r.id }}
-            </option>
-          </select>
-        </div>
-      </div>
-      <div class="ric-settings-block">
-        <div v-if="variant === 'full'" class="ric-settings-head">
-          <span class="ric-label">{{ t('settings.postProcessorSectionTitle') }}</span>
-        </div>
-        <p class="sub post-processor-status">
-          {{ postProcessorStatusText }}
-        </p>
-      </div>
+      <p v-if="!hasCatalog" class="ric-hint">
+        {{ t('settings.noIdentityCatalogHint') }}
+      </p>
+      <UiFieldRow v-else :label="t('roleRuntime.userIdentity')">
+        <UiSelect
+          :model-value="identitySelectValue"
+          :disabled="loading"
+          @change="onIdentityChange"
+        >
+          <option v-for="r in identityRows" :key="r.id" :value="r.id">
+            {{ r.name || r.id }}
+          </option>
+        </UiSelect>
+      </UiFieldRow>
     </template>
 
     <template v-else-if="variant === 'compact'">
       <select
-        v-if="hasIdentityCatalog"
+        v-if="hasCatalog"
         class="ric-compact-select"
-        :disabled="busy"
+        :disabled="loading"
         :value="identitySelectValue"
         :aria-label="t('roleRuntime.userIdentity')"
         @change="onIdentityChange"
@@ -172,18 +90,15 @@ async function onIdentityChange(ev: Event) {
           {{ r.name || r.id }}
         </option>
       </select>
-      <p class="ric-compact-status">
-        {{ postProcessorStatusText }}
-      </p>
     </template>
 
     <template v-else>
-      <div v-if="hasIdentityCatalog" class="row">
+      <div v-if="hasCatalog" class="row">
         <label for="identity-select-full">{{ t('roleRuntime.userIdentity') }}</label>
         <select
           id="identity-select-full"
           class="select"
-          :disabled="busy"
+          :disabled="loading"
           :value="identitySelectValue"
           @change="onIdentityChange"
         >
@@ -192,9 +107,6 @@ async function onIdentityChange(ev: Event) {
           </option>
         </select>
       </div>
-      <p class="sub post-processor-status">
-        {{ postProcessorStatusText }}
-      </p>
     </template>
   </div>
 </template>
@@ -202,26 +114,21 @@ async function onIdentityChange(ev: Event) {
 <style scoped>
 .role-identity-controls--compact {
   flex-shrink: 0;
-  padding: 6px 12px 10px;
-  font-size: 12px;
-  color: var(--text-secondary);
+  padding: var(--tool-space-2, 8px) var(--tool-space-3, 12px) var(--tool-space-3, 12px);
+  font-size: var(--tool-fs-sm, 12px);
+  color: var(--tool-text-muted, var(--text-secondary));
   text-align: center;
-  border-top: 1px solid var(--border-light);
+  border-top: 1px solid var(--tool-divider, var(--tool-border, var(--border-light)));
 }
 .ric-compact-select {
   width: 100%;
-  margin-bottom: 4px;
-  padding: 4px 6px;
-  border-radius: 6px;
-  border: 1px solid var(--border-light);
-  background: var(--bg-elevated);
+  margin-bottom: 0;
+  padding: var(--tool-space-1, 4px) var(--tool-space-2, 8px);
+  border-radius: var(--tool-radius, 4px);
+  border: 1px solid var(--tool-border, var(--border-light));
+  background: var(--tool-elevated, var(--bg-elevated));
   font: inherit;
-  color: inherit;
-}
-.ric-compact-status {
-  margin: 0;
-  font-size: 11px;
-  opacity: 0.9;
+  color: var(--tool-text, inherit);
 }
 .row {
   display: flex;
@@ -240,31 +147,10 @@ label {
   border: 1px solid var(--border-light);
   background: var(--bg-elevated);
 }
-.sub {
-  margin: 0;
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-.post-processor-status {
-  margin-top: 0;
-}
-.ric-settings-block + .ric-settings-block {
-  margin-top: 4px;
-}
-.ric-settings-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-bottom: 4px;
-}
-.ric-label {
-  font-weight: 600;
-  font-size: 14px;
-}
 .ric-hint {
-  margin: 0 0 8px;
-  font-size: 12px;
-  color: var(--text-secondary);
+  margin: 0;
+  font-size: var(--tool-fs-sm, 12px);
+  color: var(--tool-text-muted, var(--text-secondary));
+  line-height: 1.45;
 }
 </style>

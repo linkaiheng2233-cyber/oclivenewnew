@@ -47,6 +47,27 @@
           if (sv != null && sv !== "" && isFinite(Number(sv))) s = Number(sv);
           document.documentElement.style.setProperty("--oclive-ui-scale", String(s));
         } catch (e2) {}
+        try {
+          var lrKey = "oclive-layout-left-rail-w";
+          var spKey = "oclive-layout-sidepanel-w";
+          function clampW(v, min, max, def) {
+            var n = Number(v);
+            if (!isFinite(n)) return def;
+            n = Math.round(n);
+            if (n < min) return min;
+            if (n > max) return max;
+            return n;
+          }
+          var lr = clampW(localStorage.getItem(lrKey), 160, 360, 220);
+          var sp = clampW(localStorage.getItem(spKey), 280, 560, 400);
+          document.documentElement.style.setProperty("--tool-left-rail-w", lr + "px");
+          document.documentElement.style.setProperty("--tool-sidepanel-w", sp + "px");
+        } catch (e4) {}
+        try {
+          var shellRaw = "%VITE_OCLIVE_SHELL%";
+          var shell = shellRaw === "fluent" ? "fluent" : "tool";
+          document.documentElement.setAttribute("data-shell", shell);
+        } catch (e3) {}
       })();
     </script>
   </head>

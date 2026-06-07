@@ -1,6 +1,11 @@
 /** Matches backend `InteractionMode` / DTO. */
 export type InteractionMode = 'immersive' | 'pure_chat'
 
+/** Immersive-only UX: virtual time, narrative scenes, travel bars, life schedule hints, etc. */
+export function isImmersiveMode(mode: InteractionMode): boolean {
+  return mode === 'immersive'
+}
+
 /** Normalize API string to union type (unknown → immersive). */
 export function normalizeInteractionMode(
   raw: string | undefined | null,

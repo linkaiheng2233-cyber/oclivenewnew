@@ -33,6 +33,7 @@ import {
 import { listRoles } from '../../api/role'
 import { useAppToast } from '../../composables/useAppToast'
 import { downloadBase64File, downloadTextFile } from '../../utils/download'
+import UiButton from '../ui/UiButton.vue'
 import { formatStorageBytes } from './chat-storage/chatStorageFormat'
 import ChatStorageMessageEditor from './chat-storage/ChatStorageMessageEditor.vue'
 import ChatStorageReplayBar from './chat-storage/ChatStorageReplayBar.vue'
@@ -536,27 +537,27 @@ defineExpose({ refreshStats })
 </script>
 
 <template>
-  <section class="css-panel">
+  <section class="css-panel tool-mgmt-panel">
     <div class="css-head">
-      <button
+      <UiButton
         v-if="level !== 'roles'"
-        type="button"
-        class="css-back"
+        size="sm"
+        variant="ghost"
         @click="goBack"
       >
         {{ t('chatStorage.back') }}
-      </button>
+      </UiButton>
       <h3 class="css-title">
         {{ t('chatStorage.title') }}
       </h3>
-      <button
-        type="button"
-        class="css-refresh"
+      <UiButton
+        size="sm"
+        variant="secondary"
         :disabled="loading"
         @click="refreshStats(true)"
       >
         {{ t('chatStorage.refresh') }}
-      </button>
+      </UiButton>
     </div>
     <p class="css-lead">
       {{ t('chatStorage.lead') }}
@@ -586,9 +587,9 @@ defineExpose({ refreshStats })
     <div class="css-root">
       <span class="css-root-label">{{ t('chatStorage.storageRoot') }}</span>
       <code class="css-root-path">{{ storageRoot || '…' }}</code>
-      <button type="button" class="css-action css-root-btn" @click="changeStorageRoot">
+      <UiButton size="sm" variant="secondary" class="css-root-btn" @click="changeStorageRoot">
         {{ t('chatStorage.changeRoot') }}
-      </button>
+      </UiButton>
       <p class="css-muted css-root-hint">
         {{ t('chatStorage.storageRootHint') }}
       </p>
@@ -602,9 +603,9 @@ defineExpose({ refreshStats })
         :placeholder="t('chatStorage.searchPlaceholder')"
         @keydown.enter="runSearch"
       >
-      <button type="button" class="css-search-btn" :disabled="loading" @click="runSearch">
+      <UiButton size="sm" variant="primary" :disabled="loading" @click="runSearch">
         {{ t('chatStorage.search') }}
-      </button>
+      </UiButton>
     </div>
 
     <ul v-if="capabilities.supports_search && searchActive && searchResults.length > 0" class="css-list css-search-results">

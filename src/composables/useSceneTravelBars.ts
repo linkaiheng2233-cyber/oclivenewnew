@@ -1,5 +1,5 @@
-import type { JumpTimeResponse } from '../api'
 import type { ComputedRef } from 'vue'
+import type { JumpTimeResponse } from '../api'
 import { computed, nextTick, ref } from 'vue'
 import { useRoleStore } from '../stores/roleStore'
 import { useUiStore } from '../stores/uiStore'
@@ -27,6 +27,8 @@ export function useSceneTravelBars(opts: UseSceneTravelBarsOptions) {
   }>({ visible: false, fromLabel: '', toLabel: '' })
 
   const allSceneOptions: ComputedRef<Array<{ id: string, label: string }>> = computed(() => {
+    if (!roleStore.interactionImmersive)
+      return []
     const labels = roleStore.roleInfo.sceneLabels ?? []
     const scenes = roleStore.roleInfo.scenes ?? []
     if (labels.length > 0)
@@ -64,6 +66,8 @@ export function useSceneTravelBars(opts: UseSceneTravelBarsOptions) {
   }
 
   async function confirmPostReplyScene(together: boolean): Promise<void> {
+    if (!roleStore.interactionImmersive)
+      return
     const id = postReplySceneSelectedId.value.trim()
     postReplySceneBarVisible.value = false
     postReplySceneSelectedId.value = ''
@@ -71,6 +75,8 @@ export function useSceneTravelBars(opts: UseSceneTravelBarsOptions) {
   }
 
   async function confirmTogetherTravel(together: boolean): Promise<void> {
+    if (!roleStore.interactionImmersive)
+      return
     const id = togetherTravelSelectedId.value.trim()
     togetherTravelBarVisible.value = false
     togetherTravelSelectedId.value = ''
@@ -78,6 +84,8 @@ export function useSceneTravelBars(opts: UseSceneTravelBarsOptions) {
   }
 
   function onTopBarSceneChange(ev: Event): void {
+    if (!roleStore.interactionImmersive)
+      return
     const sel = ev.target as HTMLSelectElement
     const next = sel.value
     if (next === uiStore.sceneId)
@@ -98,6 +106,8 @@ export function useSceneTravelBars(opts: UseSceneTravelBarsOptions) {
   }
 
   async function confirmTopBarScene(together: boolean): Promise<void> {
+    if (!roleStore.interactionImmersive)
+      return
     const id = pendingTopBarSceneId.value.trim()
     topBarSceneDialogVisible.value = false
     pendingTopBarSceneId.value = ''
@@ -108,6 +118,8 @@ export function useSceneTravelBars(opts: UseSceneTravelBarsOptions) {
   }
 
   function onPluginQuickActionTravel(payload: unknown): void {
+    if (!roleStore.interactionImmersive)
+      return
     const sceneId = (payload as { sceneId?: string } | null)?.sceneId
     const togetherRaw = (payload as { together?: boolean } | null)?.together
     const id = typeof sceneId === 'string' ? sceneId.trim() : ''
@@ -120,6 +132,8 @@ export function useSceneTravelBars(opts: UseSceneTravelBarsOptions) {
   }
 
   function onVirtualTimeJumpComplete(res: JumpTimeResponse): void {
+    if (!roleStore.interactionImmersive)
+      return
     if (res.autonomous_scene_from && res.autonomous_scene_to) {
       autonomousSceneNotice.value = {
         visible: true,
@@ -134,6 +148,8 @@ export function useSceneTravelBars(opts: UseSceneTravelBarsOptions) {
   }
 
   function offerSceneBarsAfterReply(offerTogether: boolean, offerPicker: boolean): void {
+    if (!roleStore.interactionImmersive)
+      return
     if (offerTogether && sceneDestinationOptions.value.length > 0) {
       togetherTravelBarVisible.value = true
     }

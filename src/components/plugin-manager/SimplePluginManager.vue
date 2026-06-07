@@ -2,15 +2,17 @@
 import { open } from '@tauri-apps/api/dialog'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import PluginUiSlotSelectorDialog from '../PluginUiSlotSelectorDialog.vue'
+import { installPluginFromZip } from '../../api'
 import { useAppToast } from '../../composables/useAppToast'
 import { usePluginSlotEnable } from '../../composables/usePluginSlotEnable'
-import { usePluginStore } from '../../stores/pluginStore'
 import { usePluginMarketStore } from '../../stores/pluginMarketStore'
-import { installPluginFromZip } from '../../api'
+import { usePluginStore } from '../../stores/pluginStore'
+import PluginUiSlotSelectorDialog from '../PluginUiSlotSelectorDialog.vue'
+import UiButton from '../ui/UiButton.vue'
 
 const props = defineProps<{
   visible: boolean
+  embedded?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -121,26 +123,33 @@ async function onInstallZip(): Promise<void> {
 </script>
 
 <template>
-  <div class="spm-root">
+  <div class="spm-root tool-mgmt-panel">
     <header class="spm-toolbar">
-      <button type="button" class="spm-btn primary" :disabled="busyId === '__install__'" @click="onInstallZip">
+      <UiButton
+        size="sm"
+        variant="primary"
+        :disabled="busyId === '__install__'"
+        @click="onInstallZip"
+      >
         {{
           busyId === "__install__"
             ? t("simplePluginManager.installingZip")
             : t("simplePluginManager.installZip")
         }}
-      </button>
-      <button type="button" class="spm-btn" @click="emit('openMarket')">
+      </UiButton>
+      <UiButton size="sm" variant="secondary" @click="emit('openMarket')">
         {{ t("simplePluginManager.browseMarket") }}
-      </button>
-      <button
-        type="button"
-        class="spm-btn ghost"
+      </UiButton>
+      <UiButton
+        v-if="!embedded"
+        size="sm"
+        variant="ghost"
+        class="spm-close"
         :aria-label="t('simplePluginManager.close')"
         @click="emit('close')"
       >
         ×
-      </button>
+      </UiButton>
     </header>
 
     <p v-if="pluginStore.error" class="spm-error" role="alert">
@@ -168,7 +177,7 @@ async function onInstallZip(): Promise<void> {
         </label>
         <button
           type="button"
-          class="spm-btn danger"
+          class="spm-uninstall"
           :disabled="busyId === row.id"
           @click="onUninstall(row.id)"
         >
@@ -198,34 +207,12 @@ async function onInstallZip(): Promise<void> {
 .spm-toolbar {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--tool-space-2, 8px);
   align-items: center;
 }
-.spm-toolbar .ghost {
+.spm-close {
   margin-left: auto;
   min-width: 2rem;
-}
-.spm-btn {
-  padding: 6px 12px;
-  border-radius: var(--radius-sm, 6px);
-  border: 1px solid var(--border-light);
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  cursor: pointer;
-  font-size: 0.875rem;
-}
-.spm-btn.primary {
-  background: var(--accent, #3b82f6);
-  border-color: transparent;
-  color: #fff;
-}
-.spm-btn.danger {
-  color: #b91c1c;
-  border-color: color-mix(in srgb, #b91c1c 35%, var(--border-light));
-}
-.spm-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 .spm-list {
   list-style: none;
@@ -233,28 +220,46 @@ async function onInstallZip(): Promise<void> {
   padding: 0;
   overflow: auto;
   flex: 1;
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius-sm, 6px);
+  min-height: 0;
+  border: 1px solid var(--tool-border, var(--border-light));
+  border-radius: var(--tool-radius, 4px);
+  background: var(--tool-chrome-editor, var(--bg-primary));
 }
 .spm-row {
   display: grid;
   grid-template-columns: 1fr auto auto auto;
-  gap: 10px;
+  gap: var(--tool-space-3, 12px);
   align-items: center;
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--border-light);
+  padding: var(--tool-space-2, 8px) var(--tool-space-3, 12px);
+  min-height: var(--tool-row-h, 32px);
+  border-bottom: 1px solid var(--tool-divider, var(--tool-border, var(--border-light)));
 }
 .spm-row:last-child {
   border-bottom: none;
 }
 .spm-title {
   font-weight: 600;
+  font-size: var(--tool-fs-md, 13px);
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .spm-ver {
-  font-size: 0.8rem;
-  color: var(--text-muted, #64748b);
+  font-size: var(--tool-fs-sm, 12px);
+  color: var(--tool-text-muted, var(--text-muted, #64748b));
+}
+.spm-uninstall {
+  padding: 0 var(--tool-space-2, 8px);
+  min-height: var(--tool-control-h-sm, 24px);
+  border: 1px solid color-mix(in srgb, var(--tool-danger, #b91c1c) 35%, var(--tool-border, var(--border-light)));
+  border-radius: var(--tool-radius, 4px);
+  background: transparent;
+  color: var(--tool-danger, #b91c1c);
+  font-size: var(--tool-fs-sm, 12px);
+  cursor: pointer;
+}
+.spm-uninstall:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 .spm-switch {
   position: relative;

@@ -1,6 +1,10 @@
+import { ref, watch } from 'vue'
 import { ensurePluginWorkbenchI18n } from '../i18n/loadPluginWorkbench'
 import { usePluginMarketStore } from '../stores/pluginMarketStore'
 import { useOverlayWindow } from './useOverlayWindow'
+import { resolveOcliveShell } from './useOcliveShell'
+
+export type PluginsPanelSubview = 'list' | 'market'
 
 export interface UsePluginManagerWindowOptions {
   /** Collapse the top-bar "More" menu after each plugin manager open/switch. */
@@ -10,6 +14,7 @@ export interface UsePluginManagerWindowOptions {
 /** Minimal installed-plugin list and market entry. */
 export function usePluginManagerWindow(opts: UsePluginManagerWindowOptions) {
   const marketStore = usePluginMarketStore()
+  const pluginsPanelSubview = ref<PluginsPanelSubview>('list')
   const { open: simplePluginManagerOpen, toggle } = useOverlayWindow({
     closeMoreMenu: opts.closeMoreMenu,
     onOpen: () => {
@@ -28,13 +33,26 @@ export function usePluginManagerWindow(opts: UsePluginManagerWindowOptions) {
 
   function openPluginMarket(): void {
     void ensurePluginWorkbenchI18n()
-    simplePluginManagerOpen.value = false
-    void marketStore.openMarketPanel()
+    if (resolveOcliveShell() === 'tool') {
+      pluginsPanelSubview.value = 'market'
+      toggle(true)
+      marketStore.closeMarketPanel()
+    }
+    else {
+      simplePluginManagerOpen.value = false
+      void marketStore.openMarketPanel()
+    }
     opts.closeMoreMenu()
   }
 
+  watch(simplePluginManagerOpen, (open) => {
+    if (!open)
+      pluginsPanelSubview.value = 'list'
+  })
+
   return {
     simplePluginManagerOpen,
+    pluginsPanelSubview,
     openPluginManagerPanel,
     openSimplePluginManager,
     openPluginMarket,

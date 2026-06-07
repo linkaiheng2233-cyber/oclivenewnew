@@ -7,7 +7,13 @@ import { i18n } from './i18n'
 import { tryReplaceWithDirectoryShell } from './utils/directoryShellBootstrap'
 import { shouldLoadSentry } from './utils/telemetrySentry'
 import './styles/theme.css'
+import './styles/theme-tool.css'
+import './styles/theme-tool-management.css'
+import './styles/chat-tool.css'
 import './styles/global.css'
+import { hydrateLayoutWidths } from './composables/useLayoutWidths'
+
+hydrateLayoutWidths()
 
 void (async () => {
   const shellPromise = Promise.resolve().then(() => tryReplaceWithDirectoryShell())

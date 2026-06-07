@@ -267,12 +267,11 @@ async fn connect_db(db_path: &Path) -> Result<SqlitePool> {
 }
 
 async fn run_migrations(db: &SqlitePool) -> Result<()> {
-    crate::infrastructure::sql_migrate::run_sql_migrations(
-        db,
-        &PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("migrations"),
-    )
-    .await
-    .map_err(crate::error::AppError::DatabaseError)
+    let migrations_dir = crate::infrastructure::sql_migrate::resolve_migrations_dir()
+        .map_err(crate::error::AppError::DatabaseError)?;
+    crate::infrastructure::sql_migrate::run_sql_migrations(db, &migrations_dir)
+        .await
+        .map_err(crate::error::AppError::DatabaseError)
 }
 
 async fn remote_fallback_switch(db_manager: &DbManager) -> Result<Arc<AtomicBool>> {

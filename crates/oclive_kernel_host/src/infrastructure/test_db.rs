@@ -1,8 +1,6 @@
 //! Shared in-memory SQLite fixtures for unit tests.
 
 use sqlx::SqlitePool;
-use std::path::Path;
-
 use crate::infrastructure::db::DbManager;
 use crate::infrastructure::sql_migrate;
 use crate::infrastructure::sqlite_pool;
@@ -16,7 +14,7 @@ pub async fn connect_memory_migrated() -> SqlitePool {
     let pool = sqlite_pool::connect_memory()
         .await
         .expect("in-memory sqlite pool");
-    let migrations_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("migrations");
+    let migrations_dir = sql_migrate::resolve_migrations_dir().expect("migrations dir");
     sql_migrate::run_sql_migrations(&pool, &migrations_dir)
         .await
         .expect("apply migrations");

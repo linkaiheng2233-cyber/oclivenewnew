@@ -10,6 +10,8 @@ export function useNarrativeScene() {
   const uiStore = useUiStore()
 
   function applyResolvedNarrativeScene(): void {
+    if (!roleStore.interactionImmersive)
+      return
     chatStore.applySceneChange(
       resolveUserNarrativeSceneId(
         roleStore.roleInfo.userPresenceScene,

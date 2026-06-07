@@ -114,9 +114,11 @@ export function useMainShell() {
 
   const topMoreOpen = ref(false)
   const settingsViewOpen = ref(false)
+  const settingsFocusTab = ref<'general' | 'plugins' | 'storage' | null>(null)
 
   const {
     simplePluginManagerOpen,
+    pluginsPanelSubview,
     openPluginManagerPanel,
     openSimplePluginManager,
     openPluginMarket,
@@ -137,12 +139,22 @@ export function useMainShell() {
   })
 
   watch(simplePluginManagerOpen, (open) => {
-    if (open)
+    if (open) {
       modelManagerOpen.value = false
+      settingsViewOpen.value = false
+    }
   })
   watch(modelManagerOpen, (open) => {
     if (open) {
       simplePluginManagerOpen.value = false
+      settingsViewOpen.value = false
+      pluginMarketStore.closeMarketPanel()
+    }
+  })
+  watch(settingsViewOpen, (open) => {
+    if (open) {
+      simplePluginManagerOpen.value = false
+      modelManagerOpen.value = false
       pluginMarketStore.closeMarketPanel()
     }
   })
@@ -192,6 +204,11 @@ export function useMainShell() {
     closeModelManager,
   })
 
+  function openSettingsToGeneral(): void {
+    settingsFocusTab.value = 'general'
+    openSettingsView()
+  }
+
   usePluginEvents({
     showToast,
     onQuickActionTravel: onPluginQuickActionTravel,
@@ -211,8 +228,18 @@ export function useMainShell() {
     openSimplePluginManager(true)
   }
 
-  const sceneHistorySplitIndex = computed(() =>
-    chatStore.sceneHistorySplitForRoleScene(roleStore.currentRoleId, uiStore.sceneId),
+  const sceneHistorySplitIndex = computed(() => {
+    if (!roleStore.interactionImmersive)
+      return 0
+    return chatStore.sceneHistorySplitForRoleScene(roleStore.currentRoleId, uiStore.sceneId)
+  })
+
+  watch(
+    () => roleStore.roleInfo.interactionMode,
+    (mode) => {
+      if (mode === 'pure_chat')
+        resetPureChatSceneUi()
+    },
   )
 
   const packLayoutResolved = computed(() => {
@@ -301,9 +328,9 @@ export function useMainShell() {
       const perScene = roleStore.roleInfo.identityBinding === 'per_scene'
       if (nextRelation === OCLIVE_DEFAULT_RELATION_SENTINEL) {
         if (perScene)
-          await roleStore.setManifestDefaultIdentity(uiStore.sceneId)
+          await roleStore.setManifestDefaultRelation(uiStore.sceneId)
         else
-          await roleStore.setManifestDefaultIdentity()
+          await roleStore.setManifestDefaultRelation()
       }
       else if (perScene) {
         await roleStore.setSceneUserRelation(uiStore.sceneId, nextRelation)
@@ -394,6 +421,40 @@ export function useMainShell() {
     }
   })
 
+  function openSidePanelTab(tab: 'settings' | 'plugins' | 'models'): void {
+    if (tab === 'settings') {
+      openSettingsView()
+      return
+    }
+    if (tab === 'plugins') {
+      openSimplePluginManager(true)
+      return
+    }
+    openModelManager(true)
+  }
+
+  function closeAllSidePanels(): void {
+    settingsViewOpen.value = false
+    simplePluginManagerOpen.value = false
+    closeModelManager()
+  }
+
+  const sidePanelOpen = computed(
+    () => settingsViewOpen.value || simplePluginManagerOpen.value || modelManagerOpen.value,
+  )
+
+  const sidePanelTab = computed<'settings' | 'plugins' | 'models'>(() => {
+    if (settingsViewOpen.value)
+      return 'settings'
+    if (simplePluginManagerOpen.value)
+      return 'plugins'
+    return 'models'
+  })
+
+  function onSidePanelTabChange(tab: 'settings' | 'plugins' | 'models'): void {
+    openSidePanelTab(tab)
+  }
+
   return {
     t,
     localePreference,
@@ -418,12 +479,18 @@ export function useMainShell() {
     topMoreOpen,
     settingsViewOpen,
     simplePluginManagerOpen,
+    pluginsPanelSubview,
     openPluginManagerPanel,
     openSimplePluginManager,
     openPluginMarket,
     modelManagerOpen,
     openModelManager,
     closeModelManager,
+    sidePanelOpen,
+    sidePanelTab,
+    openSidePanelTab,
+    closeAllSidePanels,
+    onSidePanelTabChange,
     allSceneOptions,
     sceneDestinationOptions,
     postReplySceneBarVisible,
@@ -446,6 +513,8 @@ export function useMainShell() {
     shortcutHelpOpen,
     openShortcutHelp,
     openSettingsView,
+    openSettingsToGeneral,
+    settingsFocusTab,
     sceneTransition,
     sceneLabelForId,
     sceneHistorySplitIndex,

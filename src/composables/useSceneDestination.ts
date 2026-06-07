@@ -1,10 +1,10 @@
 import type { ToastType } from './useAppToast'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { setUserPresenceScene, switchScene } from '../api'
 import { useChatStore } from '../stores/chatStore'
 import { useDebugStore } from '../stores/debugStore'
 import { useRoleStore } from '../stores/roleStore'
-import { setUserPresenceScene, switchScene } from '../api'
 
 const SCENE_TRANSITION_MS = 520
 
@@ -38,6 +38,8 @@ export function useSceneDestination(showToast: ShowToast) {
   }
 
   async function applySceneDestination(id: string, together: boolean): Promise<void> {
+    if (!roleStore.interactionImmersive)
+      return
     if (!id.trim()) {
       showToast('warning', t('app.scene.selectDestinationFirst'))
       return

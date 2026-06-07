@@ -1,11 +1,12 @@
+import type { AppToastFn } from './useAppToast'
 import { onBeforeUnmount, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { hostEventBus } from '../lib/hostEventBus'
 import { setRemoteLifeEnabled, setRoleInteractionMode } from '../api'
+import { hostEventBus } from '../lib/hostEventBus'
 import { usePluginStore } from '../stores/pluginStore'
 import { useRoleStore } from '../stores/roleStore'
+import { resetLayoutWidths } from './useLayoutWidths'
 import { useOcliveAppearance } from './useOcliveAppearance'
-import type { AppToastFn } from './useAppToast'
 
 const quickActionTravelEvent = 'com.oclive.mumu.quick-actions:travel'
 const settingsSetRemoteLifeEvent = 'com.oclive.mumu.settings-panel:set_remote_life'
@@ -28,6 +29,10 @@ export function usePluginEvents(opts: UsePluginEventsOptions) {
   const { cycleTheme } = useOcliveAppearance()
 
   async function onPluginSetRemoteLife(payload: unknown): Promise<void> {
+    if (!roleStore.interactionImmersive) {
+      opts.showToast('info', t('app.toast.interactionPureChat'))
+      return
+    }
     const enabledRaw = (payload as { enabled?: boolean } | null)?.enabled
     if (typeof enabledRaw !== 'boolean')
       return
@@ -68,6 +73,7 @@ export function usePluginEvents(opts: UsePluginEventsOptions) {
 
   async function onPluginResetLayout(): Promise<void> {
     try {
+      resetLayoutWidths()
       await pluginStore.resetToRolePackDefault()
       const message = t('app.toast.layoutResetOk')
       hostEventBus.emit(settingsResetLayoutResultEvent, { ok: true, message })

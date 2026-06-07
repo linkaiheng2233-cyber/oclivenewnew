@@ -1,12 +1,24 @@
 <script setup lang="ts">
 import type { PluginMarketEntryDto } from '../api'
-import { computed, ref, toRef, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppToast } from '../composables/useAppToast'
 import { useModalFocusRestore } from '../composables/useModalFocusRestore'
 import { ensurePluginWorkbenchI18n } from '../i18n/loadPluginWorkbench'
 import { usePluginMarketStore } from '../stores/pluginMarketStore'
 import { hostEventBus } from '../lib/hostEventBus'
+
+const props = withDefaults(
+  defineProps<{
+    embedded?: boolean
+    visible?: boolean
+  }>(),
+  { embedded: false, visible: true },
+)
+
+const emit = defineEmits<{
+  back: []
+}>()
 
 const marketStore = usePluginMarketStore()
 const { showToast } = useAppToast()
@@ -18,21 +30,29 @@ const i18nReady = ref(false)
 
 const dialogRef = ref<HTMLElement | null>(null)
 const shareUrlRef = ref<HTMLInputElement | null>(null)
-useModalFocusRestore(toRef(marketStore, 'marketPanelVisible'), dialogRef, {
+
+const panelOpen = computed(() =>
+  props.embedded ? props.visible : marketStore.marketPanelVisible,
+)
+
+useModalFocusRestore(panelOpen, dialogRef, {
   primary: shareUrlRef,
 })
 
+async function ensureMarketI18n(): Promise<void> {
+  await ensurePluginWorkbenchI18n()
+  i18nReady.value = true
+}
+
 watch(
-  () => marketStore.marketPanelVisible,
+  panelOpen,
   async (vis) => {
-    if (vis) {
-      await ensurePluginWorkbenchI18n()
-      i18nReady.value = true
-    }
-    else {
+    if (vis)
+      await ensureMarketI18n()
+    else if (!props.embedded)
       i18nReady.value = false
-    }
   },
+  { immediate: true },
 )
 
 const categories = computed(() => {
@@ -165,43 +185,69 @@ function clearGitShare() {
 }
 
 function close() {
-  marketStore.closeMarketPanel()
+  if (props.embedded)
+    emit('back')
+  else
+    marketStore.closeMarketPanel()
 }
+
+const shareUrlInputId = computed(() =>
+  props.embedded ? 'mk-share-url-embedded' : 'mk-share-url',
+)
 </script>
 
 <template>
-  <Teleport to="body">
+  <component :is="embedded ? 'div' : 'Teleport'" v-bind="embedded ? {} : { to: 'body' }">
     <div
-      v-if="marketStore.marketPanelVisible && i18nReady"
-      class="mk-backdrop"
-      role="dialog"
-      aria-modal="true"
-      :aria-label="t('pluginWorkbench.market.dialogAria')"
-      @click.self="close"
-      @keydown.escape.stop="close"
+      v-if="panelOpen && i18nReady"
+      :class="embedded ? 'mk-embedded-root' : 'mk-backdrop'"
+      :role="embedded ? undefined : 'dialog'"
+      :aria-modal="embedded ? undefined : 'true'"
+      :aria-label="embedded ? undefined : t('pluginWorkbench.market.dialogAria')"
+      @click.self="!embedded && close()"
+      @keydown.escape.stop="close()"
     >
-      <div ref="dialogRef" class="mk-dialog" tabindex="-1" @click.stop>
-        <header class="mk-head">
+      <div
+        ref="dialogRef"
+        :class="embedded ? 'mk-embedded' : 'mk-dialog'"
+        tabindex="-1"
+        @click.stop
+      >
+        <header class="mk-head" :class="{ 'mk-head--embedded': embedded }">
           <div>
-            <h2 class="mk-title">
+            <h2 v-if="!embedded" class="mk-title">
               {{ t("pluginWorkbench.market.pageTitle") }}
             </h2>
-            <p class="mk-sub">
+            <p class="mk-sub" :class="{ 'mk-sub--embedded': embedded }">
               {{ t("pluginWorkbench.market.pageSub") }}
             </p>
           </div>
-          <button type="button" class="mk-close" :aria-label="t('common.close')" @click="close">
+          <button
+            v-if="embedded"
+            type="button"
+            class="mk-btn secondary mk-back-btn"
+            @click="close"
+          >
+            {{ t("simplePluginManager.tabInstalled") }}
+          </button>
+          <button
+            v-else
+            type="button"
+            class="mk-close"
+            :aria-label="t('common.close')"
+            @click="close"
+          >
             ×
           </button>
         </header>
 
         <div class="mk-share-block">
-          <label class="mk-share-label" for="mk-share-url">
+          <label class="mk-share-label" :for="shareUrlInputId">
             {{ t("pluginWorkbench.market.shareUrlLabel") }}
           </label>
           <div class="mk-share-row">
             <input
-              id="mk-share-url"
+              :id="shareUrlInputId"
               ref="shareUrlRef"
               v-model="marketStore.shareCatalogUrl"
               type="url"
@@ -251,7 +297,12 @@ function close() {
               {{ c }}
             </option>
           </select>
-          <button type="button" class="mk-btn secondary" @click="openPluginManager">
+          <button
+            v-if="!embedded"
+            type="button"
+            class="mk-btn secondary"
+            @click="openPluginManager"
+          >
             {{ t("pluginWorkbench.market.openManager") }}
           </button>
         </div>
@@ -283,7 +334,7 @@ function close() {
           {{ t("pluginWorkbench.market.offline") }}
         </p>
 
-        <div class="mk-scroll">
+        <div class="mk-scroll" :class="{ 'mk-scroll--embedded': embedded }">
           <section
             v-if="marketStore.pendingGitShareUrl"
             class="mk-git-card"
@@ -372,10 +423,33 @@ function close() {
         </div>
       </div>
     </div>
-  </Teleport>
+  </component>
 </template>
 
 <style scoped>
+.mk-embedded-root {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.mk-embedded {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+  background: transparent;
+}
+.mk-head--embedded {
+  padding: var(--tool-space-3, 12px) var(--tool-space-4, 16px);
+}
+.mk-sub--embedded {
+  margin-top: 0;
+}
+.mk-back-btn {
+  flex-shrink: 0;
+}
 .mk-backdrop {
   position: fixed;
   inset: 0;
@@ -483,6 +557,12 @@ function close() {
   min-height: 0;
   overflow: auto;
   padding: 14px 18px 18px;
+}
+.mk-scroll--embedded {
+  flex: initial;
+  min-height: auto;
+  overflow: visible;
+  padding: var(--tool-space-3, 12px) var(--tool-space-4, 16px) var(--tool-space-4, 16px);
 }
 .mk-git-card {
   border: 1px solid var(--border-light);

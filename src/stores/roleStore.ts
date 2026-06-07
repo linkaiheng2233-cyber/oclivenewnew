@@ -274,10 +274,10 @@ export const useRoleStore = defineStore(
         return info
       },
       /**
-       * Select "default identity": follow manifest `default_relation`.
-       * When `clearSceneId` is passed, remove identity override for that scene first (top-bar scene identity aligned with global default).
+       * Select manifest default relation (top-bar relation sentinel).
+       * When `clearSceneId` is passed, remove per-scene relation override first.
        */
-      async setManifestDefaultIdentity(clearSceneId?: string) {
+      async setManifestDefaultRelation(clearSceneId?: string) {
         if (clearSceneId) {
           await clearSceneUserRelation(this.currentRoleId, clearSceneId)
         }

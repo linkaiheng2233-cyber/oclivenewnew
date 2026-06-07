@@ -30,6 +30,9 @@ export function usePackUiTheme(): void {
       push('--fluent-accent', pc)
       push('--accent', pc)
       push('--text-accent', pc)
+      if (document.documentElement.getAttribute('data-shell') === 'tool') {
+        push('--tool-accent', pc)
+      }
       hostEventBus.emitBuiltin('theme:changed', { primaryColor: pc })
     }
     const bg = t?.backgroundColor?.trim()

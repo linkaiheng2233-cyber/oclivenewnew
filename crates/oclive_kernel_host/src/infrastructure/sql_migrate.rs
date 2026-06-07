@@ -1,10 +1,122 @@
 //! Runtime SQLite migrations without the `sqlx` umbrella `migrate` feature (avoids mysql/postgres in the lockfile).
 
+use oclive_kernel_runtime::{find_monorepo_root, ENV_ROLES_DIR};
 use sha2::{Digest, Sha256};
 use sqlx::sqlite::SqlitePool;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
+
+/// Override SQLite migrations directory (must contain `*.sql`).
+pub const ENV_MIGRATIONS_DIR: &str = "OCLIVE_MIGRATIONS_DIR";
+
+const HOST_MIGRATIONS_REL: &str = "crates/oclive_kernel_host/migrations";
+const LEGACY_MIGRATIONS_REL: &str = "src-tauri/migrations";
+
+/// Returns true when `path` is a directory containing at least one `*.sql` file.
+#[must_use]
+pub fn is_migrations_dir(path: &Path) -> bool {
+    if !path.is_dir() {
+        return false;
+    }
+    std::fs::read_dir(path)
+        .ok()
+        .into_iter()
+        .flatten()
+        .filter_map(Result::ok)
+        .any(|entry| entry.path().extension().is_some_and(|ext| ext == "sql"))
+}
+
+fn migration_discovery_anchors() -> Vec<PathBuf> {
+    let mut anchors = Vec::new();
+    if let Ok(cwd) = std::env::current_dir() {
+        anchors.push(cwd);
+    }
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(parent) = exe.parent() {
+            anchors.push(parent.to_path_buf());
+        }
+    }
+    for key in ["OCLIVE_LOCAL_MONOREPO", ENV_ROLES_DIR] {
+        if let Ok(raw) = std::env::var(key) {
+            let trimmed = raw.trim();
+            if !trimmed.is_empty() {
+                anchors.push(PathBuf::from(trimmed));
+            }
+        }
+    }
+    anchors
+}
+
+/// Resolve migrations directory for runtime apply.
+///
+/// Order: `OCLIVE_MIGRATIONS_DIR` → compile-time embed → monorepo
+/// `crates/oclive_kernel_host/migrations` (via `find_monorepo_root`) → legacy
+/// `src-tauri/migrations`.
+///
+/// # Errors
+///
+/// Returns a message listing attempted paths when none contain migration SQL.
+pub fn resolve_migrations_dir() -> Result<PathBuf, String> {
+    let mut tried: Vec<String> = Vec::new();
+
+    if let Ok(raw) = std::env::var(ENV_MIGRATIONS_DIR) {
+        let path = PathBuf::from(raw.trim());
+        if is_migrations_dir(&path) {
+            tracing::info!(
+                target: "oclive_migrate",
+                dir = %path.display(),
+                "using migrations from OCLIVE_MIGRATIONS_DIR"
+            );
+            return Ok(path);
+        }
+        tried.push(format!(
+            "{ENV_MIGRATIONS_DIR}={} (missing or no .sql)",
+            path.display()
+        ));
+    }
+
+    let embedded = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("migrations");
+    if is_migrations_dir(&embedded) {
+        return Ok(embedded);
+    }
+    tried.push(format!("embedded {} (missing or no .sql)", embedded.display()));
+
+    let anchors = migration_discovery_anchors();
+    if let Some(repo) = find_monorepo_root(&anchors) {
+        let host = repo.join(HOST_MIGRATIONS_REL);
+        if is_migrations_dir(&host) {
+            tracing::info!(
+                target: "oclive_migrate",
+                dir = %host.display(),
+                "using migrations from monorepo discovery"
+            );
+            return Ok(host);
+        }
+        tried.push(format!("{} (missing or no .sql)", host.display()));
+
+        let legacy = repo.join(LEGACY_MIGRATIONS_REL);
+        if is_migrations_dir(&legacy) {
+            tracing::info!(
+                target: "oclive_migrate",
+                dir = %legacy.display(),
+                "using legacy src-tauri migrations path"
+            );
+            return Ok(legacy);
+        }
+        tried.push(format!("{} (missing or no .sql)", legacy.display()));
+    } else {
+        tried.push(format!(
+            "monorepo root not found from {} anchor(s)",
+            anchors.len()
+        ));
+    }
+
+    Err(format!(
+        "no SQLite migrations directory found; tried: {}",
+        tried.join("; ")
+    ))
+}
 
 /// Copy `db_file` to `app_data/app.db.bak.{unix_secs}` before migrations (file DB only).
 ///
@@ -192,6 +304,17 @@ fn strip_line_comment(line: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn resolve_migrations_dir_finds_embedded_or_monorepo() {
+        let dir = resolve_migrations_dir().expect("migrations dir");
+        assert!(is_migrations_dir(&dir));
+        assert!(
+            dir.ends_with("migrations"),
+            "expected .../migrations, got {}",
+            dir.display()
+        );
+    }
 
     #[test]
     fn split_drops_pure_comment_line() {

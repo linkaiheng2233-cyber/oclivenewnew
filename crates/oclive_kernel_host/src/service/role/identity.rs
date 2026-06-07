@@ -175,19 +175,12 @@ pub async fn set_scene_user_identity_impl(
         )
         .into());
     }
-    let catalog = role.user_identity_catalog.as_ref().ok_or_else(|| {
-        crate::error::AppError::InvalidParameter(
+    if role.user_identity_catalog.is_none() {
+        return Err(crate::error::AppError::InvalidParameter(
             "role pack has no user_identities/ catalog".to_string(),
         )
-    })?;
-    if !catalog.identities.contains_key(&req.identity_id) {
-        return Err(crate::error::AppError::InvalidParameter(format!(
-            "unknown user identity: {}",
-            req.identity_id
-        ))
         .into());
     }
-    reject_identity_not_allowed(state, &req.identity_id)?;
     let scenes = state.storage.list_scene_ids(&req.role_id)?;
     if !scenes.iter().any(|s| s == &req.scene_id) {
         return Err(crate::error::AppError::InvalidParameter(format!(
@@ -196,6 +189,29 @@ pub async fn set_scene_user_identity_impl(
         ))
         .into());
     }
+    if req.identity_id == OCLIVE_DEFAULT_IDENTITY_SENTINEL {
+        state
+            .db_manager
+            .clear_user_identity_for_scene(&req.role_id, &req.scene_id)
+            .await?;
+        return get_user_identity_state_impl(
+            state,
+            &GetUserIdentityStateRequest {
+                role_id: req.role_id.clone(),
+                scene_id: Some(req.scene_id.clone()),
+            },
+        )
+        .await;
+    }
+    let catalog = role.user_identity_catalog.as_ref().expect("checked");
+    if !catalog.identities.contains_key(&req.identity_id) {
+        return Err(crate::error::AppError::InvalidParameter(format!(
+            "unknown user identity: {}",
+            req.identity_id
+        ))
+        .into());
+    }
+    reject_identity_not_allowed(state, &req.identity_id)?;
     let entry = catalog.identities.get(&req.identity_id).expect("checked");
     let relation_key = entry
         .maps_to_relation_id

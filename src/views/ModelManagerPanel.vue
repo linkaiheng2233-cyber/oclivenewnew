@@ -4,9 +4,13 @@ import { useI18n } from 'vue-i18n'
 import ModelManagerBody from '../components/model/ModelManagerBody.vue'
 import { useModalFocusRestore } from '../composables/useModalFocusRestore'
 
-const props = defineProps<{
-  visible: boolean
-}>()
+const props = withDefaults(
+  defineProps<{
+    visible: boolean
+    embedded?: boolean
+  }>(),
+  { embedded: false },
+)
 
 const emit = defineEmits<{
   close: []
@@ -19,24 +23,24 @@ useModalFocusRestore(toRef(props, 'visible'), dialogRef)
 </script>
 
 <template>
-  <Teleport to="body">
+  <component :is="embedded ? 'div' : 'Teleport'" v-bind="embedded ? {} : { to: 'body' }">
     <div
       v-if="visible"
-      class="mm-backdrop"
-      role="dialog"
-      aria-modal="true"
-      :aria-label="t('modelManager.panelAria')"
-      @click.self="emit('close')"
+      :class="embedded ? 'mm-embedded' : 'mm-backdrop'"
+      :role="embedded ? undefined : 'dialog'"
+      :aria-modal="embedded ? undefined : 'true'"
+      :aria-label="embedded ? undefined : t('modelManager.panelAria')"
+      @click.self="!embedded && emit('close')"
       @keydown.escape.stop="emit('close')"
     >
       <div
         ref="dialogRef"
-        class="mm-dialog"
+        :class="embedded ? 'mm-embedded-inner' : 'mm-dialog'"
         tabindex="-1"
         @click.stop
         @keydown.escape.stop="emit('close')"
       >
-        <header class="mm-header">
+        <header v-if="!embedded" class="mm-header">
           <h2 class="mm-heading">
             {{ t("modelManager.title") }}
           </h2>
@@ -47,7 +51,7 @@ useModalFocusRestore(toRef(props, 'visible'), dialogRef)
         <ModelManagerBody @open-settings="emit('openSettings')" />
       </div>
     </div>
-  </Teleport>
+  </component>
 </template>
 
 <style scoped>
@@ -72,6 +76,20 @@ useModalFocusRestore(toRef(props, 'visible'), dialogRef)
   border: 1px solid var(--border-light);
   background: var(--bg-primary);
   box-shadow: var(--shadow-app);
+}
+.mm-embedded {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.mm-embedded-inner {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+  background: var(--tool-chrome-editor, var(--bg-primary));
 }
 .mm-header {
   display: flex;

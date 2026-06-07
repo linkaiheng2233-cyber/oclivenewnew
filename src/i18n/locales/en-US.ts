@@ -14,6 +14,7 @@ import settingsBundle from './fragments/settings.en'
 import { modelManagerEn as modelManager } from './fragments/modelManager.en'
 import { simplePluginManagerEn as simplePluginManager } from './fragments/simplePluginManager.en'
 import virtualTime from './fragments/virtualTime.en'
+import toolShellBundle from './fragments/toolShell.en'
 
 export default {
   apiErrors,
@@ -35,4 +36,5 @@ export default {
   simplePluginManager,
   modelManager,
   virtualTime,
+  ...toolShellBundle,
 }

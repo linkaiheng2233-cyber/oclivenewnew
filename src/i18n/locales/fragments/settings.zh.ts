@@ -9,8 +9,10 @@ export default {
     tabPlugins: '插件扩展',
     tabStorage: '存储管理',
     generalLeadHtml:
-      '顶栏<strong>「更多」</strong>集中设置入口；<strong>Ctrl+Shift+S</strong> 打开设置；'
-      + '<strong>Ctrl+Shift+F</strong> 已安装插件；<strong>Ctrl+Shift+M</strong> 模型管理。',
+      '侧栏 Activity Bar 或 <strong>Ctrl+Shift+S / F / M</strong> 打开设置、插件与模型；'
+      + '外观与语言在设置 → 常规；插件市场在插件侧栏。',
+    appearanceSectionTitle: '外观',
+    appearanceSectionHelp: '界面语言、交互模式、主题与 UI 缩放；保存在本机。',
     shortcutsLabel: '快捷',
     shortcutsHelp:
       'Ctrl+Shift+S 设置；Ctrl+Shift+F 已安装插件；Ctrl+Shift+M 模型管理；Ctrl+Shift+D 调试面板。',
@@ -68,9 +70,20 @@ export default {
     iframeSavedInfo: '已保存。重启应用后强制 iframe 模式将完全生效。',
     userIdentitySectionTitle: '用户身份',
     userIdentitySectionLead:
-      '切换 User Identity Prompt Template（角色包 user_identities/）；下一轮对话 Prompt 会注入对应身份段落。',
+      '选择你在故事中的身份，角色会在下一轮对话按此理解你是谁。',
+    userIdentitySectionLeadSecondary:
+      '与顶栏「关系」不同：关系影响好感与距离感；若身份配置了对应关系，切换时会自动同步。',
     postProcessorSectionTitle: '回复后处理',
-    noIdentityCatalogHint: '当前角色包未提供 user_identities/ 目录；仍可查看后处理状态。',
+    noIdentityCatalogHint: '当前角色包未配置可选身份；可在设置中查看回复后处理状态。',
+    layoutSectionTitle: '布局',
+    layoutSectionHelp: '拖拽角色侧栏或设置/插件/模型侧栏的分界可调整宽度；偏好保存在本机。',
+    layoutSectionLead: '左栏与右侧面板宽度独立于角色包 ui.json 布局键。',
+    layoutCurrentWidths: '当前：左栏 {left}px · 侧栏 {side}px',
+    layoutResetWidths: '重置面板宽度',
+    layoutResetWidthsDone: '已恢复默认面板宽度。',
+    layoutResizeLeftRail: '调整角色侧栏宽度',
+    layoutResizeSidePanel: '调整侧栏宽度',
+    advancedFoldTitle: '高级与诊断',
   },
   hotkeys: {
     title: '全局快捷键',

@@ -1,0 +1,185 @@
+/**
+ * Tool Shell — flat gray professional palette (VS Code / Linear / Cursor).
+ * Active when `html[data-shell="tool"]`; maps into existing oclive semantic tokens.
+ */
+:root[data-shell="tool"] {
+  color-scheme: light;
+
+  --tool-bg: #f3f3f3;
+  --tool-elevated: #ffffff;
+  --tool-border: #e0e0e0;
+
+  --tool-chrome-activity: #ebebeb;
+  --tool-chrome-sidebar: #f3f3f3;
+  --tool-chrome-editor: #ffffff;
+  --tool-chrome-status: #ebebeb;
+  --tool-divider: var(--tool-border);
+  --tool-text: #1f1f1f;
+  --tool-text-muted: #6b6b6b;
+  --tool-accent: #2563eb;
+
+  --tool-fs-sm: 12px;
+  --tool-fs-md: 13px;
+  --tool-fs-lg: 15px;
+  --tool-line: 1.5;
+
+  --tool-space-1: 4px;
+  --tool-space-2: 8px;
+  --tool-space-3: 12px;
+  --tool-space-4: 16px;
+  --tool-space-6: 24px;
+
+  --tool-radius: 4px;
+  --tool-radius-lg: 6px;
+
+  --tool-activitybar-w: 48px;
+  --tool-sidepanel-w: 400px;
+  --tool-topbar-h: 36px;
+  --tool-statusbar-h: 24px;
+  --tool-row-h: 32px;
+  --tool-left-rail-w: 220px;
+
+  --tool-transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+
+  /* Map tool palette → oclive semantic aliases (components keep using --bg-* etc.) */
+  --shell-page-bg: var(--tool-bg);
+  --bg-page: var(--tool-bg);
+  --bg-primary: var(--tool-elevated);
+  --bg-secondary: var(--tool-bg);
+  --bg-elevated: var(--tool-elevated);
+  --bg-status: var(--tool-bg);
+  --bg-panel: var(--tool-elevated);
+  --card-bg: var(--tool-elevated);
+
+  --border-light: var(--tool-border);
+  --border-focus: var(--tool-accent);
+  --text-primary: var(--tool-text);
+  --text-secondary: var(--tool-text-muted);
+  --text-light: #949494;
+  --text-accent: var(--tool-accent);
+  --accent: var(--tool-accent);
+
+  --bubble-bot-bg: var(--tool-elevated);
+  --bubble-user-bg: color-mix(in srgb, var(--tool-elevated) 88%, var(--tool-accent) 12%);
+  --bubble-border: var(--tool-border);
+
+  --btn-grad-a: var(--tool-elevated);
+  --btn-grad-b: var(--tool-elevated);
+  --btn-primary: var(--tool-bg);
+  --btn-primary-hover-a: color-mix(in srgb, var(--tool-bg) 80%, var(--tool-accent) 20%);
+  --btn-primary-hover-b: var(--tool-elevated);
+
+  --shadow-app: none;
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-bubble: none;
+  --shadow-btn-hover: none;
+  --frame-inset-highlight: none;
+
+  --radius-app: 6px;
+  --radius-card: 4px;
+  --radius-bubble: 4px;
+  --radius-btn: 4px;
+  --radius-pill: 4px;
+
+  --rail-accent-runtime: var(--tool-accent);
+  --rail-accent-runtime-bg: color-mix(in srgb, var(--tool-accent) 12%, transparent);
+
+  --focus-ring-color: var(--tool-accent);
+  --control-transition: var(--tool-transition);
+
+  --dialog-backdrop: color-mix(in srgb, #000 35%, transparent);
+  --dialog-panel-bg: var(--tool-elevated);
+
+  --scrollbar-chat-track: color-mix(in srgb, var(--tool-text) 6%, transparent);
+  --scrollbar-chat-thumb: color-mix(in srgb, var(--tool-text) 18%, transparent);
+  --scrollbar-chat-thumb-hover: color-mix(in srgb, var(--tool-text) 28%, transparent);
+
+  --scrollbar-panel-track: var(--scrollbar-chat-track);
+  --scrollbar-panel-thumb: var(--scrollbar-chat-thumb);
+  --scrollbar-panel-thumb-hover: var(--scrollbar-chat-thumb-hover);
+
+  --panel-bg-soft: var(--tool-elevated);
+  --tool-shadow-panel: none;
+}
+
+:root[data-shell="tool"][data-theme="dark"] {
+  color-scheme: dark;
+
+  --tool-bg: #1e1e1e;
+  --tool-elevated: #252526;
+  --tool-border: #3a3a3a;
+
+  --tool-chrome-activity: #333333;
+  --tool-chrome-sidebar: #252526;
+  --tool-chrome-editor: #1e1e1e;
+  --tool-chrome-status: #333333;
+  --tool-divider: var(--tool-border);
+  --tool-text: #e4e4e4;
+  --tool-text-muted: #9a9a9a;
+  --tool-accent: #4f9cf9;
+
+  --bubble-bot-bg: var(--tool-elevated);
+  --bubble-user-bg: color-mix(in srgb, var(--tool-elevated) 82%, var(--tool-accent) 18%);
+  --bubble-border: var(--tool-border);
+
+  --btn-grad-a: var(--tool-elevated);
+  --btn-grad-b: var(--tool-elevated);
+  --btn-primary: var(--tool-bg);
+  --btn-primary-hover-a: color-mix(in srgb, var(--tool-bg) 80%, var(--tool-accent) 20%);
+  --btn-primary-hover-b: var(--tool-elevated);
+
+  --dialog-backdrop: color-mix(in srgb, #000 55%, transparent);
+  --dialog-panel-bg: var(--tool-elevated);
+
+  --tool-shadow-panel: none;
+
+  --scrollbar-chat-track: color-mix(in srgb, var(--tool-text) 8%, transparent);
+  --scrollbar-chat-thumb: color-mix(in srgb, var(--tool-text) 22%, transparent);
+  --scrollbar-chat-thumb-hover: color-mix(in srgb, var(--tool-text) 32%, transparent);
+
+  --scrollbar-panel-track: var(--scrollbar-chat-track);
+  --scrollbar-panel-thumb: var(--scrollbar-chat-thumb);
+  --scrollbar-panel-thumb-hover: var(--scrollbar-chat-thumb-hover);
+}
+
+/* SidePanel / embedded settings in dark */
+:root[data-shell="tool"][data-theme="dark"] .connectivity-banner {
+  background: color-mix(in srgb, var(--tool-accent) 12%, var(--tool-elevated));
+}
+
+:root[data-shell="tool"][data-theme="dark"] .ui-side-panel {
+  box-shadow: none;
+}
+
+/* Embedded side-panel views — flat tool styling */
+html[data-shell="tool"] .spm-embedded-inner,
+html[data-shell="tool"] .mm-embedded-inner {
+  background: transparent;
+  box-shadow: none;
+  padding: var(--tool-space-4, 16px);
+}
+
+html[data-shell="tool"] .spm-embedded,
+html[data-shell="tool"] .mm-embedded {
+  background: var(--tool-chrome-sidebar, var(--tool-elevated, var(--bg-primary)));
+}
+
+html[data-shell="tool"] .spm-embedded-inner .spm-list {
+  overflow: visible;
+  flex: none;
+  border-radius: var(--tool-radius, 4px);
+}
+
+html[data-shell="tool"] .mm-embedded-inner .mm-root {
+  overflow: visible;
+  flex: none;
+}
+
+html[data-shell="tool"] .mm-effective,
+html[data-shell="tool"] .mm-help,
+html[data-shell="tool"] .mm-tab {
+  border-radius: var(--tool-radius, 4px);
+  background: var(--tool-elevated, var(--bg-elevated));
+  box-shadow: none;
+}

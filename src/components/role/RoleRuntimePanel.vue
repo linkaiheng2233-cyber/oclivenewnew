@@ -52,8 +52,8 @@ async function onRelationChange(ev: Event) {
     const perScene = roleStore.roleInfo.identityBinding === 'per_scene'
     if (next === OCLIVE_DEFAULT_RELATION_SENTINEL) {
       if (perScene)
-        await roleStore.setManifestDefaultIdentity(uiStore.sceneId)
-      else await roleStore.setManifestDefaultIdentity()
+        await roleStore.setManifestDefaultRelation(uiStore.sceneId)
+      else await roleStore.setManifestDefaultRelation()
     }
     else if (perScene) {
       await roleStore.setSceneUserRelation(uiStore.sceneId, next)

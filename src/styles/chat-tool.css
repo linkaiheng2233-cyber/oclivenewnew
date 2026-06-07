@@ -1,0 +1,169 @@
+/**
+ * Tool Shell chat overrides — flat bubbles, composer, history blocks.
+ * Scoped to html[data-shell="tool"] so Fluent shell is unaffected.
+ */
+
+html[data-shell="tool"] .bubble {
+  border-radius: var(--radius-bubble);
+  animation: none;
+  box-shadow: none;
+  font-size: var(--tool-fs-md, 13px);
+  border: 1px solid var(--bubble-border);
+}
+
+html[data-shell="tool"] .bubble.user {
+  border-radius: var(--radius-bubble);
+  background: var(--bubble-user-bg);
+  box-shadow: none;
+}
+
+html[data-shell="tool"] .bubble.assistant {
+  border-radius: var(--radius-bubble);
+  background: var(--bubble-bot-bg);
+  box-shadow: none;
+  max-width: min(85%, 720px);
+}
+
+html[data-shell="tool"] .bubble-column.assistant {
+  max-width: min(85%, 720px);
+}
+
+html[data-shell="tool"] .bubble.assistant .content {
+  font-size: var(--tool-fs-md, 13px);
+}
+
+html[data-shell="tool"] .bubble-meta,
+html[data-shell="tool"] .time {
+  font-size: var(--tool-fs-sm, 12px);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html[data-shell="tool"] .bubble {
+    animation: toolBubbleFade 120ms ease;
+  }
+}
+
+@keyframes toolBubbleFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-shell="tool"] .bubble {
+    animation: none;
+  }
+}
+
+/* Composer */
+html[data-shell="tool"] .input-row {
+  padding: var(--tool-space-3, 12px) var(--tool-space-4, 16px);
+  gap: var(--tool-space-2, 8px);
+}
+
+html[data-shell="tool"] .input-row textarea,
+html[data-shell="tool"] .input-row .input {
+  font-size: var(--tool-fs-md, 13px);
+  border-radius: var(--tool-radius, 4px);
+  border: 1px solid var(--tool-border, var(--border-light));
+  background: var(--tool-elevated, var(--bg-primary));
+  box-shadow: none;
+}
+
+html[data-shell="tool"] .input-row textarea:focus,
+html[data-shell="tool"] .input-row .input:focus {
+  box-shadow: 0 0 0 1px var(--tool-accent, var(--accent));
+}
+
+html[data-shell="tool"] .input-row .send {
+  background: var(--tool-elevated, var(--bg-elevated));
+  border: 1px solid var(--tool-border, var(--border-light));
+  box-shadow: none;
+  font-size: var(--tool-fs-md, 13px);
+  border-radius: var(--tool-radius, 4px);
+  transform: none;
+}
+
+html[data-shell="tool"] .input-row .send:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--tool-accent, var(--accent)) 10%, var(--tool-elevated, var(--bg-elevated)));
+  border-color: var(--tool-accent, var(--accent));
+  box-shadow: none;
+  transform: none;
+}
+
+html[data-shell="tool"] .input-row .send:disabled {
+  box-shadow: none;
+}
+
+/* History / session split — muted, compact */
+html[data-shell="tool"] .history-cta-card {
+  background: var(--tool-bg, var(--bg-secondary));
+  border: 1px solid var(--tool-border, var(--border-light));
+  border-radius: var(--tool-radius, 4px);
+  box-shadow: none;
+}
+
+html[data-shell="tool"] .history-cta-card:hover {
+  border-color: color-mix(in srgb, var(--tool-accent, var(--accent)) 40%, var(--tool-border, var(--border-light)));
+  box-shadow: none;
+}
+
+html[data-shell="tool"] .history-cta-accent {
+  background: var(--tool-border, var(--border-light));
+}
+
+html[data-shell="tool"] .history-cta-icon {
+  background: var(--tool-elevated, var(--bg-elevated));
+  border: 1px solid var(--tool-border, var(--border-light));
+  color: var(--tool-text-muted, var(--text-secondary));
+}
+
+html[data-shell="tool"] .history-cta-title {
+  font-size: var(--tool-fs-md, 13px);
+}
+
+html[data-shell="tool"] .history-cta-sub,
+html[data-shell="tool"] .history-meta,
+html[data-shell="tool"] .history-inline-title,
+html[data-shell="tool"] .history-inline-hint {
+  font-size: var(--tool-fs-sm, 12px);
+}
+
+html[data-shell="tool"] .history-toolbar-active {
+  background: var(--tool-bg, var(--bg-secondary));
+  border: 1px solid var(--tool-border, var(--border-light));
+  border-radius: var(--tool-radius, 4px);
+  box-shadow: none;
+}
+
+html[data-shell="tool"] .history-pill {
+  border-radius: var(--tool-radius, 4px);
+  background: var(--tool-elevated, var(--bg-elevated));
+  border: 1px solid var(--tool-border, var(--border-light));
+  font-size: var(--tool-fs-sm, 12px);
+}
+
+html[data-shell="tool"] .history-pill--primary {
+  background: color-mix(in srgb, var(--tool-accent, var(--accent)) 8%, var(--tool-elevated, var(--bg-elevated)));
+  border-color: color-mix(in srgb, var(--tool-accent, var(--accent)) 35%, var(--tool-border, var(--border-light)));
+}
+
+html[data-shell="tool"] .history-inline-chat {
+  background: var(--tool-bg, var(--bg-secondary));
+  border: 1px solid var(--tool-border, var(--border-light));
+  border-radius: var(--tool-radius, 4px);
+  box-shadow: none;
+}
+
+html[data-shell="tool"] .session-split-line {
+  font-size: var(--tool-fs-sm, 12px);
+  color: var(--tool-text-muted, var(--text-secondary));
+}
+
+html[data-shell="tool"] .session-split-line::before,
+html[data-shell="tool"] .session-split-line::after {
+  background: var(--tool-border, var(--border-light));
+}

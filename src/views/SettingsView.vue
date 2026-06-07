@@ -1,28 +1,45 @@
 <script setup lang="ts">
 import type { EnvironmentDiagnostics, KernelDiagnostics } from '../api'
-import { nextTick, ref, watch } from 'vue'
+import type { LocalePreference } from '../i18n'
+import { nextTick, ref, Teleport, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import HelpHint from '../components/shared/HelpHint.vue'
-import RoleIdentityControls from '../components/role/RoleIdentityControls.vue'
-import ChatStorageSettingsPanel from '../components/settings/ChatStorageSettingsPanel.vue'
+import {
+
+  getKernelDiagnostics,
+  getRemoteFallbackAppSettings,
+  runEnvironmentDiagnostics,
+  setRemoteFallbackToBuiltin,
+  setRoleInteractionMode,
+} from '../api'
 import HotkeySettingsSection from '../components/hotkey/HotkeySettingsSection.vue'
 import PluginSettingsPanelSlots from '../components/PluginSettingsPanelSlots.vue'
 import PluginSlotEmbed from '../components/PluginSlotEmbed.vue'
+import ReplyPostProcessorStatus from '../components/role/ReplyPostProcessorStatus.vue'
+import RoleIdentityControls from '../components/role/RoleIdentityControls.vue'
+import ChatStorageSettingsPanel from '../components/settings/ChatStorageSettingsPanel.vue'
+import HelpHint from '../components/shared/HelpHint.vue'
+import UiButton from '../components/ui/UiButton.vue'
+import UiFieldRow from '../components/ui/UiFieldRow.vue'
+import UiSection from '../components/ui/UiSection.vue'
+import UiSelect from '../components/ui/UiSelect.vue'
 import { useAppToast } from '../composables/useAppToast'
+import { getLayoutWidths, resetLayoutWidths } from '../composables/useLayoutWidths'
+import { useOcliveAppearance } from '../composables/useOcliveAppearance'
+import { getLocalePreference, setLocalePreference } from '../i18n'
 import { useKernelConnectionStore } from '../stores/kernelConnectionStore'
 import { SLOT_SETTINGS_ADVANCED, usePluginStore } from '../stores/pluginStore'
-import {
-
-  getRemoteFallbackAppSettings,
-  getKernelDiagnostics,
-  runEnvironmentDiagnostics,
-  setRemoteFallbackToBuiltin,
-} from '../api'
+import { useRoleStore } from '../stores/roleStore'
 import { isSentryOptOut, setSentryOptOut } from '../utils/telemetrySentry'
 
-const props = defineProps<{
-  visible: boolean
-}>()
+const props = withDefaults(
+  defineProps<{
+    visible: boolean
+    embedded?: boolean
+    /** When set, switches the active tab (e.g. open from StatusBar identity link). */
+    focusTab?: SettingsTab | null
+  }>(),
+  { embedded: false, focusTab: null },
+)
 
 const emit = defineEmits<{
   close: []
@@ -30,8 +47,11 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const pluginStore = usePluginStore()
+const roleStore = useRoleStore()
 const kernelConnectionStore = useKernelConnectionStore()
 const { showToast } = useAppToast()
+const { themeCycleLabel, cycleTheme, bumpScale, scaleLabel } = useOcliveAppearance()
+const localePreference = ref<LocalePreference>(getLocalePreference())
 
 const hasSentryDsn
   = typeof import.meta.env.VITE_SENTRY_DSN === 'string' && import.meta.env.VITE_SENTRY_DSN.length > 0
@@ -60,6 +80,22 @@ type SettingsTab = 'general' | 'plugins' | 'storage'
 
 const tab = ref<SettingsTab>('general')
 
+watch(
+  () => props.focusTab,
+  (next) => {
+    if (next)
+      tab.value = next
+  },
+)
+
+watch(
+  () => props.visible,
+  (open) => {
+    if (open && props.focusTab)
+      tab.value = props.focusTab
+  },
+)
+
 const envDiagLoading = ref(false)
 const envDiag = ref<EnvironmentDiagnostics | null>(null)
 
@@ -71,6 +107,39 @@ const remoteFallbackChecked = ref(true)
 const remoteFallbackEnvLocked = ref(false)
 
 const settingsDialogRef = ref<HTMLElement | null>(null)
+
+const layoutLeftRailW = ref(getLayoutWidths().leftRail)
+const layoutSidePanelW = ref(getLayoutWidths().sidePanel)
+
+function onResetPanelWidths() {
+  const widths = resetLayoutWidths()
+  layoutLeftRailW.value = widths.leftRail
+  layoutSidePanelW.value = widths.sidePanel
+  showToast('success', t('settings.layoutResetWidthsDone'))
+}
+
+function onLocalePreferenceChange(ev: Event): void {
+  const v = (ev.target as HTMLSelectElement).value as LocalePreference
+  setLocalePreference(v)
+  localePreference.value = v
+}
+
+async function onInteractionModeChange(ev: Event): Promise<void> {
+  const v = (ev.target as HTMLSelectElement).value as 'immersive' | 'pure_chat'
+  try {
+    const info = await setRoleInteractionMode(roleStore.currentRoleId, v)
+    roleStore.applyRoleInfo(info)
+    showToast(
+      'info',
+      v === 'pure_chat'
+        ? t('app.toast.interactionPureChat')
+        : t('app.toast.interactionImmersive'),
+    )
+  }
+  catch (err) {
+    showToast('error', err instanceof Error ? err.message : String(err))
+  }
+}
 
 async function loadRemoteFallbackSettings() {
   remoteFallbackLoading.value = true
@@ -185,24 +254,27 @@ async function onToggleForceIframe(e: Event) {
 </script>
 
 <template>
-  <Teleport to="body">
+  <component
+    :is="embedded ? 'div' : Teleport"
+    v-bind="embedded ? {} : { to: 'body' }"
+  >
     <div
       v-if="visible"
-      class="sv-backdrop"
-      role="dialog"
-      aria-modal="true"
-      :aria-label="t('settings.ariaDialog')"
-      @click.self="emit('close')"
+      :class="embedded ? 'sv-embedded-root' : 'sv-backdrop'"
+      :role="embedded ? undefined : 'dialog'"
+      :aria-modal="embedded ? undefined : 'true'"
+      :aria-label="embedded ? undefined : t('settings.ariaDialog')"
+      @click.self="!embedded && emit('close')"
       @keydown.escape.stop="emit('close')"
     >
       <div
         ref="settingsDialogRef"
-        class="sv-dialog"
+        :class="embedded ? 'sv-embedded' : 'sv-dialog'"
         tabindex="-1"
         @click.stop
         @keydown.escape.stop="emit('close')"
       >
-        <header class="sv-head">
+        <header v-if="!embedded" class="sv-head">
           <h2 class="sv-title">
             {{ t("settings.title") }}
           </h2>
@@ -211,7 +283,7 @@ async function onToggleForceIframe(e: Event) {
           </button>
         </header>
 
-        <nav class="sv-nav" :aria-label="t('settings.ariaNav')">
+        <nav class="sv-nav" :class="{ 'sv-nav--vertical': embedded }" :aria-label="t('settings.ariaNav')">
           <button
             type="button"
             class="sv-nav-btn"
@@ -240,37 +312,120 @@ async function onToggleForceIframe(e: Event) {
 
         <form v-show="tab === 'general'" class="sv-body" @submit.prevent>
           <p class="sv-lead" v-html="t('settings.generalLeadHtml')" />
-          <section class="sv-section">
-            <div class="sv-row-h">
-              <span class="sv-label">{{ t("settings.shortcutsLabel") }}</span>
+
+          <UiSection :title="t('settings.shortcutsLabel')">
+            <template #extra>
               <HelpHint :text="t('settings.shortcutsHelp')" />
-            </div>
+            </template>
+          </UiSection>
+
+          <UiSection
+            :title="t('settings.appearanceSectionTitle')"
+            :description="t('settings.appearanceSectionHelp')"
+          >
+            <UiFieldRow :label="t('app.locale.label')">
+              <UiSelect
+                :model-value="localePreference"
+                @change="onLocalePreferenceChange"
+              >
+                <option value="system">
+                  {{ t("app.locale.system") }}
+                </option>
+                <option value="zh-CN">
+                  {{ t("app.locale.zhCN") }}
+                </option>
+                <option value="en-US">
+                  {{ t("app.locale.enUS") }}
+                </option>
+              </UiSelect>
+            </UiFieldRow>
+            <UiFieldRow :label="t('app.more.interactionMode')">
+              <div class="sv-interaction-mode">
+                <UiSelect
+                  :model-value="roleStore.roleInfo.interactionMode"
+                  @change="onInteractionModeChange"
+                >
+                  <option value="immersive">
+                    {{ t("app.more.interactionImmersive") }}
+                  </option>
+                  <option value="pure_chat">
+                    {{ t("app.more.interactionPureChat") }}
+                  </option>
+                </UiSelect>
+                <HelpHint
+                  :paragraphs="[
+                    t('app.more.interactionImmersiveHint'),
+                    t('app.more.interactionPureChatHint'),
+                  ]"
+                />
+              </div>
+            </UiFieldRow>
             <p class="sv-muted">
               {{ t("settings.immersiveOnlyNote") }}
             </p>
-          </section>
-          <section class="sv-section">
+            <UiFieldRow :label="t('app.more.ui')">
+              <div class="ui-btn-group">
+                <UiButton size="sm" variant="secondary" @click="bumpScale(-1)">
+                  A−
+                </UiButton>
+                <span class="ui-btn-group__sep">{{ scaleLabel }}</span>
+                <UiButton size="sm" variant="secondary" @click="bumpScale(1)">
+                  A+
+                </UiButton>
+                <UiButton size="sm" variant="secondary" @click="cycleTheme">
+                  {{ themeCycleLabel }}
+                </UiButton>
+              </div>
+            </UiFieldRow>
+          </UiSection>
+
+          <UiSection
+            :title="t('settings.userIdentitySectionTitle')"
+            :description="t('settings.userIdentitySectionLead')"
+          >
+            <template #extra>
+              <HelpHint :text="t('settings.userIdentitySectionLeadSecondary')" />
+            </template>
             <RoleIdentityControls variant="full" settings-layout />
-          </section>
-          <section class="sv-section">
-            <div class="sv-row-h">
-              <span class="sv-label">{{ t("settings.envCheckTitle") }}</span>
-              <HelpHint :text="t('settings.envCheckHelp')" />
-            </div>
-            <p class="sv-muted">
-              {{ t("settings.envCheckLead") }}
+          </UiSection>
+
+          <UiSection :title="t('settings.postProcessorSectionTitle')">
+            <ReplyPostProcessorStatus :show-title="false" />
+          </UiSection>
+
+          <UiSection
+            :title="t('settings.layoutSectionTitle')"
+            :description="t('settings.layoutSectionLead')"
+          >
+            <template #extra>
+              <HelpHint :text="t('settings.layoutSectionHelp')" />
+            </template>
+            <p class="sv-muted sv-layout-readout">
+              {{ t("settings.layoutCurrentWidths", { left: layoutLeftRailW, side: layoutSidePanelW }) }}
             </p>
+            <UiButton size="sm" variant="secondary" @click="onResetPanelWidths">
+              {{ t("settings.layoutResetWidths") }}
+            </UiButton>
+          </UiSection>
+
+          <UiSection
+            :title="t('settings.envCheckTitle')"
+            :description="t('settings.envCheckLead')"
+          >
+            <template #extra>
+              <HelpHint :text="t('settings.envCheckHelp')" />
+            </template>
             <p class="sv-muted sv-small">
               {{ t("settings.envCheckOllamaPullNote") }}
             </p>
-            <button
-              type="button"
-              class="sv-env-btn"
+            <UiButton
+              size="sm"
+              variant="secondary"
               :disabled="envDiagLoading"
               @click="onRunEnvironmentDiagnostics"
             >
               {{ envDiagLoading ? t("settings.envCheckRunning") : t("settings.envCheckRun") }}
-            </button>
+            </UiButton>
             <div v-if="envDiag" class="sv-env-results" role="status">
               <p class="sv-env-line">
                 <strong>{{ t("settings.envCheckOllama", { url: envDiag.ollamaBaseUrl }) }}</strong>
@@ -323,28 +478,26 @@ async function onToggleForceIframe(e: Event) {
                 <code class="sv-code">{{ envDiag.appDataDir }}</code>
               </p>
             </div>
-          </section>
-          <section class="sv-section">
-            <div class="sv-row-h">
-              <span class="sv-label">{{ t("kernel.diagnostics.title") }}</span>
-            </div>
-            <div class="sv-row-actions">
-              <button
-                type="button"
-                class="sv-btn"
+          </UiSection>
+
+          <UiSection :title="t('kernel.diagnostics.title')">
+            <div class="ui-btn-group">
+              <UiButton
+                size="sm"
+                variant="secondary"
                 :disabled="kernelDiagLoading"
                 @click="onRunKernelDiagnostics"
               >
                 {{ kernelDiagLoading ? t("settings.envCheckRunning") : t("kernel.diagnostics.refresh") }}
-              </button>
-              <button
-                type="button"
-                class="sv-btn sv-btn--secondary"
+              </UiButton>
+              <UiButton
+                size="sm"
+                variant="ghost"
                 :disabled="kernelDiagLoading"
                 @click="onReconnectKernelFromSettings"
               >
                 {{ t("kernel.diagnostics.reconnect") }}
-              </button>
+              </UiButton>
             </div>
             <div v-if="kernelDiag" class="sv-env-results" role="status">
               <p>
@@ -379,86 +532,142 @@ async function onToggleForceIframe(e: Event) {
                 JSON.stringify(kernelDiag.healthJson, null, 2)
               }}</pre>
             </div>
-          </section>
-          <section v-if="hasSentryDsn" class="sv-section">
-            <div class="sv-row-h">
-              <span class="sv-label">{{ t("settings.sentrySectionTitle") }}</span>
-              <HelpHint :text="t('settings.sentryOptOutHelp')" />
-            </div>
-            <p class="sv-muted">
-              {{ t("settings.sentrySectionLead") }}
-            </p>
-            <label class="sv-toggle-row">
-              <input type="checkbox" :checked="sentryOptOut" @change="onSentryOptOutChange">
-              <span class="sv-toggle-text">
-                <strong>{{ t("settings.sentryOptOutLabel") }}</strong>
-              </span>
-            </label>
-          </section>
-          <section class="sv-section">
-            <div class="sv-row-h">
-              <span class="sv-label">{{ t("settings.remoteFallbackSectionTitle") }}</span>
-              <HelpHint :text="t('settings.remoteFallbackHelp')" />
-            </div>
-            <p v-if="remoteFallbackEnvLocked" class="sv-muted">
-              {{ t("settings.remoteFallbackEnvLocked") }}
-            </p>
-            <label class="sv-toggle-row">
-              <input
-                type="checkbox"
-                :checked="remoteFallbackChecked"
-                :disabled="remoteFallbackLoading || remoteFallbackEnvLocked"
-                @change="onRemoteFallbackToggle"
+          </UiSection>
+          <details v-if="embedded" class="sv-advanced-fold">
+            <summary class="sv-advanced-fold__summary">
+              {{ t("settings.advancedFoldTitle") }}
+            </summary>
+            <div class="sv-advanced-fold__body">
+              <UiSection
+                v-if="hasSentryDsn"
+                :title="t('settings.sentrySectionTitle')"
+                :description="t('settings.sentrySectionLead')"
               >
-              <span class="sv-toggle-text">
-                <strong>{{ t("settings.remoteFallbackLabel") }}</strong>
-              </span>
-            </label>
-          </section>
-          <section class="sv-section">
-            <h3 class="sv-h3">
-              {{ t("settings.advancedTitle") }}
-            </h3>
-            <p class="sv-muted" v-html="t('settings.advancedDesc')" />
-            <PluginSlotEmbed
-              :slot-name="SLOT_SETTINGS_ADVANCED"
-              :aria-label="t('settings.advancedSlotAria')"
-              :bootstrap-epoch="pluginStore.bootstrapEpoch"
-            />
-          </section>
-
-          <section class="sv-section">
-            <div class="sv-row-h">
-              <span class="sv-label">{{ t("settings.securityLabel") }}</span>
+                <template #extra>
+                  <HelpHint :text="t('settings.sentryOptOutHelp')" />
+                </template>
+                <label class="sv-toggle-row">
+                  <input type="checkbox" :checked="sentryOptOut" @change="onSentryOptOutChange">
+                  <span class="sv-toggle-text">
+                    <strong>{{ t("settings.sentryOptOutLabel") }}</strong>
+                  </span>
+                </label>
+              </UiSection>
+              <UiSection :title="t('settings.remoteFallbackSectionTitle')">
+                <template #extra>
+                  <HelpHint :text="t('settings.remoteFallbackHelp')" />
+                </template>
+                <p v-if="remoteFallbackEnvLocked" class="sv-muted">
+                  {{ t("settings.remoteFallbackEnvLocked") }}
+                </p>
+                <label class="sv-toggle-row">
+                  <input
+                    type="checkbox"
+                    :checked="remoteFallbackChecked"
+                    :disabled="remoteFallbackLoading || remoteFallbackEnvLocked"
+                    @change="onRemoteFallbackToggle"
+                  >
+                  <span class="sv-toggle-text">
+                    <strong>{{ t("settings.remoteFallbackLabel") }}</strong>
+                  </span>
+                </label>
+              </UiSection>
+              <UiSection :title="t('settings.advancedTitle')">
+                <p class="sv-muted" v-html="t('settings.advancedDesc')" />
+                <PluginSlotEmbed
+                  :slot-name="SLOT_SETTINGS_ADVANCED"
+                  :aria-label="t('settings.advancedSlotAria')"
+                  :bootstrap-epoch="pluginStore.bootstrapEpoch"
+                />
+              </UiSection>
+              <UiSection :title="t('settings.securityLabel')">
+                <label class="sv-toggle-row">
+                  <input
+                    type="checkbox"
+                    :checked="pluginStore.pluginState.force_iframe_mode === true"
+                    @change="onToggleForceIframe"
+                  >
+                  <span class="sv-toggle-text">
+                    <strong>{{ t("settings.forceIframeTitle") }}</strong>
+                    <span class="sv-muted sv-toggle-desc">
+                      {{ t("settings.forceIframeDesc") }}
+                    </span>
+                  </span>
+                </label>
+              </UiSection>
             </div>
-            <label class="sv-toggle-row">
-              <input
-                type="checkbox"
-                :checked="pluginStore.pluginState.force_iframe_mode === true"
-                @change="onToggleForceIframe"
-              >
-              <span class="sv-toggle-text">
-                <strong>{{ t("settings.forceIframeTitle") }}</strong>
-                <span class="sv-muted sv-toggle-desc">
-                  {{ t("settings.forceIframeDesc") }}
+          </details>
+          <template v-else>
+            <UiSection
+              v-if="hasSentryDsn"
+              :title="t('settings.sentrySectionTitle')"
+              :description="t('settings.sentrySectionLead')"
+            >
+              <template #extra>
+                <HelpHint :text="t('settings.sentryOptOutHelp')" />
+              </template>
+              <label class="sv-toggle-row">
+                <input type="checkbox" :checked="sentryOptOut" @change="onSentryOptOutChange">
+                <span class="sv-toggle-text">
+                  <strong>{{ t("settings.sentryOptOutLabel") }}</strong>
                 </span>
-              </span>
-            </label>
-          </section>
+              </label>
+            </UiSection>
+            <UiSection :title="t('settings.remoteFallbackSectionTitle')">
+              <template #extra>
+                <HelpHint :text="t('settings.remoteFallbackHelp')" />
+              </template>
+              <p v-if="remoteFallbackEnvLocked" class="sv-muted">
+                {{ t("settings.remoteFallbackEnvLocked") }}
+              </p>
+              <label class="sv-toggle-row">
+                <input
+                  type="checkbox"
+                  :checked="remoteFallbackChecked"
+                  :disabled="remoteFallbackLoading || remoteFallbackEnvLocked"
+                  @change="onRemoteFallbackToggle"
+                >
+                <span class="sv-toggle-text">
+                  <strong>{{ t("settings.remoteFallbackLabel") }}</strong>
+                </span>
+              </label>
+            </UiSection>
+            <UiSection :title="t('settings.advancedTitle')">
+              <p class="sv-muted" v-html="t('settings.advancedDesc')" />
+              <PluginSlotEmbed
+                :slot-name="SLOT_SETTINGS_ADVANCED"
+                :aria-label="t('settings.advancedSlotAria')"
+                :bootstrap-epoch="pluginStore.bootstrapEpoch"
+              />
+            </UiSection>
+            <UiSection :title="t('settings.securityLabel')">
+              <label class="sv-toggle-row">
+                <input
+                  type="checkbox"
+                  :checked="pluginStore.pluginState.force_iframe_mode === true"
+                  @change="onToggleForceIframe"
+                >
+                <span class="sv-toggle-text">
+                  <strong>{{ t("settings.forceIframeTitle") }}</strong>
+                  <span class="sv-muted sv-toggle-desc">
+                    {{ t("settings.forceIframeDesc") }}
+                  </span>
+                </span>
+              </label>
+            </UiSection>
+          </template>
         </form>
 
         <form v-show="tab === 'plugins'" class="sv-body" @submit.prevent>
-          <section class="sv-section">
-            <div class="sv-row-h">
-              <h3 class="sv-h3">
-                {{ t("settings.pluginsPanelTitle") }}
-              </h3>
-              <HelpHint
-                :paragraphs="[t('settings.pluginsPanelHint1'), t('settings.pluginsPanelHint2')]"
-              />
-            </div>
+          <UiSection
+            :title="t('settings.pluginsPanelTitle')"
+            :description="t('settings.pluginsPanelHint1')"
+          >
+            <template #extra>
+              <HelpHint :paragraphs="[t('settings.pluginsPanelHint1'), t('settings.pluginsPanelHint2')]" />
+            </template>
             <PluginSettingsPanelSlots :bootstrap-epoch="pluginStore.bootstrapEpoch" />
-          </section>
+          </UiSection>
 
           <HotkeySettingsSection />
         </form>
@@ -468,10 +677,143 @@ async function onToggleForceIframe(e: Event) {
         </div>
       </div>
     </div>
-  </Teleport>
+  </component>
 </template>
 
 <style scoped>
+.sv-embedded-root {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.sv-embedded {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.sv-embedded .sv-body {
+  flex: 1;
+  min-width: 0;
+  overflow: visible;
+  padding: var(--tool-space-4, 16px);
+  max-width: none;
+  background: var(--tool-chrome-editor, var(--tool-elevated, var(--bg-primary)));
+}
+
+.sv-embedded .sv-section {
+  gap: var(--tool-space-3, 12px);
+  padding-top: var(--tool-space-6, 24px);
+  margin-bottom: 0;
+  border-top: 1px solid var(--tool-divider, var(--tool-border, var(--border-light)));
+}
+
+.sv-embedded .ui-section {
+  margin-bottom: 0;
+}
+
+.sv-embedded .sv-body > .sv-lead + .sv-section,
+.sv-embedded .sv-body > .sv-section:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.sv-embedded .sv-lead {
+  margin-bottom: var(--tool-space-4, 16px);
+}
+
+.sv-embedded .sv-label {
+  font-size: var(--tool-fs-md, 13px);
+}
+
+.sv-embedded .sv-toggle-row {
+  min-height: var(--tool-row-h, 32px);
+  align-items: center;
+}
+
+.sv-advanced-fold {
+  border: none;
+  border-top: 1px solid var(--tool-divider, var(--tool-border, var(--border-light)));
+  border-radius: 0;
+  padding: var(--tool-space-4, 16px) 0 0;
+  margin-bottom: 0;
+}
+
+.sv-advanced-fold__summary {
+  cursor: pointer;
+  font-size: var(--tool-fs-md, 13px);
+  font-weight: 600;
+  color: var(--tool-text, var(--text-primary));
+  list-style: none;
+}
+
+.sv-advanced-fold__summary::-webkit-details-marker {
+  display: none;
+}
+
+.sv-advanced-fold__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tool-space-6, 24px);
+  margin-top: var(--tool-space-4, 16px);
+}
+
+.sv-layout-readout {
+  font-variant-numeric: tabular-nums;
+}
+
+.sv-interaction-mode {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--tool-space-2, 8px);
+  width: 100%;
+}
+
+.sv-interaction-mode .ui-select {
+  flex: 1 1 10rem;
+  min-width: 0;
+}
+
+.sv-nav--vertical {
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  flex: 0 0 132px;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--tool-space-1, 4px);
+  padding: var(--tool-space-3, 12px);
+  border-bottom: none;
+  border-right: 1px solid var(--tool-divider, var(--tool-border, var(--border-light)));
+  background: var(--tool-chrome-sidebar, var(--tool-bg, var(--bg-secondary)));
+}
+
+.sv-nav--vertical .sv-nav-btn {
+  width: 100%;
+  text-align: left;
+  border-radius: var(--tool-radius, 4px);
+  font-size: var(--tool-fs-md, 13px);
+}
+
+.sv-nav--vertical .sv-nav-btn[aria-current="page"] {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--tool-accent, var(--accent)) 12%, transparent);
+  color: var(--tool-text, var(--text-primary));
+}
+
 .sv-backdrop {
   position: fixed;
   inset: 0;
@@ -663,5 +1005,41 @@ async function onToggleForceIframe(e: Event) {
 }
 .sv-bad {
   color: var(--danger, #b91c1c);
+}
+.sv-field-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  font-size: 13px;
+}
+.sv-field-label {
+  min-width: 6rem;
+  color: var(--text-secondary);
+}
+.sv-select {
+  min-width: 10rem;
+  max-width: 100%;
+  padding: 6px 10px;
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font-size: 13px;
+}
+.sv-appearance-row {
+  align-items: center;
+}
+.sv-appearance-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.sv-appearance-scale {
+  min-width: 2.5rem;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-secondary);
 }
 </style>

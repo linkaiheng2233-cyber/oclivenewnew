@@ -1,19 +1,20 @@
 <script setup lang="ts">
+import type { LlmUserSettings, LocalModelFile } from '../../api/llmSettings'
 import { open as openDialog } from '@tauri-apps/api/dialog'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useAppToast } from '../../composables/useAppToast'
 import {
   getLlmUserSettings,
   importGgufToOllama,
   listOllamaModels,
+
   openPathInFileManager,
   saveLlmUserSettings,
   scanLocalModelFiles,
-  type LocalModelFile,
-  type LlmUserSettings,
 } from '../../api/llmSettings'
+import { useAppToast } from '../../composables/useAppToast'
 import { useRoleStore } from '../../stores/roleStore'
+import UiButton from '../ui/UiButton.vue'
 
 const emit = defineEmits<{
   openSettings: []
@@ -247,7 +248,7 @@ watch(
 </script>
 
 <template>
-  <div class="mm-root">
+  <div class="mm-root tool-mgmt-panel">
     <p class="mm-lead">
       {{ t("modelManager.lead") }}
     </p>
@@ -444,12 +445,17 @@ watch(
       </section>
 
       <footer class="mm-footer">
-        <button type="button" class="mm-btn mm-btn--primary" :disabled="saving || loading" @click="onSave">
+        <UiButton
+          size="sm"
+          variant="primary"
+          :disabled="saving || loading"
+          @click="onSave"
+        >
           {{ saving ? t("modelManager.saving") : t("modelManager.saveApply") }}
-        </button>
-        <button type="button" class="mm-btn mm-btn--ghost" @click="emit('openSettings')">
+        </UiButton>
+        <UiButton size="sm" variant="ghost" @click="emit('openSettings')">
           {{ t("modelManager.openSettings") }}
-        </button>
+        </UiButton>
       </footer>
     </template>
   </div>

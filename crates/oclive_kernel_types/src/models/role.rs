@@ -187,7 +187,7 @@ pub struct Role {
     #[serde(default)]
     pub dev_only: bool,
     /// `settings.json` → `plugin_backends` (optional; defaults to all builtin)
-    #[serde(default = "default_plugin_backends")]
+    #[serde(default = "default_plugin_backends", with = "serde_arc_plugin_backends")]
     pub plugin_backends: Arc<PluginBackends>,
     /// `pipeline.ocblueprint` v2 → `slot_registry` (multi-instance; used by P2+ orchestration; serialized for debug/export)
     #[serde(default, skip_serializing_if = "slot_registry_is_empty")]
@@ -247,6 +247,25 @@ pub struct Role {
 
 fn default_plugin_backends() -> Arc<PluginBackends> {
     Arc::new(PluginBackends::default())
+}
+
+mod serde_arc_plugin_backends {
+    use super::{Arc, PluginBackends};
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+    pub fn serialize<S>(value: &Arc<PluginBackends>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        value.as_ref().serialize(serializer)
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Arc<PluginBackends>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        PluginBackends::deserialize(deserializer).map(Arc::new)
+    }
 }
 
 impl Default for Role {
