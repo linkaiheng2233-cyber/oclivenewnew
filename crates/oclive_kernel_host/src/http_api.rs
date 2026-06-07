@@ -23,11 +23,14 @@ use crate::models::dto::{
 use crate::models::dto::{SendMessageRequest, SendMessageResponse};
 use crate::models::role::PersonalitySource;
 use crate::service::{
-    dispatch_bridge_command, execute_chat_storage_proxy, get_role_info_impl, get_time_state_impl,
-    get_user_identity_state_impl, grant_high_risk_capability_impl, jump_time_impl,
-    list_high_risk_grants_impl, load_role_impl, revoke_high_risk_capability_impl,
-    set_scene_user_identity_impl, set_user_identity_impl, set_user_presence_scene_impl,
-    switch_scene_impl, ChatStorageProxyOp, MutateHighRiskGrantRequest,
+    dispatch_bridge_command, execute_chat_storage_proxy, get_llm_user_settings_impl,
+    get_role_info_impl, get_time_state_impl, get_user_identity_state_impl,
+    grant_high_risk_capability_impl, jump_time_impl, list_high_risk_grants_impl,
+    list_ollama_models_impl, load_role_impl, revoke_high_risk_capability_impl,
+    save_llm_user_settings_impl, set_scene_user_identity_impl, set_session_llm_model_impl,
+    set_user_identity_impl, set_user_presence_scene_impl, switch_scene_impl, ChatStorageProxyOp,
+    LlmUserSettingsDto, MutateHighRiskGrantRequest, SaveLlmUserSettingsRequest,
+    SetSessionLlmModelRequest,
 };
 use crate::state::AppState;
 use axum::extract::{Query, State};
@@ -649,6 +652,63 @@ async fn llm_reload_route(
     Ok(Json(LlmReloadResponse { ok: true, provider }))
 }
 
+#[derive(Debug, Deserialize)]
+struct OllamaModelsQuery {
+    ollama_base_url: Option<String>,
+}
+
+async fn llm_user_settings_get_route(
+    State(state): State<Arc<AppState>>,
+    Query(q): Query<RoleIdQuery>,
+) -> Result<Json<LlmUserSettingsDto>, ApiError> {
+    get_llm_user_settings_impl(&state, q.role_id.trim(), q.session_id.as_deref())
+        .await
+        .map(Json)
+        .map_err(|e| {
+            let k = e.kernel_error_body();
+            api_error(axum::http::StatusCode::BAD_REQUEST, k)
+        })
+}
+
+async fn llm_user_settings_post_route(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<SaveLlmUserSettingsRequest>,
+) -> Result<Json<RoleInfo>, ApiError> {
+    let info = save_llm_user_settings_impl(state.as_ref(), &req)
+        .await
+        .map_err(|e| {
+            let k = e.kernel_error_body();
+            api_error(axum::http::StatusCode::BAD_REQUEST, k)
+        })?;
+    Ok(Json(info))
+}
+
+async fn llm_ollama_models_route(
+    State(state): State<Arc<AppState>>,
+    Query(q): Query<OllamaModelsQuery>,
+) -> Result<Json<Vec<String>>, ApiError> {
+    list_ollama_models_impl(state.as_ref(), q.ollama_base_url.as_deref())
+        .await
+        .map(Json)
+        .map_err(|e| {
+            let k = e.kernel_error_body();
+            api_error(axum::http::StatusCode::INTERNAL_SERVER_ERROR, k)
+        })
+}
+
+async fn llm_session_model_route(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<SetSessionLlmModelRequest>,
+) -> Result<Json<RoleInfo>, ApiError> {
+    set_session_llm_model_impl(state.as_ref(), &req)
+        .await
+        .map(Json)
+        .map_err(|e| {
+            let k = e.kernel_error_body();
+            api_error(axum::http::StatusCode::BAD_REQUEST, k)
+        })
+}
+
 /// The same route tree as [`serve_api`], for integration tests to use via `tower::ServiceExt::oneshot` (no port binding required).
 pub fn api_router(app_state: Arc<AppState>) -> Router {
     let cors = CorsLayer::new()
@@ -681,6 +741,12 @@ pub fn api_router(app_state: Arc<AppState>) -> Router {
         .route("/high_risk/revoke", post(revoke_high_risk_route))
         .route("/bridge/dispatch", post(bridge_dispatch_route))
         .route("/llm/reload", post(llm_reload_route))
+        .route(
+            "/llm/user_settings",
+            get(llm_user_settings_get_route).post(llm_user_settings_post_route),
+        )
+        .route("/llm/ollama_models", get(llm_ollama_models_route))
+        .route("/llm/session_model", post(llm_session_model_route))
         .layer(cors)
         .with_state(app_state)
 }

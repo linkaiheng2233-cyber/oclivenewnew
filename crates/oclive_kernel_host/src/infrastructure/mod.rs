@@ -12,6 +12,7 @@ pub mod function_call_parser;
 pub mod high_risk_grants;
 pub mod hotkey_bindings;
 pub mod llm;
+pub mod llm_models;
 pub mod llm_params;
 pub mod mcp_client;
 pub mod ollama_client;

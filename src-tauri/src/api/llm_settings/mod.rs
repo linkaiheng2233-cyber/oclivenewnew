@@ -3,15 +3,15 @@
 mod canonical_llm_sync;
 mod commands;
 mod llm_models;
-mod user_llm_env;
 
 pub use oclive_kernel_host::domain::user_llm_env::{apply_user_llm_env, apply_user_llm_env_from_db};
 pub use canonical_llm_sync::{
     seed_shell_llm_from_canonical, sync_canonical_db_models_dir,
     sync_session_ollama_model_to_canonical, sync_shell_llm_settings_to_canonical,
 };
-pub use commands::{ImportGgufToOllamaRequest, LlmUserSettingsDto, SaveLlmUserSettingsRequest};
-pub use llm_models::LocalModelFileDto;
+pub use commands::ImportGgufToOllamaRequest;
+pub use oclive_kernel_host::infrastructure::llm_models::LocalModelFileDto;
+pub use oclive_kernel_host::service::{LlmUserSettingsDto, SaveLlmUserSettingsRequest};
 
 #[tauri::command]
 pub async fn get_llm_user_settings(

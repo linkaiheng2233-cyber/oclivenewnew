@@ -45,13 +45,31 @@ Desktop **does not** bind in-process `:8420` or open canonical `app.db` for writ
 
 | Method | Path | Purpose |
 |--------|------|---------|
-| GET | `/health` | Liveness + schema metadata |
+| GET | `/health` | Liveness + schema metadata (`Accept: application/json` for `kernel_manifest`) |
 | POST | `/chat` | Turn |
 | GET | `/role_info` | Full `RoleInfo` |
 | GET | `/role_snapshot` | Lightweight UI poll |
 | POST | `/role/load` | Initialize role runtime |
 | GET | `/chat/sessions` | Session list |
 | GET | `/chat/messages` | Message page |
+| POST | `/chat/storage` | Chat storage proxy ops |
+| GET | `/time/state` | Time state |
+| POST | `/time/jump` | Jump time |
+| POST | `/scene/switch` | Switch scene |
+| GET | `/user_identity/state` | User identity state |
+| POST | `/user_identity/set` | Set global identity |
+| POST | `/user_identity/scene_set` | Set per-scene identity |
+| POST | `/scene/user_presence` | Set user presence scene |
+| POST | `/event/create` | Create event |
+| GET | `/high_risk/grants` | List high-risk grants |
+| POST | `/high_risk/grant` | Grant high-risk capability |
+| POST | `/high_risk/revoke` | Revoke high-risk capability |
+| POST | `/bridge/dispatch` | Bridge command dispatch |
+| POST | `/llm/reload` | Reload user LLM env |
+| GET | `/llm/user_settings` | User LLM settings (`role_id`, optional `session_id`) |
+| POST | `/llm/user_settings` | Save user LLM settings → `RoleInfo` |
+| GET | `/llm/ollama_models` | List Ollama models (optional `ollama_base_url`) |
+| POST | `/llm/session_model` | Session Ollama model override |
 
 ## E2E scenarios
 
