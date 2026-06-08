@@ -35,6 +35,7 @@ pub mod sql_migrate;
 pub mod slot_resolver_port;
 pub mod sqlite_pool;
 pub mod storage;
+pub mod turn_ports;
 pub mod user_llm_secrets;
 
 #[cfg(test)]

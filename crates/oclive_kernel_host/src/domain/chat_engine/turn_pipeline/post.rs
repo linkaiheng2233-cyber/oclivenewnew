@@ -15,7 +15,7 @@ use super::super::turn_context::TurnContext;
 use super::super::turn_error::TurnResult;
 use super::persistence::{
     append_turn_to_chat_storage, persist_atomic_movement_portrait,
-    persist_non_profile_personality_delta, spawn_mutable_profile_evolution, ChatAppendIds,
+    persist_non_profile_personality_delta, ChatAppendIds,
     PostPersistOutcome, PostTurnPolicy,
 };
 use super::pre::{MainLlmOutput, MiddleOutput, PreLlmOutput, STAGES};
@@ -78,13 +78,14 @@ pub(crate) async fn run_main_llm(
 async fn analyze_bot_emotion_and_policy(
     state: &crate::state::AppState,
     pl: &crate::domain::plugin_host::ResolvedRolePlugins,
-    policies: std::sync::Arc<crate::infrastructure::policy_registry::PolicySet>,
+    scene_id: &str,
     srid: &str,
     user_message: &str,
     reply: &str,
     pre: &PreLlmOutput,
     middle: &MiddleOutput,
 ) -> TurnResult<PostTurnPolicy> {
+    let policies = state.policies_for_scene(Some(scene_id));
     let previous_emotion_fut = state.db_manager.get_current_emotion(srid);
     let bot_emotion_result = STAGES
         .stage(ChatStage::BotReplyEmotionAnalyze, async {
@@ -145,11 +146,10 @@ fn spawn_profile_evolution_after_llm(
         return;
     }
     let impact_scaled = (middle.ai_impact_factor_final * pre.event_runtime).clamp(-1.0, 1.0);
-    spawn_mutable_profile_evolution(
-        Arc::clone(&state.db_manager),
-        Arc::clone(&state.session_cache),
+    crate::state::profile_evolution::spawn_mutable_profile_evolution(
+        state,
         primary_llm,
-        role.clone(),
+        Arc::new(role.clone()),
         srid.to_string(),
         path_label.to_string(),
         pre.ollama_model.clone(),
@@ -246,7 +246,6 @@ pub(crate) async fn post_llm(
     let immersive = ctx.immersive;
     let pl = &ctx.pl;
     let user_message = ctx.req.user_message.as_str();
-    let policies = state.policies_for_scene(Some(scene_id));
     let primary_llm = SlotRunner::primary_llm(pl);
 
     let t_post_llm = Instant::now();
@@ -255,7 +254,7 @@ pub(crate) async fn post_llm(
     let policy = analyze_bot_emotion_and_policy(
         state,
         pl,
-        std::sync::Arc::clone(&policies),
+        scene_id,
         srid,
         user_message,
         &reply,
@@ -279,7 +278,6 @@ pub(crate) async fn post_llm(
     let persist_out = persist_atomic_movement_portrait(
         state,
         mode,
-        policies,
         primary_llm,
         role,
         ctx.ids(),
