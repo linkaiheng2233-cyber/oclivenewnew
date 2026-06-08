@@ -3,7 +3,6 @@
 use super::session_cache::SessionCache;
 use super::AppState;
 use crate::domain::host_profile::{self, HostProfile};
-use crate::domain::plugin_host::PluginHost;
 use crate::domain::repository::{FavorabilityRepository, MemoryRepository};
 use crate::error::Result;
 use crate::infrastructure::chat_storage::{
@@ -176,7 +175,7 @@ impl AppStateBuilder {
                 high_risk_grants.clone(),
             )
         };
-        let plugins = PluginHost::new(
+        let plugins = crate::infrastructure::plugin_wiring::build_plugin_host(
             llm.clone(),
             Some(directory_plugins.clone()),
             self.app_data_dir.clone(),
@@ -212,12 +211,25 @@ impl AppStateBuilder {
                 .unwrap_or_else(host_profile::load_host_profile_from_env),
         );
 
+        let reply_post_processor_resolver: Arc<dyn oclive_kernel_contracts::ReplyPostProcessorResolver> =
+            Arc::new(
+                crate::infrastructure::reply_post_processor_wiring::HostReplyPostProcessorResolver::new(
+                    directory_plugins.clone(),
+                    remote_fallback_allowed.clone(),
+                    high_risk_grants.clone(),
+                ),
+            );
+
+        let user_llm_secrets: Arc<dyn oclive_kernel_contracts::UserLlmSecretsPort> =
+            Arc::new(crate::infrastructure::user_llm_secrets::BuiltinUserLlmSecrets);
+
         let state = AppState {
             db_manager,
             conversation_store,
             replay_tasks,
             memory_repo,
             favorability_repo,
+            user_llm_secrets,
             llm,
             role_cache: Arc::new(RwLock::new(HashMap::new())),
             role_load_inflight: DashMap::new(),
@@ -241,6 +253,7 @@ impl AppStateBuilder {
             user_llm_env_applied_version: AtomicU64::new(0),
             user_llm_env_dirty: AtomicBool::new(true),
             host_profile,
+            reply_post_processor_resolver,
         };
         if let Err(e) = crate::domain::user_llm_env::apply_user_llm_env(&state).await {
             tracing::warn!(target: "oclive_llm", "apply user llm settings: {e}");

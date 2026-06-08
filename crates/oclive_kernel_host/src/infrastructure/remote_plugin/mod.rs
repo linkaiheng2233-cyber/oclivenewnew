@@ -144,7 +144,7 @@ fn cloud_api_style_is_openai() -> bool {
 pub fn agent_remote_backend(
     http_client: Arc<reqwest::Client>,
     agent_builtin: Arc<dyn crate::domain::agent::AgentProvider>,
-    agent_bridge: Arc<crate::domain::agent_mcp_bridge::AgentMcpBridge>,
+    agent_bridge: Arc<dyn oclive_kernel_contracts::McpBridgePort>,
     remote_fallback_allowed: Arc<AtomicBool>,
     grants: Arc<HighRiskGrantStore>,
 ) -> Arc<dyn crate::domain::agent::AgentProvider> {

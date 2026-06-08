@@ -68,6 +68,16 @@ async function scenarioHandlers(base, rolePath) {
       if (!r.ok) throw new Error(`health status ${r.status}`)
       if (t.trim() !== 'ok') throw new Error(`health body expected ok, got ${JSON.stringify(t)}`)
     },
+    S0b_health_startup_warnings: async () => {
+      const { res, body } = await fetchJson(`${base}/health`, {
+        headers: { accept: 'application/json' },
+      })
+      if (!res.ok) throw new Error(`S0b health status ${res.status}`)
+      if (body?.ok !== true) throw new Error(`S0b health ok field ${JSON.stringify(body?.ok)}`)
+      if (!Array.isArray(body?.startup_warnings)) {
+        throw new Error(`S0b startup_warnings must be array, got ${typeof body?.startup_warnings}`)
+      }
+    },
     S1: async () => {
       const { res, body } = await fetchJson(`${base}/chat`, {
         method: 'POST',
@@ -256,6 +266,7 @@ async function main() {
     includeDualCore || argFlag('--include-s14') || process.env.OCLIVE_OOCP_INCLUDE_S14 === '1'
   const order = [
     'S0',
+    'S0b_health_startup_warnings',
     'S1',
     'S2',
     'S3',

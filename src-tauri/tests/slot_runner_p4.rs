@@ -5,8 +5,9 @@
 use oclive_validation::SlotRegistryEntry;
 use oclive_kernel_host::domain::plugin_host::PluginHost;
 use oclive_kernel_host::domain::slot_runner::SlotRunner;
-use oclive_kernel_host::infrastructure::high_risk_grants::HighRiskGrantStore;
 use oclive_kernel_host::infrastructure::llm::{LlmClient, MockLlmClient};
+use oclive_kernel_host::infrastructure::plugin_wiring::build_plugin_host;
+use oclive_kernel_host::infrastructure::high_risk_grants::HighRiskGrantStore;
 use oclive_kernel_host::infrastructure::remote_fallback_policy::new_remote_fallback_switch;
 use oclive_kernel_types::models::{Memory, PluginBackends};
 use std::collections::BTreeMap;
@@ -43,7 +44,7 @@ fn host_with_llm(llm: Arc<dyn LlmClient>) -> PluginHost {
     let tmp = std::env::temp_dir();
     let grants = HighRiskGrantStore::load(tmp.clone(), false);
     let remote_fb = new_remote_fallback_switch(true);
-    PluginHost::new(llm, None, tmp, grants, remote_fb)
+    build_plugin_host(llm, None, tmp, grants, remote_fb)
 }
 
 #[test]

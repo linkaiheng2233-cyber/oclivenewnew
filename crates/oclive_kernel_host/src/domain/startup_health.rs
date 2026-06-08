@@ -17,6 +17,7 @@ const FAILURE_RETRY_TTL: Duration = Duration::from_secs(120);
 pub(crate) struct StartupHealthCache {
     successes: HashMap<String, ()>,
     failures: HashMap<String, (String, Instant)>,
+    per_role_warnings: HashMap<String, Vec<String>>,
 }
 
 impl StartupHealthCache {
@@ -32,8 +33,18 @@ impl StartupHealthCache {
         None
     }
 
-    fn record(&mut self, role_id: &str, outcome: std::result::Result<(), String>) {
+    fn record(
+        &mut self,
+        role_id: &str,
+        outcome: std::result::Result<(), String>,
+        warnings: Vec<String>,
+    ) {
         self.failures.remove(role_id);
+        if warnings.is_empty() {
+            self.per_role_warnings.remove(role_id);
+        } else {
+            self.per_role_warnings.insert(role_id.to_string(), warnings);
+        }
         match outcome {
             Ok(()) => {
                 self.successes.insert(role_id.to_string(), ());
@@ -43,6 +54,19 @@ impl StartupHealthCache {
                     .insert(role_id.to_string(), (msg, Instant::now()));
             }
         }
+    }
+
+    /// Deduped union of non-fatal startup warnings recorded across roles.
+    pub(crate) fn aggregated_warnings(&self) -> Vec<String> {
+        let mut out: Vec<String> = Vec::new();
+        for warnings in self.per_role_warnings.values() {
+            for w in warnings {
+                if !out.iter().any(|existing| existing == w) {
+                    out.push(w.clone());
+                }
+            }
+        }
+        out
     }
 }
 
@@ -60,13 +84,14 @@ pub async fn ensure_once(state: &AppState, role: &Role, effective: &PluginBacken
     if let Some(cached) = state.startup_health.read().cached_outcome(role_id) {
         return cached.map_err(AppError::StartupHealthFailed);
     }
-    let outcome = run_checks(state, role, effective)
-        .await
-        .map_err(|e| e.to_string());
+    let (outcome, warnings) = match run_checks(state, role, effective).await {
+        Ok(()) => (Ok(()), collect_remote_backend_placeholder_warnings(effective)),
+        Err(e) => (Err(e.to_string()), Vec::new()),
+    };
     state
         .startup_health
         .write()
-        .record(role_id, outcome.clone());
+        .record(role_id, outcome.clone(), warnings);
     outcome.map_err(AppError::StartupHealthFailed)
 }
 
@@ -90,12 +115,53 @@ async fn run_checks(state: &AppState, role: &Role, effective: &PluginBackends) -
             e.to_frontend_error()
         );
     }
+    warn_remote_backend_placeholders(effective);
     tracing::info!(
         target: "oclive_startup",
         "startup_health ok role_id={}",
         role.id
     );
     Ok(())
+}
+
+fn env_nonempty(key: &str) -> bool {
+    std::env::var(key)
+        .ok()
+        .is_some_and(|v| !v.trim().is_empty())
+}
+
+/// Non-fatal: remote backends without env endpoints degrade to placeholders (see `remote_plugin`).
+fn collect_remote_backend_placeholder_warnings(pb: &PluginBackends) -> Vec<String> {
+    let mut out = Vec::new();
+    let plugin_remote = matches!(pb.memory, MemoryBackend::Remote)
+        || matches!(pb.emotion, EmotionBackend::Remote)
+        || matches!(pb.event, EventBackend::Remote)
+        || matches!(pb.prompt, PromptBackend::Remote);
+    if plugin_remote && !env_nonempty("OCLIVE_REMOTE_PLUGIN_URL") {
+        out.push(
+            "plugin_backends 含 remote（memory/emotion/event/prompt），但未配置 OCLIVE_REMOTE_PLUGIN_URL；将使用占位实现，对话质量受限"
+                .to_string(),
+        );
+    }
+    if matches!(pb.llm, LlmBackend::Remote) && !env_nonempty("OCLIVE_REMOTE_LLM_URL") {
+        out.push(
+            "plugin_backends.llm=remote，但未配置 OCLIVE_REMOTE_LLM_URL；将使用占位 LLM 实现".to_string(),
+        );
+    }
+    if matches!(pb.agent, AgentBackend::Remote) && !env_nonempty("OCLIVE_REMOTE_AGENT_URL") {
+        out.push(
+            "plugin_backends.agent=remote，但未配置 OCLIVE_REMOTE_AGENT_URL；将使用占位 Agent 实现"
+                .to_string(),
+        );
+    }
+    out
+}
+
+/// Non-fatal: remote backends without env endpoints degrade to placeholders (see `remote_plugin`).
+fn warn_remote_backend_placeholders(pb: &PluginBackends) {
+    for msg in collect_remote_backend_placeholder_warnings(pb) {
+        tracing::warn!(target: "oclive_startup", "{msg}");
+    }
 }
 
 fn non_empty_slot(id: &Option<String>, slot: &str) -> Result<()> {
@@ -181,4 +247,49 @@ fn verify_role_pack_files(state: &AppState, role: &Role) -> Result<()> {
 /// DB ping for HTTP `--api` etc. after [`AppState`] construction (role-independent).
 pub async fn run_global_db_ping(db: &crate::infrastructure::db::DbManager) -> Result<()> {
     db.health_ping().await
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::plugin_backends::{LlmBackend, MemoryBackend, PluginBackends};
+
+    #[test]
+    fn collect_remote_placeholder_warnings_when_env_missing() {
+        let pb = PluginBackends {
+            memory: MemoryBackend::Remote,
+            ..Default::default()
+        };
+        let warnings = collect_remote_backend_placeholder_warnings(&pb);
+        assert_eq!(warnings.len(), 1);
+        assert!(warnings[0].contains("OCLIVE_REMOTE_PLUGIN_URL"));
+    }
+
+    #[test]
+    fn collect_remote_llm_warning_when_url_missing() {
+        let pb = PluginBackends {
+            llm: LlmBackend::Remote,
+            ..Default::default()
+        };
+        let warnings = collect_remote_backend_placeholder_warnings(&pb);
+        assert!(warnings.iter().any(|w| w.contains("OCLIVE_REMOTE_LLM_URL")));
+    }
+
+    #[test]
+    fn aggregated_warnings_dedupes_across_roles() {
+        let mut cache = StartupHealthCache::default();
+        cache.record("role_a", Ok(()), vec!["shared".into(), "only_a".into()]);
+        cache.record("role_b", Ok(()), vec!["shared".into(), "only_b".into()]);
+        let agg = cache.aggregated_warnings();
+        assert_eq!(agg.len(), 3);
+        assert!(agg.contains(&"shared".to_string()));
+        assert!(agg.contains(&"only_a".to_string()));
+        assert!(agg.contains(&"only_b".to_string()));
+    }
+
+    #[test]
+    fn aggregated_warnings_empty_when_no_roles() {
+        let cache = StartupHealthCache::default();
+        assert!(cache.aggregated_warnings().is_empty());
+    }
 }

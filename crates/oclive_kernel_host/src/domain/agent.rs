@@ -1,50 +1,34 @@
-use crate::domain::agent_mcp_bridge::AgentMcpBridge;
 use crate::domain::ports::LlmClient;
 use crate::error::Result;
-use crate::infrastructure::function_call_parser::{
-    parse_from_llm_response, to_function_calling_schema,
-};
-use crate::infrastructure::mcp_client::{McpServerManifest, McpToolCallResult};
 use async_trait::async_trait;
+use oclive_kernel_contracts::{FunctionCallingParserPort, McpBridgePort};
 pub use oclive_kernel_contracts::AgentProvider;
-pub use oclive_kernel_types::{AgentInput, AgentOutput};
+pub use oclive_kernel_types::{
+    AgentDebugTrace, AgentInput, AgentOutput, AgentToolCallTrace, McpServerInfo, McpToolInfo,
+    ToolSchemaInput,
+};
 use parking_lot::RwLock;
-use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::sync::Arc;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AgentToolCallTrace {
-    pub server_id: String,
-    pub tool_name: String,
-    pub params: Value,
-    pub result: Value,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AgentDebugTrace {
-    pub timestamp_ms: i64,
-    pub role_id: String,
-    pub session_namespace: String,
-    pub message: String,
-    pub plan: String,
-    pub tool_calls: Vec<AgentToolCallTrace>,
-    pub reply: String,
-    pub error: Option<String>,
-}
-
 pub struct BuiltinReActAgent {
     llm: Arc<dyn LlmClient>,
-    bridge: Arc<AgentMcpBridge>,
+    bridge: Arc<dyn McpBridgePort>,
+    parser: Arc<dyn FunctionCallingParserPort>,
     traces: RwLock<Vec<AgentDebugTrace>>,
 }
 
 impl BuiltinReActAgent {
     #[must_use]
-    pub fn new(llm: Arc<dyn LlmClient>, bridge: Arc<AgentMcpBridge>) -> Self {
+    pub fn new(
+        llm: Arc<dyn LlmClient>,
+        bridge: Arc<dyn McpBridgePort>,
+        parser: Arc<dyn FunctionCallingParserPort>,
+    ) -> Self {
         Self {
             llm,
             bridge,
+            parser,
             traces: RwLock::new(Vec::new()),
         }
     }
@@ -69,18 +53,17 @@ impl BuiltinReActAgent {
     }
 
     #[must_use]
-    pub fn list_mcp_servers(&self) -> Vec<McpServerManifest> {
+    pub fn list_mcp_servers(&self) -> Vec<McpServerInfo> {
         self.bridge.list_mcp_servers()
     }
+
     /// # Errors
     ///
     /// Returns [`Err`] with a human-readable message when the operation fails.
-    pub async fn list_mcp_tools(
-        &self,
-        server_id: &str,
-    ) -> Result<Vec<crate::infrastructure::mcp_client::McpToolManifest>> {
+    pub async fn list_mcp_tools(&self, server_id: &str) -> Result<Vec<McpToolInfo>> {
         self.bridge.list_mcp_tools(server_id).await
     }
+
     /// # Errors
     ///
     /// Returns [`Err`] with a human-readable message when the operation fails.
@@ -89,7 +72,7 @@ impl BuiltinReActAgent {
         server_id: &str,
         tool_name: &str,
         params: Value,
-    ) -> Result<McpToolCallResult> {
+    ) -> Result<oclive_kernel_types::AgentToolResult> {
         self.bridge.call_tool(server_id, tool_name, params).await
     }
 
@@ -121,13 +104,20 @@ impl AgentProvider for BuiltinReActAgent {
                 reply: String::new(),
             });
         }
-        let tool_schema_inputs = self.bridge.list_tool_schema_inputs().await;
-        if tool_schema_inputs.is_empty() {
+        let tool_schemas = self.bridge.list_agent_tool_schemas().await?;
+        if tool_schemas.is_empty() {
             return Ok(AgentOutput {
                 handled: false,
                 reply: String::new(),
             });
         }
+        let tool_schema_inputs: Vec<ToolSchemaInput> = tool_schemas
+            .iter()
+            .map(|t| ToolSchemaInput {
+                name: t.name.clone(),
+                description: t.description.clone(),
+            })
+            .collect();
         let mut trace = AgentDebugTrace {
             timestamp_ms: chrono::Utc::now().timestamp_millis(),
             role_id: input.role_id.clone(),
@@ -146,7 +136,7 @@ impl AgentProvider for BuiltinReActAgent {
                 .collect::<Vec<String>>()
                 .join(",")
         );
-        let schema = to_function_calling_schema(&tool_schema_inputs);
+        let schema = self.parser.to_function_calling_schema(&tool_schema_inputs);
         let mut observations: Vec<String> = Vec::new();
         for _ in 0..3 {
             let prompt = format!(
@@ -181,7 +171,7 @@ impl AgentProvider for BuiltinReActAgent {
                     reply: answer,
                 });
             }
-            let calls = parse_from_llm_response(&llm_raw);
+            let calls = self.parser.parse_from_llm_response(&llm_raw);
             if calls.is_empty() {
                 break;
             }

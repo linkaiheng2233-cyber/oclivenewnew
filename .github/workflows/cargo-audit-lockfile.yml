@@ -1,0 +1,21 @@
+name: Cargo Audit (lockfile)
+
+on:
+  pull_request:
+    paths:
+      - Cargo.lock
+      - .cargo/audit.toml
+
+permissions:
+  contents: read
+
+jobs:
+  audit-strict:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --version 0.22.1 --locked
+      - name: cargo audit (fail on vulnerability)
+        run: cargo audit

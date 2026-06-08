@@ -15,6 +15,16 @@
 | **`handoff/` 活跃 vs 归档**（closure、旧周报、编号计划已迁入 `archive/`） | **[../../handoff/README.md](../../handoff/README.md)** · 认知清单 **[../../handoff/04_4.6_PROJECT_TRUTH_CHECKLIST.md](../../handoff/04_4.6_PROJECT_TRUTH_CHECKLIST.md)** |
 | **命名规范与 canonical import**（概念 SSOT、crate 边界、禁止别名） | **[../NAMING_CONVENTIONS.md](../NAMING_CONVENTIONS.md)** · [English summary](../../creator-docs-en/getting-started/NAMING_CONVENTIONS.md) · crate 速查 **[../../crates/README.md](../../crates/README.md)** §Canonical import |
 
+### 工程纪律 / 审查状态
+
+| 主题 | 文档 |
+|------|------|
+| **Dimension 5 签字页**（验收门、ratchet、audit 快照） | **[../../handoff/DIMENSION5_CLOSURE_SIGNOFF.md](../../handoff/DIMENSION5_CLOSURE_SIGNOFF.md)** |
+| **工程债务与 Opus 4.8 摘要** | **[../../handoff/TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md)** §Dimension 5 · §Opus 4.8 |
+| **分层 ratchet**（`node scripts/check-domain-layering.mjs`） | **[../../handoff/LAYERING_BASELINE.json](../../handoff/LAYERING_BASELINE.json)** · [ARCHITECTURE_LAYERING.md](../../handoff/ARCHITECTURE_LAYERING.md) |
+| **`oclive_sqlx` 供应链** | **[../../crates/oclive_sqlx/README.md](../../crates/oclive_sqlx/README.md)** |
+| **一次性验收脚本** | 仓库根 **`node scripts/dimension5-acceptance.mjs`**（CI：`--ci`） |
+
 ---
 
 ## 学习路径

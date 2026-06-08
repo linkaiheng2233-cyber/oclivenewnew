@@ -6,7 +6,7 @@ use oclive_kernel_runtime::{
     apply_promote_to_candidate, build_resolve_plan, discover_spawn_kernel_candidates,
     ensure_app_data_dir, promote_with_backup, resolve_app_data_dir_for_host, ActiveProfileSummary,
     DistroProfileRequirements, KernelHealthJson, PolicyContext, ProfileCompat, KernelActionKind,
-    KernelBinaryManifest, KernelCandidate, ENV_DISTRO_ID, ENV_DISTRO_PROFILE,
+    KernelBinaryManifest, KernelCandidate, DEFAULT_API_PORT, ENV_DISTRO_ID, ENV_DISTRO_PROFILE,
     ENV_HTTP_API_MOCK_LLM, ENV_ROLES_DIR, terminate_listeners_on_port,
 };
 use serde::{Deserialize, Serialize};
@@ -17,7 +17,7 @@ use std::time::Duration;
 
 #[derive(Parser, Debug)]
 pub struct KernelEnsureArgs {
-    #[arg(long, default_value_t = 8420)]
+    #[arg(long, default_value_t = DEFAULT_API_PORT)]
     pub port: u16,
     #[arg(long)]
     pub json: bool,

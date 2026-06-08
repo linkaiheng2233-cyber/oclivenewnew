@@ -1,7 +1,7 @@
 //! Immersive-mode virtual clock sync, jumps, and forgetting gradient.
 
+use crate::domain::repository::VirtualTimeStore;
 use crate::error::Result;
-use crate::infrastructure::db::DbManager;
 use crate::models::{PersonalitySource, PersonalityVector, Role};
 use crate::state::AppState;
 use chrono::Utc;
@@ -18,7 +18,7 @@ use oclive_kernel_runtime::domain::virtual_time::{
 ///
 /// Returns [`crate::error::AppError`] when anchor or virtual time persistence fails.
 pub async fn sync_and_persist_virtual_time(
-    db: &DbManager,
+    db: &dyn VirtualTimeStore,
     role: &Role,
     db_role_id: &str,
     immersive: bool,

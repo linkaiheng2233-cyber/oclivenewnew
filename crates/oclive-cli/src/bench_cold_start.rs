@@ -9,6 +9,7 @@ use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
 
 use crate::bench_cmd::BenchArgs;
+use oclive_kernel_runtime::DEFAULT_API_PORT;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct ColdStartReport {
@@ -29,7 +30,7 @@ pub fn run_cold_start(root: &Path, args: &BenchArgs) -> Result<()> {
     let port = std::env::var("OCLIVE_API_PORT")
         .ok()
         .and_then(|p| p.parse().ok())
-        .unwrap_or(8420u16);
+        .unwrap_or(DEFAULT_API_PORT);
     let pkg = crate::bench_cmd::read_package_name(root)?;
     let warm_n = args.cold_start_warm_messages.max(1);
     let mut cold_samples = Vec::new();

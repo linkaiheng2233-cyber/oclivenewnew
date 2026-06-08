@@ -7,6 +7,7 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use crate::bench_cmd::BenchArgs;
+use oclive_kernel_runtime::DEFAULT_API_PORT;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct StressReport {
@@ -37,7 +38,7 @@ pub fn run_stress(root: &std::path::Path, args: &BenchArgs) -> Result<()> {
     let port = std::env::var("OCLIVE_API_PORT")
         .ok()
         .and_then(|p| p.parse().ok())
-        .unwrap_or(8420u16);
+        .unwrap_or(DEFAULT_API_PORT);
     let url = format!("http://127.0.0.1:{port}/chat");
     let agent = ureq::AgentBuilder::new()
         .timeout(Duration::from_secs(30))

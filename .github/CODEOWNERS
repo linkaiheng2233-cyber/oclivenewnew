@@ -1,0 +1,4 @@
+# Frozen / high-risk paths — PRs touching these require owner review.
+crates/oclive_kernel_host/src/domain/dual_pipeline*.rs @linkaiheng2233-cyber
+crates/oclive_kernel_host/src/domain/expert_routing.rs @linkaiheng2233-cyber
+crates/oclive-cli/src/monolith_codegen.rs @linkaiheng2233-cyber

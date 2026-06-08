@@ -1,7 +1,7 @@
 //! Complex emotion `narrative_hint` persistence and session cache (injected into main Prompt one turn later).
 
+use crate::domain::repository::ComplexEmotionHintStore;
 use crate::error::Result;
-use crate::infrastructure::db::DbManager;
 use crate::state::{AppState, SessionCache};
 use chrono::{DateTime, Duration, Utc};
 
@@ -34,7 +34,7 @@ pub async fn load_stored_narrative_hint(state: &AppState, srid: &str) -> Result<
 
 pub(crate) async fn load_stored_narrative_hint_from_parts(
     session_cache: &SessionCache,
-    db: &DbManager,
+    db: &dyn ComplexEmotionHintStore,
     srid: &str,
 ) -> Result<String> {
     if session_cache.has_stored_complex_emotion_narrative_hint(srid) {
@@ -74,7 +74,7 @@ pub async fn persist_stored_narrative_hint(state: &AppState, srid: &str, hint: S
 
 pub(crate) async fn persist_stored_narrative_hint_to_parts(
     session_cache: &SessionCache,
-    db: &DbManager,
+    db: &dyn ComplexEmotionHintStore,
     srid: &str,
     hint: String,
 ) {
@@ -111,7 +111,7 @@ mod tests {
     use crate::infrastructure::test_db;
     use crate::state::SessionCache;
 
-    async fn mem_db() -> DbManager {
+    async fn mem_db() -> impl ComplexEmotionHintStore {
         test_db::mem_db_manager().await
     }
 

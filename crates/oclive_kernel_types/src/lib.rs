@@ -30,13 +30,15 @@ pub mod error;
 pub mod event_impact;
 pub mod local_plugin;
 pub mod memory_retrieval;
+pub mod mcp;
 pub mod models;
 pub mod policy;
 pub mod prompt;
 
 pub use agent::{
-    AgentInput, AgentOutput, AgentProcessRpcResult, AgentRoleConstraints, AgentRpcToolCall,
-    AgentToolResult, AgentToolSchema, AgentTurnContext,
+    AgentDebugTrace, AgentInput, AgentOutput, AgentProcessRpcResult, AgentRoleConstraints,
+    AgentRpcToolCall, AgentToolCallTrace, AgentToolResult, AgentToolSchema, AgentTurnContext,
+    FunctionCall, ToolCall, ToolSchemaInput,
 };
 pub use complex_emotion::{ComplexEmotionInput, ComplexEmotionOutput};
 pub use emotion::EmotionResult;
@@ -46,6 +48,7 @@ pub use local_plugin::{
     LocalPluginCapability, LocalPluginProviderDescriptor, LOCAL_PLUGIN_SCHEMA_VERSION,
 };
 pub use memory_retrieval::MemoryRetrievalInput;
+pub use mcp::{McpServerInfo, McpToolInfo};
 pub use policy::{EmotionPolicyConfig, MemoryPolicyConfig, PolicyConfig, PolicyContext};
 pub use prompt::PromptInput;
 

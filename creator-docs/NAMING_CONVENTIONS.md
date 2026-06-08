@@ -123,6 +123,18 @@ This page is the **naming SSOT** for OCLive. Key rules:
 改磁盘 blueprint 文件名/顶层键？ → 冻结（v2/v3）；仅 RFC 可动
 ```
 
+### 3.1 Schema 类型例外（`oclive_validation` vs `oclive_kernel_types`）
+
+§0 写「DTOs → `oclive_kernel_types`」指 **HTTP / IPC / 编排载荷**（`SendMessageRequest`、`KernelErrorBody` 等）。**磁盘 schema 与蓝图校验结构**以 **`oclive_validation`** 为 SSOT（如 `SlotRegistryEntry`、蓝图 `groups` 规则、`PIPELINE_BLUEPRINT_FILENAME`）。
+
+| 类别 | SSOT crate | 说明 |
+|------|------------|------|
+| API / 回合 DTO | `oclive_kernel_types` | 前后端契约；回复字段为 **`reply`** |
+| 蓝图 / manifest 校验 | `oclive_validation` | 加载路径、`pack validate`、wasm 边界 |
+| Ergonomic re-export | `oclive_kernel_types` 或 `oclive_kernel_runtime::validation` | 仅为减少 import 路径；**禁止**在业务 crate 直接 `use oclive_validation::` 除非处于校验/加载/打包路径 |
+
+物理迁移 `SlotRegistryEntry` → `kernel_types` 属 breaking 范围，见 [TECHNICAL_DEBT_INVENTORY.md](../handoff/TECHNICAL_DEBT_INVENTORY.md) **D-SSOT-01** 后续项。
+
 ### 3.3 六个 kernel crate 是否 rename？
 
 **结论（v0.2.x）：不 rename crate。** 理由与影响：

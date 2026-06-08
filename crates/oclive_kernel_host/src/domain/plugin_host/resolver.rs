@@ -1,11 +1,10 @@
-use crate::domain::complex_emotion::ComplexEmotionProvider;
-use crate::domain::slot_resolver::{BuiltinComplexEmotionArc, SlotResolver};
+use crate::domain::slot_resolver::SlotResolver;
 use crate::models::{PluginBackends, PluginBackendsOverride};
 use oclive_validation::SlotRegistryEntry;
 use std::collections::BTreeMap;
-use std::sync::Arc;
 
-use super::registry::BackendRegistry;
+use oclive_kernel_contracts::PluginBackendRegistryPort;
+
 use super::ResolvedRolePlugins;
 
 /// Resolve layer: merges role pack default backends with optional session override into effective backends and binds implementations.
@@ -13,7 +12,7 @@ pub struct PluginResolver;
 
 impl PluginResolver {
     pub(crate) fn resolve(
-        registry: &BackendRegistry,
+        registry: &dyn PluginBackendRegistryPort,
         role_backends: &PluginBackends,
         session_override: Option<&PluginBackendsOverride>,
         slot_registry: Option<&BTreeMap<String, SlotRegistryEntry>>,
@@ -21,8 +20,9 @@ impl PluginResolver {
         let merged_effective = session_override.map(|ov| ov.apply_to(role_backends));
         let effective = merged_effective.as_ref().unwrap_or(role_backends);
         let mut agent = registry.agent_for_plugin_backends(effective);
-        let mut complex_emotion: Arc<dyn ComplexEmotionProvider> =
-            Arc::new(BuiltinComplexEmotionArc);
+        let mut complex_emotion = registry.resolve_complex_emotion_winner(
+            slot_registry.unwrap_or(&BTreeMap::new()),
+        );
         let mut slots = None;
         let mut merged_agent_directory_plugin_ids = Vec::new();
         if let Some(reg) = slot_registry {
@@ -31,7 +31,7 @@ impl PluginResolver {
                 reg,
                 Some(effective),
             ));
-            complex_emotion = SlotResolver::resolve_complex_emotion_winner(registry, reg);
+            complex_emotion = registry.resolve_complex_emotion_winner(reg);
             // Agent: merge tool sets from multiple directory instances (parallel semantics at assembly layer, not SlotRunner)
             agent = SlotResolver::wrap_agent_if_merged(agent, reg);
             merged_agent_directory_plugin_ids =

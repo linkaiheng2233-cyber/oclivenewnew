@@ -1,5 +1,6 @@
 use super::super::manifest::OclivePluginManifest;
-use super::{parse_ready_line, DebugLogRing, DirectoryPluginRuntime};
+use super::transport::parse_ready_line;
+use super::{DebugLogRing, DirectoryPluginRuntime};
 use parking_lot::Mutex;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;

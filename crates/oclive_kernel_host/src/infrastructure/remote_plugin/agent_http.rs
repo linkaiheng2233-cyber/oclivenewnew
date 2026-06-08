@@ -1,6 +1,6 @@
 //! JSON-RPC：`agent.process` — see AGENT_REMOTE_PROTOCOL.md
 
-use crate::domain::agent_mcp_bridge::AgentMcpBridge;
+use oclive_kernel_contracts::McpBridgePort;
 use crate::domain::error_helpers::serde_to_ollama;
 use crate::error::{AppError, Result};
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
@@ -21,7 +21,7 @@ const MAX_REACT_LOOPS: usize = 3;
 /// Remote or directory JSON-RPC agent backend (host-orchestrated tool loop).
 pub struct AgentRpcProvider {
     adapter: RemotePluginAdapterAsync,
-    bridge: Arc<AgentMcpBridge>,
+    bridge: Arc<dyn McpBridgePort>,
 }
 
 impl AgentRpcProvider {
@@ -32,7 +32,7 @@ impl AgentRpcProvider {
         remote_fallback_allowed: Arc<AtomicBool>,
         high_risk_grants: Arc<HighRiskGrantStore>,
         network_grant_id: Option<String>,
-        bridge: Arc<AgentMcpBridge>,
+        bridge: Arc<dyn McpBridgePort>,
     ) -> Self {
         Self {
             adapter: RemotePluginAdapterAsync::new(

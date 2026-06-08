@@ -320,6 +320,110 @@ mod user_identity_state;
 
 pub use role_runtime_repo::RoleRuntimeRepo;
 
+#[async_trait::async_trait]
+impl oclive_kernel_contracts::MutablePersonalityStore for DbManager {
+    async fn get_mutable_personality(&self, role_id: &str) -> Result<String> {
+        DbManager::get_mutable_personality(self, role_id).await
+    }
+
+    async fn set_mutable_personality(&self, role_id: &str, text: &str) -> Result<()> {
+        DbManager::set_mutable_personality(self, role_id, text).await
+    }
+}
+
+#[async_trait::async_trait]
+impl oclive_kernel_contracts::RelationIdentityStore for DbManager {
+    async fn get_last_interaction_at(
+        &self,
+        role_id: &str,
+    ) -> Result<Option<chrono::DateTime<chrono::Utc>>> {
+        DbManager::get_last_interaction_at(self, role_id).await
+    }
+
+    async fn get_favorability_for_identity(
+        &self,
+        role_id: &str,
+        user_relation_key: &str,
+    ) -> Result<Option<f64>> {
+        DbManager::get_favorability_for_identity(self, role_id, user_relation_key).await
+    }
+
+    async fn set_identity_favorability_value(
+        &self,
+        role_id: &str,
+        user_relation_key: &str,
+        value: f64,
+    ) -> Result<()> {
+        DbManager::set_identity_favorability_value(self, role_id, user_relation_key, value).await
+    }
+
+    async fn get_relation_state_for_identity(
+        &self,
+        role_id: &str,
+        user_relation_key: &str,
+    ) -> Result<Option<String>> {
+        DbManager::get_relation_state_for_identity(self, role_id, user_relation_key).await
+    }
+
+    async fn get_relation_state(&self, role_id: &str) -> Result<Option<String>> {
+        DbManager::get_relation_state(self, role_id).await
+    }
+
+    async fn set_identity_relation_state(
+        &self,
+        role_id: &str,
+        user_relation_key: &str,
+        relation_state: &str,
+    ) -> Result<()> {
+        DbManager::set_identity_relation_state(self, role_id, user_relation_key, relation_state)
+            .await
+    }
+}
+
+#[async_trait::async_trait]
+impl oclive_kernel_contracts::ComplexEmotionHintStore for DbManager {
+    async fn get_complex_emotion_hint(
+        &self,
+        srid: &str,
+    ) -> Result<Option<(String, String)>> {
+        DbManager::get_complex_emotion_hint(self, srid).await
+    }
+
+    async fn set_complex_emotion_hint(
+        &self,
+        srid: &str,
+        narrative_hint: &str,
+        updated_at: &str,
+    ) -> Result<()> {
+        DbManager::set_complex_emotion_hint(self, srid, narrative_hint, updated_at).await
+    }
+
+    async fn delete_complex_emotion_hint(&self, srid: &str) -> Result<()> {
+        DbManager::delete_complex_emotion_hint(self, srid).await
+    }
+}
+
+#[async_trait::async_trait]
+impl oclive_kernel_contracts::VirtualTimeStore for DbManager {
+    async fn get_virtual_time_anchors(&self, role_id: &str) -> Result<(i64, i64, i64)> {
+        DbManager::get_virtual_time_anchors(self, role_id).await
+    }
+
+    async fn set_virtual_time_anchors(
+        &self,
+        role_id: &str,
+        anchor_real_ms: i64,
+        anchor_virtual_ms: i64,
+    ) -> Result<()> {
+        DbManager::set_virtual_time_anchors(self, role_id, anchor_real_ms, anchor_virtual_ms)
+            .await
+    }
+
+    async fn set_virtual_time_ms(&self, role_id: &str, ms: i64) -> Result<()> {
+        DbManager::set_virtual_time_ms(self, role_id, ms).await
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

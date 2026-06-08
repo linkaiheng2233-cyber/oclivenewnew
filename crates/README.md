@@ -2,6 +2,8 @@
 
 Rust 贡献者与 Agent：各 kernel crate 职责、依赖方向、改 X 去哪。
 
+**Schema 例外**：槽位/蓝图校验类型以 `oclive_validation` 为磁盘 SSOT；`oclive_kernel_types` 的 re-export 仅为 ergonomic。见 [NAMING_CONVENTIONS.md §3.1](../creator-docs/NAMING_CONVENTIONS.md#31-schema-类型例外oclive_validation-vs-oclive_kernel_types)。
+
 ## 依赖方向
 
 ```mermaid
@@ -22,6 +24,7 @@ flowchart BT
 | Crate | 职责 | Workspace | 典型改法 |
 |-------|------|-----------|----------|
 | `oclive_kernel_types` | DTO、`AppError`、`SendMessageRequest/Response` | 是 | 改 API 契约字段 |
+| `oclive_sqlx` | SQLite-only SQLx facade（供应链守门；禁 `sqlx` 元 crate） | 是 | 见 [oclive_sqlx/README.md](oclive_sqlx/README.md) |
 | `oclive_kernel_contracts` | trait 端口（`LlmClient`、`MemoryRepository`…） | 是 | 新增可替换后端接口 |
 | `oclive_kernel_runtime` | 纯引擎（`PromptBuilder`、各 `*_engine`） | 是 | 改业务公式，无 I/O |
 | `oclive_kernel_host` | 编排 + DB + HTTP + `process_message` | 是 | 改回合流程、持久化 |

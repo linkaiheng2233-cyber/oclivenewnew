@@ -40,6 +40,7 @@ npm run build
   - **格式化**：`cargo fmt`；CI 与 **`npm run check:rust:fmt`** 使用 **`cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check`**。
   - **Clippy**：工作区根 **[`Cargo.toml`](Cargo.toml)** 定义 **`[workspace.lints.rust]`**（如 **`unsafe_code = "forbid"`**）与 **`[workspace.lints.clippy]`**（如 **`missing_errors_doc`**、**`missing_panics_doc`**、**`must_use_candidate`** 等 **`warn`**）。本地与 CI 使用 **`cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --all-features -- -D warnings`**（见 **`npm run check:rust:clippy`**），即 **所有 Clippy 告警在 CI 中视为错误**。
   - **`unwrap` / `expect`**：业务代码优先 **`Result` / `Option` + `context`**；集成测试等可在 crate 顶部 **`#![allow(clippy::unwrap_used, clippy::expect_used)]`**（与现有 `tests/*.rs` 一致）。**勿**在无关路径放宽 lint。
+  - **SQLx**：**禁止**直接依赖 umbrella `sqlx` 元 crate；使用 [`crates/oclive_sqlx`](crates/oclive_sqlx/README.md)（SQLite-only facade）。变更 **`Cargo.lock`** 的 PR 须跑 **`cargo audit`**（或 `node scripts/dimension5-acceptance.mjs --ci`）。
 - **Vue / TypeScript**：与现有 composables、stores 风格一致；与 Tauri 契约字段对齐（如 **`reply`**，见 `oclive_kernel_runtime` 中 DTO 定义，经 `src-tauri/src/models/mod.rs` 再导出）。
 
 ## 提交规范
@@ -133,7 +134,8 @@ npm run build
 | `cargo test`（Windows 集成） | 以 **Ubuntu CI** 为准；本机可 `cargo test --workspace --lib` |
 | `frontend` / Vitest | `npm run test:unit` |
 | `oocp-test-suite` | 确认 `OCLIVE_HTTP_API_MOCK_LLM=1`、端口空闲；见 [OOCP_TEST_SUITE.md](creator-docs/testing/OOCP_TEST_SUITE.md) |
-| `cargo-audit` | 跟踪 [KNOWN_VULNERABILITIES.md](creator-docs/security/KNOWN_VULNERABILITIES.md)；不挡合并 |
+| `cargo-audit` | 仓库根目录运行 `cargo audit`（自动读取 [`.cargo/audit.toml`](.cargo/audit.toml)）；离线复现：`cargo audit --no-fetch --stale`。跟踪 [KNOWN_VULNERABILITIES.md](creator-docs/security/KNOWN_VULNERABILITIES.md)；**`Cargo.lock` 变更的 PR 须同步更新 KNOWN_VULNERABILITIES 扫描日期**；锁文件专用 job 失败即红 |
+| `npm-audit` | 可见性 job（`continue-on-error`）；本地：`npm audit --omit=dev`；摘要见 [KNOWN_VULNERABILITIES.md](creator-docs/security/KNOWN_VULNERABILITIES.md) |
 | 契约 / 角色包 | `cargo run -p oclive-cli -- pack validate <role>` |
 
 ## 破坏性变更（Breaking changes）

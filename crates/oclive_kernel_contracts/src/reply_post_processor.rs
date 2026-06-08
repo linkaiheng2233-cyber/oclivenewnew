@@ -1,6 +1,11 @@
 //! Reply Post-Processor —修饰 LLM 原始回复，不负责持久化（非六槽）。
 
+use oclive_kernel_types::models::{
+    ReplyPostProcessorBackendKind, RolePackBuiltinReplyPostProcessorConfig,
+    RolePackDirectoryReplyPostProcessorConfig, RolePackRemoteReplyPostProcessorConfig,
+};
 use oclive_kernel_types::Result;
+use std::sync::Arc;
 
 /// Input for one post-LLM reply polish pass.
 pub struct PostProcessInput<'a> {
@@ -16,6 +21,27 @@ pub struct PostProcessInput<'a> {
 pub struct PostProcessOutput {
     pub display_reply: String,
     pub diagnostic: Option<String>,
+}
+
+/// Role pack + host profile merge result for backend wiring (infra implements remote/directory).
+#[derive(Debug, Clone)]
+pub struct ReplyPostProcessorEffectiveConfig {
+    pub backend: ReplyPostProcessorBackendKind,
+    pub builtin: RolePackBuiltinReplyPostProcessorConfig,
+    pub remote: RolePackRemoteReplyPostProcessorConfig,
+    pub directory: RolePackDirectoryReplyPostProcessorConfig,
+}
+
+/// Factory port: remote/directory HTTP wiring lives in infrastructure only.
+pub trait ReplyPostProcessorResolver: Send + Sync {
+    /// Resolve `backend=remote` (builtin fallback on misconfiguration).
+    fn resolve_remote(&self, eff: &ReplyPostProcessorEffectiveConfig) -> Arc<dyn ReplyPostProcessor>;
+
+    /// Resolve `backend=directory` (builtin fallback on misconfiguration).
+    fn resolve_directory(
+        &self,
+        eff: &ReplyPostProcessorEffectiveConfig,
+    ) -> Arc<dyn ReplyPostProcessor>;
 }
 
 /// Reply Post-Processor Plugin trait (`builtin` / `remote` / `directory` backends).

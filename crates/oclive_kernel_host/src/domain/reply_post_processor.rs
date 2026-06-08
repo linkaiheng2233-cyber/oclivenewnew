@@ -4,14 +4,12 @@ use crate::domain::builtin_reply_post_processor::{
     BuiltinReplyPostProcessor, PassthroughReplyPostProcessor,
 };
 use crate::domain::host_profile::{HostProfile, PostProcessChain};
-use crate::infrastructure::remote_plugin::RemotePluginHttpConfig;
-use crate::infrastructure::remote_plugin::{
-    DirectoryReplyPostProcessor, RemoteReplyPostProcessorHttp,
-};
 use crate::models::role::Role;
 use crate::models::ReplyPostProcessorBackendKind;
 use crate::state::AppState;
-use oclive_kernel_contracts::reply_post_processor::ReplyPostProcessor;
+use oclive_kernel_contracts::{
+    ReplyPostProcessor, ReplyPostProcessorEffectiveConfig, ReplyPostProcessorResolver,
+};
 use oclive_kernel_types::models::{
     RolePackBuiltinReplyPostProcessorConfig, RolePackDirectoryReplyPostProcessorConfig,
     RolePackRemoteReplyPostProcessorConfig, RolePackReplyPostProcessorConfig,
@@ -26,6 +24,17 @@ pub struct EffectiveReplyPostProcessorConfig {
     pub builtin: RolePackBuiltinReplyPostProcessorConfig,
     pub remote: RolePackRemoteReplyPostProcessorConfig,
     pub directory: RolePackDirectoryReplyPostProcessorConfig,
+}
+
+impl From<&EffectiveReplyPostProcessorConfig> for ReplyPostProcessorEffectiveConfig {
+    fn from(eff: &EffectiveReplyPostProcessorConfig) -> Self {
+        Self {
+            backend: eff.backend,
+            builtin: eff.builtin.clone(),
+            remote: eff.remote.clone(),
+            directory: eff.directory.clone(),
+        }
+    }
 }
 
 /// Merge role pack `reply_post_processor` with host profile post-process chain policy.
@@ -51,92 +60,6 @@ fn resolve_builtin(eff: &EffectiveReplyPostProcessorConfig) -> Arc<dyn ReplyPost
     Arc::new(BuiltinReplyPostProcessor::new(eff.builtin.clone()))
 }
 
-fn resolve_remote(
-    state: &AppState,
-    eff: &EffectiveReplyPostProcessorConfig,
-) -> Arc<dyn ReplyPostProcessor> {
-    let Some(cfg) = RemotePluginHttpConfig::for_reply_post_processor_remote(
-        eff.remote.url.as_str(),
-        eff.remote.timeout_ms,
-    ) else {
-        tracing::warn!(
-            target: "oclive_reply_post_processor",
-            "reply_post_processor backend=remote but remote.url empty; builtin fallback"
-        );
-        return resolve_builtin(eff);
-    };
-    match RemoteReplyPostProcessorHttp::new(
-        cfg,
-        Arc::clone(&state.remote_fallback_allowed),
-        Arc::clone(&state.high_risk_grants),
-        eff.builtin.clone(),
-    ) {
-        Ok(http) => Arc::new(http),
-        Err(e) => {
-            tracing::warn!(
-                target: "oclive_reply_post_processor",
-                error = %e,
-                "remote reply post-processor client build failed; builtin fallback"
-            );
-            resolve_builtin(eff)
-        }
-    }
-}
-
-fn resolve_directory(
-    state: &AppState,
-    eff: &EffectiveReplyPostProcessorConfig,
-) -> Arc<dyn ReplyPostProcessor> {
-    let pid = eff.directory.plugin_id.trim();
-    if pid.is_empty() {
-        tracing::warn!(
-            target: "oclive_reply_post_processor",
-            "reply_post_processor backend=directory but directory.plugin_id empty; builtin fallback"
-        );
-        return resolve_builtin(eff);
-    }
-    let rt = &state.directory_plugins;
-    if !rt.manifest_provides_capability(pid, "reply_post_process") {
-        tracing::warn!(
-            target: "oclive_reply_post_processor",
-            plugin_id = %pid,
-            "directory plugin missing provides reply_post_process; builtin fallback"
-        );
-        return resolve_builtin(eff);
-    }
-    match rt.ensure_rpc_url(pid) {
-        Ok(url) => {
-            let cfg = RemotePluginHttpConfig::for_directory_plugin_rpc(url, false);
-            match DirectoryReplyPostProcessor::new(
-                cfg,
-                Arc::clone(&state.remote_fallback_allowed),
-                Arc::clone(&state.high_risk_grants),
-                eff.builtin.clone(),
-            ) {
-                Ok(http) => Arc::new(http),
-                Err(e) => {
-                    tracing::warn!(
-                        target: "oclive_reply_post_processor",
-                        plugin_id = %pid,
-                        error = %e,
-                        "directory reply post-processor client build failed; builtin fallback"
-                    );
-                    resolve_builtin(eff)
-                }
-            }
-        }
-        Err(e) => {
-            tracing::warn!(
-                target: "oclive_reply_post_processor",
-                plugin_id = %pid,
-                error = %e,
-                "directory reply post-processor spawn failed; builtin fallback"
-            );
-            resolve_builtin(eff)
-        }
-    }
-}
-
 /// Factory: `enabled = false` → pass-through; merges host profile chain before backend resolution.
 #[must_use]
 pub fn resolve_reply_post_processor(state: &AppState, role: &Role) -> Arc<dyn ReplyPostProcessor> {
@@ -147,10 +70,12 @@ pub fn resolve_reply_post_processor(state: &AppState, role: &Role) -> Arc<dyn Re
     if !eff.enabled {
         return Arc::new(PassthroughReplyPostProcessor);
     }
+    let wire: &dyn ReplyPostProcessorResolver = state.reply_post_processor_resolver.as_ref();
+    let wire_cfg = ReplyPostProcessorEffectiveConfig::from(&eff);
     match eff.backend {
         ReplyPostProcessorBackendKind::Builtin => resolve_builtin(&eff),
-        ReplyPostProcessorBackendKind::Remote => resolve_remote(state, &eff),
-        ReplyPostProcessorBackendKind::Directory => resolve_directory(state, &eff),
+        ReplyPostProcessorBackendKind::Remote => wire.resolve_remote(&wire_cfg),
+        ReplyPostProcessorBackendKind::Directory => wire.resolve_directory(&wire_cfg),
     }
 }
 

@@ -2,6 +2,7 @@
 
 use anyhow::{bail, Context, Result};
 use clap::Parser;
+use oclive_kernel_runtime::DEFAULT_API_PORT;
 use serde_json::Value;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
@@ -23,7 +24,7 @@ pub struct DebugArgs {
     pub json: bool,
 
     /// HTTP API port
-    #[arg(long, default_value_t = 8420)]
+    #[arg(long, default_value_t = DEFAULT_API_PORT)]
     pub port: u16,
 
     /// Test message

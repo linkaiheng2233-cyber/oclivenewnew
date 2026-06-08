@@ -4,22 +4,7 @@
 //! into executable **`Arc<dyn …>`** handle sets (`ResolvedRolePlugins`) for the orchestration layer via
 //! [`PluginHostPort`](crate::domain::ports::PluginHostPort).
 //!
-//! **Upstream**: `Role` loaded by `RoleStorage`; session overrides from `AppState`; `BackendRegistry`
-//! caches builtin / remote / directory constructors.
-//! **Downstream**: `chat_engine`, `SlotResolver::resolve`; implements [`PluginHostPort`](crate::domain::ports::PluginHostPort)
-//! to decouple from the concrete `PluginHost` type.
-//!
-//! **Key decisions**: Orchestration depends only on **trait objects** so desktop / headless / test hosts
-//! are swappable; when Remote env is unconfigured, **graceful degradation + logging** avoids silent failure.
-//! Contract: `creator-docs/plugin-and-architecture/PLUGIN_V1.md`.
-//!
-//! **Clone strategy (audit 2026-05)**
-//!
-//! - **`Arc::clone` / `Option<Arc<_>>::clone`**: Reference-count only; backend handles on the resolve hot path are all of this kind.
-//! - **`PluginBackends` struct clone**: Allocates only when applying session override via [`PluginBackendsOverride::apply_to`];
-//!   with no override, borrows the pack default (see [`PluginResolver::resolve`]).
-//! - **`provider_id` strings**: Local memory path uses [`pick_local_memory_provider_refs`]; only the final selected id is cloned.
-//! - **`directory_slot_id`**: Directory plugin id needs an owned `String` for RPC startup; one allocation is unavoidable.
+//! Construction with infrastructure dependencies: [`crate::infrastructure::plugin_wiring::build_plugin_host`].
 
 use crate::domain::agent::{AgentDebugTrace, AgentProvider};
 use crate::domain::complex_emotion::ComplexEmotionProvider;
@@ -30,22 +15,19 @@ use crate::domain::ports::LlmClient;
 use crate::domain::prompt_assembler::PromptAssembler;
 use crate::domain::slot_resolver::ResolvedRoleSlots;
 use crate::domain::user_emotion_analyzer::UserEmotionAnalyzer;
-use crate::infrastructure::directory_plugins::DirectoryPluginRuntime;
-use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
-use crate::infrastructure::mcp_client::{McpServerManifest, McpToolCallResult};
 use crate::models::{
     AgentBackend, EmotionBackend, EventBackend, LlmBackend, MemoryBackend, PluginBackends,
     PluginBackendsOverride, PromptBackend, Role,
 };
+use oclive_kernel_contracts::{McpBridgePort, PluginBackendRegistryPort};
+use oclive_kernel_types::{AgentToolResult, McpServerInfo, McpToolInfo};
 use oclive_validation::SlotRegistryEntry;
 use serde_json::Value;
 use std::collections::BTreeMap;
-use std::path::PathBuf;
-use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use thiserror::Error;
 
-/// Errors from [`PluginHost`] / [`BackendRegistry`] during resolve and local provider registration.
+/// Errors from [`PluginHost`] during resolve and local provider registration.
 #[derive(Debug, Error)]
 pub enum PluginHostError {
     #[error("local plugin provider 注册失败: {0}")]
@@ -75,44 +57,22 @@ pub struct ResolvedRolePlugins {
     pub merged_agent_directory_plugin_ids: Vec<String>,
 }
 
-mod registry;
 mod resolver;
 
-pub use registry::BackendRegistry;
 pub use resolver::PluginResolver;
 
 /// Compile-time plugin implementation set ([`PluginHost::resolve_for_role`] clones `Arc` per enum variant).
 pub struct PluginHost {
-    registry: BackendRegistry,
+    registry: Arc<dyn PluginBackendRegistryPort>,
 }
 
 impl PluginHost {
-    /// Constructs the host registry.
-    ///
-    /// - `llm`: In-process default LLM handle (`plugin_backends.llm = ollama` etc. reuse or wrap this impl).
-    /// - `directory_runtime`: Lazy-start directory plugin runtime; pass `None` when no directory plugins are needed.
-    /// - `app_data_dir`: Application data root (Tauri app data in production). Currently used to initialize
-    ///   [`McpClient`](crate::infrastructure::mcp_client::McpClient) (scans `{app_data_dir}/mcp-servers/*.json`).
-    ///   Integration tests may pass `std::env::temp_dir()`.
-    /// - `high_risk_grants`: Explicit permission grants for MCP transport, directory plugin subprocesses, etc.
-    ///   (`{app_data}/high_risk_grants.json`).
-    pub fn new(
-        llm: Arc<dyn LlmClient>,
-        directory_runtime: Option<Arc<DirectoryPluginRuntime>>,
-        app_data_dir: PathBuf,
-        high_risk_grants: Arc<HighRiskGrantStore>,
-        remote_fallback_allowed: Arc<AtomicBool>,
-    ) -> Self {
-        Self {
-            registry: BackendRegistry::from_runtime(
-                llm,
-                directory_runtime,
-                app_data_dir,
-                high_risk_grants,
-                remote_fallback_allowed,
-            ),
-        }
+    /// Wraps a pre-built backend registry port (see [`crate::infrastructure::plugin_wiring`]).
+    #[must_use]
+    pub fn from_registry(registry: Arc<dyn PluginBackendRegistryPort>) -> Self {
+        Self { registry }
     }
+
     /// # Errors
     ///
     /// Returns [`Err`] with a human-readable message when the operation fails.
@@ -120,7 +80,9 @@ impl PluginHost {
         &self,
         descriptor: LocalPluginProviderDescriptor,
     ) -> Result<(), PluginHostError> {
-        self.registry.register_local_provider(descriptor)
+        self.registry
+            .register_local_provider(descriptor)
+            .map_err(PluginHostError::LocalProviderRegistration)
     }
 
     #[must_use]
@@ -153,7 +115,7 @@ impl PluginHost {
     }
 
     #[must_use]
-    pub fn agent_mcp_bridge(&self) -> Arc<crate::domain::agent_mcp_bridge::AgentMcpBridge> {
+    pub fn agent_mcp_bridge(&self) -> Arc<dyn McpBridgePort> {
         self.registry.agent_mcp_bridge()
     }
 
@@ -202,18 +164,20 @@ impl PluginHost {
     }
 
     #[must_use]
-    pub fn list_mcp_servers(&self) -> Vec<McpServerManifest> {
+    pub fn list_mcp_servers(&self) -> Vec<McpServerInfo> {
         self.registry.list_mcp_servers()
     }
+
     /// # Errors
     ///
     /// Returns [`Err`] with a human-readable message when the operation fails.
     pub async fn list_mcp_tools(
         &self,
         server_id: &str,
-    ) -> std::result::Result<Vec<crate::infrastructure::mcp_client::McpToolManifest>, String> {
+    ) -> std::result::Result<Vec<McpToolInfo>, String> {
         self.registry.list_mcp_tools(server_id).await
     }
+
     /// # Errors
     ///
     /// Returns [`Err`] with a human-readable message when the operation fails.
@@ -222,7 +186,7 @@ impl PluginHost {
         server_id: &str,
         tool_name: &str,
         params: Value,
-    ) -> std::result::Result<McpToolCallResult, String> {
+    ) -> std::result::Result<AgentToolResult, String> {
         self.registry
             .call_mcp_tool(server_id, tool_name, params)
             .await
@@ -240,7 +204,7 @@ impl PluginHost {
     /// Resolves all backends declared by the current role pack (one clone of five `Arc`s, reused for the whole conversation).
     pub fn resolve_for_role(&self, role: &Role) -> ResolvedRolePlugins {
         PluginResolver::resolve(
-            &self.registry,
+            self.registry.as_ref(),
             &role.plugin_backends,
             None,
             role.slot_registry.as_ref(),
@@ -254,7 +218,7 @@ impl PluginHost {
         session_override: Option<&PluginBackendsOverride>,
     ) -> ResolvedRolePlugins {
         PluginResolver::resolve(
-            &self.registry,
+            self.registry.as_ref(),
             &role.plugin_backends,
             session_override,
             role.slot_registry.as_ref(),
@@ -269,7 +233,7 @@ impl PluginHost {
         session_override: Option<&PluginBackendsOverride>,
     ) -> ResolvedRolePlugins {
         PluginResolver::resolve(
-            &self.registry,
+            self.registry.as_ref(),
             effective_backends,
             session_override,
             slot_registry,
@@ -282,203 +246,5 @@ impl ResolvedRolePlugins {
     #[must_use]
     pub fn backends_snapshot(role: &Role) -> &PluginBackends {
         role.plugin_backends.as_ref()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::infrastructure::llm::MockLlmClient;
-    use crate::infrastructure::remote_fallback_policy::new_remote_fallback_switch;
-    use crate::models::{
-        EmotionBackend, EventBackend, LlmBackend, MemoryBackend, PluginBackends,
-        PluginBackendsOverride, PromptBackend,
-    };
-    use std::sync::Arc;
-
-    fn host() -> PluginHost {
-        let llm: Arc<dyn LlmClient> = Arc::new(MockLlmClient {
-            reply: String::new(),
-        });
-        let tmp = std::env::temp_dir();
-        let grants = HighRiskGrantStore::load(tmp.clone(), false);
-        let remote_fb = new_remote_fallback_switch(true);
-        PluginHost::new(llm, None, tmp, grants, remote_fb)
-    }
-
-    #[test]
-    fn resolve_matches_role_plugin_backends_default() {
-        let role = Role::default();
-        assert_eq!(
-            ResolvedRolePlugins::backends_snapshot(&role),
-            role.plugin_backends.as_ref()
-        );
-        host().resolve_for_role(&role);
-    }
-
-    #[test]
-    fn resolve_selects_memory_v2_when_configured() {
-        let role = Role {
-            plugin_backends: std::sync::Arc::new(PluginBackends {
-                memory: MemoryBackend::BuiltinV2,
-                emotion: EmotionBackend::Builtin,
-                event: EventBackend::Builtin,
-                prompt: PromptBackend::Builtin,
-                llm: LlmBackend::Ollama,
-                ..Default::default()
-            }),
-            ..Default::default()
-        };
-        let h = host();
-        let pl = h.resolve_for_role(&role);
-        let same_again = h.memory_retrieval(MemoryBackend::BuiltinV2);
-        // Within the same `PluginHost`: resolve and explicit slot lookup must share the same `Arc` pointer
-        assert!(Arc::ptr_eq(&pl.memory, &same_again));
-    }
-
-    #[test]
-    fn resolve_selects_emotion_v2_when_configured() {
-        let role = Role {
-            plugin_backends: std::sync::Arc::new(PluginBackends {
-                emotion: EmotionBackend::BuiltinV2,
-                ..Default::default()
-            }),
-            ..Default::default()
-        };
-        let h = host();
-        let pl = h.resolve_for_role(&role);
-        let slot = h.user_emotion_analyzer(EmotionBackend::BuiltinV2);
-        assert!(Arc::ptr_eq(&pl.emotion, &slot));
-    }
-
-    #[test]
-    fn resolve_with_override_prefers_session_backend() {
-        let role = Role::default();
-        let override_backends = PluginBackendsOverride {
-            memory: Some(MemoryBackend::BuiltinV2),
-            llm: Some(LlmBackend::Remote),
-            ..Default::default()
-        };
-        let h = host();
-        let pl = h.resolve_for_role_with_override(&role, Some(&override_backends));
-        let mem_slot = h.memory_retrieval(MemoryBackend::BuiltinV2);
-        let llm_slot = h.llm_for(LlmBackend::Remote);
-        assert!(Arc::ptr_eq(&pl.memory, &mem_slot));
-        assert!(Arc::ptr_eq(&pl.llm, &llm_slot));
-    }
-
-    #[test]
-    fn register_local_provider_tracks_capability() {
-        let h = host();
-        assert!(
-            h.register_local_provider(LocalPluginProviderDescriptor {
-                provider_id: "local.demo".to_string(),
-                schema_version: crate::domain::LOCAL_PLUGIN_SCHEMA_VERSION,
-                min_runtime_version: None,
-                capabilities: vec![LocalPluginCapability::Prompt],
-            })
-            .is_ok(),
-            "register local provider"
-        );
-        assert_eq!(
-            h.local_providers_for(LocalPluginCapability::Prompt).len(),
-            1
-        );
-        assert_eq!(
-            h.local_providers_for(LocalPluginCapability::Memory).len(),
-            0
-        );
-    }
-
-    #[test]
-    fn memory_local_resolves_and_ranks_like_v2_when_provider_registered() {
-        let h = host();
-        assert!(
-            h.register_local_provider(LocalPluginProviderDescriptor {
-                provider_id: "mem.local.one".to_string(),
-                schema_version: crate::domain::LOCAL_PLUGIN_SCHEMA_VERSION,
-                min_runtime_version: None,
-                capabilities: vec![LocalPluginCapability::Memory],
-            })
-            .is_ok(),
-            "register mem.local.one"
-        );
-        let role = Role {
-            plugin_backends: std::sync::Arc::new(PluginBackends {
-                memory: MemoryBackend::Local,
-                ..Default::default()
-            }),
-            ..Default::default()
-        };
-        let pl = h.resolve_for_role(&role);
-        let v2 = h.memory_retrieval(MemoryBackend::BuiltinV2);
-        use crate::domain::memory_retrieval::MemoryRetrievalInput;
-        use crate::models::Memory;
-        use chrono::Utc;
-        let t = Utc::now();
-        let m = Memory {
-            id: "x".into(),
-            role_id: "r".into(),
-            content: "hello".into(),
-            importance: 1.0,
-            weight: 1.0,
-            created_at: t,
-            scene_id: None,
-            mention_count: 1,
-            accessed_at: None,
-        };
-        let slice = &[m];
-        let mk = || MemoryRetrievalInput {
-            memories: slice,
-            user_query: "hello",
-            scene_id: None,
-            limit: 3,
-        };
-        assert_eq!(
-            pl.memory.diagnostic_local_provider_id(),
-            Some("mem.local.one")
-        );
-        let a: Vec<_> = pl
-            .memory
-            .rank_memories(mk())
-            .expect("rank")
-            .into_iter()
-            .map(|m| m.id)
-            .collect();
-        let b: Vec<_> = v2
-            .rank_memories(mk())
-            .expect("rank")
-            .into_iter()
-            .map(|m| m.id)
-            .collect();
-        assert_eq!(a, b);
-    }
-
-    #[test]
-    fn memory_local_hint_selects_named_provider() {
-        let h = host();
-        for id in ["mem.a", "mem.z"] {
-            assert!(
-                h.register_local_provider(LocalPluginProviderDescriptor {
-                    provider_id: id.to_string(),
-                    schema_version: crate::domain::LOCAL_PLUGIN_SCHEMA_VERSION,
-                    min_runtime_version: None,
-                    capabilities: vec![LocalPluginCapability::Memory],
-                })
-                .is_ok(),
-                "register {}",
-                id
-            );
-        }
-        let role = Role {
-            plugin_backends: std::sync::Arc::new(PluginBackends {
-                memory: MemoryBackend::Local,
-                local_memory_provider_id: Some("mem.z".into()),
-                ..Default::default()
-            }),
-            ..Default::default()
-        };
-        let pl = h.resolve_for_role(&role);
-        assert_eq!(pl.memory.diagnostic_local_provider_id(), Some("mem.z"));
     }
 }

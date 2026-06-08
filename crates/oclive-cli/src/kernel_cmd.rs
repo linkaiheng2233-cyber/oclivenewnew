@@ -6,8 +6,9 @@ use serde::Serialize;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use crate::project_introspect::{analyze_project, git_head_short};
 use crate::kernel_ensure::{self, KernelEnsureArgs};
+use crate::project_introspect::{analyze_project, git_head_short};
+use oclive_kernel_runtime::DEFAULT_API_PORT;
 
 #[derive(Parser, Debug)]
 pub struct KernelCli {
@@ -33,8 +34,8 @@ pub enum KernelCommands {
 pub struct KernelStatusArgs {
     #[arg(long)]
     pub json: bool,
-    /// Probe loopback /health (default port 8420)
-    #[arg(long, default_value_t = 8420)]
+    /// Probe loopback /health (default [`DEFAULT_API_PORT`])
+    #[arg(long, default_value_t = DEFAULT_API_PORT)]
     pub port: u16,
 }
 

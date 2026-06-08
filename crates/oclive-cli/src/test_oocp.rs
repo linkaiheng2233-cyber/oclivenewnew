@@ -1,6 +1,7 @@
 //! `oclive test --oocp`: automatically launch the kernel, run the OOCP black-box suite, and clean up processes.
 
 use anyhow::{bail, Context, Result};
+use oclive_kernel_runtime::DEFAULT_API_PORT;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::time::{Duration, Instant};
@@ -73,7 +74,7 @@ fn kernel_base_url() -> String {
     std::env::var("OCLIVE_API_BASE")
         .ok()
         .filter(|s| !s.trim().is_empty())
-        .unwrap_or_else(|| "http://127.0.0.1:8420".to_string())
+        .unwrap_or_else(|| format!("http://127.0.0.1:{DEFAULT_API_PORT}"))
 }
 
 fn wait_for_health(url: &str) -> Result<()> {

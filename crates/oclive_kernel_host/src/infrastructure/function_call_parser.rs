@@ -1,23 +1,18 @@
-use serde::{Deserialize, Serialize};
+use oclive_kernel_contracts::FunctionCallingParserPort;
+use oclive_kernel_types::{FunctionCall, ToolCall, ToolSchemaInput};
 use serde_json::{json, Value};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FunctionCall {
-    pub name: String,
-    pub arguments: Value,
-}
+/// Default infrastructure parser (wired into [`BuiltinReActAgent`](crate::domain::agent::BuiltinReActAgent)).
+pub struct BuiltinFunctionCallingParser;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ToolCall {
-    pub id: String,
-    pub function: FunctionCall,
-}
+impl FunctionCallingParserPort for BuiltinFunctionCallingParser {
+    fn parse_from_llm_response(&self, text: &str) -> Vec<ToolCall> {
+        parse_from_llm_response(text)
+    }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ToolSchemaInput {
-    pub name: String,
-    #[serde(default)]
-    pub description: Option<String>,
+    fn to_function_calling_schema(&self, tools: &[ToolSchemaInput]) -> Value {
+        to_function_calling_schema(tools)
+    }
 }
 
 /// Extract OpenAI-style function calls from the LLM text output:

@@ -135,3 +135,47 @@ pub struct AgentOutput {
     pub handled: bool,
     pub reply: String,
 }
+
+/// Parsed function call from LLM output.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct FunctionCall {
+    pub name: String,
+    pub arguments: Value,
+}
+
+/// OpenAI-style tool call entry.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ToolCall {
+    pub id: String,
+    pub function: FunctionCall,
+}
+
+/// MCP / agent tool schema input for function-calling conversion.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ToolSchemaInput {
+    pub name: String,
+    #[serde(default)]
+    pub description: Option<String>,
+}
+
+/// One MCP tool invocation recorded in agent debug traces.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct AgentToolCallTrace {
+    pub server_id: String,
+    pub tool_name: String,
+    pub params: Value,
+    pub result: Value,
+}
+
+/// Agent ReAct debug trace (Tauri `get_agent_debug_traces`).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct AgentDebugTrace {
+    pub timestamp_ms: i64,
+    pub role_id: String,
+    pub session_namespace: String,
+    pub message: String,
+    pub plan: String,
+    pub tool_calls: Vec<AgentToolCallTrace>,
+    pub reply: String,
+    pub error: Option<String>,
+}

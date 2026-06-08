@@ -53,6 +53,7 @@ pub async fn sync_shell_llm_settings_to_canonical(state: &AppState) {
     }
     if let Ok(Some(t)) = oclive_kernel_host::domain::user_llm_env::resolve_remote_token(
         state.db_manager.as_ref(),
+        state.user_llm_secrets.as_ref(),
         state.directory_plugins.app_data_dir(),
     )
     .await

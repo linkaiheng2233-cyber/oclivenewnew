@@ -27,7 +27,6 @@ pub mod virtual_time_sync;
 
 pub mod agent;
 pub mod agent_context;
-pub mod agent_mcp_bridge;
 pub mod chat_engine;
 pub mod debug_trace;
 pub mod fallback_agent;

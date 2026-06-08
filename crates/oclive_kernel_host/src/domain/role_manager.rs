@@ -8,28 +8,18 @@
 //! `chat_turn` or integration tests instead.
 
 use crate::domain::memory_retrieval::MemoryRetrievalInput;
-use crate::domain::plugin_host::{PluginHost, ResolvedRolePlugins};
-use crate::domain::ports::LlmClient;
+use crate::domain::plugin_host::ResolvedRolePlugins;
 use crate::domain::{
     prompt_builder::effective_reply_quality_anchor, EventDetector, MemoryEngine, PersonalityEngine,
     PromptInput,
 };
-use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
-use crate::infrastructure::llm::MockLlmClient;
-use crate::infrastructure::remote_fallback_policy::new_remote_fallback_switch;
 use crate::models::{
     Emotion, Event, EventType, Memory, PersonalitySource, PersonalityVector, Role,
 };
 use std::sync::Arc;
 
 fn resolved_plugins_dummy(role: &Role) -> ResolvedRolePlugins {
-    let dummy_llm: Arc<dyn LlmClient> = Arc::new(MockLlmClient {
-        reply: String::new(),
-    });
-    let tmp = std::env::temp_dir();
-    let grants = HighRiskGrantStore::load(tmp.clone(), false);
-    let remote_fb = new_remote_fallback_switch(true);
-    PluginHost::new(dummy_llm, None, tmp, grants, remote_fb).resolve_for_role(role)
+    crate::infrastructure::plugin_wiring::test_plugin_host().resolve_for_role(role)
 }
 
 /// Role manager.

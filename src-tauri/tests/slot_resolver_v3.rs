@@ -5,25 +5,18 @@
 use oclive_kernel_runtime::domain::complex_emotion::ComplexEmotionInput;
 use oclive_validation::{SlotOverridePatch, SlotRegistryEntry};
 use oclive_kernel_host::domain::plugin_host::PluginHost;
+use oclive_kernel_host::domain::ports::LlmClient;
 use oclive_kernel_host::domain::slot_runner::SlotRunner;
-use oclive_kernel_host::infrastructure::high_risk_grants::HighRiskGrantStore;
-use oclive_kernel_host::infrastructure::llm::LlmClient;
-use oclive_kernel_host::infrastructure::remote_fallback_policy::new_remote_fallback_switch;
-use oclive_kernel_host::infrastructure::MockLlmClient;
+use oclive_kernel_host::infrastructure::llm::MockLlmClient;
+use oclive_kernel_host::infrastructure::plugin_wiring::test_plugin_host;
+use oclive_kernel_host::state::AppState;
 use oclive_kernel_types::models::plugin_backends::LlmBackend;
 use oclive_kernel_types::models::{MemoryBackend, Role};
-use oclive_kernel_host::state::AppState;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
 fn host() -> PluginHost {
-    let llm: Arc<dyn LlmClient> = Arc::new(MockLlmClient {
-        reply: String::new(),
-    });
-    let tmp = std::env::temp_dir();
-    let grants = HighRiskGrantStore::load(tmp.clone(), false);
-    let remote_fb = new_remote_fallback_switch(true);
-    PluginHost::new(llm, None, tmp, grants, remote_fb)
+    test_plugin_host()
 }
 
 #[test]

@@ -360,8 +360,9 @@ pub async fn save_llm_user_settings_impl(
         }
     } else if provider == "cloud" {
         let app_data = state.directory_plugins.app_data_dir();
-        let existing = resolve_remote_token(&state.db_manager, app_data).await?;
-        set_cached_remote_llm_token(existing);
+        let secrets = state.user_llm_secrets.as_ref();
+        let existing = resolve_remote_token(&state.db_manager, secrets, app_data).await?;
+        secrets.set_cached_remote_llm_token(existing);
     }
     if let Some(ref model) = req.remote_model {
         state

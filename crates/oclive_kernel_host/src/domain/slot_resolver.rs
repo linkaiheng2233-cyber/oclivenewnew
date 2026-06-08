@@ -1,20 +1,21 @@
 //! # Blueprint `slot_registry` → executable slot list
 //!
-//! **Role**: reads validated `slot_registry` from the role pack (`pipeline.ocblueprint`), binds each instance to a concrete implementation in `BackendRegistry`, and produces [`ResolvedRoleSlots`] for [`SlotRunner`](super::slot_runner::SlotRunner) merge execution.
-//!
-//! **Upstream**: `oclive_validation::slot_registry_instances_sorted`; [`PluginHost::resolve_for_role`](super::plugin_host.rs) passes registry + `slot_registry`.
-//! **Downstream**: [`SlotRunner`](super::slot_runner::SlotRunner); `groups` only affects frontend architecture graph grouping and **does not** change resolution order here.
-//!
-//! **Key decision**: sort instances by `slot_type` + `position`; `module_relations` are **not persisted**—the frontend **read-only derives** edges from `slot_registry` to avoid dual sources of truth.
+//! **Role**: reads validated `slot_registry` from the role pack (`pipeline.ocblueprint`), binds each instance to a concrete implementation in the backend registry port, and produces [`ResolvedRoleSlots`] for [`SlotRunner`](super::slot_runner::SlotRunner) merge execution.
 
 use crate::domain::agent::AgentProvider;
-use crate::domain::complex_emotion::{
-    BuiltinKeywordComplexEmotionProvider, ComplexEmotionInput, ComplexEmotionOutput,
-    ComplexEmotionProvider,
-};
+use crate::domain::complex_emotion::ComplexEmotionProvider;
 use crate::domain::event_estimator::EventEstimator;
 use crate::domain::memory_retrieval::MemoryRetrieval;
-use crate::domain::plugin_host::BackendRegistry;
+use crate::domain::ports::LlmClient;
+use crate::domain::prompt_assembler::PromptAssembler;
+use crate::domain::user_emotion_analyzer::UserEmotionAnalyzer;
+use crate::models::PluginBackends;
+use oclive_kernel_contracts::PluginBackendRegistryPort;
+use oclive_validation::{
+    plugin_backends_for_slot_entry, slot_registry_instances_sorted, SlotRegistryEntry,
+};
+use std::collections::BTreeMap;
+use std::sync::Arc;
 
 /// Multi-LLM instance merge policy (`policy` field on `slot_registry` entries).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -36,42 +37,6 @@ impl LlmMergePolicy {
         }
     }
 }
-use crate::domain::ports::LlmClient;
-use crate::domain::prompt_assembler::PromptAssembler;
-use crate::domain::user_emotion_analyzer::UserEmotionAnalyzer;
-use crate::infrastructure::remote_plugin::{
-    DirectoryComplexEmotionHttp, RemoteComplexEmotionHttp, RemotePluginHttpConfig,
-};
-use crate::models::PluginBackends;
-use oclive_validation::{
-    plugin_backends_for_slot_entry, slot_registry_instances_sorted, SlotRegistryEntry,
-};
-use std::collections::BTreeMap;
-use std::sync::Arc;
-use std::time::Duration;
-
-/// Built-in complex emotion (wrapped as trait object).
-pub struct BuiltinComplexEmotionArc;
-
-impl ComplexEmotionProvider for BuiltinComplexEmotionArc {
-    fn resolve_turn(
-        &self,
-        input: &ComplexEmotionInput,
-    ) -> crate::error::Result<ComplexEmotionOutput> {
-        Ok(BuiltinKeywordComplexEmotionProvider.resolve_turn_inner(input))
-    }
-}
-
-struct RemoteComplexEmotionArc(Arc<RemoteComplexEmotionHttp>);
-
-impl ComplexEmotionProvider for RemoteComplexEmotionArc {
-    fn resolve_turn(
-        &self,
-        input: &ComplexEmotionInput,
-    ) -> crate::error::Result<ComplexEmotionOutput> {
-        self.0.resolve_turn(input)
-    }
-}
 
 /// Multi-instance resolution grouped by `type` (ascending `position`).
 #[derive(Clone, Default)]
@@ -91,21 +56,18 @@ pub struct SlotResolver;
 
 impl SlotResolver {
     /// Maps validated `slot_registry` to `Arc<dyn …>` instance lists (bucketed by type, sorted by `position` within each bucket).
-    ///
-    /// Caller: `PluginHost::resolve_for_*` on an existing `BackendRegistry`; result goes to [`SlotRunner`](super::slot_runner::SlotRunner) for merging.
     #[must_use]
     pub fn resolve(
-        registry: &BackendRegistry,
+        registry: &dyn PluginBackendRegistryPort,
         slot_registry: &BTreeMap<String, SlotRegistryEntry>,
     ) -> ResolvedRoleSlots {
         Self::resolve_with_session_backends(registry, slot_registry, None)
     }
 
-    /// Resolves `slot_registry`; `session_effective_backends` overrides blueprint `llm` slot `backend`
-    /// (e.g. after user picks cloud in model manager, `effective_plugin_backends.llm = Remote`, avoiding pack `ollama`).
+    /// Resolves `slot_registry`; `session_effective_backends` overrides blueprint `llm` slot `backend`.
     #[must_use]
     pub fn resolve_with_session_backends(
-        registry: &BackendRegistry,
+        registry: &dyn PluginBackendRegistryPort,
         slot_registry: &BTreeMap<String, SlotRegistryEntry>,
         session_effective_backends: Option<&PluginBackends>,
     ) -> ResolvedRoleSlots {
@@ -146,129 +108,10 @@ impl SlotResolver {
         for (key, entry) in slot_registry_instances_sorted(slot_registry, "complex_emotion") {
             out.complex_emotion.push((
                 key.clone(),
-                Self::resolve_complex_emotion_entry(registry, &entry),
+                registry.resolve_complex_emotion_for_entry(&entry),
             ));
         }
         out
-    }
-
-    /// Same-type **last-wins** (`position` max) complex emotion implementation.
-    #[must_use]
-    pub fn resolve_complex_emotion_winner(
-        registry: &BackendRegistry,
-        slot_registry: &BTreeMap<String, SlotRegistryEntry>,
-    ) -> Arc<dyn ComplexEmotionProvider> {
-        slot_registry_instances_sorted(slot_registry, "complex_emotion")
-            .last()
-            .map(|(_, e)| Self::resolve_complex_emotion_entry(registry, e))
-            .unwrap_or_else(|| Arc::new(BuiltinComplexEmotionArc))
-    }
-
-    fn resolve_complex_emotion_entry(
-        registry: &BackendRegistry,
-        entry: &SlotRegistryEntry,
-    ) -> Arc<dyn ComplexEmotionProvider> {
-        let remote_fb = registry.remote_fallback_allowed();
-        match entry.backend.trim() {
-            "builtin" => Arc::new(BuiltinComplexEmotionArc),
-            "remote" => {
-                let cfg = entry
-                    .url
-                    .as_ref()
-                    .map(|u| u.trim())
-                    .filter(|u| !u.is_empty())
-                    .map(|endpoint| RemotePluginHttpConfig {
-                        endpoint: endpoint.to_string(),
-                        timeout: Duration::from_millis(8_000),
-                        bearer_token: None,
-                    })
-                    .or_else(RemotePluginHttpConfig::from_env_complex_emotion);
-                let Some(cfg) = cfg else {
-                    tracing::warn!(
-                        target: "oclive_plugin",
-                        "complex_emotion backend=remote but no url/env; using builtin"
-                    );
-                    return Arc::new(BuiltinComplexEmotionArc);
-                };
-                match RemoteComplexEmotionHttp::new(
-                    cfg,
-                    remote_fb.clone(),
-                    registry.high_risk_grants(),
-                ) {
-                    Ok(http) => Arc::new(RemoteComplexEmotionArc(Arc::new(http))),
-                    Err(e) => {
-                        tracing::error!(
-                            target: "oclive_plugin",
-                            "complex_emotion remote client build failed: {}; using builtin",
-                            e
-                        );
-                        Arc::new(BuiltinComplexEmotionArc)
-                    }
-                }
-            }
-            "directory" => Self::resolve_complex_emotion_directory(registry, entry, remote_fb),
-            _ => Arc::new(BuiltinComplexEmotionArc),
-        }
-    }
-
-    fn resolve_complex_emotion_directory(
-        registry: &BackendRegistry,
-        entry: &SlotRegistryEntry,
-        remote_fb: Arc<std::sync::atomic::AtomicBool>,
-    ) -> Arc<dyn ComplexEmotionProvider> {
-        let Some(rt) = registry.directory_runtime() else {
-            tracing::warn!(
-                target: "oclive_plugin",
-                "complex_emotion backend=directory but runtime disabled; using builtin"
-            );
-            return Arc::new(BuiltinComplexEmotionArc);
-        };
-        let plugin_id = entry
-            .plugin
-            .as_ref()
-            .map(|s| s.trim().to_string())
-            .filter(|s| !s.is_empty());
-        let Some(pid) = plugin_id else {
-            tracing::warn!(
-                target: "oclive_plugin",
-                "complex_emotion backend=directory but plugin id missing; using builtin"
-            );
-            return Arc::new(BuiltinComplexEmotionArc);
-        };
-        if !rt.manifest_provides_capability(&pid, "complex_emotion") {
-            tracing::warn!(
-                target: "oclive_plugin",
-                "directory plugin_id={} missing provides complex_emotion; using builtin",
-                pid
-            );
-            return Arc::new(BuiltinComplexEmotionArc);
-        }
-        match rt.ensure_rpc_url(pid.as_str()) {
-            Ok(url) => {
-                let cfg = RemotePluginHttpConfig::for_directory_plugin_rpc(url, false);
-                match DirectoryComplexEmotionHttp::new(cfg, remote_fb) {
-                    Ok(http) => Arc::new(http),
-                    Err(e) => {
-                        tracing::error!(
-                            target: "oclive_plugin",
-                            "complex_emotion directory plugin_id={} client failed: {}; using builtin",
-                            pid,
-                            e
-                        );
-                        Arc::new(BuiltinComplexEmotionArc)
-                    }
-                }
-            }
-            Err(e) => {
-                tracing::error!(
-                    target: "oclive_plugin",
-                    "complex_emotion directory plugin_id={} spawn failed: {}; using builtin",
-                    pid,
-                    e
-                );
-                Arc::new(BuiltinComplexEmotionArc)
-            }
-        }
     }
 
     /// Agent directory multi-instance merge is not implemented; returns `inner` unchanged.

@@ -1,5 +1,8 @@
-use crate::domain::agent::{AgentDebugTrace, AgentProvider, BuiltinReActAgent};
-use crate::domain::agent_mcp_bridge::AgentMcpBridge;
+use crate::domain::agent::{AgentProvider, BuiltinReActAgent};
+use crate::domain::complex_emotion::{
+    BuiltinKeywordComplexEmotionProvider, ComplexEmotionInput, ComplexEmotionOutput,
+    ComplexEmotionProvider,
+};
 use crate::domain::fallback_agent::FallbackAgentProvider;
 use crate::domain::noop_slot_backends::{
     NoopAgentProvider, NoopEventEstimator, NoopLlmClient, NoopMemoryRetrieval,
@@ -22,14 +25,24 @@ use crate::domain::prompt_assembler::{
 use crate::domain::user_emotion_analyzer::{
     BuiltinUserEmotionAnalyzer, BuiltinUserEmotionAnalyzerV2, UserEmotionAnalyzer,
 };
+use crate::infrastructure::agent_mcp_bridge::AgentMcpBridge;
+use crate::infrastructure::function_call_parser::BuiltinFunctionCallingParser;
 use crate::infrastructure::directory_plugins::DirectoryPluginRuntime;
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
-use crate::infrastructure::mcp_client::{McpClient, McpServerManifest, McpToolCallResult};
+use crate::infrastructure::mcp_client::McpClient;
+use async_trait::async_trait;
+use oclive_kernel_contracts::{McpBridgePort, PluginBackendRegistryPort};
+use oclive_kernel_types::{
+    AgentDebugTrace, AgentToolResult, McpServerInfo, McpToolInfo,
+};
 use crate::infrastructure::remote_plugin::{
-    self, agent_remote_backend, AgentRpcProvider, PluginRemoteGroup, RemoteEventEstimatorHttp,
-    RemoteLlmHttp, RemoteMemoryRetrievalHttp, RemotePluginHttpConfig, RemotePromptAssemblerHttp,
+    self, agent_remote_backend, AgentRpcProvider, DirectoryComplexEmotionHttp,
+    PluginRemoteGroup, RemoteComplexEmotionHttp, RemoteEventEstimatorHttp, RemoteLlmHttp,
+    RemoteMemoryRetrievalHttp, RemotePluginHttpConfig, RemotePromptAssemblerHttp,
     RemoteUserEmotionAnalyzerHttp,
 };
+use oclive_validation::{slot_registry_instances_sorted, SlotRegistryEntry};
+use std::time::Duration;
 use crate::models::{
     AgentBackend, DirectoryPluginSlots, EmotionBackend, EventBackend, LlmBackend, MemoryBackend,
     PluginBackends, PromptBackend,
@@ -41,7 +54,29 @@ use std::path::PathBuf;
 use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, OnceLock};
 
-use super::PluginHostError;
+use crate::domain::plugin_host::PluginHostError;
+
+struct BuiltinComplexEmotionArc;
+
+impl ComplexEmotionProvider for BuiltinComplexEmotionArc {
+    fn resolve_turn(
+        &self,
+        input: &ComplexEmotionInput,
+    ) -> crate::error::Result<ComplexEmotionOutput> {
+        Ok(BuiltinKeywordComplexEmotionProvider.resolve_turn_inner(input))
+    }
+}
+
+struct RemoteComplexEmotionArc(Arc<RemoteComplexEmotionHttp>);
+
+impl ComplexEmotionProvider for RemoteComplexEmotionArc {
+    fn resolve_turn(
+        &self,
+        input: &ComplexEmotionInput,
+    ) -> crate::error::Result<ComplexEmotionOutput> {
+        self.0.resolve_turn(input)
+    }
+}
 
 /// Backend registry: manages builtin / remote slots and provides a scaffold for local provider registration.
 pub struct BackendRegistry {
@@ -60,7 +95,7 @@ pub struct BackendRegistry {
     llm_remote: OnceLock<Arc<dyn LlmClient>>,
     llm_ollama: Arc<dyn LlmClient>,
     agent_builtin: Arc<BuiltinReActAgent>,
-    agent_mcp_bridge: Arc<AgentMcpBridge>,
+    agent_mcp_bridge: Arc<dyn McpBridgePort>,
     agent_remote: OnceLock<Arc<dyn AgentProvider>>,
     agent_none: Arc<dyn AgentProvider>,
     memory_none: Arc<dyn MemoryRetrieval>,
@@ -267,7 +302,7 @@ impl BackendRegistry {
         })
     }
 
-    pub fn list_mcp_servers(&self) -> Vec<McpServerManifest> {
+    pub fn list_mcp_servers(&self) -> Vec<McpServerInfo> {
         self.agent_builtin.list_mcp_servers()
     }
 
@@ -277,7 +312,7 @@ impl BackendRegistry {
     pub async fn list_mcp_tools(
         &self,
         server_id: &str,
-    ) -> std::result::Result<Vec<crate::infrastructure::mcp_client::McpToolManifest>, String> {
+    ) -> std::result::Result<Vec<McpToolInfo>, String> {
         crate::map_frontend_err!(self.agent_builtin.list_mcp_tools(server_id).await)
     }
 
@@ -289,7 +324,7 @@ impl BackendRegistry {
         server_id: &str,
         tool_name: &str,
         params: Value,
-    ) -> std::result::Result<McpToolCallResult, String> {
+    ) -> std::result::Result<AgentToolResult, String> {
         crate::map_frontend_err!(
             self.agent_builtin
                 .call_tool_direct(server_id, tool_name, params)
@@ -314,10 +349,14 @@ impl BackendRegistry {
     ) -> Self {
         let llm_ollama = llm;
         let mcp = Arc::new(McpClient::new(app_data_dir, high_risk_grants.clone()));
-        let agent_mcp_bridge = Arc::new(AgentMcpBridge::new(mcp));
+        let agent_mcp_bridge: Arc<dyn McpBridgePort> =
+            Arc::new(AgentMcpBridge::new(mcp));
+        let parser: Arc<dyn oclive_kernel_contracts::FunctionCallingParserPort> =
+            Arc::new(BuiltinFunctionCallingParser);
         let agent_builtin = Arc::new(BuiltinReActAgent::new(
             llm_ollama.clone(),
             agent_mcp_bridge.clone(),
+            parser,
         ));
         let agent_none: Arc<dyn AgentProvider> = Arc::new(NoopAgentProvider);
         let memory_none: Arc<dyn MemoryRetrieval> = Arc::new(NoopMemoryRetrieval);
@@ -366,7 +405,7 @@ impl BackendRegistry {
     }
 
     #[must_use]
-    pub fn agent_mcp_bridge(&self) -> Arc<AgentMcpBridge> {
+    pub fn agent_mcp_bridge(&self) -> Arc<dyn McpBridgePort> {
         self.agent_mcp_bridge.clone()
     }
 
@@ -636,5 +675,246 @@ impl BackendRegistry {
     #[must_use]
     pub fn directory_runtime(&self) -> Option<Arc<DirectoryPluginRuntime>> {
         self.directory_runtime.clone()
+    }
+
+    /// Same-type **last-wins** (`position` max) complex emotion implementation.
+    #[must_use]
+    pub fn resolve_complex_emotion_winner(
+        &self,
+        slot_registry: &BTreeMap<String, SlotRegistryEntry>,
+    ) -> Arc<dyn ComplexEmotionProvider> {
+        slot_registry_instances_sorted(slot_registry, "complex_emotion")
+            .last()
+            .map(|(_, e)| self.resolve_complex_emotion_for_entry(e))
+            .unwrap_or_else(|| Arc::new(BuiltinComplexEmotionArc))
+    }
+
+    pub fn resolve_complex_emotion_for_entry(
+        &self,
+        entry: &SlotRegistryEntry,
+    ) -> Arc<dyn ComplexEmotionProvider> {
+        let remote_fb = self.remote_fallback_allowed.clone();
+        match entry.backend.trim() {
+            "builtin" => Arc::new(BuiltinComplexEmotionArc),
+            "remote" => {
+                let cfg = entry
+                    .url
+                    .as_ref()
+                    .map(|u| u.trim())
+                    .filter(|u| !u.is_empty())
+                    .map(|endpoint| RemotePluginHttpConfig {
+                        endpoint: endpoint.to_string(),
+                        timeout: Duration::from_millis(8_000),
+                        bearer_token: None,
+                    })
+                    .or_else(RemotePluginHttpConfig::from_env_complex_emotion);
+                let Some(cfg) = cfg else {
+                    tracing::warn!(
+                        target: "oclive_plugin",
+                        "complex_emotion backend=remote but no url/env; using builtin"
+                    );
+                    return Arc::new(BuiltinComplexEmotionArc);
+                };
+                match RemoteComplexEmotionHttp::new(cfg, remote_fb, self.high_risk_grants.clone()) {
+                    Ok(http) => Arc::new(RemoteComplexEmotionArc(Arc::new(http))),
+                    Err(e) => {
+                        tracing::error!(
+                            target: "oclive_plugin",
+                            "complex_emotion remote client build failed: {}; using builtin",
+                            e
+                        );
+                        Arc::new(BuiltinComplexEmotionArc)
+                    }
+                }
+            }
+            "directory" => self.resolve_complex_emotion_directory(entry, remote_fb),
+            _ => Arc::new(BuiltinComplexEmotionArc),
+        }
+    }
+
+    fn resolve_complex_emotion_directory(
+        &self,
+        entry: &SlotRegistryEntry,
+        remote_fb: Arc<AtomicBool>,
+    ) -> Arc<dyn ComplexEmotionProvider> {
+        let Some(rt) = self.directory_runtime.as_ref() else {
+            tracing::warn!(
+                target: "oclive_plugin",
+                "complex_emotion backend=directory but runtime disabled; using builtin"
+            );
+            return Arc::new(BuiltinComplexEmotionArc);
+        };
+        let plugin_id = entry
+            .plugin
+            .as_ref()
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty());
+        let Some(pid) = plugin_id else {
+            tracing::warn!(
+                target: "oclive_plugin",
+                "complex_emotion backend=directory but plugin id missing; using builtin"
+            );
+            return Arc::new(BuiltinComplexEmotionArc);
+        };
+        if !rt.manifest_provides_capability(&pid, "complex_emotion") {
+            tracing::warn!(
+                target: "oclive_plugin",
+                "directory plugin_id={} missing provides complex_emotion; using builtin",
+                pid
+            );
+            return Arc::new(BuiltinComplexEmotionArc);
+        }
+        match rt.ensure_rpc_url(pid.as_str()) {
+            Ok(url) => {
+                let cfg = RemotePluginHttpConfig::for_directory_plugin_rpc(url, false);
+                match DirectoryComplexEmotionHttp::new(cfg, remote_fb) {
+                    Ok(http) => Arc::new(http),
+                    Err(e) => {
+                        tracing::error!(
+                            target: "oclive_plugin",
+                            "complex_emotion directory plugin_id={} client failed: {}; using builtin",
+                            pid,
+                            e
+                        );
+                        Arc::new(BuiltinComplexEmotionArc)
+                    }
+                }
+            }
+            Err(e) => {
+                tracing::error!(
+                    target: "oclive_plugin",
+                    "complex_emotion directory plugin_id={} spawn failed: {}; using builtin",
+                    pid,
+                    e
+                );
+                Arc::new(BuiltinComplexEmotionArc)
+            }
+        }
+    }
+}
+
+#[async_trait]
+impl PluginBackendRegistryPort for BackendRegistry {
+    fn agent_for_plugin_backends(&self, backends: &PluginBackends) -> Arc<dyn AgentProvider> {
+        BackendRegistry::agent_for_plugin_backends(self, backends)
+    }
+
+    fn agent_for(&self, b: AgentBackend) -> Arc<dyn AgentProvider> {
+        BackendRegistry::agent_for(self, b)
+    }
+
+    fn memory_retrieval_for_plugin_backends(
+        &self,
+        backends: &PluginBackends,
+    ) -> Arc<dyn MemoryRetrieval> {
+        BackendRegistry::memory_retrieval_for_plugin_backends(self, backends)
+    }
+
+    fn memory_retrieval(&self, b: MemoryBackend) -> Arc<dyn MemoryRetrieval> {
+        BackendRegistry::memory_retrieval(self, b)
+    }
+
+    fn user_emotion_analyzer_for_backends(
+        &self,
+        backends: &PluginBackends,
+    ) -> Arc<dyn UserEmotionAnalyzer> {
+        BackendRegistry::user_emotion_analyzer_for_backends(self, backends)
+    }
+
+    fn user_emotion_analyzer(&self, b: EmotionBackend) -> Arc<dyn UserEmotionAnalyzer> {
+        BackendRegistry::user_emotion_analyzer(self, b)
+    }
+
+    fn event_estimator_for_backends(&self, backends: &PluginBackends) -> Arc<dyn EventEstimator> {
+        BackendRegistry::event_estimator_for_backends(self, backends)
+    }
+
+    fn event_estimator(&self, b: EventBackend) -> Arc<dyn EventEstimator> {
+        BackendRegistry::event_estimator(self, b)
+    }
+
+    fn prompt_assembler_for_backends(
+        &self,
+        backends: &PluginBackends,
+    ) -> Arc<dyn PromptAssembler> {
+        BackendRegistry::prompt_assembler_for_backends(self, backends)
+    }
+
+    fn prompt_assembler(&self, b: PromptBackend) -> Arc<dyn PromptAssembler> {
+        BackendRegistry::prompt_assembler(self, b)
+    }
+
+    fn llm_for_plugin_backends(&self, backends: &PluginBackends) -> Arc<dyn LlmClient> {
+        BackendRegistry::llm_for_plugin_backends(self, backends)
+    }
+
+    fn llm_for(&self, b: LlmBackend) -> Arc<dyn LlmClient> {
+        BackendRegistry::llm_for(self, b)
+    }
+
+    fn resolve_complex_emotion_winner(
+        &self,
+        slot_registry: &BTreeMap<String, SlotRegistryEntry>,
+    ) -> Arc<dyn ComplexEmotionProvider> {
+        BackendRegistry::resolve_complex_emotion_winner(self, slot_registry)
+    }
+
+    fn resolve_complex_emotion_for_entry(
+        &self,
+        entry: &SlotRegistryEntry,
+    ) -> Arc<dyn ComplexEmotionProvider> {
+        BackendRegistry::resolve_complex_emotion_for_entry(self, entry)
+    }
+
+    fn register_local_provider(
+        &self,
+        descriptor: LocalPluginProviderDescriptor,
+    ) -> Result<(), String> {
+        BackendRegistry::register_local_provider(self, descriptor)
+            .map_err(|e| e.to_string())
+    }
+
+    fn local_providers_for(
+        &self,
+        capability: LocalPluginCapability,
+    ) -> Vec<Arc<LocalPluginProviderDescriptor>> {
+        BackendRegistry::local_providers_for(self, capability)
+    }
+
+    fn local_all_providers(&self) -> Vec<Arc<LocalPluginProviderDescriptor>> {
+        BackendRegistry::local_all_providers(self)
+    }
+
+    fn list_mcp_servers(&self) -> Vec<McpServerInfo> {
+        BackendRegistry::list_mcp_servers(self)
+    }
+
+    async fn list_mcp_tools(&self, server_id: &str) -> Result<Vec<McpToolInfo>, String> {
+        BackendRegistry::list_mcp_tools(self, server_id).await
+    }
+
+    async fn call_mcp_tool(
+        &self,
+        server_id: &str,
+        tool_name: &str,
+        params: Value,
+    ) -> Result<AgentToolResult, String> {
+        BackendRegistry::call_mcp_tool(self, server_id, tool_name, params).await
+    }
+
+    fn recent_agent_traces(&self) -> Vec<AgentDebugTrace> {
+        BackendRegistry::recent_agent_traces(self)
+    }
+
+    fn clear_agent_traces(&self) {
+        BackendRegistry::clear_agent_traces(self);
+    }
+
+    fn agent_mcp_bridge(&self) -> Arc<dyn McpBridgePort> {
+        BackendRegistry::agent_mcp_bridge(self)
+    }
+
+    fn remote_fallback_allowed(&self) -> Arc<AtomicBool> {
+        BackendRegistry::remote_fallback_allowed(self)
     }
 }

@@ -1,18 +1,24 @@
-//! `oclive dashboard` — local web dashboard (embedded HTML, default :8420).
+//! `oclive dashboard` — local web dashboard (embedded HTML, default loopback API port).
 
 use crate::registry::load_registry;
 use crate::template_catalog::CATALOG;
 use anyhow::{Context, Result};
 use clap::Parser;
+use oclive_kernel_runtime::DEFAULT_API_PORT;
 use serde::Serialize;
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::path::Path;
 
+#[must_use]
+fn default_dashboard_bind() -> String {
+    format!("127.0.0.1:{DEFAULT_API_PORT}")
+}
+
 #[derive(Parser, Debug)]
 pub struct DashboardArgs {
-    /// Listen address
-    #[arg(long, default_value = "127.0.0.1:8420")]
+    /// Listen address (default port = [`DEFAULT_API_PORT`])
+    #[arg(long, default_value_t = default_dashboard_bind())]
     pub bind: String,
 }
 

@@ -7,8 +7,8 @@ use crate::domain::relation_estrangement::{
     replace_mutable_profile_section, strip_mutable_profile_section,
 };
 use crate::error::Result;
-use crate::infrastructure::db::DbManager;
 use crate::models::{PersonalitySource, Role};
+use oclive_kernel_contracts::MutablePersonalityStore;
 use crate::state::SessionCache;
 
 const PROFILE_SECTION_TITLE: &str = "关系过渡";
@@ -26,7 +26,7 @@ pub struct RelationTransitionConsume {
 /// Returns [`crate::error::AppError`] on mutable profile DB read/write failure.
 pub async fn consume_relation_transition_at_turn_start(
     cache: &SessionCache,
-    db: &DbManager,
+    db: &(dyn MutablePersonalityStore + Send + Sync),
     role: &Role,
     srid: &str,
 ) -> Result<RelationTransitionConsume> {
@@ -56,7 +56,7 @@ pub async fn consume_relation_transition_at_turn_start(
 /// Returns [`crate::error::AppError`] on mutable profile DB read/write failure.
 pub async fn maybe_start_relation_transition(
     cache: &SessionCache,
-    db: &DbManager,
+    db: &(dyn MutablePersonalityStore + Send + Sync),
     role: &Role,
     srid: &str,
     relation_before: &str,

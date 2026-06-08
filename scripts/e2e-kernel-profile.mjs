@@ -21,20 +21,47 @@ function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-function findKernelBinary() {
-  const candidates = [
-    path.join(repoRoot, '..', 'oclive-dev-artifacts', 'oclivenewnew-cargo-target', 'debug', 'oclive-kernel-server.exe'),
-    path.join(repoRoot, '..', 'oclive-dev-artifacts', 'oclivenewnew-cargo-target', 'debug', 'oclive-kernel-server'),
-  ];
+function cargoTargetDir() {
+  if (process.env.CARGO_TARGET_DIR) {
+    return process.env.CARGO_TARGET_DIR;
+  }
+  try {
+    const out = execFileSync(
+      'cargo',
+      ['metadata', '--format-version=1', '--no-deps'],
+      { cwd: repoRoot, encoding: 'utf8' },
+    );
+    return JSON.parse(out).target_directory;
+  } catch {
+    return null;
+  }
+}
+
+function resolveBinary(name) {
+  const envKey = name === 'oclive-kernel-server' ? 'OCLIVE_E2E_KERNEL' : 'OCLIVE_E2E_CLI';
+  const fromEnv = process.env[envKey];
+  if (fromEnv && fs.existsSync(fromEnv)) {
+    return fromEnv;
+  }
+  const target = cargoTargetDir();
+  const suffix = process.platform === 'win32' ? '.exe' : '';
+  const candidates = [];
+  if (target) {
+    candidates.push(path.join(target, 'debug', `${name}${suffix}`));
+  }
+  candidates.push(
+    path.join(repoRoot, '..', 'oclive-dev-artifacts', 'oclivenewnew-cargo-target', 'debug', `${name}${suffix}`),
+    path.join(repoRoot, 'target', 'debug', `${name}${suffix}`),
+  );
   return candidates.find((p) => fs.existsSync(p));
 }
 
+function findKernelBinary() {
+  return resolveBinary('oclive-kernel-server');
+}
+
 function findCli() {
-  const candidates = [
-    path.join(repoRoot, '..', 'oclive-dev-artifacts', 'oclivenewnew-cargo-target', 'debug', 'oclive-cli.exe'),
-    path.join(repoRoot, '..', 'oclive-dev-artifacts', 'oclivenewnew-cargo-target', 'debug', 'oclive-cli'),
-  ];
-  return candidates.find((p) => fs.existsSync(p));
+  return resolveBinary('oclive-cli');
 }
 
 function spawnKernel(extraEnv = {}) {

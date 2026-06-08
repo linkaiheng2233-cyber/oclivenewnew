@@ -1,3 +1,5 @@
 //! Data-access ports (traits); definitions live in [`oclive_kernel_contracts`].
 
-pub use oclive_kernel_contracts::{FavorabilityRepository, MemoryRepository};
+pub use oclive_kernel_contracts::{
+    ComplexEmotionHintStore, FavorabilityRepository, MemoryRepository, VirtualTimeStore,
+};

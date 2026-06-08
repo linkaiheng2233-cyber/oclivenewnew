@@ -1,0 +1,12 @@
+{
+  "schema_version": 2,
+  "required_top_level": [
+    "schema_version",
+    "plan",
+    "profile_compat",
+    "caller_requirements",
+    "executed",
+    "health_ok"
+  ],
+  "required_plan": ["action", "degraded"]
+}

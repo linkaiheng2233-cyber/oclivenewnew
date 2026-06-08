@@ -45,7 +45,7 @@ Cross-repo optimization scan (Opus 4.7) plus **local grep/build verification**. 
 | `db.rs` ~36 `.unwrap()` on hot path | Production panic risk on `row.get` | **2×** `unwrap_or_else` in prod (RFC3339 fallback); rest in `mod tests` | **Corrected** → `parse_memory_created_at` + warn log; file split to `infrastructure/db/*` |
 | `role_pack.rs` / `dual_pipeline.rs` unwrap | User-input panic | All in `#[cfg(test)]` | **Corrected** |
 | `dual_pipeline_steps` `.expect("emotion_result set")` | Invariant panic | Replaced with `ProcessMessageError::dual_core_invalid` | **Done** |
-| `plugin_host.rs` 63× `.clone()` | Hot-path copy waste | Mix of `Arc` vs owned; needs per-field audit | **Pending** |
+| `plugin_host.rs` 63× `.clone()` | Hot-path copy waste | Arc 热路径保留；消除 `PluginBackends` / 全量 `provider_id` 克隆 | **Superseded**（见下行 L59 **Done**） |
 | `tauri-api.ts` monolith | Hard to navigate / camelCase drift | Split → `src/api/{helpers,chat,role,settings,plugin,agent,diagnostics}.ts` + `toCamelPayload` | **Done** |
 | `zh-CN.ts` / `en-US.ts` size | Linear bundle growth | Aggregators + `fragments/{app,settings,pluginManager,common,roleRuntime,editor}.*` | **Done** |
 | `@vue-flow` first-screen | Lazy-load + chunk | `PluginManagerPanel` not in current `App.vue` entry; `manualChunks` + `defineAsyncComponent` ready | **Corrected** / chunk when V1 panel wired |
@@ -57,7 +57,7 @@ Cross-repo optimization scan (Opus 4.7) plus **local grep/build verification**. 
 | Sister-repo i18n drift | Shared package | `src/i18n/shared/` + mirror sync + `verify:shared-i18n` | **Done** |
 | `fuzz/` sparse | Add validation targets | `fuzz_oclive_validation`, `fuzz_function_call_parser`, `fuzz_role_pack_loader` | **Done** |
 | `plugin_host.rs` clone audit | 63× `.clone()` | Arc 热路径保留；消除 `PluginBackends` / 全量 `provider_id` 克隆 | **Done** |
-| CI `npm audit --omit=dev` | Visibility job | Not started | **Pending** |
+| CI `npm audit --omit=dev` | Visibility job | CI job `npm-audit` | **Done**（D-NPM-01） |
 
 ### Opus 4.7 second pass — build / perf / architecture (2026-05-20)
 
@@ -245,4 +245,50 @@ Update this file when batch status changes.
 
 **叙事对齐（2026-06-08）**：对外文档对 **dual_core / blueprint v3 / expert_routing** 统一表述为 **「机制已预埋，默认关闭；解冻条件见本表」**——代码冻结不变，保留平台可扩展叙事。见 [OCLIVE_POSITIONING_DIFFERENTIATION.md](./OCLIVE_POSITIONING_DIFFERENTIATION.md)。
 
-**配套动作（owner：作者本人）**：(1) **统一文档**一次，将 roadmap（未做）与 status（已做）明确分开。注：经核实 `oclive_kernel_server` **确实存在且可跑**（`[[bin]] oclive-kernel-server`），先前「文档有、代码无」判断为搜索假象（目录名 `oclive_kernel_server`，非 `kernel_server`）；**真正待澄清的窄点**是它仍链接 `oclivenewnew-tauri` 取编排（编排尚未抽到 host-independent 纯内核 `library`，见 §3.1），文档措辞应区分「无头发行版已存在」与「纯内核 library 待抽离」。(2) 之后**重心转向宣传与滩头**，停止过度拓展。
+### Dimension 5 closure（工程纪律，2026-06-08）
+
+| ID | Item | Phase | Status |
+|----|------|-------|--------|
+| D-CI-01 | workspace clippy/test in CI | 1 | **Done** |
+| D-CI-02 | e2e-kernel-profile in CI | 1 | **Done** |
+| D-CI-03 | cargo-audit lockfile gate | 1 | **Done** (`cargo-audit-lockfile.yml`) |
+| D-LAYER-01 | domain→infra ratchet | 2 | **Done** (`scripts/check-domain-layering.mjs`) |
+| D-LAYER-02 | CODEOWNERS frozen paths | 2 | **Done** |
+| D-PORT-01 | DEFAULT_API_PORT SSOT | 2 | **Done** (`oclive_kernel_runtime::DEFAULT_API_PORT`) |
+| D-HONEST-01 | remote placeholder user-visible | 2 | **Done** (`startup_health` warnings) |
+| D-VSCODE-01 | vscode CI | 3 | **Done** |
+| D-VSCODE-02 | EnsureReport golden | 3 | **Done** |
+| D-SSOT-01 | DTO/schema naming doc | 4 | **Done** |
+| D-POLICY-01 | policy trait second impl or collapse | 4+ | **Deferred**（保留 trait；第二实现 = 角色包 policy / remote，未排期；连续两发版无第二实现则评估 collapse） |
+| D-NPM-01 | npm audit CI visibility | 6 | **Done** |
+| D-SIZE-01 | prompt_builder / http_api split | 5 | **Done** |
+| D-FREEZE-01 | dual_core / monolith PR 须引用 RFC | 2 | **Done**（`.github/CODEOWNERS` + 本表） |
+
+### Opus 4.8 审查摘要（2026-06-08）
+
+| ID | Item | Status |
+|----|------|--------|
+| D-LAYER-03 | `plugin_host` factory port (`PluginBackendRegistryPort`) | **Done**（ratchet 22→8；见 [LAYERING_BASELINE.json](./LAYERING_BASELINE.json)） |
+| D-LAYER-04 | 生产路径剩余 4 处 domain→infra（`ComplexEmotionHintStore` / `VirtualTimeStore` / `UserLlmSecretsPort` / env check） | **Done**（ratchet 8→4；仅 `#[cfg(test)]` Mock/test_db） |
+| D-SIZE-02 | `directory_plugins/runtime` split (`transport` / `spawn` / `rpc`) | **Done** |
+| Dimension 5 验收门 | `scripts/dimension5-acceptance.mjs` + [DIMENSION5_CLOSURE_SIGNOFF.md](./DIMENSION5_CLOSURE_SIGNOFF.md) | **Done** |
+| OOCP `startup_warnings` | S0b in `examples/oocp-test-suite/run.mjs` | **Done** |
+| `oclive_sqlx` 文档 + lockfile guard | [crates/oclive_sqlx/README.md](../crates/oclive_sqlx/README.md) | **Done** |
+
+未纳入本维度项见 §Opus 4.8 Deferred。
+
+### Opus 4.8 Deferred（2026-06-08）
+
+不在 Dimension 5 / Opus 4.8 工程纪律维强做的项；避免 Pending 悬空。
+
+| ID | 项 | 决定 |
+|----|-----|------|
+| D-OPUS-01 | Tauri/reqwest feature 收紧 | **Deferred**（发版前轻量化专项） |
+| D-OPUS-02 | Plugin bridge 内联 JS → 静态资源 | **Deferred** |
+| D-OPUS-03 | `load_role_cached` inflight 泄漏 | **Deferred**（需复现 + bench） |
+| D-OPUS-04 | Tracing JSON 文件 sink | **Deferred** |
+| D-OPUS-05 | Host/runtime `pub use` 去重 P3 | **Deferred**（架构 RFC） |
+| D-OPUS-06 | K-PROFILE-01 双 TOML 解析统一 | **Deferred** |
+| D-POLICY-01 | policy trait second impl or collapse | **Deferred**（见上表 Dimension 5） |
+
+**配套动作（owner：作者本人）**：(1) **统一文档**一次，将 roadmap（未做）与 status（已做）明确分开 — **Done**（[DOCUMENTATION_INDEX.md](../creator-docs/getting-started/DOCUMENTATION_INDEX.md) §工程纪律 / 审查状态）。注：经核实 `oclive_kernel_server` **确实存在且可跑**（`[[bin]] oclive-kernel-server`），先前「文档有、代码无」判断为搜索假象（目录名 `oclive_kernel_server`，非 `kernel_server`）；**真正待澄清的窄点**是它仍链接 `oclivenewnew-tauri` 取编排（编排尚未抽到 host-independent 纯内核 `library`，见 §3.1），文档措辞应区分「无头发行版已存在」与「纯内核 library 待抽离」。(2) 之后**重心转向宣传与滩头**，停止过度拓展。

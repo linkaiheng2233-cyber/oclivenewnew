@@ -38,6 +38,10 @@ pub mod reply_post_processor;
 pub(crate) mod repository;
 pub(crate) mod slot_resolver;
 pub(crate) mod user_emotion_analyzer;
+pub(crate) mod function_calling_parser;
+pub(crate) mod mcp_bridge;
+pub(crate) mod plugin_backend_registry;
+pub(crate) mod user_llm_secrets;
 
 pub use agent_provider::AgentProvider;
 pub use complex_emotion::ComplexEmotionProvider;
@@ -48,7 +52,17 @@ pub use memory_retrieval::MemoryRetrieval;
 pub use plugin_host::PluginHostPort;
 pub use policy::{EmotionPolicy, EventPolicy, MemoryPolicy};
 pub use prompt_assembler::PromptAssembler;
-pub use reply_post_processor::{PostProcessInput, PostProcessOutput, ReplyPostProcessor};
-pub use repository::{FavorabilityRepository, MemoryRepository};
+pub use reply_post_processor::{
+    PostProcessInput, PostProcessOutput, ReplyPostProcessor, ReplyPostProcessorEffectiveConfig,
+    ReplyPostProcessorResolver,
+};
+pub use repository::{
+    ComplexEmotionHintStore, FavorabilityRepository, MemoryRepository, MutablePersonalityStore,
+    RelationIdentityStore, VirtualTimeStore,
+};
+pub use user_llm_secrets::UserLlmSecretsPort;
+pub use function_calling_parser::FunctionCallingParserPort;
+pub use mcp_bridge::McpBridgePort;
+pub use plugin_backend_registry::PluginBackendRegistryPort;
 pub use slot_resolver::SlotRegistryResolver;
 pub use user_emotion_analyzer::UserEmotionAnalyzer;

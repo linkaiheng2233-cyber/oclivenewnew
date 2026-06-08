@@ -2,7 +2,6 @@
 //!
 //! `validate_disk_manifest` matches the shared crate [`oclive_validation`].
 
-use crate::infrastructure::remote_plugin::RemotePluginHttpConfig;
 use crate::models::plugin_backends::{
     AgentBackend, EmotionBackend, EventBackend, LlmBackend, MemoryBackend, PromptBackend,
 };
@@ -21,8 +20,12 @@ pub fn validate_role_interaction_mode(role: &Role) -> Result<(), String> {
 /// Log a warning when `plugin_backends` includes `remote` but env vars are unset (does not block load; runtime still falls back per PLUGIN_V1).
 pub fn log_plugin_backends_remote_missing_env(role: &Role) {
     let pb = &role.plugin_backends;
-    let plugin_url_ok = RemotePluginHttpConfig::from_env_plugin().is_some();
-    let llm_url_ok = RemotePluginHttpConfig::from_env_llm().is_some();
+    let plugin_url_ok = std::env::var("OCLIVE_REMOTE_PLUGIN_URL")
+        .ok()
+        .is_some_and(|s| !s.trim().is_empty());
+    let llm_url_ok = std::env::var("OCLIVE_REMOTE_LLM_URL")
+        .ok()
+        .is_some_and(|s| !s.trim().is_empty());
 
     let needs_plugin_url = matches!(pb.memory, MemoryBackend::Remote)
         || matches!(pb.emotion, EmotionBackend::Remote)

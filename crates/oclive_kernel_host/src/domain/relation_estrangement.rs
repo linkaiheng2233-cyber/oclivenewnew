@@ -1,9 +1,9 @@
 //! Long idle periods: favorability estrangement decay and relation state downgrade.
 
 use crate::error::Result;
-use crate::infrastructure::db::DbManager;
 use crate::models::{PersonalitySource, Role};
 use chrono::Utc;
+use oclive_kernel_contracts::RelationIdentityStore;
 use oclive_kernel_runtime::domain::relation_engine::{RelationEngine, RelationState};
 use oclive_kernel_runtime::domain::virtual_time::virtual_days_from_real_elapsed_ms;
 
@@ -59,7 +59,7 @@ pub fn strip_mutable_profile_section(existing: &str, title: &str) -> String {
 ///
 /// Returns [`crate::error::AppError`] on database read/write or mutable profile update failure.
 pub async fn apply_estrangement_at_turn_start(
-    db: &DbManager,
+    db: &(dyn RelationIdentityStore + Send + Sync),
     role: &Role,
     role_id: &str,
     user_relation_key: &str,

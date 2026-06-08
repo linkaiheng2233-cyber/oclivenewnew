@@ -1,0 +1,7 @@
+{
+  "description": "Max allowed `use crate::infrastructure` lines under crates/oclive_kernel_host/src/domain/**/*.rs (ratchet down only).",
+  "domain_to_infrastructure_imports": 4,
+  "updated": "2026-06-08",
+  "note": "D-LAYER-04 production ports: ComplexEmotionHintStore, VirtualTimeStore, UserLlmSecretsPort; role_manifest env check",
+  "check_command": "node scripts/check-domain-layering.mjs"
+}

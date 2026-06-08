@@ -70,6 +70,7 @@ pub struct AppState {
     pub replay_tasks: Arc<ReplayTaskRegistry>,
     pub memory_repo: Arc<dyn MemoryRepository>,
     pub favorability_repo: Arc<dyn FavorabilityRepository>,
+    pub user_llm_secrets: Arc<dyn oclive_kernel_contracts::UserLlmSecretsPort>,
     pub llm: Arc<dyn LlmClient>,
     /// Hot-path lock layering:
     /// - `role_cache` / `role_load_inflight`: dedupe role reads;
@@ -112,6 +113,9 @@ pub struct AppState {
     pub(crate) user_llm_env_dirty: AtomicBool,
     /// Distro capability profile (P4); loaded once at kernel startup from env.
     pub host_profile: Arc<crate::domain::host_profile::HostProfile>,
+    /// Remote/directory reply post-processor wiring (infrastructure only).
+    pub(crate) reply_post_processor_resolver:
+        Arc<dyn oclive_kernel_contracts::ReplyPostProcessorResolver>,
 }
 
 impl AppState {

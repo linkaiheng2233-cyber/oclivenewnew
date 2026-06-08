@@ -1,12 +1,12 @@
 //! Build [`AgentInput`] with role constraints and MCP tool schemas.
 
-use crate::domain::agent_mcp_bridge::AgentMcpBridge;
+use oclive_kernel_contracts::McpBridgePort;
 use crate::domain::chat_engine::context::load_recent_context;
 use crate::domain::user_identity_loader::resolve_active_user_identity;
 use crate::error::Result;
 use crate::models::{PersonalityVector, Role};
 use crate::state::AppState;
-use oclive_kernel_types::{AgentInput, AgentRoleConstraints, AgentToolSchema, AgentTurnContext};
+use oclive_kernel_types::{AgentInput, AgentRoleConstraints, AgentTurnContext};
 
 const RECENT_TURN_LIMIT: usize = 2;
 
@@ -33,7 +33,7 @@ pub async fn build_agent_input(
     scene_id: &str,
     message: &str,
     model: &str,
-    bridge: &AgentMcpBridge,
+    bridge: &dyn McpBridgePort,
 ) -> Result<AgentInput> {
     let resolved_identity = resolve_active_user_identity(state, role, srid, Some(scene_id)).await?;
     let user_relation_key = resolved_identity.relation_key.clone();
@@ -60,7 +60,7 @@ pub async fn build_agent_input(
             Ok::<Vec<(String, String)>, crate::error::AppError>(turns)
         },
         async {
-            Ok::<Vec<AgentToolSchema>, crate::error::AppError>(bridge.list_agent_tool_schemas().await)
+            bridge.list_agent_tool_schemas().await
         },
     )?;
 

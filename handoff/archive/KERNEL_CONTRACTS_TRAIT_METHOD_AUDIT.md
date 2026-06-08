@@ -4,6 +4,8 @@
 
 **结论**：无废弃删除项；带默认实现的方法为可选扩展点，已在 trait 文档中标注。
 
+**Policy traits（D-POLICY-01，2026-06-08）**：`EmotionPolicy` / `EventPolicy` / `MemoryPolicy` 当前为**策略注入端口**；预期第二实现 = 角色包自定义 policy 文件 / remote policy（未排期）。若连续两个发版周期仍无第二实现，评估降级为 `fn` + `PolicySet` 结构体（见 [TECHNICAL_DEBT_INVENTORY.md](../TECHNICAL_DEBT_INVENTORY.md)）。
+
 | Trait | 方法 | 调用方 | 说明 |
 |-------|------|--------|------|
 | `AgentProvider` | `process` | `domain/agent.rs`, `plugin_host`, `slot_resolver` | 主编排 |

@@ -53,7 +53,9 @@ pub use prompt_builder::{
     KERNEL_DIALOGUE_GUARDRAILS,
 };
 pub use relation_engine::{RelationEngine, RelationState};
-pub use repository::{FavorabilityRepository, MemoryRepository};
+pub use repository::{
+    ComplexEmotionHintStore, FavorabilityRepository, MemoryRepository, VirtualTimeStore,
+};
 pub use user_emotion_analyzer::{
     BuiltinUserEmotionAnalyzer, RemoteUserEmotionAnalyzerPlaceholder, UserEmotionAnalyzer,
 };

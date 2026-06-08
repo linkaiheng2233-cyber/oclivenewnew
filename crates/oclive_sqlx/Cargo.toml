@@ -1,0 +1,13 @@
+[package]
+name = "oclive_sqlx"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "SQLite-only SQLx facade for OCLive (no sqlx-mysql / rsa in lockfile)"
+
+[lints]
+workspace = true
+
+[dependencies]
+sqlx-core = { version = "0.8.6", default-features = false, features = ["migrate", "_rt-tokio"] }
+sqlx-sqlite = { version = "0.8.6", default-features = false, features = ["bundled", "migrate"] }

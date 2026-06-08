@@ -120,3 +120,123 @@ pub trait FavorabilityRepository: Send + Sync {
     /// Does not panic.
     async fn apply_delta(&self, role_id: &str, delta: f64) -> Result<()>;
 }
+
+/// Profile-mode mutable personality archive (relation transition / estrangement).
+#[async_trait]
+pub trait MutablePersonalityStore: Send + Sync {
+    /// # Errors
+    ///
+    /// Returns `Err` on database query failure.
+    async fn get_mutable_personality(&self, role_id: &str) -> Result<String>;
+
+    /// # Errors
+    ///
+    /// Returns `Err` on database write failure.
+    async fn set_mutable_personality(&self, role_id: &str, text: &str) -> Result<()>;
+}
+
+/// Relation identity + favorability persistence (estrangement / per-user relation stats).
+#[async_trait]
+pub trait RelationIdentityStore: MutablePersonalityStore + Send + Sync {
+    /// # Errors
+    ///
+    /// Returns `Err` on database query failure.
+    async fn get_last_interaction_at(
+        &self,
+        role_id: &str,
+    ) -> Result<Option<chrono::DateTime<chrono::Utc>>>;
+
+    /// # Errors
+    ///
+    /// Returns `Err` on database query failure.
+    async fn get_favorability_for_identity(
+        &self,
+        role_id: &str,
+        user_relation_key: &str,
+    ) -> Result<Option<f64>>;
+
+    /// # Errors
+    ///
+    /// Returns `Err` on database write failure.
+    async fn set_identity_favorability_value(
+        &self,
+        role_id: &str,
+        user_relation_key: &str,
+        value: f64,
+    ) -> Result<()>;
+
+    /// # Errors
+    ///
+    /// Returns `Err` on database query failure.
+    async fn get_relation_state_for_identity(
+        &self,
+        role_id: &str,
+        user_relation_key: &str,
+    ) -> Result<Option<String>>;
+
+    /// # Errors
+    ///
+    /// Returns `Err` on database query failure.
+    async fn get_relation_state(&self, role_id: &str) -> Result<Option<String>>;
+
+    /// # Errors
+    ///
+    /// Returns `Err` on database write failure.
+    async fn set_identity_relation_state(
+        &self,
+        role_id: &str,
+        user_relation_key: &str,
+        relation_state: &str,
+    ) -> Result<()>;
+}
+
+/// Persisted `narrative_hint` for complex emotion (one-turn delayed Prompt injection).
+#[async_trait]
+pub trait ComplexEmotionHintStore: Send + Sync {
+    /// # Errors
+    ///
+    /// Returns `Err` on database query failure.
+    async fn get_complex_emotion_hint(
+        &self,
+        srid: &str,
+    ) -> Result<Option<(String, String)>>;
+
+    /// # Errors
+    ///
+    /// Returns `Err` on database write failure.
+    async fn set_complex_emotion_hint(
+        &self,
+        srid: &str,
+        narrative_hint: &str,
+        updated_at: &str,
+    ) -> Result<()>;
+
+    /// # Errors
+    ///
+    /// Returns `Err` on database write failure.
+    async fn delete_complex_emotion_hint(&self, srid: &str) -> Result<()>;
+}
+
+/// Immersive-mode virtual clock anchors and current virtual timestamp.
+#[async_trait]
+pub trait VirtualTimeStore: Send + Sync {
+    /// # Errors
+    ///
+    /// Returns `Err` on database query failure.
+    async fn get_virtual_time_anchors(&self, role_id: &str) -> Result<(i64, i64, i64)>;
+
+    /// # Errors
+    ///
+    /// Returns `Err` on database write failure.
+    async fn set_virtual_time_anchors(
+        &self,
+        role_id: &str,
+        anchor_real_ms: i64,
+        anchor_virtual_ms: i64,
+    ) -> Result<()>;
+
+    /// # Errors
+    ///
+    /// Returns `Err` on database write failure.
+    async fn set_virtual_time_ms(&self, role_id: &str, ms: i64) -> Result<()>;
+}

@@ -1,9 +1,7 @@
 //! Process-wide LLM env vars and token resolution (DB → `std::env`).
 
-use crate::infrastructure::user_llm_secrets::{
-    self, read_token_file, set_cached_remote_llm_token, write_token_file,
-};
 use crate::state::AppState;
+use oclive_kernel_contracts::UserLlmSecretsPort;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use std::sync::atomic::Ordering;
@@ -102,13 +100,14 @@ pub async fn apply_user_llm_env_from_db(
 /// Database or settings read failures propagate as [`crate::error::AppError`].
 pub async fn resolve_remote_token(
     db: &crate::infrastructure::db::DbManager,
+    secrets: &dyn UserLlmSecretsPort,
     app_data: &std::path::Path,
 ) -> crate::error::Result<Option<String>> {
     let from_db = db.get_app_setting(KEY_REMOTE_TOKEN).await?;
     if from_db.as_ref().is_some_and(|s| !s.trim().is_empty()) {
         return Ok(from_db);
     }
-    Ok(read_token_file(app_data))
+    Ok(secrets.read_token_file(app_data))
 }
 
 /// # Errors
@@ -123,16 +122,17 @@ pub async fn apply_user_llm_env(state: &AppState) -> crate::error::Result<()> {
     }
 
     let app_data = state.directory_plugins.app_data_dir();
-    let token = resolve_remote_token(state.db_manager.as_ref(), app_data).await?;
+    let secrets = state.user_llm_secrets.as_ref();
+    let token = resolve_remote_token(state.db_manager.as_ref(), secrets, app_data).await?;
     if let Some(ref t) = token {
-        set_cached_remote_llm_token(Some(t.clone()));
+        secrets.set_cached_remote_llm_token(Some(t.clone()));
         state
             .db_manager
             .upsert_app_setting(KEY_REMOTE_TOKEN, t.trim())
             .await?;
-        let _ = write_token_file(app_data, t.trim());
+        let _ = secrets.write_token_file(app_data, t.trim());
     } else {
-        set_cached_remote_llm_token(None);
+        secrets.set_cached_remote_llm_token(None);
     }
     let provider = apply_user_llm_env_from_db(state.db_manager.as_ref()).await?;
     tracing::info!(
@@ -141,7 +141,7 @@ pub async fn apply_user_llm_env(state: &AppState) -> crate::error::Result<()> {
         remote_url_configured = std::env::var("OCLIVE_REMOTE_LLM_URL")
             .map(|s| !s.trim().is_empty())
             .unwrap_or(false),
-        remote_token_configured = user_llm_secrets::cached_remote_llm_token().is_some(),
+        remote_token_configured = secrets.cached_remote_llm_token().is_some(),
         "apply_user_llm_env"
     );
     *state.user_llm_provider.write() = provider;

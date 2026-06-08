@@ -115,7 +115,7 @@
 
 | 检查 | 结果 |
 |------|------|
-| `cargo clippy --workspace --all-targets --all-features -- -D warnings` | ✅ |
+| `cargo clippy --workspace --all-targets --all-features -- -D warnings`（CI `rust` job SSOT） | ✅ |
 | `cargo test -p oclivenewnew-tauri --lib` | ✅ 127 tests |
 | `npm run test:unit` | ✅ 22 tests |
 
@@ -226,11 +226,25 @@
 
 ## 已知适配层（后续可拆）
 
-以下 **`domain` 仍引用 `infrastructure` 具体类型**（插件宿主、Remote HTTP、目录子进程、高风险授权等），属于 **防腐层未完全抽出** 的技术债；新代码应优先扩展 `domain` 内已有 trait（`MemoryRetrieval`、`PluginHost` 解析接口等），避免新增 `domain → infrastructure` 依赖：
+以下 **`domain` 仍引用 `infrastructure` 具体类型**（插件宿主、Remote HTTP、目录子进程、高风险授权等），属于 **防腐层未完全抽出** 的技术债。基线计数见 [`LAYERING_BASELINE.json`](LAYERING_BASELINE.json)（`node scripts/check-domain-layering.mjs`）；**不得净增** `use crate::infrastructure` 行数。
 
-- `domain/plugin_host.rs`、`domain/role_manager.rs`、`domain/agent.rs`、`domain/role_manifest_validate.rs`
+| 基础设施模块 | 代表 domain 文件 | 用途 |
+|-------------|-----------------|------|
+| `infrastructure/db` | `virtual_time_sync.rs`、`complex_emotion_store.rs` | SQLite 直连（待端口化） |
+| `infrastructure/remote_plugin` | `plugin_host/registry.rs`、`slot_resolver.rs`、`role_manifest_validate.rs` | Remote HTTP 工厂与校验 |
+| `infrastructure/directory_plugins` | `plugin_host/mod.rs`、`plugin_host/registry.rs` | 目录插件子进程 |
+| `infrastructure/high_risk_grants` | `plugin_host/mod.rs`、`plugin_host/registry.rs`、`role_manager.rs` | 高风险能力授权 |
+| `infrastructure/mcp_client` | `plugin_host/registry.rs` | MCP 工具调用（**已端口化**：`McpBridgePort` → `infrastructure/agent_mcp_bridge.rs`） |
+| `infrastructure/function_call_parser` | `agent.rs` | LLM tool_calls 解析 |
+| `infrastructure/reply_post_processor_wiring` | —（**已端口化**：`ReplyPostProcessorResolver`） | Reply post-processor remote/directory |
+| `infrastructure/db`（`RelationIdentityStore`） | —（**已端口化**：`relation_estrangement.rs` 经 trait） | 关系疏远 / 身份 favor |
+| `infrastructure/llm` | `role_manager.rs`、`plugin_host/mod.rs`（测试 `MockLlmClient`） | 测试桩 / 降级 |
+| `infrastructure/remote_fallback_policy` | `role_manager.rs`、`plugin_host/mod.rs` | Remote 失败开关 |
+| `infrastructure/user_llm_secrets` | `user_llm_env.rs` | 用户 LLM 密钥读盘 |
 
-拆法建议（非本迭代范围）：将 `PluginHost::resolve_*` 的 **工厂** 迁至 `infrastructure/plugin_wiring.rs`，`domain` 只保留 trait 与 DTO。
+新代码应优先扩展 `domain` 内已有 trait（`MemoryRetrieval`、`PluginHostPort` 等）或 `oclive_kernel_contracts` 端口，避免新增 `domain → infrastructure` 依赖。
+
+拆法建议：将 `PluginHost::resolve_*` 的 **工厂** 迁至 `infrastructure/plugin_wiring.rs`；`relation_*` 经 `RelationStatePort`（contracts）+ `DbManager` 适配。
 
 ## `unsafe` 审查（任务 8）
 

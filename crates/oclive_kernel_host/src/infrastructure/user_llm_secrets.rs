@@ -56,3 +56,25 @@ pub fn read_token_file(app_data: &Path) -> Option<String> {
         Some(t.to_string())
     }
 }
+
+/// Default [`UserLlmSecretsPort`] for production wiring.
+#[derive(Debug, Default, Clone, Copy)]
+pub struct BuiltinUserLlmSecrets;
+
+impl oclive_kernel_contracts::UserLlmSecretsPort for BuiltinUserLlmSecrets {
+    fn set_cached_remote_llm_token(&self, token: Option<String>) {
+        set_cached_remote_llm_token(token);
+    }
+
+    fn cached_remote_llm_token(&self) -> Option<String> {
+        cached_remote_llm_token()
+    }
+
+    fn write_token_file(&self, app_data: &Path, token: &str) -> Result<(), String> {
+        write_token_file(app_data, token)
+    }
+
+    fn read_token_file(&self, app_data: &Path) -> Option<String> {
+        read_token_file(app_data)
+    }
+}

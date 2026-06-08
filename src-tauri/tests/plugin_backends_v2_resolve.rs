@@ -5,25 +5,14 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
-use oclive_kernel_host::domain::plugin_host::PluginHost;
-use oclive_kernel_host::infrastructure::high_risk_grants::HighRiskGrantStore;
-use oclive_kernel_host::infrastructure::llm::LlmClient;
-use oclive_kernel_host::infrastructure::remote_fallback_policy::new_remote_fallback_switch;
-use oclive_kernel_host::infrastructure::MockLlmClient;
+use oclive_kernel_host::infrastructure::plugin_wiring::test_plugin_host;
 use oclive_kernel_types::models::{
     EmotionBackend, EventBackend, LlmBackend, MemoryBackend, PluginBackends, PromptBackend, Role,
 };
-use std::sync::Arc;
 
 #[test]
 fn resolve_role_with_all_builtin_v2() {
-    let llm: Arc<dyn LlmClient> = Arc::new(MockLlmClient {
-        reply: String::new(),
-    });
-    let tmp = std::env::temp_dir();
-    let grants = HighRiskGrantStore::load(tmp.clone(), false);
-    let remote_fb = new_remote_fallback_switch(true);
-    let host = PluginHost::new(llm, None, tmp, grants, remote_fb);
+    let host = test_plugin_host();
     let role = Role {
         plugin_backends: std::sync::Arc::new(PluginBackends {
             memory: MemoryBackend::BuiltinV2,
