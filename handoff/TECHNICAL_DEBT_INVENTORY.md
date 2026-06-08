@@ -4,11 +4,13 @@
 
 **Verification (2026-06-08):** `cargo test -p oclive_kernel_runtime -p oclive_kernel_host -j 1`; `cargo check -p oclivenewnew-tauri -p oclive-cli`; `node scripts/e2e-kernel-profile.mjs` (when `oclive-kernel-server` + `oclive-cli` built).
 
+**Opus 4.8 follow-up (2026-06-08):** five-dimension re-review — `node scripts/dimension5-acceptance.mjs --ci` PASS; K-PERF-01 batched memory-decay writes; K-PERF-02 stage tracing + PERFORMANCE.md §6; K-DOC-02 CHANGELOG parity CI; K-PROFILE-01 unified `distro_oclive_file`; D-OPUS-05 re-export ratchet; D-OPUS-01/02/04 RC lightweight sweep Done. See §Opus 4.8 follow-up.
+
 ### Kernel profile scheduling (2026-06-08)
 
 | ID | Item | Status | Notes |
 |----|------|--------|-------|
-| K-PROFILE-01 | Dual TOML parse (`kernel_distro_profile` vs `host_profile`) | **Pending** | Scheduling subset still separate; unify parse later |
+| K-PROFILE-01 | Dual TOML parse (`kernel_distro_profile` vs `host_profile`) | **Done** | SSOT `oclive_kernel_runtime::distro_oclive_file`; RFC [RFC_PROFILE_AND_DOMAIN_REEXPORT.md](../creator-docs/rfc/RFC_PROFILE_AND_DOMAIN_REEXPORT.md) |
 | K-PROFILE-02 | `/health` summary non-runtime | **Done** | `HostProfile::active_profile_summary()` SSOT |
 | K-PROFILE-03 | `distro_id`-only weak compat | **Done** | Hash required without summary; else Unknown |
 | K-PROFILE-04 | Desktop missing bundled `distro.oclive.toml` | **Partial** | `{resource}/distro.oclive.toml` + anchors; ship in installer TBD |
@@ -28,7 +30,7 @@
 | dual_pipeline hints wiring | **Done** | `host_state_expression_hint` + `relation_transition_hint` |
 | pack-editor config + user_identities UI | **Done** | RolePackEditorPanel JSON sections |
 | Canonical re-export cleanup (Tauri P1) | **Done** | `src-tauri` imports → `oclive_kernel_host` / `oclive_kernel_types` |
-| Host/runtime engine re-export (P3) | **Pending** | `oclive_kernel_host::domain` still `pub use runtime::domain::*` |
+| Host/runtime engine re-export (P3) | **Partial** | `#[deprecated]` + `check-host-reexport-imports.mjs` ratchet (78 baseline); remove block when ratchet → 0 |
 | `ExplicitUnsupportedAgentProvider` dead code | **Done** | Removed from `agent.rs` |
 | VS Code per_scene identity (`scene_set`) | **Done** | `kernelClient.setSceneUserIdentity` → `POST /user_identity/scene_set` |
 
@@ -64,17 +66,17 @@ Cross-repo optimization scan (Opus 4.7) plus **local grep/build verification**. 
 | # | Item | Status | Notes |
 |---|------|--------|-------|
 | 1 | `[profile.release]` `opt-level = "z"` | **Done** | `opt-level = 3`, `codegen-units = 1`, `strip = "symbols"`, `panic = "abort"`, `lto = true` |
-| 2 | Tauri / reqwest feature tightening | **Pending** | `fs-*`, `blocking` still enabled |
+| 2 | Tauri / reqwest feature tightening | **Done** | Workspace `reqwest` `default-features = false`, `json` + `rustls-tls` only; no `fs-*` / `blocking` in `src-tauri` / host manifests (2026-06-08 RC sweep) |
 | 3 | SQLite WAL + pool 16 | **Done** | `infrastructure/sqlite_pool.rs`; `AppState::new` + tests |
 | 4 | Split `App.vue` (`TopBarMorePanel`) | **Done** | `TopBarMorePanel.vue` + `useReturnFocusOnClose`; App.vue ~1100 lines |
-| 5 | Plugin bridge script → static asset | **Pending** | `lib.rs` inline JS |
+| 5 | Plugin bridge script → static asset | **Done** | `plugin_protocol.rs` `include_str!(…/assets/plugin-bridge.iife.js)`; `npm run build:plugin-bridge` |
 | 6 | `TurnContext` in `process_message` | **Done** | `domain/chat_engine/turn_context.rs`; co_present / remote / dual-core |
 | 7 | `AppState` builder / policy extract | **Done** | `state/mod.rs` ~447 lines; `app_state_builder.rs`, `policy_registry.rs`, `session_backends.rs` |
-| 8 | `load_role_cached` inflight map leak | **Pending** | `Arc::strong_count` cleanup |
+| 8 | `load_role_cached` inflight map leak | **Resolved** | 2026-06-08 复核不可复现；见 D-OPUS-03 |
 | 9 | `generate_handler!` grouping | **Done** | Domain comments in `lib.rs` `invoke_handler` |
 | 10 | Dual `prompt_builder.rs` dedup | **Done** | SSOT: `crates/oclive_kernel_runtime/src/domain/prompt_builder.rs`; tauri re-exports only |
 | 11 | Vite `manualChunks` (i18n / pinia persist) | **Done** | `vendor-i18n`, `vendor-pinia-persist` |
-| 12 | Tracing file sink / JSON | **Pending** | |
+| 12 | Tracing file sink / JSON | **Done** | `init_tracing_with_log_dir` + `OCLIVE_LOG_FORMAT=json` or `RUST_LOG` containing `json`; `--api` / `OCLIVE_LOG_DIR` rolling file |
 | 13 | `Cache` read-lock + TTL | **Done** | read-first `get`, cap 1000, `Instant` TTL |
 | 14 | `package.json` devDeps trim | **Corrected** | `webdriverio` + `acorn` in use; note in `e2e/tauri-native.spec.ts` |
 | 15 | Split `e2e_init.rs` | **Done** | `e2e_init_{minimal,monolith,templates,legacy}.rs` + `tests/common/` |
@@ -277,18 +279,37 @@ Update this file when batch status changes.
 
 未纳入本维度项见 §Opus 4.8 Deferred。
 
+### Opus 4.8 follow-up 审查（2026-06-08，五维复审）
+
+DeepSeek 五维方向复审 + Opus 4.8 计划收尾。维度五基线：`node scripts/dimension5-acceptance.mjs --ci` → **PASS (7 checks)**（layering ratchet / cargo audit / lockfile / ensure-plan / CHANGELOG parity / host re-export ratchet；`--ci` 跳过抽样 cargo test）。所有 D-CI/D-LAYER/D-HONEST 未回退。
+
+| ID | 项 | 维度 | Status | 备注 |
+|----|-----|------|--------|------|
+| K-PERF-01 | `persist_memory_decay_batch` N+1 写 | 一·运行时 | **Done** | 单事务批量提交；`memory_decay_persist` + host `--lib db`（14）绿 |
+| K-PERF-02 | 热路径 stage tracing | 一·运行时 | **Done** | `staged.rs` target `oclive_turn` + `elapsed_ms`；采样见 PERFORMANCE.md §6 |
+| K-DOC-01 | `CHANGELOG.en.md [Unreleased]` 落后中文版 | 四·文档 | **Done** | 英文镜像补齐 |
+| K-DOC-02 | CHANGELOG `[Unreleased]` CI 门 | 四·文档 | **Done** | `scripts/check-changelog-parity.mjs` → dimension5 |
+| K-PROFILE-01 / D-OPUS-06 | 双 TOML 解析统一 | 二/三 | **Done** | SSOT `distro_oclive_file.rs`；RFC [RFC_PROFILE_AND_DOMAIN_REEXPORT.md](../creator-docs/rfc/RFC_PROFILE_AND_DOMAIN_REEXPORT.md) |
+| D-OPUS-05 | Host/runtime `pub use` 去重 | 二 | **Partial** | `#[deprecated]` + `check-host-reexport-imports.mjs` ratchet（baseline 78）；全仓 import 迁移未排期 |
+| D-OPUS-01/02/04 | 发版前轻量化 | 一 | **Done** | reqwest features / plugin bridge 静态资源 / JSON tracing sink（见 Opus 4.7 表 #2/#5/#12） |
+| D-OPUS-03 | `load_role_cached` inflight 泄漏 | 一/三 | **Resolved** | 双路 `role_load_inflight.remove` + `turn_locks` 软上限 |
+
+**仍 Deferred（长期，不阻塞滩头）**：D-POLICY-01（policy trait 第二实现 or collapse）；D-OPUS-05 Phase 2（re-export import 清零）；§3.1 `library` 对称 API；K-PROFILE-04 安装包 bundled profile。姊妹仓文档 sweep 见 [SISTER_REPO_DOC_SWEEP.md](./SISTER_REPO_DOC_SWEEP.md)。
+
+**设计维度结论**：`oclive_kernel_contracts` 下 ~24 个 trait 均为正当 DI 端口（`Arc<dyn>` 经 `AppState::*_for` / `domain/ports` 注入，含测试 Mock 替换面），无需降级为具体类型；单实现的 `EmotionPolicy`/`EventPolicy`/`MemoryPolicy` 已由 D-POLICY-01 跟踪。
+
 ### Opus 4.8 Deferred（2026-06-08）
 
 不在 Dimension 5 / Opus 4.8 工程纪律维强做的项；避免 Pending 悬空。
 
 | ID | 项 | 决定 |
 |----|-----|------|
-| D-OPUS-01 | Tauri/reqwest feature 收紧 | **Deferred**（发版前轻量化专项） |
-| D-OPUS-02 | Plugin bridge 内联 JS → 静态资源 | **Deferred** |
-| D-OPUS-03 | `load_role_cached` inflight 泄漏 | **Deferred**（需复现 + bench） |
-| D-OPUS-04 | Tracing JSON 文件 sink | **Deferred** |
-| D-OPUS-05 | Host/runtime `pub use` 去重 P3 | **Deferred**（架构 RFC） |
-| D-OPUS-06 | K-PROFILE-01 双 TOML 解析统一 | **Deferred** |
+| D-OPUS-01 | Tauri/reqwest feature 收紧 | **Done**（2026-06-08 RC sweep；见 Opus 4.7 表 #2） |
+| D-OPUS-02 | Plugin bridge 内联 JS → 静态资源 | **Done**（见 Opus 4.7 表 #5） |
+| D-OPUS-03 | `load_role_cached` inflight 泄漏 | **Resolved**（不可复现；见上表） |
+| D-OPUS-04 | Tracing JSON 文件 sink | **Done**（`OCLIVE_LOG_FORMAT=json`；见 Opus 4.7 表 #12） |
+| D-OPUS-05 | Host/runtime `pub use` 去重 P3 | **Partial**（RFC 已落地 Phase 1：deprecated + ratchet 78；Phase 2 import 迁移 Deferred） |
+| D-OPUS-06 | K-PROFILE-01 双 TOML 解析统一 | **Done**（合并入 K-PROFILE-01 / `distro_oclive_file`） |
 | D-POLICY-01 | policy trait second impl or collapse | **Deferred**（见上表 Dimension 5） |
 
 **配套动作（owner：作者本人）**：(1) **统一文档**一次，将 roadmap（未做）与 status（已做）明确分开 — **Done**（[DOCUMENTATION_INDEX.md](../creator-docs/getting-started/DOCUMENTATION_INDEX.md) §工程纪律 / 审查状态）。注：经核实 `oclive_kernel_server` **确实存在且可跑**（`[[bin]] oclive-kernel-server`），先前「文档有、代码无」判断为搜索假象（目录名 `oclive_kernel_server`，非 `kernel_server`）；**真正待澄清的窄点**是它仍链接 `oclivenewnew-tauri` 取编排（编排尚未抽到 host-independent 纯内核 `library`，见 §3.1），文档措辞应区分「无头发行版已存在」与「纯内核 library 待抽离」。(2) 之后**重心转向宣传与滩头**，停止过度拓展。

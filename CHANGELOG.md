@@ -8,6 +8,17 @@
 
 - **产品叙事对齐**：README / AGENTS / 定位文档统一为「AI 角色组装平台」；冻结项（dual_core、blueprint v3、expert_routing）表述为「机制已预埋，默认关闭」；聊天存储明确 hybrid 为生产路径。
 - **Profile 调度 UX**：桌面状态栏与设置 → 内核与连接、VS Code 状态栏统一 profile 适配文案（attach / mismatch / pin / replace / degraded）。
+- **发行版 Profile 解析 SSOT**：`distro.oclive.toml` 统一经 `oclive_kernel_runtime::distro_oclive_file` 解析（K-PROFILE-01）。
+- **Host domain 再导出**：runtime 引擎模块 re-export 标记 deprecated；`check-host-reexport-imports.mjs` ratchet（D-OPUS-05）。
+
+### Added
+
+- **热路径 stage tracing（K-PERF-02）**：`oclive_turn` target 输出 per-`ChatStage` `elapsed_ms`；采样见 `creator-docs/getting-started/PERFORMANCE.md` §6。
+- **CHANGELOG CI 门（K-DOC-02）**：`scripts/check-changelog-parity.mjs` 接入 `dimension5-acceptance.mjs`。
+
+### Performance
+
+- **记忆衰减写盘批处理**：`DbManager::persist_memory_decay_batch` 由「每条记忆一次独立 `UPDATE`（各自从连接池取连接并隐式提交）」改为「单事务批量提交」。该函数在每回合热路径中调用两次（衰减写回 + ranked `accessed_at` 触达），每次约 N≤10 条，原先一回合最多约 20 次独立提交，现降为 2 次事务提交。见 `crates/oclive_kernel_host/src/infrastructure/db/long_term_memory.rs`。
 
 ---
 

@@ -4,7 +4,9 @@ use crate::models::plugin_backends::{
     AgentBackend, EmotionBackend, EventBackend, LlmBackend, MemoryBackend, PluginBackends,
     PromptBackend,
 };
-use serde::Deserialize;
+use oclive_kernel_runtime::distro_oclive_file::{
+    parse_distro_oclive_file, DistroOcliveFile, PluginBackendsToml,
+};
 use std::path::{Path, PathBuf};
 
 pub const ENV_DISTRO_ID: &str = "OCLIVE_DISTRO_ID";
@@ -124,69 +126,65 @@ impl PromptProfile {
     }
 }
 
-#[derive(Debug, Default, Deserialize)]
-struct DistroProfileFile {
-    #[serde(default)]
-    #[allow(dead_code)]
-    schema_version: Option<u32>,
-    distro_id: Option<String>,
-    host_flags: Option<HostFlagsToml>,
-    slots: Option<SlotsToml>,
-    prompt: Option<PromptToml>,
-    user_identity: Option<UserIdentityToml>,
-    post_process: Option<PostProcessToml>,
-    state_expression: Option<StateExpressionToml>,
-    memory: Option<MemoryToml>,
-    plugin_backends: Option<PluginBackendsToml>,
-}
-
-#[derive(Debug, Default, Deserialize)]
-struct HostFlagsToml {
-    skip_agent: Option<bool>,
-    skip_complex_emotion: Option<bool>,
-}
-
-#[derive(Debug, Default, Deserialize)]
-struct SlotsToml {
-    complex_emotion: Option<String>,
-}
-
-#[derive(Debug, Default, Deserialize)]
-struct PromptToml {
-    profile: Option<String>,
-}
-
-#[derive(Debug, Default, Deserialize)]
-struct UserIdentityToml {
-    default_id: Option<String>,
-    allowed_ids: Option<Vec<String>>,
-}
-
-#[derive(Debug, Default, Deserialize)]
-struct PostProcessToml {
-    chain: Option<String>,
-}
-
-#[derive(Debug, Default, Deserialize)]
-struct StateExpressionToml {
-    favor_high: Option<String>,
-    favor_mid: Option<String>,
-    favor_low: Option<String>,
-}
-
-#[derive(Debug, Default, Deserialize)]
-struct MemoryToml {
-    retrieval: Option<String>,
-}
-
-#[derive(Debug, Default, Deserialize)]
-struct PluginBackendsToml {
-    memory: Option<String>,
-    emotion: Option<String>,
-    event: Option<String>,
-    prompt: Option<String>,
-    llm: Option<String>,
-    agent: Option<String>,
+fn host_profile_from_distro_file(file: &DistroOcliveFile) -> Result<HostProfile, String> {
+    let mut profile = HostProfile::default();
+    if let Some(ref id) = file.distro_id {
+        profile.distro_id = id.clone();
+    }
+    let (skip_agent, skip_complex_emotion) = file.resolve_skip_flags();
+    profile.skip_agent = skip_agent;
+    profile.skip_complex_emotion = skip_complex_emotion;
+    if let Some(ref p) = file.prompt {
+        if let Some(ref prof) = p.profile {
+            profile.prompt_profile = PromptProfile::parse(prof);
+        }
+    }
+    if let Some(ref pb) = file.plugin_backends {
+        profile.backends_ceiling = Some(parse_plugin_backends_toml(pb)?);
+    }
+    if let Some(ref ui) = file.user_identity {
+        profile.user_identity.default_id = ui
+            .default_id
+            .as_ref()
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty());
+        profile.user_identity.allowed_ids = ui.allowed_ids.as_ref().map(|ids| {
+            ids.iter()
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect()
+        });
+    }
+    if let Some(ref pp) = file.post_process {
+        if let Some(ref chain) = pp.chain {
+            profile.post_process.chain = PostProcessChain::parse(chain);
+        }
+    }
+    if let Some(ref se) = file.state_expression {
+        profile.state_expression = Some(StateExpressionProfile {
+            favor_high: se
+                .favor_high
+                .as_ref()
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty()),
+            favor_mid: se
+                .favor_mid
+                .as_ref()
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty()),
+            favor_low: se
+                .favor_low
+                .as_ref()
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty()),
+        });
+    }
+    if let Some(ref mem) = file.memory {
+        if let Some(ref mode) = mem.retrieval {
+            profile.memory_retrieval = MemoryRetrievalMode::parse(mode);
+        }
+    }
+    Ok(profile)
 }
 
 impl Default for HostProfile {
@@ -308,76 +306,8 @@ pub fn load_host_profile_from_env() -> HostProfile {
 ///
 /// Returns I/O or TOML parse errors, or unknown `plugin_backends` enum values.
 pub fn load_host_profile_file(path: &Path) -> Result<HostProfile, String> {
-    let raw = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
-    let file: DistroProfileFile = toml::from_str(&raw).map_err(|e| e.to_string())?;
-    let mut profile = HostProfile::default();
-    if let Some(id) = file.distro_id {
-        profile.distro_id = id;
-    }
-    if let Some(ref hf) = file.host_flags {
-        profile.skip_agent = hf.skip_agent.unwrap_or(false);
-        profile.skip_complex_emotion = hf.skip_complex_emotion.unwrap_or(false);
-    }
-    if let Some(ref slots) = file.slots {
-        if slots
-            .complex_emotion
-            .as_deref()
-            .is_some_and(|s| s.eq_ignore_ascii_case("off"))
-        {
-            profile.skip_complex_emotion = true;
-        }
-    }
-    if let Some(ref p) = file.prompt {
-        if let Some(ref prof) = p.profile {
-            profile.prompt_profile = PromptProfile::parse(prof);
-        }
-    }
-    if let Some(ref pb) = file.plugin_backends {
-        profile.backends_ceiling = Some(parse_plugin_backends_toml(pb)?);
-    }
-    if let Some(ref ui) = file.user_identity {
-        profile.user_identity.default_id = ui
-            .default_id
-            .as_ref()
-            .map(|s| s.trim().to_string())
-            .filter(|s| !s.is_empty());
-        profile.user_identity.allowed_ids = ui.allowed_ids.as_ref().map(|ids| {
-            ids.iter()
-                .map(|s| s.trim().to_string())
-                .filter(|s| !s.is_empty())
-                .collect()
-        });
-    }
-    if let Some(ref pp) = file.post_process {
-        if let Some(ref chain) = pp.chain {
-            profile.post_process.chain = PostProcessChain::parse(chain);
-        }
-    }
-    if let Some(ref se) = file.state_expression {
-        profile.state_expression = Some(StateExpressionProfile {
-            favor_high: se
-                .favor_high
-                .as_ref()
-                .map(|s| s.trim().to_string())
-                .filter(|s| !s.is_empty()),
-            favor_mid: se
-                .favor_mid
-                .as_ref()
-                .map(|s| s.trim().to_string())
-                .filter(|s| !s.is_empty()),
-            favor_low: se
-                .favor_low
-                .as_ref()
-                .map(|s| s.trim().to_string())
-                .filter(|s| !s.is_empty()),
-        });
-    }
-    if let Some(ref mem) = file.memory {
-        if let Some(ref mode) = mem.retrieval {
-            profile.memory_retrieval = MemoryRetrievalMode::parse(mode);
-        }
-    }
-    Ok(profile)
+    let file = parse_distro_oclive_file(path)?;
+    host_profile_from_distro_file(&file)
 }
 
 fn parse_plugin_backends_toml(pb: &PluginBackendsToml) -> Result<PluginBackends, String> {

@@ -1,42 +1,13 @@
 //! Distro profile requirements parsing & matching (scheduling subset).
 //!
-//! DTOs live in [`oclive_kernel_types`]; full runtime merge stays in `oclive_kernel_host::host_profile`.
+//! DTOs live in [`oclive_kernel_types`]; TOML SSOT in [`crate::distro_oclive_file`];
+//! full runtime merge stays in `oclive_kernel_host::host_profile`.
 
+use crate::distro_oclive_file::{parse_distro_oclive_file, parse_distro_oclive_toml, requirements_from_flags};
 use oclive_kernel_types::{ActiveProfileSummary, DistroProfileRequirements, ProfileCompat};
-use serde::Deserialize;
 use std::path::Path;
 
 pub use oclive_kernel_types::{AttachReason, ReplaceReason};
-
-#[derive(Debug, Default, Deserialize)]
-struct DistroProfileFile {
-    distro_id: Option<String>,
-    host_flags: Option<HostFlagsToml>,
-    slots: Option<SlotsToml>,
-    prompt: Option<PromptToml>,
-    post_process: Option<PostProcessToml>,
-}
-
-#[derive(Debug, Default, Deserialize)]
-struct HostFlagsToml {
-    skip_agent: Option<bool>,
-    skip_complex_emotion: Option<bool>,
-}
-
-#[derive(Debug, Default, Deserialize)]
-struct SlotsToml {
-    complex_emotion: Option<String>,
-}
-
-#[derive(Debug, Default, Deserialize)]
-struct PromptToml {
-    profile: Option<String>,
-}
-
-#[derive(Debug, Default, Deserialize)]
-struct PostProcessToml {
-    chain: Option<String>,
-}
 
 /// Parse scheduling requirements from `distro.oclive.toml`.
 ///
@@ -44,8 +15,8 @@ struct PostProcessToml {
 ///
 /// Returns I/O or TOML parse errors as strings.
 pub fn parse_distro_requirements_file(path: &Path) -> Result<DistroProfileRequirements, String> {
-    let raw = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
-    parse_distro_requirements_toml(&raw, path)
+    let file = parse_distro_oclive_file(path)?;
+    Ok(file.into_requirements(path))
 }
 
 /// Parse scheduling requirements from TOML text (tests / in-memory).
@@ -57,36 +28,8 @@ pub fn parse_distro_requirements_toml(
     raw: &str,
     path_hint: &Path,
 ) -> Result<DistroProfileRequirements, String> {
-    let file: DistroProfileFile = toml::from_str(raw).map_err(|e| e.to_string())?;
-    let mut skip_agent = false;
-    let mut skip_complex_emotion = false;
-    if let Some(ref hf) = file.host_flags {
-        skip_agent = hf.skip_agent.unwrap_or(false);
-        skip_complex_emotion = hf.skip_complex_emotion.unwrap_or(false);
-    }
-    if let Some(ref slots) = file.slots {
-        if slots
-            .complex_emotion
-            .as_deref()
-            .is_some_and(|s| s.eq_ignore_ascii_case("off"))
-        {
-            skip_complex_emotion = true;
-        }
-    }
-    let distro_id = file.distro_id.unwrap_or_else(|| {
-        path_hint
-            .file_stem()
-            .and_then(|s| s.to_str())
-            .unwrap_or("default")
-            .to_string()
-    });
-    Ok(requirements_from_flags(
-        &distro_id,
-        skip_agent,
-        skip_complex_emotion,
-        file.prompt.and_then(|p| p.profile),
-        file.post_process.and_then(|p| p.chain),
-    ))
+    let file = parse_distro_oclive_toml(raw)?;
+    Ok(file.into_requirements(path_hint))
 }
 
 #[must_use]
@@ -107,40 +50,6 @@ pub fn default_requirements_for_distro_id(distro_id: &str) -> DistroProfileRequi
             Some("standard".into()),
         ),
         _ => requirements_from_flags(distro_id, false, false, None, None),
-    }
-}
-
-fn requirements_from_flags(
-    distro_id: &str,
-    skip_agent: bool,
-    skip_complex_emotion: bool,
-    prompt: Option<String>,
-    post_process: Option<String>,
-) -> DistroProfileRequirements {
-    let mut forbidden_modules = Vec::new();
-    let mut required_modules = vec![
-        "memory".into(),
-        "emotion".into(),
-        "event".into(),
-        "prompt".into(),
-        "llm".into(),
-    ];
-    if skip_agent {
-        forbidden_modules.push("agent".into());
-    } else {
-        required_modules.push("agent".into());
-    }
-    if skip_complex_emotion {
-        forbidden_modules.push("complex_emotion".into());
-    } else {
-        required_modules.push("complex_emotion".into());
-    }
-    DistroProfileRequirements {
-        distro_id: distro_id.to_string(),
-        required_modules,
-        forbidden_modules,
-        post_process_profile: post_process,
-        prompt_profile: prompt,
     }
 }
 

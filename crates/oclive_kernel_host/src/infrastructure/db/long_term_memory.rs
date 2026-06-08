@@ -128,11 +128,22 @@ impl DbManager {
         memories: &[Memory],
         touch_accessed: &[Memory],
     ) -> Result<()> {
+        if memories.is_empty() {
+            return Ok(());
+        }
         let touch_ids: std::collections::HashSet<&str> = touch_accessed
             .iter()
             .map(|m| m.id.as_str())
             .collect();
         let now = Utc::now();
+        // Hot path: called up to twice per turn with ~10 memories. Batch the
+        // per-row UPDATEs into a single transaction (one commit) instead of N
+        // separate pool checkouts / auto-commit round-trips.
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         for m in memories {
             let Ok(id) = m.id.parse::<i64>() else {
                 continue;
@@ -142,9 +153,20 @@ impl DbManager {
             } else {
                 m.accessed_at.unwrap_or(now)
             };
-            self.update_memory_weight_and_accessed(id, role_id, m.weight, accessed)
-                .await?;
+            sqlx::query(
+                "UPDATE long_term_memory SET weight = ?, accessed_at = ? WHERE id = ? AND role_id = ?",
+            )
+            .bind(m.weight)
+            .bind(accessed.to_rfc3339())
+            .bind(id)
+            .bind(role_id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         }
+        tx.commit()
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(())
     }
 

@@ -125,6 +125,29 @@ npm run build
 4. **审阅**：由 **模块负责人**（上表）或受邀维护者 Review；关注 CI、安全、i18n 与契约文档是否同步。
 5. **合并条件**：CI 相关 job 绿（或已知 `continue-on-error` 项已登记）；Breaking 变更走 [`BREAKING_CHANGE_PROCESS.md`](handoff/BREAKING_CHANGE_PROCESS.md)；无未解决的 **P0** 发版阻塞项。
 
+### Dimension 5 基线（PR / 发版前）
+
+与 [`handoff/DIMENSION5_CLOSURE_SIGNOFF.md`](handoff/DIMENSION5_CLOSURE_SIGNOFF.md) 一致；**改动下列路径时须复跑**：
+
+| 路径 | 关联 ID | 建议命令 |
+|------|---------|----------|
+| `crates/oclive_kernel_host/src/domain/**` | D-LAYER-01 | `node scripts/check-domain-layering.mjs` |
+| `Cargo.lock` / `crates/oclive_sqlx/**` | D-CI-03 | `node scripts/dimension5-acceptance.mjs --ci` |
+| `kernel_ensure_plan_v1.json` / `oclive-cli` ensure | D-VSCODE-02 | `cargo test -p oclive-cli --test kernel_ensure_plan_snapshot` |
+| `.github/workflows/ci.yml` | D-CI-01/02 | 全量 `node scripts/dimension5-acceptance.mjs --ci` |
+| `CHANGELOG.md` / `CHANGELOG.en.md` | K-DOC-02 | `node scripts/check-changelog-parity.mjs` |
+| `oclive_kernel_host` 经 host 再导入 runtime 引擎 | D-OPUS-05 | `node scripts/check-host-reexport-imports.mjs` |
+
+**发版前快速门禁**（CI 对齐）：
+
+```bash
+node scripts/dimension5-acceptance.mjs --ci
+node scripts/check-domain-layering.mjs
+cargo test -p oclive-cli --test kernel_ensure_plan_snapshot
+```
+
+**本地全量**（含抽样 workspace lib tests）：`node scripts/dimension5-acceptance.mjs`（无 `--ci`）。
+
 ### CI 失败时怎么处理
 
 | Job / 症状 | 建议步骤 |

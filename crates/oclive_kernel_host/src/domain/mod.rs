@@ -2,7 +2,12 @@ pub mod ports;
 
 pub mod error_helpers;
 
-/// Kernel domain modules (re-exported from `oclive_kernel_runtime` for stable `crate::domain::*` paths).
+/// Kernel domain modules re-exported from `oclive_kernel_runtime` for legacy `crate::domain::*` paths.
+/// New code should import from `oclive_kernel_runtime::domain` directly (see RFC_PROFILE_AND_DOMAIN_REEXPORT).
+#[deprecated(
+    since = "0.3.1",
+    note = "Import from oclive_kernel_runtime::domain instead of oclive_kernel_host::domain"
+)]
 pub use oclive_kernel_runtime::domain::{
     affect_policy, builtin_reply_post_processor, chat_llm_fallback, chat_turn, chat_turn_rules,
     complex_emotion, emotion_analyzer, event_detector, knowledge_loader, life_schedule,

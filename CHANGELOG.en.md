@@ -4,7 +4,21 @@
 
 ## [Unreleased]
 
-（Next release entries go here.）
+### Changed
+
+- **Product narrative alignment**: README / AGENTS / positioning docs unified as "AI role assembly platform"; frozen items (dual_core, blueprint v3, expert_routing) phrased as "mechanism pre-wired, off by default"; chat storage clarifies hybrid as the production path.
+- **Profile scheduling UX**: desktop status bar, Settings → Kernel & Connection, and the VS Code status bar share unified profile-adaptation wording (attach / mismatch / pin / replace / degraded).
+- **Distro profile parse SSOT**: `distro.oclive.toml` parsed once via `oclive_kernel_runtime::distro_oclive_file` (K-PROFILE-01).
+- **Host domain re-exports**: runtime engine modules deprecated at `oclive_kernel_host::domain`; `check-host-reexport-imports.mjs` ratchet (D-OPUS-05).
+
+### Added
+
+- **Hot-path stage tracing (K-PERF-02)**: `oclive_turn` target logs per-`ChatStage` `elapsed_ms`; sample table in `creator-docs/getting-started/PERFORMANCE.md` §6.
+- **CHANGELOG CI gate (K-DOC-02)**: `scripts/check-changelog-parity.mjs` wired into `dimension5-acceptance.mjs`.
+
+### Performance
+
+- **Batched memory-decay writes**: `DbManager::persist_memory_decay_batch` changed from one independent `UPDATE` per memory (each checking out a pool connection and implicitly committing) to a single batched transaction. This function runs twice per turn on the hot path (decay write-back + ranked `accessed_at` touch), ~N≤10 rows each, reducing up to ~20 independent commits per turn down to 2 transaction commits. See `crates/oclive_kernel_host/src/infrastructure/db/long_term_memory.rs`.
 
 ---
 

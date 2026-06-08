@@ -1,4 +1,6 @@
 #![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
+// Legacy `crate::domain::*` re-exports from runtime are deprecated; allow until ratchet reaches zero.
+#![allow(deprecated)]
 
 //! Headless OCLive kernel: HTTP API, [`AppState`], orchestration, and infrastructure.
 //!
@@ -43,7 +45,10 @@ pub fn init_tracing_with_log_dir(
     let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
     let use_json = std::env::var("OCLIVE_LOG_FORMAT")
         .map(|v| v.eq_ignore_ascii_case("json"))
-        .unwrap_or(false);
+        .unwrap_or(false)
+        || std::env::var("RUST_LOG")
+            .map(|v| v.to_ascii_lowercase().contains("json"))
+            .unwrap_or(false);
 
     let stdout_layer = if use_json {
         tracing_subscriber::fmt::layer()

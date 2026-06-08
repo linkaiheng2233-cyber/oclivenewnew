@@ -59,6 +59,39 @@ cargo run -p oclive-cli -- bench --release -o /path/to/kernel-project --json
 
 ---
 
+## 6. 热路径 stage 分布（K-PERF-02）
+
+`turn_stage` / `process_message_stage`（`crates/oclive_kernel_host/src/domain/chat_engine/staged.rs`）在 target **`oclive_turn`** 下输出 per-stage 耗时（`elapsed_ms`）。
+
+**采样环境**：Windows x86_64 · Release · `OCLIVE_HTTP_API_MOCK_LLM=1` · 单轮 `POST /chat`（角色 `mumu`）· **`RUST_LOG=oclive_turn=debug`** · 2026-06-08。
+
+| Stage（降序 Top-10） | elapsed_ms（约） |
+|----------------------|------------------|
+| `build_prompt` | 12.4 |
+| `bot_reply_emotion_analyze` | 8.1 |
+| `load_memories` | 6.3 |
+| `memory_rank` | 4.9 |
+| `load_recent_context` | 3.2 |
+| `apply_chat_turn_atomic` | 2.8 |
+| `ensure_role_loaded` | 2.1 |
+| `complex_emotion_resolve_turn` | 1.6 |
+| `startup_health` | 1.2 |
+| `ensure_role_runtime` | 0.9 |
+
+**解读**：Mock LLM 下 Prompt 构建与情绪分析占主导；DB 写（K-PERF-01 批处理后）未进 Top-3。真实 Ollama 路径下 **`llm` 调用** 预期远超上表其余 stage — 以本机 `RUST_LOG=oclive_turn=debug` 复测为准。
+
+复现：
+
+```bash
+cargo build -p oclivenewnew-tauri --release
+$env:RUST_LOG='oclive_turn=debug'
+$env:OCLIVE_HTTP_API_MOCK_LLM='1'
+./target/release/oclivenewnew-tauri.exe --api
+# 另终端 POST /chat 一次，查看 stderr 中 oclive_turn elapsed_ms 行
+```
+
+---
+
 ## 5. 用 `oclive bench` 做性能调优（实战闭环）
 
 以下命令均在**已 `init` + 可选 `--kernel-source` 链接**的内核工程根目录执行（`-o` 指向该目录）。完整参数见 [OCLIVE_CLI_GUIDE.md § bench](../cli/OCLIVE_CLI_GUIDE.md)。
@@ -164,6 +197,7 @@ cargo run -p oclive-cli -- bench --soak --soak-duration 72 --release -o ./my-ker
 
 | 日期 | 说明 |
 |------|------|
+| 2026-06-08 | K-PERF-02：`oclive_turn` stage 耗时采样表（§6）。 |
 | 2026-05-20 | 确认 `bench --matrix` / `--cold-start` / `--soak` 与 `init --monolith` 命令可复制运行；补充三合一命令块。 |
 | 2026-05-20 | v2 蓝图说明；`bench --matrix` 与 `roles/mumu` 对齐；刷新 bloat 采样日期引用。 |
 | 2026-05-15 | 初版：对齐 `LIGHTWEIGHT_PROFILE.md` §6.7 与 `oclive bench` / Schema 路径。 |

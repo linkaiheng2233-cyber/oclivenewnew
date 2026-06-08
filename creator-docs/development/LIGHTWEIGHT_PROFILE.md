@@ -44,6 +44,7 @@ CI：`.github/workflows/ci.yml` 含 **`cargo-audit`**（`continue-on-error: true
 
 | 项 | 状态 |
 |----|------|
+| **`reqwest` features（D-OPUS-01）** | **2026-06-08**：workspace 与 `src-tauri` / `oclive_kernel_host` 均为 `default-features = false`，仅 **`json`** + **`rustls-tls`**；无 `fs-*` / `blocking`。 |
 | **`sqlx` 默认 features** | 当前 `src-tauri/Cargo.toml` 使用 **`sqlx = { version = "0.7", features = [...] }`** 显式列表；若锁文件仍含 **`sqlx-mysql` / `sqlx-postgres`**，多为 **macros / compile-time** 或历史解析路径引入——**中期**应结合 **sqlx 0.8+** 与 **仅 sqlite** 特征再压一刀。 |
 | **仅 dev / 工具向依赖** | 以 `cargo machete` / `cargo udeps`（可选）周期性核对；移除前须 `cargo test` 全绿。 |
 

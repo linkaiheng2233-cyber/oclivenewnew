@@ -8,6 +8,7 @@
 //! **Key decision**: DTOs and port traits live in `oclive_kernel_types` / `oclive_kernel_contracts`; import them directly — this crate does not re-export them.
 
 pub mod app_data_migration;
+pub mod distro_oclive_file;
 pub mod domain;
 pub mod http_error;
 pub mod kernel_discovery;
@@ -55,10 +56,13 @@ pub use kernel_discovery::{
     SCORE_DEV_FULL_DEBUG, SCORE_DEV_FULL_RELEASE, SCORE_DEV_HEADLESS_DEBUG,
     SCORE_DEV_HEADLESS_RELEASE, SCORE_ENV, SCORE_SETTINGS, SCORE_SHARED,
 };
+pub use distro_oclive_file::{
+    parse_distro_oclive_file, parse_distro_oclive_toml, DistroOcliveFile, PluginBackendsToml,
+};
 pub use kernel_distro_profile::{
     active_summary_from_requirements, default_requirements_for_distro_id,
-    evaluate_profile_compat, parse_distro_requirements_file, profile_satisfies_caller,
-    profiles_compatible_by_hash, resolve_caller_requirements,
+    evaluate_profile_compat, parse_distro_requirements_file, parse_distro_requirements_toml,
+    profile_satisfies_caller, profiles_compatible_by_hash, resolve_caller_requirements,
 };
 pub use oclive_kernel_types::{
     ActiveProfileSummary, AttachReason, DistroProfileRequirements, KernelHealthJson,

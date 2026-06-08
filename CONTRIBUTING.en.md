@@ -105,6 +105,21 @@ See **[`handoff/BUS_FACTOR_NOTES.md`](handoff/BUS_FACTOR_NOTES.md)** for entry p
 4. **Review:** module owner (table above) or delegate; CI, security, i18n, and contract docs must stay aligned.
 5. **Merge bar:** required CI jobs green (or documented `continue-on-error`); breaking changes follow [`BREAKING_CHANGE_PROCESS.md`](handoff/BREAKING_CHANGE_PROCESS.md).
 
+### Dimension 5 baseline (before PR / release)
+
+Aligned with [`handoff/DIMENSION5_CLOSURE_SIGNOFF.md`](handoff/DIMENSION5_CLOSURE_SIGNOFF.md). **Re-run when touching:**
+
+| Path | ID | Command |
+|------|-----|---------|
+| `crates/oclive_kernel_host/src/domain/**` | D-LAYER-01 | `node scripts/check-domain-layering.mjs` |
+| `Cargo.lock` / `crates/oclive_sqlx/**` | D-CI-03 | `node scripts/dimension5-acceptance.mjs --ci` |
+| `kernel_ensure_plan_v1.json` / `oclive-cli` ensure | D-VSCODE-02 | `cargo test -p oclive-cli --test kernel_ensure_plan_snapshot` |
+| `.github/workflows/ci.yml` | D-CI-01/02 | full `node scripts/dimension5-acceptance.mjs --ci` |
+| `CHANGELOG.md` / `CHANGELOG.en.md` | K-DOC-02 | `node scripts/check-changelog-parity.mjs` |
+| host re-exports of runtime engines | D-OPUS-05 | `node scripts/check-host-reexport-imports.mjs` |
+
+**Quick release gate:** `node scripts/dimension5-acceptance.mjs --ci` · `node scripts/check-domain-layering.mjs` · `cargo test -p oclive-cli --test kernel_ensure_plan_snapshot`
+
 ### When CI fails
 
 | Job | What to do |

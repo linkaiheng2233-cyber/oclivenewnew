@@ -86,6 +86,14 @@ runStep('kernel ensure plan snapshot', () => {
   sh('cargo', ['test', '-p', 'oclive-cli', '--test', 'kernel_ensure_plan_snapshot']);
 });
 
+runStep('CHANGELOG [Unreleased] parity', () => {
+  sh('node', ['scripts/check-changelog-parity.mjs']);
+});
+
+runStep('host runtime re-export ratchet', () => {
+  sh('node', ['scripts/check-host-reexport-imports.mjs']);
+});
+
 if (!ciMode) {
   runStep('sample workspace lib tests (host + runtime)', () => {
     sh('cargo', ['test', '-p', 'oclive_kernel_host', '-p', 'oclive_kernel_runtime', '--lib']);
