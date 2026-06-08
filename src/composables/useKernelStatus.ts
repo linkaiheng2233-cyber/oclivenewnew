@@ -4,7 +4,15 @@ import { fetchRoleSnapshot, getKernelConnectionStatus } from '../api/kernel'
 import { useRoleStore } from '../stores/roleStore'
 import { useChatStore } from '../stores/chatStore'
 
-const POLL_MS = 8000
+const POLL_MS_VISIBLE = 8000
+const POLL_MS_HIDDEN = 60000
+
+function pollIntervalMs(): number {
+  if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+    return POLL_MS_HIDDEN
+  }
+  return POLL_MS_VISIBLE
+}
 
 export function useRoleSnapshotPoll() {
   const roleStore = useRoleStore()
@@ -46,10 +54,18 @@ export function useRoleSnapshotPoll() {
     }
   }
 
+  function schedule() {
+    if (timer) {
+      clearInterval(timer)
+    }
+    timer = setInterval(() => { void tick() }, pollIntervalMs())
+  }
+
   function start() {
     stop()
-    timer = setInterval(() => { void tick() }, POLL_MS)
+    schedule()
     window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onVisibilityChange)
   }
 
   function stop() {
@@ -58,10 +74,18 @@ export function useRoleSnapshotPoll() {
       timer = undefined
     }
     window.removeEventListener('focus', onFocus)
+    document.removeEventListener('visibilitychange', onVisibilityChange)
   }
 
   function onFocus() {
     void tick()
+  }
+
+  function onVisibilityChange() {
+    schedule()
+    if (document.visibilityState === 'visible') {
+      void tick()
+    }
   }
 
   onMounted(start)

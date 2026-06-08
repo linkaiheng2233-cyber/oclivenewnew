@@ -26,15 +26,27 @@ export const simplePluginManagerEn = {
     needOne: 'Select at least one placement',
   },
   slots: {
-    'chat_toolbar': 'Above chat input',
-    'settings.panel': 'Settings extension',
-    'role.detail': 'Role detail area',
-    'sidebar': 'Sidebar extension',
-    'chat.header': 'Top of chat column',
-    'settings.plugins': 'Plugin settings area',
-    'settings.advanced': 'Settings advanced area',
-    'overlay.floating': 'Global overlay',
-    'launcher.palette': 'Launcher palette',
-    'debug.dock': 'Debug dock',
+    chat_toolbar: 'Above chat input',
+    sidebar: 'Sidebar extension',
+    settings: {
+      panel: 'Settings extension',
+      plugins: 'Plugin settings area',
+      advanced: 'Settings advanced area',
+    },
+    role: {
+      detail: 'Role detail area',
+    },
+    chat: {
+      header: 'Top of chat column',
+    },
+    overlay: {
+      floating: 'Global overlay',
+    },
+    launcher: {
+      palette: 'Launcher palette',
+    },
+    debug: {
+      dock: 'Debug dock',
+    },
   },
 }

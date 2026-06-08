@@ -19,6 +19,10 @@
 ### Performance
 
 - **Batched memory-decay writes**: `DbManager::persist_memory_decay_batch` changed from one independent `UPDATE` per memory (each checking out a pool connection and implicitly committing) to a single batched transaction. This function runs twice per turn on the hot path (decay write-back + ranked `accessed_at` touch), ~N≤10 rows each, reducing up to ~20 independent commits per turn down to 2 transaction commits. See `crates/oclive_kernel_host/src/infrastructure/db/long_term_memory.rs`.
+- **Lazy shell loading (K-PERF-09)**: `App.vue` now imports `FluentShell` / `ToolShell` via `defineAsyncComponent`, loading only the shell selected by `resolveOcliveShell()`; the non-rendered shell no longer ships in the first-screen main chunk.
+- **Hot-path DB merge (K-PERF-03~06)**: one `EffectiveSessionConfig` per turn; single `get_role_runtime_snapshot` read; shared `TurnPrefetch` / skip agent DB when `agent=none`; one memory-decay transaction. Baseline: `handoff/OPUS_48_PERF_BASELINE.md`.
+- **Long-lived memory/SQLite (K-PERF-07/08/12)**: `SessionCache` six-map cap+TTL; `personality_vector` composite index migration `033`; `hybrid_store` drops redundant `get_chat_session`; `role_cache` LRU(32); LLM startup probe runs in background.
+- **In-shell lazy panels + poll backoff (K-PERF-10/11)**: non-first-screen panels in `FluentShell`/`ToolShell` via `defineAsyncComponent`; `useKernelStatus` backs off to 60s when the tab is hidden.
 
 ---
 

@@ -19,6 +19,10 @@
 ### Performance
 
 - **记忆衰减写盘批处理**：`DbManager::persist_memory_decay_batch` 由「每条记忆一次独立 `UPDATE`（各自从连接池取连接并隐式提交）」改为「单事务批量提交」。该函数在每回合热路径中调用两次（衰减写回 + ranked `accessed_at` 触达），每次约 N≤10 条，原先一回合最多约 20 次独立提交，现降为 2 次事务提交。见 `crates/oclive_kernel_host/src/infrastructure/db/long_term_memory.rs`。
+- **前端外壳懒加载（K-PERF-09）**：`App.vue` 改用 `defineAsyncComponent` 动态导入 `FluentShell` / `ToolShell`，仅按 `resolveOcliveShell()` 结果加载当前外壳，未渲染的外壳不再进入首屏主 chunk。
+- **热路径 DB 合并（K-PERF-03~06）**：每回合一次 `EffectiveSessionConfig`；`get_role_runtime_snapshot` 单查；`TurnPrefetch` 共享 / `agent=none` 跳过 agent DB；记忆 decay 单事务。基线见 `handoff/OPUS_48_PERF_BASELINE.md`。
+- **长驻内存/SQLite（K-PERF-07/08/12）**：`SessionCache` 六 map cap+TTL；`personality_vector` 复合索引 migration `033`；`hybrid_store` 去掉多余 `get_chat_session`；`role_cache` LRU(32)；LLM startup probe 后台化。
+- **前端壳内懒加载与轮询退避（K-PERF-10/11）**：`FluentShell`/`ToolShell` 非首屏面板 `defineAsyncComponent`；`useKernelStatus` 在 tab hidden 时 60s 退避。
 
 ---
 

@@ -26,15 +26,27 @@ export const simplePluginManagerZh = {
     needOne: '请至少选择一个位置',
   },
   slots: {
-    'chat_toolbar': '聊天输入区上方',
-    'settings.panel': '设置页扩展',
-    'role.detail': '角色详情区',
-    'sidebar': '左侧栏扩展',
-    'chat.header': '聊天列顶部',
-    'settings.plugins': '插件设置区',
-    'settings.advanced': '设置高级扩展',
-    'overlay.floating': '全局浮层',
-    'launcher.palette': '启动器面板',
-    'debug.dock': '调试扩展',
+    chat_toolbar: '聊天输入区上方',
+    sidebar: '左侧栏扩展',
+    settings: {
+      panel: '设置页扩展',
+      plugins: '插件设置区',
+      advanced: '设置高级扩展',
+    },
+    role: {
+      detail: '角色详情区',
+    },
+    chat: {
+      header: '聊天列顶部',
+    },
+    overlay: {
+      floating: '全局浮层',
+    },
+    launcher: {
+      palette: '启动器面板',
+    },
+    debug: {
+      dock: '调试扩展',
+    },
   },
 }

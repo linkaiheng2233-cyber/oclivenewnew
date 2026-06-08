@@ -36,6 +36,11 @@ export const MarketView = defineAsyncComponent(() => import('../views/MarketView
 export const SettingsView = defineAsyncComponent(() => import('../views/SettingsView.vue'))
 export const ModelManagerPanel = defineAsyncComponent(() => import('../views/ModelManagerPanel.vue'))
 export const SimplePluginManagerPanel = defineAsyncComponent(() => import('../views/SimplePluginManagerPanel.vue'))
+export const RoleDetailView = defineAsyncComponent(() => import('../views/RoleDetailView.vue'))
+export const SceneTravelBars = defineAsyncComponent(() => import('../components/SceneTravelBars.vue'))
+export const RoleplayAsidePanel = defineAsyncComponent(() => import('../components/RoleplayAsidePanel.vue'))
+export const TopBarMorePanel = defineAsyncComponent(() => import('../components/TopBarMorePanel.vue'))
+export const AutonomousSceneNotice = defineAsyncComponent(() => import('../components/AutonomousSceneNotice.vue'))
 
 export function useMainShell() {
   const roleStore = useRoleStore()

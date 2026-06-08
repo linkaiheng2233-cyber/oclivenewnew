@@ -26,7 +26,7 @@ Same model as [PLUGIN_V1.md](PLUGIN_V1.md): **v1 uses compile‑time enums** sel
 | LLM | `LlmClient` (`plugin_backends.llm`: `ollama` / `remote` / `directory`) | Injected `OllamaClient`; `remote` when `OCLIVE_REMOTE_LLM_URL` set; **`directory`** uses **`directory_plugins.llm`** URL (see [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)); else built‑in fallback | `src-tauri/src/infrastructure/llm.rs`, `remote_plugin/` |
 | Agent | `AgentProvider` (`builtin` / `remote` / `directory`) | `BuiltinReActAgent`; `directory` needs `directory_plugins.agent`; MCP roots under `app_data_dir` | `crates/oclive_kernel_host/src/domain/agent.rs`, `mcp_client.rs` |
 | Long‑term memory persistence | `MemoryRepository` | SQLite | `domain/repository.rs`, `infrastructure/repositories` |
-| Policies | `EmotionPolicy`, … | `Default*` | `domain/policy.rs`, state loading |
+| Policies | `EmotionPolicy`, … (trait: `crates/oclive_kernel_contracts/src/policy.rs`) | `Default*` (`crates/oclive_kernel_runtime/src/domain/policy.rs`) | wiring: `crates/oclive_kernel_host/src/infrastructure/policy_registry.rs` |
 
 **World knowledge** (`roles/{id}/knowledge/*.md`, optional manifest `knowledge`) is **pack resources + prompt/rules** — **not** switched via `plugin_backends`; see [WORLDVIEW_KNOWLEDGE.md](../../creator-docs/role-pack/WORLDVIEW_KNOWLEDGE.md).
 

@@ -1,5 +1,6 @@
 //! Distro capability profile — loaded from `distro.oclive.toml` (P1 contract, P4 runtime).
 
+use crate::error::AppError;
 use crate::models::plugin_backends::{
     AgentBackend, EmotionBackend, EventBackend, LlmBackend, MemoryBackend, PluginBackends,
     PromptBackend,
@@ -126,7 +127,7 @@ impl PromptProfile {
     }
 }
 
-fn host_profile_from_distro_file(file: &DistroOcliveFile) -> Result<HostProfile, String> {
+fn host_profile_from_distro_file(file: &DistroOcliveFile) -> std::result::Result<HostProfile, AppError> {
     let mut profile = HostProfile::default();
     if let Some(ref id) = file.distro_id {
         profile.distro_id = id.clone();
@@ -305,12 +306,12 @@ pub fn load_host_profile_from_env() -> HostProfile {
 /// # Errors
 ///
 /// Returns I/O or TOML parse errors, or unknown `plugin_backends` enum values.
-pub fn load_host_profile_file(path: &Path) -> Result<HostProfile, String> {
+pub fn load_host_profile_file(path: &Path) -> std::result::Result<HostProfile, String> {
     let file = parse_distro_oclive_file(path)?;
-    host_profile_from_distro_file(&file)
+    host_profile_from_distro_file(&file).map_err(|e| e.to_string())
 }
 
-fn parse_plugin_backends_toml(pb: &PluginBackendsToml) -> Result<PluginBackends, String> {
+fn parse_plugin_backends_toml(pb: &PluginBackendsToml) -> std::result::Result<PluginBackends, AppError> {
     Ok(PluginBackends {
         memory: parse_memory(pb.memory.as_deref())?,
         emotion: parse_emotion(pb.emotion.as_deref())?,
@@ -322,7 +323,7 @@ fn parse_plugin_backends_toml(pb: &PluginBackendsToml) -> Result<PluginBackends,
     })
 }
 
-fn parse_memory(s: Option<&str>) -> Result<MemoryBackend, String> {
+fn parse_memory(s: Option<&str>) -> std::result::Result<MemoryBackend, AppError> {
     match s {
         None => Ok(MemoryBackend::Builtin),
         Some(v) => match v {
@@ -332,12 +333,14 @@ fn parse_memory(s: Option<&str>) -> Result<MemoryBackend, String> {
             "local" => Ok(MemoryBackend::Local),
             "directory" => Ok(MemoryBackend::Directory),
             "none" => Ok(MemoryBackend::None),
-            other => Err(format!("unknown memory backend: {other}")),
+            other => Err(AppError::InvalidParameter(format!(
+                "unknown memory backend: {other}"
+            ))),
         },
     }
 }
 
-fn parse_emotion(s: Option<&str>) -> Result<EmotionBackend, String> {
+fn parse_emotion(s: Option<&str>) -> std::result::Result<EmotionBackend, AppError> {
     match s {
         None => Ok(EmotionBackend::Builtin),
         Some(v) => match v {
@@ -346,12 +349,14 @@ fn parse_emotion(s: Option<&str>) -> Result<EmotionBackend, String> {
             "remote" => Ok(EmotionBackend::Remote),
             "directory" => Ok(EmotionBackend::Directory),
             "none" => Ok(EmotionBackend::None),
-            other => Err(format!("unknown emotion backend: {other}")),
+            other => Err(AppError::InvalidParameter(format!(
+                "unknown emotion backend: {other}"
+            ))),
         },
     }
 }
 
-fn parse_event(s: Option<&str>) -> Result<EventBackend, String> {
+fn parse_event(s: Option<&str>) -> std::result::Result<EventBackend, AppError> {
     match s {
         None => Ok(EventBackend::Builtin),
         Some(v) => match v {
@@ -360,12 +365,14 @@ fn parse_event(s: Option<&str>) -> Result<EventBackend, String> {
             "remote" => Ok(EventBackend::Remote),
             "directory" => Ok(EventBackend::Directory),
             "none" => Ok(EventBackend::None),
-            other => Err(format!("unknown event backend: {other}")),
+            other => Err(AppError::InvalidParameter(format!(
+                "unknown event backend: {other}"
+            ))),
         },
     }
 }
 
-fn parse_prompt(s: Option<&str>) -> Result<PromptBackend, String> {
+fn parse_prompt(s: Option<&str>) -> std::result::Result<PromptBackend, AppError> {
     match s {
         None => Ok(PromptBackend::Builtin),
         Some(v) => match v {
@@ -374,12 +381,14 @@ fn parse_prompt(s: Option<&str>) -> Result<PromptBackend, String> {
             "remote" => Ok(PromptBackend::Remote),
             "directory" => Ok(PromptBackend::Directory),
             "none" => Ok(PromptBackend::None),
-            other => Err(format!("unknown prompt backend: {other}")),
+            other => Err(AppError::InvalidParameter(format!(
+                "unknown prompt backend: {other}"
+            ))),
         },
     }
 }
 
-fn parse_llm(s: Option<&str>) -> Result<LlmBackend, String> {
+fn parse_llm(s: Option<&str>) -> std::result::Result<LlmBackend, AppError> {
     match s {
         None => Ok(LlmBackend::Ollama),
         Some(v) => match v {
@@ -387,12 +396,12 @@ fn parse_llm(s: Option<&str>) -> Result<LlmBackend, String> {
             "remote" => Ok(LlmBackend::Remote),
             "directory" => Ok(LlmBackend::Directory),
             "none" => Ok(LlmBackend::None),
-            other => Err(format!("unknown llm backend: {other}")),
+            other => Err(AppError::InvalidParameter(format!("unknown llm backend: {other}"))),
         },
     }
 }
 
-fn parse_agent(s: Option<&str>) -> Result<AgentBackend, String> {
+fn parse_agent(s: Option<&str>) -> std::result::Result<AgentBackend, AppError> {
     match s {
         None => Ok(AgentBackend::Builtin),
         Some(v) => match v {
@@ -400,7 +409,9 @@ fn parse_agent(s: Option<&str>) -> Result<AgentBackend, String> {
             "remote" => Ok(AgentBackend::Remote),
             "directory" => Ok(AgentBackend::Directory),
             "none" => Ok(AgentBackend::None),
-            other => Err(format!("unknown agent backend: {other}")),
+            other => Err(AppError::InvalidParameter(format!(
+                "unknown agent backend: {other}"
+            ))),
         },
     }
 }

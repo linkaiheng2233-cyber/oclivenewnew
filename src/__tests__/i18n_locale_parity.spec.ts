@@ -34,6 +34,27 @@ describe('i18n locale parity (zh-CN vs en-US)', () => {
     expect(missingInEn, `Missing in en-US: ${missingInEn.join(', ')}`).toEqual([])
   })
 
+  it('includes simplePluginManager.slots keys in both locales', () => {
+    const slotKeys = [
+      'simplePluginManager.slots.chat_toolbar',
+      'simplePluginManager.slots.settings.panel',
+      'simplePluginManager.slots.role.detail',
+      'simplePluginManager.slots.sidebar',
+      'simplePluginManager.slots.chat.header',
+      'simplePluginManager.slots.settings.plugins',
+      'simplePluginManager.slots.settings.advanced',
+      'simplePluginManager.slots.overlay.floating',
+      'simplePluginManager.slots.launcher.palette',
+      'simplePluginManager.slots.debug.dock',
+    ]
+    const zhKeys = flattenMessageKeys(zhCN)
+    const enKeys = flattenMessageKeys(enUS)
+    for (const key of slotKeys) {
+      expect(zhKeys.has(key), `zh-CN missing ${key}`).toBe(true)
+      expect(enKeys.has(key), `en-US missing ${key}`).toBe(true)
+    }
+  })
+
   it('has the same key tree in both catalogs (no missing zh-CN leaves)', () => {
     const zhKeys = flattenMessageKeys(zhCN)
     const enKeys = flattenMessageKeys(enUS)

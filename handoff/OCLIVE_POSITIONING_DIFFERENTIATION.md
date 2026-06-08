@@ -140,7 +140,7 @@
 
 即：**一份权威 loader/validator，谁用谁链接（原生或 WASM），格式不每发行版重写**。此为可硬气对外/写入专利的真实差异点。
 
-**诚实缺口（已据实收窄）：** 无头 `oclive_kernel_server` **确实存在且可跑**——之前误判"不存在"为搜索假象（目录名 `oclive_kernel_server`，非 `kernel_server`），已更正。**真正的窄缺口**：`oclive_kernel_server` 仍**依赖 `oclivenewnew-tauri`（host crate）提供编排**（`run_api_server`），即编排尚未抽到独立纯内核；**host-independent 的纯内核 `library` API 才是被推迟项**（见 [TECHNICAL_DEBT_INVENTORY §3.1](./TECHNICAL_DEBT_INVENTORY.md)）。**准确表述**："一份格式 + 一份校验，已被桌面 / 无头服务 / CLI / 编写器（WASM）四端共用；无头发行版已存在但仍链接 host 编排，**完全 host 解耦的纯内核 library 是下一步**；启动器消费为未来。"
+**诚实缺口（已据实收窄）：** 无头 `oclive_kernel_server` **确实存在且可跑**——之前误判"不存在"为搜索假象（目录名 `oclive_kernel_server`，非 `kernel_server`），已更正。`oclive_kernel_server` 仅依赖 **`oclive_kernel_host` + `oclive_kernel_runtime`**（`Cargo.toml`，**不**再依赖 `oclivenewnew-tauri`），编排经 `oclive_kernel_host::run_api_server`。**真正的窄缺口**：编排（`process_message`）仍内嵌在 `oclive_kernel_host`，与该 crate 的 `infrastructure` 模块耦合；**host-independent 的纯内核 `library` API 才是被推迟项**（见 [TECHNICAL_DEBT_INVENTORY §3.1](./TECHNICAL_DEBT_INVENTORY.md)）。**准确表述**："一份格式 + 一份校验，已被桌面 / 无头服务 / CLI / 编写器（WASM）四端共用；无头发行版已存在（链接 `oclive_kernel_host` 编排，非 Tauri host），**完全解耦的纯内核 library 是下一步**；启动器消费为未来。"
 
 ### 2.7 对外主线叙事：同一个 OC，全天候跨设备陪你
 

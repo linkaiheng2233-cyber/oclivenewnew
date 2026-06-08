@@ -10,41 +10,16 @@ use crate::state::AppState;
 use oclive_kernel_contracts::{
     ReplyPostProcessor, ReplyPostProcessorEffectiveConfig, ReplyPostProcessorResolver,
 };
-use oclive_kernel_types::models::{
-    RolePackBuiltinReplyPostProcessorConfig, RolePackDirectoryReplyPostProcessorConfig,
-    RolePackRemoteReplyPostProcessorConfig, RolePackReplyPostProcessorConfig,
-};
+use oclive_kernel_types::models::RolePackReplyPostProcessorConfig;
 use std::sync::Arc;
-
-/// Role pack config after distro `[post_process].chain` merge.
-#[derive(Debug, Clone)]
-pub struct EffectiveReplyPostProcessorConfig {
-    pub enabled: bool,
-    pub backend: ReplyPostProcessorBackendKind,
-    pub builtin: RolePackBuiltinReplyPostProcessorConfig,
-    pub remote: RolePackRemoteReplyPostProcessorConfig,
-    pub directory: RolePackDirectoryReplyPostProcessorConfig,
-}
-
-impl From<&EffectiveReplyPostProcessorConfig> for ReplyPostProcessorEffectiveConfig {
-    fn from(eff: &EffectiveReplyPostProcessorConfig) -> Self {
-        Self {
-            backend: eff.backend,
-            builtin: eff.builtin.clone(),
-            remote: eff.remote.clone(),
-            directory: eff.directory.clone(),
-        }
-    }
-}
 
 /// Merge role pack `reply_post_processor` with host profile post-process chain policy.
 #[must_use]
 pub fn apply_effective_post_processor_config(
     host: &HostProfile,
     role_cfg: &RolePackReplyPostProcessorConfig,
-) -> EffectiveReplyPostProcessorConfig {
-    let mut cfg = EffectiveReplyPostProcessorConfig {
-        enabled: role_cfg.enabled,
+) -> ReplyPostProcessorEffectiveConfig {
+    let mut cfg = ReplyPostProcessorEffectiveConfig {
         backend: role_cfg.backend,
         builtin: role_cfg.builtin.clone(),
         remote: role_cfg.remote.clone(),
@@ -56,26 +31,25 @@ pub fn apply_effective_post_processor_config(
     cfg
 }
 
-fn resolve_builtin(eff: &EffectiveReplyPostProcessorConfig) -> Arc<dyn ReplyPostProcessor> {
+fn resolve_builtin(eff: &ReplyPostProcessorEffectiveConfig) -> Arc<dyn ReplyPostProcessor> {
     Arc::new(BuiltinReplyPostProcessor::new(eff.builtin.clone()))
 }
 
 /// Factory: `enabled = false` → pass-through; merges host profile chain before backend resolution.
 #[must_use]
 pub fn resolve_reply_post_processor(state: &AppState, role: &Role) -> Arc<dyn ReplyPostProcessor> {
+    if !role.pack_reply_post_processor_config.enabled {
+        return Arc::new(PassthroughReplyPostProcessor);
+    }
     let eff = apply_effective_post_processor_config(
         state.host_profile.as_ref(),
         &role.pack_reply_post_processor_config,
     );
-    if !eff.enabled {
-        return Arc::new(PassthroughReplyPostProcessor);
-    }
     let wire: &dyn ReplyPostProcessorResolver = state.reply_post_processor_resolver.as_ref();
-    let wire_cfg = ReplyPostProcessorEffectiveConfig::from(&eff);
     match eff.backend {
         ReplyPostProcessorBackendKind::Builtin => resolve_builtin(&eff),
-        ReplyPostProcessorBackendKind::Remote => wire.resolve_remote(&wire_cfg),
-        ReplyPostProcessorBackendKind::Directory => wire.resolve_directory(&wire_cfg),
+        ReplyPostProcessorBackendKind::Remote => wire.resolve_remote(&eff),
+        ReplyPostProcessorBackendKind::Directory => wire.resolve_directory(&eff),
     }
 }
 
@@ -83,6 +57,7 @@ pub fn resolve_reply_post_processor(state: &AppState, role: &Role) -> Arc<dyn Re
 mod tests {
     use super::*;
     use crate::domain::host_profile::{PostProcessChainProfile, UserIdentityProfile};
+    use oclive_kernel_types::models::RolePackBuiltinReplyPostProcessorConfig;
 
     #[test]
     fn minimal_chain_forces_builtin_profile() {
@@ -102,7 +77,6 @@ mod tests {
         };
         let eff = apply_effective_post_processor_config(&host, &role_cfg);
         assert_eq!(eff.builtin.profile, "minimal");
-        assert!(eff.enabled);
     }
 
     #[test]
@@ -126,7 +100,7 @@ mod tests {
     }
 
     #[test]
-    fn minimal_chain_does_not_enable_disabled_role_config() {
+    fn disabled_role_config_stays_disabled() {
         let host = HostProfile {
             post_process: PostProcessChainProfile {
                 chain: PostProcessChain::Minimal,
@@ -134,7 +108,8 @@ mod tests {
             ..HostProfile::default()
         };
         let role_cfg = RolePackReplyPostProcessorConfig::default();
+        assert!(!role_cfg.enabled);
         let eff = apply_effective_post_processor_config(&host, &role_cfg);
-        assert!(!eff.enabled);
+        assert_eq!(eff.builtin.profile, "minimal");
     }
 }

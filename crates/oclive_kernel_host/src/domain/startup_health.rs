@@ -8,6 +8,7 @@ use crate::models::plugin_backends::{
 use crate::models::Role;
 use crate::state::AppState;
 use std::collections::HashMap;
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 const FAILURE_RETRY_TTL: Duration = Duration::from_secs(120);
@@ -108,12 +109,17 @@ async fn run_checks(state: &AppState, role: &Role, effective: &PluginBackends) -
             target: "oclive_startup",
             "OCLIVE_SKIP_LLM_STARTUP_PROBE set; skipping LLM probe"
         );
-    } else if let Err(e) = state.llm.startup_probe().await {
-        tracing::warn!(
-            target: "oclive_startup",
-            "LLM startup_probe non-fatal: {}",
-            e.to_frontend_error()
-        );
+    } else {
+        let llm = Arc::clone(&state.llm);
+        tokio::spawn(async move {
+            if let Err(e) = llm.startup_probe().await {
+                tracing::warn!(
+                    target: "oclive_startup",
+                    "LLM startup_probe non-fatal: {}",
+                    e.to_frontend_error()
+                );
+            }
+        });
     }
     warn_remote_backend_placeholders(effective);
     tracing::info!(

@@ -198,10 +198,11 @@ impl PluginHost {
         server_id: &str,
         tool_name: &str,
         params: Value,
-    ) -> std::result::Result<AgentToolResult, String> {
+    ) -> crate::error::Result<AgentToolResult> {
         self.registry
             .call_mcp_tool(server_id, tool_name, params)
             .await
+            .map_err(|e| crate::error::AppError::Unknown(e))
     }
 
     #[must_use]

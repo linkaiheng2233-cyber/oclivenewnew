@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { inject, ref } from 'vue'
-import AutonomousSceneNotice from '../../components/AutonomousSceneNotice.vue'
 import ChatInput from '../../components/chat/ChatInput.vue'
 import ChatMessageList from '../../components/chat/ChatMessageList.vue'
 import ChatPluginToolbarSlots from '../../components/ChatPluginToolbarSlots.vue'
@@ -10,9 +9,7 @@ import PluginSidebarSlots from '../../components/PluginSidebarSlots.vue'
 import PluginSlotEmbed from '../../components/PluginSlotEmbed.vue'
 import RoleIdentityControls from '../../components/role/RoleIdentityControls.vue'
 import RoleSelector from '../../components/role/RoleSelector.vue'
-import RoleplayAsidePanel from '../../components/RoleplayAsidePanel.vue'
 import TopBarSceneModeDialog from '../../components/scene/TopBarSceneModeDialog.vue'
-import SceneTravelBars from '../../components/SceneTravelBars.vue'
 import ShortcutHelp from '../../components/ShortcutHelp.vue'
 import Toast from '../../components/Toast.vue'
 import UiResizeHandle from '../../components/ui/UiResizeHandle.vue'
@@ -23,10 +20,13 @@ import {
   setSidePanelWidth,
 } from '../../composables/useLayoutWidths'
 import {
+  AutonomousSceneNotice,
   DebugPanel,
   MarketView,
+  RoleDetailView,
+  RoleplayAsidePanel,
+  SceneTravelBars,
 } from '../../composables/useMainShell'
-import RoleDetailView from '../../views/RoleDetailView.vue'
 import ToolActivityBar from './ToolActivityBar.vue'
 import ToolMoreMenu from './ToolMoreMenu.vue'
 import ToolSidePanelHost from './ToolSidePanelHost.vue'

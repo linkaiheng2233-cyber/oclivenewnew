@@ -6,6 +6,8 @@
 
 **Opus 4.8 follow-up (2026-06-08):** five-dimension re-review — `node scripts/dimension5-acceptance.mjs --ci` PASS; K-PERF-01 batched memory-decay writes; K-PERF-02 stage tracing + PERFORMANCE.md §6; K-DOC-02 CHANGELOG parity CI; K-PROFILE-01 unified `distro_oclive_file`; D-OPUS-05 re-export ratchet; D-OPUS-01/02/04 RC lightweight sweep Done. See §Opus 4.8 follow-up.
 
+**Opus 4.8 second pass (2026-06-08):** five-dimension re-review #2 — gate re-run PASS (7 checks), no regressions. Fixed (zero-risk): K-PERF-09 lazy shells, K-DOC-03/04 doc drift. **Implemented (PR-A/B/C/D/E matrix):** D-LAYER-05 (FQ 14→5 + turn ports), D-DTO-01, D-ERR-01 (incremental), K-PERF-03..08/11/12, K-DOC-05/06; K-PERF-10 **Partial** (overlay panels lazy, chat chrome still eager). Still Deferred: D-PORT-02, D-SLOT-01. See §Opus 4.8 五维复审追加.
+
 ### Kernel profile scheduling (2026-06-08)
 
 | ID | Item | Status | Notes |
@@ -312,4 +314,44 @@ DeepSeek 五维方向复审 + Opus 4.8 计划收尾。维度五基线：`node sc
 | D-OPUS-06 | K-PROFILE-01 双 TOML 解析统一 | **Done**（合并入 K-PROFILE-01 / `distro_oclive_file`） |
 | D-POLICY-01 | policy trait second impl or collapse | **Deferred**（见上表 Dimension 5） |
 
-**配套动作（owner：作者本人）**：(1) **统一文档**一次，将 roadmap（未做）与 status（已做）明确分开 — **Done**（[DOCUMENTATION_INDEX.md](../creator-docs/getting-started/DOCUMENTATION_INDEX.md) §工程纪律 / 审查状态）。注：经核实 `oclive_kernel_server` **确实存在且可跑**（`[[bin]] oclive-kernel-server`），先前「文档有、代码无」判断为搜索假象（目录名 `oclive_kernel_server`，非 `kernel_server`）；**真正待澄清的窄点**是它仍链接 `oclivenewnew-tauri` 取编排（编排尚未抽到 host-independent 纯内核 `library`，见 §3.1），文档措辞应区分「无头发行版已存在」与「纯内核 library 待抽离」。(2) 之后**重心转向宣传与滩头**，停止过度拓展。
+**配套动作（owner：作者本人）**：(1) **统一文档**一次，将 roadmap（未做）与 status（已做）明确分开 — **Done**（[DOCUMENTATION_INDEX.md](../creator-docs/getting-started/DOCUMENTATION_INDEX.md) §工程纪律 / 审查状态）。注：经核实 `oclive_kernel_server` **确实存在且可跑**（`[[bin]] oclive-kernel-server`），先前「文档有、代码无」判断为搜索假象（目录名 `oclive_kernel_server`，非 `kernel_server`）；其 `Cargo.toml` 仅依赖 **`oclive_kernel_host` + `oclive_kernel_runtime`**（**不**依赖 `oclivenewnew-tauri`，旧表述已更正），编排经 `oclive_kernel_host::run_api_server`。**真正待澄清的窄点**：编排（`process_message`）仍内嵌于 `oclive_kernel_host` 并与其 `infrastructure` 耦合（尚未抽到 host-independent 纯内核 `library`，见 §3.1），文档措辞应区分「无头发行版已存在」与「纯内核 library 待抽离」。(2) 之后**重心转向宣传与滩头**，停止过度拓展。
+
+### Opus 4.8 五维复审追加（2026-06-08，第二轮）
+
+DeepSeek 五维方向二轮复审（Opus 4.8）。维度五基线复跑：`node scripts/dimension5-acceptance.mjs --ci` → **PASS (7 checks)**，所有 D-CI/D-LAYER/D-HONEST 未回退。第二轮以**核对 + 据实入库**为主；第三轮（落实审查）完成 PR-A/B/C/D/E 主体实现与文档同步。
+
+**本轮已修复 / 已实现（Done）**
+
+| ID | 项 | 维度 | 备注 |
+|----|-----|------|------|
+| K-PERF-09 | `App.vue` 同时静态导入 `FluentShell` + `ToolShell`（仅一个渲染） | 一·前端 | 改 `defineAsyncComponent` 动态导入；`npm run test:unit` 45/45 绿 |
+| K-DOC-03 | `EXTENSION_POINTS.md`（中/英）引用不存在的 `domain/policy.rs` | 四·文档 | trait → `oclive_kernel_contracts/src/policy.rs`；impl → `oclive_kernel_runtime/src/domain/policy.rs`；wiring → `infrastructure/policy_registry.rs` |
+| K-DOC-04 | 「`oclive_kernel_server` 仍链接 `oclivenewnew-tauri`」表述过期 | 四·文档 | 实际仅依赖 host + runtime；本表 L315 与 `OCLIVE_POSITIONING_DIFFERENTIATION.md` 已更正 |
+| K-DOC-05 | `domain/README.md` adapter 清单过期（未含 FQ-path 现状） | 四·文档 | 同步为 `use`-import (4, 全 test) + 生产 FQ-path (5) + turn ports；见 `domain/README.md` |
+| D-LAYER-05 | layering ratchet FQ-path + turn ports | 二/五 | `check-domain-layering.mjs` + `LAYERING_BASELINE.json`；`ChatTurnPersistencePort`/`TurnPoliciesPort`/`ConversationPersistPort`；FQ **14→5** |
+| D-DTO-01 | reply-post-processor 配置去重 | 二 | 统一 `ReplyPostProcessorEffectiveConfig`；删除 host 双 `resolve_builtin` |
+| D-ERR-01 | profile / MCP 增量 `AppError` | 二 | **增量 Done**：`host_profile_from_distro_file`、`PluginHost::call_mcp_tool`；`user_llm_env`/`startup_health` DbManager 留后续 |
+| K-PERF-03 | TurnPrefetch 共享 / agent lazy | 一·运行时 | `turn_prefetch.rs` + `agent=none` 跳过 agent DB |
+| K-PERF-04 | `role_runtime` 单查快照 | 一·运行时 | `get_role_runtime_snapshot` 扩展字段 + `TurnContext` |
+| K-PERF-05 | session 配置一次解析 | 一·运行时 | `EffectiveSessionConfig` |
+| K-PERF-06 | memory decay 单事务 | 一·运行时 | rank 后一次 `persist_memory_decay_batch` |
+| K-PERF-07 | SessionCache 淘汰 | 一·运行时 | cap 512 + TTL + turn_lock 联动 |
+| K-PERF-08 | personality_vector 索引 | 一·运行时 | migration `033_personality_vector_index.sql` |
+| K-PERF-11 | kernel status 轮询退避 | 一·前端 | hidden 60s |
+| K-PERF-12 | 微优化打包 | 一·运行时 | hybrid_store / Arc Role / replay / role_cache / probe |
+| K-DOC-06 | `simplePluginManager.slots.*` i18n | 四·文档/前端 | fragments 已齐 + parity 测覆盖 |
+
+**Partial**
+
+| ID | 项 | 维度 | 备注 |
+|----|-----|------|------|
+| K-PERF-10 | 壳内面板懒加载 | 一·前端 | `useMainShell` async 导出 Settings/RoleDetail/SceneTravel 等 overlay；`FluentShell`/`ToolShell` 内 ChatInput、MessageList、KernelStatusBar 等 ~15 组件仍静态 import |
+
+**仍 Deferred（按工作量）**
+
+| ID | 项 | 维度 | 工作量 | 现状/证据 |
+|----|-----|------|--------|-----------|
+| D-PORT-02 | `PluginBackendRegistryPort` 为 20+ 方法 god-port，唯一实现 `BackendRegistry` 纯转发 | 二 | L | `plugin_backend_registry.rs` + `backend_registry.rs:797-919`；建议收窄到 `PluginHost`/`SlotResolver` 真用面 |
+| D-SLOT-01 | 各槽 Builtin V1/V2/Placeholder 并行实现，选择逻辑散落 `BackendRegistry` | 二 | M | `memory_retrieval`/`user_emotion_analyzer`/`prompt_assembler`/`event_estimator` 各有 `*V2` + `*Placeholder`；建议每槽收一份 builtin + 选择矩阵集中 |
+
+**结论**：Opus 4.8 主体已落地（热路径 DB 合并、SessionCache 淘汰、turn ports、FQ ratchet 14→5）；维度五 gate PASS。**未阻塞滩头**的后续项：D-PORT-02/D-SLOT-01 god-port 与槽合并、K-PERF-10 chat chrome lazy、D-LAYER-05b `post.rs` PolicySet 端口化、`user_llm_env`/`startup_health` 剩余 FQ refs。
