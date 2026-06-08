@@ -7,12 +7,10 @@ use crate::domain::memory_engine::MemoryEngine;
 use crate::domain::memory_retrieval::MemoryRetrievalInput;
 use crate::domain::personality_engine::PersonalityEngine;
 use crate::domain::slot_runner::SlotRunner;
-use crate::domain::user_identity_loader::resolve_active_user_identity;
 use crate::models::knowledge::KnowledgeChunk;
 use crate::models::{Emotion, Event, Memory, PersonalitySource, PersonalityVector, Role};
 use oclive_kernel_runtime::domain::relation_engine::RelationState;
 
-use super::super::context::load_recent_context;
 use super::super::favor::{compute_favor_and_relation, FavorRelationInput};
 use super::super::relation_snapshot::load_relation_snapshot;
 use super::super::staged::StageRunner;
@@ -110,63 +108,36 @@ pub(crate) struct MainLlmOutput {
 }
 
 async fn prefetch_context(
-    state: &crate::state::AppState,
-    role: &Role,
-    srid: &str,
+    ctx: &TurnContext<'_>,
 ) -> TurnResult<(
     f64,
     String,
     PersonalityVector,
     (Vec<(String, String)>, Vec<(String, String)>, Vec<Event>),
 )> {
-    let (
-        event_impact_opt,
-        mutable_for_prompt,
-        personality,
-        (recent_turns, recent_turns_for_event, recent_events_for_event),
-    ) = tokio::try_join!(
-        async {
-            STAGES
-                .stage(
-                    ChatStage::EventImpactFactor,
-                    state.db_manager.get_event_impact_factor(srid),
-                )
-                .await
-        },
-        async {
-            STAGES
-                .stage(
-                    ChatStage::MutablePersonality,
-                    state.db_manager.get_mutable_personality(srid),
-                )
-                .await
-        },
-        async {
-            STAGES
-                .stage(
-                    ChatStage::CurrentPersonality,
-                    state.get_current_personality(srid, role),
-                )
-                .await
-        },
-        async {
-            STAGES
-                .stage(
-                    ChatStage::LoadRecentContext,
-                    load_recent_context(state, srid),
-                )
-                .await
-        },
-    )?;
-    let event_runtime = event_impact_opt.unwrap_or(role.evolution_config.event_impact_factor);
+    let state = ctx.state;
+    let role = ctx.role;
+    let srid = ctx.srid;
+    let snapshot = &ctx.runtime_snapshot;
+    let event_runtime = snapshot
+        .event_impact_factor
+        .unwrap_or(role.evolution_config.event_impact_factor);
+    let mutable_for_prompt = snapshot.mutable_personality.clone().unwrap_or_default();
+    let personality = STAGES
+        .stage(
+            ChatStage::CurrentPersonality,
+            state.get_current_personality(srid, role),
+        )
+        .await?;
+    let pf = &ctx.prefetch;
     Ok((
         event_runtime,
         mutable_for_prompt,
         personality,
         (
-            recent_turns,
-            recent_turns_for_event,
-            recent_events_for_event,
+            pf.recent_turns.clone(),
+            pf.recent_turns_for_event.clone(),
+            pf.recent_events.clone(),
         ),
     ))
 }
@@ -238,28 +209,24 @@ async fn load_prev_narrative_hint(state: &crate::state::AppState, srid: &str) ->
 
 #[allow(clippy::too_many_arguments)]
 async fn load_memories_and_relation_key(
-    state: &crate::state::AppState,
-    role: &Role,
-    srid: &str,
-    scene_id: &str,
-    _pl: &crate::domain::plugin_host::ResolvedRolePlugins,
-    _user_message: &str,
-    immersive: bool,
-    virtual_time_ms: i64,
+    ctx: &TurnContext<'_>,
 ) -> TurnResult<(
     Vec<Memory>,
     crate::domain::user_identity_loader::ResolvedUserIdentity,
 )> {
-    let (mut memories, resolved_identity) = tokio::try_join!(
-        STAGES.stage(
+    let state = ctx.state;
+    let role = ctx.role;
+    let srid = ctx.srid;
+    let scene_id = ctx.scene_id;
+    let immersive = ctx.immersive;
+    let virtual_time_ms = ctx.virtual_time_ms;
+    let resolved_identity = ctx.prefetch.resolved_identity.clone();
+    let mut memories = STAGES
+        .stage(
             ChatStage::LoadMemories,
             state.memory_repo.load_memories(srid, 10),
-        ),
-        STAGES.stage(
-            ChatStage::ResolveUserRelationKey,
-            resolve_active_user_identity(state, role, srid, Some(scene_id)),
-        ),
-    )?;
+        )
+        .await?;
     let scene_m = role
         .memory_config
         .as_ref()
@@ -283,18 +250,6 @@ async fn load_memories_and_relation_key(
                 .timestamp_millis();
             oclive_kernel_runtime::domain::virtual_time::virtual_days_between_ms(ref_ms, now_ms)
         }, cfg);
-    }
-    if let Err(e) = state
-        .db_manager
-        .persist_memory_decay_batch(srid, &memories, &[])
-        .await
-    {
-        tracing::warn!(
-            target: "oclive_memory",
-            role_id = %srid,
-            error = %e,
-            "persist_memory_decay_batch failed"
-        );
     }
     memories = MemoryEngine::filter_for_prompt_threshold(memories, cfg);
     Ok((memories, resolved_identity))
@@ -382,6 +337,7 @@ async fn rank_relevant_memories(
     memories: &[Memory],
     user_message: &str,
     scene_id: &str,
+    decay_source: &[Memory],
 ) -> TurnResult<Vec<Memory>> {
     let limit = state.host_profile.memory_retrieval.retrieval_limit();
     let mut relevant = STAGES
@@ -403,14 +359,14 @@ async fn rank_relevant_memories(
     }
     if let Err(e) = state
         .db_manager
-        .persist_memory_decay_batch(srid, &relevant, &relevant)
+        .persist_memory_decay_batch(srid, decay_source, &relevant)
         .await
     {
         tracing::warn!(
             target: "oclive_memory",
             role_id = %srid,
             error = %e,
-            "persist accessed_at for ranked memories failed"
+            "persist_memory_decay_batch failed"
         );
     }
     Ok(relevant)
@@ -466,7 +422,7 @@ pub(crate) async fn pre_llm(ctx: &TurnContext<'_>) -> TurnResult<PreLlmOutput> {
         mut mutable_for_prompt,
         mut personality,
         (recent_turns, recent_turns_for_event, recent_events_for_event),
-    ) = prefetch_context(state, role, srid).await?;
+    ) = prefetch_context(ctx).await?;
     (personality, mutable_for_prompt) = apply_time_evolution(
         state,
         role,
@@ -491,17 +447,7 @@ pub(crate) async fn pre_llm(ctx: &TurnContext<'_>) -> TurnResult<PreLlmOutput> {
             &role.evolution_bounds,
         );
     }
-    let (memories, resolved_identity) = load_memories_and_relation_key(
-        state,
-        role,
-        srid,
-        scene_id,
-        pl,
-        user_message,
-        ctx.immersive,
-        ctx.virtual_time_ms,
-    )
-    .await?;
+    let (memories, resolved_identity) = load_memories_and_relation_key(ctx).await?;
     let user_relation_key = resolved_identity.relation_key.clone();
     (personality, mutable_for_prompt) = apply_memory_reinforcement(
         state,
@@ -521,6 +467,7 @@ pub(crate) async fn pre_llm(ctx: &TurnContext<'_>) -> TurnResult<PreLlmOutput> {
         &memories,
         user_message,
         scene_id,
+        &memories,
     )
     .await?;
     let (relation_before, favorability_before) =

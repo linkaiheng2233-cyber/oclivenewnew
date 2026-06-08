@@ -1,9 +1,11 @@
 //! Turn-scoped context for chat orchestration (avoids repeating ids / backends across branches).
 
+use crate::domain::chat_engine::turn_prefetch::TurnPrefetch;
 use crate::domain::plugin_host::ResolvedRolePlugins;
+use crate::domain::role_runtime_snapshot::RoleRuntimeSnapshot;
 use crate::models::dto::SendMessageRequest;
 use crate::models::{PluginBackends, Role};
-use crate::state::AppState;
+use crate::state::{AppState, EffectiveSessionConfig};
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -26,6 +28,7 @@ pub struct TurnContext<'a> {
     pub srid: &'a str,
     pub t0: Instant,
     pub preflight_ms: u64,
+    pub session_config: Arc<EffectiveSessionConfig>,
     pub effective_backends: Arc<PluginBackends>,
     /// Session-resolved plugin handles; parsed once per turn in `process_message`.
     pub pl: ResolvedRolePlugins,
@@ -36,6 +39,10 @@ pub struct TurnContext<'a> {
     pub virtual_time_ms: i64,
     /// `true` when blueprint requests dual-core but the host was built without `dual_core` feature.
     pub dual_core_degraded: bool,
+    /// One-row `role_runtime` snapshot loaded once per turn.
+    pub runtime_snapshot: RoleRuntimeSnapshot,
+    /// Recent context + user identity shared by agent (when enabled) and `pre_llm`.
+    pub prefetch: TurnPrefetch,
 }
 
 impl<'a> TurnContext<'a> {

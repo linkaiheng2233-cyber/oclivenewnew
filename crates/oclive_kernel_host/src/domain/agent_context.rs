@@ -1,8 +1,7 @@
 //! Build [`AgentInput`] with role constraints and MCP tool schemas.
 
+use crate::domain::chat_engine::turn_prefetch::TurnPrefetch;
 use oclive_kernel_contracts::McpBridgePort;
-use crate::domain::chat_engine::context::load_recent_context;
-use crate::domain::user_identity_loader::resolve_active_user_identity;
 use crate::error::Result;
 use crate::models::{PersonalityVector, Role};
 use crate::state::AppState;
@@ -23,6 +22,8 @@ fn default_personality_f32(role: &Role) -> Vec<f32> {
 
 /// Assemble agent turn input including B-tier constraints (personality + relation + scene).
 ///
+/// When `prefetch` is supplied, reuses turn-wide recent context and user identity (no duplicate DB reads).
+///
 /// # Errors
 ///
 /// Database or identity resolution failures.
@@ -34,11 +35,34 @@ pub async fn build_agent_input(
     message: &str,
     model: &str,
     bridge: &dyn McpBridgePort,
+    prefetch: Option<&TurnPrefetch>,
 ) -> Result<AgentInput> {
-    let resolved_identity = resolve_active_user_identity(state, role, srid, Some(scene_id)).await?;
-    let user_relation_key = resolved_identity.relation_key.clone();
+    let (user_relation_key, recent_turns) = if let Some(pf) = prefetch {
+        (
+            pf.resolved_identity.relation_key.clone(),
+            pf.recent_turns
+                .iter()
+                .take(RECENT_TURN_LIMIT)
+                .cloned()
+                .collect(),
+        )
+    } else {
+        let resolved_identity = crate::domain::user_identity_loader::resolve_active_user_identity(
+            state,
+            role,
+            srid,
+            Some(scene_id),
+        )
+        .await?;
+        let (turns, _, _) =
+            crate::domain::chat_engine::context::load_recent_context(state, srid).await?;
+        (
+            resolved_identity.relation_key,
+            turns.into_iter().take(RECENT_TURN_LIMIT).collect(),
+        )
+    };
 
-    let (personality_row, favorability, relation_state, recent, tools) = tokio::try_join!(
+    let (personality_row, favorability, relation_state, tools) = tokio::try_join!(
         state.db_manager.get_latest_personality_vector(srid),
         state
             .db_manager
@@ -55,13 +79,7 @@ pub async fn build_agent_input(
                     .unwrap_or_else(|| "Stranger".to_string()),
             )
         },
-        async {
-            let (turns, _, _) = load_recent_context(state, srid).await?;
-            Ok::<Vec<(String, String)>, crate::error::AppError>(turns)
-        },
-        async {
-            bridge.list_agent_tool_schemas().await
-        },
+        async { bridge.list_agent_tool_schemas().await },
     )?;
 
     let personality_vector = personality_row
@@ -72,8 +90,6 @@ pub async fn build_agent_input(
     let scene_label = state
         .storage
         .scene_display_name_for_role(role, scene_id);
-
-    let recent_turns = recent.into_iter().take(RECENT_TURN_LIMIT).collect();
 
     Ok(AgentInput {
         role_id: role.id.clone(),

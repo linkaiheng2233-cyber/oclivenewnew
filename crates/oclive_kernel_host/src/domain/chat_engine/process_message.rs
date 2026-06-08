@@ -9,7 +9,7 @@
 //!
 //! See [`domain/README.md`](../README.md).
 
-use crate::domain::agent::{AgentOutput};
+use crate::domain::agent::AgentOutput;
 use crate::domain::agent_context::build_agent_input;
 use crate::domain::chat_engine::chat_stage::ChatStage;
 use crate::domain::chat_engine::dispatch::{dispatch_turn, resolve_dual_core_degraded};
@@ -18,6 +18,7 @@ use crate::domain::chat_engine::minimal_response::build_minimal_response;
 use crate::domain::chat_engine::presence::user_is_remote_from_character;
 use crate::domain::chat_engine::staged::{process_message_stage, stage_process_message};
 use crate::domain::chat_engine::turn_context::TurnContext;
+use crate::domain::chat_engine::turn_prefetch::build_turn_prefetch;
 use crate::domain::chat_engine::{
     backend_resolution_summary, context::validate_scene_id, conversation_state_role_id,
     ensure_role_loaded,
@@ -25,6 +26,7 @@ use crate::domain::chat_engine::{
 use crate::domain::startup_health;
 use crate::error::Result;
 use crate::models::dto::{SendMessageRequest, SendMessageResponse};
+use crate::models::plugin_backends::AgentBackend;
 use crate::state::AppState;
 use std::sync::Arc;
 use std::time::Instant;
@@ -99,8 +101,9 @@ async fn run(
         crate::domain::user_llm_env::apply_user_llm_env(state).await,
     )?;
 
-    let effective_backends = state.effective_plugin_backends_for_session(role.as_ref(), srid);
-    let effective_sources = state.effective_plugin_backend_sources_for_session(role.as_ref(), srid);
+    let session_config = state.effective_session_config_for(role.as_ref(), srid);
+    let effective_backends = Arc::clone(&session_config.backends);
+    let effective_sources = session_config.sources.clone();
     tracing::debug!(
         target: "oclive_chat",
         role_id = %mrid,
@@ -122,16 +125,19 @@ async fn run(
         role.as_ref(),
         Some(srid),
         &effective_backends,
-        state
-            .effective_slot_registry_for_session(role.as_ref(), srid)
-            .as_ref(),
+        session_config.slot_registry.as_ref(),
     );
-    let agent_out: AgentOutput = if state.host_profile.skip_agent {
-        AgentOutput {
-            handled: false,
-            reply: String::new(),
-        }
-    } else {
+
+    let prefetch = build_turn_prefetch(state, role.as_ref(), srid, scene_id.as_str())
+        .await
+        .map_err(|source| ProcessMessageError::Stage {
+            stage: ChatStage::LoadRecentContext.as_str(),
+            source,
+        })?;
+
+    let agent_enabled = !state.host_profile.skip_agent
+        && !matches!(effective_backends.agent, AgentBackend::None);
+    let agent_out: AgentOutput = if agent_enabled {
         let model = role.resolve_ollama_model(state.ollama_model.as_str());
         let agent_input = build_agent_input(
             state,
@@ -141,17 +147,19 @@ async fn run(
             req.user_message.as_str(),
             model.as_str(),
             state.plugins.agent_mcp_bridge().as_ref(),
+            Some(&prefetch),
         )
         .await
         .map_err(|source| ProcessMessageError::Stage {
             stage: ChatStage::AgentProcess.as_str(),
             source,
         })?;
-        process_message_stage(
-            ChatStage::AgentProcess,
-            pl.agent.process(agent_input),
-        )
-        .await?
+        process_message_stage(ChatStage::AgentProcess, pl.agent.process(agent_input)).await?
+    } else {
+        AgentOutput {
+            handled: false,
+            reply: String::new(),
+        }
     };
     if agent_out.handled {
         return build_minimal_response(
@@ -171,26 +179,26 @@ async fn run(
         });
     }
 
-    let (_, current_scene, interaction_mode, remote_life_enabled) = tokio::try_join!(
-        process_message_stage(
-            ChatStage::SetUserPresenceScene,
-            state
-                .db_manager
-                .set_user_presence_scene(srid, scene_id.as_str()),
-        ),
-        process_message_stage(
-            ChatStage::GetCurrentScene,
-            state.db_manager.get_current_scene(srid),
-        ),
-        process_message_stage(
-            ChatStage::GetInteractionMode,
-            state.db_manager.get_interaction_mode(srid),
-        ),
-        process_message_stage(
-            ChatStage::GetRemoteLifeEnabled,
-            state.db_manager.get_remote_life_enabled(srid),
-        ),
-    )?;
+    let runtime_snapshot = process_message_stage(
+        ChatStage::GetRoleRuntimeSnapshot,
+        state.db_manager.get_role_runtime_snapshot(srid),
+    )
+    .await?
+    .unwrap_or_default();
+
+    process_message_stage(
+        ChatStage::SetUserPresenceScene,
+        state
+            .db_manager
+            .set_user_presence_scene(srid, scene_id.as_str()),
+    )
+    .await?;
+
+    let current_scene = runtime_snapshot.scene.clone();
+    let interaction_mode = runtime_snapshot
+        .interaction_mode
+        .unwrap_or(crate::models::InteractionMode::Immersive);
+    let remote_life_enabled = runtime_snapshot.remote_life_enabled.unwrap_or(false);
     let immersive = interaction_mode.is_immersive();
     if immersive {
         process_message_stage(
@@ -229,12 +237,15 @@ async fn run(
         srid,
         t0,
         preflight_ms,
+        session_config,
         effective_backends,
         pl: pl.clone(),
         immersive,
         character_scene_id: if is_remote { Some(char_scene) } else { None },
         virtual_time_ms,
         dual_core_degraded,
+        runtime_snapshot,
+        prefetch,
     };
     dispatch_turn(&turn, is_remote, remote_life_enabled).await
 }

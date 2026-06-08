@@ -18,6 +18,7 @@ pub(crate) mod staged;
 pub mod turn_context;
 pub(crate) mod turn_error;
 pub(crate) mod turn_pipeline;
+pub(crate) mod turn_prefetch;
 
 pub use process_message::process_message;
 

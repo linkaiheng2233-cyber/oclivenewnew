@@ -437,6 +437,7 @@ impl<'a> ExperimentalStepCtx<'a> {
             self.user_message,
             model.as_str(),
             self.state.plugins.agent_mcp_bridge().as_ref(),
+            None,
         )
         .await
         .map_err(map_db_err)?;

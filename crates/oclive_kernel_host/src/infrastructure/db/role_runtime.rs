@@ -3,20 +3,12 @@
 #![allow(clippy::missing_errors_doc, unused_imports)]
 
 use super::{DbManager, EventListRow};
+use crate::domain::role_runtime_snapshot::RoleRuntimeSnapshot;
 use crate::error::{AppError, Result};
 use crate::models::*;
 use chrono::Utc;
 use sqlx::Row;
 use std::time::Instant;
-
-/// One-row read of frequently accessed `role_runtime` columns.
-#[derive(Debug, Clone, Default)]
-pub struct RoleRuntimeSnapshot {
-    pub favorability: Option<f64>,
-    pub emotion: Option<String>,
-    pub relation_state: Option<String>,
-    pub scene: Option<String>,
-}
 
 impl DbManager {
     pub async fn save_personality_vector(
@@ -320,8 +312,22 @@ impl DbManager {
         &self,
         role_id: &str,
     ) -> Result<Option<RoleRuntimeSnapshot>> {
-        let row = sqlx::query_as::<_, (f64, Option<String>, Option<String>, Option<String>)>(
-            "SELECT current_favorability, current_emotion, relation_state, current_scene
+        let row = sqlx::query_as::<
+            _,
+            (
+                f64,
+                Option<String>,
+                Option<String>,
+                Option<String>,
+                Option<String>,
+                Option<i64>,
+                Option<String>,
+                Option<f64>,
+            ),
+        >(
+            "SELECT current_favorability, current_emotion, relation_state, current_scene,
+                    interaction_mode, COALESCE(remote_life_enabled, 0), mutable_personality,
+                    event_impact_factor
              FROM role_runtime WHERE role_id = ?",
         )
         .bind(role_id)
@@ -329,11 +335,24 @@ impl DbManager {
         .await
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(row.map(
-            |(favorability, emotion, relation_state, scene)| RoleRuntimeSnapshot {
+            |(
+                favorability,
+                emotion,
+                relation_state,
+                scene,
+                interaction_mode,
+                remote_life_enabled,
+                mutable_personality,
+                event_impact_factor,
+            )| RoleRuntimeSnapshot {
                 favorability: Some(favorability),
                 emotion,
                 relation_state,
                 scene,
+                interaction_mode: Some(InteractionMode::normalize(interaction_mode.as_deref())),
+                remote_life_enabled: remote_life_enabled.map(|v| v != 0),
+                mutable_personality,
+                event_impact_factor,
             },
         ))
     }

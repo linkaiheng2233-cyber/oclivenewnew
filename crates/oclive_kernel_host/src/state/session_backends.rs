@@ -1,14 +1,22 @@
 //! Session-scoped plugin backend / slot override helpers on [`super::AppState`].
 
-use super::AppState;
-use crate::infrastructure::storage::resolve_llm_backend_env_override;
+use super::{AppState, EffectiveSessionConfig};
 use crate::models::{
-    PluginBackendSource, PluginBackends, PluginBackendsOverride, PluginBackendsSourceMap, Role,
+    PluginBackends, PluginBackendsOverride, PluginBackendsSourceMap, Role,
 };
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
 impl AppState {
+    #[must_use]
+    pub fn effective_session_config_for(
+        &self,
+        role: &Role,
+        session_namespace: &str,
+    ) -> Arc<EffectiveSessionConfig> {
+        EffectiveSessionConfig::compute(role, session_namespace, self)
+    }
+
     #[must_use]
     pub fn session_backend_override(
         &self,
@@ -33,6 +41,7 @@ impl AppState {
                 .remove(session_namespace);
             return;
         }
+        self.session_cache.touch_session(session_namespace);
         self.session_cache
             .session_plugin_overrides()
             .write()
@@ -79,6 +88,7 @@ impl AppState {
             }
             return;
         }
+        self.session_cache.touch_session(session_namespace);
         let mut map = self.session_cache.session_slot_overrides().write();
         let entry = map.entry(session_namespace.to_string()).or_default();
         let mut merged = {
@@ -124,9 +134,9 @@ impl AppState {
         role: &Role,
         session_namespace: &str,
     ) -> Option<BTreeMap<String, oclive_validation::SlotRegistryEntry>> {
-        let pack = role.slot_registry.as_ref()?;
-        let ov = self.session_slot_overrides(session_namespace);
-        Some(oclive_validation::effective_slot_registry(pack, &ov))
+        self.effective_session_config_for(role, session_namespace)
+            .slot_registry
+            .clone()
     }
 
     #[must_use]
@@ -143,35 +153,7 @@ impl AppState {
         role: &Role,
         session_namespace: &str,
     ) -> Arc<PluginBackends> {
-        let mut backends =
-            if let Some(eff) = self.effective_slot_registry_for_session(role, session_namespace) {
-                oclive_validation::slot_registry_to_plugin_backends(&eff)
-            } else {
-                (*role.plugin_backends).clone()
-            };
-        let provider = self.user_llm_provider.read().trim().to_ascii_lowercase();
-        if provider == "cloud" {
-            backends.llm = crate::models::plugin_backends::LlmBackend::Remote;
-        } else if provider == "local" {
-            backends.llm = crate::models::plugin_backends::LlmBackend::Ollama;
-        } else if let Some(llm) = resolve_llm_backend_env_override() {
-            backends.llm = llm;
-        } else if std::env::var("OCLIVE_REMOTE_LLM_URL")
-            .ok()
-            .is_some_and(|u| !u.trim().is_empty())
-            && std::env::var("OCLIVE_REMOTE_LLM_TOKEN")
-                .ok()
-                .is_some_and(|t| !t.trim().is_empty())
-        {
-            backends.llm = crate::models::plugin_backends::LlmBackend::Remote;
-        }
-        let backends =
-            super::host_backends::apply_host_ceiling(&backends, self.host_profile.as_ref());
-        let sanitized = oclive_validation::sanitize_unimplemented_agent_backend(backends);
-        for msg in &sanitized.warnings {
-            tracing::warn!(target: "oclive_plugin", "session={session_namespace} {msg}");
-        }
-        Arc::new(sanitized.backends)
+        Arc::clone(&self.effective_session_config_for(role, session_namespace).backends)
     }
 
     #[must_use]
@@ -180,28 +162,8 @@ impl AppState {
         role: &Role,
         session_namespace: &str,
     ) -> PluginBackendsSourceMap {
-        let mut out = PluginBackendsSourceMap::default();
-        if let Some(reg) = role.slot_registry.as_ref() {
-            for (key, _) in self.session_slot_overrides(session_namespace) {
-                let Some(entry) = reg.get(&key) else {
-                    continue;
-                };
-                match entry.slot_type.as_str() {
-                    "memory" => out.memory = PluginBackendSource::SessionOverride,
-                    "emotion" => out.emotion = PluginBackendSource::SessionOverride,
-                    "event" => out.event = PluginBackendSource::SessionOverride,
-                    "prompt" => out.prompt = PluginBackendSource::SessionOverride,
-                    "llm" => out.llm = PluginBackendSource::SessionOverride,
-                    "agent" => out.agent = PluginBackendSource::SessionOverride,
-                    _ => {}
-                }
-            }
-        }
-        if out.llm == PluginBackendSource::PackDefault
-            && resolve_llm_backend_env_override().is_some()
-        {
-            out.llm = PluginBackendSource::EnvOverride;
-        }
-        out
+        self.effective_session_config_for(role, session_namespace)
+            .sources
+            .clone()
     }
 }

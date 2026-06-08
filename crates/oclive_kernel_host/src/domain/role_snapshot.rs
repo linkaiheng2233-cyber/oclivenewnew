@@ -27,13 +27,13 @@ fn reply_post_processor_role_info_fields(
     state: &AppState,
     role: &Role,
 ) -> (bool, String, Option<String>) {
+    if !role.pack_reply_post_processor_config.enabled {
+        return (false, "off".into(), None);
+    }
     let eff = apply_effective_post_processor_config(
         state.host_profile.as_ref(),
         &role.pack_reply_post_processor_config,
     );
-    if !eff.enabled {
-        return (false, "off".into(), None);
-    }
     let backend = match eff.backend {
         ReplyPostProcessorBackendKind::Builtin => "builtin",
         ReplyPostProcessorBackendKind::Remote => "remote",

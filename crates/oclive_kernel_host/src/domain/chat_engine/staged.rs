@@ -4,6 +4,8 @@
 use std::future::Future;
 use std::time::Instant;
 
+use tracing::Instrument;
+
 use crate::domain::chat_engine::chat_stage::ChatStage;
 use crate::domain::chat_engine::message_error::ProcessMessageError;
 use crate::domain::chat_engine::turn_error::{TurnError, TurnResult};
@@ -39,9 +41,10 @@ where
     Fut: Future<Output = Result<T>>,
 {
     let stage_name = stage.as_str();
-    let _span = tracing::info_span!(target: TURN_TARGET, "turn_stage", stage = stage_name).entered();
     let start = Instant::now();
+    let span = tracing::info_span!(target: TURN_TARGET, "turn_stage", stage = stage_name);
     let result = fut
+        .instrument(span)
         .await
         .map_err(|source| TurnError::wrap(stage_name, source));
     log_stage_elapsed(stage_name, start);
@@ -57,9 +60,12 @@ where
     Fut: Future<Output = Result<T>>,
 {
     let stage_name = stage.as_str();
-    let _span = tracing::info_span!(target: TURN_TARGET, "turn_stage", stage = stage_name).entered();
     let start = Instant::now();
-    let result = fut.await.map_err(|source| ProcessMessageError::Stage {
+    let span = tracing::info_span!(target: TURN_TARGET, "turn_stage", stage = stage_name);
+    let result = fut
+        .instrument(span)
+        .await
+        .map_err(|source| ProcessMessageError::Stage {
         stage: stage_name,
         source,
     });

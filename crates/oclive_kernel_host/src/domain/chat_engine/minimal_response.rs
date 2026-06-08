@@ -1,6 +1,7 @@
 //! Minimal response fields shared by Agent shortcut and co-present paths (relation / favorability / portrait emotion).
 
 use crate::domain::plugin_host::ResolvedRolePlugins;
+use crate::domain::ports::turn_persistence::ChatTurnAtomicInput;
 use crate::domain::slot_runner::SlotRunner;
 use crate::domain::user_identity::resolve_effective_user_relation_key;
 use crate::error::Result;
@@ -38,16 +39,16 @@ pub(crate) async fn build_minimal_response(
     let user_emotion_str = emotion_result.to_emotion().to_string();
     let bot_emotion = snapshot.portrait_emotion.clone();
     let personality = PersonalityVector::from(&role.default_personality);
-    let policies = state.policies_for_scene(Some(scene_id.as_str()));
+    let turn_policies = state.turn_policies_for_scene(Some(scene_id.as_str()));
+    let turn_persistence = state.chat_turn_persistence_port();
     let neutral_event = Event {
         event_type: EventType::Ignore,
         user_emotion: user_emotion_str.clone(),
         bot_emotion: bot_emotion.clone(),
     };
 
-    let _favor_current = state
-        .db_manager
-        .apply_chat_turn_atomic(crate::infrastructure::db::ChatTurnTxInput {
+    let _favor_current = turn_persistence
+        .apply_chat_turn_atomic(ChatTurnAtomicInput {
             role_id: srid,
             personality: &personality,
             current_emotion: bot_emotion.as_str(),
@@ -56,7 +57,7 @@ pub(crate) async fn build_minimal_response(
             favor_delta: 0.0,
             memory_content: "",
             memory_importance: 0.0,
-            memory_fifo_limit: policies.memory.fifo_limit(),
+            memory_fifo_limit: turn_policies.memory_fifo_limit,
             memory_similarity_threshold: role.pack_memory_config.similarity_threshold,
             event: &neutral_event,
             user_message,

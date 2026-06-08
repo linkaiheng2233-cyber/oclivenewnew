@@ -21,6 +21,7 @@ pub mod effective_llm_model;
 pub mod relation_estrangement;
 pub mod relation_transition;
 pub mod reply_post_processor;
+pub mod role_runtime_snapshot;
 pub mod role_manifest_validate;
 pub mod role_snapshot;
 pub mod startup_health;
