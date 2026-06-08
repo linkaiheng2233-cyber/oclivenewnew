@@ -1,7 +1,8 @@
 {
-  "description": "Max allowed `use crate::infrastructure` lines under crates/oclive_kernel_host/src/domain/**/*.rs (ratchet down only).",
+  "description": "Max allowed domain→infrastructure coupling under crates/oclive_kernel_host/src/domain/**/*.rs (ratchet down only).",
   "domain_to_infrastructure_imports": 4,
+  "domain_to_infrastructure_fq_refs": 5,
   "updated": "2026-06-08",
-  "note": "D-LAYER-04 production ports: ComplexEmotionHintStore, VirtualTimeStore, UserLlmSecretsPort; role_manifest env check",
+  "note": "D-LAYER-05: use=4 (test cfg imports); FQ production refs after ChatTurnPersistencePort / TurnPolicies / ConversationPersistPort extraction (post.rs emotion policy still uses state.policies_for_scene in-domain).",
   "check_command": "node scripts/check-domain-layering.mjs"
 }
