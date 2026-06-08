@@ -42,8 +42,7 @@ async fn remote_agent_http_process_via_jsonrpc() {
     let grants = HighRiskGrantStore::load(dir.path().to_path_buf(), true);
     grants.grant_network(NETWORK_GRANT_REMOTE_AGENT).unwrap();
     let mcp = Arc::new(McpClient::new(dir.path(), grants.clone()));
-    let bridge: Arc<dyn oclive_kernel_contracts::McpBridgePort> =
-        Arc::new(AgentMcpBridge::new(mcp));
+    let bridge = Arc::new(AgentMcpBridge::new(mcp));
 
     let cfg = RemotePluginHttpConfig {
         endpoint: format!("http://{addr}/"),

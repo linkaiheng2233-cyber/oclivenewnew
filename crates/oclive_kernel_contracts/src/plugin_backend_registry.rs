@@ -51,6 +51,11 @@ pub trait PluginBackendRegistryPort: Send + Sync {
         entry: &SlotRegistryEntry,
     ) -> Arc<dyn ComplexEmotionProvider>;
 
+    /// Register a local plugin provider descriptor.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error string when the descriptor is invalid or already registered.
     fn register_local_provider(
         &self,
         descriptor: LocalPluginProviderDescriptor,

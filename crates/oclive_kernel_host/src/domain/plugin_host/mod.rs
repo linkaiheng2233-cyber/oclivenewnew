@@ -98,18 +98,22 @@ impl PluginHost {
         self.registry.local_all_providers()
     }
 
+    #[must_use]
     pub fn llm_for(&self, b: LlmBackend) -> Arc<dyn LlmClient> {
         self.registry.llm_for(b)
     }
 
+    #[must_use]
     pub fn llm_for_plugin_backends(&self, backends: &PluginBackends) -> Arc<dyn LlmClient> {
         self.registry.llm_for_plugin_backends(backends)
     }
 
+    #[must_use]
     pub fn agent_for(&self, b: AgentBackend) -> Arc<dyn AgentProvider> {
         self.registry.agent_for(b)
     }
 
+    #[must_use]
     pub fn agent_for_plugin_backends(&self, backends: &PluginBackends) -> Arc<dyn AgentProvider> {
         self.registry.agent_for_plugin_backends(backends)
     }
@@ -119,6 +123,7 @@ impl PluginHost {
         self.registry.agent_mcp_bridge()
     }
 
+    #[must_use]
     pub fn memory_retrieval_for_plugin_backends(
         &self,
         backends: &PluginBackends,
@@ -126,14 +131,17 @@ impl PluginHost {
         self.registry.memory_retrieval_for_plugin_backends(backends)
     }
 
+    #[must_use]
     pub fn memory_retrieval(&self, b: MemoryBackend) -> Arc<dyn MemoryRetrieval> {
         self.registry.memory_retrieval(b)
     }
 
+    #[must_use]
     pub fn user_emotion_analyzer(&self, b: EmotionBackend) -> Arc<dyn UserEmotionAnalyzer> {
         self.registry.user_emotion_analyzer(b)
     }
 
+    #[must_use]
     pub fn user_emotion_analyzer_for_backends(
         &self,
         backends: &PluginBackends,
@@ -141,10 +149,12 @@ impl PluginHost {
         self.registry.user_emotion_analyzer_for_backends(backends)
     }
 
+    #[must_use]
     pub fn event_estimator(&self, b: EventBackend) -> Arc<dyn EventEstimator> {
         self.registry.event_estimator(b)
     }
 
+    #[must_use]
     pub fn event_estimator_for_backends(
         &self,
         backends: &PluginBackends,
@@ -152,10 +162,12 @@ impl PluginHost {
         self.registry.event_estimator_for_backends(backends)
     }
 
+    #[must_use]
     pub fn prompt_assembler(&self, b: PromptBackend) -> Arc<dyn PromptAssembler> {
         self.registry.prompt_assembler(b)
     }
 
+    #[must_use]
     pub fn prompt_assembler_for_backends(
         &self,
         backends: &PluginBackends,
@@ -202,6 +214,7 @@ impl PluginHost {
     }
 
     /// Resolves all backends declared by the current role pack (one clone of five `Arc`s, reused for the whole conversation).
+    #[must_use]
     pub fn resolve_for_role(&self, role: &Role) -> ResolvedRolePlugins {
         PluginResolver::resolve(
             self.registry.as_ref(),
@@ -212,6 +225,7 @@ impl PluginHost {
     }
 
     /// Resolves role default backends plus session-level override (equivalent to [`Self::resolve_for_role`] when override is empty).
+    #[must_use]
     pub fn resolve_for_role_with_override(
         &self,
         role: &Role,
@@ -226,6 +240,7 @@ impl PluginHost {
     }
 
     /// Effective six slots + blueprint registry + optional six-slot session override (v2 hot path).
+    #[must_use]
     pub fn resolve_for_effective_backends(
         &self,
         effective_backends: &PluginBackends,
