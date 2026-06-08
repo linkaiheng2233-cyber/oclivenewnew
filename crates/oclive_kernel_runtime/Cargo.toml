@@ -27,6 +27,8 @@ async-trait = { workspace = true }
 walkdir = { workspace = true }
 tracing = { workspace = true }
 serde_yaml_ng = { workspace = true }
+sha2 = { workspace = true }
+toml = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }

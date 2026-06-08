@@ -192,6 +192,10 @@ pub async fn list_ollama_models_impl(
 }
 
 /// Ping cloud LLM with current DB/env settings (after [`apply_user_llm_env`]).
+///
+/// # Errors
+///
+/// Returns configuration, network, or provider errors from the probe request.
 pub async fn probe_cloud_llm_impl(
     state: &AppState,
     role_id: &str,

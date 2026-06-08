@@ -7,6 +7,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::project_introspect::{analyze_project, git_head_short};
+use crate::kernel_ensure::{self, KernelEnsureArgs};
 
 #[derive(Parser, Debug)]
 pub struct KernelCli {
@@ -24,6 +25,8 @@ pub enum KernelCommands {
     Promote(KernelPromoteArgs),
     /// Roll back shared runtime to the latest backup
     Rollback(KernelRollbackArgs),
+    /// Attach-first / capability-first kernel bring-up (shared policy)
+    Ensure(KernelEnsureArgs),
 }
 
 #[derive(Parser, Debug)]
@@ -75,6 +78,7 @@ pub fn run(cli: KernelCli) -> Result<()> {
         KernelCommands::Status(a) => run_status(a),
         KernelCommands::Promote(a) => run_promote(a),
         KernelCommands::Rollback(a) => run_rollback(a),
+        KernelCommands::Ensure(a) => kernel_ensure::run_ensure(a),
     }
 }
 

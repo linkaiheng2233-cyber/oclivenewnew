@@ -2,17 +2,15 @@
 import type { JumpTimeResponse } from '../../api'
 import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import HelpHint from '../../components/shared/HelpHint.vue'
 import VirtualTimeBar from '../../components/scene/VirtualTimeBar.vue'
+import HelpHint from '../../components/shared/HelpHint.vue'
 import UiButton from '../../components/ui/UiButton.vue'
 import UiListRow from '../../components/ui/UiListRow.vue'
-import { useSceneDestination } from '../../composables/useSceneDestination'
 import { useAppToast } from '../../composables/useAppToast'
+import { useSceneDestination } from '../../composables/useSceneDestination'
 import { useDebugStore } from '../../stores/debugStore'
 import { useRoleStore } from '../../stores/roleStore'
 import { useUiStore } from '../../stores/uiStore'
-
-const open = defineModel<boolean>({ required: true })
 
 defineProps<{
   allSceneOptions: Array<{ id: string, label: string }>
@@ -24,6 +22,8 @@ const emit = defineEmits<{
   notify: [payload: { type: 'success' | 'error' | 'info', message: string }]
   virtualTimeJumpComplete: [res: JumpTimeResponse]
 }>()
+
+const open = defineModel<boolean>({ required: true })
 
 const { t } = useI18n()
 const { showToast } = useAppToast()

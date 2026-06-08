@@ -74,6 +74,10 @@ pub use models::{
     event::{Event, EventType},
     favorability::Favorability,
     interaction_mode::InteractionMode,
+    kernel::{
+        ActiveProfileSummary, AttachReason, DistroProfileRequirements, KernelHealthJson,
+        ProfileCompat, ReplaceReason,
+    },
     knowledge::{KnowledgeChunk, KnowledgeEventAugment, KnowledgeIndex, KnowledgePackConfigDisk},
     memory::{Memory, MemoryContext},
     personality::PersonalityVector,

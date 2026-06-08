@@ -64,7 +64,7 @@ roles/{id}/  ──load_role──►  桌面 / VS Code / kernel_server
 | 项 | 决策 |
 |----|------|
 | **单内核写库** | 同一时刻仅 **一个** 内核进程写 `app.db` |
-| **attach vs spawn** | `GET /health:8420` 成功 → **附着**，不 spawn；失败且仅 VS Code → **spawn** `kernel_server --api` |
+| **attach vs spawn** | **Capability-first**（共享 Rust 策略 `resolve_kernel_action`）：`/health` 可读则比较 `kernel_manifest`；本机有更全内核可 replace/spawn；`OCLIVE_KERNEL_BINARY` pin 时不替换。无服务 → spawn；仅 bundled → 降级。详见 [`DISTRO_KERNEL_LIFECYCLE.md`](../kernel/DISTRO_KERNEL_LIFECYCLE.md) |
 | **端口** | 固定 **`8420`**（`OCLIVE_API_PORT`） |
 | **`OCLIVE_ROLES_DIR`** | 桌面与扩展 **相同路径** |
 | **`OCLIVE_APP_DATA`** | 品牌目录 `%LOCALAPPDATA%/OCLive/data`（spawn 必传；见 [`OCLIVE_APP_DATA.md`](../kernel/OCLIVE_APP_DATA.md)） |
@@ -106,7 +106,8 @@ roles/{id}/  ──load_role──►  桌面 / VS Code / kernel_server
 
 ### Phase 2：单 daemon 多宿主（**已落地 spawn-only 桌面**）
 
-- 桌面 **spawn / attach** 外部 `oclive-kernel-server`；**不再**同进程 `api_router` 写库；VS Code **attach 优先**。
+- 桌面与 VS Code 均为 **HTTP 客户端**；**内核调度策略已上收**至 `oclive_kernel_runtime`（`kernel_strategy.rs` + `kernel_runtime_health.rs`），`/health` 已增强（`kernel_manifest`、`distro_id`、`distro_profile_hash`）。
+- 各宿主 **调用共享策略、执行 spawn/replace/attach**；桌面 `kernel_lifecycle/policy.rs`，VS Code 经 `oclive-cli kernel ensure --plan-only`，CLI 可直接 `kernel ensure`。
 - P0 IPC（chat / role / 会话读）经 HTTP 代理；`/role_snapshot` 供跨宿主 UI 轮询。
 - **User Identity HTTP**（Phase 2）：`GET /user_identity/state?role_id=&scene_id=`、`POST /user_identity/set`、`POST /user_identity/scene_set` — 与 Tauri `set_user_identity` / `get_user_identity_state` 同 impl；VS Code / attach 模式必走 HTTP。
 - 规范：[`DISTRO_KERNEL_LIFECYCLE.md`](../kernel/DISTRO_KERNEL_LIFECYCLE.md)。
@@ -115,7 +116,8 @@ roles/{id}/  ──load_role──►  桌面 / VS Code / kernel_server
 ### Phase 3：极薄调度层（**`oclive-runtimed`**）
 
 - 可选二进制：health 监督 + **per-role** `POST /chat` 队列，转发至上游 `:8420`。
-- **不碰 AI 逻辑**；发行版仍可调 `http://127.0.0.1:8420`（或经 scheduler 端口）。
+- **不碰 AI 逻辑**；可复用 `resolve_kernel_action` 作为 `:8420` 守护者策略（与 Phase 2 上收的 Rust 公共层对齐）。
+- 发行版仍可直接调 `http://127.0.0.1:8420`（或经 scheduler 端口）。
 
 ### 赌场 POC（Phase 2+）
 

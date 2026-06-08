@@ -16,12 +16,12 @@ import SceneTravelBars from '../../components/SceneTravelBars.vue'
 import ShortcutHelp from '../../components/ShortcutHelp.vue'
 import Toast from '../../components/Toast.vue'
 import UiResizeHandle from '../../components/ui/UiResizeHandle.vue'
+import { MAIN_SHELL_KEY } from '../../composables/mainShellKey'
 import {
   getLayoutWidths,
   setLeftRailWidth,
   setSidePanelWidth,
 } from '../../composables/useLayoutWidths'
-import { MAIN_SHELL_KEY } from '../../composables/mainShellKey'
 import {
   DebugPanel,
   MarketView,
@@ -66,7 +66,6 @@ const {
   closeAllSidePanels,
   onSidePanelTabChange,
   openSettingsView,
-  openSettingsToGeneral,
   settingsFocusTab,
   allSceneOptions,
   sceneDestinationOptions,
@@ -230,81 +229,81 @@ function onSidePanelResize(deltaX: number) {
           />
 
           <div class="tool-workspace">
-          <aside
-            v-show="roleRailOpen"
-            ref="leftPaneRef"
-            class="tool-left-rail"
-            :class="{ 'tool-left-rail--right': sidebarRight }"
-          >
-            <RoleDetailView
-              class="character-block"
-              layout="sidebar"
-              :role-id="roleStore.currentRoleId"
-              :name="roleName"
-              :emotion="emotion"
-              :bootstrap-epoch="pluginStore.bootstrapEpoch"
-            />
-            <RoleplayAsidePanel :text="latestRoleplayAside" />
-            <PluginSidebarSlots :bootstrap-epoch="pluginStore.bootstrapEpoch" />
-            <div class="tool-left-rail__status" :aria-label="t('app.sidebar.favorability')">
-              {{ t("app.sidebar.favorability") }} {{ Math.round(roleStore.roleInfo.favorability) }} {{ statusHeart }}
-            </div>
-            <RoleIdentityControls variant="compact" />
-            <div
-              v-if="roleStore.interactionImmersive && roleStore.roleInfo.currentLife?.label"
-              class="tool-left-rail__life"
+            <aside
+              v-show="roleRailOpen"
+              ref="leftPaneRef"
+              class="tool-left-rail"
+              :class="{ 'tool-left-rail--right': sidebarRight }"
             >
-              {{ t("app.sidebar.lifeNow", { label: roleStore.roleInfo.currentLife?.label }) }}
-            </div>
-            <AutonomousSceneNotice
-              v-if="roleStore.interactionImmersive"
-              :visible="autonomousSceneNotice.visible"
-              :from-label="autonomousSceneNotice.fromLabel"
-              :to-label="autonomousSceneNotice.toLabel"
-              @dismiss="dismissAutonomousSceneNotice"
-            />
-          </aside>
-
-          <UiResizeHandle
-            v-if="roleRailOpen"
-            edge="left"
-            :aria-label="t('settings.layoutResizeLeftRail')"
-            @resize="onLeftRailResize"
-          />
-
-          <div class="tool-main" :class="{ 'tool-main--input-top': chatInputTop }">
-            <PluginChatHeaderSlots :bootstrap-epoch="pluginStore.bootstrapEpoch" />
-            <div class="tool-chat-scroll chat-list">
-              <transition name="fade">
-                <ChatMessageList
-                  ref="chatListRef"
-                  :key="`${roleStore.currentRoleId}-${uiStore.sceneId}`"
-                  :messages="messages"
-                  :history-split-index="sceneHistorySplitIndex"
-                  :loading="chatListLoading"
-                  :role-switching="roleSwitching"
-                />
-              </transition>
-            </div>
-            <section class="tool-input-area">
-              <ChatPluginToolbarSlots :bootstrap-epoch="pluginStore.bootstrapEpoch" />
-              <SceneTravelBars
-                v-if="roleStore.interactionImmersive"
-                :together-visible="togetherTravelBarVisible"
-                :post-reply-visible="postReplySceneBarVisible"
-                :destination-options="sceneDestinationOptions"
-                :together-selected-id="togetherTravelSelectedId"
-                :post-reply-selected-id="postReplySceneSelectedId"
-                @update:together-selected-id="togetherTravelSelectedId = $event"
-                @update:post-reply-selected-id="postReplySceneSelectedId = $event"
-                @confirm-together="confirmTogetherTravel"
-                @dismiss-together="dismissTogetherTravelBar"
-                @confirm-post-reply="confirmPostReplyScene"
-                @dismiss-post-reply="dismissPostReplySceneBar"
+              <RoleDetailView
+                class="character-block"
+                layout="sidebar"
+                :role-id="roleStore.currentRoleId"
+                :name="roleName"
+                :emotion="emotion"
+                :bootstrap-epoch="pluginStore.bootstrapEpoch"
               />
-              <ChatInput ref="chatInputRef" :loading="chatStore.isLoading" @send="onSend" />
-            </section>
-          </div>
+              <RoleplayAsidePanel :text="latestRoleplayAside" />
+              <PluginSidebarSlots :bootstrap-epoch="pluginStore.bootstrapEpoch" />
+              <div class="tool-left-rail__status" :aria-label="t('app.sidebar.favorability')">
+                {{ t("app.sidebar.favorability") }} {{ Math.round(roleStore.roleInfo.favorability) }} {{ statusHeart }}
+              </div>
+              <RoleIdentityControls variant="compact" />
+              <div
+                v-if="roleStore.interactionImmersive && roleStore.roleInfo.currentLife?.label"
+                class="tool-left-rail__life"
+              >
+                {{ t("app.sidebar.lifeNow", { label: roleStore.roleInfo.currentLife?.label }) }}
+              </div>
+              <AutonomousSceneNotice
+                v-if="roleStore.interactionImmersive"
+                :visible="autonomousSceneNotice.visible"
+                :from-label="autonomousSceneNotice.fromLabel"
+                :to-label="autonomousSceneNotice.toLabel"
+                @dismiss="dismissAutonomousSceneNotice"
+              />
+            </aside>
+
+            <UiResizeHandle
+              v-if="roleRailOpen"
+              edge="left"
+              :aria-label="t('settings.layoutResizeLeftRail')"
+              @resize="onLeftRailResize"
+            />
+
+            <div class="tool-main" :class="{ 'tool-main--input-top': chatInputTop }">
+              <PluginChatHeaderSlots :bootstrap-epoch="pluginStore.bootstrapEpoch" />
+              <div class="tool-chat-scroll chat-list">
+                <transition name="fade">
+                  <ChatMessageList
+                    ref="chatListRef"
+                    :key="`${roleStore.currentRoleId}-${uiStore.sceneId}`"
+                    :messages="messages"
+                    :history-split-index="sceneHistorySplitIndex"
+                    :loading="chatListLoading"
+                    :role-switching="roleSwitching"
+                  />
+                </transition>
+              </div>
+              <section class="tool-input-area">
+                <ChatPluginToolbarSlots :bootstrap-epoch="pluginStore.bootstrapEpoch" />
+                <SceneTravelBars
+                  v-if="roleStore.interactionImmersive"
+                  :together-visible="togetherTravelBarVisible"
+                  :post-reply-visible="postReplySceneBarVisible"
+                  :destination-options="sceneDestinationOptions"
+                  :together-selected-id="togetherTravelSelectedId"
+                  :post-reply-selected-id="postReplySceneSelectedId"
+                  @update:together-selected-id="togetherTravelSelectedId = $event"
+                  @update:post-reply-selected-id="postReplySceneSelectedId = $event"
+                  @confirm-together="confirmTogetherTravel"
+                  @dismiss-together="dismissTogetherTravelBar"
+                  @confirm-post-reply="confirmPostReplyScene"
+                  @dismiss-post-reply="dismissPostReplySceneBar"
+                />
+                <ChatInput ref="chatInputRef" :loading="chatStore.isLoading" @send="onSend" />
+              </section>
+            </div>
           </div>
 
           <ToolStatusBar :status-heart="statusHeart" :scene-label-for-id="sceneLabelForId" />

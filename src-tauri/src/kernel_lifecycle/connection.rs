@@ -28,6 +28,10 @@ pub struct KernelConnectionStatus {
     pub binary_path: Option<String>,
     pub kernel_tier: Option<String>,
     pub healthy: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub degraded: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status_message: Option<String>,
 }
 
 /// Active kernel HTTP upstream; optionally owns a spawned child process.
@@ -37,6 +41,8 @@ pub struct KernelConnection {
     pub port: u16,
     pub binary_path: RwLock<Option<String>>,
     pub kernel_tier: RwLock<Option<KernelTier>>,
+    pub degraded: RwLock<bool>,
+    pub status_message: RwLock<Option<String>>,
     client: reqwest::Client,
     spawned_child: Mutex<Option<Child>>,
     pub auto_reconnect: Mutex<AutoReconnectPolicy>,
@@ -55,6 +61,8 @@ impl KernelConnection {
             port,
             binary_path: RwLock::new(None),
             kernel_tier: RwLock::new(None),
+            degraded: RwLock::new(false),
+            status_message: RwLock::new(None),
             client,
             spawned_child: Mutex::new(None),
             auto_reconnect: Mutex::new(AutoReconnectPolicy::default()),
@@ -108,6 +116,16 @@ impl KernelConnection {
             let _ = child.kill();
             let _ = child.wait();
         }
+    }
+
+    pub fn set_status_hint(&self, degraded: bool, message: Option<String>) {
+        *self.degraded.write() = degraded;
+        *self.status_message.write() = message;
+    }
+
+    pub fn clear_status_hint(&self) {
+        *self.degraded.write() = false;
+        *self.status_message.write() = None;
     }
 
     #[must_use]

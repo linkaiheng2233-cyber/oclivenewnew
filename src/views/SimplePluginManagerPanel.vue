@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, toRef } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useModalFocusRestore } from '../composables/useModalFocusRestore'
 import SimplePluginManager from '../components/plugin-manager/SimplePluginManager.vue'
+import { useModalFocusRestore } from '../composables/useModalFocusRestore'
 import MarketView from './MarketView.vue'
 
 export type PluginsPanelSubview = 'list' | 'market'
@@ -17,8 +17,8 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{
-  close: []
-  openMarket: []
+  'close': []
+  'openMarket': []
   'update:subview': [subview: PluginsPanelSubview]
 }>()
 

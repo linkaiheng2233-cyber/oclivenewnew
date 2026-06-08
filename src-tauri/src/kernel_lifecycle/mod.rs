@@ -2,6 +2,8 @@
 
 mod connection;
 mod ensure;
+mod policy;
+mod port_ops;
 pub mod reconnect;
 pub mod spawn;
 pub mod status;

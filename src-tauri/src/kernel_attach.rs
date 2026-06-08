@@ -11,6 +11,7 @@ use oclive_kernel_types::models::dto::{
 use oclive_kernel_host::state::AppState;
 pub(crate) use oclive_kernel_runtime::app_error_from_http_response;
 use oclive_kernel_runtime::RUNTIME_API_VERSION;
+use oclive_kernel_runtime::KernelBinaryManifest;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -23,6 +24,17 @@ const HEALTH_GATE_TTL: Duration = Duration::from_millis(1500);
 struct HealthProbeJson {
     ok: bool,
     runtime_api_version: String,
+}
+
+/// Full `/health` JSON (policy + diagnostics).
+#[derive(Debug, Clone, Deserialize)]
+pub struct KernelHealthJson {
+    pub ok: bool,
+    #[serde(default)]
+    pub kernel_manifest: Option<KernelBinaryManifest>,
+    pub distro_id: Option<String>,
+    pub distro_profile_hash: Option<String>,
+    pub active_profile_summary: Option<oclive_kernel_types::ActiveProfileSummary>,
 }
 
 /// Lightweight UI snapshot from `GET /role_snapshot`.
@@ -124,6 +136,23 @@ impl KernelHttpClient {
             return false;
         }
         true
+    }
+
+    pub async fn fetch_health_json(base_url: &str) -> Option<KernelHealthJson> {
+        let url = format!("{}/health", base_url.trim_end_matches('/'));
+        let Ok(res) = probe_http_client()
+            .get(&url)
+            .header("Accept", "application/json")
+            .timeout(Duration::from_secs(5))
+            .send()
+            .await
+        else {
+            return None;
+        };
+        if !res.status().is_success() {
+            return None;
+        }
+        res.json().await.ok()
     }
 
     async fn ensure_healthy(conn: &KernelConnection) -> bool {

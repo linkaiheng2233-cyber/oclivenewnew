@@ -9,6 +9,8 @@ export interface KernelConnectionStatus {
   binaryPath: string | null
   kernelTier: string | null
   healthy: boolean
+  degraded?: boolean | null
+  statusMessage?: string | null
 }
 
 export interface KernelDiagnostics {

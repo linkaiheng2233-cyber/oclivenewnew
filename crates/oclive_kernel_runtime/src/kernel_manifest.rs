@@ -97,15 +97,48 @@ impl KernelBinaryManifest {
         std::fs::write(p, json).map_err(|e| e.to_string())
     }
 
-    /// Compare for promote decisions: prefer newer semver, then lexicographic `built_at`.
+    /// Synthetic manifest when sidecar / compile-time env is unavailable.
     #[must_use]
-    pub fn cmp_for_promote(&self, other: &Self) -> std::cmp::Ordering {
+    pub fn synthetic(build_profile: &str, version: &str) -> Self {
+        Self {
+            version: version.to_string(),
+            build_profile: build_profile.to_string(),
+            feature_set: default_feature_set(build_profile),
+            built_at: String::new(),
+            git_commit: None,
+            runtime_api_version: crate::RUNTIME_API_VERSION.to_string(),
+        }
+    }
+
+    /// Compare capability: fuller `feature_set` → semver → `built_at`.
+    #[must_use]
+    pub fn cmp_for_capability(&self, other: &Self) -> std::cmp::Ordering {
         use std::cmp::Ordering;
+        let self_set: std::collections::HashSet<_> = self.feature_set.iter().collect();
+        let other_set: std::collections::HashSet<_> = other.feature_set.iter().collect();
+        let self_superset = other_set.iter().all(|f| self_set.contains(*f));
+        let other_superset = self_set.iter().all(|f| other_set.contains(*f));
+
+        if self_set.len() > other_set.len() && self_superset {
+            return Ordering::Greater;
+        }
+        if other_set.len() > self_set.len() && other_superset {
+            return Ordering::Less;
+        }
+        if self_set.len() != other_set.len() {
+            return self_set.len().cmp(&other_set.len());
+        }
         match semver_cmp(&self.version, &other.version) {
             Ordering::Greater => Ordering::Greater,
             Ordering::Less => Ordering::Less,
             Ordering::Equal => self.built_at.cmp(&other.built_at),
         }
+    }
+
+    /// Compare for promote decisions: capability first, then semver, then `built_at`.
+    #[must_use]
+    pub fn cmp_for_promote(&self, other: &Self) -> std::cmp::Ordering {
+        self.cmp_for_capability(other)
     }
 }
 
@@ -165,6 +198,16 @@ mod tests {
         let j = serde_json::to_string(&m).unwrap();
         let back: KernelBinaryManifest = serde_json::from_str(&j).unwrap();
         assert_eq!(m, back);
+    }
+
+    #[test]
+    fn feature_set_orders_full_over_bundled() {
+        let full = KernelBinaryManifest::synthetic("full", "0.3.0");
+        let bundled = KernelBinaryManifest::synthetic("bundled", "0.3.0");
+        assert_eq!(
+            full.cmp_for_promote(&bundled),
+            std::cmp::Ordering::Greater
+        );
     }
 
     #[test]

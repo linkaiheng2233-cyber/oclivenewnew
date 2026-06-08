@@ -1,8 +1,19 @@
 # Technical debt inventory
 
-**Last updated:** 2026-06-07 (Phase 2 legacy closure batch)
+**Last updated:** 2026-06-08 (Profile-aware kernel scheduling hardening)
 
-**Verification (2026-06-07, Phase 2 closure):** `cargo check --workspace`; `cargo test --workspace --lib`; `cargo test -p oclivenewnew-tauri --tests` (Windows: `-j 1` if parallel link hits paging-file limits); `cargo clippy --workspace --all-targets --all-features -- -D warnings` (Windows: `-j 1` if needed); `npm run test:unit` (oclivenewnew); `npm run compile` (oclive-vscode).
+**Verification (2026-06-08):** `cargo test -p oclive_kernel_runtime -p oclive_kernel_host -j 1`; `cargo check -p oclivenewnew-tauri -p oclive-cli`; `node scripts/e2e-kernel-profile.mjs` (when `oclive-kernel-server` + `oclive-cli` built).
+
+### Kernel profile scheduling (2026-06-08)
+
+| ID | Item | Status | Notes |
+|----|------|--------|-------|
+| K-PROFILE-01 | Dual TOML parse (`kernel_distro_profile` vs `host_profile`) | **Pending** | Scheduling subset still separate; unify parse later |
+| K-PROFILE-02 | `/health` summary non-runtime | **Done** | `HostProfile::active_profile_summary()` SSOT |
+| K-PROFILE-03 | `distro_id`-only weak compat | **Done** | Hash required without summary; else Unknown |
+| K-PROFILE-04 | Desktop missing bundled `distro.oclive.toml` | **Partial** | `{resource}/distro.oclive.toml` + anchors; ship in installer TBD |
+| K-PROFILE-05 | Legacy attach bypasses profile | **Done** | Graded fallback + profile-aware attach |
+| K-PROFILE-06 | Duplicated resolve/health types | **Done** | `build_resolve_plan`, `KernelHealthJson` in types, `kernel_port_ops` |
 
 ### Phase 2 (2026-06-07)
 

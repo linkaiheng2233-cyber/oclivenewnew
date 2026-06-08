@@ -11,8 +11,13 @@ pub mod app_data_migration;
 pub mod domain;
 pub mod http_error;
 pub mod kernel_discovery;
+pub mod kernel_distro_profile;
 pub mod kernel_manifest;
+pub mod kernel_policy_input;
+pub mod kernel_port_ops;
+pub mod kernel_runtime_health;
 pub mod kernel_runtime_ops;
+pub mod kernel_strategy;
 pub mod paths;
 pub(crate) mod utils;
 
@@ -50,10 +55,29 @@ pub use kernel_discovery::{
     SCORE_DEV_FULL_DEBUG, SCORE_DEV_FULL_RELEASE, SCORE_DEV_HEADLESS_DEBUG,
     SCORE_DEV_HEADLESS_RELEASE, SCORE_ENV, SCORE_SETTINGS, SCORE_SHARED,
 };
+pub use kernel_distro_profile::{
+    active_summary_from_requirements, default_requirements_for_distro_id,
+    evaluate_profile_compat, parse_distro_requirements_file, profile_satisfies_caller,
+    profiles_compatible_by_hash, resolve_caller_requirements,
+};
+pub use oclive_kernel_types::{
+    ActiveProfileSummary, AttachReason, DistroProfileRequirements, KernelHealthJson,
+    ProfileCompat, ReplaceReason,
+};
 pub use kernel_manifest::{KernelBinaryManifest, KernelBuildProfile};
+pub use kernel_policy_input::{build_resolve_plan, PolicyContext, PolicyResolution};
+pub use kernel_port_ops::{find_listener_pids, terminate_listeners_on_port};
+pub use kernel_runtime_health::{
+    distro_health_snapshot, profile_file_sha256_hex, DistroHealthSnapshot, ENV_DISTRO_ID,
+    ENV_DISTRO_PROFILE,
+};
 pub use kernel_runtime_ops::{
     apply_promote_to_candidate, list_runtime_backups, promote_with_backup, rollback_shared_kernel,
     should_promote_binary, PromoteReport,
+};
+pub use kernel_strategy::{
+    manifest_for_candidate, pick_best_by_capability, resolve_kernel_action, KernelActionCandidate,
+    KernelActionKind, KernelActionPlan, ResolveKernelActionInput,
 };
 pub use paths::{
     canonical_brand_app_data_dir, ensure_app_data_dir, resolve_app_data_dir_for_api,

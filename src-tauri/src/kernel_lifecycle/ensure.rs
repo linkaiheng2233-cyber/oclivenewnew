@@ -1,12 +1,12 @@
-//! Attach-first kernel bring-up for the desktop host.
+//! Attach-first fallback when shared policy execution fails.
 
-use super::connection::{DesktopKernelMode, KernelConnection, SharedKernelConnection};
+use super::connection::{DesktopKernelMode, SharedKernelConnection};
+use super::policy::{resolve_desktop_distro_profile_path, KernelBringUpOptions};
 use super::spawn::{probe_existing_kernel, spawn_kernel};
 use oclive_kernel_runtime::{
     apply_promote_to_candidate, discover_spawn_kernel_candidates, pick_best_kernel,
 };
 use std::path::PathBuf;
-use std::sync::Arc;
 
 /// Bootstrap inputs for [`ensure_kernel_ready`].
 pub struct EnsureKernelOptions {
@@ -15,29 +15,40 @@ pub struct EnsureKernelOptions {
     pub anchors: Vec<PathBuf>,
     pub bundled_binary: Option<PathBuf>,
 }
-/// Attach to an existing loopback kernel or spawn one.
-///
-/// # Errors
-///
-/// Returns a human-readable message when no kernel is reachable and spawn fails.
+
+/// Policy-first bring-up (shared Rust SSOT); legacy attach-first on failure.
 pub async fn ensure_kernel_ready(
     opts: EnsureKernelOptions,
 ) -> Result<SharedKernelConnection, String> {
-    let base_url = format!("http://127.0.0.1:{}", opts.port);
-    let conn = Arc::new(KernelConnection::new(base_url.clone(), opts.port));
+    let distro_profile_path = resolve_desktop_distro_profile_path(&opts.anchors);
+    super::policy::ensure_kernel_with_policy(KernelBringUpOptions {
+        port: opts.port,
+        roles_dir: opts.roles_dir,
+        anchors: opts.anchors,
+        bundled_binary: opts.bundled_binary,
+        caller_distro_id: Some("desktop".into()),
+        distro_profile_path,
+        promote_shared: true,
+    })
+    .await
+}
 
-    tracing::info!(
-        target: "oclive_desktop",
-        port = opts.port,
-        "probing for existing kernel on loopback"
-    );
-
+/// Legacy attach-first path used as fallback from [`super::policy`].
+pub(super) async fn ensure_kernel_ready_legacy_on_conn(
+    conn: SharedKernelConnection,
+    opts: KernelBringUpOptions,
+) -> Result<SharedKernelConnection, String> {
+    let base_url = conn.base_url.clone();
+    if super::policy::try_profile_aware_attach(&conn, &opts).await {
+        return Ok(conn);
+    }
     if probe_existing_kernel(&base_url).await {
         conn.set_mode(DesktopKernelMode::Attached);
+        conn.clear_status_hint();
         tracing::info!(
             target: "oclive_desktop",
             port = opts.port,
-            "attached to existing kernel on loopback"
+            "legacy attach-first: attached to existing kernel"
         );
         return Ok(conn);
     }
@@ -55,15 +66,7 @@ pub async fn ensure_kernel_ready(
     let mut candidate = best.clone();
     apply_promote_to_candidate(&mut candidate);
 
-    tracing::info!(
-        target: "oclive_desktop",
-        binary = %candidate.binary.display(),
-        tier = ?candidate.tier,
-        port = opts.port,
-        "spawning local kernel"
-    );
-
-    match spawn_kernel(&conn, &candidate, opts.port, &opts.roles_dir).await {
+    match spawn_kernel(&conn, &candidate, opts.port, &opts.roles_dir, None).await {
         Ok(()) => {
             conn.set_mode(DesktopKernelMode::Spawned);
             Ok(conn)

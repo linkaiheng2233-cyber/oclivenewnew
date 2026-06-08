@@ -42,6 +42,7 @@ mod init_plan;
 mod init_tui;
 mod interactive;
 mod kernel_cmd;
+mod kernel_ensure;
 mod learn_cmd;
 mod lint_audit_ci;
 mod lint_report;

@@ -45,7 +45,12 @@ pub async fn wait_for_health(base_url: &str) -> bool {
     false
 }
 
-fn spawn_env(port: u16, roles_dir: &Path, app_data: &Path) -> Vec<(String, String)> {
+fn spawn_env(
+    port: u16,
+    roles_dir: &Path,
+    app_data: &Path,
+    profile_override: Option<&Path>,
+) -> Vec<(String, String)> {
     let mut pairs = vec![
         ("OCLIVE_API_PORT".into(), port.to_string()),
         (
@@ -64,18 +69,27 @@ fn spawn_env(port: u16, roles_dir: &Path, app_data: &Path) -> Vec<(String, Strin
     {
         pairs.push((ENV_HTTP_API_MOCK_LLM.into(), "1".into()));
     }
-    append_distro_env(&mut pairs, &load_host_profile_from_env());
+    append_distro_env(&mut pairs, &load_host_profile_from_env(), profile_override);
     pairs
 }
 
-fn append_distro_env(pairs: &mut Vec<(String, String)>, host: &HostProfile) {
+fn append_distro_env(
+    pairs: &mut Vec<(String, String)>,
+    host: &HostProfile,
+    profile_override: Option<&Path>,
+) {
     let distro_id = if host.distro_id != "default" {
         host.distro_id.clone()
     } else {
         "desktop".into()
     };
     pairs.push((ENV_DISTRO_ID.into(), distro_id));
-    if let Some(ref p) = host.profile_path {
+    if let Some(p) = profile_override.filter(|p| p.is_file()) {
+        pairs.push((
+            ENV_DISTRO_PROFILE.into(),
+            p.to_string_lossy().into_owned(),
+        ));
+    } else if let Some(ref p) = host.profile_path {
         pairs.push((ENV_DISTRO_PROFILE.into(), p.to_string_lossy().into_owned()));
     } else if let Ok(p) = std::env::var(ENV_DISTRO_PROFILE) {
         let t = p.trim().to_string();
@@ -95,6 +109,7 @@ pub async fn spawn_kernel(
     candidate: &KernelCandidate,
     port: u16,
     roles_dir: &Path,
+    distro_profile_override: Option<&Path>,
 ) -> Result<(), String> {
     let app_data = resolve_app_data_dir_for_host();
     ensure_app_data_dir(&app_data).map_err(|e| e.to_string())?;
@@ -109,7 +124,7 @@ pub async fn spawn_kernel(
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null());
-    for (k, v) in spawn_env(port, roles_dir, &app_data) {
+    for (k, v) in spawn_env(port, roles_dir, &app_data, distro_profile_override) {
         cmd.env(k, v);
     }
 

@@ -1,11 +1,9 @@
 //! Shared manual/auto reconnect and UI status events.
 
 use super::connection::{DesktopKernelMode, KernelConnection, KernelConnectionStatus};
-use super::spawn::{spawn_kernel, wait_for_health};
+use super::policy::{reconnect_with_policy, KernelBringUpOptions};
+use super::spawn::wait_for_health;
 use super::status::{build_ui_status, probe_health_status};
-use oclive_kernel_runtime::{
-    apply_promote_to_candidate, discover_spawn_kernel_candidates, pick_best_kernel,
-};
 use parking_lot::Mutex;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -106,30 +104,41 @@ pub async fn reconnect_once(
         return Ok(status);
     }
 
-    let candidates =
-        discover_spawn_kernel_candidates(&opts.anchors, None, opts.bundled_binary.as_deref());
-    let Some(best) = pick_best_kernel(&candidates) else {
-        conn.set_mode(DesktopKernelMode::Offline);
-        let status = build_ui_status(conn, false);
-        emit_kernel_status(app, &status, StatusEmit::None);
-        return Err("no kernel binary found".into());
+    let policy_opts = KernelBringUpOptions {
+        port: opts.port,
+        roles_dir: opts.roles_dir.clone(),
+        anchors: opts.anchors.clone(),
+        bundled_binary: opts.bundled_binary.clone(),
+        caller_distro_id: Some("desktop".into()),
+        distro_profile_path: super::policy::resolve_desktop_distro_profile_path(&opts.anchors),
+        promote_shared: true,
     };
 
-    let mut candidate = best.clone();
-    apply_promote_to_candidate(&mut candidate);
-
-    spawn_kernel(conn, &candidate, opts.port, &opts.roles_dir).await?;
-    conn.set_mode(DesktopKernelMode::Spawned);
-
-    let status = probe_health_status(conn).await;
-    if status.healthy {
-        emit_kernel_status(app, &status, StatusEmit::Reconnected);
-        Ok(status)
-    } else {
-        conn.set_mode(DesktopKernelMode::Offline);
-        let status = build_ui_status(conn, false);
-        emit_kernel_status(app, &status, StatusEmit::None);
-        Err("kernel spawned but /health did not become ready".into())
+    match reconnect_with_policy(conn, &policy_opts).await {
+        Ok(()) => {
+            conn.set_mode(DesktopKernelMode::Spawned);
+            let status = probe_health_status(conn).await;
+            if status.healthy {
+                emit_kernel_status(app, &status, StatusEmit::Reconnected);
+                Ok(status)
+            } else {
+                conn.set_mode(DesktopKernelMode::Offline);
+                let status = build_ui_status(conn, false);
+                emit_kernel_status(app, &status, StatusEmit::None);
+                Err("kernel spawned but /health did not become ready".into())
+            }
+        }
+        Err(e) => {
+            tracing::warn!(
+                target: "oclive_desktop",
+                error = %e,
+                "policy reconnect failed"
+            );
+            conn.set_mode(DesktopKernelMode::Offline);
+            let status = build_ui_status(conn, false);
+            emit_kernel_status(app, &status, StatusEmit::None);
+            Err(e)
+        }
     }
 }
 

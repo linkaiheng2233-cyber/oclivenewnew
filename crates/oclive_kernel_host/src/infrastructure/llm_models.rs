@@ -21,6 +21,11 @@ pub fn canonical_models_dir(state: &AppState) -> PathBuf {
     ensure_models_dir_for_roles(state.storage.roles_dir())
 }
 
+/// Persist user-selected local models directory in app settings.
+///
+/// # Errors
+///
+/// Returns database errors from `upsert_app_setting`.
 pub async fn persist_local_models_dir(state: &AppState, path: &str) -> Result<(), CommandError> {
     state
         .db_manager
@@ -30,6 +35,10 @@ pub async fn persist_local_models_dir(state: &AppState, path: &str) -> Result<()
 }
 
 /// Effective GGUF folder: repo-root `models/` (like `roles/`), migrating legacy app-data paths.
+///
+/// # Errors
+///
+/// Returns database or persistence errors while reconciling stored paths.
 pub async fn local_models_dir_for_state(state: &AppState) -> Result<String, CommandError> {
     let canonical = canonical_models_dir(state);
     let canonical_str = canonical.to_string_lossy().into_owned();
@@ -56,6 +65,7 @@ pub async fn local_models_dir_for_state(state: &AppState) -> Result<String, Comm
     Ok(canonical_str)
 }
 
+#[must_use]
 pub fn scan_local_model_files_in(dir: &Path) -> Vec<LocalModelFileDto> {
     let mut out = Vec::new();
     let Ok(rd) = std::fs::read_dir(dir) else {
@@ -90,6 +100,7 @@ pub fn scan_local_model_files_in(dir: &Path) -> Vec<LocalModelFileDto> {
     out
 }
 
+#[must_use]
 pub fn model_name_from_gguf_path(path: &Path) -> String {
     path.file_stem()
         .and_then(|s| s.to_str())

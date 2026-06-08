@@ -125,6 +125,12 @@ struct HealthJson {
     schema_migration_version: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     kernel_manifest: Option<oclive_kernel_runtime::KernelBinaryManifest>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    distro_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    distro_profile_hash: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    active_profile_summary: Option<oclive_kernel_types::ActiveProfileSummary>,
 }
 
 async fn health(State(state): State<Arc<AppState>>) -> axum::response::Response {
@@ -139,11 +145,18 @@ async fn health(State(state): State<Arc<AppState>>) -> axum::response::Response 
         .await
         .ok()
         .flatten();
+    let distro = oclive_kernel_runtime::distro_health_snapshot();
+    let host_profile =
+        crate::domain::host_profile::load_host_profile_from_env();
+    let active_profile_summary = host_profile.active_profile_summary();
     let json = HealthJson {
         ok: true,
         runtime_api_version: RUNTIME_API_VERSION,
         schema_migration_version: version,
         kernel_manifest: Some(oclive_kernel_runtime::KernelBinaryManifest::from_compile_time_env()),
+        distro_id: distro.distro_id,
+        distro_profile_hash: distro.distro_profile_hash,
+        active_profile_summary,
     };
     (
         StatusCode::OK,

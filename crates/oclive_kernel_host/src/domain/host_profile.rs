@@ -214,6 +214,54 @@ impl HostProfile {
             .map(|s| s.hint_for_favor(favorability))
             .unwrap_or("")
     }
+
+    /// Effective profile summary for `/health` and kernel scheduling (runtime truth).
+    #[must_use]
+    pub fn active_profile_summary(&self) -> Option<oclive_kernel_types::ActiveProfileSummary> {
+        let loaded = self.profile_path.is_some()
+            || (!self.distro_id.is_empty() && self.distro_id != "default");
+        if !loaded {
+            return None;
+        }
+
+        let mut enabled = vec![
+            "memory".into(),
+            "emotion".into(),
+            "event".into(),
+            "prompt".into(),
+            "llm".into(),
+        ];
+        let mut disabled = Vec::new();
+        if self.skip_agent {
+            disabled.push("agent".into());
+            enabled.retain(|m| m != "agent");
+        } else {
+            enabled.push("agent".into());
+        }
+        if self.skip_complex_emotion {
+            disabled.push("complex_emotion".into());
+            enabled.retain(|m| m != "complex_emotion");
+        } else {
+            enabled.push("complex_emotion".into());
+        }
+
+        let post_process_profile = match self.post_process.chain {
+            PostProcessChain::Minimal => Some("minimal".into()),
+            PostProcessChain::Standard => Some("standard".into()),
+        };
+        let prompt_profile = match self.prompt_profile {
+            PromptProfile::Concise => Some("concise".into()),
+            PromptProfile::Full => Some("full".into()),
+        };
+
+        Some(oclive_kernel_types::ActiveProfileSummary {
+            distro_id: Some(self.distro_id.clone()),
+            enabled_modules: enabled,
+            disabled_modules: disabled,
+            post_process_profile,
+            prompt_profile,
+        })
+    }
 }
 
 /// Load from `OCLIVE_DISTRO_PROFILE` file and `OCLIVE_DISTRO_ID`, or defaults (full capability).
@@ -435,6 +483,24 @@ mod tests {
     use super::*;
     use crate::models::plugin_backends::{AgentBackend, LlmBackend, MemoryBackend};
     use std::io::Write;
+
+    #[test]
+    fn active_profile_summary_from_loaded_vscode_profile() {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../examples/distro-profiles");
+        let mut p = load_host_profile_file(&root.join("vscode.oclive.toml")).unwrap();
+        p.profile_path = Some(root.join("vscode.oclive.toml"));
+        let summary = p.active_profile_summary().expect("summary");
+        assert_eq!(summary.distro_id.as_deref(), Some("vscode"));
+        assert!(summary.disabled_modules.contains(&"agent".to_string()));
+        assert_eq!(summary.prompt_profile.as_deref(), Some("concise"));
+    }
+
+    #[test]
+    fn active_profile_summary_none_for_default_host() {
+        let p = HostProfile::default();
+        assert!(p.active_profile_summary().is_none());
+    }
 
     #[test]
     fn parse_vscode_profile_skips_agent_and_ce() {

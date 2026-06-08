@@ -5,6 +5,7 @@ pub mod emotion;
 pub mod event;
 pub mod favorability;
 pub mod interaction_mode;
+pub mod kernel;
 pub mod knowledge;
 pub mod memory;
 pub mod personality;
@@ -26,6 +27,10 @@ pub use emotion::*;
 pub use event::*;
 pub use favorability::*;
 pub use interaction_mode::InteractionMode;
+pub use kernel::{
+    ActiveProfileSummary, AttachReason, DistroProfileRequirements, KernelHealthJson,
+    ProfileCompat, ReplaceReason,
+};
 pub use knowledge::{KnowledgeEventAugment, KnowledgeIndex, KnowledgePackConfigDisk};
 pub use memory::*;
 pub use personality::*;

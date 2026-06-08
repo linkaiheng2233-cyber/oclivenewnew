@@ -5,8 +5,8 @@ import { useI18n } from 'vue-i18n'
 import { useAppToast } from '../composables/useAppToast'
 import { useModalFocusRestore } from '../composables/useModalFocusRestore'
 import { ensurePluginWorkbenchI18n } from '../i18n/loadPluginWorkbench'
-import { usePluginMarketStore } from '../stores/pluginMarketStore'
 import { hostEventBus } from '../lib/hostEventBus'
+import { usePluginMarketStore } from '../stores/pluginMarketStore'
 
 const props = withDefaults(
   defineProps<{
