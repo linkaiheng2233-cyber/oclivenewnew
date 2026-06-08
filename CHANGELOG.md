@@ -4,7 +4,10 @@
 
 ## [Unreleased]
 
-（下一发版条目写在此处。）
+### Changed
+
+- **产品叙事对齐**：README / AGENTS / 定位文档统一为「AI 角色组装平台」；冻结项（dual_core、blueprint v3、expert_routing）表述为「机制已预埋，默认关闭」；聊天存储明确 hybrid 为生产路径。
+- **Profile 调度 UX**：桌面状态栏与设置 → 内核与连接、VS Code 状态栏统一 profile 适配文案（attach / mismatch / pin / replace / degraded）。
 
 ---
 

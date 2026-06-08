@@ -78,30 +78,28 @@ async fn build_plan_async(opts: &KernelBringUpOptions, base_url: &str) -> Kernel
 fn apply_attach_status_hint(conn: &KernelConnection, plan: &KernelActionPlan) {
     match plan.attach_reason {
         Some(AttachReason::KernelPinnedProfileMismatch) => {
-            conn.set_status_hint(
-                true,
-                Some(
-                    "Kernel binary is pinned but its profile does not match desktop requirements"
-                        .into(),
-                ),
-            );
+            conn.set_profile_hint_key(Some("kernel_pinned_profile_mismatch".into()));
+            *conn.degraded.write() = true;
+            *conn.status_message.write() = None;
         }
         Some(AttachReason::ProfileMismatchNoReplace) => {
-            conn.set_status_hint(
-                true,
-                Some(
-                    "Running kernel profile does not match desktop requirements (replace not allowed)"
-                        .into(),
-                ),
-            );
+            conn.set_profile_hint_key(Some("profile_mismatch_no_replace".into()));
+            *conn.degraded.write() = true;
+            *conn.status_message.write() = None;
         }
         Some(AttachReason::LegacyFallback) => {
-            conn.set_status_hint(
-                true,
-                Some("Attached via legacy fallback; profile may not match".into()),
-            );
+            conn.set_profile_hint_key(Some("legacy_fallback".into()));
+            *conn.degraded.write() = true;
+            *conn.status_message.write() = None;
         }
-        _ => conn.clear_status_hint(),
+        Some(AttachReason::ProfileCompatible)
+        | Some(AttachReason::RunningKernelOk)
+        | Some(AttachReason::KernelPinned) => {
+            conn.set_profile_hint_key(Some("profile_compatible".into()));
+            *conn.degraded.write() = false;
+            *conn.status_message.write() = None;
+        }
+        None => conn.clear_status_hint(),
     }
 }
 
@@ -211,16 +209,22 @@ async fn spawn_from_plan(
         let msg = plan
             .degrade_reason
             .clone()
-            .or_else(|| sel.degrade_reason.clone())
-            .unwrap_or_else(|| "using bundled fallback kernel".into());
-        conn.set_status_hint(true, Some(msg));
+            .or_else(|| sel.degrade_reason.clone());
+        conn.set_profile_hint_key(Some("degraded".into()));
+        conn.set_status_hint(true, msg);
         tracing::warn!(
             target: "oclive_desktop",
             tier = ?candidate.tier,
             "kernel policy: degraded spawn"
         );
+    } else if matches!(plan.action, KernelActionKind::ReplaceAndAttach) {
+        conn.set_profile_hint_key(Some("replaced_for_profile".into()));
+        *conn.degraded.write() = false;
+        *conn.status_message.write() = None;
     } else {
-        conn.clear_status_hint();
+        conn.set_profile_hint_key(Some("profile_compatible".into()));
+        *conn.degraded.write() = false;
+        *conn.status_message.write() = None;
     }
 
     spawn_kernel(

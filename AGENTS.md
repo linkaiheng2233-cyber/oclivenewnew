@@ -1,6 +1,8 @@
 ﻿# Agent / AI 协作说明（A.I.Live · oclivenewnew）
 
-本仓库为 **A.I.Live** 桌面角色对话应用（**Tauri + Vue 3 + Rust**；工程代号 **oclive**）。自动化助手或外部 Agent 在修改代码前，请先阅读：
+本仓库为 **A.I.Live / OCLive** —— 开源、可组装、隐私优先的 **AI 角色运行时与开发者平台**（**Tauri + Vue 3 + Rust**；工程代号 **oclive**）。对外叙事强调 **六槽可替换架构、角色包独立分发、发行版 profile 适配、插件市场**；默认角色包（如 `roles/mumu`）为**官方示例**，非产品上限。定位摘要见 [handoff/OCLIVE_POSITIONING_DIFFERENTIATION.md](handoff/OCLIVE_POSITIONING_DIFFERENTIATION.md)。
+
+自动化助手或外部 Agent 在修改代码前，请先阅读：
 
 - **命名与 canonical import SSOT**：[creator-docs/NAMING_CONVENTIONS.md](creator-docs/NAMING_CONVENTIONS.md)（DTO → `oclive_kernel_types`；trait → `oclive_kernel_contracts`；编排 → `oclive_kernel_host`）
 
@@ -48,7 +50,7 @@
 - **角色包与蓝图边界**：**角色包** = 身份、人格、关系、**`prompts/`**、**`reply_quality_anchor`**（初级创作者）。**蓝图** = **`slot_registry`**、**`groups`**、后端/模型/交互模式/记忆策略、**`runtime_config.dual_core`**（管理员；默认关）。逻辑分责见 **[handoff/ROLE_PACK_BOUNDARY.md](handoff/ROLE_PACK_BOUNDARY.md)** · [ROLE_PACK_SPEC.md](creator-docs/role-pack/ROLE_PACK_SPEC.md) §0 · [SETTINGS_REFERENCE.md](creator-docs/cli/SETTINGS_REFERENCE.md) §零。勿让 Agent 在「角色」任务中改 `slot_registry`。
 - **错误与日志**：统一错误类型见 **`src-tauri/src/lib.rs`** 内联 `error` 模块（re-export `oclive_kernel_types::error`）；Tauri 命令层见 **`src-tauri/src/api/error.rs`**（`ApiError` / `CommandError`）；**机器 `code` 与 JSON 体**以 **`oclive_kernel_types::KernelErrorBody`** 与 **`creator-docs/getting-started/KERNEL_ERROR_CODE_CONVENTION.md`** 为准（与 `AppError::code()`、`http_chat_codes`、目录插件 **`ApiError` JSON** 对齐；**Sentry / 用户可见错误扫尾**见 **`handoff/A3_CLOSURE_SUMMARY.md`** / **`handoff/A3_CLOSURE_SUMMARY.en.md`**）。结构化日志为 **`tracing`**：`init_tracing()` / `init_tracing_with_log_dir()`（`lib.rs`）默认 `info`，受 **`RUST_LOG`** 控制；设置 **`OCLIVE_LOG_DIR`** 或 **`--api`** 模式（`main.rs` → `temp/oclive_api_app_data/logs/`）可同时写入 rolling 文件；**`RUST_LOG` 含 `json`** 时 stdout/文件使用 JSON 行格式。
 - **启动健康检查**：首轮对话前 **`startup_health::ensure_once`**（槽位、`plugin_backends`、角色包文件、**`DbManager::health_ping`**、可选 LLM 探测）；环境变量 **`OCLIVE_SKIP_STARTUP_HEALTH`** / **`OCLIVE_SKIP_LLM_STARTUP_PROBE`** 可跳过。实现：**`crates/oclive_kernel_host/src/domain/startup_health.rs`**。
-- **实验性双核运行时（feature）**：`oclivenewnew-tauri` 的 Cargo feature **`dual_core`**（**默认关闭**）。未启用时 `dual_pipeline*` 不参与编译，`role.dual_core_gated()` 走常规 `CoPresent` 路径。本地实验：`cargo build -p oclivenewnew-tauri --features dual_core`。见 [`handoff/DUAL_CORE_CURSOR_HANDOFF.md`](handoff/DUAL_CORE_CURSOR_HANDOFF.md)。
+- **实验性双核运行时（feature）**：`oclivenewnew-tauri` 的 Cargo feature **`dual_core`**（**默认关闭**）。**机制已预埋，默认关闭**；解冻条件见 [handoff/TECHNICAL_DEBT_INVENTORY.md](handoff/TECHNICAL_DEBT_INVENTORY.md) §冻结决定。未启用时 `dual_pipeline*` 不参与编译。见 [`handoff/DUAL_CORE_CURSOR_HANDOFF.md`](handoff/DUAL_CORE_CURSOR_HANDOFF.md)。
 - **多发行版单写者（Phase 2）**：桌面与 VS Code **平等**——共享 Rust 策略 **`resolve_kernel_action`**（`crates/oclive_kernel_runtime/src/kernel_strategy.rs`）；`GET :8420/health` 返回 `kernel_manifest` + 可选 **`distro_id`**；宿主 **调用策略、本地执行** attach/spawn/replace。数据目录 **`OCLIVE_APP_DATA`** → `%LOCALAPPDATA%/OCLive/data`。桌面 **`kernel_lifecycle/policy.rs`** + **`kernel_attach`** 为 HTTP 薄客户端，**不**内嵌 `api_router` 写库。VS Code 经 **`oclive-cli kernel ensure --plan-only`**（见姊妹仓 `oclive-vscode/src/kernelStrategy.ts`）。无头 HTTP 入口 crate：**[`crates/oclive_kernel_host/`](crates/oclive_kernel_host/)**；规范：[`creator-docs/kernel/DISTRO_KERNEL_LIFECYCLE.md`](creator-docs/kernel/DISTRO_KERNEL_LIFECYCLE.md) · [`OCLIVE_APP_DATA.md`](creator-docs/kernel/OCLIVE_APP_DATA.md) · [`CROSS_HOST_MEMORY.md`](creator-docs/role-pack/CROSS_HOST_MEMORY.md)。
 - **内核自举与发行版适配（P1–P4）**：各发行版可在安装根提供 **`distro.oclive.toml`**（契约 [`DISTRO_CAPABILITY_PROFILE.md`](creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md) · 示例 `examples/distro-profiles/`）。**P2a** `KernelBinaryManifest` + sidecar + `GET /health` 的 `kernel_manifest` / **`distro_id`** + `oclive-kernel-server --version-json`。**P3a** `promote_with_backup` / `rollback_shared_kernel`（`kernel_runtime_ops.rs`）+ `cargo run -p oclive-cli -- kernel status|promote|rollback|ensure`；桌面/VS Code ensure 经共享策略 + promote。**P4** `HostProfile`（`host_profile.rs`）：spawn 时 `OCLIVE_DISTRO_ID` / `OCLIVE_DISTRO_PROFILE`。延后：**P2b** 多发行版差异化 manifest 字段；**P3b** 内核进程内自升级。
 
@@ -100,6 +102,7 @@
 - **前端**：[`src/stores/chatStore.ts`](src/stores/chatStore.ts) 从 `fetch_chat_messages` 加载；IndexedDB 仅遗留迁移；设置 → **存储管理**（[`ChatStorageSettingsPanel.vue`](src/components/settings/ChatStorageSettingsPanel.vue)）显示当前后端名称，支持搜索、导出、自动清理（按能力）、单条删改、记忆回放。
 - **Tauri**：`list_chat_sessions` / `fetch_chat_messages` / … / `run_chat_auto_cleanup` / **`replay_memory_extraction`** / **`get_replay_progress`** / **`get_chat_storage_capabilities`**（完整表见架构文档）。
 - **助手勿**：让 `MemoryEngine` / 归档 LLM 读取 `{app_data}/chats/` 或 `chat_messages` 充当记忆真源；编排上下文仍走 `short_term_memory` / `long_term_memory`。
+- **投入边界**：聊天存储 **生产路径为 hybrid**（SQLite 真源 + 可选 JSON 镜像）；`file` / `sqlite` 枚举仅影响镜像开关，**保持可编译与最小测试即可，不再扩展新功能**。见 [handoff/CHAT_STORAGE_ARCHITECTURE.md](handoff/CHAT_STORAGE_ARCHITECTURE.md) §Investment boundary。
 
 **契约优先**：角色包 `manifest.json` / `settings.json` 键与行为以 `roles/README_MANIFEST.md`、`RoleStorage::load_role` 及校验 crate 为准；新增顶层键需同步 `crates/oclive_validation` 与文档。
 

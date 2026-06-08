@@ -500,6 +500,9 @@ async function onToggleForceIframe(e: Event) {
               </UiButton>
             </div>
             <div v-if="kernelDiag" class="sv-env-results" role="status">
+              <p v-if="kernelConnectionStore.display.detailKey" class="sv-kernel-profile-hint">
+                {{ t(kernelConnectionStore.display.detailKey) }}
+              </p>
               <p>
                 <strong>{{ t("kernel.diagnostics.mode") }}</strong>
                 {{ kernelDiag.status.mode }}

@@ -4,6 +4,11 @@ export default {
     status: {
       attached: 'Shared kernel connected',
       spawned: 'Local kernel started',
+      connectedLocal: 'Connected to local kernel',
+      connectedProfileMismatch: 'Connected (profile mismatch — restart kernel may help)',
+      connectedPinnedMismatch: 'Connected (kernel pinned — profile may differ)',
+      connectedReplaced: 'Connected (switched to a better-matching kernel)',
+      connectedDegraded: 'Connected (degraded kernel — some features unavailable)',
       offline: 'Kernel offline · retry',
       checking: 'Checking connection…',
       offlineTapReconnect: 'Offline · tap to reconnect',
@@ -12,11 +17,19 @@ export default {
       reconnect: 'Reconnect kernel',
       aria: 'Kernel connection status',
     },
+    profile: {
+      sectionHint: 'Distro profile',
+      detailCompatible: 'Running kernel profile matches this desktop distro.',
+      detailMismatch: 'Running kernel profile does not fully match this desktop distro; some features may differ. Try reconnect above.',
+      detailPinnedMismatch: 'Kernel binary is pinned and may not match this desktop distro.',
+      detailReplaced: 'Replaced the kernel process with a better-matching build.',
+      detailDegraded: 'Using a degraded fallback kernel; some modules may be unavailable.',
+    },
     chat: {
       disconnected: 'Connection to the kernel was lost. Use the status bar above to reconnect.',
     },
     diagnostics: {
-      title: 'Kernel diagnostics',
+      title: 'Kernel & connection',
       mode: 'Mode',
       port: 'Port',
       binary: 'Binary',

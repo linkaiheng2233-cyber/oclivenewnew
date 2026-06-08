@@ -241,6 +241,8 @@ Update this file when batch status changes.
 | **Blueprint v3 + `runtime_config`** | 加载器 dispatch v2/v3 双 schema；v3 为草案，主载荷（`dual_core`/`runtime_config`）大多默认关。**默认编译，带维护成本。** | 冻结 = **v3 别再长**；**v2 仍为 SSOT**；不新增 v3 字段/迁移。 | v2 **真的**无法表达某个真实需求时再扩 v3。 |
 | **专家路由 `expert_routing`（407 行）** | `expert_routing.rs` 顶部 `#![cfg(feature = "dual_core")]`——**与双核同一 flag，默认不编译，已是真冻结、零默认成本**；常规回合管道不触发。复用 slot 抽象（过度程度较轻）。 | 无需操作（随 `dual_core` 一并冻结）；勿再投入。 | 随 `dual_core` 解冻，或出现**真实「按意图路由到不同专家模型」需求**时。 |
 
-**未冻结、已翻案（保留）**：三套存储后端 `hybrid/file/sqlite` —— 在「可嵌入内核（无头/嵌入式）」论题下 `file`/`sqlite` 单后端合理；保持「能编译 + 最小测试」即可，勿做花活。
+**未冻结、已翻案（保留）**：三套存储后端 `hybrid/file/sqlite` —— 在「可嵌入内核（无头/嵌入式）」论题下 `file`/`sqlite` 单后端合理；**生产路径为 hybrid**；`file`/`sqlite` **保持可编译 + 最小测试即可，不再扩展新功能**（见 [CHAT_STORAGE_ARCHITECTURE.md](./CHAT_STORAGE_ARCHITECTURE.md) §Investment boundary）。
+
+**叙事对齐（2026-06-08）**：对外文档对 **dual_core / blueprint v3 / expert_routing** 统一表述为 **「机制已预埋，默认关闭；解冻条件见本表」**——代码冻结不变，保留平台可扩展叙事。见 [OCLIVE_POSITIONING_DIFFERENTIATION.md](./OCLIVE_POSITIONING_DIFFERENTIATION.md)。
 
 **配套动作（owner：作者本人）**：(1) **统一文档**一次，将 roadmap（未做）与 status（已做）明确分开。注：经核实 `oclive_kernel_server` **确实存在且可跑**（`[[bin]] oclive-kernel-server`），先前「文档有、代码无」判断为搜索假象（目录名 `oclive_kernel_server`，非 `kernel_server`）；**真正待澄清的窄点**是它仍链接 `oclivenewnew-tauri` 取编排（编排尚未抽到 host-independent 纯内核 `library`，见 §3.1），文档措辞应区分「无头发行版已存在」与「纯内核 library 待抽离」。(2) 之后**重心转向宣传与滩头**，停止过度拓展。

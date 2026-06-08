@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/workflows/ci.yml/badge.svg)](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/workflows/ci.yml)
 
-本地优先的桌面角色对话应用：**Tauri + Vue 3 + Rust**。引擎支持场景、虚拟时间、异地/共景、好感与记忆、可替换子系统（记忆检索 / 情绪 / 事件估计 / Prompt 组装），角色内容以 **`roles/{角色id}/`** 角色包分发。
+本地优先的 **AI 角色组装平台**（开源、可组装、隐私优先）：**Tauri + Vue 3 + Rust** 运行时 + **六槽可替换模块** + **角色包独立分发** + **发行版 profile** + **插件市场**。默认角色包（如 `roles/mumu`）为**官方示例**，展示平台能力；社区创作与分发角色包是核心价值。工程代号 **oclive**。
 
 **架构（摘要）**：A.I.Live 采用 **契约型薄核** + **单核双态构建架构**——**六宿主后端模块**（memory / emotion / event / prompt / llm / agent）经 `PluginHost` 接入；**第 N 设施子模块**（如复杂情感、专家模型）等为编排行内设施模块；**后端模块插件模块** 挂第 K 模块外挂、**不占第 N 模块号**。交付：**OOCP**、角色包、**`oclive-cli` 内核工厂**；构建可选 **Monolith 宏核态**。详见 **[架构总览](creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)**（[English](creator-docs-en/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)）。
 
@@ -24,6 +24,16 @@
 | **轻量化基线** | [creator-docs/development/LIGHTWEIGHT_PROFILE.md](creator-docs/development/LIGHTWEIGHT_PROFILE.md)（Release、`cargo-bloat` 采样）。 |
 
 协作说明见根目录 **[AGENTS.md](AGENTS.md)**。
+
+## 开发者入口
+
+| 目标 | 文档 |
+|------|------|
+| **脚手架**（`oclive-cli init` / `dev` / `bench`） | [OCLIVE_CLI_GUIDE.md](creator-docs/cli/OCLIVE_CLI_GUIDE.md) |
+| **角色包规范**（manifest / settings / 身份 / 后处理） | [ROLE_PACK_SPEC.md](creator-docs/role-pack/ROLE_PACK_SPEC.md) |
+| **发行版 profile**（`distro.oclive.toml` / 多宿主 attach） | [DISTRO_KERNEL_LIFECYCLE.md](creator-docs/kernel/DISTRO_KERNEL_LIFECYCLE.md) · [DISTRO_CAPABILITY_PROFILE.md](creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md) |
+| **架构与六槽契约** | [OCLIVE_ARCHITECTURE_OVERVIEW.md](creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) |
+| **定位与差异化**（对外叙事） | [handoff/OCLIVE_POSITIONING_DIFFERENTIATION.md](handoff/OCLIVE_POSITIONING_DIFFERENTIATION.md) |
 
 ## 快速开始（内核工厂 / oclive-cli）
 

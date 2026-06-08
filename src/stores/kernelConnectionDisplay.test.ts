@@ -37,7 +37,7 @@ describe('kernelConnectionStore display', () => {
     const store = useKernelConnectionStore()
     store.phase = 'ready'
     store.applyStatus(status({ mode: 'attached', healthy: true }))
-    expect(store.display.labelKey).toBe('kernel.status.attached')
+    expect(store.display.labelKey).toBe('kernel.status.connectedLocal')
     expect(store.display.ok).toBe(true)
   })
 })

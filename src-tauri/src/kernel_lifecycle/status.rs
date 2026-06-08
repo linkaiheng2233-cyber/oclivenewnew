@@ -63,6 +63,7 @@ pub fn build_ui_status(conn: &KernelConnection, healthy: bool) -> KernelConnecti
         healthy,
         degraded: (*conn.degraded.read()).then_some(true),
         status_message: conn.status_message.read().clone(),
+        profile_hint_key: conn.profile_hint_key_snapshot(),
     }
 }
 

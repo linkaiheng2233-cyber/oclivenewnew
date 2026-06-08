@@ -14,7 +14,7 @@
 
 在 **构建** 上采用 **单核双态构建架构**：**同一套**编排语义与 DTO 契约（单核），构建期两档——**外核态**（低耦合、`PluginHost`）与 **宏核态**（Monolith 焊接）。二者经 `oclive init` 生成双 `[[bin]]`，**按构建产物选择**，非两套内核产品。
 
-**运行时双核双态（Opt-in Beta）**：在**同一蓝图**内划分 **Stable 核**（固定六槽编排）与 **Experimental 核**（自定义 `pipeline.experimental`），由 `DualPipelineRunner` 优先实验、失败则快照回滚至 Stable；经 **`oclive init --dual-core`** 开启，**默认关闭**。与宏核态 **正交**，详见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md) 与 [DUAL_CORE_ALIGNMENT.md](../../handoff/DUAL_CORE_ALIGNMENT.md)。
+**运行时双核双态（Opt-in · 默认关）**：在**同一蓝图**内划分 **Stable 核**（固定六槽编排）与 **Experimental 核**（自定义 `pipeline.experimental`）。**机制已预埋，默认关闭**（`dual_core` Cargo feature；`dual_pipeline*` 默认不参与编译）。解冻条件见 [TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md) §冻结决定。RFC：[RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md) · [DUAL_CORE_ALIGNMENT.md](../../handoff/DUAL_CORE_ALIGNMENT.md)。
 
 **开放实验场** 为产品主轴（见 [VISION_OPEN_LAB.md](../roadmap/VISION_OPEN_LAB.md)）。
 
@@ -27,7 +27,7 @@
 | **设施模块** | **统称**：编排行内、**不**占用 `plugin_backends` 六键的内核延伸能力（含无编号设施与已登记子模块）。**不存在**「专家模型设施模块」等中间大类。 |
 | **`{专名}设施子模块`** | 在设施模块中**登记编号**（**第 N 设施子模块**）的项；全名 = **`{专名}` + `设施子模块`**；各专名**独立**，不得把「专家模型」当作整族前缀套在其它专名上。 |
 | **专家模型**（专名） | 仅指 **专家模型设施子模块** 及其蓝图/实验核配置（条件触发子流程）；**不**包含复杂情感。 |
-| **专家路由** | **专家模型设施子模块** 的默认实现：`blueprint/includes/expert_routing.json`、触发条件 + `steps`、可选 **`slot.expert.invoke`**（v3 + `dual_core`）。 |
+| **专家路由** | **专家模型设施子模块** 的默认实现：`blueprint/includes/expert_routing.json`（**与 `dual_core` 同 feature，默认不编译**）。 |
 
 **扩展规则（设施子模块）**：新增已登记设施时，依次占用 **第 3、第 4… 设施子模块**，全名遵循 **`{新专名}设施子模块`**（须 RFC + 文档登记），**不**复用「专家模型」专名。
 

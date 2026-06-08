@@ -11,6 +11,7 @@ export interface KernelConnectionStatus {
   healthy: boolean
   degraded?: boolean | null
   statusMessage?: string | null
+  profileHintKey?: string | null
 }
 
 export interface KernelDiagnostics {

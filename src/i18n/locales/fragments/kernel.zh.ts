@@ -4,6 +4,11 @@ export default {
     status: {
       attached: '已连接共享内核',
       spawned: '已启动本地内核',
+      connectedLocal: '已连接至本地内核',
+      connectedProfileMismatch: '已连接（配置有差异，可能需要重启内核）',
+      connectedPinnedMismatch: '已连接（内核已锁定，配置可能有差异）',
+      connectedReplaced: '已连接（已切换至更匹配的内核）',
+      connectedDegraded: '已连接（使用降级内核，部分能力不可用）',
       offline: '内核离线 · 重试',
       checking: '检测连接中…',
       offlineTapReconnect: '离线 · 点击重连',
@@ -12,11 +17,19 @@ export default {
       reconnect: '重连内核',
       aria: '内核连接状态',
     },
+    profile: {
+      sectionHint: '发行版配置（Profile）',
+      detailCompatible: '当前内核配置与桌面发行版需求一致。',
+      detailMismatch: '当前内核配置与桌面发行版需求不完全匹配，可能影响部分功能。可尝试在上方重连或重启内核。',
+      detailPinnedMismatch: '内核二进制已锁定，且与桌面发行版需求不完全匹配，部分能力可能受限。',
+      detailReplaced: '已切换至更匹配当前发行版的内核进程。',
+      detailDegraded: '正在使用降级内核，部分模块或能力可能不可用。',
+    },
     chat: {
       disconnected: '与内核的连接已断开，请通过顶栏重连。',
     },
     diagnostics: {
-      title: '内核诊断',
+      title: '内核与连接',
       mode: '模式',
       port: '端口',
       binary: '二进制',

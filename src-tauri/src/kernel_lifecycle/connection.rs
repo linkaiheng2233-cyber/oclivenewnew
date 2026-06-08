@@ -32,6 +32,9 @@ pub struct KernelConnectionStatus {
     pub degraded: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub status_message: Option<String>,
+    /// UX hint key for profile scheduling (`profile_compatible`, `degraded`, …).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub profile_hint_key: Option<String>,
 }
 
 /// Active kernel HTTP upstream; optionally owns a spawned child process.
@@ -43,6 +46,7 @@ pub struct KernelConnection {
     pub kernel_tier: RwLock<Option<KernelTier>>,
     pub degraded: RwLock<bool>,
     pub status_message: RwLock<Option<String>>,
+    profile_hint_key: RwLock<Option<String>>,
     client: reqwest::Client,
     spawned_child: Mutex<Option<Child>>,
     pub auto_reconnect: Mutex<AutoReconnectPolicy>,
@@ -63,6 +67,7 @@ impl KernelConnection {
             kernel_tier: RwLock::new(None),
             degraded: RwLock::new(false),
             status_message: RwLock::new(None),
+            profile_hint_key: RwLock::new(None),
             client,
             spawned_child: Mutex::new(None),
             auto_reconnect: Mutex::new(AutoReconnectPolicy::default()),
@@ -123,9 +128,19 @@ impl KernelConnection {
         *self.status_message.write() = message;
     }
 
+    pub fn set_profile_hint_key(&self, key: Option<String>) {
+        *self.profile_hint_key.write() = key;
+    }
+
+    #[must_use]
+    pub fn profile_hint_key_snapshot(&self) -> Option<String> {
+        self.profile_hint_key.read().clone()
+    }
+
     pub fn clear_status_hint(&self) {
         *self.degraded.write() = false;
         *self.status_message.write() = None;
+        *self.profile_hint_key.write() = None;
     }
 
     #[must_use]

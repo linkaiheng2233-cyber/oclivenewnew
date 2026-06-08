@@ -8,6 +8,17 @@ const kernelStore = useKernelConnectionStore()
 
 const label = computed(() => t(kernelStore.display.labelKey))
 
+const tooltip = computed(() => {
+  const parts = [t(kernelStore.display.labelKey)]
+  if (kernelStore.display.detailKey) {
+    parts.push(t(kernelStore.display.detailKey))
+  }
+  if (kernelStore.status?.port) {
+    parts.push(`:${kernelStore.status.port}`)
+  }
+  return parts.join(' · ')
+})
+
 async function onClick() {
   if (!kernelStore.display.clickable || kernelStore.disabled) {
     return
@@ -41,7 +52,8 @@ defineExpose({ refresh: () => kernelStore.refresh() })
       'kernel-status--checking': kernelStore.display.checking,
       'kernel-status--clickable': kernelStore.display.clickable,
     }"
-    :aria-label="t('kernel.status.aria')"
+    :aria-label="tooltip"
+    :title="tooltip"
     :disabled="kernelStore.disabled"
     @click="onClick"
   >

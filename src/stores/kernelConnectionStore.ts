@@ -3,12 +3,14 @@ import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { defineStore } from 'pinia'
 import { getKernelConnectionStatus, reconnectKernel } from '../api/kernel'
 import { i18n } from '../i18n'
+import { kernelProfileDetailKey, kernelStatusLabelKey } from '../lib/kernelProfileUx'
 import { useChatStore } from './chatStore'
 
 export type KernelPhase = 'checking' | 'ready'
 
 export interface KernelDisplay {
   labelKey: string
+  detailKey: string | null
   clickable: boolean
   ok: boolean
   checking: boolean
@@ -32,6 +34,7 @@ export const useKernelConnectionStore = defineStore('kernelConnection', {
       if (state.phase === 'checking') {
         return {
           labelKey: 'kernel.status.checking',
+          detailKey: null,
           clickable: false,
           ok: false,
           checking: true,
@@ -40,6 +43,7 @@ export const useKernelConnectionStore = defineStore('kernelConnection', {
       if (state.busy || state.status?.mode === 'reconnecting') {
         return {
           labelKey: 'kernel.status.reconnecting',
+          detailKey: null,
           clickable: false,
           ok: false,
           checking: false,
@@ -49,6 +53,7 @@ export const useKernelConnectionStore = defineStore('kernelConnection', {
         if (state.lastError) {
           return {
             labelKey: 'kernel.status.offlineRetryFailed',
+            detailKey: null,
             clickable: true,
             ok: false,
             checking: false,
@@ -56,31 +61,17 @@ export const useKernelConnectionStore = defineStore('kernelConnection', {
         }
         return {
           labelKey: 'kernel.status.offlineTapReconnect',
+          detailKey: null,
           clickable: true,
           ok: false,
           checking: false,
         }
       }
-      if (state.status.mode === 'spawned') {
-        return {
-          labelKey: 'kernel.status.spawned',
-          clickable: false,
-          ok: true,
-          checking: false,
-        }
-      }
-      if (state.status.mode === 'attached') {
-        return {
-          labelKey: 'kernel.status.attached',
-          clickable: false,
-          ok: true,
-          checking: false,
-        }
-      }
       return {
-        labelKey: 'kernel.status.offlineTapReconnect',
-        clickable: true,
-        ok: false,
+        labelKey: kernelStatusLabelKey(state.status),
+        detailKey: kernelProfileDetailKey(state.status),
+        clickable: false,
+        ok: true,
         checking: false,
       }
     },

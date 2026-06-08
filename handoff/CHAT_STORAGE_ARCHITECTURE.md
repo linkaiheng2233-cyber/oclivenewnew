@@ -41,6 +41,16 @@ Implementation: `hybrid_store.rs` + `factory.rs::resolve_mirror_enabled`.
 
 Older docs described independent `file` / `sqlite` store implementations. Phase 3+ uses a **single hybrid store**; `file`/`sqlite` backend enum values remain deserializable for migration and only toggle mirror behavior.
 
+## Investment boundary (2026-06-08)
+
+| Backend / mode | Production use | Engineering policy |
+|----------------|----------------|-------------------|
+| **`hybrid`** (`mirror: true`, default) | **Yes — primary path** | Maintain; bugfixes and capability UI as needed |
+| **`file` / `sqlite` legacy enum** | Mirror toggle only | **Keep compiling + minimal tests**; **no new features** |
+| Independent file-only / sqlite-only stores | Retired | Do not revive without new RFC |
+
+Do not extend chat storage surface area in v0.3.x; memory replay/search/cleanup ride the hybrid store + SQLite memory tables.
+
 ## Capability detection (PATCH-1)
 
 `get_chat_storage_capabilities` returns:
