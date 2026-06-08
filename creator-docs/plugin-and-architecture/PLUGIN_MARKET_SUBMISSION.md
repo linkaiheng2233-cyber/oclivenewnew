@@ -70,7 +70,7 @@ node scripts/validate-plugins-index.mjs
 | 文件 | 用途 |
 |------|------|
 | `CHANGELOG.md` | 版本变更 |
-| `LICENSE` | 许可证（与主仓 AGPL + 插件例外策略兼容） |
+| `LICENSE` | 许可证（作者自选；主仓为 Apache-2.0，插件可用 MIT / Apache-2.0 等） |
 | `author.json` | 作者展示名、推荐后端（见 [AUTHOR_JSON.md](../role-pack/AUTHOR_JSON.md) 若复用形状） |
 
 ### 4. 索引条（`plugins.json`）与仓库一致

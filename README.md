@@ -66,7 +66,7 @@
 ## 模型、插件与数据（速览三问）
 
 1. **第三方模型与 API**：默认 **本地 Ollama**；若使用云端或侧车，密钥与出站网络由 **用户与侧车配置** 负责 — 见 [creator-docs/getting-started/SIDECAR_LLM_USER_GUIDE.md](creator-docs/getting-started/SIDECAR_LLM_USER_GUIDE.md) 与 [LICENSE_POLICY.md](creator-docs/LICENSE_POLICY.md)。  
-2. **插件**：须遵守 **manifest 权限** 与宿主授权；AGPL + 插件例外见 [LICENSE](LICENSE)。  
+2. **插件**：须遵守 **manifest 权限** 与宿主授权；主程序以 **Apache-2.0** 发布，见 [LICENSE](LICENSE) 与 [LICENSE_POLICY.md](creator-docs/LICENSE_POLICY.md)。  
 3. **用户数据落盘**：SQLite 与 `{app_data}` 路径见 [creator-docs/guides/CONFIGURATION_FILES.md](creator-docs/guides/CONFIGURATION_FILES.md)；勿在公开渠道粘贴含隐私的路径全文。
 
 ## 平台愿景（开放实验场）
@@ -232,6 +232,8 @@ cd src-tauri && npx tauri build
 关于 **模型权重与许可证**、**第三方插件责任**、**本地数据与遥测** 的完整说明见 **[creator-docs/legal/DISCLAIMER.md](creator-docs/legal/DISCLAIMER.md)**（[English](creator-docs-en/legal/DISCLAIMER.md)）。安全审查边界见 [SECURITY_AUDIT_SCOPE.md](creator-docs/security/SECURITY_AUDIT_SCOPE.md) 中的「第三方风险」。
 
 ## 许可证
+
+**Apache License 2.0**（SPDX: `Apache-2.0`）— 见 [LICENSE](LICENSE) 与 [NOTICE](NOTICE)。策略说明见 [LICENSE_POLICY.md](creator-docs/LICENSE_POLICY.md)。
 
 ## 贡献与安全
 

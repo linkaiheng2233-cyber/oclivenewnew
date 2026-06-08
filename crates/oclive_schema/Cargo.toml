@@ -3,7 +3,7 @@ name = "oclive_schema"
 version = "0.1.0"
 edition = "2021"
 description = "Pure serde schema types for OCLive (decoupled from validation logic)"
-license = "AGPL-3.0-or-later"
+license = "Apache-2.0"
 
 [lints]
 workspace = true

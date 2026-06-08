@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 publish = false
 description = "SQLite-only SQLx facade for OCLive (no sqlx-mysql / rsa in lockfile)"
+license = "Apache-2.0"
 
 [lints]
 workspace = true

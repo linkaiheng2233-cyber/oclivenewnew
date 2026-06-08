@@ -6,9 +6,11 @@
 
 ## 1) 主程序仓库（oclivenewnew）
 
-- 当前协议：**GNU Affero General Public License v3.0（AGPL-3.0）**，并在仓库根 `LICENSE` 正文之后附有 **Oclive 插件例外**（允许仅通过文档化扩展面接入的独立插件使用其他许可）。
-- 对外文档应明确写出 SPDX：`AGPL-3.0`，并说明插件例外见根 `LICENSE` 附录（例外不构成对 AGPL 的替代；修改主程序或网络提供 AGPL 覆盖版本仍须遵守 AGPL，含第 13 条）。
-- 版本发布前，检查 `LICENSE` 文件存在且 AGPL 正文与例外附录均未损坏。
+- 当前协议：**Apache License 2.0（Apache-2.0）**；根目录 `LICENSE` 为官方全文，`NOTICE` 为版权归属声明。
+- 对外文档应明确写出 SPDX：`Apache-2.0`。
+- 版本发布前，检查根 `LICENSE` 与 `NOTICE` 存在且未损坏。
+
+**变更说明（2026-06-09）**：主程序由 AGPL-3.0 + 插件例外改为 Apache-2.0，以支持闭源商业发行版与嵌入式下游自由组合内核；permissive 许可下独立插件/发行版可自选协议，无需额外「插件例外」附录。
 
 ---
 

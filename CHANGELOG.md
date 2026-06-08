@@ -6,6 +6,7 @@
 
 ### Changed
 
+- **许可证变更**：主程序由 AGPL-3.0 + 插件例外改为 **Apache-2.0**（根 `LICENSE` + `NOTICE`）；支持闭源商业发行版与嵌入式下游自由组合内核；`LICENSE_POLICY.md` 已同步。
 - **产品叙事对齐**：README / AGENTS / 定位文档统一为「AI 角色组装平台」；冻结项（dual_core、blueprint v3、expert_routing）表述为「机制已预埋，默认关闭」；聊天存储明确 hybrid 为生产路径。
 - **Profile 调度 UX**：桌面状态栏与设置 → 内核与连接、VS Code 状态栏统一 profile 适配文案（attach / mismatch / pin / replace / degraded）。
 - **发行版 Profile 解析 SSOT**：`distro.oclive.toml` 统一经 `oclive_kernel_runtime::distro_oclive_file` 解析（K-PROFILE-01）。

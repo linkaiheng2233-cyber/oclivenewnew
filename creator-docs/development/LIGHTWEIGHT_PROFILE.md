@@ -36,7 +36,7 @@
 - **漏洞级（error）**：**0**（`sqlx` 0.8.6 + 仅 `sqlite` 特性；运行时 `sql_migrate`，无 `sqlx-mysql` / `rsa` 解析链）。
 - **警告级（warning）**：**3** 条未忽略（`fxhash`、`glib` unsound、`rand` 0.7）；**11** 条 gtk-rs GTK3 *unmaintained* 已在 [`.cargo/audit.toml`](../../.cargo/audit.toml) 记录忽略。发版评审时运行 `cargo audit` 并核对 [KNOWN_VULNERABILITIES.md](../security/KNOWN_VULNERABILITIES.md)。
 
-**许可证合规**（**2026-05-20**）：根目录 `deny.toml` + `cargo deny check licenses` 退出码 **0**（允许表含 `AGPL-3.0-or-later`、`CDLA-Permissive-2.0`、`NCSA` 等；工作区 crate 统一 SPDX `AGPL-3.0-or-later`）。
+**许可证合规**（**2026-06-09**）：根目录 `deny.toml` + `cargo deny check licenses` 退出码 **0**（允许表含 `Apache-2.0`、`MIT`、`CDLA-Permissive-2.0`、`NCSA` 等；工作区 crate 统一 SPDX `Apache-2.0`）。
 
 CI：`.github/workflows/ci.yml` 含 **`cargo-audit`**（`continue-on-error: true`）与 **`cargo-deny`**；`oclive ci init` 模板同步 deny / loom job。
 

@@ -194,14 +194,14 @@ fn pick_cargo_metadata(args: &InitArgs, cfg: &mut ProjectConfig) -> Result<()> {
     if !author.trim().is_empty() {
         cfg.cargo_author = Some(author.trim().to_string());
     }
-    let licenses = ["MIT", "Apache-2.0", "GPL-3.0", "AGPL-3.0"];
+    let licenses = ["Apache-2.0", "MIT", "GPL-3.0", "AGPL-3.0"];
     let lic_idx = Select::with_theme(&ColorfulTheme::default())
         .with_prompt("License (SPDX)")
         .items(&licenses)
         .default(0)
         .interact()
         .context("license")?;
-    cfg.cargo_license = Some(licenses.get(lic_idx).copied().unwrap_or("MIT").to_string());
+    cfg.cargo_license = Some(licenses.get(lic_idx).copied().unwrap_or("Apache-2.0").to_string());
     let desc: String = Input::with_theme(&ColorfulTheme::default())
         .with_prompt("Short description (optional; leave empty to omit description)")
         .allow_empty(true)

@@ -2,7 +2,7 @@
 name = "oclivenewnew-tauri"
 version = "0.3.0"
 edition = "2021"
-license = "AGPL-3.0-or-later"
+license = "Apache-2.0"
 description = "oclive desktop companion ? Tauri + Vue + Rust dialogue engine"
 repository = "https://github.com/linkaiheng2233-cyber/oclivenewnew"
 keywords = ["oclive", "tauri", "companion", "llm", "sqlite"]

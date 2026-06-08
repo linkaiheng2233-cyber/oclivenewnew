@@ -63,7 +63,7 @@ Release **`cargo-bloat` sampling**, **Monolith** vs **`oclive bench`**, and **kn
 ## Models, plugins, and data (three quick questions)
 
 1. **Third-party models / APIs:** default **local Ollama**; cloud or sidecars are **user-configured** — [SIDECAR_LLM_USER_GUIDE.md](creator-docs/getting-started/SIDECAR_LLM_USER_GUIDE.md), [LICENSE_POLICY.md](creator-docs/LICENSE_POLICY.md).  
-2. **Plugins:** follow **manifest permissions** and host grants; AGPL + plugin exception in [LICENSE](LICENSE).  
+2. **Plugins:** follow **manifest permissions** and host grants; host is **Apache-2.0** — see [LICENSE](LICENSE) and [LICENSE_POLICY.md](creator-docs/LICENSE_POLICY.md).  
 3. **Data on disk:** SQLite + `{app_data}` — [CONFIGURATION_FILES.md](creator-docs/guides/CONFIGURATION_FILES.md); do not paste private paths in public issues.
 
 ## Vision (open lab)
@@ -133,7 +133,7 @@ Full text on **model weights & licenses**, **third-party plugin responsibility**
 
 ## License
 
-AGPL-3.0 with Oclive plugin exception — [LICENSE](LICENSE).
+Apache License 2.0 (SPDX: `Apache-2.0`) — [LICENSE](LICENSE) and [NOTICE](NOTICE). Policy: [LICENSE_POLICY.md](creator-docs/LICENSE_POLICY.md).
 
 ## Contributing
 

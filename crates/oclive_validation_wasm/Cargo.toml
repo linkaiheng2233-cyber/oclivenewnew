@@ -3,7 +3,7 @@ name = "oclive_validation_wasm"
 version = "0.1.0"
 edition = "2021"
 description = "WASM cdylib facade for oclive_validation (avoids native/wasm target competition)"
-license = "AGPL-3.0-or-later"
+license = "Apache-2.0"
 
 [lints]
 workspace = true

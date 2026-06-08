@@ -8,9 +8,11 @@ Minimal licensing policy for the current phase: actionable before release, room 
 
 ## 1) Main app repo (oclivenewnew)
 
-- **License today**: **GNU Affero General Public License v3.0 (AGPL-3.0)**, with the **Oclive plugin exception** after the main `LICENSE` text (independent plugins may use other licenses when they only use the documented extension surface).
-- Public docs should state SPDX **`AGPL-3.0`** and point to the plugin exception appendix in root `LICENSE` (the exception does not replace AGPL; modifying the host or offering AGPL‑covered versions over a network still follows AGPL, including section 13).
-- Before each release: verify root `LICENSE` exists and both AGPL body and exception appendix are intact.
+- **License today**: **Apache License 2.0 (Apache-2.0)**; root `LICENSE` is the official text and `NOTICE` holds copyright attribution.
+- Public docs should state SPDX **`Apache-2.0`**.
+- Before each release: verify root `LICENSE` and `NOTICE` exist and are intact.
+
+**Change note (2026-06-09)**: the host moved from AGPL-3.0 + plugin exception to Apache-2.0 so commercial and embedded downstreams can combine the kernel freely; under a permissive license, independent plugins and distros pick their own licenses without a separate exception appendix.
 
 ---
 

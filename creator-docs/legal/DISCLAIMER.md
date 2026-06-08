@@ -31,7 +31,7 @@
 ## 4. 开源许可证合规（依赖）
 
 - 工作区 Rust 依赖的许可证策略由根目录 **`deny.toml`** 定义；发版前在仓库根执行 **`cargo deny check licenses`**（与 **`oclive lint --deny`** 一致），退出码应为 **0**。  
-- 本仓库应用代码以 **[LICENSE](../../LICENSE)**（**AGPL-3.0-or-later**）发布；**第三方 crate** 的许可证组合由 `deny.toml` 允许表约束，**不**表示维护者背书全部依赖的功能安全。  
+- 本仓库应用代码以 **[LICENSE](../../LICENSE)**（**Apache-2.0**）发布；**第三方 crate** 的许可证组合由 `deny.toml` 允许表约束，**不**表示维护者背书全部依赖的功能安全。  
 - 漏洞级依赖审计见 **[KNOWN_VULNERABILITIES.md](../security/KNOWN_VULNERABILITIES.md)** 与 [LIGHTWEIGHT_PROFILE.md §6.4](../development/LIGHTWEIGHT_PROFILE.md)。
 
 ---

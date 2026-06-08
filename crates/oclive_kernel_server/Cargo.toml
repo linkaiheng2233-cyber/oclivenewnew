@@ -2,7 +2,7 @@
 name = "oclive_kernel_server"
 version = "0.2.0"
 edition = "2021"
-license = "AGPL-3.0-or-later"
+license = "Apache-2.0"
 description = "Headless oclive kernel HTTP server (no Tauri window)"
 repository = "https://github.com/linkaiheng2233-cyber/oclivenewnew"
 keywords = ["oclive", "kernel", "headless", "http"]
