@@ -1,8 +1,8 @@
 # Technical debt inventory
 
-**Last updated:** 2026-06-08 (Profile-aware kernel scheduling hardening)
+**Last updated:** 2026-06-08 (Opus 4.8 optimization closure)
 
-**Verification (2026-06-08):** `cargo test -p oclive_kernel_runtime -p oclive_kernel_host -j 1`; `cargo check -p oclivenewnew-tauri -p oclive-cli`; `node scripts/e2e-kernel-profile.mjs` (when `oclive-kernel-server` + `oclive-cli` built).
+**Verification (2026-06-08 closure):** `node scripts/dimension5-acceptance.mjs --ci` PASS (7 checks); `cargo test -p oclive_kernel_host --lib` 180 passed; `cargo test -p oclivenewnew-tauri --test invoke_hotpath_matrix` 5 passed; `npm run test:unit` 46 passed. Prior: `cargo test -p oclive_kernel_runtime -p oclive_kernel_host -j 1`; `cargo check -p oclivenewnew-tauri -p oclive-cli`.
 
 **Opus 4.8 follow-up (2026-06-08):** five-dimension re-review — `node scripts/dimension5-acceptance.mjs --ci` PASS; K-PERF-01 batched memory-decay writes; K-PERF-02 stage tracing + PERFORMANCE.md §6; K-DOC-02 CHANGELOG parity CI; K-PROFILE-01 unified `distro_oclive_file`; D-OPUS-05 re-export ratchet; D-OPUS-01/02/04 RC lightweight sweep Done. See §Opus 4.8 follow-up.
 
@@ -354,4 +354,4 @@ DeepSeek 五维方向二轮复审（Opus 4.8）。维度五基线复跑：`node 
 | D-PORT-02 | `PluginBackendRegistryPort` 为 20+ 方法 god-port，唯一实现 `BackendRegistry` 纯转发 | 二 | L | `plugin_backend_registry.rs` + `backend_registry.rs:797-919`；建议收窄到 `PluginHost`/`SlotResolver` 真用面 |
 | D-SLOT-01 | 各槽 Builtin V1/V2/Placeholder 并行实现，选择逻辑散落 `BackendRegistry` | 二 | M | `memory_retrieval`/`user_emotion_analyzer`/`prompt_assembler`/`event_estimator` 各有 `*V2` + `*Placeholder`；建议每槽收一份 builtin + 选择矩阵集中 |
 
-**结论**：Opus 4.8 主体已落地（热路径 DB 合并、SessionCache 淘汰、turn ports、FQ ratchet 14→5）；维度五 gate PASS。**未阻塞滩头**的后续项：D-PORT-02/D-SLOT-01 god-port 与槽合并、K-PERF-10 chat chrome lazy、D-LAYER-05b `post.rs` PolicySet 端口化、`user_llm_env`/`startup_health` 剩余 FQ refs。
+**结论**：Opus 4.8 主体已落地（热路径 DB 合并、SessionCache 淘汰、turn ports、FQ ratchet 14→5）；维度五 gate PASS。**收尾验收（2026-06-08）**：PR-C1→PR-E 五 commit 已入库；见 header Verification。**未阻塞滩头**的后续项：D-PORT-02/D-SLOT-01 god-port 与槽合并、K-PERF-10 chat chrome lazy、D-LAYER-05b `post.rs` PolicySet 端口化、`user_llm_env`/`startup_health` 剩余 FQ refs。
