@@ -318,6 +318,7 @@ mod role_runtime_repo;
 mod session_state;
 mod user_identity_state;
 
+pub use crate::domain::role_runtime_snapshot::RoleRuntimeSnapshot;
 pub use role_runtime_repo::RoleRuntimeRepo;
 
 #[async_trait::async_trait]

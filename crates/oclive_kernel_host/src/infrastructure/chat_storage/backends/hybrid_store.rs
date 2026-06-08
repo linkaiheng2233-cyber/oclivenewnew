@@ -203,11 +203,9 @@ impl ConversationStore for HybridConversationStore {
         };
         let new_rows = [user_row, assistant_row];
 
-        let session_after = self
-            .db
-            .get_chat_session(&input.session_id)
-            .await?
-            .unwrap_or(session);
+        let mut session_after = session;
+        session_after.message_count = inserted.message_count;
+        session_after.updated_at = assistant_ts.clone();
 
         let storage_root =
             self.role_storage_root(&input.role_id, Some(&input.chat_storage_location));

@@ -41,7 +41,11 @@ impl ReplayTaskRegistry {
 
     #[must_use]
     pub fn get(&self, task_id: &str) -> Option<ReplayProgress> {
-        self.inner.get(task_id).map(|v| v.clone())
+        let progress = self.inner.get(task_id).map(|v| v.clone())?;
+        if progress.done {
+            self.inner.remove(task_id);
+        }
+        Some(progress)
     }
 }
 

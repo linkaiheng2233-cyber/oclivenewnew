@@ -28,7 +28,6 @@ use arc_swap::ArcSwap;
 use dashmap::DashMap;
 use parking_lot::RwLock;
 use sqlx::SqlitePool;
-use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64};
@@ -231,7 +230,7 @@ impl AppStateBuilder {
             favorability_repo,
             user_llm_secrets,
             llm,
-            role_cache: Arc::new(RwLock::new(HashMap::new())),
+            role_cache: Arc::new(RwLock::new(indexmap::IndexMap::new())),
             role_load_inflight: DashMap::new(),
             http_api_roles: DashMap::new(),
             session_cache: SessionCache::shared(),

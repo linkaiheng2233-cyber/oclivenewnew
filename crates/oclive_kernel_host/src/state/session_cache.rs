@@ -5,30 +5,112 @@ use crate::models::{PersonalityVector, PluginBackendsOverride};
 use dashmap::DashMap;
 use oclive_validation::SlotOverridePatch;
 use parking_lot::RwLock;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::sync::{Arc, Weak};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 const PERSONALITY_CACHE_CAPACITY: usize = 1000;
+const SESSION_MAP_CAPACITY: usize = 512;
+const SESSION_ENTRY_TTL: Duration = Duration::from_secs(300);
 #[cfg(test)]
 const CLEANUP_INTERVAL: Duration = Duration::from_millis(10);
 #[cfg(not(test))]
 const CLEANUP_INTERVAL: Duration = Duration::from_secs(300);
 
+#[derive(Clone, Debug)]
+struct TtlSlot<T> {
+    value: T,
+    touched_at: Instant,
+}
+
+/// Bounded TTL map for per-`srid` DashMap entries (cap + idle eviction).
+#[derive(Debug)]
+struct SessionScopedMap<T: Clone> {
+    inner: DashMap<String, TtlSlot<T>>,
+}
+
+impl<T: Clone> SessionScopedMap<T> {
+    fn new() -> Self {
+        Self {
+            inner: DashMap::new(),
+        }
+    }
+
+    fn contains_key(&self, key: &str) -> bool {
+        self.get(key).is_some()
+    }
+
+    fn get(&self, key: &str) -> Option<T> {
+        let entry = self.inner.get(key)?;
+        if entry.touched_at.elapsed() > SESSION_ENTRY_TTL {
+            drop(entry);
+            self.inner.remove(key);
+            return None;
+        }
+        Some(entry.value.clone())
+    }
+
+    fn insert(&self, key: String, value: T) {
+        self.inner.insert(
+            key,
+            TtlSlot {
+                value,
+                touched_at: Instant::now(),
+            },
+        );
+        self.evict_if_needed();
+    }
+
+    fn remove(&self, key: &str) {
+        self.inner.remove(key);
+    }
+
+    fn evict_if_needed(&self) {
+        let expired: Vec<String> = self
+            .inner
+            .iter()
+            .filter(|e| e.touched_at.elapsed() > SESSION_ENTRY_TTL)
+            .map(|e| e.key().clone())
+            .collect();
+        for key in expired {
+            self.inner.remove(&key);
+        }
+        if self.inner.len() <= SESSION_MAP_CAPACITY {
+            return;
+        }
+        let mut idle: Vec<(String, Instant)> = self
+            .inner
+            .iter()
+            .map(|e| (e.key().clone(), e.touched_at))
+            .collect();
+        idle.sort_by_key(|(_, touched)| *touched);
+        let remove_n = self.inner.len().saturating_sub(SESSION_MAP_CAPACITY / 2);
+        for (key, _) in idle.into_iter().take(remove_n) {
+            self.inner.remove(&key);
+        }
+    }
+
+    fn prune_not_in(&self, active: &HashSet<String>) {
+        self.inner.retain(|k, _| active.contains(k.as_str()));
+    }
+
+    #[cfg(test)]
+    fn len(&self) -> usize {
+        self.inner.len()
+    }
+}
+
 /// Session cache with per-purpose locks; [`RwLock`] / [`DashMap`] / [`Cache`] do not block each other.
 pub struct SessionCache {
     plugin_overrides: RwLock<HashMap<String, PluginBackendsOverride>>,
     slot_overrides: RwLock<HashMap<String, BTreeMap<String, SlotOverridePatch>>>,
-    complex_emotion_narrative_hint: DashMap<String, String>,
-    /// Expert `slot.prompt_enhance.apply` prompt fragment (appended during this turn's assemble).
-    expert_prompt_enhance: DashMap<String, String>,
-    /// Expert `slot.memory.inject` temporary memory ids (removed on failed rollback).
-    expert_injected_memory_ids: DashMap<String, Vec<String>>,
-    /// Expert `slot.lora.apply` applied directory plugin id (session marker cleared on failure).
-    expert_lora_plugin_id: DashMap<String, String>,
-    /// Multi-turn relation transition buffer per session role id.
-    relation_transitions: DashMap<String, RelationTransition>,
+    complex_emotion_narrative_hint: SessionScopedMap<String>,
+    expert_prompt_enhance: SessionScopedMap<String>,
+    expert_injected_memory_ids: SessionScopedMap<Vec<String>>,
+    expert_lora_plugin_id: SessionScopedMap<String>,
+    relation_transitions: SessionScopedMap<RelationTransition>,
     personality_snapshots: Cache<PersonalityVector>,
+    session_touch: DashMap<String, Instant>,
 }
 
 /// In-process relation transition frame (consumed each turn until `remaining_turns` reaches zero).
@@ -54,6 +136,7 @@ async fn run_personality_cleanup(weak: Weak<SessionCache>) {
             break;
         };
         cache.personality_snapshots.cleanup_expired();
+        cache.evict_idle_session_maps();
     }
 }
 
@@ -67,12 +150,13 @@ impl SessionCache {
         Self {
             plugin_overrides: RwLock::new(HashMap::new()),
             slot_overrides: RwLock::new(HashMap::new()),
-            complex_emotion_narrative_hint: DashMap::new(),
-            expert_prompt_enhance: DashMap::new(),
-            expert_injected_memory_ids: DashMap::new(),
-            expert_lora_plugin_id: DashMap::new(),
-            relation_transitions: DashMap::new(),
+            complex_emotion_narrative_hint: SessionScopedMap::new(),
+            expert_prompt_enhance: SessionScopedMap::new(),
+            expert_injected_memory_ids: SessionScopedMap::new(),
+            expert_lora_plugin_id: SessionScopedMap::new(),
+            relation_transitions: SessionScopedMap::new(),
             personality_snapshots: Cache::with_capacity(PERSONALITY_CACHE_CAPACITY),
+            session_touch: DashMap::new(),
         }
     }
 
@@ -83,6 +167,56 @@ impl SessionCache {
         cache
     }
 
+    /// Mark `srid` active for TTL eviction (call on session override writes).
+    pub fn touch_session(&self, srid: &str) {
+        self.session_touch
+            .insert(srid.to_string(), Instant::now());
+        while self.session_touch.len() > SESSION_MAP_CAPACITY {
+            let mut oldest: Option<(String, Instant)> = None;
+            for item in self.session_touch.iter() {
+                let key = item.key().clone();
+                let touched = *item.value();
+                if oldest.as_ref().is_none_or(|(_, t)| touched < *t) {
+                    oldest = Some((key, touched));
+                }
+            }
+            if let Some((key, _)) = oldest {
+                self.session_touch.remove(&key);
+            } else {
+                break;
+            }
+        }
+    }
+
+    fn evict_idle_session_maps(&self) {
+        self.complex_emotion_narrative_hint.evict_if_needed();
+        self.expert_prompt_enhance.evict_if_needed();
+        self.expert_injected_memory_ids.evict_if_needed();
+        self.expert_lora_plugin_id.evict_if_needed();
+        self.relation_transitions.evict_if_needed();
+    }
+
+    /// Drop session-scoped cache rows that no longer have an active turn lock.
+    pub fn prune_sessions_without_active_turns(&self, active_srids: &HashSet<String>) {
+        {
+            let mut map = self.plugin_overrides.write();
+            map.retain(|k, _| active_srids.contains(k.as_str()));
+        }
+        {
+            let mut map = self.slot_overrides.write();
+            map.retain(|k, _| active_srids.contains(k.as_str()));
+        }
+        self.session_touch
+            .retain(|k, _| active_srids.contains(k.as_str()));
+        self.complex_emotion_narrative_hint
+            .prune_not_in(active_srids);
+        self.expert_prompt_enhance.prune_not_in(active_srids);
+        self.expert_injected_memory_ids
+            .prune_not_in(active_srids);
+        self.expert_lora_plugin_id.prune_not_in(active_srids);
+        self.relation_transitions.prune_not_in(active_srids);
+    }
+
     #[must_use]
     pub fn has_stored_complex_emotion_narrative_hint(&self, srid: &str) -> bool {
         self.complex_emotion_narrative_hint.contains_key(srid)
@@ -91,7 +225,6 @@ impl SessionCache {
     pub fn stored_complex_emotion_narrative_hint(&self, srid: &str) -> String {
         self.complex_emotion_narrative_hint
             .get(srid)
-            .map(|v| v.clone())
             .unwrap_or_default()
     }
 
@@ -124,10 +257,7 @@ impl SessionCache {
     }
 
     pub fn expert_prompt_enhance(&self, srid: &str) -> String {
-        self.expert_prompt_enhance
-            .get(srid)
-            .map(|v| v.clone())
-            .unwrap_or_default()
+        self.expert_prompt_enhance.get(srid).unwrap_or_default()
     }
 
     pub fn set_expert_prompt_enhance(&self, srid: &str, fragment: String) {
@@ -140,16 +270,18 @@ impl SessionCache {
     }
 
     pub fn push_expert_injected_memory(&self, srid: &str, memory_id: String) {
+        let mut ids = self
+            .expert_injected_memory_ids
+            .get(srid)
+            .unwrap_or_default();
+        ids.push(memory_id);
         self.expert_injected_memory_ids
-            .entry(srid.to_string())
-            .or_default()
-            .push(memory_id);
+            .insert(srid.to_string(), ids);
     }
 
     pub fn expert_injected_memory_ids(&self, srid: &str) -> Vec<String> {
         self.expert_injected_memory_ids
             .get(srid)
-            .map(|v| v.clone())
             .unwrap_or_default()
     }
 
@@ -173,7 +305,7 @@ impl SessionCache {
     }
 
     pub fn expert_lora_plugin_id(&self, srid: &str) -> Option<String> {
-        self.expert_lora_plugin_id.get(srid).map(|v| v.clone())
+        self.expert_lora_plugin_id.get(srid)
     }
 
     #[must_use]
@@ -196,17 +328,23 @@ impl SessionCache {
     }
 
     pub fn consume_relation_transition(&self, srid: &str) -> Option<RelationTransitionConsumed> {
-        let mut entry = self.relation_transitions.get_mut(srid)?;
-        let hint = entry.hint.clone();
-        let expired = if entry.remaining_turns > 0 {
-            entry.remaining_turns -= 1;
-            entry.remaining_turns == 0
+        let current = self.relation_transitions.get(srid)?;
+        let hint = current.hint.clone();
+        let expired = if current.remaining_turns > 0 {
+            current.remaining_turns - 1 == 0
         } else {
             true
         };
         if expired {
-            drop(entry);
             self.relation_transitions.remove(srid);
+        } else {
+            self.relation_transitions.insert(
+                srid.to_string(),
+                RelationTransition {
+                    hint: hint.clone(),
+                    remaining_turns: current.remaining_turns - 1,
+                },
+            );
         }
         Some(RelationTransitionConsumed { hint, expired })
     }
@@ -255,5 +393,45 @@ mod tests {
         assert!(Arc::strong_count(&a) >= 1);
         assert!(Arc::strong_count(&b) >= 1);
         assert!(!Arc::ptr_eq(&a, &b));
+    }
+
+    #[test]
+    fn prune_sessions_without_active_turns_drops_idle_keys() {
+        let cache = SessionCache::new();
+        cache
+            .complex_emotion_narrative_hint
+            .insert("idle".into(), "hint".into());
+        cache
+            .complex_emotion_narrative_hint
+            .insert("active".into(), "keep".into());
+        cache
+            .session_plugin_overrides()
+            .write()
+            .insert("idle".into(), PluginBackendsOverride::default());
+        cache
+            .session_plugin_overrides()
+            .write()
+            .insert("active".into(), PluginBackendsOverride::default());
+
+        let mut active = HashSet::new();
+        active.insert("active".to_string());
+        cache.prune_sessions_without_active_turns(&active);
+
+        assert!(cache.complex_emotion_narrative_hint.get("idle").is_none());
+        assert_eq!(
+            cache.complex_emotion_narrative_hint.get("active").as_deref(),
+            Some("keep")
+        );
+        assert!(!cache.session_plugin_overrides().read().contains_key("idle"));
+        assert!(cache.session_plugin_overrides().read().contains_key("active"));
+    }
+
+    #[test]
+    fn session_scoped_map_evicts_when_over_capacity() {
+        let map = SessionScopedMap::<String>::new();
+        for i in 0..=SESSION_MAP_CAPACITY {
+            map.insert(format!("s-{i}"), format!("v-{i}"));
+        }
+        assert!(map.len() <= SESSION_MAP_CAPACITY);
     }
 }

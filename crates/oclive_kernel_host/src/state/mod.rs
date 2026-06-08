@@ -20,7 +20,7 @@ use crate::models::{PersonalitySource, PersonalityVector, PluginBackends, Role};
 use arc_swap::ArcSwap;
 use dashmap::DashMap;
 use parking_lot::RwLock;
-use std::collections::HashMap;
+use indexmap::IndexMap;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
@@ -28,11 +28,14 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::sync::{Mutex, OnceCell};
 
 mod app_state_builder;
+mod effective_session_config;
 pub(crate) mod host_backends;
+pub(crate) mod profile_evolution;
 mod models_dir;
 mod roles_dir;
 mod session_backends;
 mod session_cache;
+pub use effective_session_config::EffectiveSessionConfig;
 pub use models_dir::{
     ensure_models_dir, ensure_models_dir_for_roles, is_managed_legacy_models_path,
     legacy_models_dir_candidates, migrate_and_cleanup_models, paths_equal,
@@ -49,6 +52,7 @@ struct TurnLockEntry {
 
 const TURN_LOCK_SOFT_CAP: usize = 512;
 const TURN_LOCK_TARGET: usize = 256;
+const ROLE_CACHE_CAPACITY: usize = 32;
 
 fn turn_lock_now_ms() -> u64 {
     SystemTime::now()
@@ -78,7 +82,7 @@ pub struct AppState {
     /// - `user_llm_*`: in-process LLM config mirror;
     ///
     ///   none nested—avoids lock-order cycles.
-    pub role_cache: Arc<RwLock<HashMap<String, Arc<Role>>>>,
+    pub role_cache: Arc<RwLock<IndexMap<String, Arc<Role>>>>,
     /// Dedupe cold loads for the same `role_id` ([`OnceCell`]); after load, write [`Self::role_cache`] and remove this entry.
     role_load_inflight: DashMap<String, Arc<OnceCell<Arc<Role>>>>,
     /// Roles loaded from arbitrary `role_path` for HTTP `--api` trial chat; not written to [`Self::role_cache`].
@@ -183,6 +187,37 @@ impl AppState {
             .unwrap_or_else(|| runtime.default_policy_set.clone())
     }
 
+    /// Scene memory policy for the current turn (domain port; impl in infrastructure).
+    #[must_use]
+    pub fn turn_policies_for_scene(
+        &self,
+        scene_id: Option<&str>,
+    ) -> crate::domain::ports::turn_policies::TurnPolicies {
+        use crate::domain::ports::turn_policies::TurnPoliciesPort;
+        crate::infrastructure::turn_ports::AppTurnPoliciesPort::new(self)
+            .policies_for_scene(scene_id)
+    }
+
+    #[must_use]
+    pub fn chat_turn_persistence_port(
+        &self,
+    ) -> Arc<dyn crate::domain::ports::turn_persistence::ChatTurnPersistencePort> {
+        Arc::new(crate::infrastructure::turn_ports::DbChatTurnPersistencePort::new(
+            Arc::clone(&self.db_manager),
+        ))
+    }
+
+    #[must_use]
+    pub fn conversation_persist_port(
+        &self,
+    ) -> Arc<dyn crate::domain::ports::conversation_persist::ConversationPersistPort> {
+        Arc::new(
+            crate::infrastructure::turn_ports::StoreConversationPersistPort::new(Arc::clone(
+                &self.conversation_store,
+            )),
+        )
+    }
+
     pub fn scene_policy_count(&self) -> usize {
         self.policy_runtime.load_full().scene_policy_sets.len()
     }
@@ -216,8 +251,13 @@ impl AppState {
     ///
     /// Returns [`Err`] when role is missing, disk I/O fails, etc.
     pub async fn load_role_cached_async(&self, role_id: &str) -> Result<Arc<Role>> {
-        if let Some(r) = self.role_cache.read().get(role_id) {
-            return Ok(Arc::clone(r));
+        {
+            let mut map = self.role_cache.write();
+            if let Some(r) = map.swap_remove(role_id) {
+                let loaded = Arc::clone(&r);
+                map.insert(role_id.to_string(), r);
+                return Ok(loaded);
+            }
         }
         if let Some(r) = self.http_api_roles.get(role_id) {
             let loaded = Arc::clone(r.value());
@@ -258,8 +298,18 @@ impl AppState {
 
     fn insert_role_cache(&self, role_id: &str, role: &Arc<Role>) {
         let mut map = self.role_cache.write();
-        map.entry(role_id.to_string())
-            .or_insert_with(|| Arc::clone(role));
+        let key = role_id.to_string();
+        if let Some(existing) = map.swap_remove(&key) {
+            map.insert(key, existing);
+            return;
+        }
+        while map.len() >= ROLE_CACHE_CAPACITY {
+            if map.is_empty() {
+                break;
+            }
+            map.shift_remove_index(0);
+        }
+        map.insert(key, Arc::clone(role));
     }
 
     /// Drop effective personality cache for this manifest role and its trial-chat session namespaces (required after disk pack reload or `default_personality` / bounds change).
@@ -414,6 +464,10 @@ impl AppState {
         for (key, _) in idle.into_iter().take(remove_n) {
             self.turn_locks.remove(&key);
         }
+        let active: std::collections::HashSet<String> =
+            self.turn_locks.iter().map(|e| e.key().clone()).collect();
+        self.session_cache
+            .prune_sessions_without_active_turns(&active);
     }
 
     /// # Errors
