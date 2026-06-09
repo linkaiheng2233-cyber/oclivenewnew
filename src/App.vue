@@ -6,6 +6,7 @@ import { resolveOcliveShell } from './composables/useOcliveShell'
 
 const FluentShell = defineAsyncComponent(() => import('./shells/fluent/FluentShell.vue'))
 const ToolShell = defineAsyncComponent(() => import('./shells/tool/ToolShell.vue'))
+const TheaterShell = defineAsyncComponent(() => import('./shells/theater/TheaterShell.vue'))
 
 const shellKind = resolveOcliveShell()
 const shellState = useMainShell()
@@ -18,6 +19,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <FluentShell v-if="shellKind === 'fluent'" />
+  <TheaterShell v-if="shellKind === 'theater'" />
+  <FluentShell v-else-if="shellKind === 'fluent'" />
   <ToolShell v-else />
 </template>

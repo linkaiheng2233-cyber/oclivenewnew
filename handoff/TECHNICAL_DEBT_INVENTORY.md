@@ -1,6 +1,8 @@
 # Technical debt inventory
 
-**Last updated:** 2026-06-08 (Opus 4.8 optimization closure)
+**Last updated:** 2026-06-09 (Opus 4.8 Theater v0 + product freeze)
+
+**Product freeze (Theater v0):** No new kernel orchestration / six-slot expansion until strangers validate AI Theater v0. See [PRODUCT_FREEZE_THEATER_V0.md](./PRODUCT_FREEZE_THEATER_V0.md). **Deferred unchanged:** D-PORT-02, D-SLOT-01, K-PERF-10, §3.1 library API, dual_core (frozen).
 
 **Verification (2026-06-08 closure):** `node scripts/dimension5-acceptance.mjs --ci` PASS (7 checks); `cargo test -p oclive_kernel_host --lib` 180 passed; `cargo test -p oclivenewnew-tauri --test invoke_hotpath_matrix` 5 passed; `npm run test:unit` 46 passed. Prior: `cargo test -p oclive_kernel_runtime -p oclive_kernel_host -j 1`; `cargo check -p oclivenewnew-tauri -p oclive-cli`.
 

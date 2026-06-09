@@ -118,5 +118,21 @@ export default {
       role: '🎭 角色',
       identity: '👤 身份',
     },
-  }
+  },
+  theater: {
+    title: 'AI 剧场',
+    subtitle: '早饭 · 两个灵魂在动',
+    roleA: '小焦',
+    roleB: '阿懒',
+    pokeLabel: '戳一下，剧情会变',
+    editPersonality: '改性格',
+    patching: '改动加载中…',
+    patchOk: '局部改写完成',
+    patchFallback: '本地模型不可用，已继续播放默认台词',
+    ollamaOff: '未检测到 Ollama：戳点仍可用，台词保持预生成版本',
+    loadError: '无法加载剧场骨架：{err}',
+    nicknameTitle: '选一个称呼',
+    nicknameDefault: '不改',
+    cancel: '取消',
+  },
 }

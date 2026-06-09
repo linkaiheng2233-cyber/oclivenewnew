@@ -68,3 +68,7 @@ node --test examples/reply-post-process-polish/*.test.mjs
 | `polish_prompt.md` present | overrides auto preset |
 
 See [handoff/REPLY_POST_PROCESSOR_DESIGN_REPORT.md](../../handoff/REPLY_POST_PROCESSOR_DESIGN_REPORT.md).
+
+## Scope (Opus 4.8 — stop expanding)
+
+This plugin is **technical pre-research** for Theater v0 local beat patch only. **Not** the Theater product. Minimal loop is complete — do not add features until Theater v0 is validated. See [handoff/REPLY_POST_PROCESS_POLISH_SCOPE.md](../../handoff/REPLY_POST_PROCESS_POLISH_SCOPE.md).

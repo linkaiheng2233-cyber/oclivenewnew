@@ -6,6 +6,8 @@
 
 [![CI](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/workflows/ci.yml/badge.svg)](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/workflows/ci.yml)
 
+> **最近进展**：AI 剧场 v0（`distro_id=theater`）· 早饭双角色 + 戳点芯片 — 见 [CHANGELOG.md](CHANGELOG.md) `[Unreleased]` 与 [handoff/THEATER_V0_ACCEPTANCE.md](handoff/THEATER_V0_ACCEPTANCE.md)。30 秒演示：`oclive-remotion-demo` → `npm run render:theater:zh`。
+
 本地优先的 **AI 角色组装平台**（开源、可组装、隐私优先）：**Tauri + Vue 3 + Rust** 运行时 + **六槽可替换模块** + **角色包独立分发** + **发行版 profile** + **插件市场**。默认角色包（如 `roles/mumu`）为**官方示例**，展示平台能力；社区创作与分发角色包是核心价值。工程代号 **oclive**。
 
 **架构（摘要）**：A.I.Live 采用 **契约型薄核** + **单核双态构建架构**——**六宿主后端模块**（memory / emotion / event / prompt / llm / agent）经 `PluginHost` 接入；**第 N 设施子模块**（如复杂情感、专家模型）等为编排行内设施模块；**后端模块插件模块** 挂第 K 模块外挂、**不占第 N 模块号**。交付：**OOCP**、角色包、**`oclive-cli` 内核工厂**；构建可选 **Monolith 宏核态**。详见 **[架构总览](creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)**（[English](creator-docs-en/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)）。

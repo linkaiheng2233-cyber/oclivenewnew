@@ -6,6 +6,7 @@
   "license": "Apache-2.0",
   "scripts": {
     "dev": "vite",
+    "dev:theater": "vite --mode theater",
     "dev:probe": "node scripts/dev-probe.mjs",
     "verify:ui": "node scripts/verify-frontend-patches.mjs",
     "tauri:dev:verify": "npm run verify:ui && npm run tauri:dev",

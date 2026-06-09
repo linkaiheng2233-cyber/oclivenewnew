@@ -1,0 +1,32 @@
+# OCLive AI Theater v0 — first-impression distro profile
+# Set OCLIVE_DISTRO_PROFILE to this path and VITE_OCLIVE_SHELL=theater for the theater shell.
+# See creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md
+
+schema_version = 1
+distro_id = "theater"
+display_name = "OCLive AI Theater"
+
+[interaction]
+default_mode = "pure_chat"
+allow_mode_switch = false
+
+[host_flags]
+skip_agent = true
+skip_complex_emotion = true
+
+[slots]
+complex_emotion = "off"
+
+[prompt]
+profile = "concise"
+
+[state_expression]
+favor_high = "语气更自然，但仍保持角色反差"
+favor_mid  = "保持早餐场景的轻松对白节奏"
+favor_low  = "礼貌克制，勿跳出场景"
+
+[memory]
+retrieval = "light"
+
+[post_process]
+chain = "standard"

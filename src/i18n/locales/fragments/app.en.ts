@@ -123,5 +123,21 @@ export default {
       role: '🎭 Role',
       identity: '👤 Identity',
     },
-  }
+  },
+  theater: {
+    title: 'AI Theater',
+    subtitle: 'Breakfast · two souls in motion',
+    roleA: 'Jiao',
+    roleB: 'Lan',
+    pokeLabel: 'Poke a chip to shift the scene',
+    editPersonality: 'Edit personality',
+    patching: 'Applying local patch…',
+    patchOk: 'Beat patch applied',
+    patchFallback: 'Ollama unavailable — playing default lines',
+    ollamaOff: 'No Ollama detected: chips work but lines stay pre-generated',
+    loadError: 'Failed to load theater skeleton: {err}',
+    nicknameTitle: 'Pick a nickname',
+    nicknameDefault: 'Keep default',
+    cancel: 'Cancel',
+  },
 }
