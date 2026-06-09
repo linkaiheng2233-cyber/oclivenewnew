@@ -532,6 +532,7 @@ impl DbManager {
         &self,
         role_id: &str,
         pack_default: Option<&str>,
+        distro_default: Option<&str>,
     ) -> Result<()> {
         let row: Option<(Option<String>,)> =
             sqlx::query_as("SELECT interaction_mode FROM role_runtime WHERE role_id = ?")
@@ -545,11 +546,13 @@ impl DbManager {
         if current.is_some() {
             return Ok(());
         }
+        let _ = (pack_default, distro_default);
         let legacy = self.get_legacy_app_interaction_mode().await?;
+        // First run: always pure_chat. User choice persists in role_runtime after set_interaction_mode.
         let mode = if let Some(l) = legacy {
             InteractionMode::normalize(Some(l.as_str()))
         } else {
-            InteractionMode::normalize(pack_default)
+            InteractionMode::PureChat
         };
         let now = Utc::now().to_rfc3339();
         sqlx::query(
@@ -576,6 +579,7 @@ impl DbManager {
     }
 
     pub async fn set_interaction_mode_for_role(&self, role_id: &str, mode: &str) -> Result<()> {
+        self.ensure_role_runtime(role_id).await?;
         let normalized = InteractionMode::normalize(Some(mode));
         let now = Utc::now().to_rfc3339();
         let n = sqlx::query(
@@ -589,7 +593,16 @@ impl DbManager {
         .map_err(|e| AppError::DatabaseError(e.to_string()))?
         .rows_affected();
         if n == 0 {
-            return Err(AppError::RoleRuntimeNotReady);
+            sqlx::query(
+                "INSERT INTO role_runtime (role_id, interaction_mode, current_favorability, updated_at)
+                 VALUES (?, ?, 0.0, ?)",
+            )
+            .bind(role_id)
+            .bind(normalized.as_str())
+            .bind(&now)
+            .execute(&self.pool)
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         }
         Ok(())
     }
@@ -837,5 +850,37 @@ impl DbManager {
         .await
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::infrastructure::test_db;
+    use crate::models::InteractionMode;
+
+    #[tokio::test]
+    async fn set_interaction_mode_for_role_upserts_without_prior_runtime_row() {
+        let db = DbManager::new(test_db::connect_memory_migrated().await);
+        let role_id = "mumu_test_mode";
+
+        db.set_interaction_mode_for_role(role_id, InteractionMode::IMMERSIVE)
+            .await
+            .expect("set interaction mode on fresh role");
+
+        let mode = db
+            .get_interaction_mode(role_id)
+            .await
+            .expect("read interaction mode");
+        assert_eq!(mode, InteractionMode::Immersive);
+
+        db.set_interaction_mode_for_role(role_id, InteractionMode::PURE_CHAT)
+            .await
+            .expect("update interaction mode");
+        let mode = db
+            .get_interaction_mode(role_id)
+            .await
+            .expect("read updated interaction mode");
+        assert_eq!(mode, InteractionMode::PureChat);
     }
 }

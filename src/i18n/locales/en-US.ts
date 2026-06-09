@@ -15,6 +15,7 @@ import { modelManagerEn as modelManager } from './fragments/modelManager.en'
 import { simplePluginManagerEn as simplePluginManager } from './fragments/simplePluginManager.en'
 import virtualTime from './fragments/virtualTime.en'
 import toolShellBundle from './fragments/toolShell.en'
+import onboardingBundle from './fragments/onboarding.en'
 
 export default {
   apiErrors,
@@ -37,4 +38,5 @@ export default {
   modelManager,
   virtualTime,
   ...toolShellBundle,
+  ...onboardingBundle,
 }

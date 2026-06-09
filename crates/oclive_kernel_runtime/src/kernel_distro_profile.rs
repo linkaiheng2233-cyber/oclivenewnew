@@ -72,6 +72,7 @@ pub fn active_summary_from_requirements(req: &DistroProfileRequirements) -> Acti
         disabled_modules,
         post_process_profile: req.post_process_profile.clone(),
         prompt_profile: req.prompt_profile.clone(),
+        ..Default::default()
     }
 }
 

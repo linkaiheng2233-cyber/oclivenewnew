@@ -19,6 +19,11 @@ import {
   getLayoutWidths,
   setLeftRailWidth,
 } from '../../composables/useLayoutWidths'
+import ImmersiveModeIntro from '../../components/onboarding/ImmersiveModeIntro.vue'
+import ImmersiveUnlockBanner from '../../components/onboarding/ImmersiveUnlockBanner.vue'
+import IdentitySurpriseSheet from '../../components/onboarding/IdentitySurpriseSheet.vue'
+import InteractionModeBar from '../../components/onboarding/InteractionModeBar.vue'
+import PresetRolePicker from '../../components/onboarding/PresetRolePicker.vue'
 import {
   DebugPanel,
   MarketView,
@@ -95,6 +100,7 @@ const {
   roleName,
   emotion,
   statusHeart,
+  progressive,
   onInteractionModeChange,
   onSend,
   onSwitchRole,
@@ -102,6 +108,9 @@ const {
   onPackImported,
   onReloadPolicy,
   onDebugRefresh,
+  presetPickerOpen,
+  presetPickerPicking,
+  onPresetRolePick,
 } = shell
 
 const layoutWidths = getLayoutWidths()
@@ -118,16 +127,15 @@ function onLeftRailResize(deltaX: number) {
       <header class="top-bar">
         <TopBarMorePanel
           v-model="topMoreOpen"
-          v-model:locale-preference="localePreference"
           :relation-options="relationOptions"
           :all-scene-options="allSceneOptions"
+          :show-identity-section="progressive.showIdentityControls"
           @open-settings="openSettingsView"
           @open-shortcut-help="openShortcutHelp"
           @open-plugin-manager="openPluginManagerPanel"
           @open-plugin-market="openPluginMarket"
           @open-model-manager="() => openModelManager(true)"
           @scene-change="onTopBarSceneChange"
-          @interaction-mode-change="onInteractionModeChange"
           @change-role="onSwitchRole"
           @change-relation="onChangeRelation"
           @notify="(p) => showToast(p.type, p.message)"
@@ -151,7 +159,7 @@ function onLeftRailResize(deltaX: number) {
       </header>
 
       <div
-        v-if="uiStore.connectivityBanner?.kind === 'plugin_index_offline'"
+        v-if="roleStore.interactionImmersive && uiStore.connectivityBanner?.kind === 'plugin_index_offline'"
         class="connectivity-banner"
         role="status"
       >
@@ -206,12 +214,16 @@ function onLeftRailResize(deltaX: number) {
               :emotion="emotion"
               :bootstrap-epoch="pluginStore.bootstrapEpoch"
             />
-            <RoleplayAsidePanel :text="latestRoleplayAside" />
-            <PluginSidebarSlots :bootstrap-epoch="pluginStore.bootstrapEpoch" />
-            <div class="left-pane-status" :aria-label="t('app.sidebar.favorability')">
+            <RoleplayAsidePanel v-if="roleStore.interactionImmersive" :text="latestRoleplayAside" />
+            <PluginSidebarSlots v-if="roleStore.interactionImmersive" :bootstrap-epoch="pluginStore.bootstrapEpoch" />
+            <div
+              v-if="roleStore.interactionImmersive"
+              class="left-pane-status"
+              :aria-label="t('app.sidebar.favorability')"
+            >
               {{ t("app.sidebar.favorability") }} {{ Math.round(roleStore.roleInfo.favorability) }} {{ statusHeart }}
             </div>
-            <RoleIdentityControls variant="compact" />
+            <RoleIdentityControls v-if="progressive.showIdentityControls" variant="compact" />
             <div
               v-if="roleStore.interactionImmersive && roleStore.roleInfo.currentLife?.label"
               class="left-pane-life"
@@ -234,7 +246,10 @@ function onLeftRailResize(deltaX: number) {
             @resize="onLeftRailResize"
           />
           <div class="right-pane" :class="{ 'right-pane--input-top': chatInputTop }">
-            <PluginChatHeaderSlots :bootstrap-epoch="pluginStore.bootstrapEpoch" />
+            <PluginChatHeaderSlots
+              v-if="roleStore.interactionImmersive"
+              :bootstrap-epoch="pluginStore.bootstrapEpoch"
+            />
             <div class="chat-scroll-wrap chat-list">
               <transition name="fade">
                 <ChatMessageList
@@ -248,7 +263,22 @@ function onLeftRailResize(deltaX: number) {
               </transition>
             </div>
             <section class="input-area">
-              <ChatPluginToolbarSlots :bootstrap-epoch="pluginStore.bootstrapEpoch" />
+              <InteractionModeBar />
+              <ImmersiveUnlockBanner
+                :visible="progressive.showImmersiveUnlockBanner"
+                @try-story="progressive.tryStoryMode"
+                @dismiss="progressive.dismissImmersiveHint"
+              />
+              <IdentitySurpriseSheet
+                :visible="progressive.identitySheetVisible"
+                :options="progressive.identitySurpriseOptions"
+                @pick="progressive.pickIdentity"
+                @keep="progressive.keepIdentity"
+              />
+              <ChatPluginToolbarSlots
+                v-if="roleStore.interactionImmersive"
+                :bootstrap-epoch="pluginStore.bootstrapEpoch"
+              />
               <SceneTravelBars
                 v-if="roleStore.interactionImmersive"
                 :together-visible="togetherTravelBarVisible"
@@ -270,6 +300,7 @@ function onLeftRailResize(deltaX: number) {
       </div>
 
       <DebugPanel
+        v-if="roleStore.interactionImmersive"
         :visible="debugStore.visible"
         :loading="chatStore.isLoading"
         :favorability="roleStore.roleInfo.favorability"
@@ -283,11 +314,23 @@ function onLeftRailResize(deltaX: number) {
         @imported="onPackImported"
       />
 
+      <PresetRolePicker
+        :visible="presetPickerOpen"
+        :roles="roleStore.roles"
+        :picking="presetPickerPicking"
+        @pick="onPresetRolePick"
+      />
+
+      <ImmersiveModeIntro
+        :visible="progressive.immersiveIntroVisible"
+        @dismiss="progressive.dismissImmersiveIntro"
+      />
       <Toast :show="toast.show" :type="toast.type" :message="toast.message" />
       <ShortcutHelp v-model="shortcutHelpOpen" :bootstrap-epoch="pluginStore.bootstrapEpoch" />
 
-      <MarketView />
+      <MarketView v-if="roleStore.interactionImmersive" />
       <SimplePluginManagerPanel
+        v-if="roleStore.interactionImmersive"
         :visible="simplePluginManagerOpen"
         @close="simplePluginManagerOpen = false"
         @open-market="openPluginMarket"
@@ -310,7 +353,7 @@ function onLeftRailResize(deltaX: number) {
         @close="settingsViewOpen = false"
       />
 
-      <div class="app-floating-slot" aria-hidden="true">
+      <div v-if="roleStore.interactionImmersive" class="app-floating-slot" aria-hidden="true">
         <PluginSlotEmbed
           slot-name="overlay.floating"
           :aria-label="t('app.floatingSlot')"

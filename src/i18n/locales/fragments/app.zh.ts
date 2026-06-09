@@ -25,10 +25,10 @@ export default {
       ariaMoreFeatures: '更多功能',
       interactionMode: '互动模式',
       interactionImmersiveHint:
-        '沉浸：启用虚拟时间、叙事场景、日程推断与位移相关能力。',
-      interactionPureChatHint: '纯聊：只保留对话，隐藏场景与时间条，适合日常闲聊。',
-      interactionImmersive: '沉浸',
-      interactionPureChat: '纯聊',
+        '剧情模式：时间流动、场景切换，久不来关系也会慢慢变化。',
+      interactionPureChatHint: '日常聊：专注对话与性格，界面更简洁，适合第一印象。',
+      interactionImmersive: '剧情模式',
+      interactionPureChat: '日常聊',
       identity: '身份',
       identityHelp:
         '与角色相处时的关系身份（如朋友、恋人等），影响对话与关系数值；与包内「核心性格档案」不同，后者写在 core_personality.txt。',
@@ -67,8 +67,9 @@ export default {
     toast: {
       remoteLifeOn: '异地心声已开启',
       remoteLifeOff: '异地心声已关闭',
-      interactionImmersive: '互动模式已切换为沉浸',
-      interactionPureChat: '互动模式已切换为纯聊',
+      interactionImmersive: '已切换为剧情模式',
+      interactionPureChat: '已切换为日常聊',
+      pluginsStoryModeOnly: '插件功能仅在剧情模式下可用',
       layoutResetOk: '已恢复为角色包推荐布局。',
       layoutResetFailPrefix: '恢复失败：',
       noRolesScanned:

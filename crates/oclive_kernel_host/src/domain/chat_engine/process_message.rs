@@ -92,7 +92,11 @@ async fn run(
         ChatStage::EnsureInteractionModeSeeded,
         state
             .db_manager
-            .ensure_interaction_mode_seeded(srid, role.interaction_mode.as_deref())
+            .ensure_interaction_mode_seeded(
+                srid,
+                role.interaction_mode.as_deref(),
+                Some(state.host_profile.interaction.default_mode.as_str()),
+            )
             .await,
     )?;
 

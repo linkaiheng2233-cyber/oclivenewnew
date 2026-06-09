@@ -83,7 +83,11 @@ onBeforeUnmount(() => {
         <UiButton variant="secondary" @click="emit('openShortcutHelp'); open = false">
           {{ t("app.more.shortcutHelp") }}
         </UiButton>
-        <UiButton variant="secondary" @click="debugStore.toggle(); open = false">
+        <UiButton
+          v-if="roleStore.interactionImmersive"
+          variant="secondary"
+          @click="debugStore.toggle(); open = false"
+        >
           {{ t("app.more.openDebugPanel") }}
         </UiButton>
       </section>

@@ -365,6 +365,14 @@ TypeScript 侧 `SendMessageResponse`（`src/utils/tauri-api.ts`）必须与 `mod
 
 解析时 [`SlotResolver`](../../crates/oclive_kernel_host/src/domain/slot_resolver.rs) 会校验 directory 插件是否声明 `provides` 含目标能力（含 `complex_emotion`）。Reply Post-Processor 由 [`resolve_reply_post_processor`](../../crates/oclive_kernel_host/src/domain/reply_post_processor.rs) 独立解析，同样校验 `reply_post_process`。
 
+### Reply Post-Processor · 润色场景（可选 · 非默认）
+
+- **builtin**：仅格式治理（空白、引号、`max_chars`）；**不做 LLM 润色**。
+- **directory / remote**：承接 **可选 LLM 润色**；契约方法 `reply_post_process.process`，参数含 `raw_reply`、`user_message`、`role_id`、`scene_id`、`locale`；返回 `display_reply` 与可选 `diagnostic`。
+- **脚手架**：[`examples/reply-post-process-polish/`](../../examples/reply-post-process-polish/)（pass-through 默认；在 `rpc_server.mjs` 内替换 `polishReply` 接入你的模型）。
+- **设计汇报**：[handoff/REPLY_POST_PROCESSOR_DESIGN_REPORT.md](../../handoff/REPLY_POST_PROCESSOR_DESIGN_REPORT.md)。
+- **与 Prompt 分工**：生成阶段用 `meta.reply_quality_anchor`；润色在后处理阶段，默认 **`reply_post_processor.enabled: false`**。
+
 **`category`**（单值，可选）：供插件工作台左栏分类，建议与 `provides` 主槽一致，例如 `llm`、`complex_emotion`。
 
 ### `description_zh` 字段

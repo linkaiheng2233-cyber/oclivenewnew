@@ -1,0 +1,14 @@
+{
+  "id": "reply-post-process-polish",
+  "name": "Reply Post-Process Polish",
+  "version": "0.1.0",
+  "description": "Directory plugin scaffold for optional LLM reply polish (reply_post_process.process)",
+  "description_zh": "可选：在 builtin 格式治理之后，用本地脚本或 LLM 润色最终展示回复。",
+  "provides": ["reply_post_process"],
+  "category": "reply_post_process",
+  "process": {
+    "command": "node",
+    "args": ["rpc_server.mjs"],
+    "cwd": "."
+  }
+}

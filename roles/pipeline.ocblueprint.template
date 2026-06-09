@@ -23,7 +23,7 @@
     },
     "default_relation": "friend",
     "scenes": ["default"],
-    "interaction_mode": "immersive",
+    "interaction_mode": "pure_chat",
     "ollama_model": "llama3.2"
   },
   "slot_registry": {

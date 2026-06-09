@@ -7,6 +7,11 @@ schema_version = 1
 distro_id = "vscode"
 display_name = "OCLive VS Code"
 
+[interaction]
+default_mode = "pure_chat"
+allow_mode_switch = true
+immersive_unlock_hint_after_turns = 10
+
 [host_flags]
 skip_agent = true
 skip_complex_emotion = true

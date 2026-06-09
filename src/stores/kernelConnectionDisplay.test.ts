@@ -39,5 +39,16 @@ describe('kernelConnectionStore display', () => {
     store.applyStatus(status({ mode: 'attached', healthy: true }))
     expect(store.display.labelKey).toBe('kernel.status.connectedLocal')
     expect(store.display.ok).toBe(true)
+    expect(store.alreadyConnected).toBe(true)
+    expect(store.canReconnect).toBe(false)
+  })
+
+  it('allows reconnect only when unhealthy', () => {
+    setActivePinia(createPinia())
+    const store = useKernelConnectionStore()
+    store.phase = 'ready'
+    store.applyStatus(status({ mode: 'offline', healthy: false }))
+    expect(store.canReconnect).toBe(true)
+    expect(store.alreadyConnected).toBe(false)
   })
 })

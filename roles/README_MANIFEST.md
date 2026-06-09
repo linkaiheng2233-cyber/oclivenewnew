@@ -1,6 +1,8 @@
 # 角色包 `manifest.json` 与 `settings.json`（创作者 · legacy）
 
-> **新包推荐**：使用 **`pipeline.ocblueprint`**（`schema_version: 2`）为 SSOT，勿与 legacy 双文件并存。格式与校验见 **[creator-docs/role-pack/ROLE_PACK_SPEC.md](../creator-docs/role-pack/ROLE_PACK_SPEC.md)** · 实施计划 **[handoff/BLUEPRINT_V2_IMPLEMENTATION_PLAN.md](../handoff/BLUEPRINT_V2_IMPLEMENTATION_PLAN.md)**。默认 **`oclive pack validate`** 走 v2；仅维护旧包时加 **`--profile legacy`**。
+> **新包推荐**：使用 **`pipeline.ocblueprint`**（`schema_version: 2`）为 SSOT，勿与 legacy 双文件并存。格式与校验见 **[creator-docs/role-pack/ROLE_PACK_SPEC.md](../creator-docs/role-pack/ROLE_PACK_SPEC.md)** · 职责边界 **[handoff/ROLE_PACK_BOUNDARY.md](../handoff/ROLE_PACK_BOUNDARY.md)**。默认 **`oclive pack validate`** 走 v2；仅维护旧包时加 **`--profile legacy`**。
+>
+> **v0.3 契约摘要**：**人设 Tier0** = **`core_personality.txt`**（`prompts/system.md` 不参与运行时 Prompt）。**回复质量锚点** = 蓝图 **`meta.reply_quality_anchor`** 或内核默认；`prompts/reply_quality_anchor.md` 为可选镜像。编写器 **0.3.x** 导出须含 `pipeline.ocblueprint`、`core_personality.txt`，并可选 `config.json`、`user_identities/index.json`。
 
 - **`manifest.json`** 路径：**`roles/{角色id}/manifest.json`**，与角色文件夹同名。门面与主要契约：**id、展示信息、性格七维 `default_personality`、`scenes`、`user_relations`、`default_relation`** 等（七维与 **`evolution.personality_source`** 的关系见下文 §二、§5.3）。完整示例见 **`manifest.template.json`**。
 - **`settings.json`**（**可选**）路径：**`roles/{角色id}/settings.json`**。进阶引擎向配置：**`model`、`evolution`、`identity_binding`、`memory_config`**。完整示例见 **`settings.template.json`**。  

@@ -257,6 +257,10 @@ pub fn resolve_desktop_distro_profile_path(anchors: &[PathBuf]) -> Option<PathBu
         }
     }
     for anchor in anchors {
+        let dev_chat = anchor.join("examples/distro-profiles/desktop-chat.oclive.toml");
+        if dev_chat.is_file() {
+            return Some(dev_chat);
+        }
         let dev = anchor.join("examples/distro-profiles/desktop.oclive.toml");
         if dev.is_file() {
             return Some(dev);

@@ -138,6 +138,8 @@ impl RoleStorage {
             Some(loaded.groups)
         };
         role.interaction_mode = loaded.interaction_mode;
+        role.featured = loaded.featured;
+        role.preset_order = loaded.preset_order;
         role.remote_presence = loaded.remote_presence;
         role.autonomous_scene = loaded.autonomous_scene;
         role.reply_quality_anchor = loaded.reply_quality_anchor;
@@ -181,6 +183,8 @@ impl RoleStorage {
             Some(loaded.groups)
         };
         role.interaction_mode = loaded.interaction_mode;
+        role.featured = loaded.featured;
+        role.preset_order = loaded.preset_order;
         role.remote_presence = loaded.remote_presence;
         role.autonomous_scene = loaded.autonomous_scene;
         role.reply_quality_anchor = loaded.reply_quality_anchor;

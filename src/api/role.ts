@@ -258,11 +258,19 @@ export async function getRoleInfo(
 }
 
 
-export async function listRoles(): Promise<Array<{ id: string, name: string }>> {
-  const rows = await invokeWithFriendlyError<
-    Array<{ id: string, name: string, version: string, author: string }>
-  >('list_roles', {})
-  return rows.map(r => ({ id: r.id, name: r.name }))
+export interface RoleSummaryDto {
+  id: string
+  name: string
+  version: string
+  author: string
+  description?: string
+  featured?: boolean
+  preset_order?: number
+  interaction_mode_suggestion?: string | null
+}
+
+export async function listRoles(): Promise<RoleSummaryDto[]> {
+  return invokeWithFriendlyError<RoleSummaryDto[]>('list_roles', {})
 }
 
 

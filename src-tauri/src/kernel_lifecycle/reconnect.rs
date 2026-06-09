@@ -4,6 +4,7 @@ use super::connection::{DesktopKernelMode, KernelConnection, KernelConnectionSta
 use super::policy::{reconnect_with_policy, KernelBringUpOptions};
 use super::spawn::wait_for_health;
 use super::status::{build_ui_status, probe_health_status};
+use crate::kernel_attach::KernelHttpClient;
 use parking_lot::Mutex;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -91,6 +92,13 @@ pub async fn reconnect_once(
     conn: &KernelConnection,
     opts: &ReconnectOptions,
 ) -> Result<KernelConnectionStatus, String> {
+    // Healthy kernel: no-op (do not kill spawned child — that caused false "offline" errors).
+    if KernelHttpClient::probe_health(&conn.base_url).await {
+        let status = probe_health_status(conn).await;
+        emit_kernel_status(app, &status, StatusEmit::None);
+        return Ok(status);
+    }
+
     conn.set_mode(DesktopKernelMode::Reconnecting);
     let status = build_ui_status(conn, false);
     emit_kernel_status(app, &status, StatusEmit::None);

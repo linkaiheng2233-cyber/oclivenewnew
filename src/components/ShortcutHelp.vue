@@ -2,6 +2,7 @@
 import { computed, ref, toRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useModalFocusRestore } from '../composables/useModalFocusRestore'
+import { useRoleStore } from '../stores/roleStore'
 import { SLOT_LAUNCHER_PALETTE } from '../stores/pluginStore'
 import PluginSlotEmbed from './PluginSlotEmbed.vue'
 
@@ -22,16 +23,27 @@ const shDialogRef = ref<HTMLElement | null>(null)
 useModalFocusRestore(toRef(props, 'modelValue'), shDialogRef)
 
 const { t } = useI18n()
+const roleStore = useRoleStore()
 
 const rows = computed(() => {
-  const pluginF = t('common.shortcutHelp.ctrlShiftFSimple')
-  return [
+  const out = [
     { keys: 'Ctrl + Shift + S', desc: t('common.shortcutHelp.rowOpenSettings') },
-    { keys: 'Ctrl + Shift + F', desc: pluginF },
-    { keys: 'Ctrl + Shift + M', desc: t('common.shortcutHelp.ctrlShiftM') },
-    { keys: 'Ctrl + Shift + D', desc: t('common.shortcutHelp.ctrlShiftD') },
-    { keys: t('common.shortcutHelp.rowCtrlLongKeys'), desc: t('common.shortcutHelp.rowCtrlLong') },
   ]
+  if (roleStore.interactionImmersive) {
+    out.push({
+      keys: 'Ctrl + Shift + F',
+      desc: t('common.shortcutHelp.ctrlShiftFSimple'),
+    })
+  }
+  out.push({ keys: 'Ctrl + Shift + M', desc: t('common.shortcutHelp.ctrlShiftM') })
+  if (roleStore.interactionImmersive) {
+    out.push({ keys: 'Ctrl + Shift + D', desc: t('common.shortcutHelp.ctrlShiftD') })
+  }
+  out.push({
+    keys: t('common.shortcutHelp.rowCtrlLongKeys'),
+    desc: t('common.shortcutHelp.rowCtrlLong'),
+  })
+  return out
 })
 </script>
 

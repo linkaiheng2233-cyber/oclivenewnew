@@ -83,6 +83,18 @@ export const useKernelConnectionStore = defineStore('kernelConnection', {
         || Boolean(state.status?.healthy)
       )
     },
+
+    canReconnect(state): boolean {
+      return (
+        state.phase === 'ready'
+        && !state.busy
+        && !state.status?.healthy
+      )
+    },
+
+    alreadyConnected(state): boolean {
+      return state.phase === 'ready' && Boolean(state.status?.healthy)
+    },
   },
 
   actions: {
@@ -154,6 +166,9 @@ export const useKernelConnectionStore = defineStore('kernelConnection', {
 
     async reconnect() {
       if (this.busy) {
+        return this.status
+      }
+      if (this.phase === 'ready' && this.status?.healthy) {
         return this.status
       }
       this.busy = true

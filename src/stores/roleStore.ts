@@ -22,8 +22,16 @@ import {
   normalizeInteractionMode,
   packDefaultFromApi,
 } from '../utils/interactionMode'
+import {
+  resolveDefaultRoleId,
+  shouldShowPresetPicker,
+  type PresetRoleOption,
+} from '../utils/presetRolePicker'
 
-interface RoleOption { id: string, name: string }
+export interface RoleOption extends PresetRoleOption {
+  id: string
+  name: string
+}
 
 interface RoleInfoState {
   name: string
@@ -152,7 +160,7 @@ export const useRoleStore = defineStore(
   'role',
   {
     state: () => ({
-      currentRoleId: 'mumu',
+      currentRoleId: '',
       roles: [] as RoleOption[],
       roleInfo: {
         name: rt('app.defaultRoleName'),
@@ -178,7 +186,7 @@ export const useRoleStore = defineStore(
         identityBinding: 'per_scene',
         remoteLifeEnabled: false,
         remoteLifePackDefault: null,
-        interactionMode: 'immersive',
+        interactionMode: 'pure_chat',
         interactionModePackDefault: null,
         currentLife: null,
         pluginBackends: {
@@ -225,14 +233,27 @@ export const useRoleStore = defineStore(
     }),
     actions: {
       async loadRoles() {
-        this.roles = await listRoles()
+        const rows = await listRoles()
+        this.roles = rows.map(r => ({
+          id: r.id,
+          name: r.name,
+          description: r.description ?? '',
+          featured: r.featured ?? false,
+          preset_order: r.preset_order ?? 999,
+          interaction_mode_suggestion: r.interaction_mode_suggestion ?? null,
+        }))
         if (this.roles.length === 0) {
           this.currentRoleId = ''
           return
         }
+        if (shouldShowPresetPicker(this.roles, this.currentRoleId))
+          return
         if (!this.roles.some(r => r.id === this.currentRoleId)) {
-          this.currentRoleId = this.roles[0].id
+          this.currentRoleId = resolveDefaultRoleId(this.roles)
         }
+      },
+      needsPresetPicker(): boolean {
+        return shouldShowPresetPicker(this.roles, this.currentRoleId)
       },
       async switchRole(roleId: string) {
         const info = await invokeSwitchRole(roleId)

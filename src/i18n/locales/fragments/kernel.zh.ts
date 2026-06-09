@@ -42,6 +42,8 @@ export default {
       healthJson: 'Health JSON',
       refresh: '刷新',
       reconnect: '重连',
+      alreadyConnected: '已连接，无需重连',
+      alreadyConnectedHint: '内核运行正常。仅在离线或异常时再点重连。',
     },
   },
 }

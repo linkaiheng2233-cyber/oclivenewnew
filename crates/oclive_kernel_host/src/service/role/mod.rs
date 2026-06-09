@@ -11,6 +11,7 @@ pub use delete::delete_role_impl;
 pub use identity::{
     get_user_identity_state_impl, set_scene_user_identity_impl, set_user_identity_impl,
 };
+pub use interaction::set_role_interaction_mode_impl;
 pub use slot_session::{
     apply_author_suggested_plugin_backends_impl, build_plugin_resolution_debug_info,
     clear_all_session_slot_overrides_impl, clear_session_slot_override_impl,
@@ -126,7 +127,7 @@ pub async fn get_role_info_impl(
 pub async fn list_roles_impl(state: &AppState) -> Result<Vec<RoleSummary>, CommandError> {
     let list_dev = crate::env_flags::list_dev_roles_enabled();
     let roles = state.storage.load_all_roles()?;
-    Ok(roles
+    let mut summaries: Vec<RoleSummary> = roles
         .into_iter()
         .filter(|r| list_dev || !r.dev_only)
         .map(|r| RoleSummary {
@@ -134,8 +135,18 @@ pub async fn list_roles_impl(state: &AppState) -> Result<Vec<RoleSummary>, Comma
             name: r.name,
             version: r.version,
             author: r.author,
+            description: r.description,
+            featured: r.featured,
+            preset_order: r.preset_order,
+            interaction_mode_suggestion: r.interaction_mode.clone(),
         })
-        .collect())
+        .collect();
+    summaries.sort_by(|a, b| {
+        a.preset_order
+            .cmp(&b.preset_order)
+            .then_with(|| a.name.cmp(&b.name))
+    });
+    Ok(summaries)
 }
 
 /// # Errors

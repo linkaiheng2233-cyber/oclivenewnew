@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoleStore } from '../../stores/roleStore'
 import UiSidePanel from '../../components/ui/UiSidePanel.vue'
 import {
   ModelManagerPanel,
@@ -26,6 +27,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const roleStore = useRoleStore()
 
 const panelTitle = computed(() => {
   if (props.activeTab === 'settings')
@@ -38,11 +40,15 @@ const panelTitle = computed(() => {
   return t('modelManager.title')
 })
 
-const outerTabs = computed<Array<{ id: SidePanelTab, label: string }>>(() => [
-  { id: 'settings', label: t('settings.title') },
-  { id: 'plugins', label: t('simplePluginManager.title') },
-  { id: 'models', label: t('modelManager.title') },
-])
+const outerTabs = computed<Array<{ id: SidePanelTab, label: string }>>(() => {
+  const tabs: Array<{ id: SidePanelTab, label: string }> = [
+    { id: 'settings', label: t('settings.title') },
+  ]
+  if (roleStore.interactionImmersive)
+    tabs.push({ id: 'plugins', label: t('simplePluginManager.title') })
+  tabs.push({ id: 'models', label: t('modelManager.title') })
+  return tabs
+})
 
 function selectTab(tab: SidePanelTab): void {
   if (tab !== props.activeTab)

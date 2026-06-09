@@ -35,6 +35,8 @@ fn create_test_role() -> Role {
         interaction_mode: None,
         min_runtime_version: None,
         dev_only: false,
+        featured: false,
+        preset_order: 0,
         plugin_backends: std::sync::Arc::new(crate::models::PluginBackends::default()),
         slot_registry: None,
         slot_groups: None,
@@ -443,6 +445,14 @@ fn profile_mode_shows_mutable_and_summary_header() {
     assert!(prompt.contains("更黏人"));
     assert!(prompt.contains("【七维视图】"));
     assert!(prompt.contains("核心性格档案（创作者与用户设定"));
+}
+
+#[test]
+fn default_reply_quality_anchor_and_guardrails_constants_present() {
+    assert!(DEFAULT_REPLY_QUALITY_ANCHOR.contains("【回复质量锚点】"));
+    assert!(DEFAULT_REPLY_QUALITY_ANCHOR.contains("禁止复述用户"));
+    assert!(KERNEL_DIALOGUE_GUARDRAILS.contains("【对话硬约束】"));
+    assert!(KERNEL_DIALOGUE_GUARDRAILS.contains("禁止复读开场"));
 }
 
 #[test]

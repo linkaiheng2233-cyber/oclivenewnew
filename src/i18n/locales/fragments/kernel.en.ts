@@ -42,6 +42,8 @@ export default {
       healthJson: 'Health JSON',
       refresh: 'Refresh',
       reconnect: 'Reconnect',
+      alreadyConnected: 'Already connected',
+      alreadyConnectedHint: 'Kernel is healthy. Reconnect only when offline or after an error.',
     },
   },
 }

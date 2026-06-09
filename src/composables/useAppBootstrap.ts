@@ -11,6 +11,7 @@ import { hostEventBus } from '../lib/hostEventBus'
 import { useDebugStore } from '../stores/debugStore'
 import { usePluginStore } from '../stores/pluginStore'
 import { useRoleStore } from '../stores/roleStore'
+import { resolveDefaultRoleId } from '../utils/presetRolePicker'
 import { useNarrativeScene } from './useNarrativeScene'
 import type { AppToastFn } from './useAppToast'
 
@@ -35,6 +36,7 @@ export function useAppBootstrap(options: {
   syncBrowserChromeFromLocale: () => void
   scheduleRefreshSplitLayout: () => void
   refreshSplitLayout: () => void
+  onPresetPickerRequired?: () => void
 }) {
   const roleStore = useRoleStore()
   const pluginStore = usePluginStore()
@@ -44,19 +46,35 @@ export function useAppBootstrap(options: {
   let unlistenPluginFs: (() => void) | Promise<(() => void)> | undefined
   let unlistenProtocolInstall: (() => void) | Promise<(() => void)> | undefined
 
+  async function completeRoleBootstrap(roleId?: string) {
+    const rid = (roleId ?? roleStore.currentRoleId).trim()
+    if (!rid) {
+      options.showToast('error', options.t('app.toast.noRolesScanned'))
+      return
+    }
+    await loadRole(rid)
+    await pluginStore.refresh()
+    await roleStore.refreshRoleInfo()
+    hostEventBus.emitBuiltin('role:switched', { roleId: rid })
+    applyResolvedNarrativeScene()
+    await debugStore.loadDebugData()
+  }
+
   async function initialize() {
     try {
       await roleStore.loadRoles()
-      if (!roleStore.currentRoleId.trim()) {
+      if (roleStore.roles.length === 0) {
         options.showToast('error', options.t('app.toast.noRolesScanned'))
         return
       }
-      await loadRole(roleStore.currentRoleId)
-      await pluginStore.refresh()
-      await roleStore.refreshRoleInfo()
-      hostEventBus.emitBuiltin('role:switched', { roleId: roleStore.currentRoleId })
-      applyResolvedNarrativeScene()
-      await debugStore.loadDebugData()
+      if (roleStore.needsPresetPicker()) {
+        options.onPresetPickerRequired?.()
+        return
+      }
+      if (!roleStore.currentRoleId.trim()) {
+        roleStore.$patch({ currentRoleId: resolveDefaultRoleId(roleStore.roles) })
+      }
+      await completeRoleBootstrap()
     }
     catch (err) {
       options.showToast('error', err instanceof Error ? err.message : String(err))
@@ -122,5 +140,5 @@ export function useAppBootstrap(options: {
     void disposeTauriListener(unlistenProtocolInstall)
   })
 
-  return { initialize }
+  return { initialize, completeRoleBootstrap }
 }

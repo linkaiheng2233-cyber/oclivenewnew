@@ -74,6 +74,11 @@ chain = "standard"            # standard | minimal
 default_id = "classmate"      # optional; used when session has no explicit identity
 allowed_ids = ["classmate"]   # optional whitelist for set_user_identity API
 
+[interaction]
+default_mode = "pure_chat"    # pure_chat | immersive — first-run seed when DB unset
+allow_mode_switch = true
+immersive_unlock_hint_after_turns = 10
+
 [state_expression]
 favor_high = "…"              # optional; appended to 【角色当前状态】 when favor ≥ 65
 favor_mid  = "…"              # optional; 40 ≤ favor < 65

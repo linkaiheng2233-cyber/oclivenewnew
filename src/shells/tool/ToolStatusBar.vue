@@ -10,6 +10,8 @@ import { useUiStore } from '../../stores/uiStore'
 const props = defineProps<{
   statusHeart: string
   sceneLabelForId: (id: string) => string
+  /** Hide identity link until progressive disclosure unlocks it. */
+  showIdentityLink?: boolean
 }>()
 
 const { t } = useI18n()
@@ -39,11 +41,13 @@ function onIdentityClick() {
     <span v-if="roleStore.interactionImmersive" class="tool-status-bar__segment">
       {{ sceneLabel }}
     </span>
-    <span class="tool-status-bar__sep" aria-hidden="true">·</span>
-    <span class="tool-status-bar__segment">
-      {{ favorabilityText }}
-    </span>
-    <template v-if="hasCatalog && currentIdentityLabel">
+    <template v-if="roleStore.interactionImmersive">
+      <span class="tool-status-bar__sep" aria-hidden="true">·</span>
+      <span class="tool-status-bar__segment">
+        {{ favorabilityText }}
+      </span>
+    </template>
+    <template v-if="showIdentityLink && hasCatalog && currentIdentityLabel">
       <span class="tool-status-bar__sep" aria-hidden="true">·</span>
       <button
         type="button"

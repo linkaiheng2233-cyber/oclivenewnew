@@ -1,0 +1,33 @@
+# OCLive official "Daily chat" distribution — first-impression profile
+# Copy beside install root or set OCLIVE_DISTRO_PROFILE to this path.
+# See creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md
+
+schema_version = 1
+distro_id = "desktop-chat"
+display_name = "OCLive Daily Chat"
+
+[interaction]
+default_mode = "pure_chat"
+allow_mode_switch = true
+immersive_unlock_hint_after_turns = 10
+
+[host_flags]
+skip_agent = false
+skip_complex_emotion = false
+
+[slots]
+complex_emotion = "on"
+
+[prompt]
+profile = "concise"
+
+[state_expression]
+favor_high = "更自然地分享日常，语气轻松"
+favor_mid  = "保持温暖、有分寸的闲聊"
+favor_low  = "礼貌克制，勿过度主动"
+
+[memory]
+retrieval = "light"
+
+[post_process]
+chain = "standard"

@@ -45,7 +45,7 @@ async fn dual_pipeline_run_experimental_happy_path_returns_ok() {
         .expect("ensure_role_runtime");
     state
         .db_manager
-        .ensure_interaction_mode_seeded(srid, role.interaction_mode.as_deref())
+        .ensure_interaction_mode_seeded(srid, role.interaction_mode.as_deref(), None)
         .await
         .expect("ensure_interaction_mode_seeded");
     state

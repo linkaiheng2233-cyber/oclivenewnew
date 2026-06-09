@@ -6,11 +6,11 @@ import {
 } from '../utils/interactionMode'
 
 describe('interactionMode', () => {
-  it('normalizeInteractionMode maps pure_chat and defaults unknown to immersive', () => {
+  it('normalizeInteractionMode maps immersive and defaults unknown to pure_chat', () => {
     expect(normalizeInteractionMode('pure_chat')).toBe('pure_chat')
     expect(normalizeInteractionMode('immersive')).toBe('immersive')
-    expect(normalizeInteractionMode('other')).toBe('immersive')
-    expect(normalizeInteractionMode(null)).toBe('immersive')
+    expect(normalizeInteractionMode('other')).toBe('pure_chat')
+    expect(normalizeInteractionMode(null)).toBe('pure_chat')
   })
 
   it('packDefaultFromApi keeps only canonical values', () => {

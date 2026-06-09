@@ -1,15 +1,15 @@
 use super::{api_error, ApiError};
 use crate::models::dto::{
     CreateEventRequest, CreateEventResponse, GetRoleInfoRequest, GetUserIdentityStateRequest,
-    JumpTimeRequest, JumpTimeResponse, RoleInfo, SetSceneUserIdentityRequest,
-    SetUserIdentityRequest, SetUserPresenceSceneRequest, SwitchSceneRequest, SwitchSceneResponse,
-    TimeStateResponse, UserIdentityStateResponse,
+    JumpTimeRequest, JumpTimeResponse, RoleInfo, SetRoleInteractionModeRequest,
+    SetSceneUserIdentityRequest, SetUserIdentityRequest, SetUserPresenceSceneRequest,
+    SwitchSceneRequest, SwitchSceneResponse, TimeStateResponse, UserIdentityStateResponse,
 };
 use crate::models::role::PersonalitySource;
 use crate::service::{
     get_role_info_impl, get_time_state_impl, get_user_identity_state_impl, jump_time_impl,
-    load_role_impl, set_scene_user_identity_impl, set_user_identity_impl,
-    set_user_presence_scene_impl, switch_scene_impl,
+    load_role_impl, set_role_interaction_mode_impl, set_scene_user_identity_impl,
+    set_user_identity_impl, set_user_presence_scene_impl, switch_scene_impl,
 };
 use crate::state::AppState;
 use axum::extract::{Query, State};
@@ -102,6 +102,19 @@ pub(crate) async fn load_role_route(
     load_role_impl(&state, body.role_id.trim(), false)
         .await
         .map(|_| axum::http::StatusCode::NO_CONTENT)
+        .map_err(|e| {
+            let k = e.kernel_error_body();
+            api_error(axum::http::StatusCode::BAD_REQUEST, k)
+        })
+}
+
+pub(crate) async fn set_role_interaction_mode_route(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<SetRoleInteractionModeRequest>,
+) -> Result<Json<RoleInfo>, ApiError> {
+    set_role_interaction_mode_impl(&state, &req)
+        .await
+        .map(Json)
         .map_err(|e| {
             let k = e.kernel_error_body();
             api_error(axum::http::StatusCode::BAD_REQUEST, k)

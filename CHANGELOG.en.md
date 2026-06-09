@@ -7,6 +7,11 @@
 ### Changed
 
 - **License change**: host relicensed from AGPL-3.0 + plugin exception to **Apache-2.0** (root `LICENSE` + `NOTICE`); enables closed-source commercial distros and embedded downstreams to combine the kernel freely; `LICENSE_POLICY.md` updated.
+- **Official distro · Daily chat / Story mode split**: `distro.oclive.toml` adds `[interaction]`; new `desktop-chat` profile; `desktop` / `vscode` default `pure_chat`; first-run seed order is distro → role pack → `pure_chat`.
+- **Pure-chat UI slimming & settings tiers**: Daily chat hides scene/time/plugin sidebar and numeric favor; Settings split into Essentials / More options; Story-mode hint after N turns.
+- **User-identity surprise unlock**: identity picker hidden on first screen; after 5 turns or keyword match, show “You could also be…” identity sheet.
+- **Interaction mode default & dedup**: first run always Daily chat; user choice persists in `role_runtime`; mode switch unified in `InteractionModeBar` above chat input; removed duplicate locale/appearance/plugin tiles from top-bar More.
+- **Pure-chat hides plugins**: Daily chat hides plugin slots, market, Ctrl+Shift+F, and Settings Plugins tab; Story mode restores full plugin UI.
 - **Product narrative alignment**: README / AGENTS / positioning docs unified as "AI role assembly platform"; frozen items (dual_core, blueprint v3, expert_routing) phrased as "mechanism pre-wired, off by default"; chat storage clarifies hybrid as the production path.
 - **Profile scheduling UX**: desktop status bar, Settings → Kernel & Connection, and the VS Code status bar share unified profile-adaptation wording (attach / mismatch / pin / replace / degraded).
 - **Distro profile parse SSOT**: `distro.oclive.toml` parsed once via `oclive_kernel_runtime::distro_oclive_file` (K-PROFILE-01).

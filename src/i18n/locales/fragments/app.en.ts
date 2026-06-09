@@ -25,11 +25,11 @@ export default {
       ariaMoreFeatures: 'More options',
       interactionMode: 'Interaction mode',
       interactionImmersiveHint:
-        'Immersive: virtual time, narrative scenes, schedule hints, and travel-related features.',
+        'Story mode: time flows, scenes change, and relationships shift when you are away.',
       interactionPureChatHint:
-        'Chat-only: conversation only; hides scene/time bars for casual chat.',
-      interactionImmersive: 'Immersive',
-      interactionPureChat: 'Chat-only',
+        'Daily chat: focus on dialogue and personality with a simpler first impression.',
+      interactionImmersive: 'Story mode',
+      interactionPureChat: 'Daily chat',
       identity: 'Identity',
       identityHelp:
         'How you relate to the character (friend, partner, etc.); affects dialogue and stats. Different from the pack’s core personality file (core_personality.txt).',
@@ -71,8 +71,9 @@ export default {
     toast: {
       remoteLifeOn: 'Remote inner voice enabled',
       remoteLifeOff: 'Remote inner voice disabled',
-      interactionImmersive: 'Switched to immersive mode',
-      interactionPureChat: 'Switched to chat-only mode',
+      interactionImmersive: 'Switched to Story mode',
+      interactionPureChat: 'Switched to Daily chat',
+      pluginsStoryModeOnly: 'Plugins are available in Story mode only',
       layoutResetOk: 'Restored the pack’s recommended layout.',
       layoutResetFailPrefix: 'Restore failed: ',
       noRolesScanned:

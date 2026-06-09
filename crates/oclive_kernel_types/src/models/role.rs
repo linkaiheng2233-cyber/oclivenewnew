@@ -186,6 +186,12 @@ pub struct Role {
     /// When true, by default this does not appear in `list_roles` (in-repo debug/identity example packs); `load_role` can still load it by id. See the `OCLIVE_LIST_DEV_ROLES` environment variable.
     #[serde(default)]
     pub dev_only: bool,
+    /// Blueprint `meta.featured`: show in first-run preset gallery.
+    #[serde(default)]
+    pub featured: bool,
+    /// Blueprint `meta.preset_order`: gallery sort (lower first).
+    #[serde(default = "default_preset_order")]
+    pub preset_order: u32,
     /// `settings.json` → `plugin_backends` (optional; defaults to all builtin)
     #[serde(default = "default_plugin_backends", with = "serde_arc_plugin_backends")]
     pub plugin_backends: Arc<PluginBackends>,
@@ -245,6 +251,10 @@ pub struct Role {
     pub scene_text_cache: Arc<RwLock<HashMap<String, Arc<str>>>>,
 }
 
+fn default_preset_order() -> u32 {
+    999
+}
+
 fn default_plugin_backends() -> Arc<PluginBackends> {
     Arc::new(PluginBackends::default())
 }
@@ -300,6 +310,8 @@ impl Default for Role {
             interaction_mode: None,
             min_runtime_version: None,
             dev_only: false,
+            featured: false,
+            preset_order: default_preset_order(),
             plugin_backends: default_plugin_backends(),
             slot_registry: None,
             slot_groups: None,

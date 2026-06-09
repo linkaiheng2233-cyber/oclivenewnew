@@ -9,14 +9,17 @@ export default {
     tabPlugins: '插件扩展',
     tabStorage: '存储管理',
     generalLeadHtml:
-      '侧栏 Activity Bar 或 <strong>Ctrl+Shift+S / F / M</strong> 打开设置、插件与模型；'
-      + '外观与语言在设置 → 常规；插件市场在插件侧栏。',
+      '侧栏 Activity Bar 或 <strong>Ctrl+Shift+S / M</strong> 打开设置与模型；'
+      + '外观与语言在设置 → 常规；插件仅在剧情模式下可用。',
     appearanceSectionTitle: '外观',
-    appearanceSectionHelp: '界面语言、交互模式、主题与 UI 缩放；保存在本机。',
+    appearanceSectionHelp: '界面语言、主题与 UI 缩放；保存在本机。',
+    interactionModeSectionTitle: '互动模式',
+    interactionModeSectionLead: '日常聊与剧情模式的唯一切换入口；虚拟时间与场景旅行仅在剧情模式下可用。',
+    interactionModePersistNote: '你的选择会记住，下次打开仍生效。',
     shortcutsLabel: '快捷',
     shortcutsHelp:
       'Ctrl+Shift+S 设置；Ctrl+Shift+F 已安装插件；Ctrl+Shift+M 模型管理；Ctrl+Shift+D 调试面板。',
-    immersiveOnlyNote: '虚拟时间、叙事场景等仅在沉浸模式下显示于「更多」。',
+    immersiveOnlyNote: '虚拟时间、叙事场景等仅在剧情模式下显示于「更多」。',
     envCheckTitle: '环境自检',
     envCheckHelp:
       '快速探测本机 Ollama 是否可达、角色根目录是否可读、应用数据目录是否可写；不替代完整启动健康检查。',

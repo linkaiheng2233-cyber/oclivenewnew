@@ -5,8 +5,8 @@ use oclive_kernel_host::infrastructure::chat_storage::{SessionMeta, StoredMessag
 use crate::kernel_lifecycle::KernelConnection;
 use oclive_kernel_types::models::dto::{
     CreateEventRequest, CreateEventResponse, GetRoleInfoRequest, JumpTimeRequest, JumpTimeResponse,
-    RoleInfo, SendMessageRequest, SendMessageResponse, SetUserPresenceSceneRequest,
-    SwitchSceneRequest, SwitchSceneResponse, TimeStateResponse,
+    RoleInfo, SendMessageRequest, SendMessageResponse, SetRoleInteractionModeRequest,
+    SetUserPresenceSceneRequest, SwitchSceneRequest, SwitchSceneResponse, TimeStateResponse,
 };
 use oclive_kernel_host::state::AppState;
 pub(crate) use oclive_kernel_runtime::app_error_from_http_response;
@@ -208,6 +208,32 @@ impl KernelHttpClient {
         }
         serde_json::from_str(&text)
             .map_err(|e| AppError::OllamaError(format!("remote chat JSON: {e}")))
+    }
+
+    pub async fn set_role_interaction_mode_via_http(
+        conn: &KernelConnection,
+        req: &SetRoleInteractionModeRequest,
+    ) -> Result<RoleInfo, AppError> {
+        if !Self::ensure_healthy(conn).await {
+            return Err(Self::offline_err());
+        }
+        let res = conn
+            .http_client()
+            .post(format!("{}/role/interaction_mode", conn.base_url))
+            .json(req)
+            .send()
+            .await
+            .map_err(|e| Self::map_send_err(&conn.base_url, "role/interaction_mode request", e))?;
+        let status = res.status();
+        let text = res
+            .text()
+            .await
+            .map_err(|e| AppError::OllamaError(format!("role/interaction_mode body: {e}")))?;
+        if !status.is_success() {
+            return Err(app_error_from_http_response(status.as_u16(), &text));
+        }
+        serde_json::from_str(&text)
+            .map_err(|e| AppError::OllamaError(format!("role/interaction_mode JSON: {e}")))
     }
 
     pub async fn get_role_info_via_http(

@@ -383,6 +383,8 @@ mod tests {
             interaction_mode: None,
             min_runtime_version: None,
             dev_only: false,
+            featured: false,
+            preset_order: 0,
             plugin_backends: std::sync::Arc::new(Default::default()),
             slot_registry: None,
             slot_groups: None,

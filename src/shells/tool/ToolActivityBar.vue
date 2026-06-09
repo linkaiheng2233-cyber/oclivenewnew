@@ -1,13 +1,17 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-defineProps<{
-  roleRailOpen: boolean
-  settingsActive: boolean
-  pluginsActive: boolean
-  modelsActive: boolean
-  moreOpen: boolean
-}>()
+withDefaults(
+  defineProps<{
+    roleRailOpen: boolean
+    settingsActive: boolean
+    pluginsActive: boolean
+    modelsActive: boolean
+    moreOpen: boolean
+    showPluginsButton?: boolean
+  }>(),
+  { showPluginsButton: true },
+)
 
 const emit = defineEmits<{
   focusChat: []
@@ -60,6 +64,7 @@ const { t } = useI18n()
       </svg>
     </button>
     <button
+      v-if="showPluginsButton"
       type="button"
       class="tool-activity-bar__btn"
       :class="{ 'tool-activity-bar__btn--active': pluginsActive }"

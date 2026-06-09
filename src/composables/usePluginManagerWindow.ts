@@ -1,6 +1,7 @@
 import { ref, watch } from 'vue'
 import { ensurePluginWorkbenchI18n } from '../i18n/loadPluginWorkbench'
 import { usePluginMarketStore } from '../stores/pluginMarketStore'
+import { useRoleStore } from '../stores/roleStore'
 import { useOverlayWindow } from './useOverlayWindow'
 import { resolveOcliveShell } from './useOcliveShell'
 
@@ -13,6 +14,7 @@ export interface UsePluginManagerWindowOptions {
 
 /** Minimal installed-plugin list and market entry. */
 export function usePluginManagerWindow(opts: UsePluginManagerWindowOptions) {
+  const roleStore = useRoleStore()
   const marketStore = usePluginMarketStore()
   const pluginsPanelSubview = ref<PluginsPanelSubview>('list')
   const { open: simplePluginManagerOpen, toggle } = useOverlayWindow({
@@ -24,6 +26,8 @@ export function usePluginManagerWindow(opts: UsePluginManagerWindowOptions) {
   })
 
   function openSimplePluginManager(forceOpen = false): void {
+    if (!roleStore.interactionImmersive)
+      return
     toggle(forceOpen)
   }
 
@@ -32,6 +36,8 @@ export function usePluginManagerWindow(opts: UsePluginManagerWindowOptions) {
   }
 
   function openPluginMarket(): void {
+    if (!roleStore.interactionImmersive)
+      return
     void ensurePluginWorkbenchI18n()
     if (resolveOcliveShell() === 'tool') {
       pluginsPanelSubview.value = 'market'

@@ -7,6 +7,11 @@
 ### Changed
 
 - **许可证变更**：主程序由 AGPL-3.0 + 插件例外改为 **Apache-2.0**（根 `LICENSE` + `NOTICE`）；支持闭源商业发行版与嵌入式下游自由组合内核；`LICENSE_POLICY.md` 已同步。
+- **官方发行版 · 日常聊 / 剧情模式分界**：`distro.oclive.toml` 新增 `[interaction]`；新增 `desktop-chat` profile；`desktop` / `vscode` 默认 `pure_chat`；首启 seed 优先级为发行版 → 角色包 → `pure_chat`。
+- **纯聊 UI 瘦身与设置分层**：日常聊隐藏场景/时间/插件侧栏与精确好感分；设置分「常用 / 更多选项」；聊满 N 轮提示开启剧情模式。
+- **用户身份惊喜解锁**：首屏不展示身份选择；聊满 5 轮或关键词触发「原来你还可以是…」身份 sheet。
+- **互动模式默认与归一**：首启固定日常聊；用户切换后写入 `role_runtime` 下次沿用；模式切换归一至输入框上方 `InteractionModeBar`；顶栏「更多」移除语言/外观/插件重复入口。
+- **日常聊隐藏插件**：纯聊模式下隐藏插件槽、市场、快捷键 Ctrl+Shift+F 与设置「插件」分栏；剧情模式恢复完整插件能力。
 - **产品叙事对齐**：README / AGENTS / 定位文档统一为「AI 角色组装平台」；冻结项（dual_core、blueprint v3、expert_routing）表述为「机制已预埋，默认关闭」；聊天存储明确 hybrid 为生产路径。
 - **Profile 调度 UX**：桌面状态栏与设置 → 内核与连接、VS Code 状态栏统一 profile 适配文案（attach / mismatch / pin / replace / degraded）。
 - **发行版 Profile 解析 SSOT**：`distro.oclive.toml` 统一经 `oclive_kernel_runtime::distro_oclive_file` 解析（K-PROFILE-01）。

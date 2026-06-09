@@ -1,15 +1,13 @@
 <script setup lang="ts">
-import type { EnvironmentDiagnostics, KernelDiagnostics } from '../api'
+import type { EnvironmentDiagnostics } from '../api'
 import type { LocalePreference } from '../i18n'
 import { nextTick, ref, Teleport, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
 
-  getKernelDiagnostics,
   getRemoteFallbackAppSettings,
   runEnvironmentDiagnostics,
   setRemoteFallbackToBuiltin,
-  setRoleInteractionMode,
 } from '../api'
 import HotkeySettingsSection from '../components/hotkey/HotkeySettingsSection.vue'
 import PluginSettingsPanelSlots from '../components/PluginSettingsPanelSlots.vue'
@@ -17,6 +15,7 @@ import PluginSlotEmbed from '../components/PluginSlotEmbed.vue'
 import ReplyPostProcessorStatus from '../components/role/ReplyPostProcessorStatus.vue'
 import RoleIdentityControls from '../components/role/RoleIdentityControls.vue'
 import ChatStorageSettingsPanel from '../components/settings/ChatStorageSettingsPanel.vue'
+import KernelConnectionSettingsPanel from '../components/settings/KernelConnectionSettingsPanel.vue'
 import HelpHint from '../components/shared/HelpHint.vue'
 import UiButton from '../components/ui/UiButton.vue'
 import UiFieldRow from '../components/ui/UiFieldRow.vue'
@@ -26,7 +25,6 @@ import { useAppToast } from '../composables/useAppToast'
 import { getLayoutWidths, resetLayoutWidths } from '../composables/useLayoutWidths'
 import { useOcliveAppearance } from '../composables/useOcliveAppearance'
 import { getLocalePreference, setLocalePreference } from '../i18n'
-import { useKernelConnectionStore } from '../stores/kernelConnectionStore'
 import { SLOT_SETTINGS_ADVANCED, usePluginStore } from '../stores/pluginStore'
 import { useRoleStore } from '../stores/roleStore'
 import { isSentryOptOut, setSentryOptOut } from '../utils/telemetrySentry'
@@ -48,7 +46,6 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const pluginStore = usePluginStore()
 const roleStore = useRoleStore()
-const kernelConnectionStore = useKernelConnectionStore()
 const { showToast } = useAppToast()
 const { themeCycleLabel, cycleTheme, bumpScale, scaleLabel } = useOcliveAppearance()
 const localePreference = ref<LocalePreference>(getLocalePreference())
@@ -77,8 +74,10 @@ async function onSentryOptOutChange(e: Event) {
 }
 
 type SettingsTab = 'general' | 'plugins' | 'storage'
+type GeneralSubTab = 'simple' | 'advanced'
 
 const tab = ref<SettingsTab>('general')
+const generalSubTab = ref<GeneralSubTab>('simple')
 
 watch(
   () => props.focusTab,
@@ -99,14 +98,19 @@ watch(
 const envDiagLoading = ref(false)
 const envDiag = ref<EnvironmentDiagnostics | null>(null)
 
-const kernelDiagLoading = ref(false)
-const kernelDiag = ref<KernelDiagnostics | null>(null)
-
 const remoteFallbackLoading = ref(false)
 const remoteFallbackChecked = ref(true)
 const remoteFallbackEnvLocked = ref(false)
 
 const settingsDialogRef = ref<HTMLElement | null>(null)
+
+watch(
+  () => roleStore.roleInfo.interactionMode,
+  (mode) => {
+    if (mode === 'pure_chat' && tab.value === 'plugins')
+      tab.value = 'general'
+  },
+)
 
 const layoutLeftRailW = ref(getLayoutWidths().leftRail)
 const layoutSidePanelW = ref(getLayoutWidths().sidePanel)
@@ -122,23 +126,6 @@ function onLocalePreferenceChange(ev: Event): void {
   const v = (ev.target as HTMLSelectElement).value as LocalePreference
   setLocalePreference(v)
   localePreference.value = v
-}
-
-async function onInteractionModeChange(ev: Event): Promise<void> {
-  const v = (ev.target as HTMLSelectElement).value as 'immersive' | 'pure_chat'
-  try {
-    const info = await setRoleInteractionMode(roleStore.currentRoleId, v)
-    roleStore.applyRoleInfo(info)
-    showToast(
-      'info',
-      v === 'pure_chat'
-        ? t('app.toast.interactionPureChat')
-        : t('app.toast.interactionImmersive'),
-    )
-  }
-  catch (err) {
-    showToast('error', err instanceof Error ? err.message : String(err))
-  }
 }
 
 async function loadRemoteFallbackSettings() {
@@ -182,39 +169,6 @@ async function onRemoteFallbackToggle(e: Event) {
   catch (err) {
     remoteFallbackChecked.value = prev
     showToast('error', err instanceof Error ? err.message : String(err))
-  }
-}
-
-async function onRunKernelDiagnostics() {
-  kernelDiagLoading.value = true
-  kernelDiag.value = null
-  try {
-    kernelDiag.value = await getKernelDiagnostics()
-  }
-  catch (err) {
-    showToast('error', err instanceof Error ? err.message : String(err))
-  }
-  finally {
-    kernelDiagLoading.value = false
-  }
-}
-
-async function onReconnectKernelFromSettings() {
-  kernelDiagLoading.value = true
-  try {
-    const status = await kernelConnectionStore.reconnect()
-    if (status) {
-      kernelDiag.value = kernelDiag.value
-        ? { ...kernelDiag.value, status }
-        : await getKernelDiagnostics()
-    }
-    showToast('info', t('kernel.status.reconnect'))
-  }
-  catch (err) {
-    showToast('error', err instanceof Error ? err.message : String(err))
-  }
-  finally {
-    kernelDiagLoading.value = false
   }
 }
 
@@ -293,6 +247,7 @@ async function onToggleForceIframe(e: Event) {
             {{ t("settings.tabGeneral") }}
           </button>
           <button
+            v-if="roleStore.interactionImmersive"
             type="button"
             class="sv-nav-btn"
             :aria-current="tab === 'plugins' ? 'page' : undefined"
@@ -312,6 +267,25 @@ async function onToggleForceIframe(e: Event) {
 
         <form v-show="tab === 'general'" class="sv-body" @submit.prevent>
           <p class="sv-lead" v-html="t('settings.generalLeadHtml')" />
+
+          <nav class="sv-general-subnav" :aria-label="t('onboarding.settings.simpleTab')">
+            <button
+              type="button"
+              class="sv-nav-btn"
+              :aria-current="generalSubTab === 'simple' ? 'page' : undefined"
+              @click="generalSubTab = 'simple'"
+            >
+              {{ t("onboarding.settings.simpleTab") }}
+            </button>
+            <button
+              type="button"
+              class="sv-nav-btn"
+              :aria-current="generalSubTab === 'advanced' ? 'page' : undefined"
+              @click="generalSubTab = 'advanced'"
+            >
+              {{ t("onboarding.settings.advancedTab") }}
+            </button>
+          </nav>
 
           <UiSection :title="t('settings.shortcutsLabel')">
             <template #extra>
@@ -339,30 +313,6 @@ async function onToggleForceIframe(e: Event) {
                 </option>
               </UiSelect>
             </UiFieldRow>
-            <UiFieldRow :label="t('app.more.interactionMode')">
-              <div class="sv-interaction-mode">
-                <UiSelect
-                  :model-value="roleStore.roleInfo.interactionMode"
-                  @change="onInteractionModeChange"
-                >
-                  <option value="immersive">
-                    {{ t("app.more.interactionImmersive") }}
-                  </option>
-                  <option value="pure_chat">
-                    {{ t("app.more.interactionPureChat") }}
-                  </option>
-                </UiSelect>
-                <HelpHint
-                  :paragraphs="[
-                    t('app.more.interactionImmersiveHint'),
-                    t('app.more.interactionPureChatHint'),
-                  ]"
-                />
-              </div>
-            </UiFieldRow>
-            <p class="sv-muted">
-              {{ t("settings.immersiveOnlyNote") }}
-            </p>
             <UiFieldRow :label="t('app.more.ui')">
               <div class="ui-btn-group">
                 <UiButton size="sm" variant="secondary" @click="bumpScale(-1)">
@@ -379,7 +329,12 @@ async function onToggleForceIframe(e: Event) {
             </UiFieldRow>
           </UiSection>
 
+          <p v-if="generalSubTab === 'advanced'" class="sv-muted">
+            {{ t("onboarding.settings.advancedLead") }}
+          </p>
+
           <UiSection
+            v-show="generalSubTab === 'advanced'"
             :title="t('settings.userIdentitySectionTitle')"
             :description="t('settings.userIdentitySectionLead')"
           >
@@ -389,11 +344,12 @@ async function onToggleForceIframe(e: Event) {
             <RoleIdentityControls variant="full" settings-layout />
           </UiSection>
 
-          <UiSection :title="t('settings.postProcessorSectionTitle')">
+          <UiSection v-show="generalSubTab === 'advanced'" :title="t('settings.postProcessorSectionTitle')">
             <ReplyPostProcessorStatus :show-title="false" />
           </UiSection>
 
           <UiSection
+            v-show="generalSubTab === 'advanced'"
             :title="t('settings.layoutSectionTitle')"
             :description="t('settings.layoutSectionLead')"
           >
@@ -409,6 +365,7 @@ async function onToggleForceIframe(e: Event) {
           </UiSection>
 
           <UiSection
+            v-show="generalSubTab === 'advanced'"
             :title="t('settings.envCheckTitle')"
             :description="t('settings.envCheckLead')"
           >
@@ -480,61 +437,8 @@ async function onToggleForceIframe(e: Event) {
             </div>
           </UiSection>
 
-          <UiSection :title="t('kernel.diagnostics.title')">
-            <div class="ui-btn-group">
-              <UiButton
-                size="sm"
-                variant="secondary"
-                :disabled="kernelDiagLoading"
-                @click="onRunKernelDiagnostics"
-              >
-                {{ kernelDiagLoading ? t("settings.envCheckRunning") : t("kernel.diagnostics.refresh") }}
-              </UiButton>
-              <UiButton
-                size="sm"
-                variant="ghost"
-                :disabled="kernelDiagLoading"
-                @click="onReconnectKernelFromSettings"
-              >
-                {{ t("kernel.diagnostics.reconnect") }}
-              </UiButton>
-            </div>
-            <div v-if="kernelDiag" class="sv-env-results" role="status">
-              <p v-if="kernelConnectionStore.display.detailKey" class="sv-kernel-profile-hint">
-                {{ t(kernelConnectionStore.display.detailKey) }}
-              </p>
-              <p>
-                <strong>{{ t("kernel.diagnostics.mode") }}</strong>
-                {{ kernelDiag.status.mode }}
-                · :{{ kernelDiag.status.port }}
-                ·
-                <span :class="kernelDiag.status.healthy ? 'sv-ok' : 'sv-bad'">
-                  {{
-                    kernelDiag.status.healthy
-                      ? t("kernel.diagnostics.healthyYes")
-                      : t("kernel.diagnostics.healthyNo")
-                  }}
-                </span>
-              </p>
-              <p v-if="kernelDiag.status.binaryPath">
-                <strong>{{ t("kernel.diagnostics.binary") }}</strong>
-                <code class="sv-code">{{ kernelDiag.status.binaryPath }}</code>
-              </p>
-              <p v-if="kernelDiag.status.kernelTier">
-                <strong>{{ t("kernel.diagnostics.tier") }}</strong> {{ kernelDiag.status.kernelTier }}
-              </p>
-              <p>
-                <strong>{{ t("kernel.diagnostics.sharedRuntime") }}</strong>
-                <code class="sv-code">{{ kernelDiag.sharedRuntimePath }}</code>
-                <span v-if="kernelDiag.sharedRuntimeModifiedMs" class="sv-muted">
-                  ({{ t("kernel.diagnostics.sharedRuntimeMtime") }}:
-                  {{ new Date(kernelDiag.sharedRuntimeModifiedMs).toLocaleString() }})
-                </span>
-              </p>
-              <pre v-if="kernelDiag.healthJson" class="sv-code sv-pre">{{
-                JSON.stringify(kernelDiag.healthJson, null, 2)
-              }}</pre>
-            </div>
+          <UiSection v-show="generalSubTab === 'advanced'" :title="t('kernel.diagnostics.title')">
+            <KernelConnectionSettingsPanel :active="generalSubTab === 'advanced' && visible" />
           </UiSection>
           <details v-if="embedded" class="sv-advanced-fold">
             <summary class="sv-advanced-fold__summary">
@@ -602,7 +506,7 @@ async function onToggleForceIframe(e: Event) {
           </details>
           <template v-else>
             <UiSection
-              v-if="hasSentryDsn"
+              v-if="hasSentryDsn && generalSubTab === 'advanced'"
               :title="t('settings.sentrySectionTitle')"
               :description="t('settings.sentrySectionLead')"
             >
@@ -616,7 +520,7 @@ async function onToggleForceIframe(e: Event) {
                 </span>
               </label>
             </UiSection>
-            <UiSection :title="t('settings.remoteFallbackSectionTitle')">
+            <UiSection v-show="generalSubTab === 'advanced'" :title="t('settings.remoteFallbackSectionTitle')">
               <template #extra>
                 <HelpHint :text="t('settings.remoteFallbackHelp')" />
               </template>
@@ -635,7 +539,7 @@ async function onToggleForceIframe(e: Event) {
                 </span>
               </label>
             </UiSection>
-            <UiSection :title="t('settings.advancedTitle')">
+            <UiSection v-show="generalSubTab === 'advanced'" :title="t('settings.advancedTitle')">
               <p class="sv-muted" v-html="t('settings.advancedDesc')" />
               <PluginSlotEmbed
                 :slot-name="SLOT_SETTINGS_ADVANCED"
@@ -643,7 +547,7 @@ async function onToggleForceIframe(e: Event) {
                 :bootstrap-epoch="pluginStore.bootstrapEpoch"
               />
             </UiSection>
-            <UiSection :title="t('settings.securityLabel')">
+            <UiSection v-show="generalSubTab === 'advanced'" :title="t('settings.securityLabel')">
               <label class="sv-toggle-row">
                 <input
                   type="checkbox"

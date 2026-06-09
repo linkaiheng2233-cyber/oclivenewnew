@@ -30,6 +30,11 @@ import {
 import ToolActivityBar from './ToolActivityBar.vue'
 import ToolMoreMenu from './ToolMoreMenu.vue'
 import ToolSidePanelHost from './ToolSidePanelHost.vue'
+import ImmersiveModeIntro from '../../components/onboarding/ImmersiveModeIntro.vue'
+import ImmersiveUnlockBanner from '../../components/onboarding/ImmersiveUnlockBanner.vue'
+import IdentitySurpriseSheet from '../../components/onboarding/IdentitySurpriseSheet.vue'
+import InteractionModeBar from '../../components/onboarding/InteractionModeBar.vue'
+import PresetRolePicker from '../../components/onboarding/PresetRolePicker.vue'
 import ToolStatusBar from './ToolStatusBar.vue'
 
 const shell = inject(MAIN_SHELL_KEY)
@@ -95,12 +100,16 @@ const {
   roleName,
   emotion,
   statusHeart,
+  progressive,
   onSend,
   onSwitchRole,
   onChangeRelation,
   onPackImported,
   onReloadPolicy,
   onDebugRefresh,
+  presetPickerOpen,
+  presetPickerPicking,
+  onPresetRolePick,
 } = shell
 
 const roleRailOpen = ref(false)
@@ -154,7 +163,8 @@ function onSidePanelResize(deltaX: number) {
       <ToolActivityBar
         :role-rail-open="roleRailOpen"
         :settings-active="settingsViewOpen"
-        :plugins-active="simplePluginManagerOpen"
+        :plugins-active="roleStore.interactionImmersive && simplePluginManagerOpen"
+        :show-plugins-button="roleStore.interactionImmersive"
         :models-active="modelManagerOpen"
         :more-open="topMoreOpen"
         @focus-chat="onFocusChat"
@@ -170,7 +180,7 @@ function onSidePanelResize(deltaX: number) {
           <header class="tool-top-bar">
             <RoleSelector
               variant="topbar"
-              :sections="['role', 'relation']"
+              :sections="roleStore.interactionImmersive || progressive.showIdentityControls ? ['role', 'relation'] : ['role']"
               :current-role-id="roleStore.currentRoleId"
               :current-relation="roleStore.relationSelectValue"
               :roles="roleStore.roles"
@@ -190,7 +200,7 @@ function onSidePanelResize(deltaX: number) {
           </header>
 
           <div
-            v-if="uiStore.connectivityBanner?.kind === 'plugin_index_offline'"
+            v-if="roleStore.interactionImmersive && uiStore.connectivityBanner?.kind === 'plugin_index_offline'"
             class="connectivity-banner"
             role="status"
           >
@@ -243,12 +253,16 @@ function onSidePanelResize(deltaX: number) {
                 :emotion="emotion"
                 :bootstrap-epoch="pluginStore.bootstrapEpoch"
               />
-              <RoleplayAsidePanel :text="latestRoleplayAside" />
-              <PluginSidebarSlots :bootstrap-epoch="pluginStore.bootstrapEpoch" />
-              <div class="tool-left-rail__status" :aria-label="t('app.sidebar.favorability')">
+              <RoleplayAsidePanel v-if="roleStore.interactionImmersive" :text="latestRoleplayAside" />
+              <PluginSidebarSlots v-if="roleStore.interactionImmersive" :bootstrap-epoch="pluginStore.bootstrapEpoch" />
+              <div
+                v-if="roleStore.interactionImmersive"
+                class="tool-left-rail__status"
+                :aria-label="t('app.sidebar.favorability')"
+              >
                 {{ t("app.sidebar.favorability") }} {{ Math.round(roleStore.roleInfo.favorability) }} {{ statusHeart }}
               </div>
-              <RoleIdentityControls variant="compact" />
+              <RoleIdentityControls v-if="progressive.showIdentityControls" variant="compact" />
               <div
                 v-if="roleStore.interactionImmersive && roleStore.roleInfo.currentLife?.label"
                 class="tool-left-rail__life"
@@ -272,7 +286,10 @@ function onSidePanelResize(deltaX: number) {
             />
 
             <div class="tool-main" :class="{ 'tool-main--input-top': chatInputTop }">
-              <PluginChatHeaderSlots :bootstrap-epoch="pluginStore.bootstrapEpoch" />
+              <PluginChatHeaderSlots
+                v-if="roleStore.interactionImmersive"
+                :bootstrap-epoch="pluginStore.bootstrapEpoch"
+              />
               <div class="tool-chat-scroll chat-list">
                 <transition name="fade">
                   <ChatMessageList
@@ -286,7 +303,22 @@ function onSidePanelResize(deltaX: number) {
                 </transition>
               </div>
               <section class="tool-input-area">
-                <ChatPluginToolbarSlots :bootstrap-epoch="pluginStore.bootstrapEpoch" />
+                <InteractionModeBar />
+                <ImmersiveUnlockBanner
+                  :visible="progressive.showImmersiveUnlockBanner"
+                  @try-story="progressive.tryStoryMode"
+                  @dismiss="progressive.dismissImmersiveHint"
+                />
+                <IdentitySurpriseSheet
+                  :visible="progressive.identitySheetVisible"
+                  :options="progressive.identitySurpriseOptions"
+                  @pick="progressive.pickIdentity"
+                  @keep="progressive.keepIdentity"
+                />
+                <ChatPluginToolbarSlots
+                  v-if="roleStore.interactionImmersive"
+                  :bootstrap-epoch="pluginStore.bootstrapEpoch"
+                />
                 <SceneTravelBars
                   v-if="roleStore.interactionImmersive"
                   :together-visible="togetherTravelBarVisible"
@@ -306,7 +338,11 @@ function onSidePanelResize(deltaX: number) {
             </div>
           </div>
 
-          <ToolStatusBar :status-heart="statusHeart" :scene-label-for-id="sceneLabelForId" />
+          <ToolStatusBar
+            :status-heart="statusHeart"
+            :scene-label-for-id="sceneLabelForId"
+            :show-identity-link="progressive.showIdentityControls"
+          />
         </div>
 
         <UiResizeHandle
@@ -329,6 +365,7 @@ function onSidePanelResize(deltaX: number) {
       </div>
 
       <DebugPanel
+        v-if="roleStore.interactionImmersive"
         :visible="debugStore.visible"
         :loading="chatStore.isLoading"
         :favorability="roleStore.roleInfo.favorability"
@@ -342,11 +379,22 @@ function onSidePanelResize(deltaX: number) {
         @imported="onPackImported"
       />
 
+      <PresetRolePicker
+        :visible="presetPickerOpen"
+        :roles="roleStore.roles"
+        :picking="presetPickerPicking"
+        @pick="onPresetRolePick"
+      />
+
+      <ImmersiveModeIntro
+        :visible="progressive.immersiveIntroVisible"
+        @dismiss="progressive.dismissImmersiveIntro"
+      />
       <Toast :show="toast.show" :type="toast.type" :message="toast.message" />
       <ShortcutHelp v-model="shortcutHelpOpen" :bootstrap-epoch="pluginStore.bootstrapEpoch" />
-      <MarketView />
+      <MarketView v-if="roleStore.interactionImmersive" />
 
-      <div class="app-floating-slot" aria-hidden="true">
+      <div v-if="roleStore.interactionImmersive" class="app-floating-slot" aria-hidden="true">
         <PluginSlotEmbed
           slot-name="overlay.floating"
           :aria-label="t('app.floatingSlot')"

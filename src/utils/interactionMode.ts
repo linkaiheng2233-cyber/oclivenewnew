@@ -6,11 +6,13 @@ export function isImmersiveMode(mode: InteractionMode): boolean {
   return mode === 'immersive'
 }
 
-/** Normalize API string to union type (unknown → immersive). */
+/** Normalize API string to union type (unknown → pure_chat). */
 export function normalizeInteractionMode(
   raw: string | undefined | null,
 ): InteractionMode {
-  return raw === 'pure_chat' ? 'pure_chat' : 'immersive'
+  if (raw === 'immersive')
+    return 'immersive'
+  return 'pure_chat'
 }
 
 /** `interaction_mode_pack_default`: keep only valid values. */

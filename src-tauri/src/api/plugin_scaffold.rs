@@ -55,18 +55,37 @@ fn write_template_files(
     plugin_type: &str,
 ) -> Result<(), AppError> {
     fs::create_dir_all(plugin_dir)?;
-    let manifest = serde_json::json!({
-        "id": plugin_id,
-        "name": plugin_name,
-        "version": "0.1.0",
-        "description": format!("{} scaffold ({})", plugin_name, plugin_type),
-        "author": "creator",
-        "runtime": language,
-        "permissions": ["process:spawn"],
-        "tools": [
-          { "name": "example_tool", "description": "example tool placeholder" }
-        ]
-    });
+    let is_reply_pp = plugin_type.eq_ignore_ascii_case("reply_post_process");
+    let manifest = if is_reply_pp {
+        serde_json::json!({
+            "id": plugin_id,
+            "name": plugin_name,
+            "version": "0.1.0",
+            "description": format!("{} reply post-process polish scaffold", plugin_name),
+            "description_zh": "可选：润色 LLM 原始回复为展示文本（reply_post_process.process）。",
+            "author": "creator",
+            "provides": ["reply_post_process"],
+            "category": "reply_post_process",
+            "process": {
+                "command": if language == "python" { "python" } else { "node" },
+                "args": [if language == "python" { "rpc_server.py" } else { "rpc_server.mjs" }],
+                "cwd": "."
+            }
+        })
+    } else {
+        serde_json::json!({
+            "id": plugin_id,
+            "name": plugin_name,
+            "version": "0.1.0",
+            "description": format!("{} scaffold ({})", plugin_name, plugin_type),
+            "author": "creator",
+            "runtime": language,
+            "permissions": ["process:spawn"],
+            "tools": [
+              { "name": "example_tool", "description": "example tool placeholder" }
+            ]
+        })
+    };
     fs::write(
         plugin_dir.join("manifest.json"),
         serde_json::to_string_pretty(&manifest).map_err(AppError::from)?,
@@ -76,6 +95,16 @@ fn write_template_files(
         plugin_name, plugin_id, language, plugin_type
     );
     fs::write(plugin_dir.join("README.md"), readme)?;
+    if is_reply_pp {
+        let rpc = include_str!("../../../examples/reply-post-process-polish/rpc_server.mjs");
+        fs::write(plugin_dir.join("rpc_server.mjs"), rpc)?;
+        let readme = format!(
+            "# {}\n\nReply post-process polish scaffold. Edit `polishReply` in `rpc_server.mjs`.\n\nSee handoff/REPLY_POST_PROCESSOR_DESIGN_REPORT.md\n",
+            plugin_name
+        );
+        fs::write(plugin_dir.join("README.md"), readme)?;
+        return Ok(());
+    }
     match language {
         "python" => {
             fs::write(

@@ -6,6 +6,11 @@ schema_version = 1
 distro_id = "desktop"
 display_name = "OCLive Desktop"
 
+[interaction]
+default_mode = "pure_chat"
+allow_mode_switch = true
+immersive_unlock_hint_after_turns = 10
+
 [host_flags]
 skip_agent = false
 skip_complex_emotion = false

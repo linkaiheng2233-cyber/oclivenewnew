@@ -8,6 +8,8 @@ export interface UseGlobalHotkeysOptions {
   marketPanelVisible: Ref<boolean> | ComputedRef<boolean>
   modelManagerOpen: Ref<boolean>
   debugVisible: Ref<boolean> | ComputedRef<boolean>
+  pluginUiEnabled: Ref<boolean> | ComputedRef<boolean>
+  debugUiEnabled?: Ref<boolean> | ComputedRef<boolean>
   openPluginManagerPanel: () => void
   openModelManager: () => void
   toggleDebug: () => void
@@ -106,6 +108,8 @@ export function useGlobalHotkeys(opts: UseGlobalHotkeysOptions) {
       }
     }
     if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'f') {
+      if (!opts.pluginUiEnabled.value)
+        return
       e.preventDefault()
       opts.openPluginManagerPanel()
       return
@@ -121,6 +125,8 @@ export function useGlobalHotkeys(opts: UseGlobalHotkeysOptions) {
       return
     }
     if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'd') {
+      if (opts.debugUiEnabled && !opts.debugUiEnabled.value)
+        return
       e.preventDefault()
       opts.toggleDebug()
     }

@@ -26,7 +26,7 @@
       "home": { "日常": 1.0 }
     }
   },
-  "interaction_mode": "immersive",
+  "interaction_mode": "pure_chat",
   "remote_presence": {
     "default_enabled": false
   },

@@ -1,27 +1,29 @@
 <script setup lang="ts">
-import type { LocalePreference } from '../i18n'
 import type { JumpTimeResponse } from '../api'
 import type { RelationOptionRow } from '../utils/relationOptions'
 import { useAppToast } from '../composables/useAppToast'
-import { setLocalePreference } from '../i18n'
 import { useSceneDestination } from '../composables/useSceneDestination'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import HelpHint from './shared/HelpHint.vue'
 import RoleSelector from './role/RoleSelector.vue'
 import VirtualTimeBar from './scene/VirtualTimeBar.vue'
-import { useOcliveAppearance } from '../composables/useOcliveAppearance'
 import { useChatStore } from '../stores/chatStore'
 import { useDebugStore } from '../stores/debugStore'
 import { useRoleStore } from '../stores/roleStore'
 import { useUiStore } from '../stores/uiStore'
 const open = defineModel<boolean>({ required: true })
-const localePreference = defineModel<LocalePreference>('localePreference', { required: true })
 
-defineProps<{
-  relationOptions: RelationOptionRow[]
-  allSceneOptions: Array<{ id: string, label: string }>
-}>()
+withDefaults(
+  defineProps<{
+    relationOptions: RelationOptionRow[]
+    allSceneOptions: Array<{ id: string, label: string }>
+    showIdentitySection?: boolean
+  }>(),
+  {
+    showIdentitySection: true,
+  },
+)
 
 const emit = defineEmits<{
   openSettings: []
@@ -30,7 +32,6 @@ const emit = defineEmits<{
   openPluginMarket: []
   openModelManager: []
   sceneChange: [ev: Event]
-  interactionModeChange: [ev: Event]
   changeRole: [roleId: string]
   changeRelation: [relation: string]
   notify: [payload: { type: 'success' | 'error' | 'info', message: string }]
@@ -44,17 +45,8 @@ const roleStore = useRoleStore()
 const chatStore = useChatStore()
 const debugStore = useDebugStore()
 const uiStore = useUiStore()
-const { themePreference, themeCycleLabel, cycleTheme, bumpScale, scaleLabel }
-  = useOcliveAppearance()
-
 const panelRootRef = ref<HTMLElement | null>(null)
 let clickListenTimer: ReturnType<typeof setTimeout> | null = null
-
-function onLocalePreferenceChange(ev: Event): void {
-  const v = (ev.target as HTMLSelectElement).value as LocalePreference
-  setLocalePreference(v)
-  localePreference.value = v
-}
 
 function toggleOpen(e: Event): void {
   e.stopPropagation()
@@ -116,57 +108,7 @@ onBeforeUnmount(() => {
       @click.stop
     >
       <div class="more-grid">
-        <div class="more-tile more-tile--xs">
-          <div class="more-tile-head">
-            <span class="more-label">{{ t("app.locale.label") }}</span>
-          </div>
-          <div class="more-tile-body">
-            <select
-              class="interaction-mode-select more-select more-select--fill"
-              :value="localePreference"
-              @change="onLocalePreferenceChange"
-            >
-              <option value="system">
-                {{ t("app.locale.system") }}
-              </option>
-              <option value="zh-CN">
-                {{ t("app.locale.zhCN") }}
-              </option>
-              <option value="en-US">
-                {{ t("app.locale.enUS") }}
-              </option>
-            </select>
-          </div>
-        </div>
-
-        <div class="more-tile more-tile--xs">
-          <div class="more-tile-head">
-            <span class="more-label">{{ t("app.more.interactionMode") }}</span>
-            <HelpHint
-              :paragraphs="[
-                t('app.more.interactionImmersiveHint'),
-                t('app.more.interactionPureChatHint'),
-              ]"
-            />
-          </div>
-          <div class="more-tile-body">
-            <select
-              id="interaction-mode"
-              class="interaction-mode-select more-select more-select--fill"
-              :value="roleStore.roleInfo.interactionMode"
-              @change="emit('interactionModeChange', $event)"
-            >
-              <option value="immersive">
-                {{ t("app.more.interactionImmersive") }}
-              </option>
-              <option value="pure_chat">
-                {{ t("app.more.interactionPureChat") }}
-              </option>
-            </select>
-          </div>
-        </div>
-
-        <div class="more-tile more-tile--sm">
+        <div v-if="showIdentitySection" class="more-tile more-tile--sm">
           <div class="more-tile-head">
             <span class="more-label">{{ t("app.more.identity") }}</span>
             <HelpHint :text="t('app.more.identityHelp')" />
@@ -183,58 +125,6 @@ onBeforeUnmount(() => {
               @change-role="emit('changeRole', $event)"
               @change-relation="emit('changeRelation', $event)"
             />
-          </div>
-        </div>
-
-        <div class="more-tile more-tile--lg">
-          <div class="more-tile-head">
-            <span class="more-label">{{ t("app.more.ui") }}</span>
-            <HelpHint
-              :paragraphs="[t('app.more.uiHint1'), t('app.more.uiHint2')]"
-            />
-          </div>
-          <div class="more-tile-body">
-            <div class="top-bar-appearance" role="toolbar" :aria-label="t('app.more.appearanceToolbar')">
-              <div class="appearance-scale" :aria-label="t('app.more.scaleGroup')">
-                <button
-                  type="button"
-                  class="appearance-icon-btn"
-                  :title="t('app.more.shrinkTitle')"
-                  :aria-label="t('app.more.shrinkAria')"
-                  @click="bumpScale(-1)"
-                >
-                  A−
-                </button>
-                <span
-                  class="appearance-scale-value"
-                  :title="t('app.more.scaleRelativeTitle', { label: scaleLabel })"
-                >{{ scaleLabel }}</span>
-                <button
-                  type="button"
-                  class="appearance-icon-btn"
-                  :title="t('app.more.enlargeTitle')"
-                  :aria-label="t('app.more.enlargeAria')"
-                  @click="bumpScale(1)"
-                >
-                  A+
-                </button>
-              </div>
-              <button
-                type="button"
-                class="appearance-theme-btn"
-                :title="t('app.more.themeTitle', { label: themeCycleLabel })"
-                @click="cycleTheme"
-              >
-                {{
-                  themePreference === "system"
-                    ? "◐"
-                    : themePreference === "dark"
-                      ? "🌙"
-                      : "☀️"
-                }}
-                {{ themeCycleLabel }}
-              </button>
-            </div>
           </div>
         </div>
 
@@ -257,28 +147,30 @@ onBeforeUnmount(() => {
             <button
               type="button"
               class="more-debug-btn more-debug-btn--fill settings-entry-btn"
-              @click="emit('openPluginManager')"
-            >
-              {{ t("app.more.pluginBtnSimple") }}
-            </button>
-            <button
-              type="button"
-              class="more-debug-btn more-debug-btn--fill settings-entry-btn"
               @click="emit('openModelManager')"
             >
               {{ t("app.more.modelManager") }}
             </button>
-            <button
-              type="button"
-              class="more-debug-btn more-debug-btn--fill settings-entry-btn"
-              @click="emit('openPluginMarket')"
-            >
-              {{ t("app.more.pluginMarket") }}
-            </button>
+            <template v-if="roleStore.interactionImmersive">
+              <button
+                type="button"
+                class="more-debug-btn more-debug-btn--fill settings-entry-btn"
+                @click="emit('openPluginManager')"
+              >
+                {{ t("app.more.pluginBtnSimple") }}
+              </button>
+              <button
+                type="button"
+                class="more-debug-btn more-debug-btn--fill settings-entry-btn"
+                @click="emit('openPluginMarket')"
+              >
+                {{ t("app.more.pluginMarket") }}
+              </button>
+            </template>
           </div>
         </div>
 
-        <div class="more-tile more-tile--action">
+        <div v-if="roleStore.interactionImmersive" class="more-tile more-tile--action">
           <div class="more-tile-head">
             <span class="more-label">{{ t("app.more.debug") }}</span>
             <HelpHint :text="t('app.more.debugHelp')" />

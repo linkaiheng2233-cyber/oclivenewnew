@@ -30,6 +30,8 @@ import { useReturnFocusOnClose } from './useReturnFocusOnClose'
 import { useSceneDestination } from './useSceneDestination'
 import { useSceneTravelBars } from './useSceneTravelBars'
 import { usePackUiTheme } from './useTheme'
+import { useProgressiveDisclosure } from './useProgressiveDisclosure'
+import { markPresetPickerDone } from '../utils/presetRolePicker'
 
 export const DebugPanel = defineAsyncComponent(() => import('../components/dev-tools/DebugPanel.vue'))
 export const MarketView = defineAsyncComponent(() => import('../views/MarketView.vue'))
@@ -59,6 +61,7 @@ export function useMainShell() {
   const localePreference = ref<LocalePreference>(getLocalePreference())
 
   const { toast, showToast } = useAppToast()
+  const progressive = useProgressiveDisclosure()
   useRoleSnapshotPoll()
   const { applyResolvedNarrativeScene } = useNarrativeScene()
   const {
@@ -71,6 +74,8 @@ export function useMainShell() {
   const chatInputRef = ref<{ focusInput?: () => void } | null>(null)
   const leftPaneRef = ref<HTMLElement | null>(null)
   const roleSwitching = ref(false)
+  const presetPickerOpen = ref(false)
+  const presetPickerPicking = ref(false)
 
   const wideSplitLayout = ref(typeof window !== 'undefined' && window.innerWidth > 720)
   function refreshSplitLayout(): void {
@@ -195,6 +200,14 @@ export function useMainShell() {
     clearSceneBarsBeforeSend,
   } = useSceneTravelBars({ applySceneDestination, sceneLabelForId })
 
+  function closePluginSurfaces(): void {
+    simplePluginManagerOpen.value = false
+    pluginMarketStore.closeMarketPanel()
+    pluginsPanelSubview.value = 'list'
+    if (debugStore.visible)
+      debugStore.toggle()
+  }
+
   const { shortcutHelpOpen, openShortcutHelp, openSettingsView } = useGlobalHotkeys({
     simplePluginManagerOpen,
     settingsViewOpen,
@@ -202,6 +215,8 @@ export function useMainShell() {
     marketPanelVisible: computed(() => pluginMarketStore.marketPanelVisible),
     modelManagerOpen,
     debugVisible: computed(() => debugStore.visible),
+    pluginUiEnabled: computed(() => roleStore.interactionImmersive),
+    debugUiEnabled: computed(() => roleStore.interactionImmersive),
     openPluginManagerPanel,
     openModelManager: () => openModelManager(),
     toggleDebug: () => debugStore.toggle(),
@@ -242,8 +257,12 @@ export function useMainShell() {
   watch(
     () => roleStore.roleInfo.interactionMode,
     (mode) => {
-      if (mode === 'pure_chat')
+      if (mode === 'pure_chat') {
         resetPureChatSceneUi()
+        closePluginSurfaces()
+        if (settingsFocusTab.value === 'plugins')
+          settingsFocusTab.value = 'general'
+      }
     },
   )
 
@@ -270,6 +289,15 @@ export function useMainShell() {
     return '🤍'
   })
 
+  const favorClosenessLabel = computed(() => {
+    const f = roleStore.roleInfo.favorability
+    if (f >= 60)
+      return t('onboarding.favorLabel.close')
+    if (f >= 30)
+      return t('onboarding.favorLabel.warm')
+    return t('onboarding.favorLabel.distant')
+  })
+
   async function onInteractionModeChange(ev: Event) {
     const v = (ev.target as HTMLSelectElement).value as 'immersive' | 'pure_chat'
     try {
@@ -277,6 +305,12 @@ export function useMainShell() {
       roleStore.applyRoleInfo(info)
       if (v === 'pure_chat')
         resetPureChatSceneUi()
+      showToast(
+        'info',
+        v === 'pure_chat'
+          ? t('app.toast.interactionPureChat')
+          : t('app.toast.interactionImmersive'),
+      )
     }
     catch (err) {
       showToast('error', err instanceof Error ? err.message : String(err))
@@ -291,7 +325,28 @@ export function useMainShell() {
     syncBrowserChromeFromLocale,
     scheduleRefreshSplitLayout,
     refreshSplitLayout,
+    onPresetPickerRequired: () => {
+      presetPickerOpen.value = true
+    },
   })
+
+  async function onPresetRolePick(roleId: string) {
+    if (presetPickerPicking.value)
+      return
+    presetPickerPicking.value = true
+    try {
+      markPresetPickerDone()
+      presetPickerOpen.value = false
+      await onSwitchRole(roleId)
+    }
+    catch (err) {
+      presetPickerOpen.value = true
+      showToast('error', err instanceof Error ? err.message : String(err))
+    }
+    finally {
+      presetPickerPicking.value = false
+    }
+  }
 
   const { onSend } = useChatSend({
     showToast,
@@ -299,6 +354,7 @@ export function useMainShell() {
     chatInputRef,
     clearSceneBarsBeforeSend,
     offerSceneBarsAfterReply,
+    onTurnRecorded: (msg) => progressive.recordTurn(msg),
   })
 
   async function onSwitchRole(nextRoleId: string) {
@@ -432,6 +488,10 @@ export function useMainShell() {
       return
     }
     if (tab === 'plugins') {
+      if (!roleStore.interactionImmersive) {
+        showToast('info', t('app.toast.pluginsStoryModeOnly'))
+        return
+      }
       openSimplePluginManager(true)
       return
     }
@@ -529,6 +589,8 @@ export function useMainShell() {
     roleName,
     emotion,
     statusHeart,
+    favorClosenessLabel,
+    progressive,
     onInteractionModeChange,
     onSend,
     onSwitchRole,
@@ -536,5 +598,8 @@ export function useMainShell() {
     onPackImported,
     onReloadPolicy,
     onDebugRefresh,
+    presetPickerOpen,
+    presetPickerPicking,
+    onPresetRolePick,
   }
 }

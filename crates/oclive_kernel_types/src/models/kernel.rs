@@ -31,6 +31,20 @@ pub struct ActiveProfileSummary {
     pub post_process_profile: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub prompt_profile: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub default_interaction_mode: Option<String>,
+    #[serde(default = "default_allow_mode_switch")]
+    pub allow_mode_switch: bool,
+    #[serde(default = "default_immersive_unlock_turns")]
+    pub immersive_unlock_hint_after_turns: u32,
+}
+
+fn default_allow_mode_switch() -> bool {
+    true
+}
+
+fn default_immersive_unlock_turns() -> u32 {
+    10
 }
 
 /// Why attach was chosen (healthy kernel path).

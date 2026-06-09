@@ -20,6 +20,17 @@ pub struct DistroOcliveFile {
     pub state_expression: Option<StateExpressionToml>,
     pub memory: Option<MemoryToml>,
     pub plugin_backends: Option<PluginBackendsToml>,
+    pub interaction: Option<InteractionToml>,
+}
+
+#[derive(Debug, Default, Clone, Deserialize)]
+pub struct InteractionToml {
+    /// `pure_chat` | `immersive` — seeded when `role_runtime.interaction_mode` is unset.
+    pub default_mode: Option<String>,
+    #[serde(default)]
+    pub allow_mode_switch: Option<bool>,
+    /// Frontend hint: suggest story mode after N successful turns (default 10 when omitted).
+    pub immersive_unlock_hint_after_turns: Option<u32>,
 }
 
 #[derive(Debug, Default, Clone, Deserialize)]
@@ -178,6 +189,16 @@ pub fn requirements_from_flags(
 mod tests {
     use super::*;
     use std::path::Path;
+
+    #[test]
+    fn parse_desktop_chat_interaction_defaults() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../examples/distro-profiles");
+        let file = parse_distro_oclive_file(&root.join("desktop-chat.oclive.toml")).unwrap();
+        let ix = file.interaction.as_ref().expect("interaction");
+        assert_eq!(ix.default_mode.as_deref(), Some("pure_chat"));
+        assert_eq!(ix.allow_mode_switch, Some(true));
+        assert_eq!(ix.immersive_unlock_hint_after_turns, Some(10));
+    }
 
     #[test]
     fn parse_vscode_example_matches_requirements() {

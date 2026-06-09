@@ -20,6 +20,24 @@ pub struct UserIdentityProfile {
     pub allowed_ids: Option<Vec<String>>,
 }
 
+/// Distro interaction mode defaults and UX hints for official releases.
+#[derive(Debug, Clone)]
+pub struct InteractionProfile {
+    pub default_mode: oclive_kernel_types::InteractionMode,
+    pub allow_mode_switch: bool,
+    pub immersive_unlock_hint_after_turns: u32,
+}
+
+impl Default for InteractionProfile {
+    fn default() -> Self {
+        Self {
+            default_mode: oclive_kernel_types::InteractionMode::PureChat,
+            allow_mode_switch: true,
+            immersive_unlock_hint_after_turns: 10,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum PostProcessChain {
     #[default]
@@ -81,6 +99,7 @@ pub struct HostProfile {
     pub profile_path: Option<PathBuf>,
     /// Distro memory retrieval density (`default` = 8, `light` = 4 relevant memories).
     pub memory_retrieval: MemoryRetrievalMode,
+    pub interaction: InteractionProfile,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -185,6 +204,18 @@ fn host_profile_from_distro_file(file: &DistroOcliveFile) -> std::result::Result
             profile.memory_retrieval = MemoryRetrievalMode::parse(mode);
         }
     }
+    if let Some(ref ix) = file.interaction {
+        if let Some(ref mode) = ix.default_mode {
+            profile.interaction.default_mode =
+                oclive_kernel_types::InteractionMode::seed_default(Some(mode.as_str()), None);
+        }
+        if let Some(allow) = ix.allow_mode_switch {
+            profile.interaction.allow_mode_switch = allow;
+        }
+        if let Some(turns) = ix.immersive_unlock_hint_after_turns {
+            profile.interaction.immersive_unlock_hint_after_turns = turns.max(1);
+        }
+    }
     Ok(profile)
 }
 
@@ -201,6 +232,7 @@ impl Default for HostProfile {
             state_expression: None,
             profile_path: None,
             memory_retrieval: MemoryRetrievalMode::Default,
+            interaction: InteractionProfile::default(),
         }
     }
 }
@@ -259,6 +291,9 @@ impl HostProfile {
             disabled_modules: disabled,
             post_process_profile,
             prompt_profile,
+            default_interaction_mode: Some(self.interaction.default_mode.as_str().to_string()),
+            allow_mode_switch: self.interaction.allow_mode_switch,
+            immersive_unlock_hint_after_turns: self.interaction.immersive_unlock_hint_after_turns,
         })
     }
 }
@@ -435,6 +470,18 @@ mod tests {
         assert_eq!(summary.distro_id.as_deref(), Some("vscode"));
         assert!(summary.disabled_modules.contains(&"agent".to_string()));
         assert_eq!(summary.prompt_profile.as_deref(), Some("concise"));
+        assert_eq!(summary.default_interaction_mode.as_deref(), Some("pure_chat"));
+        assert_eq!(summary.immersive_unlock_hint_after_turns, 10);
+    }
+
+    #[test]
+    fn desktop_chat_profile_pure_chat_default() {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../examples/distro-profiles");
+        let p = load_host_profile_file(&root.join("desktop-chat.oclive.toml")).unwrap();
+        assert_eq!(p.distro_id, "desktop-chat");
+        assert!(!p.interaction.default_mode.is_immersive());
+        assert_eq!(p.interaction.immersive_unlock_hint_after_turns, 10);
     }
 
     #[test]

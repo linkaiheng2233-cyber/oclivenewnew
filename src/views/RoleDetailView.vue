@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import CharacterInfo from '../components/role/CharacterInfo.vue'
 import PluginRoleDetailSlots from '../components/PluginRoleDetailSlots.vue'
+import { useRoleStore } from '../stores/roleStore'
+
+const roleStore = useRoleStore()
 
 defineProps<{
   roleId: string
@@ -20,7 +23,10 @@ defineProps<{
       :name="name"
       :emotion="emotion"
     />
-    <PluginRoleDetailSlots :bootstrap-epoch="bootstrapEpoch" />
+    <PluginRoleDetailSlots
+      v-if="roleStore.interactionImmersive"
+      :bootstrap-epoch="bootstrapEpoch"
+    />
   </div>
 </template>
 

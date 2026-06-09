@@ -18,7 +18,7 @@
 
 | 组件 | 你只需关心（初级创作者） | 蓝图 / 管理员 |
 |------|--------------------------|---------------|
-| **角色包** | 身份、七维人格、关系、**`prompts/`** 系统提示词与开场白、场景文案 | — |
+| **角色包** | 身份、七维人格、关系、**`core_personality.txt`** 人设真源、场景文案 | — |
 | **蓝图** | **不要改**（除非你是集成方） | **`slot_registry`**、**`groups`**、后端 **`backend`**、**`model`**、**`interaction_mode`**、**`memory_config`**、远程/自主场景策略、**`dual_core.enabled`**（RFC）等 |
 
 v2 磁盘上常为 **同一蓝图文件 `pipeline.ocblueprint`**（**不以** `steps[]` 作主路径调度）：`meta` 中仅上表「角色包」字段由编写器默认暴露；**`slot_registry` 及引擎向 `meta` 键** 归蓝图（见 [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md) §零）。
@@ -38,13 +38,13 @@ roles/{role_id}/
 ├── pipeline.ocblueprint    # **蓝图文件（v2 SSOT · 瘦）**：meta + slot_registry + includes；**不以** steps[] 调度；见 [BLUEPRINT_FOLDER_LAYOUT.md](../../handoff/BLUEPRINT_FOLDER_LAYOUT.md)
 ├── blueprint/              # 可选：includes/、overlays/、revisions/、docs/（卫星，不替代本体路径）
 ├── config.json             # 可选；遗忘曲线、虚拟时间（沉浸模式）；见 §9
-├── prompts/                # **角色包**：系统提示词、开场白等（推荐）
+├── prompts/                # **可选创作辅助**（非 Tier0）：`reply_quality_anchor.md` 镜像等；`system.md` **非宿主必需、不参与 PromptBuilder**
 ├── user_identities/        # **可选**：User Identity Prompt Template（`index.json` + `*.md` 模板；见 RFC）
 │   ├── index.json
 │   └── {identity_id}.md
 ├── manifest.json           # **已废弃（legacy）**：勿与 v2 蓝图并存
 ├── settings.json           # **已废弃（legacy）**：勿与 v2 蓝图并存
-├── core_personality.txt    # 可选；profile 模式长文
+├── core_personality.txt    # **人设真源**（Tier0）；profile 模式长文；`prompts/system.md` 不替代本文件
 ├── ui.json                 # 可选；前端布局
 ├── author.json             # 可选；作者元数据
 ├── scenes/
@@ -54,7 +54,7 @@ roles/{role_id}/
 └── assets/                 # 可选
 ```
 
-**说明**：v2 包 **不得** 同时存在 `manifest.json` / `settings.json` 与 `pipeline.ocblueprint`。七维人格在 v2 写入 **`meta.personality`**（对象或 7 元数组）。`prompts/*.md` 非宿主必需路径。
+**说明**：v2 包 **不得** 同时存在 `manifest.json` / `settings.json` 与 `pipeline.ocblueprint`。七维人格在 v2 写入 **`meta.personality`**（对象或 7 元数组）。**人设 Tier0** 只读 **`core_personality.txt`**；`prompts/*.md` 为可选创作辅助（编写器 / creator profile 校验），**不参与** `PromptBuilder` Tier0。**回复质量锚点**运行时读 **`meta.reply_quality_anchor`**（或蓝图 `runtime_config.reply_quality_anchor`）或内核 **`DEFAULT_REPLY_QUALITY_ANCHOR`**；`prompts/reply_quality_anchor.md` 仅为人类可读镜像。
 
 ### 1.1 `user_identities/`（User Identity Prompt Template · 可选）
 

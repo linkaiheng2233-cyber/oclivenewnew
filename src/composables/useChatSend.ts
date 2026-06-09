@@ -13,6 +13,7 @@ export function useChatSend(options: {
   chatInputRef: Ref<{ focusInput?: () => void } | null>
   clearSceneBarsBeforeSend: () => void
   offerSceneBarsAfterReply: (together: boolean, destination: boolean) => void
+  onTurnRecorded?: (userMessage: string) => void
 }) {
   const chatStore = useChatStore()
   const roleStore = useRoleStore()
@@ -43,6 +44,7 @@ export function useChatSend(options: {
         res.offer_together_travel ?? false,
         res.offer_destination_picker ?? false,
       )
+      options.onTurnRecorded?.(userText)
     }
     catch (err) {
       options.showToast('error', err instanceof Error ? err.message : String(err))

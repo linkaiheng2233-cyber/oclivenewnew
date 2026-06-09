@@ -7,8 +7,18 @@ use crate::error::AppError;
 use oclive_kernel_types::models::dto::{
     RoleInfo, SetEvolutionFactorRequest, SetRemoteLifeEnabledRequest, SetRoleInteractionModeRequest,
 };
+use oclive_kernel_host::service::set_role_interaction_mode_impl as set_role_interaction_mode_kernel_impl;
 use oclive_kernel_host::state::{AppState, SharedAppState};
-use tauri::State;
+use tauri::{AppHandle, Manager, State};
+
+fn interaction_mode_route_unavailable(err: &AppError) -> bool {
+    match err {
+        AppError::OllamaError(msg) => {
+            msg.contains("404") || msg.contains("Not Found") || msg.contains("not found")
+        }
+        _ => false,
+    }
+}
 pub async fn set_evolution_factor_impl(
     state: &AppState,
     req: &SetEvolutionFactorRequest,
@@ -59,13 +69,7 @@ pub async fn set_role_interaction_mode_impl(
     state: &AppState,
     req: &SetRoleInteractionModeRequest,
 ) -> Result<RoleInfo, CommandError> {
-    state.load_role_cached_async(&req.role_id).await?;
-    ensure_manifest_role_ready(state, &req.role_id).await?;
-    state
-        .db_manager
-        .set_interaction_mode_for_role(&req.role_id, req.mode.trim())
-        .await?;
-    get_role_info_impl(state, &req.role_id, None).await
+    set_role_interaction_mode_kernel_impl(state, req).await
 }
 /// # Errors
 ///
@@ -73,7 +77,36 @@ pub async fn set_role_interaction_mode_impl(
 #[tauri::command]
 pub async fn set_role_interaction_mode(
     req: SetRoleInteractionModeRequest,
+    app: AppHandle,
     state: State<'_, SharedAppState>,
 ) -> Result<RoleInfo, CommandError> {
+    if let Some(conn) = app.try_state::<crate::kernel_lifecycle::SharedKernelConnection>() {
+        match crate::kernel_attach::KernelHttpClient::set_role_interaction_mode_via_http(
+            &conn, &req,
+        )
+        .await
+        {
+            Ok(info) => return Ok(info),
+            Err(e) if interaction_mode_route_unavailable(&e) => {
+                tracing::warn!(
+                    target: "oclive_desktop",
+                    "kernel missing POST /role/interaction_mode; falling back to shell impl"
+                );
+            }
+            Err(AppError::RoleRuntimeNotReady) => {
+                crate::kernel_attach::KernelHttpClient::load_role_via_http(
+                    &conn,
+                    req.role_id.trim(),
+                )
+                .await?;
+                return crate::kernel_attach::KernelHttpClient::set_role_interaction_mode_via_http(
+                    &conn, &req,
+                )
+                .await
+                .map_err(Into::into);
+            }
+            Err(e) => return Err(e.into()),
+        }
+    }
     set_role_interaction_mode_impl(&state, &req).await
 }

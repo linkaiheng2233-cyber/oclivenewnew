@@ -260,6 +260,18 @@ pub struct RoleSummary {
     pub name: String,
     pub version: String,
     pub author: String,
+    #[serde(default)]
+    pub description: String,
+    #[serde(default)]
+    pub featured: bool,
+    #[serde(default = "default_preset_order")]
+    pub preset_order: u32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub interaction_mode_suggestion: Option<String>,
+}
+
+fn default_preset_order() -> u32 {
+    999
 }
 
 /// Scene id + display label for scene switch UI.
@@ -541,7 +553,7 @@ pub struct TimeStateResponse {
     pub iso_datetime: String,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SetRoleInteractionModeRequest {
     pub role_id: String,
     pub mode: String,

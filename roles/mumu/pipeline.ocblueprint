@@ -4,6 +4,9 @@
     "default_relation": "classmate",
     "description": "害羞嘴硬、骨子里软乎乎的可爱小女孩：米黄色头发、个子小小，和你同住一个屋檐下；无论在哪个场景都是个可爱的小女孩，熟了之后防线偶尔裂开",
     "dev_only": false,
+    "featured": true,
+    "preset_order": 1,
+    "interaction_mode": "pure_chat",
     "evolution": {
       "ai_analysis_interval": 15,
       "event_impact_factor": 1.0,

@@ -15,6 +15,7 @@ import { modelManagerZh as modelManager } from './fragments/modelManager.zh'
 import { simplePluginManagerZh as simplePluginManager } from './fragments/simplePluginManager.zh'
 import virtualTime from './fragments/virtualTime.zh'
 import toolShellBundle from './fragments/toolShell.zh'
+import onboardingBundle from './fragments/onboarding.zh'
 
 export default {
   apiErrors,
@@ -37,4 +38,5 @@ export default {
   modelManager,
   virtualTime,
   ...toolShellBundle,
+  ...onboardingBundle,
 }

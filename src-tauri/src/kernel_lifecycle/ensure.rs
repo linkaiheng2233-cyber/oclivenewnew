@@ -4,7 +4,8 @@ use super::connection::{DesktopKernelMode, SharedKernelConnection};
 use super::policy::{resolve_desktop_distro_profile_path, KernelBringUpOptions};
 use super::spawn::{probe_existing_kernel, spawn_kernel};
 use oclive_kernel_runtime::{
-    apply_promote_to_candidate, discover_spawn_kernel_candidates, pick_best_kernel,
+    apply_promote_to_candidate, discover_spawn_kernel_candidates, parse_distro_requirements_file,
+    pick_best_kernel,
 };
 use std::path::PathBuf;
 
@@ -21,12 +22,17 @@ pub async fn ensure_kernel_ready(
     opts: EnsureKernelOptions,
 ) -> Result<SharedKernelConnection, String> {
     let distro_profile_path = resolve_desktop_distro_profile_path(&opts.anchors);
+    let caller_distro_id = distro_profile_path
+        .as_ref()
+        .and_then(|p| parse_distro_requirements_file(p).ok())
+        .map(|req| req.distro_id)
+        .unwrap_or_else(|| "desktop".into());
     super::policy::ensure_kernel_with_policy(KernelBringUpOptions {
         port: opts.port,
         roles_dir: opts.roles_dir,
         anchors: opts.anchors,
         bundled_binary: opts.bundled_binary,
-        caller_distro_id: Some("desktop".into()),
+        caller_distro_id: Some(caller_distro_id),
         distro_profile_path,
         promote_shared: true,
     })

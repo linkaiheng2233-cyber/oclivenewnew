@@ -9,15 +9,19 @@ export default {
     tabPlugins: 'Plugins',
     tabStorage: 'Storage',
     generalLeadHtml:
-      'Use the Activity Bar or <strong>Ctrl+Shift+S / F / M</strong> for settings, plugins, and models; '
-      + 'appearance and locale live under Settings → General; the plugin market is in the Plugins side panel.',
+      'Use the Activity Bar or <strong>Ctrl+Shift+S / M</strong> for settings and models; '
+      + 'appearance and locale live under Settings → General; plugins are Story-mode only.',
     appearanceSectionTitle: 'Appearance',
-    appearanceSectionHelp: 'Locale, interaction mode, theme, and UI scale; stored on this device.',
+    appearanceSectionHelp: 'Locale, theme, and UI scale; stored on this device.',
+    interactionModeSectionTitle: 'Interaction mode',
+    interactionModeSectionLead:
+      'The only place to switch Daily chat and Story mode; virtual time and scene travel are Story-only.',
+    interactionModePersistNote: 'Your choice is remembered for the next launch.',
     shortcutsLabel: 'Shortcuts',
     shortcutsHelp:
       'Ctrl+Shift+S settings; Ctrl+Shift+F installed plugins; Ctrl+Shift+M model management; Ctrl+Shift+D debug panel.',
     immersiveOnlyNote:
-      'Virtual time and narrative scenes appear under “More” only in immersive mode.',
+      'Virtual time and narrative scenes appear under “More” only in Story mode.',
     envCheckTitle: 'Environment check',
     envCheckHelp:
       'Quick probe: Ollama reachability, roles root readability, app data dir writable; not a full startup health pass.',

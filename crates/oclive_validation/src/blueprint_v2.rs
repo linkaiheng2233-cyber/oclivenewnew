@@ -97,9 +97,15 @@ pub struct BlueprintV2LoadResult {
     pub slot_registry: BTreeMap<String, SlotRegistryEntry>,
     pub groups: BTreeMap<String, SlotGroupEntry>,
     pub interaction_mode: Option<String>,
+    pub featured: bool,
+    pub preset_order: u32,
     pub remote_presence: Option<RemotePresenceConfig>,
     pub autonomous_scene: Option<AutonomousSceneConfig>,
     pub reply_quality_anchor: Option<String>,
+}
+
+fn default_preset_order() -> u32 {
+    999
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -153,6 +159,12 @@ pub struct BlueprintMeta {
     pub min_runtime_version: Option<String>,
     #[serde(default)]
     pub dev_only: bool,
+    /// Official preset gallery: show in first-run picker when `true`.
+    #[serde(default)]
+    pub featured: bool,
+    /// Sort order in preset gallery (lower first); default 999.
+    #[serde(default = "default_preset_order")]
+    pub preset_order: u32,
     #[serde(default)]
     pub remote_presence: Option<RemotePresenceConfig>,
     #[serde(default)]
@@ -555,6 +567,8 @@ fn blueprint_v2_file_to_load_result(bp: &BlueprintV2File) -> BlueprintV2LoadResu
         slot_registry: bp.slot_registry.clone(),
         groups: bp.groups.clone(),
         interaction_mode: bp.meta.interaction_mode.clone(),
+        featured: bp.meta.featured,
+        preset_order: bp.meta.preset_order,
         remote_presence: bp.meta.remote_presence.clone(),
         autonomous_scene: bp.meta.autonomous_scene.clone(),
         reply_quality_anchor: bp.meta.reply_quality_anchor.clone(),
