@@ -102,7 +102,7 @@ This page is the **naming SSOT** for OCLive. Key rules:
 | L0 契约 | `oclive_kernel_contracts` | 可替换后端 trait 端口 | 新增 trait 方法 | `src/llm.rs`, `plugin_host.rs` … |
 | L0 校验 | `oclive_validation` | 角色包 / 蓝图校验规则 | manifest / blueprint 规则 | `src/blueprint_v2.rs` |
 | L0 校验 | `oclive_schema` | blueprint serde schema | 磁盘形状增量 | — |
-| L1 引擎 | `oclive_kernel_runtime` | 纯业务公式、路径/发现常量；**过渡期 re-export L0** | Prompt 段落、`*_engine` 公式 | `domain/prompt_builder.rs` |
+| L1 引擎 | `oclive_kernel_runtime` | 纯业务公式、路径/发现常量；**过渡期 re-export L0** | Prompt 段落、`*_engine` 公式 | `domain/prompt_builder/mod.rs`（`sections.rs`） |
 | L2 编排 | `oclive_kernel_host` | **`process_message`**、DB、HTTP、基础设施 | 回合流程、持久化、插件 wiring | `domain/chat_engine/` |
 | L3 二进制 | `oclive_kernel_server` | 无头 `oclive-kernel-server --api` 入口 | CLI 参数 only | `src/main.rs` |
 | L3 二进制 | `oclivenewnew-tauri` | 桌面 IPC 薄壳、kernel attach | Tauri 命令、深链 | `src-tauri/src/api/` |

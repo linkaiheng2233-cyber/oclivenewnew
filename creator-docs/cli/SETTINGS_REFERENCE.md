@@ -12,7 +12,7 @@
 |--------|------|------|
 | `interaction_mode` | string | `immersive` \| `pure_chat` |
 | `memory_config` | object | 记忆策略（`topic_weights` 等，见 README_MANIFEST） |
-| `reply_quality_anchor` | string | 主对话质量锚点全文 |
+| `reply_quality_anchor` | string | 主对话质量锚点全文；非空则**仅替换**引擎默认锚点。通用对话纪律由 `KERNEL_DIALOGUE_GUARDRAILS` 每轮恒追加，包级不可覆盖，勿在锚点重复 |
 | `remote_fallback_to_builtin` | bool | 包级 Remote 降级建议（全局仍以 `app_settings` / 环境变量为准） |
 | `dual_core.enabled` | bool | 双核开关，默认 **`false`**（见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)） |
 | `identity_binding` | string | `global` \| `per_scene` |

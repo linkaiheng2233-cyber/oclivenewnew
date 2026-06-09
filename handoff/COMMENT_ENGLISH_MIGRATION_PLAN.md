@@ -111,7 +111,7 @@
 4. `crates/oclive_kernel_host/src/domain/slot_resolver.rs`
 5. `crates/oclive_kernel_host/src/domain/dual_pipeline.rs`、`dual_pipeline_steps.rs`、`dual_pipeline_registry.rs`
 6. `crates/oclive_kernel_runtime/src/domain/complex_emotion.rs`、`complex_emotion_store.rs`
-7. `crates/oclive_kernel_runtime/src/domain/prompt_builder.rs`、`prompt_assembler.rs`
+7. `crates/oclive_kernel_runtime/src/domain/prompt_builder/mod.rs`、`sections.rs`、`prompt_assembler.rs`
 8. `crates/oclive_kernel_runtime/src/domain/memory_retrieval.rs`、`emotion_analyzer.rs`、`event_estimator.rs`
 9. `src-tauri/src/state/mod.rs`、`state/app_state_builder.rs`
 10. `crates/oclive_kernel_host/src/domain/startup_health.rs`、`error.rs`
@@ -232,7 +232,7 @@ docs(comments): translate <module/area> comments to English (no logic change)
 
 **仍含中文的代码（预期，不在本计划范围）**
 
-- LLM Prompt 模板字符串（`prompt_builder.rs` 等）
+- LLM Prompt 模板字符串（`prompt_builder/mod.rs`、`sections.rs` 等）
 - CLI 用户可见输出、clap `help`/`about`
 - 校验/错误/日志/测试数据中的中文字符串
 - i18n、`roles/**` 人设文本

@@ -34,11 +34,20 @@ function walkMd(dir, out = []) {
 const files = [
   ...GLOBS.map((f) => join(ROOT, f)),
   ...walkMd(join(ROOT, 'creator-docs')),
+  ...walkMd(join(ROOT, 'handoff')),
 ];
 
 const patterns = [
   { re: /src-tauri\/src\/domain/g, label: 'legacy orchestration path src-tauri/src/domain' },
   { re: /\bmemory_backend\b/g, label: 'banned alias memory_backend (use plugin_backends / slot_registry)' },
+  {
+    re: /domain\/prompt_builder\.rs(?!.*mod\.rs)/g,
+    label: 'stale prompt_builder.rs path (use prompt_builder/mod.rs + sections.rs)',
+  },
+  {
+    re: /src-tauri\/src\/infrastructure\/chat_storage/g,
+    label: 'stale chat_storage path (moved to crates/oclive_kernel_host/src/infrastructure/chat_storage)',
+  },
 ];
 
 let hits = 0;

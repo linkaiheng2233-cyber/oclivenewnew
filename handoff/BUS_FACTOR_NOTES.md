@@ -107,7 +107,7 @@
 |------|------|
 | **Trait / 类型** | **`crates/oclive_kernel_runtime/src/domain/complex_emotion.rs`** 再导出内核 `ComplexEmotionInput` / `ComplexEmotionOutput` 等；内置 **`BuiltinKeywordComplexEmotionProvider`**。 |
 | **Remote 可选** | **`src-tauri/src/infrastructure/remote_plugin/complex_emotion_http.rs`**。 |
-| **注入 Prompt 链路** | **`turn_pipeline.rs`**：在 **`load_recent_context` 之后、`build_prompt` 之前** 调用解析；上一轮 hint 缓存在 **`AppState`**（按会话 `srid`）；经 **`PromptInput::previous_complex_emotion_narrative_hint`** 传入 **`PromptBuilder::build_prompt`**（`prompt_builder.rs`）。 |
+| **注入 Prompt 链路** | **[`turn_pipeline/`](../../crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/)**：在 **`load_recent_context` 之后、`build_prompt` 之前** 调用解析；上一轮 hint 缓存在 **`AppState`**（按会话 `srid`）；经 **`PromptInput::previous_complex_emotion_narrative_hint`** 传入 **`PromptBuilder::build_prompt`**（`prompt_builder/mod.rs`）。 |
 | **测试** | **`src-tauri/tests/narrative_hint_prompt_roundtrip.rs`**。 |
 
 **设计意图**：复杂情感是「回合间状态」，不能只在 UI 层拼接；必须进入 Prompt 构造输入才能保证模型侧一致。

@@ -107,7 +107,7 @@ flowchart TB
 今日已有：
 
 - 角色包 `meta.user_relations`：`prompt_hint` + `user_relation_id` → `PromptInput.relation_hint` / `user_relation_id`
-- `PromptBuilder::push_user_identity_section`（`oclive_kernel_runtime` · `prompt_builder.rs`）
+- `PromptBuilder::push_user_identity_section`（`oclive_kernel_runtime` · `prompt_builder/mod.rs`）
 
 **缺口**：模板短、与角色 Prompt 混在 manifest 字段里、不可独立版本化/切换多文件、发行版无法默认不同身份集。
 
@@ -386,7 +386,7 @@ post_llm(
 |------|------|
 | 回合编排 | `oclive_kernel_host/.../turn_pipeline/mod.rs` |
 | 内置 post | `.../turn_pipeline/post.rs` · `post_llm` |
-| 用户身份 Prompt 段 | `oclive_kernel_runtime/.../prompt_builder.rs` · `push_user_identity_section` |
+| 用户身份 Prompt 段 | `oclive_kernel_runtime/.../prompt_builder/mod.rs` · `push_user_identity_section` |
 | `PromptInput` | `oclive_kernel_types/src/prompt.rs` |
 | 记忆 trait 范式 | `oclive_kernel_contracts/src/memory_retrieval.rs` |
 | HostProfile | `oclive_kernel_host/.../host_profile.rs` |

@@ -90,7 +90,7 @@ Cross-repo optimization scan (Opus 4.7) plus **local grep/build verification**. 
 | 7 | `AppState` builder / policy extract | **Done** | `state/mod.rs` ~447 lines; `app_state_builder.rs`, `policy_registry.rs`, `session_backends.rs` |
 | 8 | `load_role_cached` inflight map leak | **Resolved** | 2026-06-08 复核不可复现；见 D-OPUS-03 |
 | 9 | `generate_handler!` grouping | **Done** | Domain comments in `lib.rs` `invoke_handler` |
-| 10 | Dual `prompt_builder.rs` dedup | **Done** | SSOT: `crates/oclive_kernel_runtime/src/domain/prompt_builder.rs`; tauri re-exports only |
+| 10 | Dual prompt_builder module dedup | **Done** | SSOT: `crates/oclive_kernel_runtime/src/domain/prompt_builder/mod.rs` (+ `sections.rs`); tauri re-exports only |
 | 11 | Vite `manualChunks` (i18n / pinia persist) | **Done** | `vendor-i18n`, `vendor-pinia-persist` |
 | 12 | Tracing file sink / JSON | **Done** | `init_tracing_with_log_dir` + `OCLIVE_LOG_FORMAT=json` or `RUST_LOG` containing `json`; `--api` / `OCLIVE_LOG_DIR` rolling file |
 | 13 | `Cache` read-lock + TTL | **Done** | read-first `get`, cap 1000, `Instant` TTL |
