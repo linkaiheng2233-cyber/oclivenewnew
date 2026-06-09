@@ -1,0 +1,30 @@
+{
+  "schema_version": 2,
+  "meta": {
+    "id": "polish-dev",
+    "name": "润色后处理调试",
+    "version": "0.1.0",
+    "author": "OCLive",
+    "description": "本地 dev：directory 润色后处理烟测包（默认不出现在角色列表）",
+    "dev_only": true,
+    "personality": [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
+    "relations": {
+      "friend": {
+        "initial_favorability": 50,
+        "favor_multiplier": 1.0,
+        "prompt_hint": "朋友"
+      }
+    },
+    "default_relation": "friend",
+    "scenes": ["default"],
+    "reply_quality_anchor": "【回复质量锚点】禁止复述用户起笔；只输出角色台词；保持口语自然。"
+  },
+  "slot_registry": {
+    "llm": {
+      "type": "llm",
+      "label": "L",
+      "backend": "ollama",
+      "position": 1
+    }
+  }
+}

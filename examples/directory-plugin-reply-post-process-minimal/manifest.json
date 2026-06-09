@@ -1,4 +1,5 @@
 {
+  "schema_version": 1,
   "id": "reply-post-process-minimal",
   "name": "Reply Post-Process Minimal",
   "version": "0.1.0",

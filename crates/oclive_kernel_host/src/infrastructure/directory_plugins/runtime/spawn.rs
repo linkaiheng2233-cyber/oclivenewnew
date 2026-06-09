@@ -135,6 +135,9 @@ impl DirectoryPluginRuntime {
                 cmd.env("OCLIVE_DEBUG_PLUGIN_CONFIG", t);
             }
         }
+        if self.roles_dir.is_dir() {
+            cmd.env("OCLIVE_ROLES_DIR", &self.roles_dir);
+        }
 
         let mut child = match cmd.spawn() {
             Ok(c) => c,

@@ -428,6 +428,8 @@ auto_sync: false
 }
 ```
 
+**可选文件**：`polish_prompt.md`（包根）— 若存在，directory 润色插件 `reply-post-process-polish` 将其整段作为 system preset，覆盖自动从 `core_personality.txt` + `meta.reply_quality_anchor` 生成的 preset。不在 `slot_registry` 中配置。
+
 **校验**：`oclive pack validate` 在 `enabled=true` 且 `backend=remote` 时要求非空 `remote.url`；directory 要求非空 `plugin_id`。
 
 **DTO**：请求 `include_raw_reply: true` 且后处理改变文本时，响应可选 `raw_reply`（`SendMessageResponse.schema` **14**）。

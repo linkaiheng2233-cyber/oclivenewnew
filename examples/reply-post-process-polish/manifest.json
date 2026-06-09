@@ -1,14 +1,23 @@
 {
+  "schema_version": 1,
   "id": "reply-post-process-polish",
   "name": "Reply Post-Process Polish",
   "version": "0.1.0",
-  "description": "Directory plugin scaffold for optional LLM reply polish (reply_post_process.process)",
+  "description": "Directory plugin for optional LLM reply polish (reply_post_process.process)",
   "description_zh": "可选：在 builtin 格式治理之后，用本地脚本或 LLM 润色最终展示回复。",
   "provides": ["reply_post_process"],
   "category": "reply_post_process",
+  "permissions": ["process:spawn"],
   "process": {
     "command": "node",
     "args": ["rpc_server.mjs"],
     "cwd": "."
+  },
+  "config": {
+    "env": {
+      "OCLIVE_POLISH_OLLAMA_URL": "http://127.0.0.1:11434",
+      "OCLIVE_POLISH_MODEL": "qwen2.5:3b",
+      "OCLIVE_POLISH_MAX_EXCERPT": "800"
+    }
   }
 }

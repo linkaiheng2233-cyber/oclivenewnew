@@ -82,6 +82,8 @@ pub struct DirectoryPluginRuntime {
     /// Tied to `get_directory_plugin_catalog` short cache; incremented on `rescan_plugin_roots` to invalidate.
     catalog_invalidate_gen: AtomicU64,
     high_risk_grants: Arc<HighRiskGrantStore>,
+    /// Roles root injected into directory plugin child env as `OCLIVE_ROLES_DIR`.
+    roles_dir: PathBuf,
     /// `plugin_id` → (`manifest.json` mtime ms, parsed manifest).
     manifest_cache: DashMap<String, (u64, Arc<OclivePluginManifest>)>,
 }
@@ -128,6 +130,7 @@ impl DirectoryPluginRuntime {
             HashMap::new()
         };
         let app_data_dir = app_data.to_path_buf();
+        let roles_dir = roles_dir.to_path_buf();
         let ps_path = app_data_dir.join("plugin_state.json");
         let plugin_state_store = Arc::new(RwLock::new(PluginStateStore::load(&ps_path)));
         let root_entries = plugin_roots_from_scan(roots);
@@ -144,6 +147,7 @@ impl DirectoryPluginRuntime {
             active_role_id: Arc::new(RwLock::new(None)),
             catalog_invalidate_gen: AtomicU64::new(0),
             high_risk_grants,
+            roles_dir,
             manifest_cache: DashMap::new(),
         })
     }

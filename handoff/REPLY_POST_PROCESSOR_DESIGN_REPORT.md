@@ -99,7 +99,13 @@ LLM raw_reply
 
 ---
 
-## 8. 启用示例（directory 润色）
+## 8. 启用示例（directory 润色 · preset 缓存方案已落地）
+
+实现：[`examples/reply-post-process-polish/`](../examples/reply-post-process-polish/)（`preset_cache` / `preset_builder` / `polish_rules` / `ollama_client`）。
+
+- 宿主 spawn 时注入 **`OCLIVE_ROLES_DIR`**（`DirectoryPluginRuntime` → `spawn_child_handshake`）。
+- 插件按 `role_id` 缓存 preset：`polish_prompt.md` 优先，否则 `core_personality.txt` 摘要 + `meta.reply_quality_anchor`。
+- 规则门控命中后才调 Ollama；未配置 `OCLIVE_POLISH_MODEL` 或 Ollama 不可用时降级 raw。
 
 `config.json`：
 
@@ -112,6 +118,8 @@ LLM raw_reply
   }
 }
 ```
+
+本地烟测包：`roles/polish-dev/`（`dev_only: true`，默认不出现在角色列表；设 `OCLIVE_LIST_DEV_ROLES=1` 可见）。
 
 插件目录：`{app_data}/plugins/reply-post-process-polish/`（或 roles 同级 `plugins/`）。
 

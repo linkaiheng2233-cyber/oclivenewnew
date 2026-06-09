@@ -58,6 +58,7 @@ fn write_template_files(
     let is_reply_pp = plugin_type.eq_ignore_ascii_case("reply_post_process");
     let manifest = if is_reply_pp {
         serde_json::json!({
+            "schema_version": 1,
             "id": plugin_id,
             "name": plugin_name,
             "version": "0.1.0",
@@ -66,10 +67,18 @@ fn write_template_files(
             "author": "creator",
             "provides": ["reply_post_process"],
             "category": "reply_post_process",
+            "permissions": ["process:spawn"],
             "process": {
                 "command": if language == "python" { "python" } else { "node" },
                 "args": [if language == "python" { "rpc_server.py" } else { "rpc_server.mjs" }],
                 "cwd": "."
+            },
+            "config": {
+                "env": {
+                    "OCLIVE_POLISH_OLLAMA_URL": "http://127.0.0.1:11434",
+                    "OCLIVE_POLISH_MODEL": "qwen2.5:3b",
+                    "OCLIVE_POLISH_MAX_EXCERPT": "800"
+                }
             }
         })
     } else {
@@ -96,10 +105,18 @@ fn write_template_files(
     );
     fs::write(plugin_dir.join("README.md"), readme)?;
     if is_reply_pp {
-        let rpc = include_str!("../../../examples/reply-post-process-polish/rpc_server.mjs");
-        fs::write(plugin_dir.join("rpc_server.mjs"), rpc)?;
+        const REPLY_PP_FILES: &[(&str, &str)] = &[
+            ("rpc_server.mjs", include_str!("../../../examples/reply-post-process-polish/rpc_server.mjs")),
+            ("preset_cache.mjs", include_str!("../../../examples/reply-post-process-polish/preset_cache.mjs")),
+            ("preset_builder.mjs", include_str!("../../../examples/reply-post-process-polish/preset_builder.mjs")),
+            ("polish_rules.mjs", include_str!("../../../examples/reply-post-process-polish/polish_rules.mjs")),
+            ("ollama_client.mjs", include_str!("../../../examples/reply-post-process-polish/ollama_client.mjs")),
+        ];
+        for (name, content) in REPLY_PP_FILES {
+            fs::write(plugin_dir.join(name), content)?;
+        }
         let readme = format!(
-            "# {}\n\nReply post-process polish scaffold. Edit `polishReply` in `rpc_server.mjs`.\n\nSee handoff/REPLY_POST_PROCESSOR_DESIGN_REPORT.md\n",
+            "# {}\n\nReply post-process polish scaffold (rule-gated LLM). See `examples/reply-post-process-polish/README.md` in oclivenewnew.\n\nModules: `preset_cache.mjs`, `preset_builder.mjs`, `polish_rules.mjs`, `ollama_client.mjs`, `rpc_server.mjs`.\n",
             plugin_name
         );
         fs::write(plugin_dir.join("README.md"), readme)?;

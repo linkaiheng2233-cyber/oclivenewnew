@@ -1,0 +1,12 @@
+{
+  "reply_post_processor": {
+    "enabled": true,
+    "backend": "directory",
+    "directory": { "plugin_id": "reply-post-process-polish" },
+    "builtin": {
+      "profile": "standard",
+      "max_chars": 2000,
+      "strip_leading_quote": false
+    }
+  }
+}
