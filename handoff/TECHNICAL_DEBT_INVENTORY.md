@@ -4,7 +4,7 @@
 
 **Product freeze (Theater v0):** No new kernel orchestration / six-slot expansion until strangers validate AI Theater v0. See [PRODUCT_FREEZE_THEATER_V0.md](./PRODUCT_FREEZE_THEATER_V0.md). **Deferred unchanged:** D-PORT-02, D-SLOT-01, K-PERF-10, K-PERF-14/15, D-NAME-01, §3.1 library API, dual_core (frozen).
 
-**Verification (2026-06-09 freeze-safe audit):** `cargo build -p oclive_kernel_server`; `cargo test -p oclive_kernel_host`; `node scripts/check-domain-layering.mjs` — layering ratchet 4/5 无回退。Prior (2026-06-08): `node scripts/dimension5-acceptance.mjs --ci` PASS (7 checks); `cargo test -p oclive_kernel_host --lib` 180 passed; `npm run test:unit` 46 passed.
+**Verification (2026-06-09 Wave 1–3):** `node scripts/dimension5-acceptance.mjs --ci` PASS (7 checks); `cargo test -p oclive_kernel_host --lib` **182** passed; `node scripts/check-domain-layering.mjs` FQ **1**/use **4**; theater acceptance **9** tests green.
 
 ### Freeze-safe audit（2026-06-09）
 
@@ -14,7 +14,7 @@
 | K-BUILD-01 | `kernel_server/build.rs` `SystemTime::now()` 致增量编译失效 | **Done** | `SOURCE_DATE_EPOCH`（缺省 0）+ `rerun-if-env-changed` |
 | K-PERF-14 | `pre_llm` 独立 await 串行 | **Deferred** | 触碰编排；冻结至 Theater v0 |
 | K-PERF-15 | 记忆候选池固定 10 条按时间非相关性 | **Deferred** | 影响召回语义；冻结 |
-| D-CLEAN-01 | `ReplayTaskRegistry` 完成不清理 | **Open** | 非热路径；可选后续 |
+| D-CLEAN-01 | `ReplayTaskRegistry` 完成不清理 | **Done** | 完成 TTL 600s + `get()` 读后清理（Wave 2） |
 | D-NAME-01 | `resolve_turn` 三义命名消歧 | **Deferred** | 触 dual_core 冻结路径 |
 | K-DOC-07 | `AGENTS.md` / `LIGHTWEIGHT_PROFILE` cargo-audit `continue-on-error` 漂移 | **Done** | 更正为 dimension5 + `cargo-audit` job + lockfile workflow 三层硬门禁 |
 
@@ -29,7 +29,7 @@
 | K-PROFILE-01 | Dual TOML parse (`kernel_distro_profile` vs `host_profile`) | **Done** | SSOT `oclive_kernel_runtime::distro_oclive_file`; RFC [RFC_PROFILE_AND_DOMAIN_REEXPORT.md](../creator-docs/rfc/RFC_PROFILE_AND_DOMAIN_REEXPORT.md) |
 | K-PROFILE-02 | `/health` summary non-runtime | **Done** | `HostProfile::active_profile_summary()` SSOT |
 | K-PROFILE-03 | `distro_id`-only weak compat | **Done** | Hash required without summary; else Unknown |
-| K-PROFILE-04 | Desktop missing bundled `distro.oclive.toml` | **Partial** | `{resource}/distro.oclive.toml` + anchors; ship in installer TBD |
+| K-PROFILE-04 | Desktop missing bundled `distro.oclive.toml` | **Done** | `src-tauri/resources/distro-profiles/{desktop,theater}.oclive.toml` + policy resolve |
 | K-PROFILE-05 | Legacy attach bypasses profile | **Done** | Graded fallback + profile-aware attach |
 | K-PROFILE-06 | Duplicated resolve/health types | **Done** | `build_resolve_plan`, `KernelHealthJson` in types, `kernel_port_ops` |
 
@@ -306,7 +306,7 @@ DeepSeek 五维方向复审 + Opus 4.8 计划收尾。维度五基线：`node sc
 | K-DOC-01 | `CHANGELOG.en.md [Unreleased]` 落后中文版 | 四·文档 | **Done** | 英文镜像补齐 |
 | K-DOC-02 | CHANGELOG `[Unreleased]` CI 门 | 四·文档 | **Done** | `scripts/check-changelog-parity.mjs` → dimension5 |
 | K-PROFILE-01 / D-OPUS-06 | 双 TOML 解析统一 | 二/三 | **Done** | SSOT `distro_oclive_file.rs`；RFC [RFC_PROFILE_AND_DOMAIN_REEXPORT.md](../creator-docs/rfc/RFC_PROFILE_AND_DOMAIN_REEXPORT.md) |
-| D-OPUS-05 | Host/runtime `pub use` 去重 | 二 | **Partial** | `#[deprecated]` + `check-host-reexport-imports.mjs` ratchet（baseline 78）；全仓 import 迁移未排期 |
+| D-OPUS-05 | Host/runtime `pub use` 去重 | 二 | **Partial** | ratchet **77**（Wave 3：`pre.rs` MemoryEngine）；Phase 2 import 迁移 Deferred |
 | D-OPUS-01/02/04 | 发版前轻量化 | 一 | **Done** | reqwest features / plugin bridge 静态资源 / JSON tracing sink（见 Opus 4.7 表 #2/#5/#12） |
 | D-OPUS-03 | `load_role_cached` inflight 泄漏 | 一/三 | **Resolved** | 双路 `role_load_inflight.remove` + `turn_locks` 软上限 |
 
@@ -344,7 +344,7 @@ DeepSeek 五维方向二轮复审（Opus 4.8）。维度五基线复跑：`node 
 | K-DOC-05 | `domain/README.md` adapter 清单过期（未含 FQ-path 现状） | 四·文档 | 同步为 `use`-import (4, 全 test) + 生产 FQ-path (5) + turn ports；见 `domain/README.md` |
 | D-LAYER-05 | layering ratchet FQ-path + turn ports | 二/五 | `check-domain-layering.mjs` + `LAYERING_BASELINE.json`；`ChatTurnPersistencePort`/`TurnPoliciesPort`/`ConversationPersistPort`；FQ **14→5** |
 | D-DTO-01 | reply-post-processor 配置去重 | 二 | 统一 `ReplyPostProcessorEffectiveConfig`；`resolve_builtin` SSOT 于 `domain/reply_post_processor.rs`（2026-06-09 去重 wiring 副本） |
-| D-ERR-01 | profile / MCP 增量 `AppError` | 二 | **增量 Done**：`host_profile_from_distro_file`、`PluginHost::call_mcp_tool`；`user_llm_env`/`startup_health` DbManager 留后续 |
+| D-ERR-01 | profile / MCP 增量 `AppError` | 二 | **Done** | `host_profile_from_distro_file`、`PluginHost::call_mcp_tool`；`user_llm_env`/`startup_health` → `AppSettingsPort`/`DbHealthPort`（Wave 1） |
 | K-PERF-03 | TurnPrefetch 共享 / agent lazy | 一·运行时 | `turn_prefetch.rs` + `agent=none` 跳过 agent DB |
 | K-PERF-04 | `role_runtime` 单查快照 | 一·运行时 | `get_role_runtime_snapshot` 扩展字段 + `TurnContext` |
 | K-PERF-05 | session 配置一次解析 | 一·运行时 | `EffectiveSessionConfig` |
@@ -369,3 +369,37 @@ DeepSeek 五维方向二轮复审（Opus 4.8）。维度五基线复跑：`node 
 | D-SLOT-01 | 各槽 Builtin V1/V2/Placeholder 并行实现，选择逻辑散落 `BackendRegistry` | 二 | M | `memory_retrieval`/`user_emotion_analyzer`/`prompt_assembler`/`event_estimator` 各有 `*V2` + `*Placeholder`；建议每槽收一份 builtin + 选择矩阵集中 |
 
 **结论**：Opus 4.8 主体已落地（热路径 DB 合并、SessionCache 淘汰、turn ports、FQ ratchet 14→5）；维度五 gate PASS。**收尾验收（2026-06-08）**：PR-C1→PR-E 五 commit 已入库；见 header Verification。**未阻塞滩头**的后续项：D-PORT-02/D-SLOT-01 god-port 与槽合并、K-PERF-10 chat chrome lazy、D-LAYER-05b `post.rs` PolicySet 端口化、`user_llm_env`/`startup_health` 剩余 FQ refs。
+
+---
+
+## 巡检债 Wave（Opus 4.8 工程夯实轨，2026-06-09）
+
+与 [RECURRING_OPTIMIZATION_PLAYBOOK.md](./RECURRING_OPTIMIZATION_PLAYBOOK.md) 半档/全档巡检正交；**不替代** Theater / desktop 发行版功能开发。每波结束更新 §8 日志与本表状态。
+
+| Wave | 窗口 | 目标 | 退出标准 |
+|------|------|------|----------|
+| 0 | 第 1 周 | 机制就位 + 债项登记 | 本表 + §8 轮次 1 |
+| 1 | 第 2–3 周 | A 档补漏 + Theater 测试护栏 | D-ERR-01 余量、K-PROFILE-04、theater 验收测绿、半档 PASS |
+| 2 | 第 4–5 周 | 可观测 + 性能预算 | poke 延迟有数字、health 警告首屏可见、D-CLEAN-01 |
+| 3 | 第 6–7 周 | 文档对拍 + re-export 切片 | ratchet 78→≤77、CREATOR_GOLDEN_PATH 大纲 |
+| 4 | 第 8 周（条件） | 陌生人测试后全档 + Phase 5 解冻评估 | [THEATER_STRANGER_TEST_ROUND1.md](./THEATER_STRANGER_TEST_ROUND1.md) 汇总后触发 |
+
+### Wave 轨新增债项（愿景类 · V-*）
+
+| ID | 项 | 档 | Status | 位置 / 约束 |
+|----|-----|-----|--------|-------------|
+| **V-THEATER-PERF-01** | 剧场戳点 E2E 延迟预算：`probe → patch → 首条新台词` 分段计时 | B | **Done** | `useTheaterBeatPatch.ts` performance.mark + [PERFORMANCE.md](../creator-docs/getting-started/PERFORMANCE.md) §7 |
+| **V-SLOT-HONEST-01** | remote 缺 env 时 UI/health `startup_warnings` 首屏可见（强化 D-HONEST-01） | B | **Done** | `StartupWarningsBanner.vue` + `GET /health` JSON；不改槽解析 |
+
+**Wave 1–3 已落地（2026-06-09）**：D-ERR-01 余量（AppSettingsPort / DbHealthPort）、K-PROFILE-04 bundled profile、Theater 验收测试（无 Ollama / patch 降级）、V-THEATER-PERF-01、V-SLOT-HONEST-01、D-CLEAN-01、D-OPUS-05 切片（77）。
+
+**Wave 4 解冻评估（2026-06-09，条件未满足）**
+
+| 条件 | 状态 | 本轨结论 |
+|------|------|----------|
+| [THEATER_STRANGER_TEST_ROUND1.md](./THEATER_STRANGER_TEST_ROUND1.md) 5–10 人 | **未执行** | 不触发 C 档 thaw |
+| 首屏 perf 失败 | 无数据 | K-PERF-10 维持 Partial |
+| 可替换性反馈差 | 无数据 | D-SLOT-01 维持 Deferred |
+| Phase 5 表逐项评估 | — | **C 档开工 0**；dual_core / expert_routing **维持冻结** |
+
+全档巡检（轮次 3）基线 PASS；待陌生人测试 ≥60% 通过后复评 Phase 5。

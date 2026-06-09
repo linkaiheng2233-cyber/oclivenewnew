@@ -10,6 +10,7 @@ import { useTheaterPlayback, useTheaterVariables } from '../theater/useTheaterPl
 import type { TheaterPokeChipId, TheaterSkeleton } from '../theater/types'
 import { NICKNAME_OPTIONS, THEATER_POKE_CHIP_IDS } from '../theater/types'
 import { openPackEditorForRole } from '../utils/openPackEditor'
+import StartupWarningsBanner from '../../components/StartupWarningsBanner.vue'
 
 const { t, locale } = useI18n()
 
@@ -114,6 +115,7 @@ async function onEditPersonality() {
 
 <template>
   <div class="theater-root" data-shell="theater">
+    <StartupWarningsBanner />
     <header class="theater-header">
       <h1 class="theater-title">
         {{ t('theater.title') }}

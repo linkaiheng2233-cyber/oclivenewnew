@@ -299,7 +299,8 @@ pub async fn save_llm_user_settings_impl(
         if !url_ok {
             return Err(AppError::InvalidParameter("云端 Base URL 不能为空".into()).into());
         }
-        if !cloud_api_token_configured(&state.db_manager, req.remote_token.as_deref()).await? {
+        let settings = crate::infrastructure::db_ports::DbSettingsPort(state.db_manager.as_ref());
+        if !cloud_api_token_configured(&settings, req.remote_token.as_deref()).await? {
             return Err(AppError::InvalidParameter("请填写云端 API Key 后再保存".into()).into());
         }
         state
@@ -361,7 +362,8 @@ pub async fn save_llm_user_settings_impl(
     } else if provider == "cloud" {
         let app_data = state.directory_plugins.app_data_dir();
         let secrets = state.user_llm_secrets.as_ref();
-        let existing = resolve_remote_token(&state.db_manager, secrets, app_data).await?;
+        let settings = crate::infrastructure::db_ports::DbSettingsPort(state.db_manager.as_ref());
+        let existing = resolve_remote_token(&settings, secrets, app_data).await?;
         secrets.set_cached_remote_llm_token(existing);
     }
     if let Some(ref model) = req.remote_model {

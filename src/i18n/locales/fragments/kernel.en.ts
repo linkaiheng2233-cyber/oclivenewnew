@@ -25,6 +25,10 @@ export default {
       detailReplaced: 'Replaced the kernel process with a better-matching build.',
       detailDegraded: 'Using a degraded fallback kernel; some modules may be unavailable.',
     },
+    startupWarnings: {
+      title: 'Kernel startup notice (some backends degraded)',
+      dismiss: 'Dismiss',
+    },
     chat: {
       disconnected: 'Connection to the kernel was lost. Use the status bar above to reconnect.',
     },

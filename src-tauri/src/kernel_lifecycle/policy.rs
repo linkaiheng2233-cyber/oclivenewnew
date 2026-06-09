@@ -241,13 +241,29 @@ async fn spawn_from_plan(
 
 /// Resolve desktop `distro.oclive.toml` for policy + spawn env.
 ///
-/// Priority: `OCLIVE_DISTRO_PROFILE` → `{anchor}/distro.oclive.toml` → monorepo example.
+/// Priority: `OCLIVE_DISTRO_PROFILE` → bundled `{anchor}/distro-profiles/{theater|desktop}.oclive.toml`
+/// → `{anchor}/distro.oclive.toml` → monorepo example.
 #[must_use]
 pub fn resolve_desktop_distro_profile_path(anchors: &[PathBuf]) -> Option<PathBuf> {
     if let Ok(p) = std::env::var(ENV_DISTRO_PROFILE) {
         let path = PathBuf::from(p.trim());
         if path.is_file() {
             return Some(path);
+        }
+    }
+    let shell = std::env::var("OCLIVE_SHELL")
+        .ok()
+        .map(|s| s.trim().to_ascii_lowercase())
+        .unwrap_or_default();
+    let bundled_name = if shell == "theater" {
+        "theater.oclive.toml"
+    } else {
+        "desktop.oclive.toml"
+    };
+    for anchor in anchors {
+        let bundled = anchor.join("distro-profiles").join(bundled_name);
+        if bundled.is_file() {
+            return Some(bundled);
         }
     }
     for anchor in anchors {
@@ -264,6 +280,12 @@ pub fn resolve_desktop_distro_profile_path(anchors: &[PathBuf]) -> Option<PathBu
         let dev = anchor.join("examples/distro-profiles/desktop.oclive.toml");
         if dev.is_file() {
             return Some(dev);
+        }
+        if shell == "theater" {
+            let theater = anchor.join("examples/distro-profiles/theater.oclive.toml");
+            if theater.is_file() {
+                return Some(theater);
+            }
         }
     }
     None

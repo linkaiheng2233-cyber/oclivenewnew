@@ -161,7 +161,9 @@ pub async fn build_api_app_state(port: u16) -> Result<Arc<AppState>, String> {
         let app_state = AppState::new_in_memory_with_llm(llm, roles_dir)
             .await
             .map_err(|e| e.to_string())?;
-        crate::domain::startup_health::run_global_db_ping(&app_state.db_manager)
+        crate::domain::startup_health::run_global_db_ping(
+            &crate::infrastructure::db_ports::DbHealthPortAdapter(app_state.db_manager.as_ref()),
+        )
             .await
             .map_err(|e| e.to_string())?;
         return Ok(Arc::new(app_state));
@@ -187,7 +189,9 @@ pub async fn build_api_app_state(port: u16) -> Result<Arc<AppState>, String> {
     let app_state = AppState::new(&db_path, Some(roles_dir), &app_data_dir)
         .await
         .map_err(|e| e.to_string())?;
-    crate::domain::startup_health::run_global_db_ping(&app_state.db_manager)
+    crate::domain::startup_health::run_global_db_ping(
+        &crate::infrastructure::db_ports::DbHealthPortAdapter(app_state.db_manager.as_ref()),
+    )
         .await
         .map_err(|e| e.to_string())?;
     Ok(Arc::new(app_state))

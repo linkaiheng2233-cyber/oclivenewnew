@@ -7,6 +7,7 @@ pub mod backend_registry;
 pub mod cache;
 pub mod chat_storage;
 pub mod db;
+pub mod db_ports;
 pub mod deep_link;
 pub mod directory_plugins;
 pub mod function_call_parser;

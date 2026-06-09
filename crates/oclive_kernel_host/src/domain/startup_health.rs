@@ -1,6 +1,7 @@
 //! Integrity self-check before `process_message` (fatal errors short-circuit so config issues surface before the first message).
 
 use crate::error::{AppError, Result};
+use crate::domain::ports::DbHealthPort;
 use crate::models::plugin_backends::{
     AgentBackend, EmotionBackend, EventBackend, LlmBackend, MemoryBackend, PluginBackends,
     PromptBackend,
@@ -251,7 +252,7 @@ fn verify_role_pack_files(state: &AppState, role: &Role) -> Result<()> {
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 /// DB ping for HTTP `--api` etc. after [`AppState`] construction (role-independent).
-pub async fn run_global_db_ping(db: &crate::infrastructure::db::DbManager) -> Result<()> {
+pub async fn run_global_db_ping(db: &impl DbHealthPort) -> Result<()> {
     db.health_ping().await
 }
 

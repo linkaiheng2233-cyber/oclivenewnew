@@ -1,55 +1,56 @@
-# 创作者黄金路径
+# 创作者黄金路径（V4 大纲 · ≤2 页）
 
-**受众：** 普通人 / 初级创作者 · **不**重复内核六槽文档。
-
-完整规范见 [ROLE_PACK_SPEC.md §0](role-pack/ROLE_PACK_SPEC.md) 边界说明。
+**状态**：大纲（Wave 3）；详细步骤待陌生人 Theater 验收后扩写。  
+**受众**：初级创作者 —— **30 分钟内**完成可对话角色包，**不涉及** `slot_registry` / 蓝图编排。
 
 ---
 
-## 1. 选预设，先聊起来
+## 0. 前置（5 分钟）
 
-- 桌面首启：[预设画廊](../src/components/onboarding/PresetRolePicker.vue) 或 **AI 剧场**（`distro_id=theater`）。
-- 日常聊：`pure_chat` — 隐藏场景/插件复杂度，适合第一印象。
-- 官方示例包：`roles/mumu`（非产品上限）。
+- 安装 OCLive 桌面或打开 [oclive-pack-editor](https://github.com)（姊妹仓编写器）
+- 本地 Ollama 或云端 API Key 二选一（剧场 demo 可零配置）
+- 克隆/下载官方示例包 `roles/mumu` 作参照（非上限）
 
-## 2. 改人格 / 关系 / prompts（初级创作者）
+## 1. 初始化角色包（5 分钟）
 
-在角色包目录内编辑（**勿动** `slot_registry` / 蓝图调度）：
+1. 编写器：**新建角色包** → 填写 `manifest.json`（`id`、`name`、`version`）
+2. 选择 **v2 最小模板**（`pipeline.ocblueprint` + `settings.json` 默认六槽 builtin）
+3. 保存到 `roles/{your_id}/`
 
-| 文件 | 作用 |
-|------|------|
-| `pipeline.ocblueprint` → `meta` | 展示名、关系、场景列表 |
-| `core_personality.txt` | 核心人格 |
-| `prompts/` | 场景/关系提示词 |
-| `user_identities/` | 用户身份模板 |
-| `config.json` → `reply_post_processor` | 可选回复后处理（默认关） |
+**禁止在本路径修改**：`slot_registry` 多实例、`groups`、Experimental 核。
 
-保存后重启或热重载（`oclive dev` 监听 `roles/`）。
+## 2. 身份与人格（10 分钟）
 
-## 3. 何时打开编写器（暗门）
+| 文件 | 做什么 |
+|------|--------|
+| `prompts/system.md` | 一句话角色 + 口吻示例 |
+| `config.json` → `reply_quality_anchor` | 可选：替换默认回复锚点（不可替换 guardrails） |
+| `user_identities/`（可选） | 一个默认 `.md` + `index.json` |
 
-- 需要可视化编辑七维、场景 JSON、导出 `.ocpak` 时 → **oclive-pack-editor**。
-- 剧场壳内 **「改性格」** → 深链到对应 `roles/<id>/`（配置 `VITE_OCLIVE_PACK_EDITOR`）。
-- 编写器 **不**向简单创作流暴露 `slot_registry` / `runtime_config` / `expert_routing`。
+**验收**：编写器预览 Prompt 含「系统 / 角色 / 用户」三层，无蓝图 step 字段。
 
-## 4. 后处理（可选）
+## 3. 本地试跑（5 分钟）
 
-- 表单：`oclive-pack-editor` → 角色包面板 → `config.json` 后处理区。
-- 预研插件：`examples/reply-post-process-polish/`（剧场局部补丁技术，非剧场产品本身）。
-
-## 5. 发布角色包
-
-```bash
-cargo run -p oclive-cli -- pack validate roles/your-role
-cargo run -p oclive-cli -- pack export roles/your-role
+```powershell
+$env:OCLIVE_ROLES_DIR = "path\to\roles"
+npm run tauri:dev
 ```
 
-拷贝到任意宿主的 `OCLIVE_ROLES_DIR` 即可加载（见 [CROSS_HOST_MEMORY.md](role-pack/CROSS_HOST_MEMORY.md)）。
+- 选择新角色 → 发送「你好」
+- 设置 → 模型管理：确认 LLM 后端可达
+
+## 4. 分发与下一步（5 分钟）
+
+- `oclive-cli` / 编写器：**打包** → `.oclive-plugin` 或整包 zip
+- 文档索引：[ROLE_PACK_SPEC.md](./role-pack/ROLE_PACK_SPEC.md) · [DOCUMENTATION_INDEX.md](./getting-started/DOCUMENTATION_INDEX.md)
+
+**进阶（不在 30 分钟路径）**：目录插件、remote 槽、`distro.oclive.toml`、Agent/MCP。
 
 ---
 
-## 相关文档
+## 关联债项
 
-- [DOCUMENTATION_INDEX.md](getting-started/DOCUMENTATION_INDEX.md) — 全站索引（含内核）
-- [ROLE_PACK_SPEC.md](role-pack/ROLE_PACK_SPEC.md) — 契约 SSOT
-- [THEATER_V0_ACCEPTANCE.md](../handoff/THEATER_V0_ACCEPTANCE.md) — AI 剧场 v0 验收
+- **V4 完整版**：陌生人 Theater 测试 ≥60% 通过后，从本大纲扩为分步截图文档。
+- **冻结期**：不引导创作者改 `runtime_config.dual_core` 或蓝图 `steps[]`。
+
+[English](../creator-docs-en/getting-started/CREATOR_GOLDEN_PATH.md)（待镜像）

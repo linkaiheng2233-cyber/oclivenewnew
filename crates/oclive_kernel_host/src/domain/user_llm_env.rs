@@ -1,5 +1,6 @@
 //! Process-wide LLM env vars and token resolution (DB → `std::env`).
 
+use crate::domain::ports::AppSettingsPort;
 use crate::state::AppState;
 use oclive_kernel_contracts::UserLlmSecretsPort;
 use once_cell::sync::Lazy;
@@ -42,7 +43,7 @@ pub async fn ollama_base_from_db_or_env(state: &AppState) -> String {
 ///
 /// Returns [`crate::error::AppError`] when app settings cannot be read from the database.
 pub async fn apply_user_llm_env_from_db(
-    db: &crate::infrastructure::db::DbManager,
+    db: &impl AppSettingsPort,
 ) -> crate::error::Result<String> {
     const LLM_ENV_KEYS: &[&str] = &[
         KEY_OLLAMA_BASE,
@@ -99,7 +100,7 @@ pub async fn apply_user_llm_env_from_db(
 ///
 /// Database or settings read failures propagate as [`crate::error::AppError`].
 pub async fn resolve_remote_token(
-    db: &crate::infrastructure::db::DbManager,
+    db: &impl AppSettingsPort,
     secrets: &dyn UserLlmSecretsPort,
     app_data: &std::path::Path,
 ) -> crate::error::Result<Option<String>> {
@@ -123,7 +124,8 @@ pub async fn apply_user_llm_env(state: &AppState) -> crate::error::Result<()> {
 
     let app_data = state.directory_plugins.app_data_dir();
     let secrets = state.user_llm_secrets.as_ref();
-    let token = resolve_remote_token(state.db_manager.as_ref(), secrets, app_data).await?;
+    let settings = crate::infrastructure::db_ports::DbSettingsPort(state.db_manager.as_ref());
+    let token = resolve_remote_token(&settings, secrets, app_data).await?;
     if let Some(ref t) = token {
         secrets.set_cached_remote_llm_token(Some(t.clone()));
         state
@@ -134,7 +136,7 @@ pub async fn apply_user_llm_env(state: &AppState) -> crate::error::Result<()> {
     } else {
         secrets.set_cached_remote_llm_token(None);
     }
-    let provider = apply_user_llm_env_from_db(state.db_manager.as_ref()).await?;
+    let provider = apply_user_llm_env_from_db(&settings).await?;
     tracing::info!(
         target: "oclive_llm",
         provider = %provider,
@@ -159,7 +161,7 @@ pub async fn apply_user_llm_env(state: &AppState) -> crate::error::Result<()> {
 ///
 /// Database read failures propagate as [`crate::error::AppError`].
 pub async fn cloud_api_token_configured(
-    db: &crate::infrastructure::db::DbManager,
+    db: &impl AppSettingsPort,
     req_token: Option<&str>,
 ) -> crate::error::Result<bool> {
     if req_token.is_some_and(|s| !s.trim().is_empty()) {

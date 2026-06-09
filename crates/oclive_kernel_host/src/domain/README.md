@@ -19,17 +19,17 @@ Chinese handoff notes: [COMMENT_ENGLISH_MIGRATION_PLAN.md](../../../../handoff/C
 | Counter | Baseline (2026-06-09) | Meaning |
 |---------|----------------------|---------|
 | `use crate::infrastructure` imports | **4** (all `#[cfg(test)]`) | Top-level `use` lines |
-| `crate::infrastructure::` FQ refs (production) | **5** | Fully-qualified paths outside test cfg |
+| `crate::infrastructure::` FQ refs (production) | **1** | Fully-qualified paths outside test cfg |
 
 **Do not increase either counter.** Ratchet down only when extracting ports.
 
-### Production FQ-path refs (5)
+### Production FQ-path refs (1)
 
 | File | Refs | Notes |
 |------|------|-------|
-| `user_llm_env.rs` | 3× `DbManager` | Env provider DB reads; candidate for a small port |
-| `startup_health.rs` | 1× `DbManager` | `run_global_db_ping` |
 | `role_manager.rs` | 1× `plugin_wiring::test_plugin_host` | Test helper only (`resolve_for_role` smoke) |
+
+`user_llm_env.rs` / `startup_health.rs` now use **`AppSettingsPort`** / **`DbHealthPort`** ([`infrastructure/db_ports.rs`](../infrastructure/db_ports.rs)).
 
 Turn hot-path persistence now goes through **`domain/ports/`** traits with implementations in [`infrastructure/turn_ports.rs`](../infrastructure/turn_ports.rs):
 

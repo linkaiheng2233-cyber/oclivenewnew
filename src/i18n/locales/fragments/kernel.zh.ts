@@ -25,6 +25,10 @@ export default {
       detailReplaced: '已切换至更匹配当前发行版的内核进程。',
       detailDegraded: '正在使用降级内核，部分模块或能力可能不可用。',
     },
+    startupWarnings: {
+      title: '内核启动提示（部分后端已降级）',
+      dismiss: '知道了',
+    },
     chat: {
       disconnected: '与内核的连接已断开，请通过顶栏重连。',
     },

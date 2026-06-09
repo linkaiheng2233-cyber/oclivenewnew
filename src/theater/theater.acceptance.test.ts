@@ -1,8 +1,12 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import skeleton from '../../public/theater/breakfast/skeleton.json'
 import {
   defaultVariableState,
+  patchTheaterBeats,
+  probeOllamaAvailable,
+  readTheaterPokePerfSample,
   resolveImpactedBeatIds,
+  THEATER_POKE_PERF_MARKS,
 } from './useTheaterBeatPatch'
 import { THEATER_POKE_CHIP_IDS } from './types'
 
@@ -44,5 +48,66 @@ describe('theater 60s timing budget (smoke)', () => {
   it('sum of delays fits ~30s playback before poke', () => {
     const totalMs = skeleton.beats.slice(1).reduce((acc, b) => acc + b.delay_ms, 0)
     expect(totalMs).toBeLessThan(35000)
+  })
+})
+
+describe('theater patch degradation (no Ollama)', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn(async () => {
+      throw new Error('network unreachable')
+    }))
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('probeOllamaAvailable returns false when Ollama is unreachable', async () => {
+    await expect(probeOllamaAvailable()).resolves.toBe(false)
+  })
+
+  it('patchTheaterBeats keeps original beats when Ollama fetch fails', async () => {
+    const beats = skeleton.beats.map(b => ({ ...b }))
+    const beatIds = resolveImpactedBeatIds(skeleton, 'running_late')
+    const vars = { ...defaultVariableState(skeleton), running_late: true }
+    const { beats: next, patched } = await patchTheaterBeats(
+      skeleton,
+      beats,
+      beatIds,
+      vars,
+      'zh',
+    )
+    expect(patched).toBe(false)
+    expect(next.map(b => b.text)).toEqual(beats.map(b => b.text))
+  })
+
+  it('patch with empty beatIds is a no-op', async () => {
+    const beats = skeleton.beats.map(b => ({ ...b }))
+    const { beats: next, patched } = await patchTheaterBeats(
+      skeleton,
+      beats,
+      [],
+      defaultVariableState(skeleton),
+      'zh',
+    )
+    expect(patched).toBe(false)
+    expect(next).toEqual(beats)
+  })
+})
+
+describe('theater poke perf marks (V-THEATER-PERF-01)', () => {
+  beforeEach(() => {
+    performance.clearMarks()
+  })
+
+  it('records probe timing marks when Ollama probe fails fast', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => {
+      throw new Error('offline')
+    }))
+    await probeOllamaAvailable()
+    const sample = readTheaterPokePerfSample()
+    expect(sample.probeMs).not.toBeNull()
+    expect(performance.getEntriesByName(THEATER_POKE_PERF_MARKS.probeStart, 'mark').length).toBe(1)
+    vi.unstubAllGlobals()
   })
 })

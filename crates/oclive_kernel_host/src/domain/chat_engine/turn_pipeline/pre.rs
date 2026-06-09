@@ -3,7 +3,7 @@
 use crate::domain::chat_turn::{relation_favor_for_key, weight_memories_for_scene};
 use crate::domain::complex_emotion::{affect_metrics_from_seven_dim, ComplexEmotionInput};
 use crate::domain::emotion_analyzer::EmotionResult;
-use crate::domain::memory_engine::MemoryEngine;
+use oclive_kernel_runtime::domain::memory_engine::MemoryEngine;
 use crate::domain::memory_retrieval::MemoryRetrievalInput;
 use crate::domain::personality_engine::PersonalityEngine;
 use crate::domain::slot_runner::SlotRunner;

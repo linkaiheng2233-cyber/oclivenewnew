@@ -1,8 +1,8 @@
 {
   "description": "Max allowed domain→infrastructure coupling under crates/oclive_kernel_host/src/domain/**/*.rs (ratchet down only).",
   "domain_to_infrastructure_imports": 4,
-  "domain_to_infrastructure_fq_refs": 5,
+  "domain_to_infrastructure_fq_refs": 1,
   "updated": "2026-06-09",
-  "note": "D-LAYER-05: use=4 (test cfg imports); FQ production refs after ChatTurnPersistencePort / TurnPolicies / ConversationPersistPort extraction (post.rs emotion policy still uses state.policies_for_scene in-domain).",
+  "note": "D-ERR-01 remainder: user_llm_env + startup_health DbManager → AppSettingsPort / DbHealthPort (Wave 1).",
   "check_command": "node scripts/check-domain-layering.mjs"
 }

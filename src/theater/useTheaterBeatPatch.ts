@@ -7,6 +7,46 @@ import type {
 const OLLAMA_URL = import.meta.env.VITE_OCLIVE_OLLAMA_URL?.trim() || 'http://127.0.0.1:11434'
 const PATCH_MODEL = import.meta.env.VITE_OCLIVE_THEATER_PATCH_MODEL?.trim() || 'qwen2.5:7b'
 
+/** Dev baseline marks for V-THEATER-PERF-01 poke budget (probe → patch → first new line). */
+export const THEATER_POKE_PERF_MARKS = {
+  probeStart: 'theater-poke-probe-start',
+  probeEnd: 'theater-poke-probe-end',
+  patchStart: 'theater-poke-patch-start',
+  patchEnd: 'theater-poke-patch-end',
+  firstLine: 'theater-poke-first-line',
+} as const
+
+export interface TheaterPokePerfSample {
+  probeMs: number | null
+  patchMs: number | null
+  firstLineMs: number | null
+}
+
+export function readTheaterPokePerfSample(): TheaterPokePerfSample {
+  if (typeof performance === 'undefined' || typeof performance.getEntriesByName !== 'function') {
+    return { probeMs: null, patchMs: null, firstLineMs: null }
+  }
+  const delta = (start: string, end: string) => {
+    const entries = performance.getEntriesByName(end, 'mark')
+    const startEntries = performance.getEntriesByName(start, 'mark')
+    if (entries.length === 0 || startEntries.length === 0) {
+      return null
+    }
+    return Math.round(entries[entries.length - 1].startTime - startEntries[startEntries.length - 1].startTime)
+  }
+  return {
+    probeMs: delta(THEATER_POKE_PERF_MARKS.probeStart, THEATER_POKE_PERF_MARKS.probeEnd),
+    patchMs: delta(THEATER_POKE_PERF_MARKS.patchStart, THEATER_POKE_PERF_MARKS.patchEnd),
+    firstLineMs: delta(THEATER_POKE_PERF_MARKS.patchEnd, THEATER_POKE_PERF_MARKS.firstLine),
+  }
+}
+
+export function markTheaterPokeFirstLine(): void {
+  if (typeof performance !== 'undefined' && typeof performance.mark === 'function') {
+    performance.mark(THEATER_POKE_PERF_MARKS.firstLine)
+  }
+}
+
 function cloneBeats(beats: TheaterBeat[]): TheaterBeat[] {
   return beats.map(b => ({ ...b }))
 }
@@ -66,6 +106,10 @@ export async function patchTheaterBeats(
     JSON.stringify(targets.map(t => ({ id: t.id, speaker: t.speaker, text: t.text }))),
   ].filter(Boolean).join('\n')
 
+  if (typeof performance !== 'undefined' && typeof performance.mark === 'function') {
+    performance.mark(THEATER_POKE_PERF_MARKS.patchStart)
+  }
+
   try {
     const res = await fetch(`${OLLAMA_URL.replace(/\/+$/, '')}/api/chat`, {
       method: 'POST',
@@ -80,6 +124,9 @@ export async function patchTheaterBeats(
         ],
       }),
     })
+    if (typeof performance !== 'undefined' && typeof performance.mark === 'function') {
+      performance.mark(THEATER_POKE_PERF_MARKS.patchEnd)
+    }
     if (!res.ok) {
       return { beats, patched: false }
     }
@@ -102,6 +149,9 @@ export async function patchTheaterBeats(
     return { beats: next, patched: true }
   }
   catch {
+    if (typeof performance !== 'undefined' && typeof performance.mark === 'function') {
+      performance.mark(THEATER_POKE_PERF_MARKS.patchEnd)
+    }
     return { beats, patched: false }
   }
 }
@@ -128,13 +178,23 @@ function extractPatchedLines(
 }
 
 export async function probeOllamaAvailable(): Promise<boolean> {
+  if (typeof performance !== 'undefined' && typeof performance.mark === 'function') {
+    performance.mark(THEATER_POKE_PERF_MARKS.probeStart)
+  }
   try {
     const res = await fetch(`${OLLAMA_URL.replace(/\/+$/, '')}/api/tags`, {
       signal: AbortSignal.timeout(2000),
     })
-    return res.ok
+    const ok = res.ok
+    if (typeof performance !== 'undefined' && typeof performance.mark === 'function') {
+      performance.mark(THEATER_POKE_PERF_MARKS.probeEnd)
+    }
+    return ok
   }
   catch {
+    if (typeof performance !== 'undefined' && typeof performance.mark === 'function') {
+      performance.mark(THEATER_POKE_PERF_MARKS.probeEnd)
+    }
     return false
   }
 }

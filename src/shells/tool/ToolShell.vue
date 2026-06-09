@@ -4,6 +4,7 @@ import ChatInput from '../../components/chat/ChatInput.vue'
 import ChatMessageList from '../../components/chat/ChatMessageList.vue'
 import ChatPluginToolbarSlots from '../../components/ChatPluginToolbarSlots.vue'
 import HotkeyHost from '../../components/hotkey/HotkeyHost.vue'
+import StartupWarningsBanner from '../../components/StartupWarningsBanner.vue'
 import PluginChatHeaderSlots from '../../components/PluginChatHeaderSlots.vue'
 import PluginSidebarSlots from '../../components/PluginSidebarSlots.vue'
 import PluginSlotEmbed from '../../components/PluginSlotEmbed.vue'
@@ -198,6 +199,8 @@ function onSidePanelResize(deltaX: number) {
               @virtual-time-jump-complete="onVirtualTimeJumpComplete"
             />
           </header>
+
+          <StartupWarningsBanner />
 
           <div
             v-if="roleStore.interactionImmersive && uiStore.connectivityBanner?.kind === 'plugin_index_offline'"

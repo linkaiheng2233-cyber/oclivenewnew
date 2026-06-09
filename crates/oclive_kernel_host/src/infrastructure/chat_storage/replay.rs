@@ -11,11 +11,15 @@ use crate::models::{Event, EventType};
 use dashmap::DashMap;
 use oclive_kernel_types::PolicyContext;
 use std::sync::Arc;
+use std::time::{Duration, Instant};
 use uuid::Uuid;
+
+const COMPLETED_TASK_TTL: Duration = Duration::from_secs(600);
 
 #[derive(Default)]
 pub struct ReplayTaskRegistry {
     inner: DashMap<String, ReplayProgress>,
+    completed_at: DashMap<String, Instant>,
 }
 
 impl ReplayTaskRegistry {
@@ -23,10 +27,26 @@ impl ReplayTaskRegistry {
     pub fn new() -> Self {
         Self {
             inner: DashMap::new(),
+            completed_at: DashMap::new(),
+        }
+    }
+
+    fn purge_stale_completed(&self) {
+        let now = Instant::now();
+        let stale: Vec<String> = self
+            .completed_at
+            .iter()
+            .filter(|e| now.duration_since(*e.value()) > COMPLETED_TASK_TTL)
+            .map(|e| e.key().clone())
+            .collect();
+        for id in stale {
+            self.inner.remove(&id);
+            self.completed_at.remove(&id);
         }
     }
 
     pub fn insert(&self, progress: ReplayProgress) {
+        self.purge_stale_completed();
         self.inner.insert(progress.task_id.clone(), progress);
     }
 
@@ -34,16 +54,25 @@ impl ReplayTaskRegistry {
     where
         F: FnOnce(&mut ReplayProgress),
     {
+        let mut mark_done = false;
         if let Some(mut entry) = self.inner.get_mut(task_id) {
+            let was_done = entry.done;
             f(&mut entry);
+            mark_done = !was_done && entry.done;
+        }
+        if mark_done {
+            self.completed_at.insert(task_id.to_string(), Instant::now());
+            self.purge_stale_completed();
         }
     }
 
     #[must_use]
     pub fn get(&self, task_id: &str) -> Option<ReplayProgress> {
+        self.purge_stale_completed();
         let progress = self.inner.get(task_id).map(|v| v.clone())?;
         if progress.done {
             self.inner.remove(task_id);
+            self.completed_at.remove(task_id);
         }
         Some(progress)
     }
