@@ -194,7 +194,7 @@ flowchart TB
 
 ### 输入 / 输出
 
-- 输入：`PromptInput`（与 `PromptBuilder` 一致，**五个参数级字段**在 `PromptInput` 结构体上；`build_prompt` 最后一参在实现内部为 `&PromptInput`）。
+- 输入：`PromptInput`（`PromptBuilder::build_prompt` 为**单参数 `&PromptInput<'_>`**，角色、性格、记忆、用户输入、情绪等所有上下文字段聚合在该结构体上）。
 - 输出：`String`（主对话 system/user 拼装结果）。
 
 附加：`top_topic_hint(role, scene_id) -> Option<String>` 与现 `PromptBuilder::top_topic_hint` 对齐。

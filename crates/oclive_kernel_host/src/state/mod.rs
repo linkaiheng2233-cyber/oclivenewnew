@@ -87,6 +87,8 @@ pub struct AppState {
     role_load_inflight: DashMap<String, Arc<OnceCell<Arc<Role>>>>,
     /// Roles loaded from arbitrary `role_path` for HTTP `--api` trial chat; not written to [`Self::role_cache`].
     pub(crate) http_api_roles: DashMap<String, Arc<Role>>,
+    /// FIFO order for [`Self::http_api_roles`] eviction (cap [`ROLE_CACHE_CAPACITY`]).
+    http_api_roles_order: RwLock<IndexMap<String, ()>>,
     pub session_cache: Arc<SessionCache>,
     pub storage: RoleStorage,
     policy_runtime: Arc<ArcSwap<PolicyRuntime>>,
@@ -294,6 +296,26 @@ impl AppState {
         self.insert_role_cache(role_id, loaded);
         self.role_load_inflight.remove(role_id);
         Ok(Arc::clone(loaded))
+    }
+
+    /// Insert or refresh an HTTP `--api` trial-chat role; evicts oldest when at [`ROLE_CACHE_CAPACITY`].
+    pub(crate) fn insert_http_api_role(&self, role_id: String, role: Arc<Role>) {
+        let mut order = self.http_api_roles_order.write();
+        if order.contains_key(&role_id) {
+            order.swap_remove(&role_id);
+            order.insert(role_id.clone(), ());
+        } else {
+            while order.len() >= ROLE_CACHE_CAPACITY {
+                if let Some((oldest, _)) = order.swap_remove_index(0) {
+                    self.http_api_roles.remove(&oldest);
+                } else {
+                    break;
+                }
+            }
+            order.insert(role_id.clone(), ());
+        }
+        drop(order);
+        self.http_api_roles.insert(role_id, role);
     }
 
     fn insert_role_cache(&self, role_id: &str, role: &Arc<Role>) {

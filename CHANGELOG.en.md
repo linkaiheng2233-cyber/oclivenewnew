@@ -6,6 +6,7 @@
 
 ### Changed
 
+- **Prompt guardrails elevation & footer dedup**: `KERNEL_DIALOGUE_GUARDRAILS` always includes state continuation, vent-first, and length-by-input (pack `reply_quality_anchor` cannot override); removed standalone `【回复结构】` block; tone block no longer exposes `warmup_level` / normalized impact-factor jargon; official mumu/shimeng/枫侵月 anchors slimmed to persona-only deltas.
 - **License change**: host relicensed from AGPL-3.0 + plugin exception to **Apache-2.0** (root `LICENSE` + `NOTICE`); enables closed-source commercial distros and embedded downstreams to combine the kernel freely; `LICENSE_POLICY.md` updated.
 - **Official distro · Daily chat / Story mode split**: `distro.oclive.toml` adds `[interaction]`; new `desktop-chat` profile; `desktop` / `vscode` default `pure_chat`; first-run seed order is distro → role pack → `pure_chat`.
 - **Pure-chat UI slimming & settings tiers**: Daily chat hides scene/time/plugin sidebar and numeric favor; Settings split into Essentials / More options; Story-mode hint after N turns.

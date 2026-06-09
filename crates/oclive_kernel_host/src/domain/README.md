@@ -16,7 +16,7 @@ Chinese handoff notes: [COMMENT_ENGLISH_MIGRATION_PLAN.md](../../../../handoff/C
 
 `node scripts/check-domain-layering.mjs` enforces two counters under `domain/**/*.rs` (baseline: [LAYERING_BASELINE.json](../../../../handoff/LAYERING_BASELINE.json)):
 
-| Counter | Baseline (2026-06-08) | Meaning |
+| Counter | Baseline (2026-06-09) | Meaning |
 |---------|----------------------|---------|
 | `use crate::infrastructure` imports | **4** (all `#[cfg(test)]`) | Top-level `use` lines |
 | `crate::infrastructure::` FQ refs (production) | **5** | Fully-qualified paths outside test cfg |
@@ -29,7 +29,7 @@ Chinese handoff notes: [COMMENT_ENGLISH_MIGRATION_PLAN.md](../../../../handoff/C
 |------|------|-------|
 | `user_llm_env.rs` | 3× `DbManager` | Env provider DB reads; candidate for a small port |
 | `startup_health.rs` | 1× `DbManager` | `run_global_db_ping` |
-| `plugin_host/mod.rs` | 1× (doc link) | Module docs only; may be skipped by heuristic |
+| `role_manager.rs` | 1× `plugin_wiring::test_plugin_host` | Test helper only (`resolve_for_role` smoke) |
 
 Turn hot-path persistence now goes through **`domain/ports/`** traits with implementations in [`infrastructure/turn_ports.rs`](../infrastructure/turn_ports.rs):
 
@@ -41,11 +41,11 @@ Turn hot-path persistence now goes through **`domain/ports/`** traits with imple
 
 ### `use`-import adapter layer (4, test-only)
 
-These files still call `use crate::infrastructure::…` directly (constructing `PluginHost`, Remote HTTP, directory child processes, etc.):
+These files still call `use crate::infrastructure::…` under `#[cfg(test)]` only:
 
-- `ports/plugin_host/`、`role_manager.rs`、`agent.rs`、`slot_resolver.rs`、`role_manifest_validate.rs`
+- `event_impact_ai.rs`、`event_estimator.rs`、`complex_emotion_store.rs`、`mutable_profile_llm.rs`（`MockLlmClient` / `test_db`）
 
-**Reason**: implementations are not fully moved into `infrastructure/*_wiring` + port factories yet. **Prefer extending `domain/ports` traits** for new features; do not add new `domain → api` references.
+Plugin host / Remote / directory / reply post-processor factories live in `infrastructure/*_wiring` + `domain/ports`. **Prefer extending `domain/ports` traits** for new features; do not add new `domain → api` references.
 
 ## Orchestration entry points
 

@@ -14,7 +14,7 @@ alwaysApply: true
 
 4. **DTO**：前后端契约以 `crates/oclive_kernel_types/src/models/dto.rs` 为准；回复字段为 **`reply`**，不是 `response`；`Emotion` 枚举见 `models/emotion.rs`（无 Joy/Fearful 等未定义变体）。
 
-5. **Prompt**：`PromptBuilder::build_prompt` 定义在 `crates/oclive_kernel_runtime/src/domain/prompt_builder.rs`（经 `oclive_kernel_host::domain` re-export）；共五个参数，返回 `String`，最后一参为 `&str`，不要用 `?`。
+5. **Prompt**：`PromptBuilder::build_prompt` 定义在 `crates/oclive_kernel_runtime/src/domain/prompt_builder/mod.rs`（段落公式在同目录 `sections.rs`；经 `oclive_kernel_host::domain` re-export）；**单参数 `input: &PromptInput<'_>`**，返回 `String`（**不是 `Result`，不要用 `?`**）。通用对话纪律收敛在内核常量 `KERNEL_DIALOGUE_GUARDRAILS`（每轮恒追加；包级 `reply_quality_anchor` 仅替换 `DEFAULT_REPLY_QUALITY_ANCHOR`，**不可替换** guardrails）。
 
 6. **周节奏与验收**：见 `handoff/WEEKLY_DEV_GUIDE.md`；认知清单见 `handoff/04_4.6_PROJECT_TRUTH_CHECKLIST.md`。
 

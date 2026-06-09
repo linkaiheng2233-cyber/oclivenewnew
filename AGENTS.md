@@ -20,7 +20,7 @@
 
 - **跨平台**：[`docs/DEV_CROSS_PLATFORM.md`](docs/DEV_CROSS_PLATFORM.md)。
 - **Rust Release / workspace 依赖**：[`handoff/RUST_RELEASE_AND_DEPENDENCIES.md`](handoff/RUST_RELEASE_AND_DEPENDENCIES.md)。
-- **性能与包体**：阶段总表 [`handoff/PERF_PHASES.md`](handoff/PERF_PHASES.md)（v0.2 P1–P3 已收尾）；[`handoff/PERFORMANCE_BASELINE_ACCEPTANCE.md`](handoff/PERFORMANCE_BASELINE_ACCEPTANCE.md)、[`handoff/FRONTEND_CHUNK_OPTIMIZATION.md`](handoff/FRONTEND_CHUNK_OPTIMIZATION.md)、[`handoff/BUNDLE_RESOURCES_SIZING.md`](handoff/BUNDLE_RESOURCES_SIZING.md)。
+- **性能与包体**：阶段总表 [`handoff/PERF_PHASES.md`](handoff/PERF_PHASES.md)（v0.2 P1–P3 已收尾）；[`handoff/PERFORMANCE_BASELINE_ACCEPTANCE.md`](handoff/PERFORMANCE_BASELINE_ACCEPTANCE.md)、前端分包 SSOT [`vite.config.ts`](vite.config.ts) + [`src/build/manualChunks.ts`](src/build/manualChunks.ts)、[`handoff/BUNDLE_RESOURCES_SIZING.md`](handoff/BUNDLE_RESOURCES_SIZING.md)。
 - **项目约束**：根目录 [`.cursor/rules/oclivenewnew.mdc`](.cursor/rules/oclivenewnew.mdc)（编排、持久化、Tauri 命令注册、DTO、Prompt 约定）。
 - **创作者与架构文档**：[`creator-docs/README.md`](creator-docs/README.md) → [`creator-docs/getting-started/DOCUMENTATION_INDEX.md`](creator-docs/getting-started/DOCUMENTATION_INDEX.md)。
 - **愿景与路线**：[`creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md`](creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md)、[`creator-docs/roadmap/VISION_OPEN_LAB.md`](creator-docs/roadmap/VISION_OPEN_LAB.md)（开放实验场摘要）。
@@ -66,7 +66,7 @@
 ### 供应链与安全审计
 
 - **当前状态**：**已知漏洞跟踪中**；**不宣称零漏洞**。摘要执行日期与命中条数见 [creator-docs/development/LIGHTWEIGHT_PROFILE.md](creator-docs/development/LIGHTWEIGHT_PROFILE.md) §6.4；**漏洞级清单与升级路线**见 [creator-docs/security/KNOWN_VULNERABILITIES.md](creator-docs/security/KNOWN_VULNERABILITIES.md)；**审查边界**见 [creator-docs/security/SECURITY_AUDIT_SCOPE.md](creator-docs/security/SECURITY_AUDIT_SCOPE.md)。
-- **CI**：**`cargo-audit`** job（**cargo-audit 0.22.1**）为 **`continue-on-error: true`**，用于可见性；待依赖升级后可改为失败即红。
+- **CI**：**cargo-audit 0.22.1** 三层硬门禁——**`dimension5-acceptance`**（`scripts/dimension5-acceptance.mjs --ci`）、**`cargo-audit`** job（`.github/workflows/ci.yml`）、**`cargo-audit-lockfile.yml`**（`Cargo.lock` / `.cargo/audit.toml` PR 路径）；**`npm-audit`** 仍为 `continue-on-error: true` 可见性 job。
 
 ### 第 1 设施子模块 — 复杂情感设施子模块（`narrative_hint` · 共景 → 下一轮 Prompt）
 

@@ -1,6 +1,6 @@
 # 发行版能力配置（Distro Capability Profile）
 
-**状态**：P1 契约（Schema + 示例）；运行时加载见 P4（`HostProfile`）。  
+**状态**：P1 契约（Schema + 示例）**Done**；P4 profile 调度（`HostProfile` 加载与合并）**Done**（`host_profile.rs` / spawn 时 `OCLIVE_DISTRO_PROFILE`）。  
 **受众**：桌面、VS Code、启动器、硬件发行版集成方。  
 **SSOT 模块形状**：与角色包 `settings.json` → `plugin_backends` 对齐，见 [`PLUGIN_V1.md`](../plugin-and-architecture/PLUGIN_V1.md) 与 `crates/oclive_validation/src/plugin_backends.rs`。
 

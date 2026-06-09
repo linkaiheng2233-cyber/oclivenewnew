@@ -6,6 +6,7 @@
 
 ### Changed
 
+- **Prompt guardrails 升格与页脚去重**：`KERNEL_DIALOGUE_GUARDRAILS` 恒含「状态延续」「倾诉优先」「篇幅随输入」，包级 `reply_quality_anchor` 无法换走；删除独立 `【回复结构】` 段；语气区块去除 `warmup_level` / `影响因子` 等系统术语；官方 mumu/shimeng/枫侵月锚点瘦身为仅人设差异。
 - **许可证变更**：主程序由 AGPL-3.0 + 插件例外改为 **Apache-2.0**（根 `LICENSE` + `NOTICE`）；支持闭源商业发行版与嵌入式下游自由组合内核；`LICENSE_POLICY.md` 已同步。
 - **官方发行版 · 日常聊 / 剧情模式分界**：`distro.oclive.toml` 新增 `[interaction]`；新增 `desktop-chat` profile；`desktop` / `vscode` 默认 `pure_chat`；首启 seed 优先级为发行版 → 角色包 → `pure_chat`。
 - **纯聊 UI 瘦身与设置分层**：日常聊隐藏场景/时间/插件侧栏与精确好感分；设置分「常用 / 更多选项」；聊满 N 轮提示开启剧情模式。

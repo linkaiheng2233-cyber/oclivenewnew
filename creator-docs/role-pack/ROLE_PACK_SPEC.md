@@ -56,6 +56,8 @@ roles/{role_id}/
 
 **说明**：v2 包 **不得** 同时存在 `manifest.json` / `settings.json` 与 `pipeline.ocblueprint`。七维人格在 v2 写入 **`meta.personality`**（对象或 7 元数组）。**人设 Tier0** 只读 **`core_personality.txt`**；`prompts/*.md` 为可选创作辅助（编写器 / creator profile 校验），**不参与** `PromptBuilder` Tier0。**回复质量锚点**运行时读 **`meta.reply_quality_anchor`**（或蓝图 `runtime_config.reply_quality_anchor`）或内核 **`DEFAULT_REPLY_QUALITY_ANCHOR`**；`prompts/reply_quality_anchor.md` 仅为人类可读镜像。
 
+**锚点 vs guardrails 分工**：包级 `reply_quality_anchor` **整段替换**内核默认锚点，但**不替换**引擎 **`KERNEL_DIALOGUE_GUARDRAILS`**（含状态延续、倾诉优先、禁止复读开场、篇幅随输入等通用纪律，每轮恒追加）。创作者宜在包级锚点只写**人设差异**，勿重复 guardrails 已覆盖的通用句。
+
 ### 1.1 `user_identities/`（User Identity Prompt Template · 可选）
 
 定义 **用户是谁**（与角色 `prompts/` 正交），在 **`build_prompt` 前** 注入 Prompt 段落「【用户身份】」。**不是**六宿主槽、**不是**蓝图字段。

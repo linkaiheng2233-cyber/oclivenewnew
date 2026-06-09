@@ -1,6 +1,8 @@
 # 内核分层（domain / infrastructure / api）
 
-**状态**：P0–P8 收口后的工程纪律说明（2026-05-20）。
+**状态**：P0–P8 收口后的工程纪律说明（2026-06-09）。
+
+**D-LAYER-05 ratchet（2026-06-09）**：`node scripts/check-domain-layering.mjs` — `use crate::infrastructure` **4**（全 `#[cfg(test)]`）、生产 `crate::infrastructure::` FQ **5**；基线 [`LAYERING_BASELINE.json`](LAYERING_BASELINE.json)。明细见 [`crates/oclive_kernel_host/src/domain/README.md`](../crates/oclive_kernel_host/src/domain/README.md)。
 
 ## 关键架构决策（摘要）
 
@@ -226,25 +228,21 @@
 
 ## 已知适配层（后续可拆）
 
-以下 **`domain` 仍引用 `infrastructure` 具体类型**（插件宿主、Remote HTTP、目录子进程、高风险授权等），属于 **防腐层未完全抽出** 的技术债。基线计数见 [`LAYERING_BASELINE.json`](LAYERING_BASELINE.json)（`node scripts/check-domain-layering.mjs`）；**不得净增** `use crate::infrastructure` 行数。
+**SSOT**：`creator-docs/` 下无同名分层文档；计数与 FQ 清单以本文件 D-LAYER-05 段与 [`crates/oclive_kernel_host/src/domain/README.md`](../crates/oclive_kernel_host/src/domain/README.md) 为准。
 
-| 基础设施模块 | 代表 domain 文件 | 用途 |
-|-------------|-----------------|------|
-| `infrastructure/db` | `virtual_time_sync.rs`、`complex_emotion_store.rs` | SQLite 直连（待端口化） |
-| `infrastructure/remote_plugin` | `plugin_host/registry.rs`、`slot_resolver.rs`、`role_manifest_validate.rs` | Remote HTTP 工厂与校验 |
-| `infrastructure/directory_plugins` | `plugin_host/mod.rs`、`plugin_host/registry.rs` | 目录插件子进程 |
-| `infrastructure/high_risk_grants` | `plugin_host/mod.rs`、`plugin_host/registry.rs`、`role_manager.rs` | 高风险能力授权 |
-| `infrastructure/mcp_client` | `plugin_host/registry.rs` | MCP 工具调用（**已端口化**：`McpBridgePort` → `infrastructure/agent_mcp_bridge.rs`） |
-| `infrastructure/function_call_parser` | `agent.rs` | LLM tool_calls 解析 |
-| `infrastructure/reply_post_processor_wiring` | —（**已端口化**：`ReplyPostProcessorResolver`） | Reply post-processor remote/directory |
-| `infrastructure/db`（`RelationIdentityStore`） | —（**已端口化**：`relation_estrangement.rs` 经 trait） | 关系疏远 / 身份 favor |
-| `infrastructure/llm` | `role_manager.rs`、`plugin_host/mod.rs`（测试 `MockLlmClient`） | 测试桩 / 降级 |
-| `infrastructure/remote_fallback_policy` | `role_manager.rs`、`plugin_host/mod.rs` | Remote 失败开关 |
-| `infrastructure/user_llm_secrets` | `user_llm_env.rs` | 用户 LLM 密钥读盘 |
+生产路径剩余 **`domain → infrastructure` FQ 引用（5）**：
 
-新代码应优先扩展 `domain` 内已有 trait（`MemoryRetrieval`、`PluginHostPort` 等）或 `oclive_kernel_contracts` 端口，避免新增 `domain → infrastructure` 依赖。
+| 文件 | 引用 | 用途 |
+|------|------|------|
+| `user_llm_env.rs` | 3× `DbManager` | 用户 LLM 环境读盘 |
+| `startup_health.rs` | 1× `DbManager` | 全局 DB ping |
+| `role_manager.rs` | 1× `plugin_wiring::test_plugin_host` | 测试辅助构造 |
 
-拆法建议：将 `PluginHost::resolve_*` 的 **工厂** 迁至 `infrastructure/plugin_wiring.rs`；`relation_*` 经 `RelationStatePort`（contracts）+ `DbManager` 适配。
+**`use crate::infrastructure` 导入（4，全 `#[cfg(test)]`）**：`event_impact_ai.rs`、`event_estimator.rs`、`complex_emotion_store.rs`、`mutable_profile_llm.rs`（`MockLlmClient` / `test_db`）。
+
+热路径持久化已经 **`domain/ports/`** turn ports（`ChatTurnPersistencePort` 等）注入；插件宿主、Remote/directory、reply post-processor、MCP 等工厂已迁至 `infrastructure/*_wiring`。
+
+新代码应优先扩展 `domain/ports` 或 `oclive_kernel_contracts`，**不得净增**生产 FQ 或 `use` 计数（`node scripts/check-domain-layering.mjs`）。
 
 ## `unsafe` 审查（任务 8）
 

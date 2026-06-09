@@ -1,17 +1,21 @@
 //! Embed build metadata for `KernelBinaryManifest` / `--version-json`.
 
 use std::process::Command;
-use std::time::{SystemTime, UNIX_EPOCH};
+
+/// Reproducible build timestamp: `SOURCE_DATE_EPOCH` when set (seconds since UNIX epoch), else 0.
+fn source_date_epoch_secs() -> u64 {
+    std::env::var("SOURCE_DATE_EPOCH")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(0)
+}
 
 fn main() {
     let pkg_version = std::env::var("CARGO_PKG_VERSION").unwrap_or_else(|_| "0.2.0".into());
     println!("cargo:rustc-env=OCLIVE_KERNEL_PKG_VERSION={pkg_version}");
     println!("cargo:rustc-env=OCLIVE_KERNEL_BUILD_PROFILE=full");
 
-    let built_at = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_secs())
-        .unwrap_or(0);
+    let built_at = source_date_epoch_secs();
     println!("cargo:rustc-env=OCLIVE_KERNEL_BUILT_AT={built_at}");
 
     if let Ok(out) = Command::new("git")

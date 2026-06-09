@@ -31,7 +31,7 @@ pub fn apply_effective_post_processor_config(
     cfg
 }
 
-fn resolve_builtin(eff: &ReplyPostProcessorEffectiveConfig) -> Arc<dyn ReplyPostProcessor> {
+pub(crate) fn resolve_builtin(eff: &ReplyPostProcessorEffectiveConfig) -> Arc<dyn ReplyPostProcessor> {
     Arc::new(BuiltinReplyPostProcessor::new(eff.builtin.clone()))
 }
 

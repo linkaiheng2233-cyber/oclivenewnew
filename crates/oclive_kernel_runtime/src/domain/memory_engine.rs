@@ -91,14 +91,13 @@ impl MemoryEngine {
 
     /// Ebbinghaus exponential decay: remaining strength = initial × e^(-λ × virtual days).
     /// Effective half-life grows with `mention_count` (reinforcement on review).
-    #[must_use]
     pub fn apply_time_decay(
-        mut memory: Memory,
+        memory: &mut Memory,
         virtual_days: f64,
         cfg: &RolePackMemoryConfig,
-    ) -> Memory {
+    ) {
         if virtual_days <= 0.0 {
-            return memory;
+            return;
         }
         let base_halflife = cfg.decay_halflife_days.max(0.1);
         let mentions = f64::from(memory.mention_count.max(1));
@@ -107,7 +106,6 @@ impl MemoryEngine {
         let lambda = std::f64::consts::LN_2 / effective_halflife;
         memory.weight *= (-lambda * virtual_days).exp();
         memory.weight = memory.weight.max(0.0);
-        memory
     }
 
     /// Decays a batch by virtual-clock age and drops entries below the prompt threshold.
@@ -132,7 +130,7 @@ impl MemoryEngine {
     ) {
         for m in memories.iter_mut() {
             let days = virtual_days_for(m);
-            *m = Self::apply_time_decay(m.clone(), days, cfg);
+            Self::apply_time_decay(m, days, cfg);
         }
     }
 
@@ -413,12 +411,12 @@ mod tests {
     #[test]
     fn ebbinghaus_halflife_about_half_after_seven_virtual_days() {
         let cfg = default_mem_cfg();
-        let mem = create_test_memory("1", "content", 1.0);
-        let decayed = MemoryEngine::apply_time_decay(mem, 7.0, &cfg);
+        let mut mem = create_test_memory("1", "content", 1.0);
+        MemoryEngine::apply_time_decay(&mut mem, 7.0, &cfg);
         assert!(
-            (decayed.weight - 0.5).abs() < 0.05,
+            (mem.weight - 0.5).abs() < 0.05,
             "weight={}",
-            decayed.weight
+            mem.weight
         );
     }
 
@@ -428,8 +426,8 @@ mod tests {
         let mut once = create_test_memory("1", "用户喜欢冒险旅行", 1.0);
         let mut thrice = create_test_memory("2", "用户喜欢冒险旅行", 1.0);
         thrice.mention_count = 3;
-        once = MemoryEngine::apply_time_decay(once, 14.0, &cfg);
-        thrice = MemoryEngine::apply_time_decay(thrice, 14.0, &cfg);
+        MemoryEngine::apply_time_decay(&mut once, 14.0, &cfg);
+        MemoryEngine::apply_time_decay(&mut thrice, 14.0, &cfg);
         assert!(
             thrice.weight > once.weight,
             "once={} thrice={}",

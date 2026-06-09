@@ -79,19 +79,25 @@ async fn shimeng_pack_anchor_replaces_default_in_main_prompt() {
     assert!(p1.contains("诗梦"));
     assert!(p1.contains("【对话硬约束】"));
     assert!(p1.contains("禁止复读开场"));
+    assert!(p1.contains("状态延续"));
+    assert!(p1.contains("倾诉优先"));
+    assert!(!p1.contains("【回复结构】"));
     assert!(KERNEL_DIALOGUE_GUARDRAILS.contains("禁止复读开场"));
+    assert!(KERNEL_DIALOGUE_GUARDRAILS.contains("状态延续"));
 }
 
 #[tokio::test]
-async fn mumu_without_pack_anchor_uses_kernel_default_in_prompt() {
+async fn mumu_pack_anchor_and_guardrails_in_main_prompt() {
     let roles_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../roles");
     let storage = RoleStorage::new(&roles_dir);
     let role = storage
         .load_role_from_dir(&roles_dir.join("mumu"))
         .expect("load mumu");
-    assert!(role.reply_quality_anchor.as_deref().unwrap_or("").trim().is_empty());
     let anchor = effective_reply_quality_anchor(&role);
-    assert!(anchor.contains("【回复质量锚点】（每轮须遵守）"));
+    assert!(anchor.contains("沐沐"));
+    assert!(anchor.contains("嘴硬藏心软"));
+    assert!(!anchor.contains("状态延续"));
+    assert!(!anchor.contains(DEFAULT_REPLY_QUALITY_ANCHOR.trim()));
 
     let prompts = Arc::new(Mutex::new(Vec::<String>::new()));
     let llm: Arc<dyn LlmClient> = Arc::new(CapturePromptLlm {
@@ -122,6 +128,11 @@ async fn mumu_without_pack_anchor_uses_kernel_default_in_prompt() {
             .expect("main prompt for turn1 should include user line")
             .clone()
     };
-    assert!(p1.contains("禁止复述用户"));
+    assert!(p1.contains("嘴硬藏心软"));
     assert!(p1.contains("【对话硬约束】"));
+    assert!(p1.contains("状态延续"));
+    assert!(p1.contains("倾诉优先"));
+    assert!(!p1.contains("影响因子(已归一)"));
+    assert!(!p1.contains("warmup_level="));
+    assert!(!p1.contains("【回复结构】"));
 }

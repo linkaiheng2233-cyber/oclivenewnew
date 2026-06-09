@@ -1,10 +1,22 @@
 # Technical debt inventory
 
-**Last updated:** 2026-06-09 (Opus 4.8 Theater v0 + product freeze)
+**Last updated:** 2026-06-09 (freeze-safe audit + Opus 4.8 Theater v0)
 
-**Product freeze (Theater v0):** No new kernel orchestration / six-slot expansion until strangers validate AI Theater v0. See [PRODUCT_FREEZE_THEATER_V0.md](./PRODUCT_FREEZE_THEATER_V0.md). **Deferred unchanged:** D-PORT-02, D-SLOT-01, K-PERF-10, §3.1 library API, dual_core (frozen).
+**Product freeze (Theater v0):** No new kernel orchestration / six-slot expansion until strangers validate AI Theater v0. See [PRODUCT_FREEZE_THEATER_V0.md](./PRODUCT_FREEZE_THEATER_V0.md). **Deferred unchanged:** D-PORT-02, D-SLOT-01, K-PERF-10, K-PERF-14/15, D-NAME-01, §3.1 library API, dual_core (frozen).
 
-**Verification (2026-06-08 closure):** `node scripts/dimension5-acceptance.mjs --ci` PASS (7 checks); `cargo test -p oclive_kernel_host --lib` 180 passed; `cargo test -p oclivenewnew-tauri --test invoke_hotpath_matrix` 5 passed; `npm run test:unit` 46 passed. Prior: `cargo test -p oclive_kernel_runtime -p oclive_kernel_host -j 1`; `cargo check -p oclivenewnew-tauri -p oclive-cli`.
+**Verification (2026-06-09 freeze-safe audit):** `cargo build -p oclive_kernel_server`; `cargo test -p oclive_kernel_host`; `node scripts/check-domain-layering.mjs` — layering ratchet 4/5 无回退。Prior (2026-06-08): `node scripts/dimension5-acceptance.mjs --ci` PASS (7 checks); `cargo test -p oclive_kernel_host --lib` 180 passed; `npm run test:unit` 46 passed.
+
+### Freeze-safe audit（2026-06-09）
+
+| ID | Item | Status | Notes |
+|----|------|--------|-------|
+| K-PERF-13 | `http_api_roles` 无界 DashMap（`--api` 长跑） | **Done** | `insert_http_api_role` FIFO cap 32（对齐 `role_cache`） |
+| K-BUILD-01 | `kernel_server/build.rs` `SystemTime::now()` 致增量编译失效 | **Done** | `SOURCE_DATE_EPOCH`（缺省 0）+ `rerun-if-env-changed` |
+| K-PERF-14 | `pre_llm` 独立 await 串行 | **Deferred** | 触碰编排；冻结至 Theater v0 |
+| K-PERF-15 | 记忆候选池固定 10 条按时间非相关性 | **Deferred** | 影响召回语义；冻结 |
+| D-CLEAN-01 | `ReplayTaskRegistry` 完成不清理 | **Open** | 非热路径；可选后续 |
+| D-NAME-01 | `resolve_turn` 三义命名消歧 | **Deferred** | 触 dual_core 冻结路径 |
+| K-DOC-07 | `AGENTS.md` / `LIGHTWEIGHT_PROFILE` cargo-audit `continue-on-error` 漂移 | **Done** | 更正为 dimension5 + `cargo-audit` job + lockfile workflow 三层硬门禁 |
 
 **Opus 4.8 follow-up (2026-06-08):** five-dimension re-review — `node scripts/dimension5-acceptance.mjs --ci` PASS; K-PERF-01 batched memory-decay writes; K-PERF-02 stage tracing + PERFORMANCE.md §6; K-DOC-02 CHANGELOG parity CI; K-PROFILE-01 unified `distro_oclive_file`; D-OPUS-05 re-export ratchet; D-OPUS-01/02/04 RC lightweight sweep Done. See §Opus 4.8 follow-up.
 
@@ -331,7 +343,7 @@ DeepSeek 五维方向二轮复审（Opus 4.8）。维度五基线复跑：`node 
 | K-DOC-04 | 「`oclive_kernel_server` 仍链接 `oclivenewnew-tauri`」表述过期 | 四·文档 | 实际仅依赖 host + runtime；本表 L315 与 `OCLIVE_POSITIONING_DIFFERENTIATION.md` 已更正 |
 | K-DOC-05 | `domain/README.md` adapter 清单过期（未含 FQ-path 现状） | 四·文档 | 同步为 `use`-import (4, 全 test) + 生产 FQ-path (5) + turn ports；见 `domain/README.md` |
 | D-LAYER-05 | layering ratchet FQ-path + turn ports | 二/五 | `check-domain-layering.mjs` + `LAYERING_BASELINE.json`；`ChatTurnPersistencePort`/`TurnPoliciesPort`/`ConversationPersistPort`；FQ **14→5** |
-| D-DTO-01 | reply-post-processor 配置去重 | 二 | 统一 `ReplyPostProcessorEffectiveConfig`；删除 host 双 `resolve_builtin` |
+| D-DTO-01 | reply-post-processor 配置去重 | 二 | 统一 `ReplyPostProcessorEffectiveConfig`；`resolve_builtin` SSOT 于 `domain/reply_post_processor.rs`（2026-06-09 去重 wiring 副本） |
 | D-ERR-01 | profile / MCP 增量 `AppError` | 二 | **增量 Done**：`host_profile_from_distro_file`、`PluginHost::call_mcp_tool`；`user_llm_env`/`startup_health` DbManager 留后续 |
 | K-PERF-03 | TurnPrefetch 共享 / agent lazy | 一·运行时 | `turn_prefetch.rs` + `agent=none` 跳过 agent DB |
 | K-PERF-04 | `role_runtime` 单查快照 | 一·运行时 | `get_role_runtime_snapshot` 扩展字段 + `TurnContext` |

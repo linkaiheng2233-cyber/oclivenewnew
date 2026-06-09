@@ -1,6 +1,6 @@
 //! Remote/directory Reply Post-Processor wiring (HTTP clients, grants, directory spawn).
 
-use crate::domain::builtin_reply_post_processor::BuiltinReplyPostProcessor;
+use crate::domain::reply_post_processor::resolve_builtin;
 use crate::infrastructure::directory_plugins::DirectoryPluginRuntime;
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
 use crate::infrastructure::remote_plugin::RemotePluginHttpConfig;
@@ -34,9 +34,6 @@ impl HostReplyPostProcessorResolver {
         }
     }
 
-    fn resolve_builtin(eff: &ReplyPostProcessorEffectiveConfig) -> Arc<dyn ReplyPostProcessor> {
-        Arc::new(BuiltinReplyPostProcessor::new(eff.builtin.clone()))
-    }
 }
 
 impl ReplyPostProcessorResolver for HostReplyPostProcessorResolver {
@@ -49,7 +46,7 @@ impl ReplyPostProcessorResolver for HostReplyPostProcessorResolver {
                 target: "oclive_reply_post_processor",
                 "reply_post_processor backend=remote but remote.url empty; builtin fallback"
             );
-            return Self::resolve_builtin(eff);
+            return resolve_builtin(eff);
         };
         match RemoteReplyPostProcessorHttp::new(
             cfg,
@@ -64,7 +61,7 @@ impl ReplyPostProcessorResolver for HostReplyPostProcessorResolver {
                     error = %e,
                     "remote reply post-processor client build failed; builtin fallback"
                 );
-                Self::resolve_builtin(eff)
+                resolve_builtin(eff)
             }
         }
     }
@@ -79,7 +76,7 @@ impl ReplyPostProcessorResolver for HostReplyPostProcessorResolver {
                 target: "oclive_reply_post_processor",
                 "reply_post_processor backend=directory but directory.plugin_id empty; builtin fallback"
             );
-            return Self::resolve_builtin(eff);
+            return resolve_builtin(eff);
         }
         let rt = &self.directory_plugins;
         if !rt.manifest_provides_capability(pid, "reply_post_process") {
@@ -88,7 +85,7 @@ impl ReplyPostProcessorResolver for HostReplyPostProcessorResolver {
                 plugin_id = %pid,
                 "directory plugin missing provides reply_post_process; builtin fallback"
             );
-            return Self::resolve_builtin(eff);
+            return resolve_builtin(eff);
         }
         match rt.ensure_rpc_url(pid) {
             Ok(url) => {
@@ -107,7 +104,7 @@ impl ReplyPostProcessorResolver for HostReplyPostProcessorResolver {
                             error = %e,
                             "directory reply post-processor client build failed; builtin fallback"
                         );
-                        Self::resolve_builtin(eff)
+                        resolve_builtin(eff)
                     }
                 }
             }
@@ -118,7 +115,7 @@ impl ReplyPostProcessorResolver for HostReplyPostProcessorResolver {
                     error = %e,
                     "directory reply post-processor spawn failed; builtin fallback"
                 );
-                Self::resolve_builtin(eff)
+                resolve_builtin(eff)
             }
         }
     }

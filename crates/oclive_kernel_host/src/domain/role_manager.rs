@@ -269,6 +269,8 @@ mod tests {
             interaction_mode: None,
             min_runtime_version: None,
             dev_only: false,
+            featured: false,
+            preset_order: 999,
             plugin_backends: std::sync::Arc::new(crate::models::PluginBackends::default()),
             slot_registry: None,
             slot_groups: None,

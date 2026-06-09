@@ -232,8 +232,11 @@ impl PromptBuilder {
         ));
         s.push_str("\n硬约束（必须遵守）：\n");
         s.push_str("- 关系阶段与好感决定亲密度：低阶段/低好感时不要突然使用过度亲昵称呼、不要突然表白或承诺长期关系。\n");
-        s.push_str("- 若事件为 Quarrel 或影响因子 < 0：语气应更克制、防御或冷静，不要立刻甜蜜撒娇、不要“当作没吵过”。\n");
-        s.push_str("- 若事件为 Praise/Apology 或影响因子 > 0：允许缓和、更温柔，但仍需服从当前关系阶段。\n");
+        if matches!(event_type, EventType::Quarrel) || impact < 0.0 {
+            s.push_str("- 本轮偏负面事件：语气应更克制、防御或冷静，不要立刻甜蜜撒娇、不要当作没吵过。\n");
+        } else if matches!(event_type, EventType::Praise | EventType::Apology) || impact > 0.0 {
+            s.push_str("- 本轮偏正面事件：允许缓和、更温柔，但仍需服从当前关系阶段。\n");
+        }
         s.push_str(
             "- 请把语气对齐到「本轮关系预览」：若仅小幅缓和，请用过渡口吻，避免语气突然升阶。\n",
         );

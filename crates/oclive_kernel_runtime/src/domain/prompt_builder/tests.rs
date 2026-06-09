@@ -134,19 +134,24 @@ fn test_build_prompt() {
     assert!(prompt.contains("朋友"));
     assert!(prompt.contains("本轮事件与关系状态机"));
     assert!(prompt.contains("Friend"));
-    assert!(prompt.contains("Praise"));
+    assert!(prompt.contains("赞美"));
+    assert!(!prompt.contains("Praise"));
     assert!(prompt.contains("场景设定"));
     assert!(prompt.contains("客厅灯暖洋洋"));
     assert!(prompt.contains("用户语气线索"));
     assert!(prompt.contains("happy"));
     assert!(prompt.contains("【回复质量锚点】"));
-    assert!(prompt.contains("禁止复述用户"));
+    assert!(prompt.contains("用全新措辞接住用户本句的内容或情绪"));
     assert!(prompt.contains("状态延续"));
-    assert!(prompt.contains("篇幅与节奏"));
+    assert!(prompt.contains("篇幅随输入"));
+    assert!(!prompt.contains("篇幅与节奏"));
     assert!(prompt.contains("倾诉优先"));
     assert!(prompt.contains("倾诉应对倾向"));
     assert!(prompt.contains("【对话硬约束】"));
     assert!(prompt.contains("回复篇幅倾向"));
+    assert!(!prompt.contains("【回复结构】"));
+    assert!(!prompt.contains("影响因子(已归一)"));
+    assert!(!prompt.contains("warmup_level="));
 }
 
 #[test]
@@ -450,9 +455,13 @@ fn profile_mode_shows_mutable_and_summary_header() {
 #[test]
 fn default_reply_quality_anchor_and_guardrails_constants_present() {
     assert!(DEFAULT_REPLY_QUALITY_ANCHOR.contains("【回复质量锚点】"));
-    assert!(DEFAULT_REPLY_QUALITY_ANCHOR.contains("禁止复述用户"));
+    assert!(DEFAULT_REPLY_QUALITY_ANCHOR.contains("用全新措辞接住用户本句的内容或情绪"));
+    assert!(!DEFAULT_REPLY_QUALITY_ANCHOR.contains("状态延续"));
+    assert!(!DEFAULT_REPLY_QUALITY_ANCHOR.contains("倾诉优先"));
     assert!(KERNEL_DIALOGUE_GUARDRAILS.contains("【对话硬约束】"));
     assert!(KERNEL_DIALOGUE_GUARDRAILS.contains("禁止复读开场"));
+    assert!(KERNEL_DIALOGUE_GUARDRAILS.contains("状态延续"));
+    assert!(KERNEL_DIALOGUE_GUARDRAILS.contains("倾诉优先"));
 }
 
 #[test]
@@ -492,6 +501,8 @@ fn reply_quality_anchor_custom_overrides_default() {
     assert!(!prompt.contains("【回复质量锚点】（每轮须遵守）"));
     assert!(prompt.contains("【对话硬约束】"));
     assert!(prompt.contains("禁止复读开场"));
+    assert!(prompt.contains("状态延续"));
+    assert!(prompt.contains("倾诉优先"));
 }
 
 #[test]
@@ -827,5 +838,161 @@ fn relation_transition_hint_in_tone_block() {
     let content_idx = prompt.find("内容区块").unwrap();
     let hint_idx = prompt.find("【关系过渡】").unwrap();
     assert!(tone_idx < hint_idx && hint_idx < content_idx);
+}
+
+#[test]
+fn custom_anchor_still_has_guardrails_state_and_vent() {
+    let mut role = create_test_role();
+    role.reply_quality_anchor = Some("【包级锚点】仅人设差异。".to_string());
+    let personality = create_test_personality();
+    let prompt = PromptBuilder::build_prompt(&PromptInput {
+        role: &role,
+        personality: &personality,
+        memories: &[],
+        user_input: "好",
+        user_emotion: "neutral",
+        user_relation_id: "",
+        relation_hint: "",
+        relation_before: "Friend",
+        favorability_before: 50.0,
+        relation_preview: "Friend",
+        favorability_preview: 50.0,
+        event_type: &EventType::Ignore,
+        impact_factor: 0.0,
+        scene_label: "",
+        scene_detail: "",
+        topic_hint_line: "",
+        life_context_line: "",
+        worldview_snippet: "",
+        mutable_personality: "",
+        reply_quality_anchor: effective_reply_quality_anchor(&role),
+        previous_complex_emotion_narrative_hint: "",
+        user_identity_template: "",
+        user_identity_id: "",
+        host_prompt_overlay: "",
+        host_state_expression_hint: "",
+        relation_transition_hint: "",
+    });
+    assert!(prompt.contains("【包级锚点】仅人设差异。"));
+    let guard_idx = prompt.find("【对话硬约束】").expect("guardrails");
+    assert!(prompt[guard_idx..].contains("状态延续"));
+    assert!(prompt[guard_idx..].contains("倾诉优先"));
+}
+
+#[test]
+fn prompt_user_input_before_closing_line() {
+    let role = create_test_role();
+    let personality = create_test_personality();
+    let prompt = PromptBuilder::build_prompt(&PromptInput {
+        role: &role,
+        personality: &personality,
+        memories: &[],
+        user_input: "今天被老板骂了",
+        user_emotion: "sad",
+        user_relation_id: "",
+        relation_hint: "",
+        relation_before: "Friend",
+        favorability_before: 50.0,
+        relation_preview: "Friend",
+        favorability_preview: 50.0,
+        event_type: &EventType::Complaint,
+        impact_factor: -0.3,
+        scene_label: "",
+        scene_detail: "",
+        topic_hint_line: "",
+        life_context_line: "",
+        worldview_snippet: "",
+        mutable_personality: "",
+        reply_quality_anchor: effective_reply_quality_anchor(&role),
+        previous_complex_emotion_narrative_hint: "",
+        user_identity_template: "",
+        user_identity_id: "",
+        host_prompt_overlay: "",
+        host_state_expression_hint: "",
+        relation_transition_hint: "",
+    });
+    let user_idx = prompt.find("用户说: 今天被老板骂了").expect("user line");
+    let closing_idx = prompt
+        .find("请以角色身份自然地回复，保持一致的性格和语气。")
+        .expect("closing");
+    assert!(user_idx < closing_idx);
+    assert!(!prompt.contains("【回复结构】"));
+    assert_eq!(prompt.matches("用户说:").count(), 1);
+}
+
+#[test]
+fn event_relation_block_no_impact_factor_jargon() {
+    let role = create_test_role();
+    let personality = create_test_personality();
+    let prompt = PromptBuilder::build_prompt(&PromptInput {
+        role: &role,
+        personality: &personality,
+        memories: &[],
+        user_input: "test",
+        user_emotion: "neutral",
+        user_relation_id: "",
+        relation_hint: "",
+        relation_before: "Acquaintance",
+        favorability_before: 35.0,
+        relation_preview: "Friend",
+        favorability_preview: 41.0,
+        event_type: &EventType::Praise,
+        impact_factor: 0.3,
+        scene_label: "",
+        scene_detail: "",
+        topic_hint_line: "",
+        life_context_line: "",
+        worldview_snippet: "",
+        mutable_personality: "",
+        reply_quality_anchor: effective_reply_quality_anchor(&role),
+        previous_complex_emotion_narrative_hint: "",
+        user_identity_template: "",
+        user_identity_id: "",
+        host_prompt_overlay: "",
+        host_state_expression_hint: "",
+        relation_transition_hint: "",
+    });
+    assert!(!prompt.contains("影响因子(已归一)"));
+    assert!(!prompt.contains("warmup_level="));
+    assert!(!prompt.contains("boundary_tone_level="));
+    assert!(prompt.contains("本轮事件类型: 赞美"));
+}
+
+#[test]
+fn prompt_block_guide_not_triplicated() {
+    let role = create_test_role();
+    let personality = create_test_personality();
+    let prompt = PromptBuilder::build_prompt(&PromptInput {
+        role: &role,
+        personality: &personality,
+        memories: &[],
+        user_input: "hi",
+        user_emotion: "neutral",
+        user_relation_id: "",
+        relation_hint: "",
+        relation_before: "Stranger",
+        favorability_before: 0.0,
+        relation_preview: "Stranger",
+        favorability_preview: 0.0,
+        event_type: &EventType::Ignore,
+        impact_factor: 0.0,
+        scene_label: "",
+        scene_detail: "",
+        topic_hint_line: "",
+        life_context_line: "",
+        worldview_snippet: "",
+        mutable_personality: "",
+        reply_quality_anchor: effective_reply_quality_anchor(&role),
+        previous_complex_emotion_narrative_hint: "",
+        user_identity_template: "",
+        user_identity_id: "",
+        host_prompt_overlay: "",
+        host_state_expression_hint: "",
+        relation_transition_hint: "",
+    });
+    assert_eq!(
+        prompt.matches("以下为语气/内容层次，请按序理解").count(),
+        1
+    );
 }
 

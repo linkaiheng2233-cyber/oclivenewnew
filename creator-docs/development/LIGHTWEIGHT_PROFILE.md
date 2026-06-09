@@ -10,10 +10,11 @@
 
 | 键 | 当前值 | 说明 |
 |----|--------|------|
-| `profile.release.opt-level` | `"z"` | 体积优先 |
-| `profile.release.lto` | `true` | 全 crate 链接时 LTO；等价于 **fat LTO**（Rust 1.46+ `true` 语义） |
-| `profile.release.strip` | *（未设置）* | 可选增加 `strip = "debuginfo"` 或 `"symbols"` 进一步缩小发行产物（需发版实测崩溃符号需求） |
-| `profile.release.codegen-units` | *（未设置）* | 可选 `codegen-units = 1` 换更小体积与更可复现 perf（编译更慢） |
+| `profile.release.opt-level` | `3` | 运行时性能优先（workspace 默认） |
+| `profile.release.lto` | `"thin"` | 薄 LTO；`[profile.release.package."*"]` 下依赖 crate 为 `codegen-units = 16` |
+| `profile.release.codegen-units` | `1` | 主 crate 单 CGU，换更可复现 perf（编译更慢） |
+| `profile.release.strip` | `"symbols"` | 发行产物剥离符号 |
+| `profile.release.panic` | `"abort"` | 发行版 panic 即 abort |
 
 **`target-dir`**：见仓库根 [`.cargo/config.toml`](../../.cargo/config.toml)，构建产物可外置到 `../oclive-dev-artifacts/oclivenewnew-cargo-target/`。
 
@@ -38,7 +39,7 @@
 
 **许可证合规**（**2026-06-09**）：根目录 `deny.toml` + `cargo deny check licenses` 退出码 **0**（允许表含 `Apache-2.0`、`MIT`、`CDLA-Permissive-2.0`、`NCSA` 等；工作区 crate 统一 SPDX `Apache-2.0`）。
 
-CI：`.github/workflows/ci.yml` 含 **`cargo-audit`**（`continue-on-error: true`）与 **`cargo-deny`**；`oclive ci init` 模板同步 deny / loom job。
+CI：三层 **cargo-audit 0.22.1** 硬门禁——**`dimension5-acceptance`**（`scripts/dimension5-acceptance.mjs --ci`）、**`cargo-audit`** job（`ci.yml`）、**`cargo-audit-lockfile.yml`**（`Cargo.lock` / `.cargo/audit.toml` PR）；另含 **`cargo-deny`**；`npm-audit` 为 `continue-on-error: true` 可见性。`oclive ci init` 模板同步 deny / loom job。
 
 ### §6.5 未使用 / 可选依赖（审查结论）
 

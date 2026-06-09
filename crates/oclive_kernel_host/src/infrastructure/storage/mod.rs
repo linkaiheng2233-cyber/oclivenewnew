@@ -140,6 +140,8 @@ mod tests {
             interaction_mode: None,
             min_runtime_version: None,
             dev_only: false,
+            featured: false,
+            preset_order: 999,
             plugin_backends: std::sync::Arc::new(crate::models::PluginBackends::default()),
             ui_config: crate::models::UiConfig::default(),
             knowledge_index: None,
