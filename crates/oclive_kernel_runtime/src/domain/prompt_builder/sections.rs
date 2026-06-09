@@ -193,6 +193,18 @@ impl PromptBuilder {
         }
     }
 
+    pub(super) fn event_type_label(event_type: &EventType) -> &'static str {
+        match event_type {
+            EventType::Quarrel => "争吵",
+            EventType::Apology => "道歉",
+            EventType::Praise => "赞美",
+            EventType::Complaint => "抱怨",
+            EventType::Confession => "表白/坦白",
+            EventType::Joke => "玩笑",
+            EventType::Ignore => "无特别事件",
+        }
+    }
+
     pub(super) fn build_event_relation_state(
         relation_before: &str,
         favorability_before: f64,
@@ -201,6 +213,7 @@ impl PromptBuilder {
         event_type: &EventType,
         impact_factor: f64,
     ) -> String {
+        let impact = impact_factor.clamp(-1.0, 1.0);
         let mut s = String::from("【本轮事件与关系状态机】\n");
         s.push_str(&format!("当前关系阶段: {}\n", relation_before));
         s.push_str(&format!(
@@ -213,10 +226,9 @@ impl PromptBuilder {
             relation_preview,
             favorability_preview.clamp(0.0, 100.0)
         ));
-        s.push_str(&format!("本轮事件类型: {:?}\n", event_type));
         s.push_str(&format!(
-            "本轮影响因子(已归一): {:.3} (范围 -1.0 ~ 1.0)\n",
-            impact_factor.clamp(-1.0, 1.0)
+            "本轮事件类型: {}\n",
+            Self::event_type_label(event_type)
         ));
         s.push_str("\n硬约束（必须遵守）：\n");
         s.push_str("- 关系阶段与好感决定亲密度：低阶段/低好感时不要突然使用过度亲昵称呼、不要突然表白或承诺长期关系。\n");
@@ -296,10 +308,6 @@ impl PromptBuilder {
         let boundary_tone_level = (stage_weight * (1.0 - warmup_level * 0.45)).clamp(0.0, 1.0);
 
         let mut s = String::from("【边界语气控制指引】\n");
-        s.push_str(&format!(
-            "7维等权连续分数 warmup_level={:.3}，边界约束强度 boundary_tone_level={:.3}。\n",
-            warmup_level, boundary_tone_level
-        ));
         if boundary_tone_level >= 0.7 {
             s.push_str("- 当前处于低阶段或升阶边界，语气请慢热、谨慎、先建立安全感；避免突然亲昵称呼或强承诺。\n");
         } else if boundary_tone_level >= 0.4 {
