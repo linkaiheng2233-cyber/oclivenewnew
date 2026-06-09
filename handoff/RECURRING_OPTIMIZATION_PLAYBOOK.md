@@ -216,6 +216,8 @@ npm run check:rust                               # fmt + clippy(-D warnings) + t
 | 1 | 2026-06-09 | 全 | PASS | A− | 无新债;槽态矩阵 24 格全有路径,缺口=remote 缺 env 静默回退;D-SLOT-01/D-PORT-02 维持 Deferred(冻结期) | Theater v0 冻结期巡检,只防回退 |
 | 2 | 2026-06-09 | 半 | PASS | A− | Wave1–3: D-ERR-01/K-PROFILE-04/D-CLEAN-01 Done; V-THEATER-PERF-01/V-SLOT-HONEST-01 Done; re-export 77; layering FQ 1 | 工程夯实轨 Wave 1–3 合并 |
 | 3 | 2026-06-09 | 全 | PASS | A− | Wave4 条件门: 陌生人测试未执行; C 档维持 Deferred; Phase 5 解冻 **不启动** | 见 TECHNICAL_DEBT §巡检债 Wave |
+| 4 | 2026-06-10 | 半 | PASS* | A− | oclive-vscode IA 统一 + ensureReady 缓存 + 轮询退避 + 占位清理; V-VSCODE-PERF-05 F5/.vsix 仍 Pending | *姊妹仓 lint/compile/smoke; 主仓基线未重跑 |
+| 5 | 2026-06-10 | 快 | n/a* | — | oclive-vscode 用户报障修复: 设置内即时切角色卡死(handleMessage 串行化 + switchRole guard 全程保持 + 去重 pushState) / 模型调用不稳(ensureReady 三态 trust·revalidate·replan, 健康连接不再整轮重规划/mock 杀端口) / 角色下拉栏改 Cursor 配色 / 新增 ensureReadyPolicy+serialQueue 单测; V-VSCODE-FIX-01·02 / UI-01 / QA-01 Done | *姊妹仓 lint/compile/test:unit/webview build 通过; 主仓基线未跑 |
 
 ---
 

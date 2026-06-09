@@ -403,3 +403,19 @@ DeepSeek 五维方向二轮复审（Opus 4.8）。维度五基线复跑：`node 
 | Phase 5 表逐项评估 | — | **C 档开工 0**；dual_core / expert_routing **维持冻结** |
 
 全档巡检（轮次 3）基线 PASS；待陌生人测试 ≥60% 通过后复评 Phase 5。
+
+### VS Code 发行版（姊妹仓 `oclive-vscode` · 2026-06-10）
+
+| ID | Item | Status | Notes |
+|----|------|--------|-------|
+| **V-VSCODE-IA-01** | 双 webview 范式（内联 Chat HTML vs Svelte Settings） | **Done** | 单一 Svelte `App.svelte` + `view` 路由；`getShellHtml` 已移除 |
+| **V-VSCODE-PERF-01** | `ensureReady` 每 API 调用重跑 discover/cli/health | **Done** | 5s TTL + in-flight 去重；`reconnectKernel`/失败时 `invalidateEnsureReady` |
+| **V-VSCODE-PERF-02** | 设置快照串行 6 连发 | **Done** | `buildStateSnapshot` `Promise.all` 并行只读请求 |
+| **V-VSCODE-PERF-03** | 角色快照轮询侧栏隐藏仍 15s | **Done** | `onDidChangeVisibility`：可见 15s / 隐藏 60s（对齐 K-PERF-11） |
+| **V-VSCODE-HONEST-01** | `penetration.*` / `portraitMaxHeight` 占位配置 | **Done** | schema 移除；高级区「实验性（未实现）」折叠 |
+| **V-VSCODE-PERF-04** | Chat 对话流每 patch 全量 innerHTML | **Done** | `appendLines` 增量 + Svelte `{#each}` |
+| **V-VSCODE-PERF-05** | F5 实机 / `.vsix` 发布验收 | **Pending** | 见 `oclive-vscode/ROADMAP.md` |
+| **V-VSCODE-FIX-01** | 设置内即时/连点切角色 → 插件卡死 | **Done** | `SettingsController.handleMessage` 经 `serialQueue` 串行化；`switchRoleInFlight` guard 全程保持（含尾部 pushState）；`handleSelectRole` 去重 pushState；切角色仅在设置面可见时跑快照 |
+| **V-VSCODE-FIX-02** | 模型调用不稳（连接抖动打断内核 → fallback） | **Done** | `ensureReady` 决策抽到纯函数 `ensureReadyPolicy`（trust/revalidate/replan）：健康连接不再整轮重规划、mock 模式不再反复杀端口重启；连接相关设置改动 `invalidateEnsureReady` |
+| **V-VSCODE-UI-01** | 角色切换下拉栏过亮 | **Done** | `.role-select` / 共享 `Select` 改用 `--vscode-dropdown-*` 主题色 + 常规字重 + focusBorder 描边（Cursor 风格） |
+| **V-VSCODE-QA-01** | 纯逻辑无单测 | **Done** | `scripts/test-unit.mjs` 覆盖 `ensureReadyPolicy` + `serialQueue`；`npm run test:unit`（tsc + node） |
