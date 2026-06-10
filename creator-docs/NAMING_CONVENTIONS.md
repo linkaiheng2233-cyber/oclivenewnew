@@ -107,7 +107,7 @@ This page is the **naming SSOT** for OCLive. Key rules:
 | L3 二进制 | `oclive_kernel_server` | 无头 `oclive-kernel-server --api` 入口 | CLI 参数 only | `src/main.rs` |
 | L3 二进制 | `oclivenewnew-tauri` | 桌面 IPC 薄壳、kernel attach | Tauri 命令、深链 | `src-tauri/src/api/` |
 | 工具 | `oclive-cli` | init / pack / bench / doctor | 脚手架模板 | `crates/oclive-cli/` |
-| **实验** | `oclive_runtimed` | HTTP 队列 + 健康代理原型 | **勿接入产品路径** | **不在 workspace** |
+| **实验（已删）** | `oclive_runtimed` | HTTP 队列 + 健康代理原型 | **已于 2026-06-10 删除（D-ORPHAN-01）** | 恢复见 git 历史 |
 
 记忆口诀：**Types = 形状，Contracts = 接口，Runtime = 公式，Host = 流程，Server/Tauri = 入口。**
 
@@ -152,11 +152,10 @@ This page is the **naming SSOT** for OCLive. Key rules:
 
 **后续可选（非 v0.2）**：在 **不 rename crate** 前提下，于 `Cargo.toml` `[package.metadata.docs.rs]` 或 docs.rs 增加 `display-name` 描述；或 v0.3 评估 **crate alias**（Rust 1.77+）仅用于新代码。
 
-### 3.4 `oclive_runtimed` 说明
+### 3.4 `oclive_runtimed` 说明（已删除）
 
-- **不在** workspace members（根 [Cargo.toml](../Cargo.toml)）
-- **未**接入桌面 / CLI / CI / 发行版生命周期
-- 权威描述：[crates/oclive_runtimed/README.md](../crates/oclive_runtimed/README.md)
+- 实验性 scheduler daemon 原型，**已于 2026-06-10 删除**（技术债 D-ORPHAN-01，从未接入产品路径）
+- 恢复方式：`git log --diff-filter=D -- crates/oclive_runtimed`
 - 命名中的 `runtimed` = 实验性 daemon；**不要**与 `oclive_kernel_runtime` 混淆
 
 ---

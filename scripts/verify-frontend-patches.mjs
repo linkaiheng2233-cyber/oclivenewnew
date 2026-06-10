@@ -1,6 +1,10 @@
 /**
  * 自检：关键前端改动是否在本仓库落盘。用法：npm run verify:ui
  * 跳过：set OCLIVE_SKIP_VERIFY=1
+ *
+ * 锚点以当前生产 UI 为准（V1 专业面板已删除）：
+ * - 插件入口：SimplePluginManagerPanel（Ctrl+Shift+F，经 usePluginManagerWindow）
+ * - 模型入口：ModelManagerPanel（Ctrl+Shift+M，经 useModelManagerWindow）
  */
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -15,36 +19,43 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 const checks = [
   {
-    name: "PluginBackendSessionPanel.vue exists",
-    ok: () => existsSync(join(root, "src/components/PluginBackendSessionPanel.vue")),
+    name: "SimplePluginManagerPanel.vue exists (plugin entry, Ctrl+Shift+F)",
+    ok: () => existsSync(join(root, "src/views/SimplePluginManagerPanel.vue")),
   },
   {
-    name: "pluginStore has panelMainTab",
-    ok: () =>
-      readFileSync(join(root, "src/stores/pluginStore.ts"), "utf8").includes("panelMainTab"),
+    name: "ModelManagerPanel.vue exists (model entry, Ctrl+Shift+M)",
+    ok: () => existsSync(join(root, "src/views/ModelManagerPanel.vue")),
   },
   {
-    name: "PluginManagerPanel has V1 professional chrome (插件工作台)",
+    name: "FluentShell mounts SimplePluginManagerPanel",
     ok: () =>
-      readFileSync(join(root, "src/components/plugin-manager/PluginManagerPanel.vue"), "utf8").includes(
-        "插件工作台",
+      readFileSync(join(root, "src/shells/fluent/FluentShell.vue"), "utf8").includes(
+        "SimplePluginManagerPanel",
       ),
   },
   {
-    name: "App.vue has settings-gear-btn",
-    ok: () => readFileSync(join(root, "src/App.vue"), "utf8").includes("settings-gear-btn"),
+    name: "usePluginManagerWindow composable exists",
+    ok: () => existsSync(join(root, "src/composables/usePluginManagerWindow.ts")),
   },
   {
-    name: "App.vue routes plugin manager via openPluginManagerPanel",
+    name: "useGlobalHotkeys wires model manager toggle",
     ok: () =>
-      readFileSync(join(root, "src/App.vue"), "utf8").includes("openPluginManagerPanel"),
+      readFileSync(join(root, "src/composables/useGlobalHotkeys.ts"), "utf8").includes(
+        "modelManagerOpen",
+      ),
   },
 ];
 
 let failed = false;
 for (const c of checks) {
-  const pass = c.ok();
-  console[pass ? "log" : "error"](`${pass ? "OK" : "FAIL"}  ${c.name}`);
+  let pass = false;
+  let err = "";
+  try {
+    pass = c.ok();
+  } catch (e) {
+    err = ` (${e.code ?? e.message})`;
+  }
+  console[pass ? "log" : "error"](`${pass ? "OK" : "FAIL"}  ${c.name}${err}`);
   if (!pass) failed = true;
 }
 

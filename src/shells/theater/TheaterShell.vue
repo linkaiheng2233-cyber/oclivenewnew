@@ -5,11 +5,11 @@ import {
   patchTheaterBeats,
   probeOllamaAvailable,
   resolveImpactedBeatIds,
-} from '../theater/useTheaterBeatPatch'
-import { useTheaterPlayback, useTheaterVariables } from '../theater/useTheaterPlayback'
-import type { TheaterPokeChipId, TheaterSkeleton } from '../theater/types'
-import { NICKNAME_OPTIONS, THEATER_POKE_CHIP_IDS } from '../theater/types'
-import { openPackEditorForRole } from '../utils/openPackEditor'
+} from '../../theater/useTheaterBeatPatch'
+import { useTheaterPlayback, useTheaterVariables } from '../../theater/useTheaterPlayback'
+import type { TheaterPokeChipId, TheaterSkeleton } from '../../theater/types'
+import { NICKNAME_OPTIONS, THEATER_POKE_CHIP_IDS } from '../../theater/types'
+import { openPackEditorForRole } from '../../utils/openPackEditor'
 import StartupWarningsBanner from '../../components/StartupWarningsBanner.vue'
 
 const { t, locale } = useI18n()

@@ -1,5 +1,7 @@
 # REGRESSION — Plugin Manager V2 & Complex Emotion
 
+> **⚠️ 已过时（2026-06-10 巡检标记）**：本清单针对的旧版 `PluginManagerPanel` / `PluginManagerV2` 与「启用新版插件管理界面（预览）」灰度开关均已从主仓删除。当前插件入口为 `SimplePluginManagerPanel`（Ctrl+Shift+F），模型入口为 `ModelManagerPanel`（Ctrl+Shift+M）。本文仅作历史参考，勿按其执行回归。
+
 用于新版插件管理面板（V2）与 Complex Emotion 相关改动的回归检查清单。
 
 ## 执行前准备

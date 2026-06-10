@@ -1,4 +1,4 @@
-﻿# Agent / AI 协作说明（A.I.Live · oclivenewnew）
+# Agent / AI 协作说明（A.I.Live · oclivenewnew）
 
 本仓库为 **A.I.Live / OCLive** —— 开源、可组装、隐私优先的 **AI 角色运行时与开发者平台**（**Tauri + Vue 3 + Rust**；工程代号 **oclive**）。对外叙事强调 **六槽可替换架构、角色包独立分发、发行版 profile 适配、插件市场**；默认角色包（如 `roles/mumu`）为**官方示例**，非产品上限。定位摘要见 [handoff/OCLIVE_POSITIONING_DIFFERENTIATION.md](handoff/OCLIVE_POSITIONING_DIFFERENTIATION.md)。
 
@@ -116,7 +116,7 @@
 ### 前端：插件管理入口与 Tauri `invoke`
 
 - **插件与模型入口**：**Ctrl+Shift+F** 打开极简已安装列表（[`SimplePluginManagerPanel`](src/views/SimplePluginManagerPanel.vue)）；**Ctrl+Shift+M** 打开模型管理（[`ModelManagerPanel`](src/views/ModelManagerPanel.vue) → [`ModelManagerBody`](src/components/model/ModelManagerBody.vue)，本会话 LLM 后端与 Ollama 探测）；顶栏「更多」另有插件市场。逻辑见 [`usePluginManagerWindow.ts`](src/composables/usePluginManagerWindow.ts)、[`useModelManagerWindow.ts`](src/composables/useModelManagerWindow.ts)。文案见 i18n `app.more.*`、`modelManager.*`。
-- **架构图专业面板（代码保留、默认不挂载）**：[`PluginManagerPanel`](src/components/plugin-manager/PluginManagerPanel.vue) 仍可供开发/CLI 场景复用，主应用 `App.vue` 不再默认挂载。
+- **架构图专业面板（V1，已删除）**：旧 `PluginManagerPanel.vue` / `PluginBackendSessionPanel.vue` 已从主仓移除；插件管理统一走 `SimplePluginManagerPanel`，目录插件调试经 pack-editor / 目录插件范式。恢复历史代码见 git。
 - **`invoke` 参数名**：Tauri 将 Rust 命令的 `snake_case` 形参映射为前端的 **camelCase** 键（如 `plugin_id` → `pluginId`）。[`src/api/`](src/api/) 封装（如 `get_plugin_logs`、`spawn_plugin_for_test`）须与之一致；若命令仍手写 `snake_case` 载荷，会出现「missing required key `pluginId`」类错误。
 
 ### Agent / Skill（最小闭环）

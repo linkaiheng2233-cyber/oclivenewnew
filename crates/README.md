@@ -32,8 +32,9 @@ flowchart BT
 | `oclive_validation` / `_wasm` | 角色包/蓝图校验 | 是 | 改 manifest 规则 |
 | `oclive_schema` | 纯 serde schema（blueprint） | 是 | 磁盘形状增量迁移 |
 | `oclive-cli` | 脚手架 init/build/bench | 是 | 模板与 CLI 命令 |
-| `oclive_runtimed` | 实验 scheduler 代理 | **否** | 见 [oclive_runtimed/README.md](oclive_runtimed/README.md) |
 | `src-tauri` | 桌面 IPC 薄壳、`kernel_attach` | 是 | Tauri 命令、attach/spawn |
+
+> 历史：实验 scheduler 代理 `oclive_runtimed` 已于 2026-06-10 删除（D-ORPHAN-01）；恢复见 `git log --diff-filter=D -- crates/oclive_runtimed`。
 
 ## Canonical import 路径
 
@@ -46,7 +47,7 @@ flowchart BT
 ## 常见任务 → 文件
 
 - 单条消息流程 → `oclive_kernel_host/.../process_message.rs`
-- Prompt 段落 → `oclive_kernel_runtime/.../prompt_builder.rs`
+- Prompt 段落 → `oclive_kernel_runtime/.../prompt_builder/mod.rs`（段落公式 `sections.rs`）
 - Tauri 命令 → `src-tauri/src/api/*.rs` + `lib.rs` 注册
 - 角色包校验 → `oclive_validation`
 - 分层纪律 → [handoff/ARCHITECTURE_LAYERING.md](../handoff/ARCHITECTURE_LAYERING.md) + [oclive_kernel_host/src/domain/README.md](oclive_kernel_host/src/domain/README.md)

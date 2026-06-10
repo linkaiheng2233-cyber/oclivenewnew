@@ -1,10 +1,21 @@
 # Technical debt inventory
 
-**Last updated:** 2026-06-10 (round 8 patrol · freeze-safe cleanup)
+**Last updated:** 2026-06-10 (round 9 patrol · over-engineering census + build fix)
 
 **Product freeze (Theater v0):** No new kernel orchestration / six-slot expansion until strangers validate AI Theater v0. See [PRODUCT_FREEZE_THEATER_V0.md](./PRODUCT_FREEZE_THEATER_V0.md). **Deferred unchanged:** D-PORT-02, D-SLOT-01, K-PERF-10, K-PERF-14/15, D-NAME-01, §3.1 library API, dual_core (frozen).
 
-**Verification (2026-06-10 round 8):** `node scripts/dimension5-acceptance.mjs --ci` PASS (7 checks); `cargo test -p oclive_kernel_host --lib` **182** passed; `node scripts/check-domain-layering.mjs` FQ **1**/use **4** PASS (role_manager FQ violation fixed); theater acceptance **9** tests green.
+**Verification (2026-06-10 round 9):** `node scripts/dimension5-acceptance.mjs --ci` PASS (7 checks); `cargo test -p oclive_kernel_host --lib` **182** passed; layering FQ **1**/use **4** PASS; `npm run test:unit` 18 files / **58** passed; `npx vite build` PASS（修复 TheaterShell 导入后）; `npm run verify:ui` PASS（重写锚点后）.
+
+### Round 9 patrol（2026-06-10 · 过度工程普查 + 构建修复）
+
+| ID | Item | Status | Notes |
+|----|------|--------|-------|
+| K-BUILD-02 | `TheaterShell.vue` 相对导入少一层 `../`（`../theater/*` 应为 `../../theater/*`）致 **`vite build` 在 HEAD 上直接失败**；`npm run build` 经 `concurrently` 包裹时表现为挂起 | **Done** | 5 处 import 修正；`npx vite build` 4.5s 绿。Theater v0 demo 构建路径恢复 |
+| D-SCRIPT-01 | `verify:ui`（`scripts/verify-frontend-patches.mjs`）5 锚点中 4 个引用已删 V1 面板（`PluginManagerPanel` / `PluginBackendSessionPanel` / `panelMainTab`），且 `readFileSync` 异常未捕获直接崩溃；`check:release` 链因此必红 | **Done** | 重写为当前生产锚点（`SimplePluginManagerPanel` / `ModelManagerPanel` / FluentShell 挂载 / hotkeys），逐项 try/catch |
+| D-ORPHAN-03 | V1 插件 UI 孤儿组件：`PluginDebugPanel.vue`(10.4KB) / `PluginPrivateSettingsForm.vue`(5.6KB) / `plugin-manager/PluginListItem.vue`(6.9KB) 零生产引用 | **Done·deleted** | rg 全仓零 import；test:unit 58 绿。`usePluginDebug.ts` 因 `RpcTester` 仍用 `RpcHistoryItem` 类型而保留（**Observe**）；`devTools.pluginDebug.*` i18n 键随之半孤儿，待 RpcTester 处置时一并清 |
+| K-DOC-08 | `oclive_runtimed` 删除后幽灵引用（`crates/README.md` 速查表行 + `NAMING_CONVENTIONS.md` §3.1/§3.4 + `P4_CRATE_AUDIT.md`）；`crates/README.md` `prompt_builder.rs` 路径笔误；`AGENTS.md` 仍称 V1 面板「代码保留」；`REGRESSION_COMPLEX_EMOTION_QA.md` 整篇针对已删 UI | **Done** | 全部更正/标注已删；QA 文档加过时横幅 |
+| D-TRAIT-01 | 单实现 trait 普查：contracts 22 个 pub trait 中 **16 个仅 1 个生产实现**（Repository 五件套、Policy 三件套、`FunctionCallingParserPort`、`McpBridgePort` 等）+ host 侧 7 个 port 亦单实现（`DbHealthPort`、`ConversationStore`…） | **Deferred** | 冻结期不动刀；thaw 后逐个裁决「保留为 DI 端口 / 降级具体类型」。多实现 trait（`LlmClient` 7+、`MemoryRetrieval` 8+、`AgentProvider` 5+）证明六槽端口本身有效 |
+| D-PORT-02 | （更正计数）god-port 实测 **24** 方法（原记 22），`backend_registry.rs:797-919` 纯转发 | **Deferred** | 维持冻结；证据更新 |
 
 ### Freeze-safe audit（2026-06-09）
 
