@@ -2,6 +2,8 @@
 
 本仓库为 **A.I.Live / OCLive** —— 开源、可组装、隐私优先的 **AI 角色运行时与开发者平台**（**Tauri + Vue 3 + Rust**；工程代号 **oclive**）。对外叙事强调 **六槽可替换架构、角色包独立分发、发行版 profile 适配、插件市场**；默认角色包（如 `roles/mumu`）为**官方示例**，非产品上限。定位摘要见 [handoff/OCLIVE_POSITIONING_DIFFERENTIATION.md](handoff/OCLIVE_POSITIONING_DIFFERENTIATION.md)。
 
+**人类开发者（不用 Cursor）**：请先 [human-docs/README.md](human-docs/README.md)（30 分钟跑通与内核主链）；本文与 `creator-docs/` / `handoff/` 为 **AI 接手包** 组成部分。
+
 自动化助手或外部 Agent 在修改代码前，请先阅读：
 
 - **命名与 canonical import SSOT**：[creator-docs/NAMING_CONVENTIONS.md](creator-docs/NAMING_CONVENTIONS.md)（DTO → `oclive_kernel_types`；trait → `oclive_kernel_contracts`；编排 → `oclive_kernel_host`）
@@ -18,7 +20,7 @@
 
 独立 SemVer 策略见 [`creator-docs/development/RELEASE_VERSIONING.md`](creator-docs/development/RELEASE_VERSIONING.md)；用户可见变更见 [`CHANGELOG.md`](CHANGELOG.md) **`[0.3.0]`**。
 
-- **跨平台**：[`docs/DEV_CROSS_PLATFORM.md`](docs/DEV_CROSS_PLATFORM.md)。
+- **跨平台**：Windows 需 MSVC（见 [CONTRIBUTING.md §开发环境](CONTRIBUTING.md#开发环境)）；Cargo `target-dir` 见 [`.cargo/config.toml`](.cargo/config.toml)。
 - **Rust Release / workspace 依赖**：[`handoff/RUST_RELEASE_AND_DEPENDENCIES.md`](handoff/RUST_RELEASE_AND_DEPENDENCIES.md)。
 - **性能与包体**：阶段总表 [`handoff/PERF_PHASES.md`](handoff/PERF_PHASES.md)（v0.2 P1–P3 已收尾）；[`handoff/PERFORMANCE_BASELINE_ACCEPTANCE.md`](handoff/PERFORMANCE_BASELINE_ACCEPTANCE.md)、前端分包 SSOT [`vite.config.ts`](vite.config.ts) + [`src/build/manualChunks.ts`](src/build/manualChunks.ts)、[`handoff/BUNDLE_RESOURCES_SIZING.md`](handoff/BUNDLE_RESOURCES_SIZING.md)。
 - **项目约束**：根目录 [`.cursor/rules/oclivenewnew.mdc`](.cursor/rules/oclivenewnew.mdc)（编排、持久化、Tauri 命令注册、DTO、Prompt 约定）。

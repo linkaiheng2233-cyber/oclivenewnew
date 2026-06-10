@@ -92,7 +92,7 @@
 
 | 项目 | 说明 |
 |------|------|
-| **迁移位置** | **`src-tauri/migrations/*.sql`**，按序号递增；**勿虚构表名**（以迁移文件为准）。 |
+| **迁移位置** | **`crates/oclive_kernel_host/migrations/*.sql`**，按序号递增；**勿虚构表名**（以迁移文件为准）。 |
 | **`role_runtime`** | 在 **`001_init.sql`** 创建；后续迁移追加列（如 `relation_state`、`virtual_time_ms`、`interaction_mode` 等）。 per-role 会话与立绘情绪等核心运行时态多在此表。 |
 | **`app_settings`** | **`011_app_settings.sql`**：`key` / `value` 文本键值；应用级（非角色包）如 `interaction_mode`、`remote_fallback_to_builtin`。 |
 | **新迁移步骤** | 新增 `0NN_*.sql` → 若需 ORM/仓库层映射，改 **`src-tauri/src/infrastructure`** 与 **`domain/repository`** trait → 跑 `cargo test` 与相关集成测 → 文档若暴露给用户则更新 ERROR_CODES / FAQ。 |

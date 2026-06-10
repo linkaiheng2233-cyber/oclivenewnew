@@ -163,6 +163,20 @@ This page is the **naming SSOT** for OCLive. Key rules:
 
 ---
 
+## 3.5 运行时缩写（人类文档对齐）
+
+代码与日志中常见缩写；全名见 [human-docs/03_GLOSSARY.md](../human-docs/03_GLOSSARY.md)。
+
+| 缩写 | 含义 | 代码锚点 |
+|------|------|----------|
+| **`mrid`** | manifest role id（角色包 ID） | `SendMessageRequest.role_id` |
+| **`srid`** | session-scoped role id（DB / 缓存命名空间） | `conversation_state_role_id(mrid, session_id)` |
+| **`pl`** | 本回合 `ResolvedRolePlugins`（六槽句柄集） | `process_message` 内局部名 |
+
+**规则**：文档与 Issue 首次出现写「`srid`（session-scoped role id）」；禁止把 `srid` 与 `mrid` 混称为「角色 id」而不加限定。
+
+---
+
 ## 4. Re-export 多路径与 canonical import
 
 ### 4.1 现状（已核实）
@@ -177,6 +191,13 @@ This page is the **naming SSOT** for OCLive. Key rules:
 | 校验 | `oclive_validation` | `oclive_kernel_types`（`SlotRegistryEntry` 等）、`oclive_validation_wasm` | 类型级 re-export 少量 |
 
 ### 4.2 Canonical import 路径（新代码必须遵守）
+
+**唯一过渡规则（与 [CONTRIBUTING.md §Rust import 纪律](../CONTRIBUTING.md#rust-import-纪律) 对齐）**：
+
+1. **新 Rust 代码**只从 canonical crate import（下表「Canonical import」列）。
+2. **禁止**为取 DTO / trait 而新增 `use oclive_kernel_runtime::SendMessageRequest` 等绕路（runtime 仅保留路径、内核发现、引擎 `domain/*` 合法用途）。
+3. **`src-tauri`** 经 `oclive_kernel_host` / `oclive_kernel_types` 消费内核；**勿**假设编排仍在 `src-tauri/src/domain`（**P1 Done，已迁出**）。
+4. 存量 re-export 可读，但 PR 触及时优先改为 canonical 路径。
 
 | 你在写… | Canonical import | 禁止作为新代码首选 |
 |---------|------------------|-------------------|

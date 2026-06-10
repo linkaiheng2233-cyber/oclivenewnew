@@ -1,6 +1,20 @@
 //! # Blueprint `slot_registry` → executable slot list
 //!
 //! **Role**: reads validated `slot_registry` from the role pack (`pipeline.ocblueprint`), binds each instance to a concrete implementation in the backend registry port, and produces [`ResolvedRoleSlots`] for [`SlotRunner`](super::slot_runner::SlotRunner) merge execution.
+//!
+//! ## Six host slots × backend → implementation (via [`BackendRegistry`](crate::infrastructure::backend_registry::BackendRegistry))
+//!
+//! | `slot_registry.type` | `PluginBackends` key | `backend` enum | Resolved trait | Builtin | Remote | Directory | None |
+//! |----------------------|----------------------|----------------|----------------|---------|--------|-----------|------|
+//! | `memory` | `.memory` | `MemoryBackend` | `Arc<dyn MemoryRetrieval>` | `BuiltinMemoryRetrieval` | `RemoteMemoryRetrievalHttp` | per `directory_plugins.memory` plugin id | `NoopMemoryRetrieval` |
+//! | `emotion` | `.emotion` | `EmotionBackend` | `Arc<dyn UserEmotionAnalyzer>` | `BuiltinUserEmotionAnalyzer` | `RemoteUserEmotionAnalyzerHttp` | per `directory_plugins.emotion` | `NoopUserEmotionAnalyzer` |
+//! | `event` | `.event` | `EventBackend` | `Arc<dyn EventEstimator>` | `BuiltinEventEstimator` | `RemoteEventEstimatorHttp` | per `directory_plugins.event` | `NoopEventEstimator` |
+//! | `prompt` | `.prompt` | `PromptBackend` | `Arc<dyn PromptAssembler>` | `BuiltinPromptAssembler` | `RemotePromptAssemblerHttp` | per `directory_plugins.prompt` | `NoopPromptAssembler` |
+//! | `llm` | `.llm` | `LlmBackend` | `Arc<dyn LlmClient>` | Ollama client | `RemoteLlmHttp` | per `directory_plugins.llm` | `NoopLlmClient` |
+//! | `agent` | `.agent` | `AgentBackend` | `Arc<dyn AgentProvider>` | `BuiltinReActAgent` | `AgentRpcProvider` | per `directory_plugins.agent` | `NoopAgentProvider` |
+//!
+//! Facility slot `complex_emotion` (not a six-slot host key) resolves via `pick_complex_emotion_winner` on the same registry.
+//! Session override may replace effective `llm` backend before instance bind ([`resolve_with_session_backends`]).
 
 use crate::domain::agent::AgentProvider;
 use crate::domain::complex_emotion::ComplexEmotionProvider;

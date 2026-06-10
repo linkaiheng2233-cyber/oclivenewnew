@@ -10,6 +10,8 @@
 
 本地优先的 **AI 角色组装平台**（开源、可组装、隐私优先）：**Tauri + Vue 3 + Rust** 运行时 + **六槽可替换模块** + **角色包独立分发** + **发行版 profile** + **插件市场**。默认角色包（如 `roles/mumu`）为**官方示例**，展示平台能力；社区创作与分发角色包是核心价值。工程代号 **oclive**。
 
+**人类开发者：从这里开始 → [human-docs/](human-docs/)**（30 分钟跑通：`npm install` → `npm run tauri:dev` → `npm run check`）。使用 Cursor / Agent 见 [AGENTS.md](AGENTS.md)。
+
 **架构（摘要）**：A.I.Live 采用 **契约型薄核** + **单核双态构建架构**——**六宿主后端模块**（memory / emotion / event / prompt / llm / agent）经 `PluginHost` 接入；**第 N 设施子模块**（如复杂情感、专家模型）等为编排行内设施模块；**后端模块插件模块** 挂第 K 模块外挂、**不占第 N 模块号**。交付：**OOCP**、角色包、**`oclive-cli` 内核工厂**；构建可选 **Monolith 宏核态**。详见 **[架构总览](creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)**（[English](creator-docs-en/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)）。
 
 ## 当前工程状态（摘要）
@@ -27,10 +29,21 @@
 
 协作说明见根目录 **[AGENTS.md](AGENTS.md)**。
 
+## 贡献者三十分钟路径（主仓）
+
+```bash
+npm install
+npm run tauri:dev          # 桌面客户端 + 热重载
+npm run check              # 日常门禁（build + fmt + clippy + test --lib）
+```
+
+Windows 需 **Visual Studio Build Tools**（MSVC）；Cargo 产物在仓库外 `../oclive-dev-artifacts/oclivenewnew-cargo-target/`。分步说明与验收：[human-docs/02_THIRTY_MINUTE_START.md](human-docs/02_THIRTY_MINUTE_START.md) · 完整贡献流程：[CONTRIBUTING.md](CONTRIBUTING.md)。
+
 ## 开发者入口
 
 | 目标 | 文档 |
 |------|------|
+| **人类接手包**（窄入口 · 学习阶梯 L0–L7） | **[human-docs/README.md](human-docs/README.md)** |
 | **脚手架**（`oclive-cli init` / `dev` / `bench`） | [OCLIVE_CLI_GUIDE.md](creator-docs/cli/OCLIVE_CLI_GUIDE.md) |
 | **角色包规范**（manifest / settings / 身份 / 后处理） | [ROLE_PACK_SPEC.md](creator-docs/role-pack/ROLE_PACK_SPEC.md) |
 | **发行版 profile**（`distro.oclive.toml` / 多宿主 attach） | [DISTRO_KERNEL_LIFECYCLE.md](creator-docs/kernel/DISTRO_KERNEL_LIFECYCLE.md) · [DISTRO_CAPABILITY_PROFILE.md](creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md) |

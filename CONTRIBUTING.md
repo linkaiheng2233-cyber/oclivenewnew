@@ -4,6 +4,8 @@
 
 感谢考虑为 **A.I.Live** 做贡献。项目目标见 [creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md](creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md)。
 
+**人类开发者窄入口**：[human-docs/README.md](human-docs/README.md)（30 分钟跑通 → 术语与约束 → 内核主链 → 首 PR）。使用 Cursor / Agent 见 [AGENTS.md](AGENTS.md)。
+
 ## GitHub 仓库（CI、Dependabot、分支保护）
 
 合并默认分支后，**Dependabot** 会按 [`.github/dependabot.yml`](.github/dependabot.yml) 开依赖更新 PR；**CI** 见 Actions。若你维护组织/仓库设置（分支保护、Secrets 等），见 **[creator-docs/getting-started/GITHUB_REPO_CHECKLIST.md](creator-docs/getting-started/GITHUB_REPO_CHECKLIST.md)**。
@@ -33,6 +35,18 @@ npm run build
 ```
 
 **本地 HTTP API**（与 GUI 同一二进制）：`./oclivenewnew-tauri` / 安装包可执行文件加 **`--api`**，见根目录 [README.md](README.md)「本地 HTTP API」节。
+
+## 工程约束（7 条 · 与 `.cursor/rules` 镜像）
+
+与 [human-docs/04_ENGINEERING_RULES.md](human-docs/04_ENGINEERING_RULES.md)、[`.cursor/rules/oclivenewnew.mdc`](.cursor/rules/oclivenewnew.mdc) 三处同步；变更须同 PR 更新。
+
+1. **编排**：对话主流程在 `crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs`；业务公式在各 `*_engine` / analyzer；**API 层不堆业务**。
+2. **持久化**：`domain/repository.rs` trait + `infrastructure/repositories.rs`；SQL 与表结构以 **`crates/oclive_kernel_host/migrations/001_init.sql`** 为准；禁止虚构表名。
+3. **Tauri**：命令在 `src-tauri/src/api/*.rs`，仅在 `src-tauri/src/lib.rs` 用 `generate_handler!` 注册。
+4. **DTO**：契约以 `crates/oclive_kernel_types/src/models/dto.rs` 为准；回复字段 **`reply`**（非 `response`）；`Emotion` 以 `models/emotion.rs` 为准。
+5. **Prompt**：`PromptBuilder::build_prompt(&PromptInput)` 返回 `String`（**非 `Result`，勿用 `?`**）。
+6. **guardrails**：`KERNEL_DIALOGUE_GUARDRAILS` 每轮恒追加；包级 `reply_quality_anchor` **仅替换**默认锚点，**不可替换** guardrails。
+7. **import**：canonical 路径见 [NAMING_CONVENTIONS §4.2](creator-docs/NAMING_CONVENTIONS.md#42-canonical-import-路径)；六槽键 `plugin_backends` / `slot_registry.type`，禁止 `memory_backend` 等别名。
 
 ## 代码规范（Rust / Vue）
 
@@ -114,7 +128,7 @@ npm run build
 | 新增槽位类型或合并策略 | `slot_runner.rs`、`slot_resolver.rs`、`oclive_validation`（schema + 校验） | `ROLE_PACK_SPEC.md`、前端 `slotRegistry` / 架构图 |
 | 新增插件后端种类 | `plugin_host.rs`（`BackendRegistry`）、`models` 枚举、`PLUGIN_V1.md` | `settings.json` / 蓝图 `slot_registry` 文档 |
 | 调整共景阶段顺序 | `turn_pipeline.rs`（**慎重**；属主编排） | `DESIGN_DECISIONS.md`、OOCP / 集成测 |
-| 新持久化字段 | `src-tauri/migrations/`、`infrastructure/repositories.rs` | 禁止虚构表名；更新 handoff 清单 |
+| 新持久化字段 | `crates/oclive_kernel_host/migrations/`、`infrastructure/repositories.rs` | 禁止虚构表名；更新 handoff 清单 |
 | 新 Tauri 命令 | `src-tauri/src/api/*.rs` + `lib.rs` `generate_handler!` | 前端 `tauri-api.ts` camelCase 键、DTO `reply` 字段 |
 
 ## PR 流程

@@ -1,4 +1,17 @@
 //! `pipeline.ocblueprint` schema_version 3 (dual-core P1 contract validation).
+//!
+//! **FROZEN (2026-06)**: v3 schema keys (`pipeline.stable` / `pipeline.experimental`, step DAG shape) are
+//! contract-frozen for validation only. **Production Stable scheduling** does not execute blueprint `steps[]`
+//! as a DSL — runtime order is **`process_message` → `turn_pipeline` → `co_present`** (see
+//! [`BUS_FACTOR_NOTES.md`](../../../handoff/BUS_FACTOR_NOTES.md) §1).
+//!
+//! **Feature gate**: Experimental pipeline steps are consumed only when the host is built with the `dual_core`
+//! Cargo feature **and** `runtime_config.dual_core.enabled` is true. Default desktop / `oclive-kernel-server`
+//! builds keep experimental scheduling off (aligned with [`dual_pipeline.rs`](../oclive_kernel_host/src/domain/dual_pipeline.rs)
+//! module freeze notes).
+//!
+//! **Disambiguation**: This file validates **disk JSON** for `schema_version: 3`. It is not the Rust `dual_pipeline`
+//! orchestrator module and not a rename target for `pipeline.ocblueprint`.
 
 use std::collections::{HashMap, HashSet};
 

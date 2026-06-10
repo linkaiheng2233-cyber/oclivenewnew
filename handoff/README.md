@@ -1,6 +1,8 @@
 # handoff/ — 活跃工程交接文档
 
-本目录仅保留**当前仍被 AGENTS.md、CI 或贡献流程直接引用**的短文。历史批次报告、closure summary、旧周报与编号开发计划已迁入 [`archive/`](archive/)。
+本目录仅保留**当前仍被 AGENTS.md、CI 或贡献流程直接引用**的短文；属 **AI 接手包**（维护者深读）。**新人请先** [human-docs/06_KERNEL_LEARNING_PATH.md](../human-docs/06_KERNEL_LEARNING_PATH.md) 与 [human-docs/08_REFERENCE_MAP.md](../human-docs/08_REFERENCE_MAP.md)，再按需打开本目录。
+
+历史批次报告、closure summary、旧周报与编号开发计划已迁入 [`archive/`](archive/)。
 
 ## 活跃文件（≤15）
 

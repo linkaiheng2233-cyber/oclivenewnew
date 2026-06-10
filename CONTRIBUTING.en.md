@@ -4,6 +4,8 @@
 
 Thank you for helping improve **A.I.Live** (engineering codename **oclive**). High-level goals are described in [creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md](creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md).
 
+**Human onboarding (no Cursor):** start at [human-docs/README.md](human-docs/README.md) — L0–L2 cover clone, `tauri:dev`, and `npm run check` in ~30 minutes. Deeper contract SSOT remains partly Chinese under `creator-docs/`.
+
 ## GitHub (CI, Dependabot, branch protection)
 
 After merges to the default branch, **Dependabot** opens PRs per [`.github/dependabot.yml`](.github/dependabot.yml). **CI** runs on Actions. For org/repo settings (branch protection, secrets), see **[creator-docs/getting-started/GITHUB_REPO_CHECKLIST.md](creator-docs/getting-started/GITHUB_REPO_CHECKLIST.md)**.
