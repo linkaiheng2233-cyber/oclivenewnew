@@ -36,6 +36,7 @@ impl EmotionAnalyzer {
             surprise: 0.0,
             disgust: 0.0,
             neutral: 0.0,
+            extension: None,
         };
 
         if text.is_empty() {

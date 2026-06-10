@@ -376,6 +376,7 @@ mod persist_non_profile_tests {
                 intensity: 0.0,
                 dissonance_score: 0.0,
                 degraded_to_builtin: false,
+                extension: None,
             },
             knowledge_chunk_count: 0,
             ai_event_type: EventType::Praise,

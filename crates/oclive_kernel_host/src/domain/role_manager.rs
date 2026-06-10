@@ -82,6 +82,7 @@ impl RoleManager {
                 surprise: 0.0,
                 disgust: 0.0,
                 neutral: 1.0,
+                extension: None,
             },
         );
 
@@ -175,6 +176,7 @@ impl RoleManager {
                 host_prompt_overlay: "",
                 host_state_expression_hint: "",
                 relation_transition_hint: "",
+                extra_sections: &[],
             })
             .expect("build_prompt");
 

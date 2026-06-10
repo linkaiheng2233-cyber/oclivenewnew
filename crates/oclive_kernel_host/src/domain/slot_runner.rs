@@ -690,7 +690,7 @@ fn registry_instances<'a, T: ?Sized>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::memory_retrieval::{BuiltinMemoryRetrieval, BuiltinMemoryRetrievalV2};
+    use crate::domain::memory_retrieval::BuiltinMemoryRetrieval;
     use crate::models::Memory;
     use chrono::Utc;
 
@@ -730,7 +730,7 @@ mod tests {
             ),
             (
                 "m2".into(),
-                Arc::new(BuiltinMemoryRetrievalV2) as Arc<dyn MemoryRetrieval>,
+                Arc::new(BuiltinMemoryRetrieval) as Arc<dyn MemoryRetrieval>,
             ),
         ];
         let mems = sample_memories();

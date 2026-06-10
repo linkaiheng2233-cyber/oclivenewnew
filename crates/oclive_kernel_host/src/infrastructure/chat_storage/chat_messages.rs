@@ -345,9 +345,9 @@ mod tests {
 
     #[tokio::test]
     async fn odd_configured_cap_keeps_user_assistant_pairs() {
-        use crate::infrastructure::chat_storage::config::resolve_max_messages_per_session;
+        use crate::infrastructure::chat_storage::config::load_max_messages_per_session;
 
-        let cap = resolve_max_messages_per_session(Some(5));
+        let cap = load_max_messages_per_session(Some(5));
         assert_eq!(cap, 4);
 
         let db = mem_db().await;

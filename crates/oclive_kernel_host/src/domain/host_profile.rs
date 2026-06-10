@@ -363,7 +363,7 @@ fn parse_memory(s: Option<&str>) -> std::result::Result<MemoryBackend, AppError>
         None => Ok(MemoryBackend::Builtin),
         Some(v) => match v {
             "builtin" => Ok(MemoryBackend::Builtin),
-            "builtin_v2" => Ok(MemoryBackend::BuiltinV2),
+            "builtin_v2" => Ok(MemoryBackend::Builtin),
             "remote" => Ok(MemoryBackend::Remote),
             "local" => Ok(MemoryBackend::Local),
             "directory" => Ok(MemoryBackend::Directory),
@@ -380,7 +380,7 @@ fn parse_emotion(s: Option<&str>) -> std::result::Result<EmotionBackend, AppErro
         None => Ok(EmotionBackend::Builtin),
         Some(v) => match v {
             "builtin" => Ok(EmotionBackend::Builtin),
-            "builtin_v2" => Ok(EmotionBackend::BuiltinV2),
+            "builtin_v2" => Ok(EmotionBackend::Builtin),
             "remote" => Ok(EmotionBackend::Remote),
             "directory" => Ok(EmotionBackend::Directory),
             "none" => Ok(EmotionBackend::None),
@@ -396,7 +396,7 @@ fn parse_event(s: Option<&str>) -> std::result::Result<EventBackend, AppError> {
         None => Ok(EventBackend::Builtin),
         Some(v) => match v {
             "builtin" => Ok(EventBackend::Builtin),
-            "builtin_v2" => Ok(EventBackend::BuiltinV2),
+            "builtin_v2" => Ok(EventBackend::Builtin),
             "remote" => Ok(EventBackend::Remote),
             "directory" => Ok(EventBackend::Directory),
             "none" => Ok(EventBackend::None),
@@ -412,7 +412,7 @@ fn parse_prompt(s: Option<&str>) -> std::result::Result<PromptBackend, AppError>
         None => Ok(PromptBackend::Builtin),
         Some(v) => match v {
             "builtin" => Ok(PromptBackend::Builtin),
-            "builtin_v2" => Ok(PromptBackend::BuiltinV2),
+            "builtin_v2" => Ok(PromptBackend::Builtin),
             "remote" => Ok(PromptBackend::Remote),
             "directory" => Ok(PromptBackend::Directory),
             "none" => Ok(PromptBackend::None),

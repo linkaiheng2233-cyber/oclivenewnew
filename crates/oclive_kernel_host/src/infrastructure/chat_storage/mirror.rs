@@ -1,6 +1,6 @@
 //! JSON file mirror under `{root}/{role_id}/{scene_id}/` (best-effort, DB is authoritative).
 
-use super::config::resolve_session_dir;
+use super::config::load_session_dir;
 use super::db::{MessageRow, SessionRow};
 use crate::error::{AppError, Result};
 use crate::infrastructure::db::DbManager;
@@ -84,7 +84,7 @@ pub fn mirror_filename(session: &SessionRow) -> String {
 }
 
 pub fn mirror_path_for_session(storage_root: &Path, session: &SessionRow) -> Result<PathBuf> {
-    let dir = resolve_session_dir(storage_root, &session.role_id, &session.scene_id)?;
+    let dir = load_session_dir(storage_root, &session.role_id, &session.scene_id)?;
     Ok(dir.join(mirror_filename(session)))
 }
 
@@ -225,7 +225,7 @@ pub async fn delete_mirror(
     scene_id: &str,
     session_id: &str,
 ) -> Result<()> {
-    let dir = resolve_session_dir(storage_root, role_id, scene_id)?;
+    let dir = load_session_dir(storage_root, role_id, scene_id)?;
     if !dir.is_dir() {
         return Ok(());
     }

@@ -36,7 +36,7 @@ pub use local_plugin_bridge::{
 };
 pub use memory_engine::MemoryEngine;
 pub use memory_retrieval::{
-    BuiltinMemoryRetrieval, BuiltinMemoryRetrievalV2, LocalPluginMemoryRetrieval, MemoryRetrieval,
+    BuiltinMemoryRetrieval, LocalPluginMemoryRetrieval, MemoryRetrieval,
     MemoryRetrievalInput, RemoteMemoryRetrievalPlaceholder,
 };
 pub use personality_engine::PersonalityEngine;

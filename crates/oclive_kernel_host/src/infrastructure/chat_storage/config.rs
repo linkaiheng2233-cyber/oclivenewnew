@@ -30,7 +30,7 @@ pub const DEFAULT_MAX_MESSAGES: i64 = 500;
 
 /// Resolve per-role cap from pack config (falls back to [`DEFAULT_MAX_MESSAGES`]).
 #[must_use]
-pub fn resolve_max_messages_per_session(configured: Option<u32>) -> i64 {
+pub fn load_max_messages_per_session(configured: Option<u32>) -> i64 {
     let raw = configured
         .map(|n| i64::from(n.max(2)))
         .unwrap_or(DEFAULT_MAX_MESSAGES);
@@ -39,7 +39,7 @@ pub fn resolve_max_messages_per_session(configured: Option<u32>) -> i64 {
 
 /// Resolve storage root: env > persisted app setting > `{app_data_dir}/chats/`.
 #[must_use]
-pub fn resolve_storage_root(app_data_dir: &Path) -> PathBuf {
+pub fn load_storage_root(app_data_dir: &Path) -> PathBuf {
     if let Ok(raw) = std::env::var(ENV_CHAT_STORAGE_ROOT) {
         let trimmed = raw.trim();
         if !trimmed.is_empty() {
@@ -83,7 +83,7 @@ pub fn is_path_writable(path: &Path) -> bool {
 /// 3. global persisted setting `chat_storage_root` (unchanged)
 /// 4. default `{app_data}/chats/` (unchanged)
 #[must_use]
-pub fn resolve_storage_root_with_role(
+pub fn load_storage_root_with_role(
     app_data_dir: &Path,
     role_config: &crate::models::RolePackChatStorageConfig,
     role_pack_dir: Option<&Path>,
@@ -132,7 +132,7 @@ pub fn read_role_chat_storage_location(roles_dir: &Path, role_id: &str) -> Strin
 
 /// Resolve mirror root for a manifest role (per-turn / per-role operations).
 #[must_use]
-pub fn resolve_role_chat_storage_root(
+pub fn load_role_chat_storage_root(
     app_data_dir: &Path,
     roles_dir: &Path,
     role_id: &str,
@@ -145,7 +145,7 @@ pub fn resolve_role_chat_storage_root(
         location: loc,
         ..Default::default()
     };
-    resolve_storage_root_with_role(app_data_dir, &cfg, Some(&roles_dir.join(role_id)))
+    load_storage_root_with_role(app_data_dir, &cfg, Some(&roles_dir.join(role_id)))
 }
 
 /// Copy mirror tree when changing storage root (best-effort).
@@ -193,7 +193,7 @@ async fn copy_dir_recursive(from: &Path, to: &Path) -> Result<()> {
 /// # Errors
 ///
 /// Returns [`AppError::InvalidParameter`] when segments are empty after sanitization.
-pub fn resolve_session_dir(root: &Path, role_id: &str, scene_id: &str) -> Result<PathBuf> {
+pub fn load_session_dir(root: &Path, role_id: &str, scene_id: &str) -> Result<PathBuf> {
     let role = sanitize_path_segment(role_id)?;
     let scene = sanitize_path_segment(scene_id)?;
     Ok(root.join(role).join(scene))
@@ -250,10 +250,10 @@ mod tests {
 
     #[test]
     fn resolve_max_messages_rounds_down_to_even() {
-        assert_eq!(resolve_max_messages_per_session(Some(5)), 4);
-        assert_eq!(resolve_max_messages_per_session(Some(3)), 2);
-        assert_eq!(resolve_max_messages_per_session(Some(2)), 2);
-        assert_eq!(resolve_max_messages_per_session(None), DEFAULT_MAX_MESSAGES);
+        assert_eq!(load_max_messages_per_session(Some(5)), 4);
+        assert_eq!(load_max_messages_per_session(Some(3)), 2);
+        assert_eq!(load_max_messages_per_session(Some(2)), 2);
+        assert_eq!(load_max_messages_per_session(None), DEFAULT_MAX_MESSAGES);
     }
 
     #[test]
@@ -262,7 +262,7 @@ mod tests {
         let prev = std::env::var(ENV_CHAT_STORAGE_ROOT).ok();
         let tmp = std::env::temp_dir().join("oclive_chat_storage_test");
         std::env::set_var(ENV_CHAT_STORAGE_ROOT, tmp.to_string_lossy().as_ref());
-        let root = resolve_storage_root(Path::new("/app_data"));
+        let root = load_storage_root(Path::new("/app_data"));
         assert_eq!(root, tmp);
         match prev {
             Some(v) => std::env::set_var(ENV_CHAT_STORAGE_ROOT, v),
@@ -274,7 +274,7 @@ mod tests {
     fn default_root_under_app_data() {
         let _guard = env_root_test_guard();
         std::env::remove_var(ENV_CHAT_STORAGE_ROOT);
-        let root = resolve_storage_root(Path::new("/app_data"));
+        let root = load_storage_root(Path::new("/app_data"));
         assert_eq!(root, Path::new("/app_data/chats"));
     }
 
@@ -294,7 +294,7 @@ mod tests {
             location: "role_pack".to_string(),
             ..Default::default()
         };
-        let root = resolve_storage_root_with_role(Path::new("/app_data"), &config, Some(&role_dir));
+        let root = load_storage_root_with_role(Path::new("/app_data"), &config, Some(&role_dir));
         assert_eq!(root, role_dir.join("chats"));
         let _ = std::fs::remove_dir_all(&role_dir);
     }
@@ -309,7 +309,7 @@ mod tests {
             location: "global".to_string(),
             ..Default::default()
         };
-        let root = resolve_storage_root_with_role(Path::new("/app_data"), &config, Some(&role_dir));
+        let root = load_storage_root_with_role(Path::new("/app_data"), &config, Some(&role_dir));
         assert_eq!(root, Path::new("/app_data/chats"));
         let _ = std::fs::remove_dir_all(&role_dir);
     }
@@ -319,7 +319,7 @@ mod tests {
         let _guard = env_root_test_guard();
         std::env::remove_var(ENV_CHAT_STORAGE_ROOT);
         let config = crate::models::RolePackChatStorageConfig::default();
-        let root = resolve_storage_root_with_role(Path::new("/app_data"), &config, None);
+        let root = load_storage_root_with_role(Path::new("/app_data"), &config, None);
         assert_eq!(root, Path::new("/app_data/chats"));
     }
 
@@ -333,7 +333,7 @@ mod tests {
             ..Default::default()
         };
         let root =
-            resolve_storage_root_with_role(Path::new("/app_data"), &config, Some(&nonexistent));
+            load_storage_root_with_role(Path::new("/app_data"), &config, Some(&nonexistent));
         assert_eq!(root, Path::new("/app_data/chats"));
     }
 }

@@ -103,6 +103,14 @@ if (!ciMode) {
   results.push({ name: 'sample workspace lib tests', ok: true, skipped: true });
 }
 
+runStep('frontend verify:ui anchors', () => {
+  sh('node', ['scripts/verify-frontend-patches.mjs']);
+});
+
+runStep('vite build', () => {
+  sh('node', [path.join(repoRoot, 'node_modules/vite/bin/vite.js'), 'build']);
+});
+
 const failed = results.filter((r) => !r.ok);
 console.log('');
 console.log(`Dimension 5 acceptance: ${failed.length === 0 ? 'PASS' : 'FAIL'} (${results.length} checks)`);

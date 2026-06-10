@@ -14,23 +14,6 @@ impl UserEmotionAnalyzer for BuiltinUserEmotionAnalyzer {
     }
 }
 
-/// Second builtin: any non-empty input returns a **fully neutral** seven-dimension distribution (distinct from `BuiltinUserEmotionAnalyzer`; used to verify backend enum wiring).
-pub struct BuiltinUserEmotionAnalyzerV2;
-
-impl UserEmotionAnalyzer for BuiltinUserEmotionAnalyzerV2 {
-    fn analyze(&self, _text: &str) -> Result<EmotionResult> {
-        Ok(EmotionResult {
-            joy: 0.0,
-            sadness: 0.0,
-            anger: 0.0,
-            fear: 0.0,
-            surprise: 0.0,
-            disgust: 0.0,
-            neutral: 1.0,
-        })
-    }
-}
-
 pub struct RemoteUserEmotionAnalyzerPlaceholder {
     inner: BuiltinUserEmotionAnalyzer,
     warned: AtomicBool,
@@ -69,26 +52,5 @@ impl UserEmotionAnalyzer for RemoteUserEmotionAnalyzerPlaceholder {
 impl Default for RemoteUserEmotionAnalyzerPlaceholder {
     fn default() -> Self {
         Self::new()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::domain::emotion_analyzer::EmotionAnalyzer;
-    use crate::models::Emotion;
-
-    #[test]
-    fn builtin_v2_neutral_differs_from_builtin_on_clear_joy() {
-        let text = "我很开心！";
-        let b = BuiltinUserEmotionAnalyzer.analyze(text).unwrap();
-        let v2 = BuiltinUserEmotionAnalyzerV2.analyze(text).unwrap();
-        assert!(b.joy > 0.2, "builtin should see joy");
-        assert!(v2.neutral >= 0.99);
-        assert_ne!(
-            EmotionAnalyzer::get_dominant_emotion(&b),
-            EmotionAnalyzer::get_dominant_emotion(&v2)
-        );
-        assert_eq!(EmotionAnalyzer::get_dominant_emotion(&v2), Emotion::Neutral);
     }
 }

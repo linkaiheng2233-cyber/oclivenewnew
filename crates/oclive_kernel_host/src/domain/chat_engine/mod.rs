@@ -207,7 +207,7 @@ mod tests {
         let effective = PluginBackends {
             memory: MemoryBackend::Remote,
             emotion: EmotionBackend::Builtin,
-            event: EventBackend::BuiltinV2,
+            event: EventBackend::Builtin,
             prompt: PromptBackend::Remote,
             llm: LlmBackend::Remote,
             ..Default::default()

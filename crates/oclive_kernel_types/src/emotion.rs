@@ -1,6 +1,7 @@
 //! Emotion-analysis result (seven-dimension distribution).
 
 use crate::models::Emotion;
+use crate::SlotExtension;
 
 /// Emotion-analysis result
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -12,6 +13,10 @@ pub struct EmotionResult {
     pub surprise: f64,
     pub disgust: f64,
     pub neutral: f64,
+    /// Optional plugin-specific extension envelope (kernel does not interpret `data`).
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub extension: Option<SlotExtension>,
 }
 
 impl EmotionResult {

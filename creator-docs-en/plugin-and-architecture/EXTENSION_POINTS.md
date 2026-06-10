@@ -44,3 +44,27 @@ Same model as [PLUGIN_V1.md](PLUGIN_V1.md): **v1 uses compile‑time enums** sel
 
 - Sidecar JSON‑RPC: [REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md).  
 - Directory plugins: [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md).
+
+## Contract extension envelope (V-CONTRACT Phase 0)
+
+**Principle**: **minimal kernel interpretation, unlimited carriage** — the kernel understands only core fields; plugin-specific state travels in envelopes instead of endlessly growing `PromptInput` hint fields.
+
+| Type | Location | Role |
+|------|----------|------|
+| `SlotExtension { schema_id, data }` | `oclive_kernel_types::slot_extension` | Opaque JSON envelope for slot plugin output; `schema_id` names the payload schema |
+| `EmotionResult.extension` | `emotion.rs` | Heterogeneous projections beyond seven-dim scores (e.g. CHS triple); `#[serde(default)]`, absent when omitted |
+| `ComplexEmotionOutput.extension` | `complex_emotion.rs` | Optional private fields from complex-emotion sidecars |
+| `PromptInput.extra_sections` | `prompt.rs` | Host-orchestrated generic prompt blocks `{ title, body }[]`; rendered **before** the reply-quality anchor as `【title】\nbody` in order |
+
+Phase 1–3 (capability negotiation via `plugin.describe`, per-slot `slot_state` table, fused-provider publishing) are tracked under **V-CONTRACT** / **V-FUSED** in `handoff/TECHNICAL_DEBT_INVENTORY.md`. **`SCHEMA_VERSION` unchanged**; six-slot enums and blueprint `slot_registry` keys unchanged.
+
+## Contract evolution rules
+
+Aligned with [BREAKING_CHANGE_PROCESS.md](../../handoff/BREAKING_CHANGE_PROCESS.md); extension-point specifics:
+
+1. **Additive-only**: new DTO / JSON-RPC fields must be `#[serde(default)]` or optional at the protocol layer; older clients/plugins must parse when new fields are omitted.
+2. **Enum evolution**: externally visible Rust enums that may grow should use `#[non_exhaustive]`; matches need `_` fallbacks or explicit degradation — never assume a closed variant set.
+3. **Interpret vs carry**: orchestration depends only on **documented core fields**; new hint-like capabilities should prefer `SlotExtension` or `extra_sections` over new top-level `PromptInput` fields (existing fields stay compatible; further stacking is discouraged).
+4. **Breaking changes**: removing fields, changing semantics, bumping `SendMessageResponse.schema` / `SCHEMA_VERSION`, or renaming six-slot keys → follow the Breaking process (compat layers, `oclive_validation`, contract docs, bilingual CHANGELOG).
+5. **Remote protocol**: new methods (e.g. Phase 1 `plugin.describe`) are **optional**; not implemented = zero capability — must not force upgrades.
+6. **Persistence**: attaching `extension` to types already stored in DB (e.g. `Memory`) requires a separate migration assessment (`slot_state` in Phase 2 is the preferred private-state channel).

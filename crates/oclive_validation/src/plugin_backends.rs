@@ -7,8 +7,8 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "snake_case")]
 pub enum MemoryBackend {
     #[default]
+    #[serde(alias = "builtin_v2")]
     Builtin,
-    BuiltinV2,
     Remote,
     /// Locally registered memory provider (see `_local_plugins`)
     Local,
@@ -23,8 +23,8 @@ pub enum MemoryBackend {
 #[serde(rename_all = "snake_case")]
 pub enum EmotionBackend {
     #[default]
+    #[serde(alias = "builtin_v2")]
     Builtin,
-    BuiltinV2,
     Remote,
     Directory,
     None,
@@ -35,8 +35,8 @@ pub enum EmotionBackend {
 #[serde(rename_all = "snake_case")]
 pub enum EventBackend {
     #[default]
+    #[serde(alias = "builtin_v2")]
     Builtin,
-    BuiltinV2,
     Remote,
     Directory,
     None,
@@ -47,8 +47,8 @@ pub enum EventBackend {
 #[serde(rename_all = "snake_case")]
 pub enum PromptBackend {
     #[default]
+    #[serde(alias = "builtin_v2")]
     Builtin,
-    BuiltinV2,
     Remote,
     Directory,
     None,

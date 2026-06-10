@@ -34,6 +34,7 @@ pub mod mcp;
 pub mod models;
 pub mod policy;
 pub mod prompt;
+pub mod slot_extension;
 
 pub use agent::{
     AgentDebugTrace, AgentInput, AgentOutput, AgentProcessRpcResult, AgentRoleConstraints,
@@ -50,7 +51,8 @@ pub use local_plugin::{
 pub use memory_retrieval::MemoryRetrievalInput;
 pub use mcp::{McpServerInfo, McpToolInfo};
 pub use policy::{EmotionPolicyConfig, MemoryPolicyConfig, PolicyConfig, PolicyContext};
-pub use prompt::PromptInput;
+pub use prompt::{PromptExtraSection, PromptInput};
+pub use slot_extension::SlotExtension;
 
 pub use oclive_validation::{SlotGroupEntry, SlotRegistryEntry};
 

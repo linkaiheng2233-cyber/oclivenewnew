@@ -20,6 +20,7 @@
 
 ### Added
 
+- **契约扩展信封（V-CONTRACT Phase 0）**：`SlotExtension { schema_id, data }`；`EmotionResult` / `ComplexEmotionOutput` 可选 `extension`；`PromptInput.extra_sections` 在锚点前注入通用段落；演化规则见 `EXTENSION_POINTS.md`。
 - **热路径 stage tracing（K-PERF-02）**：`oclive_turn` target 输出 per-`ChatStage` `elapsed_ms`；采样见 `creator-docs/getting-started/PERFORMANCE.md` §6。
 - **CHANGELOG CI 门（K-DOC-02）**：`scripts/check-changelog-parity.mjs` 接入 `dimension5-acceptance.mjs`。
 - **AI 剧场 v0（theater 发行版）**：`examples/distro-profiles/theater.oclive.toml`；`TheaterShell` 首屏（隐藏六槽/蓝图）；早饭场景 + 双反差角色包 + 预生成 `skeleton.json`；3 戳点芯片 + 本地 Ollama 局部 beat 改写（失败降级）。

@@ -1,6 +1,6 @@
 # 创作者黄金路径（V4 大纲 · ≤2 页）
 
-**状态**：大纲（Wave 3）；详细步骤待陌生人 Theater 验收后扩写。  
+**状态**：Wave 4 扩写（陌生人 Theater 自动化前置通过）；详细截图待人工陌生人复测。  
 **受众**：初级创作者 —— **30 分钟内**完成可对话角色包，**不涉及** `slot_registry` / 蓝图编排。
 
 ---
@@ -31,13 +31,25 @@
 
 ## 3. 本地试跑（5 分钟）
 
+### 桌面通用
+
 ```powershell
 $env:OCLIVE_ROLES_DIR = "path\to\roles"
 npm run tauri:dev
 ```
 
 - 选择新角色 → 发送「你好」
+- **Ctrl+Shift+F** 打开插件管理（`SimplePluginManagerPanel`）；**Ctrl+Shift+M** 打开模型管理
 - 设置 → 模型管理：确认 LLM 后端可达
+
+### 剧场发行版（`distro_id=theater`）
+
+```powershell
+npm run dev:theater
+```
+
+- 早餐场景 · 双角色对比 · 3 poke chips（见 [PRODUCT_FREEZE_THEATER_V0.md](../../handoff/PRODUCT_FREEZE_THEATER_V0.md)）
+- 自动化烟测：`npm run test:unit` → `src/theater/theater.acceptance.test.ts`（9 测）
 
 ## 4. 分发与下一步（5 分钟）
 

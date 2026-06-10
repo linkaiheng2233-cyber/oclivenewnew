@@ -86,6 +86,7 @@ fn load_knowledge_index_parses_front_matter_and_merge_hints() {
         relation_transition_hint: "",
         user_identity_template: "",
         user_identity_id: "",
+        extra_sections: &[],
     });
     assert!(prompt.contains("【世界观设定】"));
     assert!(prompt.contains("雾城"));

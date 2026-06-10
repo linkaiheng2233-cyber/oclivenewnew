@@ -962,9 +962,9 @@ fn validate_slot_backend_and_fields(key: &str, slot: &SlotRegistryEntry) -> Resu
 
 fn allowed_backends_for_type(slot_type: &str) -> &'static [&'static str] {
     match slot_type {
-        "memory" => &["builtin", "builtin_v2", "remote", "directory", "local", "none"],
+        "memory" => &["builtin", "remote", "directory", "local", "none"],
         "emotion" | "event" | "prompt" => {
-            &["builtin", "builtin_v2", "remote", "directory", "none"]
+            &["builtin", "remote", "directory", "none"]
         }
         "llm" => &["ollama", "remote", "directory", "none"],
         "agent" => &["builtin", "remote", "directory", "none"],

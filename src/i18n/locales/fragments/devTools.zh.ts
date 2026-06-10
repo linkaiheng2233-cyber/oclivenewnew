@@ -80,22 +80,6 @@ export default {
     export: '导出',
     empty: '暂无日志（启动插件进程后 stdout/stderr 会显示在此）。',
   },
-  /** 插件管理 V1 · 单插件调试台（PluginDebugPanel） */
-  pluginDebug: {
-    target: '目标',
-    tabsAria: '调试分区',
-    tabProcess: '进程',
-    tabRpc: 'RPC',
-    tabLogs: '控制台',
-    consoleHint:
-      '下方 <strong>Output</strong> 为环形缓冲（约 1000 行），宿主轮询刷新；与主流 IDE 底部控制台类似。',
-    responseTitle: '响应',
-    outputTitle: '输出',
-    emptyResponse: '（尚无响应）',
-    inspectorAria: '响应与日志输出',
-    rpcMethodEmpty: '请填写 RPC 方法名',
-    rpcParamsInvalid: '参数不是合法 JSON',
-  },
   scaffold: {
     title: '新建插件脚手架',
     fieldId: '插件 ID',

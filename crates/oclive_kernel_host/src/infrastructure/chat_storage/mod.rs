@@ -24,8 +24,8 @@ pub use backends::HybridConversationStore;
 pub use cleanup::{apply_auto_cleanup, apply_auto_cleanup_sqlite, AutoCleanupConfig};
 pub use config::{
     is_path_writable, migrate_mirror_tree, read_role_chat_storage_location,
-    resolve_max_messages_per_session, resolve_role_chat_storage_root, resolve_session_dir,
-    resolve_storage_root, resolve_storage_root_with_role, set_persisted_storage_root,
+    load_max_messages_per_session, load_role_chat_storage_root, load_session_dir,
+    load_storage_root, load_storage_root_with_role, set_persisted_storage_root,
     APP_SETTING_CHAT_STORAGE_ROOT, DEFAULT_MAX_MESSAGES, ENV_CHAT_STORAGE_ROOT,
 };
 pub use db::{highlight_snippet, manifest_sess_glob_pattern, ChatSearchRow};

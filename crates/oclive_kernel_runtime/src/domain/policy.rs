@@ -130,6 +130,7 @@ mod tests {
             surprise: 0.0,
             disgust: 0.0,
             neutral: 1.0,
+            extension: None,
         }
     }
 

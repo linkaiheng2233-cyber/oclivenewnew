@@ -1,8 +1,8 @@
 //! Filesystem + SQLite aggregation for chat storage management UI.
 
 use super::config::{
-    read_role_chat_storage_location, resolve_role_chat_storage_root, resolve_session_dir,
-    resolve_storage_root, sanitize_path_segment,
+    read_role_chat_storage_location, load_role_chat_storage_root, load_session_dir,
+    load_storage_root, sanitize_path_segment,
 };
 use super::mirror::MirrorDocument;
 use super::types::{RoleStorageStat, SceneStorageStat};
@@ -27,7 +27,7 @@ pub fn enumerate_chat_mirror_roots(
     storage_root: &Path,
 ) -> Vec<PathBuf> {
     let mut roots = vec![storage_root.to_path_buf()];
-    let global = resolve_storage_root(app_data_dir);
+    let global = load_storage_root(app_data_dir);
     if global != *storage_root && !roots.iter().any(|r| r == &global) {
         roots.push(global);
     }
@@ -42,7 +42,7 @@ pub fn enumerate_chat_mirror_roots(
             continue;
         }
         let role_id = entry.file_name().to_string_lossy().into_owned();
-        let root = resolve_role_chat_storage_root(app_data_dir, roles_dir, &role_id, None);
+        let root = load_role_chat_storage_root(app_data_dir, roles_dir, &role_id, None);
         if !roots.iter().any(|r| r == &root) {
             roots.push(root);
         }
@@ -99,7 +99,7 @@ async fn accumulate_role_pack_mirror_trees(
             continue;
         }
         let role_root =
-            resolve_role_chat_storage_root(app_data_dir, roles_dir, &role_id, Some("role_pack"));
+            load_role_chat_storage_root(app_data_dir, roles_dir, &role_id, Some("role_pack"));
         accumulate_mirror_tree_bytes(&role_root, by_role).await?;
     }
     Ok(())
@@ -219,7 +219,7 @@ pub async fn collect_chat_storage_stats(
     roles_dir: &Path,
     db: &DbManager,
 ) -> Result<Vec<RoleStorageStat>> {
-    let root = resolve_storage_root(app_data_dir);
+    let root = load_storage_root(app_data_dir);
     let mut by_role: BTreeMap<String, BTreeMap<String, SceneAgg>> = BTreeMap::new();
 
     accumulate_mirror_tree_bytes(&root, &mut by_role).await?;
@@ -291,7 +291,7 @@ pub async fn delete_mirror_scene_dir(
     role_id: &str,
     scene_id: &str,
 ) -> Result<u64> {
-    let dir = resolve_session_dir(storage_root, role_id, scene_id)?;
+    let dir = load_session_dir(storage_root, role_id, scene_id)?;
     let bytes = if dir.is_dir() {
         dir_size_bytes(&dir).await?
     } else {

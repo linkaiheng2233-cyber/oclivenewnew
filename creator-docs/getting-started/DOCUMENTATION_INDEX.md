@@ -33,6 +33,7 @@
 
 | 角色 | 文档 |
 |------|------|
+| **创作者黄金路径（30 分钟 · 不涉及 slot_registry）** | **[CREATOR_GOLDEN_PATH.md](CREATOR_GOLDEN_PATH.md)**（[English](../../creator-docs-en/getting-started/CREATOR_GOLDEN_PATH.md) · 待镜像） |
 | **普通用户**（安装 → 导入角色包 → 对话；不写包/插件） | **[USER_MANUAL.md](USER_MANUAL.md)**（[English](../../creator-docs-en/getting-started/USER_MANUAL.md)）— 含 **§3.4 用户身份**、**§3.5 回复后处理** 说明 |
 | **角色包创作者** | **[../role-pack/CREATOR_LEARNING_PATH.md](../role-pack/CREATOR_LEARNING_PATH.md)**（[English](../../creator-docs-en/role-pack/CREATOR_LEARNING_PATH.md)） |
 | **插件作者** | **[../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md](../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)**（[English](../../creator-docs-en/plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)） |

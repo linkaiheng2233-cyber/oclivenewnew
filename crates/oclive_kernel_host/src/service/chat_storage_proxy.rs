@@ -3,7 +3,7 @@
 use crate::error::{AppError, Result};
 use crate::infrastructure::chat_storage::{
     delete_mirror_scene_dir, delete_mirror_tree_for_role, resolve_export_max_messages,
-    resolve_max_messages_per_session, resolve_role_chat_storage_root, resolve_storage_root,
+    load_max_messages_per_session, load_role_chat_storage_root, load_storage_root,
     role_mirror_tree_bytes, set_persisted_storage_root, spawn_memory_replay, AutoCleanupConfig,
     ChatStorageCapabilities, DeleteChatsResult, ImportChatBucket, ReplayTarget,
     APP_SETTING_CHAT_STORAGE_ROOT,
@@ -17,7 +17,7 @@ async fn role_mirror_root(state: &AppState, role_id: &str) -> PathBuf {
         Ok(role) => role.pack_chat_storage_config.location.clone(),
         Err(_) => "global".to_string(),
     };
-    resolve_role_chat_storage_root(
+    load_role_chat_storage_root(
         state.directory_plugins.app_data_dir(),
         state.storage.roles_dir(),
         role_id,
@@ -96,12 +96,12 @@ pub async fn execute_chat_storage_proxy(
             let session_id = session_id.trim().to_string();
             let max = match state.db_manager.get_chat_session(&session_id).await {
                 Ok(Some(session)) => match state.load_role_cached_async(&session.role_id).await {
-                    Ok(role) => resolve_max_messages_per_session(
+                    Ok(role) => load_max_messages_per_session(
                         role.pack_chat_storage_config.max_messages_per_session,
                     ),
-                    Err(_) => resolve_max_messages_per_session(None),
+                    Err(_) => load_max_messages_per_session(None),
                 },
-                _ => resolve_max_messages_per_session(None),
+                _ => load_max_messages_per_session(None),
             };
             let path = state
                 .conversation_store
@@ -162,15 +162,15 @@ pub async fn execute_chat_storage_proxy(
                 Ok(Some(session)) => {
                     let role_result = state.load_role_cached_async(&session.role_id).await;
                     let max = match &role_result {
-                        Ok(role) => resolve_max_messages_per_session(
+                        Ok(role) => load_max_messages_per_session(
                             role.pack_chat_storage_config.max_messages_per_session,
                         ),
-                        Err(_) => resolve_max_messages_per_session(None),
+                        Err(_) => load_max_messages_per_session(None),
                     };
                     let role_name = role_result.ok().map(|r| r.name.clone());
                     (max, role_name)
                 }
-                _ => (resolve_max_messages_per_session(None), None),
+                _ => (load_max_messages_per_session(None), None),
             };
             let res = state
                 .conversation_store
@@ -284,7 +284,7 @@ pub async fn execute_chat_storage_proxy(
         }
         ChatStorageProxyOp::GetStorageRoot => {
             let app_data = state.directory_plugins.app_data_dir();
-            let root = resolve_storage_root(app_data)
+            let root = load_storage_root(app_data)
                 .to_string_lossy()
                 .into_owned();
             Ok(serde_json::json!({ "path": root }))
@@ -298,13 +298,13 @@ pub async fn execute_chat_storage_proxy(
                     .upsert_app_setting(APP_SETTING_CHAT_STORAGE_ROOT, "")
                     .await?;
                 set_persisted_storage_root(None);
-                let root = resolve_storage_root(app_data)
+                let root = load_storage_root(app_data)
                     .to_string_lossy()
                     .into_owned();
                 return Ok(serde_json::json!({ "path": root }));
             }
             let new_root = PathBuf::from(trimmed);
-            let old_root = resolve_storage_root(app_data);
+            let old_root = load_storage_root(app_data);
             if migrate.unwrap_or(true) && old_root != new_root {
                 crate::infrastructure::chat_storage::migrate_mirror_tree(&old_root, &new_root)
                     .await?;

@@ -122,6 +122,7 @@ fn test_build_prompt() {
         host_prompt_overlay: "",
         host_state_expression_hint: "",
         relation_transition_hint: "",
+        extra_sections: &[],
     });
 
     assert!(prompt.contains("Test Role"));
@@ -185,6 +186,7 @@ fn test_build_prompt_family_includes_guardrail_supplement() {
         host_prompt_overlay: "",
         host_state_expression_hint: "",
         relation_transition_hint: "",
+        extra_sections: &[],
     });
 
     assert!(prompt.contains("家人/长辈场景补充"));
@@ -243,6 +245,7 @@ fn test_prompt_contains_personality() {
         host_prompt_overlay: "",
         host_state_expression_hint: "",
         relation_transition_hint: "",
+        extra_sections: &[],
     });
 
     assert!(prompt.contains("倔强"));
@@ -280,6 +283,7 @@ fn test_prompt_without_memories() {
         host_prompt_overlay: "",
         host_state_expression_hint: "",
         relation_transition_hint: "",
+        extra_sections: &[],
     });
 
     assert!(prompt.contains("用户说"));
@@ -325,6 +329,7 @@ fn boundary_tone_low_stage_high_constraint_contains_slow_warm_guidance() {
         host_prompt_overlay: "",
         host_state_expression_hint: "",
         relation_transition_hint: "",
+        extra_sections: &[],
     });
 
     assert!(prompt.contains("边界语气控制指引"));
@@ -370,6 +375,7 @@ fn boundary_tone_low_stage_low_constraint_not_overly_stiff() {
         host_prompt_overlay: "",
         host_state_expression_hint: "",
         relation_transition_hint: "",
+        extra_sections: &[],
     });
 
     assert!(prompt.contains("边界语气控制指引"));
@@ -408,6 +414,7 @@ fn boundary_tone_high_stage_not_hard_limited() {
         host_prompt_overlay: "",
         host_state_expression_hint: "",
         relation_transition_hint: "",
+        extra_sections: &[],
     });
 
     assert!(!prompt.contains("边界语气控制指引"));
@@ -445,6 +452,7 @@ fn profile_mode_shows_mutable_and_summary_header() {
         host_prompt_overlay: "",
         host_state_expression_hint: "",
         relation_transition_hint: "",
+        extra_sections: &[],
     });
     assert!(prompt.contains("【可变性格档案】"));
     assert!(prompt.contains("更黏人"));
@@ -496,6 +504,7 @@ fn reply_quality_anchor_custom_overrides_default() {
         host_prompt_overlay: "",
         host_state_expression_hint: "",
         relation_transition_hint: "",
+        extra_sections: &[],
     });
     assert!(prompt.contains("【包级质量锚点】仅测试覆盖用。"));
     assert!(!prompt.contains("【回复质量锚点】（每轮须遵守）"));
@@ -536,6 +545,7 @@ fn empty_narrative_hint_skips_section() {
         host_prompt_overlay: "",
         host_state_expression_hint: "",
         relation_transition_hint: "",
+        extra_sections: &[],
     });
     assert!(!prompt.contains("【复杂情感叙事提示】"));
     assert!(prompt.contains("用户说: hi"));
@@ -573,6 +583,7 @@ fn special_chars_in_narrative_hint_preserve_prompt_structure() {
         host_prompt_overlay: "",
         host_state_expression_hint: "",
         relation_transition_hint: "",
+        extra_sections: &[],
     });
     assert!(prompt.contains("【复杂情感叙事提示】"));
     assert!(prompt.contains("引号\""));
@@ -616,6 +627,7 @@ fn prompt_section_order_core_first() {
         host_prompt_overlay: "",
         host_state_expression_hint: "",
         relation_transition_hint: "",
+        extra_sections: &[],
     });
     let core_idx = prompt
         .find("【核心设定·不可违背】")
@@ -666,6 +678,7 @@ fn prompt_three_blocks_present() {
         host_prompt_overlay: "",
         host_state_expression_hint: "",
         relation_transition_hint: "",
+        extra_sections: &[],
     });
     let bottom = prompt.find("底线区块").expect("bottom block");
     let tone = prompt.find("语气区块").expect("tone block");
@@ -704,6 +717,7 @@ fn prompt_scene_constraint_after_core() {
         host_prompt_overlay: "",
         host_state_expression_hint: "",
         relation_transition_hint: "",
+        extra_sections: &[],
     });
     let core_idx = prompt.find("【核心设定·不可违背】").unwrap();
     let scene_idx = prompt.find("【当前场景约束】").unwrap();
@@ -744,6 +758,7 @@ fn prompt_concise_overlay_in_scene_block() {
         host_prompt_overlay: overlay,
         host_state_expression_hint: "",
         relation_transition_hint: "",
+        extra_sections: &[],
     });
     assert!(!prompt.starts_with(overlay));
     let scene_idx = prompt.find("【当前场景约束】").unwrap();
@@ -790,6 +805,7 @@ fn build_character_status_summary_includes_scene_and_host_hint() {
         host_prompt_overlay: "",
         host_state_expression_hint: "更信任用户的技术判断，少寒暄",
         relation_transition_hint: "",
+        extra_sections: &[],
     });
     assert!(prompt.contains("【角色当前状态】"));
     assert!(prompt.contains("好感约 62/100"));
@@ -831,6 +847,7 @@ fn relation_transition_hint_in_tone_block() {
         host_prompt_overlay: "",
         host_state_expression_hint: "",
         relation_transition_hint: hint,
+        extra_sections: &[],
     });
     assert!(prompt.contains("【关系过渡】"));
     assert!(prompt.contains(hint));
@@ -872,6 +889,7 @@ fn custom_anchor_still_has_guardrails_state_and_vent() {
         host_prompt_overlay: "",
         host_state_expression_hint: "",
         relation_transition_hint: "",
+        extra_sections: &[],
     });
     assert!(prompt.contains("【包级锚点】仅人设差异。"));
     let guard_idx = prompt.find("【对话硬约束】").expect("guardrails");
@@ -910,6 +928,7 @@ fn prompt_user_input_before_closing_line() {
         host_prompt_overlay: "",
         host_state_expression_hint: "",
         relation_transition_hint: "",
+        extra_sections: &[],
     });
     let user_idx = prompt.find("用户说: 今天被老板骂了").expect("user line");
     let closing_idx = prompt
@@ -951,6 +970,7 @@ fn event_relation_block_no_impact_factor_jargon() {
         host_prompt_overlay: "",
         host_state_expression_hint: "",
         relation_transition_hint: "",
+        extra_sections: &[],
     });
     assert!(!prompt.contains("影响因子(已归一)"));
     assert!(!prompt.contains("warmup_level="));
@@ -989,10 +1009,60 @@ fn prompt_block_guide_not_triplicated() {
         host_prompt_overlay: "",
         host_state_expression_hint: "",
         relation_transition_hint: "",
+        extra_sections: &[],
     });
     assert_eq!(
         prompt.matches("以下为语气/内容层次，请按序理解").count(),
         1
     );
+}
+
+#[test]
+fn extra_sections_render_before_reply_quality_anchor() {
+    use oclive_kernel_types::PromptExtraSection;
+
+    let role = create_test_role();
+    let personality = create_test_personality();
+    let sections = [PromptExtraSection {
+        title: "插件扩展",
+        body: "请保持角色口吻，同时留意附加约束。",
+    }];
+    let prompt = PromptBuilder::build_prompt(&PromptInput {
+        role: &role,
+        personality: &personality,
+        memories: &[],
+        user_input: "你好",
+        user_emotion: "neutral",
+        user_relation_id: "",
+        relation_hint: "",
+        relation_before: "Stranger",
+        favorability_before: 50.0,
+        relation_preview: "Stranger",
+        favorability_preview: 50.0,
+        event_type: &EventType::Ignore,
+        impact_factor: 0.0,
+        scene_label: "",
+        scene_detail: "",
+        topic_hint_line: "",
+        life_context_line: "",
+        worldview_snippet: "",
+        mutable_personality: "",
+        reply_quality_anchor: effective_reply_quality_anchor(&role),
+        previous_complex_emotion_narrative_hint: "",
+        user_identity_template: "",
+        user_identity_id: "",
+        host_prompt_overlay: "",
+        host_state_expression_hint: "",
+        relation_transition_hint: "",
+        extra_sections: &sections,
+    });
+    let anchor_idx = prompt.find("【回复质量锚点】").unwrap_or_else(|| {
+        prompt
+            .find(DEFAULT_REPLY_QUALITY_ANCHOR.trim())
+            .expect("anchor")
+    });
+    let extra_idx = prompt.find("【插件扩展】").expect("extra section title");
+    assert!(extra_idx < anchor_idx);
+    assert!(prompt.contains("请保持角色口吻，同时留意附加约束。"));
 }
 

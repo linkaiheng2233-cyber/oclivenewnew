@@ -20,6 +20,7 @@
 
 ### Added
 
+- **Contract extension envelope (V-CONTRACT Phase 0)**: `SlotExtension { schema_id, data }`; optional `extension` on `EmotionResult` / `ComplexEmotionOutput`; `PromptInput.extra_sections` injects generic blocks before the quality anchor; evolution rules in `EXTENSION_POINTS.md`.
 - **Hot-path stage tracing (K-PERF-02)**: `oclive_turn` target logs per-`ChatStage` `elapsed_ms`; sample table in `creator-docs/getting-started/PERFORMANCE.md` §6.
 - **CHANGELOG CI gate (K-DOC-02)**: `scripts/check-changelog-parity.mjs` wired into `dimension5-acceptance.mjs`.
 - **AI Theater v0 (`theater` distro)**: `examples/distro-profiles/theater.oclive.toml`; `TheaterShell` first screen (hides six-slot/blueprint UI); breakfast scene + dual contrast role packs + pre-generated `skeleton.json`; 3 poke chips + local Ollama beat patch (graceful fallback).

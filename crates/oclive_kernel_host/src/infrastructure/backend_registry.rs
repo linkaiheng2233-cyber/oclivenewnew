@@ -8,30 +8,26 @@ use crate::domain::noop_slot_backends::{
     NoopAgentProvider, NoopEventEstimator, NoopLlmClient, NoopMemoryRetrieval,
     NoopPromptAssembler, NoopUserEmotionAnalyzer,
 };
-use crate::domain::event_estimator::{
-    BuiltinEventEstimator, BuiltinEventEstimatorV2, EventEstimator,
-};
+use crate::domain::event_estimator::{BuiltinEventEstimator, EventEstimator};
 use crate::domain::local_plugin_bridge::{
     LocalPluginCapability, LocalPluginProviderDescriptor, LocalPluginRegistry,
 };
 use crate::domain::local_plugin_memory_pick::pick_local_memory_provider_refs;
 use crate::domain::memory_retrieval::{
-    BuiltinMemoryRetrieval, BuiltinMemoryRetrievalV2, LocalPluginMemoryRetrieval, MemoryRetrieval,
+    BuiltinMemoryRetrieval, LocalPluginMemoryRetrieval, MemoryRetrieval,
 };
 use crate::domain::ports::LlmClient;
-use crate::domain::prompt_assembler::{
-    BuiltinPromptAssembler, BuiltinPromptAssemblerV2, PromptAssembler,
-};
-use crate::domain::user_emotion_analyzer::{
-    BuiltinUserEmotionAnalyzer, BuiltinUserEmotionAnalyzerV2, UserEmotionAnalyzer,
-};
+use crate::domain::prompt_assembler::{BuiltinPromptAssembler, PromptAssembler};
+use crate::domain::user_emotion_analyzer::{BuiltinUserEmotionAnalyzer, UserEmotionAnalyzer};
 use crate::infrastructure::agent_mcp_bridge::AgentMcpBridge;
 use crate::infrastructure::function_call_parser::BuiltinFunctionCallingParser;
 use crate::infrastructure::directory_plugins::DirectoryPluginRuntime;
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
 use crate::infrastructure::mcp_client::McpClient;
 use async_trait::async_trait;
-use oclive_kernel_contracts::{McpBridgePort, PluginBackendRegistryPort};
+use oclive_kernel_contracts::{
+    AgentMcpRegistryPort, LocalPluginRegistryPort, McpBridgePort, SlotBackendFactoryPort,
+};
 use oclive_kernel_types::{
     AgentDebugTrace, AgentToolResult, McpServerInfo, McpToolInfo,
 };
@@ -81,16 +77,12 @@ impl ComplexEmotionProvider for RemoteComplexEmotionArc {
 /// Backend registry: manages builtin / remote slots and provides a scaffold for local provider registration.
 pub struct BackendRegistry {
     memory_builtin: Arc<dyn MemoryRetrieval>,
-    memory_builtin_v2: OnceLock<Arc<dyn MemoryRetrieval>>,
     memory_remote: OnceLock<Arc<dyn MemoryRetrieval>>,
     emotion_builtin: Arc<dyn UserEmotionAnalyzer>,
-    emotion_builtin_v2: OnceLock<Arc<dyn UserEmotionAnalyzer>>,
     emotion_remote: OnceLock<Arc<dyn UserEmotionAnalyzer>>,
     event_builtin: Arc<dyn EventEstimator>,
-    event_builtin_v2: OnceLock<Arc<dyn EventEstimator>>,
     event_remote: OnceLock<Arc<dyn EventEstimator>>,
     prompt_builtin: Arc<dyn PromptAssembler>,
-    prompt_builtin_v2: OnceLock<Arc<dyn PromptAssembler>>,
     prompt_remote: OnceLock<Arc<dyn PromptAssembler>>,
     llm_remote: OnceLock<Arc<dyn LlmClient>>,
     llm_ollama: Arc<dyn LlmClient>,
@@ -138,21 +130,9 @@ impl BackendRegistry {
         })
     }
 
-    fn memory_builtin_v2(&self) -> Arc<dyn MemoryRetrieval> {
-        self.memory_builtin_v2
-            .get_or_init(|| Arc::new(BuiltinMemoryRetrievalV2))
-            .clone()
-    }
-
     fn memory_remote(&self) -> Arc<dyn MemoryRetrieval> {
         self.memory_remote
             .get_or_init(|| self.remote_plugin_group().memory.clone())
-            .clone()
-    }
-
-    fn emotion_builtin_v2(&self) -> Arc<dyn UserEmotionAnalyzer> {
-        self.emotion_builtin_v2
-            .get_or_init(|| Arc::new(BuiltinUserEmotionAnalyzerV2))
             .clone()
     }
 
@@ -162,21 +142,9 @@ impl BackendRegistry {
             .clone()
     }
 
-    fn event_builtin_v2(&self) -> Arc<dyn EventEstimator> {
-        self.event_builtin_v2
-            .get_or_init(|| Arc::new(BuiltinEventEstimatorV2))
-            .clone()
-    }
-
     fn event_remote(&self) -> Arc<dyn EventEstimator> {
         self.event_remote
             .get_or_init(|| self.remote_plugin_group().event.clone())
-            .clone()
-    }
-
-    fn prompt_builtin_v2(&self) -> Arc<dyn PromptAssembler> {
-        self.prompt_builtin_v2
-            .get_or_init(|| Arc::new(BuiltinPromptAssemblerV2))
             .clone()
     }
 
@@ -215,7 +183,7 @@ impl BackendRegistry {
 
     fn agent_directory_slot(&self, backends: &PluginBackends) -> Arc<dyn AgentProvider> {
         let builtin = self.agent_builtin.clone() as Arc<dyn AgentProvider>;
-        self.resolve_directory_slot(
+        self.pick_directory_slot(
             "agent",
             backends,
             &self.directory_agent_cache,
@@ -236,7 +204,7 @@ impl BackendRegistry {
         )
     }
 
-    fn resolve_directory_slot<T, Pick, Build>(
+    fn pick_directory_slot<T, Pick, Build>(
         &self,
         module: &'static str,
         backends: &PluginBackends,
@@ -367,16 +335,12 @@ impl BackendRegistry {
         let remote_http_client = remote_plugin::build_shared_remote_http_client();
         Self {
             memory_builtin: Arc::new(BuiltinMemoryRetrieval),
-            memory_builtin_v2: OnceLock::new(),
             memory_remote: OnceLock::new(),
             emotion_builtin: Arc::new(BuiltinUserEmotionAnalyzer),
-            emotion_builtin_v2: OnceLock::new(),
             emotion_remote: OnceLock::new(),
             event_builtin: Arc::new(BuiltinEventEstimator),
-            event_builtin_v2: OnceLock::new(),
             event_remote: OnceLock::new(),
             prompt_builtin: Arc::new(BuiltinPromptAssembler),
-            prompt_builtin_v2: OnceLock::new(),
             prompt_remote: OnceLock::new(),
             llm_remote: OnceLock::new(),
             llm_ollama,
@@ -426,7 +390,7 @@ impl BackendRegistry {
     }
 
     fn llm_directory_slot(&self, backends: &PluginBackends) -> Arc<dyn LlmClient> {
-        self.resolve_directory_slot(
+        self.pick_directory_slot(
             "llm",
             backends,
             &self.directory_llm_cache,
@@ -450,7 +414,6 @@ impl BackendRegistry {
     ) -> Arc<dyn MemoryRetrieval> {
         match backends.memory {
             MemoryBackend::Builtin => self.memory_builtin.clone(),
-            MemoryBackend::BuiltinV2 => self.memory_builtin_v2(),
             MemoryBackend::Remote => self.memory_remote(),
             MemoryBackend::Local => self.memory_local_slot_for(backends),
             MemoryBackend::Directory => self.memory_directory_slot(backends),
@@ -476,7 +439,7 @@ impl BackendRegistry {
         if pick.provider_id.is_none() {
             tracing::warn!(
                 target: "oclive_plugin",
-                "plugin_backends.memory=local but no registered local memory provider; ranking uses builtin_v2"
+                "plugin_backends.memory=local but no registered local memory provider; ranking uses builtin"
             );
         } else if pick.hint_missed {
             tracing::warn!(
@@ -493,13 +456,13 @@ impl BackendRegistry {
             );
         }
         Arc::new(LocalPluginMemoryRetrieval::new(
-            self.memory_builtin_v2(),
+            self.memory_builtin.clone(),
             pick.provider_id,
         ))
     }
 
     fn memory_directory_slot(&self, backends: &PluginBackends) -> Arc<dyn MemoryRetrieval> {
-        self.resolve_directory_slot(
+        self.pick_directory_slot(
             "memory",
             backends,
             &self.directory_memory_cache,
@@ -524,7 +487,6 @@ impl BackendRegistry {
     ) -> Arc<dyn UserEmotionAnalyzer> {
         match backends.emotion {
             EmotionBackend::Builtin => self.emotion_builtin.clone(),
-            EmotionBackend::BuiltinV2 => self.emotion_builtin_v2(),
             EmotionBackend::Remote => self.emotion_remote(),
             EmotionBackend::Directory => self.emotion_directory_slot(backends),
             EmotionBackend::None => self.emotion_none.clone(),
@@ -539,7 +501,7 @@ impl BackendRegistry {
     }
 
     fn emotion_directory_slot(&self, backends: &PluginBackends) -> Arc<dyn UserEmotionAnalyzer> {
-        self.resolve_directory_slot(
+        self.pick_directory_slot(
             "emotion",
             backends,
             &self.directory_emotion_cache,
@@ -564,7 +526,6 @@ impl BackendRegistry {
     ) -> Arc<dyn EventEstimator> {
         match backends.event {
             EventBackend::Builtin => self.event_builtin.clone(),
-            EventBackend::BuiltinV2 => self.event_builtin_v2(),
             EventBackend::Remote => self.event_remote(),
             EventBackend::Directory => self.event_directory_slot(backends),
             EventBackend::None => self.event_none.clone(),
@@ -579,7 +540,7 @@ impl BackendRegistry {
     }
 
     fn event_directory_slot(&self, backends: &PluginBackends) -> Arc<dyn EventEstimator> {
-        self.resolve_directory_slot(
+        self.pick_directory_slot(
             "event",
             backends,
             &self.directory_event_cache,
@@ -604,7 +565,6 @@ impl BackendRegistry {
     ) -> Arc<dyn PromptAssembler> {
         match backends.prompt {
             PromptBackend::Builtin => self.prompt_builtin.clone(),
-            PromptBackend::BuiltinV2 => self.prompt_builtin_v2(),
             PromptBackend::Remote => self.prompt_remote(),
             PromptBackend::Directory => self.prompt_directory_slot(backends),
             PromptBackend::None => self.prompt_none.clone(),
@@ -619,7 +579,7 @@ impl BackendRegistry {
     }
 
     fn prompt_directory_slot(&self, backends: &PluginBackends) -> Arc<dyn PromptAssembler> {
-        self.resolve_directory_slot(
+        self.pick_directory_slot(
             "prompt",
             backends,
             &self.directory_prompt_cache,
@@ -679,17 +639,17 @@ impl BackendRegistry {
 
     /// Same-type **last-wins** (`position` max) complex emotion implementation.
     #[must_use]
-    pub fn resolve_complex_emotion_winner(
+    pub fn pick_complex_emotion_winner(
         &self,
         slot_registry: &BTreeMap<String, SlotRegistryEntry>,
     ) -> Arc<dyn ComplexEmotionProvider> {
         slot_registry_instances_sorted(slot_registry, "complex_emotion")
             .last()
-            .map(|(_, e)| self.resolve_complex_emotion_for_entry(e))
+            .map(|(_, e)| self.pick_complex_emotion_for_entry(e))
             .unwrap_or_else(|| Arc::new(BuiltinComplexEmotionArc))
     }
 
-    pub fn resolve_complex_emotion_for_entry(
+    pub fn pick_complex_emotion_for_entry(
         &self,
         entry: &SlotRegistryEntry,
     ) -> Arc<dyn ComplexEmotionProvider> {
@@ -727,12 +687,12 @@ impl BackendRegistry {
                     }
                 }
             }
-            "directory" => self.resolve_complex_emotion_directory(entry, remote_fb),
+            "directory" => self.pick_complex_emotion_directory(entry, remote_fb),
             _ => Arc::new(BuiltinComplexEmotionArc),
         }
     }
 
-    fn resolve_complex_emotion_directory(
+    fn pick_complex_emotion_directory(
         &self,
         entry: &SlotRegistryEntry,
         remote_fb: Arc<AtomicBool>,
@@ -793,8 +753,7 @@ impl BackendRegistry {
     }
 }
 
-#[async_trait]
-impl PluginBackendRegistryPort for BackendRegistry {
+impl SlotBackendFactoryPort for BackendRegistry {
     fn agent_for_plugin_backends(&self, backends: &PluginBackends) -> Arc<dyn AgentProvider> {
         BackendRegistry::agent_for_plugin_backends(self, backends)
     }
@@ -852,26 +811,27 @@ impl PluginBackendRegistryPort for BackendRegistry {
         BackendRegistry::llm_for(self, b)
     }
 
-    fn resolve_complex_emotion_winner(
+    fn pick_complex_emotion_winner(
         &self,
         slot_registry: &BTreeMap<String, SlotRegistryEntry>,
     ) -> Arc<dyn ComplexEmotionProvider> {
-        BackendRegistry::resolve_complex_emotion_winner(self, slot_registry)
+        BackendRegistry::pick_complex_emotion_winner(self, slot_registry)
     }
 
-    fn resolve_complex_emotion_for_entry(
+    fn pick_complex_emotion_for_entry(
         &self,
         entry: &SlotRegistryEntry,
     ) -> Arc<dyn ComplexEmotionProvider> {
-        BackendRegistry::resolve_complex_emotion_for_entry(self, entry)
+        BackendRegistry::pick_complex_emotion_for_entry(self, entry)
     }
+}
 
+impl LocalPluginRegistryPort for BackendRegistry {
     fn register_local_provider(
         &self,
         descriptor: LocalPluginProviderDescriptor,
     ) -> Result<(), String> {
-        BackendRegistry::register_local_provider(self, descriptor)
-            .map_err(|e| e.to_string())
+        BackendRegistry::register_local_provider(self, descriptor).map_err(|e| e.to_string())
     }
 
     fn local_providers_for(
@@ -884,7 +844,10 @@ impl PluginBackendRegistryPort for BackendRegistry {
     fn local_all_providers(&self) -> Vec<Arc<LocalPluginProviderDescriptor>> {
         BackendRegistry::local_all_providers(self)
     }
+}
 
+#[async_trait]
+impl AgentMcpRegistryPort for BackendRegistry {
     fn list_mcp_servers(&self) -> Vec<McpServerInfo> {
         BackendRegistry::list_mcp_servers(self)
     }

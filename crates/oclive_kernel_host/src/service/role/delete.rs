@@ -24,7 +24,7 @@ pub async fn delete_role_impl(state: &AppState, role_id: String) -> Result<Value
         .await
         .ok()
         .map(|r| r.pack_chat_storage_config.location.clone());
-    let mirror_root = crate::infrastructure::chat_storage::resolve_role_chat_storage_root(
+    let mirror_root = crate::infrastructure::chat_storage::load_role_chat_storage_root(
         state.directory_plugins.app_data_dir(),
         state.storage.roles_dir(),
         rid,

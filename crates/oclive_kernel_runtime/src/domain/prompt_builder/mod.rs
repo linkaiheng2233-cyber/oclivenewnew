@@ -252,7 +252,21 @@ impl PromptBuilder {
             prompt.push_str("\n\n");
         }
 
-        // Footer — anchor → guardrails → user input → closing line
+        // Footer — extra sections → anchor → guardrails → user input → closing line
+        for section in input.extra_sections {
+            if section.title.trim().is_empty() && section.body.trim().is_empty() {
+                continue;
+            }
+            if !section.title.trim().is_empty() {
+                prompt.push('【');
+                prompt.push_str(section.title.trim());
+                prompt.push_str("】\n");
+            }
+            if !section.body.trim().is_empty() {
+                prompt.push_str(section.body.trim());
+                prompt.push_str("\n\n");
+            }
+        }
         if !input.reply_quality_anchor.trim().is_empty() {
             prompt.push_str(input.reply_quality_anchor.trim());
             prompt.push_str("\n\n");

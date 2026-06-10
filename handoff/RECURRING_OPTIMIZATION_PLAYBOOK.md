@@ -35,13 +35,13 @@
 PowerShell 下逐条跑（**不要用 `&&`**）：
 
 ```powershell
-node scripts/dimension5-acceptance.mjs --ci   # 必须 PASS (7 checks)
+node scripts/dimension5-acceptance.mjs --ci   # 必须 PASS (9 checks)
 cargo test -p oclive_kernel_host --lib         # 必须全绿
 node scripts/check-domain-layering.mjs         # ratchet 数值不得上涨
 git status                                      # 确认工作树状态 / 与 origin 差距
 ```
 
-**判定**：七项门禁含 layering ratchet / cargo-audit / lockfile / ensure-plan / CHANGELOG 中英 parity / host re-export ratchet。任一 FAIL → **本轮停止所有优化,先恢复基线**。
+**判定**：九项门禁含 layering ratchet / cargo-audit / lockfile / ensure-plan / CHANGELOG 中英 parity / host re-export ratchet / **verify:ui** / **vite build**。任一 FAIL → **本轮停止所有优化,先恢复基线**。
 
 **ratchet 锚点**（只降不升）：
 - `domain→infrastructure`：use-import ≤ 4（全 test cfg）+ FQ ≤ 5 → 见 `handoff/LAYERING_BASELINE.json`
@@ -152,7 +152,7 @@ git status                                      # 确认工作树状态 / 与 or
 ## 5. 常用命令速查（PowerShell,逐条跑勿用 `&&`）
 
 ```powershell
-node scripts/dimension5-acceptance.mjs --ci      # 维度五门禁（7 checks）
+node scripts/dimension5-acceptance.mjs --ci      # 维度五门禁（9 checks）
 cargo test -p oclive_kernel_host --lib           # 核心单测
 node scripts/check-domain-layering.mjs           # 分层 ratchet
 node scripts/check-changelog-parity.mjs          # CHANGELOG 中英 parity
@@ -222,6 +222,7 @@ npm run check:rust                               # fmt + clippy(-D warnings) + t
 | 7 | 2026-06-10 | 快 | n/a* | — | VS Code 聊天体验: LATENCY(停止/预热/计时) + UNDO(四形态/meta_action_templates) + STREAM(/chat/stream Gate 批准); 主仓 validation + oclive_kernel_host 流式 | *姊妹仓 lint/build/test:unit; 主仓 cargo test validation+host |
 | 8 | 2026-06-10 | 半 | FAIL→PASS | A− | 基线红: role_manager FQ 2>1 → 插件注入化修复; 删 `oclive_runtimed`+`crates/models`; deny.toml 去 AGPL; D-ORPHAN-01/02、D-NAME-01(104 resolve_*) 入账 | dimension5+host lib 182 绿; 含轮次7流式/撤销/meta_action_templates 提交 |
 | 9 | 2026-06-10 | 全 | PASS* | A− | *门禁 PASS 但场外两处红: K-BUILD-02 TheaterShell 导入错层致 `vite build` HEAD 失败(修复) + D-SCRIPT-01 verify:ui 锚点全过时崩溃(重写); D-ORPHAN-03 删 V1 孤儿组件 23KB; K-DOC-08 runtimed 幽灵引用清掉; D-TRAIT-01(16 单实现 trait) 入账 Deferred; D-PORT-02 计数 22→24 | 过度工程普查轮; 大刀(god-port/V2 槽/错误四层)维持冻结 Deferred |
+| 10 | 2026-06-10 | 半 | PASS | A− | K-GATE-01 九检; D-ORPHAN-03b/c; D-PORT-02/D-SLOT-01/D-TRAIT-01; Theater 自动化 9 测绿·人工陌生人待执行; beat patch 单测绿; cargo build ~81s dev | [SLOT_BACKEND_REALITY_MATRIX.md](./SLOT_BACKEND_REALITY_MATRIX.md) |
 
 ---
 

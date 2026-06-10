@@ -1,5 +1,6 @@
 //! Complex-emotion resolution input/output (pure data structures).
 
+use crate::SlotExtension;
 use serde::{Deserialize, Serialize};
 
 /// Aligned with the `params` of the JSON-RPC `complex_emotion.resolve_turn` (snake_case).
@@ -34,4 +35,8 @@ pub struct ComplexEmotionOutput {
     pub intensity: f64,
     pub dissonance_score: f64,
     pub degraded_to_builtin: bool,
+    /// Optional plugin-specific extension envelope (kernel does not interpret `data`).
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub extension: Option<SlotExtension>,
 }

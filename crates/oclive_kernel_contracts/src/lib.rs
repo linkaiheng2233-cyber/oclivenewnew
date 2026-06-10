@@ -40,6 +40,9 @@ pub(crate) mod slot_resolver;
 pub(crate) mod user_emotion_analyzer;
 pub(crate) mod function_calling_parser;
 pub(crate) mod mcp_bridge;
+pub(crate) mod agent_mcp_registry_port;
+pub(crate) mod local_plugin_registry_port;
+pub(crate) mod slot_backend_factory;
 pub(crate) mod plugin_backend_registry;
 pub(crate) mod user_llm_secrets;
 
@@ -63,6 +66,9 @@ pub use repository::{
 pub use user_llm_secrets::UserLlmSecretsPort;
 pub use function_calling_parser::FunctionCallingParserPort;
 pub use mcp_bridge::McpBridgePort;
+pub use agent_mcp_registry_port::AgentMcpRegistryPort;
+pub use local_plugin_registry_port::LocalPluginRegistryPort;
 pub use plugin_backend_registry::PluginBackendRegistryPort;
+pub use slot_backend_factory::SlotBackendFactoryPort;
 pub use slot_resolver::SlotRegistryResolver;
 pub use user_emotion_analyzer::UserEmotionAnalyzer;

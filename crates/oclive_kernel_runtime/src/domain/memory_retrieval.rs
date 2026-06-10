@@ -28,59 +28,6 @@ impl MemoryRetrieval for BuiltinMemoryRetrieval {
     }
 }
 
-/// Second builtin: adds query–content overlap on top of builtin scores.
-pub struct BuiltinMemoryRetrievalV2;
-
-fn query_overlap_boost(query: &str, content: &str) -> f64 {
-    let q = query.trim();
-    if q.is_empty() {
-        return 0.0;
-    }
-    let ql = q.to_lowercase();
-    let cl = content.to_lowercase();
-    let mut hits = 0usize;
-    for w in ql.split_whitespace() {
-        if w.len() >= 2 && cl.contains(w) {
-            hits += 1;
-        }
-    }
-    if hits == 0 && ql.chars().count() >= 2 {
-        for w in ql.as_str().chars().collect::<Vec<_>>().windows(2) {
-            let s: String = w.iter().collect();
-            if cl.contains(&s) {
-                hits += 1;
-            }
-        }
-    }
-    (hits as f64 * 0.15).min(0.6)
-}
-
-impl MemoryRetrieval for BuiltinMemoryRetrievalV2 {
-    fn rank_memories(&self, input: MemoryRetrievalInput<'_>) -> Result<Vec<Memory>> {
-        let limit = input.limit.max(1);
-        let q = input.user_query;
-        let mut scored: Vec<(f64, Memory)> = input
-            .memories
-            .iter()
-            .map(|m| {
-                let base = m.importance * m.weight;
-                let boost = query_overlap_boost(q, &m.content);
-                (base * (1.0 + boost), m.clone())
-            })
-            .collect();
-        scored.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
-        Ok(scored.into_iter().take(limit).map(|(_, m)| m).collect())
-    }
-
-    fn build_context(&self, memories: &[Memory], max_tokens: usize) -> MemoryContext {
-        MemoryEngine::build_context(memories, max_tokens)
-    }
-
-    fn search_memories(&self, keyword: &str, memories: &[Memory]) -> Vec<Memory> {
-        MemoryEngine::search_memories(keyword, memories)
-    }
-}
-
 /// Remote placeholder: falls back to builtin and logs a one-time warning.
 pub struct RemoteMemoryRetrievalPlaceholder {
     inner: BuiltinMemoryRetrieval,
@@ -157,7 +104,7 @@ impl MemoryRetrieval for LocalPluginMemoryRetrieval {
         if let Some(id) = &self.resolved_provider_id {
             tracing::debug!(
                 target: "oclive_plugin",
-                "memory.local rank_memories provider_id={} (stub delegates to builtin_v2 slot)",
+                "memory.local rank_memories provider_id={} (stub delegates to builtin slot)",
                 id
             );
         }
@@ -181,7 +128,7 @@ mod tests {
     use std::sync::Arc;
 
     #[test]
-    fn builtin_v2_can_outrank_higher_score_when_query_overlaps() {
+    fn builtin_ranks_by_importance_weight() {
         let t = Utc::now();
         let m_high = Memory {
             id: "high".into(),
@@ -194,8 +141,8 @@ mod tests {
             mention_count: 1,
             accessed_at: None,
         };
-        let m_match = Memory {
-            id: "match".into(),
+        let m_low = Memory {
+            id: "low".into(),
             role_id: "r".into(),
             content: "matchtoken appears here".into(),
             importance: 1.0,
@@ -205,28 +152,15 @@ mod tests {
             mention_count: 1,
             accessed_at: None,
         };
-        let slice = &[m_high.clone(), m_match.clone()];
-        let input_v1 = MemoryRetrievalInput {
+        let slice = &[m_high.clone(), m_low.clone()];
+        let input = MemoryRetrievalInput {
             memories: slice,
             user_query: "matchtoken",
             scene_id: None,
             limit: 1,
         };
-        let top_v1 = BuiltinMemoryRetrieval
-            .rank_memories(input_v1)
-            .expect("rank");
-        assert_eq!(top_v1[0].id, "high");
-
-        let input_v2 = MemoryRetrievalInput {
-            memories: slice,
-            user_query: "matchtoken",
-            scene_id: None,
-            limit: 1,
-        };
-        let top_v2 = BuiltinMemoryRetrievalV2
-            .rank_memories(input_v2)
-            .expect("rank");
-        assert_eq!(top_v2[0].id, "match");
+        let top = BuiltinMemoryRetrieval.rank_memories(input).expect("rank");
+        assert_eq!(top[0].id, "high");
     }
 
     #[test]
@@ -261,15 +195,15 @@ mod tests {
             scene_id: None,
             limit: 1,
         };
-        let v2 = Arc::new(BuiltinMemoryRetrievalV2) as Arc<dyn MemoryRetrieval>;
-        let local = LocalPluginMemoryRetrieval::new(v2.clone(), Some("demo.local".into()));
+        let builtin = Arc::new(BuiltinMemoryRetrieval) as Arc<dyn MemoryRetrieval>;
+        let local = LocalPluginMemoryRetrieval::new(builtin.clone(), Some("demo.local".into()));
         let a: Vec<_> = local
             .rank_memories(mk_input())
             .expect("rank")
             .into_iter()
             .map(|m| m.id)
             .collect();
-        let b: Vec<_> = v2
+        let b: Vec<_> = builtin
             .rank_memories(mk_input())
             .expect("rank")
             .into_iter()

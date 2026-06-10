@@ -3,7 +3,7 @@
 use super::super::chat_sessions::MANIFEST_SESSION_LIST_CAP;
 use super::super::cleanup::AutoCleanupConfig;
 use super::super::config::{
-    resolve_max_messages_per_session, resolve_role_chat_storage_root, DEFAULT_MAX_MESSAGES,
+    load_max_messages_per_session, load_role_chat_storage_root, DEFAULT_MAX_MESSAGES,
 };
 use super::super::db::{highlight_snippet, MessageRow, NewTurnMessages};
 use super::super::export::{export_chat_session, export_role_chats};
@@ -55,7 +55,7 @@ impl HybridConversationStore {
     }
 
     fn role_storage_root(&self, role_id: &str, location: Option<&str>) -> PathBuf {
-        resolve_role_chat_storage_root(&self.app_data_dir, &self.roles_dir, role_id, location)
+        load_role_chat_storage_root(&self.app_data_dir, &self.roles_dir, role_id, location)
     }
 
     async fn session_storage_root(&self, session_id: &str) -> Result<PathBuf> {
@@ -142,7 +142,7 @@ impl HybridConversationStore {
 impl ConversationStore for HybridConversationStore {
     async fn append_turn(&self, input: TurnPersistInput) -> Result<AppendTurnResult> {
         let scene_id = normalize_scene_id(&input.scene_id);
-        let max = resolve_max_messages_per_session(input.max_messages_per_session);
+        let max = load_max_messages_per_session(input.max_messages_per_session);
         let session = self
             .db
             .upsert_chat_session(&input.session_id, &input.role_id, &scene_id)
@@ -401,7 +401,7 @@ impl ConversationStore for HybridConversationStore {
             .ok_or_else(|| {
                 crate::error::AppError::InvalidParameter(format!("message not found: {message_id}"))
             })?;
-        let max = resolve_max_messages_per_session(None);
+        let max = load_max_messages_per_session(None);
         if self.mirror_enabled {
             let root = self.session_storage_root(&session_id).await?;
             let _ = mirror::rebuild_mirror(self.db.as_ref(), &root, &session_id, max).await?;
@@ -417,7 +417,7 @@ impl ConversationStore for HybridConversationStore {
             .ok_or_else(|| {
                 crate::error::AppError::InvalidParameter(format!("message not found: {message_id}"))
             })?;
-        let max = resolve_max_messages_per_session(None);
+        let max = load_max_messages_per_session(None);
         if self.mirror_enabled {
             let root = self.session_storage_root(&session_id).await?;
             let _ = mirror::rebuild_mirror(self.db.as_ref(), &root, &session_id, max).await?;

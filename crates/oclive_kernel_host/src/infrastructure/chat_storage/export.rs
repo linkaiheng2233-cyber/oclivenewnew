@@ -1,6 +1,6 @@
 //! Export chat sessions / roles as Markdown or JSON (SQLite authoritative).
 
-use super::config::resolve_max_messages_per_session;
+use super::config::load_max_messages_per_session;
 use super::db::SessionRow;
 use super::mirror;
 use crate::error::{AppError, Result};
@@ -238,7 +238,7 @@ pub async fn export_role_chats(
 
 #[must_use]
 pub fn resolve_export_max_messages(configured: Option<u32>) -> i64 {
-    resolve_max_messages_per_session(configured)
+    load_max_messages_per_session(configured)
 }
 
 #[cfg(test)]

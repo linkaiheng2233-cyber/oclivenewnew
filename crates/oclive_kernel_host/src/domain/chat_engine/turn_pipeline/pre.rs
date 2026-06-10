@@ -62,6 +62,7 @@ pub(crate) fn skipped_complex_emotion() -> crate::domain::complex_emotion::Compl
         intensity: 0.0,
         dissonance_score: 0.0,
         degraded_to_builtin: false,
+        extension: None,
     }
 }
 

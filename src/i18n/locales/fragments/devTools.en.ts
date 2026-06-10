@@ -80,21 +80,6 @@ export default {
     export: 'Export',
     empty: 'No logs yet (stdout/stderr appear here after starting a plugin process).',
   },
-  pluginDebug: {
-    target: 'Target',
-    tabsAria: 'Debug sections',
-    tabProcess: 'Process',
-    tabRpc: 'RPC',
-    tabLogs: 'Console',
-    consoleHint:
-      'The <strong>Output</strong> pane below is a ring buffer (~1000 lines) polled by the host, similar to an IDE console.',
-    responseTitle: 'Response',
-    outputTitle: 'Output',
-    emptyResponse: '(No response yet)',
-    inspectorAria: 'Response and log output',
-    rpcMethodEmpty: 'Enter an RPC method name',
-    rpcParamsInvalid: 'Parameters must be valid JSON',
-  },
   scaffold: {
     title: 'New plugin scaffold',
     fieldId: 'Plugin ID',

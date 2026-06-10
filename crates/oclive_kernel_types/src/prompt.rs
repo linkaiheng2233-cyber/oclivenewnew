@@ -2,6 +2,13 @@
 
 use crate::models::{EventType, Memory, PersonalityVector, Role};
 
+/// Generic prompt section injected before the reply-quality anchor footer.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PromptExtraSection<'a> {
+    pub title: &'a str,
+    pub body: &'a str,
+}
+
 /// Input for the main-dialogue `build_prompt`, avoiding a long parameter list and call-site mismatches.
 pub struct PromptInput<'a> {
     pub role: &'a Role,
@@ -42,4 +49,6 @@ pub struct PromptInput<'a> {
     pub host_state_expression_hint: &'a str,
     /// Multi-turn relation transition hint from SessionCache; empty when inactive.
     pub relation_transition_hint: &'a str,
+    /// Host-orchestrated extra sections rendered before the reply-quality anchor (ordered).
+    pub extra_sections: &'a [PromptExtraSection<'a>],
 }

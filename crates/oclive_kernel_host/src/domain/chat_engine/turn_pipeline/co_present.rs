@@ -49,6 +49,7 @@ pub(crate) async fn run_middle(
             intensity: 0.0,
             dissonance_score: 0.0,
             degraded_to_builtin: false,
+            extension: None,
         }
     } else {
         STAGES
@@ -169,6 +170,7 @@ pub(crate) async fn run_middle(
                     host_prompt_overlay: host_overlay,
                     host_state_expression_hint: host_state_hint,
                     relation_transition_hint: pre.relation_transition_hint.as_str(),
+                    extra_sections: &[],
                 },
             )
         })

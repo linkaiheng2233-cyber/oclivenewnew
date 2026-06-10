@@ -40,3 +40,27 @@
 
 - 侧车进程 / JSON-RPC 草案：[REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md)。  
 - 目录式插件（扫描、整壳、invoke）：[DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)。
+
+## 契约扩展信封（V-CONTRACT Phase 0）
+
+**原则**：内核**解释面最小、运载面无限**——内核只理解核心字段；插件专有状态经信封携带，不无限堆叠 `PromptInput` hint 字段。
+
+| 类型 | 位置 | 用途 |
+|------|------|------|
+| `SlotExtension { schema_id, data }` | `oclive_kernel_types::slot_extension` | 槽插件输出的 opaque JSON 信封；`schema_id` 标识 payload 语义 |
+| `EmotionResult.extension` | `emotion.rs` | 七维情绪之外的异构投射（如 CHS 三维）；`#[serde(default)]`，省略时无扩展 |
+| `ComplexEmotionOutput.extension` | `complex_emotion.rs` | 复杂情感侧车可附带私有字段 |
+| `PromptInput.extra_sections` | `prompt.rs` | 宿主编排的通用 Prompt 段 `{ title, body }[]`；在回复质量锚点**之前**按序渲染为 `【title】\nbody` |
+
+Phase 1–3（能力协商 `plugin.describe`、槽私有状态 `slot_state` 表、融合提供者出版级）见 `handoff/TECHNICAL_DEBT_INVENTORY.md` **V-CONTRACT** / **V-FUSED** 条目；**不升** `SCHEMA_VERSION`，六槽枚举与蓝图 `slot_registry` 不变。
+
+## 契约演化规则
+
+与 [BREAKING_CHANGE_PROCESS.md](../../handoff/BREAKING_CHANGE_PROCESS.md) 一致；扩展点相关补充：
+
+1. **只增不删（additive-only）**：DTO / JSON-RPC 响应新增字段须 `#[serde(default)]` 或协议层 optional；旧客户端/插件省略新字段时必须仍能解析。
+2. **枚举演进**：对外可见、可能扩展的 Rust 枚举优先 `#[non_exhaustive]`；match 侧须 `_` 兜底或显式降级，禁止假设变体集合已闭合。
+3. **解释 vs 运载**：内核编排只依赖**文档化的核心字段**；新 hint 类能力优先 `SlotExtension` 或 `extra_sections`，而非再增 `PromptInput` 顶层字段（已有字段保持兼容，不再鼓励堆叠）。
+4. **破坏性变更**：删字段、改语义、升 `SendMessageResponse.schema` / `SCHEMA_VERSION`、改六槽键名 → 走 Breaking 流程（兼容层、`oclive_validation`、契约文档、CHANGELOG 中英双更）。
+5. **远程协议**：新方法（如 Phase 1 `plugin.describe`）为**可选**；未实现 = 零能力，不得逼升级。
+6. **持久化**：挂 `extension` 于已有 DB 序列化类型（如 `Memory`）前须单独评估 migration（Phase 2 `slot_state` 为首选私有状态通道）。

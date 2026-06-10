@@ -10,7 +10,7 @@ use crate::domain::ports::LlmClient;
 use crate::domain::prompt_assembler::PromptAssembler;
 use crate::domain::user_emotion_analyzer::UserEmotionAnalyzer;
 use crate::models::PluginBackends;
-use oclive_kernel_contracts::PluginBackendRegistryPort;
+use oclive_kernel_contracts::SlotBackendFactoryPort;
 use oclive_validation::{
     plugin_backends_for_slot_entry, slot_registry_instances_sorted, SlotRegistryEntry,
 };
@@ -58,7 +58,7 @@ impl SlotResolver {
     /// Maps validated `slot_registry` to `Arc<dyn …>` instance lists (bucketed by type, sorted by `position` within each bucket).
     #[must_use]
     pub fn resolve(
-        registry: &dyn PluginBackendRegistryPort,
+        registry: &dyn SlotBackendFactoryPort,
         slot_registry: &BTreeMap<String, SlotRegistryEntry>,
     ) -> ResolvedRoleSlots {
         Self::resolve_with_session_backends(registry, slot_registry, None)
@@ -67,7 +67,7 @@ impl SlotResolver {
     /// Resolves `slot_registry`; `session_effective_backends` overrides blueprint `llm` slot `backend`.
     #[must_use]
     pub fn resolve_with_session_backends(
-        registry: &dyn PluginBackendRegistryPort,
+        registry: &dyn SlotBackendFactoryPort,
         slot_registry: &BTreeMap<String, SlotRegistryEntry>,
         session_effective_backends: Option<&PluginBackends>,
     ) -> ResolvedRoleSlots {
@@ -108,7 +108,7 @@ impl SlotResolver {
         for (key, entry) in slot_registry_instances_sorted(slot_registry, "complex_emotion") {
             out.complex_emotion.push((
                 key.clone(),
-                registry.resolve_complex_emotion_for_entry(&entry),
+                registry.pick_complex_emotion_for_entry(&entry),
             ));
         }
         out

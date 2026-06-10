@@ -20,7 +20,7 @@ impl PluginResolver {
         let merged_effective = session_override.map(|ov| ov.apply_to(role_backends));
         let effective = merged_effective.as_ref().unwrap_or(role_backends);
         let mut agent = registry.agent_for_plugin_backends(effective);
-        let mut complex_emotion = registry.resolve_complex_emotion_winner(
+        let mut complex_emotion = registry.pick_complex_emotion_winner(
             slot_registry.unwrap_or(&BTreeMap::new()),
         );
         let mut slots = None;
@@ -31,7 +31,7 @@ impl PluginResolver {
                 reg,
                 Some(effective),
             ));
-            complex_emotion = registry.resolve_complex_emotion_winner(reg);
+            complex_emotion = registry.pick_complex_emotion_winner(reg);
             // Agent: merge tool sets from multiple directory instances (parallel semantics at assembly layer, not SlotRunner)
             agent = SlotResolver::wrap_agent_if_merged(agent, reg);
             merged_agent_directory_plugin_ids =

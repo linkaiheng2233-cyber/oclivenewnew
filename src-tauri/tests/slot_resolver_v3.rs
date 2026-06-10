@@ -123,7 +123,7 @@ async fn session_slot_override_changes_folded_memory_backend() {
         },
     );
     let eff = state.effective_plugin_backends_for_session(&role, ns);
-    assert_eq!(eff.memory, MemoryBackend::BuiltinV2);
+    assert_eq!(eff.memory, MemoryBackend::Builtin);
     let pl = state.resolved_plugins_for_session(&role, Some(ns));
     let expected = state.plugins.memory_retrieval_for_plugin_backends(&eff);
     assert!(Arc::ptr_eq(&pl.memory, &expected));

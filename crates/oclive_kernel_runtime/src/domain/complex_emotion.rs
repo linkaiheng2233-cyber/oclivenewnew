@@ -48,6 +48,7 @@ impl BuiltinKeywordComplexEmotionProvider {
             intensity: Self::INT,
             dissonance_score: 0.0,
             degraded_to_builtin: false,
+            extension: None,
         }
     }
 
@@ -61,6 +62,7 @@ impl BuiltinKeywordComplexEmotionProvider {
             intensity: 0.25,
             dissonance_score: 0.0,
             degraded_to_builtin: false,
+            extension: None,
         }
     }
 }
@@ -182,6 +184,7 @@ mod tests {
             surprise: 0.1,
             disgust: 0.0,
             neutral: 0.2,
+            extension: None,
         };
         let (v, d) = affect_metrics_from_seven_dim(&er);
         assert!(v > 0.0 && v <= 1.0);

@@ -1,10 +1,48 @@
 # Technical debt inventory
 
-**Last updated:** 2026-06-10 (round 9 patrol · over-engineering census + build fix)
+**Last updated:** 2026-06-10 (round 11 · V-CONTRACT Phase 0)
 
-**Product freeze (Theater v0):** No new kernel orchestration / six-slot expansion until strangers validate AI Theater v0. See [PRODUCT_FREEZE_THEATER_V0.md](./PRODUCT_FREEZE_THEATER_V0.md). **Deferred unchanged:** D-PORT-02, D-SLOT-01, K-PERF-10, K-PERF-14/15, D-NAME-01, §3.1 library API, dual_core (frozen).
+**Product freeze (Theater v0):** No new kernel orchestration / six-slot expansion until strangers validate AI Theater v0. See [PRODUCT_FREEZE_THEATER_V0.md](./PRODUCT_FREEZE_THEATER_V0.md). **Deferred unchanged:** K-PERF-10, K-PERF-14/15, §3.1 library API, dual_core (frozen).
 
-**Verification (2026-06-10 round 9):** `node scripts/dimension5-acceptance.mjs --ci` PASS (7 checks); `cargo test -p oclive_kernel_host --lib` **182** passed; layering FQ **1**/use **4** PASS; `npm run test:unit` 18 files / **58** passed; `npx vite build` PASS（修复 TheaterShell 导入后）; `npm run verify:ui` PASS（重写锚点后）.
+### V-CONTRACT contract expressiveness (2026-06-10 · Phase 0 Done)
+
+| ID | Item | Status | Notes |
+|----|------|--------|-------|
+| V-CONTRACT-01 | `SlotExtension` envelope type + re-export in `oclive_kernel_types` | **Done** | `slot_extension.rs`; serde roundtrip tests |
+| V-CONTRACT-02 | `EmotionResult.extension` / `ComplexEmotionOutput.extension` (`#[serde(default)]`) | **Done** | Additive; kernel does not interpret `data` |
+| V-CONTRACT-03 | `PromptInput.extra_sections` + anchor-before render in `PromptBuilder` | **Done** | All call sites pass `&[]` until host wiring |
+| V-CONTRACT-04 | Contract evolution rules in `EXTENSION_POINTS.md` (zh/en) | **Done** | Additive-only, `non_exhaustive`, breaking process |
+| V-FUSED-01 | Multi `slot_registry` instance → same directory plugin; validation + docs | **Deferred** | Phase 3; after first external plugin author |
+
+**Phase 1–3 (post Theater demo):** `plugin.describe` capability negotiation; `034_slot_state.sql` per-slot private state; OOCP golden scenarios + `oclive_kernel_contracts` rustdoc publishing.
+
+**Verification (2026-06-10 round 10):** `node scripts/dimension5-acceptance.mjs --ci` PASS (**9** checks); `cargo test -p oclive_kernel_host --lib` green; `npm run test:unit` 18 files / **58** passed; `npx vite build` PASS; `npm run verify:ui` PASS; theater acceptance **9** tests green.
+
+### Round 10 patrol（2026-06-10 · gate + Phase D）
+
+| ID | Item | Status | Notes |
+|----|------|--------|-------|
+| K-GATE-01 | dimension5 第 8 检 `verify:ui` + 第 9 检 `vite build`；CI dimension5 job 增 `npm ci` | **Done** | 本地/CI 快档可捕获 K-BUILD-02 类前端构建回归 |
+| D-ORPHAN-03b | `usePluginDebug.ts` 删除；`RpcHistoryItem` → `src/types/pluginDebug.ts` | **Done** | RpcTester 类型迁入 |
+| D-ORPHAN-03c | `devTools.pluginDebug.*` i18n 半孤儿键删除 | **Done** | RpcTester 仅用 `devTools.rpc.*` |
+| K-DOC-09 | `docs/I18N_PROGRESS.md` 去除 `PluginManagerPanel` / `PluginDebugPanel` 引用 | **Done** | 与 AGENTS.md 一致 |
+| D-PORT-02 | god-port 拆为 `SlotBackendFactoryPort` + `LocalPluginRegistryPort` + `AgentMcpRegistryPort`；`PluginBackendRegistryPort` blanket；`SlotResolver` 窄端口 | **Done** | 删除 24 方法单体转发 impl；子 trait impl 保留 |
+| D-SLOT-01 | 删除四槽 `BuiltinV2` 实现；serde `builtin_v2` → `builtin` alias | **Done** | 20 格矩阵；breaking 见 BREAKING_CHANGE_PROCESS |
+| D-NAME-01 | `pick_*`（backend_registry 目录槽/复杂情感）+ `load_*`（chat_storage config）首批 | **Partial** | 余 `merge_*` / `find_*` 批次待续 |
+| D-TRAIT-01 | 单实现 trait 裁决表 | **Done** | 见下表 §D-TRAIT-01 裁决 |
+
+### D-TRAIT-01 单实现 trait 裁决表（2026-06-10）
+
+| 类别 | Trait / Port | 实现数 | 裁决 |
+|------|----------------|--------|------|
+| 六槽多实现 | `LlmClient`, `MemoryRetrieval`, `AgentProvider`, … | 2+ | **保留 trait** |
+| Repository 五件套 | `MemoryRepository`, `FavorabilityRepository`, … | 1 | **Deferred** → 合并 `RoleRuntimeRepo` 或 `Arc<DbManager>` |
+| Policy 三件套 | `EmotionPolicy`, `MemoryPolicy`, `EventPolicy` | 1 | **保留** 至 remote policy RFC |
+| 纯转发 port | `PluginHostPort`, `SlotRegistryResolver` | 1 | **Deferred** 内联具体类型 |
+| MCP/解析 | `FunctionCallingParserPort`, `McpBridgePort` | 1 | **保留**（测试替身价值） |
+| Host port | `DbHealthPort`, `ConversationStore`, … | 1 | **Observe** 随 D-PORT-02 后续批次 |
+
+槽态矩阵：**[SLOT_BACKEND_REALITY_MATRIX.md](./SLOT_BACKEND_REALITY_MATRIX.md)**（24 格 · 2026-06-10）。
 
 ### Round 9 patrol（2026-06-10 · 过度工程普查 + 构建修复）
 
@@ -12,10 +50,12 @@
 |----|------|--------|-------|
 | K-BUILD-02 | `TheaterShell.vue` 相对导入少一层 `../`（`../theater/*` 应为 `../../theater/*`）致 **`vite build` 在 HEAD 上直接失败**；`npm run build` 经 `concurrently` 包裹时表现为挂起 | **Done** | 5 处 import 修正；`npx vite build` 4.5s 绿。Theater v0 demo 构建路径恢复 |
 | D-SCRIPT-01 | `verify:ui`（`scripts/verify-frontend-patches.mjs`）5 锚点中 4 个引用已删 V1 面板（`PluginManagerPanel` / `PluginBackendSessionPanel` / `panelMainTab`），且 `readFileSync` 异常未捕获直接崩溃；`check:release` 链因此必红 | **Done** | 重写为当前生产锚点（`SimplePluginManagerPanel` / `ModelManagerPanel` / FluentShell 挂载 / hotkeys），逐项 try/catch |
-| D-ORPHAN-03 | V1 插件 UI 孤儿组件：`PluginDebugPanel.vue`(10.4KB) / `PluginPrivateSettingsForm.vue`(5.6KB) / `plugin-manager/PluginListItem.vue`(6.9KB) 零生产引用 | **Done·deleted** | rg 全仓零 import；test:unit 58 绿。`usePluginDebug.ts` 因 `RpcTester` 仍用 `RpcHistoryItem` 类型而保留（**Observe**）；`devTools.pluginDebug.*` i18n 键随之半孤儿，待 RpcTester 处置时一并清 |
+| D-ORPHAN-03 | V1 插件 UI 孤儿组件 | **Done·deleted** | 轮次 9 删面板；轮次 10 删 `usePluginDebug` 壳 + i18n |
 | K-DOC-08 | `oclive_runtimed` 删除后幽灵引用（`crates/README.md` 速查表行 + `NAMING_CONVENTIONS.md` §3.1/§3.4 + `P4_CRATE_AUDIT.md`）；`crates/README.md` `prompt_builder.rs` 路径笔误；`AGENTS.md` 仍称 V1 面板「代码保留」；`REGRESSION_COMPLEX_EMOTION_QA.md` 整篇针对已删 UI | **Done** | 全部更正/标注已删；QA 文档加过时横幅 |
-| D-TRAIT-01 | 单实现 trait 普查：contracts 22 个 pub trait 中 **16 个仅 1 个生产实现**（Repository 五件套、Policy 三件套、`FunctionCallingParserPort`、`McpBridgePort` 等）+ host 侧 7 个 port 亦单实现（`DbHealthPort`、`ConversationStore`…） | **Deferred** | 冻结期不动刀；thaw 后逐个裁决「保留为 DI 端口 / 降级具体类型」。多实现 trait（`LlmClient` 7+、`MemoryRetrieval` 8+、`AgentProvider` 5+）证明六槽端口本身有效 |
-| D-PORT-02 | （更正计数）god-port 实测 **24** 方法（原记 22），`backend_registry.rs:797-919` 纯转发 | **Deferred** | 维持冻结；证据更新 |
+| D-TRAIT-01 | 单实现 trait 普查：contracts 22 个 pub trait 中 **16 个仅 1 个生产实现** | **Deferred→Done** | 轮次 9 入账；轮次 10 裁决表见上 |
+| D-NAME-01 | `resolve_*` 命名消歧 | **Partial** | `pick_*` backend_registry + `load_*` chat_storage 首批 Done |
+| D-PORT-02 | god-port 拆窄 trait + blanket `PluginBackendRegistryPort`；`SlotResolver` → `SlotBackendFactoryPort` | **Done** | 轮次 10；子 trait 仍委托 inherent 方法 |
+| D-SLOT-01 | 四槽 `builtin_v2` 测试桩删除 | **Done** | serde alias 兼容旧 settings；矩阵 24→20 格语义 |
 
 ### Freeze-safe audit（2026-06-09）
 
@@ -26,7 +66,7 @@
 | K-PERF-14 | `pre_llm` 独立 await 串行 | **Deferred** | 触碰编排；冻结至 Theater v0 |
 | K-PERF-15 | 记忆候选池固定 10 条按时间非相关性 | **Deferred** | 影响召回语义；冻结 |
 | D-CLEAN-01 | `ReplayTaskRegistry` 完成不清理 | **Done** | 完成 TTL 600s + `get()` 读后清理（Wave 2） |
-| D-NAME-01 | `resolve_*` 命名消歧（全仓 **104** 个 `fn resolve_`） | **Deferred** | 触 dual_core 冻结路径；轮次 8 实测计数入库 |
+| D-NAME-01 | `resolve_*` 命名消歧（全仓 **104** 个 `fn resolve_`） | **Partial** | 轮次 10：`pick_*` + `load_*` 首批；余批次 Deferred |
 | D-ORPHAN-01 | `oclive_runtimed` 调度守护原型（8430 端口 / per-role 队列） | **Done·deleted** | 不在 workspace、无产品接线；设计：`OCLIVE_KERNEL_UPSTREAM`→8420、`OCLIVE_SCHEDULER_PORT`→8430；恢复：`git log --diff-filter=D -- crates/oclive_runtimed` |
 | D-ORPHAN-02 | `oclive_schema` 微型 crate（18 行 blueprint 片段） | **Observe** | 冻结期不合并回 `oclive_kernel_types`；评估 wasm/独立校验边界后再定 |
 | K-DOC-07 | `AGENTS.md` / `LIGHTWEIGHT_PROFILE` cargo-audit `continue-on-error` 漂移 | **Done** | 更正为 dimension5 + `cargo-audit` job + lockfile workflow 三层硬门禁 |
