@@ -86,10 +86,10 @@
 
 | 槽位 | 常用值 | 选 `remote` / `directory` 时 |
 |------|--------|------------------------------|
-| memory | `builtin` / `builtin_v2` / `remote` / `directory` / `local` | `remote`：`OCLIVE_REMOTE_PLUGIN_URL`；`directory`：配置 `directory_plugins.memory` |
-| emotion | `builtin` / `builtin_v2` / `remote` / `directory` | 同上 |
-| event | `builtin` / `builtin_v2` / `remote` / `directory` | 同上 |
-| prompt | `builtin` / `builtin_v2` / `remote` / `directory` | 同上 |
+| memory | `builtin`（`builtin_v2` 读兼容 alias）/ `remote` / `directory` / `local` | `remote`：`OCLIVE_REMOTE_PLUGIN_URL`；`directory`：配置 `directory_plugins.memory` |
+| emotion | `builtin`（`builtin_v2` alias）/ `remote` / `directory` | 同上 |
+| event | `builtin`（`builtin_v2` alias）/ `remote` / `directory` | 同上 |
+| prompt | `builtin`（`builtin_v2` alias）/ `remote` / `directory` | 同上 |
 | llm | **`ollama`** / `remote` / `directory` | **`remote`**：`OCLIVE_REMOTE_LLM_URL`；可用 **`OCLIVE_LLM_BACKEND`** 在加载时覆盖 |
 | agent | `builtin` / `remote` / `directory` / `none` | `remote`：侧车 `agent.process`（`OCLIVE_REMOTE_AGENT_URL` 或回退 `OCLIVE_REMOTE_PLUGIN_URL`）；`directory`：配置 `directory_plugins.agent`；协议见 [AGENT_REMOTE_PROTOCOL.md](../plugin-and-architecture/AGENT_REMOTE_PROTOCOL.md) |
 

@@ -35,6 +35,11 @@
 - **热路径 DB 合并（K-PERF-03~06）**：每回合一次 `EffectiveSessionConfig`；`get_role_runtime_snapshot` 单查；`TurnPrefetch` 共享 / `agent=none` 跳过 agent DB；记忆 decay 单事务。基线见 `handoff/OPUS_48_PERF_BASELINE.md`。
 - **长驻内存/SQLite（K-PERF-07/08/12）**：`SessionCache` 六 map cap+TTL；`personality_vector` 复合索引 migration `033`；`hybrid_store` 去掉多余 `get_chat_session`；`role_cache` LRU(32)；LLM startup probe 后台化。
 - **前端壳内懒加载与轮询退避（K-PERF-10/11）**：`FluentShell`/`ToolShell` 非首屏面板 `defineAsyncComponent`；`useKernelStatus` 在 tab hidden 时 60s 退避。
+- **RoleRuntimeSnapshot 下游复用（K-PERF-20）**：`relation_snapshot` / `post` / `pre` Profile 路径共享快照；每回合 `get_current_emotion` ≤1（写后刷新除外）。
+- **Ollama 模型 settings 批量读（K-PERF-21）**：`resolve_effective_ollama_model` 经单次 `get_app_settings([provider, remote_model])` 批量读取。
+- **聊天 session 列表与 upsert（K-PERF-22）**：session 列表 snippet 窗口函数 JOIN；`upsert_chat_session` `RETURNING` 消除写后重读。
+- **长期记忆与操作日志索引（K-PERF-23）**：migration `034_perf_indexes.sql`（`idx_ltm_role_content` / `idx_operation_logs_role`）。
+- **post 阶段 Role clone 减少（K-PERF-24）**：`TurnContext.role_arc` 供 profile evolution spawn 复用。
 
 ---
 

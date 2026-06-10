@@ -40,20 +40,7 @@ pub struct SampleStats {
     pub mean: f64,
 }
 
-/// Canonicalize a project root from CLI `-o` / cwd-relative path.
-///
-/// # Errors
-///
-/// Fails when the path cannot be resolved or canonicalized.
-pub fn resolve_project_root(path: &Path) -> Result<PathBuf> {
-    let root = if path.is_absolute() {
-        path.to_path_buf()
-    } else {
-        std::env::current_dir().context("current_dir")?.join(path)
-    };
-    root.canonicalize()
-        .with_context(|| format!("cannot resolve project path: {}", root.display()))
-}
+pub use crate::project_root::resolve_project_root;
 
 /// Read `[package].name` from `Cargo.toml`.
 ///

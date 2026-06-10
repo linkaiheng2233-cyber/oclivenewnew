@@ -1,5 +1,7 @@
 ﻿# PLUGIN_V1 — 编排层契约与后端枚举（v2 蓝图 · legacy 六槽）
 
+> **2026-06-10 起**：`builtin_v2` 为 **已废弃 wire alias**（serde 读兼容），行为等同 `builtin`；四槽无独立 V2 实现（D-SLOT-01）。下文 legacy 表中 `builtin_v2` 行仅作迁移对照。
+
 **插件作者学习路径**：[PLUGIN_AUTHOR_LEARNING_PATH.md](PLUGIN_AUTHOR_LEARNING_PATH.md)
 
 **当前权威**：角色包 **`pipeline.ocblueprint` → `slot_registry`**（见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)）。本文档描述宿主（Tauri / `chat_engine`）与可替换子系统之间的 **编排契约**：DTO 形状、槽位门面 trait、**v2 实例解析**；下文 **legacy** 段落中的 `settings.json` → `plugin_backends` 仅用于 **v1（已废弃）** 迁移对照。实现以源码为准：`slot_resolver.rs`、`plugin_host.rs`、`src-tauri/src/models/plugin_backends.rs`。
@@ -82,7 +84,7 @@ flowchart TB
   slots --> CE
 
   subgraph shapes["实现形态（每槽枚举见本文各节表）"]
-    BIN["builtin / builtin_v2 / ollama<br/>进程内 Rust"]
+    BIN["builtin / ollama<br/>进程内 Rust"]
     REM["remote<br/>HTTP JSON-RPC + OCLIVE_REMOTE_*"]
     DIR["directory<br/>plugins/ 子进程，同协议 wire"]
     LOC["memory: local<br/>_local_plugins"]
@@ -119,7 +121,7 @@ flowchart TB
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | `memories` | `&[Memory]` | 已由仓储读出并经场景权重等处理后的候选集 |
-| `user_query` | `&str` | 当前用户句（用于 builtin_v2 等关键词加权） |
+| `user_query` | `&str` | 当前用户句（用于关键词加权等检索策略） |
 | `scene_id` | `Option<&str>` | 当前场景 id；可选参与未来检索策略 |
 | `limit` | `usize` | 注入主 prompt 的最大条数 |
 
@@ -133,10 +135,10 @@ flowchart TB
 | 值 | 含义 |
 |----|------|
 | `builtin` | 按 `importance * weight` 排序取 Top-K（与历史 `MemoryEngine::get_relevant_memories` 一致） |
-| `builtin_v2` | 在 builtin 思路上增加 **用户查询与正文** 的轻量重合加权（第二套内置） |
+| `builtin_v2` | **已废弃 wire alias**（2026-06-10 起读入等同 `builtin`） |
 | `remote` | HTTP `memory.rank`（需 `OCLIVE_REMOTE_PLUGIN_URL`；失败回退 `builtin`） |
 | `directory` | HTTP `memory.rank` 指向 **`directory_plugins.memory`** 对应 manifest 子进程 URL（失败回退 `builtin`；见 [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)） |
-| `local` | 使用已注册的本地 memory provider（`roles/_local_plugins/*.json`）；**当前阶段**排序仍委托 `builtin_v2` 逻辑，多 provider 时按 `provider_id` 字典序取第一个并打警告（见 [LOCAL_PLUGIN_BRIDGE_SPEC.md](LOCAL_PLUGIN_BRIDGE_SPEC.md)） |
+| `local` | 使用已注册的本地 memory provider（`roles/_local_plugins/*.json`）；**当前阶段**排序仍委托 `builtin` 逻辑，多 provider 时按 `provider_id` 字典序取第一个并打警告（见 [LOCAL_PLUGIN_BRIDGE_SPEC.md](LOCAL_PLUGIN_BRIDGE_SPEC.md)） |
 
 与 `plugin_backends.memory` **同级**可选字段：
 
@@ -161,7 +163,7 @@ flowchart TB
 | 值 | 含义 |
 |----|------|
 | `builtin` | 关键词启发式（现有 `EmotionAnalyzer`） |
-| `builtin_v2` | 第二套内置：强中性输出（`BuiltinUserEmotionAnalyzerV2`；用于验证枚举可切换） |
+| `builtin_v2` | **已废弃 wire alias**（读入等同 `builtin`） |
 | `remote` | HTTP `emotion.analyze`（需 `OCLIVE_REMOTE_PLUGIN_URL`；失败回退 builtin） |
 | `directory` | HTTP `emotion.analyze` 指向 **`directory_plugins.emotion`** 插件 URL（失败回退 builtin） |
 
@@ -184,7 +186,7 @@ flowchart TB
 | 值 | 含义 |
 |----|------|
 | `builtin` | 现有 `event_impact_ai::estimate_event_impact` 链（含环境开关与规则回退） |
-| `builtin_v2` | 第二套内置：在 builtin 结果上将 `impact_factor` ×0.5（`BuiltinEventEstimatorV2`） |
+| `builtin_v2` | **已废弃 wire alias**（读入等同 `builtin`） |
 | `remote` | HTTP `event.estimate`（需 `OCLIVE_REMOTE_PLUGIN_URL`；失败回退 builtin） |
 | `directory` | HTTP `event.estimate` 指向 **`directory_plugins.event`** 插件 URL（失败回退 builtin） |
 
@@ -204,7 +206,7 @@ flowchart TB
 | 值 | 含义 |
 |----|------|
 | `builtin` | 现有 `PromptBuilder` |
-| `builtin_v2` | 第二套内置：在 builtin 正文前追加 `[oclive:prompt:builtin_v2]` + 换行前缀（`BuiltinPromptAssemblerV2`） |
+| `builtin_v2` | **已废弃 wire alias**（读入等同 `builtin`） |
 | `remote` | HTTP `prompt.build_prompt` / `prompt.top_topic_hint`（需 `OCLIVE_REMOTE_PLUGIN_URL`；失败回退 builtin） |
 | `directory` | 同上，指向 **`directory_plugins.prompt`** 插件 URL（失败回退 builtin） |
 
@@ -341,7 +343,7 @@ TypeScript 侧 `SendMessageResponse`（`src/utils/tauri-api.ts`）必须与 `mod
         "label": "后端方案",
         "type": "select",
         "required": true,
-        "default": "builtin_v2"
+        "default": "builtin"
       }
     ]
   }

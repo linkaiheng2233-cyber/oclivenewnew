@@ -201,7 +201,6 @@ export default {
       remote: 'Remote service',
       directory: 'Directory plugin',
       builtin: 'Built-in',
-      builtin_v2: 'Built-in V2',
     },
     field: {
       backend: 'Backend mode',

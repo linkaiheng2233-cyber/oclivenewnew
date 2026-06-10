@@ -60,6 +60,7 @@ mod plugin_manage_tui;
 mod plugin_search;
 mod profile_cmd;
 mod project_introspect;
+mod project_root;
 mod publish_cmd;
 mod registry;
 mod registry_cmd;

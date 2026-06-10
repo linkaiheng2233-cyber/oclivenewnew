@@ -1,3 +1,4 @@
+import { normalizeSlotBackendWire } from '../lib/slotRegistry'
 import { invokeWithFriendlyError } from './helpers'
 import type { RoleInfo } from './role'
 
@@ -10,7 +11,8 @@ export interface DirectoryPluginSlots {
   agent?: string | null
 }
 
-/** Matches `settings.json` → `plugin_backends` (snake_case, aligned with backend serde) */
+/** Matches `settings.json` → `plugin_backends` (snake_case, aligned with backend serde).
+ *  Read path may include legacy `builtin_v2` wire alias; call `normalizePluginBackends` after load. */
 
 export interface PluginBackends {
   memory: 'builtin' | 'builtin_v2' | 'remote' | 'local' | 'directory'
@@ -23,6 +25,19 @@ export interface PluginBackends {
   agent: 'builtin' | 'remote' | 'directory'
   /** Manifest `id` for each module when backend is `directory` (see DIRECTORY_PLUGINS.md) */
   directory_plugins?: DirectoryPluginSlots
+}
+
+const SLOT_BACKEND_KEYS = ['memory', 'emotion', 'event', 'prompt'] as const
+
+/** Normalize legacy `builtin_v2` wire values to `builtin` for display. */
+export function normalizePluginBackends<T extends PluginBackends | PluginBackendsOverride>(backends: T): T {
+  const next = { ...backends }
+  for (const key of SLOT_BACKEND_KEYS) {
+    const value = next[key]
+    if (typeof value === 'string')
+      next[key] = normalizeSlotBackendWire(value) as T[typeof key]
+  }
+  return next
 }
 
 
@@ -80,7 +95,7 @@ export interface PluginResolutionDebugInfo {
 export async function setSessionPluginBackend(
   roleId: string,
   module: 'memory' | 'emotion' | 'event' | 'prompt' | 'llm' | 'agent',
-  /** Matches backend `parse_backend_wire`: e.g. `builtin_v2`, `directory`, `remote` */
+  /** Matches backend `parse_backend_wire`; legacy `builtin_v2` is normalized to `builtin` on save */
   backend?: string | null,
   localMemoryProviderId?: string,
   sessionId?: string | null,
@@ -92,7 +107,7 @@ export async function setSessionPluginBackend(
     session_id: sessionId ?? null,
   }
   if (backend !== undefined) {
-    req.backend = backend
+    req.backend = backend == null ? null : normalizeSlotBackendWire(backend)
   }
   if (localMemoryProviderId !== undefined) {
     req.local_memory_provider_id = localMemoryProviderId
@@ -122,7 +137,7 @@ export async function setSessionSlotOverride(
     req: {
       role_id: roleId,
       slot_key: slotKey,
-      backend: patch.backend ?? null,
+      backend: patch.backend == null ? null : normalizeSlotBackendWire(patch.backend),
       plugin: patch.plugin ?? null,
       plugins: patch.plugins ?? null,
       model: patch.model ?? null,

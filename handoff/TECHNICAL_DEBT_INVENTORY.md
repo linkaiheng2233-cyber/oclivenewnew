@@ -1,6 +1,6 @@
 # Technical debt inventory
 
-**Last updated:** 2026-06-11 (Fable 5 巡检 Phase 0–4)
+**Last updated:** 2026-06-11 (Fable 5 漂移收口 · Phase 0–5)
 
 **Product freeze (Theater v0):** No new kernel orchestration / six-slot expansion until strangers validate AI Theater v0. See [PRODUCT_FREEZE_THEATER_V0.md](./PRODUCT_FREEZE_THEATER_V0.md). **Deferred unchanged:** K-PERF-10, K-PERF-14/15, §3.1 library API, dual_core (frozen).
 
@@ -15,7 +15,8 @@
 | K-PERF-24 | post `Role` clone 减少 | **Done** | `TurnContext.role_arc` 供 profile evolution spawn |
 | D-ERR-02 | `TurnError → AppError` 保留 stage | **Done** | `with_chat_stage`；单测 `kernel_error_body` 含 stage 前缀 |
 | D-ORPHAN-04 | 删除无消费方 `RoleRuntimeRepo` | **Done** | `preflight_turn_runtime` supersede |
-| D-NAME-01 | `resolve_backend_kind` → `pick_chat_storage_backend_kind` | **Partial** | chat_storage 批次 Done；`resolve_project_root` CLI 收敛仍 Deferred |
+| D-SLOT-01b | `builtin_v2` 前端/文档叙事收敛 | **Done** | UI 无独立 V2 选项；读入归一化为 `builtin`；creator-docs 六处对齐 |
+| D-NAME-01 | `resolve_backend_kind` → `pick_chat_storage_backend_kind` | **Partial** | chat_storage 批次 Done；CLI `resolve_project_root` SSOT Done（`project_root.rs`） |
 | D-PORT-03 | `BackendRegistry` trait 纯转发 | **Observe** | UFCS 必需（trait/inherent 同名防递归）；待 remote policy 或第二实现再 collapse |
 | K-DOC-10~12 | 分层 3/1、债务自洽、Agent 规则漂移 | **Done** | ARCHITECTURE_LAYERING · domain README · `.cursor/rules` · oclive-vscode AGENTS |
 | K-PERF-19+ | 前端 follow-up | **Done** | `patchMessageById` 原位更新；轮询复用 `kernelConnectionStore` |

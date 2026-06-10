@@ -12,10 +12,10 @@
 
 | 模块 | 职责 | Rust trait | `settings.json` 字段（`plugin_backends` 下） | 默认实现 |
 |------|------|------------|---------------------------------------------|----------|
-| **记忆检索** | 长期记忆排序、上下文、关键词搜索 | `MemoryRetrieval` | `memory`: `builtin` / `builtin_v2` / `remote` / `directory` | `BuiltinMemoryRetrieval`、`BuiltinMemoryRetrievalV2`；**`directory`** 需 `directory_plugins.memory` 指向 `plugins/<id>/` |
-| **用户句情绪** | 从文本得到七维情绪 | `UserEmotionAnalyzer` | `emotion`: `builtin` / `builtin_v2` / `remote` / `directory` | 同上；**`directory`** 需 `directory_plugins.emotion` |
-| **事件影响** | LLM 估计事件类型与影响因子 | `EventEstimator` | `event`: `builtin` / `builtin_v2` / `remote` / `directory` | 同上；**`directory`** 需 `directory_plugins.event` |
-| **Prompt 组装** | 主对话 system/user 字符串 | `PromptAssembler` | `prompt`: `builtin` / `builtin_v2` / `remote` / `directory` | 同上；**`directory`** 需 `directory_plugins.prompt` |
+| **记忆检索** | 长期记忆排序、上下文、关键词搜索 | `MemoryRetrieval` | `memory`: `builtin`（`builtin_v2` 读兼容 alias）/ `remote` / `directory` | `BuiltinMemoryRetrieval`；**`directory`** 需 `directory_plugins.memory` 指向 `plugins/<id>/` |
+| **用户句情绪** | 从文本得到七维情绪 | `UserEmotionAnalyzer` | `emotion`: `builtin`（`builtin_v2` alias）/ `remote` / `directory` | 同上；**`directory`** 需 `directory_plugins.emotion` |
+| **事件影响** | LLM 估计事件类型与影响因子 | `EventEstimator` | `event`: `builtin`（`builtin_v2` alias）/ `remote` / `directory` | 同上；**`directory`** 需 `directory_plugins.event` |
+| **Prompt 组装** | 主对话 system/user 字符串 | `PromptAssembler` | `prompt`: `builtin`（`builtin_v2` alias）/ `remote` / `directory` | 同上；**`directory`** 需 `directory_plugins.prompt` |
 | **LLM 推理** | 调用大模型生成 | `LlmClient` | `llm`: `ollama` / `remote` / `directory` | `ollama`：进程注入的客户端；`remote`：`OCLIVE_REMOTE_LLM_URL` 的 JSON-RPC，未配置则委托默认 LLM；**`directory`** 需 `directory_plugins.llm`（子进程 URL，无需 `OCLIVE_REMOTE_LLM_URL`） |
 | **Agent 编排** | 工具调度 / ReAct 等 | `AgentProvider` | `agent`: `builtin` / `remote` / `directory` | `builtin`：`BuiltinReActAgent`；**`directory`** 需 `directory_plugins.agent`；MCP 清单目录为 **`{app_data}/mcp-servers`**（`app_data` 与 `PluginHost::new` 第三参一致） |
 | **长期记忆存储** | 读写 SQLite 中的记忆行 | `MemoryRepository` | *（未挂 plugin_backends，换库需改基础设施）* | `SqliteMemoryRepository` |

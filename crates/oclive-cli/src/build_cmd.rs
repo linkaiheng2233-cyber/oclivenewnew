@@ -4,6 +4,7 @@ use crate::monolith_codegen::{copy_monolith_vendor, generate_monolith_source_wit
 use crate::monolith_config::{
     parse_monolith_toml, resolve_weld_plan, validate_monolith_section, MonolithFile,
 };
+use crate::project_root::resolve_project_root;
 use anyhow::{bail, Context, Result};
 use clap::Parser;
 use std::fs;
@@ -31,16 +32,6 @@ pub struct BuildArgs {
     /// Extra args forwarded to `cargo build` (place after `--`)
     #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
     pub cargo_extra: Vec<String>,
-}
-
-fn resolve_project_root(path: &Path) -> Result<PathBuf> {
-    let root = if path.is_absolute() {
-        path.to_path_buf()
-    } else {
-        std::env::current_dir().context("current_dir")?.join(path)
-    };
-    root.canonicalize()
-        .with_context(|| format!("cannot resolve project path: {}", root.display()))
 }
 
 fn merge_features_for_monolith(user: &[String]) -> String {

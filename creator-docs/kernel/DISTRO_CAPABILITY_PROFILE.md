@@ -45,7 +45,7 @@ display_name = "OCLive VS Code"
 
 # --- 模块上限（可选；省略 = 不额外收紧，仅用 host_flags / slots）---
 [plugin_backends]
-memory = "builtin"            # builtin | builtin_v2 | remote | local | directory | none
+memory = "builtin"            # builtin (builtin_v2 read alias) | remote | local | directory | none
 emotion = "builtin"           # … | none
 event = "builtin"             # … | none
 prompt = "builtin"            # … | none（共景路径禁止 none，见 MODULE_NONE_SEMANTICS.md）
@@ -92,10 +92,10 @@ favor_low  = "…"              # optional; favor < 40
 
 | 键 | 合法值 |
 |----|--------|
-| `memory` | `builtin`, `builtin_v2`, `remote`, `local`, `directory` |
-| `emotion` | `builtin`, `builtin_v2`, `remote`, `directory` |
-| `event` | `builtin`, `builtin_v2`, `remote`, `directory` |
-| `prompt` | `builtin`, `builtin_v2`, `remote`, `directory` |
+| `memory` | `builtin`（`builtin_v2` 读兼容 alias）, `remote`, `local`, `directory` |
+| `emotion` | `builtin`（`builtin_v2` alias）, `remote`, `directory` |
+| `event` | `builtin`（`builtin_v2` alias）, `remote`, `directory` |
+| `prompt` | `builtin`（`builtin_v2` alias）, `remote`, `directory` |
 | `llm` | `ollama`, `remote`, `directory` |
 | `agent` | `builtin`, `remote`, `directory` |
 

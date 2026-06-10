@@ -194,7 +194,7 @@
 1. [../plugin-and-architecture/EXTENSION_POINTS.md](../plugin-and-architecture/EXTENSION_POINTS.md)  
 2. [../plugin-and-architecture/HOW_TO_REPLACE_MODULES.md](../plugin-and-architecture/HOW_TO_REPLACE_MODULES.md)  
 3. 源码：`crates/oclive_kernel_host/src/domain/plugin_host/`、`crates/oclive_kernel_host/src/infrastructure/remote_plugin/`、**`crates/oclive_kernel_host/src/infrastructure/directory_plugins/`**（目录插件扫描与懒启动）  
-4. 集成烟测（`PluginHost::resolve_for_role` + `builtin_v2` 枚举）：[`src-tauri/tests/plugin_backends_v2_resolve.rs`](../../src-tauri/tests/plugin_backends_v2_resolve.rs)（`cargo test --test plugin_backends_v2_resolve`）
+4. 集成烟测（`PluginHost::resolve_for_role` + `builtin_v2` **alias 解析**）：[`src-tauri/tests/plugin_backends_v2_resolve.rs`](../../src-tauri/tests/plugin_backends_v2_resolve.rs)（`cargo test --test plugin_backends_v2_resolve`）
 
 ---
 

@@ -1,7 +1,9 @@
-# 六槽 × 后端真实性矩阵（24 格 · 只读巡检）
+# 六槽 × 后端真实性矩阵（20 格 · 只读巡检）
 
-**Last updated:** 2026-06-10（轮次 10 半档巡检）  
+**Last updated:** 2026-06-11（Fable 5 漂移收口）  
 **证据源：** `crates/oclive_kernel_host/src/infrastructure/backend_registry.rs`（`pick_*` / `*_for_plugin_backends`）
+
+> 表为 6×4=24 物理格；memory / emotion / event / prompt 四槽 **无独立 V2 实现**（D-SLOT-01）。`builtin_v2` 仅为 serde 读兼容 alias，行为等同 `builtin`。
 
 图例：✅ 真跑通 · ⚠️ 占位/静默回退 · ❌ 未实现
 

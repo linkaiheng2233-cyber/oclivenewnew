@@ -35,6 +35,11 @@
 - **Hot-path DB merge (K-PERF-03~06)**: one `EffectiveSessionConfig` per turn; single `get_role_runtime_snapshot` read; shared `TurnPrefetch` / skip agent DB when `agent=none`; one memory-decay transaction. Baseline: `handoff/OPUS_48_PERF_BASELINE.md`.
 - **Long-lived memory/SQLite (K-PERF-07/08/12)**: `SessionCache` six-map cap+TTL; `personality_vector` composite index migration `033`; `hybrid_store` drops redundant `get_chat_session`; `role_cache` LRU(32); LLM startup probe runs in background.
 - **In-shell lazy panels + poll backoff (K-PERF-10/11)**: non-first-screen panels in `FluentShell`/`ToolShell` via `defineAsyncComponent`; `useKernelStatus` backs off to 60s when the tab is hidden.
+- **RoleRuntimeSnapshot downstream reuse (K-PERF-20)**: `relation_snapshot` / `post` / `pre` Profile paths share one snapshot; at most one `get_current_emotion` per turn (except post-write refresh).
+- **Ollama model settings batch read (K-PERF-21)**: `resolve_effective_ollama_model` uses a single `get_app_settings([provider, remote_model])` round trip.
+- **Chat session list + upsert (K-PERF-22)**: session list snippet via window-function JOIN; `upsert_chat_session` `RETURNING` removes post-write re-read.
+- **Long-term memory & operation-log indexes (K-PERF-23)**: migration `034_perf_indexes.sql` (`idx_ltm_role_content` / `idx_operation_logs_role`).
+- **Fewer post-phase Role clones (K-PERF-24)**: `TurnContext.role_arc` reused for profile evolution spawn.
 
 ---
 

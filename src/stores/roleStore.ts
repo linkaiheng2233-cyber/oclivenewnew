@@ -1,4 +1,5 @@
 import type { AuthorPackFile, LifeStateDto, PackUiConfig, PluginBackends, PluginBackendsOverride, PluginBackendsSourceMap, RoleInfo, UserRelationDto } from '../api'
+import { normalizePluginBackends } from '../api/settings'
 import { defineStore } from 'pinia'
 import {
 
@@ -18,6 +19,7 @@ import {
 } from '../api'
 import { rt } from '../i18n/runtimeT'
 import { hostEventBus } from '../lib/hostEventBus'
+import { normalizeSlotBackendWire, type SlotRegistryMap } from '../lib/slotRegistry'
 import {
   normalizeInteractionMode,
   packDefaultFromApi,
@@ -95,6 +97,21 @@ interface RoleInfoState {
   replyPostProcessorProfile: string | null
 }
 
+function normalizeSlotRegistryBackends(
+  registry: SlotRegistryMap | null | undefined,
+): SlotRegistryMap | null {
+  if (!registry)
+    return null
+  const next: SlotRegistryMap = {}
+  for (const [key, entry] of Object.entries(registry)) {
+    next[key] = {
+      ...entry,
+      backend: normalizeSlotBackendWire(entry.backend),
+    }
+  }
+  return next
+}
+
 function mapRoleInfo(info: RoleInfo): RoleInfoState {
   return {
     name: info.role_name || info.role_id,
@@ -126,10 +143,13 @@ function mapRoleInfo(info: RoleInfo): RoleInfoState {
       info.interaction_mode_pack_default,
     ),
     currentLife: info.current_life ?? null,
-    pluginBackends: info.plugin_backends,
-    pluginBackendsSessionOverride: info.plugin_backends_session_override ?? null,
-    pluginBackendsEffective:
+    pluginBackends: normalizePluginBackends(info.plugin_backends),
+    pluginBackendsSessionOverride: info.plugin_backends_session_override
+      ? normalizePluginBackends(info.plugin_backends_session_override)
+      : null,
+    pluginBackendsEffective: normalizePluginBackends(
       info.plugin_backends_effective ?? info.plugin_backends,
+    ),
     pluginBackendsEffectiveSources: info.plugin_backends_effective_sources ?? {
       memory: 'pack_default',
       emotion: 'pack_default',
@@ -144,8 +164,8 @@ function mapRoleInfo(info: RoleInfo): RoleInfoState {
       info.pack_ui_baseline ?? info.pack_ui_config,
     ),
     authorPack: info.author_pack ?? null,
-    slotRegistryPack: info.slot_registry_pack ?? null,
-    slotRegistryEffective: info.slot_registry_effective ?? null,
+    slotRegistryPack: normalizeSlotRegistryBackends(info.slot_registry_pack),
+    slotRegistryEffective: normalizeSlotRegistryBackends(info.slot_registry_effective),
     slotSessionOverriddenKeys: info.slot_session_overridden_keys ?? [],
     blueprintGroupsPack: info.blueprint_groups_pack ?? null,
     dualCoreEnabled: info.dual_core_enabled ?? false,

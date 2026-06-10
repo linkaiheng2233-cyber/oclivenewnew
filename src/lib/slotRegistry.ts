@@ -67,11 +67,16 @@ export const SLOT_TYPE_ORDER = [
 
 export type SlotType = (typeof SLOT_TYPE_ORDER)[number]
 
+/** Legacy wire alias (`#[serde(alias = "builtin_v2")]`); normalize to `builtin` for UI. */
+export function normalizeSlotBackendWire(value: string): string {
+  return value === 'builtin_v2' ? 'builtin' : value
+}
+
 export const SLOT_BACKEND_OPTIONS: Record<string, string[]> = {
-  memory: ['builtin', 'builtin_v2', 'remote', 'local', 'directory'],
-  emotion: ['builtin', 'builtin_v2', 'remote', 'directory'],
-  event: ['builtin', 'builtin_v2', 'remote', 'directory'],
-  prompt: ['builtin', 'builtin_v2', 'remote', 'directory'],
+  memory: ['builtin', 'remote', 'local', 'directory'],
+  emotion: ['builtin', 'remote', 'directory'],
+  event: ['builtin', 'remote', 'directory'],
+  prompt: ['builtin', 'remote', 'directory'],
   llm: ['ollama', 'remote', 'directory'],
   agent: ['builtin', 'remote', 'directory'],
   complex_emotion: ['builtin', 'remote', 'directory'],

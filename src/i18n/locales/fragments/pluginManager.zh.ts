@@ -201,7 +201,6 @@ export default {
       remote: '远程服务',
       directory: '目录插件',
       builtin: '内置',
-      builtin_v2: '内置 V2',
     },
     field: {
       backend: '运行方式',

@@ -4,7 +4,7 @@ use anyhow::{bail, Context, Result};
 use clap::Parser;
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use crate::publish_cmd;
 use crate::registry::{oclive_home, register_project};
@@ -110,7 +110,10 @@ pub fn run_logout() -> Result<()> {
 pub fn run_push(args: RegistryPushArgs) -> Result<()> {
     let base = registry_base_url()?;
     let token = bearer_token()?;
-    let root = resolve_project_root(&args.name, args.path.as_deref())?;
+    let root = crate::project_root::resolve_project_root_for_registry(
+        &args.name,
+        args.path.as_deref(),
+    )?;
     let tmp = tempfile::tempdir()?;
     let archive = tmp
         .path()
@@ -197,20 +200,6 @@ pub fn run_search(args: RegistrySearchArgs) -> Result<()> {
         );
     }
     Ok(())
-}
-
-fn resolve_project_root(name: &str, path: Option<&Path>) -> Result<PathBuf> {
-    if let Some(p) = path {
-        return p
-            .canonicalize()
-            .with_context(|| format!("path {}", p.display()));
-    }
-    let entry = crate::registry::find_entry(name)?.ok_or_else(|| {
-        anyhow::anyhow!("No project {name} in local registry; use registry add or -o with a path")
-    })?;
-    PathBuf::from(&entry.path)
-        .canonicalize()
-        .with_context(|| format!("registry path {}", entry.path))
 }
 
 fn url_encode(s: &str) -> String {
