@@ -83,6 +83,7 @@ function lastAssistantAsideFromMessages(messages: ChatMessage[]): string {
     const m = messages[i]
     if (m.role === 'assistant') {
       const aside = m.aside?.trim()
+        ?? splitRoleplayReply(m.content).aside.trim()
       if (aside)
         return aside
     }
@@ -307,7 +308,8 @@ export const useChatStore = defineStore(
         }
         if (gen !== this.messageLoadGeneration)
           return
-        this.lastAssistantAside = rebuildLastAssistantAsideMap(this.messageMap)
+        const bucket = roleSceneBucket(this.messageMap, roleId, sid)
+        syncLastAssistantAside(this.lastAssistantAside, roleId, sid, bucket)
         sanitizeAllSceneHistorySplits(this.sceneHistorySplitIndex, this.messageMap)
         repairSplitsSoCurrentSessionVisible(
           this.sceneHistorySplitIndex,
@@ -436,13 +438,13 @@ export const useChatStore = defineStore(
         options?: { persistIdbCache?: boolean },
       ) {
         const sid = sceneId || 'default'
-        const current = roleSceneBucket(this.messageMap, roleId, sid)
-        const next = [...current, msg]
-        const trimmed
-          = next.length > this.messageCapPerSession
-            ? next.slice(-this.messageCapPerSession)
-            : next
-        const removedFromHead = next.length - trimmed.length
+        const bucket = roleSceneBucket(this.messageMap, roleId, sid)
+        bucket.push(msg)
+        let removedFromHead = 0
+        if (bucket.length > this.messageCapPerSession) {
+          removedFromHead = bucket.length - this.messageCapPerSession
+          bucket.splice(0, removedFromHead)
+        }
         if (removedFromHead > 0) {
           adjustSplitAfterTrim(
             this.sceneHistorySplitIndex,
@@ -451,14 +453,13 @@ export const useChatStore = defineStore(
             removedFromHead,
           )
         }
-        this.messageMap[roleId]![sid] = trimmed
         clampSceneHistorySplitForBucket(
           this.sceneHistorySplitIndex,
           roleId,
           sid,
-          trimmed.length,
+          bucket.length,
         )
-        syncLastAssistantAside(this.lastAssistantAside, roleId, sid, trimmed)
+        syncLastAssistantAside(this.lastAssistantAside, roleId, sid, bucket)
         if (options?.persistIdbCache !== false)
           schedulePersistMessages(this.messageMap, roleId, sid)
       },

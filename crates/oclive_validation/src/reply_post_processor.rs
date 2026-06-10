@@ -54,6 +54,26 @@ pub fn validate_reply_post_processor_config(value: &serde_json::Value) -> Vec<St
         }
     }
 
+    if cfg.enabled && backend == "directory" {
+        if let Some(plugin_id) = value
+            .get("directory")
+            .and_then(|d| d.get("plugin_id"))
+            .and_then(|p| p.as_str())
+        {
+            if plugin_id.trim().is_empty() {
+                errs.push(
+                    "config.json reply_post_processor: backend=directory 且 enabled 时 directory.plugin_id 必填非空"
+                        .into(),
+                );
+            }
+        } else {
+            errs.push(
+                "config.json reply_post_processor: backend=directory 且 enabled 时 directory.plugin_id 必填非空"
+                    .into(),
+            );
+        }
+    }
+
     if let Some(profile) = value
         .get("builtin")
         .and_then(|b| b.get("profile"))
@@ -124,5 +144,12 @@ mod tests {
         let v = json!({ "enabled": true, "backend": "remote", "remote": { "url": "" } });
         let errs = validate_reply_post_processor_config(&v);
         assert!(errs.iter().any(|e| e.contains("remote.url")));
+    }
+
+    #[test]
+    fn directory_enabled_requires_plugin_id() {
+        let v = json!({ "enabled": true, "backend": "directory", "directory": { "plugin_id": "" } });
+        let errs = validate_reply_post_processor_config(&v);
+        assert!(errs.iter().any(|e| e.contains("plugin_id")));
     }
 }

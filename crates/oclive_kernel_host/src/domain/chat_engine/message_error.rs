@@ -47,7 +47,7 @@ impl ProcessMessageError {
 impl From<ProcessMessageError> for AppError {
     fn from(e: ProcessMessageError) -> Self {
         match e {
-            ProcessMessageError::Stage { source, .. } => source,
+            ProcessMessageError::Stage { stage, source } => source.with_chat_stage(stage),
             ProcessMessageError::Turn(c) => c.into(),
         }
     }

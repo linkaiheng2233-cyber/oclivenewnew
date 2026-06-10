@@ -136,9 +136,9 @@ async fn prefetch_context(
         mutable_for_prompt,
         personality,
         (
-            pf.recent_turns.clone(),
-            pf.recent_turns_for_event.clone(),
-            pf.recent_events.clone(),
+            pf.recent_turns.to_vec(),
+            pf.recent_turns_for_event.to_vec(),
+            pf.recent_events.to_vec(),
         ),
     ))
 }

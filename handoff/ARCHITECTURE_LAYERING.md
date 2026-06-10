@@ -2,7 +2,7 @@
 
 **状态**：P0–P8 收口后的工程纪律说明（2026-06-09）。
 
-**D-LAYER-05 ratchet（2026-06-09）**：`node scripts/check-domain-layering.mjs` — `use crate::infrastructure` **4**（全 `#[cfg(test)]`）、生产 `crate::infrastructure::` FQ **5**；基线 [`LAYERING_BASELINE.json`](LAYERING_BASELINE.json)。明细见 [`crates/oclive_kernel_host/src/domain/README.md`](../crates/oclive_kernel_host/src/domain/README.md)。
+**D-LAYER-05 ratchet（2026-06-11）**：`node scripts/check-domain-layering.mjs` — 生产 `crate::infrastructure::` FQ **1**；`#[cfg(test)]` `use crate::infrastructure` **3**；基线 [`LAYERING_BASELINE.json`](LAYERING_BASELINE.json)。明细见 [`crates/oclive_kernel_host/src/domain/README.md`](../crates/oclive_kernel_host/src/domain/README.md)。
 
 ## 关键架构决策（摘要）
 

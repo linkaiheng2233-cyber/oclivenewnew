@@ -89,7 +89,10 @@ roles/{role_id}/
 
 **API / UI**：Tauri `get_user_identity_state` / `set_user_identity`；HTTP `GET /user_identity/state`、`POST /user_identity/set`。详见 [RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md](../rfc/RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md) §3。
 
-**校验**：`oclive pack validate` 对 `index.json` 做基本形状检查；缺失模板文件时 **warn**，不阻塞 `load_role`。
+**校验与加载语义**：
+
+- **整个 `user_identities/` 目录缺失** → legacy 回退（`meta.relations` 的 `prompt_hint`），不阻塞 `load_role`。
+- **目录存在且含 `index.json`** → 每条 `template_file` 指向的 `*.md` **必须可读**；`oclive pack validate` 与 `load_role` 均会 **失败**（非 warn）。
 
 ---
 
@@ -380,11 +383,14 @@ auto_sync: false
 
 **行为摘要**：仅 **沉浸模式** 下、每回合对话开始前应用疏远衰减；`profile` 人格模式下可在可变性格档案「社交关系」小节记录已疏远状态。
 
-### 9.5a `chat_storage`（聊天记录后端与回放）
+### 9.5a `chat_storage`（聊天记录后端与回放 · phase 3 hybrid）
+
+运行时始终使用 **HybridConversationStore**（SQLite 真源 + 可选 JSON 镜像）。`backend` 枚举 **`hybrid` \| `file` \| `sqlite`** 仅控制 **JSON 镜像**开关（`file`/`sqlite` 关闭镜像，`hybrid` 开启）；**不**切换独立 `file_store` / `sqlite_store` 实现。详见 [STORAGE_BACKEND_GUIDE.md](../storage/STORAGE_BACKEND_GUIDE.md) · [CHAT_STORAGE_ARCHITECTURE.md](../../handoff/CHAT_STORAGE_ARCHITECTURE.md)。
 
 | 字段 | 类型 | 默认 | 说明 |
 |------|------|------|------|
-| `backend` | string | `hybrid` | `hybrid` \| `file` \| `sqlite`；见 [STORAGE_BACKEND_GUIDE.md](../storage/STORAGE_BACKEND_GUIDE.md) |
+| `backend` | string | `hybrid` | 镜像策略：`hybrid`（开镜像）\| `file` / `sqlite`（关镜像） |
+| `mirror` | bool | 随 `backend` | 显式覆盖镜像开关；缺省时 `hybrid` → `true`，`file`/`sqlite` → `false` |
 | `max_messages_per_session` | integer | 宿主 500 | 单会话消息 FIFO 上限 |
 | `auto_cleanup_days` | integer | — | 自动清理：保留最近 N 天 |
 | `auto_cleanup_max_sessions` | integer | — | 自动清理：每角色最多 N 会话 |

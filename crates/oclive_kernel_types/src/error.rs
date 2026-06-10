@@ -144,6 +144,40 @@ impl AppError {
     pub fn to_frontend_error(&self) -> String {
         self.to_kernel_json()
     }
+
+    /// Prefix error message with `send_message[{stage}]` while preserving machine `code`.
+    #[must_use]
+    pub fn with_chat_stage(self, stage: &'static str) -> Self {
+        match self {
+            Self::DatabaseError(m) => Self::DatabaseError(format!("send_message[{stage}]: {m}")),
+            Self::IoError(e) => Self::IoError(e),
+            Self::OllamaError(m) => Self::OllamaError(format!("send_message[{stage}]: {m}")),
+            Self::RoleNotFound(m) => Self::RoleNotFound(format!("send_message[{stage}]: {m}")),
+            Self::RoleRuntimeNotReady => Self::RoleRuntimeNotReady,
+            Self::StartupHealthFailed(m) => {
+                Self::StartupHealthFailed(format!("send_message[{stage}]: {m}"))
+            }
+            Self::RolePackExists(m) => Self::RolePackExists(format!("send_message[{stage}]: {m}")),
+            Self::InvalidParameter(m) => Self::InvalidParameter(format!("send_message[{stage}]: {m}")),
+            Self::EmptyMessage => Self::EmptyMessage,
+            Self::HighRiskCapabilityNotGranted { capability, id } => {
+                Self::HighRiskCapabilityNotGranted {
+                    capability: format!("send_message[{stage}]: {capability}"),
+                    id,
+                }
+            }
+            Self::RemoteServiceUnavailable(m) => {
+                Self::RemoteServiceUnavailable(format!("send_message[{stage}]: {m}"))
+            }
+            Self::SerializationError(e) => Self::SerializationError(e),
+            Self::KernelOffline => Self::KernelOffline,
+            Self::Unknown(m) => Self::Unknown(format!("send_message[{stage}]: {m}")),
+            Self::TransactionError { code, message } => Self::TransactionError {
+                code,
+                message: format!("send_message[{stage}]: {message}"),
+            },
+        }
+    }
 }
 
 #[cfg(test)]

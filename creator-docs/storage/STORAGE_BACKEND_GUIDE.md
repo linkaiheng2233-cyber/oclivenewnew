@@ -2,7 +2,19 @@
 
 > 技术真源：[handoff/CHAT_STORAGE_ARCHITECTURE.md](../../handoff/CHAT_STORAGE_ARCHITECTURE.md) · 配置字段见 [SETTINGS_REFERENCE.md §六](../cli/SETTINGS_REFERENCE.md) · 角色包 `config.json` 亦见 [ROLE_PACK_SPEC.md §9](../role-pack/ROLE_PACK_SPEC.md)。
 
-## 三种后端对比
+## Phase 3 hybrid（投资边界）
+
+**生产路径**始终为 **HybridConversationStore**（SQLite `chat_sessions` / `chat_messages` 真源 + 可选 JSON 镜像）。`config.json` → `chat_storage.backend` 与环境变量 **`OCLIVE_CHAT_STORAGE_BACKEND`** 的 **`hybrid` \| `file` \| `sqlite`** 枚举 **仅控制 JSON 镜像开关**，不切换独立 `file_store` / `sqlite_store` 实现：
+
+| 枚举值 | 镜像 | 真源 |
+|--------|------|------|
+| **`hybrid`**（默认） | ✅ 开启 | SQLite |
+| **`file`** | ❌ 关闭 | SQLite |
+| **`sqlite`** | ❌ 关闭 | SQLite |
+
+可选显式字段 **`chat_storage.mirror`**（bool）覆盖上述推导。`file` / `sqlite` 枚举 **保持可编译与最小测试即可，不再扩展新功能**（见架构文档 §Investment boundary）。
+
+## 三种后端对比（镜像与能力）
 
 | | **hybrid**（默认） | **file** | **sqlite** |
 |---|-------------------|----------|------------|

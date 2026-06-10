@@ -15,7 +15,7 @@
 | `oclive.penetration.*` placeholders | **Deferred** | Documented as default-off; no cleanup without product traction (plan §Phase 5) |
 | Open items | **Expected** | F5 acceptance, first `.vsix` release still unchecked — not doc drift |
 
-**Action:** None required in vscode repo for this sweep.
+**Action (2026-06-11):** Main repo contract docs synced — `VSCODE_DISTRIBUTION.md` / `CROSS_HOST_MEMORY.md` now **policy-first** (no standalone「attach 优先」); penetration documented as roadmap item without `oclive.penetration.*` keys yet.
 
 ---
 

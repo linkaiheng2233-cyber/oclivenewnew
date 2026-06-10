@@ -308,6 +308,98 @@ impl DbManager {
         Ok(row.and_then(|(s,)| s))
     }
 
+    pub async fn preflight_turn_runtime(
+        &self,
+        role_id: &str,
+        scene_id: &str,
+        seed_interaction_mode: bool,
+    ) -> Result<RoleRuntimeSnapshot> {
+        let row = sqlx::query_as::<
+            _,
+            (
+                f64,
+                Option<String>,
+                Option<String>,
+                Option<String>,
+                Option<String>,
+                Option<i64>,
+                Option<String>,
+                Option<f64>,
+            ),
+        >(
+            "SELECT current_favorability, current_emotion, relation_state, current_scene,
+                    interaction_mode, COALESCE(remote_life_enabled, 0), mutable_personality,
+                    event_impact_factor
+             FROM role_runtime WHERE role_id = ?",
+        )
+        .bind(role_id)
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+
+        let Some((
+            favorability,
+            emotion,
+            relation_state,
+            scene,
+            interaction_mode_raw,
+            remote_life_enabled,
+            mutable_personality,
+            event_impact_factor,
+        )) = row
+        else {
+            return Err(AppError::RoleRuntimeNotReady);
+        };
+
+        let mut snapshot = RoleRuntimeSnapshot {
+            favorability: Some(favorability),
+            emotion,
+            relation_state,
+            scene,
+            interaction_mode: Some(InteractionMode::normalize(interaction_mode_raw.as_deref())),
+            remote_life_enabled: remote_life_enabled.map(|v| v != 0),
+            mutable_personality,
+            event_impact_factor,
+        };
+
+        if seed_interaction_mode && interaction_mode_raw.is_none() {
+            let legacy = self.get_legacy_app_interaction_mode().await?;
+            let mode = if let Some(l) = legacy {
+                InteractionMode::normalize(Some(l.as_str()))
+            } else {
+                InteractionMode::PureChat
+            };
+            let now = Utc::now().to_rfc3339();
+            sqlx::query(
+                "UPDATE role_runtime SET interaction_mode = ?, updated_at = ? WHERE role_id = ?",
+            )
+            .bind(mode.as_str())
+            .bind(&now)
+            .bind(role_id)
+            .execute(&self.pool)
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+            snapshot.interaction_mode = Some(mode);
+        }
+
+        let now = Utc::now().to_rfc3339();
+        let n = sqlx::query(
+            "UPDATE role_runtime SET user_presence_scene = ?, updated_at = ? WHERE role_id = ?",
+        )
+        .bind(scene_id)
+        .bind(&now)
+        .bind(role_id)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?
+        .rows_affected();
+        if n == 0 {
+            return Err(AppError::RoleRuntimeNotReady);
+        }
+
+        Ok(snapshot)
+    }
+
     pub async fn get_role_runtime_snapshot(
         &self,
         role_id: &str,

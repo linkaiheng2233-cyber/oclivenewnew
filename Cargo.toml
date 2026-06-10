@@ -14,6 +14,19 @@ members = [
     "fuzz",
 ]
 resolver = "2"
+default-members = [
+    "crates/oclive_validation",
+    "crates/oclive_validation_wasm",
+    "crates/oclive_schema",
+    "crates/oclive_kernel_types",
+    "crates/oclive_kernel_contracts",
+    "crates/oclive_kernel_runtime",
+    "crates/oclive_kernel_host",
+    "crates/oclive_kernel_server",
+    "crates/oclive-cli",
+    "crates/oclive_sqlx",
+    "src-tauri",
+]
 
 [workspace.dependencies]
 serde = { version = "1.0", features = ["derive"] }

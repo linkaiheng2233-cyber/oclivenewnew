@@ -176,9 +176,9 @@ async fn analyze_bot_emotion_and_policy(
     } else {
         0.0
     };
-    let recent_events = std::iter::once(event.clone())
-        .chain(pre.recent_events_for_event.clone())
-        .collect();
+    let mut recent_events = Vec::with_capacity(pre.recent_events_for_event.len() + 1);
+    recent_events.push(event.clone());
+    recent_events.extend(pre.recent_events_for_event.iter().cloned());
     Ok(PostTurnPolicy {
         bot_emotion,
         bot_emotion_str,

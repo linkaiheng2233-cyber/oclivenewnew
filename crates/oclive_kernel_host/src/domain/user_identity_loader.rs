@@ -15,29 +15,29 @@ pub struct ResolvedUserIdentity {
     pub relation_hint: String,
 }
 
-async fn effective_identity_id_from_db(
+/// DB identity pick + manifest-default flag in one round-trip per binding mode.
+async fn effective_identity_state_from_db(
     state: &AppState,
     role: &Role,
     role_id: &str,
     scene_id: Option<&str>,
-) -> Result<Option<String>> {
+) -> Result<(Option<String>, bool)> {
     if matches!(role.identity_binding, IdentityBinding::PerScene) {
         if let Some(sid) = scene_id {
-            return state
+            let id = state
                 .db_manager
                 .get_user_identity_id_for_scene(role_id, sid)
-                .await;
+                .await?;
+            let use_manifest_default = id.is_none();
+            return Ok((id, use_manifest_default));
         }
-        return Ok(None);
+        return Ok((None, true));
     }
-    if state
+    let (use_manifest_default, db_id) = state
         .db_manager
-        .get_use_manifest_default_identity(role_id)
-        .await?
-    {
-        return Ok(None);
-    }
-    state.db_manager.get_active_user_identity_id(role_id).await
+        .get_global_identity_state(role_id)
+        .await?;
+    Ok((if use_manifest_default { None } else { db_id }, use_manifest_default))
 }
 
 fn catalog_entry_for_id<'a>(
@@ -65,20 +65,8 @@ pub async fn resolve_active_user_identity(
         .as_ref()
         .map(|c| c.default_identity_id.as_str());
 
-    let db_id = effective_identity_id_from_db(state, role, role_id, scene_id).await?;
-    let use_manifest_default = if matches!(role.identity_binding, IdentityBinding::PerScene) {
-        scene_id.is_none()
-            || state
-                .db_manager
-                .get_user_identity_id_for_scene(role_id, scene_id.unwrap_or(""))
-                .await?
-                .is_none()
-    } else {
-        state
-            .db_manager
-            .get_use_manifest_default_identity(role_id)
-            .await?
-    };
+    let (db_id, use_manifest_default) =
+        effective_identity_state_from_db(state, role, role_id, scene_id).await?;
     let host_default = if !use_manifest_default && db_id.is_none() {
         state
             .host_profile

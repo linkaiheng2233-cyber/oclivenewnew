@@ -106,18 +106,6 @@ async fn run(
     );
 
     stage_process_message(
-        ChatStage::EnsureInteractionModeSeeded,
-        state
-            .db_manager
-            .ensure_interaction_mode_seeded(
-                srid,
-                role.interaction_mode.as_deref(),
-                Some(state.host_profile.interaction.default_mode.as_str()),
-            )
-            .await,
-    )?;
-
-    stage_process_message(
         ChatStage::ApplyUserLlmEnv,
         crate::domain::user_llm_env::apply_user_llm_env(state).await,
     )?;
@@ -203,20 +191,17 @@ async fn run(
         });
     }
 
+    let seed_interaction_mode = !state.session_cache.is_interaction_mode_seeded(srid);
     let runtime_snapshot = process_message_stage(
         ChatStage::GetRoleRuntimeSnapshot,
-        state.db_manager.get_role_runtime_snapshot(srid),
-    )
-    .await?
-    .unwrap_or_default();
-
-    process_message_stage(
-        ChatStage::SetUserPresenceScene,
         state
             .db_manager
-            .set_user_presence_scene(srid, scene_id.as_str()),
+            .preflight_turn_runtime(srid, scene_id.as_str(), seed_interaction_mode),
     )
     .await?;
+    if seed_interaction_mode {
+        state.session_cache.mark_interaction_mode_seeded(srid);
+    }
 
     let current_scene = runtime_snapshot.scene.clone();
     let interaction_mode = runtime_snapshot

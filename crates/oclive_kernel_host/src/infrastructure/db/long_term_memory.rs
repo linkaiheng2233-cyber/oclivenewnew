@@ -136,35 +136,54 @@ impl DbManager {
             .map(|m| m.id.as_str())
             .collect();
         let now = Utc::now();
-        // Hot path: called up to twice per turn with ~10 memories. Batch the
-        // per-row UPDATEs into a single transaction (one commit) instead of N
-        // separate pool checkouts / auto-commit round-trips.
-        let mut tx = self
-            .pool
-            .begin()
-            .await
-            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        let now_rfc = now.to_rfc3339();
+
+        let mut ids: Vec<i64> = Vec::with_capacity(memories.len());
+        let mut weights: Vec<f64> = Vec::with_capacity(memories.len());
+        let mut accessed: Vec<String> = Vec::with_capacity(memories.len());
         for m in memories {
             let Ok(id) = m.id.parse::<i64>() else {
                 continue;
             };
-            let accessed = if touch_ids.contains(m.id.as_str()) {
-                now
+            let accessed_at = if touch_ids.contains(m.id.as_str()) {
+                now_rfc.clone()
             } else {
-                m.accessed_at.unwrap_or(now)
+                m.accessed_at.unwrap_or(now).to_rfc3339()
             };
-            sqlx::query(
-                "UPDATE long_term_memory SET weight = ?, accessed_at = ? WHERE id = ? AND role_id = ?",
-            )
-            .bind(m.weight)
-            .bind(accessed.to_rfc3339())
-            .bind(id)
-            .bind(role_id)
-            .execute(&mut *tx)
-            .await
-            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+            ids.push(id);
+            weights.push(m.weight);
+            accessed.push(accessed_at);
         }
-        tx.commit()
+        if ids.is_empty() {
+            return Ok(());
+        }
+
+        let mut weight_cases = String::from("CASE id ");
+        let mut accessed_cases = String::from("CASE id ");
+        let mut placeholders = String::new();
+        for (i, id) in ids.iter().enumerate() {
+            weight_cases.push_str(&format!("WHEN {id} THEN ? "));
+            accessed_cases.push_str(&format!("WHEN {id} THEN ? "));
+            if i > 0 {
+                placeholders.push_str(", ");
+            }
+            placeholders.push_str(&id.to_string());
+        }
+        weight_cases.push_str("ELSE weight END");
+        accessed_cases.push_str("ELSE accessed_at END");
+
+        let sql = format!(
+            "UPDATE long_term_memory SET weight = {weight_cases}, accessed_at = {accessed_cases} \
+             WHERE role_id = ? AND id IN ({placeholders})"
+        );
+        let mut q = sqlx::query(&sql).bind(role_id);
+        for w in &weights {
+            q = q.bind(w);
+        }
+        for a in &accessed {
+            q = q.bind(a);
+        }
+        q.execute(&self.pool)
             .await
             .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(())

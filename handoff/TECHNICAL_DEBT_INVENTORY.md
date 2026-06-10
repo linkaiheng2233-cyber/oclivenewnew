@@ -1,8 +1,23 @@
 # Technical debt inventory
 
-**Last updated:** 2026-06-10 (round 11 · V-CONTRACT Phase 0)
+**Last updated:** 2026-06-11 (五维审查收口 Batch 1–3)
 
 **Product freeze (Theater v0):** No new kernel orchestration / six-slot expansion until strangers validate AI Theater v0. See [PRODUCT_FREEZE_THEATER_V0.md](./PRODUCT_FREEZE_THEATER_V0.md). **Deferred unchanged:** K-PERF-10, K-PERF-14/15, §3.1 library API, dual_core (frozen).
+
+### 五维审查收口（2026-06-11 · Batch 1–3 Done）
+
+| ID | Item | Status | Notes |
+|----|------|--------|-------|
+| K-DOC-DRIFT-01 | 契约级文档漂移（共景主链 / VS Code attach 残留 / user_identities 语义） | **Done** | ARCHITECTURE_OVERVIEW · VSCODE_DISTRIBUTION · CROSS_HOST_MEMORY · ROLE_PACK_SPEC §1.1 |
+| K-PERF-16 | `role_runtime` 回合预取合并（preflight + SessionCache interaction_mode） | **Done** | `preflight_turn_runtime`；3–4 SELECT/回合 → 1 SELECT + 1 UPDATE |
+| K-PERF-17 | 记忆 decay 批 UPDATE（CASE id WHEN） | **Done** | `persist_memory_decay_batch` 单语句 |
+| K-PERF-18 | TurnPrefetch / post 事件链减少 clone | **Done** | `pre.rs` borrow+to_vec；`post.rs` extend |
+| K-PERF-19 | `chatStore` 加载 aside / addMessage / 懒 split | **Done** | 当前 bucket sync；push+trim；tail 80 懒 split |
+| K-BUILD-03 | workspace `default-members` 排除 `fuzz` | **Done** | 根 `Cargo.toml`；CI `--workspace` 不变 |
+| V-VSCODE-CI-01 | 姊妹仓 CI 增 `npm run test:unit` | **Done** | `oclive-vscode/.github/workflows/ci.yml` |
+| K-CONTRACT-WIRING-01 | `extra_sections` 生产未接线 | **Deferred** | V-CONTRACT Phase 1+ |
+
+**Verification (2026-06-11):** `node scripts/dimension5-acceptance.mjs --ci`；`cargo test -p oclive_kernel_host`；`cargo test -p oclive_validation`。
 
 ### V-CONTRACT contract expressiveness (2026-06-10 · Phase 0 Done)
 
@@ -418,10 +433,12 @@ DeepSeek 五维方向二轮复审（Opus 4.8）。维度五基线复跑：`node 
 
 | ID | 项 | 维度 | 工作量 | 现状/证据 |
 |----|-----|------|--------|-----------|
-| D-PORT-02 | `PluginBackendRegistryPort` 为 20+ 方法 god-port，唯一实现 `BackendRegistry` 纯转发 | 二 | L | `plugin_backend_registry.rs` + `backend_registry.rs:797-919`；建议收窄到 `PluginHost`/`SlotResolver` 真用面 |
-| D-SLOT-01 | 各槽 Builtin V1/V2/Placeholder 并行实现，选择逻辑散落 `BackendRegistry` | 二 | M | `memory_retrieval`/`user_emotion_analyzer`/`prompt_assembler`/`event_estimator` 各有 `*V2` + `*Placeholder`；建议每槽收一份 builtin + 选择矩阵集中 |
+| K-CONTRACT-WIRING-01 | `PromptInput.extra_sections` 生产路径未接线 | 二 | M | V-CONTRACT Phase 0 类型已入库；host 仍传 `&[]` |
+| D-POLICY-01 | Policy 三 trait 单实现 DI 评估 | 二 | M | 无功能缺陷；见 D-TRAIT-01 裁决 |
 
-**结论**：Opus 4.8 主体已落地（热路径 DB 合并、SessionCache 淘汰、turn ports、FQ ratchet 14→5）；维度五 gate PASS。**收尾验收（2026-06-08）**：PR-C1→PR-E 五 commit 已入库；见 header Verification。**未阻塞滩头**的后续项：D-PORT-02/D-SLOT-01 god-port 与槽合并、K-PERF-10 chat chrome lazy、D-LAYER-05b `post.rs` PolicySet 端口化、`user_llm_env`/`startup_health` 剩余 FQ refs。
+**Round 10 已关闭（勿与上表混读）**：D-PORT-02、D-SLOT-01、K-PROFILE-04 见 §Round 10 patrol **Done**。
+
+**结论**：Opus 4.8 主体已落地（热路径 DB 合并、SessionCache 淘汰、turn ports、FQ ratchet 14→5）；维度五 gate PASS。**收尾验收（2026-06-08）**：PR-C1→PR-E 五 commit 已入库；见 header Verification。**未阻塞滩头**的后续项：K-PERF-10 chat chrome lazy、D-LAYER-05b `post.rs` PolicySet 端口化、`user_llm_env`/`startup_health` 剩余 FQ refs、K-CONTRACT-WIRING-01。
 
 ---
 

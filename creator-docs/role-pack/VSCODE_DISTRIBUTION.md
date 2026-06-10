@@ -13,7 +13,7 @@
 | 场景 | `scene_id=vscode`（须在包 `meta.scenes` 中声明） |
 | 记忆 / 好感 | 与桌面 **共用 `app.db`**（单内核写库） |
 | **数据目录** | spawn 时设 `OCLIVE_APP_DATA` → `%LOCALAPPDATA%/OCLive/data`（与 `OCLive/runtime` 并列） |
-| 渗透能力 | **扩展设置默认关闭**（信、心声、idle 聚焦、终端展示行） |
+| 渗透能力 | **路线图项**；当前无 `oclive.penetration.*` 配置键 |
 
 桌面 **沉浸模式**（`immersive`）的虚拟时间、位移、异地心声 UI **不要求** VS Code 侧实现。
 
@@ -23,7 +23,8 @@
 
 - 侧栏：**顶栏立绘**（`assets/images/` + `portrait_emotion` / `bot_emotion`，无图则 emoji）
 - **对话** + 可选 **编辑器上下文**（当前文件 / 选区）
-- 内核：`GET /health` + `POST /chat`（`8420`，attach 优先）
+- 内核：`GET /health` + `POST /chat`（`8420`；**policy-first**：共享 Rust 策略 `resolve_kernel_action` 决定 attach / spawn / replace，见 [`DISTRO_KERNEL_LIFECYCLE.md`](../kernel/DISTRO_KERNEL_LIFECYCLE.md)）
+- 可选：`POST /chat/stream`（需发行版能力 `oclive.chat.streaming`）
 
 ---
 

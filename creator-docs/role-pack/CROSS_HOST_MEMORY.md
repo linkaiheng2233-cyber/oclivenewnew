@@ -76,7 +76,7 @@ roles/{id}/  ──load_role──►  桌面 / VS Code / kernel_server
 | **HTTP 表面** | `GET /health` + `POST /chat` |
 | **测试** | OOCP / Codex 轨道 A（[`CODEX_测试指南.md`](../../dev-notes/codex-testing/CODEX_测试指南.md)） |
 
-**Phase 1 注意**：桌面与 VS Code 均为 **HTTP 客户端**（spawn-only / attach-first），唯一写者为 `oclive-kernel-server @ :8420`。详见 [`DISTRO_KERNEL_LIFECYCLE.md`](../kernel/DISTRO_KERNEL_LIFECYCLE.md)。
+**Phase 1 注意**：桌面与 VS Code 均为 **HTTP 客户端**（经共享策略 `resolve_kernel_action` 决定 attach / spawn / replace），唯一写者为 `oclive-kernel-server @ :8420`。详见 [`DISTRO_KERNEL_LIFECYCLE.md`](../kernel/DISTRO_KERNEL_LIFECYCLE.md)。
 
 **不在 Phase 1**：WebSocket 状态推送、~~调度层~~（Phase 3 `oclive-runtimed` 可选）、赌场 POC、`memories/` 包内加载、scene 级 memory 过滤。
 
@@ -135,7 +135,7 @@ roles/{id}/  ──load_role──►  桌面 / VS Code / kernel_server
 |---|------|------|
 | 1 | OOCP 烟测 / Codex 轨道 A | Codex |
 | 2 | 仓库 **`oclive-vscode`** | 开发 |
-| 3 | 扩展骨架：health + attach/spawn + chat | 开发 |
+| 3 | 扩展骨架：health + policy-first attach/spawn + chat | 开发 |
 | 4 | **`mumu`** 增加 `scenes/vscode/` | 开发 |
 
 ---

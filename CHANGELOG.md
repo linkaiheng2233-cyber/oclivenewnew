@@ -6,6 +6,7 @@
 
 ### Changed
 
+- **五维审查收口（Batch 1–3）**：架构总览共景主链与 Stable 代码对齐；VS Code / 跨宿主文档改为 policy-first；`user_identities` 校验语义与 `load_role` 一致；`reply_post_processor` 在 `enabled` + `directory` 时校验非空 `plugin_id`；`ProcessMessageError` stage 保留于对外 `AppError` message；聊天回合 `role_runtime` 预取合并、`memory decay` 单条 CASE UPDATE、`SessionCache` 跳过重复 interaction_mode seed；workspace `default-members` 排除 `fuzz`；`chatStore` 加载与 `addMessage` 小优化。
 - **Prompt guardrails 升格与页脚去重**：`KERNEL_DIALOGUE_GUARDRAILS` 恒含「状态延续」「倾诉优先」「篇幅随输入」，包级 `reply_quality_anchor` 无法换走；删除独立 `【回复结构】` 段；语气区块去除 `warmup_level` / `影响因子` 等系统术语；官方 mumu/shimeng/枫侵月锚点瘦身为仅人设差异。
 - **许可证变更**：主程序由 AGPL-3.0 + 插件例外改为 **Apache-2.0**（根 `LICENSE` + `NOTICE`）；支持闭源商业发行版与嵌入式下游自由组合内核；`LICENSE_POLICY.md` 已同步。
 - **官方发行版 · 日常聊 / 剧情模式分界**：`distro.oclive.toml` 新增 `[interaction]`；新增 `desktop-chat` profile；`desktop` / `vscode` 默认 `pure_chat`；首启 seed 优先级为发行版 → 角色包 → `pure_chat`。

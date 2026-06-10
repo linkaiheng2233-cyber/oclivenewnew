@@ -7,6 +7,20 @@ use crate::error::{AppError, Result};
 use chrono::Utc;
 
 impl DbManager {
+    /// Single round-trip for global identity session state (`use_manifest_default`, `active_user_identity_id`).
+    pub async fn get_global_identity_state(&self, role_id: &str) -> Result<(bool, Option<String>)> {
+        let row: Option<(i64, Option<String>)> = sqlx::query_as(
+            "SELECT COALESCE(use_manifest_default_identity, 1), active_user_identity_id FROM role_runtime WHERE role_id = ?",
+        )
+        .bind(role_id)
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(row
+            .map(|(use_manifest, active_id)| (use_manifest != 0, active_id))
+            .unwrap_or((true, None)))
+    }
+
     pub async fn get_use_manifest_default_identity(&self, role_id: &str) -> Result<bool> {
         let row: Option<(i64,)> = sqlx::query_as(
             "SELECT COALESCE(use_manifest_default_identity, 1) FROM role_runtime WHERE role_id = ?",

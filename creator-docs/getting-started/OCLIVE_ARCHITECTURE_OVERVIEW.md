@@ -185,20 +185,21 @@ flowchart TB
 
 ---
 
-## 共景主链（编号对照）
+## 共景主链（编号对照 · Stable 主路径）
 
-1. **设施模块**：`PluginHost` 解析 **第 1–6 模块**
-2. **第 2 模块**：`emotion.analyze`
-3. **设施模块**：`PersonalityEngine`（用户情绪）
-4. **设施模块**：`knowledge_index`（可选）
-5. **第 1 设施子模块**：**复杂情感设施子模块** → `narrative_hint`
-6. **第 3 模块**：`event.estimate` → **设施模块**：`PersonalityEngine`（事件）
-7. **第 1 模块**：`memory.rank_memories`（+ 持久化设施）
-8. **设施模块**：好感/关系
-9. **第 4 模块**：`prompt.build` → **第 5 模块**：`llm.generate`（若 `directory` 则为 **第 5 模块的插件实现**）
-10. **第 6 模块**：**agent**（按场景；MCP 为第 6 模块工具依赖）
+Stable 主路径以 `process_message` → `turn_prefetch` → `pre_llm` → `co_present` 为准；**不是**按模块编号线性排列。编号仍对照 **第 1–6 模块** 与 **设施子模块**。
 
-**实验核（可选）**：匹配触发条件时，**第 2 设施子模块**（**专家模型设施子模块** / 专家路由）经 `slot.expert.invoke` 插入子步骤链，再汇合 Prompt / LLM 等（见 `dual_core` 文档）。
+| 阶段 | 代码锚点 | 顺序 |
+|------|----------|------|
+| **预取** | `turn_prefetch.rs` | 用户身份、近期上下文 |
+| **0 · Agent 短路**（可选） | `process_message.rs` | **LLM 之前** 可选短路（第 6 模块） |
+| **pre_llm** | `turn_pipeline/pre.rs` | 第 2 模块 `emotion.analyze` → 设施 `PersonalityEngine`（用户情绪）→ **第 1 模块** memory 加载/衰减/`rank_memories` → 设施 好感/关系 |
+| **co_present** | `turn_pipeline/co_present.rs` | 第 1 设施子模块 **复杂情感** → `narrative_hint` → 设施 `knowledge_index`（可选）→ 第 3 模块 `event.estimate` → 设施 `PersonalityEngine`（事件）→ 第 4 模块 `prompt.build` → 第 5 模块 `llm.generate` |
+| **post_llm** | `turn_pipeline/post.rs` | 内置持久化、记忆抽取等 |
+
+**复杂情感锚点**：在 **pre_llm 情绪分析之后**、**`build_prompt` 之前**（`co_present` 内）；上一轮 `narrative_hint` 经 `SessionCache` / DB 注入 `PromptInput.previous_complex_emotion_narrative_hint`。
+
+**实验核（可选）**：匹配触发条件时，**第 2 设施子模块**（**专家模型设施子模块** / 专家路由）经 `slot.expert.invoke` 插入子步骤链，再汇合 Prompt / LLM 等（见 `dual_core` 文档）。Experimental 核 preview **尚未** 接线 relation transition / 复杂情感 hint。
 
 ---
 

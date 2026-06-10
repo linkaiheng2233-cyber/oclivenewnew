@@ -60,3 +60,18 @@ export function splitRoleplayReply(raw: string): RoleplaySplit {
   const aside = asideChunks.join('\n\n').trim()
   return { dialogue, aside }
 }
+
+/** Apply roleplay split to an assistant message (idempotent when `aside` already set). */
+export function applyAssistantSplit<
+  T extends { role: string; content: string; aside?: string },
+>(msg: T): T {
+  if (msg.role !== 'assistant' || msg.aside?.trim())
+    return msg
+  const split = splitRoleplayReply(msg.content)
+  const aside = split.aside.trim()
+  return {
+    ...msg,
+    content: assistantDialogueFromSplit(msg.content, split),
+    ...(aside ? { aside } : {}),
+  }
+}

@@ -109,6 +109,7 @@ pub struct SessionCache {
     expert_injected_memory_ids: SessionScopedMap<Vec<String>>,
     expert_lora_plugin_id: SessionScopedMap<String>,
     relation_transitions: SessionScopedMap<RelationTransition>,
+    interaction_mode_seeded: SessionScopedMap<()>,
     personality_snapshots: Cache<PersonalityVector>,
     session_touch: DashMap<String, Instant>,
 }
@@ -155,6 +156,7 @@ impl SessionCache {
             expert_injected_memory_ids: SessionScopedMap::new(),
             expert_lora_plugin_id: SessionScopedMap::new(),
             relation_transitions: SessionScopedMap::new(),
+            interaction_mode_seeded: SessionScopedMap::new(),
             personality_snapshots: Cache::with_capacity(PERSONALITY_CACHE_CAPACITY),
             session_touch: DashMap::new(),
         }
@@ -311,6 +313,16 @@ impl SessionCache {
     #[must_use]
     pub fn has_relation_transition(&self, srid: &str) -> bool {
         self.relation_transitions.contains_key(srid)
+    }
+
+    #[must_use]
+    pub fn is_interaction_mode_seeded(&self, srid: &str) -> bool {
+        self.interaction_mode_seeded.contains_key(srid)
+    }
+
+    pub fn mark_interaction_mode_seeded(&self, srid: &str) {
+        self.interaction_mode_seeded
+            .insert(srid.to_string(), ());
     }
 
     pub fn set_relation_transition(&self, srid: &str, hint: String, remaining_turns: u32) {

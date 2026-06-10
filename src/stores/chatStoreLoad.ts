@@ -10,8 +10,7 @@ import {
 import { isChatStorageMigrated } from '../utils/chatStorageMigration'
 import { conversationSessionId } from '../utils/conversationSessionId'
 import {
-  assistantDialogueFromSplit,
-  splitRoleplayReply,
+  applyAssistantSplit,
 } from '../utils/roleplayReplySplit'
 
 export function parseMessageTimestamp(iso?: string | null): number {
@@ -21,6 +20,7 @@ export function parseMessageTimestamp(iso?: string | null): number {
   return Number.isFinite(ms) ? ms : Date.now()
 }
 
+/** Load path: keep raw assistant content; split lazily when rendering or syncing aside. */
 export function storedMessageToChatMessage(m: StoredMessage): ChatMessage {
   let emotion: string | undefined
   let replyIsFallback: boolean | undefined
@@ -43,7 +43,7 @@ export function storedMessageToChatMessage(m: StoredMessage): ChatMessage {
     : m.sender === 'user'
       ? 'user'
       : 'system'
-  const base: ChatMessage = {
+  return {
     id: m.id,
     role,
     content: m.content,
@@ -51,15 +51,20 @@ export function storedMessageToChatMessage(m: StoredMessage): ChatMessage {
     emotion,
     replyIsFallback,
   }
-  if (role === 'assistant') {
-    const split = splitRoleplayReply(m.content)
-    return {
-      ...base,
-      content: assistantDialogueFromSplit(m.content, split),
-      ...(split.aside.trim() ? { aside: split.aside.trim() } : {}),
-    }
+}
+
+const LAZY_SPLIT_TAIL = 80
+
+function splitRecentAssistantMessages(messages: ChatMessage[]): ChatMessage[] {
+  if (messages.length === 0)
+    return messages
+  const start = Math.max(0, messages.length - LAZY_SPLIT_TAIL)
+  for (let i = start; i < messages.length; i++) {
+    const m = messages[i]
+    if (m?.role === 'assistant' && !m.aside)
+      messages[i] = applyAssistantSplit(m)
   }
-  return base
+  return messages
 }
 
 /** Resolve backend `session_id` for a role×scene bucket; null when the scene has no session yet. */
@@ -130,7 +135,9 @@ export async function loadRoleSceneMessages(
     const serverMessages = stored
       .filter(m => m.sender === 'user' || m.sender === 'assistant')
       .map(storedMessageToChatMessage)
-    const messages = mergeMessagesFromServer(serverMessages, previousLocal)
+    const messages = splitRecentAssistantMessages(
+      mergeMessagesFromServer(serverMessages, previousLocal),
+    )
     writeBucket(messageMap, roleId, sid, messages)
     if (!isChatStorageMigrated())
       await saveBucketToIdb(roleId, sid, messages)
@@ -140,7 +147,9 @@ export async function loadRoleSceneMessages(
     console.warn('[chatStore] fetch_chat_messages failed; using IDB cache', err)
     const cached = await loadBucketFromIdb(roleId, sid)
     if (cached) {
-      const messages = mergeMessagesFromServer(cached, previousLocal)
+      const messages = splitRecentAssistantMessages(
+        mergeMessagesFromServer(cached, previousLocal),
+      )
       writeBucket(messageMap, roleId, sid, messages)
       return messages
     }
