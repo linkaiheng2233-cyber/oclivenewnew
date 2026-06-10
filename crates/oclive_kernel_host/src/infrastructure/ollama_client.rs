@@ -1,6 +1,7 @@
 use crate::error::{AppError, Result};
 use crate::infrastructure::ollama_timeouts;
 use reqwest::Client;
+use std::sync::Arc;
 use std::sync::LazyLock;
 
 static OLLAMA_HTTP_CLIENT: LazyLock<Client> = LazyLock::new(|| {
@@ -171,14 +172,17 @@ impl OllamaClient {
     /// # Errors
     ///
     /// Returns [`Err`] with a human-readable message when the operation fails.
-    /// Calls Ollama to generate a reply with streaming.
-    pub async fn generate_stream(
+    /// Calls Ollama to generate a reply with streaming, invoking `on_token` per chunk.
+    pub async fn generate_stream_with_callback(
         &self,
         model: &str,
         prompt: &str,
         temperature: Option<f32>,
         top_p: Option<f32>,
+        on_token: Arc<dyn Fn(&str) + Send + Sync>,
     ) -> Result<String> {
+        use futures_util::StreamExt;
+
         let url = format!("{}/api/generate", self.base_url);
 
         let request = OllamaRequest {
@@ -199,26 +203,65 @@ impl OllamaClient {
             .map_err(|e| AppError::OllamaError(format!("Request failed: {}", e)))?;
 
         if !response.status().is_success() {
+            let status = response.status();
+            let body = response.text().await.unwrap_or_default();
             return Err(AppError::OllamaError(format!(
-                "Ollama returned status: {}",
-                response.status()
+                "Ollama returned status: {} — {}",
+                status,
+                body.chars().take(400).collect::<String>()
             )));
         }
 
-        let text = response
-            .text()
-            .await
-            .map_err(|e| AppError::OllamaError(format!("Failed to read response: {}", e)))?;
-
-        // Parse streaming response lines and merge all `response` fields
+        let mut stream = response.bytes_stream();
+        let mut line_buf = String::new();
         let mut full_response = String::new();
-        for line in text.lines() {
-            if let Ok(json) = serde_json::from_str::<OllamaResponse>(line) {
-                full_response.push_str(&json.response);
+
+        while let Some(chunk) = stream.next().await {
+            let chunk = chunk
+                .map_err(|e| AppError::OllamaError(format!("Stream read failed: {}", e)))?;
+            line_buf.push_str(&String::from_utf8_lossy(&chunk));
+            while let Some(pos) = line_buf.find('\n') {
+                let line = line_buf.drain(..=pos).collect::<String>();
+                let line = line.trim();
+                if line.is_empty() {
+                    continue;
+                }
+                if let Ok(json) = serde_json::from_str::<OllamaResponse>(line) {
+                    if !json.response.is_empty() {
+                        full_response.push_str(&json.response);
+                        on_token(json.response.as_str());
+                    }
+                }
+            }
+        }
+        if !line_buf.trim().is_empty() {
+            if let Ok(json) = serde_json::from_str::<OllamaResponse>(line_buf.trim()) {
+                if !json.response.is_empty() {
+                    full_response.push_str(&json.response);
+                    on_token(json.response.as_str());
+                }
             }
         }
 
         Ok(full_response)
+    }
+
+    /// Buffered streaming (legacy): reads full body then merges lines.
+    pub async fn generate_stream(
+        &self,
+        model: &str,
+        prompt: &str,
+        temperature: Option<f32>,
+        top_p: Option<f32>,
+    ) -> Result<String> {
+        self.generate_stream_with_callback(
+            model,
+            prompt,
+            temperature,
+            top_p,
+            Arc::new(|_| {}),
+        )
+        .await
     }
 
     /// Register a local GGUF (or bin) as an Ollama model via `POST /api/create`.

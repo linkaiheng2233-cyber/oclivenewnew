@@ -74,6 +74,65 @@ pub(crate) async fn run_main_llm(
     })
 }
 
+pub(crate) async fn run_main_llm_stream(
+    ctx: &TurnContext<'_>,
+    path_label: &str,
+    pre: &PreLlmOutput,
+    middle: &MiddleOutput,
+    on_token: oclive_kernel_contracts::LlmTokenSink,
+) -> TurnResult<MainLlmOutput> {
+    let role = ctx.role;
+    let user_message = ctx.req.user_message.as_str();
+    let pl = &ctx.pl;
+    let t_main_llm = Instant::now();
+    let mut main_llm_fallback = false;
+    let mut llm_fallback_reason = None;
+    let reply_raw = match SlotRunner::generate_llm_stream(
+        pl,
+        pre.ollama_model.as_str(),
+        &middle.prompt,
+        Arc::clone(&on_token),
+    )
+    .await
+    {
+        Ok(s) => s,
+        Err(e) => {
+            let reason = e.to_frontend_error();
+            tracing::warn!("{path_label} LLM generate_stream failed, fallback: {reason}");
+            main_llm_fallback = true;
+            llm_fallback_reason = Some(reason);
+            let fallback = fallback_reply_for_llm_failure(
+                role,
+                &middle.personality,
+                user_message,
+                &FallbackReplyContext {
+                    relation_before: pre.relation_before.as_str(),
+                    relation_preview: middle.relation_after.as_str(),
+                    favorability_before: pre.favorability_before,
+                    event_type: &middle.ai_event_type,
+                    impact_factor: middle.ai_impact_factor_final,
+                },
+            );
+            on_token(fallback.as_str());
+            fallback
+        }
+    };
+    let main_llm_ms = t_main_llm.elapsed().as_millis() as u64;
+    let reply = strip_hallucination_tokens(&soft_append_guard(
+        &reply_raw,
+        &middle.ai_event_type,
+        middle.ai_impact_factor_final,
+        middle.relation_after.as_str(),
+    ));
+
+    Ok(MainLlmOutput {
+        reply,
+        main_llm_fallback,
+        llm_fallback_reason,
+        main_llm_ms,
+    })
+}
+
 #[allow(clippy::too_many_arguments)]
 async fn analyze_bot_emotion_and_policy(
     state: &crate::state::AppState,

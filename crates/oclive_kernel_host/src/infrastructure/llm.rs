@@ -7,6 +7,7 @@ use crate::infrastructure::llm_params;
 use crate::infrastructure::ollama_client::OllamaClient;
 use crate::infrastructure::remote_fallback_policy::remote_fallback_load;
 use async_trait::async_trait;
+use oclive_kernel_contracts::LlmTokenSink;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
@@ -22,6 +23,16 @@ impl LlmClient for OllamaClient {
     async fn generate_tag(&self, model: &str, prompt: &str) -> Result<String> {
         let (t, p) = llm_params::tag_task_options();
         OllamaClient::generate(self, model, prompt, t, p).await
+    }
+
+    async fn generate_stream(
+        &self,
+        model: &str,
+        prompt: &str,
+        on_token: LlmTokenSink,
+    ) -> Result<String> {
+        let (t, p) = llm_params::main_chat_options();
+        OllamaClient::generate_stream_with_callback(self, model, prompt, t, p, on_token).await
     }
 
     async fn startup_probe(&self) -> Result<()> {

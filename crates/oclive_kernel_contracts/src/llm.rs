@@ -2,6 +2,10 @@
 
 use async_trait::async_trait;
 use oclive_kernel_types::Result;
+use std::sync::Arc;
+
+/// Incremental token callback for [`LlmClient::generate_stream`].
+pub type LlmTokenSink = Arc<dyn Fn(&str) + Send + Sync>;
 
 /// Text generation port used by orchestration and policy (Ollama, remote, mock, etc.).
 ///
@@ -50,6 +54,22 @@ pub trait LlmClient: Send + Sync {
     ///
     /// Does not panic.
     async fn generate_tag(&self, model: &str, prompt: &str) -> Result<String>;
+
+    /// Optional streaming dialogue generation (default: [`generate`](Self::generate) then one callback).
+    ///
+    /// # Errors
+    ///
+    /// Same as [`generate`](Self::generate).
+    async fn generate_stream(
+        &self,
+        model: &str,
+        prompt: &str,
+        on_token: LlmTokenSink,
+    ) -> Result<String> {
+        let full = self.generate(model, prompt).await?;
+        on_token(full.as_str());
+        Ok(full)
+    }
 
     /// Optional startup probe (default succeeds; hosts may ping remote LLM).
     ///

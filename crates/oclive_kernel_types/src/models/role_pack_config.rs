@@ -2,6 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
+use super::meta_action_templates_config::RolePackMetaActionTemplatesConfig;
 use super::reply_post_processor_config::RolePackReplyPostProcessorConfig;
 use super::role_time_config::RoleTimeConfig;
 
@@ -191,4 +192,6 @@ pub struct RolePackConfigFile {
     pub chat_storage: RolePackChatStorageConfig,
     #[serde(default)]
     pub reply_post_processor: RolePackReplyPostProcessorConfig,
+    #[serde(default)]
+    pub meta_action_templates: RolePackMetaActionTemplatesConfig,
 }

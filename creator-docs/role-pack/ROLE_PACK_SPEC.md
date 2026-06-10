@@ -345,6 +345,7 @@ auto_sync: false
 | `relation` | object | 否 | 亲密值疏远与关系降级 |
 | `chat_storage` | object | 否 | 聊天记录存储后端、FIFO、自动清理、记忆回放阈值 |
 | `reply_post_processor` | object | 否 | 回复后处理（**默认 `enabled: false`**）；见 §9.7 |
+| `meta_action_templates` | object | 否 | 破壁元操作态度文案（undo/regenerate/edit/delete）；见 §9.8 |
 
 ### 9.3 `time`（虚拟时间）
 
@@ -437,6 +438,23 @@ auto_sync: false
 **DTO**：请求 `include_raw_reply: true` 且后处理改变文本时，响应可选 `raw_reply`（`SendMessageResponse.schema` **14**）。
 
 编排与 RPC 见 [RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md](../rfc/RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md) · [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) `reply_post_process` 能力。
+
+### 9.8 `meta_action_templates`（破壁元操作 · 可选）
+
+宿主 **不强制消费**；VS Code 等客户端在撤回/重生成/编辑重发/删单条时，先经 `POST /chat/storage` 变更 SQLite 真源，再将本段 **态度文案** 作为普通 user 消息注入下一轮 `/chat`，让角色自然感知。空 `attitude_text` 或 `enabled: false` 时静默（不触发额外回应）。
+
+| 键 | 字段 | 说明 |
+|----|------|------|
+| `undo` | `enabled`, `attitude_text` | 撤回最后一轮（user+assistant） |
+| `regenerate` | 同上 | 删最后一对后用原 user 文本重发 |
+| `edit` | 同上 | 删该 user 及之后全部，用新内容重发 |
+| `delete` | 同上 | 删除单条消息 |
+
+**一致性**：删聊天记录 **不** 回退 `long_term_memory`；态度句写入记忆后角色会「记得你收回/改口」——在客户端 tooltip 与文档中诚实说明。
+
+**校验**：`oclive pack validate` 对 `enabled=true` 且非空 `attitude_text` 检查长度上限（2000 字符）。类型见 `oclive_kernel_types::RolePackMetaActionTemplatesConfig`。
+
+**示例**（`roles/mumu/config.json` 已含默认范例）。
 
 ---
 

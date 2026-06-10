@@ -1,5 +1,5 @@
 /**
- * OOCP 对齐 HTTP 黑盒：S0–S12（13 场景）；可选 S13/S14（见 ../../creator-docs/testing/OOCP_TEST_SUITE.md）
+ * OOCP 对齐 HTTP 黑盒：S0–S12 + S15（/chat/stream SSE）；可选 S13/S14（见 ../../creator-docs/testing/OOCP_TEST_SUITE.md）
  * 使用 Node 20+ 内置 fetch，无额外 npm 依赖。
  */
 
@@ -243,6 +243,50 @@ async function scenarioHandlers(base, rolePath) {
       if (typeof body?.schema !== 'number') throw new Error(`S11 schema ${body?.schema}`)
       if (typeof body?.timestamp !== 'number') throw new Error(`S11 timestamp`)
     },
+    S15_chat_stream_sse: async () => {
+      const res = await fetch(`${base}/chat/stream`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          accept: 'text/event-stream',
+        },
+        body: JSON.stringify({ role_path: mumu, message: 'OOCP S15 stream' }),
+      })
+      if (!res.ok) {
+        const errText = await res.text()
+        throw new Error(`S15 status ${res.status} ${errText.slice(0, 400)}`)
+      }
+      const text = await res.text()
+      const blocks = text.split('\n\n').map((b) => b.trim()).filter(Boolean)
+      let sawToken = false
+      let donePayload = null
+      for (const block of blocks) {
+        const lines = block.split('\n')
+        let eventName = 'message'
+        const dataLines = []
+        for (const line of lines) {
+          if (line.startsWith('event:')) eventName = line.slice(6).trim()
+          else if (line.startsWith('data:')) dataLines.push(line.slice(5).trim())
+        }
+        if (!dataLines.length) continue
+        const data = dataLines.join('\n')
+        if (eventName === 'token') {
+          sawToken = true
+          const parsed = JSON.parse(data)
+          if (typeof parsed.token !== 'string' || !parsed.token.length) {
+            throw new Error(`S15 token payload invalid: ${data}`)
+          }
+        } else if (eventName === 'done') {
+          donePayload = JSON.parse(data)
+        }
+      }
+      if (!sawToken) throw new Error('S15 missing token event')
+      if (!donePayload) throw new Error('S15 missing done event')
+      const reply = donePayload?.data?.reply ?? donePayload?.reply
+      if (typeof reply !== 'string' || !reply.length) {
+        throw new Error(`S15 done missing reply: ${JSON.stringify(donePayload).slice(0, 200)}`)
+      }
+    },
   }
 }
 
@@ -279,6 +323,7 @@ async function main() {
     'S10',
     'S11',
     'S12',
+    'S15_chat_stream_sse',
     ...(includeS13 ? ['S13_dual_core_fallback'] : []),
     ...(includeS14 ? ['S14_dual_core_happy_path'] : []),
   ]

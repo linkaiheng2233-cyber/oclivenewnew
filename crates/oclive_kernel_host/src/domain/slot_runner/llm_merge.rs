@@ -127,3 +127,56 @@ pub(super) async fn serial_last_wins(
         Err(no_reply_error())
     }
 }
+
+pub(super) async fn serial_last_wins_stream(
+    instances: &[(String, Arc<dyn LlmClient>)],
+    ollama_model: &str,
+    prompt: &str,
+    on_token: oclive_kernel_contracts::LlmTokenSink,
+) -> Result<String> {
+    if instances.is_empty() {
+        return Err(no_reply_error());
+    }
+    if instances.len() == 1 {
+        return instances[0]
+            .1
+            .generate_stream(ollama_model, prompt, on_token)
+            .await;
+    }
+    let mut last = String::new();
+    let mut any_ok = false;
+    for (i, (key, llm)) in instances.iter().enumerate() {
+        let is_final = i + 1 == instances.len();
+        let result = if is_final {
+            llm.generate_stream(ollama_model, prompt, Arc::clone(&on_token))
+                .await
+        } else {
+            llm.generate(ollama_model, prompt).await
+        };
+        match result {
+            Ok(reply) => {
+                tracing::info!(
+                    target: "oclive_plugin",
+                    slot_key = %key,
+                    reply_len = reply.len(),
+                    "llm_generate stream slot (serial; last-wins)"
+                );
+                last = reply;
+                any_ok = true;
+            }
+            Err(e) => {
+                tracing::warn!(
+                    target: "oclive_plugin",
+                    slot_key = %key,
+                    err = %e,
+                    "llm_generate stream slot failed"
+                );
+            }
+        }
+    }
+    if any_ok {
+        Ok(last)
+    } else {
+        Err(no_reply_error())
+    }
+}

@@ -325,6 +325,59 @@ impl SlotRunner {
         .await
     }
 
+    /// Streaming variant of [`generate_llm`](Self::generate_llm).
+    pub async fn generate_llm_stream(
+        pl: &ResolvedRolePlugins,
+        ollama_model: &str,
+        prompt: &str,
+        on_token: oclive_kernel_contracts::LlmTokenSink,
+    ) -> Result<String> {
+        if let Some(instances) = registry_instances(&pl.slots, |s| &s.llm) {
+            if instances.len() >= 2 {
+                let policy = pl
+                    .slots
+                    .as_ref()
+                    .map(|s| s.llm_merge_policy)
+                    .unwrap_or(LlmMergePolicy::Ensemble);
+                return match policy {
+                    LlmMergePolicy::Fastest | LlmMergePolicy::Fallback | LlmMergePolicy::Ensemble => {
+                        Self::llm_serial_last_wins_stream(instances, ollama_model, prompt, on_token)
+                            .await
+                    }
+                };
+            }
+        }
+        Self::run_slot_async(
+            &pl.slots,
+            |s| &s.llm,
+            |instances| {
+                let instances = clone_instances(instances);
+                let ollama_model = ollama_model.to_string();
+                let prompt = prompt.to_string();
+                let on_token = std::sync::Arc::clone(&on_token);
+                async move {
+                    Self::llm_serial_last_wins_stream(&instances, &ollama_model, &prompt, on_token)
+                        .await
+                }
+            },
+            |llm| {
+                let llm = Arc::clone(llm);
+                let ollama_model = ollama_model.to_string();
+                let prompt = prompt.to_string();
+                let on_token = std::sync::Arc::clone(&on_token);
+                async move { llm.generate_stream(&ollama_model, &prompt, on_token).await }
+            },
+            || {
+                let llm = Arc::clone(&pl.llm);
+                let ollama_model = ollama_model.to_string();
+                let prompt = prompt.to_string();
+                let on_token = std::sync::Arc::clone(&on_token);
+                async move { llm.generate_stream(&ollama_model, &prompt, on_token).await }
+            },
+        )
+        .await
+    }
+
     /// Emotion chain **last-wins**: serial by `position`, keep the last successful result.
     fn emotion_last_wins(
         instances: &[(String, Arc<dyn UserEmotionAnalyzer>)],
@@ -602,6 +655,15 @@ impl SlotRunner {
         prompt: &str,
     ) -> Result<String> {
         llm_merge::serial_last_wins(instances, ollama_model, prompt).await
+    }
+
+    async fn llm_serial_last_wins_stream(
+        instances: &[(String, Arc<dyn LlmClient>)],
+        ollama_model: &str,
+        prompt: &str,
+        on_token: oclive_kernel_contracts::LlmTokenSink,
+    ) -> Result<String> {
+        llm_merge::serial_last_wins_stream(instances, ollama_model, prompt, on_token).await
     }
 }
 

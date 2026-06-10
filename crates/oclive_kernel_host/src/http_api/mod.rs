@@ -106,6 +106,7 @@ pub fn api_router(app_state: Arc<AppState>) -> Router {
     Router::new()
         .route("/health", get(health::health_route))
         .route("/chat", post(chat::chat))
+        .route("/chat/stream", post(chat::chat_stream))
         .route("/role_info", get(role::role_info_route))
         .route("/role_snapshot", get(role::role_snapshot_route))
         .route("/role/load", post(role::load_role_route))

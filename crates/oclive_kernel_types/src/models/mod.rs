@@ -10,6 +10,7 @@ pub mod knowledge;
 pub mod memory;
 pub mod personality;
 pub mod plugin_backends;
+pub mod meta_action_templates_config;
 pub mod reply_post_processor_config;
 pub mod role;
 pub mod role_manifest_disk;
@@ -35,6 +36,9 @@ pub use knowledge::{KnowledgeEventAugment, KnowledgeIndex, KnowledgePackConfigDi
 pub use memory::*;
 pub use personality::*;
 pub use plugin_backends::*;
+pub use meta_action_templates_config::{
+    MetaActionTemplateEntry, RolePackMetaActionTemplatesConfig,
+};
 pub use reply_post_processor_config::{
     ReplyPostProcessorBackendKind, RolePackBuiltinReplyPostProcessorConfig,
     RolePackDirectoryReplyPostProcessorConfig, RolePackRemoteReplyPostProcessorConfig,

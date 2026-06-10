@@ -46,7 +46,7 @@ pub(crate) mod user_llm_secrets;
 pub use agent_provider::AgentProvider;
 pub use complex_emotion::ComplexEmotionProvider;
 pub use event_estimator::EventEstimator;
-pub use llm::LlmClient;
+pub use llm::{LlmClient, LlmTokenSink};
 pub use local_plugin_bridge::LocalPluginBridge;
 pub use memory_retrieval::MemoryRetrieval;
 pub use plugin_host::PluginHostPort;

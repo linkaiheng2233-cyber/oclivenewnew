@@ -16,6 +16,8 @@ Until strangers say 「卧槽」 on **AI Theater v0**, the kernel **does not exp
 
 **In-flight pre-research only:** `examples/reply-post-process-polish/` — theater local beat patch tech; **not** a substitute for Theater v0 product delivery. Scope closed per [REPLY_POST_PROCESS_POLISH_SCOPE.md](./REPLY_POST_PROCESS_POLISH_SCOPE.md).
 
+**Approved exception (2026-06-10):** VS Code `POST /chat/stream` — backward-compatible delivery mode only; no new orchestration stages. See [VSCODE_STREAM_THEATER_GATE.md](./VSCODE_STREAM_THEATER_GATE.md).
+
 ---
 
 ## Phase 5 — thaw criteria (no action until user feedback)

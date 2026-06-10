@@ -40,8 +40,9 @@
 | S10 | 同 `session_id` 连续两轮 → 均 200 |
 | S11 | 成功体含 `api_version`、`schema`、`timestamp` |
 | S12 | 错误体 `error.code` 为 **字符串**（`KernelErrorBody`），非 JSON-RPC 整数码 |
+| S15 | `POST /chat/stream` → SSE `token` 事件 + 末帧 `done`（含非空 `reply`）；Mock LLM 整段 fallback 亦须至少 1 个 `token` |
 
-**默认套件**：`run.mjs` 按序执行 **S0–S12**（**13** 项）。双核场景为可选：**S13**（experimental 失败静默降级 Stable 仍返回 `reply`）与 **S14**（experimental 合法 method DAG 成功路径仍返回 `reply`）。可通过 `--include-s13` / `--include-s14`、`OCLIVE_OOCP_INCLUDE_S13=1` / `OCLIVE_OOCP_INCLUDE_S14=1` 单独开启，或 `--include-dual-core` / `OCLIVE_OOCP_INCLUDE_DUAL_CORE=1` 一次开启两者。
+**默认套件**：`run.mjs` 按序执行 **S0–S12** 与 **S15**（**14** 项核心 HTTP 场景）。双核场景为可选：**S13**（experimental 失败静默降级 Stable 仍返回 `reply`）与 **S14**（experimental 合法 method DAG 成功路径仍返回 `reply`）。可通过 `--include-s13` / `--include-s14`、`OCLIVE_OOCP_INCLUDE_S13=1` / `OCLIVE_OOCP_INCLUDE_S14=1` 单独开启，或 `--include-dual-core` / `OCLIVE_OOCP_INCLUDE_DUAL_CORE=1` 一次开启两者。
 
 ## 协议符合性报告
 

@@ -12,7 +12,8 @@
 use crate::domain::agent::AgentOutput;
 use crate::domain::agent_context::build_agent_input;
 use crate::domain::chat_engine::chat_stage::ChatStage;
-use crate::domain::chat_engine::dispatch::{dispatch_turn, resolve_dual_core_degraded};
+use crate::domain::chat_engine::dispatch::{dispatch_turn, dispatch_turn_stream, resolve_dual_core_degraded};
+use oclive_kernel_contracts::LlmTokenSink;
 use crate::domain::chat_engine::message_error::ProcessMessageError;
 use crate::domain::chat_engine::minimal_response::build_minimal_response;
 use crate::domain::chat_engine::presence::user_is_remote_from_character;
@@ -38,7 +39,22 @@ pub async fn process_message(
     state: &AppState,
     req: &SendMessageRequest,
 ) -> Result<SendMessageResponse> {
-    match run(state, req).await {
+    match run(state, req, None).await {
+        Ok(v) => Ok(v),
+        Err(e) => {
+            tracing::error!(target: "oclive_chat", "{}", e);
+            Err(e.into())
+        }
+    }
+}
+
+/// Streaming variant: invokes `on_token` during main LLM generation; post-LLM side effects run after the stream completes.
+pub async fn process_message_stream(
+    state: &AppState,
+    req: &SendMessageRequest,
+    on_token: LlmTokenSink,
+) -> Result<SendMessageResponse> {
+    match run(state, req, Some(on_token)).await {
         Ok(v) => Ok(v),
         Err(e) => {
             tracing::error!(target: "oclive_chat", "{}", e);
@@ -50,6 +66,7 @@ pub async fn process_message(
 async fn run(
     state: &AppState,
     req: &SendMessageRequest,
+    on_token: Option<LlmTokenSink>,
 ) -> std::result::Result<SendMessageResponse, ProcessMessageError> {
     let mrid = req.role_id.as_str();
     let state_rid = conversation_state_role_id(mrid, req.session_id.as_deref());
@@ -166,6 +183,9 @@ async fn run(
         }
     };
     if agent_out.handled {
+        if let Some(ref sink) = on_token {
+            sink(agent_out.reply.as_str());
+        }
         return build_minimal_response(
             state,
             &pl,
@@ -251,5 +271,9 @@ async fn run(
         runtime_snapshot,
         prefetch,
     };
-    dispatch_turn(&turn, is_remote, remote_life_enabled).await
+    if let Some(sink) = on_token {
+        dispatch_turn_stream(&turn, is_remote, remote_life_enabled, sink).await
+    } else {
+        dispatch_turn(&turn, is_remote, remote_life_enabled).await
+    }
 }

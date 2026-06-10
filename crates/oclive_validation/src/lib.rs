@@ -22,6 +22,7 @@ pub mod plugin_dependencies;
 pub mod plugin_permissions;
 pub mod plugin_slot_attachment;
 pub mod protocol_boundary;
+pub mod meta_action_templates;
 pub mod reply_post_processor;
 pub mod role_pack;
 pub mod runtime_config;
@@ -99,6 +100,9 @@ pub use plugin_slot_attachment::{
 pub use protocol_boundary::{
     assert_layers_do_not_overlap, validate_jsonrpc_error_response, validate_kernel_error_body,
     ProtocolValidationError,
+};
+pub use meta_action_templates::{
+    validate_meta_action_templates_config, validate_meta_action_templates_config_file,
 };
 pub use reply_post_processor::{
     validate_reply_post_processor_config, validate_reply_post_processor_config_file,
