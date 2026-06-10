@@ -1,10 +1,10 @@
 # Technical debt inventory
 
-**Last updated:** 2026-06-09 (freeze-safe audit + Opus 4.8 Theater v0)
+**Last updated:** 2026-06-10 (round 8 patrol · freeze-safe cleanup)
 
 **Product freeze (Theater v0):** No new kernel orchestration / six-slot expansion until strangers validate AI Theater v0. See [PRODUCT_FREEZE_THEATER_V0.md](./PRODUCT_FREEZE_THEATER_V0.md). **Deferred unchanged:** D-PORT-02, D-SLOT-01, K-PERF-10, K-PERF-14/15, D-NAME-01, §3.1 library API, dual_core (frozen).
 
-**Verification (2026-06-09 Wave 1–3):** `node scripts/dimension5-acceptance.mjs --ci` PASS (7 checks); `cargo test -p oclive_kernel_host --lib` **182** passed; `node scripts/check-domain-layering.mjs` FQ **1**/use **4**; theater acceptance **9** tests green.
+**Verification (2026-06-10 round 8):** `node scripts/dimension5-acceptance.mjs --ci` PASS (7 checks); `cargo test -p oclive_kernel_host --lib` **182** passed; `node scripts/check-domain-layering.mjs` FQ **1**/use **4** PASS (role_manager FQ violation fixed); theater acceptance **9** tests green.
 
 ### Freeze-safe audit（2026-06-09）
 
@@ -15,7 +15,9 @@
 | K-PERF-14 | `pre_llm` 独立 await 串行 | **Deferred** | 触碰编排；冻结至 Theater v0 |
 | K-PERF-15 | 记忆候选池固定 10 条按时间非相关性 | **Deferred** | 影响召回语义；冻结 |
 | D-CLEAN-01 | `ReplayTaskRegistry` 完成不清理 | **Done** | 完成 TTL 600s + `get()` 读后清理（Wave 2） |
-| D-NAME-01 | `resolve_turn` 三义命名消歧 | **Deferred** | 触 dual_core 冻结路径 |
+| D-NAME-01 | `resolve_*` 命名消歧（全仓 **104** 个 `fn resolve_`） | **Deferred** | 触 dual_core 冻结路径；轮次 8 实测计数入库 |
+| D-ORPHAN-01 | `oclive_runtimed` 调度守护原型（8430 端口 / per-role 队列） | **Done·deleted** | 不在 workspace、无产品接线；设计：`OCLIVE_KERNEL_UPSTREAM`→8420、`OCLIVE_SCHEDULER_PORT`→8430；恢复：`git log --diff-filter=D -- crates/oclive_runtimed` |
+| D-ORPHAN-02 | `oclive_schema` 微型 crate（18 行 blueprint 片段） | **Observe** | 冻结期不合并回 `oclive_kernel_types`；评估 wasm/独立校验边界后再定 |
 | K-DOC-07 | `AGENTS.md` / `LIGHTWEIGHT_PROFILE` cargo-audit `continue-on-error` 漂移 | **Done** | 更正为 dimension5 + `cargo-audit` job + lockfile workflow 三层硬门禁 |
 
 **Opus 4.8 follow-up (2026-06-08):** five-dimension re-review — `node scripts/dimension5-acceptance.mjs --ci` PASS; K-PERF-01 batched memory-decay writes; K-PERF-02 stage tracing + PERFORMANCE.md §6; K-DOC-02 CHANGELOG parity CI; K-PROFILE-01 unified `distro_oclive_file`; D-OPUS-05 re-export ratchet; D-OPUS-01/02/04 RC lightweight sweep Done. See §Opus 4.8 follow-up.
@@ -412,10 +414,17 @@ DeepSeek 五维方向二轮复审（Opus 4.8）。维度五基线复跑：`node 
 | **V-VSCODE-PERF-01** | `ensureReady` 每 API 调用重跑 discover/cli/health | **Done** | 5s TTL + in-flight 去重；`reconnectKernel`/失败时 `invalidateEnsureReady` |
 | **V-VSCODE-PERF-02** | 设置快照串行 6 连发 | **Done** | `buildStateSnapshot` `Promise.all` 并行只读请求 |
 | **V-VSCODE-PERF-03** | 角色快照轮询侧栏隐藏仍 15s | **Done** | `onDidChangeVisibility`：可见 15s / 隐藏 60s（对齐 K-PERF-11） |
-| **V-VSCODE-HONEST-01** | `penetration.*` / `portraitMaxHeight` 占位配置 | **Done** | schema 移除；高级区「实验性（未实现）」折叠 |
+| **V-VSCODE-HONEST-01** | `penetration.*` / `portraitMaxHeight` 占位配置 | **Done** | schema 移除；原高级区折叠已删（见 HONEST-02） |
 | **V-VSCODE-PERF-04** | Chat 对话流每 patch 全量 innerHTML | **Done** | `appendLines` 增量 + Svelte `{#each}` |
 | **V-VSCODE-PERF-05** | F5 实机 / `.vsix` 发布验收 | **Pending** | 见 `oclive-vscode/ROADMAP.md` |
 | **V-VSCODE-FIX-01** | 设置内即时/连点切角色 → 插件卡死 | **Done** | `SettingsController.handleMessage` 经 `serialQueue` 串行化；`switchRoleInFlight` guard 全程保持（含尾部 pushState）；`handleSelectRole` 去重 pushState；切角色仅在设置面可见时跑快照 |
 | **V-VSCODE-FIX-02** | 模型调用不稳（连接抖动打断内核 → fallback） | **Done** | `ensureReady` 决策抽到纯函数 `ensureReadyPolicy`（trust/revalidate/replan）：健康连接不再整轮重规划、mock 模式不再反复杀端口重启；连接相关设置改动 `invalidateEnsureReady` |
 | **V-VSCODE-UI-01** | 角色切换下拉栏过亮 | **Done** | `.role-select` / 共享 `Select` 改用 `--vscode-dropdown-*` 主题色 + 常规字重 + focusBorder 描边（Cursor 风格） |
 | **V-VSCODE-QA-01** | 纯逻辑无单测 | **Done** | `scripts/test-unit.mjs` 覆盖 `ensureReadyPolicy` + `serialQueue`；`npm run test:unit`（tsc + node） |
+| **V-VSCODE-IA-02** | 设置页与 Chat 顶栏重复角色切换 | **Done** | `RoleSection` 只读包信息；切角色仅 Chat `.role-select` / QuickPick |
+| **V-VSCODE-LAND-01** | `autoDiscover` 无即时触发入口 | **Done** | 内核区「重新发现…」→ `rediscover` → `applyAutoDiscovery(forcePrompt)` + `ensureReady(force)` |
+| **V-VSCODE-HONEST-02** | 高级区「实验性（未实现）」死占位 | **Done** | 移除 `Collapsible`；渗透说明仅保留 `ROADMAP.md` |
+| **V-VSCODE-LATENCY-01** | Chat 无取消/冷启动体感差 | **Done** | 停止按钮 + 计时/8s 提示 + `warmupModel` + `oclive.chat.warmup*` |
+| **V-VSCODE-UNDO-01** | 无撤回/编辑/重生成 | **Done** | 四形态 + `meta_action_templates` + `/chat/storage`；删记录不回退记忆（tooltip/文档） |
+| **V-VSCODE-STREAM-01** | 无 SSE 流式 | **Done** | 内核 `POST /chat/stream`（Gate：[VSCODE_STREAM_THEATER_GATE.md](./VSCODE_STREAM_THEATER_GATE.md)）；`chatStream` + `oclive.chat.streaming` |
+| **V-VSCODE-IMMERSE-01** | 环境调优文档 | **Done** | ROADMAP 渗透节 + 冷启动 hint；Q4/GPU/keep_alive 见 PERFORMANCE 交叉引用 |

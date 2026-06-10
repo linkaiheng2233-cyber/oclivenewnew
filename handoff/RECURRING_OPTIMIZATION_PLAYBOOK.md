@@ -218,6 +218,9 @@ npm run check:rust                               # fmt + clippy(-D warnings) + t
 | 3 | 2026-06-09 | 全 | PASS | A− | Wave4 条件门: 陌生人测试未执行; C 档维持 Deferred; Phase 5 解冻 **不启动** | 见 TECHNICAL_DEBT §巡检债 Wave |
 | 4 | 2026-06-10 | 半 | PASS* | A− | oclive-vscode IA 统一 + ensureReady 缓存 + 轮询退避 + 占位清理; V-VSCODE-PERF-05 F5/.vsix 仍 Pending | *姊妹仓 lint/compile/smoke; 主仓基线未重跑 |
 | 5 | 2026-06-10 | 快 | n/a* | — | oclive-vscode 用户报障修复: 设置内即时切角色卡死(handleMessage 串行化 + switchRole guard 全程保持 + 去重 pushState) / 模型调用不稳(ensureReady 三态 trust·revalidate·replan, 健康连接不再整轮重规划/mock 杀端口) / 角色下拉栏改 Cursor 配色 / 新增 ensureReadyPolicy+serialQueue 单测; V-VSCODE-FIX-01·02 / UI-01 / QA-01 Done | *姊妹仓 lint/compile/test:unit/webview build 通过; 主仓基线未跑 |
+| 6 | 2026-06-10 | 快 | n/a* | — | oclive-vscode 设置落地: 角色区改只读去重(IA-02) / 内核「重新发现」触发 autoDiscover(LAND-01) / 移除高级实验性死占位(HONEST-02) | *姊妹仓 lint/test:unit/webview build 通过; F5 实机待开发者确认 |
+| 7 | 2026-06-10 | 快 | n/a* | — | VS Code 聊天体验: LATENCY(停止/预热/计时) + UNDO(四形态/meta_action_templates) + STREAM(/chat/stream Gate 批准); 主仓 validation + oclive_kernel_host 流式 | *姊妹仓 lint/build/test:unit; 主仓 cargo test validation+host |
+| 8 | 2026-06-10 | 半 | FAIL→PASS | A− | 基线红: role_manager FQ 2>1 → 插件注入化修复; 删 `oclive_runtimed`+`crates/models`; deny.toml 去 AGPL; D-ORPHAN-01/02、D-NAME-01(104 resolve_*) 入账 | dimension5+host lib 182 绿; 含轮次7流式/撤销/meta_action_templates 提交 |
 
 ---
 

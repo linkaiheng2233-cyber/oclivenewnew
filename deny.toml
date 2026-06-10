@@ -16,7 +16,6 @@ allow = [
     "OpenSSL",
     "Unlicense",
     "CDLA-Permissive-2.0",
-    "AGPL-3.0-or-later",
     "NCSA",
 ]
 confidence-threshold = 0.8
