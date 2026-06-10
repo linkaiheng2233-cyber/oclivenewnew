@@ -254,6 +254,7 @@ async fn run(
         virtual_time_ms,
         dual_core_degraded,
         runtime_snapshot,
+        role_arc: Arc::clone(&role),
         prefetch,
     };
     if let Some(sink) = on_token {

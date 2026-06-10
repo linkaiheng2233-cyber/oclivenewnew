@@ -1,6 +1,7 @@
 import type { DesktopKernelMode } from '../api/kernel'
-import { onBeforeUnmount, onMounted, ref } from 'vue'
-import { fetchRoleSnapshot, getKernelConnectionStatus } from '../api/kernel'
+import { onBeforeUnmount, onMounted } from 'vue'
+import { fetchRoleSnapshot } from '../api/kernel'
+import { useKernelConnectionStore } from '../stores/kernelConnectionStore'
 import { useRoleStore } from '../stores/roleStore'
 import { useChatStore } from '../stores/chatStore'
 
@@ -17,6 +18,7 @@ function pollIntervalMs(): number {
 export function useRoleSnapshotPoll() {
   const roleStore = useRoleStore()
   const chatStore = useChatStore()
+  const kernelConn = useKernelConnectionStore()
   let timer: ReturnType<typeof setInterval> | undefined
 
   async function tick() {
@@ -27,13 +29,7 @@ export function useRoleSnapshotPoll() {
     if (!roleId) {
       return
     }
-    try {
-      const conn = await getKernelConnectionStatus()
-      if (!conn.healthy) {
-        return
-      }
-    }
-    catch {
+    if (!kernelConn.status?.healthy) {
       return
     }
     const snap = await fetchRoleSnapshot(

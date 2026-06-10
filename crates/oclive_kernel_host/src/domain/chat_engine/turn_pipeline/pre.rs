@@ -124,12 +124,26 @@ async fn prefetch_context(
         .event_impact_factor
         .unwrap_or(role.evolution_config.event_impact_factor);
     let mutable_for_prompt = snapshot.mutable_personality.clone().unwrap_or_default();
-    let personality = STAGES
-        .stage(
-            ChatStage::CurrentPersonality,
-            state.get_current_personality(srid, role),
-        )
-        .await?;
+    let personality = if role.evolution_config.personality_source == PersonalitySource::Profile {
+        STAGES
+            .stage(
+                ChatStage::CurrentPersonality,
+                async {
+                    Ok(crate::domain::profile_personality::effective_vector_from_profile(
+                        role,
+                        snapshot.mutable_personality.as_deref().unwrap_or(""),
+                    ))
+                },
+            )
+            .await?
+    } else {
+        STAGES
+            .stage(
+                ChatStage::CurrentPersonality,
+                state.get_current_personality(srid, role),
+            )
+            .await?
+    };
     let pf = &ctx.prefetch;
     Ok((
         event_runtime,
@@ -379,6 +393,7 @@ async fn resolve_relation_before_turn(
     srid: &str,
     user_relation_key: &str,
     immersive: bool,
+    runtime_snapshot: &crate::domain::role_runtime_snapshot::RoleRuntimeSnapshot,
 ) -> TurnResult<(String, f64)> {
     let seed_favor = role.initial_favorability_for_relation(user_relation_key);
     STAGES
@@ -403,7 +418,7 @@ async fn resolve_relation_before_turn(
     let snapshot = STAGES
         .stage(
             ChatStage::RelationStateForIdentity,
-            load_relation_snapshot(state, srid, user_relation_key),
+            load_relation_snapshot(state, srid, user_relation_key, Some(runtime_snapshot)),
         )
         .await?;
     Ok((snapshot.relation_state, snapshot.favorability))
@@ -472,7 +487,14 @@ pub(crate) async fn pre_llm(ctx: &TurnContext<'_>) -> TurnResult<PreLlmOutput> {
     )
     .await?;
     let (relation_before, favorability_before) =
-        resolve_relation_before_turn(state, role, srid, user_relation_key.as_str(), ctx.immersive)
+        resolve_relation_before_turn(
+            state,
+            role,
+            srid,
+            user_relation_key.as_str(),
+            ctx.immersive,
+            &ctx.runtime_snapshot,
+        )
             .await?;
     let transition = crate::domain::relation_transition::consume_relation_transition_at_turn_start(
         &state.session_cache,

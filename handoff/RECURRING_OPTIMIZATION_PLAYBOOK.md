@@ -45,7 +45,7 @@ git status                                      # 确认工作树状态 / 与 or
 
 **ratchet 锚点**（只降不升）：
 - `domain→infrastructure`：use-import ≤ 4（全 test cfg）+ FQ ≤ 5 → 见 `handoff/LAYERING_BASELINE.json`
-- host/runtime re-export import baseline ≤ 78 → `scripts/check-host-reexport-imports.mjs`
+- host/runtime re-export import baseline ≤ 76 → `scripts/check-host-reexport-imports.mjs`
 
 ---
 
@@ -223,6 +223,7 @@ npm run check:rust                               # fmt + clippy(-D warnings) + t
 | 8 | 2026-06-10 | 半 | FAIL→PASS | A− | 基线红: role_manager FQ 2>1 → 插件注入化修复; 删 `oclive_runtimed`+`crates/models`; deny.toml 去 AGPL; D-ORPHAN-01/02、D-NAME-01(104 resolve_*) 入账 | dimension5+host lib 182 绿; 含轮次7流式/撤销/meta_action_templates 提交 |
 | 9 | 2026-06-10 | 全 | PASS* | A− | *门禁 PASS 但场外两处红: K-BUILD-02 TheaterShell 导入错层致 `vite build` HEAD 失败(修复) + D-SCRIPT-01 verify:ui 锚点全过时崩溃(重写); D-ORPHAN-03 删 V1 孤儿组件 23KB; K-DOC-08 runtimed 幽灵引用清掉; D-TRAIT-01(16 单实现 trait) 入账 Deferred; D-PORT-02 计数 22→24 | 过度工程普查轮; 大刀(god-port/V2 槽/错误四层)维持冻结 Deferred |
 | 10 | 2026-06-10 | 半 | PASS | A− | K-GATE-01 九检; D-ORPHAN-03b/c; D-PORT-02/D-SLOT-01/D-TRAIT-01; Theater 自动化 9 测绿·人工陌生人待执行; beat patch 单测绿; cargo build ~81s dev | [SLOT_BACKEND_REALITY_MATRIX.md](./SLOT_BACKEND_REALITY_MATRIX.md) |
+| 11 | 2026-06-11 | 半 | PASS | A− | Batch 1–3 入库; Phase 1 D-ERR-02/034/棘轮76/K-DOC; Phase 2 K-PERF-20/21 快照+settings 批量; Phase 3 会话索引/RoleRuntimeRepo/前端 follow-up; Phase 4 Deferred 登记 | Theater v0 冻结期; 陌生人测试仍 Pending |
 
 ---
 

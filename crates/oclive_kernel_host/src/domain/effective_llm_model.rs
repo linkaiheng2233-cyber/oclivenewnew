@@ -5,6 +5,7 @@ use crate::state::AppState;
 
 const KEY_LLM_PROVIDER: &str = "user_llm_provider";
 const KEY_REMOTE_MODEL: &str = "user_remote_llm_model";
+const LLM_MODEL_SETTING_KEYS: &[&str] = &[KEY_LLM_PROVIDER, KEY_REMOTE_MODEL];
 
 /// Session DB override → saved cloud model (`user_remote_llm_model`) when provider=cloud → [`Role::resolve_ollama_model`].
 ///
@@ -26,14 +27,16 @@ pub async fn resolve_effective_ollama_model(
             return Ok(t.to_string());
         }
     }
-    let provider = state
+    let settings = state
         .db_manager
-        .get_app_setting(KEY_LLM_PROVIDER)
-        .await?
+        .get_app_settings(LLM_MODEL_SETTING_KEYS)
+        .await?;
+    let provider = settings
+        .get(KEY_LLM_PROVIDER)
         .map(|s| s.trim().to_ascii_lowercase())
         .unwrap_or_default();
     if provider == "cloud" {
-        if let Some(m) = state.db_manager.get_app_setting(KEY_REMOTE_MODEL).await? {
+        if let Some(m) = settings.get(KEY_REMOTE_MODEL) {
             let t = m.trim();
             if !t.is_empty() {
                 return Ok(t.to_string());

@@ -475,9 +475,7 @@ export const useChatStore = defineStore(
         const idx = bucket.findIndex(m => m.id === localId)
         if (idx === -1)
           return
-        const next = [...bucket]
-        next[idx] = { ...next[idx], ...patch }
-        this.messageMap[roleId]![sid] = next
+        Object.assign(bucket[idx]!, patch)
       },
 
       editMessage(

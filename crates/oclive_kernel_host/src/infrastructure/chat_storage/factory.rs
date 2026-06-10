@@ -17,7 +17,9 @@ pub const ENV_CHAT_STORAGE_BACKEND: &str = "OCLIVE_CHAT_STORAGE_BACKEND";
 /// `file` / `sqlite` / `hybrid` only influence the JSON **mirror** flag via [`resolve_mirror_enabled`];
 /// prefer explicit `chat_storage.mirror` in role `config.json` when possible.
 #[must_use]
-pub fn resolve_backend_kind(config: Option<&RolePackChatStorageConfig>) -> ChatStorageBackendKind {
+pub fn pick_chat_storage_backend_kind(
+    config: Option<&RolePackChatStorageConfig>,
+) -> ChatStorageBackendKind {
     if let Ok(raw) = std::env::var(ENV_CHAT_STORAGE_BACKEND) {
         let t = raw.trim().to_ascii_lowercase();
         return match t.as_str() {

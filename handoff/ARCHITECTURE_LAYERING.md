@@ -230,15 +230,15 @@
 
 **SSOT**：`creator-docs/` 下无同名分层文档；计数与 FQ 清单以本文件 D-LAYER-05 段与 [`crates/oclive_kernel_host/src/domain/README.md`](../crates/oclive_kernel_host/src/domain/README.md) 为准。
 
-生产路径剩余 **`domain → infrastructure` FQ 引用（5）**：
+生产路径剩余 **`domain → infrastructure` FQ 引用（1）**：
 
 | 文件 | 引用 | 用途 |
 |------|------|------|
-| `user_llm_env.rs` | 3× `DbManager` | 用户 LLM 环境读盘 |
-| `startup_health.rs` | 1× `DbManager` | 全局 DB ping |
-| `role_manager.rs` | 1× `plugin_wiring::test_plugin_host` | 测试辅助构造 |
+| `user_llm_env.rs` | 1× `db_ports::DbSettingsPort` | 用户 LLM 环境读盘（Wave 1 port） |
 
-**`use crate::infrastructure` 导入（4，全 `#[cfg(test)]`）**：`event_impact_ai.rs`、`event_estimator.rs`、`complex_emotion_store.rs`、`mutable_profile_llm.rs`（`MockLlmClient` / `test_db`）。
+**`use crate::infrastructure` 导入（3，全 `#[cfg(test)]`）**：`event_impact_ai.rs`、`event_estimator.rs`、`complex_emotion_store.rs`、`mutable_profile_llm.rs`（`MockLlmClient` / `test_db`）。
+
+`startup_health.rs` 经 **`DbHealthPort`**；`role_manager.rs` 经构造函数注入插件宿主（无生产 FQ）。
 
 热路径持久化已经 **`domain/ports/`** turn ports（`ChatTurnPersistencePort` 等）注入；插件宿主、Remote/directory、reply post-processor、MCP 等工厂已迁至 `infrastructure/*_wiring`。
 

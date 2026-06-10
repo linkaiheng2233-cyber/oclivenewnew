@@ -143,17 +143,24 @@ async fn analyze_bot_emotion_and_policy(
     reply: &str,
     pre: &PreLlmOutput,
     middle: &MiddleOutput,
+    snapshot_emotion: Option<String>,
 ) -> TurnResult<PostTurnPolicy> {
     let policies = state.policies_for_scene(Some(scene_id));
-    let previous_emotion_fut = state.db_manager.get_current_emotion(srid);
     let bot_emotion_result = STAGES
         .stage(ChatStage::BotReplyEmotionAnalyze, async {
             SlotRunner::analyze_emotion(pl, reply)
         })
         .await?;
-    let previous_emotion = STAGES
-        .stage(ChatStage::GetCurrentEmotion, previous_emotion_fut)
-        .await?;
+    let previous_emotion = if let Some(emotion) = snapshot_emotion {
+        Some(emotion)
+    } else {
+        STAGES
+            .stage(
+                ChatStage::GetCurrentEmotion,
+                state.db_manager.get_current_emotion(srid),
+            )
+            .await?
+    };
     let bot_emotion = policies
         .emotion
         .resolve_current_emotion(previous_emotion.as_deref(), &bot_emotion_result);
@@ -193,7 +200,7 @@ async fn analyze_bot_emotion_and_policy(
 fn spawn_profile_evolution_after_llm(
     state: &crate::state::AppState,
     primary_llm: Arc<dyn crate::domain::ports::LlmClient>,
-    role: &Role,
+    role_arc: Arc<Role>,
     srid: &str,
     path_label: &str,
     pre: &PreLlmOutput,
@@ -201,14 +208,14 @@ fn spawn_profile_evolution_after_llm(
     user_message: &str,
     reply: &str,
 ) {
-    if role.evolution_config.personality_source != PersonalitySource::Profile {
+    if role_arc.evolution_config.personality_source != PersonalitySource::Profile {
         return;
     }
     let impact_scaled = (middle.ai_impact_factor_final * pre.event_runtime).clamp(-1.0, 1.0);
     crate::state::profile_evolution::spawn_mutable_profile_evolution(
         state,
         primary_llm,
-        Arc::new(role.clone()),
+        role_arc,
         srid.to_string(),
         path_label.to_string(),
         pre.ollama_model.clone(),
@@ -319,13 +326,14 @@ pub(crate) async fn post_llm(
         &reply,
         pre,
         middle,
+        ctx.runtime_snapshot.emotion.clone(),
     )
     .await?;
 
     spawn_profile_evolution_after_llm(
         state,
         Arc::clone(&primary_llm),
-        role,
+        Arc::clone(&ctx.role_arc),
         srid,
         path_label,
         pre,

@@ -16,9 +16,9 @@ Chinese handoff notes: [COMMENT_ENGLISH_MIGRATION_PLAN.md](../../../../handoff/C
 
 `node scripts/check-domain-layering.mjs` enforces two counters under `domain/**/*.rs` (baseline: [LAYERING_BASELINE.json](../../../../handoff/LAYERING_BASELINE.json)):
 
-| Counter | Baseline (2026-06-10) | Meaning |
+| Counter | Baseline (2026-06-11) | Meaning |
 |---------|----------------------|---------|
-| `use crate::infrastructure` imports | **4** (all `#[cfg(test)]`) | Top-level `use` lines |
+| `use crate::infrastructure` imports | **3** (all `#[cfg(test)]`) | Top-level `use` lines |
 | `crate::infrastructure::` FQ refs (production) | **1** | Fully-qualified paths outside test cfg |
 
 **Do not increase either counter.** Ratchet down only when extracting ports.
@@ -39,7 +39,7 @@ Turn hot-path persistence now goes through **`domain/ports/`** traits with imple
 
 `turn_pipeline/persistence.rs` consumes these ports; `post.rs` still calls `state.policies_for_scene` in-domain (D-LAYER-05b follow-up).
 
-### `use`-import adapter layer (4, test-only)
+### `use`-import adapter layer (3, test-only)
 
 These files still call `use crate::infrastructure::…` under `#[cfg(test)]` only:
 

@@ -28,13 +28,14 @@ impl DbManager {
             .map(|s| s.created_at.clone())
             .unwrap_or_else(|| now.clone());
         let message_count = existing.as_ref().map(|s| s.message_count).unwrap_or(0);
-        sqlx::query(
+        let row = sqlx::query_as::<_, (String, String, String, String, String, i64)>(
             "INSERT INTO chat_sessions (session_id, role_id, scene_id, created_at, updated_at, message_count)
              VALUES (?, ?, ?, ?, ?, ?)
              ON CONFLICT(session_id) DO UPDATE SET
                role_id = excluded.role_id,
                scene_id = excluded.scene_id,
-               updated_at = excluded.updated_at",
+               updated_at = excluded.updated_at
+             RETURNING session_id, role_id, scene_id, created_at, updated_at, message_count",
         )
         .bind(session_id)
         .bind(role_id)
@@ -42,12 +43,10 @@ impl DbManager {
         .bind(&created_at)
         .bind(&now)
         .bind(message_count)
-        .execute(&self.pool)
+        .fetch_one(&self.pool)
         .await
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-        self.get_chat_session(session_id)
-            .await?
-            .ok_or_else(|| AppError::DatabaseError("chat session missing after upsert".into()))
+        Ok(session_row_from_tuple(row))
     }
 
     /// # Errors
@@ -110,10 +109,13 @@ impl DbManager {
     ) -> Result<Vec<(SessionRow, String)>> {
         let rows = sqlx::query_as::<_, (String, String, String, String, String, i64, Option<String>)>(
             "SELECT s.session_id, s.role_id, s.scene_id, s.created_at, s.updated_at, s.message_count,
-                    (SELECT m.content FROM chat_messages m
-                     WHERE m.session_id = s.session_id
-                     ORDER BY m.created_at DESC, m.id DESC LIMIT 1) AS snippet
+                    latest.content AS snippet
              FROM chat_sessions s
+             LEFT JOIN (
+               SELECT session_id, content,
+                      ROW_NUMBER() OVER (PARTITION BY session_id ORDER BY created_at DESC, id DESC) AS rn
+               FROM chat_messages
+             ) latest ON latest.session_id = s.session_id AND latest.rn = 1
              WHERE s.role_id = ? AND s.scene_id = ?
              ORDER BY s.updated_at DESC
              LIMIT ? OFFSET ?",

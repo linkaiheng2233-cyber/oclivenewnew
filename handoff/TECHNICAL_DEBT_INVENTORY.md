@@ -1,8 +1,41 @@
 # Technical debt inventory
 
-**Last updated:** 2026-06-11 (五维审查收口 Batch 1–3)
+**Last updated:** 2026-06-11 (Fable 5 巡检 Phase 0–4)
 
 **Product freeze (Theater v0):** No new kernel orchestration / six-slot expansion until strangers validate AI Theater v0. See [PRODUCT_FREEZE_THEATER_V0.md](./PRODUCT_FREEZE_THEATER_V0.md). **Deferred unchanged:** K-PERF-10, K-PERF-14/15, §3.1 library API, dual_core (frozen).
+
+### Fable 5 巡检收口（2026-06-11 · Phase 1–4）
+
+| ID | Item | Status | Notes |
+|----|------|--------|-------|
+| K-PERF-20 | `RoleRuntimeSnapshot` 下游复用（emotion / profile personality / relation fallback） | **Done** | `relation_snapshot` / `post` / `pre` Profile 路径；每回合 `get_current_emotion` ≤1（写后刷新除外） |
+| K-PERF-21 | `resolve_effective_ollama_model` settings 批量读 | **Done** | `get_app_settings([provider, remote_model])` 单次 RTT |
+| K-PERF-22 | 聊天 session 列表 snippet + upsert | **Done** | 窗口函数 JOIN；`upsert_chat_session` `RETURNING` 消除写后重读 |
+| K-PERF-23 | `034_perf_indexes.sql` | **Done** | `idx_ltm_role_content` · `idx_operation_logs_role` |
+| K-PERF-24 | post `Role` clone 减少 | **Done** | `TurnContext.role_arc` 供 profile evolution spawn |
+| D-ERR-02 | `TurnError → AppError` 保留 stage | **Done** | `with_chat_stage`；单测 `kernel_error_body` 含 stage 前缀 |
+| D-ORPHAN-04 | 删除无消费方 `RoleRuntimeRepo` | **Done** | `preflight_turn_runtime` supersede |
+| D-NAME-01 | `resolve_backend_kind` → `pick_chat_storage_backend_kind` | **Partial** | chat_storage 批次 Done；`resolve_project_root` CLI 收敛仍 Deferred |
+| D-PORT-03 | `BackendRegistry` trait 纯转发 | **Observe** | UFCS 必需（trait/inherent 同名防递归）；待 remote policy 或第二实现再 collapse |
+| K-DOC-10~12 | 分层 3/1、债务自洽、Agent 规则漂移 | **Done** | ARCHITECTURE_LAYERING · domain README · `.cursor/rules` · oclive-vscode AGENTS |
+| K-PERF-19+ | 前端 follow-up | **Done** | `patchMessageById` 原位更新；轮询复用 `kernelConnectionStore` |
+
+**Verification (2026-06-11):** `node scripts/dimension5-acceptance.mjs --ci`（**9** checks）；`cargo test -p oclive_kernel_host --lib`；`node scripts/check-domain-layering.mjs`。
+
+### Phase 4 · Deferred 登记（解冻条件）
+
+| ID | Item | 解冻条件 | 愿景轴 |
+|----|------|----------|--------|
+| K-PERF-14 | `pre_llm` 串行 await 并行化 | Theater v0 陌生人测试通过 **或** latency 预算失败 | V1 / 剧场实时 |
+| K-PERF-15 | 记忆候选池 10 条按时间非相关性 | 产品确认召回语义变更可接受 | V2 |
+| K-PERF-10 | Chat chrome 懒加载 | Theater 首屏 perf 验收失败 | V1 |
+| K-CONTRACT-WIRING-01 | `extra_sections` 生产接线 | V-CONTRACT Phase 1+ | V2 |
+| V-VSCODE-PERF-05 | F5 实机 / `.vsix` 发布验收 | **人工**排期（2026-Q3 建议） | V3 |
+| §3.1 | 纯 library API 对称化 | 第二宿主强需求 + RFC | V1 |
+| D-POLICY-01 | Policy 三 trait 第二实现 or collapse | remote policy RFC 或连续两发版无第二实现 | V2 |
+| D-PORT-03 | BackendRegistry 转发层 collapse | 见上 Observe | V2 |
+
+**建议：** K-PERF-14 与 K-PERF-20 **同批解冻**（均触 `turn_pipeline/pre.rs`）。
 
 ### 五维审查收口（2026-06-11 · Batch 1–3 Done）
 
@@ -51,9 +84,9 @@
 | 类别 | Trait / Port | 实现数 | 裁决 |
 |------|----------------|--------|------|
 | 六槽多实现 | `LlmClient`, `MemoryRetrieval`, `AgentProvider`, … | 2+ | **保留 trait** |
-| Repository 五件套 | `MemoryRepository`, `FavorabilityRepository`, … | 1 | **Deferred** → 合并 `RoleRuntimeRepo` 或 `Arc<DbManager>` |
+| Repository 五件套 | `MemoryRepository`, `FavorabilityRepository`, … | 1 | **Deferred** → 合并 `Arc<DbManager>`（`RoleRuntimeRepo` 已删） |
 | Policy 三件套 | `EmotionPolicy`, `MemoryPolicy`, `EventPolicy` | 1 | **保留** 至 remote policy RFC |
-| 纯转发 port | `PluginHostPort`, `SlotRegistryResolver` | 1 | **Deferred** 内联具体类型 |
+| 纯转发 port | `PluginHostPort`, `SlotRegistryResolver`, `BackendRegistry` 子 trait UFCS | 1 | **Observe**（D-PORT-03）；随 remote policy RFC |
 | MCP/解析 | `FunctionCallingParserPort`, `McpBridgePort` | 1 | **保留**（测试替身价值） |
 | Host port | `DbHealthPort`, `ConversationStore`, … | 1 | **Observe** 随 D-PORT-02 后续批次 |
 

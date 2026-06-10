@@ -30,7 +30,7 @@ pub use config::{
 };
 pub use db::{highlight_snippet, manifest_sess_glob_pattern, ChatSearchRow};
 pub use export::{export_chat_session, export_role_chats, resolve_export_max_messages};
-pub use factory::{build_conversation_store, resolve_backend_kind, ENV_CHAT_STORAGE_BACKEND};
+pub use factory::{build_conversation_store, pick_chat_storage_backend_kind, ENV_CHAT_STORAGE_BACKEND};
 pub use mirror::delete_mirror_tree_for_role;
 pub use replay::{spawn_memory_replay, ReplayTaskRegistry};
 pub use role_config::save_role_chat_storage_config;

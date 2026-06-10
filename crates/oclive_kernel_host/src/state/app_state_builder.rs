@@ -6,7 +6,7 @@ use crate::domain::host_profile::{self, HostProfile};
 use crate::domain::repository::{FavorabilityRepository, MemoryRepository};
 use crate::error::Result;
 use crate::infrastructure::chat_storage::{
-    build_conversation_store, resolve_backend_kind, set_persisted_storage_root, ReplayTaskRegistry,
+    build_conversation_store, pick_chat_storage_backend_kind, set_persisted_storage_root, ReplayTaskRegistry,
     APP_SETTING_CHAT_STORAGE_ROOT,
 };
 use crate::infrastructure::db::DbManager;
@@ -193,7 +193,7 @@ impl AppStateBuilder {
                 set_persisted_storage_root(Some(PathBuf::from(trimmed)));
             }
         }
-        let backend_kind = resolve_backend_kind(None);
+        let backend_kind = pick_chat_storage_backend_kind(None);
         let default_chat_cfg = crate::models::RolePackChatStorageConfig::default();
         let conversation_store = build_conversation_store(
             backend_kind,

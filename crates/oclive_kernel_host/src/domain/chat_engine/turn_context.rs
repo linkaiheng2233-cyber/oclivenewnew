@@ -41,6 +41,8 @@ pub struct TurnContext<'a> {
     pub dual_core_degraded: bool,
     /// One-row `role_runtime` snapshot loaded once per turn.
     pub runtime_snapshot: RoleRuntimeSnapshot,
+    /// Shared ownership for background tasks (avoids `Role` clone per spawn).
+    pub role_arc: Arc<Role>,
     /// Recent context + user identity shared by agent (when enabled) and `pre_llm`.
     pub prefetch: TurnPrefetch,
 }

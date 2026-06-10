@@ -111,7 +111,7 @@ pub(super) async fn process_remote_stub(ctx: &TurnContext<'_>) -> Result<SendMes
     let emotion_result = pl.emotion.analyze(user_message)?;
     let user_relation_key: String =
         resolve_effective_user_relation_key(state, role, srid, Some(scene_id)).await?;
-    let snapshot = load_relation_snapshot(state, srid, user_relation_key.as_str()).await?;
+    let snapshot = load_relation_snapshot(state, srid, user_relation_key.as_str(), None).await?;
     let relation_before = snapshot.relation_state;
     let favorability_before = snapshot.favorability;
     let portrait_emotion_str = snapshot.portrait_emotion;

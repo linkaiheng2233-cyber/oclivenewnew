@@ -34,7 +34,7 @@ pub(crate) async fn build_minimal_response(
         resolve_effective_user_relation_key(state, role, srid, Some(scene_id.as_str())),
     )?;
 
-    let snapshot = load_relation_snapshot(state, srid, user_relation_key.as_str()).await?;
+    let snapshot = load_relation_snapshot(state, srid, user_relation_key.as_str(), None).await?;
 
     let user_emotion_str = emotion_result.to_emotion().to_string();
     let bot_emotion = snapshot.portrait_emotion.clone();
