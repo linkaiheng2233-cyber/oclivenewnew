@@ -18,10 +18,6 @@ use crate::models::{
 };
 use std::sync::Arc;
 
-fn resolved_plugins_dummy(role: &Role) -> ResolvedRolePlugins {
-    crate::infrastructure::plugin_wiring::test_plugin_host().resolve_for_role(role)
-}
-
 /// Role manager.
 pub struct RoleManager {
     role: Role,
@@ -37,9 +33,9 @@ impl RoleManager {
     /// # Arguments
     /// * `role` - Role metadata
     /// * `personality` - Initial personality vector
+    /// * `plugins` - Resolved plugin facade (same shape as main `process_message` pipeline)
     #[must_use]
-    pub fn new(role: Role, personality: PersonalityVector) -> Self {
-        let plugins = resolved_plugins_dummy(&role);
+    pub fn new(role: Role, personality: PersonalityVector, plugins: ResolvedRolePlugins) -> Self {
         Self {
             role,
             personality,
@@ -52,16 +48,11 @@ impl RoleManager {
     pub fn with_memory_retrieval(
         role: Role,
         personality: PersonalityVector,
+        mut plugins: ResolvedRolePlugins,
         memory: Arc<dyn crate::domain::memory_retrieval::MemoryRetrieval>,
     ) -> Self {
-        let mut plugins = resolved_plugins_dummy(&role);
         plugins.memory = memory;
-        Self {
-            role,
-            personality,
-            memory_engine: MemoryEngine::new(),
-            plugins,
-        }
+        Self::new(role, personality, plugins)
     }
 
     /// Processes user input and produces a reply.
@@ -238,6 +229,10 @@ mod tests {
     use super::*;
     use crate::models::EvolutionBounds;
 
+    fn test_plugins(role: &Role) -> ResolvedRolePlugins {
+        crate::infrastructure::plugin_wiring::test_plugin_host().resolve_for_role(role)
+    }
+
     fn create_test_role() -> Role {
         Role {
             id: "test".to_string(),
@@ -313,7 +308,7 @@ mod tests {
     fn test_role_manager_creation() {
         let role = create_test_role();
         let personality = create_test_personality();
-        let manager = RoleManager::new(role.clone(), personality.clone());
+        let manager = RoleManager::new(role.clone(), personality.clone(), test_plugins(&role));
 
         assert_eq!(manager.get_role().id, "test");
         assert_eq!(manager.get_personality().warmth, 0.7);
@@ -323,7 +318,7 @@ mod tests {
     fn test_process_input() {
         let role = create_test_role();
         let personality = create_test_personality();
-        let mut manager = RoleManager::new(role, personality);
+        let mut manager = RoleManager::new(role.clone(), personality, test_plugins(&role));
 
         let (prompt, updated_personality, _event) = manager.process_input("你很棒", &[]);
 
@@ -336,7 +331,7 @@ mod tests {
     fn test_short_term_memory() {
         let role = create_test_role();
         let personality = create_test_personality();
-        let mut manager = RoleManager::new(role, personality);
+        let mut manager = RoleManager::new(role.clone(), personality, test_plugins(&role));
 
         manager.process_input("Hello", &[]);
         let memories = manager.get_short_term_memories();
@@ -349,7 +344,7 @@ mod tests {
     fn test_clear_short_term_memories() {
         let role = create_test_role();
         let personality = create_test_personality();
-        let mut manager = RoleManager::new(role, personality);
+        let mut manager = RoleManager::new(role.clone(), personality, test_plugins(&role));
 
         manager.process_input("Hello", &[]);
         manager.clear_short_term_memories();
@@ -361,7 +356,7 @@ mod tests {
     fn test_get_personality_summary() {
         let role = create_test_role();
         let personality = create_test_personality();
-        let manager = RoleManager::new(role, personality);
+        let manager = RoleManager::new(role.clone(), personality, test_plugins(&role));
 
         let summary = manager.get_personality_summary();
         assert!(summary.contains("性格特征"));

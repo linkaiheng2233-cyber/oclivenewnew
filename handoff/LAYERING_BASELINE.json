@@ -2,7 +2,7 @@
   "description": "Max allowed domain→infrastructure coupling under crates/oclive_kernel_host/src/domain/**/*.rs (ratchet down only).",
   "domain_to_infrastructure_imports": 4,
   "domain_to_infrastructure_fq_refs": 1,
-  "updated": "2026-06-09",
+  "updated": "2026-06-10",
   "note": "D-ERR-01 remainder: user_llm_env + startup_health DbManager → AppSettingsPort / DbHealthPort (Wave 1).",
   "check_command": "node scripts/check-domain-layering.mjs"
 }

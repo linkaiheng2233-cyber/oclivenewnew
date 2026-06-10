@@ -16,7 +16,7 @@ Chinese handoff notes: [COMMENT_ENGLISH_MIGRATION_PLAN.md](../../../../handoff/C
 
 `node scripts/check-domain-layering.mjs` enforces two counters under `domain/**/*.rs` (baseline: [LAYERING_BASELINE.json](../../../../handoff/LAYERING_BASELINE.json)):
 
-| Counter | Baseline (2026-06-09) | Meaning |
+| Counter | Baseline (2026-06-10) | Meaning |
 |---------|----------------------|---------|
 | `use crate::infrastructure` imports | **4** (all `#[cfg(test)]`) | Top-level `use` lines |
 | `crate::infrastructure::` FQ refs (production) | **1** | Fully-qualified paths outside test cfg |
@@ -27,9 +27,9 @@ Chinese handoff notes: [COMMENT_ENGLISH_MIGRATION_PLAN.md](../../../../handoff/C
 
 | File | Refs | Notes |
 |------|------|-------|
-| `role_manager.rs` | 1× `plugin_wiring::test_plugin_host` | Test helper only (`resolve_for_role` smoke) |
+| `user_llm_env.rs` | 1× `db_ports::DbSettingsPort` | Wave 1 port adapter (D-ERR-01 remainder) |
 
-`user_llm_env.rs` / `startup_health.rs` now use **`AppSettingsPort`** / **`DbHealthPort`** ([`infrastructure/db_ports.rs`](../infrastructure/db_ports.rs)).
+`startup_health.rs` uses **`DbHealthPort`** ([`infrastructure/db_ports.rs`](../infrastructure/db_ports.rs)). `role_manager.rs` resolves plugins via constructor injection; `test_plugin_host` lives under `#[cfg(test)]` only.
 
 Turn hot-path persistence now goes through **`domain/ports/`** traits with implementations in [`infrastructure/turn_ports.rs`](../infrastructure/turn_ports.rs):
 
