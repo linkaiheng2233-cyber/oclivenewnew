@@ -76,7 +76,7 @@ pub fn active_summary_from_requirements(req: &DistroProfileRequirements) -> Acti
     }
 }
 
-/// Resolve caller requirements: profile file → defaults for `distro_id`.
+/// Resolve caller requirements: profile file → defaults for `distro_id` (cross-distro capability policy).
 #[must_use]
 pub fn resolve_caller_requirements(
     distro_id: &str,

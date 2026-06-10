@@ -17,7 +17,7 @@ use crate::models::ui_config::UiConfig;
 mod transport;
 
 pub use transport::{
-    plugin_scan_container_roots, resolve_plugin_asset_path, HostPluginsFile, PluginRootEntry,
+    plugin_scan_container_roots, find_plugin_asset_path, HostPluginsFile, PluginRootEntry,
     PluginScanSummary,
 };
 
@@ -542,12 +542,12 @@ impl Drop for DirectoryPluginRuntime {
 
 #[cfg(test)]
 mod asset_path_tests {
-    use super::{resolve_plugin_asset_path, PluginRootEntry};
+    use super::{find_plugin_asset_path, PluginRootEntry};
     use std::fs;
     use tempfile::TempDir;
 
     #[test]
-    fn resolve_plugin_asset_path_rejects_parent_traversal() {
+    fn find_plugin_asset_path_rejects_parent_traversal() {
         let tmp = TempDir::new().expect("temp");
         let root = tmp.path().join("plugin");
         fs::create_dir_all(&root).expect("mkdir");
@@ -557,18 +557,18 @@ mod asset_path_tests {
         )
         .expect("write manifest");
         let entry = PluginRootEntry::from_root(root.clone());
-        let err = resolve_plugin_asset_path(&entry, "../secret.txt").expect_err("traversal");
+        let err = find_plugin_asset_path(&entry, "../secret.txt").expect_err("traversal");
         assert!(err.contains("invalid") || err.contains("escapes"));
     }
 
     #[test]
-    fn resolve_plugin_asset_path_serves_file_under_root() {
+    fn find_plugin_asset_path_serves_file_under_root() {
         let tmp = TempDir::new().expect("temp");
         let root = tmp.path().join("plugin");
         fs::create_dir_all(&root).expect("mkdir");
         fs::write(root.join("hello.txt"), "hi").expect("write file");
         let entry = PluginRootEntry::from_root(root);
-        let path = resolve_plugin_asset_path(&entry, "hello.txt").expect("resolve");
+        let path = find_plugin_asset_path(&entry, "hello.txt").expect("resolve");
         assert!(path.is_file());
     }
 }

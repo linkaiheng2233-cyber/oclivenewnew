@@ -237,7 +237,7 @@ pub async fn export_role_chats(
 }
 
 #[must_use]
-pub fn resolve_export_max_messages(configured: Option<u32>) -> i64 {
+pub fn pick_export_max_messages(configured: Option<u32>) -> i64 {
     load_max_messages_per_session(configured)
 }
 

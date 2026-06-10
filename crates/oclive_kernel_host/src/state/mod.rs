@@ -39,9 +39,9 @@ pub use effective_session_config::EffectiveSessionConfig;
 pub use models_dir::{
     ensure_models_dir, ensure_models_dir_for_roles, is_managed_legacy_models_path,
     legacy_models_dir_candidates, migrate_and_cleanup_models, paths_equal,
-    reconcile_legacy_models_layout, resolve_models_dir, resource_dir_from_roles, ENV_MODELS_DIR,
+    reconcile_legacy_models_layout, find_models_dir, resource_dir_from_roles, ENV_MODELS_DIR,
 };
-pub use roles_dir::resolve_roles_dir;
+pub use roles_dir::find_roles_dir;
 pub use session_cache::SessionCache;
 
 /// Per-`srid` turn mutex with last-touch time for eviction of idle entries.
@@ -128,7 +128,7 @@ impl AppState {
     /// # Errors
     ///
     /// Returns [`Err`] with a human-readable message when the operation fails.
-    /// `roles_dir_override`: bundled app passes `resource_dir/roles`; when `None`, use [`resolve_roles_dir`].
+    /// `roles_dir_override`: bundled app passes `resource_dir/roles`; when `None`, use [`find_roles_dir`].
     /// `app_data_dir`: app data root (same level as SQLite), used for `oclive_host_plugins.json` and `plugins/` scan root.
     pub async fn new(
         db_path: impl AsRef<Path>,
@@ -137,7 +137,7 @@ impl AppState {
     ) -> Result<Self> {
         AppStateBuilder::production(
             db_path,
-            roles_dir_override.unwrap_or_else(|| resolve_roles_dir(None)),
+            roles_dir_override.unwrap_or_else(|| find_roles_dir(None)),
             app_data_dir,
         )
         .build()

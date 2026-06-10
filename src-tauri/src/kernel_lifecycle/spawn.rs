@@ -5,7 +5,7 @@ use oclive_kernel_host::domain::host_profile::{
 };
 use crate::kernel_lifecycle::connection::KernelConnection;
 use oclive_kernel_runtime::{
-    ensure_app_data_dir, resolve_app_data_dir_for_host, KernelCandidate, KernelTier,
+    ensure_app_data_dir, find_app_data_dir_for_host, KernelCandidate, KernelTier,
     ENV_HTTP_API_MOCK_LLM, ENV_ROLES_DIR,
 };
 use std::path::Path;
@@ -111,7 +111,7 @@ pub async fn spawn_kernel(
     roles_dir: &Path,
     distro_profile_override: Option<&Path>,
 ) -> Result<(), String> {
-    let app_data = resolve_app_data_dir_for_host();
+    let app_data = find_app_data_dir_for_host();
     ensure_app_data_dir(&app_data).map_err(|e| e.to_string())?;
     oclive_kernel_host::infrastructure::app_data_migration::ensure_canonical_app_data_ready(&app_data)
         .map_err(|e| e.to_string())?;

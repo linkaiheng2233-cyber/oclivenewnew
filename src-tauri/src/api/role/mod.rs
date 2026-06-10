@@ -144,7 +144,7 @@ pub fn read_role_asset_bytes(
 /// Resolves the absolute path for `roles/{role_id}/{relative}`; when the file exists, the frontend can load it via `convertFileSrc`.
 #[tauri::command]
 #[must_use]
-pub fn resolve_role_asset_path(
+pub fn find_role_asset_path(
     role_id: String,
     relative: String,
     state: State<'_, SharedAppState>,

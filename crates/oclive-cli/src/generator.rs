@@ -123,13 +123,13 @@ fn relativize_path(from: &Path, to: &Path) -> String {
 
 const COMMENT_PLUGIN_BACKENDS: &str = "七条编排槽位（与 PLUGIN_V1 / plugin_host 对齐）。主应用当前反序列化 6 个标准槽；complex_emotion 为扩展键，宿主会忽略未知字段。可选值以各槽枚举为准（见 SETTINGS_REFERENCE.md）。";
 
-const COMMENT_MEMORY: &str = "记忆检索 (memory.rank)。常用: builtin | builtin_v2 | remote | directory | local。选 none：不参与检索排序（主应用无 none 枚举；若复制进 oclive 请删除该键或改为 builtin）。";
+const COMMENT_MEMORY: &str = "记忆检索 (memory.rank)。常用: builtin | remote | directory | local（builtin_v2 为已废弃读兼容 alias，等同 builtin）。选 none：不参与检索排序（主应用无 none 枚举；若复制进 oclive 请删除该键或改为 builtin）。";
 
-const COMMENT_EMOTION: &str = "用户情绪分析 (emotion.analyze)。常用: builtin | builtin_v2 | remote | directory。选 none：跳过该子系统（主应用请删除键或改为 builtin）。";
+const COMMENT_EMOTION: &str = "用户情绪分析 (emotion.analyze)。常用: builtin | remote | directory（builtin_v2 读兼容 alias）。选 none：跳过该子系统（主应用请删除键或改为 builtin）。";
 
-const COMMENT_EVENT: &str = "事件影响估计 (event.estimate)。常用: builtin | builtin_v2 | remote | directory。选 none：跳过事件估计链（主应用请删除键或改为 builtin）。";
+const COMMENT_EVENT: &str = "事件影响估计 (event.estimate)。常用: builtin | remote | directory（builtin_v2 读兼容 alias）。选 none：跳过事件估计链（主应用请删除键或改为 builtin）。";
 
-const COMMENT_PROMPT: &str = "Prompt 组装 (prompt.build_prompt)。常用: builtin | builtin_v2 | remote | directory。选 none：无有效 prompt 组装（主应用请删除键或改为 builtin）。";
+const COMMENT_PROMPT: &str = "Prompt 组装 (prompt.build_prompt)。常用: builtin | remote | directory（builtin_v2 读兼容 alias）。选 none：无有效 prompt 组装（主应用请删除键或改为 builtin）。";
 
 const COMMENT_LLM: &str = "主对话 LLM (llm.generate)。主应用枚举: ollama（本机默认进程内客户端，需 Ollama）| remote（HTTP 侧车，需 OCLIVE_REMOTE_LLM_URL）| directory。若无本地模型，请改为 remote 并配置远端 URL。选 none：主生成链不可用（仅实验）。";
 
@@ -505,7 +505,7 @@ pub fn write_project(cfg: &ProjectConfig, out: &Path) -> Result<()> {
                     .context("write main_monolith.rs")?;
                 monolith_codegen::copy_monolith_vendor(out)
                     .context("copy vendor/oclive_monolith_builtin")?;
-                let weld = crate::init::resolve_monolith_weld_modules(cfg);
+                let weld = crate::init::pick_monolith_weld_modules(cfg);
                 let weld_refs: Vec<&str> = weld.iter().map(|s| s.as_str()).collect();
                 let (toml, plan) = monolith_codegen::monolith_toml_and_plan_dual(
                     &weld_refs,

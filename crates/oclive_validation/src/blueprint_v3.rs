@@ -550,7 +550,7 @@ pub fn load_blueprint_v3_for_role_dir(
     validate_role_pack_blueprint_v3_directory(role_dir, host_version)?;
     let raw = fs::read_to_string(role_dir.join(PIPELINE_BLUEPRINT_FILENAME))
         .map_err(|e| vec![format!("读取 {} 失败: {}", PIPELINE_BLUEPRINT_FILENAME, e)])?;
-    let resolved = crate::blueprint_includes::resolve_blueprint_includes_lenient(role_dir, &raw);
+    let resolved = crate::blueprint_includes::merge_blueprint_includes_lenient(role_dir, &raw);
     let folder_name = role_dir.file_name().and_then(|s| s.to_str()).unwrap_or("");
     validate_blueprint_v3_json(&resolved, Some(folder_name))?;
     let bp: BlueprintV3File = serde_json::from_str(&resolved)

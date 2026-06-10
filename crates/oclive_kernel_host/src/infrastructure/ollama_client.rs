@@ -247,6 +247,10 @@ impl OllamaClient {
     }
 
     /// Buffered streaming (legacy): reads full body then merges lines.
+    ///
+    /// # Errors
+    ///
+    /// HTTP transport failures or malformed Ollama NDJSON stream.
     pub async fn generate_stream(
         &self,
         model: &str,

@@ -11,7 +11,7 @@ use crate::domain::dual_pipeline::DualPipelineRunner;
 use crate::models::dto::SendMessageResponse;
 use crate::models::Role;
 
-/// Whether dual-core is requested by blueprint but unavailable in this build.
+/// Whether dual-core is requested by blueprint but unavailable in this build (feature-gate policy).
 pub(crate) fn resolve_dual_core_degraded(role: &Role) -> bool {
     #[cfg(not(feature = "dual_core"))]
     {

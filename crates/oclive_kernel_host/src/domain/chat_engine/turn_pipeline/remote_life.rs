@@ -10,7 +10,7 @@ use super::{
     compute_turn_favor, skipped_complex_emotion, worldview_snippet_from_chunks, MiddleOutput,
     PreLlmOutput,
 };
-use crate::domain::life_schedule::{format_life_prompt_line, resolve_life_state};
+use crate::domain::life_schedule::{format_life_prompt_line, pick_life_state};
 
 pub(crate) async fn run_middle(
     ctx: &TurnContext<'_>,
@@ -74,7 +74,7 @@ pub(crate) async fn run_middle(
     let life_schedule_line: String = role
         .life_schedule
         .as_ref()
-        .and_then(|s| resolve_life_state(virtual_time_ms, s))
+        .and_then(|s| pick_life_state(virtual_time_ms, s))
         .map(|st| format_life_prompt_line(&st, true))
         .unwrap_or_default();
     let remote_mutable = if role.evolution_config.personality_source == PersonalitySource::Profile {

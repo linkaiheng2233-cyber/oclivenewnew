@@ -94,7 +94,7 @@ async function refreshPortrait(): Promise<void> {
     catch (e) {
       if (gen !== portraitGeneration)
         return
-      console.warn('[CharacterInfo] resolve_role_asset_path failed', e)
+      console.warn('[CharacterInfo] find_role_asset_path failed', e)
       portraitLoadFailed.value = true
       return
     }

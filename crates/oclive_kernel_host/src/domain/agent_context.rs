@@ -27,6 +27,7 @@ fn default_personality_f32(role: &Role) -> Vec<f32> {
 /// # Errors
 ///
 /// Database or identity resolution failures.
+#[allow(clippy::too_many_arguments)]
 pub async fn build_agent_input(
     state: &AppState,
     role: &Role,

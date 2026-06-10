@@ -14,7 +14,7 @@ Which **pieces the host already splits**, and **what to touch** to swap one. Con
 
 | Module | Role | Rust trait | `settings.json` (`plugin_backends`) | Default |
 |--------|------|------------|----------------------------------------|---------|
-| **Memory retrieval** | rank long‑term memory, context, keyword search | `MemoryRetrieval` | `memory`: `builtin` / `builtin_v2` / `remote` / `directory` / `local` | `BuiltinMemoryRetrieval`, `BuiltinMemoryRetrievalV2`; **`directory`** needs `directory_plugins.memory` → `plugins/<id>/` |
+| **Memory retrieval** | rank long‑term memory, context, keyword search | `MemoryRetrieval` | `memory`: `builtin` / `remote` / `directory` / `local` (`builtin_v2` read alias) | `BuiltinMemoryRetrieval`; **`directory`** needs `directory_plugins.memory` → `plugins/<id>/` |
 | **User sentence emotion** | text → seven‑dim emotion | `UserEmotionAnalyzer` | `emotion`: … | same; **`directory`** → `directory_plugins.emotion` |
 | **Event impact** | LLM estimates event type & factor | `EventEstimator` | `event`: … | same; **`directory`** → `directory_plugins.event` |
 | **Prompt assembly** | main system/user strings | `PromptAssembler` | `prompt`: … | same; **`directory`** → `directory_plugins.prompt` |

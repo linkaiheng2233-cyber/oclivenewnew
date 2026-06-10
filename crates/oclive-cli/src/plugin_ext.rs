@@ -4,7 +4,7 @@ use anyhow::{bail, Context, Result};
 use clap::Parser;
 use oclive_validation::{
     apply_slot_attachments_to_registry, load_blueprint_v2_for_role_dir, parse_plugin_dependencies,
-    parse_slot_attachments_from_manifest_json, resolve_install_order,
+    parse_slot_attachments_from_manifest_json, compute_plugin_install_order,
     write_role_pack_blueprint_slot_registry, PIPELINE_BLUEPRINT_FILENAME,
 };
 use serde_json::Value;
@@ -59,7 +59,7 @@ pub fn run_install(args: PluginInstallArgs) -> Result<()> {
         parse_plugin_dependencies(&raw)
     };
 
-    let order = resolve_install_order(&args.id, load_deps).map_err(|e| anyhow::anyhow!(e))?;
+    let order = compute_plugin_install_order(&args.id, load_deps).map_err(|e| anyhow::anyhow!(e))?;
     let order_display = order.join(" → ");
     for id in &order {
         let dst = plugins_dir.join(id);

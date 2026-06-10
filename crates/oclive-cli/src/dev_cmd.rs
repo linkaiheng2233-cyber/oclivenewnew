@@ -1,5 +1,6 @@
 //! `oclive dev`: watch role pack directories for changes, making it easy to trigger hot reload manually or via scripts during development.
 
+use crate::project_root::resolve_project_root;
 use anyhow::{Context, Result};
 use clap::Parser;
 use notify::{Config, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
@@ -26,16 +27,6 @@ pub struct DevArgs {
     pub reload_cmd: Option<String>,
 }
 
-fn resolve_root(path: &Path) -> Result<PathBuf> {
-    let root = if path.is_absolute() {
-        path.to_path_buf()
-    } else {
-        std::env::current_dir().context("current_dir")?.join(path)
-    };
-    root.canonicalize()
-        .with_context(|| format!("cannot resolve project path: {}", root.display()))
-}
-
 fn is_role_pack_hot_file(path: &Path) -> bool {
     path.file_name()
         .and_then(|n| n.to_str())
@@ -54,7 +45,7 @@ fn role_pack_id_from_hot_file(path: &Path, roles_root: &Path) -> Option<String> 
 }
 
 pub fn run(args: DevArgs) -> Result<()> {
-    let root = resolve_root(&args.path)?;
+    let root = resolve_project_root(&args.path)?;
     let watch_dir = root.join(&args.roles);
     if args.no_watch {
         eprintln!(

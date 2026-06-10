@@ -2,7 +2,7 @@
 
 use crate::monolith_codegen::{copy_monolith_vendor, generate_monolith_source_with_dual_core};
 use crate::monolith_config::{
-    parse_monolith_toml, resolve_weld_plan, validate_monolith_section, MonolithFile,
+    parse_monolith_toml, build_weld_plan, validate_monolith_section, MonolithFile,
 };
 use crate::project_root::resolve_project_root;
 use anyhow::{bail, Context, Result};
@@ -96,7 +96,7 @@ fn regenerate_monolith_from_disk_inner(root: &Path, log_written: bool) -> Result
     let text = fs::read_to_string(&mt).with_context(|| format!("read {}", mt.display()))?;
     let file = parse_monolith_toml(&text)?;
     validate_monolith_section(&file.monolith)?;
-    let plan = resolve_weld_plan(&file.monolith);
+    let plan = build_weld_plan(&file.monolith);
     copy_monolith_vendor(root)?;
     let out_rs = root.join("src/process_message_monolith.rs");
     fs::write(

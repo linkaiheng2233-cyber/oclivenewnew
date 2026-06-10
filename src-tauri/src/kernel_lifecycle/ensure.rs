@@ -1,7 +1,7 @@
 //! Attach-first fallback when shared policy execution fails.
 
 use super::connection::{DesktopKernelMode, SharedKernelConnection};
-use super::policy::{resolve_desktop_distro_profile_path, KernelBringUpOptions};
+use super::policy::{find_desktop_distro_profile_path, KernelBringUpOptions};
 use super::spawn::{probe_existing_kernel, spawn_kernel};
 use oclive_kernel_runtime::{
     apply_promote_to_candidate, discover_spawn_kernel_candidates, parse_distro_requirements_file,
@@ -21,7 +21,7 @@ pub struct EnsureKernelOptions {
 pub async fn ensure_kernel_ready(
     opts: EnsureKernelOptions,
 ) -> Result<SharedKernelConnection, String> {
-    let distro_profile_path = resolve_desktop_distro_profile_path(&opts.anchors);
+    let distro_profile_path = find_desktop_distro_profile_path(&opts.anchors);
     let caller_distro_id = distro_profile_path
         .as_ref()
         .and_then(|p| parse_distro_requirements_file(p).ok())

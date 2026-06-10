@@ -1,8 +1,24 @@
 # Technical debt inventory
 
-**Last updated:** 2026-06-11 (Fable 5 漂移收口 · Phase 0–5)
+**Last updated:** 2026-06-11 (Fable 5 轮次 12 · Phase A–D)
 
-**Product freeze (Theater v0):** No new kernel orchestration / six-slot expansion until strangers validate AI Theater v0. See [PRODUCT_FREEZE_THEATER_V0.md](./PRODUCT_FREEZE_THEATER_V0.md). **Deferred unchanged:** K-PERF-10, K-PERF-14/15, §3.1 library API, dual_core (frozen).
+**Product freeze (Theater v0):** No new kernel orchestration / six-slot expansion until strangers validate AI Theater v0. See [PRODUCT_FREEZE_THEATER_V0.md](./PRODUCT_FREEZE_THEATER_V0.md). **Deferred unchanged:** K-PERF-10, K-PERF-15, §3.1 library API, dual_core (frozen). **K-PERF-14 Done（2026-06-11）**：弹幕互动产品线提前解冻 Wave 1 并行。
+
+### Fable 5 轮次 12 收口（2026-06-11 · Phase A–D）
+
+| ID | Item | Status | Notes |
+|----|------|--------|-------|
+| K-DOC-13 | 文档漂移 4 件套 + Playbook checklist | **Done** | ARCHITECTURE_LAYERING · domain README · TECHNICAL_DEBT 20 格 · vscode retrieval · NAMING §3.1 |
+| K-VALID-CHAT-STORAGE-01 | `chat_storage` pack 校验 | **Done** | `oclive_validation::chat_storage` + ROLE_PACK_SPEC §9.5a |
+| K-PERF-25 | upsert 写前 SELECT 消除 | **Done** | 单语句 COALESCE 子查询 |
+| K-PERF-26 | manifest session 窗口 JOIN | **Done** | `ROW_NUMBER()` LEFT JOIN 对齐 list_with_snippets |
+| K-BUILD-04 | build.rs git HEAD rerun | **Done** | `CARGO_MANIFEST_DIR` 解析 `.git/HEAD` |
+| D-SLOT-01c | `builtin_v2` 文档回潮 | **Done** | README · CREATOR_WORKFLOW · LOCAL_PLUGIN_BRIDGE · CLI 注释 · creator-docs-en 镜像 |
+| D-TRAIT-01b | trait 普查 28 刷新 | **Done** | +6 来自 D-PORT-02 子 port；裁决不变 |
+| K-PERF-14 | `pre_llm` Wave 1 五路 `try_join!` | **Done** | 弹幕互动产品线提前解冻；`pre_llm_wave1` tracing；PERFORMANCE.md §6 |
+| D-NAME-01 | `resolve_*` 全量裁决 | **Done** | 35 改名 + 22 锚点保留；动词表 NAMING_CONVENTIONS §4.4 |
+
+**Verification (2026-06-11 轮次 12 收口):** `node scripts/dimension5-acceptance.mjs --ci`（**9** checks）；`cargo test -p oclive_kernel_host --lib`（**183**）；`narrative_hint_prompt_roundtrip` + `invoke_hotpath_matrix`；`cargo clippy --workspace --all-targets -- -D warnings`；`node scripts/check-domain-layering.mjs`；`node scripts/check-changelog-parity.mjs`。
 
 ### Fable 5 巡检收口（2026-06-11 · Phase 1–4）
 
@@ -16,7 +32,7 @@
 | D-ERR-02 | `TurnError → AppError` 保留 stage | **Done** | `with_chat_stage`；单测 `kernel_error_body` 含 stage 前缀 |
 | D-ORPHAN-04 | 删除无消费方 `RoleRuntimeRepo` | **Done** | `preflight_turn_runtime` supersede |
 | D-SLOT-01b | `builtin_v2` 前端/文档叙事收敛 | **Done** | UI 无独立 V2 选项；读入归一化为 `builtin`；creator-docs 六处对齐 |
-| D-NAME-01 | `resolve_backend_kind` → `pick_chat_storage_backend_kind` | **Partial** | chat_storage 批次 Done；CLI `resolve_project_root` SSOT Done（`project_root.rs`） |
+| D-NAME-01 | `resolve_*` 全量裁决（35 改名 + 22 锚点） | **Done** | 动词表 NAMING_CONVENTIONS §4.4；轮次 12 收口 |
 | D-PORT-03 | `BackendRegistry` trait 纯转发 | **Observe** | UFCS 必需（trait/inherent 同名防递归）；待 remote policy 或第二实现再 collapse |
 | K-DOC-10~12 | 分层 3/1、债务自洽、Agent 规则漂移 | **Done** | ARCHITECTURE_LAYERING · domain README · `.cursor/rules` · oclive-vscode AGENTS |
 | K-PERF-19+ | 前端 follow-up | **Done** | `patchMessageById` 原位更新；轮询复用 `kernelConnectionStore` |
@@ -27,7 +43,7 @@
 
 | ID | Item | 解冻条件 | 愿景轴 |
 |----|------|----------|--------|
-| K-PERF-14 | `pre_llm` 串行 await 并行化 | Theater v0 陌生人测试通过 **或** latency 预算失败 | V1 / 剧场实时 |
+| K-PERF-14 | ~~`pre_llm` 串行 await 并行化~~ | **Done（2026-06-11）** · 弹幕互动产品线提前激活 | V1 / 剧场实时 |
 | K-PERF-15 | 记忆候选池 10 条按时间非相关性 | 产品确认召回语义变更可接受 | V2 |
 | K-PERF-10 | Chat chrome 懒加载 | Theater 首屏 perf 验收失败 | V1 |
 | K-CONTRACT-WIRING-01 | `extra_sections` 生产接线 | V-CONTRACT Phase 1+ | V2 |
@@ -77,10 +93,12 @@
 | K-DOC-09 | `docs/I18N_PROGRESS.md` 去除 `PluginManagerPanel` / `PluginDebugPanel` 引用 | **Done** | 与 AGENTS.md 一致 |
 | D-PORT-02 | god-port 拆为 `SlotBackendFactoryPort` + `LocalPluginRegistryPort` + `AgentMcpRegistryPort`；`PluginBackendRegistryPort` blanket；`SlotResolver` 窄端口 | **Done** | 删除 24 方法单体转发 impl；子 trait impl 保留 |
 | D-SLOT-01 | 删除四槽 `BuiltinV2` 实现；serde `builtin_v2` → `builtin` alias | **Done** | 20 格矩阵；breaking 见 BREAKING_CHANGE_PROCESS |
-| D-NAME-01 | `pick_*`（backend_registry 目录槽/复杂情感）+ `load_*`（chat_storage config）首批 | **Partial** | 余 `merge_*` / `find_*` 批次待续 |
+| D-NAME-01 | `resolve_*` 全量裁决 | **Done** | 轮次 12：35 改名 + 22 锚点；NAMING §4.4 |
 | D-TRAIT-01 | 单实现 trait 裁决表 | **Done** | 见下表 §D-TRAIT-01 裁决 |
 
-### D-TRAIT-01 单实现 trait 裁决表（2026-06-10）
+### D-TRAIT-01 单实现 trait 裁决表（2026-06-11 · D-TRAIT-01b 刷新）
+
+**普查**：`oclive_kernel_contracts` **`pub trait` 28 个**（轮次 9 为 22；+6 来自 D-PORT-02 子 port 拆分 `SlotBackendFactoryPort` / `LocalPluginRegistryPort` / `AgentMcpRegistryPort` 等，非野生长）。单实现比例重算后裁决不变。
 
 | 类别 | Trait / Port | 实现数 | 裁决 |
 |------|----------------|--------|------|
@@ -91,7 +109,7 @@
 | MCP/解析 | `FunctionCallingParserPort`, `McpBridgePort` | 1 | **保留**（测试替身价值） |
 | Host port | `DbHealthPort`, `ConversationStore`, … | 1 | **Observe** 随 D-PORT-02 后续批次 |
 
-槽态矩阵：**[SLOT_BACKEND_REALITY_MATRIX.md](./SLOT_BACKEND_REALITY_MATRIX.md)**（24 格 · 2026-06-10）。
+槽态矩阵：**[SLOT_BACKEND_REALITY_MATRIX.md](./SLOT_BACKEND_REALITY_MATRIX.md)**（20 格 · 2026-06-11）。
 
 ### Round 9 patrol（2026-06-10 · 过度工程普查 + 构建修复）
 
@@ -102,7 +120,7 @@
 | D-ORPHAN-03 | V1 插件 UI 孤儿组件 | **Done·deleted** | 轮次 9 删面板；轮次 10 删 `usePluginDebug` 壳 + i18n |
 | K-DOC-08 | `oclive_runtimed` 删除后幽灵引用（`crates/README.md` 速查表行 + `NAMING_CONVENTIONS.md` §3.1/§3.4 + `P4_CRATE_AUDIT.md`）；`crates/README.md` `prompt_builder.rs` 路径笔误；`AGENTS.md` 仍称 V1 面板「代码保留」；`REGRESSION_COMPLEX_EMOTION_QA.md` 整篇针对已删 UI | **Done** | 全部更正/标注已删；QA 文档加过时横幅 |
 | D-TRAIT-01 | 单实现 trait 普查：contracts 22 个 pub trait 中 **16 个仅 1 个生产实现** | **Deferred→Done** | 轮次 9 入账；轮次 10 裁决表见上 |
-| D-NAME-01 | `resolve_*` 命名消歧 | **Partial** | `pick_*` backend_registry + `load_*` chat_storage 首批 Done |
+| D-NAME-01 | `resolve_*` 命名消歧 | **Done** | 轮次 12 全量裁决 |
 | D-PORT-02 | god-port 拆窄 trait + blanket `PluginBackendRegistryPort`；`SlotResolver` → `SlotBackendFactoryPort` | **Done** | 轮次 10；子 trait 仍委托 inherent 方法 |
 | D-SLOT-01 | 四槽 `builtin_v2` 测试桩删除 | **Done** | serde alias 兼容旧 settings；矩阵 24→20 格语义 |
 
@@ -112,10 +130,10 @@
 |----|------|--------|-------|
 | K-PERF-13 | `http_api_roles` 无界 DashMap（`--api` 长跑） | **Done** | `insert_http_api_role` FIFO cap 32（对齐 `role_cache`） |
 | K-BUILD-01 | `kernel_server/build.rs` `SystemTime::now()` 致增量编译失效 | **Done** | `SOURCE_DATE_EPOCH`（缺省 0）+ `rerun-if-env-changed` |
-| K-PERF-14 | `pre_llm` 独立 await 串行 | **Deferred** | 触碰编排；冻结至 Theater v0 |
+| K-PERF-14 | `pre_llm` Wave 1 五路并行 | **Done** | `try_join!` + `pre_llm_wave1` tracing；PERFORMANCE.md §6 |
 | K-PERF-15 | 记忆候选池固定 10 条按时间非相关性 | **Deferred** | 影响召回语义；冻结 |
 | D-CLEAN-01 | `ReplayTaskRegistry` 完成不清理 | **Done** | 完成 TTL 600s + `get()` 读后清理（Wave 2） |
-| D-NAME-01 | `resolve_*` 命名消歧（全仓 **104** 个 `fn resolve_`） | **Partial** | 轮次 10：`pick_*` + `load_*` 首批；余批次 Deferred |
+| D-NAME-01 | `resolve_*` 命名消歧 | **Done** | 轮次 12：35 改名；22 策略锚点保留 + rustdoc |
 | D-ORPHAN-01 | `oclive_runtimed` 调度守护原型（8430 端口 / per-role 队列） | **Done·deleted** | 不在 workspace、无产品接线；设计：`OCLIVE_KERNEL_UPSTREAM`→8420、`OCLIVE_SCHEDULER_PORT`→8430；恢复：`git log --diff-filter=D -- crates/oclive_runtimed` |
 | D-ORPHAN-02 | `oclive_schema` 微型 crate（18 行 blueprint 片段） | **Observe** | 冻结期不合并回 `oclive_kernel_types`；评估 wasm/独立校验边界后再定 |
 | K-DOC-07 | `AGENTS.md` / `LIGHTWEIGHT_PROFILE` cargo-audit `continue-on-error` 漂移 | **Done** | 更正为 dimension5 + `cargo-audit` job + lockfile workflow 三层硬门禁 |

@@ -71,7 +71,7 @@ pub fn monolith_toml_and_plan_dual(weld_modules: &[&str], dual_core: bool) -> (S
         weld_modules: weld_modules.iter().map(|s| (*s).to_string()).collect(),
         exclude: vec![],
     };
-    let plan = crate::monolith_config::resolve_weld_plan(&section);
+    let plan = crate::monolith_config::build_weld_plan(&section);
     if weld_modules.len() == SLOT_IDS.len() {
         debug_assert_eq!(plan.welded, WeldPlan::all_welded().welded);
     }

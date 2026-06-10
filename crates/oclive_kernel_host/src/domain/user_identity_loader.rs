@@ -49,7 +49,7 @@ fn catalog_entry_for_id<'a>(
         .and_then(|c| c.identities.get(identity_id))
 }
 
-/// Priority: session identity id → catalog `default_identity_id` → legacy `user_relations.prompt_hint`.
+/// Priority merge: session identity → catalog default → legacy prompt hint (shared policy across hosts).
 ///
 /// # Errors
 ///

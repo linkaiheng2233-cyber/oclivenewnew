@@ -121,7 +121,7 @@ fn copy_dir_all(src: &Path, dst: &Path) -> Result<(), CommandError> {
     Ok(())
 }
 
-fn resolve_install_dir(state: &AppState, plugin_id: &str) -> PathBuf {
+fn find_plugin_install_dir(state: &AppState, plugin_id: &str) -> PathBuf {
     let roots = state.directory_plugins.plugin_roots.read();
     if let Some(entry) = roots.get(plugin_id) {
         return entry.root.clone();
@@ -183,7 +183,7 @@ fn install_staged_directory_plugin(
     plugin_id: &str,
 ) -> Result<(), CommandError> {
     let pid = plugin_id.trim();
-    let target = resolve_install_dir(state, pid);
+    let target = find_plugin_install_dir(state, pid);
     if let Some(parent) = target.parent() {
         fs::create_dir_all(parent).map_err(AppError::from)?;
     }

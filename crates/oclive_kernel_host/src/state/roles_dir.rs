@@ -26,7 +26,7 @@ fn try_dev_roles_dir() -> Option<PathBuf> {
             Ok(canon) if canon.is_dir() => {
                 tracing::info!(
                     target: "oclive_roles",
-                    "resolve_roles_dir: manifest-relative -> {}",
+                    "find_roles_dir: manifest-relative -> {}",
                     canon.display()
                 );
                 return Some(canon);
@@ -35,7 +35,7 @@ fn try_dev_roles_dir() -> Option<PathBuf> {
                 if from_manifest.is_dir() {
                     tracing::info!(
                         target: "oclive_roles",
-                        "resolve_roles_dir: manifest-relative (non-canon) -> {}",
+                        "find_roles_dir: manifest-relative (non-canon) -> {}",
                         from_manifest.display()
                     );
                     return Some(from_manifest);
@@ -53,7 +53,7 @@ fn try_dev_roles_dir() -> Option<PathBuf> {
             if candidate.is_dir() && roles_dir_has_any_role_pack(&candidate) {
                 tracing::info!(
                     target: "oclive_roles",
-                    "resolve_roles_dir: near_exe -> {}",
+                    "find_roles_dir: near_exe -> {}",
                     candidate.display()
                 );
                 return Some(candidate);
@@ -66,7 +66,7 @@ fn try_dev_roles_dir() -> Option<PathBuf> {
         if a.is_dir() && roles_dir_has_any_role_pack(&a) {
             tracing::info!(
                 target: "oclive_roles",
-                "resolve_roles_dir: cwd/roles -> {}",
+                "find_roles_dir: cwd/roles -> {}",
                 a.display()
             );
             return Some(a);
@@ -76,7 +76,7 @@ fn try_dev_roles_dir() -> Option<PathBuf> {
             if canon.is_dir() && roles_dir_has_any_role_pack(&canon) {
                 tracing::info!(
                     target: "oclive_roles",
-                    "resolve_roles_dir: ../roles -> {}",
+                    "find_roles_dir: ../roles -> {}",
                     canon.display()
                 );
                 return Some(canon);
@@ -90,13 +90,13 @@ fn try_dev_roles_dir() -> Option<PathBuf> {
 ///
 /// Priority: `OCLIVE_ROLES_DIR` → (debug) repo dev paths → `resource_dir/roles` when
 /// `resource_dir` is set → exe/cwd heuristics → relative `roles/`.
-pub fn resolve_roles_dir(resource_dir: Option<&Path>) -> PathBuf {
+pub fn find_roles_dir(resource_dir: Option<&Path>) -> PathBuf {
     if let Ok(custom) = std::env::var("OCLIVE_ROLES_DIR") {
         let p = PathBuf::from(&custom);
         if p.is_dir() {
             tracing::info!(
                 target: "oclive_roles",
-                "resolve_roles_dir: OCLIVE_ROLES_DIR -> {}",
+                "find_roles_dir: OCLIVE_ROLES_DIR -> {}",
                 p.display()
             );
             return p;
@@ -116,14 +116,14 @@ pub fn resolve_roles_dir(resource_dir: Option<&Path>) -> PathBuf {
     if let Some(res) = resource_dir {
         tracing::info!(
             target: "oclive_roles",
-            "resolve_roles_dir: tauri resource_dir -> {}",
+            "find_roles_dir: tauri resource_dir -> {}",
             res.display()
         );
         let bundled = res.join("roles");
         if bundled.is_dir() {
             tracing::info!(
                 target: "oclive_roles",
-                "resolve_roles_dir: bundled -> {}",
+                "find_roles_dir: bundled -> {}",
                 bundled.display()
             );
             return bundled;
@@ -142,7 +142,7 @@ pub fn resolve_roles_dir(resource_dir: Option<&Path>) -> PathBuf {
     let fallback = PathBuf::from("roles");
     tracing::info!(
         target: "oclive_roles",
-        "resolve_roles_dir: relative fallback -> {}",
+        "find_roles_dir: relative fallback -> {}",
         fallback.display()
     );
     fallback

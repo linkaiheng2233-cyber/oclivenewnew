@@ -280,7 +280,7 @@ async fn connect_db(db_path: &Path) -> Result<SqlitePool> {
 }
 
 async fn run_migrations(db: &SqlitePool) -> Result<()> {
-    let migrations_dir = crate::infrastructure::sql_migrate::resolve_migrations_dir()
+    let migrations_dir = crate::infrastructure::sql_migrate::find_migrations_dir()
         .map_err(crate::error::AppError::DatabaseError)?;
     crate::infrastructure::sql_migrate::run_sql_migrations(db, &migrations_dir)
         .await

@@ -19,10 +19,10 @@ Same model as [PLUGIN_V1.md](PLUGIN_V1.md): **v1 uses compile‑time enums** sel
 
 | Capability | Trait / type | Default impl | Source |
 |------------|--------------|--------------|--------|
-| Memory ranking / context | `MemoryRetrieval` | `BuiltinMemoryRetrieval`, `BuiltinMemoryRetrievalV2` | `crates/oclive_kernel_runtime/src/domain/memory_retrieval.rs` |
-| User‑sentence emotion | `UserEmotionAnalyzer` | `BuiltinUserEmotionAnalyzer`, … | `crates/oclive_kernel_runtime/src/domain/user_emotion_analyzer.rs` |
-| Event impact | `EventEstimator` | `BuiltinEventEstimator`, … | `crates/oclive_kernel_host/src/domain/event_estimator.rs` |
-| Prompt assembly | `PromptAssembler` | `BuiltinPromptAssembler`, … | `crates/oclive_kernel_runtime/src/domain/prompt_assembler.rs` |
+| Memory ranking / context | `MemoryRetrieval` | `BuiltinMemoryRetrieval` (`builtin_v2` is a read-compat alias only; no separate V2 impl, see D-SLOT-01) | `crates/oclive_kernel_runtime/src/domain/memory_retrieval.rs` |
+| User‑sentence emotion | `UserEmotionAnalyzer` | `BuiltinUserEmotionAnalyzer` | `crates/oclive_kernel_runtime/src/domain/user_emotion_analyzer.rs` |
+| Event impact | `EventEstimator` | `BuiltinEventEstimator` | `crates/oclive_kernel_host/src/domain/event_estimator.rs` |
+| Prompt assembly | `PromptAssembler` | `BuiltinPromptAssembler` | `crates/oclive_kernel_runtime/src/domain/prompt_assembler.rs` |
 | LLM | `LlmClient` (`plugin_backends.llm`: `ollama` / `remote` / `directory`) | Injected `OllamaClient`; `remote` when `OCLIVE_REMOTE_LLM_URL` set; **`directory`** uses **`directory_plugins.llm`** URL (see [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)); else built‑in fallback | `src-tauri/src/infrastructure/llm.rs`, `remote_plugin/` |
 | Agent | `AgentProvider` (`builtin` / `remote` / `directory`) | `BuiltinReActAgent`; `directory` needs `directory_plugins.agent`; MCP roots under `app_data_dir` | `crates/oclive_kernel_host/src/domain/agent.rs`, `mcp_client.rs` |
 | Long‑term memory persistence | `MemoryRepository` | SQLite | `domain/repository.rs`, `infrastructure/repositories` |

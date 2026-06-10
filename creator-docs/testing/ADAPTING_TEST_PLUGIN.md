@@ -1,9 +1,9 @@
 # 为可替换后端编写 Rust 集成测试（ADAPTING_TEST_PLUGIN）
 
-## `PluginHost` 与 `builtin_v2`
+## `PluginHost` 与 `builtin_v2` wire alias
 
 - **烟测示例**：[`src-tauri/tests/plugin_backends_v2_resolve.rs`](../../src-tauri/tests/plugin_backends_v2_resolve.rs)  
-  验证在 `memory` / `emotion` / `event` / `prompt` 为 **`builtin_v2`**、`llm` 为 **`ollama`** 时，`PluginHost::resolve_for_role` 能解析 **六条子系统线**（含默认 **`agent`**）。
+  验证在 `memory` / `emotion` / `event` / `prompt` 为 **`builtin_v2`**（已废弃读兼容 alias → **`builtin`**）、`llm` 为 **`ollama`** 时，`PluginHost::resolve_for_role` 能解析 **六条子系统线**（含默认 **`agent`**）。
 - **构造宿主**：`PluginHost::new(llm, None, std::env::temp_dir())`  
   第三参为 **应用数据根**（生产环境为 app data；测试可用 **临时目录**），供 MCP 配置扫描等子系统初始化。
 

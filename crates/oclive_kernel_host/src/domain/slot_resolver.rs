@@ -64,7 +64,7 @@ impl SlotResolver {
         Self::resolve_with_session_backends(registry, slot_registry, None)
     }
 
-    /// Resolves `slot_registry`; `session_effective_backends` overrides blueprint `llm` slot `backend`.
+/// Resolves `slot_registry`; `session_effective_backends` overrides blueprint `llm` slot `backend` (session policy merge).
     #[must_use]
     pub fn resolve_with_session_backends(
         registry: &dyn SlotBackendFactoryPort,

@@ -107,6 +107,9 @@ This page is the **naming SSOT** for OCLive. Key rules:
 | L3 二进制 | `oclive_kernel_server` | 无头 `oclive-kernel-server --api` 入口 | CLI 参数 only | `src/main.rs` |
 | L3 二进制 | `oclivenewnew-tauri` | 桌面 IPC 薄壳、kernel attach | Tauri 命令、深链 | `src-tauri/src/api/` |
 | 工具 | `oclive-cli` | init / pack / bench / doctor | 脚手架模板 | `crates/oclive-cli/` |
+| L0 基础设施 | `oclive_sqlx` | workspace 统一 sqlx 依赖与特性 | sqlx 版本/特性 bump | `crates/oclive_sqlx/` |
+| L0 校验 | `oclive_validation_wasm` | pack-editor wasm 校验边界 | wasm32 构建与 re-export | `crates/oclive_validation_wasm/` |
+| 测试 | `fuzz` | cargo-fuzz 目标（非 default-members） | fuzz  harness | `fuzz/` |
 | **实验（已删）** | `oclive_runtimed` | HTTP 队列 + 健康代理原型 | **已于 2026-06-10 删除（D-ORPHAN-01）** | 恢复见 git 历史 |
 
 记忆口诀：**Types = 形状，Contracts = 接口，Runtime = 公式，Host = 流程，Server/Tauri = 入口。**
@@ -194,6 +197,45 @@ This page is the **naming SSOT** for OCLive. Key rules:
 | **P3** | `domain/ports` 改为 `pub use oclive_kernel_contracts::*` 直连 | 删除经 runtime 绕路 |
 
 参考：[handoff/ARCHITECTURE_LAYERING.md](../handoff/ARCHITECTURE_LAYERING.md)、[oclive_kernel_host/src/domain/ports/mod.rs](../crates/oclive_kernel_host/src/domain/ports/mod.rs)。
+
+### 4.4 函数动词表（D-NAME-01 · 2026-06-11）
+
+新 Rust 函数优先按下表选前缀；**`resolve_*` 仅用于跨宿主/回合策略裁决**（见保留清单）。
+
+| 前缀 | 语义 | 示例 |
+|------|------|------|
+| **`load_*`** | 从 DB / 磁盘 / 远程读入数据 | `load_remote_token`、`load_memories` |
+| **`find_*`** | 在候选路径/目录中定位唯一目标 | `find_migrations_dir`、`find_roles_dir` |
+| **`pick_*`** | 从多个候选中选一个（含 env/配置默认） | `pick_mirror_enabled`、`pick_portrait_emotion` |
+| **`build_*`** | 构造配置/URL/初始化产物 | `build_init_config`、`build_git_clone_url` |
+| **`merge_*`** | 合并 includes / 叠加配置 | `merge_blueprint_includes_lenient` |
+| **`compute_*`** | 纯计算、拓扑排序 | `compute_preset_target_ms`、`compute_plugin_install_order` |
+| **`invoke_*`** | 对外 RPC / 远程调用适配 | `invoke_turn_rpc` |
+| **`resolve_*`** | **策略裁决**：多来源优先级、trait 端口、跨仓契约锚点 | 见下表 |
+
+**保留的 `resolve_*` 锚点（22，禁止改名）**：
+
+| 函数 | 保留原因 |
+|------|----------|
+| `resolve_kernel_action` | 跨宿主内核 attach/spawn/replace 策略（VS Code / 桌面共享） |
+| `resolve_effective_ollama_model` | 会话 → 云端 → 包 → env 模型链 |
+| `resolve_active_user_identity` | 会话身份 → catalog → legacy 优先级 |
+| `resolve_reply_post_processor` | 角色包 + HostProfile 后处理链合并 |
+| `resolve_for_role` / `resolve_for_effective_backends` | `PluginHostPort` 六槽策略 |
+| `resolve_turn` | `ComplexEmotionProvider` trait 回合策略 |
+| `resolve_current_emotion` | `EmotionPolicy` trait 人格映射 |
+| `resolve_effective_user_relation_key` | 跨 `load_role` / turn 的身份键 |
+| `resolve_plugins_for_session` | 会话 namespace → 有效后端 |
+| `resolve_dual_core_degraded` | `dual_core` feature gate 降级 |
+| `resolve_user_emotion_for_turn` / `resolve_relation_before_turn` | 回合前编排策略 |
+| `resolve_complex_emotion` / `resolve_with_session_backends` | 多实例 slot last-wins |
+| `resolve_ollama_model` | manifest → env → global 回退 |
+| `resolve_caller_requirements` | 发行版 capability profile |
+| `resolve_api_port` | CLI/env/default 端口 |
+| `resolve_interaction_ui_snapshot` / `resolve_relation_state_for_ui` | UI 快照策略 |
+| `resolve_project_root` / `resolve_project_root_for_registry` | CLI SSOT 项目根 |
+
+轮次 12 全量裁决：**35** 处非锚点 `resolve_*` 已改为上表动词；全仓剩余 **`fn resolve_` ≈ 40**（含 trait 方法、测试名、内部 helper）。
 
 ---
 

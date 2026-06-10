@@ -84,13 +84,13 @@ pub use kernel_strategy::{
     KernelActionKind, KernelActionPlan, ResolveKernelActionInput,
 };
 pub use paths::{
-    canonical_brand_app_data_dir, ensure_app_data_dir, resolve_app_data_dir_for_api,
-    resolve_app_data_dir_for_host, resolve_db_path, tauri_legacy_app_data_dir, temp_api_db_path,
+    canonical_brand_app_data_dir, ensure_app_data_dir, find_app_data_dir_for_api,
+    find_app_data_dir_for_host, find_db_path, tauri_legacy_app_data_dir, temp_api_db_path,
     AppDataMode, ENV_APP_DATA, ENV_APP_DATA_LEGACY_TEMP, ENV_SKIP_APP_DATA_MIGRATION,
     ENV_USE_CANONICAL_APP_DATA, TAURI_APP_IDENTIFIER,
 };
 
-/// Resolve listen port: CLI `--port` wins, then `OCLIVE_API_PORT`, then [`DEFAULT_API_PORT`].
+/// Resolve listen port: CLI `--port` wins, then `OCLIVE_API_PORT`, then default (host startup policy).
 #[must_use]
 pub fn resolve_api_port(cli_port: Option<u16>) -> u16 {
     if let Some(p) = cli_port.filter(|p| *p > 0) {

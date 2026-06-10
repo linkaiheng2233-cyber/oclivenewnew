@@ -213,7 +213,7 @@ fn pick_cargo_metadata(args: &InitArgs, cfg: &mut ProjectConfig) -> Result<()> {
     Ok(())
 }
 
-fn resolve_project_name(args: &InitArgs) -> Result<String> {
+fn pick_init_project_name(args: &InitArgs) -> Result<String> {
     if !args.project_name.is_empty() && args.project_name != "my_oclive_kernel" {
         return Ok(args.project_name.clone());
     }
@@ -263,7 +263,7 @@ fn pick_chat_storage_location() -> Result<String> {
 
 /// At least memory / emotion / prompt / llm (minimal product chat path).
 pub fn run_interactive(args: &InitArgs) -> Result<ProjectConfig> {
-    let project_name = resolve_project_name(args)?;
+    let project_name = pick_init_project_name(args)?;
 
     let template_choice = if let Some(t) = args.template {
         Some(t)

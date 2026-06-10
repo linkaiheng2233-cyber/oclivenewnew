@@ -397,6 +397,8 @@ auto_sync: false
 | `replay_similarity_threshold` | number | `0.6` | 记忆回放去重阈值（0.1–1.0） |
 | `location` | string | `global` | `"role_pack"` 或 `"global"`；聊天记录 JSON 镜像跟随角色包子目录 `chats/` 或全局 `{app_data}/chats/`。不可写时自动退回 `global` 并记录 warn。 |
 
+**校验**：`oclive pack validate` **会校验** `chat_storage` 字段（`backend` / `location` / 正整数清理项 / `replay_similarity_threshold` 范围 0.1–1.0）；节缺失则跳过（与 §9.7 `reply_post_processor` 同级）。
+
 ### 9.6 与蓝图 / 数据库的关系
 
 | 概念 | `config.json` | 蓝图 / DB |

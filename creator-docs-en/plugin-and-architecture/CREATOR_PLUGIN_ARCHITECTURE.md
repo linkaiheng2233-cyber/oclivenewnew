@@ -15,7 +15,7 @@ How **oclive’s swappable subsystems** work for creators: extend **without fork
 
 ## Part 1 — What problem the architecture solves
 
-The chat pipeline is split into swappable blocks: **memory retrieval, user‑sentence emotion, event estimation, prompt assembly, main LLM, Agent (tools / MCP)**. A role pack declares each via `settings.json` → `plugin_backends` using **builtin / builtin_v2 / remote / directory / local (memory) / ollama**, etc. (see PLUGIN_V1).
+The chat pipeline is split into swappable blocks: **memory retrieval, user‑sentence emotion, event estimation, prompt assembly, main LLM, Agent (tools / MCP)**. A role pack declares each via `settings.json` → `plugin_backends` using **builtin / remote / directory / local (memory) / ollama**, etc. (`builtin_v2` is a deprecated read alias equivalent to `builtin`; see PLUGIN_V1).
 
 **Mermaid** (same idea as PLUGIN_V1 diagram):
 

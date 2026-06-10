@@ -22,15 +22,14 @@ impl DbManager {
         scene_id: &str,
     ) -> Result<SessionRow> {
         let now = Utc::now().to_rfc3339();
-        let existing = self.get_chat_session(session_id).await?;
-        let created_at = existing
-            .as_ref()
-            .map(|s| s.created_at.clone())
-            .unwrap_or_else(|| now.clone());
-        let message_count = existing.as_ref().map(|s| s.message_count).unwrap_or(0);
         let row = sqlx::query_as::<_, (String, String, String, String, String, i64)>(
             "INSERT INTO chat_sessions (session_id, role_id, scene_id, created_at, updated_at, message_count)
-             VALUES (?, ?, ?, ?, ?, ?)
+             VALUES (
+               ?, ?, ?,
+               COALESCE((SELECT created_at FROM chat_sessions WHERE session_id = ?), ?),
+               ?,
+               COALESCE((SELECT message_count FROM chat_sessions WHERE session_id = ?), 0)
+             )
              ON CONFLICT(session_id) DO UPDATE SET
                role_id = excluded.role_id,
                scene_id = excluded.scene_id,
@@ -40,9 +39,10 @@ impl DbManager {
         .bind(session_id)
         .bind(role_id)
         .bind(scene_id)
-        .bind(&created_at)
+        .bind(session_id)
         .bind(&now)
-        .bind(message_count)
+        .bind(&now)
+        .bind(session_id)
         .fetch_one(&self.pool)
         .await
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
@@ -153,10 +153,13 @@ impl DbManager {
         let pattern = manifest_sess_glob_pattern(mid);
         let rows = sqlx::query_as::<_, (String, String, String, String, String, i64, Option<String>)>(
             "SELECT s.session_id, s.role_id, s.scene_id, s.created_at, s.updated_at, s.message_count,
-                    (SELECT m.content FROM chat_messages m
-                     WHERE m.session_id = s.session_id
-                     ORDER BY m.created_at DESC, m.id DESC LIMIT 1) AS snippet
+                    latest.content AS snippet
              FROM chat_sessions s
+             LEFT JOIN (
+               SELECT session_id, content,
+                      ROW_NUMBER() OVER (PARTITION BY session_id ORDER BY created_at DESC, id DESC) AS rn
+               FROM chat_messages
+             ) latest ON latest.session_id = s.session_id AND latest.rn = 1
              WHERE s.role_id = ? OR s.session_id = ? OR s.session_id GLOB ?
              ORDER BY s.updated_at DESC
              LIMIT ?",
@@ -414,5 +417,33 @@ impl DbManager {
         .fetch_all(&self.pool)
         .await
         .map_err(|e| AppError::DatabaseError(e.to_string()))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::infrastructure::db::DbManager;
+    use crate::infrastructure::test_db;
+
+    async fn mem_db() -> DbManager {
+        test_db::mem_db_manager().await
+    }
+
+    #[tokio::test]
+    async fn upsert_preserves_created_at_and_message_count() {
+        let db = mem_db().await;
+        let first = db
+            .upsert_chat_session("sess-upsert", "mumu", "default")
+            .await
+            .expect("insert");
+        let created_at = first.created_at.clone();
+
+        let second = db
+            .upsert_chat_session("sess-upsert", "mumu", "scene2")
+            .await
+            .expect("update");
+        assert_eq!(second.created_at, created_at);
+        assert_eq!(second.scene_id, "scene2");
+        assert_eq!(second.message_count, 0);
     }
 }

@@ -227,7 +227,7 @@ cd src-tauri && npx tauri build
 
 ## 路线图状态
 
-「完全愿景」分阶段推进，详见 [creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md](creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md)。**本仓库已落实**：开源与 CI、契约文档、扩展点索引、**HTTP JSON-RPC Remote 宿主客户端**、创作者架构说明、`PluginHost` 五类后端枚举；记忆 **与** 情绪 / 事件 / Prompt 均具备 **`builtin` + `builtin_v2` + `remote`（LLM 为 `ollama`/`remote`）** 可切换路径及回归测试、`get_role_info`/`load_role` 暴露 `plugin_backends` 等。**独立角色包编写器**为**另仓**（见上表），经同一包格式对接。**仍属路线图**：包内知识库深化、启动器等（侧车逻辑由创作者自部署，见 [creator-docs/plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md](creator-docs/plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md)）。
+「完全愿景」分阶段推进，详见 [creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md](creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md)。**本仓库已落实**：开源与 CI、契约文档、扩展点索引、**HTTP JSON-RPC Remote 宿主客户端**、创作者架构说明、`PluginHost` 五类后端枚举；记忆 **与** 情绪 / 事件 / Prompt 均具备 **`builtin` + `remote`（LLM 为 `ollama`/`remote`）** 可切换路径及回归测试、`get_role_info`/`load_role` 暴露 `plugin_backends` 等（`builtin_v2` 仅为已废弃 wire alias，读入等同 `builtin`）。**独立角色包编写器**为**另仓**（见上表），经同一包格式对接。**仍属路线图**：包内知识库深化、启动器等（侧车逻辑由创作者自部署，见 [creator-docs/plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md](creator-docs/plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md)）。
 
 ## 免责声明
 

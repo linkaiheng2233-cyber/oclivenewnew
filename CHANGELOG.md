@@ -6,6 +6,7 @@
 
 ### Changed
 
+- **`chat_storage` pack 校验**：`oclive pack validate` 现校验 `config.json` → `chat_storage`（backend / location / 正整数 / replay 阈值 0.1–1.0），与 `reply_post_processor` 同级；`CHANGELOG.en.md` parity 同步。
 - **五维审查收口（Batch 1–3）**：架构总览共景主链与 Stable 代码对齐；VS Code / 跨宿主文档改为 policy-first；`user_identities` 校验语义与 `load_role` 一致；`reply_post_processor` 在 `enabled` + `directory` 时校验非空 `plugin_id`；`ProcessMessageError` stage 保留于对外 `AppError` message；聊天回合 `role_runtime` 预取合并、`memory decay` 单条 CASE UPDATE、`SessionCache` 跳过重复 interaction_mode seed；workspace `default-members` 排除 `fuzz`；`chatStore` 加载与 `addMessage` 小优化。
 - **Prompt guardrails 升格与页脚去重**：`KERNEL_DIALOGUE_GUARDRAILS` 恒含「状态延续」「倾诉优先」「篇幅随输入」，包级 `reply_quality_anchor` 无法换走；删除独立 `【回复结构】` 段；语气区块去除 `warmup_level` / `影响因子` 等系统术语；官方 mumu/shimeng/枫侵月锚点瘦身为仅人设差异。
 - **许可证变更**：主程序由 AGPL-3.0 + 插件例外改为 **Apache-2.0**（根 `LICENSE` + `NOTICE`）；支持闭源商业发行版与嵌入式下游自由组合内核；`LICENSE_POLICY.md` 已同步。
@@ -18,6 +19,7 @@
 - **Profile 调度 UX**：桌面状态栏与设置 → 内核与连接、VS Code 状态栏统一 profile 适配文案（attach / mismatch / pin / replace / degraded）。
 - **发行版 Profile 解析 SSOT**：`distro.oclive.toml` 统一经 `oclive_kernel_runtime::distro_oclive_file` 解析（K-PROFILE-01）。
 - **Host domain 再导出**：runtime 引擎模块 re-export 标记 deprecated；`check-host-reexport-imports.mjs` ratchet（D-OPUS-05）。
+- **`resolve_*` 命名裁决（D-NAME-01）**：35 处非策略函数改为 `load_*` / `find_*` / `pick_*` / `build_*` / `merge_*` / `compute_*` / `invoke_*`；22 个跨宿主/回合策略锚点保留；动词表见 `NAMING_CONVENTIONS.md` §4.4。
 
 ### Added
 
@@ -40,6 +42,7 @@
 - **聊天 session 列表与 upsert（K-PERF-22）**：session 列表 snippet 窗口函数 JOIN；`upsert_chat_session` `RETURNING` 消除写后重读。
 - **长期记忆与操作日志索引（K-PERF-23）**：migration `034_perf_indexes.sql`（`idx_ltm_role_content` / `idx_operation_logs_role`）。
 - **post 阶段 Role clone 减少（K-PERF-24）**：`TurnContext.role_arc` 供 profile evolution spawn 复用。
+- **`pre_llm` Wave 1 并行（K-PERF-14）**：`turn_pipeline/pre.rs` 以 `tokio::try_join!` 并行 context / emotion / 模型 / narrative hint / 记忆五路只读；`oclive_turn` 输出 `pre_llm_wave1` 汇总；采样见 `PERFORMANCE.md` §6。
 
 ---
 

@@ -244,7 +244,7 @@ async fn spawn_from_plan(
 /// Priority: `OCLIVE_DISTRO_PROFILE` → bundled `{anchor}/distro-profiles/{theater|desktop}.oclive.toml`
 /// → `{anchor}/distro.oclive.toml` → monorepo example.
 #[must_use]
-pub fn resolve_desktop_distro_profile_path(anchors: &[PathBuf]) -> Option<PathBuf> {
+pub fn find_desktop_distro_profile_path(anchors: &[PathBuf]) -> Option<PathBuf> {
     if let Ok(p) = std::env::var(ENV_DISTRO_PROFILE) {
         let path = PathBuf::from(p.trim());
         if path.is_file() {

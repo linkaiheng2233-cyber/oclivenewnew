@@ -13,7 +13,7 @@ use oclive_kernel_types::{ComplexEmotionInput, ComplexEmotionOutput, Result};
 ///
 /// - Simple roles whose `complex_emotion` slot is `none`, or that do not need a `narrative_hint`.
 pub trait ComplexEmotionProvider: Send + Sync {
-    /// Resolves this turn's complex emotion labels and narrative hint.
+    /// Resolves this turn's complex emotion labels and narrative hint (provider policy, not disk lookup).
     ///
     /// # Errors
     ///

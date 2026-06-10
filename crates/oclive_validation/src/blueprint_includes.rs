@@ -91,7 +91,7 @@ fn is_allowed_target(target: &str) -> bool {
 
 /// Merge includes into the blueprint JSON text; missing or invalid entries only warn and do not block (for host loading).
 #[must_use]
-pub fn resolve_blueprint_includes_lenient(role_dir: &Path, raw: &str) -> String {
+pub fn merge_blueprint_includes_lenient(role_dir: &Path, raw: &str) -> String {
     let mut root: Value = match serde_json::from_str(raw) {
         Ok(v) => v,
         Err(_) => return raw.to_string(),
@@ -111,7 +111,7 @@ pub fn resolve_blueprint_includes_lenient(role_dir: &Path, raw: &str) -> String 
 /// Strict merge: includes must pass [`validate_includes`].
 ///
 /// # Errors
-pub fn resolve_blueprint_includes_strict(
+pub fn merge_blueprint_includes_strict(
     role_dir: &Path,
     raw: &str,
 ) -> Result<String, Vec<String>> {
@@ -318,7 +318,7 @@ mod tests {
             {"path":"patch.json","target":"meta.personality","mode":"merge"}
           ]
         }"#;
-        let out = resolve_blueprint_includes_strict(&role, raw).unwrap();
+        let out = merge_blueprint_includes_strict(&role, raw).unwrap();
         let v: Value = serde_json::from_str(&out).unwrap();
         let warmth = v["meta"]["personality"]["warmth"].as_f64().unwrap();
         assert!((warmth - 0.88).abs() < f64::EPSILON);
@@ -330,7 +330,7 @@ mod tests {
         let role = tmp.path().join("demo");
         fs::create_dir_all(&role).unwrap();
         let raw = r#"{"schema_version":2,"meta":{"id":"demo","name":"D","version":"0.1.0","author":"a","description":"d","relations":{"friend":{"initial_favorability":50,"favor_multiplier":1}},"default_relation":"friend"},"slot_registry":{"llm":{"type":"llm","label":"L","backend":"builtin","position":0}},"includes":[{"path":"missing.json","target":"meta.personality","mode":"merge"}]}"#;
-        let out = resolve_blueprint_includes_lenient(&role, raw);
+        let out = merge_blueprint_includes_lenient(&role, raw);
         assert!(out.contains("\"id\": \"demo\""));
     }
 }

@@ -1,6 +1,6 @@
 //! Per-turn session plugin backend / slot registry resolution (computed once per turn).
 
-use crate::infrastructure::storage::resolve_llm_backend_env_override;
+use crate::infrastructure::storage::pick_llm_backend_env_override;
 use crate::models::{
     PluginBackendSource, PluginBackends, PluginBackendsSourceMap, Role,
 };
@@ -35,7 +35,7 @@ impl EffectiveSessionConfig {
             backends.llm = crate::models::plugin_backends::LlmBackend::Remote;
         } else if provider == "local" {
             backends.llm = crate::models::plugin_backends::LlmBackend::Ollama;
-        } else if let Some(llm) = resolve_llm_backend_env_override() {
+        } else if let Some(llm) = pick_llm_backend_env_override() {
             backends.llm = llm;
         } else if std::env::var("OCLIVE_REMOTE_LLM_URL")
             .ok()
@@ -55,7 +55,7 @@ impl EffectiveSessionConfig {
 
         let mut sources = PluginBackendsSourceMap::default();
         if let Some(reg) = role.slot_registry.as_ref() {
-            for (key, _) in &slot_overrides {
+            for key in slot_overrides.keys() {
                 let Some(entry) = reg.get(key) else {
                     continue;
                 };
@@ -71,7 +71,7 @@ impl EffectiveSessionConfig {
             }
         }
         if sources.llm == PluginBackendSource::PackDefault
-            && resolve_llm_backend_env_override().is_some()
+            && pick_llm_backend_env_override().is_some()
         {
             sources.llm = PluginBackendSource::EnvOverride;
         }

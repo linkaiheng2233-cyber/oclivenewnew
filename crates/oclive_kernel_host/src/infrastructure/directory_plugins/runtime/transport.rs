@@ -36,7 +36,7 @@ pub(crate) fn manifest_json_mtime(root: &Path) -> u64 {
 /// # Errors
 ///
 /// Returns [`Err`] when `rel` is empty, contains `..`, escapes the plugin root, or the path does not exist.
-pub fn resolve_plugin_asset_path(entry: &PluginRootEntry, rel: &str) -> Result<PathBuf, String> {
+pub fn find_plugin_asset_path(entry: &PluginRootEntry, rel: &str) -> Result<PathBuf, String> {
     let rel = normalize_plugin_rel(rel);
     if rel.is_empty() {
         return Err("empty rel".into());

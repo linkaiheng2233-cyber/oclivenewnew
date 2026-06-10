@@ -1,7 +1,7 @@
 use super::RoleStorage;
 use crate::error::{AppError, Result};
 use oclive_validation::{
-    resolve_blueprint_includes_lenient, write_role_pack_blueprint_slot_registry, SlotRegistryEntry,
+    merge_blueprint_includes_lenient, write_role_pack_blueprint_slot_registry, SlotRegistryEntry,
     PIPELINE_BLUEPRINT_FILENAME,
 };
 use std::collections::BTreeMap;
@@ -11,8 +11,8 @@ use std::path::Path;
 /// Merge `pipeline.ocblueprint` `includes[]` when loading a role pack (missing satellite files do not block).
 #[must_use]
 #[allow(dead_code)] // For RoleStorage / toolchain explicit calls; host default uses oclive_validation load_* path
-pub fn resolve_blueprint_includes_for_role_dir(role_dir: &Path, raw: &str) -> String {
-    resolve_blueprint_includes_lenient(role_dir, raw)
+pub fn merge_blueprint_includes_for_role_dir(role_dir: &Path, raw: &str) -> String {
+    merge_blueprint_includes_lenient(role_dir, raw)
 }
 
 impl RoleStorage {

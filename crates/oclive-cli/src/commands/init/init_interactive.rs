@@ -2,8 +2,8 @@
 
 use super::init_config::{
     apply_backend_cli_overrides, apply_cargo_metadata_cli, apply_template_layer,
-    ensure_cargo_license_default, preset_config, quick_project_config, resolve_monolith,
-    resolve_role_pack_kind, ProjectConfig, ProjectType, ProjectTypeArg, RolePackKind,
+    ensure_cargo_license_default, preset_config, quick_project_config, apply_monolith_options,
+    pick_role_pack_kind, ProjectConfig, ProjectType, ProjectTypeArg, RolePackKind,
 };
 use super::InitArgs;
 use crate::generator;
@@ -53,7 +53,7 @@ pub(crate) fn run_quick_init(args: &InitArgs) -> Result<()> {
 /// # Errors
 ///
 /// Returns an error when interactive input, kernel-source validation, or TUI selection fails.
-pub fn resolve_init_config(
+pub fn build_init_config(
     args: &InitArgs,
     skip_interactive_confirm: bool,
 ) -> Result<ProjectConfig> {
@@ -97,7 +97,7 @@ pub fn resolve_init_config(
     };
 
     apply_template_layer(args, &mut cfg);
-    resolve_monolith(args, &mut cfg);
+    apply_monolith_options(args, &mut cfg);
     if cfg.monolith_enabled {
         cfg.monolith_preset = args.monolith_preset.or(args.monolith_bench_preset);
     }
@@ -110,7 +110,7 @@ pub fn resolve_init_config(
     }
     cfg.factory_template = args.template;
     cfg.with_example_plugin = args.with_example_plugin;
-    cfg.role_pack_kind = resolve_role_pack_kind(args);
+    cfg.role_pack_kind = pick_role_pack_kind(args);
     if args.skip_role_pack {
         cfg.skip_role_pack = true;
         cfg.role_pack_kind = RolePackKind::None;

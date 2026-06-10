@@ -82,7 +82,7 @@ pub fn validate_monolith_section(m: &MonolithSection) -> Result<()> {
 }
 
 /// Called after [`validate_monolith_section`] has already passed.
-pub fn resolve_weld_plan(m: &MonolithSection) -> WeldPlan {
+pub fn build_weld_plan(m: &MonolithSection) -> WeldPlan {
     if !m.weld_modules.is_empty() {
         let mut welded = [false; 7];
         for w in &m.weld_modules {
@@ -124,7 +124,7 @@ mod tests {
     fn empty_lists_full_weld() {
         let m = sec(vec![], vec![]);
         validate_monolith_section(&m).unwrap();
-        let p = resolve_weld_plan(&m);
+        let p = build_weld_plan(&m);
         assert_eq!(p, WeldPlan { welded: [true; 7] });
     }
 
@@ -132,7 +132,7 @@ mod tests {
     fn exclude_only() {
         let m = sec(vec![], vec!["agent", "llm"]);
         validate_monolith_section(&m).unwrap();
-        let p = resolve_weld_plan(&m);
+        let p = build_weld_plan(&m);
         assert!(p.welded[0]); // memory
         assert!(!p.welded[5]); // agent
         assert!(!p.welded[4]); // llm
@@ -142,7 +142,7 @@ mod tests {
     fn explicit_weld_only() {
         let m = sec(vec!["memory", "emotion"], vec![]);
         validate_monolith_section(&m).unwrap();
-        let p = resolve_weld_plan(&m);
+        let p = build_weld_plan(&m);
         assert!(p.welded[0] && p.welded[1]);
         assert!(!p.welded[2]);
     }

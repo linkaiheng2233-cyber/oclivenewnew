@@ -4,7 +4,7 @@ use anyhow::{Context, Result};
 use clap::Parser;
 use oclive_kernel_runtime::{
     apply_promote_to_candidate, build_resolve_plan, discover_spawn_kernel_candidates,
-    ensure_app_data_dir, promote_with_backup, resolve_app_data_dir_for_host, ActiveProfileSummary,
+    ensure_app_data_dir, promote_with_backup, find_app_data_dir_for_host, ActiveProfileSummary,
     DistroProfileRequirements, KernelHealthJson, PolicyContext, ProfileCompat, KernelActionKind,
     KernelBinaryManifest, KernelCandidate, DEFAULT_API_PORT, ENV_DISTRO_ID, ENV_DISTRO_PROFILE,
     ENV_HTTP_API_MOCK_LLM, ENV_ROLES_DIR, terminate_listeners_on_port,
@@ -216,7 +216,7 @@ fn spawn_kernel(
     distro_profile: Option<&Path>,
     mock_llm: bool,
 ) -> Result<()> {
-    let app_data = resolve_app_data_dir_for_host();
+    let app_data = find_app_data_dir_for_host();
     ensure_app_data_dir(&app_data).map_err(|e| anyhow::anyhow!(e.to_string()))?;
 
     let mut cmd = Command::new(binary);

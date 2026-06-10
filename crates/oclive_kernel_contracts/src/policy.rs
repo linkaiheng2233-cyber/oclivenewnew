@@ -13,7 +13,7 @@ use oclive_kernel_types::{Emotion, EmotionResult, Event, EventType, PolicyContex
 ///
 /// - When the builtin `DefaultEmotionPolicy` is used and its behavior already meets the requirements.
 pub trait EmotionPolicy: Send + Sync {
-    /// Maps the analyzed user emotion into the role's currently displayed emotion.
+    /// Maps the analyzed user emotion into the role's currently displayed emotion (personality policy).
     ///
     /// # Errors
     ///

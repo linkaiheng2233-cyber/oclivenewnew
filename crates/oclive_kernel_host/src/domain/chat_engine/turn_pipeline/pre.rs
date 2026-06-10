@@ -186,6 +186,7 @@ async fn apply_time_evolution(
     Ok((personality, mutable_for_prompt))
 }
 
+/// Six-slot emotion analyzer policy for this user message (orchestration, not path lookup).
 async fn resolve_user_emotion_for_turn(
     pl: &crate::domain::plugin_host::ResolvedRolePlugins,
     user_message: &str,
@@ -387,6 +388,7 @@ async fn rank_relevant_memories(
     Ok(relevant)
 }
 
+/// Turn-start relation seed + estrangement policy before favor/event stages run.
 async fn resolve_relation_before_turn(
     state: &crate::state::AppState,
     role: &Role,
@@ -433,12 +435,40 @@ pub(crate) async fn pre_llm(ctx: &TurnContext<'_>) -> TurnResult<PreLlmOutput> {
     let user_message = req.user_message.as_str();
     let pl = &ctx.pl;
 
+    let wave1_start = std::time::Instant::now();
     let (
-        event_runtime,
-        mut mutable_for_prompt,
-        mut personality,
-        (recent_turns, recent_turns_for_event, recent_events_for_event),
-    ) = prefetch_context(ctx).await?;
+        (
+            event_runtime,
+            mut mutable_for_prompt,
+            mut personality,
+            (recent_turns, recent_turns_for_event, recent_events_for_event),
+        ),
+        (emotion_result, user_emotion, user_emotion_str, user_emotion_prompt),
+        ollama_model,
+        prev_stored_narrative_hint,
+        (memories, resolved_identity),
+    ) = tokio::try_join!(
+        prefetch_context(ctx),
+        resolve_user_emotion_for_turn(pl, user_message),
+        async {
+            crate::domain::effective_llm_model::resolve_effective_ollama_model(state, role, srid)
+                .await
+                .map_err(|e| super::super::turn_error::TurnError::wrap("resolve_llm_model", e))
+        },
+        async {
+            Ok::<String, super::super::turn_error::TurnError>(
+                load_prev_narrative_hint(state, srid).await,
+            )
+        },
+        load_memories_and_relation_key(ctx),
+    )?;
+    tracing::debug!(
+        target: "oclive_turn",
+        stage = "pre_llm_wave1",
+        elapsed_ms = wave1_start.elapsed().as_millis() as u64,
+        "pre_llm wave1 parallel prefetch complete"
+    );
+
     (personality, mutable_for_prompt) = apply_time_evolution(
         state,
         role,
@@ -449,13 +479,6 @@ pub(crate) async fn pre_llm(ctx: &TurnContext<'_>) -> TurnResult<PreLlmOutput> {
         mutable_for_prompt,
     )
     .await?;
-    let (emotion_result, user_emotion, user_emotion_str, user_emotion_prompt) =
-        resolve_user_emotion_for_turn(pl, user_message).await?;
-    let ollama_model =
-        crate::domain::effective_llm_model::resolve_effective_ollama_model(state, role, srid)
-            .await
-            .map_err(|e| super::super::turn_error::TurnError::wrap("resolve_llm_model", e))?;
-    let prev_stored_narrative_hint = load_prev_narrative_hint(state, srid).await;
     if role.evolution_config.personality_source != PersonalitySource::Profile {
         personality = PersonalityEngine::adjust_by_user_emotion(
             personality,
@@ -463,7 +486,6 @@ pub(crate) async fn pre_llm(ctx: &TurnContext<'_>) -> TurnResult<PreLlmOutput> {
             &role.evolution_bounds,
         );
     }
-    let (memories, resolved_identity) = load_memories_and_relation_key(ctx).await?;
     let user_relation_key = resolved_identity.relation_key.clone();
     (personality, mutable_for_prompt) = apply_memory_reinforcement(
         state,

@@ -227,7 +227,7 @@ export async function resolveRoleAssetPath(
   roleId: string,
   relative: string,
 ): Promise<string | null> {
-  return invoke<string | null>('resolve_role_asset_path', {
+  return invoke<string | null>('find_role_asset_path', {
     roleId,
     relative,
   })

@@ -65,10 +65,10 @@ Entry: **`chat_engine::process_message`** → **`process_co_present`** ([`turn_p
 
 | Slot | Values (meanings) |
 |------|-------------------|
-| **memory** | `builtin` · `builtin_v2` · `remote` · `directory` · `local` (local uses `_local_plugins`; see [LOCAL_PLUGIN_BRIDGE_SPEC.md](../../creator-docs/plugin-and-architecture/LOCAL_PLUGIN_BRIDGE_SPEC.md)) |
-| **emotion** | `builtin` · `builtin_v2` · `remote` · `directory` |
-| **event** | `builtin` · `builtin_v2` · `remote` · `directory` |
-| **prompt** | `builtin` · `builtin_v2` · `remote` · `directory` |
+| **memory** | `builtin` · `remote` · `directory` · `local` (`builtin_v2` is a **deprecated read alias**, same as `builtin`; local uses `_local_plugins`; see [LOCAL_PLUGIN_BRIDGE_SPEC.md](../../creator-docs/plugin-and-architecture/LOCAL_PLUGIN_BRIDGE_SPEC.md)) |
+| **emotion** | `builtin` · `remote` · `directory` (`builtin_v2` read alias) |
+| **event** | `builtin` · `remote` · `directory` (`builtin_v2` read alias) |
+| **prompt** | `builtin` · `remote` · `directory` (`builtin_v2` read alias) |
 | **llm** | `ollama` · `remote` · `directory` |
 | **agent** | `builtin` (ReAct + MCP) · `remote` · `directory` — see root **`AGENTS.md`**. |
 

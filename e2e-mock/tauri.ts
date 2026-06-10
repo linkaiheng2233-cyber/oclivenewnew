@@ -5,7 +5,7 @@ export async function invoke<T>(
   args: Record<string, unknown> = {},
 ): Promise<T> {
   const result = mockInvoke(command, args)
-  if (result === null && command !== 'resolve_role_asset_path') {
+  if (result === null && command !== 'find_role_asset_path') {
     console.warn(`[e2e-mock] unhandled invoke: ${command}`, args)
   }
   return result as T

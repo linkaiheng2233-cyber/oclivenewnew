@@ -75,7 +75,7 @@ pub fn export_role_pack(storage: &RoleStorage, role_id: &str, dest: &Path) -> Re
 
 /// Read `manifest.json` from an extracted directory (same layout as after zip extract).
 fn peek_role_folder_manifest(dir: &Path) -> Result<(String, String, String)> {
-    let root = resolve_extracted_role_root(dir)?;
+    let root = find_extracted_role_root(dir)?;
     let manifest_path = root.join("manifest.json");
     if !manifest_path.is_file() {
         return Err(AppError::InvalidParameter(
@@ -172,7 +172,7 @@ fn unzip_to(
     Ok(())
 }
 
-fn resolve_extracted_role_root(extract_dir: &Path) -> Result<PathBuf> {
+fn find_extracted_role_root(extract_dir: &Path) -> Result<PathBuf> {
     if extract_dir.join("manifest.json").exists() {
         return Ok(extract_dir.to_path_buf());
     }
@@ -284,7 +284,7 @@ fn import_role_from_directory<F: FnMut(ImportProgress)>(
         file_total: None,
         current_file: None,
     });
-    let root = resolve_extracted_role_root(src)?;
+    let root = find_extracted_role_root(src)?;
     install_role_from_resolved_root(storage, &root, overwrite, on_progress, |cur, tot| {
         ((cur as i64 * 100) / tot as i64).min(99) as i32
     })
@@ -323,7 +323,7 @@ pub fn import_role_pack<F: FnMut(ImportProgress)>(
             current_file: current.map(str::to_string),
         });
     })?;
-    let root = resolve_extracted_role_root(td.path())?;
+    let root = find_extracted_role_root(td.path())?;
     install_role_from_resolved_root(storage, &root, overwrite, on_progress, |cur, tot| {
         (50 + ((cur as i64 * 50) / tot as i64).min(50)) as i32
     })
@@ -380,7 +380,7 @@ pub fn validate_bridge_import_role_source(
         .canonicalize()
         .map_err(|e| AppError::InvalidParameter(format!("import path: {e}")))?;
     if canonical.is_dir() {
-        resolve_extracted_role_root(&canonical)?;
+        find_extracted_role_root(&canonical)?;
     } else {
         let ext = canonical
             .extension()

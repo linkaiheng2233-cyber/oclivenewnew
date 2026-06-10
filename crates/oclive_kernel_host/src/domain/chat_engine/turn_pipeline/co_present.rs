@@ -2,7 +2,7 @@
 
 use crate::domain::complex_emotion::ComplexEmotionOutput;
 use crate::domain::host_profile::{PromptProfile, DISTRO_CONCISE_PROMPT_OVERLAY};
-use crate::domain::life_schedule::{format_life_prompt_line, resolve_life_state};
+use crate::domain::life_schedule::{format_life_prompt_line, pick_life_state};
 use crate::domain::personality_engine::PersonalityEngine;
 use crate::domain::prompt_builder::{effective_reply_quality_anchor, PromptInput};
 use crate::domain::slot_runner::SlotRunner;
@@ -123,7 +123,7 @@ pub(crate) async fn run_middle(
     let life_context_line: String = if immersive {
         role.life_schedule
             .as_ref()
-            .and_then(|s| resolve_life_state(virtual_time_ms, s))
+            .and_then(|s| pick_life_state(virtual_time_ms, s))
             .map(|st| format_life_prompt_line(&st, false))
             .unwrap_or_default()
     } else {

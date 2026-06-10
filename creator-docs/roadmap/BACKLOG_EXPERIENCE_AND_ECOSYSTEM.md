@@ -54,7 +54,7 @@
 |------|------|
 | **契约与版本** | `PACK_VERSIONING`、`min_runtime_version`、未知字段策略在创作者与编写器侧的持续收紧。 |
 | **编写器 MVP** | 从「能导出且可被加载」到「少手写 JSON、校验与运行时一致」；见 [EDITOR_VALIDATION_ROADMAP.md](../role-pack/EDITOR_VALIDATION_ROADMAP.md)。 |
-| **可替换性** | Memory/Emotion 等 **builtin_v2** 已在引擎侧；编写器是否暴露选项、文档是否一致可再对齐。 |
+| **可替换性** | Memory/Emotion 等槽位 `builtin_v2` 已收敛为读兼容 alias（无独立 V2 实现，D-SLOT-01）；编写器选项与文档已对齐。 |
 | **外接插件与安全** | Remote JSON-RPC 已有；用户确认策略、可执行路径边界可产品化。 |
 | **包内知识（月 5）** | `knowledge/` 与换包版本后的行为；可做回归场景与编写器侧编辑体验。 |
 | **双软件叙事 + 启动器（月 6）** | README 分工、新用户路径；与第一节「依赖管理」叠加时需统一对外说法。 |

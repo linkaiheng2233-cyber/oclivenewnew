@@ -39,7 +39,7 @@ use tauri::{AppHandle, Manager};
 
 use crate::desktop_integration::start_plugin_fs_watcher;
 use oclive_kernel_host::infrastructure::deep_link::seed_pending_install_urls_from_args;
-use oclive_kernel_host::infrastructure::directory_plugins::resolve_plugin_asset_path;
+use oclive_kernel_host::infrastructure::directory_plugins::find_plugin_asset_path;
 use oclive_kernel_host::infrastructure::plugin_protocol::{
     inject_plugin_bridge_script, mime_for_plugin_asset, plugin_asset_from_request_uri,
 };
@@ -83,7 +83,7 @@ fn serve_ocliveplugin_asset(
             );
     };
     let root = &entry.root;
-    let path_norm = match resolve_plugin_asset_path(entry, &rel) {
+    let path_norm = match find_plugin_asset_path(entry, &rel) {
         Ok(p) => p,
         Err(e) if e == "path escapes plugin directory" => {
             return ResponseBuilder::new()
@@ -155,7 +155,7 @@ pub fn run() {
             }
             seed_pending_install_urls_from_args(std::env::args());
             let resource_dir = app.path_resolver().resource_dir();
-            let roles_dir = state::resolve_roles_dir(resource_dir.as_deref());
+            let roles_dir = state::find_roles_dir(resource_dir.as_deref());
             let roles_for_watcher = roles_dir.clone();
             let (app_state, kernel_conn, _api_port) = desktop_host::bootstrap_desktop_blocking(
                 resource_dir.clone(),
@@ -270,7 +270,7 @@ pub fn run() {
             api::role::slot_session::save_role_slot_registry,
             api::role::slot_session::apply_author_suggested_plugin_backends,
             api::role::slot_session::get_plugin_resolution_debug,
-            api::role::resolve_role_asset_path,
+            api::role::find_role_asset_path,
             api::role::read_role_asset_bytes,
             api::role::expert::list_blueprint_includes,
             api::role::expert::get_expert_routing,

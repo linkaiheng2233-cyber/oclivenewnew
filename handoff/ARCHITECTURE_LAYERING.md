@@ -236,7 +236,7 @@
 |------|------|------|
 | `user_llm_env.rs` | 1× `db_ports::DbSettingsPort` | 用户 LLM 环境读盘（Wave 1 port） |
 
-**`use crate::infrastructure` 导入（3，全 `#[cfg(test)]`）**：`event_impact_ai.rs`、`event_estimator.rs`、`complex_emotion_store.rs`、`mutable_profile_llm.rs`（`MockLlmClient` / `test_db`）。
+**`use crate::infrastructure` 导入（3，全 `#[cfg(test)]`）**：`event_impact_ai.rs`、`complex_emotion_store.rs`、`mutable_profile_llm.rs`（`MockLlmClient` / `test_db`）。
 
 `startup_health.rs` 经 **`DbHealthPort`**；`role_manager.rs` 经构造函数注入插件宿主（无生产 FQ）。
 

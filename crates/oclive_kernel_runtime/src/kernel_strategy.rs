@@ -199,6 +199,7 @@ fn resolve_healthy(input: &ResolveKernelActionInput<'_>) -> KernelActionPlan {
     }
 }
 
+/// Cross-host kernel lifecycle policy: merges health, candidates, and caller requirements into attach/spawn/replace.
 #[must_use]
 pub fn resolve_kernel_action(input: &ResolveKernelActionInput<'_>) -> KernelActionPlan {
     if input.running_health_ok {

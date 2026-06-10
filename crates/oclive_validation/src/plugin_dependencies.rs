@@ -38,7 +38,7 @@ pub fn parse_plugin_dependencies(manifest_json: &str) -> Result<Vec<String>, Str
 /// # Errors
 ///
 /// Returns `Err` when `load_deps` fails or the dependency graph has a cycle.
-pub fn resolve_install_order(
+pub fn compute_plugin_install_order(
     root_id: &str,
     load_deps: impl Fn(&str) -> Result<Vec<String>, String>,
 ) -> Result<Vec<String>, String> {
@@ -102,6 +102,6 @@ mod tests {
                 .cloned()
                 .ok_or_else(|| format!("missing {id}"))
         };
-        assert!(resolve_install_order("a", load).is_err());
+        assert!(compute_plugin_install_order("a", load).is_err());
     }
 }

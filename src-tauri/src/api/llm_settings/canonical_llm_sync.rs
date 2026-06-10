@@ -8,10 +8,10 @@ use oclive_kernel_host::state::{is_managed_legacy_models_path, AppState};
 use std::path::{Path, PathBuf};
 
 async fn open_canonical_pool() -> Option<(sqlx::SqlitePool, PathBuf)> {
-    use oclive_kernel_runtime::{resolve_app_data_dir_for_host, resolve_db_path};
+    use oclive_kernel_runtime::{find_app_data_dir_for_host, find_db_path};
 
-    let app_data = resolve_app_data_dir_for_host();
-    let db_path = resolve_db_path(&app_data);
+    let app_data = find_app_data_dir_for_host();
+    let db_path = find_db_path(&app_data);
     if !db_path.is_file() {
         return None;
     }
@@ -51,7 +51,7 @@ pub async fn sync_shell_llm_settings_to_canonical(state: &AppState) {
         }
         let _ = upsert_canonical_app_setting(&pool, key, t).await;
     }
-    if let Ok(Some(t)) = oclive_kernel_host::domain::user_llm_env::resolve_remote_token(
+    if let Ok(Some(t)) = oclive_kernel_host::domain::user_llm_env::load_remote_token(
         &oclive_kernel_host::infrastructure::db_ports::DbSettingsPort(state.db_manager.as_ref()),
         state.user_llm_secrets.as_ref(),
         state.directory_plugins.app_data_dir(),
@@ -150,9 +150,9 @@ pub async fn seed_shell_llm_from_canonical(state: &AppState) {
 
 /// Update canonical `OCLive/data/app.db` when it still points at legacy model folders.
 pub async fn sync_canonical_db_models_dir(canonical: &Path, app_data: &Path) {
-    use oclive_kernel_runtime::resolve_db_path;
+    use oclive_kernel_runtime::find_db_path;
 
-    let db_path = resolve_db_path(app_data);
+    let db_path = find_db_path(app_data);
     if !db_path.is_file() {
         return;
     }

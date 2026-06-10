@@ -13,7 +13,7 @@
 
 ## 第一部分：架构在解决什么问题
 
-oclive 把对话管线拆成可替换块：**记忆检索、用户句情绪、事件估计、Prompt 组装、主对话 LLM、Agent 编排（工具 / MCP）**。角色包通过 `settings.json` → `plugin_backends` 声明每块用 **builtin / builtin_v2 / remote / directory / local（memory）/ ollama** 等（见 PLUGIN_V1）。
+oclive 把对话管线拆成可替换块：**记忆检索、用户句情绪、事件估计、Prompt 组装、主对话 LLM、Agent 编排（工具 / MCP）**。角色包通过 `settings.json` → `plugin_backends` 声明每块用 **builtin / remote / directory / local（memory）/ ollama** 等（`builtin_v2` 为已废弃读兼容 alias，等同 `builtin`；见 PLUGIN_V1）。
 
 **以宿主六槽为准的总览图**（与 [PLUGIN_V1.md](PLUGIN_V1.md)「架构图」一致）：
 

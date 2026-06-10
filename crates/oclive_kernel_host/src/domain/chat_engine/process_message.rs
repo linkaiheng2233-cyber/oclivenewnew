@@ -49,6 +49,10 @@ pub async fn process_message(
 }
 
 /// Streaming variant: invokes `on_token` during main LLM generation; post-LLM side effects run after the stream completes.
+///
+/// # Errors
+///
+/// Same failure modes as [`process_message`] (health, turn pipeline, LLM stream).
 pub async fn process_message_stream(
     state: &AppState,
     req: &SendMessageRequest,

@@ -71,9 +71,9 @@ pub async fn bootstrap_desktop(
 ) -> Result<(SharedAppState, SharedKernelConnection, u16), Box<dyn std::error::Error + Send + Sync>>
 {
     let port = resolve_api_port(None);
-    let roles_dir = oclive_kernel_host::state::resolve_roles_dir(resource_dir);
+    let roles_dir = oclive_kernel_host::state::find_roles_dir(resource_dir);
     let canonical_models = oclive_kernel_host::state::ensure_models_dir_for_roles(&roles_dir);
-    let app_data = oclive_kernel_runtime::resolve_app_data_dir_for_host();
+    let app_data = oclive_kernel_runtime::find_app_data_dir_for_host();
     oclive_kernel_host::state::reconcile_legacy_models_layout(&canonical_models, &app_data);
     crate::api::llm_settings::sync_canonical_db_models_dir(&canonical_models, &app_data).await;
     let anchors = discovery_anchors(resource_dir);

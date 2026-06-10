@@ -202,7 +202,7 @@ impl PluginHost {
         self.registry
             .call_mcp_tool(server_id, tool_name, params)
             .await
-            .map_err(|e| crate::error::AppError::Unknown(e))
+            .map_err(crate::error::AppError::Unknown)
     }
 
     #[must_use]
@@ -214,7 +214,7 @@ impl PluginHost {
         self.registry.clear_agent_traces();
     }
 
-    /// Resolves all backends declared by the current role pack (one clone of five `Arc`s, reused for the whole conversation).
+    /// Resolves all backends declared by the current role pack (six-slot policy anchor).
     #[must_use]
     pub fn resolve_for_role(&self, role: &Role) -> ResolvedRolePlugins {
         PluginResolver::resolve(
@@ -240,7 +240,7 @@ impl PluginHost {
         )
     }
 
-    /// Effective six slots + blueprint registry + optional six-slot session override (v2 hot path).
+    /// Effective six slots + blueprint registry + optional six-slot session override (v2 hot-path policy).
     #[must_use]
     pub fn resolve_for_effective_backends(
         &self,

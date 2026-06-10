@@ -15,10 +15,10 @@
 
 | 能力 | Trait / 类型 | 默认实现 | 源文件 |
 |------|----------------|----------|--------|
-| 记忆排序 / 上下文 | `MemoryRetrieval` | `BuiltinMemoryRetrieval`、`BuiltinMemoryRetrievalV2` | `crates/oclive_kernel_runtime/src/domain/memory_retrieval.rs` |
-| 用户句情绪 | `UserEmotionAnalyzer` | `BuiltinUserEmotionAnalyzer`、`BuiltinUserEmotionAnalyzerV2` | `crates/oclive_kernel_runtime/src/domain/user_emotion_analyzer.rs` |
-| 事件影响估计 | `EventEstimator` | `BuiltinEventEstimator`、`BuiltinEventEstimatorV2` | `crates/oclive_kernel_host/src/domain/event_estimator.rs` |
-| Prompt 组装 | `PromptAssembler` | `BuiltinPromptAssembler`、`BuiltinPromptAssemblerV2` | `crates/oclive_kernel_runtime/src/domain/prompt_assembler.rs` |
+| 记忆排序 / 上下文 | `MemoryRetrieval` | `BuiltinMemoryRetrieval`（`builtin_v2` 仅为读兼容 alias，无独立 V2 实现，见 D-SLOT-01） | `crates/oclive_kernel_runtime/src/domain/memory_retrieval.rs` |
+| 用户句情绪 | `UserEmotionAnalyzer` | `BuiltinUserEmotionAnalyzer` | `crates/oclive_kernel_runtime/src/domain/user_emotion_analyzer.rs` |
+| 事件影响估计 | `EventEstimator` | `BuiltinEventEstimator` | `crates/oclive_kernel_host/src/domain/event_estimator.rs` |
+| Prompt 组装 | `PromptAssembler` | `BuiltinPromptAssembler` | `crates/oclive_kernel_runtime/src/domain/prompt_assembler.rs` |
 | LLM 调用 | `LlmClient`（`plugin_backends.llm`：`ollama` / `remote` / `directory`） | 进程注入的 `OllamaClient`；`remote` 在配置 `OCLIVE_REMOTE_LLM_URL` 时走 HTTP JSON-RPC；**`directory`** 使用 **`directory_plugins.llm`** 指向的插件 URL（见 [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)）；否则回退进程内默认 LLM | `src-tauri/src/infrastructure/llm.rs`、`infrastructure/remote_plugin/` |
 | Agent 编排 | `AgentProvider`（`plugin_backends.agent`：`builtin` / `remote` / `directory`） | `BuiltinReActAgent`；`directory` 需 `directory_plugins.agent`；MCP 配置根见 [`PluginHost::new`](../../crates/oclive_kernel_host/src/domain/ports/plugin_host.rs) 的 `app_data_dir` | `crates/oclive_kernel_host/src/domain/agent.rs`、`infrastructure/mcp_client.rs` |
 | 长期记忆持久化 | `MemoryRepository` | SQLite | `crates/oclive_kernel_host/src/domain/repository.rs`、`infrastructure/repositories` |

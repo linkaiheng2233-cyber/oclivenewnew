@@ -96,7 +96,7 @@ pub(crate) async fn current_favorability_for_effective_identity(
         .await?)
 }
 
-/// Prefer `role_identity_stats` by identity key; otherwise fall back to global `role_runtime` (legacy data compatibility).
+/// Prefer per-identity stats; fall back to legacy global `role_runtime` (UI relation display policy).
 pub(crate) async fn resolve_relation_state_for_ui(
     state: &AppState,
     role_id: &str,

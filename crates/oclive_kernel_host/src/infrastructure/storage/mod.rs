@@ -33,7 +33,7 @@ mod user_identities;
 
 /// Matches values injected by oclive-launcher: `ollama` / `remote` (case-insensitive).
 #[must_use]
-pub fn resolve_llm_backend_env_override() -> Option<LlmBackend> {
+pub fn pick_llm_backend_env_override() -> Option<LlmBackend> {
     let Ok(v) = std::env::var("OCLIVE_LLM_BACKEND") else {
         return None;
     };
@@ -54,7 +54,7 @@ pub fn resolve_llm_backend_env_override() -> Option<LlmBackend> {
 
 /// Matches values injected by oclive-launcher: `ollama` / `remote` (case-insensitive); overrides on-disk `plugin_backends.llm`.
 pub(super) fn apply_llm_backend_env_override(role: &mut Role) {
-    if let Some(v) = resolve_llm_backend_env_override() {
+    if let Some(v) = pick_llm_backend_env_override() {
         std::sync::Arc::make_mut(&mut role.plugin_backends).llm = v;
     }
 }

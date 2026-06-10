@@ -194,7 +194,7 @@ git status                                      # 确认工作树状态 / 与 or
 - [ ] `ROLE_PACK_SPEC.md` 字段 vs schema；`DISTRO_CAPABILITY_PROFILE.md` vs `host_profile.rs`
 - [ ] `NAMING_CONVENTIONS.md` canonical 路径 vs 实际 import
 - [ ] `CHANGELOG.md` + `CHANGELOG.en.md` `[Unreleased]` **中英 parity**（门禁项）
-- [ ] 姊妹仓：`oclive-vscode/ROADMAP.md`、`VSCODE_DISTRIBUTION.md`（"能力优先"）、pack-editor README deprecated 状态
+- [x] 姊妹仓：`oclive-vscode/ROADMAP.md`、`VSCODE_DISTRIBUTION.md`（"能力优先"）、pack-editor README deprecated 状态
 - [ ] 许可证迁移后无残留 AGPL（除历史性引用）
 
 **愿景拷问**
@@ -279,6 +279,7 @@ npm run check:rust                               # fmt + clippy(-D warnings) + t
 | 9 | 2026-06-10 | 全 | PASS* | A− | *门禁 PASS 但场外两处红: K-BUILD-02 TheaterShell 导入错层致 `vite build` HEAD 失败(修复) + D-SCRIPT-01 verify:ui 锚点全过时崩溃(重写); D-ORPHAN-03 删 V1 孤儿组件 23KB; K-DOC-08 runtimed 幽灵引用清掉; D-TRAIT-01(16 单实现 trait) 入账 Deferred; D-PORT-02 计数 22→24 | 过度工程普查轮; 大刀(god-port/V2 槽/错误四层)维持冻结 Deferred |
 | 10 | 2026-06-10 | 半 | PASS | A− | K-GATE-01 九检; D-ORPHAN-03b/c; D-PORT-02/D-SLOT-01/D-TRAIT-01; Theater 自动化 9 测绿·人工陌生人待执行; beat patch 单测绿; cargo build ~81s dev | [SLOT_BACKEND_REALITY_MATRIX.md](./SLOT_BACKEND_REALITY_MATRIX.md) |
 | 11 | 2026-06-11 | 半 | PASS | A− | Batch 1–3 入库; Phase 1 D-ERR-02/034/棘轮76/K-DOC; Phase 2 K-PERF-20/21 快照+settings 批量; Phase 3 会话索引/RoleRuntimeRepo/前端 follow-up; Phase 4 Deferred 登记 | Theater v0 冻结期; 陌生人测试仍 Pending |
+| 12 | 2026-06-11 | 全 | PASS | A− | K-DOC-13; K-VALID-CHAT-STORAGE-01; K-PERF-25/26; K-BUILD-04; D-SLOT-01c/D-TRAIT-01b; **K-PERF-14** pre_llm Wave1; **D-NAME-01** 35 改名+22 锚点 | dimension5 九检; host lib 183; hotpath+roundtrip; clippy 绿; ratchet 未上涨 |
 
 ---
 

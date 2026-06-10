@@ -68,5 +68,5 @@ Fields:
 - When pack or session override sets `plugin_backends.memory` to **`local`**, the host picks a registered provider with the `memory` capability.
 - Optional sibling field **`plugin_backends.local_memory_provider_id`**: when non‑empty, match that `provider_id` exactly; on miss, fall back lexicographically and `warn`.
 - Multiple memory providers without `local_memory_provider_id`: take **lexicographically first** `provider_id` and `warn` ambiguity (recommend setting id explicitly in the pack).
-- **Current behavior**: ranking still delegates to **`builtin_v2`** so chat stays consistent before WASM/process providers land; `MemoryRetrieval::diagnostic_local_provider_id` exposes the chosen id.
+- **Current behavior**: ranking still delegates to **`builtin`** (local path selects a provider via registry, then uses built-in ranking); `MemoryRetrieval::diagnostic_local_provider_id` exposes the chosen id.
 - **Session scope**: aligned with `SendMessageRequest.session_id`, use Tauri **`set_session_plugin_backend`** (`module = memory`, optional **`local_memory_provider_id`**) for overrides; read merged `plugin_backends_effective` via **`get_role_info`** with the same **`session_id`** (see [PLUGIN_V1.md](PLUGIN_V1.md) “session overrides”).

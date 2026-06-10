@@ -5,7 +5,7 @@ use crate::api::error::{map_directory_rpc_url_error, CommandError};
 use oclive_kernel_host::infrastructure::directory_plugins::{
     bootstrap_dto::{self, collect_subscribed_host_events},
     dependency_report, normalize_plugin_rel, normalize_ui_slot_appearance_id,
-    parse_manifest_version, plugin_scan_container_roots, resolve_plugin_asset_path,
+    parse_manifest_version, plugin_scan_container_roots, find_plugin_asset_path,
 };
 use oclive_kernel_host::infrastructure::plugin_state::{PluginStateFile, RolePluginState};
 use oclive_kernel_host::infrastructure::remote_plugin::{
@@ -70,7 +70,7 @@ pub fn read_plugin_asset_text(
     let entry = roots.get(pid).ok_or_else(|| ApiError::PluginNotFound {
         plugin_id: pid.to_string(),
     })?;
-    let path_canon = resolve_plugin_asset_path(entry, &rel).map_err(|e| {
+    let path_canon = find_plugin_asset_path(entry, &rel).map_err(|e| {
         if e == "path escapes plugin directory" {
             ApiError::PermissionDenied {
                 message: "path escapes plugin directory".into(),

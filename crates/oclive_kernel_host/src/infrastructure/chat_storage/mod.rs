@@ -29,7 +29,7 @@ pub use config::{
     APP_SETTING_CHAT_STORAGE_ROOT, DEFAULT_MAX_MESSAGES, ENV_CHAT_STORAGE_ROOT,
 };
 pub use db::{highlight_snippet, manifest_sess_glob_pattern, ChatSearchRow};
-pub use export::{export_chat_session, export_role_chats, resolve_export_max_messages};
+pub use export::{export_chat_session, export_role_chats, pick_export_max_messages};
 pub use factory::{build_conversation_store, pick_chat_storage_backend_kind, ENV_CHAT_STORAGE_BACKEND};
 pub use mirror::delete_mirror_tree_for_role;
 pub use replay::{spawn_memory_replay, ReplayTaskRegistry};

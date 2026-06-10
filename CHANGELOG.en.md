@@ -7,6 +7,7 @@
 ### Changed
 
 - **Five-dimension review closure (Batch 1–3)**: architecture overview co-presence chain aligned with Stable code; VS Code / cross-host docs policy-first; `user_identities` validation matches `load_role`; `reply_post_processor` requires non-empty `plugin_id` when `enabled` + `directory`; `ProcessMessageError` stage preserved on outward `AppError` messages; chat turn `role_runtime` preflight merge, single CASE `memory decay` UPDATE, `SessionCache` skips repeat interaction_mode seed; workspace `default-members` excludes `fuzz`; `chatStore` load / `addMessage` micro-optimizations.
+- **`chat_storage` pack validation**: `oclive pack validate` now checks `config.json` → `chat_storage` (backend / location / positive integers / replay threshold 0.1–1.0), parity with `reply_post_processor`; `CHANGELOG.md` parity synced.
 - **Prompt guardrails elevation & footer dedup**: `KERNEL_DIALOGUE_GUARDRAILS` always includes state continuation, vent-first, and length-by-input (pack `reply_quality_anchor` cannot override); removed standalone `【回复结构】` block; tone block no longer exposes `warmup_level` / normalized impact-factor jargon; official mumu/shimeng/枫侵月 anchors slimmed to persona-only deltas.
 - **License change**: host relicensed from AGPL-3.0 + plugin exception to **Apache-2.0** (root `LICENSE` + `NOTICE`); enables closed-source commercial distros and embedded downstreams to combine the kernel freely; `LICENSE_POLICY.md` updated.
 - **Official distro · Daily chat / Story mode split**: `distro.oclive.toml` adds `[interaction]`; new `desktop-chat` profile; `desktop` / `vscode` default `pure_chat`; first-run seed order is distro → role pack → `pure_chat`.
@@ -18,6 +19,7 @@
 - **Profile scheduling UX**: desktop status bar, Settings → Kernel & Connection, and the VS Code status bar share unified profile-adaptation wording (attach / mismatch / pin / replace / degraded).
 - **Distro profile parse SSOT**: `distro.oclive.toml` parsed once via `oclive_kernel_runtime::distro_oclive_file` (K-PROFILE-01).
 - **Host domain re-exports**: runtime engine modules deprecated at `oclive_kernel_host::domain`; `check-host-reexport-imports.mjs` ratchet (D-OPUS-05).
+- **`resolve_*` naming adjudication (D-NAME-01)**: 35 non-policy functions renamed to `load_*` / `find_*` / `pick_*` / `build_*` / `merge_*` / `compute_*` / `invoke_*`; 22 cross-host / per-turn policy anchors kept; verb table in `NAMING_CONVENTIONS.md` §4.4.
 
 ### Added
 
@@ -40,6 +42,7 @@
 - **Chat session list + upsert (K-PERF-22)**: session list snippet via window-function JOIN; `upsert_chat_session` `RETURNING` removes post-write re-read.
 - **Long-term memory & operation-log indexes (K-PERF-23)**: migration `034_perf_indexes.sql` (`idx_ltm_role_content` / `idx_operation_logs_role`).
 - **Fewer post-phase Role clones (K-PERF-24)**: `TurnContext.role_arc` reused for profile evolution spawn.
+- **`pre_llm` Wave 1 parallelism (K-PERF-14)**: `turn_pipeline/pre.rs` uses `tokio::try_join!` for five read-only paths (context / emotion / model / narrative hint / memories); `oclive_turn` logs `pre_llm_wave1` aggregate; see `PERFORMANCE.md` §6.
 
 ---
 

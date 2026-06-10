@@ -2,7 +2,7 @@
 
 use super::{ensure_manifest_role_ready, get_role_info_impl};
 use crate::command_error::CommandError;
-use crate::domain::life_schedule::resolve_life_state;
+use crate::domain::life_schedule::pick_life_state;
 use crate::models::dto::{LifeStateDto, RoleInfo, SetRoleInteractionModeRequest};
 use crate::models::InteractionMode;
 use crate::models::Role;
@@ -15,7 +15,7 @@ pub(crate) struct InteractionUiSnapshot {
     pub current_life: Option<LifeStateDto>,
 }
 
-/// `ensure_interaction_mode_seeded` + effective mode string + pack suggestion + `current_life`.
+/// `ensure_interaction_mode_seeded` + effective mode + pack suggestion + schedule inference (UI policy snapshot).
 pub(crate) async fn resolve_interaction_ui_snapshot(
     state: &AppState,
     role_id: &str,
@@ -36,7 +36,7 @@ pub(crate) async fn resolve_interaction_ui_snapshot(
     let current_life = if mode.is_immersive() {
         role.life_schedule
             .as_ref()
-            .and_then(|s| resolve_life_state(virtual_time_ms, s))
+            .and_then(|s| pick_life_state(virtual_time_ms, s))
             .map(|st| LifeStateDto::from(&st))
     } else {
         None

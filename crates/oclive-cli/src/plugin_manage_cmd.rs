@@ -57,7 +57,7 @@ pub fn run_manage(cli: PluginManageCli) -> Result<()> {
     if cli.tui && cli.command.is_none() {
         return crate::plugin_manage_tui::run_plugin_manage_tui(cli.role.as_deref());
     }
-    let role_dir = resolve_role_dir(cli.role.as_deref())?;
+    let role_dir = find_role_dir(cli.role.as_deref())?;
     let sub = cli.command.unwrap_or(ManageSubcommand::List);
     match sub {
         ManageSubcommand::List => cmd_list(&role_dir, cli.json),
@@ -75,7 +75,7 @@ pub fn run_manage(cli: PluginManageCli) -> Result<()> {
     }
 }
 
-pub fn resolve_role_dir(role: Option<&std::path::Path>) -> Result<PathBuf> {
+pub fn find_role_dir(role: Option<&std::path::Path>) -> Result<PathBuf> {
     if let Some(r) = role {
         let p = r.canonicalize().unwrap_or_else(|_| r.to_path_buf());
         if !p.join(PIPELINE_BLUEPRINT_FILENAME).is_file() {

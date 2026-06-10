@@ -43,7 +43,7 @@ Turn hot-path persistence now goes through **`domain/ports/`** traits with imple
 
 These files still call `use crate::infrastructure::…` under `#[cfg(test)]` only:
 
-- `event_impact_ai.rs`、`event_estimator.rs`、`complex_emotion_store.rs`、`mutable_profile_llm.rs`（`MockLlmClient` / `test_db`）
+- `event_impact_ai.rs`、`complex_emotion_store.rs`、`mutable_profile_llm.rs`（`MockLlmClient` / `test_db`）
 
 Plugin host / Remote / directory / reply post-processor factories live in `infrastructure/*_wiring` + `domain/ports`. **Prefer extending `domain/ports` traits** for new features; do not add new `domain → api` references.
 

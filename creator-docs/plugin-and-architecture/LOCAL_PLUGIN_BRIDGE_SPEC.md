@@ -66,6 +66,6 @@
 - 当角色包或会话覆盖将 `plugin_backends.memory` 设为 **`local`** 时，宿主从 `LocalPluginRegistry` 中选取具备 `memory` 能力的 provider。
 - 可选字段 **`plugin_backends.local_memory_provider_id`**（与 `memory` 同级）：非空时精确匹配已注册 `provider_id`；未命中则回退字典序并打 `warn`。
 - 未指定 `local_memory_provider_id` 且存在多个 memory provider 时：按 **`provider_id` 字典序取第一个**，并打歧义 `warn`（建议在角色包中写明 id）。
-- **当前实现**：记忆排序仍委托 **`builtin_v2`**，便于在无 WASM/进程侧车前保持对话一致；宿主侧 `MemoryRetrieval::diagnostic_local_provider_id` 可观测选中 id。
+- **当前实现**：记忆排序仍委托 **`builtin`**（`local` 路径经 registry 选中 provider 后仍走内置排序）；宿主侧 `MemoryRetrieval::diagnostic_local_provider_id` 可观测选中 id。
 - **会话级**：与 `SendMessageRequest.session_id` 对齐时，可用 Tauri **`set_session_plugin_backend`**（`module = memory` 且可选 **`local_memory_provider_id`**）写入覆盖；用 **`get_role_info`** 的同名 **`session_id`** 读回合并后的 `plugin_backends_effective`（详见 [PLUGIN_V1.md](PLUGIN_V1.md)「会话级覆盖」）。
 

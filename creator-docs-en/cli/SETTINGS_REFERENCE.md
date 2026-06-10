@@ -67,10 +67,10 @@ Full table and JSON-RPC method names are in **[PLUGIN_V1.md](../plugin-and-archi
 
 | Slot | Common values | When choosing `remote` / `directory` |
 |------|---------------|--------------------------------------|
-| memory | `builtin` / `builtin_v2` / `remote` / `directory` / `local` | `remote`: `OCLIVE_REMOTE_PLUGIN_URL`; `directory`: configure `directory_plugins.memory` |
-| emotion | `builtin` / `builtin_v2` / `remote` / `directory` | same |
-| event | `builtin` / `builtin_v2` / `remote` / `directory` | same |
-| prompt | `builtin` / `builtin_v2` / `remote` / `directory` | same |
+| memory | `builtin` / `remote` / `directory` / `local` (`builtin_v2` read alias) | `remote`: `OCLIVE_REMOTE_PLUGIN_URL`; `directory`: configure `directory_plugins.memory` |
+| emotion | `builtin` / `remote` / `directory` (`builtin_v2` read alias) | same |
+| event | `builtin` / `remote` / `directory` (`builtin_v2` read alias) | same |
+| prompt | `builtin` / `remote` / `directory` (`builtin_v2` read alias) | same |
 | llm | **`ollama`** / `remote` / `directory` | **`remote`**: `OCLIVE_REMOTE_LLM_URL`; **`OCLIVE_LLM_BACKEND`** may override at load |
 | agent | `builtin` / `remote` / `directory` | `remote`: sidecar JSON-RPC; `directory`: configure `directory_plugins.agent` |
 

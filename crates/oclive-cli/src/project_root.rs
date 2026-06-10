@@ -3,7 +3,7 @@
 use anyhow::{Context, Result};
 use std::path::{Path, PathBuf};
 
-/// Canonicalize a project root from CLI `-o` / cwd-relative path.
+/// Canonicalize a project root from CLI `-o` / cwd-relative path (CLI SSOT; kept as `resolve_*` for cross-command policy).
 ///
 /// # Errors
 ///
@@ -18,7 +18,7 @@ pub fn resolve_project_root(path: &Path) -> Result<PathBuf> {
         .with_context(|| format!("cannot resolve project path: {}", root.display()))
 }
 
-/// Resolve a registry push/pull root: explicit path or local registry entry.
+/// Resolve a registry push/pull root: explicit path or local registry entry (CLI SSOT policy chain).
 ///
 /// # Errors
 ///

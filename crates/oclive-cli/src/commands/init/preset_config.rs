@@ -180,7 +180,7 @@ pub fn preset_config(name: &str, preset: &str) -> ProjectConfig {
 }
 
 #[must_use]
-pub fn resolve_monolith_weld_modules(cfg: &ProjectConfig) -> Vec<String> {
+pub fn pick_monolith_weld_modules(cfg: &ProjectConfig) -> Vec<String> {
     if !cfg.monolith_enabled {
         return vec![];
     }
@@ -215,7 +215,7 @@ pub fn apply_template_layer(args: &InitArgs, cfg: &mut ProjectConfig) {
     }
 }
 
-pub fn resolve_monolith(args: &InitArgs, cfg: &mut ProjectConfig) {
+pub fn apply_monolith_options(args: &InitArgs, cfg: &mut ProjectConfig) {
     if cfg.project_type != ProjectType::KernelServer {
         cfg.monolith_enabled = false;
         return;
@@ -233,7 +233,7 @@ pub fn resolve_monolith(args: &InitArgs, cfg: &mut ProjectConfig) {
 }
 
 #[must_use]
-pub fn resolve_role_pack_kind(args: &InitArgs) -> RolePackKind {
+pub fn pick_role_pack_kind(args: &InitArgs) -> RolePackKind {
     if args.skip_role_pack {
         return RolePackKind::None;
     }

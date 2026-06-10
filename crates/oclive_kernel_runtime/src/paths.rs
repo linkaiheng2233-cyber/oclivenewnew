@@ -17,7 +17,7 @@ pub const ENV_SKIP_APP_DATA_MIGRATION: &str = "OCLIVE_SKIP_APP_DATA_MIGRATION";
 /// Tauri bundle identifier — legacy app data folder name segment.
 pub const TAURI_APP_IDENTIFIER: &str = "com.oclivenewnew.app";
 
-/// How [`resolve_app_data_dir_for_api`] chose the directory.
+/// How [`find_app_data_dir_for_api`] chose the directory.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AppDataMode {
     /// `OCLIVE_APP_DATA` or canonical brand path; persisted across restarts.
@@ -150,13 +150,13 @@ pub fn tauri_legacy_app_data_dir() -> PathBuf {
 
 /// `app_data/app.db`
 #[must_use]
-pub fn resolve_db_path(app_data: &Path) -> PathBuf {
+pub fn find_db_path(app_data: &Path) -> PathBuf {
     app_data.join("app.db")
 }
 
 /// Desktop / spawn default: canonical brand dir (honours `OCLIVE_APP_DATA` when set).
 #[must_use]
-pub fn resolve_app_data_dir_for_host() -> PathBuf {
+pub fn find_app_data_dir_for_host() -> PathBuf {
     env_non_empty_path(ENV_APP_DATA).unwrap_or_else(canonical_brand_app_data_dir)
 }
 
@@ -179,7 +179,7 @@ pub fn temp_api_db_path(port: u16) -> PathBuf {
 ///
 /// Priority: `OCLIVE_APP_DATA` → forced temp → canonical opt-in → temp (default).
 #[must_use]
-pub fn resolve_app_data_dir_for_api(port: u16) -> (PathBuf, AppDataMode) {
+pub fn find_app_data_dir_for_api(port: u16) -> (PathBuf, AppDataMode) {
     if let Some(explicit) = env_non_empty_path(ENV_APP_DATA) {
         return (explicit, AppDataMode::Persistent);
     }
@@ -208,8 +208,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn resolve_db_path_joins_app_db() {
-        let p = resolve_db_path(Path::new("/data/OCLive"));
+    fn find_db_path_joins_app_db() {
+        let p = find_db_path(Path::new("/data/OCLive"));
         assert_eq!(p, Path::new("/data/OCLive/app.db"));
     }
 

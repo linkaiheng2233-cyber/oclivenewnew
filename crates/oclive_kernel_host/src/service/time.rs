@@ -38,7 +38,7 @@ pub async fn get_time_state_impl(
     })
 }
 
-fn resolve_preset_target_ms(base_ms: i64, preset_raw: &str) -> Option<i64> {
+fn compute_preset_target_ms(base_ms: i64, preset_raw: &str) -> Option<i64> {
     let mut dt = DateTime::from_timestamp_millis(base_ms)?;
     let preset = preset_raw.trim().to_ascii_lowercase();
     match preset.as_str() {
@@ -253,7 +253,7 @@ pub async fn jump_time_impl(
             .await?;
     let target_ms = match (req.timestamp_ms, req.preset.as_deref()) {
         (Some(ts), _) => ts,
-        (None, Some(preset)) => resolve_preset_target_ms(base_ms, preset).ok_or_else(|| {
+        (None, Some(preset)) => compute_preset_target_ms(base_ms, preset).ok_or_else(|| {
             AppError::InvalidParameter(format!("unsupported jump preset: {preset}"))
         })?,
         (None, None) => {
@@ -290,7 +290,7 @@ pub async fn jump_time_impl(
 
 #[cfg(test)]
 mod tests {
-    use super::resolve_preset_target_ms;
+    use super::compute_preset_target_ms;
     use oclive_kernel_runtime::domain::virtual_time::round_to_minute_ms;
 
     #[test]
@@ -300,10 +300,10 @@ mod tests {
     }
 
     #[test]
-    fn resolve_preset_target_ms_supports_offsets() {
+    fn compute_preset_target_ms_supports_offsets() {
         let base = 1_700_000_000_000_i64;
         assert_eq!(
-            resolve_preset_target_ms(base, "+2h"),
+            compute_preset_target_ms(base, "+2h"),
             Some(base + 2 * 60 * 60 * 1000)
         );
     }

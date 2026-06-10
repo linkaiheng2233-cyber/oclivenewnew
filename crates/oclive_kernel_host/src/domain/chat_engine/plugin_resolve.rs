@@ -6,7 +6,7 @@ use crate::models::{PluginBackends, Role};
 use oclive_validation::SlotRegistryEntry;
 use std::collections::BTreeMap;
 
-/// Resolves plugin handles from role pack and session-effective `slot_registry` (falls back to pack defaults when no session).
+/// Session namespace → role defaults or session-effective six-slot backends (orchestration policy).
 #[must_use]
 pub fn resolve_plugins_for_session(
     host: &dyn PluginHostPort<Resolved = ResolvedRolePlugins>,

@@ -57,7 +57,7 @@ fn migration_discovery_anchors() -> Vec<PathBuf> {
 /// # Errors
 ///
 /// Returns a message listing attempted paths when none contain migration SQL.
-pub fn resolve_migrations_dir() -> Result<PathBuf, String> {
+pub fn find_migrations_dir() -> Result<PathBuf, String> {
     let mut tried: Vec<String> = Vec::new();
 
     if let Ok(raw) = std::env::var(ENV_MIGRATIONS_DIR) {
@@ -306,8 +306,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn resolve_migrations_dir_finds_embedded_or_monorepo() {
-        let dir = resolve_migrations_dir().expect("migrations dir");
+    fn find_migrations_dir_finds_embedded_or_monorepo() {
+        let dir = find_migrations_dir().expect("migrations dir");
         assert!(is_migrations_dir(&dir));
         assert!(
             dir.ends_with("migrations"),

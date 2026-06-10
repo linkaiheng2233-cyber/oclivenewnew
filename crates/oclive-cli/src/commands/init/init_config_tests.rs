@@ -116,7 +116,7 @@ mod template_tests {
         };
         let mut cfg = preset_config("t", "minimal");
         apply_template_layer(&args, &mut cfg);
-        resolve_monolith(&args, &mut cfg);
+        apply_monolith_options(&args, &mut cfg);
         assert!(cfg.monolith_enabled);
     }
 
@@ -163,7 +163,7 @@ mod template_tests {
             check: false,
             chat_storage_location: None,
         };
-        assert_eq!(resolve_role_pack_kind(&args), RolePackKind::DefaultExample);
+        assert_eq!(pick_role_pack_kind(&args), RolePackKind::DefaultExample);
     }
 
     #[test]
@@ -220,7 +220,7 @@ mod template_tests {
         let mut cfg = preset_config("t", "minimal");
         apply_backend_cli_overrides(&mut cfg, &args);
         cfg.project_type = ProjectType::KernelServer;
-        resolve_monolith(&args, &mut cfg);
+        apply_monolith_options(&args, &mut cfg);
         if args.monolith_bench_preset.is_some() {
             cfg.monolith_enabled = true;
             cfg.monolith_preset = args.monolith_bench_preset;
@@ -251,7 +251,7 @@ mod template_tests {
         let mut cfg = preset_config("t", "minimal");
         cfg.monolith_enabled = true;
         cfg.monolith_preset = Some(MonolithPresetArg::Latency);
-        let weld = resolve_monolith_weld_modules(&cfg);
+        let weld = pick_monolith_weld_modules(&cfg);
         assert_eq!(weld.len(), 7);
     }
 

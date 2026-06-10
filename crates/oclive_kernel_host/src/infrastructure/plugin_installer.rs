@@ -230,7 +230,7 @@ pub fn install_plugin(
             )));
         }
     }
-    let url = resolve_git_clone_url(git_url.trim());
+    let url = build_git_clone_url(git_url.trim());
     if url.is_empty() {
         return Err(AppError::InvalidParameter("git_url required".into()));
     }
@@ -256,7 +256,7 @@ pub fn install_plugin(
         })?;
     }
     git_clone_with_fallback(git_url.trim(), &url, &clone_dir)?;
-    let plugin_root = resolve_plugin_root_after_clone(&clone_dir, git_subdir)?;
+    let plugin_root = find_plugin_root_after_clone(&clone_dir, git_subdir)?;
     let manifest = OclivePluginManifest::load_from_dir(&plugin_root)
         .map_err(|e| AppError::Unknown(format!("manifest validation failed: {}", e)))?;
     let pid = manifest.id.trim().to_string();
@@ -366,7 +366,7 @@ fn verify_plugin_signature_strict(plugin_dir: &Path, plugin_id: &str) -> Result<
     Ok(())
 }
 
-fn resolve_git_clone_url(https_git: &str) -> String {
+fn build_git_clone_url(https_git: &str) -> String {
     if let Ok(root) = std::env::var("OCLIVE_LOCAL_MONOREPO") {
         let root = root.trim();
         if !root.is_empty()
@@ -439,7 +439,7 @@ fn local_monorepo_file_git_url(https_git: &str) -> Option<String> {
     })
 }
 
-fn resolve_plugin_root_after_clone(
+fn find_plugin_root_after_clone(
     clone_dir: &Path,
     git_subdir: Option<&str>,
 ) -> Result<PathBuf, AppError> {

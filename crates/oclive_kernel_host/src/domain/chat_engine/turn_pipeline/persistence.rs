@@ -1,6 +1,6 @@
 //! Post-LLM persistence: atomic DB writes, chat storage, profile evolution.
 
-use crate::domain::portrait_emotion_engine::resolve_portrait_emotion;
+use crate::domain::portrait_emotion_engine::pick_portrait_emotion;
 use crate::domain::ports::conversation_persist::{
     TurnAutoCleanupConfig, TurnPersistRequest,
 };
@@ -74,7 +74,7 @@ pub(crate) async fn persist_atomic_movement_portrait(
     } else {
         Some(STAGES.stage(
             ChatStage::PortraitEmotionLlm,
-            resolve_portrait_emotion(
+            pick_portrait_emotion(
                 &primary_llm,
                 pre.ollama_model.as_str(),
                 role,

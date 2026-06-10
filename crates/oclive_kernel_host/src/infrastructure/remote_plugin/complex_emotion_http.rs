@@ -6,7 +6,7 @@ use crate::domain::complex_emotion::{
 use crate::error::Result;
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
 use crate::infrastructure::remote_plugin::adapter::{
-    resolve_turn_rpc, RemotePluginAdapterBlocking,
+    invoke_turn_rpc, RemotePluginAdapterBlocking,
 };
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
 use oclive_validation::NETWORK_GRANT_REMOTE_PLUGIN;
@@ -42,6 +42,6 @@ impl RemoteComplexEmotionHttp {
     ///
     /// Returns [`Err`] with a human-readable message when the operation fails.
     pub fn resolve_turn(&self, input: &ComplexEmotionInput) -> Result<ComplexEmotionOutput> {
-        resolve_turn_rpc(&self.adapter, &self.fallback, input)
+        invoke_turn_rpc(&self.adapter, &self.fallback, input)
     }
 }

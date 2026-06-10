@@ -6,7 +6,7 @@ use std::path::Path;
 use std::process::Command;
 
 use crate::generator;
-use crate::init::{resolve_init_config, InitArgs, InitTemplateArg, RolePackKind};
+use crate::init::{build_init_config, InitArgs, InitTemplateArg, RolePackKind};
 
 #[derive(Serialize, Clone)]
 struct CheckItem {
@@ -18,7 +18,7 @@ struct CheckItem {
 }
 
 pub fn run_precheck(args: &InitArgs) -> Result<()> {
-    let cfg = resolve_init_config(args, true)?;
+    let cfg = build_init_config(args, true)?;
     let mut items = Vec::new();
 
     items.push(check_rust_toolchain());

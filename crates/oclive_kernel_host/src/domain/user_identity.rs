@@ -3,10 +3,12 @@
 use crate::error::Result;
 use crate::models::role::{IdentityBinding, Role};
 use crate::state::AppState;
+
+/// Effective identity key: scene/global DB state + manifest binding policy (shared across load_role and turns).
+///
 /// # Errors
 ///
-/// Returns [`Err`] with a human-readable message when the operation fails.
-/// Effective identity key consistent with [`crate::api::role::runtime::role_runtime_extras`] and the chat turn.
+/// Returns [`Err`] when DB reads for scene/global identity state fail.
 pub async fn resolve_effective_user_relation_key(
     state: &AppState,
     role: &Role,

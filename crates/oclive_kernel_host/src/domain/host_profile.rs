@@ -151,7 +151,7 @@ fn host_profile_from_distro_file(file: &DistroOcliveFile) -> std::result::Result
     if let Some(ref id) = file.distro_id {
         profile.distro_id = id.clone();
     }
-    let (skip_agent, skip_complex_emotion) = file.resolve_skip_flags();
+    let (skip_agent, skip_complex_emotion) = file.parse_distro_skip_flags();
     profile.skip_agent = skip_agent;
     profile.skip_complex_emotion = skip_complex_emotion;
     if let Some(ref p) = file.prompt {

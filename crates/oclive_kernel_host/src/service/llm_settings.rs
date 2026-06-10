@@ -3,7 +3,7 @@
 use crate::command_error::CommandError;
 use crate::domain::effective_llm_model::resolve_effective_ollama_model;
 use crate::domain::user_llm_env::{
-    apply_user_llm_env, cloud_api_token_configured, ollama_base_from_db_or_env, resolve_remote_token,
+    apply_user_llm_env, cloud_api_token_configured, ollama_base_from_db_or_env, load_remote_token,
     KEY_CLOUD_STYLE, KEY_CLOUD_VENDOR, KEY_LLM_PROVIDER, KEY_OLLAMA_BASE, KEY_REMOTE_MODEL,
     KEY_REMOTE_TOKEN, KEY_REMOTE_URL,
 };
@@ -363,7 +363,7 @@ pub async fn save_llm_user_settings_impl(
         let app_data = state.directory_plugins.app_data_dir();
         let secrets = state.user_llm_secrets.as_ref();
         let settings = crate::infrastructure::db_ports::DbSettingsPort(state.db_manager.as_ref());
-        let existing = resolve_remote_token(&settings, secrets, app_data).await?;
+        let existing = load_remote_token(&settings, secrets, app_data).await?;
         secrets.set_cached_remote_llm_token(existing);
     }
     if let Some(ref model) = req.remote_model {

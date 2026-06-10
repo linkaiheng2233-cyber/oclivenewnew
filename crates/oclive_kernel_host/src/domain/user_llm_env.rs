@@ -99,7 +99,7 @@ pub async fn apply_user_llm_env_from_db(
 /// # Errors
 ///
 /// Database or settings read failures propagate as [`crate::error::AppError`].
-pub async fn resolve_remote_token(
+pub async fn load_remote_token(
     db: &impl AppSettingsPort,
     secrets: &dyn UserLlmSecretsPort,
     app_data: &std::path::Path,
@@ -125,7 +125,7 @@ pub async fn apply_user_llm_env(state: &AppState) -> crate::error::Result<()> {
     let app_data = state.directory_plugins.app_data_dir();
     let secrets = state.user_llm_secrets.as_ref();
     let settings = crate::infrastructure::db_ports::DbSettingsPort(state.db_manager.as_ref());
-    let token = resolve_remote_token(&settings, secrets, app_data).await?;
+    let token = load_remote_token(&settings, secrets, app_data).await?;
     if let Some(ref t) = token {
         secrets.set_cached_remote_llm_token(Some(t.clone()));
         state

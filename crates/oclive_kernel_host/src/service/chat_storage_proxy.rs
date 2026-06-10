@@ -2,7 +2,7 @@
 
 use crate::error::{AppError, Result};
 use crate::infrastructure::chat_storage::{
-    delete_mirror_scene_dir, delete_mirror_tree_for_role, resolve_export_max_messages,
+    delete_mirror_scene_dir, delete_mirror_tree_for_role, pick_export_max_messages,
     load_max_messages_per_session, load_role_chat_storage_root, load_storage_root,
     role_mirror_tree_bytes, set_persisted_storage_root, spawn_memory_replay, AutoCleanupConfig,
     ChatStorageCapabilities, DeleteChatsResult, ImportChatBucket, ReplayTarget,
@@ -184,12 +184,12 @@ pub async fn execute_chat_storage_proxy(
             let rid = role_id.trim();
             let (max, role_name) = match state.load_role_cached_async(rid).await {
                 Ok(role) => (
-                    resolve_export_max_messages(
+                    pick_export_max_messages(
                         role.pack_chat_storage_config.max_messages_per_session,
                     ),
                     Some(role.name.clone()),
                 ),
-                Err(_) => (resolve_export_max_messages(None), None),
+                Err(_) => (pick_export_max_messages(None), None),
             };
             let res = state
                 .conversation_store

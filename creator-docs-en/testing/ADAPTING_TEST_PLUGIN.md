@@ -1,9 +1,9 @@
 # Writing Rust integration tests for swappable backends (ADAPTING_TEST_PLUGIN)
 
-## `PluginHost` and `builtin_v2`
+## `PluginHost` and `builtin_v2` wire alias
 
 - **Smoke example**: [`src-tauri/tests/plugin_backends_v2_resolve.rs`](../../src-tauri/tests/plugin_backends_v2_resolve.rs)  
-  Verifies that when `memory` / `emotion` / `event` / `prompt` are **`builtin_v2`** and `llm` is **`ollama`**, `PluginHost::resolve_for_role` resolves **six subsystem lines** (including default **`agent`**).
+  Verifies that when `memory` / `emotion` / `event` / `prompt` are **`builtin_v2`** (deprecated read alias → **`builtin`**) and `llm` is **`ollama`**, `PluginHost::resolve_for_role` resolves **six subsystem lines** (including default **`agent`**).
 - **Constructing the host**: `PluginHost::new(llm, None, std::env::temp_dir())`  
   The third argument is the **app data root** (production app data; tests may use a **temp directory**) for MCP config scan and related subsystem init.
 

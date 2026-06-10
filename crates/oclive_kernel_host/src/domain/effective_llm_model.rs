@@ -7,7 +7,7 @@ const KEY_LLM_PROVIDER: &str = "user_llm_provider";
 const KEY_REMOTE_MODEL: &str = "user_remote_llm_model";
 const LLM_MODEL_SETTING_KEYS: &[&str] = &[KEY_LLM_PROVIDER, KEY_REMOTE_MODEL];
 
-/// Session DB override → saved cloud model (`user_remote_llm_model`) when provider=cloud → [`Role::resolve_ollama_model`].
+/// Session DB override → saved cloud model → pack/env/global fallback chain (policy resolution, not path lookup).
 ///
 /// # Errors
 ///

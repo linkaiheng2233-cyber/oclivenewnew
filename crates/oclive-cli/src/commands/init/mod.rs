@@ -8,7 +8,7 @@ mod init_interactive;
 mod init_smart;
 
 pub use init_config::*;
-pub use init_interactive::resolve_init_config;
+pub use init_interactive::build_init_config;
 
 use init_interactive::run_quick_init;
 use init_smart::apply_smart_hints;
@@ -217,7 +217,7 @@ pub fn run(args: InitArgs) -> Result<()> {
         return run_quick_init(&args);
     }
 
-    let cfg = resolve_init_config(&args, false)?;
+    let cfg = build_init_config(&args, false)?;
 
     if args.dry_run {
         return crate::init_plan::print_dry_run(&cfg, &args);

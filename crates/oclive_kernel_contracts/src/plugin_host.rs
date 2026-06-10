@@ -30,7 +30,7 @@ pub trait PluginHostPort: Send + Sync {
     /// A single resolution result (typically `ResolvedRolePlugins` on the host side).
     type Resolved: Clone + Send + Sync + 'static;
 
-    /// Resolves based on `role.plugin_backends` (no session override).
+    /// Resolves based on `role.plugin_backends` (no session override); policy anchor for six-slot wiring.
     ///
     /// # Errors
     ///
@@ -41,7 +41,7 @@ pub trait PluginHostPort: Send + Sync {
     /// Does not panic; implementations should return `Result` or capture errors internally.
     fn resolve_for_role(&self, role: &Role) -> Self::Resolved;
 
-    /// Resolves based on the merged effective slots + optional `slot_registry` and overrides.
+    /// Resolves based on the merged effective slots + optional `slot_registry` and overrides (session policy merge).
     ///
     /// # Errors
     ///

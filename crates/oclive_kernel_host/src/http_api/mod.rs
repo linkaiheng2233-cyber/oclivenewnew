@@ -25,7 +25,7 @@ use axum::routing::{get, post};
 use axum::http::Method;
 use axum::Router;
 use oclive_kernel_runtime::{
-    ensure_app_data_dir, resolve_app_data_dir_for_api, resolve_db_path, temp_api_db_path,
+    ensure_app_data_dir, find_app_data_dir_for_api, find_db_path, temp_api_db_path,
     AppDataMode,
 };
 use oclive_kernel_types::KernelErrorBody;
@@ -149,7 +149,7 @@ pub fn api_router(app_state: Arc<AppState>) -> Router {
 ///
 /// Returns a human-readable message on migration or DB bootstrap failure.
 pub async fn build_api_app_state(port: u16) -> Result<Arc<AppState>, String> {
-    let roles_dir = crate::state::resolve_roles_dir(None);
+    let roles_dir = crate::state::find_roles_dir(None);
     let mock_llm = std::env::var("OCLIVE_HTTP_API_MOCK_LLM")
         .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
         .unwrap_or(false);
@@ -170,7 +170,7 @@ pub async fn build_api_app_state(port: u16) -> Result<Arc<AppState>, String> {
         return Ok(Arc::new(app_state));
     }
 
-    let (app_data_dir, mode) = resolve_app_data_dir_for_api(port);
+    let (app_data_dir, mode) = find_app_data_dir_for_api(port);
     ensure_app_data_dir(&app_data_dir)?;
     if mode == AppDataMode::Persistent {
         crate::infrastructure::app_data_migration::ensure_canonical_app_data_ready(&app_data_dir)?;
@@ -178,7 +178,7 @@ pub async fn build_api_app_state(port: u16) -> Result<Arc<AppState>, String> {
     let db_path = if mode == AppDataMode::Temp {
         temp_api_db_path(port)
     } else {
-        resolve_db_path(&app_data_dir)
+        find_db_path(&app_data_dir)
     };
     tracing::info!(
         target: "oclive_api",
@@ -230,7 +230,7 @@ pub async fn serve_api_with_state(app_state: Arc<AppState>, port: u16) -> Result
 ///
 /// CI / protocol black-box: when `OCLIVE_HTTP_API_MOCK_LLM=1` is set, uses an in-memory DB + [`MockLlmClient`], not depending on a local Ollama.
 pub async fn serve_api(port: u16) -> Result<(), String> {
-    let (app_data_dir, mode) = resolve_app_data_dir_for_api(port);
+    let (app_data_dir, mode) = find_app_data_dir_for_api(port);
     let _api_temp_cleanup = if mode == AppDataMode::Temp {
         Some(ApiTempCleanup {
             db_path: temp_api_db_path(port),

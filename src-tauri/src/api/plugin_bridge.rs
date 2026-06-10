@@ -222,7 +222,7 @@ async fn dispatch_local_bridge_command(
             .and_then(|v| v.as_bool())
             .unwrap_or(false);
         let storage = state.storage.clone();
-        let app_data_dir = oclive_kernel_runtime::resolve_app_data_dir_for_host();
+        let app_data_dir = oclive_kernel_runtime::find_app_data_dir_for_host();
         let path_buf = validate_bridge_import_role_source(&storage, &app_data_dir, Path::new(path))
             .map_err(|e| e.to_string())?;
         let role_id = tokio::task::spawn_blocking(move || {

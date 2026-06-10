@@ -35,7 +35,7 @@ pub(crate) fn resolve_builtin(eff: &ReplyPostProcessorEffectiveConfig) -> Arc<dy
     Arc::new(BuiltinReplyPostProcessor::new(eff.builtin.clone()))
 }
 
-/// Factory: `enabled = false` → pass-through; merges host profile chain before backend resolution.
+/// Merges role pack + host profile chain into the effective reply post-processor backend (policy, not I/O).
 #[must_use]
 pub fn resolve_reply_post_processor(state: &AppState, role: &Role) -> Arc<dyn ReplyPostProcessor> {
     if !role.pack_reply_post_processor_config.enabled {

@@ -1,7 +1,7 @@
 //! `oclive plugin manage --tui` — a simple TUI overview of slot-to-plugin mappings.
 
 use crate::init_tui::terminal_supports_tui;
-use crate::plugin_manage_cmd::{load_registry, resolve_role_dir};
+use crate::plugin_manage_cmd::{load_registry, find_role_dir};
 use anyhow::{bail, Result};
 use crossterm::event::{self, Event, KeyCode, KeyEventKind};
 use crossterm::terminal::{
@@ -20,7 +20,7 @@ pub fn run_plugin_manage_tui(role: Option<&Path>) -> Result<()> {
     if !terminal_supports_tui() {
         bail!("TUI requires a terminal (unset OCLIVE_NO_TUI to force off)");
     }
-    let role_dir = resolve_role_dir(role)?;
+    let role_dir = find_role_dir(role)?;
     let reg = load_registry(&role_dir)?;
 
     enable_raw_mode()?;

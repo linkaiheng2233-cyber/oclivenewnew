@@ -80,6 +80,8 @@ cargo run -p oclive-cli -- bench --release -o /path/to/kernel-project --json
 
 **解读**：Mock LLM 下 Prompt 构建与情绪分析占主导；DB 写（K-PERF-01 批处理后）未进 Top-3。真实 Ollama 路径下 **`llm` 调用** 预期远超上表其余 stage — 以本机 `RUST_LOG=oclive_turn=debug` 复测为准。
 
+**K-PERF-14 · `pre_llm` Wave 1（2026-06-11）**：`turn_pipeline/pre.rs` 以 `tokio::try_join!` 并行 `prefetch_context`、`resolve_user_emotion_for_turn`、`resolve_effective_ollama_model`、`load_prev_narrative_hint`、`load_memories_and_relation_key`；`apply_time_evolution` 及后续依赖链保持原序。`oclive_turn` 额外输出 `stage=pre_llm_wave1` 汇总行（五路中最慢路径墙钟，非五段之和）。Mock LLM 下单轮 Wave 1 典型 **~4–8 ms**（视 emotion 远程槽与 DB 缓存而定），较串行累加情绪+记忆+模型读可节省约 **30–50%** 墙钟；真实 Ollama 路径收益主要在 LLM 等待前的 pre 段。
+
 复现：
 
 ```bash

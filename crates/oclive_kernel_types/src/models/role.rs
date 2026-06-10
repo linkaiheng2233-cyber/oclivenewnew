@@ -386,7 +386,7 @@ impl Role {
             .unwrap_or(50.0)
     }
 
-    /// Resolve the Ollama model name for this role (no network I/O): **manifest** → **`OLLAMA_MODEL`** → **global default**.
+/// Resolve the Ollama model name for this role (manifest → env → global fallback policy chain).
     #[must_use]
     pub fn resolve_ollama_model(&self, global_fallback: &str) -> String {
         if let Some(ref m) = self.ollama_model {

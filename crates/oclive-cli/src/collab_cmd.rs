@@ -97,7 +97,7 @@ fn load_config(root: &Path) -> Result<CollabConfig> {
 }
 
 fn run_init(args: CollabInitArgs) -> Result<()> {
-    let root = resolve_role_pack_root(&args.path)?;
+    let root = find_role_pack_root(&args.path)?;
     let cfg = CollabConfig {
         remote: args.remote.clone(),
         branch: args.branch.clone(),
@@ -120,7 +120,7 @@ fn run_init(args: CollabInitArgs) -> Result<()> {
 }
 
 fn run_status(args: CollabStatusArgs) -> Result<()> {
-    let root = resolve_role_pack_root(&args.path)?;
+    let root = find_role_pack_root(&args.path)?;
     let cfg = load_config(&root)?;
     println!("oclive collab status — {}", root.display());
     println!("  remote: {}", cfg.remote);
@@ -167,7 +167,7 @@ fn run_status(args: CollabStatusArgs) -> Result<()> {
 }
 
 fn run_pull(args: CollabPullArgs) -> Result<()> {
-    let root = resolve_role_pack_root(&args.path)?;
+    let root = find_role_pack_root(&args.path)?;
     let cfg = load_config(&root)?;
     pre_pull_checks(&root, &cfg)?;
     git_in(&root, &["pull", "origin", &cfg.branch])?;
@@ -176,7 +176,7 @@ fn run_pull(args: CollabPullArgs) -> Result<()> {
 }
 
 fn run_push(args: CollabPushArgs) -> Result<()> {
-    let root = resolve_role_pack_root(&args.path)?;
+    let root = find_role_pack_root(&args.path)?;
     let cfg = load_config(&root)?;
     pre_push_checks(&root, &cfg)?;
     git_in(&root, &["push", "origin", &cfg.branch])?;
@@ -185,7 +185,7 @@ fn run_push(args: CollabPushArgs) -> Result<()> {
 }
 
 fn run_diff(args: CollabDiffArgs) -> Result<()> {
-    let root = resolve_role_pack_root(&args.path)?;
+    let root = find_role_pack_root(&args.path)?;
     let cfg = load_config(&root)?;
     git_in(&root, &["fetch", "origin"])?;
     let refname = format!("origin/{}", cfg.branch);
@@ -239,7 +239,7 @@ fn pre_push_checks(root: &Path, cfg: &CollabConfig) -> Result<()> {
     Ok(())
 }
 
-fn resolve_role_pack_root(path: &Path) -> Result<PathBuf> {
+fn find_role_pack_root(path: &Path) -> Result<PathBuf> {
     let p = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
     if p.join("manifest.json").is_file() {
         return Ok(p);

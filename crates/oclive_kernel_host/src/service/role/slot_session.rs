@@ -4,7 +4,7 @@ use super::{get_role_info_impl, load_role_impl, session_namespace};
 use crate::command_error::CommandError;
 use crate::domain::role_snapshot::plugin_backends_override_from_slot_session;
 use crate::error::AppError;
-use crate::infrastructure::storage::resolve_llm_backend_env_override;
+use crate::infrastructure::storage::pick_llm_backend_env_override;
 use crate::models::dto::{
     ClearAllSessionSlotOverridesRequest, ClearSessionSlotOverrideRequest,
     GetPluginResolutionDebugRequest, PluginResolutionDebugInfo, RoleInfo,
@@ -272,7 +272,7 @@ pub async fn build_plugin_resolution_debug_info(
     let effective = state.effective_plugin_backends_for_session(role.as_ref(), session_ns.as_str());
     let effective_sources =
         state.effective_plugin_backend_sources_for_session(role.as_ref(), session_ns.as_str());
-    let llm_env_override = resolve_llm_backend_env_override().map(|b| match b {
+    let llm_env_override = pick_llm_backend_env_override().map(|b| match b {
         LlmBackend::Ollama => "ollama".to_string(),
         LlmBackend::Remote => "remote".to_string(),
         LlmBackend::Directory => "directory".to_string(),

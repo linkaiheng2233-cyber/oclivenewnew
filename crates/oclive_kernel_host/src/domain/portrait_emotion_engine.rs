@@ -324,7 +324,7 @@ fn fallback_base(bot_emotion: &Emotion, recent_turns: &[(String, String)]) -> St
 /// Returns [`Err`] with a human-readable message when the operation fails.
 /// Parses portrait emotion tag; on failure falls back to `neutral` when no history, else `bot_emotion`.
 #[allow(clippy::too_many_arguments)]
-pub async fn resolve_portrait_emotion(
+pub async fn pick_portrait_emotion(
     llm: &Arc<dyn LlmClient>,
     ollama_model: &str,
     role: &Role,

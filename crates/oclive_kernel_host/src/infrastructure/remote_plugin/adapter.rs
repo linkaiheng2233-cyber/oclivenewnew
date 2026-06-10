@@ -163,7 +163,7 @@ impl RemotePluginAdapterAsync {
 }
 
 /// Shared blocking RPC for `complex_emotion.resolve_turn`.
-pub fn resolve_turn_rpc(
+pub fn invoke_turn_rpc(
     adapter: &RemotePluginAdapterBlocking,
     fallback: &BuiltinKeywordComplexEmotionProvider,
     input: &ComplexEmotionInput,

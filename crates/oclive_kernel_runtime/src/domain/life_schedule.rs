@@ -23,7 +23,7 @@ fn minute_in_window(cur: u16, start: u16, end: u16) -> bool {
 
 /// Resolves the current state from a virtual timestamp (UTC ms) and the creator schedule; returns `None` when no segment matches (same behavior as unconfigured).
 #[must_use]
-pub fn resolve_life_state(virtual_time_ms: i64, schedule: &LifeScheduleDisk) -> Option<LifeState> {
+pub fn pick_life_state(virtual_time_ms: i64, schedule: &LifeScheduleDisk) -> Option<LifeState> {
     if virtual_time_ms <= 0 || schedule.entries.is_empty() {
         return None;
     }
@@ -147,7 +147,7 @@ mod tests {
             },
             Some(0),
         );
-        let st = resolve_life_state(ms, &s).unwrap();
+        let st = pick_life_state(ms, &s).unwrap();
         assert_eq!(st.label, "自习");
         assert_eq!(st.activity_key, "study");
         assert!((st.busy_level - 0.85).abs() < 0.01);
@@ -170,7 +170,7 @@ mod tests {
             },
             Some(0),
         );
-        assert!(resolve_life_state(ms, &s).is_some());
+        assert!(pick_life_state(ms, &s).is_some());
     }
 
     #[test]
@@ -213,6 +213,6 @@ mod tests {
             },
             Some(0),
         );
-        assert!(resolve_life_state(ms, &s).is_none());
+        assert!(pick_life_state(ms, &s).is_none());
     }
 }

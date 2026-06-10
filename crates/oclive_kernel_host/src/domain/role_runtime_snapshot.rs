@@ -3,7 +3,7 @@
 use crate::models::InteractionMode;
 
 /// One-row read of frequently accessed `role_runtime` columns.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct RoleRuntimeSnapshot {
     pub favorability: Option<f64>,
     pub emotion: Option<String>,
@@ -13,19 +13,4 @@ pub struct RoleRuntimeSnapshot {
     pub remote_life_enabled: Option<bool>,
     pub mutable_personality: Option<String>,
     pub event_impact_factor: Option<f64>,
-}
-
-impl Default for RoleRuntimeSnapshot {
-    fn default() -> Self {
-        Self {
-            favorability: None,
-            emotion: None,
-            relation_state: None,
-            scene: None,
-            interaction_mode: None,
-            remote_life_enabled: None,
-            mutable_personality: None,
-            event_impact_factor: None,
-        }
-    }
 }

@@ -23,7 +23,7 @@ fn main() {
 
     if api {
         let port = oclive_kernel_runtime::resolve_api_port(cli_port);
-        let (app_data, _) = oclive_kernel_runtime::resolve_app_data_dir_for_api(port);
+        let (app_data, _) = oclive_kernel_runtime::find_app_data_dir_for_api(port);
         let _ = oclive_kernel_runtime::ensure_app_data_dir(&app_data);
         let log_dir = app_data.join("logs");
         let _log_guard = oclive_kernel_host::init_tracing_with_log_dir(Some(log_dir.as_path()));

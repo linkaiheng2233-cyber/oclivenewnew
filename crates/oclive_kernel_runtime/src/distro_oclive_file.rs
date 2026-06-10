@@ -116,7 +116,7 @@ impl DistroOcliveFile {
 
     /// `(skip_agent, skip_complex_emotion)` from host_flags and slots.
     #[must_use]
-    pub fn resolve_skip_flags(&self) -> (bool, bool) {
+    pub fn parse_distro_skip_flags(&self) -> (bool, bool) {
         let mut skip_agent = false;
         let mut skip_complex_emotion = false;
         if let Some(ref hf) = self.host_flags {
@@ -139,7 +139,7 @@ impl DistroOcliveFile {
     #[must_use]
     pub fn into_requirements(self, path_hint: &Path) -> DistroProfileRequirements {
         let distro_id = self.effective_distro_id(path_hint);
-        let (skip_agent, skip_complex_emotion) = self.resolve_skip_flags();
+        let (skip_agent, skip_complex_emotion) = self.parse_distro_skip_flags();
         requirements_from_flags(
             &distro_id,
             skip_agent,

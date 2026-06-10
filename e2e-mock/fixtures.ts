@@ -206,7 +206,7 @@ export function mockInvoke(command: string, payload: Record<string, unknown> = {
       return []
     case 'reload_policy_plugins':
       return 'ok'
-    case 'resolve_role_asset_path':
+    case 'find_role_asset_path':
       return null
     case 'get_hotkey_bindings':
       return { bindings: {} }

@@ -14,7 +14,7 @@ pub async fn connect_memory_migrated() -> SqlitePool {
     let pool = sqlite_pool::connect_memory()
         .await
         .expect("in-memory sqlite pool");
-    let migrations_dir = sql_migrate::resolve_migrations_dir().expect("migrations dir");
+    let migrations_dir = sql_migrate::find_migrations_dir().expect("migrations dir");
     sql_migrate::run_sql_migrations(&pool, &migrations_dir)
         .await
         .expect("apply migrations");

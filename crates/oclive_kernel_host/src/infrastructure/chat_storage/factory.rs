@@ -14,7 +14,7 @@ pub const ENV_CHAT_STORAGE_BACKEND: &str = "OCLIVE_CHAT_STORAGE_BACKEND";
 /// role `config.json` → `chat_storage.backend` > default [`ChatStorageBackendKind::Hybrid`].
 ///
 /// **Semantics (phase 3):** runtime always builds [`HybridConversationStore`] (SQLite authoritative).
-/// `file` / `sqlite` / `hybrid` only influence the JSON **mirror** flag via [`resolve_mirror_enabled`];
+/// `file` / `sqlite` / `hybrid` only influence the JSON **mirror** flag via [`pick_mirror_enabled`];
 /// prefer explicit `chat_storage.mirror` in role `config.json` when possible.
 #[must_use]
 pub fn pick_chat_storage_backend_kind(
@@ -33,7 +33,7 @@ pub fn pick_chat_storage_backend_kind(
 
 /// Whether JSON mirror files are written. Explicit `chat_storage.mirror` wins; else legacy `backend`.
 #[must_use]
-pub fn resolve_mirror_enabled(
+pub fn pick_mirror_enabled(
     config: &RolePackChatStorageConfig,
     kind: ChatStorageBackendKind,
 ) -> bool {
@@ -65,7 +65,7 @@ pub fn build_conversation_store(
     role_config: &RolePackChatStorageConfig,
     role_pack_dir: Option<&Path>,
 ) -> Arc<dyn ConversationStore> {
-    let mirror_enabled = resolve_mirror_enabled(role_config, kind);
+    let mirror_enabled = pick_mirror_enabled(role_config, kind);
     let _ = role_pack_dir;
     Arc::new(HybridConversationStore::new(
         db,

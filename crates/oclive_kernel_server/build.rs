@@ -32,4 +32,15 @@ fn main() {
 
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-env-changed=SOURCE_DATE_EPOCH");
+
+    let manifest_dir =
+        std::path::PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap_or_default());
+    let git_head = manifest_dir.join("../../.git/HEAD");
+    if git_head.is_file() {
+        println!("cargo:rerun-if-changed=../../.git/HEAD");
+        let refs_heads = manifest_dir.join("../../.git/refs/heads");
+        if refs_heads.is_dir() {
+            println!("cargo:rerun-if-changed=../../.git/refs/heads");
+        }
+    }
 }

@@ -10,6 +10,7 @@ pub mod blueprint_includes;
 pub mod blueprint_migrate;
 pub mod blueprint_v2;
 pub mod blueprint_v3;
+pub mod chat_storage;
 pub mod creator_profile;
 pub mod disk_role_settings;
 pub mod expert_actions;
@@ -34,7 +35,7 @@ pub use agent_backend::{
     validate_implemented_agent_backend, AgentBackendSanitizeResult,
 };
 pub use blueprint_includes::{
-    resolve_blueprint_includes_lenient, resolve_blueprint_includes_strict, validate_includes,
+    merge_blueprint_includes_lenient, merge_blueprint_includes_strict, validate_includes,
     BlueprintIncludeEntry,
 };
 pub use blueprint_migrate::{
@@ -87,7 +88,7 @@ pub use plugin_backends::{
     PluginBackendSource, PluginBackends, PluginBackendsOverride, PluginBackendsSourceMap,
     PromptBackend,
 };
-pub use plugin_dependencies::{parse_plugin_dependencies, resolve_install_order};
+pub use plugin_dependencies::{parse_plugin_dependencies, compute_plugin_install_order};
 pub use plugin_permissions::{
     manifest_declares_process_spawn, validate_directory_plugin_manifest_permissions,
     validate_permissions_list, ALLOWED as PLUGIN_PERMISSIONS_ALLOWED, MCP_HTTP, MCP_STDIO,

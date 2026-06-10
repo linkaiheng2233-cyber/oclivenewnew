@@ -18,13 +18,13 @@ pub fn ensure_canonical_app_data_ready(canonical: &Path) -> Result<(), String> {
     }
 
     fs::create_dir_all(canonical).map_err(|e| format!("create canonical dir: {e}"))?;
-    let db = paths::resolve_db_path(canonical);
+    let db = paths::find_db_path(canonical);
     if db.is_file() {
         return Ok(());
     }
 
     let legacy = paths::tauri_legacy_app_data_dir();
-    let legacy_db = paths::resolve_db_path(&legacy);
+    let legacy_db = paths::find_db_path(&legacy);
     if !legacy_db.is_file() {
         return Ok(());
     }

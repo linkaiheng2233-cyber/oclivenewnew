@@ -1,4 +1,4 @@
-//! Resolve the on-disk `models/` directory (GGUF/BIN for local import), mirroring [`resolve_roles_dir`].
+//! Resolve the on-disk `models/` directory (GGUF/BIN for local import), mirroring [`find_roles_dir`].
 
 use oclive_kernel_runtime::{
     canonical_brand_app_data_dir, tauri_legacy_app_data_dir, TAURI_APP_IDENTIFIER,
@@ -41,7 +41,7 @@ fn try_dev_models_dir() -> Option<PathBuf> {
         if canon.is_dir() {
             tracing::info!(
                 target: "oclive_models",
-                "resolve_models_dir: manifest-relative -> {}",
+                "find_models_dir: manifest-relative -> {}",
                 canon.display()
             );
             return Some(canon);
@@ -49,7 +49,7 @@ fn try_dev_models_dir() -> Option<PathBuf> {
     }
     tracing::info!(
         target: "oclive_models",
-        "resolve_models_dir: manifest-relative (ensure) -> {}",
+        "find_models_dir: manifest-relative (ensure) -> {}",
         from_manifest.display()
     );
     Some(from_manifest)
@@ -67,7 +67,7 @@ fn try_dev_models_dir() -> Option<PathBuf> {
             if candidate.is_dir() {
                 tracing::info!(
                     target: "oclive_models",
-                    "resolve_models_dir: near_exe -> {}",
+                    "find_models_dir: near_exe -> {}",
                     candidate.display()
                 );
                 return Some(candidate);
@@ -80,7 +80,7 @@ fn try_dev_models_dir() -> Option<PathBuf> {
         if a.is_dir() {
             tracing::info!(
                 target: "oclive_models",
-                "resolve_models_dir: cwd/models -> {}",
+                "find_models_dir: cwd/models -> {}",
                 a.display()
             );
             return Some(a);
@@ -90,7 +90,7 @@ fn try_dev_models_dir() -> Option<PathBuf> {
             if canon.is_dir() {
                 tracing::info!(
                     target: "oclive_models",
-                    "resolve_models_dir: ../models -> {}",
+                    "find_models_dir: ../models -> {}",
                     canon.display()
                 );
                 return Some(canon);
@@ -105,13 +105,13 @@ fn try_dev_models_dir() -> Option<PathBuf> {
 /// Priority: `OCLIVE_MODELS_DIR` -> (debug) repo dev paths -> `resource_dir/models` when
 /// `resource_dir` is set -> exe/cwd heuristics -> relative `models/`.
 #[must_use]
-pub fn resolve_models_dir(resource_dir: Option<&Path>) -> PathBuf {
+pub fn find_models_dir(resource_dir: Option<&Path>) -> PathBuf {
     if let Ok(custom) = std::env::var(ENV_MODELS_DIR) {
         let p = PathBuf::from(&custom);
         if p.is_dir() {
             tracing::info!(
                 target: "oclive_models",
-                "resolve_models_dir: OCLIVE_MODELS_DIR -> {}",
+                "find_models_dir: OCLIVE_MODELS_DIR -> {}",
                 p.display()
             );
             return p;
@@ -133,7 +133,7 @@ pub fn resolve_models_dir(resource_dir: Option<&Path>) -> PathBuf {
         if bundled.is_dir() {
             tracing::info!(
                 target: "oclive_models",
-                "resolve_models_dir: bundled -> {}",
+                "find_models_dir: bundled -> {}",
                 bundled.display()
             );
             return bundled;
@@ -147,15 +147,15 @@ pub fn resolve_models_dir(resource_dir: Option<&Path>) -> PathBuf {
     let fallback = PathBuf::from("models");
     tracing::info!(
         target: "oclive_models",
-        "resolve_models_dir: relative fallback -> {}",
+        "find_models_dir: relative fallback -> {}",
         fallback.display()
     );
     fallback
 }
 
-/// Like [`resolve_models_dir`], creating the directory when missing.
+/// Like [`find_models_dir`], creating the directory when missing.
 pub fn ensure_models_dir(resource_dir: Option<&Path>) -> PathBuf {
-    let dir = resolve_models_dir(resource_dir);
+    let dir = find_models_dir(resource_dir);
     if let Err(e) = fs::create_dir_all(&dir) {
         tracing::warn!(
             target: "oclive_models",

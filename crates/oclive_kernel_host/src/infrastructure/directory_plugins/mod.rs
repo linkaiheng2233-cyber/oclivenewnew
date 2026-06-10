@@ -13,7 +13,7 @@ pub use manifest::{
     ShellSection, UiSchemaField, UiSchemaSection, UiSlotDecl,
 };
 pub use runtime::{
-    plugin_scan_container_roots, resolve_plugin_asset_path, DirectoryPluginRuntime,
+    plugin_scan_container_roots, find_plugin_asset_path, DirectoryPluginRuntime,
     HostPluginsFile, PluginProcessDebugInfo, PluginRootEntry, PluginScanSummary,
 };
 pub use version::parse_manifest_version;

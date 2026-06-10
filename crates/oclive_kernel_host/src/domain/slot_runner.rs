@@ -119,7 +119,7 @@ impl SlotRunner {
         )
     }
 
-    /// `complex_emotion`: serial, **last-wins**.
+    /// `complex_emotion`: serial, **last-wins** (multi-instance slot policy).
     pub fn resolve_complex_emotion(
         pl: &ResolvedRolePlugins,
         input: &ComplexEmotionInput,

@@ -118,7 +118,7 @@ pub async fn reconnect_once(
         anchors: opts.anchors.clone(),
         bundled_binary: opts.bundled_binary.clone(),
         caller_distro_id: Some("desktop".into()),
-        distro_profile_path: super::policy::resolve_desktop_distro_profile_path(&opts.anchors),
+        distro_profile_path: super::policy::find_desktop_distro_profile_path(&opts.anchors),
         promote_shared: true,
     };
 
