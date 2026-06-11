@@ -25,7 +25,7 @@
 
 1. 从角色 **`slot_registry`**（或 legacy `plugin_backends`）解析六槽；
 2. 应用用户 LLM 设置 / 环境变量 override；
-3. 若发行版声明 **`[plugin_backends]`**，则 **`apply_host_ceiling` 用 profile 值整表替换六槽**（`directory_plugins` 仍取自角色包）；
+3. 若发行版声明 **`[plugin_backends]`**，则 **`profile_override`（实现名 `apply_host_ceiling`）用 profile 值整表替换六槽**（`directory_plugins` 仍取自角色包）；
 4. `host_flags.skip_agent = true` 强制 `agent = none`。
 
 见 [`host_backends.rs`](../../crates/oclive_kernel_host/src/state/host_backends.rs) 与单测 `apply_ceiling_replaces_role_backends`。

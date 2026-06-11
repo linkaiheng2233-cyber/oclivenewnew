@@ -153,10 +153,20 @@ flowchart TB
 | ID | 改动 | 风险 |
 |----|------|------|
 | K-SCHED-01 | 桌面/VS Code 默认 `allow_replace_running` 仅对 `profile_mismatch` 为 true；**禁用** `binary_upgrade` 自动 replace | **Done** · env `OCLIVE_ALLOW_BINARY_UPGRADE=1` opt-in |
-| K-SCHED-02 | `/health` 文档强调：**发行版能力 = active_profile_summary**，不是 manifest feature_set | 文档 only |
-| K-SCHED-03 | `apply_host_ceiling` 文档与实现词统一为 **profile_override**（可选 rename，Breaking 走流程） | 中 |
-| K-SCHED-04 | 合并 discovery 文档为 3 档：`bundled` / `shared` / `dev` | 文档 only |
+| K-SCHED-02 | `/health` 文档强调：**发行版能力 = active_profile_summary**，不是 manifest feature_set | **Done** · [DISTRO_KERNEL_LIFECYCLE.md](../creator-docs/kernel/DISTRO_KERNEL_LIFECYCLE.md) §active profile |
+| K-SCHED-03 | `apply_host_ceiling` 文档与实现词统一为 **profile_override**（可选 rename，Breaking 走流程） | **Done（文档层）** · Rust 名保留 |
+| K-SCHED-04 | 合并 discovery 文档为 3 档：`bundled` / `shared` / `dev` | **Done** · 见下表 |
 | K-SCHED-05 | Spawn **发行版 bundled 优先** → shared 全能兜底；dev 仅 `OCLIVE_DEVELOPER=1` | **Done** · `pick_best_for_spawn` |
+
+### Discovery 三档（K-SCHED-04 · SSOT）
+
+| 档 | 来源 | 何时入选 spawn | 备注 |
+|----|------|----------------|------|
+| **`bundled`** | 安装包 `resources/`、扩展 `bin/`、Tauri bundle | **冷启动首选** | `pick_best_for_spawn` tier rank 1 |
+| **`shared`** | `%LOCALAPPDATA%/OCLive/runtime/oclive-kernel-server` | bundled 不可用或 attach 兜底 | tier rank 2 · 全量构建 |
+| **`dev`** | monorepo `target/debug`、score 89–95 | 仅 `OCLIVE_DEVELOPER=1` | tier rank 3 · 非终端默认 |
+
+`discover_spawn_kernel_candidates` 仍按 discovery score 收集候选；**spawn 决策**走 `pick_best_for_spawn` 的 tier rank，而非盲目取最高分 dev build。
 
 **不建议**：删除 `resolve_kernel_action` 或去掉 attach — 会破坏 VS Code + 桌面共 `:8420` 与 `app.db`。
 

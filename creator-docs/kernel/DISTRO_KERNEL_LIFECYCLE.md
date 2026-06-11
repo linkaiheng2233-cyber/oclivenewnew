@@ -97,6 +97,8 @@ Poll health after spawn; watchdog / reconnect reuse phase **A** policy.
 
 ### `/health` active profile (runtime truth)
 
+**发行版能力以 `active_profile_summary` 为准，不是 `kernel_manifest.feature_set`。** Sidecar manifest 描述二进制构建元数据（版本、feature_set 枚举）；调度 attach/replace 与宿主 UI 展示的「当前发行版能力」均读取 **`HostProfile` 运行时摘要**（`enabled_modules` / `disabled_modules`、prompt/post_process profile、interaction 默认值等）。勿用 manifest 的 `feature_set: full|bundled` 推断六槽或 agent/complex_emotion 开关。
+
 `active_profile_summary` is built from the loaded **`HostProfile`** (`host_profile.active_profile_summary()`), not by re-parsing TOML at health time. When no distro profile is loaded (`distro_id = default`, no `OCLIVE_DISTRO_PROFILE`), the field is omitted.
 
 ### Profile compatibility (tightened)

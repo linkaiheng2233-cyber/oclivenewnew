@@ -81,6 +81,8 @@ Tauri 安装包 smoke（Windows）：`$env:VITE_OCLIVE_SHELL='theater'` 后 `npm
 | 仅 Rust workspace | **`cargo test --workspace`**（根目录；含 `crates/*` 与 `src-tauri`） |
 | 仅前端单元 | **`npm run test:unit`**（Vitest） |
 | **核心 HTTP 重启烟测（A1.1a）** | **`npm run test:e2e:core-api-restart`**（需已 `cargo build -p oclivenewnew-tauri`；默认 `OCLIVE_HTTP_API_MOCK_LLM=1`） |
+| **三发行版 smoke（Pro / Flash）** | **`npm run test:distro:smoke`**（profile mirror · distro kernel · Tauri bundled-first）；发版前另跑 **`npm run bundle-kernel:tauri`**（`tauri:build` 已含） |
+| **Flash profile 镜像** | **`cd oclive-vscode && npm run test:distro-profile-mirror`**（需姊妹仓路径） |
 | **Web 预览壳 E2E（A1.1b）** | **`npm run build && npm run test:e2e:preview`**（Playwright + `vite preview`；**CI 仅 Ubuntu `frontend`**）。**Windows 本地**：若内置 `webServer` 超时，请先 **`npm run preview -- --host 127.0.0.1 --port 4180 --strictPort`**，再在另一终端 **`$env:PW_TEST_USE_EXTERNAL='1'`**（PowerShell）后执行 **`npm run test:e2e:preview`** |
 
 **CI 对齐（重要）**：**`npm run check:release` 不包含 `npm run test:unit`**；CI 在 **`frontend`** job 中对 **Ubuntu / Windows** 执行 **`npm run test:unit`** 与 **`npm run build`**；**Playwright（`npm run test:e2e:preview`）仅在 Ubuntu `frontend`** 执行（见 `.github/workflows/ci.yml`）。发版前建议本地补跑 **`npm run test:unit`**；有前端改动时，在 **Linux/macOS** 可 **`npm run build && npm run test:e2e:preview`**，或确认 **Actions → frontend（ubuntu）** 已绿。完整发版勾选见 [handoff/PRODUCT_RELEASE_CHECKLIST.md](handoff/PRODUCT_RELEASE_CHECKLIST.md)。

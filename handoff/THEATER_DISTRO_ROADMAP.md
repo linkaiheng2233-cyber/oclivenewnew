@@ -24,7 +24,7 @@
 
 | 项 | 解冻条件 |
 |----|----------|
-| **Phase 4 导演插件 + T1–T4 + roles 子集** | **Chat Pro + VS Code Flash smoke 通过**（见三发行版计划 Phase 2–3） |
+| **Phase 4 导演插件 + T1–T4 + roles 子集** | **Chat Pro + VS Code Flash smoke 通过** — 见 [`THREE_DISTRO_KERNEL_CLOSURE.md`](./THREE_DISTRO_KERNEL_CLOSURE.md) §3 smoke 表 · [`THEATER_PHASE4_READINESS.md`](./THEATER_PHASE4_READINESS.md) |
 | 发行版 **内核二进制定制**（promote / sidecar / 专用 `kernel_manifest`） | T4 完成 **且** 15s 陌生人测试 ≥60% 后再开 RFC |
 | **赌场 / 目录插件 DLC** | Mode 1 惊喜成立 + 第二场场景需求明确 |
 | `process_message` 新 stage · **`dual_core` 解冻** | 与 theater 发行版正交；见 `TECHNICAL_DEBT_INVENTORY` |

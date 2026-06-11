@@ -23,6 +23,9 @@
 
 ### Added
 
+- **Three-distro kernel smoke (Pro / Flash)**: `npm run test:distro:smoke` aggregates profile mirror · distro kernel e2e · Tauri bundled-first; `e2e-distro-kernel` adds a **theater** scenario; CI **`cross-host-e2e`** adds `e2e-tauri-bundled-kernel` and VS Code profile diff. Closure SSOT: [`handoff/THREE_DISTRO_KERNEL_CLOSURE.md`](handoff/THREE_DISTRO_KERNEL_CLOSURE.md).
+- **Chat Pro bundled-first spawn (K-SCHED-05/01)**: Tauri `bundle-kernel-for-tauri.mjs` · `pick_best_for_spawn` bundled → shared → dev; `binary_upgrade` replace off by default.
+- **VS Code Flash profile mirror**: `examples/distro-profiles/vscode.oclive.toml` ↔ sibling `distro.oclive.toml` · `npm run test:distro-profile-mirror`.
 - **Contract extension envelope (V-CONTRACT Phase 0)**: `SlotExtension { schema_id, data }`; optional `extension` on `EmotionResult` / `ComplexEmotionOutput`; `PromptInput.extra_sections` injects generic blocks before the quality anchor; evolution rules in `EXTENSION_POINTS.md`.
 - **Hot-path stage tracing (K-PERF-02)**: `oclive_turn` target logs per-`ChatStage` `elapsed_ms`; sample table in `creator-docs/getting-started/PERFORMANCE.md` §6.
 - **CHANGELOG CI gate (K-DOC-02)**: `scripts/check-changelog-parity.mjs` wired into `dimension5-acceptance.mjs`.

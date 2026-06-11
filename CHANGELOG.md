@@ -23,6 +23,9 @@
 
 ### Added
 
+- **三发行版内核 smoke（Pro / Flash）**：`npm run test:distro:smoke` 聚合 profile mirror · distro kernel e2e · Tauri bundled-first；`e2e-distro-kernel` 新增 **theater** scenario；CI **`cross-host-e2e`** 追加 `e2e-tauri-bundled-kernel` 与 VS Code profile diff。结项见 [`handoff/THREE_DISTRO_KERNEL_CLOSURE.md`](handoff/THREE_DISTRO_KERNEL_CLOSURE.md)。
+- **Chat Pro bundled-first spawn（K-SCHED-05/01）**：Tauri `bundle-kernel-for-tauri.mjs` · `pick_best_for_spawn` bundled → shared → dev；`binary_upgrade` replace 默认关。
+- **VS Code Flash profile 镜像**：`examples/distro-profiles/vscode.oclive.toml` ↔ 姊妹仓 `distro.oclive.toml` · `npm run test:distro-profile-mirror`。
 - **契约扩展信封（V-CONTRACT Phase 0）**：`SlotExtension { schema_id, data }`；`EmotionResult` / `ComplexEmotionOutput` 可选 `extension`；`PromptInput.extra_sections` 在锚点前注入通用段落；演化规则见 `EXTENSION_POINTS.md`。
 - **热路径 stage tracing（K-PERF-02）**：`oclive_turn` target 输出 per-`ChatStage` `elapsed_ms`；采样见 `creator-docs/getting-started/PERFORMANCE.md` §6。
 - **CHANGELOG CI 门（K-DOC-02）**：`scripts/check-changelog-parity.mjs` 接入 `dimension5-acceptance.mjs`。

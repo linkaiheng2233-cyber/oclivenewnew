@@ -133,7 +133,7 @@ favor_low  = "…"              # optional; favor < 40
 
 1. **角色基础**：从 **`slot_registry`**（v2）或 legacy `plugin_backends` 解析六槽；`directory_plugins` 取自角色包。
 2. **用户 LLM 设置 / env**：`resolve_effective_ollama_model` 等 override（在 profile 之前或之后按现有路径）。
-3. **发行版 profile**：若 `distro.oclive.toml` 声明 **`[plugin_backends]`**，则 **`apply_host_ceiling` 用 profile 值整表替换六槽**（`directory_plugins` **不**被 profile 覆盖）。
+3. **发行版 profile**：若 `distro.oclive.toml` 声明 **`[plugin_backends]`**，则 **`profile_override`（实现名 `apply_host_ceiling`）用 profile 值整表替换六槽**（`directory_plugins` **不**被 profile 覆盖）。
 4. **`host_flags`**：`skip_agent = true` → 强制 `agent = none`；`skip_complex_emotion` / `slots.complex_emotion = off` → 跳过共景复杂情感。
 5. **会话覆盖**：`PluginBackendsOverride` 在有效 backends 上再叠一层（仍受 startup health 与 none 语义约束）。
 
