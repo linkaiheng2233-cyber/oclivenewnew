@@ -125,8 +125,17 @@ fn serve_ocliveplugin_asset(
         .body(data)
 }
 
+fn apply_bundled_shell_env() {
+    if let Some(shell) = option_env!("OCLIVE_BUNDLED_SHELL") {
+        if !shell.is_empty() && std::env::var("OCLIVE_SHELL").is_err() {
+            std::env::set_var("OCLIVE_SHELL", shell);
+        }
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    apply_bundled_shell_env();
     // Align with `bundle.identifier` in `tauri.conf.json`; `tauri-plugin-deep-link` must register before setup.
     #[cfg(all(desktop, feature = "desktop"))]
     tauri_plugin_deep_link::prepare("com.oclivenewnew.app");

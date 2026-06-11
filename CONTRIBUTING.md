@@ -38,10 +38,20 @@ npm run build
 
 ```bash
 npm run dev:theater        # VITE_OCLIVE_SHELL=theater（见 .env.theater）
-npm run test:theater:smoke # profile 对齐 + theater 单测
+npm run test:theater:smoke # profile 对齐 + roles 子集 + theater 单测 + 15s 工程代理
+npm run test:theater:stranger-proxy  # 仅 15s 结构性代理
 ```
 
-Tauri 安装包 smoke（Windows）：`$env:VITE_OCLIVE_SHELL='theater'` 后 `npm run tauri:build`。验收见 [`handoff/THEATER_15S_ACCEPTANCE.md`](handoff/THEATER_15S_ACCEPTANCE.md)。
+**Theater Tauri 安装包（Windows · roles 子集）**：
+
+```powershell
+npm run tauri:build:theater
+# 等价步骤：node scripts/filter-theater-roles.mjs → bundle kernel → tauri build --config src-tauri/tauri.theater.conf.json
+# 产物：src-tauri/target/release/bundle/（NSIS / exe）
+# 内置 OCLIVE_SHELL=theater（compile-time）；bundled roles 仅 theater-breakfast-a/b
+```
+
+验收见 [`handoff/THEATER_15S_ACCEPTANCE.md`](handoff/THEATER_15S_ACCEPTANCE.md) · 陌生人填表 [`handoff/THEATER_STRANGER_TEST_ROUND1.md`](handoff/THEATER_STRANGER_TEST_ROUND1.md)。
 
 **本地 HTTP API**（与 GUI 同一二进制）：`./oclivenewnew-tauri` / 安装包可执行文件加 **`--api`**，见根目录 [README.md](README.md)「本地 HTTP API」节。
 

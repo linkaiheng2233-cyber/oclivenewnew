@@ -26,6 +26,15 @@ console.info('[theater-smoke] checking theater distro prerequisites…')
 const envTheater = read('.env.theater').trim()
 assert(envTheater.includes('VITE_OCLIVE_SHELL=theater'), '.env.theater must set VITE_OCLIVE_SHELL=theater')
 
+assert(
+  fs.existsSync(path.join(root, 'src-tauri/tauri.theater.conf.json')),
+  'tauri.theater.conf.json missing',
+)
+assert(
+  fs.existsSync(path.join(root, 'scripts/filter-theater-roles.mjs')),
+  'filter-theater-roles.mjs missing',
+)
+
 function tomlBody(text) {
   return text
     .split(/\r?\n/)
@@ -41,11 +50,31 @@ assert(exampleProfile === bundledProfile, 'bundled theater.oclive.toml body must
 assert(fs.existsSync(path.join(root, 'public/theater/breakfast/skeleton.json')), 'breakfast skeleton missing')
 assert(fs.existsSync(path.join(root, 'public/theater/scenes.json')), 'theater scenes index missing')
 
+console.info('[theater-smoke] filtering theater roles subset…')
+execSync('node scripts/filter-theater-roles.mjs', { cwd: root, stdio: 'inherit' })
+const bundledRoles = path.join(root, 'src-tauri/resources/roles')
+for (const id of ['theater-breakfast-a', 'theater-breakfast-b']) {
+  assert(
+    fs.existsSync(path.join(bundledRoles, id, 'pipeline.ocblueprint')),
+    `bundled role missing: ${id}`,
+  )
+}
+const bundledIds = fs.readdirSync(bundledRoles, { withFileTypes: true })
+  .filter(e => e.isDirectory())
+  .map(e => e.name)
+assert(bundledIds.length === 2, `expected 2 bundled roles, got ${bundledIds.length}`)
+
 console.info('[theater-smoke] running theater unit tests…')
 execSync('npm run test:unit -- src/theater/', { cwd: root, stdio: 'inherit' })
 
+console.info('[theater-smoke] running 15s engineering proxy…')
+execSync('node scripts/theater-stranger-proxy.mjs', { cwd: root, stdio: 'inherit' })
+
 console.info('[theater-smoke] PASS')
-console.info('[theater-smoke] Tauri install package (manual):')
+console.info('[theater-smoke] Tauri theater install package (Windows):')
+console.info('  npm run tauri:build:theater')
+console.info('[theater-smoke] Or manual:')
+console.info('  node scripts/filter-theater-roles.mjs')
+console.info('  $env:OCLIVE_TAURI_SHELL = "theater"')
 console.info('  $env:VITE_OCLIVE_SHELL = "theater"')
-console.info('  $env:OCLIVE_DISTRO_PROFILE = "examples/distro-profiles/theater.oclive.toml"')
-console.info('  npm run tauri:build')
+console.info('  npm run tauri:build -- --config src-tauri/tauri.theater.conf.json')

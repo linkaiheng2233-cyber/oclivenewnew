@@ -21,6 +21,8 @@
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "node scripts/bundle-kernel-for-tauri.mjs && tauri build",
+    "tauri:build:theater": "node scripts/tauri-build-theater.mjs",
+    "test:theater:stranger-proxy": "node scripts/theater-stranger-proxy.mjs",
     "bundle-kernel:tauri": "node scripts/bundle-kernel-for-tauri.mjs",
     "check:rust:fmt": "cargo fmt --all -- --check",
     "check:rust:clippy": "cargo clippy --workspace --all-targets --all-features -- -D warnings",

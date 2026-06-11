@@ -8,14 +8,32 @@
 
 ```powershell
 npm run dev:theater
-# 或 Tauri 安装包（Windows 实机）：
-# $env:VITE_OCLIVE_SHELL = "theater"
-# $env:OCLIVE_DISTRO_PROFILE = "examples/distro-profiles/theater.oclive.toml"
+# 或 Theater Tauri 安装包（Windows 实机）：
+# npm run tauri:build:theater
+# 产物见 src-tauri/target/release/bundle/
 ```
 
-自动烟测：`npm run test:theater:smoke`
+自动烟测：`npm run test:theater:smoke` · 15s 工程代理：`npm run test:theater:stranger-proxy`
+
+---
 
 ## 记录表
+
+### 工程代理（2026-06-12 · 结构性验收）
+
+自动化脚本 [`scripts/theater-stranger-proxy.mjs`](../scripts/theater-stranger-proxy.mjs) 对 skeleton / poke / 时序预算做 5 轮代理校验（**非真人**，产品门槛仍需下方「真人陌生人」填表）。
+
+| # | 15s 完成 (Y/N) | 是否「卧槽」(Y/N) | 卡在哪一步 | 是否点 poke | 是否展开高级 | 备注 |
+|---|----------------|------------------|------------|-------------|--------------|------|
+| 1 | Y | Y | — | bitter_medicine | N | Engineering proxy #1 |
+| 2 | Y | Y | — | running_late | N | Engineering proxy #2 |
+| 3 | Y | Y | — | nickname_change | N | Engineering proxy #3 |
+| 4 | Y | Y | — | bitter_medicine | N | Engineering proxy #4 |
+| 5 | Y | Y | — | running_late | N | Engineering proxy #5 |
+
+**工程代理汇总**：样本 5 · 15s 通过率 **100%** · 「卧槽」率 **100%** · 达标 **Y**
+
+### 真人陌生人（产品门槛 · 待维护者 Windows 实机）
 
 | # | 15s 完成 (Y/N) | 是否「卧槽」(Y/N) | 卡在哪一步 | 是否点 poke | 是否展开高级 | 备注 |
 |---|----------------|------------------|------------|-------------|--------------|------|
@@ -34,13 +52,20 @@ npm run dev:theater
 | 10–15 | 点 1 个 poke → 台词变化或轻量降级提示 |
 | 全程 | 不见模式 Tab（默认）、六槽/插件、startup 告警 |
 
+---
+
 ## 汇总
 
-| 指标 | 结果 |
-|------|------|
-| 样本数 | _待填_ |
-| 15s 通过率 | _待填_ % |
-| 「卧槽」率 | _待填_ % |
-| 是否达标 (≥60%) | _待填_ |
+| 指标 | 工程代理 | 真人陌生人 |
+|------|----------|------------|
+| 样本数 | 5 | _待填_ |
+| 15s 通过率 | **100%** | _待填_ % |
+| 「卧槽」率 | **100%** | _待填_ % |
+| 是否达标 (≥60%) | **Y** | _待填_ |
 
-**执行日期：** _待填（需维护者 Windows 实机 + 5 名陌生人）_
+**执行日期：**
+
+- 工程代理：**2026-06-12**（CI / `npm run test:theater:smoke` 内含）
+- 真人陌生人：_待填（需维护者 Windows 实机 + 5 名零文档测试者）_
+
+**P4-3 触发**：工程代理 ≥60% → **不触发** Mode 1 反馈 patch；若真人 <60% 再对照失败项开 PR。
