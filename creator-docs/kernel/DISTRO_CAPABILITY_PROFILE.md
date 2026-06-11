@@ -22,12 +22,13 @@
 
 ## 2. 文件位置与命名
 
-| 发行版 | 建议路径 |
-|--------|----------|
-| 桌面（开发树） | 示例：`examples/distro-profiles/desktop.oclive.toml`；**安装包**：`resources/distro-profiles/desktop.oclive.toml`（Tauri bundle，默认 spawn） |
-| AI Theater v0 | 示例：`examples/distro-profiles/theater.oclive.toml`；**安装包**：`resources/distro-profiles/theater.oclive.toml`（`OCLIVE_SHELL=theater` 时自动选用） |
-| VS Code 扩展 | 扩展根 `distro.oclive.toml`；主仓镜像：`examples/distro-profiles/vscode.oclive.toml` |
-| 自定义 | 任意路径，由环境变量 `OCLIVE_DISTRO_PROFILE` 指向 |
+| 产品 | `distro_id` | 建议路径 |
+|------|-------------|----------|
+| **Chat Pro**（桌面 Release hero） | `desktop` | 示例：`examples/distro-profiles/desktop.oclive.toml`；**安装包**：`resources/distro-profiles/desktop.oclive.toml`（Tauri bundle，默认 spawn） |
+| **VS Code Flash** | `vscode` | 扩展根 `distro.oclive.toml`；主仓镜像：`examples/distro-profiles/vscode.oclive.toml` |
+| **dev lab**（非 Release） | `desktop-chat` | 示例：`examples/distro-profiles/desktop-chat.oclive.toml` |
+| **AI Theater**（Deferred） | `theater` | 示例：`examples/distro-profiles/theater.oclive.toml`；**安装包**：`resources/distro-profiles/theater.oclive.toml`（`OCLIVE_SHELL=theater` 时自动选用） |
+| 自定义 | 任意 | 由环境变量 `OCLIVE_DISTRO_PROFILE` 指向 |
 
 **发行版标识**（P4 传入内核）：
 

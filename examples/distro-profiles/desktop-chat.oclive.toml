@@ -1,12 +1,12 @@
-# OCLive official "Daily chat" distribution — first-impression profile
-# Lab / widest plugin surface: NO [plugin_backends] block — role blueprints may use
-# builtin | remote | directory | none per slot. See DISTRO_DEFAULT_PLUGINS.md §3.1
+# dev lab only — NOT a Release hero product.
+# Concise/light HostProfile + open ceiling (no [plugin_backends]); for monorepo / examples fallback.
+# Release chat hero = `desktop` (Chat Pro). See DISTRO_DEFAULT_PLUGINS.md §3.3
 # Copy beside install root or set OCLIVE_DISTRO_PROFILE to this path.
 # See creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md
 
 schema_version = 1
 distro_id = "desktop-chat"
-display_name = "OCLive Daily Chat"
+display_name = "OCLive Daily Chat (dev lab)"
 
 [interaction]
 default_mode = "pure_chat"

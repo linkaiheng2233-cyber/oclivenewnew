@@ -1,10 +1,12 @@
-# OCLive desktop distribution — capability profile (example)
+# OCLive Chat Pro — capability profile (聊天基础发行版 · Pro · open ceiling)
+# Omit [plugin_backends]: role blueprints + directory plugins retain full six-slot surface.
 # Copy beside install root or set OCLIVE_DISTRO_PROFILE to this path.
-# See creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md
+# Bundled mirror: src-tauri/resources/distro-profiles/desktop.oclive.toml
+# See creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md · DISTRO_DEFAULT_PLUGINS.md §3.1
 
 schema_version = 1
 distro_id = "desktop"
-display_name = "OCLive Desktop"
+display_name = "OCLive Chat Pro"
 
 [interaction]
 default_mode = "pure_chat"
@@ -27,24 +29,7 @@ favor_mid  = "保持温暖、有分寸的闲聊节奏"
 favor_low  = "礼貌克制，勿过度主动"
 
 [memory]
-# retrieval: reserved, not parsed in v0.3
 retrieval = "default"
 
 [post_process]
 chain = "standard"
-
-# Optional User Identity defaults (catalog still comes from role pack user_identities/).
-# Desktop typically follows catalog default_identity_id; omit default_id unless tightening UX.
-# [user_identity]
-# default_id = "classmate"
-# allowed_ids = ["classmate", "friend"]
-
-# Desktop does not tighten plugin_backends here — full capability from role packs.
-# Optional explicit defaults (same as engine defaults):
-# [plugin_backends]
-# memory = "builtin"
-# emotion = "builtin"
-# event = "builtin"
-# prompt = "builtin"
-# llm = "ollama"
-# agent = "builtin"

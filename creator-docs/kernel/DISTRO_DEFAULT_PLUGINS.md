@@ -32,60 +32,89 @@
 
 **设计含义**：
 
-- **实验场**（desktop-chat）：**省略** `[plugin_backends]` → 角色蓝图可声明 `remote` / `directory` / 任意组合。
-- **稳定参考**（vscode / theater）：**显式** `[plugin_backends]` → 无论角色包怎么写，运行时固定为发行版矩阵（仍受 startup health 约束）。
+- **Chat Pro**（`desktop`）：**省略** `[plugin_backends]` → 角色蓝图 + 目录插件 **open ceiling**。
+- **VS Code Flash**（`vscode`）：**显式** `[plugin_backends]` → 无论角色包怎么写，运行时固定为发行版矩阵。
+- **dev lab**（`desktop-chat`）：**省略** `[plugin_backends]` → 与 Pro 相同 open ceiling，但 prompt/memory 更轻；**不进 Release 包**。
+- **Theater**（Deferred）：**显式** 轻量矩阵；见 §3.4。
 
 ---
 
-## 3. 三发行版 personas
+## 3. 三主打产品 + dev lab
 
 ```mermaid
 flowchart TB
   kernel["单核 :8420\nbundled 首选 · shared 兜底"]
-  subgraph lab [desktop_chat_实验场]
-    dcProfile["profile: 无 plugin_backends 上限"]
-    dcRoles["默认角色: mumu 等全能力示例"]
+  subgraph pro [desktop_Chat_Pro]
+    proProfile["profile: open ceiling · full prompt"]
+    proRoles["mumu 等全能力示例"]
   end
-  subgraph stable [vscode_稳定参考]
+  subgraph flash [vscode_Flash]
     vsProfile["profile: 六槽全 builtin + 限制"]
     vsRoles["mumu vscode 场景"]
     vsPlugin["渗透 optional vsix"]
   end
-  subgraph theater [theater_场景专用]
+  subgraph lab [desktop_chat_dev_lab]
+    dcProfile["profile: concise/light + open ceiling"]
+    dcNote["examples/ only · 非 Release hero"]
+  end
+  subgraph theater [theater_Deferred]
     thProfile["profile: 轻量六槽 + skip agent/CE"]
     thRoles["theater-breakfast-* 蓝图"]
-    thShell["TheaterShell 前端 Ollama patch"]
   end
-  kernel --> lab
-  kernel --> stable
-  kernel --> theater
+  kernel --> pro
+  kernel --> flash
+  kernel -.-> lab
+  kernel -.-> theater
 ```
 
-### 3.1 `desktop-chat` — 最全实验场
+### 3.1 `desktop` — Chat Pro（Release hero · 开发基座）
 
 | 维度 | 策略 |
 |------|------|
-| **目标** | 模块作者 / 高级用户验证六槽替换、directory 插件、Agent、complex_emotion |
-| **`[plugin_backends]`** | **省略**（不替换角色蓝图） |
+| **产品** | **OCLive Chat Pro** — 独立桌面 · 最强插件面 · Tauri 默认 spawn profile |
+| **`[plugin_backends]`** | **省略**（open ceiling；角色蓝图 + directory 插件说了算） |
 | **`host_flags`** | agent / complex_emotion **开启** |
-| **`prompt.profile`** | `concise`（首印象）或切 `desktop` profile 的 `full` 做对比 |
-| **`memory.retrieval`** | `light`（首印象）或 `default` |
+| **`prompt.profile`** | `full` |
+| **`memory.retrieval`** | `default`（8 条） |
+| **`post_process.chain`** | `standard` |
 | **默认角色** | `mumu` + 仓库完整示例包 |
-| **bundled profile** | [`examples/distro-profiles/desktop-chat.oclive.toml`](../../examples/distro-profiles/desktop-chat.oclive.toml) |
+| **bundled profile** | [`src-tauri/resources/distro-profiles/desktop.oclive.toml`](../../src-tauri/resources/distro-profiles/desktop.oclive.toml) · 示例镜像 [`examples/distro-profiles/desktop.oclive.toml`](../../examples/distro-profiles/desktop.oclive.toml) |
 
-### 3.2 `vscode` — 稳定核最佳实践
+### 3.2 `vscode` — VS Code Flash（Pro 简洁版）
 
 | 维度 | 策略 |
 |------|------|
-| **目标** | 侧边栏常驻聊天：**自由但有限** — 全 builtin 六槽、无 Agent（默认）、无 complex_emotion |
+| **产品** | **VS Code Flash** — Pro 的简洁侧栏版；同构建全量 `oclive-kernel-server` + 显式六槽矩阵 |
 | **`[plugin_backends]`** | **显式** 全 `builtin` + `llm = ollama`（见 [`vscode.oclive.toml`](../../examples/distro-profiles/vscode.oclive.toml)） |
 | **`host_flags`** | `skip_agent = true` · `skip_complex_emotion = true` |
+| **`prompt.profile`** | `concise` |
+| **`memory.retrieval`** | `light`（4 条） |
 | **`post_process.chain`** | `minimal` |
 | **`user_identity`** | `default_id = classmate` |
 | **高级变体** | [`vscode-agent.oclive.toml`](../../examples/distro-profiles/vscode-agent.oclive.toml)（`skip_agent = false`） |
 | **渗透** | **非六槽** · 独立 vsix + [`vscode-penetration.oclive.toml`](../../examples/distro-profiles/vscode-penetration.oclive.toml) |
 
-### 3.3 `theater` — 场景专用插件矩阵
+**Pro vs Flash 对照**：
+
+| 维度 | Chat Pro (`desktop`) | VS Code Flash (`vscode`) |
+|------|----------------------|---------------------------|
+| 内核 binary | 全量 bundled | **同构建** |
+| `[plugin_backends]` | 省略 | 全 builtin 整表替换 |
+| Agent / CE | 开 | 关 |
+| interaction | 可切沉浸 | 永久 `pure_chat` |
+| bundled 路径 | Tauri `resources/` | VSIX `bin/` |
+
+### 3.3 `desktop-chat` — dev lab only
+
+| 维度 | 策略 |
+|------|------|
+| **目标** | Monorepo / `examples/` 轻量 profile；**非** Release hero |
+| **`[plugin_backends]`** | **省略**（与 Pro 相同 open ceiling） |
+| **`prompt.profile`** | `concise` · **`memory.retrieval`** `light` |
+| **何时用** | 本地对比 Pro/Flash；`OCLIVE_DISTRO_PROFILE` 指向 examples 路径 |
+| **profile** | [`examples/distro-profiles/desktop-chat.oclive.toml`](../../examples/distro-profiles/desktop-chat.oclive.toml) |
+
+### 3.4 `theater` — AI 剧场（Deferred · Pro/Flash smoke 通过后再开）
 
 | 维度 | 策略 |
 |------|------|
@@ -133,10 +162,10 @@ flowchart TB
 
 | 发行版 | bundled / 推荐 `roles/` | 说明 |
 |--------|-------------------------|------|
-| `desktop-chat` | `mumu`、其它官方示例 | 实验六槽 + 编写器全字段 |
-| `desktop`（全功能 UI） | 同上 | spawn 默认 profile 为 `desktop.oclive.toml` |
-| `vscode` | `mumu`（`scenes/vscode/`） | vscode-lite 契约 |
-| `theater` | `theater-breakfast-a`、`theater-breakfast-b` | 仅早饭场景 |
+| `desktop`（**Chat Pro**） | `mumu`、其它官方示例 | Tauri 默认 spawn · open ceiling |
+| `desktop-chat`（**dev lab**） | 同上 | examples/ only · 非 Release hero |
+| `vscode`（**Flash**） | `mumu`（`scenes/vscode/`） | vscode-lite 契约 |
+| `theater`（**Deferred**） | `theater-breakfast-a`、`theater-breakfast-b` | Pro/Flash smoke 通过后再 ship |
 
 按发行版过滤 `roles/` 目录（安装包只带子集）— **T4 打包项**，当前 dev 树仍加载全 `roles/`。
 

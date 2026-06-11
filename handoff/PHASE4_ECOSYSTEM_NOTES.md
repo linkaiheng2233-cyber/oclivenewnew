@@ -8,9 +8,10 @@
 - 入口：[`../oclive-vscode/AGENTS.md`](../../oclive-vscode/AGENTS.md) · [`creator-docs/role-pack/CROSS_HOST_MEMORY.md`](../creator-docs/role-pack/CROSS_HOST_MEMORY.md)
 - Theater 角色包拷到 `OCLIVE_ROLES_DIR` 后 VS Code 可加载（标准 v2 蓝图）。
 
-## 基础聊天
+## 基础聊天（Chat Pro）
 
-- 继续藏在 `pure_chat` + `desktop-chat` profile；**不当 hero**。
+- **Release hero** = `desktop`（**OCLive Chat Pro**）· bundled profile [`src-tauri/resources/distro-profiles/desktop.oclive.toml`](../src-tauri/resources/distro-profiles/desktop.oclive.toml)
+- **`desktop-chat`** = **dev lab only**（`examples/` + monorepo fallback）；**不当 hero**。
 - Profile：[`examples/distro-profiles/desktop-chat.oclive.toml`](../examples/distro-profiles/desktop-chat.oclive.toml)
 
 ## OC 社交
@@ -23,4 +24,5 @@
 
 ## 第二剧场 / 多场景
 
-- 进入 Phase 4+ backlog，需 Theater v0 陌生人测试通过后再排期。
+- 进入 Phase 4+ backlog，需 **Chat Pro + VS Code Flash smoke 通过** 且 Theater v0 陌生人测试通过后再排期。
+- 导演 RPC / T1–T4 / roles 子集：[`THEATER_DISTRO_ROADMAP.md`](./THEATER_DISTRO_ROADMAP.md)（**Deferred**，不在 Pro/Flash 计划内实现）。

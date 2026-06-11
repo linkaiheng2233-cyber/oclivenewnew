@@ -1,9 +1,10 @@
-# OCLive desktop — bundled install profile (default for tool/fluent shells)
-# See creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md
+# OCLive Chat Pro — bundled install profile (聊天基础发行版 · Pro · open ceiling)
+# Omit [plugin_backends]: role blueprints + directory plugins retain full six-slot surface.
+# See creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md · DISTRO_DEFAULT_PLUGINS.md §3.1
 
 schema_version = 1
 distro_id = "desktop"
-display_name = "OCLive Desktop"
+display_name = "OCLive Chat Pro"
 
 [interaction]
 default_mode = "pure_chat"
