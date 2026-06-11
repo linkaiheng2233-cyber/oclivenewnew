@@ -280,6 +280,8 @@ jobs:
           node scripts/e2e-cross-host-memory.mjs
           node scripts/e2e-distro-kernel.mjs --scenario all
           node scripts/e2e-kernel-profile.mjs
+          node scripts/e2e-tauri-bundled-kernel.mjs
+          node scripts/diff-vscode-distro-profile.mjs
 
   oocp-test-suite:
     runs-on: ubuntu-22.04

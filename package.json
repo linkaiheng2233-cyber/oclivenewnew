@@ -32,6 +32,7 @@
     "check:release": "npm run build && npm run test:unit && npm run verify:ui && npm run verify:shared-i18n && npm run check:rust:fmt && npm run check:rust:clippy && npm run check:rust:test:all",
     "verify:shared-i18n": "node scripts/verify-shared-i18n.mjs",
     "test:distro-profile-mirror": "node scripts/diff-vscode-distro-profile.mjs",
+    "test:distro:smoke": "npm run test:distro-profile-mirror && npm run test:e2e:distro-kernel && npm run test:e2e:tauri-bundled-kernel",
     "scaffold:ui-plugin": "node scripts/scaffold-ui-slot-plugin.mjs",
     "test:unit": "vitest run",
     "test:theater:smoke": "node scripts/theater-tauri-smoke.mjs",
