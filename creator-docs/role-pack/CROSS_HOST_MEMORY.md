@@ -64,7 +64,7 @@ roles/{id}/  ──load_role──►  桌面 / VS Code / kernel_server
 | 项 | 决策 |
 |----|------|
 | **单内核写库** | 同一时刻仅 **一个** 内核进程写 `app.db` |
-| **attach vs spawn** | **Capability-first**（共享 Rust 策略 `resolve_kernel_action`）：`/health` 可读则比较 `kernel_manifest`；本机有更全内核可 replace/spawn；`OCLIVE_KERNEL_BINARY` pin 时不替换。无服务 → spawn；仅 bundled → 降级。详见 [`DISTRO_KERNEL_LIFECYCLE.md`](../kernel/DISTRO_KERNEL_LIFECYCLE.md) |
+| **attach vs spawn** | **Profile-aware attach + bundled-first spawn**（共享 Rust 策略 `resolve_kernel_action`）：`/health` 可读且 profile 兼容 → **Attach**（不因本机有更强 binary 而 replace）；profile 冲突 → **Replace**（重启）；无进程 → spawn **发行版 bundled** → **shared 兜底**（同 `OCLIVE_APP_DATA` / profile / roles；插件复用）。`OCLIVE_KERNEL_BINARY` pin 时不替换。`binary_upgrade` 自动 replace **Freeze**。详见 [`DISTRO_KERNEL_LIFECYCLE.md`](../kernel/DISTRO_KERNEL_LIFECYCLE.md) · [`KERNEL_SCHEDULER_RESCOPE.md`](../../handoff/KERNEL_SCHEDULER_RESCOPE.md) |
 | **端口** | 固定 **`8420`**（`OCLIVE_API_PORT`） |
 | **`OCLIVE_ROLES_DIR`** | 桌面与扩展 **相同路径** |
 | **`OCLIVE_APP_DATA`** | 品牌目录 `%LOCALAPPDATA%/OCLive/data`（spawn 必传；见 [`OCLIVE_APP_DATA.md`](../kernel/OCLIVE_APP_DATA.md)） |

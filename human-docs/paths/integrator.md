@@ -37,4 +37,5 @@
 ## 深度链接
 
 - [PURE_KERNEL_BOUNDARY](../../creator-docs/getting-started/PURE_KERNEL_BOUNDARY.md)
-- [DISTRO_KERNEL_LIFECYCLE](../../creator-docs/kernel/DISTRO_KERNEL_LIFECYCLE.md)
+- [DISTRO_KERNEL_LIFECYCLE](../../creator-docs/kernel/DISTRO_KERNEL_LIFECYCLE.md) — bundled-first spawn · 单核 attach/replace
+- [KERNEL_SCHEDULER_RESCOPE](../../handoff/KERNEL_SCHEDULER_RESCOPE.md) — 调度范围重划

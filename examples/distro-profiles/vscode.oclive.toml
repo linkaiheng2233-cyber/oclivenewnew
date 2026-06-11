@@ -1,4 +1,5 @@
-# OCLive VS Code extension — capability profile (example)
+# OCLive VS Code extension — stable reference profile (explicit six-slot matrix).
+# See creator-docs/kernel/DISTRO_DEFAULT_PLUGINS.md §3.2
 # Install copy: <extension-root>/distro.oclive.toml
 # SSOT mirror: oclivenewnew/examples/distro-profiles/vscode.oclive.toml
 # See creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md

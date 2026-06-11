@@ -17,7 +17,7 @@
 | **效率边界** | 不追求 IDE 效率工具最好；提供 **契约 + 参考插件 + 创作空间** |
 | 场景 | `scene_id=vscode` |
 | 记忆 / 好感 | 与桌面 **共用 `app.db`** |
-| 默认 profile | `examples/distro-profiles/vscode.oclive.toml`（`pure_chat`、`skip_agent`） |
+| 默认 profile | `examples/distro-profiles/vscode.oclive.toml`（`pure_chat`、`skip_agent`；`[plugin_backends]` 整表替换） |
 | 互动模式 | VS Code **永久 pure_chat**（决策门 B） |
 
 桌面 **沉浸模式** UI **不在** VS Code 实现。
@@ -29,7 +29,7 @@
 ### 核心（长期）
 
 - 侧栏：**立绘** + **对话** + 编辑器上下文
-- 内核：`GET /health` + `POST /chat` / `stream`（8420；policy-first）
+- 内核：`GET /health` + `POST /chat` / `stream`（8420；**profile-aware attach + bundled-first spawn** — 见 [`DISTRO_KERNEL_LIFECYCLE.md`](../kernel/DISTRO_KERNEL_LIFECYCLE.md)）
 - **不** 长期内置：日记、写信、idle、渗透设置大分区
 
 ### 渗透插件（0.4+ · 三仓 + npm）
@@ -60,6 +60,7 @@
 
 | 文档 | 路径 |
 |------|------|
+| 内核 lifecycle | [`DISTRO_KERNEL_LIFECYCLE.md`](../kernel/DISTRO_KERNEL_LIFECYCLE.md) · [`KERNEL_SCHEDULER_RESCOPE.md`](../../handoff/KERNEL_SCHEDULER_RESCOPE.md) |
 | 路线图 | [`oclive-vscode/ROADMAP.md`](../../../oclive-vscode/ROADMAP.md) |
 | 扩展契约详表 | [`oclive-vscode/docs/VSCODE_DISTRIBUTION.md`](../../../oclive-vscode/docs/VSCODE_DISTRIBUTION.md) |
 | 决策门 | [`GATE_DECISIONS.md`](../../../oclive-vscode/docs/GATE_DECISIONS.md) |

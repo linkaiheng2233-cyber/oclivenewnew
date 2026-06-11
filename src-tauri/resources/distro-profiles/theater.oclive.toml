@@ -29,3 +29,12 @@ retrieval = "light"
 
 [post_process]
 chain = "standard"
+
+# Theater effective six-slot matrix — see creator-docs/kernel/DISTRO_DEFAULT_PLUGINS.md
+[plugin_backends]
+memory = "none"
+emotion = "builtin"
+event = "none"
+prompt = "builtin"
+llm = "ollama"
+agent = "none"

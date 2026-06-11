@@ -82,8 +82,8 @@ npm run tauri:dev
 
 ## Deferred
 
-- **各发行版自带内核逐一定制**（等 Theater T4 闭环后再 RFC）
+- **各发行版裁剪内核 binary** → Deferred；spawn **bundled 首选 → shared 兜底** 见 [KERNEL_SCHEDULER_RESCOPE.md](./KERNEL_SCHEDULER_RESCOPE.md)
+- **发行版差异（当前）** → 插件矩阵见 [DISTRO_DEFAULT_PLUGINS.md](../creator-docs/kernel/DISTRO_DEFAULT_PLUGINS.md)
 - 赌场 / 目录插件导演 RPC
-- 六槽强约束组合
 - VS Code 渗透（parked 至 F5 反馈）
 - `dual_core` / 新编排 stage

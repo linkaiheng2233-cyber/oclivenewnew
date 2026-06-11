@@ -11,11 +11,11 @@
 |------|--------|-------|
 | `ROADMAP.md` version header | **OK** | Lists **0.3.x** current; aligns with main host `0.3.0` |
 | `VSCODE_DISTRIBUTION.md` link | **OK** | Points to main `creator-docs/role-pack/VSCODE_DISTRIBUTION.md` |
-| Capability-first narrative | **OK** | Roadmap emphasizes attach/spawn, shared `OCLIVE_APP_DATA`, identity — matches main Phase 1 |
+| Kernel spawn narrative | **Updated 2026-06-11** | Main docs: **bundled-first spawn** + shared fallback · profile-aware attach · `binary_upgrade` Freeze — see main `KERNEL_SCHEDULER_RESCOPE.md` / `DISTRO_KERNEL_LIFECYCLE.md`; VS Code `README.md` aligned |
 | `oclive.penetration.*` placeholders | **Deferred** | Documented as default-off; no cleanup without product traction (plan §Phase 5) |
 | Open items | **Expected** | F5 acceptance, first `.vsix` release still unchecked — not doc drift |
 
-**Action (2026-06-11):** Main repo contract docs synced — `VSCODE_DISTRIBUTION.md` / `CROSS_HOST_MEMORY.md` now **policy-first** (no standalone「attach 优先」); penetration documented as roadmap item without `oclive.penetration.*` keys yet.
+**Action (2026-06-11):** Main repo contract docs synced — `VSCODE_DISTRIBUTION.md` / `CROSS_HOST_MEMORY.md` / `DISTRO_KERNEL_LIFECYCLE.md` now **profile-aware attach + bundled-first spawn** (replacing old「capability-first / fullest kernel replace」); penetration documented as roadmap item without `oclive.penetration.*` keys yet. VS Code `README.md` + `bin/README.md` updated.
 
 ---
 

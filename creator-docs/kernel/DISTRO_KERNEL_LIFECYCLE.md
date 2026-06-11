@@ -60,21 +60,40 @@ Binary tier scores and promotion threshold live in:
 
 VS Code `src/discovery.ts` mirrors numeric tiers (comment-linked to Rust). **Spawn ordering** is decided by `resolve_kernel_action`, not score alone.
 
-## Startup order (capability-first + profile-aware, all distros)
+## Startup order (profile-aware attach + bundled-first spawn)
+
+**Two phases** — do not conflate them:
+
+| Phase | Question | SSOT |
+|-------|----------|------|
+| **A · Running process** | Is `:8420` healthy and profile-compatible? | `resolve_kernel_action` → attach / replace |
+| **B · Cold spawn** | Which binary to start when nothing listens? | **Caller bundled first** → shared fallback → dev (see [KERNEL_SCHEDULER_RESCOPE.md](../../handoff/KERNEL_SCHEDULER_RESCOPE.md) §2) |
+
+### A — When `/health` succeeds
 
 1. `GET http://127.0.0.1:8420/health` with `Accept: application/json` → read `kernel_manifest`, optional `distro_id` / `distro_profile_hash` / **`active_profile_summary`**
 2. Parse caller **`DistroProfileRequirements`** from `distro.oclive.toml` (or built-in defaults per `distro_id`)
 3. Discover local headless candidates → `resolve_kernel_action` with running manifest + profile summary + caller requirements
-4. **Attach** when running profile **satisfies** caller (even if a fuller binary exists locally) — `attach_reason: profile_compatible`
-5. **Replace** (`replace_reason: profile_mismatch`) when running profile conflicts with caller and replace is allowed
-6. **Replace** (`replace_reason: binary_upgrade`) only when profile is **unknown** (old kernel without summary) and running manifest is weaker
-7. **Pinned** kernel → always attach; `kernel_pinned_profile_mismatch` when profile conflicts (UI hint, no replace)
-8. **Spawn** when offline; **FallbackBundled** when only bundled tier exists (degraded UI hint)
-9. Poll health after spawn; watchdog / reconnect reuse the same policy
+4. **Attach** when running profile **satisfies** caller — `attach_reason: profile_compatible` (even if a stronger binary exists locally; **do not** auto-replace for “fullest kernel”)
+5. **Replace** (`replace_reason: profile_mismatch`) when running profile conflicts with caller and replace is allowed — **restart + new `OCLIVE_DISTRO_*` env** (no in-process profile hot switch)
+6. **Pinned** (`OCLIVE_KERNEL_BINARY`) → always attach; `kernel_pinned_profile_mismatch` when profile conflicts (UI hint, no replace)
+7. **`binary_upgrade` replace** — **Freeze (product)**; Rust path retained for legacy kernels without `active_profile_summary`. Default hosts **must not** proactively replace a healthy kernel because a local dev/shared binary scores higher. Opt-in: `OCLIVE_ALLOW_BINARY_UPGRADE=1` (see KERNEL_SCHEDULER_RESCOPE §3.2)
 
-**Profile on spawn**: hosts pass `OCLIVE_DISTRO_ID` + `OCLIVE_DISTRO_PROFILE` so the new kernel loads the caller's profile (no in-process hot switch).
+**Single writer**: one process on `:8420` owns `app.db`. VS Code and Desktop **attach** when profile-compatible; profile conflict → **replace** (kill `:8420`, respawn), not parallel multi-port kernels.
 
-**Multi-distro on one binary**: VS Code and Desktop can share the **same** `oclive-kernel-server` binary, but **not** the same running profile in one process. Satisfying a different distro requires **restart + new env**, not attach-only profile hot-switch.
+### B — When offline (spawn)
+
+**Target order** (product; **K-SCHED-05** — `discover_spawn_kernel_candidates` still sorts by discovery score today):
+
+1. **Caller bundled** `oclive-kernel-server` (install root / extension `bin/` / Tauri `resources/bin/`)
+2. **Shared fallback** — `%LOCALAPPDATA%/OCLive/runtime/oclive-kernel-server` (full build; same `OCLIVE_APP_DATA` + `OCLIVE_DISTRO_PROFILE` + `OCLIVE_ROLES_DIR` → plugins under `{app_data}/plugins/` **reuse**, no copy)
+3. **Dev builds** — monorepo / `OCLIVE_KERNEL_BINARY` pin (developers only)
+
+If bundled spawn fails (crash, bad manifest, health timeout) → retry shared with **unchanged** distro env. **Fault attribution**: bundled fails but shared + same plugins works → suspect **distro binary**; both fail → suspect **plugins / config / app_data**.
+
+Poll health after spawn; watchdog / reconnect reuse phase **A** policy.
+
+**Profile on spawn**: hosts pass `OCLIVE_DISTRO_ID` + `OCLIVE_DISTRO_PROFILE` so the new kernel loads the caller's profile.
 
 ### `/health` active profile (runtime truth)
 
@@ -84,17 +103,17 @@ VS Code `src/discovery.ts` mirrors numeric tiers (comment-linked to Rust). **Spa
 
 When `active_profile_summary` is **missing**: `distro_id` match alone is **not** enough. Requires matching `distro_profile_hash`, or falls through to **Unknown** → binary compare path.
 
-### Policy priority (healthy kernel)
+### Policy priority (healthy kernel — phase A only)
 
 | Order | Condition | Action |
 |-------|-----------|--------|
 | 1 | `kernel_pinned` | Attach (warn on profile mismatch) |
 | 2 | Profile compatible (summary / hash / satisfies caller) | Attach |
 | 3 | Profile incompatible + `allow_replace_running` | ReplaceAndAttach (`profile_mismatch`) |
-| 4 | Profile unknown + binary weaker | ReplaceAndAttach (`binary_upgrade`) |
+| 4 | Profile unknown + binary weaker + **`OCLIVE_ALLOW_BINARY_UPGRADE=1`** | ReplaceAndAttach (`binary_upgrade`) — **not default** |
 | 5 | Otherwise | Attach (`running_kernel_ok`) |
 
-**Fallback (graded)**: Policy spawn failure → **profile-aware attach-only** (still runs `build_resolve_plan`; only `Attach` allowed) → legacy spawn/attach. VS Code without `oclive-cli` attaches only when `/health` summary looks VS Code–compatible (agent disabled).
+**Spawn failure (graded)**: Policy spawn failure → **profile-aware attach-only** (still runs `build_resolve_plan`; only `Attach` allowed) → retry next spawn candidate (bundled → shared → bundled tier degraded). VS Code without `oclive-cli` attaches only when `/health` summary looks VS Code–compatible (agent disabled).
 
 ## Desktop (`src-tauri/src/kernel_lifecycle/`)
 
@@ -166,7 +185,7 @@ See also `scripts/e2e-cross-host-memory.mjs` for canonical app-data chat smoke.
 
 ## Distro capability profile (P1 contract)
 
-Each distribution may ship `distro.oclive.toml` at its install root (alongside bundled `bin/`). The file declares **capability ceiling** and defaults for when that host **spawns** the kernel (P4: `HostProfile` merge). It is **not** role-pack `settings.json`.
+Each distribution may ship `distro.oclive.toml` at its install root (alongside bundled `bin/`). The file declares **distro defaults** and optional **`[plugin_backends]` override** for when that host **spawns** the kernel (P4: `HostProfile`). It is **not** role-pack blueprint / legacy `settings.json`. Merge semantics: see [DISTRO_CAPABILITY_PROFILE.md](./DISTRO_CAPABILITY_PROFILE.md) §4.
 
 - Spec: [DISTRO_CAPABILITY_PROFILE.md](./DISTRO_CAPABILITY_PROFILE.md)
 - Examples: `examples/distro-profiles/desktop.oclive.toml`, `examples/distro-profiles/vscode.oclive.toml`
@@ -175,11 +194,17 @@ On **attach**, the running kernel’s `distro_id` from `/health` reflects whoeve
 
 Running side: `ActiveProfileSummary` on `/health` lists effective enabled/disabled modules. Policy may **replace** when profile requirements conflict (restart with caller `OCLIVE_DISTRO_*` env).
 
-## Logical seed (bundled binary)
+## Bundled binary vs shared fallback
 
-- **Definition**: The distro-bundled **full** `oclive-kernel-server` binary (`SCORE_BUNDLED = 50`) acts as a **logical seed** on first install—not a smaller “seed build.”
-- **Lifecycle**: First launch spawns bundled when nothing listens on `:8420` and shared runtime is empty. When a stronger binary is discovered, the **host** runs `promote_with_backup` into `%LOCALAPPDATA%/OCLive/runtime/` (P3a). Later hosts attach or replace per policy.
-- **Not in scope**: In-process seed self-upgrade or connection handoff (hosts coordinate; single writer on `:8420`).
+| Term | Meaning |
+|------|---------|
+| **发行版 bundled 内核** | Full `oclive-kernel-server` shipped with the distro install / VSIX `bin/` — **default spawn candidate** (discovery `SCORE_BUNDLED = 50` is tier label only, not spawn priority) |
+| **shared 兜底核** | `%LOCALAPPDATA%/OCLive/runtime/` copy — used when bundled fails or is absent |
+| **logical seed** (legacy doc term) | Same artifact as bundled today; prefer **「发行版 bundled 内核」** in new text |
+
+- **First launch**: nothing on `:8420` → spawn **caller bundled**; on failure → shared with same `OCLIVE_APP_DATA` / profile / roles.
+- **`promote_with_backup` (P3a)**: **Developer / maintenance** — copy a local dev build into shared runtime (`score ≥ 88`). **Not** the default product path for end users; see [KERNEL_SCHEDULER_RESCOPE.md](../../handoff/KERNEL_SCHEDULER_RESCOPE.md) §3.2.
+- **Not in scope**: In-process self-upgrade (P3b deferred); per-distro **trimmed** kernel binaries (Deferred).
 
 Kernel binary manifest and `/health` fields: P2a (`KernelBinaryManifest`, `--version-json`).
 
@@ -194,5 +219,7 @@ Kernel binary manifest and `/health` fields: P2a (`KernelBinaryManifest`, `--ver
 ## Related
 
 - [DISTRO_CAPABILITY_PROFILE.md](./DISTRO_CAPABILITY_PROFILE.md)
+- [DISTRO_DEFAULT_PLUGINS.md](./DISTRO_DEFAULT_PLUGINS.md)
+- [KERNEL_SCHEDULER_RESCOPE.md](../../handoff/KERNEL_SCHEDULER_RESCOPE.md) — bundled-first spawn · single `:8420` · `binary_upgrade` freeze
 - [CROSS_HOST_MEMORY.md](../role-pack/CROSS_HOST_MEMORY.md)
 - VS Code: `oclive-vscode/AGENTS.md`, `oclive-vscode/docs/VSCODE_DISTRIBUTION.md`

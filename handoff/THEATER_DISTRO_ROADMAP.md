@@ -1,6 +1,6 @@
 # AI 剧场发行版 — 后续开发计划（Mode 1 优先）
 
-**状态**：活跃 · **更新**：2026-06-11  
+**状态**：活跃 · **更新**：2026-06-12（T1–T4 实现入库；陌生人实机待填）  
 **发行版**：`distro_id=theater` · [`examples/distro-profiles/theater.oclive.toml`](../examples/distro-profiles/theater.oclive.toml)  
 **三模式 SSOT**：[`THEATER_MODES.md`](./THEATER_MODES.md)
 
@@ -20,11 +20,14 @@
 
 **验收 SSOT**：[`THEATER_15S_ACCEPTANCE.md`](./THEATER_15S_ACCEPTANCE.md)（Wave T2 新建）
 
-**刻意 Deferred（本轮不动）**：
+**Explicit Deferred（2026-06-12 确认 · 本轮不排期）**：
 
-- 各发行版 **自带内核二进制逐一定制**（promote / sidecar / 专用 `kernel_manifest`）——等 Theater 发行版体验闭环后再做
-- 赌场 / 目录插件 DLC
-- `process_message` 新编排 stage、`dual_core` 解冻
+| 项 | 解冻条件 |
+|----|----------|
+| 发行版 **内核二进制定制**（promote / sidecar / 专用 `kernel_manifest`） | T4 完成 **且** 15s 陌生人测试 ≥60% 后再开 RFC |
+| **赌场 / 目录插件 DLC** | Mode 1 惊喜成立 + 第二场场景需求明确 |
+| `process_message` 新 stage · **`dual_core` 解冻** | 与 theater 发行版正交；见 `TECHNICAL_DEBT_INVENTORY` |
+| **VS Code 渗透漏斗** | parked 至 F5 反馈（姊妹仓 `oclive-vscode`） |
 
 ---
 
@@ -37,18 +40,14 @@
 - poke patch + Ollama 探测 + 全屏 loading 遮罩
 - `public/theater/breakfast/skeleton.json` + `scenes.json`
 
-**与「足够简单 / 15 秒惊喜」的差距**：
+**T1–T4 已收口（2026-06-12）**：
 
-| 缺口 | 影响 |
+| Wave | 状态 |
 |------|------|
-| 首屏 **三模式 Tab 并列** | 陌生人不知点哪；认知负担 |
-| **`StartupWarningsBanner`** 在 theater 壳仍挂载 | 破坏「零配置惊喜」 |
-| **4 个 footer 按钮**（3 poke + 改性格） | 「改性格」偏创作者，非 15s 主路径 |
-| **标题 + 副标题 + Tab** 占垂直空间 | 首条台词出现偏晚（视觉） |
-| **Ollama 关闭提示** 常驻 footer | 负面首印象；应仅在戳点后轻提示 |
-| **全屏 patch 遮罩** | 可接受但可更 Cursor（芯片内联 loading） |
-| 验收仍写 **60 秒** | 与新产品 bar 不一致 |
-| **Mode 2/3** 与 Mode 1 同级曝光 | 违背「第一模式足够简单」 |
+| T1 Mode 1 极简 UI + 内容 fallback | Done |
+| T2 15s 验收 + perf mark + 单测 | Done |
+| T3 Cursor polish（淡入 / 芯片 loading / prefetch / copy） | Done |
+| T4 打包 smoke + 陌生人表模板 | Done（**5 人实机结果待填**） |
 
 ---
 
@@ -130,13 +129,13 @@ flowchart LR
 | T4-PKG-03 | bundled `theater.oclive.toml` 与示例 profile **字段对齐**检查 | 已有 K-PROFILE-04 |
 | T4-TEST-01 | 陌生人测试表 [`THEATER_STRANGER_TEST_ROUND1.md`](./THEATER_STRANGER_TEST_ROUND1.md) 改用 **15s 通过标准** | handoff |
 
-**Explicit Deferred — 发行版内核定制**：
+**Explicit Deferred — 发行版内核裁剪**：
 
-- `oclive-cli kernel promote` 为 theater 专用 channel
-- 独立 `kernel_manifest` / 裁剪 feature 的 theater 二进制
-- `HostProfile` 深度 per-distro 调度变更  
+- **不**做 per-distro **裁剪** binary（各发行版可带不同 bundled 全量核 + sidecar，但非必选）
+- spawn：**bundled 首选 → shared 兜底**（同 app_data / profile / 插件复用）— 见 [KERNEL_SCHEDULER_RESCOPE.md](../handoff/KERNEL_SCHEDULER_RESCOPE.md)
+- 各发行版差异走 **插件矩阵** — 见 [DISTRO_DEFAULT_PLUGINS.md](../creator-docs/kernel/DISTRO_DEFAULT_PLUGINS.md)
 
-→ 触发条件：**T4 完成 + 15s 陌生人测试 ≥60% 惊喜** 后再开 RFC。
+→ 触发条件：**T4 完成 + 15s 陌生人测试 ≥60% 惊喜** 后再评估内核 RFC。
 
 ---
 

@@ -61,7 +61,9 @@
 
 | 文档 | 用途 |
 |------|------|
-| [DISTRO_KERNEL_LIFECYCLE](../creator-docs/kernel/DISTRO_KERNEL_LIFECYCLE.md) | attach/spawn |
+| [DISTRO_KERNEL_LIFECYCLE](../creator-docs/kernel/DISTRO_KERNEL_LIFECYCLE.md) | attach / spawn（bundled 首选） |
+| [KERNEL_SCHEDULER_RESCOPE](../handoff/KERNEL_SCHEDULER_RESCOPE.md) | 单核 · 兜底 · Freeze 项 |
+| [DISTRO_DEFAULT_PLUGINS](../creator-docs/kernel/DISTRO_DEFAULT_PLUGINS.md) | 发行版插件矩阵 |
 | [OCLIVE_APP_DATA](../creator-docs/kernel/OCLIVE_APP_DATA.md) | 数据目录 |
 | [KERNEL_INTEGRATOR_LEARNING_PATH](../creator-docs/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md) | 集成方 |
 | [OCLIVE_CLI_GUIDE](../creator-docs/cli/OCLIVE_CLI_GUIDE.md) | CLI 脚手架 |

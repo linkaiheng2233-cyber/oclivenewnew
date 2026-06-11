@@ -119,8 +119,10 @@
 | **跨宿主记忆 · 角色包携带数据 · VS Code 等集成前确认清单** | **[../role-pack/CROSS_HOST_MEMORY.md](../role-pack/CROSS_HOST_MEMORY.md)** |
 | **VS Code 发行版契约** | **[../role-pack/VSCODE_DISTRIBUTION.md](../role-pack/VSCODE_DISTRIBUTION.md)** |
 | **跨宿主数据目录 `OCLIVE_APP_DATA`** | **[../kernel/OCLIVE_APP_DATA.md](../kernel/OCLIVE_APP_DATA.md)** |
-| **发行版内核 attach/spawn SSOT** | **[../kernel/DISTRO_KERNEL_LIFECYCLE.md](../kernel/DISTRO_KERNEL_LIFECYCLE.md)**（决策上收：`kernel_strategy.rs` · `/health` distro 字段 · `oclive kernel ensure`） |
+| **发行版内核 attach/spawn SSOT** | **[../kernel/DISTRO_KERNEL_LIFECYCLE.md](../kernel/DISTRO_KERNEL_LIFECYCLE.md)**（bundled-first spawn · profile attach/replace · 决策上收：`kernel_strategy.rs` · `/health` distro 字段 · `oclive kernel ensure`） |
+| **内核调度范围重划（2026-06）** | **[../../handoff/KERNEL_SCHEDULER_RESCOPE.md](../../handoff/KERNEL_SCHEDULER_RESCOPE.md)** · 单核 `:8420` · `binary_upgrade` Freeze · K-SCHED backlog |
 | **发行版能力配置 `distro.oclive.toml`（P1 Schema）** | **[../kernel/DISTRO_CAPABILITY_PROFILE.md](../kernel/DISTRO_CAPABILITY_PROFILE.md)** · 示例 `examples/distro-profiles/` |
+| **发行版默认插件矩阵（三 personas）** | **[../kernel/DISTRO_DEFAULT_PLUGINS.md](../kernel/DISTRO_DEFAULT_PLUGINS.md)** · desktop-chat / vscode / theater |
 | **编写器路线图（情绪图编辑 · 分级导出）** | **[../../handoff/PACK_EDITOR_ROADMAP.md](../../handoff/PACK_EDITOR_ROADMAP.md)** |
 | **蓝图 v2（`pipeline.ocblueprint` · P0–P8 收口，归档）** | **[RFC_ROLE_BLUEPRINT_V2](../../handoff/archive/RFC_ROLE_BLUEPRINT_V2.md)** · **[BLUEPRINT_V2_IMPLEMENTATION_PLAN](../../handoff/archive/BLUEPRINT_V2_IMPLEMENTATION_PLAN.md)** · **[BLUEPRINT_V2_DECISIONS](../../handoff/archive/BLUEPRINT_V2_DECISIONS.md)** |
 | **内核分层纪律（domain / infrastructure / api）** | **[../../handoff/ARCHITECTURE_LAYERING.md](../../handoff/ARCHITECTURE_LAYERING.md)** |

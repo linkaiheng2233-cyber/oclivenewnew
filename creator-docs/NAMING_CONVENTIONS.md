@@ -299,15 +299,29 @@ This page is the **naming SSOT** for OCLive. Key rules:
 
 **命名关系（一句话）**：`dual_core` = **开关**；`dual_pipeline` = **开关打开后的运行时_runner**；蓝图 **`pipeline.*`** = **开关的配置数据**。
 
-### 5.4 术语调整方案（文档层，不改冻结名）
+### 5.5 发行版内核与调度（文档层）
+
+| 术语 | 含义 | 禁止混淆 |
+|------|------|----------|
+| **单核** | 单进程 `127.0.0.1:8420` + 单写者 `app.db` | ≠ 多端口并行多内核 |
+| **发行版 bundled 内核** | 安装包 / VSIX 自带的 `oclive-kernel-server` | spawn **首选**；discovery `SCORE_BUNDLED` 仅为 tier 标签 |
+| **shared 兜底核** | `%LOCALAPPDATA%/OCLive/runtime/` 全量构建 | bundled 故障时 spawn；**同** `OCLIVE_APP_DATA` + profile |
+| **需求单** | `DistroProfileRequirements`（自 `distro.oclive.toml`） | 调度 attach/replace 用；≠ 六槽合并 |
+| **槽位 fallback** | remote/directory → builtin（单回合） | ≠ 换内核二进制 |
+| **`binary_upgrade`** | replace 原因枚举（Rust 保留） | 产品面 **Freeze** — 见 KERNEL_SCHEDULER_RESCOPE |
+| **logical seed** | 旧称 | 新文档写 **发行版 bundled 内核** |
+
+SSOT：[DISTRO_KERNEL_LIFECYCLE.md](../kernel/DISTRO_KERNEL_LIFECYCLE.md) · [KERNEL_SCHEDULER_RESCOPE.md](../../handoff/KERNEL_SCHEDULER_RESCOPE.md) · [DISTRO_DEFAULT_PLUGINS.md](../kernel/DISTRO_DEFAULT_PLUGINS.md)
+
+### 5.6 术语调整方案（文档层，不改冻结名）
 
 | 问题 | 建议 | 改动类型 |
 |------|------|----------|
 | 文件名 `pipeline.ocblueprint` 暗示 DSL | 在所有新文档首次出现时用「蓝图文件 ``pipeline.ocblueprint``」 | 文档 |
 | `dual_pipeline` 与蓝图 `pipeline` 键混淆 | 架构图注释：Rust 模块 `dual_pipeline` ↔ JSON `pipeline.experimental` | 文档 + 代码注释 |
 | README 仍写 `src-tauri/.../process_message` | 统一指向 `oclive_kernel_host/.../process_message.rs` | 文档（[BUS_FACTOR_NOTES.md](../handoff/BUS_FACTOR_NOTES.md) 已部分正确） |
-
----
+| 「capability-first」指 spawn 顺序 | 改为 **profile-aware attach + bundled-first spawn** | 文档 |
+| 「apply_within_ceiling」指 profile 合并 | 改为 **`apply_host_ceiling` 整表替换**（或省略 profile） | 文档 |
 
 ## 6. 禁止使用的别名
 
