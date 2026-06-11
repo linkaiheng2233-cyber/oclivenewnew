@@ -28,9 +28,15 @@
 
 本地联调：`file:../oclive-vscode-host`；multi-root workspace 三仓并列。
 
----
+**GitHub**（2026-06-11）：
 
-## 扩展 ID
+| 仓库 | URL |
+|------|-----|
+| host | https://github.com/linkaiheng2233-cyber/oclive-vscode-host |
+| 核心 | https://github.com/linkaiheng2233-cyber/oclive-vscode |
+| 渗透 | https://github.com/linkaiheng2233-cyber/oclive-vscode-penetration |
+
+**npm**：[`@oclive/vscode-host@0.1.0`](https://www.npmjs.com/package/@oclive/vscode-host)（npmjs.org）
 
 - 核心：`oclive.oclive-vscode`
 - 渗透：`oclive.oclive-vscode-penetration`
