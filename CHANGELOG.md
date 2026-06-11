@@ -23,6 +23,10 @@
 
 ### Added
 
+- **Theater Release 打包链**：`npm run tauri:build:theater` · `OCLIVE_TAURI_SHELL=theater` · roles 子集（`theater-breakfast-a/b`）经 [`scripts/filter-theater-roles.mjs`](scripts/filter-theater-roles.mjs) 写入 `src-tauri/resources/roles/`。
+- **Theater 15s 工程代理**：[`scripts/theater-stranger-proxy.mjs`](scripts/theater-stranger-proxy.mjs) · 聚合于 `npm run test:theater:smoke`（CI `frontend` job）。
+- **Theater 导演插件 RFC 与示例**：[`handoff/RFC_THEATER_DIRECTOR_PLUGIN.md`](handoff/RFC_THEATER_DIRECTOR_PLUGIN.md) · [`examples/directory-plugin-theater-director/`](examples/directory-plugin-theater-director/) · 前端 `theaterDirectorClient` 可选接线 Mode 3。
+- **Theater 陌生人测试主持人指南**：[`handoff/THEATER_STRANGER_FACILITATOR.md`](handoff/THEATER_STRANGER_FACILITATOR.md)。
 - **三发行版内核 smoke（Pro / Flash）**：`npm run test:distro:smoke` 聚合 profile mirror · distro kernel e2e · Tauri bundled-first；`e2e-distro-kernel` 新增 **theater** scenario；CI **`cross-host-e2e`** 追加 `e2e-tauri-bundled-kernel` 与 VS Code profile diff。结项见 [`handoff/THREE_DISTRO_KERNEL_CLOSURE.md`](handoff/THREE_DISTRO_KERNEL_CLOSURE.md)。
 - **Chat Pro bundled-first spawn（K-SCHED-05/01）**：Tauri `bundle-kernel-for-tauri.mjs` · `pick_best_for_spawn` bundled → shared → dev；`binary_upgrade` replace 默认关。
 - **VS Code Flash profile 镜像**：`examples/distro-profiles/vscode.oclive.toml` ↔ 姊妹仓 `distro.oclive.toml` · `npm run test:distro-profile-mirror`。

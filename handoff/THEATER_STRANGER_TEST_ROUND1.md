@@ -4,6 +4,8 @@
 
 **通过标准（T4-TEST-01 · 2026-06-12 升级）**：≥60% 在 **15 秒内**完成 [`THEATER_15S_ACCEPTANCE.md`](./THEATER_15S_ACCEPTANCE.md) 主清单且无失败项。
 
+**主持人操作**：见 [`THEATER_STRANGER_FACILITATOR.md`](./THEATER_STRANGER_FACILITATOR.md)（带测前必读）。
+
 ## 启动
 
 ```powershell
@@ -34,6 +36,8 @@ npm run dev:theater
 **工程代理汇总**：样本 5 · 15s 通过率 **100%** · 「卧槽」率 **100%** · 达标 **Y**
 
 ### 真人陌生人（产品门槛 · 待维护者 Windows 实机）
+
+> **状态（2026-06-12）**：主持人指南与 CI 烟测已就绪；**5 人真人表待维护者按 [`THEATER_STRANGER_FACILITATOR.md`](./THEATER_STRANGER_FACILITATOR.md) 填表**。填完后更新 §汇总并决定 C-pass / P4-3 分支。
 
 | # | 15s 完成 (Y/N) | 是否「卧槽」(Y/N) | 卡在哪一步 | 是否点 poke | 是否展开高级 | 备注 |
 |---|----------------|------------------|------------|-------------|--------------|------|

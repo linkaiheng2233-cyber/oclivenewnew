@@ -6,6 +6,7 @@ import { probeOllamaAvailable } from '../../theater/useTheaterBeatPatch'
 import { useTheaterDirector } from '../../theater/useTheaterDirector'
 import { generateImprovLine } from '../../theater/useTheaterImprovLine'
 import { sessionToOutline, sessionToSkeleton } from '../../theater/useTheaterOutlineCompiler'
+import { pingDirector, validateDirectorRules } from '../../theater/theaterDirectorClient'
 
 const props = defineProps<{
   skeleton: TheaterSkeleton | null
@@ -20,6 +21,7 @@ const userInput = ref('')
 const generating = ref(false)
 const statusNote = ref<string | null>(null)
 const ollamaUp = ref<boolean | null>(null)
+const directorUp = ref<boolean | null>(null)
 
 function sceneMeta() {
   return {
@@ -59,6 +61,8 @@ watch(
 
 async function initOllamaProbe() {
   ollamaUp.value = await probeOllamaAvailable()
+  const ping = await pingDirector()
+  directorUp.value = ping !== null
 }
 
 onMounted(() => {
@@ -95,6 +99,7 @@ async function generatePendingOcLines() {
     const roleLabel = speaker === 'a' ? roleAName.value : roleBName.value
 
     const { text, source } = await generateImprovLine({
+      sceneId: props.skeleton?.scene_id ?? 'breakfast',
       sceneTitle: props.skeleton?.title ?? '',
       roleId,
       speaker,
@@ -106,7 +111,9 @@ async function generatePendingOcLines() {
     appendOcLine(speaker, text)
     statusNote.value = source === 'fallback'
       ? t('theater.improvFallback')
-      : t('theater.improvLineOk', { who: roleLabel })
+      : source === 'director'
+        ? t('theater.improvDirectorLine', { who: roleLabel })
+        : t('theater.improvLineOk', { who: roleLabel })
     generating.value = false
 
     if (phase.value === 'ended' || phase.value === 'waiting_user') {
@@ -128,10 +135,24 @@ function onExportOutline() {
 }
 
 function onFreezeSkeleton() {
+  void onFreezeSkeletonAsync()
+}
+
+async function onFreezeSkeletonAsync() {
+  const outline = sessionToOutline(session.value)
+  const validation = await validateDirectorRules({
+    scene_id: session.value.scene_id,
+    beats: outline.beats,
+  })
   const frozen = sessionToSkeleton(session.value)
   emit('frozen', frozen)
-  statusNote.value = t('theater.improvFrozen')
   endSession()
+  if (validation && !validation.valid && validation.violations.length > 0) {
+    statusNote.value = t('theater.improvDirectorWarn', { n: validation.violations.length })
+  }
+  else {
+    statusNote.value = t('theater.improvFrozen')
+  }
 }
 </script>
 
@@ -206,6 +227,9 @@ function onFreezeSkeleton() {
     </p>
     <p v-if="ollamaUp === false" class="theater-note theater-note--muted">
       {{ t('theater.ollamaOff') }}
+    </p>
+    <p v-if="directorUp === true" class="theater-note theater-note--muted">
+      {{ t('theater.directorConnected') }}
     </p>
     <p v-if="phase === 'ended'" class="theater-note">
       {{ t('theater.improvEnded') }}

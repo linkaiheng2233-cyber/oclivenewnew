@@ -23,6 +23,10 @@
 
 ### Added
 
+- **Theater release packaging**: `npm run tauri:build:theater` · `OCLIVE_TAURI_SHELL=theater` · roles subset (`theater-breakfast-a/b`) via [`scripts/filter-theater-roles.mjs`](scripts/filter-theater-roles.mjs) into `src-tauri/resources/roles/`.
+- **Theater 15s engineering proxy**: [`scripts/theater-stranger-proxy.mjs`](scripts/theater-stranger-proxy.mjs) · aggregated in `npm run test:theater:smoke` (CI `frontend` job).
+- **Theater director plugin RFC + example**: [`handoff/RFC_THEATER_DIRECTOR_PLUGIN.md`](handoff/RFC_THEATER_DIRECTOR_PLUGIN.md) · [`examples/directory-plugin-theater-director/`](examples/directory-plugin-theater-director/) · optional Mode 3 wiring via `theaterDirectorClient`.
+- **Theater stranger-test facilitator guide**: [`handoff/THEATER_STRANGER_FACILITATOR.md`](handoff/THEATER_STRANGER_FACILITATOR.md).
 - **Three-distro kernel smoke (Pro / Flash)**: `npm run test:distro:smoke` aggregates profile mirror · distro kernel e2e · Tauri bundled-first; `e2e-distro-kernel` adds a **theater** scenario; CI **`cross-host-e2e`** adds `e2e-tauri-bundled-kernel` and VS Code profile diff. Closure SSOT: [`handoff/THREE_DISTRO_KERNEL_CLOSURE.md`](handoff/THREE_DISTRO_KERNEL_CLOSURE.md).
 - **Chat Pro bundled-first spawn (K-SCHED-05/01)**: Tauri `bundle-kernel-for-tauri.mjs` · `pick_best_for_spawn` bundled → shared → dev; `binary_upgrade` replace off by default.
 - **VS Code Flash profile mirror**: `examples/distro-profiles/vscode.oclive.toml` ↔ sibling `distro.oclive.toml` · `npm run test:distro-profile-mirror`.

@@ -1,6 +1,7 @@
 import type { TheaterSessionTurn, TheaterSpeaker } from './types'
 import { sendMessage } from '../api/chat'
 import { probeOllamaAvailable } from './useTheaterBeatPatch'
+import { injectDirectorBeat } from './theaterDirectorClient'
 
 const OLLAMA_URL = import.meta.env.VITE_OCLIVE_OLLAMA_URL?.trim() || 'http://127.0.0.1:11434'
 const IMPROV_MODEL = import.meta.env.VITE_OCLIVE_THEATER_PATCH_MODEL?.trim() || 'qwen2.5:7b'
@@ -10,6 +11,7 @@ function isTauri(): boolean {
 }
 
 export interface ImprovLineContext {
+  sceneId: string
   sceneTitle: string
   roleId: string
   speaker: TheaterSpeaker
@@ -21,7 +23,7 @@ export interface ImprovLineContext {
 export async function generateImprovLine(
   ctx: ImprovLineContext,
   options?: { preferKernel?: boolean },
-): Promise<{ text: string, source: 'ollama' | 'kernel' | 'fallback' }> {
+): Promise<{ text: string, source: 'ollama' | 'kernel' | 'director' | 'fallback' }> {
   const ollamaUp = await probeOllamaAvailable()
   if (ollamaUp && !options?.preferKernel) {
     const fromOllama = await generateViaOllama(ctx)
@@ -38,6 +40,16 @@ export async function generateImprovLine(
       }
     }
     catch { /* degrade */ }
+  }
+
+  const lastUser = [...ctx.priorTurns].reverse().find(t => t.speaker === 'user')
+  const directorBeat = await injectDirectorBeat({
+    scene_id: ctx.sceneId,
+    speaker: ctx.speaker,
+    summary: lastUser?.text ?? ctx.sceneTitle,
+  })
+  if (directorBeat?.text) {
+    return { text: directorBeat.text, source: 'director' }
   }
 
   if (!ollamaUp) {
@@ -103,14 +115,26 @@ async function generateViaOllama(ctx: ImprovLineContext): Promise<string | null>
 }
 
 async function generateViaKernel(ctx: ImprovLineContext): Promise<string | null> {
-  const prompt = ctx.priorTurns.length === 0
-    ? (ctx.locale === 'zh' ? '请用一句对白开场。' : 'Open with one line of dialogue.')
-    : ctx.priorTurns.slice(-1)[0]?.text ?? ''
+  const history = ctx.priorTurns
+    .slice(-6)
+    .map((t) => {
+      const who = t.speaker === 'user'
+        ? (ctx.locale === 'zh' ? '用户' : 'User')
+        : t.speaker === 'a'
+          ? (ctx.locale === 'zh' ? '角色A' : 'Role A')
+          : (ctx.locale === 'zh' ? '角色B' : 'Role B')
+      return `${who}: ${t.text}`
+    })
+    .join('\n')
+
+  const userMessage = ctx.locale === 'zh'
+    ? `【剧场场景：${ctx.sceneTitle}】\n${history ? `已有对白：\n${history}\n` : ''}请以${ctx.roleLabel}身份接一句对白（仅一句，无 markdown）：`
+    : `[Theater scene: ${ctx.sceneTitle}]\n${history ? `Dialogue:\n${history}\n` : ''}Reply as ${ctx.roleLabel} with one line only:`
 
   const res = await sendMessage({
     role_id: ctx.roleId,
-    user_message: prompt,
-    scene_id: null,
+    user_message: userMessage,
+    scene_id: ctx.sceneId,
   })
   const reply = res.reply?.trim()
   return reply || null

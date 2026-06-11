@@ -216,6 +216,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run test:unit
+      - run: npm run test:theater:smoke
       - run: npm run build:e2e
       - name: Install Playwright Chromium (Linux only)
         if: runner.os == 'Linux'

@@ -99,6 +99,7 @@ flowchart LR
 
 - [x] 本 RFC 文档
 - [x] 示例 [`examples/directory-plugin-theater-director/`](../examples/directory-plugin-theater-director/) manifest + RPC stub
+- [x] 前端 `theaterDirectorClient` + Mode 3 improv 可选接线（[`src/theater/theaterDirectorClient.ts`](../src/theater/theaterDirectorClient.ts)）
 - [ ] Theater 壳「安装导演插件」市场链（可选 follow-up）
 - [ ] `theater` profile 下六槽 smoke **不变**（`npm run test:distro:smoke`）
 
