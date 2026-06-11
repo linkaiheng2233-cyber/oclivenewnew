@@ -9,7 +9,9 @@
 //!
 //! Offline: spawn best candidate; bundled-only → fallback.
 
-use crate::kernel_discovery::{KernelCandidate, KernelTier, PROMOTE_SCORE_THRESHOLD};
+use crate::kernel_discovery::{
+    KernelCandidate, KernelTier, PROMOTE_SCORE_THRESHOLD, pick_best_for_spawn,
+};
 use crate::kernel_distro_profile::evaluate_profile_compat;
 use crate::kernel_manifest::KernelBinaryManifest;
 use oclive_kernel_types::{
@@ -65,6 +67,7 @@ pub struct ResolveKernelActionInput<'a> {
     pub running_profile_hash: Option<&'a str>,
     pub caller_profile_hash: Option<&'a str>,
     pub allow_replace_running: bool,
+    pub allow_binary_upgrade: bool,
     pub promote_shared: bool,
 }
 
@@ -182,7 +185,7 @@ fn resolve_healthy(input: &ResolveKernelActionInput<'_>) -> KernelActionPlan {
             degrade_reason: None,
         },
         ProfileCompat::Unknown => {
-            if running_weaker_than_best(input) {
+            if running_weaker_than_best(input) && input.allow_binary_upgrade {
                 if let Some(plan) = try_replace_plan(input, ReplaceReason::BinaryUpgrade) {
                     return plan;
                 }
@@ -231,25 +234,12 @@ pub fn resolve_kernel_action(input: &ResolveKernelActionInput<'_>) -> KernelActi
         }
     }
 
-    let non_bundled: Vec<usize> = input
-        .candidates
-        .iter()
-        .enumerate()
-        .filter(|(_, c)| c.tier != KernelTier::Bundled)
-        .map(|(i, _)| i)
-        .collect();
-
-    let pick_idx = if non_bundled.is_empty() {
-        pick_best_by_capability(input.candidates)
-    } else {
-        pick_best_by_capability(
-            &non_bundled
-                .iter()
-                .map(|&i| input.candidates[i].clone())
-                .collect::<Vec<_>>(),
-        )
-        .map(|j| non_bundled[j])
-    };
+    let pick_idx = pick_best_for_spawn(input.candidates).and_then(|picked| {
+        input
+            .candidates
+            .iter()
+            .position(|c| c.binary == picked.binary)
+    });
 
     let Some(idx) = pick_idx else {
         return KernelActionPlan {
@@ -263,36 +253,15 @@ pub fn resolve_kernel_action(input: &ResolveKernelActionInput<'_>) -> KernelActi
     };
 
     let best = &input.candidates[idx];
-    let only_bundled = input
-        .candidates
-        .iter()
-        .all(|c| c.tier == KernelTier::Bundled);
     let candidate = action_candidate(best, input.candidates, input.promote_shared);
 
-    if only_bundled || best.tier == KernelTier::Bundled {
-        KernelActionPlan {
-            action: KernelActionKind::FallbackBundled,
-            candidate: Some(KernelActionCandidate {
-                degraded: true,
-                degrade_reason: Some(
-                    "no_shared_or_dev_kernel; using bundled fallback".into(),
-                ),
-                ..candidate
-            }),
-            attach_reason: None,
-            replace_reason: None,
-            degraded: true,
-            degrade_reason: candidate.degrade_reason.clone(),
-        }
-    } else {
-        KernelActionPlan {
-            action: KernelActionKind::SpawnBest,
-            candidate: Some(candidate),
-            attach_reason: None,
-            replace_reason: None,
-            degraded: false,
-            degrade_reason: None,
-        }
+    KernelActionPlan {
+        action: KernelActionKind::SpawnBest,
+        candidate: Some(candidate),
+        attach_reason: None,
+        replace_reason: None,
+        degraded: false,
+        degrade_reason: None,
     }
 }
 
@@ -305,24 +274,19 @@ fn pinned_candidate(candidates: &[KernelCandidate]) -> Option<&KernelCandidate> 
 
 fn action_candidate(
     candidate: &KernelCandidate,
-    all: &[KernelCandidate],
+    _all: &[KernelCandidate],
     promote_shared: bool,
 ) -> KernelActionCandidate {
     let promote_to_shared = promote_shared
         && candidate.score >= PROMOTE_SCORE_THRESHOLD
         && !matches!(candidate.tier, KernelTier::Shared | KernelTier::Bundled);
-    let only_bundled = all.iter().all(|c| c.tier == KernelTier::Bundled);
     KernelActionCandidate {
         binary: candidate.binary.display().to_string(),
         tier: candidate.tier,
         score: candidate.score,
         promote_to_shared,
-        degraded: only_bundled && candidate.tier == KernelTier::Bundled,
-        degrade_reason: if only_bundled && candidate.tier == KernelTier::Bundled {
-            Some("no_shared_or_dev_kernel; using bundled fallback".into())
-        } else {
-            None
-        },
+        degraded: false,
+        degrade_reason: None,
     }
 }
 
@@ -371,6 +335,7 @@ mod tests {
             running_profile_hash: None,
             caller_profile_hash: None,
             allow_replace_running: true,
+            allow_binary_upgrade: false,
             promote_shared: true,
         };
         let plan = resolve_kernel_action(&input);
@@ -394,6 +359,7 @@ mod tests {
             running_profile_hash: None,
             caller_profile_hash: None,
             allow_replace_running: true,
+            allow_binary_upgrade: false,
             promote_shared: true,
         };
         let plan = resolve_kernel_action(&input);
@@ -402,7 +368,7 @@ mod tests {
     }
 
     #[test]
-    fn same_distro_id_hash_mismatch_unknown_triggers_binary_upgrade() {
+    fn unknown_profile_attaches_without_binary_upgrade_by_default() {
         let cands = vec![candidate(KernelTier::DevHeadless, 90, "/dev/kernel")];
         let desktop = default_requirements_for_distro_id("desktop");
         let input = ResolveKernelActionInput {
@@ -417,6 +383,31 @@ mod tests {
             running_profile_hash: Some("aaa"),
             caller_profile_hash: Some("bbb"),
             allow_replace_running: true,
+            allow_binary_upgrade: false,
+            promote_shared: true,
+        };
+        let plan = resolve_kernel_action(&input);
+        assert_eq!(plan.action, KernelActionKind::Attach);
+        assert_eq!(plan.attach_reason, Some(AttachReason::RunningKernelOk));
+    }
+
+    #[test]
+    fn same_distro_id_hash_mismatch_unknown_triggers_binary_upgrade_when_opt_in() {
+        let cands = vec![candidate(KernelTier::DevHeadless, 90, "/dev/kernel")];
+        let desktop = default_requirements_for_distro_id("desktop");
+        let input = ResolveKernelActionInput {
+            running: Some(&bundled_manifest()),
+            running_health_ok: true,
+            candidates: &cands,
+            kernel_pinned: false,
+            caller_distro_id: Some("desktop"),
+            caller_requirements: Some(&desktop),
+            running_profile: None,
+            running_distro_id: Some("desktop"),
+            running_profile_hash: Some("aaa"),
+            caller_profile_hash: Some("bbb"),
+            allow_replace_running: true,
+            allow_binary_upgrade: true,
             promote_shared: true,
         };
         let plan = resolve_kernel_action(&input);
@@ -440,6 +431,7 @@ mod tests {
             running_profile_hash: None,
             caller_profile_hash: None,
             allow_replace_running: true,
+            allow_binary_upgrade: false,
             promote_shared: true,
         };
         let plan = resolve_kernel_action(&input);
@@ -447,6 +439,62 @@ mod tests {
         assert_eq!(
             plan.attach_reason,
             Some(AttachReason::KernelPinnedProfileMismatch)
+        );
+    }
+
+    #[test]
+    fn spawn_bundled_first_when_offline() {
+        let cands = vec![
+            candidate(KernelTier::Shared, 88, "/shared/kernel"),
+            candidate(KernelTier::Bundled, 50, "/bundled/kernel"),
+        ];
+        let input = ResolveKernelActionInput {
+            running: None,
+            running_health_ok: false,
+            candidates: &cands,
+            kernel_pinned: false,
+            caller_distro_id: Some("desktop"),
+            caller_requirements: None,
+            running_profile: None,
+            running_distro_id: None,
+            running_profile_hash: None,
+            caller_profile_hash: None,
+            allow_replace_running: true,
+            allow_binary_upgrade: false,
+            promote_shared: true,
+        };
+        let plan = resolve_kernel_action(&input);
+        assert_eq!(plan.action, KernelActionKind::SpawnBest);
+        assert!(!plan.degraded);
+        assert_eq!(
+            plan.candidate.as_ref().map(|c| c.tier),
+            Some(KernelTier::Bundled)
+        );
+    }
+
+    #[test]
+    fn spawn_shared_when_no_bundled() {
+        let cands = vec![candidate(KernelTier::Shared, 88, "/shared/kernel")];
+        let input = ResolveKernelActionInput {
+            running: None,
+            running_health_ok: false,
+            candidates: &cands,
+            kernel_pinned: false,
+            caller_distro_id: Some("desktop"),
+            caller_requirements: None,
+            running_profile: None,
+            running_distro_id: None,
+            running_profile_hash: None,
+            caller_profile_hash: None,
+            allow_replace_running: true,
+            allow_binary_upgrade: false,
+            promote_shared: true,
+        };
+        let plan = resolve_kernel_action(&input);
+        assert_eq!(plan.action, KernelActionKind::SpawnBest);
+        assert_eq!(
+            plan.candidate.as_ref().map(|c| c.tier),
+            Some(KernelTier::Shared)
         );
     }
 
@@ -468,9 +516,14 @@ mod tests {
             running_profile_hash: None,
             caller_profile_hash: None,
             allow_replace_running: true,
+            allow_binary_upgrade: false,
             promote_shared: true,
         };
         let plan = resolve_kernel_action(&input);
         assert_eq!(plan.action, KernelActionKind::SpawnBest);
+        assert_eq!(
+            plan.candidate.as_ref().map(|c| c.tier),
+            Some(KernelTier::Bundled)
+        );
     }
 }

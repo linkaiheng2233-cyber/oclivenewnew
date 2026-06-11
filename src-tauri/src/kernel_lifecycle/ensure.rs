@@ -5,7 +5,7 @@ use super::policy::{find_desktop_distro_profile_path, KernelBringUpOptions};
 use super::spawn::{probe_existing_kernel, spawn_kernel};
 use oclive_kernel_runtime::{
     apply_promote_to_candidate, discover_spawn_kernel_candidates, parse_distro_requirements_file,
-    pick_best_kernel,
+    pick_best_for_spawn,
 };
 use std::path::PathBuf;
 
@@ -61,7 +61,7 @@ pub(super) async fn ensure_kernel_ready_legacy_on_conn(
 
     let candidates =
         discover_spawn_kernel_candidates(&opts.anchors, None, opts.bundled_binary.as_deref());
-    let Some(best) = pick_best_kernel(&candidates) else {
+    let Some(best) = pick_best_for_spawn(&candidates) else {
         conn.set_mode(DesktopKernelMode::Offline);
         return Err(format!(
             "no kernel on :{} and no spawn binary found (build oclive-kernel-server or set OCLIVE_KERNEL_BINARY)",

@@ -1,6 +1,6 @@
 //! Shared policy input builder for CLI and desktop hosts.
 
-use crate::kernel_discovery::KernelCandidate;
+use crate::kernel_discovery::{binary_upgrade_replace_enabled, KernelCandidate};
 use crate::kernel_distro_profile::{
     evaluate_profile_compat, resolve_caller_requirements,
 };
@@ -83,6 +83,7 @@ pub fn build_resolve_plan(
         running_profile_hash: ctx.running_profile_hash.as_deref(),
         caller_profile_hash: caller_profile_hash.as_deref(),
         allow_replace_running,
+        allow_binary_upgrade: binary_upgrade_replace_enabled(),
         promote_shared,
     };
 

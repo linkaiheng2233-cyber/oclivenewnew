@@ -83,7 +83,7 @@ flowchart TB
 
 **裁定**：**保持单进程单端口**；多发行版同时开 → **attach 优先，冲突时 last-writer replace**；**不**做默认多核并行。
 
-**与代码差距（待 RFC K-SCHED-05）**：`discover_spawn_kernel_candidates` 按 **score 降序**（dev 89–95 > shared 88 > bundled 50），**与「发行版 bundled 优先」相反** — 终端 spawn 应改为 **caller bundled 第一候选**，全能 shared 第二，dev 仅 `OCLIVE_DEVELOPER=1`。
+**K-SCHED-05（Done · 2026-06）**：`pick_best_for_spawn` — bundled → shared → dev（`OCLIVE_DEVELOPER=1`）；`discover_spawn_kernel_candidates` 仍按 score 收集，spawn 决策走 tier rank。
 
 ---
 
@@ -152,11 +152,11 @@ flowchart TB
 
 | ID | 改动 | 风险 |
 |----|------|------|
-| K-SCHED-01 | 桌面/VS Code 默认 `allow_replace_running` 仅对 `profile_mismatch` 为 true；**禁用** `binary_upgrade` 自动 replace | 低 · 加 feature flag 或 env `OCLIVE_ALLOW_BINARY_UPGRADE=1` 给开发者 |
+| K-SCHED-01 | 桌面/VS Code 默认 `allow_replace_running` 仅对 `profile_mismatch` 为 true；**禁用** `binary_upgrade` 自动 replace | **Done** · env `OCLIVE_ALLOW_BINARY_UPGRADE=1` opt-in |
 | K-SCHED-02 | `/health` 文档强调：**发行版能力 = active_profile_summary**，不是 manifest feature_set | 文档 only |
 | K-SCHED-03 | `apply_host_ceiling` 文档与实现词统一为 **profile_override**（可选 rename，Breaking 走流程） | 中 |
 | K-SCHED-04 | 合并 discovery 文档为 3 档：`bundled` / `shared` / `dev` | 文档 only |
-| K-SCHED-05 | Spawn **发行版 bundled 优先** → shared 全能兜底；dev 仅 `OCLIVE_DEVELOPER=1` | 中 · `kernel_discovery` spawn 路径 |
+| K-SCHED-05 | Spawn **发行版 bundled 优先** → shared 全能兜底；dev 仅 `OCLIVE_DEVELOPER=1` | **Done** · `pick_best_for_spawn` |
 
 **不建议**：删除 `resolve_kernel_action` 或去掉 attach — 会破坏 VS Code + 桌面共 `:8420` 与 `app.db`。
 

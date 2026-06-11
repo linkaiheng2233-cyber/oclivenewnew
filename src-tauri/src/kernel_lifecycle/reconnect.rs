@@ -5,6 +5,7 @@ use super::policy::{reconnect_with_policy, KernelBringUpOptions};
 use super::spawn::wait_for_health;
 use super::status::{build_ui_status, probe_health_status};
 use crate::kernel_attach::KernelHttpClient;
+use oclive_kernel_runtime::parse_distro_requirements_file;
 use parking_lot::Mutex;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -112,13 +113,20 @@ pub async fn reconnect_once(
         return Ok(status);
     }
 
+    let distro_profile_path = super::policy::find_desktop_distro_profile_path(&opts.anchors);
+    let caller_distro_id = distro_profile_path
+        .as_ref()
+        .and_then(|p| parse_distro_requirements_file(p).ok())
+        .map(|req| req.distro_id)
+        .unwrap_or_else(|| "desktop".into());
+
     let policy_opts = KernelBringUpOptions {
         port: opts.port,
         roles_dir: opts.roles_dir.clone(),
         anchors: opts.anchors.clone(),
         bundled_binary: opts.bundled_binary.clone(),
-        caller_distro_id: Some("desktop".into()),
-        distro_profile_path: super::policy::find_desktop_distro_profile_path(&opts.anchors),
+        caller_distro_id: Some(caller_distro_id),
+        distro_profile_path,
         promote_shared: true,
     };
 

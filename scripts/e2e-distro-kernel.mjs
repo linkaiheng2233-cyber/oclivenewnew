@@ -3,7 +3,7 @@
  * Distro kernel e2e — spawn / attach / role_snapshot scenarios.
  * Usage: node scripts/e2e-distro-kernel.mjs [--scenario spawn|attach|role-snapshot|all]
  */
-import { spawn } from 'child_process';
+import { spawn, spawnSync } from 'child_process';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -141,18 +141,71 @@ async function scenarioRoleSnapshot() {
   }
 }
 
+async function scenarioBundledFirst() {
+  console.log('[e2e-distro] scenario: bundled-first');
+  const targetDir = JSON.parse(
+    spawnSync('cargo', ['metadata', '--format-version=1', '--no-deps'], {
+      encoding: 'utf8',
+      cwd: repoRoot,
+    }).stdout,
+  ).target_directory;
+  const exe = process.platform === 'win32' ? 'oclive-kernel-server.exe' : 'oclive-kernel-server';
+  const cli = process.platform === 'win32' ? 'oclive-cli.exe' : 'oclive-cli';
+  const bundled = path.join(repoRoot, 'src-tauri', 'resources', exe);
+  if (!fs.existsSync(bundled)) {
+    spawnSync(process.execPath, ['scripts/bundle-kernel-for-tauri.mjs', '--profile', 'debug'], {
+      cwd: repoRoot,
+      stdio: 'inherit',
+    });
+  }
+  if (!fs.existsSync(bundled)) {
+    throw new Error(`missing bundled kernel at ${bundled}`);
+  }
+  const cliBin = path.join(targetDir, 'debug', cli);
+  const profile = path.join(repoRoot, 'examples', 'distro-profiles', 'desktop.oclive.toml');
+  const out = spawnSync(
+    cliBin,
+    [
+      'kernel',
+      'ensure',
+      '--plan-only',
+      '--json',
+      '--path',
+      repoRoot,
+      '--roles-dir',
+      rolesDir,
+      '--distro',
+      'desktop',
+      '--distro-profile',
+      profile,
+      '--bundled-binary',
+      bundled,
+    ],
+    { encoding: 'utf8', cwd: repoRoot },
+  );
+  if (out.status !== 0) {
+    throw new Error(out.stderr || out.stdout);
+  }
+  const report = JSON.parse(out.stdout);
+  if (report.plan?.action !== 'spawn_best' || report.plan?.candidate?.tier !== 'bundled') {
+    throw new Error(`bundled-first plan mismatch: ${JSON.stringify(report.plan)}`);
+  }
+  console.log('[e2e-distro] bundled-first ok');
+}
+
 async function main() {
   if (!findKernelBinary()) {
     console.warn('[e2e-distro] skip: build oclive-kernel-server first');
     process.exit(0);
   }
   const run = scenario === 'all'
-    ? ['spawn', 'attach', 'role-snapshot']
+    ? ['spawn', 'attach', 'role-snapshot', 'bundled-first']
     : [scenario];
   for (const s of run) {
     if (s === 'spawn') await scenarioSpawn();
     else if (s === 'attach') await scenarioAttach();
     else if (s === 'role-snapshot') await scenarioRoleSnapshot();
+    else if (s === 'bundled-first') await scenarioBundledFirst();
     else {
       console.error(`unknown scenario: ${s}`);
       process.exit(1);

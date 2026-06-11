@@ -33,7 +33,10 @@
       "identifier": "com.oclivenewnew.app",
     "resources": [
         "../roles",
-        "resources/distro-profiles"
+        "resources/distro-profiles",
+        "resources/oclive-kernel-server",
+        "resources/oclive-kernel-server.exe",
+        "resources/oclive-kernel-server.oclive-manifest.json"
       ],
       "icon": [
         "icons/32x32.png",

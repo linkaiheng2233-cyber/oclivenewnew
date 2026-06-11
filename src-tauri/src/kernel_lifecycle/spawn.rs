@@ -5,8 +5,8 @@ use oclive_kernel_host::domain::host_profile::{
 };
 use crate::kernel_lifecycle::connection::KernelConnection;
 use oclive_kernel_runtime::{
-    ensure_app_data_dir, find_app_data_dir_for_host, KernelCandidate, KernelTier,
-    ENV_HTTP_API_MOCK_LLM, ENV_ROLES_DIR,
+    ensure_app_data_dir, find_app_data_dir_for_host, parse_distro_requirements_file,
+    KernelCandidate, KernelTier, ENV_HTTP_API_MOCK_LLM, ENV_ROLES_DIR,
 };
 use std::path::Path;
 use std::process::{Command, Stdio};
@@ -78,11 +78,18 @@ fn append_distro_env(
     host: &HostProfile,
     profile_override: Option<&Path>,
 ) {
-    let distro_id = if host.distro_id != "default" {
-        host.distro_id.clone()
-    } else {
-        "desktop".into()
-    };
+    let distro_id = profile_override
+        .filter(|p| p.is_file())
+        .and_then(|p| parse_distro_requirements_file(p).ok())
+        .map(|req| req.distro_id)
+        .or_else(|| {
+            if host.distro_id != "default" {
+                Some(host.distro_id.clone())
+            } else {
+                None
+            }
+        })
+        .unwrap_or_else(|| "desktop".into());
     pairs.push((ENV_DISTRO_ID.into(), distro_id));
     if let Some(p) = profile_override.filter(|p| p.is_file()) {
         pairs.push((

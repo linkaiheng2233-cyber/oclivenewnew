@@ -1,12 +1,11 @@
-# OCLive VS Code extension — stable reference profile (explicit six-slot matrix).
+# OCLive VS Code Flash — Pro 简洁版（explicit six-slot matrix）
+# Install copy: <extension-root>/distro.oclive.toml · SSOT mirror of this file
 # See creator-docs/kernel/DISTRO_DEFAULT_PLUGINS.md §3.2
-# Install copy: <extension-root>/distro.oclive.toml
-# SSOT mirror: oclivenewnew/examples/distro-profiles/vscode.oclive.toml
 # See creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md
 
 schema_version = 1
 distro_id = "vscode"
-display_name = "OCLive VS Code"
+display_name = "OCLive VS Code Flash"
 
 [interaction]
 default_mode = "pure_chat"
@@ -28,13 +27,11 @@ favor_mid  = "保持友好但不越界"
 favor_low  = "保持距离与礼貌"
 
 [memory]
-# retrieval: default=8 relevant memories; light=4 (HostProfile.memory_retrieval). See DISTRO_CAPABILITY_PROFILE.md.
 retrieval = "light"
 
 [post_process]
 chain = "minimal"
 
-# VS Code: default identity when session has no explicit choice (matches mumu catalog).
 [user_identity]
 default_id = "classmate"
 
@@ -44,7 +41,3 @@ emotion = "builtin"
 event = "builtin"
 prompt = "builtin"
 llm = "ollama"
-# agent ignored when skip_agent = true
-
-# Penetration defaults moved to oclive-vscode-penetration (0.4+).
-# See oclive-vscode/docs/MIGRATION_0.3_to_0.4.md

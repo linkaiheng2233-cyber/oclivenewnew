@@ -50,11 +50,11 @@ pub const ENV_ROLES_DIR: &str = "OCLIVE_ROLES_DIR";
 pub use app_data_migration::ensure_canonical_app_data_ready;
 pub use http_error::{app_error_from_http_response, app_error_from_kernel_body};
 pub use kernel_discovery::{
-    discover_kernel_candidates, discover_spawn_kernel_candidates, find_monorepo_root,
-    pick_best_kernel, promote_to_shared_runtime, shared_kernel_binary_path, shared_runtime_dir,
-    should_promote, KernelCandidate, KernelTier, PROMOTE_SCORE_THRESHOLD, SCORE_BUNDLED,
-    SCORE_DEV_FULL_DEBUG, SCORE_DEV_FULL_RELEASE, SCORE_DEV_HEADLESS_DEBUG,
-    SCORE_DEV_HEADLESS_RELEASE, SCORE_ENV, SCORE_SETTINGS, SCORE_SHARED,
+    developer_spawn_enabled, discover_kernel_candidates, discover_spawn_kernel_candidates,
+    find_monorepo_root, pick_best_for_spawn, pick_best_kernel, promote_to_shared_runtime,
+    shared_kernel_binary_path, shared_runtime_dir, should_promote, KernelCandidate, KernelTier,
+    PROMOTE_SCORE_THRESHOLD, SCORE_BUNDLED, SCORE_DEV_FULL_DEBUG, SCORE_DEV_FULL_RELEASE,
+    SCORE_DEV_HEADLESS_DEBUG, SCORE_DEV_HEADLESS_RELEASE, SCORE_ENV, SCORE_SETTINGS, SCORE_SHARED,
 };
 pub use distro_oclive_file::{
     parse_distro_oclive_file, parse_distro_oclive_toml, DistroOcliveFile, PluginBackendsToml,

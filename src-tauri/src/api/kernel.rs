@@ -50,9 +50,23 @@ pub async fn reconnect_kernel(
         anchors.push(cwd);
     }
 
-    let bundled_binary = std::env::var("OCLIVE_KERNEL_BINARY")
-        .ok()
-        .map(std::path::PathBuf::from);
+    let bundled_binary = app
+        .path_resolver()
+        .resource_dir()
+        .and_then(|res| {
+            let name = if cfg!(windows) {
+                "oclive-kernel-server.exe"
+            } else {
+                "oclive-kernel-server"
+            };
+            let path = res.join(name);
+            if path.is_file() { Some(path) } else { None }
+        })
+        .or_else(|| {
+            std::env::var("OCLIVE_KERNEL_BINARY")
+                .ok()
+                .map(std::path::PathBuf::from)
+        });
 
     let opts = ReconnectOptions {
         port,

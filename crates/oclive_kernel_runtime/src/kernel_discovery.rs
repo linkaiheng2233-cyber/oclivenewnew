@@ -261,6 +261,46 @@ pub fn pick_best_kernel(candidates: &[KernelCandidate]) -> Option<&KernelCandida
     candidates.first()
 }
 
+/// Whether dev-tier binaries may participate in cold-start spawn (K-SCHED-05).
+#[must_use]
+pub fn developer_spawn_enabled() -> bool {
+    std::env::var("OCLIVE_DEVELOPER")
+        .ok()
+        .is_some_and(|v| v == "1" || v.eq_ignore_ascii_case("true"))
+}
+
+/// Opt-in healthy-path replace when a stronger local binary exists (K-SCHED-01).
+#[must_use]
+pub fn binary_upgrade_replace_enabled() -> bool {
+    std::env::var("OCLIVE_ALLOW_BINARY_UPGRADE")
+        .ok()
+        .is_some_and(|v| v == "1" || v.eq_ignore_ascii_case("true"))
+}
+
+fn spawn_tier_rank(tier: KernelTier) -> u8 {
+    match tier {
+        KernelTier::Env => 0,
+        KernelTier::Bundled => 1,
+        KernelTier::Shared => 2,
+        KernelTier::Settings => 3,
+        KernelTier::DevFull | KernelTier::DevHeadless => 4,
+    }
+}
+
+/// K-SCHED-05 spawn order: caller **bundled** → shared → dev (`OCLIVE_DEVELOPER=1`).
+/// Unlike [`pick_best_kernel`], this does **not** use discovery score ordering.
+#[must_use]
+pub fn pick_best_for_spawn(candidates: &[KernelCandidate]) -> Option<&KernelCandidate> {
+    let dev_ok = developer_spawn_enabled();
+    candidates
+        .iter()
+        .filter(|c| match c.tier {
+            KernelTier::DevFull | KernelTier::DevHeadless => dev_ok,
+            _ => true,
+        })
+        .min_by_key(|c| (spawn_tier_rank(c.tier), std::cmp::Reverse(c.score)))
+}
+
 /// Copy `binary` into shared runtime dir; returns destination path on success.
 ///
 /// # Errors
@@ -311,5 +351,24 @@ mod tests {
                 "DevFull tauri must not appear in spawn list"
             );
         }
+    }
+
+    #[test]
+    fn pick_best_for_spawn_prefers_bundled_over_shared() {
+        let bundled = KernelCandidate {
+            binary: PathBuf::from("/bundled/kernel"),
+            tier: KernelTier::Bundled,
+            score: SCORE_BUNDLED,
+            extra_args: vec![],
+        };
+        let shared = KernelCandidate {
+            binary: PathBuf::from("/shared/kernel"),
+            tier: KernelTier::Shared,
+            score: SCORE_SHARED,
+            extra_args: vec![],
+        };
+        let cands = vec![shared, bundled];
+        let picked = pick_best_for_spawn(&cands).expect("pick");
+        assert_eq!(picked.tier, KernelTier::Bundled);
     }
 }
