@@ -1,15 +1,14 @@
 <script setup lang="ts">
 import type { TheaterPokeChipId, TheaterSkeleton } from '../../theater/types'
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { NICKNAME_OPTIONS, THEATER_POKE_CHIP_IDS } from '../../theater/types'
 import {
+  markTheaterPokeFirstLine,
   patchTheaterBeats,
-  probeOllamaAvailable,
   resolveImpactedBeatIds,
 } from '../../theater/useTheaterBeatPatch'
 import { useTheaterPlayback, useTheaterVariables } from '../../theater/useTheaterPlayback'
-import { openPackEditorForRole } from '../../utils/openPackEditor'
 
 const props = defineProps<{
   skeleton: TheaterSkeleton | null
@@ -18,8 +17,8 @@ const props = defineProps<{
 const { t, locale } = useI18n()
 
 const patching = ref(false)
+const patchingChipId = ref<TheaterPokeChipId | null>(null)
 const patchNote = ref<string | null>(null)
-const ollamaUp = ref<boolean | null>(null)
 const nicknamePickerOpen = ref(false)
 
 const skeletonGetter = () => props.skeleton
@@ -45,16 +44,6 @@ const pokeChips = computed(() =>
   }),
 )
 
-async function initOllamaProbe() {
-  ollamaUp.value = await probeOllamaAvailable()
-}
-
-onMounted(() => {
-  void initOllamaProbe()
-})
-
-defineExpose({ initOllamaProbe })
-
 async function onPoke(chipId: TheaterPokeChipId) {
   if (!props.skeleton || patching.value) {
     return
@@ -79,6 +68,7 @@ async function applyPatch(varId: TheaterPokeChipId) {
     return
   }
   patching.value = true
+  patchingChipId.value = varId
   patchNote.value = null
   const beatIds = resolveImpactedBeatIds(sk, varId)
   const loc = locale.value.startsWith('zh') ? 'zh' : 'en'
@@ -90,17 +80,11 @@ async function applyPatch(varId: TheaterPokeChipId) {
     loc,
   )
   resetPlayback(beats)
+  markTheaterPokeFirstLine()
   patchNote.value = patched ? t('theater.patchOk') : t('theater.patchFallback')
   patching.value = false
-  startPlayback()
-}
-
-async function onEditPersonality() {
-  const roleId = props.skeleton?.role_a ?? 'theater-breakfast-a'
-  const result = await openPackEditorForRole(roleId)
-  if (!result.ok && result.message) {
-    patchNote.value = result.message
-  }
+  patchingChipId.value = null
+  startPlayback({ markFirstLine: false })
 }
 </script>
 
@@ -115,7 +99,7 @@ async function onEditPersonality() {
         v-for="beat in visibleBeats"
         :key="beat.id"
         class="theater-line"
-        :class="[`theater-line--${beat.speaker}`]"
+        :class="[`theater-line--${beat.speaker}`, 'theater-line--enter']"
       >
         <span class="theater-line__who">
           {{ beat.speaker === 'a' ? roleAName : roleBName }}
@@ -130,38 +114,29 @@ async function onEditPersonality() {
     </div>
 
     <footer class="theater-footer">
-      <div class="theater-chips" role="toolbar" :aria-label="t('theater.pokeLabel')">
+      <div
+        class="theater-chips"
+        role="toolbar"
+        :aria-label="t('theater.pokeLabel')"
+        :aria-busy="patching"
+      >
         <button
           v-for="chip in pokeChips"
           :key="chip.id"
           type="button"
           class="theater-chip"
+          :class="{ 'theater-chip--loading': patchingChipId === chip.id }"
           :disabled="patching || !skeleton"
           @click="onPoke(chip.id)"
         >
+          <span v-if="patchingChipId === chip.id" class="theater-chip__spinner" aria-hidden="true" />
           {{ chip.label }}
-        </button>
-        <button
-          type="button"
-          class="theater-chip theater-chip--ghost"
-          @click="onEditPersonality"
-        >
-          {{ t('theater.editPersonality') }}
         </button>
       </div>
       <p v-if="patchNote" class="theater-note">
         {{ patchNote }}
       </p>
-      <p v-if="ollamaUp === false" class="theater-note theater-note--muted">
-        {{ t('theater.ollamaOff') }}
-      </p>
     </footer>
-
-    <div v-if="patching" class="theater-patch-overlay" role="status" aria-live="polite">
-      <div class="theater-patch-overlay__card">
-        {{ t('theater.patching') }}
-      </div>
-    </div>
 
     <div
       v-if="nicknamePickerOpen"
@@ -202,14 +177,14 @@ async function onEditPersonality() {
 
 .theater-scene-bg {
   border-radius: 12px;
-  min-height: 120px;
+  min-height: 96px;
   background:
     radial-gradient(ellipse at 30% 20%, rgba(255, 200, 120, 0.25), transparent 55%),
     linear-gradient(180deg, #3d2e22, #2a1f16);
   display: flex;
   align-items: flex-end;
-  padding: 1rem;
-  margin-bottom: 1rem;
+  padding: 0.85rem 1rem;
+  margin-bottom: 0.85rem;
 }
 
 .theater-scene-label {
@@ -227,6 +202,27 @@ async function onEditPersonality() {
   padding: 0.65rem 0.85rem;
   border-radius: 10px;
   max-width: 92%;
+}
+
+.theater-line--enter {
+  animation: theater-line-fade-in 0.45s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theater-line--enter {
+    animation: none;
+  }
+}
+
+@keyframes theater-line-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .theater-line--a {
@@ -274,6 +270,9 @@ async function onEditPersonality() {
 }
 
 .theater-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   border: 1px solid rgba(255, 220, 180, 0.35);
   background: rgba(255, 220, 180, 0.08);
   color: inherit;
@@ -283,9 +282,40 @@ async function onEditPersonality() {
   cursor: pointer;
 }
 
+.theater-chip:focus-visible {
+  outline: 2px solid rgba(255, 220, 180, 0.65);
+  outline-offset: 2px;
+}
+
 .theater-chip:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+.theater-chip--loading {
+  opacity: 0.75;
+}
+
+.theater-chip__spinner {
+  width: 0.85rem;
+  height: 0.85rem;
+  border: 2px solid rgba(255, 220, 180, 0.25);
+  border-top-color: rgba(255, 220, 180, 0.85);
+  border-radius: 50%;
+  animation: theater-chip-spin 0.7s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theater-chip__spinner {
+    animation: none;
+    border-top-color: rgba(255, 220, 180, 0.5);
+  }
+}
+
+@keyframes theater-chip-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .theater-chip--ghost {
@@ -298,10 +328,6 @@ async function onEditPersonality() {
   font-size: 0.8rem;
   margin: 0.65rem 0 0;
   opacity: 0.85;
-}
-
-.theater-note--muted {
-  opacity: 0.55;
 }
 
 .theater-patch-overlay {

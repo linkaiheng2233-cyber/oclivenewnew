@@ -27,6 +27,8 @@ export interface TheaterSkeleton {
   impact_map: Record<string, string[]>
   beats: TheaterBeat[]
   patch_hints?: Record<string, string>
+  /** Pre-written alternates when Ollama is unavailable: varId → beatId → text */
+  beat_alternates?: Record<string, Partial<Record<string, string>>>
 }
 
 export type TheaterVariableState = Record<string, boolean | string>

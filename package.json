@@ -32,6 +32,7 @@
     "verify:shared-i18n": "node scripts/verify-shared-i18n.mjs",
     "scaffold:ui-plugin": "node scripts/scaffold-ui-slot-plugin.mjs",
     "test:unit": "vitest run",
+    "test:theater:smoke": "node scripts/theater-tauri-smoke.mjs",
     "lint": "eslint src vite.config.ts e2e-mock",
     "format": "prettier --write .",
     "test:e2e:core-api-restart": "node scripts/e2e-core-api-restart.mjs",

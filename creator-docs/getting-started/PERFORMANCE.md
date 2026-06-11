@@ -195,17 +195,26 @@ cargo run -p oclive-cli -- bench --soak --soak-duration 72 --release -o ./my-ker
 
 ---
 
-## 7. Theater poke 延迟预算（V-THEATER-PERF-01）
+## 7. Theater 首屏与 poke 延迟预算（V-THEATER-PERF-01 · T2）
 
-剧场壳戳点路径（`src/theater/useTheaterBeatPatch.ts`）在浏览器侧用 **`performance.mark`** 分段：
+剧场壳（`src/theater/`）在浏览器侧用 **`performance.mark`** 分段：
 
 | 段 | Mark 名 | 含义 |
 |----|--------|------|
-| probe | `theater-poke-probe-start` → `theater-poke-probe-end` | Ollama `/api/tags` 可达性 |
+| **首屏** | `theater-first-line` | skeleton 到达后第一条 visible beat（`useTheaterPlayback.startPlayback`） |
+| probe | `theater-poke-probe-start` → `theater-poke-probe-end` | Ollama `/api/tags` 可达性（戳点时按需探测） |
 | patch | `theater-poke-patch-start` → `theater-poke-patch-end` | 局部台词改写请求 |
-| first line | `theater-poke-patch-end` → `theater-poke-first-line` | 首条新台词渲染（由 `TheaterShell` 在 `resetPlayback` 后调用） |
+| poke first line | `theater-poke-patch-end` → `theater-poke-first-line` | 戳点后首条新台词渲染（`TheaterModeTweak.applyPatch`） |
 
-**开发机基线（2026-06-09，Vitest 烟测，Ollama 离线）**：probe 失败 fast-path **&lt; 50ms**（仅网络错误，无 LLM）。有 Ollama 时 patch P95 目标 **≤ 12s**（与 `AbortSignal.timeout(12000)` 对齐）；真机请用 DevTools Performance 或 `readTheaterPokePerfSample()` 采样。
+**15 秒惊喜预算（开发机 P50）**：
+
+| 指标 | 目标 |
+|------|------|
+| 打开 → 第一条台词 | **≤ 2s**（含 `scenes.json` + skeleton 并行 fetch） |
+| 前 3 beat 播完 | **≤ 12s**（单测断言 `theater.acceptance.test.ts`） |
+| poke → 首条新台词 | **≤ 8s**（有 Ollama）；无 Ollama 即时 `beat_alternates` fallback |
+
+**开发机基线（2026-06-12，Vitest 烟测，Ollama 离线）**：probe 失败 fast-path **&lt; 50ms**（仅网络错误，无 LLM）。有 Ollama 时 patch P95 目标 **≤ 12s**（与 `AbortSignal.timeout(12000)` 对齐）；真机请用 DevTools Performance、`readTheaterPokePerfSample()` 或 `performance.getEntriesByName('theater-first-line')` 采样。
 
 复现烟测：
 
@@ -219,6 +228,7 @@ npm run test:unit -- src/theater/theater.acceptance.test.ts
 
 | 日期 | 说明 |
 |------|------|
+| 2026-06-12 | T2：`theater-first-line` mark、15s 预算表、前 3 beat 单测链（§7）。 |
 | 2026-06-09 | V-THEATER-PERF-01：Theater poke 延迟 mark + 开发机基线（§7）。 |
 | 2026-06-08 | K-PERF-02：`oclive_turn` stage 耗时采样表（§6）。 |
 | 2026-05-20 | 确认 `bench --matrix` / `--cold-start` / `--soak` 与 `init --monolith` 命令可复制运行；补充三合一命令块。 |

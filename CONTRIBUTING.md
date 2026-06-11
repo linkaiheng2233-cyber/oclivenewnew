@@ -34,6 +34,15 @@ npm run dev
 npm run build
 ```
 
+**AI 剧场发行版（仅前端壳）**：
+
+```bash
+npm run dev:theater        # VITE_OCLIVE_SHELL=theater（见 .env.theater）
+npm run test:theater:smoke # profile 对齐 + theater 单测
+```
+
+Tauri 安装包 smoke（Windows）：`$env:VITE_OCLIVE_SHELL='theater'` 后 `npm run tauri:build`。验收见 [`handoff/THEATER_15S_ACCEPTANCE.md`](handoff/THEATER_15S_ACCEPTANCE.md)。
+
 **本地 HTTP API**（与 GUI 同一二进制）：`./oclivenewnew-tauri` / 安装包可执行文件加 **`--api`**，见根目录 [README.md](README.md)「本地 HTTP API」节。
 
 ## 工程约束（7 条 · 与 `.cursor/rules` 镜像）

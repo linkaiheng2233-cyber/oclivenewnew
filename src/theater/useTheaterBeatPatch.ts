@@ -110,6 +110,10 @@ export async function patchTheaterBeats(
     performance.mark(THEATER_POKE_PERF_MARKS.patchStart)
   }
 
+  const varId = beatIds.length > 0
+    ? Object.keys(skeleton.impact_map).find(k => skeleton.impact_map[k]?.some(id => beatIds.includes(id)))
+    : undefined
+
   try {
     const res = await fetch(`${OLLAMA_URL.replace(/\/+$/, '')}/api/chat`, {
       method: 'POST',
@@ -128,16 +132,16 @@ export async function patchTheaterBeats(
       performance.mark(THEATER_POKE_PERF_MARKS.patchEnd)
     }
     if (!res.ok) {
-      return { beats, patched: false }
+      return applyBeatAlternates(skeleton, beats, beatIds, varId, variables)
     }
     const data = await res.json() as { message?: { content?: string } }
     const content = data?.message?.content?.trim()
     if (!content) {
-      return { beats, patched: false }
+      return applyBeatAlternates(skeleton, beats, beatIds, varId, variables)
     }
     const parsed = extractPatchedLines(content, targets)
     if (!parsed) {
-      return { beats, patched: false }
+      return applyBeatAlternates(skeleton, beats, beatIds, varId, variables)
     }
     const next = cloneBeats(beats)
     for (const row of parsed) {
@@ -152,8 +156,50 @@ export async function patchTheaterBeats(
     if (typeof performance !== 'undefined' && typeof performance.mark === 'function') {
       performance.mark(THEATER_POKE_PERF_MARKS.patchEnd)
     }
+    return applyBeatAlternates(skeleton, beats, beatIds, varId, variables)
+  }
+}
+
+function interpolateAlternate(text: string, variables: TheaterVariableState): string {
+  const nick = String(variables.nickname_change ?? 'default')
+  if (nick === 'default') {
+    return text.replace(/[,，]?\{nick\}[,，]?/g, '').replace(/\s{2,}/g, ' ').trim()
+  }
+  return text.replace(/\{nick\}/g, nick).trim()
+}
+
+function applyBeatAlternates(
+  skeleton: TheaterSkeleton,
+  beats: TheaterBeat[],
+  beatIds: string[],
+  varId: string | undefined,
+  variables: TheaterVariableState,
+): { beats: TheaterBeat[], patched: boolean } {
+  if (!varId) {
     return { beats, patched: false }
   }
+  const altMap = skeleton.beat_alternates?.[varId]
+  if (!altMap) {
+    return { beats, patched: false }
+  }
+  const next = cloneBeats(beats)
+  let changed = false
+  for (const id of beatIds) {
+    const alt = altMap[id]
+    if (!alt) {
+      continue
+    }
+    const idx = next.findIndex(b => b.id === id)
+    if (idx < 0) {
+      continue
+    }
+    const text = interpolateAlternate(alt, variables)
+    if (text && text !== next[idx].text) {
+      next[idx] = { ...next[idx], text }
+      changed = true
+    }
+  }
+  return { beats: next, patched: changed }
 }
 
 function extractPatchedLines(

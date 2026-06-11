@@ -2,6 +2,15 @@ import type { TheaterBeat, TheaterSkeleton, TheaterVariableState } from './types
 import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import { defaultVariableState } from './useTheaterBeatPatch'
 
+/** Dev baseline mark: skeleton loaded → first visible beat (T2-PERF-01). */
+export const THEATER_FIRST_LINE_MARK = 'theater-first-line'
+
+export function markTheaterFirstLine(): void {
+  if (typeof performance !== 'undefined' && typeof performance.mark === 'function') {
+    performance.mark(THEATER_FIRST_LINE_MARK)
+  }
+}
+
 export function useTheaterPlayback(skeletonRef: () => TheaterSkeleton | null) {
   const displayedBeats = shallowRef<TheaterBeat[]>([])
   const visibleCount = ref(0)
@@ -28,7 +37,7 @@ export function useTheaterPlayback(skeletonRef: () => TheaterSkeleton | null) {
     finished.value = false
   }
 
-  function startPlayback() {
+  function startPlayback(options?: { markFirstLine?: boolean }) {
     const skeleton = skeletonRef()
     if (!skeleton || displayedBeats.value.length === 0) {
       return
@@ -37,6 +46,9 @@ export function useTheaterPlayback(skeletonRef: () => TheaterSkeleton | null) {
     playing.value = true
     finished.value = false
     visibleCount.value = 1
+    if (options?.markFirstLine !== false) {
+      markTheaterFirstLine()
+    }
     scheduleNext(0)
   }
 

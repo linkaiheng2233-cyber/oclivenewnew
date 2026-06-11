@@ -127,6 +127,9 @@ export default {
   theater: {
     title: 'AI Theater',
     subtitle: 'Breakfast · two souls in motion',
+    actionHint: 'Tap below to shift the scene',
+    advancedModes: 'Advanced ▾',
+    advancedCollapse: 'Hide advanced',
     roleA: 'Jiao',
     roleB: 'Lan',
     speakerUser: 'You',
@@ -134,7 +137,7 @@ export default {
     editPersonality: 'Edit personality',
     patching: 'Applying local patch…',
     patchOk: 'Beat patch applied',
-    patchFallback: 'Ollama unavailable — playing default lines',
+    patchFallback: 'Ollama unavailable — switched to preset lines',
     ollamaOff: 'No Ollama detected: chips work but lines stay pre-generated',
     loadError: 'Failed to load theater skeleton: {err}',
     nicknameTitle: 'Pick a nickname',

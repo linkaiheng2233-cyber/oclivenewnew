@@ -122,6 +122,9 @@ export default {
   theater: {
     title: 'AI 剧场',
     subtitle: '早饭 · 两个灵魂在动',
+    actionHint: '点下面改剧情',
+    advancedModes: '高级模式 ▾',
+    advancedCollapse: '收起高级',
     roleA: '小焦',
     roleB: '阿懒',
     speakerUser: '你',
@@ -129,7 +132,7 @@ export default {
     editPersonality: '改性格',
     patching: '改动加载中…',
     patchOk: '局部改写完成',
-    patchFallback: '本地模型不可用，已继续播放默认台词',
+    patchFallback: '本地模型不可用，已切换预置台词',
     ollamaOff: '未检测到 Ollama：戳点仍可用，台词保持预生成版本',
     loadError: '无法加载剧场骨架：{err}',
     nicknameTitle: '选一个称呼',

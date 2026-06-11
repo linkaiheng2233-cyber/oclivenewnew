@@ -30,3 +30,19 @@ export async function loadTheaterSkeleton(sceneId: string): Promise<TheaterSkele
   }
   return skeleton
 }
+
+/** Parallel prefetch for index + default scene skeleton (T3-PERF-01). */
+export function prefetchTheaterBootstrap(sceneId = 'breakfast'): void {
+  void Promise.all([loadSceneIndex(), loadTheaterSkeleton(sceneId)])
+}
+
+export async function loadTheaterBootstrap(sceneId: string): Promise<{
+  index: TheaterSceneIndex
+  skeleton: TheaterSkeleton
+}> {
+  const [index, skeleton] = await Promise.all([
+    loadSceneIndex(),
+    loadTheaterSkeleton(sceneId),
+  ])
+  return { index, skeleton }
+}
