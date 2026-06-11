@@ -12,6 +12,7 @@ mod bridge;
 mod chat;
 mod health;
 mod llm;
+mod mcp;
 mod role;
 
 #[cfg(test)]
@@ -131,6 +132,9 @@ pub fn api_router(app_state: Arc<AppState>) -> Router {
         .route("/high_risk/grants", get(bridge::list_high_risk_grants_route))
         .route("/high_risk/grant", post(bridge::grant_high_risk_route))
         .route("/high_risk/revoke", post(bridge::revoke_high_risk_route))
+        .route("/mcp/servers", get(mcp::list_mcp_servers_route))
+        .route("/mcp/tools", get(mcp::list_mcp_tools_route))
+        .route("/mcp/call", post(mcp::call_mcp_tool_route))
         .route("/bridge/dispatch", post(bridge::bridge_dispatch_route))
         .route("/llm/reload", post(llm::llm_reload_route))
         .route(

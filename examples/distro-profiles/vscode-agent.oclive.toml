@@ -1,0 +1,38 @@
+# OCLive VS Code — optional Agent profile (VS-4 advanced users)
+# Copy to oclive-vscode/distro.oclive.toml or set OCLIVE_DISTRO_PROFILE to this path.
+# See oclive-vscode/docs/VS4_AGENT.md
+
+schema_version = 1
+distro_id = "vscode"
+display_name = "OCLive VS Code (Agent)"
+
+[interaction]
+default_mode = "pure_chat"
+allow_mode_switch = false
+
+[host_flags]
+skip_agent = false
+skip_complex_emotion = true
+
+[slots]
+complex_emotion = "off"
+
+[prompt]
+profile = "concise"
+
+[memory]
+retrieval = "light"
+
+[post_process]
+chain = "minimal"
+
+[user_identity]
+default_id = "classmate"
+
+[plugin_backends]
+memory = "builtin"
+emotion = "builtin"
+event = "builtin"
+prompt = "builtin"
+llm = "ollama"
+agent = "builtin"

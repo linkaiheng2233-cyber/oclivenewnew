@@ -532,6 +532,9 @@ fn validate_role_pack_optional_extensions(role_dir: &Path) -> Result<(), Vec<Str
     crate::meta_action_templates::validate_meta_action_templates_config_file(
         &role_dir.join("config.json"),
     )?;
+    crate::penetration_templates::validate_penetration_templates_config_file(
+        &role_dir.join("config.json"),
+    )?;
     if !warns.is_empty() {
         print_pack_warnings(&warns);
     }

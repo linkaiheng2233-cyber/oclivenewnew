@@ -1,6 +1,7 @@
 # VS Code 发行版（扩展契约）
 
 **实现仓库**：`oclive-vscode`（与主应用同级目录）。  
+**产品战略 SSOT**：[`oclive-vscode/docs/STRATEGY.md`](../../../oclive-vscode/docs/STRATEGY.md)（以角色为基点 · 非 Cursor · 渗透 vs Agent 正交）。  
 **跨宿主记忆**：[`CROSS_HOST_MEMORY.md`](CROSS_HOST_MEMORY.md)。
 
 ---
@@ -9,13 +10,16 @@
 
 | 项 | 约定 |
 |----|------|
-| 对标内核模式 | **`pure_chat`**（建议蓝图 `runtime_config.interaction_mode` 或包级默认） |
+| **北极星** | **角色住在开发者的工程里** — 顺滑聊天 + IDE 渗透 + 可深度定制（**不是** Cursor / Cline 式默认编程 Agent） |
+| 聊天底座 | 体验对齐基础聊天发行版的流畅易用；内核默认 **`pure_chat`** |
 | 场景 | `scene_id=vscode`（须在包 `meta.scenes` 中声明） |
 | 记忆 / 好感 | 与桌面 **共用 `app.db`**（单内核写库） |
 | **数据目录** | spawn 时设 `OCLIVE_APP_DATA` → `%LOCALAPPDATA%/OCLive/data`（与 `OCLive/runtime` 并列） |
-| 渗透能力 | **路线图项**；当前无 `oclive.penetration.*` 配置键 |
+| 默认 profile | `examples/distro-profiles/vscode.oclive.toml`（`pure_chat`、`allow_mode_switch=false`、`skip_agent`） |
+| 互动模式 | VS Code **永久 pure_chat**；不承载 `immersive`（决策门 B=A，见姊妹仓 [`GATE_DECISIONS.md`](../../../oclive-vscode/docs/GATE_DECISIONS.md)） |
+| 渗透能力 | 0.3.1：`oclive.penetration.*`、`.oclive/{roleId}/` — 见姊妹仓 [`ROADMAP.md`](../../../oclive-vscode/ROADMAP.md) · [`VSCODE_DISTRIBUTION.md`](../../../oclive-vscode/docs/VSCODE_DISTRIBUTION.md) |
 
-桌面 **沉浸模式**（`immersive`）的虚拟时间、位移、异地心声 UI **不要求** VS Code 侧实现。
+桌面 **沉浸模式** UI **不在** VS Code 实现；跨宿主记忆仍经 `OCLIVE_APP_DATA`。
 
 ---
 

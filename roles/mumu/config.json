@@ -35,9 +35,16 @@
             "enabled": true,
             "attitude_text": "（用户修改了先前发送的内容并重新发送。）"
         },
-        "delete": {
-            "enabled": true,
-            "attitude_text": "（用户删除了一条聊天记录。）"
-        }
+    "delete": {
+      "enabled": true,
+      "attitude_text": "（用户删除了一条聊天记录。）"
     }
+  },
+  "penetration_templates": {
+    "enabled": true,
+    "diary_header": "VS Code 工作区片段",
+    "diary_path": ".oclive/{roleId}/diary.md",
+    "letter_template": "这是一封留在仓库里的信。",
+    "idle_message": "木木：代码写累了的话，来聊两句？"
+  }
 }

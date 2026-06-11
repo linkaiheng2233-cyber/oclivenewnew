@@ -4,6 +4,7 @@ pub mod chat_storage_proxy;
 pub mod conversation;
 pub mod export;
 pub mod high_risk;
+pub mod mcp;
 pub mod llm_settings;
 pub mod plugin_bridge;
 pub mod role;
@@ -18,6 +19,7 @@ pub use high_risk::{
     grant_high_risk_capability_impl, list_high_risk_grants_impl, revoke_high_risk_capability_impl,
     MutateHighRiskGrantRequest,
 };
+pub use mcp::{call_mcp_tool_impl, list_mcp_servers_impl, list_mcp_tools_impl, CallMcpToolHttpRequest};
 pub use llm_settings::{
     get_llm_user_settings_impl, list_ollama_models_impl, probe_cloud_llm_impl,
     save_llm_user_settings_impl, set_session_llm_model_impl, LlmUserSettingsDto,

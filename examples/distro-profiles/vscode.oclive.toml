@@ -9,8 +9,7 @@ display_name = "OCLive VS Code"
 
 [interaction]
 default_mode = "pure_chat"
-allow_mode_switch = true
-immersive_unlock_hint_after_turns = 10
+allow_mode_switch = false
 
 [host_flags]
 skip_agent = true
@@ -45,3 +44,9 @@ event = "builtin"
 prompt = "builtin"
 llm = "ollama"
 # agent ignored when skip_agent = true
+
+# VS-3: extension-side defaults; parsed in oclive-vscode (not host_profile yet).
+[penetration]
+enabled = true
+diary_path = ".oclive/{roleId}/diary.md"
+auto_diary_every_n_turns = 0
