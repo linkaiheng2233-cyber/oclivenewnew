@@ -14,8 +14,10 @@ npm run dev
 ## 自动烟测
 
 ```bash
-npm run test:unit -- src/theater/theater.acceptance.test.ts
+npm run test:unit -- src/theater/
 ```
+
+覆盖：v0 骨架结构（9 条）+ 场景索引 / 大纲编译 / 三向 director（见 [`THEATER_MODES.md`](./THEATER_MODES.md)）。
 
 ## 人工 60 秒清单
 

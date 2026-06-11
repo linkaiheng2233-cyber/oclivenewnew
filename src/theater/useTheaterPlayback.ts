@@ -1,5 +1,5 @@
-import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import type { TheaterBeat, TheaterSkeleton, TheaterVariableState } from './types'
+import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import { defaultVariableState } from './useTheaterBeatPatch'
 
 export function useTheaterPlayback(skeletonRef: () => TheaterSkeleton | null) {

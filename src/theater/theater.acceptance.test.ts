@@ -1,5 +1,6 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import skeleton from '../../public/theater/breakfast/skeleton.json'
+import { THEATER_POKE_CHIP_IDS } from './types'
 import {
   defaultVariableState,
   patchTheaterBeats,
@@ -8,7 +9,6 @@ import {
   resolveImpactedBeatIds,
   THEATER_POKE_PERF_MARKS,
 } from './useTheaterBeatPatch'
-import { THEATER_POKE_CHIP_IDS } from './types'
 
 describe('theater v0 acceptance (structure)', () => {
   it('skeleton has 8 beats and 3 poke variables with impact_map', () => {
