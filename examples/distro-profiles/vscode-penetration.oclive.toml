@@ -1,0 +1,27 @@
+# OCLive VS Code penetration plugin — capability profile (example)
+# Copy to penetration extension root or workspace .oclive/ as reference defaults.
+# Core profile: vscode.oclive.toml (no [penetration] section since 0.4+)
+# See oclive-vscode/docs/MIGRATION_0.3_to_0.4.md
+
+schema_version = 1
+distro_id = "vscode-penetration"
+display_name = "OCLive VS Code Penetration"
+
+[penetration]
+enabled = true
+diary_path = ".oclive/{roleId}/diary.md"
+auto_diary_every_n_turns = 0
+allowed_globs = [".oclive/**"]
+preview_after_write = true
+
+[penetration.terminal]
+enabled = false
+
+[penetration.idle]
+enabled = false
+seconds = 300
+daily_limit = 3
+
+[penetration.memory_sync]
+enabled = false
+importance = 0.6

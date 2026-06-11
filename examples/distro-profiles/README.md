@@ -8,6 +8,8 @@ Examples for [DISTRO_CAPABILITY_PROFILE.md](../../creator-docs/kernel/DISTRO_CAP
 | `desktop.oclive.toml` | `desktop` | Full capability desktop reference; `pure_chat` default + mode switch |
 | `theater.oclive.toml` | `theater` | AI Theater v0 — concise prompt, agent/complex_emotion off |
 | `vscode.oclive.toml` | `vscode` | Concise prompt; no agent / complex_emotion; `pure_chat` default |
+| `vscode-penetration.oclive.toml` | `vscode-penetration` | Penetration plugin defaults (0.4+; core profile has no `[penetration]`) |
+| `vscode-agent.oclive.toml` | `vscode-agent` | VS Code + Agent/MCP profile |
 
 **Bundled install (K-PROFILE-04):** Release builds copy `desktop.oclive.toml` and `theater.oclive.toml` into Tauri `resources/distro-profiles/`. Desktop spawn resolves `{resource}/distro-profiles/desktop.oclive.toml` by default, or `theater.oclive.toml` when `OCLIVE_SHELL=theater`, unless `OCLIVE_DISTRO_PROFILE` is set.
 

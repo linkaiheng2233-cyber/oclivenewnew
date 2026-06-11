@@ -63,10 +63,12 @@
 
 ---
 
-## 版本矩阵（0.4.0 GA）
+## 版本矩阵（0.4.x GA）
 
 | 产物 | 版本 |
 |------|------|
-| `@oclive/vscode-host` | 0.1.0 |
-| `oclive-vscode` | **0.4.0** |
-| `oclive-vscode-penetration` | 0.1.0 |
+| `@oclive/vscode-host` | 0.2.0 |
+| `oclive-vscode` | **0.4.1** |
+| `oclive-vscode-penetration` | 0.1.1 |
+
+**GA 状态**（2026-06-11）：F5/VSIX 自动化签核绿 · Release 可下载 · README 两步安装路径明确。见 [`oclive-vscode/docs/F5_ACCEPTANCE.md`](../../oclive-vscode/docs/F5_ACCEPTANCE.md)。
