@@ -73,13 +73,16 @@ npm run tauri:dev
 
 ## 验收
 
-- Wave 0/1：[THEATER_V0_ACCEPTANCE.md](./THEATER_V0_ACCEPTANCE.md)
+- **15 秒惊喜（主）**：[THEATER_15S_ACCEPTANCE.md](./THEATER_15S_ACCEPTANCE.md)
+- **后续 Wave**：[THEATER_DISTRO_ROADMAP.md](./THEATER_DISTRO_ROADMAP.md)（Mode 1 极简 · T1–T4）
+- 完整 60 秒：[THEATER_V0_ACCEPTANCE.md](./THEATER_V0_ACCEPTANCE.md)
 - 单测：`npm run test:unit -- src/theater/`
 
 ---
 
 ## Deferred
 
+- **各发行版自带内核逐一定制**（等 Theater T4 闭环后再 RFC）
 - 赌场 / 目录插件导演 RPC
 - 六槽强约束组合
 - VS Code 渗透（parked 至 F5 反馈）
