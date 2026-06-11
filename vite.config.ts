@@ -1,13 +1,24 @@
 /// <reference types="vitest/config" />
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import vue from "@vitejs/plugin-vue";
 import { visualizer } from "rollup-plugin-visualizer";
 import { resolveManualChunk } from "./src/build/manualChunks";
 
 const host = process.env.TAURI_DEV_HOST;
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
+
+/** Inject build-time shell kind into index.html early-boot script (default empty → tool). */
+function injectShellEnv(): Plugin {
+  return {
+    name: "oclive-inject-shell-env",
+    transformIndexHtml(html) {
+      const shell = process.env.VITE_OCLIVE_SHELL ?? "";
+      return html.replaceAll("__OCLIVE_SHELL__", shell);
+    },
+  };
+}
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -27,6 +38,7 @@ export default defineConfig(({ mode }) => ({
         }
       : undefined,
   plugins: [
+    injectShellEnv(),
     vue(),
     mode === "analyze" &&
       visualizer({

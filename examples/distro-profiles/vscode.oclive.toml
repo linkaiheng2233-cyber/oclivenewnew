@@ -45,8 +45,5 @@ prompt = "builtin"
 llm = "ollama"
 # agent ignored when skip_agent = true
 
-# VS-3: extension-side defaults; parsed in oclive-vscode (not host_profile yet).
-[penetration]
-enabled = true
-diary_path = ".oclive/{roleId}/diary.md"
-auto_diary_every_n_turns = 0
+# Penetration defaults moved to oclive-vscode-penetration (0.4+).
+# See oclive-vscode/docs/MIGRATION_0.3_to_0.4.md

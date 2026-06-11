@@ -64,8 +64,10 @@
           document.documentElement.style.setProperty("--tool-sidepanel-w", sp + "px");
         } catch (e4) {}
         try {
-          var shellRaw = "%VITE_OCLIVE_SHELL%";
-          var shell = shellRaw === "fluent" ? "fluent" : "tool";
+          var shellRaw = "__OCLIVE_SHELL__";
+          var shell = "tool";
+          if (shellRaw === "fluent") shell = "fluent";
+          else if (shellRaw === "theater") shell = "theater";
           document.documentElement.setAttribute("data-shell", shell);
         } catch (e3) {}
       })();

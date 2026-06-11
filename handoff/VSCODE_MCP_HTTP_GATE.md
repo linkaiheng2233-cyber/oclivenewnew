@@ -33,7 +33,7 @@
 | 默认 `vscode.oclive.toml`（`skip_agent=true`） | **无** UI；命令执行时提示切换 agent profile |
 | `vscode-agent.oclive.toml` | `OCLive: Call MCP Tool` · `List MCP Servers` |
 
-渗透写盘仍走 VS-2 按钮，**不**经 MCP。
+渗透写盘 **0.4+ 走渗透插件**；不经 MCP。0.3.x 仍为核心内置（deprecated）。
 
 ---
 

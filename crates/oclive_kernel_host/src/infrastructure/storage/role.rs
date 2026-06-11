@@ -23,6 +23,14 @@ use std::sync::Arc;
 use super::user_identities::load_user_identity_catalog;
 use super::{apply_llm_backend_env_override, RoleStorage};
 
+/// Non-role entries under `roles/` root (runtime data, shared docs/templates).
+fn should_skip_roles_subdir(name: &str) -> bool {
+    if name.starts_with('.') {
+        return true;
+    }
+    name == "blueprint"
+}
+
 impl RoleStorage {
     /// Creates a new role storage instance.
     pub fn new(roles_dir: impl AsRef<Path>) -> Self {
@@ -77,6 +85,15 @@ impl RoleStorage {
             let path = entry.path();
 
             if path.is_dir() {
+                let dir_name = entry.file_name().to_string_lossy().into_owned();
+                if should_skip_roles_subdir(&dir_name) {
+                    tracing::debug!(
+                        target: "oclive_role",
+                        "skip non-role directory under roles/: {}",
+                        path.display()
+                    );
+                    continue;
+                }
                 match self.load_role_from_dir(&path) {
                     Ok(role) => roles.push(role),
                     Err(e) => {
@@ -405,5 +422,17 @@ impl RoleStorage {
         }
 
         Ok(ids.into_iter().collect())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::should_skip_roles_subdir;
+
+    #[test]
+    fn skip_reserved_roles_root_dirs() {
+        assert!(should_skip_roles_subdir(".oclive_directory_plugin_data"));
+        assert!(should_skip_roles_subdir("blueprint"));
+        assert!(!should_skip_roles_subdir("mumu"));
     }
 }
