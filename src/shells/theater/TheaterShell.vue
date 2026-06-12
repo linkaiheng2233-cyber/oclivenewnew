@@ -8,6 +8,7 @@ import { openPackEditorForRole } from '../../utils/openPackEditor'
 import TheaterModeImprov from './TheaterModeImprov.vue'
 import TheaterModeOutline from './TheaterModeOutline.vue'
 import TheaterModeTweak from './TheaterModeTweak.vue'
+import TheaterStagePanel from './TheaterStagePanel.vue'
 
 const { t, locale } = useI18n()
 
@@ -172,6 +173,12 @@ async function onEditPersonality() {
     <div v-if="loadError" class="theater-error" role="alert">
       {{ t('theater.loadError', { err: loadError }) }}
     </div>
+
+    <TheaterStagePanel
+      v-if="!loadError && activeSkeleton"
+      :role-id="activeSkeleton.role_a"
+      :role-name="t('theater.roleA')"
+    />
 
     <TheaterModeTweak
       v-else-if="mode === 'tweak'"

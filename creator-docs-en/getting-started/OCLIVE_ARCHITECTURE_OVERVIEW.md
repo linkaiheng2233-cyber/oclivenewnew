@@ -44,7 +44,7 @@ Capabilities inside the **pure kernel** split into **two categories**. Do not co
 **Extension rules**
 
 - New **backend module** (RFC + host): **module 7**, **module 8**, …
-- New **`{Name} facility submodule`** (RFC + registry): **facility submodule 3, 4**, …
+- New **`{Name} facility submodule`** (RFC + registry): **facility submodule 3, 4, …** (#3 portrait · #4 visual presentation registered in v0.4)
 - New **plugin delivery** (sidecar / directory): **“module K’s xxx plugin implementation”**—does **not** take module 7 or a facility submodule number.
 
 ### Modules 1–6 (backend modules, fixed)

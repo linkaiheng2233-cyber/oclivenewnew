@@ -3,8 +3,10 @@
 use serde::{Deserialize, Serialize};
 
 use super::meta_action_templates_config::RolePackMetaActionTemplatesConfig;
+use super::portrait_catalog_config::PortraitCatalogToggle;
 use super::reply_post_processor_config::RolePackReplyPostProcessorConfig;
 use super::role_time_config::RoleTimeConfig;
+use super::visual_presentation_config::RolePackVisualPresentationConfig;
 
 fn default_memory_halflife() -> f64 {
     7.0
@@ -192,6 +194,10 @@ pub struct RolePackConfigFile {
     pub chat_storage: RolePackChatStorageConfig,
     #[serde(default)]
     pub reply_post_processor: RolePackReplyPostProcessorConfig,
+    #[serde(default)]
+    pub portrait_catalog: PortraitCatalogToggle,
+    #[serde(default)]
+    pub visual_presentation: RolePackVisualPresentationConfig,
     #[serde(default)]
     pub meta_action_templates: RolePackMetaActionTemplatesConfig,
 }

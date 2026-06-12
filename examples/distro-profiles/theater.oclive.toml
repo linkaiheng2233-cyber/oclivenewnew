@@ -31,6 +31,9 @@ retrieval = "light"
 [post_process]
 chain = "standard"
 
+[visual_presentation]
+mode = "stage_full"
+
 # Theater effective six-slot matrix (replaces role slot_registry when set).
 # See creator-docs/kernel/DISTRO_DEFAULT_PLUGINS.md §3.3
 [plugin_backends]

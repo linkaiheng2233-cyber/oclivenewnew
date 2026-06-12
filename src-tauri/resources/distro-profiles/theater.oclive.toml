@@ -30,6 +30,9 @@ retrieval = "light"
 [post_process]
 chain = "standard"
 
+[visual_presentation]
+mode = "stage_full"
+
 # Theater effective six-slot matrix — see creator-docs/kernel/DISTRO_DEFAULT_PLUGINS.md
 [plugin_backends]
 memory = "none"

@@ -348,6 +348,8 @@ auto_sync: false
 | `relation` | object | 否 | 亲密值疏远与关系降级 |
 | `chat_storage` | object | 否 | 聊天记录存储后端、FIFO、自动清理、记忆回放阈值 |
 | `reply_post_processor` | object | 否 | 回复后处理（**默认 `enabled: false`**）；见 §9.7 |
+| `portrait_catalog` | object | 否 | **第 3 设施**立绘目录 + 表现导演（**默认未启用**）；见 §9.9 |
+| `visual_presentation` | object | 否 | **第 4 设施**视觉舞台（**默认 `enabled: false`**）；见 §9.10 |
 | `meta_action_templates` | object | 否 | 破壁元操作态度文案（undo/regenerate/edit/delete）；见 §9.8 |
 
 ### 9.3 `time`（虚拟时间）
@@ -463,6 +465,40 @@ auto_sync: false
 **校验**：`oclive pack validate` 对 `enabled=true` 且非空 `attitude_text` 检查长度上限（2000 字符）。类型见 `oclive_kernel_types::RolePackMetaActionTemplatesConfig`。
 
 **示例**（`roles/mumu/config.json` 已含默认范例）。
+
+### 9.9 `portrait_catalog`（立绘设施 · v0.4+ · A2 磁盘）
+
+**RFC**：[RFC_PORTRAIT_FACILITY.md](../rfc/RFC_PORTRAIT_FACILITY.md)。
+
+| 位置 | 字段 | 说明 |
+|------|------|------|
+| `config.json` | `portrait_catalog.enabled` | 默认 `false`；`true` 时加载同目录 `portrait_catalog.json` |
+| `portrait_catalog.json` | `schema_version` + `assets[]` | **磁盘 SSOT**；封闭 `id` 列表 |
+
+| `assets[]` 字段 | 类型 | 说明 |
+|-----------------|------|------|
+| `id` | string | 稳定键（简单包 7 槽 id 见 RFC） |
+| `path` | string | 相对角色包根 |
+| `desc` | string | 表现导演 prompt |
+| `tags` | string[] | 规则回退 / legacy `portrait_emotion` 映射 |
+| `kind` | string | `image` \| `live2d` \| `rig3d` \| `procedural` |
+| `cluster` | string | 可选分组 |
+
+**简单创作（B1）**：导出必写 `portrait_catalog.json`（7 条）+ `config.json` 中 `enabled: true`。**高级**：可追加条目与 `kind=live2d` 资源。
+
+**legacy**：`enabled: false` 或无 catalog 文件 → `portrait_emotion` 七 tag + `CharacterInfo` 文件名启发式。
+
+### 9.10 `visual_presentation`（视觉表现设施 · 草案 · 默认关闭）
+
+**RFC**：[RFC_VISUAL_PRESENTATION_FACILITY.md](../rfc/RFC_VISUAL_PRESENTATION_FACILITY.md)。
+
+| 字段 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `enabled` | bool | `false` | 开启 **角色舞台**（Live2D / 3D / 演算 adapter） |
+| `backend` | string | `none` | `none` \| `image` \| `live2d` \| `rig3d` \| `procedural` \| `directory` |
+| `resources` | object | — | backend 所需模型路径等 |
+
+**禁止**在本节配置二次 AI 选图；输入为第 3 设施 **`visual_state_id`**。
 
 ---
 

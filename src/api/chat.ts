@@ -41,6 +41,18 @@ export interface SendMessageResponse {
   bot_emotion: string
   /** Portrait DB `current_emotion`; dialogue styling uses `bot_emotion` */
   portrait_emotion: string
+  /** Closed-set catalog asset id when portrait_catalog.enabled */
+  visual_state_id?: string | null
+  /** Visual presentation facility render directive */
+  performance_directive?: {
+    visual_state_id: string
+    kind: string
+    path?: string | null
+    fallback_image?: string | null
+    live2d_model?: string | null
+    rig3d_model?: string | null
+    context?: string | null
+  } | null
   favorability_delta: number
   favorability_current: number
   events: DetectedEventDto[]

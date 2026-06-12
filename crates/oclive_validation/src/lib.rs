@@ -25,6 +25,7 @@ pub mod plugin_slot_attachment;
 pub mod protocol_boundary;
 pub mod meta_action_templates;
 pub mod penetration_templates;
+pub mod portrait_catalog;
 pub mod reply_post_processor;
 pub mod role_pack;
 pub mod runtime_config;
@@ -109,6 +110,7 @@ pub use meta_action_templates::{
 pub use penetration_templates::{
     validate_penetration_templates_config, validate_penetration_templates_config_file,
 };
+pub use portrait_catalog::validate_portrait_catalog_files;
 pub use reply_post_processor::{
     validate_reply_post_processor_config, validate_reply_post_processor_config_file,
 };

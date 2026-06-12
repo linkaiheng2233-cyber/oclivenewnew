@@ -535,6 +535,7 @@ fn validate_role_pack_optional_extensions(role_dir: &Path) -> Result<(), Vec<Str
     crate::penetration_templates::validate_penetration_templates_config_file(
         &role_dir.join("config.json"),
     )?;
+    crate::portrait_catalog::validate_portrait_catalog_files(role_dir)?;
     if !warns.is_empty() {
         print_pack_warnings(&warns);
     }

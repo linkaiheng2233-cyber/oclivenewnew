@@ -90,6 +90,8 @@ pub(crate) async fn build_minimal_response(
         emotion: emotion_to_dto(&emotion_result),
         bot_emotion: snapshot.portrait_emotion.clone(),
         portrait_emotion: snapshot.portrait_emotion,
+        visual_state_id: None,
+        performance_directive: None,
         favorability_delta: 0.0,
         favorability_current: snapshot.favorability as f32,
         events: vec![],

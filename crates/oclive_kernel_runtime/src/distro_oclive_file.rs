@@ -21,6 +21,13 @@ pub struct DistroOcliveFile {
     pub memory: Option<MemoryToml>,
     pub plugin_backends: Option<PluginBackendsToml>,
     pub interaction: Option<InteractionToml>,
+    pub visual_presentation: Option<VisualPresentationToml>,
+}
+
+#[derive(Debug, Default, Clone, Deserialize)]
+pub struct VisualPresentationToml {
+    /// `off` | `image_only` | `stage_full` — see DISTRO_CAPABILITY_PROFILE.md §3.3
+    pub mode: Option<String>,
 }
 
 #[derive(Debug, Default, Clone, Deserialize)]

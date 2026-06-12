@@ -68,6 +68,7 @@
 | Agent remote / host-orchestrated `agent.process` | **[../plugin-and-architecture/AGENT_REMOTE_PROTOCOL.md](../plugin-and-architecture/AGENT_REMOTE_PROTOCOL.md)** |
 | 角色包磁盘格式 / `schema_version` | **[../role-pack/ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)** · **[../role-pack/PACK_VERSIONING.md](../role-pack/PACK_VERSIONING.md)** |
 | **用户身份模板 & 回复后处理（v0.3）** | **[../rfc/RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md](../rfc/RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md)** · Phase 2 **[../../handoff/USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md](../../handoff/USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md)** |
+| **立绘设施 & 视觉表现（草案）** | **[../rfc/RFC_PORTRAIT_FACILITY.md](../rfc/RFC_PORTRAIT_FACILITY.md)** · **[../rfc/RFC_VISUAL_PRESENTATION_FACILITY.md](../rfc/RFC_VISUAL_PRESENTATION_FACILITY.md)** · **[../../handoff/PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md](../../handoff/PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md)** |
 | **Prompt 分层 & 状态联动**（Tier0、`build_character_status_summary`、`relation_transition`） | **[../../AGENTS.md](../../AGENTS.md)**「Prompt 注入分层 + 状态机联动」· 实现 **[../../crates/oclive_kernel_runtime/src/domain/prompt_builder/mod.rs](../../crates/oclive_kernel_runtime/src/domain/prompt_builder/mod.rs)**（段落公式见同目录 `sections.rs`） |
 | **角色包 vs 蓝图职责边界** | **[../../handoff/ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md)** · ROLE_PACK_SPEC §0 · SETTINGS_REFERENCE §零 |
 | **v1 → v2 蓝图迁移（v1 已废弃，仅迁移用）** | **[../role-pack/V1_TO_V2_MIGRATION.md](../role-pack/V1_TO_V2_MIGRATION.md)**（[English](../../creator-docs-en/role-pack/V1_TO_V2_MIGRATION.md)） |
@@ -125,7 +126,8 @@
 | **Theater Phase 4 就绪** | **[../../handoff/THEATER_PHASE4_READINESS.md](../../handoff/THEATER_PHASE4_READINESS.md)** |
 | **发行版能力配置 `distro.oclive.toml`（P1 Schema）** | **[../kernel/DISTRO_CAPABILITY_PROFILE.md](../kernel/DISTRO_CAPABILITY_PROFILE.md)** · 示例 `examples/distro-profiles/` |
 | **发行版默认插件矩阵（三 personas）** | **[../kernel/DISTRO_DEFAULT_PLUGINS.md](../kernel/DISTRO_DEFAULT_PLUGINS.md)** · desktop-chat / vscode / theater |
-| **编写器路线图（情绪图编辑 · 分级导出）** | **[../../handoff/PACK_EDITOR_ROADMAP.md](../../handoff/PACK_EDITOR_ROADMAP.md)** |
+| **编写器路线图（立绘 catalog · 视觉舞台 · 分级导出）** | **[../../handoff/PACK_EDITOR_ROADMAP.md](../../handoff/PACK_EDITOR_ROADMAP.md)** · 姊妹仓 `oclive-pack-editor/handoff/PACK_EDITOR_ROADMAP.md` |
+| **立绘 + 视觉表现实施计划** | **[../../handoff/PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md](../../handoff/PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md)** |
 | **蓝图 v2（`pipeline.ocblueprint` · P0–P8 收口，归档）** | **[RFC_ROLE_BLUEPRINT_V2](../../handoff/archive/RFC_ROLE_BLUEPRINT_V2.md)** · **[BLUEPRINT_V2_IMPLEMENTATION_PLAN](../../handoff/archive/BLUEPRINT_V2_IMPLEMENTATION_PLAN.md)** · **[BLUEPRINT_V2_DECISIONS](../../handoff/archive/BLUEPRINT_V2_DECISIONS.md)** |
 | **内核分层纪律（domain / infrastructure / api）** | **[../../handoff/ARCHITECTURE_LAYERING.md](../../handoff/ARCHITECTURE_LAYERING.md)** |
 | **社区角色包索引 JSON 格式** | **[../role-pack/ROLE_PACK_INDEX.md](../role-pack/ROLE_PACK_INDEX.md)** |
@@ -178,6 +180,8 @@
 | **[RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md)** | **高耦合编译模式（Monolith）**：`monolith.toml`、`--monolith`、双 `[[bin]]`；**`build` / `bench`** 子命令与部分焊接（见 RFC 与 CLI 指南）。 |
 | **[RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)** | **运行时双核（Opt-in Beta）**：Stable 六槽 + Experimental 开放 type；`depends_on` DAG；`DualPipelineRunner` 快照降级；**`init --dual-core`** 默认关。Cursor 进度见 [DUAL_CORE_CURSOR_HANDOFF.md](../../handoff/DUAL_CORE_CURSOR_HANDOFF.md)。 |
 | **[RFC_STUDIO_MERGE.md](../rfc/RFC_STUDIO_MERGE.md)** | **工作室（合并启动器 + 编写器）**：新仓 `oclive-studio`、两安装物叙事、配置与验收。 |
+| **[RFC_PORTRAIT_FACILITY.md](../rfc/RFC_PORTRAIT_FACILITY.md)** | **第 3 设施 · 立绘**：`portrait_catalog`、**表现导演** AI 选 `visual_state_id`；legacy 七 tag 回退。 |
+| **[RFC_VISUAL_PRESENTATION_FACILITY.md](../rfc/RFC_VISUAL_PRESENTATION_FACILITY.md)** | **第 4 设施 · 视觉表现**：`performance_directive`、Live2D / 3D / 演算 adapter；**无 AI 选图**。 |
 
 ---
 

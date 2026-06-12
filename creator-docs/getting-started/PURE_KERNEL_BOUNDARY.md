@@ -60,6 +60,8 @@
 
 - **emotion 后端模块** + **复杂情感设施子模块**（第 1 设施子模块）：用户句情绪与跨回合叙事 `narrative_hint`。
 - **专家模型设施子模块**（第 2 设施子模块）：条件触发的专家子流程（专家路由）；与复杂情感**并列**，见 [OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)。
+- **立绘设施子模块**（第 3 设施子模块 · 草案）：`portrait_catalog`、表现导演 AI 选 `visual_state_id`；见 [RFC_PORTRAIT_FACILITY.md](../rfc/RFC_PORTRAIT_FACILITY.md)。
+- **视觉表现设施子模块**（第 4 设施子模块 · 草案）：Live2D / 3D / 演算 **角色舞台**；见 [RFC_VISUAL_PRESENTATION_FACILITY.md](../rfc/RFC_VISUAL_PRESENTATION_FACILITY.md)。
 - **memory / event**：关系与事件对后续回合的影响。
 - **prompt / llm**：语言表达与 persona 注入。
 - **agent**（可选）：工具与外部世界（MCP、目录插件）。

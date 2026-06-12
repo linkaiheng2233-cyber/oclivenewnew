@@ -279,6 +279,9 @@ export function useMainShell() {
   const chatInputTop = computed(() => packLayoutResolved.value.chatInput === 'top')
   const roleName = computed(() => roleStore.roleInfo.name || t('app.defaultRoleName'))
   const emotion = computed(() => roleStore.roleInfo.currentEmotion || 'neutral')
+  const portraitAssetRelPath = computed(
+    () => roleStore.roleInfo.portraitAssetPath ?? null,
+  )
 
   const statusHeart = computed(() => {
     const f = roleStore.roleInfo.favorability
@@ -588,6 +591,7 @@ export function useMainShell() {
     chatInputTop,
     roleName,
     emotion,
+    portraitAssetRelPath,
     statusHeart,
     favorClosenessLabel,
     progressive,

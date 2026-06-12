@@ -345,6 +345,19 @@ jobs:
             kill "$(cat /tmp/oocp_api.pid)" || true
           fi
 
+  theater-visual-smoke:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci
+      - name: Theater visual adapter unit smoke
+        run: npm run test:unit -- --run src/adapters/visual/index.test.ts
+
   e2e-tauri:
     runs-on: ubuntu-22.04
     continue-on-error: true

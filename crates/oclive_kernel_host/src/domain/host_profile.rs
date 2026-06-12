@@ -100,6 +100,8 @@ pub struct HostProfile {
     /// Distro memory retrieval density (`default` = 8, `light` = 4 relevant memories).
     pub memory_retrieval: MemoryRetrievalMode,
     pub interaction: InteractionProfile,
+    /// Distro visual gating: `off` | `image_only` | `stage_full` (None = no gating).
+    pub visual_presentation_mode: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -216,6 +218,13 @@ fn host_profile_from_distro_file(file: &DistroOcliveFile) -> std::result::Result
             profile.interaction.immersive_unlock_hint_after_turns = turns.max(1);
         }
     }
+    if let Some(ref vp) = file.visual_presentation {
+        profile.visual_presentation_mode = vp
+            .mode
+            .as_ref()
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty());
+    }
     Ok(profile)
 }
 
@@ -233,6 +242,7 @@ impl Default for HostProfile {
             profile_path: None,
             memory_retrieval: MemoryRetrievalMode::Default,
             interaction: InteractionProfile::default(),
+            visual_presentation_mode: None,
         }
     }
 }

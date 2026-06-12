@@ -52,6 +52,8 @@ This page is the **naming SSOT** for OCLive. Key rules:
 | **第 N 设施子模块** | **facility submodule N** | **否** | 已登记编号；全名 = `{专名}` + `设施子模块` |
 | **第 1 设施子模块（复杂情感）** | **complex emotion facility submodule** | 否 | 代码：`complex_emotion`、`narrative_hint` |
 | **第 2 设施子模块（专家模型）** | **expert model facility submodule** | 否 | 默认实现：**专家路由** `expert_routing.json` |
+| **第 3 设施子模块（立绘）** | **portrait facility submodule** | 否 | 代码：`portrait_catalog`、`visual_state_id`；实现口语：**表现导演** |
+| **第 4 设施子模块（视觉表现）** | **visual presentation facility submodule** | 否 | 代码：`visual_presentation`、`performance_directive`；产品口语：**角色舞台** |
 | **后端模块插件模块** | **backend module plugin** | 插件 manifest，非模块号 | 例：「第 5 模块的 directory 插件实现」 |
 | **无编号设施模块** | **unnumbered facility module** | 否 | `PluginHost`、`PersonalityEngine`、好感、`Repository` 等 |
 | **后处理链** | **post-process chain** | 否（策略枚举；**尚未全链落地**） | 发行版 `distro.oclive.toml` `[post_process].chain`；RFC 见 [RFC_OCLIVE_POST_PROCESS_CHAIN.md](rfc/RFC_OCLIVE_POST_PROCESS_CHAIN.md) |
@@ -227,7 +229,9 @@ This page is the **naming SSOT** for OCLive. Key rules:
 |------|------|------|
 | **`load_*`** | 从 DB / 磁盘 / 远程读入数据 | `load_remote_token`、`load_memories` |
 | **`find_*`** | 在候选路径/目录中定位唯一目标 | `find_migrations_dir`、`find_roles_dir` |
-| **`pick_*`** | 从多个候选中选一个（含 env/配置默认） | `pick_mirror_enabled`、`pick_portrait_emotion` |
+| **`pick_*`** | 从多个候选中选一个（含 env/配置默认） | `pick_mirror_enabled`、`pick_portrait_emotion`、`resolve_visual_state` |
+| **`visual_state_id`** | 立绘 catalog 条目 id（第 3 设施输出） | `SendMessageResponse`（草案） |
+| **`performance_directive`** | 视觉表现渲染指令（第 4 设施输出） | JSON 体；非 `reply` |
 | **`build_*`** | 构造配置/URL/初始化产物 | `build_init_config`、`build_git_clone_url` |
 | **`merge_*`** | 合并 includes / 叠加配置 | `merge_blueprint_includes_lenient` |
 | **`compute_*`** | 纯计算、拓扑排序 | `compute_preset_target_ms`、`compute_plugin_install_order` |

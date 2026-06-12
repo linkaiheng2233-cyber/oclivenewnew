@@ -29,6 +29,8 @@
 | **`slot_registry.type`** | 与六槽键同义；**禁止**别名 `memory_backend` 等 |
 | **`OOCP`** | OCLive Open Chat Protocol；HTTP 黑盒测试场景 S0–S12 |
 | **`co_present`** | Stable 核共景主路径实现模块 |
+| **第 3 设施（立绘）** | `portrait_catalog` · AI **表现导演** 选 `visual_state_id`（RFC 草案；v0.3 仍为文件名 + 七 tag） |
+| **第 4 设施（视觉表现）** | **角色舞台**：Live2D / 3D / 演算 adapter（RFC 草案；默认关） |
 
 ---
 

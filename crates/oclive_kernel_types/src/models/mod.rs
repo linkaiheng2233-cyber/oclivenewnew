@@ -11,7 +11,9 @@ pub mod memory;
 pub mod personality;
 pub mod plugin_backends;
 pub mod meta_action_templates_config;
+pub mod portrait_catalog_config;
 pub mod reply_post_processor_config;
+pub mod visual_presentation_config;
 pub mod role;
 pub mod role_manifest_disk;
 pub mod role_pack_config;
@@ -39,10 +41,17 @@ pub use plugin_backends::*;
 pub use meta_action_templates_config::{
     MetaActionTemplateEntry, RolePackMetaActionTemplatesConfig,
 };
+pub use portrait_catalog_config::{
+    PortraitAssetKind, PortraitAssetResources, PortraitCatalogAsset, PortraitCatalogFile,
+    PortraitCatalogToggle, SIMPLE_PORTRAIT_SLOT_IDS,
+};
 pub use reply_post_processor_config::{
     ReplyPostProcessorBackendKind, RolePackBuiltinReplyPostProcessorConfig,
     RolePackDirectoryReplyPostProcessorConfig, RolePackRemoteReplyPostProcessorConfig,
     RolePackReplyPostProcessorConfig,
+};
+pub use visual_presentation_config::{
+    PerformanceDirective, RolePackVisualPresentationConfig, VisualPresentationBackendKind,
 };
 pub use role::*;
 pub use role_manifest_disk::DiskRoleManifest;

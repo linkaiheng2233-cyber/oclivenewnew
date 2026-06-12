@@ -1,6 +1,9 @@
 //! Post-LLM persistence: atomic DB writes, chat storage, profile evolution.
 
 use crate::domain::portrait_emotion_engine::pick_portrait_emotion;
+use crate::domain::portrait_facility::{
+    pick_portrait_with_catalog, portrait_catalog_active, resolve_visual_state_rule,
+};
 use crate::domain::ports::conversation_persist::{
     TurnAutoCleanupConfig, TurnPersistRequest,
 };
@@ -28,6 +31,7 @@ pub(crate) struct PostPersistOutcome {
     pub favor_current: f64,
     pub movement: bool,
     pub portrait_emotion_str: String,
+    pub visual_state_id: Option<String>,
 }
 
 #[derive(Debug, Default)]
@@ -74,20 +78,65 @@ pub(crate) async fn persist_atomic_movement_portrait(
     } else {
         Some(STAGES.stage(
             ChatStage::PortraitEmotionLlm,
-            pick_portrait_emotion(
-                &primary_llm,
-                pre.ollama_model.as_str(),
-                role,
-                &core_v,
-                &middle.personality,
-                pre.favorability_before,
-                user_message,
-                &reply_for_portrait,
-                pre.user_emotion_str.as_str(),
-                &policy.bot_emotion,
-                &policy.recent_events,
-                &pre.recent_turns,
-            ),
+            async {
+                if portrait_catalog_active(role) {
+                    let catalog = role
+                        .portrait_catalog
+                        .as_ref()
+                        .expect("portrait_catalog_active implies Some");
+                    let narrative_hint_owned = {
+                        let current = middle.complex_emotion_out.narrative_hint.trim();
+                        if !current.is_empty() {
+                            Some(current.to_string())
+                        } else {
+                            let stored = state
+                                .session_cache
+                                .stored_complex_emotion_narrative_hint(srid);
+                            let t = stored.trim();
+                            if t.is_empty() {
+                                None
+                            } else {
+                                Some(t.to_string())
+                            }
+                        }
+                    };
+                    let (tag, vsid) = pick_portrait_with_catalog(
+                        &primary_llm,
+                        pre.ollama_model.as_str(),
+                        role,
+                        catalog,
+                        &core_v,
+                        &middle.personality,
+                        pre.favorability_before,
+                        user_message,
+                        &reply_for_portrait,
+                        pre.user_emotion_str.as_str(),
+                        &policy.bot_emotion,
+                        &policy.recent_events,
+                        &pre.recent_turns,
+                        narrative_hint_owned.as_deref(),
+                    )
+                    .await?;
+                    Ok((tag, Some(vsid)))
+                } else {
+                    let tag = pick_portrait_emotion(
+                        &primary_llm,
+                        pre.ollama_model.as_str(),
+                        role,
+                        &core_v,
+                        &middle.personality,
+                        pre.favorability_before,
+                        user_message,
+                        &reply_for_portrait,
+                        pre.user_emotion_str.as_str(),
+                        &policy.bot_emotion,
+                        &policy.recent_events,
+                        &pre.recent_turns,
+                    )
+                    .await?;
+                    Ok((tag, None))
+                }
+            },
         ))
     };
     let atomic_fut = STAGES.stage(
@@ -126,10 +175,12 @@ pub(crate) async fn persist_atomic_movement_portrait(
             .await
             .map_err(|e| super::super::turn_error::TurnError::wrap("relation_transition", e))?;
         }
+        let (portrait_emotion_str, visual_state_id) = portrait_res?;
         Ok(PostPersistOutcome {
             favor_current,
             movement,
-            portrait_emotion_str: portrait_res?,
+            portrait_emotion_str,
+            visual_state_id,
         })
     } else {
         let (favor_current, movement) = tokio::join!(atomic_fut, movement_fut);
@@ -151,6 +202,7 @@ pub(crate) async fn persist_atomic_movement_portrait(
             favor_current,
             movement,
             portrait_emotion_str: policy.bot_emotion_str.clone(),
+            visual_state_id: resolve_visual_state_for_role(role, policy.bot_emotion_str.as_str()),
         })
     }
 }
@@ -297,6 +349,14 @@ pub(crate) async fn persist_non_profile_personality_delta(
         .set(srid.to_string(), middle.personality.clone());
 }
 
+fn resolve_visual_state_for_role(role: &Role, emotion_tag: &str) -> Option<String> {
+    if !portrait_catalog_active(role) {
+        return None;
+    }
+    let catalog = role.portrait_catalog.as_ref()?;
+    resolve_visual_state_rule(catalog, emotion_tag)
+}
+
 #[cfg(test)]
 mod persist_non_profile_tests {
     use super::*;
@@ -362,6 +422,9 @@ mod persist_non_profile_tests {
             scene_text_cache: Arc::new(parking_lot::RwLock::new(std::collections::HashMap::new())),
             user_identity_catalog: None,
             pack_reply_post_processor_config: Default::default(),
+            pack_portrait_catalog: Default::default(),
+            portrait_catalog: None,
+            pack_visual_presentation_config: Default::default(),
         }
     }
 

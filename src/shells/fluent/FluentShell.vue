@@ -100,6 +100,7 @@ const {
   chatInputTop,
   roleName,
   emotion,
+  portraitAssetRelPath,
   statusHeart,
   progressive,
   onInteractionModeChange,
@@ -214,7 +215,8 @@ function onLeftRailResize(deltaX: number) {
               :layout="wideSplitLayout ? 'sidebar' : 'stack'"
               :role-id="roleStore.currentRoleId"
               :name="roleName"
-              :emotion="emotion"
+                :emotion="emotion"
+                :portrait-asset-rel-path="portraitAssetRelPath"
               :bootstrap-epoch="pluginStore.bootstrapEpoch"
             />
             <RoleplayAsidePanel v-if="roleStore.interactionImmersive" :text="latestRoleplayAside" />

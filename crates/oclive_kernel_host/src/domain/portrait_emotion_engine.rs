@@ -48,7 +48,7 @@ fn heuristic_base(bot_emotion: &Emotion) -> String {
 }
 
 /// Rule-based fallback (LLM primary): uses seven-dim composite scalars to avoid binary type-label heuristics.
-fn apply_persona_event_overrides(
+pub(crate) fn apply_persona_event_overrides(
     mut tag: String,
     user_emotion_str: &str,
     recent_events: &[Event],
@@ -313,6 +313,13 @@ fn truncate_chars(s: &str, max: usize) -> String {
 }
 
 fn fallback_base(bot_emotion: &Emotion, recent_turns: &[(String, String)]) -> String {
+    fallback_base_from_emotion(bot_emotion, recent_turns)
+}
+
+pub(crate) fn fallback_base_from_emotion(
+    bot_emotion: &Emotion,
+    recent_turns: &[(String, String)],
+) -> String {
     if recent_turns.is_empty() {
         "neutral".to_string()
     } else {

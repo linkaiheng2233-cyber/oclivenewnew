@@ -1,0 +1,31 @@
+{
+  "schema_version": 3,
+  "meta": {
+    "id": "portrait-catalog",
+    "name": "OOCP S16 portrait catalog",
+    "version": "0.1.0",
+    "author": "oclive",
+    "description": "Catalog-enabled role for visual_state_id / performance_directive assertions.",
+    "personality": [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
+    "relations": {
+      "friend": { "initial_favorability": 50.0, "favor_multiplier": 1.0 }
+    },
+    "default_relation": "friend",
+    "scenes": ["default"]
+  },
+  "slot_registry": {
+    "memory": { "type": "memory", "label": "Memory", "backend": "builtin", "position": 0 },
+    "emotion": { "type": "emotion", "label": "Emotion", "backend": "builtin", "position": 0 },
+    "event": { "type": "event", "label": "Event", "backend": "builtin", "position": 0 },
+    "prompt": { "type": "prompt", "label": "Prompt", "backend": "builtin", "position": 0 },
+    "llm": { "type": "llm", "label": "LLM", "backend": "ollama", "position": 0 },
+    "agent": { "type": "agent", "label": "Agent", "backend": "builtin", "position": 0 }
+  },
+  "pipeline": {
+    "stable": [
+      { "action": "slot.emotion.analyze", "depends_on": [] },
+      { "action": "slot.memory.retrieve", "depends_on": [] },
+      { "action": "slot.llm.generate", "depends_on": [] }
+    ]
+  }
+}

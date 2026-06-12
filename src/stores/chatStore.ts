@@ -561,6 +561,13 @@ export const useChatStore = defineStore(
           roleStore.updateLocalAfterMessage(
             pres.assistantEmotionLabel,
             res.favorability_current,
+            {
+              visualStateId: res.visual_state_id ?? null,
+              portraitAssetPath:
+                res.performance_directive?.path
+                ?? res.performance_directive?.fallback_image
+                ?? null,
+            },
           )
           if (res.relation_state) {
             const tip = getRelationUpgradeMessage(

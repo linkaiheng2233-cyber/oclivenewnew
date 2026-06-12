@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "assets": [
+    {
+      "id": "happy_default",
+      "path": "assets/images/happy.webp",
+      "desc": "happy",
+      "tags": ["happy"],
+      "kind": "image"
+    },
+    {
+      "id": "sad_default",
+      "path": "assets/images/sad.webp",
+      "desc": "sad",
+      "tags": ["sad"],
+      "kind": "image"
+    },
+    {
+      "id": "neutral_default",
+      "path": "assets/images/neutral.webp",
+      "desc": "neutral",
+      "tags": ["neutral"],
+      "kind": "image"
+    },
+    {
+      "id": "angry_default",
+      "path": "assets/images/angry.webp",
+      "desc": "angry",
+      "tags": ["angry"],
+      "kind": "image"
+    },
+    {
+      "id": "excited_default",
+      "path": "assets/images/excited.webp",
+      "desc": "excited",
+      "tags": ["excited"],
+      "kind": "image"
+    },
+    {
+      "id": "confused_default",
+      "path": "assets/images/confused.webp",
+      "desc": "confused",
+      "tags": ["confused"],
+      "kind": "image"
+    },
+    {
+      "id": "shy_default",
+      "path": "assets/images/shy.webp",
+      "desc": "shy",
+      "tags": ["shy"],
+      "kind": "image"
+    }
+  ]
+}

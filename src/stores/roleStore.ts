@@ -42,6 +42,10 @@ interface RoleInfoState {
   description: string
   favorability: number
   currentEmotion: string
+  /** Latest catalog visual_state_id from send_message (optional). */
+  visualStateId?: string | null
+  /** Resolved portrait asset path from performance_directive or catalog. */
+  portraitAssetPath?: string | null
   personality?: number[]
   scenes: string[]
   sceneLabels: Array<{ id: string, label: string }>
@@ -298,9 +302,20 @@ export const useRoleStore = defineStore(
           hostEventBus.emitBuiltin('role:info:updated', { roleId: rid })
         }
       },
-      updateLocalAfterMessage(emotion: string, favorabilityCurrent: number) {
+      updateLocalAfterMessage(
+        emotion: string,
+        favorabilityCurrent: number,
+        visual?: {
+          visualStateId?: string | null
+          portraitAssetPath?: string | null
+        },
+      ) {
         this.roleInfo.currentEmotion = emotion
         this.roleInfo.favorability = favorabilityCurrent
+        if (visual?.visualStateId !== undefined)
+          this.roleInfo.visualStateId = visual.visualStateId
+        if (visual?.portraitAssetPath !== undefined)
+          this.roleInfo.portraitAssetPath = visual.portraitAssetPath
       },
       updateRelationState(relationState: string) {
         this.roleInfo.relationState = relationState

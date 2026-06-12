@@ -51,6 +51,8 @@ pub mod host_profile;
 pub mod mutable_profile_llm;
 pub mod plugin_host;
 pub mod portrait_emotion_engine;
+pub mod portrait_facility;
+pub mod visual_presentation;
 #[cfg(test)]
 pub mod role_manager;
 pub mod slot_resolver;

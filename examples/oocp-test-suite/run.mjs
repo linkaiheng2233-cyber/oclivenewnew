@@ -243,6 +243,33 @@ async function scenarioHandlers(base, rolePath) {
       if (typeof body?.schema !== 'number') throw new Error(`S11 schema ${body?.schema}`)
       if (typeof body?.timestamp !== 'number') throw new Error(`S11 timestamp`)
     },
+    S16_visual_presentation_fields: async () => {
+      const { res: mumuRes, body: mumuBody } = await fetchJson(`${base}/chat`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ role_path: mumu, message: 'OOCP S16 legacy mumu' }),
+      })
+      if (!mumuRes.ok) throw new Error(`S16 mumu status ${mumuRes.status}`)
+      if (mumuBody?.visual_state_id != null) {
+        throw new Error(`S16 mumu should omit visual_state_id, got ${JSON.stringify(mumuBody?.visual_state_id)}`)
+      }
+      const catalogRole = join(__dirname, 'fixtures', 'portrait-catalog')
+      const { res: catRes, body: catBody } = await fetchJson(`${base}/chat`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          role_path: catalogRole,
+          message: 'OOCP S16 catalog visual_state_id',
+        }),
+      })
+      if (!catRes.ok) throw new Error(`S16 catalog status ${catRes.status} ${JSON.stringify(catBody)}`)
+      if (typeof catBody?.visual_state_id !== 'string' || !catBody.visual_state_id.length) {
+        throw new Error(`S16 catalog missing visual_state_id: ${JSON.stringify(catBody).slice(0, 300)}`)
+      }
+      if (!catBody?.performance_directive || catBody.performance_directive.kind !== 'image') {
+        throw new Error(`S16 catalog missing image performance_directive: ${JSON.stringify(catBody?.performance_directive)}`)
+      }
+    },
     S15_chat_stream_sse: async () => {
       const res = await fetch(`${base}/chat/stream`, {
         method: 'POST',
@@ -324,6 +351,7 @@ async function main() {
     'S11',
     'S12',
     'S15_chat_stream_sse',
+    'S16_visual_presentation_fields',
     ...(includeS13 ? ['S13_dual_core_fallback'] : []),
     ...(includeS14 ? ['S14_dual_core_happy_path'] : []),
   ]

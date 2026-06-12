@@ -6,7 +6,7 @@ use crate::error::{AppError, Result};
 use crate::models::role_manifest_disk::disk_manifest_to_role;
 use crate::models::{
     author_pack::AuthorPackFile, role_settings_disk::CURRENT_SETTINGS_SCHEMA_VERSION,
-    DiskRoleManifest, DiskRoleSettings, Role, RolePackConfigFile, UiConfig,
+    DiskRoleManifest, DiskRoleSettings, PortraitCatalogFile, Role, RolePackConfigFile, UiConfig,
 };
 use oclive_validation::{
     blueprint_schema_version_from_raw, load_blueprint_v2_for_role_dir,
@@ -325,6 +325,40 @@ impl RoleStorage {
                         role.pack_evolution_config = cfg.evolution;
                         role.pack_chat_storage_config = cfg.chat_storage;
                         role.pack_reply_post_processor_config = cfg.reply_post_processor;
+                        role.pack_portrait_catalog = cfg.portrait_catalog;
+                        role.pack_visual_presentation_config = cfg.visual_presentation;
+                        if role.pack_portrait_catalog.enabled {
+                            let catalog_path = role_dir.join("portrait_catalog.json");
+                            if catalog_path.is_file() {
+                                match fs::read_to_string(&catalog_path) {
+                                    Ok(s) => {
+                                        match serde_json::from_str::<PortraitCatalogFile>(&s) {
+                                            Ok(catalog) => {
+                                                role.portrait_catalog = Some(catalog);
+                                            }
+                                            Err(e) => tracing::warn!(
+                                                target: "oclive_role",
+                                                "portrait_catalog.json parse failed: {} — {}",
+                                                catalog_path.display(),
+                                                e
+                                            ),
+                                        }
+                                    }
+                                    Err(e) => tracing::warn!(
+                                        target: "oclive_role",
+                                        "portrait_catalog.json unreadable: {} — {}",
+                                        catalog_path.display(),
+                                        e
+                                    ),
+                                }
+                            } else {
+                                tracing::warn!(
+                                    target: "oclive_role",
+                                    "portrait_catalog.enabled but missing {}; legacy portrait path",
+                                    catalog_path.display()
+                                );
+                            }
+                        }
                     }
                     Err(e) => tracing::warn!(
                         target: "oclive_role",

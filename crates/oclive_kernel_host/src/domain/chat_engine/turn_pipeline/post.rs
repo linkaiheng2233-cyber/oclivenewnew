@@ -232,6 +232,7 @@ fn assemble_send_message_response(
     mode: TurnMode,
     immersive: bool,
     scene_id: &str,
+    role: &Role,
     middle: &MiddleOutput,
     pre: &PreLlmOutput,
     llm: &MainLlmOutput,
@@ -243,6 +244,7 @@ fn assemble_send_message_response(
     reply: String,
     raw_reply: Option<String>,
     dual_core_degraded: bool,
+    distro_visual_mode: Option<&str>,
 ) -> SendMessageResponse {
     use crate::models::dto::{DetectedEventDto, PresenceMode, API_VERSION, SCHEMA_VERSION};
 
@@ -271,6 +273,14 @@ fn assemble_send_message_response(
         emotion: emotion_to_dto(&pre.emotion_result),
         bot_emotion: policy.bot_emotion_str.clone(),
         portrait_emotion: persist.portrait_emotion_str.clone(),
+        visual_state_id: persist.visual_state_id.clone(),
+        performance_directive: persist.visual_state_id.as_deref().and_then(|id| {
+            crate::domain::visual_presentation::materialize_directive_gated(
+                role,
+                id,
+                distro_visual_mode,
+            )
+        }),
         favorability_delta: middle.favor_delta as f32,
         favorability_current: persist.favor_current as f32,
         events,
@@ -415,6 +425,7 @@ pub(crate) async fn post_llm(
         mode,
         immersive,
         scene_id,
+        role,
         middle,
         pre,
         llm,
@@ -426,6 +437,7 @@ pub(crate) async fn post_llm(
         display_reply,
         raw_reply,
         ctx.dual_core_degraded,
+        ctx.state.host_profile.visual_presentation_mode.as_deref(),
     );
 
     let post_llm_ms = t_post_llm.elapsed().as_millis() as u64;

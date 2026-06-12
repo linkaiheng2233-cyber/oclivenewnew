@@ -108,6 +108,11 @@ async fn invoke_hotpath_smoke_list_load_info_time_chat_memories_catalog_plugin_h
     .await
     .expect("send_message / process_message");
     assert_eq!(chat.reply, "hotpath");
+    assert!(
+        chat.visual_state_id.is_none(),
+        "legacy mumu should not emit visual_state_id"
+    );
+    assert!(chat.performance_directive.is_none());
 
     let mems = query_memories_impl(
         &state,

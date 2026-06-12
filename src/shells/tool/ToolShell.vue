@@ -100,6 +100,7 @@ const {
   chatInputTop,
   roleName,
   emotion,
+  portraitAssetRelPath,
   statusHeart,
   progressive,
   onSend,
@@ -254,6 +255,7 @@ function onSidePanelResize(deltaX: number) {
                 :role-id="roleStore.currentRoleId"
                 :name="roleName"
                 :emotion="emotion"
+                :portrait-asset-rel-path="portraitAssetRelPath"
                 :bootstrap-epoch="pluginStore.bootstrapEpoch"
               />
               <RoleplayAsidePanel v-if="roleStore.interactionImmersive" :text="latestRoleplayAside" />

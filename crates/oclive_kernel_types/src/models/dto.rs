@@ -15,7 +15,7 @@ use super::ui_config::UiConfig;
 use serde::{Deserialize, Serialize};
 
 pub const API_VERSION: u32 = 1;
-pub const SCHEMA_VERSION: u32 = 14;
+pub const SCHEMA_VERSION: u32 = 15;
 
 /// Primary chat invoke payload (`send_message`).
 #[derive(Debug, Default, Deserialize)]
@@ -76,6 +76,12 @@ pub struct SendMessageResponse {
     pub bot_emotion: String,
     /// Portrait expression (LLM + persona + events combined; matches `role_runtime.current_emotion`).
     pub portrait_emotion: String,
+    /// Closed-set catalog asset id when `portrait_catalog.enabled`; legacy packs omit.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub visual_state_id: Option<String>,
+    /// Render directive from visual presentation facility (#4); omitted when disabled.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub performance_directive: Option<super::visual_presentation_config::PerformanceDirective>,
     pub favorability_delta: f32,
     pub favorability_current: f32,
     pub events: Vec<DetectedEventDto>,

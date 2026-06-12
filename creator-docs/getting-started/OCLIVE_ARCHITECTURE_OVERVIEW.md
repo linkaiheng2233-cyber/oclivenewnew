@@ -46,7 +46,7 @@
 **扩展规则**
 
 - 新增 **后端模块**（须 RFC + 宿主）：依次为 **第 7 模块**、**第 8 模块**…
-- 新增 **`{专名}设施子模块`**（须 RFC + 文档登记）：依次为 **第 3、第 4… 设施子模块**
+- 新增 **`{专名}设施子模块`**（须 RFC + 文档登记）：第 3–4 已登记（立绘 · 视觉表现）；其后依次为 **第 5、第 6…**
 - 新增 **后端模块插件**（侧车 / 目录包）：写作 **「第 K 模块的 xxx 插件实现」**，**不** 占用第 7、第 8 模块号，也 **不** 占用设施子模块号。
 
 ### 第 1–6 模块（后端模块，固定）
@@ -68,6 +68,8 @@
 |------|----------|------|
 | **第 1 设施子模块** | **复杂情感设施子模块** | `narrative_hint`；消费 **第 2 模块** 产出；详见 [§ 第 1 设施子模块](#第-1-设施子模块复杂情感设施子模块) |
 | **第 2 设施子模块** | **专家模型设施子模块** | 条件触发专家子流程；默认实现为 **专家路由**；详见 [§ 第 2 设施子模块](#第-2-设施子模块专家模型设施子模块) |
+| **第 3 设施子模块** | **立绘设施子模块** | `portrait_catalog` · **表现导演** AI 选 `visual_state_id`；详见 [§ 第 3 设施子模块](#第-3-设施子模块立绘设施子模块) |
+| **第 4 设施子模块** | **视觉表现设施子模块** | `visual_state_id` → `performance_directive` · Live2D / 3D / 演算舞台；**无 AI 选图**；详见 [§ 第 4 设施子模块](#第-4-设施子模块视觉表现设施子模块) |
 
 ### 无编号设施模块（仍属设施模块统称）
 
@@ -112,6 +114,8 @@ flowchart TB
     subgraph sub["第 N 设施子模块（{专名}设施子模块）"]
       F1["① 复杂情感设施子模块"]
       F2["② 专家模型设施子模块<br/>（专家路由）"]
+      F3["③ 立绘设施子模块<br/>（表现导演）"]
+      F4["④ 视觉表现设施子模块<br/>（角色舞台）"]
     end
   end
 
@@ -120,6 +124,8 @@ flowchart TB
   F1 --> M4
   ORCH -.->|experimental 且触发| F2
   F2 -.-> M4 & M5
+  ORCH -.->|post_llm| F3
+  F3 -.-> F4
   ORCH --> back
   M5 -.-> P5
   M2 -.-> P2
@@ -164,6 +170,32 @@ flowchart TB
 | **创作者 UI** | 插件工作台「专家模型设施」向导 / 架构图齿轮（产品简称；架构全名为 **专家模型设施子模块**） |
 
 详见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) §2.6、[BLUEPRINT_FOLDER_LAYOUT.md](../../handoff/BLUEPRINT_FOLDER_LAYOUT.md)、[CREATOR_LEARNING_PATH.md](../role-pack/CREATOR_LEARNING_PATH.md) 高级配置。
+
+---
+
+## 第 3 设施子模块（立绘设施子模块）
+
+| 项 | 说明 |
+|----|------|
+| **职责** | 从角色包 **`portrait_catalog`** 封闭列表选出 **`visual_state_id`**；默认 **表现导演**（AI + 复杂情感 hint） |
+| **编排位置** | **post_llm**：合并/替换今日 `pick_portrait_emotion` 的「选状态」；**共景**可规则映射 `bot_emotion` |
+| **与第 1 设施** | **消费** `narrative_hint`；**不**生成 hint |
+| **与第 4 设施** | 输出 `visual_state_id`；**唯一**允许 LLM 选表现状态的设施 |
+| **legacy** | 保留 `portrait_emotion` 七 tag；未启用 catalog 时行为与 v0.3 一致 |
+| **RFC** | [RFC_PORTRAIT_FACILITY.md](../rfc/RFC_PORTRAIT_FACILITY.md) · 计划 [PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md](../../handoff/PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md) |
+
+---
+
+## 第 4 设施子模块（视觉表现设施子模块）
+
+| 项 | 说明 |
+|----|------|
+| **职责** | 将 **`visual_state_id`** 转为 **`performance_directive`**，供宿主渲染 adapter（PNG / Live2D / 3D /  procedural） |
+| **编排位置** | post_llm 轻量 materialize；**帧循环 / GPU 在 UI**，不在 `process_message` |
+| **AI** | **禁止**二次 LLM 选图 |
+| **默认** | `config.json` → `visual_presentation.enabled: false` |
+| **发行版** | `distro.oclive.toml` `[visual_presentation].mode` 草案：VS Code off · Theater stage_full |
+| **RFC** | [RFC_VISUAL_PRESENTATION_FACILITY.md](../rfc/RFC_VISUAL_PRESENTATION_FACILITY.md) |
 
 ---
 

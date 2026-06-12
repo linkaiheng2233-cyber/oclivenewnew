@@ -8,17 +8,18 @@
 
 - **命名与 canonical import SSOT**：[creator-docs/NAMING_CONVENTIONS.md](creator-docs/NAMING_CONVENTIONS.md)（DTO → `oclive_kernel_types`；trait → `oclive_kernel_contracts`；编排 → `oclive_kernel_host`）
 
-### 发版版本（`main`，2026-06-07）
+### 发版版本（`main`，2026-06-12）
 
 | 产物 | 版本 | 位置 |
 |------|------|------|
-| **桌面宿主** | **0.3.0** | 根 `package.json`、`src-tauri/Cargo.toml`、`src-tauri/tauri.conf.json` |
+| **桌面宿主** | **0.4.0** | 根 `package.json`、`src-tauri/Cargo.toml`、`src-tauri/tauri.conf.json` |
+| **角色包编写器** | **0.4.0** | 姊妹仓 `oclive-pack-editor/package.json` |
 | **VS Code 扩展** | **0.3.0** | 姊妹仓 `oclive-vscode/package.json` |
 | **`oclive-cli`** | **0.1.0** | `crates/oclive-cli/Cargo.toml` |
 | **`oclive_kernel_runtime`** | **0.2.0** | `crates/oclive_kernel_runtime/Cargo.toml` |
 | **`oclive_validation`** | **0.1.0** | `crates/oclive_validation/Cargo.toml` |
 
-独立 SemVer 策略见 [`creator-docs/development/RELEASE_VERSIONING.md`](creator-docs/development/RELEASE_VERSIONING.md)；用户可见变更见 [`CHANGELOG.md`](CHANGELOG.md) **`[0.3.0]`**。
+独立 SemVer 策略见 [`creator-docs/development/RELEASE_VERSIONING.md`](creator-docs/development/RELEASE_VERSIONING.md)；用户可见变更见 [`CHANGELOG.md`](CHANGELOG.md) **`[0.4.0]`**。
 
 - **跨平台**：Windows 需 MSVC（见 [CONTRIBUTING.md §开发环境](CONTRIBUTING.md#开发环境)）；Cargo `target-dir` 见 [`.cargo/config.toml`](.cargo/config.toml)。
 - **Rust Release / workspace 依赖**：[`handoff/RUST_RELEASE_AND_DEPENDENCIES.md`](handoff/RUST_RELEASE_AND_DEPENDENCIES.md)。
@@ -87,6 +88,21 @@
 - **类型与内置规则**：[`crates/oclive_kernel_runtime/src/domain/complex_emotion.rs`](crates/oclive_kernel_runtime/src/domain/complex_emotion.rs)（`ComplexEmotionInput` / `ComplexEmotionOutput`、`BuiltinKeywordComplexEmotionProvider::resolve_turn_inner`）；可选 Remote 见 [`src-tauri/src/infrastructure/remote_plugin/complex_emotion_http.rs`](src-tauri/src/infrastructure/remote_plugin/complex_emotion_http.rs)。
 - **主路径 wiring**：[`crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/`](crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/) 在 `load_recent_context` 之后、**`build_prompt` 之前**解析本回合复杂情感；上一轮 `narrative_hint` 经 **`SessionCache`** / DB（`complex_emotion_hint` 表）按 `srid` 读取；通过 **`PromptInput::previous_complex_emotion_narrative_hint`** 传入 [`PromptBuilder::build_prompt`](crates/oclive_kernel_runtime/src/domain/prompt_builder/mod.rs)（定义在 `oclive_kernel_runtime`，经 `oclive_kernel_host::domain` re-export；段落公式见同目录 `sections.rs`；段落标题为「复杂情感叙事提示」）。
 - **集成测试**：[`src-tauri/tests/narrative_hint_prompt_roundtrip.rs`](src-tauri/tests/narrative_hint_prompt_roundtrip.rs)。
+
+### 第 3 设施子模块 — 立绘设施子模块（`portrait_catalog` · 表现导演 · post_llm）
+
+编号与分层见 [`creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md`](creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)（**不是**第 2 模块 emotion；**不是**第 4 设施渲染）。
+
+- **类型与 catalog**：角色包 `config.json` → `portrait_catalog`（RFC 草案）；AI **表现导演**从封闭 `assets[].id` 选 **`visual_state_id`**，避免文件名 SSOT。
+- **主路径 wiring**：[`crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/persistence.rs`](crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/persistence.rs) **post_llm** 合并/替换 `pick_portrait_emotion`；消费第 1 设施 **`narrative_hint`**。
+- **legacy**：保留 `portrait_emotion` 七 tag；未启用 catalog 时与 v0.3 一致。
+- **RFC / 计划**：[RFC_PORTRAIT_FACILITY.md](creator-docs/rfc/RFC_PORTRAIT_FACILITY.md) · [PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md](handoff/PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md)（**草案，未合入**）。
+
+### 第 4 设施子模块 — 视觉表现设施子模块（角色舞台 · Live2D / 3D / 演算）
+
+- **职责**：`visual_state_id` → **`performance_directive`**；渲染 adapter 在宿主 UI 帧循环，**禁止**二次 LLM 选图。
+- **配置**：`config.json` → `visual_presentation`（默认 `enabled: false`）；发行版 `[visual_presentation].mode` 草案见 RFC。
+- **RFC**：[RFC_VISUAL_PRESENTATION_FACILITY.md](creator-docs/rfc/RFC_VISUAL_PRESENTATION_FACILITY.md)（**草案，未合入**）。
 
 ### Prompt 注入分层 + 状态机联动
 

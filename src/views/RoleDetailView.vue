@@ -5,10 +5,11 @@ import { useRoleStore } from '../stores/roleStore'
 
 const roleStore = useRoleStore()
 
-defineProps<{
+  defineProps<{
   roleId: string
   name: string
   emotion: string
+  portraitAssetRelPath?: string | null
   layout: 'stack' | 'sidebar'
   bootstrapEpoch: number
 }>()
@@ -22,6 +23,7 @@ defineProps<{
       :role-id="roleId"
       :name="name"
       :emotion="emotion"
+      :portrait-asset-rel-path="portraitAssetRelPath"
     />
     <PluginRoleDetailSlots
       v-if="roleStore.interactionImmersive"

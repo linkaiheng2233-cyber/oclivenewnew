@@ -33,7 +33,7 @@ flowchart TB
 | **pre** | `turn_pipeline/pre.rs` | 加载上下文、复杂情感、用户身份、建 Prompt 输入 |
 | **middle** | `co_present.rs` / `remote_life.rs` | 共景中间态（好感、关系等） |
 | **LLM** | `turn_pipeline/post.rs` | 调用 `pl.llm` |
-| **post** | `turn_pipeline/post.rs` | 持久化、聊天存储、回填 `reply` |
+| **post** | `turn_pipeline/post.rs` | 持久化、聊天存储、立绘状态（**v0.4+ 草案**：第 3/4 设施 post_llm）、回填 `reply` |
 
 入口：[`turn_pipeline/mod.rs`](../crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/mod.rs) 的 `execute_turn`。
 

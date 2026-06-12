@@ -13,7 +13,8 @@ const props = withDefaults(
     roleId: string
     name: string
     emotion: string
-    /** stack: vertical main layout; sidebar: tighter portrait and spacing in the left narrow column */
+    /** Catalog / directive relative asset path (e.g. assets/images/happy.webp) */
+    portraitAssetRelPath?: string | null
     layout?: 'stack' | 'sidebar'
   }>(),
   { layout: 'stack' },
@@ -75,11 +76,70 @@ function emotionAssetCandidates(key: string): string[] {
   return Array.from(out)
 }
 
+async function tryLoadRelativeAsset(rel: string, gen: number): Promise<void> {
+  let path: string | null
+  try {
+    path = await resolveRoleAssetPath(props.roleId, rel)
+  }
+  catch (e) {
+    if (gen !== portraitGeneration)
+      return
+    console.warn('[CharacterInfo] catalog asset resolve failed', e)
+    return
+  }
+  if (!path)
+    return
+
+  const filename = rel.split('/').pop() ?? rel
+  if (isTauri()) {
+    try {
+      const bytes = await readRoleAssetBytes(props.roleId, rel)
+      if (gen !== portraitGeneration)
+        return
+      if (!bytes)
+        return
+      const mime = filename.endsWith('.webp')
+        ? 'image/webp'
+        : filename.endsWith('.jpg') || filename.endsWith('.jpeg')
+          ? 'image/jpeg'
+          : filename.endsWith('.gif')
+            ? 'image/gif'
+            : 'image/png'
+      const blob = new Blob([new Uint8Array(bytes)], { type: mime })
+      const url = URL.createObjectURL(blob)
+      portraitBlobUrl.value = url
+      portraitSrc.value = url
+      return
+    }
+    catch (e) {
+      console.warn('[CharacterInfo] catalog readRoleAssetBytes failed', e)
+    }
+  }
+
+  try {
+    if (gen !== portraitGeneration)
+      return
+    portraitSrc.value = convertFileSrc(path)
+  }
+  catch (e) {
+    console.warn('[CharacterInfo] catalog convertFileSrc failed', e)
+  }
+}
+
 async function refreshPortrait(): Promise<void> {
   const gen = ++portraitGeneration
   portraitLoadFailed.value = false
   revokeBlob()
   portraitSrc.value = null
+
+  const catalogRel = props.portraitAssetRelPath?.trim()
+  if (catalogRel) {
+    await tryLoadRelativeAsset(catalogRel, gen)
+    if (gen !== portraitGeneration)
+      return
+    if (portraitSrc.value)
+      return
+  }
 
   const key = emotionKey()
   let loaded = false
@@ -155,7 +215,7 @@ function onPortraitError(): void {
 }
 
 watch(
-  () => [props.roleId, props.emotion] as const,
+  () => [props.roleId, props.emotion, props.portraitAssetRelPath] as const,
   () => {
     void refreshPortrait()
   },

@@ -139,6 +139,8 @@ pub(super) async fn process_remote_stub(ctx: &TurnContext<'_>) -> Result<SendMes
         emotion: emotion_to_dto(&emotion_result),
         bot_emotion: "neutral".to_string(),
         portrait_emotion: portrait_emotion_str,
+        visual_state_id: None,
+        performance_directive: None,
         favorability_delta: 0.0,
         favorability_current: favorability_before as f32,
         events: vec![],

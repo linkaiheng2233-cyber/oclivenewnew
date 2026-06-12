@@ -5,6 +5,8 @@ use super::author_pack::AuthorPackFile;
 use super::knowledge::KnowledgeIndex;
 use super::plugin_backends::PluginBackends;
 use super::reply_post_processor_config::RolePackReplyPostProcessorConfig;
+use super::portrait_catalog_config::{PortraitCatalogFile, PortraitCatalogToggle};
+use super::visual_presentation_config::RolePackVisualPresentationConfig;
 use super::role_pack_config::{
     RolePackChatStorageConfig, RolePackEvolutionConfig, RolePackMemoryConfig,
     RolePackRelationConfig,
@@ -231,6 +233,15 @@ pub struct Role {
     /// `config.json` → `reply_post_processor` (builtin post-LLM text polish; default disabled).
     #[serde(default)]
     pub pack_reply_post_processor_config: RolePackReplyPostProcessorConfig,
+    /// `config.json` → `portrait_catalog.enabled` (assets in `portrait_catalog.json`).
+    #[serde(default)]
+    pub pack_portrait_catalog: PortraitCatalogToggle,
+    /// `portrait_catalog.json` (in-memory; populated when `pack_portrait_catalog.enabled`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub portrait_catalog: Option<PortraitCatalogFile>,
+    /// `config.json` → `visual_presentation` (facility #4; default disabled).
+    #[serde(default)]
+    pub pack_visual_presentation_config: RolePackVisualPresentationConfig,
     /// `user_identities/` catalog (in-memory only; populated by [`RoleStorage::finish_role_pack_load`]).
     #[serde(skip)]
     pub user_identity_catalog: Option<Arc<UserIdentityCatalog>>,
@@ -325,6 +336,9 @@ impl Default for Role {
             pack_evolution_config: RolePackEvolutionConfig::default(),
             pack_chat_storage_config: RolePackChatStorageConfig::default(),
             pack_reply_post_processor_config: RolePackReplyPostProcessorConfig::default(),
+            pack_portrait_catalog: PortraitCatalogToggle::default(),
+            portrait_catalog: None,
+            pack_visual_presentation_config: RolePackVisualPresentationConfig::default(),
             user_identity_catalog: None,
             runtime_config: None,
             pipeline_experimental: None,

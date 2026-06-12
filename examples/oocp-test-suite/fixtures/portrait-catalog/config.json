@@ -1,0 +1,12 @@
+{
+  "reply_post_processor": {
+    "enabled": false,
+    "backend": "builtin",
+    "builtin": { "profile": "standard" }
+  },
+  "portrait_catalog": { "enabled": true },
+  "visual_presentation": {
+    "enabled": true,
+    "backend": "image"
+  }
+}

@@ -53,6 +53,25 @@
 
 ---
 
+## [0.4.0] - 2026-06-12
+
+### Added
+
+- **立绘 catalog（A2/B1）**：`portrait_catalog.json` SSOT；7 固定槽 + 高级多条目；`visual_state_id` / `performance_directive` additive DTO。
+- **表现导演**：`pick_portrait_with_catalog` + 复杂情感 `narrative_hint` 闭环；legacy `portrait_emotion` 七 tag 零回归。
+- **视觉表现 v1**：`materialize_directive`（image/live2d/rig3d/procedural）；distro `[visual_presentation].mode` gating（`off` / `image_only` / `stage_full`）。
+- **OOCP S16**：catalog fixture 断言 `visual_state_id` + `performance_directive`；mumu 无字段。
+- **编写器**：`PortraitCatalogEditor`、分级导出 profile（`desktop-full` / `vscode-lite` / `theater`）、`visual_presentation` UI。
+- **VS Code Flash**：HTTP 解析 `visual_state_id` / `performance_directive`；catalog 路径优先于 tag 文件名。
+- **Theater**：`TheaterStagePanel` + `Live2DStageAdapter` 接线（Cubism defer，PNG fallback）。
+
+### Changed
+
+- RFC 立绘/视觉表现状态更新为 Phase 1–4 delivered。
+- `theater.oclive.toml` bundled profile 同步 `stage_full`。
+
+---
+
 ## [0.3.0] - 2026-06-07
 
 **桌面宿主 `0.3.0`** · **VS Code 扩展 `0.3.0`** · **`SendMessageResponse.schema` 14**

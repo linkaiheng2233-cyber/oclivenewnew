@@ -56,7 +56,7 @@
 | `prompts/` | **可选创作辅助**：`reply_quality_anchor.md` 人类可读镜像（运行时 SSOT 为 `meta.reply_quality_anchor` 或内核默认）、creator profile 校验目录；**非** Tier0 人设来源 |
 | `scenes/{id}/` | 场景 `scene.json`、`description.txt` 等 |
 | `knowledge/` | 世界观 Markdown（内容向） |
-| `assets/` | 立绘、头像等 |
+| `assets/` | 立绘、头像等；**v0.4+ 草案**：`config.json` → `portrait_catalog` 指向 `assets/images/` 等路径（见 [RFC_PORTRAIT_FACILITY.md](../creator-docs/rfc/RFC_PORTRAIT_FACILITY.md)） |
 | `ui.json` | **前端布局**（非后端；见 CONFIGURATION_FILES） |
 | `author.json` | 作者元数据、推荐插件（须用户确认才生效） |
 
