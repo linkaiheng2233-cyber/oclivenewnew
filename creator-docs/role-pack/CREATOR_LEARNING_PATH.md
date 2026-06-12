@@ -72,7 +72,7 @@
 4. 若之后在编写器中修改人设并保存，编写器会**保留** `includes` / `groups` 等扩展字段；专家路由文件本身不会被编写器删除。
 5. 编写器高级页中的 **`expert/default.oclexpert`** 为遗留实验格式，**不是**运行时专家路由。
 
-参考：[OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) · [BLUEPRINT_FOLDER_LAYOUT.md](../../handoff/BLUEPRINT_FOLDER_LAYOUT.md) · [ROLE_PACK_SPEC.md](ROLE_PACK_SPEC.md) §2.6 · 编写器 [ROLE_PACK_EDITOR.md](https://github.com/oclive-app/oclive-pack-editor/blob/main/creator-docs/ROLE_PACK_EDITOR.md)。
+参考：[OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) · [BLUEPRINT_FOLDER_LAYOUT.md](../../handoff/BLUEPRINT_FOLDER_LAYOUT.md) · [ROLE_PACK_SPEC.md](ROLE_PACK_SPEC.md) §2.6 · 编写器 [ROLE_PACK_EDITOR.md](https://github.com/linkaiheng2233-cyber/oclive-pack-editor/blob/main/creator-docs/ROLE_PACK_EDITOR.md)。
 
 ### 配置记忆与关系演化
 

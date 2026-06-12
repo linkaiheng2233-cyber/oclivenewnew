@@ -4,7 +4,7 @@
 
 ## Install and bundled zip
 
-- Studio-only: download from [oclive-studio Releases](https://github.com/oclive-app/oclive-studio/releases).
+- Studio-only: download from [oclive-studio Releases](https://github.com/linkaiheng2233-cyber/oclive-studio/releases).
 - **Bundled zip** (studio + runtime): run `scripts/package-studio-release.ps1` (Windows) or `scripts/package-studio-release.sh` at the repo root.
 
 ## Configuration (`studio-config.json`)

@@ -131,7 +131,7 @@ node examples/oocp-test-suite/run.mjs
 
 ## 七、工作室（oclive-studio）
 
-**📦 本仓不验收**：启动/创作双模式、创作模式 E2E 5/5、`OnboardingWizard`、深链接 `oclive-studio://`、创作模式懒加载 chunk 等，见独立仓 **[oclive-studio](https://github.com/oclive-app/oclive-studio)** 与 [RFC_STUDIO_MERGE.md](../creator-docs/rfc/RFC_STUDIO_MERGE.md)。
+**📦 本仓不验收**：启动/创作双模式、创作模式 E2E 5/5、`OnboardingWizard`、深链接 `oclive-studio://`、创作模式懒加载 chunk 等，见独立仓 **[oclive-studio](https://github.com/linkaiheng2233-cyber/oclive-studio)** 与 [RFC_STUDIO_MERGE.md](../creator-docs/rfc/RFC_STUDIO_MERGE.md)。
 
 **本仓（运行时）相关**：
 

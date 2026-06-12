@@ -6,13 +6,13 @@
 ## 双应用分工（编写器 + 运行时）
 
 - **运行时（oclivenewnew 本仓库 · A.I.Live）**：加载角色包、校验、对话与持久化；**专家路由**、架构图 **`groups`**、蓝图 **`includes[]`** 在此配置。  
-- **角色包编写器（[oclive-pack-editor](https://github.com/oclive-app/oclive-pack-editor)）**：编辑人设、`pipeline.ocblueprint` 的 `meta` / `slot_registry`、场景与知识、导出 zip；保存时**保留**主应用写入的蓝图扩展字段。  
+- **角色包编写器（[oclive-pack-editor](https://github.com/linkaiheng2233-cyber/oclive-pack-editor)）**：编辑人设、`pipeline.ocblueprint` 的 `meta` / `slot_registry`、场景与知识、导出 zip；保存时**保留**主应用写入的蓝图扩展字段。  
 - **唯一接口**：磁盘上的 **`roles/{角色id}/`** 包结构；契约以本仓库 **`creator-docs/`** 与 **`roles/README_MANIFEST.md`** 为准。  
-- **已退役**：**oclive-launcher**（归档）；长期统一入口见 [oclive-studio](https://github.com/oclive-app/oclive-studio)，当前发版与文档以 **编写器 + 本运行时** 为准。
+- **已退役**：**oclive-launcher**（归档）；长期统一入口见 [oclive-studio](https://github.com/linkaiheng2233-cyber/oclive-studio)，当前发版与文档以 **编写器 + 本运行时** 为准。
 
 **在 oclive 中安装包**：除把目录放进 `roles/` 或设置 **`OCLIVE_ROLES_DIR`** 外，可在应用内 **导入 `.ocpak`、`.zip`（与 `.ocpak` 同为 ZIP）或已解压的包目录**（结构须与 `roles/{角色id}/` 一致）。详见 [roles/README_MANIFEST.md](../../roles/README_MANIFEST.md) 中「在 oclive 中导入角色包」。
 
-**使用工作室（推荐）**：[oclive-studio](https://github.com/oclive-app/oclive-studio) 在启动模式中提供 **从 zip 安装角色包** 到 `OCLIVE_ROLES_DIR`、**Ollama / Remote LLM** 配置（注入 **`OCLIVE_LLM_BACKEND`** 与 **`OCLIVE_REMOTE_*`**，运行时**覆盖**角色包中的 `plugin_backends.llm`，见 [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)）及一键拉起 **`oclivenewnew --api`** 供创作模式试聊。配置权威文件为 **`studio-config.json`**（见 [工作室用户指南](../studio/USER_GUIDE.md)）。协议见 [REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)。
+**使用工作室（推荐）**：[oclive-studio](https://github.com/linkaiheng2233-cyber/oclive-studio) 在启动模式中提供 **从 zip 安装角色包** 到 `OCLIVE_ROLES_DIR`、**Ollama / Remote LLM** 配置（注入 **`OCLIVE_LLM_BACKEND`** 与 **`OCLIVE_REMOTE_*`**，运行时**覆盖**角色包中的 `plugin_backends.llm`，见 [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)）及一键拉起 **`oclivenewnew --api`** 供创作模式试聊。配置权威文件为 **`studio-config.json`**（见 [工作室用户指南](../studio/USER_GUIDE.md)）。协议见 [REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)。
 
 建议将 **oclive-studio** 与本仓库**同级**克隆（例如 `D:\oclivenewnew` 与 `D:\oclive-studio`）。
 

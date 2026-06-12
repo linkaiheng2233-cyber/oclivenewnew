@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |--------|-----|
-| 状态 | **已落地**：独立仓库 **[oclive-studio](https://github.com/oclive-app/oclive-studio)**；原 **oclive-launcher**、**oclive-pack-editor** 归档为 Deprecated |
+| 状态 | **已落地**：独立仓库 **[oclive-studio](https://github.com/linkaiheng2233-cyber/oclive-studio)**；原 **oclive-launcher**、**oclive-pack-editor** 归档为 Deprecated |
 | 配置 SSOT | **`studio-config.json`**（`rolesDir` → `OCLIVE_ROLES_DIR`，LLM 与运行时路径） |
 | 角色包 SSOT | **v2** `pipeline.ocblueprint`；见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) |
 | 用户文档 | [studio/USER_GUIDE.md](../studio/USER_GUIDE.md) · [CREATOR_WORKFLOW.md](../getting-started/CREATOR_WORKFLOW.md) |

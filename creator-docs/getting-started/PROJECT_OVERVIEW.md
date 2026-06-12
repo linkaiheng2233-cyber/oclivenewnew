@@ -12,7 +12,7 @@
 |------|------|----------------|
 | **oclivenewnew**（本仓库） | **运行时**：玩家对话、角色包加载、引擎、架构图与专家路由、Tauri 桌面端 | Rust + Vue + Tauri |
 | **oclive-pack-editor**（另仓，同级目录常见） | **编写器**：编辑/导出 `roles/{id}/` 或 zip；人设 / 六槽 / 知识 | Vue + Tauri |
-| **oclive-launcher**（另仓） | **已退役**（归档只读）；新用户用编写器 + 运行时，见 [oclive-launcher README](https://github.com/oclive-app/oclive-launcher/blob/main/README.md) |
+| **oclive-launcher**（另仓） | **已退役**（归档只读）；新用户用编写器 + 运行时，见 [oclive-launcher README](https://github.com/linkaiheng2233-cyber/oclive-launcher/blob/main/README.md) |
 
 **唯一纽带**：磁盘上的 **角色包**（结构与 `roles/{角色id}/` 一致）。运行时与编写器通过 **导入/导出包** 或 **OCLIVE_ROLES_DIR** 对接，不依赖进程间复杂 IPC。
 

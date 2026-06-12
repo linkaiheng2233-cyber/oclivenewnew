@@ -4,7 +4,7 @@
 
 ## 安装与整合包
 
-- 单独安装工作室：从 [oclive-studio Releases](https://github.com/oclive-app/oclive-studio/releases) 获取安装包。
+- 单独安装工作室：从 [oclive-studio Releases](https://github.com/linkaiheng2233-cyber/oclive-studio/releases) 获取安装包。
 - **整合包**（工作室 + 运行时）：在仓库根目录执行 `scripts/package-studio-release.ps1`（Windows）或 `scripts/package-studio-release.sh`，生成 `oclive-studio-*-vX.Y.Z.zip`，内含 `oclive-studio` 与 `oclive-runtime/oclivenewnew` 及 `README.txt`。
 
 ## 配置（studio-config.json）

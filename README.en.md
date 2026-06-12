@@ -94,7 +94,7 @@ Legacy `docs/*.md` → see [docs/README.md](docs/README.md).
 |------|------|
 | **This repo** | Runtime desktop client + dialogue engine |
 | **Role packs** | Under `roles/`; on-disk layout is the contract |
-| **oclive-pack-editor** | [oclive-pack-editor](https://github.com/oclive-app/oclive-pack-editor) — pack authoring (persona, six slots, export) |
+| **oclive-pack-editor** | [oclive-pack-editor](https://github.com/linkaiheng2233-cyber/oclive-pack-editor) — pack authoring (persona, six slots, export) |
 | **oclive-launcher** | **Retired** (archive only); use **pack editor + this runtime** |
 
 ## Quick start: pack editor + runtime

@@ -2,7 +2,7 @@
 
 | Field | Value |
 |-------|--------|
-| Status | **Shipped** — **[oclive-studio](https://github.com/oclive-app/oclive-studio)**; **oclive-launcher** and **oclive-pack-editor** are **deprecated** |
+| Status | **Shipped** — **[oclive-studio](https://github.com/linkaiheng2233-cyber/oclive-studio)**; **oclive-launcher** and **oclive-pack-editor** are **deprecated** |
 | Config SSOT | **`studio-config.json`** (`rolesDir` → `OCLIVE_ROLES_DIR`, LLM, runtime paths) |
 | Role pack SSOT | **v2** `pipeline.ocblueprint` — [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) |
 | User guide | [studio/USER_GUIDE.md](../studio/USER_GUIDE.md) · [CREATOR_WORKFLOW.md](../getting-started/CREATOR_WORKFLOW.md) |
