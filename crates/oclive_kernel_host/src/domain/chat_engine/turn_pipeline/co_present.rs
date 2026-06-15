@@ -35,9 +35,9 @@ pub(crate) async fn run_middle(
         mrid,
         scene_id,
         user_message,
-        &pre.emotion_result,
-        pre.prev_stored_narrative_hint.clone(),
-        &pre.recent_turns,
+        &pre.hints.emotion_result,
+        pre.hints.prev_stored_narrative_hint.clone(),
+        &pre.memory.recent_turns,
     );
     let complex_emotion_out: ComplexEmotionOutput = if state.host_profile.skip_complex_emotion {
         ComplexEmotionOutput {
@@ -79,13 +79,13 @@ pub(crate) async fn run_middle(
             ChatStage::EventEstimate,
             SlotRunner::estimate_event(
                 pl,
-                pre.ollama_model.as_str(),
+                pre.memory.ollama_model.as_str(),
                 user_message,
-                &pre.user_emotion,
-                &pre.personality,
+                &pre.hints.user_emotion,
+                &pre.memory.personality,
                 role.evolution_config.personality_source,
-                &pre.recent_turns_for_event,
-                &pre.recent_events_for_event,
+                &pre.memory.recent_turns_for_event,
+                &pre.memory.recent_events_for_event,
                 knowledge_augment_opt.as_ref(),
             ),
         )
@@ -94,11 +94,11 @@ pub(crate) async fn run_middle(
     let ai_impact_factor_final = estimate.impact_factor;
     let ai_event_confidence = estimate.confidence;
 
-    let mut personality = pre.personality.clone();
+    let mut personality = pre.memory.personality.clone();
     if role.evolution_config.personality_source != PersonalitySource::Profile {
         personality = PersonalityEngine::evolve_by_event(
             personality,
-            ai_impact_factor_final * pre.event_runtime,
+            ai_impact_factor_final * pre.memory.event_runtime,
             &role.evolution_bounds,
         );
     }
@@ -136,7 +136,7 @@ pub(crate) async fn run_middle(
     };
     let host_state_hint = state
         .host_profile
-        .state_expression_hint(pre.favorability_before);
+        .state_expression_hint(pre.relation.favorability_before);
     let prompt = STAGES
         .stage(ChatStage::BuildPrompt, async {
             SlotRunner::build_prompt(
@@ -144,17 +144,17 @@ pub(crate) async fn run_middle(
                 &PromptInput {
                     role,
                     personality: &personality,
-                    memories: &pre.relevant,
+                    memories: &pre.memory.relevant,
                     user_input: user_message,
-                    user_emotion: pre.user_emotion_prompt.as_str(),
-                    user_relation_id: pre.user_relation_key.as_str(),
-                    relation_hint: pre.relation_hint.as_str(),
-                    user_identity_template: pre.user_identity_template.as_str(),
-                    user_identity_id: pre.user_identity_id.as_str(),
-                    relation_before: pre.relation_before.as_str(),
-                    favorability_before: pre.favorability_before,
+                    user_emotion: pre.hints.user_emotion_prompt.as_str(),
+                    user_relation_id: pre.relation.user_relation_key.as_str(),
+                    relation_hint: pre.relation.relation_hint.as_str(),
+                    user_identity_template: pre.relation.user_identity_template.as_str(),
+                    user_identity_id: pre.relation.user_identity_id.as_str(),
+                    relation_before: pre.relation.relation_before.as_str(),
+                    favorability_before: pre.relation.favorability_before,
                     relation_preview: relation_after.as_str(),
-                    favorability_preview: (pre.favorability_before + favor_delta).clamp(0.0, 100.0),
+                    favorability_preview: (pre.relation.favorability_before + favor_delta).clamp(0.0, 100.0),
                     event_type: &ai_event_type,
                     impact_factor: ai_impact_factor_final,
                     scene_label: &scene_label,
@@ -162,14 +162,15 @@ pub(crate) async fn run_middle(
                     topic_hint_line: &topic_line,
                     life_context_line: life_context_line.as_str(),
                     worldview_snippet: worldview_snippet.as_str(),
-                    mutable_personality: pre.mutable_for_prompt.as_str(),
+                    mutable_personality: pre.memory.mutable_for_prompt.as_str(),
                     reply_quality_anchor: effective_reply_quality_anchor(role),
                     previous_complex_emotion_narrative_hint: pre
+                        .hints
                         .prev_stored_narrative_hint
                         .as_str(),
                     host_prompt_overlay: host_overlay,
                     host_state_expression_hint: host_state_hint,
-                    relation_transition_hint: pre.relation_transition_hint.as_str(),
+                    relation_transition_hint: pre.relation.relation_transition_hint.as_str(),
                     extra_sections: &[],
                 },
             )

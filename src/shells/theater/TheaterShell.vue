@@ -181,17 +181,17 @@ async function onEditPersonality() {
     />
 
     <TheaterModeTweak
-      v-else-if="mode === 'tweak'"
+      v-if="!loadError && activeSkeleton && mode === 'tweak'"
       ref="tweakRef"
       :skeleton="activeSkeleton"
     />
     <TheaterModeOutline
-      v-else-if="mode === 'outline'"
+      v-if="!loadError && activeSkeleton && mode === 'outline'"
       :skeleton="activeSkeleton"
       @compiled="onOutlineCompiled"
     />
     <TheaterModeImprov
-      v-else-if="mode === 'improv'"
+      v-if="!loadError && activeSkeleton && mode === 'improv'"
       ref="improvRef"
       :skeleton="activeSkeleton"
       @frozen="onImprovFrozen"

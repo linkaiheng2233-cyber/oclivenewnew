@@ -41,6 +41,7 @@ pub async fn sync_shell_llm_settings_to_canonical(state: &AppState) {
     let Some((pool, app_data)) = open_canonical_pool().await else {
         return;
     };
+    let mut failed = 0usize;
     for key in LLM_APP_SETTING_KEYS {
         let Ok(Some(v)) = state.db_manager.get_app_setting(key).await else {
             continue;
@@ -49,7 +50,15 @@ pub async fn sync_shell_llm_settings_to_canonical(state: &AppState) {
         if t.is_empty() {
             continue;
         }
-        let _ = upsert_canonical_app_setting(&pool, key, t).await;
+        if let Err(e) = upsert_canonical_app_setting(&pool, key, t).await {
+            failed += 1;
+            tracing::warn!(
+                target: "oclive_llm",
+                key,
+                error = %e,
+                "canonical LLM sync upsert failed"
+            );
+        }
     }
     if let Ok(Some(t)) = oclive_kernel_host::domain::user_llm_env::load_remote_token(
         &oclive_kernel_host::infrastructure::db_ports::DbSettingsPort(state.db_manager.as_ref()),
@@ -58,14 +67,36 @@ pub async fn sync_shell_llm_settings_to_canonical(state: &AppState) {
     )
     .await
     {
-        let _ = write_token_file(&app_data, t.trim());
-        let _ = upsert_canonical_app_setting(&pool, KEY_REMOTE_TOKEN, t.trim()).await;
+        if let Err(e) = write_token_file(&app_data, t.trim()) {
+            failed += 1;
+            tracing::warn!(
+                target: "oclive_llm",
+                error = %e,
+                "write remote token file failed during canonical sync"
+            );
+        }
+        if let Err(e) = upsert_canonical_app_setting(&pool, KEY_REMOTE_TOKEN, t.trim()).await {
+            failed += 1;
+            tracing::warn!(
+                target: "oclive_llm",
+                error = %e,
+                "canonical remote token upsert failed"
+            );
+        }
     }
     pool.close().await;
-    tracing::info!(
-        target: "oclive_llm",
-        "synced LLM app_settings to canonical kernel DB"
-    );
+    if failed > 0 {
+        tracing::warn!(
+            target: "oclive_llm",
+            failed,
+            "canonical LLM sync completed with failures"
+        );
+    } else {
+        tracing::info!(
+            target: "oclive_llm",
+            "synced LLM app_settings to canonical kernel DB"
+        );
+    }
 }
 
 /// Mirror session model override into canonical `role_runtime`.
@@ -76,30 +107,46 @@ pub async fn sync_session_ollama_model_to_canonical(session_ns: &str, model: Opt
         return;
     };
     let now = Utc::now().to_rfc3339();
-    let _ = sqlx::query(
+    if let Err(e) = sqlx::query(
         "INSERT OR IGNORE INTO role_runtime (role_id, current_favorability, updated_at) VALUES (?, 0.0, ?)",
     )
     .bind(session_ns)
     .bind(&now)
     .execute(&pool)
-    .await;
-    if let Some(m) = model.filter(|s| !s.trim().is_empty()) {
-        let _ = sqlx::query(
+    .await
+    {
+        tracing::warn!(
+            target: "oclive_llm",
+            session_ns,
+            error = %e,
+            "canonical role_runtime seed failed"
+        );
+    }
+    let update_result = if let Some(m) = model.filter(|s| !s.trim().is_empty()) {
+        sqlx::query(
             "UPDATE role_runtime SET session_ollama_model_override = ?, updated_at = ? WHERE role_id = ?",
         )
         .bind(m.trim())
         .bind(&now)
         .bind(session_ns)
         .execute(&pool)
-        .await;
+        .await
     } else {
-        let _ = sqlx::query(
+        sqlx::query(
             "UPDATE role_runtime SET session_ollama_model_override = NULL, updated_at = ? WHERE role_id = ?",
         )
         .bind(&now)
         .bind(session_ns)
         .execute(&pool)
-        .await;
+        .await
+    };
+    if let Err(e) = update_result {
+        tracing::warn!(
+            target: "oclive_llm",
+            session_ns,
+            error = %e,
+            "canonical session model override sync failed"
+        );
     }
     pool.close().await;
 }
@@ -130,16 +177,29 @@ pub async fn seed_shell_llm_from_canonical(state: &AppState) {
     if let Some(token) = read_token_file(&app_data) {
         let t = token.trim();
         if !t.is_empty() {
-            let _ = state
+            if let Err(e) = state
                 .db_manager
                 .upsert_app_setting(KEY_REMOTE_TOKEN, t)
-                .await;
+                .await
+            {
+                tracing::warn!(
+                    target: "oclive_llm",
+                    error = %e,
+                    "seed remote token into shell DB failed"
+                );
+            }
         }
     }
     pool.close().await;
     if copied > 0 {
         state.mark_user_llm_env_dirty();
-        let _ = apply_user_llm_env(state).await;
+        if let Err(e) = apply_user_llm_env(state).await {
+            tracing::warn!(
+                target: "oclive_llm",
+                error = %e,
+                "apply user llm settings after canonical seed failed"
+            );
+        }
         tracing::info!(
             target: "oclive_llm",
             copied,
@@ -172,8 +232,8 @@ pub async fn sync_canonical_db_models_dir(canonical: &Path, app_data: &Path) {
         let t = s.trim();
         t.is_empty() || is_managed_legacy_models_path(Path::new(t), canonical, app_data)
     });
-    if should_patch
-        && sqlx::query(
+    if should_patch {
+        match sqlx::query(
             "INSERT INTO app_settings (key, value) VALUES (?, ?)
              ON CONFLICT(key) DO UPDATE SET value = excluded.value",
         )
@@ -181,13 +241,23 @@ pub async fn sync_canonical_db_models_dir(canonical: &Path, app_data: &Path) {
         .bind(canonical_str.trim())
         .execute(&pool)
         .await
-        .is_ok()
-    {
-        tracing::info!(
-            target: "oclive_models",
-            path = %canonical.display(),
-            "patched canonical app.db local models dir"
-        );
+        {
+            Ok(_) => {
+                tracing::info!(
+                    target: "oclive_models",
+                    path = %canonical.display(),
+                    "patched canonical app.db local models dir"
+                );
+            }
+            Err(e) => {
+                tracing::warn!(
+                    target: "oclive_models",
+                    path = %canonical.display(),
+                    error = %e,
+                    "failed to patch canonical app.db local models dir"
+                );
+            }
+        }
     }
     pool.close().await;
 }

@@ -173,5 +173,16 @@ export default {
     directorConnected: 'Director plugin connected',
     improvFrozen: 'Frozen as skeleton — switched to Tweak mode',
     improvEnded: 'This improv session has ended',
+    improvPromptSpeakerUser: 'User',
+    improvPromptSpeakerRoleA: 'Role A',
+    improvPromptSpeakerRoleB: 'Role B',
+    improvPromptOllamaSystem:
+      'You are {roleLabel} in scene "{sceneTitle}". Reply with one dialogue line only; no markdown.',
+    improvPromptOllamaUser: 'Dialogue so far:\n{history}\n\nReply as {roleLabel}:',
+    improvPromptOllamaUserEmpty: 'Dialogue so far:\n(none)\n\nReply as {roleLabel}:',
+    improvPromptKernelHistoryBlock: 'Dialogue:\n{history}\n',
+    improvPromptKernelUser:
+      '[Theater scene: {sceneTitle}]\n{historyBlock}Reply as {roleLabel} with one line only:',
+    improvPromptFallback: '{roleLabel}: (local model unavailable — keep improvising)',
   },
 }

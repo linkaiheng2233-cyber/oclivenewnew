@@ -35,9 +35,7 @@ async fn storage_proxy_ok(
     Ok(())
 }
 
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+/// Runs one chat turn via [`ChatBackend`] (in-process or attach HTTP); rejects empty `user_message`.
 #[tauri::command]
 pub async fn send_message(
     req: SendMessageRequest,
@@ -57,9 +55,7 @@ pub async fn send_message(
         .map_err(Into::into)
 }
 
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+/// Lists chat sessions for a role/scene through the active storage backend.
 #[tauri::command]
 pub async fn list_chat_sessions(
     role_id: String,
@@ -80,9 +76,7 @@ pub async fn list_chat_sessions(
         .map_err(Into::into)
 }
 
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+/// Loads paginated messages for a session id.
 #[tauri::command]
 pub async fn fetch_chat_messages(
     session_id: String,
@@ -97,9 +91,7 @@ pub async fn fetch_chat_messages(
         .map_err(Into::into)
 }
 
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+/// Rebuilds the JSON mirror for a session via storage proxy (attach-safe).
 #[tauri::command]
 pub async fn rebuild_chat_mirror(
     session_id: String,
@@ -121,9 +113,7 @@ pub async fn rebuild_chat_mirror(
     Ok(out.path)
 }
 
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+/// Imports legacy IndexedDB chat buckets into the active backend via storage proxy.
 #[tauri::command]
 pub async fn migrate_indexeddb_to_backend(
     buckets: Vec<ImportChatBucket>,
@@ -138,9 +128,7 @@ pub async fn migrate_indexeddb_to_backend(
     .await
 }
 
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+/// Returns per-role chat storage usage stats from the storage proxy.
 #[tauri::command]
 pub async fn get_chat_storage_stats(
     app: AppHandle,
@@ -152,9 +140,7 @@ pub async fn get_chat_storage_stats(
     storage_proxy_json(&app, state.inner(), ChatStorageProxyOp::StorageStats).await
 }
 
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+/// Deletes all chat sessions for a role (SQLite + optional mirror).
 #[tauri::command]
 pub async fn delete_role_chats(
     role_id: String,
@@ -171,9 +157,7 @@ pub async fn delete_role_chats(
     .await
 }
 
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+/// Deletes chat sessions for one role/scene pair.
 #[tauri::command]
 pub async fn delete_scene_chats(
     role_id: String,
@@ -192,9 +176,7 @@ pub async fn delete_scene_chats(
     .await
 }
 
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+/// Exports one session to JSON or plain text.
 #[tauri::command]
 pub async fn export_chat_session(
     session_id: String,
@@ -213,9 +195,7 @@ pub async fn export_chat_session(
     .await
 }
 
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+/// Exports all sessions for a role.
 #[tauri::command]
 pub async fn export_role_chats(
     role_id: String,
@@ -234,9 +214,7 @@ pub async fn export_role_chats(
     .await
 }
 
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+/// Full-text search across stored chat messages.
 #[tauri::command]
 pub async fn search_chat_messages(
     query: String,
@@ -259,9 +237,7 @@ pub async fn search_chat_messages(
     .await
 }
 
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+/// Deletes a single chat message by id.
 #[tauri::command]
 pub async fn delete_chat_message(
     message_id: String,
@@ -278,9 +254,7 @@ pub async fn delete_chat_message(
     .await
 }
 
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+/// Edits assistant/user message content in place.
 #[tauri::command]
 pub async fn edit_chat_message(
     message_id: String,
@@ -300,10 +274,6 @@ pub async fn edit_chat_message(
 }
 
 /// Role pack `config.json` → `chat_storage` (local roles dir; shared with kernel).
-///
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub async fn get_role_chat_storage_config(
     role_id: String,
@@ -313,9 +283,7 @@ pub async fn get_role_chat_storage_config(
     Ok(role.pack_chat_storage_config.clone())
 }
 
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+/// Persists role pack `chat_storage` config and invalidates the role cache.
 #[tauri::command]
 pub async fn save_role_chat_storage_config_cmd(
     role_id: String,
@@ -332,9 +300,7 @@ pub async fn save_role_chat_storage_config_cmd(
     Ok(())
 }
 
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+/// Runs auto-cleanup for a role per pack `chat_storage` retention rules.
 #[tauri::command]
 pub async fn run_chat_auto_cleanup(
     role_id: String,
@@ -351,9 +317,7 @@ pub async fn run_chat_auto_cleanup(
     .await
 }
 
-/// # Errors
-///
-/// Returns [`Err`] when the task cannot be started.
+/// Starts async memory replay from chat history; returns task id.
 #[tauri::command]
 pub async fn replay_memory_extraction(
     source: String,
@@ -374,9 +338,7 @@ pub async fn replay_memory_extraction(
     Ok(out.task_id)
 }
 
-/// # Errors
-///
-/// Returns [`Err`] when the task id is unknown.
+/// Polls replay task progress by task id.
 #[tauri::command]
 pub async fn get_replay_progress(
     task_id: String,
@@ -393,9 +355,7 @@ pub async fn get_replay_progress(
     .await
 }
 
-/// # Errors
-///
-/// Never fails for known backends; reserved for future dynamic backends.
+/// Reports hybrid storage capabilities (search, replay, cleanup flags).
 #[tauri::command]
 pub async fn get_chat_storage_capabilities(
     app: AppHandle,
@@ -404,9 +364,7 @@ pub async fn get_chat_storage_capabilities(
     storage_proxy_json(&app, state.inner(), ChatStorageProxyOp::Capabilities).await
 }
 
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+/// Returns the configured chat storage root directory path.
 #[tauri::command]
 pub async fn get_chat_storage_root(
     app: AppHandle,
@@ -421,9 +379,7 @@ pub async fn get_chat_storage_root(
     Ok(out.path)
 }
 
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+/// Sets chat storage root; optional migrate moves existing sessions.
 #[tauri::command]
 pub async fn set_chat_storage_root(
     path: String,

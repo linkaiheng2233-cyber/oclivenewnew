@@ -42,7 +42,7 @@
 
 - 消费：`penetration_templates`、`.oclive/` 路径约定、`bridge/dispatch` C2
 - 主仓 `oclive_validation` 对模板字段的校验 **保留**
-- 交接索引：[`handoff/VSCODE_PENETRATION_PLUGIN_PIVOT.md`](../../handoff/VSCODE_PENETRATION_PLUGIN_PIVOT.md)
+- 交接索引：[`handoff/vscode/VSCODE_PENETRATION_PLUGIN_PIVOT.md`](../../handoff/vscode/VSCODE_PENETRATION_PLUGIN_PIVOT.md)
 
 ---
 

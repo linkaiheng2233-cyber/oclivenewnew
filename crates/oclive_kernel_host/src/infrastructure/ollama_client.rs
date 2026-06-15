@@ -231,14 +231,29 @@ impl OllamaClient {
                         full_response.push_str(&json.response);
                         on_token(json.response.as_str());
                     }
+                } else {
+                    tracing::warn!(
+                        target: "oclive_llm",
+                        line = %line.chars().take(120).collect::<String>(),
+                        "ollama stream NDJSON line parse skipped"
+                    );
                 }
             }
         }
         if !line_buf.trim().is_empty() {
-            if let Ok(json) = serde_json::from_str::<OllamaResponse>(line_buf.trim()) {
-                if !json.response.is_empty() {
-                    full_response.push_str(&json.response);
-                    on_token(json.response.as_str());
+            match serde_json::from_str::<OllamaResponse>(line_buf.trim()) {
+                Ok(json) => {
+                    if !json.response.is_empty() {
+                        full_response.push_str(&json.response);
+                        on_token(json.response.as_str());
+                    }
+                }
+                Err(e) => {
+                    tracing::warn!(
+                        target: "oclive_llm",
+                        error = %e,
+                        "ollama stream trailing NDJSON parse skipped"
+                    );
                 }
             }
         }

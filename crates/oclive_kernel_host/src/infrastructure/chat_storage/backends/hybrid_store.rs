@@ -66,6 +66,52 @@ impl HybridConversationStore {
         })?;
         Ok(self.role_storage_root(&session.role_id, None))
     }
+
+    async fn rebuild_mirror_best_effort(
+        &self,
+        storage_root: &std::path::Path,
+        session_id: &str,
+        max: i64,
+        operation: &'static str,
+    ) {
+        if !self.mirror_enabled {
+            return;
+        }
+        if let Err(e) =
+            mirror::rebuild_mirror(self.db.as_ref(), storage_root, session_id, max).await
+        {
+            tracing::warn!(
+                target: "oclive_chat_storage",
+                session_id = %session_id,
+                operation = operation,
+                error = %e,
+                "mirror rebuild failed; SQLite write already committed"
+            );
+        }
+    }
+
+    async fn delete_mirror_best_effort(
+        &self,
+        storage_root: &std::path::Path,
+        role_id: &str,
+        scene_id: &str,
+        session_id: &str,
+    ) {
+        if !self.mirror_enabled {
+            return;
+        }
+        if let Err(e) =
+            mirror::delete_mirror(storage_root, role_id, scene_id, session_id).await
+        {
+            tracing::warn!(
+                target: "oclive_chat_storage",
+                session_id = %session_id,
+                role_id = %role_id,
+                error = %e,
+                "mirror delete failed; SQLite delete already committed"
+            );
+        }
+    }
     ///
     /// # Errors
     ///
@@ -127,8 +173,8 @@ impl HybridConversationStore {
             buckets_imported = buckets_imported.saturating_add(1);
             if self.mirror_enabled {
                 let storage_root = self.role_storage_root(&bucket.role_id, None);
-                let _ =
-                    mirror::rebuild_mirror(self.db.as_ref(), &storage_root, &session_id, max).await;
+                self.rebuild_mirror_best_effort(&storage_root, &session_id, max, "import_chat_buckets")
+                    .await;
             }
         }
         Ok(ImportChatBucketsResult {
@@ -404,7 +450,8 @@ impl ConversationStore for HybridConversationStore {
         let max = load_max_messages_per_session(None);
         if self.mirror_enabled {
             let root = self.session_storage_root(&session_id).await?;
-            let _ = mirror::rebuild_mirror(self.db.as_ref(), &root, &session_id, max).await?;
+            self.rebuild_mirror_best_effort(&root, &session_id, max, "delete_message")
+                .await;
         }
         Ok(())
     }
@@ -420,7 +467,8 @@ impl ConversationStore for HybridConversationStore {
         let max = load_max_messages_per_session(None);
         if self.mirror_enabled {
             let root = self.session_storage_root(&session_id).await?;
-            let _ = mirror::rebuild_mirror(self.db.as_ref(), &root, &session_id, max).await?;
+            self.rebuild_mirror_best_effort(&root, &session_id, max, "edit_message")
+                .await;
         }
         Ok(())
     }
@@ -435,9 +483,13 @@ impl ConversationStore for HybridConversationStore {
         if self.mirror_enabled {
             if let Some(session) = mirror_session {
                 let root = self.role_storage_root(&session.role_id, None);
-                let _ =
-                    mirror::delete_mirror(&root, &session.role_id, &session.scene_id, session_id)
-                        .await;
+                self.delete_mirror_best_effort(
+                    &root,
+                    &session.role_id,
+                    &session.scene_id,
+                    session_id,
+                )
+                .await;
             }
         }
         Ok(())
@@ -610,5 +662,57 @@ mod tests {
             .expect("append");
         let msgs = store.fetch_messages("mumu", 10, 0).await.expect("fetch");
         assert_eq!(msgs.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn delete_message_succeeds_when_mirror_rebuild_fails() {
+        let pool = test_db::connect_memory_migrated().await;
+        let dir = tempfile::tempdir().expect("dir");
+        let app_data = dir.path().to_path_buf();
+        let roles_blocker = app_data.join("roles");
+        std::fs::write(&roles_blocker, b"not-a-directory").expect("blocker file");
+        let store = HybridConversationStore::new(
+            Arc::new(DbManager::new(pool)),
+            app_data,
+            roles_blocker,
+            Arc::new(ReplayTaskRegistry::new()),
+            true,
+        );
+        store
+            .append_turn(TurnPersistInput {
+                session_id: "sess-mirror-fail".into(),
+                role_id: "mumu".into(),
+                scene_id: "default".into(),
+                user_message: "hi".into(),
+                assistant_reply: "ok".into(),
+                reply_is_fallback: false,
+                model_name: None,
+                response_ms: 1,
+                user_emotion: None,
+                bot_emotion: None,
+                max_messages_per_session: None,
+                auto_cleanup_config: Default::default(),
+                chat_storage_location: "global".into(),
+            })
+            .await
+            .expect("append");
+        let msgs = store
+            .fetch_messages("sess-mirror-fail", 10, 0)
+            .await
+            .expect("fetch");
+        let assistant_id = msgs
+            .iter()
+            .find(|m| m.sender == "assistant")
+            .map(|m| m.id.clone())
+            .expect("assistant msg");
+        store
+            .delete_message(&assistant_id)
+            .await
+            .expect("delete ok despite mirror failure");
+        let after = store
+            .fetch_messages("sess-mirror-fail", 10, 0)
+            .await
+            .expect("fetch after");
+        assert_eq!(after.len(), 1);
     }
 }

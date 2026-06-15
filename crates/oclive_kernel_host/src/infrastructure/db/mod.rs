@@ -310,6 +310,7 @@ impl DbManager {
 }
 
 mod complex_emotion_hint;
+mod events;
 mod long_term_memory;
 mod plugin_state;
 mod relation_state;

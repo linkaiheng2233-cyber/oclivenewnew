@@ -20,6 +20,9 @@
 | **L5** | [06 内核学习路径](06_KERNEL_LEARNING_PATH.md) | 内核主链怎么读 | 半天 |
 | **L6** | [07 常见任务](07_COMMON_TASKS.md) | 改 X 从哪下手 | 按需 |
 | **L7** | [08 资料地图](08_REFERENCE_MAP.md) | 深文档去哪找 | 按需 |
+| **L8** | [08 PR 门禁矩阵](08_PR_GATE_MATRIX.md) · [09 术语速查](09_GLOSSARY.md) · [10 Windows 附录](10_SETUP_WINDOWS.md) | 本地 CI 对照 · 缩写 · MSVC | 按需 |
+
+英文镜像（L0–L3 + L7–L10 摘要）：[human-docs-en/README.md](../human-docs-en/README.md)
 
 ```mermaid
 flowchart LR

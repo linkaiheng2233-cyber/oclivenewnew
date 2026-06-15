@@ -4,6 +4,8 @@
 
 感谢考虑为 **A.I.Live** 做贡献。项目目标见 [creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md](creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md)。
 
+行为准则：[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+
 **人类开发者窄入口**：[human-docs/README.md](human-docs/README.md)（30 分钟跑通 → 术语与约束 → 内核主链 → 首 PR）。使用 Cursor / Agent 见 [AGENTS.md](AGENTS.md)。
 
 ## GitHub 仓库（CI、Dependabot、分支保护）
@@ -18,8 +20,8 @@
 
 ## 开发环境
 
-- **本仓库**：**Node.js**（建议 18+）、**npm**、**Rust** stable、**Ollama**（本地对话默认路径，可选）。
-- **Windows**：需 **Visual Studio Build Tools**（MSVC 链接器）。
+- **本仓库**：**Node.js**（**≥ 20**，见根 `package.json` `engines`；可选 `.nvmrc`）、**npm**、**Rust** stable、**Ollama**（本地对话默认路径，可选）。
+- **Windows**：需 **Visual Studio Build Tools**（MSVC 链接器）。快速检查脚本：[`scripts/setup-dev.ps1`](scripts/setup-dev.ps1)；详解 [`human-docs/10_SETUP_WINDOWS.md`](human-docs/10_SETUP_WINDOWS.md)。
 - **克隆后**：在仓库根目录执行 **`npm install`**；首次 **`npm run tauri:dev`** 会拉取前端依赖并由 Tauri 驱动 `src-tauri` 构建。
 - **仅验证 Rust workspace**（含 `oclive_validation`、`oclive-cli`、`oclivenewnew-tauri`）：在根目录执行 **`cargo test --workspace`**，或 **`cargo test --manifest-path src-tauri/Cargo.toml`** 仅桌面宿主。
 - **Cargo 产物目录**：根目录 [`.cargo/config.toml`](.cargo/config.toml) 将 **`target-dir`** 指到仓库外 **`../oclive-dev-artifacts/oclivenewnew-cargo-target/`**；与源码分离，便于清理。
@@ -51,7 +53,7 @@ npm run tauri:build:theater
 # 内置 OCLIVE_SHELL=theater（compile-time）；bundled roles 仅 theater-breakfast-a/b
 ```
 
-验收见 [`handoff/THEATER_15S_ACCEPTANCE.md`](handoff/THEATER_15S_ACCEPTANCE.md) · 陌生人填表 [`handoff/THEATER_STRANGER_TEST_ROUND1.md`](handoff/THEATER_STRANGER_TEST_ROUND1.md)。
+验收见 [`handoff/theater/THEATER_15S_ACCEPTANCE.md`](handoff/theater/THEATER_15S_ACCEPTANCE.md) · 陌生人填表 [`handoff/theater/THEATER_STRANGER_TEST_ROUND1.md`](handoff/theater/THEATER_STRANGER_TEST_ROUND1.md)。
 
 **本地 HTTP API**（与 GUI 同一二进制）：`./oclivenewnew-tauri` / 安装包可执行文件加 **`--api`**，见根目录 [README.md](README.md)「本地 HTTP API」节。
 
@@ -95,7 +97,7 @@ npm run tauri:build:theater
 | **Flash profile 镜像** | **`cd oclive-vscode && npm run test:distro-profile-mirror`**（需姊妹仓路径） |
 | **Web 预览壳 E2E（A1.1b）** | **`npm run build && npm run test:e2e:preview`**（Playwright + `vite preview`；**CI 仅 Ubuntu `frontend`**）。**Windows 本地**：若内置 `webServer` 超时，请先 **`npm run preview -- --host 127.0.0.1 --port 4180 --strictPort`**，再在另一终端 **`$env:PW_TEST_USE_EXTERNAL='1'`**（PowerShell）后执行 **`npm run test:e2e:preview`** |
 
-**CI 对齐（重要）**：**`npm run check:release` 不包含 `npm run test:unit`**；CI 在 **`frontend`** job 中对 **Ubuntu / Windows** 执行 **`npm run test:unit`** 与 **`npm run build`**；**Playwright（`npm run test:e2e:preview`）仅在 Ubuntu `frontend`** 执行（见 `.github/workflows/ci.yml`）。发版前建议本地补跑 **`npm run test:unit`**；有前端改动时，在 **Linux/macOS** 可 **`npm run build && npm run test:e2e:preview`**，或确认 **Actions → frontend（ubuntu）** 已绿。完整发版勾选见 [handoff/PRODUCT_RELEASE_CHECKLIST.md](handoff/PRODUCT_RELEASE_CHECKLIST.md)。
+**CI 对齐（重要）**：**`npm run check:release`** 已链 **`npm run test:unit`** 与 **`npm run verify:ui`**（见根 `package.json`）；**Playwright（`npm run test:e2e:preview`）不在 `check:release` 内**，仅在 Ubuntu **`frontend`** job 执行（见 `.github/workflows/ci.yml`）。有前端改动时，在 **Linux/macOS** 可另跑 **`npm run build && npm run test:e2e:preview`**，或确认 **Actions → frontend（ubuntu）** 已绿。完整发版勾选见 [handoff/PRODUCT_RELEASE_CHECKLIST.md](handoff/PRODUCT_RELEASE_CHECKLIST.md)。
 
 **依赖审计**：`cargo udeps` 需 **nightly** toolchain。最近一次全 workspace 扫描（**2026-05-22**，`rustup run nightly cargo udeps --workspace --all-targets`）：**无未使用依赖**（`All deps seem to have been used`）。复现：`rustup toolchain install nightly` 后执行上述命令。
 

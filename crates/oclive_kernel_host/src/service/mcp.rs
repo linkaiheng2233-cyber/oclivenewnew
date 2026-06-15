@@ -1,4 +1,4 @@
-//! MCP HTTP mirror for VS Code extension (see handoff/VSCODE_MCP_HTTP_GATE.md).
+//! MCP HTTP mirror for VS Code extension (see handoff/vscode/VSCODE_MCP_HTTP_GATE.md).
 
 use crate::command_error::CommandError;
 use crate::state::AppState;

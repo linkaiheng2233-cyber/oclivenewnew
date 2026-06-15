@@ -24,6 +24,31 @@ use crate::domain::chat_engine::chat_stage::ChatStage;
 use crate::domain::reply_post_processor::resolve_reply_post_processor;
 use oclive_kernel_contracts::reply_post_processor::PostProcessInput;
 
+/// Artifacts produced during post-LLM orchestration, passed to response assembly.
+pub(crate) struct TurnArtifacts<'a> {
+    pub middle: &'a MiddleOutput,
+    pub pre: &'a PreLlmOutput,
+    pub llm: &'a MainLlmOutput,
+    pub policy: &'a PostTurnPolicy,
+    pub persist: &'a PostPersistOutcome,
+    pub chat_ids: &'a ChatAppendIds,
+}
+
+/// Context for assembling the final [`SendMessageResponse`] after post-LLM work.
+pub(crate) struct PostLlmCtx<'a> {
+    pub mode: TurnMode,
+    pub immersive: bool,
+    pub scene_id: &'a str,
+    pub role: &'a Role,
+    pub user_message: &'a str,
+    pub display_reply: String,
+    pub raw_reply: Option<String>,
+    pub dual_core_degraded: bool,
+    pub distro_visual_mode: Option<&'a str>,
+    pub movement: bool,
+    pub artifacts: TurnArtifacts<'a>,
+}
+
 pub(crate) async fn run_main_llm(
     ctx: &TurnContext<'_>,
     path_label: &str,
@@ -37,7 +62,7 @@ pub(crate) async fn run_main_llm(
     let mut main_llm_fallback = false;
     let mut llm_fallback_reason = None;
     let reply_raw =
-        match SlotRunner::generate_llm(pl, pre.ollama_model.as_str(), &middle.prompt).await {
+        match SlotRunner::generate_llm(pl, pre.memory.ollama_model.as_str(), &middle.prompt).await {
             Ok(s) => s,
             Err(e) => {
                 let reason = e.to_frontend_error();
@@ -49,9 +74,9 @@ pub(crate) async fn run_main_llm(
                     &middle.personality,
                     user_message,
                     &FallbackReplyContext {
-                        relation_before: pre.relation_before.as_str(),
+                        relation_before: pre.relation.relation_before.as_str(),
                         relation_preview: middle.relation_after.as_str(),
-                        favorability_before: pre.favorability_before,
+                        favorability_before: pre.relation.favorability_before,
                         event_type: &middle.ai_event_type,
                         impact_factor: middle.ai_impact_factor_final,
                     },
@@ -89,7 +114,7 @@ pub(crate) async fn run_main_llm_stream(
     let mut llm_fallback_reason = None;
     let reply_raw = match SlotRunner::generate_llm_stream(
         pl,
-        pre.ollama_model.as_str(),
+        pre.memory.ollama_model.as_str(),
         &middle.prompt,
         Arc::clone(&on_token),
     )
@@ -106,9 +131,9 @@ pub(crate) async fn run_main_llm_stream(
                 &middle.personality,
                 user_message,
                 &FallbackReplyContext {
-                    relation_before: pre.relation_before.as_str(),
+                    relation_before: pre.relation.relation_before.as_str(),
                     relation_preview: middle.relation_after.as_str(),
-                    favorability_before: pre.favorability_before,
+                    favorability_before: pre.relation.favorability_before,
                     event_type: &middle.ai_event_type,
                     impact_factor: middle.ai_impact_factor_final,
                 },
@@ -167,7 +192,7 @@ async fn analyze_bot_emotion_and_policy(
     let bot_emotion_str = bot_emotion.to_string();
     let event = Event {
         event_type: middle.ai_event_type,
-        user_emotion: pre.user_emotion_str.clone(),
+        user_emotion: pre.hints.user_emotion_str.clone(),
         bot_emotion: bot_emotion_str.clone(),
     };
     let policy_ctx = PolicyContext {
@@ -183,9 +208,9 @@ async fn analyze_bot_emotion_and_policy(
     } else {
         0.0
     };
-    let mut recent_events = Vec::with_capacity(pre.recent_events_for_event.len() + 1);
+    let mut recent_events = Vec::with_capacity(pre.memory.recent_events_for_event.len() + 1);
     recent_events.push(event.clone());
-    recent_events.extend(pre.recent_events_for_event.iter().cloned());
+    recent_events.extend(pre.memory.recent_events_for_event.iter().cloned());
     Ok(PostTurnPolicy {
         bot_emotion,
         bot_emotion_str,
@@ -211,45 +236,48 @@ fn spawn_profile_evolution_after_llm(
     if role_arc.evolution_config.personality_source != PersonalitySource::Profile {
         return;
     }
-    let impact_scaled = (middle.ai_impact_factor_final * pre.event_runtime).clamp(-1.0, 1.0);
+    let impact_scaled = (middle.ai_impact_factor_final * pre.memory.event_runtime).clamp(-1.0, 1.0);
     crate::state::profile_evolution::spawn_mutable_profile_evolution(
         state,
         primary_llm,
         role_arc,
         srid.to_string(),
         path_label.to_string(),
-        pre.ollama_model.clone(),
+        pre.memory.ollama_model.clone(),
         user_message.to_string(),
         reply.to_string(),
-        pre.user_emotion_str.clone(),
+        pre.hints.user_emotion_str.clone(),
         middle.ai_event_type,
         impact_scaled,
     );
 }
 
-#[allow(clippy::too_many_arguments)]
-fn assemble_send_message_response(
-    mode: TurnMode,
-    immersive: bool,
-    scene_id: &str,
-    role: &Role,
-    middle: &MiddleOutput,
-    pre: &PreLlmOutput,
-    llm: &MainLlmOutput,
-    policy: &PostTurnPolicy,
-    persist: &PostPersistOutcome,
-    chat_ids: &ChatAppendIds,
-    movement: bool,
-    user_message: &str,
-    reply: String,
-    raw_reply: Option<String>,
-    dual_core_degraded: bool,
-    distro_visual_mode: Option<&str>,
-) -> SendMessageResponse {
+fn assemble_send_message_response(ctx: &PostLlmCtx<'_>) -> SendMessageResponse {
     use crate::models::dto::{DetectedEventDto, PresenceMode, API_VERSION, SCHEMA_VERSION};
 
+    let PostLlmCtx {
+        mode,
+        immersive,
+        scene_id,
+        role,
+        user_message,
+        display_reply,
+        raw_reply,
+        dual_core_degraded,
+        distro_visual_mode,
+        movement,
+        artifacts,
+    } = ctx;
+    let middle = artifacts.middle;
+    let pre = artifacts.pre;
+    let llm = artifacts.llm;
+    let policy = artifacts.policy;
+    let persist = artifacts.persist;
+    let chat_ids = artifacts.chat_ids;
+    let reply = display_reply.clone();
+
     let (mut offer_destination_picker, mut offer_together_travel) =
-        movement_ui_flags(movement, user_message);
+        movement_ui_flags(*movement, user_message);
     if matches!(mode, TurnMode::CoPresent) && !immersive {
         offer_destination_picker = false;
         offer_together_travel = false;
@@ -270,7 +298,7 @@ fn assemble_send_message_response(
         presence_mode,
         relation_state: middle.relation_after.as_str().to_string(),
         reply,
-        emotion: emotion_to_dto(&pre.emotion_result),
+        emotion: emotion_to_dto(&pre.hints.emotion_result),
         bot_emotion: policy.bot_emotion_str.clone(),
         portrait_emotion: persist.portrait_emotion_str.clone(),
         visual_state_id: persist.visual_state_id.clone(),
@@ -278,7 +306,7 @@ fn assemble_send_message_response(
             crate::domain::visual_presentation::materialize_directive_gated(
                 role,
                 id,
-                distro_visual_mode,
+                *distro_visual_mode,
             )
         }),
         favorability_delta: middle.favor_delta as f32,
@@ -297,9 +325,45 @@ fn assemble_send_message_response(
         assistant_message_timestamp: chat_ids.assistant_message_timestamp.clone(),
         chat_persist_failed: chat_ids.chat_persist_failed,
         chat_persist_error: chat_ids.chat_persist_error.clone(),
-        dual_core_degraded: dual_core_degraded.then_some(true),
-        raw_reply,
+        dual_core_degraded: (*dual_core_degraded).then_some(true),
+        raw_reply: raw_reply.clone(),
     }
+}
+
+fn apply_reply_post_processor(
+    state: &crate::state::AppState,
+    role: &Role,
+    mrid: &str,
+    scene_id: &str,
+    srid: &str,
+    user_message: &str,
+    reply: &str,
+    include_raw_reply: bool,
+) -> (String, Option<String>) {
+    let raw_reply_before = reply.to_string();
+    let processor = resolve_reply_post_processor(state, role);
+    let display_reply = match processor.process_reply(PostProcessInput {
+        raw_reply: reply,
+        user_message,
+        role_id: mrid,
+        scene_id,
+        srid,
+        locale: "zh",
+    }) {
+        Ok(out) => out.display_reply,
+        Err(e) => {
+            tracing::warn!(
+                target: "oclive_reply_post_processor",
+                role_id = %mrid,
+                error = %e,
+                "reply post-processor failed; using raw reply"
+            );
+            raw_reply_before.clone()
+        }
+    };
+    let raw_reply =
+        (include_raw_reply && display_reply != raw_reply_before).then_some(raw_reply_before);
+    (display_reply, raw_reply)
 }
 
 pub(crate) async fn post_llm(
@@ -376,35 +440,16 @@ pub(crate) async fn post_llm(
         .await;
     }
 
-    let raw_reply_before = reply.clone();
-    let display_reply = {
-        let processor = resolve_reply_post_processor(state, role);
-        match processor.process_reply(PostProcessInput {
-            raw_reply: reply.as_str(),
-            user_message,
-            role_id: mrid,
-            scene_id,
-            srid,
-            locale: "zh",
-        }) {
-            Ok(out) => out.display_reply,
-            Err(e) => {
-                tracing::warn!(
-                    target: "oclive_reply_post_processor",
-                    role_id = %mrid,
-                    error = %e,
-                    "reply post-processor failed; using raw reply"
-                );
-                reply.clone()
-            }
-        }
-    };
-    let raw_reply = if ctx.req.include_raw_reply == Some(true) && display_reply != raw_reply_before
-    {
-        Some(raw_reply_before)
-    } else {
-        None
-    };
+    let (display_reply, raw_reply) = apply_reply_post_processor(
+        state,
+        role,
+        mrid,
+        scene_id,
+        srid,
+        user_message,
+        &reply,
+        ctx.req.include_raw_reply == Some(true),
+    );
 
     let chat_ids = append_turn_to_chat_storage(
         state,
@@ -421,24 +466,26 @@ pub(crate) async fn post_llm(
 
     persist_non_profile_personality_delta(state, role, srid, middle).await;
 
-    let response = assemble_send_message_response(
+    let response = assemble_send_message_response(&PostLlmCtx {
         mode,
         immersive,
         scene_id,
         role,
-        middle,
-        pre,
-        llm,
-        &policy,
-        &persist_out,
-        &chat_ids,
-        persist_out.movement,
         user_message,
         display_reply,
         raw_reply,
-        ctx.dual_core_degraded,
-        ctx.state.host_profile.visual_presentation_mode.as_deref(),
-    );
+        dual_core_degraded: ctx.dual_core_degraded,
+        distro_visual_mode: ctx.state.host_profile.visual_presentation_mode.as_deref(),
+        movement: persist_out.movement,
+        artifacts: TurnArtifacts {
+            middle,
+            pre,
+            llm,
+            policy: &policy,
+            persist: &persist_out,
+            chat_ids: &chat_ids,
+        },
+    });
 
     let post_llm_ms = t_post_llm.elapsed().as_millis() as u64;
     let duration_ms = t0.elapsed().as_millis() as u64;

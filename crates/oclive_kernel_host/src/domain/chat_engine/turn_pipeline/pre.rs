@@ -66,20 +66,18 @@ pub(crate) fn skipped_complex_emotion() -> crate::domain::complex_emotion::Compl
     }
 }
 
-pub(crate) struct PreLlmOutput {
+pub(crate) struct PreLlmMemory {
     pub event_runtime: f64,
     pub mutable_for_prompt: String,
     pub personality: PersonalityVector,
     pub recent_turns: Vec<(String, String)>,
     pub recent_turns_for_event: Vec<(String, String)>,
     pub recent_events_for_event: Vec<Event>,
-    pub emotion_result: EmotionResult,
-    pub user_emotion: Emotion,
-    pub user_emotion_str: String,
-    pub user_emotion_prompt: String,
     pub ollama_model: String,
-    pub prev_stored_narrative_hint: String,
     pub relevant: Vec<Memory>,
+}
+
+pub(crate) struct PreLlmRelation {
     pub user_relation_key: String,
     pub user_identity_id: String,
     pub user_identity_template: String,
@@ -87,6 +85,20 @@ pub(crate) struct PreLlmOutput {
     pub relation_before: String,
     pub favorability_before: f64,
     pub relation_transition_hint: String,
+}
+
+pub(crate) struct PreLlmHints {
+    pub emotion_result: EmotionResult,
+    pub user_emotion: Emotion,
+    pub user_emotion_str: String,
+    pub user_emotion_prompt: String,
+    pub prev_stored_narrative_hint: String,
+}
+
+pub(crate) struct PreLlmOutput {
+    pub memory: PreLlmMemory,
+    pub relation: PreLlmRelation,
+    pub hints: PreLlmHints,
 }
 
 pub(crate) struct MiddleOutput {
@@ -538,26 +550,32 @@ pub(crate) async fn pre_llm(ctx: &TurnContext<'_>) -> TurnResult<PreLlmOutput> {
     }
 
     Ok(PreLlmOutput {
-        event_runtime,
-        mutable_for_prompt,
-        personality,
-        recent_turns,
-        recent_turns_for_event,
-        recent_events_for_event,
-        emotion_result,
-        user_emotion,
-        user_emotion_str,
-        user_emotion_prompt,
-        ollama_model,
-        prev_stored_narrative_hint,
-        relevant,
-        user_relation_key,
-        user_identity_id: resolved_identity.identity_id,
-        user_identity_template: resolved_identity.template_body,
-        relation_hint: resolved_identity.relation_hint,
-        relation_before,
-        favorability_before,
-        relation_transition_hint: transition.hint,
+        memory: PreLlmMemory {
+            event_runtime,
+            mutable_for_prompt,
+            personality,
+            recent_turns,
+            recent_turns_for_event,
+            recent_events_for_event,
+            ollama_model,
+            relevant,
+        },
+        relation: PreLlmRelation {
+            user_relation_key,
+            user_identity_id: resolved_identity.identity_id,
+            user_identity_template: resolved_identity.template_body,
+            relation_hint: resolved_identity.relation_hint,
+            relation_before,
+            favorability_before,
+            relation_transition_hint: transition.hint,
+        },
+        hints: PreLlmHints {
+            emotion_result,
+            user_emotion,
+            user_emotion_str,
+            user_emotion_prompt,
+            prev_stored_narrative_hint,
+        },
     })
 }
 
@@ -568,16 +586,16 @@ pub(crate) fn compute_turn_favor(
     ai_impact_factor_final: f64,
     ai_event_confidence: f32,
 ) -> (f64, RelationState) {
-    let rf = relation_favor_for_key(role, pre.user_relation_key.as_str());
+    let rf = relation_favor_for_key(role, pre.relation.user_relation_key.as_str());
     let favor_relation_input = FavorRelationInput {
-        relation_before: pre.relation_before.as_str(),
-        favorability_before: pre.favorability_before,
+        relation_before: pre.relation.relation_before.as_str(),
+        favorability_before: pre.relation.favorability_before,
         ai_event_type,
         ai_impact_factor_final,
-        event_runtime: pre.event_runtime,
+        event_runtime: pre.memory.event_runtime,
         favor_mult: rf.favor_mult,
         event_confidence: ai_event_confidence,
-        recent_events_for_event: &pre.recent_events_for_event,
+        recent_events_for_event: &pre.memory.recent_events_for_event,
     };
     compute_favor_and_relation(&favor_relation_input)
 }

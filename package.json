@@ -4,6 +4,9 @@
   "version": "0.4.0",
   "private": true,
   "license": "Apache-2.0",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "vite",
     "dev:theater": "vite --mode theater",
@@ -32,6 +35,7 @@
     "check:license": "node scripts/check-license-readiness.mjs",
     "check": "npm run build && npm run check:rust",
     "check:release": "npm run build && npm run test:unit && npm run verify:ui && npm run verify:shared-i18n && npm run check:rust:fmt && npm run check:rust:clippy && npm run check:rust:test:all",
+    "check:ci-local": "node scripts/dimension5-acceptance.mjs --ci && npm run check",
     "verify:shared-i18n": "node scripts/verify-shared-i18n.mjs",
     "test:distro-profile-mirror": "node scripts/diff-vscode-distro-profile.mjs",
     "test:distro:smoke": "npm run test:distro-profile-mirror && npm run test:e2e:distro-kernel && npm run test:e2e:tauri-bundled-kernel",

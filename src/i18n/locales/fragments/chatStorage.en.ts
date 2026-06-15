@@ -57,5 +57,6 @@ export default {
       file: 'File only (JSON)',
       sqlite: 'SQLite only',
     },
+    capabilitiesDegraded: 'Could not detect storage capabilities; some features may be unavailable.',
   },
 }

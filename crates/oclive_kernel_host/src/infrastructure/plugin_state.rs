@@ -135,16 +135,37 @@ impl PluginStateStore {
     #[must_use]
     pub fn load(path: &Path) -> Self {
         let Ok(s) = std::fs::read_to_string(path) else {
+            tracing::debug!(
+                target: "oclive_plugin",
+                path = %path.display(),
+                "plugin_state missing; using default"
+            );
             return Self::default();
         };
         let Ok(val) = serde_json::from_str::<serde_json::Value>(&s) else {
+            tracing::warn!(
+                target: "oclive_plugin",
+                path = %path.display(),
+                "plugin_state JSON invalid; using default"
+            );
             return Self::default();
         };
         if matches!(
             val.get("schema_version").and_then(|v| v.as_u64()),
             Some(2) | Some(3)
         ) {
-            return serde_json::from_value(val).unwrap_or_default();
+            return match serde_json::from_value(val) {
+                Ok(store) => store,
+                Err(e) => {
+                    tracing::warn!(
+                        target: "oclive_plugin",
+                        path = %path.display(),
+                        error = %e,
+                        "plugin_state v2/v3 deserialize failed; using default"
+                    );
+                    Self::default()
+                }
+            };
         }
         if let Ok(v1) = serde_json::from_value::<PluginStateFile>(val) {
             return Self {
@@ -154,6 +175,11 @@ impl PluginStateStore {
                 roles: HashMap::new(),
             };
         }
+        tracing::warn!(
+            target: "oclive_plugin",
+            path = %path.display(),
+            "plugin_state schema unknown; using default"
+        );
         Self::default()
     }
     /// # Errors

@@ -280,6 +280,8 @@ npm run check:rust                               # fmt + clippy(-D warnings) + t
 | 10 | 2026-06-10 | 半 | PASS | A− | K-GATE-01 九检; D-ORPHAN-03b/c; D-PORT-02/D-SLOT-01/D-TRAIT-01; Theater 自动化 9 测绿·人工陌生人待执行; beat patch 单测绿; cargo build ~81s dev | [SLOT_BACKEND_REALITY_MATRIX.md](./SLOT_BACKEND_REALITY_MATRIX.md) |
 | 11 | 2026-06-11 | 半 | PASS | A− | Batch 1–3 入库; Phase 1 D-ERR-02/034/棘轮76/K-DOC; Phase 2 K-PERF-20/21 快照+settings 批量; Phase 3 会话索引/RoleRuntimeRepo/前端 follow-up; Phase 4 Deferred 登记 | Theater v0 冻结期; 陌生人测试仍 Pending |
 | 12 | 2026-06-11 | 全 | PASS | A− | K-DOC-13; K-VALID-CHAT-STORAGE-01; K-PERF-25/26; K-BUILD-04; D-SLOT-01c/D-TRAIT-01b; **K-PERF-14** pre_llm Wave1; **D-NAME-01** 35 改名+22 锚点 | dimension5 九检; host lib 183; hotpath+roundtrip; clippy 绿; ratchet 未上涨 |
+| 13 | 2026-06-15 | 全 | PASS | A− | W1–4 路线图收口: robust 镜像/可观测; V4 社区基建; process_message/post/events/blueprint 拆分; 前端 composable 化 | host lib 191+; dimension5 九检; Node ≥20 |
+| 14 | 2026-06-15 | 半 | PASS* | A− | M0 W13 CHANGELOG 合入; M1 PostLlmCtx/preflight/PreLlm 分组/SettingsView/role_runtime/blueprint 测试外移; M2 human-docs-en 04/07+setup-dev; M3 注释英文化 batch 1–2; D-READ-01/02/04·K-DOC-14 Done | *host lib 193; blueprint_v2 integration 13; SettingsView 304 行; 维护者跑 check:release |
 
 ---
 

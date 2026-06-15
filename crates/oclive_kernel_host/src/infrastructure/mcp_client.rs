@@ -202,6 +202,12 @@ impl McpClient {
                 if matches!(e, AppError::HighRiskCapabilityNotGranted { .. }) {
                     return Err(e);
                 }
+                tracing::warn!(
+                    target: "oclive_mcp",
+                    server_id = %server.id,
+                    error = %e,
+                    "list_tools dynamic fetch failed; using manifest tools"
+                );
                 Ok(server.tools)
             }
         }

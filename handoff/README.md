@@ -4,13 +4,15 @@
 
 历史批次报告、closure summary、旧周报与编号开发计划已迁入 [`archive/`](archive/)。
 
-## 活跃文件（≤15）
+## 活跃文件（≤15 + 子目录）
 
 | 文件 | 用途 |
 |------|------|
 | [BREAKING_CHANGE_PROCESS.md](BREAKING_CHANGE_PROCESS.md) | 破坏性变更流程 |
 | [PRODUCT_LINE_TASK_BUCKETS.md](PRODUCT_LINE_TASK_BUCKETS.md) | 产品线任务分桶 |
 | [TECHNICAL_DEBT_INVENTORY.md](TECHNICAL_DEBT_INVENTORY.md) | 技术债清单 |
+| [RECURRING_OPTIMIZATION_PLAYBOOK.md](RECURRING_OPTIMIZATION_PLAYBOOK.md) | 巡检手册（§8 日志） |
+| [GOOD_FIRST_ISSUES.md](GOOD_FIRST_ISSUES.md) | 新人 issue 策展 |
 | [DUAL_CORE_CURSOR_HANDOFF.md](DUAL_CORE_CURSOR_HANDOFF.md) | 双核实验运行时交接 |
 | [ROLE_PACK_BOUNDARY.md](ROLE_PACK_BOUNDARY.md) | 角色包 vs 蓝图边界 |
 | [ARCHITECTURE_LAYERING.md](ARCHITECTURE_LAYERING.md) | 分层架构说明 |
@@ -18,11 +20,18 @@
 | [INVOKE_HOTPATH_MATRIX.md](INVOKE_HOTPATH_MATRIX.md) | Tauri invoke 热路径矩阵 |
 | [04_4.6_PROJECT_TRUTH_CHECKLIST.md](04_4.6_PROJECT_TRUTH_CHECKLIST.md) | 项目认知清单 |
 | [PERF_PHASES.md](PERF_PHASES.md) | 性能/包体与协议验证快照 |
-| [CHAT_STORAGE_ARCHITECTURE.md](CHAT_STORAGE_ARCHITECTURE.md) | 聊天混合存储架构（AGENTS.md 引用） |
-| [GITHUB_PLUGIN_INDEX_LINE.md](GITHUB_PLUGIN_INDEX_LINE.md) | GitHub 插件索引线（AGENTS.md 引用） |
-| [BLUEPRINT_FOLDER_LAYOUT.md](BLUEPRINT_FOLDER_LAYOUT.md) | 蓝图目录布局（ROLE_PACK_SPEC 引用） |
-| [COMMENT_ENGLISH_MIGRATION_PLAN.md](COMMENT_ENGLISH_MIGRATION_PLAN.md) | 代码注释英文化执行计划（待执行） |
-| [OCLIVE_POSITIONING_DIFFERENTIATION.md](OCLIVE_POSITIONING_DIFFERENTIATION.md) | 定位与差异化（内部战略） |
+| [CHAT_STORAGE_ARCHITECTURE.md](CHAT_STORAGE_ARCHITECTURE.md) | 聊天混合存储架构 |
+| [GITHUB_PLUGIN_INDEX_LINE.md](GITHUB_PLUGIN_INDEX_LINE.md) | GitHub 插件索引线 |
+| [BLUEPRINT_FOLDER_LAYOUT.md](BLUEPRINT_FOLDER_LAYOUT.md) | 蓝图目录布局 |
+| [COMMENT_ENGLISH_MIGRATION_PLAN.md](COMMENT_ENGLISH_MIGRATION_PLAN.md) | 注释英文化计划 |
+| [OCLIVE_POSITIONING_DIFFERENTIATION.md](OCLIVE_POSITIONING_DIFFERENTIATION.md) | 定位与差异化 |
+
+### 主题子目录（仅索引，内容未改）
+
+| 目录 | 内容 |
+|------|------|
+| [theater/](theater/) | `THEATER_*` 剧场发行版 / 陌生人测试 / v0 验收 |
+| [vscode/](vscode/) | `VSCODE_*` VS Code 扩展决策与 gate |
 
 ## 归档规则
 

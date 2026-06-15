@@ -8,6 +8,16 @@
 
 A **local-first** desktop companion for roleplay dialogue: **Tauri + Vue 3 + Rust**. The engine supports scenes, virtual time, co-presence / remote presence, favorability and memory, and swappable subsystems (memory retrieval, emotion, event estimation, prompt assembly). Role content ships as **`roles/{roleId}/`** packs.
 
+**Human developers start here → [human-docs-en/](human-docs-en/)** (30-minute path: `npm install` → `npm run tauri:dev` → `npm run check`). For AI assistants see [AGENTS.md](AGENTS.md).
+
+| Contributing | |
+|--------------|--|
+| [human-docs-en/02_THIRTY_MINUTE_START.md](human-docs-en/02_THIRTY_MINUTE_START.md) | 30-minute run + verify tiers |
+| [CONTRIBUTING.en.md](CONTRIBUTING.en.md) | PR flow, tests, ownership |
+| [Good first issues](https://github.com/linkaiheng2233-cyber/oclivenewnew/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) | Curated list: [handoff/GOOD_FIRST_ISSUES.md](handoff/GOOD_FIRST_ISSUES.md) |
+
+Code of conduct: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) · Security: [SECURITY.md](SECURITY.md)
+
 **Architecture (summary):** A.I.Live uses a **contract-first thin kernel** and **single-kernel, dual-mode build architecture**—**six host backend modules** via `PluginHost`; **facility modules** (e.g. **complex-emotion** and **expert-model facility submodules**) sit in orchestration; **backend-module plugin modules** attach to modules 1–6 without their own module number. Delivery: **OOCP**, role packs, **`oclive-cli` kernel factory**; optional **Monolith macro-mode**. **[Architecture overview](creator-docs-en/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)** ([中文](creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)).
 
 ## Project status (summary)

@@ -4,8 +4,23 @@
 
 ## [Unreleased]
 
+### Added
+
+- **`CODE_OF_CONDUCT.md`** (Contributor Covenant).
+- **`human-docs-en/`** minimal set (L0–L3 + 08/09/10 English summaries).
+- **`human-docs/08_PR_GATE_MATRIX.md`**, **`09_GLOSSARY.md`**, **`10_SETUP_WINDOWS.md`**.
+- **`handoff/GOOD_FIRST_ISSUES.md`** curated issue table.
+- **`npm run check:ci-local`**; `package.json` `engines.node >=20`, **`.nvmrc`**.
+- Frontend: `src/api/plugin/*`, `useMainShell*`, `useChatStorageSettings`, `chatStoreSend`.
+
 ### Changed
 
+- **Hybrid chat mirror**: `rebuild_mirror_best_effort` / `delete_mirror_best_effort` (K-ROBUST-01).
+- **`canonical_llm_sync` / `plugin_state` / MCP·Ollama downgrade**: `tracing::warn!` (K-ROBUST-02/03).
+- **Kernel snapshot & storage capability degraded UI** (`kernel.ts`, `useKernelStatus`, `ChatStorageSettingsPanel`).
+- **`process_message` readability closure**: `preflight_turn` / `PostLlmCtx` / `PreLlmOutput` grouping; `events.rs` / `blueprint_v2_slot_registry.rs` module extraction; `SettingsView` tab subcomponents; `role_runtime` submodules; `blueprint_v2` tests moved to `tests/`.
+- **handoff layout**: `THEATER_*` → `handoff/theater/`, `VSCODE_*` → `handoff/vscode/`.
+- **README / CONTRIBUTING / SECURITY** community infra updates; PR template links to PR gate matrix; optional `scripts/setup-dev.ps1`.
 - **Five-dimension review closure (Batch 1–3)**: architecture overview co-presence chain aligned with Stable code; VS Code / cross-host docs policy-first; `user_identities` validation matches `load_role`; `reply_post_processor` requires non-empty `plugin_id` when `enabled` + `directory`; `ProcessMessageError` stage preserved on outward `AppError` messages; chat turn `role_runtime` preflight merge, single CASE `memory decay` UPDATE, `SessionCache` skips repeat interaction_mode seed; workspace `default-members` excludes `fuzz`; `chatStore` load / `addMessage` micro-optimizations.
 - **`chat_storage` pack validation**: `oclive pack validate` now checks `config.json` → `chat_storage` (backend / location / positive integers / replay threshold 0.1–1.0), parity with `reply_post_processor`; `CHANGELOG.md` parity synced.
 - **Prompt guardrails elevation & footer dedup**: `KERNEL_DIALOGUE_GUARDRAILS` always includes state continuation, vent-first, and length-by-input (pack `reply_quality_anchor` cannot override); removed standalone `【回复结构】` block; tone block no longer exposes `warmup_level` / normalized impact-factor jargon; official mumu/shimeng/枫侵月 anchors slimmed to persona-only deltas.
@@ -26,7 +41,7 @@
 - **Theater release packaging**: `npm run tauri:build:theater` · `OCLIVE_TAURI_SHELL=theater` · roles subset (`theater-breakfast-a/b`) via [`scripts/filter-theater-roles.mjs`](scripts/filter-theater-roles.mjs) into `src-tauri/resources/roles/`.
 - **Theater 15s engineering proxy**: [`scripts/theater-stranger-proxy.mjs`](scripts/theater-stranger-proxy.mjs) · aggregated in `npm run test:theater:smoke` (CI `frontend` job).
 - **Theater director plugin RFC + example**: [`handoff/RFC_THEATER_DIRECTOR_PLUGIN.md`](handoff/RFC_THEATER_DIRECTOR_PLUGIN.md) · [`examples/directory-plugin-theater-director/`](examples/directory-plugin-theater-director/) · optional Mode 3 wiring via `theaterDirectorClient`.
-- **Theater stranger-test facilitator guide**: [`handoff/THEATER_STRANGER_FACILITATOR.md`](handoff/THEATER_STRANGER_FACILITATOR.md).
+- **Theater stranger-test facilitator guide**: [`handoff/theater/THEATER_STRANGER_FACILITATOR.md`](handoff/theater/THEATER_STRANGER_FACILITATOR.md).
 - **Three-distro kernel smoke (Pro / Flash)**: `npm run test:distro:smoke` aggregates profile mirror · distro kernel e2e · Tauri bundled-first; `e2e-distro-kernel` adds a **theater** scenario; CI **`cross-host-e2e`** adds `e2e-tauri-bundled-kernel` and VS Code profile diff. Closure SSOT: [`handoff/THREE_DISTRO_KERNEL_CLOSURE.md`](handoff/THREE_DISTRO_KERNEL_CLOSURE.md).
 - **Chat Pro bundled-first spawn (K-SCHED-05/01)**: Tauri `bundle-kernel-for-tauri.mjs` · `pick_best_for_spawn` bundled → shared → dev; `binary_upgrade` replace off by default.
 - **VS Code Flash profile mirror**: `examples/distro-profiles/vscode.oclive.toml` ↔ sibling `distro.oclive.toml` · `npm run test:distro-profile-mirror`.

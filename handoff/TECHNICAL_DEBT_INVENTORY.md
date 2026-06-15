@@ -1,8 +1,39 @@
 # Technical debt inventory
 
-**Last updated:** 2026-06-11 (Fable 5 轮次 12 · Phase A–D)
+**Last updated:** 2026-06-15 (Fable 5 轮次 14 · M0–M4 收口)
 
 **Product freeze (Theater v0):** No new kernel orchestration / six-slot expansion until strangers validate AI Theater v0. See [PRODUCT_FREEZE_THEATER_V0.md](./PRODUCT_FREEZE_THEATER_V0.md). **Deferred unchanged:** K-PERF-10, K-PERF-15, §3.1 library API, dual_core (frozen). **K-PERF-14 Done（2026-06-11）**：弹幕互动产品线提前解冻 Wave 1 并行。
+
+### Fable 5 轮次 14 收口（2026-06-15 · M0–M4）
+
+| ID | Item | Wave | Status | Notes |
+|----|------|------|--------|-------|
+| D-READ-01 | `process_message::run` 完全拆分 | M1 | **Done** | `preflight_turn` · `run()` <80 行 |
+| D-READ-02 | 前端上帝组件 | M1 | **Done** | `SettingsGeneralTab` / `SettingsPluginsTab`；`SettingsView` <600 行 |
+| D-READ-04 | `PreLlmOutput` 子结构分组 | M1 | **Done** | `PreLlmMemory` / `PreLlmRelation` / `PreLlmHints` |
+| D-READ-05 | `backend_registry` directory 子模块 | W4 | **Deferred** | D-PORT-03 Observe |
+| D-READ-03 | `dual_pipeline run_method` 表驱动 | 冻结 | **Deferred** | dual_core 解冻前不动 |
+| K-DOC-14 | 注释英文化批次 1–2 | M3 | **Done** | `turn_pipeline/` + `api/chat.rs` / `api/kernel.rs` |
+| K-ROBUST-01/02/03 | W13 健壮性 | M0 | **Done** | 见轮次 13 表 |
+
+**Verification (2026-06-15 轮次 14):** `node scripts/dimension5-acceptance.mjs --ci`；`cargo test -p oclive_kernel_host --lib`（**193**）；`cargo test -p oclive_validation --test blueprint_v2`；`npm run test:unit`（维护者执行）。
+
+### Fable 5 轮次 13 巡检（2026-06-15 · Wave 1–4）
+
+| ID | Item | Wave | Status | Notes |
+|----|------|------|--------|-------|
+| K-ROBUST-01 | hybrid 镜像 best-effort 统一 | W2 | **Done** | `rebuild_mirror_best_effort` / `delete_mirror_best_effort` + 单测 |
+| K-ROBUST-02 | canonical_llm_sync 可观测 | W2 | **Done** | `tracing::warn!` 替代 `let _ =` |
+| K-ROBUST-03 | MCP/Ollama 降级诚实化 | W2 | **Done** | manifest fallback warn · NDJSON skip warn |
+| V4-ONBOARD-01 | good-first-issue 策展 | W3 | **Done** | [GOOD_FIRST_ISSUES.md](./GOOD_FIRST_ISSUES.md) |
+| V4-ONBOARD-02 | human-docs-en 最小集 | W3 | **Done** | L0–L3 + 08/09/10 |
+| D-READ-01 | `process_message::run` 拆分 | W4 | **Done** | `preflight_turn` · `try_agent_shortcut` · runtime helpers |
+| D-READ-02 | 前端上帝组件拆分 | W4 | **Done** | `SettingsGeneralTab` · composable/plugin 拆分 |
+| D-READ-03 | `dual_pipeline run_method` 表驱动 | 冻结 | **Deferred** | dual_core 解冻前不动 |
+| D-READ-04 | `PreLlmOutput` 子结构分组 | W4 | **Done** | Memory / Relation / Hints |
+| D-READ-05 | `backend_registry` directory 子模块 | W4 | **Deferred** | D-PORT-03 Observe；机械拆文件下轮 |
+
+**Verification (2026-06-15 轮次 13):** `node scripts/dimension5-acceptance.mjs --ci`；`cargo test -p oclive_kernel_host --lib`；`cargo test -p oclive_validation --lib`；`npm run test:unit`。
 
 ### Fable 5 轮次 12 收口（2026-06-11 · Phase A–D）
 

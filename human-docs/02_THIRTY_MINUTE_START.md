@@ -45,7 +45,7 @@ npm run check
 | **日常** | `npm run check` | 每次 PR 前 |
 | **发版 / 改引擎** | `npm run check:release` | 触及编排、持久化、HTTP 契约 |
 | **仅 Rust** | `cargo test --workspace` | 只改 `crates/*` |
-| **仅前端** | `npm run test:unit` | 只改 `src/`（CI 另跑，不在 `check:release` 内） |
+| **仅前端** | `npm run test:unit` | 只改 `src/`（`check:release` 已含；Playwright 仍仅 CI Ubuntu） |
 | **可选 Ollama** | 启动 Ollama 后在应用内对话一轮 | 验证端到端 LLM（非编译必需） |
 
 完整表：[CONTRIBUTING.md §测试要求](../CONTRIBUTING.md#测试要求合并前建议全绿)
@@ -59,7 +59,7 @@ npm run dev:theater
 npm run test:theater:smoke
 ```
 
-加载 `.env.theater`（`VITE_OCLIVE_SHELL=theater`），首屏为早饭场景自动播放。15 秒验收见 [`handoff/THEATER_15S_ACCEPTANCE.md`](../handoff/THEATER_15S_ACCEPTANCE.md)。
+加载 `.env.theater`（`VITE_OCLIVE_SHELL=theater`），首屏为早饭场景自动播放。15 秒验收见 [`handoff/theater/THEATER_15S_ACCEPTANCE.md`](../handoff/theater/THEATER_15S_ACCEPTANCE.md)。
 
 ---
 

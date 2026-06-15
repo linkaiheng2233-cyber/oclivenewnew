@@ -1,4 +1,3 @@
-import type ChatMessageList from '../components/chat/ChatMessageList.vue'
 import type { LocalePreference } from '../i18n'
 import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -19,13 +18,12 @@ import { useUiStore } from '../stores/uiStore'
 import { buildRelationDropdownOptions } from '../utils/relationOptions'
 import { useAppBootstrap } from './useAppBootstrap'
 import { useAppToast } from './useAppToast'
-import { useChatSend } from './useChatSend'
-import { useGlobalHotkeys } from './useGlobalHotkeys'
 import { useRoleSnapshotPoll } from './useKernelStatus'
-import { useModelManagerWindow } from './useModelManagerWindow'
+import { useMainShellChat } from './useMainShellChat'
+import { useMainShellHotkeys } from './useMainShellHotkeys'
+import { useMainShellWindows } from './useMainShellWindows'
 import { useNarrativeScene } from './useNarrativeScene'
 import { usePluginEvents } from './usePluginEvents'
-import { usePluginManagerWindow } from './usePluginManagerWindow'
 import { useReturnFocusOnClose } from './useReturnFocusOnClose'
 import { useSceneDestination } from './useSceneDestination'
 import { useSceneTravelBars } from './useSceneTravelBars'
@@ -70,8 +68,6 @@ export function useMainShell() {
     sceneLabelForId,
   } = useSceneDestination(showToast)
 
-  const chatListRef = ref<InstanceType<typeof ChatMessageList> | null>(null)
-  const chatInputRef = ref<{ focusInput?: () => void } | null>(null)
   const leftPaneRef = ref<HTMLElement | null>(null)
   const roleSwitching = ref(false)
   const presetPickerOpen = ref(false)
@@ -107,72 +103,21 @@ export function useMainShell() {
     return d.length > 200 ? `${d.slice(0, 200)}…` : d
   })
 
-  const messages = computed(() =>
-    chatStore.messagesForRoleScene(roleStore.currentRoleId, uiStore.sceneId),
-  )
-
-  const chatListLoading = computed(() =>
-    chatStore.isLoading
-    || chatStore.isMessagesLoadingFor(roleStore.currentRoleId, uiStore.sceneId),
-  )
-
-  const latestRoleplayAside = computed(() => {
-    const roleId = roleStore.currentRoleId
-    const sceneId = uiStore.sceneId || 'default'
-    return chatStore.lastAssistantAsideFor(roleId, sceneId)
-  })
-
-  const topMoreOpen = ref(false)
-  const settingsViewOpen = ref(false)
-  const settingsFocusTab = ref<'general' | 'plugins' | 'storage' | null>(null)
-
   const {
+    topMoreOpen,
+    settingsViewOpen,
+    settingsFocusTab,
     simplePluginManagerOpen,
     pluginsPanelSubview,
     openPluginManagerPanel,
     openSimplePluginManager,
     openPluginMarket,
-  } = usePluginManagerWindow({
-    closeMoreMenu: () => {
-      topMoreOpen.value = false
-    },
-  })
-
-  const {
     modelManagerOpen,
     openModelManager,
     closeModelManager,
-  } = useModelManagerWindow({
-    closeMoreMenu: () => {
-      topMoreOpen.value = false
-    },
-  })
-
-  watch(simplePluginManagerOpen, (open) => {
-    if (open) {
-      modelManagerOpen.value = false
-      settingsViewOpen.value = false
-    }
-  })
-  watch(modelManagerOpen, (open) => {
-    if (open) {
-      simplePluginManagerOpen.value = false
-      settingsViewOpen.value = false
-      pluginMarketStore.closeMarketPanel()
-    }
-  })
-  watch(settingsViewOpen, (open) => {
-    if (open) {
-      simplePluginManagerOpen.value = false
-      modelManagerOpen.value = false
-      pluginMarketStore.closeMarketPanel()
-    }
-  })
-  watch(() => pluginMarketStore.marketPanelVisible, (open) => {
-    if (open) {
-      simplePluginManagerOpen.value = false
-      modelManagerOpen.value = false
-    }
+    closeAllSidePanels,
+  } = useMainShellWindows({
+    pluginMarketStore,
   })
 
   const {
@@ -208,7 +153,14 @@ export function useMainShell() {
       debugStore.toggle()
   }
 
-  const { shortcutHelpOpen, openShortcutHelp, openSettingsView } = useGlobalHotkeys({
+  const {
+    shortcutHelpOpen,
+    openShortcutHelp,
+    openSettingsView,
+    openSettingsToGeneral,
+    sidePanelOpen,
+    sidePanelTab,
+  } = useMainShellHotkeys({
     simplePluginManagerOpen,
     settingsViewOpen,
     topMoreOpen,
@@ -222,12 +174,8 @@ export function useMainShell() {
     toggleDebug: () => debugStore.toggle(),
     closeMarketPanel: () => pluginMarketStore.closeMarketPanel(),
     closeModelManager,
+    settingsFocusTab,
   })
-
-  function openSettingsToGeneral(): void {
-    settingsFocusTab.value = 'general'
-    openSettingsView()
-  }
 
   usePluginEvents({
     showToast,
@@ -247,12 +195,6 @@ export function useMainShell() {
   function onHostOpenPluginManager(): void {
     openSimplePluginManager(true)
   }
-
-  const sceneHistorySplitIndex = computed(() => {
-    if (!roleStore.interactionImmersive)
-      return 0
-    return chatStore.sceneHistorySplitForRoleScene(roleStore.currentRoleId, uiStore.sceneId)
-  })
 
   watch(
     () => roleStore.roleInfo.interactionMode,
@@ -351,13 +293,22 @@ export function useMainShell() {
     }
   }
 
-  const { onSend } = useChatSend({
+  const {
+    chatListRef,
+    chatInputRef,
+    messages,
+    chatListLoading,
+    latestRoleplayAside,
+    sceneHistorySplitIndex,
+    onSend,
+  } = useMainShellChat({
+    roleStore,
+    uiStore,
     showToast,
     t,
-    chatInputRef,
     clearSceneBarsBeforeSend,
     offerSceneBarsAfterReply,
-    onTurnRecorded: (msg) => progressive.recordTurn(msg),
+    onTurnRecorded: msg => progressive.recordTurn(msg),
   })
 
   async function onSwitchRole(nextRoleId: string) {
@@ -500,24 +451,6 @@ export function useMainShell() {
     }
     openModelManager(true)
   }
-
-  function closeAllSidePanels(): void {
-    settingsViewOpen.value = false
-    simplePluginManagerOpen.value = false
-    closeModelManager()
-  }
-
-  const sidePanelOpen = computed(
-    () => settingsViewOpen.value || simplePluginManagerOpen.value || modelManagerOpen.value,
-  )
-
-  const sidePanelTab = computed<'settings' | 'plugins' | 'models'>(() => {
-    if (settingsViewOpen.value)
-      return 'settings'
-    if (simplePluginManagerOpen.value)
-      return 'plugins'
-    return 'models'
-  })
 
   function onSidePanelTabChange(tab: 'settings' | 'plugins' | 'models'): void {
     openSidePanelTab(tab)

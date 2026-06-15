@@ -71,7 +71,7 @@ pub(crate) async fn persist_atomic_movement_portrait(
         scene_id,
         &scenes,
         user_message,
-        pre.ollama_model.as_str(),
+        pre.memory.ollama_model.as_str(),
     );
     let portrait_fut = if matches!(mode, TurnMode::CoPresent) {
         None
@@ -79,11 +79,30 @@ pub(crate) async fn persist_atomic_movement_portrait(
         Some(STAGES.stage(
             ChatStage::PortraitEmotionLlm,
             async {
-                if portrait_catalog_active(role) {
-                    let catalog = role
-                        .portrait_catalog
-                        .as_ref()
-                        .expect("portrait_catalog_active implies Some");
+                if role.pack_portrait_catalog.enabled {
+                    let Some(catalog) = role.portrait_catalog.as_ref() else {
+                        tracing::warn!(
+                            target: "oclive_chat",
+                            role_id = %role.id,
+                            "portrait catalog enabled but catalog file missing; falling back to legacy portrait picker"
+                        );
+                        let tag = pick_portrait_emotion(
+                            &primary_llm,
+                            pre.memory.ollama_model.as_str(),
+                            role,
+                            &core_v,
+                            &middle.personality,
+                            pre.relation.favorability_before,
+                            user_message,
+                            &reply_for_portrait,
+                            pre.hints.user_emotion_str.as_str(),
+                            &policy.bot_emotion,
+                            &policy.recent_events,
+                            &pre.memory.recent_turns,
+                        )
+                        .await?;
+                        return Ok((tag, None));
+                    };
                     let narrative_hint_owned = {
                         let current = middle.complex_emotion_out.narrative_hint.trim();
                         if !current.is_empty() {
@@ -102,18 +121,18 @@ pub(crate) async fn persist_atomic_movement_portrait(
                     };
                     let (tag, vsid) = pick_portrait_with_catalog(
                         &primary_llm,
-                        pre.ollama_model.as_str(),
+                        pre.memory.ollama_model.as_str(),
                         role,
                         catalog,
                         &core_v,
                         &middle.personality,
-                        pre.favorability_before,
+                        pre.relation.favorability_before,
                         user_message,
                         &reply_for_portrait,
-                        pre.user_emotion_str.as_str(),
+                        pre.hints.user_emotion_str.as_str(),
                         &policy.bot_emotion,
                         &policy.recent_events,
-                        &pre.recent_turns,
+                        &pre.memory.recent_turns,
                         narrative_hint_owned.as_deref(),
                     )
                     .await?;
@@ -121,17 +140,17 @@ pub(crate) async fn persist_atomic_movement_portrait(
                 } else {
                     let tag = pick_portrait_emotion(
                         &primary_llm,
-                        pre.ollama_model.as_str(),
+                        pre.memory.ollama_model.as_str(),
                         role,
                         &core_v,
                         &middle.personality,
-                        pre.favorability_before,
+                        pre.relation.favorability_before,
                         user_message,
                         &reply_for_portrait,
-                        pre.user_emotion_str.as_str(),
+                        pre.hints.user_emotion_str.as_str(),
                         &policy.bot_emotion,
                         &policy.recent_events,
-                        &pre.recent_turns,
+                        &pre.memory.recent_turns,
                     )
                     .await?;
                     Ok((tag, None))
@@ -146,7 +165,7 @@ pub(crate) async fn persist_atomic_movement_portrait(
             personality: &middle.personality,
             current_emotion: policy.bot_emotion_str.as_str(),
             relation_state: middle.relation_after.as_str(),
-            user_relation_key: pre.user_relation_key.as_str(),
+            user_relation_key: pre.relation.user_relation_key.as_str(),
             favor_delta: middle.favor_delta,
             memory_content: &policy.memory_line,
             memory_importance: policy.memory_importance,
@@ -168,7 +187,7 @@ pub(crate) async fn persist_atomic_movement_portrait(
                 state.db_manager.as_ref(),
                 role,
                 srid,
-                pre.relation_before.as_str(),
+                pre.relation.relation_before.as_str(),
                 middle.relation_after.as_str(),
                 middle.favor_delta,
             )
@@ -191,7 +210,7 @@ pub(crate) async fn persist_atomic_movement_portrait(
                 state.db_manager.as_ref(),
                 role,
                 srid,
-                pre.relation_before.as_str(),
+                pre.relation.relation_before.as_str(),
                 middle.relation_after.as_str(),
                 middle.favor_delta,
             )
@@ -263,9 +282,9 @@ pub(crate) async fn append_turn_to_chat_storage(
         user_message: user_message.to_string(),
         assistant_reply: reply.to_string(),
         reply_is_fallback: llm.main_llm_fallback,
-        model_name: Some(pre.ollama_model.clone()),
+        model_name: Some(pre.memory.ollama_model.clone()),
         response_ms: llm.main_llm_ms,
-        user_emotion: Some(pre.user_emotion_str.clone()),
+        user_emotion: Some(pre.hints.user_emotion_str.clone()),
         bot_emotion: Some(policy.bot_emotion_str.clone()),
         max_messages_per_session: role.pack_chat_storage_config.max_messages_per_session,
         auto_cleanup_config: TurnAutoCleanupConfig::from_role_config(
@@ -500,5 +519,14 @@ mod persist_non_profile_tests {
             .expect("cache entry");
         assert_eq!(cached.warmth, old.warmth);
         assert_ne!(cached.warmth, new_warmth);
+    }
+
+    #[test]
+    fn portrait_catalog_enabled_without_file_does_not_panic() {
+        let mut role = vector_role();
+        role.pack_portrait_catalog.enabled = true;
+        role.portrait_catalog = None;
+        assert!(!portrait_catalog_active(&role));
+        assert_eq!(resolve_visual_state_for_role(&role, "happy"), None);
     }
 }

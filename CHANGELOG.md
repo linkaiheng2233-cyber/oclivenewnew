@@ -4,8 +4,23 @@
 
 ## [Unreleased]
 
+### Added
+
+- **`CODE_OF_CONDUCT.md`**（Contributor Covenant）。
+- **`human-docs-en/`** 最小集（L0–L3 + 08/09/10 英文摘要）。
+- **`human-docs/08_PR_GATE_MATRIX.md`**、**`09_GLOSSARY.md`**、**`10_SETUP_WINDOWS.md`**。
+- **`handoff/GOOD_FIRST_ISSUES.md`** 策展表。
+- **`npm run check:ci-local`**；`package.json` `engines.node >=20`、**`.nvmrc`**。
+- 前端：`src/api/plugin/*`、`useMainShell*`、`useChatStorageSettings`、`chatStoreSend`。
+
 ### Changed
 
+- **hybrid 聊天镜像**：`rebuild_mirror_best_effort` / `delete_mirror_best_effort`（K-ROBUST-01）。
+- **`canonical_llm_sync` / `plugin_state` / MCP·Ollama 降级**：`tracing::warn!`（K-ROBUST-02/03）。
+- **内核快照与存储能力探测 degraded UI**（`kernel.ts`、`useKernelStatus`、`ChatStorageSettingsPanel`）。
+- **`process_message` 可读性收尾**：`preflight_turn` / `PostLlmCtx` / `PreLlmOutput` 分组；`events.rs` / `blueprint_v2_slot_registry.rs` 模块提取；`SettingsView` Tab 子组件；`role_runtime` 子模块；`blueprint_v2` 测试外移。
+- **handoff 目录整理**：`THEATER_*` → `handoff/theater/`、`VSCODE_*` → `handoff/vscode/`。
+- **README / CONTRIBUTING / SECURITY** 社区基建更新；PR 模板链到 PR 门矩阵；可选 `scripts/setup-dev.ps1`。
 - **`chat_storage` pack 校验**：`oclive pack validate` 现校验 `config.json` → `chat_storage`（backend / location / 正整数 / replay 阈值 0.1–1.0），与 `reply_post_processor` 同级；`CHANGELOG.en.md` parity 同步。
 - **五维审查收口（Batch 1–3）**：架构总览共景主链与 Stable 代码对齐；VS Code / 跨宿主文档改为 policy-first；`user_identities` 校验语义与 `load_role` 一致；`reply_post_processor` 在 `enabled` + `directory` 时校验非空 `plugin_id`；`ProcessMessageError` stage 保留于对外 `AppError` message；聊天回合 `role_runtime` 预取合并、`memory decay` 单条 CASE UPDATE、`SessionCache` 跳过重复 interaction_mode seed；workspace `default-members` 排除 `fuzz`；`chatStore` 加载与 `addMessage` 小优化。
 - **Prompt guardrails 升格与页脚去重**：`KERNEL_DIALOGUE_GUARDRAILS` 恒含「状态延续」「倾诉优先」「篇幅随输入」，包级 `reply_quality_anchor` 无法换走；删除独立 `【回复结构】` 段；语气区块去除 `warmup_level` / `影响因子` 等系统术语；官方 mumu/shimeng/枫侵月锚点瘦身为仅人设差异。
@@ -26,7 +41,7 @@
 - **Theater Release 打包链**：`npm run tauri:build:theater` · `OCLIVE_TAURI_SHELL=theater` · roles 子集（`theater-breakfast-a/b`）经 [`scripts/filter-theater-roles.mjs`](scripts/filter-theater-roles.mjs) 写入 `src-tauri/resources/roles/`。
 - **Theater 15s 工程代理**：[`scripts/theater-stranger-proxy.mjs`](scripts/theater-stranger-proxy.mjs) · 聚合于 `npm run test:theater:smoke`（CI `frontend` job）。
 - **Theater 导演插件 RFC 与示例**：[`handoff/RFC_THEATER_DIRECTOR_PLUGIN.md`](handoff/RFC_THEATER_DIRECTOR_PLUGIN.md) · [`examples/directory-plugin-theater-director/`](examples/directory-plugin-theater-director/) · 前端 `theaterDirectorClient` 可选接线 Mode 3。
-- **Theater 陌生人测试主持人指南**：[`handoff/THEATER_STRANGER_FACILITATOR.md`](handoff/THEATER_STRANGER_FACILITATOR.md)。
+- **Theater 陌生人测试主持人指南**：[`handoff/theater/THEATER_STRANGER_FACILITATOR.md`](handoff/theater/THEATER_STRANGER_FACILITATOR.md)。
 - **三发行版内核 smoke（Pro / Flash）**：`npm run test:distro:smoke` 聚合 profile mirror · distro kernel e2e · Tauri bundled-first；`e2e-distro-kernel` 新增 **theater** scenario；CI **`cross-host-e2e`** 追加 `e2e-tauri-bundled-kernel` 与 VS Code profile diff。结项见 [`handoff/THREE_DISTRO_KERNEL_CLOSURE.md`](handoff/THREE_DISTRO_KERNEL_CLOSURE.md)。
 - **Chat Pro bundled-first spawn（K-SCHED-05/01）**：Tauri `bundle-kernel-for-tauri.mjs` · `pick_best_for_spawn` bundled → shared → dev；`binary_upgrade` replace 默认关。
 - **VS Code Flash profile 镜像**：`examples/distro-profiles/vscode.oclive.toml` ↔ 姊妹仓 `distro.oclive.toml` · `npm run test:distro-profile-mirror`。

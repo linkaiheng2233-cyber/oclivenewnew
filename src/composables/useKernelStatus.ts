@@ -37,6 +37,9 @@ export function useRoleSnapshotPoll() {
       roleStore.roleInfo.userPresenceScene ?? roleStore.roleInfo.currentScene ?? undefined,
     )
     if (!snap) {
+      if (kernelConn.status?.healthy) {
+        console.warn('[useKernelStatus] role snapshot poll returned empty', { roleId })
+      }
       return
     }
     roleStore.roleInfo.favorability = snap.current_favorability

@@ -29,6 +29,7 @@ use crate::error::Result;
 use crate::models::dto::{SendMessageRequest, SendMessageResponse};
 use crate::models::plugin_backends::AgentBackend;
 use crate::state::AppState;
+use crate::state::EffectiveSessionConfig;
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -67,11 +68,159 @@ pub async fn process_message_stream(
     }
 }
 
-async fn run(
+async fn try_agent_shortcut(
     state: &AppState,
     req: &SendMessageRequest,
-    on_token: Option<LlmTokenSink>,
-) -> std::result::Result<SendMessageResponse, ProcessMessageError> {
+    role: &crate::models::Role,
+    srid: &str,
+    scene_id: &str,
+    mrid: &str,
+    effective_backends: &crate::models::plugin_backends::PluginBackends,
+    pl: &crate::domain::plugin_host::ResolvedRolePlugins,
+    prefetch: &crate::domain::chat_engine::turn_prefetch::TurnPrefetch,
+    on_token: Option<&LlmTokenSink>,
+) -> std::result::Result<Option<SendMessageResponse>, ProcessMessageError> {
+    let agent_enabled =
+        !state.host_profile.skip_agent && !matches!(effective_backends.agent, AgentBackend::None);
+    let agent_out: AgentOutput = if agent_enabled {
+        let model = role.resolve_ollama_model(state.ollama_model.as_str());
+        let agent_input = build_agent_input(
+            state,
+            role,
+            srid,
+            scene_id,
+            req.user_message.as_str(),
+            model.as_str(),
+            state.plugins.agent_mcp_bridge().as_ref(),
+            Some(prefetch),
+        )
+        .await
+        .map_err(|source| ProcessMessageError::Stage {
+            stage: ChatStage::AgentProcess.as_str(),
+            source,
+        })?;
+        process_message_stage(ChatStage::AgentProcess, pl.agent.process(agent_input)).await?
+    } else {
+        AgentOutput {
+            handled: false,
+            reply: String::new(),
+        }
+    };
+    if agent_out.handled {
+        if let Some(sink) = on_token {
+            sink(agent_out.reply.as_str());
+        }
+        return build_minimal_response(
+            state,
+            pl,
+            role,
+            mrid,
+            srid,
+            scene_id.to_string(),
+            req.user_message.as_str(),
+            agent_out.reply,
+        )
+        .await
+        .map(Some)
+        .map_err(|source| ProcessMessageError::Stage {
+            stage: ChatStage::AgentMinimalResponse.as_str(),
+            source,
+        });
+    }
+    Ok(None)
+}
+
+async fn load_turn_runtime_snapshot(
+    state: &AppState,
+    srid: &str,
+    scene_id: &str,
+) -> std::result::Result<crate::domain::role_runtime_snapshot::RoleRuntimeSnapshot, ProcessMessageError>
+{
+    let seed_interaction_mode = !state.session_cache.is_interaction_mode_seeded(srid);
+    let runtime_snapshot = process_message_stage(
+        ChatStage::GetRoleRuntimeSnapshot,
+        state
+            .db_manager
+            .preflight_turn_runtime(srid, scene_id, seed_interaction_mode),
+    )
+    .await?;
+    if seed_interaction_mode {
+        state.session_cache.mark_interaction_mode_seeded(srid);
+    }
+    Ok(runtime_snapshot)
+}
+
+struct ImmersiveVirtualTimeState {
+    remote_life_enabled: bool,
+    immersive: bool,
+    is_remote: bool,
+    character_scene_id: Option<String>,
+    preflight_ms: u64,
+    virtual_time_ms: i64,
+}
+
+async fn apply_immersive_virtual_time(
+    state: &AppState,
+    role: &crate::models::Role,
+    srid: &str,
+    scene_id: &str,
+    runtime_snapshot: &crate::domain::role_runtime_snapshot::RoleRuntimeSnapshot,
+    preflight_started_at: Instant,
+) -> std::result::Result<ImmersiveVirtualTimeState, ProcessMessageError> {
+    let current_scene = runtime_snapshot.scene.clone();
+    let interaction_mode = runtime_snapshot
+        .interaction_mode
+        .unwrap_or(crate::models::InteractionMode::Immersive);
+    let remote_life_enabled = runtime_snapshot.remote_life_enabled.unwrap_or(false);
+    let immersive = interaction_mode.is_immersive();
+    if immersive {
+        process_message_stage(
+            ChatStage::IdlePersonalityDecay,
+            crate::domain::virtual_time_sync::apply_idle_personality_decay(state, role, srid),
+        )
+        .await?;
+    }
+    let is_remote =
+        immersive && user_is_remote_from_character(scene_id, current_scene.as_deref());
+    let preflight_ms = preflight_started_at.elapsed().as_millis() as u64;
+    let character_scene_id = is_remote.then(|| current_scene.as_deref().unwrap_or("default").to_string());
+    let virtual_time_ms = process_message_stage(
+        ChatStage::VirtualTimeMs,
+        crate::domain::virtual_time_sync::sync_and_persist_virtual_time(
+            state.db_manager.as_ref(),
+            role,
+            srid,
+            immersive,
+        ),
+    )
+    .await?;
+    Ok(ImmersiveVirtualTimeState {
+        remote_life_enabled,
+        immersive,
+        is_remote,
+        character_scene_id,
+        preflight_ms,
+        virtual_time_ms,
+    })
+}
+
+struct PreflightOutput {
+    state_rid: String,
+    scene_id: String,
+    role: Arc<crate::models::Role>,
+    t0: Instant,
+    session_config: Arc<EffectiveSessionConfig>,
+    effective_backends: Arc<crate::models::plugin_backends::PluginBackends>,
+    pl: crate::domain::plugin_host::ResolvedRolePlugins,
+    prefetch: crate::domain::chat_engine::turn_prefetch::TurnPrefetch,
+    runtime_snapshot: crate::domain::role_runtime_snapshot::RoleRuntimeSnapshot,
+    immersive_virtual_time: ImmersiveVirtualTimeState,
+}
+
+async fn preflight_turn(
+    state: &AppState,
+    req: &SendMessageRequest,
+) -> std::result::Result<PreflightOutput, ProcessMessageError> {
     let mrid = req.role_id.as_str();
     let state_rid = conversation_state_role_id(mrid, req.session_id.as_deref());
     let srid = state_rid.as_str();
@@ -148,122 +297,96 @@ async fn run(
             source,
         })?;
 
-    let agent_enabled = !state.host_profile.skip_agent
-        && !matches!(effective_backends.agent, AgentBackend::None);
-    let agent_out: AgentOutput = if agent_enabled {
-        let model = role.resolve_ollama_model(state.ollama_model.as_str());
-        let agent_input = build_agent_input(
-            state,
-            role.as_ref(),
-            srid,
-            scene_id.as_str(),
-            req.user_message.as_str(),
-            model.as_str(),
-            state.plugins.agent_mcp_bridge().as_ref(),
-            Some(&prefetch),
-        )
-        .await
-        .map_err(|source| ProcessMessageError::Stage {
-            stage: ChatStage::AgentProcess.as_str(),
-            source,
-        })?;
-        process_message_stage(ChatStage::AgentProcess, pl.agent.process(agent_input)).await?
-    } else {
-        AgentOutput {
-            handled: false,
-            reply: String::new(),
-        }
-    };
-    if agent_out.handled {
-        if let Some(ref sink) = on_token {
-            sink(agent_out.reply.as_str());
-        }
-        return build_minimal_response(
-            state,
-            &pl,
-            role.as_ref(),
-            mrid,
-            srid,
-            scene_id.clone(),
-            req.user_message.as_str(),
-            agent_out.reply,
-        )
-        .await
-        .map_err(|source| ProcessMessageError::Stage {
-            stage: ChatStage::AgentMinimalResponse.as_str(),
-            source,
-        });
-    }
-
-    let seed_interaction_mode = !state.session_cache.is_interaction_mode_seeded(srid);
-    let runtime_snapshot = process_message_stage(
-        ChatStage::GetRoleRuntimeSnapshot,
-        state
-            .db_manager
-            .preflight_turn_runtime(srid, scene_id.as_str(), seed_interaction_mode),
+    let runtime_snapshot = load_turn_runtime_snapshot(state, srid, scene_id.as_str()).await?;
+    let immersive_virtual_time = apply_immersive_virtual_time(
+        state,
+        role.as_ref(),
+        srid,
+        scene_id.as_str(),
+        &runtime_snapshot,
+        t0,
     )
     .await?;
-    if seed_interaction_mode {
-        state.session_cache.mark_interaction_mode_seeded(srid);
+
+    Ok(PreflightOutput {
+        state_rid,
+        scene_id,
+        role,
+        t0,
+        session_config,
+        effective_backends,
+        pl,
+        prefetch,
+        runtime_snapshot,
+        immersive_virtual_time,
+    })
+}
+
+async fn run(
+    state: &AppState,
+    req: &SendMessageRequest,
+    on_token: Option<LlmTokenSink>,
+) -> std::result::Result<SendMessageResponse, ProcessMessageError> {
+    let mrid = req.role_id.as_str();
+    let pre = preflight_turn(state, req).await?;
+    let srid = pre.state_rid.as_str();
+    let scene_id = pre.scene_id.as_str();
+
+    if let Some(response) = try_agent_shortcut(
+        state,
+        req,
+        pre.role.as_ref(),
+        srid,
+        scene_id,
+        mrid,
+        &pre.effective_backends,
+        &pre.pl,
+        &pre.prefetch,
+        on_token.as_ref(),
+    )
+    .await?
+    {
+        return Ok(response);
     }
 
-    let current_scene = runtime_snapshot.scene.clone();
-    let interaction_mode = runtime_snapshot
-        .interaction_mode
-        .unwrap_or(crate::models::InteractionMode::Immersive);
-    let remote_life_enabled = runtime_snapshot.remote_life_enabled.unwrap_or(false);
-    let immersive = interaction_mode.is_immersive();
-    if immersive {
-        process_message_stage(
-            ChatStage::IdlePersonalityDecay,
-            crate::domain::virtual_time_sync::apply_idle_personality_decay(
-                state,
-                role.as_ref(),
-                srid,
-            ),
-        )
-        .await?;
-    }
-    let is_remote =
-        immersive && user_is_remote_from_character(scene_id.as_str(), current_scene.as_deref());
-    let preflight_ms = t0.elapsed().as_millis() as u64;
-    let char_scene = current_scene.as_deref().unwrap_or("default").to_string();
-    let virtual_time_ms = process_message_stage(
-        ChatStage::VirtualTimeMs,
-        crate::domain::virtual_time_sync::sync_and_persist_virtual_time(
-            state.db_manager.as_ref(),
-            role.as_ref(),
-            srid,
-            immersive,
-        ),
-    )
-    .await?;
-    let scenes = Arc::clone(&role.scene_ids);
-    let dual_core_degraded = resolve_dual_core_degraded(role.as_ref());
+    let is_remote = pre.immersive_virtual_time.is_remote;
+    let scenes = Arc::clone(&pre.role.scene_ids);
+    let dual_core_degraded = resolve_dual_core_degraded(pre.role.as_ref());
     let turn = TurnContext {
         state,
         req,
-        role: role.as_ref(),
-        scene_id: scene_id.as_str(),
+        role: pre.role.as_ref(),
+        scene_id,
         scenes,
         mrid,
         srid,
-        t0,
-        preflight_ms,
-        session_config,
-        effective_backends,
-        pl: pl.clone(),
-        immersive,
-        character_scene_id: if is_remote { Some(char_scene) } else { None },
-        virtual_time_ms,
+        t0: pre.t0,
+        preflight_ms: pre.immersive_virtual_time.preflight_ms,
+        session_config: pre.session_config,
+        effective_backends: pre.effective_backends,
+        pl: pre.pl.clone(),
+        immersive: pre.immersive_virtual_time.immersive,
+        character_scene_id: pre.immersive_virtual_time.character_scene_id,
+        virtual_time_ms: pre.immersive_virtual_time.virtual_time_ms,
         dual_core_degraded,
-        runtime_snapshot,
-        role_arc: Arc::clone(&role),
-        prefetch,
+        runtime_snapshot: pre.runtime_snapshot,
+        role_arc: Arc::clone(&pre.role),
+        prefetch: pre.prefetch,
     };
     if let Some(sink) = on_token {
-        dispatch_turn_stream(&turn, is_remote, remote_life_enabled, sink).await
+        dispatch_turn_stream(
+            &turn,
+            is_remote,
+            pre.immersive_virtual_time.remote_life_enabled,
+            sink,
+        )
+        .await
     } else {
-        dispatch_turn(&turn, is_remote, remote_life_enabled).await
+        dispatch_turn(
+            &turn,
+            is_remote,
+            pre.immersive_virtual_time.remote_life_enabled,
+        )
+        .await
     }
 }

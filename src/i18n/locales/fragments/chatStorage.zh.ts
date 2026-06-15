@@ -57,5 +57,6 @@ export default {
       file: '纯文件存储（JSON）',
       sqlite: '纯 SQLite 存储',
     },
+    capabilitiesDegraded: '能力探测失败，部分功能可能不可用。',
   },
 }

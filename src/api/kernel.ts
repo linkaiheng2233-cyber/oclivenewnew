@@ -63,11 +63,13 @@ export async function fetchRoleSnapshot(
       signal: AbortSignal.timeout(5000),
     })
     if (!res.ok) {
+      console.warn('[kernel] fetchRoleSnapshot HTTP', res.status, roleId)
       return null
     }
     return (await res.json()) as RoleSnapshot
   }
-  catch {
+  catch (err) {
+    console.warn('[kernel] fetchRoleSnapshot failed', { roleId, sceneId, err })
     return null
   }
 }

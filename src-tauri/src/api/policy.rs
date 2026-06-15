@@ -1,9 +1,7 @@
 use crate::api::error::CommandError;
 use oclive_kernel_host::state::SharedAppState;
 use tauri::State;
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+/// Returns an error when policy plugin reload fails.
 #[tauri::command]
 pub async fn reload_policy_plugins(
     state: State<'_, SharedAppState>,

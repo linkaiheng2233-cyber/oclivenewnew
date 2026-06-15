@@ -1,4 +1,19 @@
-# Frozen / high-risk paths — PRs touching these require owner review.
+# Code owners — review routing (help wanted areas marked)
+
+# Frozen / high-risk paths
 crates/oclive_kernel_host/src/domain/dual_pipeline*.rs @linkaiheng2233-cyber
 crates/oclive_kernel_host/src/domain/expert_routing.rs @linkaiheng2233-cyber
 crates/oclive-cli/src/monolith_codegen.rs @linkaiheng2233-cyber
+
+# Kernel orchestration (help wanted: tests, docs, move-only refactors)
+crates/oclive_kernel_host/ @linkaiheng2233-cyber
+
+# Desktop API surface (help wanted: IPC wrappers, error mapping)
+src-tauri/src/api/ @linkaiheng2233-cyber
+
+# Frontend shell (help wanted: i18n, settings panels, composables)
+src/ @linkaiheng2233-cyber
+
+# Human onboarding docs
+human-docs/ @linkaiheng2233-cyber
+human-docs-en/ @linkaiheng2233-cyber

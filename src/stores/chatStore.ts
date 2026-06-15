@@ -3,12 +3,8 @@ import type { RoleSceneMessageMap } from '../utils/chatMessageDb'
 import type { RoleplaySplit } from '../utils/roleplayReplySplit'
 import { defineStore } from 'pinia'
 import {
-  sendMessage,
-} from '../api'
-import {
   getChatStorageCapabilities,
 } from '../api/chatStorage'
-import { hostEventBus } from '../lib/hostEventBus'
 import {
   bucketMapKey,
   migrateMessageMapShape,
@@ -17,15 +13,13 @@ import {
 } from '../utils/chatMessageDb'
 
 import { isChatStorageMigrated, runChatStorageMigrationIfNeeded } from '../utils/chatStorageMigration'
-import { getRelationUpgradeMessage } from '../utils/relation'
-import { presentationFromSendResponse } from '../utils/replyPresentation'
 import {
   assistantDialogueFromSplit,
 
   splitRoleplayReply,
 } from '../utils/roleplayReplySplit'
-import { loadRoleSceneMessages, parseMessageTimestamp } from './chatStoreLoad'
-import { useDebugStore } from './debugStore'
+import { loadRoleSceneMessages } from './chatStoreLoad'
+import { sendChatStoreMessage } from './chatStoreSend'
 import { useRoleStore } from './roleStore'
 import { useUiStore } from './uiStore'
 
@@ -515,91 +509,21 @@ export const useChatStore = defineStore(
       },
 
       async sendMessage(content: string, sceneId: string): Promise<SendMessageResponse> {
-        const roleStore = useRoleStore()
-        const roleId = roleStore.currentRoleId
-        const sid = sceneId || 'default'
-        const countBeforeTurn = this.getMessageCountForRoleScene(roleId, sid)
-        const userLocalId = `u-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
-        this.addMessage(roleId, sid, {
-          id: userLocalId,
-          role: 'user',
+        return sendChatStoreMessage(
+          {
+            sceneHistorySplitIndex: this.sceneHistorySplitIndex,
+            setLoading: loading => (this.isLoading = loading),
+            getMessageCountForRoleScene: (roleId, sid) => this.getMessageCountForRoleScene(roleId, sid),
+            addMessage: (roleId, sid, msg, options) => this.addMessage(roleId, sid, msg, options),
+            patchMessageById: (roleId, sid, localId, patch) =>
+              this.patchMessageById(roleId, sid, localId, patch),
+            deleteMessage: (roleId, sid, messageId) => this.deleteMessage(roleId, sid, messageId),
+            addSystemMessage: (message, sid) => this.addSystemMessage(message, sid),
+            clampSceneHistorySplitForBucket,
+          },
           content,
-          timestamp: Date.now(),
-        }, { persistIdbCache: false })
-        this.isLoading = true
-        const relationBefore = roleStore.roleInfo.relationState
-        try {
-          const res = await sendMessage({
-            role_id: roleId,
-            user_message: content,
-            scene_id: sid || null,
-          })
-          if (res.user_message_id) {
-            this.patchMessageById(roleId, sid, userLocalId, {
-              id: res.user_message_id,
-              timestamp: parseMessageTimestamp(res.user_message_timestamp),
-            })
-          }
-          const pres = presentationFromSendResponse(res)
-          const preSplit = splitRoleplayReply(pres.replyText)
-          const aside = preSplit.aside.trim()
-          const dialogue = assistantDialogueFromSplit(pres.replyText, preSplit)
-          const assistantMsg: ChatMessage = {
-            id: res.assistant_message_id
-              ?? `a-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-            role: 'assistant',
-            content: dialogue,
-            timestamp: parseMessageTimestamp(res.assistant_message_timestamp),
-            emotion: pres.assistantEmotionLabel,
-            presenceVariant: pres.presenceVariant,
-            replyIsFallback: pres.replyIsFallback,
-            ...(aside.length > 0 ? { aside } : {}),
-          }
-          this.addMessage(roleId, sid, assistantMsg, { persistIdbCache: false })
-          const split = preSplit
-          useDebugStore().recordKnowledgeFromSend(res)
-          roleStore.updateLocalAfterMessage(
-            pres.assistantEmotionLabel,
-            res.favorability_current,
-            {
-              visualStateId: res.visual_state_id ?? null,
-              portraitAssetPath:
-                res.performance_directive?.path
-                ?? res.performance_directive?.fallback_image
-                ?? null,
-            },
-          )
-          if (res.relation_state) {
-            const tip = getRelationUpgradeMessage(
-              res.relation_state,
-              relationBefore,
-            )
-            if (tip)
-              this.addSystemMessage(tip, sid)
-            roleStore.updateRelationState(res.relation_state)
-          }
-          hostEventBus.emitBuiltin('message:sent', {
-            message: content,
-            reply: assistantDialogueFromSplit(pres.replyText, split),
-            reply_aside: split.aside,
-          })
-          const countAfterTurn = this.getMessageCountForRoleScene(roleId, sid)
-          clampSceneHistorySplitForBucket(
-            this.sceneHistorySplitIndex,
-            roleId,
-            sid,
-            countAfterTurn,
-            countBeforeTurn,
-          )
-          return res
-        }
-        catch (err) {
-          this.deleteMessage(roleId, sid, userLocalId)
-          throw err
-        }
-        finally {
-          this.isLoading = false
-        }
+          sceneId,
+        )
       },
     },
     persist: {

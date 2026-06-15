@@ -15,7 +15,10 @@ where
     let rt = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
-        .expect("tokio runtime for block_on");
+        .unwrap_or_else(|e| {
+            tracing::error!(target: "oclive_runtime", error = %e, "block_on: failed to build runtime");
+            panic!("tokio runtime for block_on: {e}");
+        });
     rt.block_on(future)
 }
 
@@ -37,7 +40,10 @@ where
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
-            .expect("isolated tokio runtime");
+            .unwrap_or_else(|e| {
+                tracing::error!(target: "oclive_runtime", error = %e, "block_on_isolated: failed to build runtime");
+                panic!("isolated tokio runtime: {e}");
+            });
         rt.block_on(future)
     })
     .join()

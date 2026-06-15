@@ -9,6 +9,7 @@ pub mod agent_backend;
 pub mod blueprint_includes;
 pub mod blueprint_migrate;
 pub mod blueprint_v2;
+mod blueprint_v2_slot_registry;
 pub mod blueprint_v3;
 pub mod chat_storage;
 pub mod creator_profile;

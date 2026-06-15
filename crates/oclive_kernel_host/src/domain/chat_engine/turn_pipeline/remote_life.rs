@@ -37,11 +37,11 @@ pub(crate) async fn run_middle(
     let ai_impact_factor_final = 0.0_f64;
     let ai_event_confidence = 0.0_f32;
 
-    let mut personality = pre.personality.clone();
+    let mut personality = pre.memory.personality.clone();
     if role.evolution_config.personality_source != PersonalitySource::Profile {
         personality = PersonalityEngine::evolve_by_event(
             personality,
-            ai_impact_factor_final * pre.event_runtime,
+            ai_impact_factor_final * pre.memory.event_runtime,
             &role.evolution_bounds,
         );
     }
@@ -78,7 +78,7 @@ pub(crate) async fn run_middle(
         .map(|st| format_life_prompt_line(&st, true))
         .unwrap_or_default();
     let remote_mutable = if role.evolution_config.personality_source == PersonalitySource::Profile {
-        pre.mutable_for_prompt.as_str()
+        pre.memory.mutable_for_prompt.as_str()
     } else {
         ""
     };
@@ -88,8 +88,8 @@ pub(crate) async fn run_middle(
         char_label.as_str(),
         user_label.as_str(),
         user_message,
-        pre.favorability_before,
-        pre.relation_before.as_str(),
+        pre.relation.favorability_before,
+        pre.relation.relation_before.as_str(),
         vt_label.as_str(),
         life_schedule_line.as_str(),
         worldview_snippet.as_str(),

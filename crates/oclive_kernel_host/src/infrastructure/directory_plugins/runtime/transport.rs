@@ -80,7 +80,18 @@ impl HostPluginsFile {
     pub fn load(app_data: &Path) -> Self {
         let p = app_data.join("oclive_host_plugins.json");
         if let Ok(s) = std::fs::read_to_string(&p) {
-            serde_json::from_str(&s).unwrap_or_default()
+            match serde_json::from_str(&s) {
+                Ok(cfg) => cfg,
+                Err(e) => {
+                    tracing::warn!(
+                        target: "oclive_plugin",
+                        path = %p.display(),
+                        error = %e,
+                        "oclive_host_plugins.json invalid; using defaults"
+                    );
+                    Self::default()
+                }
+            }
         } else {
             Self::default()
         }

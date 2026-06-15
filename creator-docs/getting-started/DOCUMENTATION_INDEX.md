@@ -123,7 +123,7 @@
 | **发行版内核 attach/spawn SSOT** | **[../kernel/DISTRO_KERNEL_LIFECYCLE.md](../kernel/DISTRO_KERNEL_LIFECYCLE.md)**（bundled-first spawn · profile attach/replace · 决策上收：`kernel_strategy.rs` · `/health` distro 字段 · `oclive kernel ensure`） |
 | **内核调度范围重划（2026-06）** | **[../../handoff/KERNEL_SCHEDULER_RESCOPE.md](../../handoff/KERNEL_SCHEDULER_RESCOPE.md)** · 单核 `:8420` · `binary_upgrade` Freeze · K-SCHED backlog |
 | **三发行版内核结项（Pro / Flash / Theater profile）** | **[../../handoff/THREE_DISTRO_KERNEL_CLOSURE.md](../../handoff/THREE_DISTRO_KERNEL_CLOSURE.md)** · smoke 表 · CI 覆盖 |
-| **Theater Phase 4 就绪** | **[../../handoff/THEATER_PHASE4_READINESS.md](../../handoff/THEATER_PHASE4_READINESS.md)** |
+| **Theater Phase 4 就绪** | **[../../handoff/theater/THEATER_PHASE4_READINESS.md](../../handoff/theater/THEATER_PHASE4_READINESS.md)** |
 | **发行版能力配置 `distro.oclive.toml`（P1 Schema）** | **[../kernel/DISTRO_CAPABILITY_PROFILE.md](../kernel/DISTRO_CAPABILITY_PROFILE.md)** · 示例 `examples/distro-profiles/` |
 | **发行版默认插件矩阵（三 personas）** | **[../kernel/DISTRO_DEFAULT_PLUGINS.md](../kernel/DISTRO_DEFAULT_PLUGINS.md)** · desktop-chat / vscode / theater |
 | **编写器路线图（立绘 catalog · 视觉舞台 · 分级导出）** | **[../../handoff/PACK_EDITOR_ROADMAP.md](../../handoff/PACK_EDITOR_ROADMAP.md)** · 姊妹仓 `oclive-pack-editor/handoff/PACK_EDITOR_ROADMAP.md` |

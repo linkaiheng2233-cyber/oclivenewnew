@@ -168,5 +168,16 @@ export default {
     directorConnected: '导演插件已连接',
     improvFrozen: '已冻结为骨架，切换到微调模式',
     improvEnded: '本轮演绎已结束',
+    improvPromptSpeakerUser: '用户',
+    improvPromptSpeakerRoleA: '角色A',
+    improvPromptSpeakerRoleB: '角色B',
+    improvPromptOllamaSystem:
+      '你是「{sceneTitle}」场景中的{roleLabel}。只输出一句对白，不要 markdown、不要解释、不要括号舞台说明超过半句。',
+    improvPromptOllamaUser: '已有对白：\n{history}\n\n请以{roleLabel}身份接下一句话：',
+    improvPromptOllamaUserEmpty: '已有对白：\n（尚无）\n\n请以{roleLabel}身份接下一句话：',
+    improvPromptKernelHistoryBlock: '已有对白：\n{history}\n',
+    improvPromptKernelUser:
+      '【剧场场景：{sceneTitle}】\n{historyBlock}请以{roleLabel}身份接一句对白（仅一句，无 markdown）：',
+    improvPromptFallback: '{roleLabel}：（本地模型不可用，请继续插话推动剧情）',
   },
 }

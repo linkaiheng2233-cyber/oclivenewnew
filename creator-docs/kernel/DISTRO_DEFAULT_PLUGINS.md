@@ -176,7 +176,7 @@ flowchart TB
 | Wave | 内容 |
 |------|------|
 | **P0** | 本文档 + profile / 剧场蓝图对齐（本 PR） |
-| **P1** | [`THEATER_DISTRO_ROADMAP.md`](../../handoff/THEATER_DISTRO_ROADMAP.md) T1–T4 Mode 1 15s 惊喜 |
+| **P1** | [`THEATER_DISTRO_ROADMAP.md`](../../handoff/theater/THEATER_DISTRO_ROADMAP.md) T1–T4 Mode 1 15s 惊喜 |
 | **P2** | VS Code profile 与姊妹仓 `distro.oclive.toml` 镜像 diff 自动化 |
 | **P3** | 安装包 `roles/` 子集 + 默认角色 manifest |
 | **Deferred** | 内核 promote / 裁剪 binary · `binary_upgrade` 产品化 · 赌场 director 插件 — 见 [KERNEL_SCHEDULER_RESCOPE.md](../../handoff/KERNEL_SCHEDULER_RESCOPE.md) |
@@ -187,6 +187,6 @@ flowchart TB
 
 - [`DISTRO_CAPABILITY_PROFILE.md`](DISTRO_CAPABILITY_PROFILE.md)
 - [`MODULE_NONE_SEMANTICS.md`](MODULE_NONE_SEMANTICS.md)
-- [`THEATER_MODES.md`](../../handoff/THEATER_MODES.md)
+- [`THEATER_MODES.md`](../../handoff/theater/THEATER_MODES.md)
 - [`VSCODE_DISTRIBUTION.md`](../role-pack/VSCODE_DISTRIBUTION.md)
 - [`KERNEL_SCHEDULER_RESCOPE.md`](../../handoff/KERNEL_SCHEDULER_RESCOPE.md)

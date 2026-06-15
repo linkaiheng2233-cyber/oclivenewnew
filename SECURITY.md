@@ -10,10 +10,10 @@
 
 ## 报告漏洞
 
-若你发现安全漏洞，请**不要**在公开 issue 中披露细节。请通过以下方式联系维护者（请替换为实际邮箱或 GitHub Security 启用后的入口）：
+若你发现安全漏洞，请**不要**在公开 issue 中披露细节。请通过以下方式联系维护者：
 
-- 优先：仓库 **Security** → **Report a vulnerability**（若已启用 GitHub 私有报告）
-- 或：向维护者发送邮件（标题注明 `[oclive-security]`）
+- **优先**：[GitHub Security Advisories](https://github.com/linkaiheng2233-cyber/oclivenewnew/security/advisories/new) → **Report a vulnerability**（私有报告）
+- **或**：在 GitHub 向维护者 **@linkaiheng2233-cyber** 私信（标题注明 `[oclive-security]`）
 
 请尽量包含：复现步骤、影响范围、版本 / 提交哈希。
 

@@ -9,9 +9,7 @@ use oclive_kernel_host::state::SharedAppState;
 use oclive_kernel_runtime::shared_kernel_binary_path;
 use tauri::{AppHandle, Manager, State};
 
-/// # Errors
-///
-/// Returns [`Err`] when kernel state is not managed (should not happen on desktop).
+/// Returns kernel connection status for the desktop shell (attach/spawn/offline).
 #[tauri::command]
 pub async fn get_kernel_connection_status(
     app: AppHandle,
@@ -22,11 +20,7 @@ pub async fn get_kernel_connection_status(
     Ok(probe_health_status(&conn).await)
 }
 
-/// Re-attach or respawn the loopback kernel.
-///
-/// # Errors
-///
-/// Returns [`Err`] when discovery/spawn fails.
+/// Re-attach or respawn the loopback kernel; fails if discovery/spawn errors.
 #[tauri::command]
 pub async fn reconnect_kernel(
     app: AppHandle,
@@ -91,9 +85,7 @@ pub struct KernelDiagnostics {
     pub health_json: Option<serde_json::Value>,
 }
 
-/// # Errors
-///
-/// Returns [`Err`] when kernel state is missing.
+/// Returns extended kernel diagnostics for settings; fails when kernel connection state is missing.
 #[tauri::command]
 pub async fn get_kernel_diagnostics(app: AppHandle) -> Result<KernelDiagnostics, CommandError> {
     let conn = app

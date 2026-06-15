@@ -116,7 +116,8 @@ export const useKernelConnectionStore = defineStore('kernelConnection', {
           this.lastError = null
         }
       }
-      catch {
+      catch (err) {
+        console.warn('[kernelConnection] refresh failed', err)
         this.status = null
         this.wasHealthy = false
       }
