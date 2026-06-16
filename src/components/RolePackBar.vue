@@ -1,16 +1,11 @@
 <script setup lang="ts">
-import type { UnlistenFn } from '@tauri-apps/api/event'
-import { open, save } from '@tauri-apps/api/dialog'
-import { listen } from '@tauri-apps/api/event'
+import { save } from '@tauri-apps/api/dialog'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useModalFocusRestore } from '../composables/useModalFocusRestore'
+import { useRolePackImport } from '../composables/useRolePackImport'
 import { useRoleStore } from '../stores/roleStore'
-import {
-  exportRolePack,
-  importRolePack,
-  peekRolePack,
-} from '../api'
+import { exportRolePack } from '../api'
 import ImportProgressModal from './ImportProgressModal.vue'
 
 const emit = defineEmits<{
@@ -22,8 +17,8 @@ const roleStore = useRoleStore()
 
 /** Windows / cross-platform illegal filename characters */
 function safeFileSegment(s: string): string {
-  const t = s.replace(/[<>:"/\\|?*\x00-\x1F]/g, '_').trim()
-  return t.length > 0 ? t.slice(0, 80) : 'role'
+  const seg = s.replace(/[<>:"/\\|?*\x00-\x1F]/g, '_').trim()
+  return seg.length > 0 ? seg.slice(0, 80) : 'role'
 }
 
 function defaultExportFilename(): string {
@@ -32,19 +27,22 @@ function defaultExportFilename(): string {
   return `${name}_${ver}.ocpak`
 }
 
-const conflictOpen = ref(false)
-const pendingPath = ref<string | null>(null)
-const pendingPeek = ref<{ id: string, name: string, version: string } | null>(
-  null,
-)
-
-const importProgressOpen = ref(false)
-const importPercent = ref(0)
-const importMessage = ref('')
-const importFileIndex = ref<number | null>(null)
-const importFileTotal = ref<number | null>(null)
-const importCurrentFile = ref<string | null>(null)
-let unlistenProgress: UnlistenFn | null = null
+const {
+  conflictOpen,
+  pendingPeek,
+  importProgressOpen,
+  importPercent,
+  importMessage,
+  importFileIndex,
+  importFileTotal,
+  importCurrentFile,
+  closeConflict,
+  confirmOverwrite,
+  runImportWithPicker,
+} = useRolePackImport({
+  onImported: roleId => emit('imported', roleId),
+  onNotify: payload => emit('notify', payload),
+})
 
 const conflictPrimaryRef = ref<HTMLButtonElement | null>(null)
 const conflictCardRef = ref<HTMLElement | null>(null)
@@ -52,39 +50,6 @@ const conflictCardRef = ref<HTMLElement | null>(null)
 useModalFocusRestore(conflictOpen, conflictCardRef, {
   primary: conflictPrimaryRef,
 })
-
-async function withImportProgress<T>(fn: () => Promise<T>): Promise<T> {
-  importProgressOpen.value = true
-  importPercent.value = 0
-  importMessage.value = t('common.preparing')
-  importFileIndex.value = null
-  importFileTotal.value = null
-  importCurrentFile.value = null
-  unlistenProgress = await listen<{
-    percent: number
-    message: string
-    fileIndex?: number
-    fileTotal?: number
-    currentFile?: string
-  }>('import_progress', (e) => {
-    importPercent.value = e.payload.percent
-    importMessage.value = e.payload.message
-    importFileIndex.value
-      = typeof e.payload.fileIndex === 'number' ? e.payload.fileIndex : null
-    importFileTotal.value
-      = typeof e.payload.fileTotal === 'number' ? e.payload.fileTotal : null
-    importCurrentFile.value
-      = typeof e.payload.currentFile === 'string' ? e.payload.currentFile : null
-  })
-  try {
-    return await fn()
-  }
-  finally {
-    unlistenProgress?.()
-    unlistenProgress = null
-    importProgressOpen.value = false
-  }
-}
 
 async function onExport(): Promise<void> {
   try {
@@ -96,87 +61,6 @@ async function onExport(): Promise<void> {
       return
     await exportRolePack(roleStore.currentRoleId, path)
     emit('notify', { type: 'success', message: t('common.rolePack.exported') })
-  }
-  catch (e) {
-    emit('notify', {
-      type: 'error',
-      message: e instanceof Error ? e.message : String(e),
-    })
-  }
-}
-
-function closeConflict(): void {
-  conflictOpen.value = false
-  pendingPath.value = null
-  pendingPeek.value = null
-}
-
-async function confirmOverwrite(): Promise<void> {
-  const path = pendingPath.value
-  if (!path) {
-    closeConflict()
-    return
-  }
-  if (importProgressOpen.value)
-    return
-  try {
-    const roleId = await withImportProgress(() => importRolePack(path, true))
-    emit('imported', roleId)
-    emit('notify', { type: 'success', message: t('common.rolePack.importedOverwrite', { id: roleId }) })
-  }
-  catch (e) {
-    emit('notify', {
-      type: 'error',
-      message: e instanceof Error ? e.message : String(e),
-    })
-  }
-  finally {
-    closeConflict()
-  }
-}
-
-async function runImportFlow(path: string): Promise<void> {
-  const peek = await peekRolePack(path)
-  const exists = roleStore.roles.some(r => r.id === peek.id)
-  if (exists) {
-    pendingPath.value = path
-    pendingPeek.value = peek
-    conflictOpen.value = true
-    return
-  }
-
-  const roleId = await withImportProgress(() =>
-    importRolePack(path, false),
-  )
-  emit('imported', roleId)
-  emit('notify', { type: 'success', message: t('common.rolePack.imported', { name: peek.name }) })
-}
-
-async function pickImportSource(
-  mode: 'archive' | 'folder',
-): Promise<string | null> {
-  const path = await open(
-    mode === 'folder'
-      ? { directory: true, multiple: false }
-      : {
-          filters: [{ name: t('common.rolePack.importFilterName'), extensions: ['ocpak', 'zip'] }],
-          multiple: false,
-          directory: false,
-        },
-  )
-  if (path === null || Array.isArray(path))
-    return null
-  return path
-}
-
-async function runImportWithPicker(mode: 'archive' | 'folder'): Promise<void> {
-  if (importProgressOpen.value)
-    return
-  try {
-    const path = await pickImportSource(mode)
-    if (!path)
-      return
-    await runImportFlow(path)
   }
   catch (e) {
     emit('notify', {

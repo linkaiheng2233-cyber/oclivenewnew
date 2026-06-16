@@ -6,7 +6,8 @@ use crate::kernel_lifecycle::KernelConnection;
 use oclive_kernel_types::models::dto::{
     CreateEventRequest, CreateEventResponse, GetRoleInfoRequest, JumpTimeRequest, JumpTimeResponse,
     RoleInfo, SendMessageRequest, SendMessageResponse, SetRoleInteractionModeRequest,
-    SetUserPresenceSceneRequest, SwitchSceneRequest, SwitchSceneResponse, TimeStateResponse,
+    SetUserPresenceSceneRequest, SwitchSceneRequest, SwitchSceneResponse, TheaterSceneRequest,
+    TheaterSceneResponse, TimeStateResponse,
 };
 use oclive_kernel_host::state::AppState;
 pub(crate) use oclive_kernel_runtime::app_error_from_http_response;
@@ -208,6 +209,33 @@ impl KernelHttpClient {
         }
         serde_json::from_str(&text)
             .map_err(|e| AppError::OllamaError(format!("remote chat JSON: {e}")))
+    }
+
+    pub async fn generate_theater_scene_via_http(
+        conn: &KernelConnection,
+        req: &TheaterSceneRequest,
+    ) -> Result<TheaterSceneResponse, AppError> {
+        if !Self::ensure_healthy(conn).await {
+            return Err(Self::offline_err());
+        }
+        let url = format!("{}/theater/scene", conn.base_url);
+        let res = conn
+            .http_client()
+            .post(&url)
+            .json(req)
+            .send()
+            .await
+            .map_err(|e| Self::map_send_err(&conn.base_url, "remote theater scene request", e))?;
+        let status = res.status();
+        let text = res
+            .text()
+            .await
+            .map_err(|e| AppError::OllamaError(format!("remote theater scene body: {e}")))?;
+        if !status.is_success() {
+            return Err(app_error_from_http_response(status.as_u16(), &text));
+        }
+        serde_json::from_str(&text)
+            .map_err(|e| AppError::OllamaError(format!("remote theater scene JSON: {e}")))
     }
 
     pub async fn set_role_interaction_mode_via_http(

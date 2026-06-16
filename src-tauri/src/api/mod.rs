@@ -26,6 +26,7 @@ pub mod role;
 pub mod role_pack;
 pub mod scene;
 pub mod settings;
+pub mod theater;
 pub mod time;
 
 pub use chat::send_message;

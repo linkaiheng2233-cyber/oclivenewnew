@@ -57,6 +57,7 @@ pub mod visual_presentation;
 pub mod role_manager;
 pub mod slot_resolver;
 pub mod slot_runner;
+pub mod theater;
 
 pub use agent::{AgentDebugTrace, AgentInput, AgentOutput, AgentProvider, BuiltinReActAgent};
 pub use chat_engine::process_message;

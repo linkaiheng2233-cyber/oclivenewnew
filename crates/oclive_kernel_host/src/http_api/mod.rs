@@ -14,6 +14,7 @@ mod health;
 mod llm;
 mod mcp;
 mod role;
+mod theater;
 
 #[cfg(test)]
 mod tests;
@@ -143,6 +144,7 @@ pub fn api_router(app_state: Arc<AppState>) -> Router {
         )
         .route("/llm/ollama_models", get(llm::llm_ollama_models_route))
         .route("/llm/session_model", post(llm::llm_session_model_route))
+        .route("/theater/scene", post(theater::scene_route))
         .layer(cors)
         .with_state(app_state)
 }

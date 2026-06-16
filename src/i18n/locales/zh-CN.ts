@@ -16,6 +16,7 @@ import { simplePluginManagerZh as simplePluginManager } from './fragments/simple
 import virtualTime from './fragments/virtualTime.zh'
 import toolShellBundle from './fragments/toolShell.zh'
 import onboardingBundle from './fragments/onboarding.zh'
+import theaterBundle from './fragments/theater.zh'
 
 export default {
   apiErrors,
@@ -39,4 +40,5 @@ export default {
   virtualTime,
   ...toolShellBundle,
   ...onboardingBundle,
+  ...theaterBundle,
 }

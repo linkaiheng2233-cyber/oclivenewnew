@@ -1,0 +1,36 @@
+/**
+ * Theater Shell — warm accent & dual-cast palette (incremental over theme-tool.css).
+ * Active when `html[data-shell="theater"]`.
+ */
+:root[data-shell="theater"] {
+  --tool-accent: #e08a3c;
+  --tool-radius: 8px;
+  --tool-radius-lg: 12px;
+
+  --theater-cast-a: #d96b6b;
+  --theater-cast-b: #4f86c6;
+  --theater-cast-a-soft: color-mix(in srgb, var(--theater-cast-a) 12%, transparent);
+  --theater-cast-b-soft: color-mix(in srgb, var(--theater-cast-b) 12%, transparent);
+  --theater-stage-bg: color-mix(in srgb, var(--tool-elevated) 96%, var(--tool-accent) 4%);
+  --theater-stage-max-w: 720px;
+  --theater-portrait-w: 96px;
+  --theater-portrait-max-h: 200px;
+
+  --radius-app: 8px;
+  --radius-card: 8px;
+  --radius-bubble: 8px;
+  --radius-btn: 8px;
+  --radius-pill: 8px;
+}
+
+:root[data-shell="theater"][data-theme="dark"] {
+  --tool-accent: #f0a85c;
+
+  --theater-cast-a: #e88888;
+  --theater-cast-b: #6ba3e0;
+  --theater-stage-bg: color-mix(in srgb, var(--tool-elevated) 94%, var(--tool-accent) 6%);
+}
+
+html[data-shell="theater"] .theater-stage__scroll {
+  background: var(--theater-stage-bg);
+}

@@ -11,7 +11,9 @@ import { hostEventBus } from '../lib/hostEventBus'
 import { useDebugStore } from '../stores/debugStore'
 import { usePluginStore } from '../stores/pluginStore'
 import { useRoleStore } from '../stores/roleStore'
-import { resolveDefaultRoleId } from '../utils/presetRolePicker'
+import { markPresetPickerDone, resolveDefaultRoleId } from '../utils/presetRolePicker'
+import { getTheaterCastConfig } from './theater/theaterCastConfig'
+import { resolveOcliveShell } from './useOcliveShell'
 import { useNarrativeScene } from './useNarrativeScene'
 import type { AppToastFn } from './useAppToast'
 
@@ -67,6 +69,20 @@ export function useAppBootstrap(options: {
         options.showToast('error', options.t('app.toast.noRolesScanned'))
         return
       }
+
+      // Theater: 0-config — skip first-run preset gallery; auto-wire saved cast A (fallback mumu).
+      if (resolveOcliveShell() === 'theater') {
+        markPresetPickerDone()
+        const savedCastA = getTheaterCastConfig().castA.roleId
+        const rid = roleStore.roles.find(r => r.id === savedCastA)?.id
+          ?? roleStore.roles.find(r => r.id === 'mumu')?.id
+          ?? roleStore.roles.find(r => r.id === '枫侵月')?.id
+          ?? resolveDefaultRoleId(roleStore.roles)
+        roleStore.$patch({ currentRoleId: rid })
+        await completeRoleBootstrap(rid)
+        return
+      }
+
       if (roleStore.needsPresetPicker()) {
         options.onPresetPickerRequired?.()
         return

@@ -22,7 +22,9 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
+    "tauri:dev:theater": "node scripts/theater-env.mjs dev",
     "tauri:build": "node scripts/bundle-kernel-for-tauri.mjs && tauri build",
+    "tauri:build:theater": "node scripts/theater-env.mjs build",
     "bundle-kernel:tauri": "node scripts/bundle-kernel-for-tauri.mjs",
     "check:rust:fmt": "cargo fmt --all -- --check",
     "check:rust:clippy": "cargo clippy --workspace --all-targets --all-features -- -D warnings",
@@ -43,6 +45,7 @@
     "test:e2e:core-api-restart": "node scripts/e2e-core-api-restart.mjs",
     "test:e2e:cross-host": "node scripts/e2e-cross-host-memory.mjs",
     "test:e2e:distro-kernel": "node scripts/e2e-distro-kernel.mjs --scenario all",
+    "test:theater:smoke": "node scripts/theater-stranger-proxy.mjs && vitest run src/composables/theater/theaterLogic.test.ts",
     "test:e2e:tauri-bundled-kernel": "node scripts/e2e-tauri-bundled-kernel.mjs",
     "test:e2e:preview": "playwright test",
     "test:e2e:tauri-native": "playwright test e2e/tauri-native.spec.ts"

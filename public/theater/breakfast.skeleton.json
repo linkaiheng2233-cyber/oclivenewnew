@@ -1,0 +1,239 @@
+{
+  "scene": "breakfast",
+  "sceneId": "home",
+  "cast": {
+    "a": { "roleId": "mumu", "name": "木木", "side": "left" },
+    "b": { "roleId": "枫侵月", "name": "枫侵月", "side": "right" }
+  },
+  "beats": [
+    {
+      "id": "b1",
+      "cast": "b",
+      "name": "枫侵月",
+      "text": "木木，粥还要不要温一下？今天外面有点凉。",
+      "stageHint": "把碗推过去",
+      "emotion": "happy"
+    },
+    {
+      "id": "b2",
+      "cast": "a",
+      "name": "木木",
+      "text": "……谁要你温了。我自己会吃。",
+      "stageHint": "别过脸",
+      "emotion": "shy"
+    },
+    {
+      "id": "b3",
+      "cast": "b",
+      "name": "枫侵月",
+      "text": "天气预报说下午可能要下雨，伞在玄关。"
+    },
+    {
+      "id": "b4",
+      "cast": "a",
+      "name": "木木",
+      "text": "知道了知道了，啰嗦。",
+      "stageHint": "扒粥",
+      "emotion": "angry"
+    },
+    {
+      "id": "b5",
+      "cast": "b",
+      "name": "枫侵月",
+      "text": "书包我放你椅子上了，作业本在上层。"
+    },
+    {
+      "id": "b6",
+      "cast": "a",
+      "name": "木木",
+      "text": "……谢、谢谢。",
+      "stageHint": "声音很小",
+      "emotion": "shy"
+    },
+    {
+      "id": "b7",
+      "cast": "b",
+      "name": "枫侵月",
+      "text": "别谢了，再不吃真要迟到了。",
+      "stageHint": "笑",
+      "emotion": "happy"
+    },
+    {
+      "id": "b8",
+      "cast": "a",
+      "name": "木木",
+      "text": "才、才没有要迟到！我很快的！",
+      "stageHint": "猛塞一口",
+      "emotion": "excited"
+    },
+    {
+      "id": "b9",
+      "cast": "b",
+      "name": "枫侵月",
+      "text": "慢点，别噎着。"
+    },
+    {
+      "id": "b10",
+      "cast": "b",
+      "name": "枫侵月",
+      "text": "对了，冰箱里有昨天切的水果，上学路上记得拿。"
+    }
+  ],
+  "forks": {
+    "tea": [
+      {
+        "chipId": "tea",
+        "insertAfterBeatId": "b6",
+        "patchLines": [
+          {
+            "id": "tea-1",
+            "cast": "b",
+            "name": "枫侵月",
+            "text": "等等——这杯苦中药，医生说要空腹喝完。",
+            "stageHint": "递过纸杯"
+          },
+          {
+            "id": "tea-2",
+            "cast": "a",
+            "name": "木木",
+            "text": "……你什么时候站到我背后的？！这味道像惩罚！",
+            "stageHint": "整张脸皱成一团"
+          },
+          {
+            "id": "tea-3",
+            "cast": "b",
+            "name": "枫侵月",
+            "text": "乖，一口。喝完今天的粥我帮你热。",
+            "stageHint": "语气很稳"
+          }
+        ]
+      }
+    ],
+    "late": [
+      {
+        "chipId": "late",
+        "insertAfterBeatId": "b6",
+        "patchLines": [
+          {
+            "id": "late-1",
+            "cast": "b",
+            "name": "枫侵月",
+            "text": "糟了，校车还有三分钟就到路口。",
+            "stageHint": "看表"
+          },
+          {
+            "id": "late-2",
+            "cast": "a",
+            "name": "木木",
+            "text": "什么？！我鞋带还没系！",
+            "stageHint": "弹起来"
+          },
+          {
+            "id": "late-3",
+            "cast": "b",
+            "name": "枫侵月",
+            "text": "粥别带了，我追你——跑！",
+            "stageHint": "拽外套"
+          }
+        ]
+      }
+    ],
+    "biteTongue": [
+      {
+        "chipId": "biteTongue",
+        "insertAfterBeatId": "b6",
+        "patchLines": [
+          {
+            "id": "bt-1",
+            "cast": "a",
+            "name": "木木",
+            "text": "呜——！舌、舌头……！",
+            "stageHint": "捂嘴蹦起来",
+            "emotion": "angry"
+          },
+          {
+            "id": "bt-2",
+            "cast": "b",
+            "name": "枫侵月",
+            "text": "慢点吃啊！张嘴我看看。",
+            "stageHint": "伸手要拦",
+            "emotion": "confused"
+          },
+          {
+            "id": "bt-3",
+            "cast": "a",
+            "name": "木木",
+            "text": "别、别碰！不准看！",
+            "stageHint": "耳朵通红",
+            "emotion": "shy"
+          }
+        ]
+      }
+    ],
+    "nickname": [
+      {
+        "chipId": "nickname",
+        "insertAfterBeatId": "b6",
+        "patchLines": [
+          {
+            "id": "nick-1",
+            "cast": "a",
+            "name": "木木",
+            "text": "喂，小枫子——你今天怎么这么像管家婆？",
+            "stageHint": "突然抬头"
+          },
+          {
+            "id": "nick-2",
+            "cast": "b",
+            "name": "枫侵月",
+            "text": "……小枫子？",
+            "stageHint": "愣了一秒"
+          },
+          {
+            "id": "nick-3",
+            "cast": "a",
+            "name": "木木",
+            "text": "怎么，不许叫？那你也别念天气预报了！",
+            "stageHint": "耳朵红了"
+          }
+        ]
+      }
+    ],
+    "personality": [
+      {
+        "chipId": "personality",
+        "insertAfterBeatId": "b6",
+        "patchLines": [
+          {
+            "id": "pers-1",
+            "cast": "a",
+            "name": "木木",
+            "text": "……如果我说，我其实挺喜欢被你管着，你会不会笑我？",
+            "stageHint": "声音忽然很轻"
+          },
+          {
+            "id": "pers-2",
+            "cast": "b",
+            "name": "枫侵月",
+            "text": "不会。",
+            "stageHint": "安静两秒"
+          },
+          {
+            "id": "pers-3",
+            "cast": "b",
+            "name": "枫侵月",
+            "text": "我只是……没想到你会先说出来。",
+            "stageHint": "把伞往她那边挪"
+          },
+          {
+            "id": "pers-4",
+            "cast": "a",
+            "name": "木木",
+            "text": "闭嘴！快吃饭！",
+            "stageHint": "把脸埋进碗里"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -290,6 +290,8 @@ pub fn run() {
             api::time::jump_time,
             // ?? monologue ??
             api::monologue::generate_monologue,
+            // ?? theater scene director ??
+            api::theater::generate_theater_scene,
             // ?? chat export ??
             api::export::export_chat_logs,
             // ?? memory / events ??

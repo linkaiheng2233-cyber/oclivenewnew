@@ -21,6 +21,7 @@ pub mod http_chat_codes {
     pub const EMPTY_MESSAGE: &str = "EMPTY_MESSAGE";
     pub const INVALID_ROLE_PATH: &str = "INVALID_ROLE_PATH";
     pub const LOAD_ROLE_TASK_PANIC: &str = "LOAD_ROLE_TASK_PANIC";
+    pub const THEATER_SCENE_GEN_FAILED: &str = "THEATER_SCENE_GEN_FAILED";
 }
 
 /// Unified kernel error type mapped to [`KernelErrorBody`] and machine `code` strings.
@@ -247,6 +248,7 @@ mod tests {
             http_chat_codes::EMPTY_MESSAGE,
             http_chat_codes::INVALID_ROLE_PATH,
             http_chat_codes::LOAD_ROLE_TASK_PANIC,
+            http_chat_codes::THEATER_SCENE_GEN_FAILED,
         ] {
             assert!(
                 c.bytes().all(|b| b.is_ascii_uppercase() || b == b'_'),

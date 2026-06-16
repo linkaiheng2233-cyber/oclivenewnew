@@ -1,8 +1,9 @@
 /**
  * Tool Shell — flat gray professional palette (VS Code / Linear / Cursor).
- * Active when `html[data-shell="tool"]`; maps into existing oclive semantic tokens.
+ * Active when `html[data-shell="tool"]` or `theater`; maps into existing oclive semantic tokens.
  */
-:root[data-shell="tool"] {
+:root[data-shell="tool"],
+:root[data-shell="theater"] {
   color-scheme: light;
 
   --tool-bg: #f3f3f3;
@@ -103,7 +104,8 @@
   --tool-shadow-panel: none;
 }
 
-:root[data-shell="tool"][data-theme="dark"] {
+:root[data-shell="tool"][data-theme="dark"],
+:root[data-shell="theater"][data-theme="dark"] {
   color-scheme: dark;
 
   --tool-bg: #1e1e1e;

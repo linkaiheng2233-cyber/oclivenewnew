@@ -33,6 +33,7 @@ function stripNonUiLiterals(source: string): string {
 const ALLOWLIST_PATHS = new Set([
   'utils/roleplayReplySplit.ts',
   'utils/identitySurpriseTriggers.ts',
+  'composables/theater/theaterPortrait.ts',
 ])
 
 function lineHasHanOutsideString(line: string): boolean {

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Distro kernel e2e — spawn / attach / role_snapshot scenarios.
- * Usage: node scripts/e2e-distro-kernel.mjs [--scenario spawn|attach|role-snapshot|bundled-first|all]
+ * Usage: node scripts/e2e-distro-kernel.mjs [--scenario spawn|attach|role-snapshot|bundled-first|theater|all]
  */
 import { spawn, spawnSync } from 'child_process';
 import fs from 'fs';
@@ -193,19 +193,46 @@ async function scenarioBundledFirst() {
   console.log('[e2e-distro] bundled-first ok');
 }
 
+async function scenarioTheater() {
+  console.log('[e2e-distro] scenario: theater');
+  const profile = path.join(repoRoot, 'examples', 'distro-profiles', 'theater.oclive.toml');
+  if (!fs.existsSync(profile)) {
+    throw new Error(`missing theater profile: ${profile}`);
+  }
+  const { child } = spawnKernel({ OCLIVE_DISTRO_PROFILE: profile });
+  try {
+    await waitReady();
+    const res = await fetch(`http://127.0.0.1:${port}/health`, {
+      headers: { Accept: 'application/json' },
+    });
+    const body = await res.json();
+    if (!res.ok) {
+      throw new Error(`/health failed: ${JSON.stringify(body)}`);
+    }
+    const distroId = body.distro_id ?? body.active_profile_summary?.distro_id;
+    if (distroId !== 'theater') {
+      throw new Error(`expected distro_id=theater, got ${JSON.stringify(distroId)}`);
+    }
+    console.log('[e2e-distro] theater ok');
+  } finally {
+    child.kill();
+  }
+}
+
 async function main() {
   if (!findKernelBinary()) {
     console.warn('[e2e-distro] skip: build oclive-kernel-server first');
     process.exit(0);
   }
   const run = scenario === 'all'
-    ? ['spawn', 'attach', 'role-snapshot', 'bundled-first']
+    ? ['spawn', 'attach', 'role-snapshot', 'bundled-first', 'theater']
     : [scenario];
   for (const s of run) {
     if (s === 'spawn') await scenarioSpawn();
     else if (s === 'attach') await scenarioAttach();
     else if (s === 'role-snapshot') await scenarioRoleSnapshot();
     else if (s === 'bundled-first') await scenarioBundledFirst();
+    else if (s === 'theater') await scenarioTheater();
     else {
       console.error(`unknown scenario: ${s}`);
       process.exit(1);

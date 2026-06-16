@@ -1,6 +1,5 @@
-# OCLive AI Theater — distro profile template (inactive until wired into examples/ + resources/)
-# Fork baseline: examples/distro-profiles/desktop.oclive.toml (Chat Pro)
-# Copy to examples/distro-profiles/ and src-tauri/resources/distro-profiles/ when implementation starts.
+# OCLive AI Theater — distro profile template
+# Synced to examples/distro-profiles/ and src-tauri/resources/distro-profiles/
 
 schema_version = 1
 distro_id = "theater"

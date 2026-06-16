@@ -75,7 +75,7 @@ impl LlmClient for MockLlmClient {
     }
 
     async fn generate_tag(&self, _model: &str, _prompt: &str) -> Result<String> {
-        Ok("neutral".to_string())
+        Ok(self.reply.clone())
     }
 }
 

@@ -1,5 +1,7 @@
 import type { Ref } from 'vue'
 import { computed, type ComputedRef, onBeforeUnmount, onMounted, ref } from 'vue'
+import { hostEventBus } from '../lib/hostEventBus'
+import { resolveOcliveShell } from './useOcliveShell'
 
 export interface UseGlobalHotkeysOptions {
   simplePluginManagerOpen: Ref<boolean>
@@ -70,7 +72,14 @@ export function useGlobalHotkeys(opts: UseGlobalHotkeysOptions) {
   }
 
   function onHotkey(e: KeyboardEvent): void {
+    const isTheater = resolveOcliveShell() === 'theater'
+
     if (e.key === 'Escape') {
+      if (isTheater) {
+        e.preventDefault()
+        hostEventBus.emit('theater:settings', { action: 'escape' })
+        return
+      }
       if (opts.simplePluginManagerOpen.value) {
         e.preventDefault()
         opts.simplePluginManagerOpen.value = false
@@ -121,6 +130,10 @@ export function useGlobalHotkeys(opts: UseGlobalHotkeysOptions) {
     }
     if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 's') {
       e.preventDefault()
+      if (resolveOcliveShell() === 'theater') {
+        hostEventBus.emit('theater:settings', { action: 'toggle' })
+        return
+      }
       opts.openSettingsView()
       return
     }

@@ -2,7 +2,7 @@
 
 **状态**：当前聚焦 **模式 1**（官方剧本微改）。模式 2 / 3 **已设计、已冻结于本文档，未开工**。
 **最后更新**：2026-06-16
-**配套**：本目录 [`README.md`](README.md)（内核重开策略 / 基线文件 / 启动命令）。本文件是**思路与路线的 SSOT**；README 是工程落点。
+**配套**：本目录 [`README.md`](README.md)（内核重开策略 / 基线文件 / 启动命令）· [`INFORMATION_ARCHITECTURE.md`](INFORMATION_ARCHITECTURE.md)（模式 1 界面 IA：舞台壳 / 区域 / 组件 / 状态机 / 开发顺序）。本文件是**思路与路线的 SSOT**；README 是工程落点。
 
 ---
 
@@ -84,6 +84,8 @@
 ### 4.5 零设置门槛
 - **第一印象之前不许填任何 API key。** 预生成 + 本地模型扛住首启。
 - API key 是后面"想深入 / 隐私 / 无限用"才出现的一步，不是入场券。**先爽，再让他配。**
+- **模式 1 卡司**：首启默认 **mumu × 枫侵月**（零配置）；用户可在 **剧场设置 → 卡司** 导入/选择任意两个角色包并重开本场。**官方剧本大纲**（`breakfast.skeleton.json` beats/forks 锚点）固定不变，仅替换称呼与人设语气适配。
+- **非默认卡司 AI 适配加载**：换角后前端 `adaptRuntimeSkeleton` → `POST /theater/scene` **`mode=cast_adapt`**（内核 `scene_director` 单次 LLM 改写开场 beats + 全部 fork 罐头文本；beat/fork id 与 `insertAfterBeatId` 不变）；结果缓存 `localStorage` `oclive.theater.adapted.v1`（key：`sceneId:castA.roleId:castB.roleId`）；**再次进入同组合命中缓存秒开**。`resolveCastTier`：**默认卡司**（mumu×枫侵月）= `default`（零 AI）；**任一侧偏离**即 `applied`（含**混合卡司**）。适配失败 / 超时 / 内核 offline → **`fallbackToDefaultCast`** 整局回官方默认，非换名半成品；设置 → **恢复默认卡司** 走 `applyDefaultCast`。
 
 ### 4.6 创作漏斗（通往编辑器的暗门）
 - **"🎭 微调性格"这个戳点，本质是迷你版"创作"，是通往编辑器的暗门。**
@@ -119,10 +121,34 @@
 
 - 新增 `process_message` **编排阶段**
 - 六槽扩展、蓝图 v3 DSL、`dual_core` / `expert_routing` 解冻
+- **内核 / 后端模块 / 双核定制**（模式 3 范畴）
 
-**允许**（不违反冻结）：theater 发行版打包、目录插件、UI 差分、模式 1 预生成骨架与局部补丁。
+**允许**（不违反冻结）：
+
+- theater 发行版打包、目录插件、UI 差分
+- 模式 1 预生成骨架与局部补丁
+- **场景导演（专用命令）**：`generate_theater_scene` / `POST /theater/scene`（`oclive_kernel_host::domain::theater::scene_director`）——一次 LLM 调用结构化重写整场 JSON beats；走 `AppState::llm` 与已配置模型，**非** `process_message` stage、**非**六槽
+- **重演（混合 B，已 superseded）**：旧前端 `send_message`+正则局部补丁路径已由场景导演替代；保留 `buildWorkingScript` 作 fallback 罐头
+
+**推迟到模式 3**：自由双角色来回、N cast 泛化、内核级双核编排与六槽后端模块定制。
+
+**场景导演 UX（2026-06）**：
+
+- 前端 `generate_theater_scene` **30s** 竞态超时；思考链播完后显示已等待秒数与模型阶段文案；invoke 失败必恢复 idle。
+- 内核仅重写**涟漪区**（最后一项 tweak 插入点之后），前缀（含罐头 patch）原样拼接；默认 `max_beats=12`。
+- 首轮 LLM 走 `generate_tag`（低 temperature）；内核单轮超时 `OCLIVE_THEATER_SCENE_TIMEOUT_SECS`（默认 **25**）；环境变量 `OCLIVE_THEATER_RIPPLE_MAX_BEATS`（默认 **12**）。
 
 工程代理（如 `test:theater:smoke`）**不替代**真人「卧槽」门槛。
+
+---
+
+## 5.6 辅助小模型（草案 · 未实现）
+
+> 解冻条件：涟漪重写 + 30s UX 上线后，慢模型 fallback 率仍高。
+
+- **规则模板 + 小模型**：仅生成 3–5 行涟漪对白，失败率低于整场 JSON。
+- **两阶段**：小模型草稿 → 可选大模型润色（用户有云端 key 时）。
+- **环境开关**：预留 `OCLIVE_THEATER_AUX_MODEL`（本迭代不实现）。
 
 ---
 
