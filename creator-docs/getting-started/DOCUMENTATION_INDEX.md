@@ -123,10 +123,12 @@
 | **发行版内核 attach/spawn SSOT** | **[../kernel/DISTRO_KERNEL_LIFECYCLE.md](../kernel/DISTRO_KERNEL_LIFECYCLE.md)**（bundled-first spawn · profile attach/replace · 决策上收：`kernel_strategy.rs` · `/health` distro 字段 · `oclive kernel ensure`） |
 | **内核调度范围重划（2026-06）** | **[../../handoff/KERNEL_SCHEDULER_RESCOPE.md](../../handoff/KERNEL_SCHEDULER_RESCOPE.md)** · 单核 `:8420` · `binary_upgrade` Freeze · K-SCHED backlog |
 | **三发行版内核结项（Pro / Flash / Theater profile）** | **[../../handoff/THREE_DISTRO_KERNEL_CLOSURE.md](../../handoff/THREE_DISTRO_KERNEL_CLOSURE.md)** · smoke 表 · CI 覆盖 |
-| **Theater Phase 4 就绪** | **[../../handoff/theater/THEATER_PHASE4_READINESS.md](../../handoff/theater/THEATER_PHASE4_READINESS.md)** |
+| **AI 剧场发行版（思路与路线 SSOT）** | **[../../handoff/theater/DEVELOPMENT_ROADMAP.md](../../handoff/theater/DEVELOPMENT_ROADMAP.md)** · [README](../../handoff/theater/README.md) |
+| **VS Code Flash 工作文档** | **[../../handoff/vscode/README.md](../../handoff/vscode/README.md)** · 契约 [VSCODE_DISTRIBUTION.md](../role-pack/VSCODE_DISTRIBUTION.md) |
+| **启动器 / 工作室 / 编写器（主仓协调）** | [launcher](../../handoff/launcher/README.md) · [studio](../../handoff/studio/README.md) · [pack-editor](../../handoff/pack-editor/README.md) |
 | **发行版能力配置 `distro.oclive.toml`（P1 Schema）** | **[../kernel/DISTRO_CAPABILITY_PROFILE.md](../kernel/DISTRO_CAPABILITY_PROFILE.md)** · 示例 `examples/distro-profiles/` |
 | **发行版默认插件矩阵（三 personas）** | **[../kernel/DISTRO_DEFAULT_PLUGINS.md](../kernel/DISTRO_DEFAULT_PLUGINS.md)** · desktop-chat / vscode / theater |
-| **编写器路线图（立绘 catalog · 视觉舞台 · 分级导出）** | **[../../handoff/PACK_EDITOR_ROADMAP.md](../../handoff/PACK_EDITOR_ROADMAP.md)** · 姊妹仓 `oclive-pack-editor/handoff/PACK_EDITOR_ROADMAP.md` |
+| **编写器路线图（立绘 catalog · 视觉舞台 · 分级导出）** | **[../../handoff/pack-editor/PACK_EDITOR_ROADMAP.md](../../handoff/pack-editor/PACK_EDITOR_ROADMAP.md)** · 姊妹仓 `oclive-pack-editor/handoff/PACK_EDITOR_ROADMAP.md` |
 | **立绘 + 视觉表现实施计划** | **[../../handoff/PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md](../../handoff/PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md)** |
 | **蓝图 v2（`pipeline.ocblueprint` · P0–P8 收口，归档）** | **[RFC_ROLE_BLUEPRINT_V2](../../handoff/archive/RFC_ROLE_BLUEPRINT_V2.md)** · **[BLUEPRINT_V2_IMPLEMENTATION_PLAN](../../handoff/archive/BLUEPRINT_V2_IMPLEMENTATION_PLAN.md)** · **[BLUEPRINT_V2_DECISIONS](../../handoff/archive/BLUEPRINT_V2_DECISIONS.md)** |
 | **内核分层纪律（domain / infrastructure / api）** | **[../../handoff/ARCHITECTURE_LAYERING.md](../../handoff/ARCHITECTURE_LAYERING.md)** |

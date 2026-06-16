@@ -2,7 +2,7 @@
 
 **状态**：2026-06-12 更新 — **Phase 1–4 主仓已交付**；编写器 Sprint A–D 已落地；Live2D Cubism **defer**（见 `LIVE2D_CUBISM_DEFER.md`）  
 **SSOT**： [RFC_PORTRAIT_FACILITY.md](../creator-docs/rfc/RFC_PORTRAIT_FACILITY.md) · [RFC_VISUAL_PRESENTATION_FACILITY.md](../creator-docs/rfc/RFC_VISUAL_PRESENTATION_FACILITY.md)  
-**编写器**： [PACK_EDITOR_ROADMAP.md](PACK_EDITOR_ROADMAP.md)
+**编写器**： [pack-editor/PACK_EDITOR_ROADMAP.md](pack-editor/PACK_EDITOR_ROADMAP.md)
 
 ---
 

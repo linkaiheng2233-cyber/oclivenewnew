@@ -19,7 +19,7 @@
 - **`canonical_llm_sync` / `plugin_state` / MCP·Ollama downgrade**: `tracing::warn!` (K-ROBUST-02/03).
 - **Kernel snapshot & storage capability degraded UI** (`kernel.ts`, `useKernelStatus`, `ChatStorageSettingsPanel`).
 - **`process_message` readability closure**: `preflight_turn` / `PostLlmCtx` / `PreLlmOutput` grouping; `events.rs` / `blueprint_v2_slot_registry.rs` module extraction; `SettingsView` tab subcomponents; `role_runtime` submodules; `blueprint_v2` tests moved to `tests/`.
-- **handoff layout**: `THEATER_*` → `handoff/theater/`, `VSCODE_*` → `handoff/vscode/`.
+- **handoff layout**: `THEATER_*` → `handoff/theater/`, `VSCODE_*` → `handoff/vscode/`; added `handoff/launcher/`, `handoff/pack-editor/`, `handoff/studio/` distro doc indexes; fixed broken links after theater greenfield reset.
 - **README / CONTRIBUTING / SECURITY** community infra updates; PR template links to PR gate matrix; optional `scripts/setup-dev.ps1`.
 - **Five-dimension review closure (Batch 1–3)**: architecture overview co-presence chain aligned with Stable code; VS Code / cross-host docs policy-first; `user_identities` validation matches `load_role`; `reply_post_processor` requires non-empty `plugin_id` when `enabled` + `directory`; `ProcessMessageError` stage preserved on outward `AppError` messages; chat turn `role_runtime` preflight merge, single CASE `memory decay` UPDATE, `SessionCache` skips repeat interaction_mode seed; workspace `default-members` excludes `fuzz`; `chatStore` load / `addMessage` micro-optimizations.
 - **`chat_storage` pack validation**: `oclive pack validate` now checks `config.json` → `chat_storage` (backend / location / positive integers / replay threshold 0.1–1.0), parity with `reply_post_processor`; `CHANGELOG.md` parity synced.
@@ -40,8 +40,7 @@
 
 - **Theater release packaging**: `npm run tauri:build:theater` · `OCLIVE_TAURI_SHELL=theater` · roles subset (`theater-breakfast-a/b`) via [`scripts/filter-theater-roles.mjs`](scripts/filter-theater-roles.mjs) into `src-tauri/resources/roles/`.
 - **Theater 15s engineering proxy**: [`scripts/theater-stranger-proxy.mjs`](scripts/theater-stranger-proxy.mjs) · aggregated in `npm run test:theater:smoke` (CI `frontend` job).
-- **Theater director plugin RFC + example**: [`handoff/RFC_THEATER_DIRECTOR_PLUGIN.md`](handoff/RFC_THEATER_DIRECTOR_PLUGIN.md) · [`examples/directory-plugin-theater-director/`](examples/directory-plugin-theater-director/) · optional Mode 3 wiring via `theaterDirectorClient`.
-- **Theater stranger-test facilitator guide**: [`handoff/theater/THEATER_STRANGER_FACILITATOR.md`](handoff/theater/THEATER_STRANGER_FACILITATOR.md).
+- **Theater vision & roadmap SSOT**: [`handoff/theater/DEVELOPMENT_ROADMAP.md`](handoff/theater/DEVELOPMENT_ROADMAP.md) (Mode 1 greenfield; legacy `THEATER_*` docs removed).
 - **Three-distro kernel smoke (Pro / Flash)**: `npm run test:distro:smoke` aggregates profile mirror · distro kernel e2e · Tauri bundled-first; `e2e-distro-kernel` adds a **theater** scenario; CI **`cross-host-e2e`** adds `e2e-tauri-bundled-kernel` and VS Code profile diff. Closure SSOT: [`handoff/THREE_DISTRO_KERNEL_CLOSURE.md`](handoff/THREE_DISTRO_KERNEL_CLOSURE.md).
 - **Chat Pro bundled-first spawn (K-SCHED-05/01)**: Tauri `bundle-kernel-for-tauri.mjs` · `pick_best_for_spawn` bundled → shared → dev; `binary_upgrade` replace off by default.
 - **VS Code Flash profile mirror**: `examples/distro-profiles/vscode.oclive.toml` ↔ sibling `distro.oclive.toml` · `npm run test:distro-profile-mirror`.
@@ -49,7 +48,7 @@
 - **Hot-path stage tracing (K-PERF-02)**: `oclive_turn` target logs per-`ChatStage` `elapsed_ms`; sample table in `creator-docs/getting-started/PERFORMANCE.md` §6.
 - **CHANGELOG CI gate (K-DOC-02)**: `scripts/check-changelog-parity.mjs` wired into `dimension5-acceptance.mjs`.
 - **AI Theater v0 (`theater` distro)**: `examples/distro-profiles/theater.oclive.toml`; `TheaterShell` first screen (hides six-slot/blueprint UI); breakfast scene + dual contrast role packs + pre-generated `skeleton.json`; 3 poke chips + local Ollama beat patch (graceful fallback).
-- **Product freeze**: no kernel expansion until Theater v0 stranger validation — see `handoff/PRODUCT_FREEZE_THEATER_V0.md`.
+- **Product freeze**: no kernel expansion until Theater v0 stranger validation — see [`handoff/theater/DEVELOPMENT_ROADMAP.md`](handoff/theater/DEVELOPMENT_ROADMAP.md) §4.8.
 - **Creator golden path**: `creator-docs/getting-started/CREATOR_GOLDEN_PATH.md` (separate from kernel docs).
 
 ### Performance

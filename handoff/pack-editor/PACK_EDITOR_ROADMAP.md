@@ -1,9 +1,9 @@
 # 编写器能力路线图（立绘 catalog · 视觉舞台）
 
-**状态**：2026-06-13 与 RFC 对齐；**代码分阶段见** [PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md](PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md)  
-**姊妹仓编写器副本**：[`oclive-pack-editor/handoff/PACK_EDITOR_ROADMAP.md`](../../oclive-pack-editor/handoff/PACK_EDITOR_ROADMAP.md)
+**状态**：2026-06-13 与 RFC 对齐；**代码分阶段见** [PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md](../PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md)  
+**姊妹仓编写器副本**：[`oclive-pack-editor/handoff/PACK_EDITOR_ROADMAP.md`](../../../oclive-pack-editor/handoff/PACK_EDITOR_ROADMAP.md)
 
-**RFC**： [RFC_PORTRAIT_FACILITY.md](../creator-docs/rfc/RFC_PORTRAIT_FACILITY.md) · [RFC_VISUAL_PRESENTATION_FACILITY.md](../creator-docs/rfc/RFC_VISUAL_PRESENTATION_FACILITY.md)
+**RFC**： [RFC_PORTRAIT_FACILITY.md](../../creator-docs/rfc/RFC_PORTRAIT_FACILITY.md) · [RFC_VISUAL_PRESENTATION_FACILITY.md](../../creator-docs/rfc/RFC_VISUAL_PRESENTATION_FACILITY.md)
 
 ---
 

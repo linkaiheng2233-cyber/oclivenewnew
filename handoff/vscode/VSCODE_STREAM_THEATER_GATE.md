@@ -4,7 +4,7 @@
 
 ## 依据
 
-[PRODUCT_FREEZE_THEATER_V0.md](./PRODUCT_FREEZE_THEATER_V0.md) 冻结的是：
+[theater/DEVELOPMENT_ROADMAP.md](../theater/DEVELOPMENT_ROADMAP.md) §5.5 冻结的是：
 
 - 新增 `process_message` **编排阶段**
 - 六槽扩展

@@ -48,7 +48,7 @@ npm run tauri:dev
 npm run dev:theater
 ```
 
-- 早餐场景 · 双角色对比 · 3 poke chips（见 [PRODUCT_FREEZE_THEATER_V0.md](../../handoff/PRODUCT_FREEZE_THEATER_V0.md)）
+- 早餐场景 · 双角色对比 · 3 poke chips（见 [theater/DEVELOPMENT_ROADMAP.md](../../handoff/theater/DEVELOPMENT_ROADMAP.md) §4）
 - 自动化烟测：`npm run test:unit` → `src/theater/theater.acceptance.test.ts`（9 测）
 
 ## 4. 分发与下一步（5 分钟）

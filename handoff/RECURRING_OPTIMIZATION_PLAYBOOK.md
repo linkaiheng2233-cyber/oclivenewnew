@@ -282,6 +282,7 @@ npm run check:rust                               # fmt + clippy(-D warnings) + t
 | 12 | 2026-06-11 | 全 | PASS | A− | K-DOC-13; K-VALID-CHAT-STORAGE-01; K-PERF-25/26; K-BUILD-04; D-SLOT-01c/D-TRAIT-01b; **K-PERF-14** pre_llm Wave1; **D-NAME-01** 35 改名+22 锚点 | dimension5 九检; host lib 183; hotpath+roundtrip; clippy 绿; ratchet 未上涨 |
 | 13 | 2026-06-15 | 全 | PASS | A− | W1–4 路线图收口: robust 镜像/可观测; V4 社区基建; process_message/post/events/blueprint 拆分; 前端 composable 化 | host lib 191+; dimension5 九检; Node ≥20 |
 | 14 | 2026-06-15 | 半 | PASS* | A− | M0 W13 CHANGELOG 合入; M1 PostLlmCtx/preflight/PreLlm 分组/SettingsView/role_runtime/blueprint 测试外移; M2 human-docs-en 04/07+setup-dev; M3 注释英文化 batch 1–2; D-READ-01/02/04·K-DOC-14 Done | *host lib 193; blueprint_v2 integration 13; SettingsView 304 行; 维护者跑 check:release |
+| 15 | 2026-06-15 | 半 | PASS | A− | P0 工程验收: theater smoke+proxy 100%; tauri:build:theater MSI/NSIS 绿; 真人表仍空→Phase5 FAIL 分支; M5 K-DOC-15/16 Done; V4-ONBOARD-03 good-second-issue; 技术债四层收束; K-PERF-10 条件未触发 | 见 TECHNICAL_DEBT §1; theater/DEVELOPMENT_ROADMAP §5.5 |
 
 ---
 

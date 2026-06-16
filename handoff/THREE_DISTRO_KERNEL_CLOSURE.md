@@ -16,7 +16,7 @@
 
 **同构建各打包**：Tauri 安装包经 `bundle-kernel-for-tauri.mjs` 写入 bundled 内核；spawn 决策 **bundled → shared → dev**（K-SCHED-05）。
 
-**内核编排仍冻结**（[`PRODUCT_FREEZE_THEATER_V0.md`](./PRODUCT_FREEZE_THEATER_V0.md)）：Phase 4 允许 theater 发行版打包 / 插件 / UI，**不是**新 `process_message` stage。
+**内核编排仍冻结**（[`theater/DEVELOPMENT_ROADMAP.md`](./theater/DEVELOPMENT_ROADMAP.md) §5.5）：theater 发行版打包 / 插件 / UI 在模式 1 范围内，**不是**新 `process_message` stage。
 
 ---
 
@@ -68,16 +68,16 @@ CI **`cross-host-e2e`**（Ubuntu 22.04）含：`e2e-cross-host-memory` · `e2e-d
 | Theater roles 子集打包 | Phase 4 首 epic |
 | sidecar 分 manifest 字段 | P2b Deferred |
 | VS Code F5 / VSIX 发布验收 | V-VSCODE-PERF-05 Deferred |
-| 导演 directory 插件 | Phase 4 · 见 [`THEATER_PHASE4_READINESS.md`](./THEATER_PHASE4_READINESS.md) |
+| 导演 directory 插件 | **Deferred** · greenfield 重建；见 [`theater/DEVELOPMENT_ROADMAP.md`](./theater/DEVELOPMENT_ROADMAP.md) §5 |
 
 ---
 
 ## 6. Phase 4 入口
 
-Pro + Flash smoke **已通过** → Theater Phase 4 工程门槛满足（产品陌生人测试仍 pending）。
+Pro + Flash smoke **已通过** → Theater **模式 1** greenfield 重建中（产品陌生人测试仍 pending）。
 
-→ [`THEATER_PHASE4_READINESS.md`](./THEATER_PHASE4_READINESS.md)  
-→ [`THEATER_DISTRO_ROADMAP.md`](./THEATER_DISTRO_ROADMAP.md) §0 解冻条件
+→ [`theater/DEVELOPMENT_ROADMAP.md`](./theater/DEVELOPMENT_ROADMAP.md)  
+→ [`theater/README.md`](./theater/README.md)
 
 ---
 

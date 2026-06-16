@@ -101,11 +101,15 @@
 
 | 文档 | 用途 |
 |------|------|
-| [handoff/README](../handoff/README.md) | 活跃 vs 归档 |
+| [handoff/README](../handoff/README.md) | 活跃 vs 归档 · **发行版子目录索引** |
+| [theater/](../handoff/theater/) | AI 剧场工作文档 · [DEVELOPMENT_ROADMAP](../handoff/theater/DEVELOPMENT_ROADMAP.md) |
+| [vscode/](../handoff/vscode/) | VS Code Flash 工作文档 |
+| [pack-editor/](../handoff/pack-editor/) | 编写器路线图（主仓副本） |
+| [launcher/](../handoff/launcher/) · [studio/](../handoff/studio/) | 启动器 / 工作室协调入口 |
 | [TECHNICAL_DEBT_INVENTORY](../handoff/TECHNICAL_DEBT_INVENTORY.md) | 技术债 |
 | [04_4.6_PROJECT_TRUTH_CHECKLIST](../handoff/04_4.6_PROJECT_TRUTH_CHECKLIST.md) | 认知清单 |
 | [CHAT_STORAGE_ARCHITECTURE](../handoff/CHAT_STORAGE_ARCHITECTURE.md) | 聊天存储 |
-| [DOCUMENTATION_INDEX](../creator-docs/getting-started/DOCUMENTATION_INDEX.md) | 全量索引 |
+| [DOCUMENTATION_INDEX](../creator-docs/getting-started/DOCUMENTATION_INDEX.md) | 全量契约索引（`creator-docs/`） |
 
 ---
 

@@ -26,4 +26,4 @@
 ## 第二剧场 / 多场景
 
 - 进入 Phase 4+ backlog，需 **Chat Pro + VS Code Flash smoke 通过** 且 Theater v0 陌生人测试通过后再排期。
-- 导演 RPC / T1–T4 / roles 子集：[`THEATER_DISTRO_ROADMAP.md`](./THEATER_DISTRO_ROADMAP.md)（**Deferred**，不在 Pro/Flash 计划内实现）。
+- 导演 RPC / 模式 2–3：[`theater/DEVELOPMENT_ROADMAP.md`](./theater/DEVELOPMENT_ROADMAP.md) §5（**Deferred**，不在 Pro/Flash 计划内实现）。
