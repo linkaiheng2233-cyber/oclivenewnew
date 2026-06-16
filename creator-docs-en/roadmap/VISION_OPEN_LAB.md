@@ -4,6 +4,8 @@ oclive’s long-term direction is a **local-first, swappable-subsystem desktop b
 
 This aligns with [VISION_ROADMAP_MONTHLY.md](VISION_ROADMAP_MONTHLY.md); this page highlights the **“open experimentation”** axis for README and external messaging.
 
+**Soul weight layer (roadmap)**: After the three distros ship, the creator toolchain adds a **fine-tune workshop**—packable LoRA/SFT adapters switched at runtime by the **expert-model facility** (`expert_routing` · `slot.lora.apply`). See the workshop section in the monthly vision doc and [BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md](BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md) §5.
+
 [中文](../../creator-docs/roadmap/VISION_OPEN_LAB.md)
 
 **Already aligned in the main repo**: HTTP JSON-RPC remote host path, `plugin_backends` and extension docs, directory plugins and whole-shell bridge, open-source and multi-OS CI. See root [README.md](../../README.md) “roadmap status” and [DOCUMENTATION_INDEX.md](../getting-started/DOCUMENTATION_INDEX.md).

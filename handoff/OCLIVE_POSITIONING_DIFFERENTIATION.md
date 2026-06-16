@@ -203,6 +203,7 @@
 
 1. [ ] 把第 2.1 能力清单对照竞品逐项确认"确实独有"，删掉站不住的；
 2. [ ] 写"如何写一个 oclive 模块"的最小教程，并**亲手把一个外部技术（如某种树状记忆）包成模块插进去**——这一步同时验证前提1（可替换性）、并示范 §2.3 实验平台的核心用法；
-3. [ ] 把 **bench 升级为"组件质量评测台"**：定义场景集 + 可复现对比指标（召回/连贯/行为），复用 OOCP / replay / MOCK_LLM；
+3. [ ] 把 **bench 升级为"组件质量评测台"**：定义场景集 + 可复现对比指标（召回/连贯/行为），复用 OOCP / replay / MOCK_LLM；**含微调工坊 T3**（prompt-only vs LoRA vs LoRA+专家路由）；
 4. [ ] 选定并打磨 1 个样板应用；物色第 2 个非聊天应用；
 5. [ ] 定位定稿后，再谈宣传（样板 + DX + 一句话三者齐备前不宣传）。
+6. [ ] **三发行版结项后**：微调工坊 T0 契约（adapter 卫星文件 + `expert_routing` / `slot.lora.apply`）→ T1 独立创作者工具 MVP；冻结期内不接 Stable 主链，见 [VISION_ROADMAP_MONTHLY.md](../creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md)「微调工坊」。

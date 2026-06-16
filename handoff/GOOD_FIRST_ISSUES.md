@@ -1,6 +1,8 @@
-# Good First Issues（策展清单 · 轮次 13）
+# Good First Issues（策展清单 · 轮次 15）
 
-维护者可在 GitHub 用本表批量创建 `good-first-issue` 标签 issue。题面已写好，复制标题与正文即可。
+维护者可在 GitHub 用本表批量创建 `good-first-issue` / `good second issue` 标签 issue。题面已写好，复制标题与正文即可。
+
+## good-first-issue（#1–10 · 轮次 13）
 
 | # | 标题 | 标签 | 说明 |
 |---|------|------|------|
@@ -15,5 +17,22 @@
 | 9 | `test: hybrid_store mirror best-effort warn coverage` | `good first issue`, `rust` | 可选 `tracing_test` 断言 warn 行 |
 | 10 | `docs: README Contributing card i18n mirror` | `good first issue`, `documentation` | `README.en.md` 与中文 Contributing 三链对齐 |
 
+## good-second-issue（#11–13 · 轮次 15 · V4-ONBOARD-03）
+
+边界单测与可观测性；需熟悉 `oclive_kernel_host` 测试布局。标签建议：`good second issue`, `rust`。
+
+| # | GitHub | 标题 | 说明 |
+|---|--------|------|------|
+| 11 | [#71](https://github.com/linkaiheng2233-cyber/oclivenewnew/issues/71) | `test: emotion_analyzer empty input and neutral fallback` | 扩 `crates/oclive_kernel_host/src/domain/emotion_analyzer.rs` 边界：`""` / 纯标点 / 超长输入；断言 `EmotionResult` 维度在 0–1 且 `format_for_prompt` 不 panic |
+| 12 | [#72](https://github.com/linkaiheng2233-cyber/oclivenewnew/issues/72) | `test: slot_resolver mock BackendRegistry position merge` | 参照 `src-tauri/tests/slot_resolver_v3.rs`；用 mock `SlotRegistryResolver` / 最小 `pipeline.ocblueprint` 断言 memory 多实例按 position 列出 |
+| 13 | [#73](https://github.com/linkaiheng2233-cyber/oclivenewnew/issues/73) | `test: hybrid_store mirror rebuild emits tracing warn on failure` | `crates/oclive_kernel_host/src/infrastructure/chat_storage/hybrid_store.rs`；`tracing_test` 或 capture subscriber 断言 `rebuild_mirror_best_effort` 失败路径 `warn!` 含 session id |
+
+**创建命令（维护者）：**
+
+```powershell
+gh issue create --repo linkaiheng2233-cyber/oclivenewnew --title "…" --body "…" --label "good second issue" --label "rust"
+```
+
 **过滤 URL**（创建后）：  
-`https://github.com/linkaiheng2233-cyber/oclivenewnew/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22`
+`https://github.com/linkaiheng2233-cyber/oclivenewnew/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22`  
+`https://github.com/linkaiheng2233-cyber/oclivenewnew/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+second+issue%22`

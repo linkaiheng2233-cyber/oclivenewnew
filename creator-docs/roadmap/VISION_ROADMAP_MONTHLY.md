@@ -14,6 +14,7 @@
 | 双软件 | **运行时（玩家）** 与 **创作者工具** 分离，**角色包**为唯一纽带 | 包规范强化、编写器、README 分工说明 |
 | 角色即工作流 | 每个角色包是一套可声明的配置 + 可选后端 | manifest 扩展、`min_runtime`、后端枚举 |
 | 记忆 / 情感可换 | 七维等只是**当前默认模块**，非平台上限 | Memory/Emotion 门面、第二套实现、远期侧车/WASM |
+| **灵魂权重层** | 口癖、节奏、直播态等可沉淀为 **LoRA/SFT adapter**，与 prompt / 记忆并列；运行时由 **专家模型设施子模块** 按条件切换（`slot.lora.apply`），而非再做一个封闭「性格引擎」 | 微调工坊（独立创作者工具）、角色包 adapter 卫星文件、`expert_routing.json`、directory 推理插件 |
 
 ---
 
@@ -113,6 +114,38 @@
 | 奖杯 / 关系仪式、多模式（纯聊 / 沉浸）细化 | 与产品节奏对齐，可插入各月小迭代。 |
 | 生态 | 示例包、模板仓库、贡献指南 `CONTRIBUTING.md`。 |
 
+### 三发行版结项之后 · 微调工坊（创作者工具链第三阶段）
+
+**定位**：在 **Chat Pro / VS Code Flash / AI Theater** 工程 smoke 结项、编写器简单创作闭环可用之后，补创作者工具链的 **权重层**——使「灵魂」不只有 prompt / 记忆 / 关系，还可把口癖、节奏、直播态等沉淀为 **可打包、可校验、可分发** 的小模型 adapter（LoRA / SFT 等）。
+
+**动机（产品）**：垂直 AI 角色实践（如 AI 主播）表明，仅靠人设 prompt 难以长期锁死说话习惯；OClive 的差异化应落在 **微调产物是角色包模块 + 专家路由在运行时按需切换**，而不是与 EchoVessel 等拼「谁的记忆/情感引擎更强」。
+
+**与现有架构的接点**（已实现或预埋，默认关 / 待产品化）：
+
+| 项 | 说明 |
+|----|------|
+| **第 2 设施子模块** | **专家模型设施子模块** · `blueprint/includes/expert_routing.json` · 条件触发子流程 |
+| **`slot.lora.apply`** | 专家步骤：会话标记 `plugin_id` 以切换 adapter（`dual_core` + Experimental 核；Stable 主链不接，直至解冻决策） |
+| **第 5 模块 `llm`** | 主对话仍走通用 `plugin_backends.llm`；**默认**微调 adapter 仅在 expert 子流程切换，不强制替换主槽 |
+| **编写器** | 导出 `.ocpak` / `roles/`；工坊产出写入包内卫星文件（契约待 RFC） |
+
+**分阶段交付（T0→T3，按需排期）**：
+
+| 阶段 | 交付物 | 验收 |
+|------|--------|------|
+| **T0 · 契约** | RFC：语料来源与隐私、`lora_adapters`（或等价）卫星 schema、与 `expert_routing` / `slot.lora.apply` 引用关系、导出 profile（`desktop-full` / `vscode-lite` / `theater`） | 文档评审；`oclive_validation` 键表草案 |
+| **T1 · 工坊 MVP** | **独立桌面/Tauri 工具**（推荐与 pack-editor 并列，避免 GPU/训练进程拖慢编写器）：导入对话/人设样本 → 单 base 模型 LoRA 或等价 → 导出 adapter 清单进角色包目录 | 产物经校验 crate 检查；零手写 JSON 可装入 `roles/{id}/` |
+| **T2 · 运行时** | directory 推理插件或 Ollama modelfile 等路径；`slot.lora.apply` **真加载** adapter 并参与 generate | 专家路由命中时，同一角色可观测 prompt-only vs adapter 差异（固定用例或日志） |
+| **T3 · 评测** | 扩展 bench / OOCP / replay：**prompt-only · LoRA · LoRA+专家路由** 可复现对比（连贯 / 口癖 / 人设一致性 checklist） | 维护者可跑一轮对比报告 |
+
+**纪律（与冻结期对齐）**：
+
+- **训练、显存、数据集清洗** 放在工坊或 directory 侧车；**内核仍薄编排**，不新增 `process_message` stage 承载训练。
+- **`expert_routing` / `dual_core` 产品冻结期内**：仅推进 T0 契约 + T1 工坊原型（可选 feature 分支），**不接 Stable 主链**；解冻条件见 [TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md) §冻结决定。
+- **Theater v0 陌生人测试** 完成前，不把微调工坊标为 P0 阻塞项；与 [RECURRING_OPTIMIZATION_PLAYBOOK.md](../../handoff/RECURRING_OPTIMIZATION_PLAYBOOK.md) §9 元纪律一致——先让样板「发光」，再扩创作者楔子。
+
+**体验向细化**见 [BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md](BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md) §五；场景矩阵见 [APPLICATION_SCENARIOS.md](APPLICATION_SCENARIOS.md) **S11**。
+
 **补充（体验向 backlog）**：编写器内试聊、启动器智能依赖、角色/插件市场与愿景对照的合并清单见 **[BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md](BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md)**（与本文并行维护，供排期引用）。
 
 **中长期技术债务（第四批 · 2026-05）**：`library` 对称、`多模态/打断/多租户`、硬件靶子、边缘 OTA、市场 UGC 等 **延后**。**当前已为未来拓展预留空间，启动前请先阅读** **[handoff/TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md)** 中各项 **「预留设计」** 小节（预留原因 / 已有拓展基础 / 启动注意事项）。**A1.1c** 原生窗 WebDriver 烟测 **基础建设已启动**（非全屋 E2E）。**T05–T13** 编写器组件用例 **已全部覆盖**（见 [testing/OVERVIEW.md](../testing/OVERVIEW.md)）。
@@ -150,3 +183,5 @@
 ---
 
 *本文档随愿景迭代更新；重大方向变更时请改日期与版本说明。*
+
+*2026-06-15：新增愿景支柱「灵魂权重层」与「三发行版后 · 微调工坊」专节（T0–T3）。*

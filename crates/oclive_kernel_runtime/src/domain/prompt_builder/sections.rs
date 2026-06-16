@@ -1,3 +1,7 @@
+//! Prompt section builders (`build_core_hard_constraint`, tone blocks, etc.).
+//!
+//! **Scope note (K-DOC-16):** Chinese literals here are product prompt text, not comments.
+
 use super::*;
 
 use crate::models::{EventType, Memory, PersonalitySource, PersonalityVector, Role};

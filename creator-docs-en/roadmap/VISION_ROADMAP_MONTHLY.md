@@ -16,6 +16,7 @@ This document breaks down the platform vision—**open platform + dual apps + ro
 | Dual apps | **Runtime (player)** vs **creator tools**, **role pack** as the only handoff | Pack spec, editor, README split |
 | Role as workflow | Each pack is declarative config + optional backends | manifest extensions, `min_runtime`, backend enums |
 | Swappable memory / emotion | Seven dimensions are **current defaults**, not platform limits | Memory/Emotion facades, second implementations, future sidecars/WASM |
+| **Soul weight layer** | Speech habits and tone can ship as **LoRA/SFT adapters** alongside prompt/memory; **expert-model facility** switches them at runtime (`slot.lora.apply`), not a closed “personality engine” | Fine-tune workshop (standalone creator tool), pack satellite adapter files, `expert_routing.json`, directory inference plugins |
 
 ---
 
@@ -113,6 +114,34 @@ This document breaks down the platform vision—**open platform + dual apps + ro
 | Dynamic `.dll`/`.so` | Only with strong ABI need; not default. |
 | Trophies / relation rituals, chat modes | Product-paced small iterations. |
 | Ecosystem | Sample packs, template repos, `CONTRIBUTING.md`. |
+
+### After three distros ship · Fine-tune workshop (creator toolchain phase 3)
+
+**Positioning**: After **Chat Pro / VS Code Flash / AI Theater** engineering smoke passes and the pack editor’s simple-creator loop is usable, add the **weight layer**—soul is not only prompt/memory/relation, but also packable **LoRA/SFT adapters** for habits, pacing, and live-stream personas.
+
+**Product rationale**: Vertical AI character work (e.g. AI streamers) shows prompt-only tuning is insufficient; OClive’s edge is **adapters as pack modules + expert routing at runtime**, not competing on “best memory/emotion engine.”
+
+**Architecture hooks** (wired or pre-wired; mostly off until productized):
+
+| Item | Notes |
+|------|-------|
+| **Facility #2** | Expert-model facility · `expert_routing.json` · conditional sub-pipeline |
+| **`slot.lora.apply`** | Expert step: session `plugin_id` to switch adapter (`dual_core` / Experimental; not Stable main path until thaw) |
+| **Module 5 `llm`** | Main chat stays on `plugin_backends.llm`; adapters default to expert sub-flow only |
+| **Pack editor** | Exports `.ocpak` / `roles/`; workshop writes satellite files (contract TBD in RFC) |
+
+**Phased delivery (T0→T3)**:
+
+| Phase | Deliverable | Acceptance |
+|-------|-------------|------------|
+| **T0 · contract** | RFC: corpus/privacy, `lora_adapters` schema, links to `expert_routing` / `slot.lora.apply`, export profiles | Doc review; validation key draft |
+| **T1 · workshop MVP** | Standalone Tauri tool: import transcripts/samples → single-base LoRA → export into role pack | Validates via `oclive_validation`; loads under `roles/{id}/` |
+| **T2 · runtime** | Directory plugin or Ollama modelfile path; `slot.lora.apply` actually loads adapter | Observable diff on expert route hit (fixtures/logs) |
+| **T3 · evaluation** | Extend bench/OOCP/replay: prompt-only vs LoRA vs LoRA+expert | Reproducible comparison report |
+
+**Discipline**: training stays in the workshop/sidecar; kernel stays thin. During **expert_routing / dual_core freeze**, only T0+T1 on branches—no Stable main-path wiring. Not P0 before Theater stranger test; see [RECURRING_OPTIMIZATION_PLAYBOOK.md](../../handoff/RECURRING_OPTIMIZATION_PLAYBOOK.md) §9.
+
+Details: [BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md](BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md) §5 · scenario **S11** in [APPLICATION_SCENARIOS.md](../../creator-docs/roadmap/APPLICATION_SCENARIOS.md).
 
 Experience backlog (editor try-chat, launcher deps, marketplace): **[BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md](BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md)**.
 

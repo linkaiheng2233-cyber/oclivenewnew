@@ -37,6 +37,7 @@
 | S8 | **智能家居中枢** | 网关 / 家庭中枢 | `--template robot-gateway` + MCP 家居工具链 |
 | S9 | **机器人情感内核** | 机器人操作系统内嵌 | `library-embed` 模式 / agent 槽传感器输入 |
 | S10 | **AI NPC 引擎** | 游戏 NPC 对话后端 | CoPresent + scene 模式 + 低延迟 Monolith 态 |
+| S11 | **AI 主播 / 直播陪伴** | 桌面或直播工具链 | 主 `llm` + **专家路由** + **`slot.lora.apply`** 切换口癖/直播态 adapter；微调工坊产出随角色包分发 |
 
 ---
 

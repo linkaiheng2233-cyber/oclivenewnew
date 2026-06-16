@@ -1,4 +1,8 @@
 //! Prompt construction: role, memory, relation, and scene topic hints.
+//!
+//! **Scope note (K-DOC-16):** Chinese string literals in this module and `sections.rs` are
+//! intentional product prompt content (anchors, guardrails, section headers). Do not
+//! English-ize them as code comments; contract-layer `//` comments stay English.
 
 use crate::models::Role;
 pub use oclive_kernel_types::PromptInput;

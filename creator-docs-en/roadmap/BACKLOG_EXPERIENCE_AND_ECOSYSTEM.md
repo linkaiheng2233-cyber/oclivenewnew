@@ -47,6 +47,15 @@ Update the date note here on major direction changes; sync with `CHANGELOG.md` a
 | **Baseline** | [CONTRIBUTING.md](../../CONTRIBUTING.md), [EXTENSION_POINTS.md](../plugin-and-architecture/EXTENSION_POINTS.md). |
 | **Status** | **Ongoing**; complements marketplace but not identical. |
 
+### 1.5 Fine-tune workshop + expert routing (soul weight layer)
+
+| | |
+|--|--|
+| **Meaning** | After three distro engineering smoke: standalone **small-model fine-tune** tool exporting LoRA/SFT adapters into role packs; runtime switches adapters via **expert-model facility** (`expert_routing.json` · `slot.lora.apply`). |
+| **Repos** | New repo or sibling to pack-editor (prefer standalone Tauri); main repo `expert_routing`, `slot.lora.apply`, `oclive_validation`; optional directory inference plugin. |
+| **Status** | **In vision · not scheduled**; T0 RFC not started. During `expert_routing` / `dual_core` freeze: contract + workshop prototype only—no Stable main-path wiring. |
+| **Details** | [VISION_ROADMAP_MONTHLY.md](VISION_ROADMAP_MONTHLY.md) workshop section · Chinese [BACKLOG](../../creator-docs/roadmap/BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md) §五 · scenario **S11** in [APPLICATION_SCENARIOS.md](../../creator-docs/roadmap/APPLICATION_SCENARIOS.md) |
+
 ---
 
 ## 2. Vision items still in progress

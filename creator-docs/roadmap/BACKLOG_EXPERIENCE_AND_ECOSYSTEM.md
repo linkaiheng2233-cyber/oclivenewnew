@@ -44,6 +44,16 @@
 | 已有基础 | 根目录 [CONTRIBUTING.md](../../CONTRIBUTING.md)、扩展点 [EXTENSION_POINTS.md](../plugin-and-architecture/EXTENSION_POINTS.md)。 |
 | 状态 | **持续推进**；与上表「市场/UGC」可联动，但不等价。 |
 
+### 5. 微调工坊 + 专家路由（灵魂权重层）
+
+| 含义 | **三发行版工程结项后**的创作者工具链第三阶段：独立 **微调小模型** 软件，把口癖/节奏/直播态沉淀为 **LoRA/SFT adapter**，经角色包分发；运行时由 **专家模型设施子模块**（`expert_routing.json` · `slot.lora.apply`）按场景/关键词等条件切换 adapter。 |
+|------|------|
+| 涉及仓库 | 新仓或 **oclive-pack-editor** 姊妹工具（推荐独立 Tauri，避免训练/GPU 拖慢编写器）；主仓 `expert_routing` + `slot.lora.apply` + `oclive_validation` 契约；可选 directory 推理插件。 |
+| 与定位关系 | 补 **权重层**，不变成封闭「性格引擎」；对标 AI 主播类实践的微调投入，但产物走 **组装—契约—打包—分发** 标准层。详见 [VISION_ROADMAP_MONTHLY.md](VISION_ROADMAP_MONTHLY.md)「微调工坊」小节。 |
+| 实现时需考虑 | 语料隐私与授权；基座模型（优先 Ollama 生态小参）；默认 **expert 子流程** 切换 adapter，不强制替换主 `plugin_backends.llm`；评测（prompt-only vs LoRA vs LoRA+专家）。 |
+| 状态 | **愿景已纳入 · 待排期**；T0 RFC 未开。`expert_routing` / `dual_core` **冻结期内**仅契约+工坊原型，不接 Stable 主链。 |
+| 场景参考 | [APPLICATION_SCENARIOS.md](APPLICATION_SCENARIOS.md) **S11** |
+
 ---
 
 ## 二、相较于愿景：仍在路上 / 可深化的项
@@ -59,6 +69,7 @@
 | **包内知识（月 5）** | `knowledge/` 与换包版本后的行为；可做回归场景与编写器侧编辑体验。 |
 | **双软件叙事 + 启动器（月 6）** | README 分工、新用户路径；与第一节「依赖管理」叠加时需统一对外说法。 |
 | **远期 backlog** | WASM 插件、关系/多模式细化、动态 `.dll`/`.so`（谨慎）等，见愿景文「第 7 月及以后」。 |
+| **微调工坊（T0–T3）** | 三发行版后创作者权重层；与专家路由组合；见愿景文专节与本文 §五。 |
 
 ---
 
@@ -69,7 +80,8 @@
 1. **创作者闭环**：编写器试聊（若做）、校验对齐、导出与 oclive 导入（含 `.ocpak`/文件夹）。  
 2. **玩家上手**：启动器环境检测 → 可选进阶为 Ollama + 模型引导。  
 3. **分发与生态**：市场/UGC（角色包、插件）= 新系统层，依赖版本、签名、信任模型。  
-4. **愿景地基**：契约、第二套 backend、Remote、知识、测试与文档。
+4. **愿景地基**：契约、第二套 backend、Remote、知识、测试与文档。  
+5. **灵魂权重层**：微调工坊产物、adapter 卫星文件、专家路由运行时切换、评测台对比（晚于三发行版 smoke，非 Theater P0 阻塞）。
 
 ---
 
