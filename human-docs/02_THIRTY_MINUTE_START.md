@@ -52,17 +52,6 @@ npm run check
 
 ---
 
-## AI 剧场发行版（可选 · 仅前端）
-
-```bash
-npm run dev:theater
-npm run test:theater:smoke
-```
-
-加载 `.env.theater`（`VITE_OCLIVE_SHELL=theater`），首屏为早饭场景自动播放。15 秒验收见 [`handoff/theater/THEATER_15S_ACCEPTANCE.md`](../handoff/theater/THEATER_15S_ACCEPTANCE.md)。
-
----
-
 ## 本地 HTTP API（可选）
 
 与 GUI 同一二进制，加 `--api` 启动无头 HTTP（默认 `:8420`）。见根 [README.md](../README.md)「本地 HTTP API」节。CI 烟测常用 `OCLIVE_HTTP_API_MOCK_LLM=1`。

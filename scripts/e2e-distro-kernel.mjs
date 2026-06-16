@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Distro kernel e2e — spawn / attach / role_snapshot scenarios.
- * Usage: node scripts/e2e-distro-kernel.mjs [--scenario spawn|attach|role-snapshot|bundled-first|theater|all]
+ * Usage: node scripts/e2e-distro-kernel.mjs [--scenario spawn|attach|role-snapshot|bundled-first|all]
  */
 import { spawn, spawnSync } from 'child_process';
 import fs from 'fs';
@@ -193,70 +193,19 @@ async function scenarioBundledFirst() {
   console.log('[e2e-distro] bundled-first ok');
 }
 
-async function scenarioTheater() {
-  console.log('[e2e-distro] scenario: theater');
-  const targetDir = JSON.parse(
-    spawnSync('cargo', ['metadata', '--format-version=1', '--no-deps'], {
-      encoding: 'utf8',
-      cwd: repoRoot,
-    }).stdout,
-  ).target_directory;
-  const cli = process.platform === 'win32' ? 'oclive-cli.exe' : 'oclive-cli';
-  const cliBin = path.join(targetDir, 'debug', cli);
-  const profile = path.join(repoRoot, 'examples', 'distro-profiles', 'theater.oclive.toml');
-  const out = spawnSync(
-    cliBin,
-    [
-      'kernel',
-      'ensure',
-      '--plan-only',
-      '--json',
-      '--path',
-      repoRoot,
-      '--roles-dir',
-      rolesDir,
-      '--distro',
-      'theater',
-      '--distro-profile',
-      profile,
-    ],
-    { encoding: 'utf8', cwd: repoRoot },
-  );
-  if (out.status !== 0) {
-    throw new Error(out.stderr || out.stdout);
-  }
-  const report = JSON.parse(out.stdout);
-  if (report.plan?.action !== 'spawn_best') {
-    throw new Error(`theater plan mismatch: ${JSON.stringify(report.plan)}`);
-  }
-  const req = report.caller_requirements;
-  if (req?.distroId !== 'theater') {
-    throw new Error(`theater distroId mismatch: ${JSON.stringify(req)}`);
-  }
-  const forbidden = req?.forbiddenModules ?? [];
-  if (!forbidden.includes('agent') || !forbidden.includes('complex_emotion')) {
-    throw new Error(`theater forbiddenModules mismatch: ${JSON.stringify(forbidden)}`);
-  }
-  if (req?.promptProfile !== 'concise' || req?.postProcessProfile !== 'standard') {
-    throw new Error(`theater profile flags mismatch: ${JSON.stringify(req)}`);
-  }
-  console.log('[e2e-distro] theater profile ok');
-}
-
 async function main() {
   if (!findKernelBinary()) {
     console.warn('[e2e-distro] skip: build oclive-kernel-server first');
     process.exit(0);
   }
   const run = scenario === 'all'
-    ? ['spawn', 'attach', 'role-snapshot', 'bundled-first', 'theater']
+    ? ['spawn', 'attach', 'role-snapshot', 'bundled-first']
     : [scenario];
   for (const s of run) {
     if (s === 'spawn') await scenarioSpawn();
     else if (s === 'attach') await scenarioAttach();
     else if (s === 'role-snapshot') await scenarioRoleSnapshot();
     else if (s === 'bundled-first') await scenarioBundledFirst();
-    else if (s === 'theater') await scenarioTheater();
     else {
       console.error(`unknown scenario: ${s}`);
       process.exit(1);

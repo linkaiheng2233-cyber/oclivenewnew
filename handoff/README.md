@@ -30,7 +30,7 @@
 
 | 目录 | 内容 |
 |------|------|
-| [theater/](theater/) | `THEATER_*` 剧场发行版 / 陌生人测试 / v0 验收 |
+| [theater/](theater/) | AI 剧场发行版（从 0 开发 · 思路与路线 SSOT） |
 | [vscode/](vscode/) | `VSCODE_*` VS Code 扩展决策与 gate |
 
 ## 归档规则
