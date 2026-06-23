@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "session_id": "mumu",
+  "role_id": "mumu",
+  "scene_id": "company",
+  "created_at": "2026-06-05T19:10:29.654545800+00:00",
+  "updated_at": "2026-06-05T19:10:29.655254700+00:00",
+  "messages": [
+    {
+      "id": "cf93daa9-f4a6-4215-a45a-f871fb0c4bdc",
+      "sender": "user",
+      "content": "e2e restart probe cycle-2",
+      "timestamp": "2026-06-05T19:10:29.654747200+00:00",
+      "turn_index": 0,
+      "metadata": {
+        "user_emotion": "neutral"
+      }
+    },
+    {
+      "id": "cd9d4813-f361-4586-ad05-422392f3fe5a",
+      "sender": "assistant",
+      "content": "OOCP mock reply",
+      "timestamp": "2026-06-05T19:10:29.654749500+00:00",
+      "turn_index": 0,
+      "metadata": {
+        "model": "qwen2.5:7b",
+        "response_ms": 0,
+        "reply_is_fallback": false,
+        "bot_emotion": "neutral"
+      }
+    }
+  ]
+}

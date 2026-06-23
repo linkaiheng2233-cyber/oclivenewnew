@@ -42,8 +42,8 @@ function findKernelBinary() {
     path.join(repoRoot, '..', 'oclive-dev-artifacts', 'oclivenewnew-cargo-target', 'debug', 'oclive-kernel-server'),
     path.join(repoRoot, 'target', 'debug', 'oclive-kernel-server.exe'),
     path.join(repoRoot, 'target', 'debug', 'oclive-kernel-server'),
-    path.join(repoRoot, 'src-tauri', 'target', 'debug', 'oclive-kernel-server'),
-    path.join(repoRoot, 'src-tauri', 'target', 'debug', 'oclive-kernel-server.exe'),
+    path.join(repoRoot, 'distros/desktop-tauri', 'target', 'debug', 'oclive-kernel-server'),
+    path.join(repoRoot, 'distros/desktop-tauri', 'target', 'debug', 'oclive-kernel-server.exe'),
   ];
   return candidates.find((p) => fs.existsSync(p));
 }
@@ -151,7 +151,7 @@ async function scenarioBundledFirst() {
   ).target_directory;
   const exe = process.platform === 'win32' ? 'oclive-kernel-server.exe' : 'oclive-kernel-server';
   const cli = process.platform === 'win32' ? 'oclive-cli.exe' : 'oclive-cli';
-  const bundled = path.join(repoRoot, 'src-tauri', 'resources', exe);
+  const bundled = path.join(repoRoot, 'distros/desktop-tauri', 'resources', exe);
   if (!fs.existsSync(bundled)) {
     spawnSync(process.execPath, ['scripts/bundle-kernel-for-tauri.mjs', '--profile', 'debug'], {
       cwd: repoRoot,

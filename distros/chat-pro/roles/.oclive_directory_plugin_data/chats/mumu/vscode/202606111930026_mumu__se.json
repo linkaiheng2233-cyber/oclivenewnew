@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "session_id": "mumu__sess__vscode-smoke-1781206202676",
+  "role_id": "mumu",
+  "scene_id": "vscode",
+  "created_at": "2026-06-11T19:30:02.690648200+00:00",
+  "updated_at": "2026-06-11T19:30:02.691412400+00:00",
+  "messages": [
+    {
+      "id": "1cb03cc0-ec57-4059-bb43-1e9f5e9fe664",
+      "sender": "user",
+      "content": "VS Code 联调 smoke：你好",
+      "timestamp": "2026-06-11T19:30:02.690758800+00:00",
+      "turn_index": 0,
+      "metadata": {
+        "user_emotion": "neutral"
+      }
+    },
+    {
+      "id": "64aa4b36-70d0-4cb4-947e-e9426f939108",
+      "sender": "assistant",
+      "content": "OOCP mock reply",
+      "timestamp": "2026-06-11T19:30:02.690759600+00:00",
+      "turn_index": 0,
+      "metadata": {
+        "bot_emotion": "neutral",
+        "model": "qwen2.5:7b",
+        "reply_is_fallback": false,
+        "response_ms": 0
+      }
+    }
+  ]
+}

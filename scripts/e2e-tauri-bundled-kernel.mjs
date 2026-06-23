@@ -27,8 +27,8 @@ sh(process.execPath, ['scripts/bundle-kernel-for-tauri.mjs', '--profile', 'debug
   stdio: 'inherit',
 });
 
-const bundled = path.join(repoRoot, 'src-tauri', 'resources', kernelExeName());
-const manifest = path.join(repoRoot, 'src-tauri', 'resources', 'oclive-kernel-server.oclive-manifest.json');
+const bundled = path.join(repoRoot, 'distros/desktop-tauri', 'resources', kernelExeName());
+const manifest = path.join(repoRoot, 'distros/desktop-tauri', 'resources', 'oclive-kernel-server.oclive-manifest.json');
 if (!fs.existsSync(bundled)) {
   throw new Error(`missing bundled kernel: ${bundled}`);
 }

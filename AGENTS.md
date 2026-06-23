@@ -15,9 +15,9 @@
 | **桌面宿主** | **0.4.0** | 根 `package.json`、`src-tauri/Cargo.toml`、`src-tauri/tauri.conf.json` |
 | **角色包编写器** | **0.4.0** | 姊妹仓 `oclive-pack-editor/package.json` |
 | **VS Code 扩展** | **0.3.0** | 姊妹仓 `oclive-vscode/package.json` |
-| **`oclive-cli`** | **0.1.0** | `crates/oclive-cli/Cargo.toml` |
-| **`oclive_kernel_runtime`** | **0.2.0** | `crates/oclive_kernel_runtime/Cargo.toml` |
-| **`oclive_validation`** | **0.1.0** | `crates/oclive_validation/Cargo.toml` |
+| **`oclive-cli`** | **0.1.0** | `kernel/crates/oclive-cli/Cargo.toml` |
+| **`oclive_kernel_runtime`** | **0.2.0** | `kernel/crates/oclive_kernel_runtime/Cargo.toml` |
+| **`oclive_validation`** | **0.1.0** | `kernel/crates/oclive_validation/Cargo.toml` |
 
 独立 SemVer 策略见 [`creator-docs/development/RELEASE_VERSIONING.md`](creator-docs/development/RELEASE_VERSIONING.md)；用户可见变更见 [`CHANGELOG.md`](CHANGELOG.md) **`[0.4.0]`**。
 
@@ -36,7 +36,7 @@
 
 ### 脚手架（`oclive-cli`）
 
-- **crate**：[`crates/oclive-cli/`](crates/oclive-cli/)（workspace 成员）；`cargo run -p oclive-cli -- init` 交互或 `--non-interactive --preset` 生成**可独立 `cargo build`** 的最小内核/库骨架（当前占位依赖 `serde`/`serde_json`，便于硬件与无头场景先统一目录与 `settings.json` 形状）。
+- **crate**：[`kernel/crates/oclive-cli/`](kernel/crates/oclive-cli/)（workspace 成员）；`cargo run -p oclive-cli -- init` 交互或 `--non-interactive --preset` 生成**可独立 `cargo build`** 的最小内核/库骨架（当前占位依赖 `serde`/`serde_json`，便于硬件与无头场景先统一目录与 `settings.json` 形状）。
 - **文档**：[OCLIVE_CLI_GUIDE.md](creator-docs/cli/OCLIVE_CLI_GUIDE.md) · [SETTINGS_REFERENCE.md](creator-docs/cli/SETTINGS_REFERENCE.md)（`plugin_backends` 与预设矩阵）；接入真实 `oclive_kernel_runtime` / `oclive_kernel_server` 时在生成 `Cargo.toml` 中改为 path 依赖并替换入口代码。
 - **GitHub 插件索引缓存**：SSOT 为 [`data/plugins.json`](data/plugins.json)。桌面写入 `{app_data}/plugin_index_cache.json`；CLI 为 `~/.oclive/plugin_index_cache.json`（Windows：`%USERPROFILE%\.oclive\`）。离线或索引未 push 时可 `Copy-Item data/plugins.json` 到上述路径；GitHub 不可达时安装可设 **`OCLIVE_LOCAL_MONOREPO`** 指向本仓根目录。见 [handoff/GITHUB_PLUGIN_INDEX_LINE.md](handoff/GITHUB_PLUGIN_INDEX_LINE.md)。
 
@@ -47,9 +47,9 @@
 
 ### 内核架构（主应用 `src-tauri`）
 
-- **Crate 速查**：[`crates/README.md`](crates/README.md)（依赖图、改哪个 crate、canonical import）
+- **Crate 速查**：[`kernel/crates/README.md`](kernel/crates/README.md)（依赖图、改哪个 crate、canonical import）
 - **架构总述（对外）**：契约型薄核 + **单核双态**；**第 1–6 模块** / **第 N 设施子模块** / **后端模块插件模块** — [`creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md`](creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)。
-- **主编排入口**：Tauri IPC 与 **`--api` HTTP** 均在 **`crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs`** 的 **`process_message`**（经 `chat_engine/mod.rs` re-export；及 `co_present` / `scene` 等子模块）内顺序编排（`oclivenewnew-tauri` 经 `lib.rs` re-export）。角色包 **v2** 以 **蓝图文件 `pipeline.ocblueprint`** 为磁盘 SSOT；**不以**蓝图 `steps[]` 作首轮调度 DSL。运行时行为以本仓库 `process_message` 为准。
+- **主编排入口**：Tauri IPC 与 **`--api` HTTP** 均在 **`kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs`** 的 **`process_message`**（经 `chat_engine/mod.rs` re-export；及 `co_present` / `scene` 等子模块）内顺序编排（`oclivenewnew-tauri` 经 `lib.rs` re-export）。角色包 **v2** 以 **蓝图文件 `pipeline.ocblueprint`** 为磁盘 SSOT；**不以**蓝图 `steps[]` 作首轮调度 DSL。运行时行为以本仓库 `process_message` 为准。
 - **AI Theater 场景导演**（正交 · 非 `process_message` stage、非六槽）：**`generate_theater_scene`**（Tauri）/ **`POST /theater/scene`**（HTTP）→ [`domain/theater/scene_director.rs`](crates/oclive_kernel_host/src/domain/theater/scene_director.rs)；缺省 **`mode`** = 涟漪区 ripple 改写；**`mode=cast_adapt`** = 非默认卡司开场 + fork 罐头人设适配（`fork_templates` / `adapted_forks`）；LLM **`generate_tag`**；内核按 `cast_a`/`cast_b` **`role_id` 自加载人设摘要**；前端卡司绑定 SSOT 为 **`theaterCastConfig`**（`localStorage` `oclive.theater.cast.v1`；**`CastTier`** = `resolveCastTier` 由 roleId 推导，`default` | `applied`，混合即 applied）+ **`theaterCastAdapt`**（适配缓存 `oclive.theater.adapted.v1`；失败兜底 **`fallbackToDefaultCast`**) + 双 `load_role` 预热；环境变量 **`OCLIVE_THEATER_SCENE_TIMEOUT_SECS`**（默认 25）· **`OCLIVE_THEATER_RIPPLE_MAX_BEATS`**（默认 12）；前端竞态超时 30s。
 - **角色包与蓝图边界**：**角色包** = 身份、人格、关系、**`prompts/`**、**`reply_quality_anchor`**（初级创作者）。**蓝图** = **`slot_registry`**、**`groups`**、后端/模型/交互模式/记忆策略、**`runtime_config.dual_core`**（管理员；默认关）。逻辑分责见 **[handoff/ROLE_PACK_BOUNDARY.md](handoff/ROLE_PACK_BOUNDARY.md)** · [ROLE_PACK_SPEC.md](creator-docs/role-pack/ROLE_PACK_SPEC.md) §0 · [SETTINGS_REFERENCE.md](creator-docs/cli/SETTINGS_REFERENCE.md) §零。勿让 Agent 在「角色」任务中改 `slot_registry`。
 - **错误与日志**：统一错误类型见 **`src-tauri/src/lib.rs`** 内联 `error` 模块（re-export `oclive_kernel_types::error`）；Tauri 命令层见 **`src-tauri/src/api/error.rs`**（`ApiError` / `CommandError`）；**机器 `code` 与 JSON 体**以 **`oclive_kernel_types::KernelErrorBody`** 与 **`creator-docs/getting-started/KERNEL_ERROR_CODE_CONVENTION.md`** 为准（与 `AppError::code()`、`http_chat_codes`、目录插件 **`ApiError` JSON** 对齐；**Sentry / 用户可见错误扫尾**见 **`handoff/A3_CLOSURE_SUMMARY.md`** / **`handoff/A3_CLOSURE_SUMMARY.en.md`**）。结构化日志为 **`tracing`**：`init_tracing()` / `init_tracing_with_log_dir()`（`lib.rs`）默认 `info`，受 **`RUST_LOG`** 控制；设置 **`OCLIVE_LOG_DIR`** 或 **`--api`** 模式（`main.rs` → `temp/oclive_api_app_data/logs/`）可同时写入 rolling 文件；**`RUST_LOG` 含 `json`** 时 stdout/文件使用 JSON 行格式。

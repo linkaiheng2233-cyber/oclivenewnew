@@ -24,7 +24,7 @@ function repoRoot() {
 
 function targetDirFromCargo() {
   const root = repoRoot()
-  const cwd = join(root, 'src-tauri')
+  const cwd = join(root, 'distros', 'desktop-tauri')
   const out = execFileSync('cargo', ['metadata', '--format-version=1', '--no-deps'], {
     cwd,
     encoding: 'utf8',

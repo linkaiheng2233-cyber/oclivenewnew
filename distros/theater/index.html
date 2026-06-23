@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OCLIVE</title>
+    <script>
+      (function () {
+        try {
+          var lk = "oclive.appLocale";
+          var lv = localStorage.getItem(lk);
+          var en = false;
+          if (lv === "en-US") en = true;
+          else if (lv === "zh-CN") en = false;
+          else {
+            var raw = (navigator.languages && navigator.languages[0]) || navigator.language || "";
+            en = String(raw).toLowerCase().indexOf("zh") !== 0;
+          }
+          document.documentElement.setAttribute("lang", en ? "en" : "zh-CN");
+          document.title = en
+            ? "OCLIVE — Desktop AI companion"
+            : "沐沐 - 桌面AI伴侣";
+        } catch (e) {
+          document.title = "OCLIVE";
+        }
+      })();
+    </script>
+    <script>
+      (function () {
+        try {
+          var k = "oclive-runtime-theme";
+          var v = localStorage.getItem(k);
+          var t = "light";
+          if (v === "dark") t = "dark";
+          else if (v === "light") t = "light";
+          else if (window.matchMedia("(prefers-color-scheme: dark)").matches)
+            t = "dark";
+          document.documentElement.setAttribute("data-theme", t);
+        } catch (e) {
+          document.documentElement.setAttribute("data-theme", "light");
+        }
+        try {
+          var sk = "oclive-runtime-ui-scale";
+          var sv = localStorage.getItem(sk);
+          var s = 1;
+          if (sv != null && sv !== "" && isFinite(Number(sv))) s = Number(sv);
+          document.documentElement.style.setProperty("--oclive-ui-scale", String(s));
+        } catch (e2) {}
+        try {
+          var lrKey = "oclive-layout-left-rail-w";
+          var spKey = "oclive-layout-sidepanel-w";
+          function clampW(v, min, max, def) {
+            var n = Number(v);
+            if (!isFinite(n)) return def;
+            n = Math.round(n);
+            if (n < min) return min;
+            if (n > max) return max;
+            return n;
+          }
+          var lr = clampW(localStorage.getItem(lrKey), 160, 360, 220);
+          var sp = clampW(localStorage.getItem(spKey), 280, 560, 400);
+          document.documentElement.style.setProperty("--tool-left-rail-w", lr + "px");
+          document.documentElement.style.setProperty("--tool-sidepanel-w", sp + "px");
+        } catch (e4) {}
+        try {
+          var shellRaw = "__OCLIVE_SHELL__";
+          var shell = "tool";
+          if (shellRaw === "fluent") shell = "fluent";
+          else if (shellRaw === "theater") shell = "theater";
+          document.documentElement.setAttribute("data-shell", shell);
+        } catch (e3) {}
+      })();
+    </script>
+  </head>
+
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

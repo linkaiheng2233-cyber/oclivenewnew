@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "session_id": "mumu__sess__contract-audit",
+  "role_id": "mumu",
+  "scene_id": "company",
+  "created_at": "2026-06-07T09:42:36.350517900+00:00",
+  "updated_at": "2026-06-07T09:42:36.359222100+00:00",
+  "messages": [
+    {
+      "id": "aa87d604-3e5d-4459-b151-b5d7aaaa240a",
+      "sender": "user",
+      "content": "随便啦都行",
+      "timestamp": "2026-06-07T09:42:36.350741300+00:00",
+      "turn_index": 0,
+      "metadata": {
+        "user_emotion": "neutral"
+      }
+    },
+    {
+      "id": "a0b2a59c-464a-41c9-a2ac-369dcb68f39c",
+      "sender": "assistant",
+      "content": "mock",
+      "timestamp": "2026-06-07T09:42:36.350743300+00:00",
+      "turn_index": 0,
+      "metadata": {
+        "model": "qwen2.5:7b",
+        "response_ms": 0,
+        "reply_is_fallback": false,
+        "bot_emotion": "neutral"
+      }
+    },
+    {
+      "id": "73063fb5-28a9-49db-b83b-f7b0b13ec37e",
+      "sender": "user",
+      "content": "嗯",
+      "timestamp": "2026-06-07T09:42:36.355283500+00:00",
+      "turn_index": 1,
+      "metadata": {
+        "user_emotion": "neutral"
+      }
+    },
+    {
+      "id": "3248e25a-5b71-4fed-ba39-6c8644e6888d",
+      "sender": "assistant",
+      "content": "mock",
+      "timestamp": "2026-06-07T09:42:36.355284800+00:00",
+      "turn_index": 1,
+      "metadata": {
+        "model": "qwen2.5:7b",
+        "response_ms": 0,
+        "reply_is_fallback": false,
+        "bot_emotion": "neutral"
+      }
+    }
+  ]
+}

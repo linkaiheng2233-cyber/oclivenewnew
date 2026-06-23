@@ -48,7 +48,7 @@ if (!fs.existsSync(srcBin)) {
   throw new Error(`kernel binary not found: ${srcBin}`);
 }
 
-const destDir = path.join(repoRoot, 'src-tauri', 'resources');
+const destDir = path.join(repoRoot, 'distros', 'desktop-tauri', 'resources');
 fs.mkdirSync(destDir, { recursive: true });
 const destBin = path.join(destDir, kernelExeName());
 fs.copyFileSync(srcBin, destBin);

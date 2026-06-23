@@ -7,6 +7,13 @@
     "checkJs": false,
     "noEmit": true
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"],
-  "exclude": ["src/**/*.test.ts", "src/**/*.spec.ts"]
+  "include": [
+    "distros/shared/src/**/*.ts",
+    "distros/shared/src/**/*.vue",
+    "distros/chat-pro/src/**/*.ts",
+    "distros/chat-pro/src/**/*.vue",
+    "distros/theater/src/**/*.ts",
+    "distros/theater/src/**/*.vue"
+  ],
+  "exclude": ["**/*.test.ts", "**/*.spec.ts"]
 }

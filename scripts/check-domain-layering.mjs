@@ -11,7 +11,7 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..');
 const baselinePath = path.join(repoRoot, 'handoff', 'LAYERING_BASELINE.json');
-const domainDir = path.join(repoRoot, 'crates', 'oclive_kernel_host', 'src', 'domain');
+const domainDir = path.join(repoRoot, 'kernel', 'crates', 'oclive_kernel_host', 'src', 'domain');
 
 function countPatternInFile(filePath, pattern) {
   const text = fs.readFileSync(filePath, 'utf8');
@@ -73,7 +73,7 @@ function countDomainInfraFqRefs() {
   const pattern = 'crate::infrastructure::';
   let total = 0;
   for (const file of walkRsFiles(domainDir)) {
-    const rel = path.relative(path.join(repoRoot, 'crates', 'oclive_kernel_host', 'src'), file);
+    const rel = path.relative(path.join(repoRoot, 'kernel', 'crates', 'oclive_kernel_host', 'src'), file);
     if (rel.replace(/\\/g, '/').includes('/tests/')) {
       continue;
     }

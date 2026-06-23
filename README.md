@@ -10,6 +10,18 @@
 
 本地优先的 **AI 角色组装平台**（开源、可组装、隐私优先）：**Tauri + Vue 3 + Rust** 运行时 + **六槽可替换模块** + **角色包独立分发** + **发行版 profile** + **插件市场**。默认角色包（如 `roles/mumu`）为**官方示例**，展示平台能力；社区创作与分发角色包是核心价值。工程代号 **oclive**。
 
+## 仓库布局（内核 + 发行版）
+
+| 目录 | 内容 |
+|------|------|
+| **[`kernel/`](kernel/)** | Rust 内核（`crates/`、`fuzz/`、OOCP 示例等） |
+| **[`distros/chat-pro/`](distros/chat-pro/)** | **OCLive Chat Pro** 前端（ToolShell / FluentShell） |
+| **[`distros/theater/`](distros/theater/)** | **AI Theater** 第三发行版前端 |
+| **[`distros/shared/`](distros/shared/)** | 桌面共享 UI（`@oclive/desktop-shared`） |
+| **[`distros/desktop-tauri/`](distros/desktop-tauri/)** | 共享 Tauri 宿主（原 `src-tauri`） |
+
+RFC：[handoff/distros/ARCHITECTURE_DECOUPLING_RFC.md](handoff/distros/ARCHITECTURE_DECOUPLING_RFC.md)
+
 **人类开发者：从这里开始 → [human-docs/](human-docs/)**（30 分钟跑通：`npm install` → `npm run tauri:dev` → `npm run check`）。使用 Cursor / Agent 见 [AGENTS.md](AGENTS.md)。
 
 | 贡献入口 | 说明 |
@@ -26,10 +38,10 @@
 
 | 领域 | 状态 |
 |------|------|
-| **内核编排** | 主编排在 **`crates/oclive_kernel_host/src/domain/chat_engine/mod.rs`** 的 **`process_message`**；无独立入口蓝图 DSL 主路径；子系统经 **`PluginHost`** 解析（含 **`agent`**）。 |
-| **测试（三层）** | **协议层（本仓）**：`src-tauri` 的 **`cargo test`** + `tests/` 集成测；**OOCP HTTP 黑盒 S0–S12（13 场景；可选 S13/S14）** 已入库 [`examples/oocp-test-suite/`](examples/oocp-test-suite/)，**CI 已集成** job **`oocp-test-suite`**（Ubuntu，构建 `--features dual_core` 并运行 `run.mjs --include-dual-core`）。**A1.1b**：**`vite preview` + Playwright** 首屏烟测（[`e2e/preview-shell.spec.ts`](e2e/preview-shell.spec.ts)），**CI 仅 Ubuntu `frontend`**（Windows `frontend` 跑 Vitest + build）。**组件层（编写器）**：**oclive-pack-editor** 仓库 Vitest / Playwright 等（与本仓 CI 分工）。**插件层（编写器）**：目录插件 / `official-vue-test-runner` 等范式与用例在 **oclive-pack-editor**。**前端最小烟测**：CI **`npm ci` + `npm run test:unit`（Vitest）+ `npm run build`**；Playwright 见上。总览见 [creator-docs/testing/OVERVIEW.md](creator-docs/testing/OVERVIEW.md)、[creator-docs/testing/OOCP_TEST_SUITE.md](creator-docs/testing/OOCP_TEST_SUITE.md)。 |
+| **内核编排** | 主编排在 **`kernel/crates/oclive_kernel_host/src/domain/chat_engine/mod.rs`** 的 **`process_message`**；无独立入口蓝图 DSL 主路径；子系统经 **`PluginHost`** 解析（含 **`agent`**）。 |
+| **测试（三层）** | **协议层（本仓）**：`distros/desktop-tauri` 的 **`cargo test`** + `tests/` 集成测；**OOCP HTTP 黑盒 S0–S12（13 场景；可选 S13/S14）** 已入库 [`examples/oocp-test-suite/`](examples/oocp-test-suite/)，**CI 已集成** job **`oocp-test-suite`**（Ubuntu，构建 `--features dual_core` 并运行 `run.mjs --include-dual-core`）。**A1.1b**：**`vite preview` + Playwright** 首屏烟测（[`distros/chat-pro/e2e/preview-shell.spec.ts`](distros/chat-pro/e2e/preview-shell.spec.ts)），**CI 仅 Ubuntu `frontend`**（Windows `frontend` 跑 Vitest + build）。**组件层（编写器）**：**oclive-pack-editor** 仓库 Vitest / Playwright 等（与本仓 CI 分工）。**插件层（编写器）**：目录插件 / `official-vue-test-runner` 等范式与用例在 **oclive-pack-editor**。**前端最小烟测**：CI **`npm ci` + `npm run test:unit`（Vitest）+ `npm run build`**；Playwright 见上。总览见 [creator-docs/testing/OVERVIEW.md](creator-docs/testing/OVERVIEW.md)、[creator-docs/testing/OOCP_TEST_SUITE.md](creator-docs/testing/OOCP_TEST_SUITE.md)。 |
 | **oclive-cli** | Workspace crate **`oclive-cli`**：**`oclive dev`**（监听 `roles/`）；**`bench`**（`--save` / `--compare` / **`--cold-start`**）；**`test --coverage`** / **`--miri`**；**`explain`** / **`completions`**；**`init --dry-run`** / **`--check`**；**`lint --audit-ci`**；**`doctor --sbom`**；**`pack`** 与 **Monolith** 流程见 [creator-docs/cli/OCLIVE_CLI_GUIDE.md](creator-docs/cli/OCLIVE_CLI_GUIDE.md)。 |
-| **启动健康检查** | 首轮 **`process_message`** 前一次性自检（槽位、角色包文件、SQLite **`health_ping`**、可选 LLM 探测）；可用 **`OCLIVE_SKIP_STARTUP_HEALTH`** / **`OCLIVE_SKIP_LLM_STARTUP_PROBE`** 跳过。实现见 `crates/oclive_kernel_host/src/domain/startup_health.rs`。 |
+| **启动健康检查** | 首轮 **`process_message`** 前一次性自检（槽位、角色包文件、SQLite **`health_ping`**、可选 LLM 探测）；可用 **`OCLIVE_SKIP_STARTUP_HEALTH`** / **`OCLIVE_SKIP_LLM_STARTUP_PROBE`** 跳过。实现见 `kernel/crates/oclive_kernel_host/src/domain/startup_health.rs`。 |
 | **Monolith（高耦合编译）** | 无头脚手架在编译期按 **七焊接键**（第 1–6 模块 + `complex_emotion`）焊接静态路径；RFC 与 CLI 四阶段（`init` → `build` → 双二进制 `bench`）见 [creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md](creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md) 与上文 CLI 指南。 |
 | **安全** | 已跑 **`cargo audit`（0.22.1）**；**漏洞级已清零**（警告级仍跟踪；数字以 [KNOWN_VULNERABILITIES.md](creator-docs/security/KNOWN_VULNERABILITIES.md) 为准），见该文「维护约定」；审查边界见 [creator-docs/security/SECURITY_AUDIT_SCOPE.md](creator-docs/security/SECURITY_AUDIT_SCOPE.md)。 |
 | **CI 守门** | **`rustfmt` + workspace `clippy`（`-D warnings`）+ `cargo test --workspace`** + **`npm ci` / `npm run test:unit` / `npm run build`**；另含 **`oocp-test-suite`**、**`layering-ratchet`**、**`dimension5-acceptance`**、**`cross-host-e2e`**（含 profile 调度）、**`cargo-audit`**（失败即红；**`Cargo.lock` PR** 另走严格 job）、**`npm-audit`**（可见性）与 **remote-plugin-demo**。 |

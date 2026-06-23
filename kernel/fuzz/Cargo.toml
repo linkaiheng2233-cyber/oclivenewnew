@@ -1,0 +1,58 @@
+[package]
+name = "oclive-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+license = "Apache-2.0"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+oclive_validation = { path = "../crates/oclive_validation" }
+oclive_kernel_host = { path = "../crates/oclive_kernel_host" }
+oclivenewnew-tauri = { path = "../../distros/desktop-tauri", default-features = false }
+serde_json = "1"
+
+[[bin]]
+name = "fuzz_manifest_load"
+path = "fuzz_targets/fuzz_manifest_load.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_settings_parse"
+path = "fuzz_targets/fuzz_settings_parse.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_oocp_message"
+path = "fuzz_targets/fuzz_oocp_message.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_blueprint_v2"
+path = "fuzz_targets/fuzz_blueprint_v2.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_oclive_validation"
+path = "fuzz_targets/fuzz_oclive_validation.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_function_call_parser"
+path = "fuzz_targets/fuzz_function_call_parser.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_role_pack_loader"
+path = "fuzz_targets/fuzz_role_pack_loader.rs"
+test = false
+doc = false

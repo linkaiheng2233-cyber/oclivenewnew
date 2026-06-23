@@ -8,6 +8,23 @@
 
 ---
 
+## ★ 仓库物理布局（kernel / distros · 2026-06 重组）
+
+> **巡检前 10 秒**：改的是内核还是发行版？路径错了等于改错层。
+
+| 层 | 目录 | 改什么 |
+|----|------|--------|
+| **内核平台** | [`kernel/`](../kernel/)（`crates/`、`fuzz/`、`examples/oocp-test-suite/` 等） | `process_message`、六槽、迁移、OOCP、HTTP API |
+| **共享桌面 UI** | [`distros/shared/`](../distros/shared/) | API 封装、stores、通用 chat 组件 |
+| **Chat Pro** | [`distros/chat-pro/`](../distros/chat-pro/) | ToolShell / FluentShell、roles、plugins |
+| **AI Theater** | [`distros/theater/`](../distros/theater/) | TheaterShell、剧场 composables |
+| **Tauri 宿主** | [`distros/desktop-tauri/`](../distros/desktop-tauri/) | invoke 薄壳、打包资源、bundled kernel |
+| **契约文档** | 根 `creator-docs/`、`handoff/` | 平台 SSOT；发行版索引见 [`handoff/distros/README.md`](distros/README.md) |
+
+**禁止**：在 `kernel/` PR 里改 Chat Pro 壳样式；在 `distros/chat-pro/` PR 里改 `process_message` 编排。RFC：[`handoff/distros/ARCHITECTURE_DECOUPLING_RFC.md`](distros/ARCHITECTURE_DECOUPLING_RFC.md)。
+
+---
+
 ## ★ OClive 定位与愿景（新对话对齐前置区 · 先读这一节）
 
 > **目的**：让任何新接入的 AI / 协作者在 60 秒内对齐"OClive 到底是什么、分量有多重、为什么这么要求工程纪律"。**本节是项目的灵魂坐标,巡检的所有取舍都从这里推导。**

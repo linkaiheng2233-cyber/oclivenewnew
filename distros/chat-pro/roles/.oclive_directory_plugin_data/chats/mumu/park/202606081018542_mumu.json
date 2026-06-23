@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "session_id": "mumu",
+  "role_id": "mumu",
+  "scene_id": "park",
+  "created_at": "2026-06-08T10:18:54.224665600+00:00",
+  "updated_at": "2026-06-08T10:18:54.235847300+00:00",
+  "messages": [
+    {
+      "id": "a6ced53a-4207-4bcd-8248-0092210b155c",
+      "sender": "user",
+      "content": "你好",
+      "timestamp": "2026-06-08T10:18:54.224825500+00:00",
+      "turn_index": 0,
+      "metadata": {
+        "user_emotion": "neutral"
+      }
+    },
+    {
+      "id": "36e9f4db-1b2d-43e9-b326-f135a1dd8baf",
+      "sender": "assistant",
+      "content": "嗯",
+      "timestamp": "2026-06-08T10:18:54.224826400+00:00",
+      "turn_index": 0,
+      "metadata": {
+        "model": "qwen2.5:7b",
+        "response_ms": 0,
+        "reply_is_fallback": false,
+        "bot_emotion": "neutral"
+      }
+    },
+    {
+      "id": "8d17fde8-804f-41e8-97a1-704b217917ad",
+      "sender": "user",
+      "content": "你真好",
+      "timestamp": "2026-06-08T10:18:54.228848200+00:00",
+      "turn_index": 1,
+      "metadata": {
+        "user_emotion": "neutral"
+      }
+    },
+    {
+      "id": "ce8b8b40-eee2-43c8-8d4a-3c6fa05672a4",
+      "sender": "assistant",
+      "content": "嗯",
+      "timestamp": "2026-06-08T10:18:54.228849+00:00",
+      "turn_index": 1,
+      "metadata": {
+        "model": "qwen2.5:7b",
+        "response_ms": 0,
+        "reply_is_fallback": false,
+        "bot_emotion": "neutral"
+      }
+    },
+    {
+      "id": "90f4f0e6-3748-4e55-b224-e6d17c943e7c",
+      "sender": "user",
+      "content": "我累了",
+      "timestamp": "2026-06-08T10:18:54.232929800+00:00",
+      "turn_index": 2,
+      "metadata": {
+        "user_emotion": "neutral"
+      }
+    },
+    {
+      "id": "3d7ec3bf-a8ff-46bf-8304-0a31e6f0e5e9",
+      "sender": "assistant",
+      "content": "嗯",
+      "timestamp": "2026-06-08T10:18:54.232932200+00:00",
+      "turn_index": 2,
+      "metadata": {
+        "model": "qwen2.5:7b",
+        "response_ms": 0,
+        "reply_is_fallback": false,
+        "bot_emotion": "neutral"
+      }
+    }
+  ]
+}

@@ -9,7 +9,7 @@ export default defineConfig({
     emptyOutDir: true,
     outDir: path.join(rootDir, 'dist/plugin-bridge'),
     lib: {
-      entry: path.join(rootDir, 'src/plugin-bridge.js'),
+      entry: path.join(rootDir, 'distros/chat-pro/src/plugin-bridge.js'),
       name: 'OclivePluginBridgeBundle',
       formats: ['iife'],
       fileName: () => 'plugin-bridge.iife.js',

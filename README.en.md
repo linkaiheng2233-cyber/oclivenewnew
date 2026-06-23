@@ -6,7 +6,19 @@
 
 [![CI](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/workflows/ci.yml/badge.svg)](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/workflows/ci.yml)
 
-A **local-first** desktop companion for roleplay dialogue: **Tauri + Vue 3 + Rust**. The engine supports scenes, virtual time, co-presence / remote presence, favorability and memory, and swappable subsystems (memory retrieval, emotion, event estimation, prompt assembly). Role content ships as **`roles/{roleId}/`** packs.
+A **local-first** desktop companion for roleplay dialogue: **Tauri + Vue 3 + Rust**. The engine supports scenes, virtual time, co-presence / remote presence, favorability and memory, and swappable subsystems (memory retrieval, emotion, event estimation, prompt assembly). Role content ships as **`distros/chat-pro/roles/{roleId}/`** packs.
+
+## Repository layout (kernel + distros)
+
+| Directory | Contents |
+|-----------|----------|
+| **[`kernel/`](kernel/)** | Rust kernel (`crates/`, `fuzz/`, OOCP examples) |
+| **[`distros/chat-pro/`](distros/chat-pro/)** | **OCLive Chat Pro** UI |
+| **[`distros/theater/`](distros/theater/)** | **AI Theater** distro UI |
+| **[`distros/shared/`](distros/shared/)** | Shared desktop UI (`@oclive/desktop-shared`) |
+| **[`distros/desktop-tauri/`](distros/desktop-tauri/)** | Shared Tauri host (formerly `src-tauri`) |
+
+RFC: [handoff/distros/ARCHITECTURE_DECOUPLING_RFC.md](handoff/distros/ARCHITECTURE_DECOUPLING_RFC.md)
 
 **Human developers start here → [human-docs-en/](human-docs-en/)** (30-minute path: `npm install` → `npm run tauri:dev` → `npm run check`). For AI assistants see [AGENTS.md](AGENTS.md).
 

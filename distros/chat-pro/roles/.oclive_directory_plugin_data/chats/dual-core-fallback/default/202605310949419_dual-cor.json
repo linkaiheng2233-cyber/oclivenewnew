@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "session_id": "dual-core-fallback",
+  "role_id": "dual-core-fallback",
+  "scene_id": "default",
+  "created_at": "2026-05-31T09:49:41.938529300+00:00",
+  "updated_at": "2026-05-31T09:49:41.939753700+00:00",
+  "messages": [
+    {
+      "id": "eafe48cb-2518-41c3-97d3-99eba2554571",
+      "sender": "user",
+      "content": "OOCP S13 dual-core silent fallback",
+      "timestamp": "2026-05-31T09:49:41.938742800+00:00",
+      "turn_index": 0,
+      "metadata": {
+        "user_emotion": "neutral"
+      }
+    },
+    {
+      "id": "d741b65b-829d-4faa-8adc-df1e3b5fb9eb",
+      "sender": "assistant",
+      "content": "OOCP mock reply",
+      "timestamp": "2026-05-31T09:49:41.938745800+00:00",
+      "turn_index": 0,
+      "metadata": {
+        "model": "test-model",
+        "response_ms": 0,
+        "reply_is_fallback": false,
+        "bot_emotion": "neutral"
+      }
+    }
+  ]
+}

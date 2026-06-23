@@ -1,0 +1,10 @@
+{
+  "mcp:http": [],
+  "mcp:stdio": [],
+  "process:spawn": [
+    "plug.auth_test"
+  ],
+  "network:*": [
+    "remote:llm"
+  ]
+}

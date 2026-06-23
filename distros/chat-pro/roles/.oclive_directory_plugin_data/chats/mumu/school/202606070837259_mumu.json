@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "session_id": "mumu",
+  "role_id": "mumu",
+  "scene_id": "school",
+  "created_at": "2026-06-07T08:37:25.931918200+00:00",
+  "updated_at": "2026-06-07T08:37:25.956488200+00:00",
+  "messages": [
+    {
+      "id": "938e493e-4173-4b62-b08c-7f0ce140c2c8",
+      "sender": "user",
+      "content": "你好",
+      "timestamp": "2026-06-07T08:37:25.932162300+00:00",
+      "turn_index": 0,
+      "metadata": {
+        "user_emotion": "neutral"
+      }
+    },
+    {
+      "id": "1f3263b9-8021-4b7e-9f68-18d7b294b978",
+      "sender": "assistant",
+      "content": "嗯",
+      "timestamp": "2026-06-07T08:37:25.932164700+00:00",
+      "turn_index": 0,
+      "metadata": {
+        "model": "qwen2.5:7b",
+        "response_ms": 0,
+        "reply_is_fallback": false,
+        "bot_emotion": "neutral"
+      }
+    },
+    {
+      "id": "11e2feab-a640-44c4-9f64-6488978f8f5e",
+      "sender": "user",
+      "content": "你真好",
+      "timestamp": "2026-06-07T08:37:25.937966100+00:00",
+      "turn_index": 1,
+      "metadata": {
+        "user_emotion": "neutral"
+      }
+    },
+    {
+      "id": "ad837fd9-30e1-47e8-be84-a0970c0bd85f",
+      "sender": "assistant",
+      "content": "嗯",
+      "timestamp": "2026-06-07T08:37:25.937966800+00:00",
+      "turn_index": 1,
+      "metadata": {
+        "model": "qwen2.5:7b",
+        "response_ms": 0,
+        "reply_is_fallback": false,
+        "bot_emotion": "neutral"
+      }
+    },
+    {
+      "id": "ec1d73ae-8aaf-48a4-be0a-f7ddd382b4cd",
+      "sender": "user",
+      "content": "我累了",
+      "timestamp": "2026-06-07T08:37:25.943113500+00:00",
+      "turn_index": 2,
+      "metadata": {
+        "user_emotion": "neutral"
+      }
+    },
+    {
+      "id": "09c79014-dc58-44a0-a4c4-1b53d7d3687e",
+      "sender": "assistant",
+      "content": "嗯",
+      "timestamp": "2026-06-07T08:37:25.943115300+00:00",
+      "turn_index": 2,
+      "metadata": {
+        "model": "qwen2.5:7b",
+        "response_ms": 0,
+        "reply_is_fallback": false,
+        "bot_emotion": "neutral"
+      }
+    },
+    {
+      "id": "90307713-5026-46e8-bcaa-d23a5f0c478f",
+      "sender": "user",
+      "content": "你骗我",
+      "timestamp": "2026-06-07T08:37:25.948295300+00:00",
+      "turn_index": 3,
+      "metadata": {
+        "user_emotion": "neutral"
+      }
+    },
+    {
+      "id": "acd3b11e-895b-47aa-8e1e-fe3123cabc82",
+      "sender": "assistant",
+      "content": "嗯",
+      "timestamp": "2026-06-07T08:37:25.948296100+00:00",
+      "turn_index": 3,
+      "metadata": {
+        "model": "qwen2.5:7b",
+        "response_ms": 0,
+        "reply_is_fallback": false,
+        "bot_emotion": "neutral"
+      }
+    },
+    {
+      "id": "026815cf-d7f8-4302-a052-eda33218d6df",
+      "sender": "user",
+      "content": "x",
+      "timestamp": "2026-06-07T08:37:25.953694700+00:00",
+      "turn_index": 4,
+      "metadata": {
+        "user_emotion": "neutral"
+      }
+    },
+    {
+      "id": "7b5232f5-ed03-4474-9914-86487a741c03",
+      "sender": "assistant",
+      "content": "嗯",
+      "timestamp": "2026-06-07T08:37:25.953695600+00:00",
+      "turn_index": 4,
+      "metadata": {
+        "model": "qwen2.5:7b",
+        "response_ms": 0,
+        "reply_is_fallback": false,
+        "bot_emotion": "neutral"
+      }
+    }
+  ]
+}

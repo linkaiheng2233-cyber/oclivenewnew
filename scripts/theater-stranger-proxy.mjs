@@ -11,7 +11,7 @@ import { fileURLToPath } from 'url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, '..')
-const skeletonPath = path.join(repoRoot, 'public', 'theater', 'breakfast.skeleton.json')
+const skeletonPath = path.join(repoRoot, 'distros', 'theater', 'public', 'theater', 'breakfast.skeleton.json')
 
 function parseArgs(argv) {
   const out = { castA: null, castB: null }
@@ -88,11 +88,11 @@ const profilePath = path.join(repoRoot, 'examples', 'distro-profiles', 'theater.
 if (!fs.existsSync(profilePath))
   fail('missing theater.oclive.toml profile')
 
-const shellFile = path.join(repoRoot, 'src', 'shells', 'theater', 'TheaterShell.vue')
+const shellFile = path.join(repoRoot, 'distros', 'theater', 'src', 'shells', 'theater', 'TheaterShell.vue')
 if (!fs.existsSync(shellFile))
   fail('missing TheaterShell.vue')
 
-const castConfigFile = path.join(repoRoot, 'src', 'composables', 'theater', 'theaterCastConfig.ts')
+const castConfigFile = path.join(repoRoot, 'distros', 'theater', 'src', 'composables', 'theater', 'theaterCastConfig.ts')
 if (!fs.existsSync(castConfigFile))
   fail('missing theaterCastConfig.ts')
 

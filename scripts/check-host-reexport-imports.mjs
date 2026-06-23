@@ -12,7 +12,7 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..');
 const baselinePath = path.join(repoRoot, 'handoff', 'HOST_REEXPORT_BASELINE.json');
-const hostCrate = path.join(repoRoot, 'crates', 'oclive_kernel_host');
+const hostCrate = path.join(repoRoot, 'kernel', 'crates', 'oclive_kernel_host');
 
 const RUNTIME_MODULES =
   'affect_policy|builtin_reply_post_processor|chat_llm_fallback|chat_turn|chat_turn_rules|' +

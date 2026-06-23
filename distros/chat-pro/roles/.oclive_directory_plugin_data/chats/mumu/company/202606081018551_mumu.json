@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "session_id": "mumu",
+  "role_id": "mumu",
+  "scene_id": "company",
+  "created_at": "2026-06-08T10:18:55.104275500+00:00",
+  "updated_at": "2026-06-08T10:18:55.130722900+00:00",
+  "messages": [
+    {
+      "id": "5bef60e5-0fef-42c7-a479-b7a3cfe75897",
+      "sender": "user",
+      "content": "seed",
+      "timestamp": "2026-06-08T10:18:55.104523300+00:00",
+      "turn_index": 0,
+      "metadata": {
+        "user_emotion": "neutral"
+      }
+    },
+    {
+      "id": "54c9a81b-6712-4c6c-be83-4da75edbd9df",
+      "sender": "assistant",
+      "content": "mock",
+      "timestamp": "2026-06-08T10:18:55.104525100+00:00",
+      "turn_index": 0,
+      "metadata": {
+        "model": "qwen2.5:7b",
+        "response_ms": 0,
+        "reply_is_fallback": false,
+        "bot_emotion": "neutral"
+      }
+    },
+    {
+      "id": "7677008a-bfad-44cf-a284-1f467fcd292a",
+      "sender": "user",
+      "content": "过渡轮0",
+      "timestamp": "2026-06-08T10:18:55.111417300+00:00",
+      "turn_index": 1,
+      "metadata": {
+        "user_emotion": "neutral"
+      }
+    },
+    {
+      "id": "3756f68f-2b0c-4ada-b4ef-555ef4b50ddf",
+      "sender": "assistant",
+      "content": "mock",
+      "timestamp": "2026-06-08T10:18:55.111418400+00:00",
+      "turn_index": 1,
+      "metadata": {
+        "model": "qwen2.5:7b",
+        "response_ms": 0,
+        "reply_is_fallback": false,
+        "bot_emotion": "neutral"
+      }
+    },
+    {
+      "id": "2471c002-4873-4ece-950e-085a5608dfbf",
+      "sender": "user",
+      "content": "过渡轮1",
+      "timestamp": "2026-06-08T10:18:55.117066600+00:00",
+      "turn_index": 2,
+      "metadata": {
+        "user_emotion": "neutral"
+      }
+    },
+    {
+      "id": "0a3eea3e-ff8c-4eda-91bb-dd4aee41d1dc",
+      "sender": "assistant",
+      "content": "mock",
+      "timestamp": "2026-06-08T10:18:55.117068400+00:00",
+      "turn_index": 2,
+      "metadata": {
+        "model": "qwen2.5:7b",
+        "response_ms": 0,
+        "reply_is_fallback": false,
+        "bot_emotion": "neutral"
+      }
+    },
+    {
+      "id": "091c2ae0-3385-4e9c-8119-6c8b052b3913",
+      "sender": "user",
+      "content": "过渡轮2",
+      "timestamp": "2026-06-08T10:18:55.122559100+00:00",
+      "turn_index": 3,
+      "metadata": {
+        "user_emotion": "neutral"
+      }
+    },
+    {
+      "id": "7ca1af19-540c-468d-8c52-a7972912bcd6",
+      "sender": "assistant",
+      "content": "mock",
+      "timestamp": "2026-06-08T10:18:55.122560400+00:00",
+      "turn_index": 3,
+      "metadata": {
+        "model": "qwen2.5:7b",
+        "response_ms": 0,
+        "reply_is_fallback": false,
+        "bot_emotion": "neutral"
+      }
+    },
+    {
+      "id": "38ffe742-50c9-47a6-8a16-817fd38f02d9",
+      "sender": "user",
+      "content": "过渡轮3",
+      "timestamp": "2026-06-08T10:18:55.127816300+00:00",
+      "turn_index": 4,
+      "metadata": {
+        "user_emotion": "neutral"
+      }
+    },
+    {
+      "id": "d11a94cf-fd4b-4432-b199-446d5a6bcf55",
+      "sender": "assistant",
+      "content": "mock",
+      "timestamp": "2026-06-08T10:18:55.127817100+00:00",
+      "turn_index": 4,
+      "metadata": {
+        "model": "qwen2.5:7b",
+        "response_ms": 0,
+        "reply_is_fallback": false,
+        "bot_emotion": "neutral"
+      }
+    }
+  ]
+}

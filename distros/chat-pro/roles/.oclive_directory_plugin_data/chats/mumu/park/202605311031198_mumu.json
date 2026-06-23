@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "session_id": "mumu",
+  "role_id": "mumu",
+  "scene_id": "park",
+  "created_at": "2026-05-31T10:31:19.863194+00:00",
+  "updated_at": "2026-05-31T10:31:19.872190+00:00",
+  "messages": [
+    {
+      "id": "22d337ef-c0ea-49fc-b952-c86080c304db",
+      "sender": "user",
+      "content": "你好",
+      "timestamp": "2026-05-31T10:31:19.863399700+00:00",
+      "turn_index": 0,
+      "metadata": {
+        "user_emotion": "neutral"
+      }
+    },
+    {
+      "id": "2f9904e7-265b-4497-b9ce-e4a2f8eefc9c",
+      "sender": "assistant",
+      "content": "嗯",
+      "timestamp": "2026-05-31T10:31:19.863400700+00:00",
+      "turn_index": 0,
+      "metadata": {
+        "model": "qwen2.5:7b",
+        "response_ms": 0,
+        "reply_is_fallback": false,
+        "bot_emotion": "neutral"
+      }
+    },
+    {
+      "id": "35dd34b2-d036-4813-acbe-bf7480003e85",
+      "sender": "user",
+      "content": "你真好",
+      "timestamp": "2026-05-31T10:31:19.868627800+00:00",
+      "turn_index": 1,
+      "metadata": {
+        "user_emotion": "neutral"
+      }
+    },
+    {
+      "id": "05721f91-ce04-459e-8b21-544ee3e958ec",
+      "sender": "assistant",
+      "content": "嗯",
+      "timestamp": "2026-05-31T10:31:19.868629100+00:00",
+      "turn_index": 1,
+      "metadata": {
+        "model": "qwen2.5:7b",
+        "response_ms": 0,
+        "reply_is_fallback": false,
+        "bot_emotion": "neutral"
+      }
+    }
+  ]
+}

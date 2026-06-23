@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "session_id": "mumu",
+  "role_id": "mumu",
+  "scene_id": "home",
+  "created_at": "2026-05-31T10:34:13.840097800+00:00",
+  "updated_at": "2026-05-31T10:34:13.861320800+00:00",
+  "messages": [
+    {
+      "id": "a04ca29b-5d7c-4ba4-925f-fe6a0cce726d",
+      "sender": "user",
+      "content": "scene explicit",
+      "timestamp": "2026-05-31T10:34:13.860675900+00:00",
+      "turn_index": 2,
+      "metadata": {
+        "user_emotion": "neutral"
+      }
+    },
+    {
+      "id": "ebd959ff-2be4-4a5e-844a-3bc6727a3f4b",
+      "sender": "assistant",
+      "content": "OOCP mock reply",
+      "timestamp": "2026-05-31T10:34:13.860676900+00:00",
+      "turn_index": 2,
+      "metadata": {
+        "model": "qwen2.5:7b",
+        "response_ms": 0,
+        "reply_is_fallback": false,
+        "bot_emotion": "neutral"
+      }
+    }
+  ]
+}

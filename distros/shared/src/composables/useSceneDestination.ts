@@ -1,0 +1,92 @@
+import type { ToastType } from '@oclive/shared/composables/useAppToast'
+import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { setUserPresenceScene, switchScene } from '@oclive/shared/api'
+import { useChatStore } from '@oclive/shared/stores/chatStore'
+import { useDebugStore } from '@oclive/shared/stores/debugStore'
+import { useRoleStore } from '@oclive/shared/stores/roleStore'
+
+const SCENE_TRANSITION_MS = 520
+
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => window.setTimeout(resolve, ms))
+}
+
+export type ShowToast = (type: ToastType, message: string) => void
+
+/**
+ * Top-bar / travel-bar "Go": co-present uses `switchScene`; narrative-only uses `setUserPresenceScene`.
+ */
+export function useSceneDestination(showToast: ShowToast) {
+  const { t } = useI18n()
+  const roleStore = useRoleStore()
+  const chatStore = useChatStore()
+  const debugStore = useDebugStore()
+
+  const sceneTransition = ref({ visible: false, label: '' })
+
+  function sceneLabelForId(sceneId: string): string {
+    const row = roleStore.roleInfo.sceneLabels?.find(s => s.id === sceneId)
+    return row?.label ?? sceneId
+  }
+
+  function characterSceneLabel(): string {
+    const id = roleStore.roleInfo.currentScene
+    if (!id)
+      return '—'
+    return sceneLabelForId(id)
+  }
+
+  async function applySceneDestination(id: string, together: boolean): Promise<void> {
+    if (!roleStore.interactionImmersive)
+      return
+    if (!id.trim()) {
+      showToast('warning', t('app.scene.selectDestinationFirst'))
+      return
+    }
+    const label = sceneLabelForId(id)
+    if (together) {
+      sceneTransition.value = { visible: true, label }
+    }
+    try {
+      if (together) {
+        const res = await switchScene(roleStore.currentRoleId, id, true)
+        await sleep(SCENE_TRANSITION_MS)
+        sceneTransition.value = { visible: false, label: '' }
+        roleStore.applyRoleInfo(res)
+        const narrative = res.user_presence_scene ?? id
+        chatStore.applySceneChange(narrative)
+        if (res.scene_welcome) {
+          chatStore.addSystemMessage(res.scene_welcome, narrative)
+        }
+        showToast('success', t('app.scene.toastTogether'))
+      }
+      else {
+        const info = await setUserPresenceScene(roleStore.currentRoleId, id)
+        roleStore.applyRoleInfo(info)
+        const narrative = info.user_presence_scene ?? id
+        chatStore.applySceneChange(narrative)
+        chatStore.addSystemMessage(
+          t('app.scene.systemLine', {
+            narrative: label,
+            character: characterSceneLabel(),
+          }),
+          narrative,
+        )
+        showToast('success', t('app.scene.toastNarrativeOnly'))
+      }
+      await debugStore.loadDebugData()
+    }
+    catch (err) {
+      sceneTransition.value = { visible: false, label: '' }
+      showToast('error', err instanceof Error ? err.message : String(err))
+    }
+  }
+
+  return {
+    sceneTransition,
+    applySceneDestination,
+    sceneLabelForId,
+    characterSceneLabel,
+  }
+}

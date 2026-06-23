@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "session_id": "mumu__sess__attach-smoke",
+  "role_id": "mumu",
+  "scene_id": "vscode",
+  "created_at": "2026-06-07T20:10:56.325846700+00:00",
+  "updated_at": "2026-06-07T20:10:56.326693600+00:00",
+  "messages": [
+    {
+      "id": "ce938ff8-df14-4741-8da7-51d7ffb66cea",
+      "sender": "user",
+      "content": "attach mode smoke",
+      "timestamp": "2026-06-07T20:10:56.326080200+00:00",
+      "turn_index": 0,
+      "metadata": {
+        "user_emotion": "neutral"
+      }
+    },
+    {
+      "id": "4ed21f67-aae2-4df7-8d94-80de0bd77404",
+      "sender": "assistant",
+      "content": "OOCP mock reply",
+      "timestamp": "2026-06-07T20:10:56.326082200+00:00",
+      "turn_index": 0,
+      "metadata": {
+        "bot_emotion": "neutral",
+        "model": "qwen2.5:7b",
+        "reply_is_fallback": false,
+        "response_ms": 0
+      }
+    }
+  ]
+}

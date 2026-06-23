@@ -1,0 +1,55 @@
+{
+  "schema_version": 3,
+  "legacy_v1": null,
+  "global": null,
+  "roles": {
+    "mumu": {
+      "shell_plugin_id": "",
+      "disabled_plugins": [],
+      "slot_order": {},
+      "disabled_slot_contributions": {},
+      "slot_appearance": {},
+      "force_iframe_mode": false
+    },
+    "shimeng": {
+      "shell_plugin_id": "",
+      "disabled_plugins": [],
+      "slot_order": {},
+      "disabled_slot_contributions": {},
+      "slot_appearance": {},
+      "force_iframe_mode": false
+    },
+    "枫侵月": {
+      "shell_plugin_id": "",
+      "disabled_plugins": [],
+      "slot_order": {
+        "settings.panel": [
+          "com.oclive.mumu.settings-panel"
+        ],
+        "role.detail": [
+          "com.oclive.mumu.role-detail-card"
+        ],
+        "chat_toolbar": [
+          "com.oclive.mumu.quick-actions"
+        ],
+        "sidebar": [
+          "com.oclive.mumu.sidebar-glance"
+        ],
+        "chat.header": [
+          "com.oclive.mumu.chat-header-status"
+        ]
+      },
+      "disabled_slot_contributions": {},
+      "slot_appearance": {},
+      "force_iframe_mode": false
+    },
+    "theater-breakfast-a": {
+      "shell_plugin_id": "",
+      "disabled_plugins": [],
+      "slot_order": {},
+      "disabled_slot_contributions": {},
+      "slot_appearance": {},
+      "force_iframe_mode": false
+    }
+  }
+}

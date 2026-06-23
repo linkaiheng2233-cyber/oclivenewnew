@@ -142,7 +142,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: src-tauri
+        working-directory: distros/desktop-tauri
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -167,7 +167,7 @@ jobs:
       - name: Install cargo-loom
         run: cargo install cargo-loom --locked
       - name: loom model tests
-        working-directory: src-tauri
+        working-directory: distros/desktop-tauri
         run: cargo loom test --test loom_concurrency -- --test-threads=1
 
   fuzz:
@@ -302,7 +302,7 @@ jobs:
       - name: Build frontend (Tauri generate_context)
         run: npm ci && npm run build
       - name: Build oclivenewnew-tauri (--api + dual_core)
-        working-directory: src-tauri
+        working-directory: distros/desktop-tauri
         run: cargo build -p oclivenewnew-tauri --features dual_core
       - name: Start HTTP API and run OOCP suite (S0–S12 + optional S13/S14)
         run: |
@@ -315,7 +315,7 @@ jobs:
           root = os.environ["GITHUB_WORKSPACE"]
           out = subprocess.check_output(
               ["cargo", "metadata", "--format-version=1", "--no-deps"],
-              cwd=os.path.join(root, "src-tauri"),
+              cwd=os.path.join(root, "distros", "desktop-tauri"),
           )
           print(json.loads(out)["target_directory"])
           PY
@@ -331,7 +331,7 @@ jobs:
           done
           curl -sf "http://127.0.0.1:${PORT}/health" >/dev/null || (echo "--- oclive api log ---"; cat /tmp/oocp_api.log; exit 1)
           export OCLIVE_API_BASE="http://127.0.0.1:${PORT}"
-          export OCLIVE_OOCP_ROLE_PATH="$GITHUB_WORKSPACE/roles/mumu"
+          export OCLIVE_OOCP_ROLE_PATH="$GITHUB_WORKSPACE/distros/chat-pro/roles/mumu"
           export OCLIVE_OOCP_INCLUDE_DUAL_CORE=1
           cd "$GITHUB_WORKSPACE/examples/oocp-test-suite"
           node run.mjs --include-dual-core
@@ -380,7 +380,7 @@ jobs:
       - run: npm ci
       - run: npm run build
       - name: Build debug Tauri binary
-        working-directory: src-tauri
+        working-directory: distros/desktop-tauri
         run: cargo build -p oclivenewnew-tauri
       - name: Native window smoke — A1.1c (WebDriver)
         run: |

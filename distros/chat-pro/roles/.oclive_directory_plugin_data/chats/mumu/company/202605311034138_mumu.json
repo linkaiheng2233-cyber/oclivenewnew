@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "session_id": "mumu",
+  "role_id": "mumu",
+  "scene_id": "company",
+  "created_at": "2026-05-31T10:34:13.840097800+00:00",
+  "updated_at": "2026-05-31T10:34:13.893596200+00:00",
+  "messages": [
+    {
+      "id": "f83d4d50-c7ed-4b23-875b-1c74d062d61c",
+      "sender": "user",
+      "content": "你好，OOCP 黑盒",
+      "timestamp": "2026-05-31T10:34:13.840261800+00:00",
+      "turn_index": 0,
+      "metadata": {
+        "user_emotion": "neutral"
+      }
+    },
+    {
+      "id": "68befd21-7957-48f5-9a8b-5ef0c5da1684",
+      "sender": "assistant",
+      "content": "OOCP mock reply",
+      "timestamp": "2026-05-31T10:34:13.840264400+00:00",
+      "turn_index": 0,
+      "metadata": {
+        "model": "qwen2.5:7b",
+        "response_ms": 0,
+        "reply_is_fallback": false,
+        "bot_emotion": "neutral"
+      }
+    },
+    {
+      "id": "ce31acf3-7771-4f11-a5f1-d0c4648dc126",
+      "sender": "user",
+      "content": "ping",
+      "timestamp": "2026-05-31T10:34:13.847038300+00:00",
+      "turn_index": 1,
+      "metadata": {
+        "user_emotion": "neutral"
+      }
+    },
+    {
+      "id": "02e813c4-b18d-405e-9962-f88e1dee4260",
+      "sender": "assistant",
+      "content": "OOCP mock reply",
+      "timestamp": "2026-05-31T10:34:13.847040400+00:00",
+      "turn_index": 1,
+      "metadata": {
+        "model": "qwen2.5:7b",
+        "response_ms": 0,
+        "reply_is_fallback": false,
+        "bot_emotion": "neutral"
+      }
+    },
+    {
+      "id": "e17ba101-a3f6-429f-8d1d-9a7838106d0d",
+      "sender": "user",
+      "content": "你好 😀 中文 + emoji",
+      "timestamp": "2026-05-31T10:34:13.866973500+00:00",
+      "turn_index": 3,
+      "metadata": {
+        "user_emotion": "neutral"
+      }
+    },
+    {
+      "id": "a8ba2cf6-c6c6-4f3f-a143-247f49e80472",
+      "sender": "assistant",
+      "content": "OOCP mock reply",
+      "timestamp": "2026-05-31T10:34:13.866974600+00:00",
+      "turn_index": 3,
+      "metadata": {
+        "model": "qwen2.5:7b",
+        "response_ms": 0,
+        "reply_is_fallback": false,
+        "bot_emotion": "neutral"
+      }
+    },
+    {
+      "id": "793151a6-87e3-4b27-8975-12f15d9ad50a",
+      "sender": "user",
+      "content": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "timestamp": "2026-05-31T10:34:13.876302300+00:00",
+      "turn_index": 4,
+      "metadata": {
+        "user_emotion": "neutral"
+      }
+    },
+    {
+      "id": "9ad20922-702e-4184-817c-9cf71b59ada2",
+      "sender": "assistant",
+      "content": "OOCP mock reply",
+      "timestamp": "2026-05-31T10:34:13.876303400+00:00",
+      "turn_index": 4,
+      "metadata": {
+        "model": "qwen2.5:7b",
+        "response_ms": 0,
+        "reply_is_fallback": false,
+        "bot_emotion": "neutral"
+      }
+    },
+    {
+      "id": "826d8392-8931-4ac9-96fb-c8bd3f855e01",
+      "sender": "user",
+      "content": "schema fields",
+      "timestamp": "2026-05-31T10:34:13.893001500+00:00",
+      "turn_index": 5,
+      "metadata": {
+        "user_emotion": "neutral"
+      }
+    },
+    {
+      "id": "d4ac94e9-3db8-4db3-8e41-3df664b721e8",
+      "sender": "assistant",
+      "content": "OOCP mock reply",
+      "timestamp": "2026-05-31T10:34:13.893004+00:00",
+      "turn_index": 5,
+      "metadata": {
+        "model": "qwen2.5:7b",
+        "response_ms": 0,
+        "reply_is_fallback": false,
+        "bot_emotion": "neutral"
+      }
+    }
+  ]
+}

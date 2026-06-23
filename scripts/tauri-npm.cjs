@@ -10,6 +10,10 @@ const { spawn, spawnSync } = require("child_process");
 
 const repoRoot = path.join(__dirname, "..");
 const script = process.argv[2] === "build" ? "build" : "dev";
+const workspace =
+  process.env.OCLIVE_TAURI_SHELL === "theater"
+    ? "@oclive/theater"
+    : "@oclive/chat-pro";
 
 function freeVitePortIfBusy() {
   if (script !== "dev") return;
@@ -45,7 +49,7 @@ function freeVitePortIfBusy() {
 
 freeVitePortIfBusy();
 
-const child = spawn("npm", ["run", script], {
+const child = spawn("npm", ["run", script, "-w", workspace], {
   cwd: repoRoot,
   stdio: "inherit",
   shell: true,

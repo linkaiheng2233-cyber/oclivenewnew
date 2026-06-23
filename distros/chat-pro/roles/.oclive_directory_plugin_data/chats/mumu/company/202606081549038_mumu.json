@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "session_id": "mumu",
+  "role_id": "mumu",
+  "scene_id": "company",
+  "created_at": "2026-06-08T15:49:03.834331100+00:00",
+  "updated_at": "2026-06-08T15:49:03.834846300+00:00",
+  "messages": [
+    {
+      "id": "fd02ab0a-24c4-4d19-a2a5-53218e35f9cc",
+      "sender": "user",
+      "content": "Opus 4.8 perf after sample",
+      "timestamp": "2026-06-08T15:49:03.834492200+00:00",
+      "turn_index": 0,
+      "metadata": {
+        "user_emotion": "neutral"
+      }
+    },
+    {
+      "id": "3f1628cb-a15e-4083-b39d-80e5ffb441b0",
+      "sender": "assistant",
+      "content": "OOCP mock reply",
+      "timestamp": "2026-06-08T15:49:03.834492600+00:00",
+      "turn_index": 0,
+      "metadata": {
+        "model": "qwen2.5:7b",
+        "response_ms": 0,
+        "reply_is_fallback": false,
+        "bot_emotion": "neutral"
+      }
+    }
+  ]
+}

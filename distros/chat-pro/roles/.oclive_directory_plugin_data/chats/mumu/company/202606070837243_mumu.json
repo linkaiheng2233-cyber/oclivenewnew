@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "session_id": "mumu",
+  "role_id": "mumu",
+  "scene_id": "company",
+  "created_at": "2026-06-07T08:37:24.365770900+00:00",
+  "updated_at": "2026-06-07T08:37:24.366678300+00:00",
+  "messages": [
+    {
+      "id": "ae87a724-d37a-4572-a73d-dfdbb5cc0a93",
+      "sender": "user",
+      "content": "随便啦都行",
+      "timestamp": "2026-06-07T08:37:24.366029300+00:00",
+      "turn_index": 0,
+      "metadata": {
+        "user_emotion": "neutral"
+      }
+    },
+    {
+      "id": "2aee92d3-339f-419c-98ce-6ea1b24a4af1",
+      "sender": "assistant",
+      "content": "mock",
+      "timestamp": "2026-06-07T08:37:24.366030500+00:00",
+      "turn_index": 0,
+      "metadata": {
+        "model": "qwen2.5:7b",
+        "response_ms": 0,
+        "reply_is_fallback": false,
+        "bot_emotion": "neutral"
+      }
+    }
+  ]
+}

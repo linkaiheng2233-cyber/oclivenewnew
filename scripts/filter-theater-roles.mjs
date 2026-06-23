@@ -9,8 +9,9 @@ import { fileURLToPath } from 'url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, '..')
-const rolesRoot = path.join(repoRoot, 'roles')
-const destRoot = path.join(repoRoot, 'src-tauri', 'resources', 'roles')
+const tauriRoot = path.join(repoRoot, 'distros', 'desktop-tauri')
+const rolesRoot = path.join(repoRoot, 'distros', 'chat-pro', 'roles')
+const destRoot = path.join(tauriRoot, 'resources', 'roles')
 const CAST_ROLE_IDS = ['mumu', '枫侵月']
 
 function copyDir(src, dest) {
@@ -45,8 +46,8 @@ for (const roleId of CAST_ROLE_IDS) {
   console.log(`[filter-theater-roles] copied ${roleId}`)
 }
 
-const skeletonDir = path.join(repoRoot, 'src-tauri', 'resources', 'theater', 'scenes')
-const skeletonPublicDir = path.join(repoRoot, 'public', 'theater', 'scenes')
+const skeletonDir = path.join(tauriRoot, 'resources', 'theater', 'scenes')
+const skeletonPublicDir = path.join(repoRoot, 'distros', 'theater', 'public', 'theater', 'scenes')
 if (fs.existsSync(skeletonDir)) {
   fs.mkdirSync(skeletonPublicDir, { recursive: true })
   for (const entry of fs.readdirSync(skeletonDir)) {
@@ -59,8 +60,7 @@ if (fs.existsSync(skeletonDir)) {
   }
 }
 
-// Legacy single-file path (dev caches)
-const legacySkeleton = path.join(repoRoot, 'public', 'theater', 'breakfast.skeleton.json')
+const legacySkeleton = path.join(repoRoot, 'distros', 'theater', 'public', 'theater', 'breakfast.skeleton.json')
 const breakfastScene = path.join(skeletonPublicDir, 'breakfast.skeleton.json')
 if (fs.existsSync(breakfastScene) && !fs.existsSync(legacySkeleton)) {
   fs.mkdirSync(path.dirname(legacySkeleton), { recursive: true })
@@ -69,12 +69,13 @@ if (fs.existsSync(breakfastScene) && !fs.existsSync(legacySkeleton)) {
 
 const officialPluginSrc = path.join(
   repoRoot,
+  'distros',
+  'chat-pro',
   'plugins',
   'com.oclive.theater_director_official',
 )
 const officialPluginDest = path.join(
-  repoRoot,
-  'src-tauri',
+  tauriRoot,
   'resources',
   'plugins',
   'com.oclive.theater_director_official',

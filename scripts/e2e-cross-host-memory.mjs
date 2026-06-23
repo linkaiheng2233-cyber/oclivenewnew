@@ -41,8 +41,8 @@ function findKernelBinary() {
     path.join(repoRoot, 'target', 'debug', 'oclive-kernel-server.exe'),
     path.join(repoRoot, 'target', 'debug', 'oclive-kernel-server'),
     path.join(repoRoot, 'target', 'debug', 'oclivenewnew-tauri.exe'),
-    path.join(repoRoot, 'src-tauri', 'target', 'debug', 'oclive-kernel-server'),
-    path.join(repoRoot, 'src-tauri', 'target', 'debug', 'oclive-kernel-server.exe'),
+    path.join(repoRoot, 'distros/desktop-tauri', 'target', 'debug', 'oclive-kernel-server'),
+    path.join(repoRoot, 'distros/desktop-tauri', 'target', 'debug', 'oclive-kernel-server.exe'),
   ];
   return candidates.find((p) => fs.existsSync(p));
 }

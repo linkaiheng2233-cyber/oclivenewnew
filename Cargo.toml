@@ -1,31 +1,31 @@
 [workspace]
 members = [
-    "crates/oclive_validation",
-    "crates/oclive_validation_wasm",
-    "crates/oclive_schema",
-    "crates/oclive_kernel_types",
-    "crates/oclive_kernel_contracts",
-    "crates/oclive_kernel_runtime",
-    "crates/oclive_kernel_host",
-    "crates/oclive_kernel_server",
-    "crates/oclive-cli",
-    "crates/oclive_sqlx",
-    "src-tauri",
-    "fuzz",
+    "kernel/crates/oclive_validation",
+    "kernel/crates/oclive_validation_wasm",
+    "kernel/crates/oclive_schema",
+    "kernel/crates/oclive_kernel_types",
+    "kernel/crates/oclive_kernel_contracts",
+    "kernel/crates/oclive_kernel_runtime",
+    "kernel/crates/oclive_kernel_host",
+    "kernel/crates/oclive_kernel_server",
+    "kernel/crates/oclive-cli",
+    "kernel/crates/oclive_sqlx",
+    "distros/desktop-tauri",
+    "kernel/fuzz",
 ]
 resolver = "2"
 default-members = [
-    "crates/oclive_validation",
-    "crates/oclive_validation_wasm",
-    "crates/oclive_schema",
-    "crates/oclive_kernel_types",
-    "crates/oclive_kernel_contracts",
-    "crates/oclive_kernel_runtime",
-    "crates/oclive_kernel_host",
-    "crates/oclive_kernel_server",
-    "crates/oclive-cli",
-    "crates/oclive_sqlx",
-    "src-tauri",
+    "kernel/crates/oclive_validation",
+    "kernel/crates/oclive_validation_wasm",
+    "kernel/crates/oclive_schema",
+    "kernel/crates/oclive_kernel_types",
+    "kernel/crates/oclive_kernel_contracts",
+    "kernel/crates/oclive_kernel_runtime",
+    "kernel/crates/oclive_kernel_host",
+    "kernel/crates/oclive_kernel_server",
+    "kernel/crates/oclive-cli",
+    "kernel/crates/oclive_sqlx",
+    "distros/desktop-tauri",
 ]
 
 [workspace.dependencies]
@@ -33,7 +33,7 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 serde_yaml_ng = "0.10"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "fs", "io-util", "sync", "net", "signal"] }
-sqlx = { path = "crates/oclive_sqlx", package = "oclive_sqlx" }
+sqlx = { path = "kernel/crates/oclive_sqlx", package = "oclive_sqlx" }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", default-features = false, features = ["env-filter", "fmt", "std", "json"] }

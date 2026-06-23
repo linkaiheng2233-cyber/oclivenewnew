@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "session_id": "mumu__sess__s1",
+  "role_id": "mumu",
+  "scene_id": "vscode",
+  "created_at": "2026-05-31T11:45:07.030541900+00:00",
+  "updated_at": "2026-05-31T11:45:12.173136500+00:00",
+  "messages": [
+    {
+      "id": "b9bf1332-70c6-4d53-8da6-20e581529e2b",
+      "sender": "user",
+      "content": "hi",
+      "timestamp": "2026-05-31T11:45:07.030719400+00:00",
+      "turn_index": 0,
+      "metadata": {
+        "user_emotion": "neutral"
+      }
+    },
+    {
+      "id": "153e77d4-2a1d-4f8e-8351-a1ac528ccd4e",
+      "sender": "assistant",
+      "content": "OOCP mock reply",
+      "timestamp": "2026-05-31T11:45:07.030720700+00:00",
+      "turn_index": 0,
+      "metadata": {
+        "model": "qwen2.5:7b",
+        "response_ms": 0,
+        "reply_is_fallback": false,
+        "bot_emotion": "neutral"
+      }
+    },
+    {
+      "id": "fc0790c5-9908-4417-86ac-1416c1e51da6",
+      "sender": "user",
+      "content": "hi",
+      "timestamp": "2026-05-31T11:45:12.172638600+00:00",
+      "turn_index": 1,
+      "metadata": {
+        "user_emotion": "neutral"
+      }
+    },
+    {
+      "id": "f835eace-7d91-4d85-baaa-1d9b8e0a1d4c",
+      "sender": "assistant",
+      "content": "OOCP mock reply",
+      "timestamp": "2026-05-31T11:45:12.172639400+00:00",
+      "turn_index": 1,
+      "metadata": {
+        "model": "qwen2.5:7b",
+        "response_ms": 0,
+        "reply_is_fallback": false,
+        "bot_emotion": "neutral"
+      }
+    }
+  ]
+}

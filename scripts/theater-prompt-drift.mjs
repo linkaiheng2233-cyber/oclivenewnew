@@ -6,10 +6,10 @@
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { buildTheaterPrompt, DRIFT_MARKERS } from "../plugins/com.oclive.theater_director_official/prompts/index.mjs";
+import { buildTheaterPrompt, DRIFT_MARKERS } from "../distros/chat-pro/plugins/com.oclive.theater_director_official/prompts/index.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const pluginDir = path.join(repoRoot, "plugins/com.oclive.theater_director_official");
+const pluginDir = path.join(repoRoot, "distros/chat-pro/plugins/com.oclive.theater_director_official");
 
 const sampleInput = {
   mode: "patch",

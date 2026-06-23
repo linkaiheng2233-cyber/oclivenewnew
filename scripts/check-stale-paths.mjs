@@ -45,8 +45,8 @@ const patterns = [
     label: 'stale prompt_builder.rs path (use prompt_builder/mod.rs + sections.rs)',
   },
   {
-    re: /src-tauri\/src\/infrastructure\/chat_storage/g,
-    label: 'stale chat_storage path (moved to crates/oclive_kernel_host/src/infrastructure/chat_storage)',
+    re: /^(crates\/|src-tauri\/|(?<!kernel\/)src\/)/gm,
+    label: 'legacy root layout path (use kernel/ or distros/)',
   },
 ];
 

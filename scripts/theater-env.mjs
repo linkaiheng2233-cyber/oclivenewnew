@@ -10,7 +10,7 @@ import { fileURLToPath } from 'url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, '..')
-const confPath = path.join(repoRoot, 'src-tauri', 'tauri.conf.json')
+const confPath = path.join(repoRoot, 'distros', 'desktop-tauri', 'tauri.conf.json')
 const mode = process.argv[2] === 'build' ? 'build' : 'dev'
 
 function runNodeScript(name) {
@@ -58,7 +58,7 @@ function patchTauriRolesForTheater() {
     throw new Error('tauri.conf.json: bundle.resources missing')
 
   const nextResources = resources.map((entry) => {
-    if (entry === '../roles')
+    if (entry === '../chat-pro/roles' || entry === '../roles')
       return 'resources/roles'
     return entry
   })
