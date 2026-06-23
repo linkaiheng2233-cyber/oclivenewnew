@@ -219,7 +219,7 @@ export default {
     title: { v2: '插件与后端管理 V2（简易模式）' },
     subtitle: {
       v2:
-        '轻量概览：按 slot_registry 实例展示后端与「本次覆盖」；完整增删槽位、分组与写盘请在 V1 专业模式 → 架构图（Ctrl+Shift+F）。',
+        '轻量概览：按 slot_registry 实例展示后端与「本次覆盖」；完整增删槽位、分组与写盘请在插件管理专业模式（Ctrl+Shift+F）。专家路由 UI 暂未挂载。',
     },
   }
 }

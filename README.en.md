@@ -124,7 +124,7 @@ Legacy `docs/*.md` → see [docs/README.md](docs/README.md).
 1. Install Node.js, Rust, Ollama (default local LLM). See [CREATOR_WORKFLOW.md](creator-docs/getting-started/CREATOR_WORKFLOW.md).
 2. Clone **this repo** and **oclive-pack-editor** side by side; author a pack in the editor (export zip or write to `distros/chat-pro/roles/{id}/`), or use sample packs under `distros/chat-pro/roles/`.
 3. Set **`OCLIVE_ROLES_DIR`** to the roles root if needed; `npm install` then `npm run tauri:dev`.
-4. Optional: configure expert routing and architecture **groups** in this app (Plugin manager → architecture graph); the pack editor preserves those blueprint fields when you save persona edits later.
+4. Optional: configure blueprint **groups** and slot overrides in Plugin manager; **expert routing** (`expert_routing.json`) is **mechanism-only** (`dual_core` feature)—**architecture-graph UI not mounted**; edit `includes/expert_routing.json` manually or via Tauri API; the pack editor preserves blueprint fields when you save persona edits later.
 
 ## Requirements
 

@@ -161,7 +161,7 @@ Windows 需 **Visual Studio Build Tools**（MSVC）；Cargo 产物在仓库外 `
 2. **克隆两仓**（同级目录最省事）：**本仓库**（A.I.Live 运行时）与 **[oclive-pack-editor](https://github.com/linkaiheng2233-cyber/oclive-pack-editor)**（角色包编写器）。
 3. **制作角色包**：在编写器中编辑并 **导出 zip / 写入文件夹**，或复制 `distros/chat-pro/roles/mumu/` 等示例；使 **蓝图文件 `distros/chat-pro/roles/{角色id}/pipeline.ocblueprint`** 位于 **roles 根**（**不以** `steps[]` 作主路径调度；本项目内 `distros/chat-pro/roles/`，或设置 **`OCLIVE_ROLES_DIR`**）。
 4. **运行本应用**：`npm run tauri:dev`（或 Release 安装包）；加载角色并开始对话。
-5. **（可选）高级能力**：在本应用 **插件与后端管理 → 架构图** 配置 **专家路由**（`expert_routing.json`）、`groups` 等；之后在编写器保存人设时，编写器会保留这些蓝图扩展字段。
+5. **（可选）高级能力**：在本应用 **插件与后端管理** 配置 `groups`、槽位覆盖等；**专家路由**（`expert_routing.json`）机制已预埋（`dual_core` feature），**架构图 UI 暂未挂载**——可手改蓝图 `includes/expert_routing.json` 或经 Tauri API；编写器保存人设时会保留这些蓝图扩展字段。
 
 旧版 **oclive-launcher** 已退役，见 [oclive-launcher README](https://github.com/linkaiheng2233-cyber/oclive-launcher/blob/main/README.md)。数据流：**编写器 → 磁盘角色包 → 本应用 `load_role`**。
 

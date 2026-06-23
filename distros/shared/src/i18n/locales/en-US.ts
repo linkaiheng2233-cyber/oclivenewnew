@@ -6,7 +6,6 @@ import commonBundle from './fragments/common.en'
 import devTools from './fragments/devTools.en'
 import editorBundle from './fragments/editor.en'
 import emotionUi from './fragments/emotionUi.en'
-import { expertConfigEn } from './fragments/expert.en'
 import kernelBundle from './fragments/kernel.en'
 import pluginManagerBundle from './fragments/pluginManager.en'
 import roleRuntimeBundle from './fragments/roleRuntime.en'
@@ -27,7 +26,6 @@ export default {
   devTools,
   editor: editorBundle.editor,
   emotionUi,
-  ...expertConfigEn,
   ...kernelBundle,
   pluginManager: pluginManagerBundle.pluginManager,
   pluginTerms: pluginManagerBundle.pluginTerms,
