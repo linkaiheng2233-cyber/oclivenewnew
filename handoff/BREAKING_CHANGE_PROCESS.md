@@ -55,7 +55,7 @@
 
 ### 步骤 5：更新校验（`oclive_validation`）
 
-- 若 manifest / `settings` / 角色包顶层键变化：更新 **`crates/oclive_validation`**（Rust 校验 + 若有 `json_keys` 等与编写器对齐的源）。
+- 若 manifest / `settings` / 角色包顶层键变化：更新 **`kernel/crates/oclive_validation`**（Rust 校验 + 若有 `json_keys` 等与编写器对齐的源）。
 - 运行：`cargo test -p oclive_validation`（及工作区相关测）；编写器侧若依赖 wasm，需按 [`oclive-pack-editor` README](https://github.com/linkaiheng2233-cyber/oclive-pack-editor/blob/main/README.md) 重建 **`npm run wasm:build`** 并跑其契约脚本（如 `contract:json-keys`）。
 
 ### 步骤 6：更新文档
@@ -118,7 +118,7 @@
 - 链接：（issue 或本文档 §）
 
 ### 校验与文档
-- [ ] `crates/oclive_validation` 已更新并 `cargo test` 相关 crate
+- [ ] `kernel/crates/oclive_validation` 已更新并 `cargo test` 相关 crate
 - [ ] PLUGIN_V1 / ERROR_CODES / COMPATIBILITY / KERNEL_ERROR_CODE_CONVENTION（勾选已改项）
 - [ ] CHANGELOG.md + CHANGELOG.en.md
 

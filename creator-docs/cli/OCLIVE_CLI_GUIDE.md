@@ -2,7 +2,7 @@
 
 **oclive-cli** 是 oclive 官方 **内核 / 无头项目** 脚手架：在终端中交互（或脚本化）生成**可独立 `cargo build`** 的最小工程，便于硬件、侧车与多发行形态复用同一套配置形状。
 
-**源码**：[`crates/oclive-cli/`](../../crates/oclive-cli/)  
+**源码**：[`kernel/crates/oclive-cli/`](../../kernel/crates/oclive-cli/)  
 **契约参考**（正式宿主）：[`PLUGIN_V1.md`](../plugin-and-architecture/PLUGIN_V1.md)  
 **`plugin_backends` 字段级权威说明**：[SETTINGS_REFERENCE.md](SETTINGS_REFERENCE.md)
 
@@ -24,7 +24,7 @@ cargo run -p oclive-cli -- init --help
 
 **5 分钟上手**（`doctor` → `init --quick` → `cargo run`）：[KERNEL_FACTORY_VISION.md](../getting-started/KERNEL_FACTORY_VISION.md#5-分钟从零到对话纯内核脚手架)。
 
-**与实现对齐**：顶层子命令以 `crates/oclive-cli/src/main.rs` 的 `Commands` 枚举为准；下列分级为对外门面，**不**把未实现的 CLI 算作「已完成能力」。
+**与实现对齐**：顶层子命令以 `kernel/crates/oclive-cli/src/main.rs` 的 `Commands` 枚举为准；下列分级为对外门面，**不**把未实现的 CLI 算作「已完成能力」。
 
 ---
 
@@ -71,7 +71,7 @@ cargo run -p oclive-cli -- init --help
 | **AB2** | 侧车 / 内核错误分层 | `oclive_validation::protocol_boundary`；OOCP **S12** |
 | **AB3** | `bench --equivalence` | 标准 vs Monolith `/chat` 回复逐条对比（MOCK_LLM） |
 | **AB4** | `test --loom` | `cargo-loom` 模型检查（CI `loom` job，`continue-on-error`） |
-| **AB5** | 模糊测试 | [FUZZING.md](../testing/FUZZING.md)；`fuzz/` + proptest |
+| **AB5** | 模糊测试 | [FUZZING.md](../testing/FUZZING.md)；`kernel/fuzz/` + proptest |
 | **AB6** | `bench --soak` | 长稳 RSS 趋势（`--soak-duration` 小时） |
 
 ```bash
@@ -232,7 +232,7 @@ cargo run -p oclive-cli -- profile -o ./my-kernel --json
 |--------|------|
 | `market search <kw>` | 搜索插件、模板、角色包（复用 `OCLIVE_PLUGIN_INDEX_URL` / `OCLIVE_MARKET_INDEX_URL`） |
 | `market browse` | TUI：左侧分类、右侧列表与详情；**Enter** 安装，**Esc** 退出 |
-| `market install <id>` | 安装条目（插件→`plugins/`；模板→`init`；角色包→`roles/`） |
+| `market install <id>` | 安装条目（插件→`distros/chat-pro/plugins/`；模板→`init`；角色包→`distros/chat-pro/roles/`） |
 | `market info <id>` | 查看详情 |
 
 离线缓存：`~/.oclive/plugin_index_cache.json`（在线拉取失败时自动回退）。默认索引与桌面一致：`awesome-oclive-plugins` 的 `plugins.json`；官方示例草稿见主仓 `data/plugins.json`（可用 `OCLIVE_PLUGIN_INDEX_URL` 指向其 raw URL）。
@@ -307,7 +307,7 @@ cargo run -p oclive-cli -- doctor --fix
 cargo run -p oclive-cli -- doctor --fix --yes
 ```
 
-检查 Rust/Cargo、C++ 工具链、系统内存、磁盘剩余、Ollama（`http://127.0.0.1:11434/api/tags`）、GitHub 连通、工作区可写。在 **oclivenewnew 根**且存在 `roles/*/pipeline.ocblueprint` 时，额外三项 v2 蓝图检查：**`blueprint_file_format`**（文件存在且 JSON 合法）、**`slot_registry_llm`**（至少一个 `type: llm`）、**`slot_position_unique`**（同 type 下 `position` 不重复）。`--fix` 可对 Rust（`rustup update stable`）、Ollama（尝试启动 serve）等项自动修复。存在 **fail** 项时退出码非 0。JSON Schema：`crates/oclive-cli/schemas/oclive_doctor_report.schema.json`。
+检查 Rust/Cargo、C++ 工具链、系统内存、磁盘剩余、Ollama（`http://127.0.0.1:11434/api/tags`）、GitHub 连通、工作区可写。在 **oclivenewnew 根**且存在 `distros/chat-pro/roles/*/pipeline.ocblueprint` 时，额外三项 v2 蓝图检查：**`blueprint_file_format`**（文件存在且 JSON 合法）、**`slot_registry_llm`**（至少一个 `type: llm`）、**`slot_position_unique`**（同 type 下 `position` 不重复）。`--fix` 可对 Rust（`rustup update stable`）、Ollama（尝试启动 serve）等项自动修复。存在 **fail** 项时退出码非 0。JSON Schema：`kernel/crates/oclive-cli/schemas/oclive_doctor_report.schema.json`。
 
 ### `test --oocp`（本地 OOCP 闭环）
 
@@ -327,13 +327,13 @@ cargo run -p oclive-cli -- test --oocp -o .
 
 ```bash
 # 默认：v2 蓝图（pipeline.ocblueprint schema_version 2）
-cargo run -p oclive-cli -- pack validate ./roles/mumu --host-version 0.2.0
+cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/mumu --host-version 0.2.0
 # legacy manifest/settings 包
-cargo run -p oclive-cli -- pack validate ./roles/legacy-example --profile legacy
+cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/legacy-example --profile legacy
 # RobotSoulPack（在 legacy 校验通过后追加规则）
-cargo run -p oclive-cli -- pack validate ./roles/legacy-example --profile robot-soul
+cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/legacy-example --profile robot-soul
 # 创作者 profile：仅 meta 子集 + prompts/（不校验 slot_registry / runtime_config）
-cargo run -p oclive-cli -- pack validate ./roles/mumu --profile creator
+cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/mumu --profile creator
 cargo run -p oclive-cli -- pack create -o ./out/my-role --flat --id com.example.demo --name Demo --format-blueprint-v2
 cargo run -p oclive-cli -- pack publish ./out/my-role -o ./dist/com.example.demo-0.1.0.oclivepack
 ```
@@ -345,7 +345,7 @@ cargo run -p oclive-cli -- pack publish ./out/my-role -o ./dist/com.example.demo
 - **`create`**：生成最小可校验目录；推荐 **`--format-blueprint-v2`**（写入 `pipeline.ocblueprint`）；`--flat` 时 `-o` 即为角色根。
 - **`publish`**：将角色目录打成 **ZIP**，扩展名 **`.oclivepack`**；ZIP 内顶层文件夹名为包内 **`meta.id`**（v2）或 **`manifest.id`**（legacy）。
 
-**JSON Schema**（IDE / `ajv` 等）：`crates/oclive-cli/schemas/pipeline.ocblueprint.v2.schema.json`（v2）；legacy 见 `role_pack_manifest.schema.json`、`role_pack_settings.schema.json`、`role_pack_index.schema.json`。
+**JSON Schema**（IDE / `ajv` 等）：`kernel/crates/oclive-cli/schemas/pipeline.ocblueprint.v2.schema.json`（v2）；legacy 见 `role_pack_manifest.schema.json`、`role_pack_settings.schema.json`、`role_pack_index.schema.json`。
 
 ---
 
@@ -355,7 +355,7 @@ cargo run -p oclive-cli -- pack publish ./out/my-role -o ./dist/com.example.demo
 
 ```bash
 # 非交互：目录插件，提供 llm 槽
-cargo run -p oclive-cli -- plugin create my-llm-plugin --type directory --provides llm -o ./plugins/
+cargo run -p oclive-cli -- plugin create my-llm-plugin --type directory --provides llm -o ./distros/chat-pro/plugins/
 
 # Remote 侧车，多槽
 cargo run -p oclive-cli -- plugin create my-remote --type remote --provides memory --provides emotion -o ./out/plugin --non-interactive
@@ -364,7 +364,7 @@ cargo run -p oclive-cli -- plugin create my-remote --type remote --provides memo
 cargo run -p oclive-cli -- plugin create my-plugin
 ```
 
-**`--provides`**：`llm` | `memory` | `emotion` | `event` | `prompt` | `agent` | `complex_emotion`（可重复）。输出目录默认为 `./plugins/`；最终包路径为 `<output>/<plugin_id>/`（`id` 由名称 slug 为 `com.oclive.plugin.<name>`）。
+**`--provides`**：`llm` | `memory` | `emotion` | `event` | `prompt` | `agent` | `complex_emotion`（可重复）。输出目录默认为 `./distros/chat-pro/plugins/`；最终包路径为 `<output>/<plugin_id>/`（`id` 由名称 slug 为 `com.oclive.plugin.<name>`）。
 
 生成 manifest 经 **`oclive_validation`** 权限校验（目录插件）。快速上手见 [PLUGIN_AUTHOR_LEARNING_PATH.md](../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)。
 
@@ -377,19 +377,19 @@ cargo run -p oclive-cli -- plugin create my-plugin
 主应用默认**不**展示架构图；开发者用本子命令组管理 **`slot_registry`**。
 
 ```bash
-# 列出槽位（默认 ./roles/ 下唯一包，或 --role）
+# 列出槽位（默认 ./distros/chat-pro/roles/ 下唯一包，或 --role）
 cargo run -p oclive-cli -- plugin manage list
-cargo run -p oclive-cli -- plugin manage list --role roles/mumu --json
+cargo run -p oclive-cli -- plugin manage list --role distros/chat-pro/roles/mumu --json
 
 # 增删槽、改 backend、关联目录插件
-cargo run -p oclive-cli -- plugin manage add-slot llm "My LLM" --role roles/mumu
-cargo run -p oclive-cli -- plugin manage set-backend llm directory --role roles/mumu
-cargo run -p oclive-cli -- plugin manage link llm com.example.my-llm --role roles/mumu
-cargo run -p oclive-cli -- plugin manage unlink llm --role roles/mumu
-cargo run -p oclive-cli -- plugin manage remove-slot memory_2 --role roles/mumu
+cargo run -p oclive-cli -- plugin manage add-slot llm "My LLM" --role distros/chat-pro/roles/mumu
+cargo run -p oclive-cli -- plugin manage set-backend llm directory --role distros/chat-pro/roles/mumu
+cargo run -p oclive-cli -- plugin manage link llm com.example.my-llm --role distros/chat-pro/roles/mumu
+cargo run -p oclive-cli -- plugin manage unlink llm --role distros/chat-pro/roles/mumu
+cargo run -p oclive-cli -- plugin manage remove-slot memory_2 --role distros/chat-pro/roles/mumu
 
 # TUI 总览（环序示意 + 槽位列表）
-cargo run -p oclive-cli -- plugin manage --tui --role roles/mumu
+cargo run -p oclive-cli -- plugin manage --tui --role distros/chat-pro/roles/mumu
 ```
 
 | 子命令 | 说明 |
@@ -401,13 +401,13 @@ cargo run -p oclive-cli -- plugin manage --tui --role roles/mumu
 | `link <key> <plugin-id>` | 设为 `directory` 并写入 `plugin` |
 | `unlink <key>` | 清除 `plugin` |
 
-安装并自动装配：`cargo run -p oclive-cli -- plugin install <id> --role roles/mumu`。
+安装并自动装配：`cargo run -p oclive-cli -- plugin install <id> --role distros/chat-pro/roles/mumu`。
 
 ---
 
 ## `dev`：角色包目录监听
 
-在**已存在**的内核 / 脚手架项目根（含 `Cargo.toml`）执行。使用 **notify 递归模式**监听 **`roles/**/manifest.json`** 与 **`roles/**/settings.json`**（任意子目录角色包）；**500ms 防抖**后打印：
+在**已存在**的内核 / 脚手架项目根（含 `Cargo.toml`）执行。使用 **notify 递归模式**监听 **`distros/chat-pro/roles/**/manifest.json`** 与 **`distros/chat-pro/roles/**/settings.json`**（任意子目录角色包）；**500ms 防抖**后打印：
 
 `[oclive dev] 检测到角色包 '<id>' 变更，已重载`
 
@@ -429,7 +429,7 @@ cargo run -p oclive-cli -- dev -o /path/to/project --no-watch
 cargo run -p oclive-cli -- init -o ./out/my-kernel
 ```
 
-流程包括：项目名、类型（无头可执行 / 库）、后端槽位多选、`builtin` / `remote` / `directory` / `none`（`llm` 槽另有 **`ollama`**）选择、可选插件开关、是否生成示例 `roles/default`；**无头服务（kernel_server）** 末尾另有 **开发者编译选项**（默认关闭）。
+流程包括：项目名、类型（无头可执行 / 库）、后端槽位多选、`builtin` / `remote` / `directory` / `none`（`llm` 槽另有 **`ollama`**）选择、可选插件开关、是否生成示例 `distros/chat-pro/roles/default`；**无头服务（kernel_server）** 末尾另有 **开发者编译选项**（默认关闭）。
 
 ### 非交互 + 预设
 
@@ -444,7 +444,7 @@ cargo run -p oclive-cli -- init --non-interactive --quiet --preset minimal -o /t
 cargo run -p oclive-cli -- init --non-interactive --quiet --preset minimal --skip-role-pack -o /tmp/my-kernel-no-roles
 ```
 
-`--skip-role-pack`：不生成 `roles/`（空白内核工程）。
+`--skip-role-pack`：不生成 `distros/chat-pro/roles/`（空白内核工程）。
 
 ### 环境推荐（`--smart`）
 
@@ -455,7 +455,7 @@ cargo run -p oclive-cli -- init --smart --non-interactive -o ./out --project-nam
 
 交互式 `init` 默认会先做一次轻量探测（Ollama / NVIDIA GPU / 内存）；可用 **`--no-smart`** 关闭。完整诊断仍用 **`oclive doctor`**。
 
-对含 `oclive_kernel_*` 依赖的内核工程，`doctor` 另增五项 **contracts 实现** 检查（`plugin_host_port_impl`、`llm_client_impl`、`slot_registry_resolver_impl`、`event_estimator_impl`、`agent_provider_impl`）：在 `src/` 或 `src-tauri/src/` 下搜索对应 `impl Trait` 块。在 monorepo 根目录执行时探测 `src-tauri/Cargo.toml`。
+对含 `oclive_kernel_*` 依赖的内核工程，`doctor` 另增五项 **contracts 实现** 检查（`plugin_host_port_impl`、`llm_client_impl`、`slot_registry_resolver_impl`、`event_estimator_impl`、`agent_provider_impl`）：在 `src/` 或 `distros/desktop-tauri/src/` 下搜索对应 `impl Trait` 块。在 monorepo 根目录执行时探测 `distros/desktop-tauri/Cargo.toml`。
 
 ### 内核工厂模板（`--template`）
 
@@ -477,16 +477,16 @@ cargo run -p oclive-cli -- init --non-interactive --template headless-api --mono
 cargo run -p oclive-cli -- init --non-interactive --template library-embed --kernel-source . -o ./out/embed
 ```
 
-**`--with-role-pack`**：`robot-soul-minimal`（七维 + `prompts/system.md`）| `default`（通用 `roles/default`）。未指定且未用模板时，非交互仍生成 **default** 示例包（与历史一致）。
+**`--with-role-pack`**：`robot-soul-minimal`（七维 + `prompts/system.md`）| `default`（通用 `distros/chat-pro/roles/default`）。未指定且未用模板时，非交互仍生成 **default** 示例包（与历史一致）。
 
-**`--with-example-plugin`**：复制 `com.oclive.example.llamacpp_llm/` 到 `plugins/`（源自主仓 `examples/directory-plugin-llamacpp/`；默认关闭）。
+**`--with-example-plugin`**：复制 `com.oclive.example.llamacpp_llm/` 到 `distros/chat-pro/plugins/`（源自主仓 `examples/directory-plugin-llamacpp/`；默认关闭）。
 
-生成工程含 **`plugins/README.md`**、**`docs/BLUEPRINT_REFERENCE.md`**、**`docs/ORCHESTRATION_REFERENCE.md`**（中英编排参考）。
+生成工程含 **`distros/chat-pro/plugins/README.md`**、**`docs/BLUEPRINT_REFERENCE.md`**、**`docs/ORCHESTRATION_REFERENCE.md`**（中英编排参考）。
 
 **蓝图校验**（`[experimental/legacy]`，不改变桌面宿主主路径；新工程优先 `init --pipeline`）：
 
 ```bash
-cargo run -p oclive-cli -- blueprint validate ./roles/myrole/pipeline.ocblueprint
+cargo run -p oclive-cli -- blueprint validate ./distros/chat-pro/roles/myrole/pipeline.ocblueprint
 cargo run -p oclive-cli -- blueprint validate ./path.json --json
 ```
 
@@ -520,10 +520,10 @@ cargo run -p oclive-cli -- init --non-interactive --quiet --preset mixed --proje
 | `--monolith-preset` | 仅 Monolith 启用时：`latency`（七焊接键全焊）\| `memory` \| `embedded`；预填 `monolith.toml` 的 `weld_modules` |
 | `--monolith-bench-preset` | 同档位枚举；生成后自动 release 双构建 + `bench --runs 5` → `bench_results/report.json`（失败不阻塞） |
 | `--list-templates` | 打印模板矩阵后退出；交互 `init` 亦可在项目类型前选模板 |
-| `--quick` / `-q` | 极速：`preset=full`、无 Monolith、无 `roles/`；交互仅问项目名与输出目录 |
+| `--quick` / `-q` | 极速：`preset=full`、无 Monolith、无 `distros/chat-pro/roles/`；交互仅问项目名与输出目录 |
 | `--template` | `robot-soul` \| `robot-gateway` \| `dialogue-only` \| `headless-api` \| `library-embed`（内核工厂套餐；见上表） |
 | `--with-role-pack` | `robot-soul-minimal` \| `default`；与 `--skip-role-pack` 互斥 |
-| `--with-example-plugin` | 附带 llamacpp 目录插件示例到 `plugins/` |
+| `--with-example-plugin` | 附带 llamacpp 目录插件示例到 `distros/chat-pro/plugins/` |
 | `--kernel-source` | 指向 oclivenewnew 根目录，生成 path 依赖与真实 HTTP 入口 |
 | `--author` | 写入生成 `Cargo.toml` 的 `[package].authors` |
 | `--license` | SPDX 许可证（默认 **MIT**） |
@@ -590,7 +590,7 @@ cargo run -p oclive-cli -- debug -o . --step build_prompt --json
 ## 生成物说明
 
 - **占位 `Cargo.toml`**：当前仅依赖 **`serde` / `serde_json`**，不假设本机已存在 `oclive_kernel_runtime` 拆分 crate。接入真实内核时，请改为 `path` / 版本依赖并替换 `main.rs` / `lib.rs` 入口。
-- **`roles/default/settings.json`**：含 **`_comment_*`** 与完整 **`plugin_backends`**（含第 7 键 `complex_emotion`）；与主应用完全对齐时请以 [SETTINGS_REFERENCE.md](SETTINGS_REFERENCE.md) 为准裁剪非法键（如主应用不接受的 `none` 字符串）。
+- **`distros/chat-pro/roles/default/settings.json`**：含 **`_comment_*`** 与完整 **`plugin_backends`**（含第 7 键 `complex_emotion`）；与主应用完全对齐时请以 [SETTINGS_REFERENCE.md](SETTINGS_REFERENCE.md) 为准裁剪非法键（如主应用不接受的 `none` 字符串）。
 - **`CONFIG_REFERENCE.md`（项目根）**：预设矩阵与各槽一句话；含 **开发者编译选项（Monolith）** 与 RFC 链接。
 - **`init --help` 末尾**：含预设矩阵、**`--monolith`** 说明，指向 [RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md)。
 - **README（生成）**：根据插件勾选，写入接入 `oclive_kernel_server`、OOCP、目录插件的**文字指引**。
@@ -621,7 +621,7 @@ cargo run -p oclive-cli -- build -o /path/to/kernel-project --no-cargo
 
 ### `bench` 子命令
 
-再生成源码、双构建后，对两个二进制各跑 `--runs` 次子进程；子进程内通过环境变量 **`OCLIVE_KERNEL_BENCH_ITERS`** 做热循环。输出 **JSON**（`schema_version: 2`），除延迟分位数外含 **`binary_size`**（字节）、**`peak_memory`**（MiB）、**`build_time`**（秒）。Schema：`crates/oclive-cli/schemas/oclive_bench_report.schema.json`。
+再生成源码、双构建后，对两个二进制各跑 `--runs` 次子进程；子进程内通过环境变量 **`OCLIVE_KERNEL_BENCH_ITERS`** 做热循环。输出 **JSON**（`schema_version: 2`），除延迟分位数外含 **`binary_size`**（字节）、**`peak_memory`**（MiB）、**`build_time`**（秒）。Schema：`kernel/crates/oclive-cli/schemas/oclive_bench_report.schema.json`。
 
 ```bash
 cargo run -p oclive-cli -- bench --release -o /path/to/kernel-project --runs 30 --inner-iters 500 --output ./bench-report.json

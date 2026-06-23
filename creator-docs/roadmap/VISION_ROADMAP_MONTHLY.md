@@ -26,8 +26,8 @@
 |--------|------|
 | `creator-docs/plugin-and-architecture/PLUGIN_V1.md` | 各子系统 DTO、`settings.json` 枚举；**已补充**「`send_message` 编排顺序」与 `chat_engine` / `PluginHost` 对照。 |
 | `creator-docs/role-pack/PACK_VERSIONING.md` | 包版本、`schema_version`、`min_runtime_version`（预留）、未知字段策略；**已补充**第 1 月与 `plugin_backends` 的对照。 |
-| Rust 门面 | 以 **[`PluginHost`](../../crates/oclive_kernel_host/src/domain/ports/plugin_host.rs)** 为宿主：[`MemoryRetrieval`](../../crates/oclive_kernel_runtime/src/domain/memory_retrieval.rs)、[`UserEmotionAnalyzer`](../../crates/oclive_kernel_runtime/src/domain/user_emotion_analyzer.rs)、[`EventEstimator`](../../crates/oclive_kernel_host/src/domain/event_estimator.rs)、[`PromptAssembler`](../../crates/oclive_kernel_runtime/src/domain/prompt_assembler.rs)、[`LlmClient`](../../src-tauri/src/infrastructure/llm/mod.rs)；主流程只做编排。 |
-| `settings.json` | 使用嵌套对象 **`plugin_backends`**（`memory` / `emotion` / `event` / `prompt` / `llm`），见 [`plugin_backends.rs`](../../src-tauri/src/models/plugin_backends.rs)。**不再**使用独立字段名 `memory_backend` / `affect_backend`（早期愿景草案）；情感分析对应键 **`emotion`**。`builtin` / `remote`（及 `llm`: `ollama` / `remote`）为已实现枚举；`builtin_v2` 仅为读兼容 alias（等同 `builtin`）；`remote` 需环境变量时，加载角色时会 **记警告日志**（仍回退内置，与既有行为一致）。 |
+| Rust 门面 | 以 **[`PluginHost`](../../kernel/crates/oclive_kernel_host/src/domain/ports/plugin_host.rs)** 为宿主：[`MemoryRetrieval`](../../kernel/crates/oclive_kernel_runtime/src/domain/memory_retrieval.rs)、[`UserEmotionAnalyzer`](../../kernel/crates/oclive_kernel_runtime/src/domain/user_emotion_analyzer.rs)、[`EventEstimator`](../../kernel/crates/oclive_kernel_host/src/domain/event_estimator.rs)、[`PromptAssembler`](../../kernel/crates/oclive_kernel_runtime/src/domain/prompt_assembler.rs)、[`LlmClient`](../../kernel/crates/oclive_kernel_host/src/infrastructure/llm/mod.rs)；主流程只做编排。 |
+| `settings.json` | 使用嵌套对象 **`plugin_backends`**（`memory` / `emotion` / `event` / `prompt` / `llm`），见 [`plugin_backends.rs`](../../kernel/crates/oclive_kernel_types/src/models/plugin_backends.rs)。**不再**使用独立字段名 `memory_backend` / `affect_backend`（早期愿景草案）；情感分析对应键 **`emotion`**。`builtin` / `remote`（及 `llm`: `ollama` / `remote`）为已实现枚举；`builtin_v2` 仅为读兼容 alias（等同 `builtin`）；`remote` 需环境变量时，加载角色时会 **记警告日志**（仍回退内置，与既有行为一致）。 |
 
 **验收**：全量 `cargo test`、`npm run build`；对话与好感等行为与本月前**无回归**（或仅有可说明的显式变更）。
 
@@ -41,7 +41,7 @@
 |--------|------|
 | 编写器形态 | 独立应用或 oclive 内「创作者模式」二选一；优先**独立**，避免与玩家端耦合过重。 |
 | 功能范围 | `manifest.json` 门面字段、`settings.json` 基础段、**与后端同一套校验**（或调用/复用校验逻辑）。 |
-| 导出 | 生成 `roles/{id}/` 目录或 zip，结构与 [roles/README_MANIFEST.md](../../roles/README_MANIFEST.md) 一致。 |
+| 导出 | 生成 `distros/chat-pro/roles/{id}/` 目录或 zip，结构与 [distros/chat-pro/roles/README_MANIFEST.md](../../distros/chat-pro/roles/README_MANIFEST.md) 一致。 |
 | 文档 | 创作者路径：`creator-docs/getting-started/` 等 |
 
 **验收**：用编写器新建/编辑一个包，**零手写 JSON** 可被 oclive 加载并正常对话。
@@ -127,14 +127,14 @@
 | **第 2 设施子模块** | **专家模型设施子模块** · `blueprint/includes/expert_routing.json` · 条件触发子流程 |
 | **`slot.lora.apply`** | 专家步骤：会话标记 `plugin_id` 以切换 adapter（`dual_core` + Experimental 核；Stable 主链不接，直至解冻决策） |
 | **第 5 模块 `llm`** | 主对话仍走通用 `plugin_backends.llm`；**默认**微调 adapter 仅在 expert 子流程切换，不强制替换主槽 |
-| **编写器** | 导出 `.ocpak` / `roles/`；工坊产出写入包内卫星文件（契约待 RFC） |
+| **编写器** | 导出 `.ocpak` / `distros/chat-pro/roles/`；工坊产出写入包内卫星文件（契约待 RFC） |
 
 **分阶段交付（T0→T3，按需排期）**：
 
 | 阶段 | 交付物 | 验收 |
 |------|--------|------|
 | **T0 · 契约** | RFC：语料来源与隐私、`lora_adapters`（或等价）卫星 schema、与 `expert_routing` / `slot.lora.apply` 引用关系、导出 profile（`desktop-full` / `vscode-lite` / `theater`） | 文档评审；`oclive_validation` 键表草案 |
-| **T1 · 工坊 MVP** | **独立桌面/Tauri 工具**（推荐与 pack-editor 并列，避免 GPU/训练进程拖慢编写器）：导入对话/人设样本 → 单 base 模型 LoRA 或等价 → 导出 adapter 清单进角色包目录 | 产物经校验 crate 检查；零手写 JSON 可装入 `roles/{id}/` |
+| **T1 · 工坊 MVP** | **独立桌面/Tauri 工具**（推荐与 pack-editor 并列，避免 GPU/训练进程拖慢编写器）：导入对话/人设样本 → 单 base 模型 LoRA 或等价 → 导出 adapter 清单进角色包目录 | 产物经校验 crate 检查；零手写 JSON 可装入 `distros/chat-pro/roles/{id}/` |
 | **T2 · 运行时** | directory 推理插件或 Ollama modelfile 等路径；`slot.lora.apply` **真加载** adapter 并参与 generate | 专家路由命中时，同一角色可观测 prompt-only vs adapter 差异（固定用例或日志） |
 | **T3 · 评测** | 扩展 bench / OOCP / replay：**prompt-only · LoRA · LoRA+专家路由** 可复现对比（连贯 / 口癖 / 人设一致性 checklist） | 维护者可跑一轮对比报告 |
 
@@ -175,7 +175,7 @@
 
 ## 文档索引
 
-- 角色包契约：[roles/README_MANIFEST.md](../../roles/README_MANIFEST.md)  
+- 角色包契约：[distros/chat-pro/roles/README_MANIFEST.md](../../distros/chat-pro/roles/README_MANIFEST.md)  
 - 创作者向：[../role-pack/CREATOR_ROLE_PACK_CUSTOMIZATION.md](../role-pack/CREATOR_ROLE_PACK_CUSTOMIZATION.md) 等  
 - 体验差异化与愿景对照 backlog：[BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md](BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md)  
 - 本月计划若与实现不一致，**以仓库代码与校验为准**，并回写本文。

@@ -32,10 +32,10 @@ LLM raw_reply
 
 相关实现：
 
-- 编排：`crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/post.rs`
-- 解析：`crates/oclive_kernel_host/src/domain/reply_post_processor.rs`
-- builtin：`crates/oclive_kernel_runtime/src/domain/builtin_reply_post_processor.rs`
-- trait：`crates/oclive_kernel_contracts/src/reply_post_processor.rs`
+- 编排：`kernel/crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/post.rs`
+- 解析：`kernel/crates/oclive_kernel_host/src/domain/reply_post_processor.rs`
+- builtin：`kernel/crates/oclive_kernel_runtime/src/domain/builtin_reply_post_processor.rs`
+- trait：`kernel/crates/oclive_kernel_contracts/src/reply_post_processor.rs`
 
 ---
 
@@ -47,7 +47,7 @@ LLM raw_reply
 | **`remote`** | JSON-RPC `reply_post_process.process` | 你的 **LLM 润色 HTTP 服务** |
 | **`directory`** | 同上经目录插件 stdio/http | 你的 **本地/脚本润色插件** |
 
-包级开关：`roles/{id}/config.json` → `reply_post_processor`（**默认 `enabled: false`**）。
+包级开关：`distros/chat-pro/roles/{id}/config.json` → `reply_post_processor`（**默认 `enabled: false`**）。
 
 ---
 
@@ -119,9 +119,9 @@ LLM raw_reply
 }
 ```
 
-本地烟测包：`roles/polish-dev/`（`dev_only: true`，默认不出现在角色列表；设 `OCLIVE_LIST_DEV_ROLES=1` 可见）。
+本地烟测包：`distros/chat-pro/roles/polish-dev/`（`dev_only: true`，默认不出现在角色列表；设 `OCLIVE_LIST_DEV_ROLES=1` 可见）。
 
-插件目录：`{app_data}/plugins/reply-post-process-polish/`（或 roles 同级 `plugins/`）。
+插件目录：`{app_data}/distros/chat-pro/plugins/reply-post-process-polish/`（或 roles 同级 `distros/chat-pro/plugins/`）。
 
 ---
 

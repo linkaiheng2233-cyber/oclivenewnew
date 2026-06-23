@@ -20,11 +20,11 @@ One minimal path for **integrators / hardware / gateways**, aligned with [PURE_K
 |------|--------|---------|
 | 1 | `cargo build -p oclive-cli` | CLI ready |
 | 2 | `cargo run -p oclive-cli -- init --kernel-source <repo root> -o <proj> …` | **kernel_server** or **library** with path deps |
-| 3 | Author **`roles/<id>/`** (`pack create` or copy [examples/robot-soul-minimal](../../examples/robot-soul-minimal/)) | `pack validate`; devices: **`--profile robot-soul`** ([ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)) |
+| 3 | Author **`distros/chat-pro/roles/<id>/`** (`pack create` or copy [examples/robot-soul-minimal](../../examples/robot-soul-minimal/)) | `pack validate`; devices: **`--profile robot-soul`** ([ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)) |
 | 4 | Directory plugins / sidecars (optional) | [DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md), [REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) |
 | 5 | `cargo run -p oclive-cli -- pack validate <role root> [--profile robot-soul]` | Contract + RobotSoulPack |
 | 6 | Headless | **`cargo run -p oclive_kernel_server -- --api`** or generated project **`cargo run`**; or **`oclivenewnew-tauri --api`** |
-| 7 | Ship | Binary + `roles/` + `plugins/` (if directory) + env: `OCLIVE_ROLES_DIR`, `OCLIVE_API_PORT`, `OCLIVE_HTTP_API_MOCK_LLM` (bring-up), … |
+| 7 | Ship | Binary + `distros/chat-pro/roles/` + `distros/chat-pro/plugins/` (if directory) + env: `OCLIVE_ROLES_DIR`, `OCLIVE_API_PORT`, `OCLIVE_HTTP_API_MOCK_LLM` (bring-up), … |
 
 ---
 

@@ -75,7 +75,7 @@ flowchart TB
 
 ### 2.2 与 `execute_turn` 的阶段对齐
 
-今日锚点：`crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/mod.rs`
+今日锚点：`kernel/crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/mod.rs`
 
 | 顺序 | 阶段 | 用户身份 | 回复后处理 |
 |------|------|----------|------------|
@@ -116,7 +116,7 @@ flowchart TB
 ### 3.2 磁盘格式（角色包）
 
 ```
-roles/{role_id}/
+distros/chat-pro/roles/{role_id}/
 ├── prompts/                    # 角色是谁（已有）
 ├── user_identities/            # 用户是谁（新增，可选）
 │   ├── index.json              # 身份目录 + 默认 id
@@ -353,7 +353,7 @@ post_llm(
 | `UserIdentityLoader`、port impl、`post_llm` 挂钩 | `oclive_kernel_host` |
 | 默认规则公式 | `oclive_kernel_runtime`（可选纯函数） |
 | manifest / config 校验 | `oclive_validation` |
-| Tauri / HTTP 命令 | `src-tauri/src/api/` + `oclive_kernel_host` service |
+| Tauri / HTTP 命令 | `distros/desktop-tauri/src/api/` + `oclive_kernel_host` service |
 
 ---
 

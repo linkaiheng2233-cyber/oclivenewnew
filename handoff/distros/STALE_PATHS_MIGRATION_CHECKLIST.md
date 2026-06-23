@@ -46,17 +46,21 @@
 | 根 `plugins/` | `distros/chat-pro/plugins/` |
 | 根 `e2e/` | `distros/chat-pro/e2e/` |
 
-## 5. CI / 文档（Phase 4）
+## 5. CI / 文档（Phase 4）— **Done（2026-06-24）**
 
 | 旧引用 | 新引用 |
 |--------|--------|
 | `crates/README.md` | `kernel/crates/README.md`（根留 redirect） |
 | CI `working-directory: src-tauri` | `distros/desktop-tauri` |
-| `AGENTS.md` 编排路径 | 仍指向 `kernel/crates/oclive_kernel_host/...` |
+| `AGENTS.md` / `.cursor/rules` 编排路径 | `kernel/crates/oclive_kernel_host/...` |
+| normative docs 机械迁移 | `node scripts/migrate-doc-paths.mjs`（194 文件） |
+| `check-stale-paths.mjs` | 硬门禁 + dimension5 第 11 检 |
 
 ## 6. CI ratchet（迁移完成后禁止）
 
-迁移合入后，以下路径**不得**再出现在 normative docs / 新脚本中：
+迁移合入后，以下路径**不得**再出现在 normative docs / 新脚本中（`handoff/archive/**`、本清单、CHANGELOG 历史行除外）：
 
 - 根 `crates/`、`fuzz/`、`src-tauri/`、根 `src/`（前端）
 - `src-tauri/src/domain`（编排已迁至 `kernel/crates/oclive_kernel_host`）
+
+**验收（2026-06-24）**：`node scripts/check-stale-paths.mjs` OK · `node scripts/dimension5-acceptance.mjs --ci` PASS。

@@ -14,7 +14,7 @@
 
 | [`INFORMATION_ARCHITECTURE.md`](INFORMATION_ARCHITECTURE.md) | 信息架构（模式 1 · 舞台壳 / 区域 / 组件 / 状态机 / 开发顺序） |
 
-| [`theater.oclive.toml`](theater.oclive.toml) | Profile 模板（已同步至 `examples/distro-profiles/` 与 `src-tauri/resources/distro-profiles/`） |
+| [`theater.oclive.toml`](theater.oclive.toml) | Profile 模板（已同步至 `examples/distro-profiles/` 与 `distros/desktop-tauri/resources/distro-profiles/`） |
 
 
 

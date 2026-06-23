@@ -14,8 +14,8 @@ Technical pre-research for **Theater v0 local beat patch** (rule gate + preset c
 | Rule gate | `polish_rules.mjs` + tests |
 | Preset builder / cache | `preset_builder.mjs`, `preset_cache.mjs` |
 | Ollama client | `ollama_client.mjs` |
-| Integration smoke | `src-tauri/tests/reply_post_processor_directory_roundtrip.rs` |
-| Dev role pack | `roles/polish-dev/` |
+| Integration smoke | `distros/desktop-tauri/tests/reply_post_processor_directory_roundtrip.rs` |
+| Dev role pack | `distros/chat-pro/roles/polish-dev/` |
 
 ## Orchestration contract (unchanged)
 
@@ -23,4 +23,4 @@ Technical pre-research for **Theater v0 local beat patch** (rule gate + preset c
 
 ## Stop line
 
-Do **not** add features to this plugin until Theater v0 is validated. Theater beat patch lives in frontend (`src/theater/useTheaterBeatPatch.ts`), not `process_message`.
+Do **not** add features to this plugin until Theater v0 is validated. Theater beat patch lives in frontend (`distros/theater/src/composables/theater/useTheaterBeatPatch.ts`), not `process_message`.

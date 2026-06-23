@@ -11,10 +11,10 @@
 | 仓库 | 角色 | 技术栈（概要） |
 |------|------|----------------|
 | **oclivenewnew**（本仓库） | **运行时**：玩家对话、角色包加载、引擎、架构图与专家路由、Tauri 桌面端 | Rust + Vue + Tauri |
-| **oclive-pack-editor**（另仓，同级目录常见） | **编写器**：编辑/导出 `roles/{id}/` 或 zip；人设 / 六槽 / 知识 | Vue + Tauri |
+| **oclive-pack-editor**（另仓，同级目录常见） | **编写器**：编辑/导出 `distros/chat-pro/roles/{id}/` 或 zip；人设 / 六槽 / 知识 | Vue + Tauri |
 | **oclive-launcher**（另仓） | **已退役**（归档只读）；新用户用编写器 + 运行时，见 [oclive-launcher README](https://github.com/linkaiheng2233-cyber/oclive-launcher/blob/main/README.md) |
 
-**唯一纽带**：磁盘上的 **角色包**（结构与 `roles/{角色id}/` 一致）。运行时与编写器通过 **导入/导出包** 或 **OCLIVE_ROLES_DIR** 对接，不依赖进程间复杂 IPC。
+**唯一纽带**：磁盘上的 **角色包**（结构与 `distros/chat-pro/roles/{角色id}/` 一致）。运行时与编写器通过 **导入/导出包** 或 **OCLIVE_ROLES_DIR** 对接，不依赖进程间复杂 IPC。
 
 ---
 
@@ -23,7 +23,7 @@
 - **角色包（v2）**：`pipeline.ocblueprint` 为 SSOT（`meta` + `slot_registry` + 可选 `groups`）；导入 `.ocpak` / `.zip` / 目录；legacy `manifest.json`+`settings.json` 仅迁移路径，见 [V1_TO_V2_MIGRATION.md](../role-pack/V1_TO_V2_MIGRATION.md)。
 - **工程**：`npm run check`（日常）、`npm run check:release`（发版前全量测试）；Rust fmt / clippy / `cargo test`。
 - **CI**：GitHub Actions 在 **Ubuntu + Windows** 上跑 Rust 与 `npm run build`（见 `.github/workflows/ci.yml`）。
-- **文档**：`creator-docs/`、`roles/README_MANIFEST.md`、导入测试清单 `roles/TESTING_ROLE_PACK_IMPORT.md`、愿景与体验 backlog 等。
+- **文档**：`creator-docs/`、`distros/chat-pro/roles/README_MANIFEST.md`、导入测试清单 `distros/chat-pro/roles/TESTING_ROLE_PACK_IMPORT.md`、愿景与体验 backlog 等。
 
 ---
 
@@ -40,7 +40,7 @@
 | **v2 蓝图 / 导入** | [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) · [V1_TO_V2_MIGRATION.md](../role-pack/V1_TO_V2_MIGRATION.md)（v1 已废弃） |
 | **性格档案设计轴心** | [docs/personality-archive-notes.md](../../docs/personality-archive-notes.md) |
 | **思路变化（以前 vs 现在）** | [docs/design-axis-evolution.md](../../docs/design-axis-evolution.md) |
-| **导入手工测试清单** | [roles/TESTING_ROLE_PACK_IMPORT.md](../../roles/TESTING_ROLE_PACK_IMPORT.md) |
+| **导入手工测试清单** | [distros/chat-pro/roles/TESTING_ROLE_PACK_IMPORT.md](../../distros/chat-pro/roles/TESTING_ROLE_PACK_IMPORT.md) |
 | **按月愿景** | [../roadmap/VISION_ROADMAP_MONTHLY.md](../roadmap/VISION_ROADMAP_MONTHLY.md) |
 | **体验向 backlog（试聊 / 启动器 / 市场）** | [../roadmap/BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md](../roadmap/BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md) |
 | **构建、CI、发版门槛、Sentry** | 根目录 [README.md](../../README.md) |

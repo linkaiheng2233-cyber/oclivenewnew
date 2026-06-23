@@ -40,7 +40,7 @@
 **A:**
 
 1. 打开 **插件管理面板**，查看该插件的 **依赖状态**（`ok` / `missing` / `mismatch`）及具体缺失的 **`manifest.id`**。
-2. 从社区站或本地 **`plugins/`** 安装对应目录插件，确保 **`manifest.json`** 中 **`version`** 满足依赖声明的 semver 范围。
+2. 从社区站或本地 **`distros/chat-pro/plugins/`** 安装对应目录插件，确保 **`manifest.json`** 中 **`version`** 满足依赖声明的 semver 范围。
 3. 重启应用或等待目录扫描刷新后再启用。
 
 ---
@@ -80,7 +80,7 @@
 
 ### Q: mumu 现在默认有哪些前端模块？
 
-**A:** 当前 `roles/mumu/ui.json` 默认启用了 5 个前端模块（目录插件）：
+**A:** 当前 `distros/chat-pro/roles/mumu/ui.json` 默认启用了 5 个前端模块（目录插件）：
 
 - `chat.header`：`com.oclive.mumu.chat-header-status`（头部状态）
 - `chat_toolbar`：`com.oclive.mumu.quick-actions`（快捷动作）

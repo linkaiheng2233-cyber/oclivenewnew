@@ -42,7 +42,7 @@ For **plugin authors** and **role pack creators**. Authoritative technical detai
 **A:**
 
 1. Open the **plugin manager** and read **dependency status** (`ok` / `missing` / `mismatch`) and the missing **`manifest.id`**.
-2. Install the directory plugin from the community site or local **`plugins/`**, with **`manifest.json` `version`** satisfying the declared semver range.
+2. Install the directory plugin from the community site or local **`distros/chat-pro/plugins/`**, with **`manifest.json` `version`** satisfying the declared semver range.
 3. Restart the app or wait for directory rescan before enabling.
 
 ---
@@ -82,7 +82,7 @@ For **plugin authors** and **role pack creators**. Authoritative technical detai
 
 ### Q: Which default front-end modules does mumu ship?
 
-**A:** `roles/mumu/ui.json` enables five directory plugins by default:
+**A:** `distros/chat-pro/roles/mumu/ui.json` enables five directory plugins by default:
 
 - `chat.header`: `com.oclive.mumu.chat-header-status`
 - `chat_toolbar`: `com.oclive.mumu.quick-actions`

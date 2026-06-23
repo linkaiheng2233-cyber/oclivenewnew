@@ -6,7 +6,7 @@
 
 本文档描述 **与 A.I.Live 主宿主加载逻辑一致** 的磁盘角色包形状，便于 **多发行版**（桌面 Tauri、无头 `kernel_server`、未来启动器）共用同一包。权威细节仍以源码与既有文档为准：
 
-- 创作者门面与字段语义：[README_MANIFEST.md](../../roles/README_MANIFEST.md)
+- 创作者门面与字段语义：[README_MANIFEST.md](../../distros/chat-pro/roles/README_MANIFEST.md)
 - 六宿主槽与编排：[PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)、[SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)
 - 以内核为中心的模块图：[KERNEL_AND_MODULES_ARCHITECTURE.md](../getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md)
 
@@ -31,10 +31,10 @@ v2 磁盘上常为 **同一蓝图文件 `pipeline.ocblueprint`**（**不以** `s
 
 ## 1. 目录结构（推荐）
 
-角色包根目录通常命名为 **`roles/{角色id}/`**（v2 时 `{角色id}` 与 `meta.id` 一致）。
+角色包根目录通常命名为 **`distros/chat-pro/roles/{角色id}/`**（v2 时 `{角色id}` 与 `meta.id` 一致）。
 
 ```text
-roles/{role_id}/
+distros/chat-pro/roles/{role_id}/
 ├── pipeline.ocblueprint    # **蓝图文件（v2 SSOT · 瘦）**：meta + slot_registry + includes；**不以** steps[] 调度；见 [BLUEPRINT_FOLDER_LAYOUT.md](../../handoff/BLUEPRINT_FOLDER_LAYOUT.md)
 ├── blueprint/              # 可选：includes/、overlays/、revisions/、docs/（卫星，不替代本体路径）
 ├── config.json             # 可选；遗忘曲线、虚拟时间（沉浸模式）；见 §9
@@ -85,7 +85,7 @@ roles/{role_id}/
 
 **兼容层**：无 `user_identities/` 时，宿主仍可使用蓝图 **`meta.relations`** 中各关系的 **`prompt_hint`**（legacy）。有 catalog 时以 catalog 模板为准；发行版可通过 `distro.oclive.toml` → `[user_identity].default_id` 覆盖会话默认（见 [DISTRO_CAPABILITY_PROFILE.md](../kernel/DISTRO_CAPABILITY_PROFILE.md)）。
 
-**示例**：`roles/mumu/user_identities/`（演示 identity；**未**默认开启 `reply_post_processor`）。
+**示例**：`distros/chat-pro/roles/mumu/user_identities/`（演示 identity；**未**默认开启 `reply_post_processor`）。
 
 **API / UI**：Tauri `get_user_identity_state` / `set_user_identity`；HTTP `GET /user_identity/state`、`POST /user_identity/set`。详见 [RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md](../rfc/RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md) §3。
 
@@ -179,7 +179,7 @@ roles/{role_id}/
 
 | 字段 | 说明 |
 |------|------|
-| `path` | 相对 **`roles/{role_id}/`** 的正斜杠路径；禁止 `..` |
+| `path` | 相对 **`distros/chat-pro/roles/{role_id}/`** 的正斜杠路径；禁止 `..` |
 | `target` | 点分路径，如 `meta.personality`、`expert_routing`、`runtime_config.expert_hints`、`slot_registry.<key>` |
 | `mode` | `merge`（JSON 深合并）或 `replace`（整段替换） |
 
@@ -189,7 +189,7 @@ roles/{role_id}/
 
 **禁止**在 `pipeline.ocblueprint` 文件中出现 `module_relations`、`steps`、`entry`（校验报错）。运行时由 `slot_registry` **派生**模块间示意关系，供架构图只读连线。
 
-JSON Schema：`crates/oclive-cli/schemas/pipeline.ocblueprint.v2.schema.json`。
+JSON Schema：`kernel/crates/oclive-cli/schemas/pipeline.ocblueprint.v2.schema.json`。
 
 ---
 
@@ -244,13 +244,13 @@ JSON Schema：`crates/oclive-cli/schemas/pipeline.ocblueprint.v2.schema.json`。
 ## 6. 自动化校验
 
 ```bash
-cargo run -p oclive-cli -- pack validate ./roles/mumu --host-version 0.2.0
+cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/mumu --host-version 0.2.0
 ```
 
 - 默认 `--host-version` 为 **本 CLI 的 `CARGO_PKG_VERSION`**；与桌面宿主版本不一致时，请显式传入 **与目标 A.I.Live 发行版一致的 semver** 再检查 `min_runtime_version`。
 - 通过时输出：`✓ 角色包验证通过`；失败时逐条列出错误。
 
-**JSON Schema**（IDE 提示 / 外部校验器）：`crates/oclive-cli/schemas/role_pack_manifest.schema.json`、`role_pack_settings.schema.json`。
+**JSON Schema**（IDE 提示 / 外部校验器）：`kernel/crates/oclive-cli/schemas/role_pack_manifest.schema.json`、`role_pack_settings.schema.json`。
 
 ### RobotSoulPack（`--profile robot-soul`）
 
@@ -266,10 +266,10 @@ cargo run -p oclive-cli -- pack validate ./roles/mumu --host-version 0.2.0
 | `remote_presence` | 可选 |
 
 ```bash
-cargo run -p oclive-cli -- pack validate ./roles/my-role --host-version 0.2.0 --profile robot-soul
+cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/my-role --host-version 0.2.0 --profile robot-soul
 ```
 
-示例：`examples/robot-soul-minimal/roles/default/`。
+示例：`examples/robot-soul-minimal/distros/chat-pro/roles/default/`。
 
 ---
 
@@ -282,7 +282,7 @@ cargo run -p oclive-cli -- pack validate ./roles/my-role --host-version 0.2.0 --
 | `pack validate <dir> --profile robot-soul` | legacy + RobotSoulPack（见 §6） |
 | `pack create -o <out> --id <id> [--flat]` | 生成最小可校验包（`--flat` 时 `<out>` 即为角色根） |
 | `pack publish <dir> [-o file.oclivepack]` | ZIP 打包；根目录为 `manifest.id` |
-| `init … --skip-role-pack` | 生成内核工程时不创建 `roles/` |
+| `init … --skip-role-pack` | 生成内核工程时不创建 `distros/chat-pro/roles/` |
 
 详见 [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md)。
 
@@ -313,7 +313,7 @@ auto_sync: false
 
 ## 9. 配置文件（`config.json`）
 
-**可选** JSON 文件，位于角色包根目录 `roles/{role_id}/config.json`。宿主在 `RoleStorage::load_role` 时读取，**不**写入 `pipeline.ocblueprint`。主要用于 **沉浸模式** 下的虚拟时钟、**艾宾浩斯记忆衰减**、**关系疏远** 等行为；未提供时使用代码内默认值（与下表「默认」列一致）。
+**可选** JSON 文件，位于角色包根目录 `distros/chat-pro/roles/{role_id}/config.json`。宿主在 `RoleStorage::load_role` 时读取，**不**写入 `pipeline.ocblueprint`。主要用于 **沉浸模式** 下的虚拟时钟、**艾宾浩斯记忆衰减**、**关系疏远** 等行为；未提供时使用代码内默认值（与下表「默认」列一致）。
 
 **标准 JSON 无 `//` 注释**；示例片段仅供复制，实际文件须为合法 JSON。
 
@@ -337,7 +337,7 @@ auto_sync: false
 }
 ```
 
-参考包：`roles/mumu/config.json`（含进阶可选键）。
+参考包：`distros/chat-pro/roles/mumu/config.json`（含进阶可选键）。
 
 ### 9.2 顶层结构
 
@@ -464,7 +464,7 @@ auto_sync: false
 
 **校验**：`oclive pack validate` 对 `enabled=true` 且非空 `attitude_text` 检查长度上限（2000 字符）。类型见 `oclive_kernel_types::RolePackMetaActionTemplatesConfig`。
 
-**示例**（`roles/mumu/config.json` 已含默认范例）。
+**示例**（`distros/chat-pro/roles/mumu/config.json` 已含默认范例）。
 
 ### 9.9 `portrait_catalog`（立绘设施 · v0.4+ · A2 磁盘）
 

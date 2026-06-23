@@ -68,7 +68,7 @@ sequenceDiagram
 **磁盘 SSOT（A2）**：
 
 ```
-roles/{role_id}/
+distros/chat-pro/roles/{role_id}/
 ├── config.json                 # portrait_catalog: { "enabled": true | false }
 ├── portrait_catalog.json       # assets[] 全集
 └── assets/images/…

@@ -18,12 +18,12 @@
 
 | 路径 | 内容 |
 |------|------|
-| `/plugins` 或 `/plugins/` | **列表页**：卡片 = 插件/侧车项目（名称、简介、兼容 oclive 版本、作者、**外链 GitHub**、可选标签） |
-| `/plugins/how-it-works` | **科普页**：Remote 与 builtin 区别；`OCLIVE_REMOTE_PLUGIN_URL` / `OCLIVE_REMOTE_LLM_URL` 表格（可链到架构文档） |
-| `/plugins/examples` | **最小示例**：链到仓库 [examples/remote_plugin_minimal/README.md](../../examples/remote_plugin_minimal/README.md)（站内可写 200 字摘要 + 外链） |
-| `/plugins/submit` | **投稿说明**：作者如何被收录——**仅登记信息**（见 [COMMUNITY_WEB_VISION.md](./COMMUNITY_WEB_VISION.md) 成本策略）；必填：公开仓库、协议兼容说明、测试过的 oclive 版本 |
+| `/plugins` 或 `/distros/chat-pro/plugins/` | **列表页**：卡片 = 插件/侧车项目（名称、简介、兼容 oclive 版本、作者、**外链 GitHub**、可选标签） |
+| `/distros/chat-pro/plugins/how-it-works` | **科普页**：Remote 与 builtin 区别；`OCLIVE_REMOTE_PLUGIN_URL` / `OCLIVE_REMOTE_LLM_URL` 表格（可链到架构文档） |
+| `/distros/chat-pro/plugins/examples` | **最小示例**：链到仓库 [examples/remote_plugin_minimal/README.md](../../examples/remote_plugin_minimal/README.md)（站内可写 200 字摘要 + 外链） |
+| `/distros/chat-pro/plugins/submit` | **投稿说明**：作者如何被收录——**仅登记信息**（见 [COMMUNITY_WEB_VISION.md](./COMMUNITY_WEB_VISION.md) 成本策略）；必填：公开仓库、协议兼容说明、测试过的 oclive 版本 |
 
-可选：`/plugins/protocol` 放协议长文 **摘要** + 指向主仓文档的「完整版」链接（避免重复维护全文）。
+可选：`/distros/chat-pro/plugins/protocol` 放协议长文 **摘要** + 指向主仓文档的「完整版」链接（避免重复维护全文）。
 
 ---
 
@@ -31,7 +31,7 @@
 
 **阶段 A（无后端）**  
 
-- 仓库内维护 **`data/plugins.json`**（或 `plugins/catalog.json`），CI 构建静态站时读入。  
+- 仓库内维护 **`data/plugins.json`**（或 `distros/chat-pro/plugins/catalog.json`），CI 构建静态站时读入。  
 - 每条字段示例：
 
 ```json

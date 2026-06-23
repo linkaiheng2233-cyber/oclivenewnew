@@ -12,7 +12,7 @@
 
 | 职责 | 实现锚点（主仓） |
 |------|------------------|
-| **回合编排** | `crates/oclive_kernel_host/src/domain/chat_engine/` · `process_message` |
+| **回合编排** | `kernel/crates/oclive_kernel_host/src/domain/chat_engine/` · `process_message` |
 | **槽位解析** | `SlotResolver` / `PluginHost::resolve_for_role` · **`slot_registry` → 六槽折叠** |
 | **契约与持久化形状** | `oclive_kernel_runtime`（DTO / 纯 domain）· `migrations/001_init.sql` · `oclive_validation` |
 | **无头入口（过渡）** | `http_api` · **`oclive-kernel-server`** · **`oclivenewnew-tauri --api`** |
@@ -76,7 +76,7 @@
 |------|------|----------|------|
 | **桌面宿主** | 玩家 / 创作者 | 可选（独立工程） | Tauri + Vue + 同一 domain |
 | **无头 HTTP** | 网关、机器人中控、CI 联调 | **Monolith 仅** `oclive-cli` 生成的 **kernel_server** 工程可选 | 主仓 **`oclive-kernel-server`** 与 **`oclivenewnew-tauri --api`** 等价（`http_api`）；默认端口 **8420**（`OCLIVE_API_PORT`） |
-| **嵌入式 `library`** | 进程内嵌、自有 `main` | **不适用** Monolith | 链接 **`crates/oclive_kernel_runtime`**；`oclive-cli init --project-type library --kernel-source`；编排仍在 **`oclivenewnew-tauri`**（见 [KERNEL_PLATFORM_DEVELOPER_PATH.md](KERNEL_PLATFORM_DEVELOPER_PATH.md) §5） |
+| **嵌入式 `library`** | 进程内嵌、自有 `main` | **不适用** Monolith | 链接 **`kernel/crates/oclive_kernel_runtime`**；`oclive-cli init --project-type library --kernel-source`；编排仍在 **`oclivenewnew-tauri`**（见 [KERNEL_PLATFORM_DEVELOPER_PATH.md](KERNEL_PLATFORM_DEVELOPER_PATH.md) §5） |
 | **HTTP `--api`** | 联调、CI、编写器试聊 | N/A | 当前主仓过渡方案，见 [headless-kernel-minimal](../../examples/headless-kernel-minimal/README.md) |
 
 **可拆可焊**：开发期槽位可替换（松耦合）；量产可选 Monolith 将选定 builtin 焊进单一二进制（紧耦合）。二者与 `settings.json` **正交**。

@@ -2,7 +2,7 @@
 
 ## `oclive test --json`
 
-**Schema 文件**：[`crates/oclive-cli/schemas/oclive_test_report.schema.json`](../../crates/oclive-cli/schemas/oclive_test_report.schema.json)
+**Schema 文件**：[`kernel/crates/oclive-cli/schemas/oclive_test_report.schema.json`](../../kernel/crates/oclive-cli/schemas/oclive_test_report.schema.json)
 
 **示例**：
 
@@ -33,7 +33,7 @@
 ## Tauri / Rust 集成测
 
 - **主对话响应**：前后端契约以 **`oclive_kernel_types`** DTO 为准；用户可见回复字段名为 **`reply`**。
-- **`src-tauri/tests/*.rs`**：使用 **`serde_json`** 断言；fixture 建议放在 `src-tauri/tests/fixtures/`。
+- **`distros/desktop-tauri/tests/*.rs`**：使用 **`serde_json`** 断言；fixture 建议放在 `distros/desktop-tauri/tests/fixtures/`。
 
 ## 前端
 
@@ -48,8 +48,8 @@
 
 | 命令 | Schema |
 |------|--------|
-| `oclive bench --json` | [`oclive_bench_report.schema.json`](../../crates/oclive-cli/schemas/oclive_bench_report.schema.json) |
-| `oclive doctor --json` | [`oclive_doctor_report.schema.json`](../../crates/oclive-cli/schemas/oclive_doctor_report.schema.json) |
+| `oclive bench --json` | [`oclive_bench_report.schema.json`](../../kernel/crates/oclive-cli/schemas/oclive_bench_report.schema.json) |
+| `oclive doctor --json` | [`oclive_doctor_report.schema.json`](../../kernel/crates/oclive-cli/schemas/oclive_doctor_report.schema.json) |
 
 ---
 

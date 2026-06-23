@@ -1,6 +1,6 @@
 # Agent Remote / Directory 协议（宿主 ↔ 侧车）
 
-**实现状态**：宿主在 `crates/oclive_kernel_host/src/infrastructure/remote_plugin/agent_http.rs` 与 `domain/agent_mcp_bridge.rs` 中实现 **host-orchestrated** 多轮 JSON-RPC：侧车返回 `tool_calls[]`，**MCP 工具在本机执行**，结果经 `turn_context.tool_results` 回传下一轮 `agent.process`。
+**实现状态**：宿主在 `kernel/crates/oclive_kernel_host/src/infrastructure/remote_plugin/agent_http.rs` 与 `domain/agent_mcp_bridge.rs` 中实现 **host-orchestrated** 多轮 JSON-RPC：侧车返回 `tool_calls[]`，**MCP 工具在本机执行**，结果经 `turn_context.tool_results` 回传下一轮 `agent.process`。
 
 ---
 

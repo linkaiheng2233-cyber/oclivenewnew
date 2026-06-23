@@ -11,10 +11,10 @@
 | Repository | Role | Stack (high level) |
 |--------------|------|--------------------|
 | **oclivenewnew** (this repo) | **Runtime:** player chat, pack loading, engine, Tauri desktop | Rust + Vue + Tauri |
-| **oclive-pack-editor** (separate clone, often sibling folder) | **Authoring tool:** edit / export `roles/{id}/` or zip | Vue + Tauri (**different** `package.json` from runtime) |
+| **oclive-pack-editor** (separate clone, often sibling folder) | **Authoring tool:** edit / export `distros/chat-pro/roles/{id}/` or zip | Vue + Tauri (**different** `package.json` from runtime) |
 | **oclive-launcher** (separate repo) | **Launcher:** paths, starts runtime & editor; **environment & troubleshooting** | Vue + Tauri |
 
-**The only contract between them:** the on-disk **role pack** (same layout as `roles/{roleId}/`). Runtime and editor meet through **import/export** or **`OCLIVE_ROLES_DIR`**, not heavy cross-process IPC.
+**The only contract between them:** the on-disk **role pack** (same layout as `distros/chat-pro/roles/{roleId}/`). Runtime and editor meet through **import/export** or **`OCLIVE_ROLES_DIR`**, not heavy cross-process IPC.
 
 ---
 
@@ -23,7 +23,7 @@
 - **Role packs (v2):** `pipeline.ocblueprint` SSOT (`meta`, `slot_registry`, optional `groups`); import `.ocpak` / `.zip` / folders. Legacy `manifest.json`+`settings.json` — migration only ([V1_TO_V2_MIGRATION.md](../../creator-docs/role-pack/V1_TO_V2_MIGRATION.md)).
 - **Tooling:** `npm run check` (daily), `npm run check:release` (before release); Rust fmt / clippy / `cargo test`.
 - **CI:** GitHub Actions on **Ubuntu + Windows** for Rust and `npm run build` (see `.github/workflows/ci.yml`).
-- **Docs:** `creator-docs/`, `roles/README_MANIFEST.md`, import checklist `roles/TESTING_ROLE_PACK_IMPORT.md`, roadmap & backlog pages.
+- **Docs:** `creator-docs/`, `distros/chat-pro/roles/README_MANIFEST.md`, import checklist `distros/chat-pro/roles/TESTING_ROLE_PACK_IMPORT.md`, roadmap & backlog pages.
 
 ---
 
@@ -36,10 +36,10 @@
 | **Status snapshot & goal alignment (kernel + product + doc map by purpose)** | [PROJECT_STATUS_AND_ALIGNMENT.md](PROJECT_STATUS_AND_ALIGNMENT.md) |
 | **Kernel & six-slot diagram** | [KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md) |
 | **Creator: from pack to A.I.Live** | [CREATOR_WORKFLOW.md](../../creator-docs/getting-started/CREATOR_WORKFLOW.md) |
-| **manifest / import** | [roles/README_MANIFEST.md](../../roles/README_MANIFEST.md) |
+| **manifest / import** | [distros/chat-pro/roles/README_MANIFEST.md](../../distros/chat-pro/roles/README_MANIFEST.md) |
 | **Personality archive design** | [docs/personality-archive-notes.md](../../docs/personality-archive-notes.md) |
 | **Design axis evolution** | [docs/design-axis-evolution.md](../../docs/design-axis-evolution.md) |
-| **Import manual test list** | [roles/TESTING_ROLE_PACK_IMPORT.md](../../roles/TESTING_ROLE_PACK_IMPORT.md) |
+| **Import manual test list** | [distros/chat-pro/roles/TESTING_ROLE_PACK_IMPORT.md](../../distros/chat-pro/roles/TESTING_ROLE_PACK_IMPORT.md) |
 | **Monthly roadmap** | [VISION_ROADMAP_MONTHLY.md](../../creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md) |
 | **Experience backlog** | [BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md](../../creator-docs/roadmap/BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md) |
 | **Build, CI, release bar, Sentry** | Root [README.md](../../README.md) / [README.en.md](../../README.en.md) |

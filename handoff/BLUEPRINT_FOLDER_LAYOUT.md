@@ -1,6 +1,6 @@
 # 蓝图目录布局（`blueprint/` · 拉取式 SSOT）
 
-**状态**：架构约定（实验功能与 v3 双核可并行）；**宿主加载路径以源码为准**（今日仍读 `roles/{id}/pipeline.ocblueprint`）。  
+**状态**：架构约定（实验功能与 v3 双核可并行）；**宿主加载路径以源码为准**（今日仍读 `distros/chat-pro/roles/{id}/pipeline.ocblueprint`）。  
 **读者**：创作者、编写器、Cursor / Agent。  
 **关联**：[ROLE_PACK_BOUNDARY.md](./ROLE_PACK_BOUNDARY.md) · [ROLE_PACK_SPEC.md](../creator-docs/role-pack/ROLE_PACK_SPEC.md)
 
@@ -20,7 +20,7 @@
 ## 2. 角色包目录（推荐）
 
 ```text
-roles/{role_id}/
+distros/chat-pro/roles/{role_id}/
 ├── pipeline.ocblueprint      # 蓝图本体（瘦）· 宿主当前 SSOT 入口
 ├── blueprint/                # 蓝图相关卫星文件（本约定）
 │   ├── README.md             # 本目录说明（可选）
@@ -102,7 +102,7 @@ roles/{role_id}/
 | `replace` | 替换 `target` 整段 |
 | `file_text` | 读取文本写入字符串字段（供 Prompt / 设施子模块） |
 
-**路径规则**：相对 **`roles/{role_id}/`**；禁止 `..` 逃逸包根（实现时校验）。
+**路径规则**：相对 **`distros/chat-pro/roles/{role_id}/`**；禁止 `..` 逃逸包根（实现时校验）。
 
 **合并顺序**：按 `includes` 数组顺序；同 `target` 后项覆盖前项。  
 **降级**：apply 前将当前生效片段写入 `blueprint/revisions/`；回滚 = 改 `expert_overlay.active_revision` 或恢复 revision 快照，**不必**在本体堆叠多版历史。
@@ -128,7 +128,7 @@ roles/{role_id}/
 
 | 项 | 今日 | 目标 |
 |----|------|------|
-| SSOT 路径 | `roles/{id}/pipeline.ocblueprint` | 可迁至 `blueprint/pipeline.ocblueprint`，根路径保留兼容或 symlink 文档 |
+| SSOT 路径 | `distros/chat-pro/roles/{id}/pipeline.ocblueprint` | 可迁至 `blueprint/pipeline.ocblueprint`，根路径保留兼容或 symlink 文档 |
 | `pack validate` | 只校验本体 JSON | `blueprint/includes` 可选 `oclive blueprint validate`；`blueprint/docs` 忽略 |
 | `includes` 解析 | **已实现**（`load_blueprint_v2/v3_for_role_dir` + `resolve_blueprint_includes_lenient`） | 缺失卫星文件 warn 跳过 |
 | 专家目录缺失 | 不阻塞加载 | 保持 |
@@ -146,7 +146,7 @@ roles/{role_id}/
 
 ## 8. 迁移建议
 
-1. 新建 `roles/{id}/blueprint/` 子目录，外移冗长片段到 `includes/` 或 `revisions/`。
+1. 新建 `distros/chat-pro/roles/{id}/blueprint/` 子目录，外移冗长片段到 `includes/` 或 `revisions/`。
 2. 在本体增加 `includes` 指向外置文件；删除本体中已外移的大块 JSON。
 3. 校验通过后提交；旧包无 `blueprint/` 仍合法。
 

@@ -43,7 +43,7 @@ This document breaks down the platform vision—**open platform + dual apps + ro
 |-------------|-------|
 | Editor shape | Standalone app or in-app creator mode; prefer **standalone**. |
 | Scope | manifest + basic `settings.json`, **same validation as runtime**. |
-| Export | `roles/{id}/` or zip per `roles/README_MANIFEST.md`. |
+| Export | `distros/chat-pro/roles/{id}/` or zip per `distros/chat-pro/roles/README_MANIFEST.md`. |
 
 **Acceptance**: New/edit pack via editor loads in oclive and chats normally.
 
@@ -128,14 +128,14 @@ This document breaks down the platform vision—**open platform + dual apps + ro
 | **Facility #2** | Expert-model facility · `expert_routing.json` · conditional sub-pipeline |
 | **`slot.lora.apply`** | Expert step: session `plugin_id` to switch adapter (`dual_core` / Experimental; not Stable main path until thaw) |
 | **Module 5 `llm`** | Main chat stays on `plugin_backends.llm`; adapters default to expert sub-flow only |
-| **Pack editor** | Exports `.ocpak` / `roles/`; workshop writes satellite files (contract TBD in RFC) |
+| **Pack editor** | Exports `.ocpak` / `distros/chat-pro/roles/`; workshop writes satellite files (contract TBD in RFC) |
 
 **Phased delivery (T0→T3)**:
 
 | Phase | Deliverable | Acceptance |
 |-------|-------------|------------|
 | **T0 · contract** | RFC: corpus/privacy, `lora_adapters` schema, links to `expert_routing` / `slot.lora.apply`, export profiles | Doc review; validation key draft |
-| **T1 · workshop MVP** | Standalone Tauri tool: import transcripts/samples → single-base LoRA → export into role pack | Validates via `oclive_validation`; loads under `roles/{id}/` |
+| **T1 · workshop MVP** | Standalone Tauri tool: import transcripts/samples → single-base LoRA → export into role pack | Validates via `oclive_validation`; loads under `distros/chat-pro/roles/{id}/` |
 | **T2 · runtime** | Directory plugin or Ollama modelfile path; `slot.lora.apply` actually loads adapter | Observable diff on expert route hit (fixtures/logs) |
 | **T3 · evaluation** | Extend bench/OOCP/replay: prompt-only vs LoRA vs LoRA+expert | Reproducible comparison report |
 
@@ -170,7 +170,7 @@ Not yet implemented in `oclive-cli`; do not mark as shipped in status overviews.
 
 ## Doc index
 
-- Pack contract: [roles/README_MANIFEST.md](../../roles/README_MANIFEST.md)
+- Pack contract: [distros/chat-pro/roles/README_MANIFEST.md](../../distros/chat-pro/roles/README_MANIFEST.md)
 - Creator docs: [../role-pack/CREATOR_ROLE_PACK_CUSTOMIZATION.md](../role-pack/CREATOR_ROLE_PACK_CUSTOMIZATION.md)
 - Experience backlog: [BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md](BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md)
 - If this plan diverges from code, **code and validation win**—update this file.

@@ -14,7 +14,7 @@
 | **cargo-audit 版本** | **0.22.1**（建议固定该主版本以便报告可比） |
 | **最近扫描日期** | **2026-06-08**（本地，`cargo audit --no-fetch --stale` + 已缓存 `~/.cargo/advisory-db`）；**`Cargo.lock` 基线** workspace `oclive_sqlx` 直引 `sqlx-sqlite` |
 | **扫描路径** | 工作区根目录 `Cargo.lock` |
-| **漏洞级命中数** | **0**（`cargo audit` 退出码 **0**；`sqlx-mysql` / `rsa` 已从锁文件解析图移除，见 `crates/oclive_sqlx`） |
+| **漏洞级命中数** | **0**（`cargo audit` 退出码 **0**；`sqlx-mysql` / `rsa` 已从锁文件解析图移除，见 `kernel/crates/oclive_sqlx`） |
 | **警告级命中数** | **3**（`cargo audit` + [`.cargo/audit.toml`](../../.cargo/audit.toml) 已记录并忽略 **11** 条 gtk-rs GTK3 / 工具链 *unmaintained*；见下表） |
 
 > 若 CI 或本机无法拉取 advisory-db，可使用：`cargo audit --no-fetch --stale`（依赖本地已 fetch 的数据库）。
@@ -25,7 +25,7 @@
 
 | RUSTSEC ID | Crate | 状态 | 说明 |
 |------------|-------|------|------|
-| [RUSTSEC-2023-0071](https://rustsec.org/advisories/RUSTSEC-2023-0071) | `rsa` 0.9.10（经 `sqlx-mysql`） | **已清零** | workspace 经 `crates/oclive_sqlx` 直引 `sqlx-sqlite`；锁文件无 MySQL 路径 |
+| [RUSTSEC-2023-0071](https://rustsec.org/advisories/RUSTSEC-2023-0071) | `rsa` 0.9.10（经 `sqlx-mysql`） | **已清零** | workspace 经 `kernel/crates/oclive_sqlx` 直引 `sqlx-sqlite`；锁文件无 MySQL 路径 |
 | [RUSTSEC-2026-0098](https://rustsec.org/advisories/RUSTSEC-2026-0098) | rustls-webpki 0.101 | **已清零** | |
 | [RUSTSEC-2026-0099](https://rustsec.org/advisories/RUSTSEC-2026-0099) | rustls-webpki 0.101 | **已清零** | |
 | [RUSTSEC-2026-0104](https://rustsec.org/advisories/RUSTSEC-2026-0104) | rustls-webpki 0.101 | **已清零** | |
@@ -38,7 +38,7 @@
 ### 已完成（2026-05-20）
 
 - **sqlx ≥ 0.8.6**，`default-features = false`，features：`runtime-tokio-rustls`、`sqlite`（无 umbrella `migrate`）。
-- 迁移：`src-tauri/src/infrastructure/sql_migrate.rs` 运行时应用 `migrations/*.sql`，与既有 `_sqlx_migrations` 表兼容。
+- 迁移：`kernel/crates/oclive_kernel_host/src/infrastructure/sql_migrate.rs` 运行时应用 `migrations/*.sql`，与既有 `_sqlx_migrations` 表兼容。
 - **CI**：主 `cargo-audit` job **失败即红**（2026-06-08）；`Cargo.lock` PR 另走 `cargo-audit-lockfile.yml`。
 
 ### 维护约定

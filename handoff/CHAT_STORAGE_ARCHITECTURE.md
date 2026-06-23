@@ -20,7 +20,7 @@
 
 ## Pluggable storage (SQLite + optional JSON mirror)
 
-Runtime always constructs **`HybridConversationStore`** (SQLite authoritative). Legacy `chat_storage.backend` values (`hybrid` / `file` / `sqlite`) and env `OCLIVE_CHAT_STORAGE_BACKEND` map to an internal **`mirror: bool`** via [`resolve_mirror_enabled`](../../crates/oclive_kernel_host/src/infrastructure/chat_storage/factory.rs); explicit `chat_storage.mirror` in role `config.json` wins.
+Runtime always constructs **`HybridConversationStore`** (SQLite authoritative). Legacy `chat_storage.backend` values (`hybrid` / `file` / `sqlite`) and env `OCLIVE_CHAT_STORAGE_BACKEND` map to an internal **`mirror: bool`** via [`resolve_mirror_enabled`](../../kernel/crates/oclive_kernel_host/src/infrastructure/chat_storage/factory.rs); explicit `chat_storage.mirror` in role `config.json` wins.
 
 Selection order:
 
@@ -181,15 +181,15 @@ Under `{root}/{role_id}/{scene_id}/{created_at_compact}_{session_id_prefix}.json
 ## Frontend
 
 - Settings → **存储管理** — backend label, capability-gated search/export/cleanup/replay, role→scene→session→message drill-down
-- `src/api/chatStorage.ts` — all invoke wrappers
-- `src/stores/chatStore.ts` — loads from `fetch_chat_messages`
+- `distros/shared/src/api/chatStorage.ts` — all invoke wrappers
+- `distros/shared/src/stores/chatStore.ts` — loads from `fetch_chat_messages`
 
 ## Code map
 
-- `src-tauri/migrations/027_chat_storage.sql`
-- `crates/oclive_kernel_host/src/infrastructure/chat_storage/` (`store_trait.rs`, `factory.rs`, `replay.rs`, `backends/`, …)
-- `crates/oclive-cli/src/role_pack.rs` — `config.json` with `chat_storage.backend`
-- `src/components/settings/ChatStorageSettingsPanel.vue`
+- `distros/desktop-tauri/migrations/027_chat_storage.sql`
+- `kernel/crates/oclive_kernel_host/src/infrastructure/chat_storage/` (`store_trait.rs`, `factory.rs`, `replay.rs`, `backends/`, …)
+- `kernel/crates/oclive-cli/src/role_pack.rs` — `config.json` with `chat_storage.backend`
+- `distros/shared/src/components/settings/ChatStorageSettingsPanel.vue`
 
 ## Out of scope (later)
 
@@ -205,5 +205,5 @@ Under `{root}/{role_id}/{scene_id}/{created_at_compact}_{session_id_prefix}.json
 |-------|------|
 | CLI `chat_storage` keys | [`creator-docs/cli/SETTINGS_REFERENCE.md`](../creator-docs/cli/SETTINGS_REFERENCE.md) §六 |
 | Backend selection guide | [`creator-docs/storage/STORAGE_BACKEND_GUIDE.md`](../creator-docs/storage/STORAGE_BACKEND_GUIDE.md) |
-| Role pack `config.json` | [`roles/README_MANIFEST.md`](../roles/README_MANIFEST.md) · [`creator-docs/role-pack/ROLE_PACK_SPEC.md`](../creator-docs/role-pack/ROLE_PACK_SPEC.md) §9.5a |
+| Role pack `config.json` | [`distros/chat-pro/roles/README_MANIFEST.md`](../distros/chat-pro/roles/README_MANIFEST.md) · [`creator-docs/role-pack/ROLE_PACK_SPEC.md`](../creator-docs/role-pack/ROLE_PACK_SPEC.md) §9.5a |
 | Conformance tests | `store_trait_tests.rs` **9** trait cases + module unit tests **27** total (`cargo test -p oclivenewnew-tauri --lib infrastructure::chat_storage`) |

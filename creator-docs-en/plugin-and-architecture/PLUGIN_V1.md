@@ -19,7 +19,7 @@
 - **Backends = compile-time enums**: legacy via `settings.json`; v2 via **`slot_registry`**. No dynamic `cdylib` loading.
 - **Default implementations** are the built-in Rust paths; switching backend **does not rename API fields** (especially **`SendMessageResponse.reply`**).
 - **Remote:** the host speaks **HTTP JSON-RPC** ([REMOTE_PLUGIN_PROTOCOL.md](../../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)). Missing `OCLIVE_REMOTE_*` URLs → fall back to builtin / in-process LLM with logs.
-- **Directory:** `plugins/*/manifest.json` child processes; same JSON-RPC wire as Remote; slot ids in `plugin_backends.directory_plugins` ([DIRECTORY_PLUGINS.md](../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md)).
+- **Directory:** `distros/chat-pro/plugins/*/manifest.json` child processes; same JSON-RPC wire as Remote; slot ids in `plugin_backends.directory_plugins` ([DIRECTORY_PLUGINS.md](../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md)).
 
 ---
 
@@ -46,7 +46,7 @@ Runtime struct **`PluginBackends`** has **six** enum fields: **`memory` · `emot
 
 ## `send_message` order (co-present path)
 
-Entry: **`chat_engine::process_message`** → **`process_co_present`** ([`turn_pipeline.rs`](../../crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/mod.rs)). Remote / stub branches differ; this list is the **PLUGIN_V1-relevant** sequence:
+Entry: **`chat_engine::process_message`** → **`process_co_present`** ([`turn_pipeline.rs`](../../kernel/crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/mod.rs)). Remote / stub branches differ; this list is the **PLUGIN_V1-relevant** sequence:
 
 1. **`PluginHost`**: `resolved_plugins_for` → **`PluginHost::resolve_for_role`** binds six **backend modules** (host needs app-data root for **`mcp-servers/*.json`**).
 2. **User emotion (backend module):** `emotion.analyze` → `EmotionDto` in the response.
@@ -106,7 +106,7 @@ If `plugin_backends` is omitted: memory / emotion / event / prompt / **agent** d
 
 ## Frontend alignment
 
-TypeScript **`SendMessageResponse`** (`src/utils/tauri-api.ts`) must match `models/dto.rs`: the assistant text field is **`reply`**. `personality_source`, `reply_is_fallback`, `schema`, `api_version` drive UI ([`replyPresentation.ts`](../../src/utils/replyPresentation.ts)).
+TypeScript **`SendMessageResponse`** (`distros/shared/src/api/`) must match `models/dto.rs`: the assistant text field is **`reply`**. `personality_source`, `reply_is_fallback`, `schema`, `api_version` drive UI ([`replyPresentation.ts`](../../distros/shared/src/utils/replyPresentation.ts)).
 
 **Plugin Manager V2** templates (`endpoint-config`, `slot-selector`, `switch-toggle`, …) and manifest `ui_schema` are documented in the **Chinese** PLUGIN_V1 tail section; behavior is the same in English builds.
 

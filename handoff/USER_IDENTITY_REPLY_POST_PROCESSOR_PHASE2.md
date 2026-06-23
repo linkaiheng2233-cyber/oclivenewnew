@@ -11,7 +11,7 @@
 | **Remote Reply Post-Processor** | `reply_post_process_http.rs` | JSON-RPC `reply_post_process.process`; fallback to builtin |
 | **Directory Reply Post-Processor** | `reply_post_process_directory_http.rs` · `provides: reply_post_process` | Example: `examples/directory-plugin-reply-post-process-minimal/` |
 | **HTTP identity API** | `http_api.rs` | `POST /user_identity/set`, `POST /user_identity/scene_set`, `GET /user_identity/state` |
-| **Desktop identity switcher** | `RoleRuntimePanel.vue` · `src/api/role.ts` | When `user_identities/` catalog non-empty |
+| **Desktop identity switcher** | `RoleRuntimePanel.vue` · `distros/shared/src/api/role.ts` | When `user_identities/` catalog non-empty |
 | **VS Code identity switcher** | `oclive-vscode` · `kernelClient` + command `oclive.selectUserIdentity` | Depends on HTTP routes |
 | **`raw_reply` DTO** | `SendMessageRequest.include_raw_reply` · `SendMessageResponse.raw_reply` | `schema` **14**; opt-in only |
 | **Validation** | `oclive_validation` | `backend=remote` + `enabled` requires non-empty `remote.url` |
@@ -21,7 +21,7 @@
 ## v0.3 closure (2026-06-07)
 
 - Documentation: ROLE_PACK_SPEC §1.1 / §9.7, OCLIVE_ARCHITECTURE_OVERVIEW, AGENTS, USER_MANUAL, RFC §8
-- `roles/mumu` keeps **no** `reply_post_processor` (identity demo only)
+- `distros/chat-pro/roles/mumu` keeps **no** `reply_post_processor` (identity demo only)
 - Desktop spawn passes `OCLIVE_DISTRO_ID=desktop` when profile unset
 - Release **0.3.0** (desktop + VS Code extension)
 
@@ -40,8 +40,8 @@
 
 ## Tests
 
-- `src-tauri/tests/reply_post_processor_roundtrip.rs` — builtin truncate
-- `src-tauri/tests/reply_post_processor_remote_roundtrip.rs` — mock HTTP + fallback
-- `src-tauri/tests/user_identity_host_profile.rs` — distro default identity + chain merge
-- `crates/oclive_kernel_host/src/domain/host_profile.rs` — TOML parse
-- `crates/oclive_kernel_host/src/domain/reply_post_processor.rs` — effective config merge
+- `distros/desktop-tauri/tests/reply_post_processor_roundtrip.rs` — builtin truncate
+- `distros/desktop-tauri/tests/reply_post_processor_remote_roundtrip.rs` — mock HTTP + fallback
+- `distros/desktop-tauri/tests/user_identity_host_profile.rs` — distro default identity + chain merge
+- `kernel/crates/oclive_kernel_host/src/domain/host_profile.rs` — TOML parse
+- `kernel/crates/oclive_kernel_host/src/domain/reply_post_processor.rs` — effective config merge

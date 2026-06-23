@@ -22,7 +22,7 @@
 
 ## 契约
 
-- `crates/oclive_kernel_types` → `RolePackChatStorageConfig.mirror`
+- `kernel/crates/oclive_kernel_types` → `RolePackChatStorageConfig.mirror`
 - `get_chat_storage_capabilities` → 新增 `default_max_messages_per_session`
 - 前端 `RoleChatStorageConfig.mirror` 可选
 

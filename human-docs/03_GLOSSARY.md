@@ -12,7 +12,7 @@
 | 缩写 | 全称 | 含义 | 代码锚点 |
 |------|------|------|----------|
 | **`mrid`** | manifest role id | 角色包 `manifest.json` 里的角色 ID | `SendMessageRequest.role_id` |
-| **`srid`** | session-scoped role id | SQLite / 缓存命名空间：默认等于 `mrid`；有 `session_id` 时变为 `{mrid}::{session_id}` | [`conversation_state_role_id`](../crates/oclive_kernel_host/src/domain/chat_engine/mod.rs) |
+| **`srid`** | session-scoped role id | SQLite / 缓存命名空间：默认等于 `mrid`；有 `session_id` 时变为 `{mrid}::{session_id}` | [`conversation_state_role_id`](../kernel/crates/oclive_kernel_host/src/domain/chat_engine/mod.rs) |
 | **`pl`** | plugin layer / resolved plugins | 本回合解析后的 `ResolvedRolePlugins`（六槽 `Arc<dyn …>` 句柄集） | `process_message` 内 `pl` 变量 |
 
 **示例**：HTTP 试用聊天带 `session_id` 时，记忆与 `role_runtime` 行按 **`srid`** 隔离，不与默认会话混用。
@@ -23,7 +23,7 @@
 
 | 术语 | 含义 |
 |------|------|
-| **`PluginHost`** | 按角色包 + 会话覆盖解析六槽实现；入口 [`plugin_host/mod.rs`](../crates/oclive_kernel_host/src/domain/plugin_host/mod.rs) |
+| **`PluginHost`** | 按角色包 + 会话覆盖解析六槽实现；入口 [`plugin_host/mod.rs`](../kernel/crates/oclive_kernel_host/src/domain/plugin_host/mod.rs) |
 | **`slot_registry`** | v2 蓝图多实例槽位表（`pipeline.ocblueprint`）；权威键 `type`: memory / emotion / … |
 | **`plugin_backends`** | legacy 六键折叠结构 + Rust 运行时类型名 `PluginBackends`；**非** v2 新 UI 首选名 |
 | **`slot_registry.type`** | 与六槽键同义；**禁止**别名 `memory_backend` 等 |
@@ -38,7 +38,7 @@
 
 | 术语 | 含义 |
 |------|------|
-| **角色包** | `roles/{id}/`：身份、人格、`prompts/` |
+| **角色包** | `distros/chat-pro/roles/{id}/`：身份、人格、`prompts/` |
 | **蓝图文件** | `pipeline.ocblueprint`（文件名冻结）；含 `slot_registry`、`groups` |
 | **`{app_data}`** | Tauri 应用数据目录；含 **`app.db`** |
 | **`reply`** | AI 回复契约字段名；**不是** `response` |

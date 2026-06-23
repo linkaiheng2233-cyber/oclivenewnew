@@ -145,7 +145,7 @@ A：Q18 批量工具延后；用手动步骤或 `init --dual-core` 生成 v3 模
 A：`oclive init --monolith --dual-core`；见 [RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md)。
 
 **Q：`pack validate --profile creator` 还要用吗？**  
-A：纯创作者子集校验不变；完整 v3 包用默认 `pack validate`。勿用 `roles/mumu` 测 creator profile（完整示例包）。
+A：纯创作者子集校验不变；完整 v3 包用默认 `pack validate`。勿用 `distros/chat-pro/roles/mumu` 测 creator profile（完整示例包）。
 
 ---
 

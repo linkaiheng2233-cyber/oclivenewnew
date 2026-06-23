@@ -17,12 +17,12 @@
 
 | 层 | 名称 | 落点 | 跨宿主 |
 |----|------|------|--------|
-| **L1** | 角色包 SSOT | `roles/{role_id}/` | ✅ 桌面与 VS Code **同一份** `OCLIVE_ROLES_DIR` |
+| **L1** | 角色包 SSOT | `distros/chat-pro/roles/{role_id}/` | ✅ 桌面与 VS Code **同一份** `OCLIVE_ROLES_DIR` |
 | **L2** | 宿主私有 | VS Code 编辑器上下文等 | ❌ 拼进 user message；**不新增 memory API** |
 | **L3** | 跨宿主 runtime | `{app_data}/app.db` | ✅ **共库即时共享**（长期记忆、好感、关系阶段） |
 
 ```text
-roles/{id}/  ──load_role──►  桌面 / VS Code / kernel_server
+distros/chat-pro/roles/{id}/  ──load_role──►  桌面 / VS Code / kernel_server
        │                           │
        │ L1 身份+策略+内容          │ L2 编辑器上下文 → message
        │                           │

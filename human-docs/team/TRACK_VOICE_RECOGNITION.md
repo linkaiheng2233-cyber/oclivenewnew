@@ -50,7 +50,7 @@ python loop.py
 | **W2** | 真 ASR + 固定 session 记忆 | 麦克风/按键 → 全链路 5 次成功；连聊 3 轮能引用上下文 |
 | **W3** | 开发板迁移说明 + 可选 stream | README「开发板部署」节他人可复现；可选 `--stream` 输出 ttft |
 
-**不在本轨道：** Live2D、Chat Pro Vue、`crates/` 内核、**Chat Pro UI 流式打字机**（见 [CHAT_PRO §2 延迟/stream](./CHAT_PRO_VERTICAL_HANDOFF.md) · 组长或视觉线）。
+**不在本轨道：** Live2D、Chat Pro Vue、`kernel/crates/` 内核、**Chat Pro UI 流式打字机**（见 [CHAT_PRO §2 延迟/stream](./CHAT_PRO_VERTICAL_HANDOFF.md) · 组长或视觉线）。
 
 ---
 
@@ -89,9 +89,9 @@ python loop.py
 | 3 | [examples/voice-loop-minimal/loop.py](../../examples/voice-loop-minimal/loop.py) | `post_chat` · `extract_reply` |
 | 4 | [HARDWARE_INTEGRATION.md §4–§5](../../HARDWARE_INTEGRATION.md) | 主循环 + API |
 
-**不必读**：整个 `src/`、`handoff/LIVE2D_*`、`PLUGIN_V1`、`human-docs/06_KERNEL`。
+**不必读**：整个 `distros/` 前端、`handoff/LIVE2D_*`、`PLUGIN_V1`、`human-docs/06_KERNEL`。
 
-**Week 3 接 `/chat/stream` 时只读**（不改）：`crates/oclive_kernel_host/src/http_api/chat.rs` 中 SSE 事件名 `token` / `done` / `error`。
+**Week 3 接 `/chat/stream` 时只读**（不改）：`kernel/crates/oclive_kernel_host/src/http_api/chat.rs` 中 SSE 事件名 `token` / `done` / `error`。
 
 ---
 
@@ -112,14 +112,14 @@ POST http://127.0.0.1:8420/chat
 Content-Type: application/json
 
 {
-  "role_path": "<REPO_ROOT>/roles/mumu",
+  "role_path": "<REPO_ROOT>/distros/chat-pro/roles/mumu",
   "message": "用户说的话",
   "scene_id": "default",
   "session_id": "00000000-0000-4000-8000-000000000001"
 }
 ```
 
-> Windows 路径在 JSON 里用 **正斜杠** `D:/oclivenewnew/roles/mumu`，或设环境变量 `OCLIVE_ROLE_PATH`（见 `loop.py`）。
+> Windows 路径在 JSON 里用 **正斜杠** `D:/oclivenewnew/distros/chat-pro/roles/mumu`，或设环境变量 `OCLIVE_ROLE_PATH`（见 `loop.py`）。
 
 **响应形状（重要）：**
 
@@ -278,7 +278,7 @@ v1 可用 **按住空格录音、松开识别**，不必做唤醒词。
 | **A（推荐）** | 你只跑 `loop.py`；视觉 A 在 Chat Pro **手动打字**同一角色，各自验证 JSON / UI |
 | **B** | 你打印 `performance_directive` 到日志；A 对照 [TRACK_VISUAL §A6](./TRACK_VISUAL_UPGRADE.md) 看 UI 切图 |
 
-**Done：** B 触发 `/chat` 后，日志里 `performance_directive` 非空（角色需 catalog，通常 `roles/demo-doll`）；或 A 截图证明 UI 切图。
+**Done：** B 触发 `/chat` 后，日志里 `performance_directive` 非空（角色需 catalog，通常 `distros/chat-pro/roles/demo-doll`）；或 A 截图证明 UI 切图。
 
 ---
 
@@ -319,8 +319,8 @@ v1 可用 **按住空格录音、松开识别**，不必做唤醒词。
 
 | 禁止 | 原因 |
 |------|------|
-| 改 `process_message` / `crates/` | 内核轨道 |
-| 改 `src/` Vue | 视觉轨道 |
+| 改 `process_message` / `kernel/crates/` | 内核轨道 |
+| 改 `distros/` 前端 Vue | 视觉轨道 |
 | ASR 进 `slot_registry` | 架构边界 |
 | 公网暴露 `:8420` | 仅 loopback |
 | 量产唯一依赖云端 ASR | 玩偶要离线 |
@@ -336,7 +336,7 @@ v1 可用 **按住空格录音、松开识别**，不必做唤醒词。
 | `8420` 连接拒绝 | 内核是否启动；[DEV_ENVIRONMENT §10](./DEV_ENVIRONMENT.md) |
 | 记忆像没有 | `OCLIVE_SESSION_ID` 是否固定；是否 mock LLM |
 | `role_path not found` | `OCLIVE_ROLE_PATH` 或 `--role-path` 指向真实目录 |
-| directive 一直 null | 正常（mumu 无 catalog）；联调用 `roles/demo-doll` |
+| directive 一直 null | 正常（mumu 无 catalog）；联调用 `distros/chat-pro/roles/demo-doll` |
 
 ---
 
@@ -353,7 +353,7 @@ v1 可用 **按住空格录音、松开识别**，不必做唤醒词。
 **PR 描述必勾选：**
 
 - [ ] 仅改 `examples/voice-loop-minimal/`（及本 track 文档）  
-- [ ] 未改 `src/` · `crates/` · 对方视觉目录  
+- [ ] 未改 `distros/` 前端 · `kernel/crates/` · 对方视觉目录  
 - [ ] README 验收步骤可复现  
 
 审阅规则：[CHAT_PRO_VERTICAL_HANDOFF.md §5](./CHAT_PRO_VERTICAL_HANDOFF.md)

@@ -10,9 +10,9 @@ Common **read/write** paths for the **oclivenewnew** desktop host: locations, pu
 | Plugin UI state (v2) | `{app_data}/plugin_state.json` |
 | Host plugin options | `{app_data}/oclive_host_plugins.json` |
 | Last active role id | `{app_data}/oclive_last_role_id.txt` |
-| User plugin scan root | `{app_data}/plugins/` |
+| User plugin scan root | `{app_data}/distros/chat-pro/plugins/` |
 
-**Code**: `src-tauri/src/infrastructure/plugin_state.rs`, `directory_plugins/runtime.rs`, `lib.rs` (`app_data_dir`).
+**Code**: `kernel/crates/oclive_kernel_host/src/infrastructure/plugin_state.rs`, `directory_plugins/runtime.rs`, `lib.rs` (`app_data_dir`).
 
 [中文](../../creator-docs/guides/CONFIGURATION_FILES.md)
 
@@ -44,7 +44,7 @@ First load of a role without a record can seed from pack **`ui.json`** (`RolePlu
 
 ## 2. `ui.json` (role pack)
 
-- **Path**: pack root next to **`settings.json`** / **`manifest.json`** (see [roles/README_MANIFEST.md](../../roles/README_MANIFEST.md)).
+- **Path**: pack root next to **`settings.json`** / **`manifest.json`** (see [distros/chat-pro/roles/README_MANIFEST.md](../../distros/chat-pro/roles/README_MANIFEST.md)).
 - **Purpose**: author **recommended front‑end layout**: whole‑shell plugin, per official slot order/visibility, theme/layout, …
 - **Format**: JSON; machine schema **[role-pack/ui.json.schema.json](../role-pack/ui.json.schema.json)**.
 
@@ -70,7 +70,7 @@ First load of a role without a record can seed from pack **`ui.json`** (`RolePlu
 
 ## 4. `manifest.json` (directory plugin)
 
-- **Path**: each plugin root **`manifest.json`** (scan roots: `<roles parent>/plugins/`, `./plugins/`, `{app_data}/plugins/`, … — [DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md) §1).
+- **Path**: each plugin root **`manifest.json`** (scan roots: `<roles parent>/distros/chat-pro/plugins/`, `./distros/chat-pro/plugins/`, `{app_data}/distros/chat-pro/plugins/`, … — [DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md) §1).
 - **Purpose**: id, version, whole shell, child process, UI slots, bridge allowlist, dependencies, …
 - **Detail**: [DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md) §2; **versions** must be **SemVer** the host can parse (`load_from_dir`).
 

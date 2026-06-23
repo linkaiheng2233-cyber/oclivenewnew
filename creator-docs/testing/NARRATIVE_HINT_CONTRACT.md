@@ -32,7 +32,7 @@
 
 | 用例 | 位置 |
 |------|------|
-| 首轮主 Prompt 无叙事段 | `src-tauri/tests/narrative_hint_contract_audit.rs` |
+| 首轮主 Prompt 无叙事段 | `distros/desktop-tauri/tests/narrative_hint_contract_audit.rs` |
 | 次轮注入上一轮 hint | 同上 + 既有 `narrative_hint_prompt_roundtrip.rs` |
 | 连续三轮后第三轮含【复杂情感叙事提示】 | `narrative_hint_contract_audit.rs` |
 | 空 hint / 特殊字符不破坏结构 | `oclive_kernel_runtime` `prompt_builder` 单元测试 |

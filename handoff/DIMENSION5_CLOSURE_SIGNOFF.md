@@ -14,7 +14,7 @@
 | 2 | 本签字页日期 ≥ 当前 `Cargo.lock` 维护周期 | 2026-06-08 |
 | 3 | TECHNICAL_DEBT Dimension 5 全 Done/Deferred；Opus 4.7 表无矛盾 Pending | [TECHNICAL_DEBT_INVENTORY.md](./TECHNICAL_DEBT_INVENTORY.md) |
 | 4 | OOCP health 场景覆盖 `startup_warnings` | `examples/oocp-test-suite/run.mjs` S0b |
-| 5 | `oclive_sqlx` crates 文档 SSOT | [crates/oclive_sqlx/README.md](../crates/oclive_sqlx/README.md) · [crates/README.md](../crates/README.md) |
+| 5 | `oclive_sqlx` crates 文档 SSOT | [kernel/crates/oclive_sqlx/README.md](../kernel/crates/oclive_sqlx/README.md) · [kernel/crates/README.md](../kernel/crates/README.md) |
 | 6 | Layering ratchet ≤ 4（D-LAYER-04 生产路径端口化） | [LAYERING_BASELINE.json](./LAYERING_BASELINE.json) |
 | 7 | cargo-audit 漏洞级 0 | [KNOWN_VULNERABILITIES.md](../creator-docs/security/KNOWN_VULNERABILITIES.md) |
 | 8 | EnsureReport golden | `cargo test -p oclive-cli --test kernel_ensure_plan_snapshot` |

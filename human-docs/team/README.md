@@ -10,7 +10,7 @@
 
 | 你是谁 | 打开 | 工作区（只改这些） |
 |--------|------|-------------------|
-| **视觉 A** | [TRACK_VISUAL_UPGRADE.md](./TRACK_VISUAL_UPGRADE.md) | `src/components/visual/` · Shell · `roles/demo-doll/` |
+| **视觉 A** | [TRACK_VISUAL_UPGRADE.md](./TRACK_VISUAL_UPGRADE.md) | `distros/shared/src/components/visual/` · Shell · `distros/chat-pro/roles/demo-doll/` |
 | **语音 B** | [TRACK_VOICE_RECOGNITION.md](./TRACK_VOICE_RECOGNITION.md) | **`examples/voice-loop-minimal/`** |
 | **延迟 / stream UI** | [CHAT_PRO §2.1](./CHAT_PRO_VERTICAL_HANDOFF.md) | **组长** · Chat Pro 打字机（本 sprint 默认） |
 
@@ -48,7 +48,7 @@
 3. [TRACK_VOICE_RECOGNITION.md](./TRACK_VOICE_RECOGNITION.md) Week 1  
 4. `HARDWARE_INTEGRATION.md` §4  
 
-**跳过**：`npm run tauri:dev` 章节（除非联调日）、立绘/Live2D 全部文档、整个 `src/`。
+**跳过**：`npm run tauri:dev` 章节（除非联调日）、立绘/Live2D 全部文档、整个 `distros/` 前端。
 
 ---
 

@@ -7,9 +7,9 @@
 | 改动类型 | 必跑（本地） | 可选 / 条件 |
 |----------|--------------|-------------|
 | **仅文档** (`*.md`, `human-docs/`, `creator-docs/`) | 链接抽查；若动 `CHANGELOG.md` → `node scripts/check-changelog-parity.mjs` | — |
-| **仅前端** (`src/`, `e2e/`, `vite.config.ts`) | `npm run test:unit` · `npm run build` | Linux/macOS：`npm run test:e2e:preview` |
-| **内核 / 编排** (`crates/oclive_kernel_host/`, `process_message`) | `npm run check` · 触及 HTTP/持久化 → `npm run check:release` | `node scripts/dimension5-acceptance.mjs --ci` |
-| **Tauri API** (`src-tauri/src/api/`) | `cargo test -p oclivenewnew-tauri` · `npm run check` | `npm run test:e2e:core-api-restart` |
+| **仅前端** (`distros/shared/`, `distros/chat-pro/`, `distros/chat-pro/e2e/`, `distros/chat-pro/vite.config.ts`) | `npm run test:unit` · `npm run build` | Linux/macOS：`npm run test:e2e:preview` |
+| **内核 / 编排** (`kernel/crates/oclive_kernel_host/`, `process_message`) | `npm run check` · 触及 HTTP/持久化 → `npm run check:release` | `node scripts/dimension5-acceptance.mjs --ci` |
+| **Tauri API** (`distros/desktop-tauri/src/api/`) | `cargo test -p oclivenewnew-tauri` · `npm run check` | `npm run test:e2e:core-api-restart` |
 | **Cargo.lock / 依赖** | `node scripts/dimension5-acceptance.mjs --ci` | `cargo audit` |
 | **发版 / 契约** | `npm run check:release` | OOCP：`examples/oocp-test-suite/run.mjs` |
 

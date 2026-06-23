@@ -5,7 +5,7 @@
 | Change type | Run locally | Optional |
 |-------------|-------------|----------|
 | Docs only | Link check; CHANGELOG → `node scripts/check-changelog-parity.mjs` | — |
-| Frontend (`src/`) | `npm run test:unit` · `npm run build` | `npm run test:e2e:preview` (Linux/macOS) |
+| Frontend (`distros/shared/` + `distros/chat-pro/`) | `npm run test:unit` · `npm run build` | `npm run test:e2e:preview` (Linux/macOS) |
 | Kernel / orchestration | `npm run check` · `npm run check:release` if HTTP/persist | `node scripts/dimension5-acceptance.mjs --ci` |
 | Tauri API | `cargo test -p oclivenewnew-tauri` | `npm run test:e2e:core-api-restart` |
 | `Cargo.lock` | `node scripts/dimension5-acceptance.mjs --ci` | `cargo audit` |

@@ -12,7 +12,7 @@ For **headless HTTP**, **embedded**, and **hardware** teams shipping an oclive-c
 | 2 | “Pure kernel” scope | [PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md) |
 | 3 | Generate a minimal project | `cargo run -p oclive-cli -- init` ([OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md)) |
 
-**Done when:** `cargo build` works in the generated tree and you can locate `roles/` + `settings.json` conventions.
+**Done when:** `cargo build` works in the generated tree and you can locate `distros/chat-pro/roles/` + `settings.json` conventions.
 
 ---
 
@@ -20,8 +20,8 @@ For **headless HTTP**, **embedded**, and **hardware** teams shipping an oclive-c
 
 | Topic | Read |
 |-------|------|
-| **`process_message` flow** | Reference host: **`crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs`**, **`turn_pipeline.rs`**; summary [BUS_FACTOR_NOTES](../../handoff/BUS_FACTOR_NOTES.md) |
-| **`PluginHost` slots** | **`crates/oclive_kernel_host/src/domain/ports/plugin_host.rs`** · [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) |
+| **`process_message` flow** | Reference host: **`kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs`**, **`turn_pipeline.rs`**; summary [BUS_FACTOR_NOTES](../../handoff/BUS_FACTOR_NOTES.md) |
+| **`PluginHost` slots** | **`kernel/crates/oclive_kernel_host/src/domain/ports/plugin_host.rs`** · [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) |
 | **Backends & fallback** | [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md) · [CONFIGURATION_FILES.md](../guides/CONFIGURATION_FILES.md) |
 
 **Done when:** You can name the main `send_message` stages you expect in logs.

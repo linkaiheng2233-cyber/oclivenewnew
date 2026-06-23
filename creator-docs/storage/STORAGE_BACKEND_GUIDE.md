@@ -56,7 +56,7 @@
 
 `config.json` → `chat_storage.location` 可设为：
 
-- `"role_pack"`（推荐）：聊天记录跟随角色包存储在 `roles/{id}/chats/`，分享/迁移角色包时对话历史一同移动
+- `"role_pack"`（推荐）：聊天记录跟随角色包存储在 `distros/chat-pro/roles/{id}/chats/`，分享/迁移角色包时对话历史一同移动
 - `"global"`（默认）：存储在 `{app_data}/chats/`，与角色包位置独立
 
 当角色包位于只读文件系统或不可写时，自动退回 `global` 并记录 warn 日志。

@@ -90,6 +90,10 @@ runStep('CHANGELOG [Unreleased] parity', () => {
   sh('node', ['scripts/check-changelog-parity.mjs']);
 });
 
+runStep('stale doc paths ratchet', () => {
+  sh('node', ['scripts/check-stale-paths.mjs']);
+});
+
 runStep('host runtime re-export ratchet', () => {
   sh('node', ['scripts/check-host-reexport-imports.mjs']);
 });

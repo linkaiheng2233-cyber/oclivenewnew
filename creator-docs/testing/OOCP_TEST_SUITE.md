@@ -11,7 +11,7 @@
 
 ## A1.1b：Web 预览壳 Playwright 烟测
 
-- **用例**：根目录 [`e2e/preview-shell.spec.ts`](../../e2e/preview-shell.spec.ts)（`#app` 挂载与页签标题）。  
+- **用例**：根目录 [`distros/chat-pro/e2e/preview-shell.spec.ts`](../../distros/chat-pro/e2e/preview-shell.spec.ts)（`#app` 挂载与页签标题）。  
 - **本地**：`npm run build && npm run test:e2e:preview`（首次需 `npx playwright install chromium`；Linux 可用 `npx playwright install --with-deps chromium`）。  
 - **CI**：**`frontend`** job 在 **Ubuntu** 上由 workflow **先后台拉起 `vite preview`**（默认端口 **4180**），设 **`PW_TEST_USE_EXTERNAL=1`** 后执行 **`npm run test:e2e:preview`**；环境变量 **`PLAYWRIGHT_DISABLE_HEADLESS_SHELL=1`** 以减少额外浏览器下载。
 
@@ -20,7 +20,7 @@
 - **本地**：见 [`examples/oocp-test-suite/README.md`](../../examples/oocp-test-suite/README.md)。
 - **环境变量**：
   - `OCLIVE_API_BASE`：默认 `http://127.0.0.1:8420`
-  - `OCLIVE_OOCP_ROLE_PATH`：角色包目录（默认 `<repo>/roles/mumu`，**v2** `pipeline.ocblueprint`；勿指向仅含 legacy `manifest.json` 的目录）
+  - `OCLIVE_OOCP_ROLE_PATH`：角色包目录（默认 `<repo>/distros/chat-pro/roles/mumu`，**v2** `pipeline.ocblueprint`；勿指向仅含 legacy `manifest.json` 的目录）
   - **`OCLIVE_HTTP_API_MOCK_LLM=1`**（仅 `--api`）：使用内存库 + 固定回复的 Mock LLM，**CI 默认开启**，无需本机 Ollama。
 
 ## 场景表（HTTP 黑盒）

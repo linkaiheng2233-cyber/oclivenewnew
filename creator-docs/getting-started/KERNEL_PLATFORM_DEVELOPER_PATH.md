@@ -20,11 +20,11 @@
 |------|------|----------------|
 | 1 | `cargo build -p oclive-cli` | CLI 可用 |
 | 2 | `cargo run -p oclive-cli -- init --kernel-source <本仓库根> -o <项目> …` | 带 path 依赖的 **kernel_server** 或 **library** 工程 |
-| 3 | 放入或编辑 **`roles/<id>/`**（建议先用 `pack create` 或复制 [examples/robot-soul-minimal](../../examples/robot-soul-minimal/)） | 可 `pack validate`；设备交付建议 **`--profile robot-soul`**（见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)） |
+| 3 | 放入或编辑 **`distros/chat-pro/roles/<id>/`**（建议先用 `pack create` 或复制 [examples/robot-soul-minimal](../../examples/robot-soul-minimal/)） | 可 `pack validate`；设备交付建议 **`--profile robot-soul`**（见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)） |
 | 4 | 目录插件 / 侧车（可选） | 见 [DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md)、[REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) |
 | 5 | `cargo run -p oclive-cli -- pack validate <角色根> [--profile robot-soul]` | 契约与 RobotSoulPack 规则 |
 | 6 | 无头运行 | **`cargo run -p oclive_kernel_server -- --api`** 或生成工程内 **`cargo run`**（与 `--api` 等价）；或 **`oclivenewnew-tauri --api`** |
-| 7 | 部署 | 二进制 + `roles/` + `plugins/`（若用 directory）+ 环境变量：`OCLIVE_ROLES_DIR`、`OCLIVE_API_PORT`、`OCLIVE_HTTP_API_MOCK_LLM`（联调）等 |
+| 7 | 部署 | 二进制 + `distros/chat-pro/roles/` + `distros/chat-pro/plugins/`（若用 directory）+ 环境变量：`OCLIVE_ROLES_DIR`、`OCLIVE_API_PORT`、`OCLIVE_HTTP_API_MOCK_LLM`（联调）等 |
 
 ---
 

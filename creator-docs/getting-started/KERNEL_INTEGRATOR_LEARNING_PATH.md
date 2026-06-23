@@ -12,7 +12,7 @@
 | 2 | 理解「纯净内核」与 library / kernel_server 分工 | [PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md) |
 | 3 | 生成最小无头/库骨架 | `cargo run -p oclive-cli -- init`（交互或 `--non-interactive`；见 [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md)） |
 
-**验收**：能在本机 `cargo build` 生成的骨架工程，并找到生成的 `roles/` 与 `settings.json` 形状说明。
+**验收**：能在本机 `cargo build` 生成的骨架工程，并找到生成的 `distros/chat-pro/roles/` 与 `settings.json` 形状说明。
 
 ---
 
@@ -20,8 +20,8 @@
 
 | 主题 | 读什么 |
 |------|--------|
-| **`process_message` 编排** | 宿主参考实现 **`crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs`** 与 **`turn_pipeline.rs`**（[handoff/BUS_FACTOR_NOTES.md](../../handoff/BUS_FACTOR_NOTES.md) 摘要） |
-| **`PluginHost` 第 1–6 模块** | **`crates/oclive_kernel_host/src/domain/ports/plugin_host.rs`** · [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) · [OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md) |
+| **`process_message` 编排** | 宿主参考实现 **`kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs`** 与 **`turn_pipeline.rs`**（[handoff/BUS_FACTOR_NOTES.md](../../handoff/BUS_FACTOR_NOTES.md) 摘要） |
+| **`PluginHost` 第 1–6 模块** | **`kernel/crates/oclive_kernel_host/src/domain/ports/plugin_host.rs`** · [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) · [OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md) |
 | **`plugin_backends` 与兜底** | [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md) · 远端失败回退相关设置见 [CONFIGURATION_FILES.md](../guides/CONFIGURATION_FILES.md) / 设置页「兜底」 |
 
 **验收**：能描述一条 `send_message` 从入口到 LLM 再持久化的大致阶段名（便于对齐日志）。

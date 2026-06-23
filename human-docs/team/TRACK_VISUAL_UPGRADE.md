@@ -27,7 +27,7 @@ npm run tauri:dev
 ```powershell
 npm run test:unit
 npm run build
-# 若改 src-tauri/：
+# 若改 distros/desktop-tauri/：
 cargo test -p oclivenewnew-tauri --lib
 ```
 
@@ -43,7 +43,7 @@ cargo test -p oclivenewnew-tauri --lib
 | **W2** | `ChatProStage.vue` 接入 `FluentShell` / `ToolShell`；store 与 directive 字段对齐 |
 | **W3** | Live2D 决策 memo 1 页；`kind=live2d` 时 PNG fallback **不 crash** |
 
-**不在本轨道：** ASR/TTS（`examples/voice-loop-minimal/`）、`crates/` 内核、开发板 BSP。
+**不在本轨道：** ASR/TTS（`examples/voice-loop-minimal/`）、`kernel/crates/` 内核、开发板 BSP。
 
 **不在本 sprint（除非组长另排）：** Chat Pro **`/chat/stream` 打字机 UI**（延迟线 · 见 [CHAT_PRO §2](./CHAT_PRO_VERTICAL_HANDOFF.md)）。当前 UI 走整段 `send_message`，**无浏览器 Network 里的 `/chat` 请求**。
 
@@ -95,18 +95,18 @@ props 来源：`useMainShell.ts` 的 `portraitAssetRelPath`（来自 `roleStore.
 | # | 文件 | 看什么 |
 |---|------|--------|
 | 1 | [SCOPE_AND_BOUNDARIES.md §2](./SCOPE_AND_BOUNDARIES.md) | 白名单 |
-| 2 | `src/stores/chatStoreSend.ts` | directive → `roleStore` |
-| 3 | `src/composables/useMainShell.ts` | `portraitAssetRelPath` |
-| 4 | `src/views/RoleDetailView.vue` | 立绘容器 |
-| 5 | `src/components/role/CharacterInfo.vue` | PNG 加载 |
+| 2 | `distros/shared/src/stores/chatStoreSend.ts` | directive → `roleStore` |
+| 3 | `distros/shared/src/composables/useMainShell.ts` | `portraitAssetRelPath` |
+| 4 | `distros/chat-pro/src/views/RoleDetailView.vue` | 立绘容器 |
+| 5 | `distros/shared/src/components/role/CharacterInfo.vue` | PNG 加载 |
 | 6 | `handoff/LIVE2D_CUBISM_DEFER.md` | Live2D 为何 defer |
 
 **Week 2+：** `handoff/PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md`（Phase 1–4）
 
 **Live2D 参考（只读抄结构）：**
 
-- `src/components/visual/Live2DStageAdapter.vue`  
-- `src/shells/theater/TheaterStagePanel.vue`
+- `distros/shared/src/components/visual/Live2DStageAdapter.vue`  
+- `distros/theater/src/shells/theater/TheaterStagePanel.vue`
 
 **不必读：** `process_message`、语音 example、PLUGIN_V1 全文。
 
@@ -129,14 +129,14 @@ props 来源：`useMainShell.ts` 的 `portraitAssetRelPath`（来自 `roleStore.
 
 | 角色包 | 预期 |
 |--------|------|
-| **`roles/mumu`（默认）** | `config.json` **无** `portrait_catalog` → `performance_directive` **常为 null** → 仅 legacy 七图，**不算管线坏了** |
-| **`roles/demo-doll`（A2）** | 启用 catalog 后 directive **应有** `path` / `fallback_image` |
+| **`distros/chat-pro/roles/mumu`（默认）** | `config.json` **无** `portrait_catalog` → `performance_directive` **常为 null** → 仅 legacy 七图，**不算管线坏了** |
+| **`distros/chat-pro/roles/demo-doll`（A2）** | 启用 catalog 后 directive **应有** `path` / `fallback_image` |
 
 **Done：** 短报告截图：Pinia 字段 + 是否 null + 结论「需 A2」。
 
 ### 任务 A2 · 最小 catalog 演示角色（1 天）
 
-**推荐：** 新建 `roles/demo-doll/`（勿改官方 mumu，除非组长批准）。
+**推荐：** 新建 `distros/chat-pro/roles/demo-doll/`（勿改官方 mumu，除非组长批准）。
 
 **最小 `config.json` 片段**（完整样例见 OOCP fixture）：
 
@@ -156,7 +156,7 @@ props 来源：`useMainShell.ts` 的 `portraitAssetRelPath`（来自 `roleStore.
 
 ```powershell
 cd <REPO_ROOT>
-cargo run -p oclive-cli -- pack validate roles/demo-doll --profile robot-soul
+cargo run -p oclive-cli -- pack validate distros/chat-pro/roles/demo-doll --profile robot-soul
 ```
 
 **Done：**
@@ -168,10 +168,10 @@ cargo run -p oclive-cli -- pack validate roles/demo-doll --profile robot-soul
 
 | 动作 | 路径 |
 |------|------|
-| **新建** | `src/components/visual/ChatProStage.vue` |
-| **修改** | `src/views/RoleDetailView.vue` 或 `FluentShell.vue` / `ToolShell.vue` |
-| **只读对齐** | `src/components/visual/Live2DStageAdapter.vue` |
-| **可选** | `src/adapters/visual/index.ts` |
+| **新建** | `distros/shared/src/components/visual/ChatProStage.vue` |
+| **修改** | `distros/chat-pro/src/views/RoleDetailView.vue` 或 `FluentShell.vue` / `ToolShell.vue` |
+| **只读对齐** | `distros/shared/src/components/visual/Live2DStageAdapter.vue` |
+| **可选** | `distros/shared/src/adapters/visual/index.ts` |
 
 **`ChatProStage.vue` 行为：**
 
@@ -248,7 +248,7 @@ mode = "image_only"
 | 禁止 | 原因 |
 |------|------|
 | UI 再调 LLM 选立绘 | 第 4 设施边界 |
-| 改 `process_message` / `crates/` | 内核 |
+| 改 `process_message` / `kernel/crates/` | 内核 |
 | 改 `examples/voice-loop-minimal/` | B 轨道 |
 | 未批准 bundle Cubism | 许可 / CI |
 
@@ -282,14 +282,14 @@ $env:OCLIVE_PORTRAIT_EMOTION_LLM = "0"
 
 **交付物：**
 
-- [ ] `roles/demo-doll/`（或等价）  
+- [ ] `distros/chat-pro/roles/demo-doll/`（或等价）  
 - [ ] `ChatProStage.vue` + Shell 接入  
 - [ ] Live2D memo（W3）  
 - [ ] 联调截图  
 
 **PR 描述必勾选：**
 
-- [ ] 未改 `crates/` · `examples/voice-loop-minimal/`  
+- [ ] 未改 `kernel/crates/` · `examples/voice-loop-minimal/`  
 - [ ] 未在 UI 增加 LLM 选图  
 - [ ] `npm run test:unit` + `npm run build` 通过  
 
@@ -304,6 +304,6 @@ $env:OCLIVE_PORTRAIT_EMOTION_LLM = "0"
 | `pack validate` 失败 | 组长 + CLI 输出 |
 | directive 逻辑 / null | 是否 catalog；组长看内核日志 |
 | Cubism 许可 | 组长 / 产品 |
-| invoke / DTO | `src/api/chat.ts` · `NAMING_CONVENTIONS.md` |
+| invoke / DTO | `distros/shared/src/api/chat.ts` · `NAMING_CONVENTIONS.md` |
 | stream 打字机 | 组长（本轨道外） |
 | 语音 loop | 成员 B · [TRACK_VOICE_RECOGNITION.md](./TRACK_VOICE_RECOGNITION.md) |

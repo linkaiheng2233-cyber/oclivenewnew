@@ -1,6 +1,6 @@
 # 目录式进程插件（Directory Plugins）— 架构与契约
 
-本文描述用户选型 **A1–C1** 下**当前实现**：`plugins/` 扫描、`manifest.json`、子进程 JSON-RPC、**整壳 UI**（`https://ocliveplugin.localhost/…`）、**统一门面命令** `directory_plugin_invoke`（等价于「动态 Tauri 命令」），以及**开发者模式**从额外根目录加载。
+本文描述用户选型 **A1–C1** 下**当前实现**：`distros/chat-pro/plugins/` 扫描、`manifest.json`、子进程 JSON-RPC、**整壳 UI**（`https://ocliveplugin.localhost/…`）、**统一门面命令** `directory_plugin_invoke`（等价于「动态 Tauri 命令」），以及**开发者模式**从额外根目录加载。
 
 **Wire 格式**：与现有 Remote 侧车一致（HTTP POST JSON-RPC 2.0、请求头 `x-oclive-remote-protocol` 等），见 [REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md)。
 
@@ -12,9 +12,9 @@
 
 宿主合并以下**存在的**扫描根，每个根下的一级子目录若含 `manifest.json` 则视为一个插件包（以 manifest 内 `id` 注册；重复 `id` 时后扫描到的根覆盖并打日志）：
 
-1. **`<roles 父目录>/plugins/`**（与 `roles/` 同级；开发时常为仓库根下 `plugins/`）
-2. **`./plugins/`**（相对进程当前工作目录）
-3. **`{app_data}/plugins/`**（与 `app.db` 同级的应用数据目录下的 `plugins/`）
+1. **`<roles 父目录>/distros/chat-pro/plugins/`**（与 `distros/chat-pro/roles/` 同级；开发时常为仓库根下 `distros/chat-pro/plugins/`）
+2. **`./distros/chat-pro/plugins/`**（相对进程当前工作目录）
+3. **`{app_data}/distros/chat-pro/plugins/`**（与 `app.db` 同级的应用数据目录下的 `distros/chat-pro/plugins/`）
 
 **开发者模式（C1）**：当 `app_data/oclive_host_plugins.json` 中 **`developer_mode`: true**，或环境变量 **`OCLIVE_DEVELOPER=1`**（`true`/`yes` 亦可）时，额外扫描 **`extra_plugin_roots`** 中每一项（须为已存在目录）；行为同上。
 
@@ -180,7 +180,7 @@
 - **`oclive.events.request(event, data?, timeoutMs?)`**：向已用 **`onRequest`** 注册的监听方发起**请求—响应**；事件名须为 **`某插件ID:名称`**（可跨插件，不要求与调用方 id 一致）；返回 **`Promise`**，超时默认 15s。多监听方时为 **`Promise.race`**（首个 fulfilled 的结果）。
 - **`oclive.events.onRequest` / `offRequest`**：注册/移除请求处理器；`handler` 可同步或异步返回值。
 
-样式可直接使用宿主 **CSS 变量**（如 `--fluent-accent`、`--bg-primary`、`--font-ui`、`--border-light` 等，见 `src/styles/theme.css`）。
+样式可直接使用宿主 **CSS 变量**（如 `--fluent-accent`、`--bg-primary`、`--font-ui`、`--border-light` 等，见 `distros/shared/src/styles/theme.css`）。
 
 **安全说明**：插件组件与主界面同 JS 上下文；请勿在插件中直接使用 `window.__TAURI__`，应只通过 `oclive.invoke` 访问白名单命令。宿主不对插件做完整沙箱隔离。
 
@@ -282,22 +282,22 @@
 
 | 区域 | 路径 |
 |------|------|
-| 扫描 / manifest / 懒启动 / shell URL | `src-tauri/src/infrastructure/directory_plugins/` |
-| 枚举与 `directory_plugins` 槽位 | `src-tauri/src/models/plugin_backends.rs` |
-| 六模块解析与 HTTP 复用 | `crates/oclive_kernel_host/src/domain/ports/plugin_host.rs`、`src-tauri/src/infrastructure/remote_plugin/` |
-| Tauri 命令 | `src-tauri/src/api/directory_plugin.rs`、`src-tauri/src/api/plugin_bridge.rs`、`src-tauri/src/api/plugin_update.rs`（本地 zip 覆盖 / 更新检查预留） |
-| 自定义协议 + 启动 | `src-tauri/src/lib.rs` |
-| 内置 UI 启动引导 | `src/main.js`、`src/utils/directoryShellBootstrap.ts`、`src/DirectoryShellApp.vue` |
-| 聊天工具栏插槽 | `src/components/ChatPluginToolbarSlots.vue` |
-| 设置页插槽 | `src/components/PluginSettingsPanelSlots.vue`、`src/views/SettingsView.vue` |
-| 角色详情插槽 | `src/components/PluginRoleDetailSlots.vue`、`src/views/RoleDetailView.vue` |
-| 前端封装 | `src/utils/tauri-api.ts`（`getDirectoryPluginBootstrap`、`directoryPluginInvoke`、`pluginBridgeInvoke`） |
+| 扫描 / manifest / 懒启动 / shell URL | `kernel/crates/oclive_kernel_host/src/infrastructure/directory_plugins/` |
+| 枚举与 `directory_plugins` 槽位 | `kernel/crates/oclive_kernel_types/src/models/plugin_backends.rs` |
+| 六模块解析与 HTTP 复用 | `kernel/crates/oclive_kernel_host/src/domain/ports/plugin_host.rs`、`kernel/crates/oclive_kernel_host/src/infrastructure/remote_plugin/` |
+| Tauri 命令 | `distros/desktop-tauri/src/api/directory_plugin.rs`、`distros/desktop-tauri/src/api/plugin_bridge.rs`、`distros/desktop-tauri/src/api/plugin_update.rs`（本地 zip 覆盖 / 更新检查预留） |
+| 自定义协议 + 启动 | `distros/desktop-tauri/src/lib.rs` |
+| 内置 UI 启动引导 | `distros/shared/src/main.js`、`distros/shared/src/utils/directoryShellBootstrap.ts`、`distros/shared/src/DirectoryShellApp.vue` |
+| 聊天工具栏插槽 | `distros/shared/src/components/ChatPluginToolbarSlots.vue` |
+| 设置页插槽 | `distros/shared/src/components/PluginSettingsPanelSlots.vue`、`distros/chat-pro/src/views/SettingsView.vue` |
+| 角色详情插槽 | `distros/shared/src/components/PluginRoleDetailSlots.vue`、`distros/chat-pro/src/views/RoleDetailView.vue` |
+| 前端封装 | `distros/shared/src/api/`（`getDirectoryPluginBootstrap`、`directoryPluginInvoke`、`pluginBridgeInvoke`） |
 
 ---
 
 ## 8. 仓库内最小示例
 
-见 **`examples/directory-plugin-minimal/`**（含 **`Shell.vue`** + **`shell.vueEntry`** 示例）：可复制到 `plugins/<id>/` 或加入 `extra_plugin_roots` 后，配置 `shell_plugin_id` 与（可选）`plugin_backends` 做联调。  
+见 **`examples/directory-plugin-minimal/`**（含 **`Shell.vue`** + **`shell.vueEntry`** 示例）：可复制到 `distros/chat-pro/plugins/<id>/` 或加入 `extra_plugin_roots` 后，配置 `shell_plugin_id` 与（可选）`plugin_backends` 做联调。  
 **LLM 槽 + 本机 llama.cpp**：**[`examples/directory-plugin-llamacpp/`](../../examples/directory-plugin-llamacpp/README.md)**（[English](../../examples/directory-plugin-llamacpp/README.en.md)）。  
 **非整壳 + 工具栏插槽**：**`examples/directory-plugin-ui-slot/`**；**原生 Vue 工具栏 + iframe 回退**：**`examples/directory-plugin-ui-slot-vue/`**。
 
@@ -307,7 +307,7 @@
 npm run scaffold:ui-plugin -- --id com.example.my-slot --slot role.detail --title "My Slot Card"
 ```
 
-命令会生成 `plugins/<id>/manifest.json`、`slots/slot.html`、`slots/SlotCard.vue` 三个文件；再把该插件 id 加入目标角色的 `ui.json` 对应 `slots.<slot>.order/visible` 即可。
+命令会生成 `distros/chat-pro/plugins/<id>/manifest.json`、`slots/slot.html`、`slots/SlotCard.vue` 三个文件；再把该插件 id 加入目标角色的 `ui.json` 对应 `slots.<slot>.order/visible` 即可。
 
 ---
 

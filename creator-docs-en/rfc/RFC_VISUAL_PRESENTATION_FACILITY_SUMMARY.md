@@ -17,7 +17,7 @@ Maps `visual_state_id` → optional `performance_directive` for host UI adapters
 |-------|---------|
 | v0.4 | `image` — PNG/WebP path in directive |
 | Theater | `live2d` — `Live2DStageAdapter.vue` (fallback image when Cubism unavailable) |
-| Future | `rig3d` / `procedural` / `directory` — see `src/adapters/visual/` |
+| Future | `rig3d` / `procedural` / `directory` — see `distros/shared/src/adapters/visual/` |
 
 ## DTO
 

@@ -6,16 +6,16 @@
 
 | 层级 | 内容 | 位置 / 命令 |
 |------|------|----------------|
-| Rust 单元与集成测试 | 编排、`--api` HTTP 路由、`process_message`、**`invoke` 热路径（11 条 `*_impl` 烟测）**（[`invoke_hotpath_matrix.rs`](../../src-tauri/tests/invoke_hotpath_matrix.rs)，对照 [`handoff/INVOKE_HOTPATH_MATRIX.md`](../../handoff/INVOKE_HOTPATH_MATRIX.md)）、蓝图写盘 [`save_role_slot_registry.rs`](../../src-tauri/tests/save_role_slot_registry.rs) 等 | `src-tauri/` 下 `cargo test`；集成测在 `src-tauri/tests/` |
+| Rust 单元与集成测试 | 编排、`--api` HTTP 路由、`process_message`、**`invoke` 热路径（11 条 `*_impl` 烟测）**（[`invoke_hotpath_matrix.rs`](../../distros/desktop-tauri/tests/invoke_hotpath_matrix.rs)，对照 [`handoff/INVOKE_HOTPATH_MATRIX.md`](../../handoff/INVOKE_HOTPATH_MATRIX.md)）、蓝图写盘 [`save_role_slot_registry.rs`](../../distros/desktop-tauri/tests/save_role_slot_registry.rs) 等 | `distros/desktop-tauri/` 下 `cargo test`；集成测在 `distros/desktop-tauri/tests/` |
 | OOCP 对齐 HTTP 黑盒 | **13 场景（S0–S12）**；可选 **S13/S14** 双核场景（降级与成功路径，见 [`OOCP_TEST_SUITE.md`](./OOCP_TEST_SUITE.md)） | `examples/oocp-test-suite/run.mjs`；CI job **`oocp-test-suite`**；另跑 **`scripts/e2e-core-api-restart.mjs`**（进程重启烟测，**A1.1a**） |
-| 前端烟测 | Vitest 守门 + **`vite preview` + Playwright** 首屏（**A1.1b**；**CI 仅 Ubuntu `frontend`**） | `npm run test:unit`；`npm run build && npm run test:e2e:preview`（[`e2e/preview-shell.spec.ts`](../../e2e/preview-shell.spec.ts)；见 CONTRIBUTING **Windows** 说明） |
+| 前端烟测 | Vitest 守门 + **`vite preview` + Playwright** 首屏（**A1.1b**；**CI 仅 Ubuntu `frontend`**） | `npm run test:unit`；`npm run build && npm run test:e2e:preview`（[`distros/chat-pro/e2e/preview-shell.spec.ts`](../../distros/chat-pro/e2e/preview-shell.spec.ts)；见 CONTRIBUTING **Windows** 说明） |
 
 ### Remote LLM 测试覆盖
 
 | 层级 | 状态 | 位置 |
 |------|------|------|
-| JSON-RPC 客户端（`RemoteLlmHttp`） | **已覆盖** | [`remote_llm_jsonrpc_roundtrip.rs`](../../src-tauri/tests/remote_llm_jsonrpc_roundtrip.rs) |
-| 完整 `process_message`（`plugin_backends.llm = remote`） | **已覆盖** | [`remote_llm_process_message_roundtrip.rs`](../../src-tauri/tests/remote_llm_process_message_roundtrip.rs) |
+| JSON-RPC 客户端（`RemoteLlmHttp`） | **已覆盖** | [`remote_llm_jsonrpc_roundtrip.rs`](../../distros/desktop-tauri/tests/remote_llm_jsonrpc_roundtrip.rs) |
+| 完整 `process_message`（`plugin_backends.llm = remote`） | **已覆盖** | [`remote_llm_process_message_roundtrip.rs`](../../distros/desktop-tauri/tests/remote_llm_process_message_roundtrip.rs) |
 | OpenAI-compatible 路径（`OCLIVE_LLM_CLOUD_API_STYLE`） | **未覆盖** | 见 [REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) §测试覆盖 |
 
 ## 组件与插件壳（编写器 `oclive-pack-editor`）
@@ -38,11 +38,11 @@
 | **T10** | 插件后端 / 角色包编辑器 | `PluginManagerPanel.spec.ts`（`RolePackEditorPanel` 插件槽）、`RolePackEditorPanel.spec.ts` | **已覆盖** |
 | **T11** | 校验调试面板 | `DebugPanel.spec.ts`（`PackChecksSection` wasm/TS 状态） | **已覆盖** |
 | **T12** | 快捷键 / 视图分级 | `HotkeySettingsSection.spec.ts`、`useEditorViewState.test.ts` | **已覆盖** |
-| **T13** | 前端测试运行器 + 工具函数 | `FrontendTestRunnerPanel.spec.ts`、`mergeManifest.test.ts`、`uiConfig.test.ts`、`authorPack.test.ts`；Playwright `e2e/smoke.spec.ts` | **已覆盖** |
+| **T13** | 前端测试运行器 + 工具函数 | `FrontendTestRunnerPanel.spec.ts`、`mergeManifest.test.ts`、`uiConfig.test.ts`、`authorPack.test.ts`；Playwright `distros/chat-pro/e2e/smoke.spec.ts` | **已覆盖** |
 
 **合计（编写器 Vitest `it` 数）**：**119**（2026-05-20）；组件 spec **32** 条。
 
-| **T14–T20**（`official-vue-test-runner` 等） | 编写器内置能力，以**目录插件**范式对接工作区；**T14 Vue runner 已入库** `plugins/official-vue-test-runner/`（见插件 README）。 |
+| **T14–T20**（`official-vue-test-runner` 等） | 编写器内置能力，以**目录插件**范式对接工作区；**T14 Vue runner 已入库** `distros/chat-pro/plugins/official-vue-test-runner/`（见插件 README）。 |
 
 主应用通过包格式与 HTTP/`invoke` 契约对接；组件级与插件壳级测试在编写器侧执行即可覆盖创作者工具链。
 

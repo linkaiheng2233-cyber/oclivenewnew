@@ -2,7 +2,7 @@
 
 **状态**：P1 契约（Schema + 示例）**Done**；P4 profile 调度（`HostProfile` 加载与合并）**Done**（`host_profile.rs` / spawn 时 `OCLIVE_DISTRO_PROFILE`）。  
 **受众**：桌面、VS Code、启动器、硬件发行版集成方。  
-**SSOT 模块形状**：与角色包 `settings.json` → `plugin_backends` 对齐，见 [`PLUGIN_V1.md`](../plugin-and-architecture/PLUGIN_V1.md) 与 `crates/oclive_validation/src/plugin_backends.rs`。
+**SSOT 模块形状**：与角色包 `settings.json` → `plugin_backends` 对齐，见 [`PLUGIN_V1.md`](../plugin-and-architecture/PLUGIN_V1.md) 与 `kernel/crates/oclive_validation/src/plugin_backends.rs`。
 
 ---
 
@@ -11,7 +11,7 @@
 | 层级 | 文件位置 | 作用 |
 |------|----------|------|
 | **发行版** | 发行版根目录 `distro.oclive.toml`（与 bundled `bin/` 同级） | spawn 时加载的 **HostProfile**：prompt/memory/post_process、`host_flags`、可选 **`[plugin_backends]` 整表替换** |
-| **角色包** | `roles/<id>/pipeline.ocblueprint` → `slot_registry`（v2）；legacy `settings.json` | 六槽默认；可被发行版 profile **整表替换**（若 profile 声明 `[plugin_backends]`） |
+| **角色包** | `distros/chat-pro/roles/<id>/pipeline.ocblueprint` → `slot_registry`（v2）；legacy `settings.json` | 六槽默认；可被发行版 profile **整表替换**（若 profile 声明 `[plugin_backends]`） |
 | **会话** | 宿主 DB / 会话覆盖 | 在有效 backends 上临时覆盖字段 |
 
 **不承载于**：蓝图文件 `pipeline.ocblueprint` / blueprint v3 `runtime_config`（v3 冻结，见 handoff）。**不替代** Monolith `monolith.toml`（仅编译期）。后处理链扩展点 RFC（预留）：[RFC_OCLIVE_POST_PROCESS_CHAIN.md](../rfc/RFC_OCLIVE_POST_PROCESS_CHAIN.md)。
@@ -166,7 +166,7 @@ mode = "off"   # off | image_only | stage_full
 | 场景 | 行为 |
 |------|------|
 | **冷启动** | 优先 spawn **本发行版 bundled** `oclive-kernel-server` |
-| **bundled 失败** | 同 `OCLIVE_APP_DATA` + `OCLIVE_DISTRO_PROFILE` + `OCLIVE_ROLES_DIR` 下 spawn **shared 兜底核**；`{app_data}/plugins/` 自动复用 |
+| **bundled 失败** | 同 `OCLIVE_APP_DATA` + `OCLIVE_DISTRO_PROFILE` + `OCLIVE_ROLES_DIR` 下 spawn **shared 兜底核**；`{app_data}/distros/chat-pro/plugins/` 自动复用 |
 | **`promote`** | 开发者将本机构建写入 shared runtime — **维护通道**，非终端用户默认路径 |
 | **Deferred** | 每发行版裁剪 binary · 进程内自升级（P3b） |
 

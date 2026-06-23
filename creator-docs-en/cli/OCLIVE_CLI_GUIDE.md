@@ -2,7 +2,7 @@
 
 **oclive-cli** is the official oclive **kernel / headless project** scaffold: interact in the terminal (or script) to generate a **standalone `cargo build`-able** minimal project for hardware, sidecars, and multiple distribution shapes sharing the same configuration shape.
 
-**Source**: [`crates/oclive-cli/`](../../crates/oclive-cli/)  
+**Source**: [`kernel/crates/oclive-cli/`](../../kernel/crates/oclive-cli/)  
 **Contract reference** (full host): [`PLUGIN_V1.md`](../plugin-and-architecture/PLUGIN_V1.md)  
 **Authoritative `plugin_backends` field reference**: [SETTINGS_REFERENCE.md](SETTINGS_REFERENCE.md)
 
@@ -22,7 +22,7 @@ The end of `init --help` lists **presets and the `plugin_backends` matrix** (sam
 
 **Role pack spec and validation**: [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md); **`pack`** subcommands are in section 6 of that doc and below.
 
-**Aligned with code**: top-level commands match `crates/oclive-cli/src/main.rs`. See the Chinese guide for the full **A / B / C** tier table, deprecated aliases, and **planned** (not yet implemented) items.
+**Aligned with code**: top-level commands match `kernel/crates/oclive-cli/src/main.rs`. See the Chinese guide for the full **A / B / C** tier table, deprecated aliases, and **planned** (not yet implemented) items.
 
 **Planned CLI** (not shipped): `pack diff`/`update`, `kernel update`, `dev --inject`, `bench history clear`/`export`/`import` — [VISION_ROADMAP_MONTHLY.md](../../creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md#oclive-cli-脚手架计划中).
 
@@ -34,8 +34,8 @@ From repo root:
 
 ```bash
 # Default: v2 blueprint (pipeline.ocblueprint schema_version 2)
-cargo run -p oclive-cli -- pack validate ./roles/mumu --host-version 0.2.0
-cargo run -p oclive-cli -- pack validate ./roles/legacy-example --profile legacy
+cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/mumu --host-version 0.2.0
+cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/legacy-example --profile legacy
 cargo run -p oclive-cli -- pack create -o ./out/my-role --flat --id com.example.demo --name Demo --format-blueprint-v2
 cargo run -p oclive-cli -- pack publish ./out/my-role -o ./dist/com.example.demo-0.1.0.oclivepack
 ```
@@ -46,7 +46,7 @@ cargo run -p oclive-cli -- pack publish ./out/my-role -o ./dist/com.example.demo
 - **`create`**: minimal pack; prefer **`--format-blueprint-v2`**; with `--flat`, `-o` is the role root.
 - **`publish`**: **`.oclivepack`** ZIP; top-level folder is **`meta.id`** (v2) or **`manifest.id`** (legacy).
 
-**JSON Schema**: `crates/oclive-cli/schemas/pipeline.ocblueprint.v2.schema.json` (v2); legacy: `role_pack_manifest.schema.json`, `role_pack_settings.schema.json`, `role_pack_index.schema.json`.
+**JSON Schema**: `kernel/crates/oclive-cli/schemas/pipeline.ocblueprint.v2.schema.json` (v2); legacy: `role_pack_manifest.schema.json`, `role_pack_settings.schema.json`, `role_pack_index.schema.json`.
 
 ---
 
@@ -55,18 +55,18 @@ cargo run -p oclive-cli -- pack publish ./out/my-role -o ./dist/com.example.demo
 Generate a **directory** plugin (Node `rpc_server.mjs` + child process) or **remote HTTP** plugin (Python `rpc_server.py`) with `manifest.json` (`id`, `provides`, `permissions`, `rpcMethods`), README, and RPC stubs.
 
 ```bash
-cargo run -p oclive-cli -- plugin create my-llm-plugin --type directory --provides llm -o ./plugins/
+cargo run -p oclive-cli -- plugin create my-llm-plugin --type directory --provides llm -o ./distros/chat-pro/plugins/
 cargo run -p oclive-cli -- plugin create my-remote --type remote --provides memory --provides emotion -o ./out/plugin --non-interactive
 cargo run -p oclive-cli -- plugin create my-plugin
 ```
 
-**`--provides`**: `llm` | `memory` | `emotion` | `event` | `prompt` | `agent` | `complex_emotion` (repeatable). Output defaults to `./plugins/`; final path is `<output>/<plugin_id>/`. See [PLUGIN_AUTHOR_LEARNING_PATH.md](../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md).
+**`--provides`**: `llm` | `memory` | `emotion` | `event` | `prompt` | `agent` | `complex_emotion` (repeatable). Output defaults to `./distros/chat-pro/plugins/`; final path is `<output>/<plugin_id>/`. See [PLUGIN_AUTHOR_LEARNING_PATH.md](../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md).
 
 ---
 
 ## `dev`: watch role pack directories
 
-Run from an **existing** kernel / scaffold project root (with `Cargo.toml`). **Recursive notify** on **`roles/**/manifest.json`** and **`roles/**/settings.json`**; **500ms debounce** then:
+Run from an **existing** kernel / scaffold project root (with `Cargo.toml`). **Recursive notify** on **`distros/chat-pro/roles/**/manifest.json`** and **`distros/chat-pro/roles/**/settings.json`**; **500ms debounce** then:
 
 `[oclive dev] role pack '<id>' changed — reload`
 
@@ -88,7 +88,7 @@ cargo run -p oclive-cli -- dev -o /path/to/project --no-watch
 cargo run -p oclive-cli -- init -o ./out/my-kernel
 ```
 
-Flow includes: project name, type (headless binary / library), multi-select backend slots, `builtin` / `remote` / `directory` / `none` (`llm` also has **`ollama`**), optional plugin toggles, whether to generate sample `roles/default`; **headless service (`kernel_server`)** ends with **developer compile options** (off by default).
+Flow includes: project name, type (headless binary / library), multi-select backend slots, `builtin` / `remote` / `directory` / `none` (`llm` also has **`ollama`**), optional plugin toggles, whether to generate sample `distros/chat-pro/roles/default`; **headless service (`kernel_server`)** ends with **developer compile options** (off by default).
 
 ### Non-interactive + presets
 
@@ -103,7 +103,7 @@ cargo run -p oclive-cli -- init --non-interactive --quiet --preset minimal -o /t
 cargo run -p oclive-cli -- init --non-interactive --quiet --preset minimal --skip-role-pack -o /tmp/my-kernel-no-roles
 ```
 
-`--skip-role-pack`: do not create `roles/` (blank kernel project).
+`--skip-role-pack`: do not create `distros/chat-pro/roles/` (blank kernel project).
 
 Enable Monolith (non-interactive: add **`--monolith`**; **kernel_server** only):
 
@@ -141,7 +141,7 @@ Non-interactive mode does **not** require any `--backend-*` flags; if passed, th
 ## Generated artifacts
 
 - **Stub `Cargo.toml`**: currently depends only on **`serde` / `serde_json`**, not assuming `oclive_kernel_runtime` split crates exist. When wiring a real kernel, switch to `path` / version deps and replace `main.rs` / `lib.rs` entrypoints.
-- **`roles/default/settings.json`**: includes **`_comment_*`** and full **`plugin_backends`** (including seventh key `complex_emotion`); trim invalid keys per [SETTINGS_REFERENCE.md](SETTINGS_REFERENCE.md) when matching the full host (e.g. strings `none` the host rejects).
+- **`distros/chat-pro/roles/default/settings.json`**: includes **`_comment_*`** and full **`plugin_backends`** (including seventh key `complex_emotion`); trim invalid keys per [SETTINGS_REFERENCE.md](SETTINGS_REFERENCE.md) when matching the full host (e.g. strings `none` the host rejects).
 - **`CONFIG_REFERENCE.md` (project root)**: preset matrix and one-liner per slot; **developer compile options (Monolith)** and RFC link.
 - **End of `init --help`**: preset matrix, **`--monolith`**, pointer to [RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md).
 - **Generated README**: textual pointers to `oclive_kernel_server`, OOCP, directory plugins based on toggles.
@@ -172,7 +172,7 @@ cargo run -p oclive-cli -- build -o /path/to/kernel-project --no-cargo
 
 ### `bench` subcommand
 
-After regenerating sources and dual builds, runs each binary `--runs` times as subprocesses; inside the subprocess **`OCLIVE_KERNEL_BENCH_ITERS`** controls the hot loop. Output is **JSON** (`schema_version: 2`, includes `binary_size`, `peak_memory`, `build_time`); schema at **`crates/oclive-cli/schemas/oclive_bench_report.schema.json`**.
+After regenerating sources and dual builds, runs each binary `--runs` times as subprocesses; inside the subprocess **`OCLIVE_KERNEL_BENCH_ITERS`** controls the hot loop. Output is **JSON** (`schema_version: 2`, includes `binary_size`, `peak_memory`, `build_time`); schema at **`kernel/crates/oclive-cli/schemas/oclive_bench_report.schema.json`**.
 
 ```bash
 cargo run -p oclive-cli -- bench --release -o /path/to/kernel-project --runs 30 --inner-iters 500 --output ./bench-report.json

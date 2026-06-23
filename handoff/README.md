@@ -2,6 +2,8 @@
 
 本目录仅保留**当前仍被 AGENTS.md、CI 或贡献流程直接引用**的短文；属 **AI 接手包**（维护者深读）。**新人请先** [human-docs/06_KERNEL_LEARNING_PATH.md](../human-docs/06_KERNEL_LEARNING_PATH.md) 与 [human-docs/08_REFERENCE_MAP.md](../human-docs/08_REFERENCE_MAP.md)，再按需打开本目录。
 
+**物理分层**：**内核**项（编排、`process_message`、六槽、迁移、OOCP）在**本目录根级**与 `creator-docs/kernel/`；**发行版**项在 [`distros/`](../distros/)、[`theater/`](theater/)、[`vscode/`](vscode/) 等子目录。源码：`kernel/` = Rust workspace；`distros/` = 前端 + Tauri 宿主。
+
 历史批次报告、closure summary、旧周报与编号开发计划已迁入 [`archive/`](archive/)。
 
 ## 活跃文件（根目录 · 跨发行版）

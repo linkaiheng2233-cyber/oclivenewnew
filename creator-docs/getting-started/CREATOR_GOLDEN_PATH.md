@@ -9,13 +9,13 @@
 
 - 安装 OCLive 桌面或打开 [oclive-pack-editor](https://github.com)（姊妹仓编写器）
 - 本地 Ollama 或云端 API Key 二选一（剧场 demo 可零配置）
-- 克隆/下载官方示例包 `roles/mumu` 作参照（非上限）
+- 克隆/下载官方示例包 `distros/chat-pro/roles/mumu` 作参照（非上限）
 
 ## 1. 初始化角色包（5 分钟）
 
 1. 编写器：**新建角色包** → 填写 `manifest.json`（`id`、`name`、`version`）
 2. 选择 **v2 最小模板**（`pipeline.ocblueprint` + `settings.json` 默认六槽 builtin）
-3. 保存到 `roles/{your_id}/`
+3. 保存到 `distros/chat-pro/roles/{your_id}/`
 
 **禁止在本路径修改**：`slot_registry` 多实例、`groups`、Experimental 核。
 
@@ -49,7 +49,7 @@ npm run dev:theater
 ```
 
 - 早餐场景 · 双角色对比 · 3 poke chips（见 [theater/DEVELOPMENT_ROADMAP.md](../../handoff/theater/DEVELOPMENT_ROADMAP.md) §4）
-- 自动化烟测：`npm run test:unit` → `src/theater/theater.acceptance.test.ts`（9 测）
+- 自动化烟测：`npm run test:unit` → `distros/theater/src/theater.acceptance.test.ts`（9 测）
 
 ## 4. 分发与下一步（5 分钟）
 

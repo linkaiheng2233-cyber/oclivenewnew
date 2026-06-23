@@ -9,7 +9,7 @@
 
 ## RUST_LOG 配方
 
-默认 `info`；由 [`init_tracing`](../crates/oclive_kernel_host/src/lib.rs) 初始化。设置环境变量 **`RUST_LOG`** 后重启应用。
+默认 `info`；由 [`init_tracing`](../kernel/crates/oclive_kernel_host/src/lib.rs) 初始化。设置环境变量 **`RUST_LOG`** 后重启应用。
 
 **PowerShell 示例**：
 
@@ -30,7 +30,7 @@ RUST_LOG=info,oclive_chat=debug,oclive_plugin=debug npm run tauri:dev
 
 ## tracing target 表（仓库内显式 `target:`）
 
-在 `crates/` 与 `src-tauri/` 中检索 `target: "oclive_*"` 得到的主要 target：
+在 `kernel/crates/` 与 `distros/desktop-tauri/` 中检索 `target: "oclive_*"` 得到的主要 target：
 
 | target | 典型场景 |
 |--------|----------|
@@ -67,7 +67,7 @@ rg 'target: "oclive' crates src-tauri
 | **路径** | `{app_data}/app.db`（Windows 常见 `%APPDATA%` 下应用标识目录） |
 | **文档** | [CONFIGURATION_FILES.md](../creator-docs/guides/CONFIGURATION_FILES.md) |
 | **打开** | [DB Browser for SQLite](https://sqlitebrowser.org/) 或 `sqlite3` CLI |
-| **迁移 SSOT** | [`crates/oclive_kernel_host/migrations/`](../crates/oclive_kernel_host/migrations/) |
+| **迁移 SSOT** | [`kernel/crates/oclive_kernel_host/migrations/`](../kernel/crates/oclive_kernel_host/migrations/) |
 
 常用表：`role_runtime`（按 **`srid`** 键）、`chat_messages`、`long_term_memory`（与聊天存储解耦）。
 
@@ -81,7 +81,7 @@ rg 'target: "oclive' crates src-tauri
 - `startup_health`
 - `dual_core_experimental`（仅 `dual_core` feature）
 
-定义：[`message_error.rs`](../crates/oclive_kernel_host/src/domain/chat_engine/message_error.rs)
+定义：[`message_error.rs`](../kernel/crates/oclive_kernel_host/src/domain/chat_engine/message_error.rs)
 
 日志检索：`oclive_chat` target + 错误全文中的 `stage` 名。
 

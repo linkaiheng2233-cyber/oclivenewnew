@@ -2,7 +2,7 @@
 
 ## 结论（截至当前 `main`）
 
-在 `crates/oclive_kernel_host/src/domain/chat_engine/` 下检索 **cancel / abort / interrupt / stop / halt** 及公开 Tauri 命令名 **`chat_generation_cancel`**：**未发现**「取消正在进行的 LLM 生成」的已实现 API 或引擎内钩子。
+在 `kernel/crates/oclive_kernel_host/src/domain/chat_engine/` 下检索 **cancel / abort / interrupt / stop / halt** 及公开 Tauri 命令名 **`chat_generation_cancel`**：**未发现**「取消正在进行的 LLM 生成」的已实现 API 或引擎内钩子。
 
 `process_message` 路径为单次 `await` 驱动的主对话编排，无协作式取消令牌暴露给前端。
 

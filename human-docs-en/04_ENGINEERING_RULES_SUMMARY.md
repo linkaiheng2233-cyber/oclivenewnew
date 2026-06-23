@@ -4,9 +4,9 @@
 
 ## Non-negotiables
 
-1. **Orchestration** lives in `crates/oclive_kernel_host/.../process_message.rs` — do not add stages from API or Tauri layers.
+1. **Orchestration** lives in `kernel/crates/oclive_kernel_host/.../process_message.rs` — do not add stages from API or Tauri layers.
 2. **Persistence** goes through `domain/repository.rs` traits; SQL schema is `migrations/001_init.sql` — no invented table names.
-3. **Tauri commands** in `src-tauri/src/api/*.rs`, registered only in `lib.rs` via `generate_handler!`.
+3. **Tauri commands** in `distros/desktop-tauri/src/api/*.rs`, registered only in `lib.rs` via `generate_handler!`.
 4. **DTO contract** is `oclive_kernel_types::models::dto` — reply field is **`reply`**, not `response`.
 5. **Prompt** via `PromptBuilder::build_prompt(input: &PromptInput<'_>) -> String` (not `Result`). Pack `reply_quality_anchor` cannot replace `KERNEL_DIALOGUE_GUARDRAILS`.
 

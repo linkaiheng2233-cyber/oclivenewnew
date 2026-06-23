@@ -36,7 +36,7 @@ Host executes: kill :8420 · promote · spawn · status UI
 | **Promote / backup** | `kernel_runtime_ops.rs` | `promote_with_backup`, shared runtime |
 | **CLI** | `oclive kernel ensure` | Same policy + optional execution (`--plan-only`, `--json`) |
 | **VS Code** | `oclive-vscode/src/kernelStrategy.ts` | `oclive-cli kernel ensure --plan-only`; spawn/kill in extension |
-| **Desktop** | `src-tauri/src/kernel_lifecycle/policy.rs` | Direct `resolve_kernel_action`; spawn/kill in Tauri; **attach-first fallback** on failure |
+| **Desktop** | `distros/desktop-tauri/src/kernel_lifecycle/policy.rs` | Direct `resolve_kernel_action`; spawn/kill in Tauri; **attach-first fallback** on failure |
 
 Hosts **no longer** each embed their own capability-compare logic. They **call shared policy** and run side effects (process management, distro env on spawn).
 
@@ -44,7 +44,7 @@ Hosts **no longer** each embed their own capability-compare logic. They **call s
 
 Binary tier scores and promotion threshold live in:
 
-`crates/oclive_kernel_runtime/src/kernel_discovery.rs`
+`kernel/crates/oclive_kernel_runtime/src/kernel_discovery.rs`
 
 | Constant | Value | Tier |
 |----------|-------|------|
@@ -86,7 +86,7 @@ VS Code `src/discovery.ts` mirrors numeric tiers (comment-linked to Rust). **Spa
 **Target order** (product; **K-SCHED-05** — `discover_spawn_kernel_candidates` still sorts by discovery score today):
 
 1. **Caller bundled** `oclive-kernel-server` (install root / extension `bin/` / Tauri `resources/bin/`)
-2. **Shared fallback** — `%LOCALAPPDATA%/OCLive/runtime/oclive-kernel-server` (full build; same `OCLIVE_APP_DATA` + `OCLIVE_DISTRO_PROFILE` + `OCLIVE_ROLES_DIR` → plugins under `{app_data}/plugins/` **reuse**, no copy)
+2. **Shared fallback** — `%LOCALAPPDATA%/OCLive/runtime/oclive-kernel-server` (full build; same `OCLIVE_APP_DATA` + `OCLIVE_DISTRO_PROFILE` + `OCLIVE_ROLES_DIR` → plugins under `{app_data}/distros/chat-pro/plugins/` **reuse**, no copy)
 3. **Dev builds** — monorepo / `OCLIVE_KERNEL_BINARY` pin (developers only)
 
 If bundled spawn fails (crash, bad manifest, health timeout) → retry shared with **unchanged** distro env. **Fault attribution**: bundled fails but shared + same plugins works → suspect **distro binary**; both fail → suspect **plugins / config / app_data**.
@@ -117,7 +117,7 @@ When `active_profile_summary` is **missing**: `distro_id` match alone is **not**
 
 **Spawn failure (graded)**: Policy spawn failure → **profile-aware attach-only** (still runs `build_resolve_plan`; only `Attach` allowed) → retry next spawn candidate (bundled → shared → bundled tier degraded). VS Code without `oclive-cli` attaches only when `/health` summary looks VS Code–compatible (agent disabled).
 
-## Desktop (`src-tauri/src/kernel_lifecycle/`)
+## Desktop (`distros/desktop-tauri/src/kernel_lifecycle/`)
 
 - `policy.rs` — `build_resolve_plan` + spawn/replace execution
 - `ensure.rs` — entry; graded fallback (profile-aware attach → legacy)

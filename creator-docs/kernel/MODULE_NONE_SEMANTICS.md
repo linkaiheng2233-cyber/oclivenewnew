@@ -1,8 +1,8 @@
 # 六槽 `none` 语义（Module None Semantics）
 
 **状态**：v0.3.x 运行时契约  
-**SSOT 枚举**：`crates/oclive_validation/src/plugin_backends.rs`（`*Backend::None`）  
-**Noop 实现**：`crates/oclive_kernel_host/src/domain/noop_slot_backends.rs`
+**SSOT 枚举**：`kernel/crates/oclive_validation/src/plugin_backends.rs`（`*Backend::None`）  
+**Noop 实现**：`kernel/crates/oclive_kernel_host/src/domain/noop_slot_backends.rs`
 
 ---
 

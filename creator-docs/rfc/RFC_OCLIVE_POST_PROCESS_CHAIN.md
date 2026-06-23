@@ -71,5 +71,5 @@ flowchart LR
 
 ## 6. 参考实现锚点（只读）
 
-- 今日内置逻辑：`crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/post.rs`
+- 今日内置逻辑：`kernel/crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/post.rs`
 - 命名 SSOT：[NAMING_CONVENTIONS.md](../NAMING_CONVENTIONS.md) §1.2「后处理链」

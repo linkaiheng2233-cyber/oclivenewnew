@@ -37,7 +37,7 @@
 
 - `topic_weights` 的 **顶层键必须是场景 id**，且该场景须出现在以下至少一处：
   - `manifest.json` 顶层 **`scenes`** 数组，或
-  - `roles/{角色id}/scenes/` 下 **子目录名**（与 manifest 顶层 `scenes` 合并、去重后的场景 id 列表一致）。
+  - `distros/chat-pro/roles/{角色id}/scenes/` 下 **子目录名**（与 manifest 顶层 `scenes` 合并、去重后的场景 id 列表一致）。
 - 否则会加载失败，并返回 **中文错误说明**（便于修正 manifest）。
 
 ## 校验时机

@@ -93,7 +93,7 @@
 - **发版前勾选表（P0 子集）**：[../../handoff/PRODUCT_RELEASE_CHECKLIST.md](../../handoff/PRODUCT_RELEASE_CHECKLIST.md)  
 - 包版本：[PACK_VERSIONING.md](../role-pack/PACK_VERSIONING.md)  
 - 创作者工作流：[../getting-started/CREATOR_WORKFLOW.md](../getting-started/CREATOR_WORKFLOW.md)  
-- 角色包导入测试清单：[../../roles/TESTING_ROLE_PACK_IMPORT.md](../../roles/TESTING_ROLE_PACK_IMPORT.md)  
+- 角色包导入测试清单：[../../distros/chat-pro/roles/TESTING_ROLE_PACK_IMPORT.md](../../distros/chat-pro/roles/TESTING_ROLE_PACK_IMPORT.md)  
 
 ---
 

@@ -79,9 +79,9 @@ cd examples/oocp-test-suite && node run.mjs
 
 | Step | Work | Acceptance |
 |------|------|------------|
-| 2.1.1 | Add `crates/oclive_kernel_runtime` with minimal API (`KernelContext` or `AppState` subset for `process_message`) | `cargo test -p oclive_kernel_runtime` |
+| 2.1.1 | Add `kernel/crates/oclive_kernel_runtime` with minimal API (`KernelContext` or `AppState` subset for `process_message`) | `cargo test -p oclive_kernel_runtime` |
 | 2.1.2 | Move or re-export **non-Tauri** `domain/`, `models/`, repository traits | `src-tauri` becomes thin glue |
-| 2.1.3 | Add `crates/oclive_kernel_server` bin: HTTP entry reusing runtime | `cargo run -p oclive_kernel_server -- --api` |
+| 2.1.3 | Add `kernel/crates/oclive_kernel_server` bin: HTTP entry reusing runtime | `cargo run -p oclive_kernel_server -- --api` |
 | 2.1.4 | `src-tauri` depends on runtime; keep `--api` compatible | existing `http_api` tests pass |
 
 **Closeout (2026-05-15)**: Rows 2.1.1–2.1.4 are implemented; locally `cargo build -p oclivenewnew-tauri`, `cargo test -p oclive_kernel_runtime`, and `cargo test -p oclive-cli` passed. Ongoing bar: CI `oocp-test-suite` + the tests above.
@@ -109,7 +109,7 @@ cd examples/oocp-test-suite && node run.mjs
   - `settings.json`: explicit `plugin_backends` (six slots + optional extensions), `interaction_mode`, optional `remote_presence`
   - `core_personality.txt` or seven-dim `default_personality` (either/or)
 - [x] `oclive-cli pack validate --profile robot-soul`
-- [x] `examples/robot-soul-minimal/roles/default/`
+- [x] `examples/robot-soul-minimal/distros/chat-pro/roles/default/`
 
 ---
 

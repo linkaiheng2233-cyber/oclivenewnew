@@ -12,7 +12,7 @@
 |------|------------------|------|
 | **内核二进制** | **否（Deferred 裁剪）** | 各发行版 **自带 bundled 全量核**（spawn 首选）；**shared 兜底** 在 bundled 故障时接管。**不**默认「一颗全能核打天下」；`promote` / per-distro 裁剪 binary 等产品化见 [KERNEL_SCHEDULER_RESCOPE.md](../../handoff/KERNEL_SCHEDULER_RESCOPE.md) |
 | **`distro.oclive.toml`（HostProfile）** | **是** | 宿主策略：prompt / memory / post_process / `host_flags` / 可选 **`[plugin_backends]`** |
-| **默认角色包 + 蓝图 `slot_registry`** | **是** | 各发行版 bundled / 推荐的 `roles/*` 蓝图 tuned for 场景 |
+| **默认角色包 + 蓝图 `slot_registry`** | **是** | 各发行版 bundled / 推荐的 `distros/chat-pro/roles/*` 蓝图 tuned for 场景 |
 | **目录插件 / 独立通道能力增强模块** | **按需** | VS Code 渗透插件（宿主侧）、`reply_post_process` / **`theater_director`** 等；注册表 [RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md](../rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md) |
 
 **一句话**：**单进程** `:8420`；发行版差异来自 **`distro.oclive.toml`（含可选六槽整表替换）** + **默认角色蓝图** + **目录插件** — **不是**为每个发行版维护不同裁剪内核二进制（Deferred）。
@@ -28,7 +28,7 @@
 3. 若发行版声明 **`[plugin_backends]`**，则 **`profile_override`（实现名 `apply_host_ceiling`）用 profile 值整表替换六槽**（`directory_plugins` 仍取自角色包）；
 4. `host_flags.skip_agent = true` 强制 `agent = none`。
 
-见 [`host_backends.rs`](../../crates/oclive_kernel_host/src/state/host_backends.rs) 与单测 `apply_ceiling_replaces_role_backends`。
+见 [`host_backends.rs`](../../kernel/crates/oclive_kernel_host/src/state/host_backends.rs) 与单测 `apply_ceiling_replaces_role_backends`。
 
 **设计含义**：
 
@@ -78,7 +78,7 @@ flowchart TB
 | **`memory.retrieval`** | `default`（8 条） |
 | **`post_process.chain`** | `standard` |
 | **默认角色** | `mumu` + 仓库完整示例包 |
-| **bundled profile** | [`src-tauri/resources/distro-profiles/desktop.oclive.toml`](../../src-tauri/resources/distro-profiles/desktop.oclive.toml) · 示例镜像 [`examples/distro-profiles/desktop.oclive.toml`](../../examples/distro-profiles/desktop.oclive.toml) |
+| **bundled profile** | [`distros/desktop-tauri/resources/distro-profiles/desktop.oclive.toml`](../../distros/desktop-tauri/resources/distro-profiles/desktop.oclive.toml) · 示例镜像 [`examples/distro-profiles/desktop.oclive.toml`](../../examples/distro-profiles/desktop.oclive.toml) |
 
 ### 3.2 `vscode` — VS Code Flash（Pro 简洁版）
 
@@ -124,7 +124,7 @@ flowchart TB
 | **`host_flags`** | `skip_agent` · `skip_complex_emotion` |
 | **`prompt.profile`** | `concise` + 包级 `reply_quality_anchor` 锁场景 |
 | **默认卡司** | **mumu × 枫侵月**（四场景：早饭 / 超市 / 回家 / 睡前） |
-| **前端热路径** | [`useTheaterBeatPatch.ts`](../../src/composables/theater/theaterLogic.ts) patch 路径 **不经过**六槽；`theater_director` 经圈外 API |
+| **前端热路径** | [`useTheaterBeatPatch.ts`](../../distros/theater/distros/shared/src/composables/theater/theaterLogic.ts) patch 路径 **不经过**六槽；`theater_director` 经圈外 API |
 
 **Theater 有效六槽（profile + 蓝图对齐）**：
 
@@ -137,9 +137,9 @@ flowchart TB
 | llm | `ollama` | 本地 `qwen2.5:7b`（与 patch 默认一致） |
 | agent | `none` | 无工具链；`skip_agent` 双保险 |
 
-**蓝图改动**：官方剧场角色 [`roles/theater-breakfast-*/pipeline.ocblueprint`](../../roles/theater-breakfast-a/pipeline.ocblueprint) 的 `slot_registry` 与上表一致；`meta.ollama_model` / `reply_quality_anchor` 保留场景约束。
+**蓝图改动**：官方剧场角色 [`distros/chat-pro/roles/theater-breakfast-*/pipeline.ocblueprint`](../../distros/chat-pro/roles/theater-breakfast-a/pipeline.ocblueprint) 的 `slot_registry` 与上表一致；`meta.ollama_model` / `reply_quality_anchor` 保留场景约束。
 
-**独立通道（已交付）**：[`resolve_theater_director`](../../crates/oclive_kernel_host/src/domain/theater_director.rs) + 官方目录插件 `com.oclive.theater_director_official`（RPC `theater.build_prompt`）；不占六槽键，与 `reply_post_process` 同类 Resolver 模式。Fork 示例：[`examples/directory-plugin-theater-director-minimal/`](../../examples/directory-plugin-theater-director-minimal/)。
+**独立通道（已交付）**：[`resolve_theater_director`](../../kernel/crates/oclive_kernel_host/src/domain/theater_director.rs) + 官方目录插件 `com.oclive.theater_director_official`（RPC `theater.build_prompt`）；不占六槽键，与 `reply_post_process` 同类 Resolver 模式。Fork 示例：[`examples/directory-plugin-theater-director-minimal/`](../../examples/directory-plugin-theater-director-minimal/)。
 
 ---
 
@@ -161,14 +161,14 @@ flowchart TB
 
 ## 5. 默认角色包清单（推荐）
 
-| 发行版 | bundled / 推荐 `roles/` | 说明 |
+| 发行版 | bundled / 推荐 `distros/chat-pro/roles/` | 说明 |
 |--------|-------------------------|------|
 | `desktop`（**Chat Pro**） | `mumu`、其它官方示例 | Tauri 默认 spawn · open ceiling |
 | `desktop-chat`（**dev lab**） | 同上 | examples/ only · 非 Release hero |
 | `vscode`（**Flash**） | `mumu`（`scenes/vscode/`） | vscode-lite 契约 |
 | `theater`（**已交付**） | `mumu`、`枫侵月`（四场景 skeleton） | Theater 发行版 bundled；见 [`handoff/theater/`](../../handoff/theater/) |
 
-按发行版过滤 `roles/` 目录（安装包只带子集）— **T4 打包项**，当前 dev 树仍加载全 `roles/`。
+按发行版过滤 `distros/chat-pro/roles/` 目录（安装包只带子集）— **T4 打包项**，当前 dev 树仍加载全 `distros/chat-pro/roles/`。
 
 ---
 
@@ -179,7 +179,7 @@ flowchart TB
 | **P0** | 本文档 + profile / 剧场蓝图对齐（本 PR） |
 | **P1** | [`DEVELOPMENT_ROADMAP.md`](../../handoff/theater/DEVELOPMENT_ROADMAP.md) 模式 1 — **Done**（2026-06）；P0 陌生人验收 OPEN |
 | **P2** | VS Code profile 与姊妹仓 `distro.oclive.toml` 镜像 diff 自动化 |
-| **P3** | 安装包 `roles/` 子集 + 默认角色 manifest |
+| **P3** | 安装包 `distros/chat-pro/roles/` 子集 + 默认角色 manifest |
 | **Deferred** | 内核 promote / 裁剪 binary · `binary_upgrade` 产品化 · 模式 2/3 — 见 [MODE2_UNFREEZE.md](../../handoff/theater/MODE2_UNFREEZE.md) |
 
 ---

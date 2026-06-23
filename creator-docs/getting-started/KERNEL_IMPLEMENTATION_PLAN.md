@@ -80,9 +80,9 @@ cd examples/oocp-test-suite && node run.mjs
 
 | 步骤 | 内容 | 验收 |
 |------|------|------|
-| 2.1.1 | 新建 `crates/oclive_kernel_runtime`，先暴露 **最小 API**：`process_message` 所需 `AppState` 子集或 `KernelContext` | `cargo test -p oclive_kernel_runtime` |
+| 2.1.1 | 新建 `kernel/crates/oclive_kernel_runtime`，先暴露 **最小 API**：`process_message` 所需 `AppState` 子集或 `KernelContext` | `cargo test -p oclive_kernel_runtime` |
 | 2.1.2 | 将 `domain/`、`models/`、`infrastructure/repository` 等 **无 Tauri 依赖** 模块迁入或 `pub use` 转发 | `src-tauri` 仅薄包装 |
-| 2.1.3 | 新建 `crates/oclive_kernel_server`（bin）：`main` 启动 HTTP，复用 runtime | `cargo run -p oclive_kernel_server -- --api` |
+| 2.1.3 | 新建 `kernel/crates/oclive_kernel_server`（bin）：`main` 启动 HTTP，复用 runtime | `cargo run -p oclive_kernel_server -- --api` |
 | 2.1.4 | `src-tauri` 依赖 runtime；`--api` 可委托 server 或保留兼容一层 | 现有 `http_api` 测试仍绿 |
 
 **收口说明（2026-05-15）**：上表 2.1.1–2.1.4 已在工作区落地；本地已执行 `cargo build -p oclivenewnew-tauri`、`cargo test -p oclive_kernel_runtime`、`cargo test -p oclive-cli` 均通过。持续回归以 CI `oocp-test-suite` 与上述单测为准。
@@ -92,7 +92,7 @@ cd examples/oocp-test-suite && node run.mjs
 - [x] `init --kernel-source <path-to-oclivenewnew>` 写入 `Cargo.toml` path 依赖与示例 `main.rs`
 - [x] 生成 README 区分：**占位 init** vs **已接 runtime** 两种模式
 - [x] `bench` / `build` 对真实 runtime 工程可跑（Monolith 仍仅 `kernel_server`）
-- [x] **内核工厂（配方层）**：`init --template`（`robot-soul` / `headless-api` / `library-embed`）、`--with-role-pack`、`plugins/README.md` — 见 [KERNEL_FACTORY_VISION.md](KERNEL_FACTORY_VISION.md)
+- [x] **内核工厂（配方层）**：`init --template`（`robot-soul` / `headless-api` / `library-embed`）、`--with-role-pack`、`distros/chat-pro/plugins/README.md` — 见 [KERNEL_FACTORY_VISION.md](KERNEL_FACTORY_VISION.md)
 
 ### K2.3 不做的（控制范围）
 
@@ -111,7 +111,7 @@ cd examples/oocp-test-suite && node run.mjs
   - `settings.json`：`plugin_backends`（六槽显式 + 可选扩展键）、`interaction_mode`、`remote_presence`（可选）
   - `core_personality.txt` 或 `default_personality` 七维（二选一）
 - [x] `oclive-cli pack validate --profile robot-soul`
-- [x] `examples/robot-soul-minimal/roles/default/` 示例目录
+- [x] `examples/robot-soul-minimal/distros/chat-pro/roles/default/` 示例目录
 
 ---
 

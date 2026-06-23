@@ -6,7 +6,7 @@
 
 **目标读者**：仍使用 `manifest.json` + `settings.json` 的创作者。按本文操作，**约 10 分钟**可完成迁移与校验。
 
-**权威格式**：[ROLE_PACK_SPEC.md](ROLE_PACK_SPEC.md) · 校验实现：`crates/oclive_validation`。
+**权威格式**：[ROLE_PACK_SPEC.md](ROLE_PACK_SPEC.md) · 校验实现：`kernel/crates/oclive_validation`。
 
 [English](../../creator-docs-en/role-pack/V1_TO_V2_MIGRATION.md)
 
@@ -106,7 +106,7 @@ cargo run -p oclive-cli -- pack validate roles\my_role
 
 **编写器**：打开包 →「运行全部检查」。**主应用**：设置页环境自检 → 加载角色 → 试聊一条。
 
-**参考样例**：仓库内 `roles/mumu/`（仅 `pipeline.ocblueprint`，无 legacy 双文件）。
+**参考样例**：仓库内 `distros/chat-pro/roles/mumu/`（仅 `pipeline.ocblueprint`，无 legacy 双文件）。
 
 ---
 

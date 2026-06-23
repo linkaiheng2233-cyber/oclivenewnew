@@ -10,7 +10,7 @@
 **角色包**是应用从磁盘加载的一个文件夹，路径形如：
 
 ```text
-roles/<角色 id>/
+distros/chat-pro/roles/<角色 id>/
 ```
 
 其中 `<角色 id>` 必须与 `manifest.json` 顶层的 **`id`** 一致，且建议使用**稳定的小写英文**（可含数字、下划线），避免随意改名，以免与存档、导入导出路径冲突。
@@ -20,7 +20,7 @@ roles/<角色 id>/
 ## 2. 推荐目录结构
 
 ```text
-roles/<角色 id>/
+distros/chat-pro/roles/<角色 id>/
 ├── manifest.json           # 必填：角色元数据、用户身份、场景列表、记忆策略等
 ├── core_personality.txt    # 强烈建议：核心性格档案（包内长文），供主模型阅读；运行时不可由模型改写
 ├── config.json             # 可选：虚拟时间等
@@ -93,7 +93,7 @@ roles/<角色 id>/
 
 ### 3.5 `evolution`（可选）
 
-与事件影响、**人格来源**（`personality_source`）、可变档案更新步长（`max_change_per_event`）等相关；可按作品节奏调整，缺省亦有合理默认。摘要见 [roles/README_MANIFEST.md](../../roles/README_MANIFEST.md) §5.3。
+与事件影响、**人格来源**（`personality_source`）、可变档案更新步长（`max_change_per_event`）等相关；可按作品节奏调整，缺省亦有合理默认。摘要见 [distros/chat-pro/roles/README_MANIFEST.md](../../distros/chat-pro/roles/README_MANIFEST.md) §5.3。
 
 ---
 
@@ -112,7 +112,7 @@ roles/<角色 id>/
 
 ## 6. 创作者工作流建议
 
-1. 新建 `roles/<你的角色 id>/`，先写好 **`manifest.json`** 的 `id`、`name`、`user_relations`、`default_relation`。  
+1. 新建 `distros/chat-pro/roles/<你的角色 id>/`，先写好 **`manifest.json`** 的 `id`、`name`、`user_relations`、`default_relation`。  
 2. 为每个身份写好 **`display_name`** 与 **`prompt_hint`**，并设好 **`initial_favorability`** 与 **`favor_multiplier`**。  
 3. 配置 **`scenes`** 与 `scenes/<scene_id>/`，需要时再填 **`topic_weights`**。  
 4. 撰写 **`core_personality.txt`**（核心性格档案），与身份设定对齐；若使用 **`profile`** 人格来源，在 `settings.json` 的 **`evolution`** 中配置 `max_change_per_event` 等，勿尝试在包内手写运行时可变档案。  

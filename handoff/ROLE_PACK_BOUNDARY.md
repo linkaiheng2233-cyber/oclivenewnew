@@ -19,7 +19,7 @@
 | **角色包** | 角色身份、人格、关系、提示词与场景**内容** | **初级创作者** |
 | **蓝图** | 槽位实例、后端路由、模型名、交互/记忆/远程策略、双核开关等**系统配置** | **高级开发者 / 宿主管理员** |
 
-**物理落盘（今日）**：v2 仍以 **`roles/{id}/pipeline.ocblueprint`** 为宿主加载入口（`meta` + `slot_registry` + 可选 `groups`）。**逻辑上**分责；外置片段、专家修订与说明放入 **`roles/{id}/blueprint/`**，经本体 **`includes`** 拉取合并（见 [BLUEPRINT_FOLDER_LAYOUT.md](./BLUEPRINT_FOLDER_LAYOUT.md)），**禁止**把长文与向导结果搅进蓝图 JSON。编写器 / CLI 应按角色分视图编辑，避免初级创作者改 `slot_registry`。
+**物理落盘（今日）**：v2 仍以 **`distros/chat-pro/roles/{id}/pipeline.ocblueprint`** 为宿主加载入口（`meta` + `slot_registry` + 可选 `groups`）。**逻辑上**分责；外置片段、专家修订与说明放入 **`distros/chat-pro/roles/{id}/blueprint/`**，经本体 **`includes`** 拉取合并（见 [BLUEPRINT_FOLDER_LAYOUT.md](./BLUEPRINT_FOLDER_LAYOUT.md)），**禁止**把长文与向导结果搅进蓝图 JSON。编写器 / CLI 应按角色分视图编辑，避免初级创作者改 `slot_registry`。
 
 **legacy**：`manifest.json` + `settings.json` 已废弃，**不得**与 v2 蓝图并存；引擎字段应视为**蓝图侧**，非「角色门面」。
 
@@ -129,7 +129,7 @@ v2 文件若含 `runtime_config`：`pack validate` **警告并忽略**；请升 
 | 引擎字段 | 多在 `meta.*` | 顶层 **`runtime_config`**（v3 草案） |
 | CLI | `pack validate` 全量 v2/v3 | **`--profile creator`** 已实现（§2 子集 + `prompts/`；**不**校验 `slot_registry` / `pipeline`） |
 
-**`--profile creator` 与完整示例包**：`roles/mumu` 等**完整示例包**含 evolution、`slot_registry` 与引擎向字段，应用**默认** `pack validate`（全量 v2/v3）。对 **`--profile creator`** 会失败 — **不是 bug**，说明该包超出「纯创作者子集」。验证 creator profile 请用 `pack create` 生成的最小包或仅含 §2 字段的包。
+**`--profile creator` 与完整示例包**：`distros/chat-pro/roles/mumu` 等**完整示例包**含 evolution、`slot_registry` 与引擎向字段，应用**默认** `pack validate`（全量 v2/v3）。对 **`--profile creator`** 会失败 — **不是 bug**，说明该包超出「纯创作者子集」。验证 creator profile 请用 `pack create` 生成的最小包或仅含 §2 字段的包。
 | 编写器 | 全字段编辑 | 默认「角色」视图 / 高级「蓝图」视图 |
 
 **v2 与 v3 并存**：`schema_version: 3` 不自动升级 v2 包（见 [DUAL_CORE_CURSOR_HANDOFF.md](DUAL_CORE_CURSOR_HANDOFF.md) Q10）。
@@ -164,7 +164,7 @@ v2 文件若含 `runtime_config`：`pack validate` **警告并忽略**；请升 
 ## 6. 加载链（供 Bus factor）
 
 ```text
-roles/{id}/pipeline.ocblueprint
+distros/chat-pro/roles/{id}/pipeline.ocblueprint
   ├─ meta（创作者子集 + 过渡期引擎字段）
   ├─ runtime_config（目标：系统配置 SSOT）
   ├─ slot_registry（蓝图）

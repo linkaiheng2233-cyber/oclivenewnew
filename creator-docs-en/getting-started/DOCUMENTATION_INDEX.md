@@ -91,7 +91,7 @@ Time-boxed “start here → ship”; **authoritative detail stays in each topic
 | **Role pack disk layout, multi-distro alignment, `oclive pack validate`** | **[../role-pack/ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)** |
 | **Blueprint v2 (`pipeline.ocblueprint` · P0–P8 closed)** | **[../../handoff/RFC_ROLE_BLUEPRINT_V2.md](../../handoff/RFC_ROLE_BLUEPRINT_V2.md)** · **[../../handoff/BLUEPRINT_V2_IMPLEMENTATION_PLAN.md](../../handoff/BLUEPRINT_V2_IMPLEMENTATION_PLAN.md)** · **[../../handoff/BLUEPRINT_V2_DECISIONS.md](../../handoff/BLUEPRINT_V2_DECISIONS.md)** |
 | **Community role pack index JSON** | **[../role-pack/ROLE_PACK_INDEX.md](../role-pack/ROLE_PACK_INDEX.md)** |
-| **Directory process plugins** (`plugins/`, manifest, whole-shell, `directory_plugin_invoke`, dev mode; **plugin manager** `Ctrl+Shift+F`, enable/disable/reorder/local zip) | **[../plugin-and-architecture/DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md)** |
+| **Directory process plugins** (`distros/chat-pro/plugins/`, manifest, whole-shell, `directory_plugin_invoke`, dev mode; **plugin manager** `Ctrl+Shift+F`, enable/disable/reorder/local zip) | **[../plugin-and-architecture/DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md)** |
 | **Bridge `invoke` table, permission aliases, error codes** | **[../plugin-and-architecture/BRIDGE_API_REFERENCE.md](../plugin-and-architecture/BRIDGE_API_REFERENCE.md)** |
 | **Config file locations** | **[../guides/CONFIGURATION_FILES.md](../guides/CONFIGURATION_FILES.md)** |
 | **Chat storage architecture** (v3 pluggable backends + memory replay + capability UI) | **[../../handoff/CHAT_STORAGE_ARCHITECTURE.md](../../handoff/CHAT_STORAGE_ARCHITECTURE.md)** · selection **[../storage/STORAGE_BACKEND_GUIDE.md](../storage/STORAGE_BACKEND_GUIDE.md)** |
@@ -102,7 +102,7 @@ Time-boxed “start here → ship”; **authoritative detail stays in each topic
 | **Editor vs host compatibility (A5 one-pager, EN/ZH)** | **[../COMPATIBILITY.md](../COMPATIBILITY.md)** (Chinese source [../../creator-docs/COMPATIBILITY.md](../../creator-docs/COMPATIBILITY.md)); closure [`../../handoff/A5_CLOSURE_SUMMARY.md`](../../handoff/A5_CLOSURE_SUMMARY.md) |
 | **`memory = local`, `_local_plugins`, bridge spec** | **[../plugin-and-architecture/LOCAL_PLUGIN_BRIDGE_SPEC.md](../plugin-and-architecture/LOCAL_PLUGIN_BRIDGE_SPEC.md)** |
 | **Add a new built-in backend in Rust** | **[../plugin-and-architecture/HOW_TO_REPLACE_MODULES.md](../plugin-and-architecture/HOW_TO_REPLACE_MODULES.md)** |
-| **Author pack content only** | **[CREATOR_WORKFLOW.md](CREATOR_WORKFLOW.md)**, [roles/README_MANIFEST.md](../../roles/README_MANIFEST.md), import checklist [roles/TESTING_ROLE_PACK_IMPORT.md](../../roles/TESTING_ROLE_PACK_IMPORT.md) |
+| **Author pack content only** | **[CREATOR_WORKFLOW.md](CREATOR_WORKFLOW.md)**, [distros/chat-pro/roles/README_MANIFEST.md](../../distros/chat-pro/roles/README_MANIFEST.md), import checklist [distros/chat-pro/roles/TESTING_ROLE_PACK_IMPORT.md](../../distros/chat-pro/roles/TESTING_ROLE_PACK_IMPORT.md) |
 | **Core / mutable personality archives, `personality_source`** | **[../../docs/personality-archive-notes.md](../../docs/personality-archive-notes.md)** |
 | **Design evolution (seven-dim vs archive axis)** | **[../../docs/design-axis-evolution.md](../../docs/design-axis-evolution.md)** |
 | **Editor validation roadmap** | **[../../creator-docs/role-pack/EDITOR_VALIDATION_ROADMAP.md](../../creator-docs/role-pack/EDITOR_VALIDATION_ROADMAP.md)** |
@@ -156,8 +156,8 @@ Architecture-level design converges in RFCs (**drafts do not imply merged code o
 
 1. [EXTENSION_POINTS.md](../plugin-and-architecture/EXTENSION_POINTS.md)  
 2. [HOW_TO_REPLACE_MODULES.md](../plugin-and-architecture/HOW_TO_REPLACE_MODULES.md)  
-3. Source: `crates/oclive_kernel_host/src/domain/ports/plugin_host.rs`, `src-tauri/src/infrastructure/remote_plugin/`, **`src-tauri/src/infrastructure/directory_plugins/`**  
-4. Integration smoke: [`src-tauri/tests/plugin_backends_v2_resolve.rs`](../../src-tauri/tests/plugin_backends_v2_resolve.rs) (`cargo test --test plugin_backends_v2_resolve`)
+3. Source: `kernel/crates/oclive_kernel_host/src/domain/ports/plugin_host.rs`, `kernel/crates/oclive_kernel_host/src/infrastructure/remote_plugin/`, **`kernel/crates/oclive_kernel_host/src/infrastructure/directory_plugins/`**  
+4. Integration smoke: [`distros/desktop-tauri/tests/plugin_backends_v2_resolve.rs`](../../distros/desktop-tauri/tests/plugin_backends_v2_resolve.rs) (`cargo test --test plugin_backends_v2_resolve`)
 
 ---
 

@@ -10,7 +10,7 @@ Audience: users and developers. Goal: **self-serve first**, then file a high-qua
 
 On `POST /chat` failures, JSON uses **`error` = `KernelErrorBody`** (same fields as the JSON string Tauri `invoke` may return):
 
-- `code`: **`SCREAMING_SNAKE_CASE`**, aligned with [`AppError::code`](../../crates/oclive_kernel_runtime/src/error.rs).
+- `code`: **`SCREAMING_SNAKE_CASE`**, aligned with [`AppError::code`](../../kernel/crates/oclive_kernel_runtime/src/error.rs).
 - `message`: kernel `Display` (default English technical text); shells localize via `code`.
 - `hint`: optional next step; HTTP may attach extra hints for editor try-chat.
 
@@ -59,7 +59,7 @@ Example:
 <!-- code:UNKNOWN_ERROR -->
 | `UNKNOWN_ERROR` | Unclassified internal error | Catch-all | File issue with logs; UI may show `UNKNOWN_WITH_CODE` |
 
-**Transactions**: [`AppError::TransactionError`](../../crates/oclive_kernel_runtime/src/error.rs) uses a **dynamic** `code` string; not listed above. `oclive explain` covers static `AppError` variants and HTTP supplement codes only.
+**Transactions**: [`AppError::TransactionError`](../../kernel/crates/oclive_kernel_runtime/src/error.rs) uses a **dynamic** `code` string; not listed above. `oclive explain` covers static `AppError` variants and HTTP supplement codes only.
 
 ### 1.5) First install: Ollama and role paths (subset)
 

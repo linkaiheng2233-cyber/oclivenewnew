@@ -59,7 +59,7 @@
 ### 4.1 场景
 - **两个角色吃早饭、准备上学。**
 - 场景足够日常、足够简单 → **变量本身就是分叉，无需写 if 线**。零认知负担，适合陌生人头 60 秒。
-- 角色包与场景资产 **从 0 在本目录规划后** 再落入 `roles/`（旧 `theater-breakfast-*` 已清理）。
+- 角色包与场景资产 **从 0 在本目录规划后** 再落入 `distros/chat-pro/roles/`（旧 `theater-breakfast-*` 已清理）。
 
 ### 4.2 魔法的来源：两个"反差极大"的角色
 - **舞台越简单，注意力越聚焦在角色反应上。卧槽 100% 住在这两个角色身上。**
@@ -131,7 +131,7 @@
 - theater 发行版打包、目录插件、UI 差分
 - 模式 1 预生成骨架与局部补丁
 - **场景导演（专用命令）**：`generate_theater_scene` / `POST /theater/scene`（`oclive_kernel_host::domain::theater::scene_director`）——一次 LLM 调用结构化重写整场 JSON beats；走 `AppState::llm` 与已配置模型，**非** `process_message` stage、**非**六槽
-- **场景导演 prompt 独立通道（已交付）**：[`resolve_theater_director`](../../crates/oclive_kernel_host/src/domain/theater_director.rs) + 官方 directory 插件 `com.oclive.theater_director_official`（`theater.build_prompt`）；profile `[theater].director_plugin` · env `OCLIVE_THEATER_DIRECTOR_PLUGIN`；RPC 失败自动 fallback 内置模板
+- **场景导演 prompt 独立通道（已交付）**：[`resolve_theater_director`](../../kernel/crates/oclive_kernel_host/src/domain/theater_director.rs) + 官方 directory 插件 `com.oclive.theater_director_official`（`theater.build_prompt`）；profile `[theater].director_plugin` · env `OCLIVE_THEATER_DIRECTOR_PLUGIN`；RPC 失败自动 fallback 内置模板
 - **重演（混合 B，已 superseded）**：旧前端 `send_message`+正则局部补丁路径已由场景导演替代；保留 `buildWorkingScript` 作 fallback 罐头
 
 **推迟到模式 3**：自由双角色来回、N cast 泛化、内核级双核编排与六槽后端模块定制。
@@ -148,9 +148,9 @@
 
 ### Prompt pack v0.2 · 戏剧性纪律 · 插件 SSOT（2026-06）
 
-- **创作面**：[`plugins/com.oclive.theater_director_official/prompts/`](../../plugins/com.oclive.theater_director_official/prompts/) — `drama_guardrails.mjs` + `modes/*`；`mode=patch` 为戳 chip 主路径（标题「剧场即兴 · 戏剧性补丁」）。
-- **替换**：Fork 插件 → 改 `prompts/` → `{app_data}/plugins/<id>/` + `[theater].director_plugin` 或 `OCLIVE_THEATER_DIRECTOR_PLUGIN`（**无**剧场设置 UI 选包）。
-- **Rust fallback**：仅 RPC 失败；同步清单见官方插件 [`README.md`](../../plugins/com.oclive.theater_director_official/README.md)；drift 烟测 `node scripts/theater-prompt-drift.mjs`。
+- **创作面**：[`distros/chat-pro/plugins/com.oclive.theater_director_official/prompts/`](../../distros/chat-pro/plugins/com.oclive.theater_director_official/prompts/) — `drama_guardrails.mjs` + `modes/*`；`mode=patch` 为戳 chip 主路径（标题「剧场即兴 · 戏剧性补丁」）。
+- **替换**：Fork 插件 → 改 `prompts/` → `{app_data}/distros/chat-pro/plugins/<id>/` + `[theater].director_plugin` 或 `OCLIVE_THEATER_DIRECTOR_PLUGIN`（**无**剧场设置 UI 选包）。
+- **Rust fallback**：仅 RPC 失败；同步清单见官方插件 [`README.md`](../../distros/chat-pro/plugins/com.oclive.theater_director_official/README.md)；drift 烟测 `node scripts/theater-prompt-drift.mjs`。
 - **人工验收矩阵**：[`PLAYTEST_MATRIX.md`](PLAYTEST_MATRIX.md)（四场景 × 代表 chip + playtest 笔记模板）。
 
 ---
@@ -180,11 +180,11 @@
 
 | 项 | 落点 | 状态 |
 |----|------|------|
-| Profile 接入 | `examples/distro-profiles/theater.oclive.toml` · `src-tauri/resources/distro-profiles/` | **Done** |
-| 双角色 + 四场景 | `src/composables/theater/theaterSceneCatalog.ts` · mumu × 枫侵月 | **Done** |
+| Profile 接入 | `examples/distro-profiles/theater.oclive.toml` · `distros/desktop-tauri/resources/distro-profiles/` | **Done** |
+| 双角色 + 四场景 | `distros/theater/distros/shared/src/composables/theater/theaterSceneCatalog.ts` · mumu × 枫侵月 | **Done** |
 | 本地启动 / 打包 | `npm run tauri:dev:theater` · `npm run tauri:build:theater` | **Done** |
-| 场景导演插件 | `plugins/com.oclive.theater_director_official/` · `resolve_theater_director` | **Done** |
-| TheaterShell 前端 | `src/shells/theater/` · `TheaterShell` | **Done** |
+| 场景导演插件 | `distros/chat-pro/plugins/com.oclive.theater_director_official/` · `resolve_theater_director` | **Done** |
+| TheaterShell 前端 | `distros/theater/src/shells/theater/` · `TheaterShell` | **Done** |
 
 ---
 

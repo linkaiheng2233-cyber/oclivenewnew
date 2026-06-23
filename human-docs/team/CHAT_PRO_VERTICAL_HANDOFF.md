@@ -12,7 +12,7 @@
 |----|------|
 | 仓库 URL / 分支 | |
 | 本地路径示例 | `D:\oclivenewnew` |
-| 演示角色包 | `roles/mumu`（或 `roles/demo-doll`） |
+| 演示角色包 | `distros/chat-pro/roles/mumu`（或 `distros/chat-pro/roles/demo-doll`） |
 | 组长 / 联调联系人 | |
 | 周会时间 | |
 | Ollama 模型（若用） | 例：`hermes3:3b` |
@@ -53,11 +53,11 @@
 
 | 轨道 | 负责人 | 文档 | 代码工作区（仅这些） |
 |------|--------|------|----------------------|
-| **视觉升级** | 成员 A | [TRACK_VISUAL_UPGRADE.md](./TRACK_VISUAL_UPGRADE.md) | `src/components/visual/` · Shell · `roles/demo-doll/` |
+| **视觉升级** | 成员 A | [TRACK_VISUAL_UPGRADE.md](./TRACK_VISUAL_UPGRADE.md) | `distros/shared/src/components/visual/` · Shell · `distros/chat-pro/roles/demo-doll/` |
 | **语音识别** | 成员 B | [TRACK_VOICE_RECOGNITION.md](./TRACK_VOICE_RECOGNITION.md) | **`examples/voice-loop-minimal/`** |
-| **延迟 / Chat Pro stream UI** | **组长**（本 sprint 默认） | 见下方说明 | `src/api/chatStream.ts` · `chatStoreSend.ts`（待建） |
+| **延迟 / Chat Pro stream UI** | **组长**（本 sprint 默认） | 见下方说明 | `distros/shared/src/api/chatStream.ts` · `chatStoreSend.ts`（待建） |
 
-**两人都不需要：** 改 `crates/oclive_kernel_host`、读 `process_message` 全流程、碰六槽/迁移/SQL。
+**两人都不需要：** 改 `kernel/crates/oclive_kernel_host`、读 `process_message` 全流程、碰六槽/迁移/SQL。
 
 **并行关系：**
 
@@ -117,7 +117,7 @@ curl.exe -s http://127.0.0.1:8420/health
 
 ```powershell
 $body = @{
-  role_path = "D:/oclivenewnew/roles/mumu"
+  role_path = "D:/oclivenewnew/distros/chat-pro/roles/mumu"
   message   = "hello"
   scene_id  = "default"
 } | ConvertTo-Json -Compress
@@ -134,8 +134,8 @@ Invoke-RestMethod -Uri "http://127.0.0.1:8420/chat" -Method POST -Body $body -Co
 | 规则 | 说明 |
 |------|------|
 | 回复字段 | **`reply`**，禁止自造 `response` |
-| 工作区 | 视觉不动 `examples/voice-*`；语音不动 `src/` |
-| 内核 | 本 sprint **不改** `process_message.rs` / `crates/oclive_kernel_host` |
+| 工作区 | 视觉不动 `examples/voice-*`；语音不动 `distros/` 前端 |
+| 内核 | 本 sprint **不改** `process_message.rs` / `kernel/crates/oclive_kernel_host` |
 | ASR/TTS | **不进**六槽；只在 `examples/voice-loop-minimal` |
 | Live2D | 勿把 Cubism 打进默认 CI |
 
@@ -178,10 +178,10 @@ invoke camelCase 等细节：视觉同学读 [paths/frontend.md](../paths/fronte
 
 | 谁 | 改了什么 | PR 前命令 |
 |----|----------|-----------|
-| **视觉** | 仅 `src/` | `npm run test:unit` · `npm run build` |
-| **视觉** | 含 `src-tauri/` | 上项 + `cargo test -p oclivenewnew-tauri --lib` |
+| **视觉** | 仅 `distros/` 前端 | `npm run test:unit` · `npm run build` |
+| **视觉** | 含 `distros/desktop-tauri/` | 上项 + `cargo test -p oclivenewnew-tauri --lib` |
 | **语音** | 仅 `examples/voice-loop-minimal/` | README 验收步骤 + `python loop.py` 手测 |
-| **任何人** | 含 `crates/*` | **本 sprint 需组长批准** + `npm run check:release` |
+| **任何人** | 含 `kernel/crates/*` | **本 sprint 需组长批准** + `npm run check:release` |
 
 越界文件见 [SCOPE_AND_BOUNDARIES.md §5](./SCOPE_AND_BOUNDARIES.md)。
 
@@ -208,7 +208,7 @@ invoke camelCase 等细节：视觉同学读 [paths/frontend.md](../paths/fronte
 A：**不需要。** 按 [SCOPE_AND_BOUNDARIES.md](./SCOPE_AND_BOUNDARIES.md) 只改白名单目录；内核是 `:8420` 上的 API。
 
 **Q：我们要改内核吗？**  
-A：本 sprint **默认不改** 层 1（`crates/oclive_kernel_host`）。视觉 = 层 3 UI；语音 = 层 3 `examples/`。
+A：本 sprint **默认不改** 层 1（`kernel/crates/oclive_kernel_host`）。视觉 = 层 3 UI；语音 = 层 3 `examples/`。
 
 **Q：Chat Pro 和玩偶固件是什么关系？**  
 A：同一套 HTTP API。玩偶上可 **没有 Vue**，只跑 `oclive-kernel-server` + 你们中控；Chat Pro 是联调与演示壳。

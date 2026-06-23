@@ -8,7 +8,7 @@ This page is for **external disclosure**: Release **binary size sampling**, what
 
 Figures below are copied from **[`LIGHTWEIGHT_PROFILE.md`](../LIGHTWEIGHT_PROFILE.md) §6.7** (**Windows x86_64**, **Release**, sampled **2026-05-20**; `cargo bloat --release -n 8`, `oclivenewnew-tauri.exe`; external `target-dir` per repo config).
 
-**v2 blueprint packs** (e.g. `roles/mumu/pipeline.ocblueprint`): the chat hot path remains `process_message` → `co_present`; no extra blueprint `steps[]` scheduler. Binary size is in the same ballpark as legacy twin-file packs.
+**v2 blueprint packs** (e.g. `distros/chat-pro/roles/mumu/pipeline.ocblueprint`): the chat hot path remains `process_message` → `co_present`; no extra blueprint `steps[]` scheduler. Binary size is in the same ballpark as legacy twin-file packs.
 
 | Metric | Value |
 |--------|--------|
@@ -41,7 +41,7 @@ cargo run -p oclive-cli -- bench --release -o /path/to/kernel-project --json
 ```
 
 - **`--save`** / **`--compare`**: append/compare **`bench_history.json`** at the project root (local only; do not commit).  
-- **JSON Schema**: **`crates/oclive-cli/schemas/oclive_bench_report.schema.json`**.  
+- **JSON Schema**: **`kernel/crates/oclive-cli/schemas/oclive_bench_report.schema.json`**.  
 - **CI**: `.github/workflows/ci.yml` includes a lightweight **`cli-bench`** job (smoke; no perf threshold).
 
 ---

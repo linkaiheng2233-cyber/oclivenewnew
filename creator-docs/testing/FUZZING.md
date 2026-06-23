@@ -49,7 +49,7 @@ CI **`fuzz`** job 在 proptest 之后会尝试 **256 轮** libFuzzer 冒烟（`c
 
 ## 复现崩溃
 
-1. libFuzzer 会在 `fuzz/artifacts/<target>/` 留下最小输入。
+1. libFuzzer 会在 `kernel/fuzz/artifacts/<target>/` 留下最小输入。
 2. 将字节写入文件后：`cargo test -p oclive_validation --test proptest_fuzz_parsing -- --exact <case>` 或单元测试夹具。
 
 ## 与 `oclive test` 的关系

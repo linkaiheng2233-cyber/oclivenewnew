@@ -8,7 +8,7 @@ Key trade-offs distilled for contributors and host integrators. Layering rules: 
 
 | Decision | Rationale |
 |----------|-----------|
-| **No executable DSL from `pipeline.ocblueprint`** | Keeps on-disk flow and [`process_message`](../../crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs) / [`co_present`](../../crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/mod.rs) **in sync**; blueprint supplies `slot_registry` / `groups` only. |
+| **No executable DSL from `pipeline.ocblueprint`** | Keeps on-disk flow and [`process_message`](../../kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs) / [`co_present`](../../kernel/crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/mod.rs) **in sync**; blueprint supplies `slot_registry` / `groups` only. |
 
 ---
 
@@ -16,7 +16,7 @@ Key trade-offs distilled for contributors and host integrators. Layering rules: 
 
 | Decision | Rationale |
 |----------|-----------|
-| **Ports live in contracts crate** | Hosts (desktop, headless, embedded) share the same abstractions; `src-tauri/domain/ports/` re-exports only. |
+| **Ports live in contracts crate** | Hosts (desktop, headless, embedded) share the same abstractions; `distros/desktop-tauri/domain/ports/` re-exports only. |
 
 ---
 
@@ -45,7 +45,7 @@ Key trade-offs distilled for contributors and host integrators. Layering rules: 
 | emotion / event / prompt / complex_emotion | Serial last-wins | State / final text semantics |
 | agent (directory) | Merged in `PluginHost` | Combine tool sets when plugins are independent |
 
-See [`slot_runner.rs`](../../crates/oclive_kernel_host/src/domain/slot_runner.rs).
+See [`slot_runner.rs`](../../kernel/crates/oclive_kernel_host/src/domain/slot_runner.rs).
 
 ---
 
@@ -63,7 +63,7 @@ See [`slot_runner.rs`](../../crates/oclive_kernel_host/src/domain/slot_runner.rs
 pipeline.ocblueprint → validate → Role.slot_registry → PluginHost → SlotResolver → SlotRunner
 ```
 
-See [`storage.rs`](../../src-tauri/src/infrastructure/storage.rs) module docs.
+See [`storage.rs`](../../kernel/crates/oclive_kernel_host/src/infrastructure/storage.rs) module docs.
 
 ---
 

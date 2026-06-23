@@ -1,6 +1,6 @@
 # mumu 前端模块验收清单
 
-用于发版前快速确认 `roles/mumu/ui.json` 推荐布局与目录插件状态是否可用。
+用于发版前快速确认 `distros/chat-pro/roles/mumu/ui.json` 推荐布局与目录插件状态是否可用。
 
 ---
 
@@ -39,5 +39,5 @@
 
 ## 4) 发版建议
 
-- 导出角色包前，确认 `roles/mumu/ui.json` 的 `slots` 配置包含上述 5 个插件 ID。
+- 导出角色包前，确认 `distros/chat-pro/roles/mumu/ui.json` 的 `slots` 配置包含上述 5 个插件 ID。
 - 如调整了模块文案或视觉，请同步更新 `creator-docs/FAQ.md` 对应说明。

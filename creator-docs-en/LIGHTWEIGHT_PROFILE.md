@@ -1,6 +1,6 @@
 # Lightweight profile and supply-chain baseline (LIGHTWEIGHT_PROFILE)
 
-This document records **Release settings, dependency slimming, audits, and binary size baselines**, aligned with root `Cargo.toml` / `src-tauri/Cargo.lock`. Audience: maintainers and release owners.
+This document records **Release settings, dependency slimming, audits, and binary size baselines**, aligned with root `Cargo.toml` / `distros/desktop-tauri/Cargo.lock`. Audience: maintainers and release owners.
 
 **Related**: known vulns and upgrade path in **[security/KNOWN_VULNERABILITIES.md](../creator-docs/security/KNOWN_VULNERABILITIES.md)**; audit scope boundaries in **[security/SECURITY_AUDIT_SCOPE.md](../creator-docs/security/SECURITY_AUDIT_SCOPE.md)** (complements this doc §6.4).
 
@@ -31,7 +31,7 @@ This document records **Release settings, dependency slimming, audits, and binar
 
 **Known vulnerabilities under tracking**; **do not claim zero vulns**. Vulnerability-level hits and roadmap: **[KNOWN_VULNERABILITIES.md](../creator-docs/security/KNOWN_VULNERABILITIES.md)** (see that file for last update date).
 
-Summary (**2026-05-12**, `cargo audit --no-fetch --stale`, `src-tauri/Cargo.lock`; matches that CLI run):
+Summary (**2026-05-12**, `cargo audit --no-fetch --stale`, `distros/desktop-tauri/Cargo.lock`; matches that CLI run):
 
 - **Vulnerability level (error)**: **5** (`rsa`, `rustls-webpki` ×3 advisories, `sqlx`).
 - **Warning level (warning)**: **17** (includes gtk-rs *unmaintained*, `rustls-pemfile` *unmaintained*, `glib` *unsound*, etc.); **not** listed in the KNOWN table, but release review should read full `cargo audit` output.
@@ -42,10 +42,10 @@ CI: `.github/workflows/ci.yml` **`cargo-audit`** job uses **`continue-on-error: 
 
 | Item | Status |
 |------|--------|
-| **`sqlx` default features** | Current `src-tauri/Cargo.toml` uses **`sqlx = { version = "0.7", features = [...] }`** explicit list; if the lockfile still contains **`sqlx-mysql` / `sqlx-postgres`**, it is often from **macros / compile-time** or historical resolution—**mid-term** should combine **sqlx 0.8+** and **sqlite-only** features for another trim pass. |
+| **`sqlx` default features** | Current `distros/desktop-tauri/Cargo.toml` uses **`sqlx = { version = "0.7", features = [...] }`** explicit list; if the lockfile still contains **`sqlx-mysql` / `sqlx-postgres`**, it is often from **macros / compile-time** or historical resolution—**mid-term** should combine **sqlx 0.8+** and **sqlite-only** features for another trim pass. |
 | **Dev-only / tooling deps** | Periodically check with `cargo machete` / `cargo udeps` (optional); never remove without full `cargo test` green. |
 
-> Historical lists of removed deps are **not** kept here permanently; use `git log -p -- src-tauri/Cargo.toml`.
+> Historical lists of removed deps are **not** kept here permanently; use `git log -p -- distros/desktop-tauri/Cargo.toml`.
 
 ### §6.6 Duplicate dependency review (`cargo tree -d`)
 

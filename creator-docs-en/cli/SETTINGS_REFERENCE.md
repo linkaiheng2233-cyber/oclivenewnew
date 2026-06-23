@@ -38,8 +38,8 @@ On **schema_version 2**, `runtime_config` triggers a **pack validate warning** a
 
 This document describes configuration semantics shared by the **desktop host (Tauri)** and **`oclive-cli` scaffolds**. Single sources of truth remain code:
 
-- Enums and structs: [`src-tauri/src/models/plugin_backends.rs`](../../src-tauri/src/models/plugin_backends.rs)
-- Resolution and binding: [`crates/oclive_kernel_host/src/domain/ports/plugin_host.rs`](../../crates/oclive_kernel_host/src/domain/ports/plugin_host.rs)
+- Enums and structs: [`kernel/crates/oclive_kernel_types/src/models/plugin_backends.rs`](../../kernel/crates/oclive_kernel_types/src/models/plugin_backends.rs)
+- Resolution and binding: [`kernel/crates/oclive_kernel_host/src/domain/ports/plugin_host.rs`](../../kernel/crates/oclive_kernel_host/src/domain/ports/plugin_host.rs)
 - Protocol and tables: [`creator-docs/plugin-and-architecture/PLUGIN_V1.md`](../plugin-and-architecture/PLUGIN_V1.md)
 
 **Standard JSON has no comments**: use **`_`-prefixed keys** for prose (ignored at load), or out-of-pack docs. `oclive-cli` sample packs use `_comment_*` keys per slot.
@@ -52,12 +52,12 @@ The runtime struct **`PluginBackends`** has these **6** fields (Serde **ignores 
 
 | Field | Facade trait (orchestration entry) | Common built-in (in-process) |
 |-------|-----------------------------------|-------------------------------|
-| `memory` | [`MemoryRetrieval`](../../crates/oclive_kernel_runtime/src/domain/memory_retrieval.rs) | default `MemoryBackend::Builtin` |
+| `memory` | [`MemoryRetrieval`](../../kernel/crates/oclive_kernel_runtime/src/domain/memory_retrieval.rs) | default `MemoryBackend::Builtin` |
 | `emotion` | user emotion analysis (see `plugin_host` / `EmotionAnalyzer`) | `EmotionBackend::Builtin` |
 | `event` | event impact estimation (`EventEstimator`) | `EventBackend::Builtin` |
 | `prompt` | `PromptAssembler` / `PromptBuilder` | `PromptBackend::Builtin` |
 | `llm` | `LlmClient` | **`LlmBackend::Ollama`** (default local client; **no `builtin` literal**) |
-| `agent` | [`AgentProvider`](../../crates/oclive_kernel_host/src/domain/agent.rs) | `AgentBackend::Builtin` |
+| `agent` | [`AgentProvider`](../../kernel/crates/oclive_kernel_host/src/domain/agent.rs) | `AgentBackend::Builtin` |
 
 When the whole `plugin_backends` block is omitted: memory / emotion / event / prompt / agent behave as **`builtin`**, **`llm` is `ollama`** (see PLUGIN_V1 examples).
 
@@ -129,7 +129,7 @@ Written by **`oclive-cli init`** when Monolith is enabled at **project root**; c
 | **`weld_modules`** | List of welded module names; **empty array** means “weld all weldable slots, then apply `exclude`”. **Must not be non-empty together with `exclude`.** |
 | **`exclude`** | When **`weld_modules` is empty**, exclude listed slots from full weld; those slots stay trait/PluginHost placeholders in generated code. |
 
-**Bench report JSON Schema** (`oclive bench`): [`crates/oclive-cli/schemas/oclive_bench_report.schema.json`](../../crates/oclive-cli/schemas/oclive_bench_report.schema.json) (relative paths assume repo clone layout).
+**Bench report JSON Schema** (`oclive bench`): [`kernel/crates/oclive-cli/schemas/oclive_bench_report.schema.json`](../../kernel/crates/oclive-cli/schemas/oclive_bench_report.schema.json) (relative paths assume repo clone layout).
 
 See [RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md) section 4.
 
@@ -137,7 +137,7 @@ See [RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md) section 4.
 
 ## VI. Role pack `config.json` → `chat_storage`
 
-Optional **`chat_storage`** object in `roles/{role_id}/config.json`. Loaded by `RoleStorage::load_role`; type: `oclive_kernel_types::RolePackChatStorageConfig`. **Not** part of `pipeline.ocblueprint`.
+Optional **`chat_storage`** object in `distros/chat-pro/roles/{role_id}/config.json`. Loaded by `RoleStorage::load_role`; type: `oclive_kernel_types::RolePackChatStorageConfig`. **Not** part of `pipeline.ocblueprint`.
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|

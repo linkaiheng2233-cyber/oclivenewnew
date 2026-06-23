@@ -2,7 +2,7 @@
 
 本文档描述 **目录插件** 在 HTML 整壳或 **`shell.vueEntry` 宿主 Vue 页** 中，通过 **`OclivePluginBridge.invoke`**（或原生 Vue 插槽的 **`inject('oclive').invoke`）可调用的**命令列表、权限别名与典型参数/返回值。
 
-**权威实现**：`src-tauri/src/api/plugin_bridge.rs`（`required_permission_token`、`dispatch_bridge_command`、`validate_bridge`）。
+**权威实现**：`distros/desktop-tauri/src/api/plugin_bridge.rs`（`required_permission_token`、`dispatch_bridge_command`、`validate_bridge`）。
 
 **前置阅读**：[DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md) §4.1–4.3（整壳桥接、敏感命令门禁、事件总线）。
 
@@ -79,7 +79,7 @@
 
 ## 3. 错误码说明
 
-宿主与桥接层会将失败信息格式化为 **`[CODE] 说明`**，前端可解析首段 `CODE`（见 `src/utils/tauri-api.ts`：`parseApiErrorCode`、`toFriendlyErrorMessage`）。
+宿主与桥接层会将失败信息格式化为 **`[CODE] 说明`**，前端可解析首段 `CODE`（见 `distros/shared/src/api/`：`parseApiErrorCode`、`toFriendlyErrorMessage`）。
 
 | 代码 | 含义 |
 |------|------|

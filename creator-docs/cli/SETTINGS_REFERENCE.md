@@ -57,8 +57,8 @@
 
 本文档描述 **桌面宿主（Tauri）** 与 **`oclive-cli` 脚手架** 共用的配置语义。单一事实来源以源码为准：
 
-- 枚举与结构体：[`src-tauri/src/models/plugin_backends.rs`](../../src-tauri/src/models/plugin_backends.rs)
-- 解析与绑定：[`crates/oclive_kernel_host/src/domain/ports/plugin_host.rs`](../../crates/oclive_kernel_host/src/domain/ports/plugin_host.rs)
+- 枚举与结构体：[`kernel/crates/oclive_kernel_types/src/models/plugin_backends.rs`](../../kernel/crates/oclive_kernel_types/src/models/plugin_backends.rs)
+- 解析与绑定：[`kernel/crates/oclive_kernel_host/src/domain/ports/plugin_host.rs`](../../kernel/crates/oclive_kernel_host/src/domain/ports/plugin_host.rs)
 - 协议与表格：[`creator-docs/plugin-and-architecture/PLUGIN_V1.md`](../plugin-and-architecture/PLUGIN_V1.md)
 
 **标准 JSON 无注释**：说明性文字请用 **`_` 前缀的键**（加载时忽略），或写在包外文档。`oclive-cli` 生成的示例包使用 `_comment_*` 键解释各槽。
@@ -71,12 +71,12 @@
 
 | 字段 | 门面 trait（编排入口） | 常用内置实现（进程内） |
 |------|-------------------------|-------------------------|
-| `memory` | [`MemoryRetrieval`](../../crates/oclive_kernel_runtime/src/domain/memory_retrieval.rs) | 默认 `MemoryBackend::Builtin` |
+| `memory` | [`MemoryRetrieval`](../../kernel/crates/oclive_kernel_runtime/src/domain/memory_retrieval.rs) | 默认 `MemoryBackend::Builtin` |
 | `emotion` | 用户情绪分析（见 `plugin_host` / `EmotionAnalyzer`） | `EmotionBackend::Builtin` |
 | `event` | 事件影响估计（`EventEstimator`） | `EventBackend::Builtin` |
 | `prompt` | `PromptAssembler` / `PromptBuilder` | `PromptBackend::Builtin` |
 | `llm` | `LlmClient` | **`LlmBackend::Ollama`**（默认本地客户端；**无 `builtin` 字面量**） |
-| `agent` | [`AgentProvider`](../../crates/oclive_kernel_host/src/domain/agent.rs) | `AgentBackend::Builtin` |
+| `agent` | [`AgentProvider`](../../kernel/crates/oclive_kernel_host/src/domain/agent.rs) | `AgentBackend::Builtin` |
 
 省略整段 `plugin_backends` 时：记忆 / 情绪 / 事件 / Prompt / Agent 为 **`builtin`**，**`llm` 为 `ollama`**（见 PLUGIN_V1 示例）。
 
@@ -136,7 +136,7 @@
 
 **`--list-templates`**：列出五套模板；交互 `init` 默认含「不使用模板」项。
 
-**`robot-gateway`**：附带 `mcp_servers/` 与 `roles/gateway/settings.json`（`agent` = builtin，`agent_mcp` 占位）。
+**`robot-gateway`**：附带 `mcp_servers/` 与 `distros/chat-pro/roles/gateway/settings.json`（`agent` = builtin，`agent_mcp` 占位）。
 
 **`--quick` / `-q`**：full 预设、无 Monolith、无示例角色包。
 
@@ -196,7 +196,7 @@
 | **`weld_modules`** | 焊接模块名列表；**空数组** 表示「从全槽焊接出发，再应用 `exclude`」。与 **`exclude` 不能同时非空**。 |
 | **`exclude`** | 当 **`weld_modules` 为空** 时，从全槽焊接中排除所列槽；这些槽在生成代码中走 trait/PluginHost 占位。 |
 
-**基准报告 JSON Schema**（`oclive bench`）：[`crates/oclive-cli/schemas/oclive_bench_report.schema.json`](../../crates/oclive-cli/schemas/oclive_bench_report.schema.json)（仓库内相对链接以克隆路径为准）。
+**基准报告 JSON Schema**（`oclive bench`）：[`kernel/crates/oclive-cli/schemas/oclive_bench_report.schema.json`](../../kernel/crates/oclive-cli/schemas/oclive_bench_report.schema.json)（仓库内相对链接以克隆路径为准）。
 
 **本地历史**：`bench --save` 追加 **`bench_history.json`**；`bench --history` 打印趋势表；`bench --compare` 对比最近两次。勿提交 `bench_history.json`。
 
@@ -206,7 +206,7 @@
 
 ## 六、角色包 `config.json` → `chat_storage`
 
-位于 `roles/{role_id}/config.json` 的 **`chat_storage`** 对象（可选）。宿主在 `RoleStorage::load_role` 时读取；类型见 `oclive_kernel_types::RolePackChatStorageConfig`。与蓝图 `pipeline.ocblueprint` **无关**。
+位于 `distros/chat-pro/roles/{role_id}/config.json` 的 **`chat_storage`** 对象（可选）。宿主在 `RoleStorage::load_role` 时读取；类型见 `oclive_kernel_types::RolePackChatStorageConfig`。与蓝图 `pipeline.ocblueprint` **无关**。
 
 | 键 | 类型 | 默认值 | 说明 |
 |----|------|--------|------|

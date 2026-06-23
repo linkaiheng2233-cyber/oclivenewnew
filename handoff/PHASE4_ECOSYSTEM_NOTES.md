@@ -10,7 +10,7 @@
 
 ## 基础聊天（Chat Pro）
 
-- **Release hero** = `desktop`（**OCLive Chat Pro**）· bundled profile [`src-tauri/resources/distro-profiles/desktop.oclive.toml`](../src-tauri/resources/distro-profiles/desktop.oclive.toml)
+- **Release hero** = `desktop`（**OCLive Chat Pro**）· bundled profile [`distros/desktop-tauri/resources/distro-profiles/desktop.oclive.toml`](../distros/desktop-tauri/resources/distro-profiles/desktop.oclive.toml)
 - **`desktop-chat`** = **dev lab only**（`examples/` + monorepo fallback）；**不当 hero**。
 - Profile：[`examples/distro-profiles/desktop-chat.oclive.toml`](../examples/distro-profiles/desktop-chat.oclive.toml)
 - 三发行版内核结项 smoke：[`THREE_DISTRO_KERNEL_CLOSURE.md`](./THREE_DISTRO_KERNEL_CLOSURE.md)

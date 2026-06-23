@@ -46,7 +46,7 @@ flowchart TB
     direction LR
     REPO["Repository / SQLite"]
     RMT["Remote 侧车<br/>JSON-RPC · OCLIVE_REMOTE_*"]
-    DIR["Directory 插件<br/>plugins/ 子进程"]
+    DIR["Directory 插件<br/>distros/chat-pro/plugins/ 子进程"]
     MCP["MCP 配置<br/>app_data/mcp-servers/*.json"]
     SESS["会话级槽位覆盖<br/>set_session_slot_override"]
   end

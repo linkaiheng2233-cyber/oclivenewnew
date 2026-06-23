@@ -1,6 +1,6 @@
 # Known vulnerability tracking (`cargo-audit`)
 
-This file records **vulnerability-level** hits from **`cargo audit`** on **`src-tauri/Cargo.lock`**, as the single source of truth for supply-chain risk and upgrade planning. It **does not** include `cargo audit` entries reported only as *warning* (*unmaintained* / *unsound*; see full `cargo audit` output and [SECURITY_AUDIT_SCOPE.md](./SECURITY_AUDIT_SCOPE.md)).
+This file records **vulnerability-level** hits from **`cargo audit`** on **`distros/desktop-tauri/Cargo.lock`**, as the single source of truth for supply-chain risk and upgrade planning. It **does not** include `cargo audit` entries reported only as *warning* (*unmaintained* / *unsound*; see full `cargo audit` output and [SECURITY_AUDIT_SCOPE.md](./SECURITY_AUDIT_SCOPE.md)).
 
 **Full doc index**: [../getting-started/DOCUMENTATION_INDEX.md](../getting-started/DOCUMENTATION_INDEX.md)  
 **Lightweight profile & audit flow**: [../../creator-docs/development/LIGHTWEIGHT_PROFILE.md](../../creator-docs/development/LIGHTWEIGHT_PROFILE.md) §6.4
@@ -13,7 +13,7 @@ This file records **vulnerability-level** hits from **`cargo audit`** on **`src-
 |------|-------|
 | **cargo-audit version** | **0.22.1** (pin this major line for comparable reports) |
 | **Last scan date** | **2026-05-13** (local, `--no-fetch --stale` + cached `~/.cargo/advisory-db`) |
-| **Scan path** | `src-tauri/Cargo.lock` |
+| **Scan path** | `distros/desktop-tauri/Cargo.lock` |
 | **Vulnerability-level count** | **5** (per `cargo audit` `error: N vulnerabilities found`) |
 | **Warning-level count** | **17** (not listed below; includes gtk-rs *unmaintained*, *unsound*, etc.) |
 

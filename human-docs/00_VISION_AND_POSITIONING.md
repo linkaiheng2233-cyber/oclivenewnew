@@ -22,7 +22,7 @@
 | **组装—契约—分发层**（模块可替换、可打包、可校验） | 又一个「定死的垂直角色记忆引擎」 |
 | **契约型薄核** + `PluginHost` 六槽 | 以蓝图 `steps[]` 作首轮调度 DSL 的主路径 |
 | **角色包**（身份、人格、`prompts/`）与 **蓝图**（`slot_registry`、后端路由）分责 | 把创作者字段写进六槽或 `runtime_config` 混为一谈 |
-| 默认 **`roles/mumu` 等为官方示例**，展示平台能力 | 内置角色即产品上限 |
+| 默认 **`distros/chat-pro/roles/mumu` 等为官方示例**，展示平台能力 | 内置角色即产品上限 |
 
 深度叙事：[handoff/OCLIVE_POSITIONING_DIFFERENTIATION.md](../handoff/OCLIVE_POSITIONING_DIFFERENTIATION.md) · [creator-docs/roadmap/VISION_OPEN_LAB.md](../creator-docs/roadmap/VISION_OPEN_LAB.md)
 
@@ -76,7 +76,7 @@ flowchart LR
 ## 验收
 
 - [ ] 能说出：OCLive 卖的是「可组装、可分发」，不是单一角色引擎
-- [ ] 能区分：`roles/mumu` 是示例；六槽在蓝图 `slot_registry`
+- [ ] 能区分：`distros/chat-pro/roles/mumu` 是示例；六槽在蓝图 `slot_registry`
 
 ---
 
@@ -84,4 +84,4 @@ flowchart LR
 
 - [OCLIVE_ARCHITECTURE_OVERVIEW](../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)
 - [ROLE_PACK_SPEC](../creator-docs/role-pack/ROLE_PACK_SPEC.md)
-- [crates/README](../crates/README.md)
+- [kernel/crates/README](../kernel/crates/README.md)

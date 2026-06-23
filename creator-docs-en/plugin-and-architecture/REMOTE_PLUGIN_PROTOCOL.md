@@ -1,6 +1,6 @@
 # Remote plugin protocol (host ↔ HTTP sidecar) — full reference
 
-**Implementation status**: the host implements an **HTTP POST + JSON‑RPC 2.0** client under `src-tauri/src/infrastructure/remote_plugin/`. When a pack sets a subsystem to `remote` and env URLs are set, requests go to the sidecar; on **network errors, non‑2xx HTTP, JSON‑RPC `error`, or result deserialization failure**, the host **falls back to built‑in implementations** and logs (`target: oclive_plugin`) — chat usually continues.
+**Implementation status**: the host implements an **HTTP POST + JSON‑RPC 2.0** client under `kernel/crates/oclive_kernel_host/src/infrastructure/remote_plugin/`. When a pack sets a subsystem to `remote` and env URLs are set, requests go to the sidecar; on **network errors, non‑2xx HTTP, JSON‑RPC `error`, or result deserialization failure**, the host **falls back to built‑in implementations** and logs (`target: oclive_plugin`) — chat usually continues.
 
 [中文](../../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)
 

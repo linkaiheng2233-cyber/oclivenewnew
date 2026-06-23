@@ -1,13 +1,13 @@
 # Remote 插件协议（宿主 ↔ HTTP 侧车）— 完整说明
 
-**实现状态**：宿主在 `src-tauri/src/infrastructure/remote_plugin/` 中实现 **HTTP POST + JSON-RPC 2.0** 客户端。角色包将子系统设为 `remote` 且配置环境变量后，请求发往侧车；**网络错误、HTTP 非 2xx、JSON-RPC `error`、或 result 无法反序列化**时，宿主**回退内置实现**并写日志（`target: oclive_plugin`），对话一般仍可继续。
+**实现状态**：宿主在 `kernel/crates/oclive_kernel_host/src/infrastructure/remote_plugin/` 中实现 **HTTP POST + JSON-RPC 2.0** 客户端。角色包将子系统设为 `remote` 且配置环境变量后，请求发往侧车；**网络错误、HTTP 非 2xx、JSON-RPC `error`、或 result 无法反序列化**时，宿主**回退内置实现**并写日志（`target: oclive_plugin`），对话一般仍可继续。
 
 ### 测试覆盖（2026-06-07）
 
 | 范围 | 状态 | 说明 |
 |------|------|------|
-| `RemoteLlmHttp` JSON-RPC 客户端 | **Done** | [`remote_llm_jsonrpc_roundtrip.rs`](../../src-tauri/tests/remote_llm_jsonrpc_roundtrip.rs) |
-| `plugin_backends.llm = remote` 经 `process_message` | **Done** | [`remote_llm_process_message_roundtrip.rs`](../../src-tauri/tests/remote_llm_process_message_roundtrip.rs) |
+| `RemoteLlmHttp` JSON-RPC 客户端 | **Done** | [`remote_llm_jsonrpc_roundtrip.rs`](../../distros/desktop-tauri/tests/remote_llm_jsonrpc_roundtrip.rs) |
+| `plugin_backends.llm = remote` 经 `process_message` | **Done** | [`remote_llm_process_message_roundtrip.rs`](../../distros/desktop-tauri/tests/remote_llm_process_message_roundtrip.rs) |
 | OpenAI-compatible（`OCLIVE_LLM_CLOUD_API_STYLE`） | **未覆盖** | 走 `OpenAiCompatibleLlm`，与 JSON-RPC 侧车 wire 不同 |
 
 ---

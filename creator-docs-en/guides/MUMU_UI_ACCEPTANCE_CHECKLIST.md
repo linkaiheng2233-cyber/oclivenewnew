@@ -1,6 +1,6 @@
 # mumu front-end modules — release acceptance checklist
 
-Quick pre-release checks that **`roles/mumu/ui.json`** recommended layout and directory-plugin slots behave as expected.
+Quick pre-release checks that **`distros/chat-pro/roles/mumu/ui.json`** recommended layout and directory-plugin slots behave as expected.
 
 [中文](../../creator-docs/guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md)
 
@@ -41,5 +41,5 @@ Quick pre-release checks that **`roles/mumu/ui.json`** recommended layout and di
 
 ## 4) Release notes
 
-- Before exporting a role pack, confirm **`roles/mumu/ui.json`** `slots` includes the five plugin IDs above.
+- Before exporting a role pack, confirm **`distros/chat-pro/roles/mumu/ui.json`** `slots` includes the five plugin IDs above.
 - If you change module copy or visuals, update the matching notes in **`creator-docs/FAQ.md`** (Chinese hub) or keep **`creator-docs-en/FAQ.md`** in sync where applicable.

@@ -150,7 +150,7 @@ npm run tauri:dev
 ```
 
 - 自动 spawn/attach 内核 `127.0.0.1:8420`  
-- Vue 热重载；改 `src/` 保存即刷新  
+- Vue 热重载；改 `distros/` 前端 保存即刷新  
 
 ### 模式 B · 仅无头内核（语音线主用）
 
@@ -216,7 +216,7 @@ curl.exe -s http://127.0.0.1:8420/health
 |------|------|
 | **VS Code / Cursor** | 仓库根打开 `oclivenewnew` |
 | Vue - Official | `.vue` 高亮 |
-| rust-analyzer | `src-tauri/`、`crates/`（视觉线改 Rust 时） |
+| rust-analyzer | `distros/desktop-tauri/`、`kernel/crates/`（视觉线改 Rust 时） |
 | ESLint | 与仓库配置一致 |
 
 **调试：**
@@ -252,7 +252,7 @@ curl.exe -s http://127.0.0.1:8420/health
 
 - [ ] `npm run tauri:dev` 打开 Chat Pro 并能文字对话一轮
 - [ ] `npm run test:unit` 通过
-- [ ] 知道改 `src/` 后如何刷新、改 `src-tauri/` 后需重新编译
+- [ ] 知道改 `distros/` 前端 后如何刷新、改 `distros/desktop-tauri/` 后需重新编译
 
 ### 语音线额外
 

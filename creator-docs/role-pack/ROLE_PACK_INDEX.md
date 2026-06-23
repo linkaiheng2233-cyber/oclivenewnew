@@ -48,7 +48,7 @@
 ]
 ```
 
-**JSON Schema**：`crates/oclive-cli/schemas/role_pack_index.schema.json`。
+**JSON Schema**：`kernel/crates/oclive-cli/schemas/role_pack_index.schema.json`。
 
 ---
 

@@ -12,7 +12,7 @@
 
 | Item | Value |
 |------|--------|
-| Desktop app semver | **0.2.0** (align `package.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml`) |
+| Desktop app semver | **0.2.0** (align `package.json`, `distros/desktop-tauri/tauri.conf.json`, `distros/desktop-tauri/Cargo.toml`) |
 | Default HTTP API (`--api`) | `http://127.0.0.1:8420` (`GET /health`) |
 | User-visible change log | **[CHANGELOG.en.md](../../CHANGELOG.en.md)** (English) · **[CHANGELOG.md](../../CHANGELOG.md)** (Chinese; keep both in sync for each entry) |
 

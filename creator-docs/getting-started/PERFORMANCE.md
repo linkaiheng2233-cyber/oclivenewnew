@@ -8,7 +8,7 @@
 
 以下数据摘自 **`creator-docs/development/LIGHTWEIGHT_PROFILE.md` §6.7**（**Windows x86_64**，**Release**，采样日期 **2026-05-20**；`cargo bloat --release -n 8`，可执行文件为 `oclivenewnew-tauri.exe`，`target-dir` 以外置配置为准）。
 
-**v2 蓝图角色包**（如 `roles/mumu/pipeline.ocblueprint`）：对话热路径仍为 `process_message` → `co_present`，**不**因 `slot_registry` 多实例而增加蓝图 `steps[]` 调度；包体与 `.text` 与 v1 双文件形态同量级（差异主要来自 `meta`/`slot_registry` JSON 体积，非二次编排引擎）。
+**v2 蓝图角色包**（如 `distros/chat-pro/roles/mumu/pipeline.ocblueprint`）：对话热路径仍为 `process_message` → `co_present`，**不**因 `slot_registry` 多实例而增加蓝图 `steps[]` 调度；包体与 `.text` 与 v1 双文件形态同量级（差异主要来自 `meta`/`slot_registry` JSON 体积，非二次编排引擎）。
 
 | 指标 | 数值 |
 |------|------|
@@ -41,7 +41,7 @@ cargo run -p oclive-cli -- bench --release -o /path/to/kernel-project --json
 ```
 
 - **`--save`** / **`--compare`**：写入/对比项目根 **`bench_history.json`**（本地文件，勿提交仓库）。  
-- **JSON Schema（机器可读）**：仓库内 **`crates/oclive-cli/schemas/oclive_bench_report.schema.json`**。  
+- **JSON Schema（机器可读）**：仓库内 **`kernel/crates/oclive-cli/schemas/oclive_bench_report.schema.json`**。  
 - **CI**：`.github/workflows/ci.yml` 中含轻量 **`cli-bench`** job（冒烟一轮，不设性能阈值）。
 
 ---
@@ -61,7 +61,7 @@ cargo run -p oclive-cli -- bench --release -o /path/to/kernel-project --json
 
 ## 6. 热路径 stage 分布（K-PERF-02）
 
-`turn_stage` / `process_message_stage`（`crates/oclive_kernel_host/src/domain/chat_engine/staged.rs`）在 target **`oclive_turn`** 下输出 per-stage 耗时（`elapsed_ms`）。
+`turn_stage` / `process_message_stage`（`kernel/crates/oclive_kernel_host/src/domain/chat_engine/staged.rs`）在 target **`oclive_turn`** 下输出 per-stage 耗时（`elapsed_ms`）。
 
 **采样环境**：Windows x86_64 · Release · `OCLIVE_HTTP_API_MOCK_LLM=1` · 单轮 `POST /chat`（角色 `mumu`）· **`RUST_LOG=oclive_turn=debug`** · 2026-06-08。
 
@@ -131,7 +131,7 @@ cargo run -p oclive-cli -- init --monolith --non-interactive --preset minimal --
 cargo run -p oclive-cli -- bench --matrix --release -o ./my-kernel-monolith --json > matrix.json
 ```
 
-对 **档位 × preset** 组合各跑少量轮次（**4×3=12**），用于挑选嵌入式/低延迟预设下的最优焊接组合；须在含 **`monolith.toml`** 的内核脚手架工程上执行（主应用仓无该文件时用 `oclive init --monolith` 工程）。参考样例角色包：**`roles/mumu`**（v2 蓝图）。结论以本机 JSON 为准。
+对 **档位 × preset** 组合各跑少量轮次（**4×3=12**），用于挑选嵌入式/低延迟预设下的最优焊接组合；须在含 **`monolith.toml`** 的内核脚手架工程上执行（主应用仓无该文件时用 `oclive init --monolith` 工程）。参考样例角色包：**`distros/chat-pro/roles/mumu`**（v2 蓝图）。结论以本机 JSON 为准。
 
 **矩阵采样表（待本机 `bench --matrix --json` 填入）**：
 
@@ -197,7 +197,7 @@ cargo run -p oclive-cli -- bench --soak --soak-duration 72 --release -o ./my-ker
 
 ## 7. Theater 首屏与 poke 延迟预算（V-THEATER-PERF-01 · T2）
 
-剧场壳（`src/theater/`）在浏览器侧用 **`performance.mark`** 分段：
+剧场壳（`distros/theater/src/composables/theater/`）在浏览器侧用 **`performance.mark`** 分段：
 
 | 段 | Mark 名 | 含义 |
 |----|--------|------|
@@ -219,7 +219,7 @@ cargo run -p oclive-cli -- bench --soak --soak-duration 72 --release -o ./my-ker
 复现烟测：
 
 ```bash
-npm run test:unit -- src/theater/theater.acceptance.test.ts
+npm run test:unit -- distros/theater/src/theater.acceptance.test.ts
 ```
 
 ---
@@ -232,7 +232,7 @@ npm run test:unit -- src/theater/theater.acceptance.test.ts
 | 2026-06-09 | V-THEATER-PERF-01：Theater poke 延迟 mark + 开发机基线（§7）。 |
 | 2026-06-08 | K-PERF-02：`oclive_turn` stage 耗时采样表（§6）。 |
 | 2026-05-20 | 确认 `bench --matrix` / `--cold-start` / `--soak` 与 `init --monolith` 命令可复制运行；补充三合一命令块。 |
-| 2026-05-20 | v2 蓝图说明；`bench --matrix` 与 `roles/mumu` 对齐；刷新 bloat 采样日期引用。 |
+| 2026-05-20 | v2 蓝图说明；`bench --matrix` 与 `distros/chat-pro/roles/mumu` 对齐；刷新 bloat 采样日期引用。 |
 | 2026-05-15 | 初版：对齐 `LIGHTWEIGHT_PROFILE.md` §6.7 与 `oclive bench` / Schema 路径。 |
 
 [English](../../creator-docs-en/getting-started/PERFORMANCE.md)

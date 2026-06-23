@@ -19,9 +19,9 @@ For the community site **Plugins** area: discovery and docs for **Remote HTTP si
 | Path | Purpose |
 |------|---------|
 | `/plugins` | Card list: name, blurb, compatible oclive version, author, GitHub link, tags |
-| `/plugins/how-it-works` | Remote vs built-in; env var table linking to architecture docs |
-| `/plugins/examples` | Summary + link to [remote_plugin_minimal](../../examples/remote_plugin_minimal/README.md) |
-| `/plugins/submit` | How to get listed (public repo, protocol compatibility, tested version) |
+| `/distros/chat-pro/plugins/how-it-works` | Remote vs built-in; env var table linking to architecture docs |
+| `/distros/chat-pro/plugins/examples` | Summary + link to [remote_plugin_minimal](../../examples/remote_plugin_minimal/README.md) |
+| `/distros/chat-pro/plugins/submit` | How to get listed (public repo, protocol compatibility, tested version) |
 
 ---
 

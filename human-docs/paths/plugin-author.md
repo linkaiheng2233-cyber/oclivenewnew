@@ -28,7 +28,7 @@
 
 ## 调试
 
-- 目录插件：`{app_data}/plugins/`、`high_risk_grants.json`
+- 目录插件：`{app_data}/distros/chat-pro/plugins/`、`high_risk_grants.json`
 - 日志 target：`oclive_plugin`（见 [05 调试](../05_DEBUGGING.md)）
 - 编写器调试：姊妹仓 **oclive-pack-editor**
 

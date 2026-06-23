@@ -1,6 +1,6 @@
 # Directory process plugins — architecture & contract
 
-User paths **A1–C1**: scanning `plugins/`, `manifest.json`, child‑process JSON‑RPC, **whole‑shell UI** (`https://ocliveplugin.localhost/…`), the unified façade commands **`directory_plugin_invoke`** / **`plugin_bridge_invoke`**, and **developer mode** extra roots.
+User paths **A1–C1**: scanning `distros/chat-pro/plugins/`, `manifest.json`, child‑process JSON‑RPC, **whole‑shell UI** (`https://ocliveplugin.localhost/…`), the unified façade commands **`directory_plugin_invoke`** / **`plugin_bridge_invoke`**, and **developer mode** extra roots.
 
 **Wire format**: same as the HTTP remote sidecar (**POST JSON‑RPC 2.0**, `x-oclive-remote-protocol` header, …) — [REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md).
 
@@ -14,9 +14,9 @@ User paths **A1–C1**: scanning `plugins/`, `manifest.json`, child‑process JS
 
 The host merges these **existing** roots; each **first‑level** subdirectory containing `manifest.json` is one plugin (registered by manifest `id`; later roots **override** duplicates with a log line):
 
-1. **`<parent of roles>/plugins/`** (sibling of `roles/`; often `./plugins/` in dev)  
-2. **`./plugins/`** (relative to process CWD)  
-3. **`{app_data}/plugins/`** under app data next to `app.db`
+1. **`<parent of roles>/distros/chat-pro/plugins/`** (sibling of `distros/chat-pro/roles/`; often `./distros/chat-pro/plugins/` in dev)  
+2. **`./distros/chat-pro/plugins/`** (relative to process CWD)  
+3. **`{app_data}/distros/chat-pro/plugins/`** under app data next to `app.db`
 
 **Developer mode (C1)**: when `app_data/oclive_host_plugins.json` has **`developer_mode`: true**, or env **`OCLIVE_DEVELOPER=1`** (`true`/`yes` accepted), also scan each directory in **`extra_plugin_roots`** (each entry is a **container**; its first‑level children are plugin roots).
 
@@ -171,7 +171,7 @@ Rules:
 - **`oclive.events.request(event, data?, timeoutMs?)`** — request/response; event names **`pluginId:name`**; default timeout 15s; **`Promise.race`** if multiple handlers.  
 - **`oclive.events.onRequest` / `offRequest`**
 
-You may use host CSS variables (`--fluent-accent`, `--bg-primary`, … — `src/styles/theme.css`).
+You may use host CSS variables (`--fluent-accent`, `--bg-primary`, … — `distros/shared/src/styles/theme.css`).
 
 **Security**: slot code shares JS context with the app; **do not** use raw `window.__TAURI__` — use **`oclive.invoke`** only.
 
@@ -245,14 +245,14 @@ Front‑end `invoke` wraps args under **`req`** (same as other commands):
 
 | area | path |
 |------|------|
-| scan / manifest / lazy / shell URL | `src-tauri/src/infrastructure/directory_plugins/` |
-| enums + `directory_plugins` | `src-tauri/src/models/plugin_backends.rs` |
-| six‑slot resolve + HTTP reuse | `crates/oclive_kernel_host/src/domain/ports/plugin_host.rs`, `remote_plugin/` |
+| scan / manifest / lazy / shell URL | `kernel/crates/oclive_kernel_host/src/infrastructure/directory_plugins/` |
+| enums + `directory_plugins` | `kernel/crates/oclive_kernel_types/src/models/plugin_backends.rs` |
+| six‑slot resolve + HTTP reuse | `kernel/crates/oclive_kernel_host/src/domain/ports/plugin_host.rs`, `remote_plugin/` |
 | Tauri APIs | `api/directory_plugin.rs`, `api/plugin_bridge.rs`, `api/plugin_update.rs`, … |
-| custom protocol | `src-tauri/src/lib.rs` |
-| Vue bootstrap | `src/main.js`, `src/utils/directoryShellBootstrap.ts`, `src/DirectoryShellApp.vue` |
+| custom protocol | `distros/desktop-tauri/src/lib.rs` |
+| Vue bootstrap | `distros/shared/src/main.js`, `distros/shared/src/utils/directoryShellBootstrap.ts`, `distros/shared/src/DirectoryShellApp.vue` |
 | toolbar / settings / detail slots | `ChatPluginToolbarSlots.vue`, `PluginSettingsPanelSlots.vue`, `PluginRoleDetailSlots.vue`, … |
-| TS wrappers | `src/utils/tauri-api.ts` |
+| TS wrappers | `distros/shared/src/api/` |
 
 ---
 

@@ -11,7 +11,7 @@
 1. [02 三十分钟跑通](../02_THIRTY_MINUTE_START.md) — `npm run tauri:dev` + `npm run check`
 2. [03 术语表](../03_GLOSSARY.md) — **`reply`** 非 `response`；invoke **camelCase**
 3. [04 工程约束](../04_ENGINEERING_RULES.md) §3、§4、§7
-4. 读本仓 `src/api/` 封装与 `src/stores/chatStore.ts`
+4. 读本仓 `distros/shared/src/api/` 封装与 `distros/shared/src/stores/chatStore.ts`
 
 ---
 
@@ -19,11 +19,11 @@
 
 | 任务 | 路径 |
 |------|------|
-| 发消息 | `src/api/chat.ts` → `send_message` |
-| 聊天状态 | `src/stores/chatStore.ts` |
+| 发消息 | `distros/shared/src/api/chat.ts` → `send_message` |
+| 聊天状态 | `distros/shared/src/stores/chatStore.ts` |
 | 插件管理 | `Ctrl+Shift+F` → `SimplePluginManagerPanel.vue` |
 | 模型管理 | `Ctrl+Shift+M` → `ModelManagerPanel.vue` |
-| Tauri 命令全集 | `src-tauri/src/lib.rs` `generate_handler!` |
+| Tauri 命令全集 | `distros/desktop-tauri/src/lib.rs` `generate_handler!` |
 
 ---
 

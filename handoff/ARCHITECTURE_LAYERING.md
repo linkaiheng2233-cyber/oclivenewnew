@@ -2,7 +2,7 @@
 
 **状态**：P0–P8 收口后的工程纪律说明（2026-06-09）。
 
-**D-LAYER-05 ratchet（2026-06-11）**：`node scripts/check-domain-layering.mjs` — 生产 `crate::infrastructure::` FQ **1**；`#[cfg(test)]` `use crate::infrastructure` **3**；基线 [`LAYERING_BASELINE.json`](LAYERING_BASELINE.json)。明细见 [`crates/oclive_kernel_host/src/domain/README.md`](../crates/oclive_kernel_host/src/domain/README.md)。
+**D-LAYER-05 ratchet（2026-06-11）**：`node scripts/check-domain-layering.mjs` — 生产 `crate::infrastructure::` FQ **1**；`#[cfg(test)]` `use crate::infrastructure` **3**；基线 [`LAYERING_BASELINE.json`](LAYERING_BASELINE.json)。明细见 [`kernel/crates/oclive_kernel_host/src/domain/README.md`](../kernel/crates/oclive_kernel_host/src/domain/README.md)。
 
 ## 关键架构决策（摘要）
 
@@ -41,7 +41,7 @@
 | Remote HTTP 统一 `RemoteHttpClientBlocking` / `RemoteHttpClientAsync` | 已落实 |
 | `domain/error_helpers` 错误映射辅助 | 已落实 |
 | `PluginHostPort` + `AppState::plugin_host_port` | 已落实 |
-| CLI 废弃别名移除（见 `crates/oclive-cli/DEPRECATED_COMMANDS.md`） | 已落实 |
+| CLI 废弃别名移除（见 `kernel/crates/oclive-cli/DEPRECATED_COMMANDS.md`） | 已落实 |
 | `cargo udeps` 全 workspace | 需 **nightly**（本机 stable 未跑通）；见 `CONTRIBUTING.md` |
 | 前端 `depcheck` | 已移除 `idb-keyval`、`monaco-editor`、`vite-plugin-monaco-editor` |
 
@@ -59,7 +59,7 @@
 |----|------|
 | `oclive_kernel_types`（DTO / `AppError` / 纯结构） | 已落实 |
 | `oclive_kernel_contracts`（`MemoryRepository`、`MemoryRetrieval` 等 trait） | 已落实 |
-| `oclive_kernel_runtime` 编排实现 + 过渡期 re-export | 已落实；详见 [../crates/README.md](../crates/README.md) |
+| `oclive_kernel_runtime` 编排实现 + 过渡期 re-export | 已落实；详见 [../kernel/crates/README.md](../kernel/crates/README.md) |
 
 ## 防腐层补全（2026-05-20）
 
@@ -68,7 +68,7 @@
 | `kernel_types` / `kernel_contracts` / `kernel_runtime` **pub 可见性审计** | 已落实（types 显式根导出；contracts `pub(crate)` 子模块；runtime `utils` 收紧 + `extract_json_object` 根导出） |
 | `PluginHostPort` / `LlmClient` / `SlotRegistryResolver` 迁入 `oclive_kernel_contracts` | 已落实 |
 | `EventEstimator` / `AgentProvider` 迁入 `oclive_kernel_contracts` | 已落实 |
-| `src-tauri/domain/ports/` **无 trait 定义**（仅 re-export + `impl`） | 已落实；`SlotResolver` struct 仍在 `domain/slot_resolver.rs`，经 `SlotRegistryResolver` 端口化 |
+| `distros/desktop-tauri/domain/ports/` **无 trait 定义**（仅 re-export + `impl`） | 已落实；`SlotResolver` struct 仍在 `domain/slot_resolver.rs`，经 `SlotRegistryResolver` 端口化 |
 | 防腐层（`domain` → `ports` / `kernel_contracts`） | **完整**（2026-05-20） |
 
 ## 精修收尾（2026-05-20）
@@ -126,7 +126,7 @@
 | 检查 | 结果 |
 |------|------|
 | `cargo clippy --workspace --all-targets --all-features -- -D warnings`（`CARGO_BUILD_JOBS=1`；勿把 `-j 1` 放在 `--` 后） | ✅ 通过 |
-| `cargo test`（`src-tauri/`，与 CI `rust` job 一致） | ✅ 通过（含集成测） |
+| `cargo test`（`distros/desktop-tauri/`，与 CI `rust` job 一致） | ✅ 通过（含集成测） |
 | `cargo test --workspace --lib` | ✅ 通过 |
 | `cargo test -p oclive_kernel_contracts --doc` | ✅ 通过（修正 `EventEstimator` 示例） |
 | `npm run test:unit` / `npm run build` | ✅ 22 tests + vite build |
@@ -228,7 +228,7 @@
 
 ## 已知适配层（后续可拆）
 
-**SSOT**：`creator-docs/` 下无同名分层文档；计数与 FQ 清单以本文件 D-LAYER-05 段与 [`crates/oclive_kernel_host/src/domain/README.md`](../crates/oclive_kernel_host/src/domain/README.md) 为准。
+**SSOT**：`creator-docs/` 下无同名分层文档；计数与 FQ 清单以本文件 D-LAYER-05 段与 [`kernel/crates/oclive_kernel_host/src/domain/README.md`](../kernel/crates/oclive_kernel_host/src/domain/README.md) 为准。
 
 生产路径剩余 **`domain → infrastructure` FQ 引用（1）**：
 
@@ -252,8 +252,8 @@
 
 ```bash
 # domain 不得引用 api
-rg "use crate::api" crates/oclive_kernel_host/src/domain
+rg "use crate::api" kernel/crates/oclive_kernel_host/src/domain
 
 # infrastructure 不得引用 api
-rg "use crate::api" src-tauri/src/infrastructure
+rg "use crate::api" distros/desktop-tauri/src/infrastructure
 ```

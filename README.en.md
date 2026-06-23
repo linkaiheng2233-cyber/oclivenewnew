@@ -12,7 +12,7 @@ A **local-first** desktop companion for roleplay dialogue: **Tauri + Vue 3 + Rus
 
 | Directory | Contents |
 |-----------|----------|
-| **[`kernel/`](kernel/)** | Rust kernel (`crates/`, `fuzz/`, OOCP examples) |
+| **[`kernel/`](kernel/)** | Rust kernel (`kernel/crates/`, `kernel/fuzz/`, OOCP examples) |
 | **[`distros/chat-pro/`](distros/chat-pro/)** | **OCLive Chat Pro** UI |
 | **[`distros/theater/`](distros/theater/)** | **AI Theater** distro UI |
 | **[`distros/shared/`](distros/shared/)** | Shared desktop UI (`@oclive/desktop-shared`) |
@@ -36,10 +36,10 @@ Code of conduct: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) · Security: [SECURITY
 
 | Area | Status |
 |------|--------|
-| **Kernel orchestration** | Main flow in **`process_message`** under **`crates/oclive_kernel_host/src/domain/chat_engine/mod.rs`**; no entry blueprint DSL on the hot path; subsystems resolved via **`PluginHost`** (including **`agent`**). |
+| **Kernel orchestration** | Main flow in **`process_message`** under **`kernel/crates/oclive_kernel_host/src/domain/chat_engine/mod.rs`**; no entry blueprint DSL on the hot path; subsystems resolved via **`PluginHost`** (including **`agent`**). |
 | **Testing (three layers)** | **Protocol (this repo):** `cargo test` in `src-tauri` + `tests/`; **OOCP HTTP black-box S0–S12 (13 scenarios; optional S13)** in [`examples/oocp-test-suite/`](examples/oocp-test-suite/) with CI job **`oocp-test-suite`** (Ubuntu), followed by **`scripts/e2e-core-api-restart.mjs`** (HTTP API process restart smoke). **Components (editor):** **oclive-pack-editor** Vitest / Playwright. **Plugins (editor):** directory-plugin patterns / **`official-vue-test-runner`** live in **oclive-pack-editor**. **Frontend smoke:** CI **`npm ci` + `npm run test:unit` + `npm run build`**. See [creator-docs/testing/OVERVIEW.md](creator-docs/testing/OVERVIEW.md) and [creator-docs/testing/OOCP_TEST_SUITE.md](creator-docs/testing/OOCP_TEST_SUITE.md). |
 | **oclive-cli** | Workspace crate **`oclive-cli`**: **`dev`**, **`bench`** (`--save`, `--compare`, **`--cold-start`**), **`test --coverage`** / **`--miri`**, **`explain`**, **`completions`**, **`init --dry-run`** / **`--check`**, **`lint --audit-ci`**, **`doctor --sbom`**, **`pack`**, **Monolith** — [OCLIVE_CLI_GUIDE.md](creator-docs/cli/OCLIVE_CLI_GUIDE.md). |
-| **Startup health** | One-shot checks before the first **`process_message`** (slots, pack files, SQLite **`health_ping`**, optional LLM probe). Skip with **`OCLIVE_SKIP_STARTUP_HEALTH`** / **`OCLIVE_SKIP_LLM_STARTUP_PROBE`**. See `crates/oclive_kernel_host/src/domain/startup_health.rs`. |
+| **Startup health** | One-shot checks before the first **`process_message`** (slots, pack files, SQLite **`health_ping`**, optional LLM probe). Skip with **`OCLIVE_SKIP_STARTUP_HEALTH`** / **`OCLIVE_SKIP_LLM_STARTUP_PROBE`**. See `kernel/crates/oclive_kernel_host/src/domain/startup_health.rs`. |
 | **Monolith** | Compile-time welded slots for headless scaffolds; RFC + CLI in [creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md](creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md). |
 | **Security** | **`cargo audit` (0.22.1)** run; **vulnerability-level cleared** (warnings still tracked; counts in SSOT). See [creator-docs/security/KNOWN_VULNERABILITIES.md](creator-docs/security/KNOWN_VULNERABILITIES.md) and [creator-docs/security/SECURITY_AUDIT_SCOPE.md](creator-docs/security/SECURITY_AUDIT_SCOPE.md). |
 | **CI gates** | **`rustfmt` + workspace **`clippy` (`-D warnings`) + `cargo test --workspace`** + **`npm ci` / `npm run test:unit` / `npm run build`**; **`oocp-test-suite`**, **`layering-ratchet`**, **`dimension5-acceptance`**, **`cross-host-e2e`** (incl. profile scheduling), **`cargo-audit`** (fail on vulns; strict job on **`Cargo.lock`** PRs), **`npm-audit`** (visibility), **remote-plugin-demo**. |
@@ -64,7 +64,7 @@ Release **`cargo-bloat` sampling**, **Monolith** vs **`oclive bench`**, and **kn
 - **Single entry point:** [**GitHub Issues**](https://github.com/linkaiheng2233-cyber/oclivenewnew/issues) (this repository).  
 - **Suggested titles:** `[bug]: …` · `[feat]: …` · `[support]: …` (matches issue templates).  
 - **First response:** we usually triage within **3–5 business days** (best-effort volunteer window, **not an SLA**).  
-- **Attach environment context:** **OS**; **app version** (e.g. `package.json` / `src-tauri/Cargo.toml` `version`); **`oclive-cli` version** (`crates/oclive-cli/Cargo.toml` or `cargo run -p oclive-cli -- --help`); plus a short summary from **Settings → General → Environment check**. **Do not** paste API keys, tokens, or full private paths.
+- **Attach environment context:** **OS**; **app version** (e.g. `package.json` / `distros/desktop-tauri/Cargo.toml` `version`); **`oclive-cli` version** (`kernel/crates/oclive-cli/Cargo.toml` or `cargo run -p oclive-cli -- --help`); plus a short summary from **Settings → General → Environment check**. **Do not** paste API keys, tokens, or full private paths.
 
 **Self-serve:** [User manual](creator-docs-en/getting-started/USER_MANUAL.md) (Chinese: [USER_MANUAL.md](creator-docs/getting-started/USER_MANUAL.md)) · [FAQ](creator-docs/FAQ.md) · [Documentation index (EN)](creator-docs-en/getting-started/DOCUMENTATION_INDEX.md) · [Documentation index (ZH)](creator-docs/getting-started/DOCUMENTATION_INDEX.md) · [ERROR_CODES](creator-docs/getting-started/ERROR_CODES.md). For bugs, include **error code** and **minimal repro** when possible.
 
@@ -105,7 +105,7 @@ Local-first, swappable subsystems, role packs as the contract surface — see [c
 | **Kernel & modules diagram (EN)** | [creator-docs-en/getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md](creator-docs-en/getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md) |
 | **Plugin contract summary (EN)** | [creator-docs-en/plugin-and-architecture/PLUGIN_V1.md](creator-docs-en/plugin-and-architecture/PLUGIN_V1.md) |
 | Plugin contract (full, ZH) | [creator-docs/plugin-and-architecture/PLUGIN_V1.md](creator-docs/plugin-and-architecture/PLUGIN_V1.md) |
-| Role manifest | [roles/README_MANIFEST.md](roles/README_MANIFEST.md) |
+| Role manifest | [distros/chat-pro/roles/README_MANIFEST.md](distros/chat-pro/roles/README_MANIFEST.md) |
 | Directory plugins | [creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md](creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md) |
 
 Legacy `docs/*.md` → see [docs/README.md](docs/README.md).
@@ -115,14 +115,14 @@ Legacy `docs/*.md` → see [docs/README.md](docs/README.md).
 | Part | Role |
 |------|------|
 | **This repo** | Runtime desktop client + dialogue engine |
-| **Role packs** | Under `roles/`; on-disk layout is the contract |
+| **Role packs** | Under `distros/chat-pro/roles/`; on-disk layout is the contract |
 | **oclive-pack-editor** | [oclive-pack-editor](https://github.com/linkaiheng2233-cyber/oclive-pack-editor) — pack authoring (persona, six slots, export) |
 | **oclive-launcher** | **Retired** (archive only); use **pack editor + this runtime** |
 
 ## Quick start: pack editor + runtime
 
 1. Install Node.js, Rust, Ollama (default local LLM). See [CREATOR_WORKFLOW.md](creator-docs/getting-started/CREATOR_WORKFLOW.md).
-2. Clone **this repo** and **oclive-pack-editor** side by side; author a pack in the editor (export zip or write to `roles/{id}/`), or use sample packs under `roles/`.
+2. Clone **this repo** and **oclive-pack-editor** side by side; author a pack in the editor (export zip or write to `distros/chat-pro/roles/{id}/`), or use sample packs under `distros/chat-pro/roles/`.
 3. Set **`OCLIVE_ROLES_DIR`** to the roles root if needed; `npm install` then `npm run tauri:dev`.
 4. Optional: configure expert routing and architecture **groups** in this app (Plugin manager → architecture graph); the pack editor preserves those blueprint fields when you save persona edits later.
 

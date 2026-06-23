@@ -52,7 +52,7 @@ Fields:
 
 ### 4.1 File manifest discovery (`file_manifest`)
 
-- Directory: **`<roles root>/_local_plugins/`** (same `roles_dir` as `RoleStorage`; in dev often `roles/_local_plugins/` in the repo).
+- Directory: **`<roles root>/_local_distros/chat-pro/plugins/`** (same `roles_dir` as `RoleStorage`; in dev often `distros/chat-pro/roles/_local_distros/chat-pro/plugins/` in the repo).
 - Scan `*.json` files (case‑insensitive); each file deserializes to one `LocalPluginProviderDescriptor`.
 - Parse/read errors: skip file, log `oclive_plugin` warning, do not block startup.
 - On startup the host `register_provider` for each discovery; **duplicate `provider_id` → later registration wins** (directory order is platform‑dependent — **do not rely on override order**; configure each id once).

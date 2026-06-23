@@ -5,7 +5,7 @@
 **文档索引（全库导航）**：[../getting-started/DOCUMENTATION_INDEX.md](../getting-started/DOCUMENTATION_INDEX.md)  
 **JSON-RPC 字段与完整示例**：[REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md)  
 **settings 枚举契约**：[PLUGIN_V1.md](PLUGIN_V1.md)  
-**目录式进程插件**（`plugins/`、`manifest`、整壳、`directory_plugin_invoke`）：[DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)  
+**目录式进程插件**（`distros/chat-pro/plugins/`、`manifest`、整壳、`directory_plugin_invoke`）：[DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)  
 **Rust 替换步骤**：[HOW_TO_REPLACE_MODULES.md](HOW_TO_REPLACE_MODULES.md)  
 **本地桥接规范（schema/min_runtime_version）**：[LOCAL_PLUGIN_BRIDGE_SPEC.md](LOCAL_PLUGIN_BRIDGE_SPEC.md)
 
@@ -37,7 +37,7 @@ flowchart TB
 
 - **builtin**：逻辑编译在宿主内，稳定、离线友好。  
 - **remote**：逻辑可在**独立 HTTP 服务（侧车）**中实现，宿主只发 JSON-RPC，按约定解析结果（环境变量 `OCLIVE_REMOTE_*` URL）。  
-- **directory**：逻辑在 **`plugins/<id>/` 子进程**中实现，wire 与 **remote 相同**，槽位 id 写在 **`plugin_backends.directory_plugins`**（见 [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)）。  
+- **directory**：逻辑在 **`distros/chat-pro/plugins/<id>/` 子进程**中实现，wire 与 **remote 相同**，槽位 id 写在 **`plugin_backends.directory_plugins`**（见 [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)）。  
 - **llm: ollama**：使用应用启动时注入的本地/兼容 **Ollama** 客户端。  
 - **llm: remote**：使用 **`OCLIVE_REMOTE_LLM_URL`** 指向的 JSON-RPC（`llm.generate` / `llm.generate_tag`）。  
 - **llm: directory**：使用 **`directory_plugins.llm`** 指向的插件进程 URL（同 JSON-RPC）。
@@ -45,7 +45,7 @@ flowchart TB
 这样创作者可以：  
 - 只写**角色包**（剧本、场景、核心性格档案等）；或  
 - 自建**侧车**（Python/Node/Go 等）实现自定义记忆排序、网关大模型、自定义 Prompt 策略；或  
-- 分发**目录插件包**（manifest + 可选整壳 UI），用户放入 `plugins/` 或开发者额外根目录；或  
+- 分发**目录插件包**（manifest + 可选整壳 UI），用户放入 `distros/chat-pro/plugins/` 或开发者额外根目录；或  
 - **Fork 仓库**改 Rust，在 `PluginHost` 注册新的编译期后端。
 
 ---
@@ -54,9 +54,9 @@ flowchart TB
 
 | 方式 | 你需要准备什么 | 何时生效 | 「热更新」在工程上的含义 |
 |------|----------------|----------|---------------------------|
-| **A. 角色包** | `roles/{角色id}/` 下 manifest、settings、场景、文案等 | 保存后由应用 **`load_role`**（或你们提供的重载）加载 | 更新内容**无需重编译宿主**；对话逻辑仍由**内置引擎**执行，除非该角色显式使用 remote / directory |
+| **A. 角色包** | `distros/chat-pro/roles/{角色id}/` 下 manifest、settings、场景、文案等 | 保存后由应用 **`load_role`**（或你们提供的重载）加载 | 更新内容**无需重编译宿主**；对话逻辑仍由**内置引擎**执行，除非该角色显式使用 remote / directory |
 | **B. HTTP 侧车** | 可访问的 URL + 实现 [REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md) 中的 **method** | 启动应用**前**设置环境变量；角色包 `plugin_backends.* = remote` | **更新侧车进程/容器**即可换新逻辑，**桌面应用可不重新编译**；需保持 JSON-RPC **向后兼容** |
-| **D. 目录式进程插件** | `plugins/<manifest.id>/`（扫描规则见 [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)）+ 子进程打印 **`OCLIVE_READY`**；可选整壳 HTML | 用户安装/替换磁盘目录后**重启应用**（或首次访问时懒启动子进程） | 换逻辑**无需重编译宿主**；与 B 类似，契约为同一 JSON-RPC；**未签名路径**仅在开发者模式下通过 `extra_plugin_roots` 加载 |
+| **D. 目录式进程插件** | `distros/chat-pro/plugins/<manifest.id>/`（扫描规则见 [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)）+ 子进程打印 **`OCLIVE_READY`**；可选整壳 HTML | 用户安装/替换磁盘目录后**重启应用**（或首次访问时懒启动子进程） | 换逻辑**无需重编译宿主**；与 B 类似，契约为同一 JSON-RPC；**未签名路径**仅在开发者模式下通过 `extra_plugin_roots` 加载 |
 | **C. Fork 改宿主（Rust）** | Rust 工具链；在 `domain` / `PluginHost` / `plugin_backends` 注册新枚举与实现 | `cargo build` / 发布**新安装包** | **不是**进程内动态换 `.dll`/插件；发新版 exe 才算替换宿主模块 |
 
 **选型建议**
@@ -135,7 +135,7 @@ flowchart TB
    - 目录：[examples/remote_plugin_minimal/README.md](../examples/remote_plugin_minimal/README.md)  
    - 默认监听示例 URL（以该 README 为准）。  
 
-1b. **目录插件最小示例**（无需 `OCLIVE_REMOTE_*`，改用 `plugins/` + manifest）：  
+1b. **目录插件最小示例**（无需 `OCLIVE_REMOTE_*`，改用 `distros/chat-pro/plugins/` + manifest）：  
    - [examples/directory-plugin-minimal/README.md](../examples/directory-plugin-minimal/README.md)  
 
 2. **设置环境变量**后再启动 oclive（**侧车 B** 路径；**目录 D** 路径可跳过本步，仅配置 `plugin_backends` 与磁盘目录）：
@@ -198,17 +198,17 @@ export OCLIVE_REMOTE_LLM_URL="http://127.0.0.1:8765/rpc"
 
 | 内容 | 路径 |
 |------|------|
-| 宿主聚合 | `crates/oclive_kernel_host/src/domain/ports/plugin_host.rs` |
-| Remote HTTP 客户端 | `src-tauri/src/infrastructure/remote_plugin/` |
-| 目录插件扫描 / 懒启动 | `src-tauri/src/infrastructure/directory_plugins/` |
-| 运行时解析 | `AppState::resolved_plugins_for` — `src-tauri/src/state/mod.rs` |
+| 宿主聚合 | `kernel/crates/oclive_kernel_host/src/domain/ports/plugin_host.rs` |
+| Remote HTTP 客户端 | `kernel/crates/oclive_kernel_host/src/infrastructure/remote_plugin/` |
+| 目录插件扫描 / 懒启动 | `kernel/crates/oclive_kernel_host/src/infrastructure/directory_plugins/` |
+| 运行时解析 | `AppState::resolved_plugins_for` — `kernel/crates/oclive_kernel_host/src/state/mod.rs` |
 | 全库文档导航 | [../getting-started/DOCUMENTATION_INDEX.md](../getting-started/DOCUMENTATION_INDEX.md) |
 
 ---
 
 ## 第九部分：与相关文档的关系
 
-- **角色包怎么写**： [../getting-started/CREATOR_WORKFLOW.md](../getting-started/CREATOR_WORKFLOW.md)、[roles/README_MANIFEST.md](../../roles/README_MANIFEST.md)  
+- **角色包怎么写**： [../getting-started/CREATOR_WORKFLOW.md](../getting-started/CREATOR_WORKFLOW.md)、[distros/chat-pro/roles/README_MANIFEST.md](../../distros/chat-pro/roles/README_MANIFEST.md)  
 - **枚举与默认值**： [PLUGIN_V1.md](PLUGIN_V1.md)、[../role-pack/PACK_VERSIONING.md](../role-pack/PACK_VERSIONING.md)  
 - **目录式插件（manifest、整壳、invoke）**： [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)、[../examples/directory-plugin-minimal/README.md](../../examples/directory-plugin-minimal/README.md)  
 - **只关心替换 Rust 模块步骤**： [HOW_TO_REPLACE_MODULES.md](HOW_TO_REPLACE_MODULES.md)  

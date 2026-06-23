@@ -9,7 +9,7 @@ Tauri / HTTP → process_message → turn_pipeline
   pre_llm → build_prompt → main LLM → post_llm → persist
 ```
 
-- **Orchestration SSOT:** `crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs`
+- **Orchestration SSOT:** `kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs`
 - **Six slots:** resolved via `plugin_backends` + session overrides → `PluginHost`
 - **Facilities** (complex emotion, expert routing): in-pipeline, not slot numbers
 

@@ -22,7 +22,7 @@
                             │
 ┌───────────────────────────▼─────────────────────────────────┐
 │  层 1 · 灵魂内核（组长/内核维护者；组员默认不碰）               │
-│  crates/oclive_kernel_host · process_message · SQLite        │
+│  kernel/crates/oclive_kernel_host · process_message · SQLite        │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -40,24 +40,24 @@
 
 | 路径 | 用途 |
 |------|------|
-| `src/components/visual/` | Stage、Live2D adapter |
-| `src/components/role/CharacterInfo.vue` | 立绘 PNG 组件（可改） |
-| `src/shells/fluent/FluentShell.vue` | Chat Pro 主壳布局 |
-| `src/shells/tool/ToolShell.vue` | 备用壳（若启用） |
-| `src/adapters/visual/` | 渲染 adapter 注册 |
-| `src/stores/roleStore.ts` | 仅表现相关字段写入（小改） |
-| `src/stores/chatStoreSend.ts` | 仅确认 directive 写入（小改） |
-| `src/composables/useMainShell.ts` | 仅 portrait 相关 computed（小改） |
-| `roles/demo-doll/` **或** 演示用角色包 | catalog 资源与 `config.json`（**数据**，非代码） |
+| `distros/shared/src/components/visual/` | Stage、Live2D adapter |
+| `distros/shared/src/components/role/CharacterInfo.vue` | 立绘 PNG 组件（可改） |
+| `distros/chat-pro/src/shells/fluent/FluentShell.vue` | Chat Pro 主壳布局 |
+| `distros/chat-pro/src/shells/tool/ToolShell.vue` | 备用壳（若启用） |
+| `distros/shared/src/adapters/visual/` | 渲染 adapter 注册 |
+| `distros/shared/src/stores/roleStore.ts` | 仅表现相关字段写入（小改） |
+| `distros/shared/src/stores/chatStoreSend.ts` | 仅确认 directive 写入（小改） |
+| `distros/shared/src/composables/useMainShell.ts` | 仅 portrait 相关 computed（小改） |
+| `distros/chat-pro/roles/demo-doll/` **或** 演示用角色包 | catalog 资源与 `config.json`（**数据**，非代码） |
 
 ### 2.3 只读、一般不改
 
 | 路径 | 原因 |
 |------|------|
-| `src/api/chat.ts` | invoke 封装；懂 `SendMessageResponse` 形状即可 |
-| `src-tauri/src/api/chat_backend.rs` | 桌面已固定走 HTTP 内核 |
-| `crates/oclive_kernel_host/` | 内核黑盒 |
-| `crates/oclive_kernel_runtime/` | 引擎公式，与 UI 无关 |
+| `distros/shared/src/api/chat.ts` | invoke 封装；懂 `SendMessageResponse` 形状即可 |
+| `distros/desktop-tauri/src/api/chat_backend.rs` | 桌面已固定走 HTTP 内核 |
+| `kernel/crates/oclive_kernel_host/` | 内核黑盒 |
+| `kernel/crates/oclive_kernel_runtime/` | 引擎公式，与 UI 无关 |
 
 ### 2.4 禁止碰
 
@@ -119,16 +119,16 @@ npm run build              # PR 前
 | 路径 | 原因 |
 |------|------|
 | `HARDWARE_INTEGRATION.md` §4–§5 | 契约 SSOT |
-| `crates/oclive_kernel_host/src/http_api/` | 理解路由即可 |
-| 根目录 `roles/mumu` | 提供 `role_path`，勿改人格除非组长要求 |
+| `kernel/crates/oclive_kernel_host/src/http_api/` | 理解路由即可 |
+| 根目录 `distros/chat-pro/roles/mumu` | 提供 `role_path`，勿改人格除非组长要求 |
 
 ### 3.4 禁止碰
 
 | 路径 / 行为 | 原因 |
 |-------------|------|
-| 整个 `src/`（Vue） | 不是语音线职责 |
-| `src-tauri/` | 桌面壳 |
-| `crates/` | 内核 |
+| 整个 `distros/` 前端（Vue） | 不是语音线职责 |
+| `distros/desktop-tauri/` | 桌面壳 |
+| `kernel/crates/` | 内核 |
 | 把 ASR 写进 `process_message` 或六槽 | 架构边界 |
 | 公网暴露 `:8420` | 仅 loopback |
 
@@ -170,7 +170,7 @@ python loop.py
 
 | 需要 | 不需要 |
 |------|--------|
-| Git clone 仓库（为了 `examples/` + `roles/`） | `npm install` 全量 |
+| Git clone 仓库（为了 `examples/` + `distros/chat-pro/roles/`） | `npm install` 全量 |
 | Python venv | 首次 `npm run tauri:dev` 2 小时编译（可用无头内核代替） |
 | Ollama + 小模型 | Vue / Rust 日常开发 |
 | 内核进程 `:8420` | 读 `process_message` 源码 |
@@ -181,7 +181,7 @@ python loop.py
 
 | 耦合点 | 约定 |
 |--------|------|
-| **HTTP** | 同一 `127.0.0.1:8420`、同一角色包（建议 `roles/demo-doll`） |
+| **HTTP** | 同一 `127.0.0.1:8420`、同一角色包（建议 `distros/chat-pro/roles/demo-doll`） |
 | **session_id** | **仅语音 loop 内**固定 UUID 测记忆；Chat Pro UI **默认不同 session**，联调 **不要求** UI 与 loop 共享 session（见 [TRACK_VOICE §B6](./TRACK_VOICE_RECOGNITION.md)） |
 | **表现字段** | B 在 loop 日志打印 `data.performance_directive`；A 在 Pinia/UI 显示——**互不改对方目录** |
 | **联调** | W2 周五：B 触发 `/chat` + 日志；A 在 Chat Pro 手动发句或对照 directive 截图 |
@@ -194,9 +194,9 @@ python loop.py
 
 | 谁 | 典型 PR 文件数 | 审阅重点 |
 |----|----------------|----------|
-| **视觉** | `src/components/visual/*`、`FluentShell.vue`、`roles/demo-doll/*` | 是否只在消费 directive；是否误触内核 |
+| **视觉** | `distros/shared/src/components/visual/*`、`FluentShell.vue`、`distros/chat-pro/roles/demo-doll/*` | 是否只在消费 directive；是否误触内核 |
 | **语音** | `examples/voice-loop-minimal/*` | 是否只 HTTP；README 可复现 |
-| **越界 PR** | 含 `crates/oclive_kernel_host` | 组长必须 review，本 sprint 默认拒绝 |
+| **越界 PR** | 含 `kernel/crates/oclive_kernel_host` | 组长必须 review，本 sprint 默认拒绝 |
 
 ---
 
@@ -218,7 +218,7 @@ python loop.py
 ## 7. 常见问题
 
 **Q：我还用 clone 整个 oclivenewnew 吗？**  
-A：要。语音至少要有 `examples/` 和 `roles/`；视觉要有 `src/`。但 **不必编译/理解全 workspace**。
+A：要。语音至少要有 `examples/` 和 `distros/chat-pro/roles/`；视觉要有 `distros/` 前端。但 **不必编译/理解全 workspace**。
 
 **Q：语音同事完全不用 Chat Pro？**  
 A：**开发阶段可以**。联调日打开 Chat Pro 只看立绘即可，日常只在 `voice-loop-minimal` 写代码。

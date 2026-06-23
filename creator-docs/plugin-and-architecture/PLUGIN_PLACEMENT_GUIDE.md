@@ -1,6 +1,6 @@
 # 插件放置指南（贡献者决策树）
 
-物理安装路径：`{app_data}/plugins/<manifest.id>/`（目录插件）；开发时还可被 `roles/` 同级 `plugins/`、工作目录 `plugins/` 扫描到（见 [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)）。
+物理安装路径：`{app_data}/distros/chat-pro/plugins/<manifest.id>/`（目录插件）；开发时还可被 `distros/chat-pro/roles/` 同级 `distros/chat-pro/plugins/`、工作目录 `distros/chat-pro/plugins/` 扫描到（见 [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)）。
 
 ## 三问决策树
 
@@ -16,7 +16,7 @@
 
 → 角色包 `config.json` → `reply_post_processor`；发行版 `[post_process].chain` 可合并策略。
 
-→ 解析：`resolve_reply_post_processor`（[reply_post_processor.rs](../../crates/oclive_kernel_host/src/domain/reply_post_processor.rs)）
+→ 解析：`resolve_reply_post_processor`（[reply_post_processor.rs](../../kernel/crates/oclive_kernel_host/src/domain/reply_post_processor.rs)）
 
 ### 3. 要为剧场生成场景 Prompt（不进 `send_message`、不占六槽）？
 
@@ -24,9 +24,9 @@
 
 → 发行版 `distro.oclive.toml` → `[theater].director_plugin = "<manifest.id>"`；开发 env `OCLIVE_THEATER_DIRECTOR_PLUGIN` 覆盖 profile。
 
-→ 解析：`resolve_theater_director`（[theater_director.rs](../../crates/oclive_kernel_host/src/domain/theater_director.rs)）；入口 `generate_theater_scene` / `POST /theater/scene`。
+→ 解析：`resolve_theater_director`（[theater_director.rs](../../kernel/crates/oclive_kernel_host/src/domain/theater_director.rs)）；入口 `generate_theater_scene` / `POST /theater/scene`。
 
-→ 官方示例：`plugins/com.oclive.theater_director_official/`
+→ 官方示例：`distros/chat-pro/plugins/com.oclive.theater_director_official/`
 
 ## 附录（非六槽、非上述独立通道）
 

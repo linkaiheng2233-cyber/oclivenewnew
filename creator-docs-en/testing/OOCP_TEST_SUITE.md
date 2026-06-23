@@ -11,7 +11,7 @@
 
 ## A1.1b: Web preview shell (Playwright)
 
-- **Specs:** repo root [`e2e/preview-shell.spec.ts`](../../e2e/preview-shell.spec.ts) (`#app` mount + document title).  
+- **Specs:** repo root [`distros/chat-pro/e2e/preview-shell.spec.ts`](../../distros/chat-pro/e2e/preview-shell.spec.ts) (`#app` mount + document title).  
 - **Local:** `npm run build && npm run test:e2e:preview` (first time: `npx playwright install chromium`; Linux: `npx playwright install --with-deps chromium`).  
 - **CI:** **`frontend`** job on **Ubuntu** starts **`vite preview`** in the background (default port **4180**), sets **`PW_TEST_USE_EXTERNAL=1`**, then runs **`npm run test:e2e:preview`**; **`PLAYWRIGHT_DISABLE_HEADLESS_SHELL=1`** reduces extra browser downloads.
 
@@ -20,7 +20,7 @@
 - **Locally**: see [`examples/oocp-test-suite/README.md`](../../examples/oocp-test-suite/README.md).
 - **Environment variables**:
   - `OCLIVE_API_BASE`: default `http://127.0.0.1:8420`
-  - `OCLIVE_OOCP_ROLE_PATH`: role pack directory (default `<repo>/roles/mumu`)
+  - `OCLIVE_OOCP_ROLE_PATH`: role pack directory (default `<repo>/distros/chat-pro/roles/mumu`)
   - **`OCLIVE_HTTP_API_MOCK_LLM=1`** (with `--api` only): in-memory store + fixed-reply mock LLM; **enabled by default in CI**, no local Ollama required.
 
 ## Scenario table (HTTP black-box)

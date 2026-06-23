@@ -8,7 +8,7 @@
 
 `POST /chat` 失败时返回 JSON，**`error` 与 `oclive_kernel_runtime::KernelErrorBody` 同形**（与 Tauri `invoke` 失败载荷为**同一 JSON 单行**时可互解析）：
 
-- `code`：**`SCREAMING_SNAKE_CASE`** 机器码，与内核 [`AppError::code`](../../crates/oclive_kernel_runtime/src/error.rs) 一致。
+- `code`：**`SCREAMING_SNAKE_CASE`** 机器码，与内核 [`AppError::code`](../../kernel/crates/oclive_kernel_runtime/src/error.rs) 一致。
 - `message`：内核 `Display`（默认英文技术句）；本地化由发行版用 `code` 映射。
 - `hint`：可选「下一步」；HTTP 可为试聊附加中文提示。
 
@@ -57,7 +57,7 @@
 <!-- code:UNKNOWN_ERROR -->
 | `UNKNOWN_ERROR` | 未分类内部错误 | 兜底路径 | 带完整日志提 issue；前端可能显示 `UNKNOWN_WITH_CODE` |
 
-**事务类**：[`AppError::TransactionError`](../../crates/oclive_kernel_runtime/src/error.rs) 的 `code` 为**动态字符串**（如好感/记忆事务子步骤），不在上表逐条列出；`oclive explain <CODE>` 仅覆盖静态 `AppError` 变体与 HTTP 补充码。
+**事务类**：[`AppError::TransactionError`](../../kernel/crates/oclive_kernel_runtime/src/error.rs) 的 `code` 为**动态字符串**（如好感/记忆事务子步骤），不在上表逐条列出；`oclive explain <CODE>` 仅覆盖静态 `AppError` 变体与 HTTP 补充码。
 
 ### 1.5) 首装常见：Ollama 与角色目录（A2.1 子集）
 

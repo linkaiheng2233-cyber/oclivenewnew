@@ -11,7 +11,7 @@
 | 决策 | 为什么这样做 |
 |------|----------------|
 | **`pipeline.ocblueprint` 不解释执行 DSL** | 避免「文件里写的流程」与 `process_message` / `co_present` **实际执行顺序**不一致；编排顺序由 **Rust 代码**审计，蓝图只提供配置（`slot_registry`、`groups`）。 |
-| **入口** | [`crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs`](../../crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs) |
+| **入口** | [`kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs`](../../kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs) |
 
 ---
 
@@ -20,7 +20,7 @@
 | 决策 | 为什么这样做 |
 |------|----------------|
 | **trait 集中在 `oclive_kernel_contracts`** | 核心抽象与 Tauri 解耦；桌面、无头、嵌入式宿主均可实现同一套端口。 |
-| **`src-tauri/domain/ports/` 仅 re-export** | 编排依赖 `dyn PluginHostPort` / `LlmClient` 等，不绑定 `PluginHost` 具体类型。 |
+| **`distros/desktop-tauri/domain/ports/` 仅 re-export** | 编排依赖 `dyn PluginHostPort` / `LlmClient` 等，不绑定 `PluginHost` 具体类型。 |
 
 ---
 
@@ -49,7 +49,7 @@
 | emotion / event / prompt / complex_emotion | 串行 **last-wins** | 状态类或「最终文本」语义，后次覆盖前次 |
 | agent（多目录插件） | **PluginHost** 合并目录 ID | 多工具无强顺序依赖时合并工具集；执行逻辑见 `plugin_host` / `SlotResolver::wrap_agent_if_merged` |
 
-实现与注释：[`crates/oclive_kernel_host/src/domain/slot_runner.rs`](../../crates/oclive_kernel_host/src/domain/slot_runner.rs)。
+实现与注释：[`kernel/crates/oclive_kernel_host/src/domain/slot_runner.rs`](../../kernel/crates/oclive_kernel_host/src/domain/slot_runner.rs)。
 
 ---
 
@@ -64,14 +64,14 @@
 ## 7. 蓝图加载数据流（配置 → 执行）
 
 ```text
-roles/{id}/pipeline.ocblueprint
+distros/chat-pro/roles/{id}/pipeline.ocblueprint
   → load_blueprint_v2_for_role_dir（解析 + 校验）
   → Role { slot_registry, plugin_backends, slot_groups }
   → PluginHost::resolve → SlotResolver::resolve
   → process_message → SlotRunner
 ```
 
-详见：[`src-tauri/src/infrastructure/storage.rs`](../../src-tauri/src/infrastructure/storage.rs) 模块注释。
+详见：[`kernel/crates/oclive_kernel_host/src/infrastructure/storage.rs`](../../kernel/crates/oclive_kernel_host/src/infrastructure/storage.rs) 模块注释。
 
 ---
 

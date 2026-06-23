@@ -32,7 +32,7 @@ flowchart TB
   end
   subgraph fail [bundled 故障]
     fb["同 OCLIVE_APP_DATA + 同 distro profile 重启"]
-    reuse["plugins/ 与蓝图不变 → 插件复用"]
+    reuse["distros/chat-pro/plugins/ 与蓝图不变 → 插件复用"]
   end
   b1 -->|health fail| b2
   b2 --> fb
@@ -45,7 +45,7 @@ flowchart TB
 | **全能兜底** | `%LOCALAPPDATA%/OCLive/runtime/` shared 全量构建 | bundled 启动失败 / crash / manifest 不兼容 |
 | **开发覆盖** | monorepo dev build（score 89–95） | 仅开发者；**不**作为终端用户默认 |
 
-**插件复用（兜底时）**：目录插件在 `{app_data}/plugins/`；策略在 `distro.oclive.toml` + 角色蓝图。**换兜底内核 ≠ 换插件目录** — 新进程继承相同 `OCLIVE_APP_DATA`、`OCLIVE_DISTRO_PROFILE`、`OCLIVE_ROLES_DIR` 即可。
+**插件复用（兜底时）**：目录插件在 `{app_data}/distros/chat-pro/plugins/`；策略在 `distro.oclive.toml` + 角色蓝图。**换兜底内核 ≠ 换插件目录** — 新进程继承相同 `OCLIVE_APP_DATA`、`OCLIVE_DISTRO_PROFILE`、`OCLIVE_ROLES_DIR` 即可。
 
 **新模块问题**：
 
@@ -89,7 +89,7 @@ flowchart TB
 
 ## 3. 对 `resolve_kernel_action` 的裁定
 
-实现：`crates/oclive_kernel_runtime/src/kernel_strategy.rs`  
+实现：`kernel/crates/oclive_kernel_runtime/src/kernel_strategy.rs`  
 文档：[DISTRO_KERNEL_LIFECYCLE.md](../creator-docs/kernel/DISTRO_KERNEL_LIFECYCLE.md)
 
 ### 3.1 保留（产品仍依赖）
@@ -196,7 +196,7 @@ flowchart TD
 
 ### 8.2 「发行版内核需求单」— 已有，可扩展
 
-**SSOT**：[`distro.oclive.toml`](../examples/distro-profiles/theater.oclive.toml) → 调度子集 [`DistroProfileRequirements`](../crates/oclive_kernel_types/src/models/kernel.rs)（`parse_distro_requirements_file` · [`kernel_distro_profile.rs`](../crates/oclive_kernel_runtime/src/kernel_distro_profile.rs)）。
+**SSOT**：[`distro.oclive.toml`](../examples/distro-profiles/theater.oclive.toml) → 调度子集 [`DistroProfileRequirements`](../kernel/crates/oclive_kernel_types/src/models/kernel.rs)（`parse_distro_requirements_file` · [`kernel_distro_profile.rs`](../kernel/crates/oclive_kernel_runtime/src/kernel_distro_profile.rs)）。
 
 | 字段 | 含义 |
 |------|------|
@@ -208,7 +208,7 @@ flowchart TD
 
 **插件复用**：不拷贝插件。兜底 spawn 沿用同一组 env：
 
-- `OCLIVE_APP_DATA` → `{app_data}/plugins/` 不变  
+- `OCLIVE_APP_DATA` → `{app_data}/distros/chat-pro/plugins/` 不变  
 - `OCLIVE_DISTRO_PROFILE` → 同一 HostProfile / `[plugin_backends]`  
 - `OCLIVE_ROLES_DIR` → 同一蓝图 `slot_registry` / `directory_plugins`
 

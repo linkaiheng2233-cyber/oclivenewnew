@@ -22,7 +22,7 @@
 | **状态注入** | `MAIN_SHELL_KEY` ← `useMainShell()` | **新增** `useTheaterShell()`（独立编排，复用底层 store/api） | **新增（瘦）** |
 | **中心区** | 聊天气泡列表（我 vs TA） | **舞台画布**（两个角色对戏的剧本流） | **改写** |
 | **输入区** | `ChatInput` 自由文本 | **戳一戳 Dock**（封闭芯片，模式 1 不开自由文本） | **改写** |
-| **左图标栏 ActivityBar** | settings/plugins/models | **首屏隐藏**（剧场单一目的，零干扰） | **隐藏** |
+| **左图标栏 ActivityBar** | settings/distros/chat-pro/plugins/models | **首屏隐藏**（剧场单一目的，零干扰） | **隐藏** |
 | **顶栏** | RoleSelector + More | **极简**：剧目/卡司指示 + 「更多」（设置藏二级） | **瘦身** |
 | **底层内核** | `process_message` / store / api | **同一套**（剧场是 profile + 前端差分，**不新增编排 stage**，§5.5） | **复用** |
 
@@ -150,7 +150,7 @@ TheaterShell（舞台壳 · data-shell="theater"）
 ## 7. 数据与内核契约（复用，零新 stage）
 
 - **对戏生成**：模式 1 = **预生成骨架（强模型·离线一次性）+ 本地千问局部补丁**。前端通过**现有 `send_message` / `process_message` 主链**驱动单角色回合；双角色对戏由**前端编排两次单角色调用 + 骨架拼接**实现，**不**在内核加「双角色 stage」（守 §5.5 冻结）。
-- **角色包**：两个反差角色为标准 v2 角色包（落 `roles/`，开工清单），经 `theater.oclive.toml` profile 加载。
+- **角色包**：两个反差角色为标准 v2 角色包（落 `distros/chat-pro/roles/`，开工清单），经 `theater.oclive.toml` profile 加载。
 - **预生成骨架**：随发行版打包的静态资产（如 `resources/theater/*.json`），由作者用强模型一次性生成（路线图 §2 成本模型）。
 - **零 key 首屏**：预生成 + 本地模型扛住；BYOK 藏设置（路线图 §4.5）。
 
@@ -212,11 +212,11 @@ src/
 资产 / profile（开工清单，路线图 §7）：
 ```
 examples/distro-profiles/theater.oclive.toml        # 复制自 handoff/theater/theater.oclive.toml
-src-tauri/resources/distro-profiles/theater.oclive.toml
-src-tauri/resources/theater/scenes/*.skeleton.json   # 四场景预生成骨架（强模型离线产出）
-public/theater/scenes/*.skeleton.json                # Vite dev 镜像
-src/composables/theater/theaterSceneCatalog.ts       # 场景目录 SSOT（preset id / pokeEnabled / prompt hints）
-roles/theater-breakfast-a/  roles/theater-breakfast-b/  # 两个反差角色 v2 包
+distros/desktop-tauri/resources/distro-profiles/theater.oclive.toml
+distros/desktop-tauri/resources/theater/scenes/*.skeleton.json   # 四场景预生成骨架（强模型离线产出）
+distros/theater/public/theater/scenes/*.skeleton.json                # Vite dev 镜像
+distros/theater/distros/shared/src/composables/theater/theaterSceneCatalog.ts       # 场景目录 SSOT（preset id / pokeEnabled / prompt hints）
+distros/chat-pro/roles/theater-breakfast-a/  distros/chat-pro/roles/theater-breakfast-b/  # 两个反差角色 v2 包
 ```
 
 ## B. 壳选择与挂载（改 2 个文件）
@@ -326,7 +326,7 @@ theater.beat.loading           节拍 loader aria
 theater.footer.source.pregen / local / cloud
 theater.funnel.title / create / keep
 ```
-落 `src/i18n/locales/fragments/`（仿现有 fragment 结构）；`verify:shared-i18n` 与 parity 测需同步中英。
+落 `distros/shared/src/i18n/locales/fragments/`（仿现有 fragment 结构）；`verify:shared-i18n` 与 parity 测需同步中英。
 
 ## G. 验收锚点（按 IA §9 步骤）
 
@@ -343,8 +343,8 @@ theater.funnel.title / create / keep
 
 | 直接复用 | 来源 |
 |----------|------|
-| `Toast.vue` / `UiButton.vue` / `VirtualScrollContainer.vue` | `src/components/` |
-| store / api / `send_message` 主链 | `src/stores/`、`src/api/` |
+| `Toast.vue` / `UiButton.vue` / `VirtualScrollContainer.vue` | `distros/shared/src/components/` |
+| store / api / `send_message` 主链 | `distros/shared/src/stores/`、`distros/shared/src/api/` |
 | 主题机制 `data-shell` + token 别名映射 | `theme-tool.css` 范式 |
 | sheet / a11y / focus 范式 | `IdentitySurpriseSheet.vue`、`useReturnFocusOnClose` |
 | 设置叠层 | `SettingsView`（藏「更多」，精简 Tab） |

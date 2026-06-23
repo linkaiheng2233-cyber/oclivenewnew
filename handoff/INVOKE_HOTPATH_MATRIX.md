@@ -2,9 +2,9 @@
 
 **用途**：把 Tauri **`generate_handler!`** 中的高频命令与 **Rust 侧入口**、**烟测** 对齐，便于回归与后续扩写 golden。**不替代**各 `*_impl` 的单元语义；完整 IPC 仍由 Tauri 运行时绑定。
 
-**权威命令表**：[`../src-tauri/src/lib.rs`](../src-tauri/src/lib.rs)（`invoke_handler` 列表）。
+**权威命令表**：[`../distros/desktop-tauri/src/lib.rs`](../distros/desktop-tauri/src/lib.rs)（`invoke_handler` 列表）。
 
-**集成测**：[`../src-tauri/tests/invoke_hotpath_matrix.rs`](../src-tauri/tests/invoke_hotpath_matrix.rs)  
+**集成测**：[`../distros/desktop-tauri/tests/invoke_hotpath_matrix.rs`](../distros/desktop-tauri/tests/invoke_hotpath_matrix.rs)  
 命令：`cargo test -p oclivenewnew-tauri --test invoke_hotpath_matrix`
 
 ---
@@ -43,5 +43,5 @@
 ## 相关
 
 - [PRODUCT_LINE_TASK_BUCKETS.md](./PRODUCT_LINE_TASK_BUCKETS.md) §四 **A1.2**  
-- [week3_004_api.rs](../src-tauri/tests/week3_004_api.rs)（更宽 API 覆盖）  
-- [plugin_backends_v2_resolve.rs](../src-tauri/tests/plugin_backends_v2_resolve.rs)
+- [week3_004_api.rs](../distros/desktop-tauri/tests/week3_004_api.rs)（更宽 API 覆盖）  
+- [plugin_backends_v2_resolve.rs](../distros/desktop-tauri/tests/plugin_backends_v2_resolve.rs)

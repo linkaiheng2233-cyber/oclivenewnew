@@ -8,7 +8,7 @@ This document states **what security-related work exists in this repo today** an
 
 ## Completed in this round (engineering)
 
-- **`unsafe` blocks**: full inventory with comments (concurrency and invariants); see `# Safety` / module headers in `src-tauri/src/**/*.rs`.
+- **`unsafe` blocks**: full inventory with comments (concurrency and invariants); see `# Safety` / module headers in `distros/desktop-tauri/src/**/*.rs`.
 - **Cancellation and concurrency**: `process_message` path, `PluginHost` resolution, **cancellable LLM** (e.g. `llm_cancelable` modules)—**lock ordering**, `.await` boundaries, and cancel semantics are documented in source comments and key module headers.
 - **`cargo audit`**: run regularly; **vulnerability-level** hits are tracked in [KNOWN_VULNERABILITIES.md](./KNOWN_VULNERABILITIES.md).
 - **Concurrency review**: targeted review (not formal verification) of **`Arc` / `Mutex` / `JoinHandle`** and **async cancellation** on the main orchestration path.

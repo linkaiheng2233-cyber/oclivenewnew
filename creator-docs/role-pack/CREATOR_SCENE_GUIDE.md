@@ -23,7 +23,7 @@
 以角色 ID 为 `mumu` 为例，场景相关文件建议如下组织：
 
 ```text
-roles/mumu/
+distros/chat-pro/roles/mumu/
 ├── manifest.json              # 声明 scenes 列表、记忆话题权重等
 ├── core_personality.txt       # 核心性格档案（与场景无关）
 ├── config.json                # 可选：时间衰减等
@@ -147,7 +147,7 @@ roles/mumu/
 
 ## 8. 新增场景：推荐步骤清单
 
-1. 新建文件夹 `roles/<角色ID>/scenes/<新场景ID>/`。  
+1. 新建文件夹 `distros/chat-pro/roles/<角色ID>/scenes/<新场景ID>/`。  
 2. 编写 `scene.json`：至少 `name`、尽量多的 `keywords`，按需 `welcome_message`、`events`、`monologues`。  
 3. 编写 `description.txt`（推荐），写清氛围与互动习惯。  
 4. 在 **`manifest.json` 的 `scenes`** 中追加该 id。  

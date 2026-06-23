@@ -36,7 +36,7 @@ This page is the **naming SSOT** for OCLive. Key rules:
 | **发行版** | **distro** | 面向用户的前端壳 + 集成逻辑 | 桌面 `oclivenewnew-tauri`、VS Code 扩展、未来游戏壳 |
 | **宿主进程** | **host process** | 运行某发行版的 OS 进程；可 attach 或 spawn 内核 | Tauri 桌面进程、VS Code extension host |
 | **单写者内核** | **single-writer kernel** | 同一时刻一个 `:8420` 进程写 `app.db` | [DISTRO_KERNEL_LIFECYCLE.md](kernel/DISTRO_KERNEL_LIFECYCLE.md) |
-| **角色包** | **role pack** | 身份、人格、关系、`prompts/` 等内容 | `roles/{id}/` |
+| **角色包** | **role pack** | 身份、人格、关系、`prompts/` 等内容 | `distros/chat-pro/roles/{id}/` |
 | **蓝图** | **blueprint** | 槽位实例、后端路由、模型、交互/记忆策略、双核开关等系统配置 | `pipeline.ocblueprint` 内 `slot_registry`、`runtime_config` 等 |
 | **契约型薄核** | **contract-type thin kernel** | 内核只做编排 + 跨宿主错误语义；能力经槽位接入 | [OCLIVE_ARCHITECTURE_OVERVIEW.md](getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) |
 
@@ -88,7 +88,7 @@ This page is the **naming SSOT** for OCLive. Key rules:
 
 ## 2. 命名原则（执行）
 
-1. **命名即文档**：crate / 文件名应能回答「改什么去哪」；做不到时必须在本文 + [crates/README.md](../crates/README.md) 补速查表。
+1. **命名即文档**：crate / 文件名应能回答「改什么去哪」；做不到时必须在本文 + [kernel/crates/README.md](../kernel/crates/README.md) 补速查表。
 2. **概念统一**：权威名唯一；别名列入 §6 禁止列表。
 3. **层级自解释**：依赖方向 `types → contracts → runtime → host → {server, tauri}` 不变。
 4. **职责匹配**：磁盘名 / JSON 键 / Rust 模块名不一致时，以**职责**为准并在本文标注，不强行重命名已冻结产物。
@@ -109,11 +109,11 @@ This page is the **naming SSOT** for OCLive. Key rules:
 | L1 引擎 | `oclive_kernel_runtime` | 纯业务公式、路径/发现常量；**过渡期 re-export L0** | Prompt 段落、`*_engine` 公式 | `domain/prompt_builder/mod.rs`（`sections.rs`） |
 | L2 编排 | `oclive_kernel_host` | **`process_message`**、DB、HTTP、基础设施 | 回合流程、持久化、插件 wiring | `domain/chat_engine/` |
 | L3 二进制 | `oclive_kernel_server` | 无头 `oclive-kernel-server --api` 入口 | CLI 参数 only | `src/main.rs` |
-| L3 二进制 | `oclivenewnew-tauri` | 桌面 IPC 薄壳、kernel attach | Tauri 命令、深链 | `src-tauri/src/api/` |
-| 工具 | `oclive-cli` | init / pack / bench / doctor | 脚手架模板 | `crates/oclive-cli/` |
-| L0 基础设施 | `oclive_sqlx` | workspace 统一 sqlx 依赖与特性 | sqlx 版本/特性 bump | `crates/oclive_sqlx/` |
-| L0 校验 | `oclive_validation_wasm` | pack-editor wasm 校验边界 | wasm32 构建与 re-export | `crates/oclive_validation_wasm/` |
-| 测试 | `fuzz` | cargo-fuzz 目标（非 default-members） | fuzz  harness | `fuzz/` |
+| L3 二进制 | `oclivenewnew-tauri` | 桌面 IPC 薄壳、kernel attach | Tauri 命令、深链 | `distros/desktop-tauri/src/api/` |
+| 工具 | `oclive-cli` | init / pack / bench / doctor | 脚手架模板 | `kernel/crates/oclive-cli/` |
+| L0 基础设施 | `oclive_sqlx` | workspace 统一 sqlx 依赖与特性 | sqlx 版本/特性 bump | `kernel/crates/oclive_sqlx/` |
+| L0 校验 | `oclive_validation_wasm` | pack-editor wasm 校验边界 | wasm32 构建与 re-export | `kernel/crates/oclive_validation_wasm/` |
+| 测试 | `fuzz` | cargo-fuzz 目标（非 default-members） | fuzz  harness | `kernel/fuzz/` |
 | **实验（已删）** | `oclive_runtimed` | HTTP 队列 + 健康代理原型 | **已于 2026-06-10 删除（D-ORPHAN-01）** | 恢复见 git 历史 |
 
 记忆口诀：**Types = 形状，Contracts = 接口，Runtime = 公式，Host = 流程，Server/Tauri = 入口。**
@@ -125,7 +125,7 @@ This page is the **naming SSOT** for OCLive. Key rules:
 改可插拔后端接口？              → oclive_kernel_contracts
 改 Prompt 怎么拼、好感怎么算？   → oclive_kernel_runtime（公式）
 改一条消息的执行顺序/分支？      → oclive_kernel_host::process_message
-改 Tauri 命令名/前端 invoke？    → src-tauri/src/api/*.rs
+改 Tauri 命令名/前端 invoke？    → distros/desktop-tauri/src/api/*.rs
 改角色包 JSON 能否通过校验？     → oclive_validation
 改磁盘 blueprint 文件名/顶层键？ → 冻结（v2/v3）；仅 RFC 可动
 ```
@@ -153,7 +153,7 @@ This page is the **naming SSOT** for OCLive. Key rules:
 
 **文档补偿（已采用）**：
 
-- 本文 §3 + [crates/README.md](../crates/README.md)
+- 本文 §3 + [kernel/crates/README.md](../kernel/crates/README.md)
 - crate `lib.rs` 顶部英文模块说明（`oclive_kernel_runtime` 已标注 transitional re-export）
 - 层级代号 **L0/L1/L2/L3** 可在 PR / Issue 中使用
 
@@ -162,7 +162,7 @@ This page is the **naming SSOT** for OCLive. Key rules:
 ### 3.4 `oclive_runtimed` 说明（已删除）
 
 - 实验性 scheduler daemon 原型，**已于 2026-06-10 删除**（技术债 D-ORPHAN-01，从未接入产品路径）
-- 恢复方式：`git log --diff-filter=D -- crates/oclive_runtimed`
+- 恢复方式：`git log --diff-filter=D -- kernel/crates/oclive_runtimed`
 - 命名中的 `runtimed` = 实验性 daemon；**不要**与 `oclive_kernel_runtime` 混淆
 
 ---
@@ -200,7 +200,7 @@ This page is the **naming SSOT** for OCLive. Key rules:
 
 1. **新 Rust 代码**只从 canonical crate import（下表「Canonical import」列）。
 2. **禁止**为取 DTO / trait 而新增 `use oclive_kernel_runtime::SendMessageRequest` 等绕路（runtime 仅保留路径、内核发现、引擎 `domain/*` 合法用途）。
-3. **`src-tauri`** 经 `oclive_kernel_host` / `oclive_kernel_types` 消费内核；**勿**假设编排仍在 `src-tauri/src/domain`（**P1 Done，已迁出**）。
+3. **`distros/desktop-tauri`** 经 `oclive_kernel_host` / `oclive_kernel_types` 消费内核；**勿**假设编排仍在 Tauri 宿主内（**P1 Done，已迁至 `kernel/crates/oclive_kernel_host`**）。
 4. 存量 re-export 可读，但 PR 触及时优先改为 canonical 路径。
 
 | 你在写… | Canonical import | 禁止作为新代码首选 |
@@ -208,7 +208,7 @@ This page is the **naming SSOT** for OCLive. Key rules:
 | 任何 crate 的 DTO / 错误 | `oclive_kernel_types::…` | `oclive_kernel_runtime::SendMessageRequest` |
 | Trait 端口 | `oclive_kernel_contracts::…` | 仅为了 trait 而 `use oclive_kernel_runtime::LlmClient` |
 | Host 内编排 | `crate::domain::…` / `crate::domain::ports::…` | 跨 crate 直接 `use oclive_kernel_runtime::domain::chat_engine` |
-| Host 外消费编排 | `oclive_kernel_host::domain::process_message` | 假设仍在 `src-tauri/src/domain`（**已迁出**） |
+| Host 外消费编排 | `oclive_kernel_host::domain::process_message` | 假设仍在 `distros/desktop-tauri` 内编排（**已迁出至 host**） |
 | Tauri 命令 impl | `oclive_kernel_host::service::*_impl` | 在 `api/` 重复业务逻辑 |
 | 前端 TS 类型 | 与 `dto.rs` 对齐的手写类型 / 生成类型 | 字段名 `response`（应为 **`reply`**） |
 
@@ -217,11 +217,11 @@ This page is the **naming SSOT** for OCLive. Key rules:
 | 阶段 | 目标 | 完成判据 |
 |------|------|----------|
 | **P0（当前）** | 新 PR 遵循 §4.2；`rg` 不再新增 `runtime` 直引 DTO | CR / clippy 注释 + Agent 规则 |
-| **P1** | `src-tauri` 去除仅因 re-export 存在的 `oclive_kernel_runtime` 依赖 | **Done（2026-06-07）**：`src-tauri` 经 `oclive_kernel_host` / `oclive_kernel_types` canonical import；`rg 'oclivenewnew_tauri::domain' src-tauri` 零命中 |
+| **P1** | `distros/desktop-tauri` 去除仅因 re-export 存在的 `oclive_kernel_runtime` 依赖 | **Done（2026-06-07）**：Tauri 宿主经 `oclive_kernel_host` / `oclive_kernel_types` canonical import；`rg 'oclivenewnew_tauri::domain' distros/desktop-tauri` 零命中 |
 | **P2** | `oclive_kernel_runtime` 移除 `pub use oclive_kernel_types::*` | runtime `lib.rs` 仅导出引擎 + 常量 |
 | **P3** | `domain/ports` 改为 `pub use oclive_kernel_contracts::*` 直连 | 删除经 runtime 绕路 |
 
-参考：[handoff/ARCHITECTURE_LAYERING.md](../handoff/ARCHITECTURE_LAYERING.md)、[oclive_kernel_host/src/domain/ports/mod.rs](../crates/oclive_kernel_host/src/domain/ports/mod.rs)。
+参考：[handoff/ARCHITECTURE_LAYERING.md](../handoff/ARCHITECTURE_LAYERING.md)、[oclive_kernel_host/src/domain/ports/mod.rs](../kernel/crates/oclive_kernel_host/src/domain/ports/mod.rs)。
 
 ### 4.4 函数动词表（D-NAME-01 · 2026-06-11）
 
@@ -325,7 +325,7 @@ SSOT：[DISTRO_KERNEL_LIFECYCLE.md](../kernel/DISTRO_KERNEL_LIFECYCLE.md) · [KE
 |------|------|----------|
 | 文件名 `pipeline.ocblueprint` 暗示 DSL | 在所有新文档首次出现时用「蓝图文件 ``pipeline.ocblueprint``」 | 文档 |
 | `dual_pipeline` 与蓝图 `pipeline` 键混淆 | 架构图注释：Rust 模块 `dual_pipeline` ↔ JSON `pipeline.experimental` | 文档 + 代码注释 |
-| README 仍写 `src-tauri/.../process_message` | 统一指向 `oclive_kernel_host/.../process_message.rs` | 文档（[BUS_FACTOR_NOTES.md](../handoff/BUS_FACTOR_NOTES.md) 已部分正确） |
+| README 仍写 `distros/desktop-tauri/.../process_message` | 统一指向 `kernel/crates/oclive_kernel_host/.../process_message.rs` | 文档（[BUS_FACTOR_NOTES.md](../handoff/BUS_FACTOR_NOTES.md) 已部分正确） |
 | 「capability-first」指 spawn 顺序 | 改为 **profile-aware attach + bundled-first spawn** | 文档 |
 | 「apply_within_ceiling」指 profile 合并 | 改为 **`apply_host_ceiling` 整表替换**（或省略 profile） | 文档 |
 
@@ -335,7 +335,7 @@ SSOT：[DISTRO_KERNEL_LIFECYCLE.md](../kernel/DISTRO_KERNEL_LIFECYCLE.md) · [KE
 |------|-------------|------|
 | `response`（作 AI 回复字段名） | **`reply`** | `SendMessageResponse.reply` |
 | `memory_backend` / `affect_backend` | `plugin_backends.memory` / `.emotion` 或 `slot_registry type: memory` | 早期愿景草案 |
-| `Joy` / `Fearful` 等未定义 Emotion 变体 | [emotion.rs](../crates/oclive_kernel_types/src/models/emotion.rs) 枚举 | DTO 契约 |
+| `Joy` / `Fearful` 等未定义 Emotion 变体 | [emotion.rs](../kernel/crates/oclive_kernel_types/src/models/emotion.rs) 枚举 | DTO 契约 |
 | 「第 7 模块」指 directory 插件 | **第 K 模块的 xxx 插件实现** | 插件不占模块号 |
 | 「专家模型设施模块」（中间大类） | **专家模型设施子模块** 或 **专家路由** | 架构规定 |
 | `mcp_http` / `directory_plugin_process_spawn`（权限键） | `mcp:http` / `process:spawn` / `network:*` | Breaking 2026 Unreleased |
@@ -345,7 +345,7 @@ SSOT：[DISTRO_KERNEL_LIFECYCLE.md](../kernel/DISTRO_KERNEL_LIFECYCLE.md) · [KE
 
 ### 6.1 已移除 CLI 别名
 
-见 [crates/oclive-cli/DEPRECATED_COMMANDS.md](../crates/oclive-cli/DEPRECATED_COMMANDS.md)（`publish`、`plugin search` 在线版等）。
+见 [kernel/crates/oclive-cli/DEPRECATED_COMMANDS.md](../kernel/crates/oclive-cli/DEPRECATED_COMMANDS.md)（`publish`、`plugin search` 在线版等）。
 
 ---
 
@@ -366,17 +366,17 @@ SSOT：[DISTRO_KERNEL_LIFECYCLE.md](../kernel/DISTRO_KERNEL_LIFECYCLE.md) · [KE
 
 ### 8.1 Tauri invoke 映射
 
-Tauri 将 Rust **`snake_case` 形参** 映射为前端 **`camelCase` 键**。权威封装：`src/api/*.ts`。
+Tauri 将 Rust **`snake_case` 形参** 映射为前端 **`camelCase` 键**。权威封装：`distros/shared/src/api/*.ts`。
 
 | Rust 命令 | TS 封装 | 常见参数（TS → Rust） |
 |-----------|---------|----------------------|
-| `send_message` | `src/api/chat.ts` | `req` → `SendMessageRequest` |
-| `set_session_slot_override` | `src/api/settings.ts` | `roleId`, `slotType`, … |
-| `save_role_slot_registry` | `src/api/settings.ts` | `roleId`, `slotRegistry` |
-| `get_kernel_connection_status` | `src/api/kernel.ts` | — |
-| `list_mcp_servers` | `src/api/agent.ts` | — |
+| `send_message` | `distros/shared/src/api/chat.ts` | `req` → `SendMessageRequest` |
+| `set_session_slot_override` | `distros/shared/src/api/settings.ts` | `roleId`, `slotType`, … |
+| `save_role_slot_registry` | `distros/shared/src/api/settings.ts` | `roleId`, `slotRegistry` |
+| `get_kernel_connection_status` | `distros/shared/src/api/kernel.ts` | — |
+| `list_mcp_servers` | `distros/shared/src/api/agent.ts` | — |
 
-**规则**：新增命令时，`src/api/` 封装必须与 `src-tauri/src/api/*.rs` 形参一致；禁止手写 snake_case 载荷。
+**规则**：新增命令时，`distros/shared/src/api/` 封装必须与 `distros/desktop-tauri/src/api/*.rs` 形参一致；禁止手写 snake_case 载荷。
 
 ### 8.2 核心 DTO 字段
 
@@ -422,15 +422,15 @@ Tauri 将 Rust **`snake_case` 形参** 映射为前端 **`camelCase` 键**。权
 |----------|------|------|
 | **创作者契约**（`creator-docs/role-pack`、`plugin-and-architecture`） | **中文 SSOT** + 英文镜像 | 规范句以中文为准 |
 | **handoff / RFC** | 中文为主 | 关键表头可双语 |
-| **Crate `lib.rs` / `README.md`（`crates/*`）** | **英文正文** | 模块职责、依赖方向；中文仅一句摘要可选 |
-| **`crates/oclive_kernel_host/src/domain/README.md` 类** | 中文或双语表 | 逐步改为英文正文 + 链接中文 handoff |
+| **Crate `lib.rs` / `README.md`（`kernel/crates/*`）** | **英文正文** | 模块职责、依赖方向；中文仅一句摘要可选 |
+| **`kernel/crates/oclive_kernel_host/src/domain/README.md` 类** | 中文或双语表 | 逐步改为英文正文 + 链接中文 handoff |
 | **代码注释** | 与所在 crate 文档语言一致 | 业务非显而易见处再写 |
 
 **禁止**：同一 README 段落中英随机混排（如一句英文一句中文）；应 **整节** 分语言或单一语言 + 链接镜像。
 
 **清理优先级（文档 PR，非代码）**：
 
-1. `crates/README.md`、`oclive_kernel_*/src/lib.rs` — 已 mostly EN
+1. `kernel/crates/README.md`、`oclive_kernel_*/src/lib.rs` — 已 mostly EN
 2. `handoff/ARCHITECTURE_LAYERING.md` — 中文；保留
 3. 根 `README.md` 过时路径 — 指向 `oclive_kernel_host`
 
@@ -457,7 +457,7 @@ Tauri 将 Rust **`snake_case` 形参** 映射为前端 **`camelCase` 键**。权
 |------|------|
 | 架构总述 | [OCLIVE_ARCHITECTURE_OVERVIEW.md](getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) |
 | 角色包 vs 蓝图 | [handoff/ROLE_PACK_BOUNDARY.md](../handoff/ROLE_PACK_BOUNDARY.md) |
-| Crate 速查 | [crates/README.md](../crates/README.md) |
+| Crate 速查 | [kernel/crates/README.md](../kernel/crates/README.md) |
 | 分层纪律 | [handoff/ARCHITECTURE_LAYERING.md](../handoff/ARCHITECTURE_LAYERING.md) |
 | 双核 RFC | [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md) |
 | 关键路径 | [handoff/BUS_FACTOR_NOTES.md](../handoff/BUS_FACTOR_NOTES.md) |

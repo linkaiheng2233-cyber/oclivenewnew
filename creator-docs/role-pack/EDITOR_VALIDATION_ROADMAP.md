@@ -4,7 +4,7 @@
 
 ## 短期（当前）
 
-- **权威**：运行时 **`load_role`**：顶层 JSON 键白名单（`oclive_validation::json_keys`）、合并后的 **`validate_disk_manifest`**、**`validate_min_runtime_version`**（与 `CARGO_PKG_VERSION` 比较），见 `src-tauri/src/infrastructure/storage.rs`。  
+- **权威**：运行时 **`load_role`**：顶层 JSON 键白名单（`oclive_validation::json_keys`）、合并后的 **`validate_disk_manifest`**、**`validate_min_runtime_version`**（与 `CARGO_PKG_VERSION` 比较），见 `kernel/crates/oclive_kernel_host/src/infrastructure/storage.rs`。  
 - **编写器**：导出前运行 **`manifest.json` / `settings.json` 顶层键检查**（与 Rust 白名单一致，见 `oclive-pack-editor/src/lib/jsonKeys.ts`）；若已构建 wasm（`npm run wasm:build`），则 **`validateManifestWasm`** 与 **`validate_disk_manifest` + `validate_min_runtime_version`** 同源；否则回退 TypeScript 轻量检查 + **`validateMinRuntimeVersion`**（`HOST_RUNTIME_VERSION` 须与 oclivenewnew `Cargo.toml` 对齐）。  
 - **验收**：导出包 → 设置 **`OCLIVE_ROLES_DIR`** 指向 roles 根 → 在 oclive 中加载并对话。
 
@@ -17,5 +17,5 @@
 
 ## 与文档的关系
 
-- 包字段与版本语义：`roles/README_MANIFEST.md`、`creator-docs/role-pack/PACK_VERSIONING.md`。  
+- 包字段与版本语义：`distros/chat-pro/roles/README_MANIFEST.md`、`creator-docs/role-pack/PACK_VERSIONING.md`。  
 - 编写器 README 链到上述路径，避免双份漂移。

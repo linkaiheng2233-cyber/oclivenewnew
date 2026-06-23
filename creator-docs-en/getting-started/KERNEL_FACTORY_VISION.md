@@ -26,7 +26,7 @@ Full narrative and characteristics: **[OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_A
 
 ## Capability tiers (public surface)
 
-Aligned with [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md); **source of truth** is `crates/oclive-cli/src/main.rs`.
+Aligned with [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md); **source of truth** is `kernel/crates/oclive-cli/src/main.rs`.
 
 | Tier | Scope |
 |------|--------|
@@ -74,7 +74,7 @@ flowchart TB
   subgraph impl["Implementation layer"]
     PB["plugin_backends modules 1-6"]
     M["monolith.toml compile-time weld"]
-    PL["plugins/ directory · Remote sidecars"]
+    PL["distros/chat-pro/plugins/ directory · Remote sidecars"]
   end
   subgraph code["Code layer (orchestration)"]
     PM["process_message fixed Rust order"]
@@ -94,8 +94,8 @@ flowchart TB
 
 | Layer | Audience | Tools / artifacts | What changes |
 |-------|----------|-------------------|--------------|
-| **Recipe** | Platform / hardware devs | `oclive init --template …` | Project type, slot presets, Monolith on/off, sample `roles/` |
-| **Implementation** | Integrators + authors | `settings.json`, `monolith.toml`, `plugins/` | Per-slot **builtin / remote / directory / ollama**; which slots to weld |
+| **Recipe** | Platform / hardware devs | `oclive init --template …` | Project type, slot presets, Monolith on/off, sample `distros/chat-pro/roles/` |
+| **Implementation** | Integrators + authors | `settings.json`, `monolith.toml`, `distros/chat-pro/plugins/` | Per-slot **builtin / remote / directory / ollama**; which slots to weld |
 | **Code** | Kernel maintainers | `chat_engine` in `src-tauri` / `oclive_kernel_runtime` | **Atomic step order** per turn (memory → emotion → event → prompt → LLM → …) |
 
 ---
@@ -165,8 +165,8 @@ See [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md) (Chinese guide includes U�
 1. Browse recipes: `oclive init --list-templates` or the interactive template picker; then pick `robot-soul`, `robot-gateway` (MCP scaffold), `dialogue-only`, `headless-api`, or `library-embed`.
 2. **Override** explicitly if needed: `--preset`, `--monolith`, `--monolith-preset`, `--with-role-pack`, `--with-example-plugin` beat template defaults.
 3. **Wire the real kernel**: `--kernel-source <oclivenewnew root>`; `cargo build` / `cargo run -- --api` in the generated tree.
-4. **Swap soul**: edit `roles/<id>/` or `oclive pack create`; `oclive dev` watches manifest/settings.
-5. **Swap implementations**: `plugin_backends`, `plugins/<id>/`, or Remote sidecars ([PLUGIN_AUTHOR_LEARNING_PATH.md](../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)).
+4. **Swap soul**: edit `distros/chat-pro/roles/<id>/` or `oclive pack create`; `oclive dev` watches manifest/settings.
+5. **Swap implementations**: `plugin_backends`, `distros/chat-pro/plugins/<id>/`, or Remote sidecars ([PLUGIN_AUTHOR_LEARNING_PATH.md](../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)).
 6. **Need speed**: `robot-soul` / `robot-gateway` enable Monolith by default; edit `monolith.toml` then `oclive build`.
 
 ---
@@ -198,7 +198,7 @@ See [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md) (Chinese guide includes U�
 
 ## Quick mode
 
-**`oclive init --quick`**: `preset=full`, no Monolith, no `roles/`. Interactive mode asks only **project name** and **output directory**. CLI flags already set skip duplicate prompts.
+**`oclive init --quick`**: `preset=full`, no Monolith, no `distros/chat-pro/roles/`. Interactive mode asks only **project name** and **output directory**. CLI flags already set skip duplicate prompts.
 
 ---
 
@@ -218,7 +218,7 @@ See [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md) (Chinese guide includes U�
 
 ## robot-gateway MCP
 
-Generates **`mcp_servers/`** (README + example JSON) and **`roles/gateway/settings.json`** with `agent: builtin` and **`agent_mcp`** placeholders for smart-home sidecars.
+Generates **`mcp_servers/`** (README + example JSON) and **`distros/chat-pro/roles/gateway/settings.json`** with `agent: builtin` and **`agent_mcp`** placeholders for smart-home sidecars.
 
 ---
 
@@ -232,7 +232,7 @@ Generates **`mcp_servers/`** (README + example JSON) and **`roles/gateway/settin
 | `headless-api` | Headless API | full | off | kernel_server | none |
 | `library-embed` | Embedded library | minimal | off | library | none |
 
-`--with-role-pack`: `robot-soul-minimal` | `default`; `--skip-role-pack` forces empty `roles/`.
+`--with-role-pack`: `robot-soul-minimal` | `default`; `--skip-role-pack` forces empty `distros/chat-pro/roles/`.
 
 ---
 
@@ -244,7 +244,7 @@ Generates **`mcp_servers/`** (README + example JSON) and **`roles/gateway/settin
 
 ## Example plugin
 
-`--with-example-plugin` (default off) copies **`examples/directory-plugin-llamacpp/`** to **`plugins/com.oclive.example.llamacpp_llm/`**. See **`plugins/README.md`** in the generated tree.
+`--with-example-plugin` (default off) copies **`examples/directory-plugin-llamacpp/`** to **`distros/chat-pro/plugins/com.oclive.example.llamacpp_llm/`**. See **`distros/chat-pro/plugins/README.md`** in the generated tree.
 
 ---
 
@@ -256,7 +256,7 @@ Generates **`mcp_servers/`** (README + example JSON) and **`roles/gateway/settin
 
 ## Dev watch (`dev`)
 
-**`oclive dev`** recursively watches **`roles/**/manifest.json`** and **`settings.json`** with **500ms debounce** and prints which role pack `<id>` changed.
+**`oclive dev`** recursively watches **`distros/chat-pro/roles/**/manifest.json`** and **`settings.json`** with **500ms debounce** and prints which role pack `<id>` changed.
 
 ---
 

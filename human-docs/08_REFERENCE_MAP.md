@@ -16,7 +16,7 @@
 | [OCLIVE_ARCHITECTURE_OVERVIEW](../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) | 第 1–4 设施子模块 |
 | [RFC 立绘 / 视觉表现（草案）](../creator-docs/rfc/RFC_PORTRAIT_FACILITY.md) | catalog · 表现导演 · 角色舞台 |
 | [PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN](../handoff/PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md) | 分阶段实施 |
-| [crates/README](../crates/README.md) | Crate 依赖与改哪 |
+| [kernel/crates/README](../kernel/crates/README.md) | Crate 依赖与改哪 |
 | [DESIGN_DECISIONS](../creator-docs/architecture/DESIGN_DECISIONS.md) | 取舍记录 |
 | [ARCHITECTURE_LAYERING](../handoff/ARCHITECTURE_LAYERING.md) | 分层 ratchet |
 | [ROLE_PACK_BOUNDARY](../handoff/ROLE_PACK_BOUNDARY.md) | 角色 vs 蓝图 |
@@ -28,7 +28,7 @@
 | 文档 | 用途 |
 |------|------|
 | [NAMING_CONVENTIONS](../creator-docs/NAMING_CONVENTIONS.md) | 权威名、import、禁止别名 |
-| [dto.rs](../crates/oclive_kernel_types/src/models/dto.rs) | HTTP/IPC 字段 |
+| [dto.rs](../kernel/crates/oclive_kernel_types/src/models/dto.rs) | HTTP/IPC 字段 |
 | [KERNEL_ERROR_CODE_CONVENTION](../creator-docs/getting-started/KERNEL_ERROR_CODE_CONVENTION.md) | 错误 JSON |
 | [COMPATIBILITY](../creator-docs/COMPATIBILITY.md) | 版本兼容表 |
 | [BREAKING_CHANGE_PROCESS](../handoff/BREAKING_CHANGE_PROCESS.md) | Breaking 流程 |
@@ -41,7 +41,7 @@
 |------|------|
 | [ROLE_PACK_SPEC](../creator-docs/role-pack/ROLE_PACK_SPEC.md) | 包规范 |
 | [CREATOR_LEARNING_PATH](../creator-docs/role-pack/CREATOR_LEARNING_PATH.md) | 创作者路径 |
-| [roles/README_MANIFEST](../roles/README_MANIFEST.md) | manifest 字段 |
+| [distros/chat-pro/roles/README_MANIFEST](../distros/chat-pro/roles/README_MANIFEST.md) | manifest 字段 |
 | [PACK_VERSIONING](../creator-docs/role-pack/PACK_VERSIONING.md) | 版本规则 |
 | [CROSS_HOST_MEMORY](../creator-docs/role-pack/CROSS_HOST_MEMORY.md) | 跨宿主记忆 |
 

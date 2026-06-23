@@ -10,9 +10,9 @@
 | 插件 UI 状态（v2） | `{app_data}/plugin_state.json` |
 | 宿主插件选项 | `{app_data}/oclive_host_plugins.json` |
 | 上次切换的角色 ID | `{app_data}/oclive_last_role_id.txt` |
-| 用户级插件包目录（扫描根之一） | `{app_data}/plugins/` |
+| 用户级插件包目录（扫描根之一） | `{app_data}/distros/chat-pro/plugins/` |
 
-**实现参考**：`src-tauri/src/infrastructure/plugin_state.rs`、`src-tauri/src/infrastructure/directory_plugins/runtime.rs`、`src-tauri/src/lib.rs`（`app_data_dir` 解析）。
+**实现参考**：`kernel/crates/oclive_kernel_host/src/infrastructure/plugin_state.rs`、`kernel/crates/oclive_kernel_host/src/infrastructure/directory_plugins/runtime.rs`、`distros/desktop-tauri/src/lib.rs`（`app_data_dir` 解析）。
 
 ---
 
@@ -42,7 +42,7 @@
 
 ## 2. `ui.json`（角色包）
 
-- **位置**：角色包根目录，与 **`settings.json`**、**`manifest.json`** 并列（见 [roles/README_MANIFEST.md](../../roles/README_MANIFEST.md)）。
+- **位置**：角色包根目录，与 **`settings.json`**、**`manifest.json`** 并列（见 [distros/chat-pro/roles/README_MANIFEST.md](../../distros/chat-pro/roles/README_MANIFEST.md)）。
 - **用途**：创作者定义 **推荐前端布局**：整壳插件、各官方插槽的插件顺序与可见性、主题与布局等。
 - **格式**：JSON，**机器可读 schema** 见 **[role-pack/ui.json.schema.json](../role-pack/ui.json.schema.json)**。
 
@@ -68,7 +68,7 @@
 
 ## 4. `manifest.json`（目录插件）
 
-- **位置**：每个插件包根目录下的 **`manifest.json`**（扫描根为 `<roles 父目录>/plugins/`、`./plugins/`、`{app_data}/plugins/` 等，见 [DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md) §1）。
+- **位置**：每个插件包根目录下的 **`manifest.json`**（扫描根为 `<roles 父目录>/distros/chat-pro/plugins/`、`./distros/chat-pro/plugins/`、`{app_data}/distros/chat-pro/plugins/` 等，见 [DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md) §1）。
 - **用途**：声明插件 ID、版本、整壳、子进程、UI 插槽、bridge 白名单、依赖等。
 - **详细规范**：见 [DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md) §2；**版本号**须为宿主可解析的 **SemVer**（`load_from_dir` 校验）。
 

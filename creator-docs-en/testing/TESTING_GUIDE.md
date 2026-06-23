@@ -20,7 +20,7 @@ For integrators running **v2 blueprint / Monolith** benchmarks locally. Run comm
 
 1. **Matrix:** `oclive init --monolith` (or any tree with `monolith.toml`); optional `--kernel-source` to this repo.  
 2. **Cold start / soak:** `cargo run --release -- --api` works; mock LLM env recommended.  
-3. **Role pack:** v2 example `roles/mumu/pipeline.ocblueprint` (load reference only).
+3. **Role pack:** v2 example `distros/chat-pro/roles/mumu/pipeline.ocblueprint` (load reference only).
 
 ---
 

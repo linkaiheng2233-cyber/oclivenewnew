@@ -9,7 +9,7 @@
 
 | 发行版 | `distro_id` | Hero / 定位 | Profile SSOT |
 |--------|-------------|-------------|--------------|
-| **OCLive Chat Pro** | `desktop` | 桌面 Release hero | [`src-tauri/resources/distro-profiles/desktop.oclive.toml`](../src-tauri/resources/distro-profiles/desktop.oclive.toml) |
+| **OCLive Chat Pro** | `desktop` | 桌面 Release hero | [`distros/desktop-tauri/resources/distro-profiles/desktop.oclive.toml`](../distros/desktop-tauri/resources/distro-profiles/desktop.oclive.toml) |
 | **VS Code Flash** | `vscode` | 姊妹仓 VSIX | [`examples/distro-profiles/vscode.oclive.toml`](../examples/distro-profiles/vscode.oclive.toml) · 镜像 [`oclive-vscode/distro.oclive.toml`](../../oclive-vscode/distro.oclive.toml) |
 | **dev lab** | `desktop-chat` | 实验场 only | [`examples/distro-profiles/desktop-chat.oclive.toml`](../examples/distro-profiles/desktop-chat.oclive.toml) |
 | **AI Theater** | `theater` | Phase 4 打包预埋 | [`examples/distro-profiles/theater.oclive.toml`](../examples/distro-profiles/theater.oclive.toml) |
@@ -24,7 +24,7 @@
 
 | 项 | 路径 / 机制 | Commit（主仓） |
 |----|-------------|----------------|
-| Pro bundled profile | `src-tauri/resources/distro-profiles/desktop.oclive.toml` | `d91789fa` |
+| Pro bundled profile | `distros/desktop-tauri/resources/distro-profiles/desktop.oclive.toml` | `d91789fa` |
 | Tauri kernel bundle | `scripts/bundle-kernel-for-tauri.mjs` · `npm run bundle-kernel:tauri` | `63711570` |
 | bundled-first spawn | `pick_best_for_spawn` · K-SCHED-05/01 | `63711570` |
 | Flash profile 镜像 | `scripts/diff-vscode-distro-profile.mjs` | `d91789fa`（主仓）· `8a4cdae`（vscode） |

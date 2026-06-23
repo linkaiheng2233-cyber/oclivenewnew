@@ -23,7 +23,7 @@
 - **本仓库**：**Node.js**（**≥ 20**，见根 `package.json` `engines`；可选 `.nvmrc`）、**npm**、**Rust** stable、**Ollama**（本地对话默认路径，可选）。
 - **Windows**：需 **Visual Studio Build Tools**（MSVC 链接器）。快速检查脚本：[`scripts/setup-dev.ps1`](scripts/setup-dev.ps1)；详解 [`human-docs/10_SETUP_WINDOWS.md`](human-docs/10_SETUP_WINDOWS.md)。
 - **克隆后**：在仓库根目录执行 **`npm install`**；首次 **`npm run tauri:dev`** 会拉取前端依赖并由 Tauri 驱动 `src-tauri` 构建。
-- **仅验证 Rust workspace**（含 `oclive_validation`、`oclive-cli`、`oclivenewnew-tauri`）：在根目录执行 **`cargo test --workspace`**，或 **`cargo test --manifest-path src-tauri/Cargo.toml`** 仅桌面宿主。
+- **仅验证 Rust workspace**（含 `oclive_validation`、`oclive-cli`、`oclivenewnew-tauri`）：在根目录执行 **`cargo test --workspace`**，或 **`cargo test --manifest-path distros/desktop-tauri/Cargo.toml`** 仅桌面宿主。
 - **Cargo 产物目录**：根目录 [`.cargo/config.toml`](.cargo/config.toml) 将 **`target-dir`** 指到仓库外 **`../oclive-dev-artifacts/oclivenewnew-cargo-target/`**；与源码分离，便于清理。
 
 ## 构建与本地运行
@@ -42,10 +42,10 @@ npm run build
 
 与 [human-docs/04_ENGINEERING_RULES.md](human-docs/04_ENGINEERING_RULES.md)、[`.cursor/rules/oclivenewnew.mdc`](.cursor/rules/oclivenewnew.mdc) 三处同步；变更须同 PR 更新。
 
-1. **编排**：对话主流程在 `crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs`；业务公式在各 `*_engine` / analyzer；**API 层不堆业务**。
-2. **持久化**：`domain/repository.rs` trait + `infrastructure/repositories.rs`；SQL 与表结构以 **`crates/oclive_kernel_host/migrations/001_init.sql`** 为准；禁止虚构表名。
-3. **Tauri**：命令在 `src-tauri/src/api/*.rs`，仅在 `src-tauri/src/lib.rs` 用 `generate_handler!` 注册。
-4. **DTO**：契约以 `crates/oclive_kernel_types/src/models/dto.rs` 为准；回复字段 **`reply`**（非 `response`）；`Emotion` 以 `models/emotion.rs` 为准。
+1. **编排**：对话主流程在 `kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs`；业务公式在各 `*_engine` / analyzer；**API 层不堆业务**。
+2. **持久化**：`domain/repository.rs` trait + `infrastructure/repositories.rs`；SQL 与表结构以 **`kernel/crates/oclive_kernel_host/migrations/001_init.sql`** 为准；禁止虚构表名。
+3. **Tauri**：命令在 `distros/desktop-tauri/src/api/*.rs`，仅在 `distros/desktop-tauri/src/lib.rs` 用 `generate_handler!` 注册。
+4. **DTO**：契约以 `kernel/crates/oclive_kernel_types/src/models/dto.rs` 为准；回复字段 **`reply`**（非 `response`）；`Emotion` 以 `models/emotion.rs` 为准。
 5. **Prompt**：`PromptBuilder::build_prompt(&PromptInput)` 返回 `String`（**非 `Result`，勿用 `?`**）。
 6. **guardrails**：`KERNEL_DIALOGUE_GUARDRAILS` 每轮恒追加；包级 `reply_quality_anchor` **仅替换**默认锚点，**不可替换** guardrails。
 7. **import**：canonical 路径见 [NAMING_CONVENTIONS §4.2](creator-docs/NAMING_CONVENTIONS.md#42-canonical-import-路径)；六槽键 `plugin_backends` / `slot_registry.type`，禁止 `memory_backend` 等别名。
@@ -53,11 +53,11 @@ npm run build
 ## 代码规范（Rust / Vue）
 
 - **Rust**
-  - **格式化**：`cargo fmt`；CI 与 **`npm run check:rust:fmt`** 使用 **`cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check`**。
-  - **Clippy**：工作区根 **[`Cargo.toml`](Cargo.toml)** 定义 **`[workspace.lints.rust]`**（如 **`unsafe_code = "forbid"`**）与 **`[workspace.lints.clippy]`**（如 **`missing_errors_doc`**、**`missing_panics_doc`**、**`must_use_candidate`** 等 **`warn`**）。本地与 CI 使用 **`cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --all-features -- -D warnings`**（见 **`npm run check:rust:clippy`**），即 **所有 Clippy 告警在 CI 中视为错误**。
+  - **格式化**：`cargo fmt`；CI 与 **`npm run check:rust:fmt`** 使用 **`cargo fmt --manifest-path distros/desktop-tauri/Cargo.toml --all -- --check`**。
+  - **Clippy**：工作区根 **[`Cargo.toml`](Cargo.toml)** 定义 **`[workspace.lints.rust]`**（如 **`unsafe_code = "forbid"`**）与 **`[workspace.lints.clippy]`**（如 **`missing_errors_doc`**、**`missing_panics_doc`**、**`must_use_candidate`** 等 **`warn`**）。本地与 CI 使用 **`cargo clippy --manifest-path distros/desktop-tauri/Cargo.toml --all-targets --all-features -- -D warnings`**（见 **`npm run check:rust:clippy`**），即 **所有 Clippy 告警在 CI 中视为错误**。
   - **`unwrap` / `expect`**：业务代码优先 **`Result` / `Option` + `context`**；集成测试等可在 crate 顶部 **`#![allow(clippy::unwrap_used, clippy::expect_used)]`**（与现有 `tests/*.rs` 一致）。**勿**在无关路径放宽 lint。
-  - **SQLx**：**禁止**直接依赖 umbrella `sqlx` 元 crate；使用 [`crates/oclive_sqlx`](crates/oclive_sqlx/README.md)（SQLite-only facade）。变更 **`Cargo.lock`** 的 PR 须跑 **`cargo audit`**（或 `node scripts/dimension5-acceptance.mjs --ci`）。
-- **Vue / TypeScript**：与现有 composables、stores 风格一致；与 Tauri 契约字段对齐（如 **`reply`**，见 `oclive_kernel_runtime` 中 DTO 定义，经 `src-tauri/src/models/mod.rs` 再导出）。
+  - **SQLx**：**禁止**直接依赖 umbrella `sqlx` 元 crate；使用 [`kernel/crates/oclive_sqlx`](kernel/crates/oclive_sqlx/README.md)（SQLite-only facade）。变更 **`Cargo.lock`** 的 PR 须跑 **`cargo audit`**（或 `node scripts/dimension5-acceptance.mjs --ci`）。
+- **Vue / TypeScript**：与现有 composables、stores 风格一致；与 Tauri 契约字段对齐（如 **`reply`**，见 `oclive_kernel_runtime` 中 DTO 定义，经 `kernel/crates/oclive_kernel_types/src/models/mod.rs` 再导出）。
 
 ## 提交规范
 
@@ -71,7 +71,7 @@ npm run build
 |------|------|
 | 日常开发（与 `npm run check` 对齐） | **`npm run check`**（`vite build` + **`cargo fmt` / `clippy` / `cargo test --lib`**，manifest 指向 `src-tauri`） |
 | 发版或改引擎 / 契约前 | **`npm run check:release`**（含 **`cargo test`** 全量，即 **`tests/`** 集成与单元） |
-| 仅 Rust workspace | **`cargo test --workspace`**（根目录；含 `crates/*` 与 `src-tauri`） |
+| 仅 Rust workspace | **`cargo test --workspace`**（根目录；含 `kernel/crates/*` 与 `src-tauri`） |
 | 仅前端单元 | **`npm run test:unit`**（Vitest） |
 | **核心 HTTP 重启烟测（A1.1a）** | **`npm run test:e2e:core-api-restart`**（需已 `cargo build -p oclivenewnew-tauri`；默认 `OCLIVE_HTTP_API_MOCK_LLM=1`） |
 | **三发行版 smoke（Pro / Flash）** | **`npm run test:distro:smoke`**（profile mirror · distro kernel · Tauri bundled-first）；发版前另跑 **`npm run bundle-kernel:tauri`**（`tauri:build` 已含） |
@@ -88,14 +88,14 @@ npm run build
 
 | Crate / 区域 | 路径 | 负责人 | 说明 |
 |--------------|------|--------|------|
-| 桌面宿主 | `src-tauri/` | @linkaiheng2233-cyber | Tauri IPC、HTTP `--api`、`AppState` |
-| 内核编排 | `crates/oclive_kernel_host/src/domain/chat_engine/` | 同上 | `process_message` / `co_present` |
-| 内核 crate | `crates/oclive_kernel_types` | 同上 | DTO、`AppError` |
-| 内核 crate | `crates/oclive_kernel_contracts` | 同上 | 端口 trait |
-| 内核 crate | `crates/oclive_kernel_runtime` | 同上 | 编排与 re-export |
-| 校验 | `crates/oclive_validation` | 同上 | manifest / v2 蓝图 |
-| CLI | `crates/oclive-cli` | 同上 | `init` / `bench` / `test` / `doctor` |
-| 前端 | `src/`（Vue） | 同上 | Pinia、插件管理、i18n |
+| 桌面宿主 | `distros/desktop-tauri/` | @linkaiheng2233-cyber | Tauri IPC、HTTP `--api`、`AppState` |
+| 内核编排 | `kernel/crates/oclive_kernel_host/src/domain/chat_engine/` | 同上 | `process_message` / `co_present` |
+| 内核 crate | `kernel/crates/oclive_kernel_types` | 同上 | DTO、`AppError` |
+| 内核 crate | `kernel/crates/oclive_kernel_contracts` | 同上 | 端口 trait |
+| 内核 crate | `kernel/crates/oclive_kernel_runtime` | 同上 | 编排与 re-export |
+| 校验 | `kernel/crates/oclive_validation` | 同上 | manifest / v2 蓝图 |
+| CLI | `kernel/crates/oclive-cli` | 同上 | `init` / `bench` / `test` / `doctor` |
+| 前端 | `distros/shared/` + `distros/chat-pro/`（Vue） | 同上 | Pinia、插件管理、i18n |
 | 文档 | `creator-docs/`、`handoff/` | 同上 | 契约与发版清单 |
 
 更细入口见 **[`handoff/BUS_FACTOR_NOTES.md`](handoff/BUS_FACTOR_NOTES.md)**（含 crate 拆分后路径）。
@@ -117,12 +117,12 @@ npm run build
 
 | 你想… | 从这里开始 |
 |--------|------------|
-| 理解一条消息如何走完 | `crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs` → `turn_pipeline.rs` |
-| 改多实例槽合并规则 | `crates/oclive_kernel_host/src/domain/slot_runner.rs`（读函数头「为何」注释） |
-| 改插件后端解析 | `crates/oclive_kernel_host/src/domain/ports/plugin_host.rs` + `slot_resolver.rs` |
-| 改蓝图加载 / 写盘 | `src-tauri/src/infrastructure/storage.rs`；校验在 `crates/oclive_validation` |
-| 实现目录 / Remote 插件 | `creator-docs/plugin-and-architecture/PLUGIN_V1.md` + `crates/oclive_kernel_contracts` 对应 trait |
-| 改 HTTP / Tauri 契约 | `src-tauri/src/models/`、`src-tauri/src/api/`、`creator-docs/getting-started/ERROR_CODES.md` |
+| 理解一条消息如何走完 | `kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs` → `turn_pipeline.rs` |
+| 改多实例槽合并规则 | `kernel/crates/oclive_kernel_host/src/domain/slot_runner.rs`（读函数头「为何」注释） |
+| 改插件后端解析 | `kernel/crates/oclive_kernel_host/src/domain/ports/plugin_host.rs` + `slot_resolver.rs` |
+| 改蓝图加载 / 写盘 | `kernel/crates/oclive_kernel_host/src/infrastructure/storage.rs`；校验在 `kernel/crates/oclive_validation` |
+| 实现目录 / Remote 插件 | `creator-docs/plugin-and-architecture/PLUGIN_V1.md` + `kernel/crates/oclive_kernel_contracts` 对应 trait |
+| 改 HTTP / Tauri 契约 | `kernel/crates/oclive_kernel_types/src/models/`、`distros/desktop-tauri/src/api/`、`creator-docs/getting-started/ERROR_CODES.md` |
 | 理解架构取舍 | [`creator-docs/architecture/DESIGN_DECISIONS.md`](creator-docs/architecture/DESIGN_DECISIONS.md) |
 
 ## 常见修改场景
@@ -132,12 +132,12 @@ npm run build
 | 新增槽位类型或合并策略 | `slot_runner.rs`、`slot_resolver.rs`、`oclive_validation`（schema + 校验） | `ROLE_PACK_SPEC.md`、前端 `slotRegistry` / 架构图 |
 | 新增插件后端种类 | `plugin_host.rs`（`BackendRegistry`）、`models` 枚举、`PLUGIN_V1.md` | `settings.json` / 蓝图 `slot_registry` 文档 |
 | 调整共景阶段顺序 | `turn_pipeline.rs`（**慎重**；属主编排） | `DESIGN_DECISIONS.md`、OOCP / 集成测 |
-| 新持久化字段 | `crates/oclive_kernel_host/migrations/`、`infrastructure/repositories.rs` | 禁止虚构表名；更新 handoff 清单 |
-| 新 Tauri 命令 | `src-tauri/src/api/*.rs` + `lib.rs` `generate_handler!` | 前端 `tauri-api.ts` camelCase 键、DTO `reply` 字段 |
+| 新持久化字段 | `kernel/crates/oclive_kernel_host/migrations/`、`infrastructure/repositories.rs` | 禁止虚构表名；更新 handoff 清单 |
+| 新 Tauri 命令 | `distros/desktop-tauri/src/api/*.rs` + `lib.rs` `generate_handler!` | 前端 `tauri-api.ts` camelCase 键、DTO `reply` 字段 |
 
 ## PR 流程
 
-1. **Fork / 功能分支**，一条 PR 聚焦一类变更；契约（manifest、DTO、`PLUGIN_V1`）变更需 **同步文档** 与 **`crates/oclive_validation`**（若适用）。
+1. **Fork / 功能分支**，一条 PR 聚焦一类变更；契约（manifest、DTO、`PLUGIN_V1`）变更需 **同步文档** 与 **`kernel/crates/oclive_validation`**（若适用）。
 2. **描述**：说明动机、行为变化、风险与手动验证步骤；关联 issue（若有）。
 3. **自检**：至少 **`npm run check`**；触及持久化 / HTTP / 编排时建议 **`npm run check:release`**；内核工程可加 **`cargo run -p oclive-cli -- test -o . --json`**。
 4. **审阅**：由 **模块负责人**（上表）或受邀维护者 Review；关注 CI、安全、i18n 与契约文档是否同步。
@@ -149,8 +149,8 @@ npm run build
 
 | 路径 | 关联 ID | 建议命令 |
 |------|---------|----------|
-| `crates/oclive_kernel_host/src/domain/**` | D-LAYER-01 | `node scripts/check-domain-layering.mjs` |
-| `Cargo.lock` / `crates/oclive_sqlx/**` | D-CI-03 | `node scripts/dimension5-acceptance.mjs --ci` |
+| `kernel/crates/oclive_kernel_host/src/domain/**` | D-LAYER-01 | `node scripts/check-domain-layering.mjs` |
+| `Cargo.lock` / `kernel/crates/oclive_sqlx/**` | D-CI-03 | `node scripts/dimension5-acceptance.mjs --ci` |
 | `kernel_ensure_plan_v1.json` / `oclive-cli` ensure | D-VSCODE-02 | `cargo test -p oclive-cli --test kernel_ensure_plan_snapshot` |
 | `.github/workflows/ci.yml` | D-CI-01/02 | 全量 `node scripts/dimension5-acceptance.mjs --ci` |
 | `CHANGELOG.md` / `CHANGELOG.en.md` | K-DOC-02 | `node scripts/check-changelog-parity.mjs` |
@@ -186,20 +186,20 @@ cargo test -p oclive-cli --test kernel_ensure_plan_snapshot
 摘要：
 
 1. **先开 issue**（或对大面变更开 RFC），说明对角色包、`plugin_backends`、HTTP OOCP / `invoke` DTO 的迁移影响；PR 描述中显式标注 **BREAKING**。  
-2. **PR 须带**：`crates/oclive_validation` 更新（若 manifest / `settings` 键变更）、**`PLUGIN_V1.md` / `ERROR_CODES.md` / `COMPATIBILITY.md`** 等触及项、**`creator-docs/`** / **`creator-docs-en/`** 镜像，以及 **`CHANGELOG.md` / `CHANGELOG.en.md`** 双语条目。  
+2. **PR 须带**：`kernel/crates/oclive_validation` 更新（若 manifest / `settings` 键变更）、**`PLUGIN_V1.md` / `ERROR_CODES.md` / `COMPATIBILITY.md`** 等触及项、**`creator-docs/`** / **`creator-docs-en/`** 镜像，以及 **`CHANGELOG.md` / `CHANGELOG.en.md`** 双语条目。  
 3. **审阅**：至少一名维护者确认 **兼容层与迁移路径**、CI 与 [PRODUCT_RELEASE_CHECKLIST.md](handoff/PRODUCT_RELEASE_CHECKLIST.md) P0 行。
 
 ## 文档约定
 
 - **用户可见文案**：避免多处硬编码漂移（参见 [AGENTS.md](AGENTS.md) 中插件管理入口说明）。
-- **契约与表名**：以 `roles/README_MANIFEST.md`、`RoleStorage::load_role` 及 **`crates/oclive_validation`** 为准；**禁止**虚构数据库表名。
+- **契约与表名**：以 `distros/chat-pro/roles/README_MANIFEST.md`、`RoleStorage::load_role` 及 **`kernel/crates/oclive_validation`** 为准；**禁止**虚构数据库表名。
 - **创作者文档索引**：[creator-docs/getting-started/DOCUMENTATION_INDEX.md](creator-docs/getting-started/DOCUMENTATION_INDEX.md)。
 - **发版与兼容**：semver bump 或契约变更时，核对 [`creator-docs/COMPATIBILITY.md`](creator-docs/COMPATIBILITY.md) 快照与一页表，并过 [handoff/PRODUCT_RELEASE_CHECKLIST.md](handoff/PRODUCT_RELEASE_CHECKLIST.md)「对外说明」；角色包版本规则见 [PACK_VERSIONING.md](creator-docs/role-pack/PACK_VERSIONING.md)。
 
 ## 不要提交
 
 - 密钥、Token、个人路径；勿将 `.env` 提交入库（见 `.gitignore`）。
-- 若本地仍有历史目录 **`src-tauri/target/`**，可删除；发行 bundle 以外置 **`target-dir`** 下的 **`release/bundle/`** 为准。
+- 若本地仍有历史目录 **`distros/desktop-tauri/target/`**，可删除；发行 bundle 以外置 **`target-dir`** 下的 **`release/bundle/`** 为准。
 
 ## 讨论与路线图
 

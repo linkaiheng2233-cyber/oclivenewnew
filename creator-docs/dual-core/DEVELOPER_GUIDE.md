@@ -28,7 +28,7 @@ AND pipeline.experimental 非空
 cargo run -p oclive-cli -- init --dual-core --preset full -o ./my-kernel
 ```
 
-生成 `roles/default/pipeline.ocblueprint`（`schema_version: 3`，含 `runtime_config` 与 `pipeline`）。
+生成 `distros/chat-pro/roles/default/pipeline.ocblueprint`（`schema_version: 3`，含 `runtime_config` 与 `pipeline`）。
 
 ### 手写蓝图
 
@@ -40,7 +40,7 @@ cargo run -p oclive-cli -- init --dual-core --preset full -o ./my-kernel
 校验：
 
 ```bash
-cargo run -p oclive-cli -- pack validate --profile creator ./roles/your_role
+cargo run -p oclive-cli -- pack validate --profile creator ./distros/chat-pro/roles/your_role
 ```
 
 ---
@@ -118,7 +118,7 @@ $env:RUST_LOG = "info,oclive_dual_core=info"
 
 ## 贡献新 method 映射
 
-1. 在 `crates/oclive_kernel_host/src/domain/dual_pipeline_registry.rs` 注册 `(type, method)`。
+1. 在 `kernel/crates/oclive_kernel_host/src/domain/dual_pipeline_registry.rs` 注册 `(type, method)`。
 2. 在 `dual_pipeline_steps.rs` 实现与共景子步骤对齐的调用。
 3. 更新 [METHOD_REGISTRY.md](./METHOD_REGISTRY.md) 与 `oclive explain`。
 4. 补充单元测试。

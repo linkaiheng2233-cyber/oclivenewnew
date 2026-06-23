@@ -2,7 +2,7 @@
 
 > **非 CI 门禁** — 自动化 [`npm run test:theater:smoke`](../../package.json) 不替代 §4.8 陌生人「卧槽」门槛。  
 > **工程就绪（Track A · 2026-06-18）**：dimension5 + drift + kernel 239 测 + `theater_director_resolver` 3 测 + smoke 全绿；模式 2 解冻见 [`MODE2_UNFREEZE.md`](MODE2_UNFREEZE.md)。  
-> Prompt pack **v0.2** SSOT：[`plugins/com.oclive.theater_director_official/`](../../plugins/com.oclive.theater_director_official/)
+> Prompt pack **v0.2** SSOT：[`distros/chat-pro/plugins/com.oclive.theater_director_official/`](../../distros/chat-pro/plugins/com.oclive.theater_director_official/)
 
 ## 前置
 
@@ -41,8 +41,8 @@
 
 ## 反馈回流
 
-- **seed 文案**：[`theaterSceneCatalog.ts`](../../src/composables/theater/theaterSceneCatalog.ts) `dramaSeed` / `sceneBrief`
-- **纪律与 mode 模板**：官方插件 [`prompts/drama_guardrails.mjs`](../../plugins/com.oclive.theater_director_official/prompts/drama_guardrails.mjs) 与各 `prompts/modes/*`
-- **Rust fallback**（仅 RPC 失败）：[`drama_guardrails.rs`](../../crates/oclive_kernel_host/src/domain/theater/drama_guardrails.rs) — 改插件后按需同步，见插件 README sync 清单
+- **seed 文案**：[`theaterSceneCatalog.ts`](../../distros/theater/distros/shared/src/composables/theater/theaterSceneCatalog.ts) `dramaSeed` / `sceneBrief`
+- **纪律与 mode 模板**：官方插件 [`prompts/drama_guardrails.mjs`](../../distros/chat-pro/plugins/com.oclive.theater_director_official/prompts/drama_guardrails.mjs) 与各 `prompts/modes/*`
+- **Rust fallback**（仅 RPC 失败）：[`drama_guardrails.rs`](../../kernel/crates/oclive_kernel_host/src/domain/theater/drama_guardrails.rs) — 改插件后按需同步，见插件 README sync 清单
 
 Drift 烟测（子串，不测 LLM 质量）：`node scripts/theater-prompt-drift.mjs`

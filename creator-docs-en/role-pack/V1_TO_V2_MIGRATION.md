@@ -6,7 +6,7 @@
 
 **Audience**: creators still on `manifest.json` + `settings.json`. Following this guide takes **about 10 minutes** including validation.
 
-**Normative spec**: [ROLE_PACK_SPEC.md](ROLE_PACK_SPEC.md) · validation: `crates/oclive_validation`.
+**Normative spec**: [ROLE_PACK_SPEC.md](ROLE_PACK_SPEC.md) · validation: `kernel/crates/oclive_validation`.
 
 [中文](../../creator-docs/role-pack/V1_TO_V2_MIGRATION.md)
 
@@ -77,7 +77,7 @@ Each entry needs `label`, `position`, and directory `plugin`/`plugins` when appl
 From the **oclivenewnew** repo root:
 
 ```bash
-cargo run -p oclive-cli -- pack migrate-to-blueprint roles/my_role
+cargo run -p oclive-cli -- pack migrate-to-blueprint distros/chat-pro/roles/my_role
 ```
 
 | flag | default | meaning |
@@ -91,12 +91,12 @@ cargo run -p oclive-cli -- pack migrate-to-blueprint roles/my_role
 ## 4. Post-migration validation
 
 ```bash
-cargo run -p oclive-cli -- pack validate roles/my_role
+cargo run -p oclive-cli -- pack validate distros/chat-pro/roles/my_role
 ```
 
 Default profile is **v2** (`default` / `blueprint-v2`). Use `--profile legacy` only for unmigrated packs.
 
-**Sample pack**: `roles/mumu/` (blueprint only).
+**Sample pack**: `distros/chat-pro/roles/mumu/` (blueprint only).
 
 ---
 

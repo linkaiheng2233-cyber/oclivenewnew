@@ -18,7 +18,7 @@
 
 ## 3. 验收（摘要）
 
-- 可配置 roles 根并导入/导出与 `roles/{id}/` 一致的包树。
+- 可配置 roles 根并导入/导出与 `distros/chat-pro/roles/{id}/` 一致的包树。
 - 创作模式可编辑 **`pipeline.ocblueprint`** 并通过 `oclive pack validate` 等价规则校验。
 - 试聊注入 `OCLIVE_ROLES_DIR` 与 LLM 环境变量（可覆盖 legacy `plugin_backends.llm` 运行时行为，见 [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)）。
 

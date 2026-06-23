@@ -4,7 +4,7 @@
 
 **插件作者学习路径**：[PLUGIN_AUTHOR_LEARNING_PATH.md](PLUGIN_AUTHOR_LEARNING_PATH.md)
 
-**当前权威**：角色包 **`pipeline.ocblueprint` → `slot_registry`**（见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)）。本文档描述宿主（Tauri / `chat_engine`）与可替换子系统之间的 **编排契约**：DTO 形状、槽位门面 trait、**v2 实例解析**；下文 **legacy** 段落中的 `settings.json` → `plugin_backends` 仅用于 **v1（已废弃）** 迁移对照。实现以源码为准：`slot_resolver.rs`、`plugin_host.rs`、`src-tauri/src/models/plugin_backends.rs`。
+**当前权威**：角色包 **`pipeline.ocblueprint` → `slot_registry`**（见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)）。本文档描述宿主（Tauri / `chat_engine`）与可替换子系统之间的 **编排契约**：DTO 形状、槽位门面 trait、**v2 实例解析**；下文 **legacy** 段落中的 `settings.json` → `plugin_backends` 仅用于 **v1（已废弃）** 迁移对照。实现以源码为准：`slot_resolver.rs`、`plugin_host.rs`、`kernel/crates/oclive_kernel_types/src/models/plugin_backends.rs`。
 
 **全库文档索引**：[../getting-started/DOCUMENTATION_INDEX.md](../getting-started/DOCUMENTATION_INDEX.md)。**架构总览（单核双态 · 后端/插件/设施 · `{专名}设施子模块`）**：[../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)。**以内核为中心、模块环绕的总览（图 + Mermaid）**：[../getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md](../getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md)。包版本与 `schema_version` 见 **[../role-pack/PACK_VERSIONING.md](../role-pack/PACK_VERSIONING.md)**。HTTP 侧车 JSON-RPC 全文见 **[REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md)**；创作者总览见 **[CREATOR_PLUGIN_ARCHITECTURE.md](CREATOR_PLUGIN_ARCHITECTURE.md)**。**目录式进程插件**（`plugin_backends.* = directory`、整壳、`directory_plugin_invoke` 等）见 **[DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)**。
 
@@ -27,13 +27,13 @@
 - **可替换后端 = 编译期枚举 + 蓝图实例**：**v2** 通过 **`slot_registry`** 声明多实例；**legacy v1** 通过 `settings.json` → `plugin_backends`（勿在新包中使用）。无动态 `cdylib`。
 - **默认实现**即当前内置逻辑；换后端时 **API 字段名不变**（尤其 `SendMessageResponse.reply`）。
 - **Remote**：宿主已实现 **HTTP JSON-RPC**（见 [REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md)）；未配置 `OCLIVE_REMOTE_*` URL 时回退 **builtin**（或进程内 LLM）并写日志。
-- **Directory**：`plugins/*/manifest.json` 子进程 + 与 Remote 相同的 JSON-RPC wire；槽位见 `plugin_backends.directory_plugins`（[DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)）。
+- **Directory**：`distros/chat-pro/plugins/*/manifest.json` 子进程 + 与 Remote 相同的 JSON-RPC wire；槽位见 `plugin_backends.directory_plugins`（[DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)）。
 
 ## 架构图（legacy · 以 `plugin_backends` 六槽为准）
 
 > **v2 读图**：以 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) 与 [KERNEL_AND_MODULES_ARCHITECTURE.md](../getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md) 中的 **`slot_registry`** 为准；下图保留 v1 形状便于对照迁移。
 
-运行时结构体 **`PluginBackends`**（[`plugin_backends.rs`](../../src-tauri/src/models/plugin_backends.rs)）含 **六** 个枚举字段；**`directory_plugins`** 与之并列，仅在对应槽为 **`directory`** 时解析 manifest **`id`**。编排层通过 **`PluginHost::resolve_for_role`** 将每槽绑定到具体 **`Arc<dyn …>`** 实现，再由 **`chat_engine`** 按 **`send_message` 编排顺序**（见同文档下一节）调用。**`complex_emotion`** 等脚手架专用键可被 Serde 忽略，**不是**宿主六槽之一；运行时对应 **第 1 设施子模块**（**复杂情感设施子模块**；见 [OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)、[SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md) §二）。**第 2 设施子模块**为 **专家模型设施子模块**（专家路由），见架构总览同文档。
+运行时结构体 **`PluginBackends`**（[`plugin_backends.rs`](../../kernel/crates/oclive_kernel_types/src/models/plugin_backends.rs)）含 **六** 个枚举字段；**`directory_plugins`** 与之并列，仅在对应槽为 **`directory`** 时解析 manifest **`id`**。编排层通过 **`PluginHost::resolve_for_role`** 将每槽绑定到具体 **`Arc<dyn …>`** 实现，再由 **`chat_engine`** 按 **`send_message` 编排顺序**（见同文档下一节）调用。**`complex_emotion`** 等脚手架专用键可被 Serde 忽略，**不是**宿主六槽之一；运行时对应 **第 1 设施子模块**（**复杂情感设施子模块**；见 [OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)、[SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md) §二）。**第 2 设施子模块**为 **专家模型设施子模块**（专家路由），见架构总览同文档。
 
 ### 模块编号对照（与架构总览一致）
 
@@ -86,7 +86,7 @@ flowchart TB
   subgraph shapes["实现形态（每槽枚举见本文各节表）"]
     BIN["builtin / ollama<br/>进程内 Rust"]
     REM["remote<br/>HTTP JSON-RPC + OCLIVE_REMOTE_*"]
-    DIR["directory<br/>plugins/ 子进程，同协议 wire"]
+    DIR["directory<br/>distros/chat-pro/plugins/ 子进程，同协议 wire"]
     LOC["memory: local<br/>_local_plugins"]
   end
 
@@ -97,9 +97,9 @@ flowchart TB
 
 ## `send_message` 编排顺序（与 `chat_engine`）
 
-共景主路径见源码 [`chat_engine/turn_pipeline.rs`](../../crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/mod.rs) 的 `process_co_present`。入口为 [`chat_engine::process_message`](../../crates/oclive_kernel_host/src/domain/chat_engine/mod.rs)（异地分支为 `process_remote_stub` / `process_remote_life`，事件链有简化）。与 **PLUGIN_V1** 子系统相关的顺序如下（与 DTO 流一致）：
+共景主路径见源码 [`chat_engine/turn_pipeline.rs`](../../kernel/crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/mod.rs) 的 `process_co_present`。入口为 [`chat_engine::process_message`](../../kernel/crates/oclive_kernel_host/src/domain/chat_engine/mod.rs)（异地分支为 `process_remote_stub` / `process_remote_life`，事件链有简化）。与 **PLUGIN_V1** 子系统相关的顺序如下（与 DTO 流一致）：
 
-1. **`PluginHost`**：[`state::resolved_plugins_for`](../../src-tauri/src/state/mod.rs) → [`PluginHost::resolve_for_role`](../../crates/oclive_kernel_host/src/domain/ports/plugin_host.rs)，按 `role.plugin_backends` 绑定 **`memory` / `emotion` / `event` / `prompt` / `llm` / `agent`** 六条**后端模块**线。宿主构造 [`PluginHost::new`](../../crates/oclive_kernel_host/src/domain/ports/plugin_host.rs) 需传入 **应用数据根目录**（`PathBuf`），用于扫描 **`{app_data}/mcp-servers/*.json`** 等；集成烟测见 [`src-tauri/tests/plugin_backends_v2_resolve.rs`](../../src-tauri/tests/plugin_backends_v2_resolve.rs)。
+1. **`PluginHost`**：[`state::resolved_plugins_for`](../../kernel/crates/oclive_kernel_host/src/state/mod.rs) → [`PluginHost::resolve_for_role`](../../kernel/crates/oclive_kernel_host/src/domain/ports/plugin_host.rs)，按 `role.plugin_backends` 绑定 **`memory` / `emotion` / `event` / `prompt` / `llm` / `agent`** 六条**后端模块**线。宿主构造 [`PluginHost::new`](../../kernel/crates/oclive_kernel_host/src/domain/ports/plugin_host.rs) 需传入 **应用数据根目录**（`PathBuf`），用于扫描 **`{app_data}/mcp-servers/*.json`** 等；集成烟测见 [`distros/desktop-tauri/tests/plugin_backends_v2_resolve.rs`](../../distros/desktop-tauri/tests/plugin_backends_v2_resolve.rs)。
 2. **用户情绪（后端模块）**：`pl.emotion.analyze` → `EmotionResult`，对外为响应中的 `emotion`（`EmotionDto`）。
 3. **人格微调（设施）**：`PersonalityEngine::adjust_by_user_emotion`（消费用户情绪，非后端模块）。
 4. **复杂情感设施子模块**（第 1 号）：`co_present` 内 `BuiltinKeywordComplexEmotionProvider`（或将来 Remote）；产出 `narrative_hint` 供后续 Prompt（**不经** `PluginHost`；见 [OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)）。
@@ -138,7 +138,7 @@ flowchart TB
 | `builtin_v2` | **已废弃 wire alias**（2026-06-10 起读入等同 `builtin`） |
 | `remote` | HTTP `memory.rank`（需 `OCLIVE_REMOTE_PLUGIN_URL`；失败回退 `builtin`） |
 | `directory` | HTTP `memory.rank` 指向 **`directory_plugins.memory`** 对应 manifest 子进程 URL（失败回退 `builtin`；见 [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)） |
-| `local` | 使用已注册的本地 memory provider（`roles/_local_plugins/*.json`）；**当前阶段**排序仍委托 `builtin` 逻辑，多 provider 时按 `provider_id` 字典序取第一个并打警告（见 [LOCAL_PLUGIN_BRIDGE_SPEC.md](LOCAL_PLUGIN_BRIDGE_SPEC.md)） |
+| `local` | 使用已注册的本地 memory provider（`distros/chat-pro/roles/_local_distros/chat-pro/plugins/*.json`）；**当前阶段**排序仍委托 `builtin` 逻辑，多 provider 时按 `provider_id` 字典序取第一个并打警告（见 [LOCAL_PLUGIN_BRIDGE_SPEC.md](LOCAL_PLUGIN_BRIDGE_SPEC.md)） |
 
 与 `plugin_backends.memory` **同级**可选字段：
 
@@ -237,7 +237,7 @@ flowchart TB
 
 | 值 | 含义 |
 |----|------|
-| `builtin` | 进程内 [`BuiltinReActAgent`](../../crates/oclive_kernel_host/src/domain/agent.rs)；可配合 MCP 工具（配置目录见上节 `PluginHost::new` 的 app data 根） |
+| `builtin` | 进程内 [`BuiltinReActAgent`](../../kernel/crates/oclive_kernel_host/src/domain/agent.rs)；可配合 MCP 工具（配置目录见上节 `PluginHost::new` 的 app data 根） |
 | `remote` | HTTP JSON-RPC 侧车 **`agent.process`**（`OCLIVE_REMOTE_AGENT_URL` 或回退 `OCLIVE_REMOTE_PLUGIN_URL`）；协议见 [AGENT_REMOTE_PROTOCOL.md](AGENT_REMOTE_PROTOCOL.md)；失败 **降级 builtin** |
 | `directory` | 子进程 JSON-RPC，槽位 **`directory_plugins.agent`**（失败 **降级 builtin**；见 [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)） |
 
@@ -265,7 +265,7 @@ flowchart TB
 
 ## 会话级 `plugin_backends` 覆盖（Tauri）
 
-宿主命令 **`set_session_plugin_backend`**（实现见 [`src-tauri/src/api/role/mod.rs`](../../src-tauri/src/api/role/mod.rs)），请求体 **`SetSessionPluginBackendRequest`**（[`src-tauri/src/models/dto.rs`](../../src-tauri/src/models/dto.rs)）。覆盖按 **`role_id` + 可选 `session_id`** 对应的会话命名空间持久化，**不写回角色包**；`load_role` / **`get_role_info`**（请求体 **`GetRoleInfoRequest`**，可选 **`session_id`**，与 `send_message` 同命名空间）返回中的 **`plugin_backends_effective`**、**`plugin_backends_effective_sources`** 等为包默认与会话覆盖合并后的快照。
+宿主命令 **`set_session_plugin_backend`**（实现见 [`distros/desktop-tauri/src/api/role/mod.rs`](../../distros/desktop-tauri/src/api/role/mod.rs)），请求体 **`SetSessionPluginBackendRequest`**（[`kernel/crates/oclive_kernel_types/src/models/dto.rs`](../../kernel/crates/oclive_kernel_types/src/models/dto.rs)）。覆盖按 **`role_id` + 可选 `session_id`** 对应的会话命名空间持久化，**不写回角色包**；`load_role` / **`get_role_info`**（请求体 **`GetRoleInfoRequest`**，可选 **`session_id`**，与 `send_message` 同命名空间）返回中的 **`plugin_backends_effective`**、**`plugin_backends_effective_sources`** 等为包默认与会话覆盖合并后的快照。
 
 ### 请求字段（摘要）
 
@@ -285,7 +285,7 @@ flowchart TB
 | `null` | **移除**该模块的会话枚举覆盖，回退角色包 `plugin_backends` 对应字段 |
 | `"snake_case"` | 设为指定后端；非法值报错 |
 
-前端封装见 **`setSessionPluginBackend`**、**`getRoleInfo`**（[`src/utils/tauri-api.ts`](../../src/utils/tauri-api.ts)）：前者仅在传入时序列化 `backend` / `local_memory_provider_id`；后者可选第二参 **`sessionId`** 与 `send_message` 对齐。
+前端封装见 **`setSessionPluginBackend`**、**`getRoleInfo`**（[`distros/shared/src/api/`](../../distros/shared/src/api/)）：前者仅在传入时序列化 `backend` / `local_memory_provider_id`；后者可选第二参 **`sessionId`** 与 `send_message` 对齐。
 
 ### `directory` 与 `directory_plugins`
 
@@ -296,7 +296,7 @@ flowchart TB
 
 ## 前端对齐
 
-TypeScript 侧 `SendMessageResponse`（`src/utils/tauri-api.ts`）必须与 `models/dto.rs` 一致：**回复字段名为 `reply`**；`presence_mode`、`reply_is_fallback`、`schema`、`api_version` 用于展示策略（见 `src/utils/replyPresentation.ts`）。
+TypeScript 侧 `SendMessageResponse`（`distros/shared/src/api/`）必须与 `models/dto.rs` 一致：**回复字段名为 `reply`**；`presence_mode`、`reply_is_fallback`、`schema`、`api_version` 用于展示策略（见 `distros/shared/src/utils/replyPresentation.ts`）。
 
 ---
 
@@ -366,7 +366,7 @@ TypeScript 侧 `SendMessageResponse`（`src/utils/tauri-api.ts`）必须与 `mod
 | **`reply_post_process`** | **Reply Post-Processor**（**独立通道** `reply_post_process` · 非六槽）；`config.json` → `reply_post_processor.backend=directory` 时须在 `provides` 中含此项；RPC `reply_post_process.process` |
 | **`theater_director`** | **Theater Scene Director**（**独立通道** `theater_director` · 非六槽 · **已交付**）；`distro.oclive.toml` → `[theater].director_plugin`；开发 env `OCLIVE_THEATER_DIRECTOR_PLUGIN`；`provides` 须含此项；RPC **`theater.build_prompt`**（见下节） |
 
-解析时 [`SlotResolver`](../../crates/oclive_kernel_host/src/domain/slot_resolver.rs) 会校验 directory 插件是否声明 `provides` 含目标能力（含 `complex_emotion`）。**独立通道**项由专用 Resolver 解析（如 [`resolve_reply_post_processor`](../../crates/oclive_kernel_host/src/domain/reply_post_processor.rs) 校验 `reply_post_process`；[`resolve_theater_director`](../../crates/oclive_kernel_host/src/domain/theater_director.rs) 校验 `theater_director`），**不**经六槽 `SlotResolver`。
+解析时 [`SlotResolver`](../../kernel/crates/oclive_kernel_host/src/domain/slot_resolver.rs) 会校验 directory 插件是否声明 `provides` 含目标能力（含 `complex_emotion`）。**独立通道**项由专用 Resolver 解析（如 [`resolve_reply_post_processor`](../../kernel/crates/oclive_kernel_host/src/domain/reply_post_processor.rs) 校验 `reply_post_process`；[`resolve_theater_director`](../../kernel/crates/oclive_kernel_host/src/domain/theater_director.rs) 校验 `theater_director`），**不**经六槽 `SlotResolver`。
 
 ### Reply Post-Processor · 润色场景（可选 · 非默认）
 
@@ -381,10 +381,10 @@ TypeScript 侧 `SendMessageResponse`（`src/utils/tauri-api.ts`）必须与 `mod
 - **入口**：`generate_theater_scene` / `POST /theater/scene`（**不进** `process_message`）
 - **配置**：`distro.oclive.toml` → `[theater].director_plugin = "com.oclive.theater_director_official"`；开发 env **`OCLIVE_THEATER_DIRECTOR_PLUGIN`**
 - **directory**：`provides: theater_director`；RPC **`theater.build_prompt`**
-- **params**：[`TheaterPromptBuildInput`](../../crates/oclive_kernel_contracts/src/theater_director.rs)（`mode`：`patch` | `ripple` | `cast_adapt` | `cast_rewrite` | `cast_rewrite_minimal`；persona、beats、tweak、fork 等快照字段）
+- **params**：[`TheaterPromptBuildInput`](../../kernel/crates/oclive_kernel_contracts/src/theater_director.rs)（`mode`：`patch` | `ripple` | `cast_adapt` | `cast_rewrite` | `cast_rewrite_minimal`；persona、beats、tweak、fork 等快照字段）
 - **result**：`{ "prompt": "<非空字符串>" }`（长度上限 32 768）；RPC 失败或空串 → 内核 **builtin** 模板，不 500
-- **官方插件**：[`plugins/com.oclive.theater_director_official/`](../../plugins/com.oclive.theater_director_official/) · 最小示例 [`examples/directory-plugin-theater-director-minimal/`](../../examples/directory-plugin-theater-director-minimal/)
-- **自定义 prompt pack**：Fork 官方插件 → 改 `prompts/`（入口 `prompts/index.mjs`；风格一句切换见 `drama_guardrails.mjs`）→ 新 `manifest.id` → `{app_data}/plugins/<id>/` + `[theater].director_plugin` 或 **`OCLIVE_THEATER_DIRECTOR_PLUGIN`**。详见官方插件 [`README.md`](../../plugins/com.oclive.theater_director_official/README.md) 与 [`handoff/theater/PLAYTEST_MATRIX.md`](../../handoff/theater/PLAYTEST_MATRIX.md)。
+- **官方插件**：[`distros/chat-pro/plugins/com.oclive.theater_director_official/`](../../distros/chat-pro/plugins/com.oclive.theater_director_official/) · 最小示例 [`examples/directory-plugin-theater-director-minimal/`](../../examples/directory-plugin-theater-director-minimal/)
+- **自定义 prompt pack**：Fork 官方插件 → 改 `prompts/`（入口 `prompts/index.mjs`；风格一句切换见 `drama_guardrails.mjs`）→ 新 `manifest.id` → `{app_data}/distros/chat-pro/plugins/<id>/` + `[theater].director_plugin` 或 **`OCLIVE_THEATER_DIRECTOR_PLUGIN`**。详见官方插件 [`README.md`](../../distros/chat-pro/plugins/com.oclive.theater_director_official/README.md) 与 [`handoff/theater/PLAYTEST_MATRIX.md`](../../handoff/theater/PLAYTEST_MATRIX.md)。
 - **放置指南**：[PLUGIN_PLACEMENT_GUIDE.md](PLUGIN_PLACEMENT_GUIDE.md)
 
 **`category`**（单值，可选）：供插件工作台左栏分类，建议与 `provides` 主槽一致，例如 `llm`、`complex_emotion`。
@@ -430,9 +430,9 @@ TypeScript 侧 `SendMessageResponse`（`src/utils/tauri-api.ts`）必须与 `mod
 
 ### `RoleInfo` / `RoleData` 与本地 HTTP `POST /chat`
 
-- Tauri **`get_role_info`**（`GetRoleInfoRequest`，可选 **`session_id`**）、**`load_role`** 返回体含 **`personality_source`**：JSON 字符串 **`vector`** | **`profile`**，与角色包 **`evolution.personality_source`** 一致（见 `src-tauri/src/models/dto.rs`）。
-- 启动参数 **`--api`** 时，**`POST /chat`** 成功响应在扁平化的 `SendMessageResponse` 字段之外另含 **`personality_source`**（同上），便于编写器试聊等工具区分人格模式；实现见 `src-tauri/src/http_api.rs`。
-- Remote **`prompt.build_prompt`**：`params` 中含完整 **`role`**（其 `evolution_config.personality_source` 亦可读），并另含顶层 **`personality_source`** 与 `personality` 并列，侧车无需仅从嵌套 `role` 解析（`src-tauri/src/infrastructure/remote_plugin/prompt_http.rs`）。
+- Tauri **`get_role_info`**（`GetRoleInfoRequest`，可选 **`session_id`**）、**`load_role`** 返回体含 **`personality_source`**：JSON 字符串 **`vector`** | **`profile`**，与角色包 **`evolution.personality_source`** 一致（见 `kernel/crates/oclive_kernel_types/src/models/dto.rs`）。
+- 启动参数 **`--api`** 时，**`POST /chat`** 成功响应在扁平化的 `SendMessageResponse` 字段之外另含 **`personality_source`**（同上），便于编写器试聊等工具区分人格模式；实现见 `kernel/crates/oclive_kernel_host/src/http_api.rs`。
+- Remote **`prompt.build_prompt`**：`params` 中含完整 **`role`**（其 `evolution_config.personality_source` 亦可读），并另含顶层 **`personality_source`** 与 `personality` 并列，侧车无需仅从嵌套 `role` 解析（`kernel/crates/oclive_kernel_host/src/infrastructure/remote_plugin/prompt_http.rs`）。
 
 ---
 
@@ -491,7 +491,7 @@ TypeScript 侧 `SendMessageResponse`（`src/utils/tauri-api.ts`）必须与 `mod
 | `label` | 可选，蓝图实例展示名 |
 | `position` | 可选，实例排序；缺省 `0` |
 
-校验：`crates/oclive_validation/src/plugin_slot_attachment.rs`。未声明 `slot_attachment` 时仅复制插件目录，需手动 **`oclive plugin manage link`**。
+校验：`kernel/crates/oclive_validation/src/plugin_slot_attachment.rs`。未声明 `slot_attachment` 时仅复制插件目录，需手动 **`oclive plugin manage link`**。
 
 ### 主应用：极简插件管理（唯一入口）
 
@@ -512,9 +512,9 @@ TypeScript 侧 `SendMessageResponse`（`src/utils/tauri-api.ts`）必须与 `mod
 }
 ```
 
-校验：`crates/oclive_validation/src/plugin_dependencies.rs`。
+校验：`kernel/crates/oclive_validation/src/plugin_dependencies.rs`。
 
-实现与测试：`crates/oclive_validation/src/plugin_permissions.rs`、`src-tauri/src/infrastructure/high_risk_grants.rs`、集成测 `src-tauri/tests/permission_three_way_consistency.rs`。
+实现与测试：`kernel/crates/oclive_validation/src/plugin_permissions.rs`、`kernel/crates/oclive_kernel_host/src/infrastructure/high_risk_grants.rs`、集成测 `distros/desktop-tauri/tests/permission_three_way_consistency.rs`。
 
 ### 发布到社区索引（GitHub · 链接策展）
 

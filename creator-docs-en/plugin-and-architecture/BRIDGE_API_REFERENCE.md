@@ -2,7 +2,7 @@
 
 Commands callable from **directory plugins** in an HTML whole shell or a **`shell.vueEntry`** host Vue page via **`OclivePluginBridge.invoke`** (or **`inject('oclive').invoke`** in native Vue slots).
 
-**Implementation**: `src-tauri/src/api/plugin_bridge.rs` (`required_permission_token`, `dispatch_bridge_command`, `validate_bridge`).
+**Implementation**: `distros/desktop-tauri/src/api/plugin_bridge.rs` (`required_permission_token`, `dispatch_bridge_command`, `validate_bridge`).
 
 **Prerequisite**: [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md) §4.1–4.3 (whole‑shell bridge, sensitive command gate, event bus).
 
@@ -81,7 +81,7 @@ Parameter / field names follow **JSON** (camelCase and snake_case mixed to match
 
 ## 3. Error codes
 
-Failures are formatted as **`[CODE] message`**; the frontend may parse the leading `CODE` (`src/utils/tauri-api.ts`: `parseApiErrorCode`, `toFriendlyErrorMessage`).
+Failures are formatted as **`[CODE] message`**; the frontend may parse the leading `CODE` (`distros/shared/src/api/`: `parseApiErrorCode`, `toFriendlyErrorMessage`).
 
 | Code | Meaning |
 |------|---------|

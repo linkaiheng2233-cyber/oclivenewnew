@@ -36,7 +36,7 @@
 
 **与 Experimental 核**：Experimental 改的是 Stable 链上「整圈工序顺序」；独立通道是 Stable 链上**固定钩子**（身份 / 后处理）或 **圈外 API**（剧场）。二者 **不互替**。
 
-**与 bundled / shared 核**：spawn 降级只换内核二进制；`{app_data}/plugins/` 与独立通道 Resolver **路径不变**。
+**与 bundled / shared 核**：spawn 降级只换内核二进制；`{app_data}/distros/chat-pro/plugins/` 与独立通道 Resolver **路径不变**。
 
 ---
 
@@ -72,19 +72,19 @@
 
 ## 4. `theater_director` 插件通道（已交付）
 
-与 [`reply_post_processor`](../../crates/oclive_kernel_host/src/domain/reply_post_processor.rs) 对齐：
+与 [`reply_post_processor`](../../kernel/crates/oclive_kernel_host/src/domain/reply_post_processor.rs) 对齐：
 
 ```
 generate_scene()
-  → resolve_theater_director()  (../../crates/oclive_kernel_host/src/domain/theater_director.rs)
+  → resolve_theater_director()  (../../kernel/crates/oclive_kernel_host/src/domain/theater_director.rs)
   → [directory] RPC theater.build_prompt  (provides: theater_director)
   → AppState.llm.generate_tag / generate
   → fallback: scene_director.rs / patch_scene.rs 内置模板
 ```
 
-- **官方包**：`plugins/com.oclive.theater_director_official/`（Theater 构建时复制到 `src-tauri/resources/plugins/`）
+- **官方包**：`distros/chat-pro/plugins/com.oclive.theater_director_official/`（Theater 构建时复制到 `distros/desktop-tauri/resources/distros/chat-pro/plugins/`）
 - **开发 env**：`OCLIVE_THEATER_DIRECTOR_PLUGIN=<manifest.id>` 覆盖 profile `director_plugin`
-- **RPC**：`theater.build_prompt` · params = [`TheaterPromptBuildInput`](../../crates/oclive_kernel_contracts/src/theater_director.rs) JSON · result `{ "prompt": "..." }`（非空，≤32k）
+- **RPC**：`theater.build_prompt` · params = [`TheaterPromptBuildInput`](../../kernel/crates/oclive_kernel_contracts/src/theater_director.rs) JSON · result `{ "prompt": "..." }`（非空，≤32k）
 - 社区作者可替换 prompt 拼装，**不** 改六槽与 Stable 主链顺序
 
 ---

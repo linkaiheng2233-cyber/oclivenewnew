@@ -42,22 +42,22 @@
 
 | 能力 | 代码锚点 | 为什么是"组装/契约层"的核心，而非过度工程 |
 |------|----------|------------------------------------------------|
-| **六宿主槽 + agent + complex_emotion 的契约式插件后端** | `crates/oclive_validation/plugin_backends.rs`、`src-tauri/.../plugin_host/` | 定义了"模块"的统一契约面；builtin/remote/directory 三实现 = 模块可来自进程内、网络侧车、子进程。这是"可替换"的物理基础。 |
+| **六宿主槽 + agent + complex_emotion 的契约式插件后端** | `kernel/crates/oclive_validation/plugin_backends.rs`、`distros/desktop-tauri/.../plugin_host/` | 定义了"模块"的统一契约面；builtin/remote/directory 三实现 = 模块可来自进程内、网络侧车、子进程。这是"可替换"的物理基础。 |
 | **`slot_registry` 多实例 + `groups` 编排声明** | `slot_registry`、`slot_resolver.rs` | 让"同一类模块"可多实例、可分组，是"组装"的语法。 |
 | **`pipeline.ocblueprint` 蓝图作为磁盘 SSOT + `includes` 卫星合并** | `blueprint_v2.rs`、`blueprint_includes.rs` | 把"一台组装好的 oclive"序列化为一个可分享、可校验、可继承的声明文件。 |
 | **角色包（身份/人设/prompts/质量锚点）+ 打包签名** | `api/plugin_pack.rs`（SHA-256 + signature 侧车） | 把"组装结果 + 内容"打包成可分发产物（`.oclive-plugin` / `.ocpak`）。这是"分发"层。 |
-| **跨端同源校验 crate（native + WASM + TS）** | `crates/oclive_validation`（`wasm_exports.rs`） | 同一契约在运行时/编写器/CLI 三处一致校验 = 生态可信的地基。 |
-| **脚手架 CLI（init/build/dev）** | `crates/oclive-cli` | "30 分钟拼出一个 oclive"的入口：生成可独立 `cargo build` 的内核骨架。 |
+| **跨端同源校验 crate（native + WASM + TS）** | `kernel/crates/oclive_validation`（`wasm_exports.rs`） | 同一契约在运行时/编写器/CLI 三处一致校验 = 生态可信的地基。 |
+| **脚手架 CLI（init/build/dev）** | `kernel/crates/oclive-cli` | "30 分钟拼出一个 oclive"的入口：生成可独立 `cargo build` 的内核骨架。 |
 | **能力授权模型（process:spawn / network:* / mcp:*）** | `high_risk_grants.rs`、权限弹窗 | 第三方模块可安全接入的前提：高风险能力显式授权、未授权降级。 |
 | **插件市场 + `oclive://` 深链安装 + Git 索引** | `deep_link.rs`、`plugin_installer.rs`、`oclive-plugin-market` | "食材市场"——模块的发现与分发渠道。 |
-| **统一错误契约（KernelErrorBody / 错误码）** | `crates/oclive_kernel_runtime`、`KERNEL_ERROR_CODE_CONVENTION.md` | 模块跨实现互换时行为可预期的契约。 |
+| **统一错误契约（KernelErrorBody / 错误码）** | `kernel/crates/oclive_kernel_runtime`、`KERNEL_ERROR_CODE_CONVENTION.md` | 模块跨实现互换时行为可预期的契约。 |
 | **双核双态（Experimental 核 + 快照回滚）** | `dual_pipeline.rs`（`#[cfg(feature = "dual_core")]`，**默认不编译**） | **机制已预埋，默认关闭**，为未来 A/B 实验与模块热替换预留架构空间；解冻条件见 [TECHNICAL_DEBT_INVENTORY.md](./TECHNICAL_DEBT_INVENTORY.md) §冻结决定。 |
 
 > 反转说明：本表中的蓝图、slot 契约、角色包、校验 crate、CLI——在"做单机聊天 App"目标下是**过度工程**；在"做组装/契约/分发标准层"目标下，它们是**产品本体**。目标决定了它们的性质。
 
 ### 2.1.1 官方示例角色包（非产品上限）
 
-仓库内置角色包（如 **`roles/mumu`**）定位为 **官方示例，抛砖引玉**：展示身份模板、场景、记忆与用户身份等平台能力。OCLive 的核心价值在于 **社区可自由创作、校验、打包与分发角色包**（及后端模块），而非内置默认角色在单一垂直能力上做到最强。
+仓库内置角色包（如 **`distros/chat-pro/roles/mumu`**）定位为 **官方示例，抛砖引玉**：展示身份模板、场景、记忆与用户身份等平台能力。OCLive 的核心价值在于 **社区可自由创作、校验、打包与分发角色包**（及后端模块），而非内置默认角色在单一垂直能力上做到最强。
 
 ### 2.2 "上限 = 模块上限" 的真正威力（你的核心洞察）
 

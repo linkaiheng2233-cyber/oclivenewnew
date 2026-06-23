@@ -10,6 +10,19 @@
 
 ---
 
+## 双轴导航（内核 vs 发行版 · 人类 vs AI）
+
+| 轴 | 内核 / 平台 | 发行版 / 产品面 |
+|----|-------------|-----------------|
+| **物理目录** | [`kernel/`](../../kernel/)（`kernel/crates/`、`kernel/fuzz/`、OOCP 示例） | [`distros/`](../../distros/)（`shared`、`chat-pro`、`theater`、`desktop-tauri`） |
+| **契约文档** | `creator-docs/kernel/`、`creator-docs/cli/`、六槽 / HTTP / 迁移 | `handoff/distros/`、`handoff/theater/`、`handoff/vscode/` |
+| **给人类** | [human-docs/06_KERNEL_LEARNING_PATH.md](../../human-docs/06_KERNEL_LEARNING_PATH.md) | [human-docs/README.md](../../human-docs/README.md) L0–L2 |
+| **给 AI** | [AGENTS.md](../../AGENTS.md) · [handoff/BUS_FACTOR_NOTES.md](../../handoff/BUS_FACTOR_NOTES.md) | [handoff/README.md](../../handoff/README.md) 发行版子目录 |
+
+编排 SSOT 在 **`kernel/crates/oclive_kernel_host`**；Tauri IPC 薄壳在 **`distros/desktop-tauri`**。勿将二者混写在同一「改 API」任务中。
+
+---
+
 ## 工程纪律（C2）
 
 | 主题 | 文档 |
@@ -17,7 +30,7 @@
 | **Breaking 变更流程**（定义、六步、兼容层、PR/迁移模板） | **[../../handoff/BREAKING_CHANGE_PROCESS.md](../../handoff/BREAKING_CHANGE_PROCESS.md)** |
 | **关键路径交接笔记**（Bus factor：`process_message`、`PluginHost`、错误码、DB、测试/CI 等入口） | **[../../handoff/BUS_FACTOR_NOTES.md](../../handoff/BUS_FACTOR_NOTES.md)** |
 | **`handoff/` 活跃 vs 归档**（closure、旧周报、编号计划已迁入 `archive/`） | **[../../handoff/README.md](../../handoff/README.md)** · 认知清单 **[../../handoff/04_4.6_PROJECT_TRUTH_CHECKLIST.md](../../handoff/04_4.6_PROJECT_TRUTH_CHECKLIST.md)** |
-| **命名规范与 canonical import**（概念 SSOT、crate 边界、禁止别名） | **[../NAMING_CONVENTIONS.md](../NAMING_CONVENTIONS.md)** · [English summary](../../creator-docs-en/getting-started/NAMING_CONVENTIONS.md) · crate 速查 **[../../crates/README.md](../../crates/README.md)** §Canonical import |
+| **命名规范与 canonical import**（概念 SSOT、crate 边界、禁止别名） | **[../NAMING_CONVENTIONS.md](../NAMING_CONVENTIONS.md)** · [English summary](../../creator-docs-en/getting-started/NAMING_CONVENTIONS.md) · crate 速查 **[../../kernel/crates/README.md](../../kernel/crates/README.md)** §Canonical import |
 | **独立通道能力增强模块**（注册表 · 非六槽 · 非设施子模块） | **[../rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md](../rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md)** · [OCLIVE_ARCHITECTURE_OVERVIEW §独立通道](OCLIVE_ARCHITECTURE_OVERVIEW.md#独立通道能力增强模块非六槽--非设施子模块编号) |
 
 ### 工程纪律 / 审查状态
@@ -27,7 +40,7 @@
 | **Dimension 5 签字页**（验收门、ratchet、audit 快照） | **[../../handoff/DIMENSION5_CLOSURE_SIGNOFF.md](../../handoff/DIMENSION5_CLOSURE_SIGNOFF.md)** |
 | **工程债务与 Opus 4.8 摘要** | **[../../handoff/TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md)** §Dimension 5 · §Opus 4.8 |
 | **分层 ratchet**（`node scripts/check-domain-layering.mjs`） | **[../../handoff/LAYERING_BASELINE.json](../../handoff/LAYERING_BASELINE.json)** · [ARCHITECTURE_LAYERING.md](../../handoff/ARCHITECTURE_LAYERING.md) |
-| **`oclive_sqlx` 供应链** | **[../../crates/oclive_sqlx/README.md](../../crates/oclive_sqlx/README.md)** |
+| **`oclive_sqlx` 供应链** | **[../../kernel/crates/oclive_sqlx/README.md](../../kernel/crates/oclive_sqlx/README.md)** |
 | **一次性验收脚本** | 仓库根 **`node scripts/dimension5-acceptance.mjs`**（CI：`--ci`） |
 
 ---
@@ -70,7 +83,7 @@
 | 角色包磁盘格式 / `schema_version` | **[../role-pack/ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)** · **[../role-pack/PACK_VERSIONING.md](../role-pack/PACK_VERSIONING.md)** |
 | **用户身份模板 & 回复后处理（v0.3）** | **[../rfc/RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md](../rfc/RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md)** · Phase 2 **[../../handoff/USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md](../../handoff/USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md)** |
 | **立绘设施 & 视觉表现（草案）** | **[../rfc/RFC_PORTRAIT_FACILITY.md](../rfc/RFC_PORTRAIT_FACILITY.md)** · **[../rfc/RFC_VISUAL_PRESENTATION_FACILITY.md](../rfc/RFC_VISUAL_PRESENTATION_FACILITY.md)** · **[../../handoff/PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md](../../handoff/PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md)** |
-| **Prompt 分层 & 状态联动**（Tier0、`build_character_status_summary`、`relation_transition`） | **[../../AGENTS.md](../../AGENTS.md)**「Prompt 注入分层 + 状态机联动」· 实现 **[../../crates/oclive_kernel_runtime/src/domain/prompt_builder/mod.rs](../../crates/oclive_kernel_runtime/src/domain/prompt_builder/mod.rs)**（段落公式见同目录 `sections.rs`） |
+| **Prompt 分层 & 状态联动**（Tier0、`build_character_status_summary`、`relation_transition`） | **[../../AGENTS.md](../../AGENTS.md)**「Prompt 注入分层 + 状态机联动」· 实现 **[../../kernel/crates/oclive_kernel_runtime/src/domain/prompt_builder/mod.rs](../../kernel/crates/oclive_kernel_runtime/src/domain/prompt_builder/mod.rs)**（段落公式见同目录 `sections.rs`） |
 | **角色包 vs 蓝图职责边界** | **[../../handoff/ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md)** · ROLE_PACK_SPEC §0 · SETTINGS_REFERENCE §零 |
 | **v1 → v2 蓝图迁移（v1 已废弃，仅迁移用）** | **[../role-pack/V1_TO_V2_MIGRATION.md](../role-pack/V1_TO_V2_MIGRATION.md)**（[English](../../creator-docs-en/role-pack/V1_TO_V2_MIGRATION.md)） |
 | **v2 → v3 蓝图迁移（runtime_config / 可选双核）** | **[../role-pack/V2_TO_V3_MIGRATION.md](../role-pack/V2_TO_V3_MIGRATION.md)**（[English](../../creator-docs-en/role-pack/V2_TO_V3_MIGRATION.md)） |
@@ -92,7 +105,7 @@
 | **插件作者：放置决策树** | **[../plugin-and-architecture/PLUGIN_PLACEMENT_GUIDE.md](../plugin-and-architecture/PLUGIN_PLACEMENT_GUIDE.md)** |
 | **插件作者：目录 / Remote / 市场（学习路径）** | **[../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md](../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)**（[English](../../creator-docs-en/plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)） |
 | **LLM 目录插件 + llama.cpp（不经 Ollama，按角色切换）** | **[examples/directory-plugin-llamacpp/README.md](../../examples/directory-plugin-llamacpp/README.md)**（[English](../../examples/directory-plugin-llamacpp/README.en.md)） |
-| **改 Rust 内核：该动哪个 crate？** | **[../../crates/README.md](../../crates/README.md)** |
+| **改 Rust 内核：该动哪个 crate？** | **[../../kernel/crates/README.md](../../kernel/crates/README.md)** |
 | **内核 / 硬件集成方：脚手架到设备（学习路径）** | **[KERNEL_INTEGRATOR_LEARNING_PATH.md](KERNEL_INTEGRATOR_LEARNING_PATH.md)**（[English](../../creator-docs-en/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md)） |
 | **项目现状（版本、交付面、变更日志入口，短快照）** | **[PROJECT_CURRENT_STATUS.md](PROJECT_CURRENT_STATUS.md)** |
 | **对齐进度与目标（一页：摘要 + 按用途分类的文档地图）** | **[PROJECT_STATUS_AND_ALIGNMENT.md](PROJECT_STATUS_AND_ALIGNMENT.md)** |
@@ -135,7 +148,7 @@
 | **蓝图 v2（`pipeline.ocblueprint` · P0–P8 收口，归档）** | **[RFC_ROLE_BLUEPRINT_V2](../../handoff/archive/RFC_ROLE_BLUEPRINT_V2.md)** · **[BLUEPRINT_V2_IMPLEMENTATION_PLAN](../../handoff/archive/BLUEPRINT_V2_IMPLEMENTATION_PLAN.md)** · **[BLUEPRINT_V2_DECISIONS](../../handoff/archive/BLUEPRINT_V2_DECISIONS.md)** |
 | **内核分层纪律（domain / infrastructure / api）** | **[../../handoff/ARCHITECTURE_LAYERING.md](../../handoff/ARCHITECTURE_LAYERING.md)** |
 | **社区角色包索引 JSON 格式** | **[../role-pack/ROLE_PACK_INDEX.md](../role-pack/ROLE_PACK_INDEX.md)** |
-| **目录式进程插件**（`plugins/`、`manifest.json`、整壳、`directory_plugin_invoke`、开发者模式；**含插件管理面板** `Ctrl+Shift+F`、启用/停用/拖拽排序/本地 zip 更新） | **[../plugin-and-architecture/DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md)** |
+| **目录式进程插件**（`distros/chat-pro/plugins/`、`manifest.json`、整壳、`directory_plugin_invoke`、开发者模式；**含插件管理面板** `Ctrl+Shift+F`、启用/停用/拖拽排序/本地 zip 更新） | **[../plugin-and-architecture/DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md)** |
 | **整壳 / 插槽 `invoke` 命令表、权限别名、错误码** | **[../plugin-and-architecture/BRIDGE_API_REFERENCE.md](../plugin-and-architecture/BRIDGE_API_REFERENCE.md)** |
 | **配置文件位置**（`plugin_state`、`ui.json`、`oclive_last_role_id`） | **[../guides/CONFIGURATION_FILES.md](../guides/CONFIGURATION_FILES.md)** |
 | **聊天记录存储架构**（v3 插件化后端 + 记忆回放 + 能力探测） | **[../../handoff/CHAT_STORAGE_ARCHITECTURE.md](../../handoff/CHAT_STORAGE_ARCHITECTURE.md)** · 选型 **[../storage/STORAGE_BACKEND_GUIDE.md](../storage/STORAGE_BACKEND_GUIDE.md)** |
@@ -145,8 +158,8 @@
 | **编写器与主程序版本兼容（A5 一页表 · 中英）** | **[../COMPATIBILITY.md](../COMPATIBILITY.md)**（镜像 [creator-docs-en/COMPATIBILITY.md](../../creator-docs-en/COMPATIBILITY.md)）；结项（归档）[`../../handoff/archive/A5_CLOSURE_SUMMARY.md`](../../handoff/archive/A5_CLOSURE_SUMMARY.md) |
 | **`memory = local`**、`_local_plugins` 清单与桥接契约 | **[../plugin-and-architecture/LOCAL_PLUGIN_BRIDGE_SPEC.md](../plugin-and-architecture/LOCAL_PLUGIN_BRIDGE_SPEC.md)** |
 | 在 Rust 里新增一种内置后端或注册方式 | **[../plugin-and-architecture/HOW_TO_REPLACE_MODULES.md](../plugin-and-architecture/HOW_TO_REPLACE_MODULES.md)** |
-| 只做角色包内容（蓝图、场景、文案） | **[CREATOR_WORKFLOW.md](CREATOR_WORKFLOW.md)**（**`OCLIVE_ROLES_DIR`**、工作室分工、**应用内导入 zip/文件夹**）、[ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)、导入验收 [roles/TESTING_ROLE_PACK_IMPORT.md](../../roles/TESTING_ROLE_PACK_IMPORT.md) |
-| **核心 / 可变性格档案、`personality_source`、七维视图** | **[docs/personality-archive-notes.md](../../docs/personality-archive-notes.md)**（与 `roles/README_MANIFEST.md` §5.3 互参） |
+| 只做角色包内容（蓝图、场景、文案） | **[CREATOR_WORKFLOW.md](CREATOR_WORKFLOW.md)**（**`OCLIVE_ROLES_DIR`**、工作室分工、**应用内导入 zip/文件夹**）、[ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)、导入验收 [distros/chat-pro/roles/TESTING_ROLE_PACK_IMPORT.md](../../distros/chat-pro/roles/TESTING_ROLE_PACK_IMPORT.md) |
+| **核心 / 可变性格档案、`personality_source`、七维视图** | **[docs/personality-archive-notes.md](../../docs/personality-archive-notes.md)**（与 `distros/chat-pro/roles/README_MANIFEST.md` §5.3 互参） |
 | **设计思路为何从「七维为主」走到「档案轴心」** | **[docs/design-axis-evolution.md](../../docs/design-axis-evolution.md)**（旧文档保留，冲突以契约为准） |
 | 编写器校验路线（与 `load_role` / crate 中期） | **[../role-pack/EDITOR_VALIDATION_ROADMAP.md](../role-pack/EDITOR_VALIDATION_ROADMAP.md)** |
 | 包版本、`schema_version`、世界观知识 `knowledge/` | **[../role-pack/PACK_VERSIONING.md](../role-pack/PACK_VERSIONING.md)** · **[../role-pack/WORLDVIEW_KNOWLEDGE.md](../role-pack/WORLDVIEW_KNOWLEDGE.md) |
@@ -209,8 +222,8 @@
 
 1. [../plugin-and-architecture/EXTENSION_POINTS.md](../plugin-and-architecture/EXTENSION_POINTS.md)  
 2. [../plugin-and-architecture/HOW_TO_REPLACE_MODULES.md](../plugin-and-architecture/HOW_TO_REPLACE_MODULES.md)  
-3. 源码：`crates/oclive_kernel_host/src/domain/plugin_host/`、`crates/oclive_kernel_host/src/infrastructure/remote_plugin/`、**`crates/oclive_kernel_host/src/infrastructure/directory_plugins/`**（目录插件扫描与懒启动）  
-4. 集成烟测（`PluginHost::resolve_for_role` + `builtin_v2` **alias 解析**）：[`src-tauri/tests/plugin_backends_v2_resolve.rs`](../../src-tauri/tests/plugin_backends_v2_resolve.rs)（`cargo test --test plugin_backends_v2_resolve`）
+3. 源码：`kernel/crates/oclive_kernel_host/src/domain/plugin_host/`、`kernel/crates/oclive_kernel_host/src/infrastructure/remote_plugin/`、**`kernel/crates/oclive_kernel_host/src/infrastructure/directory_plugins/`**（目录插件扫描与懒启动）  
+4. 集成烟测（`PluginHost::resolve_for_role` + `builtin_v2` **alias 解析**）：[`distros/desktop-tauri/tests/plugin_backends_v2_resolve.rs`](../../distros/desktop-tauri/tests/plugin_backends_v2_resolve.rs)（`cargo test --test plugin_backends_v2_resolve`）
 
 ---
 

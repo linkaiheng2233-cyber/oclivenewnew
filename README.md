@@ -8,13 +8,13 @@
 
 > **最近进展**：Chat Pro **0.4.0** · VS Code Flash **0.4.1** — 见 [CHANGELOG.md](CHANGELOG.md)。**AI 剧场**已从 0 规划，见 [`handoff/theater/`](handoff/theater/)。
 
-本地优先的 **AI 角色组装平台**（开源、可组装、隐私优先）：**Tauri + Vue 3 + Rust** 运行时 + **六槽可替换模块** + **角色包独立分发** + **发行版 profile** + **插件市场**。默认角色包（如 `roles/mumu`）为**官方示例**，展示平台能力；社区创作与分发角色包是核心价值。工程代号 **oclive**。
+本地优先的 **AI 角色组装平台**（开源、可组装、隐私优先）：**Tauri + Vue 3 + Rust** 运行时 + **六槽可替换模块** + **角色包独立分发** + **发行版 profile** + **插件市场**。默认角色包（如 `distros/chat-pro/roles/mumu`）为**官方示例**，展示平台能力；社区创作与分发角色包是核心价值。工程代号 **oclive**。
 
 ## 仓库布局（内核 + 发行版）
 
 | 目录 | 内容 |
 |------|------|
-| **[`kernel/`](kernel/)** | Rust 内核（`crates/`、`fuzz/`、OOCP 示例等） |
+| **[`kernel/`](kernel/)** | Rust 内核（`kernel/crates/`、`kernel/fuzz/`、OOCP 示例等） |
 | **[`distros/chat-pro/`](distros/chat-pro/)** | **OCLive Chat Pro** 前端（ToolShell / FluentShell） |
 | **[`distros/theater/`](distros/theater/)** | **AI Theater** 第三发行版前端 |
 | **[`distros/shared/`](distros/shared/)** | 桌面共享 UI（`@oclive/desktop-shared`） |
@@ -40,7 +40,7 @@ RFC：[handoff/distros/ARCHITECTURE_DECOUPLING_RFC.md](handoff/distros/ARCHITECT
 |------|------|
 | **内核编排** | 主编排在 **`kernel/crates/oclive_kernel_host/src/domain/chat_engine/mod.rs`** 的 **`process_message`**；无独立入口蓝图 DSL 主路径；子系统经 **`PluginHost`** 解析（含 **`agent`**）。 |
 | **测试（三层）** | **协议层（本仓）**：`distros/desktop-tauri` 的 **`cargo test`** + `tests/` 集成测；**OOCP HTTP 黑盒 S0–S12（13 场景；可选 S13/S14）** 已入库 [`examples/oocp-test-suite/`](examples/oocp-test-suite/)，**CI 已集成** job **`oocp-test-suite`**（Ubuntu，构建 `--features dual_core` 并运行 `run.mjs --include-dual-core`）。**A1.1b**：**`vite preview` + Playwright** 首屏烟测（[`distros/chat-pro/e2e/preview-shell.spec.ts`](distros/chat-pro/e2e/preview-shell.spec.ts)），**CI 仅 Ubuntu `frontend`**（Windows `frontend` 跑 Vitest + build）。**组件层（编写器）**：**oclive-pack-editor** 仓库 Vitest / Playwright 等（与本仓 CI 分工）。**插件层（编写器）**：目录插件 / `official-vue-test-runner` 等范式与用例在 **oclive-pack-editor**。**前端最小烟测**：CI **`npm ci` + `npm run test:unit`（Vitest）+ `npm run build`**；Playwright 见上。总览见 [creator-docs/testing/OVERVIEW.md](creator-docs/testing/OVERVIEW.md)、[creator-docs/testing/OOCP_TEST_SUITE.md](creator-docs/testing/OOCP_TEST_SUITE.md)。 |
-| **oclive-cli** | Workspace crate **`oclive-cli`**：**`oclive dev`**（监听 `roles/`）；**`bench`**（`--save` / `--compare` / **`--cold-start`**）；**`test --coverage`** / **`--miri`**；**`explain`** / **`completions`**；**`init --dry-run`** / **`--check`**；**`lint --audit-ci`**；**`doctor --sbom`**；**`pack`** 与 **Monolith** 流程见 [creator-docs/cli/OCLIVE_CLI_GUIDE.md](creator-docs/cli/OCLIVE_CLI_GUIDE.md)。 |
+| **oclive-cli** | Workspace crate **`oclive-cli`**：**`oclive dev`**（监听 `distros/chat-pro/roles/`）；**`bench`**（`--save` / `--compare` / **`--cold-start`**）；**`test --coverage`** / **`--miri`**；**`explain`** / **`completions`**；**`init --dry-run`** / **`--check`**；**`lint --audit-ci`**；**`doctor --sbom`**；**`pack`** 与 **Monolith** 流程见 [creator-docs/cli/OCLIVE_CLI_GUIDE.md](creator-docs/cli/OCLIVE_CLI_GUIDE.md)。 |
 | **启动健康检查** | 首轮 **`process_message`** 前一次性自检（槽位、角色包文件、SQLite **`health_ping`**、可选 LLM 探测）；可用 **`OCLIVE_SKIP_STARTUP_HEALTH`** / **`OCLIVE_SKIP_LLM_STARTUP_PROBE`** 跳过。实现见 `kernel/crates/oclive_kernel_host/src/domain/startup_health.rs`。 |
 | **Monolith（高耦合编译）** | 无头脚手架在编译期按 **七焊接键**（第 1–6 模块 + `complex_emotion`）焊接静态路径；RFC 与 CLI 四阶段（`init` → `build` → 双二进制 `bench`）见 [creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md](creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md) 与上文 CLI 指南。 |
 | **安全** | 已跑 **`cargo audit`（0.22.1）**；**漏洞级已清零**（警告级仍跟踪；数字以 [KNOWN_VULNERABILITIES.md](creator-docs/security/KNOWN_VULNERABILITIES.md) 为准），见该文「维护约定」；审查边界见 [creator-docs/security/SECURITY_AUDIT_SCOPE.md](creator-docs/security/SECURITY_AUDIT_SCOPE.md)。 |
@@ -87,7 +87,7 @@ Windows 需 **Visual Studio Build Tools**（MSVC）；Cargo 产物在仓库外 `
 - **唯一反馈入口**：[**GitHub Issues**](https://github.com/linkaiheng2233-cyber/oclivenewnew/issues)（本仓库）。  
 - **Issue 标题建议**：`[bug]: …` · `[feat]: …` · `[support]: …`（与模板 `title` 前缀一致，便于筛选）。  
 - **首次响应**：维护者通常在 **3–5 个工作日** 内完成首轮分类（志愿维护窗口，**非合同 SLA**；节假日顺延）。  
-- **请附带环境信息**：**操作系统**；**应用版本**（例如 `package.json` / `src-tauri/Cargo.toml` 的 `version`）；**`oclive-cli` 版本**（`crates/oclive-cli/Cargo.toml` 的 `version` 或 `cargo run -p oclive-cli -- --help` 输出）；并粘贴应用内 **设置 → 常规 → 环境自检** 的结果摘要。**勿**在公开 issue 中粘贴 API 密钥、Token 或可识别隐私的完整本机路径。
+- **请附带环境信息**：**操作系统**；**应用版本**（例如 `package.json` / `distros/desktop-tauri/Cargo.toml` 的 `version`）；**`oclive-cli` 版本**（`kernel/crates/oclive-cli/Cargo.toml` 的 `version` 或 `cargo run -p oclive-cli -- --help` 输出）；并粘贴应用内 **设置 → 常规 → 环境自检** 的结果摘要。**勿**在公开 issue 中粘贴 API 密钥、Token 或可识别隐私的完整本机路径。
 
 **自助排查**：[用户手册](creator-docs/getting-started/USER_MANUAL.md)（[English](creator-docs-en/getting-started/USER_MANUAL.md)）· [FAQ](creator-docs/FAQ.md) · [文档索引](creator-docs/getting-started/DOCUMENTATION_INDEX.md) · [ERROR_CODES](creator-docs/getting-started/ERROR_CODES.md)。报告缺陷请尽量包含 **错误码** 与 **最少复现步骤**。
 
@@ -136,10 +136,10 @@ Windows 需 **Visual Studio Build Tools**（MSVC）；Cargo 产物在仓库外 `
 | 最小侧车示例（Python） | [examples/remote_plugin_minimal/README.md](examples/remote_plugin_minimal/README.md) |
 | 侧车范例：OpenAI 兼容 API | [examples/remote_plugin_openai_compat/README.md](examples/remote_plugin_openai_compat/README.md) |
 | 侧车示例共用模块（JSON-RPC / 非 LLM 占位） | [examples/common/README.md](examples/common/README.md) |
-| 角色 manifest 说明 | [roles/README_MANIFEST.md](roles/README_MANIFEST.md)（含应用内 **导入 `.ocpak` / `.zip` / 文件夹**） |
+| 角色 manifest 说明 | [distros/chat-pro/roles/README_MANIFEST.md](distros/chat-pro/roles/README_MANIFEST.md)（含应用内 **导入 `.ocpak` / `.zip` / 文件夹**） |
 | **性格档案（核心 / 可变 / 七维视图）** | [docs/personality-archive-notes.md](docs/personality-archive-notes.md)（与 `evolution.personality_source` 对齐） |
 | **设计思路演进记录** | [docs/design-axis-evolution.md](docs/design-axis-evolution.md) |
-| 角色包导入 — 手工测试清单 | [roles/TESTING_ROLE_PACK_IMPORT.md](roles/TESTING_ROLE_PACK_IMPORT.md) |
+| 角色包导入 — 手工测试清单 | [distros/chat-pro/roles/TESTING_ROLE_PACK_IMPORT.md](distros/chat-pro/roles/TESTING_ROLE_PACK_IMPORT.md) |
 
 **说明**：旧路径 `docs/*.md` 已迁移至 `creator-docs/`，见 [docs/README.md](docs/README.md)。**开发史料归档**（交接日志索引）：[ARCHIVE_PROJECT_HISTORY.md](handoff/archive/ARCHIVE_PROJECT_HISTORY.md)。
 
@@ -148,18 +148,18 @@ Windows 需 **Visual Studio Build Tools**（MSVC）；Cargo 产物在仓库外 `
 | 部分 | 说明 |
 |------|------|
 | **运行时（本仓库）** | 玩家使用的桌面客户端 + 对话引擎 |
-| **角色包** | `roles/` 下每角色一目录；**唯一对接面**为磁盘上的包目录（或 zip 解压后同等结构） |
+| **角色包** | `distros/chat-pro/roles/` 下每角色一目录；**唯一对接面**为磁盘上的包目录（或 zip 解压后同等结构） |
 | **角色包编写器** | **独立仓库** [oclive-pack-editor](https://github.com/linkaiheng2233-cyber/oclive-pack-editor)（与本仓库**同级**目录常见）：产出 v2 角色包；人设 / 六槽 / 知识 / 导出 |
 | **启动器（已退役）** | [oclive-launcher](https://github.com/linkaiheng2233-cyber/oclive-launcher) 仅归档；新用户用 **编写器 + 本运行时**，无需第三应用 |
 | **扩展** | 见 [creator-docs/plugin-and-architecture/EXTENSION_POINTS.md](creator-docs/plugin-and-architecture/EXTENSION_POINTS.md)；HTTP 侧车见 [creator-docs/plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md](creator-docs/plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md)；**目录式插件**（整壳 / 嵌入插槽、manifest）见 [creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md](creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md) |
 
-**契约与版本（摘要）**：`manifest.min_runtime_version`、根对象顶层键白名单、`validate_disk_manifest` 等以 [PACK_VERSIONING.md](creator-docs/role-pack/PACK_VERSIONING.md) 与 `RoleStorage::load_role` 为准。编写器侧 **`HOST_RUNTIME_VERSION`**（`oclive-pack-editor`）应与 **`src-tauri/Cargo.toml` 的 `version`** 一致。
+**契约与版本（摘要）**：`manifest.min_runtime_version`、根对象顶层键白名单、`validate_disk_manifest` 等以 [PACK_VERSIONING.md](creator-docs/role-pack/PACK_VERSIONING.md) 与 `RoleStorage::load_role` 为准。编写器侧 **`HOST_RUNTIME_VERSION`**（`oclive-pack-editor`）应与 **`distros/desktop-tauri/Cargo.toml` 的 `version`** 一致。
 
 ## 快速开始：编写器 + 运行时
 
 1. **安装依赖**：Node.js、Ollama（本地对话默认路径）。详见 [CREATOR_WORKFLOW.md](creator-docs/getting-started/CREATOR_WORKFLOW.md)。
 2. **克隆两仓**（同级目录最省事）：**本仓库**（A.I.Live 运行时）与 **[oclive-pack-editor](https://github.com/linkaiheng2233-cyber/oclive-pack-editor)**（角色包编写器）。
-3. **制作角色包**：在编写器中编辑并 **导出 zip / 写入文件夹**，或复制 `roles/mumu/` 等示例；使 **蓝图文件 `roles/{角色id}/pipeline.ocblueprint`** 位于 **roles 根**（**不以** `steps[]` 作主路径调度；本项目内 `roles/`，或设置 **`OCLIVE_ROLES_DIR`**）。
+3. **制作角色包**：在编写器中编辑并 **导出 zip / 写入文件夹**，或复制 `distros/chat-pro/roles/mumu/` 等示例；使 **蓝图文件 `distros/chat-pro/roles/{角色id}/pipeline.ocblueprint`** 位于 **roles 根**（**不以** `steps[]` 作主路径调度；本项目内 `distros/chat-pro/roles/`，或设置 **`OCLIVE_ROLES_DIR`**）。
 4. **运行本应用**：`npm run tauri:dev`（或 Release 安装包）；加载角色并开始对话。
 5. **（可选）高级能力**：在本应用 **插件与后端管理 → 架构图** 配置 **专家路由**（`expert_routing.json`）、`groups` 等；之后在编写器保存人设时，编写器会保留这些蓝图扩展字段。
 
@@ -173,7 +173,7 @@ Windows 需 **Visual Studio Build Tools**（MSVC）；Cargo 产物在仓库外 `
 
 ## 开发
 
-本机调试外部角色目录时，可设置环境变量 **`OCLIVE_ROLES_DIR`** 指向 **roles 根**（其下为各 `角色id/` 子目录，内含 `manifest.json`）。详见 [roles/README_MANIFEST.md](roles/README_MANIFEST.md) 与 [creator-docs/getting-started/CREATOR_WORKFLOW.md](creator-docs/getting-started/CREATOR_WORKFLOW.md)。
+本机调试外部角色目录时，可设置环境变量 **`OCLIVE_ROLES_DIR`** 指向 **roles 根**（其下为各 `角色id/` 子目录，内含 `manifest.json`）。详见 [distros/chat-pro/roles/README_MANIFEST.md](distros/chat-pro/roles/README_MANIFEST.md) 与 [creator-docs/getting-started/CREATOR_WORKFLOW.md](creator-docs/getting-started/CREATOR_WORKFLOW.md)。
 
 **插件开发（目录式插件）**：支持以 **Vue 单文件组件** 作为嵌入插槽 UI，契约与整壳、iframe 回退、事件订阅与安全选项见 **[DIRECTORY_PLUGINS.md](creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md)**。
 
@@ -193,7 +193,7 @@ npm run tauri:dev
 ```
 
 - **`GET /health`**：返回纯文本 `ok`。
-- **`POST /chat`**：JSON 体 `{ "role_path": "D:/.../roles/某角色id", "message": "你好", "session_id": null }`，成功时扁平字段含 **`reply`**、`personality_source` 等（与 Tauri `send_message` 契约一致）。`role_path` 为含 `manifest.json` 的角色目录的**绝对或规范化路径**。
+- **`POST /chat`**：JSON 体 `{ "role_path": "D:/.../distros/chat-pro/roles/某角色id", "message": "你好", "session_id": null }`，成功时扁平字段含 **`reply`**、`personality_source` 等（与 Tauri `send_message` 契约一致）。`role_path` 为含 `manifest.json` 的角色目录的**绝对或规范化路径**。
 
 与 Tauri IPC 相同，内部走 `chat_engine::process_message`；需本机 **Ollama** 等环境可用。自动化/CI 可对进程设置 **`OCLIVE_HTTP_API_MOCK_LLM=1`** 以使用内存库 + Mock LLM（不访问网络），详见 [`examples/oocp-test-suite/README.md`](examples/oocp-test-suite/README.md)。
 
@@ -206,13 +206,13 @@ npm run build
 
 ## 测试与检查
 
-**主路径快捷键（应用内）**：**Ctrl+Shift+F** 打开插件管理、**Ctrl+Shift+S** 打开设置、**Ctrl+Shift+D** 开关调试面板；完整说明见应用内 **设置** 相关文案与 `src/i18n` 中 **`shortcutHelp`**（与 [FAQ](creator-docs/FAQ.md) 一致）。
+**主路径快捷键（应用内）**：**Ctrl+Shift+F** 打开插件管理、**Ctrl+Shift+S** 打开设置、**Ctrl+Shift+D** 开关调试面板；完整说明见应用内 **设置** 相关文案与 `distros/shared/src/i18n` 中 **`shortcutHelp`**（与 [FAQ](creator-docs/FAQ.md) 一致）。
 
 **CI（`.github/workflows/ci.yml`）**：在 **Ubuntu** 与 **Windows** 上均执行 Rust **`rustfmt` + workspace `clippy`（`-D warnings`）+ `cargo test --workspace`**，以及 **`npm ci` + `npm run test:unit` + `npm run build`**。**Ubuntu** 的 **`frontend`** job 另跑 **Playwright + `vite preview` 首屏烟测（A1.1b）**；**Windows** 的 **`frontend`** job 不跑 Playwright（避免子进程拉起 `vite preview` 不稳定），以 **Vitest + build** 为主。在 **Ubuntu** 上另跑 **`oocp-test-suite`**（`--api` + `examples/oocp-test-suite/run.mjs --include-dual-core`，默认 S0–S12 + 可选双核 S13/S14；随后 **`scripts/e2e-core-api-restart.mjs`** 进程重启烟测）、**`layering-ratchet`**、**`dimension5-acceptance`**、**`cross-host-e2e`**（profile 调度）、**`cargo-audit`（0.22.1，失败即红；`Cargo.lock` PR 另走严格 job）**、**`npm-audit`（可见性）** 与 **`remote-plugin-demo`**。**组件 / 插件层**自动化在 **oclive-pack-editor** 各自 workflow 中维护（见上文「测试（三层）」）。
 
 | 命令 | 用途 |
 |------|------|
-| `npm run test:unit` | **Vitest**：主仓最小烟测（`src/smoke.test.ts`） |
+| `npm run test:unit` | **Vitest**：主仓最小烟测（`distros/chat-pro/src/smoke.test.ts`） |
 | `npm run test:e2e:core-api-restart` | **A1.1a**：`--api` 进程 **重启后** 仍能 `/health` + `POST /chat`（需先 `cargo build -p oclivenewnew-tauri`；默认 Mock LLM） |
 | `npm run test:e2e:preview` | **A1.1b**：**`vite preview`** 下 **Playwright** 首屏烟测（需先 **`npm run build`**；首次本地需 `npx playwright install chromium`） |
 | `npm run build:analyze` | 生成前端打包体积报告（`dist/stats.html`，用于定位大 chunk） |
@@ -243,7 +243,7 @@ cargo check --lib
 
 - **Sentry**：仅当构建时设置环境变量 **`VITE_SENTRY_DSN`** 时，前端**可能**初始化 `@sentry/vue`，上报 **Vue 侧未捕获异常**（`sendDefaultPii: false`，请求 URL 去掉 query）；**Rust 后端错误默认不上报 Sentry**（以本地/系统日志为准）。未配置 DSN 时无任何上报。若构建已带 DSN，用户可在 **设置 → 常规** 勾选 **「禁用崩溃上报」**，将偏好写入本机 **`localStorage`**（键 **`oclive.telemetry.sentryOptOut`**，`1` 表示退出）；取消勾选后需**重启应用**才会重新初始化上报。
 - **在线更新**：当前 **未配置** Tauri 内置更新端点；对外分发以 **离线安装包**（`tauri build` 产物）为准。若日后启用更新器，需另行配置签名与更新源并在发行说明中写明。
-- **版本与协作**：发版前请统一 **`package.json` / `src-tauri/Cargo.toml` / `tauri.conf.json` 版本号**，并更新 **`CHANGELOG.md`** 与 **`CHANGELOG.en.md`**（用户可见变更保持中英同步）；使用 Git 便于回滚与对照 CI。
+- **版本与协作**：发版前请统一 **`package.json` / `distros/desktop-tauri/Cargo.toml` / `tauri.conf.json` 版本号**，并更新 **`CHANGELOG.md`** 与 **`CHANGELOG.en.md`**（用户可见变更保持中英同步）；使用 Git 便于回滚与对照 CI。
 
 ## 打包
 

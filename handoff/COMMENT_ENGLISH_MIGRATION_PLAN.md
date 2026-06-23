@@ -131,7 +131,7 @@
 3. `src/api/**`、`src/utils/**`、`src/lib/**`
 4. `src/components/**`、`src/views/**`（`.vue` 文件 `<script>` 内注释）
 
-> i18n 文案文件 `src/i18n/**` 属于「用户可见文案」，**不在范围内**，跳过。
+> i18n 文案文件 `distros/shared/src/i18n/**` 属于「用户可见文案」，**不在范围内**，跳过。
 
 ---
 

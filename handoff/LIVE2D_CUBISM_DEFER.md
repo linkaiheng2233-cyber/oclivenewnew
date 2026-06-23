@@ -24,6 +24,6 @@
 
 ## 相关文件
 
-- `src/components/visual/Live2DStageAdapter.vue`
-- `src/adapters/visual/index.ts`
-- `src/shells/theater/TheaterStagePanel.vue`
+- `distros/shared/src/components/visual/Live2DStageAdapter.vue`
+- `distros/shared/src/adapters/visual/index.ts`
+- `distros/theater/src/shells/theater/TheaterStagePanel.vue`

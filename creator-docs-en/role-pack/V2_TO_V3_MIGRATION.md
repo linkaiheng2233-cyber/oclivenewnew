@@ -24,7 +24,7 @@ Batch CLI migration (Q18) is **deferred**; copy v2 pack → edit JSON → `pack 
 
 ## 2. Manual steps (~10 min)
 
-1. **Back up** `roles/<id>/`.
+1. **Back up** `distros/chat-pro/roles/<id>/`.
 2. Set **`"schema_version": 3`**.
 3. Add **`runtime_config`** (move system fields from `meta`):
 
@@ -39,7 +39,7 @@ Minimal v3 without dual-core: `"runtime_config": { "dual_core": { "enabled": fal
 
 4. **Optional dual-core:** `"dual_core": { "enabled": true }` plus non-empty `pipeline.experimental` (see [DEVELOPER_GUIDE.md](../dual-core/DEVELOPER_GUIDE.md)).
 5. **Optional** `zone` on `slot_registry` entries.
-6. **Validate:** `cargo run -p oclive-cli -- pack validate roles/<id>` and `oclive doctor` (v3 checks: `blueprint_v3_file_format`, `slot_registry_v3_llm`, `slot_position_v3_unique`).
+6. **Validate:** `cargo run -p oclive-cli -- pack validate distros/chat-pro/roles/<id>` and `oclive doctor` (v3 checks: `blueprint_v3_file_format`, `slot_registry_v3_llm`, `slot_position_v3_unique`).
 7. **Smoke chat** via desktop or `--api`.
 
 ---
@@ -71,7 +71,7 @@ Scaffold: `cargo run -p oclive-cli -- init --dual-core -o ./my-kernel`
 
 **No `migrate-v2-v3` CLI?** Q18 deferred; use manual steps or `init --dual-core` template.
 
-**Creator profile vs full pack?** Use `--profile creator` only on pure creator packs; do not validate `roles/mumu` with it.
+**Creator profile vs full pack?** Use `--profile creator` only on pure creator packs; do not validate `distros/chat-pro/roles/mumu` with it.
 
 ---
 

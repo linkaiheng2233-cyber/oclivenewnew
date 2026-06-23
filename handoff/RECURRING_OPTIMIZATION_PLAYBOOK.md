@@ -14,7 +14,7 @@
 
 | 层 | 目录 | 改什么 |
 |----|------|--------|
-| **内核平台** | [`kernel/`](../kernel/)（`crates/`、`fuzz/`、`examples/oocp-test-suite/` 等） | `process_message`、六槽、迁移、OOCP、HTTP API |
+| **内核平台** | [`kernel/`](../kernel/)（`kernel/crates/`、`kernel/fuzz/`、`examples/oocp-test-suite/` 等） | `process_message`、六槽、迁移、OOCP、HTTP API |
 | **共享桌面 UI** | [`distros/shared/`](../distros/shared/) | API 封装、stores、通用 chat 组件 |
 | **Chat Pro** | [`distros/chat-pro/`](../distros/chat-pro/) | ToolShell / FluentShell、roles、plugins |
 | **AI Theater** | [`distros/theater/`](../distros/theater/) | TheaterShell、剧场 composables |
@@ -141,7 +141,7 @@ git status                                      # 确认工作树状态 / 与 or
 **正确性 checklist**
 - [ ] 12 crate 依赖图仍严格单向（`types→contracts→runtime→host→{server,tauri}`）
 - [ ] `domain→infrastructure` 反向依赖无新增（对照 `LAYERING_BASELINE.json`）
-- [ ] `process_message`（`crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs`）仍是唯一编排 SSOT,业务逻辑未泄漏到 `src-tauri/src/api/*`
+- [ ] `process_message`（`kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs`）仍是唯一编排 SSOT,业务逻辑未泄漏到 `distros/desktop-tauri/src/api/*`
 - [ ] 冻结项（dual_core / blueprint v3 / expert_routing）仍 feature-gated 默认不编译
 
 **愿景拷问**
@@ -224,7 +224,7 @@ git status                                      # 确认工作树状态 / 与 or
 ## 5. 常用命令速查（PowerShell,逐条跑勿用 `&&`）
 
 ```powershell
-node scripts/dimension5-acceptance.mjs --ci      # 维度五门禁（9 checks）
+node scripts/dimension5-acceptance.mjs --ci      # 维度五门禁（11 checks）
 cargo test -p oclive_kernel_host --lib           # 核心单测
 node scripts/check-domain-layering.mjs           # 分层 ratchet
 node scripts/check-changelog-parity.mjs          # CHANGELOG 中英 parity
@@ -241,12 +241,12 @@ npm run check:rust                               # fmt + clippy(-D warnings) + t
 
 | 用途 | 路径 |
 |------|------|
-| 编排 SSOT | `crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs` |
-| Prompt 公式 | `crates/oclive_kernel_runtime/src/domain/prompt_builder/` |
+| 编排 SSOT | `kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs` |
+| Prompt 公式 | `kernel/crates/oclive_kernel_runtime/src/domain/prompt_builder/` |
 | 分层基线 | `handoff/LAYERING_BASELINE.json` |
 | 技术债总账 | `handoff/TECHNICAL_DEBT_INVENTORY.md` |
-| 迁移 SSOT | `crates/oclive_kernel_host/migrations/*.sql` |
-| crate 速查 | `crates/README.md` |
+| 迁移 SSOT | `kernel/crates/oclive_kernel_host/migrations/*.sql` |
+| crate 速查 | `kernel/crates/README.md` |
 | 命名 SSOT | `creator-docs/NAMING_CONVENTIONS.md` |
 
 ---
@@ -292,7 +292,7 @@ npm run check:rust                               # fmt + clippy(-D warnings) + t
 | 5 | 2026-06-10 | 快 | n/a* | — | oclive-vscode 用户报障修复: 设置内即时切角色卡死(handleMessage 串行化 + switchRole guard 全程保持 + 去重 pushState) / 模型调用不稳(ensureReady 三态 trust·revalidate·replan, 健康连接不再整轮重规划/mock 杀端口) / 角色下拉栏改 Cursor 配色 / 新增 ensureReadyPolicy+serialQueue 单测; V-VSCODE-FIX-01·02 / UI-01 / QA-01 Done | *姊妹仓 lint/compile/test:unit/webview build 通过; 主仓基线未跑 |
 | 6 | 2026-06-10 | 快 | n/a* | — | oclive-vscode 设置落地: 角色区改只读去重(IA-02) / 内核「重新发现」触发 autoDiscover(LAND-01) / 移除高级实验性死占位(HONEST-02) | *姊妹仓 lint/test:unit/webview build 通过; F5 实机待开发者确认 |
 | 7 | 2026-06-10 | 快 | n/a* | — | VS Code 聊天体验: LATENCY(停止/预热/计时) + UNDO(四形态/meta_action_templates) + STREAM(/chat/stream Gate 批准); 主仓 validation + oclive_kernel_host 流式 | *姊妹仓 lint/build/test:unit; 主仓 cargo test validation+host |
-| 8 | 2026-06-10 | 半 | FAIL→PASS | A− | 基线红: role_manager FQ 2>1 → 插件注入化修复; 删 `oclive_runtimed`+`crates/models`; deny.toml 去 AGPL; D-ORPHAN-01/02、D-NAME-01(104 resolve_*) 入账 | dimension5+host lib 182 绿; 含轮次7流式/撤销/meta_action_templates 提交 |
+| 8 | 2026-06-10 | 半 | FAIL→PASS | A− | 基线红: role_manager FQ 2>1 → 插件注入化修复; 删 `oclive_runtimed`+`kernel/crates/models`; deny.toml 去 AGPL; D-ORPHAN-01/02、D-NAME-01(104 resolve_*) 入账 | dimension5+host lib 182 绿; 含轮次7流式/撤销/meta_action_templates 提交 |
 | 9 | 2026-06-10 | 全 | PASS* | A− | *门禁 PASS 但场外两处红: K-BUILD-02 TheaterShell 导入错层致 `vite build` HEAD 失败(修复) + D-SCRIPT-01 verify:ui 锚点全过时崩溃(重写); D-ORPHAN-03 删 V1 孤儿组件 23KB; K-DOC-08 runtimed 幽灵引用清掉; D-TRAIT-01(16 单实现 trait) 入账 Deferred; D-PORT-02 计数 22→24 | 过度工程普查轮; 大刀(god-port/V2 槽/错误四层)维持冻结 Deferred |
 | 10 | 2026-06-10 | 半 | PASS | A− | K-GATE-01 九检; D-ORPHAN-03b/c; D-PORT-02/D-SLOT-01/D-TRAIT-01; Theater 自动化 9 测绿·人工陌生人待执行; beat patch 单测绿; cargo build ~81s dev | [SLOT_BACKEND_REALITY_MATRIX.md](./SLOT_BACKEND_REALITY_MATRIX.md) |
 | 11 | 2026-06-11 | 半 | PASS | A− | Batch 1–3 入库; Phase 1 D-ERR-02/034/棘轮76/K-DOC; Phase 2 K-PERF-20/21 快照+settings 批量; Phase 3 会话索引/RoleRuntimeRepo/前端 follow-up; Phase 4 Deferred 登记 | Theater v0 冻结期; 陌生人测试仍 Pending |

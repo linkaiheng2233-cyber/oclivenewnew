@@ -1,8 +1,8 @@
 # author.json（创作者建议）
 
-可选文件，与 `manifest.json`、`settings.json` 同位于角色包根目录（`roles/{id}/author.json`）。
+可选文件，与 `manifest.json`、`settings.json` 同位于角色包根目录（`distros/chat-pro/roles/{id}/author.json`）。
 
-仓库内参考示例：`roles/mumu/author.json`（文案 + `recommended_plugins`；插槽布局仍用同目录 `ui.json`，避免重复维护 `suggested_ui`）。
+仓库内参考示例：`distros/chat-pro/roles/mumu/author.json`（文案 + `recommended_plugins`；插槽布局仍用同目录 `ui.json`，避免重复维护 `suggested_ui`）。
 
 ## 与 `ui.json` 的关系
 
@@ -30,4 +30,4 @@
 | `suggested_ui` | 同 `ui.json` |
 | `suggested_plugin_backends` | 同 `plugin_backends` |
 
-详见实现：`oclivenewnew` 仓库 `src-tauri/src/models/author_pack.rs`。
+详见实现：`oclivenewnew` 仓库 `kernel/crates/oclive_kernel_types/src/models/author_pack.rs`。

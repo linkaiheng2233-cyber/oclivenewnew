@@ -1,10 +1,10 @@
 # Technical debt inventory
 
-**Last updated:** 2026-06-18 (轮次 16 · Theater Track A 工程卫生)
+**Last updated:** 2026-06-24 (轮次 17 · 重组文档路径收尾)
 
 **Product freeze (Theater v0):** Active until **5 人真人陌生人** ≥60% 通过。工程代理 100% **不替代**产品门槛。见 [`theater/DEVELOPMENT_ROADMAP.md`](./theater/DEVELOPMENT_ROADMAP.md) §4.8 · 解冻 checklist [`theater/MODE2_UNFREEZE.md`](./theater/MODE2_UNFREEZE.md)。
 
-**综合评分：** A− · 基线 dimension5 九检 PASS · `oclive_kernel_host --lib` **239** 绿 · layering ratchet 3/1 未涨 · `theater_director_resolver` 集成测 3 绿
+**综合评分：** A− · 基线 dimension5 **十检** PASS（含 `check-stale-paths`）· `oclive_kernel_host --lib` **239** 绿 · layering ratchet 3/1 未涨 · `theater_director_resolver` 集成测 3 绿
 
 **下一动作：** **P0-STRANGER** — 维护者带 5 名零文档测试者；验收标准见 [`theater/PLAYTEST_MATRIX.md`](./theater/PLAYTEST_MATRIX.md)
 
@@ -20,6 +20,9 @@
 | **K-DOC-17** | 注释英文化 batch 3 | P1 | `slot_runner.rs` · `kernel_strategy.rs` 等 | **Done**（轮次 16 复核：上述文件已为英文 `//!`/`///`） |
 | **V-VSCODE-PERF-05** | VS Code F5 / `.vsix` 实机 | P1 | 姊妹仓 `oclive-vscode` 人工排期 | **OPEN**（cross-repo） |
 | **K-CONTRACT-WIRING-01** | `extra_sections` 生产接线 | P2 | 首个外部插件作者 or Phase 5 通过后 | **OPEN** |
+| **D-DOCDRIFT-01** | 重组后 normative 文档路径漂移（旧布局引用） | P0 | `check-stale-paths` 硬门禁绿 + `migrate-doc-paths` 路径存在性全过 | **Done**（轮次 17） |
+| **D-SCRIPT-02** | `check-stale-paths.mjs` 误报/漏报（反例说明与行内路径） | P1 | 扩范围 + 修 pattern + 挂 dimension5 | **Done**（轮次 17） |
+| **D-ORPHAN-04** | 残留空目录 `kernel/crates/models/` | P2 | 目录删除 + workspace 无引用 | **Done**（轮次 17） |
 
 ---
 
@@ -80,13 +83,13 @@ Done 项（K-PERF-01~26、D-READ-01/02/04、K-ROBUST-01~03、Opus 4.8 Wave 0–4
 
 - [RECURRING_OPTIMIZATION_PLAYBOOK.md §8](./RECURRING_OPTIMIZATION_PLAYBOOK.md) 巡检日志
 - [CHANGELOG.md](../CHANGELOG.md) `[0.4.0]` · `[Unreleased]`
-- git log `handoff/` · `crates/oclive_kernel_host`
+- git log `handoff/` · `kernel/crates/oclive_kernel_host`
 
 ### 轮次 16 Done（2026-06-18）
 
 | ID | 项 | 说明 |
 |----|-----|------|
-| **T-LAYER-16** | Theater 测迁出 domain | `theater_director_resolver` → `src-tauri/tests/theater_director_resolver.rs` |
+| **T-LAYER-16** | Theater 测迁出 domain | `theater_director_resolver` → `distros/desktop-tauri/tests/theater_director_resolver.rs` |
 | **T-DOC-TD-01** | `theater_director` 文档扫尾 | DISTRO / ARCHITECTURE / NAMING / ROADMAP §7 / IA 头注 / domain README |
 | **T-MINIMAL-TD-01** | minimal 插件自包含 | `examples/directory-plugin-theater-director-minimal/prompts/` 本地 `buildTheaterPrompt` |
 | **T-CI-DRIFT-01** | prompt drift 门禁 | `dimension5-acceptance.mjs` + `test:theater:smoke` 双挂 |
@@ -99,9 +102,9 @@ Done 项（K-PERF-01~26、D-READ-01/02/04、K-ROBUST-01~03、Opus 4.8 Wave 0–4
 
 | 用途 | 路径 |
 |------|------|
-| 编排 SSOT | `crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs` |
+| 编排 SSOT | `kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs` |
 | 槽态矩阵 | [SLOT_BACKEND_REALITY_MATRIX.md](./SLOT_BACKEND_REALITY_MATRIX.md) |
 | Theater 验收 | [PLAYTEST_MATRIX.md](./theater/PLAYTEST_MATRIX.md) |
 | Theater 模式 2 解冻 | [MODE2_UNFREEZE.md](./theater/MODE2_UNFREEZE.md) |
 | 分层 ratchet | `handoff/LAYERING_BASELINE.json` |
-| Theater director 集成测 | `src-tauri/tests/theater_director_resolver.rs` |
+| Theater director 集成测 | `distros/desktop-tauri/tests/theater_director_resolver.rs` |

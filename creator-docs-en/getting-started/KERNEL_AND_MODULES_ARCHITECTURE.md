@@ -44,7 +44,7 @@ flowchart TB
     direction LR
     REPO["Repository / SQLite"]
     RMT["Remote sidecar<br/>JSON-RPC · OCLIVE_REMOTE_*"]
-    DIR["Directory plugins<br/>plugins/ child processes"]
+    DIR["Directory plugins<br/>distros/chat-pro/plugins/ child processes"]
     MCP["MCP config<br/>app_data/mcp-servers/*.json"]
     SESS["Session slot overrides<br/>set_session_slot_override"]
   end

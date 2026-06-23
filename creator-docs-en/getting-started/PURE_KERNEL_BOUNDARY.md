@@ -12,7 +12,7 @@ The **pure kernel** is the runtime layer that is **independent of UI**, **indepe
 
 | Responsibility | Anchor in main repo |
 |----------------|---------------------|
-| **Turn orchestration** | `crates/oclive_kernel_host/src/domain/chat_engine/` · `process_message` |
+| **Turn orchestration** | `kernel/crates/oclive_kernel_host/src/domain/chat_engine/` · `process_message` |
 | **Slot resolution** | `SlotResolver` / `PluginHost::resolve_for_role` · **`slot_registry` → six-slot fold** |
 | **Contracts & persistence shape** | `oclive_kernel_runtime` (DTOs / pure domain) · `migrations/001_init.sql` · `oclive_validation` |
 | **Headless entry (transition)** | `http_api` · **`oclive-kernel-server`** · **`oclivenewnew-tauri --api`** |
@@ -74,7 +74,7 @@ The kernel guarantees **call order and DTOs**; quality comes from slots and pack
 |-------|-----|----------|-------|
 | **Desktop host** | Players / creators | Optional (separate project) | Tauri + Vue + same domain |
 | **Headless HTTP** | Gateway, robot brain, CI | **Monolith only** for **kernel_server** projects from `oclive-cli` | Workspace **`oclive-kernel-server`** and **`oclivenewnew-tauri --api`** are equivalent (`http_api`); default port **8420** (`OCLIVE_API_PORT`) |
-| **Embedded `library`** | In-process embed | **Not supported** | Link **`crates/oclive_kernel_runtime`**; `oclive-cli init --project-type library --kernel-source`; full orchestration stays in **`oclivenewnew-tauri`** ([KERNEL_PLATFORM_DEVELOPER_PATH.md](KERNEL_PLATFORM_DEVELOPER_PATH.md) §5) |
+| **Embedded `library`** | In-process embed | **Not supported** | Link **`kernel/crates/oclive_kernel_runtime`**; `oclive-cli init --project-type library --kernel-source`; full orchestration stays in **`oclivenewnew-tauri`** ([KERNEL_PLATFORM_DEVELOPER_PATH.md](KERNEL_PLATFORM_DEVELOPER_PATH.md) §5) |
 | **HTTP `--api`** | Dev, CI, editor try-chat | N/A | Transition — [headless-kernel-minimal](../../examples/headless-kernel-minimal/README.md) |
 
 **Detachable or welded**: dev-time swappable slots; production optional Monolith weld into one binary—orthogonal to `settings.json`.

@@ -2,7 +2,7 @@
 
 ## `oclive test --json`
 
-**Schema:** [`crates/oclive-cli/schemas/oclive_test_report.schema.json`](../../crates/oclive-cli/schemas/oclive_test_report.schema.json)
+**Schema:** [`kernel/crates/oclive-cli/schemas/oclive_test_report.schema.json`](../../kernel/crates/oclive-cli/schemas/oclive_test_report.schema.json)
 
 **Shape:** `schema_version`, `summary` (`passed` / `failed` / `skipped`), `suites[]` (`name`, `status`, optional `duration_ms`, `detail`), `failures[]` (`suite`, optional `file` / `line`, `error`).
 
@@ -15,7 +15,7 @@
 ## Tauri / Rust integration tests
 
 - Chat DTOs: **`oclive_kernel_types`**; assistant text field is **`reply`**.
-- Fixtures: prefer `src-tauri/tests/fixtures/`.
+- Fixtures: prefer `distros/desktop-tauri/tests/fixtures/`.
 
 ## Frontend
 

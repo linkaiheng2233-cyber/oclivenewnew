@@ -20,8 +20,8 @@
 
 ## 实现落点
 
-- 服务层：`crates/oclive_kernel_host/src/service/mcp.rs`
-- 路由：`crates/oclive_kernel_host/src/http_api/mcp.rs` · `api_router`
+- 服务层：`kernel/crates/oclive_kernel_host/src/service/mcp.rs`
+- 路由：`kernel/crates/oclive_kernel_host/src/http_api/mcp.rs` · `api_router`
 - 扩展：`oclive-vscode/src/mcpBridge.ts`（QuickPick + Output `OCLive MCP`）
 
 ---
@@ -48,4 +48,4 @@
 ## 相关
 
 - [`VS4_AGENT.md`](../../oclive-vscode/docs/VS4_AGENT.md)
-- 主仓 `src-tauri/src/api/agent.rs`（Tauri 同源实现）
+- 主仓 `distros/desktop-tauri/src/api/agent.rs`（Tauri 同源实现）

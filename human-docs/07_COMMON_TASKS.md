@@ -13,9 +13,9 @@
 
 | 步骤 | 位置 |
 |------|------|
-| 实现 | `src-tauri/src/api/<topic>.rs` |
-| 注册 | `src-tauri/src/lib.rs` → `generate_handler!` |
-| 前端 | `src/api/*.ts`（**camelCase** 键，如 `pluginId`） |
+| 实现 | `distros/desktop-tauri/src/api/<topic>.rs` |
+| 注册 | `distros/desktop-tauri/src/lib.rs` → `generate_handler!` |
+| 前端 | `distros/shared/src/api/*.ts`（**camelCase** 键，如 `pluginId`） |
 | 业务 | 委托 `oclive_kernel_host::service::*_impl`，**勿在 api 堆编排** |
 
 **还须同步**：若改 DTO → `oclive_kernel_types` + [ERROR_CODES](../creator-docs/getting-started/ERROR_CODES.md)
@@ -26,7 +26,7 @@
 
 | 步骤 | 位置 |
 |------|------|
-| 段落公式 | `crates/oclive_kernel_runtime/src/domain/prompt_builder/sections.rs` |
+| 段落公式 | `kernel/crates/oclive_kernel_runtime/src/domain/prompt_builder/sections.rs` |
 | 组装顺序 | `prompt_builder/mod.rs` |
 | 注入输入 | `turn_pipeline/pre.rs` → `PromptInput` 字段 |
 | guardrails | **内核常量** `KERNEL_DIALOGUE_GUARDRAILS`，不可被角色包替换 |
@@ -40,7 +40,7 @@
 | 步骤 | 位置 |
 |------|------|
 | 解析 | `RoleStorage::load_role` / 相关 loader |
-| 校验 | `crates/oclive_validation` |
+| 校验 | `kernel/crates/oclive_validation` |
 | 文档 | [ROLE_PACK_SPEC](../creator-docs/role-pack/ROLE_PACK_SPEC.md) |
 | 使用 | 对应 `*_engine` 或 `turn_pipeline`，**非** API 层 |
 
@@ -49,12 +49,12 @@
 ## 4. 写 domain 单测（推荐首 PR）
 
 ```rust
-// 模式：src-tauri/tests/ 或 crates/oclive_kernel_host 内 #[cfg(test)]
+// 模式：distros/desktop-tauri/tests/ 或 kernel/crates/oclive_kernel_host 内 #[cfg(test)]
 let state = AppState::new_in_memory_with_llm(/* … */).await;
 // 调用 domain 函数，断言 Result
 ```
 
-参考：`src-tauri/tests/invoke_hotpath_matrix.rs`、`narrative_hint_prompt_roundtrip.rs`
+参考：`distros/desktop-tauri/tests/invoke_hotpath_matrix.rs`、`narrative_hint_prompt_roundtrip.rs`
 
 **命令**：`cargo test -p oclivenewnew-tauri --test <name>` 或 `npm run check:release`
 
@@ -75,7 +75,7 @@ let state = AppState::new_in_memory_with_llm(/* … */).await;
 
 | 步骤 | 位置 |
 |------|------|
-| SQL | `crates/oclive_kernel_host/migrations/0NN_*.sql` |
+| SQL | `kernel/crates/oclive_kernel_host/migrations/0NN_*.sql` |
 | trait | `domain/repository.rs` |
 | impl | `infrastructure/repositories.rs` |
 | **禁止** | 虚构表名；以 `001_init.sql` 与后续迁移为准 |
@@ -105,7 +105,7 @@ let state = AppState::new_in_memory_with_llm(/* … */).await;
 ## 验收
 
 - [ ] 能根据任务类型在 30 秒内打开首要文件
-- [ ] 知道 Tauri 新命令要同步 `src/api/` camelCase
+- [ ] 知道 Tauri 新命令要同步 `distros/shared/src/api/` camelCase
 
 ---
 

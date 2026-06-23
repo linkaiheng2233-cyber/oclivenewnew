@@ -19,12 +19,12 @@
 1. 粘贴创作者提供的链接。
 2. 点击 **加载**。
    - **`…/plugins.json`**：加载目录，浏览多条插件。
-   - **Git 仓库 HTTPS / SSH**：识别为单插件仓库，显示安装卡片（浅克隆到本机 `{app_data}/plugins/<id>/`）。
+   - **Git 仓库 HTTPS / SSH**：识别为单插件仓库，显示安装卡片（浅克隆到本机 `{app_data}/distros/chat-pro/plugins/<id>/`）。
 3. 安装后于 **插件工作台** 配置槽位；高风险权限按 [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md) 弹窗授权。
 
 维护者可将审核后的目录 raw 链接发给用户，例如：
 
-`https://raw.githubusercontent.com/linkaiheng2233-cyber/awesome-oclive-plugins/main/plugins.json`
+`https://raw.githubusercontent.com/linkaiheng2233-cyber/awesome-oclive-distros/chat-pro/plugins/main/plugins.json`
 
 ## 作者侧：投稿流程（GitHub）
 
@@ -52,7 +52,7 @@ node scripts/validate-plugins-index.mjs
 |------|------|
 | **功能** | 插件解决什么问题、提供哪些 `provides` / 插槽 |
 | **环境要求** | Node/Python 版本、系统依赖、是否需要 GPU/Ollama 等 |
-| **安装** | 手动复制到 `plugins/` 的路径说明；或说明「仅通过插件市场 / `git` 安装」 |
+| **安装** | 手动复制到 `distros/chat-pro/plugins/` 的路径说明；或说明「仅通过插件市场 / `git` 安装」 |
 | **配置** | `plugin_state`、环境变量、与 `plugin_backends` 的对应关系 |
 | **权限说明** | `manifest.json` 里每一项 `permissions` / `shell.bridge.invoke` **为何需要** |
 | **兼容版本** | 测试过的 oclive / 主应用版本（如 `0.2.x`） |

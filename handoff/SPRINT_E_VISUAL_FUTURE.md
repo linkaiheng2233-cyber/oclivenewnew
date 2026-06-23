@@ -6,10 +6,10 @@
 
 | 能力 | 落点 | 状态 |
 |------|------|------|
-| `rig3d` WebGL adapter | `src/adapters/visual/index.ts` | stub |
+| `rig3d` WebGL adapter | `distros/shared/src/adapters/visual/index.ts` | stub |
 | `procedural` adapter | 同上 | stub |
 | directory `visual_presentation.materialize` | 目录插件契约 + 示例 | 未开始 |
-| `context: inner` 双壳 UI | `src/shells/inner/InnerVisualShell.vue` | 占位组件 |
+| `context: inner` 双壳 UI | `distros/chat-pro/distros/chat-pro/src/shells/inner/InnerVisualShell.vue` | 占位组件 |
 
 ## 契约要点
 

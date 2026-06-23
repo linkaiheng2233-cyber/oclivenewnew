@@ -8,12 +8,12 @@
 
 | 步骤 | 做什么 | 读什么 |
 |------|--------|--------|
-| 0 | **快速开始**：一键生成插件骨架 | 在 oclivenewnew 根：`cargo run -p oclive-cli -- plugin create my-plugin --type directory --provides llm -o ./plugins/`；见 [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md) § `plugin create` |
+| 0 | **快速开始**：一键生成插件骨架 | 在 oclivenewnew 根：`cargo run -p oclive-cli -- plugin create my-plugin --type directory --provides llm -o ./distros/chat-pro/plugins/`；见 [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md) § `plugin create` |
 | 0b | **依赖与市场** | `plugin install` / `plugin_dependencies`；`plugin test`；**`oclive market browse/search/install`**（推荐；`plugin search`/`update` 已 deprecated） |
-| 0c | **自动装配蓝图** | manifest **`slot_attachment`** + `plugin install <id> --role roles/<pack>`；高级槽位 **`oclive plugin manage`**（`--tui`） |
+| 0c | **自动装配蓝图** | manifest **`slot_attachment`** + `plugin install <id> --role distros/chat-pro/roles/<pack>`；高级槽位 **`oclive plugin manage`**（`--tui`） |
 | 1 | 建立「六宿主后端模块 + 设施模块」心智模型 | [OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) · [PLUGIN_V1.md](PLUGIN_V1.md)（`complex_emotion` = **复杂情感设施子模块**（第 1 号），非宿主槽；**专家模型**专名 = 第 2 号 / 专家路由） |
 | 2 | 理解 `plugin_backends` 与 `directory_plugins` | [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md) |
-| 3 | 三种后端差异 | **builtin**：进程内默认；**remote**：HTTP JSON-RPC 侧车；**directory**：`plugins/<id>/` 子进程 + 同 wire（见 [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)） |
+| 3 | 三种后端差异 | **builtin**：进程内默认；**remote**：HTTP JSON-RPC 侧车；**directory**：`distros/chat-pro/plugins/<id>/` 子进程 + 同 wire（见 [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)） |
 
 **验收**：能口述每个槽可选的后端类型，并说明 `directory` 时 manifest `id` 如何与 `directory_plugins` 对齐。
 
@@ -37,7 +37,7 @@
 | 主题 | 读什么 |
 |------|--------|
 | **市场投稿（GitHub 链接策展）** | **[PLUGIN_MARKET_SUBMISSION.md](PLUGIN_MARKET_SUBMISSION.md)** · 索引维护 [GITHUB_PLUGIN_INDEX_LINE.md](../../handoff/GITHUB_PLUGIN_INDEX_LINE.md) · 网站愿景 [../roadmap/PLUGIN_WEB_SECTION.md](../roadmap/PLUGIN_WEB_SECTION.md) |
-| **`oclive_validation` 集成** | `crates/oclive_validation`（与宿主、编写器 wasm 同源）；三面一致测试 `src-tauri/tests/permission_three_way_consistency.rs` |
+| **`oclive_validation` 集成** | `kernel/crates/oclive_validation`（与宿主、编写器 wasm 同源）；三面一致测试 `distros/desktop-tauri/tests/permission_three_way_consistency.rs` |
 | **调试与排障** | 主应用插件管理 **Ctrl+Shift+F**；[FAQ.md](../FAQ.md)；错误码 [ERROR_CODES.md](../getting-started/ERROR_CODES.md)；目录 RPC 日志见 DIRECTORY_PLUGINS 与宿主 `tracing` |
 
 **验收**：能独立起一个最小目录插件或 Remote demo，并在管理面板里完成启用 / RPC 探活 / 读日志排错。

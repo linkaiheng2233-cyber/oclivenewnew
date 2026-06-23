@@ -21,7 +21,7 @@ After merges to the default branch, **Dependabot** opens PRs per [`.github/depen
 - **This repo:** **Node.js** (18+ recommended), **npm**, **Rust** stable, **Ollama** (optional for local dialogue).
 - **Windows:** **Visual Studio Build Tools** (MSVC linker).
 - **After clone:** run **`npm install`** at the repo root; **`npm run tauri:dev`** drives the Tauri + `src-tauri` build.
-- **Rust workspace only** (`oclive_validation`, `oclive-cli`, `oclivenewnew-tauri`): **`cargo test --workspace`** from the root, or **`cargo test --manifest-path src-tauri/Cargo.toml`** for the desktop crate only.
+- **Rust workspace only** (`oclive_validation`, `oclive-cli`, `oclivenewnew-tauri`): **`cargo test --workspace`** from the root, or **`cargo test --manifest-path distros/desktop-tauri/Cargo.toml`** for the desktop crate only.
 - **Cargo `target-dir`:** [`.cargo/config.toml`](.cargo/config.toml) points to **`../oclive-dev-artifacts/oclivenewnew-cargo-target/`** outside the clone.
 
 ## Build & run locally
@@ -38,10 +38,10 @@ npm run build
 ## Code style (Rust / Vue)
 
 - **Rust**
-  - **Format:** `cargo fmt`; CI uses **`npm run check:rust:fmt`** (`cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check`).
-  - **Clippy:** Root **[`Cargo.toml`](Cargo.toml)** defines **`[workspace.lints.rust]`** and **`[workspace.lints.clippy]`**. Local + CI: **`cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --all-features -- -D warnings`** (**`npm run check:rust:clippy`**): **warnings are errors**.
+  - **Format:** `cargo fmt`; CI uses **`npm run check:rust:fmt`** (`cargo fmt --manifest-path distros/desktop-tauri/Cargo.toml --all -- --check`).
+  - **Clippy:** Root **[`Cargo.toml`](Cargo.toml)** defines **`[workspace.lints.rust]`** and **`[workspace.lints.clippy]`**. Local + CI: **`cargo clippy --manifest-path distros/desktop-tauri/Cargo.toml --all-targets --all-features -- -D warnings`** (**`npm run check:rust:clippy`**): **warnings are errors**.
   - **`unwrap` / `expect`:** Prefer **`Result` / `Option` + `context`** in product code; integration tests may use **`#![allow(clippy::unwrap_used, clippy::expect_used)]`** at the crate root. Do not widen allows elsewhere.
-- **Vue / TypeScript:** Match existing composables/stores; align with Tauri DTO field names (e.g. **`reply`**, defined in **`oclive_kernel_runtime`** models and re-exported from `src-tauri/src/models/mod.rs`).
+- **Vue / TypeScript:** Match existing composables/stores; align with Tauri DTO field names (e.g. **`reply`**, defined in **`oclive_kernel_runtime`** models and re-exported from `kernel/crates/oclive_kernel_types/src/models/mod.rs`).
 
 ## Commits
 
@@ -68,12 +68,12 @@ npm run build
 
 | Area | Path | Owner | Notes |
 |------|------|-------|-------|
-| Desktop host | `src-tauri/` | @linkaiheng2233-cyber | Tauri IPC, HTTP `--api` |
-| Orchestration | `crates/oclive_kernel_host/src/domain/chat_engine/` | same | `process_message` / `co_present` |
-| Kernel crates | `crates/oclive_kernel_{types,contracts,runtime}` | same | DTOs, traits, runtime |
-| Validation | `crates/oclive_validation` | same | manifest / v2 blueprint |
-| CLI | `crates/oclive-cli` | same | `init`, `bench`, `test`, `doctor` |
-| Frontend | `src/` (Vue) | same | Pinia, plugin manager, i18n |
+| Desktop host | `distros/desktop-tauri/` | @linkaiheng2233-cyber | Tauri IPC, HTTP `--api` |
+| Orchestration | `kernel/crates/oclive_kernel_host/src/domain/chat_engine/` | same | `process_message` / `co_present` |
+| Kernel crates | `kernel/crates/oclive_kernel_{types,contracts,runtime}` | same | DTOs, traits, runtime |
+| Validation | `kernel/crates/oclive_validation` | same | manifest / v2 blueprint |
+| CLI | `kernel/crates/oclive-cli` | same | `init`, `bench`, `test`, `doctor` |
+| Frontend | `distros/shared/` + `distros/chat-pro/` (Vue workspaces) | same | Pinia, plugin manager, i18n |
 | Docs | `creator-docs/`, `handoff/` | same | contracts & release gates |
 
 See **[`handoff/BUS_FACTOR_NOTES.md`](handoff/BUS_FACTOR_NOTES.md)** for entry paths after the kernel crate split.
@@ -82,10 +82,10 @@ See **[`handoff/BUS_FACTOR_NOTES.md`](handoff/BUS_FACTOR_NOTES.md)** for entry p
 
 | Goal | Start here |
 |------|------------|
-| One message end-to-end | `crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs` → `turn_pipeline.rs` |
-| Multi-instance merge rules | `crates/oclive_kernel_host/src/domain/slot_runner.rs` |
+| One message end-to-end | `kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs` → `turn_pipeline.rs` |
+| Multi-instance merge rules | `kernel/crates/oclive_kernel_host/src/domain/slot_runner.rs` |
 | Plugin backend resolution | `plugin_host.rs` + `slot_resolver.rs` |
-| Blueprint load / save | `infrastructure/storage.rs` + `crates/oclive_validation` |
+| Blueprint load / save | `infrastructure/storage.rs` + `kernel/crates/oclive_validation` |
 | Plugin implementation | `PLUGIN_V1.md` + traits in `oclive_kernel_contracts` |
 | Architecture trade-offs | [`creator-docs/architecture/DESIGN_DECISIONS.md`](creator-docs/architecture/DESIGN_DECISIONS.md) |
 
@@ -96,12 +96,12 @@ See **[`handoff/BUS_FACTOR_NOTES.md`](handoff/BUS_FACTOR_NOTES.md)** for entry p
 | New slot type or merge policy | `slot_runner.rs`, `slot_resolver.rs`, `oclive_validation` | `ROLE_PACK_SPEC.md`, frontend graph |
 | New plugin backend | `plugin_host.rs`, model enums, `PLUGIN_V1.md` | blueprint / settings docs |
 | Co-present stage order | `turn_pipeline.rs` (careful) | `DESIGN_DECISIONS.md`, OOCP tests |
-| New DB column | `src-tauri/migrations/`, repositories | documented table names only |
-| New Tauri command | `src-tauri/src/api/`, `lib.rs` handler | `tauri-api.ts`, DTO field names |
+| New DB column | `distros/desktop-tauri/migrations/`, repositories | documented table names only |
+| New Tauri command | `distros/desktop-tauri/src/api/`, `lib.rs` handler | `tauri-api.ts`, DTO field names |
 
 ## Pull requests
 
-1. **Fork / feature branch**; one PR per concern. Contract changes (manifest, DTO, PLUGIN_V1) need **docs** + **`crates/oclive_validation`** when applicable.
+1. **Fork / feature branch**; one PR per concern. Contract changes (manifest, DTO, PLUGIN_V1) need **docs** + **`kernel/crates/oclive_validation`** when applicable.
 2. **Description:** motivation, behavior change, risks, manual verification; link issues if any.
 3. **Self-check:** at least **`npm run check`**; for persistence / HTTP / orchestration, prefer **`npm run check:release`**; kernel scaffolds may add **`cargo run -p oclive-cli -- test -o . --json`**.
 4. **Review:** module owner (table above) or delegate; CI, security, i18n, and contract docs must stay aligned.
@@ -113,8 +113,8 @@ Aligned with [`handoff/DIMENSION5_CLOSURE_SIGNOFF.md`](handoff/DIMENSION5_CLOSUR
 
 | Path | ID | Command |
 |------|-----|---------|
-| `crates/oclive_kernel_host/src/domain/**` | D-LAYER-01 | `node scripts/check-domain-layering.mjs` |
-| `Cargo.lock` / `crates/oclive_sqlx/**` | D-CI-03 | `node scripts/dimension5-acceptance.mjs --ci` |
+| `kernel/crates/oclive_kernel_host/src/domain/**` | D-LAYER-01 | `node scripts/check-domain-layering.mjs` |
+| `Cargo.lock` / `kernel/crates/oclive_sqlx/**` | D-CI-03 | `node scripts/dimension5-acceptance.mjs --ci` |
 | `kernel_ensure_plan_v1.json` / `oclive-cli` ensure | D-VSCODE-02 | `cargo test -p oclive-cli --test kernel_ensure_plan_snapshot` |
 | `.github/workflows/ci.yml` | D-CI-01/02 | full `node scripts/dimension5-acceptance.mjs --ci` |
 | `CHANGELOG.md` / `CHANGELOG.en.md` | K-DOC-02 | `node scripts/check-changelog-parity.mjs` |
@@ -141,20 +141,20 @@ Aligned with [`handoff/DIMENSION5_CLOSURE_SIGNOFF.md`](handoff/DIMENSION5_CLOSUR
 Summary:
 
 1. **Open an issue** (or RFC for large surface) describing migration impact on role packs, `plugin_backends`, HTTP OOCP / `invoke` DTOs; label the PR **BREAKING**.  
-2. **PR must include:** updates to **`crates/oclive_validation`** (if manifest/settings keys change), **`PLUGIN_V1.md` / `ERROR_CODES.md` / `COMPATIBILITY.md`** as applicable, **`creator-docs/`** / **`creator-docs-en/`** mirrors, and **`CHANGELOG.md` + `CHANGELOG.en.md`** entries.  
+2. **PR must include:** updates to **`kernel/crates/oclive_validation`** (if manifest/settings keys change), **`PLUGIN_V1.md` / `ERROR_CODES.md` / `COMPATIBILITY.md`** as applicable, **`creator-docs/`** / **`creator-docs-en/`** mirrors, and **`CHANGELOG.md` + `CHANGELOG.en.md`** entries.  
 3. **Review:** at least one maintainer confirms **compatibility shims + migration path**, CI, and [PRODUCT_RELEASE_CHECKLIST.md](handoff/PRODUCT_RELEASE_CHECKLIST.md) P0 rows touched.
 
 ## Documentation
 
 - **User-visible copy:** avoid duplicated hard-coded strings (see [AGENTS.md](AGENTS.md) for the plugin manager entry pattern).
-- **Contracts & DB:** follow `roles/README_MANIFEST.md`, `RoleStorage::load_role`, and **`crates/oclive_validation`**; **do not invent** SQL table names.
+- **Contracts & DB:** follow `distros/chat-pro/roles/README_MANIFEST.md`, `RoleStorage::load_role`, and **`kernel/crates/oclive_validation`**; **do not invent** SQL table names.
 - **Doc index:** [creator-docs/getting-started/DOCUMENTATION_INDEX.md](creator-docs/getting-started/DOCUMENTATION_INDEX.md).
 - **Releases & compatibility:** on semver bumps or contract changes, review [`creator-docs/COMPATIBILITY.md`](creator-docs/COMPATIBILITY.md) snapshots and the one-pager table, and walk [handoff/PRODUCT_RELEASE_CHECKLIST.md](handoff/PRODUCT_RELEASE_CHECKLIST.md) “对外说明”; pack rules stay in [PACK_VERSIONING.md](creator-docs/role-pack/PACK_VERSIONING.md).
 
 ## Do not commit
 
 - Secrets, tokens, personal paths; keep `.env` out of git (see `.gitignore`).
-- You may delete a legacy **`src-tauri/target/`** folder; release bundles live under the **external `target-dir`** `release/bundle/`.
+- You may delete a legacy **`distros/desktop-tauri/target/`** folder; release bundles live under the **external `target-dir`** `release/bundle/`.
 
 ## Discussion & roadmap
 

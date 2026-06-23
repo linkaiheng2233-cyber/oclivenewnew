@@ -20,7 +20,7 @@
 
 1. **Monolith 矩阵**：`oclive init --monolith`（或已有 `monolith.toml` 的工程）；可选 `--kernel-source` 指向本仓以链接真实 runtime。  
 2. **冷启动 / 长稳**：工程能 `cargo run --release -- --api`；建议 `OCLIVE_HTTP_API_MOCK_LLM=1`。  
-3. **角色包**：v2 蓝图示例见 `roles/mumu/pipeline.ocblueprint`（仅作负载参考，非 v1 对比）。
+3. **角色包**：v2 蓝图示例见 `distros/chat-pro/roles/mumu/pipeline.ocblueprint`（仅作负载参考，非 v1 对比）。
 
 ---
 

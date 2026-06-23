@@ -9,7 +9,7 @@
 
 ## 内核 PR 前必读 Top 5
 
-1. [crates/README.md](../crates/README.md) — 依赖图与改 X 去哪  
+1. [kernel/crates/README.md](../kernel/crates/README.md) — 依赖图与改 X 去哪  
 2. [BUS_FACTOR_NOTES.md §0–2](../handoff/BUS_FACTOR_NOTES.md) — `process_message`、`PluginHost`  
 3. [OCLIVE_ARCHITECTURE_OVERVIEW](../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) — 单节「模块三层」  
 4. [NAMING_CONVENTIONS §4.2](../creator-docs/NAMING_CONVENTIONS.md#42-canonical-import-路径)  
@@ -47,7 +47,7 @@
 |------|------|
 | Repository trait | `domain/repository.rs` |
 | 实现 | `infrastructure/repositories.rs` |
-| 迁移 | `crates/oclive_kernel_host/migrations/` |
+| 迁移 | `kernel/crates/oclive_kernel_host/migrations/` |
 | 错误码 | `AppError::to_kernel_json()`、[ERROR_CODES](../creator-docs/getting-started/ERROR_CODES.md) |
 
 **验收**：新增字段时知道先写迁移 SQL，再改 trait/impl。

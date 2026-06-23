@@ -1,6 +1,6 @@
 # Role pack author learning path
 
-Time-boxed steps. **Normative layout** remains [ROLE_PACK_SPEC.md](ROLE_PACK_SPEC.md) and [roles/README_MANIFEST.md](../../roles/README_MANIFEST.md). CLI from repo root: **`cargo run -p oclive-cli -- pack …`**.
+Time-boxed steps. **Normative layout** remains [ROLE_PACK_SPEC.md](ROLE_PACK_SPEC.md) and [distros/chat-pro/roles/README_MANIFEST.md](../../distros/chat-pro/roles/README_MANIFEST.md). CLI from repo root: **`cargo run -p oclive-cli -- pack …`**.
 
 ---
 
@@ -17,7 +17,7 @@ Packs still on **`manifest.json` + `settings.json`**: **[V1_TO_V2_MIGRATION.md](
 | 1 | Know the on-disk shape | [ROLE_PACK_SPEC.md](ROLE_PACK_SPEC.md) **§1** |
 | 2 | Generate a minimal pack | `cargo run -p oclive-cli -- pack create -o <parent> --id my_first_role --format-blueprint-v2` (writes `pipeline.ocblueprint`; see [../cli/OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md)) |
 | 3 | Open in the editor | **oclive-pack-editor** for v2 blueprint or legacy files ([CREATOR_WORKFLOW.md](../getting-started/CREATOR_WORKFLOW.md)) |
-| 4 | Edit façade fields | v2: **role-pack `meta` only** + **`prompts/`**; do not edit `slot_registry`; legacy: [README_MANIFEST](../../roles/README_MANIFEST.md) |
+| 4 | Edit façade fields | v2: **role-pack `meta` only** + **`prompts/`**; do not edit `slot_registry`; legacy: [README_MANIFEST](../../distros/chat-pro/roles/README_MANIFEST.md) |
 
 **Done when:** `pack validate <role-root>` passes (default v2); legacy packs use `--profile legacy`.
 
@@ -31,7 +31,7 @@ Edit only **role-pack** fields; do not touch **`slot_registry`** or **`dual_core
 
 | Topic | Read |
 |-------|------|
-| **Seven-dim personality** | [README_MANIFEST](../../roles/README_MANIFEST.md) · [docs/personality-archive-notes.md](../../docs/personality-archive-notes.md) |
+| **Seven-dim personality** | [README_MANIFEST](../../distros/chat-pro/roles/README_MANIFEST.md) · [docs/personality-archive-notes.md](../../docs/personality-archive-notes.md) |
 | **System prompts / openings** | ROLE_PACK_SPEC + [WORLDVIEW_KNOWLEDGE.md](../../creator-docs/role-pack/WORLDVIEW_KNOWLEDGE.md); final chat prompt is driven by **`slot_registry` `type: prompt`** and engine policy |
 | **Slots & modules 1–6** | [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) · [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md) |
 
@@ -52,7 +52,7 @@ Edit only **role-pack** fields; do not touch **`slot_registry`** or **`dual_core
 
 ### Memory & relation evolution (`config.json`)
 
-In **immersive mode**, optional **`roles/{id}/config.json`** (not the blueprint) drives human-like forgetting and estrangement. Full field list: **[ROLE_PACK_SPEC §9](ROLE_PACK_SPEC.md#9-configuration-file-configjson)** (Chinese spec is authoritative; English summary in [creator-docs-en/ROLE_PACK_SPEC.md](../creator-docs-en/role-pack/ROLE_PACK_SPEC.md)).
+In **immersive mode**, optional **`distros/chat-pro/roles/{id}/config.json`** (not the blueprint) drives human-like forgetting and estrangement. Full field list: **[ROLE_PACK_SPEC §9](ROLE_PACK_SPEC.md#9-configuration-file-configjson)** (Chinese spec is authoritative; English summary in [creator-docs-en/ROLE_PACK_SPEC.md](../creator-docs-en/role-pack/ROLE_PACK_SPEC.md)).
 
 | Mechanism | Idea | Main keys |
 |-----------|------|-----------|

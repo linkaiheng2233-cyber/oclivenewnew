@@ -21,7 +21,7 @@
 
 - [ ] CHANGELOG.md + CHANGELOG.en.md `[Unreleased]` parity if user-visible
 - [ ] No new six-slot keys in role packs for “character” tasks
-- [ ] Tauri `invoke` keys are **camelCase** on the frontend ([`src/api/`](../src/api/))
+- [ ] Tauri `invoke` keys are **camelCase** on the frontend ([`distros/shared/src/api/`](../distros/shared/src/api/))
 - [ ] Link PR to [08_PR_GATE_MATRIX.md](08_PR_GATE_MATRIX.md) gates in the description
 
 Fork workflow: [CONTRIBUTING.en.md](../CONTRIBUTING.en.md).

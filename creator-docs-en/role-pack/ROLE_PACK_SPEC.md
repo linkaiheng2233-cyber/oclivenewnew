@@ -33,7 +33,7 @@ See the [Chinese ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) for director
 
 ## 9. Configuration file (`config.json`)
 
-Optional JSON at **`roles/{role_id}/config.json`**. Loaded by the host at role load time; **not** merged into `pipeline.ocblueprint`. Drives **immersive-mode** virtual clock, **Ebbinghaus memory decay**, **mention reinforcement**, and **relation estrangement**. Omitted keys use Rust defaults (same as the “Default” column below).
+Optional JSON at **`distros/chat-pro/roles/{role_id}/config.json`**. Loaded by the host at role load time; **not** merged into `pipeline.ocblueprint`. Drives **immersive-mode** virtual clock, **Ebbinghaus memory decay**, **mention reinforcement**, and **relation estrangement**. Omitted keys use Rust defaults (same as the “Default” column below).
 
 ### 9.1 Example
 
@@ -52,7 +52,7 @@ Optional JSON at **`roles/{role_id}/config.json`**. Loaded by the host at role l
 }
 ```
 
-Reference: `roles/mumu/config.json`.
+Reference: `distros/chat-pro/roles/mumu/config.json`.
 
 ### 9.2 Top-level keys
 

@@ -12,7 +12,7 @@
 ```mermaid
 flowchart TB
   UI[Vue 前端\ninvoke / HTTP]
-  API[src-tauri/src/api/*.rs\n或 http_api]
+  API[distros/desktop-tauri/src/api/*.rs\n或 http_api]
   PM[process_message.rs\n主编排入口]
   TP[turn_pipeline\npre → middle → LLM → post]
   PH[PluginHost\n六槽 Arc dyn]
@@ -20,7 +20,7 @@ flowchart TB
   TP --> PH
 ```
 
-**实现文件**：[`crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs`](../crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs)（经 `chat_engine/mod.rs` re-export）。**不是** `mod.rs` 里的业务逻辑本体。
+**实现文件**：[`kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs`](../kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs)（经 `chat_engine/mod.rs` re-export）。**不是** `mod.rs` 里的业务逻辑本体。
 
 **概念六段**（文件头注释）：分析情绪 → 检测事件 → 演化性格 → 构建 Prompt → 调用 LLM → 持久化。实际还有 **Agent 短路**、**异地/远程人生** 分支，否则进入 **`co_present`** 共景路径。
 
@@ -35,7 +35,7 @@ flowchart TB
 | **LLM** | `turn_pipeline/post.rs` | 调用 `pl.llm` |
 | **post** | `turn_pipeline/post.rs` | 持久化、聊天存储、立绘状态（**v0.4+ 草案**：第 3/4 设施 post_llm）、回填 `reply` |
 
-入口：[`turn_pipeline/mod.rs`](../crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/mod.rs) 的 `execute_turn`。
+入口：[`turn_pipeline/mod.rs`](../kernel/crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/mod.rs) 的 `execute_turn`。
 
 ---
 
@@ -50,9 +50,9 @@ flowchart TB
 | `llm` | `LlmClient` |
 | `agent` | `AgentProvider` |
 
-- **解析**：`PluginHost::resolve_for_role` → [`plugin_host/`](../crates/oclive_kernel_host/src/domain/plugin_host/mod.rs)
-- **多实例**：蓝图 `slot_registry` → [`slot_resolver.rs`](../crates/oclive_kernel_host/src/domain/slot_resolver.rs)
-- **后端实现表**：[`backend_registry.rs`](../crates/oclive_kernel_host/src/infrastructure/backend_registry.rs)
+- **解析**：`PluginHost::resolve_for_role` → [`plugin_host/`](../kernel/crates/oclive_kernel_host/src/domain/plugin_host/mod.rs)
+- **多实例**：蓝图 `slot_registry` → [`slot_resolver.rs`](../kernel/crates/oclive_kernel_host/src/domain/slot_resolver.rs)
+- **后端实现表**：[`backend_registry.rs`](../kernel/crates/oclive_kernel_host/src/infrastructure/backend_registry.rs)
 
 v2 **不以**蓝图 `steps[]` 调度首轮；顺序由 **Rust 编排** 审计。
 
@@ -72,7 +72,7 @@ flowchart BT
 
 口诀：**Types = 形状，Contracts = 接口，Runtime = 公式，Host = 流程，Tauri = 入口。**
 
-速查：[crates/README.md](../crates/README.md)
+速查：[kernel/crates/README.md](../kernel/crates/README.md)
 
 ---
 

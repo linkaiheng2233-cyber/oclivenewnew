@@ -63,7 +63,7 @@
 ### 3.1 环境
 
 - 仓库根目录，已安装 **Rust**、**Ollama**（若用本地模型）。  
-- 角色包：默认 `roles/mumu`，或机器人最小包 [`examples/robot-soul-minimal`](examples/robot-soul-minimal/README.md)。
+- 角色包：默认 `distros/chat-pro/roles/mumu`，或机器人最小包 [`examples/robot-soul-minimal`](examples/robot-soul-minimal/README.md)。
 
 ### 3.2 启动无头内核
 
@@ -107,7 +107,7 @@ curl -s -H "Accept: application/json" http://127.0.0.1:8420/health
 ```bash
 curl -s -X POST http://127.0.0.1:8420/chat \
   -H "Content-Type: application/json" \
-  -d "{\"role_path\":\"/绝对路径/roles/mumu\",\"message\":\"你好\",\"session_id\":\"doll-001\"}"
+  -d "{\"role_path\":\"/绝对路径/distros/chat-pro/roles/mumu\",\"message\":\"你好\",\"session_id\":\"doll-001\"}"
 ```
 
 **请求体**（`ChatApiRequest`）：
@@ -169,7 +169,7 @@ node run.mjs
 
 ## 5. HTTP API 速查（硬件常用）
 
-完整路由定义：`crates/oclive_kernel_host/src/http_api/mod.rs`。
+完整路由定义：`kernel/crates/oclive_kernel_host/src/http_api/mod.rs`。
 
 | 方法 | 路径 | 用途 |
 |------|------|------|
@@ -200,7 +200,7 @@ node run.mjs
 
 ### 5.2 `performance_directive` 形状
 
-定义：`crates/oclive_kernel_types/src/models/visual_presentation_config.rs`
+定义：`kernel/crates/oclive_kernel_types/src/models/visual_presentation_config.rs`
 
 ```json
 {
@@ -270,7 +270,7 @@ OClive **不自带模型权重**；`llm` 槽可换：
 机器人最小示例：[`examples/robot-soul-minimal`](examples/robot-soul-minimal/README.md)。  
 规范：[`creator-docs/role-pack/ROLE_PACK_SPEC.md`](creator-docs/role-pack/ROLE_PACK_SPEC.md)。
 
-**换灵魂**：更新 `roles/{id}/` 或改 `OCLIVE_ROLES_DIR`，`role_path` 指向新目录即可，**无需重刷内核固件**。
+**换灵魂**：更新 `distros/chat-pro/roles/{id}/` 或改 `OCLIVE_ROLES_DIR`，`role_path` 指向新目录即可，**无需重刷内核固件**。
 
 ---
 

@@ -25,8 +25,8 @@ oclivenewnew/
 ├── handoff/
 │   └── distros/            # 发行版 handoff 索引
 ├── kernel/
-│   ├── crates/             # 12 个 Rust crate
-│   ├── fuzz/
+│   ├── kernel/crates/             # 12 个 Rust crate
+│   ├── kernel/fuzz/
 │   ├── data/plugins.json
 │   └── examples/             # 内核向示例（oocp、distro-profiles 等）
 └── distros/
@@ -42,12 +42,12 @@ oclivenewnew/
 
 | 资产 | 位置 |
 |------|------|
-| `crates/*`, `fuzz`, `oclive-cli` | `kernel/` |
+| `kernel/crates/*`, `fuzz`, `oclive-cli` | `kernel/` |
 | `src/api`, `stores`, 通用组件/composables | `distros/shared/` |
 | ToolShell / FluentShell | `distros/chat-pro/src/` |
 | TheaterShell / `composables/theater` | `distros/theater/src/` |
 | `src-tauri`, bundled kernel | `distros/desktop-tauri/` |
-| `roles/`, `plugins/`, `e2e/` | `distros/chat-pro/` |
+| `distros/chat-pro/roles/`, `distros/chat-pro/plugins/`, `distros/chat-pro/e2e/` | `distros/chat-pro/` |
 | `creator-docs/`, `handoff/` | **根**（索引标明 kernel vs distro） |
 
 ---
@@ -106,7 +106,7 @@ oclive_kernel_host = { path = "../../kernel/crates/oclive_kernel_host", features
 | Phase | 内容 | 验收 |
 |-------|------|------|
 | 0 | 本 RFC + stale-paths 清单 + 巡检手册前置区 | 零行为变更 |
-| 1 | `git mv` crates/fuzz → `kernel/`；Cargo/脚本 path | `cargo test -p oclive_kernel_host --lib`；`dimension5 --ci` |
+| 1 | `git mv` kernel/crates/fuzz → `kernel/`；Cargo/脚本 path | `cargo test -p oclive_kernel_host --lib`；`dimension5 --ci` |
 | 2 | `distros/shared` + chat-pro/theater 前端拆分 | 双 `vite build`；`test:theater:smoke` |
 | 3 | `src-tauri` → `distros/desktop-tauri`；双入口打包 | `tauri:dev` / `tauri:dev:theater` |
 | 4 | README / AGENTS / CI / CHANGELOG | `check:ci-local` |
@@ -118,13 +118,18 @@ oclive_kernel_host = { path = "../../kernel/crates/oclive_kernel_host", features
 
 - 每 Phase 独立 PR；失败则 `git revert` 该 PR，不跨 Phase 回滚。
 - Phase 1–3 期间剧场功能改动在 Phase 3 前冻结；`test:theater:smoke` 每 PR 必跑。
-- 路径 ratchet：`scripts/check-stale-paths.mjs` 扩展禁止根 `crates/`、`src-tauri/` 回潮。
+- 路径 ratchet：`scripts/check-stale-paths.mjs` 扩展禁止根 `kernel/crates/`、`distros/desktop-tauri/` 回潮。
 
 ---
 
 ## 附录 A：姊妹仓 `oclive-chat-pro` 拆分决策门
 
-> **Phase 5 · 仅文档 · 不执行**
+> **Phase 5 · 仅文档 · 本轮不执行（Deferred）**  
+> **状态（2026-06-24）**：三道门均未过 → **`oclive-chat-pro` 拆仓本轮不执行**。  
+> - **P0-STRANGER**（剧场 5 人陌生人测试）：**OPEN** — 见 [`handoff/theater/PLAYTEST_MATRIX.md`](../theater/PLAYTEST_MATRIX.md)  
+> - **Chat Pro 可传播 demo**：未交付成片  
+> - **内核 `kernel-v0.x` tag**：未稳定发版节奏  
+> 维持 monorepo `kernel/` + `distros/` 物理分层；文档路径收尾见 [`STALE_PATHS_MIGRATION_CHECKLIST.md`](STALE_PATHS_MIGRATION_CHECKLIST.md) §5–§6。
 
 ### 何时拆独立仓
 

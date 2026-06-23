@@ -146,7 +146,7 @@ flowchart TD
 | 可观测性 | 结构化日志可带 `degraded_from=experimental`（**仅日志**） |
 | 用户可见 | **完全静默**（已决，与 Remote 降级一致）；**不得**破坏 `reply` 契约 |
 
-实现落点（规划）：`crates/oclive_kernel_host/src/domain/dual_pipeline.rs`（新模块）、`SlotResolver` 扩展按 `zone` 过滤视图。
+实现落点（规划）：`kernel/crates/oclive_kernel_host/src/domain/dual_pipeline.rs`（新模块）、`SlotResolver` 扩展按 `zone` 过滤视图。
 
 ---
 

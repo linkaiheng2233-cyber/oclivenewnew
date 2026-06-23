@@ -50,7 +50,7 @@
 
 ## 4.1 文件清单发现（已实现：`file_manifest`）
 
-- 目录：`<roles 根目录>/_local_plugins/`（与 `RoleStorage` 使用的 `roles_dir` 一致；开发时多为仓库内 `roles/_local_plugins/`）。
+- 目录：`<roles 根目录>/_local_distros/chat-pro/plugins/`（与 `RoleStorage` 使用的 `roles_dir` 一致；开发时多为仓库内 `distros/chat-pro/roles/_local_distros/chat-pro/plugins/`）。
 - 扫描该目录下扩展名为 `.json`（大小写不敏感）的文件；每个文件反序列化为一个 `LocalPluginProviderDescriptor`。
 - 解析失败或读文件失败：跳过该文件并打 `oclive_plugin` 警告日志，不阻塞启动。
 - 启动时由宿主将发现结果依次 `register_provider`；**同一 `provider_id` 若多次出现，后注册的覆盖先注册的**（目录遍历顺序依赖平台，**请勿依赖覆盖顺序**，每个 id 建议只配置一次）。

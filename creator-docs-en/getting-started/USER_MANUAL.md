@@ -92,7 +92,7 @@ Optional text shaping after the LLM reply (`config.json` → `reply_post_process
 
 ### 4.1 General
 
-- **Language**: Settings → General → **UI language**. Residual non-target language may come from **plugins/packs** or **untranslated strings**; see FAQ below.  
+- **Language**: Settings → General → **UI language**. Residual non-target language may come from **distros/chat-pro/plugins/packs** or **untranslated strings**; see FAQ below.  
 - **Telemetry (Sentry)**: opt-out in Settings when DSN is present; see [ERROR_CODES.md](ERROR_CODES.md) §1.7 and [A3 closure](../../handoff/A3_CLOSURE_SUMMARY.en.md).  
 - **Environment check**: quick Ollama / paths / writability probe.
 

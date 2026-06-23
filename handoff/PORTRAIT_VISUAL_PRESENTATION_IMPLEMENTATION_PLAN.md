@@ -43,7 +43,7 @@
 | DTO | `SendMessageResponse.visual_state_id` optional |
 | 前端 | `CharacterInfo`：有 id 则 catalog path，否则 legacy |
 | 校验 | `oclive_validation` 创作者 profile：`id` 唯一、path 安全 |
-| 测试 | 单测 + 1 条 `src-tauri/tests/` 回退链 |
+| 测试 | 单测 + 1 条 `distros/desktop-tauri/tests/` 回退链 |
 
 **不做的**：表现导演 LLM、Live2D、编写器 UI。
 

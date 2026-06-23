@@ -6,8 +6,8 @@
 
 - **Shape**: **`SCREAMING_SNAKE_CASE`** only (uppercase ASCII + underscores).
 - **Origin**:
-  - Most errors map to [`AppError`](../../crates/oclive_kernel_runtime/src/error.rs); **`code` must equal `AppError::code()`** (e.g. `ROLE_NOT_FOUND`, `LLM_ERROR`, `TXN_*`).
-  - **Host directory-plugin `ApiError`** (`src-tauri/src/api/error.rs`): same **one-line `KernelErrorBody` JSON** (`code` stays `SCREAMING_SNAKE_CASE`, e.g. **`API_PLUGIN_NOT_FOUND`**).
+  - Most errors map to [`AppError`](../../kernel/crates/oclive_kernel_runtime/src/error.rs); **`code` must equal `AppError::code()`** (e.g. `ROLE_NOT_FOUND`, `LLM_ERROR`, `TXN_*`).
+  - **Host directory-plugin `ApiError`** (`distros/desktop-tauri/src/api/error.rs`): same **one-line `KernelErrorBody` JSON** (`code` stays `SCREAMING_SNAKE_CASE`, e.g. **`API_PLUGIN_NOT_FOUND`**).
   - **HTTP `POST /chat` boundary** (request checks, `spawn_blocking` panic, etc.) uses the in-crate constant module **`http_chat_codes`** (no duplicate string literals):
     - `EMPTY_MESSAGE`
     - `INVALID_ROLE_PATH`
@@ -42,8 +42,8 @@ Sidecars use **JSON-RPC numeric `code` + lowercase snake `message` names**; see 
 
 ## 6. Code and patch notes
 
-- Rust: `crates/oclive_kernel_runtime/src/error.rs` (`KernelErrorBody`, `AppError`, `http_chat_codes`).
-- HTTP: `src-tauri/src/http_api.rs`.
+- Rust: `kernel/crates/oclive_kernel_runtime/src/error.rs` (`KernelErrorBody`, `AppError`, `http_chat_codes`).
+- HTTP: `distros/desktop-tauri/src/http_api.rs`.
 - Patch summary: `handoff/A2_KERNEL_JSON_ERROR_PATCH.md`.
 - **A3 (crash reporting & user-visible error polish)**: [`handoff/A3_CLOSURE_SUMMARY.en.md`](../../handoff/A3_CLOSURE_SUMMARY.en.md) · [`handoff/A3_CLOSURE_SUMMARY.md`](../../handoff/A3_CLOSURE_SUMMARY.md).
 
