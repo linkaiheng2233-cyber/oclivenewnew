@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { CastTier } from '../../composables/theater/theaterCastConfig'
+import type { TheaterScenePreset, TheaterScenePresetId } from '../../composables/theater/theaterSceneCatalog'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import UiButton from '../../components/ui/UiButton.vue'
@@ -8,15 +9,19 @@ defineProps<{
   castLabel: string
   castTier?: CastTier
   sceneLabelKey: string
+  activeScenePresetId: TheaterScenePresetId
+  scenePresets: TheaterScenePreset[]
 }>()
 
 const emit = defineEmits<{
   openSettings: []
   restart: []
+  selectScene: [id: TheaterScenePresetId]
 }>()
 
 const { t } = useI18n()
 const moreOpen = ref(false)
+const sceneOpen = ref(false)
 
 function onMore(action: 'settings' | 'restart') {
   moreOpen.value = false
@@ -25,14 +30,47 @@ function onMore(action: 'settings' | 'restart') {
   else
     emit('restart')
 }
+
+function onSelectScene(id: TheaterScenePresetId) {
+  sceneOpen.value = false
+  emit('selectScene', id)
+}
 </script>
 
 <template>
   <header class="theater-header">
     <div class="theater-header__titles">
-      <h1 class="theater-header__scene">
-        {{ t(sceneLabelKey) }}
-      </h1>
+      <div class="theater-header__scene-picker">
+        <button
+          type="button"
+          class="theater-header__scene"
+          :aria-expanded="sceneOpen"
+          aria-haspopup="listbox"
+          @click="sceneOpen = !sceneOpen"
+        >
+          {{ t(sceneLabelKey) }}
+        </button>
+        <div
+          v-show="sceneOpen"
+          class="theater-header__scene-menu"
+          role="listbox"
+          :aria-label="t('theater.header.scenePicker')"
+          @click.stop
+        >
+          <button
+            v-for="preset in scenePresets"
+            :key="preset.id"
+            type="button"
+            class="theater-header__scene-option"
+            role="option"
+            :aria-selected="preset.id === activeScenePresetId"
+            :class="{ 'theater-header__scene-option--active': preset.id === activeScenePresetId }"
+            @click="onSelectScene(preset.id)"
+          >
+            {{ t(preset.labelKey) }}
+          </button>
+        </div>
+      </div>
       <p v-if="castLabel" class="theater-header__cast">
         {{ castLabel }}
         <span v-if="castTier === 'applied'" class="theater-header__cast-badge">
@@ -74,11 +112,54 @@ function onMore(action: 'settings' | 'restart') {
   min-width: 0;
 }
 
+.theater-header__scene-picker {
+  position: relative;
+}
+
 .theater-header__scene {
   margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
   font-size: var(--tool-fs-md, 13px);
   font-weight: 600;
   line-height: var(--tool-line, 1.5);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.theater-header__scene:hover {
+  color: var(--tool-accent, #6b8cff);
+}
+
+.theater-header__scene-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 20;
+  min-width: 168px;
+  padding: var(--tool-space-1, 4px);
+  border: 1px solid var(--tool-divider, var(--border-light));
+  border-radius: var(--tool-radius, 8px);
+  background: var(--tool-elevated, var(--bg-elevated));
+}
+
+.theater-header__scene-option {
+  display: block;
+  width: 100%;
+  padding: var(--tool-space-2, 8px) var(--tool-space-3, 12px);
+  border: none;
+  border-radius: var(--tool-radius, 8px);
+  background: transparent;
+  color: var(--text-primary);
+  font-size: var(--tool-fs-md, 13px);
+  text-align: left;
+  cursor: pointer;
+}
+
+.theater-header__scene-option:hover,
+.theater-header__scene-option--active {
+  background: color-mix(in srgb, var(--tool-accent) 10%, transparent);
 }
 
 .theater-header__cast {

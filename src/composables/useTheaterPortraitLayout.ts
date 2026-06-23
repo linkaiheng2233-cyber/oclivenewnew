@@ -2,13 +2,13 @@ const PORTRAIT_W_KEY = 'oclive-theater-portrait-w'
 const PORTRAIT_MAX_H_KEY = 'oclive-theater-portrait-max-h'
 
 export const THEATER_PORTRAIT_DEFAULTS = {
-  width: 96,
-  maxHeight: 200,
+  width: 128,
+  maxHeight: 280,
 } as const
 
 export const THEATER_PORTRAIT_LIMITS = {
-  width: { min: 64, max: 200 },
-  maxHeight: { min: 100, max: 360 },
+  width: { min: 72, max: 320 },
+  maxHeight: { min: 120, max: 520 },
 } as const
 
 function clamp(value: number, min: number, max: number): number {

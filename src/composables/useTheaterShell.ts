@@ -14,6 +14,7 @@ import { useI18n } from 'vue-i18n'
 import { loadRole, setRoleInteractionMode } from '../api/role'
 import {
   bindCastToSkeleton,
+  castConfigChanged,
   DEFAULT_THEATER_CAST_CONFIG,
   enrichCastConfigFromRoles,
   getTheaterCastConfig,
@@ -22,6 +23,7 @@ import {
 } from './theater/theaterCastConfig'
 import {
   buildRuntimeFromRewrite,
+  clearAdaptedCacheForCast,
   clearAllAdaptedCache,
   computeSkeletonHash,
   getAdaptedCache,
@@ -34,6 +36,10 @@ import {
   pickCastRewritePreviewLine,
 } from './theater/theaterCastAdaptPasses'
 import {
+  normalizePairRelationId,
+  resolvePairRelationHint,
+} from './theater/theaterPairRelation'
+import {
   generateTheaterScene,
   type TheaterSceneRequest,
   type TheaterScriptLine,
@@ -44,26 +50,75 @@ import { hostEventBus } from '../lib/hostEventBus'
 import { MAIN_SHELL_KEY } from './mainShellKey'
 import {
   buildWorkingScript,
+  beatsAfterInsert,
   cloneScriptLines,
   defaultInsertAnchor,
-  FALLBACK_SKELETON,
+  fetchSkeletonForPreset,
   nextVisibleCount,
   pickCanFork,
   playbackDone,
+  resolveChipLeadCast,
   SCENE_GEN_TIMEOUT_MS,
   SceneGenTimeoutError,
-  SKELETON_URL,
-  THEATER_POKE_CHIPS,
   timeoutReject,
-  validateSkeleton,
 } from './theater/theaterLogic'
+import {
+  getTheaterCustomLeadCast,
+  getTheaterPokeMode,
+  getTheaterVariantSwipeEnabled,
+} from './useTheaterPokeSettings'
+import {
+  getPokeChipsForPreset,
+  getTheaterScenePreset,
+  getTheaterScenePresetId,
+  listTheaterScenePresets,
+  resolveActivePokeChips,
+  setTheaterScenePresetId,
+  type TheaterScenePreset,
+  type TheaterScenePresetId,
+} from './theater/theaterSceneCatalog'
 import { ApiInvokeError } from '../api/helpers'
 
 const LINE_REVEAL_MS = 720
 const THINK_STEP_MS = 650
 const CAST_ADAPT_DONE_VISIBLE_MS = 1000
-/** Full cast_rewrite may output 8-12 beats + forks in one call. */
-const CAST_REWRITE_TIMEOUT_MS = 45_000
+/** Two kernel attempts × cast_rewrite timeout (default 45s) + buffer. */
+const CAST_REWRITE_TIMEOUT_MS = 100_000
+
+export interface PokeVariant {
+  id: 'a' | 'b'
+  patchLines: ScriptLine[]
+  fullBeats: ScriptLine[]
+  source: TheaterSourceKind
+}
+
+interface PendingVariantContext {
+  key: string
+  tweaks: AppliedTweak[]
+  insertAfterBeatId: string
+}
+
+function extractPatchSegment(
+  beats: ScriptLine[],
+  insertAfterBeatId: string,
+  baseBeats: ScriptLine[],
+): ScriptLine[] {
+  const tailIds = new Set(beatsAfterInsert(baseBeats, insertAfterBeatId).map(b => b.id))
+  const anchorIdx = beats.findIndex(b => b.id === insertAfterBeatId)
+  if (anchorIdx < 0)
+    return []
+  const tailIdx = beats.findIndex((b, i) => i > anchorIdx && tailIds.has(b.id))
+  const end = tailIdx >= 0 ? tailIdx : beats.length
+  return beats.slice(anchorIdx + 1, end)
+}
+
+function pokeVariantKey(
+  presetId: string,
+  chipId: PokeChipId | 'custom',
+  tweakIndex: number,
+): string {
+  return `${presetId}:${chipId}:${tweakIndex}`
+}
 
 function delay(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -98,10 +153,11 @@ function fromScriptLineDto(line: TheaterScriptLine): ScriptLine {
 function tweakToDto(
   tweak: AppliedTweak,
   translate: (key: string) => string,
+  presetId: TheaterScenePresetId,
 ): TheaterTweak {
   let chipLabel: string | undefined
   if (tweak.kind === 'chip' && tweak.chipId) {
-    const chip = THEATER_POKE_CHIPS.find(c => c.id === tweak.chipId)
+    const chip = getPokeChipsForPreset(presetId).find(c => c.id === tweak.chipId)
     chipLabel = chip ? translate(chip.labelKey) : tweak.chipId
   }
   else if (tweak.kind === 'custom') {
@@ -138,6 +194,7 @@ export function useTheaterShell() {
   const roleStore = useRoleStore()
   const { t, te } = useI18n()
 
+  const activeScenePresetId = ref<TheaterScenePresetId>(getTheaterScenePresetId())
   const canonicalSkeleton = shallowRef<TheaterSkeleton | null>(null)
   const skeleton = shallowRef<TheaterSkeleton | null>(null)
   const displayLines = ref<ScriptLine[]>([])
@@ -148,6 +205,7 @@ export function useTheaterShell() {
   const loadError = ref<string | null>(null)
   const appliedTweaks = ref<AppliedTweak[]>([])
   const settingsOpen = ref(false)
+  const settingsTab = ref<'general' | 'stage' | 'cast' | 'model'>('general')
 
   const thinkingActive = ref(false)
   const thinkingSteps = ref<string[]>([])
@@ -157,6 +215,26 @@ export function useTheaterShell() {
   const thinkingTitle = computed(() =>
     t('theater.think.title', { chip: thinkingChipLabel.value }),
   )
+
+  /** Hover preview on poke chips — highlights the affected cast on stage portraits. */
+  const previewChipId = ref<PokeChipId | null>(null)
+  /** While a poke/custom tweak runs, keep the affected cast highlighted. */
+  const patchingEventCast = ref<TheaterCast | null>(null)
+
+  const pokeVariants = ref(new Map<string, [PokeVariant, PokeVariant?]>())
+  const activeVariantKey = ref<string | null>(null)
+  const activeVariantIndex = ref<0 | 1>(0)
+  const variantBackdropOpen = ref(false)
+  const pendingVariantContext = ref<PendingVariantContext | null>(null)
+  const variantPair = computed(() => {
+    const key = activeVariantKey.value
+    if (!key)
+      return null
+    return pokeVariants.value.get(key) ?? null
+  })
+  const variantPatchA = computed(() => variantPair.value?.[0]?.patchLines ?? [])
+  const variantPatchB = computed(() => variantPair.value?.[1]?.patchLines ?? [])
+  const variantBReady = computed(() => (variantPair.value?.[1]?.patchLines.length ?? 0) > 0)
 
   const castAdaptActive = ref(false)
   const castAdaptSteps = ref<string[]>([])
@@ -188,11 +266,13 @@ export function useTheaterShell() {
   })
 
   const castTier = computed(() => {
+    const saved = getTheaterCastConfig()
     const sk = skeleton.value
-    if (!sk)
-      return resolveCastTier(getTheaterCastConfig())
+    if (!sk) {
+      return resolveCastTier(enrichCastConfigFromRoles(saved, roleStore.roles))
+    }
     return resolveCastTier({
-      ...DEFAULT_THEATER_CAST_CONFIG,
+      ...saved,
       castA: { roleId: sk.cast.a.roleId, displayName: sk.cast.a.name },
       castB: { roleId: sk.cast.b.roleId, displayName: sk.cast.b.name },
     })
@@ -200,12 +280,36 @@ export function useTheaterShell() {
 
   const castInfo = computed(() => skeleton.value?.cast ?? null)
 
-  const sceneLabelKey = computed(() => {
-    const scene = skeleton.value?.scene ?? 'breakfast'
-    return scene === 'breakfast' ? 'theater.header.scene.breakfast' : 'theater.header.scene.generic'
+  const activeScenePreset = computed(() => getTheaterScenePreset(activeScenePresetId.value))
+  const scenePresets = computed<TheaterScenePreset[]>(() => listTheaterScenePresets())
+
+  const sceneLabelKey = computed(() => activeScenePreset.value.labelKey)
+
+  const activePokeChips = computed(() =>
+    resolveActivePokeChips(activeScenePreset.value, skeleton.value),
+  )
+
+  const pokeEnabled = computed(() => activePokeChips.value.length > 0)
+
+  const dockDisabled = computed(() => stageState.value === 'patching' || !pokeEnabled.value)
+
+  const eventHighlightCast = computed((): TheaterCast | null => {
+    if (stageState.value === 'patching' && patchingEventCast.value)
+      return patchingEventCast.value
+    const sk = skeleton.value
+    const chipId = previewChipId.value
+    if (sk && chipId)
+      return resolveChipLeadCast(sk, chipId)
+    return null
   })
 
-  const dockDisabled = computed(() => stageState.value === 'patching')
+  function setPreviewChip(chipId: PokeChipId | null) {
+    if (dockDisabled.value) {
+      previewChipId.value = null
+      return
+    }
+    previewChipId.value = chipId
+  }
 
   function clearWaitingTimer() {
     if (waitingTimer != null) {
@@ -242,6 +346,7 @@ export function useTheaterShell() {
   function clearPokeThinkingState() {
     thinkingActive.value = false
     thinkingSteps.value = []
+    patchingEventCast.value = null
     clearWaitingTimer()
     waitingSeconds.value = 0
     waitingPhase.value = 'thinking'
@@ -338,7 +443,7 @@ export function useTheaterShell() {
       await skeletonLoadPromise
       return canonicalSkeleton.value
     }
-    skeletonLoadPromise = loadSkeleton()
+    skeletonLoadPromise = loadSkeleton(activeScenePresetId.value)
     try {
       await skeletonLoadPromise
     }
@@ -348,13 +453,36 @@ export function useTheaterShell() {
     return canonicalSkeleton.value
   }
 
+  function sceneContextFields(preset: TheaterScenePreset) {
+    return {
+      theater_scene: preset.id,
+      scene_brief: preset.sceneBrief,
+      scene_setting_hint: preset.sceneSettingHint,
+    }
+  }
+
+  function presetIdForCanonical(canonical: TheaterSkeleton): string {
+    return canonical.scene
+  }
+
+  function pairRelationRequestFields(config: TheaterCastConfig): {
+    pair_relation_id: string
+    pair_relation_hint: string
+  } {
+    const id = normalizePairRelationId(config.pairRelationId)
+    return {
+      pair_relation_id: id,
+      pair_relation_hint: resolvePairRelationHint(id, canonicalSkeleton.value),
+    }
+  }
+
   async function reAdaptCurrentCast() {
     const canonical = await ensureCanonicalSkeletonLoaded()
     if (!canonical)
       return
 
     const config = enrichCastConfigFromRoles(getTheaterCastConfig(), roleStore.roles)
-    if (resolveCastTier(config) === 'default') {
+    if (!needsCastAdaptation(config)) {
       shell?.showToast('info', t('theater.cast.reAdaptDefaultHint'))
       return
     }
@@ -380,10 +508,10 @@ export function useTheaterShell() {
     await ensureBothCastLoaded(runtime)
     startReveal(0)
     const renamedOnly = beatsEqual(runtime.beats, baseline.beats)
-    shell?.showToast(
-      renamedOnly ? 'info' : 'success',
-      renamedOnly ? t('theater.cast.adaptFallback') : t('theater.cast.reAdaptDone'),
-    )
+    if (renamedOnly)
+      castAdaptFallbackToast()
+    else
+      shell?.showToast('success', t('theater.cast.reAdaptDone'))
     await delay(CAST_ADAPT_DONE_VISIBLE_MS)
     clearCastAdaptProgress()
   }
@@ -406,6 +534,16 @@ export function useTheaterShell() {
     await ensureBothCastLoaded(runtime)
     startReveal(0)
     shell?.showToast('success', t('theater.cast.restoreDefaultDone'))
+  }
+
+  function castAdaptFallbackToast() {
+    const issue = castAdaptLastIssue.value
+    if (issue) {
+      const key = `theater.cast.issue.${issue.code}`
+      shell?.showToast('info', te(key) ? t(key) : t('theater.cast.adaptFallback'))
+      return
+    }
+    shell?.showToast('info', t('theater.cast.adaptFallback'))
   }
 
   function setCastAdaptIssue(failureReason?: string | null, rewriteNote?: string | null) {
@@ -444,9 +582,10 @@ export function useTheaterShell() {
 
   async function runCastRewrite(
     baseline: TheaterSkeleton,
-    sceneId: string,
+    preset: TheaterScenePreset,
     token: number,
     showProgress: boolean,
+    castConfig: TheaterCastConfig,
   ): Promise<{
     runtime: TheaterSkeleton
     source: TheaterSourceKind
@@ -459,29 +598,33 @@ export function useTheaterShell() {
     if (showProgress) {
       castAdaptPassProgress.value = { current: 1, total: 1, label: rewriteLabel }
       appendCastAdaptStep(token, t('theater.think.rewrite.readPersona'))
-      appendCastAdaptStep(token, t('theater.think.rewrite.start'))
+      appendCastAdaptStep(token, t(`theater.think.rewrite.${preset.id}`, t('theater.think.rewrite.start')))
       castAdaptWaitingPhase.value = 'model'
       if (castAdaptWaitingTimer == null)
         startCastAdaptWaitingTimer()
     }
 
-    const pokeChips = THEATER_POKE_CHIPS.map(chip => ({
-      chip_id: chip.id,
-      drama_seed: chip.dramaSeed,
-      label: t(chip.labelKey),
-    }))
+    const pokeChips = preset.pokeEnabled
+      ? getPokeChipsForPreset(preset.id).map(chip => ({
+          chip_id: chip.id,
+          drama_seed: chip.dramaSeed,
+          label: t(chip.labelKey),
+        }))
+      : []
 
     const req: TheaterSceneRequest = {
       cast_a: { role_id: baseline.cast.a.roleId, name: baseline.cast.a.name },
       cast_b: { role_id: baseline.cast.b.roleId, name: baseline.cast.b.name },
-      scene_id: sceneId,
+      scene_id: baseline.sceneId ?? preset.runtimeSceneId,
       base_beats: [],
       applied_tweaks: [],
       fallback_beats: baseline.beats.map(toScriptLineDto),
-      fork_templates: skeletonToForkTemplates(baseline),
+      fork_templates: preset.pokeEnabled ? skeletonToForkTemplates(baseline) : [],
       mode: 'cast_rewrite',
       poke_chips: pokeChips,
       max_beats: 12,
+      ...sceneContextFields(preset),
+      ...pairRelationRequestFields(castConfig),
     }
 
     try {
@@ -540,17 +683,23 @@ export function useTheaterShell() {
   async function adaptRuntimeSkeleton(
     canonical: TheaterSkeleton,
     config: TheaterCastConfig,
-    options?: { showProgress?: boolean, showToast?: boolean, skipCache?: boolean },
+    options?: {
+      showProgress?: boolean
+      showToast?: boolean
+      skipCache?: boolean
+      /** When set (e.g. from applyCastConfig), reuse instead of bumping castAdaptToken again. */
+      adaptToken?: number
+    },
   ): Promise<TheaterSkeleton> {
     const showToastMessage = options?.showToast ?? true
     const baseline = applyRuntimeCast(canonical, config)
     if (!needsCastAdaptation(config))
       return baseline
 
-    const sceneId = canonical.sceneId ?? 'home'
+    const presetId = presetIdForCanonical(canonical)
     const skeletonHash = computeSkeletonHash(canonical)
     if (!options?.skipCache) {
-      const cached = getAdaptedCache(config, sceneId, skeletonHash)
+      const cached = getAdaptedCache(config, presetId, skeletonHash)
       if (cached) {
         if (showToastMessage)
           shell?.showToast('info', t('theater.cast.cacheHit'))
@@ -560,9 +709,10 @@ export function useTheaterShell() {
     }
 
     const showProgress = options?.showProgress ?? true
-    const token = ++castAdaptToken
+    const token = options?.adaptToken ?? ++castAdaptToken
     if (showProgress) {
-      clearCastAdaptProgress()
+      if (options?.adaptToken == null)
+        clearCastAdaptProgress()
       castAdaptActive.value = true
       castAdaptSteps.value = []
       castAdaptLastIssue.value = null
@@ -572,9 +722,10 @@ export function useTheaterShell() {
     try {
       const { runtime, source, failedEarly } = await runCastRewrite(
         baseline,
-        sceneId,
+        getTheaterScenePreset(presetId as TheaterScenePresetId),
         token,
         showProgress,
+        config,
       )
 
       if (token !== castAdaptToken)
@@ -584,13 +735,13 @@ export function useTheaterShell() {
 
       if (failedEarly || equivalentToBaseline) {
         if (showToastMessage)
-          shell?.showToast('info', t('theater.cast.adaptFallback'))
+          castAdaptFallbackToast()
         footerSource.value = 'pregen'
         return baseline
       }
 
       const finalForks = skeletonToForkTemplates(runtime)
-      setAdaptedCache(config, sceneId, {
+      setAdaptedCache(config, presetId, {
         skeletonHash,
         beats: runtime.beats.map(toScriptLineDto),
         forks: finalForks,
@@ -605,7 +756,7 @@ export function useTheaterShell() {
       if (token !== castAdaptToken)
         throw err
       if (showToastMessage)
-        shell?.showToast('info', t('theater.cast.adaptFallback'))
+        castAdaptFallbackToast()
       footerSource.value = 'pregen'
       return baseline
     }
@@ -616,13 +767,29 @@ export function useTheaterShell() {
   }
 
   async function applyCastConfig(config: TheaterCastConfig) {
-    const canonical = await ensureCanonicalSkeletonLoaded()
+    const applyToken = ++castAdaptToken
+    clearCastAdaptProgress()
+
+    const presetId = activeScenePresetId.value
+    const previousConfig = enrichCastConfigFromRoles(getTheaterCastConfig(), roleStore.roles)
+    const enriched = enrichCastConfigFromRoles(config, roleStore.roles)
+
+    let canonical: TheaterSkeleton | null
+    try {
+      canonical = await fetchSkeletonForPreset(presetId)
+      canonicalSkeleton.value = canonical
+    }
+    catch {
+      canonical = await ensureCanonicalSkeletonLoaded()
+    }
     if (!canonical) {
       shell?.showToast('error', t('theater.cast.applyFailed'))
       return
     }
 
-    const enriched = enrichCastConfigFromRoles(config, roleStore.roles)
+    if (castConfigChanged(previousConfig, enriched))
+      clearAdaptedCacheForCast(previousConfig, presetId)
+
     setTheaterCastConfig(enriched)
     castAdaptLastIssue.value = null
 
@@ -630,13 +797,12 @@ export function useTheaterShell() {
     funnelVisible.value = false
     footerSource.value = 'pregen'
 
-    let tier = resolveCastTier(enriched)
     const baseline = applyRuntimeCast(canonical, enriched)
     skeleton.value = baseline
     displayLines.value = cloneScriptLines(baseline.beats)
     startReveal(0)
 
-    if (tier === 'default') {
+    if (!needsCastAdaptation(enriched)) {
       await ensureBothCastLoaded(baseline)
       shell?.showToast('success', t('theater.cast.applyDone'))
       return
@@ -649,6 +815,7 @@ export function useTheaterShell() {
         skipCache: true,
         showProgress: true,
         showToast: false,
+        adaptToken: applyToken,
       })
     }
     catch (err) {
@@ -656,18 +823,21 @@ export function useTheaterShell() {
       console.warn('[theater] cast adapt failed; keeping rename-only baseline', err)
     }
 
+    if (applyToken !== castAdaptToken)
+      return
+
     skeleton.value = runtime
     displayLines.value = cloneScriptLines(runtime.beats)
     await ensureBothCastLoaded(runtime)
     startReveal(0)
 
     if (adaptErrored) {
-      shell?.showToast('info', t('theater.cast.adaptFallback'))
+      castAdaptFallbackToast()
     }
     else {
       const renamedOnly = beatsEqual(runtime.beats, baseline.beats)
       if (renamedOnly)
-        shell?.showToast('info', t('theater.cast.adaptFallback'))
+        castAdaptFallbackToast()
       else
         shell?.showToast('success', t('theater.cast.applyDone'))
     }
@@ -694,19 +864,33 @@ export function useTheaterShell() {
       waitingPhase.value = 'model'
   }
 
-  function buildSceneRequest(sk: TheaterSkeleton, tweaks: AppliedTweak[]): TheaterSceneRequest {
+  function buildSceneRequest(
+    sk: TheaterSkeleton,
+    tweaks: AppliedTweak[],
+    options?: { mode?: string, patchVariant?: number },
+  ): TheaterSceneRequest {
     const fallbackBeats = buildWorkingScript(sk.beats, tweaks)
+    const castConfig = enrichCastConfigFromRoles(getTheaterCastConfig(), roleStore.roles)
+    const preset = getTheaterScenePreset(sk.scene as TheaterScenePresetId)
+    const pokeMode = options?.mode ?? getTheaterPokeMode()
     return {
       cast_a: { role_id: sk.cast.a.roleId, name: sk.cast.a.name },
       cast_b: { role_id: sk.cast.b.roleId, name: sk.cast.b.name },
-      scene_id: sk.sceneId ?? 'home',
+      scene_id: sk.sceneId ?? preset.runtimeSceneId,
       base_beats: sk.beats.map(toScriptLineDto),
-      applied_tweaks: tweaks.map(tweak => tweakToDto(tweak, t)),
+      applied_tweaks: tweaks.map(tweak => tweakToDto(tweak, t, preset.id)),
       fallback_beats: fallbackBeats.map(toScriptLineDto),
+      mode: pokeMode,
+      patch_variant: options?.patchVariant ?? undefined,
+      ...sceneContextFields(preset),
+      ...pairRelationRequestFields(castConfig),
     }
   }
 
-  async function generateAndReplay(tweaks: AppliedTweak[]): Promise<{
+  async function generateAndReplay(
+    tweaks: AppliedTweak[],
+    options?: { mode?: string, patchVariant?: number },
+  ): Promise<{
     beats: ScriptLine[]
     source: TheaterSourceKind
     usedFallback: boolean
@@ -718,7 +902,7 @@ export function useTheaterShell() {
     }
 
     const fallbackBeats = buildWorkingScript(sk.beats, tweaks)
-    const req = buildSceneRequest(sk, tweaks)
+    const req = buildSceneRequest(sk, tweaks, options)
     await ensureBothCastLoaded(sk)
 
     try {
@@ -747,6 +931,87 @@ export function useTheaterShell() {
       }
       throw err
     }
+  }
+
+  async function generateVariantB(ctx: PendingVariantContext) {
+    const sk = skeleton.value
+    if (!sk || !getTheaterVariantSwipeEnabled() || getTheaterPokeMode() !== 'patch')
+      return
+    try {
+      const resp = await generateTheaterScene(
+        buildSceneRequest(sk, ctx.tweaks, { mode: 'patch', patchVariant: 1 }),
+      )
+      if (resp.source === 'fallback' || resp.beats.length === 0)
+        return
+      const beats = resp.beats.map(fromScriptLineDto)
+      const patchLines = extractPatchSegment(beats, ctx.insertAfterBeatId, sk.beats)
+      if (patchLines.length === 0)
+        return
+      const existing = pokeVariants.value.get(ctx.key)
+      if (!existing?.[0])
+        return
+      const variantB: PokeVariant = {
+        id: 'b',
+        patchLines,
+        fullBeats: beats,
+        source: mapFooterSource(resp.source),
+      }
+      pokeVariants.value.set(ctx.key, [existing[0], variantB])
+      variantBackdropOpen.value = true
+      shell?.showToast('info', t('theater.variant.ready'))
+    }
+    catch {
+      /* second candidate optional */
+    }
+  }
+
+  function storePokeVariantA(
+    key: string,
+    beats: ScriptLine[],
+    insertAfterBeatId: string,
+    source: TheaterSourceKind,
+  ) {
+    const sk = skeleton.value
+    if (!sk)
+      return
+    const patchLines = extractPatchSegment(beats, insertAfterBeatId, sk.beats)
+    pokeVariants.value.set(key, [{
+      id: 'a',
+      patchLines,
+      fullBeats: cloneScriptLines(beats),
+      source,
+    }])
+    activeVariantKey.value = key
+    activeVariantIndex.value = 0
+    variantBackdropOpen.value = false
+  }
+
+  function selectPokeVariant(index: 0 | 1) {
+    const key = activeVariantKey.value
+    if (!key)
+      return
+    const pair = pokeVariants.value.get(key)
+    const chosen = pair?.[index]
+    if (!chosen)
+      return
+    activeVariantIndex.value = index
+    displayLines.value = cloneScriptLines(chosen.fullBeats)
+    footerSource.value = chosen.source
+    const lastTweak = appliedTweaks.value[appliedTweaks.value.length - 1]
+    if (lastTweak)
+      lastTweak.patchLines = cloneScriptLines(chosen.patchLines)
+    visibleCount.value = displayLines.value.length
+    variantBackdropOpen.value = false
+  }
+
+  function dismissVariantBackdrop() {
+    variantBackdropOpen.value = false
+  }
+
+  function scheduleVariantBAfterReveal(ctx: PendingVariantContext) {
+    if (!getTheaterVariantSwipeEnabled() || getTheaterPokeMode() !== 'patch')
+      return
+    pendingVariantContext.value = ctx
   }
 
   type SceneGenOutcome = {
@@ -825,10 +1090,11 @@ export function useTheaterShell() {
     stageState.value = 'patching'
     clearRevealTimer()
 
-    const lead = fork.patchLines[0]
-    const leadCast = lead?.cast ?? 'a'
+    const leadCast = resolveChipLeadCast(sk, chipId) ?? (fork.patchLines[0]?.cast ?? 'a')
+    patchingEventCast.value = leadCast
     const name = castName(sk, leadCast)
-    const chip = THEATER_POKE_CHIPS.find(c => c.id === chipId)
+    const preset = activeScenePreset.value
+    const chip = getPokeChipsForPreset(preset.id).find(c => c.id === chipId)
     const chipLabel = chip ? t(chip.labelKey) : chipId
     const dramaSeed = chip?.dramaSeed ?? ''
     thinkingChipLabel.value = chipLabel
@@ -857,6 +1123,13 @@ export function useTheaterShell() {
     appliedTweaks.value = tweaks
     footerSource.value = outcome.source
     displayLines.value = outcome.beats
+    const vKey = pokeVariantKey(preset.id, chipId, tweaks.length - 1)
+    storePokeVariantA(vKey, outcome.beats, tweak.insertAfterBeatId, outcome.source)
+    scheduleVariantBAfterReveal({
+      key: vKey,
+      tweaks,
+      insertAfterBeatId: tweak.insertAfterBeatId,
+    })
     startReveal(0)
   }
 
@@ -873,7 +1146,8 @@ export function useTheaterShell() {
     clearRevealTimer()
 
     const insertAfterBeatId = defaultInsertAnchor(sk)
-    const leadCast: TheaterCast = 'a'
+    const leadCast: TheaterCast = getTheaterCustomLeadCast()
+    patchingEventCast.value = leadCast
     const name = castName(sk, leadCast)
     const chipLabel = t('theater.poke.customLabel')
     thinkingChipLabel.value = chipLabel
@@ -902,6 +1176,14 @@ export function useTheaterShell() {
     appliedTweaks.value = tweaks
     footerSource.value = outcome.source
     displayLines.value = outcome.beats
+    const preset = activeScenePreset.value
+    const vKey = pokeVariantKey(preset.id, 'custom', tweaks.length - 1)
+    storePokeVariantA(vKey, outcome.beats, insertAfterBeatId, outcome.source)
+    scheduleVariantBAfterReveal({
+      key: vKey,
+      tweaks,
+      insertAfterBeatId,
+    })
     startReveal(0)
   }
 
@@ -927,29 +1209,21 @@ export function useTheaterShell() {
     appliedTweaks.value = []
     funnelVisible.value = false
     footerSource.value = 'pregen'
+    pokeVariants.value = new Map()
+    activeVariantKey.value = null
+    variantBackdropOpen.value = false
+    pendingVariantContext.value = null
     displayLines.value = cloneScriptLines(sk.beats)
     startReveal(0)
   }
 
-  async function loadSkeleton() {
-    let canonical: TheaterSkeleton
-    try {
-      const res = await fetch(SKELETON_URL)
-      if (!res.ok)
-        throw new Error(`skeleton fetch failed: ${res.status}`)
-      canonical = validateSkeleton(await res.json())
-    }
-    catch (e) {
-      console.warn('[theater] skeleton fetch failed, using embedded opening', e)
-      canonical = FALLBACK_SKELETON
-      loadError.value = null
-    }
-
+  async function loadSkeleton(presetId: TheaterScenePresetId) {
+    const canonical = await fetchSkeletonForPreset(presetId)
     canonicalSkeleton.value = canonical
+    loadError.value = null
     try {
       const castConfig = enrichCastConfigFromRoles(getTheaterCastConfig(), roleStore.roles)
-      const tier = resolveCastTier(castConfig)
-      if (tier === 'default') {
+      if (!needsCastAdaptation(castConfig)) {
         const runtime = applyRuntimeCast(canonical, castConfig)
         skeleton.value = runtime
         displayLines.value = cloneScriptLines(runtime.beats)
@@ -957,11 +1231,10 @@ export function useTheaterShell() {
         startReveal(0)
       }
       else {
-        // Cold start: cache-only — never block the stage with cast_adapt LLM passes.
         const baseline = applyRuntimeCast(canonical, castConfig)
-        const sceneId = canonical.sceneId ?? 'home'
+        const cachePresetId = presetIdForCanonical(canonical)
         const skeletonHash = computeSkeletonHash(canonical)
-        const cached = getAdaptedCache(castConfig, sceneId, skeletonHash)
+        const cached = getAdaptedCache(castConfig, cachePresetId, skeletonHash)
         if (cached) {
           skeleton.value = buildRuntimeFromRewrite(baseline, cached.beats, cached.forks)
           footerSource.value = mapFooterSource(cached.source)
@@ -980,16 +1253,73 @@ export function useTheaterShell() {
     }
   }
 
+  async function switchScenePreset(id: TheaterScenePresetId) {
+    if (id === activeScenePresetId.value)
+      return
+
+    castAdaptToken++
+    clearCastAdaptProgress()
+    clearPokeThinkingState()
+    appliedTweaks.value = []
+    funnelVisible.value = false
+    footerSource.value = 'pregen'
+
+    activeScenePresetId.value = id
+    setTheaterScenePresetId(id)
+    canonicalSkeleton.value = null
+
+    shell?.showToast('info', t('theater.scene.switching'))
+
+    await loadSkeleton(id)
+    const canonical = canonicalSkeleton.value
+    if (!canonical)
+      return
+
+    const config = enrichCastConfigFromRoles(getTheaterCastConfig(), roleStore.roles)
+    const baseline = applyRuntimeCast(canonical, config)
+    skeleton.value = baseline
+    displayLines.value = cloneScriptLines(baseline.beats)
+    startReveal(0)
+
+    if (needsCastAdaptation(config)) {
+      const runtime = await adaptRuntimeSkeleton(canonical, config, {
+        skipCache: false,
+        showProgress: false,
+        showToast: false,
+      })
+      skeleton.value = runtime
+      displayLines.value = cloneScriptLines(runtime.beats)
+      startReveal(0)
+      const skeletonHash = computeSkeletonHash(canonical)
+      const cachePresetId = presetIdForCanonical(canonical)
+      const cacheHit = getAdaptedCache(config, cachePresetId, skeletonHash)
+      if (!cacheHit && beatsEqual(runtime.beats, baseline.beats))
+        castAdaptFallbackToast()
+    }
+
+    await ensureBothCastLoaded(skeleton.value)
+  }
+
   function closeSettings() {
     settingsOpen.value = false
     if (shell)
       shell.settingsViewOpen.value = false
   }
 
-  function openSettings() {
-    settingsOpen.value = !settingsOpen.value
+  function openSettingsToTab(tab: 'general' | 'stage' | 'cast' | 'model') {
+    settingsTab.value = tab
+    settingsOpen.value = true
+    shell?.closeModelManager()
     if (shell)
       shell.settingsViewOpen.value = false
+  }
+
+  function openSettings() {
+    settingsOpen.value = !settingsOpen.value
+    if (shell) {
+      shell.settingsViewOpen.value = false
+      shell.closeModelManager()
+    }
   }
 
   function onTheaterSettingsEvent(payload?: { action?: string }) {
@@ -1004,8 +1334,13 @@ export function useTheaterShell() {
       }
       return
     }
+    if (action === 'model') {
+      openSettingsToTab('model')
+      return
+    }
     if (action === 'open') {
       settingsOpen.value = true
+      shell?.closeModelManager()
       if (shell)
         shell.settingsViewOpen.value = false
       return
@@ -1017,10 +1352,16 @@ export function useTheaterShell() {
     openSettings()
   }
 
+  function onHostOpenModelManagerInTheater() {
+    openSettingsToTab('model')
+  }
+
   let stopSettingsWatch: (() => void) | undefined
 
   onMounted(async () => {
+    shell?.closeModelManager()
     hostEventBus.on('theater:settings', onTheaterSettingsEvent)
+    hostEventBus.on('ui:open_model_manager', onHostOpenModelManagerInTheater)
     if (shell) {
       if (shell.settingsViewOpen.value)
         shell.settingsViewOpen.value = false
@@ -1038,7 +1379,7 @@ export function useTheaterShell() {
     try {
       if (roleStore.roles.length === 0)
         await roleStore.loadRoles()
-      skeletonLoadPromise = loadSkeleton()
+      skeletonLoadPromise = loadSkeleton(activeScenePresetId.value)
       await skeletonLoadPromise
       skeletonLoadPromise = null
       const sk = skeleton.value
@@ -1056,6 +1397,7 @@ export function useTheaterShell() {
     clearWaitingTimer()
     clearCastAdaptWaitingTimer()
     hostEventBus.off('theater:settings', onTheaterSettingsEvent)
+    hostEventBus.off('ui:open_model_manager', onHostOpenModelManagerInTheater)
     stopSettingsWatch?.()
   })
 
@@ -1064,12 +1406,23 @@ export function useTheaterShell() {
       stageState.value = 'idle'
   })
 
+  watch(stageState, (state, prev) => {
+    if (state === 'idle' && prev === 'playing') {
+      patchingEventCast.value = null
+      const ctx = pendingVariantContext.value
+      if (ctx) {
+        pendingVariantContext.value = null
+        void generateVariantB(ctx)
+      }
+    }
+  })
+
   const castAdaptSkeletonHash = computed(() => {
     const canonical = canonicalSkeleton.value
     return canonical ? computeSkeletonHash(canonical) : ''
   })
 
-  const castAdaptSceneId = computed(() => canonicalSkeleton.value?.sceneId ?? 'home')
+  const castAdaptPresetId = computed(() => canonicalSkeleton.value?.scene ?? activeScenePresetId.value)
 
   const castSkeletonReady = computed(() => canonicalSkeleton.value != null)
 
@@ -1087,7 +1440,11 @@ export function useTheaterShell() {
     castLabel,
     castTier,
     castInfo,
+    activeScenePresetId,
+    scenePresets,
     sceneLabelKey,
+    activePokeChips,
+    pokeEnabled,
     dockDisabled,
     thinkingActive,
     thinkingSteps,
@@ -1102,19 +1459,29 @@ export function useTheaterShell() {
     castAdaptWaitingPhase,
     castAdaptLastIssue,
     castAdaptSkeletonHash,
-    castAdaptSceneId,
+    castAdaptPresetId,
     onPoke,
     onCustomTweak,
+    setPreviewChip,
+    eventHighlightCast,
+    variantBackdropOpen,
+    variantBReady,
+    variantPatchA,
+    variantPatchB,
+    selectPokeVariant,
+    dismissVariantBackdrop,
     dismissFunnel,
     onFunnelCreate,
     restartScene,
     settingsOpen,
+    settingsTab,
     openSettings,
     closeSettings,
     applyCastConfig,
     applyDefaultCast,
     clearCastAdaptCache,
     reAdaptCurrentCast,
+    switchScenePreset,
     showToast: shell?.showToast,
   }
 }

@@ -35,6 +35,7 @@
         "../roles",
         "resources/distro-profiles",
         "resources/theater",
+        "resources/plugins",
         "resources/oclive-kernel-server",
         "resources/oclive-kernel-server.exe",
         "resources/oclive-kernel-server.oclive-manifest.json"

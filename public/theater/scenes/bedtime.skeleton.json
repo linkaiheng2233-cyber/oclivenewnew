@@ -1,0 +1,222 @@
+{
+  "scene": "bedtime",
+  "sceneId": "home",
+  "defaultPairRelation": "family",
+  "pairRelations": {
+    "family": {
+      "displayName": "家人",
+      "promptHint": "同住或家人般的日常照应：一方略操心、一方嘴硬但不真疏远，可拌嘴也可温存。"
+    },
+    "friend": {
+      "displayName": "朋友",
+      "promptHint": "同龄好友：说话随意、互怼互损，但会自然帮对方收拾东西、提醒出门。"
+    },
+    "stranger": {
+      "displayName": "陌生人",
+      "promptHint": "刚认识或并不熟：礼貌克制、有距离感，避免过度亲密称呼与同居式唠叨。"
+    },
+    "lover": {
+      "displayName": "恋人",
+      "promptHint": "恋人或暧昧对象：语气更软、更在意对方反应，可害羞、可斗嘴，但底色是彼此在意。"
+    }
+  },
+  "cast": {
+    "a": { "roleId": "mumu", "name": "木木", "side": "left" },
+    "b": { "roleId": "枫侵月", "name": "枫侵月", "side": "right" }
+  },
+  "beats": [
+    {
+      "id": "b1",
+      "cast": "b",
+      "name": "枫侵月",
+      "text": "你先洗脸，我去放水。",
+      "stageHint": "拿毛巾",
+      "emotion": "happy"
+    },
+    {
+      "id": "b2",
+      "cast": "a",
+      "name": "木木",
+      "text": "凭什么我先？",
+      "emotion": "angry"
+    },
+    {
+      "id": "b3",
+      "cast": "b",
+      "name": "枫侵月",
+      "text": "因为你每次都吹头发，吹到浴室全是雾气。",
+      "stageHint": "指浴室门"
+    },
+    {
+      "id": "b4",
+      "cast": "a",
+      "name": "木木",
+      "text": "那是吹风机的问题！",
+      "emotion": "excited"
+    },
+    {
+      "id": "b5",
+      "cast": "b",
+      "name": "枫侵月",
+      "text": "好吧，你先洗头发。别跟我抢毛巾。",
+      "stageHint": "笑",
+      "emotion": "happy"
+    },
+    {
+      "id": "b6",
+      "cast": "a",
+      "name": "木木",
+      "text": "谁要抢你的……",
+      "emotion": "shy"
+    },
+    {
+      "id": "b7",
+      "cast": "b",
+      "name": "枫侵月",
+      "text": "牙刷挤好了，在杯子里。",
+      "stageHint": "指洗手台"
+    },
+    {
+      "id": "b8",
+      "cast": "a",
+      "name": "木木",
+      "text": "……多管闲事。",
+      "stageHint": "耳朵有点红",
+      "emotion": "shy"
+    },
+    {
+      "id": "b9",
+      "cast": "b",
+      "name": "枫侵月",
+      "text": "晚安之前还有一句——今天辛苦了。",
+      "stageHint": "语气放软"
+    },
+    {
+      "id": "b10",
+      "cast": "a",
+      "name": "木木",
+      "text": "……你也是。快睡啦，啰嗦。",
+      "stageHint": "把脸偏开",
+      "emotion": "shy"
+    }
+  ],
+  "forks": {
+    "drinkMilk": [
+      {
+        "chipId": "drinkMilk",
+        "insertAfterBeatId": "b6",
+        "patchLines": [
+          {
+            "id": "dm-1",
+            "cast": "b",
+            "name": "枫侵月",
+            "text": "睡前温了杯奶，趁热。",
+            "stageHint": "递杯子"
+          },
+          {
+            "id": "dm-2",
+            "cast": "a",
+            "name": "木木",
+            "text": "……大晚上的，喝了会胖。",
+            "emotion": "shy"
+          },
+          {
+            "id": "dm-3",
+            "cast": "b",
+            "name": "枫侵月",
+            "text": "一小杯，助眠。喝完再刷牙。",
+            "stageHint": "语气很稳"
+          }
+        ]
+      }
+    ],
+    "insomnia": [
+      {
+        "chipId": "insomnia",
+        "insertAfterBeatId": "b6",
+        "patchLines": [
+          {
+            "id": "in-1",
+            "cast": "a",
+            "name": "木木",
+            "text": "……睡不着。",
+            "stageHint": "翻身"
+          },
+          {
+            "id": "in-2",
+            "cast": "b",
+            "name": "枫侵月",
+            "text": "你刚才翻身第三次了，要不要聊两句？",
+            "stageHint": "压低声音"
+          },
+          {
+            "id": "in-3",
+            "cast": "a",
+            "name": "木木",
+            "text": "才没有……你别说话，我更睡不着了。",
+            "emotion": "angry"
+          }
+        ]
+      }
+    ],
+    "midnightSnack": [
+      {
+        "chipId": "midnightSnack",
+        "insertAfterBeatId": "b6",
+        "patchLines": [
+          {
+            "id": "ms-1",
+            "cast": "a",
+            "name": "木木",
+            "text": "肚子……好像有点饿了。",
+            "stageHint": "小声"
+          },
+          {
+            "id": "ms-2",
+            "cast": "b",
+            "name": "枫侵月",
+            "text": "这个点厨房还有泡面，要煮吗？",
+            "stageHint": "已经起身"
+          },
+          {
+            "id": "ms-3",
+            "cast": "a",
+            "name": "木木",
+            "text": "别煮太大声！……只要半份。",
+            "emotion": "shy"
+          }
+        ]
+      }
+    ],
+    "thunderstorm": [
+      {
+        "chipId": "thunderstorm",
+        "insertAfterBeatId": "b6",
+        "patchLines": [
+          {
+            "id": "ts-1",
+            "cast": "b",
+            "name": "枫侵月",
+            "text": "打雷了——我去关窗。",
+            "stageHint": "窗外闪电"
+          },
+          {
+            "id": "ts-2",
+            "cast": "a",
+            "name": "木木",
+            "text": "……才、才没有怕。",
+            "emotion": "shy"
+          },
+          {
+            "id": "ts-3",
+            "cast": "b",
+            "name": "枫侵月",
+            "text": "嗯，不怕。那窗帘我拉严实一点。",
+            "stageHint": "语气放软",
+            "emotion": "happy"
+          }
+        ]
+      }
+    ]
+  }
+}

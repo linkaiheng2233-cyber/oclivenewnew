@@ -2904,6 +2904,7 @@ dependencies = [
  "async-trait",
  "chrono",
  "oclive_kernel_types",
+ "serde",
  "serde_json",
 ]
 
@@ -3040,6 +3041,7 @@ dependencies = [
  "dashmap",
  "indexmap 2.14.0",
  "notify",
+ "oclive_kernel_contracts",
  "oclive_kernel_host",
  "oclive_kernel_runtime",
  "oclive_kernel_types",

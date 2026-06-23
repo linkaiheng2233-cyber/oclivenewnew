@@ -8,6 +8,8 @@ defineProps<{
 
 const emit = defineEmits<{
   click: []
+  preview: []
+  previewEnd: []
 }>()
 </script>
 
@@ -19,6 +21,10 @@ const emit = defineEmits<{
     :disabled="disabled"
     :aria-label="label"
     @click="emit('click')"
+    @mouseenter="emit('preview')"
+    @mouseleave="emit('previewEnd')"
+    @focus="emit('preview')"
+    @blur="emit('previewEnd')"
   >
     <span class="poke-chip__emoji" aria-hidden="true">{{ emoji }}</span>
     <span class="poke-chip__label">{{ label }}</span>

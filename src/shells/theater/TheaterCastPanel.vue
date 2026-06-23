@@ -14,6 +14,7 @@ import {
   isHybridCast,
   resolveCastTier,
 } from '../../composables/theater/theaterCastConfig'
+import { THEATER_PAIR_RELATION_IDS, type TheaterPairRelationId } from '../../composables/theater/theaterPairRelation'
 import { countAdaptedCacheEntries, resolveCastAdaptStatus, type CastAdaptIssue } from '../../composables/theater/theaterCastAdapt'
 import { useRolePackImport } from '../../composables/useRolePackImport'
 import { useRoleStore } from '../../stores/roleStore'
@@ -33,7 +34,7 @@ const props = defineProps<{
   castAdaptWaitingPhase?: 'thinking' | 'model'
   castAdaptWaitingSeconds?: number
   castAdaptSkeletonHash?: string
-  castAdaptSceneId?: string
+  castAdaptPresetId?: string
   castSkeletonReady?: boolean
   castAdaptLastIssue?: CastAdaptIssue | null
 }>()
@@ -81,7 +82,7 @@ const castTierLabelKey = computed(() => {
 const castAdaptStatus = computed(() =>
   resolveCastAdaptStatus(
     activeCastConfig.value,
-    props.castAdaptSceneId ?? 'home',
+    props.castAdaptPresetId ?? 'breakfast',
     props.castAdaptSkeletonHash ?? '',
   ),
 )
@@ -108,6 +109,19 @@ const castAdaptLastIssueLabel = computed(() => {
     ? t('theater.cast.issue.unknown')
     : t('theater.cast.issue.degradedUnknown')
 })
+
+const showAiRewriteProbBadge = computed(() => {
+  const issue = props.castAdaptLastIssue
+  if (issue?.kind === 'failure')
+    return true
+  if (resolveCastTier(activeCastConfig.value) === 'default')
+    return false
+  return castAdaptStatus.value !== 'cached'
+})
+
+const draftNeedsAiRewrite = computed(() =>
+  resolveCastTier(enrichCastConfigFromRoles(draft.value, roleStore.roles)) !== 'default',
+)
 
 const showHybridHint = computed(() => isHybridCast(activeCastConfig.value))
 
@@ -253,6 +267,13 @@ async function onClearAndReAdapt() {
   }
 }
 
+function onPairRelationChange(raw: string) {
+  draft.value = {
+    ...draft.value,
+    pairRelationId: raw as TheaterPairRelationId,
+  }
+}
+
 async function onApply() {
   if (!canApply.value)
     return
@@ -307,9 +328,24 @@ watch(
       <p class="theater-cast-status__hint">
         {{ t(castAdaptStatusHintKey) }}
       </p>
-      <p v-if="castAdaptLastIssueLabel" class="theater-cast-status__issue" :class="castAdaptLastIssue?.kind === 'failure' ? 'theater-cast-status__issue--failure' : 'theater-cast-status__issue--degraded'">
-        {{ castAdaptLastIssueLabel }}
-      </p>
+      <div
+        v-if="castAdaptLastIssueLabel"
+        class="theater-cast-status__issue-row"
+      >
+        <p
+          class="theater-cast-status__issue"
+          :class="castAdaptLastIssue?.kind === 'failure' ? 'theater-cast-status__issue--failure' : 'theater-cast-status__issue--degraded'"
+        >
+          {{ castAdaptLastIssueLabel }}
+        </p>
+        <span
+          v-if="showAiRewriteProbBadge"
+          class="theater-cast-status__prob-badge"
+          :title="t('theater.cast.aiRewriteProbHint')"
+        >
+          {{ t('theater.cast.aiRewriteProbBadge') }}
+        </span>
+      </div>
       <p class="theater-cast-status__hint theater-cast-status__hint--design">
         {{ t('theater.cast.modeDesignHint') }}
       </p>
@@ -341,7 +377,7 @@ watch(
       <UiFieldRow :label="t('theater.cast.roleSelect')">
         <UiSelect
           :model-value="draft[slot].roleId"
-          @change="onSlotChange(slot, ($event.target as HTMLSelectElement).value)"
+          @update:model-value="onSlotChange(slot, $event)"
         >
           <option
             v-for="role in roleOptions(slot === 'castA' ? draft.castB.roleId : draft.castA.roleId)"
@@ -413,11 +449,31 @@ watch(
           @click="onClearAndReAdapt"
         >
           {{ t('theater.cast.clearCacheAndReAdapt') }}
+          <span
+            class="theater-cast-apply-badge theater-cast-apply-badge--secondary"
+            :title="t('theater.cast.aiRewriteProbHint')"
+          >
+            {{ t('theater.cast.aiRewriteProbBadge') }}
+          </span>
         </UiButton>
       </div>
     </UiSection>
 
     <div class="theater-cast-actions">
+      <UiFieldRow :label="t('theater.cast.pairRelationField')" class="theater-cast-relation-field">
+        <UiSelect
+          :model-value="draft.pairRelationId"
+          @change="onPairRelationChange(($event.target as HTMLSelectElement).value)"
+        >
+          <option
+            v-for="relId in THEATER_PAIR_RELATION_IDS"
+            :key="relId"
+            :value="relId"
+          >
+            {{ t(`theater.cast.pairRelationOpts.${relId}`) }}
+          </option>
+        </UiSelect>
+      </UiFieldRow>
       <UiButton
         size="sm"
         variant="secondary"
@@ -436,9 +492,19 @@ watch(
         @click="onApply"
       >
         {{ t('theater.cast.apply') }}
+        <span
+          v-if="draftNeedsAiRewrite"
+          class="theater-cast-apply-badge"
+          :title="t('theater.cast.aiRewriteProbHint')"
+        >
+          {{ t('theater.cast.aiRewriteProbBadge') }}
+        </span>
       </UiButton>
     </div>
 
+    <p class="theater-cast-hint">
+      {{ t('theater.cast.pairRelationHint') }}
+    </p>
     <p class="theater-cast-hint">
       {{ t('theater.cast.applyHint') }}
     </p>
@@ -520,12 +586,37 @@ watch(
   color: var(--text-tertiary, var(--text-secondary));
 }
 
+.theater-cast-status__issue-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 8px;
+}
+
 .theater-cast-status__issue {
-  margin: 8px 0 0;
+  margin: 0;
+  flex: 1;
+  min-width: 0;
   padding: 8px 10px;
   border-radius: 6px;
   font-size: 12px;
   line-height: 1.45;
+}
+
+.theater-cast-status__prob-badge {
+  flex-shrink: 0;
+  margin-top: 8px;
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.3;
+  color: #9a4a4a;
+  background: color-mix(in srgb, #c45c5c 12%, transparent);
+  border: 1px solid color-mix(in srgb, #c45c5c 28%, var(--border-light));
+  cursor: help;
 }
 
 .theater-cast-status__issue--failure {
@@ -575,9 +666,37 @@ watch(
 
 .theater-cast-actions {
   display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
   justify-content: flex-end;
   gap: 8px;
   margin-top: 8px;
+}
+
+.theater-cast-apply-badge {
+  margin-left: 6px;
+  display: inline-block;
+  padding: 0 5px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  vertical-align: middle;
+  color: rgba(255, 255, 255, 0.92);
+  background: color-mix(in srgb, #fff 18%, transparent);
+  border: 1px solid color-mix(in srgb, #fff 28%, transparent);
+  cursor: help;
+}
+
+.theater-cast-apply-badge--secondary {
+  color: #9a4a4a;
+  background: color-mix(in srgb, #c45c5c 10%, transparent);
+  border: 1px solid color-mix(in srgb, #c45c5c 22%, var(--border-light));
+}
+
+.theater-cast-relation-field {
+  flex: 1 1 160px;
+  margin-right: auto;
+  margin-bottom: 0;
 }
 
 .theater-cast-hint {

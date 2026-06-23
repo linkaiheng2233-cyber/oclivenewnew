@@ -766,9 +766,12 @@ pub struct TheaterSceneRequest {
     pub fallback_beats: Vec<TheaterScriptLine>,
     #[serde(default)]
     pub max_beats: Option<u32>,
-    /// `cast_adapt` for non-default cast opening + fork rewrite; omit for ripple tweak.
+    /// `cast_adapt` | `cast_rewrite` | `ripple` (JSON ripple rewrite) | `patch` (local prose micro-scene).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub mode: Option<String>,
+    /// Patch mode only: `0` = first variant, `1` = alternate plot branch.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub patch_variant: Option<u8>,
     /// Fork patch templates (name-bound baseline) for `cast_adapt`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub fork_templates: Option<Vec<TheaterForkTemplate>>,
@@ -778,6 +781,21 @@ pub struct TheaterSceneRequest {
     /// Poke chip definitions for `cast_rewrite`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub poke_chips: Option<Vec<TheaterPokeChipDef>>,
+    /// Pair-relation preset id (`family` | `friend` | `stranger` | `lover`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pair_relation_id: Option<String>,
+    /// Human-readable pair-relation tone for cast_rewrite / ripple prompts.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pair_relation_hint: Option<String>,
+    /// Theater scene preset id (`breakfast` | `supermarket` | …); orthogonal to `scene_id`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub theater_scene: Option<String>,
+    /// Short scene description for cast_rewrite / ripple prompts.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub scene_brief: Option<String>,
+    /// Scene constraints (location, time, forbidden elements).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub scene_setting_hint: Option<String>,
 }
 
 /// `generate_theater_scene` response.

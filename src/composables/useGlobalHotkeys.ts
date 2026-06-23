@@ -125,6 +125,10 @@ export function useGlobalHotkeys(opts: UseGlobalHotkeysOptions) {
     }
     if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'm') {
       e.preventDefault()
+      if (resolveOcliveShell() === 'theater') {
+        hostEventBus.emit('theater:settings', { action: 'model' })
+        return
+      }
       opts.openModelManager()
       return
     }

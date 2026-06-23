@@ -44,7 +44,16 @@ $env:VITE_OCLIVE_SHELL='theater'; npm run dev
 
 
 
-**验收**：`html[data-shell="theater"]`、暖橙 accent、头/舞台/戳 Dock/脚注四区可见；开场自动播放 `breakfast.skeleton.json`。
+**验收**：`html[data-shell="theater"]`、暖橙 accent、头/舞台/戳 Dock/脚注四区可见；开场自动播放默认场景（早餐）`scenes/breakfast.skeleton.json`；左上角可切换四场景。
+
+**手动回归矩阵（四场景）**：
+
+| 场景 | 默认卡司+家人 | 换卡司 | 改关系 | 戳点 |
+|------|---------------|--------|--------|------|
+| breakfast | 预生成秒开 | AI 重写+forks | AI 重写 | 可用（4 芯片） |
+| supermarket | 预生成秒开 | AI 重写 beats-only | AI 重写 | 可用（4 芯片） |
+| way_home | 预生成秒开 | AI 重写 beats-only | AI 重写 | 可用（4 芯片） |
+| bedtime | 预生成秒开 | AI 重写 beats-only | AI 重写 | 可用（4 芯片） |
 
 
 

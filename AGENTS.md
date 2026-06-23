@@ -56,7 +56,7 @@
 - **启动健康检查**：首轮对话前 **`startup_health::ensure_once`**（槽位、`plugin_backends`、角色包文件、**`DbManager::health_ping`**、可选 LLM 探测）；环境变量 **`OCLIVE_SKIP_STARTUP_HEALTH`** / **`OCLIVE_SKIP_LLM_STARTUP_PROBE`** 可跳过。实现：**`crates/oclive_kernel_host/src/domain/startup_health.rs`**。
 - **实验性双核运行时（feature）**：`oclivenewnew-tauri` 的 Cargo feature **`dual_core`**（**默认关闭**）。**机制已预埋，默认关闭**；解冻条件见 [handoff/TECHNICAL_DEBT_INVENTORY.md](handoff/TECHNICAL_DEBT_INVENTORY.md) §冻结决定。未启用时 `dual_pipeline*` 不参与编译。见 [`handoff/DUAL_CORE_CURSOR_HANDOFF.md`](handoff/DUAL_CORE_CURSOR_HANDOFF.md)。
 - **多发行版单写者（Phase 2）**：桌面与 VS Code **平等**——共享 Rust 策略 **`resolve_kernel_action`**（`crates/oclive_kernel_runtime/src/kernel_strategy.rs`）；`GET :8420/health` 返回 `kernel_manifest` + 可选 **`distro_id`**；宿主 **调用策略、本地执行** attach/spawn/replace。**单核**：固定 `:8420` + 单写者 `app.db`；spawn **bundled 首选 → shared 兜底**（见 [`handoff/KERNEL_SCHEDULER_RESCOPE.md`](handoff/KERNEL_SCHEDULER_RESCOPE.md)）。数据目录 **`OCLIVE_APP_DATA`** → `%LOCALAPPDATA%/OCLive/data`。桌面 **`kernel_lifecycle/policy.rs`** + **`kernel_attach`** 为 HTTP 薄客户端，**不**内嵌 `api_router` 写库。VS Code 经 **`oclive-cli kernel ensure --plan-only`**（见姊妹仓 `oclive-vscode/src/kernelStrategy.ts`）。无头 HTTP 入口 crate：**[`crates/oclive_kernel_host/`](crates/oclive_kernel_host/)**；规范：[`creator-docs/kernel/DISTRO_KERNEL_LIFECYCLE.md`](creator-docs/kernel/DISTRO_KERNEL_LIFECYCLE.md) · [`OCLIVE_APP_DATA.md`](creator-docs/kernel/OCLIVE_APP_DATA.md) · [`CROSS_HOST_MEMORY.md`](creator-docs/role-pack/CROSS_HOST_MEMORY.md)。
-- **三主打产品（2026-06）**：**Chat Pro**（`desktop` · Tauri · open ceiling）· **VS Code Flash**（`vscode` · 显式六槽 builtin · Pro 简洁版）· **AI Theater**（`theater` · **从 0 开发**，规划见 [`handoff/theater/`](handoff/theater/)）；`desktop-chat` = dev lab only（`examples/`）。
+- **三主打产品（2026-06）**：**Chat Pro**（`desktop` · Tauri · open ceiling）· **VS Code Flash**（`vscode` · 显式六槽 builtin · Pro 简洁版）· **AI Theater**（`theater` · 模式 1 **已交付**；`theater_director` 独立通道已交付；模式 2 **BLOCKED** 见 [`handoff/theater/MODE2_UNFREEZE.md`](handoff/theater/MODE2_UNFREEZE.md)）；`desktop-chat` = dev lab only（`examples/`）。
 - **内核自举与发行版适配（P1–P4）**：各发行版可在安装根提供 **`distro.oclive.toml`**（契约 [`DISTRO_CAPABILITY_PROFILE.md`](creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md) · 插件矩阵 [`DISTRO_DEFAULT_PLUGINS.md`](creator-docs/kernel/DISTRO_DEFAULT_PLUGINS.md) · 示例 `examples/distro-profiles/`）。**P2a** `KernelBinaryManifest` + sidecar + `GET /health` 的 `kernel_manifest` / **`distro_id`** + `oclive-kernel-server --version-json`。**P3a** `promote_with_backup` / `rollback_shared_kernel`（`kernel_runtime_ops.rs`）+ `cargo run -p oclive-cli -- kernel status|promote|rollback|ensure` — **promote 为开发者维护通道**，非终端默认。**P4** `HostProfile`（`host_profile.rs`）：spawn 时 `OCLIVE_DISTRO_ID` / `OCLIVE_DISTRO_PROFILE`。**`binary_upgrade` 产品面 Freeze**（见 KERNEL_SCHEDULER_RESCOPE §3.2）。延后：**P2b** 多发行版差异化 manifest 字段；**P3b** 内核进程内自升级；**per-distro 裁剪 binary** Deferred。
 
 ### 测试体系（三层归属）
@@ -75,12 +75,18 @@
 
 ### 第 1 设施子模块 — 复杂情感设施子模块（`narrative_hint` · 共景 → 下一轮 Prompt）
 
-### 用户身份 & 回复后处理（v0.3 · 非六槽）
+### 独立通道能力增强模块（v0.3+ · 非六槽 · 非设施子模块）
 
-- **User Identity Prompt Template**：角色包 `user_identities/`（`index.json` + `*.md`）；编排 **`resolve_active_user_identity`** → **`PromptBuilder.push_user_identity_section`**（`turn_pipeline/pre`，LLM 之前）。Tauri / HTTP：`get_user_identity_state`、`set_user_identity`、`POST /user_identity/set` 等。
-- **Reply Post-Processor**：角色包 **`config.json` → `reply_post_processor`**（**默认 `enabled: false`**）；编排 **`resolve_reply_post_processor`** → **`process_reply`**（内置 `post_llm` 之后）。backend：`builtin` / `remote` / `directory`；发行版 `[post_process].chain` 合并见 `host_profile.rs`。
-- **禁止**：将二者写入 **`slot_registry`**、蓝图 `runtime_config` 六槽键，或 Experimental 核 step（正交能力，见 [RFC](../creator-docs/rfc/RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md)）。
-- **文档**：[ROLE_PACK_SPEC §1.1 / §9.7](creator-docs/role-pack/ROLE_PACK_SPEC.md) · [OCLIVE_ARCHITECTURE_OVERVIEW](creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)「正交能力单元」· handoff [USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md](handoff/USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md)。
+统称 **独立通道能力增强模块**（英文 **side-channel capability enhancement module**）；注册表 SSOT：[RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md](creator-docs/rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md) · 架构总述 [OCLIVE_ARCHITECTURE_OVERVIEW](creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) §独立通道能力增强模块。
+
+| `id` | 能力 | 锚点 |
+|------|------|------|
+| **`user_identity`** | **User Identity Prompt Template**：角色包 `user_identities/`；**`resolve_active_user_identity`** → **`PromptBuilder.push_user_identity_section`**（`turn_pipeline/pre`，LLM 之前）。Tauri / HTTP：`get_user_identity_state`、`set_user_identity`、`POST /user_identity/set` 等。 | 主链 pre |
+| **`reply_post_process`** | **Reply Post-Processor**：角色包 **`config.json` → `reply_post_processor`**（**默认 `enabled: false`**）；**`resolve_reply_post_processor`** → **`process_reply`**（内置 `post_llm` 之后）。backend：`builtin` / `remote` / `directory`；发行版 `[post_process].chain` 合并见 `host_profile.rs`。 | 主链 post |
+| **`theater_director`** | **Theater Scene Director**：**`generate_theater_scene`** / **`POST /theater/scene`**（**不进** `process_message`）；[`resolve_theater_director`](crates/oclive_kernel_host/src/domain/theater_director.rs) + `provides: theater_director`；官方 `plugins/com.oclive.theater_director_official/`；env **`OCLIVE_THEATER_DIRECTOR_PLUGIN`** 覆盖 profile。 | 圈外 API |
+
+- **禁止**：将上述能力写入 **`slot_registry`**、蓝图 `runtime_config` 六槽键，或 Experimental 核 step。
+- **文档**：[ROLE_PACK_SPEC §1.1 / §9.7](creator-docs/role-pack/ROLE_PACK_SPEC.md) · 身份/后处理 RFC：[RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md](creator-docs/rfc/RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md) · handoff [USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md](handoff/USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md) · 剧场 [handoff/theater/DEVELOPMENT_ROADMAP.md](handoff/theater/DEVELOPMENT_ROADMAP.md)。
 
 ### 第 2 设施子模块 — 专家模型设施子模块（专家路由 · `expert_routing.json` · `slot.expert.invoke`）
 

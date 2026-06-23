@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { convertFileSrc } from '@tauri-apps/api/tauri'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { readRoleAssetBytes, resolveRoleAssetPath } from '../../api'
 import {
   emotionToAssetFilename,
@@ -13,12 +14,16 @@ const props = defineProps<{
   emotion: string
   side: 'left' | 'right'
   active?: boolean
+  /** Event preview / patching: primary subject of the poke chip. */
+  eventAffected?: boolean
 }>()
 
 const portraitSrc = ref<string | null>(null)
 const portraitBlobUrl = ref<string | null>(null)
 const portraitLoadFailed = ref(false)
 let portraitGeneration = 0
+
+const { t } = useI18n()
 
 const emotionKey = computed(() => props.emotion.trim().toLowerCase() || 'neutral')
 const fallbackEmoji = computed(() => emotionToEmoji[emotionKey.value] ?? '😐')
@@ -130,8 +135,9 @@ onBeforeUnmount(() => {
     :class="[
       side === 'left' ? 'cast-portrait--a' : 'cast-portrait--b',
       { 'cast-portrait--active': active },
+      { 'cast-portrait--event-affected': eventAffected },
     ]"
-    :aria-label="name"
+    :aria-label="eventAffected ? t('theater.stage.eventAffected', { name }) : name"
   >
     <div class="cast-portrait__frame">
       <img
@@ -162,6 +168,29 @@ onBeforeUnmount(() => {
 .cast-portrait--active {
   opacity: 1;
   transform: translateY(-2px);
+}
+
+.cast-portrait--event-affected {
+  opacity: 1;
+}
+
+.cast-portrait--event-affected .cast-portrait__frame {
+  outline: 2px dashed color-mix(in srgb, var(--tool-accent) 72%, transparent);
+  outline-offset: 3px;
+}
+
+.cast-portrait--a.cast-portrait--event-affected .cast-portrait__frame {
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--theater-cast-a) 55%, transparent),
+    0 0 0 6px color-mix(in srgb, var(--theater-cast-a) 18%, transparent),
+    0 8px 24px color-mix(in srgb, var(--theater-cast-a) 32%, transparent);
+}
+
+.cast-portrait--b.cast-portrait--event-affected .cast-portrait__frame {
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--theater-cast-b) 55%, transparent),
+    0 0 0 6px color-mix(in srgb, var(--theater-cast-b) 18%, transparent),
+    0 8px 24px color-mix(in srgb, var(--theater-cast-b) 32%, transparent);
 }
 
 .cast-portrait--a.cast-portrait--active .cast-portrait__frame {

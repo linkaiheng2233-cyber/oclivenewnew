@@ -8,6 +8,7 @@ import {
   nextVisibleCount,
   parsePatchReply,
   playbackDone,
+  resolveChipLeadCast,
   SCENE_GEN_TIMEOUT_MS,
   SceneGenTimeoutError,
   timeoutReject,
@@ -107,6 +108,29 @@ describe('theaterLogic', () => {
       forks: { tea: [{ chipId: 'tea' as const, insertAfterBeatId: 'b6', patchLines: [] }] },
     }
     expect(defaultInsertAnchor(sk)).toBe('b6')
+  })
+
+  it('resolveChipLeadCast reads first fork patch speaker', () => {
+    const sk = {
+      scene: 'way_home',
+      cast: { a: { roleId: 'mumu', name: '木木' }, b: { roleId: 'x', name: '枫侵月' } },
+      beats: [{ ...sampleBeat, id: 'b1' }],
+      forks: {
+        sprainedAnkle: [{
+          chipId: 'sprainedAnkle' as const,
+          insertAfterBeatId: 'b5',
+          patchLines: [{ ...sampleBeat, id: 'sa-1', cast: 'a' as const, text: '嘶——' }],
+        }],
+        wrongWay: [{
+          chipId: 'wrongWay' as const,
+          insertAfterBeatId: 'b5',
+          patchLines: [{ ...sampleBeat, id: 'ww-1', cast: 'b' as const, name: '枫侵月', text: '等等' }],
+        }],
+      },
+    }
+    expect(resolveChipLeadCast(sk, 'sprainedAnkle')).toBe('a')
+    expect(resolveChipLeadCast(sk, 'wrongWay')).toBe('b')
+    expect(resolveChipLeadCast(sk, 'tea')).toBeNull()
   })
 
   it('SCENE_GEN_TIMEOUT_MS is 30 seconds', () => {

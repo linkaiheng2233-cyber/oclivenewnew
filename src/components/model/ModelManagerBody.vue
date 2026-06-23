@@ -6,13 +6,20 @@ import { useI18n } from 'vue-i18n'
 import {
   getLlmUserSettings,
   importGgufToOllama,
+  listCloudModels,
   listOllamaModels,
 
   openPathInFileManager,
+  probeCloudLlm,
   saveLlmUserSettings,
   scanLocalModelFiles,
 } from '../../api/llmSettings'
 import { useAppToast } from '../../composables/useAppToast'
+import {
+  getCloudModelHistory,
+  mergeCloudModelOptions,
+  rememberCloudModel,
+} from '../../composables/useCloudModelHistory'
 import { useRoleStore } from '../../stores/roleStore'
 import UiButton from '../ui/UiButton.vue'
 
@@ -26,6 +33,8 @@ const { showToast } = useAppToast()
 
 const loading = ref(false)
 const saving = ref(false)
+const probing = ref(false)
+const cloudModelsLoading = ref(false)
 const modelsLoading = ref(false)
 const importing = ref(false)
 const settings = ref<LlmUserSettings | null>(null)
@@ -39,6 +48,8 @@ const selectedLocalModel = ref('')
 const remoteUrl = ref('')
 const remoteToken = ref('')
 const remoteModel = ref('')
+const cloudModels = ref<string[]>([])
+const cloudModelHistory = ref<string[]>(getCloudModelHistory())
 
 const localModelSelectOptions = computed(() => {
   const ollama = ollamaModels.value.map(id => ({
@@ -55,6 +66,17 @@ const localModelSelectOptions = computed(() => {
 })
 
 const selectedLocalIsFile = computed(() => selectedLocalModel.value.startsWith('file:'))
+
+const cloudModelOptions = computed(() =>
+  mergeCloudModelOptions(cloudModels.value, cloudModelHistory.value, remoteModel.value),
+)
+
+function canListCloudModels(): boolean {
+  if (!remoteUrl.value.trim())
+    return false
+  const tokenInput = remoteToken.value.trim()
+  return tokenInput.length > 0 || Boolean(settings.value?.remoteTokenConfigured)
+}
 
 const effectiveModel = computed(
   () => settings.value?.effectiveModel?.trim() || roleStore.roleInfo.effectiveOllamaModel?.trim() || '',
@@ -90,6 +112,39 @@ async function loadSettings(): Promise<void> {
   }
   finally {
     loading.value = false
+  }
+}
+
+async function refreshCloudModels(opts?: { silent?: boolean }): Promise<void> {
+  if (!remoteUrl.value.trim()) {
+    if (!opts?.silent)
+      showToast('error', t('modelManager.needRemoteUrl'))
+    return
+  }
+  const tokenInput = remoteToken.value.trim()
+  const hasKey = tokenInput.length > 0 || Boolean(settings.value?.remoteTokenConfigured)
+  if (!hasKey) {
+    if (!opts?.silent)
+      showToast('error', t('modelManager.needApiKey'))
+    return
+  }
+  cloudModelsLoading.value = true
+  try {
+    const req: { remoteUrl: string, remoteToken?: string } = {
+      remoteUrl: remoteUrl.value.trim(),
+    }
+    if (tokenInput.length > 0)
+      req.remoteToken = tokenInput
+    cloudModels.value = await listCloudModels(req)
+    if (!opts?.silent)
+      showToast('success', t('modelManager.cloudModelsOk', { count: cloudModels.value.length }))
+  }
+  catch (e) {
+    if (!opts?.silent)
+      showToast('error', e instanceof Error ? e.message : String(e))
+  }
+  finally {
+    cloudModelsLoading.value = false
   }
 }
 
@@ -178,6 +233,44 @@ async function resolveLocalModelForSave(): Promise<string> {
   return sel
 }
 
+async function runCloudProbeAfterSave(): Promise<void> {
+  try {
+    await probeCloudLlm(roleStore.currentRoleId)
+    showToast('info', t('modelManager.probeOk'))
+  }
+  catch (e) {
+    showToast('warning', e instanceof Error ? e.message : String(e))
+  }
+}
+
+async function onProbeCloud(): Promise<void> {
+  if (!remoteUrl.value.trim()) {
+    showToast('error', t('modelManager.needRemoteUrl'))
+    return
+  }
+  if (!remoteModel.value.trim()) {
+    showToast('error', t('modelManager.needRemoteModel'))
+    return
+  }
+  const tokenInput = remoteToken.value.trim()
+  const hasKey = tokenInput.length > 0 || Boolean(settings.value?.remoteTokenConfigured)
+  if (!hasKey) {
+    showToast('error', t('modelManager.needApiKey'))
+    return
+  }
+  probing.value = true
+  try {
+    await probeCloudLlm(roleStore.currentRoleId)
+    showToast('success', t('modelManager.probeOk'))
+  }
+  catch (e) {
+    showToast('error', e instanceof Error ? e.message : String(e))
+  }
+  finally {
+    probing.value = false
+  }
+}
+
 async function onSave(): Promise<void> {
   saving.value = true
   try {
@@ -192,6 +285,7 @@ async function onSave(): Promise<void> {
         cloudApiStyle: 'openai',
       })
       roleStore.applyRoleInfo(info)
+      showToast('success', t('modelManager.saveOk'))
     }
     else {
       if (!remoteUrl.value.trim()) {
@@ -220,8 +314,11 @@ async function onSave(): Promise<void> {
       }
       const info = await saveLlmUserSettings(req)
       roleStore.applyRoleInfo(info)
+      rememberCloudModel(remoteModel.value.trim())
+      cloudModelHistory.value = getCloudModelHistory()
+      showToast('success', t('modelManager.saveOk'))
+      await runCloudProbeAfterSave()
     }
-    showToast('success', t('modelManager.saveOk'))
     await loadSettings()
   }
   catch (e) {
@@ -235,6 +332,9 @@ async function onSave(): Promise<void> {
 watch(providerTab, (tab) => {
   if (tab === 'local' && ollamaModels.value.length === 0) {
     void refreshOllamaModels()
+  }
+  if (tab === 'cloud' && cloudModels.value.length === 0 && canListCloudModels()) {
+    void refreshCloudModels({ silent: true })
   }
 })
 
@@ -403,6 +503,10 @@ watch(
           </ul>
         </div>
 
+        <p class="mm-hint mm-hint-note">
+          {{ t("modelManager.cloudEnvCheckNote") }}
+        </p>
+
         <label class="mm-field">
           <span>{{ t("modelManager.remoteUrlLabel") }}</span>
           <input
@@ -436,12 +540,34 @@ watch(
           <span>{{ t("modelManager.remoteModelLabel") }}</span>
           <input
             v-model="remoteModel"
+            list="mm-cloud-model-list"
             type="text"
             class="mm-input"
             :placeholder="t('modelManager.remoteModelPlaceholder')"
           >
+          <datalist id="mm-cloud-model-list">
+            <option v-for="m in cloudModelOptions" :key="m" :value="m" />
+          </datalist>
           <span class="mm-field-hint">{{ t("modelManager.remoteModelHint") }}</span>
         </label>
+
+        <div class="mm-row-actions">
+          <button
+            type="button"
+            class="mm-btn"
+            :disabled="cloudModelsLoading || saving || !canListCloudModels()"
+            @click="refreshCloudModels()"
+          >
+            {{
+              cloudModelsLoading
+                ? t("modelManager.refreshingCloudModels")
+                : t("modelManager.refreshCloudModels")
+            }}
+          </button>
+          <span v-if="cloudModelHistory.length" class="mm-muted mm-small">
+            {{ t("modelManager.cloudModelHistoryHint", { count: cloudModelHistory.length }) }}
+          </span>
+        </div>
       </section>
 
       <footer class="mm-footer">
@@ -452,6 +578,15 @@ watch(
           @click="onSave"
         >
           {{ saving ? t("modelManager.saving") : t("modelManager.saveApply") }}
+        </UiButton>
+        <UiButton
+          v-if="providerTab === 'cloud'"
+          size="sm"
+          variant="ghost"
+          :disabled="probing || saving || loading"
+          @click="onProbeCloud"
+        >
+          {{ probing ? t("modelManager.probing") : t("modelManager.probeCloud") }}
         </UiButton>
         <UiButton size="sm" variant="ghost" @click="emit('openSettings')">
           {{ t("modelManager.openSettings") }}

@@ -6,9 +6,11 @@ use super::canonical_llm_sync::{
 use super::llm_models::{local_models_dir_for_state, model_name_from_gguf_path, scan_local_model_files_in};
 use crate::api::error::CommandError;
 use crate::error::AppError;
+use crate::kernel_attach::KernelHttpClient;
+use crate::kernel_lifecycle::SharedKernelConnection;
 use oclive_kernel_host::infrastructure::ollama_client::OllamaClient;
 use oclive_kernel_host::service::{
-    get_llm_user_settings_impl, list_ollama_models_impl, probe_cloud_llm_impl,
+    get_llm_user_settings_impl, list_cloud_models_impl, list_ollama_models_impl, probe_cloud_llm_impl,
     save_llm_user_settings_impl, session_namespace,
 };
 use oclive_kernel_host::state::SharedAppState;
@@ -32,10 +34,20 @@ pub struct ImportGgufToOllamaRequest {
 ///
 /// Returns [`Err`] when persistence or role reload fails.
 pub async fn get_llm_user_settings(
+    app: AppHandle,
     state: State<'_, SharedAppState>,
     role_id: String,
     session_id: Option<String>,
 ) -> Result<LlmUserSettingsDto, CommandError> {
+    if let Some(conn) = app.try_state::<SharedKernelConnection>() {
+        return KernelHttpClient::get_llm_user_settings_via_http(
+            &conn,
+            role_id.as_str(),
+            session_id.as_deref(),
+        )
+        .await
+        .map_err(Into::into);
+    }
     get_llm_user_settings_impl(state.inner(), role_id.as_str(), session_id.as_deref()).await
 }
 
@@ -47,6 +59,32 @@ pub async fn list_ollama_models(
     ollama_base_url: Option<String>,
 ) -> Result<Vec<String>, CommandError> {
     list_ollama_models_impl(state.inner(), ollama_base_url.as_deref()).await
+}
+
+/// # Errors
+///
+/// Returns [`Err`] when cloud credentials are missing or the provider list request fails.
+pub async fn list_cloud_models(
+    app: AppHandle,
+    state: State<'_, SharedAppState>,
+    remote_url: Option<String>,
+    remote_token: Option<String>,
+) -> Result<Vec<String>, CommandError> {
+    if let Some(conn) = app.try_state::<SharedKernelConnection>() {
+        return KernelHttpClient::list_cloud_models_via_http(
+            &conn,
+            remote_url.as_deref(),
+            remote_token.as_deref(),
+        )
+        .await
+        .map_err(Into::into);
+    }
+    list_cloud_models_impl(
+        state.inner(),
+        remote_url.as_deref(),
+        remote_token.as_deref(),
+    )
+    .await
 }
 
 /// # Errors
@@ -114,10 +152,16 @@ pub async fn import_gguf_to_ollama(
 ///
 /// Returns [`Err`] when cloud LLM is misconfigured or the probe request fails.
 pub async fn probe_cloud_llm(
+    app: AppHandle,
     state: State<'_, SharedAppState>,
     role_id: String,
     session_id: Option<String>,
 ) -> Result<String, CommandError> {
+    if let Some(conn) = app.try_state::<SharedKernelConnection>() {
+        KernelHttpClient::probe_cloud_llm_via_http(&conn, role_id.as_str(), session_id.as_deref())
+            .await?;
+        return Ok("ok".to_string());
+    }
     probe_cloud_llm_impl(state.inner(), role_id.as_str(), session_id.as_deref()).await?;
     Ok("ok".to_string())
 }
@@ -130,6 +174,14 @@ pub async fn save_llm_user_settings(
     state: State<'_, SharedAppState>,
     req: SaveLlmUserSettingsRequest,
 ) -> Result<RoleInfo, CommandError> {
+    if let Some(conn) = app.try_state::<SharedKernelConnection>() {
+        // Kernel `:8420` is the single writer; avoid post-save canonical mirror + env re-apply here
+        // (deep async stack on Windows dev builds has caused main-thread stack overflow).
+        return KernelHttpClient::save_llm_user_settings_via_http(&conn, &req)
+            .await
+            .map_err(Into::into);
+    }
+
     let provider = req.provider.trim().to_ascii_lowercase();
     let model_for_session = if provider == "cloud" {
         req.remote_model.as_deref().or(req.ollama_model.as_deref())

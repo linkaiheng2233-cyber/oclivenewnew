@@ -142,7 +142,9 @@ pub fn api_router(app_state: Arc<AppState>) -> Router {
             "/llm/user_settings",
             get(llm::llm_user_settings_get_route).post(llm::llm_user_settings_post_route),
         )
+        .route("/llm/probe_cloud", post(llm::llm_probe_cloud_route))
         .route("/llm/ollama_models", get(llm::llm_ollama_models_route))
+        .route("/llm/cloud_models", post(llm::llm_cloud_models_route))
         .route("/llm/session_model", post(llm::llm_session_model_route))
         .route("/theater/scene", post(theater::scene_route))
         .layer(cors)

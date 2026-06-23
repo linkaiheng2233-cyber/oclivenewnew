@@ -17,6 +17,8 @@ export interface CastRosterEntry {
 export interface CastColumnEntry extends CastRosterEntry {
   emotion: string
   active: boolean
+  /** Poke / tweak preview: this cast is the primary subject of the hovered or running event. */
+  eventAffected?: boolean
 }
 
 /** Build roster from skeleton cast entries (defaults a=left, b=right). */

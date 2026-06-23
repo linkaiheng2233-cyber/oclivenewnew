@@ -121,6 +121,14 @@ favor_low  = "…"              # optional; favor < 40
 | `user_identity.default_id` | 未设 | 会话无显式身份且非 sentinel 时作为默认 catalog id |
 | `user_identity.allowed_ids` | 未设（不限制） | API 层拒绝列表外 id |
 | `state_expression.favor_*` | 未设 | 按好感分档追加一句语气调节到 Prompt「角色当前状态」 |
+| `[theater].director_plugin` | 未设（builtin prompt 模板） | Theater：`com.oclive.theater_director_official`；可被 env `OCLIVE_THEATER_DIRECTOR_PLUGIN` 覆盖 |
+
+```toml
+[theater]
+director_plugin = "com.oclive.theater_director_official"
+```
+
+**合并规则（Theater Scene Director）**：仅当 profile 或 env 声明 `director_plugin` 且 `{app_data}/plugins` 中存在对应 manifest（`provides: theater_director`）时使用 directory RPC `theater.build_prompt`；否则 **builtin**（`scene_director.rs` / `patch_scene.rs`）。RPC 失败不 500，fallback builtin。
 
 **合并优先级（User Identity）**：DB 会话/场景覆盖 → `HostProfile.user_identity.default_id` → catalog `default_identity_id` → legacy `user_relations.prompt_hint`。
 

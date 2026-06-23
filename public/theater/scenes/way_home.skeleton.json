@@ -1,0 +1,222 @@
+{
+  "scene": "way_home",
+  "sceneId": "home",
+  "defaultPairRelation": "family",
+  "pairRelations": {
+    "family": {
+      "displayName": "家人",
+      "promptHint": "同住或家人般的日常照应：一方略操心、一方嘴硬但不真疏远，可拌嘴也可温存。"
+    },
+    "friend": {
+      "displayName": "朋友",
+      "promptHint": "同龄好友：说话随意、互怼互损，但会自然帮对方收拾东西、提醒出门。"
+    },
+    "stranger": {
+      "displayName": "陌生人",
+      "promptHint": "刚认识或并不熟：礼貌克制、有距离感，避免过度亲密称呼与同居式唠叨。"
+    },
+    "lover": {
+      "displayName": "恋人",
+      "promptHint": "恋人或暧昧对象：语气更软、更在意对方反应，可害羞、可斗嘴，但底色是彼此在意。"
+    }
+  },
+  "cast": {
+    "a": { "roleId": "mumu", "name": "木木", "side": "left" },
+    "b": { "roleId": "枫侵月", "name": "枫侵月", "side": "right" }
+  },
+  "beats": [
+    {
+      "id": "b1",
+      "cast": "b",
+      "name": "枫侵月",
+      "text": "路灯亮了，走内侧。",
+      "stageHint": "提购物袋",
+      "emotion": "happy"
+    },
+    {
+      "id": "b2",
+      "cast": "a",
+      "name": "木木",
+      "text": "用不着你管，路又不是你的。",
+      "emotion": "angry"
+    },
+    {
+      "id": "b3",
+      "cast": "b",
+      "name": "枫侵月",
+      "text": "两袋东西，你拎一个？",
+      "stageHint": "晃了晃重的袋子"
+    },
+    {
+      "id": "b4",
+      "cast": "a",
+      "name": "木木",
+      "text": "不行，太重。",
+      "stageHint": "抱紧零食袋"
+    },
+    {
+      "id": "b5",
+      "cast": "b",
+      "name": "枫侵月",
+      "text": "你手里那个是零食。",
+      "stageHint": "无语一秒"
+    },
+    {
+      "id": "b6",
+      "cast": "a",
+      "name": "木木",
+      "text": "零食也很重！",
+      "emotion": "excited"
+    },
+    {
+      "id": "b7",
+      "cast": "b",
+      "name": "枫侵月",
+      "text": "……行，我拿重的。你别半路喊手酸。",
+      "emotion": "happy"
+    },
+    {
+      "id": "b8",
+      "cast": "a",
+      "name": "木木",
+      "text": "我才不会。",
+      "stageHint": "嘴硬",
+      "emotion": "shy"
+    },
+    {
+      "id": "b9",
+      "cast": "b",
+      "name": "枫侵月",
+      "text": "公交还有两站。围巾系好，风大了。",
+      "stageHint": "抬下巴示意"
+    },
+    {
+      "id": "b10",
+      "cast": "a",
+      "name": "木木",
+      "text": "……知道了。多谢。",
+      "stageHint": "声音很小",
+      "emotion": "shy"
+    }
+  ],
+  "forks": {
+    "strayCat": [
+      {
+        "chipId": "strayCat",
+        "insertAfterBeatId": "b5",
+        "patchLines": [
+          {
+            "id": "sc-1",
+            "cast": "a",
+            "name": "木木",
+            "text": "……停一下，那边有只猫。",
+            "stageHint": "拽住袖口"
+          },
+          {
+            "id": "sc-2",
+            "cast": "b",
+            "name": "枫侵月",
+            "text": "别乱摸，万一有跳蚤。",
+            "stageHint": "拦了一下"
+          },
+          {
+            "id": "sc-3",
+            "cast": "a",
+            "name": "木木",
+            "text": "就看一下嘛……它耳朵好尖。",
+            "emotion": "shy"
+          }
+        ]
+      }
+    ],
+    "hitPole": [
+      {
+        "chipId": "hitPole",
+        "insertAfterBeatId": "b5",
+        "patchLines": [
+          {
+            "id": "hp-1",
+            "cast": "a",
+            "name": "木木",
+            "text": "呜——！",
+            "stageHint": "额头撞上电线杆",
+            "emotion": "angry"
+          },
+          {
+            "id": "hp-2",
+            "cast": "b",
+            "name": "枫侵月",
+            "text": "走路看路啊！……有没有肿？",
+            "stageHint": "伸手要碰额头"
+          },
+          {
+            "id": "hp-3",
+            "cast": "a",
+            "name": "木木",
+            "text": "别碰！……才、才没事。",
+            "emotion": "shy"
+          }
+        ]
+      }
+    ],
+    "wrongWay": [
+      {
+        "chipId": "wrongWay",
+        "insertAfterBeatId": "b5",
+        "patchLines": [
+          {
+            "id": "ww-1",
+            "cast": "b",
+            "name": "枫侵月",
+            "text": "等等，这路怎么越走越陌生？",
+            "stageHint": "看手机地图"
+          },
+          {
+            "id": "ww-2",
+            "cast": "a",
+            "name": "木木",
+            "text": "是你带的路吧！",
+            "emotion": "angry"
+          },
+          {
+            "id": "ww-3",
+            "cast": "b",
+            "name": "枫侵月",
+            "text": "……原路返回，两步就到公交站。",
+            "stageHint": "掉头"
+          }
+        ]
+      }
+    ],
+    "sprainedAnkle": [
+      {
+        "chipId": "sprainedAnkle",
+        "insertAfterBeatId": "b5",
+        "patchLines": [
+          {
+            "id": "sa-1",
+            "cast": "a",
+            "name": "木木",
+            "text": "嘶——！这台阶怎么缺一块……",
+            "stageHint": "单脚跳了一下",
+            "emotion": "angry"
+          },
+          {
+            "id": "sa-2",
+            "cast": "b",
+            "name": "枫侵月",
+            "text": "别逞强，扶着我。",
+            "stageHint": "伸手"
+          },
+          {
+            "id": "sa-3",
+            "cast": "a",
+            "name": "木木",
+            "text": "谁、谁要扶……慢点走啦。",
+            "emotion": "shy"
+          }
+        ]
+      }
+    ]
+  }
+}

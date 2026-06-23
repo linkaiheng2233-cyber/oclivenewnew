@@ -42,13 +42,22 @@ export interface TheaterSceneRequest {
   applied_tweaks: TheaterTweak[]
   fallback_beats: TheaterScriptLine[]
   max_beats?: number | null
-  /** `cast_adapt` for legacy merge; `cast_rewrite` for full script from personas */
+  /** `cast_adapt` | `cast_rewrite` | `ripple` (JSON rewrite) | `patch` (prose micro-scene, poke default) */
   mode?: string | null
+  /** Patch mode: `0` first variant, `1` alternate branch */
+  patch_variant?: number | null
   fork_templates?: TheaterForkTemplate[] | null
   /** `voice` | `depth` | `polish` — legacy cast_adapt pass */
   adapt_pass?: string | null
   /** Poke chips for `cast_rewrite` */
   poke_chips?: TheaterPokeChipDef[] | null
+  /** `family` | `friend` | `stranger` | `lover` */
+  pair_relation_id?: string | null
+  pair_relation_hint?: string | null
+  /** Theater preset id (`breakfast` | `supermarket` | …) */
+  theater_scene?: string | null
+  scene_brief?: string | null
+  scene_setting_hint?: string | null
 }
 
 export interface TheaterSceneResponse {

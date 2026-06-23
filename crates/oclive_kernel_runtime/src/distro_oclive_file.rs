@@ -22,6 +22,13 @@ pub struct DistroOcliveFile {
     pub plugin_backends: Option<PluginBackendsToml>,
     pub interaction: Option<InteractionToml>,
     pub visual_presentation: Option<VisualPresentationToml>,
+    pub theater: Option<TheaterToml>,
+}
+
+#[derive(Debug, Default, Clone, Deserialize)]
+pub struct TheaterToml {
+    /// Directory plugin id with `provides: theater_director`.
+    pub director_plugin: Option<String>,
 }
 
 #[derive(Debug, Default, Clone, Deserialize)]

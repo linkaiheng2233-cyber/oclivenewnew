@@ -151,9 +151,7 @@ pub async fn apply_user_llm_env(state: &AppState) -> crate::error::Result<()> {
     state
         .user_llm_env_applied_version
         .store(end_version, Ordering::Release);
-    state
-        .user_llm_env_dirty
-        .store(end_version != start_version, Ordering::Release);
+    state.user_llm_env_dirty.store(false, Ordering::Release);
     Ok(())
 }
 

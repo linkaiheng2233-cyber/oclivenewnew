@@ -22,14 +22,14 @@ describe('useTheaterPortraitLayout', () => {
   it('clamps width within limits', () => {
     expect(setTheaterPortraitWidth(10)).toBe(THEATER_PORTRAIT_LIMITS.width.min)
     expect(setTheaterPortraitWidth(999)).toBe(THEATER_PORTRAIT_LIMITS.width.max)
-    expect(localStorage.getItem('oclive-theater-portrait-w')).toBe('200')
+    expect(localStorage.getItem('oclive-theater-portrait-w')).toBe('320')
     expect(getTheaterPortraitLayout().width).toBe(THEATER_PORTRAIT_LIMITS.width.max)
   })
 
   it('clamps max height within limits', () => {
     expect(setTheaterPortraitMaxHeight(50)).toBe(THEATER_PORTRAIT_LIMITS.maxHeight.min)
-    expect(setTheaterPortraitMaxHeight(500)).toBe(THEATER_PORTRAIT_LIMITS.maxHeight.max)
-    expect(localStorage.getItem('oclive-theater-portrait-max-h')).toBe('360')
+    expect(setTheaterPortraitMaxHeight(600)).toBe(THEATER_PORTRAIT_LIMITS.maxHeight.max)
+    expect(localStorage.getItem('oclive-theater-portrait-max-h')).toBe('520')
   })
 
   it('reset restores defaults', () => {
@@ -37,7 +37,7 @@ describe('useTheaterPortraitLayout', () => {
     setTheaterPortraitMaxHeight(280)
     const layout = resetTheaterPortraitLayout()
     expect(layout).toEqual({ ...THEATER_PORTRAIT_DEFAULTS })
-    expect(localStorage.getItem('oclive-theater-portrait-w')).toBe('96')
-    expect(localStorage.getItem('oclive-theater-portrait-max-h')).toBe('200')
+    expect(localStorage.getItem('oclive-theater-portrait-w')).toBe('128')
+    expect(localStorage.getItem('oclive-theater-portrait-max-h')).toBe('280')
   })
 })

@@ -47,6 +47,7 @@ flowchart LR
 | **前端贡献者**（Vue / Tauri invoke） | L2 → [paths/frontend.md](paths/frontend.md) → L4 |
 | **插件作者**（目录 / Remote 后端） | L0 → [paths/plugin-author.md](paths/plugin-author.md) → [08 资料地图](08_REFERENCE_MAP.md) §插件 |
 | **集成方**（无头 HTTP / 硬件嵌入） | L2 → [paths/integrator.md](paths/integrator.md) |
+| **Chat Pro 垂直 sprint**（视觉 / 语音） | [team/README.md](team/README.md) → **[SCOPE_AND_BOUNDARIES.md](team/SCOPE_AND_BOUNDARIES.md)** + 分轨任务 |
 
 ---
 
@@ -66,4 +67,5 @@ flowchart LR
 | 架构总述 | [OCLIVE_ARCHITECTURE_OVERVIEW](../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) |
 | 命名与 import | [NAMING_CONVENTIONS](../creator-docs/NAMING_CONVENTIONS.md) |
 | 贡献与测试 | [CONTRIBUTING](../CONTRIBUTING.md) |
+| **Chat Pro 垂直 sprint（组员）** | [team/README.md](team/README.md) |
 | AI 接手包 | [ai-package/README.md](ai-package/README.md) |

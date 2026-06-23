@@ -5,6 +5,7 @@ import {
   DEFAULT_THEATER_CAST_CONFIG,
   isHybridCast,
   resolveCastTier,
+  resolveCanonicalReplacementNames,
   swapCanonicalNamesInBeats,
   swapCanonicalNamesInForks,
 } from './theaterCastConfig'
@@ -102,9 +103,20 @@ describe('theaterCastConfig', () => {
     expect(canonicalSkeleton.beats[0]?.text).toContain('木木')
   })
 
-  it('resolveCastTier treats official pair as default and any deviation as applied', () => {
+  it('resolveCastTier treats official pair + family as default', () => {
     expect(resolveCastTier(DEFAULT_THEATER_CAST_CONFIG)).toBe('default')
     expect(resolveCastTier(DEFAULT_CAST_CONFIG)).toBe('default')
+    const swappedOfficial = {
+      ...DEFAULT_THEATER_CAST_CONFIG,
+      castA: { roleId: '枫侵月', displayName: '枫侵月' },
+      castB: { roleId: 'mumu', displayName: '沐沐' },
+    }
+    expect(resolveCastTier(swappedOfficial)).toBe('default')
+    const loverOfficial = {
+      ...DEFAULT_THEATER_CAST_CONFIG,
+      pairRelationId: 'lover' as const,
+    }
+    expect(resolveCastTier(loverOfficial)).toBe('applied')
     const fullCustom = {
       ...DEFAULT_THEATER_CAST_CONFIG,
       castA: { roleId: 'custom-a', displayName: 'A' },
@@ -119,5 +131,38 @@ describe('theaterCastConfig', () => {
     expect(isHybridCast(hybrid)).toBe(true)
     expect(isHybridCast(fullCustom)).toBe(false)
     expect(isHybridCast(DEFAULT_THEATER_CAST_CONFIG)).toBe(false)
+  })
+
+  it('bindCastToSkeleton maps hybrid cast names by slot', () => {
+    const hybrid = {
+      ...DEFAULT_THEATER_CAST_CONFIG,
+      castA: { roleId: 'custom-a', displayName: '小艾' },
+      castB: { roleId: 'mumu', displayName: '沐沐' },
+    }
+    const names = resolveCanonicalReplacementNames(hybrid)
+    expect(names.canonicalSideA).toBe('小艾')
+    expect(names.canonicalSideB).toBe('沐沐')
+    const runtime = bindCastToSkeleton(canonicalSkeleton, hybrid)
+    expect(runtime.cast.a.roleId).toBe('custom-a')
+    expect(runtime.cast.b.roleId).toBe('mumu')
+    expect(runtime.beats[0]?.text).toContain('小艾')
+    expect(runtime.beats[0]?.name).toBe('沐沐')
+    expect(runtime.beats[1]?.name).toBe('小艾')
+  })
+
+  it('bindCastToSkeleton swaps beat sides when official roles are reversed', () => {
+    const config = {
+      ...DEFAULT_THEATER_CAST_CONFIG,
+      castA: { roleId: '枫侵月', displayName: '枫侵月' },
+      castB: { roleId: 'mumu', displayName: '沐沐' },
+    }
+    const runtime = bindCastToSkeleton(canonicalSkeleton, config)
+    expect(runtime.cast.a.roleId).toBe('枫侵月')
+    expect(runtime.cast.b.roleId).toBe('mumu')
+    expect(runtime.beats[0]?.cast).toBe('a')
+    expect(runtime.beats[0]?.name).toBe('枫侵月')
+    expect(runtime.beats[0]?.text).toContain('沐沐')
+    expect(runtime.beats[1]?.cast).toBe('b')
+    expect(runtime.beats[1]?.name).toBe('沐沐')
   })
 })

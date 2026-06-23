@@ -12,6 +12,7 @@ use crate::infrastructure::llm_models::{
     canonical_models_dir, local_models_dir_for_state, persist_local_models_dir,
     scan_local_model_files_in, LocalModelFileDto,
 };
+use crate::infrastructure::openai_compatible_llm::list_openai_compatible_models;
 use crate::infrastructure::ollama_client::OllamaClient;
 use crate::infrastructure::user_llm_secrets::{set_cached_remote_llm_token, write_token_file};
 use crate::models::dto::{RoleInfo, SetSessionPluginBackendRequest};
@@ -22,10 +23,11 @@ use crate::state::{is_managed_legacy_models_path, migrate_and_cleanup_models, Ap
 use oclive_kernel_types::models::plugin_backends::LlmBackend;
 use oclive_kernel_types::models::PluginBackendsOverride;
 use oclive_validation::NETWORK_GRANT_REMOTE_LLM;
+use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LlmUserSettingsDto {
     pub provider: String,
@@ -46,7 +48,7 @@ pub struct LlmUserSettingsDto {
     pub remote_token_env_active: bool,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SaveLlmUserSettingsRequest {
     pub role_id: String,
@@ -191,6 +193,107 @@ pub async fn list_ollama_models_impl(
         .map_err(CommandError::from)
 }
 
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListCloudModelsRequest {
+    pub remote_url: Option<String>,
+    pub remote_token: Option<String>,
+}
+
+/// List model ids from the configured OpenAI-compatible cloud endpoint.
+///
+/// # Errors
+///
+/// Returns [`Err`] when URL/token are missing or the provider request fails.
+pub async fn list_cloud_models_impl(
+    state: &AppState,
+    remote_url: Option<&str>,
+    remote_token: Option<&str>,
+) -> Result<Vec<String>, CommandError> {
+    let url = if let Some(u) = remote_url.filter(|s| !s.trim().is_empty()) {
+        u.trim().to_string()
+    } else {
+        state
+            .db_manager
+            .get_app_setting(KEY_REMOTE_URL)
+            .await?
+            .unwrap_or_default()
+    };
+    if url.trim().is_empty() {
+        return Err(AppError::InvalidParameter("云端 Base URL 未配置".into()).into());
+    }
+
+    let token = if let Some(t) = remote_token.filter(|s| !s.trim().is_empty()) {
+        Some(t.trim().to_string())
+    } else {
+        let app_data = state.directory_plugins.app_data_dir();
+        let settings = crate::infrastructure::db_ports::DbSettingsPort(state.db_manager.as_ref());
+        load_remote_token(&settings, state.user_llm_secrets.as_ref(), app_data).await?
+    };
+    if token.as_deref().unwrap_or("").trim().is_empty() {
+        return Err(AppError::InvalidParameter(
+            "请先填写或保存 API Key 后再拉取模型列表".into(),
+        )
+        .into());
+    }
+
+    if let Err(e) = state
+        .high_risk_grants
+        .grant_network(NETWORK_GRANT_REMOTE_LLM)
+    {
+        tracing::warn!(
+            target: "oclive_llm",
+            error = %e,
+            "auto-grant remote LLM on cloud model list failed"
+        );
+    }
+
+    let timeout_ms = std::env::var("OCLIVE_REMOTE_LLM_TIMEOUT_MS")
+        .ok()
+        .and_then(|s| s.parse::<u64>().ok())
+        .unwrap_or(120_000);
+    let client = Client::builder()
+        .build()
+        .map_err(|e| AppError::InvalidParameter(format!("HTTP client: {e}")))?;
+    list_openai_compatible_models(
+        &client,
+        url.trim(),
+        token.as_deref(),
+        std::time::Duration::from_millis(timeout_ms.clamp(1_000, 600_000)),
+        state.high_risk_grants.as_ref(),
+    )
+    .await
+    .map_err(CommandError::from)
+}
+
+/// Map provider/HTTP failures to a short user-facing probe message (no nested JSON).
+fn humanize_cloud_probe_error(detail: &str) -> String {
+    let lower = detail.to_ascii_lowercase();
+    if lower.contains("401")
+        || lower.contains("authentication")
+        || lower.contains("invalid api key")
+        || lower.contains("api key")
+            && (lower.contains("invalid") || lower.contains("incorrect"))
+    {
+        return "API Key 无效或未授权，请检查密钥是否正确".to_string();
+    }
+    if lower.contains("404") {
+        return "Base URL 或模型 ID 可能有误（HTTP 404）".to_string();
+    }
+    if lower.contains("timeout") || lower.contains("timed out") {
+        return "连接超时，请检查网络或 Base URL".to_string();
+    }
+    if lower.contains("high_risk") || lower.contains("not granted") {
+        return "尚未授予云端 LLM 网络权限，请重新保存配置".to_string();
+    }
+    let n = detail.chars().count();
+    if n > 160 {
+        format!("{}…", detail.chars().take(160).collect::<String>())
+    } else {
+        detail.to_string()
+    }
+}
+
 /// Ping cloud LLM with current DB/env settings (after [`apply_user_llm_env`]).
 ///
 /// # Errors
@@ -219,9 +322,9 @@ pub async fn probe_cloud_llm_impl(
         )
         .into());
     }
-    state
+    let _ = state
         .high_risk_grants
-        .require_network(NETWORK_GRANT_REMOTE_LLM)?;
+        .grant_network(NETWORK_GRANT_REMOTE_LLM);
 
     let role = state.load_role_cached_async(role_id).await?;
     let ns = session_namespace(role_id, session_id);
@@ -242,8 +345,8 @@ pub async fn probe_cloud_llm_impl(
         .await
         .map(|_| ())
         .map_err(|e| {
-            AppError::InvalidParameter(format!("云端模型连通性测试失败：{}", e.to_frontend_error()))
-                .into()
+            let detail = humanize_cloud_probe_error(e.to_frontend_error().as_str());
+            AppError::InvalidParameter(format!("云端连通性测试失败：{detail}")).into()
         })
 }
 
@@ -303,9 +406,17 @@ pub async fn save_llm_user_settings_impl(
         if !cloud_api_token_configured(&settings, req.remote_token.as_deref()).await? {
             return Err(AppError::InvalidParameter("请填写云端 API Key 后再保存".into()).into());
         }
-        state
+        // BYOK save is explicit user consent for outbound LLM API calls.
+        if let Err(e) = state
             .high_risk_grants
-            .require_network(NETWORK_GRANT_REMOTE_LLM)?;
+            .grant_network(NETWORK_GRANT_REMOTE_LLM)
+        {
+            tracing::warn!(
+                target: "oclive_llm",
+                error = %e,
+                "auto-grant remote LLM on cloud save failed"
+            );
+        }
     }
 
     if let Some(ref url) = req.ollama_base_url {
@@ -444,10 +555,6 @@ pub async fn save_llm_user_settings_impl(
         }
         Err(e) => return Err(e),
     };
-
-    if provider == "cloud" {
-        probe_cloud_llm_impl(state, req.role_id.as_str(), req.session_id.as_deref()).await?;
-    }
 
     Ok(info)
 }

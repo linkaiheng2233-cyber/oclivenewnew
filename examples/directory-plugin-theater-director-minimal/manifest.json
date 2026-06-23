@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "id": "com.example.theater_director_comedy",
+  "name": "Theater Director Minimal (Comedy Fork Demo)",
+  "version": "0.1.0",
+  "description": "Minimal fork demo: wraps official prompt pack with a comedy prefix",
+  "provides": ["theater_director"],
+  "rpcMethods": ["theater.build_prompt"],
+  "process": {
+    "command": "node",
+    "args": ["rpc_server.mjs"]
+  },
+  "permissions": ["process:spawn"]
+}

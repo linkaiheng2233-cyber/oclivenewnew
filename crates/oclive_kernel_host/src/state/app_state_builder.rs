@@ -91,6 +91,12 @@ impl AppStateBuilder {
         self
     }
 
+    #[must_use]
+    pub fn with_app_data_dir(mut self, dir: impl AsRef<Path>) -> Self {
+        self.app_data_dir = dir.as_ref().to_path_buf();
+        self
+    }
+
     /// # Errors
     ///
     /// Database connect/migrate, policy load, or plugin bootstrap failures.
@@ -159,6 +165,12 @@ impl AppStateBuilder {
         }
         let storage = RoleStorage::new(self.roles_dir);
         let _ = fs::create_dir_all(&self.app_data_dir);
+        if let Some(parent) = storage.roles_dir().parent() {
+            crate::infrastructure::theater_director_plugin_seed::seed_official_theater_director_plugin(
+                &self.app_data_dir,
+                Some(&parent.join("plugins")),
+            );
+        }
         let high_risk_grants =
             HighRiskGrantStore::load(self.app_data_dir.clone(), self.high_risk_strict);
         let directory_plugins = if self.high_risk_strict {
@@ -219,6 +231,15 @@ impl AppStateBuilder {
                 ),
             );
 
+        let theater_director_resolver: Arc<dyn oclive_kernel_contracts::TheaterDirectorResolver> =
+            Arc::new(
+                crate::infrastructure::theater_director_wiring::HostTheaterDirectorResolver::new(
+                    directory_plugins.clone(),
+                    remote_fallback_allowed.clone(),
+                    high_risk_grants.clone(),
+                ),
+            );
+
         let user_llm_secrets: Arc<dyn oclive_kernel_contracts::UserLlmSecretsPort> =
             Arc::new(crate::infrastructure::user_llm_secrets::BuiltinUserLlmSecrets);
 
@@ -254,6 +275,7 @@ impl AppStateBuilder {
             user_llm_env_dirty: AtomicBool::new(true),
             host_profile,
             reply_post_processor_resolver,
+            theater_director_resolver,
         };
         if let Err(e) = crate::domain::user_llm_env::apply_user_llm_env(&state).await {
             tracing::warn!(target: "oclive_llm", "apply user llm settings: {e}");

@@ -6,6 +6,7 @@
 
 ### Added
 
+- **Theater Track A engineering hygiene (round 16)**: [`handoff/theater/MODE2_UNFREEZE.md`](handoff/theater/MODE2_UNFREEZE.md) Mode 2 unfreeze checklist; `theater-prompt-drift` wired into `dimension5-acceptance.mjs` and `test:theater:smoke`; self-contained `prompts/` in minimal director example; `data/plugins.json` entry for `com.oclive.theater_director_official`.
 - **`CODE_OF_CONDUCT.md`** (Contributor Covenant).
 - **`human-docs-en/`** minimal set (L0–L3 + 08/09/10 English summaries).
 - **`human-docs/08_PR_GATE_MATRIX.md`**, **`09_GLOSSARY.md`**, **`10_SETUP_WINDOWS.md`**.
@@ -15,6 +16,7 @@
 
 ### Changed
 
+- **Theater doc SSOT sweep**: `theater_director` unified as **shipped (2026-06)** (DISTRO_DEFAULT_PLUGINS · ARCHITECTURE · NAMING · ROADMAP §7 · IA); [`TECHNICAL_DEBT_INVENTORY.md`](handoff/TECHNICAL_DEBT_INVENTORY.md) round 16; acceptance chain → [`PLAYTEST_MATRIX.md`](handoff/theater/PLAYTEST_MATRIX.md).
 - **Hybrid chat mirror**: `rebuild_mirror_best_effort` / `delete_mirror_best_effort` (K-ROBUST-01).
 - **`canonical_llm_sync` / `plugin_state` / MCP·Ollama downgrade**: `tracing::warn!` (K-ROBUST-02/03).
 - **Kernel snapshot & storage capability degraded UI** (`kernel.ts`, `useKernelStatus`, `ChatStorageSettingsPanel`).

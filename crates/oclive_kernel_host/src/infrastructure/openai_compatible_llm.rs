@@ -30,6 +30,31 @@ pub fn chat_completions_url(base: &str) -> String {
     format!("{b}/v1/chat/completions")
 }
 
+/// Normalize user/base URL to `…/v1/models` (OpenAI-compatible model listing).
+#[must_use]
+pub fn models_list_url(base: &str) -> String {
+    let b = base.trim().trim_end_matches('/').to_string();
+    if b.is_empty() {
+        return String::new();
+    }
+    if b.ends_with("/models") {
+        return b;
+    }
+    if b.ends_with("/chat/completions") {
+        let root = b.trim_end_matches("/chat/completions");
+        if root.ends_with("/v1") {
+            return format!("{root}/models");
+        }
+    }
+    if b.ends_with("/v1") {
+        return format!("{b}/models");
+    }
+    if b.contains("/v1/") {
+        return b;
+    }
+    format!("{b}/v1/models")
+}
+
 pub struct OpenAiCompatibleLlm {
     chat_url: String,
     bearer_token: Option<String>,
@@ -151,6 +176,113 @@ fn parse_chat_response(body: &str) -> Result<String> {
                 "OpenAI API response missing choices[0].message.content".into(),
             )
         })
+}
+
+#[derive(Debug, Deserialize)]
+struct ModelsListResponse {
+    data: Option<Vec<ModelEntry>>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ModelEntry {
+    id: Option<String>,
+}
+
+/// List model ids from an OpenAI-compatible `GET /v1/models` endpoint.
+pub async fn list_openai_compatible_models(
+    client: &Client,
+    base_url: &str,
+    bearer_token: Option<&str>,
+    timeout: Duration,
+    grants: &HighRiskGrantStore,
+) -> Result<Vec<String>> {
+    grants.require_network(NETWORK_GRANT_REMOTE_LLM)?;
+    let models_url = models_list_url(base_url);
+    if models_url.is_empty() {
+        return Err(AppError::InvalidParameter("云端 Base URL 为空".into()));
+    }
+    let mut req = client
+        .get(&models_url)
+        .timeout(timeout)
+        .header("Accept", "application/json");
+    if let Some(token) = bearer_token.filter(|s| !s.trim().is_empty()) {
+        req = req.bearer_auth(token.trim());
+    }
+    let response = req.send().await.map_err(|e| {
+        AppError::RemoteServiceUnavailable(format!("OpenAI models list request: {e}"))
+    })?;
+    let status = response.status();
+    let text = response.text().await.map_err(|e| {
+        AppError::RemoteServiceUnavailable(format!("OpenAI models list body: {e}"))
+    })?;
+    if !status.is_success() {
+        return Err(AppError::RemoteServiceUnavailable(format!(
+            "OpenAI models list HTTP {status}: {}",
+            text.chars().take(600).collect::<String>()
+        )));
+    }
+    parse_models_list_response(&text)
+}
+
+fn parse_models_list_response(body: &str) -> Result<Vec<String>> {
+    let parsed: ModelsListResponse = serde_json::from_str(body).map_err(|e| {
+        AppError::RemoteServiceUnavailable(format!("OpenAI models list JSON parse: {e}"))
+    })?;
+    let mut ids: Vec<String> = parsed
+        .data
+        .unwrap_or_default()
+        .into_iter()
+        .filter_map(|entry| entry.id.map(|s| s.trim().to_string()))
+        .filter(|s| !s.is_empty())
+        .collect();
+    ids.sort_by(|a, b| a.to_ascii_lowercase().cmp(&b.to_ascii_lowercase()));
+    ids.dedup_by(|a, b| a.eq_ignore_ascii_case(b));
+    if ids.is_empty() {
+        return Err(AppError::RemoteServiceUnavailable(
+            "OpenAI models list response contained no model ids".into(),
+        ));
+    }
+    Ok(ids)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn chat_completions_url_normalizes_base() {
+        assert_eq!(
+            chat_completions_url("https://api.openai.com"),
+            "https://api.openai.com/v1/chat/completions"
+        );
+        assert_eq!(
+            chat_completions_url("https://api.openai.com/v1"),
+            "https://api.openai.com/v1/chat/completions"
+        );
+    }
+
+    #[test]
+    fn models_list_url_normalizes_base() {
+        assert_eq!(
+            models_list_url("https://api.openai.com"),
+            "https://api.openai.com/v1/models"
+        );
+        assert_eq!(
+            models_list_url("https://api.openai.com/v1"),
+            "https://api.openai.com/v1/models"
+        );
+        assert_eq!(
+            models_list_url("https://api.openai.com/v1/chat/completions"),
+            "https://api.openai.com/v1/models"
+        );
+    }
+
+    #[test]
+    fn parse_models_list_response_extracts_ids() {
+        let body = r#"{"data":[{"id":"gpt-4o-mini"},{"id":"gpt-4o"}]}"#;
+        let ids = parse_models_list_response(body).expect("parse");
+        assert_eq!(ids, vec!["gpt-4o".to_string(), "gpt-4o-mini".to_string()]);
+    }
 }
 
 #[async_trait]

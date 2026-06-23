@@ -3,23 +3,37 @@ import type { TheaterCastConfig } from '../../composables/theater/theaterCastCon
 import Toast from '../../components/Toast.vue'
 import { useAppToast } from '../../composables/useAppToast'
 import { useTheaterShell } from '../../composables/useTheaterShell'
+import { useI18n } from 'vue-i18n'
 import PokeDock from './PokeDock.vue'
 import TheaterFooter from './TheaterFooter.vue'
 import TheaterHeader from './TheaterHeader.vue'
 import TheaterSettingsSheet from './TheaterSettingsSheet.vue'
 import TheaterStage from './TheaterStage.vue'
 import TheaterThinkChain from './TheaterThinkChain.vue'
+import TheaterVariantBackdrop from './TheaterVariantBackdrop.vue'
 
 const {
   castLabel,
   castTier,
   sceneLabelKey,
+  activeScenePresetId,
+  scenePresets,
+  activePokeChips,
+  pokeEnabled,
   visibleLines,
   stageState,
   loadError,
   dockDisabled,
   onPoke,
   onCustomTweak,
+  setPreviewChip,
+  eventHighlightCast,
+  variantBackdropOpen,
+  variantBReady,
+  variantPatchA,
+  variantPatchB,
+  selectPokeVariant,
+  dismissVariantBackdrop,
   thinkingActive,
   thinkingSteps,
   thinkingTitle,
@@ -32,11 +46,12 @@ const {
   castAdaptWaitingSeconds,
   castAdaptWaitingPhase,
   castAdaptSkeletonHash,
-  castAdaptSceneId,
+  castAdaptPresetId,
   castSkeletonReady,
   castAdaptLastIssue,
   restartScene,
   settingsOpen,
+  settingsTab,
   openSettings,
   closeSettings,
   visibleCount,
@@ -47,10 +62,12 @@ const {
   applyDefaultCast,
   clearCastAdaptCache,
   reAdaptCurrentCast,
+  switchScenePreset,
   showToast,
 } = useTheaterShell()
 
 const { toast } = useAppToast()
+const { t } = useI18n()
 
 async function onApplyCast(config: TheaterCastConfig) {
   await applyCastConfig(config)
@@ -70,6 +87,9 @@ async function onApplyDefaultCast() {
         :cast-label="castLabel"
         :cast-tier="castTier"
         :scene-label-key="sceneLabelKey"
+        :active-scene-preset-id="activeScenePresetId"
+        :scene-presets="scenePresets"
+        @select-scene="switchScenePreset"
         @open-settings="openSettings()"
         @restart="restartScene()"
       />
@@ -79,7 +99,18 @@ async function onApplyDefaultCast() {
         :state="stageState"
         :load-error="loadError"
         :cast="castInfo"
-      />
+        :event-highlight-cast="eventHighlightCast"
+      >
+        <template #variant-backdrop>
+          <TheaterVariantBackdrop
+            :visible="variantBackdropOpen && variantBReady"
+            :patch-a="variantPatchA"
+            :patch-b="variantPatchB"
+            @select-b="selectPokeVariant(1)"
+            @dismiss="dismissVariantBackdrop()"
+          />
+        </template>
+      </TheaterStage>
 
       <TheaterThinkChain
         :visible="thinkingActive"
@@ -91,9 +122,12 @@ async function onApplyDefaultCast() {
 
       <section class="theater-dock">
         <PokeDock
+          v-if="pokeEnabled"
+          :chips="activePokeChips"
           :disabled="dockDisabled"
           @poke="onPoke"
           @custom="onCustomTweak"
+          @preview="setPreviewChip"
         />
       </section>
 
@@ -106,6 +140,8 @@ async function onApplyDefaultCast() {
 
     <TheaterSettingsSheet
       :visible="settingsOpen"
+      :settings-tab="settingsTab"
+      @update:settings-tab="settingsTab = $event"
       :apply-cast="onApplyCast"
       :apply-default-cast="onApplyDefaultCast"
       :clear-cast-adapt-cache="clearCastAdaptCache"
@@ -118,7 +154,7 @@ async function onApplyDefaultCast() {
       :cast-adapt-waiting-phase="castAdaptWaitingPhase"
       :cast-adapt-waiting-seconds="castAdaptWaitingSeconds"
       :cast-adapt-skeleton-hash="castAdaptSkeletonHash"
-      :cast-adapt-scene-id="castAdaptSceneId"
+      :cast-adapt-preset-id="castAdaptPresetId"
       :cast-skeleton-ready="castSkeletonReady"
       :cast-adapt-last-issue="castAdaptLastIssue"
       @close="closeSettings()"
@@ -153,5 +189,13 @@ async function onApplyDefaultCast() {
 .theater-dock {
   flex-shrink: 0;
   border-top: 1px solid var(--tool-divider, var(--border-light));
+}
+
+.theater-dock__hint {
+  margin: 0;
+  padding: var(--tool-space-3, 12px) var(--tool-space-4, 16px);
+  font-size: var(--tool-fs-sm, 12px);
+  color: var(--text-secondary);
+  text-align: center;
 }
 </style>

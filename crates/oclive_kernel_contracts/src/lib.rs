@@ -35,6 +35,7 @@ pub(crate) mod plugin_host;
 pub(crate) mod policy;
 pub(crate) mod prompt_assembler;
 pub mod reply_post_processor;
+pub mod theater_director;
 pub(crate) mod repository;
 pub(crate) mod slot_resolver;
 pub(crate) mod user_emotion_analyzer;
@@ -58,6 +59,11 @@ pub use prompt_assembler::PromptAssembler;
 pub use reply_post_processor::{
     PostProcessInput, PostProcessOutput, ReplyPostProcessor, ReplyPostProcessorEffectiveConfig,
     ReplyPostProcessorResolver,
+};
+pub use theater_director::{
+    TheaterDirectorBackendKind, TheaterDirectorEffectiveConfig, TheaterDirectorPromptProvider,
+    TheaterDirectorResolver, TheaterPromptBuildInput, TheaterPromptBuildOutput,
+    MAX_THEATER_PROMPT_LEN, THEATER_BUILD_PROMPT_METHOD,
 };
 pub use repository::{
     ComplexEmotionHintStore, FavorabilityRepository, MemoryRepository, MutablePersonalityStore,

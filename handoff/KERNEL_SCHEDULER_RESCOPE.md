@@ -49,7 +49,7 @@ flowchart TB
 
 **新模块问题**：
 
-- **档 1–2**（新 directory 插件 / 正交能力）：装在 app_data，发行版内核与兜底全能核 **共用同一路径**。
+- **档 1–2**（新 directory 插件 / **独立通道能力增强模块**）：装在 app_data，发行版内核与兜底全能核 **共用同一路径**（注册表 [RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md](../creator-docs/rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md)）。
 - **档 3**（新编排 stage / 新六槽枚举）：需 **内核 semver**；发行版包可带较新 bundled；兜底核 **runtime_api_version ≥ 发行版要求** 时接管，否则 degraded + 提示升级。
 
 **与 B 层关系**：发行版差异仍主要在 **HostProfile + 蓝图**；bundled 与 shared **可以是同一构建产物**（今日 logical seed），差别在 sidecar `feature_set` / 测试矩阵，而非必须两颗裁剪 binary。

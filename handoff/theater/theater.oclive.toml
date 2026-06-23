@@ -30,3 +30,6 @@ retrieval = "default"
 
 [post_process]
 chain = "standard"
+
+[theater]
+director_plugin = "com.oclive.theater_director_official"

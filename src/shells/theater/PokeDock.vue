@@ -1,34 +1,46 @@
 <script setup lang="ts">
-import type { PokeChipId } from '../../composables/theater/theaterLogic'
+import type { PokeChipDef, PokeChipId } from '../../composables/theater/theaterLogic'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { THEATER_POKE_CHIPS } from '../../composables/theater/theaterLogic'
 import PokeChip from './PokeChip.vue'
 import PokeCustomInput from './PokeCustomInput.vue'
 
 defineProps<{
   disabled: boolean
+  chips: PokeChipDef[]
 }>()
 
 const emit = defineEmits<{
   poke: [chipId: PokeChipId]
   custom: [text: string]
+  preview: [chipId: PokeChipId | null]
 }>()
 
 const { t } = useI18n()
 const customOpen = ref(false)
+
+function onChipPreview(chipId: PokeChipId | null) {
+  emit('preview', chipId)
+}
 </script>
 
 <template>
-  <div class="poke-dock" role="toolbar" :aria-label="t('theater.poke.dock')">
+  <div
+    class="poke-dock"
+    role="toolbar"
+    :aria-label="t('theater.poke.dock')"
+    @mouseleave="onChipPreview(null)"
+  >
     <div class="poke-dock__chips">
       <PokeChip
-        v-for="chip in THEATER_POKE_CHIPS"
+        v-for="chip in chips"
         :key="chip.id"
         :emoji="chip.emoji"
         :label="t(chip.labelKey)"
         :disabled="disabled"
         @click="emit('poke', chip.id)"
+        @preview="onChipPreview(chip.id)"
+        @preview-end="onChipPreview(null)"
       />
       <PokeChip
         variant="custom"

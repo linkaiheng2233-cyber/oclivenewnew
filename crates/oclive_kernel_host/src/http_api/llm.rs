@@ -1,9 +1,9 @@
 use super::{api_error, ApiError};
 use crate::models::dto::RoleInfo;
 use crate::service::{
-    get_llm_user_settings_impl, list_ollama_models_impl, save_llm_user_settings_impl,
-    set_session_llm_model_impl, LlmUserSettingsDto, SaveLlmUserSettingsRequest,
-    SetSessionLlmModelRequest,
+    get_llm_user_settings_impl, list_cloud_models_impl, list_ollama_models_impl, probe_cloud_llm_impl,
+    save_llm_user_settings_impl, set_session_llm_model_impl, LlmUserSettingsDto,
+    ListCloudModelsRequest, SaveLlmUserSettingsRequest, SetSessionLlmModelRequest,
 };
 use crate::state::AppState;
 use axum::extract::{Query, State};
@@ -21,6 +21,11 @@ pub(crate) struct RoleIdQuery {
 pub(crate) struct LlmReloadResponse {
     ok: bool,
     provider: String,
+}
+
+#[derive(Serialize)]
+pub(crate) struct LlmProbeResponse {
+    ok: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -68,6 +73,19 @@ pub(crate) async fn llm_user_settings_post_route(
     Ok(Json(info))
 }
 
+pub(crate) async fn llm_probe_cloud_route(
+    State(state): State<Arc<AppState>>,
+    Query(q): Query<RoleIdQuery>,
+) -> Result<Json<LlmProbeResponse>, ApiError> {
+    probe_cloud_llm_impl(&state, q.role_id.trim(), q.session_id.as_deref())
+        .await
+        .map(|_| Json(LlmProbeResponse { ok: true }))
+        .map_err(|e| {
+            let k = e.kernel_error_body();
+            api_error(axum::http::StatusCode::BAD_REQUEST, k)
+        })
+}
+
 pub(crate) async fn llm_ollama_models_route(
     State(state): State<Arc<AppState>>,
     Query(q): Query<OllamaModelsQuery>,
@@ -79,6 +97,23 @@ pub(crate) async fn llm_ollama_models_route(
             let k = e.kernel_error_body();
             api_error(axum::http::StatusCode::INTERNAL_SERVER_ERROR, k)
         })
+}
+
+pub(crate) async fn llm_cloud_models_route(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<ListCloudModelsRequest>,
+) -> Result<Json<Vec<String>>, ApiError> {
+    list_cloud_models_impl(
+        state.as_ref(),
+        req.remote_url.as_deref(),
+        req.remote_token.as_deref(),
+    )
+    .await
+    .map(Json)
+    .map_err(|e| {
+        let k = e.kernel_error_body();
+        api_error(axum::http::StatusCode::BAD_REQUEST, k)
+    })
 }
 
 pub(crate) async fn llm_session_model_route(

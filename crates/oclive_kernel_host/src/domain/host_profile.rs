@@ -12,6 +12,13 @@ use std::path::{Path, PathBuf};
 
 pub const ENV_DISTRO_ID: &str = "OCLIVE_DISTRO_ID";
 pub const ENV_DISTRO_PROFILE: &str = "OCLIVE_DISTRO_PROFILE";
+pub const ENV_THEATER_DIRECTOR_PLUGIN: &str = "OCLIVE_THEATER_DIRECTOR_PLUGIN";
+
+/// Distro theater scene director directory plugin id.
+#[derive(Debug, Clone, Default)]
+pub struct TheaterProfile {
+    pub director_plugin: Option<String>,
+}
 
 /// Distro default User Identity Prompt Template id (when session has no explicit choice).
 #[derive(Debug, Clone, Default)]
@@ -102,6 +109,7 @@ pub struct HostProfile {
     pub interaction: InteractionProfile,
     /// Distro visual gating: `off` | `image_only` | `stage_full` (None = no gating).
     pub visual_presentation_mode: Option<String>,
+    pub theater: TheaterProfile,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -225,6 +233,13 @@ fn host_profile_from_distro_file(file: &DistroOcliveFile) -> std::result::Result
             .map(|s| s.trim().to_string())
             .filter(|s| !s.is_empty());
     }
+    if let Some(ref th) = file.theater {
+        profile.theater.director_plugin = th
+            .director_plugin
+            .as_ref()
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty());
+    }
     Ok(profile)
 }
 
@@ -243,6 +258,7 @@ impl Default for HostProfile {
             memory_retrieval: MemoryRetrievalMode::Default,
             interaction: InteractionProfile::default(),
             visual_presentation_mode: None,
+            theater: TheaterProfile::default(),
         }
     }
 }

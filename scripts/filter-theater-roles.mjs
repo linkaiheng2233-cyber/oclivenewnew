@@ -45,11 +45,45 @@ for (const roleId of CAST_ROLE_IDS) {
   console.log(`[filter-theater-roles] copied ${roleId}`)
 }
 
-const skeletonSrc = path.join(repoRoot, 'src-tauri', 'resources', 'theater', 'breakfast.skeleton.json')
-const skeletonPublic = path.join(repoRoot, 'public', 'theater', 'breakfast.skeleton.json')
-if (fs.existsSync(skeletonSrc)) {
-  fs.mkdirSync(path.dirname(skeletonPublic), { recursive: true })
-  fs.copyFileSync(skeletonSrc, skeletonPublic)
+const skeletonDir = path.join(repoRoot, 'src-tauri', 'resources', 'theater', 'scenes')
+const skeletonPublicDir = path.join(repoRoot, 'public', 'theater', 'scenes')
+if (fs.existsSync(skeletonDir)) {
+  fs.mkdirSync(skeletonPublicDir, { recursive: true })
+  for (const entry of fs.readdirSync(skeletonDir)) {
+    if (entry.endsWith('.skeleton.json') || entry === 'index.json') {
+      fs.copyFileSync(
+        path.join(skeletonDir, entry),
+        path.join(skeletonPublicDir, entry),
+      )
+    }
+  }
+}
+
+// Legacy single-file path (dev caches)
+const legacySkeleton = path.join(repoRoot, 'public', 'theater', 'breakfast.skeleton.json')
+const breakfastScene = path.join(skeletonPublicDir, 'breakfast.skeleton.json')
+if (fs.existsSync(breakfastScene) && !fs.existsSync(legacySkeleton)) {
+  fs.mkdirSync(path.dirname(legacySkeleton), { recursive: true })
+  fs.copyFileSync(breakfastScene, legacySkeleton)
+}
+
+const officialPluginSrc = path.join(
+  repoRoot,
+  'plugins',
+  'com.oclive.theater_director_official',
+)
+const officialPluginDest = path.join(
+  repoRoot,
+  'src-tauri',
+  'resources',
+  'plugins',
+  'com.oclive.theater_director_official',
+)
+if (fs.existsSync(officialPluginSrc)) {
+  if (fs.existsSync(officialPluginDest))
+    fs.rmSync(officialPluginDest, { recursive: true, force: true })
+  copyDir(officialPluginSrc, officialPluginDest)
+  console.log('[filter-theater-roles] copied official theater director plugin')
 }
 
 console.log('[filter-theater-roles] done')

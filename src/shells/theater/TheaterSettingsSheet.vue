@@ -2,7 +2,7 @@
 
 import type { LocalePreference } from '../../i18n'
 
-import { defineAsyncComponent, onMounted, onUnmounted, ref } from 'vue'
+import { defineAsyncComponent, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { useI18n } from 'vue-i18n'
 
@@ -34,6 +34,16 @@ import {
 
 import { getLocalePreference, setLocalePreference } from '../../i18n'
 
+import {
+  getTheaterCustomLeadCast,
+  getTheaterPokeMode,
+  getTheaterVariantSwipeEnabled,
+  setTheaterCustomLeadCast,
+  setTheaterPokeMode,
+  setTheaterVariantSwipeEnabled,
+  type TheaterPokeMode,
+} from '../../composables/useTheaterPokeSettings'
+
 
 
 import TheaterCastPanel from './TheaterCastPanel.vue'
@@ -47,10 +57,17 @@ const KernelConnectionSettingsPanel = defineAsyncComponent(
 
 )
 
+const ModelManagerBody = defineAsyncComponent(
+
+  () => import('../../components/model/ModelManagerBody.vue'),
+
+)
+
 
 
 const props = defineProps<{
   visible: boolean
+  settingsTab?: SettingsTab
   applyCast?: (config: TheaterCastConfig) => Promise<void>
   applyDefaultCast?: () => Promise<void>
   clearCastAdaptCache?: () => number
@@ -63,7 +80,7 @@ const props = defineProps<{
   castAdaptWaitingPhase?: 'thinking' | 'model'
   castAdaptWaitingSeconds?: number
   castAdaptSkeletonHash?: string
-  castAdaptSceneId?: string
+  castAdaptPresetId?: string
   castSkeletonReady?: boolean
   castAdaptLastIssue?: import('../../composables/theater/theaterCastAdapt').CastAdaptIssue | null
 }>()
@@ -72,6 +89,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: []
+  'update:settingsTab': [tab: SettingsTab]
   applyCast: [config: import('../../composables/theater/theaterCastConfig').TheaterCastConfig]
   notify: [payload: { type: 'success' | 'error' | 'info' | 'warning', message: string }]
 }>()
@@ -92,9 +110,52 @@ const localePreference = ref<LocalePreference>(getLocalePreference())
 
 const tab = ref<SettingsTab>('general')
 
+function setTab(next: SettingsTab) {
+  tab.value = next
+  emit('update:settingsTab', next)
+}
+
+watch(
+  () => props.settingsTab,
+  (next) => {
+    if (next && next !== tab.value)
+      tab.value = next
+  },
+)
+
+watch(
+  () => props.visible,
+  (open) => {
+    if (open && props.settingsTab)
+      tab.value = props.settingsTab
+  },
+)
+
 
 
 const portraitLayout = ref(getTheaterPortraitLayout())
+
+const pokeMode = ref<TheaterPokeMode>(getTheaterPokeMode())
+const variantSwipe = ref(getTheaterVariantSwipeEnabled())
+const customLeadCast = ref<'a' | 'b'>(getTheaterCustomLeadCast())
+
+function onPokeModeChange(ev: Event) {
+  const v = (ev.target as HTMLSelectElement).value as TheaterPokeMode
+  setTheaterPokeMode(v)
+  pokeMode.value = v
+}
+
+function onVariantSwipeChange(ev: Event) {
+  const enabled = (ev.target as HTMLInputElement).checked
+  setTheaterVariantSwipeEnabled(enabled)
+  variantSwipe.value = enabled
+}
+
+function onCustomLeadChange(ev: Event) {
+  const v = (ev.target as HTMLSelectElement).value as 'a' | 'b'
+  setTheaterCustomLeadCast(v)
+  customLeadCast.value = v
+}
 
 
 
@@ -256,7 +317,7 @@ onUnmounted(() => {
 
             :aria-current="tab === 'general' ? 'page' : undefined"
 
-            @click="tab = 'general'"
+            @click="setTab('general')"
 
           >
 
@@ -272,7 +333,7 @@ onUnmounted(() => {
 
             :aria-current="tab === 'stage' ? 'page' : undefined"
 
-            @click="tab = 'stage'"
+            @click="setTab('stage')"
 
           >
 
@@ -288,7 +349,7 @@ onUnmounted(() => {
 
             :aria-current="tab === 'cast' ? 'page' : undefined"
 
-            @click="tab = 'cast'"
+            @click="setTab('cast')"
 
           >
 
@@ -304,7 +365,7 @@ onUnmounted(() => {
 
             :aria-current="tab === 'model' ? 'page' : undefined"
 
-            @click="tab = 'model'"
+            @click="setTab('model')"
 
           >
 
@@ -484,6 +545,50 @@ onUnmounted(() => {
 
             </UiSection>
 
+            <UiSection
+              :title="t('theater.settings.pokeSectionTitle')"
+              :description="t('theater.settings.pokeSectionHelp')"
+            >
+              <UiFieldRow :label="t('theater.settings.pokeMode')">
+                <UiSelect
+                  :model-value="pokeMode"
+                  @change="onPokeModeChange"
+                >
+                  <option value="patch">
+                    {{ t('theater.settings.pokeModePatch') }}
+                  </option>
+                  <option value="ripple">
+                    {{ t('theater.settings.pokeModeRipple') }}
+                  </option>
+                </UiSelect>
+              </UiFieldRow>
+
+              <UiFieldRow :label="t('theater.settings.variantSwipe')">
+                <label class="theater-checkbox-row">
+                  <input
+                    type="checkbox"
+                    :checked="variantSwipe"
+                    @change="onVariantSwipeChange"
+                  >
+                  <span>{{ t('theater.settings.variantSwipeHint') }}</span>
+                </label>
+              </UiFieldRow>
+
+              <UiFieldRow :label="t('theater.settings.customLeadCast')">
+                <UiSelect
+                  :model-value="customLeadCast"
+                  @change="onCustomLeadChange"
+                >
+                  <option value="a">
+                    {{ t('theater.settings.customLeadA') }}
+                  </option>
+                  <option value="b">
+                    {{ t('theater.settings.customLeadB') }}
+                  </option>
+                </UiSelect>
+              </UiFieldRow>
+            </UiSection>
+
           </template>
 
 
@@ -504,7 +609,7 @@ onUnmounted(() => {
               :cast-adapt-waiting-phase="props.castAdaptWaitingPhase ?? 'thinking'"
               :cast-adapt-waiting-seconds="props.castAdaptWaitingSeconds ?? 0"
               :cast-adapt-skeleton-hash="props.castAdaptSkeletonHash ?? ''"
-              :cast-adapt-scene-id="props.castAdaptSceneId ?? 'home'"
+              :cast-adapt-preset-id="props.castAdaptPresetId ?? 'breakfast'"
               :cast-skeleton-ready="props.castSkeletonReady ?? false"
               :cast-adapt-last-issue="props.castAdaptLastIssue ?? null"
               @apply="emit('applyCast', $event)"
@@ -522,6 +627,12 @@ onUnmounted(() => {
               {{ t('theater.settings.modelLead') }}
 
             </p>
+
+            <UiSection :title="t('modelManager.title')">
+
+              <ModelManagerBody />
+
+            </UiSection>
 
             <UiSection :title="t('kernel.diagnostics.title')">
 
@@ -822,6 +933,34 @@ onUnmounted(() => {
   text-align: right;
 
   font-variant-numeric: tabular-nums;
+
+}
+
+
+
+.theater-checkbox-row {
+
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 8px;
+
+  font-size: var(--tool-fs-sm, 12px);
+
+  color: var(--text-secondary);
+
+  cursor: pointer;
+
+}
+
+
+
+.theater-checkbox-row input {
+
+  margin-top: 2px;
+
+  accent-color: var(--tool-accent, var(--accent));
 
 }
 

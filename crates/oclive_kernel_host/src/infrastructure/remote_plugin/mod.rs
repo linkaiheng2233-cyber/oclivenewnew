@@ -19,6 +19,7 @@ mod prompt_http;
 mod remote_client;
 mod reply_post_process_directory_http;
 mod reply_post_process_http;
+mod theater_director_directory_http;
 
 pub use agent_http::AgentRpcProvider;
 pub use complex_emotion_directory_http::DirectoryComplexEmotionHttp;
@@ -30,6 +31,7 @@ pub use llm_http::RemoteLlmHttp;
 pub use memory_http::RemoteMemoryRetrievalHttp;
 pub use prompt_http::RemotePromptAssemblerHttp;
 pub use reply_post_process_directory_http::DirectoryReplyPostProcessor;
+pub use theater_director_directory_http::DirectoryTheaterDirector;
 pub use reply_post_process_http::RemoteReplyPostProcessorHttp;
 
 use crate::domain::event_estimator::{EventEstimator, RemoteEventEstimatorPlaceholder};

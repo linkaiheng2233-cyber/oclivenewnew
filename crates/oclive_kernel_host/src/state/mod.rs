@@ -43,6 +43,7 @@ pub use models_dir::{
 };
 pub use roles_dir::find_roles_dir;
 pub use session_cache::SessionCache;
+pub use app_state_builder::AppStateBuilder;
 
 /// Per-`srid` turn mutex with last-touch time for eviction of idle entries.
 struct TurnLockEntry {
@@ -64,7 +65,6 @@ fn turn_lock_now_ms() -> u64 {
 pub type SharedAppState = Arc<AppState>;
 
 use crate::domain::startup_health::StartupHealthCache;
-use app_state_builder::AppStateBuilder;
 
 pub struct AppState {
     pub db_manager: Arc<DbManager>,
@@ -122,6 +122,8 @@ pub struct AppState {
     /// Remote/directory reply post-processor wiring (infrastructure only).
     pub(crate) reply_post_processor_resolver:
         Arc<dyn oclive_kernel_contracts::ReplyPostProcessorResolver>,
+    pub(crate) theater_director_resolver:
+        Arc<dyn oclive_kernel_contracts::TheaterDirectorResolver>,
 }
 
 impl AppState {

@@ -103,6 +103,10 @@ if (!ciMode) {
   results.push({ name: 'sample workspace lib tests', ok: true, skipped: true });
 }
 
+runStep('theater prompt drift', () => {
+  sh('node', ['scripts/theater-prompt-drift.mjs']);
+});
+
 runStep('frontend verify:ui anchors', () => {
   sh('node', ['scripts/verify-frontend-patches.mjs']);
 });

@@ -45,7 +45,7 @@
     "test:e2e:core-api-restart": "node scripts/e2e-core-api-restart.mjs",
     "test:e2e:cross-host": "node scripts/e2e-cross-host-memory.mjs",
     "test:e2e:distro-kernel": "node scripts/e2e-distro-kernel.mjs --scenario all",
-    "test:theater:smoke": "node scripts/theater-stranger-proxy.mjs && vitest run src/composables/theater/theaterLogic.test.ts",
+    "test:theater:smoke": "node scripts/theater-prompt-drift.mjs && node scripts/theater-stranger-proxy.mjs && vitest run src/composables/theater/theaterLogic.test.ts src/composables/theater/theaterSceneCatalog.test.ts",
     "test:e2e:tauri-bundled-kernel": "node scripts/e2e-tauri-bundled-kernel.mjs",
     "test:e2e:preview": "playwright test",
     "test:e2e:tauri-native": "playwright test e2e/tauri-native.spec.ts"

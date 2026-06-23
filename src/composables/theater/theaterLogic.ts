@@ -1,3 +1,6 @@
+import type { TheaterScenePresetId } from './theaterSceneCatalog'
+import { getPokeChipsForPreset, getTheaterScenePreset, LEGACY_BREAKFAST_SKELETON_URL } from './theaterSceneCatalog'
+
 export type TheaterCast = 'a' | 'b'
 
 export type TheaterCastSide = 'left' | 'right'
@@ -6,7 +9,24 @@ export type TheaterStageState = 'playing' | 'idle' | 'patching'
 
 export type TheaterSourceKind = 'pregen' | 'local' | 'cloud'
 
-export type PokeChipId = 'tea' | 'late' | 'biteTongue' | 'nickname' | 'personality'
+export type PokeChipId =
+  | 'tea'
+  | 'late'
+  | 'biteTongue'
+  | 'nickname'
+  | 'personality'
+  | 'buyMilk'
+  | 'forgotMilk'
+  | 'milkSoldOut'
+  | 'milkLottery'
+  | 'strayCat'
+  | 'hitPole'
+  | 'wrongWay'
+  | 'sprainedAnkle'
+  | 'drinkMilk'
+  | 'insomnia'
+  | 'midnightSnack'
+  | 'thunderstorm'
 
 export interface ScriptLine {
   id: string
@@ -40,6 +60,11 @@ export interface AppliedTweak {
   patchLines: ScriptLine[]
 }
 
+export interface TheaterPairRelationDef {
+  displayName: string
+  promptHint: string
+}
+
 export interface TheaterSkeleton {
   scene: string
   sceneId?: string
@@ -49,6 +74,10 @@ export interface TheaterSkeleton {
   }
   beats: ScriptLine[]
   forks: Partial<Record<PokeChipId, SkeletonFork[]>>
+  /** Default pair relation when user has not chosen (mode 1). */
+  defaultPairRelation?: string
+  /** Official pair-relation presets for cast_rewrite prompts. */
+  pairRelations?: Partial<Record<string, TheaterPairRelationDef>>
 }
 
 export interface PokeChipDef {
@@ -60,38 +89,13 @@ export interface PokeChipDef {
   dramaSeed: string
 }
 
-export const THEATER_POKE_CHIPS: PokeChipDef[] = [
-  {
-    id: 'tea',
-    emoji: '🍵',
-    labelKey: 'theater.poke.tea',
-    weight: 'high',
-    dramaSeed: '把"喝下一碗苦中药"这件苦差事，变成两人拌嘴的笑料：一方嫌弃抗拒，另一方半哄半逼，制造嫌弃与无奈的反差。',
-  },
-  {
-    id: 'late',
-    emoji: '⏰',
-    labelKey: 'theater.poke.late',
-    weight: 'high',
-    dramaSeed: '突然发现快要迟到，时间压力骤升，让两人手忙脚乱、语速变快、互相催促，节奏陡然紧张起来。',
-  },
-  {
-    id: 'biteTongue',
-    emoji: '👅',
-    labelKey: 'theater.poke.biteTongue',
-    weight: 'high',
-    dramaSeed: '吃早饭时冷不丁咬到舌头，一个突发小意外打破平静：先是吃痛慌乱，再被对方关心查看，最后窘迫害羞，情绪起伏明显。',
-  },
-  {
-    id: 'nickname',
-    emoji: '😼',
-    labelKey: 'theater.poke.nickname',
-    weight: 'high',
-    dramaSeed: '冷不防甩出一个出其不意的新称呼撩拨关系，让对方先愣神、再追问，引出害羞与微妙的暧昧拉扯。',
-  },
-]
+/** @deprecated Use `getPokeChipsForPreset` from `theaterSceneCatalog`. */
+export const THEATER_POKE_CHIPS: PokeChipDef[] = getPokeChipsForPreset('breakfast')
 
-export const SKELETON_URL = '/theater/breakfast.skeleton.json'
+export const SKELETON_URL = '/theater/scenes/breakfast.skeleton.json'
+
+/** @deprecated Use `fetchSkeletonForPreset` with catalog preset id. */
+export const LEGACY_SKELETON_URL = LEGACY_BREAKFAST_SKELETON_URL
 
 /** Frontend race timeout for `generate_theater_scene` (kernel defaults to 25s). */
 export const SCENE_GEN_TIMEOUT_MS = 30_000
@@ -133,6 +137,103 @@ export const FALLBACK_SKELETON: TheaterSkeleton = {
   },
   beats: FALLBACK_OPENING_BEATS,
   forks: {},
+}
+
+const FALLBACK_SUPERMARKET_BEATS: ScriptLine[] = [
+  { id: 'b1', cast: 'b', name: '枫侵月', text: '购物车推这边，特价鸡蛋在冷藏柜那头。' },
+  { id: 'b2', cast: 'a', name: '木木', text: '我不买鸡蛋。又不是我做饭。' },
+  { id: 'b3', cast: 'b', name: '枫侵月', text: '你前天不是说周末想做蛋糕？' },
+  { id: 'b4', cast: 'a', name: '木木', text: '……那是随口一说。' },
+  { id: 'b5', cast: 'b', name: '枫侵月', text: '试吃区有新酸奶，就一小杯。' },
+  { id: 'b6', cast: 'a', name: '木木', text: '不要。会胖。' },
+  { id: 'b7', cast: 'b', name: '枫侵月', text: '一小杯不会胖。尝一口。' },
+  { id: 'b8', cast: 'a', name: '木木', text: '……就一口。' },
+  { id: 'b9', cast: 'b', name: '枫侵月', text: '结账队伍好长。你带钱包了吗？' },
+  { id: 'b10', cast: 'a', name: '木木', text: '啊？！我、我没带……' },
+]
+
+const FALLBACK_WAY_HOME_BEATS: ScriptLine[] = [
+  { id: 'b1', cast: 'b', name: '枫侵月', text: '路灯亮了，走内侧。' },
+  { id: 'b2', cast: 'a', name: '木木', text: '用不着你管，路又不是你的。' },
+  { id: 'b3', cast: 'b', name: '枫侵月', text: '两袋东西，你拎一个？' },
+  { id: 'b4', cast: 'a', name: '木木', text: '不行，太重。' },
+  { id: 'b5', cast: 'b', name: '枫侵月', text: '你手里那个是零食。' },
+  { id: 'b6', cast: 'a', name: '木木', text: '零食也很重！' },
+  { id: 'b7', cast: 'b', name: '枫侵月', text: '……行，我拿重的。' },
+  { id: 'b8', cast: 'a', name: '木木', text: '我才不会。' },
+  { id: 'b9', cast: 'b', name: '枫侵月', text: '公交还有两站。围巾系好。' },
+  { id: 'b10', cast: 'a', name: '木木', text: '……知道了。多谢。' },
+]
+
+const FALLBACK_BEDTIME_BEATS: ScriptLine[] = [
+  { id: 'b1', cast: 'b', name: '枫侵月', text: '你先洗脸，我去放水。' },
+  { id: 'b2', cast: 'a', name: '木木', text: '凭什么我先？' },
+  { id: 'b3', cast: 'b', name: '枫侵月', text: '因为你每次都吹头发，吹到浴室全是雾气。' },
+  { id: 'b4', cast: 'a', name: '木木', text: '那是吹风机的问题！' },
+  { id: 'b5', cast: 'b', name: '枫侵月', text: '好吧，你先洗头发。别跟我抢毛巾。' },
+  { id: 'b6', cast: 'a', name: '木木', text: '谁要抢你的……' },
+  { id: 'b7', cast: 'b', name: '枫侵月', text: '牙刷挤好了，在杯子里。' },
+  { id: 'b8', cast: 'a', name: '木木', text: '……多管闲事。' },
+  { id: 'b9', cast: 'b', name: '枫侵月', text: '晚安之前还有一句——今天辛苦了。' },
+  { id: 'b10', cast: 'a', name: '木木', text: '……你也是。快睡啦，啰嗦。' },
+]
+
+const FALLBACK_SKELETON_BY_PRESET: Record<TheaterScenePresetId, TheaterSkeleton> = {
+  breakfast: FALLBACK_SKELETON,
+  supermarket: {
+    scene: 'supermarket',
+    sceneId: 'home',
+    cast: FALLBACK_SKELETON.cast,
+    beats: FALLBACK_SUPERMARKET_BEATS,
+    forks: {},
+  },
+  way_home: {
+    scene: 'way_home',
+    sceneId: 'home',
+    cast: FALLBACK_SKELETON.cast,
+    beats: FALLBACK_WAY_HOME_BEATS,
+    forks: {},
+  },
+  bedtime: {
+    scene: 'bedtime',
+    sceneId: 'home',
+    cast: FALLBACK_SKELETON.cast,
+    beats: FALLBACK_BEDTIME_BEATS,
+    forks: {},
+  },
+}
+
+export function fallbackSkeletonForPreset(presetId: TheaterScenePresetId): TheaterSkeleton {
+  const sk = FALLBACK_SKELETON_BY_PRESET[presetId]
+  return {
+    ...sk,
+    cast: {
+      a: { ...sk.cast.a },
+      b: { ...sk.cast.b },
+    },
+    beats: cloneScriptLines(sk.beats),
+    forks: { ...sk.forks },
+  }
+}
+
+export async function fetchSkeletonForPreset(presetId: TheaterScenePresetId): Promise<TheaterSkeleton> {
+  const preset = getTheaterScenePreset(presetId)
+  const urls = presetId === 'breakfast'
+    ? [preset.skeletonPath, LEGACY_BREAKFAST_SKELETON_URL]
+    : [preset.skeletonPath]
+  for (const url of urls) {
+    try {
+      const res = await fetch(url)
+      if (!res.ok)
+        continue
+      return validateSkeleton(await res.json())
+    }
+    catch {
+      /* try next url */
+    }
+  }
+  console.warn(`[theater] skeleton fetch failed for ${presetId}, using embedded fallback`)
+  return fallbackSkeletonForPreset(presetId)
 }
 
 export function cloneScriptLines(lines: ScriptLine[]): ScriptLine[] {
@@ -192,6 +293,16 @@ export function pickCanFork(
   if (!entries?.length)
     return null
   return entries[0] ?? null
+}
+
+/** Primary cast affected by a poke chip (first fork patch speaker). */
+export function resolveChipLeadCast(
+  skeleton: TheaterSkeleton,
+  chipId: PokeChipId,
+): TheaterCast | null {
+  const fork = pickCanFork(skeleton, chipId)
+  const lead = fork?.patchLines[0]
+  return lead?.cast ?? null
 }
 
 export function playbackDone(visibleCount: number, total: number): boolean {

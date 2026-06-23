@@ -38,6 +38,19 @@
       "source": "official"
     },
     {
+      "id": "com.oclive.theater_director_official",
+      "name": "Theater Scene Director (Official)",
+      "description": "AI 剧场场景导演：theater.build_prompt · provides theater_director",
+      "author": "oclive",
+      "version": "0.2.0",
+      "git": "https://github.com/linkaiheng2233-cyber/oclivenewnew.git",
+      "gitSubdir": "plugins/com.oclive.theater_director_official",
+      "tags": ["theater", "side_channel", "directory"],
+      "category": "theater",
+      "source": "official",
+      "provides": ["theater_director"]
+    },
+    {
       "id": "com.oclive.example.llamacpp_llm",
       "name": "LlamaCpp LLM (示例)",
       "description": "目录插件示例：本地 llama.cpp RPC LLM 槽位（需自行准备模型与 llama-server）",

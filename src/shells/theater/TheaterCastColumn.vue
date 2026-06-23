@@ -18,6 +18,7 @@ defineProps<{
       :name="entry.name"
       :emotion="entry.emotion"
       :active="entry.active"
+      :event-affected="entry.eventAffected"
     />
   </div>
 </template>

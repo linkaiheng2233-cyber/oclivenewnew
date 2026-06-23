@@ -56,7 +56,10 @@ Plugin host / Remote / directory / reply post-processor factories live in `infra
 | `chat_engine/turn_prefetch.rs` | Shared prefetch (recent context, user identity, complex emotion hint) |
 | `role_runtime_snapshot.rs` | Single DB read for hot `role_runtime` fields |
 | `dual_pipeline.rs` | Dual-core experimental + stable fallback |
+| `theater_director.rs` | Theater Scene Director resolver (`resolve_theater_director`) |
 | `slot_runner.rs` | Multi-instance slot merge and invocation |
 | `ports/plugin_host/` | `plugin_backends` → `Arc<dyn …>` |
+
+**Integration tests (outside `domain/`):** `src-tauri/tests/theater_director_resolver.rs` — directory plugin wiring + RPC fallback.
 
 Naming SSOT: [NAMING_CONVENTIONS.md](../../../../creator-docs/NAMING_CONVENTIONS.md).

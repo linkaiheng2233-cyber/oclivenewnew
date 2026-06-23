@@ -5,7 +5,7 @@
 | 状态 | **Phase 2 delivered**（v0.3.0 · builtin/remote/directory 后处理 · HTTP 身份 API · 桌面/VS Code UI） |
 | 受众 | Cursor / 内核 / 编写器 / 发行版集成方 |
 | 前置 | P1–P4 内核自举与 `HostProfile` · [NAMING_CONVENTIONS.md](../NAMING_CONVENTIONS.md) · [RFC_OCLIVE_POST_PROCESS_CHAIN.md](RFC_OCLIVE_POST_PROCESS_CHAIN.md) |
-| 命名 | **User Identity Prompt Template** · **Reply Post-Processor Plugin** |
+| 命名 | **User Identity Prompt Template** · **Reply Post-Processor Plugin** · 统称见 [RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md](RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md)（**独立通道能力增强模块**） |
 
 [English summary in §0](#0-english-summary)
 
@@ -13,7 +13,7 @@
 
 ## 0. English summary
 
-Two **orthogonal capability units** (not six host slots, not numbered facility submodules):
+Two **side-channel capability enhancement modules** (registry: [RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md](RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md); not six host slots, not numbered facility submodules):
 
 1. **User Identity Prompt Template** — switchable prompt fragments defining **who the user is**, merged at **`build_prompt`** (pre-LLM). Stored in the **role pack**; separate from role persona `prompts/`.
 2. **Reply Post-Processor Plugin** — trait + `builtin` / `remote` / `directory` backends, invoked **after** built-in `post_llm` side effects, **before** `SendMessageResponse.reply` is returned. Config in role pack **`config.json`** (parallel to `memory`), not under `slot_registry`.

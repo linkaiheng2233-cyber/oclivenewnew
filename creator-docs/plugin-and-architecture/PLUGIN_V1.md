@@ -363,9 +363,10 @@ TypeScript 侧 `SendMessageResponse`（`src/utils/tauri-api.ts`）必须与 `mod
 | `llm` | 主 LLM |
 | `agent` | Agent / MCP 工具链 |
 | **`complex_emotion`** | **复杂情感**（共景 `narrative_hint`）；蓝图 v2 中对应 `slot_registry` 的 `type: complex_emotion`，`backend: directory` 时须在 `provides` 中含此项 |
-| **`reply_post_process`** | **Reply Post-Processor**（非六槽）；`config.json` → `reply_post_processor.backend=directory` 时须在 `provides` 中含此项；RPC `reply_post_process.process` |
+| **`reply_post_process`** | **Reply Post-Processor**（**独立通道** `reply_post_process` · 非六槽）；`config.json` → `reply_post_processor.backend=directory` 时须在 `provides` 中含此项；RPC `reply_post_process.process` |
+| **`theater_director`** | **Theater Scene Director**（**独立通道** `theater_director` · 非六槽 · **已交付**）；`distro.oclive.toml` → `[theater].director_plugin`；开发 env `OCLIVE_THEATER_DIRECTOR_PLUGIN`；`provides` 须含此项；RPC **`theater.build_prompt`**（见下节） |
 
-解析时 [`SlotResolver`](../../crates/oclive_kernel_host/src/domain/slot_resolver.rs) 会校验 directory 插件是否声明 `provides` 含目标能力（含 `complex_emotion`）。Reply Post-Processor 由 [`resolve_reply_post_processor`](../../crates/oclive_kernel_host/src/domain/reply_post_processor.rs) 独立解析，同样校验 `reply_post_process`。
+解析时 [`SlotResolver`](../../crates/oclive_kernel_host/src/domain/slot_resolver.rs) 会校验 directory 插件是否声明 `provides` 含目标能力（含 `complex_emotion`）。**独立通道**项由专用 Resolver 解析（如 [`resolve_reply_post_processor`](../../crates/oclive_kernel_host/src/domain/reply_post_processor.rs) 校验 `reply_post_process`；[`resolve_theater_director`](../../crates/oclive_kernel_host/src/domain/theater_director.rs) 校验 `theater_director`），**不**经六槽 `SlotResolver`。
 
 ### Reply Post-Processor · 润色场景（可选 · 非默认）
 
@@ -374,6 +375,17 @@ TypeScript 侧 `SendMessageResponse`（`src/utils/tauri-api.ts`）必须与 `mod
 - **脚手架**：[`examples/reply-post-process-polish/`](../../examples/reply-post-process-polish/)（pass-through 默认；在 `rpc_server.mjs` 内替换 `polishReply` 接入你的模型）。
 - **设计汇报**：[handoff/REPLY_POST_PROCESSOR_DESIGN_REPORT.md](../../handoff/REPLY_POST_PROCESSOR_DESIGN_REPORT.md)。
 - **与 Prompt 分工**：生成阶段用 `meta.reply_quality_anchor`；润色在后处理阶段，默认 **`reply_post_processor.enabled: false`**。
+
+### Theater Scene Director · `theater.build_prompt`（独立通道 · 已交付）
+
+- **入口**：`generate_theater_scene` / `POST /theater/scene`（**不进** `process_message`）
+- **配置**：`distro.oclive.toml` → `[theater].director_plugin = "com.oclive.theater_director_official"`；开发 env **`OCLIVE_THEATER_DIRECTOR_PLUGIN`**
+- **directory**：`provides: theater_director`；RPC **`theater.build_prompt`**
+- **params**：[`TheaterPromptBuildInput`](../../crates/oclive_kernel_contracts/src/theater_director.rs)（`mode`：`patch` | `ripple` | `cast_adapt` | `cast_rewrite` | `cast_rewrite_minimal`；persona、beats、tweak、fork 等快照字段）
+- **result**：`{ "prompt": "<非空字符串>" }`（长度上限 32 768）；RPC 失败或空串 → 内核 **builtin** 模板，不 500
+- **官方插件**：[`plugins/com.oclive.theater_director_official/`](../../plugins/com.oclive.theater_director_official/) · 最小示例 [`examples/directory-plugin-theater-director-minimal/`](../../examples/directory-plugin-theater-director-minimal/)
+- **自定义 prompt pack**：Fork 官方插件 → 改 `prompts/`（入口 `prompts/index.mjs`；风格一句切换见 `drama_guardrails.mjs`）→ 新 `manifest.id` → `{app_data}/plugins/<id>/` + `[theater].director_plugin` 或 **`OCLIVE_THEATER_DIRECTOR_PLUGIN`**。详见官方插件 [`README.md`](../../plugins/com.oclive.theater_director_official/README.md) 与 [`handoff/theater/PLAYTEST_MATRIX.md`](../../handoff/theater/PLAYTEST_MATRIX.md)。
+- **放置指南**：[PLUGIN_PLACEMENT_GUIDE.md](PLUGIN_PLACEMENT_GUIDE.md)
 
 **`category`**（单值，可选）：供插件工作台左栏分类，建议与 `provides` 主槽一致，例如 `llm`、`complex_emotion`。
 

@@ -1,6 +1,6 @@
 # AI 剧场发行版 — 信息架构（IA）
 
-**状态**：设计稿（模式 1 · 开发前）。**最后更新**：2026-06-16
+**状态**：模式 1 **已落地**（2026-06）。**最后更新**：2026-06-18
 **配套**：[`DEVELOPMENT_ROADMAP.md`](DEVELOPMENT_ROADMAP.md)（思路/路线 SSOT · 模式 1 规格 · §5.5 冻结）· [`README.md`](README.md)（内核重开策略）· [`theater.oclive.toml`](theater.oclive.toml)（profile 模板）
 **范围纪律**：仅模式 1。本 IA **不**设计模式 2/3 界面（路线图 §5/§6）。
 
@@ -62,8 +62,8 @@ TheaterShell（舞台壳 · data-shell="theater"）
 复用 ToolShell 的纵向骨架（头/主/脚），但每区语义改写为舞台。
 
 ### Zone A · 舞台头（Stage Header）
-- **内容**：剧目名（如「早餐·上学前」）+ **卡司对**（两角色名/小头像；**可配置**，默认 mumu × 枫侵月，设置 → 卡司 Tab 换角后顶栏/立绘同步）。
-- **对应 ToolShell**：`tool-top-bar`（RoleSelector 位）。剧场**不放 RoleSelector**（模式 1 固定双槽，非自由多角色），顶栏为**只读卡司指示** + 右侧「更多」入口（设置藏此）。
+- **内容**：**可切换剧目**（早餐 / 超市 / 回家路上 / 洗澡睡觉；点击标题下拉）+ **卡司对**（两角色名/小头像；**可配置**，默认 mumu × 枫侵月，设置 → 卡司 Tab 换角后顶栏/立绘同步）。
+- **对应 ToolShell**：`tool-top-bar`（RoleSelector 位）。剧场**不放 RoleSelector**（模式 1 固定双槽，非自由多角色），顶栏为**场景选择器** + **只读卡司指示** + 右侧「更多」入口（设置藏此）。
 - **token**：`--tool-topbar-h` / `--tool-chrome-editor` / `--tool-divider`。
 
 ### Zone B · 舞台画布（Stage Canvas）—— 核心
@@ -79,7 +79,8 @@ TheaterShell（舞台壳 · data-shell="theater"）
 ### Zone C · 戳一戳 Dock（Poke Dock）—— 交互核心
 - **范式**：替代 `ChatInput`。**封闭芯片集**（模式 1 不开自由文本），一眼可见可点：
   - 🍵 喝苦中药 · ⏰ 改到快迟到 · 🥦 逼吃讨厌的菜 · 😼 换个称呼 · 🎭 微调性格
-- **交互**：点芯片 → `patching` 节拍（「弹改动加载」遮延迟）→ 舞台画布插入/改写**那一小段** → 回 `idle`。
+- **场景门控**：**仅早餐场景**显示 `PokeDock`；超市 / 回家路上 / 洗澡睡觉只播官方预生成对白（无戳点 forks）。
+- **交互**：点芯片 → `patching` 节拍 → 舞台插入**局部 patch 小剧情**（默认 `mode=patch`，保留官方 skeleton 尾部）→ 回 `idle`；可选 **双候选背景板**（`TheaterVariantBackdrop`）拖拽切换另一种合理分支。
 - **对应 ToolShell**：`tool-input-area`（`InteractionModeBar` + `ChatInput` 位）。剧场**新组件 `PokeDock` / `PokeChip` / `BeatLoader`**。
 - **含金量排序**：高含金量芯片（苦中药/迟到/讨厌菜/性格）优先且显眼；中性变量不入首屏 Dock（路线图 §4.3）。
 - **🎭 性格芯片**：是**创作漏斗暗门**（见 Zone 叠层）。
@@ -212,7 +213,9 @@ src/
 ```
 examples/distro-profiles/theater.oclive.toml        # 复制自 handoff/theater/theater.oclive.toml
 src-tauri/resources/distro-profiles/theater.oclive.toml
-src-tauri/resources/theater/breakfast.skeleton.json # 预生成骨架（强模型离线产出）
+src-tauri/resources/theater/scenes/*.skeleton.json   # 四场景预生成骨架（强模型离线产出）
+public/theater/scenes/*.skeleton.json                # Vite dev 镜像
+src/composables/theater/theaterSceneCatalog.ts       # 场景目录 SSOT（preset id / pokeEnabled / prompt hints）
 roles/theater-breakfast-a/  roles/theater-breakfast-b/  # 两个反差角色 v2 包
 ```
 

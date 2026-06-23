@@ -6,10 +6,10 @@ use crate::state::{
     ensure_models_dir_for_roles, is_managed_legacy_models_path, migrate_and_cleanup_models,
     paths_equal, reconcile_legacy_models_layout, AppState,
 };
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LocalModelFileDto {
     pub name: String,

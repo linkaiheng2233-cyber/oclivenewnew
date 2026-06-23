@@ -10,7 +10,7 @@
 
 | 维度 | 说明 |
 |------|------|
-| **正交能力** | 与六宿主槽、`slot_registry`、蓝图 `runtime_config` 六槽键**无关**；见 [RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md](../creator-docs/rfc/RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md) |
+| **独立通道 `reply_post_process`** | 与六宿主槽、`slot_registry`、蓝图 `runtime_config` 六槽键**无关**；注册表 [RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md](../creator-docs/rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md) · 细节 [RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md](../creator-docs/rfc/RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md) |
 | **与 Prompt 分工** | **`meta.reply_quality_anchor`**（或内核 `DEFAULT_REPLY_QUALITY_ANCHOR`）管**生成**；后处理管**落地**（格式、口癖修正、长度、安全、可选 LLM 重写） |
 | **与 RFC 草案差距** | [RFC_OCLIVE_POST_PROCESS_CHAIN.md](../creator-docs/rfc/RFC_OCLIVE_POST_PROCESS_CHAIN.md) 多步 `chain` 尚未落地；今日仅 builtin profile + 单后端 |
 

@@ -21,9 +21,9 @@ pub use high_risk::{
 };
 pub use mcp::{call_mcp_tool_impl, list_mcp_servers_impl, list_mcp_tools_impl, CallMcpToolHttpRequest};
 pub use llm_settings::{
-    get_llm_user_settings_impl, list_ollama_models_impl, probe_cloud_llm_impl,
+    get_llm_user_settings_impl, list_cloud_models_impl, list_ollama_models_impl, probe_cloud_llm_impl,
     save_llm_user_settings_impl, set_session_llm_model_impl, LlmUserSettingsDto,
-    SaveLlmUserSettingsRequest, SetSessionLlmModelRequest,
+    ListCloudModelsRequest, SaveLlmUserSettingsRequest, SetSessionLlmModelRequest,
 };
 pub use plugin_bridge::{
     bridge_command_needs_kernel_writer, dispatch_bridge_command, parse_send_message_request,

@@ -13,7 +13,7 @@
 | **内核二进制** | **否（Deferred 裁剪）** | 各发行版 **自带 bundled 全量核**（spawn 首选）；**shared 兜底** 在 bundled 故障时接管。**不**默认「一颗全能核打天下」；`promote` / per-distro 裁剪 binary 等产品化见 [KERNEL_SCHEDULER_RESCOPE.md](../../handoff/KERNEL_SCHEDULER_RESCOPE.md) |
 | **`distro.oclive.toml`（HostProfile）** | **是** | 宿主策略：prompt / memory / post_process / `host_flags` / 可选 **`[plugin_backends]`** |
 | **默认角色包 + 蓝图 `slot_registry`** | **是** | 各发行版 bundled / 推荐的 `roles/*` 蓝图 tuned for 场景 |
-| **目录插件 / 正交能力** | **按需** | VS Code 渗透插件、未来 Theater 导演插件等 |
+| **目录插件 / 独立通道能力增强模块** | **按需** | VS Code 渗透插件（宿主侧）、`reply_post_process` / **`theater_director`** 等；注册表 [RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md](../rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md) |
 
 **一句话**：**单进程** `:8420`；发行版差异来自 **`distro.oclive.toml`（含可选六槽整表替换）** + **默认角色蓝图** + **目录插件** — **不是**为每个发行版维护不同裁剪内核二进制（Deferred）。
 
@@ -35,7 +35,7 @@
 - **Chat Pro**（`desktop`）：**省略** `[plugin_backends]` → 角色蓝图 + 目录插件 **open ceiling**。
 - **VS Code Flash**（`vscode`）：**显式** `[plugin_backends]` → 无论角色包怎么写，运行时固定为发行版矩阵。
 - **dev lab**（`desktop-chat`）：**省略** `[plugin_backends]` → 与 Pro 相同 open ceiling，但 prompt/memory 更轻；**不进 Release 包**。
-- **Theater**（Deferred）：**显式** 轻量矩阵；见 §3.4。
+- **Theater**（**已交付 2026-06**）：**显式** 轻量矩阵 + **`theater_director`** 独立通道；见 §3.4。
 
 ---
 
@@ -57,9 +57,9 @@ flowchart TB
     dcProfile["profile: concise/light + open ceiling"]
     dcNote["examples/ only · 非 Release hero"]
   end
-  subgraph theater [theater_Deferred]
-    thProfile["profile: 轻量六槽 + skip agent/CE"]
-    thRoles["theater-breakfast-* 蓝图"]
+  subgraph theater [theater_AI_Theater]
+    thProfile["profile: 轻量六槽 + director_plugin"]
+    thRoles["mumu × 枫侵月 · 四场景"]
   end
   kernel --> pro
   kernel --> flash
@@ -114,16 +114,17 @@ flowchart TB
 | **何时用** | 本地对比 Pro/Flash；`OCLIVE_DISTRO_PROFILE` 指向 examples 路径 |
 | **profile** | [`examples/distro-profiles/desktop-chat.oclive.toml`](../../examples/distro-profiles/desktop-chat.oclive.toml) |
 
-### 3.4 `theater` — AI 剧场（Deferred · Pro/Flash smoke 通过后再开）
+### 3.4 `theater` — AI 剧场（**已交付 2026-06** · 模式 1）
 
 | 维度 | 策略 |
 |------|------|
-| **目标** | 15s 双 OC 互动；Mode 1 以 **前端 skeleton + Ollama patch** 为主；Mode 3 可选 `send_message` |
+| **目标** | 15s 双 OC 互动；模式 1 以 **前端 skeleton + Ollama patch** 为主；模式 2/3 **冻结**至陌生人验收 |
 | **`[plugin_backends]`** | **显式轻量矩阵**（见下表） |
+| **`[theater].director_plugin`** | `com.oclive.theater_director_official`（`provides: theater_director`）；env `OCLIVE_THEATER_DIRECTOR_PLUGIN` 可覆盖 |
 | **`host_flags`** | `skip_agent` · `skip_complex_emotion` |
 | **`prompt.profile`** | `concise` + 包级 `reply_quality_anchor` 锁场景 |
-| **默认角色** | `theater-breakfast-a` / `theater-breakfast-b` |
-| **前端热路径** | [`useTheaterBeatPatch.ts`](../../src/theater/useTheaterBeatPatch.ts) **不经过**六槽；内核矩阵主要服务 Mode 3 / Tauri `send_message` |
+| **默认卡司** | **mumu × 枫侵月**（四场景：早饭 / 超市 / 回家 / 睡前） |
+| **前端热路径** | [`useTheaterBeatPatch.ts`](../../src/composables/theater/theaterLogic.ts) patch 路径 **不经过**六槽；`theater_director` 经圈外 API |
 
 **Theater 有效六槽（profile + 蓝图对齐）**：
 
@@ -138,7 +139,7 @@ flowchart TB
 
 **蓝图改动**：官方剧场角色 [`roles/theater-breakfast-*/pipeline.ocblueprint`](../../roles/theater-breakfast-a/pipeline.ocblueprint) 的 `slot_registry` 与上表一致；`meta.ollama_model` / `reply_quality_anchor` 保留场景约束。
 
-**未来（Deferred）**：目录插件「导演 RPC」不占新六槽键；通过 `directory` + `directory_plugins` 或正交 `reply_post_processor` 加强规则。
+**独立通道（已交付）**：[`resolve_theater_director`](../../crates/oclive_kernel_host/src/domain/theater_director.rs) + 官方目录插件 `com.oclive.theater_director_official`（RPC `theater.build_prompt`）；不占六槽键，与 `reply_post_process` 同类 Resolver 模式。Fork 示例：[`examples/directory-plugin-theater-director-minimal/`](../../examples/directory-plugin-theater-director-minimal/)。
 
 ---
 
@@ -151,7 +152,7 @@ flowchart TB
 | Prompt 简洁度 / 记忆条数 / 后处理链 | `[prompt]` / `[memory]` / `[post_process]` | 发行版作者 |
 | 单角色 LLM 模型名 | 蓝图 `slot_registry.llm.model` | 蓝图（theater 官方包） |
 | 场景锚点 / 禁 OOC | `meta.reply_quality_anchor` + `core_personality.txt` | 角色包 |
-| 回复后处理 / 场景校验 | `config.json` → `reply_post_processor` | 角色包（正交） |
+| 回复后处理 / 场景校验 | `config.json` → `reply_post_processor` | 角色包（**独立通道** `reply_post_process`） |
 | 渗透 / IDE 能力 | 独立 vsix + penetration profile | VS Code 插件 |
 
 **不要**把发行版策略写进蓝图 `runtime_config` 的 distro 字段 — profile 与蓝图分责见 [`ROLE_PACK_BOUNDARY.md`](../../handoff/ROLE_PACK_BOUNDARY.md)。
@@ -165,7 +166,7 @@ flowchart TB
 | `desktop`（**Chat Pro**） | `mumu`、其它官方示例 | Tauri 默认 spawn · open ceiling |
 | `desktop-chat`（**dev lab**） | 同上 | examples/ only · 非 Release hero |
 | `vscode`（**Flash**） | `mumu`（`scenes/vscode/`） | vscode-lite 契约 |
-| `theater`（**Deferred**） | `theater-breakfast-a`、`theater-breakfast-b` | Pro/Flash smoke 通过后再 ship |
+| `theater`（**已交付**） | `mumu`、`枫侵月`（四场景 skeleton） | Theater 发行版 bundled；见 [`handoff/theater/`](../../handoff/theater/) |
 
 按发行版过滤 `roles/` 目录（安装包只带子集）— **T4 打包项**，当前 dev 树仍加载全 `roles/`。
 
@@ -176,10 +177,10 @@ flowchart TB
 | Wave | 内容 |
 |------|------|
 | **P0** | 本文档 + profile / 剧场蓝图对齐（本 PR） |
-| **P1** | [`DEVELOPMENT_ROADMAP.md`](../../handoff/theater/DEVELOPMENT_ROADMAP.md) 模式 1（早饭场景 · 戳点微改） |
+| **P1** | [`DEVELOPMENT_ROADMAP.md`](../../handoff/theater/DEVELOPMENT_ROADMAP.md) 模式 1 — **Done**（2026-06）；P0 陌生人验收 OPEN |
 | **P2** | VS Code profile 与姊妹仓 `distro.oclive.toml` 镜像 diff 自动化 |
 | **P3** | 安装包 `roles/` 子集 + 默认角色 manifest |
-| **Deferred** | 内核 promote / 裁剪 binary · `binary_upgrade` 产品化 · 赌场 director 插件 — 见 [KERNEL_SCHEDULER_RESCOPE.md](../../handoff/KERNEL_SCHEDULER_RESCOPE.md) |
+| **Deferred** | 内核 promote / 裁剪 binary · `binary_upgrade` 产品化 · 模式 2/3 — 见 [MODE2_UNFREEZE.md](../../handoff/theater/MODE2_UNFREEZE.md) |
 
 ---
 

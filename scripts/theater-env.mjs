@@ -85,6 +85,7 @@ const env = {
 if (mode === 'dev') {
   env.OCLIVE_KERNEL_BINARY = ensureDevKernelBinary()
   env.OCLIVE_DEVELOPER = '1'
+  env.OCLIVE_THEATER_CAST_REWRITE_TIMEOUT_SECS = '45'
 }
 
 const npmArgs = mode === 'build' ? ['run', 'tauri:build'] : ['run', 'tauri:dev']

@@ -30,6 +30,7 @@ import { useSceneTravelBars } from './useSceneTravelBars'
 import { usePackUiTheme } from './useTheme'
 import { useProgressiveDisclosure } from './useProgressiveDisclosure'
 import { markPresetPickerDone } from '../utils/presetRolePicker'
+import { resolveOcliveShell } from './useOcliveShell'
 
 export const DebugPanel = defineAsyncComponent(() => import('../components/dev-tools/DebugPanel.vue'))
 export const MarketView = defineAsyncComponent(() => import('../views/MarketView.vue'))
@@ -189,6 +190,11 @@ export function useMainShell() {
   useReturnFocusOnClose(shortcutHelpOpen)
 
   function onHostOpenModelManager(): void {
+    if (resolveOcliveShell() === 'theater') {
+      closeModelManager()
+      hostEventBus.emit('theater:settings', { action: 'model' })
+      return
+    }
     openModelManager(true)
   }
 
@@ -447,6 +453,11 @@ export function useMainShell() {
         return
       }
       openSimplePluginManager(true)
+      return
+    }
+    if (resolveOcliveShell() === 'theater') {
+      closeModelManager()
+      hostEventBus.emit('theater:settings', { action: 'model' })
       return
     }
     openModelManager(true)

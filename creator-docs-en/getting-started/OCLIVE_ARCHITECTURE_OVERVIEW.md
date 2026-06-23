@@ -1,6 +1,6 @@
 # Oclive architecture overview (single-kernel, dual-mode build)
 
-This page is the **authoritative public narrative** and **module numbering & taxonomy**: single-kernel dual-mode build, **backend modules (modules 1–6)**, **facility modules (umbrella term)**, **`{Name} facility submodule`** entries (**facility submodule 1, 2, …**), plus **backend-module plugin modules** (not in the module-number series). Implementation details remain in [PLUGIN_V1.md](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md), [SETTINGS_REFERENCE.md](../../creator-docs/cli/SETTINGS_REFERENCE.md), [PURE_KERNEL_BOUNDARY.md](../../creator-docs/getting-started/PURE_KERNEL_BOUNDARY.md), [RFC_OCLIVE_MONOLITH_MODE.md](../../creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md), and source.
+This page is the **authoritative public narrative** and **module numbering & taxonomy**: single-kernel dual-mode build, **backend modules (modules 1–6)**, **facility modules (umbrella term)**, **`{Name} facility submodule`** entries (**facility submodule 1, 2, …**), **side-channel capability enhancement modules**, plus **backend-module plugin modules** (not in the module-number series). Implementation details remain in [PLUGIN_V1.md](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md), [SETTINGS_REFERENCE.md](../../creator-docs/cli/SETTINGS_REFERENCE.md), [PURE_KERNEL_BOUNDARY.md](../../creator-docs/getting-started/PURE_KERNEL_BOUNDARY.md), [RFC_OCLIVE_MONOLITH_MODE.md](../../creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md), [RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md](../../creator-docs/rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md), and source.
 
 [中文](../../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)
 
@@ -33,19 +33,21 @@ This page is the **authoritative public narrative** and **module numbering & tax
 
 ## Module numbering (normative)
 
-Capabilities inside the **pure kernel** split into **two categories**. Do not confuse with the kernel factory’s **recipe · implementation · code** layers ([KERNEL_FACTORY_VISION.md](../../creator-docs/getting-started/KERNEL_FACTORY_VISION.md)).
+Capabilities inside the **pure kernel** split into **four categories**. Do not confuse with the kernel factory’s **recipe · implementation · code** layers ([KERNEL_FACTORY_VISION.md](../../creator-docs/getting-started/KERNEL_FACTORY_VISION.md)).
 
 | Category | Numbering | In `plugin_backends`? |
 |----------|-----------|------------------------|
 | **Backend modules** | **Modules 1–6** (fixed table below) | **Yes** (six enum fields) |
 | **Facility modules** | **Umbrella**; registered items are **facility submodule N** (separate from modules 1–6) | **No** (orchestration calls) |
+| **Side-channel capability enhancement modules** | **No module or facility submodule number**; registry `id` in [RFC §2](../../creator-docs/rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md#2-注册表-v1) | **No** (dedicated resolver + anchor / standalone API) |
 | **Backend-module plugin modules** | **No “module N” id** | Only an implementation of **module K** |
 
 **Extension rules**
 
 - New **backend module** (RFC + host): **module 7**, **module 8**, …
 - New **`{Name} facility submodule`** (RFC + registry): **facility submodule 3, 4, …** (#3 portrait · #4 visual presentation registered in v0.4)
-- New **plugin delivery** (sidecar / directory): **“module K’s xxx plugin implementation”**—does **not** take module 7 or a facility submodule number.
+- New **side-channel capability enhancement module** (RFC + registry): register `id`, anchor or standalone API, optional `provides`; **not** in six slots or facility submodule series ([RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md](../../creator-docs/rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md))
+- New **plugin delivery** (sidecar / directory): **“module K’s xxx plugin implementation”**—does **not** take module 7, a facility submodule number, or a side-channel registry slot.
 
 ### Modules 1–6 (backend modules, fixed)
 
@@ -168,6 +170,20 @@ See [NARRATIVE_HINT_CONTRACT.md](../../creator-docs/testing/NARRATIVE_HINT_CONTR
 10. **Module 6:** **agent**
 
 **Experimental (optional):** when triggers match, **facility submodule 2** (**expert-model facility submodule** / expert routing) runs via `slot.expert.invoke`.
+
+---
+
+## Side-channel capability enhancement modules
+
+Normative Chinese: **独立通道能力增强模块**. Registry SSOT: [RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md](../../creator-docs/rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md). **Not** six host slots; **not** facility submodule numbers.
+
+| `id` | Anchor | `provides` |
+|------|--------|------------|
+| **`user_identity`** | pre-LLM → `build_prompt` | — (role pack `user_identities/`) |
+| **`reply_post_process`** | after built-in `post_llm` → `process_reply` | `reply_post_process` |
+| **`theater_director`** | `generate_theater_scene` / `POST /theater/scene` (outside `process_message`) | `theater_director` (**shipped 2026-06**) |
+
+See the Chinese page for diagrams and disambiguation vs Experimental `dual_core`, module 4 Prompt, and module 5 LLM.
 
 ---
 

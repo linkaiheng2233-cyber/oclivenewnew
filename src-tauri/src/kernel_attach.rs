@@ -10,6 +10,7 @@ use oclive_kernel_types::models::dto::{
     TheaterSceneResponse, TimeStateResponse,
 };
 use oclive_kernel_host::state::AppState;
+use oclive_kernel_host::service::{LlmUserSettingsDto, ListCloudModelsRequest, SaveLlmUserSettingsRequest};
 pub(crate) use oclive_kernel_runtime::app_error_from_http_response;
 use oclive_kernel_runtime::RUNTIME_API_VERSION;
 use oclive_kernel_runtime::KernelBinaryManifest;
@@ -564,6 +565,122 @@ impl KernelHttpClient {
             let text = res.text().await.unwrap_or_default();
             Err(app_error_from_http_response(status.as_u16(), &text))
         }
+    }
+
+    pub async fn get_llm_user_settings_via_http(
+        conn: &KernelConnection,
+        role_id: &str,
+        session_id: Option<&str>,
+    ) -> Result<LlmUserSettingsDto, AppError> {
+        if !Self::ensure_healthy(conn).await {
+            return Err(Self::offline_err());
+        }
+        let mut req = conn
+            .http_client()
+            .get(format!("{}/llm/user_settings", conn.base_url))
+            .query(&[("role_id", role_id.trim())]);
+        if let Some(sid) = session_id.filter(|s| !s.trim().is_empty()) {
+            req = req.query(&[("session_id", sid.trim())]);
+        }
+        let res = req
+            .send()
+            .await
+            .map_err(|e| Self::map_send_err(&conn.base_url, "llm/user_settings GET", e))?;
+        let status = res.status();
+        let text = res
+            .text()
+            .await
+            .map_err(|e| AppError::OllamaError(format!("llm/user_settings body: {e}")))?;
+        if !status.is_success() {
+            return Err(app_error_from_http_response(status.as_u16(), &text));
+        }
+        serde_json::from_str(&text)
+            .map_err(|e| AppError::OllamaError(format!("llm/user_settings JSON: {e}")))
+    }
+
+    pub async fn save_llm_user_settings_via_http(
+        conn: &KernelConnection,
+        req: &SaveLlmUserSettingsRequest,
+    ) -> Result<RoleInfo, AppError> {
+        if !Self::ensure_healthy(conn).await {
+            return Err(Self::offline_err());
+        }
+        let res = conn
+            .http_client()
+            .post(format!("{}/llm/user_settings", conn.base_url))
+            .json(req)
+            .send()
+            .await
+            .map_err(|e| Self::map_send_err(&conn.base_url, "llm/user_settings POST", e))?;
+        let status = res.status();
+        let text = res
+            .text()
+            .await
+            .map_err(|e| AppError::OllamaError(format!("llm/user_settings POST body: {e}")))?;
+        if !status.is_success() {
+            return Err(app_error_from_http_response(status.as_u16(), &text));
+        }
+        serde_json::from_str(&text)
+            .map_err(|e| AppError::OllamaError(format!("llm/user_settings POST JSON: {e}")))
+    }
+
+    pub async fn probe_cloud_llm_via_http(
+        conn: &KernelConnection,
+        role_id: &str,
+        session_id: Option<&str>,
+    ) -> Result<(), AppError> {
+        if !Self::ensure_healthy(conn).await {
+            return Err(Self::offline_err());
+        }
+        let mut req = conn
+            .http_client()
+            .post(format!("{}/llm/probe_cloud", conn.base_url))
+            .query(&[("role_id", role_id.trim())]);
+        if let Some(sid) = session_id.filter(|s| !s.trim().is_empty()) {
+            req = req.query(&[("session_id", sid.trim())]);
+        }
+        let res = req
+            .send()
+            .await
+            .map_err(|e| Self::map_send_err(&conn.base_url, "llm/probe_cloud POST", e))?;
+        let status = res.status();
+        if status.is_success() {
+            Ok(())
+        } else {
+            let text = res.text().await.unwrap_or_default();
+            Err(app_error_from_http_response(status.as_u16(), &text))
+        }
+    }
+
+    pub async fn list_cloud_models_via_http(
+        conn: &KernelConnection,
+        remote_url: Option<&str>,
+        remote_token: Option<&str>,
+    ) -> Result<Vec<String>, AppError> {
+        if !Self::ensure_healthy(conn).await {
+            return Err(Self::offline_err());
+        }
+        let body = ListCloudModelsRequest {
+            remote_url: remote_url.map(str::to_string),
+            remote_token: remote_token.map(str::to_string),
+        };
+        let res = conn
+            .http_client()
+            .post(format!("{}/llm/cloud_models", conn.base_url))
+            .json(&body)
+            .send()
+            .await
+            .map_err(|e| Self::map_send_err(&conn.base_url, "llm/cloud_models POST", e))?;
+        let status = res.status();
+        let text = res
+            .text()
+            .await
+            .map_err(|e| AppError::OllamaError(format!("llm/cloud_models body: {e}")))?;
+        if !status.is_success() {
+            return Err(app_error_from_http_response(status.as_u16(), &text));
+        }
+        serde_json::from_str(&text)
+            .map_err(|e| AppError::OllamaError(format!("llm/cloud_models JSON: {e}")))
     }
 
     pub async fn fetch_chat_messages_via_http(

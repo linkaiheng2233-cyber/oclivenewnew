@@ -1,11 +1,34 @@
 import type { TheaterForkTemplate, TheaterScriptLine } from '../../api/theater'
 import type { PokeChipId, ScriptLine, TheaterSkeleton } from './theaterLogic'
 import {
+  isBaselinePregenCast,
+  normalizePairRelationId,
+} from './theaterPairRelation'
+import {
+  DEFAULT_THEATER_CAST_CONFIG,
   isDefaultCastConfig,
+  syncBeatSpeakerNames,
   type TheaterCastConfig,
 } from './theaterCastConfig'
 
-export const THEATER_ADAPTED_STORAGE_KEY = 'oclive.theater.adapted.v1'
+export const THEATER_ADAPTED_STORAGE_KEY = 'oclive.theater.adapted.v2'
+const LEGACY_ADAPTED_STORAGE_KEY = 'oclive.theater.adapted.v1'
+
+function migrateLegacyAdaptedCache(): void {
+  try {
+    if (localStorage.getItem(THEATER_ADAPTED_STORAGE_KEY))
+      return
+    const legacy = localStorage.getItem(LEGACY_ADAPTED_STORAGE_KEY)
+    if (!legacy)
+      return
+    localStorage.removeItem(LEGACY_ADAPTED_STORAGE_KEY)
+  }
+  catch {
+    /* ignore */
+  }
+}
+
+migrateLegacyAdaptedCache()
 
 export interface AdaptedCacheEntry {
   skeletonHash: string
@@ -44,7 +67,11 @@ export function isDefaultCast(config: TheaterCastConfig): boolean {
 }
 
 export function needsCastAdaptation(config: TheaterCastConfig): boolean {
-  return !isDefaultCast(config)
+  return !isBaselinePregenCast(
+    config,
+    DEFAULT_THEATER_CAST_CONFIG.castA.roleId,
+    DEFAULT_THEATER_CAST_CONFIG.castB.roleId,
+  )
 }
 
 export type CastAdaptStatus = 'default' | 'cached' | 'renameOnly'
@@ -59,12 +86,16 @@ export interface CastAdaptIssue {
 /** Whether applied cast has AI-adapted cache or is rename-only baseline. */
 export function resolveCastAdaptStatus(
   config: TheaterCastConfig,
-  sceneId: string,
+  presetId: string,
   skeletonHash: string,
 ): CastAdaptStatus {
-  if (isDefaultCast(config))
+  if (isBaselinePregenCast(
+    config,
+    DEFAULT_THEATER_CAST_CONFIG.castA.roleId,
+    DEFAULT_THEATER_CAST_CONFIG.castB.roleId,
+  ))
     return 'default'
-  const cached = getAdaptedCache(config, sceneId, skeletonHash)
+  const cached = getAdaptedCache(config, presetId, skeletonHash)
   return cached ? 'cached' : 'renameOnly'
 }
 
@@ -86,9 +117,9 @@ export function pruneAdaptedCache(maxEntries = DEFAULT_ADAPTED_CACHE_MAX): void 
 
 export function clearAdaptedCacheForCast(
   config: TheaterCastConfig,
-  sceneId = 'home',
+  presetId = 'breakfast',
 ): void {
-  const key = cacheKeyForCast(config, sceneId)
+  const key = cacheKeyForCast(config, presetId)
   const store = readCacheStore()
   if (!(key in store))
     return
@@ -96,7 +127,7 @@ export function clearAdaptedCacheForCast(
   writeCacheStore(store)
 }
 
-/** Number of cached `(sceneId, castA, castB)` adaptation entries. */
+/** Number of cached `(presetId, castA, castB)` adaptation entries. */
 export function countAdaptedCacheEntries(): number {
   return Object.keys(readCacheStore()).length
 }
@@ -134,8 +165,9 @@ export function computeSkeletonHash(canonical: TheaterSkeleton): string {
   return (h >>> 0).toString(36)
 }
 
-export function cacheKeyForCast(config: TheaterCastConfig, sceneId: string): string {
-  return `${sceneId}:${config.castA.roleId}:${config.castB.roleId}`
+export function cacheKeyForCast(config: TheaterCastConfig, presetId: string): string {
+  const rel = normalizePairRelationId(config.pairRelationId)
+  return `${presetId}:${config.castA.roleId}:${config.castB.roleId}:${rel}`
 }
 
 function readCacheStore(): AdaptedCacheStore {
@@ -162,10 +194,10 @@ function writeCacheStore(store: AdaptedCacheStore): void {
 
 export function getAdaptedCache(
   config: TheaterCastConfig,
-  sceneId: string,
+  presetId: string,
   skeletonHash: string,
 ): AdaptedCacheEntry | null {
-  const key = cacheKeyForCast(config, sceneId)
+  const key = cacheKeyForCast(config, presetId)
   const entry = readCacheStore()[key]
   if (!entry || entry.skeletonHash !== skeletonHash)
     return null
@@ -174,10 +206,10 @@ export function getAdaptedCache(
 
 export function setAdaptedCache(
   config: TheaterCastConfig,
-  sceneId: string,
+  presetId: string,
   entry: AdaptedCacheEntry,
 ): void {
-  const key = cacheKeyForCast(config, sceneId)
+  const key = cacheKeyForCast(config, presetId)
   const store = readCacheStore()
   store[key] = { ...entry, ts: entry.ts || Date.now() }
   writeCacheStore(store)
@@ -259,7 +291,7 @@ export function buildRuntimeFromRewrite(
       patchLines: tmpl.patch_lines.map(scriptLineFromDto),
     }]
   }
-  return {
+  return syncBeatSpeakerNames({
     ...baseline,
     cast: {
       a: { ...baseline.cast.a },
@@ -267,5 +299,5 @@ export function buildRuntimeFromRewrite(
     },
     beats: beats.map(scriptLineFromDto),
     forks: nextForks,
-  }
+  })
 }

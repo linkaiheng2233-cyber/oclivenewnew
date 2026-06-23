@@ -29,6 +29,8 @@ pub mod policy_registry;
 pub mod remote_fallback_policy;
 pub mod agent_mcp_bridge;
 pub mod reply_post_processor_wiring;
+pub mod theater_director_plugin_seed;
+pub mod theater_director_wiring;
 pub mod remote_plugin;
 pub mod repositories;
 pub mod role_pack;

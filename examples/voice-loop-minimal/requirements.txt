@@ -1,0 +1,2 @@
+# Week 1: stdlib only. Optional TTS:
+# pyttsx3>=2.90

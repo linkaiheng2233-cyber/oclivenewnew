@@ -1,6 +1,6 @@
 # Oclive 架构总览（单核双态构建架构）
 
-本文是 **对外架构叙述** 与 **模块编号与分层术语** 的权威页：单核双态构建、**后端模块（第 1–6 模块）**、**设施模块（统称）** 与 **第 N 设施子模块（`{专名}设施子模块`）**，以及 **后端模块插件模块**（不归入第几模块序列）。实现细节仍以 [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)、[SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)、[PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md)、[RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md) 与源码为准。
+本文是 **对外架构叙述** 与 **模块编号与分层术语** 的权威页：单核双态构建、**后端模块（第 1–6 模块）**、**设施模块（统称）** 与 **第 N 设施子模块（`{专名}设施子模块`）**、**独立通道能力增强模块**，以及 **后端模块插件模块**（不归入第几模块序列）。实现细节仍以 [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)、[SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)、[PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md)、[RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md)、[RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md](../rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md) 与源码为准。
 
 [English](../../creator-docs-en/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)
 
@@ -35,19 +35,21 @@
 
 ## 模块编号约定（规定）
 
-纯净内核能力划分为 **两大类**；**不要** 与「内核工厂配方层·实现层·代码层」混淆（后者见 [KERNEL_FACTORY_VISION.md](KERNEL_FACTORY_VISION.md)）。
+纯净内核能力划分为 **四大类**；**不要** 与「内核工厂配方层·实现层·代码层」混淆（后者见 [KERNEL_FACTORY_VISION.md](KERNEL_FACTORY_VISION.md)）。
 
 | 大类 | 编号系列 | 是否写入 `plugin_backends` |
 |------|----------|---------------------------|
 | **后端模块** | **第 1–6 模块**（固定，见下表） | **是**（六枚举字段） |
 | **设施模块** | **统称**；其中已登记项为 **第 N 设施子模块**（与 1–6 **独立序号**） | **否**（编排行内调用） |
+| **独立通道能力增强模块** | **无模块号、无设施子模块号**；注册表 `id` 见 [RFC §2](../rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md#2-注册表-v1) | **否**（自有 Resolver + 锚点 / 独立 API） |
 | **后端模块插件模块** | **不使用「第 N 模块」编号** | 仅表示某 **第 K 后端模块** 的外挂实现 |
 
 **扩展规则**
 
 - 新增 **后端模块**（须 RFC + 宿主）：依次为 **第 7 模块**、**第 8 模块**…
 - 新增 **`{专名}设施子模块`**（须 RFC + 文档登记）：第 3–4 已登记（立绘 · 视觉表现）；其后依次为 **第 5、第 6…**
-- 新增 **后端模块插件**（侧车 / 目录包）：写作 **「第 K 模块的 xxx 插件实现」**，**不** 占用第 7、第 8 模块号，也 **不** 占用设施子模块号。
+- 新增 **独立通道能力增强模块**（须 RFC + 注册表）：登记 `id`、锚点或独立 API、可选 `provides`；**不** 占六槽、**不** 领设施子模块号（见 [RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md](../rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md)）
+- 新增 **后端模块插件**（侧车 / 目录包）：写作 **「第 K 模块的 xxx 插件实现」**，**不** 占用第 7、第 8 模块号，也 **不** 占用设施子模块号或独立通道注册表位。
 
 ### 第 1–6 模块（后端模块，固定）
 
@@ -235,9 +237,16 @@ Stable 主路径以 `process_message` → `turn_prefetch` → `pre_llm` → `co_
 
 ---
 
-## 正交能力单元（非六槽 · 非设施子模块编号）
+## 独立通道能力增强模块（非六槽 · 非设施子模块编号）
 
-与 [NAMING_CONVENTIONS.md](../NAMING_CONVENTIONS.md) §1.2 对齐：**User Identity Prompt Template** 与 **Reply Post-Processor Plugin** 不占 `plugin_backends` 六键，也不登记为「第 N 设施子模块」。
+与 [NAMING_CONVENTIONS.md](../NAMING_CONVENTIONS.md) §1.2、[RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md](../rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md) 对齐：**不占** `plugin_backends` 六键，**不**登记为「第 N 设施子模块」；经 **自有 Resolver** 接入 Stable 主链固定锚点，或经 **独立 API** 在 `process_message` 圈外运行。
+
+**两类锚点**
+
+| 模式 | 说明 | 注册表项 |
+|------|------|----------|
+| **主链侧钩（pre / post）** | 仍属对话回合，但不走六槽解析 | `user_identity`、`reply_post_process` |
+| **圈外独立 API** | 单独 HTTP/Tauri 入口；消费 LLM 等设施，**不**插入 Stable 工序表 | `theater_director` |
 
 ```mermaid
 flowchart TB
@@ -246,32 +255,45 @@ flowchart TB
     PB[PromptBuilder.push_user_identity_section]
     UI --> PB
   end
-  subgraph slots [第 1–6 模块]
+  subgraph slots [第 1–6 模块 · process_message]
     LLM[llm.generate → raw reply]
   end
-  subgraph builtin_post [post_llm · 现有 turn_pipeline/post.rs]
+  subgraph builtin_post [post_llm · turn_pipeline/post.rs]
     PERSIST[记忆/好感/chat_storage 等内置持久化]
   end
-  subgraph pp [Reply Post-Processor]
+  subgraph pp [reply_post_process]
     PROC[ReplyPostProcessor.process_reply]
     OUT[SendMessageResponse.reply]
     PROC --> OUT
+  end
+  subgraph theater [theater_director · 圈外 API]
+    API[generate_theater_scene / POST /theater/scene]
+    SD[resolve_theater_director + 官方/目录插件]
+    API --> SD
   end
   PB --> slots
   LLM --> PERSIST
   PERSIST --> PROC
 ```
 
-| 能力 | 配置落点 | 编排锚点 | 时机 |
-|------|----------|----------|------|
-| **User Identity** | 角色包 `user_identities/`；发行版 `[user_identity]` | `resolve_active_user_identity` → `PromptBuilder.build_prompt` | **LLM 之前**（pre-LLM Prompt 注入） |
-| **Reply Post-Processor** | 角色包 `config.json` → `reply_post_processor`；发行版 `[post_process].chain` | `resolve_reply_post_processor` → `process_reply` | **内置 post_llm 之后**、返回 `reply` 之前 |
+### 注册表 v1（摘要）
+
+| `id` | 规范名 | 配置落点 | 锚点 | 插件 `provides` |
+|------|--------|----------|------|-----------------|
+| **`user_identity`** | 用户身份 Prompt 模板 | 角色包 `user_identities/`；发行版 `[user_identity]` | pre → `build_prompt` | 无（角色包内容） |
+| **`reply_post_process`** | 回复后处理 | 角色包 `config.json` → `reply_post_processor`；发行版 `[post_process].chain` | post_llm → `process_reply` | `reply_post_process` |
+| **`theater_director`** | 剧场场景导演 | `[theater].director_plugin`；fallback 内置 | `generate_theater_scene` | `theater_director`（**已交付**） |
+
+**消歧**
 
 - **用户身份** ≠ **角色身份**（`prompts/`、`core_personality.txt`）。
-- **Reply Post-Processor** ≠ **post-process chain profile**（发行版策略枚举）本身；chain 仅合并 effective builtin `profile`。
-- **Reply Post-Processor** ≠ 第 4 模块 Prompt 槽（槽拼 Prompt；后处理改 LLM 输出字句）。
+- **Reply Post-Processor** ≠ post-process chain profile 本身；≠ 第 4 模块 Prompt 槽；≠ Experimental 核 step。
+- **Theater Scene Director** ≠ 第 4 模块 Prompt（`TheaterSceneRequest` ≠ `PromptInput`）；≠ 第 5 模块 LLM 插件（仅消费 `AppState::llm`）；默认 **不** 升格「第 5 设施子模块」。
+- **Experimental 核**（`dual_core`）改的是 Stable **整圈工序**；独立通道是 Stable **固定钩子** 或 **圈外 API**。
 
-RFC 与验收：[RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md](../rfc/RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md) · Phase 2 handoff：[USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md](../../handoff/USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md)。
+**附录（宿主工具，非本注册表主表）**：编写器 `test_runner` 等见 RFC §2.1。
+
+RFC 与验收：[RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md](../rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md) · 身份/后处理细节：[RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md](../rfc/RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md) · 剧场：[handoff/theater/DEVELOPMENT_ROADMAP.md](../../handoff/theater/DEVELOPMENT_ROADMAP.md)。
 
 ---
 

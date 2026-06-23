@@ -56,9 +56,11 @@ This page is the **naming SSOT** for OCLive. Key rules:
 | **第 4 设施子模块（视觉表现）** | **visual presentation facility submodule** | 否 | 代码：`visual_presentation`、`performance_directive`；产品口语：**角色舞台** |
 | **后端模块插件模块** | **backend module plugin** | 插件 manifest，非模块号 | 例：「第 5 模块的 directory 插件实现」 |
 | **无编号设施模块** | **unnumbered facility module** | 否 | `PluginHost`、`PersonalityEngine`、好感、`Repository` 等 |
+| **独立通道能力增强模块** | **side-channel capability enhancement module** | **否** | 统称；注册表 SSOT：[RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md](rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md) |
+| **用户身份 Prompt 模板** | **User Identity Prompt Template** | 否 | 独立通道 **`user_identity`**；角色包 `user_identities/`；pre-LLM 注入 |
+| **回复后处理插件** | **Reply Post-Processor Plugin** | 否 | 独立通道 **`reply_post_process`**；`config.json` → `reply_post_processor`；trait `ReplyPostProcessor` |
+| **剧场场景导演** | **Theater Scene Director** | 否 | 独立通道 **`theater_director`**；`generate_theater_scene` / `POST /theater/scene`；`provides: theater_director`（**已交付 2026-06**） |
 | **后处理链** | **post-process chain** | 否（策略枚举；**尚未全链落地**） | 发行版 `distro.oclive.toml` `[post_process].chain`；RFC 见 [RFC_OCLIVE_POST_PROCESS_CHAIN.md](rfc/RFC_OCLIVE_POST_PROCESS_CHAIN.md) |
-| **用户身份 Prompt 模板** | **User Identity Prompt Template** | 否 | 角色包 `user_identities/`；pre-LLM 注入；RFC 见 [RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md](rfc/RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md) |
-| **回复后处理插件** | **Reply Post-Processor Plugin** | 否 | 角色包 `config.json` → `reply_post_processor`；trait `ReplyPostProcessor`；**非**六槽 |
 
 ### 1.3 六槽权威键名
 

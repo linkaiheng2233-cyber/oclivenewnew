@@ -16,6 +16,10 @@
   --theater-portrait-w: 96px;
   --theater-portrait-max-h: 200px;
 
+  --theater-variant-bg: color-mix(in srgb, var(--tool-elevated) 94%, var(--tool-accent) 6%);
+  --theater-variant-alt-bg: color-mix(in srgb, var(--theater-cast-a-soft) 55%, transparent);
+  --theater-variant-border: color-mix(in srgb, var(--tool-accent) 35%, var(--border-light));
+
   --radius-app: 8px;
   --radius-card: 8px;
   --radius-bubble: 8px;

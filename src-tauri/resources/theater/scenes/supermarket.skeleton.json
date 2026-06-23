@@ -1,0 +1,223 @@
+{
+  "scene": "supermarket",
+  "sceneId": "home",
+  "defaultPairRelation": "family",
+  "pairRelations": {
+    "family": {
+      "displayName": "家人",
+      "promptHint": "同住或家人般的日常照应：一方略操心、一方嘴硬但不真疏远，可拌嘴也可温存。"
+    },
+    "friend": {
+      "displayName": "朋友",
+      "promptHint": "同龄好友：说话随意、互怼互损，但会自然帮对方收拾东西、提醒出门。"
+    },
+    "stranger": {
+      "displayName": "陌生人",
+      "promptHint": "刚认识或并不熟：礼貌克制、有距离感，避免过度亲密称呼与同居式唠叨。"
+    },
+    "lover": {
+      "displayName": "恋人",
+      "promptHint": "恋人或暧昧对象：语气更软、更在意对方反应，可害羞、可斗嘴，但底色是彼此在意。"
+    }
+  },
+  "cast": {
+    "a": { "roleId": "mumu", "name": "木木", "side": "left" },
+    "b": { "roleId": "枫侵月", "name": "枫侵月", "side": "right" }
+  },
+  "beats": [
+    {
+      "id": "b1",
+      "cast": "b",
+      "name": "枫侵月",
+      "text": "购物车推这边，特价鸡蛋在冷藏柜那头。",
+      "stageHint": "指货架",
+      "emotion": "happy"
+    },
+    {
+      "id": "b2",
+      "cast": "a",
+      "name": "木木",
+      "text": "我不买鸡蛋。又不是我做饭。",
+      "stageHint": "别过脸",
+      "emotion": "angry"
+    },
+    {
+      "id": "b3",
+      "cast": "b",
+      "name": "枫侵月",
+      "text": "你前天不是说周末想做蛋糕？",
+      "stageHint": "挑眉"
+    },
+    {
+      "id": "b4",
+      "cast": "a",
+      "name": "木木",
+      "text": "……那是随口一说。而且我也没说要你做。",
+      "emotion": "shy"
+    },
+    {
+      "id": "b5",
+      "cast": "b",
+      "name": "枫侵月",
+      "text": "试吃区有新酸奶，你要不要——就一小杯。",
+      "stageHint": "递塑料勺"
+    },
+    {
+      "id": "b6",
+      "cast": "a",
+      "name": "木木",
+      "text": "不要。会胖。",
+      "emotion": "angry"
+    },
+    {
+      "id": "b7",
+      "cast": "b",
+      "name": "枫侵月",
+      "text": "一小杯不会胖。尝一口，不好吃算我的。",
+      "stageHint": "笑",
+      "emotion": "happy"
+    },
+    {
+      "id": "b8",
+      "cast": "a",
+      "name": "木木",
+      "text": "……就一口。",
+      "stageHint": "别过脸尝",
+      "emotion": "shy"
+    },
+    {
+      "id": "b9",
+      "cast": "b",
+      "name": "枫侵月",
+      "text": "结账队伍好长。你带钱包了吗？",
+      "stageHint": "看收银台"
+    },
+    {
+      "id": "b10",
+      "cast": "a",
+      "name": "木木",
+      "text": "啊？！我、我没带……你也没说要用我的钱！",
+      "stageHint": "摸口袋慌了一下",
+      "emotion": "excited"
+    }
+  ],
+  "forks": {
+    "buyMilk": [
+      {
+        "chipId": "buyMilk",
+        "insertAfterBeatId": "b5",
+        "patchLines": [
+          {
+            "id": "bm-1",
+            "cast": "b",
+            "name": "枫侵月",
+            "text": "清单上写了牛奶——两盒，别又忘拿。",
+            "stageHint": "指购物清单"
+          },
+          {
+            "id": "bm-2",
+            "cast": "a",
+            "name": "木木",
+            "text": "谁要你记了！……两盒会不会太多？",
+            "emotion": "angry"
+          },
+          {
+            "id": "bm-3",
+            "cast": "b",
+            "name": "枫侵月",
+            "text": "特价，不喝你负责拎空袋子回家。",
+            "stageHint": "推购物车"
+          }
+        ]
+      }
+    ],
+    "forgotMilk": [
+      {
+        "chipId": "forgotMilk",
+        "insertAfterBeatId": "b5",
+        "patchLines": [
+          {
+            "id": "fm-1",
+            "cast": "a",
+            "name": "木木",
+            "text": "等等……牛奶呢？袋子里怎么没有？",
+            "stageHint": "翻购物袋"
+          },
+          {
+            "id": "fm-2",
+            "cast": "b",
+            "name": "枫侵月",
+            "text": "你不是说不用买？",
+            "stageHint": "看收银小票"
+          },
+          {
+            "id": "fm-3",
+            "cast": "a",
+            "name": "木木",
+            "text": "我说的是低脂那款！……算了，你回去拿还是我？",
+            "emotion": "excited"
+          }
+        ]
+      }
+    ],
+    "milkSoldOut": [
+      {
+        "chipId": "milkSoldOut",
+        "insertAfterBeatId": "b5",
+        "patchLines": [
+          {
+            "id": "ms-1",
+            "cast": "b",
+            "name": "枫侵月",
+            "text": "冷藏柜空了——常买那牌子卖完了。",
+            "stageHint": "指空货架"
+          },
+          {
+            "id": "ms-2",
+            "cast": "a",
+            "name": "木木",
+            "text": "换别的呗，又不是什么大事。",
+            "emotion": "angry"
+          },
+          {
+            "id": "ms-3",
+            "cast": "b",
+            "name": "枫侵月",
+            "text": "你昨天才说只喝那一个牌子……行，去隔壁货架看看。",
+            "stageHint": "叹气"
+          }
+        ]
+      }
+    ],
+    "milkLottery": [
+      {
+        "chipId": "milkLottery",
+        "insertAfterBeatId": "b5",
+        "patchLines": [
+          {
+            "id": "ml-1",
+            "cast": "b",
+            "name": "枫侵月",
+            "text": "抽奖区在喊号——诶，中了？一整箱奶？",
+            "stageHint": "举奖券愣住"
+          },
+          {
+            "id": "ml-2",
+            "cast": "a",
+            "name": "木木",
+            "text": "……真的假的？你运气也太好了吧。",
+            "emotion": "shy"
+          },
+          {
+            "id": "ml-3",
+            "cast": "b",
+            "name": "枫侵月",
+            "text": "拎回去的路上你别喊手酸就行。",
+            "stageHint": "笑",
+            "emotion": "happy"
+          }
+        ]
+      }
+    ]
+  }
+}

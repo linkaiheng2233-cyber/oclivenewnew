@@ -56,6 +56,16 @@ export async function listOllamaModels(ollamaBaseUrl?: string): Promise<string[]
   })
 }
 
+export async function listCloudModels(opts?: {
+  remoteUrl?: string
+  remoteToken?: string
+}): Promise<string[]> {
+  return invokeWithFriendlyError<string[]>('list_cloud_models', {
+    remoteUrl: opts?.remoteUrl?.trim() || null,
+    remoteToken: opts?.remoteToken?.trim() || null,
+  })
+}
+
 export async function scanLocalModelFiles(directory?: string): Promise<LocalModelFile[]> {
   return invokeWithFriendlyError<LocalModelFile[]>('scan_local_model_files', {
     directory: directory?.trim() || null,

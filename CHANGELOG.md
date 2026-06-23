@@ -6,6 +6,8 @@
 
 ### Added
 
+- **Theater Track A 工程卫生（轮次 16）**：[`handoff/theater/MODE2_UNFREEZE.md`](handoff/theater/MODE2_UNFREEZE.md) 模式 2 解冻 checklist；`theater-prompt-drift` 接入 `dimension5-acceptance.mjs` 与 `test:theater:smoke`；minimal 导演插件示例自包含 `prompts/`；`data/plugins.json` 登记 `com.oclive.theater_director_official`。
+- **AI 剧场 Patch 涟漪升级**：poke 默认 `mode=patch`（局部 prose 小剧情 + 保留 skeleton 尾部）；`patch_variant` 双候选后台生成 + `TheaterVariantBackdrop` 拖拽切换；设置 → 舞台 Tab 可选 ripple 降级与自定义 poke 主角。
 - **`CODE_OF_CONDUCT.md`**（Contributor Covenant）。
 - **`human-docs-en/`** 最小集（L0–L3 + 08/09/10 英文摘要）。
 - **`human-docs/08_PR_GATE_MATRIX.md`**、**`09_GLOSSARY.md`**、**`10_SETUP_WINDOWS.md`**。
@@ -15,6 +17,7 @@
 
 ### Changed
 
+- **Theater 文档 SSOT 扫尾**：`theater_director` 由「拟/Deferred」统一为**已交付（2026-06）**（DISTRO_DEFAULT_PLUGINS · ARCHITECTURE · NAMING · ROADMAP §7 · IA）；[`TECHNICAL_DEBT_INVENTORY.md`](handoff/TECHNICAL_DEBT_INVENTORY.md) 轮次 16；验收链指向 [`PLAYTEST_MATRIX.md`](handoff/theater/PLAYTEST_MATRIX.md)。
 - **hybrid 聊天镜像**：`rebuild_mirror_best_effort` / `delete_mirror_best_effort`（K-ROBUST-01）。
 - **`canonical_llm_sync` / `plugin_state` / MCP·Ollama 降级**：`tracing::warn!`（K-ROBUST-02/03）。
 - **内核快照与存储能力探测 degraded UI**（`kernel.ts`、`useKernelStatus`、`ChatStorageSettingsPanel`）。

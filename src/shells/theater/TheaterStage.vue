@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { ScriptLine, TheaterCastSide, TheaterStageState } from '../../composables/theater/theaterLogic'
+import type { ScriptLine, TheaterCast, TheaterCastSide, TheaterStageState } from '../../composables/theater/theaterLogic'
 import { buildCastRoster, resolveCastPortraitState, rosterBySide } from '../../composables/theater/theaterPortrait'
-import { setTheaterPortraitWidth } from '../../composables/useTheaterPortraitLayout'
+import { setTheaterPortraitWidth, THEATER_PORTRAIT_DEFAULTS } from '../../composables/useTheaterPortraitLayout'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import UiResizeHandle from '../../components/ui/UiResizeHandle.vue'
@@ -22,6 +22,8 @@ const props = defineProps<{
     a: TheaterCastInfo
     b: TheaterCastInfo
   } | null
+  /** Poke preview / patching: which cast slot is primarily affected by the event. */
+  eventHighlightCast?: TheaterCast | null
 }>()
 
 const { t } = useI18n()
@@ -33,7 +35,14 @@ const columns = computed(() => {
     return { left: [], right: [] }
   const roster = buildCastRoster(props.cast)
   const portraitMap = resolveCastPortraitState(props.lines)
-  return rosterBySide(roster, portraitMap)
+  const grouped = rosterBySide(roster, portraitMap)
+  const highlight = props.eventHighlightCast
+  const mark = (entries: typeof grouped.left) =>
+    entries.map(entry => ({
+      ...entry,
+      eventAffected: highlight != null && entry.castId === highlight,
+    }))
+  return { left: mark(grouped.left), right: mark(grouped.right) }
 })
 
 watch(
@@ -50,7 +59,7 @@ function onPortraitResizeStart() {
   portraitWidth = Number.parseInt(
     getComputedStyle(document.documentElement).getPropertyValue('--theater-portrait-w'),
     10,
-  ) || 96
+  ) || THEATER_PORTRAIT_DEFAULTS.width
 }
 
 function onPortraitResizeLeft(deltaX: number) {
@@ -92,6 +101,7 @@ function onPortraitResizeRight(deltaX: number) {
           :key="line.id"
           :line="line"
         />
+        <slot name="variant-backdrop" />
       </div>
     </div>
 
@@ -130,6 +140,7 @@ function onPortraitResizeRight(deltaX: number) {
 }
 
 .theater-stage__inner {
+  position: relative;
   max-width: var(--theater-stage-max-w, 720px);
   margin: 0 auto;
   padding: var(--tool-space-4, 16px) var(--tool-space-2, 8px);

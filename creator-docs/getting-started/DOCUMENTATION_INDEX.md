@@ -18,6 +18,7 @@
 | **关键路径交接笔记**（Bus factor：`process_message`、`PluginHost`、错误码、DB、测试/CI 等入口） | **[../../handoff/BUS_FACTOR_NOTES.md](../../handoff/BUS_FACTOR_NOTES.md)** |
 | **`handoff/` 活跃 vs 归档**（closure、旧周报、编号计划已迁入 `archive/`） | **[../../handoff/README.md](../../handoff/README.md)** · 认知清单 **[../../handoff/04_4.6_PROJECT_TRUTH_CHECKLIST.md](../../handoff/04_4.6_PROJECT_TRUTH_CHECKLIST.md)** |
 | **命名规范与 canonical import**（概念 SSOT、crate 边界、禁止别名） | **[../NAMING_CONVENTIONS.md](../NAMING_CONVENTIONS.md)** · [English summary](../../creator-docs-en/getting-started/NAMING_CONVENTIONS.md) · crate 速查 **[../../crates/README.md](../../crates/README.md)** §Canonical import |
+| **独立通道能力增强模块**（注册表 · 非六槽 · 非设施子模块） | **[../rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md](../rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md)** · [OCLIVE_ARCHITECTURE_OVERVIEW §独立通道](OCLIVE_ARCHITECTURE_OVERVIEW.md#独立通道能力增强模块非六槽--非设施子模块编号) |
 
 ### 工程纪律 / 审查状态
 
@@ -88,6 +89,7 @@
 | **角色包创作者：从零到发布（学习路径）** | **[../role-pack/CREATOR_LEARNING_PATH.md](../role-pack/CREATOR_LEARNING_PATH.md)**（[English](../../creator-docs-en/role-pack/CREATOR_LEARNING_PATH.md)） |
 | **已有 v1 包：迁到 v2 蓝图（约 10 分钟）** | **[../role-pack/V1_TO_V2_MIGRATION.md](../role-pack/V1_TO_V2_MIGRATION.md)**（[English](../../creator-docs-en/role-pack/V1_TO_V2_MIGRATION.md)） |
 | **已有 v2 蓝图：迁到 v3（runtime_config / 双核，约 10 分钟）** | **[../role-pack/V2_TO_V3_MIGRATION.md](../role-pack/V2_TO_V3_MIGRATION.md)**（[English](../../creator-docs-en/role-pack/V2_TO_V3_MIGRATION.md)） |
+| **插件作者：放置决策树** | **[../plugin-and-architecture/PLUGIN_PLACEMENT_GUIDE.md](../plugin-and-architecture/PLUGIN_PLACEMENT_GUIDE.md)** |
 | **插件作者：目录 / Remote / 市场（学习路径）** | **[../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md](../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)**（[English](../../creator-docs-en/plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)） |
 | **LLM 目录插件 + llama.cpp（不经 Ollama，按角色切换）** | **[examples/directory-plugin-llamacpp/README.md](../../examples/directory-plugin-llamacpp/README.md)**（[English](../../examples/directory-plugin-llamacpp/README.en.md)） |
 | **改 Rust 内核：该动哪个 crate？** | **[../../crates/README.md](../../crates/README.md)** |

@@ -220,6 +220,7 @@ pub fn run() {
             api::kernel::reconnect_kernel,
             api::llm_settings::get_llm_user_settings,
             api::llm_settings::list_ollama_models,
+            api::llm_settings::list_cloud_models,
             api::llm_settings::save_llm_user_settings,
             api::llm_settings::probe_cloud_llm,
             api::llm_settings::scan_local_model_files,

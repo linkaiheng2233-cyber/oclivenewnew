@@ -1,10 +1,16 @@
 //! Theater scene director: one LLM call rewrites the ripple zone (after tweaks) as structured JSON beats.
 //!
-//! Bypasses `process_message` and six-slot orchestration; uses [`AppState::llm`] with the
-//! effective model resolved from cast roles.
+//! Bypasses `process_message` and six-slot orchestration; uses
+//! [`PluginHost::llm_for_plugin_backends`](crate::domain::plugin_host::PluginHost::llm_for_plugin_backends)
+//! with the effective model resolved from cast roles (same path as Chat Pro model manager).
 
 use crate::domain::effective_llm_model::resolve_effective_ollama_model;
-use crate::domain::theater::scene_director_config::{ripple_max_beats, scene_llm_timeout_secs};
+use crate::domain::theater::drama_guardrails;
+use crate::domain::ports::LlmClient;
+use crate::domain::user_llm_env::apply_user_llm_env;
+use crate::domain::theater::scene_director_config::{
+    cast_rewrite_llm_timeout_secs, cast_rewrite_min_beats, ripple_max_beats, scene_llm_timeout_secs,
+};
 use crate::error::{AppError, Result};
 use crate::models::dto::{
     TheaterForkTemplate, TheaterPokeChipDef, TheaterSceneRequest, TheaterSceneResponse,
@@ -13,12 +19,35 @@ use crate::models::dto::{
 use crate::state::AppState;
 use serde_json::Value;
 use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
 use std::time::Duration;
 
 const MAX_BEAT_TEXT_LEN: usize = 500;
 const MAX_STAGE_HINT_LEN: usize = 120;
 
-fn scene_response(
+struct CastRewriteParseCtx {
+    name_a: String,
+    name_b: String,
+    role_id_a: String,
+    role_id_b: String,
+}
+
+impl CastRewriteParseCtx {
+    fn from_req(req: &TheaterSceneRequest) -> Self {
+        Self {
+            name_a: req.cast_a.name.trim().to_string(),
+            name_b: req.cast_b.name.trim().to_string(),
+            role_id_a: req.cast_a.role_id.trim().to_string(),
+            role_id_b: req.cast_b.role_id.trim().to_string(),
+        }
+    }
+}
+
+pub(crate) fn cast_rewrite_target_beats(min_beats: u32, max_beats: u32) -> u32 {
+    ((min_beats + max_beats) / 2).clamp(min_beats, 8)
+}
+
+pub(crate) fn scene_response(
     beats: Vec<TheaterScriptLine>,
     source: &str,
     model: String,
@@ -27,7 +56,7 @@ fn scene_response(
     scene_response_with_meta(beats, source, model, adapted_forks, None, None)
 }
 
-fn scene_response_with_meta(
+pub(crate) fn scene_response_with_meta(
     beats: Vec<TheaterScriptLine>,
     source: &str,
     model: String,
@@ -46,13 +75,14 @@ fn scene_response_with_meta(
 }
 
 /// Prefix (immutable) + ripple skeleton for scene director rewrite.
-struct RippleContext {
-    prefix_beats: Vec<TheaterScriptLine>,
-    ripple_skeleton: Vec<TheaterScriptLine>,
-    full_rewrite: bool,
+pub(crate) struct RippleContext {
+    pub(crate) prefix_beats: Vec<TheaterScriptLine>,
+    pub(crate) ripple_skeleton: Vec<TheaterScriptLine>,
+    pub(crate) full_rewrite: bool,
 }
 
 /// Resolve theater scene mode; infer `cast_rewrite` when optional `mode` was dropped by an older kernel DTO.
+/// Modes: `cast_rewrite` | `cast_adapt` | `patch` (prose micro-scene) | `ripple` (JSON rewrite, default).
 #[cfg_attr(test, allow(dead_code))]
 pub(crate) fn resolve_scene_mode(req: &TheaterSceneRequest) -> Option<&str> {
     if let Some(mode) = req.mode.as_deref().map(str::trim).filter(|m| !m.is_empty()) {
@@ -77,6 +107,14 @@ pub async fn generate_scene(
     state: &AppState,
     req: &TheaterSceneRequest,
 ) -> Result<TheaterSceneResponse> {
+    if let Err(e) = apply_user_llm_env(state).await {
+        tracing::warn!(
+            target: "oclive_theater",
+            error = %e,
+            "apply_user_llm_env failed; continuing with cached LLM env"
+        );
+    }
+
     if resolve_scene_mode(req) == Some("cast_rewrite") {
         if req.fallback_beats.is_empty() {
             return Err(AppError::InvalidParameter(
@@ -106,20 +144,40 @@ pub async fn generate_scene(
         return generate_cast_adapt_scene(state, req).await;
     }
 
+    if req.mode.as_deref() == Some("patch") {
+        return crate::domain::theater::patch_scene::generate_patch_scene(state, req).await;
+    }
+
     let ctx = resolve_ripple_context(req);
     let max_beats = req
         .max_beats
         .unwrap_or_else(ripple_max_beats)
         .clamp(4, 64);
-    let model = resolve_scene_model(state, req).await?;
+    let (llm, model) = match resolve_theater_llm(state, req).await {
+        Ok(v) => v,
+        Err(e) => {
+            tracing::warn!(target: "oclive_theater", "resolve_theater_llm failed: {e}");
+            return Ok(fallback_response(req, state.ollama_model.as_str(), "fallback"));
+        }
+    };
     let source = resolve_llm_source_label(state);
     let timeout = Duration::from_secs(scene_llm_timeout_secs());
 
     let persona_a = resolve_cast_persona(state, req.cast_a.role_id.as_str()).await;
     let persona_b = resolve_cast_persona(state, req.cast_b.role_id.as_str()).await;
 
-    let prompt = build_scene_prompt(req, &ctx, max_beats, false, persona_a.as_str(), persona_b.as_str());
-    let raw = match tokio::time::timeout(timeout, state.llm.generate_tag(model.as_str(), prompt.as_str())).await
+    let prompt = crate::domain::theater_director::build_theater_prompt(
+        state,
+        &crate::domain::theater_director::ripple_prompt_input(
+            req,
+            &ctx,
+            max_beats,
+            false,
+            persona_a.as_str(),
+            persona_b.as_str(),
+        ),
+    );
+    let raw = match tokio::time::timeout(timeout, llm.generate_tag(model.as_str(), prompt.as_str())).await
     {
         Ok(Ok(t)) => t,
         Ok(Err(e)) => {
@@ -136,12 +194,20 @@ pub async fn generate_scene(
         return Ok(scene_response(beats, source, model.clone(), None));
     }
 
-    let strict_prompt = build_scene_prompt(req, &ctx, max_beats, true, persona_a.as_str(), persona_b.as_str());
+    let strict_prompt = crate::domain::theater_director::build_theater_prompt(
+        state,
+        &crate::domain::theater_director::ripple_prompt_input(
+            req,
+            &ctx,
+            max_beats,
+            true,
+            persona_a.as_str(),
+            persona_b.as_str(),
+        ),
+    );
     let retry_raw = match tokio::time::timeout(
         timeout,
-        state
-            .llm
-            .generate_tag(model.as_str(), strict_prompt.as_str()),
+        llm.generate_tag(model.as_str(), strict_prompt.as_str()),
     )
     .await
     {
@@ -190,7 +256,13 @@ async fn generate_cast_adapt_scene(
             (req.base_beats.len() as u32).max(ripple_max_beats())
         })
         .clamp(4, 64);
-    let model = resolve_scene_model(state, req).await?;
+    let (llm, model) = match resolve_theater_llm(state, req).await {
+        Ok(v) => v,
+        Err(e) => {
+            tracing::warn!(target: "oclive_theater", "cast_adapt resolve_theater_llm failed: {e}");
+            return Ok(cast_adapt_fallback_response(req, state.ollama_model.as_str(), "fallback"));
+        }
+    };
     let source = resolve_llm_source_label(state);
     let timeout = Duration::from_secs(scene_llm_timeout_secs());
     let templates = req.fork_templates.clone().unwrap_or_default();
@@ -198,8 +270,17 @@ async fn generate_cast_adapt_scene(
     let persona_a = resolve_cast_persona(state, req.cast_a.role_id.as_str()).await;
     let persona_b = resolve_cast_persona(state, req.cast_b.role_id.as_str()).await;
 
-    let prompt = build_cast_adapt_prompt(req, &templates, max_beats, false, persona_a.as_str(), persona_b.as_str());
-    let raw = match tokio::time::timeout(timeout, state.llm.generate_tag(model.as_str(), prompt.as_str())).await
+    let prompt = crate::domain::theater_director::build_theater_prompt(
+        state,
+        &crate::domain::theater_director::cast_adapt_prompt_input(
+            req,
+            max_beats,
+            false,
+            persona_a.as_str(),
+            persona_b.as_str(),
+        ),
+    );
+    let raw = match tokio::time::timeout(timeout, llm.generate_tag(model.as_str(), prompt.as_str())).await
     {
         Ok(Ok(t)) => t,
         Ok(Err(e)) => {
@@ -216,13 +297,19 @@ async fn generate_cast_adapt_scene(
         return Ok(scene_response(beats, source, model.clone(), Some(forks)));
     }
 
-    let strict_prompt =
-        build_cast_adapt_prompt(req, &templates, max_beats, true, persona_a.as_str(), persona_b.as_str());
+    let strict_prompt = crate::domain::theater_director::build_theater_prompt(
+        state,
+        &crate::domain::theater_director::cast_adapt_prompt_input(
+            req,
+            max_beats,
+            true,
+            persona_a.as_str(),
+            persona_b.as_str(),
+        ),
+    );
     let retry_raw = match tokio::time::timeout(
         timeout,
-        state
-            .llm
-            .generate_tag(model.as_str(), strict_prompt.as_str()),
+        llm.generate_tag(model.as_str(), strict_prompt.as_str()),
     )
     .await
     {
@@ -250,29 +337,42 @@ async fn generate_cast_rewrite_scene(
     state: &AppState,
     req: &TheaterSceneRequest,
 ) -> Result<TheaterSceneResponse> {
-    let min_beats = 6_u32;
+    let fallback_len = req.fallback_beats.len().max(1) as u32;
+    let min_beats = cast_rewrite_min_beats();
     let max_beats = req
         .max_beats
-        .unwrap_or(12)
+        .unwrap_or(fallback_len.max(10))
         .clamp(min_beats, 16);
-    let model = resolve_scene_model(state, req).await?;
+    let (llm, model) = match resolve_theater_llm(state, req).await {
+        Ok(v) => v,
+        Err(e) => {
+            tracing::warn!(target: "oclive_theater", "cast_rewrite resolve_theater_llm failed: {e}");
+            return Ok(cast_rewrite_fallback_response(
+                req,
+                state.ollama_model.as_str(),
+                "fallback",
+                "rewrite_llm_resolve_failed",
+            ));
+        }
+    };
     let source = resolve_llm_source_label(state);
-    let timeout = Duration::from_secs(scene_llm_timeout_secs());
-    let poke_chips = req.poke_chips.clone().unwrap_or_default();
+    let timeout = Duration::from_secs(cast_rewrite_llm_timeout_secs());
 
     let persona_a = resolve_cast_persona(state, req.cast_a.role_id.as_str()).await;
     let persona_b = resolve_cast_persona(state, req.cast_b.role_id.as_str()).await;
 
-    let prompt = build_cast_rewrite_prompt(
-        req,
-        &poke_chips,
-        min_beats,
-        max_beats,
-        false,
-        persona_a.as_str(),
-        persona_b.as_str(),
+    let prompt = crate::domain::theater_director::build_theater_prompt(
+        state,
+        &crate::domain::theater_director::cast_rewrite_prompt_input(
+            req,
+            min_beats,
+            max_beats,
+            false,
+            persona_a.as_str(),
+            persona_b.as_str(),
+        ),
     );
-    let raw = match tokio::time::timeout(timeout, state.llm.generate_tag(model.as_str(), prompt.as_str())).await
+    let raw = match tokio::time::timeout(timeout, llm.generate_tag(model.as_str(), prompt.as_str())).await
     {
         Ok(Ok(t)) => t,
         Ok(Err(e)) => {
@@ -280,37 +380,32 @@ async fn generate_cast_rewrite_scene(
             return Ok(cast_rewrite_fallback_response(req, &model, "fallback", "rewrite_llm_error"));
         }
         Err(_) => {
-            tracing::warn!(target: "oclive_theater", "cast_rewrite LLM timed out ({}s)", scene_llm_timeout_secs());
+            tracing::warn!(
+                target: "oclive_theater",
+                "cast_rewrite LLM timed out ({}s)",
+                cast_rewrite_llm_timeout_secs()
+            );
             return Ok(cast_rewrite_fallback_response(req, &model, "fallback", "rewrite_llm_timeout"));
         }
     };
 
-    if let Some((beats, forks)) = try_parse_cast_rewrite(req, &poke_chips, &raw, min_beats, max_beats) {
-        return Ok(scene_response(beats, source, model.clone(), Some(forks)));
-    }
-
     if let Some(beats) = try_parse_cast_rewrite_beats_only(req, &raw, min_beats, max_beats) {
-        tracing::info!(
-            target: "oclive_theater",
-            "cast_rewrite accepted beats-only (fork parse incomplete)"
-        );
         return Ok(cast_rewrite_beats_only_response(req, beats, &model, source));
     }
 
-    let strict_prompt = build_cast_rewrite_prompt(
-        req,
-        &poke_chips,
-        min_beats,
-        max_beats,
-        true,
-        persona_a.as_str(),
-        persona_b.as_str(),
+    let target_beats = cast_rewrite_target_beats(min_beats, max_beats);
+    let strict_prompt = crate::domain::theater_director::build_theater_prompt(
+        state,
+        &crate::domain::theater_director::cast_rewrite_minimal_prompt_input(
+            req,
+            target_beats,
+            persona_a.as_str(),
+            persona_b.as_str(),
+        ),
     );
     let retry_raw = match tokio::time::timeout(
         timeout,
-        state
-            .llm
-            .generate_tag(model.as_str(), strict_prompt.as_str()),
+        llm.generate_tag(model.as_str(), strict_prompt.as_str()),
     )
     .await
     {
@@ -320,25 +415,34 @@ async fn generate_cast_rewrite_scene(
             return Ok(cast_rewrite_fallback_response(req, &model, "fallback", "rewrite_llm_error"));
         }
         Err(_) => {
-            tracing::warn!(target: "oclive_theater", "cast_rewrite retry LLM timed out");
+            tracing::warn!(
+                target: "oclive_theater",
+                "cast_rewrite retry LLM timed out ({}s)",
+                cast_rewrite_llm_timeout_secs()
+            );
             return Ok(cast_rewrite_fallback_response(req, &model, "fallback", "rewrite_llm_timeout"));
         }
     };
 
-    if let Some((beats, forks)) = try_parse_cast_rewrite(req, &poke_chips, &retry_raw, min_beats, max_beats) {
-        return Ok(scene_response(beats, source, model, Some(forks)));
-    }
-
     if let Some(beats) = try_parse_cast_rewrite_beats_only(req, &retry_raw, min_beats, max_beats) {
-        tracing::info!(
-            target: "oclive_theater",
-            "cast_rewrite retry accepted beats-only (fork parse incomplete)"
-        );
         return Ok(cast_rewrite_beats_only_response(req, beats, &model, source));
     }
 
-    tracing::warn!(target: "oclive_theater", "cast_rewrite parse failed; using fallback");
+    tracing::warn!(
+        target: "oclive_theater",
+        preview = %raw_preview_for_log(&retry_raw),
+        "cast_rewrite parse failed; using fallback"
+    );
     Ok(cast_rewrite_fallback_response(req, &model, "fallback", "rewrite_parse_failed"))
+}
+
+fn raw_preview_for_log(raw: &str) -> String {
+    let collapsed: String = raw.split_whitespace().collect::<Vec<_>>().join(" ");
+    if collapsed.len() <= 240 {
+        collapsed
+    } else {
+        format!("{}…", &collapsed[..240])
+    }
 }
 
 fn cast_rewrite_fallback_response(
@@ -357,6 +461,8 @@ fn cast_rewrite_fallback_response(
     )
 }
 
+/// Full beats+forks parse (kept for tests / future opt-in path).
+#[allow(dead_code)]
 fn try_parse_cast_rewrite(
     req: &TheaterSceneRequest,
     poke_chips: &[TheaterPokeChipDef],
@@ -377,8 +483,281 @@ fn try_parse_cast_rewrite_beats_only(
     min_beats: u32,
     max_beats: u32,
 ) -> Option<Vec<TheaterScriptLine>> {
-    let parsed = parse_cast_rewrite_json(raw, min_beats, max_beats)?;
-    normalize_rewrite_beats(req, &parsed.beats)
+    let ctx = CastRewriteParseCtx::from_req(req);
+    let beats = parse_cast_rewrite_beats_loose_with_ctx(raw, min_beats, max_beats, &ctx)
+        .or_else(|| salvage_rewrite_objects(raw, min_beats, max_beats, &ctx))?;
+    normalize_rewrite_beats(req, &beats)
+}
+
+/// Parse beats from LLM output when forks are not required or fork JSON is invalid.
+#[allow(dead_code)]
+fn parse_cast_rewrite_beats_loose(
+    raw: &str,
+    min_beats: u32,
+    max_beats: u32,
+) -> Option<Vec<TheaterScriptLine>> {
+    parse_cast_rewrite_beats_loose_with_ctx(raw, min_beats, max_beats, &CastRewriteParseCtx {
+        name_a: String::new(),
+        name_b: String::new(),
+        role_id_a: String::new(),
+        role_id_b: String::new(),
+    })
+}
+
+fn parse_cast_rewrite_beats_loose_with_ctx(
+    raw: &str,
+    min_beats: u32,
+    max_beats: u32,
+    ctx: &CastRewriteParseCtx,
+) -> Option<Vec<TheaterScriptLine>> {
+    let trimmed = strip_code_fence(raw.trim());
+    parse_cast_rewrite_beats_from_trimmed(trimmed, min_beats, max_beats, ctx).or_else(|| {
+        let repaired = repair_json_loose(trimmed);
+        if repaired == trimmed {
+            None
+        } else {
+            parse_cast_rewrite_beats_from_trimmed(&repaired, min_beats, max_beats, ctx)
+        }
+    })
+}
+
+fn parse_cast_rewrite_beats_from_trimmed(
+    trimmed: &str,
+    min_beats: u32,
+    max_beats: u32,
+    ctx: &CastRewriteParseCtx,
+) -> Option<Vec<TheaterScriptLine>> {
+    if let Some(obj_slice) = extract_json_object(trimmed) {
+        if let Ok(value) = serde_json::from_str::<Value>(obj_slice) {
+            if let Some(beats_arr) = value.get("beats").and_then(|v| v.as_array()) {
+                if let Some(beats) =
+                    parse_rewrite_beats_array(beats_arr, min_beats, max_beats, Some(ctx))
+                {
+                    return Some(beats);
+                }
+            }
+        }
+    }
+
+    let array_slice = extract_json_array(trimmed).unwrap_or(trimmed);
+    if let Ok(value) = serde_json::from_str::<Value>(array_slice) {
+        if let Some(arr) = value.as_array() {
+            return parse_rewrite_beats_array(arr, min_beats, max_beats, Some(ctx));
+        }
+    }
+
+    None
+}
+
+fn parse_rewrite_beats_array(
+    arr: &[Value],
+    min_beats: u32,
+    max_beats: u32,
+    ctx: Option<&CastRewriteParseCtx>,
+) -> Option<Vec<TheaterScriptLine>> {
+    if arr.len() < min_beats as usize || arr.len() > max_beats as usize {
+        return None;
+    }
+    let mut beats = Vec::with_capacity(arr.len());
+    let mut beat_ids = HashSet::new();
+    for (i, item) in arr.iter().enumerate() {
+        let mut line = parse_rewrite_line_object(item, ctx)?;
+        if line.id.is_empty() || line.id == "beat" || beat_ids.contains(&line.id) {
+            line.id = format!("b{}", i + 1);
+        }
+        beat_ids.insert(line.id.clone());
+        beats.push(line);
+    }
+    Some(beats)
+}
+
+fn parse_rewrite_line_object(v: &Value, ctx: Option<&CastRewriteParseCtx>) -> Option<TheaterScriptLine> {
+    let cast_raw = v
+        .get("cast")
+        .or_else(|| v.get("speaker"))
+        .or_else(|| v.get("role"))
+        .and_then(|x| x.as_str())
+        .map(str::trim)
+        .filter(|s| !s.is_empty())?;
+    let cast = resolve_rewrite_cast(cast_raw, ctx)?;
+    let text = extract_rewrite_text(v)?;
+    let id = v
+        .get("id")
+        .and_then(|x| x.as_str())
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .unwrap_or("beat")
+        .to_string();
+    let name = v
+        .get("name")
+        .and_then(|x| x.as_str())
+        .map(str::trim)
+        .unwrap_or("")
+        .to_string();
+    let stage_hint = v
+        .get("stage_hint")
+        .or_else(|| v.get("stageHint"))
+        .and_then(|x| x.as_str())
+        .map(str::trim)
+        .filter(|s| !s.is_empty() && s.len() <= MAX_STAGE_HINT_LEN)
+        .map(str::to_string);
+    let emotion = v
+        .get("emotion")
+        .and_then(|x| x.as_str())
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(str::to_string);
+    Some(TheaterScriptLine {
+        id,
+        cast,
+        name,
+        text,
+        stage_hint,
+        emotion,
+    })
+}
+
+fn extract_rewrite_text(v: &Value) -> Option<String> {
+    for key in [
+        "text", "dialogue", "line", "content", "utterance", "台词", "对白",
+    ] {
+        if let Some(text) = v.get(key).and_then(|x| x.as_str()).map(str::trim) {
+            if text.is_empty() {
+                continue;
+            }
+            if text.len() > MAX_BEAT_TEXT_LEN {
+                return None;
+            }
+            return Some(text.to_string());
+        }
+    }
+    None
+}
+
+fn resolve_rewrite_cast(raw: &str, ctx: Option<&CastRewriteParseCtx>) -> Option<String> {
+    let lower = raw.to_ascii_lowercase();
+    if matches!(
+        lower.as_str(),
+        "a" | "cast_a" | "casta" | "left" | "1" | "first" | "甲"
+    ) {
+        return Some("a".to_string());
+    }
+    if matches!(
+        lower.as_str(),
+        "b" | "cast_b" | "castb" | "right" | "2" | "second" | "乙"
+    ) {
+        return Some("b".to_string());
+    }
+    let ctx = ctx?;
+    if raw.eq_ignore_ascii_case(ctx.name_a.as_str()) || raw == ctx.role_id_a.as_str() {
+        return Some("a".to_string());
+    }
+    if raw.eq_ignore_ascii_case(ctx.name_b.as_str()) || raw == ctx.role_id_b.as_str() {
+        return Some("b".to_string());
+    }
+    None
+}
+
+fn repair_json_loose(raw: &str) -> String {
+    let mut s = raw.trim().to_string();
+    for ch in ['\u{201c}', '\u{201d}', '\u{2018}', '\u{2019}'] {
+        s = s.replace(ch, "\"");
+    }
+    s = remove_trailing_commas_before_close(&s);
+    if s.contains('[') && !s.contains(']') {
+        s.push(']');
+    }
+    s
+}
+
+fn remove_trailing_commas_before_close(raw: &str) -> String {
+    let bytes = raw.as_bytes();
+    let mut out = String::with_capacity(raw.len());
+    let mut i = 0usize;
+    while i < bytes.len() {
+        if bytes[i] == b',' {
+            let mut j = i + 1;
+            while j < bytes.len() && bytes[j].is_ascii_whitespace() {
+                j += 1;
+            }
+            if j < bytes.len() && (bytes[j] == b']' || bytes[j] == b'}') {
+                i += 1;
+                continue;
+            }
+        }
+        out.push(char::from(bytes[i]));
+        i += 1;
+    }
+    out
+}
+
+fn salvage_rewrite_objects(
+    raw: &str,
+    min_beats: u32,
+    max_beats: u32,
+    ctx: &CastRewriteParseCtx,
+) -> Option<Vec<TheaterScriptLine>> {
+    let trimmed = strip_code_fence(raw.trim());
+    let search = extract_json_array(trimmed).unwrap_or(trimmed);
+    let mut beats = Vec::new();
+    let mut beat_ids = HashSet::new();
+    let mut i = 0;
+    while i < search.len() {
+        if search.as_bytes().get(i) == Some(&b'{') {
+            if let Some((obj_slice, next)) = extract_balanced_json_object(search, i) {
+                if let Ok(value) = serde_json::from_str::<Value>(obj_slice) {
+                    if let Some(mut line) = parse_rewrite_line_object(&value, Some(ctx)) {
+                        if line.id.is_empty() || line.id == "beat" || beat_ids.contains(&line.id) {
+                            line.id = format!("b{}", beats.len() + 1);
+                        }
+                        beat_ids.insert(line.id.clone());
+                        beats.push(line);
+                    }
+                }
+                i = next;
+                continue;
+            }
+        }
+        i += 1;
+    }
+    if beats.len() >= min_beats as usize && beats.len() <= max_beats as usize {
+        Some(beats)
+    } else {
+        None
+    }
+}
+
+fn extract_balanced_json_object(s: &str, start: usize) -> Option<(&str, usize)> {
+    if s.as_bytes().get(start) != Some(&b'{') {
+        return None;
+    }
+    let mut depth = 0i32;
+    let mut in_string = false;
+    let mut escape = false;
+    for (i, b) in s.as_bytes().iter().enumerate().skip(start) {
+        if in_string {
+            if escape {
+                escape = false;
+            } else if *b == b'\\' {
+                escape = true;
+            } else if *b == b'"' {
+                in_string = false;
+            }
+            continue;
+        }
+        match b {
+            b'"' => in_string = true,
+            b'{' => depth += 1,
+            b'}' => {
+                depth -= 1;
+                if depth == 0 {
+                    return Some((&s[start..=i], i + 1));
+                }
+            }
+            _ => {}
+        }
+    }
+    None
 }
 
 fn cast_rewrite_beats_only_response(
@@ -397,18 +776,64 @@ fn cast_rewrite_beats_only_response(
     )
 }
 
-fn build_cast_rewrite_prompt(
+fn pair_relation_block(req: &TheaterSceneRequest) -> String {
+    let hint = req
+        .pair_relation_hint
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty());
+    let Some(hint) = hint else {
+        return String::new();
+    };
+    let id = req
+        .pair_relation_id
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .unwrap_or("custom");
+    format!("\n双角色关系（{id}）：{hint}\n")
+}
+
+fn default_scene_brief() -> &'static str {
+    "早餐 · 上学前：厨房餐桌、温粥、收拾书包、出门前的日常照应与拌嘴。"
+}
+
+fn default_scene_setting_hint() -> &'static str {
+    "地点限于家中厨房/餐桌/玄关；时间早晨上学前；禁止脱离居家早饭场景或引入第三人。"
+}
+
+fn scene_context_block(req: &TheaterSceneRequest) -> String {
+    let brief = req
+        .scene_brief
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .unwrap_or(default_scene_brief());
+    let setting = req
+        .scene_setting_hint
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .unwrap_or(default_scene_setting_hint());
+    format!("场景：{brief}\n场景约束：{setting}\n")
+}
+
+fn cast_rewrite_requires_forks(req: &TheaterSceneRequest) -> bool {
+    req.poke_chips
+        .as_ref()
+        .is_some_and(|chips| !chips.is_empty())
+}
+
+pub(crate) fn build_cast_rewrite_prompt(
     req: &TheaterSceneRequest,
-    poke_chips: &[TheaterPokeChipDef],
     min_beats: u32,
     max_beats: u32,
     strict: bool,
     persona_a: &str,
     persona_b: &str,
 ) -> String {
-    let chips_json = serde_json::to_string(poke_chips).unwrap_or_else(|_| "[]".to_string());
     let strict_tail = if strict {
-        "\n【严格】只输出 JSON 对象，无 Markdown、无解释。forks 必须包含全部 chip_id。"
+        "\n【严格】只输出 JSON 数组，无 Markdown、无解释。每条仅 id、cast、text；cast 只能是 a 或 b。"
     } else {
         ""
     };
@@ -427,31 +852,94 @@ fn build_cast_rewrite_prompt(
             persona_b.trim()
         },
     );
+    let relation_block = pair_relation_block(req);
+    let scene_block = scene_context_block(req);
+    let theater_scene = req
+        .theater_scene
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .unwrap_or("breakfast");
+    let target_beats = cast_rewrite_target_beats(min_beats, max_beats);
+
+    let poke_space_line = if cast_rewrite_requires_forks(req) {
+        "\n5. 主剧本须为戳点 chip 可能触发的事件留出合理插入空间（中段附近可接小插曲），不要预写 forks 正文。"
+    } else {
+        ""
+    };
+    let guardrails = drama_guardrails::drama_guardrails_compact(req.theater_scene.as_deref());
 
     format!(
-        r#"卡司重写：为以下两位角色**从零**撰写「早饭 · 上学前」双人短剧。不要沿用任何现成台词或剧情模板，须完全贴合人设关系与说话方式。
+        r#"卡司重写：为以下两位角色**从零**撰写「{theater_scene}」双人短剧。不要沿用任何现成台词或剧情模板，须完全贴合人设关系与说话方式。
 
-cast a={name_a}，cast b={name_b}，场景={scene_id}。仅 a/b 两人发言，禁止第三人。
+cast a={name_a}，cast b={name_b}，角色包场景={scene_id}。仅 a/b 两人发言，禁止第三人。
 
-人设摘要：
-{persona_block}
-
-戳点分支（forks 须全部覆盖，每项含 chip_id、insert_after_beat_id、patch_lines）：
-{chips_json}
-
+{scene_block}{guardrails}人设摘要：
+{persona_block}{relation_block}
 撰写要求：
-1. beats：{min_beats}-{max_beats} 条，id 依次为 b1,b2,b3…（连续）；cast 仅 a/b；name 用对应显示名；text 非空≤{max_text}字；写**全新**对白与小事件（仍可落在厨房/餐桌/玄关出门，但不要复制常见「温粥/天气预报/书包」流水账，除非符合该人设）。
-2. forks：每个 chip_id 一条；insert_after_beat_id 必须是 beats 中某条 id（建议中后段）；patch_lines 3-4 条，id 自定如 tea-1；体现 drama_seed 意图。
-3. 交替发言、有戏感、口语自然中文。
+1. 恰好 {target_beats} 条对白（id 依次为 b1,b2,b3…）；cast 只能是 a 或 b；text 非空≤{max_text}字；写**全新**对白与小事件，须落在上述场景约束内。
+2. 开场 2 拍须建立场景物件感与两人性格对照；交替发言、有戏感、口语自然中文。
+3. 中段留 poke 插入空间，勿把戳点事件写死进主剧本。{poke_space_line}
+4. 戳点分支由系统另行挂载，不要输出 forks 字段。
 
-输出契约：{{"beats":[{{"id","cast","name","text","stage_hint?","emotion?"}}],"forks":[{{"chip_id","insert_after_beat_id","patch_lines":[...]}}]}}
-
-示例 beat：{{"id":"b1","cast":"b","name":"{name_b}","text":"……","emotion":"happy"}}{strict_tail}
-"#,
+输出格式（仅 JSON 数组，不要其它文字）：
+- 只输出一个 JSON 数组；不要 Markdown、不要代码块围栏、不要前后说明。
+- 每条仅含 id、cast、text 三个字段；不要 name、stage_hint、emotion 等字段。
+- 示例：
+[{{"id":"b1","cast":"b","text":"……"}},{{"id":"b2","cast":"a","text":"……"}}]
+{strict_tail}"#,
+        theater_scene = theater_scene,
         name_a = req.cast_a.name.trim(),
         name_b = req.cast_b.name.trim(),
         scene_id = req.scene_id.trim(),
+        scene_block = scene_block,
+        guardrails = guardrails,
+        persona_block = persona_block,
+        relation_block = relation_block,
+        target_beats = target_beats,
         max_text = MAX_BEAT_TEXT_LEN,
+        strict_tail = strict_tail,
+        poke_space_line = poke_space_line,
+    )
+}
+
+pub(crate) fn build_cast_rewrite_minimal_prompt(
+    req: &TheaterSceneRequest,
+    target_beats: u32,
+    persona_a: &str,
+    persona_b: &str,
+) -> String {
+    let brief = req
+        .scene_brief
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .unwrap_or(default_scene_brief());
+    let pa = if persona_a.trim().is_empty() {
+        "按角色名推断语气"
+    } else {
+        persona_a.trim()
+    };
+    let pb = if persona_b.trim().is_empty() {
+        "按角色名推断语气"
+    } else {
+        persona_b.trim()
+    };
+    let guardrails = drama_guardrails::drama_guardrails_compact(req.theater_scene.as_deref());
+    format!(
+        r#"只输出 JSON 数组，恰好 {target} 条对白。从 [ 开始到 ] 结束，不要 Markdown、不要解释。
+cast 只能是 a 或 b；每条仅 id、cast、text 三个字段。
+A({name_a})={pa}
+B({name_b})={pb}
+场景：{brief}{guardrails}
+示例：[{{"id":"b1","cast":"b","text":"……"}},{{"id":"b2","cast":"a","text":"……"}},{{"id":"b3","cast":"a","text":"……"}}]"#,
+        target = target_beats,
+        name_a = req.cast_a.name.trim(),
+        name_b = req.cast_b.name.trim(),
+        pa = pa,
+        pb = pb,
+        brief = brief,
+        guardrails = guardrails,
     )
 }
 
@@ -557,6 +1045,7 @@ fn normalize_rewrite_beats(
     Some(out)
 }
 
+#[allow(dead_code)]
 fn normalize_rewrite_forks(
     req: &TheaterSceneRequest,
     poke_chips: &[TheaterPokeChipDef],
@@ -650,7 +1139,7 @@ pub struct CastAdaptLlmOutput {
 
 /// Build cast-adapt instruction prompt (optionally stricter on retry).
 #[must_use]
-fn build_cast_adapt_prompt(
+pub(crate) fn build_cast_adapt_prompt(
     req: &TheaterSceneRequest,
     templates: &[TheaterForkTemplate],
     max_beats: u32,
@@ -689,10 +1178,12 @@ fn build_cast_adapt_prompt(
         )
     };
 
+    let scene_block = scene_context_block(req);
+    let guardrails = drama_guardrails::drama_guardrails_compact(req.theater_scene.as_deref());
+
     format!(
-        r#"卡司适配：双人早饭上学前剧场。cast a={name_a}，cast b={name_b}，场景={scene_id}。仅 a/b 发言。
-{pass_block}
-{persona_block}
+        r#"卡司适配：双人剧场。cast a={name_a}，cast b={name_b}，场景={scene_id}。仅 a/b 发言。
+{pass_block}{guardrails}{scene_block}{persona_block}
 开场 beats 骨架（id/cast 只读，可改 name/text/stage_hint/emotion）：
 {beats_json}
 
@@ -707,7 +1198,15 @@ fn build_cast_adapt_prompt(
         name_a = req.cast_a.name.trim(),
         name_b = req.cast_b.name.trim(),
         scene_id = req.scene_id.trim(),
+        pass_block = pass_block,
+        guardrails = guardrails,
+        scene_block = scene_block,
+        persona_block = persona_block,
+        beats_json = beats_json,
+        forks_json = forks_json,
+        max_beats = max_beats,
         max_text = MAX_BEAT_TEXT_LEN,
+        strict_tail = strict_tail,
     )
 }
 
@@ -717,10 +1216,10 @@ fn cast_adapt_pass_instructions(pass: Option<&str>) -> String {
             "【本轮·语气人设】第一轮：在保持事件顺序与 beat id 不变的前提下，把每位角色的台词改成其人设口吻；同步调整 emotion/stage_hint 以贴合性格（毒舌/温柔/别扭等）。禁止只改姓名。"
         }
         Some("depth") => {
-            "【本轮·角色化大纲】第二轮：在早饭→上学前的时间框架内，进一步改写台词内容与 stage_hint，使互动、拌嘴方式、关心/抵触的表达方式更符合两位角色的关系与性格；可调整具体物件与情绪转折，但 beat id/cast 不可变，仍须落在同一早餐场景。"
+            "【本轮·角色化大纲】第二轮：在当前场景时间框架内，进一步改写台词内容与 stage_hint，使互动、拌嘴方式、关心/抵触的表达方式更符合两位角色的关系与性格；可调整具体物件与情绪转折，但 beat id/cast 不可变，仍须落在同一 scene_brief 场景。"
         }
         Some("polish") => {
-            "【本轮·戳点收束】第三轮：重点改写 forks 戳点罐头台词；beats 做最终通顺与人设一致性润色，确保全剧台词风格统一、角色区分度明显。"
+            "【本轮·戳点收束】第三轮：重点改写 forks 戳点罐头台词，每条须是可分享的一击（有反差/动作/情绪），勿平述；beats 做最终通顺与人设一致性润色，确保全剧台词风格统一、角色区分度明显。"
         }
         _ => {
             "【综合适配】语气、角色化互动与戳点一并改写；beat id/cast 不可变。"
@@ -869,19 +1368,31 @@ fn extract_json_object(raw: &str) -> Option<&str> {
     Some(&raw[start..=end])
 }
 
-async fn resolve_scene_model(state: &AppState, req: &TheaterSceneRequest) -> Result<String> {
-    let role_id = req.cast_a.role_id.trim();
+/// Resolve the effective LLM client + model for theater scene generation (local Ollama or cloud BYOK).
+pub(crate) async fn resolve_theater_llm(
+    state: &AppState,
+    req: &TheaterSceneRequest,
+) -> Result<(Arc<dyn LlmClient>, String)> {
     let session_ns = format!("theater:{}", req.scene_id.trim());
-    if let Ok(role) = state.load_role_cached_async(role_id).await {
-        return resolve_effective_ollama_model(state, role.as_ref(), session_ns.as_str()).await;
-    }
-    if let Ok(role) = state.load_role_cached_async(req.cast_b.role_id.trim()).await {
-        return resolve_effective_ollama_model(state, role.as_ref(), session_ns.as_str()).await;
-    }
-    Ok(state.ollama_model.clone())
+    let role = if let Ok(role) = state.load_role_cached_async(req.cast_a.role_id.trim()).await {
+        role
+    } else if let Ok(role) = state.load_role_cached_async(req.cast_b.role_id.trim()).await {
+        role
+    } else {
+        return Err(AppError::InvalidParameter(format!(
+            "theater scene: neither cast role loaded (a={}, b={})",
+            req.cast_a.role_id.trim(),
+            req.cast_b.role_id.trim()
+        )));
+    };
+    let backends = state.effective_plugin_backends_for_session(role.as_ref(), session_ns.as_str());
+    let llm = state.plugins.llm_for_plugin_backends(backends.as_ref());
+    let model =
+        resolve_effective_ollama_model(state, role.as_ref(), session_ns.as_str()).await?;
+    Ok((llm, model))
 }
 
-fn resolve_llm_source_label(state: &AppState) -> &'static str {
+pub(crate) fn resolve_llm_source_label(state: &AppState) -> &'static str {
     let provider = state.user_llm_provider.read().trim().to_ascii_lowercase();
     if provider == "cloud" {
         "cloud"
@@ -895,7 +1406,7 @@ const PERSONA_CORE_MAX: usize = 280;
 const PERSONA_PROMPT_MAX: usize = 300;
 
 /// Load a short persona summary from role pack (description + core + optional prompt snippet).
-async fn resolve_cast_persona(state: &AppState, role_id: &str) -> String {
+pub(crate) async fn resolve_cast_persona(state: &AppState, role_id: &str) -> String {
     let role_id = role_id.trim();
     if role_id.is_empty() {
         return String::new();
@@ -961,7 +1472,7 @@ fn truncate_chars(s: &str, max: usize) -> String {
 
 /// Beats in the base script that follow the insert anchor (ripple skeleton reference).
 #[must_use]
-fn beats_after_insert(
+pub(crate) fn beats_after_insert(
     base_beats: &[TheaterScriptLine],
     insert_after_beat_id: &str,
 ) -> Vec<TheaterScriptLine> {
@@ -1017,7 +1528,7 @@ fn resolve_ripple_context(req: &TheaterSceneRequest) -> RippleContext {
 
 /// Merge prefix beats with parsed LLM ripple output.
 #[must_use]
-fn merge_scene_beats(
+pub(crate) fn merge_scene_beats(
     prefix: &[TheaterScriptLine],
     ripple: Vec<TheaterScriptLine>,
 ) -> Vec<TheaterScriptLine> {
@@ -1026,7 +1537,7 @@ fn merge_scene_beats(
     out
 }
 
-fn ripple_ids_conflict(prefix: &[TheaterScriptLine], ripple: &[TheaterScriptLine]) -> bool {
+pub(crate) fn ripple_ids_conflict(prefix: &[TheaterScriptLine], ripple: &[TheaterScriptLine]) -> bool {
     let prefix_ids: HashSet<&str> = prefix.iter().map(|b| b.id.as_str()).collect();
     ripple.iter().any(|b| prefix_ids.contains(b.id.as_str()))
 }
@@ -1051,7 +1562,7 @@ fn try_merge_ripple(
 
 /// Build the scene-director instruction prompt (optionally stricter on retry).
 #[must_use]
-fn build_scene_prompt(
+pub(crate) fn build_scene_prompt(
     req: &TheaterSceneRequest,
     ctx: &RippleContext,
     max_beats: u32,
@@ -1078,7 +1589,14 @@ fn build_scene_prompt(
     let tweak_block = if req.applied_tweaks.is_empty() {
         "（无微调）".to_string()
     } else {
-        format!("微调意图：{tweaks_json}")
+        format!(
+            "微调意图：{tweaks_json}\n\
+微调纪律：drama_seed 是剧情变数/事件，须融入涟漪区大纲；\
+不得机械复制罐头 fork 的 cast 顺序或台词；\
+由谁开口、谁主导反应由 A/B 人设摘要与前缀上下文决定，两人都要有戏；\
+罐头 patchLines 仅表事件方向与接锚点，不是强制台词模板；\
+须自然接回后续节拍走向。涟漪区须比前缀更有张力，禁止平淡续写。"
+        )
     };
 
     let strict_tail = if strict {
@@ -1106,28 +1624,48 @@ fn build_scene_prompt(
             },
         )
     };
+    let relation_block = pair_relation_block(req);
+    let scene_block = scene_context_block(req);
+    let setting_tail = req
+        .scene_setting_hint
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .unwrap_or(default_scene_setting_hint());
+
+    let guardrails = drama_guardrails::drama_guardrails_full(req.theater_scene.as_deref());
 
     format!(
-        r#"场景导演：双人早饭剧场。cast a={name_a}，cast b={name_b}，场景={scene_id}。仅 a/b 发言。
-{persona_block}
+        r#"场景导演：双人剧场。cast a={name_a}，cast b={name_b}，角色包场景={scene_id}。仅 a/b 发言。
+{persona_block}{relation_block}{scene_block}{guardrails}
 {scope_block}
 
 {tweak_block}
 
 输出契约：JSON 数组，每元素 {{"id","cast":"a"|"b","name","text","stage_hint?","emotion?"}}。
-规则：只输出{output_scope}；总拍数≤{max_beats}；text 非空≤{max_text}字；name 与 cast 一致；台词须符合各人设；禁止脱离早饭上学前场景；不得新增第三人。
+规则：只输出{output_scope}；总拍数≤{max_beats}；text 非空≤{max_text}字；name 与 cast 一致；台词须符合各人设；\
+微调时 cast 分配须随人设与上下文决定，勿照搬罐头 fork 的说话顺序；{setting_tail}；不得新增第三人。
 
-示例：[{{"id":"r1","cast":"b","name":"枫侵月","text":"粥还要不要温一下？","stage_hint":"推碗","emotion":"happy"}},{{"id":"r2","cast":"a","name":"木木","text":"……谁要你温了。","emotion":"shy"}}]{strict_tail}
+示例：[{{"id":"r1","cast":"b","name":"枫侵月","text":"……","stage_hint":"推碗","emotion":"happy"}},{{"id":"r2","cast":"a","name":"木木","text":"……","emotion":"shy"}}]{strict_tail}
 "#,
         name_a = req.cast_a.name.trim(),
         name_b = req.cast_b.name.trim(),
         scene_id = req.scene_id.trim(),
+        persona_block = persona_block,
+        relation_block = relation_block,
+        scene_block = scene_block,
+        guardrails = guardrails,
+        scope_block = scope_block,
+        tweak_block = tweak_block,
         output_scope = if ctx.full_rewrite {
             "整场"
         } else {
             "涟漪区（不含前缀）"
         },
+        max_beats = max_beats,
         max_text = MAX_BEAT_TEXT_LEN,
+        setting_tail = setting_tail,
+        strict_tail = strict_tail,
     )
 }
 
@@ -1283,9 +1821,15 @@ mod tests {
             ],
             max_beats: Some(10),
             mode: None,
+            patch_variant: None,
             fork_templates: None,
             adapt_pass: None,
             poke_chips: None,
+            pair_relation_id: None,
+            pair_relation_hint: None,
+            theater_scene: None,
+            scene_brief: None,
+            scene_setting_hint: None,
         }
     }
 
@@ -1350,6 +1894,17 @@ mod tests {
         let ctx = resolve_ripple_context(&req);
         let p = build_scene_prompt(&req, &ctx, 10, true, "", "");
         assert!(p.contains("严格"));
+    }
+
+    #[test]
+    fn build_scene_prompt_includes_drama_seed_persona_discipline() {
+        let req = sample_req();
+        let ctx = resolve_ripple_context(&req);
+        let p = build_scene_prompt(&req, &ctx, 10, false, "傲娇", "温柔");
+        assert!(p.contains("微调纪律"));
+        assert!(p.contains("drama_seed"));
+        assert!(p.contains("不得机械复制罐头 fork"));
+        assert!(p.contains("勿照搬罐头 fork"));
     }
 
     #[test]
@@ -1566,5 +2121,158 @@ mod tests {
         let mut req = sample_req();
         req.mode = Some("cast_rewrite".to_string());
         assert_eq!(resolve_scene_mode(&req), Some("cast_rewrite"));
+    }
+
+    #[test]
+    fn build_cast_rewrite_prompt_includes_pair_relation() {
+        let mut req = sample_req();
+        req.base_beats.clear();
+        req.pair_relation_id = Some("lover".to_string());
+        req.pair_relation_hint = Some("恋人语气更软".to_string());
+        let p = build_cast_rewrite_prompt(&req, 6, 12, false, "傲娇", "温柔");
+        assert!(p.contains("双角色关系（lover）"));
+        assert!(p.contains("恋人语气更软"));
+    }
+
+    #[test]
+    fn build_cast_rewrite_prompt_supermarket_beats_only() {
+        let mut req = sample_req();
+        req.base_beats.clear();
+        req.theater_scene = Some("supermarket".to_string());
+        req.scene_brief = Some("超市采购：推购物车、抢特价。".to_string());
+        req.scene_setting_hint = Some("地点限于超市卖场。".to_string());
+        let p = build_cast_rewrite_prompt(&req, 6, 12, false, "傲娇", "温柔");
+        assert!(p.contains("supermarket"));
+        assert!(p.contains("超市采购"));
+        assert!(p.contains("超市卖场"));
+        assert!(p.contains("JSON 数组"));
+        assert!(!p.contains("forks 须全部覆盖"));
+    }
+
+    #[test]
+    fn build_cast_rewrite_prompt_breakfast_beats_only_even_with_poke_chips() {
+        let mut req = sample_req();
+        req.base_beats.clear();
+        req.poke_chips = Some(vec![TheaterPokeChipDef {
+            chip_id: "tea".to_string(),
+            drama_seed: "苦药".to_string(),
+            label: None,
+        }]);
+        let p = build_cast_rewrite_prompt(&req, 4, 12, false, "傲娇", "温柔");
+        assert!(p.contains("JSON 数组"));
+        assert!(p.contains("不要") && p.contains("forks"));
+        assert!(!p.contains("forks 须全部覆盖"));
+        assert!(!p.contains("patch_lines"));
+        assert!(!p.contains("{theater_scene}"));
+        assert!(!p.contains("stage_hint?"));
+        assert!(!p.contains("emotion?"));
+        assert!(p.contains("仅含 id、cast、text"));
+    }
+
+    #[test]
+    fn cast_rewrite_requires_forks_when_poke_chips_present() {
+        let mut req = sample_req();
+        req.poke_chips = Some(vec![TheaterPokeChipDef {
+            chip_id: "tea".to_string(),
+            drama_seed: "苦药".to_string(),
+            label: None,
+        }]);
+        assert!(cast_rewrite_requires_forks(&req));
+        req.poke_chips = Some(vec![]);
+        assert!(!cast_rewrite_requires_forks(&req));
+    }
+
+    #[test]
+    fn parse_cast_rewrite_beats_loose_accepts_json_array() {
+        let raw = r#"[
+          {"id":"b1","cast":"b","text":"购物车在这边。"},
+          {"id":"b2","cast":"a","text":"我不买。"},
+          {"id":"b3","cast":"b","text":"特价鸡蛋。"},
+          {"id":"b4","cast":"a","text":"知道了。"},
+          {"id":"b5","cast":"b","text":"试吃区在那。"},
+          {"id":"b6","cast":"a","text":"别塞给我。"}
+        ]"#;
+        let beats = parse_cast_rewrite_beats_loose(raw, 4, 12).expect("array parse");
+        assert_eq!(beats.len(), 6);
+        assert_eq!(beats[0].text, "购物车在这边。");
+    }
+
+    #[test]
+    fn parse_cast_rewrite_beats_loose_ignores_invalid_forks() {
+        let raw = r#"{"beats":[
+          {"id":"b1","cast":"b","text":"第一句。"},
+          {"id":"b2","cast":"a","text":"第二句。"},
+          {"id":"b3","cast":"b","text":"第三句。"},
+          {"id":"b4","cast":"a","text":"第四句。"}
+        ],"forks":[{"chip_id":"bad","patch_lines":[]}]}"#;
+        let beats = parse_cast_rewrite_beats_loose(raw, 4, 12).expect("beats despite bad forks");
+        assert_eq!(beats.len(), 4);
+    }
+
+    #[test]
+    fn try_parse_cast_rewrite_beats_only_normalizes_names() {
+        let mut req = sample_req();
+        req.base_beats.clear();
+        req.cast_a.name = "木木".to_string();
+        req.cast_b.name = "诗梦".to_string();
+        let raw = r#"[{"cast":"b","text":"a"},{"cast":"a","text":"b"},{"cast":"b","text":"c"},{"cast":"a","text":"d"}]"#;
+        let beats = try_parse_cast_rewrite_beats_only(&req, raw, 4, 12).expect("normalize");
+        assert_eq!(beats[0].name, "诗梦");
+        assert_eq!(beats[1].name, "木木");
+    }
+
+    #[test]
+    fn parse_cast_rewrite_beats_loose_accepts_trailing_commas() {
+        let raw = r#"[
+          {"id":"b1","cast":"b","text":"第一句。"},
+          {"id":"b2","cast":"a","text":"第二句。"},
+          {"id":"b3","cast":"b","text":"第三句。"},
+          {"id":"b4","cast":"a","text":"第四句。"},
+        ]"#;
+        let beats = parse_cast_rewrite_beats_loose(raw, 4, 12).expect("trailing comma");
+        assert_eq!(beats.len(), 4);
+    }
+
+    #[test]
+    fn try_parse_cast_rewrite_accepts_role_name_cast_and_dialogue_field() {
+        let mut req = sample_req();
+        req.cast_a.name = "木木".to_string();
+        req.cast_b.name = "枫侵月".to_string();
+        let raw = r#"说明如下：
+[
+  {"id":"b1","cast":"枫侵月","dialogue":"早。"},
+  {"id":"b2","cast":"木木","dialogue":"哼。"},
+  {"id":"b3","cast":"枫侵月","dialogue":"粥好了。"},
+  {"id":"b4","cast":"木木","dialogue":"知道了。"}
+]"#;
+        let beats = try_parse_cast_rewrite_beats_only(&req, raw, 4, 12).expect("name cast");
+        assert_eq!(beats.len(), 4);
+        assert_eq!(beats[0].cast, "b");
+        assert_eq!(beats[1].cast, "a");
+    }
+
+    #[test]
+    fn salvage_rewrite_objects_accepts_malformed_array_wrapper() {
+        let mut req = sample_req();
+        req.cast_a.name = "木木".to_string();
+        req.cast_b.name = "枫侵月".to_string();
+        let raw = r#"[
+          {"cast":"b","text":"一"},
+          {"cast":"a","text":"二"},
+          {"cast":"b","text":"三"},
+          {"cast":"a","text":"四"},
+        "#;
+        let ctx = CastRewriteParseCtx::from_req(&req);
+        let beats = salvage_rewrite_objects(raw, 4, 12, &ctx).expect("salvage");
+        assert_eq!(beats.len(), 4);
+    }
+
+    #[test]
+    fn build_cast_rewrite_minimal_prompt_is_short_and_fixed_count() {
+        let req = sample_req();
+        let p = build_cast_rewrite_minimal_prompt(&req, 8, "傲娇", "温柔");
+        assert!(p.contains("恰好 8 条"));
+        assert!(p.contains("从 [ 开始"));
+        assert!(!p.contains("forks"));
     }
 }

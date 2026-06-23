@@ -68,8 +68,11 @@
 - **几分钱强模型预算 + 最精的 prompt 手艺，全砸在这两个角色上。反差 = 喜剧 / 惊艳引擎。**
 
 ### 4.3 交互 = 淘气地"戳一戳"
-- 用**一眼可见的可点芯片**让用户戳，把第一次微改的门槛降到零：
-  - 🍵 让他们喝苦中药 · ⏰ 改到快迟到 · 🥦 逼吃讨厌的菜 · 😼 换个称呼 · 🎭 微调性格
+- 用**一眼可见的可点芯片**让用户戳，把第一次微改的门槛降到零（芯片 SSOT：`theaterSceneCatalog.ts` → `pokeChips`）：
+  - **早餐**：🍵 苦中药 · ⏰ 快迟到 · 👅 咬舌头 · 😼 换称呼
+  - **超市**：🥛 买牛奶 · 🛒 忘拿牛奶 · 📦 卖完了 · 🎁 中奖送奶
+  - **回家路上**：🐱 遇到小猫 · 🚧 撞电线杆 · 🧭 走错方向 · 🦶 崴脚
+  - **睡前**：🥛 喝杯牛奶 · 😴 失眠 · 🍜 吃宵夜 · ⛈️ 打雷下雨
 - **小输入 → 肉眼可见的大后果**（出人意料又完全符合人设的反应）。机制上是小补丁，体感上要是大转折。
 - **挑高含金量变量**（苦中药 / 迟到 / 讨厌的菜——逼出性格）**而非中性变量**（具体几点——改了看不出性格）。
 - 把它框成**"调戏这两个人，看会怎样"**——最可分享、最可重复玩的交互模式（沙盒 / 模拟人生同理）。天生可剪、可传、玩不腻。
@@ -84,8 +87,8 @@
 ### 4.5 零设置门槛
 - **第一印象之前不许填任何 API key。** 预生成 + 本地模型扛住首启。
 - API key 是后面"想深入 / 隐私 / 无限用"才出现的一步，不是入场券。**先爽，再让他配。**
-- **模式 1 卡司**：首启默认 **mumu × 枫侵月**（零配置）；用户可在 **剧场设置 → 卡司** 导入/选择任意两个角色包并重开本场。**官方剧本大纲**（`breakfast.skeleton.json` beats/forks 锚点）固定不变，仅替换称呼与人设语气适配。
-- **非默认卡司 AI 适配加载**：换角后前端 `adaptRuntimeSkeleton` → `POST /theater/scene` **`mode=cast_adapt`**（内核 `scene_director` 单次 LLM 改写开场 beats + 全部 fork 罐头文本；beat/fork id 与 `insertAfterBeatId` 不变）；结果缓存 `localStorage` `oclive.theater.adapted.v1`（key：`sceneId:castA.roleId:castB.roleId`）；**再次进入同组合命中缓存秒开**。`resolveCastTier`：**默认卡司**（mumu×枫侵月）= `default`（零 AI）；**任一侧偏离**即 `applied`（含**混合卡司**）。适配失败 / 超时 / 内核 offline → **`fallbackToDefaultCast`** 整局回官方默认，非换名半成品；设置 → **恢复默认卡司** 走 `applyDefaultCast`。
+- **模式 1 卡司**：首启默认 **mumu × 枫侵月**（零配置）；用户可在 **剧场设置 → 卡司** 导入/选择任意两个角色包并重开本场。**四场景官方剧本**（`theater/scenes/*.skeleton.json` beats/forks 锚点；**四场景均含 4 枚 poke forks**）固定不变，仅替换称呼与人设语气适配；场景可任意跳转（`localStorage` `oclive.theater.scene.v1`）。
+- **非默认卡司 AI 适配加载**：换角后前端 `adaptRuntimeSkeleton` → `POST /theater/scene` **`mode=cast_rewrite`**（早餐含 forks；其它三场景 beats-only）；结果缓存 `localStorage` `oclive.theater.adapted.v2`（key：`presetId:castA.roleId:castB.roleId:pairRelationId`）；**再次进入同组合命中缓存秒开**。
 
 ### 4.6 创作漏斗（通往编辑器的暗门）
 - **"🎭 微调性格"这个戳点，本质是迷你版"创作"，是通往编辑器的暗门。**
@@ -128,6 +131,7 @@
 - theater 发行版打包、目录插件、UI 差分
 - 模式 1 预生成骨架与局部补丁
 - **场景导演（专用命令）**：`generate_theater_scene` / `POST /theater/scene`（`oclive_kernel_host::domain::theater::scene_director`）——一次 LLM 调用结构化重写整场 JSON beats；走 `AppState::llm` 与已配置模型，**非** `process_message` stage、**非**六槽
+- **场景导演 prompt 独立通道（已交付）**：[`resolve_theater_director`](../../crates/oclive_kernel_host/src/domain/theater_director.rs) + 官方 directory 插件 `com.oclive.theater_director_official`（`theater.build_prompt`）；profile `[theater].director_plugin` · env `OCLIVE_THEATER_DIRECTOR_PLUGIN`；RPC 失败自动 fallback 内置模板
 - **重演（混合 B，已 superseded）**：旧前端 `send_message`+正则局部补丁路径已由场景导演替代；保留 `buildWorkingScript` 作 fallback 罐头
 
 **推迟到模式 3**：自由双角色来回、N cast 泛化、内核级双核编排与六槽后端模块定制。
@@ -135,20 +139,28 @@
 **场景导演 UX（2026-06）**：
 
 - 前端 `generate_theater_scene` **30s** 竞态超时；思考链播完后显示已等待秒数与模型阶段文案；invoke 失败必恢复 idle。
-- 内核仅重写**涟漪区**（最后一项 tweak 插入点之后），前缀（含罐头 patch）原样拼接；默认 `max_beats=12`。
-- 首轮 LLM 走 `generate_tag`（低 temperature）；内核单轮超时 `OCLIVE_THEATER_SCENE_TIMEOUT_SECS`（默认 **25**）；环境变量 `OCLIVE_THEATER_RIPPLE_MAX_BEATS`（默认 **12**）。
+- **Poke 默认 `mode=patch`**：局部 prose 小剧情（2–4 行）插入锚点后，**保留官方 skeleton 尾部**；`lead_cast` 与 UI 事件高亮 SSOT 一致；失败降级罐头 fork。
+- **双候选（可选）**：`patch_variant=1` 后台生成另一种合理分支；前端 `TheaterVariantBackdrop` 拖拽切换。
+- **涟漪重写（可选）**：设置或 `mode=ripple` 仍走 JSON 整段涟漪 rewrite；内核单轮超时 `OCLIVE_THEATER_SCENE_TIMEOUT_SECS`（默认 **25**）；`OCLIVE_THEATER_RIPPLE_MAX_BEATS`（默认 **12**）。
+- Patch 环境变量：`OCLIVE_THEATER_PATCH_MAX_LINES`（默认 **4**）、`OCLIVE_THEATER_PATCH_PARTNER_REPLY`（默认开）。
 
 工程代理（如 `test:theater:smoke`）**不替代**真人「卧槽」门槛。
 
+### Prompt pack v0.2 · 戏剧性纪律 · 插件 SSOT（2026-06）
+
+- **创作面**：[`plugins/com.oclive.theater_director_official/prompts/`](../../plugins/com.oclive.theater_director_official/prompts/) — `drama_guardrails.mjs` + `modes/*`；`mode=patch` 为戳 chip 主路径（标题「剧场即兴 · 戏剧性补丁」）。
+- **替换**：Fork 插件 → 改 `prompts/` → `{app_data}/plugins/<id>/` + `[theater].director_plugin` 或 `OCLIVE_THEATER_DIRECTOR_PLUGIN`（**无**剧场设置 UI 选包）。
+- **Rust fallback**：仅 RPC 失败；同步清单见官方插件 [`README.md`](../../plugins/com.oclive.theater_director_official/README.md)；drift 烟测 `node scripts/theater-prompt-drift.mjs`。
+- **人工验收矩阵**：[`PLAYTEST_MATRIX.md`](PLAYTEST_MATRIX.md)（四场景 × 代表 chip + playtest 笔记模板）。
+
 ---
 
-## 5.6 辅助小模型（草案 · 未实现）
+## 5.6 辅助小模型（草案 · 部分落地）
 
-> 解冻条件：涟漪重写 + 30s UX 上线后，慢模型 fallback 率仍高。
+> 解冻条件：patch + 双候选上线后，仍慢或 OOC 率高时再加强。
 
-- **规则模板 + 小模型**：仅生成 3–5 行涟漪对白，失败率低于整场 JSON。
-- **两阶段**：小模型草稿 → 可选大模型润色（用户有云端 key 时）。
-- **环境开关**：预留 `OCLIVE_THEATER_AUX_MODEL`（本迭代不实现）。
+- **已实现**：`mode=patch` prose 局部改写 + strict retry + 罐头 fallback（见 `patch_scene.rs`）。
+- **仍草案**：专用 aux 模型、`OCLIVE_THEATER_AUX_MODEL`、小模型草稿 → 大模型润色两阶段链。
 
 ---
 
@@ -162,14 +174,17 @@
 
 ---
 
-## 7. 开工清单（当前为空仓）
+## 7. 开工清单（已归档 · 2026-06）
 
-| 待建 | 落点（实现时） |
-|------|----------------|
-| Profile 接入 | 复制 [`theater.oclive.toml`](theater.oclive.toml) → `examples/distro-profiles/` · `src-tauri/resources/distro-profiles/` |
-| 双角色示例包 | `roles/`（早饭场景等） |
-| 本地启动脚本 | `package.json` / `scripts/`（如 `OCLIVE_DISTRO_PROFILE` + `tauri:dev`） |
-| 内核 / 前端差分 | `crates/oclive_kernel_host` · `src/`（按路线图模式 1） |
+模式 1 greenfield 项均已落地；后续工程见 [`TECHNICAL_DEBT_INVENTORY.md`](../TECHNICAL_DEBT_INVENTORY.md) 轮次 16 · 模式 2 见 [`MODE2_UNFREEZE.md`](MODE2_UNFREEZE.md)。
+
+| 项 | 落点 | 状态 |
+|----|------|------|
+| Profile 接入 | `examples/distro-profiles/theater.oclive.toml` · `src-tauri/resources/distro-profiles/` | **Done** |
+| 双角色 + 四场景 | `src/composables/theater/theaterSceneCatalog.ts` · mumu × 枫侵月 | **Done** |
+| 本地启动 / 打包 | `npm run tauri:dev:theater` · `npm run tauri:build:theater` | **Done** |
+| 场景导演插件 | `plugins/com.oclive.theater_director_official/` · `resolve_theater_director` | **Done** |
+| TheaterShell 前端 | `src/shells/theater/` · `TheaterShell` | **Done** |
 
 ---
 

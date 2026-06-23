@@ -15,11 +15,12 @@ pub use oclive_kernel_host::service::{LlmUserSettingsDto, SaveLlmUserSettingsReq
 
 #[tauri::command]
 pub async fn get_llm_user_settings(
+    app: tauri::AppHandle,
     state: tauri::State<'_, oclive_kernel_host::state::SharedAppState>,
     role_id: String,
     session_id: Option<String>,
 ) -> Result<LlmUserSettingsDto, crate::api::error::CommandError> {
-    commands::get_llm_user_settings(state, role_id, session_id).await
+    commands::get_llm_user_settings(app, state, role_id, session_id).await
 }
 
 #[tauri::command]
@@ -28,6 +29,16 @@ pub async fn list_ollama_models(
     ollama_base_url: Option<String>,
 ) -> Result<Vec<String>, crate::api::error::CommandError> {
     commands::list_ollama_models(state, ollama_base_url).await
+}
+
+#[tauri::command]
+pub async fn list_cloud_models(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, oclive_kernel_host::state::SharedAppState>,
+    remote_url: Option<String>,
+    remote_token: Option<String>,
+) -> Result<Vec<String>, crate::api::error::CommandError> {
+    commands::list_cloud_models(app, state, remote_url, remote_token).await
 }
 
 #[tauri::command]
@@ -56,11 +67,12 @@ pub async fn import_gguf_to_ollama(
 
 #[tauri::command]
 pub async fn probe_cloud_llm(
+    app: tauri::AppHandle,
     state: tauri::State<'_, oclive_kernel_host::state::SharedAppState>,
     role_id: String,
     session_id: Option<String>,
 ) -> Result<String, crate::api::error::CommandError> {
-    commands::probe_cloud_llm(state, role_id, session_id).await
+    commands::probe_cloud_llm(app, state, role_id, session_id).await
 }
 
 #[tauri::command]
