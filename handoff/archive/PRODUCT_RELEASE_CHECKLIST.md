@@ -29,7 +29,7 @@
 
 **状态说明**：下列为发版会议手工项；未勾选表示**待发版日执行**，不阻塞工程扫尾合入。
 
-- [ ] [mumu 模块发版前验收清单](../creator-docs/guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md) — ⚠️ 发版前手工
+- [ ] [mumu 模块发版前验收清单](../distros/MUMU_UI_ACCEPTANCE_CHECKLIST.md) — ⚠️ 发版前手工
 - [ ] [Plugin Manager V2 + 复杂情感回归](../creator-docs/guides/REGRESSION_COMPLEX_EMOTION_QA.md) — ⚠️ 发版前手工
 - [ ] [角色包导入 — 手工测试清单](../roles/TESTING_ROLE_PACK_IMPORT.md)（若本版 touched 导入 / manifest）— ⚠️ 按需
 - [ ] [高风险能力验收（演示向）](./PLUGIN_HIGH_RISK_ACCEPTANCE.md) — ⚠️ 演示向；A4.1 已 CI/文档收口，发版日再勾

@@ -31,7 +31,7 @@
 | Error codes & triage | [ERROR_CODES.md](ERROR_CODES.md) · [KERNEL_ERROR_CODE_CONVENTION.md](KERNEL_ERROR_CODE_CONVENTION.md) · A3 [EN](../../handoff/A3_CLOSURE_SUMMARY.en.md) / [ZH](../../handoff/A3_CLOSURE_SUMMARY.md) |
 | Local sidecar + BYOK | [SIDECAR_LLM_USER_GUIDE.md](SIDECAR_LLM_USER_GUIDE.md) |
 | Config paths | [../guides/CONFIGURATION_FILES.md](../guides/CONFIGURATION_FILES.md) |
-| mumu UI acceptance | [../guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md](../guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md) |
+| mumu UI acceptance | [`handoff/distros/MUMU_UI_ACCEPTANCE_CHECKLIST.md`](../../handoff/distros/MUMU_UI_ACCEPTANCE_CHECKLIST.md) |
 | Editor vs host compatibility | [../COMPATIBILITY.md](../COMPATIBILITY.md) |
 | Open-source licensing (host & plugins) | [../LICENSE_POLICY.md](../LICENSE_POLICY.md) |
 | Creator workflow | [CREATOR_WORKFLOW.md](CREATOR_WORKFLOW.md) |

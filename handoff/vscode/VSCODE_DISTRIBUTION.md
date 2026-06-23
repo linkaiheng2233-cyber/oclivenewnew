@@ -3,7 +3,7 @@
 **实现仓库**：`oclive-vscode`（与主应用同级目录）。  
 **产品战略 SSOT**：[`oclive-vscode/docs/STRATEGY.md`](../../../oclive-vscode/docs/STRATEGY.md)（以角色为基点 · **渗透插件化**）。  
 **渗透模型**：[`PENETRATION_PLUGIN_MODEL.md`](../../../oclive-vscode/docs/PENETRATION_PLUGIN_MODEL.md)  
-**跨宿主记忆**：[`CROSS_HOST_MEMORY.md`](CROSS_HOST_MEMORY.md)。
+**跨宿主记忆**：[`CROSS_HOST_MEMORY.md`](../../creator-docs/role-pack/CROSS_HOST_MEMORY.md)。
 
 ---
 
@@ -29,7 +29,7 @@
 ### 核心（长期）
 
 - 侧栏：**立绘** + **对话** + 编辑器上下文
-- 内核：`GET /health` + `POST /chat` / `stream`（8420；**profile-aware attach + bundled-first spawn** — 见 [`DISTRO_KERNEL_LIFECYCLE.md`](../kernel/DISTRO_KERNEL_LIFECYCLE.md)）
+- 内核：`GET /health` + `POST /chat` / `stream`（8420；**profile-aware attach + bundled-first spawn** — 见 [`DISTRO_KERNEL_LIFECYCLE.md`](../../creator-docs/kernel/DISTRO_KERNEL_LIFECYCLE.md)）
 - **不** 长期内置：日记、写信、idle、渗透设置大分区
 
 ### 渗透插件（0.4+ · 三仓 + npm）
@@ -42,7 +42,7 @@
 
 - 消费：`penetration_templates`、`.oclive/` 路径约定、`bridge/dispatch` C2
 - 主仓 `oclive_validation` 对模板字段的校验 **保留**
-- 交接索引：[`handoff/vscode/VSCODE_PENETRATION_PLUGIN_PIVOT.md`](../../handoff/vscode/VSCODE_PENETRATION_PLUGIN_PIVOT.md)
+- 交接索引：[`VSCODE_PENETRATION_PLUGIN_PIVOT.md`](./VSCODE_PENETRATION_PLUGIN_PIVOT.md)
 
 ---
 
@@ -60,7 +60,7 @@
 
 | 文档 | 路径 |
 |------|------|
-| 内核 lifecycle | [`DISTRO_KERNEL_LIFECYCLE.md`](../kernel/DISTRO_KERNEL_LIFECYCLE.md) · [`KERNEL_SCHEDULER_RESCOPE.md`](../../handoff/KERNEL_SCHEDULER_RESCOPE.md) |
+| 内核 lifecycle | [`DISTRO_KERNEL_LIFECYCLE.md`](../../creator-docs/kernel/DISTRO_KERNEL_LIFECYCLE.md) · [`KERNEL_SCHEDULER_RESCOPE.md`](../KERNEL_SCHEDULER_RESCOPE.md) |
 | 路线图 | [`oclive-vscode/ROADMAP.md`](../../../oclive-vscode/ROADMAP.md) |
 | 扩展契约详表 | [`oclive-vscode/docs/VSCODE_DISTRIBUTION.md`](../../../oclive-vscode/docs/VSCODE_DISTRIBUTION.md) |
 | 决策门 | [`GATE_DECISIONS.md`](../../../oclive-vscode/docs/GATE_DECISIONS.md) |

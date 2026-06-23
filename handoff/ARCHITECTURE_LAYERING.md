@@ -164,7 +164,7 @@
 | `kernel_contracts` trait `# Errors` / `# Panics` + 核心 trait 示例 | 已落实 |
 | `oclive ci init` 模板 `cargo-deny` + `loom` job | 已落实 |
 | `oclive lint` 彩色输出 / 通过率 / 耗时 | 已落实 |
-| `creator-docs/studio/USER_GUIDE` 创作 / 试聊 / 导出工作流 | 已落实 |
+| `handoff/studio/USER_GUIDE.md` 创作 / 试聊 / 导出工作流 | 已落实 |
 
 ### 优化轮验证（任务 9）
 

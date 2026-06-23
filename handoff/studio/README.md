@@ -5,7 +5,7 @@
 | 资源 | 路径 |
 |------|------|
 | 合并 RFC | [`creator-docs/rfc/RFC_STUDIO_MERGE.md`](../../creator-docs/rfc/RFC_STUDIO_MERGE.md) |
-| 用户指南（契约） | [`creator-docs/studio/USER_GUIDE.md`](../../creator-docs/studio/USER_GUIDE.md) |
+| 用户指南（契约） | [`handoff/studio/USER_GUIDE.md`](./USER_GUIDE.md) |
 | 编写器路线图（主仓副本） | [`../pack-editor/PACK_EDITOR_ROADMAP.md`](../pack-editor/PACK_EDITOR_ROADMAP.md) |
 | 姊妹仓编写器（已归档 0.2） | [`oclive-pack-editor`](../../../oclive-pack-editor/) |
 | 姊妹仓启动器 | [`oclive-launcher`](../../../oclive-launcher/) |

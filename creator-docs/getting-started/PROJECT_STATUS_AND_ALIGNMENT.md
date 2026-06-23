@@ -31,7 +31,7 @@
 | 错误码与排障、提 issue 最少信息 | [ERROR_CODES.md](ERROR_CODES.md) · [KERNEL_ERROR_CODE_CONVENTION.md](KERNEL_ERROR_CODE_CONVENTION.md) · A3 [中](../../handoff/A3_CLOSURE_SUMMARY.md) / [En](../../handoff/A3_CLOSURE_SUMMARY.en.md) |
 | 本机侧车 + BYOK（闭源云端） | [SIDECAR_LLM_USER_GUIDE.md](SIDECAR_LLM_USER_GUIDE.md) |
 | 配置文件与数据路径 | [../guides/CONFIGURATION_FILES.md](../guides/CONFIGURATION_FILES.md) |
-| mumu 模块发版前验收 | [../guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md](../guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md) |
+| mumu 模块发版前验收 | [`handoff/distros/MUMU_UI_ACCEPTANCE_CHECKLIST.md`](../../handoff/distros/MUMU_UI_ACCEPTANCE_CHECKLIST.md) |
 | 编写器与主程序版本兼容 | [../COMPATIBILITY.md](../COMPATIBILITY.md) |
 | 创作者工作流（包、目录、导入） | [CREATOR_WORKFLOW.md](CREATOR_WORKFLOW.md) |
 

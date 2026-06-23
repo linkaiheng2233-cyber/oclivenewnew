@@ -67,5 +67,5 @@ CLI：`cargo run -p oclive-cli -- migrate-app-data [--target PATH] [--dry-run]`
 ## 相关文档
 
 - [`CROSS_HOST_MEMORY.md`](../role-pack/CROSS_HOST_MEMORY.md)  
-- [`VSCODE_DISTRIBUTION.md`](../role-pack/VSCODE_DISTRIBUTION.md)  
+- [`VSCODE_DISTRIBUTION.md`](../../handoff/vscode/VSCODE_DISTRIBUTION.md)  
 - [`handoff/CHAT_STORAGE_ARCHITECTURE.md`](../../handoff/CHAT_STORAGE_ARCHITECTURE.md)

@@ -2,6 +2,8 @@
 
 本目录为 **面向创作者、侧车开发者与插件扩展者** 的文档根目录，按主题分子文件夹；亦是 **AI 接手包** 的契约百科组成部分（与 [AGENTS.md](../AGENTS.md)、[handoff/](../handoff/) 并列）。
 
+**受众导航**：**创作者 / 插件契约** → 本目录；**终端用户** → [getting-started/USER_MANUAL.md](getting-started/USER_MANUAL.md)；**AI 维护 / 工程交接** → [handoff/](../handoff/) + [AGENTS.md](../AGENTS.md)。
+
 **人类开发者（主仓贡献 · 不用 Cursor）**：请先 [human-docs/README.md](../human-docs/README.md)（窄入口）；需要契约细节时再回本文。
 
 **不再使用**旧的扁平 `docs/*.md` 布局（见 `docs/README.md` 说明）。
@@ -13,7 +15,7 @@
 | 文件夹 | 内容 |
 |--------|------|
 | **[getting-started/](getting-started/)** | 文档总索引、[架构总览 · 单核双态](getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)（[English](../creator-docs-en/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)）、[用户手册](getting-started/USER_MANUAL.md)、[进度与目标对齐](getting-started/PROJECT_STATUS_AND_ALIGNMENT.md)、[项目现状快照](getting-started/PROJECT_CURRENT_STATUS.md)、入门与角色包工作流、[GitHub 仓库清单](getting-started/GITHUB_REPO_CHECKLIST.md) |
-| **[guides/](guides/)** | [配置文件说明](guides/CONFIGURATION_FILES.md)（`plugin_state`、`ui.json`、应用数据路径等）、[mumu 模块验收清单](guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md)、[复杂情感回归清单](guides/REGRESSION_COMPLEX_EMOTION_QA.md) · 英 [`../creator-docs-en/guides/`](../creator-docs-en/guides/) |
+| **[guides/](guides/)** | [配置文件说明](guides/CONFIGURATION_FILES.md)（`plugin_state`、`ui.json`、应用数据路径等）、[mumu 模块验收清单](../handoff/distros/MUMU_UI_ACCEPTANCE_CHECKLIST.md)、[复杂情感回归清单](guides/REGRESSION_COMPLEX_EMOTION_QA.md) · 英 [`../creator-docs-en/guides/`](../creator-docs-en/guides/) |
 | **[plugin-and-architecture/](plugin-and-architecture/)** | `plugin_backends` 契约、扩展点、HTTP JSON-RPC 协议、[整壳桥接 API 参考](plugin-and-architecture/BRIDGE_API_REFERENCE.md)、替换模块 · 英文总表 [`../creator-docs-en/README.md`](../creator-docs-en/README.md) |
 | **[FAQ.md](FAQ.md)** | 插件与角色包常见问题 · 英文 [`../creator-docs-en/FAQ.md`](../creator-docs-en/FAQ.md) |
 | **[LICENSE_POLICY.md](LICENSE_POLICY.md)** | 主程序与插件的开源协议策略（发布前最小检查） |

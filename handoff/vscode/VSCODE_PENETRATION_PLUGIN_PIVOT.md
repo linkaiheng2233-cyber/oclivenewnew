@@ -59,7 +59,7 @@
 | 宿主 API | `oclive-vscode/docs/HOST_API_V1.md` |
 | 插件作者 | `oclive-vscode/docs/PENETRATION_PLUGIN_AUTHOR.md` |
 | F5 验收 | `oclive-vscode/docs/F5_ACCEPTANCE.md` |
-| 跨仓契约 | `creator-docs/role-pack/VSCODE_DISTRIBUTION.md` |
+| 跨仓契约 | `handoff/vscode/VSCODE_DISTRIBUTION.md` |
 
 ---
 

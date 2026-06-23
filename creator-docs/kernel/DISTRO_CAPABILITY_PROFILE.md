@@ -196,6 +196,6 @@ mode = "off"   # off | image_only | stage_full
 - [DISTRO_KERNEL_LIFECYCLE.md](./DISTRO_KERNEL_LIFECYCLE.md)
 - [KERNEL_SCHEDULER_RESCOPE.md](../../handoff/KERNEL_SCHEDULER_RESCOPE.md) — 进程调度收窄 · 与插件矩阵分责
 - [DISTRO_DEFAULT_PLUGINS.md](./DISTRO_DEFAULT_PLUGINS.md) — 发行版默认六槽矩阵与三 personas
-- [VSCODE_DISTRIBUTION.md](../role-pack/VSCODE_DISTRIBUTION.md)
+- [VSCODE_DISTRIBUTION.md](../../handoff/vscode/VSCODE_DISTRIBUTION.md)
 - [CROSS_HOST_MEMORY.md](../role-pack/CROSS_HOST_MEMORY.md)
 - [OCLIVE_APP_DATA.md](./OCLIVE_APP_DATA.md)

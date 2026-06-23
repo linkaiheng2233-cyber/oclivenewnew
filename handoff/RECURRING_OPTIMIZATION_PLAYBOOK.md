@@ -300,6 +300,9 @@ npm run check:rust                               # fmt + clippy(-D warnings) + t
 | 13 | 2026-06-15 | 全 | PASS | A− | W1–4 路线图收口: robust 镜像/可观测; V4 社区基建; process_message/post/events/blueprint 拆分; 前端 composable 化 | host lib 191+; dimension5 九检; Node ≥20 |
 | 14 | 2026-06-15 | 半 | PASS* | A− | M0 W13 CHANGELOG 合入; M1 PostLlmCtx/preflight/PreLlm 分组/SettingsView/role_runtime/blueprint 测试外移; M2 human-docs-en 04/07+setup-dev; M3 注释英文化 batch 1–2; D-READ-01/02/04·K-DOC-14 Done | *host lib 193; blueprint_v2 integration 13; SettingsView 304 行; 维护者跑 check:release |
 | 15 | 2026-06-15 | 半 | PASS | A− | P0 工程验收: theater smoke+proxy 100%; tauri:build:theater MSI/NSIS 绿; 真人表仍空→Phase5 FAIL 分支; M5 K-DOC-15/16 Done; V4-ONBOARD-03 good-second-issue; 技术债四层收束; K-PERF-10 条件未触发 | 见 TECHNICAL_DEBT §1; theater/DEVELOPMENT_ROADMAP §5.5 |
+| 16 | 2026-06-18 | 半 | PASS | A− | T-LAYER-16 theater 测迁出 domain; T-DOC-TD-01 theater_director 文档扫尾; T-MINIMAL-TD-01 minimal 插件自包含; T-CI-DRIFT-01 prompt drift 门禁 | host lib 239; theater_director_resolver 3 绿 |
+| 17 | 2026-06-24 | 半 | PASS | A− | D-DOCDRIFT-01 206 文件路径迁移; D-SCRIPT-02 check-stale-paths 扩范围; D-ORPHAN-04 删空 models/; dimension5 十一检 | monorepo 重组文档收尾 |
+| 18 | 2026-06-24 | 全 | PASS | A− | **O-1** plugin-bridge 内核化; **O-2** expert 孤儿前端删; **D-DOC-RELOC-01** 三文档归位 handoff/; creator-docs 受众导航; 冻结项未动 | test:unit 67 绿; vite build 绿; cargo build host 绿 |
 
 ---
 

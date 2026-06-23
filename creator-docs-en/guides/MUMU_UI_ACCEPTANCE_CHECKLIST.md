@@ -2,7 +2,7 @@
 
 Quick pre-release checks that **`distros/chat-pro/roles/mumu/ui.json`** recommended layout and directory-plugin slots behave as expected.
 
-[中文](../../creator-docs/guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md)
+[中文](../../handoff/distros/MUMU_UI_ACCEPTANCE_CHECKLIST.md)
 
 ---
 

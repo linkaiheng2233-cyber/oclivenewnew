@@ -1,14 +1,14 @@
 # Technical debt inventory
 
-**Last updated:** 2026-06-24 (轮次 17 · 重组文档路径收尾)
+**Last updated:** 2026-06-24 (轮次 18 · 巡检优化收尾)
 
 **Product freeze (Theater v0):** Active until **5 人真人陌生人** ≥60% 通过。工程代理 100% **不替代**产品门槛。见 [`theater/DEVELOPMENT_ROADMAP.md`](./theater/DEVELOPMENT_ROADMAP.md) §4.8 · 解冻 checklist [`theater/MODE2_UNFREEZE.md`](./theater/MODE2_UNFREEZE.md)。
 
-**综合评分：** A− · 基线 dimension5 **十检** PASS（含 `check-stale-paths`）· `oclive_kernel_host --lib` **239** 绿 · layering ratchet 3/1 未涨 · `theater_director_resolver` 集成测 3 绿
+**综合评分：** A− · 基线 dimension5 **十一检** PASS · `oclive_kernel_host` 编译期不再依赖 `distros/desktop-tauri/` · expert 孤儿前端已清 · 三份名实不符文档已归位 `handoff/`
 
 **下一动作：** **P0-STRANGER** — 维护者带 5 名零文档测试者；验收标准见 [`theater/PLAYTEST_MATRIX.md`](./theater/PLAYTEST_MATRIX.md)
 
-**Verification (2026-06-18 轮次 16):** `node scripts/dimension5-acceptance.mjs --ci`（含 theater prompt drift）；`node scripts/theater-prompt-drift.mjs`；`npm run test:theater:smoke`；`cargo test -p oclive_kernel_host --lib`；`cargo test -p oclivenewnew-tauri --test theater_director_resolver`。
+**Verification (2026-06-24 轮次 18):** `node scripts/dimension5-acceptance.mjs --ci`；`cargo build -p oclive_kernel_host`；`npm run test:unit`；`npm run build -w @oclive/chat-pro`；`node scripts/check-stale-paths.mjs`。
 
 ---
 
@@ -23,6 +23,9 @@
 | **D-DOCDRIFT-01** | 重组后 normative 文档路径漂移（旧布局引用） | P0 | `check-stale-paths` 硬门禁绿 + `migrate-doc-paths` 路径存在性全过 | **Done**（轮次 17） |
 | **D-SCRIPT-02** | `check-stale-paths.mjs` 误报/漏报（反例说明与行内路径） | P1 | 扩范围 + 修 pattern + 挂 dimension5 | **Done**（轮次 17） |
 | **D-ORPHAN-04** | 残留空目录 `kernel/crates/models/` | P2 | 目录删除 + workspace 无引用 | **Done**（轮次 17） |
+| **O-1** | `oclive_kernel_host` 编译期 `include_str!` 耦合 `distros/desktop-tauri/assets/plugin-bridge.iife.js` | P1 | 资产迁入 `kernel/crates/oclive_kernel_host/assets/` + copy 脚本改指向 | **Done**（轮次 18） |
+| **O-2** | expert 孤儿前端（Vue/lib/test/i18n/API re-export，零 import） | P2 | 删除 + `role.ts`/locales 同步 + stale 文档措辞 | **Done**（轮次 18） |
+| **D-DOC-RELOC-01** | 三份名实不符文档仍在 `creator-docs/`（VS Code 契约 / Studio 指南 / mumu 验收） | P2 | 物理迁至 `handoff/{vscode,studio,distros}/` + 原位 stub + 入链更新 | **Done**（轮次 18） |
 
 ---
 
@@ -36,7 +39,7 @@
 | **§3.1** | 纯 library API 对称化 | 第二宿主强需求 + RFC |
 | **模式 2 / 3** | 用户大纲演绎 / Mode 3 | Track B ≥60% + [`MODE2_UNFREEZE.md`](./theater/MODE2_UNFREEZE.md) 签字 |
 
-**Phase 5 结论（2026-06-15）：** 真人门槛未过 → **维持冻结**；`dual_core` / `expert_routing` / 编排扩展 **不开工**。详见 [`theater/DEVELOPMENT_ROADMAP.md`](./theater/DEVELOPMENT_ROADMAP.md) §5.5。
+**Phase 5 结论（2026-06-15）：** 真人门槛未过 → **维持冻结**；`dual_core` / `expert_routing` / 编排扩展 **不开工**。轮次 18 仅清 dead code / 编译耦合 / 文档名实，**未动**上述冻结项。详见 [`theater/DEVELOPMENT_ROADMAP.md`](./theater/DEVELOPMENT_ROADMAP.md) §5.5。
 
 ---
 
@@ -93,6 +96,22 @@ Done 项（K-PERF-01~26、D-READ-01/02/04、K-ROBUST-01~03、Opus 4.8 Wave 0–4
 | **T-DOC-TD-01** | `theater_director` 文档扫尾 | DISTRO / ARCHITECTURE / NAMING / ROADMAP §7 / IA 头注 / domain README |
 | **T-MINIMAL-TD-01** | minimal 插件自包含 | `examples/directory-plugin-theater-director-minimal/prompts/` 本地 `buildTheaterPrompt` |
 | **T-CI-DRIFT-01** | prompt drift 门禁 | `dimension5-acceptance.mjs` + `test:theater:smoke` 双挂 |
+
+### 轮次 17 Done（2026-06-24）
+
+| ID | 项 | 说明 |
+|----|-----|------|
+| **D-DOCDRIFT-01** | monorepo 后文档路径机械迁移 | `migrate-doc-paths.mjs` / `fix-remaining-doc-paths.mjs`；206 文件；`check-stale-paths` 硬门禁 |
+| **D-SCRIPT-02** | `check-stale-paths.mjs` 扩范围 | dimension5 十一检 |
+| **D-ORPHAN-04** | 删 `kernel/crates/models/` 空目录 | workspace 无引用 |
+
+### 轮次 18 Done（2026-06-24）
+
+| ID | 项 | 说明 |
+|----|-----|------|
+| **O-1** | plugin-bridge 资产内核化 | `kernel/crates/oclive_kernel_host/assets/plugin-bridge.iife.js`；删 desktop-tauri 副本 |
+| **O-2** | expert 孤儿前端清理 | 10 文件删；Tauri expert API / validation / dual_core 链保留 |
+| **D-DOC-RELOC-01** | 文档名实归位 | `VSCODE_DISTRIBUTION` → `handoff/vscode/`；`USER_GUIDE` → `handoff/studio/`；`MUMU_UI_ACCEPTANCE` → `handoff/distros/` |
 
 轮次 1–15 明细表已从本文件移除以降低噪音；需要历史格查 git `handoff/TECHNICAL_DEBT_INVENTORY.md` @ 2026-06-15。
 

@@ -1,6 +1,6 @@
 # VS Code Flash 发行版 — 工作文档
 
-**契约 SSOT（跨仓）**：[`creator-docs/role-pack/VSCODE_DISTRIBUTION.md`](../../creator-docs/role-pack/VSCODE_DISTRIBUTION.md)
+**契约 SSOT（跨仓）**：[`handoff/vscode/VSCODE_DISTRIBUTION.md`](./VSCODE_DISTRIBUTION.md)
 
 **姊妹仓实现**：[`oclive-vscode`](../../../oclive-vscode/) · [`AGENTS.md`](../../../oclive-vscode/AGENTS.md) · [`ROADMAP.md`](../../../oclive-vscode/ROADMAP.md)
 

@@ -111,7 +111,7 @@
 | **对齐进度与目标（一页：摘要 + 按用途分类的文档地图）** | **[PROJECT_STATUS_AND_ALIGNMENT.md](PROJECT_STATUS_AND_ALIGNMENT.md)** |
 | **产品首发门槛 + 内核/平台缺口（与 K 计划、愿景互参）** | **[PRODUCT_AND_KERNEL_GAP_CHECKLIST（归档）](../../handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md)** · 按复杂度排期 **[../../handoff/PRODUCT_LINE_TASK_BUCKETS.md](../../handoff/PRODUCT_LINE_TASK_BUCKETS.md)**（**§四 · 硬骨头** 为下一工程焦点）· 发版勾选 **[PRODUCT_RELEASE_CHECKLIST（归档）](../../handoff/archive/PRODUCT_RELEASE_CHECKLIST.md)** · **功能自检** **[PRODUCT_SELF_CHECK（归档）](../../handoff/archive/PRODUCT_SELF_CHECK.md)** |
 | **四仓双语基线（CJK 扫描、vue-i18n 挂载）** | **[I18N_FOUR_REPO_BASELINE（归档）](../../handoff/archive/I18N_FOUR_REPO_BASELINE.md)** |
-| **工作室：启动 + 创作、环境诊断、深链接、整合包** | **[../studio/USER_GUIDE.md](../studio/USER_GUIDE.md)**（[English](../../creator-docs-en/studio/USER_GUIDE.md)）· 仓库 [oclive-studio](https://github.com/linkaiheng2233-cyber/oclive-studio) |
+| **工作室：启动 + 创作、环境诊断、深链接、整合包** | **[`handoff/studio/USER_GUIDE.md`](../../handoff/studio/USER_GUIDE.md)**（[English](../../creator-docs-en/studio/USER_GUIDE.md)）· 仓库 [oclive-studio](https://github.com/linkaiheng2233-cyber/oclive-studio) |
 | **用启动器安装 zip 角色包（已废弃，见工作室）** | **[oclive-launcher README](https://github.com/linkaiheng2233-cyber/oclive-launcher/blob/main/README.md)**（**Deprecated** → oclive-studio） |
 | **高耦合编译模式（Monolith）** | [RFC 章节](#rfc)（`monolith.toml`、编译期焊接） |
 | **理清项目全貌 / 人机分工 / 命令与发版清单** | **[PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)** |
@@ -133,13 +133,13 @@
 | **v2 蓝图字段与 legacy `plugin_backends` 对照（权威）** | **[../cli/SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)** |
 | **角色包磁盘格式、多发行版对齐、`oclive pack validate`** | **[../role-pack/ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)** |
 | **跨宿主记忆 · 角色包携带数据 · VS Code 等集成前确认清单** | **[../role-pack/CROSS_HOST_MEMORY.md](../role-pack/CROSS_HOST_MEMORY.md)** |
-| **VS Code 发行版契约** | **[../role-pack/VSCODE_DISTRIBUTION.md](../role-pack/VSCODE_DISTRIBUTION.md)** |
+| **VS Code 发行版契约** | **[`handoff/vscode/VSCODE_DISTRIBUTION.md`](../../handoff/vscode/VSCODE_DISTRIBUTION.md)** |
 | **跨宿主数据目录 `OCLIVE_APP_DATA`** | **[../kernel/OCLIVE_APP_DATA.md](../kernel/OCLIVE_APP_DATA.md)** |
 | **发行版内核 attach/spawn SSOT** | **[../kernel/DISTRO_KERNEL_LIFECYCLE.md](../kernel/DISTRO_KERNEL_LIFECYCLE.md)**（bundled-first spawn · profile attach/replace · 决策上收：`kernel_strategy.rs` · `/health` distro 字段 · `oclive kernel ensure`） |
 | **内核调度范围重划（2026-06）** | **[../../handoff/KERNEL_SCHEDULER_RESCOPE.md](../../handoff/KERNEL_SCHEDULER_RESCOPE.md)** · 单核 `:8420` · `binary_upgrade` Freeze · K-SCHED backlog |
 | **三发行版内核结项（Pro / Flash / Theater profile）** | **[../../handoff/THREE_DISTRO_KERNEL_CLOSURE.md](../../handoff/THREE_DISTRO_KERNEL_CLOSURE.md)** · smoke 表 · CI 覆盖 |
 | **AI 剧场发行版（思路与路线 SSOT）** | **[../../handoff/theater/DEVELOPMENT_ROADMAP.md](../../handoff/theater/DEVELOPMENT_ROADMAP.md)** · [README](../../handoff/theater/README.md) |
-| **VS Code Flash 工作文档** | **[../../handoff/vscode/README.md](../../handoff/vscode/README.md)** · 契约 [VSCODE_DISTRIBUTION.md](../role-pack/VSCODE_DISTRIBUTION.md) |
+| **VS Code Flash 工作文档** | **[../../handoff/vscode/README.md](../../handoff/vscode/README.md)** · 契约 [`VSCODE_DISTRIBUTION.md`](../../handoff/vscode/VSCODE_DISTRIBUTION.md) |
 | **启动器 / 工作室 / 编写器（主仓协调）** | [launcher](../../handoff/launcher/README.md) · [studio](../../handoff/studio/README.md) · [pack-editor](../../handoff/pack-editor/README.md) |
 | **发行版能力配置 `distro.oclive.toml`（P1 Schema）** | **[../kernel/DISTRO_CAPABILITY_PROFILE.md](../kernel/DISTRO_CAPABILITY_PROFILE.md)** · 示例 `examples/distro-profiles/` |
 | **发行版默认插件矩阵（三 personas）** | **[../kernel/DISTRO_DEFAULT_PLUGINS.md](../kernel/DISTRO_DEFAULT_PLUGINS.md)** · desktop-chat / vscode / theater |
@@ -154,7 +154,7 @@
 | **聊天记录存储架构**（v3 插件化后端 + 记忆回放 + 能力探测） | **[../../handoff/CHAT_STORAGE_ARCHITECTURE.md](../../handoff/CHAT_STORAGE_ARCHITECTURE.md)** · 选型 **[../storage/STORAGE_BACKEND_GUIDE.md](../storage/STORAGE_BACKEND_GUIDE.md)** |
 | **开源协议怎么定（主程序/官方插件/第三方）** | **[../LICENSE_POLICY.md](../LICENSE_POLICY.md)** |
 | **mumu 默认前端模块、插件 FAQ（Vue 不显示、iframe 调试、依赖等；用户向 Q&A）** | **[../FAQ.md](../FAQ.md)** |
-| **mumu 模块发版前验收清单** | **[../guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md](../guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md)** |
+| **mumu 模块发版前验收清单** | **[`handoff/distros/MUMU_UI_ACCEPTANCE_CHECKLIST.md`](../../handoff/distros/MUMU_UI_ACCEPTANCE_CHECKLIST.md)** |
 | **编写器与主程序版本兼容（A5 一页表 · 中英）** | **[../COMPATIBILITY.md](../COMPATIBILITY.md)**（镜像 [creator-docs-en/COMPATIBILITY.md](../../creator-docs-en/COMPATIBILITY.md)）；结项（归档）[`../../handoff/archive/A5_CLOSURE_SUMMARY.md`](../../handoff/archive/A5_CLOSURE_SUMMARY.md) |
 | **`memory = local`**、`_local_plugins` 清单与桥接契约 | **[../plugin-and-architecture/LOCAL_PLUGIN_BRIDGE_SPEC.md](../plugin-and-architecture/LOCAL_PLUGIN_BRIDGE_SPEC.md)** |
 | 在 Rust 里新增一种内置后端或注册方式 | **[../plugin-and-architecture/HOW_TO_REPLACE_MODULES.md](../plugin-and-architecture/HOW_TO_REPLACE_MODULES.md)** |

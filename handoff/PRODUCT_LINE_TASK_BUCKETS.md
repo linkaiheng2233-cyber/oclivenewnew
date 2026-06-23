@@ -23,7 +23,7 @@
 | **A10.1（轻量版）** | **许可证三问**：README 或 `SECURITY.md` 顶部/底部 3 条 bullet（模型/插件/落盘），链到 [LICENSE_POLICY](../creator-docs/LICENSE_POLICY.md) | 完整法律审阅仍属 P1，此处先做「扫一眼能答」 |
 | **C2（轻量版）** | **Breaking 流程**：`CONTRIBUTING.md` 或 `handoff/` 半页：谁审、谁写迁移、谁改校验与文档 | 与 bus factor 笔记可分两条 commit |
 | **A5.2** | **CHANGELOG 纪律**：确认 CONTRIBUTING 已要求双语；可选在 **PRODUCT_RELEASE_CHECKLIST** 中加「已写 CHANGELOG 双语文案」勾选行 | 主仓已有双语 CHANGELOG 习惯则偏 **核对** |
-| **A1.4（组织级）** | **回归清单版本化**：不在此重复写用例——在 **PRODUCT_RELEASE_CHECKLIST** 中 **链接** 已有 [MUMU_UI_ACCEPTANCE_CHECKLIST](../creator-docs/guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md)、[REGRESSION_COMPLEX_EMOTION_QA](../creator-docs/guides/REGRESSION_COMPLEX_EMOTION_QA.md) 等，并注明「发版前勾选」 | 避免与现成 guides 重复维护 |
+| **A1.4（组织级）** | **回归清单版本化**：不在此重复写用例——在 **PRODUCT_RELEASE_CHECKLIST** 中 **链接** 已有 [MUMU_UI_ACCEPTANCE_CHECKLIST](./distros/MUMU_UI_ACCEPTANCE_CHECKLIST.md)、[REGRESSION_COMPLEX_EMOTION_QA](../creator-docs/guides/REGRESSION_COMPLEX_EMOTION_QA.md) 等，并注明「发版前勾选」 | 避免与现成 guides 重复维护 |
 
 ---
 

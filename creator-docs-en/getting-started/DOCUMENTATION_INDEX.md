@@ -97,7 +97,7 @@ Time-boxed “start here → ship”; **authoritative detail stays in each topic
 | **Chat storage architecture** (v3 pluggable backends + memory replay + capability UI) | **[../../handoff/CHAT_STORAGE_ARCHITECTURE.md](../../handoff/CHAT_STORAGE_ARCHITECTURE.md)** · selection **[../storage/STORAGE_BACKEND_GUIDE.md](../storage/STORAGE_BACKEND_GUIDE.md)** |
 | **Open-source licensing policy** | **[../LICENSE_POLICY.md](../LICENSE_POLICY.md)** |
 | **mumu default slots + plugin FAQ (Vue not showing, iframe debug, deps; user Q&A)** | **[../FAQ.md](../FAQ.md)** |
-| **mumu UI release checklist** | **[../guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md](../guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md)** |
+| **mumu UI release checklist** | **[`handoff/distros/MUMU_UI_ACCEPTANCE_CHECKLIST.md`](../../handoff/distros/MUMU_UI_ACCEPTANCE_CHECKLIST.md)** |
 | **Regression: Plugin Manager V2 & Complex Emotion** | **[../guides/REGRESSION_COMPLEX_EMOTION_QA.md](../guides/REGRESSION_COMPLEX_EMOTION_QA.md)** |
 | **Editor vs host compatibility (A5 one-pager, EN/ZH)** | **[../COMPATIBILITY.md](../COMPATIBILITY.md)** (Chinese source [../../creator-docs/COMPATIBILITY.md](../../creator-docs/COMPATIBILITY.md)); closure [`../../handoff/A5_CLOSURE_SUMMARY.md`](../../handoff/A5_CLOSURE_SUMMARY.md) |
 | **`memory = local`, `_local_plugins`, bridge spec** | **[../plugin-and-architecture/LOCAL_PLUGIN_BRIDGE_SPEC.md](../plugin-and-architecture/LOCAL_PLUGIN_BRIDGE_SPEC.md)** |

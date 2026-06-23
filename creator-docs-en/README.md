@@ -109,7 +109,7 @@ This tree mirrors **`creator-docs/`** with hand-maintained English pages. For to
 | Topic | English |
 |-------|---------|
 | Configuration paths (`plugin_state`, `ui.json`, `{app_data}`) | [guides/CONFIGURATION_FILES.md](guides/CONFIGURATION_FILES.md) |
-| mumu UI release checklist (`ui.json` + directory slots) | [guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md](guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md) |
+| mumu UI release checklist (`ui.json` + directory slots) | [`handoff/distros/MUMU_UI_ACCEPTANCE_CHECKLIST.md`](../../handoff/distros/MUMU_UI_ACCEPTANCE_CHECKLIST.md) |
 | Regression: Plugin Manager V2 & Complex Emotion | [guides/REGRESSION_COMPLEX_EMOTION_QA.md](guides/REGRESSION_COMPLEX_EMOTION_QA.md) |
 
 ---
