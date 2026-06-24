@@ -11,4 +11,4 @@ workspace = true
 
 [dependencies]
 sqlx-core = { version = "0.8.6", default-features = false, features = ["migrate", "_rt-tokio"] }
-sqlx-sqlite = { version = "0.8.6", default-features = false, features = ["bundled", "migrate"] }
+sqlx-sqlite = { version = "0.9.0", default-features = false, features = ["bundled", "migrate"] }
