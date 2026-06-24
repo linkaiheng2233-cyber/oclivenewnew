@@ -2,6 +2,8 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
+mod common;
+
 use chrono::{Duration, Utc};
 use oclive_kernel_host::domain::complex_emotion_store::{
     load_stored_narrative_hint, persist_stored_narrative_hint, COMPLEX_EMOTION_HINT_TTL_HOURS,
@@ -11,7 +13,7 @@ use oclive_kernel_host::state::AppState;
 use std::sync::Arc;
 
 async fn in_memory_state() -> AppState {
-    let roles_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../roles");
+    let roles_dir = common::roles_dir();
     AppState::new_in_memory_with_llm(Arc::new(MockLlmClient { reply: "ok".into() }), roles_dir)
         .await
         .expect("state")

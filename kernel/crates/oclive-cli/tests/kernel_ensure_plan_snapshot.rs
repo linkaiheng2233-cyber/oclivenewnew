@@ -1,5 +1,6 @@
 //! Golden contract: `oclive kernel ensure --plan-only --json` shape (shared with oclive-vscode).
 
+use oclive_kernel_runtime::resolve_project_roles_dir;
 use std::path::PathBuf;
 use std::process::Command;
 
@@ -31,7 +32,7 @@ fn kernel_ensure_plan_snapshot_fields() {
         .arg(repo_root)
         .args([
             "--roles-dir",
-            repo_root.join("roles").to_str().unwrap(),
+            resolve_project_roles_dir(&repo_root).to_str().unwrap(),
             "--distro",
             "vscode",
             "--distro-profile",

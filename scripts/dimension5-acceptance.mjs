@@ -95,7 +95,11 @@ runStep('CHANGELOG [Unreleased] parity', () => {
 });
 
 runStep('stale doc paths ratchet', () => {
-  sh('node', ['scripts/check-stale-paths.mjs']);
+  sh('node', ['scripts/check-stale-paths.mjs', '--docs-only']);
+});
+
+runStep('stale code paths ratchet', () => {
+  sh('node', ['scripts/check-stale-paths.mjs', '--code-only']);
 });
 
 runStep('host runtime re-export ratchet', () => {

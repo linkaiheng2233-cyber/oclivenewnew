@@ -47,7 +47,7 @@ pub(super) fn run_deps_audit(root: &Path, json: bool) -> Result<()> {
                     items.push(warn(
                         "cargo_audit",
                         "audit findings or non-zero exit (see cargo audit)".to_string(),
-                        Some("cd src-tauri && cargo audit  # or upgrade deps per KNOWN_VULNERABILITIES.md".into()),
+                        Some("cargo audit  # or upgrade deps per KNOWN_VULNERABILITIES.md".into()),
                     ));
                 }
             }

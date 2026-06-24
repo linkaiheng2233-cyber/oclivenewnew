@@ -1,7 +1,7 @@
 //! `oclive test --oocp`: automatically launch the kernel, run the OOCP black-box suite, and clean up processes.
 
 use anyhow::{bail, Context, Result};
-use oclive_kernel_runtime::DEFAULT_API_PORT;
+use oclive_kernel_runtime::{resolve_project_roles_dir, DEFAULT_API_PORT};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::time::{Duration, Instant};
@@ -45,10 +45,10 @@ pub fn run_oocp_integration(repo_root: &Path) -> Result<()> {
 }
 
 fn spawn_kernel_api(repo_root: &Path) -> Result<Child> {
-    let manifest = repo_root.join("src-tauri/Cargo.toml");
+    let manifest = repo_root.join("distros/desktop-tauri/Cargo.toml");
     if !manifest.is_file() {
         bail!(
-            "src-tauri/Cargo.toml not found under {}; run from oclivenewnew root or set -o",
+            "distros/desktop-tauri/Cargo.toml not found under {}; run from oclivenewnew root or set -o",
             repo_root.display()
         );
     }
@@ -57,13 +57,20 @@ fn spawn_kernel_api(repo_root: &Path) -> Result<Child> {
             "run",
             "--release",
             "--manifest-path",
-            manifest.to_str().unwrap_or("src-tauri/Cargo.toml"),
+            manifest
+                .to_str()
+                .unwrap_or("distros/desktop-tauri/Cargo.toml"),
             "--",
             "--api",
         ])
         .current_dir(repo_root)
         .env("OCLIVE_HTTP_API_MOCK_LLM", "1")
-        .env("OCLIVE_ROLES_DIR", repo_root.join("roles"))
+        .env(
+            "OCLIVE_ROLES_DIR",
+            resolve_project_roles_dir(repo_root)
+                .to_string_lossy()
+                .into_owned(),
+        )
         .stdout(Stdio::null())
         .stderr(Stdio::piped())
         .spawn()

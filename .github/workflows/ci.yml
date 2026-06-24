@@ -192,7 +192,7 @@ jobs:
         run: |
           rustup toolchain install nightly -y
           cargo install cargo-fuzz --locked -q
-          cd fuzz
+          cd kernel/fuzz
           for t in fuzz_blueprint_v2 fuzz_oclive_validation fuzz_function_call_parser fuzz_role_pack_loader; do
             cargo +nightly fuzz run "$t" -- -runs=256
           done

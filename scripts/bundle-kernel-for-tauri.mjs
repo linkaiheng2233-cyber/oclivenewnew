@@ -9,6 +9,7 @@ import { spawnSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { cargoTargetDir, kernelExeName } from './lib/e2e-binary.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..');
@@ -24,15 +25,6 @@ function sh(cmd, args, opts = {}) {
   return (r.stdout || '').trim();
 }
 
-function cargoTargetDir() {
-  const raw = sh('cargo', ['metadata', '--format-version=1', '--no-deps'], { cwd: repoRoot });
-  return JSON.parse(raw).target_directory;
-}
-
-function kernelExeName() {
-  return process.platform === 'win32' ? 'oclive-kernel-server.exe' : 'oclive-kernel-server';
-}
-
 function manifestName() {
   return 'oclive-kernel-server.oclive-manifest.json';
 }
@@ -43,7 +35,7 @@ sh('cargo', ['build', '-p', 'oclive_kernel_server', ...releaseFlag], {
   stdio: 'inherit',
 });
 
-const srcBin = path.join(cargoTargetDir(), profile, kernelExeName());
+const srcBin = path.join(cargoTargetDir(repoRoot), profile, kernelExeName());
 if (!fs.existsSync(srcBin)) {
   throw new Error(`kernel binary not found: ${srcBin}`);
 }

@@ -2,6 +2,8 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
+mod common;
+
 use async_trait::async_trait;
 use oclive_kernel_host::infrastructure::llm::LlmClient;
 use oclive_kernel_host::service::role::identity::{
@@ -142,7 +144,7 @@ async fn per_scene_sentinel_clears_scene_override() {
 
 #[tokio::test]
 async fn global_binding_rejects_scene_set() {
-    let roles_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../roles");
+    let roles_dir = common::roles_dir();
     let llm: Arc<dyn LlmClient> = Arc::new(StubLlm);
     let state = AppState::new_in_memory_with_llm(llm, roles_dir)
         .await

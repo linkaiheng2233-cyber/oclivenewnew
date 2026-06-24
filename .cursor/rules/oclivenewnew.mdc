@@ -16,6 +16,8 @@ alwaysApply: true
 
 5. **Prompt**：`PromptBuilder::build_prompt` 定义在 `kernel/crates/oclive_kernel_runtime/src/domain/prompt_builder/mod.rs`（段落公式在同目录 `sections.rs`；经 `oclive_kernel_host::domain` re-export）；**单参数 `input: &PromptInput<'_>`**，返回 `String`（**不是 `Result`，不要用 `?`**）。通用对话纪律收敛在内核常量 `KERNEL_DIALOGUE_GUARDRAILS`（每轮恒追加；包级 `reply_quality_anchor` 仅替换 `DEFAULT_REPLY_QUALITY_ANCHOR`，**不可替换** guardrails）。
 
-6. **周节奏与验收**：见 `handoff/WEEKLY_DEV_GUIDE.md`；认知清单见 `handoff/04_4.6_PROJECT_TRUTH_CHECKLIST.md`。
+6. **工程纪律与关键路径**：见 [`handoff/BUS_FACTOR_NOTES.md`](handoff/BUS_FACTOR_NOTES.md)（编排入口、错误码、迁移）；技术债与冻结项见 [`handoff/TECHNICAL_DEBT_INVENTORY.md`](handoff/TECHNICAL_DEBT_INVENTORY.md)。**勿**将已归档的 `handoff/04_4.6_PROJECT_TRUTH_CHECKLIST.md` 或 `handoff/archive/WEEKLY_DEV_GUIDE.md` 当作当前 truth。
 
 7. **命名 SSOT**：canonical import 与禁止别名见 [`creator-docs/NAMING_CONVENTIONS.md`](creator-docs/NAMING_CONVENTIONS.md) §4.2（DTO → `oclive_kernel_types`；trait → `oclive_kernel_contracts`；编排 → `oclive_kernel_host`）。回复字段为 **`reply`**（非 `response`）；六槽键用 `plugin_backends` / `slot_registry.type`（非 `memory_backend` 等自造别名）。
+
+8. **AI 改动边界（禁止区摘要）**：见 [`handoff/AI_CHANGE_BOUNDARIES.md`](handoff/AI_CHANGE_BOUNDARIES.md)。角色任务不改 `slot_registry`；不把 RFC Draft 当未实现而删 wiring；路径改动须 grep 全仓 `roles/` / `src-tauri`；改 `Cargo.lock` 须 `cargo audit` 并更新 `KNOWN_VULNERABILITIES.md`。

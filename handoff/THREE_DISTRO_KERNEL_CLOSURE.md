@@ -68,7 +68,7 @@ CI **`cross-host-e2e`**（Ubuntu 22.04）含：`e2e-cross-host-memory` · `e2e-d
 | Theater roles 子集打包 | Phase 4 首 epic |
 | sidecar 分 manifest 字段 | P2b Deferred |
 | VS Code F5 / VSIX 发布验收 | V-VSCODE-PERF-05 Deferred |
-| 导演 directory 插件 | **Deferred** · greenfield 重建；见 [`theater/DEVELOPMENT_ROADMAP.md`](./theater/DEVELOPMENT_ROADMAP.md) §5 |
+| 导演 directory 插件 | **已交付** · `distros/chat-pro/plugins/com.oclive.theater_director_official/`；见 [`theater/DEVELOPMENT_ROADMAP.md`](./theater/DEVELOPMENT_ROADMAP.md) §5 |
 
 ---
 

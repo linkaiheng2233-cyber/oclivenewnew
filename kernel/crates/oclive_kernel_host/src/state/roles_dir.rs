@@ -1,5 +1,6 @@
 //! Resolve the on-disk `roles/` directory for dev and packaged runs.
 
+use oclive_kernel_runtime::chat_pro_roles_dir;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -19,26 +20,35 @@ fn roles_dir_has_any_role_pack(roles_root: &Path) -> bool {
 fn try_dev_roles_dir() -> Option<PathBuf> {
     #[cfg(debug_assertions)]
     {
-        let from_manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("..")
-            .join("roles");
-        match from_manifest.canonicalize() {
+        let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        if let Some(roles) = chat_pro_roles_dir(std::slice::from_ref(&manifest)) {
+            if roles.is_dir() {
+                tracing::info!(
+                    target: "oclive_roles",
+                    "find_roles_dir: monorepo chat-pro -> {}",
+                    roles.display()
+                );
+                return Some(roles);
+            }
+        }
+        let legacy = manifest.join("..").join("roles");
+        match legacy.canonicalize() {
             Ok(canon) if canon.is_dir() => {
                 tracing::info!(
                     target: "oclive_roles",
-                    "find_roles_dir: manifest-relative -> {}",
+                    "find_roles_dir: manifest-relative legacy -> {}",
                     canon.display()
                 );
                 return Some(canon);
             }
             _ => {
-                if from_manifest.is_dir() {
+                if legacy.is_dir() {
                     tracing::info!(
                         target: "oclive_roles",
-                        "find_roles_dir: manifest-relative (non-canon) -> {}",
-                        from_manifest.display()
+                        "find_roles_dir: manifest-relative legacy (non-canon) -> {}",
+                        legacy.display()
                     );
-                    return Some(from_manifest);
+                    return Some(legacy);
                 }
             }
         }

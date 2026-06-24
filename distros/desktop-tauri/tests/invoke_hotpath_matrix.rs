@@ -4,6 +4,8 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
+mod common;
+
 use oclive_kernel_host::domain::chat_engine::process_message;
 use oclive_kernel_host::infrastructure::MockLlmClient;
 use oclive_kernel_host::service::{
@@ -25,18 +27,13 @@ use oclivenewnew_tauri::api::role::{
 };
 use oclivenewnew_tauri::api::time::get_time_state_impl;
 use serde_json::Value;
-use std::path::PathBuf;
 use std::sync::Arc;
-
-fn roles_dir() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../roles")
-}
 
 async fn hotpath_state() -> AppState {
     let llm = Arc::new(MockLlmClient {
         reply: "hotpath".to_string(),
     });
-    AppState::new_in_memory_with_llm(llm, roles_dir())
+    AppState::new_in_memory_with_llm(llm, common::roles_dir())
         .await
         .expect("state")
 }

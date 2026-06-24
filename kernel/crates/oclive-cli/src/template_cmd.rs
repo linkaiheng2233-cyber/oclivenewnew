@@ -2,6 +2,7 @@
 
 use anyhow::{bail, Context, Result};
 use clap::{Parser, Subcommand};
+use oclive_kernel_runtime::resolve_project_roles_dir;
 use serde_json::Value;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -128,7 +129,7 @@ fn infer_preset_and_monolith(root: &Path, monolith: bool) -> (String, Option<Str
 }
 
 fn find_first_settings(root: &Path) -> Option<String> {
-    let roles = root.join("roles");
+    let roles = resolve_project_roles_dir(root);
     if !roles.is_dir() {
         return None;
     }

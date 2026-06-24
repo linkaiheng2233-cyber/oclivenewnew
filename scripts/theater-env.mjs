@@ -7,6 +7,7 @@ import { spawn, spawnSync } from 'child_process'
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { cargoTargetDir, kernelExeName } from './lib/e2e-binary.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, '..')
@@ -20,20 +21,6 @@ function runNodeScript(name) {
     process.exit(r.status ?? 1)
 }
 
-function cargoTargetDir() {
-  const r = spawnSync('cargo', ['metadata', '--format-version=1', '--no-deps'], {
-    cwd: repoRoot,
-    encoding: 'utf8',
-  })
-  if (r.status !== 0)
-    throw new Error('cargo metadata failed')
-  return JSON.parse(r.stdout.trim()).target_directory
-}
-
-function kernelExeName() {
-  return process.platform === 'win32' ? 'oclive-kernel-server.exe' : 'oclive-kernel-server'
-}
-
 /** Dev spawn uses Env-tier binary (rank 0) so stale bundled resources are not picked first. */
 function ensureDevKernelBinary() {
   console.log('[theater-env] building oclive_kernel_server (debug) for :8420...')
@@ -43,7 +30,7 @@ function ensureDevKernelBinary() {
   })
   if (build.status !== 0)
     process.exit(build.status ?? 1)
-  const bin = path.join(cargoTargetDir(), 'debug', kernelExeName())
+  const bin = path.join(cargoTargetDir(repoRoot), 'debug', kernelExeName())
   if (!fs.existsSync(bin))
     throw new Error(`kernel binary not found: ${bin}`)
   console.log(`[theater-env] OCLIVE_KERNEL_BINARY=${bin}`)

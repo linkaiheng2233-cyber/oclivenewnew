@@ -2,6 +2,8 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
+mod common;
+
 use async_trait::async_trait;
 use oclive_kernel_host::domain::chat_engine::process_message;
 use oclive_kernel_host::domain::prompt_builder::{
@@ -38,7 +40,7 @@ impl LlmClient for CapturePromptLlm {
 
 #[tokio::test]
 async fn shimeng_pack_anchor_replaces_default_in_main_prompt() {
-    let roles_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../roles");
+    let roles_dir = common::roles_dir();
     let storage = RoleStorage::new(&roles_dir);
     let role = storage
         .load_role_from_dir(&roles_dir.join("shimeng"))
@@ -88,7 +90,7 @@ async fn shimeng_pack_anchor_replaces_default_in_main_prompt() {
 
 #[tokio::test]
 async fn mumu_pack_anchor_and_guardrails_in_main_prompt() {
-    let roles_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../roles");
+    let roles_dir = common::roles_dir();
     let storage = RoleStorage::new(&roles_dir);
     let role = storage
         .load_role_from_dir(&roles_dir.join("mumu"))

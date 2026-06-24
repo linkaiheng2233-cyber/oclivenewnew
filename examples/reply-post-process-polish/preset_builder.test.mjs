@@ -7,7 +7,7 @@ import { clearPresetCache, getPresetForRole, rolePackMtimeMs } from "./preset_ca
 import { buildPresetFromRolePack } from "./preset_builder.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const ROLES_DIR = path.resolve(__dirname, "../../roles");
+const ROLES_DIR = path.resolve(__dirname, "../../distros/chat-pro/roles");
 
 test("getPresetForRole caches by role pack mtime", () => {
   clearPresetCache();

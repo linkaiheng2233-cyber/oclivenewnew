@@ -24,7 +24,7 @@ body:
     id: app_version
     attributes:
       label: Environment — oclive app version
-      description: From About screen, `package.json`, or `src-tauri/Cargo.toml` version field.
+      description: From About screen, `package.json`, or `distros/desktop-tauri/Cargo.toml` version field.
       placeholder: 0.2.x
     validations:
       required: true

@@ -6,6 +6,7 @@ use super::super::bench_history::trend_arrow;
 use crate::bench_metrics::{binary_file_size, run_bench_child_with_peak};
 use crate::build_cmd::{regenerate_monolith_from_disk_quiet, run_timed_dual_build};
 use anyhow::{bail, Context, Result};
+use oclive_kernel_runtime::resolve_project_roles_dir;
 use std::fs;
 use std::path::{Path, PathBuf};
 fn sparkline(values: &[f64]) -> String {
@@ -333,7 +334,7 @@ exclude = []
 
 fn backup_role_settings(root: &Path) -> Vec<(PathBuf, Option<String>)> {
     let mut out = Vec::new();
-    let roles = root.join("roles");
+    let roles = resolve_project_roles_dir(root);
     if !roles.is_dir() {
         return out;
     }
@@ -375,7 +376,7 @@ fn restore_role_settings(root: &Path, backup: Vec<(PathBuf, Option<String>)>) {
 fn apply_matrix_preset(root: &Path, preset: &str) -> Result<()> {
     let cfg = crate::init::preset_config("matrix", preset);
     let value = crate::generator::build_settings_value(&cfg);
-    let roles = root.join("roles");
+    let roles = resolve_project_roles_dir(root);
     if !roles.is_dir() {
         return Ok(());
     }

@@ -12,7 +12,7 @@
 | 项 | 值 |
 |----|-----|
 | **cargo-audit 版本** | **0.22.1**（建议固定该主版本以便报告可比） |
-| **最近扫描日期** | **2026-06-08**（本地，`cargo audit --no-fetch --stale` + 已缓存 `~/.cargo/advisory-db`）；**`Cargo.lock` 基线** workspace `oclive_sqlx` 直引 `sqlx-sqlite` |
+| **最近扫描日期** | **2026-06-24**（本地，`cargo audit --no-fetch --stale` + 已缓存 `~/.cargo/advisory-db`）；**`Cargo.lock` 基线** workspace `oclive_sqlx` 直引 `sqlx-sqlite` |
 | **扫描路径** | 工作区根目录 `Cargo.lock` |
 | **漏洞级命中数** | **0**（`cargo audit` 退出码 **0**；`sqlx-mysql` / `rsa` 已从锁文件解析图移除，见 `kernel/crates/oclive_sqlx`） |
 | **警告级命中数** | **3**（`cargo audit` + [`.cargo/audit.toml`](../../.cargo/audit.toml) 已记录并忽略 **11** 条 gtk-rs GTK3 / 工具链 *unmaintained*；见下表） |
@@ -30,6 +30,7 @@
 | [RUSTSEC-2026-0099](https://rustsec.org/advisories/RUSTSEC-2026-0099) | rustls-webpki 0.101 | **已清零** | |
 | [RUSTSEC-2026-0104](https://rustsec.org/advisories/RUSTSEC-2026-0104) | rustls-webpki 0.101 | **已清零** | |
 | [RUSTSEC-2024-0363](https://rustsec.org/advisories/RUSTSEC-2024-0363) | sqlx 0.7.4 | **已清零** — 已升级至 **0.8.6** | |
+| [RUSTSEC-2026-0185](https://rustsec.org/advisories/RUSTSEC-2026-0185) | quinn-proto &lt; 0.11.15 | **已修复** — 锁文件 **0.11.15** | 2026-06-24 条理优化波次 A 升级 |
 
 ---
 

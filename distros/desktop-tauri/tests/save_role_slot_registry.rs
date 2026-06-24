@@ -2,15 +2,16 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
+mod common;
+
 use oclive_kernel_host::state::AppState;
 use oclive_kernel_types::models::dto::SaveRoleSlotRegistryRequest;
 use oclive_validation::load_blueprint_v2_for_role_dir;
 use oclivenewnew_tauri::api::role::{get_role_info_impl, save_role_slot_registry_impl};
-use std::path::PathBuf;
 use std::sync::Arc;
 
 fn roles_src_mumu() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../roles/mumu")
+    common::roles_dir().join("mumu")
 }
 
 #[tokio::test]

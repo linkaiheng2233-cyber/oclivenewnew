@@ -2,19 +2,16 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
+mod common;
+
 use axum::body::{to_bytes, Body};
 use axum::http::{Request, StatusCode};
 use oclive_kernel_host::infrastructure::MockLlmClient;
 use oclive_kernel_host::state::AppState;
 use oclivenewnew_tauri::http_api::api_router;
 use serde_json::{json, Value};
-use std::path::PathBuf;
 use std::sync::Arc;
 use tower::ServiceExt;
-
-fn roles_dir() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../roles")
-}
 
 async fn response_json(res: axum::response::Response) -> Value {
     let bytes = to_bytes(res.into_body(), usize::MAX).await.expect("body");
@@ -27,7 +24,7 @@ async fn http_api_health_ok() {
         reply: "ok".to_string(),
     });
     let state = Arc::new(
-        AppState::new_in_memory_with_llm(llm, roles_dir())
+        AppState::new_in_memory_with_llm(llm, common::roles_dir())
             .await
             .expect("state"),
     );
@@ -52,13 +49,13 @@ async fn http_api_chat_empty_message_400() {
         reply: "ok".to_string(),
     });
     let state = Arc::new(
-        AppState::new_in_memory_with_llm(llm, roles_dir())
+        AppState::new_in_memory_with_llm(llm, common::roles_dir())
             .await
             .expect("state"),
     );
     let app = api_router(state);
     let body = json!({
-        "role_path": roles_dir().join("mumu").to_string_lossy(),
+        "role_path": common::roles_dir().join("mumu").to_string_lossy(),
         "message": "   ",
     });
     let res = app
@@ -83,12 +80,12 @@ async fn http_api_chat_ok_includes_personality_source_and_reply() {
         reply: "模拟回复".to_string(),
     });
     let state = Arc::new(
-        AppState::new_in_memory_with_llm(llm, roles_dir())
+        AppState::new_in_memory_with_llm(llm, common::roles_dir())
             .await
             .expect("state"),
     );
     let app = api_router(state);
-    let mumu = roles_dir().join("mumu");
+    let mumu = common::roles_dir().join("mumu");
     let body = json!({
         "role_path": mumu.to_string_lossy(),
         "message": "你好",
@@ -116,12 +113,12 @@ async fn http_api_chat_with_session_id_ok() {
         reply: "模拟回复".to_string(),
     });
     let state = Arc::new(
-        AppState::new_in_memory_with_llm(llm, roles_dir())
+        AppState::new_in_memory_with_llm(llm, common::roles_dir())
             .await
             .expect("state"),
     );
     let app = api_router(state);
-    let mumu = roles_dir().join("mumu");
+    let mumu = common::roles_dir().join("mumu");
     let body = json!({
         "role_path": mumu.to_string_lossy(),
         "message": "你好",

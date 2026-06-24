@@ -8,6 +8,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 import { chatProRolesDir, resolveRepoRoot } from './lib/chat-pro-roles-dir.mjs';
+import { kernelExeName } from './lib/e2e-binary.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolveRepoRoot();
@@ -18,10 +19,6 @@ function sh(cmd, args, opts = {}) {
     throw new Error(`${cmd} ${args.join(' ')} failed:\n${r.stderr || r.stdout}`);
   }
   return (r.stdout || '').trim();
-}
-
-function kernelExeName() {
-  return process.platform === 'win32' ? 'oclive-kernel-server.exe' : 'oclive-kernel-server';
 }
 
 console.log('[e2e-tauri-bundled] bundling kernel into Tauri resources...');

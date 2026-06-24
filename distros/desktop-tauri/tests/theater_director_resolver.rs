@@ -2,6 +2,8 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
+mod common;
+
 use oclive_kernel_contracts::{TheaterDirectorBackendKind, TheaterPromptBuildInput};
 use oclive_kernel_host::domain::host_profile::{HostProfile, TheaterProfile};
 use oclive_kernel_host::domain::theater_director::{
@@ -10,20 +12,12 @@ use oclive_kernel_host::domain::theater_director::{
 use oclive_kernel_host::infrastructure::MockLlmClient;
 use oclive_kernel_host::state::AppStateBuilder;
 use std::fs;
-use std::path::PathBuf;
 use std::sync::Arc;
 use tempfile::TempDir;
 
 struct TestHarness {
     _app_data: TempDir,
     state: oclive_kernel_host::state::AppState,
-}
-
-fn repo_root() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .expect("repo root")
-        .to_path_buf()
 }
 
 fn copy_dir_all(src: &std::path::Path, dst: &std::path::Path) {
@@ -117,7 +111,7 @@ async fn test_state_with_profile(profile: HostProfile) -> TestHarness {
     let llm = Arc::new(MockLlmClient {
         reply: String::new(),
     });
-    let roles = repo_root().join("roles");
+    let roles = common::roles_dir();
     let state = AppStateBuilder::in_memory_test(llm, roles, None)
         .with_app_data_dir(app_data.path())
         .with_host_profile(profile)
@@ -144,7 +138,7 @@ async fn state_with_test_director_plugin() -> TestHarness {
     let llm = Arc::new(MockLlmClient {
         reply: String::new(),
     });
-    let roles = repo_root().join("roles");
+    let roles = common::roles_dir();
     let state = AppStateBuilder::in_memory_test(llm, roles, None)
         .with_app_data_dir(app_data.path())
         .with_host_profile(profile)

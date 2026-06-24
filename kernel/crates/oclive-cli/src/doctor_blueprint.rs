@@ -1,6 +1,7 @@
 //! `oclive doctor` blueprint-specific checks (`roles/*/pipeline.ocblueprint`, routed by `schema_version` to v2 / v3).
 
 use crate::doctor_cmd::DoctorCheck;
+use oclive_kernel_runtime::resolve_project_roles_dir;
 use oclive_validation::{
     validate_blueprint_v2_json, validate_blueprint_v3_json,
     validate_role_pack_blueprint_v2_directory, validate_role_pack_blueprint_v3_directory,
@@ -17,7 +18,7 @@ struct PackDir {
 }
 
 pub fn blueprint_checks(root: &Path) -> Vec<DoctorCheck> {
-    let roles = root.join("roles");
+    let roles = resolve_project_roles_dir(root);
     if !roles.is_dir() {
         return vec![DoctorCheck::ok(
             "blueprint_file_format",

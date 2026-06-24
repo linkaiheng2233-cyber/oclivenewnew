@@ -2,19 +2,16 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
+mod common;
+
 use axum::body::{to_bytes, Body};
 use axum::http::{Request, StatusCode};
 use oclive_kernel_host::infrastructure::MockLlmClient;
 use oclive_kernel_host::state::AppState;
 use oclivenewnew_tauri::http_api::api_router;
 use serde_json::{json, Value};
-use std::path::PathBuf;
 use std::sync::Arc;
 use tower::ServiceExt;
-
-fn roles_dir() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../roles")
-}
 
 async fn response_json(res: axum::response::Response) -> Value {
     let bytes = to_bytes(res.into_body(), usize::MAX).await.expect("body");
@@ -27,7 +24,7 @@ async fn http_api_llm_user_settings_get_ok() {
         reply: "ok".to_string(),
     });
     let state = Arc::new(
-        AppState::new_in_memory_with_llm(llm, roles_dir())
+        AppState::new_in_memory_with_llm(llm, common::roles_dir())
             .await
             .expect("state"),
     );
@@ -54,7 +51,7 @@ async fn http_api_llm_session_model_post_ok() {
         reply: "ok".to_string(),
     });
     let state = Arc::new(
-        AppState::new_in_memory_with_llm(llm, roles_dir())
+        AppState::new_in_memory_with_llm(llm, common::roles_dir())
             .await
             .expect("state"),
     );
@@ -85,7 +82,7 @@ async fn http_api_llm_user_settings_post_local_ok() {
         reply: "ok".to_string(),
     });
     let state = Arc::new(
-        AppState::new_in_memory_with_llm(llm, roles_dir())
+        AppState::new_in_memory_with_llm(llm, common::roles_dir())
             .await
             .expect("state"),
     );
@@ -117,7 +114,7 @@ async fn http_api_llm_ollama_models_get_ok_or_unreachable() {
         reply: "ok".to_string(),
     });
     let state = Arc::new(
-        AppState::new_in_memory_with_llm(llm, roles_dir())
+        AppState::new_in_memory_with_llm(llm, common::roles_dir())
             .await
             .expect("state"),
     );

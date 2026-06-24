@@ -6,6 +6,8 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
+mod common;
+
 use oclive_kernel_host::domain::chat_engine::process_message;
 use oclive_kernel_host::infrastructure::MockLlmClient;
 use oclive_kernel_host::state::AppState;
@@ -28,19 +30,14 @@ use oclivenewnew_tauri::api::role::{
     set_user_relation_impl, switch_role_impl,
 };
 use oclivenewnew_tauri::api::scene::switch_scene_impl;
-use std::path::PathBuf;
 use std::sync::Arc;
-
-fn roles_dir() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../roles")
-}
 
 #[tokio::test]
 async fn week3_004_load_role_and_get_info() {
     let llm = Arc::new(MockLlmClient {
         reply: "ok".to_string(),
     });
-    let state = AppState::new_in_memory_with_llm(llm, roles_dir())
+    let state = AppState::new_in_memory_with_llm(llm, common::roles_dir())
         .await
         .expect("state");
 
@@ -78,7 +75,7 @@ async fn week3_004_get_role_info_auto_loads_when_runtime_missing() {
     let llm = Arc::new(MockLlmClient {
         reply: "ok".to_string(),
     });
-    let state = AppState::new_in_memory_with_llm(llm, roles_dir())
+    let state = AppState::new_in_memory_with_llm(llm, common::roles_dir())
         .await
         .expect("state");
 
@@ -93,7 +90,7 @@ async fn week3_004_session_backend_override_uses_session_namespace() {
     let llm = Arc::new(MockLlmClient {
         reply: "ok".to_string(),
     });
-    let state = AppState::new_in_memory_with_llm(llm, roles_dir())
+    let state = AppState::new_in_memory_with_llm(llm, common::roles_dir())
         .await
         .expect("state");
     load_role_impl(&state, "mumu", true)
@@ -151,7 +148,7 @@ async fn week3_004_session_memory_local_provider_id_without_touching_memory_enum
     let llm = Arc::new(MockLlmClient {
         reply: "ok".to_string(),
     });
-    let state = AppState::new_in_memory_with_llm(llm, roles_dir())
+    let state = AppState::new_in_memory_with_llm(llm, common::roles_dir())
         .await
         .expect("state");
     load_role_impl(&state, "mumu", true)
@@ -232,7 +229,7 @@ async fn week3_004_session_backend_explicit_null_clears_module_override() {
     let llm = Arc::new(MockLlmClient {
         reply: "ok".to_string(),
     });
-    let state = AppState::new_in_memory_with_llm(llm, roles_dir())
+    let state = AppState::new_in_memory_with_llm(llm, common::roles_dir())
         .await
         .expect("state");
     load_role_impl(&state, "mumu", true)
@@ -288,7 +285,7 @@ async fn week3_004_local_memory_provider_id_rejects_non_memory_module() {
     let llm = Arc::new(MockLlmClient {
         reply: "ok".to_string(),
     });
-    let state = AppState::new_in_memory_with_llm(llm, roles_dir())
+    let state = AppState::new_in_memory_with_llm(llm, common::roles_dir())
         .await
         .expect("state");
     load_role_impl(&state, "mumu", true)
@@ -315,7 +312,7 @@ async fn week3_004_plugin_resolution_debug_reports_session_override_and_namespac
     let llm = Arc::new(MockLlmClient {
         reply: "ok".to_string(),
     });
-    let state = AppState::new_in_memory_with_llm(llm, roles_dir())
+    let state = AppState::new_in_memory_with_llm(llm, common::roles_dir())
         .await
         .expect("state");
     load_role_impl(&state, "mumu", true)
@@ -366,7 +363,7 @@ async fn week3_004_export_chat_logs_with_plugin_debug_includes_section() {
     let llm = Arc::new(MockLlmClient {
         reply: "ok".to_string(),
     });
-    let state = AppState::new_in_memory_with_llm(llm, roles_dir())
+    let state = AppState::new_in_memory_with_llm(llm, common::roles_dir())
         .await
         .expect("state");
     load_role_impl(&state, "mumu", true)
@@ -396,7 +393,7 @@ async fn week3_004_query_memories_and_events() {
     let llm = Arc::new(MockLlmClient {
         reply: "模拟".to_string(),
     });
-    let state = AppState::new_in_memory_with_llm(llm, roles_dir())
+    let state = AppState::new_in_memory_with_llm(llm, common::roles_dir())
         .await
         .expect("state");
 
@@ -439,7 +436,7 @@ async fn week3_004_create_event_and_query() {
     let llm = Arc::new(MockLlmClient {
         reply: "ok".to_string(),
     });
-    let state = AppState::new_in_memory_with_llm(llm, roles_dir())
+    let state = AppState::new_in_memory_with_llm(llm, common::roles_dir())
         .await
         .expect("state");
 
@@ -479,7 +476,7 @@ async fn week3_004_create_event_invalid_type() {
     let llm = Arc::new(MockLlmClient {
         reply: "ok".to_string(),
     });
-    let state = AppState::new_in_memory_with_llm(llm, roles_dir())
+    let state = AppState::new_in_memory_with_llm(llm, common::roles_dir())
         .await
         .expect("state");
 
@@ -506,7 +503,7 @@ async fn week3_004_query_limits_return_invalid_parameter_code() {
     let llm = Arc::new(MockLlmClient {
         reply: "ok".to_string(),
     });
-    let state = AppState::new_in_memory_with_llm(llm, roles_dir())
+    let state = AppState::new_in_memory_with_llm(llm, common::roles_dir())
         .await
         .expect("state");
 
@@ -540,7 +537,7 @@ async fn week3_004_list_roles_and_switch_role() {
     let llm = Arc::new(MockLlmClient {
         reply: "ok".to_string(),
     });
-    let state = AppState::new_in_memory_with_llm(llm, roles_dir())
+    let state = AppState::new_in_memory_with_llm(llm, common::roles_dir())
         .await
         .expect("state");
 
@@ -557,7 +554,7 @@ async fn week3_004_set_user_relation_and_evolution_factor() {
     let llm = Arc::new(MockLlmClient {
         reply: "ok".to_string(),
     });
-    let state = AppState::new_in_memory_with_llm(llm, roles_dir())
+    let state = AppState::new_in_memory_with_llm(llm, common::roles_dir())
         .await
         .expect("state");
     load_role_impl(&state, "mumu", true)
@@ -616,7 +613,7 @@ async fn week3_004_set_scene_user_relation_validates_and_persists() {
     let llm = Arc::new(MockLlmClient {
         reply: "ok".to_string(),
     });
-    let state = AppState::new_in_memory_with_llm(llm, roles_dir())
+    let state = AppState::new_in_memory_with_llm(llm, common::roles_dir())
         .await
         .expect("state");
     load_role_impl(&state, "shimeng", true)
@@ -660,7 +657,7 @@ async fn week3_004_scene_relation_overrides_global_in_chat() {
     let llm = Arc::new(MockLlmClient {
         reply: "ok".to_string(),
     });
-    let state = AppState::new_in_memory_with_llm(llm, roles_dir())
+    let state = AppState::new_in_memory_with_llm(llm, common::roles_dir())
         .await
         .expect("state");
     load_role_impl(&state, "shimeng", true)
@@ -723,7 +720,7 @@ async fn week3_004_get_role_info_favor_follows_scene_identity_not_global_column(
     let llm = Arc::new(MockLlmClient {
         reply: "ok".to_string(),
     });
-    let state = AppState::new_in_memory_with_llm(llm, roles_dir())
+    let state = AppState::new_in_memory_with_llm(llm, common::roles_dir())
         .await
         .expect("state");
 

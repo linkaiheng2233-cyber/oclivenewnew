@@ -1,10 +1,12 @@
 //! 仓库黄金包 `roles/mumu`（v2 蓝图）可经 `RoleStorage` 加载。
 
+mod common;
+
 use oclive_kernel_host::infrastructure::storage::RoleStorage;
 
 #[test]
 fn load_migrated_mumu_blueprint_pack() {
-    let roles_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../roles");
+    let roles_dir = common::roles_dir();
     let storage = RoleStorage::new(&roles_dir);
     let role = storage
         .load_role("mumu")

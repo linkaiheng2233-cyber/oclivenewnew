@@ -10,6 +10,7 @@ import os from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { chatProRolesDir, resolveRepoRoot } from './lib/chat-pro-roles-dir.mjs';
+import { findKernelBinary } from './lib/e2e-binary.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolveRepoRoot();
@@ -31,25 +32,8 @@ async function healthOk() {
   }
 }
 
-function findKernelBinary() {
-  if (process.env.OCLIVE_E2E_KERNEL && fs.existsSync(process.env.OCLIVE_E2E_KERNEL)) {
-    return process.env.OCLIVE_E2E_KERNEL;
-  }
-  const candidates = [
-    path.join(repoRoot, '..', 'oclive-dev-artifacts', 'oclivenewnew-cargo-target', 'debug', 'oclive-kernel-server.exe'),
-    path.join(repoRoot, '..', 'oclive-dev-artifacts', 'oclivenewnew-cargo-target', 'debug', 'oclive-kernel-server'),
-    path.join(repoRoot, '..', 'oclive-dev-artifacts', 'oclivenewnew-cargo-target', 'debug', 'oclivenewnew-tauri.exe'),
-    path.join(repoRoot, 'target', 'debug', 'oclive-kernel-server.exe'),
-    path.join(repoRoot, 'target', 'debug', 'oclive-kernel-server'),
-    path.join(repoRoot, 'target', 'debug', 'oclivenewnew-tauri.exe'),
-    path.join(repoRoot, 'distros/desktop-tauri', 'target', 'debug', 'oclive-kernel-server'),
-    path.join(repoRoot, 'distros/desktop-tauri', 'target', 'debug', 'oclive-kernel-server.exe'),
-  ];
-  return candidates.find((p) => fs.existsSync(p));
-}
-
 async function main() {
-  const bin = findKernelBinary();
+  const bin = findKernelBinary(repoRoot);
   if (!bin) {
     console.warn('[e2e-cross-host-memory] skip: no kernel binary (run cargo build -p oclive_kernel_server)');
     process.exit(0);

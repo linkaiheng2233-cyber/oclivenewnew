@@ -2,6 +2,8 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
+mod common;
+
 use oclive_kernel_host::domain::portrait_facility::{
     portrait_catalog_active, resolve_visual_state_rule,
 };
@@ -11,10 +13,8 @@ use oclive_kernel_types::models::{
 };
 use std::fs;
 use std::io::Write;
-use std::path::PathBuf;
-
 fn roles_root() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../roles")
+    common::roles_dir()
 }
 
 #[test]

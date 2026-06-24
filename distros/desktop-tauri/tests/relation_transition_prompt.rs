@@ -2,6 +2,8 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
+mod common;
+
 use async_trait::async_trait;
 use oclive_kernel_host::domain::chat_engine::process_message;
 use oclive_kernel_host::domain::prompt_builder::relation_transition_duration;
@@ -51,7 +53,7 @@ async fn relation_transition_hint_persists_then_expires() {
         prompts: prompts.clone(),
         reply: "mock".to_string(),
     });
-    let roles_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../roles");
+    let roles_dir = common::roles_dir();
     let state = AppState::new_in_memory_with_llm(llm, roles_dir)
         .await
         .expect("state");
@@ -133,7 +135,7 @@ async fn vector_mode_transition_does_not_write_mutable_profile() {
         prompts: prompts.clone(),
         reply: "mock".to_string(),
     });
-    let roles_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../roles");
+    let roles_dir = common::roles_dir();
     let state = AppState::new_in_memory_with_llm(llm, roles_dir)
         .await
         .expect("state");

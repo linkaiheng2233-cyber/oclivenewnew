@@ -2,6 +2,8 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
+mod common;
+
 use axum::body::{to_bytes, Body};
 use axum::http::{Request, StatusCode};
 use oclive_kernel_host::domain::host_profile::HostProfile;
@@ -9,17 +11,12 @@ use oclive_kernel_host::infrastructure::MockLlmClient;
 use oclive_kernel_host::state::{AppState, AppStateBuilder};
 use oclivenewnew_tauri::http_api::api_router;
 use serde_json::{json, Value};
-use std::path::PathBuf;
 use std::sync::Arc;
 use tower::ServiceExt;
 
-fn roles_dir() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../roles")
-}
-
 async fn theater_test_state(llm: Arc<MockLlmClient>) -> AppState {
     std::env::remove_var(oclive_kernel_host::domain::host_profile::ENV_THEATER_DIRECTOR_PLUGIN);
-    AppStateBuilder::in_memory_test(llm, roles_dir(), None)
+    AppStateBuilder::in_memory_test(llm, common::roles_dir(), None)
         .with_host_profile(HostProfile::default())
         .build()
         .await

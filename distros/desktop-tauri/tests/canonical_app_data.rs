@@ -1,18 +1,15 @@
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
+mod common;
+
 use axum::body::{to_bytes, Body};
 use axum::http::{Request, StatusCode};
 use oclive_kernel_host::infrastructure::MockLlmClient;
 use oclive_kernel_host::state::AppState;
 use oclivenewnew_tauri::http_api::api_router;
 use serde_json::json;
-use std::path::PathBuf;
 use std::sync::Arc;
 use tower::ServiceExt;
-
-fn roles_dir() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../roles")
-}
 
 #[tokio::test]
 async fn serve_api_persists_favorability_on_disk() {
@@ -26,12 +23,12 @@ async fn serve_api_persists_favorability_on_disk() {
         reply: "persist ok".to_string(),
     });
     let state = Arc::new(
-        AppState::new_in_memory_with_llm(llm, roles_dir())
+        AppState::new_in_memory_with_llm(llm, common::roles_dir())
             .await
             .expect("state"),
     );
     let app = api_router(state);
-    let role_path = roles_dir().join("mumu");
+    let role_path = common::roles_dir().join("mumu");
     let body = json!({
         "role_path": role_path.to_string_lossy(),
         "message": "hello persistence",
@@ -64,7 +61,7 @@ async fn health_json_when_accept_header() {
         reply: "ok".to_string(),
     });
     let state = Arc::new(
-        AppState::new_in_memory_with_llm(llm, roles_dir())
+        AppState::new_in_memory_with_llm(llm, common::roles_dir())
             .await
             .expect("state"),
     );

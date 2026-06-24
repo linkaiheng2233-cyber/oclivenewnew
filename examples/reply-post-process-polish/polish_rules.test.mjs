@@ -11,7 +11,7 @@ import {
 import { shouldPolish } from "./polish_rules.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const SHIMENG_DIR = path.resolve(__dirname, "../../roles/shimeng");
+const SHIMENG_DIR = path.resolve(__dirname, "../../distros/chat-pro/roles/shimeng");
 
 test("shouldPolish detects user echo at opening", () => {
   assert.equal(

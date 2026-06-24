@@ -120,6 +120,26 @@ pub fn find_monorepo_root(anchors: &[PathBuf]) -> Option<PathBuf> {
     None
 }
 
+/// Canonical Chat Pro role packs directory under a monorepo root (`distros/chat-pro/roles`).
+#[must_use]
+pub fn chat_pro_roles_dir(anchors: &[PathBuf]) -> Option<PathBuf> {
+    find_monorepo_root(anchors).map(|root| root.join("distros").join("chat-pro").join("roles"))
+}
+
+/// Resolve `roles/` for a project root: monorepo layout first, then legacy `roles/`.
+#[must_use]
+pub fn resolve_project_roles_dir(project_root: &Path) -> PathBuf {
+    let monorepo_roles = project_root.join("distros").join("chat-pro").join("roles");
+    if monorepo_roles.is_dir() {
+        return monorepo_roles;
+    }
+    let legacy = project_root.join("roles");
+    if legacy.is_dir() {
+        return legacy;
+    }
+    monorepo_roles
+}
+
 fn dev_kernel_candidates(repo_root: &Path) -> Vec<KernelCandidate> {
     let mut out = Vec::new();
     let target_roots = [

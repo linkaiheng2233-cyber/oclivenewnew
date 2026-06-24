@@ -28,7 +28,7 @@ def default_role_path() -> Path:
     env = os.environ.get("OCLIVE_ROLE_PATH", "").strip()
     if env:
         return Path(env)
-    return repo_root() / "roles" / "mumu"
+    return repo_root() / "distros" / "chat-pro" / "roles" / "mumu"
 
 
 def api_base() -> str:

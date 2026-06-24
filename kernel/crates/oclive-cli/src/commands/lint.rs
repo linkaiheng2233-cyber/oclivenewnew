@@ -5,6 +5,7 @@ use super::lint_deps::run_deps_audit;
 use crate::lint_report::{self, LintCheck};
 use anyhow::Result;
 use clap::Parser;
+use oclive_kernel_runtime::resolve_project_roles_dir;
 use serde::Serialize;
 use std::path::{Path, PathBuf};
 use std::time::Instant;
@@ -162,7 +163,7 @@ fn lint_cargo_toml(root: &Path, checks: &mut Vec<LintCheck>) {
 fn lint_settings(root: &Path, checks: &mut Vec<LintCheck>) {
     let started = Instant::now();
     let mut items = Vec::new();
-    let roles = root.join("roles");
+    let roles = resolve_project_roles_dir(root);
     if !roles.is_dir() {
         return;
     }

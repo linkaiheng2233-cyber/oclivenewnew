@@ -2,6 +2,7 @@
 
 use anyhow::{bail, Context, Result};
 use clap::{Parser, Subcommand};
+use oclive_kernel_runtime::resolve_project_roles_dir;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -244,7 +245,7 @@ fn find_role_pack_root(path: &Path) -> Result<PathBuf> {
     if p.join("manifest.json").is_file() {
         return Ok(p);
     }
-    if p.join("roles").is_dir() {
+    if resolve_project_roles_dir(p.as_ref()).is_dir() {
         bail!(
             "Point to a single role pack directory (with manifest.json), not kernel project root {}",
             p.display()

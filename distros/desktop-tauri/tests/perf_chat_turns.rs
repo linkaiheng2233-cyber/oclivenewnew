@@ -5,17 +5,14 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
+mod common;
+
 use oclive_kernel_host::domain::chat_engine::process_message;
 use oclive_kernel_host::infrastructure::MockLlmClient;
 use oclive_kernel_host::state::AppState;
 use oclive_kernel_types::models::dto::SendMessageRequest;
-use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Instant;
-
-fn roles_dir() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../roles")
-}
 
 fn percentile(sorted_ms: &[u128], p: f64) -> u128 {
     if sorted_ms.is_empty() {
@@ -31,7 +28,7 @@ async fn perf_chat_turn_distribution() {
     let llm = Arc::new(MockLlmClient {
         reply: "好的，我记住了。".to_string(),
     });
-    let state = AppState::new_in_memory_with_llm(llm, roles_dir())
+    let state = AppState::new_in_memory_with_llm(llm, common::roles_dir())
         .await
         .expect("state");
 

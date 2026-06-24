@@ -11,15 +11,9 @@ const TRAIT_CHECKS: &[(&str, &str)] = &[
     ("agent_provider_impl", "AgentProvider"),
 ];
 
-/// When `Cargo.toml` references oclive kernel crates, verify `src/` (or `src-tauri/src/`) contains trait impls.
+/// When `Cargo.toml` references oclive kernel crates, verify host `src/` contains trait impls.
 pub(crate) fn kernel_contract_impl_checks(root: &Path) -> Vec<DoctorCheck> {
-    let cargo = root.join("Cargo.toml");
-    let workspace_cargo = root.join("src-tauri/Cargo.toml");
-    let kernel_toml = if cargo.is_file() {
-        cargo
-    } else if workspace_cargo.is_file() {
-        workspace_cargo
-    } else {
+    let Some(kernel_toml) = resolve_kernel_cargo_toml(root) else {
         return vec![DoctorCheck::ok(
             "kernel_contracts",
             "no kernel Cargo.toml at probe root (trait impl audit skipped)",
@@ -47,7 +41,7 @@ pub(crate) fn kernel_contract_impl_checks(root: &Path) -> Vec<DoctorCheck> {
         return vec![DoctorCheck::warn(
             "kernel_contracts",
             "kernel dependency present but no src/ tree found",
-            Some("expected src/ or src-tauri/src/ with trait impl blocks".into()),
+            Some("expected src/, distros/desktop-tauri/src/, or legacy src-tauri/src/".into()),
         )];
     }
 
@@ -69,15 +63,32 @@ pub(crate) fn kernel_contract_impl_checks(root: &Path) -> Vec<DoctorCheck> {
         .collect()
 }
 
+fn resolve_kernel_cargo_toml(root: &Path) -> Option<PathBuf> {
+    for candidate in [
+        root.join("distros/desktop-tauri/Cargo.toml"),
+        root.join("src-tauri/Cargo.toml"),
+        root.join("Cargo.toml"),
+    ] {
+        if !candidate.is_file() {
+            continue;
+        }
+        let Ok(raw) = std::fs::read_to_string(&candidate) else {
+            continue;
+        };
+        if raw.contains("oclive_kernel") {
+            return Some(candidate);
+        }
+    }
+    None
+}
+
 fn rust_src_roots(root: &Path) -> Vec<PathBuf> {
     let mut out = Vec::new();
-    let direct = root.join("src");
-    if direct.is_dir() {
-        out.push(direct);
-    }
-    let tauri = root.join("src-tauri/src");
-    if tauri.is_dir() {
-        out.push(tauri);
+    for rel in ["src", "distros/desktop-tauri/src", "src-tauri/src"] {
+        let p = root.join(rel);
+        if p.is_dir() {
+            out.push(p);
+        }
     }
     out
 }

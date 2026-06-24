@@ -9,6 +9,7 @@ import os from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { chatProRolesDir, resolveRepoRoot } from './lib/chat-pro-roles-dir.mjs';
+import { findKernelBinary } from './lib/e2e-binary.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolveRepoRoot();
@@ -34,23 +35,8 @@ async function healthOk(p = port) {
   }
 }
 
-function findKernelBinary() {
-  if (process.env.OCLIVE_E2E_KERNEL && fs.existsSync(process.env.OCLIVE_E2E_KERNEL)) {
-    return process.env.OCLIVE_E2E_KERNEL;
-  }
-  const candidates = [
-    path.join(repoRoot, '..', 'oclive-dev-artifacts', 'oclivenewnew-cargo-target', 'debug', 'oclive-kernel-server.exe'),
-    path.join(repoRoot, '..', 'oclive-dev-artifacts', 'oclivenewnew-cargo-target', 'debug', 'oclive-kernel-server'),
-    path.join(repoRoot, 'target', 'debug', 'oclive-kernel-server.exe'),
-    path.join(repoRoot, 'target', 'debug', 'oclive-kernel-server'),
-    path.join(repoRoot, 'distros/desktop-tauri', 'target', 'debug', 'oclive-kernel-server'),
-    path.join(repoRoot, 'distros/desktop-tauri', 'target', 'debug', 'oclive-kernel-server.exe'),
-  ];
-  return candidates.find((p) => fs.existsSync(p));
-}
-
 function spawnKernel(extraEnv = {}) {
-  const bin = findKernelBinary();
+  const bin = findKernelBinary(repoRoot);
   if (!bin) {
     throw new Error('no oclive-kernel-server binary');
   }
@@ -221,7 +207,7 @@ async function scenarioTheater() {
 }
 
 async function main() {
-  if (!findKernelBinary()) {
+  if (!findKernelBinary(repoRoot)) {
     console.warn('[e2e-distro] skip: build oclive-kernel-server first');
     process.exit(0);
   }

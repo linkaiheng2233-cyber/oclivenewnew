@@ -2,6 +2,8 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
+mod common;
+
 use oclive_kernel_host::domain::chat_engine::process_message;
 use oclive_kernel_host::infrastructure::MockLlmClient;
 use oclive_kernel_host::state::AppState;
@@ -11,10 +13,6 @@ use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-
-fn roles_dir() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../roles")
-}
 
 fn policy_file() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("config/policy.toml")
@@ -44,7 +42,7 @@ async fn run_scene(scene_id: &str) -> RunMetrics {
     });
     let state = AppState::new_in_memory_with_llm_and_policy_file(
         llm,
-        roles_dir(),
+        common::roles_dir(),
         Some(Path::new(&policy_file())),
     )
     .await

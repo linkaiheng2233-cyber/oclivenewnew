@@ -20,7 +20,8 @@
 | [ARCHITECTURE_LAYERING.md](ARCHITECTURE_LAYERING.md) | 分层架构说明 |
 | [BUS_FACTOR_NOTES.md](BUS_FACTOR_NOTES.md) | 关键路径 bus factor |
 | [INVOKE_HOTPATH_MATRIX.md](INVOKE_HOTPATH_MATRIX.md) | Tauri invoke 热路径矩阵 |
-| [04_4.6_PROJECT_TRUTH_CHECKLIST.md](04_4.6_PROJECT_TRUTH_CHECKLIST.md) | 项目认知清单 |
+| [04_4.6_PROJECT_TRUTH_CHECKLIST.md](04_4.6_PROJECT_TRUTH_CHECKLIST.md) | **已归档**认知快照（以 BUS_FACTOR + 源码为准） |
+| [AI_CHANGE_BOUNDARIES.md](AI_CHANGE_BOUNDARIES.md) | AI / Agent 改动边界与禁止区 |
 | [PERF_PHASES.md](PERF_PHASES.md) | 性能/包体与协议验证快照 |
 | [CHAT_STORAGE_ARCHITECTURE.md](CHAT_STORAGE_ARCHITECTURE.md) | 聊天混合存储架构 |
 | [GITHUB_PLUGIN_INDEX_LINE.md](GITHUB_PLUGIN_INDEX_LINE.md) | GitHub 插件索引线 |
@@ -46,7 +47,7 @@
 
 ## 归档规则
 
-- **迁入 `archive/`**：`*_CLOSURE_SUMMARY*`、旧 `0x_` / `1x_` 开发报告与计划、`WEEKLY_DEV_GUIDE`、已合并进 `creator-docs/` 的阶段性总结。
+- **迁入 `archive/`**：`*_CLOSURE_SUMMARY*`、旧 `0x_` / `1x_` 开发报告与计划、`WEEKLY_DEV_GUIDE`（现于 `archive/WEEKLY_DEV_GUIDE.md`）、`04_4.6` 级历史认知清单（根目录文件保留只读快照）、已合并进 `creator-docs/` 的阶段性总结。
 - **留在根目录**：上表「跨发行版」所列；新增 handoff 前请确认是否应进 `creator-docs/`、`handoff/<distro>/` 或 `archive/`。
 - **勿删** `archive/` 内文件（史料与审计对照）；链接失效时从 `archive/` 恢复或改链到 `creator-docs/`。
 

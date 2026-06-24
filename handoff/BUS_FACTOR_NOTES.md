@@ -13,7 +13,7 @@
 |-------|------|------|
 | **`oclive_kernel_types`** | `kernel/crates/oclive_kernel_types/` | DTO、`AppError`、纯数据结构 |
 | **`oclive_kernel_contracts`** | `kernel/crates/oclive_kernel_contracts/` | `LlmClient`、`PluginHostPort`、`EventEstimator`、`AgentProvider` 等 trait |
-| **`oclive_kernel_runtime`** | `kernel/crates/oclive_kernel_runtime/` | 编排实现；宿主经 `src-tauri` re-export 消费 |
+| **`oclive_kernel_runtime`** | `kernel/crates/oclive_kernel_runtime/` | 策略、Prompt、kernel discovery；**编排实现**在 `oclive_kernel_host` |
 | **`oclive_validation`** | `kernel/crates/oclive_validation/` | manifest / **`pipeline.ocblueprint` v2** 校验 |
 | **`oclive-cli`** | `kernel/crates/oclive-cli/` | 脚手架、`bench` / `test` / `doctor` / `ci init` |
 
@@ -78,11 +78,11 @@
 
 | 环节 | 文件/类型 | 说明 |
 |------|-----------|------|
-| **核心错误枚举** | `oclive_kernel_runtime` 的 **`AppError`**（宿主 `distros/desktop-tauri/src/error.rs` 再导出） | 业务语义与 `thiserror` 变体。 |
+| **核心错误枚举** | `oclive_kernel_types::AppError`（宿主 `distros/desktop-tauri/src/lib.rs` 内联 `error` 模块 re-export） | 业务语义与 `thiserror` 变体。 |
 | **→ 前端 / HTTP JSON** | **`AppError::to_kernel_json()`** → **`KernelErrorBody`** 单行 JSON | Tauri `invoke` 失败与 HTTP `error` 对象同源；见 **`creator-docs/getting-started/KERNEL_ERROR_CODE_CONVENTION.md`**。 |
 | **宿主桥** | `distros/desktop-tauri/src/error.rs` 的 **`to_invoke_error`** | 将内核错误转为 `InvokeError`。 |
 | **目录插件 ApiError** | `distros/desktop-tauri/src/api/error.rs` | 与内核 `code` 对齐。 |
-| **前端 i18n** | `distros/shared/distros/shared/src/i18n/locales/fragments/apiErrors.*` + `toFriendlyErrorMessage` 等 | 机器码 → 用户可读文案；新增码需 **中英** 词条 + [`ERROR_CODES.md`](../creator-docs/getting-started/ERROR_CODES.md) 速查表。 |
+| **前端 i18n** | `distros/shared/src/i18n/locales/fragments/apiErrors.*` + `toFriendlyErrorMessage` 等 | 机器码 → 用户可读文案；新增码需 **中英** 词条 + [`ERROR_CODES.md`](../creator-docs/getting-started/ERROR_CODES.md) 速查表。 |
 
 **设计意图**：机器可读 `code` 稳定，文案可迭代；HTTP 与桌面一致，便于 OOCP 黑盒断言。
 

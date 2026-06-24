@@ -21,7 +21,7 @@
 | **Tauri 宿主** | [`distros/desktop-tauri/`](../distros/desktop-tauri/) | invoke 薄壳、打包资源、bundled kernel |
 | **契约文档** | 根 `creator-docs/`、`handoff/` | 平台 SSOT；发行版索引见 [`handoff/distros/README.md`](distros/README.md) |
 
-**禁止**：在 `kernel/` PR 里改 Chat Pro 壳样式；在 `distros/chat-pro/` PR 里改 `process_message` 编排。RFC：[`handoff/distros/ARCHITECTURE_DECOUPLING_RFC.md`](distros/ARCHITECTURE_DECOUPLING_RFC.md)。供应链：[`creator-docs/security/SUPPLY_CHAIN.md`](../creator-docs/security/SUPPLY_CHAIN.md) · `node scripts/dimension5-acceptance.mjs --ci`（十二检含 `cargo deny`）。
+**禁止**：在 `kernel/` PR 里改 Chat Pro 壳样式；在 `distros/chat-pro/` PR 里改 `process_message` 编排。RFC：[`handoff/distros/ARCHITECTURE_DECOUPLING_RFC.md`](distros/ARCHITECTURE_DECOUPLING_RFC.md)。供应链：[`creator-docs/security/SUPPLY_CHAIN.md`](../creator-docs/security/SUPPLY_CHAIN.md) · `node scripts/dimension5-acceptance.mjs --ci`（十三检含 `cargo deny` 与代码路径 ratchet）。
 
 ---
 
@@ -84,7 +84,7 @@
 
 1. 不要每次都全跑。按 **§1 触发条件** 决定本轮跑「快档」还是「全档」。
 2. 永远从 **基线门禁（§2）** 开始；基线 FAIL 则**中止**，先修地基再谈优化。
-3. 按固定顺序走维度：**基线 → 一架构 → 二性能 → 三设计 → 四技术债 → 六文档**。
+3. 按固定顺序走维度：**基线 → 一架构 → 二性能 → 三设计 → 四技术债 → 六文档 → 七条理与边界**。
 4. 每个维度用**两把尺子**：① 传统正确性（能跑/对不对）；② **愿景对齐**（V1–V4，见 §3）。
 5. 收尾在 **§7 综合输出** 出评分，在 **§8 巡检日志** 追加一行,新债按编号入 `TECHNICAL_DEBT_INVENTORY.md`。
 
@@ -94,7 +94,7 @@
 
 | 档位 | 何时跑 | 范围 |
 |------|--------|------|
-| **快档（Smoke,~15min）** | 每次合并涉及 `process_message` / `plugin_host` / `host_profile` / CI 配置 / 迁移的改动后 | 仅 §2 基线 + 受影响维度的对应 checklist |
+| **快档（Smoke,~15min）** | 每次合并涉及 `process_message` / `plugin_host` / `host_profile` / CI 配置 / 迁移 / **路径或目录结构** 的改动后 | §2 基线 + **维度七第 1–2 项（路径漂移 + AI 入口时效）** + 受影响维度的对应 checklist |
 | **半档（~1h）** | 每完成一个发行版里程碑、或每 2–4 周 | §2 基线 + 维度一 + 维度二 |
 | **全档（半天）** | 每个 minor 版本发布前、或重大架构变更后 | 全部六维 + §7 评分 + §8 记录 |
 
@@ -107,13 +107,13 @@
 PowerShell 下逐条跑（**不要用 `&&`**）：
 
 ```powershell
-node scripts/dimension5-acceptance.mjs --ci   # 必须 PASS (9 checks)
+node scripts/dimension5-acceptance.mjs --ci   # 必须 PASS (13 checks; --ci 跳过 sample tests 仍计数)
 cargo test -p oclive_kernel_host --lib         # 必须全绿
 node scripts/check-domain-layering.mjs         # ratchet 数值不得上涨
 git status                                      # 确认工作树状态 / 与 origin 差距
 ```
 
-**判定**：九项门禁含 layering ratchet / cargo-audit / lockfile / ensure-plan / CHANGELOG 中英 parity / host re-export ratchet / **verify:ui** / **vite build**。任一 FAIL → **本轮停止所有优化,先恢复基线**。
+**判定**：十二项门禁含 layering ratchet / **cargo audit** / **cargo deny（licenses+bans）** / lockfile（禁 sqlx-mysql·rsa 回潮）/ ensure-plan 快照 / CHANGELOG 中英 parity / stale 路径 ratchet / host re-export ratchet / theater prompt drift / **verify:ui** / **vite build**。任一 FAIL → **本轮停止所有优化,先恢复基线**。
 
 **ratchet 锚点**（只降不升）：
 - `domain→infrastructure`：use-import ≤ 4（全 test cfg）+ FQ ≤ 5 → 见 `handoff/LAYERING_BASELINE.json`
@@ -221,12 +221,51 @@ git status                                      # 确认工作树状态 / 与 or
 
 ---
 
+### 维度七 · 条理与边界（防 AI 脱轨 ★每轮快档也跑前两项）
+
+> **存在理由**：六维盯「对不对 / 够不够愿景」,**不盯「事实来源是否分裂」**。kernel/distros 拆分后,旧路径、过期文档、模糊边界让 AI「每次对话都合理,合起来互相打架」。本维度是给狂奔的火车装的轨道与限速器。
+
+> **巡检前自问一句**：*如果我是一个只读了 `AGENTS.md` + `.cursor/rules` 的新 AI,会不会被带到错误的目录 / 过期的结论 / 没有 SSOT 的自由区?*
+
+**1. 路径 SSOT 漂移（每轮快档必跑 · 自动化优先）**
+- [ ] `node scripts/check-stale-paths.mjs` 通过（应覆盖 bare `roles/`、`src-tauri`、根级 `crates/`、非 `distros/chat-pro/plugins` 的 `plugins/`）
+- [ ] Rust 侧 `roles` 解析有单一 SSOT（测试经 `tests/common` 或 `chat_pro_roles_dir()`,**禁止**每文件手写 `../roles`）
+- [ ] JS 侧路径经 `scripts/lib/chat-pro-roles-dir.mjs`,未新增散落 `join('roles')`
+- [ ] CI / 脚本 / `examples` 中 `OCLIVE_ROLES_DIR`、`cd fuzz`(应 `kernel/fuzz`)、Playwright `testDir`、`check:license` 插件路径与新布局一致
+
+**2. AI 入口文档时效（每轮快档必跑）**
+- [ ] `.cursor/rules/oclivenewnew.mdc` 不指向**已归档**文档（如 `04_4.6`）或失效路径（如根 `handoff/WEEKLY_DEV_GUIDE.md`）
+- [ ] `AGENTS.md` 与源码无硬冲突（迁移目录、HTTP API 存在性、`process_message` 所在 crate、re-export 现状）
+- [ ] 同一事实只有一个数字 SSOT（如 invoke 热路径条数以 `INVOKE_HOTPATH_MATRIX.md` 为准,AGENTS/CHANGELOG 引用不另造数字）
+- [ ] 已归档文档在 README / DOCUMENTATION_INDEX / `.cursor/rules` 处**显式标注归档**,不再被当当前 truth
+
+**3. 边界明确性（防 AI 自作主张 · 半档/全档）**
+- [ ] 每个「已交付 / 草案 / 冻结 / Deferred」状态在**三处一致**：源码现实、handoff 台账、AGENTS 入口（重点查 theater_director、reply_post_process chain、portrait/visual、expert_routing）
+- [ ] 「草案 / 冻结」不等于「仓库无代码」——文档须标明 Stable 主路径 vs Experimental/未接线现状（如 `extra_sections` 恒 `&[]`）
+- [ ] 角色包 vs 蓝图改动层次清晰（`meta` 今日字段 vs `runtime_config` v3 目标）——见 `ROLE_PACK_BOUNDARY.md`
+- [ ] AI 硬约束清单存在且最新（建议 `AI_CHANGE_BOUNDARIES.md` 或 AGENTS「禁止区」：不在角色任务改 `slot_registry`、不把 RFC Draft 当未实现而删 wiring、不引归档当 truth、改锁文件必跑 `cargo audit` 并更新 `KNOWN_VULNERABILITIES.md`）
+
+**4. 门禁语义纯度（全档）**
+- [ ] CI job 只分两类：**硬门禁（红=不能合）** 与 **nightly/可见性（不挡 main）**；无第三种「红了也不拦但看着像在测」的伪门禁
+- [ ] `continue-on-error: true` 的 job（loom / fuzz / e2e-tauri / npm-audit / visual-smoke）逐个裁决：修通去掉软标 **或** 迁出 `ci.yml` 改 nightly
+- [ ] 本地 `check:release` 与 CI 全集差距已知并记录(不假装等价)
+
+**愿景拷问**
+- [ ] 【V4】新接入的第三方创作者 / AI 是否能在不踩旧路径的前提下跑通?事实来源是否单一?
+- [ ] 【元纪律】本维度发现是否在「防回退」边界内?纯洁癖式重排默认 Deferred(见 §9)
+
+**方法**：先跑 `check-stale-paths` / `check-domain-layering` 等 ratchet（自动化优先于人工通读）；人工只复核「自动化扫不到的语义矛盾」（文档状态 vs 代码、边界归属）。**新发现按 `D-ORDER-*`（路径/脚本条理）或 `D-DOC-*`（文档矛盾）入 `TECHNICAL_DEBT_INVENTORY.md`。**
+**产物**：① 路径漂移清单（自动化输出）；② 文档矛盾清单（声称 A 文件 vs 事实 B 文件）；③ AI 自由度缺口（无 SSOT 的边界）+ 处置建议。
+
+---
+
 ## 5. 常用命令速查（PowerShell,逐条跑勿用 `&&`）
 
 ```powershell
-node scripts/dimension5-acceptance.mjs --ci      # 维度五门禁（11 checks）
+node scripts/dimension5-acceptance.mjs --ci      # 维度五门禁（13 checks,含 cargo deny + 代码路径 ratchet）
 cargo test -p oclive_kernel_host --lib           # 核心单测
 node scripts/check-domain-layering.mjs           # 分层 ratchet
+node scripts/check-stale-paths.mjs               # 维度七:过期路径漂移(roles/src-tauri/crates)
 node scripts/check-changelog-parity.mjs          # CHANGELOG 中英 parity
 node scripts/check-host-reexport-imports.mjs     # re-export ratchet
 npm run check:license                            # 许可证文件存在性
@@ -248,6 +287,10 @@ npm run check:rust                               # fmt + clippy(-D warnings) + t
 | 迁移 SSOT | `kernel/crates/oclive_kernel_host/migrations/*.sql` |
 | crate 速查 | `kernel/crates/README.md` |
 | 命名 SSOT | `creator-docs/NAMING_CONVENTIONS.md` |
+| 角色包路径 SSOT(JS) | `scripts/lib/chat-pro-roles-dir.mjs` |
+| 过期路径 ratchet | `scripts/check-stale-paths.mjs` |
+| 角色 vs 蓝图边界 | `handoff/ROLE_PACK_BOUNDARY.md` |
+| 关键路径交接 | `handoff/BUS_FACTOR_NOTES.md` |
 
 ---
 
@@ -303,6 +346,16 @@ npm run check:rust                               # fmt + clippy(-D warnings) + t
 | 16 | 2026-06-18 | 半 | PASS | A− | T-LAYER-16 theater 测迁出 domain; T-DOC-TD-01 theater_director 文档扫尾; T-MINIMAL-TD-01 minimal 插件自包含; T-CI-DRIFT-01 prompt drift 门禁 | host lib 239; theater_director_resolver 3 绿 |
 | 17 | 2026-06-24 | 半 | PASS | A− | D-DOCDRIFT-01 206 文件路径迁移; D-SCRIPT-02 check-stale-paths 扩范围; D-ORPHAN-04 删空 models/; dimension5 十一检 | monorepo 重组文档收尾 |
 | 18 | 2026-06-24 | 全 | PASS | A− | **O-1** plugin-bridge 内核化; **O-2** expert 孤儿前端删; **D-DOC-RELOC-01** 三文档归位 handoff/; creator-docs 受众导航; 冻结项未动 | test:unit 67 绿; vite build 绿; cargo build host 绿 |
+| 19 | 2026-06-24 | 快 | PASS | A− | CI 全红修复(ripgrep/advisory-db/rustfmt/plugins-index/cli)+ bundle kernel/role 路径/quinn-proto 0.11.15; **新增维度七「条理与边界」**(防 AI 脱轨:路径 SSOT/AI 入口时效/边界明确/门禁纯度);修手册 dimension5 9·11→12 计数 | 发现待入账:`D-ORDER-*`(27 测仍 `../roles`、`cd fuzz`、Playwright testDir、check:license)、`D-DOC-*`(04_4.6 归档矛盾、THREE_DISTRO 导演状态、invoke 条数) |
+
+> **轮次 19 维度七首扫待办（建议下一轮 Wave A/B 处理,已记此处防丢）**
+> - **D-ORDER-01**(P0):`distros/desktop-tauri/tests/*.rs` 27 文件 + oclive-cli `src/` 多处对 monorepo 仍 `join("roles")`/`../roles` → 抽 Rust 侧 `chat_pro_roles_dir()` SSOT
+> - **D-ORDER-02**(P0):`roles_dir.rs` debug 回退、`test_oocp.rs`(`src-tauri/Cargo.toml`)路径错布局
+> - **D-ORDER-03**(P1):CI `cd fuzz`→`kernel/fuzz`、Playwright `testDir:"e2e"`→`distros/chat-pro/e2e`、`check-license-readiness.mjs` 插件路径、`examples/reply-post-process-polish` 测试 `../../roles`
+> - **D-ORDER-04**(P1):扩 `check-stale-paths.mjs` 覆盖 bare `roles/`、非 distros 的 `plugins/`
+> - **D-DOC-DRIFT-02**(P1):`.cursor/rules` 指向归档 04_4.6 / 失效 `WEEKLY_DEV_GUIDE`;`AGENTS.md` 迁移目录·HTTP API·re-export·invoke 条数与源码对齐;`THREE_DISTRO_KERNEL_CLOSURE.md` 导演「Deferred」与已交付矛盾
+> - **D-DOC-DRIFT-03**(P2):`KNOWN_VULNERABILITIES.md` 记 quinn-proto 0.11.15 已修 + 刷新扫描日期
+> - **建议新增**:`handoff/AI_CHANGE_BOUNDARIES.md`(六槽/设施/独立通道/角色包/蓝图 五列「SSOT + 可改条件」),`.cursor/rules` 收紧入口
 
 ---
 

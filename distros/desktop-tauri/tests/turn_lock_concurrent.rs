@@ -2,24 +2,21 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
+mod common;
+
 use oclive_kernel_host::domain::chat_engine::process_message;
 use oclive_kernel_host::infrastructure::MockLlmClient;
 use oclive_kernel_host::state::AppState;
 use oclive_kernel_types::models::dto::SendMessageRequest;
 use oclivenewnew_tauri::api::role::load_role_impl;
-use std::path::PathBuf;
 use std::sync::Arc;
-
-fn roles_dir() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../roles")
-}
 
 async fn test_state() -> Arc<AppState> {
     let llm = Arc::new(MockLlmClient {
         reply: "并发锁测试回复".to_string(),
     });
     Arc::new(
-        AppState::new_in_memory_with_llm(llm, roles_dir())
+        AppState::new_in_memory_with_llm(llm, common::roles_dir())
             .await
             .expect("AppState"),
     )

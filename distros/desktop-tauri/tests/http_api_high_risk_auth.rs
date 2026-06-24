@@ -2,21 +2,18 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
+mod common;
+
 use axum::body::{to_bytes, Body};
 use axum::http::{Request, StatusCode};
 use oclive_kernel_host::infrastructure::MockLlmClient;
 use oclive_kernel_host::state::AppState;
 use oclivenewnew_tauri::http_api::api_router;
 use serde_json::{json, Value};
-use std::path::PathBuf;
 use std::sync::Arc;
 use tower::ServiceExt;
 
 const TOKEN_HEADER: &str = "x-oclive-bridge-token";
-
-fn roles_dir() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../roles")
-}
 
 async fn response_json(res: axum::response::Response) -> Value {
     let bytes = to_bytes(res.into_body(), usize::MAX).await.expect("body");
@@ -28,7 +25,7 @@ async fn test_state() -> Arc<AppState> {
         reply: "ok".to_string(),
     });
     Arc::new(
-        AppState::new_in_memory_with_llm(llm, roles_dir())
+        AppState::new_in_memory_with_llm(llm, common::roles_dir())
             .await
             .expect("state"),
     )

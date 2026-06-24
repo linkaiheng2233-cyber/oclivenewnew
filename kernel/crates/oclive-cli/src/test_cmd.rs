@@ -2,6 +2,7 @@
 
 use anyhow::{bail, Result};
 use clap::Parser;
+use oclive_kernel_runtime::resolve_project_roles_dir;
 use serde::Serialize;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -149,7 +150,7 @@ fn run_clippy(root: &Path) -> CheckResult {
 }
 
 fn run_pack_validate_all(root: &Path) -> CheckResult {
-    let roles = root.join("roles");
+    let roles = resolve_project_roles_dir(root);
     if !roles.is_dir() {
         return ok("pack validate", "no roles/ directory; skipped");
     }

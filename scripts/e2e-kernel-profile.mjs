@@ -10,6 +10,7 @@ import os from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { chatProRolesDir, resolveRepoRoot } from './lib/chat-pro-roles-dir.mjs';
+import { findCliBinary, findKernelBinary } from './lib/e2e-binary.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolveRepoRoot();
@@ -22,51 +23,12 @@ function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-function cargoTargetDir() {
-  if (process.env.CARGO_TARGET_DIR) {
-    return process.env.CARGO_TARGET_DIR;
-  }
-  try {
-    const out = execFileSync(
-      'cargo',
-      ['metadata', '--format-version=1', '--no-deps'],
-      { cwd: repoRoot, encoding: 'utf8' },
-    );
-    return JSON.parse(out).target_directory;
-  } catch {
-    return null;
-  }
-}
-
-function resolveBinary(name) {
-  const envKey = name === 'oclive-kernel-server' ? 'OCLIVE_E2E_KERNEL' : 'OCLIVE_E2E_CLI';
-  const fromEnv = process.env[envKey];
-  if (fromEnv && fs.existsSync(fromEnv)) {
-    return fromEnv;
-  }
-  const target = cargoTargetDir();
-  const suffix = process.platform === 'win32' ? '.exe' : '';
-  const candidates = [];
-  if (target) {
-    candidates.push(path.join(target, 'debug', `${name}${suffix}`));
-  }
-  candidates.push(
-    path.join(repoRoot, '..', 'oclive-dev-artifacts', 'oclivenewnew-cargo-target', 'debug', `${name}${suffix}`),
-    path.join(repoRoot, 'target', 'debug', `${name}${suffix}`),
-  );
-  return candidates.find((p) => fs.existsSync(p));
-}
-
-function findKernelBinary() {
-  return resolveBinary('oclive-kernel-server');
-}
-
 function findCli() {
-  return resolveBinary('oclive-cli');
+  return findCliBinary(repoRoot);
 }
 
 function spawnKernel(extraEnv = {}) {
-  const bin = findKernelBinary();
+  const bin = findKernelBinary(repoRoot);
   if (!bin) throw new Error('build oclive-kernel-server first');
   const appData = path.join(os.tmpdir(), `oclive_profile_e2e_${Date.now()}`);
   fs.mkdirSync(appData, { recursive: true });
@@ -134,7 +96,7 @@ function runEnsurePlan(distro, profilePath, extraArgs = []) {
 }
 
 async function main() {
-  if (!findKernelBinary()) {
+  if (!findKernelBinary(repoRoot)) {
     console.warn('[e2e-profile] skip: no kernel binary');
     process.exit(0);
   }

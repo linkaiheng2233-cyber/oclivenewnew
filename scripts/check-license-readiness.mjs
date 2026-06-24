@@ -30,7 +30,7 @@ async function main() {
   }
 
   for (const pluginId of MUMU_OFFICIAL_PLUGIN_IDS) {
-    const pluginLicense = path.join(cwd, "plugins", pluginId, "LICENSE");
+    const pluginLicense = path.join(cwd, "distros", "chat-pro", "plugins", pluginId, "LICENSE");
     if (!(await exists(pluginLicense))) {
       missing.push(path.relative(cwd, pluginLicense));
     }

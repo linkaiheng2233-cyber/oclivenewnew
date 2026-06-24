@@ -1,6 +1,7 @@
 //! Analyze scaffold projects for replication (`init --from-existing`, `template create`, `kernel info`).
 
 use anyhow::{bail, Context, Result};
+use oclive_kernel_runtime::resolve_project_roles_dir;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::fs;
@@ -90,9 +91,13 @@ pub fn analyze_project(root: &Path) -> Result<ProjectSnapshot> {
 
     let pipeline = detect_pipeline(&root);
     let (has_roles, role_pack_hint) = detect_roles(&root);
-    let with_example_plugin = root
-        .join("plugins/com.oclive.example.llamacpp_llm/manifest.json")
-        .is_file();
+    let with_example_plugin = [
+        root.join("distros/chat-pro/plugins/com.oclive.example.llamacpp_llm/manifest.json"),
+        root.join("plugins")
+            .join("com.oclive.example.llamacpp_llm/manifest.json"),
+    ]
+    .iter()
+    .any(|p| p.is_file());
 
     Ok(ProjectSnapshot {
         project_name,
@@ -157,7 +162,7 @@ fn infer_preset_from_settings(root: &Path) -> String {
 }
 
 fn find_first_settings(root: &Path) -> Option<String> {
-    let roles = root.join("roles");
+    let roles = resolve_project_roles_dir(root);
     if !roles.is_dir() {
         return None;
     }
@@ -221,7 +226,7 @@ fn detect_pipeline(root: &Path) -> Option<String> {
 }
 
 fn detect_roles(root: &Path) -> (bool, Option<String>) {
-    let roles = root.join("roles");
+    let roles = resolve_project_roles_dir(root);
     if !roles.is_dir() {
         return (false, None);
     }

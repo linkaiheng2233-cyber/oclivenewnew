@@ -6,7 +6,7 @@ export default antfu({
   ignores: [
     'dist',
     'node_modules',
-    'src-tauri',
+    'distros/desktop-tauri',
     'playwright-report',
     'test-results',
     'distributions',
@@ -18,7 +18,7 @@ export default antfu({
     'scripts',
     'e2e',
     'crates',
-    'roles',
+    'distros/chat-pro/roles',
     '**/*.md',
   ],
   rules: {

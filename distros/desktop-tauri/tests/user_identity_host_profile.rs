@@ -2,6 +2,8 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
+mod common;
+
 use async_trait::async_trait;
 use oclive_kernel_host::domain::host_profile::load_host_profile_file;
 use oclive_kernel_host::domain::reply_post_processor::apply_effective_post_processor_config;
@@ -50,7 +52,7 @@ default_id = "classmate"
     assert_eq!(host.user_identity.default_id.as_deref(), Some("classmate"));
 
     std::env::set_var("OCLIVE_DISTRO_PROFILE", profile_file.display().to_string());
-    let roles_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../roles");
+    let roles_dir = common::roles_dir();
     let llm: Arc<dyn LlmClient> = Arc::new(StubLlm);
     let state = AppState::new_in_memory_with_llm(llm, roles_dir)
         .await

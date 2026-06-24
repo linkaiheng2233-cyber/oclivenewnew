@@ -13,7 +13,7 @@ const externalPreview = process.env.PW_TEST_USE_EXTERNAL === "1";
  * **Windows**：若内置 `webServer` 超时，可先 `npm run preview` 再设 **`PW_TEST_USE_EXTERNAL=1`** 后执行 **`npm run test:e2e:preview`**。CI 仅在 **Ubuntu** 跑本套（见 `.github/workflows/ci.yml`）。
  */
 export default defineConfig({
-  testDir: "e2e",
+  testDir: "distros/chat-pro/e2e",
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,

@@ -2,6 +2,8 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
+mod common;
+
 use async_trait::async_trait;
 use oclive_kernel_host::domain::chat_engine::process_message;
 use oclive_kernel_host::infrastructure::directory_plugins::DirectoryPluginRuntime;
@@ -11,7 +13,6 @@ use oclive_kernel_host::state::AppState;
 use oclive_kernel_types::models::dto::SendMessageRequest;
 use oclivenewnew_tauri::error::Result;
 use std::fs;
-use std::path::PathBuf;
 use std::sync::Arc;
 use tempfile::TempDir;
 
@@ -48,15 +49,8 @@ fn copy_dir_all(src: &std::path::Path, dst: &std::path::Path) {
     }
 }
 
-fn repo_root() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .expect("repo root")
-        .to_path_buf()
-}
-
 fn install_mock_polish_plugin(plugins_dir: &std::path::Path) {
-    let src = repo_root().join("examples/directory-plugin-reply-post-process-minimal");
+    let src = common::monorepo_root().join("examples/directory-plugin-reply-post-process-minimal");
     let dst = plugins_dir.join("reply-post-process-polish");
     copy_dir_all(&src, &dst);
     let manifest_path = dst.join("manifest.json");
