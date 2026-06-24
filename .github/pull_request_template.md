@@ -4,6 +4,7 @@
 
 ## 检查清单
 
+- [ ] 若改动 `Cargo.lock`：已跑 `cargo audit` / `dimension5 --ci`，并更新 [KNOWN_VULNERABILITIES.md](creator-docs/security/KNOWN_VULNERABILITIES.md) 扫描日期
 - [ ] 本地已跑过 `npm run check`（或发版相关改动已跑 `npm run check:release`）
 - [ ] 契约 / manifest / 对外文档有变时已同步更新
 - [ ] 若改动 `domain/**`、`Cargo.lock`、`CHANGELOG*`、`.github/workflows/ci.yml` 或 host→runtime 再导出路径，已跑 `node scripts/dimension5-acceptance.mjs --ci`（见 [CONTRIBUTING.md](CONTRIBUTING.md)「Dimension 5 基线」）

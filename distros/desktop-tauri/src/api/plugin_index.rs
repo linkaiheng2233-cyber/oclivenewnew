@@ -7,7 +7,7 @@ use oclive_kernel_host::infrastructure::directory_plugins::{
 use oclive_kernel_host::infrastructure::plugin_data::ensure_default_config_for_manifest;
 use oclive_kernel_host::infrastructure::plugin_installer::{
     install_plugin, load_cached_index, missing_dependencies, sync_plugin_index_online,
-    uninstall_plugin, update_plugin, PluginIndexEntry, PluginIndexFile,
+    uninstall_plugin, update_plugin, PluginIndexEntry, PluginIndexFile, PluginInstallOutcome,
 };
 use oclive_kernel_host::state::{AppState, SharedAppState};
 use semver::Version;
@@ -48,6 +48,14 @@ pub struct PendingProtocolInstall {
 #[serde(rename_all = "camelCase")]
 pub struct InstallPluginFromMarketResponse {
     pub installed_plugin_id: String,
+    pub install_path: String,
+}
+
+fn install_outcome_to_response(outcome: PluginInstallOutcome) -> InstallPluginFromMarketResponse {
+    InstallPluginFromMarketResponse {
+        installed_plugin_id: outcome.plugin_id,
+        install_path: outcome.install_path.to_string_lossy().into_owned(),
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -168,26 +176,16 @@ pub fn install_plugin_from_market(
         .and_then(|x| x.git_subdir.as_deref())
         .map(str::trim)
         .filter(|s| !s.is_empty());
-    let installed_id = install_plugin(
+    let outcome = install_plugin(
         &state,
         &resolved,
         git_subdir,
         index_item.as_ref().map(|x| &x.dependencies),
     )?;
-    let root_opt = {
-        let roots = state.directory_plugins.plugin_roots.read();
-        roots
-            .get(installed_id.as_str())
-            .map(|entry| entry.root.clone())
-    };
-    if let Some(root) = root_opt {
-        if let Ok(m) = OclivePluginManifest::load_from_dir(&root) {
-            ensure_default_config_for_manifest(&state, &m);
-        }
+    if let Ok(m) = OclivePluginManifest::load_from_dir(&outcome.install_path) {
+        ensure_default_config_for_manifest(&state, &m);
     }
-    Ok(InstallPluginFromMarketResponse {
-        installed_plugin_id: installed_id,
-    })
+    Ok(install_outcome_to_response(outcome))
 }
 /// # Errors
 ///
@@ -201,21 +199,11 @@ pub fn install_plugin_from_git(
     if git.is_empty() {
         return Err(AppError::InvalidParameter("git_url required".into()).into());
     }
-    let installed_id = install_plugin(&state, git, None, None)?;
-    let root_opt = {
-        let roots = state.directory_plugins.plugin_roots.read();
-        roots
-            .get(installed_id.as_str())
-            .map(|entry| entry.root.clone())
-    };
-    if let Some(root) = root_opt {
-        if let Ok(m) = OclivePluginManifest::load_from_dir(&root) {
-            ensure_default_config_for_manifest(&state, &m);
-        }
+    let outcome = install_plugin(&state, git, None, None)?;
+    if let Ok(m) = OclivePluginManifest::load_from_dir(&outcome.install_path) {
+        ensure_default_config_for_manifest(&state, &m);
     }
-    Ok(InstallPluginFromMarketResponse {
-        installed_plugin_id: installed_id,
-    })
+    Ok(install_outcome_to_response(outcome))
 }
 /// # Errors
 ///

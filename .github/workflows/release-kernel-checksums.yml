@@ -1,0 +1,56 @@
+name: Release kernel checksums
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'oclivenewnew-v*'
+
+permissions:
+  contents: read
+
+jobs:
+  kernel-checksums:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Build oclive_kernel_server (release)
+        run: cargo build -p oclive_kernel_server --release
+      - name: Generate manifest and SHA256SUMS (Linux)
+        if: runner.os != 'Windows'
+        run: |
+          set -euo pipefail
+          TARGET="$(cargo metadata --format-version=1 --no-deps | node -e "let b='';process.stdin.on('data',c=>b+=c);process.stdin.on('end',()=>console.log(JSON.parse(b).target_directory))")"
+          BIN="$TARGET/release/oclive-kernel-server"
+          MANIFEST="$TARGET/release/oclive-kernel-server.oclive-manifest.json"
+          "$BIN" --version-json > "$MANIFEST"
+          node scripts/generate-sha256sums.mjs --out "$TARGET/release/SHA256SUMS" "$BIN" "$MANIFEST"
+          echo "KERNEL_RELEASE_DIR=$TARGET/release" >> "$GITHUB_ENV"
+      - name: Generate manifest and SHA256SUMS (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $meta = cargo metadata --format-version=1 --no-deps | ConvertFrom-Json
+          $dir = Join-Path $meta.target_directory "release"
+          $bin = Join-Path $dir "oclive-kernel-server.exe"
+          $manifest = Join-Path $dir "oclive-kernel-server.oclive-manifest.json"
+          & $bin --version-json | Set-Content -Encoding utf8NoBOM $manifest
+          node scripts/generate-sha256sums.mjs --out (Join-Path $dir "SHA256SUMS") $bin $manifest
+          "KERNEL_RELEASE_DIR=$dir" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      - name: Upload kernel release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-${{ matrix.os }}
+          path: |
+            ${{ env.KERNEL_RELEASE_DIR }}/oclive-kernel-server*
+            ${{ env.KERNEL_RELEASE_DIR }}/SHA256SUMS
+          if-no-files-found: error

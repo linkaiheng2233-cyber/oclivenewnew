@@ -3,6 +3,7 @@ import { open } from '@tauri-apps/api/dialog'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { installPluginFromZip } from '@oclive/shared/api'
+import { showPluginInstallReviewHint } from '@oclive/shared/composables/usePluginInstallReviewHint'
 import { useAppToast } from '@oclive/shared/composables/useAppToast'
 import { usePluginSlotEnable } from '@oclive/shared/composables/usePluginSlotEnable'
 import { usePluginMarketStore } from '@oclive/shared/stores/pluginMarketStore'
@@ -109,9 +110,10 @@ async function onInstallZip(): Promise<void> {
     return
   busyId.value = '__install__'
   try {
-    const id = await installPluginFromZip(path)
+    const result = await installPluginFromZip(path)
     await pluginStore.refresh()
-    showToast('success', t('simplePluginManager.installed', { id }))
+    showToast('success', t('simplePluginManager.installed', { id: result.installedPluginId }))
+    showPluginInstallReviewHint(showToast, result)
   }
   catch (e) {
     showToast('error', e instanceof Error ? e.message : String(e))

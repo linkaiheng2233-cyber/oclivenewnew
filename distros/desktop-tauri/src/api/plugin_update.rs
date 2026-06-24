@@ -1,8 +1,8 @@
 //! Directory plugin local updates (zip overwrite); online version check reserved.
 
 use crate::api::error::CommandError;
-use crate::error::AppError;
-use oclive_kernel_host::infrastructure::directory_plugins::OclivePluginManifest;
+use crate::api::plugin_index::InstallPluginFromMarketResponse;
+use crate::error::AppError;use oclive_kernel_host::infrastructure::directory_plugins::OclivePluginManifest;
 use oclive_kernel_host::state::{AppState, SharedAppState};
 use serde::Serialize;
 use std::collections::HashMap;
@@ -181,7 +181,7 @@ fn install_staged_directory_plugin(
     state: &AppState,
     staged: &Path,
     plugin_id: &str,
-) -> Result<(), CommandError> {
+) -> Result<PathBuf, CommandError> {
     let pid = plugin_id.trim();
     let target = find_plugin_install_dir(state, pid);
     if let Some(parent) = target.parent() {
@@ -199,9 +199,8 @@ fn install_staged_directory_plugin(
     state
         .directory_plugins
         .rescan_plugin_roots(state.storage.roles_dir());
-    Ok(())
+    Ok(target)
 }
-
 /// Install directory plugin from zip: reads `manifest.id` from the package; caller need not pass `plugin_id` upfront.
 ///
 /// # Errors
@@ -211,8 +210,7 @@ fn install_staged_directory_plugin(
 pub fn install_plugin_from_zip(
     zip_path: String,
     state: State<'_, SharedAppState>,
-) -> Result<String, CommandError> {
-    let zip_path = PathBuf::from(zip_path.trim());
+) -> Result<InstallPluginFromMarketResponse, CommandError> {    let zip_path = PathBuf::from(zip_path.trim());
     if !zip_path.is_file() {
         return Err(AppError::InvalidParameter(format!(
             "zip file not found: {}",
@@ -230,6 +228,9 @@ pub fn install_plugin_from_zip(
     let manifest =
         OclivePluginManifest::load_from_dir(&staged).map_err(AppError::InvalidParameter)?;
     let pid = manifest.id.trim().to_string();
-    install_staged_directory_plugin(&state, &staged, &pid)?;
-    Ok(pid)
+    let install_path = install_staged_directory_plugin(&state, &staged, &pid)?;
+    Ok(InstallPluginFromMarketResponse {
+        installed_plugin_id: pid,
+        install_path: install_path.to_string_lossy().into_owned(),
+    })
 }

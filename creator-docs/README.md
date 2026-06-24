@@ -24,7 +24,7 @@
 | **[role-pack/](role-pack/)** | 包版本、场景、用户身份、角色包自定义 |
 | **[roadmap/](roadmap/)** | [开放实验场 · 愿景摘要](roadmap/VISION_OPEN_LAB.md)、愿景与按月路线图、[体验差异化 backlog](roadmap/BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md)、[后日待办 · 工具链与 CI](roadmap/SOMEDAY_TOOLCHAIN_CI.md)、[市场 · 启动器联动](roadmap/MARKET_LAUNCHER_INTEGRATION.md)、[社区站愿景（三板块）](roadmap/COMMUNITY_WEB_VISION.md)、[插件区网站 IA](roadmap/PLUGIN_WEB_SECTION.md) |
 | **[development/](development/)** | [轻量化与供应链基线](development/LIGHTWEIGHT_PROFILE.md)（Release、`cargo audit`、`cargo tree -d`、`cargo-bloat`） |
-| **[security/](security/)** | [已知漏洞跟踪](security/KNOWN_VULNERABILITIES.md)、[安全审查范围](security/SECURITY_AUDIT_SCOPE.md) |
+| **[security/](security/)** | [供应链安全](security/SUPPLY_CHAIN.md)、[已知漏洞跟踪](security/KNOWN_VULNERABILITIES.md)、[安全审查范围](security/SECURITY_AUDIT_SCOPE.md) |
 | **[testing/](testing/)** | [矩阵/冷启动/长稳测试指南](testing/TESTING_GUIDE.md)、[测试输出契约](testing/TEST_OUTPUT_SCHEMA.md)、[OOCP 套件](testing/OOCP_TEST_SUITE.md) |
 | **[rfc/](rfc/)** | [RFC：高耦合编译模式 Monolith](rfc/RFC_OCLIVE_MONOLITH_MODE.md)（`monolith.toml`、`oclive-cli --monolith`；第一阶段已实现占位焊接） |
 | **[cli/](cli/)** | [oclive-cli 脚手架指南](cli/OCLIVE_CLI_GUIDE.md) · [`plugin_backends` 参考](cli/SETTINGS_REFERENCE.md)（内核 / 无头最小工程生成） |

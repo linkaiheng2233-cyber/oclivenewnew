@@ -15,6 +15,7 @@ import { markPresetPickerDone, resolveDefaultRoleId } from '@oclive/shared/utils
 import { getTheaterCastConfig } from '@oclive/theater/composables/theater/theaterCastConfig'
 import { resolveOcliveShell } from '@oclive/shared/composables/useOcliveShell'
 import { useNarrativeScene } from '@oclive/shared/composables/useNarrativeScene'
+import { showPluginInstallReviewHint } from '@oclive/shared/composables/usePluginInstallReviewHint'
 import type { AppToastFn } from '@oclive/shared/composables/useAppToast'
 
 async function disposeTauriListener(
@@ -107,6 +108,7 @@ export function useAppBootstrap(options: {
         try {
           const r = await installPluginFromGit(git)
           options.showToast('success', options.t('app.toast.pluginInstalledFromWeb', { id: r.installedPluginId }))
+          showPluginInstallReviewHint(options.showToast, r)
           await pluginStore.refresh()
           options.openPluginManagerPanel()
         }

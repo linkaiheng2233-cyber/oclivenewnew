@@ -115,6 +115,12 @@ pub fn run_install(args: PluginInstallArgs) -> Result<()> {
         );
     }
 
+    let dst = plugins_dir.join(&args.id);
+    println!(
+        "Review manifest.json and source at {} before enabling high-risk permissions.",
+        dst.display()
+    );
+
     Ok(())
 }
 

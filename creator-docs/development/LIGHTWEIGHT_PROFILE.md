@@ -39,7 +39,7 @@
 
 **许可证合规**（**2026-06-09**）：根目录 `deny.toml` + `cargo deny check licenses` 退出码 **0**（允许表含 `Apache-2.0`、`MIT`、`CDLA-Permissive-2.0`、`NCSA` 等；工作区 crate 统一 SPDX `Apache-2.0`）。
 
-CI：三层 **cargo-audit 0.22.1** 硬门禁——**`dimension5-acceptance`**（`scripts/dimension5-acceptance.mjs --ci`）、**`cargo-audit`** job（`ci.yml`）、**`cargo-audit-lockfile.yml`**（`Cargo.lock` / `.cargo/audit.toml` PR）；另含 **`cargo-deny`**；`npm-audit` 为 `continue-on-error: true` 可见性。`oclive ci init` 模板同步 deny / loom job。
+CI：三层 **cargo-audit 0.22.1** 硬门禁——**`dimension5-acceptance`**（`scripts/dimension5-acceptance.mjs --ci`，含 **`cargo deny` licenses+bans**）、**`cargo-audit`** job（`ci.yml`）、**`cargo-audit-lockfile.yml`**（`Cargo.lock` / `.cargo/audit.toml` PR）；`npm-audit` 为 `continue-on-error: true` 可见性。供应链策略见 [security/SUPPLY_CHAIN.md](../security/SUPPLY_CHAIN.md)。
 
 ### §6.5 未使用 / 可选依赖（审查结论）
 

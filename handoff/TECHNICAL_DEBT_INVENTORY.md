@@ -1,10 +1,10 @@
 # Technical debt inventory
 
-**Last updated:** 2026-06-24 (轮次 18 · 巡检优化收尾)
+**Last updated:** 2026-06-24 (轮次 19 · 供应链安全入账 + cargo-deny 进 dimension5)
 
 **Product freeze (Theater v0):** Active until **5 人真人陌生人** ≥60% 通过。工程代理 100% **不替代**产品门槛。见 [`theater/DEVELOPMENT_ROADMAP.md`](./theater/DEVELOPMENT_ROADMAP.md) §4.8 · 解冻 checklist [`theater/MODE2_UNFREEZE.md`](./theater/MODE2_UNFREEZE.md)。
 
-**综合评分：** A− · 基线 dimension5 **十一检** PASS · `oclive_kernel_host` 编译期不再依赖 `distros/desktop-tauri/` · expert 孤儿前端已清 · 三份名实不符文档已归位 `handoff/`
+**综合评分：** A− · 基线 dimension5 **十二检** PASS（含 `cargo deny`）· `oclive_kernel_host` 编译期不再依赖 `distros/desktop-tauri/` · expert 孤儿前端已清 · 三份名实不符文档已归位 `handoff/`
 
 **下一动作：** **P0-STRANGER** — 维护者带 5 名零文档测试者；验收标准见 [`theater/PLAYTEST_MATRIX.md`](./theater/PLAYTEST_MATRIX.md)
 
@@ -26,6 +26,44 @@
 | **O-1** | `oclive_kernel_host` 编译期 `include_str!` 耦合 `distros/desktop-tauri/assets/plugin-bridge.iife.js` | P1 | 资产迁入 `kernel/crates/oclive_kernel_host/assets/` + copy 脚本改指向 | **Done**（轮次 18） |
 | **O-2** | expert 孤儿前端（Vue/lib/test/i18n/API re-export，零 import） | P2 | 删除 + `role.ts`/locales 同步 + stale 文档措辞 | **Done**（轮次 18） |
 | **D-DOC-RELOC-01** | 三份名实不符文档仍在 `creator-docs/`（VS Code 契约 / Studio 指南 / mumu 验收） | P2 | 物理迁至 `handoff/{vscode,studio,distros}/` + 原位 stub + 入链更新 | **Done**（轮次 18） |
+| **K-SUPPLY-02** | Release 预编译内核 **SHA256SUMS**（防换包） | P1 | workflow + 脚本已入库；**维护者**首次 Release 挂 asset | **Partial** |
+| **K-SUPPLY-03** | 插件安装后「请审本地源码」固定提示 | P2 | 市场/git/zip + CLI | **Done**（轮次 19） |
+| **K-SUPPLY-04** | 前端 `npm-audit` 仅可见性（`continue-on-error`） | P2 | 连续 2 周期高危命中 → 升格硬门禁或文档豁免 | **OPEN** |
+| **K-SUPPLY-05** | `deny.toml` `multiple-versions = warn` | P2 | 依赖树去重后改 `deny` | **OPEN** |
+
+---
+
+## §1.5 供应链安全（Supply Chain · 2026-06-24）
+
+**策略 SSOT**：[`creator-docs/security/SUPPLY_CHAIN.md`](../creator-docs/security/SUPPLY_CHAIN.md)
+
+### 基线（已落地 · 非债）
+
+| 护栏 | 说明 |
+|------|------|
+| `cargo audit` 0.22.1 | dimension5 + `ci.yml` + `cargo-audit-lockfile.yml` 三层硬门禁 |
+| `Cargo.lock` ratchet | dimension5 禁止 `sqlx-mysql` / `rsa` |
+| `KNOWN_VULNERABILITIES.md` | 漏洞级 SSOT；`Cargo.lock` PR 须滚动日期 |
+| `deny.toml` + `oclive lint --deny` | 许可证允许表 · Apache-2.0 工作区 |
+| 插件权限 A4 | manifest / runtime / 集成测三面一致 |
+| SQL 迁移 checksum | 防迁移文件静默篡改 |
+
+### 台账（OPEN / Observe / Deferred）
+
+| ID | 项 | 优先级 | 状态 |
+|----|-----|--------|------|
+| **K-SUPPLY-01** | `cargo deny` 进 dimension5 / CI 硬门禁 | P1 | **Done**（轮次 19） |
+| **K-SUPPLY-02** | Release SHA256SUMS | P1 | **Partial** — workflow 已入库；Release 挂 asset = 维护者 |
+| **K-SUPPLY-03** | 插件安装审源码提示 | P2 | **Done**（轮次 19） |
+| **K-SUPPLY-04** | npm-audit 升格策略 | P2 | **OPEN** |
+| **K-SUPPLY-05** | deny 重复依赖 warn→deny | P2 | **OPEN** |
+| **K-SUPPLY-06** | 位级可重复构建（reproducible） | — | **Deferred** · 见 SECURITY_AUDIT_SCOPE 局限 |
+| **K-SUPPLY-07** | SBOM（CycloneDX/SPDX） | — | **Deferred** · 政企/校企采购需求触发 |
+| **K-SUPPLY-08** | crate 作者信誉 / 发布历史系统审计 | — | **Observe** · 无成熟自动化方案 |
+
+**现在就能做（低成本）**：维持 dimension5 十二检绿 · `Cargo.lock` PR 更新 KNOWN_VULN · 发版前本地 `oclive lint --deny` · 校企仓要求组员 `npm ci && cargo build` 从源码跑通。
+
+**下一工程动作（P1）**：K-SUPPLY-02 Release 哈希清单（与 `kernel_manifest` / bundled kernel 发版对齐）。
 
 ---
 
@@ -77,6 +115,8 @@
 | **§5.3** | 插件市场 UGC | 路线图 |
 | **V-LORA-WORKSHOP-01** | 创作者微调工坊（T0–T3）+ `slot.lora.apply` 运行时 | 三发行版 smoke 后；愿景 [VISION_ROADMAP_MONTHLY.md](../creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md)「微调工坊」；冻结期内仅 T0 契约 + T1 原型 |
 | **D-OPUS-05 Phase 2** | re-export import 清零 | ratchet ≤76 只降不升 |
+| **K-SUPPLY-06** | 位级可重复构建 | 内核 `kernel-v0.x` tag 稳定 + 专用 CI 镜像 |
+| **K-SUPPLY-07** | SBOM 导出 | 校企/商业客户采购或合规要求 |
 
 ---
 
@@ -113,6 +153,15 @@ Done 项（K-PERF-01~26、D-READ-01/02/04、K-ROBUST-01~03、Opus 4.8 Wave 0–4
 | **O-2** | expert 孤儿前端清理 | 10 文件删；Tauri expert API / validation / dual_core 链保留 |
 | **D-DOC-RELOC-01** | 文档名实归位 | `VSCODE_DISTRIBUTION` → `handoff/vscode/`；`USER_GUIDE` → `handoff/studio/`；`MUMU_UI_ACCEPTANCE` → `handoff/distros/` |
 
+### 轮次 19 Done（2026-06-24）
+
+| ID | 项 | 说明 |
+|----|-----|------|
+| **K-SUPPLY-01** | `cargo deny` 硬门禁 | dimension5 第十二检 · `ci.yml` dimension5 job 安装 cargo-deny |
+| **K-SUPPLY-02** | Release SHA256 | `generate-sha256sums.mjs` · `release-kernel-checksums.yml` · bundle 钩子 |
+| **K-SUPPLY-03** | 插件审源码 toast | `installPath` DTO · 市场/git/zip · CLI · i18n |
+| **K-SUPPLY-DOC-01** | 供应链策略 SSOT | `creator-docs/security/SUPPLY_CHAIN.md` + 本文件 §1.5 |
+
 轮次 1–15 明细表已从本文件移除以降低噪音；需要历史格查 git `handoff/TECHNICAL_DEBT_INVENTORY.md` @ 2026-06-15。
 
 ---
@@ -127,3 +176,4 @@ Done 项（K-PERF-01~26、D-READ-01/02/04、K-ROBUST-01~03、Opus 4.8 Wave 0–4
 | Theater 模式 2 解冻 | [MODE2_UNFREEZE.md](./theater/MODE2_UNFREEZE.md) |
 | 分层 ratchet | `handoff/LAYERING_BASELINE.json` |
 | Theater director 集成测 | `distros/desktop-tauri/tests/theater_director_resolver.rs` |
+| 供应链策略 | [SUPPLY_CHAIN.md](../creator-docs/security/SUPPLY_CHAIN.md) |

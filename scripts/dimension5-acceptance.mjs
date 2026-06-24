@@ -71,6 +71,10 @@ runStep('cargo audit (no-fetch stale)', () => {
   sh('cargo', ['audit', '--no-fetch', '--stale']);
 });
 
+runStep('cargo deny (licenses + bans)', () => {
+  sh('cargo', ['deny', 'check', 'licenses', 'bans']);
+});
+
 runStep('Cargo.lock excludes sqlx-mysql / rsa', () => {
   const lockPath = path.join(repoRoot, 'Cargo.lock');
   const lock = fs.readFileSync(lockPath, 'utf8');

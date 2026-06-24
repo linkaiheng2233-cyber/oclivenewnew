@@ -81,6 +81,8 @@ export default {
       relationSetPerScene: '已设置当前场景身份：{name}',
       relationSetGlobal: '已设置身份：{name}',
       pluginInstalledFromWeb: '已通过网页链接安装插件：{id}',
+      pluginReviewSource:
+        '插件 {id} 已安装至 {path}。运行前请自行查看 manifest.json 与源码；高风险权限需在宿主中显式授权。',
       pluginFilesChanged: '检测到插件变更，已自动刷新',
     },
     sceneTransition: {

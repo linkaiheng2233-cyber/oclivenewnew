@@ -8,7 +8,8 @@ import {
   uninstallPluginFromMarket,
   updatePluginFromMarket,
 } from '@oclive/shared/api'
-import { classifyPluginShareUrl } from '@oclive/shared/lib/pluginShareUrl'
+import { showPluginInstallReviewHint } from '@oclive/shared/composables/usePluginInstallReviewHint'
+import { useAppToast } from '@oclive/shared/composables/useAppToast'
 import { useUiStore } from '../uiStore'
 import { usePluginStore } from '../pluginStore'
 
@@ -87,11 +88,12 @@ export const marketActions = {
     this.pluginMarketSyncing = true
     this.pluginMarketError = null
     try {
-      await installPluginFromGit(url)
+      const result = await installPluginFromGit(url)
       this.pendingGitShareUrl = null
       const pluginStore = usePluginStore()
       await pluginStore.refresh()
       pluginStore.bootstrapEpoch += 1
+      showPluginInstallReviewHint(useAppToast().showToast, result)
     }
     catch (e) {
       this.pluginMarketError = e instanceof Error ? e.message : String(e)
@@ -133,10 +135,12 @@ export const marketActions = {
     }
   },
   async installFromPluginMarket(this: MarketSliceStore, pluginId: string, gitUrl?: string | null) {
-    await installPluginFromMarket(pluginId, gitUrl ?? null)
+    const result = await installPluginFromMarket(pluginId, gitUrl ?? null)
     const pluginStore = usePluginStore()
     await pluginStore.refresh()
     pluginStore.bootstrapEpoch += 1
+    const { showToast } = useAppToast()
+    showPluginInstallReviewHint(showToast, result)
   },
   async updateInstalledPluginFromGit(this: MarketSliceStore, pluginId: string) {
     await updatePluginFromMarket(pluginId)

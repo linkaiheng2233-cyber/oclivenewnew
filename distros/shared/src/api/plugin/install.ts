@@ -26,11 +26,14 @@ export async function extractPluginZip(
   })
 }
 
-/** Install from zip; returns `manifest.id`. */
-export async function installPluginFromZip(zipPath: string): Promise<string> {
-  return invokeWithFriendlyError<string>('install_plugin_from_zip', {
-    zipPath,
-  })
+/** Install from zip; returns `manifest.id` and on-disk path. */
+export async function installPluginFromZip(
+  zipPath: string,
+): Promise<InstallPluginFromMarketResponseDto> {
+  return invokeWithFriendlyError<InstallPluginFromMarketResponseDto>(
+    'install_plugin_from_zip',
+    { zipPath },
+  )
 }
 
 /** One plugin row from index (`plugin_installer::PluginIndexEntry`, camelCase DTO). */
@@ -69,6 +72,7 @@ export interface PendingProtocolInstallDto {
 
 export interface InstallPluginFromMarketResponseDto {
   installedPluginId: string
+  installPath: string
 }
 
 export async function syncPluginIndexCommand(

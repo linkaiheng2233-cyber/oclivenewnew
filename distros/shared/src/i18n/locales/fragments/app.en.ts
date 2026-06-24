@@ -86,6 +86,8 @@ export default {
       relationSetPerScene: 'Scene identity set: {name}',
       relationSetGlobal: 'Identity set: {name}',
       pluginInstalledFromWeb: 'Installed plugin from web link: {id}',
+      pluginReviewSource:
+        'Plugin {id} installed at {path}. Review manifest.json and source before use; high-risk permissions require explicit host grants.',
       pluginFilesChanged: 'Plugin files changed; refreshed',
     },
     sceneTransition: {

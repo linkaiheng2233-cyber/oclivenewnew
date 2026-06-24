@@ -212,6 +212,13 @@ pub fn missing_dependencies(
     }
     Ok(missing)
 }
+/// Outcome of a successful directory-plugin install (git clone or local copy).
+#[derive(Debug, Clone)]
+pub struct PluginInstallOutcome {
+    pub plugin_id: String,
+    pub install_path: PathBuf,
+}
+
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
@@ -220,7 +227,7 @@ pub fn install_plugin(
     git_url: &str,
     git_subdir: Option<&str>,
     deps: Option<&HashMap<String, String>>,
-) -> Result<String, AppError> {
+) -> Result<PluginInstallOutcome, AppError> {
     if let Some(deps_map) = deps {
         let miss = missing_dependencies(state, deps_map)?;
         if !miss.is_empty() {
@@ -294,7 +301,10 @@ pub fn install_plugin(
     state
         .directory_plugins
         .rescan_plugin_roots(state.storage.roles_dir());
-    Ok(pid)
+    Ok(PluginInstallOutcome {
+        plugin_id: pid,
+        install_path: final_dir,
+    })
 }
 
 fn plugin_signature_strict_enabled() -> bool {

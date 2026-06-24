@@ -123,6 +123,8 @@ node scripts/dimension5-acceptance.mjs --ci
 cargo test -p oclive_kernel_host --lib
 ```
 
+**供应链**：见 [`creator-docs/security/SUPPLY_CHAIN.md`](../../creator-docs/security/SUPPLY_CHAIN.md) — 要求组员 `npm ci && cargo build` 从源码跑通，勿只下未知二进制。
+
 ---
 
 ## 5. 与上游同步

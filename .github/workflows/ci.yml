@@ -66,6 +66,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Install cargo-audit
         run: cargo install cargo-audit --version 0.22.1 --locked
+      - name: Install cargo-deny
+        run: cargo install cargo-deny --locked
       - name: Dimension 5 acceptance gate (--ci)
         run: node scripts/dimension5-acceptance.mjs --ci
 

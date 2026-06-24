@@ -200,7 +200,10 @@ export function mockInvoke(command: string, payload: Record<string, unknown> = {
       }
     case 'install_plugin_from_zip':
       installedPluginIds.add('e2e-local-plugin')
-      return 'e2e-local-plugin'
+      return {
+        installedPluginId: 'e2e-local-plugin',
+        installPath: '/mock/plugins/e2e-local-plugin',
+      }
     case 'query_events':
     case 'query_memories':
       return []

@@ -67,3 +67,13 @@ if (!fs.existsSync(stubPath)) {
 
 console.log(`[bundle-kernel-for-tauri] bundled -> ${destBin}`);
 console.log(`[bundle-kernel-for-tauri] manifest -> ${destManifest}`);
+
+const sumsOut = path.join(destDir, 'SHA256SUMS');
+sh('node', [
+  path.join(repoRoot, 'scripts/generate-sha256sums.mjs'),
+  '--out',
+  sumsOut,
+  destBin,
+  destManifest,
+], { cwd: repoRoot, stdio: 'inherit' });
+console.log(`[bundle-kernel-for-tauri] checksums -> ${sumsOut}`);
