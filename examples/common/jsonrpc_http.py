@@ -57,7 +57,8 @@ def dispatch_jsonrpc(
 def make_handler_class(path: str, handle_method: Callable[[str, dict], Optional[dict]]):
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, fmt, *args):
-            sys.stderr.write("%s - %s\n" % (self.address_string(), args[0] % args[1:]))
+            message = fmt % args if args else fmt
+            sys.stderr.write("%s - %s\n" % (self.address_string(), message))
 
         def do_POST(self):
             if self.path != path:

@@ -186,7 +186,10 @@ async function scenarioTheater() {
   if (!fs.existsSync(profile)) {
     throw new Error(`missing theater profile: ${profile}`);
   }
-  const { child } = spawnKernel({ OCLIVE_DISTRO_PROFILE: profile });
+  const { child } = spawnKernel({
+    OCLIVE_DISTRO_ID: 'theater',
+    OCLIVE_DISTRO_PROFILE: profile,
+  });
   try {
     await waitReady();
     const res = await fetch(`http://127.0.0.1:${port}/health`, {

@@ -3,6 +3,7 @@
  * 使用 Node 20+ 内置 fetch，无额外 npm 依赖。
  */
 
+import { existsSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { chatProRolesDir, resolveRepoRoot } from '../../scripts/lib/chat-pro-roles-dir.mjs'

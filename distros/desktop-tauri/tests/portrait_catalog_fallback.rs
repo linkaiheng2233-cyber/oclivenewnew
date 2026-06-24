@@ -13,13 +13,10 @@ use oclive_kernel_types::models::{
 };
 use std::fs;
 use std::io::Write;
-fn roles_root() -> PathBuf {
-    common::roles_dir()
-}
 
 #[test]
 fn mumu_has_no_portrait_catalog_active() {
-    let storage = RoleStorage::new(roles_root());
+    let storage = RoleStorage::new(common::roles_dir());
     let role = storage.load_role("mumu").expect("mumu");
     assert!(!portrait_catalog_active(&role));
     assert!(role.portrait_catalog.is_none());
