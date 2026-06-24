@@ -4,7 +4,7 @@
  *
  * Env:
  *   OCLIVE_E2E_BINARY — path to oclivenewnew-tauri (default: cargo metadata target-dir + debug/oclivenewnew-tauri[.exe])
- *   OCLIVE_ROLES_DIR  — roles root (default: <repo>/roles)
+ *   OCLIVE_ROLES_DIR  — roles root (default: <repo>/distros/chat-pro/roles)
  *   OCLIVE_E2E_PORT   — listen port (default: 9843)
  *   GITHUB_WORKSPACE  — set in CI to repo root
  */
@@ -13,13 +13,16 @@ import { spawn, execFileSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { chatProRolesDir, resolveRepoRoot } from './lib/chat-pro-roles-dir.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
 function repoRoot() {
-  const g = process.env.GITHUB_WORKSPACE
-  if (g && existsSync(join(g, 'roles'))) return resolve(g)
-  return resolve(__dirname, '..')
+  return resolveRepoRoot()
+}
+
+function chatRolesRoot() {
+  return chatProRolesDir(repoRoot())
 }
 
 function targetDirFromCargo() {
@@ -42,7 +45,7 @@ function defaultBinary() {
 function rolePathDefault() {
   const o = process.env.OCLIVE_OOCP_ROLE_PATH
   if (o) return resolve(o)
-  return join(repoRoot(), 'roles', 'mumu')
+  return join(chatRolesRoot(), 'mumu')
 }
 
 async function sleep(ms) {
@@ -93,7 +96,7 @@ function startApi(port) {
   }
   const env = {
     ...process.env,
-    OCLIVE_ROLES_DIR: process.env.OCLIVE_ROLES_DIR || join(repoRoot(), 'roles'),
+    OCLIVE_ROLES_DIR: process.env.OCLIVE_ROLES_DIR || chatRolesRoot(),
     OCLIVE_HTTP_API_MOCK_LLM: process.env.OCLIVE_HTTP_API_MOCK_LLM || '1',
   }
   const child = spawn(bin, ['--api', '--port', String(port)], {

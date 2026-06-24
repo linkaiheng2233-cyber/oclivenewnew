@@ -8,12 +8,13 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { chatProRolesDir, resolveRepoRoot } from './lib/chat-pro-roles-dir.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const repoRoot = path.resolve(__dirname, '..');
+const repoRoot = resolveRepoRoot();
 const port = Number(process.env.OCLIVE_E2E_PORT || 18421);
 const appData = path.join(os.tmpdir(), `oclive_distro_e2e_${Date.now()}`);
-const rolesDir = path.join(repoRoot, 'roles');
+const rolesDir = chatProRolesDir(repoRoot);
 
 const scenario = (() => {
   const i = process.argv.indexOf('--scenario');

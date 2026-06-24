@@ -6,7 +6,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 export ROOT="$ROOT"
 
-export OCLIVE_ROLES_DIR="${OCLIVE_ROLES_DIR:-$ROOT/roles}"
+export OCLIVE_ROLES_DIR="${OCLIVE_ROLES_DIR:-$ROOT/distros/chat-pro/roles}"
 export OCLIVE_SKIP_STARTUP_HEALTH=1
 export OCLIVE_SKIP_LLM_STARTUP_PROBE=1
 export OCLIVE_TAURI_E2E=1
@@ -17,7 +17,7 @@ import json, os, subprocess
 root = os.environ["ROOT"]
 out = subprocess.check_output(
     ["cargo", "metadata", "--format-version=1", "--no-deps"],
-    cwd=os.path.join(root, "src-tauri"),
+    cwd=os.path.join(root, "distros", "desktop-tauri"),
     text=True,
 )
 print(json.loads(out)["target_directory"])

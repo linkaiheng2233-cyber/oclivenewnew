@@ -9,11 +9,12 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { chatProRolesDir, resolveRepoRoot } from './lib/chat-pro-roles-dir.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const repoRoot = path.resolve(__dirname, '..');
+const repoRoot = resolveRepoRoot();
 const port = Number(process.env.OCLIVE_E2E_PORT || 18422);
-const rolesDir = path.join(repoRoot, 'roles');
+const rolesDir = chatProRolesDir(repoRoot);
 const vscodeProfile = path.join(repoRoot, 'examples/distro-profiles/vscode.oclive.toml');
 const desktopProfile = path.join(repoRoot, 'examples/distro-profiles/desktop.oclive.toml');
 

@@ -7,8 +7,10 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+import { chatProRolesDir, resolveRepoRoot } from './lib/chat-pro-roles-dir.mjs';
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const repoRoot = path.resolve(__dirname, '..');
+const repoRoot = resolveRepoRoot();
 
 function sh(cmd, args, opts = {}) {
   const r = spawnSync(cmd, args, { encoding: 'utf8', cwd: repoRoot, ...opts });
@@ -53,7 +55,7 @@ const planJson = sh(cliBin, [
   '--path',
   repoRoot,
   '--roles-dir',
-  path.join(repoRoot, 'roles'),
+  chatProRolesDir(repoRoot),
   '--distro',
   'desktop',
   '--distro-profile',

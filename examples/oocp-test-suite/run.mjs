@@ -3,9 +3,9 @@
  * 使用 Node 20+ 内置 fetch，无额外 npm 依赖。
  */
 
-import { existsSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { chatProRolesDir, resolveRepoRoot } from '../../scripts/lib/chat-pro-roles-dir.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -34,15 +34,17 @@ function ciContext(baseUrl) {
 }
 
 function repoRoot() {
-  const envRoot = process.env.GITHUB_WORKSPACE
-  if (envRoot && existsSync(join(envRoot, 'roles'))) return resolve(envRoot)
-  return resolve(__dirname, '..', '..')
+  return resolveRepoRoot()
+}
+
+function chatRolesRoot() {
+  return chatProRolesDir(repoRoot())
 }
 
 function defaultRolePath() {
   const override = process.env.OCLIVE_OOCP_ROLE_PATH
   if (override) return resolve(override)
-  return join(repoRoot(), 'roles', 'mumu')
+  return join(chatRolesRoot(), 'mumu')
 }
 
 async function fetchJson(url, init) {
@@ -59,7 +61,7 @@ async function fetchJson(url, init) {
 
 async function scenarioHandlers(base, rolePath) {
   const mumu = rolePath
-  const badPath = join(repoRoot(), 'roles', '__oocp_nonexistent_role__')
+  const badPath = join(chatRolesRoot(), '__oocp_nonexistent_role__')
 
   return {
     S0: async () => {
