@@ -2,7 +2,8 @@
 
 use crate::api::error::CommandError;
 use crate::api::plugin_index::InstallPluginFromMarketResponse;
-use crate::error::AppError;use oclive_kernel_host::infrastructure::directory_plugins::OclivePluginManifest;
+use crate::error::AppError;
+use oclive_kernel_host::infrastructure::directory_plugins::OclivePluginManifest;
 use oclive_kernel_host::state::{AppState, SharedAppState};
 use serde::Serialize;
 use std::collections::HashMap;
@@ -210,7 +211,8 @@ fn install_staged_directory_plugin(
 pub fn install_plugin_from_zip(
     zip_path: String,
     state: State<'_, SharedAppState>,
-) -> Result<InstallPluginFromMarketResponse, CommandError> {    let zip_path = PathBuf::from(zip_path.trim());
+) -> Result<InstallPluginFromMarketResponse, CommandError> {
+    let zip_path = PathBuf::from(zip_path.trim());
     if !zip_path.is_file() {
         return Err(AppError::InvalidParameter(format!(
             "zip file not found: {}",

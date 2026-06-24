@@ -49,7 +49,7 @@ fn e2e_pack_create_validate_publish() {
 #[test]
 fn e2e_pack_validate_robot_soul_example() {
     let example = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../..")
+        .join("../../..")
         .join("examples")
         .join("robot-soul-minimal")
         .join("roles")

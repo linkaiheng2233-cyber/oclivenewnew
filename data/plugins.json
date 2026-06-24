@@ -44,7 +44,7 @@
       "author": "oclive",
       "version": "0.2.0",
       "git": "https://github.com/linkaiheng2233-cyber/oclivenewnew.git",
-      "gitSubdir": "plugins/com.oclive.theater_director_official",
+      "gitSubdir": "distros/chat-pro/plugins/com.oclive.theater_director_official",
       "tags": ["theater", "side_channel", "directory"],
       "category": "theater",
       "source": "official",

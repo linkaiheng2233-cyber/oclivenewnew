@@ -13,7 +13,7 @@ fn blueprint_validate_valid_fixture() {
         "/tests/fixtures/valid_blueprint.json"
     );
     let o = cli_bin()
-        .args(["blueprint", "validate", path])
+        .args(["--experimental", "blueprint", "validate", path])
         .output()
         .unwrap();
     assert!(
@@ -32,7 +32,7 @@ fn blueprint_validate_invalid_fixture_exits_nonzero() {
         "/tests/fixtures/invalid_blueprint.json"
     );
     let o = cli_bin()
-        .args(["blueprint", "validate", path])
+        .args(["--experimental", "blueprint", "validate", path])
         .output()
         .unwrap();
     assert!(!o.status.success());

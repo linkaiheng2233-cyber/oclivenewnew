@@ -25,8 +25,7 @@ pub fn inject_plugin_bridge_script(
     let ev = serde_json::to_string(&b.events).unwrap_or_else(|_| "[]".to_string());
     let pid = serde_json::to_string(plugin_id).expect("serialize plugin_id");
     let arel = serde_json::to_string(asset_rel).expect("serialize asset_rel");
-    static BRIDGE_CORE: &str =
-        include_str!("../../assets/plugin-bridge.iife.js");
+    static BRIDGE_CORE: &str = include_str!("../../assets/plugin-bridge.iife.js");
     let script = format!(
         "<script>{core}window.__oclivSetupPluginBridge({pid},{arel},{inv},{ev});</script>",
         core = BRIDGE_CORE,

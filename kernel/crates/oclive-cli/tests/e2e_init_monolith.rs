@@ -204,6 +204,7 @@ fn e2e_bench_smoke_json() {
             "oclive-cli",
             "--quiet",
             "--",
+            "--experimental",
             "bench",
             "--release",
             "-o",

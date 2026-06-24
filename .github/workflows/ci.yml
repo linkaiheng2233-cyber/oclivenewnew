@@ -50,6 +50,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install ripgrep
+        run: sudo apt-get update && sudo apt-get install -y ripgrep
       - name: domain→infrastructure import ratchet
         run: node scripts/check-domain-layering.mjs
 
@@ -62,12 +64,16 @@ jobs:
           node-version: "20"
           cache: npm
       - run: npm ci
+      - name: Install ripgrep
+        run: sudo apt-get update && sudo apt-get install -y ripgrep
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: Install cargo-audit
         run: cargo install cargo-audit --version 0.22.1 --locked
       - name: Install cargo-deny
         run: cargo install cargo-deny --locked
+      - name: Prime cargo advisory-db
+        run: cargo audit
       - name: Dimension 5 acceptance gate (--ci)
         run: node scripts/dimension5-acceptance.mjs --ci
 
@@ -357,6 +363,7 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Visual presentation adapter unit smoke
+        working-directory: distros/shared
         run: npm run test:unit -- --run src/adapters/visual/index.test.ts
 
   e2e-tauri:
@@ -399,7 +406,19 @@ jobs:
         run: |
           python examples/remote_plugin_minimal/server.py > /tmp/remote_plugin_demo.log 2>&1 &
           echo $! > /tmp/remote_plugin_demo.pid
-          sleep 1
+          for _ in $(seq 1 30); do
+            if curl -sf -X POST http://127.0.0.1:8765/rpc \
+              -H 'Content-Type: application/json' \
+              -d '{"jsonrpc":"2.0","id":0,"method":"memory.rank","params":{"memories":[],"user_query":"ping","limit":1}}' \
+              >/dev/null 2>&1; then
+              break
+            fi
+            sleep 0.5
+          done
+          curl -sf -X POST http://127.0.0.1:8765/rpc \
+            -H 'Content-Type: application/json' \
+            -d '{"jsonrpc":"2.0","id":0,"method":"memory.rank","params":{"memories":[],"user_query":"ping","limit":1}}' \
+            >/dev/null || (echo "--- remote plugin demo log ---"; cat /tmp/remote_plugin_demo.log; exit 1)
       - name: Smoke test memory.rank JSON-RPC
         run: |
           python - <<'PY'
