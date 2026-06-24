@@ -21,6 +21,7 @@ pub use oclive_validation::{
     RemotePresenceConfig, RuntimeConfig,
 };
 use parking_lot::RwLock;
+use std::path::PathBuf;
 use std::sync::Arc;
 
 /// Default persona values inside a role pack (legacy seven dimensions, matching the `PersonalityVector` fields)
@@ -263,6 +264,9 @@ pub struct Role {
     /// Scene text-material cache (`desc:{scene}` / `away:{char}:{user}`); populated by [`RoleStorage`].
     #[serde(skip)]
     pub scene_text_cache: Arc<RwLock<HashMap<String, Arc<str>>>>,
+    /// Directory the role pack was loaded from (runtime only).
+    #[serde(skip)]
+    pub source_dir: Option<PathBuf>,
 }
 
 fn default_preset_order() -> u32 {
@@ -348,6 +352,7 @@ impl Default for Role {
             scene_ids: Arc::from(Vec::<String>::new()),
             scene_config_cache: Arc::new(RwLock::new(HashMap::new())),
             scene_text_cache: Arc::new(RwLock::new(HashMap::new())),
+            source_dir: None,
         }
     }
 }

@@ -63,6 +63,7 @@ fn create_test_role() -> Role {
         scene_text_cache: std::sync::Arc::new(parking_lot::RwLock::new(
             std::collections::HashMap::new(),
         )),
+        source_dir: None,
     }
 }
 

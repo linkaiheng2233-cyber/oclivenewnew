@@ -389,6 +389,7 @@ impl RoleStorage {
         }
 
         role.user_identity_catalog = load_user_identity_catalog(role_dir)?;
+        role.source_dir = Some(role_dir.to_path_buf());
 
         Ok(role)
     }

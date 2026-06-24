@@ -166,6 +166,7 @@ pub fn disk_manifest_to_role(d: &DiskRoleManifest) -> Role {
         scene_text_cache: std::sync::Arc::new(parking_lot::RwLock::new(
             std::collections::HashMap::new(),
         )),
+        source_dir: None,
     }
 }
 

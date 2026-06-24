@@ -17,7 +17,7 @@ struct HealthJson {
     distro_profile_hash: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     active_profile_summary: Option<oclive_kernel_types::ActiveProfileSummary>,
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    #[serde(default)]
     startup_warnings: Vec<String>,
 }
 

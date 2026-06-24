@@ -232,7 +232,12 @@ pub fn validate_co_present_dialogue_backends(pb: &PluginBackends) -> Result<()> 
 }
 
 fn verify_role_pack_files(state: &AppState, role: &Role) -> Result<()> {
-    let dir = state.storage.roles_dir().join(role.id.as_str());
+    let dir = role
+        .source_dir
+        .as_deref()
+        .filter(|p| p.is_dir())
+        .map(std::path::Path::to_path_buf)
+        .unwrap_or_else(|| state.storage.roles_dir().join(role.id.as_str()));
     let blueprint = dir.join(oclive_validation::PIPELINE_BLUEPRINT_FILENAME);
     let manifest = dir.join("manifest.json");
     if !blueprint.is_file() && !manifest.is_file() {
@@ -302,5 +307,37 @@ mod tests {
     fn aggregated_warnings_empty_when_no_roles() {
         let cache = StartupHealthCache::default();
         assert!(cache.aggregated_warnings().is_empty());
+    }
+
+    #[tokio::test]
+    async fn verify_role_pack_files_uses_source_dir_outside_roles_dir() {
+        use std::fs;
+        use std::sync::Arc;
+        use tempfile::TempDir;
+
+        let roles_root = TempDir::new().unwrap();
+        let fixture_parent = TempDir::new().unwrap();
+        let fixture_dir = fixture_parent.path().join("external-fixture");
+        fs::create_dir_all(&fixture_dir).unwrap();
+        fs::write(
+            fixture_dir.join(oclive_validation::PIPELINE_BLUEPRINT_FILENAME),
+            "{}",
+        )
+        .unwrap();
+
+        let mut role = Role::default();
+        role.id = "external-fixture".to_string();
+        role.source_dir = Some(fixture_dir);
+
+        let state = AppState::new_in_memory_with_llm(
+            Arc::new(crate::infrastructure::llm::MockLlmClient {
+                reply: "ok".to_string(),
+            }),
+            roles_root.path().to_path_buf(),
+        )
+        .await
+        .expect("state");
+
+        verify_role_pack_files(&state, &role).expect("verify with source_dir");
     }
 }

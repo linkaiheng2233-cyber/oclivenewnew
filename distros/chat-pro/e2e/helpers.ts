@@ -1,5 +1,5 @@
 import { expect, type Page } from "@playwright/test";
-import { resetE2eMockState } from "../../../../e2e-mock/fixtures";
+import { resetE2eMockState } from "../../../e2e-mock/fixtures";
 
 export async function gotoApp(page: Page): Promise<void> {
   resetE2eMockState();

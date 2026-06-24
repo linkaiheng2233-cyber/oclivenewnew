@@ -1,8 +1,8 @@
 //! Resolve the on-disk `models/` directory (GGUF/BIN for local import), mirroring [`find_roles_dir`].
 
-use oclive_kernel_runtime::{canonical_brand_app_data_dir, tauri_legacy_app_data_dir};
 #[cfg(target_os = "windows")]
 use oclive_kernel_runtime::TAURI_APP_IDENTIFIER;
+use oclive_kernel_runtime::{canonical_brand_app_data_dir, tauri_legacy_app_data_dir};
 use std::fs;
 use std::path::{Path, PathBuf};
 
