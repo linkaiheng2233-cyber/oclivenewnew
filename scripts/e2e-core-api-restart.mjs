@@ -146,12 +146,19 @@ async function runCycle(port, rolePath, label) {
   }
 }
 
+function rolePackExists(rolePath) {
+  return (
+    existsSync(join(rolePath, 'manifest.json'))
+    || existsSync(join(rolePath, 'pipeline.ocblueprint'))
+  )
+}
+
 async function main() {
   const port = Number(process.env.OCLIVE_E2E_PORT || '9843')
   if (!Number.isFinite(port) || port <= 0) throw new Error('bad OCLIVE_E2E_PORT')
   const rolePath = rolePathDefault()
-  if (!existsSync(join(rolePath, 'manifest.json'))) {
-    throw new Error(`role_path has no manifest: ${rolePath}`)
+  if (!rolePackExists(rolePath)) {
+    throw new Error(`role_path has no manifest or pipeline.ocblueprint: ${rolePath}`)
   }
 
   await runCycle(port, rolePath, 'cycle-1')
