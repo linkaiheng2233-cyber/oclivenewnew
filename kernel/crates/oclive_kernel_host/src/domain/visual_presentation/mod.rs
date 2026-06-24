@@ -152,8 +152,13 @@ pub fn filter_directive_by_distro_mode(
     distro_mode: Option<&str>,
     directive: PerformanceDirective,
 ) -> Option<PerformanceDirective> {
-    let mode = distro_mode?.trim().to_ascii_lowercase();
-    if mode.is_empty() || mode == "off" {
+    let Some(mode) = distro_mode
+        .map(|s| s.trim().to_ascii_lowercase())
+        .filter(|s| !s.is_empty())
+    else {
+        return Some(directive);
+    };
+    if mode == "off" {
         return None;
     }
     if mode == "image_only" && directive.kind != "image" {
@@ -235,6 +240,13 @@ mod tests {
     fn no_directive_when_disabled() {
         let role = role_with_catalog(false);
         assert!(materialize_directive(&role, "happy_default").is_none());
+    }
+
+    #[test]
+    fn none_distro_mode_passes_directive() {
+        let role = role_with_catalog(true);
+        let d = materialize_directive_gated(&role, "happy_default", None).expect("directive");
+        assert_eq!(d.kind, "image");
     }
 
     #[test]

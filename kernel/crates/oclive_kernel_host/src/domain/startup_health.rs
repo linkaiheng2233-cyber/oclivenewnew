@@ -325,9 +325,11 @@ mod tests {
         )
         .unwrap();
 
-        let mut role = Role::default();
-        role.id = "external-fixture".to_string();
-        role.source_dir = Some(fixture_dir);
+        let role = Role {
+            id: "external-fixture".to_string(),
+            source_dir: Some(fixture_dir),
+            ..Default::default()
+        };
 
         let state = AppState::new_in_memory_with_llm(
             Arc::new(crate::infrastructure::llm::MockLlmClient {
