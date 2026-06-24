@@ -77,6 +77,10 @@ import {
   type TheaterScenePreset,
   type TheaterScenePresetId,
 } from './theater/theaterSceneCatalog'
+import {
+  requestOutlineScene,
+  SceneGenTimeoutError,
+} from './theater/useTheaterOutlineMode'
 import { ApiInvokeError } from '@oclive/shared/api/helpers'
 
 const LINE_REVEAL_MS = 720
@@ -206,6 +210,8 @@ export function useTheaterShell() {
   const appliedTweaks = ref<AppliedTweak[]>([])
   const settingsOpen = ref(false)
   const settingsTab = ref<'general' | 'stage' | 'cast' | 'model'>('general')
+  const outlineOpen = ref(false)
+  const outlineLoading = ref(false)
 
   const thinkingActive = ref(false)
   const thinkingSteps = ref<string[]>([])
@@ -1200,6 +1206,43 @@ export function useTheaterShell() {
       shell.showToast('info', result.message ?? '')
   }
 
+  function openOutline() {
+    outlineOpen.value = true
+  }
+
+  function closeOutline() {
+    outlineOpen.value = false
+  }
+
+  async function submitOutline(text: string) {
+    const preset = getTheaterScenePreset(activeScenePresetId.value)
+    const castConfig = enrichCastConfigFromRoles(getTheaterCastConfig(), roleStore.roles)
+    outlineLoading.value = true
+    try {
+      const result = await requestOutlineScene(text, castConfig, preset)
+      const beats = result.beats.map(fromScriptLineDto)
+      thinkToken++
+      clearPokeThinkingState()
+      appliedTweaks.value = []
+      funnelVisible.value = false
+      footerSource.value = mapFooterSource(result.source)
+      displayLines.value = beats
+      outlineOpen.value = false
+      startReveal(0)
+      if (result.failureReason && shell)
+        shell.showToast('info', t('theater.outline.fallback'))
+    }
+    catch (err) {
+      if (err instanceof SceneGenTimeoutError)
+        shell?.showToast('info', t('theater.poke.sceneTimeout'))
+      else
+        shell?.showToast('info', t('theater.outline.failed'))
+    }
+    finally {
+      outlineLoading.value = false
+    }
+  }
+
   function restartScene() {
     const sk = skeleton.value
     if (!sk)
@@ -1483,5 +1526,10 @@ export function useTheaterShell() {
     reAdaptCurrentCast,
     switchScenePreset,
     showToast: shell?.showToast,
+    outlineOpen,
+    outlineLoading,
+    openOutline,
+    closeOutline,
+    submitOutline,
   }
 }

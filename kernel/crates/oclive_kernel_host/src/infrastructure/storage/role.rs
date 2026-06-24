@@ -62,8 +62,8 @@ impl RoleStorage {
     ///
     /// # Examples
     ///
-    /// ```
-    /// # use oclivenewnew_tauri::infrastructure::storage::RoleStorage;
+    /// ```no_run
+    /// # use oclive_kernel_host::infrastructure::RoleStorage;
     /// let storage = RoleStorage::new("./roles");
     /// let roles = storage.load_all_roles().expect("load roles");
     /// let _ = roles.len();

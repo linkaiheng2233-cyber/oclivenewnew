@@ -87,6 +87,7 @@
 3. 按固定顺序走维度：**基线 → 一架构 → 二性能 → 三设计 → 四技术债 → 六文档 → 七条理与边界**。
 4. 每个维度用**两把尺子**：① 传统正确性（能跑/对不对）；② **愿景对齐**（V1–V4，见 §3）。
 5. 收尾在 **§7 综合输出** 出评分，在 **§8 巡检日志** 追加一行,新债按编号入 `TECHNICAL_DEBT_INVENTORY.md`。
+6. **凡输出带数字的审查/汇报**（含 AI 生成的质量报告），遵守 [`AI_VERIFICATION_PROTOCOL.md`](./AI_VERIFICATION_PROTOCOL.md)；第三方结论默认「待核实」直至 §2 命令复现。
 
 ---
 
@@ -108,10 +109,12 @@ PowerShell 下逐条跑（**不要用 `&&`**）：
 
 ```powershell
 node scripts/dimension5-acceptance.mjs --ci   # 必须 PASS (13 checks; --ci 跳过 sample tests 仍计数)
-cargo test -p oclive_kernel_host --lib         # 必须全绿
+cargo test -p oclive_kernel_host --lib         # 必须全绿（注意：--lib 不含 doctest）
 node scripts/check-domain-layering.mjs         # ratchet 数值不得上涨
 git status                                      # 确认工作树状态 / 与 origin 差距
 ```
+
+> **⚠️ doctest 盲区**：上面的 `--lib` 与日常 `npm run check:rust`（`cargo test --workspace --lib`）**都不跑 doctest**，但 CI `rust` job 跑 `cargo test --workspace`（**含 doctest**）。**本轮若改了公开 DTO 字段 / trait 签名 / crate 名 / re-export，必须补 `cargo test --workspace --doc`**，否则会出现「本地全绿 / 远程 CI 硬门禁红」（见 [`AI_VERIFICATION_PROTOCOL.md`](./AI_VERIFICATION_PROTOCOL.md) §2.1）。
 
 **判定**：十二项门禁含 layering ratchet / **cargo audit** / **cargo deny（licenses+bans）** / lockfile（禁 sqlx-mysql·rsa 回潮）/ ensure-plan 快照 / CHANGELOG 中英 parity / stale 路径 ratchet / host re-export ratchet / theater prompt drift / **verify:ui** / **vite build**。任一 FAIL → **本轮停止所有优化,先恢复基线**。
 
@@ -263,7 +266,8 @@ git status                                      # 确认工作树状态 / 与 or
 
 ```powershell
 node scripts/dimension5-acceptance.mjs --ci      # 维度五门禁（13 checks,含 cargo deny + 代码路径 ratchet）
-cargo test -p oclive_kernel_host --lib           # 核心单测
+cargo test -p oclive_kernel_host --lib           # 核心单测（不含 doctest）
+cargo test --workspace --doc                     # doctest（公开 DTO/trait/crate 改名后必跑;check:rust 不跑）
 node scripts/check-domain-layering.mjs           # 分层 ratchet
 node scripts/check-stale-paths.mjs               # 维度七:过期路径漂移(roles/src-tauri/crates)
 node scripts/check-changelog-parity.mjs          # CHANGELOG 中英 parity
@@ -347,6 +351,16 @@ npm run check:rust                               # fmt + clippy(-D warnings) + t
 | 17 | 2026-06-24 | 半 | PASS | A− | D-DOCDRIFT-01 206 文件路径迁移; D-SCRIPT-02 check-stale-paths 扩范围; D-ORPHAN-04 删空 models/; dimension5 十一检 | monorepo 重组文档收尾 |
 | 18 | 2026-06-24 | 全 | PASS | A− | **O-1** plugin-bridge 内核化; **O-2** expert 孤儿前端删; **D-DOC-RELOC-01** 三文档归位 handoff/; creator-docs 受众导航; 冻结项未动 | test:unit 67 绿; vite build 绿; cargo build host 绿 |
 | 19 | 2026-06-24 | 快 | PASS | A− | CI 全红修复(ripgrep/advisory-db/rustfmt/plugins-index/cli)+ bundle kernel/role 路径/quinn-proto 0.11.15; **新增维度七「条理与边界」**(防 AI 脱轨:路径 SSOT/AI 入口时效/边界明确/门禁纯度);修手册 dimension5 9·11→12 计数 | 发现待入账:`D-ORDER-*`(27 测仍 `../roles`、`cd fuzz`、Playwright testDir、check:license)、`D-DOC-*`(04_4.6 归档矛盾、THREE_DISTRO 导演状态、invoke 条数) |
+| 20 | 2026-06-25 | 半 | PASS* | A− | **新增** [`AI_VERIFICATION_PROTOCOL.md`](./AI_VERIFICATION_PROTOCOL.md)+AGENTS/BOUNDARIES/Playbook 挂链; DeepSeek 质量报告逐条核实(unwrap/scene_director 单测/dependabot 数等多处误报); 本地 dimension5 十三检绿; **GitHub CI main 仍红**(`cargo test --workspace`); 入账 D-MAINT-01·D-DOC-EN-01·D-ORDER-05/06 | *`gh run` 28118002153; 未跑全仓 `cargo test`; 冻结项未动; §9 不追覆盖率数字 |
+| 21 | 2026-06-25 | 快 | PASS | A− | **轮次 20 P0 根因定位+修复**: CI `rust` 硬门禁红 = **3 处 doctest 漂移**(`AgentInput` 加 5 字段后 contracts 示例缺字段; `RoleStorage`/`EmotionAnalyzer` doctest 引旧 crate 名 `oclivenewnew_tauri`),被「首个 doctest 失败即 abort」逐个掩盖; `--lib`/`check:rust` 不跑 doctest 是本地绿≠远程绿根因 → 新增 **G8** + 协议 §2.1 doctest 行 + Playbook doctest 盲区警示 | `cargo test --workspace --doc` 全绿; dimension5 十三检/layering/stale-paths/host lib 241 绿; 冻结项未动 |
+
+> **轮次 20 待办（核实协议后 · 建议 Wave）**
+> - **P0**：~~修 CI `rust` job `tests (workspace)` 失败（本地 dimension5 绿 ≠ remote 绿）~~ → **轮次 21 已修**：根因为 3 处 doctest 漂移（非 `--lib` 单测），已修并补 doctest 盲区规则（G8）
+> - **D-ORDER-05**(P2)：`distros/desktop-tauri/src/lib.rs` L203 `src-tauri/src/api/` 注释 + 考虑移出 stale-path 豁免
+> - **D-MAINT-01**(P2)：清理远程 dependabot 陈旧分支（实测 **39**，其中 **9** 含 `src-tauri`；非 DeepSeek 所称 71）
+> - **D-DOC-EN-01**(P2)：`creator-docs-en/security/KNOWN_VULNERABILITIES.md` 扫描日期滞后中文 SSOT
+> - **D-ORDER-06**(P3)：`distributions/vscode/out/` 构建产物 vs `distros/` 命名 — gitignore 或删夹
+> - **Observe**：`backend_registry.rs` 无 in-file 单测（D-READ-05 已有）；勿按「3.6% 覆盖率」立项大清洗
 
 > **轮次 19 维度七首扫待办（建议下一轮 Wave A/B 处理,已记此处防丢）**
 > - **D-ORDER-01**(P0):`distros/desktop-tauri/tests/*.rs` 27 文件 + oclive-cli `src/` 多处对 monorepo 仍 `join("roles")`/`../roles` → 抽 Rust 侧 `chat_pro_roles_dir()` SSOT

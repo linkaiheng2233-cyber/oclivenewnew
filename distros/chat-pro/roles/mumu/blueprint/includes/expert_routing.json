@@ -1,0 +1,24 @@
+{
+  "routing_path": "blueprint/includes/expert_routing.json",
+  "fallback": "skip",
+  "routes": [
+    {
+      "id": "demo_home_prompt_enhance",
+      "enabled": false,
+      "priority": 10,
+      "trigger": {
+        "scenes": ["home"],
+        "keywords": ["作业", "考试"],
+        "message_length": { "min": 4, "max": 200 }
+      },
+      "steps": [
+        {
+          "action": "slot.prompt_enhance.apply",
+          "params": {
+            "template": "（专家路由演示 · 默认关闭）用户提到学业时，语气可更关心但保持角色口吻。"
+          }
+        }
+      ]
+    }
+  ]
+}

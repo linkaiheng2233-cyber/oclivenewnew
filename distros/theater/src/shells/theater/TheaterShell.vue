@@ -7,6 +7,7 @@ import { useI18n } from 'vue-i18n'
 import PokeDock from './PokeDock.vue'
 import TheaterFooter from './TheaterFooter.vue'
 import TheaterHeader from './TheaterHeader.vue'
+import TheaterOutlineSheet from './TheaterOutlineSheet.vue'
 import TheaterSettingsSheet from './TheaterSettingsSheet.vue'
 import TheaterStage from './TheaterStage.vue'
 import TheaterThinkChain from './TheaterThinkChain.vue'
@@ -64,6 +65,11 @@ const {
   reAdaptCurrentCast,
   switchScenePreset,
   showToast,
+  outlineOpen,
+  outlineLoading,
+  openOutline,
+  closeOutline,
+  submitOutline,
 } = useTheaterShell()
 
 const { toast } = useAppToast()
@@ -91,6 +97,7 @@ async function onApplyDefaultCast() {
         :scene-presets="scenePresets"
         @select-scene="switchScenePreset"
         @open-settings="openSettings()"
+        @open-outline="openOutline()"
         @restart="restartScene()"
       />
 
@@ -137,6 +144,14 @@ async function onApplyDefaultCast() {
         :total="displayLines.length"
       />
     </div>
+
+    <TheaterOutlineSheet
+      :open="outlineOpen"
+      :loading="outlineLoading"
+      :cast-label="castLabel"
+      @close="closeOutline()"
+      @submit="submitOutline"
+    />
 
     <TheaterSettingsSheet
       :visible="settingsOpen"

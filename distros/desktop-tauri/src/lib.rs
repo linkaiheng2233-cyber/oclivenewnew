@@ -200,7 +200,7 @@ pub fn run() {
             crate::desktop_integration::spawn_auto_cleanup_scheduler(app.handle());
             Ok(())
         })
-        // Tauri invoke commands ? grouped by domain (see `src-tauri/src/api/`).
+        // Tauri invoke commands — grouped by domain (see `distros/desktop-tauri/src/api/`).
         .invoke_handler(tauri::generate_handler![
             // ?? agent / MCP ??
             api::agent::list_mcp_servers,

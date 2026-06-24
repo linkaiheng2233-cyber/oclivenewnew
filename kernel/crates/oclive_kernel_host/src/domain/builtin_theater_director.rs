@@ -3,7 +3,7 @@
 use crate::domain::theater::patch_scene::{build_patch_prompt, PatchContext};
 use crate::domain::theater::scene_director::{
     build_cast_adapt_prompt, build_cast_rewrite_minimal_prompt, build_cast_rewrite_prompt,
-    build_scene_prompt, RippleContext,
+    build_outline_rewrite_prompt, build_scene_prompt, RippleContext,
 };
 use crate::error::Result;
 use crate::models::dto::TheaterSceneRequest;
@@ -75,6 +75,16 @@ impl BuiltinTheaterDirector {
                     input.persona_b.as_str(),
                 )
             }
+            "outline_rewrite" => {
+                let max = input.cast_rewrite_max_beats.unwrap_or(input.max_beats);
+                build_outline_rewrite_prompt(
+                    &req,
+                    max,
+                    input.strict,
+                    input.persona_a.as_str(),
+                    input.persona_b.as_str(),
+                )
+            }
             other => {
                 tracing::warn!(
                     target: "oclive_theater",
@@ -128,6 +138,7 @@ fn theater_request_from_input(input: &TheaterPromptBuildInput) -> TheaterSceneRe
         theater_scene: input.theater_scene.clone(),
         scene_brief: input.scene_brief.clone(),
         scene_setting_hint: input.scene_setting_hint.clone(),
+        script_outline: input.script_outline.clone(),
     }
 }
 

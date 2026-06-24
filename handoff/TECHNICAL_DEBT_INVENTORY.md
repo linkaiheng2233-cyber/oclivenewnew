@@ -1,14 +1,14 @@
 # Technical debt inventory
 
-**Last updated:** 2026-06-24 (轮次 19 · 供应链安全入账 + cargo-deny 进 dimension5)
+**Last updated:** 2026-06-25 (轮次 21 · Wave 0–5 全面优化)
 
-**Product freeze (Theater v0):** Active until **5 人真人陌生人** ≥60% 通过。工程代理 100% **不替代**产品门槛。见 [`theater/DEVELOPMENT_ROADMAP.md`](./theater/DEVELOPMENT_ROADMAP.md) §4.8 · 解冻 checklist [`theater/MODE2_UNFREEZE.md`](./theater/MODE2_UNFREEZE.md)。
+**Product freeze (Theater v0):** **Lifted** — 朋友 cohort 产品门通过（7/10 卧槽）；模式 2 可开工；模式 3 仍冻结。见 [`theater/MODE2_UNFREEZE.md`](./theater/MODE2_UNFREEZE.md)。
 
-**综合评分：** A− · 基线 dimension5 **十三检** PASS（含 `cargo deny` + 文档/代码路径 ratchet）· `oclive_kernel_host` 编译期不再依赖 `distros/desktop-tauri/` · expert 孤儿前端已清 · 三份名实不符文档已归位 `handoff/`
+**综合评分：** A− · 本地 dimension5 **十三检** PASS · workspace **doctest** 绿 · 审查汇报 SSOT：[`AI_VERIFICATION_PROTOCOL.md`](./AI_VERIFICATION_PROTOCOL.md)
 
-**下一动作：** **P0-STRANGER** — 维护者带 5 名零文档测试者；验收标准见 [`theater/PLAYTEST_MATRIX.md`](./theater/PLAYTEST_MATRIX.md)
+**下一动作：** **P1** — 模式 2 playtest 扩展；**K-SUPPLY-02** Release SHA256 asset（维护者）
 
-**Verification (2026-06-24 轮次 18):** `node scripts/dimension5-acceptance.mjs --ci`；`cargo build -p oclive_kernel_host`；`npm run test:unit`；`npm run build -w @oclive/chat-pro`；`node scripts/check-stale-paths.mjs`。
+**Verification (2026-06-25 轮次 21):** `cargo test --workspace --doc` PASS；`node scripts/dimension5-acceptance.mjs --ci` PASS；`cargo test -p oclive_kernel_host --lib` PASS。
 
 ---
 
@@ -16,7 +16,7 @@
 
 | ID | 项 | 优先级 | 解冻/完成条件 | 状态 |
 |----|-----|--------|----------------|------|
-| **P0-STRANGER** | Theater 5 人真人陌生人测试 | **P0** | ≥60% 通过 · [`theater/PLAYTEST_MATRIX.md`](./theater/PLAYTEST_MATRIX.md) | **OPEN** — 工程代理 100%；真人表待填 |
+| **P0-STRANGER** | Theater 朋友 cohort 试玩（10 人） | **P0** | ≥60% 通过 · [`theater/PLAYTEST_MATRIX.md`](./theater/PLAYTEST_MATRIX.md) | **Done**（朋友 cohort 7/10 · 2026-06-25） |
 | **K-DOC-17** | 注释英文化 batch 3 | P1 | `slot_runner.rs` · `kernel_strategy.rs` 等 | **Done**（轮次 16 复核：上述文件已为英文 `//!`/`///`） |
 | **V-VSCODE-PERF-05** | VS Code F5 / `.vsix` 实机 | P1 | 姊妹仓 `oclive-vscode` 人工排期 | **OPEN**（cross-repo） |
 | **K-CONTRACT-WIRING-01** | `extra_sections` 生产接线 | P2 | 首个外部插件作者 or Phase 5 通过后 | **OPEN** |
@@ -36,6 +36,17 @@
 | **D-ORDER-04** | `check-stale-paths` 仅扫 `.md` | P1 | 扩展 `.rs/.mjs/.sh/.yml` + dimension5 代码 ratchet | **Done**（Wave B2/B4） |
 | **D-DOC-DRIFT-02** | AI 入口文档（rules/AGENTS/THREE_DISTRO/invoke 条数） | P1 | 与 BUS_FACTOR / INVOKE_HOTPATH_MATRIX 对齐 | **Done**（Wave C · 2026-06-24） |
 | **D-DOC-DRIFT-03** | `KNOWN_VULNERABILITIES` quinn-proto 0.11.15 | P2 | 台账 + 扫描日期 | **Done**（Wave C4） |
+| **D-AI-VERIFY-01** | AI 审查/汇报无核实纪律 → 误报入账 | P1 | [`AI_VERIFICATION_PROTOCOL.md`](./AI_VERIFICATION_PROTOCOL.md) + AGENTS/BOUNDARIES/Playbook 挂链 | **Done**（轮次 20） |
+| **D-MAINT-01** | 远程 dependabot 陈旧分支（实测 **39**，**9** 含 `src-tauri`） | P2 | `gh api` 列表 + 批量 `git push origin --delete` | **OPEN** |
+| **D-DOC-EN-01** | `creator-docs-en/security/KNOWN_VULNERABILITIES.md` 扫描日期滞后中文 | P2 | 对齐 `creator-docs/security/` 日期与命中条数 | **Done**（Wave 1 · 2026-06-25） |
+| **D-ORDER-05** | `desktop-tauri/src/lib.rs` L203 仍写 `src-tauri/src/api/` | P2 | 改注释为 `distros/desktop-tauri/src/api/`；评估移出 stale-path 豁免 | **Done**（Wave 1） |
+| **D-ORDER-06** | `distributions/vscode/out/` 与 `distros/` 命名并存 | P3 | gitignore 或删除构建产物 | **Done**（根 `.gitignore` 已含 `distributions/`） |
+| **D-AI-VERIFY-02** | AGENTS 测试段链 `AI_VERIFICATION_PROTOCOL` + `check:rust` vs `check:release` doctest | P2 | AGENTS §测试体系 | **Done**（Wave 1） |
+| **K-CI-01** | GitHub CI main 红：doctest 漂移 | **P0** | 修 doctest；`cargo test --workspace` 绿 | **Done**（Wave 0 · doctest 三处） |
+| **D-READ-05** | `backend_registry.rs` 拆 `directory_slots` | P2 | 零语义变更 | **Done**（Wave 4 · `directory_slots_impl.rs`） |
+| **D-PORT-02** | `PluginBackendRegistryPort` 拆窄 trait | P1 | `MemoryBackendPort` phase 1 | **Partial**（`memory_backend_port.rs`） |
+| **D-SLOT-01** | BuiltinV1/V2 选择收到 resolver | P2 | 依赖 D-PORT-02 后续 | **Observe** |
+| **D-TRAIT-01** | 单实现 trait 合并 | P3 | 仅明显 DI 噪音 | **Observe** |
 
 ---
 
@@ -59,10 +70,10 @@
 | ID | 项 | 优先级 | 状态 |
 |----|-----|--------|------|
 | **K-SUPPLY-01** | `cargo deny` 进 dimension5 / CI 硬门禁 | P1 | **Done**（轮次 19） |
-| **K-SUPPLY-02** | Release SHA256SUMS | P1 | **Partial** — workflow 已入库；Release 挂 asset = 维护者 |
+| **K-SUPPLY-02** | Release SHA256SUMS | P1 | **Partial** — workflow 已入库；**维护者**首次 Release 挂 asset（见 [`.github/workflows/`](../../.github/workflows/) release 模板） |
 | **K-SUPPLY-03** | 插件安装审源码提示 | P2 | **Done**（轮次 19） |
-| **K-SUPPLY-04** | npm-audit 升格策略 | P2 | **OPEN** |
-| **K-SUPPLY-05** | deny 重复依赖 warn→deny | P2 | **OPEN** |
+| **K-SUPPLY-04** | npm-audit 升格策略 | P2 | **OPEN** — 连续 2 周期高危 → 硬门禁或文档豁免（Observe 至 2026-07） |
+| **K-SUPPLY-05** | deny 重复依赖 warn→deny | P2 | **OPEN** — `deny.toml` 已标注 K-SUPPLY-05；待 `cargo tree -d` 去重 |
 | **K-SUPPLY-06** | 位级可重复构建（reproducible） | — | **Deferred** · 见 SECURITY_AUDIT_SCOPE 局限 |
 | **K-SUPPLY-07** | SBOM（CycloneDX/SPDX） | — | **Deferred** · 政企/校企采购需求触发 |
 | **K-SUPPLY-08** | crate 作者信誉 / 发布历史系统审计 | — | **Observe** · 无成熟自动化方案 |
@@ -77,13 +88,14 @@
 
 | ID | 项 | 解冻条件 |
 |----|-----|----------|
-| **dual_core** / **expert_routing** / **blueprint v3** | 实验管线 | 重大发版决策；默认关 |
-| **D-READ-03** | `dual_pipeline` 表驱动 | 随 `dual_core` |
-| **D-PORT-02** / **D-SLOT-01** | god-port collapse / 槽调度 | 外部贡献者 or 第二成熟插件后端 |
-| **§3.1** | 纯 library API 对称化 | 第二宿主强需求 + RFC |
-| **模式 2 / 3** | 用户大纲演绎 / Mode 3 | Track B ≥60% + [`MODE2_UNFREEZE.md`](./theater/MODE2_UNFREEZE.md) 签字 |
+| **dual_core** / **expert_routing** / **blueprint v3** | 实验管线 | **可选解冻 · 默认仍关**（蓝图 `dual_core.enabled` / 角色包 `expert_routing.json` 显式配置） |
+| **D-READ-03** | `dual_pipeline` 表驱动 | 随 `dual_core` opt-in |
+| **D-PORT-02** / **D-SLOT-01** | god-port collapse / 槽调度 | phase 1 memory 已拆；余组 Observe |
+| **§3.1** | 纯 library API 对称化 | [`RFC_OCLIVE_KERNEL_LIBRARY.md`](./RFC_OCLIVE_KERNEL_LIBRARY.md) T0 |
+| **模式 3** | 用户大纲演绎 / Mode 3 `send_message` 长对话 | 模式 2 playtest 扩展后另开计划 |
+| ~~**模式 2**~~ | — | **已解冻** · [`MODE2_RFC.md`](./theater/MODE2_RFC.md) · `outline_rewrite` |
 
-**Phase 5 结论（2026-06-15）：** 真人门槛未过 → **维持冻结**；`dual_core` / `expert_routing` / 编排扩展 **不开工**。轮次 18 仅清 dead code / 编译耦合 / 文档名实，**未动**上述冻结项。详见 [`theater/DEVELOPMENT_ROADMAP.md`](./theater/DEVELOPMENT_ROADMAP.md) §5.5。
+**Phase 5 结论（2026-06-25 更新）：** 朋友 cohort 产品门通过 → **模式 2 开工**；`dual_core` / `expert_routing` **机制可选、默认关**。详见 [`theater/DEVELOPMENT_ROADMAP.md`](./theater/DEVELOPMENT_ROADMAP.md) §5.5。
 
 ---
 

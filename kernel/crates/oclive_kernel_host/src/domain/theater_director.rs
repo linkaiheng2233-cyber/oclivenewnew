@@ -4,6 +4,7 @@ use crate::domain::builtin_theater_director::BuiltinTheaterDirector;
 use crate::domain::host_profile::ENV_THEATER_DIRECTOR_PLUGIN;
 use crate::domain::theater::patch_scene::PatchContext;
 use crate::domain::theater::scene_director::{cast_rewrite_target_beats, RippleContext};
+use crate::domain::theater::scene_director_config::cast_rewrite_min_beats;
 use crate::models::dto::TheaterSceneRequest;
 use crate::state::AppState;
 use oclive_kernel_contracts::{
@@ -136,6 +137,7 @@ pub(crate) fn ripple_prompt_input(
         cast_rewrite_min_beats: None,
         cast_rewrite_max_beats: None,
         cast_rewrite_target_beats: None,
+        script_outline: None,
     }
 }
 
@@ -181,6 +183,7 @@ pub fn cast_adapt_prompt_input(
         cast_rewrite_min_beats: None,
         cast_rewrite_max_beats: None,
         cast_rewrite_target_beats: None,
+        script_outline: None,
     }
 }
 
@@ -227,6 +230,7 @@ pub fn cast_rewrite_prompt_input(
         cast_rewrite_min_beats: Some(min_beats),
         cast_rewrite_max_beats: Some(max_beats),
         cast_rewrite_target_beats: Some(cast_rewrite_target_beats(min_beats, max_beats)),
+        script_outline: req.script_outline.clone(),
     }
 }
 
@@ -271,6 +275,54 @@ pub fn cast_rewrite_minimal_prompt_input(
         cast_rewrite_min_beats: None,
         cast_rewrite_max_beats: None,
         cast_rewrite_target_beats: Some(target_beats),
+        script_outline: req.script_outline.clone(),
+    }
+}
+
+#[must_use]
+pub fn outline_prompt_input(
+    req: &TheaterSceneRequest,
+    max_beats: u32,
+    strict: bool,
+    persona_a: &str,
+    persona_b: &str,
+) -> TheaterPromptBuildInput {
+    let min_beats = cast_rewrite_min_beats();
+    TheaterPromptBuildInput {
+        mode: "outline_rewrite".to_string(),
+        strict,
+        persona_a: persona_a.to_string(),
+        persona_b: persona_b.to_string(),
+        cast_a_name: req.cast_a.name.clone(),
+        cast_b_name: req.cast_b.name.clone(),
+        cast_a_role_id: req.cast_a.role_id.clone(),
+        cast_b_role_id: req.cast_b.role_id.clone(),
+        scene_id: req.scene_id.clone(),
+        applied_tweaks: req.applied_tweaks.clone(),
+        base_beats: req.base_beats.clone(),
+        max_beats,
+        patch_variant: None,
+        fork_templates: None,
+        adapt_pass: None,
+        poke_chips: None,
+        pair_relation_id: req.pair_relation_id.clone(),
+        pair_relation_hint: req.pair_relation_hint.clone(),
+        theater_scene: req.theater_scene.clone(),
+        scene_brief: req.scene_brief.clone(),
+        scene_setting_hint: req.scene_setting_hint.clone(),
+        ripple_prefix_beats: None,
+        ripple_skeleton: None,
+        ripple_full_rewrite: None,
+        patch_prefix_beats: None,
+        patch_skeleton_tail: None,
+        patch_canned_patch: None,
+        patch_tweak: None,
+        patch_chip_slug: None,
+        patch_max_lines: None,
+        cast_rewrite_min_beats: Some(min_beats),
+        cast_rewrite_max_beats: Some(max_beats),
+        cast_rewrite_target_beats: Some(cast_rewrite_target_beats(min_beats, max_beats)),
+        script_outline: req.script_outline.clone(),
     }
 }
 
@@ -318,5 +370,6 @@ pub(crate) fn patch_prompt_input(
         cast_rewrite_min_beats: None,
         cast_rewrite_max_beats: None,
         cast_rewrite_target_beats: None,
+        script_outline: None,
     }
 }

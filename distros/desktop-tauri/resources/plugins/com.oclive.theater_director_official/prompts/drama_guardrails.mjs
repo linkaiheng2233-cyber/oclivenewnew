@@ -43,6 +43,7 @@ export function dramaGuardrailsBlock(input, variant = "full") {
 /** Marker substring tests use for drift detection (plugin ↔ Rust fallback). */
 export const DRIFT_MARKERS = {
   patchTitle: "【剧场即兴 · 戏剧性补丁】",
+  outlineTitle: "【剧场大纲 · 用户剧本】",
   guardrailsHeader: "【戏剧性纪律】",
   compactHeader: "【戏剧纪律（精简）】",
 };

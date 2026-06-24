@@ -31,7 +31,7 @@ pub struct TheaterDirectorEffectiveConfig {
 /// Input for one `theater.build_prompt` call (JSON-RPC params projection).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TheaterPromptBuildInput {
-    /// `patch` | `ripple` | `cast_adapt` | `cast_rewrite` | `cast_rewrite_minimal`
+    /// `patch` | `ripple` | `cast_adapt` | `cast_rewrite` | `cast_rewrite_minimal` | `outline_rewrite`
     pub mode: String,
     pub strict: bool,
     pub persona_a: String,
@@ -68,6 +68,8 @@ pub struct TheaterPromptBuildInput {
     pub cast_rewrite_min_beats: Option<u32>,
     pub cast_rewrite_max_beats: Option<u32>,
     pub cast_rewrite_target_beats: Option<u32>,
+    /// Mode 2: user script outline (`outline_rewrite`).
+    pub script_outline: Option<String>,
 }
 
 /// Output of [`TheaterDirectorPromptProvider::build_prompt`].

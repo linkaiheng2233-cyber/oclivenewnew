@@ -444,4 +444,17 @@ mod tests {
         assert!(select_expert_route(&doc, &ok).is_some());
         assert!(select_expert_route(&doc, &bad).is_none());
     }
+
+    #[test]
+    fn mumu_demo_expert_routing_validates() {
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../distros/chat-pro/roles/mumu/blueprint/includes/expert_routing.json");
+        let raw = std::fs::read_to_string(&path).expect("mumu expert_routing.json");
+        let doc: ExpertRoutingDoc = serde_json::from_str(&raw).expect("parse");
+        validate_expert_routing_doc(&doc).expect("valid");
+        assert!(
+            doc.routes.iter().all(|r| !r.enabled),
+            "demo routes must stay disabled (no default invoke)"
+        );
+    }
 }

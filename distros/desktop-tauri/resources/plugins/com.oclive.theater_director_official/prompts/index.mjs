@@ -4,6 +4,7 @@
 import { buildCastAdapt } from "./modes/cast_adapt.mjs";
 import { buildCastRewrite } from "./modes/cast_rewrite.mjs";
 import { buildCastRewriteMinimal } from "./modes/cast_rewrite_minimal.mjs";
+import { buildOutlineRewrite } from "./modes/outline_rewrite.mjs";
 import { buildPatch } from "./modes/patch.mjs";
 import { buildRipple } from "./modes/ripple.mjs";
 
@@ -20,6 +21,8 @@ export function buildTheaterPrompt(input) {
       return buildCastRewrite(input);
     case "cast_rewrite_minimal":
       return buildCastRewriteMinimal(input);
+    case "outline_rewrite":
+      return buildOutlineRewrite(input);
     case "ripple":
     default:
       return buildRipple(input);

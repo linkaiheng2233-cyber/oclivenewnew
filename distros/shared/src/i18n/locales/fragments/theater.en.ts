@@ -15,6 +15,16 @@ export default {
       scenePicker: 'Choose scene',
       settings: 'Settings',
       restart: 'Restart scene',
+      outline: 'Script outline',
+    },
+    outline: {
+      title: 'Mode 2 · Script outline',
+      lead: 'Describe what should happen in a few sentences; AI turns it into dialogue for your cast (outside the chat pipeline).',
+      placeholder: 'e.g. They fight over the last strawberry milk at the supermarket, then realize neither brought a wallet…',
+      submit: 'Generate & play',
+      cancel: 'Cancel',
+      failed: 'Outline generation failed. Please try again.',
+      fallback: 'The model response was weak; a fallback script was used.',
     },
     scene: {
       switching: 'Switching scene…',

@@ -592,6 +592,7 @@ mod tests {
             theater_scene: None,
             scene_brief: None,
             scene_setting_hint: None,
+            script_outline: None,
         }
     }
 

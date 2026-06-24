@@ -35,7 +35,8 @@ use crate::models::{
 };
 use async_trait::async_trait;
 use oclive_kernel_contracts::{
-    AgentMcpRegistryPort, LocalPluginRegistryPort, McpBridgePort, SlotBackendFactoryPort,
+    AgentMcpRegistryPort, LocalPluginRegistryPort, McpBridgePort, MemoryBackendPort,
+    SlotBackendFactoryPort,
 };
 use oclive_kernel_types::{AgentDebugTrace, AgentToolResult, McpServerInfo, McpToolInfo};
 use oclive_validation::{slot_registry_instances_sorted, SlotRegistryEntry};
@@ -104,16 +105,6 @@ pub struct BackendRegistry {
     directory_prompt_cache: RwLock<BTreeMap<String, Arc<dyn PromptAssembler>>>,
     directory_llm_cache: RwLock<BTreeMap<String, Arc<dyn LlmClient>>>,
     directory_agent_cache: RwLock<BTreeMap<String, Arc<dyn AgentProvider>>>,
-}
-
-fn directory_slot_id(
-    slots: &DirectoryPluginSlots,
-    pick: impl FnOnce(&DirectoryPluginSlots) -> &Option<String>,
-) -> Option<String> {
-    pick(slots)
-        .as_ref()
-        .map(|s| s.trim().to_string())
-        .filter(|s| !s.is_empty())
 }
 
 impl BackendRegistry {
@@ -203,53 +194,6 @@ impl BackendRegistry {
                 )
             },
         )
-    }
-
-    fn pick_directory_slot<T, Pick, Build>(
-        &self,
-        module: &'static str,
-        backends: &PluginBackends,
-        cache: &RwLock<BTreeMap<String, T>>,
-        pick: Pick,
-        fallback: T,
-        build: Build,
-    ) -> T
-    where
-        Pick: FnOnce(&DirectoryPluginSlots) -> &Option<String>,
-        Build: FnOnce(&Self, &str, &str) -> T,
-        T: Clone + Send + Sync + 'static,
-    {
-        let Some(_rt) = self.directory_runtime.as_ref() else {
-            tracing::warn!(
-                target: "oclive_plugin",
-                "plugin_backends.{module}=directory but directory plugin runtime disabled; using fallback"
-            );
-            return fallback;
-        };
-        let Some(pid) = directory_slot_id(&backends.directory_plugins, pick) else {
-            tracing::warn!(
-                target: "oclive_plugin",
-                "plugin_backends.{module}=directory but directory_plugins.{module} missing; using fallback"
-            );
-            return fallback;
-        };
-        if let Some(cached) = cache.read().get(&pid).cloned() {
-            return cached;
-        }
-        match _rt.ensure_rpc_url(pid.as_str()) {
-            Ok(url) => {
-                let built = build(self, pid.as_str(), url.as_str());
-                cache.write().insert(pid, built.clone());
-                built
-            }
-            Err(e) => {
-                tracing::error!(
-                    target: "oclive_plugin",
-                    "directory {module} plugin_id={pid} spawn failed: {e}"
-                );
-                fallback
-            }
-        }
     }
 
     pub(crate) fn agent_for_plugin_backends(
@@ -637,6 +581,10 @@ impl BackendRegistry {
         self.directory_runtime.clone()
     }
 
+    pub(super) fn directory_runtime_for_slots(&self) -> Option<Arc<DirectoryPluginRuntime>> {
+        self.directory_runtime.clone()
+    }
+
     /// Same-type **last-wins** (`position` max) complex emotion implementation.
     #[must_use]
     pub fn pick_complex_emotion_winner(
@@ -753,15 +701,7 @@ impl BackendRegistry {
     }
 }
 
-impl SlotBackendFactoryPort for BackendRegistry {
-    fn agent_for_plugin_backends(&self, backends: &PluginBackends) -> Arc<dyn AgentProvider> {
-        BackendRegistry::agent_for_plugin_backends(self, backends)
-    }
-
-    fn agent_for(&self, b: AgentBackend) -> Arc<dyn AgentProvider> {
-        BackendRegistry::agent_for(self, b)
-    }
-
+impl MemoryBackendPort for BackendRegistry {
     fn memory_retrieval_for_plugin_backends(
         &self,
         backends: &PluginBackends,
@@ -771,6 +711,16 @@ impl SlotBackendFactoryPort for BackendRegistry {
 
     fn memory_retrieval(&self, b: MemoryBackend) -> Arc<dyn MemoryRetrieval> {
         BackendRegistry::memory_retrieval(self, b)
+    }
+}
+
+impl SlotBackendFactoryPort for BackendRegistry {
+    fn agent_for_plugin_backends(&self, backends: &PluginBackends) -> Arc<dyn AgentProvider> {
+        BackendRegistry::agent_for_plugin_backends(self, backends)
+    }
+
+    fn agent_for(&self, b: AgentBackend) -> Arc<dyn AgentProvider> {
+        BackendRegistry::agent_for(self, b)
     }
 
     fn user_emotion_analyzer_for_backends(

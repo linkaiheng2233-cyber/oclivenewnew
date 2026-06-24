@@ -796,6 +796,9 @@ pub struct TheaterSceneRequest {
     /// Scene constraints (location, time, forbidden elements).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub scene_setting_hint: Option<String>,
+    /// Mode 2: user script outline for `outline_rewrite`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub script_outline: Option<String>,
 }
 
 /// `generate_theater_scene` response.

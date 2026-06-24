@@ -27,6 +27,7 @@ use oclive_kernel_types::{AgentInput, AgentOutput, Result};
 ///         session_namespace: "default".into(),
 ///         message: "查一下北京天气".into(),
 ///         model: "qwen2.5:7b".into(),
+///         ..Default::default()
 ///     };
 ///     let out = agent.process(input).await?;
 ///     let _ = out.reply;

@@ -58,6 +58,8 @@ export interface TheaterSceneRequest {
   theater_scene?: string | null
   scene_brief?: string | null
   scene_setting_hint?: string | null
+  /** Mode 2: user script outline for `outline_rewrite` */
+  script_outline?: string | null
 }
 
 export interface TheaterSceneResponse {

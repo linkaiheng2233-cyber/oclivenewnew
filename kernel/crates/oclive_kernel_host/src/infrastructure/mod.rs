@@ -5,6 +5,7 @@
 pub mod agent_mcp_bridge;
 pub mod app_data_migration;
 pub mod backend_registry;
+mod directory_slots_impl;
 pub mod cache;
 pub mod chat_storage;
 pub mod db;

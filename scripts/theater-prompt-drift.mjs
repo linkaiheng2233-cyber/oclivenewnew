@@ -52,6 +52,25 @@ for (const m of markers) {
   }
 }
 
+const outlinePrompt = buildTheaterPrompt({
+  mode: "outline_rewrite",
+  script_outline: "两人在超市抢特价牛奶，结账时发现忘带钱包。",
+  cast_a_name: "木木",
+  cast_b_name: "枫侵月",
+  cast_a_role_id: "mumu",
+  cast_b_role_id: "feng",
+  scene_id: "home",
+  theater_scene: "supermarket",
+  persona_a: "傲娇",
+  persona_b: "温柔",
+  max_beats: 10,
+});
+
+if (!outlinePrompt.includes(DRIFT_MARKERS.outlineTitle)) {
+  console.error("outline prompt missing outlineTitle marker");
+  failed = true;
+}
+
 const rustTest = spawnSync(
   "cargo",
   [

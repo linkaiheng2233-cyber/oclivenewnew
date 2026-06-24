@@ -16,6 +16,7 @@ defineProps<{
 const emit = defineEmits<{
   openSettings: []
   restart: []
+  openOutline: []
   selectScene: [id: TheaterScenePresetId]
 }>()
 
@@ -23,10 +24,12 @@ const { t } = useI18n()
 const moreOpen = ref(false)
 const sceneOpen = ref(false)
 
-function onMore(action: 'settings' | 'restart') {
+function onMore(action: 'settings' | 'restart' | 'outline') {
   moreOpen.value = false
   if (action === 'settings')
     emit('openSettings')
+  else if (action === 'outline')
+    emit('openOutline')
   else
     emit('restart')
 }
@@ -84,6 +87,9 @@ function onSelectScene(id: TheaterScenePresetId) {
         {{ moreOpen ? t('app.more.collapse') : t('app.more.more') }}
       </UiButton>
       <div v-show="moreOpen" class="theater-header__menu" role="menu" @click.stop>
+        <button type="button" class="theater-header__menu-item" role="menuitem" @click="onMore('outline')">
+          {{ t('theater.header.outline') }}
+        </button>
         <button type="button" class="theater-header__menu-item" role="menuitem" @click="onMore('settings')">
           {{ t('theater.header.settings') }}
         </button>

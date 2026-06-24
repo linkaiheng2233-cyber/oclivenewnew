@@ -124,6 +124,10 @@ pub async fn generate_scene(
         return generate_cast_rewrite_scene(state, req).await;
     }
 
+    if req.mode.as_deref() == Some("outline_rewrite") {
+        return generate_outline_rewrite_scene(state, req).await;
+    }
+
     if req.base_beats.is_empty() {
         let hint = if !req.fallback_beats.is_empty() {
             " — cast apply needs `mode=cast_rewrite`; restart the app/kernel so :8420 loads the current build"
@@ -460,6 +464,157 @@ async fn generate_cast_rewrite_scene(
         &model,
         "fallback",
         "rewrite_parse_failed",
+    ))
+}
+
+const MAX_SCRIPT_OUTLINE_LEN: usize = 4096;
+
+/// Mode 2: generate beats from user script outline + cast personas.
+async fn generate_outline_rewrite_scene(
+    state: &AppState,
+    req: &TheaterSceneRequest,
+) -> Result<TheaterSceneResponse> {
+    let outline = req
+        .script_outline
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .ok_or_else(|| {
+            AppError::InvalidParameter(
+                "theater outline_rewrite requires non-empty script_outline".to_string(),
+            )
+        })?;
+    if outline.len() > MAX_SCRIPT_OUTLINE_LEN {
+        return Err(AppError::InvalidParameter(format!(
+            "theater script_outline exceeds {MAX_SCRIPT_OUTLINE_LEN} characters"
+        )));
+    }
+    if req.fallback_beats.is_empty() {
+        return Err(AppError::InvalidParameter(
+            "theater outline_rewrite fallback_beats must not be empty".to_string(),
+        ));
+    }
+
+    let min_beats = cast_rewrite_min_beats();
+    let max_beats = req
+        .max_beats
+        .unwrap_or_else(ripple_max_beats)
+        .clamp(min_beats, 16);
+    let (llm, model) = match resolve_theater_llm(state, req).await {
+        Ok(v) => v,
+        Err(e) => {
+            tracing::warn!(target: "oclive_theater", "outline_rewrite resolve_theater_llm failed: {e}");
+            return Ok(cast_rewrite_fallback_response(
+                req,
+                state.ollama_model.as_str(),
+                "fallback",
+                "outline_llm_resolve_failed",
+            ));
+        }
+    };
+    let source = resolve_llm_source_label(state);
+    let timeout = Duration::from_secs(scene_llm_timeout_secs());
+
+    let persona_a = resolve_cast_persona(state, req.cast_a.role_id.as_str()).await;
+    let persona_b = resolve_cast_persona(state, req.cast_b.role_id.as_str()).await;
+
+    let prompt = crate::domain::theater_director::build_theater_prompt(
+        state,
+        &crate::domain::theater_director::outline_prompt_input(
+            req,
+            max_beats,
+            false,
+            persona_a.as_str(),
+            persona_b.as_str(),
+        ),
+    );
+    let raw = match tokio::time::timeout(timeout, llm.generate_tag(model.as_str(), prompt.as_str()))
+        .await
+    {
+        Ok(Ok(t)) => t,
+        Ok(Err(e)) => {
+            tracing::warn!(target: "oclive_theater", "outline_rewrite LLM failed: {e}");
+            return Ok(cast_rewrite_fallback_response(
+                req,
+                &model,
+                "fallback",
+                "outline_llm_error",
+            ));
+        }
+        Err(_) => {
+            tracing::warn!(
+                target: "oclive_theater",
+                "outline_rewrite LLM timed out ({}s)",
+                scene_llm_timeout_secs()
+            );
+            return Ok(cast_rewrite_fallback_response(
+                req,
+                &model,
+                "fallback",
+                "outline_llm_timeout",
+            ));
+        }
+    };
+
+    if let Some(beats) = try_parse_cast_rewrite_beats_only(req, &raw, min_beats, max_beats) {
+        return Ok(cast_rewrite_beats_only_response(req, beats, &model, source));
+    }
+
+    let strict_prompt = crate::domain::theater_director::build_theater_prompt(
+        state,
+        &crate::domain::theater_director::outline_prompt_input(
+            req,
+            max_beats,
+            true,
+            persona_a.as_str(),
+            persona_b.as_str(),
+        ),
+    );
+    let retry_raw = match tokio::time::timeout(
+        timeout,
+        llm.generate_tag(model.as_str(), strict_prompt.as_str()),
+    )
+    .await
+    {
+        Ok(Ok(t)) => t,
+        Ok(Err(e)) => {
+            tracing::warn!(target: "oclive_theater", "outline_rewrite retry LLM failed: {e}");
+            return Ok(cast_rewrite_fallback_response(
+                req,
+                &model,
+                "fallback",
+                "outline_llm_error",
+            ));
+        }
+        Err(_) => {
+            tracing::warn!(
+                target: "oclive_theater",
+                "outline_rewrite retry LLM timed out ({}s)",
+                scene_llm_timeout_secs()
+            );
+            return Ok(cast_rewrite_fallback_response(
+                req,
+                &model,
+                "fallback",
+                "outline_llm_timeout",
+            ));
+        }
+    };
+
+    if let Some(beats) = try_parse_cast_rewrite_beats_only(req, &retry_raw, min_beats, max_beats) {
+        return Ok(cast_rewrite_beats_only_response(req, beats, &model, source));
+    }
+
+    tracing::warn!(
+        target: "oclive_theater",
+        preview = %raw_preview_for_log(&retry_raw),
+        "outline_rewrite parse failed; using fallback"
+    );
+    Ok(cast_rewrite_fallback_response(
+        req,
+        &model,
+        "fallback",
+        "outline_parse_failed",
     ))
 }
 
@@ -941,6 +1096,78 @@ cast a={name_a}，cast b={name_b}，角色包场景={scene_id}。仅 a/b 两人�
         max_text = MAX_BEAT_TEXT_LEN,
         strict_tail = strict_tail,
         poke_space_line = poke_space_line,
+    )
+}
+
+pub(crate) fn build_outline_rewrite_prompt(
+    req: &TheaterSceneRequest,
+    max_beats: u32,
+    strict: bool,
+    persona_a: &str,
+    persona_b: &str,
+) -> String {
+    let strict_tail = if strict {
+        "\n【严格】只输出 JSON 数组，无 Markdown、无解释。每条仅 id、cast、text；cast 只能是 a 或 b。"
+    } else {
+        ""
+    };
+    let outline = req
+        .script_outline
+        .as_deref()
+        .map(str::trim)
+        .unwrap_or("")
+        .chars()
+        .take(MAX_SCRIPT_OUTLINE_LEN)
+        .collect::<String>();
+    let persona_block = format!(
+        "- A({name_a}): {pa}\n- B({name_b}): {pb}",
+        name_a = req.cast_a.name.trim(),
+        name_b = req.cast_b.name.trim(),
+        pa = if persona_a.trim().is_empty() {
+            "（无额外人设，按角色名推断语气）"
+        } else {
+            persona_a.trim()
+        },
+        pb = if persona_b.trim().is_empty() {
+            "（无额外人设，按角色名推断语气）"
+        } else {
+            persona_b.trim()
+        },
+    );
+    let relation_block = pair_relation_block(req);
+    let scene_block = scene_context_block(req);
+    let target_beats = cast_rewrite_target_beats(cast_rewrite_min_beats(), max_beats);
+    let guardrails = drama_guardrails::drama_guardrails_compact(req.theater_scene.as_deref());
+
+    format!(
+        r#"【剧场大纲 · 用户剧本】围绕以下大纲，为两位角色撰写双人短剧对白。大纲是剧情骨架，须完整覆盖关键节拍，但台词须原创、符合人设。
+
+cast a={name_a}，cast b={name_b}，角色包场景={scene_id}。仅 a/b 两人发言，禁止第三人。
+
+用户剧本大纲：
+{outline}
+
+{scene_block}{guardrails}人设摘要：
+{persona_block}{relation_block}
+撰写要求：
+1. 恰好 {target_beats} 条对白（id 依次为 b1,b2,b3…）；cast 只能是 a 或 b；text 非空≤{max_text}字。
+2. 须落实大纲中的事件与转折；开场 2 拍建立场景感与性格对照；交替发言、口语自然中文。
+3. 不得照搬大纲原文当台词；须写成对白与小动作感。
+
+输出格式（仅 JSON 数组）：
+[{{"id":"b1","cast":"b","text":"……"}},{{"id":"b2","cast":"a","text":"……"}}]
+{strict_tail}"#,
+        name_a = req.cast_a.name.trim(),
+        name_b = req.cast_b.name.trim(),
+        scene_id = req.scene_id.trim(),
+        outline = outline,
+        scene_block = scene_block,
+        guardrails = guardrails,
+        persona_block = persona_block,
+        relation_block = relation_block,
+        target_beats = target_beats,
+        max_text = MAX_BEAT_TEXT_LEN,
+        strict_tail = strict_tail,
     )
 }
 
@@ -1880,6 +2107,7 @@ mod tests {
             theater_scene: None,
             scene_brief: None,
             scene_setting_hint: None,
+            script_outline: None,
         }
     }
 

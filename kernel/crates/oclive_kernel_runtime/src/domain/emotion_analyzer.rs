@@ -23,7 +23,7 @@ impl EmotionAnalyzer {
     ///
     /// # Examples
     /// ```
-    /// # use oclivenewnew_tauri::domain::emotion_analyzer::EmotionAnalyzer;
+    /// # use oclive_kernel_runtime::domain::emotion_analyzer::EmotionAnalyzer;
     /// let result = EmotionAnalyzer::analyze("我很开心").unwrap();
     /// assert!(result.joy > 0.0);
     /// ```

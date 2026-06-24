@@ -486,3 +486,40 @@ async fn http_api_theater_scene_patch_mode_preserves_skeleton_tail() {
     assert_eq!(beats[4]["id"], "b3");
     assert_eq!(beats[4]["text"], "官方尾部。");
 }
+
+#[tokio::test]
+async fn http_api_theater_outline_rewrite_ok() {
+    let llm = Arc::new(MockLlmClient {
+        reply: r#"[{"id":"b1","cast":"a","name":"木木","text":"大纲第一句。"},{"id":"b2","cast":"b","name":"枫侵月","text":"大纲第二句。"},{"id":"b3","cast":"a","name":"木木","text":"大纲第三句。"},{"id":"b4","cast":"b","name":"枫侵月","text":"大纲第四句。"},{"id":"b5","cast":"a","name":"木木","text":"大纲第五句。"},{"id":"b6","cast":"b","name":"枫侵月","text":"大纲第六句。"}]"#.to_string(),
+    });
+    let state = Arc::new(theater_test_state(llm).await);
+    let app = api_router(state);
+    let body = json!({
+        "cast_a": { "role_id": "mumu", "name": "木木" },
+        "cast_b": { "role_id": "枫侵月", "name": "枫侵月" },
+        "scene_id": "home",
+        "base_beats": [],
+        "applied_tweaks": [],
+        "fallback_beats": [
+            { "id": "f1", "cast": "a", "name": "木木", "text": "罐头。" }
+        ],
+        "mode": "outline_rewrite",
+        "script_outline": "两人在超市抢牛奶，最后一起结账回家。",
+        "theater_scene": "supermarket"
+    });
+    let res = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/theater/scene")
+                .header("content-type", "application/json")
+                .body(Body::from(serde_json::to_vec(&body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .expect("oneshot");
+    assert_eq!(res.status(), StatusCode::OK);
+    let v = response_json(res).await;
+    assert_eq!(v["beats"][0]["text"], "大纲第一句。");
+    assert_eq!(v["source"], "local");
+}

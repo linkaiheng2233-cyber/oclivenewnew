@@ -1,6 +1,6 @@
 # 创作者黄金路径（V4 大纲 · ≤2 页）
 
-**状态**：Wave 4 扩写（陌生人 Theater 自动化前置通过）；详细截图待人工陌生人复测。  
+**状态**：Wave 5 扩写（模式 2 产品门通过后）；分步截图待下一 minor。  
 **受众**：初级创作者 —— **30 分钟内**完成可对话角色包，**不涉及** `slot_registry` / 蓝图编排。
 
 ---
@@ -51,6 +51,17 @@ npm run dev:theater
 - 早餐场景 · 双角色对比 · 3 poke chips（见 [theater/DEVELOPMENT_ROADMAP.md](../../handoff/theater/DEVELOPMENT_ROADMAP.md) §4）
 - 自动化烟测：`npm run test:unit` → `distros/theater/src/theater.acceptance.test.ts`（9 测）
 
+### 剧场模式 2 · 剧本大纲（可选 +10 分钟）
+
+> 产品门已通过（朋友 cohort）；入口：**更多 → 写剧本大纲**。不进聊天主链。
+
+1. 顶栏 **更多** → **写剧本大纲**
+2. 用 2–5 句话写本场发生什么（例：超市抢牛奶、忘带钱包）
+3. 选好人设卡司后点 **生成并开演**
+4. 失败时会降级罐头对白；可 **Ctrl+Shift+M** 换更强模型后重试
+
+契约：[`handoff/theater/MODE2_RFC.md`](../../handoff/theater/MODE2_RFC.md)
+
 ## 4. 分发与下一步（5 分钟）
 
 - `oclive-cli` / 编写器：**打包** → `.oclive-plugin` 或整包 zip
@@ -62,7 +73,7 @@ npm run dev:theater
 
 ## 关联债项
 
-- **V4 完整版**：陌生人 Theater 测试 ≥60% 通过后，从本大纲扩为分步截图文档。
-- **冻结期**：不引导创作者改 `runtime_config.dual_core` 或蓝图 `steps[]`。
+- **V4 完整版**：模式 2 可演示后，从本大纲扩为分步截图文档（含大纲模式截图）。
+- **专家路由演示**：`mumu` 包内 `blueprint/includes/expert_routing.json`（`enabled: false`，默认不 invoke）。
 
 [English](../creator-docs-en/getting-started/CREATOR_GOLDEN_PATH.md)（待镜像）

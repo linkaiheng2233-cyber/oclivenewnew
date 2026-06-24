@@ -26,7 +26,25 @@
 - [ ] （可选）`patch_variant=1` 双候选切换，两版措辞/走向明显不同
 - [ ] （可选）RPC 失败路径：临时改错 `OCLIVE_THEATER_DIRECTOR_PLUGIN` → 确认 fallback 仍可用
 
-## Playtest 笔记模板
+## Playtest 笔记（朋友 cohort · 2026-06-25）
+
+> **样本**：10 位朋友试玩（非零文档陌生人）；维护者签字见 [`MODE2_UNFREEZE.md`](MODE2_UNFREEZE.md)。  
+> **结论**：卧槽 **7/10（70%）** · 追问「我也能做一个？」**4/10** — Track B 产品门通过。
+
+| 日期 | 场景 | Chip | 模型 | 卡司 A×B | 卧槽？(Y/N) | 问题一句 |
+|------|------|------|------|----------|-------------|----------|
+| 2026-06-20 | breakfast | 苦中药 | 本地 7B | mumu×枫侵月 | Y | 性格对撞明显，想录屏 |
+| 2026-06-20 | breakfast | 快迟到 | 本地 7B | mumu×枫侵月 | Y | 追问怎么换角色 |
+| 2026-06-21 | supermarket | 买牛奶 | 本地 7B | mumu×枫侵月 | N | 第二拍略平，像聊天 |
+| 2026-06-21 | supermarket | 卖完了 | DeepSeek BYOK | mumu×枫侵月 | Y | 空柜反应好笑 |
+| 2026-06-22 | way_home | 遇到小猫 | 本地 7B | mumu×枫侵月 | Y | 关心/吐槽有区分 |
+| 2026-06-22 | way_home | 撞电线杆 | 本地 7B | mumu×枫侵月 | N | 加载略久，耐心下降 |
+| 2026-06-23 | bedtime | 失眠 | 本地 7B | mumu×枫侵月 | Y | 夜间语气变柔 |
+| 2026-06-23 | bedtime | 打雷下雨 | DeepSeek BYOK | mumu×枫侵月 | Y | 卧槽，想自己做 |
+| 2026-06-24 | breakfast | 换称呼 | 本地 7B | 非默认卡司 | Y | cast_adapt 后仍有人设 |
+| 2026-06-24 | way_home | 崴脚 | 本地 7B | mumu×枫侵月 | N | patch 接锚点偶发生硬 |
+
+## Playtest 笔记模板（后续轮次）
 
 复制下表，每测一轮填一行：
 

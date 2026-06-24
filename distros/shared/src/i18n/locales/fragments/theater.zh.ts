@@ -15,6 +15,16 @@ export default {
       scenePicker: '选择场景',
       settings: '设置',
       restart: '重开本场',
+      outline: '写剧本大纲',
+    },
+    outline: {
+      title: '模式 2 · 剧本大纲',
+      lead: '用几句话写下本场要发生什么；AI 会按你的人设卡司写成对白剧本（不进聊天主链）。',
+      placeholder: '例：两人在超市抢最后一盒草莓牛奶，结账时发现忘带钱包，最后互相吐槽着合用零钱……',
+      submit: '生成并开演',
+      cancel: '取消',
+      failed: '大纲生成失败，请稍后再试。',
+      fallback: '模型未返回理想结果，已使用备用剧本。',
     },
     scene: {
       switching: '正在切换场景…',

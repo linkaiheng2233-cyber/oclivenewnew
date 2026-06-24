@@ -17,6 +17,7 @@
 | G5 | 改 **monorepo 路径**须 grep `roles/`、`src-tauri`、`join("roles")`；Rust 用 `chat_pro_roles_dir()` / `resolve_project_roles_dir()`；JS 用 `scripts/lib/chat-pro-roles-dir.mjs` | CI `check-stale-paths` 红 |
 | G6 | **编排**只在 `oclive_kernel_host::process_message` 及 `turn_pipeline/`；Tauri `api/*.rs` 薄封装，**不在 `lib.rs` 堆业务** | 分层 ratchet 红 |
 | G7 | DTO / 错误码以 `oclive_kernel_types` + [KERNEL_ERROR_CODE_CONVENTION.md](../creator-docs/getting-started/KERNEL_ERROR_CODE_CONVENTION.md) 为准；回复字段 **`reply`** | 前后端契约断裂 |
+| G8 | 改 **公开 DTO 字段 / trait 签名 / crate 名 / 公开 re-export** 后须 `cargo test --workspace --doc`（`check:rust` 与 `--lib` **不跑 doctest**） | rustdoc 示例漂移 → CI `rust` 硬门禁红（本地 `--lib` 全绿掩盖）；见 [AI_VERIFICATION_PROTOCOL.md](./AI_VERIFICATION_PROTOCOL.md) §2.1 |
 
 ---
 
@@ -84,6 +85,7 @@
 - `node scripts/dimension5-acceptance.mjs --ci` — **13** 项（含 `cargo deny`）
 - 关键路径索引：[BUS_FACTOR_NOTES.md](./BUS_FACTOR_NOTES.md)
 - 技术债 / 冻结：[TECHNICAL_DEBT_INVENTORY.md](./TECHNICAL_DEBT_INVENTORY.md)
+- **审查 / 汇报核实**（带数字的质量报告、第三方审查入账前）：[AI_VERIFICATION_PROTOCOL.md](./AI_VERIFICATION_PROTOCOL.md)
 
 ---
 
