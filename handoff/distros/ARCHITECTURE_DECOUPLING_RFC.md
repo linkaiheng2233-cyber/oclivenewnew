@@ -163,3 +163,30 @@ oclive_kernel_host = { path = "../../kernel/crates/oclive_kernel_host", features
 - Gate 3 kernel tag: kernel-vX.Y.Z
 - Outcome: split / defer / partial (shared+chat-pro only)
 ```
+
+---
+
+## 附录 B：校企合作全量镜像仓 `oclive-school`
+
+> **与附录 A 正交**：附录 A = 官方产品拆姊妹仓；附录 B = **校企下游二次开发基线**（完整镜像，非 kernel-only）。
+
+### 决策（2026-06-24）
+
+- **范围**：新仓 = `oclivenewnew` 全量（`kernel/` + 全部 `distros/` + 根契约文档）。
+- **上游**：`oclivenewnew` 继续官方叙事与 OOCP 门禁。
+- **推荐仓名**：**`oclive-school`**（备选 `oclive-campus`）。
+- **状态**：待建仓；操作手册见 [`SCHOOL_ENTERPRISE_FORK.md`](./SCHOOL_ENTERPRISE_FORK.md)。
+
+### 执行清单
+
+1. 上游打 tag `school-baseline-v0.4.0`（或当前稳定点）。
+2. mirror push 至校企空仓。
+3. 校企仓运行 `node scripts/init-school-fork.mjs --upstream <oclivenewnew-url>`.
+4. README 首屏加校企横幅；定制记录 `handoff/distros/SCHOOL_CUSTOMIZATIONS.md`（校企仓内维护）。
+
+### 不回灌上游的信号
+
+- 校企私有配置、未脱敏数据、内网 endpoint。
+- 仅适用于单校课程的实验性 UI（除非产品化并过陌生人测试）。
+
+通用内核/契约改进仍应 **PR → oclivenewnew**。

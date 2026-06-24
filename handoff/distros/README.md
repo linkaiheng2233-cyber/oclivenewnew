@@ -14,3 +14,5 @@
 **迁移路径清单**：[STALE_PATHS_MIGRATION_CHECKLIST.md](./STALE_PATHS_MIGRATION_CHECKLIST.md)
 
 **Chat Pro 发版验收**：[MUMU_UI_ACCEPTANCE_CHECKLIST.md](./MUMU_UI_ACCEPTANCE_CHECKLIST.md)
+
+**校企合作全量镜像仓**：[SCHOOL_ENTERPRISE_FORK.md](./SCHOOL_ENTERPRISE_FORK.md)（推荐仓名 **`oclive-school`** · 初始化 `node scripts/init-school-fork.mjs`）

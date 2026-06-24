@@ -78,3 +78,6 @@ src-tauri/resources/roles/
 src-tauri/resources/.theater-roles-bundle
 distros/desktop-tauri/resources/roles/
 distros/desktop-tauri/resources/.theater-roles-bundle
+
+# Downstream school fork marker (commit in oclive-school; ignore in upstream)
+.oclive/school-fork.json
