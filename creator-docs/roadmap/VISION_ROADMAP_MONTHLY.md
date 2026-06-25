@@ -116,9 +116,9 @@
 
 | Wave | 目标 | 说明 |
 |------|------|------|
-| **C** | 感知延迟 | Chat Pro 主 UI 接 `/chat/stream`，与后端 TTFT 正交 |
-| **D** | **Deep 短 prompt** | 角色包 **`prompts/deep_capsule.txt`**（离线蒸馏）；Deep 轮替换全量 `core_personality` 注入 |
-| **D+** | **上下文延续** | Prompt 拆 **稳定前缀 / 可变后缀**；同会话 Deep 多轮复用 KV cache，继续压 prefill |
+| **C** | 感知延迟 | Chat Pro 主 UI 接 `/chat/stream` · **Done** |
+| **D** | **Deep 短 prompt** | 角色包 **`prompts/deep_capsule.txt`** · **Small+Deep Done** |
+| **D-T3 / D+** | **上下文延续（Large + KV）** | Prompt 拆 **稳定前缀 / 可变后缀**；**Large 模型全文 + KV 延续** — **第 7 月+ backlog** |
 
 **架构归类 SSOT**：规则 event = **第 3 模块** optional 子路径 + **HostProfile** 开关；Turn Thinking = **编排行无编号设施**；capsule = **角色包卫星 + 第 4 模块组装分支**。详见 **[`handoff/DEEP_PROMPT_DISTILLATION.md`](../../handoff/DEEP_PROMPT_DISTILLATION.md)**。
 

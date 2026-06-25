@@ -417,6 +417,8 @@ mod persist_non_profile_tests {
             min_runtime_version: None,
             dev_only: false,
             featured: false,
+            deep_capsule_enabled: false,
+            deep_capsule: None,
             preset_order: 999,
             plugin_backends: Arc::new(crate::models::PluginBackends::default()),
             slot_registry: None,

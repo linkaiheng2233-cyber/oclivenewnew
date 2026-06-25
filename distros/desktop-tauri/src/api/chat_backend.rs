@@ -63,6 +63,61 @@ impl ChatBackend {
         }
     }
 
+    pub async fn send_message_stream(
+        &self,
+        role_path: &std::path::Path,
+        req: &SendMessageRequest,
+        on_token: impl FnMut(&str) + Send + 'static,
+    ) -> Result<SendMessageResponse, AppError> {
+        let on_token = std::sync::Arc::new(parking_lot::Mutex::new(on_token));
+        let emit = |t: &str| {
+            let mut f = on_token.lock();
+            f(t);
+        };
+        match self {
+            Self::Http(conn) => {
+                match KernelHttpClient::send_message_stream_via_http(
+                    conn,
+                    role_path,
+                    req,
+                    |t| emit(t),
+                )
+                .await
+                {
+                    Ok(res) => Ok(res),
+                    Err(AppError::RoleRuntimeNotReady) => {
+                        KernelHttpClient::load_role_via_http(conn, req.role_id.trim()).await?;
+                        KernelHttpClient::send_message_stream_via_http(
+                            conn,
+                            role_path,
+                            req,
+                            |t| emit(t),
+                        )
+                        .await
+                    }
+                    Err(e) => Err(e),
+                }
+            }
+            Self::Local(state) => {
+                debug_assert!(
+                    cfg!(test),
+                    "Local chat backend must not be used for authoritative desktop writes"
+                );
+                use oclive_kernel_host::domain::chat_engine::process_message_stream;
+                let sink_on = Arc::clone(&on_token);
+                process_message_stream(
+                    state.as_ref(),
+                    req,
+                    Arc::new(move |t: &str| {
+                        let mut f = sink_on.lock();
+                        f(t);
+                    }),
+                )
+                .await
+            }
+        }
+    }
+
     pub async fn list_chat_sessions(
         &self,
         role_id: &str,

@@ -36,6 +36,13 @@ const historicalMessages = computed(() =>
 )
 const currentMessages = computed(() => props.messages.slice(split.value))
 
+const showThinkingIndicator = computed(() => {
+  if (!props.loading || props.roleSwitching)
+    return false
+  const last = currentMessages.value.at(-1)
+  return !(last?.role === 'assistant' && last.streaming)
+})
+
 const historyPreviewMaxChunks = computed(() =>
   Math.ceil(historicalMessages.value.length / PREVIEW_STEP),
 )
@@ -187,6 +194,7 @@ defineExpose({ scrollToBottom })
             :timestamp="item.timestamp"
             :presence-variant="item.presenceVariant"
             :reply-is-fallback="item.replyIsFallback"
+            :streaming="item.streaming"
           />
         </div>
       </template>
@@ -199,7 +207,7 @@ defineExpose({ scrollToBottom })
       {{ t("chat.empty") }}
     </div>
 
-    <div v-if="loading" class="thinking">
+    <div v-if="showThinkingIndicator" class="thinking">
       <div class="dot-wrap">
         <span class="dot" />
         <span class="dot" />

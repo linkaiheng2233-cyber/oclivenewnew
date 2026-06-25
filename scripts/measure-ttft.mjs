@@ -204,7 +204,13 @@ function printBlockingReport(report) {
 async function main() {
   const base = arg('--base', 'http://127.0.0.1:8420').replace(/\/$/, '')
   const runs = Number(arg('--runs', '5'))
-  const message = arg('--message', '你好，一句话自我介绍。')
+  const deepOnly = process.argv.includes('--deep-only')
+  const message = deepOnly
+    ? arg(
+        '--message',
+        '我今天心情特别不好，想了很久要不要和你说…（认真）这件对我来说很重要，你别敷衍我，能多陪我说说话吗？我们好好聊聊。',
+      )
+    : arg('--message', '你好，一句话自我介绍。')
   const sceneId = arg('--scene-id', 'home')
   const rolePath = resolve(arg('--role-path', join(chatProRolesDir(resolveRepoRoot()), 'mumu')))
   const ollamaModel = arg('--ollama-model', 'qwen2.5:7b')
@@ -221,6 +227,7 @@ async function main() {
   console.log(`API: ${base}`)
   console.log(`Role: ${rolePath}`)
   console.log(`Runs: ${runs} · Scene: ${sceneId} · Message: ${message}`)
+  if (deepOnly) console.log('Mode: --deep-only (Turn Thinking Deep trigger)')
   console.log(`Kernel: runtime=${healthBody.runtime_api_version ?? '?'} warnings=${(healthBody.startup_warnings ?? []).length}`)
 
   if (!skipSetup) {

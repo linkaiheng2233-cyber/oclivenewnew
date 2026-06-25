@@ -3039,6 +3039,7 @@ dependencies = [
  "axum",
  "chrono",
  "dashmap",
+ "futures-util",
  "indexmap 2.14.0",
  "notify",
  "oclive_kernel_contracts",

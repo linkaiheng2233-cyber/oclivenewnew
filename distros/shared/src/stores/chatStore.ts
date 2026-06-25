@@ -36,6 +36,8 @@ export interface ChatMessage {
   replyIsFallback?: boolean
   /** Narration/inner thought/action split from main reply (assistant only; main content is dialogue) */
   aside?: string
+  /** True while SSE tokens are still arriving */
+  streaming?: boolean
 }
 
 /** Populated from `get_chat_storage_capabilities` on hydrate; backend SSOT is `DEFAULT_MAX_MESSAGES`. */
@@ -462,7 +464,7 @@ export const useChatStore = defineStore(
         roleId: string,
         sceneId: string,
         localId: string,
-        patch: Partial<Pick<ChatMessage, 'id' | 'timestamp'>>,
+        patch: Partial<Pick<ChatMessage, 'id' | 'timestamp' | 'content' | 'streaming' | 'emotion' | 'aside'>>,
       ) {
         const sid = sceneId || 'default'
         const bucket = roleSceneBucket(this.messageMap, roleId, sid)

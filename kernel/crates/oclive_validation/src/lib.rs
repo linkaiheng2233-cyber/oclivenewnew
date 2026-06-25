@@ -13,6 +13,7 @@ mod blueprint_v2_slot_registry;
 pub mod blueprint_v3;
 pub mod chat_storage;
 pub mod creator_profile;
+pub mod deep_capsule;
 pub mod disk_role_settings;
 pub mod expert_actions;
 pub mod expert_routing;

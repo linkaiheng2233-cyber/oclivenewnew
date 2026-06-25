@@ -1,6 +1,6 @@
 # Deep 路径 · Prompt 蒸馏与上下文延续（Wave D）
 
-**状态**：T0 契约 / 愿景（本文）· **未接 Stable 主链**  
+**状态**：T1/T2 **已接 Stable 主链**（角色包资产 + `PromptBuilder` Deep 分支）· T3 KV 延续仍为愿景  
 **前置**：Wave A/B 已交付（Turn Thinking · 规则 event · TTFT bench），见 [`TTFT_BENCHMARK.md`](TTFT_BENCHMARK.md)  
 **关联愿景**：[`creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md`](../creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md) §「TTFT 与 Deep 精炼」
 
@@ -23,23 +23,47 @@
 
 ---
 
-## 3. Deep Prompt 蒸馏（T0 契约）
+## 3. Deep Prompt 蒸馏
 
-### 3.1 角色包字段（草案）
+### 3.0 资产矩阵（model_tier × Turn Thinking）
+
+| model_tier | Fast 轮 | Deep 轮 |
+|------------|---------|---------|
+| **Small**（≤13B · `7b`/`8b`/`13b` 启发式） | 全量 `core_personality.txt` + 现 co-present Fast 裁剪 | **`deep_capsule`**（2–3k 字离线蒸馏）替代 Tier0 全量注入 |
+| **Large**（34B+ 启发式） | 全量 `core_personality` | 全量 `core_personality` + 全 enrichment（**KV 前缀延续**见 §4 · 第 7 月+ backlog） |
+
+编排行 SSOT：`ModelTier` / `PersonaSource` — [`MODULE_MAP_AND_HANDOFF.md`](MODULE_MAP_AND_HANDOFF.md) §12 · 实现 `model_tier.rs` + `resolve_persona_source`。
+
+### 3.1 角色包字段
 
 | 字段 | 位置 | 说明 |
 |------|------|------|
-| `prompts/deep_capsule.txt` | 包内可选文件 | **Deep 专用**；≤ ~800 汉字（或 ~1.2k tokens）人格胶囊；**替换** Tier0 中全量 `core_personality.txt` 注入，**不**删磁盘上的 `core_personality.txt`（Fast 与编写器仍读全文） |
-| `meta.deep_capsule_enabled` | manifest / blueprint meta | 默认 `false`；`true` 且文件存在时 Deep 路径启用 |
+| `prompts/deep_capsule.txt` | 包内可选文件 | **Deep 专用**；≤ **2500** 汉字人格胶囊；**替换** Tier0 中全量 `core_personality.txt` 注入，**不**删磁盘上的 `core_personality.txt`（Fast 与编写器仍读全文） |
+| `meta.deep_capsule_enabled` | blueprint `meta` | 默认 `false`；`true` 且文件存在且 Small+Deep 时启用 |
 | 镜像 | `prompts/deep_capsule.md` | 编写器人类可读镜像（不参与运行时） |
 
 **不变量**：
 
 - `KERNEL_DIALOGUE_GUARDRAILS` **每轮恒追加**，不可被 capsule 替换（与 `reply_quality_anchor` 纪律相同）。
 - `reply_quality_anchor`：Deep 仍可用包级锚点；capsule 只承担「人格差异压缩」，不重复 guardrails。
-- 校验：`oclive_validation` 待增 `deep_capsule` 长度上限与 UTF-8 检查（T1）。
+- 校验：`oclive_validation` UTF-8 · ≤2500 字；`enabled` 但缺文件 → **ERROR**（T1 已交付）。
 
-### 3.2 离线蒸馏流程（编写器 / CLI，T1）
+### 3.2 人设一致性 checklist（Full Deep vs Capsule Deep）
+
+固定 OOCP / bench 对比时逐条核对（mumu 样例）：
+
+1. 身份：米黄色头发、个子小小的**可爱小女孩**沐沐（非御姐/职场大人）。
+2. 关系：与用户同住屋檐下（妹妹+室友感），非亲兄妹。
+3. 嘴硬根源：**害羞**而非恶意怼人；关心藏在行动与琐碎里。
+4. 情感表达：说不出口「需要你/想你」→ 用行动或转移话题掩盖。
+5. 称呼：可轮换「你/喂/笨蛋」，高好感后偶现亲昵称呼并立刻吐槽找补。
+6. 场景不变性：学校/家/公司/游乐园/VS Code 等仅改「在做什么」，不改本质人设。
+7. 长度：日常 1–3 句；深聊 4–5 句；纯文字无 Markdown。
+8. 禁止：替用户做决定；低落时轻浮；固定开场复读；恶意欺负陌生人。
+9. 甜食/番剧/小动物：自然提及，不每轮推销。
+10. 低/中/高好感语气梯度与全量 Deep 一致（防御 → 松动 → 偶发半句真话）。
+
+### 3.3 离线蒸馏流程（编写器 / CLI，T1）
 
 1. **输入**：`core_personality.txt` + 可选 `scenes/` 摘要 + 固定 guardrails 清单（只读参考）。
 2. **工具**：pack-editor「生成 Deep 胶囊」或 `oclive-cli pack distill-deep --role mumu`（占位，T1 实现）。
@@ -48,21 +72,22 @@
 
 **禁止**：在 `EventEstimate` / `BuildPrompt` stage 内调用 LLM 动态压缩。
 
-### 3.3 运行时接线（T2 · Stable 主链）
+### 3.4 运行时接线（T2 · Stable 主链）
 
 ```text
 resolve_turn_thinking → Deep
+  → resolve_model_tier(ollama_model) + resolve_persona_source(tier, mode, role, host)
   → co_present: 全量 enrichment（与今一致）
-  → PromptInput + HostProfile
+  → PromptInput { persona_override: Option<&str> } + HostProfile
   → PromptBuilder:
-       if deep_capsule_enabled && mode == Deep:
+       if PersonaSource::DeepCapsule:
          build_core_hard_constraint ← deep_capsule（短）
        else:
          build_core_hard_constraint ← core_personality（全文）
   → LLM generate（见 §4 前缀延续）
 ```
 
-`TurnThinkingPlan` 可增 `use_deep_capsule(role, host) -> bool`（角色包 + 发行版 `[turn_thinking] deep_capsule = true` 可选强制）。
+`resolve_persona_source`：**仅** `Small + Deep + deep_capsule_enabled + 文件存在` → `DeepCapsule`；发行版 `[turn_thinking] deep_capsule` 可强制开/关（见 DISTRO_CAPABILITY_PROFILE）。
 
 ---
 
@@ -91,10 +116,10 @@ Deep 路径 prompt 长、prefill 重；除缩短 capsule 外，应 **最大化�
 
 | 阶段 | 交付物 | 验收 |
 |------|--------|------|
-| **T0** | 本文 + 愿景条目 + `DISTRO_CAPABILITY_PROFILE` 开关说明 | 文档评审 |
-| **T1** | 角色包 schema · 编写器导出 · `oclive_validation` | mumu 样例 `deep_capsule.txt`；validate 通过 |
-| **T2** | `PromptBuilder` Deep 分支 · `co_present` 传 mode · bench | Deep TTFT 较全量下降 ≥20%（同模型同机） |
-| **T3** | 前缀分段 + Ollama KV 延续 · `measure-ttft.mjs --deep-only` | 连续 5 轮 Deep，第 2–5 轮 p50 prefill 低于第 1 轮 |
+| **T0** | 本文 + 愿景条目 + `DISTRO_CAPABILITY_PROFILE` 开关说明 | 文档评审 · **Done** |
+| **T1** | 角色包 schema · 编写器导出 · `oclive_validation` | mumu 样例 `deep_capsule.txt`；validate 通过 · **Done** |
+| **T2** | `PromptBuilder` Deep 分支 · `co_present` 传 mode · bench | Deep TTFT 较全量下降 ≥20%（同模型同机）· **Done** |
+| **T3** | 前缀分段 + Ollama KV 延续 | 连续 5 轮 Deep，第 2–5 轮 p50 prefill 低于第 1 轮 · **待排** |
 
 ---
 

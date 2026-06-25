@@ -177,6 +177,7 @@ impl RoleManager {
                 host_state_expression_hint: "",
                 relation_transition_hint: "",
                 extra_sections: &[],
+                persona_override: None,
             })
             .expect("build_prompt");
 
@@ -267,6 +268,8 @@ mod tests {
             min_runtime_version: None,
             dev_only: false,
             featured: false,
+            deep_capsule_enabled: false,
+            deep_capsule: None,
             preset_order: 999,
             plugin_backends: std::sync::Arc::new(crate::models::PluginBackends::default()),
             slot_registry: None,

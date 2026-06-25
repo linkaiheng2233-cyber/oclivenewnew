@@ -396,6 +396,7 @@ impl<'a> ExperimentalStepCtx<'a> {
                 host_state_expression_hint: host_state_hint,
                 relation_transition_hint: transition.hint.as_str(),
                 extra_sections: &[],
+                persona_override: None,
             },
         )
         .map_err(map_slot_err)?;

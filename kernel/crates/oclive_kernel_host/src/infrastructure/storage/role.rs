@@ -156,6 +156,7 @@ impl RoleStorage {
         };
         role.interaction_mode = loaded.interaction_mode;
         role.featured = loaded.featured;
+        role.deep_capsule_enabled = loaded.deep_capsule_enabled;
         role.preset_order = loaded.preset_order;
         role.remote_presence = loaded.remote_presence;
         role.autonomous_scene = loaded.autonomous_scene;
@@ -201,6 +202,7 @@ impl RoleStorage {
         };
         role.interaction_mode = loaded.interaction_mode;
         role.featured = loaded.featured;
+        role.deep_capsule_enabled = loaded.deep_capsule_enabled;
         role.preset_order = loaded.preset_order;
         role.remote_presence = loaded.remote_presence;
         role.autonomous_scene = loaded.autonomous_scene;
@@ -386,6 +388,13 @@ impl RoleStorage {
         if core_personality_path.exists() {
             role.core_personality =
                 fs::read_to_string(&core_personality_path).map_err(AppError::IoError)?;
+        }
+
+        let deep_capsule_path = role_dir.join("prompts/deep_capsule.txt");
+        if deep_capsule_path.is_file() {
+            role.deep_capsule = Some(
+                fs::read_to_string(&deep_capsule_path).map_err(AppError::IoError)?,
+            );
         }
 
         role.user_identity_catalog = load_user_identity_catalog(role_dir)?;

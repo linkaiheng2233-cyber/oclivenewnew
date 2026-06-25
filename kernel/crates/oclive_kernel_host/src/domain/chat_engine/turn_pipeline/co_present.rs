@@ -7,6 +7,9 @@ use crate::domain::life_schedule::{format_life_prompt_line, pick_life_state};
 use crate::domain::personality_engine::PersonalityEngine;
 use crate::domain::prompt_builder::{effective_reply_quality_anchor, PromptInput};
 use crate::domain::slot_runner::SlotRunner;
+use crate::domain::model_tier::{
+    persona_override_for_source, resolve_model_tier, resolve_persona_source,
+};
 use crate::domain::turn_thinking::{resolve_turn_thinking, TurnThinkingMode};
 use crate::models::knowledge::KnowledgeIndex;
 use crate::models::Memory;
@@ -205,6 +208,16 @@ pub(crate) async fn run_middle(
     } else {
         pre.hints.prev_stored_narrative_hint.as_str()
     };
+    let tier = resolve_model_tier(pre.memory.ollama_model.as_str());
+    let persona_source =
+        resolve_persona_source(tier, thinking.mode, role, &state.host_profile);
+    let persona_override = persona_override_for_source(role, persona_source);
+    tracing::debug!(
+        target: "oclive_turn",
+        ?tier,
+        ?persona_source,
+        "persona_source resolved"
+    );
     let prompt = STAGES
         .stage(ChatStage::BuildPrompt, async {
             SlotRunner::build_prompt(
@@ -238,6 +251,7 @@ pub(crate) async fn run_middle(
                     host_state_expression_hint: host_state_hint,
                     relation_transition_hint: pre.relation.relation_transition_hint.as_str(),
                     extra_sections: &[],
+                    persona_override,
                 },
             )
         })

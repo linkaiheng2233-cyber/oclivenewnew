@@ -51,4 +51,6 @@ pub struct PromptInput<'a> {
     pub relation_transition_hint: &'a str,
     /// Host-orchestrated extra sections rendered before the reply-quality anchor (ordered).
     pub extra_sections: &'a [PromptExtraSection<'a>],
+    /// When set, replaces Tier0 `core_personality` injection (Wave D Deep capsule).
+    pub persona_override: Option<&'a str>,
 }

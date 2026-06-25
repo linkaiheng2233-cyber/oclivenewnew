@@ -1,5 +1,5 @@
 import type { SendMessageResponse } from '@oclive/shared/api'
-import { sendMessage } from '@oclive/shared/api'
+import { sendMessage, sendMessageStream } from '@oclive/shared/api'
 import { hostEventBus } from '@oclive/shared/lib/hostEventBus'
 import { getRelationUpgradeMessage } from '@oclive/shared/utils/relation'
 import { presentationFromSendResponse } from '@oclive/shared/utils/replyPresentation'
@@ -26,7 +26,7 @@ export interface ChatStoreSendContext {
     roleId: string,
     sceneId: string,
     localId: string,
-    patch: Partial<Pick<ChatMessage, 'id' | 'timestamp'>>,
+    patch: Partial<Pick<ChatMessage, 'id' | 'timestamp' | 'content' | 'streaming' | 'emotion' | 'aside'>>,
   ) => void
   deleteMessage: (roleId: string, sceneId: string, messageId: string) => void
   addSystemMessage: (content: string, sceneId?: string) => void
@@ -57,35 +57,76 @@ export async function sendChatStoreMessage(
   }, { persistIdbCache: false })
   context.setLoading(true)
   const relationBefore = roleStore.roleInfo.relationState
+  const assistantLocalId = `a-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+  let streamBubbleActive = false
   try {
-    const res = await sendMessage({
-      role_id: roleId,
-      user_message: content,
-      scene_id: sid || null,
-    })
+    let res: SendMessageResponse
+    try {
+      context.addMessage(roleId, sid, {
+        id: assistantLocalId,
+        role: 'assistant',
+        content: '',
+        timestamp: Date.now(),
+        streaming: true,
+      }, { persistIdbCache: false })
+      streamBubbleActive = true
+      res = await sendMessageStream(
+        {
+          role_id: roleId,
+          user_message: content,
+          scene_id: sid || null,
+        },
+        {
+          onToken: (_token, accumulated) => {
+            context.patchMessageById(roleId, sid, assistantLocalId, {
+              content: accumulated,
+            })
+          },
+        },
+      )
+    }
+    catch (streamErr) {
+      console.warn('[chat] stream failed, fallback to /chat', streamErr)
+      if (streamBubbleActive) {
+        context.deleteMessage(roleId, sid, assistantLocalId)
+        streamBubbleActive = false
+      }
+      res = await sendMessage({
+        role_id: roleId,
+        user_message: content,
+        scene_id: sid || null,
+      })
+    }
+
     if (res.user_message_id) {
       context.patchMessageById(roleId, sid, userLocalId, {
         id: res.user_message_id,
         timestamp: parseMessageTimestamp(res.user_message_timestamp),
       })
     }
+
     const pres = presentationFromSendResponse(res)
     const preSplit = splitRoleplayReply(pres.replyText)
     const aside = preSplit.aside.trim()
     const dialogue = assistantDialogueFromSplit(pres.replyText, preSplit)
     const assistantMsg: ChatMessage = {
       id: res.assistant_message_id
-        ?? `a-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+        ?? assistantLocalId,
       role: 'assistant',
       content: dialogue,
       timestamp: parseMessageTimestamp(res.assistant_message_timestamp),
       emotion: pres.assistantEmotionLabel,
       presenceVariant: pres.presenceVariant,
       replyIsFallback: pres.replyIsFallback,
+      streaming: false,
       ...(aside.length > 0 ? { aside } : {}),
     }
+
+    if (streamBubbleActive) {
+      context.deleteMessage(roleId, sid, assistantLocalId)
+    }
     context.addMessage(roleId, sid, assistantMsg, { persistIdbCache: false })
-    const split = preSplit
+
     useDebugStore().recordKnowledgeFromSend(res)
     roleStore.updateLocalAfterMessage(
       pres.assistantEmotionLabel,
@@ -109,8 +150,8 @@ export async function sendChatStoreMessage(
     }
     hostEventBus.emitBuiltin('message:sent', {
       message: content,
-      reply: assistantDialogueFromSplit(pres.replyText, split),
-      reply_aside: split.aside,
+      reply: assistantDialogueFromSplit(pres.replyText, preSplit),
+      reply_aside: preSplit.aside,
     })
     const countAfterTurn = context.getMessageCountForRoleScene(roleId, sid)
     context.clampSceneHistorySplitForBucket(
@@ -124,6 +165,8 @@ export async function sendChatStoreMessage(
   }
   catch (err) {
     context.deleteMessage(roleId, sid, userLocalId)
+    if (streamBubbleActive)
+      context.deleteMessage(roleId, sid, assistantLocalId)
     throw err
   }
   finally {

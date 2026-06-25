@@ -156,7 +156,7 @@ slot_registry（或 legacy plugin_backends）
 | **Tier0 人设真源** | **`core_personality.txt`**（非 `prompts/system.md`） |
 | **页脚** | `reply_quality_anchor`（包级 **可替**）+ **`KERNEL_DIALOGUE_GUARDRAILS`**（**不可替**） |
 | **主链 hook** | `co_present` `BuildPrompt` · `PromptInput` |
-| **Wave D 预留** | Deep **`prompts/deep_capsule.txt`** — [`DEEP_PROMPT_DISTILLATION.md`](./DEEP_PROMPT_DISTILLATION.md) |
+| **Wave D 预留** | Deep **`prompts/deep_capsule.txt`** — [`DEEP_PROMPT_DISTILLATION.md`](./DEEP_PROMPT_DISTILLATION.md) · **Small+Deep 已接线** |
 | **允许改** | 段落公式 `sections.rs`、overlay（concise profile） |
 | **禁止** | 运行时 LLM 压缩 prompt；用 capsule 替换 guardrails |
 
@@ -223,6 +223,8 @@ RFC：[`RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md`](../creator-docs/rfc/RFC_SI
 | 能力 | 归类 | 配置 | 代码 |
 |------|------|------|------|
 | **Turn Thinking** Fast/Deep/Auto | HostProfile 策略 | `[turn_thinking]` · `distro.oclive.toml` | `turn_thinking.rs` |
+| **`ModelTier`** Small/Large | 编排行 · Ollama 模型启发式 | — | `model_tier.rs` |
+| **`PersonaSource`** FullCore/DeepCapsule | 编排行 · Deep Tier0 选择 | 角色 `meta.deep_capsule_enabled` + `prompts/deep_capsule.txt` | `model_tier.rs` · `co_present` |
 | **`event_impact_llm`** | HostProfile 开关 | `[host_flags]` | `event_impact_ai.rs` |
 | **`prompt.profile` concise** | HostProfile overlay | `[prompt]` | `DISTRO_CONCISE_PROMPT_OVERLAY` |
 | **PersonalityEngine / 好感** | 无编号设施 | 角色 `evolution` · `role_runtime` | `personality_engine.rs` |

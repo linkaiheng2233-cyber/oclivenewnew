@@ -137,6 +137,8 @@ pub fn disk_manifest_to_role(d: &DiskRoleManifest) -> Role {
         min_runtime_version: d.min_runtime_version.clone(),
         dev_only: d.dev_only,
         featured: false,
+        deep_capsule_enabled: false,
+        deep_capsule: None,
         preset_order: 999,
         plugin_backends: std::sync::Arc::new(super::PluginBackends::default()),
         slot_registry: None,

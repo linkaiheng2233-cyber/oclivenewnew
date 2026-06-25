@@ -230,6 +230,7 @@ pub fn run() {
             api::settings::set_remote_fallback_to_builtin,
             // ?? chat ??
             api::chat::send_message,
+            api::chat::get_role_pack_path,
             api::chat::list_chat_sessions,
             api::chat::fetch_chat_messages,
             api::chat::rebuild_chat_mirror,

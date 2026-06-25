@@ -192,6 +192,12 @@ pub struct Role {
     /// Blueprint `meta.featured`: show in first-run preset gallery.
     #[serde(default)]
     pub featured: bool,
+    /// Blueprint `meta.deep_capsule_enabled`: use `prompts/deep_capsule.txt` on Small+Deep when true.
+    #[serde(default)]
+    pub deep_capsule_enabled: bool,
+    /// Wave D: offline-distilled Deep persona (`prompts/deep_capsule.txt`; in-memory only).
+    #[serde(skip)]
+    pub deep_capsule: Option<String>,
     /// Blueprint `meta.preset_order`: gallery sort (lower first).
     #[serde(default = "default_preset_order")]
     pub preset_order: u32,
@@ -329,6 +335,8 @@ impl Default for Role {
             min_runtime_version: None,
             dev_only: false,
             featured: false,
+            deep_capsule_enabled: false,
+            deep_capsule: None,
             preset_order: default_preset_order(),
             plugin_backends: default_plugin_backends(),
             slot_registry: None,

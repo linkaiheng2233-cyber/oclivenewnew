@@ -128,7 +128,7 @@ favor_low  = "…"              # optional; favor < 40
 | `auto_deep_min_chars` | usize | Auto 触发 Deep 的最小用户句字符数 |
 | `fast_knowledge_limit` | usize | Fast 轮知识检索条数上限 |
 | `fast_memory_cap` | usize | Fast 轮注入 prompt 的记忆条数上限 |
-| `deep_capsule` | bool（**Wave D 预留**） | 为 `true` 且角色包含 `prompts/deep_capsule.txt` 时，Deep 轮用 capsule 替代全量 `core_personality` 注入 |
+| `deep_capsule` | bool（**Wave D**） | 发行版强制开/关 Deep capsule；`true` 且角色含 `prompts/deep_capsule.txt` + `meta.deep_capsule_enabled` 时，**Small+Deep** 用 capsule 替代全量 `core_personality` |
 
 示例（latency bench）：[`examples/distro-profiles/desktop-latency.oclive.toml`](../../examples/distro-profiles/desktop-latency.oclive.toml)。架构归类与 Deep 蒸馏路线图：[`handoff/DEEP_PROMPT_DISTILLATION.md`](../../handoff/DEEP_PROMPT_DISTILLATION.md)。
 

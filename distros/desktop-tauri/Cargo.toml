@@ -42,7 +42,8 @@ anyhow = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["env-filter", "fmt", "std", "json"] }
-reqwest = { workspace = true, features = ["json", "rustls-tls"] }
+reqwest = { workspace = true, features = ["json", "rustls-tls", "stream"] }
+futures-util = "0.3"
 dashmap = { workspace = true }
 tracing-appender = { workspace = true }
 once_cell = { workspace = true }

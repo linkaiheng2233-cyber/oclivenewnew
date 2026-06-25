@@ -165,6 +165,104 @@ export async function sendMessage(
   return invokeWithFriendlyError<SendMessageResponse>('send_message', { req })
 }
 
+function parseSseBlock(block: string): { eventName: string, data: string } {
+  let eventName = 'message'
+  const dataLines: string[] = []
+  for (const line of block.split('\n')) {
+    if (line.startsWith('event:'))
+      eventName = line.slice(6).trim()
+    else if (line.startsWith('data:'))
+      dataLines.push(line.slice(5).trim())
+  }
+  return { eventName, data: dataLines.join('\n') }
+}
+
+export interface SendMessageStreamOptions {
+  onToken?: (token: string, accumulated: string) => void
+  signal?: AbortSignal
+}
+
+/** Stream chat tokens via kernel HTTP `POST /chat/stream` (SSE). */
+export async function sendMessageStream(
+  req: SendMessageRequest,
+  options: SendMessageStreamOptions = {},
+): Promise<SendMessageResponse> {
+  const { getKernelConnectionStatus } = await import('./kernel')
+  const status = await getKernelConnectionStatus()
+  if (!status.healthy) {
+    throw new Error('Kernel offline')
+  }
+  const rolePath = await invokeWithFriendlyError<string>('get_role_pack_path', {
+    roleId: req.role_id,
+  })
+  const res = await fetch(`${status.baseUrl}/chat/stream`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      accept: 'text/event-stream',
+    },
+    body: JSON.stringify({
+      role_path: rolePath,
+      message: req.user_message,
+      scene_id: req.scene_id ?? null,
+    }),
+    signal: options.signal,
+  })
+  if (!res.ok) {
+    const errText = await res.text()
+    throw new Error(`stream HTTP ${res.status}: ${errText.slice(0, 400)}`)
+  }
+  const reader = res.body?.getReader()
+  if (!reader)
+    throw new Error('stream body unavailable')
+  const decoder = new TextDecoder()
+  let buffer = ''
+  let accumulated = ''
+  let finalResponse: SendMessageResponse | null = null
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done)
+      break
+    buffer += decoder.decode(value, { stream: true })
+    let sep: number
+    while ((sep = buffer.indexOf('\n\n')) !== -1) {
+      const block = buffer.slice(0, sep)
+      buffer = buffer.slice(sep + 2)
+      const { eventName, data } = parseSseBlock(block)
+      if (!data)
+        continue
+      if (eventName === 'token') {
+        try {
+          const token = JSON.parse(data).token ?? ''
+          if (typeof token === 'string' && token.length > 0) {
+            accumulated += token
+            options.onToken?.(token, accumulated)
+          }
+        }
+        catch {
+          accumulated += data
+          options.onToken?.(data, accumulated)
+        }
+      }
+      else if (eventName === 'done') {
+        try {
+          const parsed = JSON.parse(data) as { data?: SendMessageResponse }
+          finalResponse = parsed.data ?? (parsed as unknown as SendMessageResponse)
+        }
+        catch {
+          throw new Error('stream done payload parse failed')
+        }
+      }
+      else if (eventName === 'error') {
+        throw new Error(data.slice(0, 400))
+      }
+    }
+  }
+  if (!finalResponse)
+    throw new Error('stream ended without done event')
+  return finalResponse
+}
+
 
 export async function queryMemories(
   req: QueryMemoriesRequest,

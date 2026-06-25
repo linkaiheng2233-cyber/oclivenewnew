@@ -37,6 +37,8 @@ $env:RUST_LOG = "oclive_turn=debug"
 |------|------|
 | `[host_flags] event_impact_llm = false` | 全局跳过 event `generate_tag` |
 | `[turn_thinking] default = "auto"` | 闲聊 Fast / 高情绪 Deep |
+| `meta.deep_capsule_enabled` + `prompts/deep_capsule.txt` | Small+Deep 用离线 capsule（见 [`DEEP_PROMPT_DISTILLATION.md`](DEEP_PROMPT_DISTILLATION.md)） |
+| `node scripts/measure-ttft.mjs --deep-only` | 仅测 Deep 轮 TTFT（长句触发） |
 | `OCLIVE_EVENT_IMPACT_LLM=0` | 环境变量等价关闭 event LLM |
 
 ## 实测摘要（2026-06 · mumu · qwen2.5:7b · `desktop-latency`）
@@ -47,7 +49,7 @@ $env:RUST_LOG = "oclive_turn=debug"
 | **Wave A/B 后（Auto → Fast）** | **~243ms** | PASS |
 | Ollama 直连极短 prompt | ~130ms | 物理下限参考 |
 
-**Deep 路径（Wave D 待测）**：全量 `core_personality` + 可选 event LLM；目标为 **persona capsule + 前缀 KV 延续**，见 [`DEEP_PROMPT_DISTILLATION.md`](DEEP_PROMPT_DISTILLATION.md)。
+**Deep 路径（Wave D · Small+Deep capsule）**：启用 mumu `deep_capsule_enabled` + `--deep-only` 测 Deep TTFT；capsule ~2k 字 vs 全量 ~4.9k 字，目标 prefill 下降 ≥20%。人设 checklist 见 [`DEEP_PROMPT_DISTILLATION.md`](DEEP_PROMPT_DISTILLATION.md) §3.2。
 
 ## Related
 

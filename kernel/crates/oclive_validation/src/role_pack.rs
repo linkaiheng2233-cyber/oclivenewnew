@@ -536,6 +536,8 @@ fn validate_role_pack_optional_extensions(role_dir: &Path) -> Result<(), Vec<Str
         &role_dir.join("config.json"),
     )?;
     crate::portrait_catalog::validate_portrait_catalog_files(role_dir)?;
+    let capsule_enabled = crate::deep_capsule::blueprint_meta_deep_capsule_enabled(role_dir);
+    crate::deep_capsule::validate_deep_capsule_file(role_dir, capsule_enabled)?;
     if !warns.is_empty() {
         print_pack_warnings(&warns);
     }

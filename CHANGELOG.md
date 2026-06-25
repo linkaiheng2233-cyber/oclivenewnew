@@ -6,6 +6,10 @@
 
 ### Added
 
+- **Wave D · Deep persona capsule**：`prompts/deep_capsule.txt`（≤2500 字）· `meta.deep_capsule_enabled` · Small+Deep 时 `PromptBuilder` 用 capsule 替代全量 Tier0；mumu 样例已启用。
+- **Wave C · Chat Pro 流式**：主 UI 经 `sendMessageStream` 接 `POST /chat/stream`（SSE `event:token`）；失败自动回退 blocking `/chat`。
+- **Chat Pro 正式 profile**：`desktop.oclive.toml` 启用 `[turn_thinking]` Auto/Fast/Deep（`event_impact_llm` 默认仍 true，仅 Deep 轮调 event LLM）。
+- **`measure-ttft.mjs --deep-only`**：长句触发 Deep 轮 TTFT 对比。
 - **Monorepo 目录重组（kernel / distros）**：`kernel/` 收纳 Rust crates；`distros/{shared,chat-pro,theater,desktop-tauri}` 拆分桌面发行版；RFC 见 [`handoff/distros/ARCHITECTURE_DECOUPLING_RFC.md`](handoff/distros/ARCHITECTURE_DECOUPLING_RFC.md)。
 - **Theater Track A 工程卫生（轮次 16）**：[`handoff/theater/MODE2_UNFREEZE.md`](handoff/theater/MODE2_UNFREEZE.md) 模式 2 解冻 checklist；`theater-prompt-drift` 接入 `dimension5-acceptance.mjs` 与 `test:theater:smoke`；minimal 导演插件示例自包含 `prompts/`；`data/plugins.json` 登记 `com.oclive.theater_director_official`。
 - **AI 剧场 Patch 涟漪升级**：poke 默认 `mode=patch`（局部 prose 小剧情 + 保留 skeleton 尾部）；`patch_variant` 双候选后台生成 + `TheaterVariantBackdrop` 拖拽切换；设置 → 舞台 Tab 可选 ripple 降级与自定义 poke 主角。

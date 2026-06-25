@@ -167,7 +167,10 @@ impl PromptBuilder {
         let mut prompt = String::new();
 
         // Tier 0 — highest priority
-        prompt.push_str(&Self::build_core_hard_constraint(input.role));
+        prompt.push_str(&Self::build_core_hard_constraint(
+            input.role,
+            input.persona_override,
+        ));
         let scene_block = Self::build_scene_constraint_block(input);
         if !scene_block.is_empty() {
             prompt.push_str("\n\n");

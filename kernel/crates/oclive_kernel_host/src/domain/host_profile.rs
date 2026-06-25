@@ -173,6 +173,8 @@ pub struct TurnThinkingProfile {
     pub auto_deep_keywords: Vec<String>,
     pub fast_knowledge_limit: usize,
     pub fast_memory_cap: usize,
+    /// When `Some(true)`, force Deep capsule on Small+Deep when file exists; `Some(false)` blocks.
+    pub deep_capsule: Option<bool>,
 }
 
 impl Default for TurnThinkingProfile {
@@ -184,6 +186,7 @@ impl Default for TurnThinkingProfile {
             auto_deep_keywords: vec!["认真".into(), "很重要".into(), "别敷衍".into()],
             fast_knowledge_limit: 4,
             fast_memory_cap: 4,
+            deep_capsule: None,
         }
     }
 }
@@ -320,6 +323,9 @@ fn host_profile_from_distro_file(
         }
         if let Some(n) = tt.fast_memory_cap {
             profile.turn_thinking.fast_memory_cap = n.clamp(1, 8);
+        }
+        if let Some(v) = tt.deep_capsule {
+            profile.turn_thinking.deep_capsule = Some(v);
         }
     }
     Ok(profile)
