@@ -144,9 +144,13 @@ impl AppStateBuilder {
             }
         };
 
-        let ollama_model = self.ollama_model.unwrap_or_else(|| {
-            std::env::var("OLLAMA_MODEL").unwrap_or_else(|_| "qwen2.5:7b".to_string())
-        });
+        let ollama_model = match self.ollama_model {
+            Some(m) => m,
+            None => {
+                let settings = crate::infrastructure::db_ports::DbSettingsPort(db_manager.as_ref());
+                crate::domain::user_llm_env::global_ollama_model_from_db_or_env(&settings).await
+            }
+        };
 
         let policy_runtime = Arc::new(ArcSwap::from_pointee(build_policy_sets_from_registry(
             PolicyRegistryFile::with_defaults(),
@@ -165,11 +169,17 @@ impl AppStateBuilder {
         }
         let storage = RoleStorage::new(self.roles_dir);
         let _ = fs::create_dir_all(&self.app_data_dir);
+        let host_profile = Arc::new(
+            self.host_profile
+                .unwrap_or_else(host_profile::load_host_profile_from_env),
+        );
         if let Some(parent) = storage.roles_dir().parent() {
-            crate::infrastructure::theater_director_plugin_seed::seed_official_theater_director_plugin(
-                &self.app_data_dir,
-                Some(&parent.join("plugins")),
-            );
+            if host_profile::theater_director_enabled(host_profile.as_ref()) {
+                crate::infrastructure::theater_director_plugin_seed::seed_official_theater_director_plugin(
+                    &self.app_data_dir,
+                    Some(&parent.join("plugins")),
+                );
+            }
         }
         let high_risk_grants =
             HighRiskGrantStore::load(self.app_data_dir.clone(), self.high_risk_strict);
@@ -217,11 +227,6 @@ impl AppStateBuilder {
             None,
         );
 
-        let host_profile = Arc::new(
-            self.host_profile
-                .unwrap_or_else(host_profile::load_host_profile_from_env),
-        );
-
         let reply_post_processor_resolver: Arc<
             dyn oclive_kernel_contracts::ReplyPostProcessorResolver,
         > = Arc::new(
@@ -259,7 +264,7 @@ impl AppStateBuilder {
             session_cache: SessionCache::shared(),
             storage,
             policy_runtime,
-            ollama_model,
+            ollama_model: parking_lot::RwLock::new(ollama_model),
             plugins,
             directory_plugins,
             high_risk_grants,

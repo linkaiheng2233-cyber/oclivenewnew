@@ -82,7 +82,6 @@
       }
     },
     "name": "枫侵月",
-    "ollama_model": "qwen2.5:7b",
     "personality": [
       0.25,
       0.44999998807907104,

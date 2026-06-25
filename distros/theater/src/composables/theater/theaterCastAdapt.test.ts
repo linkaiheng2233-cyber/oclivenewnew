@@ -20,7 +20,7 @@ import type { TheaterSkeleton } from './theaterLogic'
 
 const canonicalSkeleton: TheaterSkeleton = {
   scene: 'breakfast',
-  sceneId: 'home',
+  sceneId: 'theater:home',
   cast: {
     a: { roleId: 'mumu', name: '木木', side: 'left' },
     b: { roleId: '枫侵月', name: '枫侵月', side: 'right' },

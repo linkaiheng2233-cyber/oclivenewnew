@@ -15,8 +15,10 @@ export default {
     appearanceSectionHelp: 'Locale, theme, and UI scale; stored on this device.',
     interactionModeSectionTitle: 'Interaction mode',
     interactionModeSectionLead:
-      'The only place to switch Daily chat and Story mode; virtual time and scene travel are Story-only.',
+      'Switch daily chat vs story mode here. Daily chat stays on the simple home scene; scenes, travel, and plugins unlock in story mode.',
+    interactionModeFieldLabel: 'Mode',
     interactionModePersistNote: 'Your choice is remembered for the next launch.',
+    interactionModeLockedNote: 'Mode switching is disabled for this distro profile.',
     shortcutsLabel: 'Shortcuts',
     shortcutsHelp:
       'Ctrl+Shift+S settings; Ctrl+Shift+F installed plugins; Ctrl+Shift+M model management; Ctrl+Shift+D debug panel.',

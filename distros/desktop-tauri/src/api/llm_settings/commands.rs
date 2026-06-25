@@ -12,8 +12,9 @@ use crate::kernel_attach::KernelHttpClient;
 use crate::kernel_lifecycle::SharedKernelConnection;
 use oclive_kernel_host::infrastructure::ollama_client::OllamaClient;
 use oclive_kernel_host::service::{
-    get_llm_user_settings_impl, list_cloud_models_impl, list_ollama_models_impl,
-    probe_cloud_llm_impl, save_llm_user_settings_impl, session_namespace,
+    get_global_ollama_model_impl, get_llm_user_settings_impl, list_cloud_models_impl,
+    list_ollama_models_impl, probe_cloud_llm_impl, save_llm_user_settings_impl, session_namespace,
+    set_global_ollama_model_impl, GlobalOllamaModelDto, SetGlobalOllamaModelRequest,
 };
 use oclive_kernel_host::state::SharedAppState;
 use oclive_kernel_types::models::dto::RoleInfo;
@@ -211,4 +212,35 @@ pub async fn save_llm_user_settings(
     }
 
     Ok(info)
+}
+
+/// # Errors
+///
+/// Returns [`Err`] when app settings cannot be read.
+pub async fn get_global_ollama_model(
+    app: AppHandle,
+    state: State<'_, SharedAppState>,
+) -> Result<GlobalOllamaModelDto, CommandError> {
+    if let Some(conn) = app.try_state::<SharedKernelConnection>() {
+        return KernelHttpClient::get_global_ollama_model_via_http(&conn)
+            .await
+            .map_err(Into::into);
+    }
+    get_global_ollama_model_impl(state.inner()).await
+}
+
+/// # Errors
+///
+/// Returns [`Err`] when persistence fails or model name is empty.
+pub async fn set_global_ollama_model(
+    app: AppHandle,
+    state: State<'_, SharedAppState>,
+    req: SetGlobalOllamaModelRequest,
+) -> Result<GlobalOllamaModelDto, CommandError> {
+    if let Some(conn) = app.try_state::<SharedKernelConnection>() {
+        return KernelHttpClient::set_global_ollama_model_via_http(&conn, &req)
+            .await
+            .map_err(Into::into);
+    }
+    set_global_ollama_model_impl(state.inner(), &req).await
 }

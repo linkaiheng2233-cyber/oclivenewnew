@@ -20,10 +20,11 @@ pub use high_risk::{
     MutateHighRiskGrantRequest,
 };
 pub use llm_settings::{
-    get_llm_user_settings_impl, list_cloud_models_impl, list_ollama_models_impl,
-    probe_cloud_llm_impl, save_llm_user_settings_impl, set_session_llm_model_impl,
+    get_global_ollama_model_impl, get_llm_user_settings_impl, list_cloud_models_impl,
+    list_ollama_models_impl, probe_cloud_llm_impl, save_llm_user_settings_impl,
+    set_global_ollama_model_impl, set_session_llm_model_impl, GlobalOllamaModelDto,
     ListCloudModelsRequest, LlmUserSettingsDto, SaveLlmUserSettingsRequest,
-    SetSessionLlmModelRequest,
+    SetGlobalOllamaModelRequest, SetSessionLlmModelRequest,
 };
 pub use mcp::{
     call_mcp_tool_impl, list_mcp_servers_impl, list_mcp_tools_impl, CallMcpToolHttpRequest,

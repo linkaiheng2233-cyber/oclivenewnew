@@ -1,10 +1,11 @@
 use super::{api_error, ApiError};
 use crate::models::dto::RoleInfo;
 use crate::service::{
-    get_llm_user_settings_impl, list_cloud_models_impl, list_ollama_models_impl,
-    probe_cloud_llm_impl, save_llm_user_settings_impl, set_session_llm_model_impl,
+    get_global_ollama_model_impl, get_llm_user_settings_impl, list_cloud_models_impl,
+    list_ollama_models_impl, probe_cloud_llm_impl, save_llm_user_settings_impl,
+    set_global_ollama_model_impl, set_session_llm_model_impl, GlobalOllamaModelDto,
     ListCloudModelsRequest, LlmUserSettingsDto, SaveLlmUserSettingsRequest,
-    SetSessionLlmModelRequest,
+    SetGlobalOllamaModelRequest, SetSessionLlmModelRequest,
 };
 use crate::state::AppState;
 use axum::extract::{Query, State};
@@ -122,6 +123,31 @@ pub(crate) async fn llm_session_model_route(
     Json(req): Json<SetSessionLlmModelRequest>,
 ) -> Result<Json<RoleInfo>, ApiError> {
     set_session_llm_model_impl(state.as_ref(), &req)
+        .await
+        .map(Json)
+        .map_err(|e| {
+            let k = e.kernel_error_body();
+            api_error(axum::http::StatusCode::BAD_REQUEST, k)
+        })
+}
+
+pub(crate) async fn llm_global_ollama_model_get_route(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<GlobalOllamaModelDto>, ApiError> {
+    get_global_ollama_model_impl(state.as_ref())
+        .await
+        .map(Json)
+        .map_err(|e| {
+            let k = e.kernel_error_body();
+            api_error(axum::http::StatusCode::INTERNAL_SERVER_ERROR, k)
+        })
+}
+
+pub(crate) async fn llm_global_ollama_model_post_route(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<SetGlobalOllamaModelRequest>,
+) -> Result<Json<GlobalOllamaModelDto>, ApiError> {
+    set_global_ollama_model_impl(state.as_ref(), &req)
         .await
         .map(Json)
         .map_err(|e| {

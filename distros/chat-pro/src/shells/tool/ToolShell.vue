@@ -8,7 +8,6 @@ import StartupWarningsBanner from '@oclive/shared/components/StartupWarningsBann
 import PluginChatHeaderSlots from '@oclive/shared/components/PluginChatHeaderSlots.vue'
 import PluginSidebarSlots from '@oclive/shared/components/PluginSidebarSlots.vue'
 import PluginSlotEmbed from '@oclive/shared/components/PluginSlotEmbed.vue'
-import RoleIdentityControls from '@oclive/shared/components/role/RoleIdentityControls.vue'
 import RoleSelector from '@oclive/shared/components/role/RoleSelector.vue'
 import TopBarSceneModeDialog from '@oclive/shared/components/scene/TopBarSceneModeDialog.vue'
 import ShortcutHelp from '@oclive/shared/components/ShortcutHelp.vue'
@@ -33,8 +32,6 @@ import ToolMoreMenu from './ToolMoreMenu.vue'
 import ToolSidePanelHost from './ToolSidePanelHost.vue'
 import ImmersiveModeIntro from '@oclive/shared/components/onboarding/ImmersiveModeIntro.vue'
 import ImmersiveUnlockBanner from '@oclive/shared/components/onboarding/ImmersiveUnlockBanner.vue'
-import IdentitySurpriseSheet from '@oclive/shared/components/onboarding/IdentitySurpriseSheet.vue'
-import InteractionModeBar from '@oclive/shared/components/onboarding/InteractionModeBar.vue'
 import PresetRolePicker from '@oclive/shared/components/onboarding/PresetRolePicker.vue'
 import ToolStatusBar from './ToolStatusBar.vue'
 
@@ -182,7 +179,7 @@ function onSidePanelResize(deltaX: number) {
           <header class="tool-top-bar">
             <RoleSelector
               variant="topbar"
-              :sections="roleStore.interactionImmersive || progressive.showIdentityControls ? ['role', 'relation'] : ['role']"
+              :sections="roleStore.interactionImmersive ? ['role', 'relation'] : ['role']"
               :current-role-id="roleStore.currentRoleId"
               :current-relation="roleStore.relationSelectValue"
               :roles="roleStore.roles"
@@ -267,7 +264,6 @@ function onSidePanelResize(deltaX: number) {
               >
                 {{ t("app.sidebar.favorability") }} {{ Math.round(roleStore.roleInfo.favorability) }} {{ statusHeart }}
               </div>
-              <RoleIdentityControls v-if="progressive.showIdentityControls" variant="compact" />
               <div
                 v-if="roleStore.interactionImmersive && roleStore.roleInfo.currentLife?.label"
                 class="tool-left-rail__life"
@@ -308,17 +304,10 @@ function onSidePanelResize(deltaX: number) {
                 </transition>
               </div>
               <section class="tool-input-area">
-                <InteractionModeBar />
                 <ImmersiveUnlockBanner
                   :visible="progressive.showImmersiveUnlockBanner"
                   @try-story="progressive.tryStoryMode"
                   @dismiss="progressive.dismissImmersiveHint"
-                />
-                <IdentitySurpriseSheet
-                  :visible="progressive.identitySheetVisible"
-                  :options="progressive.identitySurpriseOptions"
-                  @pick="progressive.pickIdentity"
-                  @keep="progressive.keepIdentity"
                 />
                 <ChatPluginToolbarSlots
                   v-if="roleStore.interactionImmersive"
@@ -346,7 +335,6 @@ function onSidePanelResize(deltaX: number) {
           <ToolStatusBar
             :status-heart="statusHeart"
             :scene-label-for-id="sceneLabelForId"
-            :show-identity-link="progressive.showIdentityControls"
           />
         </div>
 

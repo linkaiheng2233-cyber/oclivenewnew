@@ -353,7 +353,29 @@ impl Default for HostProfile {
     }
 }
 
+/// Whether theater director plugins should be indexed for the active host profile.
+#[must_use]
+pub fn theater_director_enabled(profile: &HostProfile) -> bool {
+    profile.theater_director_enabled()
+}
+
 impl HostProfile {
+    /// Whether this distro profile (or env override) enables the theater director directory plugin.
+    #[must_use]
+    pub fn theater_director_enabled(&self) -> bool {
+        if self
+            .theater
+            .director_plugin
+            .as_ref()
+            .is_some_and(|s| !s.trim().is_empty())
+        {
+            return true;
+        }
+        std::env::var(ENV_THEATER_DIRECTOR_PLUGIN)
+            .ok()
+            .is_some_and(|s| !s.trim().is_empty())
+    }
+
     #[must_use]
     pub fn state_expression_hint(&self, favorability: f64) -> &str {
         self.state_expression

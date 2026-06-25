@@ -6,6 +6,8 @@ export type TheaterScenePresetId =
   | 'way_home'
   | 'bedtime'
 
+export const THEATER_RUNTIME_SCENE_ID = 'theater:home' as const
+
 export interface TheaterScenePreset {
   id: TheaterScenePresetId
   labelKey: string
@@ -14,7 +16,7 @@ export interface TheaterScenePreset {
   sceneSettingHint: string
   pokeEnabled: boolean
   pokeChips: PokeChipDef[]
-  runtimeSceneId: 'home'
+  runtimeSceneId: typeof THEATER_RUNTIME_SCENE_ID
   order: number
 }
 
@@ -155,7 +157,7 @@ const CATALOG: TheaterScenePreset[] = [
     sceneSettingHint: '地点限于家中厨房/餐桌/玄关；时间早晨上学前；禁止脱离居家早饭场景或引入第三人。',
     pokeEnabled: true,
     pokeChips: BREAKFAST_POKE_CHIPS,
-    runtimeSceneId: 'home',
+    runtimeSceneId: THEATER_RUNTIME_SCENE_ID,
     order: 0,
   },
   {
@@ -166,7 +168,7 @@ const CATALOG: TheaterScenePreset[] = [
     sceneSettingHint: '地点限于超市卖场/货架/试吃台/收银台；时间白天采购；禁止脱离超市或引入店员以外的第三人对话。',
     pokeEnabled: true,
     pokeChips: SUPERMARKET_POKE_CHIPS,
-    runtimeSceneId: 'home',
+    runtimeSceneId: THEATER_RUNTIME_SCENE_ID,
     order: 1,
   },
   {
@@ -177,7 +179,7 @@ const CATALOG: TheaterScenePreset[] = [
     sceneSettingHint: '地点限于街道/路灯下/公交站附近；时间傍晚或采购归途；禁止跳转到室内长戏或引入第三人。',
     pokeEnabled: true,
     pokeChips: WAY_HOME_POKE_CHIPS,
-    runtimeSceneId: 'home',
+    runtimeSceneId: THEATER_RUNTIME_SCENE_ID,
     order: 2,
   },
   {
@@ -188,7 +190,7 @@ const CATALOG: TheaterScenePreset[] = [
     sceneSettingHint: '地点限于家中浴室/卧室门口/睡前片刻；时间夜晚就寝前；禁止脱离居家就寝场景。',
     pokeEnabled: true,
     pokeChips: BEDTIME_POKE_CHIPS,
-    runtimeSceneId: 'home',
+    runtimeSceneId: THEATER_RUNTIME_SCENE_ID,
     order: 3,
   },
 ]

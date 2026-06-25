@@ -221,6 +221,8 @@ pub fn run() {
             api::llm_settings::list_ollama_models,
             api::llm_settings::list_cloud_models,
             api::llm_settings::save_llm_user_settings,
+            api::llm_settings::get_global_ollama_model,
+            api::llm_settings::set_global_ollama_model,
             api::llm_settings::probe_cloud_llm,
             api::llm_settings::scan_local_model_files,
             api::llm_settings::open_path_in_file_manager,

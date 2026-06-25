@@ -10,8 +10,6 @@ import { useUiStore } from '@oclive/shared/stores/uiStore'
 const props = defineProps<{
   statusHeart: string
   sceneLabelForId: (id: string) => string
-  /** Hide identity link until progressive disclosure unlocks it. */
-  showIdentityLink?: boolean
 }>()
 
 const { t } = useI18n()
@@ -47,7 +45,7 @@ function onIdentityClick() {
         {{ favorabilityText }}
       </span>
     </template>
-    <template v-if="showIdentityLink && hasCatalog && currentIdentityLabel">
+    <template v-if="hasCatalog && currentIdentityLabel">
       <span class="tool-status-bar__sep" aria-hidden="true">·</span>
       <button
         type="button"

@@ -4,7 +4,8 @@ use crate::error::AppError;
 use crate::kernel_lifecycle::KernelConnection;
 use oclive_kernel_host::infrastructure::chat_storage::{SessionMeta, StoredMessage};
 use oclive_kernel_host::service::{
-    ListCloudModelsRequest, LlmUserSettingsDto, SaveLlmUserSettingsRequest,
+    GlobalOllamaModelDto, ListCloudModelsRequest, LlmUserSettingsDto, SaveLlmUserSettingsRequest,
+    SetGlobalOllamaModelRequest,
 };
 use oclive_kernel_host::state::AppState;
 pub(crate) use oclive_kernel_runtime::app_error_from_http_response;
@@ -705,6 +706,55 @@ impl KernelHttpClient {
         }
         serde_json::from_str(&text)
             .map_err(|e| AppError::OllamaError(format!("llm/user_settings POST JSON: {e}")))
+    }
+
+    pub async fn get_global_ollama_model_via_http(
+        conn: &KernelConnection,
+    ) -> Result<GlobalOllamaModelDto, AppError> {
+        if !Self::ensure_healthy(conn).await {
+            return Err(Self::offline_err());
+        }
+        let res = conn
+            .http_client()
+            .get(format!("{}/llm/global_ollama_model", conn.base_url))
+            .send()
+            .await
+            .map_err(|e| Self::map_send_err(&conn.base_url, "llm/global_ollama_model GET", e))?;
+        let status = res.status();
+        let text = res
+            .text()
+            .await
+            .map_err(|e| AppError::OllamaError(format!("llm/global_ollama_model body: {e}")))?;
+        if !status.is_success() {
+            return Err(app_error_from_http_response(status.as_u16(), &text));
+        }
+        serde_json::from_str(&text)
+            .map_err(|e| AppError::OllamaError(format!("llm/global_ollama_model JSON: {e}")))
+    }
+
+    pub async fn set_global_ollama_model_via_http(
+        conn: &KernelConnection,
+        req: &SetGlobalOllamaModelRequest,
+    ) -> Result<GlobalOllamaModelDto, AppError> {
+        if !Self::ensure_healthy(conn).await {
+            return Err(Self::offline_err());
+        }
+        let res = conn
+            .http_client()
+            .post(format!("{}/llm/global_ollama_model", conn.base_url))
+            .json(req)
+            .send()
+            .await
+            .map_err(|e| Self::map_send_err(&conn.base_url, "llm/global_ollama_model POST", e))?;
+        let status = res.status();
+        let text = res.text().await.map_err(|e| {
+            AppError::OllamaError(format!("llm/global_ollama_model POST body: {e}"))
+        })?;
+        if !status.is_success() {
+            return Err(app_error_from_http_response(status.as_u16(), &text));
+        }
+        serde_json::from_str(&text)
+            .map_err(|e| AppError::OllamaError(format!("llm/global_ollama_model POST JSON: {e}")))
     }
 
     pub async fn probe_cloud_llm_via_http(

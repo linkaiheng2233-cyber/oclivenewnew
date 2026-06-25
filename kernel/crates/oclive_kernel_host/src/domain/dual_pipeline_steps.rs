@@ -209,7 +209,7 @@ impl<'a> ExperimentalStepCtx<'a> {
         let personality = self.ensure_personality().await?;
         let ollama_model = self
             .role
-            .resolve_ollama_model(self.state.ollama_model.as_str());
+            .resolve_ollama_model(self.state.global_ollama_model().as_str());
         let (_turns, recent_turns_for_event, recent_events_for_event) =
             load_recent_context(self.state, self.srid)
                 .await
@@ -432,7 +432,7 @@ impl<'a> ExperimentalStepCtx<'a> {
         }
         let model = self
             .role
-            .resolve_ollama_model(self.state.ollama_model.as_str());
+            .resolve_ollama_model(self.state.global_ollama_model().as_str());
         let agent_input = build_agent_input(
             self.state,
             self.role,

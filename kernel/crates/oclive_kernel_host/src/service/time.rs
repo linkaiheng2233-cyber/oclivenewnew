@@ -163,7 +163,7 @@ pub async fn generate_monologue_lines(
         .collect();
 
     let pl = state.resolved_plugins_for_session(role.as_ref(), Some(role_id));
-    let ollama_model = role.resolve_ollama_model(state.ollama_model.as_str());
+    let ollama_model = role.resolve_ollama_model(state.global_ollama_model().as_str());
     let mut out = Vec::new();
     for (i, p) in prompts.into_iter().enumerate() {
         let text = match pl.llm.generate(ollama_model.as_str(), &p).await {

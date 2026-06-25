@@ -92,8 +92,8 @@ pub struct AppState {
     pub session_cache: Arc<SessionCache>,
     pub storage: RoleStorage,
     policy_runtime: Arc<ArcSwap<PolicyRuntime>>,
-    /// Ollama model name (overridable via `OLLAMA_MODEL`).
-    pub ollama_model: String,
+    /// Ollama model name (global default; overridable via app settings / `OLLAMA_MODEL`).
+    pub ollama_model: parking_lot::RwLock<String>,
     /// Swappable subsystem implementations (selected by `Role.plugin_backends`).
     pub plugins: PluginHost,
     /// Directory plugins (`plugins/*/manifest.json`) scan and lazy start.
@@ -181,6 +181,15 @@ impl AppState {
     pub fn mark_user_llm_env_dirty(&self) {
         self.user_llm_env_version.fetch_add(1, Ordering::AcqRel);
         self.user_llm_env_dirty.store(true, Ordering::Release);
+    }
+
+    #[must_use]
+    pub fn global_ollama_model(&self) -> String {
+        self.ollama_model.read().clone()
+    }
+
+    pub fn set_global_ollama_model_in_memory(&self, model: String) {
+        *self.ollama_model.write() = model;
     }
 
     pub fn policies_for_scene(&self, scene_id: Option<&str>) -> Arc<PolicySet> {

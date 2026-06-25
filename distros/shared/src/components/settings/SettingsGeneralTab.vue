@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { EnvironmentDiagnostics } from '@oclive/shared/api'
 import type { LocalePreference } from '@oclive/shared/i18n'
-import { defineAsyncComponent, ref, watch } from 'vue'
+import { defineAsyncComponent, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   getRemoteFallbackAppSettings,
@@ -15,10 +15,14 @@ import UiFieldRow from '../ui/UiFieldRow.vue'
 import UiSection from '../ui/UiSection.vue'
 import UiSelect from '../ui/UiSelect.vue'
 import { useAppToast } from '@oclive/shared/composables/useAppToast'
+import { useDistroUxProfile } from '@oclive/shared/composables/useDistroUxProfile'
+import { useInteractionModeSettings } from '@oclive/shared/composables/useInteractionModeSettings'
+import { useUserIdentityState } from '@oclive/shared/composables/useUserIdentityState'
 import { getLayoutWidths, resetLayoutWidths } from '@oclive/shared/composables/useLayoutWidths'
 import { useOcliveAppearance } from '@oclive/shared/composables/useOcliveAppearance'
 import { getLocalePreference, setLocalePreference } from '@oclive/shared/i18n'
 import { SLOT_SETTINGS_ADVANCED, usePluginStore } from '@oclive/shared/stores/pluginStore'
+import { useRoleStore } from '@oclive/shared/stores/roleStore'
 import { isSentryOptOut, setSentryOptOut } from '@oclive/shared/utils/telemetrySentry'
 import { isChatStreamEnabled, setChatStreamEnabled } from '@oclive/shared/utils/chatStreamSettings'
 
@@ -40,9 +44,21 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const pluginStore = usePluginStore()
+const roleStore = useRoleStore()
 const { showToast } = useAppToast()
+const { allowModeSwitch, ensureDistroUxProfileLoaded } = useDistroUxProfile()
+const { onInteractionModeSelect } = useInteractionModeSettings()
+const { hasCatalog } = useUserIdentityState()
 const { themeCycleLabel, cycleTheme, bumpScale, scaleLabel } = useOcliveAppearance()
 const localePreference = ref<LocalePreference>(getLocalePreference())
+
+onMounted(() => {
+  void ensureDistroUxProfileLoaded()
+})
+
+async function onSettingsInteractionModeChange(ev: Event): Promise<void> {
+  await onInteractionModeSelect(ev)
+}
 
 const hasSentryDsn
   = typeof import.meta.env.VITE_SENTRY_DSN === 'string' && import.meta.env.VITE_SENTRY_DSN.length > 0
@@ -203,6 +219,37 @@ async function onToggleForceIframe(e: Event) {
       </button>
     </nav>
 
+    <UiSection
+      v-show="generalSubTab === 'simple'"
+      :title="t('settings.interactionModeSectionTitle')"
+      :description="t('settings.interactionModeSectionLead')"
+    >
+      <template #extra>
+        <HelpHint :text="t('settings.interactionModePersistNote')" />
+      </template>
+      <UiFieldRow v-if="allowModeSwitch" :label="t('settings.interactionModeFieldLabel')">
+        <UiSelect
+          :model-value="roleStore.roleInfo.interactionMode"
+          @change="onSettingsInteractionModeChange"
+        >
+          <option value="pure_chat">
+            {{ t('app.more.interactionPureChat') }}
+          </option>
+          <option value="immersive">
+            {{ t('app.more.interactionImmersive') }}
+          </option>
+        </UiSelect>
+      </UiFieldRow>
+      <p v-else class="sv-muted">
+        {{ t('settings.interactionModeLockedNote') }}
+      </p>
+      <RoleIdentityControls
+        v-if="hasCatalog"
+        variant="full"
+        settings-layout
+      />
+    </UiSection>
+
     <UiSection :title="t('settings.shortcutsLabel')">
       <template #extra>
         <HelpHint :text="t('settings.shortcutsHelp')" />
@@ -248,17 +295,6 @@ async function onToggleForceIframe(e: Event) {
     <p v-if="generalSubTab === 'advanced'" class="sv-muted">
       {{ t("onboarding.settings.advancedLead") }}
     </p>
-
-    <UiSection
-      v-show="generalSubTab === 'advanced'"
-      :title="t('settings.userIdentitySectionTitle')"
-      :description="t('settings.userIdentitySectionLead')"
-    >
-      <template #extra>
-        <HelpHint :text="t('settings.userIdentitySectionLeadSecondary')" />
-      </template>
-      <RoleIdentityControls variant="full" settings-layout />
-    </UiSection>
 
     <UiSection v-show="generalSubTab === 'advanced'" :title="t('settings.postProcessorSectionTitle')">
       <ReplyPostProcessorStatus :show-title="false" />

@@ -14,8 +14,10 @@ export default {
     appearanceSectionTitle: '外观',
     appearanceSectionHelp: '界面语言、主题与 UI 缩放；保存在本机。',
     interactionModeSectionTitle: '互动模式',
-    interactionModeSectionLead: '日常聊与剧情模式的唯一切换入口；虚拟时间与场景旅行仅在剧情模式下可用。',
+    interactionModeSectionLead: '日常聊与剧情模式在此切换；日常聊固定「家」场景作轻量钩子，完整场景/旅行/插件仅在剧情模式可用。',
+    interactionModeFieldLabel: '模式',
     interactionModePersistNote: '你的选择会记住，下次打开仍生效。',
+    interactionModeLockedNote: '当前发行版未开放模式切换。',
     shortcutsLabel: '快捷',
     shortcutsHelp:
       'Ctrl+Shift+S 设置；Ctrl+Shift+F 已安装插件；Ctrl+Shift+M 模型管理；Ctrl+Shift+D 调试面板。',

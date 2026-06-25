@@ -40,6 +40,16 @@ export interface SaveLlmUserSettingsRequest {
   remoteModel?: string
 }
 
+export async function getGlobalOllamaModel(): Promise<{ model: string }> {
+  return invokeWithFriendlyError<{ model: string }>('get_global_ollama_model')
+}
+
+export async function setGlobalOllamaModel(model: string): Promise<{ model: string }> {
+  return invokeWithFriendlyError<{ model: string }>('set_global_ollama_model', {
+    req: { model: model.trim() },
+  })
+}
+
 export async function getLlmUserSettings(
   roleId: string,
   sessionId?: string | null,

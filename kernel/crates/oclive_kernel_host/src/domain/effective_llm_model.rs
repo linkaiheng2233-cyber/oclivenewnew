@@ -43,5 +43,5 @@ pub async fn resolve_effective_ollama_model(
             }
         }
     }
-    Ok(role.resolve_ollama_model(state.ollama_model.as_str()))
+    Ok(role.resolve_ollama_model(state.global_ollama_model().as_str()))
 }

@@ -4,8 +4,8 @@ use crate::command_error::CommandError;
 use crate::domain::effective_llm_model::resolve_effective_ollama_model;
 use crate::domain::user_llm_env::{
     apply_user_llm_env, cloud_api_token_configured, load_remote_token, ollama_base_from_db_or_env,
-    KEY_CLOUD_STYLE, KEY_CLOUD_VENDOR, KEY_LLM_PROVIDER, KEY_OLLAMA_BASE, KEY_REMOTE_MODEL,
-    KEY_REMOTE_TOKEN, KEY_REMOTE_URL,
+    KEY_CLOUD_STYLE, KEY_CLOUD_VENDOR, KEY_GLOBAL_OLLAMA_MODEL, KEY_LLM_PROVIDER, KEY_OLLAMA_BASE,
+    KEY_REMOTE_MODEL, KEY_REMOTE_TOKEN, KEY_REMOTE_URL,
 };
 use crate::error::AppError;
 use crate::infrastructure::llm_models::{
@@ -569,4 +569,48 @@ pub async fn set_session_llm_model_impl(
     state.db_manager.ensure_role_runtime(ns.as_str()).await?;
     apply_session_model_override(state, ns.as_str(), req.model.as_deref()).await?;
     get_role_info_impl(state, &req.role_id, req.session_id.as_deref()).await
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GlobalOllamaModelDto {
+    pub model: String,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SetGlobalOllamaModelRequest {
+    pub model: String,
+}
+
+/// # Errors
+///
+/// Returns [`Err`] when app settings cannot be read.
+pub async fn get_global_ollama_model_impl(
+    state: &AppState,
+) -> Result<GlobalOllamaModelDto, CommandError> {
+    Ok(GlobalOllamaModelDto {
+        model: state.global_ollama_model(),
+    })
+}
+
+/// # Errors
+///
+/// Returns [`Err`] when persistence fails or model name is empty.
+pub async fn set_global_ollama_model_impl(
+    state: &AppState,
+    req: &SetGlobalOllamaModelRequest,
+) -> Result<GlobalOllamaModelDto, CommandError> {
+    let t = req.model.trim();
+    if t.is_empty() {
+        return Err(AppError::InvalidParameter("empty global ollama model".into()).into());
+    }
+    state
+        .db_manager
+        .upsert_app_setting(KEY_GLOBAL_OLLAMA_MODEL, t)
+        .await?;
+    state.set_global_ollama_model_in_memory(t.to_string());
+    Ok(GlobalOllamaModelDto {
+        model: t.to_string(),
+    })
 }

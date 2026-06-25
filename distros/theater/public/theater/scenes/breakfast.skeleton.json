@@ -1,6 +1,6 @@
 {
   "scene": "breakfast",
-  "sceneId": "home",
+  "sceneId": "theater:home",
   "defaultPairRelation": "family",
   "pairRelations": {
     "family": {

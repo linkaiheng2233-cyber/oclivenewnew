@@ -15,6 +15,7 @@ pub const KEY_CLOUD_STYLE: &str = "user_llm_cloud_api_style";
 pub const KEY_CLOUD_VENDOR: &str = "user_llm_cloud_vendor";
 pub const KEY_LLM_PROVIDER: &str = "user_llm_provider";
 pub const KEY_LOCAL_MODELS_DIR: &str = "user_local_models_dir";
+pub const KEY_GLOBAL_OLLAMA_MODEL: &str = "global_ollama_model";
 
 pub const LLM_APP_SETTING_KEYS: &[&str] = &[
     KEY_LLM_PROVIDER,
@@ -25,7 +26,21 @@ pub const LLM_APP_SETTING_KEYS: &[&str] = &[
     KEY_CLOUD_STYLE,
     KEY_CLOUD_VENDOR,
     KEY_LOCAL_MODELS_DIR,
+    KEY_GLOBAL_OLLAMA_MODEL,
 ];
+
+const DEFAULT_GLOBAL_OLLAMA_MODEL: &str = "qwen2.5:7b";
+
+/// Resolve global default Ollama model: DB app_setting → `OLLAMA_MODEL` env → built-in default.
+pub async fn global_ollama_model_from_db_or_env(db: &impl AppSettingsPort) -> String {
+    if let Ok(Some(v)) = db.get_app_setting(KEY_GLOBAL_OLLAMA_MODEL).await {
+        let t = v.trim();
+        if !t.is_empty() {
+            return t.to_string();
+        }
+    }
+    std::env::var("OLLAMA_MODEL").unwrap_or_else(|_| DEFAULT_GLOBAL_OLLAMA_MODEL.to_string())
+}
 
 static USER_LLM_ENV: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
 
