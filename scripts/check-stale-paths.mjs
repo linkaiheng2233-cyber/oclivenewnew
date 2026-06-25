@@ -2,6 +2,7 @@
 /**
  * Hard gate: normative docs and monorepo code must not reference legacy layout paths.
  * Wired into dimension5-acceptance.mjs (docs + code checks).
+ * Whitelist rules SSOT: handoff/AI_CHANGE_BOUNDARIES.md G5
  *
  * Usage:
  *   node scripts/check-stale-paths.mjs            # docs + code
