@@ -30,8 +30,8 @@ use crate::infrastructure::remote_plugin::{
     RemotePluginHttpConfig, RemotePromptAssemblerHttp, RemoteUserEmotionAnalyzerHttp,
 };
 use crate::models::{
-    AgentBackend, EmotionBackend, EventBackend, LlmBackend, MemoryBackend,
-    PluginBackends, PromptBackend,
+    AgentBackend, EmotionBackend, EventBackend, LlmBackend, MemoryBackend, PluginBackends,
+    PromptBackend,
 };
 use async_trait::async_trait;
 use oclive_kernel_contracts::{

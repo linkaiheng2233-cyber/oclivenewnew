@@ -5,13 +5,13 @@
 pub mod agent_mcp_bridge;
 pub mod app_data_migration;
 pub mod backend_registry;
-mod directory_slots_impl;
 pub mod cache;
 pub mod chat_storage;
 pub mod db;
 pub mod db_ports;
 pub mod deep_link;
 pub mod directory_plugins;
+mod directory_slots_impl;
 pub mod function_call_parser;
 pub mod high_risk_grants;
 pub mod hotkey_bindings;

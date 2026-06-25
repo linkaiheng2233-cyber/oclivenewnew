@@ -221,7 +221,14 @@ pub fn outline_prompt_input(
         cast_rewrite_max_beats: Some(max_beats),
         cast_rewrite_target_beats: Some(cast_rewrite_target_beats(min_beats, max_beats)),
         script_outline: req.script_outline.clone(),
-        ..base_prompt_input(req, "outline_rewrite", strict, persona_a, persona_b, max_beats)
+        ..base_prompt_input(
+            req,
+            "outline_rewrite",
+            strict,
+            persona_a,
+            persona_b,
+            max_beats,
+        )
     }
 }
 
