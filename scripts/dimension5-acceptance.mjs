@@ -132,14 +132,14 @@ runStep('tauri beforeBuildCommand path ratchet', () => {
   const conf = fs.readFileSync(confPath, 'utf8');
   if (/\.\.\/\.\.\/scripts/.test(conf)) {
     throw new Error(
-      'tauri.conf.json must use repo-root paths (node scripts/tauri-run.cjs), not ../../scripts',
+      'tauri.conf.json must use distros-relative paths (node ../scripts/tauri-run.cjs), not ../../scripts',
     );
   }
   const parsed = JSON.parse(conf);
   const build = parsed.build?.beforeBuildCommand ?? '';
   const dev = parsed.build?.beforeDevCommand ?? '';
-  if (!build.includes('scripts/tauri-run.cjs') || !dev.includes('scripts/tauri-run.cjs')) {
-    throw new Error('tauri.conf.json beforeBuildCommand/beforeDevCommand must invoke scripts/tauri-run.cjs');
+  if (!build.includes('tauri-run.cjs') || !dev.includes('tauri-run.cjs')) {
+    throw new Error('tauri.conf.json beforeBuildCommand/beforeDevCommand must invoke tauri-run.cjs');
   }
   const resources = parsed.tauri?.bundle?.resources;
   if (!Array.isArray(resources)) {
