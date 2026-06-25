@@ -25,7 +25,7 @@
 | G13 | **动文档前先读关联 SSOT**（[`handoff/README.md`](./README.md) §文档分责 → 该主题唯一文 → 必要时源码）；**可以慢，禁止**未读就新建/大段粘贴 | 冗余 · 与源码/他文冲突 |
 | G14 | **文档零冗余**：同一事实 **一处** 维护；他处 **一行链接**；禁止把 MODULE_MAP / PLUGIN_V1 表复制进 handoff 新文 | 文档屎山 · 改一处牵十处 |
 | G15 | **统一风格**（见下 §文档编写纪律）：文首 **SSOT 范围 / 最后更新**；事实用 **表**；流程用 **简图**；中文简体；状态词 **Done / OPEN / 冻结 / 草案** 与 TECHNICAL_DEBT 一致 | AI/人类无法快速扫读 |
-| G16 | **新建或变更文档 SSOT 范围**时，须更新 [`handoff/README.md`](./README.md) §文档分责 **一行**（或 maintainer 确认无需登记）；**禁止** silent 新增顶层 `.md` | 索引失效 · 下一只 AI 找不到 |
+| G16 | **新建或变更文档 SSOT 范围**时，须更新 [`handoff/README.md`](./README.md) §文档分责 **一行**（或 maintainer 确认无需登记）；**禁止** silent 新增顶层 `.md`（**由 `scripts/check-doc-registry.mjs` 强制**） | 索引失效 · 下一只 AI 找不到 |
 
 ---
 
@@ -188,7 +188,8 @@
 ## 门禁与验收
 
 - `node scripts/check-stale-paths.mjs` — 文档 + 代码路径（dimension5 拆为 doc/code 两检）
-- `node scripts/dimension5-acceptance.mjs --ci` — **13** 项（含 `cargo deny`）
+- `node scripts/check-doc-registry.mjs` — handoff 根级文档登记 + 重复块哨兵（G14/G16）
+- `node scripts/dimension5-acceptance.mjs --ci` — **14** 项（含 `cargo deny` · doc registry）
 - 关键路径索引：[BUS_FACTOR_NOTES.md](./BUS_FACTOR_NOTES.md)
 - 技术债 / 冻结：[TECHNICAL_DEBT_INVENTORY.md](./TECHNICAL_DEBT_INVENTORY.md)
 - **审查 / 汇报核实**（带数字的质量报告、第三方审查入账前）：[AI_VERIFICATION_PROTOCOL.md](./AI_VERIFICATION_PROTOCOL.md)

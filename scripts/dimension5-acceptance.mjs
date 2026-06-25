@@ -94,6 +94,10 @@ runStep('CHANGELOG [Unreleased] parity', () => {
   sh('node', ['scripts/check-changelog-parity.mjs']);
 });
 
+runStep('doc registry ratchet', () => {
+  sh('node', ['scripts/check-doc-registry.mjs']);
+});
+
 runStep('stale doc paths ratchet', () => {
   sh('node', ['scripts/check-stale-paths.mjs', '--docs-only']);
 });
