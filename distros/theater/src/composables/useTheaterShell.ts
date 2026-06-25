@@ -78,7 +78,10 @@ import {
   type TheaterScenePresetId,
 } from './theater/theaterSceneCatalog'
 import { requestOutlineScene } from './theater/useTheaterOutlineMode'
-import { ApiInvokeError } from '@oclive/shared/api/helpers'
+import {
+  mapTheaterInvokeError,
+  mapTheaterOutlineInvokeError,
+} from './theater/mapTheaterInvokeError'
 
 const LINE_REVEAL_MS = 720
 const THINK_STEP_MS = 650
@@ -371,25 +374,8 @@ export function useTheaterShell() {
     return true
   }
 
-  function isKernelOfflineError(err: unknown): boolean {
-    if (!(err instanceof ApiInvokeError))
-      return false
-    const code = err.code ?? ''
-    const raw = err.raw.toLowerCase()
-    return code === 'KERNEL_HTTP_UNAVAILABLE'
-      || code === 'KERNEL_ATTACH_FAILED'
-      || code === 'REMOTE_SERVICE_UNAVAILABLE'
-      || raw.includes('connection refused')
-      || raw.includes('failed to fetch')
-      || raw.includes('内核')
-  }
-
   function sceneGenErrorToast(err: unknown): string {
-    if (err instanceof SceneGenTimeoutError)
-      return t('theater.poke.sceneTimeout')
-    if (isKernelOfflineError(err))
-      return t('theater.poke.kernelOffline')
-    return t('theater.poke.sceneFailed')
+    return t(mapTheaterInvokeError(err).userMessageKey)
   }
   function clearRevealTimer() {
     if (revealTimer != null) {
@@ -571,16 +557,7 @@ export function useTheaterShell() {
   }
 
   function classifyCastRewriteInvokeError(err: unknown): string {
-    if (err instanceof SceneGenTimeoutError)
-      return 'client_timeout'
-    if (isKernelOfflineError(err))
-      return 'kernel_offline'
-    if (err instanceof ApiInvokeError) {
-      const blob = `${err.message}\n${err.raw}`.toLowerCase()
-      if (blob.includes('base_beats must not be empty') || blob.includes('cast_rewrite'))
-        return 'kernel_stale_cast_rewrite'
-    }
-    return 'invoke_error'
+    return mapTheaterInvokeError(err).kind
   }
 
   async function runCastRewrite(
@@ -1230,10 +1207,8 @@ export function useTheaterShell() {
         shell.showToast('info', t('theater.outline.fallback'))
     }
     catch (err) {
-      if (err instanceof SceneGenTimeoutError)
-        shell?.showToast('info', t('theater.poke.sceneTimeout'))
-      else
-        shell?.showToast('info', t('theater.outline.failed'))
+      const mapped = mapTheaterOutlineInvokeError(err)
+      shell?.showToast('info', t(mapped.userMessageKey))
     }
     finally {
       outlineLoading.value = false

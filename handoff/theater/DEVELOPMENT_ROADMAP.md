@@ -188,6 +188,11 @@
 | 场景导演插件 | `distros/chat-pro/plugins/com.oclive.theater_director_official/` · `resolve_theater_director` | **Done** |
 | TheaterShell 前端 | `distros/theater/src/shells/theater/` · `TheaterShell` | **Done** |
 
+### 工程注记 · `scene_director.rs` 体积
+
+[`scene_director.rs`](../../kernel/crates/oclive_kernel_host/src/domain/theater/scene_director.rs) 当前约 **2000+** 行生产代码，主要来自 **LLM JSON 宽松解析 / salvage** 与各 `mode` 入口（`patch` · `cast_rewrite` · `outline_rewrite`）的领域防御——**有意保留单体**，非内核腐烂信号。  
+**拆分触发条件**（满足其一再立项 **MEGA-SD-01**）：模式 2 playtest ≥60% 正面且无 P0 剧场回归 · 或生产段 **>2500** 行且单次 PR 难 review · 或第二成熟 remote 剧场插件落地。见 [`TECHNICAL_DEBT_INVENTORY.md`](../TECHNICAL_DEBT_INVENTORY.md) §2 / §4。
+
 ---
 
 ## 8. 一句话收束

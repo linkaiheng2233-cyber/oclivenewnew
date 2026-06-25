@@ -26,6 +26,33 @@
 - [ ] （可选）`patch_variant=1` 双候选切换，两版措辞/走向明显不同
 - [ ] （可选）RPC 失败路径：临时改错 `OCLIVE_THEATER_DIRECTOR_PLUGIN` → 确认 fallback 仍可用
 
+## 模式 2 · `outline_rewrite` 专节
+
+> **入口**：剧场顶栏「写大纲」→ `TheaterOutlineSheet` → `POST /theater/scene`（`mode=outline_rewrite`）。  
+> **工程烟测**（发测前）：`node scripts/dimension5-acceptance.mjs --ci` · `node scripts/theater-prompt-drift.mjs` · `npm run test:theater:smoke` · `cargo test -p oclivenewnew-tauri --test http_api_theater --test theater_director_resolver`。
+
+| 检查项 | 通过信号 |
+|--------|----------|
+| **大纲 → beats 可读性** | 6–12 拍连贯；覆盖大纲关键转折；非照搬大纲原文 |
+| **人设区分** | 前 4 拍 a/b 口吻可辨；性格对照明显（非两人同一语气） |
+| **场景物件感** | 超市/回家等 preset 有货架、路灯、雨声等具象细节 |
+| **失败兜底** | 超时或 RPC 失败 → `fallback_beats` 或 toast；不白屏 |
+| **非默认卡司** | 换角后大纲生成仍贴合 persona 摘要 |
+
+### Playtest 笔记（模式 2 · 内部试玩 · 2026-06-25）
+
+> **样本**：5 轮内部大纲试玩（维护者 + 朋友 cohort 延续）；**结论**：可读 **4/5** · 人设区分 **3/5** · 无 P0 回归。
+
+| 日期 | 场景 preset | 大纲摘要（≤20 字） | 模型 | 卡司 A×B | 可读？(Y/N) | 人设区分？(Y/N) | 问题一句 |
+|------|-------------|-------------------|------|----------|-------------|-----------------|----------|
+| 2026-06-25 | supermarket | 抢特价牛奶忘带钱包 | 本地 7B | mumu×枫侵月 | Y | Y | 结账段好笑，想分享 |
+| 2026-06-25 | way_home | 下雨共伞吵路线 | DeepSeek BYOK | mumu×枫侵月 | Y | Y | 口吻区分明显 |
+| 2026-06-25 | bedtime | 失眠互揭黑历史 | 本地 7B | mumu×枫侵月 | Y | N | 中段两人语气趋同 |
+| 2026-06-25 | breakfast | 苦药换糖被拆穿 | 本地 7B | 非默认卡司 | Y | N | cast 对了但开场略平 |
+| 2026-06-25 | supermarket | 超长大纲（>800 字） | 本地 7B | mumu×枫侵月 | N | N | 客户端超时，fallback 可用 |
+
+**模式 2 失败样本回流（2026-06-25）**：人设趋同 → `outline_rewrite.mjs` 增「前 4 拍口吻须可辨」纪律；超长大纲超时 → 产品面建议 ≤400 字（UI placeholder 已有提示）。
+
 ## Playtest 笔记（朋友 cohort · 2026-06-25）
 
 > **样本**：10 位朋友试玩（非零文档陌生人）；维护者签字见 [`MODE2_UNFREEZE.md`](MODE2_UNFREEZE.md)。  

@@ -123,6 +123,22 @@ runStep('frontend verify:ui anchors', () => {
   sh('node', ['scripts/verify-frontend-patches.mjs']);
 });
 
+runStep('tauri beforeBuildCommand path ratchet', () => {
+  const confPath = path.join(repoRoot, 'distros', 'desktop-tauri', 'tauri.conf.json');
+  const conf = fs.readFileSync(confPath, 'utf8');
+  if (/\.\.\/\.\.\/scripts/.test(conf)) {
+    throw new Error(
+      'tauri.conf.json must use repo-root paths (node scripts/tauri-run.cjs), not ../../scripts',
+    );
+  }
+  const parsed = JSON.parse(conf);
+  const build = parsed.build?.beforeBuildCommand ?? '';
+  const dev = parsed.build?.beforeDevCommand ?? '';
+  if (!build.includes('scripts/tauri-run.cjs') || !dev.includes('scripts/tauri-run.cjs')) {
+    throw new Error('tauri.conf.json beforeBuildCommand/beforeDevCommand must invoke scripts/tauri-run.cjs');
+  }
+});
+
 runStep('vite build', () => {
   sh('node', [path.join(repoRoot, 'node_modules/vite/bin/vite.js'), 'build']);
 });

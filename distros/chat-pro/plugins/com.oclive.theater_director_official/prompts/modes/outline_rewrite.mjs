@@ -25,7 +25,7 @@ ${outline}
 ${personaBlock}${pairRelationBlock(input)}${sceneContextBlock(input)}${dramaGuardrailsBlock(input, "compact")}
 撰写要求：
 1. 恰好 ${targetBeats} 条对白（id 依次为 b1,b2,b3…）；cast 只能是 a 或 b；text 非空≤${MAX_BEAT_TEXT_LEN}字。
-2. 须落实大纲中的事件与转折；开场 2 拍建立场景感与性格对照；交替发言、口语自然中文。
+2. 须落实大纲中的事件与转折；开场 2 拍建立场景感与性格对照；**前 4 拍须让 a/b 口吻与人设明显可辨**（禁止两人同一语气）；交替发言、口语自然中文。
 3. 不得照搬大纲原文当台词；须写成对白与小动作感。
 
 输出契约：JSON 数组，每元素 {"id","cast":"a"|"b","text"}。
