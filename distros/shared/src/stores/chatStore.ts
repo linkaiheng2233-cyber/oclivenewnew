@@ -510,7 +510,7 @@ export const useChatStore = defineStore(
         schedulePersistMessages(this.messageMap, roleId, sid)
       },
 
-      async sendMessage(content: string, sceneId: string): Promise<SendMessageResponse> {
+      async sendMessage(content: string, sceneId: string): Promise<SendMessageResponse | undefined> {
         return sendChatStoreMessage(
           {
             sceneHistorySplitIndex: this.sceneHistorySplitIndex,

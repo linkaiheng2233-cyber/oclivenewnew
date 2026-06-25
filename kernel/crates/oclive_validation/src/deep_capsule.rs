@@ -33,10 +33,7 @@ pub fn validate_deep_capsule_file(role_dir: &Path, enabled: bool) -> Result<(), 
         }
     };
     if content.trim().is_empty() {
-        return Err(vec![format!(
-            "deep_capsule.txt 为空: {}",
-            path.display()
-        )]);
+        return Err(vec![format!("deep_capsule.txt 为空: {}", path.display())]);
     }
     let char_count = content.chars().count();
     if char_count > DEEP_CAPSULE_MAX_CHARS {
@@ -94,7 +91,11 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let prompts = dir.path().join("prompts");
         fs::create_dir_all(&prompts).unwrap();
-        fs::write(prompts.join("deep_capsule.txt"), "沐沐：害羞嘴硬的可爱小女孩。").unwrap();
+        fs::write(
+            prompts.join("deep_capsule.txt"),
+            "沐沐：害羞嘴硬的可爱小女孩。",
+        )
+        .unwrap();
         validate_deep_capsule_file(dir.path(), true).unwrap();
     }
 }

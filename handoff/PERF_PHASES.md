@@ -27,3 +27,13 @@
 | **D-T3** | 待排 | 稳定前缀 **KV 延续**（Large 模型 · 第 7 月+ backlog） |
 
 Bench SSOT：[`TTFT_BENCHMARK.md`](TTFT_BENCHMARK.md) · 设计：[`DEEP_PROMPT_DISTILLATION.md`](DEEP_PROMPT_DISTILLATION.md) · 愿景：[`creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md`](../creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md)。
+
+## Chat Pro 正式启用（2026-06-26）
+
+| 项 | 状态 |
+|----|------|
+| Profile | `desktop.oclive.toml` · `[turn_thinking]` Auto/Fast/Deep |
+| 流式 UI | `sendMessageStream` + 失败回退 `/chat` + `AbortController` 取消 |
+| 设置 | `chat.streamEnabled`（localStorage，默认开启） |
+| Bench | `measure-ttft.mjs --profile desktop` · OOCP **S15** 文档化于 [`TTFT_BENCHMARK.md`](TTFT_BENCHMARK.md) |
+| 技术债 | **K-CHATPRO-01** 流式取消 UX → **Done** |

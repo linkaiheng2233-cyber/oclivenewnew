@@ -77,6 +77,10 @@ export default {
     userIdentitySectionLeadSecondary:
       '与顶栏「关系」不同：关系影响好感与距离感；若身份配置了对应关系，切换时会自动同步。',
     postProcessorSectionTitle: '回复后处理',
+    chatStreamSectionTitle: '对话',
+    chatStreamSectionHelp: '流式回复逐字显示，降低等待感；关闭后每轮等待整段 blocking 回复。',
+    chatStreamEnabledLabel: '流式回复',
+    chatStreamEnabledHint: '启用 SSE 逐字显示（默认开启）',
     noIdentityCatalogHint: '当前角色包未配置可选身份；可在设置中查看回复后处理状态。',
     layoutSectionTitle: '布局',
     layoutSectionHelp: '拖拽角色侧栏或设置/插件/模型侧栏的分界可调整宽度；偏好保存在本机。',

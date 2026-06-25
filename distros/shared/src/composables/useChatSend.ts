@@ -26,6 +26,8 @@ export function useChatSend(options: {
     const userText = payload.content
     try {
       const res = await chatStore.sendMessage(userText, uiStore.sceneId)
+      if (!res)
+        return
       await roleStore.refreshRoleInfo()
       applyResolvedNarrativeScene()
       await debugStore.loadDebugData()

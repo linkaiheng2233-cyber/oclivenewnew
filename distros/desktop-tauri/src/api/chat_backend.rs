@@ -63,6 +63,7 @@ impl ChatBackend {
         }
     }
 
+    #[allow(clippy::assertions_on_constants)]
     pub async fn send_message_stream(
         &self,
         role_path: &std::path::Path,
@@ -76,23 +77,17 @@ impl ChatBackend {
         };
         match self {
             Self::Http(conn) => {
-                match KernelHttpClient::send_message_stream_via_http(
-                    conn,
-                    role_path,
-                    req,
-                    |t| emit(t),
-                )
+                match KernelHttpClient::send_message_stream_via_http(conn, role_path, req, |t| {
+                    emit(t)
+                })
                 .await
                 {
                     Ok(res) => Ok(res),
                     Err(AppError::RoleRuntimeNotReady) => {
                         KernelHttpClient::load_role_via_http(conn, req.role_id.trim()).await?;
-                        KernelHttpClient::send_message_stream_via_http(
-                            conn,
-                            role_path,
-                            req,
-                            |t| emit(t),
-                        )
+                        KernelHttpClient::send_message_stream_via_http(conn, role_path, req, |t| {
+                            emit(t)
+                        })
                         .await
                     }
                     Err(e) => Err(e),

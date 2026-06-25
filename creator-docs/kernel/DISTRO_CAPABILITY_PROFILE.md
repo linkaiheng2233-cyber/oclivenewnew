@@ -132,6 +132,18 @@ favor_low  = "…"              # optional; favor < 40
 
 示例（latency bench）：[`examples/distro-profiles/desktop-latency.oclive.toml`](../../examples/distro-profiles/desktop-latency.oclive.toml)。架构归类与 Deep 蒸馏路线图：[`handoff/DEEP_PROMPT_DISTILLATION.md`](../../handoff/DEEP_PROMPT_DISTILLATION.md)。
 
+#### Chat Pro 默认行为（`distro_id = desktop`）
+
+Release 安装包 bundled [`resources/distro-profiles/desktop.oclive.toml`](../../distros/desktop-tauri/resources/distro-profiles/desktop.oclive.toml) 与示例 [`examples/distro-profiles/desktop.oclive.toml`](../../examples/distro-profiles/desktop.oclive.toml) 对齐：
+
+| 能力 | 默认 | 用户感知 |
+|------|------|----------|
+| **`[turn_thinking]`** | `default = "auto"` | 闲聊走 Fast；长句 / 高唤醒情绪 / Quarrel 链 → Deep |
+| **流式回复** | 主 UI `sendMessageStream` → `POST /chat/stream` | 回复**逐字显示**（降低**感知延迟**）；SSE 失败自动回退 blocking `/chat` |
+| **Deep capsule** | 角色包 `meta.deep_capsule_enabled` + `prompts/deep_capsule.txt` | Small 模型 + Deep 轮用离线 capsule（见 Wave D） |
+
+**Bench 区分**：`desktop-latency` profile（`event_impact_llm = false`）用于 TTFT 开发 bench；**正式用户默认**为 `desktop` profile。流式改善**感知延迟**，不改变 [`handoff/TTFT_BENCHMARK.md`](../../handoff/TTFT_BENCHMARK.md) 中 stream TTFT 数值定义。设置 → 常规 → 高级可关闭「流式回复」。
+
 > 说明：六槽 `none` 语义见 [MODULE_NONE_SEMANTICS.md](./MODULE_NONE_SEMANTICS.md)。发行版关闭 Agent 可用 `host_flags.skip_agent` 或 `[plugin_backends] agent = "none"`。
 
 ### 3.3 Prompt / 记忆 / 后处理（P4 映射表）

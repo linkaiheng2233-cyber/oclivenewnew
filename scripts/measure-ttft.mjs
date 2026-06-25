@@ -1,11 +1,22 @@
 /**
  * Measure time-to-first-token (TTFT) for OCLive HTTP chat APIs.
  * Usage: node scripts/measure-ttft.mjs [--base URL] [--role-path PATH] [--runs N] [--message TEXT]
+ *        [--profile desktop|desktop-latency]  (expects matching OCLIVE_DISTRO_PROFILE on API process)
  */
 import { existsSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { performance } from 'node:perf_hooks'
 import { chatProRolesDir, resolveRepoRoot } from './lib/chat-pro-roles-dir.mjs'
+
+const PROFILE_PATHS = {
+  desktop: 'examples/distro-profiles/desktop.oclive.toml',
+  'desktop-latency': 'examples/distro-profiles/desktop-latency.oclive.toml',
+}
+
+const PROFILE_DISTRO_IDS = {
+  desktop: 'desktop',
+  'desktop-latency': 'desktop-latency',
+}
 
 function arg(name, fallback) {
   const i = process.argv.indexOf(name)
@@ -205,6 +216,14 @@ async function main() {
   const base = arg('--base', 'http://127.0.0.1:8420').replace(/\/$/, '')
   const runs = Number(arg('--runs', '5'))
   const deepOnly = process.argv.includes('--deep-only')
+  const profileKey = arg('--profile', 'desktop-latency')
+  const repoRoot = resolveRepoRoot()
+  const profileRel = PROFILE_PATHS[profileKey]
+  if (!profileRel) {
+    throw new Error(`unknown --profile ${profileKey}; use desktop or desktop-latency`)
+  }
+  const profilePath = resolve(repoRoot, profileRel)
+  const expectedDistroId = PROFILE_DISTRO_IDS[profileKey]
   const message = deepOnly
     ? arg(
         '--message',
@@ -225,6 +244,16 @@ async function main() {
   if (!health.ok) throw new Error(`health ${health.status}`)
   const healthBody = await health.json()
   console.log(`API: ${base}`)
+  console.log(`Profile: ${profileKey} → ${profileRel}`)
+  console.log(`  Set on API process: OCLIVE_DISTRO_PROFILE=${profilePath}`)
+  const actualDistroId = healthBody.distro_id ?? healthBody.active_profile_summary?.distro_id ?? null
+  if (actualDistroId && actualDistroId !== expectedDistroId) {
+    console.warn(
+      `  WARN: health distro_id=${actualDistroId} (expected ${expectedDistroId} for --profile ${profileKey})`,
+    )
+  } else if (actualDistroId) {
+    console.log(`  Health distro_id: ${actualDistroId} ✓`)
+  }
   console.log(`Role: ${rolePath}`)
   console.log(`Runs: ${runs} · Scene: ${sceneId} · Message: ${message}`)
   if (deepOnly) console.log('Mode: --deep-only (Turn Thinking Deep trigger)')

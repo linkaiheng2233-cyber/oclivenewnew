@@ -8,7 +8,10 @@ use crate::models::{EventType, Memory, PersonalitySource, PersonalityVector, Rol
 
 impl PromptBuilder {
     #[must_use]
-    pub(super) fn build_core_hard_constraint(role: &Role, persona_override: Option<&str>) -> String {
+    pub(super) fn build_core_hard_constraint(
+        role: &Role,
+        persona_override: Option<&str>,
+    ) -> String {
         let mut core = String::new();
         core.push_str(&format!("你是{}。\n", role.name));
         core.push_str("【核心设定·不可违背】以下是你不可违背的核心设定\n");

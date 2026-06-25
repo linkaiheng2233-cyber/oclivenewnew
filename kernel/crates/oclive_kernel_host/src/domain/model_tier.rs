@@ -64,7 +64,7 @@ pub fn resolve_persona_source(
 }
 
 #[must_use]
-pub fn persona_override_for_source<'a>(role: &'a Role, source: PersonaSource) -> Option<&'a str> {
+pub fn persona_override_for_source(role: &Role, source: PersonaSource) -> Option<&str> {
     match source {
         PersonaSource::DeepCapsule => role.deep_capsule.as_deref(),
         PersonaSource::FullCore => None,

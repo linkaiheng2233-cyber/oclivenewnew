@@ -31,6 +31,10 @@ pub fn event_impact_llm_enabled(profile_allows: bool) -> bool {
 }
 
 /// Rule-based event impact (no pre-LLM call).
+///
+/// # Errors
+///
+/// Propagates errors from [`EventDetector::detect_with_augment`] when rule detection fails.
 pub fn estimate_event_impact_rules_only(
     user_message: &str,
     user_emotion: &Emotion,

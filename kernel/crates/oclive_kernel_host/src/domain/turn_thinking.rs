@@ -1,8 +1,8 @@
 //! Per-turn Fast/Deep thinking mode for co-present latency (distro `HostProfile` + auto router).
 
 use crate::domain::host_profile::{HostProfile, TurnThinkingDefault};
-use oclive_kernel_runtime::domain::emotion_analyzer::EmotionResult;
 use crate::models::{Event, EventType};
+use oclive_kernel_runtime::domain::emotion_analyzer::EmotionResult;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TurnThinkingMode {

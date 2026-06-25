@@ -80,6 +80,11 @@ export default {
     userIdentitySectionLeadSecondary:
       'Different from the top-bar Relation: relation affects favor and distance; if an identity maps to a relation, switching identity syncs relation automatically.',
     postProcessorSectionTitle: 'Reply post-processor',
+    chatStreamSectionTitle: 'Chat',
+    chatStreamSectionHelp:
+      'Streaming shows tokens as they arrive; when off, each turn waits for the full blocking reply.',
+    chatStreamEnabledLabel: 'Streaming replies',
+    chatStreamEnabledHint: 'Enable SSE token-by-token display (default on)',
     noIdentityCatalogHint:
       'This role pack has no selectable identities; reply post-processor status is still shown below.',
     layoutSectionTitle: 'Layout',

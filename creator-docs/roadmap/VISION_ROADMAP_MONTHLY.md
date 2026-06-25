@@ -110,15 +110,13 @@
 
 ### TTFT 与 Deep 精炼（Wave A–D · 2026-06 起）
 
-**已交付（Wave A/B）**：发行版 `event_impact_llm` · Turn Thinking Auto/Fast/Deep · co-present Fast 裁剪 · `scripts/measure-ttft.mjs` · Chat Pro co-present **p50 ~243ms**（见 [`handoff/TTFT_BENCHMARK.md`](../../handoff/TTFT_BENCHMARK.md)）。
+**已交付（Wave A–D · T1/T2）**：发行版 `event_impact_llm` · Turn Thinking Auto/Fast/Deep · co-present Fast 裁剪 · `scripts/measure-ttft.mjs` · Chat Pro co-present **p50 ~243ms**（bench profile `desktop-latency`，见 [`handoff/TTFT_BENCHMARK.md`](../../handoff/TTFT_BENCHMARK.md)）· **Wave C** 主 UI `/chat/stream` · **Wave D** Small+Deep **`prompts/deep_capsule.txt`**。
 
-**进行中 / 待排（Wave C–D）**：
+**第 7 月+ backlog（Wave D-T3）**：
 
 | Wave | 目标 | 说明 |
 |------|------|------|
-| **C** | 感知延迟 | Chat Pro 主 UI 接 `/chat/stream` · **Done** |
-| **D** | **Deep 短 prompt** | 角色包 **`prompts/deep_capsule.txt`** · **Small+Deep Done** |
-| **D-T3 / D+** | **上下文延续（Large + KV）** | Prompt 拆 **稳定前缀 / 可变后缀**；**Large 模型全文 + KV 延续** — **第 7 月+ backlog** |
+| **D-T3 / D+** | **上下文延续（Large + KV）** | Prompt 拆 **稳定前缀 / 可变后缀**；**Large 模型全文 + KV 延续** — 待 34B+ 默认用户或 bench 需求 |
 
 **架构归类 SSOT**：规则 event = **第 3 模块** optional 子路径 + **HostProfile** 开关；Turn Thinking = **编排行无编号设施**；capsule = **角色包卫星 + 第 4 模块组装分支**。详见 **[`handoff/DEEP_PROMPT_DISTILLATION.md`](../../handoff/DEEP_PROMPT_DISTILLATION.md)**。
 

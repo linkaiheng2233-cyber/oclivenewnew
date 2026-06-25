@@ -16,6 +16,8 @@
 | **Windows** | **Visual Studio Build Tools**（MSVC 链接器） |
 | **Ollama** | 可选；未安装时对话可能失败，但 **编译与 `npm run check` 不依赖** |
 
+**Chat Pro 对话体验（需本地 Ollama）**：默认发行版 profile 启用 **Auto 快/深思考**——短句闲聊走 Fast，长句或高情绪内容自动切 Deep；回复经 **流式 SSE** 逐字显示（感知更快）。未装 Ollama 或流式失败时会回退整段 blocking 回复。详见 [`DISTRO_CAPABILITY_PROFILE.md`](../creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md) §Chat Pro 默认行为。
+
 **Cargo 产物目录**：根目录 [`.cargo/config.toml`](../.cargo/config.toml) 将 `target-dir` 指到仓库外 `../oclive-dev-artifacts/oclivenewnew-cargo-target/`（与源码分离，便于清理）。
 
 ---

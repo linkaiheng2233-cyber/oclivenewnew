@@ -20,6 +20,7 @@ import { useOcliveAppearance } from '@oclive/shared/composables/useOcliveAppeara
 import { getLocalePreference, setLocalePreference } from '@oclive/shared/i18n'
 import { SLOT_SETTINGS_ADVANCED, usePluginStore } from '@oclive/shared/stores/pluginStore'
 import { isSentryOptOut, setSentryOptOut } from '@oclive/shared/utils/telemetrySentry'
+import { isChatStreamEnabled, setChatStreamEnabled } from '@oclive/shared/utils/chatStreamSettings'
 
 const ReplyPostProcessorStatus = defineAsyncComponent(() => import('../role/ReplyPostProcessorStatus.vue'))
 const RoleIdentityControls = defineAsyncComponent(() => import('../role/RoleIdentityControls.vue'))
@@ -46,6 +47,13 @@ const localePreference = ref<LocalePreference>(getLocalePreference())
 const hasSentryDsn
   = typeof import.meta.env.VITE_SENTRY_DSN === 'string' && import.meta.env.VITE_SENTRY_DSN.length > 0
 const sentryOptOut = ref(isSentryOptOut())
+const chatStreamEnabled = ref(isChatStreamEnabled())
+
+function onChatStreamEnabledChange(e: Event) {
+  const enabled = (e.target as HTMLInputElement).checked
+  setChatStreamEnabled(enabled)
+  chatStreamEnabled.value = enabled
+}
 
 async function onSentryOptOutChange(e: Event) {
   const optOut = (e.target as HTMLInputElement).checked
@@ -254,6 +262,25 @@ async function onToggleForceIframe(e: Event) {
 
     <UiSection v-show="generalSubTab === 'advanced'" :title="t('settings.postProcessorSectionTitle')">
       <ReplyPostProcessorStatus :show-title="false" />
+    </UiSection>
+
+    <UiSection
+      v-show="generalSubTab === 'advanced'"
+      :title="t('settings.chatStreamSectionTitle')"
+      :description="t('settings.chatStreamSectionHelp')"
+    >
+      <UiFieldRow :label="t('settings.chatStreamEnabledLabel')">
+        <label class="sv-toggle-row">
+          <input
+            type="checkbox"
+            :checked="chatStreamEnabled"
+            @change="onChatStreamEnabledChange"
+          >
+          <span class="sv-toggle-text">
+            <strong>{{ t('settings.chatStreamEnabledHint') }}</strong>
+          </span>
+        </label>
+      </UiFieldRow>
     </UiSection>
 
     <UiSection

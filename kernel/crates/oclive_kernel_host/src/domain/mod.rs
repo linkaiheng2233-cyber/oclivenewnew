@@ -49,6 +49,7 @@ pub mod event_impact_ai;
 pub mod expert_routing;
 pub mod fallback_agent;
 pub mod host_profile;
+pub mod model_tier;
 pub mod mutable_profile_llm;
 pub mod noop_slot_backends;
 pub mod plugin_host;
@@ -60,7 +61,6 @@ pub mod slot_resolver;
 pub mod slot_runner;
 pub mod theater;
 pub mod turn_thinking;
-pub mod model_tier;
 pub mod visual_presentation;
 
 pub use agent::{AgentDebugTrace, AgentInput, AgentOutput, AgentProvider, BuiltinReActAgent};

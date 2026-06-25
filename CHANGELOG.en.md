@@ -6,6 +6,8 @@
 
 ### Added
 
+- **Chat Pro stream cancel**: new sends abort the in-flight SSE via `AbortController` and remove dangling `streaming` bubbles.
+- **Chat Pro stream toggle**: Settings → General → Advanced “Streaming replies” (`localStorage` `oclive.chat.streamEnabled`, default on).
 - **Monorepo layout (kernel / distros)**: Rust crates under `kernel/`; desktop distros under `distros/{shared,chat-pro,theater,desktop-tauri}`; RFC: [`handoff/distros/ARCHITECTURE_DECOUPLING_RFC.md`](handoff/distros/ARCHITECTURE_DECOUPLING_RFC.md).
 - **Theater Track A engineering hygiene (round 16)**: [`handoff/theater/MODE2_UNFREEZE.md`](handoff/theater/MODE2_UNFREEZE.md) Mode 2 unfreeze checklist; `theater-prompt-drift` wired into `dimension5-acceptance.mjs` and `test:theater:smoke`; self-contained `prompts/` in minimal director example; `data/plugins.json` entry for `com.oclive.theater_director_official`.
 - **`CODE_OF_CONDUCT.md`** (Contributor Covenant).

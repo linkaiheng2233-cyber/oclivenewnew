@@ -392,9 +392,8 @@ impl RoleStorage {
 
         let deep_capsule_path = role_dir.join("prompts/deep_capsule.txt");
         if deep_capsule_path.is_file() {
-            role.deep_capsule = Some(
-                fs::read_to_string(&deep_capsule_path).map_err(AppError::IoError)?,
-            );
+            role.deep_capsule =
+                Some(fs::read_to_string(&deep_capsule_path).map_err(AppError::IoError)?);
         }
 
         role.user_identity_catalog = load_user_identity_catalog(role_dir)?;

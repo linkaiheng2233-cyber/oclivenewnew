@@ -3,6 +3,7 @@ import { sendMessage, sendMessageStream } from '@oclive/shared/api'
 import { hostEventBus } from '@oclive/shared/lib/hostEventBus'
 import { getRelationUpgradeMessage } from '@oclive/shared/utils/relation'
 import { presentationFromSendResponse } from '@oclive/shared/utils/replyPresentation'
+import { isChatStreamEnabled } from '@oclive/shared/utils/chatStreamSettings'
 import {
   assistantDialogueFromSplit,
   splitRoleplayReply,
@@ -39,16 +40,32 @@ export interface ChatStoreSendContext {
   ) => void
 }
 
+let activeSendSeq = 0
+let inFlightStreamAbort: AbortController | null = null
+
+function isAbortError(err: unknown, signal?: AbortSignal): boolean {
+  if (signal?.aborted)
+    return true
+  return err instanceof DOMException && err.name === 'AbortError'
+}
+
 export async function sendChatStoreMessage(
   context: ChatStoreSendContext,
   content: string,
   sceneId: string,
-): Promise<SendMessageResponse> {
+): Promise<SendMessageResponse | void> {
   const roleStore = useRoleStore()
   const roleId = roleStore.currentRoleId
   const sid = sceneId || 'default'
   const countBeforeTurn = context.getMessageCountForRoleScene(roleId, sid)
   const userLocalId = `u-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+  const sendSeq = ++activeSendSeq
+  const isStale = () => sendSeq !== activeSendSeq
+
+  inFlightStreamAbort?.abort()
+  const streamAbort = new AbortController()
+  inFlightStreamAbort = streamAbort
+
   context.addMessage(roleId, sid, {
     id: userLocalId,
     role: 'user',
@@ -61,42 +78,63 @@ export async function sendChatStoreMessage(
   let streamBubbleActive = false
   try {
     let res: SendMessageResponse
-    try {
-      context.addMessage(roleId, sid, {
-        id: assistantLocalId,
-        role: 'assistant',
-        content: '',
-        timestamp: Date.now(),
-        streaming: true,
-      }, { persistIdbCache: false })
-      streamBubbleActive = true
-      res = await sendMessageStream(
-        {
+    const streamEnabled = isChatStreamEnabled()
+    if (streamEnabled) {
+      try {
+        context.addMessage(roleId, sid, {
+          id: assistantLocalId,
+          role: 'assistant',
+          content: '',
+          timestamp: Date.now(),
+          streaming: true,
+        }, { persistIdbCache: false })
+        streamBubbleActive = true
+        res = await sendMessageStream(
+          {
+            role_id: roleId,
+            user_message: content,
+            scene_id: sid || null,
+          },
+          {
+            signal: streamAbort.signal,
+            onToken: (_token, accumulated) => {
+              if (isStale())
+                return
+              context.patchMessageById(roleId, sid, assistantLocalId, {
+                content: accumulated,
+              })
+            },
+          },
+        )
+      }
+      catch (streamErr) {
+        if (isAbortError(streamErr, streamAbort.signal) || isStale()) {
+          if (streamBubbleActive)
+            context.deleteMessage(roleId, sid, assistantLocalId)
+          return
+        }
+        console.warn('[chat] stream failed, fallback to /chat', streamErr)
+        if (streamBubbleActive) {
+          context.deleteMessage(roleId, sid, assistantLocalId)
+          streamBubbleActive = false
+        }
+        res = await sendMessage({
           role_id: roleId,
           user_message: content,
           scene_id: sid || null,
-        },
-        {
-          onToken: (_token, accumulated) => {
-            context.patchMessageById(roleId, sid, assistantLocalId, {
-              content: accumulated,
-            })
-          },
-        },
-      )
-    }
-    catch (streamErr) {
-      console.warn('[chat] stream failed, fallback to /chat', streamErr)
-      if (streamBubbleActive) {
-        context.deleteMessage(roleId, sid, assistantLocalId)
-        streamBubbleActive = false
+        })
       }
+    }
+    else {
       res = await sendMessage({
         role_id: roleId,
         user_message: content,
         scene_id: sid || null,
       })
     }
+
+    if (isStale())
+      return
 
     if (res.user_message_id) {
       context.patchMessageById(roleId, sid, userLocalId, {
@@ -164,12 +202,20 @@ export async function sendChatStoreMessage(
     return res
   }
   catch (err) {
+    if (isAbortError(err, streamAbort.signal) || isStale()) {
+      if (streamBubbleActive)
+        context.deleteMessage(roleId, sid, assistantLocalId)
+      return
+    }
     context.deleteMessage(roleId, sid, userLocalId)
     if (streamBubbleActive)
       context.deleteMessage(roleId, sid, assistantLocalId)
     throw err
   }
   finally {
-    context.setLoading(false)
+    if (!isStale())
+      context.setLoading(false)
+    if (inFlightStreamAbort === streamAbort)
+      inFlightStreamAbort = null
   }
 }
