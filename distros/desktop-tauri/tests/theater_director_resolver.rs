@@ -179,7 +179,6 @@ async fn build_theater_prompt_uses_directory_plugin_prefix() {
 
     let input = TheaterPromptBuildInput {
         mode: "ripple".to_string(),
-        strict: false,
         persona_a: "傲娇".to_string(),
         persona_b: "温柔".to_string(),
         cast_a_name: "木木".to_string(),
@@ -187,30 +186,11 @@ async fn build_theater_prompt_uses_directory_plugin_prefix() {
         cast_a_role_id: "mumu".to_string(),
         cast_b_role_id: "枫侵月".to_string(),
         scene_id: "home".to_string(),
-        applied_tweaks: vec![],
-        base_beats: vec![],
         max_beats: 8,
-        patch_variant: None,
-        fork_templates: None,
-        adapt_pass: None,
-        poke_chips: None,
-        pair_relation_id: None,
-        pair_relation_hint: None,
-        theater_scene: None,
-        scene_brief: None,
-        scene_setting_hint: None,
         ripple_prefix_beats: Some(vec![]),
         ripple_skeleton: Some(vec![]),
         ripple_full_rewrite: Some(true),
-        patch_prefix_beats: None,
-        patch_skeleton_tail: None,
-        patch_canned_patch: None,
-        patch_tweak: None,
-        patch_chip_slug: None,
-        patch_max_lines: None,
-        cast_rewrite_min_beats: None,
-        cast_rewrite_max_beats: None,
-        cast_rewrite_target_beats: None,
+        ..Default::default()
     };
     let prompt = build_theater_prompt(&harness.state, &input);
     assert!(

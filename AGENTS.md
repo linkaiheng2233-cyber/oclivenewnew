@@ -7,6 +7,7 @@
 自动化助手或外部 Agent 在修改代码前，请先阅读：
 
 - **命名与 canonical import SSOT**：[creator-docs/NAMING_CONVENTIONS.md](creator-docs/NAMING_CONVENTIONS.md)（DTO → `oclive_kernel_types`；trait → `oclive_kernel_contracts`；编排 → `oclive_kernel_host`）
+- **改动边界 / 简洁优先**：[handoff/AI_CHANGE_BOUNDARIES.md](handoff/AI_CHANGE_BOUNDARIES.md)（G1–G9 硬约束 + **「代码编写纪律」**：先调研后动手 · correct-by-construction · 精简反屎山 · 解耦可维护）· 带数字的审查汇报先读 [handoff/AI_VERIFICATION_PROTOCOL.md](handoff/AI_VERIFICATION_PROTOCOL.md)
 
 ### 发版版本（`main`，2026-06-12）
 

@@ -29,7 +29,11 @@ pub struct TheaterDirectorEffectiveConfig {
 }
 
 /// Input for one `theater.build_prompt` call (JSON-RPC params projection).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+///
+/// Derives `Default` so host-side constructors can fill only the fields that
+/// distinguish a mode and leave the rest at their zero value via
+/// `..Default::default()` (avoids ~40-field repetition per mode).
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct TheaterPromptBuildInput {
     /// `patch` | `ripple` | `cast_adapt` | `cast_rewrite` | `cast_rewrite_minimal` | `outline_rewrite`
     pub mode: String,

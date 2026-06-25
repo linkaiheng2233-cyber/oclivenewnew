@@ -184,6 +184,7 @@ git status                                      # 确认工作树状态 / 与 or
 - [ ] 错误模型一致性（`AppError / TurnError / ProcessMessageError`）
 - [ ] 单实现 trait 普查（~24 contracts trait）：保留为 DI 端口 / 降级具体类型
 - [ ] `resolve_*` 命名混淆度 + rustdoc 覆盖率
+- [ ] **认知负担 / 冗余抽查**（人类开发者友好度）：多分支手写同一大 struct（如 builder 函数群、测试字面量）是否可 `#[derive(Default)]` + `..Default::default()` + 共享 base 收敛；复制粘贴块、未用 import、自己引入的死代码——**行为等价前提下顺手清**（见 [`AI_CHANGE_BOUNDARIES.md`](./AI_CHANGE_BOUNDARIES.md) G9），**勿为清而清**触发无关大重构（§9）
 
 **愿景拷问**
 - [ ] 【V2】god-port / 槽并行是"可替换性"愿景的实现质量问题——本轮是否升级优先级？

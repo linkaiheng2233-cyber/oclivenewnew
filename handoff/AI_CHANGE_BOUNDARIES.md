@@ -18,6 +18,34 @@
 | G6 | **编排**只在 `oclive_kernel_host::process_message` 及 `turn_pipeline/`；Tauri `api/*.rs` 薄封装，**不在 `lib.rs` 堆业务** | 分层 ratchet 红 |
 | G7 | DTO / 错误码以 `oclive_kernel_types` + [KERNEL_ERROR_CODE_CONVENTION.md](../creator-docs/getting-started/KERNEL_ERROR_CODE_CONVENTION.md) 为准；回复字段 **`reply`** | 前后端契约断裂 |
 | G8 | 改 **公开 DTO 字段 / trait 签名 / crate 名 / 公开 re-export** 后须 `cargo test --workspace --doc`（`check:rust` 与 `--lib` **不跑 doctest**） | rustdoc 示例漂移 → CI `rust` 硬门禁红（本地 `--lib` 全绿掩盖）；见 [AI_VERIFICATION_PROTOCOL.md](./AI_VERIFICATION_PROTOCOL.md) §2.1 |
+| G9 | **简洁优先 / 反冗余**：在你**已因其它原因改动**的代码里，顺手收敛明显重复（多分支手写同一大 struct、复制粘贴字段块、未用 import、自己引入的死代码）——struct 用 `#[derive(Default)]` + `..Default::default()` 或共享 base helper，只列差异字段。**收敛须行为等价 + 相关测试绿**；**禁止**为清而清做与当前任务无关的大重构（§9 防过度工程）。新加字段时优先让构造点用 `..Default::default()`，避免 N 处手写全字段。 | 认知负担累积 / 或反向触发过度重构与行为漂移 |
+
+---
+
+## 代码编写纪律（correct-by-construction · 反屎山）
+
+> G9 管「把已有的重复删掉」；本节管「一开始就别写出重复 / 易错 / 耦合的代码」。**写功能前先读完本节。**
+
+**1. 先调研，后动手（写任何功能前必做）**
+- 先 `grep` 既有实现：同类 helper / DTO / trait / 路由是否已存在？**优先复用，禁止平行造第二份**（canonical import 见 [NAMING_CONVENTIONS.md](../creator-docs/NAMING_CONVENTIONS.md) §4.2）。
+- 读该路径的 SSOT 与最近同类写法再下笔：编排 → `process_message` / `turn_pipeline`；DTO → `oclive_kernel_types`；trait → `oclive_kernel_contracts`；路径 → `chat_pro_roles_dir()`。
+- 边界不清就**停下问**，不要先写一版「应该差不多」的猜测代码再返工。
+
+**2. 源头防错（correct-by-construction，让编译器替你挡 bug）**
+- 用类型系统兜底：`enum` + **穷尽 `match`**（慎用 `_ =>` 吞掉新分支）；`Option` / `Result` 显式处理；`#[derive(Default)]` + `..Default::default()` 避免漏字段（G8/G9 已被此类漂移咬过）。
+- 生产路径 **禁 `.unwrap()` / `.expect()`**（测试除外）；错误走 `Result` + 既有错误码（G7）。
+- 新增结构体字段时，优先让所有构造点走 `..Default::default()`，避免 N 处手写全字段（这是「加一个字段改 6 处」屎山的源头）。
+
+**3. 精简而非冗余（同功能取更短、更少分支）**
+- 同等功能选代码量 / 分支更少的写法；同一逻辑复制粘贴 **≥2 次即抽 helper**。
+- 不写「将来可能用得上」的参数 / 泛型 / trait（speculative generality = §9 点名的过度工程）。
+
+**4. 解耦与可维护（人类开发者认知负担优先）**
+- 守分层（G6）：编排只在 `process_message` / `turn_pipeline`；`api/*.rs` 薄封装；`lib.rs` 不堆业务。
+- 一事一 **SSOT**；函数短、单一职责；公共逻辑下沉到一个 helper，不在多处镜像。
+- 改动面最小化：与当前任务无关的代码**不顺手重写**（避免「修 A 带崩 B」；大重构走 §9 判定）。
+
+**收尾自检（声称「写完」前）**：`cargo test --workspace --doc`（G8）+ 受影响的集成测 + `node scripts/dimension5-acceptance.mjs --ci`；`cargo clippy` 无新增 warning。
 
 ---
 

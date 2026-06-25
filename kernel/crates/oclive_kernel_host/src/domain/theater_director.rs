@@ -94,17 +94,22 @@ pub fn build_theater_prompt(state: &AppState, input: &TheaterPromptBuildInput) -
     }
 }
 
+/// Shared fields common to every mode's `TheaterPromptBuildInput`.
+///
+/// Each `*_prompt_input` builder fills only the fields that distinguish its mode
+/// and spreads this base via `..base_prompt_input(...)`; all remaining
+/// mode-specific options stay at their `Default` (mostly `None`).
 #[must_use]
-pub(crate) fn ripple_prompt_input(
+fn base_prompt_input(
     req: &TheaterSceneRequest,
-    ctx: &RippleContext,
-    max_beats: u32,
+    mode: &str,
     strict: bool,
     persona_a: &str,
     persona_b: &str,
+    max_beats: u32,
 ) -> TheaterPromptBuildInput {
     TheaterPromptBuildInput {
-        mode: "ripple".to_string(),
+        mode: mode.to_string(),
         strict,
         persona_a: persona_a.to_string(),
         persona_b: persona_b.to_string(),
@@ -116,28 +121,30 @@ pub(crate) fn ripple_prompt_input(
         applied_tweaks: req.applied_tweaks.clone(),
         base_beats: req.base_beats.clone(),
         max_beats,
-        patch_variant: None,
-        fork_templates: None,
-        adapt_pass: None,
-        poke_chips: req.poke_chips.clone(),
         pair_relation_id: req.pair_relation_id.clone(),
         pair_relation_hint: req.pair_relation_hint.clone(),
         theater_scene: req.theater_scene.clone(),
         scene_brief: req.scene_brief.clone(),
         scene_setting_hint: req.scene_setting_hint.clone(),
+        ..Default::default()
+    }
+}
+
+#[must_use]
+pub(crate) fn ripple_prompt_input(
+    req: &TheaterSceneRequest,
+    ctx: &RippleContext,
+    max_beats: u32,
+    strict: bool,
+    persona_a: &str,
+    persona_b: &str,
+) -> TheaterPromptBuildInput {
+    TheaterPromptBuildInput {
+        poke_chips: req.poke_chips.clone(),
         ripple_prefix_beats: Some(ctx.prefix_beats.clone()),
         ripple_skeleton: Some(ctx.ripple_skeleton.clone()),
         ripple_full_rewrite: Some(ctx.full_rewrite),
-        patch_prefix_beats: None,
-        patch_skeleton_tail: None,
-        patch_canned_patch: None,
-        patch_tweak: None,
-        patch_chip_slug: None,
-        patch_max_lines: None,
-        cast_rewrite_min_beats: None,
-        cast_rewrite_max_beats: None,
-        cast_rewrite_target_beats: None,
-        script_outline: None,
+        ..base_prompt_input(req, "ripple", strict, persona_a, persona_b, max_beats)
     }
 }
 
@@ -150,40 +157,10 @@ pub fn cast_adapt_prompt_input(
     persona_b: &str,
 ) -> TheaterPromptBuildInput {
     TheaterPromptBuildInput {
-        mode: "cast_adapt".to_string(),
-        strict,
-        persona_a: persona_a.to_string(),
-        persona_b: persona_b.to_string(),
-        cast_a_name: req.cast_a.name.clone(),
-        cast_b_name: req.cast_b.name.clone(),
-        cast_a_role_id: req.cast_a.role_id.clone(),
-        cast_b_role_id: req.cast_b.role_id.clone(),
-        scene_id: req.scene_id.clone(),
-        applied_tweaks: req.applied_tweaks.clone(),
-        base_beats: req.base_beats.clone(),
-        max_beats,
-        patch_variant: None,
         fork_templates: req.fork_templates.clone(),
         adapt_pass: req.adapt_pass.clone(),
         poke_chips: req.poke_chips.clone(),
-        pair_relation_id: req.pair_relation_id.clone(),
-        pair_relation_hint: req.pair_relation_hint.clone(),
-        theater_scene: req.theater_scene.clone(),
-        scene_brief: req.scene_brief.clone(),
-        scene_setting_hint: req.scene_setting_hint.clone(),
-        ripple_prefix_beats: None,
-        ripple_skeleton: None,
-        ripple_full_rewrite: None,
-        patch_prefix_beats: None,
-        patch_skeleton_tail: None,
-        patch_canned_patch: None,
-        patch_tweak: None,
-        patch_chip_slug: None,
-        patch_max_lines: None,
-        cast_rewrite_min_beats: None,
-        cast_rewrite_max_beats: None,
-        cast_rewrite_target_beats: None,
-        script_outline: None,
+        ..base_prompt_input(req, "cast_adapt", strict, persona_a, persona_b, max_beats)
     }
 }
 
@@ -197,40 +174,13 @@ pub fn cast_rewrite_prompt_input(
     persona_b: &str,
 ) -> TheaterPromptBuildInput {
     TheaterPromptBuildInput {
-        mode: "cast_rewrite".to_string(),
-        strict,
-        persona_a: persona_a.to_string(),
-        persona_b: persona_b.to_string(),
-        cast_a_name: req.cast_a.name.clone(),
-        cast_b_name: req.cast_b.name.clone(),
-        cast_a_role_id: req.cast_a.role_id.clone(),
-        cast_b_role_id: req.cast_b.role_id.clone(),
-        scene_id: req.scene_id.clone(),
-        applied_tweaks: req.applied_tweaks.clone(),
-        base_beats: req.base_beats.clone(),
-        max_beats,
-        patch_variant: None,
         fork_templates: req.fork_templates.clone(),
-        adapt_pass: None,
         poke_chips: req.poke_chips.clone(),
-        pair_relation_id: req.pair_relation_id.clone(),
-        pair_relation_hint: req.pair_relation_hint.clone(),
-        theater_scene: req.theater_scene.clone(),
-        scene_brief: req.scene_brief.clone(),
-        scene_setting_hint: req.scene_setting_hint.clone(),
-        ripple_prefix_beats: None,
-        ripple_skeleton: None,
-        ripple_full_rewrite: None,
-        patch_prefix_beats: None,
-        patch_skeleton_tail: None,
-        patch_canned_patch: None,
-        patch_tweak: None,
-        patch_chip_slug: None,
-        patch_max_lines: None,
         cast_rewrite_min_beats: Some(min_beats),
         cast_rewrite_max_beats: Some(max_beats),
         cast_rewrite_target_beats: Some(cast_rewrite_target_beats(min_beats, max_beats)),
         script_outline: req.script_outline.clone(),
+        ..base_prompt_input(req, "cast_rewrite", strict, persona_a, persona_b, max_beats)
     }
 }
 
@@ -242,40 +192,18 @@ pub fn cast_rewrite_minimal_prompt_input(
     persona_b: &str,
 ) -> TheaterPromptBuildInput {
     TheaterPromptBuildInput {
-        mode: "cast_rewrite_minimal".to_string(),
-        strict: true,
-        persona_a: persona_a.to_string(),
-        persona_b: persona_b.to_string(),
-        cast_a_name: req.cast_a.name.clone(),
-        cast_b_name: req.cast_b.name.clone(),
-        cast_a_role_id: req.cast_a.role_id.clone(),
-        cast_b_role_id: req.cast_b.role_id.clone(),
-        scene_id: req.scene_id.clone(),
-        applied_tweaks: req.applied_tweaks.clone(),
-        base_beats: req.base_beats.clone(),
-        max_beats: target_beats,
-        patch_variant: None,
         fork_templates: req.fork_templates.clone(),
-        adapt_pass: None,
         poke_chips: req.poke_chips.clone(),
-        pair_relation_id: req.pair_relation_id.clone(),
-        pair_relation_hint: req.pair_relation_hint.clone(),
-        theater_scene: req.theater_scene.clone(),
-        scene_brief: req.scene_brief.clone(),
-        scene_setting_hint: req.scene_setting_hint.clone(),
-        ripple_prefix_beats: None,
-        ripple_skeleton: None,
-        ripple_full_rewrite: None,
-        patch_prefix_beats: None,
-        patch_skeleton_tail: None,
-        patch_canned_patch: None,
-        patch_tweak: None,
-        patch_chip_slug: None,
-        patch_max_lines: None,
-        cast_rewrite_min_beats: None,
-        cast_rewrite_max_beats: None,
         cast_rewrite_target_beats: Some(target_beats),
         script_outline: req.script_outline.clone(),
+        ..base_prompt_input(
+            req,
+            "cast_rewrite_minimal",
+            true,
+            persona_a,
+            persona_b,
+            target_beats,
+        )
     }
 }
 
@@ -289,40 +217,11 @@ pub fn outline_prompt_input(
 ) -> TheaterPromptBuildInput {
     let min_beats = cast_rewrite_min_beats();
     TheaterPromptBuildInput {
-        mode: "outline_rewrite".to_string(),
-        strict,
-        persona_a: persona_a.to_string(),
-        persona_b: persona_b.to_string(),
-        cast_a_name: req.cast_a.name.clone(),
-        cast_b_name: req.cast_b.name.clone(),
-        cast_a_role_id: req.cast_a.role_id.clone(),
-        cast_b_role_id: req.cast_b.role_id.clone(),
-        scene_id: req.scene_id.clone(),
-        applied_tweaks: req.applied_tweaks.clone(),
-        base_beats: req.base_beats.clone(),
-        max_beats,
-        patch_variant: None,
-        fork_templates: None,
-        adapt_pass: None,
-        poke_chips: None,
-        pair_relation_id: req.pair_relation_id.clone(),
-        pair_relation_hint: req.pair_relation_hint.clone(),
-        theater_scene: req.theater_scene.clone(),
-        scene_brief: req.scene_brief.clone(),
-        scene_setting_hint: req.scene_setting_hint.clone(),
-        ripple_prefix_beats: None,
-        ripple_skeleton: None,
-        ripple_full_rewrite: None,
-        patch_prefix_beats: None,
-        patch_skeleton_tail: None,
-        patch_canned_patch: None,
-        patch_tweak: None,
-        patch_chip_slug: None,
-        patch_max_lines: None,
         cast_rewrite_min_beats: Some(min_beats),
         cast_rewrite_max_beats: Some(max_beats),
         cast_rewrite_target_beats: Some(cast_rewrite_target_beats(min_beats, max_beats)),
         script_outline: req.script_outline.clone(),
+        ..base_prompt_input(req, "outline_rewrite", strict, persona_a, persona_b, max_beats)
     }
 }
 
@@ -337,39 +236,20 @@ pub(crate) fn patch_prompt_input(
     variant_index: u8,
 ) -> TheaterPromptBuildInput {
     TheaterPromptBuildInput {
-        mode: "patch".to_string(),
-        strict,
-        persona_a: persona_a.to_string(),
-        persona_b: persona_b.to_string(),
-        cast_a_name: req.cast_a.name.clone(),
-        cast_b_name: req.cast_b.name.clone(),
-        cast_a_role_id: req.cast_a.role_id.clone(),
-        cast_b_role_id: req.cast_b.role_id.clone(),
-        scene_id: req.scene_id.clone(),
-        applied_tweaks: req.applied_tweaks.clone(),
-        base_beats: req.base_beats.clone(),
-        max_beats: req.max_beats.unwrap_or(12),
         patch_variant: Some(variant_index),
-        fork_templates: None,
-        adapt_pass: None,
-        poke_chips: None,
-        pair_relation_id: req.pair_relation_id.clone(),
-        pair_relation_hint: req.pair_relation_hint.clone(),
-        theater_scene: req.theater_scene.clone(),
-        scene_brief: req.scene_brief.clone(),
-        scene_setting_hint: req.scene_setting_hint.clone(),
-        ripple_prefix_beats: None,
-        ripple_skeleton: None,
-        ripple_full_rewrite: None,
         patch_prefix_beats: Some(ctx.prefix_beats.clone()),
         patch_skeleton_tail: Some(ctx.skeleton_tail.clone()),
         patch_canned_patch: Some(ctx.canned_patch.clone()),
         patch_tweak: Some(ctx.tweak.clone()),
         patch_chip_slug: Some(ctx.chip_slug.clone()),
         patch_max_lines: Some(max_lines as u32),
-        cast_rewrite_min_beats: None,
-        cast_rewrite_max_beats: None,
-        cast_rewrite_target_beats: None,
-        script_outline: None,
+        ..base_prompt_input(
+            req,
+            "patch",
+            strict,
+            persona_a,
+            persona_b,
+            req.max_beats.unwrap_or(12),
+        )
     }
 }

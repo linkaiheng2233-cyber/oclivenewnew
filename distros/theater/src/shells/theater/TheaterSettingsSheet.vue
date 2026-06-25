@@ -52,15 +52,11 @@ import type { TheaterCastConfig } from '../../composables/theater/theaterCastCon
 
 
 const KernelConnectionSettingsPanel = defineAsyncComponent(
-
-  () => import('../../components/settings/KernelConnectionSettingsPanel.vue'),
-
+  () => import('@oclive/shared/components/settings/KernelConnectionSettingsPanel.vue'),
 )
 
 const ModelManagerBody = defineAsyncComponent(
-
-  () => import('../../components/model/ModelManagerBody.vue'),
-
+  () => import('@oclive/shared/components/model/ModelManagerBody.vue'),
 )
 
 

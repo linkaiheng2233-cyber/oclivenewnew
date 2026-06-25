@@ -122,6 +122,18 @@ node -e "const fs=require('fs'),path=require('path');function walk(d,a=[]){for(c
 
 ---
 
+### 2.7 代码冗余 / 过度工程 / 「不简洁」声称
+
+「代码冗余 / 不够简洁 / 过度工程 / 认知负担高」属 **L2 度量结论**，须附：
+
+1. 具体 **`文件:行`** + 重复块数量或重复字段数（如「6 个构造函数各手写 33 字段、其中 ~18 字段恒为 `None`」）
+2. 一个 **行为等价** 的收敛方案（`#[derive(Default)]` + `..Default::default()` / 共享 helper / 删死代码），而非仅「代码混乱」印象
+3. 收敛验证命令（相关测试 + `cargo test --workspace --doc`）
+
+**禁止**：凭印象写「这块代码很乱 / 应该重构」却无 `文件:行` 与等价方案；或把 §9 之外的大重构当作「优化」入账（见 [AI_CHANGE_BOUNDARIES.md](./AI_CHANGE_BOUNDARIES.md) G9）。
+
+---
+
 ## 3. 汇报模板（审查 / 优化轮次必填）
 
 ```markdown

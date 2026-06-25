@@ -6,7 +6,7 @@ import {
   type TheaterScriptLine,
 } from '@oclive/shared/api/theater'
 import { normalizePairRelationId, resolvePairRelationHint } from './theaterPairRelation'
-import { SCENE_GEN_TIMEOUT_MS, SceneGenTimeoutError, timeoutReject } from './theaterLogic'
+import { SCENE_GEN_TIMEOUT_MS, timeoutReject } from './theaterLogic'
 
 export const OUTLINE_STORAGE_KEY = 'oclive.theater.outline.v1'
 
@@ -89,5 +89,3 @@ export async function requestOutlineScene(
   }
   return { beats: resp.beats, source: resp.source }
 }
-
-export { SceneGenTimeoutError }

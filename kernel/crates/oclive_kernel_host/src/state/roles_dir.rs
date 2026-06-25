@@ -1,5 +1,6 @@
 //! Resolve the on-disk `roles/` directory for dev and packaged runs.
 
+#[cfg(debug_assertions)]
 use oclive_kernel_runtime::chat_pro_roles_dir;
 use std::fs;
 use std::path::{Path, PathBuf};

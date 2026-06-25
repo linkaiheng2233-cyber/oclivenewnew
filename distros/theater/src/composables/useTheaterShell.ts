@@ -77,10 +77,7 @@ import {
   type TheaterScenePreset,
   type TheaterScenePresetId,
 } from './theater/theaterSceneCatalog'
-import {
-  requestOutlineScene,
-  SceneGenTimeoutError,
-} from './theater/useTheaterOutlineMode'
+import { requestOutlineScene } from './theater/useTheaterOutlineMode'
 import { ApiInvokeError } from '@oclive/shared/api/helpers'
 
 const LINE_REVEAL_MS = 720
