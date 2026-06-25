@@ -55,6 +55,9 @@ test-reports/
 blob-report/
 playwright/.cache/
 
+# Local TTFT / kernel bench app data (OCLIVE_APP_DATA scratch)
+/temp/
+
 # Archives
 *.tgz
 

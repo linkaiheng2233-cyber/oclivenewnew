@@ -1,12 +1,15 @@
 //! Co-present turn path: complex emotion, event estimate, prompt build.
 
 use crate::domain::complex_emotion::ComplexEmotionOutput;
-use crate::domain::host_profile::{PromptProfile, DISTRO_CONCISE_PROMPT_OVERLAY};
+use crate::domain::event_impact_ai::estimate_event_impact_rules_only;
+use crate::domain::host_profile::DISTRO_CONCISE_PROMPT_OVERLAY;
 use crate::domain::life_schedule::{format_life_prompt_line, pick_life_state};
 use crate::domain::personality_engine::PersonalityEngine;
 use crate::domain::prompt_builder::{effective_reply_quality_anchor, PromptInput};
 use crate::domain::slot_runner::SlotRunner;
+use crate::domain::turn_thinking::{resolve_turn_thinking, TurnThinkingMode};
 use crate::models::knowledge::KnowledgeIndex;
+use crate::models::Memory;
 use crate::models::PersonalitySource;
 
 use super::super::turn_context::TurnContext;
@@ -31,6 +34,23 @@ pub(crate) async fn run_middle(
     let pl = &ctx.pl;
     let user_message = req.user_message.as_str();
 
+    let thinking = STAGES
+        .stage(ChatStage::TurnThinkingRouter, async {
+            Ok(resolve_turn_thinking(
+                &state.host_profile,
+                user_message,
+                &pre.hints.emotion_result,
+                &pre.memory.recent_events_for_event,
+            ))
+        })
+        .await?;
+    tracing::debug!(
+        target: "oclive_turn",
+        mode = ?thinking.mode,
+        reasons = ?thinking.reasons,
+        "turn_thinking resolved"
+    );
+
     let complex_emotion_input = build_complex_emotion_turn_input(
         mrid,
         scene_id,
@@ -39,30 +59,32 @@ pub(crate) async fn run_middle(
         pre.hints.prev_stored_narrative_hint.clone(),
         &pre.memory.recent_turns,
     );
-    let complex_emotion_out: ComplexEmotionOutput = if state.host_profile.skip_complex_emotion {
-        ComplexEmotionOutput {
-            source: "host_skipped".into(),
-            narrative_hint: String::new(),
-            labels: vec![],
-            pattern: None,
-            confidence: 0.0,
-            intensity: 0.0,
-            dissonance_score: 0.0,
-            degraded_to_builtin: false,
-            extension: None,
-        }
-    } else {
-        STAGES
-            .stage(ChatStage::ComplexEmotionResolveTurn, async {
-                SlotRunner::resolve_complex_emotion(pl, &complex_emotion_input)
-            })
-            .await?
-    };
+    let complex_emotion_out: ComplexEmotionOutput =
+        if thinking.skip_complex_emotion(&state.host_profile) {
+            ComplexEmotionOutput {
+                source: "turn_thinking_fast".into(),
+                narrative_hint: String::new(),
+                labels: vec![],
+                pattern: None,
+                confidence: 0.0,
+                intensity: 0.0,
+                dissonance_score: 0.0,
+                degraded_to_builtin: false,
+                extension: None,
+            }
+        } else {
+            STAGES
+                .stage(ChatStage::ComplexEmotionResolveTurn, async {
+                    SlotRunner::resolve_complex_emotion(pl, &complex_emotion_input)
+                })
+                .await?
+        };
 
+    let knowledge_limit = thinking.knowledge_retrieve_limit(&state.host_profile);
     let knowledge_chunks = role
         .knowledge_index
         .as_ref()
-        .map(|idx| idx.retrieve(user_message, Some(scene_id), 8))
+        .map(|idx| idx.retrieve(user_message, Some(scene_id), knowledge_limit))
         .unwrap_or_default();
     let knowledge_chunk_count = knowledge_chunks.len() as u32;
 
@@ -74,22 +96,38 @@ pub(crate) async fn run_middle(
             Some(aug)
         }
     };
-    let estimate = STAGES
-        .stage(
-            ChatStage::EventEstimate,
-            SlotRunner::estimate_event(
-                pl,
-                pre.memory.ollama_model.as_str(),
-                user_message,
-                &pre.hints.user_emotion,
-                &pre.memory.personality,
-                role.evolution_config.personality_source,
-                &pre.memory.recent_turns_for_event,
-                &pre.memory.recent_events_for_event,
-                knowledge_augment_opt.as_ref(),
-            ),
-        )
-        .await?;
+
+    let use_event_llm = thinking.use_event_impact_llm(&state.host_profile);
+    let estimate = if use_event_llm {
+        STAGES
+            .stage(
+                ChatStage::EventEstimate,
+                SlotRunner::estimate_event(
+                    pl,
+                    pre.memory.ollama_model.as_str(),
+                    user_message,
+                    &pre.hints.user_emotion,
+                    &pre.memory.personality,
+                    role.evolution_config.personality_source,
+                    &pre.memory.recent_turns_for_event,
+                    &pre.memory.recent_events_for_event,
+                    knowledge_augment_opt.as_ref(),
+                    true,
+                ),
+            )
+            .await?
+    } else {
+        STAGES
+            .stage(ChatStage::EventEstimate, async {
+                estimate_event_impact_rules_only(
+                    user_message,
+                    &pre.hints.user_emotion,
+                    knowledge_augment_opt.as_ref(),
+                )
+                .map_err(Into::into)
+            })
+            .await?
+    };
     let ai_event_type = estimate.event_type;
     let ai_impact_factor_final = estimate.impact_factor;
     let ai_event_confidence = estimate.confidence;
@@ -111,16 +149,37 @@ pub(crate) async fn run_middle(
         ai_event_confidence,
     );
 
-    let worldview_snippet = worldview_snippet_from_chunks(knowledge_chunks.as_slice());
+    let memory_cap = thinking.memory_cap(&state.host_profile);
+    let prompt_memories: Vec<Memory> = pre
+        .memory
+        .relevant
+        .iter()
+        .take(memory_cap)
+        .cloned()
+        .collect();
+
+    let worldview_snippet = if thinking.mode == TurnThinkingMode::Fast {
+        String::new()
+    } else {
+        worldview_snippet_from_chunks(knowledge_chunks.as_slice())
+    };
     let scene_label = state.storage.scene_display_name_for_role(role, scene_id);
-    let scene_detail_buf = state
-        .storage
-        .scene_prompt_enrichment_for_role(role, scene_id);
-    let top_topic = SlotRunner::top_topic_hint(pl, role, scene_id);
+    let scene_detail_buf = if thinking.mode == TurnThinkingMode::Fast {
+        String::new()
+    } else {
+        state
+            .storage
+            .scene_prompt_enrichment_for_role(role, scene_id)
+    };
+    let top_topic = if thinking.mode == TurnThinkingMode::Fast {
+        None
+    } else {
+        SlotRunner::top_topic_hint(pl, role, scene_id)
+    };
     let topic_line = top_topic
         .map(|t| format!("在「{}」下，你们可能会多聊「{}」相关的事。", scene_label, t))
         .unwrap_or_default();
-    let life_context_line: String = if immersive {
+    let life_context_line: String = if immersive && thinking.mode == TurnThinkingMode::Deep {
         role.life_schedule
             .as_ref()
             .and_then(|s| pick_life_state(virtual_time_ms, s))
@@ -129,14 +188,23 @@ pub(crate) async fn run_middle(
     } else {
         String::new()
     };
-    let host_overlay = if state.host_profile.prompt_profile == PromptProfile::Concise {
+    let host_overlay = if thinking.use_concise_prompt(&state.host_profile) {
         DISTRO_CONCISE_PROMPT_OVERLAY
     } else {
         ""
     };
-    let host_state_hint = state
-        .host_profile
-        .state_expression_hint(pre.relation.favorability_before);
+    let host_state_hint = if thinking.mode == TurnThinkingMode::Fast {
+        ""
+    } else {
+        state
+            .host_profile
+            .state_expression_hint(pre.relation.favorability_before)
+    };
+    let complex_hint = if thinking.skip_complex_emotion(&state.host_profile) {
+        ""
+    } else {
+        pre.hints.prev_stored_narrative_hint.as_str()
+    };
     let prompt = STAGES
         .stage(ChatStage::BuildPrompt, async {
             SlotRunner::build_prompt(
@@ -144,7 +212,7 @@ pub(crate) async fn run_middle(
                 &PromptInput {
                     role,
                     personality: &personality,
-                    memories: &pre.memory.relevant,
+                    memories: &prompt_memories,
                     user_input: user_message,
                     user_emotion: pre.hints.user_emotion_prompt.as_str(),
                     user_relation_id: pre.relation.user_relation_key.as_str(),
@@ -165,10 +233,7 @@ pub(crate) async fn run_middle(
                     worldview_snippet: worldview_snippet.as_str(),
                     mutable_personality: pre.memory.mutable_for_prompt.as_str(),
                     reply_quality_anchor: effective_reply_quality_anchor(role),
-                    previous_complex_emotion_narrative_hint: pre
-                        .hints
-                        .prev_stored_narrative_hint
-                        .as_str(),
+                    previous_complex_emotion_narrative_hint: complex_hint,
                     host_prompt_overlay: host_overlay,
                     host_state_expression_hint: host_state_hint,
                     relation_transition_hint: pre.relation.relation_transition_hint.as_str(),

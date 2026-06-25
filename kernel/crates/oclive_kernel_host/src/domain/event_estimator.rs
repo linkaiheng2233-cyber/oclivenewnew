@@ -36,6 +36,7 @@ impl EventEstimator for BuiltinEventEstimator {
             recent_turns,
             recent_events,
             knowledge_augment,
+            true,
         )
         .await
     }

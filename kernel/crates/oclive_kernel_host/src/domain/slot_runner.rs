@@ -144,7 +144,15 @@ impl SlotRunner {
         recent_turns: &[(String, String)],
         recent_events: &[Event],
         knowledge_augment: Option<&KnowledgeEventAugment>,
+        use_event_impact_llm: bool,
     ) -> Result<EventImpactEstimate> {
+        if !use_event_impact_llm {
+            return crate::domain::event_impact_ai::estimate_event_impact_rules_only(
+                user_message,
+                user_emotion,
+                knowledge_augment,
+            );
+        }
         let llm = Self::primary_llm(pl);
         let ollama_model = ollama_model.to_string();
         let user_message = user_message.to_string();

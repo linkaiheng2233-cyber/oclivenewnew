@@ -1,0 +1,38 @@
+# TTFT 基准复现（Chat Pro co-present）
+
+**指标**：`POST /chat/stream` 从请求发出到首个 `event:token` 的墙钟时间（p50 门禁 **≤ 1000ms**）。
+
+## 环境
+
+- 角色：`distros/chat-pro/roles/mumu`
+- 场景：`home`（脚本自动 co-present setup）
+- 模型：本地 Ollama `qwen2.5:7b`
+- 发行版：建议 `OCLIVE_DISTRO_PROFILE=examples/distro-profiles/desktop-latency.oclive.toml`（Turn Thinking Auto + 规则 event）
+
+## 命令
+
+```powershell
+# 终端 1
+$env:OCLIVE_APP_DATA = "D:\oclivenewnew\temp\oclive_ttft_bench"
+$env:OCLIVE_DISTRO_PROFILE = "D:\oclivenewnew\examples\distro-profiles\desktop-latency.oclive.toml"
+D:\oclive-dev-artifacts\oclivenewnew-cargo-target\debug\oclivenewnew-tauri.exe --api --port 8420
+
+# 终端 2
+cd D:\oclivenewnew
+node -e "fetch('http://127.0.0.1:8420/llm/user_settings',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({roleId:'mumu',provider:'local',ollamaModel:'qwen2.5:7b'})})"
+node scripts/measure-ttft.mjs --runs 5 --ollama-model qwen2.5:7b
+```
+
+## Stage 分解（可选）
+
+```powershell
+$env:RUST_LOG = "oclive_turn=debug"
+```
+
+## 相关开关
+
+| 开关 | 作用 |
+|------|------|
+| `[host_flags] event_impact_llm = false` | 全局跳过 event `generate_tag` |
+| `[turn_thinking] default = "auto"` | 闲聊 Fast / 高情绪 Deep |
+| `OCLIVE_EVENT_IMPACT_LLM=0` | 环境变量等价关闭 event LLM |

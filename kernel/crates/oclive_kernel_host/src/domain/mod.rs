@@ -59,6 +59,7 @@ pub mod role_manager;
 pub mod slot_resolver;
 pub mod slot_runner;
 pub mod theater;
+pub mod turn_thinking;
 pub mod visual_presentation;
 
 pub use agent::{AgentDebugTrace, AgentInput, AgentOutput, AgentProvider, BuiltinReActAgent};

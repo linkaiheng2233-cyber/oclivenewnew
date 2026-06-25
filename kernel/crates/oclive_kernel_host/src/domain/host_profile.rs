@@ -97,6 +97,8 @@ pub struct HostProfile {
     pub distro_id: String,
     pub skip_agent: bool,
     pub skip_complex_emotion: bool,
+    /// When false, skip pre-LLM `generate_tag` for event impact (rules-only `EventDetector`).
+    pub event_impact_llm: bool,
     pub prompt_profile: PromptProfile,
     pub backends_ceiling: Option<PluginBackends>,
     pub user_identity: UserIdentityProfile,
@@ -110,6 +112,7 @@ pub struct HostProfile {
     /// Distro visual gating: `off` | `image_only` | `stage_full` (None = no gating).
     pub visual_presentation_mode: Option<String>,
     pub theater: TheaterProfile,
+    pub turn_thinking: TurnThinkingProfile,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -154,6 +157,54 @@ impl PromptProfile {
             Self::Full
         }
     }
+
+    #[must_use]
+    pub fn is_concise(self) -> bool {
+        matches!(self, Self::Concise)
+    }
+}
+
+/// Per-turn latency policy (`[turn_thinking]` in `distro.oclive.toml`).
+#[derive(Debug, Clone)]
+pub struct TurnThinkingProfile {
+    pub default: TurnThinkingDefault,
+    pub fast_skip_complex_emotion: bool,
+    pub auto_deep_min_chars: usize,
+    pub auto_deep_keywords: Vec<String>,
+    pub fast_knowledge_limit: usize,
+    pub fast_memory_cap: usize,
+}
+
+impl Default for TurnThinkingProfile {
+    fn default() -> Self {
+        Self {
+            default: TurnThinkingDefault::Auto,
+            fast_skip_complex_emotion: true,
+            auto_deep_min_chars: 80,
+            auto_deep_keywords: vec!["认真".into(), "很重要".into(), "别敷衍".into()],
+            fast_knowledge_limit: 4,
+            fast_memory_cap: 4,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum TurnThinkingDefault {
+    #[default]
+    Auto,
+    Fast,
+    Deep,
+}
+
+impl TurnThinkingDefault {
+    #[must_use]
+    pub fn parse(s: &str) -> Self {
+        match s.trim().to_ascii_lowercase().as_str() {
+            "fast" => Self::Fast,
+            "deep" => Self::Deep,
+            _ => Self::Auto,
+        }
+    }
 }
 
 fn host_profile_from_distro_file(
@@ -166,6 +217,11 @@ fn host_profile_from_distro_file(
     let (skip_agent, skip_complex_emotion) = file.parse_distro_skip_flags();
     profile.skip_agent = skip_agent;
     profile.skip_complex_emotion = skip_complex_emotion;
+    if let Some(ref hf) = file.host_flags {
+        if let Some(v) = hf.event_impact_llm {
+            profile.event_impact_llm = v;
+        }
+    }
     if let Some(ref p) = file.prompt {
         if let Some(ref prof) = p.profile {
             profile.prompt_profile = PromptProfile::parse(prof);
@@ -242,6 +298,30 @@ fn host_profile_from_distro_file(
             .map(|s| s.trim().to_string())
             .filter(|s| !s.is_empty());
     }
+    if let Some(ref tt) = file.turn_thinking {
+        if let Some(ref d) = tt.default {
+            profile.turn_thinking.default = TurnThinkingDefault::parse(d);
+        }
+        if let Some(v) = tt.fast_skip_complex_emotion {
+            profile.turn_thinking.fast_skip_complex_emotion = v;
+        }
+        if let Some(n) = tt.auto_deep_min_chars {
+            profile.turn_thinking.auto_deep_min_chars = n.max(20);
+        }
+        if let Some(ref kws) = tt.auto_deep_keywords {
+            profile.turn_thinking.auto_deep_keywords = kws
+                .iter()
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect();
+        }
+        if let Some(n) = tt.fast_knowledge_limit {
+            profile.turn_thinking.fast_knowledge_limit = n.clamp(1, 8);
+        }
+        if let Some(n) = tt.fast_memory_cap {
+            profile.turn_thinking.fast_memory_cap = n.clamp(1, 8);
+        }
+    }
     Ok(profile)
 }
 
@@ -251,6 +331,7 @@ impl Default for HostProfile {
             distro_id: "default".into(),
             skip_agent: false,
             skip_complex_emotion: false,
+            event_impact_llm: true,
             prompt_profile: PromptProfile::Full,
             backends_ceiling: None,
             user_identity: UserIdentityProfile::default(),
@@ -261,6 +342,7 @@ impl Default for HostProfile {
             interaction: InteractionProfile::default(),
             visual_presentation_mode: None,
             theater: TheaterProfile::default(),
+            turn_thinking: TurnThinkingProfile::default(),
         }
     }
 }

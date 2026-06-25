@@ -232,6 +232,7 @@ impl<'a> ExperimentalStepCtx<'a> {
             &recent_turns_for_event,
             &recent_events_for_event,
             knowledge_augment_opt.as_ref(),
+            true,
         )
         .await
         .map_err(map_slot_err)?;

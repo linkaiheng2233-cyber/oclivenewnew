@@ -1,0 +1,35 @@
+# OCLive Chat Pro — latency bench profile (TTFT optimization)
+# Use via OCLIVE_DISTRO_PROFILE for local measurement; not the default Release hero profile.
+# See handoff/TTFT_BENCHMARK.md · creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md
+
+schema_version = 1
+distro_id = "desktop-latency"
+display_name = "OCLive Chat Pro (latency bench)"
+
+[interaction]
+default_mode = "pure_chat"
+allow_mode_switch = true
+
+[host_flags]
+skip_agent = false
+skip_complex_emotion = false
+event_impact_llm = false
+
+[turn_thinking]
+default = "auto"
+fast_skip_complex_emotion = true
+auto_deep_min_chars = 80
+fast_knowledge_limit = 4
+fast_memory_cap = 4
+
+[slots]
+complex_emotion = "on"
+
+[prompt]
+profile = "full"
+
+[memory]
+retrieval = "default"
+
+[post_process]
+chain = "standard"
