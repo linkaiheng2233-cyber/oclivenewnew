@@ -15,3 +15,14 @@
 | `cargo clippy --workspace --all-targets --all-features` | 通过（`-D warnings`） |
 
 说明：默认 feature 下双核 `dual_pipeline*` 不编入产物；包体为第十四轮精简（re-export 合并、`dual_core` gate、移除 Tauri `fs-*`、Cache 去 `lru` 等）后的 release 实测。
+
+## Wave A–D · TTFT / co-present（2026-06）
+
+| Wave | 状态 | 摘要 |
+|------|------|------|
+| **A** | Done | `host_flags.event_impact_llm` · 规则 event · `event_impact_ai` 分支 |
+| **B** | Done | Turn Thinking Auto/Fast/Deep · `co_present` Fast 裁剪 · `measure-ttft.mjs` |
+| **C** | 待排 | Chat Pro UI `/chat/stream`（感知延迟） |
+| **D** | T0 愿景 | Deep **`prompts/deep_capsule.txt`** 离线蒸馏 · 稳定前缀 **KV 延续** |
+
+Bench SSOT：[`TTFT_BENCHMARK.md`](TTFT_BENCHMARK.md) · 设计：[`DEEP_PROMPT_DISTILLATION.md`](DEEP_PROMPT_DISTILLATION.md) · 愿景：[`creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md`](../creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md)。

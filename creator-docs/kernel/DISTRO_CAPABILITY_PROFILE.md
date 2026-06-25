@@ -61,6 +61,14 @@ complex_emotion = "off"       # on | off
 [host_flags]
 skip_agent = true
 skip_complex_emotion = true
+event_impact_llm = false          # optional; default true — false 跳过 event LLM generate_tag
+
+[turn_thinking]
+default = "auto"                  # fast | deep | auto
+fast_skip_complex_emotion = true  # optional
+auto_deep_min_chars = 80          # optional
+fast_knowledge_limit = 4          # optional
+fast_memory_cap = 4               # optional
 
 # --- Prompt / 记忆 / 后处理（P4 映射；P1 先约定语义）---
 [prompt]
@@ -106,7 +114,23 @@ favor_low  = "…"              # optional; favor < 40
 
 - **`host_flags.skip_agent`**：为 `true` 时，运行时强制 `plugin_backends.agent = none`（与角色包声明 `agent: none` 等效）。
 - **`host_flags.skip_complex_emotion`**：为 `true` 时，跳过共景复杂情感解析（`co_present` 阶段）。
+- **`host_flags.event_impact_llm`**：为 `false` 时，**全局**跳过第 3 模块 event 的 LLM `estimate_event_impact`（`generate_tag`）；仍走规则 `EventDetector` / `estimate_event_impact_rules_only`。环境变量 `OCLIVE_EVENT_IMPACT_LLM=0` 等价。与 **Turn Thinking** 组合：Fast 轮本就不调 event LLM；Deep 轮仍受本开关约束。见 [`handoff/TTFT_BENCHMARK.md`](../../handoff/TTFT_BENCHMARK.md)。
 - **`slots.complex_emotion`**：`off` 等价于 `skip_complex_emotion`（二者任一为 off 即关闭）。
+
+### 3.2.1 `[turn_thinking]`（编排行 · 非六槽）
+
+每轮 **Fast / Deep** 思考档位，由 `co_present` 内 `TurnThinkingRouter` stage 解析（`turn_thinking.rs`）。**不是**设施子模块号，**不**写入 `plugin_backends`。
+
+| 字段 | 合法值 / 类型 | 说明 |
+|------|----------------|------|
+| `default` | `fast` \| `deep` \| `auto` | `auto`：闲聊→Fast；长句 / 高唤醒情绪 / Quarrel 事件链 / 关键词→Deep |
+| `fast_skip_complex_emotion` | bool | Fast 轮跳过复杂情感（可与 `host_flags.skip_complex_emotion` 叠加） |
+| `auto_deep_min_chars` | usize | Auto 触发 Deep 的最小用户句字符数 |
+| `fast_knowledge_limit` | usize | Fast 轮知识检索条数上限 |
+| `fast_memory_cap` | usize | Fast 轮注入 prompt 的记忆条数上限 |
+| `deep_capsule` | bool（**Wave D 预留**） | 为 `true` 且角色包含 `prompts/deep_capsule.txt` 时，Deep 轮用 capsule 替代全量 `core_personality` 注入 |
+
+示例（latency bench）：[`examples/distro-profiles/desktop-latency.oclive.toml`](../../examples/distro-profiles/desktop-latency.oclive.toml)。架构归类与 Deep 蒸馏路线图：[`handoff/DEEP_PROMPT_DISTILLATION.md`](../../handoff/DEEP_PROMPT_DISTILLATION.md)。
 
 > 说明：六槽 `none` 语义见 [MODULE_NONE_SEMANTICS.md](./MODULE_NONE_SEMANTICS.md)。发行版关闭 Agent 可用 `host_flags.skip_agent` 或 `[plugin_backends] agent = "none"`。
 
@@ -196,6 +220,8 @@ mode = "off"   # off | image_only | stage_full
 - [DISTRO_KERNEL_LIFECYCLE.md](./DISTRO_KERNEL_LIFECYCLE.md)
 - [KERNEL_SCHEDULER_RESCOPE.md](../../handoff/KERNEL_SCHEDULER_RESCOPE.md) — 进程调度收窄 · 与插件矩阵分责
 - [DISTRO_DEFAULT_PLUGINS.md](./DISTRO_DEFAULT_PLUGINS.md) — 发行版默认六槽矩阵与三 personas
+- [TTFT_BENCHMARK.md](../../handoff/TTFT_BENCHMARK.md) — co-present 首字延迟复现
+- [DEEP_PROMPT_DISTILLATION.md](../../handoff/DEEP_PROMPT_DISTILLATION.md) — Deep capsule · 前缀 KV 延续（Wave D）
 - [VSCODE_DISTRIBUTION.md](../../handoff/vscode/VSCODE_DISTRIBUTION.md)
 - [CROSS_HOST_MEMORY.md](../role-pack/CROSS_HOST_MEMORY.md)
 - [OCLIVE_APP_DATA.md](./OCLIVE_APP_DATA.md)

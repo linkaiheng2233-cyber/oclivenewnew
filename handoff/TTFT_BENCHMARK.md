@@ -2,6 +2,8 @@
 
 **指标**：`POST /chat/stream` 从请求发出到首个 `event:token` 的墙钟时间（p50 门禁 **≤ 1000ms**）。
 
+**架构归类**（规则 event · Turn Thinking · Prompt 分层）：[`MODULE_MAP_AND_HANDOFF.md`](MODULE_MAP_AND_HANDOFF.md) §6–§12。
+
 ## 环境
 
 - 角色：`distros/chat-pro/roles/mumu`
@@ -36,3 +38,19 @@ $env:RUST_LOG = "oclive_turn=debug"
 | `[host_flags] event_impact_llm = false` | 全局跳过 event `generate_tag` |
 | `[turn_thinking] default = "auto"` | 闲聊 Fast / 高情绪 Deep |
 | `OCLIVE_EVENT_IMPACT_LLM=0` | 环境变量等价关闭 event LLM |
+
+## 实测摘要（2026-06 · mumu · qwen2.5:7b · `desktop-latency`）
+
+| 场景 | Stream TTFT p50 | 备注 |
+|------|-----------------|------|
+| 优化前（event LLM + 全链） | ~2468ms | FAIL |
+| **Wave A/B 后（Auto → Fast）** | **~243ms** | PASS |
+| Ollama 直连极短 prompt | ~130ms | 物理下限参考 |
+
+**Deep 路径（Wave D 待测）**：全量 `core_personality` + 可选 event LLM；目标为 **persona capsule + 前缀 KV 延续**，见 [`DEEP_PROMPT_DISTILLATION.md`](DEEP_PROMPT_DISTILLATION.md)。
+
+## Related
+
+- [`DEEP_PROMPT_DISTILLATION.md`](DEEP_PROMPT_DISTILLATION.md)
+- [`PERF_PHASES.md`](PERF_PHASES.md)
+- [`creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md`](../creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md) §Wave A–D

@@ -38,7 +38,7 @@ distros/chat-pro/roles/{role_id}/
 ├── pipeline.ocblueprint    # **蓝图文件（v2 SSOT · 瘦）**：meta + slot_registry + includes；**不以** steps[] 调度；见 [BLUEPRINT_FOLDER_LAYOUT.md](../../handoff/BLUEPRINT_FOLDER_LAYOUT.md)
 ├── blueprint/              # 可选：includes/、overlays/、revisions/、docs/（卫星，不替代本体路径）
 ├── config.json             # 可选；遗忘曲线、虚拟时间（沉浸模式）；见 §9
-├── prompts/                # **可选创作辅助**（非 Tier0）：`reply_quality_anchor.md` 镜像等；`system.md` **非宿主必需、不参与 PromptBuilder**
+├── prompts/                # **可选创作辅助**（非 Tier0）：`reply_quality_anchor.md` 镜像等；`deep_capsule.txt`（Wave D · Deep 离线蒸馏胶囊）；`system.md` **非宿主必需、不参与 PromptBuilder**
 ├── user_identities/        # **可选**：User Identity Prompt Template（`index.json` + `*.md` 模板；见 RFC）
 │   ├── index.json
 │   └── {identity_id}.md
@@ -57,6 +57,8 @@ distros/chat-pro/roles/{role_id}/
 **说明**：v2 包 **不得** 同时存在 `manifest.json` / `settings.json` 与 `pipeline.ocblueprint`。七维人格在 v2 写入 **`meta.personality`**（对象或 7 元数组）。**人设 Tier0** 只读 **`core_personality.txt`**；`prompts/*.md` 为可选创作辅助（编写器 / creator profile 校验），**不参与** `PromptBuilder` Tier0。**回复质量锚点**运行时读 **`meta.reply_quality_anchor`**（或蓝图 `runtime_config.reply_quality_anchor`）或内核 **`DEFAULT_REPLY_QUALITY_ANCHOR`**；`prompts/reply_quality_anchor.md` 仅为人类可读镜像。
 
 **锚点 vs guardrails 分工**：包级 `reply_quality_anchor` **整段替换**内核默认锚点，但**不替换**引擎 **`KERNEL_DIALOGUE_GUARDRAILS`**（含状态延续、倾诉优先、禁止复读开场、篇幅随输入等通用纪律，每轮恒追加）。创作者宜在包级锚点只写**人设差异**，勿重复 guardrails 已覆盖的通用句。
+
+**Deep persona capsule（Wave D · 可选 · 待运行时接线）**：`prompts/deep_capsule.txt` 为 **Turn Thinking Deep** 轮准备的 **离线蒸馏** 短人设（≤ ~800 汉字）；启用后 **仅 Deep 轮** 替代 Tier0 全量 `core_personality.txt` 注入，Fast 轮仍读全文。开关 `meta.deep_capsule_enabled`（默认 `false`）。蒸馏流程与 KV 前缀延续见 [`handoff/DEEP_PROMPT_DISTILLATION.md`](../../handoff/DEEP_PROMPT_DISTILLATION.md)。**禁止**运行时 LLM 动态压缩。
 
 ### 1.1 `user_identities/`（User Identity Prompt Template · 可选）
 

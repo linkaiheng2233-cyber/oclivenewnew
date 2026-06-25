@@ -24,6 +24,8 @@ This tree mirrors **`creator-docs/`** with hand-maintained English pages. For to
 
 **Update discipline (as development continues)** — When you change runtime or author-facing contracts (slots, `plugin_backends`, bridge, OOCP, pack schema), update the **English mirror in the same change-set** when a mirror exists, or add a **CHANGELOG** note that docs were updated Chinese-only. For small copy edits, batching EN sync in the same release is fine.
 
+**Documentation governance (2026-06)** — Module definitions: [MODULE_MAP_AND_HANDOFF.md](../handoff/MODULE_MAP_AND_HANDOFF.md). Doc SSOT map: [handoff/README.md §文档分责](../handoff/README.md). Human-readable ladder progress: [human-docs/README.md §文档包进度](../human-docs/README.md#文档包进度与-ai-包同步--2026-06-25). AI rules G10–G16: [AI_CHANGE_BOUNDARIES.md](../handoff/AI_CHANGE_BOUNDARIES.md). Do **not** treat [AGENTS.md](../AGENTS.md) as the long architecture encyclopedia — it is a slim agent index.
+
 ---
 
 ## Getting started

@@ -19,6 +19,13 @@
 | G7 | DTO / 错误码以 `oclive_kernel_types` + [KERNEL_ERROR_CODE_CONVENTION.md](../creator-docs/getting-started/KERNEL_ERROR_CODE_CONVENTION.md) 为准；回复字段 **`reply`** | 前后端契约断裂 |
 | G8 | 改 **公开 DTO 字段 / trait 签名 / crate 名 / 公开 re-export** 后须 `cargo test --workspace --doc`（`check:rust` 与 `--lib` **不跑 doctest**） | rustdoc 示例漂移 → CI `rust` 硬门禁红（本地 `--lib` 全绿掩盖）；见 [AI_VERIFICATION_PROTOCOL.md](./AI_VERIFICATION_PROTOCOL.md) §2.1 |
 | G9 | **简洁优先 / 反冗余**：在你**已因其它原因改动**的代码里，顺手收敛明显重复（多分支手写同一大 struct、复制粘贴字段块、未用 import、自己引入的死代码）——struct 用 `#[derive(Default)]` + `..Default::default()` 或共享 base helper，只列差异字段。**收敛须行为等价 + 相关测试绿**；**禁止**为清而清做与当前任务无关的大重构（§9 防过度工程）。新加字段时优先让构造点用 `..Default::default()`，避免 N 处手写全字段。 | 认知负担累积 / 或反向触发过度重构与行为漂移 |
+| G10 | **模块定义 / 划分 / 槽位与设施关系** 只改 [`MODULE_MAP_AND_HANDOFF.md`](./MODULE_MAP_AND_HANDOFF.md)；不在 AGENTS、OCLIVE_ARCHITECTURE、PLUGIN_V1 长文复制同表 | 文档屎山 · 改一模块牵十处 |
+| G11 | **无 RFC 或关键决策记录，不新建** `handoff/*.md` / `creator-docs` 顶层文档；优先扩展现有 SSOT 一节或 `handoff/<distro>/` | 索引膨胀 · AI 无法定位 |
+| G12 | **改文档只改该文 SSOT 范围**；跨主题用 **链接**；进度/债/版本 **不**写进 MODULE_MAP（走 TECHNICAL_DEBT / PROJECT_STATUS）；引用 **禁止** archive / `04_4.6` 当 truth（G3） | 牵一发而动全身 |
+| G13 | **动文档前先读关联 SSOT**（[`handoff/README.md`](./README.md) §文档分责 → 该主题唯一文 → 必要时源码）；**可以慢，禁止**未读就新建/大段粘贴 | 冗余 · 与源码/他文冲突 |
+| G14 | **文档零冗余**：同一事实 **一处** 维护；他处 **一行链接**；禁止把 MODULE_MAP / PLUGIN_V1 表复制进 handoff 新文 | 文档屎山 · 改一处牵十处 |
+| G15 | **统一风格**（见下 §文档编写纪律）：文首 **SSOT 范围 / 最后更新**；事实用 **表**；流程用 **简图**；中文简体；状态词 **Done / OPEN / 冻结 / 草案** 与 TECHNICAL_DEBT 一致 | AI/人类无法快速扫读 |
+| G16 | **新建或变更文档 SSOT 范围**时，须更新 [`handoff/README.md`](./README.md) §文档分责 **一行**（或 maintainer 确认无需登记）；**禁止** silent 新增顶层 `.md` | 索引失效 · 下一只 AI 找不到 |
 
 ---
 
@@ -46,6 +53,67 @@
 - 改动面最小化：与当前任务无关的代码**不顺手重写**（避免「修 A 带崩 B」；大重构走 §9 判定）。
 
 **收尾自检（声称「写完」前）**：`cargo test --workspace --doc`（G8）+ 受影响的集成测 + `node scripts/dimension5-acceptance.mjs --ci`；`cargo clippy` 无新增 warning。
+
+---
+
+## 文档纪律（与 G10–G12 配套）
+
+| 你要改… | 只改 | 不要改 |
+|---------|------|--------|
+| 模块叫什么、属第几类、六槽关系 | [`MODULE_MAP_AND_HANDOFF.md`](./MODULE_MAP_AND_HANDOFF.md) | AGENTS 内核长节、VISION、PLUGIN_V1 编号表 |
+| DTO / 编排 stage 顺序 / wire 枚举 | [`PLUGIN_V1.md`](../creator-docs/plugin-and-architecture/PLUGIN_V1.md) | MODULE_MAP 全文 |
+| backend 24 格实现真值 | [`SLOT_BACKEND_REALITY_MATRIX.md`](./SLOT_BACKEND_REALITY_MATRIX.md) | 在 MODULE_MAP 复制矩阵 |
+| 活跃 OPEN / 冻结 / 下一动作 | [`TECHNICAL_DEBT_INVENTORY.md`](./TECHNICAL_DEBT_INVENTORY.md) | MODULE_MAP · VISION 重复 Wave 表 |
+| 文档分责与过期审计 | [`handoff/README.md`](./README.md) §文档分责 | 新建 `DOC_*.md` |
+| AI 审查数字口径 | [`AI_VERIFICATION_PROTOCOL.md`](./AI_VERIFICATION_PROTOCOL.md) | Playbook 复制整张表 |
+
+**新建文档准入**：须说明 (1) 现有 SSOT 无法容纳 (2) RFC 或 maintainer 关键决策 (3) 将登记进 `handoff/README` 分责表。
+
+---
+
+## 文档编写纪律（与 G10–G16 配套）
+
+> **效率源于限制。** 大项目靠文档让内里有条理；文档写得越少、边界越清，AI 与人类接手越快。**慢在读 SSOT，快在改对一处。**
+
+### 1. 动笔前：关联文档（必做，顺序不可跳）
+
+| 步骤 | 动作 |
+|------|------|
+| ① 定主题 | 一句话：这份改动属于哪一类？（模块 / 契约 / 进度 / 发行版 / Theater …） |
+| ② 查分责 | 打开 [`handoff/README.md`](./README.md) §文档分责 — **是否已有 SSOT？** 有则 **只扩一节**，G11 禁止新建 |
+| ③ 读 SSOT | **全文或相关节**读完再改；模块类必先扫 [`MODULE_MAP_AND_HANDOFF.md`](./MODULE_MAP_AND_HANDOFF.md) |
+| ④ 对源码 | 行为描述以 **源码 / 迁移 SQL** 为准；勿信 archive / Phase closure 旧文（G3） |
+| ⑤ 列关联 | 列出将 **链接** 的文档（不复制）；若需改第二份 SSOT → **停下**，通常说明边界划错 |
+
+**禁止**：「先写一版文档占位，以后再对齐」——占位即冗余，且会被下一任 AI 当 truth。
+
+### 2. 编写中：零冗余
+
+- **一事一文**：进度不进 MODULE_MAP；模块定义不进 TECHNICAL_DEBT；wire 细节不进 AGENTS 长节。
+- **链接 > 摘要 > 复制**：跨主题最多 **一句** 摘要 + markdown 链接；**禁止** 复制他文整表（backend 24 格、六槽边界表等）。
+- **改 A 不顺手改 B**：除非 B 的 SSOT 就是当前任务；否则开独立 PR / 单独说明。
+- **用户未要求不写 doc**：修 bug / 小 refactor **默认不** 新建 markdown（G11）。
+
+### 3. 统一风格（全仓 handoff / creator-docs 工程文）
+
+| 元素 | 规范 |
+|------|------|
+| **文首 5 行** | 标题 · **SSOT 范围**（本文管什么 / 不管什么）· **最后更新** · 读者（可选） |
+| **状态** | `Done` · `OPEN` · `冻结` · `草案` · `已归档` — 与 [`TECHNICAL_DEBT_INVENTORY.md`](./TECHNICAL_DEBT_INVENTORY.md) 用词一致 |
+| **事实** | markdown **表格**；枚举与源码 **逐字一致**（`reply` 非 `response`） |
+| **流程** | 短 **ASCII** 或 **mermaid**（单图够用即止）；不在 prose 里堆箭头链 |
+| **路径** | 仓库根相对路径 + 反引号；monorepo 角色 **`distros/chat-pro/roles/`** |
+| **中英** | 工程 handoff **中文简体**；标识符 / crate / 命令 **英文** |
+| **脚注** | 大段历史放 `archive/` 或文内「已归档」块；正文只保留 **现行** |
+| **模板** | 新 handoff 结构对齐 [`MODULE_MAP_AND_HANDOFF.md`](./MODULE_MAP_AND_HANDOFF.md) · [`TECHNICAL_DEBT_INVENTORY.md`](./TECHNICAL_DEBT_INVENTORY.md) — **不**另起 DOC_STYLE.md |
+
+### 4. 收尾自检（动文档后）
+
+- [ ] 只改了一个 SSOT 范围？（G12）
+- [ ] 未复制他文大段？（G14）
+- [ ] 新建/变更 SSOT 已登记 `handoff/README` §文档分责？（G16）
+- [ ] 路径存在：`node scripts/check-stale-paths.mjs`（若改路径引用）
+- [ ] 模块/槽位描述与 MODULE_MAP 一致？（若相关）
 
 ---
 
@@ -124,6 +192,7 @@
 - 关键路径索引：[BUS_FACTOR_NOTES.md](./BUS_FACTOR_NOTES.md)
 - 技术债 / 冻结：[TECHNICAL_DEBT_INVENTORY.md](./TECHNICAL_DEBT_INVENTORY.md)
 - **审查 / 汇报核实**（带数字的质量报告、第三方审查入账前）：[AI_VERIFICATION_PROTOCOL.md](./AI_VERIFICATION_PROTOCOL.md)
+- **模块注册表 / 文档分责**：[MODULE_MAP_AND_HANDOFF.md](./MODULE_MAP_AND_HANDOFF.md) · [handoff/README.md](./README.md) §文档分责
 
 ---
 

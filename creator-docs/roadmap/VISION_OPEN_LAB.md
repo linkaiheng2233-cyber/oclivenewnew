@@ -6,6 +6,8 @@ oclive 的长期方向，是在 **本地优先、可替换子系统、角色包�
 
 **灵魂权重层（路线图）**：三发行版结项后，创作者工具链将补 **微调工坊**——把口癖/节奏等沉淀为可打包的 LoRA/SFT adapter，由 **专家模型设施子模块**（`expert_routing` · `slot.lora.apply`）在运行时按条件切换，与 prompt/记忆并列而非替代「组装平台」定位。详见愿景文「微调工坊」专节与 [BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md](BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md) §五。
 
+**TTFT · 双档思考（路线图）**：共在 co-present 路径按轮选择 **Fast**（规则 event · 裁剪上下文，首字 ~243ms 量级）或 **Deep**（全 enrichment）。Deep 侧下一阶段用 **离线 persona capsule**（`prompts/deep_capsule.txt`）缩短 Tier0，并用 **稳定前缀 KV 延续** 压多轮 prefill——见 [VISION_ROADMAP_MONTHLY.md](VISION_ROADMAP_MONTHLY.md) §Wave A–D 与 [`handoff/DEEP_PROMPT_DISTILLATION.md`](../../handoff/DEEP_PROMPT_DISTILLATION.md)。
+
 **已对齐的落实点（随主仓演进）**：HTTP JSON-RPC Remote 宿主路径、`plugin_backends` 与扩展点文档、目录式插件与整壳桥接、开源与多平台 CI。详见仓库根目录 [README.md](../../README.md) 的「路线图状态」与 [DOCUMENTATION_INDEX.md](../getting-started/DOCUMENTATION_INDEX.md)。
 
 **仍属路线图**：包内知识库深化、启动器/市场联动、社区站形态等，以对应 roadmap 文档为准。

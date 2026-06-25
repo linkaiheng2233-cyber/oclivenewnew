@@ -391,5 +391,6 @@ npm run check:rust                               # fmt + clippy(-D warnings) + t
    - 维度二【剧场实时 / V1 低算力】性能预算（直接决定 demo 体感）
    - 维度六【V4】创作者黄金路径（直接决定 30 分钟创造能否兑现）
 4. **默认走快档。** 全档稀缺、刻意。别让巡检频率变成逃避"把它推到陌生人面前"的借口。
+5. **文档不增殖。** 模块定义只改 [`MODULE_MAP_AND_HANDOFF.md`](./MODULE_MAP_AND_HANDOFF.md)；无 RFC/关键决策不新建 handoff 顶层文；动文档前读 [`handoff/README.md`](./README.md) §文档分责（**可以慢，读对 SSOT**）；遵循 [`AI_CHANGE_BOUNDARIES.md`](./AI_CHANGE_BOUNDARIES.md) G10–G16 · §文档编写纪律。**效率源于限制。**
 
 > 一句话:**地基稳是为了让"惊喜"走得远;当地基稳与做惊喜冲突时,先做惊喜,把地基发现记进 §8 等下一轮。**

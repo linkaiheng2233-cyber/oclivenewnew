@@ -17,7 +17,7 @@
 | **物理目录** | [`kernel/`](../../kernel/)（`kernel/crates/`、`kernel/fuzz/`、OOCP 示例） | [`distros/`](../../distros/)（`shared`、`chat-pro`、`theater`、`desktop-tauri`） |
 | **契约文档** | `creator-docs/kernel/`、`creator-docs/cli/`、六槽 / HTTP / 迁移 | `handoff/distros/`、`handoff/theater/`、`handoff/vscode/` |
 | **给人类** | [human-docs/06_KERNEL_LEARNING_PATH.md](../../human-docs/06_KERNEL_LEARNING_PATH.md) | [human-docs/README.md](../../human-docs/README.md) L0–L2 |
-| **给 AI** | [AGENTS.md](../../AGENTS.md) · [handoff/BUS_FACTOR_NOTES.md](../../handoff/BUS_FACTOR_NOTES.md) | [handoff/README.md](../../handoff/README.md) 发行版子目录 |
+| **给 AI** | [AGENTS.md](../../AGENTS.md) · [handoff/MODULE_MAP_AND_HANDOFF.md](../../handoff/MODULE_MAP_AND_HANDOFF.md) · [handoff/README.md](../../handoff/README.md) §文档分责 · [handoff/BUS_FACTOR_NOTES.md](../../handoff/BUS_FACTOR_NOTES.md) | [handoff/README.md](../../handoff/README.md) 发行版子目录 |
 
 编排 SSOT 在 **`kernel/crates/oclive_kernel_host`**；Tauri IPC 薄壳在 **`distros/desktop-tauri`**。勿将二者混写在同一「改 API」任务中。
 
@@ -29,6 +29,9 @@
 |------|------|
 | **Breaking 变更流程**（定义、六步、兼容层、PR/迁移模板） | **[../../handoff/BREAKING_CHANGE_PROCESS.md](../../handoff/BREAKING_CHANGE_PROCESS.md)** |
 | **关键路径交接笔记**（Bus factor：`process_message`、`PluginHost`、错误码、DB、测试/CI 等入口） | **[../../handoff/BUS_FACTOR_NOTES.md](../../handoff/BUS_FACTOR_NOTES.md)** |
+| **模块地图与接手备忘**（模块注册表 · 六槽/设施关系 · **非**进度） | **[../../handoff/MODULE_MAP_AND_HANDOFF.md](../../handoff/MODULE_MAP_AND_HANDOFF.md)** |
+| **文档分责 · 耦合审计** | **[../../handoff/README.md](../../handoff/README.md)** §文档分责 |
+| **AI 改动边界**（代码 G1–G9 · **文档 G10–G16** · §文档编写纪律） | **[../../handoff/AI_CHANGE_BOUNDARIES.md](../../handoff/AI_CHANGE_BOUNDARIES.md)** · 审查核实 **[../../handoff/AI_VERIFICATION_PROTOCOL.md](../../handoff/AI_VERIFICATION_PROTOCOL.md)** |
 | **`handoff/` 活跃 vs 归档**（closure、旧周报、编号计划已迁入 `archive/`） | **[../../handoff/README.md](../../handoff/README.md)** · 关键路径 **[../../handoff/BUS_FACTOR_NOTES.md](../../handoff/BUS_FACTOR_NOTES.md)** · 认知清单（**已归档快照**）**[../../handoff/04_4.6_PROJECT_TRUTH_CHECKLIST.md](../../handoff/04_4.6_PROJECT_TRUTH_CHECKLIST.md)** |
 | **命名规范与 canonical import**（概念 SSOT、crate 边界、禁止别名） | **[../NAMING_CONVENTIONS.md](../NAMING_CONVENTIONS.md)** · [English summary](../../creator-docs-en/getting-started/NAMING_CONVENTIONS.md) · crate 速查 **[../../kernel/crates/README.md](../../kernel/crates/README.md)** §Canonical import |
 | **独立通道能力增强模块**（注册表 · 非六槽 · 非设施子模块） | **[../rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md](../rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md)** · [OCLIVE_ARCHITECTURE_OVERVIEW §独立通道](OCLIVE_ARCHITECTURE_OVERVIEW.md#独立通道能力增强模块非六槽--非设施子模块编号) |

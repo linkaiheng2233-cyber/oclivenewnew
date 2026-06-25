@@ -15,6 +15,7 @@
 | 角色即工作流 | 每个角色包是一套可声明的配置 + 可选后端 | manifest 扩展、`min_runtime`、后端枚举 |
 | 记忆 / 情感可换 | 七维等只是**当前默认模块**，非平台上限 | Memory/Emotion 门面、第二套实现、远期侧车/WASM |
 | **灵魂权重层** | 口癖、节奏、直播态等可沉淀为 **LoRA/SFT adapter**，与 prompt / 记忆并列；运行时由 **专家模型设施子模块** 按条件切换（`slot.lora.apply`），而非再做一个封闭「性格引擎」 | 微调工坊（独立创作者工具）、角色包 adapter 卫星文件、`expert_routing.json`、directory 推理插件 |
+| **TTFT · 双档思考** | 闲聊 **Fast**（规则 event · 裁剪上下文）保首字；高价值轮 **Deep** 保质量；Deep 侧用 **离线 persona capsule + 稳定前缀 KV 延续** 压 prefill | Turn Thinking · `handoff/TTFT_BENCHMARK.md` · `handoff/DEEP_PROMPT_DISTILLATION.md` |
 
 ---
 
@@ -107,6 +108,22 @@
 
 ## 第 7 月及以后（ backlog，按需排）
 
+### TTFT 与 Deep 精炼（Wave A–D · 2026-06 起）
+
+**已交付（Wave A/B）**：发行版 `event_impact_llm` · Turn Thinking Auto/Fast/Deep · co-present Fast 裁剪 · `scripts/measure-ttft.mjs` · Chat Pro co-present **p50 ~243ms**（见 [`handoff/TTFT_BENCHMARK.md`](../../handoff/TTFT_BENCHMARK.md)）。
+
+**进行中 / 待排（Wave C–D）**：
+
+| Wave | 目标 | 说明 |
+|------|------|------|
+| **C** | 感知延迟 | Chat Pro 主 UI 接 `/chat/stream`，与后端 TTFT 正交 |
+| **D** | **Deep 短 prompt** | 角色包 **`prompts/deep_capsule.txt`**（离线蒸馏）；Deep 轮替换全量 `core_personality` 注入 |
+| **D+** | **上下文延续** | Prompt 拆 **稳定前缀 / 可变后缀**；同会话 Deep 多轮复用 KV cache，继续压 prefill |
+
+**架构归类 SSOT**：规则 event = **第 3 模块** optional 子路径 + **HostProfile** 开关；Turn Thinking = **编排行无编号设施**；capsule = **角色包卫星 + 第 4 模块组装分支**。详见 **[`handoff/DEEP_PROMPT_DISTILLATION.md`](../../handoff/DEEP_PROMPT_DISTILLATION.md)**。
+
+**纪律**：蒸馏 **仅离线/包内**；不新增 `process_message` LLM 压缩 stage；`KERNEL_DIALOGUE_GUARDRAILS` 不可被 capsule 替换。
+
 | 方向 | 说明 |
 |------|------|
 | WASM 插件 | 在进程插件稳定后，对计算型扩展做沙箱化。 |
@@ -184,4 +201,5 @@
 
 *本文档随愿景迭代更新；重大方向变更时请改日期与版本说明。*
 
-*2026-06-15：新增愿景支柱「灵魂权重层」与「三发行版后 · 微调工坊」专节（T0–T3）。*
+*2026-06-15：新增愿景支柱「灵魂权重层」与「三发行版后 · 微调工坊」专节（T0–T3）。*  
+*2026-06-25：新增愿景支柱「TTFT · 双档思考」与 §Wave A–D（Deep persona capsule · 前缀 KV 延续）。*
