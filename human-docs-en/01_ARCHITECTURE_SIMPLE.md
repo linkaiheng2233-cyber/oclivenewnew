@@ -1,5 +1,6 @@
 # 01 · Architecture (simple)
 
+> **Last updated:** 2026-06-26  
 > **Next:** [02 Thirty-minute start](02_THIRTY_MINUTE_START.md) · **Full human edition (CN):** [human-docs/01](../human-docs/01_ARCHITECTURE_SIMPLE.md) · **Module registry:** [MODULE_MAP](../handoff/MODULE_MAP_AND_HANDOFF.md)
 
 ## One turn (co-present path)

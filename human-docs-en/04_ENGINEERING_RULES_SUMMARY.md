@@ -1,5 +1,6 @@
 # Engineering rules (English summary)
 
+> **Last updated:** 2026-06-26  
 > Full Chinese SSOT: [human-docs/04_ENGINEERING_RULES.md](../human-docs/04_ENGINEERING_RULES.md) (includes **§8 documentation discipline — human edition**).
 
 ## Non-negotiables (code)

@@ -10,7 +10,8 @@
 | [02_THIRTY_MINUTE_START.md](02_THIRTY_MINUTE_START.md) | Clone, run, verify |
 | [03_GLOSSARY.md](03_GLOSSARY.md) | Terms (links to 09) |
 | [04_ENGINEERING_RULES_SUMMARY.md](04_ENGINEERING_RULES_SUMMARY.md) | Code + **documentation** rules summary |
-| [07_FIRST_PR.md](07_FIRST_PR.md) | First PR recipe |
+| [06_KERNEL_LEARNING_PATH.md](06_KERNEL_LEARNING_PATH.md) | Kernel main chain Day 1–5 (summary) |
+| [07_FIRST_PR.md](07_FIRST_PR.md) | First PR recipe · L6 task shortcut |
 | [08_PR_GATE_MATRIX.md](08_PR_GATE_MATRIX.md) | Local PR gates |
 | [09_GLOSSARY.md](09_GLOSSARY.md) | One-page glossary |
 | [10_SETUP_WINDOWS.md](10_SETUP_WINDOWS.md) | Windows MSVC, target-dir |
