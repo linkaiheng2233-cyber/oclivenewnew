@@ -23,7 +23,8 @@
 | **team/ 垂直 sprint** | **Done** | 视觉/语音边界 · 组员不必读全仓 |
 | **模块注册表（深读）** | **handoff** | [`MODULE_MAP_AND_HANDOFF.md`](../handoff/MODULE_MAP_AND_HANDOFF.md) — 人类 L5+ 深读，不在 human-docs 复制 |
 | **AI 文档纪律 G10–G16** | **Done** | AI 详述 → [`AI_CHANGE_BOUNDARIES`](../handoff/AI_CHANGE_BOUNDARIES.md)；人类摘要 → [04 §8](04_ENGINEERING_RULES.md#8-文档贡献纪律人类版) |
-| **human-docs-en 全覆盖** | **Partial** | L0–L4 + **L5**（06 摘要）+ L6（07 首 PR）；L6 深任务仍链中文 07 |
+| **模块开工包（H-DOC-04）** | **OPEN** | [`modules/README.md`](modules/README.md) · 骨架已建 |
+| **human-docs-en 全覆盖** | **Partial** | L0–L4 + **L5**（06 摘要）+ L6（07 首 PR）+ **modules 选择器摘要** |
 | **creator-docs-en 契约** | **Partial** | 与中文 `creator-docs/` 并行；**契约以中文为准** |
 
 **待办（文档债 · 非代码债）**
@@ -33,6 +34,7 @@
 | H-DOC-01 | `human-docs-en/06_KERNEL_LEARNING_PATH` 英文摘要 | **Done**（2026-06-26） |
 | H-DOC-02 | 人类文档文首「最后更新」徽标 | **Done**（2026-06-26 · 01/04/06 + EN 镜像） |
 | H-DOC-03 | 物理迁移 `04_4.6` / `CHAT_STORAGE_MIRROR_COLLAPSE` → `archive/` | P3 · 需批量改链 |
+| H-DOC-04 | 人类模块化开工包 `human-docs/modules/` | **OPEN**（阶段 0 骨架） |
 
 ---
 
@@ -56,7 +58,7 @@
 | **L2** | [02 三十分钟跑通](02_THIRTY_MINUTE_START.md) | 主仓怎么跑、怎么验 | 30 min |
 | **L3** | [03 术语表](03_GLOSSARY.md) + [04 工程约束](04_ENGINEERING_RULES.md) | 缩写 · PR 规则 · **写文档纪律** | 45 min |
 | **L4** | [05 调试](05_DEBUGGING.md) | 不用 AI 怎么查问题 | 30 min |
-| **L5** | [06 内核学习路径](06_KERNEL_LEARNING_PATH.md) | 内核主链 Day 1–5 | 半天–3 天 |
+| **L5** | [06 内核学习路径](06_KERNEL_LEARNING_PATH.md) | **内核主链维护者专用** Day 1–5 | 半天–3 天 |
 | **L6** | [07 常见任务](07_COMMON_TASKS.md) | 改 X 从哪下手 | 按需 |
 | **L7** | [08 资料地图](08_REFERENCE_MAP.md) | 深文档去哪找 | 按需 |
 | **L8** | [08 PR 门禁](08_PR_GATE_MATRIX.md) · [09 术语速查](09_GLOSSARY.md) · [10 Windows](10_SETUP_WINDOWS.md) | CI 对照 · 缩写 · MSVC | 按需 |
@@ -69,7 +71,9 @@ flowchart LR
   L1 --> L2["L2 跑通\n02"]
   L2 --> L3["L3 规则+术语\n03+04"]
   L3 --> L4["L4 调试\n05"]
-  L4 --> L5["L5 主链\n06"]
+  L3 --> MP["模块选择器\nmodules/"]
+  MP --> SLOT["单槽/设施包\n30-60min"]
+  L4 --> L5["L5 主链\n06 维护者专用"]
   L5 --> L6["L6 首 PR\n07"]
   L6 --> L7["L7 按需\n08"]
 ```
@@ -78,14 +82,27 @@ flowchart LR
 
 ---
 
+## 模块选择器（L3 后默认分叉）
+
+完成 L0–L3 后，**多数贡献者不必默认读 L5**。按任务选一份开工包（约 30–60 min）：
+
+| 我要改… | 开工包 |
+|---------|--------|
+| LLM / 目录插件后端 | `modules/slots/llm.md`（待交付） |
+| Agent / MCP 工具 | `modules/slots/agent.md`（待交付） |
+| 记忆检索 / STM·LTM | `modules/slots/memory.md`（待交付） |
+| **全表** | [modules/README.md](modules/README.md) |
+
+---
+
 ## 按角色分流
 
 | 你是谁 | 建议路径 |
 |--------|----------|
 | **内核贡献者** | L0 → L2 → L3 → **L5** → L6；深读 [MODULE_MAP](../handoff/MODULE_MAP_AND_HANDOFF.md) · [BUS_FACTOR](../handoff/BUS_FACTOR_NOTES.md) |
-| **前端贡献者** | L2 → [paths/frontend.md](paths/frontend.md) → L4 |
-| **插件作者** | L0 → [paths/plugin-author.md](paths/plugin-author.md) → [08 §4](08_REFERENCE_MAP.md) |
-| **集成方** | L2 → [paths/integrator.md](paths/integrator.md) |
+| **前端贡献者** | L2 → [paths/frontend.md](paths/frontend.md) → [modules/surfaces/](modules/surfaces/) |
+| **插件作者** | L0–L3 → [paths/plugin-author.md](paths/plugin-author.md) → [modules/slots/](modules/slots/) |
+| **集成方** | L2 → [paths/integrator.md](paths/integrator.md) → [modules/surfaces/distro-hostprofile.md](modules/surfaces/distro-hostprofile.md) |
 | **Chat Pro 垂直 sprint** | [team/README.md](team/README.md) → [SCOPE_AND_BOUNDARIES](team/SCOPE_AND_BOUNDARIES.md) |
 
 ---
@@ -109,4 +126,4 @@ flowchart LR
 | 贡献与测试 | [CONTRIBUTING](../CONTRIBUTING.md) |
 | AI 接手包说明 | [ai-package/README.md](ai-package/README.md) |
 
-*最后更新：2026-06-25 · 与 handoff 文档纪律 G10–G16 对齐。*
+*最后更新：2026-06-26 · H-DOC-04 模块开工包进行中。*

@@ -85,7 +85,7 @@
 2. **有** → 只改那一份（或只加一节），**不要** 新建 `handoff/某某.md`  
 3. **没有** → 需要维护者/RFC 认定「必须新开」；并登记进分责表  
 
-**模块 / 六槽 / 设施关系**：只维护 [`MODULE_MAP_AND_HANDOFF.md`](../handoff/MODULE_MAP_AND_HANDOFF.md)。人类入门读 [01 简架构](01_ARCHITECTURE_SIMPLE.md) + MODULE_MAP 深读，**不要在 human-docs 复制整表**。
+**模块 / 六槽 / 设施关系**：只维护 [`MODULE_MAP_AND_HANDOFF.md`](../handoff/MODULE_MAP_AND_HANDOFF.md)。人类入门读 [01 简架构](01_ARCHITECTURE_SIMPLE.md)；**按模块开工**读 [`modules/`](modules/README.md)（checklist · 链 SSOT）；定义仍只在 MODULE_MAP，**不要在 human-docs 复制整表**。
 
 ### 8.2 人类包 vs AI 包
 

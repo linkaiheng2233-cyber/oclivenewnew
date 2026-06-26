@@ -41,6 +41,7 @@
 | AI 审查数字核实 | [`AI_VERIFICATION_PROTOCOL.md`](./AI_VERIFICATION_PROTOCOL.md) | — |
 | 文档总索引 | [`DOCUMENTATION_INDEX.md`](../creator-docs/getting-started/DOCUMENTATION_INDEX.md) | 勿在 AGENTS 复制全表 |
 | **人类文档包进度** | [`human-docs/README.md`](../human-docs/README.md) §文档包进度 | TECHNICAL_DEBT（代码债） |
+| **人类模块化开工包** | [`human-docs/modules/README.md`](../human-docs/modules/README.md) | MODULE_MAP（只写定义）· 各包 `_TEMPLATE` |
 
 ---
 
