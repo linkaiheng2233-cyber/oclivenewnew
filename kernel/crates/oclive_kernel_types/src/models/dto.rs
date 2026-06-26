@@ -122,6 +122,9 @@ pub struct SendMessageResponse {
     /// Pre–post-processor LLM text; only when `include_raw_reply` was requested and text changed.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub raw_reply: Option<String>,
+    /// Ollama `prompt_eval_duration` (ms) when `OCLIVE_BENCH_TELEMETRY=1` and Deep prefix-cache path.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub llm_prompt_eval_ms: Option<u64>,
 }
 
 // ----- WEEK3-004: role / memory / event queries -----

@@ -1,6 +1,6 @@
 # Deep 路径 · Prompt 蒸馏与上下文延续（Wave D）
 
-**状态**：T1/T2 **已接 Stable 主链**（角色包资产 + `PromptBuilder` Deep 分支）· T3 KV 延续仍为愿景  
+**状态**：T1/T2/T3 **已接 Stable 主链**（角色包资产 · `PromptBuilder` Deep 分支 · Ollama 前缀缓存）  
 **前置**：Wave A/B 已交付（Turn Thinking · 规则 event · TTFT bench），见 [`TTFT_BENCHMARK.md`](TTFT_BENCHMARK.md)  
 **关联愿景**：[`creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md`](../creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md) §「TTFT 与 Deep 精炼」
 
@@ -91,24 +91,22 @@ resolve_turn_thinking → Deep
 
 ---
 
-## 4. 上下文延续（KV · 继续）
+## 4. 上下文延续（KV · T3 实现）
 
-Deep 路径 prompt 长、prefill 重；除缩短 capsule 外，应 **最大化前缀复用**：
+Deep 路径 prompt 长、prefill 重；除缩短 capsule 外，应 **最大化前缀复用**。
+
+**T3 采用（非 Ollama deprecated `context` 数组）**：`build_prompt_segments` 将 **稳定字节前缀** 排在字符串最前；同模型 + `keep_alive` 下依赖 **llama.cpp 字节级前缀 KV 复用**；用 `prompt_eval_duration` 观测 prefill 下降。
 
 | 分段 | 内容 | 回合间是否变化 |
 |------|------|----------------|
-| **P0 稳定前缀** | guardrails + deep_capsule（或 core）+ 静态角色元数据 | 同角色同会话 **不变** |
-| **P1 半稳定** | reply_quality_anchor · user_identity 模板 · 关系基线 | 关系/身份切换时变 |
-| **P2 可变后缀** | 记忆检索 · 复杂情感 hint · 场景/state · 用户句 | **每轮**变 |
+| **stable_prefix** | Tier0（capsule/core）· 世界观 · `reply_quality_anchor` · `KERNEL_DIALOGUE_GUARDRAILS` · 场景约束 | 同角色同场景同 persona **不变** |
+| **dynamic_suffix** | 人格补充 · 状态/关系/事件 · CE hint · 记忆 · 用户身份 · 日程 · 用户句 | **每轮**变 |
 
-**实现方向（T2–T3）**：
+**运行时开关**：`[turn_thinking] prompt_prefix_cache = true` 或 `OCLIVE_PROMPT_PREFIX_CACHE=1`；且 `TurnThinkingMode::Deep`；且有效 LLM 为 Ollama。`SessionCache` 键 `srid:model:persona:scene:user_identity` 仅用于遥测「预期命中」，**不**存 Ollama context。
 
-1. `PromptBuilder` 输出 `{ stable_prefix, mutable_suffix }` 或等价 hash（`SessionCache` 键：`role_id` + `srid` + capsule 版本）。
-2. LLM 客户端（Ollama `/api/chat` 或 stream）：同前缀时依赖服务端 **KV cache**；文档化「勿在 P0 段注入时间戳」。
-3. 可选：`OCLIVE_PROMPT_PREFIX_CACHE=1` 进程内缓存上一轮的 stable prefix token 长度，bench 对比 prefill ms。
-4. **Monolith 态**：宏核焊接路径可进一步内联 prefix buffer（与 [`RFC_OCLIVE_MONOLITH_MODE.md`](../creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md) 低延迟叙事对齐）。
+**P0 禁令**：stable 段内不得含虚拟时间戳、轮次号、随机 token。
 
-**与 Fast 的分工**：Fast 已靠 **减 stage + 规则 event** 达标；Deep 靠 **短 capsule + 前缀延续** 控长 prompt 成本，而非再砍 enrichment。
+**Bench**：`OCLIVE_BENCH_TELEMETRY=1` + `node scripts/measure-ttft.mjs --deep-multi --profile desktop-latency`；门禁：连续 5 轮 Deep，round 2–5 `prompt_eval_ms` p50 &lt; round 1。
 
 ---
 
@@ -119,7 +117,7 @@ Deep 路径 prompt 长、prefill 重；除缩短 capsule 外，应 **最大化�
 | **T0** | 本文 + 愿景条目 + `DISTRO_CAPABILITY_PROFILE` 开关说明 | 文档评审 · **Done** |
 | **T1** | 角色包 schema · 编写器导出 · `oclive_validation` | mumu 样例 `deep_capsule.txt`；validate 通过 · **Done** |
 | **T2** | `PromptBuilder` Deep 分支 · `co_present` 传 mode · bench | Deep TTFT 较全量下降 ≥20%（同模型同机）· **Done** |
-| **T3** | 前缀分段 + Ollama KV 延续 | 连续 5 轮 Deep，第 2–5 轮 p50 prefill 低于第 1 轮 · **待排** |
+| **T3** | 前缀分段 + Ollama llama.cpp 前缀缓存 + `keep_alive` | 连续 5 轮 Deep，第 2–5 轮 p50 `prompt_eval_ms` 低于第 1 轮 · **Done**（见 [`TTFT_BENCHMARK.md`](TTFT_BENCHMARK.md) `--deep-multi`） |
 
 ---
 

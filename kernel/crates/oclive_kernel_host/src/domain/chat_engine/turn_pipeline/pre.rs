@@ -111,6 +111,10 @@ pub(crate) struct MiddleOutput {
     pub prompt: String,
     pub favor_delta: f64,
     pub relation_after: RelationState,
+    pub prompt_stable_hash: Option<u64>,
+    pub prompt_stable_len: Option<usize>,
+    pub prefix_cache_expected_hit: Option<bool>,
+    pub use_ollama_prefix_opts: bool,
 }
 
 pub(crate) struct MainLlmOutput {
@@ -118,6 +122,7 @@ pub(crate) struct MainLlmOutput {
     pub main_llm_fallback: bool,
     pub llm_fallback_reason: Option<String>,
     pub main_llm_ms: u64,
+    pub llm_prompt_eval_ms: Option<u64>,
 }
 
 async fn prefetch_context(

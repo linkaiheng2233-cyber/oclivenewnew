@@ -12,8 +12,7 @@ use crate::infrastructure::chat_storage::{
 use crate::infrastructure::db::DbManager;
 use crate::infrastructure::directory_plugins::DirectoryPluginRuntime;
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
-use crate::infrastructure::llm::ollama_llm;
-use crate::infrastructure::llm::LlmClient;
+use crate::infrastructure::llm::{LlmClient, SharedOllamaClient};
 use crate::infrastructure::ollama_client::OllamaClient;
 use crate::infrastructure::policy_registry::{
     build_policy_sets_from_registry, load_policy_registry_from_path, PolicyRegistryFile,
@@ -133,14 +132,15 @@ impl AppStateBuilder {
         let favorability_repo: Arc<dyn FavorabilityRepository> =
             Arc::new(SqliteFavorabilityRepository::new(db_manager.clone()));
 
-        let llm = match self.llm {
-            Some(l) => l,
+        let (llm, ollama) = match self.llm {
+            Some(l) => (l, None),
             None => {
-                let ollama = OllamaClient::new(
+                let client = Arc::new(OllamaClient::new(
                     std::env::var("OLLAMA_BASE_URL")
                         .unwrap_or_else(|_| "http://localhost:11434".to_string()),
-                );
-                ollama_llm(ollama)
+                ));
+                let llm: Arc<dyn LlmClient> = Arc::new(SharedOllamaClient(Arc::clone(&client)));
+                (llm, Some(client))
             }
         };
 
@@ -257,6 +257,7 @@ impl AppStateBuilder {
             favorability_repo,
             user_llm_secrets,
             llm,
+            ollama,
             role_cache: Arc::new(RwLock::new(indexmap::IndexMap::new())),
             role_load_inflight: DashMap::new(),
             http_api_roles: DashMap::new(),

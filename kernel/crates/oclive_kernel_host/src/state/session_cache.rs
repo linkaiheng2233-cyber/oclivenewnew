@@ -94,10 +94,25 @@ impl<T: Clone> SessionScopedMap<T> {
         self.inner.retain(|k, _| active.contains(k.as_str()));
     }
 
+    fn prune_not_in_srid_prefix(&self, active_srids: &HashSet<String>) {
+        self.inner.retain(|k, _| {
+            active_srids
+                .iter()
+                .any(|srid| k == srid.as_str() || k.starts_with(&format!("{srid}:")))
+        });
+    }
+
     #[cfg(test)]
     fn len(&self) -> usize {
         self.inner.len()
     }
+}
+
+/// Prefix-cache telemetry row (does not store Ollama context arrays).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PrefixCacheEntry {
+    pub prefix_hash: u64,
+    pub stable_len: usize,
 }
 
 /// Session cache with per-purpose locks; [`RwLock`] / [`DashMap`] / [`Cache`] do not block each other.
@@ -110,6 +125,7 @@ pub struct SessionCache {
     expert_lora_plugin_id: SessionScopedMap<String>,
     relation_transitions: SessionScopedMap<RelationTransition>,
     interaction_mode_seeded: SessionScopedMap<()>,
+    prefix_cache: SessionScopedMap<PrefixCacheEntry>,
     personality_snapshots: Cache<PersonalityVector>,
     session_touch: DashMap<String, Instant>,
 }
@@ -157,6 +173,7 @@ impl SessionCache {
             expert_lora_plugin_id: SessionScopedMap::new(),
             relation_transitions: SessionScopedMap::new(),
             interaction_mode_seeded: SessionScopedMap::new(),
+            prefix_cache: SessionScopedMap::new(),
             personality_snapshots: Cache::with_capacity(PERSONALITY_CACHE_CAPACITY),
             session_touch: DashMap::new(),
         }
@@ -195,6 +212,7 @@ impl SessionCache {
         self.expert_injected_memory_ids.evict_if_needed();
         self.expert_lora_plugin_id.evict_if_needed();
         self.relation_transitions.evict_if_needed();
+        self.prefix_cache.evict_if_needed();
     }
 
     /// Drop session-scoped cache rows that no longer have an active turn lock.
@@ -215,6 +233,49 @@ impl SessionCache {
         self.expert_injected_memory_ids.prune_not_in(active_srids);
         self.expert_lora_plugin_id.prune_not_in(active_srids);
         self.relation_transitions.prune_not_in(active_srids);
+        self.prefix_cache.prune_not_in_srid_prefix(active_srids);
+    }
+
+    /// Build session prefix-cache key: model / persona / scene / user identity must match for expected KV hit.
+    #[must_use]
+    pub fn prefix_cache_key(
+        srid: &str,
+        model: &str,
+        persona_source: &str,
+        scene_id: &str,
+        user_identity_id: &str,
+    ) -> String {
+        format!("{srid}:{model}:{persona_source}:{scene_id}:{user_identity_id}")
+    }
+
+    #[must_use]
+    pub fn read_prefix_cache(&self, key: &str) -> Option<PrefixCacheEntry> {
+        self.prefix_cache.get(key)
+    }
+
+    /// Returns whether the stable prefix hash matches the previous turn (expected Ollama prefix hit).
+    pub fn observe_prefix_cache(
+        &self,
+        key: String,
+        prefix_hash: u64,
+        stable_len: usize,
+    ) -> bool {
+        let expected_hit = self
+            .prefix_cache
+            .get(&key)
+            .is_some_and(|e| e.prefix_hash == prefix_hash && e.stable_len == stable_len);
+        self.prefix_cache.insert(
+            key,
+            PrefixCacheEntry {
+                prefix_hash,
+                stable_len,
+            },
+        );
+        expected_hit
+    }
+
+    pub fn clear_prefix_cache(&self, key: &str) {
+        self.prefix_cache.remove(key);
     }
 
     #[must_use]
@@ -439,6 +500,15 @@ mod tests {
             .session_plugin_overrides()
             .read()
             .contains_key("active"));
+    }
+
+    #[test]
+    fn observe_prefix_cache_detects_stable_hash_match() {
+        let cache = SessionCache::new();
+        let key = SessionCache::prefix_cache_key("s1", "qwen2.5:7b", "deep_capsule", "home", "u1");
+        assert!(!cache.observe_prefix_cache(key.clone(), 42, 1000));
+        assert!(cache.observe_prefix_cache(key.clone(), 42, 1000));
+        assert!(!cache.observe_prefix_cache(key, 43, 1000));
     }
 
     #[test]

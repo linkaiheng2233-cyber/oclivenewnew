@@ -67,6 +67,7 @@ pub struct TurnThinkingToml {
     pub fast_knowledge_limit: Option<usize>,
     pub fast_memory_cap: Option<usize>,
     pub deep_capsule: Option<bool>,
+    pub prompt_prefix_cache: Option<bool>,
 }
 
 #[derive(Debug, Default, Clone, Deserialize)]

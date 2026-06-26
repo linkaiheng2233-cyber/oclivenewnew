@@ -21,6 +21,7 @@ fast_skip_complex_emotion = true
 auto_deep_min_chars = 80
 fast_knowledge_limit = 4
 fast_memory_cap = 4
+prompt_prefix_cache = true
 
 [slots]
 complex_emotion = "on"

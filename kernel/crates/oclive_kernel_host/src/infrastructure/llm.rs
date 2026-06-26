@@ -57,6 +57,37 @@ impl LlmClient for OllamaClient {
     }
 }
 
+/// Share one [`OllamaClient`] as [`LlmClient`] (production `AppState` wiring).
+pub struct SharedOllamaClient(pub Arc<OllamaClient>);
+
+#[async_trait]
+impl LlmClient for SharedOllamaClient {
+    async fn generate(&self, model: &str, prompt: &str) -> Result<String> {
+        let (t, p) = llm_params::main_chat_options();
+        OllamaClient::generate(self.0.as_ref(), model, prompt, t, p).await
+    }
+
+    async fn generate_tag(&self, model: &str, prompt: &str) -> Result<String> {
+        let (t, p) = llm_params::tag_task_options();
+        OllamaClient::generate(self.0.as_ref(), model, prompt, t, p).await
+    }
+
+    async fn generate_stream(
+        &self,
+        model: &str,
+        prompt: &str,
+        on_token: LlmTokenSink,
+    ) -> Result<String> {
+        let (t, p) = llm_params::main_chat_options();
+        OllamaClient::generate_stream_with_callback(self.0.as_ref(), model, prompt, t, p, on_token)
+            .await
+    }
+
+    async fn startup_probe(&self) -> Result<()> {
+        LlmClient::startup_probe(self.0.as_ref()).await
+    }
+}
+
 /// Wraps `OllamaClient` as `Arc<dyn LlmClient>`.
 #[must_use]
 pub fn ollama_llm(client: OllamaClient) -> Arc<dyn LlmClient> {
@@ -108,6 +139,12 @@ impl RemoteLlmPlaceholder {
             .is_some_and(|s| !s.trim().is_empty())
     }
 
+    fn ollama_backend_active() -> bool {
+        std::env::var("OCLIVE_LLM_BACKEND")
+            .ok()
+            .is_none_or(|v| !v.trim().eq_ignore_ascii_case("remote"))
+    }
+
     fn warn_once(&self) {
         if self
             .warned
@@ -125,7 +162,9 @@ impl RemoteLlmPlaceholder {
 #[async_trait]
 impl LlmClient for RemoteLlmPlaceholder {
     async fn generate(&self, model: &str, prompt: &str) -> Result<String> {
-        if Self::user_explicitly_chose_cloud_remote() || Self::remote_url_configured() {
+        if Self::user_explicitly_chose_cloud_remote()
+            || (Self::remote_url_configured() && !Self::ollama_backend_active())
+        {
             let msg = if Self::remote_url_configured() {
                 "云端 LLM 未能连接（请重新在「模型管理」保存 URL/API Key，或检查网络授权）"
             } else {

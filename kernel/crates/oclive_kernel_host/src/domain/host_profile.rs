@@ -175,6 +175,8 @@ pub struct TurnThinkingProfile {
     pub fast_memory_cap: usize,
     /// When `Some(true)`, force Deep capsule on Small+Deep when file exists; `Some(false)` blocks.
     pub deep_capsule: Option<bool>,
+    /// When `Some(true)`, Deep+Ollama uses `build_prompt_segments` for llama.cpp prefix reuse.
+    pub prompt_prefix_cache: Option<bool>,
 }
 
 impl Default for TurnThinkingProfile {
@@ -187,8 +189,27 @@ impl Default for TurnThinkingProfile {
             fast_knowledge_limit: 4,
             fast_memory_cap: 4,
             deep_capsule: None,
+            prompt_prefix_cache: None,
         }
     }
+}
+
+#[must_use]
+pub fn prompt_prefix_cache_effective(host: &HostProfile) -> bool {
+    if std::env::var("OCLIVE_PROMPT_PREFIX_CACHE")
+        .ok()
+        .is_some_and(|v| v == "1" || v.eq_ignore_ascii_case("true"))
+    {
+        return true;
+    }
+    host.turn_thinking.prompt_prefix_cache == Some(true)
+}
+
+#[must_use]
+pub fn bench_telemetry_enabled() -> bool {
+    std::env::var("OCLIVE_BENCH_TELEMETRY")
+        .ok()
+        .is_some_and(|v| v == "1" || v.eq_ignore_ascii_case("true"))
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -326,6 +347,9 @@ fn host_profile_from_distro_file(
         }
         if let Some(v) = tt.deep_capsule {
             profile.turn_thinking.deep_capsule = Some(v);
+        }
+        if let Some(v) = tt.prompt_prefix_cache {
+            profile.turn_thinking.prompt_prefix_cache = Some(v);
         }
     }
     Ok(profile)

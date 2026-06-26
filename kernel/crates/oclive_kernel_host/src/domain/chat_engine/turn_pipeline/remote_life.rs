@@ -106,5 +106,9 @@ pub(crate) async fn run_middle(
         prompt,
         favor_delta,
         relation_after,
+        prompt_stable_hash: None,
+        prompt_stable_len: None,
+        prefix_cache_expected_hit: None,
+        use_ollama_prefix_opts: false,
     })
 }

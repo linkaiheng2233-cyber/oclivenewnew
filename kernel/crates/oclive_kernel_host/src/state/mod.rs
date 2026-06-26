@@ -11,6 +11,7 @@ use crate::infrastructure::db::DbManager;
 use crate::infrastructure::directory_plugins::DirectoryPluginRuntime;
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
 use crate::infrastructure::llm::LlmClient;
+use crate::infrastructure::ollama_client::OllamaClient;
 use crate::infrastructure::policy_registry::{
     build_policy_sets_from_registry, load_policy_registry_from_path, PolicyRuntime, PolicySet,
 };
@@ -76,6 +77,8 @@ pub struct AppState {
     pub favorability_repo: Arc<dyn FavorabilityRepository>,
     pub user_llm_secrets: Arc<dyn oclive_kernel_contracts::UserLlmSecretsPort>,
     pub llm: Arc<dyn LlmClient>,
+    /// Direct Ollama client for Deep prefix-cache metrics (`keep_alive`); `None` in mock-LLM tests.
+    pub ollama: Option<Arc<OllamaClient>>,
     /// Hot-path lock layering:
     /// - `role_cache` / `role_load_inflight`: dedupe role reads;
     /// - `session_cache`: session overrides;

@@ -47,6 +47,21 @@ node scripts/measure-ttft.mjs --profile desktop --runs 5 --ollama-model qwen2.5:
 
 `--profile` 会打印期望的 `OCLIVE_DISTRO_PROFILE` 路径，并通过 `/health` 的 `distro_id` 校验是否匹配。
 
+### 表 3 · 多轮 Deep prefill（Wave D-T3）
+
+与 stream **TTFT** 不同：测 Ollama `prompt_eval_duration`（内核 `llm_prompt_eval_ms`）。
+
+```powershell
+# 终端 1 — 在表 1 基础上增加：
+$env:OCLIVE_BENCH_TELEMETRY = "1"
+# desktop-latency.oclive.toml 已含 prompt_prefix_cache = true
+
+# 终端 2
+node scripts/measure-ttft.mjs --profile desktop-latency --deep-multi --runs 5 --ollama-model qwen2.5:7b
+```
+
+**门禁**：round 2–5 `prompt_eval_ms` p50 **&lt;** round 1（同角色同场景同模型、顺序请求）。
+
 ## Stage 分解（可选）
 
 ```powershell
@@ -61,6 +76,10 @@ $env:RUST_LOG = "oclive_turn=debug"
 | `[turn_thinking] default = "auto"` | 闲聊 Fast / 高情绪 Deep |
 | `meta.deep_capsule_enabled` + `prompts/deep_capsule.txt` | Small+Deep 用离线 capsule（见 [`DEEP_PROMPT_DISTILLATION.md`](DEEP_PROMPT_DISTILLATION.md)） |
 | `node scripts/measure-ttft.mjs --deep-only` | 仅测 Deep 轮 TTFT（长句触发） |
+| `[turn_thinking] prompt_prefix_cache = true` | Deep+Ollama 稳定前缀分段 + `keep_alive`（`desktop-latency` 默认开启） |
+| `OCLIVE_PROMPT_PREFIX_CACHE=1` | 环境变量强制开启前缀缓存（覆盖 profile） |
+| `OCLIVE_BENCH_TELEMETRY=1` | `SendMessageResponse.llm_prompt_eval_ms`（仅 bench，不进产品 UI） |
+| `node scripts/measure-ttft.mjs --deep-multi --runs 5` | 连续 5 轮 Deep **prefill**（`prompt_eval_ms`，非 stream TTFT） |
 | `OCLIVE_EVENT_IMPACT_LLM=0` | 环境变量等价关闭 event LLM |
 
 ## OOCP S15（流式 SSE smoke）
@@ -95,6 +114,19 @@ node examples/oocp-test-suite/run.mjs
 在 `desktop.oclive.toml`（`event_impact_llm` 默认 true）下复测；Deep 轮可能调 event LLM，TTFT 高于 Fast 路径属预期。发版前用 `--profile desktop` 记录一行 p50 填入 [`PERF_PHASES.md`](PERF_PHASES.md)。
 
 **Deep 路径（Wave D · Small+Deep capsule）**：启用 mumu `deep_capsule_enabled` + `--deep-only` 测 Deep TTFT；capsule ~2k 字 vs 全量 ~4.9k 字，目标 prefill 下降 ≥20%。人设 checklist 见 [`DEEP_PROMPT_DISTILLATION.md`](DEEP_PROMPT_DISTILLATION.md) §3.2。
+
+### 表 3 · 多轮 Deep prefill（Wave D-T3 · `desktop-latency`）
+
+| 轮次 | `prompt_eval_ms` |
+|------|------------------|
+| Round 1（冷前缀） | **1443** |
+| Round 2 | 511 |
+| Round 3 | 28 |
+| Round 4 | 1450 |
+| Round 5 | 26 |
+| **Round 2–5 p50** | **28**（&lt; Round 1 · **PASS**） |
+
+环境：mumu · `qwen2.5:7b` · `prompt_prefix_cache=true` · `OCLIVE_BENCH_TELEMETRY=1` · 2026-06-26。
 
 ## Related
 

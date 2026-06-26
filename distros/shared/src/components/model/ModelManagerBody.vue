@@ -55,6 +55,38 @@ const remoteModel = ref('')
 const cloudModels = ref<string[]>([])
 const cloudModelHistory = ref<string[]>(getCloudModelHistory())
 
+function isUsableOllamaModelId(model: string | null | undefined): boolean {
+  const t = model?.trim() ?? ''
+  if (!t || t.startsWith('file:'))
+    return false
+  if (t.includes('\\'))
+    return false
+  if (/^[a-zA-Z]:/.test(t))
+    return false
+  if (t.startsWith('/') || t.startsWith('\\\\'))
+    return false
+  return true
+}
+
+function resolveLocalModelSelection(s: LlmUserSettings): string {
+  const session = s.sessionOllamaModel?.trim()
+  if (session && isUsableOllamaModelId(session)) {
+    if (folderModelFiles.value.some(f => f.path === session))
+      return `file:${session}`
+    return session
+  }
+  const global = globalDefaultModel.value.trim()
+  if (global && isUsableOllamaModelId(global))
+    return global
+  const effective = s.effectiveModel?.trim()
+  if (effective && isUsableOllamaModelId(effective))
+    return effective
+  const pack = s.packOllamaModel?.trim()
+  if (pack && isUsableOllamaModelId(pack))
+    return pack
+  return ''
+}
+
 const localModelSelectOptions = computed(() => {
   const ollama = ollamaModels.value.map(id => ({
     value: id,
@@ -104,7 +136,7 @@ async function saveGlobalDefaultModel(): Promise<void> {
   }
   savingGlobal.value = true
   try {
-    const g = await setGlobalOllamaModel(model)
+    const g = await setGlobalOllamaModel(model, roleStore.currentRoleId)
     globalDefaultModel.value = g.model
     await roleStore.loadRoleInfo()
     showToast('success', t('modelManager.globalDefaultModelSaveOk'))
@@ -131,13 +163,7 @@ async function loadSettings(): Promise<void> {
     remoteModel.value = s.remoteModel || s.sessionOllamaModel || ''
     remoteToken.value = ''
 
-    const session = s.sessionOllamaModel?.trim()
-    if (session && folderModelFiles.value.some(f => f.path === session)) {
-      selectedLocalModel.value = `file:${session}`
-    }
-    else {
-      selectedLocalModel.value = session || s.packOllamaModel?.trim() || s.effectiveModel || ''
-    }
+    selectedLocalModel.value = resolveLocalModelSelection(s)
 
     if (providerTab.value === 'local') {
       await refreshOllamaModels()
@@ -189,7 +215,12 @@ async function refreshOllamaModels(): Promise<void> {
   try {
     ollamaModels.value = await listOllamaModels(ollamaBaseUrl.value)
     const cur = selectedLocalModel.value
-    if (cur && !cur.startsWith('file:') && !ollamaModels.value.includes(cur)) {
+    if (
+      cur
+      && !cur.startsWith('file:')
+      && isUsableOllamaModelId(cur)
+      && !ollamaModels.value.includes(cur)
+    ) {
       ollamaModels.value = [cur, ...ollamaModels.value]
     }
   }
@@ -213,7 +244,9 @@ async function pickModelsFolder(): Promise<void> {
   localModelsDir.value = picked
   folderModelFiles.value = await scanLocalModelFiles(picked)
   if (folderModelFiles.value.length > 0 && !selectedLocalModel.value) {
-    selectedLocalModel.value = `file:${folderModelFiles.value[0].path}`
+    const first = folderModelFiles.value[0]
+    if (first)
+      selectedLocalModel.value = `file:${first.path}`
   }
 }
 

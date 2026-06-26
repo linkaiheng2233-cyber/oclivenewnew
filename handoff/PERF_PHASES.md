@@ -23,8 +23,8 @@
 | **A** | Done | `host_flags.event_impact_llm` · 规则 event · `event_impact_ai` 分支 |
 | **B** | Done | Turn Thinking Auto/Fast/Deep · `co_present` Fast 裁剪 · `measure-ttft.mjs` |
 | **C** | Done | Chat Pro UI `/chat/stream` · `sendMessageStream` · 失败回退 `/chat` |
-| **D** | T1/T2 Done | Deep **`prompts/deep_capsule.txt`** · `model_tier` + `PersonaSource` · **`measure-ttft --deep-only`** |
-| **D-T3** | 待排 | 稳定前缀 **KV 延续**（Large 模型 · 第 7 月+ backlog） |
+| **D** | T1/T2/T3 Done | Deep capsule · `PersonaSource` · **`prompt_prefix_cache`** · `--deep-multi` prefill bench |
+| **D-T3** | Done | `build_prompt_segments` · prefill p50 **28ms** vs 冷启动 **1443ms**（mumu · qwen2.5:7b · 2026-06-26） |
 
 Bench SSOT：[`TTFT_BENCHMARK.md`](TTFT_BENCHMARK.md) · 设计：[`DEEP_PROMPT_DISTILLATION.md`](DEEP_PROMPT_DISTILLATION.md) · 愿景：[`creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md`](../creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md)。
 

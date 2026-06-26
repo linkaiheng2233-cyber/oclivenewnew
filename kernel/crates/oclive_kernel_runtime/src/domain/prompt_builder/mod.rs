@@ -88,6 +88,38 @@ pub fn effective_reply_quality_anchor(role: &crate::models::Role) -> &str {
     }
 }
 
+/// Deep prefix-cache layout: byte-stable head + per-turn tail (see `handoff/DEEP_PROMPT_DISTILLATION.md` §4).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PromptSegments {
+    pub stable_prefix: String,
+    pub dynamic_suffix: String,
+}
+
+impl PromptSegments {
+    #[must_use]
+    pub fn full(&self) -> String {
+        let mut out =
+            String::with_capacity(self.stable_prefix.len() + self.dynamic_suffix.len());
+        out.push_str(&self.stable_prefix);
+        out.push_str(&self.dynamic_suffix);
+        out
+    }
+
+    #[must_use]
+    pub fn stable_len(&self) -> usize {
+        self.stable_prefix.len()
+    }
+}
+
+/// Fingerprint stable prefix bytes for session prefix-cache telemetry (not cryptographic).
+#[must_use]
+pub fn hash_stable_prefix(stable: &str) -> u64 {
+    use std::hash::{Hash, Hasher};
+    let mut h = std::collections::hash_map::DefaultHasher::new();
+    stable.hash(&mut h);
+    h.finish()
+}
+
 pub struct PromptBuilder;
 
 impl PromptBuilder {
@@ -282,6 +314,124 @@ impl PromptBuilder {
         prompt.push_str("\n\n请以角色身份自然地回复，保持一致的性格和语气。");
         prompt
     }
+
+    /// Deep + Ollama prefix-cache path: stable sections first (Tier0 · worldview · anchor · guardrails · scene).
+    #[must_use]
+    pub fn build_prompt_segments(input: &PromptInput<'_>) -> PromptSegments {
+        let mut stable_prefix = String::new();
+        stable_prefix.push_str(&Self::build_core_hard_constraint(
+            input.role,
+            input.persona_override,
+        ));
+        if !input.worldview_snippet.trim().is_empty() {
+            stable_prefix.push_str("\n\n【世界观设定】（角色包知识；与闲聊记忆冲突时以本段为权威事实，但不得覆盖【用户身份】与安全红线。）\n");
+            stable_prefix.push_str(input.worldview_snippet.trim());
+            stable_prefix.push_str("\n\n");
+        }
+        if !input.reply_quality_anchor.trim().is_empty() {
+            stable_prefix.push_str(input.reply_quality_anchor.trim());
+            stable_prefix.push_str("\n\n");
+        }
+        stable_prefix.push_str(KERNEL_DIALOGUE_GUARDRAILS);
+        stable_prefix.push_str("\n\n");
+        let scene_block = Self::build_scene_constraint_block(input);
+        if !scene_block.is_empty() {
+            stable_prefix.push_str(&scene_block);
+        }
+
+        let mut dynamic_suffix = String::new();
+        dynamic_suffix.push_str("\n\n---\n底线区块\n");
+        dynamic_suffix.push_str(PROMPT_BLOCK_GUIDE);
+        dynamic_suffix.push_str("\n\n");
+        let supplement = Self::build_personality_supplement(
+            input.role,
+            input.personality,
+            input.mutable_personality,
+        );
+        if !supplement.is_empty() {
+            dynamic_suffix.push_str(&supplement);
+            dynamic_suffix.push_str("\n\n");
+        }
+
+        dynamic_suffix.push_str("---\n语气区块\n\n");
+        let status = Self::build_character_status_summary(input);
+        if !status.is_empty() {
+            dynamic_suffix.push_str(&status);
+            dynamic_suffix.push_str("\n\n");
+        }
+        if !input.relation_transition_hint.trim().is_empty() {
+            dynamic_suffix.push_str("【关系过渡】\n");
+            dynamic_suffix.push_str(input.relation_transition_hint.trim());
+            dynamic_suffix.push_str("\n\n");
+        }
+        dynamic_suffix.push_str(&Self::build_event_relation_state(
+            input.relation_before,
+            input.favorability_before,
+            input.relation_preview,
+            input.favorability_preview,
+            input.event_type,
+            input.impact_factor,
+        ));
+        dynamic_suffix.push_str("\n\n");
+        if let Some(boundary_guide) = Self::build_boundary_tone_guideline(
+            input.personality,
+            input.relation_before,
+            input.relation_preview,
+        ) {
+            dynamic_suffix.push_str(&boundary_guide);
+            dynamic_suffix.push_str("\n\n");
+        }
+        dynamic_suffix.push_str(&Self::build_current_state(
+            input.personality,
+            input.user_emotion,
+        ));
+        dynamic_suffix.push_str("\n\n");
+        if !input
+            .previous_complex_emotion_narrative_hint
+            .trim()
+            .is_empty()
+        {
+            dynamic_suffix.push_str(
+                "【复杂情感叙事提示】（上一回合内置分析输出；自然落实，勿向用户复述本段标题或元信息）\n",
+            );
+            dynamic_suffix.push_str(input.previous_complex_emotion_narrative_hint.trim());
+            dynamic_suffix.push_str("\n\n");
+        }
+
+        dynamic_suffix.push_str("---\n内容区块\n\n");
+        if !input.memories.is_empty() {
+            dynamic_suffix.push_str(&Self::build_memory_context(input.memories));
+            dynamic_suffix.push_str("\n\n");
+        }
+        Self::push_user_identity_section(&mut dynamic_suffix, input);
+        if !input.life_context_line.is_empty() {
+            dynamic_suffix.push_str("【日程推断】\n");
+            dynamic_suffix.push_str(input.life_context_line.trim());
+            dynamic_suffix.push_str("\n\n");
+        }
+        for section in input.extra_sections {
+            if section.title.trim().is_empty() && section.body.trim().is_empty() {
+                continue;
+            }
+            if !section.title.trim().is_empty() {
+                dynamic_suffix.push('【');
+                dynamic_suffix.push_str(section.title.trim());
+                dynamic_suffix.push_str("】\n");
+            }
+            if !section.body.trim().is_empty() {
+                dynamic_suffix.push_str(section.body.trim());
+                dynamic_suffix.push_str("\n\n");
+            }
+        }
+        dynamic_suffix.push_str(&format!("用户说: {}", input.user_input));
+        dynamic_suffix.push_str("\n\n请以角色身份自然地回复，保持一致的性格和语气。");
+
+        PromptSegments {
+            stable_prefix,
+            dynamic_suffix,
+        }
+    }
+
     #[must_use]
     pub fn build_simple_prompt(role_name: &str, user_input: &str) -> String {
         format!("你是{}。用户说: {}\n请自然地回复。", role_name, user_input)

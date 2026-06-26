@@ -469,6 +469,10 @@ mod persist_non_profile_tests {
             prompt: String::new(),
             favor_delta: 0.0,
             relation_after: RelationState::Stranger,
+            prompt_stable_hash: None,
+            prompt_stable_len: None,
+            prefix_cache_expected_hit: None,
+            use_ollama_prefix_opts: false,
         }
     }
 

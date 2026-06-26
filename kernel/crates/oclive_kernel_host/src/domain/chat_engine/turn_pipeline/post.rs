@@ -3,7 +3,9 @@
 use crate::domain::chat_llm_fallback::{fallback_reply_for_llm_failure, FallbackReplyContext};
 use crate::domain::chat_turn_rules::{soft_append_guard, strip_hallucination_tokens};
 use crate::domain::policy::PolicyContext;
+use crate::domain::host_profile::bench_telemetry_enabled;
 use crate::domain::slot_runner::SlotRunner;
+use crate::infrastructure::ollama_client::OllamaGenerateOpts;
 use crate::models::dto::SendMessageResponse;
 use crate::models::{Event, PersonalitySource, Role};
 use std::sync::Arc;
@@ -60,20 +62,26 @@ pub(crate) async fn run_main_llm(
     let t_main_llm = Instant::now();
     let mut main_llm_fallback = false;
     let mut llm_fallback_reason = None;
-    let reply_raw = match SlotRunner::generate_llm(
+    let ollama = ctx.state.ollama.as_deref();
+    let ollama_opts = middle
+        .use_ollama_prefix_opts
+        .then(OllamaGenerateOpts::deep_prefix_cache);
+    let reply_out = match SlotRunner::generate_llm(
         pl,
         pre.memory.ollama_model.as_str(),
         &middle.prompt,
+        ollama,
+        ollama_opts.as_ref(),
     )
     .await
     {
-        Ok(s) => s,
+        Ok(out) => out,
         Err(e) => {
             let reason = e.to_frontend_error();
             tracing::warn!("{path_label} LLM generate failed, fallback: {reason}");
             main_llm_fallback = true;
             llm_fallback_reason = Some(reason);
-            fallback_reply_for_llm_failure(
+            let fallback = fallback_reply_for_llm_failure(
                 role,
                 &middle.personality,
                 user_message,
@@ -84,9 +92,29 @@ pub(crate) async fn run_main_llm(
                     event_type: &middle.ai_event_type,
                     impact_factor: middle.ai_impact_factor_final,
                 },
-            )
+            );
+            crate::domain::slot_runner::LlmGenerateOutcome {
+                reply: fallback,
+                prompt_eval_ms: None,
+            }
         }
     };
+    if let (Some(hash), Some(len), Some(hit)) = (
+        middle.prompt_stable_hash,
+        middle.prompt_stable_len,
+        middle.prefix_cache_expected_hit,
+    ) {
+        tracing::debug!(
+            target: "oclive_turn",
+            prefix_hash = hash,
+            stable_len = len,
+            cache_expected_hit = hit,
+            prompt_eval_ms = ?reply_out.prompt_eval_ms,
+            "deep prefix cache llm metrics"
+        );
+    }
+    let reply_raw = reply_out.reply;
+    let llm_prompt_eval_ms = reply_out.prompt_eval_ms;
     let main_llm_ms = t_main_llm.elapsed().as_millis() as u64;
     let reply = strip_hallucination_tokens(&soft_append_guard(
         &reply_raw,
@@ -100,6 +128,7 @@ pub(crate) async fn run_main_llm(
         main_llm_fallback,
         llm_fallback_reason,
         main_llm_ms,
+        llm_prompt_eval_ms,
     })
 }
 
@@ -116,15 +145,21 @@ pub(crate) async fn run_main_llm_stream(
     let t_main_llm = Instant::now();
     let mut main_llm_fallback = false;
     let mut llm_fallback_reason = None;
-    let reply_raw = match SlotRunner::generate_llm_stream(
+    let ollama = ctx.state.ollama.as_deref();
+    let ollama_opts = middle
+        .use_ollama_prefix_opts
+        .then(OllamaGenerateOpts::deep_prefix_cache);
+    let reply_out = match SlotRunner::generate_llm_stream(
         pl,
         pre.memory.ollama_model.as_str(),
         &middle.prompt,
         Arc::clone(&on_token),
+        ollama,
+        ollama_opts.as_ref(),
     )
     .await
     {
-        Ok(s) => s,
+        Ok(out) => out,
         Err(e) => {
             let reason = e.to_frontend_error();
             tracing::warn!("{path_label} LLM generate_stream failed, fallback: {reason}");
@@ -143,9 +178,14 @@ pub(crate) async fn run_main_llm_stream(
                 },
             );
             on_token(fallback.as_str());
-            fallback
+            crate::domain::slot_runner::LlmGenerateOutcome {
+                reply: fallback,
+                prompt_eval_ms: None,
+            }
         }
     };
+    let reply_raw = reply_out.reply;
+    let llm_prompt_eval_ms = reply_out.prompt_eval_ms;
     let main_llm_ms = t_main_llm.elapsed().as_millis() as u64;
     let reply = strip_hallucination_tokens(&soft_append_guard(
         &reply_raw,
@@ -159,6 +199,7 @@ pub(crate) async fn run_main_llm_stream(
         main_llm_fallback,
         llm_fallback_reason,
         main_llm_ms,
+        llm_prompt_eval_ms,
     })
 }
 
@@ -331,6 +372,11 @@ fn assemble_send_message_response(ctx: &PostLlmCtx<'_>) -> SendMessageResponse {
         chat_persist_error: chat_ids.chat_persist_error.clone(),
         dual_core_degraded: (*dual_core_degraded).then_some(true),
         raw_reply: raw_reply.clone(),
+        llm_prompt_eval_ms: if bench_telemetry_enabled() {
+            llm.llm_prompt_eval_ms
+        } else {
+            None
+        },
     }
 }
 

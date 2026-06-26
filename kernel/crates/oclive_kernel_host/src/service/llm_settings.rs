@@ -1,7 +1,7 @@
 //! LLM / model settings impls shared by HTTP routes and Tauri invoke.
 
 use crate::command_error::CommandError;
-use crate::domain::effective_llm_model::resolve_effective_ollama_model;
+use crate::domain::effective_llm_model::{is_usable_ollama_model_id, resolve_effective_ollama_model};
 use crate::domain::user_llm_env::{
     apply_user_llm_env, cloud_api_token_configured, load_remote_token, ollama_base_from_db_or_env,
     KEY_CLOUD_STYLE, KEY_CLOUD_VENDOR, KEY_GLOBAL_OLLAMA_MODEL, KEY_LLM_PROVIDER, KEY_OLLAMA_BASE,
@@ -87,6 +87,21 @@ pub async fn get_llm_user_settings_impl(
     let ns = session_namespace(role_id, session_id);
     state.db_manager.ensure_role_runtime(ns.as_str()).await?;
 
+    let mut session_ollama_model = state
+        .db_manager
+        .get_session_ollama_model_override(ns.as_str())
+        .await?;
+    if session_ollama_model
+        .as_deref()
+        .is_some_and(|m| !is_usable_ollama_model_id(m))
+    {
+        state
+            .db_manager
+            .clear_session_ollama_model_override(ns.as_str())
+            .await?;
+        session_ollama_model = None;
+    }
+
     let effective = resolve_effective_ollama_model(state, role.as_ref(), ns.as_str()).await?;
     let plugin_backends_effective =
         state.effective_plugin_backends_for_session(role.as_ref(), ns.as_str());
@@ -113,10 +128,6 @@ pub async fn get_llm_user_settings_impl(
         "Ollama unreachable".to_string()
     };
 
-    let session_ollama_model = state
-        .db_manager
-        .get_session_ollama_model_override(ns.as_str())
-        .await?;
     let pack_ollama_model = role.ollama_model.clone();
 
     let remote_url = state
@@ -356,7 +367,7 @@ async fn apply_session_model_override(
 ) -> Result<(), CommandError> {
     if let Some(model) = model {
         let t = model.trim();
-        if t.is_empty() {
+        if t.is_empty() || !is_usable_ollama_model_id(t) {
             state
                 .db_manager
                 .clear_session_ollama_model_override(ns)
@@ -581,6 +592,9 @@ pub struct GlobalOllamaModelDto {
 #[serde(rename_all = "camelCase")]
 pub struct SetGlobalOllamaModelRequest {
     pub model: String,
+    /// When set, clears per-role session model override so global default applies.
+    #[serde(default)]
+    pub role_id: Option<String>,
 }
 
 /// # Errors
@@ -610,6 +624,18 @@ pub async fn set_global_ollama_model_impl(
         .upsert_app_setting(KEY_GLOBAL_OLLAMA_MODEL, t)
         .await?;
     state.set_global_ollama_model_in_memory(t.to_string());
+    if let Some(role_id) = req
+        .role_id
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+    {
+        let ns = session_namespace(role_id, None);
+        state
+            .db_manager
+            .clear_session_ollama_model_override(ns.as_str())
+            .await?;
+    }
     Ok(GlobalOllamaModelDto {
         model: t.to_string(),
     })

@@ -2,19 +2,23 @@
 
 use crate::domain::complex_emotion::ComplexEmotionOutput;
 use crate::domain::event_impact_ai::estimate_event_impact_rules_only;
-use crate::domain::host_profile::DISTRO_CONCISE_PROMPT_OVERLAY;
+use crate::domain::host_profile::{prompt_prefix_cache_effective, DISTRO_CONCISE_PROMPT_OVERLAY};
 use crate::domain::life_schedule::{format_life_prompt_line, pick_life_state};
 use crate::domain::model_tier::{
-    persona_override_for_source, resolve_model_tier, resolve_persona_source,
+    persona_override_for_source, resolve_model_tier, resolve_persona_source, PersonaSource,
 };
 use crate::domain::personality_engine::PersonalityEngine;
-use crate::domain::prompt_builder::{effective_reply_quality_anchor, PromptInput};
+use crate::domain::prompt_builder::{
+    effective_reply_quality_anchor, hash_stable_prefix, PromptInput,
+};
 use crate::domain::slot_runner::SlotRunner;
 use crate::domain::turn_thinking::{resolve_turn_thinking, TurnThinkingMode};
+use crate::infrastructure::storage::pick_llm_backend_env_override;
 use crate::models::knowledge::KnowledgeIndex;
 use crate::models::Memory;
-use crate::models::PersonalitySource;
+use crate::models::{LlmBackend, PersonalitySource};
 
+use crate::state::SessionCache;
 use super::super::turn_context::TurnContext;
 use super::super::turn_error::TurnResult;
 use super::{
@@ -216,44 +220,97 @@ pub(crate) async fn run_middle(
         ?persona_source,
         "persona_source resolved"
     );
-    let prompt = STAGES
-        .stage(ChatStage::BuildPrompt, async {
-            SlotRunner::build_prompt(
-                pl,
-                &PromptInput {
-                    role,
-                    personality: &personality,
-                    memories: &prompt_memories,
-                    user_input: user_message,
-                    user_emotion: pre.hints.user_emotion_prompt.as_str(),
-                    user_relation_id: pre.relation.user_relation_key.as_str(),
-                    relation_hint: pre.relation.relation_hint.as_str(),
-                    user_identity_template: pre.relation.user_identity_template.as_str(),
-                    user_identity_id: pre.relation.user_identity_id.as_str(),
-                    relation_before: pre.relation.relation_before.as_str(),
-                    favorability_before: pre.relation.favorability_before,
-                    relation_preview: relation_after.as_str(),
-                    favorability_preview: (pre.relation.favorability_before + favor_delta)
-                        .clamp(0.0, 100.0),
-                    event_type: &ai_event_type,
-                    impact_factor: ai_impact_factor_final,
-                    scene_label: &scene_label,
-                    scene_detail: scene_detail_buf.as_str(),
-                    topic_hint_line: &topic_line,
-                    life_context_line: life_context_line.as_str(),
-                    worldview_snippet: worldview_snippet.as_str(),
-                    mutable_personality: pre.memory.mutable_for_prompt.as_str(),
-                    reply_quality_anchor: effective_reply_quality_anchor(role),
-                    previous_complex_emotion_narrative_hint: complex_hint,
-                    host_prompt_overlay: host_overlay,
-                    host_state_expression_hint: host_state_hint,
-                    relation_transition_hint: pre.relation.relation_transition_hint.as_str(),
-                    extra_sections: &[],
-                    persona_override,
-                },
-            )
-        })
-        .await?;
+
+    let prompt_input = PromptInput {
+        role,
+        personality: &personality,
+        memories: &prompt_memories,
+        user_input: user_message,
+        user_emotion: pre.hints.user_emotion_prompt.as_str(),
+        user_relation_id: pre.relation.user_relation_key.as_str(),
+        relation_hint: pre.relation.relation_hint.as_str(),
+        user_identity_template: pre.relation.user_identity_template.as_str(),
+        user_identity_id: pre.relation.user_identity_id.as_str(),
+        relation_before: pre.relation.relation_before.as_str(),
+        favorability_before: pre.relation.favorability_before,
+        relation_preview: relation_after.as_str(),
+        favorability_preview: (pre.relation.favorability_before + favor_delta).clamp(0.0, 100.0),
+        event_type: &ai_event_type,
+        impact_factor: ai_impact_factor_final,
+        scene_label: &scene_label,
+        scene_detail: scene_detail_buf.as_str(),
+        topic_hint_line: &topic_line,
+        life_context_line: life_context_line.as_str(),
+        worldview_snippet: worldview_snippet.as_str(),
+        mutable_personality: pre.memory.mutable_for_prompt.as_str(),
+        reply_quality_anchor: effective_reply_quality_anchor(role),
+        previous_complex_emotion_narrative_hint: complex_hint,
+        host_prompt_overlay: host_overlay,
+        host_state_expression_hint: host_state_hint,
+        relation_transition_hint: pre.relation.relation_transition_hint.as_str(),
+        extra_sections: &[],
+        persona_override,
+    };
+
+    let effective_llm_is_ollama = match pick_llm_backend_env_override() {
+        Some(LlmBackend::Ollama) => true,
+        Some(_) => false,
+        None => ctx.effective_backends.llm == LlmBackend::Ollama,
+    };
+    let use_prefix_segments = thinking.mode == TurnThinkingMode::Deep
+        && prompt_prefix_cache_effective(&state.host_profile)
+        && effective_llm_is_ollama;
+
+    let (
+        prompt,
+        prompt_stable_hash,
+        prompt_stable_len,
+        prefix_cache_expected_hit,
+        use_ollama_prefix_opts,
+    ) = if use_prefix_segments {
+        let segments = STAGES
+            .stage(ChatStage::BuildPrompt, async {
+                SlotRunner::build_prompt_segments(pl, &prompt_input)
+            })
+            .await?;
+        let stable_hash = hash_stable_prefix(&segments.stable_prefix);
+        let stable_len = segments.stable_len();
+        let cache_key = SessionCache::prefix_cache_key(
+            ctx.srid,
+            pre.memory.ollama_model.as_str(),
+            match persona_source {
+                PersonaSource::DeepCapsule => "deep_capsule",
+                PersonaSource::FullCore => "full_core",
+            },
+            scene_id,
+            pre.relation.user_identity_id.as_str(),
+        );
+        let expected_hit =
+            state
+                .session_cache
+                .observe_prefix_cache(cache_key, stable_hash, stable_len);
+        tracing::debug!(
+            target: "oclive_turn",
+            prefix_hash = stable_hash,
+            stable_len,
+            cache_expected_hit = expected_hit,
+            "deep prompt prefix cache"
+        );
+        (
+            segments.full(),
+            Some(stable_hash),
+            Some(stable_len),
+            Some(expected_hit),
+            true,
+        )
+    } else {
+        let prompt = STAGES
+            .stage(ChatStage::BuildPrompt, async {
+                SlotRunner::build_prompt(pl, &prompt_input)
+            })
+            .await?;
+        (prompt, None, None, None, false)
+    };
 
     Ok(MiddleOutput {
         complex_emotion_out,
@@ -265,5 +322,9 @@ pub(crate) async fn run_middle(
         prompt,
         favor_delta,
         relation_after,
+        prompt_stable_hash,
+        prompt_stable_len,
+        prefix_cache_expected_hit,
+        use_ollama_prefix_opts,
     })
 }

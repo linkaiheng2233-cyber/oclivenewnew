@@ -1127,3 +1127,138 @@ fn persona_override_replaces_core_personality_in_tier0() {
     assert!(prompt.contains("CAPSULE_TEXT"));
     assert!(!prompt.contains("FULL_CORE_TEXT"));
 }
+
+fn sample_prompt_input<'a>(
+    role: &'a Role,
+    personality: &'a PersonalityVector,
+    memories: &'a [Memory],
+    user_input: &'a str,
+    scene_label: &'a str,
+    scene_detail: &'a str,
+    persona_override: Option<&'a str>,
+) -> PromptInput<'a> {
+    PromptInput {
+        role,
+        personality,
+        memories,
+        user_input,
+        user_emotion: "happy",
+        user_relation_id: "friend",
+        relation_hint: "你们是朋友。",
+        relation_before: "Friend",
+        favorability_before: 55.0,
+        relation_preview: "CloseFriend",
+        favorability_preview: 60.0,
+        event_type: &EventType::Praise,
+        impact_factor: 0.7,
+        scene_label,
+        scene_detail,
+        topic_hint_line: "在「家」下，你们可能会多聊日常。",
+        life_context_line: "",
+        worldview_snippet: "世界观测试片段",
+        mutable_personality: "",
+        reply_quality_anchor: effective_reply_quality_anchor(role),
+        previous_complex_emotion_narrative_hint: "",
+        user_identity_template: "",
+        user_identity_id: "",
+        host_prompt_overlay: "",
+        host_state_expression_hint: "",
+        relation_transition_hint: "",
+        extra_sections: &[],
+        persona_override,
+    }
+}
+
+#[test]
+fn build_prompt_segments_stable_is_full_prefix() {
+    let role = create_test_role();
+    let personality = create_test_personality();
+    let memories = vec![create_test_memory()];
+    let input = sample_prompt_input(
+        &role,
+        &personality,
+        &memories,
+        "Hello",
+        "家",
+        "客厅灯暖洋洋的，适合闲聊。",
+        None,
+    );
+    let segments = PromptBuilder::build_prompt_segments(&input);
+    let full = segments.full();
+    assert!(full.starts_with(segments.stable_prefix.as_str()));
+    assert_eq!(full.len(), segments.stable_len() + segments.dynamic_suffix.len());
+    assert!(full.contains("Hello"));
+    assert!(full.contains("世界观测试片段"));
+    assert!(full.contains("【对话硬约束】"));
+    assert!(full.contains("客厅灯暖洋洋"));
+}
+
+#[test]
+fn build_prompt_segments_stable_stable_across_turns_same_scene() {
+    let role = create_test_role();
+    let personality = create_test_personality();
+    let memories = vec![create_test_memory()];
+    let input1 = sample_prompt_input(
+        &role,
+        &personality,
+        &memories,
+        "第一句",
+        "家",
+        "客厅",
+        None,
+    );
+    let input2 = sample_prompt_input(
+        &role,
+        &personality,
+        &memories,
+        "第二句",
+        "家",
+        "客厅",
+        None,
+    );
+    let s1 = PromptBuilder::build_prompt_segments(&input1);
+    let s2 = PromptBuilder::build_prompt_segments(&input2);
+    assert_eq!(s1.stable_prefix, s2.stable_prefix);
+    assert_ne!(s1.dynamic_suffix, s2.dynamic_suffix);
+}
+
+#[test]
+fn build_prompt_segments_stable_changes_on_scene_switch() {
+    let role = create_test_role();
+    let personality = create_test_personality();
+    let home = sample_prompt_input(
+        &role,
+        &personality,
+        &[],
+        "hi",
+        "家",
+        "客厅",
+        None,
+    );
+    let vscode = sample_prompt_input(
+        &role,
+        &personality,
+        &[],
+        "hi",
+        "VS Code",
+        "结对编程",
+        None,
+    );
+    let s_home = PromptBuilder::build_prompt_segments(&home);
+    let s_vscode = PromptBuilder::build_prompt_segments(&vscode);
+    assert_ne!(s_home.stable_prefix, s_vscode.stable_prefix);
+}
+
+#[test]
+fn build_prompt_segments_stable_changes_on_persona_override() {
+    let mut role = create_test_role();
+    role.core_personality = "FULL_CORE".into();
+    let personality = create_test_personality();
+    let full = sample_prompt_input(&role, &personality, &[], "hi", "", "", None);
+    let capsule = sample_prompt_input(&role, &personality, &[], "hi", "", "", Some("CAPSULE"));
+    let s_full = PromptBuilder::build_prompt_segments(&full);
+    let s_capsule = PromptBuilder::build_prompt_segments(&capsule);
+    assert_ne!(s_full.stable_prefix, s_capsule.stable_prefix);
+    assert!(s_capsule.stable_prefix.contains("CAPSULE"));
+    assert!(!s_capsule.stable_prefix.contains("FULL_CORE"));
+}

@@ -143,10 +143,10 @@ async fn dual_llm_slots_call_both_serially() {
     let pb = PluginBackends::default();
     let h = host_with_llm(llm);
     let pl = h.resolve_for_effective_backends(&pb, Some(&reg), None);
-    let reply = SlotRunner::generate_llm(&pl, "test-model", "hello")
+    let out = SlotRunner::generate_llm(&pl, "test-model", "hello", None, None)
         .await
         .expect("generate");
-    assert_eq!(reply, "from-mock");
+    assert_eq!(out.reply, "from-mock");
     assert_eq!(
         calls.load(Ordering::SeqCst),
         2,

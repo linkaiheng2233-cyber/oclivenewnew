@@ -141,8 +141,10 @@ async function measureBlockingOnce(base, rolePath, message, sceneId) {
     throw new Error(`chat HTTP ${res.status}: ${errText.slice(0, 400)}`)
   }
   const body = await res.json()
-  const reply = body?.data?.reply ?? body?.reply ?? ''
-  return { fullMs, replyLen: typeof reply === 'string' ? reply.length : 0 }
+  const data = body?.data ?? body
+  const reply = data?.reply ?? ''
+  const promptEvalMs = data?.llmPromptEvalMs ?? data?.llm_prompt_eval_ms ?? null
+  return { fullMs, replyLen: typeof reply === 'string' ? reply.length : 0, promptEvalMs }
 }
 
 async function measureOllamaDirectOnce(model, prompt) {
@@ -212,10 +214,33 @@ function printBlockingReport(report) {
   console.log(`  Full reply ms: min=${s.min.toFixed(0)} p50=${s.p50.toFixed(0)} p95=${s.p95.toFixed(0)} max=${s.max.toFixed(0)} mean=${s.mean.toFixed(0)}`)
 }
 
+function printDeepPrefillReport(rows) {
+  const evals = rows.map((r) => r.promptEvalMs).filter((v) => v != null)
+  if (!evals.length) {
+    console.log('\n=== Deep prefill (prompt_eval_ms) ===')
+    console.log('  NO prompt_eval_ms — set OCLIVE_BENCH_TELEMETRY=1 on API + prompt_prefix_cache=true')
+    return
+  }
+  const round1 = evals[0]
+  const rest = evals.slice(1)
+  const sRest = rest.length ? stats(rest) : null
+  console.log('\n=== Deep prefill (prompt_eval_ms via /chat blocking) ===')
+  evals.forEach((v, i) => console.log(`  Round ${i + 1}: ${v.toFixed(0)} ms`))
+  if (sRest) {
+    console.log(
+      `  Round 2–${evals.length} p50: ${sRest.p50.toFixed(0)} ms (vs round1 ${round1.toFixed(0)} ms)`,
+    )
+    const pass = sRest.p50 < round1
+    console.log(`  T3 gate (round2+ p50 < round1): ${pass ? 'PASS' : 'FAIL'}`)
+  }
+}
+
 async function main() {
   const base = arg('--base', 'http://127.0.0.1:8420').replace(/\/$/, '')
   const runs = Number(arg('--runs', '5'))
   const deepOnly = process.argv.includes('--deep-only')
+  const deepMulti = process.argv.includes('--deep-multi')
+  const benchTelemetry = process.argv.includes('--bench-telemetry')
   const profileKey = arg('--profile', 'desktop-latency')
   const repoRoot = resolveRepoRoot()
   const profileRel = PROFILE_PATHS[profileKey]
@@ -224,7 +249,7 @@ async function main() {
   }
   const profilePath = resolve(repoRoot, profileRel)
   const expectedDistroId = PROFILE_DISTRO_IDS[profileKey]
-  const message = deepOnly
+  const message = deepOnly || deepMulti
     ? arg(
         '--message',
         '我今天心情特别不好，想了很久要不要和你说…（认真）这件对我来说很重要，你别敷衍我，能多陪我说说话吗？我们好好聊聊。',
@@ -257,11 +282,33 @@ async function main() {
   console.log(`Role: ${rolePath}`)
   console.log(`Runs: ${runs} · Scene: ${sceneId} · Message: ${message}`)
   if (deepOnly) console.log('Mode: --deep-only (Turn Thinking Deep trigger)')
+  if (deepMulti) {
+    console.log('Mode: --deep-multi (5-round Deep prefill via prompt_eval_ms)')
+    console.log('  API env: OCLIVE_BENCH_TELEMETRY=1 · profile with prompt_prefix_cache=true')
+  }
+  if (benchTelemetry) console.log('Hint: also set OCLIVE_BENCH_TELEMETRY=1 on the API process')
   console.log(`Kernel: runtime=${healthBody.runtime_api_version ?? '?'} warnings=${(healthBody.startup_warnings ?? []).length}`)
 
   if (!skipSetup) {
     await prepareCoPresent(base, rolePath, sceneId)
     console.log(`Co-present setup: role+user scene=${sceneId} (together)`)
+  }
+
+  if (deepMulti) {
+    const deepRuns = Number(arg('--runs', '5'))
+    const rows = []
+    for (let i = 0; i < deepRuns; i++) {
+      rows.push(
+        await measureBlockingOnce(
+          base,
+          rolePath,
+          `${message} [deep-${i + 1}]`,
+          sceneId,
+        ),
+      )
+    }
+    printDeepPrefillReport(rows)
+    return
   }
 
   let settings = null

@@ -159,6 +159,7 @@ pub(super) async fn process_remote_stub(ctx: &TurnContext<'_>) -> Result<SendMes
         chat_persist_error: None,
         dual_core_degraded: None,
         raw_reply: None,
+        llm_prompt_eval_ms: None,
     })
 }
 

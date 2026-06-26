@@ -85,6 +85,10 @@ pub async fn apply_user_llm_env_from_db(db: &impl AppSettingsPort) -> crate::err
         _ => None,
     };
     let _guard = USER_LLM_ENV.lock();
+    let provider_for_env = settings
+        .get(KEY_LLM_PROVIDER)
+        .map(|s| s.trim().to_ascii_lowercase())
+        .unwrap_or_default();
     let env_pairs = [
         (KEY_OLLAMA_BASE, "OLLAMA_BASE_URL"),
         (KEY_REMOTE_URL, "OCLIVE_REMOTE_LLM_URL"),
@@ -92,6 +96,10 @@ pub async fn apply_user_llm_env_from_db(db: &impl AppSettingsPort) -> crate::err
         (KEY_CLOUD_STYLE, "OCLIVE_LLM_CLOUD_API_STYLE"),
     ];
     for (db_key, env_key) in env_pairs {
+        if db_key == KEY_REMOTE_URL && provider_for_env == "local" {
+            std::env::remove_var(env_key);
+            continue;
+        }
         match settings
             .get(db_key)
             .map(|s| s.trim())

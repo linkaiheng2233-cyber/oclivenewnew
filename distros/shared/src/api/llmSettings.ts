@@ -44,9 +44,12 @@ export async function getGlobalOllamaModel(): Promise<{ model: string }> {
   return invokeWithFriendlyError<{ model: string }>('get_global_ollama_model')
 }
 
-export async function setGlobalOllamaModel(model: string): Promise<{ model: string }> {
+export async function setGlobalOllamaModel(
+  model: string,
+  roleId?: string | null,
+): Promise<{ model: string }> {
   return invokeWithFriendlyError<{ model: string }>('set_global_ollama_model', {
-    req: { model: model.trim() },
+    req: { model: model.trim(), roleId: roleId?.trim() || null },
   })
 }
 
