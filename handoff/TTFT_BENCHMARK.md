@@ -81,6 +81,28 @@ $env:RUST_LOG = "oclive_turn=debug"
 | `OCLIVE_BENCH_TELEMETRY=1` | `SendMessageResponse.llm_prompt_eval_ms`（仅 bench，不进产品 UI） |
 | `node scripts/measure-ttft.mjs --deep-multi --runs 5` | 连续 5 轮 Deep **prefill**（`prompt_eval_ms`，非 stream TTFT） |
 | `OCLIVE_EVENT_IMPACT_LLM=0` | 环境变量等价关闭 event LLM |
+| `[turn_thinking] fast_persistence = "strong_only"` | Fast 闲聊不写 long_term / favor / evolution（强事件仍写）；见 Wave E |
+| `OCLIVE_FAST_PERSISTENCE=strong_only` | 环境变量强制 `strong_only`（覆盖 profile） |
+
+## Wave E · Fast 持久化分流（手测）
+
+**Profile**：`desktop-latency` 与正式 `desktop` 均已启用 `fast_persistence = "strong_only"`（RFC [`RFC_TURN_THINKING_PERSISTENCE.md`](../creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md)）。
+
+```powershell
+# 终端 1 — 表 1 环境 + desktop-latency profile（已含 fast_persistence）
+$env:OCLIVE_DISTRO_PROFILE = "D:\oclivenewnew\examples\distro-profiles\desktop-latency.oclive.toml"
+
+# 终端 2 — TTFT 回归（Fast 闲聊仍 ~243ms 量级）
+node scripts/measure-ttft.mjs --profile desktop-latency --runs 5 --ollama-model qwen2.5:7b
+```
+
+| 场景 | 期望 |
+|------|------|
+| Fast 10 轮闲聊（短句「你好」等） | stream TTFT p50 **维持** Wave B 量级（~243ms）；`role_runtime.favorability` 变化 **&lt; 0.01** |
+| 1 轮 Deep（≥80 字或高情绪句） | `long_term_memory` 有新增；好感可观测变化 |
+| Fast + 强事件（争吵/道歉等） | 仍写入 long_term / favor（与 `legacy` 一致） |
+
+**说明**：聊天 turns 每轮仍写（UI 可见）；本 Wave 只分流 long_term / favor / evolution。
 
 ## OOCP S15（流式 SSE smoke）
 

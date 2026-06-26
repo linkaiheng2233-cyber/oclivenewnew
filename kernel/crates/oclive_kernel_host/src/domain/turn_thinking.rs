@@ -1,8 +1,23 @@
 //! Per-turn Fast/Deep thinking mode for co-present latency (distro `HostProfile` + auto router).
 
-use crate::domain::host_profile::{HostProfile, TurnThinkingDefault};
+use crate::domain::host_profile::{
+    fast_persistence_effective, FastPersistenceMode, HostProfile, TurnThinkingDefault,
+};
 use crate::models::{Event, EventType};
 use oclive_kernel_runtime::domain::emotion_analyzer::EmotionResult;
+
+/// Strong dialogue events that still consolidate favor / long-term memory on Fast + `strong_only`.
+pub const STRONG_PERSISTENCE_EVENTS: [EventType; 4] = [
+    EventType::Quarrel,
+    EventType::Apology,
+    EventType::Confession,
+    EventType::Praise,
+];
+
+#[must_use]
+pub fn is_strong_persistence_event(event: EventType) -> bool {
+    STRONG_PERSISTENCE_EVENTS.contains(&event)
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TurnThinkingMode {
@@ -61,6 +76,45 @@ impl TurnThinkingPlan {
         } else {
             host.memory_retrieval.retrieval_limit()
         }
+    }
+
+    #[must_use]
+    pub fn applies_full_persistence(&self, host: &HostProfile, event: &EventType) -> bool {
+        if self.mode == TurnThinkingMode::Deep {
+            return true;
+        }
+        match fast_persistence_effective(host) {
+            FastPersistenceMode::Legacy => true,
+            FastPersistenceMode::StrongOnly => is_strong_persistence_event(*event),
+        }
+    }
+
+    #[must_use]
+    pub fn favor_delta_scale(&self, host: &HostProfile, event: &EventType) -> f64 {
+        if self.applies_full_persistence(host, event) {
+            1.0
+        } else {
+            0.0
+        }
+    }
+
+    #[must_use]
+    pub fn memory_importance_after_policy(
+        &self,
+        host: &HostProfile,
+        event: &EventType,
+        raw: f64,
+    ) -> f64 {
+        if self.applies_full_persistence(host, event) {
+            raw
+        } else {
+            0.0
+        }
+    }
+
+    #[must_use]
+    pub fn skip_mutable_profile_evolution(&self, host: &HostProfile, event: &EventType) -> bool {
+        !self.applies_full_persistence(host, event)
     }
 }
 
@@ -130,7 +184,9 @@ fn emotion_high_arousal(er: &EmotionResult) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::host_profile::{HostProfile, TurnThinkingDefault, TurnThinkingProfile};
+    use crate::domain::host_profile::{
+        FastPersistenceMode, HostProfile, TurnThinkingDefault, TurnThinkingProfile,
+    };
 
     fn test_host(default: TurnThinkingDefault) -> HostProfile {
         HostProfile {
@@ -139,6 +195,30 @@ mod tests {
                 ..TurnThinkingProfile::default()
             },
             ..HostProfile::default()
+        }
+    }
+
+    fn host_with_fast_persistence(mode: FastPersistenceMode) -> HostProfile {
+        HostProfile {
+            turn_thinking: TurnThinkingProfile {
+                fast_persistence: mode,
+                ..TurnThinkingProfile::default()
+            },
+            ..HostProfile::default()
+        }
+    }
+
+    fn fast_plan() -> TurnThinkingPlan {
+        TurnThinkingPlan {
+            mode: TurnThinkingMode::Fast,
+            reasons: vec![TurnThinkingReason::AutoCasual],
+        }
+    }
+
+    fn deep_plan() -> TurnThinkingPlan {
+        TurnThinkingPlan {
+            mode: TurnThinkingMode::Deep,
+            reasons: vec![TurnThinkingReason::AutoLongMessage],
         }
     }
 
@@ -184,5 +264,61 @@ mod tests {
         host.event_impact_llm = true;
         let plan = resolve_turn_thinking(&host, "hi", &neutral_emotion(), &[]);
         assert!(!plan.use_event_impact_llm(&host));
+    }
+
+    #[test]
+    fn strong_only_fast_ignore_skips_persistence() {
+        let host = host_with_fast_persistence(FastPersistenceMode::StrongOnly);
+        let plan = fast_plan();
+        assert!(!plan.applies_full_persistence(&host, &EventType::Ignore));
+        assert_eq!(plan.favor_delta_scale(&host, &EventType::Ignore), 0.0);
+        assert_eq!(
+            plan.memory_importance_after_policy(&host, &EventType::Ignore, 0.8),
+            0.0
+        );
+        assert!(plan.skip_mutable_profile_evolution(&host, &EventType::Ignore));
+    }
+
+    #[test]
+    fn strong_only_fast_quarrel_persists() {
+        let host = host_with_fast_persistence(FastPersistenceMode::StrongOnly);
+        let plan = fast_plan();
+        assert!(plan.applies_full_persistence(&host, &EventType::Quarrel));
+        assert_eq!(plan.favor_delta_scale(&host, &EventType::Quarrel), 1.0);
+        assert_eq!(
+            plan.memory_importance_after_policy(&host, &EventType::Quarrel, 0.8),
+            0.8
+        );
+        assert!(!plan.skip_mutable_profile_evolution(&host, &EventType::Quarrel));
+    }
+
+    #[test]
+    fn deep_ignore_still_persists() {
+        let host = host_with_fast_persistence(FastPersistenceMode::StrongOnly);
+        let plan = deep_plan();
+        assert!(plan.applies_full_persistence(&host, &EventType::Ignore));
+        assert_eq!(plan.favor_delta_scale(&host, &EventType::Ignore), 1.0);
+    }
+
+    #[test]
+    fn legacy_fast_ignore_still_persists() {
+        let host = host_with_fast_persistence(FastPersistenceMode::Legacy);
+        let plan = fast_plan();
+        assert!(plan.applies_full_persistence(&host, &EventType::Ignore));
+        assert_eq!(
+            plan.memory_importance_after_policy(&host, &EventType::Ignore, 0.5),
+            0.5
+        );
+    }
+
+    #[test]
+    fn strong_persistence_events_match_rfc_whitelist() {
+        assert!(is_strong_persistence_event(EventType::Quarrel));
+        assert!(is_strong_persistence_event(EventType::Apology));
+        assert!(is_strong_persistence_event(EventType::Confession));
+        assert!(is_strong_persistence_event(EventType::Praise));
+        assert!(!is_strong_persistence_event(EventType::Ignore));
+        assert!(!is_strong_persistence_event(EventType::Joke));
+        assert!(!is_strong_persistence_event(EventType::Complaint));
     }
 }

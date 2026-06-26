@@ -6,6 +6,7 @@
 
 ### Added
 
+- **Wave E · Turn Thinking 持久化分流**：`[turn_thinking] fast_persistence = "strong_only"`（默认 `legacy`）；Fast 闲聊不写 long_term / favor / evolution；**Quarrel / Apology / Confession / Praise** 仍正常写入；RFC [`creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md`](creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md)。
 - **Chat Pro 流式取消**：新消息发出时 `AbortController` 打断上一轮 SSE；清理悬空 `streaming` 气泡。
 - **Chat Pro 流式开关**：设置 → 常规 → 高级「流式回复」（`localStorage` `oclive.chat.streamEnabled`，默认开启）。
 - **Wave D · Deep persona capsule**：`prompts/deep_capsule.txt`（≤2500 字）· `meta.deep_capsule_enabled` · Small+Deep 时 `PromptBuilder` 用 capsule 替代全量 Tier0；mumu 样例已启用。
@@ -24,6 +25,7 @@
 
 ### Changed
 
+- **Chat Pro 默认 profile**：`desktop.oclive.toml` 启用 `fast_persistence = "strong_only"`（Fast 闲聊不涨好感/不进长期记忆；强关系事件仍巩固）。旧 session 数据不回滚。
 - **仓库物理布局**：根 `crates/`、`src-tauri/`、`src/` 分别迁至 `kernel/crates/`、`distros/desktop-tauri/`、`distros/{shared,chat-pro,theater}/`；根 `npm run tauri:dev` / `tauri:dev:theater` 行为不变。
 - **Theater 文档 SSOT 扫尾**：`theater_director` 由「拟/Deferred」统一为**已交付（2026-06）**（DISTRO_DEFAULT_PLUGINS · ARCHITECTURE · NAMING · ROADMAP §7 · IA）；[`TECHNICAL_DEBT_INVENTORY.md`](handoff/TECHNICAL_DEBT_INVENTORY.md) 轮次 16；验收链指向 [`PLAYTEST_MATRIX.md`](handoff/theater/PLAYTEST_MATRIX.md)。
 - **hybrid 聊天镜像**：`rebuild_mirror_best_effort` / `delete_mirror_best_effort`（K-ROBUST-01）。

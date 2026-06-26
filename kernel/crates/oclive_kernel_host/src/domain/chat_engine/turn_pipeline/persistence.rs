@@ -450,6 +450,10 @@ mod persist_non_profile_tests {
 
     fn middle_with_personality(personality: PersonalityVector) -> MiddleOutput {
         MiddleOutput {
+            turn_thinking: crate::domain::turn_thinking::TurnThinkingPlan {
+                mode: crate::domain::turn_thinking::TurnThinkingMode::Deep,
+                reasons: vec![],
+            },
             complex_emotion_out: ComplexEmotionOutput {
                 source: "builtin".to_string(),
                 narrative_hint: String::new(),

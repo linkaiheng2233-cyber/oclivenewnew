@@ -22,6 +22,7 @@ auto_deep_min_chars = 80
 fast_knowledge_limit = 4
 fast_memory_cap = 4
 prompt_prefix_cache = true
+fast_persistence = "strong_only"
 
 [slots]
 complex_emotion = "on"

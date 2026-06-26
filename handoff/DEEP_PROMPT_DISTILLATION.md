@@ -11,6 +11,7 @@
 | 路径 | 现状（2026-06） | 下一档目标 |
 |------|-----------------|------------|
 | **Fast**（Auto 闲聊） | co-present TTFT p50 **~243ms**（mumu · qwen2.5:7b · `desktop-latency`） | 维持；边际收益小（Ollama 直连下限 ~130ms） |
+| **Fast 巩固**（Wave E） | Fast 闲聊仍写 favor / long_term（`legacy`） | **`strong_only`**：闲聊不写 long_term / favor / evolution；强事件仍写 · RFC [`RFC_TURN_THINKING_PERSISTENCE.md`](../rfc/RFC_TURN_THINKING_PERSISTENCE.md) |
 | **Deep**（高情绪 / 长句 / 事件链） | 仍走 **全量** `PromptBuilder` + 可选 event LLM + 全记忆/知识/场景 enrichment | **离线蒸馏短 prompt（persona capsule）** + **稳定前缀 KV 延续**，压 Deep TTFT 与 prefill 成本 |
 
 **产品原则**：蒸馏产物 **离线生成、包内分发**（编写器 / CLI），**禁止**在 `process_message` 主链再调 LLM 做「运行时压缩」。

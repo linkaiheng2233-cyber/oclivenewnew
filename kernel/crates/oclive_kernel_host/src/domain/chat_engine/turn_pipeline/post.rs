@@ -253,6 +253,11 @@ async fn analyze_bot_emotion_and_policy(
     } else {
         0.0
     };
+    let memory_importance = middle.turn_thinking.memory_importance_after_policy(
+        &state.host_profile,
+        &middle.ai_event_type,
+        memory_importance,
+    );
     let mut recent_events = Vec::with_capacity(pre.memory.recent_events_for_event.len() + 1);
     recent_events.push(event.clone());
     recent_events.extend(pre.memory.recent_events_for_event.iter().cloned());
@@ -279,6 +284,12 @@ fn spawn_profile_evolution_after_llm(
     reply: &str,
 ) {
     if role_arc.evolution_config.personality_source != PersonalitySource::Profile {
+        return;
+    }
+    if middle
+        .turn_thinking
+        .skip_mutable_profile_evolution(&state.host_profile, &middle.ai_event_type)
+    {
         return;
     }
     let impact_scaled = (middle.ai_impact_factor_final * pre.memory.event_runtime).clamp(-1.0, 1.0);

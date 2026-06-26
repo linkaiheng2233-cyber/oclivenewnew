@@ -130,6 +130,7 @@ favor_low  = "…"              # optional; favor < 40
 | `fast_memory_cap` | usize | Fast 轮注入 prompt 的记忆条数上限 |
 | `deep_capsule` | bool（**Wave D**） | 发行版强制开/关 Deep capsule；`true` 且角色含 `prompts/deep_capsule.txt` + `meta.deep_capsule_enabled` 时，**Small+Deep** 用 capsule 替代全量 `core_personality` |
 | `prompt_prefix_cache` | bool（**Wave D-T3**） | `true` 时 Deep+Ollama 走 `build_prompt_segments`（稳定前缀在前）+ `keep_alive`；亦可用 `OCLIVE_PROMPT_PREFIX_CACHE=1` 覆盖。bench 见 [`handoff/TTFT_BENCHMARK.md`](../../handoff/TTFT_BENCHMARK.md) `--deep-multi` |
+| `fast_persistence` | `"legacy"` \| `"strong_only"`（**Wave E**） | 默认 **`legacy`**（Fast 仍全量巩固）；`strong_only` 时 Fast 闲聊不写 long_term / 好感 / 演化，**Quarrel / Apology / Confession / Praise** 仍正常写入。RFC [`RFC_TURN_THINKING_PERSISTENCE.md`](../rfc/RFC_TURN_THINKING_PERSISTENCE.md) |
 
 示例（latency bench）：[`examples/distro-profiles/desktop-latency.oclive.toml`](../../examples/distro-profiles/desktop-latency.oclive.toml)。架构归类与 Deep 蒸馏路线图：[`handoff/DEEP_PROMPT_DISTILLATION.md`](../../handoff/DEEP_PROMPT_DISTILLATION.md)。
 
@@ -139,7 +140,7 @@ Release 安装包 bundled [`resources/distro-profiles/desktop.oclive.toml`](../.
 
 | 能力 | 默认 | 用户感知 |
 |------|------|----------|
-| **`[turn_thinking]`** | `default = "auto"` | 闲聊走 Fast；长句 / 高唤醒情绪 / Quarrel 链 → Deep |
+| **`[turn_thinking]`** | `default = "auto"` · `fast_persistence = "strong_only"` | 闲聊走 Fast；长句 / 高唤醒情绪 / Quarrel 链 → Deep；Fast 闲聊不写 long_term / favor（强事件仍写） |
 | **流式回复** | 主 UI `sendMessageStream` → `POST /chat/stream` | 回复**逐字显示**（降低**感知延迟**）；SSE 失败自动回退 blocking `/chat` |
 | **Deep capsule** | 角色包 `meta.deep_capsule_enabled` + `prompts/deep_capsule.txt` | Small 模型 + Deep 轮用离线 capsule（见 Wave D） |
 

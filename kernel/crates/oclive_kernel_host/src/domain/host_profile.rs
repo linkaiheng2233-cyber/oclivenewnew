@@ -177,6 +177,8 @@ pub struct TurnThinkingProfile {
     pub deep_capsule: Option<bool>,
     /// When `Some(true)`, Deep+Ollama uses `build_prompt_segments` for llama.cpp prefix reuse.
     pub prompt_prefix_cache: Option<bool>,
+    /// `legacy` = Fast rounds persist favor/memory/evolution as today; `strong_only` = Fast casual skips.
+    pub fast_persistence: FastPersistenceMode,
 }
 
 impl Default for TurnThinkingProfile {
@@ -190,8 +192,38 @@ impl Default for TurnThinkingProfile {
             fast_memory_cap: 4,
             deep_capsule: None,
             prompt_prefix_cache: None,
+            fast_persistence: FastPersistenceMode::default(),
         }
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum FastPersistenceMode {
+    #[default]
+    Legacy,
+    StrongOnly,
+}
+
+impl FastPersistenceMode {
+    #[must_use]
+    pub fn parse(s: &str) -> Self {
+        if s.trim().eq_ignore_ascii_case("strong_only") {
+            Self::StrongOnly
+        } else {
+            Self::Legacy
+        }
+    }
+}
+
+#[must_use]
+pub fn fast_persistence_effective(host: &HostProfile) -> FastPersistenceMode {
+    if std::env::var("OCLIVE_FAST_PERSISTENCE")
+        .ok()
+        .is_some_and(|v| v.eq_ignore_ascii_case("strong_only"))
+    {
+        return FastPersistenceMode::StrongOnly;
+    }
+    host.turn_thinking.fast_persistence
 }
 
 #[must_use]
@@ -350,6 +382,9 @@ fn host_profile_from_distro_file(
         }
         if let Some(v) = tt.prompt_prefix_cache {
             profile.turn_thinking.prompt_prefix_cache = Some(v);
+        }
+        if let Some(ref fp) = tt.fast_persistence {
+            profile.turn_thinking.fast_persistence = FastPersistenceMode::parse(fp);
         }
     }
     Ok(profile)
@@ -767,6 +802,26 @@ favor_low = "保持距离与礼貌"
         assert_eq!(se.hint_for_favor(70.0), "更信任用户的技术判断，少寒暄");
         assert_eq!(se.hint_for_favor(50.0), "保持友好但不越界");
         assert_eq!(se.hint_for_favor(20.0), "保持距离与礼貌");
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn parse_turn_thinking_fast_persistence() {
+        let dir = std::env::temp_dir().join(format!("oclive_host_profile_tt_{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let file = dir.join("distro.oclive.toml");
+        let raw = r#"
+distro_id = "desktop-latency"
+[turn_thinking]
+fast_persistence = "strong_only"
+"#;
+        let mut f = std::fs::File::create(&file).unwrap();
+        f.write_all(raw.as_bytes()).unwrap();
+        let p = load_host_profile_file(&file).unwrap();
+        assert_eq!(
+            p.turn_thinking.fast_persistence,
+            FastPersistenceMode::StrongOnly
+        );
         let _ = std::fs::remove_dir_all(dir);
     }
 

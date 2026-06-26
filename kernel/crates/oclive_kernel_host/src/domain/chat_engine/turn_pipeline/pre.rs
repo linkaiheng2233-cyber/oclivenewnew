@@ -102,6 +102,7 @@ pub(crate) struct PreLlmOutput {
 }
 
 pub(crate) struct MiddleOutput {
+    pub turn_thinking: crate::domain::turn_thinking::TurnThinkingPlan,
     pub complex_emotion_out: crate::domain::complex_emotion::ComplexEmotionOutput,
     pub knowledge_chunk_count: u32,
     pub ai_event_type: crate::models::EventType,

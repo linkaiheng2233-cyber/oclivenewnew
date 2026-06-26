@@ -140,11 +140,13 @@ pub(crate) async fn run_middle(
 
     let mut personality = pre.memory.personality.clone();
     if role.evolution_config.personality_source != PersonalitySource::Profile {
-        personality = PersonalityEngine::evolve_by_event(
-            personality,
-            ai_impact_factor_final * pre.memory.event_runtime,
-            &role.evolution_bounds,
-        );
+        if thinking.applies_full_persistence(&state.host_profile, &ai_event_type) {
+            personality = PersonalityEngine::evolve_by_event(
+                personality,
+                ai_impact_factor_final * pre.memory.event_runtime,
+                &role.evolution_bounds,
+            );
+        }
     }
 
     let (favor_delta, relation_after) = compute_turn_favor(
@@ -154,6 +156,17 @@ pub(crate) async fn run_middle(
         ai_impact_factor_final,
         ai_event_confidence,
     );
+    let favor_scale = thinking.favor_delta_scale(&state.host_profile, &ai_event_type);
+    let (favor_delta, relation_after) = if favor_scale == 0.0 {
+        (
+            0.0,
+            oclive_kernel_runtime::domain::relation_engine::RelationState::parse(
+                pre.relation.relation_before.as_str(),
+            ),
+        )
+    } else {
+        (favor_delta, relation_after)
+    };
 
     let memory_cap = thinking.memory_cap(&state.host_profile);
     let prompt_memories: Vec<Memory> = pre
@@ -313,6 +326,7 @@ pub(crate) async fn run_middle(
     };
 
     Ok(MiddleOutput {
+        turn_thinking: thinking,
         complex_emotion_out,
         knowledge_chunk_count,
         ai_event_type,
