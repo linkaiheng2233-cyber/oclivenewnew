@@ -24,7 +24,7 @@
 
 | 大类 | 包目录 | 开工包 | 状态 |
 |------|--------|--------|------|
-| **六槽** | [`slots/`](slots/) | memory · emotion · event · prompt · llm · agent | OPEN |
+| **六槽** | [`slots/`](slots/) | memory · emotion · event · prompt · llm · agent | **Partial**（llm · agent · memory Done） |
 | **设施** | [`facilities/`](facilities/) | complex-emotion · portrait · visual-stage | OPEN |
 | **独立通道** | [`side-channels/`](side-channels/) | user-identity · reply-post-process · chat-storage | OPEN |
 | **编排行** | [`orchestration/`](orchestration/) | turn-thinking · model-tier（摘要链） | OPEN |

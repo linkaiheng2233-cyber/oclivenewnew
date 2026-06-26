@@ -88,9 +88,9 @@ flowchart LR
 
 | 我要改… | 开工包 |
 |---------|--------|
-| LLM / 目录插件后端 | `modules/slots/llm.md`（待交付） |
-| Agent / MCP 工具 | `modules/slots/agent.md`（待交付） |
-| 记忆检索 / STM·LTM | `modules/slots/memory.md`（待交付） |
+| LLM / 目录插件后端 | [modules/slots/llm.md](modules/slots/llm.md) |
+| Agent / MCP 工具 | [modules/slots/agent.md](modules/slots/agent.md) |
+| 记忆检索 / STM·LTM | [modules/slots/memory.md](modules/slots/memory.md) |
 | **全表** | [modules/README.md](modules/README.md) |
 
 ---
