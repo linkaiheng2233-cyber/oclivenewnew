@@ -11,6 +11,8 @@
 
 ## 1. 架构
 
+**人类开工（按模块）** → [modules/README.md](modules/README.md)（链 MODULE_MAP，不复制表）
+
 | 文档 | 用途 |
 |------|------|
 | [OCLIVE_ARCHITECTURE_OVERVIEW](../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) | 第 1–4 设施子模块 |
