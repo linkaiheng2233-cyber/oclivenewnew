@@ -91,6 +91,8 @@ flowchart LR
 | LLM / 目录插件后端 | [modules/slots/llm.md](modules/slots/llm.md) |
 | Agent / MCP 工具 | [modules/slots/agent.md](modules/slots/agent.md) |
 | 记忆检索 / STM·LTM | [modules/slots/memory.md](modules/slots/memory.md) |
+| 角色包文案 / 人设文件 | [modules/packs/role-pack-content.md](modules/packs/role-pack-content.md) |
+| `config.json` / turn_thinking | [modules/packs/role-pack-config.md](modules/packs/role-pack-config.md) |
 | **全表** | [modules/README.md](modules/README.md) |
 
 ---
