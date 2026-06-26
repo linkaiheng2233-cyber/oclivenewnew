@@ -25,11 +25,11 @@
 | 大类 | 包目录 | 开工包 | 状态 |
 |------|--------|--------|------|
 | **六槽** | [`slots/`](slots/) | memory · emotion · event · prompt · llm · agent | **Done** |
-| **编排行** | [`orchestration/`](orchestration/) | turn-thinking · model-tier（摘要链） | OPEN |
-| **设施** | [`facilities/`](facilities/) | complex-emotion · portrait · visual-stage | OPEN |
+| **设施** | [`facilities/`](facilities/) | complex-emotion · portrait · visual-stage | **Done** |
 | **角色包** | [`packs/`](packs/) | role-pack-content · role-pack-config | **Done** |
-| **独立通道** | [`side-channels/`](side-channels/) | user-identity · reply-post-process · chat-storage | **Partial**（chat-storage Done） |
-| **宿主面** | [`surfaces/`](surfaces/) | frontend-chat-pro · tauri-invoke · distro-hostprofile | OPEN |
+| **独立通道** | [`side-channels/`](side-channels/) | user-identity · reply-post-process · chat-storage | **Done** |
+| **编排行** | [`orchestration/`](orchestration/) | turn-thinking · model-tier（摘要链） | **Done** |
+| **宿主面** | [`surfaces/`](surfaces/) | frontend-chat-pro · tauri-invoke · distro-hostprofile | **Done** |
 
 ---
 

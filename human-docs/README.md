@@ -93,6 +93,7 @@ flowchart LR
 | 记忆检索 / STM·LTM | [modules/slots/memory.md](modules/slots/memory.md) |
 | 角色包文案 / 人设文件 | [modules/packs/role-pack-content.md](modules/packs/role-pack-content.md) |
 | `config.json` / turn_thinking | [modules/packs/role-pack-config.md](modules/packs/role-pack-config.md) |
+| Vue / invoke 前端 | [modules/surfaces/frontend-chat-pro.md](modules/surfaces/frontend-chat-pro.md) |
 | **全表** | [modules/README.md](modules/README.md) |
 
 ---

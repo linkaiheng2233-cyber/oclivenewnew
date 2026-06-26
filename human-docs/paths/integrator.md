@@ -2,16 +2,17 @@
 
 > **读者**：无头 HTTP、嵌入式硬件、二次开发内核的工程师。  
 > **耗时**：约 1–2 天入门。  
-> **下一篇**：[KERNEL_INTEGRATOR_LEARNING_PATH](../../creator-docs/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md)
+> **下一篇**：[modules/surfaces/distro-hostprofile.md](../modules/surfaces/distro-hostprofile.md)
 
 ---
 
 ## 建议顺序
 
 1. [02 三十分钟跑通](../02_THIRTY_MINUTE_START.md)
-2. [01 简架构](../01_ARCHITECTURE_SIMPLE.md) — `process_message` 主链
-3. [KERNEL_INTEGRATOR_LEARNING_PATH](../../creator-docs/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md)（SSOT）
-4. `cargo run -p oclive-cli -- init` — 最小骨架
+2. [01 简架构](../01_ARCHITECTURE_SIMPLE.md) — `process_message` 主链（导读即可）
+3. **宿主面开工包** → [modules/surfaces/distro-hostprofile.md](../modules/surfaces/distro-hostprofile.md)
+4. [KERNEL_INTEGRATOR_LEARNING_PATH](../../creator-docs/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md)（SSOT）
+5. `cargo run -p oclive-cli -- init` — 最小骨架
 
 ---
 
@@ -36,6 +37,7 @@
 
 ## 深度链接
 
+- [modules/ 选择器](../modules/README.md)
 - [PURE_KERNEL_BOUNDARY](../../creator-docs/getting-started/PURE_KERNEL_BOUNDARY.md)
 - [DISTRO_KERNEL_LIFECYCLE](../../creator-docs/kernel/DISTRO_KERNEL_LIFECYCLE.md) — bundled-first spawn · 单核 attach/replace
 - [KERNEL_SCHEDULER_RESCOPE](../../handoff/KERNEL_SCHEDULER_RESCOPE.md) — 调度范围重划
