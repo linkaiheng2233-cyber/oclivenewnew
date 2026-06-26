@@ -807,7 +807,8 @@ favor_low = "保持距离与礼貌"
 
     #[test]
     fn parse_turn_thinking_fast_persistence() {
-        let dir = std::env::temp_dir().join(format!("oclive_host_profile_tt_{}", std::process::id()));
+        let dir =
+            std::env::temp_dir().join(format!("oclive_host_profile_tt_{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let file = dir.join("distro.oclive.toml");
         let raw = r#"

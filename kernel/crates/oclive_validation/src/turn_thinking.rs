@@ -125,10 +125,7 @@ pub fn validate_turn_thinking_config(value: &serde_json::Value) -> Vec<String> {
                     errs.push(format!("{path}.all 须至少含一项"));
                 }
                 for (i, rule) in all.iter().enumerate() {
-                    errs.extend(validate_signal_rule(
-                        rule,
-                        &format!("{path}.all[{i}]"),
-                    ));
+                    errs.extend(validate_signal_rule(rule, &format!("{path}.all[{i}]")));
                 }
             }
         } else if deep_when.get("and").is_some() {
@@ -155,12 +152,13 @@ pub fn validate_turn_thinking_config(value: &serde_json::Value) -> Vec<String> {
         if let Some(ttl) = ephemeral.get("ttl_turns") {
             match ttl.as_u64() {
                 Some(n) if (1..=8).contains(&n) => {}
-                _ => errs.push("config.json turn_thinking.ephemeral_archive.ttl_turns 须在 1–8".into()),
+                _ => errs
+                    .push("config.json turn_thinking.ephemeral_archive.ttl_turns 须在 1–8".into()),
             }
         }
         if let Some(max) = ephemeral.get("max_chars") {
             match max.as_u64() {
-                Some(n) if n >= 1 && n <= 500 => {}
+                Some(n) if (1..=500).contains(&n) => {}
                 _ => {
                     errs.push(
                         "config.json turn_thinking.ephemeral_archive.max_chars 须在 1–500".into(),
@@ -180,6 +178,10 @@ pub fn validate_turn_thinking_config(value: &serde_json::Value) -> Vec<String> {
 }
 
 /// Validate `turn_thinking` section in `config.json` when present.
+///
+/// # Errors
+///
+/// Returns validation messages when `turn_thinking` is present and invalid.
 pub fn validate_turn_thinking_config_file(config_path: &Path) -> Result<(), Vec<String>> {
     let Ok(raw) = std::fs::read_to_string(config_path) else {
         return Ok(());

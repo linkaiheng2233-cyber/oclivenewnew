@@ -2,12 +2,12 @@
 
 use crate::domain::chat_llm_fallback::{fallback_reply_for_llm_failure, FallbackReplyContext};
 use crate::domain::chat_turn_rules::{soft_append_guard, strip_hallucination_tokens};
-use crate::domain::policy::PolicyContext;
 use crate::domain::host_profile::bench_telemetry_enabled;
+use crate::domain::policy::PolicyContext;
+use crate::domain::slot_runner::SlotRunner;
 use crate::domain::turn_thinking::{
     effective_turn_thinking_policy, update_turn_thinking_runtime_state,
 };
-use crate::domain::slot_runner::SlotRunner;
 use crate::infrastructure::ollama_client::OllamaGenerateOpts;
 use crate::models::dto::SendMessageResponse;
 use crate::models::{Event, PersonalitySource, Role};

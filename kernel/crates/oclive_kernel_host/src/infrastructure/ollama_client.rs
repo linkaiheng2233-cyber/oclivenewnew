@@ -179,6 +179,10 @@ impl OllamaClient {
     }
 
     /// Like [`generate`](Self::generate) but accepts Deep-session `keep_alive` and returns bench metrics.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`anyhow::Error`] when the Ollama HTTP request fails or the response is invalid.
     pub async fn generate_with_opts(
         &self,
         model: &str,
@@ -272,6 +276,10 @@ impl OllamaClient {
     }
 
     /// Streaming generate with optional `keep_alive` and final-frame metrics.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`anyhow::Error`] when the Ollama stream request fails or the final frame is invalid.
     pub async fn generate_stream_with_callback_and_opts(
         &self,
         model: &str,

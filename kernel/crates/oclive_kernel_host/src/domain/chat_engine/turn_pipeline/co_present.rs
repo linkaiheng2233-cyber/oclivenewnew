@@ -18,7 +18,6 @@ use crate::models::knowledge::KnowledgeIndex;
 use crate::models::Memory;
 use crate::models::{LlmBackend, PersonalitySource};
 
-use crate::state::SessionCache;
 use super::super::turn_context::TurnContext;
 use super::super::turn_error::TurnResult;
 use super::{
@@ -26,6 +25,7 @@ use super::{
     MiddleOutput, PreLlmOutput, STAGES,
 };
 use crate::domain::chat_engine::chat_stage::ChatStage;
+use crate::state::SessionCache;
 
 pub(crate) async fn run_middle(
     ctx: &TurnContext<'_>,
@@ -45,11 +45,7 @@ pub(crate) async fn run_middle(
 
     let rules_estimate = STAGES
         .stage(ChatStage::EventEstimate, async {
-            estimate_event_impact_rules_only(
-                user_message,
-                &pre.hints.user_emotion,
-                None,
-            )
+            estimate_event_impact_rules_only(user_message, &pre.hints.user_emotion, None)
         })
         .await?;
     let this_turn_event = rules_estimate.event_type;
@@ -147,14 +143,14 @@ pub(crate) async fn run_middle(
     let ai_event_confidence = estimate.confidence;
 
     let mut personality = pre.memory.personality.clone();
-    if role.evolution_config.personality_source != PersonalitySource::Profile {
-        if thinking.applies_full_persistence(&state.host_profile, &ai_event_type) {
-            personality = PersonalityEngine::evolve_by_event(
-                personality,
-                ai_impact_factor_final * pre.memory.event_runtime,
-                &role.evolution_bounds,
-            );
-        }
+    if role.evolution_config.personality_source != PersonalitySource::Profile
+        && thinking.applies_full_persistence(&state.host_profile, &ai_event_type)
+    {
+        personality = PersonalityEngine::evolve_by_event(
+            personality,
+            ai_impact_factor_final * pre.memory.event_runtime,
+            &role.evolution_bounds,
+        );
     }
 
     let (favor_delta, relation_after) = compute_turn_favor(

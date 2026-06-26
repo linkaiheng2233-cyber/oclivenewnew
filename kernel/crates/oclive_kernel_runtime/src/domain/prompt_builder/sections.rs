@@ -72,9 +72,7 @@ impl PromptBuilder {
         if text.is_empty() {
             return String::new();
         }
-        format!(
-            "【局面摘要】（临时状态，会过期；与核心/可变档案冲突以核心为准）\n{text}\n\n"
-        )
+        format!("【局面摘要】（临时状态，会过期；与核心/可变档案冲突以核心为准）\n{text}\n\n")
     }
 
     #[must_use]

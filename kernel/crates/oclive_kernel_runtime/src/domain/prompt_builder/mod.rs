@@ -98,8 +98,7 @@ pub struct PromptSegments {
 impl PromptSegments {
     #[must_use]
     pub fn full(&self) -> String {
-        let mut out =
-            String::with_capacity(self.stable_prefix.len() + self.dynamic_suffix.len());
+        let mut out = String::with_capacity(self.stable_prefix.len() + self.dynamic_suffix.len());
         out.push_str(&self.stable_prefix);
         out.push_str(&self.dynamic_suffix);
         out

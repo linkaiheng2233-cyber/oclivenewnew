@@ -254,12 +254,7 @@ impl SessionCache {
     }
 
     /// Returns whether the stable prefix hash matches the previous turn (expected Ollama prefix hit).
-    pub fn observe_prefix_cache(
-        &self,
-        key: String,
-        prefix_hash: u64,
-        stable_len: usize,
-    ) -> bool {
+    pub fn observe_prefix_cache(&self, key: String, prefix_hash: u64, stable_len: usize) -> bool {
         let expected_hit = self
             .prefix_cache
             .get(&key)

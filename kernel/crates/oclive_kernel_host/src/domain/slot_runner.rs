@@ -353,9 +353,7 @@ impl SlotRunner {
                 prompt_eval_ms: out.metrics.prompt_eval_ms(),
             });
         }
-        let reply = llm
-            .generate_stream(ollama_model, prompt, on_token)
-            .await?;
+        let reply = llm.generate_stream(ollama_model, prompt, on_token).await?;
         Ok(LlmGenerateOutcome {
             reply,
             prompt_eval_ms: None,
@@ -379,8 +377,7 @@ impl SlotRunner {
                     .unwrap_or(LlmMergePolicy::Ensemble);
                 return match policy {
                     LlmMergePolicy::Fastest => {
-                        Self::llm_fastest_wins(instances, ollama, ollama_model, prompt, opts)
-                            .await
+                        Self::llm_fastest_wins(instances, ollama, ollama_model, prompt, opts).await
                     }
                     LlmMergePolicy::Fallback => {
                         Self::llm_fallback_first(instances, ollama, ollama_model, prompt, opts)

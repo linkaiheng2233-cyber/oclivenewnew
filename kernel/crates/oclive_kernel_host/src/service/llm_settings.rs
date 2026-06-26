@@ -1,7 +1,9 @@
 //! LLM / model settings impls shared by HTTP routes and Tauri invoke.
 
 use crate::command_error::CommandError;
-use crate::domain::effective_llm_model::{is_usable_ollama_model_id, resolve_effective_ollama_model};
+use crate::domain::effective_llm_model::{
+    is_usable_ollama_model_id, resolve_effective_ollama_model,
+};
 use crate::domain::user_llm_env::{
     apply_user_llm_env, cloud_api_token_configured, load_remote_token, ollama_base_from_db_or_env,
     KEY_CLOUD_STYLE, KEY_CLOUD_VENDOR, KEY_GLOBAL_OLLAMA_MODEL, KEY_LLM_PROVIDER, KEY_OLLAMA_BASE,

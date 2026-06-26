@@ -30,25 +30,6 @@ pub fn is_usable_ollama_model_id(model: &str) -> bool {
     true
 }
 
-#[cfg(test)]
-mod tests {
-    use super::is_usable_ollama_model_id;
-
-    #[test]
-    fn rejects_empty_file_prefix_and_paths() {
-        assert!(!is_usable_ollama_model_id(""));
-        assert!(!is_usable_ollama_model_id("file:D:\\models\\a.gguf"));
-        assert!(!is_usable_ollama_model_id(r"D:\models\a.gguf"));
-        assert!(!is_usable_ollama_model_id("/tmp/model.gguf"));
-    }
-
-    #[test]
-    fn accepts_ollama_tags() {
-        assert!(is_usable_ollama_model_id("qwen2.5:7b"));
-        assert!(is_usable_ollama_model_id("mumu:latest"));
-    }
-}
-
 /// Session DB override → saved cloud model → pack/env/global fallback chain (policy resolution, not path lookup).
 ///
 /// # Errors
@@ -86,4 +67,23 @@ pub async fn resolve_effective_ollama_model(
         }
     }
     Ok(role.resolve_ollama_model(state.global_ollama_model().as_str()))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_usable_ollama_model_id;
+
+    #[test]
+    fn rejects_empty_file_prefix_and_paths() {
+        assert!(!is_usable_ollama_model_id(""));
+        assert!(!is_usable_ollama_model_id("file:D:\\models\\a.gguf"));
+        assert!(!is_usable_ollama_model_id(r"D:\models\a.gguf"));
+        assert!(!is_usable_ollama_model_id("/tmp/model.gguf"));
+    }
+
+    #[test]
+    fn accepts_ollama_tags() {
+        assert!(is_usable_ollama_model_id("qwen2.5:7b"));
+        assert!(is_usable_ollama_model_id("mumu:latest"));
+    }
 }

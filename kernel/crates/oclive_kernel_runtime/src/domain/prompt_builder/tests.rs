@@ -1255,7 +1255,10 @@ fn build_prompt_segments_stable_is_full_prefix() {
     let segments = PromptBuilder::build_prompt_segments(&input);
     let full = segments.full();
     assert!(full.starts_with(segments.stable_prefix.as_str()));
-    assert_eq!(full.len(), segments.stable_len() + segments.dynamic_suffix.len());
+    assert_eq!(
+        full.len(),
+        segments.stable_len() + segments.dynamic_suffix.len()
+    );
     assert!(full.contains("Hello"));
     assert!(full.contains("世界观测试片段"));
     assert!(full.contains("【对话硬约束】"));
@@ -1267,24 +1270,8 @@ fn build_prompt_segments_stable_stable_across_turns_same_scene() {
     let role = create_test_role();
     let personality = create_test_personality();
     let memories = vec![create_test_memory()];
-    let input1 = sample_prompt_input(
-        &role,
-        &personality,
-        &memories,
-        "第一句",
-        "家",
-        "客厅",
-        None,
-    );
-    let input2 = sample_prompt_input(
-        &role,
-        &personality,
-        &memories,
-        "第二句",
-        "家",
-        "客厅",
-        None,
-    );
+    let input1 = sample_prompt_input(&role, &personality, &memories, "第一句", "家", "客厅", None);
+    let input2 = sample_prompt_input(&role, &personality, &memories, "第二句", "家", "客厅", None);
     let s1 = PromptBuilder::build_prompt_segments(&input1);
     let s2 = PromptBuilder::build_prompt_segments(&input2);
     assert_eq!(s1.stable_prefix, s2.stable_prefix);
@@ -1295,24 +1282,8 @@ fn build_prompt_segments_stable_stable_across_turns_same_scene() {
 fn build_prompt_segments_stable_changes_on_scene_switch() {
     let role = create_test_role();
     let personality = create_test_personality();
-    let home = sample_prompt_input(
-        &role,
-        &personality,
-        &[],
-        "hi",
-        "家",
-        "客厅",
-        None,
-    );
-    let vscode = sample_prompt_input(
-        &role,
-        &personality,
-        &[],
-        "hi",
-        "VS Code",
-        "结对编程",
-        None,
-    );
+    let home = sample_prompt_input(&role, &personality, &[], "hi", "家", "客厅", None);
+    let vscode = sample_prompt_input(&role, &personality, &[], "hi", "VS Code", "结对编程", None);
     let s_home = PromptBuilder::build_prompt_segments(&home);
     let s_vscode = PromptBuilder::build_prompt_segments(&vscode);
     assert_ne!(s_home.stable_prefix, s_vscode.stable_prefix);

@@ -190,10 +190,7 @@ pub fn effective_turn_thinking_policy(host: &HostProfile, role: &Role) -> TurnTh
 }
 
 fn parse_event_names(names: &[String]) -> Vec<EventType> {
-    names
-        .iter()
-        .filter_map(|n| parse_event_name(n))
-        .collect()
+    names.iter().filter_map(|n| parse_event_name(n)).collect()
 }
 
 fn parse_event_name(name: &str) -> Option<EventType> {
@@ -246,9 +243,10 @@ fn evaluate_or_rule(
         TurnThinkingSignalRule::ThisTurnEvent { events } => {
             event_list_matches(events, signals.this_turn_event)
         }
-        TurnThinkingSignalRule::RecentEvent { events } => signals.recent_events.iter().any(|e| {
-            event_list_matches(events, e.event_type)
-        }),
+        TurnThinkingSignalRule::RecentEvent { events } => signals
+            .recent_events
+            .iter()
+            .any(|e| event_list_matches(events, e.event_type)),
         TurnThinkingSignalRule::Keyword { keywords } => keywords
             .iter()
             .any(|kw| signals.user_message.contains(kw.as_str())),
@@ -351,16 +349,16 @@ fn event_label(event: EventType) -> &'static str {
     }
 }
 
-fn build_ephemeral_event_summary(
-    event: EventType,
-    user_message: &str,
-    max_chars: usize,
-) -> String {
+fn build_ephemeral_event_summary(event: EventType, user_message: &str, max_chars: usize) -> String {
     let snippet = truncate_chars(user_message.trim(), max_chars.saturating_sub(24));
     format!("【{}】用户：{}", event_label(event), snippet)
 }
 
 /// Post-turn: latch enter/exit + ephemeral TTL and situation summary (no main-chain LLM).
+///
+/// # Errors
+///
+/// Returns [`anyhow::Error`] when `role_runtime` latch or ephemeral columns cannot be updated.
 pub async fn update_turn_thinking_runtime_state(
     db: &DbManager,
     role_id: &str,
@@ -389,7 +387,7 @@ pub async fn update_turn_thinking_runtime_state(
     let mut text = db.get_ephemeral_personality(role_id).await?;
 
     if ttl > 0 {
-        ttl -= 1;
+        ttl = ttl.saturating_sub(1);
     }
     if ttl == 0 {
         text.clear();
@@ -406,7 +404,10 @@ pub async fn update_turn_thinking_runtime_state(
         );
         ttl = ep_cfg.ttl_turns;
     } else if exit_events.contains(&this_turn_event) {
-        text = format!("【局面】{}后气氛缓和，可逐步恢复正常语气。", event_label(this_turn_event));
+        text = format!(
+            "【局面】{}后气氛缓和，可逐步恢复正常语气。",
+            event_label(this_turn_event)
+        );
         ttl = ep_cfg.ttl_turns;
     }
 
@@ -444,10 +445,11 @@ mod tests {
     }
 
     fn test_role() -> Role {
-        let mut role = Role::default();
-        role.id = "test".into();
-        role.name = "Test".into();
-        role
+        Role {
+            id: "test".into(),
+            name: "Test".into(),
+            ..Default::default()
+        }
     }
 
     fn host_with_fast_persistence(mode: FastPersistenceMode) -> HostProfile {
@@ -530,8 +532,7 @@ mod tests {
         assert_eq!(plan.mode, TurnThinkingMode::Deep);
         assert!(plan
             .reasons
-            .iter()
-            .any(|r| *r == TurnThinkingReason::AutoThisTurnEvent));
+            .contains(&TurnThinkingReason::AutoThisTurnEvent));
     }
 
     #[test]
@@ -589,10 +590,7 @@ mod tests {
             false,
         );
         assert_eq!(plan.mode, TurnThinkingMode::Deep);
-        assert!(plan
-            .reasons
-            .iter()
-            .any(|r| *r == TurnThinkingReason::AutoPackAndRule));
+        assert!(plan.reasons.contains(&TurnThinkingReason::AutoPackAndRule));
     }
 
     #[test]
@@ -606,7 +604,10 @@ mod tests {
             ..Default::default()
         });
         let policy = effective_turn_thinking_policy(&test_host(TurnThinkingDefault::Auto), &role);
-        assert!(policy.or_rules.len() > host_default_or_rules(&test_host(TurnThinkingDefault::Auto)).len());
+        assert!(
+            policy.or_rules.len()
+                > host_default_or_rules(&test_host(TurnThinkingDefault::Auto)).len()
+        );
     }
 
     #[test]
@@ -698,10 +699,7 @@ mod tests {
 
     #[test]
     fn ephemeral_for_prompt_respects_ttl() {
-        assert_eq!(
-            ephemeral_for_prompt(Some(3), Some("局面紧张")),
-            "局面紧张"
-        );
+        assert_eq!(ephemeral_for_prompt(Some(3), Some("局面紧张")), "局面紧张");
         assert_eq!(ephemeral_for_prompt(Some(0), Some("x")), "");
         assert_eq!(ephemeral_for_prompt(None, Some("x")), "");
     }
