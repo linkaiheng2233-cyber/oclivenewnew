@@ -8,6 +8,8 @@ oclive 的长期方向，是在 **本地优先、可替换子系统、角色包�
 
 **TTFT · 双档思考（路线图）**：共在 co-present 路径按轮选择 **Fast**（规则 event · 裁剪上下文，首字 ~243ms 量级）或 **Deep**（全 enrichment）。Deep 侧下一阶段用 **离线 persona capsule**（`prompts/deep_capsule.txt`）缩短 Tier0，并用 **稳定前缀 KV 延续** 压多轮 prefill——见 [VISION_ROADMAP_MONTHLY.md](VISION_ROADMAP_MONTHLY.md) §Wave A–D 与 [`handoff/DEEP_PROMPT_DISTILLATION.md`](../../handoff/DEEP_PROMPT_DISTILLATION.md)。
 
+**具身互动 · 性格驱动的「手脚」（路线图）**：除对话外，角色按人设 **在宿主上动手**——分 **被动**（用户开口 → 第 6 槽 agent + MCP 调工具）与 **自发**（idle / 虚拟时间 → 行为导演按七维与包级策略选动作）。破坏性好奇（如「小孩」建删文件夹）须在 **playroom 沙盒** 与用户显式授权内完成；**不**用整包通用 Agent 替代 co-present 聊天。分阶段交付与场景见 [VISION_ROADMAP_MONTHLY.md](VISION_ROADMAP_MONTHLY.md)「具身互动」专节与 [APPLICATION_SCENARIOS.md](APPLICATION_SCENARIOS.md) **S12**。
+
 **已对齐的落实点（随主仓演进）**：HTTP JSON-RPC Remote 宿主路径、`plugin_backends` 与扩展点文档、目录式插件与整壳桥接、开源与多平台 CI。详见仓库根目录 [README.md](../../README.md) 的「路线图状态」与 [DOCUMENTATION_INDEX.md](../getting-started/DOCUMENTATION_INDEX.md)。
 
 **仍属路线图**：包内知识库深化、启动器/市场联动、社区站形态等，以对应 roadmap 文档为准。
