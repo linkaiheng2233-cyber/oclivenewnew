@@ -16,6 +16,8 @@
 | [09_GLOSSARY.md](09_GLOSSARY.md) | One-page glossary |
 | [10_SETUP_WINDOWS.md](10_SETUP_WINDOWS.md) | Windows MSVC, target-dir |
 
+**Module packs (EN picker + slot summaries):** [modules/README.md](modules/README.md) · full ZH SSOT [human-docs/modules/](../human-docs/modules/README.md)
+
 **Start here:** [02_THIRTY_MINUTE_START.md](02_THIRTY_MINUTE_START.md) — not AGENTS.md.
 
 **Documentation discipline (EN):** [04 § Documentation](../human-docs-en/04_ENGINEERING_RULES_SUMMARY.md#documentation-discipline) · full AI rules [AI_CHANGE_BOUNDARIES G10–G16](../handoff/AI_CHANGE_BOUNDARIES.md).

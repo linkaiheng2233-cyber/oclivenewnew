@@ -23,8 +23,8 @@
 | **team/ 垂直 sprint** | **Done** | 视觉/语音边界 · 组员不必读全仓 |
 | **模块注册表（深读）** | **handoff** | [`MODULE_MAP_AND_HANDOFF.md`](../handoff/MODULE_MAP_AND_HANDOFF.md) — 人类 L5+ 深读，不在 human-docs 复制 |
 | **AI 文档纪律 G10–G16** | **Done** | AI 详述 → [`AI_CHANGE_BOUNDARIES`](../handoff/AI_CHANGE_BOUNDARIES.md)；人类摘要 → [04 §8](04_ENGINEERING_RULES.md#8-文档贡献纪律人类版) |
-| **模块开工包（H-DOC-04）** | **OPEN** | [`modules/README.md`](modules/README.md) · 骨架已建 |
-| **human-docs-en 全覆盖** | **Partial** | L0–L4 + **L5**（06 摘要）+ L6（07 首 PR）+ **modules 选择器摘要** |
+| **模块开工包（H-DOC-04）** | **Done** | [`modules/README.md`](modules/README.md) · 全类 Done 2026-06-26 |
+| **human-docs-en 全覆盖** | **Partial** | L0–L4 + L5 + L6 + **modules 选择器摘要**（六槽 llm/agent/memory EN） |
 | **creator-docs-en 契约** | **Partial** | 与中文 `creator-docs/` 并行；**契约以中文为准** |
 
 **待办（文档债 · 非代码债）**
@@ -34,7 +34,7 @@
 | H-DOC-01 | `human-docs-en/06_KERNEL_LEARNING_PATH` 英文摘要 | **Done**（2026-06-26） |
 | H-DOC-02 | 人类文档文首「最后更新」徽标 | **Done**（2026-06-26 · 01/04/06 + EN 镜像） |
 | H-DOC-03 | 物理迁移 `04_4.6` / `CHAT_STORAGE_MIRROR_COLLAPSE` → `archive/` | P3 · 需批量改链 |
-| H-DOC-04 | 人类模块化开工包 `human-docs/modules/` | **OPEN**（阶段 0 骨架） |
+| H-DOC-04 | 人类模块化开工包 `human-docs/modules/` | **Done**（2026-06-26） |
 
 ---
 
@@ -129,4 +129,4 @@ flowchart LR
 | 贡献与测试 | [CONTRIBUTING](../CONTRIBUTING.md) |
 | AI 接手包说明 | [ai-package/README.md](ai-package/README.md) |
 
-*最后更新：2026-06-26 · H-DOC-04 模块开工包进行中。*
+*最后更新：2026-06-26 · H-DOC-04 模块开工包 Done。*
