@@ -15,6 +15,7 @@
 |------|------|
 | [OCLIVE_ARCHITECTURE_OVERVIEW](../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) | 第 1–4 设施子模块 |
 | [RFC 立绘 / 视觉表现（草案）](../creator-docs/rfc/RFC_PORTRAIT_FACILITY.md) | catalog · 表现导演 · 角色舞台 |
+| [RFC Turn Thinking](../creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md) | Fast/Deep · `fast_persistence` · 包级 latch / ephemeral · [EN](../creator-docs-en/rfc/RFC_TURN_THINKING_PERSISTENCE_SUMMARY.md) |
 | [PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN](../handoff/PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md) | 分阶段实施 |
 | [kernel/crates/README](../kernel/crates/README.md) | Crate 依赖与改哪 |
 | [DESIGN_DECISIONS](../creator-docs/architecture/DESIGN_DECISIONS.md) | 取舍记录 |
@@ -65,6 +66,7 @@
 |------|------|
 | [DISTRO_KERNEL_LIFECYCLE](../creator-docs/kernel/DISTRO_KERNEL_LIFECYCLE.md) | attach / spawn（bundled 首选） |
 | [KERNEL_SCHEDULER_RESCOPE](../handoff/KERNEL_SCHEDULER_RESCOPE.md) | 单核 · 兜底 · Freeze 项 |
+| [DISTRO_CAPABILITY_PROFILE](../creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md) | HostProfile · `[turn_thinking]` |
 | [DISTRO_DEFAULT_PLUGINS](../creator-docs/kernel/DISTRO_DEFAULT_PLUGINS.md) | 发行版插件矩阵 |
 | [OCLIVE_APP_DATA](../creator-docs/kernel/OCLIVE_APP_DATA.md) | 数据目录 |
 | [KERNEL_INTEGRATOR_LEARNING_PATH](../creator-docs/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md) | 集成方 |

@@ -402,6 +402,7 @@ mod tests {
             pack_portrait_catalog: Default::default(),
             portrait_catalog: None,
             pack_visual_presentation_config: Default::default(),
+            pack_turn_thinking_config: None,
             pack_reply_post_processor_config: Default::default(),
             user_identity_catalog: None,
             runtime_config: None,

@@ -33,6 +33,7 @@
 | 角色包 vs 蓝图 | [`ROLE_PACK_BOUNDARY.md`](./ROLE_PACK_BOUNDARY.md) | ROLE_PACK_SPEC §0 摘要 |
 | 聊天 vs 记忆三套存储 | [`CHAT_STORAGE_ARCHITECTURE.md`](./CHAT_STORAGE_ARCHITECTURE.md) | MODULE_MAP §4 摘要 |
 | **Turn Thinking 持久化分流**（Fast strong_only） | [`RFC_TURN_THINKING_PERSISTENCE.md`](../creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md) | MODULE_MAP §12 · DISTRO_CAPABILITY_PROFILE §3.2.1 |
+| **Turn Thinking 包级路由 + ephemeral**（Wave F） | [`RFC_TURN_THINKING_PERSISTENCE.md` §8–12](../creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md) | ROLE_PACK_SPEC §9.11 · `035_turn_thinking_runtime.sql` |
 | 发行版 HostProfile 字段 | [`DISTRO_CAPABILITY_PROFILE.md`](../creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md) | — |
 | 活跃债 / 冻结 / OPEN | [`TECHNICAL_DEBT_INVENTORY.md`](./TECHNICAL_DEBT_INVENTORY.md) | MODULE_MAP · VISION 路线图 |
 | 版本与文档地图 | [`PROJECT_STATUS_AND_ALIGNMENT.md`](../creator-docs/getting-started/PROJECT_STATUS_AND_ALIGNMENT.md) | — |

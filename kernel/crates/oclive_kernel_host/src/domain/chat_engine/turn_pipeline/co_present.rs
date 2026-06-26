@@ -41,13 +41,29 @@ pub(crate) async fn run_middle(
     let pl = &ctx.pl;
     let user_message = req.user_message.as_str();
 
+    let deep_latch_active = ctx.runtime_snapshot.deep_latch_active.unwrap_or(false);
+
+    let rules_estimate = STAGES
+        .stage(ChatStage::EventEstimate, async {
+            estimate_event_impact_rules_only(
+                user_message,
+                &pre.hints.user_emotion,
+                None,
+            )
+        })
+        .await?;
+    let this_turn_event = rules_estimate.event_type;
+
     let thinking = STAGES
         .stage(ChatStage::TurnThinkingRouter, async {
             Ok(resolve_turn_thinking(
                 &state.host_profile,
+                role,
                 user_message,
                 &pre.hints.emotion_result,
                 &pre.memory.recent_events_for_event,
+                this_turn_event,
+                deep_latch_active,
             ))
         })
         .await?;
@@ -124,15 +140,7 @@ pub(crate) async fn run_middle(
             )
             .await?
     } else {
-        STAGES
-            .stage(ChatStage::EventEstimate, async {
-                estimate_event_impact_rules_only(
-                    user_message,
-                    &pre.hints.user_emotion,
-                    knowledge_augment_opt.as_ref(),
-                )
-            })
-            .await?
+        rules_estimate
     };
     let ai_event_type = estimate.event_type;
     let ai_impact_factor_final = estimate.impact_factor;
@@ -256,6 +264,7 @@ pub(crate) async fn run_middle(
         life_context_line: life_context_line.as_str(),
         worldview_snippet: worldview_snippet.as_str(),
         mutable_personality: pre.memory.mutable_for_prompt.as_str(),
+        ephemeral_personality: pre.memory.ephemeral_for_prompt.as_str(),
         reply_quality_anchor: effective_reply_quality_anchor(role),
         previous_complex_emotion_narrative_hint: complex_hint,
         host_prompt_overlay: host_overlay,

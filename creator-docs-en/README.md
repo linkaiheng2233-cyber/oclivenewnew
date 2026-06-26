@@ -78,6 +78,7 @@ This tree mirrors **`creator-docs/`** with hand-maintained English pages. For to
 | `oclive-cli` user guide | [cli/OCLIVE_CLI_GUIDE.md](cli/OCLIVE_CLI_GUIDE.md) |
 | `settings.json` → `plugin_backends` reference | [cli/SETTINGS_REFERENCE.md](cli/SETTINGS_REFERENCE.md) |
 | Monolith / high-coupling compile mode (RFC) | [rfc/RFC_OCLIVE_MONOLITH_MODE.md](rfc/RFC_OCLIVE_MONOLITH_MODE.md) |
+| Turn Thinking — Fast/Deep persistence & pack routing | [rfc/RFC_TURN_THINKING_PERSISTENCE_SUMMARY.md](rfc/RFC_TURN_THINKING_PERSISTENCE_SUMMARY.md) (full RFC: [Chinese](../creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md)) |
 
 ---
 

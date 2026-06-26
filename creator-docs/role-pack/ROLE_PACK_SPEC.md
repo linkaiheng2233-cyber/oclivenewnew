@@ -353,6 +353,7 @@ auto_sync: false
 | `portrait_catalog` | object | 否 | **第 3 设施**立绘目录 + 表现导演（**默认未启用**）；见 §9.9 |
 | `visual_presentation` | object | 否 | **第 4 设施**视觉舞台（**默认 `enabled: false`**）；见 §9.10 |
 | `meta_action_templates` | object | 否 | 破壁元操作态度文案（undo/regenerate/edit/delete）；见 §9.8 |
+| `turn_thinking` | object | 否 | co-present Fast/Deep 路由、Deep latch、局面摘要 TTL；见 §9.11 · RFC [`RFC_TURN_THINKING_PERSISTENCE.md`](../rfc/RFC_TURN_THINKING_PERSISTENCE.md) §8–12 |
 
 ### 9.3 `time`（虚拟时间）
 
@@ -501,6 +502,49 @@ auto_sync: false
 | `resources` | object | — | backend 所需模型路径等 |
 
 **禁止**在本节配置二次 AI 选图；输入为第 3 设施 **`visual_state_id`**。
+
+### 9.11 `turn_thinking`（Wave F · co-present 路由）
+
+**RFC**：[RFC_TURN_THINKING_PERSISTENCE.md §8–12](../rfc/RFC_TURN_THINKING_PERSISTENCE.md) · 内核 `turn_thinking.rs`。
+
+| 字段 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `deep_when.or` | array | — | 追加 Host 默认 OR 项（signal 对象） |
+| `deep_when.and` | array | — | `{ "all": [ … ] }` 组；组内全 true → Deep |
+| `latch.enter_on` / `exit_on` | string[] | `[]` | 事件名（`Quarrel` 等）；Deep latch 直到和解 |
+| `ephemeral_archive.enabled` | bool | — | 节缺失 = 关闭 |
+| `ephemeral_archive.ttl_turns` | integer | `3` | 1–8；剩余轮数 |
+| `ephemeral_archive.max_chars` | integer | `200` | 局面摘要上限 |
+| `ephemeral_archive.update_on_events` | string[] | — | 命中时规则模板写入 |
+
+**signal 枚举**：`long_message` · `high_arousal` · `high_sadness` · `high_anger` · `high_fear` · `this_turn_event` · `recent_event` · `keyword` · `deep_latch_active`。
+
+**校验**：`oclive pack validate` 校验 signal / 事件名 / TTL / `max_chars`；节缺失则跳过。
+
+**示例**（注释版见 `distros/chat-pro/roles/mumu/config.json`）：
+
+```json
+{
+  "turn_thinking": {
+    "deep_when": {
+      "or": [{ "signal": "this_turn_event", "events": ["Quarrel"] }],
+      "and": [{
+        "all": [
+          { "signal": "long_message", "min_chars": 40 },
+          { "signal": "high_sadness" }
+        ]
+      }]
+    },
+    "latch": { "enter_on": ["Quarrel"], "exit_on": ["Apology"] },
+    "ephemeral_archive": {
+      "enabled": true,
+      "ttl_turns": 3,
+      "max_chars": 200,
+      "update_on_events": ["Quarrel", "Apology", "Confession", "Praise"]
+    }
+  }
+}
+```
 
 ---
 

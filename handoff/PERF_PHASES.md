@@ -26,6 +26,7 @@
 | **D** | T1/T2/T3 Done | Deep capsule · `PersonaSource` · **`prompt_prefix_cache`** · `--deep-multi` prefill bench |
 | **D-T3** | Done | `build_prompt_segments` · prefill p50 **28ms** vs 冷启动 **1443ms**（mumu · qwen2.5:7b · 2026-06-26） |
 | **E** | Done | `fast_persistence = strong_only` · Fast 闲聊不写 long_term / favor / evolution；强事件仍写 · RFC [`RFC_TURN_THINKING_PERSISTENCE.md`](../creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md) |
+| **F** | Done | 包级 `turn_thinking` OR/AND · 本句 rule prepass · Deep latch · ephemeral TTL 局面摘要 · migration `035` |
 
 Bench SSOT：[`TTFT_BENCHMARK.md`](TTFT_BENCHMARK.md) · 设计：[`DEEP_PROMPT_DISTILLATION.md`](DEEP_PROMPT_DISTILLATION.md) · 愿景：[`creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md`](../creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md)。
 

@@ -8,7 +8,7 @@
 
 ---
 
-## 文档包进度（与 AI 包同步 · 2026-06-25）
+## 文档包进度（与 AI 包同步 · 2026-06-26）
 
 维护者改架构/纪律时 **须同轮** 更新本表与 [`handoff/README.md`](../handoff/README.md) §文档分责，避免「人类文滞后 → 误以为技术债」。
 
@@ -18,7 +18,8 @@
 | **L3 术语 + L4 工程约束** | **Done** | 03/04；04 已含 **§8 文档贡献（人类版）** |
 | **L5 内核路径** | **Done** | 06；已链 MODULE_MAP · 记忆三套存储 |
 | **L6–L8 任务 / 地图 / PR** | **Done** | 07–10；08 资料地图含文档分责 |
-| **01 简架构** | **Done（2026-06-25）** | 增补模块四类 · 记忆三套 · 设施/独立通道导读 |
+| **01 简架构** | **Done（2026-06-26）** | 模块四类 · 记忆三套 · **Turn Thinking**（Wave E/F 导读） |
+| **Turn Thinking 文档** | **Done** | RFC [`RFC_TURN_THINKING_PERSISTENCE`](../creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md) · 英文摘要 [`creator-docs-en/rfc/`](../creator-docs-en/rfc/RFC_TURN_THINKING_PERSISTENCE_SUMMARY.md) · ROLE_PACK §9.11 |
 | **team/ 垂直 sprint** | **Done** | 视觉/语音边界 · 组员不必读全仓 |
 | **模块注册表（深读）** | **handoff** | [`MODULE_MAP_AND_HANDOFF.md`](../handoff/MODULE_MAP_AND_HANDOFF.md) — 人类 L5+ 深读，不在 human-docs 复制 |
 | **AI 文档纪律 G10–G16** | **Done** | AI 详述 → [`AI_CHANGE_BOUNDARIES`](../handoff/AI_CHANGE_BOUNDARIES.md)；人类摘要 → [04 §8](04_ENGINEERING_RULES.md#8-文档贡献纪律人类版) |

@@ -6,6 +6,8 @@
 
 ### Added
 
+- **Wave E · Turn Thinking persistence split**: `[turn_thinking] fast_persistence = "strong_only"` (default `legacy`); Fast casual chat skips long_term / favor / profile evolution; **Quarrel / Apology / Confession / Praise** still persist. RFC: [`RFC_TURN_THINKING_PERSISTENCE_SUMMARY.md`](creator-docs-en/rfc/RFC_TURN_THINKING_PERSISTENCE_SUMMARY.md) (full: [Chinese](creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md)).
+- **Wave F · Turn Thinking pack routing**: `config.json` → `turn_thinking` (OR/AND · Deep latch · ephemeral situation summary TTL); migration `035_turn_thinking_runtime.sql`; this-turn rule event prepass before router. RFC §8–12.
 - **Chat Pro stream cancel**: new sends abort the in-flight SSE via `AbortController` and remove dangling `streaming` bubbles.
 - **Chat Pro stream toggle**: Settings → General → Advanced “Streaming replies” (`localStorage` `oclive.chat.streamEnabled`, default on).
 - **Monorepo layout (kernel / distros)**: Rust crates under `kernel/`; desktop distros under `distros/{shared,chat-pro,theater,desktop-tauri}`; RFC: [`handoff/distros/ARCHITECTURE_DECOUPLING_RFC.md`](handoff/distros/ARCHITECTURE_DECOUPLING_RFC.md).

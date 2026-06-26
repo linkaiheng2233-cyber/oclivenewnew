@@ -30,6 +30,17 @@ Deleting chat **does not** clear memory tables. Details: [CHAT_STORAGE_ARCHITECT
 
 Per-slot definitions: [MODULE_MAP §4–§9](../handoff/MODULE_MAP_AND_HANDOFF.md).
 
+## Turn Thinking (orchestration, not a slot)
+
+Each co-present turn picks **Fast** or **Deep** before the main LLM chain (`turn_thinking.rs` + `co_present`).
+
+| Layer | Config | Effect |
+|-------|--------|--------|
+| **Wave E** | `distro.oclive.toml` → `[turn_thinking] fast_persistence` | `strong_only`: Fast casual chat skips LTM / favor / profile evolution; strong events still persist |
+| **Wave F** | `config.json` → `turn_thinking` | OR/AND Deep rules, latch, ephemeral situation summary (TTL) |
+
+Chat log rows are **always** written. No player Fast/Deep toggle. Details: [RFC summary](../creator-docs-en/rfc/RFC_TURN_THINKING_PERSISTENCE_SUMMARY.md) · [Chinese RFC](../creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md).
+
 ## Key IDs
 
 | Term | Meaning |

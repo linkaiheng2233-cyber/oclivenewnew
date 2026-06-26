@@ -10,6 +10,9 @@
 | **slot_registry** | Blueprint slot overrides (admin layer) |
 | **reply** | API response field (**not** `response`) |
 | **OOCP** | OCLive Open Chat Protocol — HTTP black-box tests |
+| **Turn Thinking** | Co-present Fast/Deep policy (**not** a seventh slot) |
+| **Fast / Deep** | Turn mode: Fast skips extra LLM + (with `strong_only`) long-term consolidation; Deep is full |
+| **ephemeral_archive** | Rule-written situation summary (TTL); separate from `mutable_personality` |
 
 ```
 User picks mrid → ensure_role_loaded

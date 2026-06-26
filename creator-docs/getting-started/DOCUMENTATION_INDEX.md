@@ -145,6 +145,7 @@
 | **VS Code Flash 工作文档** | **[../../handoff/vscode/README.md](../../handoff/vscode/README.md)** · 契约 [`VSCODE_DISTRIBUTION.md`](../../handoff/vscode/VSCODE_DISTRIBUTION.md) |
 | **启动器 / 工作室 / 编写器（主仓协调）** | [launcher](../../handoff/launcher/README.md) · [studio](../../handoff/studio/README.md) · [pack-editor](../../handoff/pack-editor/README.md) |
 | **发行版能力配置 `distro.oclive.toml`（P1 Schema）** | **[../kernel/DISTRO_CAPABILITY_PROFILE.md](../kernel/DISTRO_CAPABILITY_PROFILE.md)** · 示例 `examples/distro-profiles/` |
+| **Turn Thinking（Fast/Deep · 持久化分流 · 包级路由）** | **[../rfc/RFC_TURN_THINKING_PERSISTENCE.md](../rfc/RFC_TURN_THINKING_PERSISTENCE.md)** · [English summary](../../creator-docs-en/rfc/RFC_TURN_THINKING_PERSISTENCE_SUMMARY.md) · MODULE_MAP §12 |
 | **发行版默认插件矩阵（三 personas）** | **[../kernel/DISTRO_DEFAULT_PLUGINS.md](../kernel/DISTRO_DEFAULT_PLUGINS.md)** · desktop-chat / vscode / theater |
 | **编写器路线图（立绘 catalog · 视觉舞台 · 分级导出）** | **[../../handoff/pack-editor/PACK_EDITOR_ROADMAP.md](../../handoff/pack-editor/PACK_EDITOR_ROADMAP.md)** · 姊妹仓 `oclive-pack-editor/handoff/PACK_EDITOR_ROADMAP.md` |
 | **立绘 + 视觉表现实施计划** | **[../../handoff/PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md](../../handoff/PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md)** |
@@ -202,6 +203,7 @@
 | **[RFC_STUDIO_MERGE.md](../rfc/RFC_STUDIO_MERGE.md)** | **工作室（合并启动器 + 编写器）**：新仓 `oclive-studio`、两安装物叙事、配置与验收。 |
 | **[RFC_PORTRAIT_FACILITY.md](../rfc/RFC_PORTRAIT_FACILITY.md)** | **第 3 设施 · 立绘**：`portrait_catalog`、**表现导演** AI 选 `visual_state_id`；legacy 七 tag 回退。 |
 | **[RFC_VISUAL_PRESENTATION_FACILITY.md](../rfc/RFC_VISUAL_PRESENTATION_FACILITY.md)** | **第 4 设施 · 视觉表现**：`performance_directive`、Live2D / 3D / 演算 adapter；**无 AI 选图**。 |
+| **[RFC_TURN_THINKING_PERSISTENCE.md](../rfc/RFC_TURN_THINKING_PERSISTENCE.md)** | **编排行 · Turn Thinking**：Wave E `fast_persistence`；Wave F 包级 OR/AND · Deep latch · ephemeral 局面摘要；**非第七槽**。[English](../../creator-docs-en/rfc/RFC_TURN_THINKING_PERSISTENCE_SUMMARY.md) |
 
 ---
 

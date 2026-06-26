@@ -67,6 +67,17 @@ impl PromptBuilder {
     }
 
     #[must_use]
+    pub(super) fn build_ephemeral_archive_block(ephemeral_personality: &str) -> String {
+        let text = ephemeral_personality.trim();
+        if text.is_empty() {
+            return String::new();
+        }
+        format!(
+            "【局面摘要】（临时状态，会过期；与核心/可变档案冲突以核心为准）\n{text}\n\n"
+        )
+    }
+
+    #[must_use]
     pub(super) fn build_personality_supplement(
         role: &Role,
         personality: &PersonalityVector,

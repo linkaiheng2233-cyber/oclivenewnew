@@ -390,6 +390,7 @@ impl<'a> ExperimentalStepCtx<'a> {
                 life_context_line: "",
                 worldview_snippet: "",
                 mutable_personality: mutable_for_prompt.as_str(),
+                ephemeral_personality: "",
                 reply_quality_anchor: effective_reply_quality_anchor(self.role),
                 previous_complex_emotion_narrative_hint: prev_hint.as_str(),
                 host_prompt_overlay: "",

@@ -4,6 +4,9 @@ use crate::domain::chat_llm_fallback::{fallback_reply_for_llm_failure, FallbackR
 use crate::domain::chat_turn_rules::{soft_append_guard, strip_hallucination_tokens};
 use crate::domain::policy::PolicyContext;
 use crate::domain::host_profile::bench_telemetry_enabled;
+use crate::domain::turn_thinking::{
+    effective_turn_thinking_policy, update_turn_thinking_runtime_state,
+};
 use crate::domain::slot_runner::SlotRunner;
 use crate::infrastructure::ollama_client::OllamaGenerateOpts;
 use crate::models::dto::SendMessageResponse;
@@ -527,6 +530,26 @@ pub(crate) async fn post_llm(
     .await;
 
     persist_non_profile_personality_delta(state, role, srid, middle).await;
+
+    if matches!(mode, TurnMode::CoPresent) {
+        let policy = effective_turn_thinking_policy(&state.host_profile, role);
+        if let Err(e) = update_turn_thinking_runtime_state(
+            &state.db_manager,
+            srid,
+            &policy,
+            middle.ai_event_type,
+            user_message,
+        )
+        .await
+        {
+            tracing::warn!(
+                target: "oclive_turn",
+                role_id = %srid,
+                error = %e,
+                "turn_thinking runtime state update failed"
+            );
+        }
+    }
 
     let response = assemble_send_message_response(&PostLlmCtx {
         mode,

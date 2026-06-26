@@ -36,6 +36,7 @@ Time-boxed “start here → ship”; **authoritative detail stays in each topic
 | Kernel factory & three layers | [KERNEL_FACTORY_VISION.md](KERNEL_FACTORY_VISION.md) |
 | Kernel-centric diagram | [KERNEL_AND_MODULES_ARCHITECTURE.md](../../creator-docs/getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md) |
 | Monolith (macro-mode) | [RFC_OCLIVE_MONOLITH_MODE.md](../../creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md) |
+| Turn Thinking (Fast/Deep · persistence · pack routing) | [RFC_TURN_THINKING_PERSISTENCE_SUMMARY.md](../rfc/RFC_TURN_THINKING_PERSISTENCE_SUMMARY.md) (full: [Chinese RFC](../../creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md)) |
 
 ---
 
@@ -133,6 +134,7 @@ Architecture-level design converges in RFCs (**drafts do not imply merged code o
 | Document | Notes |
 |----------|--------|
 | **[RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md)** | **Monolith**: `monolith.toml`, `--monolith`, dual `[[bin]]`; **`build` / `bench`** and partial welding (see RFC and CLI guide). |
+| **[RFC_TURN_THINKING_PERSISTENCE_SUMMARY.md](../rfc/RFC_TURN_THINKING_PERSISTENCE_SUMMARY.md)** | **Turn Thinking**: Wave E `fast_persistence`; Wave F pack OR/AND · latch · ephemeral; **not** a seventh slot. Full RFC: [Chinese](../../creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md). |
 
 ---
 

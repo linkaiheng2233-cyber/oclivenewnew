@@ -35,6 +35,8 @@ pub struct PromptInput<'a> {
     pub worldview_snippet: &'a str,
     /// Full text of the "mutable personality profile" from the DB under persona-first mode; pass an empty string in `vector` mode.
     pub mutable_personality: &'a str,
+    /// Ephemeral situation summary (Wave F TTL archive); empty when TTL expired.
+    pub ephemeral_personality: &'a str,
     /// Merged "reply quality anchor" (engine default or `settings.json` override); injected before "User says".
     pub reply_quality_anchor: &'a str,
     /// The `narrative_hint` output by the builtin complex-emotion module in the previous turn; if empty the [Complex-Emotion Narrative Hint] section is skipped.

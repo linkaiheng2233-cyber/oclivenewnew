@@ -95,6 +95,10 @@ pub use models::{
     },
     role_manifest_disk::{disk_manifest_from_role, disk_manifest_to_role, DiskRoleManifest},
     role_settings_disk::{disk_role_settings_from_role, DiskRoleSettings},
+    role_pack_config::{
+        RolePackTurnThinkingConfig, TurnThinkingAndGroup, TurnThinkingDeepWhen,
+        TurnThinkingEphemeralArchiveConfig, TurnThinkingLatchConfig, TurnThinkingSignalRule,
+    },
     scene_disk::{DiskSceneConfig, DiskSceneTimeWindow},
     ui_config::{LayoutConfig, SlotConfig, ThemeConfig, UiConfig, UiSlots},
 };

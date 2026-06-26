@@ -197,6 +197,79 @@ impl DbManager {
         Ok(())
     }
 
+    pub async fn get_ephemeral_personality(&self, role_id: &str) -> Result<String> {
+        let row: Option<(Option<String>,)> =
+            sqlx::query_as("SELECT ephemeral_personality FROM role_runtime WHERE role_id = ?")
+                .bind(role_id)
+                .fetch_optional(&self.pool)
+                .await
+                .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(row.and_then(|(c,)| c).unwrap_or_default())
+    }
+
+    pub async fn set_ephemeral_personality(&self, role_id: &str, text: &str) -> Result<()> {
+        let now = Utc::now().to_rfc3339();
+        sqlx::query(
+            "UPDATE role_runtime SET ephemeral_personality = ?, updated_at = ? WHERE role_id = ?",
+        )
+        .bind(text)
+        .bind(&now)
+        .bind(role_id)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(())
+    }
+
+    pub async fn get_ephemeral_ttl_turns(&self, role_id: &str) -> Result<u32> {
+        let row: Option<(Option<i64>,)> =
+            sqlx::query_as("SELECT ephemeral_ttl_turns FROM role_runtime WHERE role_id = ?")
+                .bind(role_id)
+                .fetch_optional(&self.pool)
+                .await
+                .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(row.and_then(|(v,)| v).unwrap_or(0).max(0) as u32)
+    }
+
+    pub async fn set_ephemeral_ttl_turns(&self, role_id: &str, ttl: u32) -> Result<()> {
+        let now = Utc::now().to_rfc3339();
+        sqlx::query(
+            "UPDATE role_runtime SET ephemeral_ttl_turns = ?, updated_at = ? WHERE role_id = ?",
+        )
+        .bind(i64::from(ttl))
+        .bind(&now)
+        .bind(role_id)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(())
+    }
+
+    pub async fn get_deep_latch_active(&self, role_id: &str) -> Result<bool> {
+        let row: Option<(Option<i64>,)> =
+            sqlx::query_as("SELECT deep_latch_active FROM role_runtime WHERE role_id = ?")
+                .bind(role_id)
+                .fetch_optional(&self.pool)
+                .await
+                .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(row.and_then(|(v,)| v).unwrap_or(0) != 0)
+    }
+
+    pub async fn set_deep_latch_active(&self, role_id: &str, active: bool) -> Result<()> {
+        let now = Utc::now().to_rfc3339();
+        let n = if active { 1i64 } else { 0i64 };
+        sqlx::query(
+            "UPDATE role_runtime SET deep_latch_active = ?, updated_at = ? WHERE role_id = ?",
+        )
+        .bind(n)
+        .bind(&now)
+        .bind(role_id)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(())
+    }
+
     pub async fn ensure_role_runtime(&self, role_id: &str) -> Result<()> {
         let now = Utc::now().to_rfc3339();
         sqlx::query(
@@ -328,11 +401,15 @@ impl DbManager {
                 Option<i64>,
                 Option<String>,
                 Option<f64>,
+                Option<String>,
+                Option<i64>,
+                Option<i64>,
             ),
         >(
             "SELECT current_favorability, current_emotion, relation_state, current_scene,
                     interaction_mode, COALESCE(remote_life_enabled, 0), mutable_personality,
-                    event_impact_factor
+                    event_impact_factor, ephemeral_personality, ephemeral_ttl_turns,
+                    COALESCE(deep_latch_active, 0)
              FROM role_runtime WHERE role_id = ?",
         )
         .bind(role_id)
@@ -349,6 +426,9 @@ impl DbManager {
             remote_life_enabled,
             mutable_personality,
             event_impact_factor,
+            ephemeral_personality,
+            ephemeral_ttl_turns,
+            deep_latch_active,
         )) = row
         else {
             return Err(AppError::RoleRuntimeNotReady);
@@ -363,6 +443,9 @@ impl DbManager {
             remote_life_enabled: remote_life_enabled.map(|v| v != 0),
             mutable_personality,
             event_impact_factor,
+            ephemeral_personality,
+            ephemeral_ttl_turns: ephemeral_ttl_turns.map(|v| v.max(0) as u32),
+            deep_latch_active: deep_latch_active.map(|v| v != 0),
         };
 
         if seed_interaction_mode && interaction_mode_raw.is_none() {
@@ -418,11 +501,15 @@ impl DbManager {
                 Option<i64>,
                 Option<String>,
                 Option<f64>,
+                Option<String>,
+                Option<i64>,
+                Option<i64>,
             ),
         >(
             "SELECT current_favorability, current_emotion, relation_state, current_scene,
                     interaction_mode, COALESCE(remote_life_enabled, 0), mutable_personality,
-                    event_impact_factor
+                    event_impact_factor, ephemeral_personality, ephemeral_ttl_turns,
+                    COALESCE(deep_latch_active, 0)
              FROM role_runtime WHERE role_id = ?",
         )
         .bind(role_id)
@@ -439,6 +526,9 @@ impl DbManager {
                 remote_life_enabled,
                 mutable_personality,
                 event_impact_factor,
+                ephemeral_personality,
+                ephemeral_ttl_turns,
+                deep_latch_active,
             )| RoleRuntimeSnapshot {
                 favorability: Some(favorability),
                 emotion,
@@ -448,6 +538,9 @@ impl DbManager {
                 remote_life_enabled: remote_life_enabled.map(|v| v != 0),
                 mutable_personality,
                 event_impact_factor,
+                ephemeral_personality,
+                ephemeral_ttl_turns: ephemeral_ttl_turns.map(|v| v.max(0) as u32),
+                deep_latch_active: deep_latch_active.map(|v| v != 0),
             },
         ))
     }

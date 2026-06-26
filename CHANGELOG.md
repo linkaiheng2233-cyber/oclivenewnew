@@ -7,6 +7,7 @@
 ### Added
 
 - **Wave E · Turn Thinking 持久化分流**：`[turn_thinking] fast_persistence = "strong_only"`（默认 `legacy`）；Fast 闲聊不写 long_term / favor / evolution；**Quarrel / Apology / Confession / Praise** 仍正常写入；RFC [`creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md`](creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md)。
+- **Wave F · Turn Thinking 包级路由**：`config.json` → `turn_thinking`（OR/AND · Deep latch · ephemeral 局面摘要 TTL）；迁移 `035_turn_thinking_runtime.sql`；本句 rule event Router 前 prepass；RFC §8–12。
 - **Chat Pro 流式取消**：新消息发出时 `AbortController` 打断上一轮 SSE；清理悬空 `streaming` 气泡。
 - **Chat Pro 流式开关**：设置 → 常规 → 高级「流式回复」（`localStorage` `oclive.chat.streamEnabled`，默认开启）。
 - **Wave D · Deep persona capsule**：`prompts/deep_capsule.txt`（≤2500 字）· `meta.deep_capsule_enabled` · Small+Deep 时 `PromptBuilder` 用 capsule 替代全量 Tier0；mumu 样例已启用。

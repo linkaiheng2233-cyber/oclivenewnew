@@ -222,6 +222,10 @@ impl PromptBuilder {
             prompt.push_str(&supplement);
             prompt.push_str("\n\n");
         }
+        let ephemeral = Self::build_ephemeral_archive_block(input.ephemeral_personality);
+        if !ephemeral.is_empty() {
+            prompt.push_str(&ephemeral);
+        }
         if !input.worldview_snippet.trim().is_empty() {
             prompt.push_str(
                 "【世界观设定】（角色包知识；与闲聊记忆冲突时以本段为权威事实，但不得覆盖【用户身份】与安全红线。）\n",
@@ -351,6 +355,10 @@ impl PromptBuilder {
         if !supplement.is_empty() {
             dynamic_suffix.push_str(&supplement);
             dynamic_suffix.push_str("\n\n");
+        }
+        let ephemeral = Self::build_ephemeral_archive_block(input.ephemeral_personality);
+        if !ephemeral.is_empty() {
+            dynamic_suffix.push_str(&ephemeral);
         }
 
         dynamic_suffix.push_str("---\n语气区块\n\n");

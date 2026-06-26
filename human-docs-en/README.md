@@ -1,6 +1,6 @@
 # Human docs (English mirror — minimal set)
 
-> Full Chinese ladder: [human-docs/README.md](../human-docs/README.md) · **Human doc pack progress**: [same §进度 table](../human-docs/README.md#文档包进度与-ai-包同步--2026-06-25).  
+> Full Chinese ladder: [human-docs/README.md](../human-docs/README.md) · **Human doc pack progress**: [same §进度 table](../human-docs/README.md#文档包进度与-ai-包同步--2026-06-26).  
 > Deep contracts: [creator-docs-en/](../creator-docs-en/) · AI index: [AGENTS.md](../AGENTS.md) (for agents, not humans).
 
 | Doc | Topic |

@@ -29,6 +29,9 @@
 | **`slot_registry.type`** | 与六槽键同义；**禁止**别名 `memory_backend` 等 |
 | **`OOCP`** | OCLive Open Chat Protocol；HTTP 黑盒测试场景 S0–S12 |
 | **`co_present`** | Stable 核共景主路径实现模块 |
+| **Turn Thinking** | 编排行 Fast/Deep（**非第七槽**）；Wave E 持久化分流 · Wave F 包级路由 / latch / ephemeral |
+| **Fast / Deep** | 本回合思考档位：Fast 跳过部分 LLM 与（在 `strong_only` 下）长时巩固；Deep 全量 |
+| **ephemeral_archive** | 规则写的临时局面摘要（TTL），Prompt 段 `【局面摘要】`；与 `mutable_personality` 独立 |
 | **第 3 设施（立绘）** | `portrait_catalog` · AI **表现导演** 选 `visual_state_id`（RFC 草案；v0.3 仍为文件名 + 七 tag） |
 | **第 4 设施（视觉表现）** | **角色舞台**：Live2D / 3D / 演算 adapter（RFC 草案；默认关） |
 
@@ -66,4 +69,5 @@
 ## 深度链接
 
 - [ROLE_PACK_BOUNDARY](../handoff/ROLE_PACK_BOUNDARY.md)
+- [RFC_TURN_THINKING_PERSISTENCE](../creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md) — Fast/Deep · 持久化 · 包级路由
 - [SETTINGS_REFERENCE](../creator-docs/cli/SETTINGS_REFERENCE.md)

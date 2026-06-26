@@ -79,6 +79,7 @@ fn load_knowledge_index_parses_front_matter_and_merge_hints() {
         life_context_line: "",
         worldview_snippet: snippet.as_str(),
         mutable_personality: "",
+        ephemeral_personality: "",
         reply_quality_anchor: effective_reply_quality_anchor(&disk_role),
         previous_complex_emotion_narrative_hint: "",
         host_prompt_overlay: "",

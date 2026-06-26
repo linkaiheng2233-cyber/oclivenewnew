@@ -157,6 +157,7 @@ mod tests {
             pack_portrait_catalog: Default::default(),
             portrait_catalog: None,
             pack_visual_presentation_config: Default::default(),
+            pack_turn_thinking_config: None,
             slot_registry: None,
             slot_groups: None,
             runtime_config: None,

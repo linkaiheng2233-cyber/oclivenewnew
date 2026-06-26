@@ -150,6 +150,17 @@ node examples/oocp-test-suite/run.mjs
 
 环境：mumu · `qwen2.5:7b` · `prompt_prefix_cache=true` · `OCLIVE_BENCH_TELEMETRY=1` · 2026-06-26。
 
+### 表 4 · Wave F 手测（`desktop-latency` · 可选）
+
+| 场景 | 预期 |
+|------|------|
+| 短句 + 规则 Quarrel | Auto → **Deep**（`this_turn_event` prepass，无需长消息） |
+| mumu `turn_thinking.latch` | Quarrel 后 **持续 Deep** 直至 Apology |
+| `ephemeral_archive.ttl_turns=3` | 局面摘要 **3 轮** 后清空；Fast 轮仍注入 Prompt |
+| Fast + ephemeral ≤200 字 | TTFT 增量手测目标 **&lt;50ms**（不阻塞 CI） |
+
+示例包：`distros/chat-pro/roles/mumu/config.json` → `turn_thinking`（注释见 RFC §12 示例）。
+
 ## Related
 
 - [`DEEP_PROMPT_DISTILLATION.md`](DEEP_PROMPT_DISTILLATION.md)

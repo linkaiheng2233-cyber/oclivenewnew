@@ -535,6 +535,7 @@ fn validate_role_pack_optional_extensions(role_dir: &Path) -> Result<(), Vec<Str
     crate::penetration_templates::validate_penetration_templates_config_file(
         &role_dir.join("config.json"),
     )?;
+    crate::turn_thinking::validate_turn_thinking_config_file(&role_dir.join("config.json"))?;
     crate::portrait_catalog::validate_portrait_catalog_files(role_dir)?;
     let capsule_enabled = crate::deep_capsule::blueprint_meta_deep_capsule_enabled(role_dir);
     crate::deep_capsule::validate_deep_capsule_file(role_dir, capsule_enabled)?;

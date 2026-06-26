@@ -31,6 +31,7 @@ pub mod protocol_boundary;
 pub mod reply_post_processor;
 pub mod role_pack;
 pub mod runtime_config;
+pub mod turn_thinking;
 pub mod user_identities;
 pub mod validate;
 
