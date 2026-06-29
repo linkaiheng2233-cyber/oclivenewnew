@@ -25,7 +25,7 @@ oclivenewnew/
 ├── handoff/
 │   └── distros/            # 发行版 handoff 索引
 ├── kernel/
-│   ├── kernel/crates/             # 12 个 Rust crate
+│   ├── kernel/crates/             # 10 个 Rust crate（workspace 共 12 成员，另含 distros/desktop-tauri 与 kernel/fuzz）
 │   ├── kernel/fuzz/
 │   ├── data/plugins.json
 │   └── examples/             # 内核向示例（oocp、distro-profiles 等）

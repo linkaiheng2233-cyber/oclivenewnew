@@ -22,7 +22,7 @@ npm run check
 # 发版或改引擎
 npm run check:release
 
-# 本地 CI 子集（dimension5 十三检 `--ci`，需已 build）
+# 本地 CI 子集（dimension5 十四检 `--ci`，需已 build）
 npm run check:ci-local
 ```
 
