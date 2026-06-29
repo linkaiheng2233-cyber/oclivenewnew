@@ -20,7 +20,8 @@ parsed.build.distDir = distDir
 parsed.package.productName = productName
 parsed.tauri.windows[0].title = productName
 
-const resources = parsed.tauri.bundle.resources.filter((e) => e !== '../roles' && e !== 'resources/roles')
+const ROLE_PATHS = new Set(['../roles', '../chat-pro/roles', 'resources/roles'])
+const resources = parsed.tauri.bundle.resources.filter((e) => !ROLE_PATHS.has(e))
 resources.unshift(rolesResource)
 parsed.tauri.bundle.resources = resources
 
