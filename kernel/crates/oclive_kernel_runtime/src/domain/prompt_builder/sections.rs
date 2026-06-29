@@ -135,11 +135,7 @@ impl PromptBuilder {
 
     #[must_use]
     pub(super) fn build_character_status_summary(input: &PromptInput<'_>) -> String {
-        let mut parts = vec![format!(
-            "你当前对用户好感约 {:.0}/100，关系处于 {}。",
-            input.favorability_before.clamp(0.0, 100.0),
-            input.relation_before
-        )];
+        let mut parts = Vec::new();
         if !input.user_emotion.trim().is_empty() {
             parts.push(format!("用户语气线索：{}。", input.user_emotion.trim()));
         }
@@ -148,6 +144,9 @@ impl PromptBuilder {
         }
         if !input.host_state_expression_hint.trim().is_empty() {
             parts.push(input.host_state_expression_hint.trim().to_string());
+        }
+        if parts.is_empty() {
+            return String::new();
         }
         format!("【角色当前状态】{}\n", parts.join(""))
     }
@@ -231,76 +230,29 @@ impl PromptBuilder {
     }
 
     pub(super) fn build_event_relation_state(
-        relation_before: &str,
-        favorability_before: f64,
-        relation_preview: &str,
-        favorability_preview: f64,
+        _relation_before: &str,
+        _favorability_before: f64,
+        _relation_preview: &str,
+        _favorability_preview: f64,
         event_type: &EventType,
         impact_factor: f64,
     ) -> String {
         let impact = impact_factor.clamp(-1.0, 1.0);
-        let mut s = String::from("【本轮事件与关系状态机】\n");
-        s.push_str(&format!("当前关系阶段: {}\n", relation_before));
-        s.push_str(&format!(
-            "当前好感度: {:.1}/100\n",
-            favorability_before.clamp(0.0, 100.0)
-        ));
-        s.push_str(&format!(
-            "本轮关系预览: {} -> {}（预计好感 {:.1}/100）\n",
-            relation_before,
-            relation_preview,
-            favorability_preview.clamp(0.0, 100.0)
-        ));
+        let mut s = String::from("【本轮事件】\n");
         s.push_str(&format!(
             "本轮事件类型: {}\n",
             Self::event_type_label(event_type)
         ));
         s.push_str("\n硬约束（必须遵守）：\n");
-        s.push_str("- 关系阶段与好感决定亲密度：低阶段/低好感时不要突然使用过度亲昵称呼、不要突然表白或承诺长期关系。\n");
         if matches!(event_type, EventType::Quarrel) || impact < 0.0 {
             s.push_str(
                 "- 本轮偏负面事件：语气应更克制、防御或冷静，不要立刻甜蜜撒娇、不要当作没吵过。\n",
             );
         } else if matches!(event_type, EventType::Praise | EventType::Apology) || impact > 0.0 {
-            s.push_str("- 本轮偏正面事件：允许缓和、更温柔，但仍需服从当前关系阶段。\n");
+            s.push_str("- 本轮偏正面事件：允许缓和、更温柔，但仍需服从人设与当前对话氛围。\n");
         }
-        s.push_str(
-            "- 请把语气对齐到「本轮关系预览」：若仅小幅缓和，请用过渡口吻，避免语气突然升阶。\n",
-        );
         s.push_str("- 不要编造系统状态：不要虚构未发生的关系跳变、共同经历或历史事件。\n");
-        s.push_str(&Self::build_transition_tone_line(
-            relation_before,
-            relation_preview,
-            favorability_before,
-            favorability_preview,
-            impact_factor,
-        ));
         s
-    }
-
-    pub(super) fn build_transition_tone_line(
-        relation_before: &str,
-        relation_preview: &str,
-        favorability_before: f64,
-        favorability_preview: f64,
-        impact_factor: f64,
-    ) -> String {
-        let before_rank = relation_rank(relation_before);
-        let preview_rank = relation_rank(relation_preview);
-        let favor_delta = (favorability_preview - favorability_before).clamp(-100.0, 100.0);
-        let impact = impact_factor.clamp(-1.0, 1.0);
-        let line = if preview_rank > before_rank {
-            if favor_delta > 2.0 || impact > 0.45 {
-                "本轮过渡语气：可轻微升温，但先用试探/确认式表达，再进入更亲近语气。"
-            } else {
-                "本轮过渡语气：关系有改善预览，但请维持慢热，只做一句轻度缓和。"
-            }
-        } else if preview_rank < before_rank || impact < -0.2 {
-            "本轮过渡语气：关系收紧，优先克制与边界，不使用亲密化措辞。"
-        } else {
-            "本轮过渡语气：延续当前阶段语气，避免突然升阶或突然疏离。"
-        };
-        format!("{line}\n")
     }
 
     pub(super) fn seven_dim_equal_weight_score(personality: &PersonalityVector) -> f64 {

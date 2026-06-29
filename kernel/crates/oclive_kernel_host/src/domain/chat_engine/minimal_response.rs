@@ -5,7 +5,9 @@ use crate::domain::ports::turn_persistence::ChatTurnAtomicInput;
 use crate::domain::slot_runner::SlotRunner;
 use crate::domain::user_identity::resolve_effective_user_relation_key;
 use crate::error::Result;
-use crate::models::dto::{PresenceMode, SendMessageResponse, API_VERSION, SCHEMA_VERSION};
+use crate::models::dto::{
+    DisplayMetricsDto, PresenceMode, SendMessageResponse, API_VERSION, SCHEMA_VERSION,
+};
 use crate::models::{Event, EventType, PersonalityVector, Role};
 use crate::state::AppState;
 
@@ -85,6 +87,11 @@ pub(crate) async fn build_minimal_response(
         api_version: API_VERSION,
         schema: SCHEMA_VERSION,
         presence_mode: PresenceMode::CoPresent,
+        display_metrics: Some(DisplayMetricsDto {
+            favor: snapshot.favorability,
+            relation_summary: snapshot.relation_state.clone(),
+            traits: vec![],
+        }),
         relation_state: snapshot.relation_state,
         reply,
         emotion: emotion_to_dto(&emotion_result),

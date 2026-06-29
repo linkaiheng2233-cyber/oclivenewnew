@@ -24,7 +24,8 @@ use crate::domain::slot_runner::SlotRunner;
 use crate::domain::user_identity_loader::resolve_active_user_identity;
 use crate::error::AppError;
 use crate::models::dto::{
-    PresenceMode, SendMessageRequest, SendMessageResponse, API_VERSION, SCHEMA_VERSION,
+    DisplayMetricsDto, PresenceMode, SendMessageRequest, SendMessageResponse, API_VERSION,
+    SCHEMA_VERSION,
 };
 use crate::models::{EventType, KnowledgeIndex, PersonalityVector, Role};
 use crate::state::AppState;
@@ -506,6 +507,11 @@ impl<'a> ExperimentalStepCtx<'a> {
             api_version: API_VERSION,
             schema: SCHEMA_VERSION,
             presence_mode: PresenceMode::CoPresent,
+            display_metrics: Some(DisplayMetricsDto {
+                favor: favor_current,
+                relation_summary: relation_state.clone(),
+                traits: vec![],
+            }),
             relation_state,
             reply: agent_out.reply,
             emotion: crate::domain::chat_engine::emotion_to_dto(&emotion_result),

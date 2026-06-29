@@ -116,9 +116,11 @@ slot_registry（或 legacy plugin_backends）
 
 ## 5. 第 2 模块 · `emotion`
 
+> **T0 / T1+ 分层与情感·展示分轨（Draft）**：[RFC_MODULE_MVL_AND_AFFECT_ARCHITECTURE.md](../creator-docs/rfc/RFC_MODULE_MVL_AND_AFFECT_ARCHITECTURE.md) — T0 = `analyze`；T2 角色模拟、T3 `display_metrics` 为扩展；好感数值非 Prompt 力学。
+
 | 项 | 内容 |
 |----|------|
-| **定义** | 分析 **用户句** 情绪，供 Prompt 与事件/好感链路消费 |
+| **定义** | 分析 **用户句** 情绪（**T0**）；可选角色情绪模拟（**T2**）与展示快照（**T3**） |
 | **键** | `emotion` |
 | **Trait** | `UserEmotionAnalyzer` |
 | **Backend** | `builtin` · `remote` · `directory` · `none` |
@@ -229,7 +231,7 @@ RFC：[`RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md`](../creator-docs/rfc/RFC_SI
 | **`PersonaSource`** FullCore/DeepCapsule | 编排行 · Deep Tier0 选择 | 角色 `meta.deep_capsule_enabled` + `prompts/deep_capsule.txt` | `model_tier.rs` · `co_present` |
 | **`event_impact_llm`** | HostProfile 开关 | `[host_flags]` | `event_impact_ai.rs` |
 | **`prompt.profile` concise** | HostProfile overlay | `[prompt]` | `DISTRO_CONCISE_PROMPT_OVERLAY` |
-| **PersonalityEngine / 好感** | 无编号设施 | 角色 `evolution` · `role_runtime` | `personality_engine.rs` |
+| **PersonalityEngine / 好感（legacy 数值）** | 无编号设施 · **目标废弃** | 角色 `evolution` · `role_runtime` | `personality_engine.rs` · 见 [RFC_MODULE_MVL_AND_AFFECT_ARCHITECTURE.md](../creator-docs/rfc/RFC_MODULE_MVL_AND_AFFECT_ARCHITECTURE.md) §6 |
 | **PluginHost** | 无编号设施 | — | `plugin_host.rs` |
 | **remote_stub / remote_life** | 场景模式分支 | 场景 + `remote_presence` | `process_message` 分支 |
 

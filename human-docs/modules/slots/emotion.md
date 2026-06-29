@@ -11,6 +11,7 @@
 
 ## 1. 你插在哪
 
+- **T0 / T1+ 分层（Draft RFC）**：[RFC_MODULE_MVL_AND_AFFECT_ARCHITECTURE.md](../../../creator-docs/rfc/RFC_MODULE_MVL_AND_AFFECT_ARCHITECTURE.md) — 最小闭环 = `analyze`；模拟与展示指标为扩展  
 - **MODULE_MAP**：[§5 第 2 模块 · `emotion`](../../handoff/MODULE_MAP_AND_HANDOFF.md#5-第-2-模块--emotion)  
 - **`plugin_backends` 键**：`emotion`  
 - **Trait**：`UserEmotionAnalyzer`  

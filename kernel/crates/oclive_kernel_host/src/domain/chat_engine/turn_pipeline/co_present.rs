@@ -13,10 +13,9 @@ use crate::domain::prompt_builder::{
 };
 use crate::domain::slot_runner::SlotRunner;
 use crate::domain::turn_thinking::{resolve_turn_thinking, TurnThinkingMode};
-use crate::infrastructure::storage::pick_llm_backend_env_override;
 use crate::models::knowledge::KnowledgeIndex;
 use crate::models::Memory;
-use crate::models::{LlmBackend, PersonalitySource};
+use crate::models::PersonalitySource;
 
 use super::super::turn_context::TurnContext;
 use super::super::turn_error::TurnResult;
@@ -272,14 +271,10 @@ pub(crate) async fn run_middle(
         previous_assistant_reply: previous_assistant_reply.as_str(),
     };
 
-    let effective_llm_is_ollama = match pick_llm_backend_env_override() {
-        Some(LlmBackend::Ollama) => true,
-        Some(_) => false,
-        None => ctx.effective_backends.llm == LlmBackend::Ollama,
-    };
+    let llm_supports_prefix_cache = SlotRunner::primary_llm(pl).supports_prefix_cache();
     let use_prefix_segments = thinking.mode == TurnThinkingMode::Deep
         && prompt_prefix_cache_effective(&state.host_profile)
-        && effective_llm_is_ollama;
+        && llm_supports_prefix_cache;
 
     let (
         prompt,

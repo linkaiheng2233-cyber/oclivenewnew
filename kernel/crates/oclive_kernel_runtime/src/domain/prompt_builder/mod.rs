@@ -244,11 +244,6 @@ impl PromptBuilder {
             prompt.push_str(&status);
             prompt.push_str("\n\n");
         }
-        if !input.relation_transition_hint.trim().is_empty() {
-            prompt.push_str("【关系过渡】\n");
-            prompt.push_str(input.relation_transition_hint.trim());
-            prompt.push_str("\n\n");
-        }
         prompt.push_str(&Self::build_event_relation_state(
             input.relation_before,
             input.favorability_before,
@@ -374,11 +369,6 @@ impl PromptBuilder {
         let status = Self::build_character_status_summary(input);
         if !status.is_empty() {
             dynamic_suffix.push_str(&status);
-            dynamic_suffix.push_str("\n\n");
-        }
-        if !input.relation_transition_hint.trim().is_empty() {
-            dynamic_suffix.push_str("【关系过渡】\n");
-            dynamic_suffix.push_str(input.relation_transition_hint.trim());
             dynamic_suffix.push_str("\n\n");
         }
         dynamic_suffix.push_str(&Self::build_event_relation_state(

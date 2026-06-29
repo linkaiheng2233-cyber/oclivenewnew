@@ -11,9 +11,11 @@ pub mod plugin_host;
 pub mod slot_resolver;
 pub mod turn_persistence;
 pub mod turn_policies;
+pub mod turn_thinking_state;
 
 pub use app_settings::AppSettingsPort;
 pub use db_health::DbHealthPort;
-pub use llm::LlmClient;
+pub use llm::{LlmClient, LlmGenerateOpts, LlmGenerateOutcome};
 pub use oclive_kernel_contracts::{AgentProvider, EventEstimator, SlotRegistryResolver};
 pub use plugin_host::PluginHostPort;
+pub use turn_thinking_state::TurnThinkingStatePort;

@@ -157,7 +157,10 @@ async fn invoke_hotpath_role_info_full_shape() {
     assert_eq!(info.role_id, "mumu");
     assert!(!info.role_name.is_empty());
     assert!(!info.version.is_empty());
-    assert_eq!(info.personality_vector.len(), 7);
+    #[allow(deprecated)]
+    {
+        assert_eq!(info.personality_vector.len(), 7);
+    }
     assert!(!info.scenes.is_empty());
     assert_eq!(info.scenes.len(), info.scene_labels.len());
     assert!(!info.effective_ollama_model.is_empty());

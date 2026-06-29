@@ -35,7 +35,7 @@
     "check:rust:clippy": "cargo clippy --workspace --all-targets --all-features -- -D warnings",
     "check:rust:test": "cargo test --workspace --lib",
     "check:rust:test:all": "cargo test --workspace",
-    "check:rust": "npm run check:rust:fmt && npm run check:rust:clippy && npm run check:rust:test",
+    "check:rust": "node scripts/check-domain-layering.mjs && node scripts/check-changelog-parity.mjs && npm run check:rust:fmt && npm run check:rust:clippy && npm run check:rust:test",
     "check:license": "node scripts/check-license-readiness.mjs",
     "check": "npm run build && npm run check:rust",
     "check:release": "npm run build && npm run test:unit && npm run verify:ui && npm run verify:shared-i18n && npm run check:rust:fmt && npm run check:rust:clippy && npm run check:rust:test:all",

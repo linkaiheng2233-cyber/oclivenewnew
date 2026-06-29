@@ -5,7 +5,7 @@ use crate::domain::chat_engine::conversation_state_role_id;
 use crate::domain::effective_llm_model::resolve_effective_ollama_model;
 use crate::domain::reply_post_processor::apply_effective_post_processor_config;
 use crate::error::AppError;
-use crate::models::dto::{RoleData, RoleInfo, SceneLabelEntry};
+use crate::models::dto::{DisplayMetricsDto, RoleData, RoleInfo, SceneLabelEntry};
 use crate::models::plugin_backends::{
     AgentBackend, EmotionBackend, EventBackend, LlmBackend, MemoryBackend, PluginBackendsOverride,
     PromptBackend,
@@ -22,6 +22,18 @@ use serde::de::DeserializeOwned;
 use serde_json::Value;
 
 type SlotRegistryMap = std::collections::BTreeMap<String, oclive_validation::SlotRegistryEntry>;
+
+fn build_display_metrics(
+    favor: f64,
+    relation_state: &str,
+    personality: &crate::models::PersonalityVector,
+) -> DisplayMetricsDto {
+    DisplayMetricsDto {
+        favor,
+        relation_summary: relation_state.to_string(),
+        traits: personality.to_vec7(),
+    }
+}
 
 fn reply_post_processor_role_info_fields(
     state: &AppState,
@@ -209,6 +221,11 @@ pub async fn assemble_role_data(
         description: role.description.clone(),
         personality_vector: personality.to_vec7(),
         current_favorability,
+        display_metrics: Some(build_display_metrics(
+            current_favorability,
+            relation_state.as_str(),
+            &personality,
+        )),
         current_emotion: state
             .db_manager
             .get_current_emotion(role_id)
@@ -327,6 +344,11 @@ pub async fn assemble_role_info(
         author: role.author.clone(),
         description: role.description.clone(),
         current_favorability,
+        display_metrics: Some(build_display_metrics(
+            current_favorability,
+            relation_state.as_str(),
+            &personality,
+        )),
         current_emotion: state
             .db_manager
             .get_current_emotion(role_id)

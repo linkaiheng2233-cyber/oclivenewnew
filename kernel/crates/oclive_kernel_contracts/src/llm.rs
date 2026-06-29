@@ -7,6 +7,34 @@ use std::sync::Arc;
 /// Incremental token callback for [`LlmClient::generate_stream`].
 pub type LlmTokenSink = Arc<dyn Fn(&str) + Send + Sync>;
 
+/// Optional knobs for Deep prefix-cache sessions (Ollama-only; ignored by default trait impls).
+#[derive(Debug, Clone, Default)]
+pub struct LlmGenerateOpts {
+    pub keep_alive: Option<String>,
+    pub want_metrics: bool,
+}
+
+impl LlmGenerateOpts {
+    /// Deep prefix-cache session: keep model loaded and request Ollama bench metrics.
+    #[must_use]
+    pub fn deep_prefix_cache() -> Self {
+        Self {
+            keep_alive: std::env::var("OCLIVE_OLLAMA_KEEP_ALIVE")
+                .ok()
+                .filter(|s| !s.trim().is_empty())
+                .or_else(|| Some("30m".to_string())),
+            want_metrics: true,
+        }
+    }
+}
+
+/// Main LLM call result; `prompt_eval_ms` is set when the backend reports prompt eval timing.
+#[derive(Debug, Clone)]
+pub struct LlmGenerateOutcome {
+    pub reply: String,
+    pub prompt_eval_ms: Option<u64>,
+}
+
 /// Text generation port used by orchestration and policy (Ollama, remote, mock, etc.).
 ///
 /// ## When to implement
@@ -55,6 +83,30 @@ pub trait LlmClient: Send + Sync {
     /// Does not panic.
     async fn generate_tag(&self, model: &str, prompt: &str) -> Result<String>;
 
+    /// Whether this backend supports Ollama-style prefix-cache opts ([`LlmGenerateOpts::deep_prefix_cache`]).
+    fn supports_prefix_cache(&self) -> bool {
+        false
+    }
+
+    /// Dialogue generation with optional backend-specific opts (default: [`generate`](Self::generate)).
+    ///
+    /// # Errors
+    ///
+    /// Same as [`generate`](Self::generate).
+    async fn generate_with_opts(
+        &self,
+        model: &str,
+        prompt: &str,
+        opts: Option<&LlmGenerateOpts>,
+    ) -> Result<LlmGenerateOutcome> {
+        let _ = opts;
+        let reply = self.generate(model, prompt).await?;
+        Ok(LlmGenerateOutcome {
+            reply,
+            prompt_eval_ms: None,
+        })
+    }
+
     /// Optional streaming dialogue generation (default: [`generate`](Self::generate) then one callback).
     ///
     /// # Errors
@@ -69,6 +121,26 @@ pub trait LlmClient: Send + Sync {
         let full = self.generate(model, prompt).await?;
         on_token(full.as_str());
         Ok(full)
+    }
+
+    /// Streaming variant of [`generate_with_opts`](Self::generate_with_opts) (default: [`generate_stream`](Self::generate_stream)).
+    ///
+    /// # Errors
+    ///
+    /// Same as [`generate_stream`](Self::generate_stream).
+    async fn generate_stream_with_opts(
+        &self,
+        model: &str,
+        prompt: &str,
+        on_token: LlmTokenSink,
+        opts: Option<&LlmGenerateOpts>,
+    ) -> Result<LlmGenerateOutcome> {
+        let _ = opts;
+        let reply = self.generate_stream(model, prompt, on_token).await?;
+        Ok(LlmGenerateOutcome {
+            reply,
+            prompt_eval_ms: None,
+        })
     }
 
     /// Optional startup probe (default succeeds; hosts may ping remote LLM).

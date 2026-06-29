@@ -7,7 +7,7 @@ use crate::infrastructure::llm_params;
 use crate::infrastructure::ollama_client::OllamaClient;
 use crate::infrastructure::remote_fallback_policy::remote_fallback_load;
 use async_trait::async_trait;
-use oclive_kernel_contracts::LlmTokenSink;
+use oclive_kernel_contracts::{LlmGenerateOpts, LlmGenerateOutcome, LlmTokenSink};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
@@ -15,6 +15,10 @@ pub use crate::domain::ports::LlmClient;
 
 #[async_trait]
 impl LlmClient for OllamaClient {
+    fn supports_prefix_cache(&self) -> bool {
+        true
+    }
+
     async fn generate(&self, model: &str, prompt: &str) -> Result<String> {
         let (t, p) = llm_params::main_chat_options();
         OllamaClient::generate(self, model, prompt, t, p).await
@@ -25,6 +29,27 @@ impl LlmClient for OllamaClient {
         OllamaClient::generate(self, model, prompt, t, p).await
     }
 
+    async fn generate_with_opts(
+        &self,
+        model: &str,
+        prompt: &str,
+        opts: Option<&LlmGenerateOpts>,
+    ) -> Result<LlmGenerateOutcome> {
+        let (t, p) = llm_params::main_chat_options();
+        let ollama_opts = opts.map(
+            |o| crate::infrastructure::ollama_client::OllamaGenerateOpts {
+                keep_alive: o.keep_alive.clone(),
+                want_metrics: o.want_metrics,
+            },
+        );
+        let out = OllamaClient::generate_with_opts(self, model, prompt, t, p, ollama_opts.as_ref())
+            .await?;
+        Ok(LlmGenerateOutcome {
+            reply: out.response,
+            prompt_eval_ms: out.metrics.prompt_eval_ms(),
+        })
+    }
+
     async fn generate_stream(
         &self,
         model: &str,
@@ -33,6 +58,36 @@ impl LlmClient for OllamaClient {
     ) -> Result<String> {
         let (t, p) = llm_params::main_chat_options();
         OllamaClient::generate_stream_with_callback(self, model, prompt, t, p, on_token).await
+    }
+
+    async fn generate_stream_with_opts(
+        &self,
+        model: &str,
+        prompt: &str,
+        on_token: LlmTokenSink,
+        opts: Option<&LlmGenerateOpts>,
+    ) -> Result<LlmGenerateOutcome> {
+        let (t, p) = llm_params::main_chat_options();
+        let ollama_opts = opts.map(
+            |o| crate::infrastructure::ollama_client::OllamaGenerateOpts {
+                keep_alive: o.keep_alive.clone(),
+                want_metrics: o.want_metrics,
+            },
+        );
+        let out = OllamaClient::generate_stream_with_callback_and_opts(
+            self,
+            model,
+            prompt,
+            t,
+            p,
+            on_token,
+            ollama_opts.as_ref(),
+        )
+        .await?;
+        Ok(LlmGenerateOutcome {
+            reply: out.response,
+            prompt_eval_ms: out.metrics.prompt_eval_ms(),
+        })
     }
 
     async fn startup_probe(&self) -> Result<()> {
@@ -62,6 +117,10 @@ pub struct SharedOllamaClient(pub Arc<OllamaClient>);
 
 #[async_trait]
 impl LlmClient for SharedOllamaClient {
+    fn supports_prefix_cache(&self) -> bool {
+        true
+    }
+
     async fn generate(&self, model: &str, prompt: &str) -> Result<String> {
         let (t, p) = llm_params::main_chat_options();
         OllamaClient::generate(self.0.as_ref(), model, prompt, t, p).await
@@ -70,6 +129,15 @@ impl LlmClient for SharedOllamaClient {
     async fn generate_tag(&self, model: &str, prompt: &str) -> Result<String> {
         let (t, p) = llm_params::tag_task_options();
         OllamaClient::generate(self.0.as_ref(), model, prompt, t, p).await
+    }
+
+    async fn generate_with_opts(
+        &self,
+        model: &str,
+        prompt: &str,
+        opts: Option<&LlmGenerateOpts>,
+    ) -> Result<LlmGenerateOutcome> {
+        LlmClient::generate_with_opts(self.0.as_ref(), model, prompt, opts).await
     }
 
     async fn generate_stream(
@@ -81,6 +149,16 @@ impl LlmClient for SharedOllamaClient {
         let (t, p) = llm_params::main_chat_options();
         OllamaClient::generate_stream_with_callback(self.0.as_ref(), model, prompt, t, p, on_token)
             .await
+    }
+
+    async fn generate_stream_with_opts(
+        &self,
+        model: &str,
+        prompt: &str,
+        on_token: LlmTokenSink,
+        opts: Option<&LlmGenerateOpts>,
+    ) -> Result<LlmGenerateOutcome> {
+        LlmClient::generate_stream_with_opts(self.0.as_ref(), model, prompt, on_token, opts).await
     }
 
     async fn startup_probe(&self) -> Result<()> {

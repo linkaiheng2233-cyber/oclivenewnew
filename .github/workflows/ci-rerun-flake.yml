@@ -1,0 +1,40 @@
+name: CI flake rerun
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  rerun-flaky:
+    if: >
+      github.event.workflow_run.conclusion == 'failure' &&
+      github.event.workflow_run.event != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Rerun failed rust / e2e-tauri jobs (once)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          RUN_ID="${{ github.event.workflow_run.id }}"
+          ATTEMPT="${{ github.event.workflow_run.run_attempt }}"
+          if [ "$ATTEMPT" -gt 1 ]; then
+            echo "Skip rerun: workflow already retried (attempt=$ATTEMPT)"
+            exit 0
+          fi
+          FAILED=$(gh run view "$RUN_ID" --json jobs --jq '.jobs[] | select(.conclusion=="failure") | .name')
+          echo "$FAILED" | while read -r job; do
+            case "$job" in
+              rust|e2e-tauri)
+                echo "Rerunning failed job: $job"
+                gh run rerun "$RUN_ID" --failed --job "$job" || true
+                ;;
+              *)
+                echo "Skip job (not in flake allowlist): $job"
+                ;;
+            esac
+          done

@@ -10,8 +10,7 @@ use crate::domain::slot_runner::SlotRunner;
 use crate::domain::turn_thinking::{
     effective_turn_thinking_policy, update_turn_thinking_runtime_state,
 };
-use crate::infrastructure::ollama_client::OllamaGenerateOpts;
-use crate::models::dto::SendMessageResponse;
+use crate::models::dto::{DisplayMetricsDto, SendMessageResponse};
 use crate::models::{Event, PersonalitySource, Role};
 use std::sync::Arc;
 use std::time::Instant;
@@ -29,6 +28,7 @@ use super::TurnMode;
 use crate::domain::chat_engine::chat_stage::ChatStage;
 use crate::domain::reply_post_processor::resolve_reply_post_processor;
 use oclive_kernel_contracts::reply_post_processor::PostProcessInput;
+use oclive_kernel_contracts::LlmGenerateOpts;
 
 /// Artifacts produced during post-LLM orchestration, passed to response assembly.
 pub(crate) struct TurnArtifacts<'a> {
@@ -67,15 +67,13 @@ pub(crate) async fn run_main_llm(
     let t_main_llm = Instant::now();
     let mut main_llm_fallback = false;
     let mut llm_fallback_reason = None;
-    let ollama = ctx.state.ollama.as_deref();
     let ollama_opts = middle
         .use_ollama_prefix_opts
-        .then(OllamaGenerateOpts::deep_prefix_cache);
+        .then(LlmGenerateOpts::deep_prefix_cache);
     let reply_out = match SlotRunner::generate_llm(
         pl,
         pre.memory.ollama_model.as_str(),
         &middle.prompt,
-        ollama,
         ollama_opts.as_ref(),
     )
     .await
@@ -98,7 +96,7 @@ pub(crate) async fn run_main_llm(
                     impact_factor: middle.ai_impact_factor_final,
                 },
             );
-            crate::domain::slot_runner::LlmGenerateOutcome {
+            oclive_kernel_contracts::LlmGenerateOutcome {
                 reply: fallback,
                 prompt_eval_ms: None,
             }
@@ -151,16 +149,14 @@ pub(crate) async fn run_main_llm_stream(
     let t_main_llm = Instant::now();
     let mut main_llm_fallback = false;
     let mut llm_fallback_reason = None;
-    let ollama = ctx.state.ollama.as_deref();
     let ollama_opts = middle
         .use_ollama_prefix_opts
-        .then(OllamaGenerateOpts::deep_prefix_cache);
+        .then(LlmGenerateOpts::deep_prefix_cache);
     let reply_out = match SlotRunner::generate_llm_stream(
         pl,
         pre.memory.ollama_model.as_str(),
         &middle.prompt,
         Arc::clone(&on_token),
-        ollama,
         ollama_opts.as_ref(),
     )
     .await
@@ -184,7 +180,7 @@ pub(crate) async fn run_main_llm_stream(
                 },
             );
             on_token(fallback.as_str());
-            crate::domain::slot_runner::LlmGenerateOutcome {
+            oclive_kernel_contracts::LlmGenerateOutcome {
                 reply: fallback,
                 prompt_eval_ms: None,
             }
@@ -359,6 +355,11 @@ fn assemble_send_message_response(ctx: &PostLlmCtx<'_>) -> SendMessageResponse {
         api_version: API_VERSION,
         schema: SCHEMA_VERSION,
         presence_mode,
+        display_metrics: Some(DisplayMetricsDto {
+            favor: persist.favor_current,
+            relation_summary: middle.relation_after.as_str().to_string(),
+            traits: middle.personality.to_vec7(),
+        }),
         relation_state: middle.relation_after.as_str().to_string(),
         reply,
         emotion: emotion_to_dto(&pre.hints.emotion_result),
@@ -538,7 +539,7 @@ pub(crate) async fn post_llm(
     if matches!(mode, TurnMode::CoPresent) {
         let policy = effective_turn_thinking_policy(&state.host_profile, role);
         if let Err(e) = update_turn_thinking_runtime_state(
-            &state.db_manager,
+            &state.turn_thinking_state(),
             srid,
             &policy,
             middle.ai_event_type,

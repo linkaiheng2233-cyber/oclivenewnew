@@ -117,14 +117,15 @@ function normalizeSlotRegistryBackends(
 }
 
 function mapRoleInfo(info: RoleInfo): RoleInfoState {
+  const metrics = info.display_metrics
   return {
     name: info.role_name || info.role_id,
     version: info.version ?? '',
     author: info.author ?? '',
     description: info.description ?? '',
-    favorability: info.current_favorability,
+    favorability: metrics?.favor ?? info.current_favorability,
     currentEmotion: info.current_emotion,
-    personality: info.personality_vector ?? [],
+    personality: metrics?.traits ?? info.personality_vector ?? [],
     scenes: info.scenes ?? [],
     sceneLabels: info.scene_labels ?? [],
     currentScene: info.current_scene ?? null,
@@ -134,7 +135,7 @@ function mapRoleInfo(info: RoleInfo): RoleInfoState {
     defaultRelation: info.default_relation ?? 'friend',
     currentUserRelation: info.current_user_relation ?? info.default_relation ?? 'friend',
     useManifestDefault: info.use_manifest_default ?? false,
-    relationState: info.relation_state ?? 'Stranger',
+    relationState: metrics?.relation_summary ?? info.relation_state ?? 'Stranger',
     eventImpactFactor: info.event_impact_factor ?? 1,
     personalitySource:
       info.personality_source === 'profile' ? 'profile' : 'vector',

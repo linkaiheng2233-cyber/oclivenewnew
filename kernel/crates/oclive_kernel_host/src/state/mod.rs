@@ -195,6 +195,13 @@ impl AppState {
         *self.ollama_model.write() = model;
     }
 
+    /// Borrows [`DbManager`] as [`TurnThinkingStatePort`](crate::domain::ports::TurnThinkingStatePort).
+    pub fn turn_thinking_state(
+        &self,
+    ) -> crate::infrastructure::db_ports::TurnThinkingStateAdapter<'_> {
+        crate::infrastructure::db_ports::TurnThinkingStateAdapter(self.db_manager.as_ref())
+    }
+
     pub fn policies_for_scene(&self, scene_id: Option<&str>) -> Arc<PolicySet> {
         let runtime = self.policy_runtime.load_full();
         scene_id

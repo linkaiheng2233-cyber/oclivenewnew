@@ -35,6 +35,9 @@ async fn process_message_golden_path_mock_llm() {
     assert_eq!(res.schema, SCHEMA_VERSION);
     assert_eq!(res.reply, "黄金路径回复");
     assert!(!res.scene_id.is_empty());
-    assert!(!res.relation_state.is_empty());
-    assert!(res.favorability_current >= 0.0 && res.favorability_current <= 100.0);
+    #[allow(deprecated)]
+    {
+        assert!(!res.relation_state.is_empty());
+        assert!(res.favorability_current >= 0.0 && res.favorability_current <= 100.0);
+    }
 }

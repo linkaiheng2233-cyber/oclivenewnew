@@ -18,6 +18,7 @@ type RoleInfoPayload = {
   role_name?: string;
   version?: string;
   relation_state?: string;
+  display_metrics?: { relation_summary?: string } | null;
   interaction_mode?: "immersive" | "pure_chat";
   remote_life_enabled?: boolean;
   current_scene?: string | null;
@@ -125,7 +126,10 @@ async function refresh(nextRoleId?: string): Promise<void> {
     roleId.value = rid;
     roleName.value = safeTrim(info.role_name) || "沐沐";
     version.value = safeTrim(info.version) || "—";
-    relationStage.value = safeTrim(info.relation_state) || "—";
+    relationStage.value =
+      safeTrim(info.display_metrics?.relation_summary) ||
+      safeTrim(info.relation_state) ||
+      "—";
     relationName.value = humanRelationName(info);
     modeLabel.value = info.interaction_mode === "pure_chat" ? "纯聊" : "沉浸";
     remoteLabel.value = humanRemote(info);

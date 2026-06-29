@@ -90,6 +90,10 @@ runStep('kernel ensure plan snapshot', () => {
   sh('cargo', ['test', '-p', 'oclive-cli', '--test', 'kernel_ensure_plan_snapshot']);
 });
 
+runStep('RFC affect drift ratchet', () => {
+  sh('node', ['scripts/check-rfc-affect-drift.mjs']);
+});
+
 runStep('CHANGELOG [Unreleased] parity', () => {
   sh('node', ['scripts/check-changelog-parity.mjs']);
 });

@@ -143,7 +143,7 @@ fn test_build_prompt() {
     assert!(prompt.contains("当前关系"));
     assert!(!prompt.contains("家人/长辈场景补充"));
     assert!(prompt.contains("朋友"));
-    assert!(prompt.contains("本轮事件与关系状态机"));
+    assert!(prompt.contains("本轮事件"));
     assert!(prompt.contains("Friend"));
     assert!(prompt.contains("赞美"));
     assert!(!prompt.contains("Praise"));
@@ -906,15 +906,14 @@ fn build_character_status_summary_includes_scene_and_host_hint() {
         previous_assistant_reply: "",
     });
     assert!(prompt.contains("【角色当前状态】"));
-    assert!(prompt.contains("好感约 62/100"));
-    assert!(prompt.contains("Friend"));
+    assert!(!prompt.contains("好感约"));
     assert!(prompt.contains("低落"));
     assert!(prompt.contains("VS Code 结对编程"));
     assert!(prompt.contains("更信任用户的技术判断"));
 }
 
 #[test]
-fn relation_transition_hint_in_tone_block() {
+fn relation_transition_hint_not_injected_into_prompt() {
     let role = create_test_role();
     let personality = create_test_personality();
     let hint = "正在从 Acquaintance 向 Friend 过渡";
@@ -950,12 +949,8 @@ fn relation_transition_hint_in_tone_block() {
         persona_override: None,
         previous_assistant_reply: "",
     });
-    assert!(prompt.contains("【关系过渡】"));
-    assert!(prompt.contains(hint));
-    let tone_idx = prompt.find("语气区块").unwrap();
-    let content_idx = prompt.find("内容区块").unwrap();
-    let hint_idx = prompt.find("【关系过渡】").unwrap();
-    assert!(tone_idx < hint_idx && hint_idx < content_idx);
+    assert!(!prompt.contains("【关系过渡】"));
+    assert!(!prompt.contains(hint));
 }
 
 #[test]

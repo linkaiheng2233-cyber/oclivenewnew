@@ -30,7 +30,7 @@ use crate::domain::remote_life_prompt::compose_remote_stub_reply;
 use crate::domain::user_identity::resolve_effective_user_relation_key;
 use crate::error::Result;
 use crate::models::dto::{
-    EmotionDto, PresenceMode, SendMessageResponse, API_VERSION, SCHEMA_VERSION,
+    DisplayMetricsDto, EmotionDto, PresenceMode, SendMessageResponse, API_VERSION, SCHEMA_VERSION,
 };
 use crate::models::{PluginBackends, PluginBackendsSourceMap, Role};
 use crate::state::AppState;
@@ -134,6 +134,11 @@ pub(super) async fn process_remote_stub(ctx: &TurnContext<'_>) -> Result<SendMes
         api_version: API_VERSION,
         schema: SCHEMA_VERSION,
         presence_mode: PresenceMode::RemoteStub,
+        display_metrics: Some(DisplayMetricsDto {
+            favor: favorability_before,
+            relation_summary: relation_before.clone(),
+            traits: vec![],
+        }),
         relation_state: relation_before,
         reply,
         emotion: emotion_to_dto(&emotion_result),

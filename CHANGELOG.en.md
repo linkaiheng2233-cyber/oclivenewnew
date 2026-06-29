@@ -6,6 +6,10 @@
 
 ### Added
 
+- **Domain layering ports (#101 unblock)**: `LlmClient::supports_prefix_cache` / `generate_with_opts` / `generate_stream_with_opts`; `TurnThinkingStatePort`; removed domain→infra imports from `co_present` / `slot_runner` / `post`; `npm run check:rust` now runs layering + CHANGELOG parity gates first.
+- **Affect display channel `display_metrics`**: `RoleData` / `RoleInfo` / `SendMessageResponse` expose UI-only metrics (`favor` / `traits[7]` / `relation_summary`); legacy scalar fields deprecated; frontend `roleStore` prefers the new field.
+- **CI flake auto-rerun**: `.github/workflows/ci-rerun-flake.yml` reruns failed `rust` / `e2e-tauri` jobs once via `gh run rerun --failed`.
+- **RFC affect drift ratchet**: `scripts/check-rfc-affect-drift.mjs` wired into dimension5.
 - **Wave E · Turn Thinking persistence split**: `[turn_thinking] fast_persistence = "strong_only"` (default `legacy`); Fast casual chat skips long_term / favor / profile evolution; **Quarrel / Apology / Confession / Praise** still persist. RFC: [`RFC_TURN_THINKING_PERSISTENCE_SUMMARY.md`](creator-docs-en/rfc/RFC_TURN_THINKING_PERSISTENCE_SUMMARY.md) (full: [Chinese](creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md)).
 - **Wave F · Turn Thinking pack routing**: `config.json` → `turn_thinking` (OR/AND · Deep latch · ephemeral situation summary TTL); migration `035_turn_thinking_runtime.sql`; this-turn rule event prepass before router. RFC §8–12.
 - **Chat Pro stream cancel**: new sends abort the in-flight SSE via `AbortController` and remove dangling `streaming` bubbles.
@@ -21,6 +25,8 @@
 
 ### Changed
 
+- **Prompt mechanics decoupling (RFC #2)**: `PromptBuilder` no longer injects favor/relation numerics or `relation_transition_hint`; event block keeps event type + tone constraints only; character affect driven by user emotion engine + `mutable_personality`.
+- **Chat Pro default profile**: `desktop.oclive.toml` enables `fast_persistence = "strong_only"` (Fast casual chat skips favor/long-term memory; strong relationship events still consolidate). Existing session data is not rolled back.
 - **Repository layout**: root `crates/`, `src-tauri/`, and `src/` moved to `kernel/crates/`, `distros/desktop-tauri/`, and `distros/{shared,chat-pro,theater}/`; root `npm run tauri:dev` / `tauri:dev:theater` unchanged.
 - **Theater doc SSOT sweep**: `theater_director` unified as **shipped (2026-06)** (DISTRO_DEFAULT_PLUGINS · ARCHITECTURE · NAMING · ROADMAP §7 · IA); [`TECHNICAL_DEBT_INVENTORY.md`](handoff/TECHNICAL_DEBT_INVENTORY.md) round 16; acceptance chain → [`PLAYTEST_MATRIX.md`](handoff/theater/PLAYTEST_MATRIX.md).
 - **Hybrid chat mirror**: `rebuild_mirror_best_effort` / `delete_mirror_best_effort` (K-ROBUST-01).

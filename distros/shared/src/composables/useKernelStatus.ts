@@ -42,9 +42,9 @@ export function useRoleSnapshotPoll() {
       }
       return
     }
-    roleStore.roleInfo.favorability = snap.current_favorability
+    roleStore.roleInfo.favorability = snap.display_metrics?.favor ?? snap.current_favorability
     roleStore.roleInfo.currentEmotion = snap.portrait_emotion || snap.current_emotion
-    roleStore.roleInfo.relationState = snap.relation_state
+    roleStore.roleInfo.relationState = snap.display_metrics?.relation_summary ?? snap.relation_state
     if (snap.current_scene != null) {
       roleStore.roleInfo.currentScene = snap.current_scene
     }

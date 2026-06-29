@@ -3,8 +3,8 @@
 use crate::domain::host_profile::{
     fast_persistence_effective, FastPersistenceMode, HostProfile, TurnThinkingDefault,
 };
+use crate::domain::ports::TurnThinkingStatePort;
 use crate::error::Result;
-use crate::infrastructure::db::DbManager;
 use crate::models::{Event, EventType, Role};
 use oclive_kernel_runtime::domain::emotion_analyzer::EmotionResult;
 use oclive_kernel_types::{
@@ -360,7 +360,7 @@ fn build_ephemeral_event_summary(event: EventType, user_message: &str, max_chars
 ///
 /// Returns [`anyhow::Error`] when `role_runtime` latch or ephemeral columns cannot be updated.
 pub async fn update_turn_thinking_runtime_state(
-    db: &DbManager,
+    db: &dyn TurnThinkingStatePort,
     role_id: &str,
     policy: &TurnThinkingPolicy,
     this_turn_event: EventType,

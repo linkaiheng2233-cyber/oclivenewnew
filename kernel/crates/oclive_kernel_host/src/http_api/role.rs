@@ -1,9 +1,10 @@
 use super::{api_error, ApiError};
 use crate::models::dto::{
-    CreateEventRequest, CreateEventResponse, GetRoleInfoRequest, GetUserIdentityStateRequest,
-    JumpTimeRequest, JumpTimeResponse, RoleInfo, SetRoleInteractionModeRequest,
-    SetSceneUserIdentityRequest, SetUserIdentityRequest, SetUserPresenceSceneRequest,
-    SwitchSceneRequest, SwitchSceneResponse, TimeStateResponse, UserIdentityStateResponse,
+    CreateEventRequest, CreateEventResponse, DisplayMetricsDto, GetRoleInfoRequest,
+    GetUserIdentityStateRequest, JumpTimeRequest, JumpTimeResponse, RoleInfo,
+    SetRoleInteractionModeRequest, SetSceneUserIdentityRequest, SetUserIdentityRequest,
+    SetUserPresenceSceneRequest, SwitchSceneRequest, SwitchSceneResponse, TimeStateResponse,
+    UserIdentityStateResponse,
 };
 use crate::models::role::PersonalitySource;
 use crate::service::{
@@ -37,6 +38,7 @@ pub(crate) struct RoleSnapshotResponse {
     current_emotion: String,
     portrait_emotion: String,
     relation_state: String,
+    display_metrics: Option<DisplayMetricsDto>,
     personality_source: PersonalitySource,
     current_scene: Option<String>,
     user_presence_scene: Option<String>,
@@ -89,6 +91,7 @@ pub(crate) async fn role_snapshot_route(
         current_emotion: info.current_emotion.clone(),
         portrait_emotion: info.current_emotion,
         relation_state: info.relation_state,
+        display_metrics: info.display_metrics,
         personality_source: info.personality_source,
         current_scene: info.current_scene,
         user_presence_scene: info.user_presence_scene,

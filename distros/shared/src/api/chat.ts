@@ -27,13 +27,20 @@ export interface DetectedEventDto {
 
 export type PresenceMode = 'co_present' | 'remote_stub' | 'remote_life'
 
+/** UI-only affect metrics from kernel simulation (not injected into Prompt). */
+export interface DisplayMetricsDto {
+  favor: number
+  relation_summary: string
+  traits: number[]
+}
 
 export interface SendMessageResponse {
   api_version: number
   schema: number
   /** co-present / remote stub / remote life */
   presence_mode: PresenceMode
-  /** Favorability relation stage; from `role_runtime.relation_state` */
+  display_metrics?: DisplayMetricsDto | null
+  /** @deprecated prefer `display_metrics.relation_summary` */
   relation_state: string
   reply: string
   emotion: EmotionDto
