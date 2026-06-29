@@ -19,9 +19,9 @@
 | **Chat Pro** | [`distros/chat-pro/`](../distros/chat-pro/) | ToolShell / FluentShell、roles、plugins |
 | **AI Theater** | [`distros/theater/`](../distros/theater/) | TheaterShell、剧场 composables |
 | **Tauri 宿主** | [`distros/desktop-tauri/`](../distros/desktop-tauri/) | invoke 薄壳、打包资源、bundled kernel |
-| **契约文档** | 根 `creator-docs/`、`handoff/` | 平台 SSOT；发行版索引见 [`handoff/distros/README.md`](distros/README.md) |
+| **契约文档** | 根 `ai-docs/zh/creator/`、`ai-docs/zh/handoff/` | 平台 SSOT；发行版索引见 [`ai-docs/zh/handoff/distros/README.md`](distros/README.md) |
 
-**禁止**：在 `kernel/` PR 里改 Chat Pro 壳样式；在 `distros/chat-pro/` PR 里改 `process_message` 编排。RFC：[`handoff/distros/ARCHITECTURE_DECOUPLING_RFC.md`](distros/ARCHITECTURE_DECOUPLING_RFC.md)。供应链：[`creator-docs/security/SUPPLY_CHAIN.md`](../creator-docs/security/SUPPLY_CHAIN.md) · `node scripts/dimension5-acceptance.mjs --ci`（十三检含 `cargo deny` 与代码路径 ratchet）。
+**禁止**：在 `kernel/` PR 里改 Chat Pro 壳样式；在 `distros/chat-pro/` PR 里改 `process_message` 编排。RFC：[`ai-docs/zh/handoff/distros/ARCHITECTURE_DECOUPLING_RFC.md`](distros/ARCHITECTURE_DECOUPLING_RFC.md)。供应链：[`ai-docs/zh/creator/security/SUPPLY_CHAIN.md`](../ai-docs/zh/creator/security/SUPPLY_CHAIN.md) · `node scripts/dimension5-acceptance.mjs --ci`（十三检含 `cargo deny` 与代码路径 ratchet）。
 
 ---
 
@@ -119,7 +119,7 @@ git status                                      # 确认工作树状态 / 与 or
 **判定**：十二项门禁含 layering ratchet / **cargo audit** / **cargo deny（licenses+bans）** / lockfile（禁 sqlx-mysql·rsa 回潮）/ ensure-plan 快照 / CHANGELOG 中英 parity / stale 路径 ratchet / host re-export ratchet / theater prompt drift / **verify:ui** / **vite build**。任一 FAIL → **本轮停止所有优化,先恢复基线**。
 
 **ratchet 锚点**（只降不升）：
-- `domain→infrastructure`：use-import ≤ 4（全 test cfg）+ FQ ≤ 5 → 见 `handoff/LAYERING_BASELINE.json`
+- `domain→infrastructure`：use-import ≤ 4（全 test cfg）+ FQ ≤ 5 → 见 `ai-docs/zh/handoff/LAYERING_BASELINE.json`
 - host/runtime re-export import baseline ≤ 76 → `scripts/check-host-reexport-imports.mjs`
 
 ---
@@ -238,7 +238,7 @@ git status                                      # 确认工作树状态 / 与 or
 - [ ] CI / 脚本 / `examples` 中 `OCLIVE_ROLES_DIR`、`cd fuzz`(应 `kernel/fuzz`)、Playwright `testDir`、`check:license` 插件路径与新布局一致
 
 **2. AI 入口文档时效（每轮快档必跑）**
-- [ ] `.cursor/rules/oclivenewnew.mdc` 不指向**已归档**文档（如 `04_4.6`）或失效路径（如根 `handoff/WEEKLY_DEV_GUIDE.md`）
+- [ ] `.cursor/rules/oclivenewnew.mdc` 不指向**已归档**文档（如 `04_4.6`）或失效路径（如根 `ai-docs/zh/handoff/WEEKLY_DEV_GUIDE.md`）
 - [ ] `AGENTS.md` 与源码无硬冲突（迁移目录、HTTP API 存在性、`process_message` 所在 crate、re-export 现状）
 - [ ] 同一事实只有一个数字 SSOT（如 invoke 热路径条数以 `INVOKE_HOTPATH_MATRIX.md` 为准,AGENTS/CHANGELOG 引用不另造数字）
 - [ ] 已归档文档在 README / DOCUMENTATION_INDEX / `.cursor/rules` 处**显式标注归档**,不再被当当前 truth
@@ -287,15 +287,15 @@ npm run check:rust                               # fmt + clippy(-D warnings) + t
 |------|------|
 | 编排 SSOT | `kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs` |
 | Prompt 公式 | `kernel/crates/oclive_kernel_runtime/src/domain/prompt_builder/` |
-| 分层基线 | `handoff/LAYERING_BASELINE.json` |
-| 技术债总账 | `handoff/TECHNICAL_DEBT_INVENTORY.md` |
+| 分层基线 | `ai-docs/zh/handoff/LAYERING_BASELINE.json` |
+| 技术债总账 | `ai-docs/zh/handoff/TECHNICAL_DEBT_INVENTORY.md` |
 | 迁移 SSOT | `kernel/crates/oclive_kernel_host/migrations/*.sql` |
 | crate 速查 | `kernel/crates/README.md` |
-| 命名 SSOT | `creator-docs/NAMING_CONVENTIONS.md` |
+| 命名 SSOT | `ai-docs/zh/creator/NAMING_CONVENTIONS.md` |
 | 角色包路径 SSOT(JS) | `scripts/lib/chat-pro-roles-dir.mjs` |
 | 过期路径 ratchet | `scripts/check-stale-paths.mjs` |
-| 角色 vs 蓝图边界 | `handoff/ROLE_PACK_BOUNDARY.md` |
-| 关键路径交接 | `handoff/BUS_FACTOR_NOTES.md` |
+| 角色 vs 蓝图边界 | `ai-docs/zh/handoff/ROLE_PACK_BOUNDARY.md` |
+| 关键路径交接 | `ai-docs/zh/handoff/BUS_FACTOR_NOTES.md` |
 
 ---
 
@@ -350,17 +350,18 @@ npm run check:rust                               # fmt + clippy(-D warnings) + t
 | 15 | 2026-06-15 | 半 | PASS | A− | P0 工程验收: theater smoke+proxy 100%; tauri:build:theater MSI/NSIS 绿; 真人表仍空→Phase5 FAIL 分支; M5 K-DOC-15/16 Done; V4-ONBOARD-03 good-second-issue; 技术债四层收束; K-PERF-10 条件未触发 | 见 TECHNICAL_DEBT §1; theater/DEVELOPMENT_ROADMAP §5.5 |
 | 16 | 2026-06-18 | 半 | PASS | A− | T-LAYER-16 theater 测迁出 domain; T-DOC-TD-01 theater_director 文档扫尾; T-MINIMAL-TD-01 minimal 插件自包含; T-CI-DRIFT-01 prompt drift 门禁 | host lib 239; theater_director_resolver 3 绿 |
 | 17 | 2026-06-24 | 半 | PASS | A− | D-DOCDRIFT-01 206 文件路径迁移; D-SCRIPT-02 check-stale-paths 扩范围; D-ORPHAN-04 删空 models/; dimension5 十一检 | monorepo 重组文档收尾 |
-| 18 | 2026-06-24 | 全 | PASS | A− | **O-1** plugin-bridge 内核化; **O-2** expert 孤儿前端删; **D-DOC-RELOC-01** 三文档归位 handoff/; creator-docs 受众导航; 冻结项未动 | test:unit 67 绿; vite build 绿; cargo build host 绿 |
+| 18 | 2026-06-24 | 全 | PASS | A− | **O-1** plugin-bridge 内核化; **O-2** expert 孤儿前端删; **D-DOC-RELOC-01** 三文档归位 ai-docs/zh/handoff/; creator-docs 受众导航; 冻结项未动 | test:unit 67 绿; vite build 绿; cargo build host 绿 |
 | 19 | 2026-06-24 | 快 | PASS | A− | CI 全红修复(ripgrep/advisory-db/rustfmt/plugins-index/cli)+ bundle kernel/role 路径/quinn-proto 0.11.15; **新增维度七「条理与边界」**(防 AI 脱轨:路径 SSOT/AI 入口时效/边界明确/门禁纯度);修手册 dimension5 9·11→12 计数 | 发现待入账:`D-ORDER-*`(27 测仍 `../roles`、`cd fuzz`、Playwright testDir、check:license)、`D-DOC-*`(04_4.6 归档矛盾、THREE_DISTRO 导演状态、invoke 条数) |
 | 20 | 2026-06-25 | 半 | PASS* | A− | **新增** [`AI_VERIFICATION_PROTOCOL.md`](./AI_VERIFICATION_PROTOCOL.md)+AGENTS/BOUNDARIES/Playbook 挂链; DeepSeek 质量报告逐条核实(unwrap/scene_director 单测/dependabot 数等多处误报); 本地 dimension5 十三检绿; **GitHub CI main 仍红**(`cargo test --workspace`); 入账 D-MAINT-01·D-DOC-EN-01·D-ORDER-05/06 | *`gh run` 28118002153; 未跑全仓 `cargo test`; 冻结项未动; §9 不追覆盖率数字 |
 | 21 | 2026-06-25 | 快 | PASS | A− | **轮次 20 P0 根因定位+修复**: CI `rust` 硬门禁红 = **3 处 doctest 漂移**(`AgentInput` 加 5 字段后 contracts 示例缺字段; `RoleStorage`/`EmotionAnalyzer` doctest 引旧 crate 名 `oclivenewnew_tauri`),被「首个 doctest 失败即 abort」逐个掩盖; `--lib`/`check:rust` 不跑 doctest 是本地绿≠远程绿根因 → 新增 **G8** + 协议 §2.1 doctest 行 + Playbook doctest 盲区警示 | `cargo test --workspace --doc` 全绿; dimension5 十三检/layering/stale-paths/host lib 241 绿; 冻结项未动 |
 | 22 | 2026-06-25 | 半 | PASS | A− | **BUILD-TAURI-01** `beforeBuildCommand` 仓根路径修复 + dimension5 十四检 ratchet; **模式 2** playtest 5 轮 + prompt 人设纪律回流; **mapTheaterInvokeError**; **D-MAINT-01** dependabot 分支清理; **K-SUPPLY-02** Done; push main 验 CI | `tauri-run.cjs` chat-pro/theater 绿; MEGA-SD/TS 仍 §2 冻结 |
+| 23 | 2026-06-29 | 快 | PASS* | A− | **BUILD-TAURI-02** tauri.conf roles SSOT（0× `resources/roles`、1× `../chat-pro/roles`）+ shell-dist/theater-env 幂等去重 + tauri-run restore-on-exit + dimension5 ratchet | *Wave 0 单独 PR；remote CI 待绿验证；本地 29 commit mumu 另 PR |
 
 > **轮次 20 待办（核实协议后 · 建议 Wave）**
 > - **P0**：~~修 CI `rust` job `tests (workspace)` 失败（本地 dimension5 绿 ≠ remote 绿）~~ → **轮次 21 已修**：根因为 3 处 doctest 漂移（非 `--lib` 单测），已修并补 doctest 盲区规则（G8）
 > - **D-ORDER-05**(P2)：`distros/desktop-tauri/src/lib.rs` L203 `src-tauri/src/api/` 注释 + 考虑移出 stale-path 豁免
 > - **D-MAINT-01**(P2)：清理远程 dependabot 陈旧分支（实测 **39**，其中 **9** 含 `src-tauri`；非 DeepSeek 所称 71）
-> - **D-DOC-EN-01**(P2)：`creator-docs-en/security/KNOWN_VULNERABILITIES.md` 扫描日期滞后中文 SSOT
+> - **D-DOC-EN-01**(P2)：`ai-docs/en/creator/security/KNOWN_VULNERABILITIES.md` 扫描日期滞后中文 SSOT
 > - **D-ORDER-06**(P3)：`distributions/vscode/out/` 构建产物 vs `distros/` 命名 — gitignore 或删夹
 > - **Observe**：`backend_registry.rs` 无 in-file 单测（D-READ-05 已有）；勿按「3.6% 覆盖率」立项大清洗
 
@@ -371,7 +372,7 @@ npm run check:rust                               # fmt + clippy(-D warnings) + t
 > - **D-ORDER-04**(P1):扩 `check-stale-paths.mjs` 覆盖 bare `roles/`、非 distros 的 `plugins/`
 > - **D-DOC-DRIFT-02**(P1):`.cursor/rules` 指向归档 04_4.6 / 失效 `WEEKLY_DEV_GUIDE`;`AGENTS.md` 迁移目录·HTTP API·re-export·invoke 条数与源码对齐;`THREE_DISTRO_KERNEL_CLOSURE.md` 导演「Deferred」与已交付矛盾
 > - **D-DOC-DRIFT-03**(P2):`KNOWN_VULNERABILITIES.md` 记 quinn-proto 0.11.15 已修 + 刷新扫描日期
-> - **建议新增**:`handoff/AI_CHANGE_BOUNDARIES.md`(六槽/设施/独立通道/角色包/蓝图 五列「SSOT + 可改条件」),`.cursor/rules` 收紧入口
+> - **建议新增**:`ai-docs/zh/handoff/AI_CHANGE_BOUNDARIES.md`(六槽/设施/独立通道/角色包/蓝图 五列「SSOT + 可改条件」),`.cursor/rules` 收紧入口
 
 ---
 
