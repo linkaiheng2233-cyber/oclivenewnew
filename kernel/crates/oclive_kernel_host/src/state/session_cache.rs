@@ -550,4 +550,28 @@ mod tests {
         }
         assert!(map.len() <= SESSION_MAP_CAPACITY);
     }
+
+    #[test]
+    fn profile_evolution_turn_counter_increments_per_session() {
+        let cache = SessionCache::new();
+        assert_eq!(cache.increment_profile_evolution_turn("s1"), 1);
+        assert_eq!(cache.increment_profile_evolution_turn("s1"), 2);
+        assert_eq!(cache.increment_profile_evolution_turn("s1"), 3);
+        // Counters are per-session-namespace, not shared.
+        assert_eq!(cache.increment_profile_evolution_turn("s2"), 1);
+    }
+
+    #[test]
+    fn radar_deep_pending_flag_set_and_clear() {
+        let cache = SessionCache::new();
+        assert!(!cache.radar_deep_pending("s1"));
+        cache.set_radar_deep_pending("s1", true);
+        assert!(cache.radar_deep_pending("s1"));
+        cache.clear_radar_deep_pending("s1");
+        assert!(!cache.radar_deep_pending("s1"));
+        // set_radar_deep_pending(false) is equivalent to clear.
+        cache.set_radar_deep_pending("s1", true);
+        cache.set_radar_deep_pending("s1", false);
+        assert!(!cache.radar_deep_pending("s1"));
+    }
 }
