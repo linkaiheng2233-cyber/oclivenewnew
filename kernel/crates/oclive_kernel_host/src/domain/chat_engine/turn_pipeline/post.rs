@@ -1,7 +1,9 @@
 //! Main LLM call and post-LLM orchestration.
 
 use crate::domain::chat_llm_fallback::{fallback_reply_for_llm_failure, FallbackReplyContext};
-use crate::domain::chat_turn_rules::{soft_append_guard, strip_hallucination_tokens};
+use crate::domain::chat_turn_rules::{
+    soft_append_guard, strip_hallucination_tokens, trim_template_repeat_reply,
+};
 use crate::domain::host_profile::bench_telemetry_enabled;
 use crate::domain::policy::PolicyContext;
 use crate::domain::slot_runner::SlotRunner;
@@ -22,7 +24,7 @@ use super::persistence::{
     append_turn_to_chat_storage, persist_atomic_movement_portrait,
     persist_non_profile_personality_delta, ChatAppendIds, PostPersistOutcome, PostTurnPolicy,
 };
-use super::pre::{MainLlmOutput, MiddleOutput, PreLlmOutput, STAGES};
+use super::pre::{latest_recent_turn_pair, MainLlmOutput, MiddleOutput, PreLlmOutput, STAGES};
 use super::TurnMode;
 use crate::domain::chat_engine::chat_stage::ChatStage;
 use crate::domain::reply_post_processor::resolve_reply_post_processor;
@@ -119,8 +121,9 @@ pub(crate) async fn run_main_llm(
     let reply_raw = reply_out.reply;
     let llm_prompt_eval_ms = reply_out.prompt_eval_ms;
     let main_llm_ms = t_main_llm.elapsed().as_millis() as u64;
+    let (_, previous_assistant_reply) = latest_recent_turn_pair(&pre.memory.recent_turns);
     let reply = strip_hallucination_tokens(&soft_append_guard(
-        &reply_raw,
+        &trim_template_repeat_reply(previous_assistant_reply.as_str(), &reply_raw),
         &middle.ai_event_type,
         middle.ai_impact_factor_final,
         middle.relation_after.as_str(),
@@ -190,8 +193,9 @@ pub(crate) async fn run_main_llm_stream(
     let reply_raw = reply_out.reply;
     let llm_prompt_eval_ms = reply_out.prompt_eval_ms;
     let main_llm_ms = t_main_llm.elapsed().as_millis() as u64;
+    let (_, previous_assistant_reply) = latest_recent_turn_pair(&pre.memory.recent_turns);
     let reply = strip_hallucination_tokens(&soft_append_guard(
-        &reply_raw,
+        &trim_template_repeat_reply(previous_assistant_reply.as_str(), &reply_raw),
         &middle.ai_event_type,
         middle.ai_impact_factor_final,
         middle.relation_after.as_str(),
