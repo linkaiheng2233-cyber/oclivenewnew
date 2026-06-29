@@ -10,6 +10,7 @@
 - **Affect 展示通道 `display_metrics`**：`RoleData` / `RoleInfo` / `SendMessageResponse` 增 UI-only 指标（`favor` / `traits[7]` / `relation_summary`）；旧标量字段标 deprecated；前端 `roleStore` 优先读新字段。
 - **CI flake 自动重跑**：`.github/workflows/ci-rerun-flake.yml` 对 `rust` / `e2e-tauri` 失败限次 `gh run rerun --failed`。
 - **Affect WS4.2–4.4（情感解耦）**：`apply_profile_evolution_atomic` 档案+七维同事务；深度档案 LLM 门控（强事件 OR 每 N 轮 OR 雷达 `radar_deep_pending`，默认 N=3）；`get_display_metrics` GET-only（Tauri + HTTP `/display_metrics`）；Tauri `affect:metricsChanged` 推送 + `roleStore` listen。
+- **RFC affect 漂移闸**：`scripts/check-rfc-affect-drift.mjs` 接入 dimension5。
 - **Wave E · Turn Thinking 持久化分流**：`[turn_thinking] fast_persistence = "strong_only"`（默认 `legacy`）；Fast 闲聊不写 long_term / favor / evolution；**Quarrel / Apology / Confession / Praise** 仍正常写入；RFC [`creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md`](creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md)。
 - **Wave F · Turn Thinking 包级路由**：`config.json` → `turn_thinking`（OR/AND · Deep latch · ephemeral 局面摘要 TTL）；迁移 `035_turn_thinking_runtime.sql`；本句 rule event Router 前 prepass；RFC §8–12。
 - **Chat Pro 流式取消**：新消息发出时 `AbortController` 打断上一轮 SSE；清理悬空 `streaming` 气泡。
