@@ -1,6 +1,6 @@
 # 产品线任务分桶（按复杂度 · 执行视图）
 
-**用途**：把 [PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](./PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) **§A / §C** 拆成「可先打包的细碎活」与「需单独攻坚的硬骨头」，便于排期。**不替代**主清单里的 `[ ]` / `[x]`；发版仍以主清单与 [PROJECT_OVERVIEW.md](../creator-docs/getting-started/PROJECT_OVERVIEW.md) §8 为准。
+**用途**：把 [PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](./archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) **§A / §C** 拆成「可先打包的细碎活」与「需单独攻坚的硬骨头」，便于排期。**不替代**主清单里的 `[ ]` / `[x]`；发版仍以主清单与 [PROJECT_OVERVIEW.md](../creator-docs/getting-started/PROJECT_OVERVIEW.md) §8 为准。
 
 **排序原则**：先做**低风险、短平快、文档/流程类**（可合并为「文档与闸门日」）；再做**有边界的中小工程**；**硬骨头**各自独立里程碑，避免与细碎混在同一 PR。
 
@@ -16,7 +16,7 @@
 
 | 主清单锚点 | 内容 | 备注 |
 |------------|------|------|
-| **C1** | 新建 **`handoff/PRODUCT_RELEASE_CHECKLIST.md`** 骨架：只列 **§A 的 P0 行**（引用主清单 §A1–A5 文案或编号），发版会议只过此表 | **已建**：[`PRODUCT_RELEASE_CHECKLIST.md`](./PRODUCT_RELEASE_CHECKLIST.md)；高风险演示表见 [`PLUGIN_HIGH_RISK_ACCEPTANCE.md`](./PLUGIN_HIGH_RISK_ACCEPTANCE.md) |
+| **C1** | 新建 **`handoff/archive/PRODUCT_RELEASE_CHECKLIST.md`** 骨架：只列 **§A 的 P0 行**（引用主清单 §A1–A5 文案或编号），发版会议只过此表 | **已建**：[`PRODUCT_RELEASE_CHECKLIST.md`](./archive/PRODUCT_RELEASE_CHECKLIST.md)；高风险演示表见 [`PLUGIN_HIGH_RISK_ACCEPTANCE.md`](./archive/PLUGIN_HIGH_RISK_ACCEPTANCE.md) |
 | **C1（路线图互链）** | **路线图互链**：在 `VISION_ROADMAP_MONTHLY.md`、`BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md` 各加一节或一段，指向主清单 §A / 本分桶 | 对应主清单 §C1 第二项 |
 | **A9.1** | **单一支持入口**：根 `README.md` 固定一句「提问先去…」+ Issue 模板指向 [FAQ](../creator-docs/FAQ.md) / [DOCUMENTATION_INDEX](../creator-docs/getting-started/DOCUMENTATION_INDEX.md) | 机械活 |
 | **A9.2** | **首发预期**：`README` 或 `README.en.md` 增加「早期采用者 / 已知限制」短段落（5～10 行级） | 与 A9.1 同 PR 亦可 |
@@ -36,7 +36,7 @@
 | **A5.1** | **对外兼容一页表**：主程序 semver ↔ 编写器/启动器 ↔ `min_runtime_version` ↔ 包 schema（表格 + 破坏性迁移指针） | **基线已入库**（[`COMPATIBILITY.md`](../creator-docs/COMPATIBILITY.md)、[`A5_CLOSURE_SUMMARY.md`](./A5_CLOSURE_SUMMARY.md)）；姊妹仓版本号仍须发版时人工对拍 |
 | **A1.3（强化）** | **CI 与本地一致**：核对 `.github/workflows` 与 `npm run check:release` 覆盖差；缺则在 CI 或文档补一句「发版前本地补跑」 | CONTRIBUTING 已有 `check:release`，多为 **对齐与文档** |
 | **A6.1（切片）** | **界面无残留中文**：按 **一个垂直域** 扫（如仅设置页 / 仅插件管理），`rg Han` + i18n 键 | 全应用一次扫完工作量大，**按切片收口** |
-| **A3.2（切片）** | **`KernelErrorBody` JSON `code` + `apiErrors`**：目录插件 `ApiError` 已 JSON 化；未知码 **`UNKNOWN_WITH_CODE`** 兜底；`[CODE]` 仅 legacy | 见 `handoff/A3_CLOSURE_SUMMARY.md` |
+| **A3.2（切片）** | **`KernelErrorBody` JSON `code` + `apiErrors`**：目录插件 `ApiError` 已 JSON 化；未知码 **`UNKNOWN_WITH_CODE`** 兜底；`[CODE]` 仅 legacy | 见 `handoff/archive/A3_CLOSURE_SUMMARY.md` |
 | **A8.1（切片）** | **高频键盘路径**：例如「插件管理打开 / 关闭 / 发送」一条链 | 全 a11y 属硬骨头，先做 **单链** |
 | **A8.2（单点）** | **长任务进度**：例如仅「大包导入」进度与失败态 | 与 A8.1 类似，**单场景**先闭环 |
 | **A4.1（文档先行）** | **高风险能力验收表**：Markdown 表（权限 → 期望弹窗 → 拒绝后行为）+ 手工演示脚本 | 自动化可后移；先 **可演示** |
@@ -49,7 +49,7 @@
 | 主清单锚点 | 内容 | 依赖 / 说明 |
 |------------|------|----------------|
 | **A4.2** | **权限与 manifest 一致性**：`oclive_validation`、运行时、`DIRECTORY_PLUGINS` / manifest 文档 **三面盘点** | 依赖 inventory，可能牵迁移与校验 |
-| **A3.1** | **崩溃与遥测**：Sentry 构建期 DSN、设置页退出、脱敏、README 一致 | 见 `handoff/A3_CLOSURE_SUMMARY.md` |
+| **A3.1** | **崩溃与遥测**：Sentry 构建期 DSN、设置页退出、脱敏、README 一致 | 见 `handoff/archive/A3_CLOSURE_SUMMARY.md` |
 | **A2.2** | **可选环境自检**：首次启动或设置页探测（模型、目录可写等）+ 降级说明 | 与 A2.1 文案衔接；有产品形态设计 |
 | **A7** | **性能与资源**：与 perf handoff 对照，公开冷启动/长会话 **数字或已知限制** | 需测量与文案 |
 
@@ -83,6 +83,6 @@
 
 ## 相关链接
 
-- 主清单：[PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](./PRODUCT_AND_KERNEL_GAP_CHECKLIST.md)  
+- 主清单：[PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](./archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md)  
 - 发版习惯：[PROJECT_OVERVIEW.md §8](../creator-docs/getting-started/PROJECT_OVERVIEW.md)  
 - 贡献与闸门：[CONTRIBUTING.md](../CONTRIBUTING.md)

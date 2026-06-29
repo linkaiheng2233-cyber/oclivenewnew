@@ -107,6 +107,16 @@
 
 ---
 
+## 文档纪律（精简）
+
+- **入口 SSOT**：人类 [`human-docs/README.md`](../human-docs/README.md) · AI [`AGENTS.md`](../AGENTS.md) + 本文
+- **契约 SSOT**：[`creator-docs/`](../creator-docs/) 中文；[`creator-docs-en/`](../creator-docs-en/) 镜像
+- **工程态 / 债**：[`handoff/README.md`](./README.md) · [`TECHNICAL_DEBT_INVENTORY.md`](./TECHNICAL_DEBT_INVENTORY.md)
+- **禁止**：新建顶层 handoff 文（无 RFC/maintainer 确认）；复制他文大表；把 `archive/` / `04_4.6` 当现行 truth（G3）
+- **深链**：人类用 [`08_REFERENCE_MAP.md`](../human-docs/08_REFERENCE_MAP.md)；全量索引用 [`DOCUMENTATION_INDEX.md`](../creator-docs/getting-started/DOCUMENTATION_INDEX.md)
+
+---
+
 ## 门禁与验收
 
 - `node scripts/check-stale-paths.mjs` — 文档 + 代码路径（dimension5 拆为 doc/code 两检）

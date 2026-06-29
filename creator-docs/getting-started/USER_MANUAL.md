@@ -96,7 +96,7 @@
 ### 4.1 常规设置
 
 - **语言**：设置 → 常规 → **界面语言**（如 中文 / English / 跟随系统）。切换后若个别位置仍有非当前语言文案，可能为 **长尾未翻译** 或 **插件自带文案**；可反馈 issue。  
-- **遥测（Sentry）**：若构建包含 DSN，可在设置中 **退出崩溃上报**（详见 [ERROR_CODES.md](ERROR_CODES.md) §1.7 与 [A3 结项](../../handoff/A3_CLOSURE_SUMMARY.md)）。  
+- **遥测（Sentry）**：若构建包含 DSN，可在设置中 **退出崩溃上报**（详见 [ERROR_CODES.md](ERROR_CODES.md) §1.7 与 [A3 结项](../../handoff/archive/A3_CLOSURE_SUMMARY.md)）。  
 - **环境自检**：设置 → 常规 → **运行检测**，用于快速确认 Ollama、目录与写权限。
 
 ### 4.2 LLM 后端配置
@@ -122,7 +122,7 @@
 ### 5.2 为什么我切到英文后还是看到中文？
 
 - 部分 **插件、角色包自带文案** 未走宿主 i18n。  
-- **长尾界面** 仍在翻译收口中，见 [产品清单 §A6](../../handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md)。  
+- **长尾界面** 仍在翻译收口中，见 [产品清单 §A6](../../handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md)。  
 - 若确认是主界面遗漏，欢迎带 **截图与版本号** 提 issue。
 
 ### 5.3 如何卸载插件？

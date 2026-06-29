@@ -1,6 +1,6 @@
 # 纯净内核 / 平台目标 — 实施计划（内核优先）
 
-**当前策略**：先完成内核与平台里程碑（K0–K5）；**桌面产品级首发**暂缓，见 [handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](../../handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) §A。
+**当前策略**：先完成内核与平台里程碑（K0–K5）；**桌面产品级首发**暂缓，见 [handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](../../handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) §A。
 
 **权威契约**：[KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md) · [PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md) · [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)
 

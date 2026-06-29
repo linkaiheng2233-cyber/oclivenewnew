@@ -1,6 +1,6 @@
 # Pure kernel / platform goals — implementation plan (kernel first)
 
-**Current strategy**: deliver kernel and platform milestones **K0–K5** first; **desktop product-level launch** is deferred — see [handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](../../handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) §A.
+**Current strategy**: deliver kernel and platform milestones **K0–K5** first; **desktop product-level launch** is deferred — see [handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](../../handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) §A.
 
 **Authoritative contracts**: [KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md) · [PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md) · [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)
 
@@ -144,7 +144,7 @@ cd examples/oocp-test-suite && node run.mjs
 | K2–K4 | Shippable process / lib |
 | K5 | Third-party onboarding |
 
-**Product P0** is ready to focus on **product checklist §A** now that **K1 is green and K2 is closed** (see [PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](../../handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) §A).
+**Product P0** is ready to focus on **product checklist §A** now that **K1 is green and K2 is closed** (see [PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](../../handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) §A).
 
 ---
 

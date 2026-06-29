@@ -151,12 +151,12 @@
 
 ## 6. 与发版清单的关系
 
-发版前仍须按 [`handoff/PRODUCT_RELEASE_CHECKLIST.md`](./PRODUCT_RELEASE_CHECKLIST.md) 核对：Breaking 是否已写入 CHANGELOG、兼容表、对外说明。
+发版前仍须按 [`handoff/archive/PRODUCT_RELEASE_CHECKLIST.md`](./archive/PRODUCT_RELEASE_CHECKLIST.md) 核对：Breaking 是否已写入 CHANGELOG、兼容表、对外说明。
 
 ---
 
 ## 7. 相关链接
 
 - [`CONTRIBUTING.md`](../CONTRIBUTING.md) / [`CONTRIBUTING.en.md`](../CONTRIBUTING.en.md) — Breaking 小节入口
-- [`handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md`](./PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) — §C2 工程纪律
+- [`handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md`](./archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) — §C2 工程纪律
 - [`creator-docs/getting-started/DOCUMENTATION_INDEX.md`](../creator-docs/getting-started/DOCUMENTATION_INDEX.md) — 文档索引

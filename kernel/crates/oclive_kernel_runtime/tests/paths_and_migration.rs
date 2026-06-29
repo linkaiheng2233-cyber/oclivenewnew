@@ -2,17 +2,22 @@
 
 use oclive_kernel_runtime::{
     ensure_app_data_dir, find_app_data_dir_for_api, find_db_path, AppDataMode, ENV_APP_DATA,
-    ENV_USE_CANONICAL_APP_DATA,
+    ENV_APP_DATA_LEGACY_TEMP, ENV_USE_CANONICAL_APP_DATA,
 };
 use std::env;
+use std::sync::Mutex;
+
+/// Env-var resolution tests share process-global state; serialize to avoid Windows CI flakes.
+static ENV_TEST_LOCK: Mutex<()> = Mutex::new(());
 
 #[test]
 fn resolve_api_explicit_app_data_wins() {
+    let _guard = ENV_TEST_LOCK.lock().unwrap();
     let tmp = tempfile::tempdir().unwrap();
     let explicit = tmp.path().join("custom");
     env::set_var(ENV_APP_DATA, explicit.to_string_lossy().as_ref());
     env::remove_var(ENV_USE_CANONICAL_APP_DATA);
-    env::remove_var("OCLIVE_API_USE_TEMP_APP_DATA");
+    env::remove_var(ENV_APP_DATA_LEGACY_TEMP);
     let (dir, mode) = find_app_data_dir_for_api(8420);
     assert_eq!(mode, AppDataMode::Persistent);
     assert_eq!(dir, explicit);
@@ -21,8 +26,9 @@ fn resolve_api_explicit_app_data_wins() {
 
 #[test]
 fn resolve_api_canonical_opt_in() {
+    let _guard = ENV_TEST_LOCK.lock().unwrap();
     env::remove_var(ENV_APP_DATA);
-    env::remove_var("OCLIVE_API_USE_TEMP_APP_DATA");
+    env::remove_var(ENV_APP_DATA_LEGACY_TEMP);
     env::set_var(ENV_USE_CANONICAL_APP_DATA, "1");
     let (dir, mode) = find_app_data_dir_for_api(8420);
     assert_eq!(mode, AppDataMode::Persistent);
@@ -32,15 +38,17 @@ fn resolve_api_canonical_opt_in() {
 
 #[test]
 fn resolve_api_defaults_temp() {
+    let _guard = ENV_TEST_LOCK.lock().unwrap();
     env::remove_var(ENV_APP_DATA);
     env::remove_var(ENV_USE_CANONICAL_APP_DATA);
-    env::remove_var("OCLIVE_API_USE_TEMP_APP_DATA");
+    env::remove_var(ENV_APP_DATA_LEGACY_TEMP);
     let (_, mode) = find_app_data_dir_for_api(9999);
     assert_eq!(mode, AppDataMode::Temp);
 }
 
 #[test]
 fn migration_copies_legacy_db() {
+    let _guard = ENV_TEST_LOCK.lock().unwrap();
     let tmp = tempfile::tempdir().unwrap();
     let legacy = tmp.path().join("legacy");
     let canonical = tmp.path().join("canonical");

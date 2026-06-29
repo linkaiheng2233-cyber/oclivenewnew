@@ -44,11 +44,9 @@ function patchTauriRolesForTheater() {
   if (!Array.isArray(resources))
     throw new Error('tauri.conf.json: bundle.resources missing')
 
-  const nextResources = resources.map((entry) => {
-    if (entry === '../chat-pro/roles' || entry === '../roles')
-      return 'resources/roles'
-    return entry
-  })
+  const ROLE_PATHS = new Set(['../roles', '../chat-pro/roles', 'resources/roles'])
+  const nextResources = resources.filter((entry) => !ROLE_PATHS.has(entry))
+  nextResources.unshift('resources/roles')
   if (!nextResources.includes('resources/theater'))
     nextResources.push('resources/theater')
 

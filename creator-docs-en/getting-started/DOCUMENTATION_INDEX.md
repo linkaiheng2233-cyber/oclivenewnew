@@ -67,7 +67,7 @@ Time-boxed “start here → ship”; **authoritative detail stays in each topic
 | **Kernel / hardware integrators: scaffold → device (learning path)** | **[KERNEL_INTEGRATOR_LEARNING_PATH.md](KERNEL_INTEGRATOR_LEARNING_PATH.md)** (Chinese: [../../creator-docs/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md](../../creator-docs/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md)) |
 | **Current status (version, what ships, changelog entry points)** | **[PROJECT_CURRENT_STATUS.md](PROJECT_CURRENT_STATUS.md)** |
 | **Align progress and goals (one page: summary + doc map by purpose)** | **[PROJECT_STATUS_AND_ALIGNMENT.md](PROJECT_STATUS_AND_ALIGNMENT.md)** |
-| **Product launch gates + kernel/platform gaps** | **[../../handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](../../handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md)** |
+| **Product launch gates + kernel/platform gaps** | **[../../handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](../../handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md)** |
 | **Four-repo i18n baseline (CJK scan, vue-i18n wiring)** | **[../../handoff/I18N_FOUR_REPO_BASELINE.md](../../handoff/I18N_FOUR_REPO_BASELINE.md)** |
 | **Install zip packs via launcher, pick local Ollama, one-click pull** | **[oclive-launcher README](https://github.com/linkaiheng2233-cyber/oclive-launcher/blob/main/README.md)** (separate repo) |
 | **High-coupling compile mode (Monolith)** | [RFC section](#rfc) (`monolith.toml`, compile-time welding) |
@@ -77,7 +77,7 @@ Time-boxed “start here → ship”; **authoritative detail stays in each topic
 | **Pure kernel boundary, soul delivery, embedded scope** | **[PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md)** · **[KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md)** (K0–K5) |
 | **Single-track platform path (scaffold → deploy)** | **[KERNEL_PLATFORM_DEVELOPER_PATH.md](KERNEL_PLATFORM_DEVELOPER_PATH.md)** |
 | **Headless bring-up (`--api`, K1)** | **[examples/headless-kernel-minimal/README.md](../../examples/headless-kernel-minimal/README.md)** |
-| **Fast triage after errors / filing issues** | **[ERROR_CODES.md](ERROR_CODES.md)** (tables) · **Normative `code` + JSON: [KERNEL_ERROR_CODE_CONVENTION.md](KERNEL_ERROR_CODE_CONVENTION.md)** · **A3 closure** [EN](../../handoff/A3_CLOSURE_SUMMARY.en.md) / [ZH](../../handoff/A3_CLOSURE_SUMMARY.md) (Sentry / user-visible errors) |
+| **Fast triage after errors / filing issues** | **[ERROR_CODES.md](ERROR_CODES.md)** (tables) · **Normative `code` + JSON: [KERNEL_ERROR_CODE_CONVENTION.md](KERNEL_ERROR_CODE_CONVENTION.md)** · **A3 closure** [EN](../../handoff/archive/A3_CLOSURE_SUMMARY.en.md) / [ZH](../../handoff/archive/A3_CLOSURE_SUMMARY.md) (Sentry / user-visible errors) |
 | **GitHub: Dependabot, CI, web settings** | **[GITHUB_REPO_CHECKLIST.md](GITHUB_REPO_CHECKLIST.md)** |
 | **Replaceable modules + HTTP sidecar + update strategy** | **[../plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md](../plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md)** |
 | **BYOK sidecar to proprietary cloud models** | **[SIDECAR_LLM_USER_GUIDE.md](SIDECAR_LLM_USER_GUIDE.md)** |

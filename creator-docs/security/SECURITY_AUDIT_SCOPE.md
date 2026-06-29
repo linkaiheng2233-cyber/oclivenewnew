@@ -11,7 +11,7 @@
 - **`unsafe` 块**：已做 **全量清单与注释**（含并发与不变式说明）；见各 `distros/desktop-tauri/src/**/*.rs` 中 `# Safety` / 模块头注释。
 - **取消与并发**：`process_message` 路径、`PluginHost` 解析、**可取消 LLM**（如 `llm_cancelable` 相关模块）的 **锁顺序、`.await` 边界与取消语义** 已文档化于源码注释与关键模块头。
 - **`cargo audit`**：已定期执行；**漏洞级** 命中已建档至 [KNOWN_VULNERABILITIES.md](./KNOWN_VULNERABILITIES.md)。
-- **`cargo deny`**：根 `deny.toml`；**dimension5 第十二检** + `oclive lint --deny`；策略见 [SUPPLY_CHAIN.md](./SUPPLY_CHAIN.md)。
+- **`cargo deny`**：根 `deny.toml`；**dimension5 检查项之一（licenses+bans）** + `oclive lint --deny`；策略见 [SUPPLY_CHAIN.md](./SUPPLY_CHAIN.md)。
 - **并发审查**：对 **`Arc` / `Mutex` / `JoinHandle`** 与 **异步取消** 在主编排路径上做过 **针对性** 代码审阅（非形式化验证）。
 
 ---

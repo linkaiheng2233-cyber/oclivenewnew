@@ -88,7 +88,7 @@ If the GUI still shows raw English backend strings, track under **A6** cleanup; 
 | **When it runs** | **`@sentry/vue`** may initialize only if **`VITE_SENTRY_DSN`** was set at **frontend build** time; no DSN → **no telemetry**. |
 | **What is sent** | **Uncaught Vue** errors; **not** chat text; Rust still relies mainly on **local logs**. |
 | **User opt-out** | **Settings → General** shows **Crash diagnostics (Sentry)** on DSN-enabled builds; **Disable crash reporting** writes **`localStorage`** key **`oclive.telemetry.sentryOptOut`** (`1` = opted out) and closes the client; clearing it requires an **app restart** to resume. |
-| **More detail** | Root [README.md](../../README.md) / [README.en.md](../../README.en.md) (Observability); closure notes [EN](../../handoff/A3_CLOSURE_SUMMARY.en.md) / [ZH](../../handoff/A3_CLOSURE_SUMMARY.md). |
+| **More detail** | Root [README.md](../../README.md) / [README.en.md](../../README.en.md) (Observability); closure notes [EN](../../handoff/archive/A3_CLOSURE_SUMMARY.en.md) / [ZH](../../handoff/archive/A3_CLOSURE_SUMMARY.md). |
 
 ---
 

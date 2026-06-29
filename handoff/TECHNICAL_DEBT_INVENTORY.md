@@ -39,10 +39,12 @@
 | **D-AI-VERIFY-01** | AI 审查/汇报无核实纪律 → 误报入账 | P1 | [`AI_VERIFICATION_PROTOCOL.md`](./AI_VERIFICATION_PROTOCOL.md) + AGENTS/BOUNDARIES/Playbook 挂链 | **Done**（轮次 20） |
 | **D-MAINT-01** | 远程 dependabot 陈旧分支（实测 **39**，**9** 含 `src-tauri`） | P2 | `gh api` 列表 + 批量 `git push origin --delete` | **Done**（轮次 22 · 维护者确认后清理） |
 | **BUILD-TAURI-01** | `tauri.conf.json` `beforeBuildCommand` 误写 `../../scripts` | **P0** | 改为 `node scripts/tauri-run.cjs` + dimension5 ratchet | **Done**（轮次 22） |
+| **BUILD-TAURI-02** | `tauri.conf` roles 污染（`resources/roles` 误提交 / shell-dist 累积） | **P0** | canonical 单条 `../chat-pro/roles` + shell-dist 去重 + tauri-run restore + dimension5 ratchet | **Done**（2026-06-29） |
 | **D-DOC-EN-01** | `creator-docs-en/security/KNOWN_VULNERABILITIES.md` 扫描日期滞后中文 | P2 | 对齐 `creator-docs/security/` 日期与命中条数 | **Done**（Wave 1 · 2026-06-25） |
 | **D-ORDER-05** | `desktop-tauri/src/lib.rs` L203 仍写 `src-tauri/src/api/` | P2 | 改注释为 `distros/desktop-tauri/src/api/`；评估移出 stale-path 豁免 | **Done**（Wave 1） |
 | **D-ORDER-06** | `distributions/vscode/out/` 与 `distros/` 命名并存 | P3 | gitignore 或删除构建产物 | **Done**（根 `.gitignore` 已含 `distributions/`） |
 | **D-AI-VERIFY-02** | AGENTS 测试段链 `AI_VERIFICATION_PROTOCOL` + `check:rust` vs `check:release` doctest | P2 | AGENTS §测试体系 | **Done**（Wave 1） |
+| **D-DOC-LINK-01** | 活跃文档链到已迁 `handoff/archive/` 的 closure / 发版清单（根路径断链） | P1 | `check-stale-paths` archive ratchet + dimension5 十三检口径 + BOUNDARIES 文档纪律节 | **Done**（2026-06-29） |
 | **K-CI-01** | GitHub CI main 红：doctest 漂移 | **P0** | 修 doctest；`cargo test --workspace` 绿 | **Done**（Wave 0 · doctest 三处） |
 | **D-READ-05** | `backend_registry.rs` 拆 `directory_slots` | P2 | 零语义变更 | **Done**（Wave 4 · `directory_slots_impl.rs`） |
 | **D-PORT-02** | `PluginBackendRegistryPort` 拆窄 trait | P1 | `MemoryBackendPort` phase 1 | **Partial**（`memory_backend_port.rs`） |
@@ -81,7 +83,7 @@
 | **MEGA-TS-01** | `useTheaterShell.ts` 巨无霸拆分 | 见 §2；`mapTheaterInvokeError` 已先行减负（轮次 22） |
 | **K-SUPPLY-08** | crate 作者信誉 / 发布历史系统审计 | — | **Observe** · 无成熟自动化方案 |
 
-**现在就能做（低成本）**：维持 dimension5 十三检绿 · `Cargo.lock` PR 更新 KNOWN_VULN · 发版前本地 `oclive lint --deny` · 校企仓要求组员 `npm ci && cargo build` 从源码跑通。
+**现在就能做（低成本）**：维持 dimension5 十四检绿 · `Cargo.lock` PR 更新 KNOWN_VULN · 发版前本地 `oclive lint --deny` · 校企仓要求组员 `npm ci && cargo build` 从源码跑通。
 
 **下一工程动作（P1）**：K-SUPPLY-02 Release 哈希清单（与 `kernel_manifest` / bundled kernel 发版对齐）。
 
@@ -180,7 +182,7 @@ Done 项（K-PERF-01~26、D-READ-01/02/04、K-ROBUST-01~03、Opus 4.8 Wave 0–4
 
 | ID | 项 | 说明 |
 |----|-----|------|
-| **K-SUPPLY-01** | `cargo deny` 硬门禁 | dimension5 第十二检 · `ci.yml` dimension5 job 安装 cargo-deny |
+| **K-SUPPLY-01** | `cargo deny` 硬门禁 | dimension5 检查项（licenses+bans）· `ci.yml` dimension5 job 安装 cargo-deny |
 | **K-SUPPLY-02** | Release SHA256 | `generate-sha256sums.mjs` · `release-kernel-checksums.yml` · bundle 钩子 |
 | **K-SUPPLY-03** | 插件审源码 toast | `installPath` DTO · 市场/git/zip · CLI · i18n |
 | **K-SUPPLY-DOC-01** | 供应链策略 SSOT | `creator-docs/security/SUPPLY_CHAIN.md` + 本文件 §1.5 |

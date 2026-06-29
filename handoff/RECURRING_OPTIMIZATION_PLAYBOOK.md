@@ -21,7 +21,7 @@
 | **Tauri 宿主** | [`distros/desktop-tauri/`](../distros/desktop-tauri/) | invoke 薄壳、打包资源、bundled kernel |
 | **契约文档** | 根 `creator-docs/`、`handoff/` | 平台 SSOT；发行版索引见 [`handoff/distros/README.md`](distros/README.md) |
 
-**禁止**：在 `kernel/` PR 里改 Chat Pro 壳样式；在 `distros/chat-pro/` PR 里改 `process_message` 编排。RFC：[`handoff/distros/ARCHITECTURE_DECOUPLING_RFC.md`](distros/ARCHITECTURE_DECOUPLING_RFC.md)。供应链：[`creator-docs/security/SUPPLY_CHAIN.md`](../creator-docs/security/SUPPLY_CHAIN.md) · `node scripts/dimension5-acceptance.mjs --ci`（十三检含 `cargo deny` 与代码路径 ratchet）。
+**禁止**：在 `kernel/` PR 里改 Chat Pro 壳样式；在 `distros/chat-pro/` PR 里改 `process_message` 编排。RFC：[`handoff/distros/ARCHITECTURE_DECOUPLING_RFC.md`](distros/ARCHITECTURE_DECOUPLING_RFC.md)。供应链：[`creator-docs/security/SUPPLY_CHAIN.md`](../creator-docs/security/SUPPLY_CHAIN.md) · `node scripts/dimension5-acceptance.mjs --ci`（十四检含 `cargo deny` 与代码路径 ratchet）。
 
 ---
 
@@ -76,7 +76,7 @@
 
 ### 项目分量（一句话量级）
 
-12 个 Rust crate / 489 源文件 / 33 迁移 / 38 后端集成测试 / 180 核心单测全绿 / 6 关联仓库 / 150+ 文档;独立 AI 审查综合评级 **A−**。**由一人完成通常需要团队的工作量。**
+12 个 Rust crate / 489 源文件 / 34 迁移 / 38 后端集成测试 / 180 核心单测全绿 / 6 关联仓库 / 150+ 文档;独立 AI 审查综合评级 **A−**。**由一人完成通常需要团队的工作量。**
 
 ---
 
@@ -108,7 +108,7 @@
 PowerShell 下逐条跑（**不要用 `&&`**）：
 
 ```powershell
-node scripts/dimension5-acceptance.mjs --ci   # 必须 PASS (13 checks; --ci 跳过 sample tests 仍计数)
+node scripts/dimension5-acceptance.mjs --ci   # 必须 PASS (14 checks; --ci 跳过 sample tests 仍计数)
 cargo test -p oclive_kernel_host --lib         # 必须全绿（注意：--lib 不含 doctest）
 node scripts/check-domain-layering.mjs         # ratchet 数值不得上涨
 git status                                      # 确认工作树状态 / 与 origin 差距
@@ -116,7 +116,9 @@ git status                                      # 确认工作树状态 / 与 or
 
 > **⚠️ doctest 盲区**：上面的 `--lib` 与日常 `npm run check:rust`（`cargo test --workspace --lib`）**都不跑 doctest**，但 CI `rust` job 跑 `cargo test --workspace`（**含 doctest**）。**本轮若改了公开 DTO 字段 / trait 签名 / crate 名 / re-export，必须补 `cargo test --workspace --doc`**，否则会出现「本地全绿 / 远程 CI 硬门禁红」（见 [`AI_VERIFICATION_PROTOCOL.md`](./AI_VERIFICATION_PROTOCOL.md) §2.1）。
 
-**判定**：十二项门禁含 layering ratchet / **cargo audit** / **cargo deny（licenses+bans）** / lockfile（禁 sqlx-mysql·rsa 回潮）/ ensure-plan 快照 / CHANGELOG 中英 parity / stale 路径 ratchet / host re-export ratchet / theater prompt drift / **verify:ui** / **vite build**。任一 FAIL → **本轮停止所有优化,先恢复基线**。
+**判定**：14 项门禁（择要）含 layering ratchet / **cargo audit** / **cargo deny（licenses+bans）** / lockfile（禁 sqlx-mysql·rsa 回潮）/ ensure-plan 快照 / CHANGELOG 中英 parity / stale 路径 ratchet（doc + code）/ host re-export ratchet / theater prompt drift / **verify:ui** / **vite build** / **tauri beforeBuildCommand 路径 ratchet**。任一 FAIL → **本轮停止所有优化,先恢复基线**。
+
+> **dimension5 检数 SSOT**：以 `dimension5-acceptance.mjs --ci` 脚本结尾输出的 **`PASS (N checks)`** 为准；文档中的「N 检」须与此对齐，勿另造数字。
 
 **ratchet 锚点**（只降不升）：
 - `domain→infrastructure`：use-import ≤ 4（全 test cfg）+ FQ ≤ 5 → 见 `handoff/LAYERING_BASELINE.json`
@@ -266,7 +268,7 @@ git status                                      # 确认工作树状态 / 与 or
 ## 5. 常用命令速查（PowerShell,逐条跑勿用 `&&`）
 
 ```powershell
-node scripts/dimension5-acceptance.mjs --ci      # 维度五门禁（13 checks,含 cargo deny + 代码路径 ratchet）
+node scripts/dimension5-acceptance.mjs --ci      # 维度五门禁（14 checks,含 cargo deny + 代码路径 ratchet）
 cargo test -p oclive_kernel_host --lib           # 核心单测（不含 doctest）
 cargo test --workspace --doc                     # doctest（公开 DTO/trait/crate 改名后必跑;check:rust 不跑）
 node scripts/check-domain-layering.mjs           # 分层 ratchet
@@ -355,6 +357,7 @@ npm run check:rust                               # fmt + clippy(-D warnings) + t
 | 20 | 2026-06-25 | 半 | PASS* | A− | **新增** [`AI_VERIFICATION_PROTOCOL.md`](./AI_VERIFICATION_PROTOCOL.md)+AGENTS/BOUNDARIES/Playbook 挂链; DeepSeek 质量报告逐条核实(unwrap/scene_director 单测/dependabot 数等多处误报); 本地 dimension5 十三检绿; **GitHub CI main 仍红**(`cargo test --workspace`); 入账 D-MAINT-01·D-DOC-EN-01·D-ORDER-05/06 | *`gh run` 28118002153; 未跑全仓 `cargo test`; 冻结项未动; §9 不追覆盖率数字 |
 | 21 | 2026-06-25 | 快 | PASS | A− | **轮次 20 P0 根因定位+修复**: CI `rust` 硬门禁红 = **3 处 doctest 漂移**(`AgentInput` 加 5 字段后 contracts 示例缺字段; `RoleStorage`/`EmotionAnalyzer` doctest 引旧 crate 名 `oclivenewnew_tauri`),被「首个 doctest 失败即 abort」逐个掩盖; `--lib`/`check:rust` 不跑 doctest 是本地绿≠远程绿根因 → 新增 **G8** + 协议 §2.1 doctest 行 + Playbook doctest 盲区警示 | `cargo test --workspace --doc` 全绿; dimension5 十三检/layering/stale-paths/host lib 241 绿; 冻结项未动 |
 | 22 | 2026-06-25 | 半 | PASS | A− | **BUILD-TAURI-01** `beforeBuildCommand` 仓根路径修复 + dimension5 十四检 ratchet; **模式 2** playtest 5 轮 + prompt 人设纪律回流; **mapTheaterInvokeError**; **D-MAINT-01** dependabot 分支清理; **K-SUPPLY-02** Done; push main 验 CI | `tauri-run.cjs` chat-pro/theater 绿; MEGA-SD/TS 仍 §2 冻结 |
+| 23 | 2026-06-29 | 快 | PASS | A− | **D-DOC-LINK-01** 活跃区 archive 断链修复（A3/PRODUCT_RELEASE/GAP）+ dimension5 十三检口径统一 + BOUNDARIES 文档纪律节 + `check-stale-paths` closure ratchet | `node scripts/check-stale-paths.mjs --docs-only` 绿; 冻结项未动 |
 
 > **轮次 20 待办（核实协议后 · 建议 Wave）**
 > - **P0**：~~修 CI `rust` job `tests (workspace)` 失败（本地 dimension5 绿 ≠ remote 绿）~~ → **轮次 21 已修**：根因为 3 处 doctest 漂移（非 `--lib` 单测），已修并补 doctest 盲区规则（G8）
