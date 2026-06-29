@@ -259,6 +259,24 @@ function hasBareMonorepoRolesDoc(line, rel = '') {
   return false;
 }
 
+/** Active docs must link archived closure checklists under handoff/archive/. */
+function lineHasStaleHandoffClosure(line, rel = '') {
+  if (rel.startsWith('handoff/archive/')) return [];
+  const checks = [
+    ['handoff/A3_CLOSURE_SUMMARY', 'handoff/archive/A3_CLOSURE_SUMMARY'],
+    ['handoff/PRODUCT_RELEASE_CHECKLIST', 'handoff/archive/PRODUCT_RELEASE_CHECKLIST'],
+    ['handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST', 'handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST'],
+  ];
+  const hits = [];
+  for (const [bad, good] of checks) {
+    const stripped = line.split(good).join('__ARCHIVE_OK__');
+    if (stripped.includes(bad)) {
+      hits.push(`stale handoff root path ${bad} (use handoff/archive/...)`);
+    }
+  }
+  return hits;
+}
+
 function scanDocLine(line, rel = '') {
   if (lineDocumentsForbiddenPath(line)) return [];
   const inRolePackTree = rel.startsWith('distros/chat-pro/roles/');
@@ -284,6 +302,7 @@ function scanDocLine(line, rel = '') {
   if (hasBareMonorepoRolesDoc(line, rel)) {
     hits.push('bare roles/ path (use distros/chat-pro/roles/)');
   }
+  hits.push(...lineHasStaleHandoffClosure(line, rel));
   return hits;
 }
 

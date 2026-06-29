@@ -45,7 +45,7 @@
 - Rust：`kernel/crates/oclive_kernel_runtime/src/error.rs`（`KernelErrorBody`、`AppError`、`http_chat_codes`）。
 - HTTP：`kernel/crates/oclive_kernel_host/src/http_api.rs`。
 - 补丁摘要：`handoff/A2_KERNEL_JSON_ERROR_PATCH.md`。
-- **A3（崩溃上报与用户可见错误扫尾）**：[`handoff/A3_CLOSURE_SUMMARY.md`](../../handoff/A3_CLOSURE_SUMMARY.md) · [`handoff/A3_CLOSURE_SUMMARY.en.md`](../../handoff/A3_CLOSURE_SUMMARY.en.md)。
+- **A3（崩溃上报与用户可见错误扫尾）**：[`handoff/archive/A3_CLOSURE_SUMMARY.md`](../../handoff/archive/A3_CLOSURE_SUMMARY.md) · [`handoff/archive/A3_CLOSURE_SUMMARY.en.md`](../../handoff/archive/A3_CLOSURE_SUMMARY.en.md)。
 
 ## 7. 目录插件 RPC 字符串 → `ApiError` 映射
 

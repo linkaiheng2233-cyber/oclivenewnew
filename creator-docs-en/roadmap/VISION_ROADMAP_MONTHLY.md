@@ -2,7 +2,7 @@
 
 This document breaks down the platform vision—**open platform + dual apps + role packs + swappable memory/emotion + optional multilingual plugins**—into **monthly, shippable milestones**. Order may shift with staffing, but **contracts before implementation, default implementations before real plugins** stays fixed.
 
-**Product launch (P0)**: desktop host gaps and task buckets live in **[`handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md`](../../handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md)** and **[`handoff/PRODUCT_LINE_TASK_BUCKETS.md`](../../handoff/PRODUCT_LINE_TASK_BUCKETS.md)**; release sign-off in **[`handoff/PRODUCT_RELEASE_CHECKLIST.md`](../../handoff/PRODUCT_RELEASE_CHECKLIST.md)**.
+**Product launch (P0)**: desktop host gaps and task buckets live in **[`handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md`](../../handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md)** and **[`handoff/PRODUCT_LINE_TASK_BUCKETS.md`](../../handoff/PRODUCT_LINE_TASK_BUCKETS.md)**; release sign-off in **[`handoff/archive/PRODUCT_RELEASE_CHECKLIST.md`](../../handoff/archive/PRODUCT_RELEASE_CHECKLIST.md)**.
 
 [中文](../../creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md)
 

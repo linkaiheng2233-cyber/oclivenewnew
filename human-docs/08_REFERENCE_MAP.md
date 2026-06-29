@@ -90,7 +90,7 @@
 | 文档 | 用途 |
 |------|------|
 | [RELEASE_VERSIONING](../creator-docs/development/RELEASE_VERSIONING.md) | SemVer |
-| [PRODUCT_RELEASE_CHECKLIST](../handoff/PRODUCT_RELEASE_CHECKLIST.md) | 发版勾选 |
+| [PRODUCT_RELEASE_CHECKLIST（归档）](../handoff/archive/PRODUCT_RELEASE_CHECKLIST.md) | 发版勾选 |
 | [KNOWN_VULNERABILITIES](../creator-docs/security/KNOWN_VULNERABILITIES.md) | 供应链 |
 | [LIGHTWEIGHT_PROFILE](../creator-docs/development/LIGHTWEIGHT_PROFILE.md) | 包体基线 |
 | [CHANGELOG](../CHANGELOG.md) | 用户可见变更 |
@@ -107,7 +107,7 @@
 | [pack-editor/](../handoff/pack-editor/) | 编写器路线图（主仓副本） |
 | [launcher/](../handoff/launcher/) · [studio/](../handoff/studio/) | 启动器 / 工作室协调入口 |
 | [TECHNICAL_DEBT_INVENTORY](../handoff/TECHNICAL_DEBT_INVENTORY.md) | 技术债 |
-| [04_4.6_PROJECT_TRUTH_CHECKLIST](../handoff/04_4.6_PROJECT_TRUTH_CHECKLIST.md) | 认知清单 |
+| [04_4.6_PROJECT_TRUTH_CHECKLIST](../handoff/04_4.6_PROJECT_TRUTH_CHECKLIST.md) | **已归档快照** · 以 [BUS_FACTOR_NOTES](../handoff/BUS_FACTOR_NOTES.md) 为准 |
 | [CHAT_STORAGE_ARCHITECTURE](../handoff/CHAT_STORAGE_ARCHITECTURE.md) | 聊天存储 |
 | [DOCUMENTATION_INDEX](../creator-docs/getting-started/DOCUMENTATION_INDEX.md) | 全量契约索引（`creator-docs/`） |
 

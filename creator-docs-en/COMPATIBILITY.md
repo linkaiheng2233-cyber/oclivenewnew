@@ -59,7 +59,7 @@ For breaking changes: update **`CHANGELOG.md` / `CHANGELOG.en.md`**, the planned
 ### Release review (maintainer self-check)
 
 1. Verify the three SemVer snapshots: root **`package.json`**, **`distros/desktop-tauri/Cargo.toml`**, **`oclive_kernel_runtime`** (often bumped together).  
-2. Open [`PRODUCT_RELEASE_CHECKLIST.md`](../handoff/PRODUCT_RELEASE_CHECKLIST.md) **“对外说明”**: if contracts or sister-repo expectations changed, update this page.  
+2. Open [`PRODUCT_RELEASE_CHECKLIST.md`](../handoff/archive/PRODUCT_RELEASE_CHECKLIST.md) **“对外说明”**: if contracts or sister-repo expectations changed, update this page.  
 3. **HTTP / OOCP**: if `API_VERSION` or `RUNTIME_API_VERSION` changes, update the test suite and docs ([`OOCP_TEST_SUITE.md`](../creator-docs/testing/OOCP_TEST_SUITE.md)).
 
 For the Chinese-maintained superset (same facts), see [COMPATIBILITY.md](../creator-docs/COMPATIBILITY.md).

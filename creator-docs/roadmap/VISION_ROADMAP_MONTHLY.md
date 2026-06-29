@@ -2,7 +2,7 @@
 
 本文把「开放平台 + 双软件 + 角色包 + 可替换记忆/情感 + 可选多语言插件」拆成**按月可交付**的里程碑。顺序可随人力微调，但**契约先于实现、默认实现先于真插件**的原则不变。
 
-**产品首发（P0）**：桌面宿主「能公开发」的缺口与任务分桶见 **[`handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md`](../../handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md)**、**[`handoff/PRODUCT_LINE_TASK_BUCKETS.md`](../../handoff/PRODUCT_LINE_TASK_BUCKETS.md)**；发版勾选 **[`handoff/PRODUCT_RELEASE_CHECKLIST.md`](../../handoff/PRODUCT_RELEASE_CHECKLIST.md)**。
+**产品首发（P0）**：桌面宿主「能公开发」的缺口与任务分桶见 **[`handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md`](../../handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md)**、**[`handoff/PRODUCT_LINE_TASK_BUCKETS.md`](../../handoff/PRODUCT_LINE_TASK_BUCKETS.md)**；发版勾选 **[`handoff/archive/PRODUCT_RELEASE_CHECKLIST.md`](../../handoff/archive/PRODUCT_RELEASE_CHECKLIST.md)**。
 
 ---
 

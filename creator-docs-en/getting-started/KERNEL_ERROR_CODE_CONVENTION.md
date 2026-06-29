@@ -45,6 +45,6 @@ Sidecars use **JSON-RPC numeric `code` + lowercase snake `message` names**; see 
 - Rust: `kernel/crates/oclive_kernel_runtime/src/error.rs` (`KernelErrorBody`, `AppError`, `http_chat_codes`).
 - HTTP: `distros/desktop-tauri/src/http_api.rs`.
 - Patch summary: `handoff/A2_KERNEL_JSON_ERROR_PATCH.md`.
-- **A3 (crash reporting & user-visible error polish)**: [`handoff/A3_CLOSURE_SUMMARY.en.md`](../../handoff/A3_CLOSURE_SUMMARY.en.md) · [`handoff/A3_CLOSURE_SUMMARY.md`](../../handoff/A3_CLOSURE_SUMMARY.md).
+- **A3 (crash reporting & user-visible error polish)**: [`handoff/archive/A3_CLOSURE_SUMMARY.en.md`](../../handoff/archive/A3_CLOSURE_SUMMARY.en.md) · [`handoff/archive/A3_CLOSURE_SUMMARY.md`](../../handoff/archive/A3_CLOSURE_SUMMARY.md).
 
 [中文原文](../../creator-docs/getting-started/KERNEL_ERROR_CODE_CONVENTION.md)

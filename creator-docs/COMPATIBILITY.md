@@ -57,7 +57,7 @@
 ### 发版审阅（维护者自检）
 
 1. 核对本节「快照」三处 semver：**根 `package.json`**、**`distros/desktop-tauri/Cargo.toml`**、**`oclive_kernel_runtime`**（发版 bump 时常需同改）。  
-2. 打开 [handoff/PRODUCT_RELEASE_CHECKLIST.md](../handoff/PRODUCT_RELEASE_CHECKLIST.md) **「对外说明」**：若 bump 了契约或姊妹仓依赖，更新本页表格或快照句。  
+2. 打开 [handoff/archive/PRODUCT_RELEASE_CHECKLIST.md](../handoff/archive/PRODUCT_RELEASE_CHECKLIST.md) **「对外说明」**：若 bump 了契约或姊妹仓依赖，更新本页表格或快照句。  
 3. **HTTP / OOCP**：若 `API_VERSION` 或 `RUNTIME_API_VERSION` 变更，必须同步测试套件与文档（见 `creator-docs/testing/OOCP_TEST_SUITE.md`）。
 
 ---

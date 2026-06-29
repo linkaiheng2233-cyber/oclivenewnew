@@ -93,7 +93,7 @@ Optional text shaping after the LLM reply (`config.json` → `reply_post_process
 ### 4.1 General
 
 - **Language**: Settings → General → **UI language**. Residual non-target language may come from **distros/chat-pro/plugins/packs** or **untranslated strings**; see FAQ below.  
-- **Telemetry (Sentry)**: opt-out in Settings when DSN is present; see [ERROR_CODES.md](ERROR_CODES.md) §1.7 and [A3 closure](../../handoff/A3_CLOSURE_SUMMARY.en.md).  
+- **Telemetry (Sentry)**: opt-out in Settings when DSN is present; see [ERROR_CODES.md](ERROR_CODES.md) §1.7 and [A3 closure](../../handoff/archive/A3_CLOSURE_SUMMARY.en.md).  
 - **Environment check**: quick Ollama / paths / writability probe.
 
 ### 4.2 LLM backend
@@ -119,7 +119,7 @@ Optional text shaping after the LLM reply (`config.json` → `reply_post_process
 ### 5.2 I switched to English but still see Chinese
 
 - **Plugins / packs** ship their own strings.  
-- **Residual UI** may still be tracked under checklist §A6 ([PRODUCT_AND_KERNEL_GAP_CHECKLIST](../../handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md)).  
+- **Residual UI** may still be tracked under checklist §A6 ([PRODUCT_AND_KERNEL_GAP_CHECKLIST](../../handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md)).  
 - File an issue with **screenshot + version** for host UI gaps.
 
 ### 5.3 How do I remove a plugin?

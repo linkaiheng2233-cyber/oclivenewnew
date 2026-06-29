@@ -15,6 +15,7 @@
 | **创作者契约** | [`creator-docs/`](../../creator-docs/) | manifest、六槽、插件协议、角色包规范 |
 | **英文镜像** | [`creator-docs-en/`](../../creator-docs-en/) | 对外英文；契约以中文 `creator-docs/` 为准 |
 | **维护者深读** | [`handoff/`](../../handoff/) | Bus factor、发版清单、技术债；新人请先 human-docs L5–L7 |
+| **文档纪律** | [`AI_CHANGE_BOUNDARIES` §文档纪律](../../handoff/AI_CHANGE_BOUNDARIES.md#文档纪律精简) | 入口/契约 SSOT、禁止增殖 handoff、archive 非 truth |
 
 **物理分层**：Rust 内核在 [`kernel/`](../../kernel/)（`kernel/crates/`、`kernel/fuzz/`）；桌面 / Chat Pro / Theater 前端与 Tauri 宿主在 [`distros/`](../../distros/)（`shared`、`chat-pro`、`theater`、`desktop-tauri`）。
 

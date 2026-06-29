@@ -1,14 +1,16 @@
 # I18N progress (oclivenewnew)
 
+> **2026-06 monorepo 注记**：Vue 源在 `distros/chat-pro/src`、`distros/shared/src`（及 `distros/theater/src`）；下文旧 `src/` 表述为 pre-reorg 历史快照，扫盘请用 `distros/**` glob。
+
 ## Locale wiring
 
 - **Library**: `vue-i18n` v9+ (`legacy: false`).
-- **Entry**: `src/i18n/index.ts` — `LOCALE_PREF_KEY = "oclive.appLocale"`, `getLocalePreference` / `setLocalePreference`, `resolveLocaleTag`, `fallbackLocale: "zh-CN"`.
-- **Messages**: `src/i18n/locales/zh-CN.ts`, `en-US.ts` (+ `locales/fragments/*` for large trees).
+- **Entry**: `distros/shared/src/i18n/index.ts`（历史：`src/i18n/index.ts`）— `LOCALE_PREF_KEY = "oclive.appLocale"`, `getLocalePreference` / `setLocalePreference`, `resolveLocaleTag`, `fallbackLocale: "zh-CN"`.
+- **Messages**: `distros/shared/src/i18n/locales/zh-CN.ts`, `en-US.ts` (+ `locales/fragments/*` for large trees).
 
-## Phase 0 — CJK inventory (Vue/TS under `src/`)
+## Phase 0 — CJK inventory (Vue/TS under `distros/**`)
 
-Generated with: `rg -l "\\p{Han}" --glob "*.vue" --glob "*.ts" src` (Unicode class `Han`).
+Generated with: `rg -l "\\p{Han}" --glob "*.vue" --glob "*.ts" distros/chat-pro/src distros/shared/src distros/theater/src` (Unicode class `Han`).
 
 Hotspots (user-visible; comments / locale files / tests may still match):
 

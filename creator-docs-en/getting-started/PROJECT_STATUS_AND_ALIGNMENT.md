@@ -15,7 +15,7 @@
 | **[KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md)** | Kernel milestones **K0–K5**, north star, **verification log** |
 | **[../../creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md](../../creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md)** | Monthly vision |
 | **[../../creator-docs/roadmap/BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md](../../creator-docs/roadmap/BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md)** | Experience backlog; **does not replace** the monthly roadmap |
-| **[../../handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](../../handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md)** | **Product P0–P2** + kernel/platform **section B** gaps |
+| **[../../handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](../../handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md)** | **Product P0–P2** + kernel/platform **section B** gaps |
 
 ---
 
@@ -28,7 +28,7 @@
 | Hub & quick links | [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md) |
 | **Current status snapshot (version, ships, changelogs)** | [PROJECT_CURRENT_STATUS.md](PROJECT_CURRENT_STATUS.md) |
 | In-app FAQ (mumu slots, plugins, UI) | [../FAQ.md](../FAQ.md) |
-| Error codes & triage | [ERROR_CODES.md](ERROR_CODES.md) · [KERNEL_ERROR_CODE_CONVENTION.md](KERNEL_ERROR_CODE_CONVENTION.md) · A3 [EN](../../handoff/A3_CLOSURE_SUMMARY.en.md) / [ZH](../../handoff/A3_CLOSURE_SUMMARY.md) |
+| Error codes & triage | [ERROR_CODES.md](ERROR_CODES.md) · [KERNEL_ERROR_CODE_CONVENTION.md](KERNEL_ERROR_CODE_CONVENTION.md) · A3 [EN](../../handoff/archive/A3_CLOSURE_SUMMARY.en.md) / [ZH](../../handoff/archive/A3_CLOSURE_SUMMARY.md) |
 | Local sidecar + BYOK | [SIDECAR_LLM_USER_GUIDE.md](SIDECAR_LLM_USER_GUIDE.md) |
 | Config paths | [../guides/CONFIGURATION_FILES.md](../guides/CONFIGURATION_FILES.md) |
 | mumu UI acceptance | [`handoff/distros/MUMU_UI_ACCEPTANCE_CHECKLIST.md`](../../handoff/distros/MUMU_UI_ACCEPTANCE_CHECKLIST.md) |
@@ -85,7 +85,7 @@
 
 | Topic | Entry |
 |-------|--------|
-| Product + kernel gap list | [../../handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](../../handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) |
+| Product + kernel gap list | [../../handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](../../handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) |
 | Four-repo i18n baseline | [../../handoff/I18N_FOUR_REPO_BASELINE.md](../../handoff/I18N_FOUR_REPO_BASELINE.md) |
 
 ---
@@ -105,7 +105,7 @@
 | Track | Source of truth |
 |-------|-----------------|
 | Kernel follow-up (incl. P2) | [KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md) |
-| Product P0–P2 | [PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](../../handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) |
+| Product P0–P2 | [PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](../../handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) |
 | Vision / narrative | [../../creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md](../../creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md) · [../../creator-docs/roadmap/VISION_OPEN_LAB.md](../../creator-docs/roadmap/VISION_OPEN_LAB.md) |
 
 **Habit**: before release or contract changes, run checks in [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md); when changing kernel boundaries, sync [PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md) and the kernel plan.

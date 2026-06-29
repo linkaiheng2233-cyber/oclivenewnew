@@ -22,7 +22,7 @@
 
 - **Runtime**: Tauri desktop; role pack import (`.ocpak` / `.zip` / folder); chat orchestration **`process_message`**; six-slot `plugin_backends`; directory plugins; remote sidecar; local HTTP `--api`; startup health checks (see [PROJECT_OVERVIEW.md](../../creator-docs/getting-started/PROJECT_OVERVIEW.md)).
 - **Kernel programme**: milestones **K0–K5** are closed in plan except **P2 (OTA / remote logs, etc.)**; verification and CI: [KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md) and root [AGENTS.md](../../AGENTS.md).
-- **Product “first launch” hard gates**: still governed by [PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](../../handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) **§A**, decoupled from kernel milestones per **§D** of that checklist.
+- **Product “first launch” hard gates**: still governed by [PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](../../handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) **§A**, decoupled from kernel milestones per **§D** of that checklist.
 
 ---
 

@@ -96,7 +96,7 @@ Windows 需 **Visual Studio Build Tools**（MSVC）；Cargo 产物在仓库外 `
 - 当前以 **0.2.x** 桌面宿主为主；**在线更新器未配置**，分发以 **离线安装包** 为准（见下文「可观测性与发布」）。  
 - **Ollama** 为本地对话默认路径；未安装或模型未拉取时对话会失败——请见 [CREATOR_WORKFLOW.md](creator-docs/getting-started/CREATOR_WORKFLOW.md) 与 [ERROR_CODES.md](creator-docs/getting-started/ERROR_CODES.md)（§1.5 首装常见）。  
 - **Remote / 目录插件 / MCP** 涉及出站网络或子进程时，须按 manifest 与宿主授权流程使用（见 [DIRECTORY_PLUGINS.md](creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md)）。  
-- **产品级首发 P0**：**A1（可 CI 子集）**已收口（HTTP 重启、`vite preview`+Playwright、九条 `invoke` 热路径；见 [handoff/PRODUCT_RELEASE_CHECKLIST.md](handoff/PRODUCT_RELEASE_CHECKLIST.md)）；**A2 首装文案 / 离线弱网** 等仍在推进，维护者用 [handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) 跟踪。
+- **产品级首发 P0**：**A1（可 CI 子集）**已收口（HTTP 重启、`vite preview`+Playwright、九条 `invoke` 热路径；见 [handoff/archive/PRODUCT_RELEASE_CHECKLIST.md](handoff/archive/PRODUCT_RELEASE_CHECKLIST.md)）；**A2 首装文案 / 离线弱网** 等仍在推进，维护者用 [handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) 跟踪。
 
 ## 模型、插件与数据（速览三问）
 

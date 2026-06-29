@@ -73,7 +73,7 @@ Release **`cargo-bloat` sampling**, **Monolith** vs **`oclive bench`**, and **kn
 - **0.2.x** desktop host focus; **no in-app updater** wired yet — ship **offline installers** (see **Observability & release** if present below).  
 - **Ollama** is the default local LLM path; missing daemon or models will fail chat — see [CREATOR_WORKFLOW.md](creator-docs/getting-started/CREATOR_WORKFLOW.md) and [ERROR_CODES.md](creator-docs/getting-started/ERROR_CODES.md) (§1.5 first-install subset).  
 - **Remote / directory plugins / MCP** may require outbound network or subprocesses per manifest + host prompts — [DIRECTORY_PLUGINS.md](creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md).  
-- **Product P0 gates** are tracked in [handoff/PRODUCT_RELEASE_CHECKLIST.md](handoff/PRODUCT_RELEASE_CHECKLIST.md) and [handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md).
+- **Product P0 gates** are tracked in [handoff/archive/PRODUCT_RELEASE_CHECKLIST.md](handoff/archive/PRODUCT_RELEASE_CHECKLIST.md) and [handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md).
 
 ## Observability (Sentry)
 
