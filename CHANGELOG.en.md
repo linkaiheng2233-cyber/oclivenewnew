@@ -25,7 +25,7 @@
 
 ### Changed
 
-- **Prompt mechanics decoupling (RFC #2)**: `PromptBuilder` no longer injects favor/relation numerics or `relation_transition_hint`; event block keeps event type + tone constraints only; character affect driven by user emotion engine + `mutable_personality`.
+- **Prompt mechanics fully text-driven (RFC #2 deepened)**: `PromptBuilder` no longer injects any favor/relation numerics, relation stage, event block, boundary-tone guideline, or seven-dim numeric-derived tone into the dialogue prompt (removed `build_event_relation_state` / `build_boundary_tone_guideline` / `build_current_state` and their numeric helpers); persona and tone are driven entirely by the core archive + `mutable_personality` narrative + user-emotion cue, with only a number-free "authenticity constraint" anti-fabrication guard retained; seven-dim/favor are demoted to read-only `display_metrics`.
 - **Chat Pro default profile**: `desktop.oclive.toml` enables `fast_persistence = "strong_only"` (Fast casual chat skips favor/long-term memory; strong relationship events still consolidate). Existing session data is not rolled back.
 - **Repository layout**: root `crates/`, `src-tauri/`, and `src/` moved to `kernel/crates/`, `distros/desktop-tauri/`, and `distros/{shared,chat-pro,theater}/`; root `npm run tauri:dev` / `tauri:dev:theater` unchanged.
 - **Theater doc SSOT sweep**: `theater_director` unified as **shipped (2026-06)** (DISTRO_DEFAULT_PLUGINS · ARCHITECTURE · NAMING · ROADMAP §7 · IA); [`TECHNICAL_DEBT_INVENTORY.md`](handoff/TECHNICAL_DEBT_INVENTORY.md) round 16; acceptance chain → [`PLAYTEST_MATRIX.md`](handoff/theater/PLAYTEST_MATRIX.md).

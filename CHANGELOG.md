@@ -30,7 +30,7 @@
 
 ### Changed
 
-- **Prompt 力学解耦（RFC #2）**：`PromptBuilder` 不再注入好感/关系数值与 `relation_transition_hint`；事件块仅保留事件类型与语气约束；情感表现由用户情绪引擎 + `mutable_personality` 驱动。
+- **Prompt 力学彻底文本化（RFC #2 深化）**：`PromptBuilder` 不再向对话 prompt 注入任何好感/关系数值、关系阶段、事件块、边界语气指引或七维数值派生口吻（删除 `build_event_relation_state` / `build_boundary_tone_guideline` / `build_current_state` 及其数值辅助函数）；人设与语气完全由核心档案 + `mutable_personality` 叙事 + 用户情绪线索驱动，仅保留无数值的「真实性约束」防编造守门；七维/好感退场为 `display_metrics` 只读展示。
 - **Chat Pro 默认 profile**：`desktop.oclive.toml` 启用 `fast_persistence = "strong_only"`（Fast 闲聊不涨好感/不进长期记忆；强关系事件仍巩固）。旧 session 数据不回滚。
 - **仓库物理布局**：根 `crates/`、`src-tauri/`、`src/` 分别迁至 `kernel/crates/`、`distros/desktop-tauri/`、`distros/{shared,chat-pro,theater}/`；根 `npm run tauri:dev` / `tauri:dev:theater` 行为不变。
 - **Theater 文档 SSOT 扫尾**：`theater_director` 由「拟/Deferred」统一为**已交付（2026-06）**（DISTRO_DEFAULT_PLUGINS · ARCHITECTURE · NAMING · ROADMAP §7 · IA）；[`TECHNICAL_DEBT_INVENTORY.md`](handoff/TECHNICAL_DEBT_INVENTORY.md) 轮次 16；验收链指向 [`PLAYTEST_MATRIX.md`](handoff/theater/PLAYTEST_MATRIX.md)。

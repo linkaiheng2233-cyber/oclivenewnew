@@ -4,7 +4,7 @@
 
 use super::*;
 
-use crate::models::{EventType, Memory, PersonalitySource, PersonalityVector, Role};
+use crate::models::{Memory, PersonalitySource, Role};
 
 impl PromptBuilder {
     #[must_use]
@@ -75,61 +75,23 @@ impl PromptBuilder {
         format!("【局面摘要】（临时状态，会过期；与核心/可变档案冲突以核心为准）\n{text}\n\n")
     }
 
+    /// Personality supplement is now text-first: persona comes from the core hard
+    /// constraint plus the mutable personality archive narrative. Numeric seven-dim
+    /// values are display-only and must not be rendered into the prompt.
     #[must_use]
-    pub(super) fn build_personality_supplement(
-        role: &Role,
-        personality: &PersonalityVector,
-        mutable_personality: &str,
-    ) -> String {
-        let profile_primary =
-            role.evolution_config.personality_source == PersonalitySource::Profile;
+    pub(super) fn build_personality_supplement(role: &Role, mutable_personality: &str) -> String {
         let mut supplement = String::new();
         if !role.description.trim().is_empty() {
             supplement.push_str(&format!("描述: {}\n", role.description));
         }
-        if profile_primary {
-            let m = mutable_personality.trim();
-            if !m.is_empty() {
-                supplement.push_str(
-                    "【可变性格档案】（由模型在规则内根据对话维护，用于抓住相处中的有限变化；创作者不可手写本条；与核心档案冲突时以核心为准）\n",
-                );
-                supplement.push_str(m);
-                supplement.push_str("\n\n");
-            }
+        let m = mutable_personality.trim();
+        if !m.is_empty() {
             supplement.push_str(
-                "【七维视图】（仅由「核心 + 可变档案」正文经规则归纳的辅助读数，帮助把握语气松紧；**不是**性格主数据源；与上文档案冲突时以档案正文为准）\n",
+                "【可变性格档案】（由模型在规则内根据对话维护，用于把握相处中的有限变化；创作者不可手写本条；与核心档案冲突时以核心为准）\n",
             );
-        } else {
-            supplement.push_str("\n当前性格（自然语言）:\n");
+            supplement.push_str(m);
+            supplement.push('\n');
         }
-        supplement.push_str(&format!(
-            "- 倔强: {}\n",
-            Self::dim_label(personality.stubbornness, "偏低", "一般", "偏高")
-        ));
-        supplement.push_str(&format!(
-            "- 黏人: {}\n",
-            Self::dim_label(personality.clinginess, "偏低", "一般", "偏高")
-        ));
-        supplement.push_str(&format!(
-            "- 敏感: {}\n",
-            Self::dim_label(personality.sensitivity, "偏低", "一般", "偏高")
-        ));
-        supplement.push_str(&format!(
-            "- 强势: {}\n",
-            Self::dim_label(personality.assertiveness, "偏低", "一般", "偏高")
-        ));
-        supplement.push_str(&format!(
-            "- 宽容: {}\n",
-            Self::dim_label(personality.forgiveness, "偏低", "一般", "偏高")
-        ));
-        supplement.push_str(&format!(
-            "- 话多: {}\n",
-            Self::dim_label(personality.talkativeness, "偏低", "一般", "偏高")
-        ));
-        supplement.push_str(&format!(
-            "- 温暖: {}",
-            Self::dim_label(personality.warmth, "偏低", "一般", "偏高")
-        ));
         supplement
     }
 
@@ -151,16 +113,6 @@ impl PromptBuilder {
         format!("【角色当前状态】{}\n", parts.join(""))
     }
 
-    pub(super) fn dim_label(v: f64, low: &str, mid: &str, high: &str) -> String {
-        if v < 0.35 {
-            low.to_string()
-        } else if v < 0.65 {
-            mid.to_string()
-        } else {
-            high.to_string()
-        }
-    }
-
     pub(super) fn build_memory_context(memories: &[Memory]) -> String {
         // Do not expose importance scores to the model, to avoid them leaking into user-visible replies and breaking immersion
         let mut context = String::from(
@@ -172,134 +124,11 @@ impl PromptBuilder {
         context
     }
 
-    pub(super) fn build_current_state(
-        personality: &PersonalityVector,
-        user_emotion: &str,
-    ) -> String {
-        let mut state = String::from("当前状态:\n");
-        state.push_str("用户语气线索（内置情感引擎；请先对齐再编内容）:\n");
-        state.push_str(user_emotion.trim());
-        state.push('\n');
-        let balance = (personality.forgiveness + personality.warmth) / 2.0;
-        let mood = if balance > 0.65 {
-            "偏温柔、好说话"
-        } else if balance > 0.35 {
-            "平常"
-        } else {
-            "偏硬、易较真"
-        };
-        state.push_str(&format!("我的心情倾向: {}\n", mood));
-        state.push_str(Self::reply_pacing_hint(personality));
-        state.push('\n');
-        state.push_str(Self::listening_style_hint(personality));
-        state
-    }
-
-    pub(super) fn reply_pacing_hint(personality: &PersonalityVector) -> &'static str {
-        if personality.talkativeness >= 0.65 {
-            "回复篇幅倾向: 可适度展开（通常 1–4 句），须先接住用户本句；用户仅「嗯/好/在吗」等极短句时仍宜短答。\n"
-        } else if personality.talkativeness <= 0.35 {
-            "回复篇幅倾向: 宜精炼（常 1–2 句），嘴硬但不灌水；用户寒暄时勿写成长段。\n"
-        } else {
-            "回复篇幅倾向: 随用户信息量调节——寒暄短答，深聊或提问再展开；勿与用户消息字数盲目攀比。\n"
-        }
-    }
-
-    pub(super) fn listening_style_hint(personality: &PersonalityVector) -> &'static str {
-        if personality.warmth >= 0.65 && personality.sensitivity >= 0.6 {
-            "倾诉应对倾向: 先共情安抚，再用一问一答陪伴展开。"
-        } else if personality.assertiveness >= 0.65 {
-            "倾诉应对倾向: 可直接点评或吐槽，但要先承认对方情绪，再表达立场，避免上来训话。"
-        } else if personality.warmth <= 0.35 && personality.sensitivity <= 0.35 {
-            "倾诉应对倾向: 可偏克制或冷感，但仍要先回应事实与情绪，不要敷衍转移。"
-        } else {
-            "倾诉应对倾向: 先接情绪，再追问一个细节，按对方反馈决定是否展开。"
-        }
-    }
-
-    pub(super) fn event_type_label(event_type: &EventType) -> &'static str {
-        match event_type {
-            EventType::Quarrel => "争吵",
-            EventType::Apology => "道歉",
-            EventType::Praise => "赞美",
-            EventType::Complaint => "抱怨",
-            EventType::Confession => "表白/坦白",
-            EventType::Joke => "玩笑",
-            EventType::Ignore => "无特别事件",
-        }
-    }
-
-    pub(super) fn build_event_relation_state(
-        _relation_before: &str,
-        _favorability_before: f64,
-        _relation_preview: &str,
-        _favorability_preview: f64,
-        event_type: &EventType,
-        impact_factor: f64,
-    ) -> String {
-        let impact = impact_factor.clamp(-1.0, 1.0);
-        let mut s = String::from("【本轮事件】\n");
-        s.push_str(&format!(
-            "本轮事件类型: {}\n",
-            Self::event_type_label(event_type)
-        ));
-        s.push_str("\n硬约束（必须遵守）：\n");
-        if matches!(event_type, EventType::Quarrel) || impact < 0.0 {
-            s.push_str(
-                "- 本轮偏负面事件：语气应更克制、防御或冷静，不要立刻甜蜜撒娇、不要当作没吵过。\n",
-            );
-        } else if matches!(event_type, EventType::Praise | EventType::Apology) || impact > 0.0 {
-            s.push_str("- 本轮偏正面事件：允许缓和、更温柔，但仍需服从人设与当前对话氛围。\n");
-        }
-        s.push_str("- 不要编造系统状态：不要虚构未发生的关系跳变、共同经历或历史事件。\n");
-        s
-    }
-
-    pub(super) fn seven_dim_equal_weight_score(personality: &PersonalityVector) -> f64 {
-        let sum = personality.stubbornness
-            + personality.clinginess
-            + personality.sensitivity
-            + personality.assertiveness
-            + personality.forgiveness
-            + personality.talkativeness
-            + personality.warmth;
-        (sum / 7.0).clamp(0.0, 1.0)
-    }
-
-    pub(super) fn build_boundary_tone_guideline(
-        personality: &PersonalityVector,
-        relation_before: &str,
-        relation_preview: &str,
-    ) -> Option<String> {
-        let before_rank = relation_rank(relation_before);
-        let preview_rank = relation_rank(relation_preview);
-        let is_low_stage = before_rank <= 1 || preview_rank <= 1;
-        let is_low_to_friend_boundary = before_rank <= 1 && preview_rank == 2;
-        if !(is_low_stage || is_low_to_friend_boundary) {
-            return None;
-        }
-
-        let warmup_level = Self::seven_dim_equal_weight_score(personality);
-        let stage_weight = if is_low_to_friend_boundary {
-            0.95
-        } else if is_low_stage {
-            0.65
-        } else {
-            0.0
-        };
-        let boundary_tone_level = (stage_weight * (1.0 - warmup_level * 0.45)).clamp(0.0, 1.0);
-
-        let mut s = String::from("【边界语气控制指引】\n");
-        if boundary_tone_level >= 0.7 {
-            s.push_str("- 当前处于低阶段或升阶边界，语气请慢热、谨慎、先建立安全感；避免突然亲昵称呼或强承诺。\n");
-        } else if boundary_tone_level >= 0.4 {
-            s.push_str("- 当前建议渐进升温：保持友好与礼貌，可轻微拉近距离，但避免语气突然变得过度亲密。\n");
-        } else {
-            s.push_str(
-                "- 当前仅需轻度边界控制：保持自然友好，不必刻意生硬，但仍避免突升亲密语气。\n",
-            );
-        }
-        Some(s)
+    /// Static authenticity guardrail (no numeric state): replaces the former
+    /// favor/relation/event-tone injection. Tone is driven by the persona text and
+    /// mutable personality archive, not by relation stage or seven-dim numbers.
+    pub(super) fn build_authenticity_constraint() -> &'static str {
+        "【真实性约束】不要编造系统状态：不要虚构未发生的关系跳变、共同经历或历史事件。\n"
     }
 
     /// Care-package keywords used to detect templated repeat concern lists.

@@ -216,11 +216,7 @@ impl PromptBuilder {
         prompt.push_str("\n\n---\n底线区块\n");
         prompt.push_str(PROMPT_BLOCK_GUIDE);
         prompt.push_str("\n\n");
-        let supplement = Self::build_personality_supplement(
-            input.role,
-            input.personality,
-            input.mutable_personality,
-        );
+        let supplement = Self::build_personality_supplement(input.role, input.mutable_personality);
         if !supplement.is_empty() {
             prompt.push_str(&supplement);
             prompt.push_str("\n\n");
@@ -244,27 +240,7 @@ impl PromptBuilder {
             prompt.push_str(&status);
             prompt.push_str("\n\n");
         }
-        prompt.push_str(&Self::build_event_relation_state(
-            input.relation_before,
-            input.favorability_before,
-            input.relation_preview,
-            input.favorability_preview,
-            input.event_type,
-            input.impact_factor,
-        ));
-        prompt.push_str("\n\n");
-        if let Some(boundary_guide) = Self::build_boundary_tone_guideline(
-            input.personality,
-            input.relation_before,
-            input.relation_preview,
-        ) {
-            prompt.push_str(&boundary_guide);
-            prompt.push_str("\n\n");
-        }
-        prompt.push_str(&Self::build_current_state(
-            input.personality,
-            input.user_emotion,
-        ));
+        prompt.push_str(Self::build_authenticity_constraint());
         prompt.push_str("\n\n");
         if !input
             .previous_complex_emotion_narrative_hint
@@ -351,11 +327,7 @@ impl PromptBuilder {
         dynamic_suffix.push_str("\n\n---\n底线区块\n");
         dynamic_suffix.push_str(PROMPT_BLOCK_GUIDE);
         dynamic_suffix.push_str("\n\n");
-        let supplement = Self::build_personality_supplement(
-            input.role,
-            input.personality,
-            input.mutable_personality,
-        );
+        let supplement = Self::build_personality_supplement(input.role, input.mutable_personality);
         if !supplement.is_empty() {
             dynamic_suffix.push_str(&supplement);
             dynamic_suffix.push_str("\n\n");
@@ -371,27 +343,7 @@ impl PromptBuilder {
             dynamic_suffix.push_str(&status);
             dynamic_suffix.push_str("\n\n");
         }
-        dynamic_suffix.push_str(&Self::build_event_relation_state(
-            input.relation_before,
-            input.favorability_before,
-            input.relation_preview,
-            input.favorability_preview,
-            input.event_type,
-            input.impact_factor,
-        ));
-        dynamic_suffix.push_str("\n\n");
-        if let Some(boundary_guide) = Self::build_boundary_tone_guideline(
-            input.personality,
-            input.relation_before,
-            input.relation_preview,
-        ) {
-            dynamic_suffix.push_str(&boundary_guide);
-            dynamic_suffix.push_str("\n\n");
-        }
-        dynamic_suffix.push_str(&Self::build_current_state(
-            input.personality,
-            input.user_emotion,
-        ));
+        dynamic_suffix.push_str(Self::build_authenticity_constraint());
         dynamic_suffix.push_str("\n\n");
         if !input
             .previous_complex_emotion_narrative_hint

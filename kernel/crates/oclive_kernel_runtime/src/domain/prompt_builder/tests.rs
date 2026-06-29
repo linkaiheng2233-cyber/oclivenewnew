@@ -143,10 +143,10 @@ fn test_build_prompt() {
     assert!(prompt.contains("当前关系"));
     assert!(!prompt.contains("家人/长辈场景补充"));
     assert!(prompt.contains("朋友"));
-    assert!(prompt.contains("本轮事件"));
+    assert!(prompt.contains("真实性约束"));
     assert!(prompt.contains("Friend"));
-    assert!(prompt.contains("赞美"));
     assert!(!prompt.contains("Praise"));
+    assert!(!prompt.contains("本轮事件"));
     assert!(prompt.contains("场景设定"));
     assert!(prompt.contains("客厅灯暖洋洋"));
     assert!(prompt.contains("用户语气线索"));
@@ -157,9 +157,9 @@ fn test_build_prompt() {
     assert!(prompt.contains("篇幅随输入"));
     assert!(!prompt.contains("篇幅与节奏"));
     assert!(prompt.contains("倾诉优先"));
-    assert!(prompt.contains("倾诉应对倾向"));
     assert!(prompt.contains("【对话硬约束】"));
-    assert!(prompt.contains("回复篇幅倾向"));
+    assert!(!prompt.contains("倾诉应对倾向"));
+    assert!(!prompt.contains("回复篇幅倾向"));
     assert!(!prompt.contains("【回复结构】"));
     assert!(!prompt.contains("影响因子(已归一)"));
     assert!(!prompt.contains("warmup_level="));
@@ -264,8 +264,8 @@ fn test_prompt_contains_personality() {
         previous_assistant_reply: "",
     });
 
-    assert!(prompt.contains("倔强"));
-    assert!(prompt.contains("温暖"));
+    assert!(!prompt.contains("- 倔强"));
+    assert!(prompt.contains("【核心设定·不可违背】"));
 }
 
 #[test]
@@ -310,7 +310,7 @@ fn test_prompt_without_memories() {
 }
 
 #[test]
-fn boundary_tone_low_stage_high_constraint_contains_slow_warm_guidance() {
+fn boundary_tone_guideline_no_longer_injected_high_stage() {
     let role = create_test_role();
     let cautious = PersonalityVector {
         stubbornness: 0.1,
@@ -354,12 +354,13 @@ fn boundary_tone_low_stage_high_constraint_contains_slow_warm_guidance() {
         previous_assistant_reply: "",
     });
 
-    assert!(prompt.contains("边界语气控制指引"));
-    assert!(prompt.contains("慢热、谨慎"));
+    assert!(!prompt.contains("边界语气控制指引"));
+    assert!(!prompt.contains("慢热、谨慎"));
+    assert!(prompt.contains("真实性约束"));
 }
 
 #[test]
-fn boundary_tone_low_stage_low_constraint_not_overly_stiff() {
+fn boundary_tone_guideline_no_longer_injected_low_stage() {
     let role = create_test_role();
     let warm = PersonalityVector {
         stubbornness: 0.9,
@@ -403,9 +404,8 @@ fn boundary_tone_low_stage_low_constraint_not_overly_stiff() {
         previous_assistant_reply: "",
     });
 
-    assert!(prompt.contains("边界语气控制指引"));
-    assert!(prompt.contains("保持自然友好"));
-    assert!(!prompt.contains("慢热、谨慎"));
+    assert!(!prompt.contains("边界语气控制指引"));
+    assert!(!prompt.contains("回复篇幅倾向"));
 }
 
 #[test]
@@ -487,7 +487,7 @@ fn profile_mode_shows_mutable_and_summary_header() {
     });
     assert!(prompt.contains("【可变性格档案】"));
     assert!(prompt.contains("更黏人"));
-    assert!(prompt.contains("【七维视图】"));
+    assert!(!prompt.contains("【七维视图】"));
     assert!(prompt.contains("核心性格档案（创作者与用户设定"));
 }
 
@@ -1080,7 +1080,8 @@ fn event_relation_block_no_impact_factor_jargon() {
     assert!(!prompt.contains("影响因子(已归一)"));
     assert!(!prompt.contains("warmup_level="));
     assert!(!prompt.contains("boundary_tone_level="));
-    assert!(prompt.contains("本轮事件类型: 赞美"));
+    assert!(!prompt.contains("本轮事件类型"));
+    assert!(prompt.contains("真实性约束"));
 }
 
 #[test]
