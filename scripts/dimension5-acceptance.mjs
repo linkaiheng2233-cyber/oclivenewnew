@@ -137,6 +137,28 @@ runStep('tauri beforeBuildCommand path ratchet', () => {
   if (!build.includes('scripts/tauri-run.cjs') || !dev.includes('scripts/tauri-run.cjs')) {
     throw new Error('tauri.conf.json beforeBuildCommand/beforeDevCommand must invoke scripts/tauri-run.cjs');
   }
+  const resources = parsed.tauri?.bundle?.resources;
+  if (!Array.isArray(resources)) {
+    throw new Error('tauri.conf.json bundle.resources must be an array');
+  }
+  const rolesResourceCount = resources.filter((e) => e === 'resources/roles').length;
+  const chatProRolesCount = resources.filter((e) => e === '../chat-pro/roles').length;
+  if (rolesResourceCount !== 0) {
+    throw new Error(
+      `tauri.conf.json must not commit resources/roles (found ${rolesResourceCount}); use runtime shell-dist only`,
+    );
+  }
+  if (chatProRolesCount !== 1) {
+    throw new Error(
+      `tauri.conf.json must have exactly one ../chat-pro/roles entry (found ${chatProRolesCount})`,
+    );
+  }
+  const MAX_RESOURCES = 10;
+  if (resources.length > MAX_RESOURCES) {
+    throw new Error(
+      `tauri.conf.json bundle.resources has ${resources.length} entries (max ${MAX_RESOURCES}); dedupe role paths`,
+    );
+  }
 });
 
 runStep('vite build', () => {

@@ -1,12 +1,12 @@
 {
   "build": {
-    "beforeBuildCommand": "node scripts/tauri-run.cjs build",
-    "beforeDevCommand": "node scripts/tauri-run.cjs dev",
+    "beforeBuildCommand": "node ../scripts/tauri-run.cjs build",
+    "beforeDevCommand": "node ../scripts/tauri-run.cjs dev",
     "devPath": "http://localhost:1420",
-    "distDir": "../theater/dist"
+    "distDir": "../chat-pro/dist"
   },
   "package": {
-    "productName": "OCLive Theater",
+    "productName": "OCLive Chat Pro",
     "version": "0.4.0"
   },
   "tauri": {
@@ -32,8 +32,6 @@
       "targets": "all",
       "identifier": "com.oclivenewnew.app",
       "resources": [
-        "resources/roles",
-        "../chat-pro/roles",
         "../chat-pro/roles",
         "resources/distro-profiles",
         "resources/theater",
@@ -70,7 +68,7 @@
         "fullscreen": false,
         "height": 600,
         "resizable": true,
-        "title": "OCLive Theater",
+        "title": "OCLive Chat Pro",
         "width": 800
       }
     ]

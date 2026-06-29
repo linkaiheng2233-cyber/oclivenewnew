@@ -6,7 +6,7 @@
 
 **综合评分：** A− · 本地 dimension5 **十四检** PASS · workspace **doctest** 绿 · 审查汇报 SSOT：[`AI_VERIFICATION_PROTOCOL.md`](./AI_VERIFICATION_PROTOCOL.md)
 
-**下一动作：** **P1** — 模式 2 playtest 扩展至陌生人 cohort；**Observe** K-SUPPLY-04/05 至 2026-07
+**下一动作：** **P0** — BUILD-TAURI-02 PR 合并后验 remote CI 绿；**P1** — 模式 2 playtest 扩展至陌生人 cohort；**Observe** K-SUPPLY-04/05 至 2026-07
 
 **Verification (2026-06-25 轮次 22):** `cargo test --workspace --doc` PASS；`node scripts/dimension5-acceptance.mjs --ci` PASS；`mapTheaterInvokeError` 单测绿。
 
@@ -25,7 +25,7 @@
 | **D-ORPHAN-04** | 残留空目录 `kernel/crates/models/` | P2 | 目录删除 + workspace 无引用 | **Done**（轮次 17） |
 | **O-1** | `oclive_kernel_host` 编译期 `include_str!` 耦合 `distros/desktop-tauri/assets/plugin-bridge.iife.js` | P1 | 资产迁入 `kernel/crates/oclive_kernel_host/assets/` + copy 脚本改指向 | **Done**（轮次 18） |
 | **O-2** | expert 孤儿前端（Vue/lib/test/i18n/API re-export，零 import） | P2 | 删除 + `role.ts`/locales 同步 + stale 文档措辞 | **Done**（轮次 18） |
-| **D-DOC-RELOC-01** | 三份名实不符文档仍在 `creator-docs/`（VS Code 契约 / Studio 指南 / mumu 验收） | P2 | 物理迁至 `handoff/{vscode,studio,distros}/` + 原位 stub + 入链更新 | **Done**（轮次 18） |
+| **D-DOC-RELOC-01** | 三份名实不符文档仍在 `ai-docs/zh/creator/`（VS Code 契约 / Studio 指南 / mumu 验收） | P2 | 物理迁至 `ai-docs/zh/handoff/{vscode,studio,distros}/` + 原位 stub + 入链更新 | **Done**（轮次 18） |
 | **K-SUPPLY-02** | Release 预编译内核 **SHA256SUMS**（防换包） | P1 | workflow + `bundle-kernel-for-tauri.mjs` 钩子已入库；tag `oclivenewnew-v*` 触发 CI artifact | **Done**（轮次 22） |
 | **K-SUPPLY-03** | 插件安装后「请审本地源码」固定提示 | P2 | 市场/git/zip + CLI | **Done**（轮次 19） |
 | **K-SUPPLY-04** | 前端 `npm-audit` 仅可见性（`continue-on-error`） | P2 | 连续 2 周期高危命中 → 升格硬门禁或文档豁免 | **OPEN** |
@@ -39,7 +39,8 @@
 | **D-AI-VERIFY-01** | AI 审查/汇报无核实纪律 → 误报入账 | P1 | [`AI_VERIFICATION_PROTOCOL.md`](./AI_VERIFICATION_PROTOCOL.md) + AGENTS/BOUNDARIES/Playbook 挂链 | **Done**（轮次 20） |
 | **D-MAINT-01** | 远程 dependabot 陈旧分支（实测 **39**，**9** 含 `src-tauri`） | P2 | `gh api` 列表 + 批量 `git push origin --delete` | **Done**（轮次 22 · 维护者确认后清理） |
 | **BUILD-TAURI-01** | `tauri.conf.json` `beforeBuildCommand` 误写 `../../scripts` | **P0** | 改为 `node scripts/tauri-run.cjs` + dimension5 ratchet | **Done**（轮次 22） |
-| **D-DOC-EN-01** | `creator-docs-en/security/KNOWN_VULNERABILITIES.md` 扫描日期滞后中文 | P2 | 对齐 `creator-docs/security/` 日期与命中条数 | **Done**（Wave 1 · 2026-06-25） |
+| **BUILD-TAURI-02** | committed `tauri.conf.json` 含 `resources/roles` / 重复 `../chat-pro/roles` → CI `generate_context` 失败 | **P0** | canonical 单条 chat-pro roles + shell-dist/theater-env 去重 + tauri-run restore + dimension5 ratchet | **Done**（轮次 23 · CI 待绿验证） |
+| **D-DOC-EN-01** | `ai-docs/en/creator/security/KNOWN_VULNERABILITIES.md` 扫描日期滞后中文 | P2 | 对齐 `ai-docs/zh/creator/security/` 日期与命中条数 | **Done**（Wave 1 · 2026-06-25） |
 | **D-ORDER-05** | `desktop-tauri/src/lib.rs` L203 仍写 `src-tauri/src/api/` | P2 | 改注释为 `distros/desktop-tauri/src/api/`；评估移出 stale-path 豁免 | **Done**（Wave 1） |
 | **D-ORDER-06** | `distributions/vscode/out/` 与 `distros/` 命名并存 | P3 | gitignore 或删除构建产物 | **Done**（根 `.gitignore` 已含 `distributions/`） |
 | **D-AI-VERIFY-02** | AGENTS 测试段链 `AI_VERIFICATION_PROTOCOL` + `check:rust` vs `check:release` doctest | P2 | AGENTS §测试体系 | **Done**（Wave 1） |
@@ -53,7 +54,7 @@
 
 ## §1.5 供应链安全（Supply Chain · 2026-06-24）
 
-**策略 SSOT**：[`creator-docs/security/SUPPLY_CHAIN.md`](../creator-docs/security/SUPPLY_CHAIN.md)
+**策略 SSOT**：[`ai-docs/zh/creator/security/SUPPLY_CHAIN.md`](../ai-docs/zh/creator/security/SUPPLY_CHAIN.md)
 
 ### 基线（已落地 · 非债）
 
@@ -136,7 +137,7 @@
 | **V-FUSED-01** | 多 `slot_registry` 实例融合 | Phase 3 |
 | **§3.5–3.7** | 多模态 / 参考硬件 / Edge OTA | 路线图 |
 | **§5.3** | 插件市场 UGC | 路线图 |
-| **V-LORA-WORKSHOP-01** | 创作者微调工坊（T0–T3）+ `slot.lora.apply` 运行时 | 三发行版 smoke 后；愿景 [VISION_ROADMAP_MONTHLY.md](../creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md)「微调工坊」；冻结期内仅 T0 契约 + T1 原型 |
+| **V-LORA-WORKSHOP-01** | 创作者微调工坊（T0–T3）+ `slot.lora.apply` 运行时 | 三发行版 smoke 后；愿景 [VISION_ROADMAP_MONTHLY.md](../ai-docs/zh/creator/roadmap/VISION_ROADMAP_MONTHLY.md)「微调工坊」；冻结期内仅 T0 契约 + T1 原型 |
 | **D-OPUS-05 Phase 2** | re-export import 清零 | ratchet ≤76 只降不升 |
 | **K-SUPPLY-06** | 位级可重复构建 | 内核 `kernel-v0.x` tag 稳定 + 专用 CI 镜像 |
 | **K-SUPPLY-07** | SBOM 导出 | 校企/商业客户采购或合规要求 |
@@ -149,7 +150,7 @@ Done 项（K-PERF-01~26、D-READ-01/02/04、K-ROBUST-01~03、Opus 4.8 Wave 0–4
 
 - [RECURRING_OPTIMIZATION_PLAYBOOK.md §8](./RECURRING_OPTIMIZATION_PLAYBOOK.md) 巡检日志
 - [CHANGELOG.md](../CHANGELOG.md) `[0.4.0]` · `[Unreleased]`
-- git log `handoff/` · `kernel/crates/oclive_kernel_host`
+- git log `ai-docs/zh/handoff/` · `kernel/crates/oclive_kernel_host`
 
 ### 轮次 16 Done（2026-06-18）
 
@@ -174,7 +175,7 @@ Done 项（K-PERF-01~26、D-READ-01/02/04、K-ROBUST-01~03、Opus 4.8 Wave 0–4
 |----|-----|------|
 | **O-1** | plugin-bridge 资产内核化 | `kernel/crates/oclive_kernel_host/assets/plugin-bridge.iife.js`；删 desktop-tauri 副本 |
 | **O-2** | expert 孤儿前端清理 | 10 文件删；Tauri expert API / validation / dual_core 链保留 |
-| **D-DOC-RELOC-01** | 文档名实归位 | `VSCODE_DISTRIBUTION` → `handoff/vscode/`；`USER_GUIDE` → `handoff/studio/`；`MUMU_UI_ACCEPTANCE` → `handoff/distros/` |
+| **D-DOC-RELOC-01** | 文档名实归位 | `VSCODE_DISTRIBUTION` → `ai-docs/zh/handoff/vscode/`；`USER_GUIDE` → `ai-docs/zh/handoff/studio/`；`MUMU_UI_ACCEPTANCE` → `ai-docs/zh/handoff/distros/` |
 
 ### 轮次 19 Done（2026-06-24）
 
@@ -183,9 +184,9 @@ Done 项（K-PERF-01~26、D-READ-01/02/04、K-ROBUST-01~03、Opus 4.8 Wave 0–4
 | **K-SUPPLY-01** | `cargo deny` 硬门禁 | dimension5 第十二检 · `ci.yml` dimension5 job 安装 cargo-deny |
 | **K-SUPPLY-02** | Release SHA256 | `generate-sha256sums.mjs` · `release-kernel-checksums.yml` · bundle 钩子 |
 | **K-SUPPLY-03** | 插件审源码 toast | `installPath` DTO · 市场/git/zip · CLI · i18n |
-| **K-SUPPLY-DOC-01** | 供应链策略 SSOT | `creator-docs/security/SUPPLY_CHAIN.md` + 本文件 §1.5 |
+| **K-SUPPLY-DOC-01** | 供应链策略 SSOT | `ai-docs/zh/creator/security/SUPPLY_CHAIN.md` + 本文件 §1.5 |
 
-轮次 1–15 明细表已从本文件移除以降低噪音；需要历史格查 git `handoff/TECHNICAL_DEBT_INVENTORY.md` @ 2026-06-15。
+轮次 1–15 明细表已从本文件移除以降低噪音；需要历史格查 git `ai-docs/zh/handoff/TECHNICAL_DEBT_INVENTORY.md` @ 2026-06-15。
 
 ---
 
@@ -197,6 +198,6 @@ Done 项（K-PERF-01~26、D-READ-01/02/04、K-ROBUST-01~03、Opus 4.8 Wave 0–4
 | 槽态矩阵 | [SLOT_BACKEND_REALITY_MATRIX.md](./SLOT_BACKEND_REALITY_MATRIX.md) |
 | Theater 验收 | [PLAYTEST_MATRIX.md](./theater/PLAYTEST_MATRIX.md) |
 | Theater 模式 2 解冻 | [MODE2_UNFREEZE.md](./theater/MODE2_UNFREEZE.md) |
-| 分层 ratchet | `handoff/LAYERING_BASELINE.json` |
+| 分层 ratchet | `ai-docs/zh/handoff/LAYERING_BASELINE.json` |
 | Theater director 集成测 | `distros/desktop-tauri/tests/theater_director_resolver.rs` |
-| 供应链策略 | [SUPPLY_CHAIN.md](../creator-docs/security/SUPPLY_CHAIN.md) |
+| 供应链策略 | [SUPPLY_CHAIN.md](../ai-docs/zh/creator/security/SUPPLY_CHAIN.md) |
