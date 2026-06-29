@@ -87,7 +87,9 @@ distros/chat-pro/roles/{role_id}/
 
 **兼容层**：无 `user_identities/` 时，宿主仍可使用蓝图 **`meta.relations`** 中各关系的 **`prompt_hint`**（legacy）。有 catalog 时以 catalog 模板为准；发行版可通过 `distro.oclive.toml` → `[user_identity].default_id` 覆盖会话默认（见 [DISTRO_CAPABILITY_PROFILE.md](../kernel/DISTRO_CAPABILITY_PROFILE.md)）。
 
-**示例**：`distros/chat-pro/roles/mumu/user_identities/`（演示 identity；**未**默认开启 `reply_post_processor`）。
+**示例**：`distros/chat-pro/roles/mumu/user_identities/`（含 **父亲/父女** 演示：`father.md` 映射 `father_daughter` 关系；**未**默认开启 `reply_post_processor`）。
+
+**Tier0 与身份冲突**：`core_personality.txt`（Tier0）中的通用叙事若与【用户身份】矛盾（例如 Tier0 写「照顾用户」而身份为父亲），**以【用户身份】段落为准**；创作者应在 Tier0 加显式退让句，并在 `user_identities/*.md` 写清 SSOT（见 mumu `father.md`）。
 
 **API / UI**：Tauri `get_user_identity_state` / `set_user_identity`；HTTP `GET /user_identity/state`、`POST /user_identity/set`。详见 [RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md](../rfc/RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md) §3。
 
