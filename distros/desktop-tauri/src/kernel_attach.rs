@@ -12,10 +12,11 @@ pub(crate) use oclive_kernel_runtime::app_error_from_http_response;
 use oclive_kernel_runtime::KernelBinaryManifest;
 use oclive_kernel_runtime::RUNTIME_API_VERSION;
 use oclive_kernel_types::models::dto::{
-    CreateEventRequest, CreateEventResponse, GetRoleInfoRequest, JumpTimeRequest, JumpTimeResponse,
-    RoleInfo, SendMessageRequest, SendMessageResponse, SetRoleInteractionModeRequest,
-    SetUserPresenceSceneRequest, SwitchSceneRequest, SwitchSceneResponse, TheaterSceneRequest,
-    TheaterSceneResponse, TimeStateResponse,
+    CreateEventRequest, CreateEventResponse, DisplayMetricsDto, GetDisplayMetricsRequest,
+    GetRoleInfoRequest, JumpTimeRequest, JumpTimeResponse, RoleInfo, SendMessageRequest,
+    SendMessageResponse, SetRoleInteractionModeRequest, SetUserPresenceSceneRequest,
+    SwitchSceneRequest, SwitchSceneResponse, TheaterSceneRequest, TheaterSceneResponse,
+    TimeStateResponse,
 };
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -377,6 +378,36 @@ impl KernelHttpClient {
         }
         serde_json::from_str(&text)
             .map_err(|e| AppError::OllamaError(format!("role_info JSON: {e}")))
+    }
+
+    pub async fn get_display_metrics_via_http(
+        conn: &KernelConnection,
+        req: &GetDisplayMetricsRequest,
+    ) -> Result<DisplayMetricsDto, AppError> {
+        if !Self::ensure_healthy(conn).await {
+            return Err(Self::offline_err());
+        }
+        let mut req_builder = conn
+            .http_client()
+            .get(format!("{}/display_metrics", conn.base_url))
+            .query(&[("role_id", req.role_id.as_str())]);
+        if let Some(sid) = req.session_id.as_deref().filter(|s| !s.is_empty()) {
+            req_builder = req_builder.query(&[("session_id", sid)]);
+        }
+        let res = req_builder
+            .send()
+            .await
+            .map_err(|e| Self::map_send_err(&conn.base_url, "display_metrics request", e))?;
+        let status = res.status();
+        let text = res
+            .text()
+            .await
+            .map_err(|e| AppError::OllamaError(format!("display_metrics body: {e}")))?;
+        if !status.is_success() {
+            return Err(app_error_from_http_response(status.as_u16(), &text));
+        }
+        serde_json::from_str(&text)
+            .map_err(|e| AppError::OllamaError(format!("display_metrics JSON: {e}")))
     }
 
     pub async fn get_time_state_via_http(

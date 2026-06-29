@@ -130,6 +130,37 @@ impl TurnThinkingPlan {
     }
 }
 
+/// Default interval (turns) for profile-mode deep archive LLM when host/pack omit explicit N.
+pub const DEFAULT_DEEP_PROFILE_UPDATE_EVERY_N_TURNS: u32 = 3;
+
+#[must_use]
+pub fn effective_deep_profile_update_interval(host: &HostProfile, role: &Role) -> u32 {
+    if let Some(cfg) = role.pack_turn_thinking_config.as_ref() {
+        if cfg.deep_profile_update_every_n_turns > 0 {
+            return cfg.deep_profile_update_every_n_turns;
+        }
+    }
+    let host_n = host.turn_thinking.deep_profile_update_every_n_turns;
+    if host_n > 0 {
+        host_n
+    } else {
+        DEFAULT_DEEP_PROFILE_UPDATE_EVERY_N_TURNS
+    }
+}
+
+/// Gate for background profile archive LLM: strong persistence OR every N turns OR radar refresh pending.
+#[must_use]
+pub fn should_run_deep_profile_update(
+    applies_full_persistence: bool,
+    turn_index: u32,
+    interval_n: u32,
+    radar_pending: bool,
+) -> bool {
+    applies_full_persistence
+        || radar_pending
+        || (interval_n > 0 && turn_index > 0 && turn_index.is_multiple_of(interval_n))
+}
+
 /// Effective routing policy: host default OR rules ++ pack OR; pack AND groups appended.
 #[derive(Debug, Clone)]
 pub struct TurnThinkingPolicy {
@@ -702,5 +733,26 @@ mod tests {
         assert_eq!(ephemeral_for_prompt(Some(3), Some("局面紧张")), "局面紧张");
         assert_eq!(ephemeral_for_prompt(Some(0), Some("x")), "");
         assert_eq!(ephemeral_for_prompt(None, Some("x")), "");
+    }
+
+    #[test]
+    fn should_run_deep_profile_update_exhaustive() {
+        assert!(should_run_deep_profile_update(true, 1, 3, false));
+        assert!(should_run_deep_profile_update(false, 3, 3, false));
+        assert!(should_run_deep_profile_update(false, 1, 3, true));
+        assert!(!should_run_deep_profile_update(false, 1, 3, false));
+        assert!(!should_run_deep_profile_update(false, 2, 3, false));
+        assert!(!should_run_deep_profile_update(false, 0, 3, false));
+    }
+
+    #[test]
+    fn effective_deep_profile_interval_pack_overrides_host() {
+        let host = test_host(TurnThinkingDefault::Auto);
+        let mut role = test_role();
+        role.pack_turn_thinking_config = Some(RolePackTurnThinkingConfig {
+            deep_profile_update_every_n_turns: 5,
+            ..Default::default()
+        });
+        assert_eq!(effective_deep_profile_update_interval(&host, &role), 5);
     }
 }

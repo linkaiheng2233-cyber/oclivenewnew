@@ -23,7 +23,9 @@ use serde_json::Value;
 
 type SlotRegistryMap = std::collections::BTreeMap<String, oclive_validation::SlotRegistryEntry>;
 
-fn build_display_metrics(
+/// UI-only affect snapshot (shared by role info, GET display metrics, and affect push).
+#[must_use]
+pub fn build_display_metrics(
     favor: f64,
     relation_state: &str,
     personality: &crate::models::PersonalityVector,

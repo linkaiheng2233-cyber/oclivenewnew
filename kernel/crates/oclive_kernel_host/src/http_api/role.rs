@@ -1,16 +1,17 @@
 use super::{api_error, ApiError};
 use crate::models::dto::{
-    CreateEventRequest, CreateEventResponse, DisplayMetricsDto, GetRoleInfoRequest,
-    GetUserIdentityStateRequest, JumpTimeRequest, JumpTimeResponse, RoleInfo,
+    CreateEventRequest, CreateEventResponse, DisplayMetricsDto, GetDisplayMetricsRequest,
+    GetRoleInfoRequest, GetUserIdentityStateRequest, JumpTimeRequest, JumpTimeResponse, RoleInfo,
     SetRoleInteractionModeRequest, SetSceneUserIdentityRequest, SetUserIdentityRequest,
     SetUserPresenceSceneRequest, SwitchSceneRequest, SwitchSceneResponse, TimeStateResponse,
     UserIdentityStateResponse,
 };
 use crate::models::role::PersonalitySource;
 use crate::service::{
-    get_role_info_impl, get_time_state_impl, get_user_identity_state_impl, jump_time_impl,
-    load_role_impl, set_role_interaction_mode_impl, set_scene_user_identity_impl,
-    set_user_identity_impl, set_user_presence_scene_impl, switch_scene_impl,
+    get_display_metrics_impl, get_role_info_impl, get_time_state_impl,
+    get_user_identity_state_impl, jump_time_impl, load_role_impl, set_role_interaction_mode_impl,
+    set_scene_user_identity_impl, set_user_identity_impl, set_user_presence_scene_impl,
+    switch_scene_impl,
 };
 use crate::state::AppState;
 use axum::extract::{Query, State};
@@ -96,6 +97,23 @@ pub(crate) async fn role_snapshot_route(
         current_scene: info.current_scene,
         user_presence_scene: info.user_presence_scene,
     }))
+}
+
+pub(crate) async fn display_metrics_route(
+    State(state): State<Arc<AppState>>,
+    Query(q): Query<RoleIdQuery>,
+) -> Result<Json<DisplayMetricsDto>, ApiError> {
+    let req = GetDisplayMetricsRequest {
+        role_id: q.role_id.trim().to_string(),
+        session_id: q.session_id.clone(),
+    };
+    get_display_metrics_impl(&state, &req.role_id, req.session_id.as_deref())
+        .await
+        .map(Json)
+        .map_err(|e| {
+            let k = e.kernel_error_body();
+            api_error(axum::http::StatusCode::BAD_REQUEST, k)
+        })
 }
 
 pub(crate) async fn load_role_route(

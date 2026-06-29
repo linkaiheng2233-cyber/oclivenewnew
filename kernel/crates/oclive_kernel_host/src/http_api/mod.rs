@@ -110,6 +110,7 @@ pub fn api_router(app_state: Arc<AppState>) -> Router {
         .route("/chat/stream", post(chat::chat_stream))
         .route("/role_info", get(role::role_info_route))
         .route("/role_snapshot", get(role::role_snapshot_route))
+        .route("/display_metrics", get(role::display_metrics_route))
         .route("/role/load", post(role::load_role_route))
         .route(
             "/role/interaction_mode",

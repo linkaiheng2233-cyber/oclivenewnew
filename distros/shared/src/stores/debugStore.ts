@@ -2,6 +2,7 @@ import type { PresenceMode, SendMessageResponse } from '@oclive/shared/api'
 import { defineStore } from 'pinia'
 import {
 
+  getDisplayMetrics,
   queryEvents,
   queryMemories,
   reloadPolicyPlugins,
@@ -36,7 +37,11 @@ export const useDebugStore = defineStore('debug', {
         const [events, memories] = await Promise.all([
           queryEvents({ role_id: roleId, limit: 10, offset: 0 }),
           queryMemories({ role_id: roleId, limit: 10, offset: 0 }),
-          roleStore.refreshRoleInfo(),
+          getDisplayMetrics(roleId)
+            .then((metrics) => {
+              roleStore.applyDisplayMetrics(metrics)
+            })
+            .catch(() => roleStore.refreshRoleInfo()),
         ])
         this.events = events
         this.memories = memories

@@ -2,8 +2,9 @@
 
 use crate::domain::mutable_profile_llm;
 use crate::domain::ports::LlmClient;
+use crate::domain::role_snapshot::build_display_metrics;
 use crate::models::{EventType, PersonalityVector, Role};
-use crate::state::{AppState, SessionCache};
+use crate::state::{AffectSnapshotEvent, AppState, SessionCache};
 use std::sync::{Arc, LazyLock};
 use tokio::sync::Semaphore;
 
@@ -26,6 +27,7 @@ pub(crate) fn spawn_mutable_profile_evolution(
 ) {
     let db = Arc::clone(&state.db_manager);
     let session_cache: Arc<SessionCache> = Arc::clone(&state.session_cache);
+    let affect_state = Arc::new(state.affect_sink_handle());
     tokio::spawn(async move {
         let Ok(_permit) = MUTABLE_PROFILE_EVOLUTION_SEM.acquire().await else {
             return;
@@ -71,33 +73,43 @@ pub(crate) fn spawn_mutable_profile_evolution(
                 return;
             }
         };
-        if let Err(e) = db.set_mutable_personality(&srid, &next).await {
-            tracing::warn!(
-                target: "oclive_chat",
-                role_id = %srid,
-                error = %e,
-                "background mutable_profile: set_mutable_personality failed"
-            );
-            return;
-        }
         let core_v = PersonalityVector::from(&role.default_personality);
         let personality_after =
             crate::domain::profile_personality::effective_vector_from_profile(&role, &next);
         let delta_out = PersonalityVector::sub_components(&personality_after, &core_v);
+        let core_json = core_v.to_json_vec();
+        let delta_json = delta_out.to_json_vec();
         if let Err(e) = db
-            .set_core_delta_personality_json(&srid, &core_v.to_json_vec(), &delta_out.to_json_vec())
+            .apply_profile_evolution_atomic(&srid, &next, &core_json, &delta_json)
             .await
         {
             tracing::warn!(
                 target: "oclive_chat",
                 role_id = %srid,
                 error = %e,
-                "background mutable_profile: set_core_delta_personality_json failed"
+                "background mutable_profile: apply_profile_evolution_atomic failed"
             );
             return;
         }
         session_cache
             .personality_cache()
-            .set(srid, personality_after);
+            .set(srid.clone(), personality_after.clone());
+        let favor = db
+            .get_favorability(&srid)
+            .await
+            .ok()
+            .flatten()
+            .unwrap_or(0.0);
+        let relation_state = db
+            .get_relation_state(&srid)
+            .await
+            .ok()
+            .flatten()
+            .unwrap_or_else(|| "Stranger".to_string());
+        let metrics = build_display_metrics(favor, relation_state.as_str(), &personality_after);
+        affect_state.emit(AffectSnapshotEvent {
+            role_id: srid,
+            metrics,
+        });
     });
 }

@@ -271,6 +271,18 @@ export async function getRoleInfo(
   })
 }
 
+/** GET-only affect snapshot; sets kernel `radar_deep_pending` for next deep profile refresh. */
+export async function getDisplayMetrics(
+  roleId: string,
+  sessionId?: string | null,
+): Promise<DisplayMetricsDto> {
+  return invokeWithFriendlyError<DisplayMetricsDto>('get_display_metrics', {
+    req: {
+      role_id: roleId,
+      session_id: sessionId ?? null,
+    },
+  })
+}
 
 export interface RoleSummaryDto {
   id: string

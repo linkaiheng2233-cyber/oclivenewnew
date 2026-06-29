@@ -169,7 +169,14 @@ pub fn run() {
                 e
             })?;
             app.manage(kernel_conn.clone());
-            app.manage(app_state);
+            app.manage(app_state.clone());
+            {
+                let shell = app_state.clone();
+                let app_handle = app.handle().clone();
+                shell.set_affect_metrics_sink(Some(std::sync::Arc::new(move |ev| {
+                    let _ = app_handle.emit_all("affect:metricsChanged", &ev);
+                })));
+            }
             desktop_host::finish_desktop_setup(
                 &app.handle(),
                 kernel_conn,
@@ -256,6 +263,7 @@ pub fn run() {
             // ?? role / session / slot registry ??
             api::role::load_role,
             api::role::get_role_info,
+            api::role::affect::get_display_metrics,
             api::role::list_roles,
             api::role::switch_role,
             api::role::relation::set_user_relation,

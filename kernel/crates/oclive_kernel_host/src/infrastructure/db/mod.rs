@@ -329,6 +329,23 @@ impl oclive_kernel_contracts::MutablePersonalityStore for DbManager {
     async fn set_mutable_personality(&self, role_id: &str, text: &str) -> Result<()> {
         DbManager::set_mutable_personality(self, role_id, text).await
     }
+
+    async fn apply_profile_evolution_atomic(
+        &self,
+        role_id: &str,
+        mutable_text: &str,
+        core_json: &str,
+        delta_json: &str,
+    ) -> Result<()> {
+        DbManager::apply_profile_evolution_atomic(
+            self,
+            role_id,
+            mutable_text,
+            core_json,
+            delta_json,
+        )
+        .await
+    }
 }
 
 #[async_trait::async_trait]

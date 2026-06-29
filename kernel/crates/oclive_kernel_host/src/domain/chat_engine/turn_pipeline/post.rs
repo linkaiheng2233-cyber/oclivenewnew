@@ -289,11 +289,25 @@ fn spawn_profile_evolution_after_llm(
     if role_arc.evolution_config.personality_source != PersonalitySource::Profile {
         return;
     }
-    if middle
+    let turn_index = state.session_cache.increment_profile_evolution_turn(srid);
+    let interval_n = crate::domain::turn_thinking::effective_deep_profile_update_interval(
+        state.host_profile.as_ref(),
+        role_arc.as_ref(),
+    );
+    let applies_full = middle
         .turn_thinking
-        .skip_mutable_profile_evolution(&state.host_profile, &middle.ai_event_type)
-    {
+        .applies_full_persistence(state.host_profile.as_ref(), &middle.ai_event_type);
+    let radar_pending = state.session_cache.radar_deep_pending(srid);
+    if !crate::domain::turn_thinking::should_run_deep_profile_update(
+        applies_full,
+        turn_index,
+        interval_n,
+        radar_pending,
+    ) {
         return;
+    }
+    if radar_pending {
+        state.session_cache.clear_radar_deep_pending(srid);
     }
     let impact_scaled = (middle.ai_impact_factor_final * pre.memory.event_runtime).clamp(-1.0, 1.0);
     crate::state::profile_evolution::spawn_mutable_profile_evolution(

@@ -10,7 +10,7 @@ import {
 import { hostEventBus } from '@oclive/shared/lib/hostEventBus'
 import { useDebugStore } from '@oclive/shared/stores/debugStore'
 import { usePluginStore } from '@oclive/shared/stores/pluginStore'
-import { useRoleStore } from '@oclive/shared/stores/roleStore'
+import { useRoleStore, bindAffectMetricsListener } from '@oclive/shared/stores/roleStore'
 import { markPresetPickerDone, resolveDefaultRoleId } from '@oclive/shared/utils/presetRolePicker'
 import { getTheaterCastConfig } from '@oclive/theater/composables/theater/theaterCastConfig'
 import { resolveOcliveShell } from '@oclive/shared/composables/useOcliveShell'
@@ -123,6 +123,7 @@ export function useAppBootstrap(options: {
   }
 
   onMounted(() => {
+    void bindAffectMetricsListener()
     options.syncBrowserChromeFromLocale()
     setErrorReporter((err) => {
       options.showToast('error', err.message)

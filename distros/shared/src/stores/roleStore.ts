@@ -1,6 +1,7 @@
-import type { AuthorPackFile, LifeStateDto, PackUiConfig, PluginBackends, PluginBackendsOverride, PluginBackendsSourceMap, RoleInfo, UserRelationDto } from '@oclive/shared/api'
+import type { AuthorPackFile, LifeStateDto, PackUiConfig, PluginBackends, PluginBackendsOverride, PluginBackendsSourceMap, RoleInfo, UserRelationDto, DisplayMetricsDto } from '@oclive/shared/api'
 import { normalizePluginBackends } from '@oclive/shared/api/settings'
 import { defineStore } from 'pinia'
+import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import {
 
   clearSceneUserRelation,
@@ -181,6 +182,53 @@ function mapRoleInfo(info: RoleInfo): RoleInfoState {
   }
 }
 
+let affectMetricsUnlisten: UnlistenFn | undefined
+let affectMetricsListenerBound = false
+
+interface AffectMetricsChangedPayload {
+  role_id: string
+  metrics: DisplayMetricsDto
+}
+
+function roleIdMatchesPayload(currentRoleId: string, payloadRoleId: string): boolean {
+  const current = currentRoleId.trim()
+  const incoming = payloadRoleId.trim()
+  if (!current || !incoming)
+    return false
+  return incoming === current || incoming.startsWith(`${current}__sess__`)
+}
+
+/** Passive Tauri push when profile evolution commits (no polling). */
+export async function bindAffectMetricsListener(): Promise<void> {
+  if (affectMetricsListenerBound)
+    return
+  affectMetricsListenerBound = true
+  try {
+    affectMetricsUnlisten = await listen<AffectMetricsChangedPayload>(
+      'affect:metricsChanged',
+      (event) => {
+        const payload = event.payload
+        if (!payload?.metrics)
+          return
+        const store = useRoleStore()
+        if (!roleIdMatchesPayload(store.currentRoleId, payload.role_id))
+          return
+        store.applyDisplayMetrics(payload.metrics)
+      },
+    )
+  }
+  catch (err) {
+    affectMetricsListenerBound = false
+    console.warn('[roleStore] affect:metricsChanged listen failed', err)
+  }
+}
+
+export function unbindAffectMetricsListener(): void {
+  affectMetricsUnlisten?.()
+  affectMetricsUnlisten = undefined
+  affectMetricsListenerBound = false
+}
+
 export const useRoleStore = defineStore(
   'role',
   {
@@ -302,6 +350,11 @@ export const useRoleStore = defineStore(
         if (rid) {
           hostEventBus.emitBuiltin('role:info:updated', { roleId: rid })
         }
+      },
+      applyDisplayMetrics(metrics: DisplayMetricsDto) {
+        this.roleInfo.favorability = metrics.favor
+        this.roleInfo.personality = metrics.traits
+        this.roleInfo.relationState = metrics.relation_summary
       },
       updateLocalAfterMessage(
         emotion: string,

@@ -1,7 +1,7 @@
 //! [`AppState`] construction (production DB, in-memory tests).
 
 use super::session_cache::SessionCache;
-use super::AppState;
+use super::{AffectSinkHandle, AppState};
 use crate::domain::host_profile::{self, HostProfile};
 use crate::domain::repository::{FavorabilityRepository, MemoryRepository};
 use crate::error::Result;
@@ -281,6 +281,7 @@ impl AppStateBuilder {
             user_llm_env_applied_version: AtomicU64::new(0),
             user_llm_env_dirty: AtomicBool::new(true),
             host_profile,
+            affect_metrics_sink: AffectSinkHandle::new(),
             reply_post_processor_resolver,
             theater_director_resolver,
         };

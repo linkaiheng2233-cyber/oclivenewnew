@@ -69,6 +69,7 @@ pub struct TurnThinkingToml {
     pub deep_capsule: Option<bool>,
     pub prompt_prefix_cache: Option<bool>,
     pub fast_persistence: Option<String>,
+    pub deep_profile_update_every_n_turns: Option<u32>,
 }
 
 #[derive(Debug, Default, Clone, Deserialize)]

@@ -16,6 +16,7 @@
 | `list_roles` | `list_roles_impl` | 角色列表 |
 | `load_role` | `load_role_impl` | 加载角色 |
 | `get_role_info` | `get_role_info_impl` | 角色信息 |
+| `get_display_metrics` | `get_display_metrics_impl` | 只读 affect 快照 + 置 `radar_deep_pending` |
 | `get_time_state` | `get_time_state_impl` | 虚拟时间 |
 | `send_message` | `process_message` | 主编排 |
 | `query_memories` | `query_memories_impl` | 记忆查询 |

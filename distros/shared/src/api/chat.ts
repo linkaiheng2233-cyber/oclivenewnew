@@ -1,5 +1,5 @@
 import { invokeWithFriendlyError } from './helpers'
-import type { RoleInfo } from './role'
+import type { DisplayMetricsDto, RoleInfo } from './role'
 
 export interface SendMessageRequest {
   role_id: string
@@ -26,13 +26,6 @@ export interface DetectedEventDto {
 
 
 export type PresenceMode = 'co_present' | 'remote_stub' | 'remote_life'
-
-/** UI-only affect metrics from kernel simulation (not injected into Prompt). */
-export interface DisplayMetricsDto {
-  favor: number
-  relation_summary: string
-  traits: number[]
-}
 
 export interface SendMessageResponse {
   api_version: number

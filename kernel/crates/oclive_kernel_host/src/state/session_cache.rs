@@ -127,6 +127,8 @@ pub struct SessionCache {
     interaction_mode_seeded: SessionScopedMap<()>,
     prefix_cache: SessionScopedMap<PrefixCacheEntry>,
     personality_snapshots: Cache<PersonalityVector>,
+    profile_evolution_turns: SessionScopedMap<u32>,
+    radar_deep_pending: SessionScopedMap<bool>,
     session_touch: DashMap<String, Instant>,
 }
 
@@ -175,6 +177,8 @@ impl SessionCache {
             interaction_mode_seeded: SessionScopedMap::new(),
             prefix_cache: SessionScopedMap::new(),
             personality_snapshots: Cache::with_capacity(PERSONALITY_CACHE_CAPACITY),
+            profile_evolution_turns: SessionScopedMap::new(),
+            radar_deep_pending: SessionScopedMap::new(),
             session_touch: DashMap::new(),
         }
     }
@@ -213,6 +217,8 @@ impl SessionCache {
         self.expert_lora_plugin_id.evict_if_needed();
         self.relation_transitions.evict_if_needed();
         self.prefix_cache.evict_if_needed();
+        self.profile_evolution_turns.evict_if_needed();
+        self.radar_deep_pending.evict_if_needed();
     }
 
     /// Drop session-scoped cache rows that no longer have an active turn lock.
@@ -234,6 +240,8 @@ impl SessionCache {
         self.expert_lora_plugin_id.prune_not_in(active_srids);
         self.relation_transitions.prune_not_in(active_srids);
         self.prefix_cache.prune_not_in_srid_prefix(active_srids);
+        self.profile_evolution_turns.prune_not_in(active_srids);
+        self.radar_deep_pending.prune_not_in(active_srids);
     }
 
     /// Build session prefix-cache key: model / persona / scene / user identity must match for expected KV hit.
@@ -416,6 +424,34 @@ impl SessionCache {
 
     pub fn clear_relation_transition(&self, srid: &str) {
         self.relation_transitions.remove(srid);
+    }
+
+    /// Increment per-session profile-evolution turn counter (co-present turns).
+    pub fn increment_profile_evolution_turn(&self, srid: &str) -> u32 {
+        let next = self
+            .profile_evolution_turns
+            .get(srid)
+            .unwrap_or(0)
+            .saturating_add(1);
+        self.profile_evolution_turns.insert(srid.to_string(), next);
+        next
+    }
+
+    #[must_use]
+    pub fn radar_deep_pending(&self, srid: &str) -> bool {
+        self.radar_deep_pending.get(srid).unwrap_or(false)
+    }
+
+    pub fn set_radar_deep_pending(&self, srid: &str, pending: bool) {
+        if pending {
+            self.radar_deep_pending.insert(srid.to_string(), true);
+        } else {
+            self.radar_deep_pending.remove(srid);
+        }
+    }
+
+    pub fn clear_radar_deep_pending(&self, srid: &str) {
+        self.radar_deep_pending.remove(srid);
     }
 }
 

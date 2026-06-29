@@ -28,6 +28,7 @@ use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::sync::{Mutex, OnceCell};
 
+mod affect_sink;
 mod app_state_builder;
 mod effective_session_config;
 pub(crate) mod host_backends;
@@ -36,6 +37,7 @@ pub(crate) mod profile_evolution;
 mod roles_dir;
 mod session_backends;
 mod session_cache;
+pub use affect_sink::{AffectMetricsSink, AffectSinkHandle, AffectSnapshotEvent};
 pub use app_state_builder::AppStateBuilder;
 pub use effective_session_config::EffectiveSessionConfig;
 pub use models_dir::{
@@ -122,6 +124,8 @@ pub struct AppState {
     pub(crate) user_llm_env_dirty: AtomicBool,
     /// Distro capability profile (P4); loaded once at kernel startup from env.
     pub host_profile: Arc<crate::domain::host_profile::HostProfile>,
+    /// Optional callback when profile evolution commits new display metrics (desktop Tauri push).
+    affect_metrics_sink: AffectSinkHandle,
     /// Remote/directory reply post-processor wiring (infrastructure only).
     pub(crate) reply_post_processor_resolver:
         Arc<dyn oclive_kernel_contracts::ReplyPostProcessorResolver>,
@@ -200,6 +204,16 @@ impl AppState {
         &self,
     ) -> crate::infrastructure::db_ports::TurnThinkingStateAdapter<'_> {
         crate::infrastructure::db_ports::TurnThinkingStateAdapter(self.db_manager.as_ref())
+    }
+
+    #[must_use]
+    pub fn affect_sink_handle(&self) -> AffectSinkHandle {
+        self.affect_metrics_sink.clone()
+    }
+
+    /// Register host→UI push for affect display metrics (Tauri `affect:metricsChanged`).
+    pub fn set_affect_metrics_sink(&self, sink: Option<AffectMetricsSink>) {
+        self.affect_metrics_sink.set(sink);
     }
 
     pub fn policies_for_scene(&self, scene_id: Option<&str>) -> Arc<PolicySet> {

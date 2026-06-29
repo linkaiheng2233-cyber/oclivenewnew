@@ -131,6 +131,9 @@ pub struct RolePackTurnThinkingConfig {
     pub latch: TurnThinkingLatchConfig,
     #[serde(default)]
     pub ephemeral_archive: Option<TurnThinkingEphemeralArchiveConfig>,
+    /// Profile-mode deep archive refresh every N turns; `0` = use host `[turn_thinking]` default.
+    #[serde(default)]
+    pub deep_profile_update_every_n_turns: u32,
 }
 
 /// Default chat log storage location is the global path (backward compatible).

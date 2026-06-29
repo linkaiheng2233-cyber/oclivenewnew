@@ -173,6 +173,57 @@ impl DbManager {
         Ok(())
     }
 
+    /// Profile-mode archive + seven-dim core/delta in one SQLite transaction (LLM stays outside).
+    pub async fn apply_profile_evolution_atomic(
+        &self,
+        role_id: &str,
+        mutable_text: &str,
+        core_json: &str,
+        delta_json: &str,
+    ) -> Result<()> {
+        let started = Instant::now();
+        let now = Utc::now().to_rfc3339();
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+
+        crate::txn_step!(
+            role_id,
+            started,
+            "TXN_MUTABLE_PERSONALITY_FAILED",
+            "set_mutable_personality",
+            sqlx::query(
+                "UPDATE role_runtime SET mutable_personality = ?, updated_at = ? WHERE role_id = ?",
+            )
+            .bind(mutable_text)
+            .bind(&now)
+            .bind(role_id)
+            .execute(tx.as_mut())
+        );
+
+        crate::txn_step!(
+            role_id,
+            started,
+            "TXN_CORE_DELTA_PERSONALITY_FAILED",
+            "set_core_delta_personality_json",
+            sqlx::query(
+                "UPDATE role_runtime SET core_personality = ?, delta_personality = ?, updated_at = ? WHERE role_id = ?",
+            )
+            .bind(core_json)
+            .bind(delta_json)
+            .bind(&now)
+            .bind(role_id)
+            .execute(tx.as_mut())
+        );
+
+        tx.commit()
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(())
+    }
+
     pub async fn get_mutable_personality(&self, role_id: &str) -> Result<String> {
         let row: Option<(Option<String>,)> =
             sqlx::query_as("SELECT mutable_personality FROM role_runtime WHERE role_id = ?")
@@ -693,5 +744,77 @@ impl DbManager {
         .await
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod profile_evolution_atomic_tests {
+    use super::*;
+    use crate::infrastructure::test_db;
+    use crate::models::PersonalityVector;
+
+    #[tokio::test]
+    async fn apply_profile_evolution_atomic_commits_mutable_and_delta() {
+        let db = test_db::mem_db_manager().await;
+        let role_id = "atomic_ok";
+        db.ensure_role_runtime(role_id).await.expect("ensure");
+        db.set_mutable_personality(role_id, "before")
+            .await
+            .expect("seed mutable");
+        let core = PersonalityVector::zero();
+        let delta = PersonalityVector {
+            warmth: 0.5,
+            ..PersonalityVector::zero()
+        };
+        db.apply_profile_evolution_atomic(
+            role_id,
+            "after",
+            &core.to_json_vec(),
+            &delta.to_json_vec(),
+        )
+        .await
+        .expect("atomic");
+        assert_eq!(
+            db.get_mutable_personality(role_id).await.expect("read"),
+            "after"
+        );
+        let (_, delta_s) = db
+            .get_core_delta_personality_json(role_id)
+            .await
+            .expect("read delta");
+        let stored = PersonalityVector::from_json_vec(delta_s.as_deref().unwrap()).expect("parse");
+        assert!((stored.warmth - 0.5).abs() < 1e-6);
+    }
+
+    #[tokio::test]
+    async fn apply_profile_evolution_atomic_rolls_back_on_delta_failure() {
+        let db = test_db::mem_db_manager().await;
+        let role_id = "atomic_rollback";
+        db.ensure_role_runtime(role_id).await.expect("ensure");
+        db.set_mutable_personality(role_id, "before")
+            .await
+            .expect("seed mutable");
+        sqlx::query(
+            "CREATE TRIGGER IF NOT EXISTS test_abort_delta
+             BEFORE UPDATE OF delta_personality ON role_runtime
+             WHEN NEW.delta_personality LIKE '%TRIGGER_FAIL%'
+             BEGIN SELECT RAISE(ABORT, 'test'); END;",
+        )
+        .execute(&db.pool)
+        .await
+        .expect("trigger");
+        let core = PersonalityVector::zero();
+        let delta = PersonalityVector::zero();
+        let mut fail_delta = delta.to_json_vec();
+        fail_delta.push_str("TRIGGER_FAIL");
+        let err = db
+            .apply_profile_evolution_atomic(role_id, "after", &core.to_json_vec(), &fail_delta)
+            .await
+            .expect_err("should fail");
+        assert!(matches!(err, AppError::TransactionError { .. }));
+        assert_eq!(
+            db.get_mutable_personality(role_id).await.expect("read"),
+            "before"
+        );
     }
 }

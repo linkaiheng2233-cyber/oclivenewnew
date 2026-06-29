@@ -179,6 +179,8 @@ pub struct TurnThinkingProfile {
     pub prompt_prefix_cache: Option<bool>,
     /// `legacy` = Fast rounds persist favor/memory/evolution as today; `strong_only` = Fast casual skips.
     pub fast_persistence: FastPersistenceMode,
+    /// Profile-mode deep archive LLM every N co-present turns (default 3; 0 = disable interval gate).
+    pub deep_profile_update_every_n_turns: u32,
 }
 
 impl Default for TurnThinkingProfile {
@@ -193,6 +195,7 @@ impl Default for TurnThinkingProfile {
             deep_capsule: None,
             prompt_prefix_cache: None,
             fast_persistence: FastPersistenceMode::default(),
+            deep_profile_update_every_n_turns: 3,
         }
     }
 }
@@ -385,6 +388,9 @@ fn host_profile_from_distro_file(
         }
         if let Some(ref fp) = tt.fast_persistence {
             profile.turn_thinking.fast_persistence = FastPersistenceMode::parse(fp);
+        }
+        if let Some(n) = tt.deep_profile_update_every_n_turns {
+            profile.turn_thinking.deep_profile_update_every_n_turns = n.max(1);
         }
     }
     Ok(profile)

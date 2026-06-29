@@ -95,6 +95,17 @@ flowchart LR
 | T1 | 用户语气进 Prompt | `format_for_prompt` 或等价一行；角色包 `affect.user_emotion_in_prompt` |
 | T2 | **角色情绪模拟** | `CharacterAffectSimulator::simulate(ctx) -> String`（**自然语言**，无 favor/traits 数值） |
 | T3 | **展示快照** | `DisplayMetrics { favor, traits[7], relation_summary }`；**禁止** PromptBuilder 读取 |
+| T3 push | **被动刷新** | 桌面 Tauri：`affect:metricsChanged`；HTTP 发行版：`GET /display_metrics` 轮询（无 SSE） |
+
+### WS4 落地（2026-06）
+
+| 项 | 行为 |
+|----|------|
+| **档案原子写** | `apply_profile_evolution_atomic`：mutable + core/delta 单事务；LLM 仍在事务外 |
+| **深度更新门** | `should_run_deep_profile_update`：强持久化事件 OR `turn_index % N`（默认 N=3，host `[turn_thinking]` / 包 `turn_thinking.deep_profile_update_every_n_turns`）OR `radar_deep_pending` |
+| **GET 快照** | `get_display_metrics` / `GET /display_metrics`：只读 DB；打开雷达时拉取并置 `radar_deep_pending` |
+| **推送** | 内核 `AppState` 可选 `affect_metrics_sink`；桌面 `.setup` → `emit_all("affect:metricsChanged")` |
+
 | T4 | 插件扩展 | remote/directory；`SlotExtension`；多实例 last-wins |
 
 **T0 官方实现**：`EmotionAnalyzer`（关键词）；作者可替换为任意满足 `analyze` 的实现。

@@ -556,6 +556,14 @@ pub struct GetRoleInfoRequest {
     pub session_id: Option<String>,
 }
 
+/// GET-only affect display snapshot (`get_display_metrics` / HTTP `/display_metrics`).
+#[derive(Debug, Clone, Deserialize)]
+pub struct GetDisplayMetricsRequest {
+    pub role_id: String,
+    #[serde(default)]
+    pub session_id: Option<String>,
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct GetPluginResolutionDebugRequest {
     pub role_id: String,
