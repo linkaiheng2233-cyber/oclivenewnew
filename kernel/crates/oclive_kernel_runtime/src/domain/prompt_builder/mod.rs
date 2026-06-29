@@ -27,7 +27,8 @@ pub const KERNEL_DIALOGUE_GUARDRAILS: &str = "【对话硬约束】（引擎预�
 - **倾诉优先**：用户透露委屈、挫败、被责备、压力时，先回应其遭遇与情绪，再给一个贴题追问或短反馈，让对话能继续；勿转去闲聊邀约或用一句话把话题封死。\n\
 - **禁止复读开场**：勿把用户刚说的句子、称呼或口头禅原样当作你的起句或主体。例：用户「晚上好哦沐沐」→ 勿以「晚上好哦」起句；改为你自己的措辞接情绪或话题。\n\
 - **禁止学舌式模仿**：勿逐句复制用户句式、口癖、昵称链或颜文字密度；保持本角色惯常说话方式。\n\
-- **篇幅随输入**：按用户本句的信息量与情绪强度调节密度。用户极短或仅确认时，宜 1–2 句精炼回复；用户倾诉或追问时再展开；勿为显得热情而重复同一关心或写成长段。\n";
+- **篇幅随输入**：按用户本句的信息量与情绪强度调节密度。用户极短或仅确认时，宜 1–2 句精炼回复；用户倾诉或追问时再展开；勿为显得热情而重复同一关心或写成长段。\n\
+- **勿与上一轮助手回复大段雷同**：用户短确认时勿重新展开已说过的关心清单。\n";
 
 const PROMPT_BLOCK_GUIDE: &str = "以下为语气/内容层次，请按序理解";
 
@@ -127,10 +128,13 @@ impl PromptBuilder {
         let family_id = user_relation_id.eq_ignore_ascii_case("family")
             || user_relation_id.eq_ignore_ascii_case("parent")
             || user_relation_id.eq_ignore_ascii_case("parents")
-            || user_relation_id.eq_ignore_ascii_case("guardian");
+            || user_relation_id.eq_ignore_ascii_case("guardian")
+            || user_relation_id.eq_ignore_ascii_case("father_daughter");
         let hint_suggests_family = relation_hint.contains("父母")
             || relation_hint.contains("长辈")
-            || relation_hint.contains("家长");
+            || relation_hint.contains("家长")
+            || relation_hint.contains("父亲")
+            || relation_hint.contains("女儿");
         family_id || hint_suggests_family
     }
 
@@ -307,6 +311,12 @@ impl PromptBuilder {
                 prompt.push_str("\n\n");
             }
         }
+        if let Some(prev_block) =
+            Self::build_previous_reply_constraint(input.previous_assistant_reply)
+        {
+            prompt.push_str(&prev_block);
+            prompt.push_str("\n\n");
+        }
         if !input.reply_quality_anchor.trim().is_empty() {
             prompt.push_str(input.reply_quality_anchor.trim());
             prompt.push_str("\n\n");
@@ -429,6 +439,12 @@ impl PromptBuilder {
                 dynamic_suffix.push_str(section.body.trim());
                 dynamic_suffix.push_str("\n\n");
             }
+        }
+        if let Some(prev_block) =
+            Self::build_previous_reply_constraint(input.previous_assistant_reply)
+        {
+            dynamic_suffix.push_str(&prev_block);
+            dynamic_suffix.push_str("\n\n");
         }
         dynamic_suffix.push_str(&format!("用户说: {}", input.user_input));
         dynamic_suffix.push_str("\n\n请以角色身份自然地回复，保持一致的性格和语气。");

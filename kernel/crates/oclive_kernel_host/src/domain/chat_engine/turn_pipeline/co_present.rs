@@ -21,8 +21,8 @@ use crate::models::{LlmBackend, PersonalitySource};
 use super::super::turn_context::TurnContext;
 use super::super::turn_error::TurnResult;
 use super::{
-    build_complex_emotion_turn_input, compute_turn_favor, worldview_snippet_from_chunks,
-    MiddleOutput, PreLlmOutput, STAGES,
+    build_complex_emotion_turn_input, compute_turn_favor, latest_recent_turn_pair,
+    worldview_snippet_from_chunks, MiddleOutput, PreLlmOutput, STAGES,
 };
 use crate::domain::chat_engine::chat_stage::ChatStage;
 use crate::state::SessionCache;
@@ -231,6 +231,7 @@ pub(crate) async fn run_middle(
     let tier = resolve_model_tier(pre.memory.ollama_model.as_str());
     let persona_source = resolve_persona_source(tier, thinking.mode, role, &state.host_profile);
     let persona_override = persona_override_for_source(role, persona_source);
+    let (_, previous_assistant_reply) = latest_recent_turn_pair(&pre.memory.recent_turns);
     tracing::debug!(
         target: "oclive_turn",
         ?tier,
@@ -268,6 +269,7 @@ pub(crate) async fn run_middle(
         relation_transition_hint: pre.relation.relation_transition_hint.as_str(),
         extra_sections: &[],
         persona_override,
+        previous_assistant_reply: previous_assistant_reply.as_str(),
     };
 
     let effective_llm_is_ollama = match pick_llm_backend_env_override() {

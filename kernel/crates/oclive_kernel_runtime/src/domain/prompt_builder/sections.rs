@@ -349,4 +349,45 @@ impl PromptBuilder {
         }
         Some(s)
     }
+
+    /// Care-package keywords used to detect templated repeat concern lists.
+    const CARE_PACKAGE_KEYWORDS: &'static [&'static str] = &[
+        "出门",
+        "晒太阳",
+        "作业",
+        "早睡",
+        "熬夜",
+        "热水",
+        "暖手",
+        "喝水",
+        "记得",
+        "注意安全",
+        "早点睡",
+        "写完",
+        "多穿",
+    ];
+
+    fn care_package_keyword_hits(text: &str) -> usize {
+        Self::CARE_PACKAGE_KEYWORDS
+            .iter()
+            .filter(|w| text.contains(**w))
+            .count()
+    }
+
+    /// When the previous assistant reply is known, inject a footer constraint before the quality anchor.
+    #[must_use]
+    pub(super) fn build_previous_reply_constraint(prev: &str) -> Option<String> {
+        let prev = prev.trim();
+        if prev.is_empty() {
+            return None;
+        }
+        let mut block = String::from("【上一轮回复约束】\n");
+        block.push_str("- 勿大段复述上一轮助手回复；用户短确认时勿重新展开已说过的关心清单。\n");
+        if Self::care_package_keyword_hits(prev) >= 2 {
+            block.push_str(
+                "- 上一轮已出现「出门/作业/早睡/热水」类叮嘱，本轮禁止原样复读或打包再问。\n",
+            );
+        }
+        Some(block)
+    }
 }

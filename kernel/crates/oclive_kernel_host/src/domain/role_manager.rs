@@ -179,6 +179,7 @@ impl RoleManager {
                 relation_transition_hint: "",
                 extra_sections: &[],
                 persona_override: None,
+                previous_assistant_reply: "",
             })
             .expect("build_prompt");
 

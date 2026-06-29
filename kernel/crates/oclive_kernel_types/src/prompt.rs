@@ -55,4 +55,6 @@ pub struct PromptInput<'a> {
     pub extra_sections: &'a [PromptExtraSection<'a>],
     /// When set, replaces Tier0 `core_personality` injection (Wave D Deep capsule).
     pub persona_override: Option<&'a str>,
+    /// Previous turn assistant reply; when non-empty, injects anti-repeat constraint before the quality anchor.
+    pub previous_assistant_reply: &'a str,
 }

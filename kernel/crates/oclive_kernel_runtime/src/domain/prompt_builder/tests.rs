@@ -132,6 +132,7 @@ fn test_build_prompt() {
         relation_transition_hint: "",
         extra_sections: &[],
         persona_override: None,
+        previous_assistant_reply: "",
     });
 
     assert!(prompt.contains("Test Role"));
@@ -198,6 +199,7 @@ fn test_build_prompt_family_includes_guardrail_supplement() {
         relation_transition_hint: "",
         extra_sections: &[],
         persona_override: None,
+        previous_assistant_reply: "",
     });
 
     assert!(prompt.contains("家人/长辈场景补充"));
@@ -259,6 +261,7 @@ fn test_prompt_contains_personality() {
         relation_transition_hint: "",
         extra_sections: &[],
         persona_override: None,
+        previous_assistant_reply: "",
     });
 
     assert!(prompt.contains("倔强"));
@@ -299,6 +302,7 @@ fn test_prompt_without_memories() {
         relation_transition_hint: "",
         extra_sections: &[],
         persona_override: None,
+        previous_assistant_reply: "",
     });
 
     assert!(prompt.contains("用户说"));
@@ -347,6 +351,7 @@ fn boundary_tone_low_stage_high_constraint_contains_slow_warm_guidance() {
         relation_transition_hint: "",
         extra_sections: &[],
         persona_override: None,
+        previous_assistant_reply: "",
     });
 
     assert!(prompt.contains("边界语气控制指引"));
@@ -395,6 +400,7 @@ fn boundary_tone_low_stage_low_constraint_not_overly_stiff() {
         relation_transition_hint: "",
         extra_sections: &[],
         persona_override: None,
+        previous_assistant_reply: "",
     });
 
     assert!(prompt.contains("边界语气控制指引"));
@@ -436,6 +442,7 @@ fn boundary_tone_high_stage_not_hard_limited() {
         relation_transition_hint: "",
         extra_sections: &[],
         persona_override: None,
+        previous_assistant_reply: "",
     });
 
     assert!(!prompt.contains("边界语气控制指引"));
@@ -476,6 +483,7 @@ fn profile_mode_shows_mutable_and_summary_header() {
         relation_transition_hint: "",
         extra_sections: &[],
         persona_override: None,
+        previous_assistant_reply: "",
     });
     assert!(prompt.contains("【可变性格档案】"));
     assert!(prompt.contains("更黏人"));
@@ -517,6 +525,7 @@ fn ephemeral_archive_block_injected_after_personality_supplement() {
         relation_transition_hint: "",
         extra_sections: &[],
         persona_override: None,
+        previous_assistant_reply: "",
     });
     assert!(prompt.contains("【局面摘要】"));
     assert!(prompt.contains("你烦死了"));
@@ -574,6 +583,7 @@ fn reply_quality_anchor_custom_overrides_default() {
         relation_transition_hint: "",
         extra_sections: &[],
         persona_override: None,
+        previous_assistant_reply: "",
     });
     assert!(prompt.contains("【包级质量锚点】仅测试覆盖用。"));
     assert!(!prompt.contains("【回复质量锚点】（每轮须遵守）"));
@@ -617,6 +627,7 @@ fn empty_narrative_hint_skips_section() {
         relation_transition_hint: "",
         extra_sections: &[],
         persona_override: None,
+        previous_assistant_reply: "",
     });
     assert!(!prompt.contains("【复杂情感叙事提示】"));
     assert!(prompt.contains("用户说: hi"));
@@ -657,6 +668,7 @@ fn special_chars_in_narrative_hint_preserve_prompt_structure() {
         relation_transition_hint: "",
         extra_sections: &[],
         persona_override: None,
+        previous_assistant_reply: "",
     });
     assert!(prompt.contains("【复杂情感叙事提示】"));
     assert!(prompt.contains("引号\""));
@@ -703,6 +715,7 @@ fn prompt_section_order_core_first() {
         relation_transition_hint: "",
         extra_sections: &[],
         persona_override: None,
+        previous_assistant_reply: "",
     });
     let core_idx = prompt.find("【核心设定·不可违背】").expect("core section");
     for title in [
@@ -754,6 +767,7 @@ fn prompt_three_blocks_present() {
         relation_transition_hint: "",
         extra_sections: &[],
         persona_override: None,
+        previous_assistant_reply: "",
     });
     let bottom = prompt.find("底线区块").expect("bottom block");
     let tone = prompt.find("语气区块").expect("tone block");
@@ -795,6 +809,7 @@ fn prompt_scene_constraint_after_core() {
         relation_transition_hint: "",
         extra_sections: &[],
         persona_override: None,
+        previous_assistant_reply: "",
     });
     let core_idx = prompt.find("【核心设定·不可违背】").unwrap();
     let scene_idx = prompt.find("【当前场景约束】").unwrap();
@@ -838,6 +853,7 @@ fn prompt_concise_overlay_in_scene_block() {
         relation_transition_hint: "",
         extra_sections: &[],
         persona_override: None,
+        previous_assistant_reply: "",
     });
     assert!(!prompt.starts_with(overlay));
     let scene_idx = prompt.find("【当前场景约束】").unwrap();
@@ -887,6 +903,7 @@ fn build_character_status_summary_includes_scene_and_host_hint() {
         relation_transition_hint: "",
         extra_sections: &[],
         persona_override: None,
+        previous_assistant_reply: "",
     });
     assert!(prompt.contains("【角色当前状态】"));
     assert!(prompt.contains("好感约 62/100"));
@@ -931,6 +948,7 @@ fn relation_transition_hint_in_tone_block() {
         relation_transition_hint: hint,
         extra_sections: &[],
         persona_override: None,
+        previous_assistant_reply: "",
     });
     assert!(prompt.contains("【关系过渡】"));
     assert!(prompt.contains(hint));
@@ -975,6 +993,7 @@ fn custom_anchor_still_has_guardrails_state_and_vent() {
         relation_transition_hint: "",
         extra_sections: &[],
         persona_override: None,
+        previous_assistant_reply: "",
     });
     assert!(prompt.contains("【包级锚点】仅人设差异。"));
     let guard_idx = prompt.find("【对话硬约束】").expect("guardrails");
@@ -1016,6 +1035,7 @@ fn prompt_user_input_before_closing_line() {
         relation_transition_hint: "",
         extra_sections: &[],
         persona_override: None,
+        previous_assistant_reply: "",
     });
     let user_idx = prompt.find("用户说: 今天被老板骂了").expect("user line");
     let closing_idx = prompt
@@ -1060,6 +1080,7 @@ fn event_relation_block_no_impact_factor_jargon() {
         relation_transition_hint: "",
         extra_sections: &[],
         persona_override: None,
+        previous_assistant_reply: "",
     });
     assert!(!prompt.contains("影响因子(已归一)"));
     assert!(!prompt.contains("warmup_level="));
@@ -1101,6 +1122,7 @@ fn prompt_block_guide_not_triplicated() {
         relation_transition_hint: "",
         extra_sections: &[],
         persona_override: None,
+        previous_assistant_reply: "",
     });
     assert_eq!(prompt.matches("以下为语气/内容层次，请按序理解").count(), 1);
 }
@@ -1145,6 +1167,7 @@ fn extra_sections_render_before_reply_quality_anchor() {
         relation_transition_hint: "",
         extra_sections: &sections,
         persona_override: None,
+        previous_assistant_reply: "",
     });
     let anchor_idx = prompt.find("【回复质量锚点】").unwrap_or_else(|| {
         prompt
@@ -1191,6 +1214,7 @@ fn persona_override_replaces_core_personality_in_tier0() {
         relation_transition_hint: "",
         extra_sections: &[],
         persona_override: Some("CAPSULE_TEXT"),
+        previous_assistant_reply: "",
     });
     assert!(prompt.contains("CAPSULE_TEXT"));
     assert!(!prompt.contains("FULL_CORE_TEXT"));
@@ -1235,6 +1259,7 @@ fn sample_prompt_input<'a>(
         relation_transition_hint: "",
         extra_sections: &[],
         persona_override,
+        previous_assistant_reply: "",
     }
 }
 
@@ -1301,4 +1326,28 @@ fn build_prompt_segments_stable_changes_on_persona_override() {
     assert_ne!(s_full.stable_prefix, s_capsule.stable_prefix);
     assert!(s_capsule.stable_prefix.contains("CAPSULE"));
     assert!(!s_capsule.stable_prefix.contains("FULL_CORE"));
+}
+
+#[test]
+fn build_prompt_skips_previous_reply_constraint_when_empty() {
+    let role = create_test_role();
+    let personality = create_test_personality();
+    let input = sample_prompt_input(&role, &personality, &[], "嗯", "", "", None);
+    let prompt = PromptBuilder::build_prompt(&input);
+    assert!(!prompt.contains("【上一轮回复约束】"));
+}
+
+#[test]
+fn build_prompt_injects_previous_reply_constraint_with_care_package() {
+    let role = create_test_role();
+    let personality = create_test_personality();
+    let mut input = sample_prompt_input(&role, &personality, &[], "嗯", "", "", None);
+    let prev = "记得出门晒晒太阳，作业写完没？早点睡，多喝热水。";
+    input.previous_assistant_reply = prev;
+    let prompt = PromptBuilder::build_prompt(&input);
+    assert!(prompt.contains("【上一轮回复约束】"));
+    assert!(prompt.contains("禁止原样复读或打包再问"));
+    let anchor_pos = prompt.find("【回复质量锚点】").unwrap_or(prompt.len());
+    let prev_pos = prompt.find("【上一轮回复约束】").unwrap();
+    assert!(prev_pos < anchor_pos);
 }

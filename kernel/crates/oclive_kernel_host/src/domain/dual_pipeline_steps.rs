@@ -398,6 +398,7 @@ impl<'a> ExperimentalStepCtx<'a> {
                 relation_transition_hint: transition.hint.as_str(),
                 extra_sections: &[],
                 persona_override: None,
+                previous_assistant_reply: "",
             },
         )
         .map_err(map_slot_err)?;
