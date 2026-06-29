@@ -22,7 +22,7 @@ import { loadRoleSceneMessages } from './chatStoreLoad'
 import { sendChatStoreMessage } from './chatStoreSend'
 import { useRoleStore } from './roleStore'
 import { useUiStore } from './uiStore'
-import { effectiveChatSceneId } from '../utils/pureChatScene'
+import { effectiveChatSceneId, PURE_CHAT_DEFAULT_SCENE_ID } from '../utils/pureChatScene'
 
 export interface ChatMessage {
   id: string
@@ -309,6 +309,18 @@ export const useChatStore = defineStore(
         const bucket = roleSceneBucket(this.messageMap, roleId, sid)
         syncLastAssistantAside(this.lastAssistantAside, roleId, sid, bucket)
         sanitizeAllSceneHistorySplits(this.sceneHistorySplitIndex, this.messageMap)
+      },
+
+      /** Daily chat: load `home` bucket and fold existing turns into collapsible history. */
+      async enterPureChatScene(roleId: string): Promise<void> {
+        const sceneId = PURE_CHAT_DEFAULT_SCENE_ID
+        await this.loadMessagesForRoleScene(roleId, sceneId)
+        beginNewChatSessionOnRestart(
+          this.sceneHistorySplitIndex,
+          roleId,
+          sceneId,
+          this.getMessageCountForRoleScene(roleId, sceneId),
+        )
       },
 
       /** Flush IndexedDB before exit (avoid 300ms debounce not yet written). */

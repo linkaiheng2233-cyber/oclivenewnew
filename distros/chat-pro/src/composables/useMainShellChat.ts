@@ -42,11 +42,12 @@ export function useMainShellChat(options: {
     return chatStore.lastAssistantAsideFor(roleId, activeSceneId.value)
   })
 
-  const sceneHistorySplitIndex = computed(() => {
-    if (!options.roleStore.interactionImmersive)
-      return 0
-    return chatStore.sceneHistorySplitForRoleScene(options.roleStore.currentRoleId, activeSceneId.value)
-  })
+  const sceneHistorySplitIndex = computed(() =>
+    chatStore.sceneHistorySplitForRoleScene(
+      options.roleStore.currentRoleId,
+      activeSceneId.value,
+    ),
+  )
 
   const { onSend } = useChatSend({
     showToast: options.showToast,

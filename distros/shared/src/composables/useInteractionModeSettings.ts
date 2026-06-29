@@ -2,6 +2,7 @@ import { useI18n } from 'vue-i18n'
 import { setRoleInteractionMode } from '@oclive/shared/api'
 import { useAppToast } from '@oclive/shared/composables/useAppToast'
 import { useNarrativeScene } from '@oclive/shared/composables/useNarrativeScene'
+import { useChatStore } from '@oclive/shared/stores/chatStore'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
 import { useUiStore } from '@oclive/shared/stores/uiStore'
 import type { InteractionMode } from '@oclive/shared/utils/interactionMode'
@@ -11,6 +12,7 @@ import { PURE_CHAT_DEFAULT_SCENE_ID } from '@oclive/shared/utils/pureChatScene'
 export function useInteractionModeSettings() {
   const roleStore = useRoleStore()
   const uiStore = useUiStore()
+  const chatStore = useChatStore()
   const { showToast } = useAppToast()
   const { t } = useI18n()
   const { applyResolvedNarrativeScene } = useNarrativeScene()
@@ -26,8 +28,10 @@ export function useInteractionModeSettings() {
       return
     const info = await setRoleInteractionMode(roleId, mode)
     roleStore.applyRoleInfo(info)
-    if (mode === 'pure_chat')
+    if (mode === 'pure_chat') {
       applyPureChatSceneIsolation()
+      await chatStore.enterPureChatScene(roleId)
+    }
     else
       applyResolvedNarrativeScene()
     showToast(

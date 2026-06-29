@@ -213,6 +213,9 @@ export function useMainShell() {
         closePluginSurfaces()
         if (settingsFocusTab.value === 'plugins')
           settingsFocusTab.value = 'general'
+        const roleId = roleStore.currentRoleId
+        if (roleId)
+          void chatStore.enterPureChatScene(roleId)
       }
     },
     { immediate: true },
