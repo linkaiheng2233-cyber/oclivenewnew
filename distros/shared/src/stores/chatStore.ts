@@ -225,6 +225,8 @@ export const useChatStore = defineStore(
       messagesLoadingKey: null as string | null,
       /** Per-session UI cap; synced from backend capabilities on hydrate. */
       messageCapPerSession: FALLBACK_MAX_MESSAGES_PER_CONVERSATION,
+      /** Role×scene buckets successfully fetched at least once this session. */
+      loadedBucketKeys: {} as Record<string, true>,
     }),
     getters: {
       messagesForRoleScene: (state) => {
@@ -252,7 +254,7 @@ export const useChatStore = defineStore(
       },
     },
     actions: {
-      /** Startup: migrate IndexedDB → backend, then load current role×scene from API (IDB cache fallback on failure). */
+      /** Startup: migrate IndexedDB → backend; defer bucket load until role info is ready (see useAppBootstrap). */
       async hydrateFromStorage() {
         if (this.messagesHydrated)
           return
@@ -265,25 +267,6 @@ export const useChatStore = defineStore(
         catch {
           // keep fallback cap
         }
-        const roleStore = useRoleStore()
-        const uiStore = useUiStore()
-        const sceneId = effectiveChatSceneId(
-          roleStore.roleInfo.interactionMode,
-          uiStore.sceneId || 'default',
-        )
-        await this.loadMessagesForRoleScene(
-          roleStore.currentRoleId,
-          sceneId,
-        )
-        beginNewChatSessionOnRestart(
-          this.sceneHistorySplitIndex,
-          roleStore.currentRoleId,
-          sceneId,
-          this.getMessageCountForRoleScene(
-            roleStore.currentRoleId,
-            sceneId,
-          ),
-        )
         this.messagesHydrated = true
       },
 
@@ -294,6 +277,7 @@ export const useChatStore = defineStore(
       async loadMessagesForRoleScene(roleId: string, sceneId: string) {
         const sid = sceneId || 'default'
         const loadKey = bucketMapKey(roleId, sid)
+        delete this.loadedBucketKeys[loadKey]
         const gen = ++this.messageLoadGeneration
         this.messagesLoadingKey = loadKey
         this.ensureLegacyMigrated(roleId)
@@ -306,6 +290,7 @@ export const useChatStore = defineStore(
         }
         if (gen !== this.messageLoadGeneration)
           return
+        this.loadedBucketKeys[loadKey] = true
         const bucket = roleSceneBucket(this.messageMap, roleId, sid)
         syncLastAssistantAside(this.lastAssistantAside, roleId, sid, bucket)
         sanitizeAllSceneHistorySplits(this.sceneHistorySplitIndex, this.messageMap)
@@ -363,17 +348,16 @@ export const useChatStore = defineStore(
         const roleId = roleStore.currentRoleId
         const prev = uiStore.sceneId
         const next = nextSceneId || 'default'
-        // The target bucket can be unloaded even when prev === next: hydrateFromStorage
-        // loads the mode-resolved scene (pure_chat forces `home`) while uiStore.sceneId
-        // still holds the persisted immersive scene, so a later resolve back to that
-        // scene must still load its bucket instead of short-circuiting (history loss).
-        const bucketLoaded = this.messageMap[roleId]?.[next] !== undefined
+        const loadKey = bucketMapKey(roleId, next)
+        // `roleSceneBucket` auto-creates empty arrays; only treat a bucket as loaded after
+        // `loadMessagesForRoleScene` completes (loadedBucketKeys), not merely when the key exists.
+        const bucketLoaded = this.loadedBucketKeys[loadKey] === true
         const shouldReload = prev !== next || !bucketLoaded
         if (shouldReload && !options?.skipHistorySplit) {
           this.ensureLegacyMigrated(roleId)
           if (!this.sceneHistorySplitIndex[roleId])
             this.sceneHistorySplitIndex[roleId] = {}
-          const count = this.getMessageCountForRoleScene(roleId, next)
+          const count = this.messageMap[roleId]?.[next]?.length ?? 0
           this.sceneHistorySplitIndex[roleId][next] = count
         }
         if (shouldReload) {

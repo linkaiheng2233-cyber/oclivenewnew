@@ -33,6 +33,7 @@ describe('applySceneChange bucket sync', () => {
     role.currentRoleId = 'mumu'
     ui.setScene('company')
     chat.messageMap = { mumu: { company: [] } }
+    chat.loadedBucketKeys = { 'mumu:company': true }
     const spy = vi
       .spyOn(chat, 'loadMessagesForRoleScene')
       .mockResolvedValue([])
@@ -40,5 +41,21 @@ describe('applySceneChange bucket sync', () => {
     chat.applySceneChange('company')
 
     expect(spy).not.toHaveBeenCalled()
+  })
+
+  it('reloads when an empty placeholder bucket exists but was never fetched', () => {
+    const chat = useChatStore()
+    const ui = useUiStore()
+    const role = useRoleStore()
+    role.currentRoleId = 'mumu'
+    ui.setScene('company')
+    chat.messageMap = { mumu: { company: [] } }
+    const spy = vi
+      .spyOn(chat, 'loadMessagesForRoleScene')
+      .mockResolvedValue([])
+
+    chat.applySceneChange('company')
+
+    expect(spy).toHaveBeenCalledWith('mumu', 'company')
   })
 })

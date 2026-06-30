@@ -9,6 +9,7 @@ import {
 } from '@oclive/shared/api'
 import { hostEventBus } from '@oclive/shared/lib/hostEventBus'
 import { useDebugStore } from '@oclive/shared/stores/debugStore'
+import { useChatStore } from '@oclive/shared/stores/chatStore'
 import { usePluginStore } from '@oclive/shared/stores/pluginStore'
 import { useRoleStore, bindAffectMetricsListener } from '@oclive/shared/stores/roleStore'
 import { markPresetPickerDone, resolveDefaultRoleId } from '@oclive/shared/utils/presetRolePicker'
@@ -59,7 +60,13 @@ export function useAppBootstrap(options: {
     await pluginStore.refresh()
     await roleStore.refreshRoleInfo()
     hostEventBus.emitBuiltin('role:switched', { roleId: rid })
-    applyResolvedNarrativeScene()
+    const chatStore = useChatStore()
+    if (roleStore.interactionImmersive) {
+      applyResolvedNarrativeScene()
+    }
+    else {
+      await chatStore.enterPureChatScene(rid)
+    }
     await debugStore.loadDebugData()
   }
 
