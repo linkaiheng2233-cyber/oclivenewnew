@@ -71,6 +71,11 @@ export function useGlobalHotkeys(opts: UseGlobalHotkeysOptions) {
     opts.topMoreOpen.value = false
   }
 
+  function openSettingsView(): void {
+    opts.settingsViewOpen.value = true
+    opts.topMoreOpen.value = false
+  }
+
   function onHotkey(e: KeyboardEvent): void {
     const isTheater = resolveOcliveShell() === 'theater'
 
@@ -138,7 +143,7 @@ export function useGlobalHotkeys(opts: UseGlobalHotkeysOptions) {
         hostEventBus.emit('theater:settings', { action: 'toggle' })
         return
       }
-      opts.openSettingsView()
+      openSettingsView()
       return
     }
     if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'd') {
@@ -167,9 +172,6 @@ export function useGlobalHotkeys(opts: UseGlobalHotkeysOptions) {
   return {
     shortcutHelpOpen,
     openShortcutHelp,
-    openSettingsView: () => {
-      opts.settingsViewOpen.value = true
-      opts.topMoreOpen.value = false
-    },
+    openSettingsView,
   }
 }

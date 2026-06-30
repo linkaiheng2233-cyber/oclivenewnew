@@ -26,7 +26,7 @@
 
 ### Changed
 
-- **Fluent “More” panel IA**: action buttons reordered to Settings → Models → Plugins → Market → Shortcuts; tiles grouped as Core / Plugins / Scene / Dev with Debug last; removed empty Shortcuts placeholder from Settings → General (help remains under More and Ctrl long-press).
+- **Fluent “More” panel IA**: action buttons reordered to Settings → Models → Plugins → Market → Shortcuts; tiles grouped as Core / Plugins / Scene / Dev with Debug last; removed empty Shortcuts placeholder from Settings → General (help remains under More and Ctrl long-press). Panel tiles now use a single responsive grid (`auto-fill minmax`), aligned to equal-width columns in both Daily-chat and Story modes.
 - **Chat Pro default shell Fluent**: `resolveOcliveShell()` fallback is now **`fluent`** (quiet living-room shell); set `VITE_OCLIVE_SHELL=tool` for ToolShell; early-boot `index.html` `data-shell` aligned; dark brand teal matches light hue (`--fluent-accent`); role `primaryColor` light tint (focus / user bubble / runtime rail only); FluentShell mounts `InteractionModeBar` as the sole in-shell mode switch; interaction-mode IA in [`MODULE_MAP_AND_HANDOFF.md`](handoff/MODULE_MAP_AND_HANDOFF.md) §13.1.
 - **Prompt mechanics fully text-driven (RFC #2 deepened)**: `PromptBuilder` no longer injects any favor/relation numerics, relation stage, event block, boundary-tone guideline, or seven-dim numeric-derived tone into the dialogue prompt (removed `build_event_relation_state` / `build_boundary_tone_guideline` / `build_current_state` and their numeric helpers); persona and tone are driven entirely by the core archive + `mutable_personality` narrative + user-emotion cue, with only a number-free "authenticity constraint" anti-fabrication guard retained; seven-dim/favor are demoted to read-only `display_metrics`.
 - **Chat Pro default profile**: `desktop.oclive.toml` enables `fast_persistence = "strong_only"` (Fast casual chat skips favor/long-term memory; strong relationship events still consolidate). Existing session data is not rolled back.
@@ -81,6 +81,10 @@
 - **Long-term memory & operation-log indexes (K-PERF-23)**: migration `034_perf_indexes.sql` (`idx_ltm_role_content` / `idx_operation_logs_role`).
 - **Fewer post-phase Role clones (K-PERF-24)**: `TurnContext.role_arc` reused for profile evolution spawn.
 - **`pre_llm` Wave 1 parallelism (K-PERF-14)**: `turn_pipeline/pre.rs` uses `tokio::try_join!` for five read-only paths (context / emotion / model / narrative hint / memories); `oclive_turn` logs `pre_llm_wave1` aggregate; see `PERFORMANCE.md` §6.
+
+### Fixed
+
+- **Ctrl+Shift+S did not open Settings**: `useGlobalHotkeys` referenced an unpassed `opts.openSettingsView` (`undefined` at runtime); now calls the local `openSettingsView`; the theater shell still emits `theater:settings`.
 
 ---
 

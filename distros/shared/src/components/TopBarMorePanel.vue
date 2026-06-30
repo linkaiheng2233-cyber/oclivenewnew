@@ -287,20 +287,14 @@ onBeforeUnmount(() => {
   font-size: 13px;
   padding: 8px 12px;
 }
-.settings-entry-tile {
-  min-width: min(24rem, 100%);
-}
 .settings-entry-actions {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
   gap: 8px;
-}
-.plugin-entry-tile {
-  min-width: min(16rem, 100%);
 }
 .plugin-entry-actions {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
   gap: 8px;
 }
 .settings-entry-btn {
@@ -323,22 +317,14 @@ onBeforeUnmount(() => {
   }
 }
 .more-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(15rem, 100%), 1fr));
+  gap: 12px;
+  align-items: start;
 }
+/* Groups are layout-transparent so every tile aligns to one shared grid. */
 .more-group {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 12px 16px;
-}
-.more-group--scene {
-  width: 100%;
-}
-.more-group--scene .more-tile--scene {
-  flex: 1 1 calc((100% - 16px) / 2);
-  min-width: min(17rem, 100%);
+  display: contents;
 }
 .more-tile {
   box-sizing: border-box;
@@ -351,22 +337,6 @@ onBeforeUnmount(() => {
   flex-direction: column;
   gap: 10px;
   box-shadow: var(--shadow-sm);
-}
-.more-tile--xs {
-  flex: 0 0 auto;
-  width: min(12rem, 100%);
-}
-.more-tile--sm {
-  flex: 0 0 auto;
-  width: min(17rem, 100%);
-}
-.more-tile--lg {
-  flex: 0 0 auto;
-  width: min(22rem, 100%);
-}
-.more-tile--action {
-  flex: 0 0 auto;
-  width: min(13rem, 100%);
 }
 .more-tile--third {
   flex: 0 0 calc((100% - 32px) / 3);
@@ -385,21 +355,6 @@ onBeforeUnmount(() => {
 }
 .more-tile-head--tight .more-label {
   padding-top: 0;
-}
-@media (max-width: 560px) {
-  .more-tile--xs,
-  .more-tile--sm,
-  .more-tile--lg,
-  .more-tile--action,
-  .more-group--scene .more-tile--scene {
-    width: 100%;
-    flex: 1 1 100%;
-  }
-  .more-tile--third {
-    flex: 1 1 100%;
-    width: 100%;
-    max-width: 100%;
-  }
 }
 .more-tile-head {
   display: flex;
