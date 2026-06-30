@@ -84,6 +84,7 @@ export default {
       pluginReviewSource:
         '插件 {id} 已安装至 {path}。运行前请自行查看 manifest.json 与源码；高风险权限需在宿主中显式授权。',
       pluginFilesChanged: '检测到插件变更，已自动刷新',
+      eggUnlocked: '彩蛋已解锁：Windows 98 皮肤已启用。',
     },
     sceneTransition: {
       going: '正在前往「{label}」…',

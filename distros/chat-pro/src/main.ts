@@ -11,6 +11,7 @@ import '@oclive/shared/styles/theme-tool.css'
 import '@oclive/shared/styles/theme-tool-management.css'
 import '@oclive/shared/styles/chat-tool.css'
 import '@oclive/shared/styles/global.css'
+import '@oclive/shared/styles/theme-win98.css'
 import { hydrateLayoutWidths } from '@oclive/shared/composables/useLayoutWidths'
 
 hydrateLayoutWidths()

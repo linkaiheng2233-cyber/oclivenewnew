@@ -10,6 +10,7 @@ import { useAppToast } from '@oclive/shared/composables/useAppToast'
 import { useDistroUxProfile } from '@oclive/shared/composables/useDistroUxProfile'
 import { useInteractionModeSettings } from '@oclive/shared/composables/useInteractionModeSettings'
 import { getLayoutWidths, resetLayoutWidths } from '@oclive/shared/composables/useLayoutWidths'
+import { useEasterEggSkin } from '@oclive/shared/composables/useEasterEggSkin'
 import { useOcliveAppearance } from '@oclive/shared/composables/useOcliveAppearance'
 import { useUserIdentityState } from '@oclive/shared/composables/useUserIdentityState'
 import { getLocalePreference, setLocalePreference } from '@oclive/shared/i18n'
@@ -48,6 +49,13 @@ const { allowModeSwitch, ensureDistroUxProfileLoaded } = useDistroUxProfile()
 const { onInteractionModeSelect } = useInteractionModeSettings()
 const { hasCatalog } = useUserIdentityState()
 const { themeCycleLabel, cycleTheme, bumpScale, scaleLabel } = useOcliveAppearance()
+const { skinUnlocked, win98Enabled, toggleWin98 } = useEasterEggSkin()
+
+function onWin98SkinChange(e: Event) {
+  const checked = (e.target as HTMLInputElement).checked
+  if (checked !== win98Enabled.value)
+    toggleWin98()
+}
 const localePreference = ref<LocalePreference>(getLocalePreference())
 
 onMounted(() => {
@@ -282,6 +290,18 @@ async function onToggleForceIframe(e: Event) {
             {{ themeCycleLabel }}
           </UiButton>
         </div>
+      </UiFieldRow>
+      <UiFieldRow v-if="skinUnlocked" :label="t('settings.skinWin98Label')">
+        <label class="sv-toggle-row">
+          <input
+            type="checkbox"
+            :checked="win98Enabled"
+            @change="onWin98SkinChange"
+          >
+          <span class="sv-toggle-text">
+            <strong>{{ t('settings.skinWin98Help') }}</strong>
+          </span>
+        </label>
       </UiFieldRow>
     </UiSection>
 

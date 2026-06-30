@@ -13,6 +13,8 @@ export default {
       + 'appearance and locale live under Settings → General; plugins are Story-mode only.',
     appearanceSectionTitle: 'Appearance',
     appearanceSectionHelp: 'Locale, theme, and UI scale; stored on this device.',
+    skinWin98Label: 'Windows 98 skin (easter egg)',
+    skinWin98Help: 'Classic gray chrome and pixel scrollbars.',
     interactionModeSectionTitle: 'Interaction mode',
     interactionModeSectionLead:
       'Switch daily chat vs story mode here. Daily chat stays on the simple home scene; scenes, travel, and plugins unlock in story mode.',

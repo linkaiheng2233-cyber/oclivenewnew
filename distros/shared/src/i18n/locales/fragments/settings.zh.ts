@@ -13,6 +13,8 @@ export default {
       + '外观与语言在设置 → 常规；插件仅在剧情模式下可用。',
     appearanceSectionTitle: '外观',
     appearanceSectionHelp: '界面语言、主题与 UI 缩放；保存在本机。',
+    skinWin98Label: 'Windows 98 皮肤（彩蛋）',
+    skinWin98Help: '启用经典灰阶界面与像素滚动条。',
     interactionModeSectionTitle: '互动模式',
     interactionModeSectionLead: '日常聊与剧情模式在此切换；日常聊固定「家」场景作轻量钩子，完整场景/旅行/插件仅在剧情模式可用。',
     interactionModeFieldLabel: '模式',

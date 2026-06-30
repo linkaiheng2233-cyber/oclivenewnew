@@ -70,6 +70,14 @@
           else if (shellRaw === "theater") shell = "theater";
           document.documentElement.setAttribute("data-shell", shell);
         } catch (e3) {}
+        try {
+          var skinKey = "oclive-runtime-skin";
+          var skinVal = localStorage.getItem(skinKey);
+          document.documentElement.setAttribute(
+            "data-skin",
+            skinVal === "win98" ? "win98" : "default"
+          );
+        } catch (e5) {}
       })();
     </script>
   </head>
