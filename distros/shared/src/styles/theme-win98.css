@@ -296,7 +296,9 @@
 :root[data-skin="win98"] .scene-mode-dialog-overlay,
 :root[data-skin="win98"] .preset-picker-overlay,
 :root[data-skin="win98"] .immersive-intro-overlay,
-:root[data-skin="win98"] .css-modal-backdrop {
+:root[data-skin="win98"] .css-modal-backdrop,
+:root[data-skin="win98"] .modal-backdrop,
+:root[data-skin="win98"] .backdrop {
   background: rgba(0, 0, 0, 0.25);
 }
 
@@ -404,12 +406,45 @@
 }
 
 /* Win98 ✕ control buttons on dialogs */
+:root[data-skin="win98"] .ui-side-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0;
+  min-height: 20px;
+  height: auto;
+  padding: 2px 2px 2px 4px;
+  background: linear-gradient(90deg, #000080 0%, #1084d0 100%);
+  color: #ffffff;
+  border-bottom: none;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: bold;
+}
+
+:root[data-skin="win98"] .ui-side-panel__title {
+  margin: 0;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+:root[data-skin="win98"] .ui-side-panel__scroll {
+  padding: 8px;
+}
+
+:root[data-skin="win98"] .ui-side-panel__scroll--flush {
+  padding: 0;
+}
+
 :root[data-skin="win98"] .sv-close,
 :root[data-skin="win98"] .mm-close,
 :root[data-skin="win98"] .mk-close,
 :root[data-skin="win98"] .hk-close,
 :root[data-skin="win98"] .sh-close,
 :root[data-skin="win98"] .spm-close,
+:root[data-skin="win98"] .ui-side-panel__close,
 :root[data-skin="win98"] .close-x,
 :root[data-skin="win98"] .debug > .title > button {
   display: flex;
@@ -438,6 +473,7 @@
 :root[data-skin="win98"] .hk-close:active,
 :root[data-skin="win98"] .sh-close:active,
 :root[data-skin="win98"] .spm-close:active,
+:root[data-skin="win98"] .ui-side-panel__close:active,
 :root[data-skin="win98"] .close-x:active,
 :root[data-skin="win98"] .debug > .title > button:active {
   border-style: inset;

@@ -58,7 +58,7 @@ function onCaptionDblClick(event: MouseEvent): void {
   >
     <img
       class="win98-titlebar__icon"
-      src="/vite.svg"
+      src="/oclive-icon.png"
       alt=""
       width="16"
       height="16"
