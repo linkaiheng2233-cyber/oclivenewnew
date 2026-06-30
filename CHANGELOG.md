@@ -31,7 +31,7 @@
 
 ### Changed
 
-- **Fluent「更多」面板 IA**：动作按钮顺序改为 设置 → 模型 → 插件 → 市场 → 快捷键说明；磁贴按 核心 / 插件 / 场景 / 开发 分组，Debug 移至末尾；设置 → 常规移除无内容的「快捷键」占位小节（说明入口保留在「更多」与 Ctrl 长按）。面板磁贴改为统一自适应栅格（`auto-fill minmax`），日常聊 / 剧情两种模式下均等宽对齐。
+- **Fluent「更多」面板 IA**：动作按钮顺序改为 设置 → 模型 → 插件 → 市场 → 快捷键说明；磁贴按 核心 / 插件 / 场景 / 开发 分组，Debug 移至末尾；设置 → 常规移除无内容的「快捷键」占位小节（说明入口保留在「更多」与 Ctrl 长按）。面板磁贴改为自适应栅格（`auto-fill minmax`），按占地大小从左到右排列（设置 / 场景跨两列，其余单列），日常聊 / 剧情两种模式下均整齐对齐。
 - **Chat Pro 默认壳 Fluent**：`resolveOcliveShell()` fallback 由 `tool` 改为 **`fluent`**（安静客厅）；`VITE_OCLIVE_SHELL=tool` 仍可显式启用 ToolShell；早启动 `index.html` `data-shell` 同步；暗色品牌黛绿与浅色同色相（`--fluent-accent`）；角色 `primaryColor` 轻度染色（focus / 用户气泡 / runtime rail）；FluentShell 挂载 `InteractionModeBar` 为壳内唯一模式切换；互动模式 IA 见 [`MODULE_MAP_AND_HANDOFF.md`](handoff/MODULE_MAP_AND_HANDOFF.md) §13.1。
 - **Prompt 力学彻底文本化（RFC #2 深化）**：`PromptBuilder` 不再向对话 prompt 注入任何好感/关系数值、关系阶段、事件块、边界语气指引或七维数值派生口吻（删除 `build_event_relation_state` / `build_boundary_tone_guideline` / `build_current_state` 及其数值辅助函数）；人设与语气完全由核心档案 + `mutable_personality` 叙事 + 用户情绪线索驱动，仅保留无数值的「真实性约束」防编造守门；七维/好感退场为 `display_metrics` 只读展示。
 - **Chat Pro 默认 profile**：`desktop.oclive.toml` 启用 `fast_persistence = "strong_only"`（Fast 闲聊不涨好感/不进长期记忆；强关系事件仍巩固）。旧 session 数据不回滚。

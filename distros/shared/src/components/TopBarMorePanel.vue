@@ -109,30 +109,9 @@ onBeforeUnmount(() => {
       @click.stop
     >
       <div class="more-grid">
-        <div v-if="showIdentitySection" class="more-group more-group--identity">
-          <div class="more-tile more-tile--sm">
-            <div class="more-tile-head">
-              <span class="more-label">{{ t("app.more.identity") }}</span>
-              <HelpHint :text="t('app.more.identityHelp')" />
-            </div>
-            <div class="more-tile-body more-tile-body--selector">
-              <RoleSelector
-                variant="topbar"
-                :sections="['relation']"
-                :current-role-id="roleStore.currentRoleId"
-                :current-relation="roleStore.relationSelectValue"
-                :roles="roleStore.roles"
-                :relations="relationOptions"
-                :loading="chatStore.isLoading"
-                @change-role="emit('changeRole', $event)"
-                @change-relation="emit('changeRelation', $event)"
-              />
-            </div>
-          </div>
-        </div>
-
+        <!-- Tiles ordered by footprint, largest → smallest (left → right). -->
         <div class="more-group more-group--core">
-          <div class="more-tile more-tile--action settings-entry-tile">
+          <div class="more-tile more-tile--action more-tile--wide settings-entry-tile">
             <div class="more-tile-head">
               <span class="more-label">{{ t("app.more.settingsEntry") }}</span>
               <HelpHint :text="t('app.more.settingsTileHelp')" />
@@ -159,29 +138,8 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <div v-if="roleStore.interactionImmersive" class="more-group more-group--plugin">
-          <div class="more-tile more-tile--action plugin-entry-tile">
-            <div class="more-tile-body plugin-entry-actions" role="group" :aria-label="t('app.more.pluginBtnSimple')">
-              <button
-                type="button"
-                class="more-debug-btn more-debug-btn--fill settings-entry-btn"
-                @click="emit('openPluginManager')"
-              >
-                {{ t("app.more.pluginBtnSimple") }}
-              </button>
-              <button
-                type="button"
-                class="more-debug-btn more-debug-btn--fill settings-entry-btn"
-                @click="emit('openPluginMarket')"
-              >
-                {{ t("app.more.pluginMarket") }}
-              </button>
-            </div>
-          </div>
-        </div>
-
         <div v-if="roleStore.interactionImmersive" class="more-group more-group--scene">
-          <div v-if="allSceneOptions.length > 0" class="more-tile more-tile--scene">
+          <div v-if="allSceneOptions.length > 0" class="more-tile more-tile--scene more-tile--wide">
             <div class="more-tile-head more-tile-head--tight">
               <span class="more-label">{{ t("app.more.narrativeScene") }}</span>
               <HelpHint :text="t('app.more.narrativeSceneHelp')" />
@@ -216,6 +174,49 @@ onBeforeUnmount(() => {
                 @notify="(p) => emit('notify', p)"
                 @refreshed="roleStore.refreshRoleInfo"
                 @jump-complete="(res) => emit('virtualTimeJumpComplete', res)"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div v-if="roleStore.interactionImmersive" class="more-group more-group--plugin">
+          <div class="more-tile more-tile--action plugin-entry-tile">
+            <div class="more-tile-body plugin-entry-actions" role="group" :aria-label="t('app.more.pluginBtnSimple')">
+              <button
+                type="button"
+                class="more-debug-btn more-debug-btn--fill settings-entry-btn"
+                @click="emit('openPluginManager')"
+              >
+                {{ t("app.more.pluginBtnSimple") }}
+              </button>
+              <button
+                type="button"
+                class="more-debug-btn more-debug-btn--fill settings-entry-btn"
+                @click="emit('openPluginMarket')"
+              >
+                {{ t("app.more.pluginMarket") }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="showIdentitySection" class="more-group more-group--identity">
+          <div class="more-tile more-tile--sm">
+            <div class="more-tile-head">
+              <span class="more-label">{{ t("app.more.identity") }}</span>
+              <HelpHint :text="t('app.more.identityHelp')" />
+            </div>
+            <div class="more-tile-body more-tile-body--selector">
+              <RoleSelector
+                variant="topbar"
+                :sections="['relation']"
+                :current-role-id="roleStore.currentRoleId"
+                :current-relation="roleStore.relationSelectValue"
+                :roles="roleStore.roles"
+                :relations="relationOptions"
+                :loading="chatStore.isLoading"
+                @change-role="emit('changeRole', $event)"
+                @change-relation="emit('changeRelation', $event)"
               />
             </div>
           </div>
@@ -318,13 +319,25 @@ onBeforeUnmount(() => {
 }
 .more-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(15rem, 100%), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(13rem, 100%), 1fr));
   gap: 12px;
   align-items: start;
 }
 /* Groups are layout-transparent so every tile aligns to one shared grid. */
 .more-group {
   display: contents;
+}
+/* Larger-footprint tiles take two tracks so the panel reads big → small, left → right. */
+.more-tile--wide {
+  grid-column: span 2;
+}
+@media (max-width: 30rem) {
+  .more-grid {
+    grid-template-columns: 1fr;
+  }
+  .more-tile--wide {
+    grid-column: 1 / -1;
+  }
 }
 .more-tile {
   box-sizing: border-box;
