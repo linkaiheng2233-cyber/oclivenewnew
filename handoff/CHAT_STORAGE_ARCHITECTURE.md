@@ -184,6 +184,10 @@ Under `{root}/{role_id}/{scene_id}/{created_at_compact}_{session_id_prefix}.json
 - `distros/shared/src/api/chatStorage.ts` — all invoke wrappers
 - `distros/shared/src/stores/chatStore.ts` — loads from `fetch_chat_messages`
 
+### Scene bucket ↔ `uiStore.sceneId` 不变量（回归守门）
+
+消息按 **role × scene** 分桶（`messageMap[roleId][sceneId]`）。`hydrateFromStorage` 在角色信息加载前用**默认角色状态**经 `effectiveChatSceneId` 解析场景（`pure_chat` 恒为 `home`），因此**实际加载的桶可能不等于持久化的 `uiStore.sceneId`**（如 immersive 的 `company`）。故 `applySceneChange` 必须在目标桶**未加载**时也重新加载，而非仅在 `sceneId` 变化时——否则随后解析回持久场景会因 `prev === next` 短路、桶永不加载、历史空白。守门：`chatStoreScene.test.ts`。
+
 ## Code map
 
 - `distros/desktop-tauri/migrations/027_chat_storage.sql`

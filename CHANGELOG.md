@@ -90,6 +90,7 @@
 
 ### Fixed
 
+- **历史聊天记录在剧情场景下消失**：`hydrateFromStorage` 在角色信息加载前按默认 `pure_chat` 解析场景（恒 `home`），而 `uiStore.sceneId` 仍指向持久化的 immersive 场景（如 `company`）；随后 `applySceneChange` 因 `prev === next` 短路、目标桶从未加载导致主聊天空白。现按"目标桶未加载即重载"修复（数据从未丢失）；守门 `chatStoreScene.test.ts`，见 [`CHAT_STORAGE_ARCHITECTURE.md`](handoff/CHAT_STORAGE_ARCHITECTURE.md)。
 - **Ctrl+Shift+S 打开设置失效**：`useGlobalHotkeys` 误引用未传入的 `opts.openSettingsView`（运行时为 `undefined`），改为调用本地 `openSettingsView`；theater 壳仍发 `theater:settings`。
 
 ---

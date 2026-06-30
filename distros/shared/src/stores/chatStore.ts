@@ -360,20 +360,26 @@ export const useChatStore = defineStore(
       ) {
         const uiStore = useUiStore()
         const roleStore = useRoleStore()
+        const roleId = roleStore.currentRoleId
         const prev = uiStore.sceneId
         const next = nextSceneId || 'default'
-        if (prev !== next && !options?.skipHistorySplit) {
-          const roleId = roleStore.currentRoleId
+        // The target bucket can be unloaded even when prev === next: hydrateFromStorage
+        // loads the mode-resolved scene (pure_chat forces `home`) while uiStore.sceneId
+        // still holds the persisted immersive scene, so a later resolve back to that
+        // scene must still load its bucket instead of short-circuiting (history loss).
+        const bucketLoaded = this.messageMap[roleId]?.[next] !== undefined
+        const shouldReload = prev !== next || !bucketLoaded
+        if (shouldReload && !options?.skipHistorySplit) {
           this.ensureLegacyMigrated(roleId)
           if (!this.sceneHistorySplitIndex[roleId])
             this.sceneHistorySplitIndex[roleId] = {}
           const count = this.getMessageCountForRoleScene(roleId, next)
           this.sceneHistorySplitIndex[roleId][next] = count
         }
-        if (prev !== next) {
-          this.messagesLoadingKey = bucketMapKey(roleStore.currentRoleId, next)
+        if (shouldReload) {
+          this.messagesLoadingKey = bucketMapKey(roleId, next)
           uiStore.setScene(next)
-          void this.loadMessagesForRoleScene(roleStore.currentRoleId, next)
+          void this.loadMessagesForRoleScene(roleId, next)
         }
         else {
           uiStore.setScene(next)
