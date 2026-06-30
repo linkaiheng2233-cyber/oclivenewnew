@@ -25,6 +25,14 @@
       "dialog": {
         "open": true,
         "save": true
+      },
+      "window": {
+        "minimize": true,
+        "maximize": true,
+        "unmaximize": true,
+        "close": true,
+        "startDragging": true,
+        "setDecorations": true
       }
     },
     "bundle": {

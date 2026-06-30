@@ -45,8 +45,25 @@ function readSkinEnabled(): boolean {
   }
 }
 
+function isTauriWebview(): boolean {
+  return typeof window !== 'undefined' && '__TAURI__' in window
+}
+
+async function syncNativeDecorations(skinEnabled: boolean): Promise<void> {
+  if (!isTauriWebview())
+    return
+  try {
+    const { getCurrent } = await import('@tauri-apps/api/window')
+    await getCurrent().setDecorations(!skinEnabled)
+  }
+  catch {
+    /* web build or permission denied */
+  }
+}
+
 function applySkinToDocument(enabled: boolean): void {
   document.documentElement.setAttribute('data-skin', enabled ? 'win98' : 'default')
+  void syncNativeDecorations(enabled)
 }
 
 function persistSkin(enabled: boolean): void {

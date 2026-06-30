@@ -160,6 +160,12 @@
 | `distro.oclive.toml` | [DISTRO_CAPABILITY_PROFILE.md](../creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md) | 发行版差异化 | 在角色任务里改 profile |
 | `runtime_config.dual_core` | 蓝图 · **默认关** | 解冻后 | 默认开启 Experimental 核 |
 
+### 6. Desktop 宿主（Tauri v1 allowlist）
+
+| 项 | SSOT | 允许改动条件 | 禁止 |
+|----|------|--------------|------|
+| `tauri.conf.json` `allowlist.window` | [`distros/desktop-tauri/tauri.conf.json`](../distros/desktop-tauri/tauri.conf.json) | Win98 彩蛋皮肤合成标题栏（`setDecorations` · `minimize` · `maximize` · `unmaximize` · `close` · `startDragging`）；须同步 [MODULE_MAP §13.2](./MODULE_MAP_AND_HANDOFF.md) | 无产品需求时 `all: true` 或扩大无关 API |
+
 ---
 
 ## 路径与测试 SSOT（代码）

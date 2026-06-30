@@ -6,7 +6,7 @@
 
 ### Added
 
-- **Chat Pro Windows 98 easter-egg skin**: Konami unlock → `data-skin=win98` (`oclive-runtime-skin`); Settings → General toggle; orthogonal overlay on Fluent + Tool for `data-theme` / `data-shell` / UI scale; see [`MODULE_MAP_AND_HANDOFF.md`](handoff/MODULE_MAP_AND_HANDOFF.md) §13.2.
+- **Chat Pro Windows 98 easter-egg skin**: Konami unlock → `data-skin=win98` (`oclive-runtime-skin`); Settings → General toggle; orthogonal overlay on Fluent + Tool for `data-theme` / `data-shell` / UI scale; synthetic Win98 title bar (`Win98TitleBar` + Tauri `setDecorations`) and 3D dialog chrome; see [`MODULE_MAP_AND_HANDOFF.md`](handoff/MODULE_MAP_AND_HANDOFF.md) §13.2.
 - **Domain layering ports (#101 unblock)**: `LlmClient::supports_prefix_cache` / `generate_with_opts` / `generate_stream_with_opts`; `TurnThinkingStatePort`; removed domain→infra imports from `co_present` / `slot_runner` / `post`; `npm run check:rust` now runs layering + CHANGELOG parity gates first.
 - **Affect display channel `display_metrics`**: `RoleData` / `RoleInfo` / `SendMessageResponse` expose UI-only metrics (`favor` / `traits[7]` / `relation_summary`); legacy scalar fields deprecated; frontend `roleStore` prefers the new field.
 - **CI flake auto-rerun**: `.github/workflows/ci-rerun-flake.yml` reruns failed `rust` / `e2e-tauri` jobs once via `gh run rerun --failed`.

@@ -14,6 +14,7 @@ import TopBarSceneModeDialog from '@oclive/shared/components/scene/TopBarSceneMo
 import ShortcutHelp from '@oclive/shared/components/ShortcutHelp.vue'
 import Toast from '@oclive/shared/components/Toast.vue'
 import UiResizeHandle from '@oclive/shared/components/ui/UiResizeHandle.vue'
+import Win98TitleBar from '@oclive/shared/components/win98/Win98TitleBar.vue'
 import { MAIN_SHELL_KEY } from '@oclive/shared/composables/mainShellKey'
 import {
   getLayoutWidths,
@@ -122,6 +123,7 @@ function onLeftRailResize(deltaX: number) {
 <template>
   <main class="layout">
     <div class="app-frame">
+      <Win98TitleBar />
       <header class="top-bar">
         <TopBarMorePanel
           v-model="topMoreOpen"

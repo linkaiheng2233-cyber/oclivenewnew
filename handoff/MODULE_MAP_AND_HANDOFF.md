@@ -287,6 +287,7 @@ Agent 短路、异地 stub：**并列**于上链，见 `process_message.rs`。
 - **范围**：chat-pro **Fluent + Tool**；theater 不纳入。
 - **解锁**：Konami 序列 → `oclive-easteregg-unlocked=1` → 自动启用 Win98；设置 → 常规外观区开关（`v-if` 已解锁）。
 - **正交**：皮肤只覆盖 CSS 变量与少量 chrome 类；不改 shell 布局或六槽逻辑。`appearance:changed` 事件 payload 可含 `skin`。
+- **Authentic chrome（Win98 窗口框）**：[`Win98TitleBar.vue`](../distros/shared/src/components/win98/Win98TitleBar.vue) 挂载于 FluentShell `.app-frame` / ToolShell `.tool-body__main` 首子节点；启用皮肤时 Tauri `setDecorations(false)` 隐藏原生标题栏，合成栏经 `data-tauri-drag-region` + `allowlist.window`（`minimize` / `maximize` / `unmaximize` / `close` / `startDragging` / `setDecorations`）驱动 ─ □ ✕；关闭皮肤或退出即恢复原生装饰与边缘缩放。对话框仅靠 [`theme-win98.css`](../distros/shared/src/styles/theme-win98.css) 类簇覆写为 Win98 窗体（✕ 仍关对话框，非 OS 窗）。
 
 ---
 
