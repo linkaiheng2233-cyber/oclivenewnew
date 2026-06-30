@@ -22,7 +22,8 @@ import { loadRoleSceneMessages } from './chatStoreLoad'
 import { sendChatStoreMessage } from './chatStoreSend'
 import { useRoleStore } from './roleStore'
 import { useUiStore } from './uiStore'
-import { effectiveChatSceneId, PURE_CHAT_DEFAULT_SCENE_ID } from '../utils/pureChatScene'
+import { resolveUserNarrativeSceneId } from '../composables/narrativeScene'
+import { PURE_CHAT_DEFAULT_SCENE_ID } from '../utils/pureChatScene'
 
 export interface ChatMessage {
   id: string
@@ -298,13 +299,40 @@ export const useChatStore = defineStore(
 
       /** Daily chat: load `home` bucket and fold existing turns into collapsible history. */
       async enterPureChatScene(roleId: string): Promise<void> {
-        const sceneId = PURE_CHAT_DEFAULT_SCENE_ID
-        await this.loadMessagesForRoleScene(roleId, sceneId)
+        await this.bootstrapChatForRole(roleId)
+      },
+
+      /**
+       * Cold start / role switch: load the mode-correct scene bucket and fold prior
+       * turns into collapsible history (restart session UX).
+       */
+      async bootstrapChatForRole(roleId: string): Promise<void> {
+        const roleStore = useRoleStore()
+        const uiStore = useUiStore()
+        const rid = roleId.trim()
+        if (!rid)
+          return
+
+        const sceneId = roleStore.interactionImmersive
+          ? resolveUserNarrativeSceneId(
+            roleStore.roleInfo.userPresenceScene,
+            roleStore.roleInfo.currentScene,
+            roleStore.roleInfo.scenes,
+            uiStore.sceneId,
+          )
+          : PURE_CHAT_DEFAULT_SCENE_ID
+
+        if (roleStore.interactionImmersive)
+          uiStore.setScene(sceneId)
+        else if (uiStore.sceneId !== PURE_CHAT_DEFAULT_SCENE_ID)
+          uiStore.setScene(PURE_CHAT_DEFAULT_SCENE_ID)
+
+        await this.loadMessagesForRoleScene(rid, sceneId)
         beginNewChatSessionOnRestart(
           this.sceneHistorySplitIndex,
-          roleId,
+          rid,
           sceneId,
-          this.getMessageCountForRoleScene(roleId, sceneId),
+          this.getMessageCountForRoleScene(rid, sceneId),
         )
       },
 

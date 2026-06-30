@@ -86,7 +86,7 @@
 
 ### Fixed
 
-- **Chat history vanished in story scenes**: `hydrateFromStorage` no longer preloads buckets before `refreshRoleInfo` (default `pure_chat` wrongly resolves to `home`); first load now happens in `completeRoleBootstrap` (immersive → `applyResolvedNarrativeScene`, pure_chat → `enterPureChatScene`). `applySceneChange` uses `loadedBucketKeys` to detect fetched buckets (empty placeholder arrays no longer short-circuit). Data was never lost; guard `chatStoreScene.test.ts`, see [`CHAT_STORAGE_ARCHITECTURE.md`](handoff/CHAT_STORAGE_ARCHITECTURE.md).
+- **Chat history vanished in story scenes**: cold start now uses unified `bootstrapChatForRole` (await fetch + `beginNewChatSessionOnRestart` fold); removed `interactionMode` watch `immediate` race; `loadedBucketKeys` prevents empty-placeholder short-circuit. Guard `chatStoreScene.test.ts`, see [`CHAT_STORAGE_ARCHITECTURE.md`](handoff/CHAT_STORAGE_ARCHITECTURE.md).
 - **Ctrl+Shift+S did not open Settings**: `useGlobalHotkeys` referenced an unpassed `opts.openSettingsView` (`undefined` at runtime); now calls the local `openSettingsView`; the theater shell still emits `theater:settings`.
 
 ---

@@ -15,7 +15,6 @@ import { useRoleStore, bindAffectMetricsListener } from '@oclive/shared/stores/r
 import { markPresetPickerDone, resolveDefaultRoleId } from '@oclive/shared/utils/presetRolePicker'
 import { getTheaterCastConfig } from '@oclive/theater/composables/theater/theaterCastConfig'
 import { resolveOcliveShell } from '@oclive/shared/composables/useOcliveShell'
-import { useNarrativeScene } from '@oclive/shared/composables/useNarrativeScene'
 import { showPluginInstallReviewHint } from '@oclive/shared/composables/usePluginInstallReviewHint'
 import type { AppToastFn } from '@oclive/shared/composables/useAppToast'
 
@@ -45,7 +44,6 @@ export function useAppBootstrap(options: {
   const roleStore = useRoleStore()
   const pluginStore = usePluginStore()
   const debugStore = useDebugStore()
-  const { applyResolvedNarrativeScene } = useNarrativeScene()
 
   let unlistenPluginFs: (() => void) | Promise<(() => void)> | undefined
   let unlistenProtocolInstall: (() => void) | Promise<(() => void)> | undefined
@@ -61,12 +59,7 @@ export function useAppBootstrap(options: {
     await roleStore.refreshRoleInfo()
     hostEventBus.emitBuiltin('role:switched', { roleId: rid })
     const chatStore = useChatStore()
-    if (roleStore.interactionImmersive) {
-      applyResolvedNarrativeScene()
-    }
-    else {
-      await chatStore.enterPureChatScene(rid)
-    }
+    await chatStore.bootstrapChatForRole(rid)
     await debugStore.loadDebugData()
   }
 

@@ -21,7 +21,6 @@ import { useRoleSnapshotPoll } from '@oclive/shared/composables/useKernelStatus'
 import { useMainShellChat } from './useMainShellChat'
 import { useMainShellHotkeys } from './useMainShellHotkeys'
 import { useMainShellWindows } from './useMainShellWindows'
-import { useNarrativeScene } from '@oclive/shared/composables/useNarrativeScene'
 import { usePluginEvents } from '@oclive/shared/composables/usePluginEvents'
 import { useReturnFocusOnClose } from '@oclive/shared/composables/useReturnFocusOnClose'
 import { useSceneDestination } from '@oclive/shared/composables/useSceneDestination'
@@ -30,7 +29,6 @@ import { usePackUiTheme } from '@oclive/shared/composables/useTheme'
 import { useProgressiveDisclosure } from '@oclive/shared/composables/useProgressiveDisclosure'
 import { useInteractionModeSettings } from '@oclive/shared/composables/useInteractionModeSettings'
 import { markPresetPickerDone } from '@oclive/shared/utils/presetRolePicker'
-import { effectiveChatSceneId } from '@oclive/shared/utils/pureChatScene'
 import { resolveOcliveShell } from '@oclive/shared/composables/useOcliveShell'
 
 export const DebugPanel = defineAsyncComponent(() => import('@oclive/shared/components/dev-tools/DebugPanel.vue'))
@@ -64,7 +62,6 @@ export function useMainShell() {
   const progressive = useProgressiveDisclosure()
   const { applyPureChatSceneIsolation, onInteractionModeSelect } = useInteractionModeSettings()
   useRoleSnapshotPoll()
-  const { applyResolvedNarrativeScene } = useNarrativeScene()
   const {
     sceneTransition,
     applySceneDestination,
@@ -207,6 +204,10 @@ export function useMainShell() {
   watch(
     () => roleStore.roleInfo.interactionMode,
     (mode) => {
+      // Default state is pure_chat before refreshRoleInfo; cold start is handled by
+      // completeRoleBootstrap.bootstrapChatForRole — do not race-load the wrong bucket.
+      if (!roleStore.roleInfo.version)
+        return
       if (mode === 'pure_chat') {
         applyPureChatSceneIsolation()
         resetPureChatSceneUi()
@@ -218,7 +219,6 @@ export function useMainShell() {
           void chatStore.enterPureChatScene(roleId)
       }
     },
-    { immediate: true },
   )
 
   const packLayoutResolved = computed(() => {
@@ -318,14 +318,9 @@ export function useMainShell() {
     try {
       roleSwitching.value = true
       await roleStore.switchRole(nextRoleId)
-      const sceneId = effectiveChatSceneId(
-        roleStore.roleInfo.interactionMode,
-        uiStore.sceneId,
-      )
-      await chatStore.loadMessagesForRoleScene(nextRoleId, sceneId)
+      await chatStore.bootstrapChatForRole(nextRoleId)
       await pluginStore.syncDirectoryPluginBootstrap()
       hostEventBus.emitBuiltin('role:switched', { roleId: nextRoleId })
-      applyResolvedNarrativeScene()
       await debugStore.loadDebugData()
       showToast('success', t('app.toast.roleSwitched', { id: nextRoleId }))
     }
@@ -377,7 +372,7 @@ export function useMainShell() {
       await pluginStore.refresh()
       await roleStore.refreshRoleInfo()
       await roleStore.loadRoles()
-      applyResolvedNarrativeScene()
+      await chatStore.bootstrapChatForRole(roleId)
       await debugStore.loadDebugData()
     }
     catch (err) {

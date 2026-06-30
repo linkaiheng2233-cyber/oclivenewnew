@@ -91,7 +91,7 @@
 
 ### Fixed
 
-- **历史聊天记录在剧情场景下消失**：`hydrateFromStorage` 不再在 `refreshRoleInfo` 前预加载桶（默认 `pure_chat` 会误解析为 `home`）；首次加载改在 `completeRoleBootstrap`（immersive → `applyResolvedNarrativeScene`，pure_chat → `enterPureChatScene`）。`applySceneChange` 以 `loadedBucketKeys` 判断桶是否已拉取（避免空占位桶短路）；数据从未丢失。守门 `chatStoreScene.test.ts`，见 [`CHAT_STORAGE_ARCHITECTURE.md`](handoff/CHAT_STORAGE_ARCHITECTURE.md)。
+- **历史聊天记录在剧情场景下消失**：冷启动统一 `bootstrapChatForRole`（await 拉取 + `beginNewChatSessionOnRestart` 折叠）；移除 `interactionMode` watch 的 `immediate` 竞态；`loadedBucketKeys` 防止空占位桶短路。守门 `chatStoreScene.test.ts`，见 [`CHAT_STORAGE_ARCHITECTURE.md`](handoff/CHAT_STORAGE_ARCHITECTURE.md)。
 - **Ctrl+Shift+S 打开设置失效**：`useGlobalHotkeys` 误引用未传入的 `opts.openSettingsView`（运行时为 `undefined`），改为调用本地 `openSettingsView`；theater 壳仍发 `theater:settings`。
 
 ---

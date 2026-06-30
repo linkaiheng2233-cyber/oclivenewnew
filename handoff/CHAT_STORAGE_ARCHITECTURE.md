@@ -186,7 +186,7 @@ Under `{root}/{role_id}/{scene_id}/{created_at_compact}_{session_id_prefix}.json
 
 ### Scene bucket ↔ `uiStore.sceneId` 不变量（回归守门）
 
-消息按 **role × scene** 分桶（`messageMap[roleId][sceneId]`）。**`hydrateFromStorage` 不再预加载桶**（角色 `interactionMode` 在 `refreshRoleInfo` 前默认为 `pure_chat`，会误解析为 `home`）；首次加载在 `useAppBootstrap.completeRoleBootstrap`：`immersive` → `applyResolvedNarrativeScene`；`pure_chat` → `enterPureChatScene`。`applySceneChange` 用 `loadedBucketKeys`（非 `messageMap` 键是否存在）判断桶是否已拉取——`roleSceneBucket` 会静默创建空数组，仅靠 `!== undefined` 会短路、历史永不加载。守门：`chatStoreScene.test.ts`。
+消息按 **role × scene** 分桶（`messageMap[roleId][sceneId]`）。**`hydrateFromStorage` 不再预加载桶**；冷启动/切角色统一走 `chatStore.bootstrapChatForRole`（`completeRoleBootstrap` / `onSwitchRole`）：按 `refreshRoleInfo` 后的互动模式解析场景、`await loadMessagesForRoleScene`、再 `beginNewChatSessionOnRestart` 折叠历史。`useMainShell` 的 `interactionMode` watch **不得** `immediate`（默认 `pure_chat` 会在角色信息就绪前误触发 `enterPureChatScene`）。`applySceneChange` 用 `loadedBucketKeys` 判断桶是否已拉取。守门：`chatStoreScene.test.ts`。
 
 ## Code map
 
