@@ -44,6 +44,7 @@ export function useProgressiveDisclosure() {
   }
 
   async function tryStoryMode(): Promise<void> {
+    // Discovery path from ImmersiveUnlockBanner; user-facing switch is InteractionModeBar + Settings.
     if (!roleId.value)
       return
     try {

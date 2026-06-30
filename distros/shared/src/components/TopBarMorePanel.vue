@@ -266,16 +266,10 @@ onBeforeUnmount(() => {
   padding-top: 12px;
   border-top: 1px solid var(--border-light);
 }
-.top-more-panel .interaction-mode-select,
 .top-more-panel .scene-select {
   font-size: 13px;
   padding: 6px 10px;
   line-height: 1.4;
-}
-.top-more-panel .appearance-icon-btn,
-.top-more-panel .appearance-theme-btn {
-  font-size: 13px;
-  min-height: 30px;
 }
 .top-more-panel .more-debug-btn {
   font-size: 13px;
@@ -481,79 +475,5 @@ onBeforeUnmount(() => {
 .more-debug-btn:hover {
   color: var(--text-primary);
   border-color: var(--border-focus);
-}
-.top-bar-appearance {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-}
-.top-more-panel .top-bar-appearance {
-  margin-left: 0;
-}
-.appearance-scale {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 6px;
-  border-radius: var(--radius-btn);
-  border: 1px solid var(--border-light);
-  background: color-mix(in srgb, var(--bg-elevated) 88%, transparent);
-  box-shadow: var(--shadow-sm), var(--frame-inset-highlight);
-}
-.appearance-scale-value {
-  min-width: 2.6rem;
-  text-align: center;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  font-variant-numeric: tabular-nums;
-}
-.appearance-icon-btn,
-.appearance-theme-btn {
-  padding: 4px 8px;
-  min-height: 28px;
-  border-radius: var(--radius-btn);
-  border: 1px solid var(--border-light);
-  background: var(--bg-elevated);
-  color: var(--text-primary);
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 500;
-  font-family: var(--font-ui);
-  transition: var(--control-transition);
-}
-.appearance-icon-btn:hover,
-.appearance-theme-btn:hover {
-  border-color: var(--accent);
-  color: var(--text-accent);
-}
-.appearance-icon-btn:focus,
-.appearance-theme-btn:focus {
-  outline: none;
-}
-.appearance-icon-btn:focus-visible,
-.appearance-theme-btn:focus-visible {
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus-ring-color) 35%, transparent);
-}
-.appearance-theme-btn {
-  white-space: nowrap;
-}
-.interaction-mode-select {
-  min-width: 88px;
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius-btn);
-  padding: 4px 8px;
-  font-size: 12px;
-  color: var(--text-primary);
-  background: var(--bg-elevated);
-}
-.interaction-mode-select:focus {
-  outline: none;
-}
-.interaction-mode-select:focus-visible {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus-ring-color) 35%, transparent);
 }
 </style>

@@ -18,6 +18,6 @@ onMounted(() => {
 </script>
 
 <template>
-  <FluentShell v-if="shellKind === 'fluent'" />
-  <ToolShell v-else />
+  <ToolShell v-if="shellKind === 'tool'" />
+  <FluentShell v-else />
 </template>

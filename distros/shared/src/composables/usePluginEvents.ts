@@ -47,6 +47,7 @@ export function usePluginEvents(opts: UsePluginEventsOptions) {
   }
 
   async function onPluginSetInteractionMode(payload: unknown): Promise<void> {
+    // Plugin programming entry (`com.oclive.mumu.settings-panel:set_interaction_mode`); not a user IA surface.
     const mode = (payload as { mode?: string } | null)?.mode
     if (mode !== 'immersive' && mode !== 'pure_chat')
       return

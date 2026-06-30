@@ -39,8 +39,8 @@
   --rail-accent-runtime-bg: rgba(106, 95, 138, 0.13);
 
   --shell-page-bg:
-    radial-gradient(ellipse 90% 55% at 100% -5%, color-mix(in srgb, #b89a6e 16%, transparent), transparent 52%),
-    radial-gradient(ellipse 75% 48% at 0% 100%, color-mix(in srgb, #7d9c91 12%, transparent), transparent 50%),
+    radial-gradient(ellipse 90% 55% at 100% -5%, color-mix(in srgb, #b89a6e 13%, transparent), transparent 52%),
+    radial-gradient(ellipse 75% 48% at 0% 100%, color-mix(in srgb, #7d9c91 10%, transparent), transparent 50%),
     var(--fluent-bg-page);
 
   /* —— oclive 组件使用的语义（映射到 Fluent）—— */
@@ -105,20 +105,20 @@ html[data-theme="dark"] {
   color-scheme: dark;
 
   --fluent-bg-page: #1a1d24;
-  --fluent-bg-card: #252830;
+  --fluent-bg-card: #272b34;
   --fluent-bg-subtle: #2f3440;
   --fluent-bg-input: #1e2128;
   --fluent-border-stroke: #3d4451;
   --fluent-border-control: #4d5565;
-  --fluent-border-focus: #8f96a3;
+  --fluent-border-focus: #7fa89c;
   --fluent-shadow-card: 0 4px 24px rgba(0, 0, 0, 0.45);
   --fluent-shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.35);
   --fluent-text-primary: #e8e6e3;
   --fluent-text-secondary: #b0aca6;
   --fluent-text-disabled: #8a8580;
-  --fluent-accent: #aeb4bf;
-  --fluent-accent-hover: #c8ced8;
-  --fluent-accent-subtle: rgba(255, 255, 255, 0.07);
+  --fluent-accent: #7fa89c;
+  --fluent-accent-hover: #8fb8ac;
+  --fluent-accent-subtle: rgba(127, 168, 156, 0.14);
   --fluent-success-text: #92c353;
   --fluent-danger-text: #f9a7ad;
   --fluent-warning-text: #ffd44d;
@@ -131,8 +131,8 @@ html[data-theme="dark"] {
   --rail-accent-runtime-bg: rgba(180, 167, 255, 0.18);
 
   --shell-page-bg:
-    radial-gradient(115% 95% at 0% 0%, rgba(36, 44, 58, 0.85), transparent 58%),
-    radial-gradient(100% 92% at 100% 100%, rgba(28, 34, 48, 0.82), transparent 56%),
+    radial-gradient(115% 95% at 0% 0%, rgba(36, 44, 58, 0.72), transparent 58%),
+    radial-gradient(100% 92% at 100% 100%, rgba(28, 34, 48, 0.68), transparent 56%),
     linear-gradient(168deg, #0f1218 0%, #181c24 45%, #12151c 100%);
 
   --bg-page: var(--fluent-bg-page);
@@ -177,7 +177,7 @@ html[data-theme="dark"] {
     0 1px 2px rgba(0, 0, 0, 0.18),
     0 4px 14px rgba(0, 0, 0, 0.2);
 
-  --focus-ring-color: #9aa3ae;
+  --focus-ring-color: var(--fluent-border-focus);
   --frame-inset-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 
   --scrollbar-chat-track: rgba(255, 255, 255, 0.05);

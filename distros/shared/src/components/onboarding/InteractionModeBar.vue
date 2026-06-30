@@ -22,7 +22,7 @@ async function onChange(ev: Event): Promise<void> {
 </script>
 
 <template>
-  <!-- Story mode only: daily chat discovers immersive via unlock banner; bar is the exit ramp. -->
+  <!-- In-shell user entry for mode switch (story mode exit ramp); pairs with Settings → General. -->
   <div
     v-if="allowModeSwitch && roleStore.interactionImmersive"
     class="interaction-mode-bar"
@@ -63,8 +63,8 @@ async function onChange(ev: Event): Promise<void> {
   margin: 0.5rem 0.75rem 0;
   padding: 0.5rem 0.75rem;
   border-radius: 0.5rem;
-  background: var(--oc-surface-elevated, rgba(127, 127, 127, 0.08));
-  border: 1px solid var(--oc-border-subtle, rgba(127, 127, 127, 0.18));
+  background: color-mix(in srgb, var(--bg-elevated) 88%, var(--fluent-accent-subtle) 12%);
+  border: 1px solid var(--border-light);
   font-size: 0.85rem;
 }
 .interaction-mode-bar__label {

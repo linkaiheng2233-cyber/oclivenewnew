@@ -257,6 +257,7 @@ export function useMainShell() {
   })
 
   async function onInteractionModeChange(ev: Event) {
+    // Primary in-shell handler for InteractionModeBar (Settings → General is the other user entry).
     const v = (ev.target as HTMLSelectElement).value as 'immersive' | 'pure_chat'
     await onInteractionModeSelect(ev)
     if (v === 'pure_chat')

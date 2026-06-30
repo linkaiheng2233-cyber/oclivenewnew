@@ -21,6 +21,7 @@ import {
 } from '@oclive/shared/composables/useLayoutWidths'
 import ImmersiveModeIntro from '@oclive/shared/components/onboarding/ImmersiveModeIntro.vue'
 import ImmersiveUnlockBanner from '@oclive/shared/components/onboarding/ImmersiveUnlockBanner.vue'
+import InteractionModeBar from '@oclive/shared/components/onboarding/InteractionModeBar.vue'
 import PresetRolePicker from '@oclive/shared/components/onboarding/PresetRolePicker.vue'
 import {
   DebugPanel,
@@ -42,7 +43,6 @@ if (!shell) {
 
 const {
   t,
-  localePreference,
   toast,
   showToast,
   roleStore,
@@ -210,8 +210,8 @@ function onLeftRailResize(deltaX: number) {
               :layout="wideSplitLayout ? 'sidebar' : 'stack'"
               :role-id="roleStore.currentRoleId"
               :name="roleName"
-                :emotion="emotion"
-                :portrait-asset-rel-path="portraitAssetRelPath"
+              :emotion="emotion"
+              :portrait-asset-rel-path="portraitAssetRelPath"
               :bootstrap-epoch="pluginStore.bootstrapEpoch"
             />
             <RoleplayAsidePanel v-if="roleStore.interactionImmersive" :text="latestRoleplayAside" />
@@ -285,6 +285,7 @@ function onLeftRailResize(deltaX: number) {
                 @confirm-post-reply="confirmPostReplyScene"
                 @dismiss-post-reply="dismissPostReplySceneBar"
               />
+              <InteractionModeBar />
               <ChatInput ref="chatInputRef" :loading="chatStore.isLoading" @send="onSend" />
             </section>
           </div>

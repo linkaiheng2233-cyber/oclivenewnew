@@ -58,7 +58,7 @@ oclivenewnew/
 
 `distros/desktop-tauri` 仍是一个 Tauri 工程；`beforeDevCommand` / `beforeBuildCommand` 根据 `OCLIVE_TAURI_SHELL=chat-pro|theater` 在对应 Vite 根启 dev/build。
 
-- Chat Pro：`VITE_OCLIVE_SHELL` 空或 `tool`（默认 ToolShell）。
+- Chat Pro：`VITE_OCLIVE_SHELL` 空或 `fluent`（默认 FluentShell）；`tool` → ToolShell。
 - Theater：`VITE_OCLIVE_SHELL=theater`（独立 `App.vue`，仅 TheaterShell）。
 
 ### 4.2 npm workspaces

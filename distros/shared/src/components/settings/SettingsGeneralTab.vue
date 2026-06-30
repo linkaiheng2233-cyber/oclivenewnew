@@ -57,6 +57,7 @@ onMounted(() => {
 })
 
 async function onSettingsInteractionModeChange(ev: Event): Promise<void> {
+  // Primary user entry alongside in-shell InteractionModeBar (FluentShell).
   await onInteractionModeSelect(ev)
 }
 

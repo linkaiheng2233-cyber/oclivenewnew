@@ -9,7 +9,7 @@ import { resolveManualChunk } from './distros/shared/src/build/manualChunks'
 const host = process.env.TAURI_DEV_HOST
 const repoRoot = path.dirname(fileURLToPath(import.meta.url))
 
-/** Inject build-time shell kind into index.html early-boot script (default empty → tool). */
+/** Inject build-time shell kind into index.html early-boot script (default empty → fluent). */
 export function injectShellEnv(): Plugin {
   return {
     name: 'oclive-inject-shell-env',

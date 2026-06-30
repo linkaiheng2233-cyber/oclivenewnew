@@ -35,6 +35,7 @@ function dismiss(): void {
 </script>
 
 <template>
+  <!-- Onboarding after programmatic immersive unlock (tryStoryMode); not a recurring mode switch. -->
   <Teleport to="body">
     <div
       v-if="open"

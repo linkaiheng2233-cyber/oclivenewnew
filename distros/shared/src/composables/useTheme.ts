@@ -5,6 +5,7 @@ import { useRoleStore } from '@oclive/shared/stores/roleStore'
 
 /**
  * Map role pack `ui.json` → `theme` to Fluent / oclive CSS variables; remove inline overrides on role switch or cleared fields to fall back to built-in theme.
+ * `primaryColor` lightly tints focus ring, user bubble, and runtime rail only — not global accent/text.
  */
 export function usePackUiTheme(): void {
   const roleStore = useRoleStore()
@@ -27,12 +28,10 @@ export function usePackUiTheme(): void {
     }
     const pc = t?.primaryColor?.trim()
     if (pc) {
-      push('--fluent-accent', pc)
-      push('--accent', pc)
-      push('--text-accent', pc)
-      if (document.documentElement.getAttribute('data-shell') === 'tool') {
-        push('--tool-accent', pc)
-      }
+      push('--focus-ring-color', pc)
+      push('--bubble-user-bg', `color-mix(in srgb, var(--fluent-bg-input) 72%, color-mix(in srgb, ${pc} 14%, transparent) 28%)`)
+      push('--rail-accent-runtime', pc)
+      push('--rail-accent-runtime-bg', `color-mix(in srgb, ${pc} 13%, transparent)`)
       hostEventBus.emitBuiltin('theme:changed', { primaryColor: pc })
     }
     const bg = t?.backgroundColor?.trim()
