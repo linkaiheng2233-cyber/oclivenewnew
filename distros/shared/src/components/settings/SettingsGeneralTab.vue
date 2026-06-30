@@ -1,46 +1,44 @@
 <script setup lang="ts">
 import type { EnvironmentDiagnostics } from '@oclive/shared/api'
 import type { LocalePreference } from '@oclive/shared/i18n'
-import { defineAsyncComponent, onMounted, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 import {
   getRemoteFallbackAppSettings,
   runEnvironmentDiagnostics,
   setRemoteFallbackToBuiltin,
 } from '@oclive/shared/api'
+import { useAppToast } from '@oclive/shared/composables/useAppToast'
+import { useDistroUxProfile } from '@oclive/shared/composables/useDistroUxProfile'
+import { useInteractionModeSettings } from '@oclive/shared/composables/useInteractionModeSettings'
+import { getLayoutWidths, resetLayoutWidths } from '@oclive/shared/composables/useLayoutWidths'
+import { useOcliveAppearance } from '@oclive/shared/composables/useOcliveAppearance'
+import { useUserIdentityState } from '@oclive/shared/composables/useUserIdentityState'
+import { getLocalePreference, setLocalePreference } from '@oclive/shared/i18n'
+import { SLOT_SETTINGS_ADVANCED, usePluginStore } from '@oclive/shared/stores/pluginStore'
+import { useRoleStore } from '@oclive/shared/stores/roleStore'
+import { isChatStreamEnabled, setChatStreamEnabled } from '@oclive/shared/utils/chatStreamSettings'
+import { isSentryOptOut, setSentryOptOut } from '@oclive/shared/utils/telemetrySentry'
+import { defineAsyncComponent, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import PluginSlotEmbed from '../PluginSlotEmbed.vue'
 import HelpHint from '../shared/HelpHint.vue'
 import UiButton from '../ui/UiButton.vue'
 import UiFieldRow from '../ui/UiFieldRow.vue'
 import UiSection from '../ui/UiSection.vue'
 import UiSelect from '../ui/UiSelect.vue'
-import { useAppToast } from '@oclive/shared/composables/useAppToast'
-import { useDistroUxProfile } from '@oclive/shared/composables/useDistroUxProfile'
-import { useInteractionModeSettings } from '@oclive/shared/composables/useInteractionModeSettings'
-import { useUserIdentityState } from '@oclive/shared/composables/useUserIdentityState'
-import { getLayoutWidths, resetLayoutWidths } from '@oclive/shared/composables/useLayoutWidths'
-import { useOcliveAppearance } from '@oclive/shared/composables/useOcliveAppearance'
-import { getLocalePreference, setLocalePreference } from '@oclive/shared/i18n'
-import { SLOT_SETTINGS_ADVANCED, usePluginStore } from '@oclive/shared/stores/pluginStore'
-import { useRoleStore } from '@oclive/shared/stores/roleStore'
-import { isSentryOptOut, setSentryOptOut } from '@oclive/shared/utils/telemetrySentry'
-import { isChatStreamEnabled, setChatStreamEnabled } from '@oclive/shared/utils/chatStreamSettings'
-
-const ReplyPostProcessorStatus = defineAsyncComponent(() => import('../role/ReplyPostProcessorStatus.vue'))
-const RoleIdentityControls = defineAsyncComponent(() => import('../role/RoleIdentityControls.vue'))
-const KernelConnectionSettingsPanel = defineAsyncComponent(() => import('./KernelConnectionSettingsPanel.vue'))
-
-type GeneralSubTab = 'simple' | 'advanced'
 
 const props = defineProps<{
   visible: boolean
   embedded: boolean
   generalSubTab: GeneralSubTab
 }>()
-
 const emit = defineEmits<{
   'update:generalSubTab': [value: GeneralSubTab]
 }>()
+const ReplyPostProcessorStatus = defineAsyncComponent(() => import('../role/ReplyPostProcessorStatus.vue'))
+const RoleIdentityControls = defineAsyncComponent(() => import('../role/RoleIdentityControls.vue'))
+const KernelConnectionSettingsPanel = defineAsyncComponent(() => import('./KernelConnectionSettingsPanel.vue'))
+
+type GeneralSubTab = 'simple' | 'advanced'
 
 const { t } = useI18n()
 const pluginStore = usePluginStore()
@@ -249,12 +247,6 @@ async function onToggleForceIframe(e: Event) {
         variant="full"
         settings-layout
       />
-    </UiSection>
-
-    <UiSection :title="t('settings.shortcutsLabel')">
-      <template #extra>
-        <HelpHint :text="t('settings.shortcutsHelp')" />
-      </template>
     </UiSection>
 
     <UiSection

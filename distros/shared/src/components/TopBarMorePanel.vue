@@ -3,16 +3,15 @@ import type { JumpTimeResponse } from '@oclive/shared/api'
 import type { RelationOptionRow } from '@oclive/shared/utils/relationOptions'
 import { useAppToast } from '@oclive/shared/composables/useAppToast'
 import { useSceneDestination } from '@oclive/shared/composables/useSceneDestination'
-import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
-import HelpHint from './shared/HelpHint.vue'
-import RoleSelector from './role/RoleSelector.vue'
-import VirtualTimeBar from './scene/VirtualTimeBar.vue'
 import { useChatStore } from '@oclive/shared/stores/chatStore'
 import { useDebugStore } from '@oclive/shared/stores/debugStore'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
 import { useUiStore } from '@oclive/shared/stores/uiStore'
-const open = defineModel<boolean>({ required: true })
+import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import RoleSelector from './role/RoleSelector.vue'
+import VirtualTimeBar from './scene/VirtualTimeBar.vue'
+import HelpHint from './shared/HelpHint.vue'
 
 withDefaults(
   defineProps<{
@@ -37,6 +36,8 @@ const emit = defineEmits<{
   notify: [payload: { type: 'success' | 'error' | 'info', message: string }]
   virtualTimeJumpComplete: [res: JumpTimeResponse]
 }>()
+
+const open = defineModel<boolean>({ required: true })
 
 const { t } = useI18n()
 const { showToast } = useAppToast()
@@ -108,50 +109,59 @@ onBeforeUnmount(() => {
       @click.stop
     >
       <div class="more-grid">
-        <div v-if="showIdentitySection" class="more-tile more-tile--sm">
-          <div class="more-tile-head">
-            <span class="more-label">{{ t("app.more.identity") }}</span>
-            <HelpHint :text="t('app.more.identityHelp')" />
-          </div>
-          <div class="more-tile-body more-tile-body--selector">
-            <RoleSelector
-              variant="topbar"
-              :sections="['relation']"
-              :current-role-id="roleStore.currentRoleId"
-              :current-relation="roleStore.relationSelectValue"
-              :roles="roleStore.roles"
-              :relations="relationOptions"
-              :loading="chatStore.isLoading"
-              @change-role="emit('changeRole', $event)"
-              @change-relation="emit('changeRelation', $event)"
-            />
+        <div v-if="showIdentitySection" class="more-group more-group--identity">
+          <div class="more-tile more-tile--sm">
+            <div class="more-tile-head">
+              <span class="more-label">{{ t("app.more.identity") }}</span>
+              <HelpHint :text="t('app.more.identityHelp')" />
+            </div>
+            <div class="more-tile-body more-tile-body--selector">
+              <RoleSelector
+                variant="topbar"
+                :sections="['relation']"
+                :current-role-id="roleStore.currentRoleId"
+                :current-relation="roleStore.relationSelectValue"
+                :roles="roleStore.roles"
+                :relations="relationOptions"
+                :loading="chatStore.isLoading"
+                @change-role="emit('changeRole', $event)"
+                @change-relation="emit('changeRelation', $event)"
+              />
+            </div>
           </div>
         </div>
 
-        <div class="more-tile more-tile--action settings-entry-tile">
-          <div class="more-tile-head">
-            <span class="more-label">{{ t("app.more.settingsEntry") }}</span>
-            <HelpHint :text="t('app.more.settingsTileHelp')" />
+        <div class="more-group more-group--core">
+          <div class="more-tile more-tile--action settings-entry-tile">
+            <div class="more-tile-head">
+              <span class="more-label">{{ t("app.more.settingsEntry") }}</span>
+              <HelpHint :text="t('app.more.settingsTileHelp')" />
+            </div>
+            <div class="more-tile-body settings-entry-actions" role="group" :aria-label="t('app.more.settingsEntry')">
+              <button
+                type="button"
+                class="more-debug-btn more-debug-btn--fill settings-entry-btn settings-entry-btn--primary settings-gear-btn"
+                @click="emit('openSettings')"
+              >
+                {{ t("app.more.openSettings") }}
+              </button>
+              <button
+                type="button"
+                class="more-debug-btn more-debug-btn--fill settings-entry-btn"
+                @click="emit('openModelManager')"
+              >
+                {{ t("app.more.modelManager") }}
+              </button>
+              <button type="button" class="more-debug-btn more-debug-btn--fill settings-entry-btn" @click="emit('openShortcutHelp')">
+                {{ t("app.more.shortcutHelp") }}
+              </button>
+            </div>
           </div>
-          <div class="more-tile-body settings-entry-actions" role="group" :aria-label="t('app.more.settingsEntry')">
-            <button type="button" class="more-debug-btn more-debug-btn--fill settings-entry-btn" @click="emit('openShortcutHelp')">
-              {{ t("app.more.shortcutHelp") }}
-            </button>
-            <button
-              type="button"
-              class="more-debug-btn more-debug-btn--fill settings-entry-btn settings-entry-btn--primary settings-gear-btn"
-              @click="emit('openSettings')"
-            >
-              {{ t("app.more.openSettings") }}
-            </button>
-            <button
-              type="button"
-              class="more-debug-btn more-debug-btn--fill settings-entry-btn"
-              @click="emit('openModelManager')"
-            >
-              {{ t("app.more.modelManager") }}
-            </button>
-            <template v-if="roleStore.interactionImmersive">
+        </div>
+
+        <div v-if="roleStore.interactionImmersive" class="more-group more-group--plugin">
+          <div class="more-tile more-tile--action plugin-entry-tile">
+            <div class="more-tile-body plugin-entry-actions" role="group" :aria-label="t('app.more.pluginBtnSimple')">
               <button
                 type="button"
                 class="more-debug-btn more-debug-btn--fill settings-entry-btn"
@@ -166,43 +176,12 @@ onBeforeUnmount(() => {
               >
                 {{ t("app.more.pluginMarket") }}
               </button>
-            </template>
+            </div>
           </div>
         </div>
 
-        <div v-if="roleStore.interactionImmersive" class="more-tile more-tile--action">
-          <div class="more-tile-head">
-            <span class="more-label">{{ t("app.more.debug") }}</span>
-            <HelpHint :text="t('app.more.debugHelp')" />
-          </div>
-          <div class="more-tile-body">
-            <button type="button" class="more-debug-btn more-debug-btn--fill" @click="debugStore.toggle">
-              {{ t("app.more.openDebugPanel") }}
-            </button>
-          </div>
-        </div>
-
-        <template v-if="roleStore.interactionImmersive">
-          <div class="more-tile more-tile--third">
-            <div class="more-tile-head more-tile-head--tight">
-              <span class="more-label">{{ t("app.more.virtualTime") }}</span>
-              <HelpHint
-                :paragraphs="[t('app.more.virtualTimeHint1'), t('app.more.virtualTimeHint2')]"
-              />
-            </div>
-            <div class="more-tile-body more-tile-body--row">
-              <VirtualTimeBar
-                compact
-                class="more-vtime"
-                :role-id="roleStore.currentRoleId"
-                @notify="(p) => emit('notify', p)"
-                @refreshed="roleStore.refreshRoleInfo"
-                @jump-complete="(res) => emit('virtualTimeJumpComplete', res)"
-              />
-            </div>
-          </div>
-
-          <div v-if="allSceneOptions.length > 0" class="more-tile more-tile--third">
+        <div v-if="roleStore.interactionImmersive" class="more-group more-group--scene">
+          <div v-if="allSceneOptions.length > 0" class="more-tile more-tile--scene">
             <div class="more-tile-head more-tile-head--tight">
               <span class="more-label">{{ t("app.more.narrativeScene") }}</span>
               <HelpHint :text="t('app.more.narrativeSceneHelp')" />
@@ -221,7 +200,40 @@ onBeforeUnmount(() => {
               <span class="scene-row-hint scene-row-hint--tile">{{ t('app.more.characterAt', { label: characterSceneLabel() }) }}</span>
             </div>
           </div>
-        </template>
+
+          <div class="more-tile more-tile--scene">
+            <div class="more-tile-head more-tile-head--tight">
+              <span class="more-label">{{ t("app.more.virtualTime") }}</span>
+              <HelpHint
+                :paragraphs="[t('app.more.virtualTimeHint1'), t('app.more.virtualTimeHint2')]"
+              />
+            </div>
+            <div class="more-tile-body more-tile-body--row">
+              <VirtualTimeBar
+                compact
+                class="more-vtime"
+                :role-id="roleStore.currentRoleId"
+                @notify="(p) => emit('notify', p)"
+                @refreshed="roleStore.refreshRoleInfo"
+                @jump-complete="(res) => emit('virtualTimeJumpComplete', res)"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div v-if="roleStore.interactionImmersive" class="more-group more-group--dev">
+          <div class="more-tile more-tile--action">
+            <div class="more-tile-head">
+              <span class="more-label">{{ t("app.more.debug") }}</span>
+              <HelpHint :text="t('app.more.debugHelp')" />
+            </div>
+            <div class="more-tile-body">
+              <button type="button" class="more-debug-btn more-debug-btn--fill" @click="debugStore.toggle">
+                {{ t("app.more.openDebugPanel") }}
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -283,6 +295,14 @@ onBeforeUnmount(() => {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
+.plugin-entry-tile {
+  min-width: min(16rem, 100%);
+}
+.plugin-entry-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
 .settings-entry-btn {
   min-height: 34px;
   font-size: 12px;
@@ -297,17 +317,28 @@ onBeforeUnmount(() => {
   justify-content: center;
 }
 @media (max-width: 680px) {
-  .settings-entry-actions {
+  .settings-entry-actions,
+  .plugin-entry-actions {
     grid-template-columns: 1fr;
   }
 }
 .more-grid {
   display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.more-group {
+  display: flex;
   flex-wrap: wrap;
-  justify-content: flex-start;
   align-items: flex-start;
-  align-content: flex-start;
   gap: 12px 16px;
+}
+.more-group--scene {
+  width: 100%;
+}
+.more-group--scene .more-tile--scene {
+  flex: 1 1 calc((100% - 16px) / 2);
+  min-width: min(17rem, 100%);
 }
 .more-tile {
   box-sizing: border-box;
@@ -359,8 +390,10 @@ onBeforeUnmount(() => {
   .more-tile--xs,
   .more-tile--sm,
   .more-tile--lg,
-  .more-tile--action {
+  .more-tile--action,
+  .more-group--scene .more-tile--scene {
     width: 100%;
+    flex: 1 1 100%;
   }
   .more-tile--third {
     flex: 1 1 100%;

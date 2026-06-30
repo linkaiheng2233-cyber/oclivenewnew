@@ -18,9 +18,6 @@ export default {
     interactionModeFieldLabel: '模式',
     interactionModePersistNote: '你的选择会记住，下次打开仍生效。',
     interactionModeLockedNote: '当前发行版未开放模式切换。',
-    shortcutsLabel: '快捷',
-    shortcutsHelp:
-      'Ctrl+Shift+S 设置；Ctrl+Shift+F 已安装插件；Ctrl+Shift+M 模型管理；Ctrl+Shift+D 调试面板。',
     immersiveOnlyNote: '虚拟时间、叙事场景等仅在剧情模式下显示于「更多」。',
     envCheckTitle: '环境自检',
     envCheckHelp:
@@ -111,5 +108,5 @@ export default {
     addRow: '添加一条',
     save: '保存',
     savedToast: '已保存快捷键配置（仅启用的项会注册全局快捷键）。',
-  }
+  },
 }

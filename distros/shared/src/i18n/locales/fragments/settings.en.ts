@@ -19,9 +19,6 @@ export default {
     interactionModeFieldLabel: 'Mode',
     interactionModePersistNote: 'Your choice is remembered for the next launch.',
     interactionModeLockedNote: 'Mode switching is disabled for this distro profile.',
-    shortcutsLabel: 'Shortcuts',
-    shortcutsHelp:
-      'Ctrl+Shift+S settings; Ctrl+Shift+F installed plugins; Ctrl+Shift+M model management; Ctrl+Shift+D debug panel.',
     immersiveOnlyNote:
       'Virtual time and narrative scenes appear under “More” only in Story mode.',
     envCheckTitle: 'Environment check',
@@ -117,5 +114,5 @@ export default {
     addRow: 'Add row',
     save: 'Save',
     savedToast: 'Hotkeys saved (only enabled rows register globally).',
-  }
+  },
 }
