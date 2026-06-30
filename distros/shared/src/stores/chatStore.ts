@@ -18,7 +18,7 @@ import {
 
   splitRoleplayReply,
 } from '@oclive/shared/utils/roleplayReplySplit'
-import { loadRoleSceneMessages } from './chatStoreLoad'
+import { loadRoleSceneMessages, loadRoleSceneMessagesWithSceneFallback } from './chatStoreLoad'
 import { sendChatStoreMessage } from './chatStoreSend'
 import { useRoleStore } from './roleStore'
 import { useUiStore } from './uiStore'
@@ -313,7 +313,7 @@ export const useChatStore = defineStore(
         if (!rid)
           return
 
-        const sceneId = roleStore.interactionImmersive
+        const primarySceneId = roleStore.interactionImmersive
           ? resolveUserNarrativeSceneId(
             roleStore.roleInfo.userPresenceScene,
             roleStore.roleInfo.currentScene,
@@ -322,17 +322,27 @@ export const useChatStore = defineStore(
           )
           : PURE_CHAT_DEFAULT_SCENE_ID
 
+        const loadedSceneId = await loadRoleSceneMessagesWithSceneFallback(
+          this.messageMap,
+          rid,
+          primarySceneId,
+          roleStore.roleInfo.scenes,
+        )
+        this.loadedBucketKeys[bucketMapKey(rid, loadedSceneId)] = true
+        const bucket = roleSceneBucket(this.messageMap, rid, loadedSceneId)
+        syncLastAssistantAside(this.lastAssistantAside, rid, loadedSceneId, bucket)
+        sanitizeAllSceneHistorySplits(this.sceneHistorySplitIndex, this.messageMap)
+
         if (roleStore.interactionImmersive)
-          uiStore.setScene(sceneId)
+          uiStore.setScene(loadedSceneId)
         else if (uiStore.sceneId !== PURE_CHAT_DEFAULT_SCENE_ID)
           uiStore.setScene(PURE_CHAT_DEFAULT_SCENE_ID)
 
-        await this.loadMessagesForRoleScene(rid, sceneId)
         beginNewChatSessionOnRestart(
           this.sceneHistorySplitIndex,
           rid,
-          sceneId,
-          this.getMessageCountForRoleScene(rid, sceneId),
+          loadedSceneId,
+          this.getMessageCountForRoleScene(rid, loadedSceneId),
         )
       },
 

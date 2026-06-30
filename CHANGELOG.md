@@ -91,7 +91,7 @@
 
 ### Fixed
 
-- **历史聊天记录在剧情场景下消失**：冷启动统一 `bootstrapChatForRole`（await 拉取 + `beginNewChatSessionOnRestart` 折叠）；移除 `interactionMode` watch 的 `immediate` 竞态；`loadedBucketKeys` 防止空占位桶短路。守门 `chatStoreScene.test.ts`，见 [`CHAT_STORAGE_ARCHITECTURE.md`](handoff/CHAT_STORAGE_ARCHITECTURE.md)。
+- **历史聊天记录在剧情场景下消失**：冷启动统一 `bootstrapChatForRole`（await 拉取 + `beginNewChatSessionOnRestart` 折叠）；移除 `interactionMode` watch 的 `immediate` 竞态；`loadedBucketKeys` 防止空占位桶短路；切角色时按后端有会话的场景 / 角色包场景 / IDB 索引回退加载。守门 `chatStoreScene.test.ts`、`chatStoreLoad.test.ts`，见 [`CHAT_STORAGE_ARCHITECTURE.md`](handoff/CHAT_STORAGE_ARCHITECTURE.md)。
 - **Ctrl+Shift+S 打开设置失效**：`useGlobalHotkeys` 误引用未传入的 `opts.openSettingsView`（运行时为 `undefined`），改为调用本地 `openSettingsView`；theater 壳仍发 `theater:settings`。
 
 ---
