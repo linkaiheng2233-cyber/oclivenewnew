@@ -224,7 +224,7 @@ distros/chat-pro/roles/theater-breakfast-a/  distros/chat-pro/roles/theater-brea
 **`useOcliveShell.ts`**：
 ```ts
 export type OcliveShellKind = 'tool' | 'fluent' | 'theater'
-// resolve: VITE_OCLIVE_SHELL === 'theater' → 'theater'（fluent 同理；default 'tool'）
+// resolve: VITE_OCLIVE_SHELL === 'tool' → 'tool'（'theater' 同理）；default 'fluent'
 ```
 
 **`App.vue`**：加 `const TheaterShell = defineAsyncComponent(() => import('./shells/theater/TheaterShell.vue'))`；模板加 `<TheaterShell v-else-if="shellKind === 'theater'" />`。`data-shell` 已自动写入（现有 `onMounted` 逻辑）。
