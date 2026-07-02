@@ -18,7 +18,7 @@
 
 **不必第一时间装齐**：Node / 全量 `npm install` / 日常 `tauri:dev`（除非联调日看 Chat Pro 界面）。
 
-**工作区白名单 / 禁区** → [SCOPE_AND_BOUNDARIES.md §3](./SCOPE_AND_BOUNDARIES.md)（本轨道 **只改** `examples/voice-loop-minimal/`）。
+**工作区白名单 / 禁区** → [SCOPE_AND_BOUNDARIES.md §3](./SCOPE_AND_BOUNDARIES.md)（HTTP 烟测 **只改** `examples/voice-loop-minimal/`；**产品路径**为官方目录插件 [`distros/chat-pro/plugins/com.oclive.voice.asr/`](../../distros/chat-pro/plugins/com.oclive.voice.asr/) · 独立通道 `voice.asr`，见 [RFC §4.1](../../creator-docs/rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md#41-voiceasr-插件通道windows-已交付--宿主侧)）。
 
 **仅首次需要 Rust 时（编无头内核一次）：**
 
@@ -246,25 +246,26 @@ ollama pull hermes3:3b
 
 ### 任务 B4 · 真实 ASR（2–3 天）
 
-| 优先级 | 引擎 | 说明 |
-|--------|------|------|
-| 1 | **Vosk** | 离线、Python 友好 |
-| 2 | **whisper.cpp** CLI | 子进程调 exe |
-| 3 | **faster-whisper** | 有 NVIDIA 时 |
+**已交付（Windows）**：**sherpa-onnx Paraformer** · SSOT 在 [`examples/voice-loop-minimal/asr/`](../../examples/voice-loop-minimal/asr/) · 产品网关 [`com.oclive.voice.asr`](../../distros/chat-pro/plugins/com.oclive.voice.asr/) · RPC 契约见插件 [`README.md`](../../distros/chat-pro/plugins/com.oclive.voice.asr/README.md)。
+
+**模型准备（不入 git）：**
+
+1. 下载 [sherpa-onnx Paraformer zh small int8](https://k2-fsa.github.io/sherpa/onnx/pretrained_models/offline-paraformer/paraformer-models.html#csukuangfj-sherpa-onnx-paraformer-chinese-small-2024-03-09-int8)  
+2. 放到 `examples/voice-loop-minimal/models/asr/sherpa-paraformer-zh-small/`（`MANIFEST.json` 所列文件）**或** `%APPDATA%/OCLive/models/asr/sherpa-paraformer-zh-small/`（Chat Pro 设置 → 导入模型目录）  
+3. `pip install -r requirements-asr.txt`（HTTP 烟测）或 Chat Pro 内由 `rpc_server.mjs` spawn Python
 
 **要求：**
 
-- 代码放在 `examples/voice-loop-minimal/`（如 `asr_vosk.py`）  
-- README：模型下载 URL、磁盘占用、首次命令  
 - **ASR 空结果 → 不要 POST /chat**（空 `message` 会 400）  
+- 可选 TTS：`requirements-tts.txt` + `models/tts/sherpa-piper-zh/`（见 [`models/README.md`](../../distros/chat-pro/plugins/com.oclive.voice.asr/models/README.md)）
 
-**Done：** 5 次麦克风（或 wav）→ 5 次非空 `reply`。
+**Done：** `python loop.py --mic` 或 Chat Pro 按住 🎤 → 5 次非空 `reply`。
 
 ### 任务 B5 · 按键说话 / 简单 VAD（1 天）
 
-v1 可用 **按住空格录音、松开识别**，不必做唤醒词。
+v1 可用 **按住空格录音、松开识别**（`loop.py --mic`），或 Chat Pro 工具栏 **按住 🎤**（`VoiceToolbar.vue` · `MediaRecorder`）。
 
-**Done：** 与 B4 相同 5 次全链路；可选 `--tts`。
+**Done：** 与 B4 相同 5 次全链路；可选 `--tts` 或插件设置 `auto_tts`。
 
 ### 任务 B6 · 与视觉线联调（0.5 天）
 

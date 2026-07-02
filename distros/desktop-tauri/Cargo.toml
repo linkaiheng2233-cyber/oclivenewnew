@@ -27,7 +27,7 @@ oclive_kernel_host = { path = "../../kernel/crates/oclive_kernel_host", features
 oclive_kernel_types = { path = "../../kernel/crates/oclive_kernel_types" }
 oclive_validation = { path = "../../kernel/crates/oclive_validation" }
 oclive_kernel_runtime = { path = "../../kernel/crates/oclive_kernel_runtime" }
-tauri = { version = "1.5", features = [ "protocol-asset", "shell-open", "dialog-open", "dialog-save", "global-shortcut"] }
+tauri = { version = "1.5", features = [ "window-minimize", "window-unmaximize", "window-set-decorations", "window-close", "window-maximize", "window-start-dragging", "protocol-asset", "shell-open", "dialog-open", "dialog-save", "global-shortcut"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 serde_yaml_ng = { workspace = true }

@@ -1,0 +1,44 @@
+{
+  "default_profile": "sherpa-paraformer-zh-small",
+  "default_tts_profile": "sherpa-piper-zh",
+  "profiles": {
+    "sherpa-paraformer-zh-small": {
+      "label": "Sherpa Paraformer zh small/int8",
+      "engine": "sherpa-onnx",
+      "model_dir": "models/asr/sherpa-paraformer-zh-small",
+      "platforms": {
+        "win32": {
+          "venv": ".venv",
+          "model_dir": "models/asr/sherpa-paraformer-zh-small"
+        },
+        "linux": {
+          "unsupported": true,
+          "message": "Linux ASR profile reserved; import model when engine ships"
+        },
+        "darwin": {
+          "unsupported": true,
+          "message": "macOS ASR profile reserved; import model when engine ships"
+        }
+      }
+    },
+    "sherpa-piper-zh": {
+      "label": "Sherpa Piper zh TTS",
+      "engine": "sherpa-onnx-tts",
+      "model_dir": "models/tts/sherpa-piper-zh",
+      "kind": "tts",
+      "platforms": {
+        "win32": {
+          "model_dir": "models/tts/sherpa-piper-zh"
+        },
+        "linux": {
+          "unsupported": true,
+          "message": "Linux TTS reserved for a later release"
+        },
+        "darwin": {
+          "unsupported": true,
+          "message": "macOS TTS reserved for a later release"
+        }
+      }
+    }
+  }
+}

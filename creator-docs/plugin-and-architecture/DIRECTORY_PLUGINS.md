@@ -141,7 +141,7 @@
 | **`update_settings`** | **`write:settings`** 或 `update_settings` | 更新允许的应用设置（白名单字段，如 `theme` / `ui_theme`、`interaction_mode`） |
 | **`get_conversation_list`** | **`read:conversations`** 或 `get_conversation_list` | 返回本地会话元数据列表：`items[]` 含 `session_namespace`、`turn_count`、`last_at` |
 
-**不强制 `type: ocliveplugin` 的桥接命令**（亦需在 **`bridge.invoke`** 中声明）：`get_role_info`、`list_roles`、`get_time_state`、`get_directory_plugin_bootstrap` 等。未声明的调用一律拒绝。
+**不强制 `type: ocliveplugin` 的桥接命令**（亦需在 **`bridge.invoke`** 中声明）：`get_role_info`、`list_roles`、`get_time_state`、`get_directory_plugin_bootstrap`、**`plugin_rpc_invoke`**（仅可调用**本插件** manifest **`rpcMethods`** 声明的方法，供 `ui_slots` 侧车 RPC；例：[`com.oclive.voice.asr`](../../distros/chat-pro/plugins/com.oclive.voice.asr/)）等。未声明的调用一律拒绝。
 
 **写入类命令**（`update_memory` / `delete_memory` / `update_emotion` / `update_event` / `update_prompt`）以及 **`export_conversation`** / **`import_role`** 与上表「聊天/角色」敏感命令相同：**必须** `type: ocliveplugin` 且自 **`shell.entry` HTML** 或 **`shell.vueEntry` Vue** 调用。
 

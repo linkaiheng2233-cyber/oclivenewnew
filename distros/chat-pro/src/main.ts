@@ -6,13 +6,14 @@ import { useChatStore } from '@oclive/shared/stores/chatStore'
 import { i18n } from '@oclive/shared/i18n'
 import { tryReplaceWithDirectoryShell } from '@oclive/shared/utils/directoryShellBootstrap'
 import { shouldLoadSentry } from '@oclive/shared/utils/telemetrySentry'
+import { hydrateLayoutWidths } from '@oclive/shared/composables/useLayoutWidths'
 import '@oclive/shared/styles/theme.css'
 import '@oclive/shared/styles/theme-tool.css'
 import '@oclive/shared/styles/theme-tool-management.css'
 import '@oclive/shared/styles/chat-tool.css'
 import '@oclive/shared/styles/global.css'
-import '@oclive/shared/styles/theme-win98.css'
-import { hydrateLayoutWidths } from '@oclive/shared/composables/useLayoutWidths'
+import '@oclive/shared/styles/win98/tokens.css'
+import '@oclive/shared/styles/win98/primitives.css'
 
 hydrateLayoutWidths()
 

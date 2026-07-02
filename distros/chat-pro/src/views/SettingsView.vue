@@ -302,3 +302,7 @@ watch(
   min-height: 0;
 }
 </style>
+
+<style>
+@import '@oclive/shared/styles/win98/panel-settings.css';
+</style>

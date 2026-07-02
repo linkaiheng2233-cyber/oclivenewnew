@@ -1,0 +1,108 @@
+/* Win98 skin — co-locate SSOT: see MODULE_MAP §13.2 dependency table */
+/* Scope: :root[data-skin="win98"] only */
+/* Imported by: chat-pro/main.ts */
+
+/**
+ * Windows 98 easter-egg skin tokens — orthogonal to data-theme / data-shell / --oclive-ui-scale.
+ * Enabled via :root[data-skin="win98"] (localStorage `oclive-runtime-skin`).
+ */
+:root[data-skin="win98"] {
+  color-scheme: light;
+
+  --font-ui: "MS Sans Serif", "Tahoma", "Microsoft Sans Serif", sans-serif;
+
+  --fluent-bg-page: #c0c0c0;
+  --fluent-bg-card: #c0c0c0;
+  --fluent-bg-subtle: #dfdfdf;
+  --fluent-bg-input: #ffffff;
+  --fluent-border-stroke: #808080;
+  --fluent-border-control: #404040;
+  --fluent-border-focus: #000080;
+  --fluent-shadow-card: none;
+  --fluent-shadow-soft: none;
+  --fluent-text-primary: #000000;
+  --fluent-text-secondary: #000000;
+  --fluent-text-disabled: #808080;
+  --fluent-accent: #000080;
+  --fluent-accent-hover: #0000aa;
+  --fluent-accent-subtle: #000080;
+  --fluent-success-text: #008000;
+  --fluent-danger-text: #800000;
+  --fluent-warning-text: #804000;
+  --fluent-info-muted: #404040;
+
+  --dialog-backdrop: rgba(0, 0, 0, 0.25);
+  --dialog-panel-bg: #c0c0c0;
+
+  --rail-accent-runtime: #000080;
+  --rail-accent-runtime-bg: #c0c0c0;
+
+  --shell-page-bg: #c0c0c0;
+
+  --bg-page: #c0c0c0;
+  --bg-primary: #c0c0c0;
+  --bg-secondary: #dfdfdf;
+  --bg-status: #c0c0c0;
+  --card-bg: #c0c0c0;
+  --bg-elevated: #ffffff;
+  --bg-panel: #c0c0c0;
+
+  --border-light: #808080;
+  --border-focus: #000080;
+  --accent: #000080;
+  --text-primary: #000000;
+  --text-secondary: #000000;
+  --text-light: #808080;
+  --text-accent: #000080;
+
+  --bubble-bot-bg: #ffffff;
+  --bubble-user-bg: #c0c0c0;
+  --bubble-border: #808080;
+
+  --btn-grad-a: #dfdfdf;
+  --btn-grad-b: #c0c0c0;
+  --btn-primary: #c0c0c0;
+  --btn-primary-hover-a: #dfdfdf;
+  --btn-primary-hover-b: #c0c0c0;
+  --btn-disabled: #c0c0c0;
+
+  --success: #008000;
+  --warning: #804000;
+  --error: #800000;
+  --info: #404040;
+
+  --shadow-app: none;
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-btn-hover: none;
+  --shadow-bubble: none;
+
+  --focus-ring-color: #000080;
+  --control-transition: none;
+  --frame-inset-highlight: none;
+
+  --radius-app: 2px;
+  --radius-card: 0;
+  --radius-bubble: 0;
+  --radius-btn: 0;
+  --radius-pill: 0;
+
+  --scrollbar-chat-track: #c0c0c0;
+  --scrollbar-chat-thumb: #808080;
+  --scrollbar-chat-thumb-hover: #404040;
+
+  /* Tool shell (data-shell="tool") consumes --tool-* directly, so re-skin them too. */
+  --tool-bg: #c0c0c0;
+  --tool-elevated: #ffffff;
+  --tool-border: #808080;
+  --tool-divider: #808080;
+  --tool-chrome-activity: #c0c0c0;
+  --tool-chrome-sidebar: #c0c0c0;
+  --tool-chrome-editor: #ffffff;
+  --tool-chrome-status: #c0c0c0;
+  --tool-text: #000000;
+  --tool-text-muted: #000000;
+  --tool-accent: #000080;
+  --tool-radius: 0;
+  --tool-radius-lg: 0;
+}

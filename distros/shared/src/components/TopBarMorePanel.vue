@@ -478,3 +478,7 @@ onBeforeUnmount(() => {
   border-color: var(--border-focus);
 }
 </style>
+
+<style>
+@import '@oclive/shared/styles/win98/component-top-bar.css';
+</style>

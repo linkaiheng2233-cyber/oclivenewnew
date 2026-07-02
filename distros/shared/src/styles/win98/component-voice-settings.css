@@ -1,0 +1,39 @@
+/* Win98 skin — voice.asr settings.panel slot */
+/* Scope: html[data-skin="win98"] only */
+/* Imported by: PluginSettingsPanelSlots.vue */
+
+html[data-skin="win98"] .voice-asr-settings {
+  border: 2px inset #808080;
+  border-radius: 0;
+  background: #c0c0c0;
+  padding: 8px;
+  color: #000000;
+}
+
+html[data-skin="win98"] .voice-asr-settings .title {
+  background: linear-gradient(90deg, #000080, #1084d0);
+  color: #ffffff;
+  padding: 2px 4px;
+  margin: -8px -8px 8px;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+html[data-skin="win98"] .voice-asr-settings .btn {
+  border-radius: 0;
+  border: 2px outset #dfdfdf;
+  background: #c0c0c0;
+  color: #000000;
+  box-shadow: none;
+}
+
+html[data-skin="win98"] .voice-asr-settings .btn:active:not(:disabled) {
+  border-style: inset;
+}
+
+html[data-skin="win98"] .voice-asr-settings .probe {
+  border: 2px inset #808080;
+  border-radius: 0;
+  background: #ffffff;
+  color: #000000;
+}

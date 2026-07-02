@@ -358,6 +358,7 @@ export type PluginBridgeManifestToken
     | 'delete:role'
     | 'write:settings'
     | 'read:conversations'
+    | 'plugin_rpc_invoke'
 
 /** Shell `OclivePluginBridge.invoke('update_memory', params)` */
 export interface PluginBridgeUpdateMemoryParams {

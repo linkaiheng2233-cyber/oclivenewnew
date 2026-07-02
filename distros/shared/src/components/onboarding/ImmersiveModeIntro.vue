@@ -99,3 +99,7 @@ function dismiss(): void {
   line-height: 1.5;
 }
 </style>
+
+<style>
+@import '@oclive/shared/styles/win98/dialogs-shared.css';
+</style>

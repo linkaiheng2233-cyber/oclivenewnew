@@ -177,12 +177,6 @@ export function useMainShell() {
     settingsFocusTab,
   })
 
-  usePluginEvents({
-    showToast,
-    onQuickActionTravel: onPluginQuickActionTravel,
-    onPureChatMode: resetPureChatSceneUi,
-  })
-
   useReturnFocusOnClose(settingsViewOpen)
   useReturnFocusOnClose(simplePluginManagerOpen)
   useReturnFocusOnClose(modelManagerOpen)
@@ -311,6 +305,21 @@ export function useMainShell() {
     clearSceneBarsBeforeSend,
     offerSceneBarsAfterReply,
     onTurnRecorded: () => progressive.recordTurn(),
+  })
+
+  usePluginEvents({
+    showToast,
+    onQuickActionTravel: onPluginQuickActionTravel,
+    onPureChatMode: resetPureChatSceneUi,
+    onVoiceAsrSubmit: ({ text, mode }) => {
+      if (!text?.trim())
+        return
+      if (mode === 'fill') {
+        hostEventBus.emit('chat:set_input_draft', { text: text.trim() })
+        return
+      }
+      void onSend({ content: text.trim() })
+    },
   })
 
   async function onSwitchRole(nextRoleId: string) {

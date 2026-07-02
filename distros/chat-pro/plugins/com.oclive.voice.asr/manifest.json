@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "id": "com.oclive.voice.asr",
+  "name": "OCLive Voice ASR (Official)",
+  "version": "0.2.0",
+  "description": "Side-channel voice.asr + voice.speak: microphone → text → send_message; optional TTS reply (Windows first)",
+  "provides": ["voice.asr"],
+  "rpcMethods": [
+    "voice.probe",
+    "voice.list_profiles",
+    "voice.import_model",
+    "voice.transcribe",
+    "voice.speak"
+  ],
+  "process": {
+    "command": "node",
+    "args": ["rpc_server.mjs"]
+  },
+  "permissions": ["process:spawn"],
+  "ui_schema": {
+    "fields": [
+      {
+        "key": "submit_mode",
+        "label": "识别结果",
+        "type": "select",
+        "default": "send",
+        "required": false
+      },
+      {
+        "key": "auto_tts",
+        "label": "自动朗读回复",
+        "type": "boolean",
+        "default": false,
+        "required": false
+      },
+      {
+        "key": "asr_profile",
+        "label": "ASR 档案",
+        "type": "string",
+        "default": "sherpa-paraformer-zh-small",
+        "required": false
+      },
+      {
+        "key": "tts_profile",
+        "label": "TTS 档案",
+        "type": "string",
+        "default": "sherpa-piper-zh",
+        "required": false
+      }
+    ]
+  },
+  "ui_slots": [
+    {
+      "slot": "chat_toolbar",
+      "entry": "slots/toolbar.html",
+      "vueComponent": "slots/VoiceToolbar.vue",
+      "label": "语音输入",
+      "bridge": {
+        "invoke": ["plugin_rpc_invoke", "get_plugin_settings_ui"],
+        "events": ["message:sent"]
+      }
+    },
+    {
+      "slot": "settings.panel",
+      "entry": "slots/settings.html",
+      "vueComponent": "slots/VoiceSettings.vue",
+      "label": "语音识别",
+      "bridge": {
+        "invoke": ["plugin_rpc_invoke", "get_plugin_settings_ui", "set_plugin_settings_config"],
+        "events": []
+      }
+    }
+  ]
+}

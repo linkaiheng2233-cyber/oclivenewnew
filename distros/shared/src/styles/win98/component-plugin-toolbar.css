@@ -1,0 +1,54 @@
+/* Win98 skin — co-locate SSOT: see MODULE_MAP §13.2 dependency table */
+/* Scope: html[data-skin="win98"] only */
+/* Imported by: ChatPluginToolbarSlots.vue */
+
+html[data-skin="win98"] .plugin-toolbar {
+  background: #c0c0c0;
+  border-bottom: 2px inset #808080;
+  padding: 4px 8px 2px;
+  gap: 6px;
+}
+
+html[data-skin="win98"] .plugin-toolbar-frame {
+  border: 2px inset #808080;
+  border-radius: 0;
+  background: #ffffff;
+}
+
+html[data-skin="win98"] .voice-bar .mic-btn,
+html[data-skin="win98"] .mumu-surface .btn,
+html[data-skin="win98"] .mumu-surface .sel {
+  border-radius: 0;
+  border: 2px outset #dfdfdf;
+  background: #c0c0c0;
+  color: #000000;
+  box-shadow: none;
+  filter: none;
+}
+
+html[data-skin="win98"] .voice-bar .mic-btn:active:not(:disabled),
+html[data-skin="win98"] .voice-bar .mic-btn.recording:not(:disabled),
+html[data-skin="win98"] .mumu-surface .btn:active:not(:disabled) {
+  border-style: inset;
+  background: #a0a0a0;
+}
+
+html[data-skin="win98"] .voice-bar .mic-btn.recording:not(:disabled) {
+  outline: 1px dotted #000000;
+  outline-offset: -3px;
+}
+
+html[data-skin="win98"] .mumu-surface {
+  border: 2px inset #808080;
+  border-radius: 0;
+  background: #c0c0c0;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+html[data-skin="win98"] .mumu-surface .btn-primary {
+  background: #c0c0c0;
+  color: #000000;
+  border: 2px outset #dfdfdf;
+}

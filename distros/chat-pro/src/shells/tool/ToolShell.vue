@@ -606,3 +606,7 @@ function onSidePanelResize(deltaX: number) {
   flex-shrink: 0;
 }
 </style>
+
+<style>
+@import '@oclive/shared/styles/win98/shell-tool.css';
+</style>

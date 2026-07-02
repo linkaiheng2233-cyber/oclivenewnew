@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-"""Minimal voice/chat loop: text in → POST /chat → reply out (optional TTS).
+"""Minimal voice/chat loop: text or mic → POST /chat → reply out (optional TTS).
 
-ASR is not included in v0 — type at the prompt to simulate speech-to-text.
 See README.md and human-docs/team/TRACK_VOICE_RECOGNITION.md.
 """
 
@@ -13,7 +12,6 @@ import os
 import sys
 import urllib.error
 import urllib.request
-import uuid
 from pathlib import Path
 
 # Fixed session for multi-turn memory (do not regenerate each request).
@@ -29,6 +27,13 @@ def default_role_path() -> Path:
     if env:
         return Path(env)
     return repo_root() / "distros" / "chat-pro" / "roles" / "mumu"
+
+
+def default_asr_model_dir() -> Path:
+    env = os.environ.get("OCLIVE_ASR_MODEL_DIR", "").strip()
+    if env:
+        return Path(env)
+    return Path(__file__).resolve().parent / "models" / "asr" / "sherpa-paraformer-zh-small"
 
 
 def api_base() -> str:
@@ -73,7 +78,6 @@ def post_chat(message: str, role_path: Path) -> dict:
 
 
 def extract_reply(body: dict) -> str:
-    # HTTP wrapper: { "data": { "reply": "..." }, ... } or flat SendMessageResponse.
     if "data" in body and isinstance(body["data"], dict):
         inner = body["data"]
         if "reply" in inner:
@@ -83,7 +87,33 @@ def extract_reply(body: dict) -> str:
     raise KeyError(f"no reply field in response keys={list(body.keys())}")
 
 
-def speak(text: str) -> None:
+def speak(text: str, use_plugin_tts: bool = False, tts_model_dir: Path | None = None) -> None:
+    if use_plugin_tts and tts_model_dir:
+        try:
+            from tts.engine import synthesize_text
+
+            result = synthesize_text(model_dir=tts_model_dir, text=text)
+            if not result.get("ok"):
+                print(f"[tts] {result.get('reason', 'failed')}", file=sys.stderr)
+                return
+            import base64
+            import struct
+            import wave
+            from io import BytesIO
+
+            import sounddevice as sd
+
+            raw = base64.b64decode(result["audio_base64"])
+            with wave.open(BytesIO(raw), "rb") as wf:
+                sr = wf.getframerate()
+                pcm = wf.readframes(wf.getnframes())
+            count = len(pcm) // 2
+            samples = [s / 32768.0 for s in struct.unpack(f"<{count}h", pcm)]
+            sd.play(samples, sr)
+            sd.wait()
+            return
+        except Exception as exc:  # noqa: BLE001
+            print(f"[tts] sherpa failed: {exc}", file=sys.stderr)
     try:
         import pyttsx3  # type: ignore
     except ImportError:
@@ -94,13 +124,34 @@ def speak(text: str) -> None:
     engine.runAndWait()
 
 
+def transcribe_mic(seconds: float, model_dir: Path) -> str:
+    from asr.engine import transcribe_audio
+    from asr.mic import record_seconds
+
+    wav_bytes = record_seconds(seconds=seconds)
+    import base64
+
+    result = transcribe_audio(
+        model_dir=model_dir,
+        audio_base64=base64.b64encode(wav_bytes).decode("ascii"),
+    )
+    if not result.get("ok"):
+        raise RuntimeError(result.get("reason") or result.get("message") or "asr failed")
+    return str(result.get("text", "")).strip()
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="OClive minimal chat loop (HTTP)")
-    parser.add_argument("--tts", action="store_true", help="Speak reply via pyttsx3")
+    parser.add_argument("--tts", action="store_true", help="Speak reply (pyttsx3 or sherpa TTS)")
+    parser.add_argument("--tts-sherpa", action="store_true", help="Use sherpa TTS model for reply")
+    parser.add_argument("--mic", action="store_true", help="Record from microphone → ASR → chat")
+    parser.add_argument("--mic-seconds", type=float, default=3.0, help="Mic capture length (default 3)")
+    parser.add_argument("--asr-model-dir", type=Path, default=None, help="ASR model directory")
     parser.add_argument("--role-path", type=Path, default=None, help="Role pack directory")
     args = parser.parse_args()
 
     role_path = args.role_path or default_role_path()
+    asr_model_dir = args.asr_model_dir or default_asr_model_dir()
     if not role_path.is_dir():
         print(f"role_path not found: {role_path}", file=sys.stderr)
         return 1
@@ -112,13 +163,21 @@ def main() -> int:
         )
         return 1
 
-    print(f"OClive voice-loop v0 | base={api_base()} | role={role_path}")
+    print(f"OClive voice-loop | base={api_base()} | role={role_path}")
     print(f"session_id={session_id()} (fixed for memory)")
-    print("Type a message and Enter (empty line or Ctrl+C to quit).\n")
+    if args.mic:
+        print(f"mic mode | asr_model={asr_model_dir} | seconds={args.mic_seconds}")
+    else:
+        print("Type a message and Enter (empty line or Ctrl+C to quit).\n")
 
     while True:
         try:
-            line = input("you> ").strip()
+            if args.mic:
+                input("Press Enter to record from mic (Ctrl+C to quit)... ")
+                line = transcribe_mic(args.mic_seconds, asr_model_dir)
+                print(f"you> {line}")
+            else:
+                line = input("you> ").strip()
         except (EOFError, KeyboardInterrupt):
             print()
             break
@@ -131,13 +190,14 @@ def main() -> int:
             err = e.read().decode("utf-8", errors="replace")
             print(f"[error] HTTP {e.code}: {err}", file=sys.stderr)
             continue
-        except (urllib.error.URLError, TimeoutError, KeyError, json.JSONDecodeError) as e:
+        except (urllib.error.URLError, TimeoutError, KeyError, json.JSONDecodeError, RuntimeError) as e:
             print(f"[error] {e}", file=sys.stderr)
             continue
 
         print(f"bot> {reply}\n")
-        if args.tts:
-            speak(reply)
+        if args.tts or args.tts_sherpa:
+            tts_dir = Path(__file__).resolve().parent / "models" / "tts" / "sherpa-piper-zh"
+            speak(reply, use_plugin_tts=args.tts_sherpa, tts_model_dir=tts_dir)
 
     return 0
 

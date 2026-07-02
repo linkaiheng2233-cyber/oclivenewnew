@@ -175,3 +175,7 @@ const rows = computed(() => {
   font-size: 13px;
 }
 </style>
+
+<style>
+@import '@oclive/shared/styles/win98/dialogs-shared.css';
+</style>

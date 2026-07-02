@@ -114,3 +114,7 @@ watch(
   border-color: var(--accent);
 }
 </style>
+
+<style>
+@import '@oclive/shared/styles/win98/dialogs-shared.css';
+</style>

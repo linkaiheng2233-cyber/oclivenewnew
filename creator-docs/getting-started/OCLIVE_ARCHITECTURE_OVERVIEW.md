@@ -249,6 +249,7 @@ Stable 主路径以 `process_message` → `turn_prefetch` → `pre_llm` → `co_
 |------|------|----------|
 | **主链侧钩（pre / post）** | 仍属对话回合，但不走六槽解析 | `user_identity`、`reply_post_process` |
 | **圈外独立 API** | 单独 HTTP/Tauri 入口；消费 LLM 等设施，**不**插入 Stable 工序表 | `theater_director` |
+| **输入侧宿主通道** | `send_message` **之前**；不进 `process_message` 钩子 | **`voice.asr`**（Windows 已交付 · Linux/macOS profile 占位） |
 
 ```mermaid
 flowchart TB
@@ -285,6 +286,7 @@ flowchart TB
 | **`user_identity`** | 用户身份 Prompt 模板 | 角色包 `user_identities/`；发行版 `[user_identity]` | pre → `build_prompt` | 无（角色包内容） |
 | **`reply_post_process`** | 回复后处理 | 角色包 `config.json` → `reply_post_processor`；发行版 `[post_process].chain` | post_llm → `process_reply` | `reply_post_process` |
 | **`theater_director`** | 剧场场景导演 | `[theater].director_plugin`；fallback 内置 | `generate_theater_scene` | `theater_director`（**已交付**） |
+| **`voice.asr`** | 语音识别输入 + 可选 TTS | 插件 `models/` + 设置；官方 `com.oclive.voice.asr` | 宿主 UI → `send_message` / `voice.speak` | `voice.asr`（**Windows 已交付**） |
 
 **消歧**
 

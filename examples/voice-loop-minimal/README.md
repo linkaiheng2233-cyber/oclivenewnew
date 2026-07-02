@@ -64,7 +64,9 @@ pip install -r requirements.txt
 
 ---
 
-## 运行（v0 · 键盘模拟 ASR）
+## 运行
+
+### 键盘（v0）
 
 ```powershell
 python loop.py
@@ -72,13 +74,27 @@ python loop.py
 
 交互：输入一行文本 → 脚本 `POST /chat` → 打印 `reply`。
 
+### 麦克风 + ASR（Week 2+）
+
+```powershell
+pip install -r requirements-asr.txt
+# 放置模型到 models/asr/sherpa-paraformer-zh-small/（见 models/asr/.../MANIFEST.json）
+python loop.py --mic
+```
+
+`--mic-seconds 4` 调整录音时长；`OCLIVE_ASR_MODEL_DIR` 覆盖模型路径。
+
 > HTTP 响应为 **`{ "data": { "reply": "..." }, ... }`**；`loop.py` 已解析。自建客户端请读 `data.reply`。
 
-可选 TTS（Windows 离线）：
+可选 TTS：
 
 ```powershell
 pip install pyttsx3
 python loop.py --tts
+
+# 或 sherpa TTS（需 models/tts/sherpa-piper-zh/）
+pip install -r requirements-tts.txt
+python loop.py --mic --tts-sherpa
 ```
 
 ---
@@ -94,11 +110,12 @@ python loop.py --tts
 
 ---
 
-## 验收（Week 1）
+## 验收（Week 1–2）
 
 - [ ] `python loop.py` 输入 `hi` 得到 `reply` 行  
 - [ ] 同一 session 连聊两轮，第二轮能引用第一轮（需真 LLM，关 mock）  
 - [ ] `python loop.py --tts` 能朗读（可选）
+- [ ] `python loop.py --mic` 在已放置 sherpa 模型时识别并进 `/chat`（Windows）
 
 ---
 

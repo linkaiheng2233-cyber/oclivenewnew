@@ -7,6 +7,7 @@
 ### Added
 
 - **Chat Pro Windows 98 彩蛋皮肤**：Konami 解锁 → `data-skin=win98`（`oclive-runtime-skin`）；设置 → 常规开关；Fluent + Tool 正交叠加于 `data-theme` / `data-shell` / UI 缩放；合成 Win98 标题栏（`Win98TitleBar` + Tauri `setDecorations`）与对话框 3D 窗框；见 [`MODULE_MAP_AND_HANDOFF.md`](handoff/MODULE_MAP_AND_HANDOFF.md) §13.2。
+- **独立通道 `voice.asr`（Windows 已交付 · v0.2）**：官方目录插件 [`distros/chat-pro/plugins/com.oclive.voice.asr/`](distros/chat-pro/plugins/com.oclive.voice.asr/) · `provides: voice.asr` · **不进**六槽 / `process_message`；`chat_toolbar` 按住说话 + `plugin_rpc_invoke`（`voice.probe` / `voice.transcribe` / `voice.import_model` / `voice.list_profiles` / `voice.speak`）→ `com.oclive.voice.asr:submit` → `send_message` 或 `chat:set_input_draft`（`mode: fill`）；sherpa-onnx 引擎 SSOT 在 [`examples/voice-loop-minimal/asr/`](examples/voice-loop-minimal/asr/) · [`tts/`](examples/voice-loop-minimal/tts/) 经 `rpc_server.mjs` spawn；官方角色包 `ui.json` 默认启用工具栏/设置插槽；Win98 覆写见 `win98/component-plugin-toolbar.css` / `component-voice-settings.css`；`plugin_bridge` RPC 白名单单测；Linux/macOS profile 返回 `unsupported_platform`；注册表见 [`RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md`](creator-docs/rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md) §4.1。
 - **Domain layering ports（#101 解阻塞）**：`LlmClient::supports_prefix_cache` / `generate_with_opts` / `generate_stream_with_opts`；`TurnThinkingStatePort`；`co_present` / `slot_runner` / `post` 去除 domain→infra 直连；`npm run check:rust` 前置 layering + CHANGELOG parity 守门。
 - **Affect 展示通道 `display_metrics`**：`RoleData` / `RoleInfo` / `SendMessageResponse` 增 UI-only 指标（`favor` / `traits[7]` / `relation_summary`）；旧标量字段标 deprecated；前端 `roleStore` 优先读新字段。
 - **CI flake 自动重跑**：`.github/workflows/ci-rerun-flake.yml` 对 `rust` / `e2e-tauri` 失败限次 `gh run rerun --failed`。
@@ -32,6 +33,7 @@
 
 ### Changed
 
+- **Win98 皮肤 CSS 分层重构**：单体 `theme-win98.css` 拆为 `distros/shared/src/styles/win98/`（L0 tokens · L1 primitives · L2 壳 · L3 面板/组件 co-locate unscoped import）；最大化满框无青绿边、主窗 2px 圆角、对话框 navy 标题条贴边；见 [`MODULE_MAP_AND_HANDOFF.md`](handoff/MODULE_MAP_AND_HANDOFF.md) §13.2 样式依赖表。
 - **Win98 皮肤抛光**：补全 `modal-backdrop` / `TimeDial.backdrop` 遮罩；Tool `UiSidePanel` navy 标题条与 Win98 ✕；合成标题栏改用 OCLive 应用图标（`public/oclive-icon.png`）。
 - **Fluent「更多」面板 IA**：动作按钮顺序改为 设置 → 模型 → 插件 → 市场 → 快捷键说明；磁贴按 核心 / 插件 / 场景 / 开发 分组，Debug 移至末尾；设置 → 常规移除无内容的「快捷键」占位小节（说明入口保留在「更多」与 Ctrl 长按）。面板磁贴改为自适应栅格（`auto-fill minmax`），按占地大小从左到右排列（设置 / 场景跨两列，其余单列），日常聊 / 剧情两种模式下均整齐对齐。
 - **Chat Pro 默认壳 Fluent**：`resolveOcliveShell()` fallback 由 `tool` 改为 **`fluent`**（安静客厅）；`VITE_OCLIVE_SHELL=tool` 仍可显式启用 ToolShell；早启动 `index.html` `data-shell` 同步；暗色品牌黛绿与浅色同色相（`--fluent-accent`）；角色 `primaryColor` 轻度染色（focus / 用户气泡 / runtime rail）；FluentShell 挂载 `InteractionModeBar` 为壳内唯一模式切换；互动模式 IA 见 [`MODULE_MAP_AND_HANDOFF.md`](handoff/MODULE_MAP_AND_HANDOFF.md) §13.1。

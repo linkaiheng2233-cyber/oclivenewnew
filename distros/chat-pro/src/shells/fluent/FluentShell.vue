@@ -581,3 +581,7 @@ function onLeftRailResize(deltaX: number) {
   z-index: 2;
 }
 </style>
+
+<style>
+@import '@oclive/shared/styles/win98/shell-fluent.css';
+</style>

@@ -94,3 +94,7 @@ function onCaptionDblClick(event: MouseEvent): void {
     </div>
   </header>
 </template>
+
+<style>
+@import '@oclive/shared/styles/win98/titlebar.css';
+</style>

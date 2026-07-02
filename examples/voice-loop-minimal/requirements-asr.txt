@@ -1,0 +1,5 @@
+# ASR (sherpa-onnx Paraformer). Install into voice-loop-minimal venv:
+#   pip install -r requirements-asr.txt
+sherpa-onnx>=1.10.0
+numpy>=1.24.0
+sounddevice>=0.4.6

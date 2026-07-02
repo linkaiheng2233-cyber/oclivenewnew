@@ -304,3 +304,7 @@ function hhmm(ts: number): string {
   }
 }
 </style>
+
+<style>
+@import '@oclive/shared/styles/win98/component-chat.css';
+</style>

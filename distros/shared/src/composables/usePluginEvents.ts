@@ -7,6 +7,10 @@ import { usePluginStore } from '@oclive/shared/stores/pluginStore'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
 import { resetLayoutWidths } from '@oclive/shared/composables/useLayoutWidths'
 import { useOcliveAppearance } from '@oclive/shared/composables/useOcliveAppearance'
+import {
+  VOICE_ASR_SUBMIT_EVENT,
+  type VoiceAsrSubmitPayload,
+} from '@oclive/shared/lib/voiceAsrEvents'
 
 const quickActionTravelEvent = 'com.oclive.mumu.quick-actions:travel'
 const settingsSetRemoteLifeEvent = 'com.oclive.mumu.settings-panel:set_remote_life'
@@ -20,6 +24,7 @@ export interface UsePluginEventsOptions {
   showToast: AppToastFn
   onQuickActionTravel: (payload: unknown) => void
   onPureChatMode: () => void
+  onVoiceAsrSubmit?: (payload: VoiceAsrSubmitPayload) => void
 }
 
 export function usePluginEvents(opts: UsePluginEventsOptions) {
@@ -72,6 +77,14 @@ export function usePluginEvents(opts: UsePluginEventsOptions) {
     cycleTheme()
   }
 
+  function onVoiceAsrSubmit(payload: unknown): void {
+    const p = payload as VoiceAsrSubmitPayload | null
+    const text = p?.text?.trim()
+    if (!text)
+      return
+    opts.onVoiceAsrSubmit?.({ text, mode: p?.mode })
+  }
+
   async function onPluginResetLayout(): Promise<void> {
     try {
       resetLayoutWidths()
@@ -96,6 +109,9 @@ export function usePluginEvents(opts: UsePluginEventsOptions) {
     hostEventBus.on(settingsSetInteractionModeEvent, onPluginSetInteractionMode)
     hostEventBus.on(settingsCycleThemeEvent, onPluginCycleTheme)
     hostEventBus.on(settingsResetLayoutEvent, onPluginResetLayout)
+    if (opts.onVoiceAsrSubmit) {
+      hostEventBus.on(VOICE_ASR_SUBMIT_EVENT, onVoiceAsrSubmit)
+    }
   })
 
   onBeforeUnmount(() => {
@@ -104,6 +120,9 @@ export function usePluginEvents(opts: UsePluginEventsOptions) {
     hostEventBus.off(settingsSetInteractionModeEvent, onPluginSetInteractionMode)
     hostEventBus.off(settingsCycleThemeEvent, onPluginCycleTheme)
     hostEventBus.off(settingsResetLayoutEvent, onPluginResetLayout)
+    if (opts.onVoiceAsrSubmit) {
+      hostEventBus.off(VOICE_ASR_SUBMIT_EVENT, onVoiceAsrSubmit)
+    }
   })
 
   return {

@@ -1,0 +1,76 @@
+/* Win98 skin — co-locate SSOT: see MODULE_MAP §13.2 dependency table */
+/* Scope: html[data-skin="win98"] only */
+/* Imported by: FluentShell.vue */
+
+html[data-skin="win98"] .layout {
+  padding: 0;
+  background: var(--shell-page-bg);
+}
+
+html[data-skin="win98"] .app-frame {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  border: 2px outset #dfdfdf;
+  border-radius: var(--radius-app);
+  box-shadow: none;
+  background: #c0c0c0;
+}
+
+html[data-skin="win98"] header.top-bar {
+  background: #c0c0c0;
+  border-bottom: 1px solid #808080;
+  border-left: none;
+  box-shadow: inset 0 -1px 0 #ffffff;
+  padding: 6px 8px 8px;
+}
+
+html[data-skin="win98"] .top-bar {
+  background: #c0c0c0;
+  border-bottom: 1px solid #808080;
+  border-left: none;
+  box-shadow: inset 0 -1px 0 #ffffff;
+}
+
+html[data-skin="win98"] .left-pane {
+  background: #c0c0c0;
+  border-right: 1px solid #808080;
+  box-shadow: none;
+}
+
+html[data-skin="win98"] .chat-scroll-wrap {
+  padding: 8px 8px 0;
+  background: #ffffff;
+  box-shadow: none;
+}
+
+html[data-skin="win98"] .main-content {
+  background: #c0c0c0;
+}
+
+html[data-skin="win98"] .right-pane {
+  background: #ffffff;
+}
+
+html[data-skin="win98"] .input-area {
+  background: #c0c0c0;
+  box-shadow: none;
+}
+
+html[data-skin="win98"] .connectivity-banner {
+  background: #dfdfdf;
+  border-bottom: 1px solid #808080;
+}
+
+html[data-skin="win98"] .connectivity-banner__dismiss {
+  border-radius: 0;
+  border: 2px outset #dfdfdf;
+  background: #c0c0c0;
+}
+
+html[data-skin="win98"] .scene-transition-overlay {
+  background: #dfdfdf;
+  border-bottom: 1px solid #808080;
+  box-shadow: none;
+}

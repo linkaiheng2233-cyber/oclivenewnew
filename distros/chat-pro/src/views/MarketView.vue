@@ -689,3 +689,7 @@ const shareUrlInputId = computed(() =>
   color: var(--text-secondary);
 }
 </style>
+
+<style>
+@import '@oclive/shared/styles/win98/panel-market.css';
+</style>

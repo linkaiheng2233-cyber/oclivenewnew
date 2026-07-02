@@ -171,3 +171,7 @@ code {
   font-size: 0.9em;
 }
 </style>
+
+<style>
+@import '@oclive/shared/styles/win98/component-voice-settings.css';
+</style>

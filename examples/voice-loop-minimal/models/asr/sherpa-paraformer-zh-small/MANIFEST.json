@@ -1,0 +1,12 @@
+{
+  "id": "sherpa-paraformer-zh-small",
+  "engine": "sherpa-onnx",
+  "label": "Sherpa Paraformer zh small/int8",
+  "model_file": "model.int8.onnx",
+  "tokens_file": "tokens.txt",
+  "sample_rate": 16000,
+  "feature_dim": 80,
+  "num_threads": 2,
+  "decoding_method": "greedy_search",
+  "note": "Download model files separately; not bundled in git."
+}

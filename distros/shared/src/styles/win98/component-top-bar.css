@@ -1,0 +1,55 @@
+/* Win98 skin — co-locate SSOT: see MODULE_MAP §13.2 dependency table */
+/* Scope: html[data-skin="win98"] only */
+/* Imported by: TopBarMorePanel.vue */
+
+html[data-skin="win98"] .more-toggle {
+  border-radius: 0;
+  border: 2px outset #dfdfdf;
+  background: #c0c0c0;
+  color: #000000;
+  transition: none;
+  box-shadow: none;
+}
+
+html[data-skin="win98"] .more-toggle:hover {
+  border-color: #dfdfdf;
+  color: #000000;
+  background: #c0c0c0;
+}
+
+html[data-skin="win98"] .more-toggle:focus-visible {
+  outline: 1px dotted #000000;
+  outline-offset: -4px;
+  box-shadow: none;
+}
+
+html[data-skin="win98"] .more-tile {
+  border-radius: 0;
+  border: 2px inset #808080;
+  background: #c0c0c0;
+  box-shadow: none;
+}
+
+html[data-skin="win98"] .more-debug-btn {
+  border-radius: 0;
+  border: 2px outset #dfdfdf;
+  background: #c0c0c0;
+  color: #000000;
+  transition: none;
+}
+
+html[data-skin="win98"] .more-debug-btn:hover {
+  color: #000000;
+  border-color: #dfdfdf;
+  background: #c0c0c0;
+}
+
+html[data-skin="win98"] .settings-entry-btn--primary {
+  border: 2px outset #dfdfdf;
+  background: #c0c0c0;
+  color: #000000;
+}
+
+html[data-skin="win98"] .top-more-panel {
+  border-top: 1px solid #808080;
+}

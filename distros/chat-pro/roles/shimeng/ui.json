@@ -12,18 +12,22 @@
   "slots": {
     "chat_toolbar": {
       "order": [
-        "com.oclive.mumu.quick-actions"
+        "com.oclive.mumu.quick-actions",
+        "com.oclive.voice.asr"
       ],
       "visible": [
-        "com.oclive.mumu.quick-actions"
+        "com.oclive.mumu.quick-actions",
+        "com.oclive.voice.asr"
       ]
     },
     "settings.panel": {
       "order": [
-        "com.oclive.mumu.settings-panel"
+        "com.oclive.mumu.settings-panel",
+        "com.oclive.voice.asr"
       ],
       "visible": [
-        "com.oclive.mumu.settings-panel"
+        "com.oclive.mumu.settings-panel",
+        "com.oclive.voice.asr"
       ]
     },
     "role.detail": {
