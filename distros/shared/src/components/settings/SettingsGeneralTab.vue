@@ -26,6 +26,7 @@ import UiButton from '../ui/UiButton.vue'
 import UiFieldRow from '../ui/UiFieldRow.vue'
 import UiSection from '../ui/UiSection.vue'
 import UiSelect from '../ui/UiSelect.vue'
+import KeybindingsSettingsSection from '../hotkey/KeybindingsSettingsSection.vue'
 
 const props = defineProps<{
   visible: boolean
@@ -347,6 +348,8 @@ async function onToggleForceIframe(e: Event) {
         {{ t("settings.layoutResetWidths") }}
       </UiButton>
     </UiSection>
+
+    <KeybindingsSettingsSection v-show="generalSubTab === 'advanced'" />
 
     <UiSection
       v-show="generalSubTab === 'advanced'"

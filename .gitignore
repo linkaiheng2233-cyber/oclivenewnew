@@ -58,6 +58,10 @@ playwright/.cache/
 # Local TTFT / kernel bench app data (OCLIVE_APP_DATA scratch)
 /temp/
 
+# Voice loop local python env/cache (do not commit)
+examples/voice-loop-minimal/.venv/
+examples/voice-loop-minimal/**/__pycache__/
+
 # Archives
 *.tgz
 

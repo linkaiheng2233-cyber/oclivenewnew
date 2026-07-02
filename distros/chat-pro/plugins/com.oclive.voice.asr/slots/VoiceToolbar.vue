@@ -11,6 +11,7 @@ type OcliveApi = {
 };
 
 const EVT_SUBMIT = "com.oclive.voice.asr:submit";
+const EVT_HOLD = "com.oclive.voice.asr:hold";
 const PLUGIN_ID = "com.oclive.voice.asr";
 
 const oclive = inject<OcliveApi | null>("oclive", null);
@@ -145,6 +146,17 @@ function onMessageSent(payload: unknown): void {
   void playTts(reply);
 }
 
+function onHoldEvent(payload: unknown): void {
+  const phase = (payload as { phase?: string } | null)?.phase;
+  if (phase === "start") {
+    void startRecording();
+    return;
+  }
+  if (phase === "stop") {
+    stopRecording();
+  }
+}
+
 async function startRecording(): Promise<void> {
   if (!oclive || busy.value || recording.value) return;
   errText.value = "";
@@ -202,10 +214,12 @@ function onPointerUp(ev: PointerEvent): void {
 onMounted(() => {
   void loadPluginConfig().then(() => refreshProbe());
   oclive?.events.on("oclive:message:sent", onMessageSent);
+  oclive?.events.on(EVT_HOLD, onHoldEvent);
 });
 
 onBeforeUnmount(() => {
   oclive?.events.off("oclive:message:sent", onMessageSent);
+  oclive?.events.off(EVT_HOLD, onHoldEvent);
   stopRecording();
   mediaStream?.getTracks().forEach((t) => t.stop());
 });

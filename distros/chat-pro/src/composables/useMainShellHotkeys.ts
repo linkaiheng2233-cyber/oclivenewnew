@@ -1,6 +1,7 @@
 import type { ComputedRef, Ref } from 'vue'
 import { computed } from 'vue'
 import { useGlobalHotkeys } from '@oclive/shared/composables/useGlobalHotkeys'
+import { hostEventBus } from '@oclive/shared/lib/hostEventBus'
 import type { MainShellSettingsTab } from './useMainShellWindows'
 
 export function useMainShellHotkeys(options: {
@@ -37,6 +38,14 @@ export function useMainShellHotkeys(options: {
     toggleDebug: options.toggleDebug,
     closeMarketPanel: options.closeMarketPanel,
     closeModelManager: options.closeModelManager,
+    holdActions: [
+      {
+        actionId: 'voice.holdToTalk',
+        enabled: computed(() => true),
+        onStart: () => hostEventBus.emit('com.oclive.voice.asr:hold', { phase: 'start' }),
+        onStop: () => hostEventBus.emit('com.oclive.voice.asr:hold', { phase: 'stop' }),
+      },
+    ],
   })
 
   function openSettingsToGeneral(): void {

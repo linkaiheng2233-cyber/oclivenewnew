@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import HotkeySettingsSection from '../hotkey/HotkeySettingsSection.vue'
 import PluginSettingsPanelSlots from '../PluginSettingsPanelSlots.vue'
 import HelpHint from '../shared/HelpHint.vue'
+import UiButton from '../ui/UiButton.vue'
 import UiSection from '../ui/UiSection.vue'
 
 defineProps<{
   bootstrapEpoch: number
+}>()
+
+defineEmits<{
+  'request-general-advanced': []
 }>()
 
 const { t } = useI18n()
@@ -24,6 +28,13 @@ const { t } = useI18n()
       <PluginSettingsPanelSlots :bootstrap-epoch="bootstrapEpoch" />
     </UiSection>
 
-    <HotkeySettingsSection />
+    <UiSection :title="t('keybindings.title')">
+      <p class="sv-muted">
+        {{ t("keybindings.movedNotice") }}
+      </p>
+      <UiButton size="sm" variant="secondary" type="button" @click="$emit('request-general-advanced')">
+        {{ t("keybindings.goToGeneralAdvanced") }}
+      </UiButton>
+    </UiSection>
   </form>
 </template>

@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useModalFocusRestore } from '@oclive/shared/composables/useModalFocusRestore'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
 import { SLOT_LAUNCHER_PALETTE } from '@oclive/shared/stores/pluginStore'
+import { describeBindingOrUnbound, getPrimaryEffectiveAcceleratorForAction, loadUnifiedBindingsFile } from '@oclive/shared/lib/keybindings'
 import PluginSlotEmbed from './PluginSlotEmbed.vue'
 
 const props = withDefaults(
@@ -26,23 +27,43 @@ const { t } = useI18n()
 const roleStore = useRoleStore()
 
 const rows = computed(() => {
-  const out = [
-    { keys: 'Ctrl + Shift + S', desc: t('common.shortcutHelp.rowOpenSettings') },
-  ]
+  const f = loadUnifiedBindingsFile()
+  const out: { keys: string, desc: string }[] = []
+
+  out.push({
+    keys: describeBindingOrUnbound(getPrimaryEffectiveAcceleratorForAction(f, 'app.openSettings')),
+    desc: t('common.shortcutHelp.rowOpenSettings'),
+  })
+
   if (roleStore.interactionImmersive) {
     out.push({
-      keys: 'Ctrl + Shift + F',
+      keys: describeBindingOrUnbound(getPrimaryEffectiveAcceleratorForAction(f, 'app.openPluginManager')),
       desc: t('common.shortcutHelp.ctrlShiftFSimple'),
     })
   }
-  out.push({ keys: 'Ctrl + Shift + M', desc: t('common.shortcutHelp.ctrlShiftM') })
-  if (roleStore.interactionImmersive) {
-    out.push({ keys: 'Ctrl + Shift + D', desc: t('common.shortcutHelp.ctrlShiftD') })
-  }
+
   out.push({
-    keys: t('common.shortcutHelp.rowCtrlLongKeys'),
+    keys: describeBindingOrUnbound(getPrimaryEffectiveAcceleratorForAction(f, 'app.openModelManager')),
+    desc: t('common.shortcutHelp.ctrlShiftM'),
+  })
+
+  if (roleStore.interactionImmersive) {
+    out.push({
+      keys: describeBindingOrUnbound(getPrimaryEffectiveAcceleratorForAction(f, 'app.toggleDebug')),
+      desc: t('common.shortcutHelp.ctrlShiftD'),
+    })
+  }
+
+  out.push({
+    keys: describeBindingOrUnbound(getPrimaryEffectiveAcceleratorForAction(f, 'voice.holdToTalk')),
+    desc: t('common.shortcutHelp.voiceHoldToTalk'),
+  })
+
+  out.push({
+    keys: describeBindingOrUnbound(getPrimaryEffectiveAcceleratorForAction(f, 'app.openShortcutHelp')),
     desc: t('common.shortcutHelp.rowCtrlLong'),
   })
+
   return out
 })
 </script>

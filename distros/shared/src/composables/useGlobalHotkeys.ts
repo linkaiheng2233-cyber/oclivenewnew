@@ -2,6 +2,8 @@ import type { Ref } from 'vue'
 import { computed, type ComputedRef, onBeforeUnmount, onMounted, ref } from 'vue'
 import { hostEventBus } from '@oclive/shared/lib/hostEventBus'
 import { resolveOcliveShell } from './useOcliveShell'
+import { getPrimaryEffectiveAcceleratorForAction, loadUnifiedBindingsFile } from '@oclive/shared/lib/keybindings'
+import { type HoldRuntimeAction, useUnifiedKeybindings } from '@oclive/shared/composables/useUnifiedKeybindings'
 
 export interface UseGlobalHotkeysOptions {
   simplePluginManagerOpen: Ref<boolean>
@@ -17,12 +19,76 @@ export interface UseGlobalHotkeysOptions {
   toggleDebug: () => void
   closeMarketPanel: () => void
   closeModelManager: () => void
+  holdActions?: HoldRuntimeAction[]
 }
 
 export function useGlobalHotkeys(opts: UseGlobalHotkeysOptions) {
   const shortcutHelpOpen = ref(false)
   let ctrlLongPressTimer: ReturnType<typeof setTimeout> | null = null
   let ctrlHoldBlockedByPointer = false
+
+  const isTheater = computed(() => resolveOcliveShell() === 'theater')
+
+  function openShortcutHelp(): void {
+    shortcutHelpOpen.value = true
+    opts.topMoreOpen.value = false
+  }
+
+  function openSettingsView(): void {
+    opts.settingsViewOpen.value = true
+    opts.topMoreOpen.value = false
+  }
+
+  useUnifiedKeybindings({
+    appActions: [
+      {
+        actionId: 'app.openShortcutHelp',
+        enabled: computed(() => true),
+        run: openShortcutHelp,
+      },
+      {
+        actionId: 'app.openSettings',
+        enabled: computed(() => true),
+        run: () => {
+          if (isTheater.value) {
+            hostEventBus.emit('theater:settings', { action: 'toggle' })
+            return
+          }
+          openSettingsView()
+        },
+      },
+      {
+        actionId: 'app.openPluginManager',
+        enabled: computed(() => opts.pluginUiEnabled.value),
+        run: () => {
+          if (!opts.pluginUiEnabled.value)
+            return
+          opts.openPluginManagerPanel()
+        },
+      },
+      {
+        actionId: 'app.openModelManager',
+        enabled: computed(() => true),
+        run: () => {
+          if (isTheater.value) {
+            hostEventBus.emit('theater:settings', { action: 'model' })
+            return
+          }
+          opts.openModelManager()
+        },
+      },
+      {
+        actionId: 'app.toggleDebug',
+        enabled: computed(() => (opts.debugUiEnabled ? opts.debugUiEnabled.value : true)),
+        run: () => {
+          if (opts.debugUiEnabled && !opts.debugUiEnabled.value)
+            return
+          opts.toggleDebug()
+        },
+      },
+    ],
+    holdActions: opts.holdActions,
+  })
 
   function clearCtrlLongPressTimer(): void {
     if (ctrlLongPressTimer != null) {
@@ -49,6 +115,18 @@ export function useGlobalHotkeys(opts: UseGlobalHotkeysOptions) {
       return
     if (!ctrlHoldModifiersClean(e))
       return
+    // Only show long-press hint when shortcut help is bound to Ctrl+LongPress.
+    try {
+      const accel = getPrimaryEffectiveAcceleratorForAction(
+        loadUnifiedBindingsFile(),
+        'app.openShortcutHelp',
+      )
+      if (accel !== 'Ctrl+LongPress')
+        return
+    }
+    catch {
+      // ignore and allow default behavior
+    }
     ctrlHoldBlockedByPointer = false
     clearCtrlLongPressTimer()
     ctrlLongPressTimer = window.setTimeout(() => {
@@ -66,21 +144,9 @@ export function useGlobalHotkeys(opts: UseGlobalHotkeysOptions) {
     }
   }
 
-  function openShortcutHelp(): void {
-    shortcutHelpOpen.value = true
-    opts.topMoreOpen.value = false
-  }
-
-  function openSettingsView(): void {
-    opts.settingsViewOpen.value = true
-    opts.topMoreOpen.value = false
-  }
-
   function onHotkey(e: KeyboardEvent): void {
-    const isTheater = resolveOcliveShell() === 'theater'
-
     if (e.key === 'Escape') {
-      if (isTheater) {
+      if (isTheater.value) {
         e.preventDefault()
         hostEventBus.emit('theater:settings', { action: 'escape' })
         return
@@ -120,37 +186,6 @@ export function useGlobalHotkeys(opts: UseGlobalHotkeysOptions) {
         opts.toggleDebug()
         return
       }
-    }
-    if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'f') {
-      if (!opts.pluginUiEnabled.value)
-        return
-      e.preventDefault()
-      opts.openPluginManagerPanel()
-      return
-    }
-    if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'm') {
-      e.preventDefault()
-      if (resolveOcliveShell() === 'theater') {
-        hostEventBus.emit('theater:settings', { action: 'model' })
-        return
-      }
-      opts.openModelManager()
-      return
-    }
-    if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 's') {
-      e.preventDefault()
-      if (resolveOcliveShell() === 'theater') {
-        hostEventBus.emit('theater:settings', { action: 'toggle' })
-        return
-      }
-      openSettingsView()
-      return
-    }
-    if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'd') {
-      if (opts.debugUiEnabled && !opts.debugUiEnabled.value)
-        return
-      e.preventDefault()
-      opts.toggleDebug()
     }
   }
 
