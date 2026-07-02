@@ -68,6 +68,11 @@ watch(
     }
   },
 )
+
+function openGeneralAdvancedKeybindings(): void {
+  tab.value = 'general'
+  generalSubTab.value = 'advanced'
+}
 </script>
 
 <template>
@@ -138,6 +143,7 @@ watch(
         <SettingsPluginsTab
           v-show="tab === 'plugins'"
           :bootstrap-epoch="pluginStore.bootstrapEpoch"
+          @request-general-advanced="openGeneralAdvancedKeybindings"
         />
 
         <div v-show="tab === 'storage'" class="sv-body">

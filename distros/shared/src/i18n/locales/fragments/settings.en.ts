@@ -142,22 +142,4 @@ export default {
     movedNotice: 'Plugin global shortcuts moved to: Settings → General → Advanced → Keybindings.',
     goToGeneralAdvanced: 'Go to General → Advanced',
   },
-  hotkeys: {
-    title: 'Global shortcuts',
-    lead:
-      'All off by default. When enabled, the OS listens globally and may conflict with other apps; save errors show a toast.',
-    fieldAccelerator: 'Shortcut',
-    accelPlaceholder: 'e.g. Ctrl+Shift+L',
-    enabled: 'On',
-    action: 'Action',
-    actionOpenLauncher: 'Open plugin directory list',
-    actionOpenSlot: 'Open a plugin slot page',
-    pluginId: 'Plugin id',
-    slotName: 'Slot name',
-    appearanceOptional: 'appearance (optional)',
-    remove: 'Remove',
-    addRow: 'Add row',
-    save: 'Save',
-    savedToast: 'Hotkeys saved (only enabled rows register globally).',
-  },
 }

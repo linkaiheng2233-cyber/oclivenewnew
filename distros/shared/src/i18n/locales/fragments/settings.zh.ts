@@ -135,22 +135,4 @@ export default {
     movedNotice: '全局插件快捷键已合并到：设置 → 常规 → 高级 → 键位绑定。',
     goToGeneralAdvanced: '去常规 → 高级',
   },
-  hotkeys: {
-    title: '全局快捷键',
-    lead:
-      '默认全部关闭。启用后由系统全局监听，可能与系统或其它应用冲突；保存失败时会提示原因。',
-    fieldAccelerator: '快捷键',
-    accelPlaceholder: '如 Ctrl+Shift+L',
-    enabled: '启用',
-    action: '动作',
-    actionOpenLauncher: '打开插件目录列表',
-    actionOpenSlot: '打开某插件插槽页',
-    pluginId: '插件 id',
-    slotName: '插槽名',
-    appearanceOptional: 'appearance（可选）',
-    remove: '删除',
-    addRow: '添加一条',
-    save: '保存',
-    savedToast: '已保存快捷键配置（仅启用的项会注册全局快捷键）。',
-  },
 }
