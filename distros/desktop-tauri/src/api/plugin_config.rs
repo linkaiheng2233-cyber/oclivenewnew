@@ -59,14 +59,13 @@ fn plugin_root(state: &AppState, plugin_id: &str) -> Result<PathBuf, CommandErro
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
-#[tauri::command]
-pub fn get_plugin_settings_ui(
-    plugin_id: String,
-    state: State<'_, SharedAppState>,
+pub(crate) fn get_plugin_settings_ui_impl(
+    state: &AppState,
+    plugin_id: &str,
 ) -> Result<PluginUiSettingsDto, CommandError> {
-    let root = plugin_root(&state, &plugin_id)?;
+    let root = plugin_root(state, plugin_id)?;
     let manifest = OclivePluginManifest::load_from_dir(&root)?;
-    ensure_default_config_for_manifest(&state, &manifest);
+    ensure_default_config_for_manifest(state, &manifest);
     let ui_template = manifest.ui_template.clone();
     let fields: Vec<UiSchemaFieldDto> = manifest
         .ui_schema
@@ -84,21 +83,21 @@ pub fn get_plugin_settings_ui(
                 .collect()
         })
         .unwrap_or_default();
-    let config = read_config_json(&state, plugin_id.trim())?;
+    let config = read_config_json(state, plugin_id.trim())?;
     Ok(PluginUiSettingsDto {
         ui_template,
         fields,
         config,
     })
 }
+
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
-#[tauri::command]
-pub fn set_plugin_settings_config(
-    plugin_id: String,
-    config: Value,
-    state: State<'_, SharedAppState>,
+pub(crate) fn set_plugin_settings_config_impl(
+    state: &AppState,
+    plugin_id: &str,
+    config: &Value,
 ) -> Result<(), CommandError> {
     let pid = plugin_id.trim();
     if pid.is_empty() {
@@ -107,14 +106,14 @@ pub fn set_plugin_settings_config(
         }
         .into());
     }
-    let _root = plugin_root(&state, pid)?;
+    let _root = plugin_root(state, pid)?;
     if !config.is_object() {
         return Err(ApiError::InvalidParameter {
             message: "config must be a JSON object".into(),
         }
         .into());
     }
-    write_config_json(&state, pid, &config)?;
+    write_config_json(state, pid, config)?;
     if let Ok(url) = state.directory_plugins.ensure_rpc_url(pid) {
         let _ = invoke_directory_plugin_rpc_blocking(
             &url,
@@ -124,4 +123,27 @@ pub fn set_plugin_settings_config(
         );
     }
     Ok(())
+}
+
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
+#[tauri::command]
+pub fn get_plugin_settings_ui(
+    plugin_id: String,
+    state: State<'_, SharedAppState>,
+) -> Result<PluginUiSettingsDto, CommandError> {
+    get_plugin_settings_ui_impl(&state, &plugin_id)
+}
+
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
+#[tauri::command]
+pub fn set_plugin_settings_config(
+    plugin_id: String,
+    config: Value,
+    state: State<'_, SharedAppState>,
+) -> Result<(), CommandError> {
+    set_plugin_settings_config_impl(&state, &plugin_id, &config)
 }

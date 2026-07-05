@@ -3,3 +3,4 @@
 sherpa-onnx>=1.10.0
 numpy>=1.24.0
 sounddevice>=0.4.6
+# Optional: ffmpeg on PATH enables compressed-audio fallback in asr/audio_decode.py

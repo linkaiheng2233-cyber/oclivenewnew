@@ -190,6 +190,8 @@ export async function sendChatStoreMessage(
       message: content,
       reply: assistantDialogueFromSplit(pres.replyText, preSplit),
       reply_aside: preSplit.aside,
+      bot_emotion: res.bot_emotion,
+      role_id: roleId,
     })
     const countAfterTurn = context.getMessageCountForRoleScene(roleId, sid)
     context.clampSceneHistorySplitForBucket(

@@ -8,6 +8,9 @@
 use crate::api::chat_backend::ChatBackend;
 use crate::api::directory_plugin::directory_plugin_bootstrap_dto;
 use crate::api::error::{map_directory_rpc_url_error, ApiError, CommandError};
+use crate::api::plugin_config::{
+    get_plugin_settings_ui_impl, set_plugin_settings_config_impl,
+};
 use crate::kernel_attach::{role_dir_for_id, KernelHttpClient};
 use oclive_kernel_host::infrastructure::directory_plugins::{
     normalize_plugin_rel, OclivePluginManifest,
@@ -292,6 +295,47 @@ async fn dispatch_local_bridge_command(
         });
     }
 
+    if command == "get_plugin_settings_ui" {
+        let plugin_id = params
+            .get("pluginId")
+            .or_else(|| params.get("plugin_id"))
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| bridge_invalid("get_plugin_settings_ui: pluginId required"))?;
+        let dto = get_plugin_settings_ui_impl(state, plugin_id)?;
+        return serde_json::to_value(dto).map_err(|e| {
+            CommandError::from(
+                ApiError::Io {
+                    message: format!("host json get_plugin_settings_ui: {e}"),
+                }
+                .to_string(),
+            )
+        });
+    }
+
+    if command == "set_plugin_settings_config" {
+        let plugin_id = params
+            .get("pluginId")
+            .or_else(|| params.get("plugin_id"))
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| bridge_invalid("set_plugin_settings_config: pluginId required"))?;
+        let config = params
+            .get("config")
+            .cloned()
+            .unwrap_or(Value::Null);
+        set_plugin_settings_config_impl(state, plugin_id, &config)?;
+        return Ok(json!({ "ok": true }));
+    }
+
+    if command == "get_role_pack_path" {
+        let role_id = params
+            .get("roleId")
+            .or_else(|| params.get("role_id"))
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| bridge_invalid("get_role_pack_path: roleId required"))?;
+        let path = role_dir_for_id(state, role_id.trim());
+        return Ok(json!({ "role_path": path.to_string_lossy() }));
+    }
+
     if command == "import_role" {
         let path = params
             .get("path")
@@ -403,9 +447,19 @@ mod rpc_validation_tests {
     #[test]
     fn declared_rpc_method_passes_manifest_whitelist() {
         let tmp = TempDir::new().expect("temp");
-        write_manifest(tmp.path(), &["voice.probe", "voice.transcribe"], true);
+        write_manifest(
+            tmp.path(),
+            &[
+                "voice.probe",
+                "voice.transcribe",
+                "voice.speak",
+                "voice.build_directive",
+            ],
+            true,
+        );
         let manifest = OclivePluginManifest::load_from_dir(tmp.path()).expect("load manifest");
         assert!(validate_rpc_method_for_manifest(&manifest, "voice.transcribe").is_ok());
+        assert!(validate_rpc_method_for_manifest(&manifest, "voice.build_directive").is_ok());
     }
 
     #[test]

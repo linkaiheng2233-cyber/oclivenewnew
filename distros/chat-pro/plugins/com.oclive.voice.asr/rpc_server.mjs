@@ -35,8 +35,43 @@ function readProfiles() {
   try {
     return JSON.parse(fs.readFileSync(p, "utf8"));
   } catch {
-    return { default_profile: "sherpa-paraformer-zh-small", profiles: {} };
+    return {
+      default_profile: "sherpa-paraformer-zh-small",
+      default_tts_profile: "sherpa-piper-zh",
+      default_director_profile: "rules-v1",
+      profiles: {},
+    };
   }
+}
+
+const RULES_V1_SPEED = {
+  shy: 0.85,
+  happy: 1.1,
+  sad: 0.75,
+  angry: 1.15,
+  fearful: 0.8,
+  surprised: 1.05,
+  disgusted: 0.9,
+  neutral: 1.0,
+};
+
+function loadVoiceProfileFromRole(rolePath) {
+  const base = String(rolePath || "").trim();
+  if (!base) return null;
+  const file = path.join(base, "voice_profile.json");
+  if (!fs.existsSync(file)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(file, "utf8"));
+  } catch {
+    return null;
+  }
+}
+
+function validateDirective(directive) {
+  if (!directive || typeof directive !== "object") return false;
+  if (directive.schema_version !== 1) return false;
+  const required = ["emotion_tag", "speed", "energy", "emo_text", "synth_profile"];
+  return required.every((k) => Object.prototype.hasOwnProperty.call(directive, k));
 }
 
 function userModelsRoot() {
@@ -135,16 +170,28 @@ function resolveModelDir(profileRec) {
 }
 
 function resolveTtsModelDir(profileId) {
-  const id = (profileId || pluginConfig?.tts_profile || "sherpa-piper-zh").trim();
+  const id = (profileId || pluginConfig?.tts_profile || readProfiles().default_tts_profile || "sherpa-piper-zh").trim();
+  const resolved = resolvePlatformProfile(id);
+  const profile = resolved.ok ? resolved.profile : null;
+  const rel = profile?.model_dir || `models/tts/${id}`;
   const candidates = [
     path.join(userModelsRoot(), "tts", id),
-    path.join(__dirname, "models", "tts", id),
+    path.join(__dirname, rel),
     path.join(findEngineRoot() || "", "models", "tts", id),
   ];
   for (const dir of candidates) {
     if (dir && fs.existsSync(dir)) return dir;
   }
   return candidates[0];
+}
+
+function resolveTtsProfileRecord(profileId) {
+  const id = (profileId || pluginConfig?.tts_profile || readProfiles().default_tts_profile || "sherpa-piper-zh").trim();
+  const resolved = resolvePlatformProfile(id);
+  if (!resolved.ok) {
+    return { id, ok: false, profile: null };
+  }
+  return { id, ok: true, profile: resolved.profile };
 }
 
 function spawnPythonJson(moduleName, payload, timeoutMs = 120_000) {
@@ -280,7 +327,7 @@ function handleListProfiles() {
       label: p.label || id,
       engine: p.engine || "",
       model_dir: p.model_dir || "",
-      kind: p.kind || (String(p.engine || "").includes("tts") ? "tts" : "asr"),
+      kind: p.kind || (String(p.engine || "").includes("tts") ? "tts" : String(p.engine || "").includes("director") || p.engine === "rules-v1" ? "director" : "asr"),
       platform_ready: !(p.platforms?.[PLATFORM]?.unsupported),
     })),
   };
@@ -366,15 +413,89 @@ async function handleSpeak(params) {
   if (!text) {
     return { ok: false, reason: "empty_text", audio_base64: "" };
   }
-  const modelDir = resolveTtsModelDir(params?.profile);
+  const directive = params?.directive && typeof params.directive === "object" ? params.directive : null;
+  const profileId =
+    directive?.synth_profile ||
+    params?.profile ||
+    pluginConfig?.tts_profile ||
+    readProfiles().default_tts_profile ||
+    "sherpa-piper-zh";
+  const profileRec = resolveTtsProfileRecord(profileId);
+  const modelDir = resolveTtsModelDir(profileId);
   const result = await spawnPythonJson("tts.synthesize", {
     model_dir: modelDir,
     text,
+    speed: directive?.speed,
+    directive,
+    engine: profileRec.profile?.engine,
+    voice: profileRec.profile?.voice,
   });
   return {
     ...result,
-    profile: params?.profile || pluginConfig?.tts_profile || "sherpa-piper-zh",
+    profile: profileId,
+    directive: directive || undefined,
   };
+}
+
+function handleBuildDirective(params) {
+  const cfg = readProfiles();
+  const directorId = String(
+    params?.profile ||
+      params?.director_profile ||
+      pluginConfig?.director_profile ||
+      cfg.default_director_profile ||
+      "",
+  ).trim();
+  const botEmotion = String(params?.bot_emotion || "neutral")
+    .trim()
+    .toLowerCase();
+  const rolePath = String(params?.role_path || "").trim();
+  const roleVoice = loadVoiceProfileFromRole(rolePath);
+  const synthProfile =
+    roleVoice?.synth_profile ||
+    pluginConfig?.tts_profile ||
+    cfg.default_tts_profile ||
+    "sherpa-piper-zh";
+  const baselineSpeed = Number(roleVoice?.speed ?? 1.0) || 1.0;
+
+  if (!directorId || directorId === "none") {
+    const directive = {
+      schema_version: 1,
+      emotion_tag: botEmotion,
+      speed: baselineSpeed,
+      energy: roleVoice?.energy || "normal",
+      emo_text: "",
+      synth_profile: synthProfile,
+    };
+    return { ok: true, directive, director_profile: null };
+  }
+
+  const resolved = resolvePlatformProfile(directorId);
+  if (!resolved.ok) {
+    return { ok: false, reason: resolved.reason || "director_not_found", director_profile: directorId };
+  }
+  const engine = resolved.profile.engine || "rules-v1";
+  if (engine !== "rules-v1") {
+    return { ok: false, reason: "unsupported_director_engine", director_profile: directorId };
+  }
+
+  const emotionSpeed = RULES_V1_SPEED[botEmotion] ?? 1.0;
+  const speed = Math.round(baselineSpeed * emotionSpeed * 100) / 100;
+  const energy =
+    roleVoice?.energy ||
+    (botEmotion === "shy" || botEmotion === "sad" ? "soft" : "normal");
+  const directive = {
+    schema_version: 1,
+    emotion_tag: botEmotion,
+    speed,
+    energy,
+    emo_text: "",
+    synth_profile: roleVoice?.synth_profile || synthProfile,
+  };
+  if (!validateDirective(directive)) {
+    return { ok: false, reason: "invalid_directive", director_profile: directorId };
+  }
+  return { ok: true, directive, director_profile: directorId };
 }
 
 function handleConfigUpdated(params) {
@@ -420,6 +541,7 @@ const server = http.createServer((req, res) => {
         else if (method === "voice.import_model") result = handleImportModel(params);
         else if (method === "voice.transcribe") result = await handleTranscribe(params);
         else if (method === "voice.speak") result = await handleSpeak(params);
+        else if (method === "voice.build_directive") result = handleBuildDirective(params);
         else if (method === "config_updated") result = handleConfigUpdated(params);
         else {
           res.writeHead(200);

@@ -143,6 +143,7 @@
 | `user_identity` | `user_identities/` · `turn_pipeline/pre` | 身份模板、API 扩展 | 进六槽或 blueprint 六键 |
 | `reply_post_process` | `config.json` → `reply_post_processor` | 后处理链、directory 插件 | 默认 `enabled: true` 无审核 |
 | `theater_director` | `theater_director.rs` · `POST /theater/scene` | 剧场导演、插件目录 | 进 `process_message` stage |
+| **`voice.asr`** | [`com.oclive.voice.asr`](../distros/chat-pro/plugins/com.oclive.voice.asr/) · [`voiceAsrEvents.ts`](../distros/shared/src/lib/voiceAsrEvents.ts) · RFC §4.1 | Windows ASR/TTS 插件、RPC 白名单、`examples/voice-loop-minimal/` 烟测 | 进六槽 / `process_message`；在 `slot_registry` 加 memory 类键 |
 
 ### 4. 角色包（创作者面）
 
@@ -165,6 +166,8 @@
 | 项 | SSOT | 允许改动条件 | 禁止 |
 |----|------|--------------|------|
 | `tauri.conf.json` `allowlist.window` | [`distros/desktop-tauri/tauri.conf.json`](../distros/desktop-tauri/tauri.conf.json) | Win98 彩蛋皮肤合成标题栏（`setDecorations` · `minimize` · `maximize` · `unmaximize` · `close` · `startDragging`）；须同步 [MODULE_MAP §13.2](./MODULE_MAP_AND_HANDOFF.md) | 无产品需求时 `all: true` 或扩大无关 API |
+| **`plugin_bridge_invoke`** | [`plugin_bridge.rs`](../distros/desktop-tauri/src/api/plugin_bridge.rs) · [DIRECTORY_PLUGINS.md §4.1](../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md) | 新桥接命令：manifest `bridge.invoke` + **`dispatch_local_bridge_command`**（桌面本地）或内核 `dispatch_bridge_command`（DB 写路径）；`plugin_rpc_invoke` 走 manifest `rpcMethods` | 假定 `ui_slots` 可直接调顶层 Tauri 命令而不经 bridge 分发 |
+| **统一键位** | [`keybindings.ts`](../distros/shared/src/lib/keybindings.ts) · `useUnifiedKeybindings.ts` | 应用内 / 全局 / hold 动作目录；`voice.holdToTalk` 默认 **V** | 在 `useGlobalHotkeys` 硬编码 Ctrl+Shift 组合作 SSOT |
 
 ---
 

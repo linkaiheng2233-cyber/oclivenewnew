@@ -105,7 +105,7 @@ chat_toolbar (VoiceToolbar.vue)
 
 - **官方包**：[`distros/chat-pro/plugins/com.oclive.voice.asr/`](../../distros/chat-pro/plugins/com.oclive.voice.asr/)
 - **UI 插槽**：`chat_toolbar`（按住说话）+ `settings.panel`（模型导入 / probe / submit_mode / auto_tts）
-- **RPC**：`voice.probe` · `voice.list_profiles` · `voice.import_model` · `voice.transcribe` · **`voice.speak`**
+- **RPC**：`voice.probe` · `voice.list_profiles` · `voice.import_model` · `voice.transcribe` · **`voice.speak`** · **`voice.build_directive`**（`rules-v1` 导演 → `voice_directive` v1，见插件 [`README.md`](../../distros/chat-pro/plugins/com.oclive.voice.asr/README.md)）
 - **params/result JSON**：见插件 [`README.md`](../../distros/chat-pro/plugins/com.oclive.voice.asr/README.md) RPC contract
 - **引擎**：Node `rpc_server.mjs` 网关 + `spawn` Python [`examples/voice-loop-minimal/asr/`](../../examples/voice-loop-minimal/asr/)（sherpa-onnx）；TTS 同目录 [`tts/`](../../examples/voice-loop-minimal/tts/)
 - **降级**：无模型 / 识别失败 → 键盘输入；**禁止** ASR 进六槽或 `process_message` 钩子；`ok:false` 或空 `text` **不得** emit submit

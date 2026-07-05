@@ -97,6 +97,14 @@ pip install -r requirements-tts.txt
 python loop.py --mic --tts-sherpa
 ```
 
+### SSE stream（Week 3 · 可选）
+
+```powershell
+python loop.py --stream
+```
+
+同一 prompt 可对比 blocking `/chat` 与 `/chat/stream`；输出 `ttft_ms`（首 token）与 `total_ms`（`done`）。
+
 ---
 
 ## 环境变量
@@ -112,27 +120,50 @@ python loop.py --mic --tts-sherpa
 
 ## 验收（Week 1–2）
 
-- [ ] `python loop.py` 输入 `hi` 得到 `reply` 行  
-- [ ] 同一 session 连聊两轮，第二轮能引用第一轮（需真 LLM，关 mock）  
-- [ ] `python loop.py --tts` 能朗读（可选）
-- [ ] `python loop.py --mic` 在已放置 sherpa 模型时识别并进 `/chat`（Windows）
+- [x] `python loop.py` 输入 `hi` 得到 `reply` 行  
+- [x] 同一 session 连聊两轮，第二轮能引用第一轮（需真 LLM，关 mock）  
+- [x] `python loop.py --tts` / `--tts-sherpa` 能朗读（可选）
+- [x] `python loop.py --mic` 在已放置 sherpa 模型时识别并进 `/chat`（Windows）
 
 ---
 
-## 开发板部署（Week 3 由 B 填写）
+## 开发板部署（Week 3 · AP + MCU 分工）
 
-模板：
+> 完整硬件叙事见根目录 [HARDWARE_INTEGRATION.md](../../HARDWARE_INTEGRATION.md) §4–§5 · §12 M5。
 
-1. AP 安装 Ollama + 拉取 `hermes3:3b`  
-2. 启动 `oclive-kernel-server --api`，设置 `OCLIVE_ROLES_DIR`  
-3. 本目录 `loop.py` 或等价 C++ 中控在同一机器运行  
-4. MCU 仅负责舵机；文本链路不经过 MCU  
+| 组件 | 职责 | 说明 |
+|------|------|------|
+| **AP（应用处理器）** | Ollama + `oclive-kernel-server --api` + Python/C++ 中控 | 与 PC 相同 HTTP 契约：`POST /chat` · 读 `data.reply` |
+| **loop / 中控** | 麦克风 · VAD · ASR · TTS · 播放 | 本目录 `loop.py` 或等价实现；**文本不经过 MCU** |
+| **MCU** | 舵机 / GPIO | 仅执行 AP 下发的动作指令 |
 
-延迟建议见根目录 [HARDWARE_INTEGRATION.md](../../HARDWARE_INTEGRATION.md) §4、`§12 M5`。
+### PC 模拟 AP（他人可复现）
+
+1. 安装 Ollama 并 `ollama pull hermes3:3b`（或小模型，与蓝图 llm 槽一致）  
+2. 构建并启动无头内核：
+
+```powershell
+cd <REPO_ROOT>
+cargo build -p oclive-kernel-server
+$env:OCLIVE_USE_CANONICAL_APP_DATA = "1"
+$env:OCLIVE_ROLES_DIR = "<REPO_ROOT>/distros/chat-pro/roles"
+$env:RUST_LOG = "info"
+# 测记忆时勿设 OCLIVE_HTTP_API_MOCK_LLM
+..\oclive-dev-artifacts\oclivenewnew-cargo-target\debug\oclive-kernel-server.exe --api
+```
+
+3. 本目录 venv + `python loop.py --mic`（或 `--stream` 测延迟）  
+4. 环境变量：`OCLIVE_API_BASE`（默认 `:8420`）· `OCLIVE_ROLE_PATH` · 固定 `OCLIVE_SESSION_ID`
+
+### 延迟建议
+
+- 立绘情感 LLM：`OCLIVE_PORTRAIT_EMOTION_LLM=0`（玩偶场景）  
+- 优先小模型 + `POST /chat/stream`（`loop.py --stream` 可测 ttft）  
+- ASR/TTS 模型放 AP 本地存储，避免云端依赖
 
 ---
 
-## 相关文档
+## 相关文档（旧模板已合并至上节）
 
 - [HARDWARE_INTEGRATION.md](../../HARDWARE_INTEGRATION.md)  
 - [headless-kernel-minimal](../headless-kernel-minimal/README.md)  

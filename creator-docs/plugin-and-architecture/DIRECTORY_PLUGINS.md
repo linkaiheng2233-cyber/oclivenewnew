@@ -141,7 +141,9 @@
 | **`update_settings`** | **`write:settings`** 或 `update_settings` | 更新允许的应用设置（白名单字段，如 `theme` / `ui_theme`、`interaction_mode`） |
 | **`get_conversation_list`** | **`read:conversations`** 或 `get_conversation_list` | 返回本地会话元数据列表：`items[]` 含 `session_namespace`、`turn_count`、`last_at` |
 
-**不强制 `type: ocliveplugin` 的桥接命令**（亦需在 **`bridge.invoke`** 中声明）：`get_role_info`、`list_roles`、`get_time_state`、`get_directory_plugin_bootstrap`、**`plugin_rpc_invoke`**（仅可调用**本插件** manifest **`rpcMethods`** 声明的方法，供 `ui_slots` 侧车 RPC；例：[`com.oclive.voice.asr`](../../distros/chat-pro/plugins/com.oclive.voice.asr/)）等。未声明的调用一律拒绝。
+**不强制 `type: ocliveplugin` 的桥接命令**（亦需在 **`bridge.invoke`** 中声明）：`get_role_info`、`list_roles`、`get_time_state`、`get_directory_plugin_bootstrap`、**`get_plugin_settings_ui`** / **`set_plugin_settings_config`**（插件私有 `config.json`；**桌面本地** `plugin_config.rs`，经 `plugin_bridge_invoke` → `dispatch_local_bridge_command`，**不**进内核 `dispatch_bridge_command`）、**`plugin_rpc_invoke`**（仅可调用**本插件** manifest **`rpcMethods`** 声明的方法，供 `ui_slots` 侧车 RPC；例：[`com.oclive.voice.asr`](../../distros/chat-pro/plugins/com.oclive.voice.asr/)）等。未声明的调用一律拒绝。
+
+> **AI 接线纪律**：`ui_slots` 内 `oclive.invoke("…")` **一律**走 `plugin_bridge_invoke`。若命令在 `lib.rs` 另有顶层 Tauri 注册（如 `get_plugin_settings_ui`），仍须在 **`plugin_bridge.rs` 的 `dispatch_local_bridge_command`** 显式分发，否则报 `unsupported bridge command`。
 
 **写入类命令**（`update_memory` / `delete_memory` / `update_emotion` / `update_event` / `update_prompt`）以及 **`export_conversation`** / **`import_role`** 与上表「聊天/角色」敏感命令相同：**必须** `type: ocliveplugin` 且自 **`shell.entry` HTML** 或 **`shell.vueEntry` Vue** 调用。
 
@@ -206,6 +208,8 @@
 当 **`get_directory_plugin_bootstrap.developerMode`** 为真时，宿主在编译 `.vue` 前会对脚本做静态 AST 扫描；若匹配危险模式（如 `fetch`、`eval`、`document.cookie`、`localStorage`、`window.__TAURI__` 等），会弹出确认框，用户取消则该插槽回退行为与编译失败一致（可再走 iframe）。
 
 **编译失败提示**：`vue3-sfc-loader` 报错时，插槽 UI 展示 **插件 id、组件路径、可读摘要**；可通过 **「查看详情」** 展开原始堆栈。
+
+**`ui_slots` 脚本纪律**：插槽 `.vue` **勿** `import` 同级或子目录的 **`.ts` / `.js` 模块**（宿主经 `read_plugin_asset_text` 按请求路径解析，loader 常将 `./foo.ts` 解析为 `foo.js` 导致 `not found`）。可复用逻辑请 **内联进 `.vue`**，或仅保留 `import "vue"`（与 mumu 其它 toolbar 插件一致）。语音侧车踩坑记录见 [TRACK_VOICE_RECOGNITION §10](../../human-docs/team/TRACK_VOICE_RECOGNITION.md)。
 
 ### 4.3.2 强制 iframe 模式
 

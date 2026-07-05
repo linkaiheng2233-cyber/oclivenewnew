@@ -1,10 +1,12 @@
 {
   "default_profile": "sherpa-paraformer-zh-small",
   "default_tts_profile": "sherpa-piper-zh",
+  "default_director_profile": "rules-v1",
   "profiles": {
     "sherpa-paraformer-zh-small": {
       "label": "Sherpa Paraformer zh small/int8",
       "engine": "sherpa-onnx",
+      "kind": "asr",
       "model_dir": "models/asr/sherpa-paraformer-zh-small",
       "platforms": {
         "win32": {
@@ -21,11 +23,40 @@
         }
       }
     },
+    "sherpa-paraformer-zh-medium": {
+      "label": "Sherpa Paraformer zh medium (higher accuracy)",
+      "engine": "sherpa-onnx",
+      "kind": "asr",
+      "model_dir": "models/asr/sherpa-paraformer-zh-medium",
+      "platforms": {
+        "win32": {
+          "model_dir": "models/asr/sherpa-paraformer-zh-medium"
+        },
+        "linux": {
+          "unsupported": true,
+          "message": "Linux ASR profile reserved; import model when engine ships"
+        },
+        "darwin": {
+          "unsupported": true,
+          "message": "macOS ASR profile reserved; import model when engine ships"
+        }
+      }
+    },
+    "rules-v1": {
+      "label": "Rules v1 (bot_emotion → speed)",
+      "engine": "rules-v1",
+      "kind": "director",
+      "platforms": {
+        "win32": {},
+        "linux": {},
+        "darwin": {}
+      }
+    },
     "sherpa-piper-zh": {
       "label": "Sherpa Piper zh TTS",
       "engine": "sherpa-onnx-tts",
-      "model_dir": "models/tts/sherpa-piper-zh",
       "kind": "tts",
+      "model_dir": "models/tts/sherpa-piper-zh",
       "platforms": {
         "win32": {
           "model_dir": "models/tts/sherpa-piper-zh"
@@ -37,6 +68,74 @@
         "darwin": {
           "unsupported": true,
           "message": "macOS TTS reserved for a later release"
+        }
+      }
+    },
+    "sherpa-piper-zh-alt": {
+      "label": "Sherpa Piper zh alt voice (second model dir)",
+      "engine": "sherpa-onnx-tts",
+      "kind": "tts",
+      "model_dir": "models/tts/sherpa-piper-zh-alt",
+      "platforms": {
+        "win32": {
+          "model_dir": "models/tts/sherpa-piper-zh-alt"
+        },
+        "linux": {
+          "unsupported": true,
+          "message": "Linux TTS reserved for a later release"
+        },
+        "darwin": {
+          "unsupported": true,
+          "message": "macOS TTS reserved for a later release"
+        }
+      }
+    },
+    "edge-tts-zh": {
+      "label": "Edge TTS zh (online · edge-tts)",
+      "engine": "edge-tts",
+      "kind": "tts",
+      "voice": "zh-CN-XiaoxiaoNeural",
+      "platforms": {
+        "win32": {},
+        "linux": {},
+        "darwin": {}
+      }
+    },
+    "pilot-tts-zh": {
+      "label": "PilotTTS zh (experimental adapter)",
+      "engine": "pilot-tts",
+      "kind": "tts",
+      "model_dir": "models/tts/pilot-tts-zh",
+      "platforms": {
+        "win32": {
+          "model_dir": "models/tts/pilot-tts-zh"
+        },
+        "linux": {
+          "unsupported": true,
+          "message": "PilotTTS adapter reserved"
+        },
+        "darwin": {
+          "unsupported": true,
+          "message": "PilotTTS adapter reserved"
+        }
+      }
+    },
+    "cosyvoice-zh": {
+      "label": "CosyVoice zh (experimental adapter)",
+      "engine": "cosyvoice",
+      "kind": "tts",
+      "model_dir": "models/tts/cosyvoice-zh",
+      "platforms": {
+        "win32": {
+          "model_dir": "models/tts/cosyvoice-zh"
+        },
+        "linux": {
+          "unsupported": true,
+          "message": "CosyVoice adapter reserved"
+        },
+        "darwin": {
+          "unsupported": true,
+          "message": "CosyVoice adapter reserved"
         }
       }
     }

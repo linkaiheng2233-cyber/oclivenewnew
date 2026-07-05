@@ -10,6 +10,7 @@ import argparse
 import json
 import os
 import sys
+import time
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -87,6 +88,69 @@ def extract_reply(body: dict) -> str:
     raise KeyError(f"no reply field in response keys={list(body.keys())}")
 
 
+def post_chat_stream(message: str, role_path: Path) -> tuple[str, int | None, int]:
+    """POST /chat/stream; returns (reply, ttft_ms, total_ms)."""
+    payload = {
+        "role_path": str(role_path).replace("\\", "/"),
+        "message": message,
+        "scene_id": scene_id(),
+        "session_id": session_id(),
+    }
+    data = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(
+        f"{api_base()}/chat/stream",
+        data=data,
+        method="POST",
+        headers={
+            "Content-Type": "application/json; charset=utf-8",
+            "Accept": "text/event-stream",
+        },
+    )
+    started = time.perf_counter()
+    ttft_ms: int | None = None
+    tokens: list[str] = []
+    reply = ""
+    event_name = ""
+    with urllib.request.urlopen(req, timeout=300) as resp:
+        while True:
+            line = resp.readline()
+            if not line:
+                break
+            text = line.decode("utf-8", errors="replace").strip()
+            if not text:
+                continue
+            if text.startswith("event:"):
+                event_name = text.split(":", 1)[1].strip()
+                continue
+            if not text.startswith("data:"):
+                continue
+            data_text = text.split(":", 1)[1].strip()
+            if event_name == "token":
+                try:
+                    token = str(json.loads(data_text).get("token", ""))
+                except json.JSONDecodeError:
+                    token = data_text
+                if token:
+                    if ttft_ms is None:
+                        ttft_ms = int((time.perf_counter() - started) * 1000)
+                    tokens.append(token)
+                    print(token, end="", flush=True)
+            elif event_name == "done":
+                try:
+                    body = json.loads(data_text)
+                    reply = extract_reply(body)
+                except (json.JSONDecodeError, KeyError):
+                    reply = "".join(tokens)
+            elif event_name == "error":
+                raise RuntimeError(data_text)
+    total_ms = int((time.perf_counter() - started) * 1000)
+    if not reply:
+        reply = "".join(tokens)
+    if tokens:
+        print()
+    return reply, ttft_ms, total_ms
+
+
 def speak(text: str, use_plugin_tts: bool = False, tts_model_dir: Path | None = None) -> None:
     if use_plugin_tts and tts_model_dir:
         try:
@@ -144,6 +208,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="OClive minimal chat loop (HTTP)")
     parser.add_argument("--tts", action="store_true", help="Speak reply (pyttsx3 or sherpa TTS)")
     parser.add_argument("--tts-sherpa", action="store_true", help="Use sherpa TTS model for reply")
+    parser.add_argument("--stream", action="store_true", help="Use POST /chat/stream and print ttft_ms")
     parser.add_argument("--mic", action="store_true", help="Record from microphone → ASR → chat")
     parser.add_argument("--mic-seconds", type=float, default=3.0, help="Mic capture length (default 3)")
     parser.add_argument("--asr-model-dir", type=Path, default=None, help="ASR model directory")
@@ -184,8 +249,14 @@ def main() -> int:
         if not line:
             break
         try:
-            body = post_chat(line, role_path)
-            reply = extract_reply(body)
+            if args.stream:
+                reply, ttft_ms, total_ms = post_chat_stream(line, role_path)
+                print(f"bot> {reply}")
+                print(f"[stream] ttft_ms={ttft_ms} total_ms={total_ms}")
+            else:
+                body = post_chat(line, role_path)
+                reply = extract_reply(body)
+                print(f"bot> {reply}\n")
         except urllib.error.HTTPError as e:
             err = e.read().decode("utf-8", errors="replace")
             print(f"[error] HTTP {e.code}: {err}", file=sys.stderr)
@@ -194,10 +265,11 @@ def main() -> int:
             print(f"[error] {e}", file=sys.stderr)
             continue
 
-        print(f"bot> {reply}\n")
         if args.tts or args.tts_sherpa:
             tts_dir = Path(__file__).resolve().parent / "models" / "tts" / "sherpa-piper-zh"
             speak(reply, use_plugin_tts=args.tts_sherpa, tts_model_dir=tts_dir)
+        if not args.stream:
+            print()
 
     return 0
 

@@ -12,13 +12,26 @@ def main() -> int:
     raw = sys.stdin.read()
     payload = json.loads(raw) if raw.strip() else {}
     model_dir = payload.get("model_dir")
-    if not model_dir:
+    if not model_dir and payload.get("engine") != "edge-tts":
         print(json.dumps({"ok": False, "reason": "model_dir_required"}, ensure_ascii=False))
         return 1
     if payload.get("probe"):
-        print(json.dumps(probe_engine(model_dir), ensure_ascii=False))
+        print(
+            json.dumps(
+                probe_engine(model_dir or ".", engine=payload.get("engine")),
+                ensure_ascii=False,
+            )
+        )
         return 0
-    result = synthesize_text(model_dir=model_dir, text=str(payload.get("text", "")))
+    directive = payload.get("directive") if isinstance(payload.get("directive"), dict) else None
+    result = synthesize_text(
+        model_dir=model_dir or ".",
+        text=str(payload.get("text", "")),
+        speed=payload.get("speed"),
+        directive=directive,
+        engine=payload.get("engine"),
+        voice=payload.get("voice"),
+    )
     print(json.dumps(result, ensure_ascii=False))
     return 0 if result.get("ok") else 1
 

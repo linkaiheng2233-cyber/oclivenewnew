@@ -2,15 +2,16 @@
   "schema_version": 1,
   "id": "com.oclive.voice.asr",
   "name": "OCLive Voice ASR (Official)",
-  "version": "0.2.0",
-  "description": "Side-channel voice.asr + voice.speak: microphone → text → send_message; optional TTS reply (Windows first)",
+  "version": "0.3.0",
+  "description": "Side-channel voice.asr + voice.speak + voice.build_directive: microphone → text → send_message; optional TTS with director profiles (Windows first)",
   "provides": ["voice.asr"],
   "rpcMethods": [
     "voice.probe",
     "voice.list_profiles",
     "voice.import_model",
     "voice.transcribe",
-    "voice.speak"
+    "voice.speak",
+    "voice.build_directive"
   ],
   "process": {
     "command": "node",
@@ -46,6 +47,13 @@
         "type": "string",
         "default": "sherpa-piper-zh",
         "required": false
+      },
+      {
+        "key": "director_profile",
+        "label": "声音导演",
+        "type": "string",
+        "default": "rules-v1",
+        "required": false
       }
     ]
   },
@@ -56,7 +64,7 @@
       "vueComponent": "slots/VoiceToolbar.vue",
       "label": "语音输入",
       "bridge": {
-        "invoke": ["plugin_rpc_invoke", "get_plugin_settings_ui"],
+        "invoke": ["plugin_rpc_invoke", "get_plugin_settings_ui", "get_role_pack_path"],
         "events": ["message:sent"]
       }
     },
@@ -66,7 +74,7 @@
       "vueComponent": "slots/VoiceSettings.vue",
       "label": "语音识别",
       "bridge": {
-        "invoke": ["plugin_rpc_invoke", "get_plugin_settings_ui", "set_plugin_settings_config"],
+        "invoke": ["plugin_rpc_invoke", "get_plugin_settings_ui", "set_plugin_settings_config", "get_role_pack_path"],
         "events": []
       }
     }

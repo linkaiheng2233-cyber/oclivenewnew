@@ -1,6 +1,6 @@
 # 模块注册表（Module Registry）
 
-**最后更新**：2026-06-25  
+**最后更新**：2026-07-05  
 **SSOT 范围**：**模块定义 · 架构划分 · 槽位/设施/独立通道之间的联系 · 在边界内如何改**。  
 **非 SSOT**：发版进度 → [`TECHNICAL_DEBT_INVENTORY.md`](./TECHNICAL_DEBT_INVENTORY.md) · 版本快照 → [`PROJECT_STATUS_AND_ALIGNMENT.md`](../creator-docs/getting-started/PROJECT_STATUS_AND_ALIGNMENT.md) · 关键文件路径 → [`BUS_FACTOR_NOTES.md`](./BUS_FACTOR_NOTES.md) · 文档分责 → [`handoff/README.md`](./README.md) §文档分责。
 
@@ -215,9 +215,11 @@ slot_registry（或 legacy plugin_backends）
 | `user_identity` | 用户是谁 | `user_identities/` · pre | **是**（pre 段落） |
 | `reply_post_process` | 回复润色/改写 | `config.json` · post_llm | **是**（post） |
 | `theater_director` | 剧场场景生成 | `POST /theater/scene` | **否**（圈外 API） |
-| **`voice.asr`** | 麦克风 → 文本（ASR） | 宿主 `chat_toolbar` + **`plugin_rpc_invoke`**（`ui_slots` 桥接）→ [`VOICE_ASR_SUBMIT_EVENT`](../distros/shared/src/lib/voiceAsrEvents.ts) → `send_message` | **否**（不进编排钩子；文本走既有对话入口） |
+| **`voice.asr`** | 麦克风 → 文本（ASR）+ 可选 TTS | 宿主 `chat_toolbar` + **`plugin_rpc_invoke`**（`ui_slots` 桥接）→ [`VOICE_ASR_SUBMIT_EVENT`](../distros/shared/src/lib/voiceAsrEvents.ts) → `send_message`；`message:sent` → **`voice.speak`** | **否**（不进编排钩子；文本走既有对话入口） |
+| **`voice.director`**（规划） | 人设 → **`voice_directive`** | 侧车 · 消费 `reply` / `bot_emotion` / `voice_profile` | **否** |
+| **`voice.synth`**（规划） | `reply` + directive → 音频 | 同 **`voice.speak`** RPC · synth profile 注册表 | **否** |
 
-**`voice.asr` 插件 SSOT**：[`distros/chat-pro/plugins/com.oclive.voice.asr/`](../distros/chat-pro/plugins/com.oclive.voice.asr/) · `provides: ["voice.asr"]` · RPC `voice.probe` / `voice.transcribe` / `voice.import_model` / `voice.list_profiles` / **`voice.speak`** · 开发烟测 HTTP 闭环仍用 [`examples/voice-loop-minimal/`](../examples/voice-loop-minimal/)（`loop.py --mic`）。
+**`voice.asr` 插件 SSOT**：[`distros/chat-pro/plugins/com.oclive.voice.asr/`](../distros/chat-pro/plugins/com.oclive.voice.asr/) · `provides: ["voice.asr"]` · RPC `voice.probe` / `voice.transcribe` / `voice.import_model` / `voice.list_profiles` / **`voice.speak`** · 开发烟测 HTTP 闭环仍用 [`examples/voice-loop-minimal/`](../examples/voice-loop-minimal/)（`loop.py --mic`）。**导演 + 发声器双 profile** 规划见 [`ARCHITECTURE_DECOUPLING_PANORAMA.md`](../human-docs/team/ARCHITECTURE_DECOUPLING_PANORAMA.md) §6。
 
 RFC：[`RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md`](../creator-docs/rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md) · Phase2：[`USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md`](./USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md)（**已交付**，勿当待办）。
 
@@ -276,6 +278,7 @@ Agent 短路、异地 stub：**并列**于上链，见 `process_message.rs`。
 |------|-------------|
 | **默认壳** | [`resolveOcliveShell()`](../distros/shared/src/composables/useOcliveShell.ts) fallback **`fluent`**；`VITE_OCLIVE_SHELL=tool` → ToolShell；`theater` 走剧场发行版。 |
 | **用户入口** | **Settings → General**（[`SettingsGeneralTab.vue`](../distros/shared/src/components/settings/SettingsGeneralTab.vue)）+ **FluentShell** 输入区上方 [`InteractionModeBar.vue`](../distros/shared/src/components/onboarding/InteractionModeBar.vue)（经 `MAIN_SHELL_KEY.onInteractionModeChange`）。 |
+| **键位绑定** | **Settings → General → Advanced** · [`keybindings.ts`](../distros/shared/src/lib/keybindings.ts)（动作目录 SSOT）· [`KeybindingsSettingsSection.vue`](../distros/shared/src/components/hotkey/KeybindingsSettingsSection.vue)；全局 OS 快捷键仍经 `save_hotkey_bindings`；`voice.holdToTalk`（默认 **V**）→ `hostEventBus` → VoiceToolbar。 |
 | **发现 / 编程入口** | 日常聊解锁条 [`ImmersiveUnlockBanner`](../distros/shared/src/components/onboarding/ImmersiveUnlockBanner.vue) · 首次剧情引导 [`ImmersiveModeIntro`](../distros/shared/src/components/onboarding/ImmersiveModeIntro.vue) · 插件总线 `com.oclive.mumu.settings-panel:set_interaction_mode`（[`usePluginEvents.ts`](../distros/shared/src/composables/usePluginEvents.ts)）— **非**并列用户 IA。 |
 
 ### 13.2 Chat Pro 外观正交轴 `data-skin`
@@ -344,5 +347,9 @@ Agent 短路、异地 stub：**并列**于上链，见 `process_message.rs`。
 - **不改本文**：版本号、Wave Done 列表、CVE 日期、invoke 条数 — 各走专属 SSOT。
 - **新增模块**：先更新 §2–§12，再 **一行链接** 更新 OCLIVE_ARCHITECTURE（对外），**禁止**三处粘贴同一段落。
 - **动本文前**：读 [`handoff/README.md`](./README.md) §文档分责 · [`AI_CHANGE_BOUNDARIES.md`](./AI_CHANGE_BOUNDARIES.md) G13–G16。
+
+## 17. 脉络全景（插件清单 · 正交轴 · 核心术语 · 非定义 SSOT）
+
+**模块定义仍只维护于本文 §0–§16**。**六槽 / 独立通道 / 正交 含义** · bundled 插件全表 · 解耦形式 A–I · 调用图 → [`human-docs/team/ARCHITECTURE_DECOUPLING_PANORAMA.md`](../human-docs/team/ARCHITECTURE_DECOUPLING_PANORAMA.md) **§1** 起（2026-07-05 起）。
 
 *2026-06-25 v2：收敛为模块注册表 SSOT；进度迁至 TECHNICAL_DEBT / PROJECT_STATUS。*

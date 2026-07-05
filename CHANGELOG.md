@@ -8,7 +8,7 @@
 
 - **统一键位绑定系统（Phase 1–4）**：设置 → 常规 → 高级新增「键位绑定」（应用内 + 全局快捷键统一 UI）；全局插件快捷键继续复用 `save_hotkey_bindings` 注册系统级监听；`ShortcutHelp` 改为动态读取当前键位；语音插件新增 **V 按住说话**（`voice.holdToTalk`，窗口聚焦时生效，输入框聚焦不抢键）。
 - **Chat Pro Windows 98 彩蛋皮肤**：Konami 解锁 → `data-skin=win98`（`oclive-runtime-skin`）；设置 → 常规开关；Fluent + Tool 正交叠加于 `data-theme` / `data-shell` / UI 缩放；合成 Win98 标题栏（`Win98TitleBar` + Tauri `setDecorations`）与对话框 3D 窗框；见 [`MODULE_MAP_AND_HANDOFF.md`](handoff/MODULE_MAP_AND_HANDOFF.md) §13.2。
-- **独立通道 `voice.asr`（Windows 已交付 · v0.2）**：官方目录插件 [`distros/chat-pro/plugins/com.oclive.voice.asr/`](distros/chat-pro/plugins/com.oclive.voice.asr/) · `provides: voice.asr` · **不进**六槽 / `process_message`；`chat_toolbar` 按住说话 + `plugin_rpc_invoke`（`voice.probe` / `voice.transcribe` / `voice.import_model` / `voice.list_profiles` / `voice.speak`）→ `com.oclive.voice.asr:submit` → `send_message` 或 `chat:set_input_draft`（`mode: fill`）；sherpa-onnx 引擎 SSOT 在 [`examples/voice-loop-minimal/asr/`](examples/voice-loop-minimal/asr/) · [`tts/`](examples/voice-loop-minimal/tts/) 经 `rpc_server.mjs` spawn；官方角色包 `ui.json` 默认启用工具栏/设置插槽；Win98 覆写见 `win98/component-plugin-toolbar.css` / `component-voice-settings.css`；`plugin_bridge` RPC 白名单单测；Linux/macOS profile 返回 `unsupported_platform`；注册表见 [`RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md`](creator-docs/rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md) §4.1。
+- **独立通道 `voice.asr`（Windows 已交付 · v0.2–0.3）**：官方目录插件 [`distros/chat-pro/plugins/com.oclive.voice.asr/`](distros/chat-pro/plugins/com.oclive.voice.asr/) · `provides: voice.asr` · **不进**六槽 / `process_message`；`chat_toolbar` 按住说话 + `plugin_rpc_invoke`（`voice.probe` / `voice.transcribe` / `voice.import_model` / `voice.list_profiles` / `voice.speak` / **`voice.build_directive`**) → `com.oclive.voice.asr:submit` → `send_message` 或 `chat:set_input_draft`（`mode: fill`）；**v0.3** 增 TTS `tts_profile` · `auto_tts` · `rules-v1` 导演 · 角色包可选 `voice_profile.json`；sherpa-onnx 引擎 SSOT 在 [`examples/voice-loop-minimal/asr/`](examples/voice-loop-minimal/asr/) · [`tts/`](examples/voice-loop-minimal/tts/) 经 `rpc_server.mjs` spawn；实验 synth：`edge-tts` · `pilot-tts` · `cosyvoice` adapter；官方角色包 `ui.json` 默认启用工具栏/设置插槽；Win98 覆写见 `win98/component-plugin-toolbar.css` / `component-voice-settings.css`；`plugin_bridge` RPC 白名单单测；Linux/macOS profile 返回 `unsupported_platform`；注册表见 [`RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md`](creator-docs/rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md) §4.1。
 - **Domain layering ports（#101 解阻塞）**：`LlmClient::supports_prefix_cache` / `generate_with_opts` / `generate_stream_with_opts`；`TurnThinkingStatePort`；`co_present` / `slot_runner` / `post` 去除 domain→infra 直连；`npm run check:rust` 前置 layering + CHANGELOG parity 守门。
 - **Affect 展示通道 `display_metrics`**：`RoleData` / `RoleInfo` / `SendMessageResponse` 增 UI-only 指标（`favor` / `traits[7]` / `relation_summary`）；旧标量字段标 deprecated；前端 `roleStore` 优先读新字段。
 - **CI flake 自动重跑**：`.github/workflows/ci-rerun-flake.yml` 对 `rust` / `e2e-tauri` 失败限次 `gh run rerun --failed`。
@@ -33,6 +33,8 @@
 - 前端：`src/api/plugin/*`、`useMainShell*`、`useChatStorageSettings`、`chatStoreSend`。
 
 ### Changed
+
+- **Voice ASR v0.2.1（识别质量）**：聊天栏录音 WebM/Opus 经 `audioCapture.ts` 解码并重采样为 **16 kHz mono WAV** 再送 sherpa（修复此前误当 PCM 导致的识别极差）；麦克风约束启用 echoCancellation / noiseSuppression / autoGainControl；最短录音 350ms；引擎侧识别器缓存、过静音门控（`audio_too_quiet`）、可选 **ffmpeg** 压缩音频回退；新增 **medium** ASR profile 占位（设置里切换，需自行导入模型）。
 
 - **Win98 皮肤 CSS 分层重构**：单体 `theme-win98.css` 拆为 `distros/shared/src/styles/win98/`（L0 tokens · L1 primitives · L2 壳 · L3 面板/组件 co-locate unscoped import）；最大化满框无青绿边、主窗 2px 圆角、对话框 navy 标题条贴边；见 [`MODULE_MAP_AND_HANDOFF.md`](handoff/MODULE_MAP_AND_HANDOFF.md) §13.2 样式依赖表。
 - **Win98 皮肤抛光**：补全 `modal-backdrop` / `TimeDial.backdrop` 遮罩；Tool `UiSidePanel` navy 标题条与 Win98 ✕；合成标题栏改用 OCLive 应用图标（`public/oclive-icon.png`）。
@@ -96,6 +98,7 @@
 
 - **历史聊天记录在剧情场景下消失**：冷启动统一 `bootstrapChatForRole`（await 拉取 + `beginNewChatSessionOnRestart` 折叠）；移除 `interactionMode` watch 的 `immediate` 竞态；`loadedBucketKeys` 防止空占位桶短路；切角色时按后端有会话的场景 / 角色包场景 / IDB 索引回退加载。守门 `chatStoreScene.test.ts`、`chatStoreLoad.test.ts`，见 [`CHAT_STORAGE_ARCHITECTURE.md`](handoff/CHAT_STORAGE_ARCHITECTURE.md)。
 - **Ctrl+Shift+S 打开设置失效**：`useGlobalHotkeys` 误引用未传入的 `opts.openSettingsView`（运行时为 `undefined`），改为调用本地 `openSettingsView`；theater 壳仍发 `theater:settings`。
+- **语音插件 `get_plugin_settings_ui` 桥接失败**：`ui_slots` 经 `plugin_bridge_invoke` 调用插件设置读/写时，桌面未在 `dispatch_local_bridge_command` 分发 `get_plugin_settings_ui` / `set_plugin_settings_config`，报 `unsupported bridge command`；已路由至 `plugin_config.rs`。
 
 ---
 

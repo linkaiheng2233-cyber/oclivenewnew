@@ -106,7 +106,7 @@ ollama list
 ollama run hermes3:3b "hello"
 ```
 
-Chat Pro 内对话失败但编译成功 → 多半是 Ollama 未启动或模型未 pull。
+Chat Pro 内对话失败但编译成功 → 多半是 Ollama 未启动或模型未 pull。语音 **识别正常、仅回复失败**（`LLM_ERROR` + `localhost:11434`）同理——语音 `send` 与键盘发送走同一 `send_message` 链，见 [TRACK_VOICE_RECOGNITION §10](./TRACK_VOICE_RECOGNITION.md)。
 
 **延迟/记忆测试时不要开 mock：**
 
@@ -269,6 +269,8 @@ curl.exe -s http://127.0.0.1:8420/health
 | `LNK1104` / 无法链接 exe | 关掉正在运行的 `oclivenewnew-tauri.exe` / 旧 `tauri dev` |
 | 首次 `cargo build` 极慢 | 正常；产物在外部 target-dir，勿删源码仓内旧 `target/` 误以为没编译 |
 | `8420` 连接拒绝 | 先起 `tauri:dev` 或 `oclive-kernel-server --api` |
+| 切剧情模式 **DB_ERROR** / `no such table: role_runtime` | 桌面会 **attach** 已有 `:8420` 进程；勿与 `cargo run -p oclive_kernel_server` 测试实例并存。`Get-Process oclive-kernel-server \| Stop-Process -Force` 后重启 `tauri:dev` |
+| 插件报 `unsupported bridge command: get_plugin_settings_ui` | manifest 已声明 `bridge.invoke` 时，检查 `distros/desktop-tauri/src/api/plugin_bridge.rs` 是否已分发该命令（见 [DIRECTORY_PLUGINS.md §4.1](../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md)） |
 | Chat 400 empty message | 语音 loop 不要 POST 空字符串 |
 | Python 找不到 | 用 `py -3` 或安装时勾选 PATH |
 | 对话总是同一句 mock | 清除 `OCLIVE_HTTP_API_MOCK_LLM` |

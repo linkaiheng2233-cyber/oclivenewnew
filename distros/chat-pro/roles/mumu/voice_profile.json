@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "director_profile": "rules-v1",
+  "synth_profile": "sherpa-piper-zh",
+  "speed": 0.95,
+  "energy": "soft"
+}

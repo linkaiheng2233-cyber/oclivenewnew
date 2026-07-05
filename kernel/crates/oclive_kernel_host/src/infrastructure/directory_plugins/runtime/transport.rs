@@ -32,13 +32,38 @@ pub(crate) fn manifest_json_mtime(root: &Path) -> u64 {
         .unwrap_or(0)
 }
 
+/// Strip vue3-sfc-loader / Vite query suffixes (`?vue&type=script`, etc.).
+fn strip_asset_rel_query(rel: &str) -> &str {
+    rel.split(['?', '#']).next().unwrap_or(rel)
+}
+
+/// When `vue3-sfc-loader` resolves `./audioCapture`, the rel may be extensionless or `.js` while
+/// the on-disk plugin source is `.ts`.
+fn resolve_existing_plugin_asset(resolved: &Path) -> Option<PathBuf> {
+    if resolved.is_file() {
+        return Some(resolved.to_path_buf());
+    }
+    let stem = match resolved.extension() {
+        Some(_) => resolved.with_extension(""),
+        None => resolved.to_path_buf(),
+    };
+    for ext in ["ts", "tsx", "js", "mjs", "vue"] {
+        let candidate = stem.with_extension(ext);
+        if candidate.is_file() {
+            return Some(candidate);
+        }
+    }
+    None
+}
+
 /// Resolve a normalized relative asset path under a plugin root without `canonicalize`.
 ///
 /// # Errors
 ///
 /// Returns [`Err`] when `rel` is empty, contains `..`, escapes the plugin root, or the path does not exist.
 pub fn find_plugin_asset_path(entry: &PluginRootEntry, rel: &str) -> Result<PathBuf, String> {
-    let rel = normalize_plugin_rel(rel);
+    let rel_norm = normalize_plugin_rel(rel);
+    let rel = strip_asset_rel_query(&rel_norm);
     if rel.is_empty() {
         return Err("empty rel".into());
     }
@@ -52,10 +77,7 @@ pub fn find_plugin_asset_path(entry: &PluginRootEntry, rel: &str) -> Result<Path
     if !resolved.starts_with(&entry.canonical) {
         return Err("path escapes plugin directory".into());
     }
-    if !resolved.exists() {
-        return Err("not found".into());
-    }
-    Ok(resolved)
+    resolve_existing_plugin_asset(&resolved).ok_or_else(|| format!("not found: {rel}"))
 }
 
 pub(crate) fn plugin_roots_from_scan(

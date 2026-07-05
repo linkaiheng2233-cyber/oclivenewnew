@@ -70,10 +70,14 @@ pub fn read_plugin_asset_text(
     let entry = roots.get(pid).ok_or_else(|| ApiError::PluginNotFound {
         plugin_id: pid.to_string(),
     })?;
-    let path_canon = find_plugin_asset_path(entry, &rel).map_err(|e| {
+    let path = find_plugin_asset_path(entry, &rel).map_err(|e| {
         if e == "path escapes plugin directory" {
             ApiError::PermissionDenied {
                 message: "path escapes plugin directory".into(),
+            }
+        } else if e.starts_with("not found") {
+            ApiError::InvalidParameter {
+                message: format!("plugin asset not found: {rel} ({e})"),
             }
         } else {
             ApiError::Io {
@@ -81,11 +85,9 @@ pub fn read_plugin_asset_text(
             }
         }
     })?;
-    Ok(
-        std::fs::read_to_string(&path_canon).map_err(|e| ApiError::Io {
-            message: e.to_string(),
-        })?,
-    )
+    Ok(std::fs::read_to_string(&path).map_err(|e| ApiError::Io {
+        message: e.to_string(),
+    })?)
 }
 /// # Errors
 ///

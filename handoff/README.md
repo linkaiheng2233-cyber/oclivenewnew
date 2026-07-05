@@ -26,6 +26,7 @@
 | 主题 | 唯一 SSOT | 只链接、勿重复粘贴 |
 |------|-----------|-------------------|
 | **模块定义 · 六槽 · 设施 · 独立通道 · 槽间关系** | [`MODULE_MAP_AND_HANDOFF.md`](./MODULE_MAP_AND_HANDOFF.md) | OCLIVE_ARCHITECTURE（对外叙述）、AGENTS 内核小节 |
+| **解耦全景 · 插件清单 · §1 核心术语（六槽/独立通道/正交）**（非模块定义 SSOT） | [`human-docs/team/ARCHITECTURE_DECOUPLING_PANORAMA.md`](../human-docs/team/ARCHITECTURE_DECOUPLING_PANORAMA.md) | MODULE_MAP §17 一行链出；勿复制六槽表 |
 | 六槽 DTO · `send_message` **顺序** · wire 枚举 | [`PLUGIN_V1.md`](../creator-docs/plugin-and-architecture/PLUGIN_V1.md) | MODULE_MAP（只写关系与约束） |
 | 六槽 backend 24 格真值 | [`SLOT_BACKEND_REALITY_MATRIX.md`](./SLOT_BACKEND_REALITY_MATRIX.md) | MODULE_MAP · PLUGIN_V1 |
 | 关键路径文件 · DB 表 | [`BUS_FACTOR_NOTES.md`](./BUS_FACTOR_NOTES.md) | MODULE_MAP |

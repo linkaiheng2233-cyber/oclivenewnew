@@ -5,18 +5,29 @@ type OcliveApi = {
   invoke(command: string, params?: unknown): Promise<unknown>;
 };
 
+type ProfileRow = {
+  id: string;
+  label: string;
+  engine: string;
+  kind?: string;
+  platform_ready?: boolean;
+};
+
 const PLUGIN_ID = "com.oclive.voice.asr";
 
 const oclive = inject<OcliveApi | null>("oclive", null);
-const profiles = ref<
-  Array<{ id: string; label: string; engine: string; kind?: string; platform_ready?: boolean }>
->([]);
+const asrProfiles = ref<ProfileRow[]>([]);
+const ttsProfiles = ref<ProfileRow[]>([]);
+const directorProfiles = ref<ProfileRow[]>([]);
 const probe = ref<Record<string, unknown> | null>(null);
 const errText = ref("");
 const submitMode = ref<"send" | "fill">("send");
 const autoTts = ref(false);
 const asrProfile = ref("sherpa-paraformer-zh-small");
+const ttsProfile = ref("sherpa-piper-zh");
+const directorProfile = ref("rules-v1");
 const importPath = ref("");
+const importKind = ref<"asr" | "tts">("asr");
 const saving = ref(false);
 
 async function rpc(method: string, params: Record<string, unknown> = {}) {
@@ -34,6 +45,10 @@ async function loadConfig(): Promise<void> {
     submitMode.value = cfg.submit_mode === "fill" ? "fill" : "send";
     autoTts.value = cfg.auto_tts === true;
     if (typeof cfg.asr_profile === "string") asrProfile.value = cfg.asr_profile;
+    if (typeof cfg.tts_profile === "string") ttsProfile.value = cfg.tts_profile;
+    if (typeof cfg.director_profile === "string") {
+      directorProfile.value = cfg.director_profile || "none";
+    }
   } catch {
     /* optional */
   }
@@ -50,7 +65,8 @@ async function saveConfig(): Promise<void> {
         submit_mode: submitMode.value,
         auto_tts: autoTts.value,
         asr_profile: asrProfile.value,
-        tts_profile: "sherpa-piper-zh",
+        tts_profile: ttsProfile.value,
+        director_profile: directorProfile.value,
       },
     });
     await reload();
@@ -61,21 +77,21 @@ async function saveConfig(): Promise<void> {
   }
 }
 
+function byKind(rows: ProfileRow[], kind: string): ProfileRow[] {
+  return rows.filter((p) => (p.kind || "asr") === kind);
+}
+
 async function reload(): Promise<void> {
   if (!oclive) return;
   errText.value = "";
   try {
     const list = (await rpc("voice.list_profiles", {})) as {
-      profiles?: Array<{
-        id: string;
-        label: string;
-        engine: string;
-        platform_ready?: boolean;
-      }>;
+      profiles?: ProfileRow[];
     };
-    profiles.value = (Array.isArray(list.profiles) ? list.profiles : []).filter(
-      (p) => (p.kind || "asr") === "asr",
-    );
+    const all = Array.isArray(list.profiles) ? list.profiles : [];
+    asrProfiles.value = byKind(all, "asr");
+    ttsProfiles.value = byKind(all, "tts");
+    directorProfiles.value = byKind(all, "director");
     probe.value = (await rpc("voice.probe", { profile: asrProfile.value })) as Record<
       string,
       unknown
@@ -92,11 +108,12 @@ async function importModel(): Promise<void> {
     return;
   }
   errText.value = "";
+  const profile = importKind.value === "tts" ? ttsProfile.value : asrProfile.value;
   try {
     const res = (await rpc("voice.import_model", {
       src_path: src,
-      profile: asrProfile.value,
-      kind: "asr",
+      profile,
+      kind: importKind.value,
     })) as { ok?: boolean; reason?: string; dest?: string };
     if (!res.ok) {
       errText.value = res.reason || "导入失败";
@@ -119,16 +136,36 @@ onMounted(() => {
     <h3 class="title">语音识别（voice.asr）</h3>
     <p class="lede">
       独立通道 · 不进六槽。Windows 首版：模型导入至
-      <code>%APPDATA%/OCLive/models/asr/</code> 或插件 <code>models/</code>。
+      <code>%APPDATA%/OCLive/models/asr/</code> 或 <code>models/tts/</code>。
     </p>
 
     <label class="field">
       <span class="label">ASR 档案</span>
       <select v-model="asrProfile" class="sel" @change="reload">
-        <option v-for="p in profiles" :key="p.id" :value="p.id">
+        <option v-for="p in asrProfiles" :key="p.id" :value="p.id">
           {{ p.label }} ({{ p.engine }})
         </option>
       </select>
+    </label>
+
+    <label class="field">
+      <span class="label">TTS 发声 profile</span>
+      <select v-model="ttsProfile" class="sel">
+        <option v-for="p in ttsProfiles" :key="p.id" :value="p.id">
+          {{ p.label }} ({{ p.engine }})
+        </option>
+      </select>
+    </label>
+
+    <label class="field">
+      <span class="label">声音导演</span>
+      <select v-model="directorProfile" class="sel">
+        <option value="none">无（仅 synth）</option>
+        <option v-for="p in directorProfiles" :key="p.id" :value="p.id">
+          {{ p.label }}
+        </option>
+      </select>
+      <span class="hint">Piper 忽略 emotion_tag，<code>speed</code> 可听出差异</span>
     </label>
 
     <label class="field">
@@ -141,17 +178,26 @@ onMounted(() => {
 
     <label class="field row">
       <input v-model="autoTts" type="checkbox" />
-      <span>自动朗读回复（voice.speak）</span>
+      <span>自动朗读回复（voice.speak · 键盘发送与语音 send 均生效）</span>
     </label>
 
     <label class="field">
-      <span class="label">导入模型目录</span>
-      <input v-model="importPath" class="inp" type="text" placeholder="D:\models\sherpa-paraformer-zh-small" />
+      <span class="label">导入模型</span>
+      <select v-model="importKind" class="sel narrow">
+        <option value="asr">ASR</option>
+        <option value="tts">TTS</option>
+      </select>
+      <input
+        v-model="importPath"
+        class="inp"
+        type="text"
+        placeholder="D:\models\sherpa-paraformer-zh-small"
+      />
       <button type="button" class="btn" :disabled="!oclive" @click="importModel">导入</button>
     </label>
 
-    <ul v-if="profiles.length" class="list">
-      <li v-for="p in profiles" :key="p.id">
+    <ul v-if="asrProfiles.length" class="list">
+      <li v-for="p in asrProfiles" :key="p.id">
         <strong>{{ p.label }}</strong>
         <span class="meta">
           {{ p.id }} · {{ p.engine }}
@@ -204,6 +250,10 @@ onMounted(() => {
   font-size: 0.75rem;
   color: var(--text-secondary, #666);
 }
+.hint {
+  font-size: 0.6875rem;
+  color: var(--text-secondary, #666);
+}
 .sel,
 .inp {
   min-height: 1.875rem;
@@ -211,6 +261,9 @@ onMounted(() => {
   border-radius: 6px;
   border: 1px solid var(--border-light, #ccc);
   font-size: 0.8125rem;
+}
+.sel.narrow {
+  max-width: 6rem;
 }
 .list {
   margin: 0;

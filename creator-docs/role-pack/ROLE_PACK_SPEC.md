@@ -550,4 +550,22 @@ auto_sync: false
 
 ---
 
+## 10. 可选 · `voice_profile.json`（语音侧车 · 非六槽）
+
+> **架构**：独立通道 `voice.asr` / 导演 / synth profile 与主链正交；详见 [ARCHITECTURE_DECOUPLING_PANORAMA.md §11.2](../../human-docs/team/ARCHITECTURE_DECOUPLING_PANORAMA.md) · [TRACK_VOICE_RECOGNITION.md](../../human-docs/team/TRACK_VOICE_RECOGNITION.md)。
+
+角色包根目录可选 **`voice_profile.json`**（**不**写入 `slot_registry` · **不**进 `process_message`）。插件 `voice.build_directive` 在收到 `role_path` 时读取并覆盖默认 synth / director / baseline `speed`。
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `schema_version` | integer | 是 | 当前 **1** |
+| `director_profile` | string | 否 | 默认导演 profile id（如 `rules-v1`） |
+| `synth_profile` | string | 否 | 默认发声 profile id（如 `sherpa-piper-zh`） |
+| `speed` | number | 否 | baseline 语速乘数（0.5–2.0） |
+| `energy` | string | 否 | `soft` · `normal` · `strong` |
+
+示例见 [`distros/chat-pro/roles/mumu/voice_profile.json`](../../distros/chat-pro/roles/mumu/voice_profile.json)。契约 **`voice_directive` v1** 由插件 RPC 产出，不进 `SendMessageResponse`。
+
+---
+
 [English](../../creator-docs-en/role-pack/ROLE_PACK_SPEC.md)

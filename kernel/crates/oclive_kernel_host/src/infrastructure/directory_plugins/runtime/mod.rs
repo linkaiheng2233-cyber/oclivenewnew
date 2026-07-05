@@ -546,6 +546,7 @@ impl Drop for DirectoryPluginRuntime {
 mod asset_path_tests {
     use super::{find_plugin_asset_path, PluginRootEntry};
     use std::fs;
+    use std::path::PathBuf;
     use tempfile::TempDir;
 
     #[test]
@@ -572,6 +573,55 @@ mod asset_path_tests {
         let entry = PluginRootEntry::from_root(root);
         let path = find_plugin_asset_path(&entry, "hello.txt").expect("resolve");
         assert!(path.is_file());
+    }
+
+    #[test]
+    fn find_plugin_asset_path_resolves_typescript_extension() {
+        let tmp = TempDir::new().expect("temp");
+        let root = tmp.path().join("plugin");
+        let slots = root.join("slots");
+        fs::create_dir_all(&slots).expect("mkdir slots");
+        fs::write(slots.join("audioCapture.ts"), "export const x = 1").expect("write ts");
+        let entry = PluginRootEntry::from_root(root);
+        let path = find_plugin_asset_path(&entry, "slots/audioCapture").expect("resolve");
+        assert!(path.to_string_lossy().ends_with("audioCapture.ts"));
+    }
+
+    #[test]
+    fn find_plugin_asset_path_strips_query_suffix() {
+        let tmp = TempDir::new().expect("temp");
+        let root = tmp.path().join("plugin");
+        fs::create_dir_all(&root).expect("mkdir");
+        fs::write(root.join("helper.ts"), "export {}").expect("write ts");
+        let entry = PluginRootEntry::from_root(root);
+        let path =
+            find_plugin_asset_path(&entry, "helper.ts?vue&type=script").expect("resolve with query");
+        assert!(path.to_string_lossy().ends_with("helper.ts"));
+    }
+
+    #[test]
+    fn find_plugin_asset_path_resolves_js_request_to_typescript() {
+        let tmp = TempDir::new().expect("temp");
+        let root = tmp.path().join("plugin");
+        let slots = root.join("slots");
+        fs::create_dir_all(&slots).expect("mkdir slots");
+        fs::write(slots.join("audioCapture.ts"), "export const x = 1").expect("write ts");
+        let entry = PluginRootEntry::from_root(root);
+        let path = find_plugin_asset_path(&entry, "slots/audioCapture.js").expect("js->ts");
+        assert!(path.to_string_lossy().ends_with("audioCapture.ts"));
+    }
+
+    /// Monorepo dev: `VoiceToolbar.vue` imports `./audioCapture` without `.ts` suffix.
+    #[test]
+    fn find_plugin_asset_path_voice_asr_monorepo_if_present() {
+        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../distros/chat-pro/plugins/com.oclive.voice.asr");
+        if !root.join("manifest.json").is_file() {
+            return;
+        }
+        let entry = PluginRootEntry::from_root(root);
+        let path = find_plugin_asset_path(&entry, "slots/audioCapture").expect("audioCapture.ts");
+        assert!(path.to_string_lossy().ends_with("audioCapture.ts"));
     }
 }
 

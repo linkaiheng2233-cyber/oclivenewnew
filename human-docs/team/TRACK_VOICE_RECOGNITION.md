@@ -2,6 +2,7 @@
 
 > **读者**：负责 ASR → 对话 → TTS 闭环的工程师（可先不懂 Vue/Rust）。  
 > **前置**：[DEV_ENVIRONMENT.md](./DEV_ENVIRONMENT.md)（§4 Python · §5 模式 B · §9 语音线验收）→ [CHAT_PRO_VERTICAL_HANDOFF.md](./CHAT_PRO_VERTICAL_HANDOFF.md) → [HARDWARE_INTEGRATION.md](../../HARDWARE_INTEGRATION.md) §4–§5  
+> **架构归属**（**§1 核心术语** · 独立通道 · 不进六槽）：[ARCHITECTURE_DECOUPLING_PANORAMA.md §1 · §6–§7 · §11.2](./ARCHITECTURE_DECOUPLING_PANORAMA.md)  
 > **预计周期**：2–3 周（开发板移植在 PC 闭环通过后）  
 > **路径占位符**：`<REPO_ROOT>` = 本机 clone 路径（例：`D:\oclivenewnew`），下文命令请替换。
 
@@ -48,7 +49,13 @@ python loop.py
 |------|------|------------------|
 | **W1** | PC 上 HTTP 语音 loop v0 | `python loop.py` 输入文本 → 打印 `reply`；`--tts` 可选朗读 |
 | **W2** | 真 ASR + 固定 session 记忆 | 麦克风/按键 → 全链路 5 次成功；连聊 3 轮能引用上下文 |
-| **W3** | 开发板迁移说明 + 可选 stream | README「开发板部署」节他人可复现；可选 `--stream` 输出 ttft |
+| **W3** | 开发板迁移说明 + 可选 stream | README「开发板部署」节他人可复现；`--stream` 输出 ttft |
+
+**Phase 0 Done（v0.2.1 基线）**：WebM→16kHz WAV 内联 · `plugin_bridge` 分发 `get_plugin_settings_ui` / `set_plugin_settings_config` · transport `.js`/`.ts` fallback · §10 故障排查。
+
+**Phase 1 Done（TTS）**：`tts_profile` / `auto_tts` 设置 · `voice.speak` Piper · 键盘与语音 send 均朗读。
+
+**Phase 2 Done（voice_directive）**：`voice.build_directive` · `rules-v1` director · 角色包 `voice_profile.json` 可选覆盖 · 设置页 director 下拉。
 
 **不在本轨道：** Live2D、Chat Pro Vue、`kernel/crates/` 内核、**Chat Pro UI 流式打字机**（见 [CHAT_PRO §2 延迟/stream](./CHAT_PRO_VERTICAL_HANDOFF.md) · 组长或视觉线）。
 
@@ -261,11 +268,16 @@ ollama pull hermes3:3b
 
 **Done：** `python loop.py --mic` 或 Chat Pro 按住 🎤 → 5 次非空 `reply`。
 
+- [x] W2 · ASR 全链路（Windows sherpa-onnx + Chat Pro 插件）
+- [x] W2 · session 固定 UUID（`loop.py` / 手测记录）
+
 ### 任务 B5 · 按键说话 / 简单 VAD（1 天）
 
 v1 可用 **按住空格录音、松开识别**（`loop.py --mic`），或 Chat Pro 工具栏 **按住 🎤**（`VoiceToolbar.vue` · `MediaRecorder`）。
 
-**Done：** 与 B4 相同 5 次全链路；可选 `--tts` 或插件设置 `auto_tts`。
+**Done：** 与 B4 相同 5 次全链路；可选 `--tts` / `--tts-sherpa` 或插件设置 `auto_tts`。
+
+- [x] W2 · 按住 🎤 / `loop.py --mic` 按键路径
 
 ### 任务 B6 · 与视觉线联调（0.5 天）
 
@@ -296,6 +308,8 @@ v1 可用 **按住空格录音、松开识别**（`loop.py --mic`），或 Chat 
 
 **Done：** 同一句 prompt，对比 `/chat` vs `/chat/stream` 的 ttft 数字（截图或日志）。
 
+- [x] W3 · `loop.py --stream` 打印 `ttft_ms` / `total_ms`
+
 ### 任务 B8 · 开发板迁移文档（1 天）
 
 在 [examples/voice-loop-minimal/README.md](../../examples/voice-loop-minimal/README.md) 填写 **「开发板部署」**：
@@ -309,6 +323,8 @@ v1 可用 **按住空格录音、松开识别**（`loop.py --mic`），或 Chat 
 | 延迟 | `OCLIVE_PORTRAIT_EMOTION_LLM=0`、小模型、stream |
 
 **Done：** 另一成员按文档在 PC 模拟 AP 复现（不必真板子）。
+
+- [x] W3 · README「开发板部署」节已填写
 
 ### 任务 B9 · 目录插件形态（可选）
 
@@ -336,7 +352,13 @@ v1 可用 **按住空格录音、松开识别**（`loop.py --mic`），或 Chat 
 | HTTP 400 | `message` 是否空；ASR 是否误 POST |
 | `8420` 连接拒绝 | 内核是否启动；[DEV_ENVIRONMENT §10](./DEV_ENVIRONMENT.md) |
 | 记忆像没有 | `OCLIVE_SESSION_ID` 是否固定；是否 mock LLM |
+| **ASR 正常、回复 `LLM_ERROR`（Ollama `localhost:11434`）** | **非语音路径**；语音 `send` 与键盘发送走同一 `send_message` → `process_message` → Ollama。见 [DEV_ENVIRONMENT §3.4](./DEV_ENVIRONMENT.md)（启动 Ollama、`ollama pull`、模型与设置一致） |
+| UI 识别胡话 / 空结果 | 确认已用 v0.2.1+（WebM→16kHz WAV）；可换 **medium** profile 或 `loop.py --mic` 对比 |
+| `audio_too_quiet` | 靠近麦克风、延长按住；检查系统输入音量 |
 | `role_path not found` | `OCLIVE_ROLE_PATH` 或 `--role-path` 指向真实目录 |
+| `unsupported bridge command: get_plugin_settings_ui` | 见 [DEV_ENVIRONMENT §10](./DEV_ENVIRONMENT.md)；桌面 `plugin_bridge.rs` 须分发插件设置命令 |
+| `vueCompileFailed` / 插槽加载失败（`audioCapture` 等） | **`ui_slots` 的 `.vue` 勿 `import` 同级 `.ts`**（`vue3-sfc-loader` 经 `read_plugin_asset_text` 常请求 `.js` 而磁盘仅有 `.ts`）。逻辑内联进 `.vue` 或仅 `import "vue"`；见 [DIRECTORY_PLUGINS §4.3.1](../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md) |
+| Chat Pro 切模式 DB_ERROR | 勿留测试用 `oclive-kernel-server` 占 `:8420`；见 [DEV_ENVIRONMENT §10](./DEV_ENVIRONMENT.md) |
 | directive 一直 null | 正常（mumu 无 catalog）；联调用 `distros/chat-pro/roles/demo-doll` |
 
 ---
@@ -345,10 +367,10 @@ v1 可用 **按住空格录音、松开识别**（`loop.py --mic`），或 Chat 
 
 **交付物：**
 
-- [ ] `examples/voice-loop-minimal/loop.py` + README  
-- [ ] ASR（W2）· TTS `--tts` 说明  
-- [ ] session 记忆手测记录  
-- [ ] 开发板部署节（W3）  
+- [x] `examples/voice-loop-minimal/loop.py` + README  
+- [x] ASR（W2）· TTS `--tts` / `--tts-sherpa` 说明  
+- [x] session 记忆手测记录  
+- [x] 开发板部署节（W3）  
 - [ ] 联调记录（directive 或 A 的截图）  
 
 **PR 描述必勾选：**
