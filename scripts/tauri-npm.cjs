@@ -15,10 +15,24 @@ const workspace =
     ? "@oclive/theater"
     : "@oclive/chat-pro";
 
+function viteDevProbeOk() {
+  const probe = spawnSync(
+    process.execPath,
+    [path.join(__dirname, "dev-probe.mjs")],
+    { encoding: "utf8", shell: false, timeout: 8000 },
+  );
+  return probe.status === 0;
+}
+
 function freeVitePortIfBusy() {
   if (script !== "dev") return;
   if (process.env.OCLIVE_DEV_FREE_PORT === "0") return;
   if (process.platform !== "win32") return;
+
+  if (viteDevProbeOk()) {
+    console.info("[tauri-npm] port 1420 already serving dev web — keeping existing Vite");
+    return;
+  }
 
   const query = spawnSync(
     "powershell.exe",
@@ -48,6 +62,11 @@ function freeVitePortIfBusy() {
 }
 
 freeVitePortIfBusy();
+
+if (script === "dev" && viteDevProbeOk()) {
+  console.info("[tauri-npm] dev web already up on :1420 — skip spawning Vite");
+  process.exit(0);
+}
 
 const child = spawn("npm", ["run", script, "-w", workspace], {
   cwd: repoRoot,

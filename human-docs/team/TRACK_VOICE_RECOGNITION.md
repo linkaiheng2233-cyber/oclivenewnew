@@ -67,7 +67,7 @@ python loop.py
 | **VX-3** | 模型 DLC | `voice_model_pack.json` · `voice.list_model_packs` · 手动导入 |
 | **VX-4** | 角色 ref | `voice_profile` v2 · `ref_map` · `emo_text` |
 | **VX-5** | 云端并列 | `synth_provider: cloud` · OpenAI-compatible · `edge-tts-zh` |
-| **VX-6** | 延迟 | 流式首句 `voice:stream-sentence` · 侧车预热 |
+| **VX-6** | 延迟 | 流式首句 `voice:stream-sentence`（旁白过滤 · 首块更早）· 侧车 `/warm` **prime** dummy 合成 · 角色切换预热 |
 
 **产品原则**：文字默认；情感 TTS 为扩展；不为发声订阅；probe 失败诚实提示，无 Piper 降级。
 

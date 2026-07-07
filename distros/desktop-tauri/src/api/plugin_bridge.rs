@@ -8,9 +8,7 @@
 use crate::api::chat_backend::ChatBackend;
 use crate::api::directory_plugin::directory_plugin_bootstrap_dto;
 use crate::api::error::{map_directory_rpc_url_error, ApiError, CommandError};
-use crate::api::plugin_config::{
-    get_plugin_settings_ui_impl, set_plugin_settings_config_impl,
-};
+use crate::api::plugin_config::{get_plugin_settings_ui_impl, set_plugin_settings_config_impl};
 use crate::kernel_attach::{role_dir_for_id, KernelHttpClient};
 use oclive_kernel_host::infrastructure::directory_plugins::{
     normalize_plugin_rel, OclivePluginManifest,
@@ -240,8 +238,17 @@ async fn dispatch_plugin_rpc_invoke(
             .directory_plugins
             .ensure_rpc_url(&pid)
             .map_err(|e| map_directory_rpc_url_error(&pid, e))?;
-        invoke_directory_plugin_rpc_blocking(&url, &method, rpc_params, RemoteRpcChannel::Plugin)
-            .map_err(Into::into)
+        let timeout_ms = shared
+            .directory_plugins
+            .rpc_timeout_override_ms(&pid, &method);
+        invoke_directory_plugin_rpc_blocking(
+            &url,
+            &method,
+            rpc_params,
+            RemoteRpcChannel::Plugin,
+            timeout_ms,
+        )
+        .map_err(Into::into)
     })
     .await
     .map_err(|e| {
@@ -318,10 +325,7 @@ async fn dispatch_local_bridge_command(
             .or_else(|| params.get("plugin_id"))
             .and_then(|v| v.as_str())
             .ok_or_else(|| bridge_invalid("set_plugin_settings_config: pluginId required"))?;
-        let config = params
-            .get("config")
-            .cloned()
-            .unwrap_or(Value::Null);
+        let config = params.get("config").cloned().unwrap_or(Value::Null);
         set_plugin_settings_config_impl(state, plugin_id, &config)?;
         return Ok(json!({ "ok": true }));
     }

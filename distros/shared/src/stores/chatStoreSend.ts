@@ -9,6 +9,7 @@ import {
   assistantDialogueFromSplit,
   splitRoleplayReply,
 } from '@oclive/shared/utils/roleplayReplySplit'
+import { StreamingVoiceChunker } from '@oclive/shared/utils/streamingVoiceChunker'
 import { parseMessageTimestamp } from './chatStoreLoad'
 import { useDebugStore } from './debugStore'
 import { useRoleStore } from './roleStore'
@@ -44,11 +45,6 @@ export interface ChatStoreSendContext {
 let activeSendSeq = 0
 let inFlightStreamAbort: AbortController | null = null
 
-function extractFirstSentence(accumulated: string): string | null {
-  const m = accumulated.match(/^[\s\S]*?[。！？!?；;\n]/)
-  return m ? m[0].trim() : null
-}
-
 function isAbortError(err: unknown, signal?: AbortSignal): boolean {
   if (signal?.aborted)
     return true
@@ -79,11 +75,26 @@ export async function sendChatStoreMessage(
     timestamp: Date.now(),
   }, { persistIdbCache: false })
   context.setLoading(true)
+  hostEventBus.emitBuiltin('message:submit', { role_id: roleId, scene_id: sid })
   const relationBefore = roleStore.roleInfo.relationState
     const assistantLocalId = `a-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
     const streamId = assistantLocalId
     let streamBubbleActive = false
-    let streamSentenceEmitted = false
+    let streamSpokenPrefix = ''
+    let lastStreamAccumulated = ''
+    const voiceChunker = new StreamingVoiceChunker()
+
+    function emitStreamVoiceChunks(chunks: string[]): void {
+      for (const chunk of chunks) {
+        streamSpokenPrefix += chunk
+        hostEventBus.emitBuiltin(VOICE_STREAM_SENTENCE_EVENT, {
+          sentence: chunk,
+          stream_id: streamId,
+          role_id: roleId,
+          bot_emotion: 'neutral',
+        })
+      }
+    }
   try {
     let res: SendMessageResponse
     const streamEnabled = isChatStreamEnabled()
@@ -108,24 +119,15 @@ export async function sendChatStoreMessage(
             onToken: (_token, accumulated) => {
               if (isStale())
                 return
+              lastStreamAccumulated = accumulated
               context.patchMessageById(roleId, sid, assistantLocalId, {
                 content: accumulated,
               })
-              if (!streamSentenceEmitted) {
-                const sentence = extractFirstSentence(accumulated)
-                if (sentence) {
-                  streamSentenceEmitted = true
-                  hostEventBus.emitBuiltin(VOICE_STREAM_SENTENCE_EVENT, {
-                    sentence,
-                    stream_id: streamId,
-                    role_id: roleId,
-                    bot_emotion: 'neutral',
-                  })
-                }
-              }
+              emitStreamVoiceChunks(voiceChunker.push(accumulated))
             },
           },
         )
+        emitStreamVoiceChunks(voiceChunker.flush(lastStreamAccumulated))
       }
       catch (streamErr) {
         if (isAbortError(streamErr, streamAbort.signal) || isStale()) {
@@ -213,6 +215,9 @@ export async function sendChatStoreMessage(
       bot_emotion: res.bot_emotion,
       role_id: roleId,
       stream_id: streamBubbleActive ? streamId : undefined,
+      stream_spoken_prefix: streamBubbleActive ? streamSpokenPrefix : undefined,
+      stream_full_raw: streamBubbleActive ? lastStreamAccumulated : undefined,
+      stream_spoken_end_index: streamBubbleActive ? voiceChunker.rawEndIndex : undefined,
     })
     const countAfterTurn = context.getMessageCountForRoleScene(roleId, sid)
     context.clampSceneHistorySplitForBucket(

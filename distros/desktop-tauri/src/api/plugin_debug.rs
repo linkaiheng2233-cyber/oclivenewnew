@@ -148,8 +148,17 @@ pub async fn test_plugin_method(
         let url = shared
             .directory_plugins
             .ensure_rpc_url_for_debug(&pid_owned, None)?;
-        invoke_directory_plugin_rpc_blocking(&url, &method_owned, params, RemoteRpcChannel::Plugin)
-            .map_err(Into::into)
+        let timeout_ms = shared
+            .directory_plugins
+            .rpc_timeout_override_ms(&pid_owned, &method_owned);
+        invoke_directory_plugin_rpc_blocking(
+            &url,
+            &method_owned,
+            params,
+            RemoteRpcChannel::Plugin,
+            timeout_ms,
+        )
+        .map_err(Into::into)
     })
     .await
     .map_err(|e| crate::error::AppError::Unknown(format!("test_plugin_method join: {e}")))?
@@ -215,6 +224,9 @@ fn discover_plugin_methods_blocking(
         "rpc.discover",
         json!({}),
         RemoteRpcChannel::Plugin,
+        state
+            .directory_plugins
+            .rpc_timeout_override_ms(pid, "rpc.discover"),
     ) {
         merge_discovered_methods(&mut out, &v);
     }

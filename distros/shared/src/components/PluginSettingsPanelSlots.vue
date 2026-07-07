@@ -12,15 +12,36 @@ const props = withDefaults(
     bootstrapEpoch?: number
     /** In pure_chat, only show platform side-channel settings plugins (e.g. voice.asr). */
     platformOnly?: boolean
+    /** Only embed slots from these plugin ids. */
+    pluginIdAllowlist?: readonly string[] | null
+    /** Hide slots from these plugin ids. */
+    pluginIdDenylist?: readonly string[] | null
+    /** Hide tab bar when a single plugin panel is shown. */
+    hideTabs?: boolean
+    /** Fill parent height and scroll inside plugin panel (voice settings page). */
+    fillHeight?: boolean
   }>(),
-  { bootstrapEpoch: 0, platformOnly: false },
+  {
+    bootstrapEpoch: 0,
+    platformOnly: false,
+    pluginIdAllowlist: null,
+    pluginIdDenylist: null,
+    hideTabs: false,
+    fillHeight: false,
+  },
 )
 
 const { t } = useI18n()
 
-const pluginIdAllowlist = computed(() =>
-  props.platformOnly ? PURE_CHAT_PLATFORM_PLUGIN_IDS : null,
-)
+const pluginIdAllowlist = computed(() => {
+  if (props.pluginIdAllowlist?.length)
+    return props.pluginIdAllowlist
+  if (props.platformOnly)
+    return PURE_CHAT_PLATFORM_PLUGIN_IDS
+  return null
+})
+
+const pluginIdDenylist = computed(() => props.pluginIdDenylist ?? null)
 
 function slotTabLabel(s: { pluginId: string, label?: string | null }): string {
   const label = s.label?.trim()
@@ -44,7 +65,10 @@ const {
   slot: SLOT_SETTINGS_PANEL,
   bootstrapEpoch: () => props.bootstrapEpoch,
   pluginIdAllowlist,
+  pluginIdDenylist,
 })
+
+const showTabBar = computed(() => !props.hideTabs && panelSlots.value.length > 1)
 
 const activeTab = ref(0)
 
@@ -56,12 +80,12 @@ watch(panelSlots, (list) => {
 </script>
 
 <template>
-  <div class="psp-root">
+  <div class="psp-root" :class="{ 'psp-root--fill': props.fillHeight }">
     <div v-if="pluginError" class="psp-msg psp-msg--err" role="status">
       {{ pluginError }}
     </div>
     <template v-else-if="panelSlots.length > 0">
-      <div class="psp-tabs" role="tablist" :aria-label="t('pluginManager.slotsAria.settingsPanelTablist')">
+      <div v-if="showTabBar" class="psp-tabs" role="tablist" :aria-label="t('pluginManager.slotsAria.settingsPanelTablist')">
         <button
           v-for="(s, i) in panelSlots"
           :key="`${s.pluginId}:${s.appearanceId ?? ''}`"
@@ -79,11 +103,14 @@ watch(panelSlots, (list) => {
         v-show="activeTab === i"
         :key="`frame-${s.pluginId}-${s.appearanceId ?? ''}`"
         class="psp-frame-wrap"
+        :class="{ 'psp-frame-wrap--fill': props.fillHeight }"
         role="tabpanel"
       >
         <AsyncPluginVue
           v-if="showVue(s)"
+          :key="`vue-${s.pluginId}-${s.appearanceId ?? ''}-${reloadNonceFor(s.pluginId)}`"
           class="psp-vue"
+          :class="{ 'psp-vue--fill': props.fillHeight }"
           :plugin-id="s.pluginId"
           :vue-component="s.vueComponent!"
           :bridge-asset-rel="s.entry"
@@ -126,6 +153,12 @@ watch(panelSlots, (list) => {
   gap: 10px;
   min-height: 0;
 }
+.psp-root--fill {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  gap: 0;
+}
 .psp-tabs {
   display: flex;
   flex-wrap: wrap;
@@ -150,6 +183,12 @@ watch(panelSlots, (list) => {
   flex-direction: column;
   gap: 6px;
 }
+.psp-frame-wrap--fill {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  gap: 0;
+}
 .psp-frame {
   width: 100%;
   min-height: 260px;
@@ -161,6 +200,13 @@ watch(panelSlots, (list) => {
 .psp-vue {
   width: 100%;
   flex: 0 0 auto;
+}
+.psp-vue--fill {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 .psp-msg {
   margin: 0;

@@ -16,6 +16,10 @@ html[data-skin="win98"] .sv-dialog {
   overflow-y: auto;
 }
 
+html[data-skin="win98"] .sv-dialog.sv-dialog--voice {
+  overflow: hidden;
+}
+
 html[data-skin="win98"] .sv-head {
   display: flex;
   align-items: center;

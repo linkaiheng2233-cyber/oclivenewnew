@@ -31,6 +31,8 @@ export default {
   API_INVALID_MANIFEST: 'Invalid plugin manifest. Check manifest.json.',
   LLM_ERROR:
     'Model call failed. Check: (1) If `OCLIVE_LLM_BACKEND=ollama` (default): Ollama is running, `ollama list` / `ollama pull` matches `OLLAMA_MODEL`, and `OLLAMA_BASE_URL` is correct; (2) If **remote**: `OCLIVE_REMOTE_LLM_URL` is reachable, timeouts (`OCLIVE_REMOTE_LLM_TIMEOUT_MS`) are reasonable, and upstream is healthy. Settings → General → Environment check probes local Ollama.',
+  VOICE_RPC_TIMEOUT:
+    'Voice plugin RPC timed out (CosyVoice warm/synth is slow). In Settings → Voice, run “Warm TTS sidecar” and wait; first synthesis may take several minutes. Optional: raise `OCLIVE_VOICE_RPC_TIMEOUT_MS` (defaults: speak 600000 / warm 900000 ms).',
   ROLE_NOT_FOUND: 'Role not found. Verify role_id and your `OCLIVE_ROLES_DIR` layout.',
   ROLE_NOT_FOUND_DETAIL: 'Role not found or manifest missing. {detail}',
   ROLE_RUNTIME_NOT_READY:

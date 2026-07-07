@@ -149,8 +149,17 @@ pub async fn directory_plugin_invoke(
             .directory_plugins
             .ensure_rpc_url(&pid)
             .map_err(|e| map_directory_rpc_url_error(&pid, e))?;
-        invoke_directory_plugin_rpc_blocking(&url, &method, params, RemoteRpcChannel::Plugin)
-            .map_err(Into::into)
+        let timeout_ms = shared
+            .directory_plugins
+            .rpc_timeout_override_ms(&pid, &method);
+        invoke_directory_plugin_rpc_blocking(
+            &url,
+            &method,
+            params,
+            RemoteRpcChannel::Plugin,
+            timeout_ms,
+        )
+        .map_err(Into::into)
     })
     .await
     .map_err(|e| crate::error::AppError::Unknown(format!("directory_plugin_invoke join: {e}")))?

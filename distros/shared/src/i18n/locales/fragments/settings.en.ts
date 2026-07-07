@@ -6,8 +6,11 @@ export default {
     title: 'Settings',
     closeAria: 'Close',
     tabGeneral: 'General',
+    tabVoice: 'Voice',
     tabPlugins: 'Plugins',
     tabStorage: 'Storage',
+    voicePanelLead:
+      'Speech recognition (hold-to-talk), submit behavior, and optional emotional TTS expansion with model packs.',
     generalLeadHtml:
       'Use the Activity Bar or <strong>Ctrl+Shift+S / M</strong> for settings and models; '
       + 'appearance and locale live under Settings → General; plugins are Story-mode only.',

@@ -177,6 +177,21 @@ impl DirectoryPluginRuntime {
         Ok(arc)
     }
 
+    /// Optional per-method RPC timeout from plugin `manifest.json` (`rpcTimeoutsMs`).
+    #[must_use]
+    pub fn rpc_timeout_override_ms(&self, plugin_id: &str, method: &str) -> Option<u64> {
+        let id = plugin_id.trim();
+        if id.is_empty() {
+            return None;
+        }
+        let root = {
+            let roots = self.plugin_roots.read();
+            roots.get(id)?.root.clone()
+        };
+        let manifest = self.load_manifest_cached(id, &root).ok()?;
+        manifest.rpc_timeout_ms_for_method(method)
+    }
+
     #[must_use]
     pub fn catalog_cache_invalidation_gen(&self) -> u64 {
         self.catalog_invalidate_gen.load(Ordering::Relaxed)
@@ -594,8 +609,8 @@ mod asset_path_tests {
         fs::create_dir_all(&root).expect("mkdir");
         fs::write(root.join("helper.ts"), "export {}").expect("write ts");
         let entry = PluginRootEntry::from_root(root);
-        let path =
-            find_plugin_asset_path(&entry, "helper.ts?vue&type=script").expect("resolve with query");
+        let path = find_plugin_asset_path(&entry, "helper.ts?vue&type=script")
+            .expect("resolve with query");
         assert!(path.to_string_lossy().ends_with("helper.ts"));
     }
 

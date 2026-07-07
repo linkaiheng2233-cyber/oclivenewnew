@@ -35,6 +35,7 @@ def main() -> int:
                     model_dir=model_dir or ".",
                     engine=engine,
                     sidecar_endpoint=payload.get("sidecar_endpoint"),
+                    prime=bool(payload.get("prime", True)),
                 ),
                 ensure_ascii=False,
             )

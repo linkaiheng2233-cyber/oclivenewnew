@@ -6,6 +6,7 @@
   "description": "Side-channel voice.asr + optional voice expansion (CosyVoice2 TTS) + voice.build_directive. ASR in base; emotional TTS requires expansion.",
   "provides": ["voice.asr"],
   "rpcMethods": [
+    "config_updated",
     "voice.probe",
     "voice.probe_tts",
     "voice.warm",
@@ -16,6 +17,13 @@
     "voice.speak",
     "voice.build_directive"
   ],
+  "rpcTimeoutsMs": {
+    "voice.warm": 900000,
+    "voice.speak": 600000,
+    "voice.probe_tts": 120000,
+    "voice.transcribe": 120000,
+    "voice.import_model": 300000
+  },
   "process": {
     "command": "node",
     "args": ["rpc_server.mjs"]

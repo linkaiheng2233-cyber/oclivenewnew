@@ -200,21 +200,10 @@ def warm_engine(
     base = _sidecar_base(manifest=manifest, sidecar_endpoint=sidecar_endpoint)
     result = _http_json(
         f"{base}/warm",
-        {"model_dir": str(path)},
+        {"model_dir": str(path), "prime": prime},
         method="POST",
         timeout=300.0,
     )
-    if not result.get("ok") or not prime:
-        return result
-    prime_result = _http_json(
-        f"{base}/synthesize",
-        {"text": "好", "emo_text": "平静"},
-        method="POST",
-        timeout=600.0,
-    )
-    result["primed"] = bool(prime_result.get("ok"))
-    result["prime_reason"] = prime_result.get("reason", "")
-    result["prime_elapsed_ms"] = prime_result.get("elapsed_ms")
     return result
 
 
@@ -292,10 +281,14 @@ def _synthesize_cosyvoice2(
 ) -> dict[str, Any]:
     base = _sidecar_base(manifest=manifest, sidecar_endpoint=sidecar_endpoint)
     d = directive or {}
+    emo_text = str(d.get("emo_text") or "").strip()
+    ref_audio = str(d.get("ref_audio") or "").strip()
+    if not emo_text and not ref_audio:
+        emo_text = "用自然平静的语气"
     payload = {
         "text": cleaned,
-        "emo_text": str(d.get("emo_text") or ""),
-        "ref_audio": str(d.get("ref_audio") or ""),
+        "emo_text": emo_text,
+        "ref_audio": ref_audio,
         "ref_text": str(d.get("ref_text") or ""),
         "speed": speed,
     }
@@ -426,6 +419,37 @@ def _synthesize_cloud_openai(
     }
 
 
+def _ensure_cosyvoice2_warmed(
+    *,
+    path: Path,
+    sidecar_endpoint: str | None,
+) -> dict[str, Any]:
+    """Load CosyVoice2 weights when sidecar is up but still cold (health: not_warmed)."""
+    probe = probe_engine(path, engine="cosyvoice2", sidecar_endpoint=sidecar_endpoint)
+    if probe.get("ok"):
+        return probe
+    reason = str(probe.get("reason") or "")
+    endpoint = sidecar_endpoint or probe.get("sidecar_endpoint")
+    if reason != "not_warmed":
+        return probe
+    warm = warm_engine(
+        model_dir=path,
+        sidecar_endpoint=endpoint,
+        engine="cosyvoice2",
+        prime=False,
+    )
+    if not warm.get("ok"):
+        return {
+            "ok": False,
+            "engine": "cosyvoice2",
+            "reason": warm.get("reason") or "warm_failed",
+            "message": warm.get("message") or "CosyVoice2 warm failed",
+            "model_dir": str(path),
+            "sidecar_endpoint": endpoint,
+        }
+    return probe_engine(path, engine="cosyvoice2", sidecar_endpoint=endpoint)
+
+
 def synthesize_text(
     *,
     model_dir: str | Path,
@@ -468,16 +492,16 @@ def synthesize_text(
             cloud_model=cloud_model,
         )
     if engine_name == "cosyvoice2":
-        probe = probe_engine(path, engine=engine_name, sidecar_endpoint=sidecar_endpoint)
-        if not probe.get("ok"):
-            return {"ok": False, "audio_base64": "", **probe}
+        ready = _ensure_cosyvoice2_warmed(path=path, sidecar_endpoint=sidecar_endpoint)
+        if not ready.get("ok"):
+            return {"ok": False, "audio_base64": "", **ready}
         return _synthesize_cosyvoice2(
             path=path,
             cleaned=cleaned,
             speed=effective_speed,
             manifest=manifest,
             directive=directive,
-            sidecar_endpoint=sidecar_endpoint or probe.get("sidecar_endpoint"),
+            sidecar_endpoint=sidecar_endpoint or ready.get("sidecar_endpoint"),
         )
     if engine_name == "sherpa-onnx-tts":
         probe = probe_engine(path, engine=engine_name)

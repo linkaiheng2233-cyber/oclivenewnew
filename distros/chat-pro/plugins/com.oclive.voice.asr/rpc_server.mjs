@@ -26,6 +26,9 @@ let pluginConfig = null;
 let cosyvoiceSidecarChild = null;
 /** @type {string | null} */
 let cosyvoiceSidecarUrl = null;
+let cosyvoiceSidecarWarmed = false;
+/** @type {Promise<Record<string, unknown>> | null} */
+let cosyvoiceWarmInFlight = null;
 
 function jsonRpcResult(id, result) {
   return JSON.stringify({ jsonrpc: "2.0", id, result });
@@ -73,7 +76,11 @@ const RULES_V1_EMO_TEXT = {
   surprised: "用惊讶的语气",
   disgusted: "用嫌弃的语气",
   neutral: "用自然平静的语气",
+  excited: "用兴奋活泼的语气",
+  confused: "用困惑犹豫的语气",
 };
+
+const DEFAULT_COSYVOICE_EMO_TEXT = RULES_V1_EMO_TEXT.neutral;
 
 const MODEL_PACK_FILENAME = "voice_model_pack.json";
 
@@ -144,7 +151,58 @@ function stopCosyvoiceSidecar() {
     }
     cosyvoiceSidecarChild = null;
     cosyvoiceSidecarUrl = null;
+    cosyvoiceSidecarWarmed = false;
   }
+}
+
+async function ensureCosyvoiceSidecarWarmed(profileId, sidecarEndpoint) {
+  if (cosyvoiceSidecarWarmed) {
+    return { ok: true, already_warmed: true, warmed: true };
+  }
+  const modelDir = resolveTtsModelDir(profileId);
+  const health = await probeSidecarEndpoint(sidecarEndpoint, modelDir);
+  if (health.ok && health.warmed) {
+    cosyvoiceSidecarWarmed = true;
+    return {
+      ok: true,
+      already_warmed: true,
+      warmed: true,
+      sidecar_endpoint: sidecarEndpoint,
+      model_dir: modelDir,
+    };
+  }
+  if (cosyvoiceWarmInFlight) {
+    return cosyvoiceWarmInFlight;
+  }
+  cosyvoiceWarmInFlight = runCosyvoiceWarm(profileId, sidecarEndpoint, modelDir);
+  try {
+    return await cosyvoiceWarmInFlight;
+  } finally {
+    cosyvoiceWarmInFlight = null;
+  }
+}
+
+async function runCosyvoiceWarm(profileId, sidecarEndpoint, modelDir) {
+  const warm = await spawnPythonJson(
+    "tts.synthesize",
+    {
+      warm: true,
+      prime: true,
+      model_dir: modelDir,
+      engine: "cosyvoice2",
+      sidecar_endpoint: sidecarEndpoint,
+    },
+    COSYVOICE_WARM_TIMEOUT_MS,
+  );
+  if (warm.ok) {
+    cosyvoiceSidecarWarmed = true;
+  }
+  return {
+    ...warm,
+    sidecar_endpoint: sidecarEndpoint,
+    model_dir: modelDir,
+    profile: profileId,
+  };
 }
 
 function startCosyvoiceSidecar(modelDir, port = 50000) {
@@ -201,6 +259,7 @@ function startCosyvoiceSidecar(modelDir, port = 50000) {
     child.on("error", (err) => {
       cosyvoiceSidecarChild = null;
       cosyvoiceSidecarUrl = null;
+      cosyvoiceSidecarWarmed = false;
       finish({
         ok: false,
         reason: "sidecar_spawn_failed",
@@ -211,12 +270,50 @@ function startCosyvoiceSidecar(modelDir, port = 50000) {
       if (cosyvoiceSidecarChild === child) {
         cosyvoiceSidecarChild = null;
         cosyvoiceSidecarUrl = null;
+        cosyvoiceSidecarWarmed = false;
       }
       if (!settled) {
         finish({ ok: false, reason: "sidecar_exited", message: "CosyVoice2 sidecar exited" });
       }
     });
   });
+}
+
+async function probeSidecarEndpoint(endpoint, expectedModelDir) {
+  const base = String(endpoint || "").trim().replace(/\/+$/, "");
+  if (!base) {
+    return { ok: false, reason: "endpoint_missing" };
+  }
+  try {
+    const res = await fetch(`${base}/health`, { signal: AbortSignal.timeout(3000) });
+    if (!res.ok) {
+      return { ok: false, reason: "health_http", endpoint: base };
+    }
+    const body = await res.json();
+    const expected = path.resolve(expectedModelDir);
+    const actual = path.resolve(String(body.model_dir || ""));
+    if (expected.toLowerCase() !== actual.toLowerCase()) {
+      return {
+        ok: false,
+        reason: "sidecar_model_mismatch",
+        endpoint: base,
+        message: `Sidecar at ${base} uses ${actual}; expected ${expected}`,
+      };
+    }
+    return {
+      ok: true,
+      sidecar_endpoint: base,
+      model_dir: actual,
+      warmed: body.warmed === true,
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      reason: "health_unreachable",
+      endpoint: base,
+      message: err instanceof Error ? err.message : String(err),
+    };
+  }
 }
 
 async function ensureCosyvoiceSidecar(profileId) {
@@ -229,6 +326,28 @@ async function ensureCosyvoiceSidecar(profileId) {
   const port = Number(profile.sidecar_port || 50000) || 50000;
   if (cosyvoiceSidecarChild && cosyvoiceSidecarUrl) {
     return { ok: true, sidecar_endpoint: cosyvoiceSidecarUrl, model_dir: modelDir };
+  }
+  const portUrl = `http://127.0.0.1:${port}`;
+  const existing = await probeSidecarEndpoint(portUrl, modelDir);
+  if (existing.ok) {
+    cosyvoiceSidecarUrl = existing.sidecar_endpoint;
+    if (existing.warmed) {
+      cosyvoiceSidecarWarmed = true;
+    }
+    return {
+      ok: true,
+      sidecar_endpoint: cosyvoiceSidecarUrl,
+      model_dir: modelDir,
+      adopted: true,
+    };
+  }
+  if (existing.reason === "sidecar_model_mismatch") {
+    return {
+      ok: false,
+      reason: existing.reason,
+      message: `${existing.message}. Close other CosyVoice sidecar processes, then run Warm TTS again.`,
+      sidecar_endpoint: existing.endpoint,
+    };
   }
   return startCosyvoiceSidecar(modelDir, port);
 }
@@ -662,6 +781,42 @@ async function handleTranscribe(params) {
   };
 }
 
+function directiveHasCosyvoiceInput(directive) {
+  if (!directive || typeof directive !== "object") return false;
+  if (String(directive.emo_text || "").trim()) return true;
+  const ref = String(directive.ref_audio || "").trim();
+  return ref.length > 0 && fs.existsSync(ref);
+}
+
+function ensureCosyvoiceSpeakDirective(directive, params) {
+  if (directiveHasCosyvoiceInput(directive)) return directive;
+  const built = handleBuildDirective({
+    bot_emotion: params?.bot_emotion || directive?.emotion_tag || "neutral",
+    role_path: String(params?.role_path || ""),
+    profile: pluginConfig?.director_profile,
+  });
+  if (built.ok && built.directive && directiveHasCosyvoiceInput(built.directive)) {
+    return built.directive;
+  }
+  const emotion = String(params?.bot_emotion || directive?.emotion_tag || "neutral")
+    .trim()
+    .toLowerCase();
+  return {
+    schema_version: 1,
+    emotion_tag: emotion,
+    speed: Number(directive?.speed ?? 1.0) || 1.0,
+    energy: directive?.energy || "normal",
+    emo_text: RULES_V1_EMO_TEXT[emotion] || DEFAULT_COSYVOICE_EMO_TEXT,
+    synth_profile:
+      directive?.synth_profile ||
+      pluginConfig?.tts_profile ||
+      readProfiles().default_tts_profile ||
+      DEFAULT_TTS_PROFILE,
+    ...(directive?.ref_audio ? { ref_audio: directive.ref_audio } : {}),
+    ...(directive?.ref_text ? { ref_text: directive.ref_text } : {}),
+  };
+}
+
 async function handleSpeak(params) {
   const text = String(params?.text || "").trim();
   if (!text) {
@@ -675,7 +830,9 @@ async function handleSpeak(params) {
       audio_base64: "",
     };
   }
-  const directive = params?.directive && typeof params.directive === "object" ? params.directive : null;
+  let directive =
+    params?.directive && typeof params.directive === "object" ? params.directive : null;
+  directive = ensureCosyvoiceSpeakDirective(directive, params);
   const profileId =
     directive?.synth_profile ||
     params?.profile ||
@@ -696,6 +853,15 @@ async function handleSpeak(params) {
       };
     }
     sidecarEndpoint = sidecar.sidecar_endpoint || sidecarEndpoint;
+    const warm = await ensureCosyvoiceSidecarWarmed(profileId, sidecarEndpoint);
+    if (!warm.ok) {
+      return {
+        ok: false,
+        reason: warm.reason || "not_warmed",
+        message: warm.message || "CosyVoice2 sidecar warm failed — try 预热 TTS 侧车 in settings",
+        audio_base64: "",
+      };
+    }
   }
   const modelDir = resolveTtsModelDir(profileId);
   const engine = profileRec.profile?.engine;
@@ -781,16 +947,40 @@ async function handleWarm(params) {
     return sidecar;
   }
   const modelDir = resolveTtsModelDir(profileId);
-  return spawnPythonJson(
-    "tts.synthesize",
-    {
-      warm: true,
-      model_dir: modelDir,
+  const endpoint = sidecar.sidecar_endpoint;
+  if (cosyvoiceSidecarWarmed) {
+    return {
+      ok: true,
+      already_warmed: true,
+      warmed: true,
       engine: "cosyvoice2",
-      sidecar_endpoint: sidecar.sidecar_endpoint,
-    },
-    COSYVOICE_WARM_TIMEOUT_MS,
-  );
+      model_dir: modelDir,
+      sidecar_endpoint: endpoint,
+      message: "CosyVoice2 sidecar already warmed",
+    };
+  }
+  const health = await probeSidecarEndpoint(endpoint, modelDir);
+  if (health.ok && health.warmed) {
+    cosyvoiceSidecarWarmed = true;
+    return {
+      ok: true,
+      already_warmed: true,
+      warmed: true,
+      engine: "cosyvoice2",
+      model_dir: modelDir,
+      sidecar_endpoint: endpoint,
+      message: "CosyVoice2 sidecar already warmed",
+    };
+  }
+  if (cosyvoiceWarmInFlight) {
+    return cosyvoiceWarmInFlight;
+  }
+  cosyvoiceWarmInFlight = runCosyvoiceWarm(profileId, endpoint, modelDir);
+  try {
+    return await cosyvoiceWarmInFlight;
+  } finally {
+    cosyvoiceWarmInFlight = null;
+  }
 }
 
 function handleBuildDirective(params) {
@@ -820,7 +1010,8 @@ function handleBuildDirective(params) {
     roleVoice?.emo_text_template && typeof roleVoice.emo_text_template === "string"
       ? roleVoice.emo_text_template.replace("{tone}", RULES_V1_EMO_TEXT[botEmotion] || "")
       : "";
-  const emoText = emoFromRole || RULES_V1_EMO_TEXT[botEmotion] || "";
+  const emoText =
+    emoFromRole || RULES_V1_EMO_TEXT[botEmotion] || DEFAULT_COSYVOICE_EMO_TEXT;
 
   if (!directorId || directorId === "none") {
     const directive = {
@@ -875,17 +1066,7 @@ function handleConfigUpdated(params) {
         pluginConfig.tts_profile || readProfiles().default_tts_profile || DEFAULT_TTS_PROFILE;
       void ensureCosyvoiceSidecar(profileId).then((sidecar) => {
         if (sidecar.ok) {
-          const modelDir = resolveTtsModelDir(profileId);
-          void spawnPythonJson(
-            "tts.synthesize",
-            {
-              warm: true,
-              model_dir: modelDir,
-              engine: "cosyvoice2",
-              sidecar_endpoint: sidecar.sidecar_endpoint,
-            },
-            COSYVOICE_WARM_TIMEOUT_MS,
-          );
+          void ensureCosyvoiceSidecarWarmed(profileId, sidecar.sidecar_endpoint);
         }
       });
     } else if (prev?.tts_expansion_enabled === true && pluginConfig.tts_expansion_enabled !== true) {

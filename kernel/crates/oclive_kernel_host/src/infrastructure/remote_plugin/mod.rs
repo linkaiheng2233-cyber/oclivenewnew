@@ -222,6 +222,7 @@ pub fn invoke_directory_plugin_rpc_blocking(
     method: &str,
     params: Value,
     channel: RemoteRpcChannel,
+    timeout_override_ms: Option<u64>,
 ) -> Result<Value> {
     if !rpc_url_is_loopback(url) {
         return Err(AppError::HighRiskCapabilityNotGranted {
@@ -229,10 +230,18 @@ pub fn invoke_directory_plugin_rpc_blocking(
             id: url.to_string(),
         });
     }
-    let cfg = RemotePluginHttpConfig::for_directory_plugin_rpc(
+    let mut cfg = RemotePluginHttpConfig::for_directory_plugin_rpc(
         url,
         matches!(channel, RemoteRpcChannel::Llm),
     );
+    cfg.timeout = if let Some(ms) = timeout_override_ms {
+        Duration::from_millis(ms.clamp(500, 900_000))
+    } else {
+        RemotePluginHttpConfig::directory_plugin_rpc_timeout_for_method(
+            method,
+            matches!(channel, RemoteRpcChannel::Llm),
+        )
+    };
     let http = RemoteHttpClientBlocking::new_standalone(
         cfg,
         HighRiskGrantStore::load(std::env::temp_dir(), false),
@@ -258,6 +267,7 @@ mod invoke_rpc_tests {
             "test.method",
             serde_json::json!({}),
             RemoteRpcChannel::Plugin,
+            None,
         )
         .unwrap_err();
         assert!(matches!(err, AppError::HighRiskCapabilityNotGranted { .. }));

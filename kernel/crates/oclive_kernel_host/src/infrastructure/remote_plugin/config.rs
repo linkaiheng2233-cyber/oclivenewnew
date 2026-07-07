@@ -99,31 +99,33 @@ impl RemotePluginHttpConfig {
     /// JSON-RPC root URL obtained after a directory plugin lazily starts (shares timeout / auth env var name prefix `OCLIVE_DIRECTORY_*` with env sidecars).
     pub fn for_directory_plugin_rpc(endpoint: impl Into<String>, is_llm: bool) -> Self {
         let endpoint = endpoint.into();
-        let timeout_ms = if is_llm {
-            std::env::var("OCLIVE_DIRECTORY_LLM_TIMEOUT_MS")
-                .ok()
-                .and_then(|s| s.parse::<u64>().ok())
-                .unwrap_or(120_000)
-        } else {
-            std::env::var("OCLIVE_DIRECTORY_PLUGIN_TIMEOUT_MS")
-                .ok()
-                .and_then(|s| s.parse::<u64>().ok())
-                .unwrap_or(8_000)
-        };
-        let (lo, hi) = if is_llm {
-            (1_000u64, 600_000u64)
-        } else {
-            (500u64, 120_000u64)
-        };
+        let timeout = Self::directory_plugin_rpc_timeout_for_method("", is_llm);
         let bearer_token = std::env::var("OCLIVE_DIRECTORY_PLUGIN_TOKEN")
             .ok()
             .map(|s| s.trim().to_string())
             .filter(|s| !s.is_empty());
         Self {
             endpoint,
-            timeout: Duration::from_millis(timeout_ms.clamp(lo, hi)),
+            timeout,
             bearer_token,
         }
+    }
+
+    /// Per-method timeout for local directory-plugin JSON-RPC (generic default; plugins may override via manifest `rpcTimeoutsMs`).
+    #[must_use]
+    pub fn directory_plugin_rpc_timeout_for_method(_method: &str, is_llm: bool) -> Duration {
+        if is_llm {
+            let timeout_ms = std::env::var("OCLIVE_DIRECTORY_LLM_TIMEOUT_MS")
+                .ok()
+                .and_then(|s| s.parse::<u64>().ok())
+                .unwrap_or(120_000);
+            return Duration::from_millis(timeout_ms.clamp(1_000, 600_000));
+        }
+        let env_ms = std::env::var("OCLIVE_DIRECTORY_PLUGIN_TIMEOUT_MS")
+            .ok()
+            .and_then(|s| s.parse::<u64>().ok())
+            .unwrap_or(8_000);
+        Duration::from_millis(env_ms.clamp(500, 900_000))
     }
 
     /// `OCLIVE_REMOTE_AGENT_URL`: agent sidecar JSON-RPC (`agent.process`).
@@ -183,6 +185,23 @@ impl RemotePluginHttpConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn directory_plugin_timeout_defaults_to_eight_seconds() {
+        std::env::remove_var("OCLIVE_DIRECTORY_PLUGIN_TIMEOUT_MS");
+        let d =
+            RemotePluginHttpConfig::directory_plugin_rpc_timeout_for_method("voice.warm", false);
+        assert_eq!(d.as_millis(), 8_000);
+    }
+
+    #[test]
+    fn directory_plugin_timeout_honors_env() {
+        std::env::set_var("OCLIVE_DIRECTORY_PLUGIN_TIMEOUT_MS", "600000");
+        let d =
+            RemotePluginHttpConfig::directory_plugin_rpc_timeout_for_method("voice.speak", false);
+        assert_eq!(d.as_millis(), 600_000);
+        std::env::remove_var("OCLIVE_DIRECTORY_PLUGIN_TIMEOUT_MS");
+    }
 
     #[test]
     fn plugin_timeout_is_clamped() {

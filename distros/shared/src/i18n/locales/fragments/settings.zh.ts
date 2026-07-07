@@ -6,8 +6,11 @@ export default {
     title: '设置',
     closeAria: '关闭',
     tabGeneral: '常规',
+    tabVoice: '语音交互',
     tabPlugins: '插件扩展',
     tabStorage: '存储管理',
+    voicePanelLead:
+      '语音识别（按住说话）、识别结果处理方式，以及可选的情感 TTS 扩展与模型包管理。',
     generalLeadHtml:
       '侧栏 Activity Bar 或 <strong>Ctrl+Shift+S / M</strong> 打开设置与模型；'
       + '外观与语言在设置 → 常规；插件仅在剧情模式下可用。',

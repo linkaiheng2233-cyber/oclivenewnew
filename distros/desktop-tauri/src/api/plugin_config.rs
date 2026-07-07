@@ -115,11 +115,15 @@ pub(crate) fn set_plugin_settings_config_impl(
     }
     write_config_json(state, pid, config)?;
     if let Ok(url) = state.directory_plugins.ensure_rpc_url(pid) {
+        let timeout_ms = state
+            .directory_plugins
+            .rpc_timeout_override_ms(pid, "config_updated");
         let _ = invoke_directory_plugin_rpc_blocking(
             &url,
             "config_updated",
             json!({ "config": config }),
             RemoteRpcChannel::Plugin,
+            timeout_ms,
         );
     }
     Ok(())

@@ -158,6 +158,14 @@ export function toFriendlyErrorMessage(err: unknown): string {
     if (mapped)
       return mapped
   }
+  if (
+    code === 'LLM_ERROR'
+    && /remote_plugin transport kind=timeout method=voice\./.test(`${text} ${raw}`)
+  ) {
+    const mapped = translateApiError('VOICE_RPC_TIMEOUT')
+    if (mapped)
+      return mapped
+  }
   const mapped = translateApiError(code)
   if (mapped)
     return mapped

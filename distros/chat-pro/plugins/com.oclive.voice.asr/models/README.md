@@ -141,6 +141,8 @@ $warmJson | .\.venv-cosyvoice\Scripts\python.exe -m tts.synthesize
 
 3. **Second synthesis** should be faster than the first; compare `elapsed_ms` in sidecar stderr.
 
+**Latency tip (optional):** install `onnxruntime-gpu` in `.venv-cosyvoice` if ONNX frontend CPU warnings appear during warm — often reduces first-chunk synthesis time on NVIDIA GPUs.
+
 **Piper** is **not** a product fallback. Dev-only: [`examples/voice-loop-minimal/models/tts/sherpa-piper-zh/`](../../../../examples/voice-loop-minimal/models/tts/sherpa-piper-zh/).
 
 

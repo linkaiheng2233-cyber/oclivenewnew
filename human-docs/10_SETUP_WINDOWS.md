@@ -9,6 +9,7 @@
 | **Node.js ≥ 20** | 见根 `package.json` `engines`；可选 `.nvmrc` |
 | **Rust stable** | `rustup` 默认 toolchain |
 | **Visual Studio Build Tools** | 勾选 **「使用 C++ 的桌面开发」**（MSVC 链接器） |
+| **Windows SDK** | 含 **rc.exe**（资源编译器）；`npm run tauri:dev` 会自动把 SDK `bin/.../x64` 加入 PATH。未安装时：`winget install Microsoft.WindowsSDK.10.0.26100` |
 | **WebView2** | Win10/11 通常已带；Tauri 1.x 依赖 |
 
 ## Cargo 产物目录（外部 target-dir）
@@ -28,6 +29,23 @@
 | 后续增量 `npm run tauri:dev` | 数分钟 |
 
 ## 常见问题
+
+### RC.EXE / embed-resource panic
+
+Tauri 编译若报 `Are you sure you have RC.EXE in your $PATH`：
+
+1. 安装 Windows SDK（见上表 `winget install Microsoft.WindowsSDK.10.0.26100`）
+2. 使用仓库脚本包装：`npm run tauri:dev`（已含 `scripts/with-windows-rc-path.mjs`）
+
+### link.exe not found（MSVC 链接器）
+
+Rust/Tauri 最终链接需要 **Visual Studio Build Tools** 里的 `link.exe`（不是 VS Code）：
+
+```powershell
+winget install Microsoft.VisualStudio.2022.BuildTools --override "--wait --passive --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
+```
+
+安装完成后**新开终端**，再 `npm run tauri:dev`。脚本会自动把 MSVC `bin/Hostx64/x64` 加入 PATH。
 
 ### LNK1104 / 无法打开文件
 

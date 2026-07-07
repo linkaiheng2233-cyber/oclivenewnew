@@ -18,6 +18,8 @@ export function useDirectoryPluginSlotEmbed(options: {
   bootstrapEpoch: MaybeRefOrGetter<number>
   /** When set, only embed slots from these plugin ids (e.g. pure_chat platform plugins). */
   pluginIdAllowlist?: MaybeRefOrGetter<readonly string[] | null | undefined>
+  /** When set, hide slots from these plugin ids (e.g. voice tab owns voice.asr). */
+  pluginIdDenylist?: MaybeRefOrGetter<readonly string[] | null | undefined>
 }) {
   const { t } = useI18n()
   const roleStore = useRoleStore()
@@ -35,8 +37,11 @@ export function useDirectoryPluginSlotEmbed(options: {
 
   const slots = computed<PluginUiSlotInfo[]>(() => {
     const allowlist = toValue(options.pluginIdAllowlist)
+    const denylist = toValue(options.pluginIdDenylist)
     return (bootstrapUiSlots.value ?? []).filter((s) => {
       if (s.slot !== toValue(options.slot))
+        return false
+      if (denylist?.includes(s.pluginId))
         return false
       if (!allowlist || allowlist.length === 0)
         return true
@@ -54,9 +59,19 @@ export function useDirectoryPluginSlotEmbed(options: {
     () => {
       vueFallback.value = {}
       clearAllKeyedErrors()
-      reloadEpoch.value = {}
+      const next: Record<string, number> = {}
+      for (const s of slots.value) {
+        next[s.pluginId] = (reloadEpoch.value[s.pluginId] ?? 0) + 1
+      }
+      reloadEpoch.value = next
     },
   )
+
+  function reloadNonceFor(pluginId: string): number {
+    const local = reloadEpoch.value[pluginId] ?? 0
+    const fromStore = pluginStore.slotReloadByPluginId[pluginId] ?? 0
+    return local + fromStore
+  }
 
   function onFrameError(pluginId: string): void {
     setKeyedError(pluginId, t('pluginWorkbench.slotEmbed.frameLoadFailed'))
@@ -89,10 +104,6 @@ export function useDirectoryPluginSlotEmbed(options: {
     }
     clearKeyedError(id)
     vueFallback.value = { ...vueFallback.value, [id]: false }
-  }
-
-  function reloadNonceFor(pluginId: string): number {
-    return reloadEpoch.value[pluginId] ?? 0
   }
 
   function showIframe(s: PluginUiSlotInfo): boolean {

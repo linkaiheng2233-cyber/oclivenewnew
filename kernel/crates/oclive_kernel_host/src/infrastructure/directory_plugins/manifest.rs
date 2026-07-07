@@ -114,6 +114,9 @@ pub struct OclivePluginManifest {
     /// Optional: high-risk capability declarations (PLUGIN_V1 permissions); omitted = `[]`.
     #[serde(default)]
     pub permissions: Vec<String>,
+    /// Optional: per JSON-RPC method HTTP timeout overrides in milliseconds.
+    #[serde(default, rename = "rpcTimeoutsMs")]
+    pub rpc_timeouts_ms: HashMap<String, u64>,
     /// Optional: plugin description (simple manager list detail).
     #[serde(default)]
     pub description: Option<String>,
@@ -174,6 +177,12 @@ impl OclivePluginManifest {
             return false;
         };
         !b.invoke.is_empty() || !b.events.is_empty()
+    }
+
+    /// Manifest-declared JSON-RPC timeout for `method` (milliseconds), if any.
+    #[must_use]
+    pub fn rpc_timeout_ms_for_method(&self, method: &str) -> Option<u64> {
+        self.rpc_timeouts_ms.get(method).copied()
     }
     /// # Errors
     ///

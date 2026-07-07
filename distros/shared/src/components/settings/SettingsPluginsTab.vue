@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { VOICE_ASR_PLUGIN_ID } from '@oclive/shared/lib/voiceAsrEvents'
 import PluginSettingsPanelSlots from '../PluginSettingsPanelSlots.vue'
 import HelpHint from '../shared/HelpHint.vue'
 import UiButton from '../ui/UiButton.vue'
@@ -16,6 +17,8 @@ defineEmits<{
 }>()
 
 const { t } = useI18n()
+
+const voiceSettingsDenylist = [VOICE_ASR_PLUGIN_ID] as const
 </script>
 
 <template>
@@ -30,6 +33,7 @@ const { t } = useI18n()
       <PluginSettingsPanelSlots
         :bootstrap-epoch="bootstrapEpoch"
         :platform-only="platformOnly"
+        :plugin-id-denylist="voiceSettingsDenylist"
       />
     </UiSection>
 

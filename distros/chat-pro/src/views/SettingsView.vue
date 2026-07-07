@@ -6,11 +6,15 @@ import {
   SLOT_SETTINGS_PANEL,
   usePluginStore,
 } from '@oclive/shared/stores/pluginStore'
+import { VOICE_ASR_PLUGIN_ID } from '@oclive/shared/lib/voiceAsrEvents'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
 
 const ChatStorageSettingsPanel = defineAsyncComponent(() => import('@oclive/shared/components/settings/ChatStorageSettingsPanel.vue'))
 const SettingsGeneralTab = defineAsyncComponent(() => import('@oclive/shared/components/settings/SettingsGeneralTab.vue'))
 const SettingsPluginsTab = defineAsyncComponent(() => import('@oclive/shared/components/settings/SettingsPluginsTab.vue'))
+const SettingsVoiceTab = defineAsyncComponent(() => import('@oclive/shared/components/settings/SettingsVoiceTab.vue'))
+
+export type SettingsTab = 'general' | 'voice' | 'plugins' | 'storage'
 
 const props = withDefaults(
   defineProps<{
@@ -30,17 +34,27 @@ const { t } = useI18n()
 const pluginStore = usePluginStore()
 const roleStore = useRoleStore()
 
-type SettingsTab = 'general' | 'plugins' | 'storage'
 type GeneralSubTab = 'simple' | 'advanced'
 
 const tab = ref<SettingsTab>('general')
 const generalSubTab = ref<GeneralSubTab>('simple')
 
+const showVoiceSettingsTab = computed(() =>
+  (pluginStore.bootstrapUiSlots ?? []).some(
+    s => s.slot === SLOT_SETTINGS_PANEL && s.pluginId === VOICE_ASR_PLUGIN_ID,
+  ),
+)
+
 const showPluginsSettingsTab = computed(() => {
-  if (roleStore.interactionImmersive)
-    return true
+  if (roleStore.interactionImmersive) {
+    return (pluginStore.bootstrapUiSlots ?? []).some(
+      s => s.slot === SLOT_SETTINGS_PANEL && s.pluginId !== VOICE_ASR_PLUGIN_ID,
+    )
+  }
   return (pluginStore.bootstrapUiSlots ?? []).some(
-    s => s.slot === SLOT_SETTINGS_PANEL && isPureChatPlatformPlugin(s.pluginId),
+    s => s.slot === SLOT_SETTINGS_PANEL
+      && isPureChatPlatformPlugin(s.pluginId)
+      && s.pluginId !== VOICE_ASR_PLUGIN_ID,
   )
 })
 
@@ -66,6 +80,8 @@ watch(
   () => roleStore.roleInfo.interactionMode,
   (mode) => {
     if (mode === 'pure_chat' && tab.value === 'plugins' && !showPluginsSettingsTab.value)
+      tab.value = 'general'
+    if (tab.value === 'voice' && !showVoiceSettingsTab.value)
       tab.value = 'general'
   },
 )
@@ -103,7 +119,10 @@ function openGeneralAdvancedKeybindings(): void {
     >
       <div
         ref="settingsDialogRef"
-        :class="embedded ? 'sv-embedded' : 'sv-dialog'"
+        :class="[
+          embedded ? 'sv-embedded' : 'sv-dialog',
+          !embedded && tab === 'voice' ? 'sv-dialog--voice' : '',
+        ]"
         tabindex="-1"
         @click.stop
         @keydown.escape.stop="emit('close')"
@@ -125,6 +144,15 @@ function openGeneralAdvancedKeybindings(): void {
             @click="tab = 'general'"
           >
             {{ t("settings.tabGeneral") }}
+          </button>
+          <button
+            v-if="showVoiceSettingsTab"
+            type="button"
+            class="sv-nav-btn"
+            :aria-current="tab === 'voice' ? 'page' : undefined"
+            @click="tab = 'voice'"
+          >
+            {{ t("settings.tabVoice") }}
           </button>
           <button
             v-if="showPluginsSettingsTab"
@@ -150,6 +178,11 @@ function openGeneralAdvancedKeybindings(): void {
           v-model:general-sub-tab="generalSubTab"
           :visible="visible"
           :embedded="embedded"
+        />
+
+        <SettingsVoiceTab
+          v-show="tab === 'voice'"
+          :bootstrap-epoch="pluginStore.bootstrapEpoch"
         />
 
         <SettingsPluginsTab
@@ -275,6 +308,22 @@ function openGeneralAdvancedKeybindings(): void {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  min-height: 0;
+}
+.sv-dialog--voice {
+  width: min(760px, 100%);
+  height: min(92vh, 880px);
+  max-height: min(92vh, 880px);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.sv-dialog--voice > .sv-body--voice {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 .sv-head {
   display: flex;

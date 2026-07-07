@@ -15,7 +15,7 @@ import { useRoleStore, bindAffectMetricsListener } from '@oclive/shared/stores/r
 import { markPresetPickerDone, resolveDefaultRoleId } from '@oclive/shared/utils/presetRolePicker'
 import { getTheaterCastConfig } from '@oclive/theater/composables/theater/theaterCastConfig'
 import { resolveOcliveShell } from '@oclive/shared/composables/useOcliveShell'
-import { showPluginInstallReviewHint } from '@oclive/shared/composables/usePluginInstallReviewHint'
+import { startVoiceExpansionWarmOnStartup } from '@oclive/shared/composables/useVoiceExpansionWarm'
 import type { AppToastFn } from '@oclive/shared/composables/useAppToast'
 
 async function disposeTauriListener(
@@ -56,6 +56,7 @@ export function useAppBootstrap(options: {
     }
     await loadRole(rid)
     await pluginStore.refresh()
+    startVoiceExpansionWarmOnStartup(id => pluginStore.isPluginDisabled(id))
     await roleStore.refreshRoleInfo()
     hostEventBus.emitBuiltin('role:switched', { roleId: rid })
     const chatStore = useChatStore()

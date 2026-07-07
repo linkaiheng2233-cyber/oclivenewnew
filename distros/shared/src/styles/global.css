@@ -54,32 +54,37 @@ textarea {
 /* 聊天记录：与深色背景同系、略浅，视觉更柔和 */
 .chat-list::-webkit-scrollbar,
 .chat-list .vue-recycle-scroller::-webkit-scrollbar,
-.debug-scroll::-webkit-scrollbar {
+.debug-scroll::-webkit-scrollbar,
+.panel-scroll::-webkit-scrollbar {
   width: 6px;
 }
 
 .chat-list::-webkit-scrollbar-track,
 .chat-list .vue-recycle-scroller::-webkit-scrollbar-track,
-.debug-scroll::-webkit-scrollbar-track {
+.debug-scroll::-webkit-scrollbar-track,
+.panel-scroll::-webkit-scrollbar-track {
   background: var(--scrollbar-chat-track);
   border-radius: 4px;
 }
 
 .chat-list::-webkit-scrollbar-thumb,
 .chat-list .vue-recycle-scroller::-webkit-scrollbar-thumb,
-.debug-scroll::-webkit-scrollbar-thumb {
+.debug-scroll::-webkit-scrollbar-thumb,
+.panel-scroll::-webkit-scrollbar-thumb {
   background: var(--scrollbar-chat-thumb);
   border-radius: 4px;
 }
 
 .chat-list::-webkit-scrollbar-thumb:hover,
 .chat-list .vue-recycle-scroller::-webkit-scrollbar-thumb:hover,
-.debug-scroll::-webkit-scrollbar-thumb:hover {
+.debug-scroll::-webkit-scrollbar-thumb:hover,
+.panel-scroll::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-chat-thumb-hover);
 }
 
 .chat-list,
-.chat-list .vue-recycle-scroller {
+.chat-list .vue-recycle-scroller,
+.panel-scroll {
   scrollbar-width: thin;
   scrollbar-color: var(--scrollbar-chat-thumb) var(--scrollbar-chat-track);
 }

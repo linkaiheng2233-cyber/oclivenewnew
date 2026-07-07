@@ -6,6 +6,7 @@
 
 ### Added
 
+- **语音首字发声优化**：流式朗读经 `streamingVoiceChunker` 过滤旁白/内心/动作行；首块更早出句；CosyVoice2 `/warm` 默认 **prime** dummy 合成；角色切换触发侧车预热与 directive 预取；插件 manifest `rpcTimeoutsMs` 声明长 RPC 超时；CSP `connect-src` 收窄至侧车默认端口 `50000`。
 - **语音扩展 v0.4（情感 TTS · 可选）**：`com.oclive.voice.asr` 升至 v0.4 · 默认纯文字；`tts_expansion_enabled` 开启后 CosyVoice2 侧车 + 模型 DLC（`voice_model_pack.json`）+ `synth_provider`（bundled / local_http / cloud）；RPC 增 `voice.probe_tts` · `voice.warm` · `voice.list_model_packs`；`rules-v1` 产出 `emo_text` + 角色包 `ref_map`；流式首句 `voice:stream-sentence` 提前 TTS；**移除 Piper 产品路径**（dev loop `--tts-sherpa` 保留）。详见插件 [`README.md`](distros/chat-pro/plugins/com.oclive.voice.asr/README.md) · [`TRACK_VOICE`](human-docs/team/TRACK_VOICE_RECOGNITION.md)。
 - **统一键位绑定系统（Phase 1–4）**：设置 → 常规 → 高级新增「键位绑定」（应用内 + 全局快捷键统一 UI）；全局插件快捷键继续复用 `save_hotkey_bindings` 注册系统级监听；`ShortcutHelp` 改为动态读取当前键位；语音插件新增 **V 按住说话**（`voice.holdToTalk`，窗口聚焦时生效，输入框聚焦不抢键）。
 - **Chat Pro Windows 98 彩蛋皮肤**：Konami 解锁 → `data-skin=win98`（`oclive-runtime-skin`）；设置 → 常规开关；Fluent + Tool 正交叠加于 `data-theme` / `data-shell` / UI 缩放；合成 Win98 标题栏（`Win98TitleBar` + Tauri `setDecorations`）与对话框 3D 窗框；见 [`MODULE_MAP_AND_HANDOFF.md`](handoff/MODULE_MAP_AND_HANDOFF.md) §13.2。
