@@ -92,7 +92,8 @@ python loop.py --mic
 pip install pyttsx3
 python loop.py --tts
 
-# 或 sherpa TTS（需 models/tts/sherpa-piper-zh/）
+# 或 sherpa TTS（**dev/CI only** · `--tts-sherpa` · 需 models/tts/sherpa-piper-zh/）
+# 或 CosyVoice2（`--tts-cosyvoice` · 需侧车 + models/tts/cosyvoice2-0.5b/）
 pip install -r requirements-tts.txt
 python loop.py --mic --tts-sherpa
 ```

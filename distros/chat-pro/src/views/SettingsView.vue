@@ -1,7 +1,11 @@
 <script setup lang="ts">
-import { defineAsyncComponent, nextTick, ref, Teleport, watch } from 'vue'
+import { computed, defineAsyncComponent, nextTick, ref, Teleport, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { usePluginStore } from '@oclive/shared/stores/pluginStore'
+import {
+  isPureChatPlatformPlugin,
+  SLOT_SETTINGS_PANEL,
+  usePluginStore,
+} from '@oclive/shared/stores/pluginStore'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
 
 const ChatStorageSettingsPanel = defineAsyncComponent(() => import('@oclive/shared/components/settings/ChatStorageSettingsPanel.vue'))
@@ -32,6 +36,14 @@ type GeneralSubTab = 'simple' | 'advanced'
 const tab = ref<SettingsTab>('general')
 const generalSubTab = ref<GeneralSubTab>('simple')
 
+const showPluginsSettingsTab = computed(() => {
+  if (roleStore.interactionImmersive)
+    return true
+  return (pluginStore.bootstrapUiSlots ?? []).some(
+    s => s.slot === SLOT_SETTINGS_PANEL && isPureChatPlatformPlugin(s.pluginId),
+  )
+})
+
 watch(
   () => props.focusTab,
   (next) => {
@@ -53,7 +65,7 @@ const settingsDialogRef = ref<HTMLElement | null>(null)
 watch(
   () => roleStore.roleInfo.interactionMode,
   (mode) => {
-    if (mode === 'pure_chat' && tab.value === 'plugins')
+    if (mode === 'pure_chat' && tab.value === 'plugins' && !showPluginsSettingsTab.value)
       tab.value = 'general'
   },
 )
@@ -115,7 +127,7 @@ function openGeneralAdvancedKeybindings(): void {
             {{ t("settings.tabGeneral") }}
           </button>
           <button
-            v-if="roleStore.interactionImmersive"
+            v-if="showPluginsSettingsTab"
             type="button"
             class="sv-nav-btn"
             :aria-current="tab === 'plugins' ? 'page' : undefined"
@@ -143,6 +155,7 @@ function openGeneralAdvancedKeybindings(): void {
         <SettingsPluginsTab
           v-show="tab === 'plugins'"
           :bootstrap-epoch="pluginStore.bootstrapEpoch"
+          :platform-only="!roleStore.interactionImmersive"
           @request-general-advanced="openGeneralAdvancedKeybindings"
         />
 
@@ -161,6 +174,7 @@ function openGeneralAdvancedKeybindings(): void {
   min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .sv-embedded {
@@ -168,19 +182,22 @@ function openGeneralAdvancedKeybindings(): void {
   min-height: 0;
   display: flex;
   flex-direction: row;
-  align-items: flex-start;
+  align-items: stretch;
   gap: 0;
   padding: 0;
   border: none;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
+  overflow: hidden;
 }
 
 .sv-embedded :deep(.sv-body) {
   flex: 1;
   min-width: 0;
-  overflow: visible;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
   padding: var(--tool-space-4, 16px);
   max-width: none;
   background: var(--tool-chrome-editor, var(--tool-elevated, var(--bg-primary)));

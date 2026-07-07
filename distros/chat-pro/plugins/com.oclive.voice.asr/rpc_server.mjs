@@ -14,9 +14,18 @@ const PROTOCOL_HEADER = "x-oclive-remote-protocol";
 const PROTOCOL_VALUE = "oclive-remote-jsonrpc-v1";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PLATFORM = process.platform;
+const DEFAULT_TTS_PROFILE = "bundled-cosyvoice2-zh";
+/** CosyVoice2 first inference can exceed 2 min when ONNX runs on CPU. */
+const COSYVOICE_SYNTH_TIMEOUT_MS = 600_000;
+const COSYVOICE_WARM_TIMEOUT_MS = 900_000;
 
 /** @type {Record<string, unknown> | null} */
 let pluginConfig = null;
+
+/** @type {import("node:child_process").ChildProcess | null} */
+let cosyvoiceSidecarChild = null;
+/** @type {string | null} */
+let cosyvoiceSidecarUrl = null;
 
 function jsonRpcResult(id, result) {
   return JSON.stringify({ jsonrpc: "2.0", id, result });
@@ -37,7 +46,7 @@ function readProfiles() {
   } catch {
     return {
       default_profile: "sherpa-paraformer-zh-small",
-      default_tts_profile: "sherpa-piper-zh",
+      default_tts_profile: DEFAULT_TTS_PROFILE,
       default_director_profile: "rules-v1",
       profiles: {},
     };
@@ -55,6 +64,186 @@ const RULES_V1_SPEED = {
   neutral: 1.0,
 };
 
+const RULES_V1_EMO_TEXT = {
+  shy: "用害羞轻柔的语气",
+  happy: "用开心明亮的语气",
+  sad: "用低沉难过的语气",
+  angry: "用严厉激动的语气",
+  fearful: "用紧张不安的语气",
+  surprised: "用惊讶的语气",
+  disgusted: "用嫌弃的语气",
+  neutral: "用自然平静的语气",
+};
+
+const MODEL_PACK_FILENAME = "voice_model_pack.json";
+
+function resolveRoleAssetPath(rolePath, relPath) {
+  const base = String(rolePath || "").trim();
+  const rel = String(relPath || "").trim();
+  if (!base || !rel) return "";
+  const joined = path.join(base, rel);
+  return fs.existsSync(joined) ? joined : "";
+}
+
+function resolveRefAudio(rolePath, roleVoice, emotion) {
+  if (!roleVoice || typeof roleVoice !== "object") return "";
+  const refMap = roleVoice.ref_map;
+  if (refMap && typeof refMap === "object") {
+    const mapped = refMap[emotion] || refMap.neutral;
+    if (mapped) {
+      const resolved = resolveRoleAssetPath(rolePath, mapped);
+      if (resolved) return resolved;
+    }
+  }
+  if (roleVoice.ref_default) {
+    return resolveRoleAssetPath(rolePath, roleVoice.ref_default);
+  }
+  return "";
+}
+
+function synthRoutingFromConfig() {
+  const cfg = pluginConfig || {};
+  const provider = String(cfg.synth_provider || "bundled").trim();
+  const localEndpoint = String(cfg.local_synth_endpoint || "").trim();
+  const cloudUrl = String(cfg.cloud_tts_url || "").trim();
+  const cloudToken = String(cfg.cloud_tts_token || "").trim();
+  const cloudVoiceId = String(cfg.cloud_tts_voice_id || "").trim();
+  const cloudModel = String(cfg.cloud_tts_model || "").trim();
+  return { provider, localEndpoint, cloudUrl, cloudToken, cloudVoiceId, cloudModel };
+}
+
+function shouldRunBundledSidecar() {
+  const cfg = pluginConfig || {};
+  if (cfg.tts_expansion_enabled !== true) return false;
+  const routing = synthRoutingFromConfig();
+  return routing.provider === "bundled" || routing.provider === "";
+}
+
+function findCosyvoicePython(engineRoot) {
+  const envPy = process.env.OCLIVE_COSYVOICE_PYTHON?.trim();
+  if (envPy && fs.existsSync(envPy)) return envPy;
+  if (engineRoot) {
+    const venvNames =
+      PLATFORM === "win32"
+        ? [".venv-cosyvoice/Scripts/python.exe", ".venv/Scripts/python.exe"]
+        : [".venv-cosyvoice/bin/python3", ".venv/bin/python3"];
+    for (const rel of venvNames) {
+      const candidate = path.join(engineRoot, rel);
+      if (fs.existsSync(candidate)) return candidate;
+    }
+  }
+  return findPythonExecutable(engineRoot);
+}
+
+function stopCosyvoiceSidecar() {
+  if (cosyvoiceSidecarChild) {
+    try {
+      cosyvoiceSidecarChild.kill("SIGTERM");
+    } catch {
+      /* ignore */
+    }
+    cosyvoiceSidecarChild = null;
+    cosyvoiceSidecarUrl = null;
+  }
+}
+
+function startCosyvoiceSidecar(modelDir, port = 50000) {
+  stopCosyvoiceSidecar();
+  const engineRoot = findEngineRoot();
+  if (!engineRoot) {
+    return Promise.resolve({
+      ok: false,
+      reason: "engine_root_missing",
+      message: "voice-loop-minimal not found",
+    });
+  }
+  const python = findCosyvoicePython(engineRoot);
+  const args =
+    python === "py" && PLATFORM === "win32"
+      ? ["-3", "-m", "tts.cosyvoice_sidecar"]
+      : ["-m", "tts.cosyvoice_sidecar"];
+  return new Promise((resolve) => {
+    const child = spawn(python, args, {
+      cwd: engineRoot,
+      env: {
+        ...process.env,
+        PYTHONPATH: engineRoot,
+        PYTHONIOENCODING: "utf-8",
+        PYTHONUTF8: "1",
+        OCLIVE_COSYVOICE_MODEL_DIR: modelDir,
+        OCLIVE_COSYVOICE_PORT: String(port),
+      },
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    cosyvoiceSidecarChild = child;
+    let settled = false;
+    const finish = (result) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve(result);
+    };
+    const timer = setTimeout(() => {
+      finish({
+        ok: false,
+        reason: "sidecar_start_timeout",
+        message: "CosyVoice2 sidecar did not become ready",
+      });
+    }, 30_000);
+    child.stdout.on("data", (chunk) => {
+      const text = chunk.toString("utf8");
+      const match = text.match(/OCLIVE_SIDECAR_READY\s+(http:\/\/[^\s]+)/);
+      if (match) {
+        cosyvoiceSidecarUrl = match[1].trim();
+        finish({ ok: true, sidecar_endpoint: cosyvoiceSidecarUrl, warmed: false });
+      }
+    });
+    child.on("error", (err) => {
+      cosyvoiceSidecarChild = null;
+      cosyvoiceSidecarUrl = null;
+      finish({
+        ok: false,
+        reason: "sidecar_spawn_failed",
+        message: err instanceof Error ? err.message : String(err),
+      });
+    });
+    child.on("close", () => {
+      if (cosyvoiceSidecarChild === child) {
+        cosyvoiceSidecarChild = null;
+        cosyvoiceSidecarUrl = null;
+      }
+      if (!settled) {
+        finish({ ok: false, reason: "sidecar_exited", message: "CosyVoice2 sidecar exited" });
+      }
+    });
+  });
+}
+
+async function ensureCosyvoiceSidecar(profileId) {
+  if (!shouldRunBundledSidecar()) {
+    return { ok: false, reason: "expansion_disabled" };
+  }
+  const modelDir = resolveTtsModelDir(profileId);
+  const cfg = readProfiles();
+  const profile = cfg.profiles?.[profileId] || {};
+  const port = Number(profile.sidecar_port || 50000) || 50000;
+  if (cosyvoiceSidecarChild && cosyvoiceSidecarUrl) {
+    return { ok: true, sidecar_endpoint: cosyvoiceSidecarUrl, model_dir: modelDir };
+  }
+  return startCosyvoiceSidecar(modelDir, port);
+}
+
+function readModelPackMeta(src) {
+  const direct = path.join(src, MODEL_PACK_FILENAME);
+  if (fs.existsSync(direct)) {
+    try {
+      return JSON.parse(fs.readFileSync(direct, "utf8"));
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
 function loadVoiceProfileFromRole(rolePath) {
   const base = String(rolePath || "").trim();
   if (!base) return null;
@@ -170,11 +359,13 @@ function resolveModelDir(profileRec) {
 }
 
 function resolveTtsModelDir(profileId) {
-  const id = (profileId || pluginConfig?.tts_profile || readProfiles().default_tts_profile || "sherpa-piper-zh").trim();
+  const id = (profileId || pluginConfig?.tts_profile || readProfiles().default_tts_profile || DEFAULT_TTS_PROFILE).trim();
   const resolved = resolvePlatformProfile(id);
   const profile = resolved.ok ? resolved.profile : null;
   const rel = profile?.model_dir || `models/tts/${id}`;
+  const folderName = rel ? path.basename(rel.replace(/\\/g, "/")) : id;
   const candidates = [
+    path.join(userModelsRoot(), "tts", folderName),
     path.join(userModelsRoot(), "tts", id),
     path.join(__dirname, rel),
     path.join(findEngineRoot() || "", "models", "tts", id),
@@ -186,7 +377,7 @@ function resolveTtsModelDir(profileId) {
 }
 
 function resolveTtsProfileRecord(profileId) {
-  const id = (profileId || pluginConfig?.tts_profile || readProfiles().default_tts_profile || "sherpa-piper-zh").trim();
+  const id = (profileId || pluginConfig?.tts_profile || readProfiles().default_tts_profile || DEFAULT_TTS_PROFILE).trim();
   const resolved = resolvePlatformProfile(id);
   if (!resolved.ok) {
     return { id, ok: false, profile: null };
@@ -321,49 +512,112 @@ function handleListProfiles() {
   const profiles = cfg.profiles || {};
   return {
     default_profile: cfg.default_profile || "sherpa-paraformer-zh-small",
+    default_tts_profile: cfg.default_tts_profile || DEFAULT_TTS_PROFILE,
     platform: PLATFORM,
     profiles: Object.entries(profiles).map(([id, p]) => ({
       id,
       label: p.label || id,
       engine: p.engine || "",
       model_dir: p.model_dir || "",
-      kind: p.kind || (String(p.engine || "").includes("tts") ? "tts" : String(p.engine || "").includes("director") || p.engine === "rules-v1" ? "director" : "asr"),
+      kind:
+        p.kind ||
+        (String(p.engine || "").includes("tts")
+          ? "tts"
+          : String(p.engine || "").includes("director") || p.engine === "rules-v1"
+            ? "director"
+            : "asr"),
       platform_ready: !(p.platforms?.[PLATFORM]?.unsupported),
+      requires_pack: p.requires_pack || "",
+      min_vram_gb_recommended: p.min_vram_gb_recommended ?? null,
+      synth_provider: p.synth_provider || "",
     })),
   };
 }
 
+function handleListModelPacks() {
+  const cfg = readProfiles();
+  const packs = [];
+  for (const [id, p] of Object.entries(cfg.profiles || {})) {
+    if (p.kind !== "tts" || !p.requires_pack) continue;
+    const modelDir = resolveTtsModelDir(id);
+    const ready = fs.existsSync(path.join(modelDir, "MANIFEST.json"));
+    packs.push({
+      pack_id: p.requires_pack,
+      profile_id: id,
+      label: p.label || id,
+      engine: p.engine || "",
+      min_vram_gb_recommended: p.min_vram_gb_recommended ?? null,
+      installed: ready,
+      model_dir: modelDir,
+      download_url: p.download_url || "",
+    });
+  }
+  return { ok: true, packs };
+}
+
 function handleImportModel(params) {
   const src = String(params?.src_path || params?.path || "").trim();
-  const profileId = String(params?.profile || "custom").trim();
-  const kind = String(params?.kind || "asr").trim();
+  let profileId = String(params?.profile || "custom").trim();
+  let kind = String(params?.kind || "asr").trim();
   if (!src) {
     throw new Error("import_model: src_path required");
   }
   if (!fs.existsSync(src)) {
     return { ok: false, reason: "src_not_found", profile: profileId };
   }
+
+  const packMeta = readModelPackMeta(src);
+  if (packMeta) {
+    profileId = String(packMeta.install_profile || packMeta.pack_id || profileId).trim();
+    kind = "tts";
+    const installName =
+      String(packMeta.install_dir || "")
+        .split(/[/\\]/)
+        .filter(Boolean)
+        .pop() || "cosyvoice2-0.5b";
+    profileId = installName.includes("cosyvoice") ? "cosyvoice2-0.5b" : profileId;
+  }
+
   const dest = path.join(userModelsRoot(), kind, profileId);
   const stat = fs.statSync(src);
   if (stat.isDirectory()) {
     copyDirRecursive(src, dest);
+  } else if (src.toLowerCase().endsWith(".zip")) {
+    return {
+      ok: false,
+      reason: "zip_extract_not_supported",
+      message: "Extract the zip to a folder, then import the folder path",
+      profile: profileId,
+    };
   } else {
     fs.mkdirSync(dest, { recursive: true });
     const base = path.basename(src);
     fs.copyFileSync(src, path.join(dest, base));
   }
+
+  const engine =
+    packMeta?.engine ||
+    (kind === "tts" ? "cosyvoice2" : "sherpa-onnx");
   const manifest = {
     id: profileId,
     imported_from: src,
     imported_at: new Date().toISOString(),
-    engine: kind === "tts" ? "sherpa-onnx-tts" : "sherpa-onnx",
+    engine,
+    ...(packMeta?.pack_id ? { pack_id: packMeta.pack_id } : {}),
   };
   fs.writeFileSync(
     path.join(dest, "MANIFEST.json"),
     JSON.stringify(manifest, null, 2),
     "utf8",
   );
-  return { ok: true, profile: profileId, dest, kind };
+  if (packMeta) {
+    fs.writeFileSync(
+      path.join(dest, MODEL_PACK_FILENAME),
+      JSON.stringify(packMeta, null, 2),
+      "utf8",
+    );
+  }
+  return { ok: true, profile: profileId, dest, kind, pack: packMeta || undefined };
 }
 
 async function handleTranscribe(params) {
@@ -413,28 +667,130 @@ async function handleSpeak(params) {
   if (!text) {
     return { ok: false, reason: "empty_text", audio_base64: "" };
   }
+  if (pluginConfig?.tts_expansion_enabled !== true) {
+    return {
+      ok: false,
+      reason: "tts_expansion_disabled",
+      message: "Enable voice expansion in settings to use emotional TTS",
+      audio_base64: "",
+    };
+  }
   const directive = params?.directive && typeof params.directive === "object" ? params.directive : null;
   const profileId =
     directive?.synth_profile ||
     params?.profile ||
     pluginConfig?.tts_profile ||
     readProfiles().default_tts_profile ||
-    "sherpa-piper-zh";
+    DEFAULT_TTS_PROFILE;
   const profileRec = resolveTtsProfileRecord(profileId);
+  const routing = synthRoutingFromConfig();
+  let sidecarEndpoint = routing.localEndpoint;
+  if (routing.provider === "bundled" || routing.provider === "") {
+    const sidecar = await ensureCosyvoiceSidecar(profileId);
+    if (!sidecar.ok) {
+      return {
+        ok: false,
+        reason: sidecar.reason || "sidecar_not_ready",
+        message: sidecar.message || "Start CosyVoice2 sidecar and import model pack",
+        audio_base64: "",
+      };
+    }
+    sidecarEndpoint = sidecar.sidecar_endpoint || sidecarEndpoint;
+  }
   const modelDir = resolveTtsModelDir(profileId);
-  const result = await spawnPythonJson("tts.synthesize", {
+  const engine = profileRec.profile?.engine;
+  const payload = {
     model_dir: modelDir,
     text,
     speed: directive?.speed,
     directive,
-    engine: profileRec.profile?.engine,
+    engine,
     voice: profileRec.profile?.voice,
-  });
+    sidecar_endpoint: sidecarEndpoint,
+    cloud_url: routing.cloudUrl,
+    cloud_token: routing.cloudToken,
+    cloud_voice_id: routing.cloudVoiceId,
+    cloud_model: routing.cloudModel,
+  };
+  if (routing.provider === "cloud" && engine !== "edge-tts") {
+    payload.engine = "cloud-tts-openai";
+  }
+  const result = await spawnPythonJson(
+    "tts.synthesize",
+    payload,
+    engine === "cosyvoice2" ? COSYVOICE_SYNTH_TIMEOUT_MS : undefined,
+  );
   return {
     ...result,
     profile: profileId,
     directive: directive || undefined,
   };
+}
+
+async function handleProbeTts(params) {
+  const profileId =
+    params?.profile ||
+    pluginConfig?.tts_profile ||
+    readProfiles().default_tts_profile ||
+    DEFAULT_TTS_PROFILE;
+  const profileRec = resolveTtsProfileRecord(profileId);
+  const routing = synthRoutingFromConfig();
+  let sidecarEndpoint = routing.localEndpoint;
+  if ((routing.provider === "bundled" || routing.provider === "") && pluginConfig?.tts_expansion_enabled === true) {
+    const sidecar = await ensureCosyvoiceSidecar(profileId);
+    if (sidecar.ok) {
+      sidecarEndpoint = sidecar.sidecar_endpoint || sidecarEndpoint;
+    }
+  }
+  const modelDir = resolveTtsModelDir(profileId);
+  const engineRoot = findEngineRoot();
+  if (!engineRoot) {
+    return {
+      ok: false,
+      profile: profileId,
+      reason: "engine_root_missing",
+      message: "Python engine path not found",
+    };
+  }
+  const engine = profileRec.profile?.engine;
+  const probePayload = {
+    probe: true,
+    model_dir: modelDir,
+    engine: routing.provider === "cloud" && engine !== "edge-tts" ? "cloud-tts-openai" : engine,
+    sidecar_endpoint: sidecarEndpoint,
+  };
+  const probe = await spawnPythonJson("tts.synthesize", probePayload);
+  return {
+    ...probe,
+    profile: profileId,
+    platform: PLATFORM,
+    model_dir: modelDir,
+    synth_provider: routing.provider,
+    expansion_enabled: pluginConfig?.tts_expansion_enabled === true,
+  };
+}
+
+async function handleWarm(params) {
+  const profileId =
+    params?.profile ||
+    pluginConfig?.tts_profile ||
+    readProfiles().default_tts_profile ||
+    DEFAULT_TTS_PROFILE;
+  const sidecar = await ensureCosyvoiceSidecar(profileId);
+  if (!sidecar.ok) {
+    return sidecar;
+  }
+  const modelDir = resolveTtsModelDir(profileId);
+  return spawnPythonJson(
+    "tts.synthesize",
+    {
+      warm: true,
+      model_dir: modelDir,
+      engine: "cosyvoice2",
+      sidecar_endpoint: sidecar.sidecar_endpoint,
+    },
+    COSYVOICE_WARM_TIMEOUT_MS,
+  );
 }
 
 function handleBuildDirective(params) {
@@ -455,8 +811,16 @@ function handleBuildDirective(params) {
     roleVoice?.synth_profile ||
     pluginConfig?.tts_profile ||
     cfg.default_tts_profile ||
-    "sherpa-piper-zh";
+    DEFAULT_TTS_PROFILE;
   const baselineSpeed = Number(roleVoice?.speed ?? 1.0) || 1.0;
+
+  const refAudio = resolveRefAudio(rolePath, roleVoice, botEmotion);
+  const refText = String(roleVoice?.ref_text || "").trim();
+  const emoFromRole =
+    roleVoice?.emo_text_template && typeof roleVoice.emo_text_template === "string"
+      ? roleVoice.emo_text_template.replace("{tone}", RULES_V1_EMO_TEXT[botEmotion] || "")
+      : "";
+  const emoText = emoFromRole || RULES_V1_EMO_TEXT[botEmotion] || "";
 
   if (!directorId || directorId === "none") {
     const directive = {
@@ -464,8 +828,10 @@ function handleBuildDirective(params) {
       emotion_tag: botEmotion,
       speed: baselineSpeed,
       energy: roleVoice?.energy || "normal",
-      emo_text: "",
+      emo_text: emoText,
       synth_profile: synthProfile,
+      ...(refAudio ? { ref_audio: refAudio } : {}),
+      ...(refText ? { ref_text: refText } : {}),
     };
     return { ok: true, directive, director_profile: null };
   }
@@ -489,8 +855,10 @@ function handleBuildDirective(params) {
     emotion_tag: botEmotion,
     speed,
     energy,
-    emo_text: "",
+    emo_text: emoText,
     synth_profile: roleVoice?.synth_profile || synthProfile,
+    ...(refAudio ? { ref_audio: refAudio } : {}),
+    ...(refText ? { ref_text: refText } : {}),
   };
   if (!validateDirective(directive)) {
     return { ok: false, reason: "invalid_directive", director_profile: directorId };
@@ -500,7 +868,29 @@ function handleBuildDirective(params) {
 
 function handleConfigUpdated(params) {
   if (params?.config && typeof params.config === "object") {
+    const prev = pluginConfig;
     pluginConfig = params.config;
+    if (pluginConfig.tts_expansion_enabled === true && shouldRunBundledSidecar()) {
+      const profileId =
+        pluginConfig.tts_profile || readProfiles().default_tts_profile || DEFAULT_TTS_PROFILE;
+      void ensureCosyvoiceSidecar(profileId).then((sidecar) => {
+        if (sidecar.ok) {
+          const modelDir = resolveTtsModelDir(profileId);
+          void spawnPythonJson(
+            "tts.synthesize",
+            {
+              warm: true,
+              model_dir: modelDir,
+              engine: "cosyvoice2",
+              sidecar_endpoint: sidecar.sidecar_endpoint,
+            },
+            COSYVOICE_WARM_TIMEOUT_MS,
+          );
+        }
+      });
+    } else if (prev?.tts_expansion_enabled === true && pluginConfig.tts_expansion_enabled !== true) {
+      stopCosyvoiceSidecar();
+    }
   }
   return { ok: true };
 }
@@ -541,6 +931,9 @@ const server = http.createServer((req, res) => {
         else if (method === "voice.import_model") result = handleImportModel(params);
         else if (method === "voice.transcribe") result = await handleTranscribe(params);
         else if (method === "voice.speak") result = await handleSpeak(params);
+        else if (method === "voice.probe_tts") result = await handleProbeTts(params);
+        else if (method === "voice.warm") result = await handleWarm(params);
+        else if (method === "voice.list_model_packs") result = handleListModelPacks();
         else if (method === "voice.build_directive") result = handleBuildDirective(params);
         else if (method === "config_updated") result = handleConfigUpdated(params);
         else {
@@ -571,5 +964,11 @@ server.listen(0, "127.0.0.1", () => {
   process.stdout.write(`OCLIVE_READY ${url}\n`);
 });
 
-process.on("SIGTERM", () => server.close());
-process.on("SIGINT", () => server.close());
+process.on("SIGTERM", () => {
+  stopCosyvoiceSidecar();
+  server.close();
+});
+process.on("SIGINT", () => {
+  stopCosyvoiceSidecar();
+  server.close();
+});

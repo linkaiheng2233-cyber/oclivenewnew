@@ -9,7 +9,9 @@
     "speed": { "type": "number", "minimum": 0.5, "maximum": 2.0 },
     "energy": { "type": "string", "enum": ["soft", "normal", "strong"] },
     "emo_text": { "type": "string" },
-    "synth_profile": { "type": "string" }
+    "synth_profile": { "type": "string" },
+    "ref_audio": { "type": "string" },
+    "ref_text": { "type": "string" }
   },
   "additionalProperties": false
 }

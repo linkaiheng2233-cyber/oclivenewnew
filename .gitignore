@@ -60,6 +60,7 @@ playwright/.cache/
 
 # Voice loop local python env/cache (do not commit)
 examples/voice-loop-minimal/.venv/
+examples/voice-loop-minimal/.venv-cosyvoice/
 examples/voice-loop-minimal/**/__pycache__/
 
 # Archives

@@ -53,9 +53,23 @@ python loop.py
 
 **Phase 0 Done（v0.2.1 基线）**：WebM→16kHz WAV 内联 · `plugin_bridge` 分发 `get_plugin_settings_ui` / `set_plugin_settings_config` · transport `.js`/`.ts` fallback · §10 故障排查。
 
-**Phase 1 Done（TTS）**：`tts_profile` / `auto_tts` 设置 · `voice.speak` Piper · 键盘与语音 send 均朗读。
+**Phase 1 Done（TTS）**：`tts_profile` / `auto_tts` 设置 · `voice.speak`（历史 Piper 路径；**产品默认已迁移**，见下）。
 
 **Phase 2 Done（voice_directive）**：`voice.build_directive` · `rules-v1` director · 角色包 `voice_profile.json` 可选覆盖 · 设置页 director 下拉。
+
+### 语音扩展（v0.4 · 情感 TTS · 可选 DLC）
+
+| 阶段 | 目标 | Done 定义 |
+|------|------|-----------|
+| **VX-0** | 去 Piper 产品路径 | 默认 `bundled-cosyvoice2-zh`；Piper 仅 `voice-loop-minimal` dev/CI |
+| **VX-1** | 扩展开关 | `tts_expansion_enabled` 默认关；ASR 与 TTS 设置分区 |
+| **VX-2** | CosyVoice2 侧车 | `voice.warm` · 常驻 `tts.cosyvoice_sidecar` · `tts/engine.py` adapter |
+| **VX-3** | 模型 DLC | `voice_model_pack.json` · `voice.list_model_packs` · 手动导入 |
+| **VX-4** | 角色 ref | `voice_profile` v2 · `ref_map` · `emo_text` |
+| **VX-5** | 云端并列 | `synth_provider: cloud` · OpenAI-compatible · `edge-tts-zh` |
+| **VX-6** | 延迟 | 流式首句 `voice:stream-sentence` · 侧车预热 |
+
+**产品原则**：文字默认；情感 TTS 为扩展；不为发声订阅；probe 失败诚实提示，无 Piper 降级。
 
 **不在本轨道：** Live2D、Chat Pro Vue、`kernel/crates/` 内核、**Chat Pro UI 流式打字机**（见 [CHAT_PRO §2 延迟/stream](./CHAT_PRO_VERTICAL_HANDOFF.md) · 组长或视觉线）。
 
@@ -264,7 +278,7 @@ ollama pull hermes3:3b
 **要求：**
 
 - **ASR 空结果 → 不要 POST /chat**（空 `message` 会 400）  
-- 可选 TTS：`requirements-tts.txt` + `models/tts/sherpa-piper-zh/`（见 [`models/README.md`](../../distros/chat-pro/plugins/com.oclive.voice.asr/models/README.md)）
+- 可选 TTS（**dev loop / Piper 回归**）：`requirements-tts.txt` + `models/tts/sherpa-piper-zh/`。产品路径见 **语音扩展** · CosyVoice2 · [`models/README.md`](../../distros/chat-pro/plugins/com.oclive.voice.asr/models/README.md)
 
 **Done：** `python loop.py --mic` 或 Chat Pro 按住 🎤 → 5 次非空 `reply`。
 

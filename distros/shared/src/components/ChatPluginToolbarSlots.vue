@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useDirectoryPluginSlotEmbed } from '@oclive/shared/composables/useDirectoryPluginSlotEmbed'
-import { SLOT_CHAT_TOOLBAR } from '@oclive/shared/stores/pluginStore'
+import { PURE_CHAT_PLATFORM_PLUGIN_IDS, SLOT_CHAT_TOOLBAR } from '@oclive/shared/stores/pluginStore'
 import AsyncPluginVue from './AsyncPluginVue.vue'
 import PluginErrorPlaceholder from './PluginErrorPlaceholder.vue'
 
@@ -9,11 +10,17 @@ const props = withDefaults(
   defineProps<{
     /** Bump to refetch bootstrap after changes (synced with plugin manager save) */
     bootstrapEpoch?: number
+    /** In pure_chat, only show platform side-channel toolbar plugins (e.g. voice.asr). */
+    platformOnly?: boolean
   }>(),
-  { bootstrapEpoch: 0 },
+  { bootstrapEpoch: 0, platformOnly: false },
 )
 
 const { t } = useI18n()
+
+const pluginIdAllowlist = computed(() =>
+  props.platformOnly ? PURE_CHAT_PLATFORM_PLUGIN_IDS : null,
+)
 
 const {
   pluginError,
@@ -31,6 +38,7 @@ const {
 } = useDirectoryPluginSlotEmbed({
   slot: SLOT_CHAT_TOOLBAR,
   bootstrapEpoch: () => props.bootstrapEpoch,
+  pluginIdAllowlist,
 })
 </script>
 

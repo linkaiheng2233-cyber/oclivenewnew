@@ -22,6 +22,7 @@ import { useMainShellChat } from './useMainShellChat'
 import { useMainShellHotkeys } from './useMainShellHotkeys'
 import { useMainShellWindows } from './useMainShellWindows'
 import { usePluginEvents } from '@oclive/shared/composables/usePluginEvents'
+import { useVoiceAutoTts } from '@oclive/shared/composables/useVoiceAutoTts'
 import { useReturnFocusOnClose } from '@oclive/shared/composables/useReturnFocusOnClose'
 import { useSceneDestination } from '@oclive/shared/composables/useSceneDestination'
 import { useSceneTravelBars } from '@oclive/shared/composables/useSceneTravelBars'
@@ -321,6 +322,8 @@ export function useMainShell() {
       void onSend({ content: text.trim() })
     },
   })
+
+  useVoiceAutoTts({ showToast })
 
   async function onSwitchRole(nextRoleId: string) {
     const savedLeftScroll = leftPaneRef.value?.scrollTop ?? 0

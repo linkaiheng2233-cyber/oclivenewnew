@@ -270,8 +270,8 @@ function onLeftRailResize(deltaX: number) {
                 @dismiss="progressive.dismissImmersiveHint"
               />
               <ChatPluginToolbarSlots
-                v-if="roleStore.interactionImmersive"
                 :bootstrap-epoch="pluginStore.bootstrapEpoch"
+                :platform-only="!roleStore.interactionImmersive"
               />
               <SceneTravelBars
                 v-if="roleStore.interactionImmersive"

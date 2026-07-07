@@ -1,4 +1,4 @@
-"""TTS engines: sherpa-onnx Piper, edge-tts, PilotTTS/CosyVoice adapters."""
+"""TTS engines: CosyVoice2 sidecar, edge-tts, cloud OpenAI-compatible, sherpa Piper (dev/CI)."""
 
 from __future__ import annotations
 
@@ -8,18 +8,13 @@ import wave
 from io import BytesIO
 from pathlib import Path
 from typing import Any
+from urllib import error as urlerror
+from urllib import request as urlrequest
 
-_REQUIRED_FILES = ("model.onnx", "tokens.txt")
-
-
-def _load_manifest(model_dir: Path) -> dict[str, Any]:
-    manifest_path = model_dir / "MANIFEST.json"
-    if manifest_path.is_file():
-        return json.loads(manifest_path.read_text(encoding="utf-8"))
-    return {}
+_DEFAULT_TTS_PROFILE = "bundled-cosyvoice2-zh"
 
 
-def _model_ready(model_dir: Path) -> tuple[bool, str]:
+def _model_ready_sherpa(model_dir: Path) -> tuple[bool, str]:
     if not model_dir.is_dir():
         return False, "model_dir_missing"
     manifest = _load_manifest(model_dir)
@@ -35,10 +30,57 @@ def _model_ready(model_dir: Path) -> tuple[bool, str]:
     return True, ""
 
 
-def probe_engine(model_dir: str | Path, *, engine: str | None = None) -> dict[str, Any]:
+def _load_manifest(model_dir: Path) -> dict[str, Any]:
+    manifest_path = model_dir / "MANIFEST.json"
+    if manifest_path.is_file():
+        return json.loads(manifest_path.read_text(encoding="utf-8"))
+    return {}
+
+
+def _http_json(
+    url: str,
+    payload: dict[str, Any] | None = None,
+    *,
+    method: str = "GET",
+    headers: dict[str, str] | None = None,
+    timeout: float = 120.0,
+) -> dict[str, Any]:
+    data = None
+    req_headers = {"Content-Type": "application/json; charset=utf-8", **(headers or {})}
+    if payload is not None:
+        data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    req = urlrequest.Request(url, data=data, headers=req_headers, method=method)
+    try:
+        with urlrequest.urlopen(req, timeout=timeout) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except urlerror.HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="replace")
+        return {"ok": False, "reason": "http_error", "message": body[:300]}
+    except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "reason": "http_unreachable", "message": str(exc)}
+
+
+def _sidecar_base(
+    *,
+    manifest: dict[str, Any],
+    sidecar_endpoint: str | None = None,
+) -> str:
+    if sidecar_endpoint and sidecar_endpoint.strip():
+        return sidecar_endpoint.strip().rstrip("/")
+    port = int(manifest.get("sidecar_port", 50000) or 50000)
+    return f"http://127.0.0.1:{port}"
+
+
+def probe_engine(
+    model_dir: str | Path,
+    *,
+    engine: str | None = None,
+    sidecar_endpoint: str | None = None,
+) -> dict[str, Any]:
     path = Path(model_dir)
     manifest = _load_manifest(path)
-    engine_name = engine or manifest.get("engine") or "sherpa-onnx-tts"
+    engine_name = engine or manifest.get("engine") or "cosyvoice2"
+
     if engine_name == "edge-tts":
         try:
             import edge_tts  # noqa: F401
@@ -57,50 +99,123 @@ def probe_engine(model_dir: str | Path, *, engine: str | None = None) -> dict[st
             "model_dir": str(path),
             "message": "edge-tts ready (online)",
         }
-    if engine_name in {"pilot-tts", "cosyvoice"}:
-        ready, reason = _model_ready(path) if path.is_dir() else (False, "model_dir_missing")
+
+    if engine_name == "cloud-tts-openai":
+        return {
+            "ok": True,
+            "engine": engine_name,
+            "profile": manifest.get("id", "cloud-tts-openai"),
+            "model_dir": str(path),
+            "message": "cloud TTS ready when URL/token configured in settings",
+        }
+
+    if engine_name == "sherpa-onnx-tts":
+        ready, reason = _model_ready_sherpa(path)
+        try:
+            import sherpa_onnx  # noqa: F401
+        except ImportError:
+            return {
+                "ok": False,
+                "engine": "sherpa-onnx-tts",
+                "reason": "engine_not_installed",
+                "message": "pip install -r requirements-tts.txt (dev/CI only)",
+                "model_dir": str(path),
+            }
         if not ready:
             return {
                 "ok": False,
-                "engine": engine_name,
-                "reason": reason or "adapter_not_configured",
-                "message": f"Place {engine_name} model under model_dir or use sherpa-piper-zh",
+                "engine": "sherpa-onnx-tts",
+                "reason": reason,
+                "message": "Place Piper model under model_dir (dev/CI only)",
                 "model_dir": str(path),
             }
         return {
-            "ok": False,
-            "engine": engine_name,
-            "reason": "adapter_not_installed",
-            "message": f"{engine_name} adapter reserved; install engine package separately",
+            "ok": True,
+            "engine": "sherpa-onnx-tts",
+            "profile": manifest.get("id", path.name),
             "model_dir": str(path),
+            "message": "sherpa Piper ready (dev/CI only — not Chat Pro product path)",
         }
 
-    ready, reason = _model_ready(path)
-    try:
-        import sherpa_onnx  # noqa: F401
-    except ImportError:
+    if engine_name == "cosyvoice2":
+        if not path.is_dir():
+            return {
+                "ok": False,
+                "engine": "cosyvoice2",
+                "reason": "model_dir_missing",
+                "message": "Import voice expansion model pack (CosyVoice2-0.5B)",
+                "model_dir": str(path),
+            }
+        if not (path / "MANIFEST.json").is_file():
+            return {
+                "ok": False,
+                "engine": "cosyvoice2",
+                "reason": "manifest_missing",
+                "message": "Import oclive-tts-cosyvoice2-0.5b-zh model pack",
+                "model_dir": str(path),
+            }
+        base = _sidecar_base(manifest=manifest, sidecar_endpoint=sidecar_endpoint)
+        health = _http_json(f"{base}/health", timeout=3.0)
+        if health.get("ok"):
+            return {
+                "ok": True,
+                "engine": "cosyvoice2",
+                "profile": manifest.get("id", path.name),
+                "model_dir": str(path),
+                "sidecar_endpoint": base,
+                "warmed": health.get("warmed", False),
+                "message": health.get("message", "CosyVoice2 sidecar ready"),
+            }
         return {
             "ok": False,
-            "engine": "sherpa-onnx-tts",
-            "reason": "engine_not_installed",
-            "message": "pip install -r requirements-tts.txt",
+            "engine": "cosyvoice2",
+            "reason": health.get("reason") or "sidecar_not_ready",
+            "message": health.get("message")
+            or "Start voice expansion sidecar and import CosyVoice2 weights",
             "model_dir": str(path),
+            "sidecar_endpoint": base,
         }
-    if not ready:
-        return {
-            "ok": False,
-            "engine": "sherpa-onnx-tts",
-            "reason": reason,
-            "message": "Place Piper/sherpa TTS model under model_dir",
-            "model_dir": str(path),
-        }
+
     return {
-        "ok": True,
-        "engine": manifest.get("engine", "sherpa-onnx-tts"),
-        "profile": manifest.get("id", path.name),
+        "ok": False,
+        "engine": engine_name,
+        "reason": "unsupported_engine",
+        "message": f"Unknown TTS engine: {engine_name}",
         "model_dir": str(path),
-        "message": "TTS ready",
     }
+
+
+def warm_engine(
+    *,
+    model_dir: str | Path,
+    sidecar_endpoint: str | None = None,
+    engine: str | None = None,
+    prime: bool = True,
+) -> dict[str, Any]:
+    path = Path(model_dir)
+    manifest = _load_manifest(path)
+    engine_name = engine or manifest.get("engine") or "cosyvoice2"
+    if engine_name != "cosyvoice2":
+        return {"ok": False, "reason": "unsupported_engine", "engine": engine_name}
+    base = _sidecar_base(manifest=manifest, sidecar_endpoint=sidecar_endpoint)
+    result = _http_json(
+        f"{base}/warm",
+        {"model_dir": str(path)},
+        method="POST",
+        timeout=300.0,
+    )
+    if not result.get("ok") or not prime:
+        return result
+    prime_result = _http_json(
+        f"{base}/synthesize",
+        {"text": "好", "emo_text": "平静"},
+        method="POST",
+        timeout=600.0,
+    )
+    result["primed"] = bool(prime_result.get("ok"))
+    result["prime_reason"] = prime_result.get("reason", "")
+    result["prime_elapsed_ms"] = prime_result.get("elapsed_ms")
+    return result
 
 
 def _pcm_to_wav_base64(samples: list[float], sample_rate: int) -> str:
@@ -123,6 +238,7 @@ def _synthesize_sherpa(
     speed: float,
     manifest: dict[str, Any],
 ) -> dict[str, Any]:
+    """Dev/CI Piper path — not used by Chat Pro product profiles."""
     import sherpa_onnx
 
     tts_config = sherpa_onnx.OfflineTtsConfig(
@@ -161,7 +277,37 @@ def _synthesize_sherpa(
         "audio_base64": audio_b64,
         "sample_rate": audio.sample_rate,
         "profile": manifest.get("id", path.name),
-        "engine": manifest.get("engine", "sherpa-onnx-tts"),
+        "engine": "sherpa-onnx-tts",
+    }
+
+
+def _synthesize_cosyvoice2(
+    *,
+    path: Path,
+    cleaned: str,
+    speed: float,
+    manifest: dict[str, Any],
+    directive: dict[str, Any] | None,
+    sidecar_endpoint: str | None,
+) -> dict[str, Any]:
+    base = _sidecar_base(manifest=manifest, sidecar_endpoint=sidecar_endpoint)
+    d = directive or {}
+    payload = {
+        "text": cleaned,
+        "emo_text": str(d.get("emo_text") or ""),
+        "ref_audio": str(d.get("ref_audio") or ""),
+        "ref_text": str(d.get("ref_text") or ""),
+        "speed": speed,
+    }
+    result = _http_json(f"{base}/synthesize", payload, method="POST", timeout=600.0)
+    if not result.get("ok"):
+        return {"ok": False, "audio_base64": "", **result}
+    return {
+        "ok": True,
+        "audio_base64": result.get("audio_base64", ""),
+        "sample_rate": result.get("sample_rate", 22050),
+        "profile": manifest.get("id", path.name),
+        "engine": "cosyvoice2",
     }
 
 
@@ -224,12 +370,59 @@ def _synthesize_edge_tts(
     }
 
 
-def _synthesize_experimental(*, engine: str, path: Path) -> dict[str, Any]:
-    probe = probe_engine(path, engine=engine)
+def _synthesize_cloud_openai(
+    *,
+    cleaned: str,
+    speed: float,
+    manifest: dict[str, Any],
+    cloud_url: str | None,
+    cloud_token: str | None,
+    cloud_voice_id: str | None,
+    cloud_model: str | None,
+) -> dict[str, Any]:
+    base = (cloud_url or "").strip().rstrip("/")
+    if not base:
+        return {
+            "ok": False,
+            "reason": "cloud_url_missing",
+            "message": "Configure cloud TTS URL in voice expansion settings",
+            "audio_base64": "",
+            "engine": "cloud-tts-openai",
+        }
+    url = base if base.endswith("/audio/speech") else f"{base}/v1/audio/speech"
+    headers: dict[str, str] = {"Content-Type": "application/json"}
+    token = (cloud_token or "").strip()
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    body = {
+        "model": (cloud_model or manifest.get("cloud_model") or "tts-1").strip(),
+        "input": cleaned,
+        "voice": (cloud_voice_id or manifest.get("voice") or "alloy").strip(),
+        "speed": speed,
+    }
+    data = json.dumps(body).encode("utf-8")
+    req = urlrequest.Request(url, data=data, headers=headers, method="POST")
+    try:
+        with urlrequest.urlopen(req, timeout=120.0) as resp:
+            audio = resp.read()
+    except Exception as exc:  # noqa: BLE001
+        return {
+            "ok": False,
+            "reason": "cloud_tts_failed",
+            "message": str(exc),
+            "audio_base64": "",
+            "engine": "cloud-tts-openai",
+        }
+    if not audio:
+        return {"ok": False, "reason": "cloud_tts_empty", "audio_base64": ""}
+    mime = "audio/mpeg"
     return {
-        "ok": False,
-        "audio_base64": "",
-        **probe,
+        "ok": True,
+        "audio_base64": base64.b64encode(audio).decode("ascii"),
+        "sample_rate": 24000,
+        "profile": manifest.get("id", "cloud-tts-openai"),
+        "engine": "cloud-tts-openai",
+        "audio_mime": mime,
     }
 
 
@@ -241,6 +434,11 @@ def synthesize_text(
     directive: dict[str, Any] | None = None,
     engine: str | None = None,
     voice: str | None = None,
+    sidecar_endpoint: str | None = None,
+    cloud_url: str | None = None,
+    cloud_token: str | None = None,
+    cloud_voice_id: str | None = None,
+    cloud_model: str | None = None,
 ) -> dict[str, Any]:
     cleaned = (text or "").strip()
     if not cleaned:
@@ -248,7 +446,7 @@ def synthesize_text(
 
     path = Path(model_dir)
     manifest = _load_manifest(path)
-    engine_name = engine or manifest.get("engine") or "sherpa-onnx-tts"
+    engine_name = engine or manifest.get("engine") or "cosyvoice2"
     effective_speed = float(speed if speed is not None else (directive or {}).get("speed", 1.0))
     effective_speed = max(0.5, min(2.0, effective_speed))
 
@@ -259,16 +457,38 @@ def synthesize_text(
             voice=voice,
             manifest=manifest,
         )
-    if engine_name in {"pilot-tts", "cosyvoice"}:
-        return _synthesize_experimental(engine=engine_name, path=path)
+    if engine_name == "cloud-tts-openai":
+        return _synthesize_cloud_openai(
+            cleaned=cleaned,
+            speed=effective_speed,
+            manifest=manifest,
+            cloud_url=cloud_url,
+            cloud_token=cloud_token,
+            cloud_voice_id=cloud_voice_id,
+            cloud_model=cloud_model,
+        )
+    if engine_name == "cosyvoice2":
+        probe = probe_engine(path, engine=engine_name, sidecar_endpoint=sidecar_endpoint)
+        if not probe.get("ok"):
+            return {"ok": False, "audio_base64": "", **probe}
+        return _synthesize_cosyvoice2(
+            path=path,
+            cleaned=cleaned,
+            speed=effective_speed,
+            manifest=manifest,
+            directive=directive,
+            sidecar_endpoint=sidecar_endpoint or probe.get("sidecar_endpoint"),
+        )
+    if engine_name == "sherpa-onnx-tts":
+        probe = probe_engine(path, engine=engine_name)
+        if not probe.get("ok"):
+            return {"ok": False, "audio_base64": "", **probe}
+        return _synthesize_sherpa(
+            path=path,
+            cleaned=cleaned,
+            speed=effective_speed,
+            manifest=manifest,
+        )
 
-    probe = probe_engine(path, engine=engine_name)
-    if not probe.get("ok"):
-        return {"ok": False, "audio_base64": "", **probe}
-
-    return _synthesize_sherpa(
-        path=path,
-        cleaned=cleaned,
-        speed=effective_speed,
-        manifest=manifest,
-    )
+    probe = probe_engine(path, engine=engine_name, sidecar_endpoint=sidecar_endpoint)
+    return {"ok": False, "audio_base64": "", **probe}

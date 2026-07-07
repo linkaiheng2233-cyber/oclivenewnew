@@ -558,13 +558,18 @@ auto_sync: false
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `schema_version` | integer | 是 | 当前 **1** |
+| `schema_version` | integer | 是 | **1** 或 **2**（v2 增 ref / engine_family） |
 | `director_profile` | string | 否 | 默认导演 profile id（如 `rules-v1`） |
-| `synth_profile` | string | 否 | 默认发声 profile id（如 `sherpa-piper-zh`） |
+| `synth_profile` | string | 否 | 默认发声 profile id（如 `bundled-cosyvoice2-zh`） |
 | `speed` | number | 否 | baseline 语速乘数（0.5–2.0） |
 | `energy` | string | 否 | `soft` · `normal` · `strong` |
+| `engine_family` | string[] | 否 | v2：推荐引擎族（如 `cosyvoice2`） |
+| `ref_default` | string | 否 | v2：默认参考音相对路径（如 `assets/voice/ref_neutral.wav`） |
+| `ref_text` | string | 否 | v2：与 `ref_default` 对应的参考文本 |
+| `ref_map` | object | 否 | v2：emotion → ref 相对路径 |
+| `emo_text_template` | string | 否 | v2：含 `{tone}` 占位符的 instruct 模板 |
 
-示例见 [`distros/chat-pro/roles/mumu/voice_profile.json`](../../distros/chat-pro/roles/mumu/voice_profile.json)。契约 **`voice_directive` v1** 由插件 RPC 产出，不进 `SendMessageResponse`。
+示例见 [`distros/chat-pro/roles/mumu/voice_profile.json`](../../distros/chat-pro/roles/mumu/voice_profile.json)。契约 **`voice_directive` v1** 由插件 RPC 产出（可含 `ref_audio` · `ref_text` · `emo_text`），不进 `SendMessageResponse`。
 
 ---
 

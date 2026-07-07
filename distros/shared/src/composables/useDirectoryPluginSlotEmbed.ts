@@ -16,6 +16,8 @@ export function useDirectoryPluginSlotEmbed(options: {
   slot: MaybeRefOrGetter<string>
   /** Tied to plugin save/refresh (e.g. `pluginStore.bootstrapEpoch`). */
   bootstrapEpoch: MaybeRefOrGetter<number>
+  /** When set, only embed slots from these plugin ids (e.g. pure_chat platform plugins). */
+  pluginIdAllowlist?: MaybeRefOrGetter<readonly string[] | null | undefined>
 }) {
   const { t } = useI18n()
   const roleStore = useRoleStore()
@@ -31,9 +33,16 @@ export function useDirectoryPluginSlotEmbed(options: {
     setKey: setKeyedError,
   } = useKeyedPluginErrors()
 
-  const slots = computed<PluginUiSlotInfo[]>(() =>
-    (bootstrapUiSlots.value ?? []).filter(s => s.slot === toValue(options.slot)),
-  )
+  const slots = computed<PluginUiSlotInfo[]>(() => {
+    const allowlist = toValue(options.pluginIdAllowlist)
+    return (bootstrapUiSlots.value ?? []).filter((s) => {
+      if (s.slot !== toValue(options.slot))
+        return false
+      if (!allowlist || allowlist.length === 0)
+        return true
+      return allowlist.includes(s.pluginId)
+    })
+  })
 
   const vueFallback = ref<Record<string, boolean>>({})
   /** Increment to force remount of iframe / Vue. */

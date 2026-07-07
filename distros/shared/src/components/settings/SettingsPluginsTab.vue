@@ -7,6 +7,8 @@ import UiSection from '../ui/UiSection.vue'
 
 defineProps<{
   bootstrapEpoch: number
+  /** In pure_chat, only embed platform side-channel settings (e.g. voice.asr). */
+  platformOnly?: boolean
 }>()
 
 defineEmits<{
@@ -25,7 +27,10 @@ const { t } = useI18n()
       <template #extra>
         <HelpHint :paragraphs="[t('settings.pluginsPanelHint1'), t('settings.pluginsPanelHint2')]" />
       </template>
-      <PluginSettingsPanelSlots :bootstrap-epoch="bootstrapEpoch" />
+      <PluginSettingsPanelSlots
+        :bootstrap-epoch="bootstrapEpoch"
+        :platform-only="platformOnly"
+      />
     </UiSection>
 
     <UiSection :title="t('keybindings.title')">

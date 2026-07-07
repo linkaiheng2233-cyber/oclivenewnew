@@ -2,12 +2,15 @@
   "schema_version": 1,
   "id": "com.oclive.voice.asr",
   "name": "OCLive Voice ASR (Official)",
-  "version": "0.3.0",
-  "description": "Side-channel voice.asr + voice.speak + voice.build_directive: microphone → text → send_message; optional TTS with director profiles (Windows first)",
+  "version": "0.4.0",
+  "description": "Side-channel voice.asr + optional voice expansion (CosyVoice2 TTS) + voice.build_directive. ASR in base; emotional TTS requires expansion.",
   "provides": ["voice.asr"],
   "rpcMethods": [
     "voice.probe",
+    "voice.probe_tts",
+    "voice.warm",
     "voice.list_profiles",
+    "voice.list_model_packs",
     "voice.import_model",
     "voice.transcribe",
     "voice.speak",
@@ -28,6 +31,13 @@
         "required": false
       },
       {
+        "key": "tts_expansion_enabled",
+        "label": "语音扩展（情感 TTS）",
+        "type": "boolean",
+        "default": false,
+        "required": false
+      },
+      {
         "key": "auto_tts",
         "label": "自动朗读回复",
         "type": "boolean",
@@ -45,7 +55,7 @@
         "key": "tts_profile",
         "label": "TTS 档案",
         "type": "string",
-        "default": "sherpa-piper-zh",
+        "default": "bundled-cosyvoice2-zh",
         "required": false
       },
       {
@@ -53,6 +63,48 @@
         "label": "声音导演",
         "type": "string",
         "default": "rules-v1",
+        "required": false
+      },
+      {
+        "key": "synth_provider",
+        "label": "发声提供方",
+        "type": "string",
+        "default": "bundled",
+        "required": false
+      },
+      {
+        "key": "local_synth_endpoint",
+        "label": "本地 HTTP TTS",
+        "type": "string",
+        "default": "http://127.0.0.1:50000",
+        "required": false
+      },
+      {
+        "key": "cloud_tts_url",
+        "label": "云端 TTS URL",
+        "type": "string",
+        "default": "",
+        "required": false
+      },
+      {
+        "key": "cloud_tts_token",
+        "label": "云端 TTS Token",
+        "type": "string",
+        "default": "",
+        "required": false
+      },
+      {
+        "key": "cloud_tts_voice_id",
+        "label": "云端 Voice ID",
+        "type": "string",
+        "default": "",
+        "required": false
+      },
+      {
+        "key": "cloud_tts_model",
+        "label": "云端 TTS Model",
+        "type": "string",
+        "default": "tts-1",
         "required": false
       }
     ]

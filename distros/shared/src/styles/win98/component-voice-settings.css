@@ -19,6 +19,11 @@ html[data-skin="win98"] .voice-asr-settings .title {
   font-weight: bold;
 }
 
+html[data-skin="win98"] .voice-asr-settings .actions {
+  background: #c0c0c0;
+  border-top: 1px solid #808080;
+}
+
 html[data-skin="win98"] .voice-asr-settings .btn {
   border-radius: 0;
   border: 2px outset #dfdfdf;

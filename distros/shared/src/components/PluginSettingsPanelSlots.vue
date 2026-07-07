@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useDirectoryPluginSlotEmbed } from '@oclive/shared/composables/useDirectoryPluginSlotEmbed'
-import { SLOT_SETTINGS_PANEL } from '@oclive/shared/stores/pluginStore'
+import { PURE_CHAT_PLATFORM_PLUGIN_IDS, SLOT_SETTINGS_PANEL } from '@oclive/shared/stores/pluginStore'
 import AsyncPluginVue from './AsyncPluginVue.vue'
 import PluginErrorPlaceholder from './PluginErrorPlaceholder.vue'
 
@@ -10,11 +10,22 @@ const props = withDefaults(
   defineProps<{
     /** Bump to refetch bootstrap after changes (synced with plugin manager save) */
     bootstrapEpoch?: number
+    /** In pure_chat, only show platform side-channel settings plugins (e.g. voice.asr). */
+    platformOnly?: boolean
   }>(),
-  { bootstrapEpoch: 0 },
+  { bootstrapEpoch: 0, platformOnly: false },
 )
 
 const { t } = useI18n()
+
+const pluginIdAllowlist = computed(() =>
+  props.platformOnly ? PURE_CHAT_PLATFORM_PLUGIN_IDS : null,
+)
+
+function slotTabLabel(s: { pluginId: string, label?: string | null }): string {
+  const label = s.label?.trim()
+  return label || s.pluginId
+}
 
 const {
   pluginError,
@@ -32,6 +43,7 @@ const {
 } = useDirectoryPluginSlotEmbed({
   slot: SLOT_SETTINGS_PANEL,
   bootstrapEpoch: () => props.bootstrapEpoch,
+  pluginIdAllowlist,
 })
 
 const activeTab = ref(0)
@@ -59,7 +71,7 @@ watch(panelSlots, (list) => {
           :aria-selected="activeTab === i"
           @click="activeTab = i"
         >
-          {{ s.pluginId }}
+          {{ slotTabLabel(s) }}
         </button>
       </div>
       <div
@@ -112,7 +124,7 @@ watch(panelSlots, (list) => {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  min-height: 200px;
+  min-height: 0;
 }
 .psp-tabs {
   display: flex;
@@ -133,8 +145,7 @@ watch(panelSlots, (list) => {
   background: color-mix(in srgb, var(--accent, #3b82f6) 12%, var(--bg-elevated));
 }
 .psp-frame-wrap {
-  flex: 1;
-  min-height: 280px;
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -149,8 +160,7 @@ watch(panelSlots, (list) => {
 }
 .psp-vue {
   width: 100%;
-  min-height: 200px;
-  flex: 1;
+  flex: 0 0 auto;
 }
 .psp-msg {
   margin: 0;

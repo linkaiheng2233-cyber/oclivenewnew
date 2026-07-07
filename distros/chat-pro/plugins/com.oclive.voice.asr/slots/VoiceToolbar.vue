@@ -140,17 +140,12 @@ const busy = ref(false);
 const recording = ref(false);
 const errText = ref("");
 const submitMode = ref<"send" | "fill">("send");
-const autoTts = ref(false);
 const asrProfile = ref("sherpa-paraformer-zh-small");
-const ttsProfile = ref("sherpa-piper-zh");
-const directorProfile = ref("rules-v1");
 
 let mediaStream: MediaStream | null = null;
 let mediaRecorder: MediaRecorder | null = null;
 let audioChunks: Blob[] = [];
 let recordStartedAt = 0;
-let pendingTts = false;
-let audioEl: HTMLAudioElement | null = null;
 
 async function rpc(method: string, params: Record<string, unknown> = {}) {
   if (!oclive) throw new Error("oclive bridge missing");
@@ -165,15 +160,8 @@ async function loadPluginConfig(): Promise<void> {
     })) as { config?: Record<string, unknown> };
     const cfg = ui.config || {};
     submitMode.value = cfg.submit_mode === "fill" ? "fill" : "send";
-    autoTts.value = cfg.auto_tts === true;
     if (typeof cfg.asr_profile === "string" && cfg.asr_profile.trim()) {
       asrProfile.value = cfg.asr_profile.trim();
-    }
-    if (typeof cfg.tts_profile === "string" && cfg.tts_profile.trim()) {
-      ttsProfile.value = cfg.tts_profile.trim();
-    }
-    if (typeof cfg.director_profile === "string") {
-      directorProfile.value = cfg.director_profile.trim() || "none";
     }
   } catch {
     /* settings optional */
@@ -230,7 +218,6 @@ async function transcribeBlob(blob: Blob): Promise<void> {
     if (submitMode.value === "fill") {
       oclive.events.emit(EVT_SUBMIT, { text, mode: "fill" });
     } else {
-      pendingTts = autoTts.value;
       oclive.events.emit(EVT_SUBMIT, { text, mode: "send" });
     }
   } catch (e) {
@@ -238,68 +225,6 @@ async function transcribeBlob(blob: Blob): Promise<void> {
   } finally {
     busy.value = false;
   }
-}
-
-async function resolveRolePath(roleId: string): Promise<string> {
-  if (!oclive || !roleId.trim()) return "";
-  try {
-    const res = (await oclive.invoke("get_role_pack_path", { roleId: roleId.trim() })) as {
-      role_path?: string;
-    };
-    return String(res.role_path || "").trim();
-  } catch {
-    return "";
-  }
-}
-
-async function playTts(text: string, botEmotion?: string, roleId?: string): Promise<void> {
-  const cleaned = text.trim();
-  if (!cleaned || !oclive) return;
-  try {
-    let directive: Record<string, unknown> | undefined;
-    const director = directorProfile.value.trim();
-    if (director && director !== "none") {
-      const rolePath = roleId ? await resolveRolePath(roleId) : "";
-      const built = (await rpc("voice.build_directive", {
-        profile: director,
-        bot_emotion: botEmotion || "neutral",
-        role_path: rolePath,
-      })) as { ok?: boolean; directive?: Record<string, unknown> };
-      if (built.ok && built.directive) directive = built.directive;
-    }
-    const profile =
-      (directive?.synth_profile as string | undefined) || ttsProfile.value;
-    const res = (await rpc("voice.speak", {
-      text: cleaned,
-      profile,
-      directive,
-    })) as {
-      ok?: boolean;
-      audio_base64?: string;
-      audio_mime?: string;
-      reason?: string;
-    };
-    if (!res.ok || !res.audio_base64) return;
-    if (!audioEl) audioEl = new Audio();
-    const mime = res.audio_mime || "audio/wav";
-    audioEl.src = `data:${mime};base64,${res.audio_base64}`;
-    await audioEl.play();
-  } catch {
-    /* TTS failure is silent per plan */
-  }
-}
-
-function onMessageSent(payload: unknown): void {
-  if (!pendingTts && !autoTts.value) return;
-  const data = payload as {
-    reply?: string;
-    bot_emotion?: string;
-    role_id?: string;
-  } | null;
-  const reply = data?.reply?.trim();
-  pendingTts = false;
-  if (!reply) return;
-  void playTts(reply, data?.bot_emotion, data?.role_id);
 }
 
 function onHoldEvent(payload: unknown): void {
@@ -374,12 +299,10 @@ function onPointerUp(ev: PointerEvent): void {
 
 onMounted(() => {
   void loadPluginConfig().then(() => refreshProbe());
-  oclive?.events.on("oclive:message:sent", onMessageSent);
   oclive?.events.on(EVT_HOLD, onHoldEvent);
 });
 
 onBeforeUnmount(() => {
-  oclive?.events.off("oclive:message:sent", onMessageSent);
   oclive?.events.off(EVT_HOLD, onHoldEvent);
   stopRecording();
   cleanupMic();

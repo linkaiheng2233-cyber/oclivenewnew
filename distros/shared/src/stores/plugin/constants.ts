@@ -12,6 +12,15 @@ export function setRefreshPromise(p: Promise<void> | null): void {
   refreshPromise = p
 }
 
+/** Side-channel plugins that stay available in `pure_chat` (not gated by story mode). */
+export const PURE_CHAT_PLATFORM_PLUGIN_IDS: readonly string[] = [
+  'com.oclive.voice.asr',
+]
+
+export function isPureChatPlatformPlugin(pluginId: string): boolean {
+  return PURE_CHAT_PLATFORM_PLUGIN_IDS.includes(pluginId)
+}
+
 /** Toolbar above chat input */
 export const SLOT_CHAT_TOOLBAR = 'chat_toolbar'
 /** Embed on in-app Settings → Plugin extensions page */

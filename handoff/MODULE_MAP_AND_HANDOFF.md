@@ -215,11 +215,11 @@ slot_registry（或 legacy plugin_backends）
 | `user_identity` | 用户是谁 | `user_identities/` · pre | **是**（pre 段落） |
 | `reply_post_process` | 回复润色/改写 | `config.json` · post_llm | **是**（post） |
 | `theater_director` | 剧场场景生成 | `POST /theater/scene` | **否**（圈外 API） |
-| **`voice.asr`** | 麦克风 → 文本（ASR）+ 可选 TTS | 宿主 `chat_toolbar` + **`plugin_rpc_invoke`**（`ui_slots` 桥接）→ [`VOICE_ASR_SUBMIT_EVENT`](../distros/shared/src/lib/voiceAsrEvents.ts) → `send_message`；`message:sent` → **`voice.speak`** | **否**（不进编排钩子；文本走既有对话入口） |
-| **`voice.director`**（规划） | 人设 → **`voice_directive`** | 侧车 · 消费 `reply` / `bot_emotion` / `voice_profile` | **否** |
-| **`voice.synth`**（规划） | `reply` + directive → 音频 | 同 **`voice.speak`** RPC · synth profile 注册表 | **否** |
+| **`voice.asr`** | 麦克风 → 文本（ASR，基础）+ 可选情感 TTS（扩展 · 默认关） | 宿主 `chat_toolbar` + **`plugin_rpc_invoke`** → [`VOICE_ASR_SUBMIT_EVENT`](../distros/shared/src/lib/voiceAsrEvents.ts) → `send_message`；`message:sent` / 流式首句 → **`voice.speak`**（须 `tts_expansion_enabled`） | **否** |
+| **`voice.director`** | 人设 → **`voice_directive`**（`rules-v1` · `emo_text` · `ref_map`） | 插件 RPC **`voice.build_directive`** | **否** |
+| **`voice.synth`** | `reply` + directive → 音频（CosyVoice2 / cloud） | **`voice.speak`** · `voice.probe_tts` · `voice.warm` · 模型 DLC | **否** |
 
-**`voice.asr` 插件 SSOT**：[`distros/chat-pro/plugins/com.oclive.voice.asr/`](../distros/chat-pro/plugins/com.oclive.voice.asr/) · `provides: ["voice.asr"]` · RPC `voice.probe` / `voice.transcribe` / `voice.import_model` / `voice.list_profiles` / **`voice.speak`** · 开发烟测 HTTP 闭环仍用 [`examples/voice-loop-minimal/`](../examples/voice-loop-minimal/)（`loop.py --mic`）。**导演 + 发声器双 profile** 规划见 [`ARCHITECTURE_DECOUPLING_PANORAMA.md`](../human-docs/team/ARCHITECTURE_DECOUPLING_PANORAMA.md) §6。
+**`voice.asr` 插件 SSOT**：[`distros/chat-pro/plugins/com.oclive.voice.asr/`](../distros/chat-pro/plugins/com.oclive.voice.asr/) · **v0.4** · `provides: ["voice.asr"]` · RPC 见插件 README · 开发烟测 [`examples/voice-loop-minimal/`](../examples/voice-loop-minimal/)（Piper 仅 `--tts-sherpa` dev 路径）。导演 + 发声器已合入同插件，见 [`ARCHITECTURE_DECOUPLING_PANORAMA.md`](../human-docs/team/ARCHITECTURE_DECOUPLING_PANORAMA.md) §6–§7。
 
 RFC：[`RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md`](../creator-docs/rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md) · Phase2：[`USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md`](./USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md)（**已交付**，勿当待办）。
 

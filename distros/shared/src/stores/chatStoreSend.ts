@@ -1,6 +1,7 @@
 import type { SendMessageResponse } from '@oclive/shared/api'
 import { sendMessage, sendMessageStream } from '@oclive/shared/api'
 import { hostEventBus } from '@oclive/shared/lib/hostEventBus'
+import { VOICE_STREAM_SENTENCE_EVENT } from '@oclive/shared/lib/voiceAsrEvents'
 import { getRelationUpgradeMessage } from '@oclive/shared/utils/relation'
 import { presentationFromSendResponse } from '@oclive/shared/utils/replyPresentation'
 import { isChatStreamEnabled } from '@oclive/shared/utils/chatStreamSettings'
@@ -43,6 +44,11 @@ export interface ChatStoreSendContext {
 let activeSendSeq = 0
 let inFlightStreamAbort: AbortController | null = null
 
+function extractFirstSentence(accumulated: string): string | null {
+  const m = accumulated.match(/^[\s\S]*?[。！？!?；;\n]/)
+  return m ? m[0].trim() : null
+}
+
 function isAbortError(err: unknown, signal?: AbortSignal): boolean {
   if (signal?.aborted)
     return true
@@ -74,8 +80,10 @@ export async function sendChatStoreMessage(
   }, { persistIdbCache: false })
   context.setLoading(true)
   const relationBefore = roleStore.roleInfo.relationState
-  const assistantLocalId = `a-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
-  let streamBubbleActive = false
+    const assistantLocalId = `a-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+    const streamId = assistantLocalId
+    let streamBubbleActive = false
+    let streamSentenceEmitted = false
   try {
     let res: SendMessageResponse
     const streamEnabled = isChatStreamEnabled()
@@ -103,6 +111,18 @@ export async function sendChatStoreMessage(
               context.patchMessageById(roleId, sid, assistantLocalId, {
                 content: accumulated,
               })
+              if (!streamSentenceEmitted) {
+                const sentence = extractFirstSentence(accumulated)
+                if (sentence) {
+                  streamSentenceEmitted = true
+                  hostEventBus.emitBuiltin(VOICE_STREAM_SENTENCE_EVENT, {
+                    sentence,
+                    stream_id: streamId,
+                    role_id: roleId,
+                    bot_emotion: 'neutral',
+                  })
+                }
+              }
             },
           },
         )
@@ -192,6 +212,7 @@ export async function sendChatStoreMessage(
       reply_aside: preSplit.aside,
       bot_emotion: res.bot_emotion,
       role_id: roleId,
+      stream_id: streamBubbleActive ? streamId : undefined,
     })
     const countAfterTurn = context.getMessageCountForRoleScene(roleId, sid)
     context.clampSceneHistorySplitForBucket(

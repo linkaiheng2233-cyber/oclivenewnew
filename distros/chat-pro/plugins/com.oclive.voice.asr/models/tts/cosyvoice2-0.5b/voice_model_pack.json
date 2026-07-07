@@ -1,0 +1,15 @@
+{
+  "pack_id": "oclive-tts-cosyvoice2-0.5b-zh",
+  "engine": "cosyvoice2",
+  "version": "1",
+  "label": "CosyVoice2-0.5B Chinese",
+  "min_vram_gb_recommended": 6,
+  "install_dir": "models/tts/cosyvoice2-0.5b",
+  "size_bytes": 5616076920,
+  "download_url": "https://www.modelscope.cn/models/iic/CosyVoice2-0.5B",
+  "download_cmd": "pip install modelscope && modelscope download --model iic/CosyVoice2-0.5B --local_dir \"%APPDATA%/OCLive/models/tts/cosyvoice2-0.5b\"",
+  "companion_pack": {
+    "pack_id": "oclive-tts-cosyvoice-ttsfrd",
+    "download_cmd": "modelscope download --model iic/CosyVoice-ttsfrd --local_dir \"%APPDATA%/OCLive/models/tts/cosyvoice-ttsfrd\""
+  }
+}

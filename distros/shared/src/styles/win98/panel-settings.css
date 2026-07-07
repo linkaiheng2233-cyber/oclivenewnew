@@ -12,7 +12,8 @@ html[data-skin="win98"] .sv-dialog {
   box-shadow: 1px 1px 0 #000000;
   background: #c0c0c0;
   padding: 0;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 html[data-skin="win98"] .sv-head {

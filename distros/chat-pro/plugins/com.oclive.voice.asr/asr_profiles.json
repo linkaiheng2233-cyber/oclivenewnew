@@ -1,143 +1,227 @@
 {
+
   "default_profile": "sherpa-paraformer-zh-small",
-  "default_tts_profile": "sherpa-piper-zh",
+
+  "default_tts_profile": "bundled-cosyvoice2-zh",
+
   "default_director_profile": "rules-v1",
+
   "profiles": {
+
     "sherpa-paraformer-zh-small": {
+
       "label": "Sherpa Paraformer zh small/int8",
+
       "engine": "sherpa-onnx",
+
       "kind": "asr",
+
       "model_dir": "models/asr/sherpa-paraformer-zh-small",
+
       "platforms": {
+
         "win32": {
+
           "venv": ".venv",
+
           "model_dir": "models/asr/sherpa-paraformer-zh-small"
+
         },
+
         "linux": {
+
           "unsupported": true,
+
           "message": "Linux ASR profile reserved; import model when engine ships"
+
         },
+
         "darwin": {
+
           "unsupported": true,
+
           "message": "macOS ASR profile reserved; import model when engine ships"
+
         }
+
       }
+
     },
+
     "sherpa-paraformer-zh-medium": {
+
       "label": "Sherpa Paraformer zh medium (higher accuracy)",
+
       "engine": "sherpa-onnx",
+
       "kind": "asr",
+
       "model_dir": "models/asr/sherpa-paraformer-zh-medium",
+
       "platforms": {
+
         "win32": {
+
           "model_dir": "models/asr/sherpa-paraformer-zh-medium"
+
         },
+
         "linux": {
+
           "unsupported": true,
+
           "message": "Linux ASR profile reserved; import model when engine ships"
+
         },
+
         "darwin": {
+
           "unsupported": true,
+
           "message": "macOS ASR profile reserved; import model when engine ships"
+
         }
+
       }
+
     },
+
     "rules-v1": {
-      "label": "Rules v1 (bot_emotion → speed)",
+
+      "label": "Rules v1 (bot_emotion → speed / emo_text)",
+
       "engine": "rules-v1",
+
       "kind": "director",
+
       "platforms": {
+
         "win32": {},
+
         "linux": {},
+
         "darwin": {}
+
       }
+
     },
-    "sherpa-piper-zh": {
-      "label": "Sherpa Piper zh TTS",
-      "engine": "sherpa-onnx-tts",
+
+    "bundled-cosyvoice2-zh": {
+
+      "label": "CosyVoice2 0.5B 情感 TTS（本地扩展 · 推荐 NVIDIA 6GB+ 显存）",
+
+      "engine": "cosyvoice2",
+
       "kind": "tts",
-      "model_dir": "models/tts/sherpa-piper-zh",
+
+      "model_dir": "models/tts/cosyvoice2-0.5b",
+
+      "requires_pack": "oclive-tts-cosyvoice2-0.5b-zh",
+
+      "sidecar_port": 50000,
+
+      "min_vram_gb_recommended": 6,
+
       "platforms": {
+
         "win32": {
-          "model_dir": "models/tts/sherpa-piper-zh"
+
+          "model_dir": "models/tts/cosyvoice2-0.5b"
+
         },
+
         "linux": {
+
           "unsupported": true,
-          "message": "Linux TTS reserved for a later release"
+
+          "message": "Linux CosyVoice2 TTS reserved for a later release"
+
         },
+
         "darwin": {
+
           "unsupported": true,
-          "message": "macOS TTS reserved for a later release"
+
+          "message": "macOS CosyVoice2 TTS reserved for a later release"
+
         }
+
       }
+
     },
-    "sherpa-piper-zh-alt": {
-      "label": "Sherpa Piper zh alt voice (second model dir)",
-      "engine": "sherpa-onnx-tts",
-      "kind": "tts",
-      "model_dir": "models/tts/sherpa-piper-zh-alt",
-      "platforms": {
-        "win32": {
-          "model_dir": "models/tts/sherpa-piper-zh-alt"
-        },
-        "linux": {
-          "unsupported": true,
-          "message": "Linux TTS reserved for a later release"
-        },
-        "darwin": {
-          "unsupported": true,
-          "message": "macOS TTS reserved for a later release"
-        }
-      }
-    },
+
     "edge-tts-zh": {
-      "label": "Edge TTS zh (online · edge-tts)",
+
+      "label": "Edge TTS zh（在线 · 无 API key · 隐私弱于本地）",
+
       "engine": "edge-tts",
+
       "kind": "tts",
+
       "voice": "zh-CN-XiaoxiaoNeural",
+
+      "synth_provider": "cloud",
+
       "platforms": {
+
         "win32": {},
+
         "linux": {},
+
         "darwin": {}
+
       }
+
     },
-    "pilot-tts-zh": {
-      "label": "PilotTTS zh (experimental adapter)",
-      "engine": "pilot-tts",
+
+    "cloud-tts-openai": {
+
+      "label": "云端 TTS（OpenAI 兼容 · 用户自填 URL/key）",
+
+      "engine": "cloud-tts-openai",
+
       "kind": "tts",
-      "model_dir": "models/tts/pilot-tts-zh",
+
+      "synth_provider": "cloud",
+
       "platforms": {
-        "win32": {
-          "model_dir": "models/tts/pilot-tts-zh"
-        },
-        "linux": {
-          "unsupported": true,
-          "message": "PilotTTS adapter reserved"
-        },
-        "darwin": {
-          "unsupported": true,
-          "message": "PilotTTS adapter reserved"
-        }
+
+        "win32": {},
+
+        "linux": {},
+
+        "darwin": {}
+
       }
+
     },
-    "cosyvoice-zh": {
-      "label": "CosyVoice zh (experimental adapter)",
-      "engine": "cosyvoice",
+
+    "local-http-tts": {
+
+      "label": "本地 HTTP TTS（用户自建 CosyVoice / GSVI 等服务）",
+
+      "engine": "cosyvoice2",
+
       "kind": "tts",
-      "model_dir": "models/tts/cosyvoice-zh",
+
+      "synth_provider": "local_http",
+
+      "sidecar_endpoint": "http://127.0.0.1:9880",
+
       "platforms": {
-        "win32": {
-          "model_dir": "models/tts/cosyvoice-zh"
-        },
-        "linux": {
-          "unsupported": true,
-          "message": "CosyVoice adapter reserved"
-        },
-        "darwin": {
-          "unsupported": true,
-          "message": "CosyVoice adapter reserved"
-        }
+
+        "win32": {},
+
+        "linux": {},
+
+        "darwin": {}
+
       }
+
     }
+
   }
+
 }
+
+

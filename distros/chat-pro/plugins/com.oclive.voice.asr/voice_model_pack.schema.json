@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "oclive_voice_model_pack",
+  "type": "object",
+  "required": ["pack_id", "engine", "version"],
+  "properties": {
+    "pack_id": { "type": "string" },
+    "engine": { "type": "string", "enum": ["cosyvoice2"] },
+    "version": { "type": "string" },
+    "label": { "type": "string" },
+    "size_bytes": { "type": "integer", "minimum": 0 },
+    "sha256": { "type": "string" },
+    "min_vram_gb_recommended": { "type": "number", "minimum": 0 },
+    "install_dir": { "type": "string" },
+    "download_url": { "type": "string" }
+  },
+  "additionalProperties": false
+}

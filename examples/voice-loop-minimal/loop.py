@@ -151,12 +151,25 @@ def post_chat_stream(message: str, role_path: Path) -> tuple[str, int | None, in
     return reply, ttft_ms, total_ms
 
 
-def speak(text: str, use_plugin_tts: bool = False, tts_model_dir: Path | None = None) -> None:
-    if use_plugin_tts and tts_model_dir:
+def speak(
+    text: str,
+    *,
+    use_plugin_tts: bool = False,
+    use_cosyvoice: bool = False,
+    tts_model_dir: Path | None = None,
+    sidecar_endpoint: str | None = None,
+) -> None:
+    if (use_plugin_tts or use_cosyvoice) and tts_model_dir:
         try:
             from tts.engine import synthesize_text
 
-            result = synthesize_text(model_dir=tts_model_dir, text=text)
+            engine = "cosyvoice2" if use_cosyvoice else None
+            result = synthesize_text(
+                model_dir=tts_model_dir,
+                text=text,
+                engine=engine,
+                sidecar_endpoint=sidecar_endpoint,
+            )
             if not result.get("ok"):
                 print(f"[tts] {result.get('reason', 'failed')}", file=sys.stderr)
                 return
@@ -207,7 +220,17 @@ def transcribe_mic(seconds: float, model_dir: Path) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser(description="OClive minimal chat loop (HTTP)")
     parser.add_argument("--tts", action="store_true", help="Speak reply (pyttsx3 or sherpa TTS)")
-    parser.add_argument("--tts-sherpa", action="store_true", help="Use sherpa TTS model for reply")
+    parser.add_argument("--tts-sherpa", action="store_true", help="Dev/CI: sherpa Piper TTS")
+    parser.add_argument(
+        "--tts-cosyvoice",
+        action="store_true",
+        help="CosyVoice2 sidecar TTS (requires model + running sidecar)",
+    )
+    parser.add_argument(
+        "--cosyvoice-endpoint",
+        default=os.environ.get("OCLIVE_COSYVOICE_ENDPOINT", "http://127.0.0.1:50000"),
+        help="CosyVoice2 sidecar base URL",
+    )
     parser.add_argument("--stream", action="store_true", help="Use POST /chat/stream and print ttft_ms")
     parser.add_argument("--mic", action="store_true", help="Record from microphone → ASR → chat")
     parser.add_argument("--mic-seconds", type=float, default=3.0, help="Mic capture length (default 3)")
@@ -265,9 +288,18 @@ def main() -> int:
             print(f"[error] {e}", file=sys.stderr)
             continue
 
-        if args.tts or args.tts_sherpa:
-            tts_dir = Path(__file__).resolve().parent / "models" / "tts" / "sherpa-piper-zh"
-            speak(reply, use_plugin_tts=args.tts_sherpa, tts_model_dir=tts_dir)
+        if args.tts or args.tts_sherpa or args.tts_cosyvoice:
+            if args.tts_cosyvoice:
+                tts_dir = Path(__file__).resolve().parent / "models" / "tts" / "cosyvoice2-0.5b"
+                speak(
+                    reply,
+                    use_cosyvoice=True,
+                    tts_model_dir=tts_dir,
+                    sidecar_endpoint=args.cosyvoice_endpoint,
+                )
+            else:
+                tts_dir = Path(__file__).resolve().parent / "models" / "tts" / "sherpa-piper-zh"
+                speak(reply, use_plugin_tts=args.tts_sherpa, tts_model_dir=tts_dir)
         if not args.stream:
             print()
 

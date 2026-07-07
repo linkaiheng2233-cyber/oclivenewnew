@@ -230,9 +230,9 @@
 | `user_identity` | 用户身份 Prompt 模板 | **是**（pre 段落） | `user_identities/` | 无（内容在角色包） | 已交付 |
 | `reply_post_process` | 回复后处理 | **是**（post_llm 后） | `config.json` → chain | 例：`examples/reply-post-process-polish/` | 已交付 |
 | `theater_director` | 剧场场景导演 | **否** | `POST /theater/scene` · RPC `theater.build_prompt` | `com.oclive.theater_director_official` | 已交付 |
-| **`voice.asr`** | 语音输入（ASR）+ 可选 TTS | **否** | `chat_toolbar` → `com.oclive.voice.asr:submit` → `send_message` | `com.oclive.voice.asr` | Windows 已交付 |
-| **`voice.director`**（规划） | 声音导演 | **否** | `message:sent` 前 · 产出 `voice_directive` | 合入 `voice.asr` 或独立 manifest | 未实现 |
-| **`voice.synth`**（规划） | 发声器 TTS | **否** | RPC `voice.speak` + synth profile | 合入 `voice.asr` profile 注册表 | 部分（Piper） |
+| **`voice.asr`** | 语音输入（ASR）+ 可选情感 TTS 扩展 | **否** | `chat_toolbar` → `com.oclive.voice.asr:submit` → `send_message`；`message:sent` → `voice.speak` | `com.oclive.voice.asr` v0.4 | Windows 已交付 |
+| **`voice.director`** | 声音导演（`rules-v1`） | **否** | `voice.build_directive` · 合入 `voice.asr` | 同插件 | **已交付**（规则导演） |
+| **`voice.synth`** | 情感发声（CosyVoice2 / cloud） | **否** | RPC `voice.speak` + `tts_expansion_enabled` | 同插件 profile 注册表 | **已交付**（扩展可选；无 Piper 降级） |
 
 ### 6.1 附录 · 宿主工具向（非独立通道主表）
 
@@ -242,27 +242,27 @@
 
 ---
 
-## 7. 语音侧车 · 导演 + 发声器（规划对齐）
+## 7. 语音侧车 · 导演 + 发声器（v0.4 对齐）
 
-与 ASR 相同归类：**独立通道 + 目录插件**，不进六槽、不进 post_llm 设施。
+与 ASR 相同归类：**独立通道 + 目录插件**，不进六槽、不进 post_llm 设施。默认 **纯文字**；情感 TTS 为可选 **语音扩展**（`tts_expansion_enabled`）。
 
 ```text
-voice_profile.json（角色包 · 可选）
+voice_profile.json（角色包 · 可选 v2 ref_map）
         │
-用户设置 director_profile + synth_profile（插件 config）
-        │
-        ▼
-声音导演（规则 / 小 LLM profile）→ voice_directive JSON
+用户设置：ASR（基础）/ 语音扩展（TTS · 默认关）
         │
         ▼
-发声器（TTS profile · voice.speak）→ audio
+声音导演 rules-v1 → voice_directive（emo_text · ref_audio）
+        │
+        ▼
+发声器 CosyVoice2 侧车 / 本地 HTTP / 云端 API → audio
 ```
 
 | profile `kind` | 用户可选 | 今日状态 |
 |----------------|----------|----------|
-| `asr` | ✅ | sherpa-paraformer small/medium |
-| `director` | 规划 | 未注册；可用规则占位 |
-| `synth` | ✅（全局 `tts_profile`） | sherpa-piper-zh |
+| `asr` | ✅（基础包） | sherpa-paraformer small/medium |
+| `director` | ✅（扩展内） | `rules-v1` 已注册 |
+| `synth` | ✅（扩展内 · 默认关） | `bundled-cosyvoice2-zh` · 无 Piper 产品降级 |
 
 契约 SSOT 演进：[`TRACK_VOICE_RECOGNITION.md`](./TRACK_VOICE_RECOGNITION.md) · 插件 [`README`](../../distros/chat-pro/plugins/com.oclive.voice.asr/README.md)。
 
@@ -412,11 +412,11 @@ flowchart TB
 | profile 轴 | 配置 | 说明 |
 |------------|------|------|
 | **ASR** | 插件 `asr_profile` | 识别引擎 · 已有 |
-| **TTS / synth** | 插件 `tts_profile` | 发声器 · Piper 等 |
-| **voice director**（规划） | `director_profile` | 人设 → `voice_directive` |
-| **角色覆盖**（规划） | 包 `voice_profile.json` | 可选默认 director / synth |
+| **TTS / synth** | 插件 `tts_profile` + `tts_expansion_enabled` | CosyVoice2 扩展 · cloud · 无 Piper 产品路径 |
+| **voice director** | `director_profile` | `rules-v1` → `voice_directive`（已交付） |
+| **角色覆盖** | 包 `voice_profile.json` v2 | 可选 `ref_map` / `synth_profile` |
 
-SSOT：[TRACK_VOICE](./TRACK_VOICE_RECOGNITION.md) · [§7 语音侧车](#7-语音侧车--导演--发声器规划对齐) · [§1.3 正交三层](#13-正交orthogonal)。
+SSOT：[TRACK_VOICE](./TRACK_VOICE_RECOGNITION.md) · [§7 语音侧车](#7-语音侧车--导演--发声器v04-对齐) · [§1.3 正交三层](#13-正交orthogonal)。
 
 ---
 
