@@ -198,11 +198,13 @@ def warm_engine(
     if engine_name != "cosyvoice2":
         return {"ok": False, "reason": "unsupported_engine", "engine": engine_name}
     base = _sidecar_base(manifest=manifest, sidecar_endpoint=sidecar_endpoint)
+    # Model load + first-inference prime can exceed the default probe timeout on
+    # cold CPU/GPU; align with the plugin warm RPC budget so prime is not cut off.
     result = _http_json(
         f"{base}/warm",
         {"model_dir": str(path), "prime": prime},
         method="POST",
-        timeout=300.0,
+        timeout=900.0,
     )
     return result
 

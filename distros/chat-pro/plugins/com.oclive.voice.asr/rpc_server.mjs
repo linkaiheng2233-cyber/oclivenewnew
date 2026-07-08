@@ -256,6 +256,14 @@ function startCosyvoiceSidecar(modelDir, port = 50000) {
         finish({ ok: true, sidecar_endpoint: cosyvoiceSidecarUrl, warmed: false });
       }
     });
+    // Surface sidecar stderr (warm/prime/synth timings + tracebacks) and drain the
+    // pipe so a full buffer cannot block the Python process.
+    child.stderr.on("data", (chunk) => {
+      const text = chunk.toString("utf8");
+      if (text.trim()) {
+        process.stderr.write(`[cosyvoice-sidecar] ${text}`);
+      }
+    });
     child.on("error", (err) => {
       cosyvoiceSidecarChild = null;
       cosyvoiceSidecarUrl = null;

@@ -33,6 +33,7 @@ export default {
   roleRuntime: roleRuntimeBundle.roleRuntime,
   settings: settingsBundle.settings,
   hotkeys: settingsBundle.hotkeys,
+  keybindings: settingsBundle.keybindings,
   simplePluginManager,
   modelManager,
   virtualTime,

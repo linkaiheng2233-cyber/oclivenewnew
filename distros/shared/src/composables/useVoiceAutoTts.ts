@@ -521,10 +521,10 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
     }
 
     const streamId = p.stream_id.trim()
-    const spokenPrefix
-      = p.stream_spoken_prefix?.trim()
-        || streamSpokenPrefixById.get(streamId)
-        || ''
+    // Source of truth for "already spoken" is what THIS composable actually
+    // emitted during streaming (streamSpokenPrefixById) — not chatStoreSend's
+    // optimistic prefix, whose sentence events may never reach the speaker.
+    const spokenPrefix = streamSpokenPrefixById.get(streamId) || ''
     streamSpokenPrefixById.delete(streamId)
 
     const reply = p.reply?.trim()
@@ -535,15 +535,12 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
     if (!cfg?.tts_expansion_enabled || !cfg.auto_tts)
       return
 
-    let toSpeak = ''
     const rawFull = p.stream_full_raw ?? ''
-    const spokenEnd = p.stream_spoken_end_index ?? 0
-    if (rawFull.length > spokenEnd) {
-      toSpeak = voiceDialogueFromRaw(rawFull.slice(spokenEnd))
-    }
-    if (!toSpeak) {
-      toSpeak = remainderAfterSpokenPrefix(reply, spokenPrefix)
-    }
+    const fullDialogue
+      = voiceDialogueFromRaw(rawFull) || voiceDialogueFromRaw(reply) || reply
+    const toSpeak = spokenPrefix
+      ? remainderAfterSpokenPrefix(fullDialogue, spokenPrefix)
+      : fullDialogue
     if (!toSpeak)
       return
 

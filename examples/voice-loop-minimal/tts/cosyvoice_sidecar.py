@@ -202,9 +202,20 @@ def _collect_synthesis_tensors(
     ref_text: str,
     speed: float,
 ) -> tuple[list[Any], str, str]:
-    """Run CosyVoice once (stream=True, fallback stream=False). Caller holds _synth_lock."""
+    """Run CosyVoice once. Caller holds _synth_lock.
+
+    CosyVoice2 ``stream=True`` can deadlock on Windows (multiprocessing worker),
+    so non-streaming is the default reliable path; opt into streaming via
+    ``OCLIVE_COSYVOICE_STREAM=1``.
+    """
+    allow_stream = os.environ.get("OCLIVE_COSYVOICE_STREAM", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+    }
+    stream_modes = (False, True) if allow_stream else (False,)
     tensors: list[Any] = []
-    for stream in (True, False):
+    for stream in stream_modes:
         iterator, err, msg = _open_synthesis_iterator(
             model,
             text=text,
@@ -399,9 +410,16 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, format: str, *args: object) -> None:
         return
 
+    def _send_cors_headers(self) -> None:
+        """Loopback sidecar consumed by the Tauri webview via cross-origin fetch."""
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+
     def _json(self, code: int, payload: dict[str, Any]) -> None:
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         self.send_response(code)
+        self._send_cors_headers()
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
@@ -409,12 +427,19 @@ class Handler(BaseHTTPRequestHandler):
 
     def _ndjson_stream(self, lines) -> None:
         self.send_response(200)
+        self._send_cors_headers()
         self.send_header("Content-Type", "application/x-ndjson; charset=utf-8")
         self.send_header("Cache-Control", "no-cache")
         self.end_headers()
         for line in lines:
             self.wfile.write((line + "\n").encode("utf-8"))
             self.wfile.flush()
+
+    def do_OPTIONS(self) -> None:
+        self.send_response(204)
+        self._send_cors_headers()
+        self.send_header("Content-Length", "0")
+        self.end_headers()
 
     def do_GET(self) -> None:
         if self.path.rstrip("/") == "/health":
