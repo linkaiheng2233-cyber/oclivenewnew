@@ -126,12 +126,14 @@
       }
     },
     "local-fish-speech-http": {
-      "label": "Fish Speech HTTP（用户本地 · OpenAI 兼容 · 端口 9881）",
+      "label": "Fish Speech HTTP（用户本地 · 原生 /v1/tts · 端口 9881）",
       "engine": "fish-speech-http",
       "kind": "tts",
       "synth_provider": "local_http",
       "sidecar_endpoint": "http://127.0.0.1:9881",
-      "api_style": "openai-speech-v1",
+      "api_style": "native-v1-tts",
+      "probe_path": "/v1/health",
+      "synthesize_path": "/v1/tts",
       "platforms": {
         "win32": {},
         "linux": {},

@@ -13,6 +13,15 @@ class FishSpeechHttpEngine:
     supports_stream = False
     supports_warm = False
 
+    @staticmethod
+    def _probe_paths(manifest: dict[str, Any]) -> list[str]:
+        custom = str(manifest.get("probe_path") or "").strip()
+        paths = [custom] if custom else []
+        for path in ("/v1/health", "/health", "/v1/models"):
+            if path not in paths:
+                paths.append(path)
+        return paths
+
     def probe(
         self,
         model_dir: str,
@@ -26,23 +35,30 @@ class FishSpeechHttpEngine:
             sidecar_endpoint=sidecar_endpoint,
             default_port=9881,
         )
-        health = http_json(f"{base}/health", timeout=3.0)
-        if health.get("ok") is False:
+        last_error = ""
+        for path in self._probe_paths(manifest):
+            health = http_json(f"{base}{path}", timeout=3.0)
+            if health.get("ok"):
+                break
+            last_error = str(health.get("message") or health.get("reason") or last_error)
             try:
                 from urllib import request as urlrequest
 
-                with urlrequest.urlopen(f"{base}/v1/models", timeout=3.0) as resp:
+                with urlrequest.urlopen(f"{base}{path}", timeout=3.0) as resp:
                     if resp.status < 500:
                         health = {"ok": True}
+                        break
             except Exception as exc:  # noqa: BLE001
-                return {
-                    "ok": False,
-                    "engine": self.engine_id,
-                    "reason": "endpoint_unreachable",
-                    "message": str(exc),
-                    "sidecar_endpoint": base,
-                    "model_dir": model_dir,
-                }
+                last_error = str(exc)
+        else:
+            return {
+                "ok": False,
+                "engine": self.engine_id,
+                "reason": "endpoint_unreachable",
+                "message": last_error or "Fish Speech HTTP probe failed",
+                "sidecar_endpoint": base,
+                "model_dir": model_dir,
+            }
         return {
             "ok": True,
             "engine": self.engine_id,
@@ -74,7 +90,7 @@ class FishSpeechHttpEngine:
             default_port=9881,
         )
         d = directive or {}
-        api_style = manifest.get("api_style", "openai-speech-v1")
+        api_style = manifest.get("api_style", "native-v1-tts")
         if api_style == "openai-speech-v1":
             payload = {
                 "input": text,

@@ -73,7 +73,9 @@ Write-ManifestStub -Id "local-gpt-sovits-http" -Engine "gpt-sovits-http" -Extra 
 Write-Host "=== 4/5 Fish Speech (git / pip, port 9881) — manual if git blocked ==="
 Write-ManifestStub -Id "local-fish-speech-http" -Engine "fish-speech-http" -Extra @{
   sidecar_endpoint = "http://127.0.0.1:9881"
-  api_style = "openai-speech-v1"
+  api_style = "native-v1-tts"
+  probe_path = "/v1/health"
+  synthesize_path = "/v1/tts"
 }
 
 Write-Host "=== 5/5 IndexTTS (port 7860) — manual if git blocked ==="
