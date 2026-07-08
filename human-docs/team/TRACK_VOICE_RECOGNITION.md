@@ -66,14 +66,58 @@ python loop.py
 | **VX-2** | CosyVoice2 侧车 | `voice.warm` · 常驻 `tts.cosyvoice_sidecar` · `tts/engine.py` adapter |
 | **VX-3** | 模型 DLC | `voice_model_pack.json` · `voice.list_model_packs` · 手动导入 |
 | **VX-4** | 角色 ref | `voice_profile` v2 · `ref_map` · `emo_text` |
+| **VX-4b** | 人设 → 风格指令 | 无 `emo_text_template` 时从 `core_personality.txt` 规则派生 · 显式 `voice_profile.json` 优先 |
 | **VX-5** | 云端并列 | `synth_provider: cloud` · OpenAI-compatible · `edge-tts-zh` |
 | **VX-6** | 延迟 | 流式首句 `voice:stream-sentence`（旁白过滤 · 首块更早）· 侧车 `/warm` **prime** dummy 合成 · 角色切换预热 |
+| **VX-7** | 引擎契约统一 | `TtsEngine` 协议 + `tts/engines/registry.py` · profile 驱动 `synth_provider` · 非 `cosyvoice2` 不启侧车 · `shouldUseDirectSidecarStream(engine, provider)` |
+| **VX-8** | 主流 TTS adapter | Tier-1：`gpt-sovits-http` · `qwen3-tts-http` · `edge-tts` · `cloud-tts-openai` · `fish-speech-http` · `indextts-http` |
+| **VX-9** | 通用 HTTP 适配包 | `voice_tts_adapter.schema.json` · `generic-http-adapter` · `voice.import_tts_adapter` · 设置页导入 UI |
+| **VX-10** | 愿景与生态 | 社区 directory 插件 · 插件市场 adapter 分类 · `voice_directive` v2 · 全引擎流式 — 见 TECHNICAL_DEBT K-VOICE-02–08 |
 
 **产品原则**：文字默认；情感 TTS 为扩展；不为发声订阅；probe 失败诚实提示，无 Piper 降级。
 
 **声线来源合规（贴风格 ≠ 克隆）**：官方包 / 分发 / 商用的参考音色**只用**原创、明确授权或免版权（CC0）音源；用 `voice_profile.json` 的 `emo_text_template`（CosyVoice2 instruct 文字指令）贴近某类"风格 / 原型"，**不**克隆受版权保护的声优/角色音频，也**不**把第三方角色音色模型（GPT-SoVITS/RVC 等，本质仍是版权声音复制品且各有自身许可）放进官方包或分发。纯本地个人实验属使用者自担。
 
+### 人设 → 风格指令（VX-4b · rules-v1）
+
+`voice.build_directive`（[`rpc_server.mjs`](../../distros/chat-pro/plugins/com.oclive.voice.asr/rpc_server.mjs) · `deriveVoiceStyleFromPersonality`）在收到 `role_path` 时按下列优先级合成 CosyVoice2 instruct：
+
+| 优先级 | 来源 | 覆盖字段 |
+|--------|------|----------|
+| 1 | 角色包 **`voice_profile.json`**（显式） | `emo_text_template` · `speed` · `energy` · `ref_*` · `synth_profile` |
+| 2 | 角色包 **`core_personality.txt`**（规则派生） | 缺省时的 `emo_text_template` · baseline `speed` · `energy` |
+| 3 | **`rules-v1` 情绪表** | `{tone}` 占位替换 · 无模板时的 `emo_text` 兜底 |
+
+**规则派生做什么**：读取人设全文，按关键词计分推断声线原型（小女孩 / 少女 / 少年感男声 / 泛角色）与 3 条以内风格修饰（温柔、活泼、毒舌、害羞、关心等），拼成 `emo_text_template`（含 `{tone}`）。否定句（如「不会用语言撒娇」「不挖苦」）**不计分**，避免把禁止项误当特征。
+
+**作者怎么控**：要精确贴某角色声线 → 写 `voice_profile.json` 的 `emo_text_template`（见 [ROLE_PACK_SPEC §10](../../creator-docs/role-pack/ROLE_PACK_SPEC.md)）；只写好人设、不写 voice 文件 → 自动得「够用」的默认风格；社区后续可扩展 **ref 音色库**（VX-4），与 instruct 文字正交。
+
+**手测派生结果**：
+
+1. **产品路径**：切换角色 → 开启「语音扩展 + 自动朗读」→ 预热 TTS → 发消息听声线是否与 persona 大致一致。  
+2. **插件 RPC 烟测**（改 `rpc_server.mjs` 后、不必开 Chat Pro UI）：
+
+```powershell
+cd <REPO_ROOT>
+node distros/chat-pro/plugins/com.oclive.voice.asr/rpc_server.mjs
+# 另开终端对 /rpc POST voice.build_directive，params 含 role_path + bot_emotion
+```
+
+期望示例（2026-07 · rules-v1）：`mumu` 用手写 `voice_profile`；`shimeng` 偏清冷毒舌少女；`枫侵月` 偏温和少年感；仅一句人设的 `polish-dev` 得泛角色 + 嘴硬修饰。
+
+**自动化矩阵（2026-07-08 · L1）**：`node scripts/test-voice-build-directive.mjs` → 四角色 × neutral/happy/shy **PASS**；`node scripts/test-voice-speak-path.mjs --probe-only` → bundled CosyVoice **ok** · GPT-SoVITS **probe ok**（本地 :9880 在线时）· 离线 engine 诚实 `endpoint_unreachable` / `engine_not_installed`。
+
 **不在本轨道：** Live2D、Chat Pro Vue、`kernel/crates/` 内核、**Chat Pro UI 流式打字机**（见 [CHAT_PRO §2 延迟/stream](./CHAT_PRO_VERTICAL_HANDOFF.md) · 组长或视觉线）。
+
+### VX-10 愿景（OPEN · 台账 K-VOICE-02–08）
+
+| 项 | 说明 | 台账 |
+|----|------|------|
+| 社区 directory 插件 `com.user.tts.*` | 自带 sidecar/RPC，经 `plugin_rpc_invoke` | K-VOICE-06 |
+| 插件市场 adapter 分类 | 姊妹仓 `oclive-plugin-market` | 跨仓 OPEN |
+| `voice_directive` v2 + `engine_extras` | RFC 小节后再实现 | K-VOICE-07 |
+| 全引擎流式 playback | 统一 chunked audio contract | K-VOICE-08 Deferred |
+| Tier-2 引擎（ChatTTS · XTTS · Piper 产品化等） | 靠 VX-9 generic pack 或社区 | K-VOICE-02–05 |
 
 ---
 
@@ -381,6 +425,11 @@ v1 可用 **按住空格录音、松开识别**（`loop.py --mic`），或 Chat 
 | webview 直连侧车流式 CORS / preflight 失败 | 侧车须回 CORS 头 + 处理 `OPTIONS`（`cosyvoice_sidecar.py` 已加）；`tauri.conf.json` CSP `connect-src` 须含侧车端口（默认 `http://127.0.0.1:50000`） |
 | 合成成功却仍无声（无报错） | 浏览器自动播放限制：先用鼠标点一下聊天区域（产生用户手势）再发消息；发送时会解锁 Web Audio |
 | 选对 TTS 档案仍指向旧模型 | 插件进程内存态残留：整体重启 app；`voice.asr` 配置在 `%LOCALAPPDATA%/OCLive/data/plugin-data/com.oclive.voice.asr/config.json` |
+| 自动派生声线与人设不符 | rules-v1 为**通用**关键词映射；精确控制请写 `voice_profile.json` 的 `emo_text_template`（见 [ROLE_PACK_SPEC §10](../../creator-docs/role-pack/ROLE_PACK_SPEC.md) · TRACK §1 VX-4b） |
+| 换 TTS profile 仍启动 CosyVoice 侧车 | VX-7：仅 `engine=cosyvoice2` 且 `synth_provider=bundled` 才 spawn/warm；GPT-SoVITS/Qwen3 等走 HTTP adapter，无侧车 |
+| GPT-SoVITS / Qwen3 probe 失败 | 确认本地服务已启动且端口与 profile `sidecar_endpoint` 一致（Qwen3 默认 **8080** · Fish Speech 默认 **9881**，避免同机冲突）；音色来源合规自负（TRACK §1） |
+| `edge-tts-zh` probe `engine_not_installed` | 在 voice-loop venv 或 RPC 使用的 Python 环境执行 `pip install edge-tts` |
+| `voice.import_tts_adapter` 失败 | 目录须含 `tts_adapter_pack.json`；示例见 `examples/voice-loop-minimal/tts_adapter_packs/` |
 
 ---
 

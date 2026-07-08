@@ -561,6 +561,7 @@ auto_sync: false
 | `schema_version` | integer | 是 | **1** 或 **2**（v2 增 ref / engine_family） |
 | `director_profile` | string | 否 | 默认导演 profile id（如 `rules-v1`） |
 | `synth_profile` | string | 否 | 默认发声 profile id（如 `bundled-cosyvoice2-zh`） |
+| `preferred_tts_profile` | string | 否 | 设置页切换角色时的 TTS 档案建议（与 `synth_profile` 同 id 空间；未实现自动联动前为文档性 hint · K-VOICE-04） |
 | `speed` | number | 否 | baseline 语速乘数（0.5–2.0） |
 | `energy` | string | 否 | `soft` · `normal` · `strong` |
 | `engine_family` | string[] | 否 | v2：推荐引擎族（如 `cosyvoice2`） |
@@ -568,6 +569,8 @@ auto_sync: false
 | `ref_text` | string | 否 | v2：与 `ref_default` 对应的参考文本 |
 | `ref_map` | object | 否 | v2：emotion → ref 相对路径 |
 | `emo_text_template` | string | 否 | v2：含 `{tone}` 占位符的 instruct 模板 |
+
+**缺省派生**：未提供 `voice_profile.json`，或其中未写 `emo_text_template` / `speed` / `energy` 时，插件 `voice.build_directive` 会从同包 **`core_personality.txt`** 按 rules-v1 关键词规则自动派生 baseline 风格（显式字段始终优先）。详情与合规见 [TRACK_VOICE_RECOGNITION.md §1 VX-4b](../../human-docs/team/TRACK_VOICE_RECOGNITION.md)。
 
 示例见 [`distros/chat-pro/roles/mumu/voice_profile.json`](../../distros/chat-pro/roles/mumu/voice_profile.json)。契约 **`voice_directive` v1** 由插件 RPC 产出（可含 `ref_audio` · `ref_text` · `emo_text`），不进 `SendMessageResponse`。
 

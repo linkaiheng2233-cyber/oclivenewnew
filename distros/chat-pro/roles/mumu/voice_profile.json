@@ -1,33 +1,17 @@
 {
-
   "schema_version": 2,
-
   "director_profile": "rules-v1",
-
   "synth_profile": "bundled-cosyvoice2-zh",
-
-  "speed": 0.95,
-
+  "speed": 1.0,
   "energy": "soft",
-
+  "emo_text_template": "用软萌可爱、孩子气十足的小女孩嗓音说话，声音软软的、自然有起伏、带一点点撒娇感，语气生动不平淡；{tone}",
   "engine_family": ["cosyvoice2", "local_http"],
-
   "ref_default": "assets/voice/ref_neutral.wav",
-
   "ref_text": "这是一段参考文本，与参考音频对应。",
-
   "ref_map": {
-
     "happy": "assets/voice/ref_happy.wav",
-
     "sad": "assets/voice/ref_sad.wav",
-
     "shy": "assets/voice/ref_shy.wav",
-
     "neutral": "assets/voice/ref_neutral.wav"
-
   }
-
 }
-
-

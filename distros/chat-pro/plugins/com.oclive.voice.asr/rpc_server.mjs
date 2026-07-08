@@ -83,6 +83,7 @@ const RULES_V1_EMO_TEXT = {
 const DEFAULT_COSYVOICE_EMO_TEXT = RULES_V1_EMO_TEXT.neutral;
 
 const MODEL_PACK_FILENAME = "voice_model_pack.json";
+const ADAPTER_PACK_FILENAME = "tts_adapter_pack.json";
 
 function resolveRoleAssetPath(rolePath, relPath) {
   const base = String(rolePath || "").trim();
@@ -108,22 +109,56 @@ function resolveRefAudio(rolePath, roleVoice, emotion) {
   return "";
 }
 
-function synthRoutingFromConfig() {
+function synthRoutingFromConfig(profileRec) {
   const cfg = pluginConfig || {};
-  const provider = String(cfg.synth_provider || "bundled").trim();
-  const localEndpoint = String(cfg.local_synth_endpoint || "").trim();
+  const profile = profileRec?.profile || {};
+  const provider = String(
+    profile.synth_provider || cfg.synth_provider || "bundled",
+  ).trim();
+  const profileEndpoint = String(profile.sidecar_endpoint || "").trim();
+  const localEndpoint = String(
+    profileEndpoint || cfg.local_synth_endpoint || "",
+  ).trim();
   const cloudUrl = String(cfg.cloud_tts_url || "").trim();
   const cloudToken = String(cfg.cloud_tts_token || "").trim();
-  const cloudVoiceId = String(cfg.cloud_tts_voice_id || "").trim();
+  const cloudVoiceId = String(
+    profile.voice || cfg.cloud_tts_voice_id || "",
+  ).trim();
   const cloudModel = String(cfg.cloud_tts_model || "").trim();
-  return { provider, localEndpoint, cloudUrl, cloudToken, cloudVoiceId, cloudModel };
+  const engine = String(profile.engine || "").trim();
+  return {
+    provider,
+    localEndpoint,
+    cloudUrl,
+    cloudToken,
+    cloudVoiceId,
+    cloudModel,
+    engine,
+  };
 }
 
-function shouldRunBundledSidecar() {
+function profileEngine(profileRec) {
+  return String(profileRec?.profile?.engine || "").trim();
+}
+
+function shouldRunBundledSidecar(profileRec) {
   const cfg = pluginConfig || {};
   if (cfg.tts_expansion_enabled !== true) return false;
-  const routing = synthRoutingFromConfig();
+  const routing = synthRoutingFromConfig(profileRec);
+  const engine = routing.engine || profileEngine(profileRec) || "cosyvoice2";
+  if (engine !== "cosyvoice2") return false;
   return routing.provider === "bundled" || routing.provider === "";
+}
+
+function engineSupportsWarm(engine) {
+  return String(engine || "").trim() === "cosyvoice2";
+}
+
+function engineSupportsStream(engine, provider) {
+  return (
+    String(engine || "").trim() === "cosyvoice2" &&
+    (provider === "bundled" || provider === "")
+  );
 }
 
 function findCosyvoicePython(engineRoot) {
@@ -325,8 +360,9 @@ async function probeSidecarEndpoint(endpoint, expectedModelDir) {
 }
 
 async function ensureCosyvoiceSidecar(profileId) {
-  if (!shouldRunBundledSidecar()) {
-    return { ok: false, reason: "expansion_disabled" };
+  const profileRec = resolveTtsProfileRecord(profileId);
+  if (!shouldRunBundledSidecar(profileRec)) {
+    return { ok: false, reason: "sidecar_not_applicable" };
   }
   const modelDir = resolveTtsModelDir(profileId);
   const cfg = readProfiles();
@@ -381,6 +417,106 @@ function loadVoiceProfileFromRole(rolePath) {
   } catch {
     return null;
   }
+}
+
+function loadCorePersonalityFromRole(rolePath) {
+  const base = String(rolePath || "").trim();
+  if (!base) return "";
+  const file = path.join(base, "core_personality.txt");
+  if (!fs.existsSync(file)) return "";
+  try {
+    return fs.readFileSync(file, "utf8");
+  } catch {
+    return "";
+  }
+}
+
+
+function countPositiveKeywordMentions(text, keyword) {
+  const negRe = new RegExp(
+    `(?:不|勿|别|没有|不会|不要|绝不|禁止|勿)[^\\n。；]{0,12}${keyword}`,
+  );
+  let score = 0;
+  for (const line of text.split("\n")) {
+    if (!line.includes(keyword)) continue;
+    if (negRe.test(line)) continue;
+    if (/绝不用/.test(line) && line.includes(keyword)) continue;
+    score += line.split(keyword).length - 1;
+  }
+  return score;
+}
+
+function sumKeywordScores(text, keywords) {
+  return keywords.reduce((sum, keyword) => sum + countPositiveKeywordMentions(text, keyword), 0);
+}
+
+function deriveVoiceStyleFromPersonality(coreText) {
+  const text = String(coreText || "").trim();
+  if (!text) return null;
+
+  const childlike = sumKeywordScores(text, ["小女孩", "孩子气", "女儿", "学妹"]);
+  const feminine = childlike + sumKeywordScores(text, ["女生", "姐姐", "少女"]);
+  const masculine = sumKeywordScores(text, ["正太", "少年", "男生"]);
+
+  const cute = sumKeywordScores(text, ["可爱", "软萌", "软软", "软糯", "撒娇"]);
+  const gentle = sumKeywordScores(text, ["温柔", "轻轻", "安静", "友善", "心很软", "从容", "不急不缓"]);
+  const lively = sumKeywordScores(text, ["活泼", "元气", "兴奋", "蹦两下", "脚步会变轻"]);
+  const shy = sumKeywordScores(text, ["害羞", "脸红", "声音越来越小", "耳朵红", "结巴"]);
+  const tsundere = sumKeywordScores(text, ["傲娇", "口嫌体正直", "别扭", "嘴硬"]);
+  const sharp = sumKeywordScores(text, ["毒舌", "带刺", "烦人", "差劲", "变态", "挖苦"]);
+  const caring = sumKeywordScores(text, ["关心", "照顾", "体贴", "护短", "陪着", "安抚"]);
+
+  const childDominant = childlike >= 2;
+  const sharpDominant = sharp >= 2 || (sharp >= 1 && tsundere >= 1);
+  const gentleDominant = gentle >= 3 && !sharpDominant;
+
+  const styleCandidates = [];
+  const pushStyle = (bit, priority) => {
+    if (!styleCandidates.some(item => item.bit === bit)) {
+      styleCandidates.push({ bit, priority });
+    }
+  };
+
+  if (childDominant && cute > 0) pushStyle("软萌可爱", 10);
+  if (masculine > 0 && cute > 0 && !childDominant) pushStyle("温和软萌", 8);
+  if (gentle > 0 && !sharpDominant) pushStyle("温柔轻软", gentleDominant ? 8 : 5);
+  if (lively > 0 && (childDominant || !sharpDominant)) pushStyle("自然有活力", 6);
+  if (sharpDominant) pushStyle("带一点冷淡锋利感", 9);
+  if (tsundere > 0) {
+    pushStyle(
+      childDominant ? "偶尔带一点点嘴硬撒娇" : "偶尔嘴硬掩饰真实情绪",
+      7,
+    );
+  }
+  if (shy > 0) pushStyle("害羞时会轻轻放小声音", 5);
+  if (caring > 0) pushStyle("会把关心感放进语气细节里", sharpDominant ? 4 : 6);
+  if (styleCandidates.length === 0) pushStyle("自然生动", 1);
+
+  const selectedStyleBits = styleCandidates
+    .sort((a, b) => b.priority - a.priority)
+    .slice(0, 3)
+    .map(item => item.bit);
+
+  let speakerStyle = "角色感声线";
+  if (childDominant) speakerStyle = "小女孩嗓音";
+  else if (masculine > feminine) {
+    speakerStyle = gentleDominant ? "温和从容的少年感男声" : "自然的少年感男声";
+  } else if (feminine > 0) {
+    if (sharpDominant) speakerStyle = "带一点清冷感的少女声线";
+    else if (gentleDominant) speakerStyle = "温柔自然的少女声线";
+    else speakerStyle = "自然的少女声线";
+  }
+
+  const speed = childDominant && lively > 0 ? 1.0 : sharpDominant ? 0.98 : gentleDominant ? 0.95 : 0.98;
+  const energy = sharpDominant ? "normal" : childDominant && lively > 0 ? "normal" : "soft";
+  const emoTextTemplate
+    = `用${selectedStyleBits.join("、")}的${speakerStyle}说话，语气自然有起伏，不要平铺直叙，也不要太像播报；{tone}`;
+
+  return {
+    speed,
+    energy,
+    emoTextTemplate,
+  };
 }
 
 function validateDirective(directive) {
@@ -485,10 +621,26 @@ function resolveModelDir(profileRec) {
   return candidates[0];
 }
 
+function resolveTtsAdapterDir(adapterId) {
+  const id = String(adapterId || "").trim();
+  if (!id) return "";
+  const candidates = [
+    path.join(userModelsRoot(), "tts_adapters", id),
+    path.join(__dirname, "models", "tts_adapters", id),
+  ];
+  for (const dir of candidates) {
+    if (dir && fs.existsSync(dir)) return dir;
+  }
+  return candidates[0];
+}
+
 function resolveTtsModelDir(profileId) {
   const id = (profileId || pluginConfig?.tts_profile || readProfiles().default_tts_profile || DEFAULT_TTS_PROFILE).trim();
   const resolved = resolvePlatformProfile(id);
   const profile = resolved.ok ? resolved.profile : null;
+  if (profile?.engine === "generic-http-adapter" && profile.adapter_id) {
+    return resolveTtsAdapterDir(profile.adapter_id);
+  }
   const rel = profile?.model_dir || `models/tts/${id}`;
   const folderName = rel ? path.basename(rel.replace(/\\/g, "/")) : id;
   const candidates = [
@@ -657,6 +809,8 @@ function handleListProfiles() {
       requires_pack: p.requires_pack || "",
       min_vram_gb_recommended: p.min_vram_gb_recommended ?? null,
       synth_provider: p.synth_provider || "",
+      adapter_id: p.adapter_id || "",
+      sidecar_endpoint: p.sidecar_endpoint || "",
     })),
   };
 }
@@ -848,9 +1002,10 @@ async function handleSpeak(params) {
     readProfiles().default_tts_profile ||
     DEFAULT_TTS_PROFILE;
   const profileRec = resolveTtsProfileRecord(profileId);
-  const routing = synthRoutingFromConfig();
+  const routing = synthRoutingFromConfig(profileRec);
+  const engine = routing.engine || profileRec.profile?.engine;
   let sidecarEndpoint = routing.localEndpoint;
-  if (routing.provider === "bundled" || routing.provider === "") {
+  if (shouldRunBundledSidecar(profileRec)) {
     const sidecar = await ensureCosyvoiceSidecar(profileId);
     if (!sidecar.ok) {
       return {
@@ -872,7 +1027,6 @@ async function handleSpeak(params) {
     }
   }
   const modelDir = resolveTtsModelDir(profileId);
-  const engine = profileRec.profile?.engine;
   const payload = {
     model_dir: modelDir,
     text,
@@ -897,6 +1051,7 @@ async function handleSpeak(params) {
   return {
     ...result,
     profile: profileId,
+    engine: payload.engine || engine,
     directive: directive || undefined,
   };
 }
@@ -908,9 +1063,9 @@ async function handleProbeTts(params) {
     readProfiles().default_tts_profile ||
     DEFAULT_TTS_PROFILE;
   const profileRec = resolveTtsProfileRecord(profileId);
-  const routing = synthRoutingFromConfig();
+  const routing = synthRoutingFromConfig(profileRec);
   let sidecarEndpoint = routing.localEndpoint;
-  if ((routing.provider === "bundled" || routing.provider === "") && pluginConfig?.tts_expansion_enabled === true) {
+  if (shouldRunBundledSidecar(profileRec) && pluginConfig?.tts_expansion_enabled === true) {
     const sidecar = await ensureCosyvoiceSidecar(profileId);
     if (sidecar.ok) {
       sidecarEndpoint = sidecar.sidecar_endpoint || sidecarEndpoint;
@@ -926,7 +1081,7 @@ async function handleProbeTts(params) {
       message: "Python engine path not found",
     };
   }
-  const engine = profileRec.profile?.engine;
+  const engine = routing.engine || profileRec.profile?.engine;
   const probePayload = {
     probe: true,
     model_dir: modelDir,
@@ -939,7 +1094,10 @@ async function handleProbeTts(params) {
     profile: profileId,
     platform: PLATFORM,
     model_dir: modelDir,
+    engine: probe.engine || engine,
     synth_provider: routing.provider,
+    supports_stream: engineSupportsStream(engine, routing.provider),
+    supports_warm: engineSupportsWarm(engine),
     expansion_enabled: pluginConfig?.tts_expansion_enabled === true,
   };
 }
@@ -950,6 +1108,27 @@ async function handleWarm(params) {
     pluginConfig?.tts_profile ||
     readProfiles().default_tts_profile ||
     DEFAULT_TTS_PROFILE;
+  const profileRec = resolveTtsProfileRecord(profileId);
+  const routing = synthRoutingFromConfig(profileRec);
+  const engine = routing.engine || profileRec.profile?.engine;
+  if (!engineSupportsWarm(engine)) {
+    return {
+      ok: true,
+      skipped: true,
+      engine,
+      profile: profileId,
+      message: `${engine || "engine"} does not require CosyVoice sidecar warm`,
+    };
+  }
+  if (!shouldRunBundledSidecar(profileRec)) {
+    return {
+      ok: true,
+      skipped: true,
+      engine,
+      profile: profileId,
+      message: "Warm applies only to bundled CosyVoice2 profile",
+    };
+  }
   const sidecar = await ensureCosyvoiceSidecar(profileId);
   if (!sidecar.ok) {
     return sidecar;
@@ -1005,18 +1184,21 @@ function handleBuildDirective(params) {
     .toLowerCase();
   const rolePath = String(params?.role_path || "").trim();
   const roleVoice = loadVoiceProfileFromRole(rolePath);
+  const personalityVoice = deriveVoiceStyleFromPersonality(loadCorePersonalityFromRole(rolePath));
   const synthProfile =
     roleVoice?.synth_profile ||
     pluginConfig?.tts_profile ||
     cfg.default_tts_profile ||
     DEFAULT_TTS_PROFILE;
-  const baselineSpeed = Number(roleVoice?.speed ?? 1.0) || 1.0;
+  const baselineSpeed = Number(roleVoice?.speed ?? personalityVoice?.speed ?? 1.0) || 1.0;
 
   const refAudio = resolveRefAudio(rolePath, roleVoice, botEmotion);
   const refText = String(roleVoice?.ref_text || "").trim();
   const emoFromRole =
     roleVoice?.emo_text_template && typeof roleVoice.emo_text_template === "string"
       ? roleVoice.emo_text_template.replace("{tone}", RULES_V1_EMO_TEXT[botEmotion] || "")
+      : personalityVoice?.emoTextTemplate
+        ? personalityVoice.emoTextTemplate.replace("{tone}", RULES_V1_EMO_TEXT[botEmotion] || "")
       : "";
   const emoText =
     emoFromRole || RULES_V1_EMO_TEXT[botEmotion] || DEFAULT_COSYVOICE_EMO_TEXT;
@@ -1026,7 +1208,7 @@ function handleBuildDirective(params) {
       schema_version: 1,
       emotion_tag: botEmotion,
       speed: baselineSpeed,
-      energy: roleVoice?.energy || "normal",
+      energy: roleVoice?.energy || personalityVoice?.energy || "normal",
       emo_text: emoText,
       synth_profile: synthProfile,
       ...(refAudio ? { ref_audio: refAudio } : {}),
@@ -1048,6 +1230,7 @@ function handleBuildDirective(params) {
   const speed = Math.round(baselineSpeed * emotionSpeed * 100) / 100;
   const energy =
     roleVoice?.energy ||
+    personalityVoice?.energy ||
     (botEmotion === "shy" || botEmotion === "sad" ? "soft" : "normal");
   const directive = {
     schema_version: 1,
@@ -1065,19 +1248,98 @@ function handleBuildDirective(params) {
   return { ok: true, directive, director_profile: directorId };
 }
 
+function readAdapterPackMeta(src) {
+  const direct = path.join(src, ADAPTER_PACK_FILENAME);
+  if (fs.existsSync(direct)) {
+    try {
+      return JSON.parse(fs.readFileSync(direct, "utf8"));
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+function handleListTtsAdapters() {
+  const root = path.join(userModelsRoot(), "tts_adapters");
+  const adapters = [];
+  if (!fs.existsSync(root)) {
+    return { ok: true, adapters };
+  }
+  for (const entry of fs.readdirSync(root, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const dir = path.join(root, entry.name);
+    const pack = readAdapterPackMeta(dir);
+    if (!pack) continue;
+    adapters.push({
+      adapter_id: pack.adapter_id || entry.name,
+      label: pack.label || entry.name,
+      api_style: pack.api_style || "",
+      base_url: pack.base_url || "",
+      path: dir,
+    });
+  }
+  return { ok: true, adapters };
+}
+
+function handleImportTtsAdapter(params) {
+  const src = String(params?.src_path || params?.path || "").trim();
+  if (!src) {
+    throw new Error("import_tts_adapter: src_path required");
+  }
+  if (!fs.existsSync(src)) {
+    return { ok: false, reason: "src_not_found" };
+  }
+  const packMeta = readAdapterPackMeta(src);
+  if (!packMeta) {
+    return {
+      ok: false,
+      reason: "adapter_pack_missing",
+      message: `Directory must contain ${ADAPTER_PACK_FILENAME}`,
+    };
+  }
+  const adapterId = String(packMeta.adapter_id || path.basename(src)).trim();
+  const dest = path.join(userModelsRoot(), "tts_adapters", adapterId);
+  const stat = fs.statSync(src);
+  if (stat.isDirectory()) {
+    copyDirRecursive(src, dest);
+  } else {
+    return {
+      ok: false,
+      reason: "src_must_be_directory",
+      message: "Import the folder containing tts_adapter_pack.json",
+    };
+  }
+  return {
+    ok: true,
+    adapter_id: adapterId,
+    dest,
+    pack: packMeta,
+  };
+}
+
 function handleConfigUpdated(params) {
   if (params?.config && typeof params.config === "object") {
     const prev = pluginConfig;
     pluginConfig = params.config;
-    if (pluginConfig.tts_expansion_enabled === true && shouldRunBundledSidecar()) {
-      const profileId =
-        pluginConfig.tts_profile || readProfiles().default_tts_profile || DEFAULT_TTS_PROFILE;
+    const profileId =
+      pluginConfig.tts_profile || readProfiles().default_tts_profile || DEFAULT_TTS_PROFILE;
+    const profileRec = resolveTtsProfileRecord(profileId);
+    if (
+      pluginConfig.tts_expansion_enabled === true &&
+      shouldRunBundledSidecar(profileRec)
+    ) {
       void ensureCosyvoiceSidecar(profileId).then((sidecar) => {
         if (sidecar.ok) {
           void ensureCosyvoiceSidecarWarmed(profileId, sidecar.sidecar_endpoint);
         }
       });
     } else if (prev?.tts_expansion_enabled === true && pluginConfig.tts_expansion_enabled !== true) {
+      stopCosyvoiceSidecar();
+    } else if (
+      prev?.tts_expansion_enabled === true &&
+      !shouldRunBundledSidecar(profileRec)
+    ) {
       stopCosyvoiceSidecar();
     }
   }
@@ -1123,6 +1385,8 @@ const server = http.createServer((req, res) => {
         else if (method === "voice.probe_tts") result = await handleProbeTts(params);
         else if (method === "voice.warm") result = await handleWarm(params);
         else if (method === "voice.list_model_packs") result = handleListModelPacks();
+        else if (method === "voice.list_tts_adapters") result = handleListTtsAdapters();
+        else if (method === "voice.import_tts_adapter") result = handleImportTtsAdapter(params);
         else if (method === "voice.build_directive") result = handleBuildDirective(params);
         else if (method === "config_updated") result = handleConfigUpdated(params);
         else {
