@@ -143,7 +143,7 @@
 | `user_identity` | `user_identities/` · `turn_pipeline/pre` | 身份模板、API 扩展 | 进六槽或 blueprint 六键 |
 | `reply_post_process` | `config.json` → `reply_post_processor` | 后处理链、directory 插件 | 默认 `enabled: true` 无审核 |
 | `theater_director` | `theater_director.rs` · `POST /theater/scene` | 剧场导演、插件目录 | 进 `process_message` stage |
-| **`voice.asr`** | [`com.oclive.voice.asr`](../distros/chat-pro/plugins/com.oclive.voice.asr/) · [`voiceAsrEvents.ts`](../distros/shared/src/lib/voiceAsrEvents.ts) · RFC §4.1 | Windows ASR/TTS 插件、RPC 白名单、`examples/voice-loop-minimal/` 烟测 | 进六槽 / `process_message`；在 `slot_registry` 加 memory 类键 |
+| **`voice.asr`** | [`com.oclive.voice.asr`](../distros/chat-pro/plugins/com.oclive.voice.asr/) · [`voiceAsrEvents.ts`](../distros/shared/src/lib/voiceAsrEvents.ts) · RFC §4.1 · 排查/声线合规见 [`TRACK_VOICE_RECOGNITION.md`](../human-docs/team/TRACK_VOICE_RECOGNITION.md) §10 | Windows ASR/TTS 插件、RPC 白名单、`examples/voice-loop-minimal/` 烟测 | 进六槽 / `process_message`；在 `slot_registry` 加 memory 类键；**克隆受版权保护的声优/角色音色进官方包或分发**（贴风格只用原创/授权/免版权音源，见 TRACK §10） |
 
 ### 4. 角色包（创作者面）
 

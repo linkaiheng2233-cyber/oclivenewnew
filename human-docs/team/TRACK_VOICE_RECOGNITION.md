@@ -71,6 +71,8 @@ python loop.py
 
 **产品原则**：文字默认；情感 TTS 为扩展；不为发声订阅；probe 失败诚实提示，无 Piper 降级。
 
+**声线来源合规（贴风格 ≠ 克隆）**：官方包 / 分发 / 商用的参考音色**只用**原创、明确授权或免版权（CC0）音源；用 `voice_profile.json` 的 `emo_text_template`（CosyVoice2 instruct 文字指令）贴近某类"风格 / 原型"，**不**克隆受版权保护的声优/角色音频，也**不**把第三方角色音色模型（GPT-SoVITS/RVC 等，本质仍是版权声音复制品且各有自身许可）放进官方包或分发。纯本地个人实验属使用者自担。
+
 **不在本轨道：** Live2D、Chat Pro Vue、`kernel/crates/` 内核、**Chat Pro UI 流式打字机**（见 [CHAT_PRO §2 延迟/stream](./CHAT_PRO_VERTICAL_HANDOFF.md) · 组长或视觉线）。
 
 ---
@@ -374,6 +376,11 @@ v1 可用 **按住空格录音、松开识别**（`loop.py --mic`），或 Chat 
 | `vueCompileFailed` / 插槽加载失败（`audioCapture` 等） | **`ui_slots` 的 `.vue` 勿 `import` 同级 `.ts`**（`vue3-sfc-loader` 经 `read_plugin_asset_text` 常请求 `.js` 而磁盘仅有 `.ts`）。逻辑内联进 `.vue` 或仅 `import "vue"`；见 [DIRECTORY_PLUGINS §4.3.1](../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md) |
 | Chat Pro 切模式 DB_ERROR | 勿留测试用 `oclive-kernel-server` 占 `:8420`；见 [DEV_ENVIRONMENT §10](./DEV_ENVIRONMENT.md) |
 | directive 一直 null | 正常（mumu 无 catalog）；联调用 `distros/chat-pro/roles/demo-doll` |
+| 预热成功但发消息无声 / 首句卡住数分钟 | CosyVoice2 `stream=True` 在 Windows 会死锁；侧车 `_collect_synthesis_tensors` 默认已改**非流式**（`OCLIVE_COSYVOICE_STREAM=1` 才尝试流式）。整句合成 ~3s 出声属正常 |
+| `/health` 返回 `not_warmed` 或 `model_dir` 不对 | ① 模型包 `iic/CosyVoice2-0.5B` 是否已导入 `%APPDATA%/OCLive/models/tts/cosyvoice2-0.5b`（且含 `MANIFEST.json`）；② 是否有**残留/重复的 cosyvoice_sidecar 进程**占用 50000（全部结束后由 app 重新拉起，避免带旧 env/旧代码） |
+| webview 直连侧车流式 CORS / preflight 失败 | 侧车须回 CORS 头 + 处理 `OPTIONS`（`cosyvoice_sidecar.py` 已加）；`tauri.conf.json` CSP `connect-src` 须含侧车端口（默认 `http://127.0.0.1:50000`） |
+| 合成成功却仍无声（无报错） | 浏览器自动播放限制：先用鼠标点一下聊天区域（产生用户手势）再发消息；发送时会解锁 Web Audio |
+| 选对 TTS 档案仍指向旧模型 | 插件进程内存态残留：整体重启 app；`voice.asr` 配置在 `%LOCALAPPDATA%/OCLive/data/plugin-data/com.oclive.voice.asr/config.json` |
 
 ---
 
