@@ -1,6 +1,6 @@
 # Technical debt inventory
 
-**Last updated:** 2026-06-25 (轮次 22 · Wave 0–5 全面优化收尾)
+**Last updated:** 2026-07-08（K-VOICE-01 追加：CosyVoice2 Windows 流式死锁）· 上轮 2026-06-25 轮次 22 · Wave 0–5 全面优化收尾
 
 **Product freeze (Theater v0):** **Lifted** — 朋友 cohort 产品门通过（7/10 卧槽）；模式 2 playtest 扩展中；模式 3 仍冻结。见 [`theater/MODE2_UNFREEZE.md`](./theater/MODE2_UNFREEZE.md)。
 
@@ -54,6 +54,7 @@
 | **D-PORT-02** | `PluginBackendRegistryPort` 拆窄 trait | P1 | `MemoryBackendPort` phase 1 | **Partial**（`memory_backend_port.rs`） |
 | **D-SLOT-01** | BuiltinV1/V2 选择收到 resolver | P2 | 依赖 D-PORT-02 后续 | **Observe** |
 | **D-TRAIT-01** | 单实现 trait 合并 | P3 | 仅明显 DI 噪音 | **Observe** |
+| **K-VOICE-01** | CosyVoice2 `stream=True` 在 Windows 死锁（侧车多进程 worker）→ 默认非流式合成，牺牲首字流式增益（整句 ~3s 出声） | P2 | 上游修复 or `num_workers=0`/spawn 规避经 `OCLIVE_COSYVOICE_STREAM=1` 实测不卡后解冻 | **Deferred**（默认非流式已上线 · 排查见 [`TRACK_VOICE_RECOGNITION.md`](../human-docs/team/TRACK_VOICE_RECOGNITION.md) §10） |
 
 ---
 
