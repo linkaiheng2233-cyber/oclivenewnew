@@ -1,0 +1,16 @@
+{
+  "adapter_id": "example-custom-json",
+  "label": "Example custom JSON template",
+  "api_style": "custom-json-template",
+  "base_url": "http://127.0.0.1:9000",
+  "probe_path": "/health",
+  "synthesize_path": "/api/tts",
+  "method": "POST",
+  "request_template": {
+    "text": "{text}",
+    "speed": "{speed}",
+    "style": "{emo_text}",
+    "reference": "{ref_audio}"
+  },
+  "response_audio_field": "audio_base64"
+}

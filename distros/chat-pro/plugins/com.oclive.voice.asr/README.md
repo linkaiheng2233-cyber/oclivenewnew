@@ -67,9 +67,14 @@ Unchanged entry; `rules-v1` now fills `emo_text` + role-pack `ref_map`.
 | profile | engine | 说明 |
 |---------|--------|------|
 | `bundled-cosyvoice2-zh` | `cosyvoice2` | 默认 · 侧车 + 模型 DLC |
-| `local-http-tts` | `cosyvoice2` | 用户自建 HTTP |
-| `edge-tts-zh` | `edge-tts` | 在线无 key |
+| `local-cosyvoice-http` | `cosyvoice2` | 用户自建 CosyVoice HTTP（`local-http-tts` 为弃用别名） |
+| `local-gpt-sovits-http` | `gpt-sovits-http` | GPT-SoVITS :9880（用户本地 · 合规自负） |
+| `local-qwen3-tts-http` | `qwen3-tts-http` | Qwen3 OpenAI-compatible :8080 |
+| `local-fish-speech-http` | `fish-speech-http` | Fish Speech HTTP :9881（与 Qwen3 默认 :8080 分离） |
+| `local-indextts-http` | `indextts-http` | IndexTTS HTTP |
+| `edge-tts-zh` | `edge-tts` | 在线无 key · 须 `pip install edge-tts`（voice-loop venv 或 `OCLIVE_VOICE_PYTHON` 指向的 env） |
 | `cloud-tts-openai` | `cloud-tts-openai` | 用户 URL/token |
+| *(imported)* | `generic-http-adapter` | `voice.import_tts_adapter` + `tts_adapter_pack.json` |
 
 ## Engine layout
 

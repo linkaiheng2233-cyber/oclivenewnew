@@ -13,6 +13,8 @@
     "voice.list_profiles",
     "voice.list_model_packs",
     "voice.import_model",
+    "voice.import_tts_adapter",
+    "voice.list_tts_adapters",
     "voice.transcribe",
     "voice.speak",
     "voice.build_directive"
@@ -22,7 +24,8 @@
     "voice.speak": 600000,
     "voice.probe_tts": 120000,
     "voice.transcribe": 120000,
-    "voice.import_model": 300000
+    "voice.import_model": 300000,
+    "voice.import_tts_adapter": 300000
   },
   "process": {
     "command": "node",

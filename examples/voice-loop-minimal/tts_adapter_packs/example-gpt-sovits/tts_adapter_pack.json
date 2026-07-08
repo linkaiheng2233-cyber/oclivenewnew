@@ -1,0 +1,14 @@
+{
+  "adapter_id": "example-gpt-sovits",
+  "label": "Example GPT-SoVITS v2 HTTP",
+  "api_style": "gpt-sovits-v2",
+  "base_url": "http://127.0.0.1:9880",
+  "probe_path": "/",
+  "synthesize_path": "/tts",
+  "method": "GET",
+  "text_language": "zh",
+  "field_map": {
+    "ref_audio": "refer_wav_path",
+    "ref_text": "prompt_text"
+  }
+}
