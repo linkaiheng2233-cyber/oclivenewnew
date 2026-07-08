@@ -29,6 +29,9 @@ let cosyvoiceSidecarUrl = null;
 let cosyvoiceSidecarWarmed = false;
 /** @type {Promise<Record<string, unknown>> | null} */
 let cosyvoiceWarmInFlight = null;
+/** @type {Map<string, Promise<Record<string, unknown>>>} */
+const inFlightSpeakByKey = new Map();
+let localSpeakLane = Promise.resolve();
 
 function jsonRpcResult(id, result) {
   return JSON.stringify({ jsonrpc: "2.0", id, result });
@@ -664,6 +667,51 @@ function resolveTtsProfileRecord(profileId) {
   return { id, ok: true, profile: resolved.profile };
 }
 
+function stableJson(value) {
+  if (Array.isArray(value)) {
+    return `[${value.map(stableJson).join(",")}]`;
+  }
+  if (value && typeof value === "object") {
+    return `{${Object.keys(value)
+      .sort()
+      .map(key => `${JSON.stringify(key)}:${stableJson(value[key])}`)
+      .join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
+function speakRequestKey(payload) {
+  return stableJson({
+    text: String(payload?.text || "").trim(),
+    engine: String(payload?.engine || "").trim(),
+    model_dir: String(payload?.model_dir || "").trim(),
+    sidecar_endpoint: String(payload?.sidecar_endpoint || "").trim(),
+    voice: String(payload?.voice || "").trim(),
+    cloud_url: String(payload?.cloud_url || "").trim(),
+    cloud_voice_id: String(payload?.cloud_voice_id || "").trim(),
+    cloud_model: String(payload?.cloud_model || "").trim(),
+    directive: payload?.directive && typeof payload.directive === "object" ? payload.directive : null,
+  });
+}
+
+function shouldSerializeLocalSpeak(routing, engine) {
+  const provider = String(routing?.provider || "").trim();
+  const id = String(engine || "").trim();
+  if (!id) return false;
+  if (provider === "cloud" || id === "edge-tts") return false;
+  return true;
+}
+
+function runInLocalSpeakLane(task) {
+  const next = localSpeakLane.then(task, task);
+  localSpeakLane = next.finally(() => {
+    if (localSpeakLane === next) {
+      localSpeakLane = Promise.resolve();
+    }
+  });
+  return next;
+}
+
 function spawnPythonJson(moduleName, payload, timeoutMs = 120_000) {
   const engineRoot = findEngineRoot();
   if (!engineRoot) {
@@ -1043,17 +1091,32 @@ async function handleSpeak(params) {
   if (routing.provider === "cloud" && engine !== "edge-tts") {
     payload.engine = "cloud-tts-openai";
   }
-  const result = await spawnPythonJson(
+  const finalizeSpeak = () => spawnPythonJson(
     "tts.synthesize",
     payload,
     engine === "cosyvoice2" ? COSYVOICE_SYNTH_TIMEOUT_MS : undefined,
-  );
-  return {
+  ).then((result) => ({
     ...result,
     profile: profileId,
     engine: payload.engine || engine,
     directive: directive || undefined,
-  };
+  }));
+  const key = speakRequestKey(payload);
+  const existing = inFlightSpeakByKey.get(key);
+  if (existing) {
+    return existing;
+  }
+  const promise = shouldSerializeLocalSpeak(routing, payload.engine || engine)
+    ? runInLocalSpeakLane(finalizeSpeak)
+    : finalizeSpeak();
+  inFlightSpeakByKey.set(key, promise);
+  try {
+    return await promise;
+  } finally {
+    if (inFlightSpeakByKey.get(key) === promise) {
+      inFlightSpeakByKey.delete(key);
+    }
+  }
 }
 
 async function handleProbeTts(params) {

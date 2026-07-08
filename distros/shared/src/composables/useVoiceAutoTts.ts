@@ -25,6 +25,7 @@ import {
 } from '@oclive/shared/utils/cosyvoiceStreamPlayback'
 import { formatVoiceSpeakFailure, shouldFallbackStreamToRpc } from '@oclive/shared/utils/voiceSpeakErrors'
 import { voiceDialogueFromRaw } from '@oclive/shared/utils/voiceDialogueFromRaw'
+import { VoiceSpeakDeduper } from '@oclive/shared/utils/voiceSpeakDeduper'
 import { remainderAfterSpokenPrefix } from '@oclive/shared/utils/extractFirstSpeakableChunk'
 import { onBeforeUnmount, onMounted } from 'vue'
 import { usePluginStore } from '@oclive/shared/stores/pluginStore'
@@ -92,6 +93,7 @@ const directiveCache = new Map<string, Record<string, unknown>>()
 const speakQueue: SpeakJob[] = []
 const preparedRpcSpeak = new Map<string, Promise<RpcSpeakResult>>()
 const streamPrefetchByKey = new Map<string, CosyvoiceStreamPrefetch>()
+const speakDeduper = new VoiceSpeakDeduper()
 let drainingSpeakQueue = false
 let speakGeneration = 0
 
@@ -100,6 +102,7 @@ function resetSpeakPipeline(): void {
   speakQueue.length = 0
   preparedRpcSpeak.clear()
   streamPrefetchByKey.clear()
+  speakDeduper.reset()
 }
 
 function directiveCacheKey(roleId: string, director: string, emotion: string): string {
@@ -402,6 +405,7 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
     if (!reply || generation !== speakGeneration)
       return
 
+    let spoken = false
     try {
       await ensureVoiceAudioReady()
       if (generation !== speakGeneration)
@@ -421,8 +425,10 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
           directive,
           prefetch,
         )
-        if (streamRes.ok && (streamRes.chunks ?? 0) > 0)
+        if (streamRes.ok && (streamRes.chunks ?? 0) > 0) {
+          spoken = true
           return
+        }
         cancelStreamPrefetchForKey(job.key)
         abortCosyvoiceStreamPrefetch(prefetch)
         if (shouldFallbackStreamToRpc(streamRes)) {
@@ -451,11 +457,15 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
         return
       }
       await playRpcAudio(res)
+      spoken = true
     }
     catch (err) {
       if (generation !== speakGeneration)
         return
       handleSpeakError(err)
+    }
+    finally {
+      speakDeduper.finish(job.key, spoken)
     }
   }
 
@@ -499,6 +509,8 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
     speakOpts: SpeakOptions = {},
   ): void {
     const key = speakJobKey(text, payload, cfg)
+    if (!speakDeduper.markQueued(key))
+      return
     enqueueSpeakJob({ key, text, payload, cfg, speakOpts })
   }
 
