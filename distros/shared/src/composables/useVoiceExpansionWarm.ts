@@ -21,7 +21,9 @@ function rememberSidecarEndpoint(result: unknown): void {
 }
 
 function isSidecarAlreadyWarmed(result: unknown): boolean {
-  const r = result as VoiceWarmResult | null
+  const r = result as VoiceWarmResult & { skipped?: boolean } | null
+  if (r?.skipped)
+    return true
   if (!r?.ok)
     return false
   return r.warmed === true || r.already_warmed === true

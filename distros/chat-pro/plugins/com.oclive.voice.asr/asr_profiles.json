@@ -1,227 +1,179 @@
 {
-
   "default_profile": "sherpa-paraformer-zh-small",
-
   "default_tts_profile": "bundled-cosyvoice2-zh",
-
   "default_director_profile": "rules-v1",
-
   "profiles": {
-
     "sherpa-paraformer-zh-small": {
-
       "label": "Sherpa Paraformer zh small/int8",
-
       "engine": "sherpa-onnx",
-
       "kind": "asr",
-
       "model_dir": "models/asr/sherpa-paraformer-zh-small",
-
       "platforms": {
-
         "win32": {
-
           "venv": ".venv",
-
           "model_dir": "models/asr/sherpa-paraformer-zh-small"
-
         },
-
         "linux": {
-
           "unsupported": true,
-
           "message": "Linux ASR profile reserved; import model when engine ships"
-
         },
-
         "darwin": {
-
           "unsupported": true,
-
           "message": "macOS ASR profile reserved; import model when engine ships"
-
         }
-
       }
-
     },
-
     "sherpa-paraformer-zh-medium": {
-
       "label": "Sherpa Paraformer zh medium (higher accuracy)",
-
       "engine": "sherpa-onnx",
-
       "kind": "asr",
-
       "model_dir": "models/asr/sherpa-paraformer-zh-medium",
-
       "platforms": {
-
         "win32": {
-
           "model_dir": "models/asr/sherpa-paraformer-zh-medium"
-
         },
-
         "linux": {
-
           "unsupported": true,
-
           "message": "Linux ASR profile reserved; import model when engine ships"
-
         },
-
         "darwin": {
-
           "unsupported": true,
-
           "message": "macOS ASR profile reserved; import model when engine ships"
-
         }
-
       }
-
     },
-
     "rules-v1": {
-
       "label": "Rules v1 (bot_emotion → speed / emo_text)",
-
       "engine": "rules-v1",
-
       "kind": "director",
-
       "platforms": {
-
         "win32": {},
-
         "linux": {},
-
         "darwin": {}
-
       }
-
     },
-
     "bundled-cosyvoice2-zh": {
-
       "label": "CosyVoice2 0.5B 情感 TTS（本地扩展 · 推荐 NVIDIA 6GB+ 显存）",
-
       "engine": "cosyvoice2",
-
       "kind": "tts",
-
+      "synth_provider": "bundled",
       "model_dir": "models/tts/cosyvoice2-0.5b",
-
       "requires_pack": "oclive-tts-cosyvoice2-0.5b-zh",
-
       "sidecar_port": 50000,
-
       "min_vram_gb_recommended": 6,
-
       "platforms": {
-
         "win32": {
-
           "model_dir": "models/tts/cosyvoice2-0.5b"
-
         },
-
         "linux": {
-
           "unsupported": true,
-
           "message": "Linux CosyVoice2 TTS reserved for a later release"
-
         },
-
         "darwin": {
-
           "unsupported": true,
-
           "message": "macOS CosyVoice2 TTS reserved for a later release"
-
         }
-
       }
-
     },
-
-    "edge-tts-zh": {
-
-      "label": "Edge TTS zh（在线 · 无 API key · 隐私弱于本地）",
-
-      "engine": "edge-tts",
-
-      "kind": "tts",
-
-      "voice": "zh-CN-XiaoxiaoNeural",
-
-      "synth_provider": "cloud",
-
-      "platforms": {
-
-        "win32": {},
-
-        "linux": {},
-
-        "darwin": {}
-
-      }
-
-    },
-
-    "cloud-tts-openai": {
-
-      "label": "云端 TTS（OpenAI 兼容 · 用户自填 URL/key）",
-
-      "engine": "cloud-tts-openai",
-
-      "kind": "tts",
-
-      "synth_provider": "cloud",
-
-      "platforms": {
-
-        "win32": {},
-
-        "linux": {},
-
-        "darwin": {}
-
-      }
-
-    },
-
-    "local-http-tts": {
-
-      "label": "本地 HTTP TTS（用户自建 CosyVoice / GSVI 等服务）",
-
+    "local-cosyvoice-http": {
+      "label": "本地 HTTP CosyVoice2（用户自建侧车 /synthesize）",
       "engine": "cosyvoice2",
-
       "kind": "tts",
-
       "synth_provider": "local_http",
-
-      "sidecar_endpoint": "http://127.0.0.1:9880",
-
+      "sidecar_endpoint": "http://127.0.0.1:50000",
       "platforms": {
-
         "win32": {},
-
         "linux": {},
-
         "darwin": {}
-
       }
-
+    },
+    "local-http-tts": {
+      "label": "（已弃用别名）本地 HTTP CosyVoice2 — 请用 local-cosyvoice-http",
+      "engine": "cosyvoice2",
+      "kind": "tts",
+      "synth_provider": "local_http",
+      "sidecar_endpoint": "http://127.0.0.1:50000",
+      "platforms": {
+        "win32": {},
+        "linux": {},
+        "darwin": {}
+      }
+    },
+    "local-gpt-sovits-http": {
+      "label": "GPT-SoVITS HTTP（用户本地 · 端口 9880 · 音色来源自负）",
+      "engine": "gpt-sovits-http",
+      "kind": "tts",
+      "synth_provider": "local_http",
+      "sidecar_endpoint": "http://127.0.0.1:9880",
+      "platforms": {
+        "win32": {},
+        "linux": {},
+        "darwin": {}
+      }
+    },
+    "local-qwen3-tts-http": {
+      "label": "Qwen3-TTS HTTP（OpenAI 兼容 · 用户本地 · 端口 8080）",
+      "engine": "qwen3-tts-http",
+      "kind": "tts",
+      "synth_provider": "local_http",
+      "sidecar_endpoint": "http://127.0.0.1:8080",
+      "voice": "Vivian",
+      "language": "Chinese",
+      "platforms": {
+        "win32": {},
+        "linux": {},
+        "darwin": {}
+      }
+    },
+    "local-fish-speech-http": {
+      "label": "Fish Speech HTTP（用户本地 · OpenAI 兼容 · 端口 9881）",
+      "engine": "fish-speech-http",
+      "kind": "tts",
+      "synth_provider": "local_http",
+      "sidecar_endpoint": "http://127.0.0.1:9881",
+      "api_style": "openai-speech-v1",
+      "platforms": {
+        "win32": {},
+        "linux": {},
+        "darwin": {}
+      }
+    },
+    "local-indextts-http": {
+      "label": "IndexTTS HTTP（用户本地 · /infer）",
+      "engine": "indextts-http",
+      "kind": "tts",
+      "synth_provider": "local_http",
+      "sidecar_endpoint": "http://127.0.0.1:7860",
+      "synthesize_path": "/infer",
+      "probe_path": "/health",
+      "platforms": {
+        "win32": {},
+        "linux": {},
+        "darwin": {}
+      }
+    },
+    "edge-tts-zh": {
+      "label": "Edge TTS zh（在线 · 无 API key · 隐私弱于本地）",
+      "engine": "edge-tts",
+      "kind": "tts",
+      "synth_provider": "cloud",
+      "voice": "zh-CN-XiaoxiaoNeural",
+      "platforms": {
+        "win32": {},
+        "linux": {},
+        "darwin": {}
+      }
+    },
+    "cloud-tts-openai": {
+      "label": "云端 TTS（OpenAI 兼容 · 用户自填 URL/key）",
+      "engine": "cloud-tts-openai",
+      "kind": "tts",
+      "synth_provider": "cloud",
+      "platforms": {
+        "win32": {},
+        "linux": {},
+        "darwin": {}
+      }
     }
-
   }
-
 }
-
-

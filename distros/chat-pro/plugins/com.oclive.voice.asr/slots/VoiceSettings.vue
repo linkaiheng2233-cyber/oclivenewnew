@@ -17,6 +17,15 @@ type ProfileRow = {
   requires_pack?: string;
   min_vram_gb_recommended?: number | null;
   synth_provider?: string;
+  sidecar_endpoint?: string;
+};
+
+type AdapterRow = {
+  adapter_id: string;
+  label: string;
+  api_style?: string;
+  base_url?: string;
+  path?: string;
 };
 
 type ModelPackRow = {
@@ -39,6 +48,7 @@ const asrProfiles = ref<ProfileRow[]>([]);
 const ttsProfiles = ref<ProfileRow[]>([]);
 const directorProfiles = ref<ProfileRow[]>([]);
 const modelPacks = ref<ModelPackRow[]>([]);
+const ttsAdapters = ref<AdapterRow[]>([]);
 const asrProbe = ref<Record<string, unknown> | null>(null);
 const ttsProbe = ref<Record<string, unknown> | null>(null);
 const errText = ref("");
@@ -56,6 +66,7 @@ const cloudTtsToken = ref("");
 const cloudTtsVoiceId = ref("");
 const cloudTtsModel = ref("tts-1");
 const importPath = ref("");
+const adapterImportPath = ref("");
 const importKind = ref<"asr" | "tts">("asr");
 const saving = ref(false);
 const warming = ref(false);
@@ -122,6 +133,7 @@ async function saveConfig(): Promise<void> {
   saving.value = true;
   errText.value = "";
   try {
+    applyTtsProfileDefaults(ttsProfile.value);
     const config = {
       submit_mode: submitMode.value,
       tts_expansion_enabled: ttsExpansionEnabled.value,
@@ -150,6 +162,49 @@ async function saveConfig(): Promise<void> {
   }
 }
 
+function applyTtsProfileDefaults(profileId: string): void {
+  const profile = ttsProfiles.value.find((p) => p.id === profileId);
+  if (!profile) return;
+  if (
+    profile.synth_provider === "local_http" ||
+    profile.synth_provider === "cloud" ||
+    profile.synth_provider === "bundled"
+  ) {
+    synthProvider.value = profile.synth_provider;
+  }
+  if (profile.sidecar_endpoint?.trim()) {
+    localSynthEndpoint.value = profile.sidecar_endpoint.trim();
+  }
+}
+
+function onTtsProfileChange(): void {
+  applyTtsProfileDefaults(ttsProfile.value);
+  void reload();
+}
+
+function profileComplianceHint(profileId: string): string {
+  const profile = ttsProfiles.value.find((p) => p.id === profileId);
+  const engine = profile?.engine || "";
+  if (engine === "gpt-sovits-http") {
+    return "GPT-SoVITS：仅提供 HTTP 接入；参考音色须为原创/授权来源，平台不 ship 克隆权重。";
+  }
+  if (engine === "qwen3-tts-http" || engine === "fish-speech-http" || engine === "indextts-http") {
+    return "用户本地 TTS：算力与音色来源自负；官方包不捆绑第三方权重。";
+  }
+  if (engine === "generic-http-adapter") {
+    return "自定义适配包：请确保 endpoint 与 request 模板符合你的服务契约。";
+  }
+  return "";
+}
+
+function warmButtonLabel(): string {
+  const profile = ttsProfiles.value.find((p) => p.id === ttsProfile.value);
+  if (profile?.engine === "cosyvoice2" && synthProvider.value === "bundled") {
+    return warming.value ? "预热中…" : "预热 TTS 侧车";
+  }
+  return warming.value ? "检测中…" : "检测 TTS";
+}
+
 function byKind(rows: ProfileRow[], kind: string): ProfileRow[] {
   return rows.filter((p) => (p.kind || "asr") === kind);
 }
@@ -169,6 +224,11 @@ async function reload(): Promise<void> {
       packs?: ModelPackRow[];
     };
     modelPacks.value = Array.isArray(packs.packs) ? packs.packs : [];
+    const adapters = (await rpc("voice.list_tts_adapters", {})) as {
+      adapters?: AdapterRow[];
+    };
+    ttsAdapters.value = Array.isArray(adapters.adapters) ? adapters.adapters : [];
+    applyTtsProfileDefaults(ttsProfile.value);
     asrProbe.value = (await rpc("voice.probe", { profile: asrProfile.value })) as Record<
       string,
       unknown
@@ -211,6 +271,31 @@ async function importModel(): Promise<void> {
   }
 }
 
+async function importTtsAdapter(): Promise<void> {
+  const src = adapterImportPath.value.trim();
+  if (!src) {
+    errText.value = "请填写 TTS 适配包目录路径";
+    return;
+  }
+  errText.value = "";
+  try {
+    const res = (await rpc("voice.import_tts_adapter", { src_path: src })) as {
+      ok?: boolean;
+      reason?: string;
+      message?: string;
+      adapter_id?: string;
+    };
+    if (!res.ok) {
+      errText.value = res.message || res.reason || "导入失败";
+      return;
+    }
+    adapterImportPath.value = "";
+    await reload();
+  } catch (e) {
+    errText.value = e instanceof Error ? e.message : String(e);
+  }
+}
+
 async function warmTts(): Promise<void> {
   if (warming.value) return;
   warming.value = true;
@@ -227,16 +312,21 @@ async function warmTts(): Promise<void> {
       warmInfo.value = "侧车已预热，无需重复操作";
       return;
     }
-    const res = (await rpc("voice.warm", { profile: ttsProfile.value })) as {
+    const warmRes = (await rpc("voice.warm", { profile: ttsProfile.value })) as {
       ok?: boolean;
       already_warmed?: boolean;
+      skipped?: boolean;
       reason?: string;
       message?: string;
     };
-    if (res.already_warmed) {
-      warmInfo.value = res.message || "侧车已预热，无需重复操作";
-    } else if (!res.ok) {
-      errText.value = res.message || res.reason || "预热失败";
+    if (warmRes.skipped) {
+      warmInfo.value = warmRes.message || "当前 profile 无需预热侧车";
+      return;
+    }
+    if (warmRes.already_warmed) {
+      warmInfo.value = warmRes.message || "侧车已预热，无需重复操作";
+    } else if (!warmRes.ok) {
+      errText.value = warmRes.message || warmRes.reason || "预热失败";
     } else {
       warmInfo.value = "预热完成";
     }
@@ -348,14 +438,16 @@ onMounted(() => {
           <span class="label">发声提供方</span>
           <select v-model="synthProvider" class="sel">
             <option value="bundled">本地 bundled（CosyVoice2 侧车）</option>
-            <option value="local_http">本地 HTTP（自建 GSVI / CosyVoice）</option>
+            <option value="local_http">本地 HTTP（GPT-SoVITS / Qwen3 / CosyVoice 等）</option>
             <option value="cloud">云端（自填 API · 不经 OCLive 计费）</option>
           </select>
+          <span class="hint">切换 TTS profile 会自动同步提供方与默认 endpoint</span>
         </label>
 
         <label v-if="synthProvider === 'local_http'" class="field">
           <span class="label">本地 HTTP endpoint</span>
           <input v-model="localSynthEndpoint" class="inp" type="text" />
+          <span class="hint">GPT-SoVITS 默认 :9880 · Qwen3 默认 :8080 · CosyVoice 默认 :50000</span>
         </label>
 
         <template v-if="synthProvider === 'cloud'">
@@ -380,11 +472,14 @@ onMounted(() => {
 
         <label class="field">
           <span class="label">TTS profile</span>
-          <select v-model="ttsProfile" class="sel" @change="reload">
+          <select v-model="ttsProfile" class="sel" @change="onTtsProfileChange">
             <option v-for="p in ttsProfiles" :key="p.id" :value="p.id">
               {{ p.label }}
             </option>
           </select>
+          <p v-if="profileComplianceHint(ttsProfile)" class="hint compliance">
+            {{ profileComplianceHint(ttsProfile) }}
+          </p>
         </label>
 
         <label class="field">
@@ -435,9 +530,36 @@ onMounted(() => {
           </button>
         </label>
 
+        <div v-if="ttsAdapters.length" class="pack-list">
+          <p class="label">已导入 TTS 适配包</p>
+          <ul class="list">
+            <li v-for="adapter in ttsAdapters" :key="adapter.adapter_id">
+              <strong>{{ adapter.label || adapter.adapter_id }}</strong>
+              <span class="meta">
+                {{ adapter.adapter_id }}
+                <template v-if="adapter.api_style"> · {{ adapter.api_style }}</template>
+              </span>
+            </li>
+          </ul>
+        </div>
+
+        <label class="field">
+          <span class="label">导入 TTS 适配包（generic-http-adapter）</span>
+          <input
+            v-model="adapterImportPath"
+            class="inp"
+            type="text"
+            placeholder="含 tts_adapter_pack.json 的目录"
+          />
+          <button type="button" class="btn" :disabled="!oclive" @click="importTtsAdapter">
+            导入 TTS 适配包
+          </button>
+          <span class="hint">示例见 examples/voice-loop-minimal/tts_adapter_packs/</span>
+        </label>
+
         <div class="actions inline">
           <button type="button" class="btn" :disabled="!oclive || warming" @click="warmTts">
-            {{ warming ? "预热中…" : "预热 TTS 侧车" }}
+            {{ warmButtonLabel() }}
           </button>
         </div>
 

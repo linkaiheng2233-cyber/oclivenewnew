@@ -17,10 +17,13 @@ describe('cosyvoiceStreamPlayback', () => {
     expect(shouldUseBundledSidecarStream('cloud')).toBe(false)
   })
 
-  it('enables direct sidecar stream for bundled provider (including Tauri)', () => {
+  it('enables direct sidecar stream only for bundled cosyvoice2', () => {
+    expect(shouldUseDirectSidecarStream('bundled', 'cosyvoice2')).toBe(true)
     expect(shouldUseDirectSidecarStream('bundled')).toBe(true)
-    expect(shouldUseDirectSidecarStream('')).toBe(true)
+    expect(shouldUseDirectSidecarStream('', 'cosyvoice2')).toBe(true)
     expect(shouldUseDirectSidecarStream('cloud')).toBe(false)
+    expect(shouldUseDirectSidecarStream('bundled', 'gpt-sovits-http')).toBe(false)
+    expect(shouldUseDirectSidecarStream('local_http', 'cosyvoice2')).toBe(false)
   })
 
   it('exports bounded stream timeout constants', async () => {

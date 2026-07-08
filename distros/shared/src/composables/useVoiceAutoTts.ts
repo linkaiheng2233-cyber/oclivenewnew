@@ -54,6 +54,7 @@ type VoiceRuntimeConfig = {
   tts_expansion_enabled: boolean
   auto_tts: boolean
   tts_profile: string
+  tts_engine: string
   director_profile: string
   synth_provider: string
   local_synth_endpoint: string
@@ -112,6 +113,36 @@ function speakJobKey(text: string, payload: SpeakJob['payload'], cfg: VoiceRunti
 export function invalidateVoiceRuntimeConfig(): void {
   cachedConfig = null
   cachedConfigAt = 0
+  cachedProfileEngines = null
+}
+
+let cachedProfileEngines: Map<string, string> | null = null
+
+async function loadTtsProfileEngines(): Promise<Map<string, string>> {
+  if (cachedProfileEngines)
+    return cachedProfileEngines
+  try {
+    const list = (await directoryPluginInvoke(
+      VOICE_ASR_PLUGIN_ID,
+      'voice.list_profiles',
+      {},
+    )) as { profiles?: Array<{ id: string, engine?: string }> }
+    const map = new Map<string, string>()
+    for (const row of list.profiles || []) {
+      if (row.id && row.engine)
+        map.set(row.id, row.engine)
+    }
+    cachedProfileEngines = map
+    return map
+  }
+  catch {
+    return new Map()
+  }
+}
+
+async function resolveTtsEngine(profileId: string): Promise<string> {
+  const map = await loadTtsProfileEngines()
+  return map.get(profileId) || 'cosyvoice2'
 }
 
 async function loadVoiceRuntimeConfig(
@@ -125,13 +156,16 @@ async function loadVoiceRuntimeConfig(
   try {
     const ui = await getPluginSettingsUi(VOICE_ASR_PLUGIN_ID)
     const cfg = ui.config ?? {}
+    const ttsProfile =
+      typeof cfg.tts_profile === 'string' && cfg.tts_profile.trim()
+        ? cfg.tts_profile.trim()
+        : DEFAULT_TTS_PROFILE
+    const engines = await loadTtsProfileEngines()
     cachedConfig = {
       tts_expansion_enabled: cfg.tts_expansion_enabled === true,
       auto_tts: cfg.auto_tts === true,
-      tts_profile:
-        typeof cfg.tts_profile === 'string' && cfg.tts_profile.trim()
-          ? cfg.tts_profile.trim()
-          : DEFAULT_TTS_PROFILE,
+      tts_profile: ttsProfile,
+      tts_engine: engines.get(ttsProfile) || 'cosyvoice2',
       director_profile:
         typeof cfg.director_profile === 'string'
           ? cfg.director_profile.trim() || 'none'
@@ -341,7 +375,7 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
   }
 
   async function ensureStreamPrefetch(job: SpeakJob): Promise<void> {
-    if (!shouldUseDirectSidecarStream(job.cfg.synth_provider))
+    if (!shouldUseDirectSidecarStream(job.cfg.synth_provider, job.cfg.tts_engine))
       return
     if (streamPrefetchByKey.has(job.key))
       return
@@ -373,7 +407,7 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
       if (generation !== speakGeneration)
         return
 
-      const useStream = shouldUseDirectSidecarStream(job.cfg.synth_provider)
+      const useStream = shouldUseDirectSidecarStream(job.cfg.synth_provider, job.cfg.tts_engine)
       if (useStream) {
         const rawDirective = await resolveDirective(job.payload, job.cfg, job.speakOpts)
         const directive = finalizeSpeakDirective(rawDirective, job.cfg, job.payload)
@@ -435,7 +469,7 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
         const job = speakQueue[0]
         const next = speakQueue[1]
         if (next && generation === speakGeneration) {
-          if (shouldUseDirectSidecarStream(next.cfg.synth_provider))
+          if (shouldUseDirectSidecarStream(next.cfg.synth_provider, next.cfg.tts_engine))
             void ensureStreamPrefetch(next)
           else
             void prepareRpcSpeak(next)

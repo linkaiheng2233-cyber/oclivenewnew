@@ -106,8 +106,9 @@ chat_toolbar (VoiceToolbar.vue)
 
 - **官方包**：[`distros/chat-pro/plugins/com.oclive.voice.asr/`](../../distros/chat-pro/plugins/com.oclive.voice.asr/) · **v0.4.0**
 - **UI 插槽**：`chat_toolbar`（按住说话）+ `settings.panel`（**语音识别** + **语音扩展** 分区）
-- **RPC**：`voice.probe` · `voice.probe_tts` · `voice.warm` · `voice.list_profiles` · `voice.list_model_packs` · `voice.import_model` · `voice.transcribe` · **`voice.speak`** · **`voice.build_directive`**
-- **引擎**：Node `rpc_server.mjs` + Python [`examples/voice-loop-minimal/`](../../examples/voice-loop-minimal/)（ASR sherpa-onnx；TTS CosyVoice2 侧车 · cloud · dev Piper 仅 loop）
+- **RPC**：`voice.probe` · `voice.probe_tts` · `voice.warm` · `voice.list_profiles` · `voice.list_model_packs` · `voice.import_model` · **`voice.list_tts_adapters`** · **`voice.import_tts_adapter`** · `voice.transcribe` · **`voice.speak`** · **`voice.build_directive`**
+- **引擎**：Node `rpc_server.mjs` + Python [`examples/voice-loop-minimal/`](../../examples/voice-loop-minimal/)（ASR sherpa-onnx；TTS **`tts/engines/registry.py`** 注册 CosyVoice2 · GPT-SoVITS · Qwen3 · edge/cloud · generic-http-adapter；dev Piper 仅 loop）
+- **Profile SSOT**：`asr_profiles.json` 每 profile 含 `engine` · `synth_provider` · `sidecar_endpoint`；仅 `engine=cosyvoice2` 且 `synth_provider=bundled` 时 spawn/warm 侧车
 - **降级**：无 ASR 模型 / 识别失败 → 键盘输入；**禁止** ASR 进六槽；TTS 扩展关或 probe 失败 → **不播放**（无 Piper 产品降级）
 - **HTTP 烟测**：[`examples/voice-loop-minimal/`](../../examples/voice-loop-minimal/)（`loop.py --mic` · `--tts-sherpa` dev · `--tts-cosyvoice`）
 

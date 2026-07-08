@@ -470,7 +470,13 @@ export function shouldUseBundledSidecarStream(synthProvider: string | undefined)
   return p === '' || p === 'bundled'
 }
 
-/** Stream PCM from local CosyVoice sidecar when synth provider is bundled. */
-export function shouldUseDirectSidecarStream(synthProvider: string | undefined): boolean {
+/** Stream PCM from local CosyVoice sidecar when engine is cosyvoice2 and provider is bundled. */
+export function shouldUseDirectSidecarStream(
+  synthProvider: string | undefined,
+  engine?: string,
+): boolean {
+  const eng = (engine || '').trim().toLowerCase()
+  if (eng && eng !== 'cosyvoice2')
+    return false
   return shouldUseBundledSidecarStream(synthProvider)
 }

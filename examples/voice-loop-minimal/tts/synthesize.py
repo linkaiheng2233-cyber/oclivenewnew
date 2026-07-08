@@ -13,7 +13,16 @@ def main() -> int:
     payload = json.loads(raw) if raw.strip() else {}
     model_dir = payload.get("model_dir")
     engine = payload.get("engine")
-    if not model_dir and engine not in {"edge-tts", "cloud-tts-openai"}:
+    _NO_MODEL_DIR_ENGINES = {
+        "edge-tts",
+        "cloud-tts-openai",
+        "gpt-sovits-http",
+        "qwen3-tts-http",
+        "fish-speech-http",
+        "indextts-http",
+        "generic-http-adapter",
+    }
+    if not model_dir and engine not in _NO_MODEL_DIR_ENGINES:
         print(json.dumps({"ok": False, "reason": "model_dir_required"}, ensure_ascii=False))
         return 1
     if payload.get("probe"):
