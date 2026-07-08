@@ -458,12 +458,40 @@ mod rpc_validation_tests {
                 "voice.transcribe",
                 "voice.speak",
                 "voice.build_directive",
+                "voice.import_tts_adapter",
+                "voice.list_tts_adapters",
             ],
             true,
         );
         let manifest = OclivePluginManifest::load_from_dir(tmp.path()).expect("load manifest");
         assert!(validate_rpc_method_for_manifest(&manifest, "voice.transcribe").is_ok());
         assert!(validate_rpc_method_for_manifest(&manifest, "voice.build_directive").is_ok());
+        assert!(validate_rpc_method_for_manifest(&manifest, "voice.import_tts_adapter").is_ok());
+        assert!(validate_rpc_method_for_manifest(&manifest, "voice.list_tts_adapters").is_ok());
+    }
+
+    #[test]
+    fn voice_asr_manifest_declares_tts_adapter_rpc() {
+        let repo = path_from_manifest_dir();
+        let manifest =
+            OclivePluginManifest::load_from_dir(&repo).expect("load com.oclive.voice.asr manifest");
+        for method in ["voice.import_tts_adapter", "voice.list_tts_adapters"] {
+            assert!(
+                manifest.rpc_methods.iter().any(|m| m == method),
+                "missing rpcMethods {method}"
+            );
+            assert!(
+                validate_rpc_method_for_manifest(&manifest, method).is_ok(),
+                "whitelist rejected {method}"
+            );
+        }
+    }
+
+    fn path_from_manifest_dir() -> std::path::PathBuf {
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../chat-pro/plugins/com.oclive.voice.asr")
+            .canonicalize()
+            .expect("voice.asr plugin dir")
     }
 
     #[test]

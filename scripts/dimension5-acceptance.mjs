@@ -102,6 +102,10 @@ runStep('doc registry ratchet', () => {
   sh('node', ['scripts/check-doc-registry.mjs']);
 });
 
+runStep('voice TTS ratchet', () => {
+  sh('node', ['scripts/check-voice-tts-ratchet.mjs']);
+});
+
 runStep('stale doc paths ratchet', () => {
   sh('node', ['scripts/check-stale-paths.mjs', '--docs-only']);
 });
