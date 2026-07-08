@@ -31,6 +31,7 @@ class GptSovitsHttpEngine:
         if health.get("ok") is False and health.get("reason") == "http_error":
             # GSVI root may not be JSON — try a lightweight GET
             try:
+                from urllib import error as urlerror
                 from urllib import request as urlrequest
 
                 with urlrequest.urlopen(f"{base}/", timeout=3.0) as resp:
@@ -44,6 +45,17 @@ class GptSovitsHttpEngine:
                             "message": "GPT-SoVITS HTTP reachable (user-local)",
                             "model_dir": model_dir,
                         }
+            except urlerror.HTTPError as exc:
+                if exc.code < 500:
+                    return {
+                        "ok": True,
+                        "engine": self.engine_id,
+                        "sidecar_endpoint": base,
+                        "supports_stream": False,
+                        "supports_warm": False,
+                        "message": f"GPT-SoVITS HTTP reachable (status {exc.code})",
+                        "model_dir": model_dir,
+                    }
             except Exception as exc:  # noqa: BLE001
                 return {
                     "ok": False,
@@ -86,15 +98,15 @@ class GptSovitsHttpEngine:
         ref_audio = str(d.get("ref_audio") or manifest.get("default_ref_audio") or "").strip()
         params: dict[str, Any] = {
             "text": text,
-            "text_language": manifest.get("text_language", "zh"),
-            "speed": speed,
+            "text_lang": manifest.get("text_language", "zh"),
+            "speed_factor": speed,
         }
         if ref_audio:
-            params["refer_wav_path"] = ref_audio
+            params["ref_audio_path"] = ref_audio
             ref_text = str(d.get("ref_text") or manifest.get("ref_text") or "").strip()
             if ref_text:
                 params["prompt_text"] = ref_text
-                params["prompt_language"] = manifest.get("prompt_language", "zh")
+                params["prompt_lang"] = manifest.get("prompt_language", "zh")
         synthesize_path = manifest.get("synthesize_path", "/tts")
         # GSVI v2 HTTP: GET /tts or POST depending on deployment; try GET first
         query = urlencode({k: v for k, v in params.items() if v is not None})

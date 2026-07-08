@@ -88,6 +88,7 @@ class Qwen3TtsHttpEngine:
         if ref_audio:
             # Voice clone endpoint (common in Qwen3-TTS-API)
             import json
+            from urllib import error as urlerror
             from urllib import request as urlrequest
 
             boundary = "----ocliveqwen3"
@@ -131,6 +132,15 @@ class Qwen3TtsHttpEngine:
                         "engine": self.engine_id,
                         "profile": manifest.get("id", "qwen3-tts-http"),
                         "audio_mime": "audio/wav",
+                    }
+            except urlerror.HTTPError as exc:
+                if exc.code not in (404, 405):
+                    return {
+                        "ok": False,
+                        "reason": "qwen3_clone_failed",
+                        "message": str(exc),
+                        "audio_base64": "",
+                        "engine": self.engine_id,
                     }
             except Exception as exc:  # noqa: BLE001
                 return {
