@@ -4,9 +4,11 @@
 
 **人类开发者（不用 Cursor）**：请先 **[human-docs/README.md](../../human-docs/README.md)**（窄入口 · 学习阶梯 L0–L7）；契约深读再回本文与 `creator-docs/`。
 
-**插件契约等英文镜像**：[`creator-docs-en/README.md`](../../creator-docs-en/README.md)（与中文长文对拍时以 `creator-docs/` 为准；已含 Remote / 目录插件 / 桥接 / 扩展点 / 创作者架构 / FAQ / 兼容表等）。**文档双语收尾**：英文镜像范围、中文-only 长尾与更新纪律见英文 README 小节 [Documentation bilingual closure baseline](../../creator-docs-en/README.md#documentation-bilingual-closure-baseline)。
+**插件契约等英文镜像**：[`creator-docs-en/README.md`](../../creator-docs-en/README.md)（**契约以 `creator-docs/` 中文为准**；英文为分阶段完整镜像，含 kernel / 插件放置 / Agent remote / 角色包跨宿主等）。**镜像治理**：覆盖台账与同步纪律见英文 README [Mirror policy](../../creator-docs-en/README.md#mirror-policy) · [Coverage matrix](../../creator-docs-en/README.md#mirror-coverage-matrix)。
 
 **若思路较乱、想一次看清三件套与事项分工**：先读 **[PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)**（项目全貌与总览）。**若要对齐「当前进度 + 未来目标 + 按用途分类的文档地图」**：读 **[PROJECT_STATUS_AND_ALIGNMENT.md](PROJECT_STATUS_AND_ALIGNMENT.md)**。**若只要版本号、交付面摘要与 CHANGELOG 入口**：读 **[PROJECT_CURRENT_STATUS.md](PROJECT_CURRENT_STATUS.md)**。
+
+**文档五层分工**（谁读什么 · 各层管什么）：[`handoff/README.md`](../../handoff/README.md) §文档分层。Agent 深读入口：[`handoff/AI_READING_INDEX.md`](../../handoff/AI_READING_INDEX.md)。
 
 ---
 
@@ -31,6 +33,7 @@
 | **关键路径交接笔记**（Bus factor：`process_message`、`PluginHost`、错误码、DB、测试/CI 等入口） | **[../../handoff/BUS_FACTOR_NOTES.md](../../handoff/BUS_FACTOR_NOTES.md)** |
 | **模块地图与接手备忘**（模块注册表 · 六槽/设施关系 · **非**进度） | **[../../handoff/MODULE_MAP_AND_HANDOFF.md](../../handoff/MODULE_MAP_AND_HANDOFF.md)** |
 | **文档分责 · 耦合审计** | **[../../handoff/README.md](../../handoff/README.md)** §文档分责 |
+| **AI 深读分类目录**（链 SSOT · 场景路径 · **非事实 SSOT**） | **[../../handoff/AI_READING_INDEX.md](../../handoff/AI_READING_INDEX.md)** |
 | **AI 改动边界**（代码 G1–G9 · **文档 G10–G16** · §文档编写纪律） | **[../../handoff/AI_CHANGE_BOUNDARIES.md](../../handoff/AI_CHANGE_BOUNDARIES.md)** · 审查核实 **[../../handoff/AI_VERIFICATION_PROTOCOL.md](../../handoff/AI_VERIFICATION_PROTOCOL.md)** |
 | **`handoff/` 活跃 vs 归档**（closure、旧周报、编号计划已迁入 `archive/`） | **[../../handoff/README.md](../../handoff/README.md)** · 关键路径 **[../../handoff/BUS_FACTOR_NOTES.md](../../handoff/BUS_FACTOR_NOTES.md)** · 认知清单（**已归档快照**）**[../../handoff/04_4.6_PROJECT_TRUTH_CHECKLIST.md](../../handoff/04_4.6_PROJECT_TRUTH_CHECKLIST.md)** |
 | **命名规范与 canonical import**（概念 SSOT、crate 边界、禁止别名） | **[../NAMING_CONVENTIONS.md](../NAMING_CONVENTIONS.md)** · [English summary](../../creator-docs-en/getting-started/NAMING_CONVENTIONS.md) · crate 速查 **[../../kernel/crates/README.md](../../kernel/crates/README.md)** §Canonical import |
@@ -82,8 +85,8 @@
 | **`code` 与 JSON 错误体规范** | **[KERNEL_ERROR_CODE_CONVENTION.md](KERNEL_ERROR_CODE_CONVENTION.md)** |
 | **`slot_registry` / 六槽编排契约** | **[../plugin-and-architecture/PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)** · 蓝图字段 **[ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)** · 编号 **[OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)** |
 | Remote HTTP JSON-RPC | **[../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)** |
-| Agent remote / host-orchestrated `agent.process` | **[../plugin-and-architecture/AGENT_REMOTE_PROTOCOL.md](../plugin-and-architecture/AGENT_REMOTE_PROTOCOL.md)** |
-| 角色包磁盘格式 / `schema_version` | **[../role-pack/ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)** · **[../role-pack/PACK_VERSIONING.md](../role-pack/PACK_VERSIONING.md)** |
+| Agent remote / host-orchestrated `agent.process` | **[../plugin-and-architecture/AGENT_REMOTE_PROTOCOL.md](../plugin-and-architecture/AGENT_REMOTE_PROTOCOL.md)**（[English](../../creator-docs-en/plugin-and-architecture/AGENT_REMOTE_PROTOCOL.md)） |
+| 角色包磁盘格式 / `schema_version` | **[../role-pack/ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)** · **[../role-pack/PACK_VERSIONING.md](../role-pack/PACK_VERSIONING.md)**（[English](../../creator-docs-en/role-pack/PACK_VERSIONING.md)） |
 | **用户身份模板 & 回复后处理（v0.3）** | **[../rfc/RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md](../rfc/RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md)** · Phase 2 **[../../handoff/USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md](../../handoff/USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md)** |
 | **立绘设施 & 视觉表现（草案）** | **[../rfc/RFC_PORTRAIT_FACILITY.md](../rfc/RFC_PORTRAIT_FACILITY.md)** · **[../rfc/RFC_VISUAL_PRESENTATION_FACILITY.md](../rfc/RFC_VISUAL_PRESENTATION_FACILITY.md)** · **[../../handoff/PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md](../../handoff/PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md)** |
 | **Prompt 分层 & 状态联动**（Tier0、`build_character_status_summary`、`relation_transition`） | **[../../AGENTS.md](../../AGENTS.md)**「Prompt 注入分层 + 状态机联动」· 实现 **[../../kernel/crates/oclive_kernel_runtime/src/domain/prompt_builder/mod.rs](../../kernel/crates/oclive_kernel_runtime/src/domain/prompt_builder/mod.rs)**（段落公式见同目录 `sections.rs`） |
@@ -105,7 +108,7 @@
 | **角色包创作者：从零到发布（学习路径）** | **[../role-pack/CREATOR_LEARNING_PATH.md](../role-pack/CREATOR_LEARNING_PATH.md)**（[English](../../creator-docs-en/role-pack/CREATOR_LEARNING_PATH.md)） |
 | **已有 v1 包：迁到 v2 蓝图（约 10 分钟）** | **[../role-pack/V1_TO_V2_MIGRATION.md](../role-pack/V1_TO_V2_MIGRATION.md)**（[English](../../creator-docs-en/role-pack/V1_TO_V2_MIGRATION.md)） |
 | **已有 v2 蓝图：迁到 v3（runtime_config / 双核，约 10 分钟）** | **[../role-pack/V2_TO_V3_MIGRATION.md](../role-pack/V2_TO_V3_MIGRATION.md)**（[English](../../creator-docs-en/role-pack/V2_TO_V3_MIGRATION.md)） |
-| **插件作者：放置决策树** | **[../plugin-and-architecture/PLUGIN_PLACEMENT_GUIDE.md](../plugin-and-architecture/PLUGIN_PLACEMENT_GUIDE.md)** |
+| **插件作者：放置决策树** | **[../plugin-and-architecture/PLUGIN_PLACEMENT_GUIDE.md](../plugin-and-architecture/PLUGIN_PLACEMENT_GUIDE.md)**（[English](../../creator-docs-en/plugin-and-architecture/PLUGIN_PLACEMENT_GUIDE.md)） |
 | **插件作者：目录 / Remote / 市场（学习路径）** | **[../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md](../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)**（[English](../../creator-docs-en/plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)） |
 | **LLM 目录插件 + llama.cpp（不经 Ollama，按角色切换）** | **[examples/directory-plugin-llamacpp/README.md](../../examples/directory-plugin-llamacpp/README.md)**（[English](../../examples/directory-plugin-llamacpp/README.en.md)） |
 | **改 Rust 内核：该动哪个 crate？** | **[../../kernel/crates/README.md](../../kernel/crates/README.md)** |
@@ -135,18 +138,18 @@
 | **内核工厂愿景（U–X + T 协作分发 + Y 持续精进）** | **[KERNEL_FACTORY_VISION.md](KERNEL_FACTORY_VISION.md)**（[English](../../creator-docs-en/getting-started/KERNEL_FACTORY_VISION.md)） |
 | **v2 蓝图字段与 legacy `plugin_backends` 对照（权威）** | **[../cli/SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)** |
 | **角色包磁盘格式、多发行版对齐、`oclive pack validate`** | **[../role-pack/ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)** |
-| **跨宿主记忆 · 角色包携带数据 · VS Code 等集成前确认清单** | **[../role-pack/CROSS_HOST_MEMORY.md](../role-pack/CROSS_HOST_MEMORY.md)** |
+| **跨宿主记忆 · 角色包携带数据 · VS Code 等集成前确认清单** | **[../role-pack/CROSS_HOST_MEMORY.md](../role-pack/CROSS_HOST_MEMORY.md)**（[English](../../creator-docs-en/role-pack/CROSS_HOST_MEMORY.md)） |
 | **VS Code 发行版契约** | **[`handoff/vscode/VSCODE_DISTRIBUTION.md`](../../handoff/vscode/VSCODE_DISTRIBUTION.md)** |
-| **跨宿主数据目录 `OCLIVE_APP_DATA`** | **[../kernel/OCLIVE_APP_DATA.md](../kernel/OCLIVE_APP_DATA.md)** |
-| **发行版内核 attach/spawn SSOT** | **[../kernel/DISTRO_KERNEL_LIFECYCLE.md](../kernel/DISTRO_KERNEL_LIFECYCLE.md)**（bundled-first spawn · profile attach/replace · 决策上收：`kernel_strategy.rs` · `/health` distro 字段 · `oclive kernel ensure`） |
+| **跨宿主数据目录 `OCLIVE_APP_DATA`** | **[../kernel/OCLIVE_APP_DATA.md](../kernel/OCLIVE_APP_DATA.md)**（[English](../../creator-docs-en/kernel/OCLIVE_APP_DATA.md)） |
+| **发行版内核 attach/spawn SSOT** | **[../kernel/DISTRO_KERNEL_LIFECYCLE.md](../kernel/DISTRO_KERNEL_LIFECYCLE.md)**（[English](../../creator-docs-en/kernel/DISTRO_KERNEL_LIFECYCLE.md)） |
 | **内核调度范围重划（2026-06）** | **[../../handoff/KERNEL_SCHEDULER_RESCOPE.md](../../handoff/KERNEL_SCHEDULER_RESCOPE.md)** · 单核 `:8420` · `binary_upgrade` Freeze · K-SCHED backlog |
 | **三发行版内核结项（Pro / Flash / Theater profile）** | **[../../handoff/THREE_DISTRO_KERNEL_CLOSURE.md](../../handoff/THREE_DISTRO_KERNEL_CLOSURE.md)** · smoke 表 · CI 覆盖 |
 | **AI 剧场发行版（思路与路线 SSOT）** | **[../../handoff/theater/DEVELOPMENT_ROADMAP.md](../../handoff/theater/DEVELOPMENT_ROADMAP.md)** · [README](../../handoff/theater/README.md) |
 | **VS Code Flash 工作文档** | **[../../handoff/vscode/README.md](../../handoff/vscode/README.md)** · 契约 [`VSCODE_DISTRIBUTION.md`](../../handoff/vscode/VSCODE_DISTRIBUTION.md) |
 | **启动器 / 工作室 / 编写器（主仓协调）** | [launcher](../../handoff/launcher/README.md) · [studio](../../handoff/studio/README.md) · [pack-editor](../../handoff/pack-editor/README.md) |
-| **发行版能力配置 `distro.oclive.toml`（P1 Schema）** | **[../kernel/DISTRO_CAPABILITY_PROFILE.md](../kernel/DISTRO_CAPABILITY_PROFILE.md)** · 示例 `examples/distro-profiles/` |
+| **发行版能力配置 `distro.oclive.toml`（P1 Schema）** | **[../kernel/DISTRO_CAPABILITY_PROFILE.md](../kernel/DISTRO_CAPABILITY_PROFILE.md)**（[English](../../creator-docs-en/kernel/DISTRO_CAPABILITY_PROFILE.md)） · 示例 `examples/distro-profiles/` |
 | **Turn Thinking（Fast/Deep · 持久化分流 · 包级路由）** | **[../rfc/RFC_TURN_THINKING_PERSISTENCE.md](../rfc/RFC_TURN_THINKING_PERSISTENCE.md)** · [English summary](../../creator-docs-en/rfc/RFC_TURN_THINKING_PERSISTENCE_SUMMARY.md) · MODULE_MAP §12 |
-| **发行版默认插件矩阵（三 personas）** | **[../kernel/DISTRO_DEFAULT_PLUGINS.md](../kernel/DISTRO_DEFAULT_PLUGINS.md)** · desktop-chat / vscode / theater |
+| **发行版默认插件矩阵（三 personas）** | **[../kernel/DISTRO_DEFAULT_PLUGINS.md](../kernel/DISTRO_DEFAULT_PLUGINS.md)**（[English](../../creator-docs-en/kernel/DISTRO_DEFAULT_PLUGINS.md)） · desktop-chat / vscode / theater |
 | **编写器路线图（立绘 catalog · 视觉舞台 · 分级导出）** | **[../../handoff/pack-editor/PACK_EDITOR_ROADMAP.md](../../handoff/pack-editor/PACK_EDITOR_ROADMAP.md)** · 姊妹仓 `oclive-pack-editor/handoff/PACK_EDITOR_ROADMAP.md` |
 | **立绘 + 视觉表现实施计划** | **[../../handoff/PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md](../../handoff/PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md)** |
 | **蓝图 v2（`pipeline.ocblueprint` · P0–P8 收口，归档）** | **[RFC_ROLE_BLUEPRINT_V2](../../handoff/archive/RFC_ROLE_BLUEPRINT_V2.md)** · **[BLUEPRINT_V2_IMPLEMENTATION_PLAN](../../handoff/archive/BLUEPRINT_V2_IMPLEMENTATION_PLAN.md)** · **[BLUEPRINT_V2_DECISIONS](../../handoff/archive/BLUEPRINT_V2_DECISIONS.md)** |

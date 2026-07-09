@@ -10,7 +10,7 @@
 
 ## 文档包进度（与 AI 包同步 · 2026-06-26）
 
-维护者改架构/纪律时 **须同轮** 更新本表与 [`handoff/README.md`](../handoff/README.md) §文档分责，避免「人类文滞后 → 误以为技术债」。
+**维护纪律**：改架构/纪律时 **须同轮** 更新本表与 [`handoff/README.md`](../handoff/README.md) §文档分责；已有英文镜像的中文页变更时，**同轮**更新 `human-docs-en/` / `creator-docs-en/` 对应文件。台账见 [creator-docs-en/README § Coverage matrix](../creator-docs-en/README.md#mirror-coverage-matrix) · [human-docs-en/README § Mirror status](../human-docs-en/README.md#mirror-status-human-docs-en)。
 
 | 区块 | 状态 | 说明 |
 |------|------|------|
@@ -24,8 +24,8 @@
 | **模块注册表（深读）** | **handoff** | [`MODULE_MAP_AND_HANDOFF.md`](../handoff/MODULE_MAP_AND_HANDOFF.md) — 人类 L5+ 深读，不在 human-docs 复制 |
 | **AI 文档纪律 G10–G16** | **Done** | AI 详述 → [`AI_CHANGE_BOUNDARIES`](../handoff/AI_CHANGE_BOUNDARIES.md)；人类摘要 → [04 §8](04_ENGINEERING_RULES.md#8-文档贡献纪律人类版) |
 | **模块开工包（H-DOC-04）** | **Done** | [`modules/README.md`](modules/README.md) · 全类 Done 2026-06-26 |
-| **human-docs-en 全覆盖** | **Partial** | L0–L4 + L5 + L6 + **modules 选择器摘要**（六槽 llm/agent/memory EN） |
-| **creator-docs-en 契约** | **Partial** | 与中文 `creator-docs/` 并行；**契约以中文为准** |
+| **human-docs-en 镜像** | **Mirrored（主干）** | L0–L8 主干已对齐；`modules/` 六槽部分摘要 · `paths/`/`team/` 仍中文 |
+| **creator-docs-en 镜像** | **分阶段补齐** | 高频契约/kernel/role-pack/testing 已镜像；长尾 RFC/创作者深读见 [coverage matrix](../creator-docs-en/README.md#mirror-coverage-matrix) · **契约以中文为准** |
 
 **待办（文档债 · 非代码债）**
 
@@ -46,6 +46,7 @@
 | **篇幅** | 可长可细 · 表格/图/分段 | 短 · 链出 · 禁止复制长表 |
 | **进度** | 本页 **文档包进度** | [`TECHNICAL_DEBT_INVENTORY`](../handoff/TECHNICAL_DEBT_INVENTORY.md) §1 |
 | **改文档** | 先读 [04 §8](04_ENGINEERING_RULES.md#8-文档贡献纪律人类版) | G10–G16 · [`AI_CHANGE_BOUNDARIES`](../handoff/AI_CHANGE_BOUNDARIES.md) |
+| **五层分工** | 人类阶梯 vs 契约 vs handoff | [`handoff/README`](../handoff/README.md) §文档分层 |
 
 ---
 
@@ -63,7 +64,7 @@
 | **L7** | [08 资料地图](08_REFERENCE_MAP.md) | 深文档去哪找 | 按需 |
 | **L8** | [08 PR 门禁](08_PR_GATE_MATRIX.md) · [09 术语速查](09_GLOSSARY.md) · [10 Windows](10_SETUP_WINDOWS.md) | CI 对照 · 缩写 · MSVC | 按需 |
 
-英文镜像（L0–L4 + L7–L10 摘要）：[`human-docs-en/README.md`](../human-docs-en/README.md)
+英文镜像（L0–L8 主干 + modules 摘要）：[`human-docs-en/README.md`](../human-docs-en/README.md) · 覆盖台账见该页 [Mirror status](../human-docs-en/README.md#mirror-status-human-docs-en)
 
 ```mermaid
 flowchart LR

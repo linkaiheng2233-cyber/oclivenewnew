@@ -13,7 +13,7 @@
 | **Agent 索引（精简）** | [`AGENTS.md`](../../AGENTS.md) | 每次让 AI 改代码前 |
 | **改动 + 文档纪律** | [`AI_CHANGE_BOUNDARIES`](../../handoff/AI_CHANGE_BOUNDARIES.md) G1–G16 | 改代码/改文档 |
 | **模块注册表** | [`MODULE_MAP`](../../handoff/MODULE_MAP_AND_HANDOFF.md) | 模块/六槽/设施关系 |
-| **文档分责** | [`handoff/README`](../../handoff/README.md) §文档分责 | **新建/大改文档前** |
+| **文档分责** | [`handoff/README`](../../handoff/README.md) §文档分责 · §文档分层 | **新建/大改文档前** |
 | **Cursor 规则** | [`.cursor/rules/oclivenewnew.mdc`](../../.cursor/rules/oclivenewnew.mdc) | 7 条硬约束；人类版见 [04 工程约束](../04_ENGINEERING_RULES.md) |
 | **契约百科** | [`creator-docs/`](../../creator-docs/) | manifest、六槽、插件、角色包 |
 | **英文镜像** | [`creator-docs-en/`](../../creator-docs-en/) | 对外英文；契约以中文 `creator-docs/` 为准 |

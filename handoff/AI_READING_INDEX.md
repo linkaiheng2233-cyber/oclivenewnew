@@ -1,9 +1,12 @@
 # AI 深读索引（Agent Reading Index）
 
+> **SSOT 范围**：**分类目录与阅读路径**；各主题事实以链出文档为准。  
+> **最后更新**：2026-07-10  
 > **读者**：Cursor / Codex / 自动化 Agent / 维护者用 AI 改代码。  
-> **GitHub 首页 [`README.md`](../README.md) 面向人类**；本文是 **AI 专用分类目录**——链 SSOT、**禁止复制长表**（G14）。  
+> **GitHub 首页 [`README.md`](../README.md) 面向人类**；五层文档分工见 [`handoff/README.md`](./README.md) §文档分层。  
 > **快速约束**：[`AGENTS.md`](../AGENTS.md) · **人类阶梯**：[`human-docs/README.md`](../human-docs/README.md)
 
+**本文不管什么**：模块定义表、backend 24 格、记忆三套存储表、wire 枚举——这些只在各自 SSOT 维护（G14）。
 ---
 
 ## 怎么用本文

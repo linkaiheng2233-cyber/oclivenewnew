@@ -10,6 +10,30 @@
 
 ---
 
+## 文档分层（五层 · 谁读什么）
+
+| 层 | 路径 | 读者 | **管什么** | **不管什么** |
+|----|------|------|------------|--------------|
+| **GitHub 首页** | [`README.md`](../README.md) | 人类访客 | 定位、示例、架构导读、快速开始 | 契约全文、模块注册表、AI 门禁 |
+| **人类阶梯** | [`human-docs/`](../human-docs/) | 人类工程师 | 顺序学习、时间盒、模块开工包 | wire 枚举、backend 24 格真值 |
+| **契约百科** | [`creator-docs/`](../creator-docs/) | 创作者 / 集成方 / 插件作者 | ROLE_PACK_SPEC、PLUGIN_V1、RFC、学习路径 | 模块关系表、代码债进度 |
+| **工程交接** | **`handoff/`（本目录）** | 维护者 · Agent 深读 | MODULE_MAP、BUS_FACTOR、技术债、**本文 §文档分责** | 用户手册、愿景长文复述 |
+| **AI 索引** | [`AGENTS.md`](../AGENTS.md) + [`AI_READING_INDEX.md`](./AI_READING_INDEX.md) | Cursor / Codex 等 Agent | 门禁链、分类目录、[§9 场景路径](./AI_READING_INDEX.md#9-按任务选阅读路径) | **事实 SSOT**（只链出，G14） |
+
+**入口速查**
+
+| 你是谁 | 从哪进 |
+|--------|--------|
+| 普通用户 | [`USER_MANUAL`](../creator-docs/getting-started/USER_MANUAL.md) |
+| 人类开发者 | [`human-docs/README.md`](../human-docs/README.md) L0–L2 |
+| Agent 改代码 | [`AGENTS.md`](../AGENTS.md) → [`AI_READING_INDEX.md`](./AI_READING_INDEX.md) |
+| 按主题找契约 | [`DOCUMENTATION_INDEX.md`](../creator-docs/getting-started/DOCUMENTATION_INDEX.md) |
+| 查「这事该改哪份文」 | **本文 §文档分责** |
+
+**纪律**：索引层（`AGENTS` · `AI_READING_INDEX` · `DOCUMENTATION_INDEX` · `human-docs/08`）**禁止**复制 MODULE_MAP / PLUGIN_V1 / backend 24 格等大表；人类 README 可 **导读 + 链 SSOT**，不可当注册表第二份。
+
+---
+
 ## 文档分责（SSOT · 防耦合）
 
 **原则**：一事一文；**链接代替复制**；无 RFC / 关键决策 **不新建** handoff 或 creator-docs 顶层文档。改文档时 **只改该文档 SSOT 范围**，勿顺手同步十处（见 [`AI_CHANGE_BOUNDARIES.md`](./AI_CHANGE_BOUNDARIES.md) G10–G16 · §文档编写纪律）。
@@ -77,30 +101,46 @@
 
 ## 活跃文件（根目录 · 跨发行版）
 
+### 活跃 SSOT（事实 · 边界 · 关键路径）
+
 | 文件 | 用途 |
 |------|------|
-| [BREAKING_CHANGE_PROCESS.md](BREAKING_CHANGE_PROCESS.md) | 破坏性变更流程 |
-| [PRODUCT_LINE_TASK_BUCKETS.md](PRODUCT_LINE_TASK_BUCKETS.md) | 产品线任务分桶 |
-| [TECHNICAL_DEBT_INVENTORY.md](TECHNICAL_DEBT_INVENTORY.md) | 技术债清单 |
-| [RECURRING_OPTIMIZATION_PLAYBOOK.md](RECURRING_OPTIMIZATION_PLAYBOOK.md) | 巡检手册（§8 日志） |
-| [GOOD_FIRST_ISSUES.md](GOOD_FIRST_ISSUES.md) | 新人 issue 策展 |
-| [DUAL_CORE_CURSOR_HANDOFF.md](DUAL_CORE_CURSOR_HANDOFF.md) | 双核实验运行时交接 |
+| [MODULE_MAP_AND_HANDOFF.md](MODULE_MAP_AND_HANDOFF.md) | **模块注册表**（四大类 · 六槽/设施/独立通道 · 改动约束） |
+| [SLOT_BACKEND_REALITY_MATRIX.md](SLOT_BACKEND_REALITY_MATRIX.md) | 六槽 × backend **24 格真值** |
 | [ROLE_PACK_BOUNDARY.md](ROLE_PACK_BOUNDARY.md) | 角色包 vs 蓝图边界 |
-| [ARCHITECTURE_LAYERING.md](ARCHITECTURE_LAYERING.md) | 分层架构说明 |
-| [BUS_FACTOR_NOTES.md](BUS_FACTOR_NOTES.md) | 关键路径 bus factor |
-| [MODULE_MAP_AND_HANDOFF.md](MODULE_MAP_AND_HANDOFF.md) | **模块注册表**（定义 · 划分 · 六槽/设施/独立通道关系 · 改动约束） |
-| [INVOKE_HOTPATH_MATRIX.md](INVOKE_HOTPATH_MATRIX.md) | Tauri invoke 热路径矩阵 |
-| [04_4.6_PROJECT_TRUTH_CHECKLIST.md](04_4.6_PROJECT_TRUTH_CHECKLIST.md) | **已归档**认知快照（以 BUS_FACTOR + 源码为准） |
-| [AI_CHANGE_BOUNDARIES.md](AI_CHANGE_BOUNDARIES.md) | AI / Agent 改动边界与禁止区 |
-| [AI_READING_INDEX.md](AI_READING_INDEX.md) | **AI 深读分类目录**（链 SSOT · 场景阅读路径） |
-| [PERF_PHASES.md](PERF_PHASES.md) | 性能/包体与协议验证快照 |
-| [CHAT_STORAGE_ARCHITECTURE.md](CHAT_STORAGE_ARCHITECTURE.md) | 聊天混合存储架构 |
-| [GITHUB_PLUGIN_INDEX_LINE.md](GITHUB_PLUGIN_INDEX_LINE.md) | GitHub 插件索引线 |
+| [CHAT_STORAGE_ARCHITECTURE.md](CHAT_STORAGE_ARCHITECTURE.md) | 聊天 vs 记忆三套存储 |
+| [ARCHITECTURE_LAYERING.md](ARCHITECTURE_LAYERING.md) | domain ↔ infrastructure 分层 |
+| [BUS_FACTOR_NOTES.md](BUS_FACTOR_NOTES.md) | 关键路径 bus factor · DB · 错误码锚点 |
+| [INVOKE_HOTPATH_MATRIX.md](INVOKE_HOTPATH_MATRIX.md) | Tauri invoke 热路径矩阵（**13** 条） |
 | [BLUEPRINT_FOLDER_LAYOUT.md](BLUEPRINT_FOLDER_LAYOUT.md) | 蓝图目录布局 |
-| [COMMENT_ENGLISH_MIGRATION_PLAN.md](COMMENT_ENGLISH_MIGRATION_PLAN.md) | 注释英文化计划 |
-| [OCLIVE_POSITIONING_DIFFERENTIATION.md](OCLIVE_POSITIONING_DIFFERENTIATION.md) | 定位与差异化 |
 | [THREE_DISTRO_KERNEL_CLOSURE.md](THREE_DISTRO_KERNEL_CLOSURE.md) | 三发行版内核结项 |
 | [KERNEL_SCHEDULER_RESCOPE.md](KERNEL_SCHEDULER_RESCOPE.md) | 内核调度范围重划 |
+| [OCLIVE_POSITIONING_DIFFERENTIATION.md](OCLIVE_POSITIONING_DIFFERENTIATION.md) | 定位与差异化 |
+| [DEEP_PROMPT_DISTILLATION.md](DEEP_PROMPT_DISTILLATION.md) | Deep 路径 · Prompt 蒸馏（Wave D；归类链 MODULE_MAP） |
+| [TTFT_BENCHMARK.md](TTFT_BENCHMARK.md) | TTFT 基准复现与 profile 区分 |
+
+### 流程 · 门禁 · AI 纪律
+
+| 文件 | 用途 |
+|------|------|
+| [AI_CHANGE_BOUNDARIES.md](AI_CHANGE_BOUNDARIES.md) | AI / Agent 改动边界（G1–G16） |
+| [AI_READING_INDEX.md](AI_READING_INDEX.md) | **AI 深读分类目录**（链 SSOT · 场景路径；**非事实 SSOT**） |
+| [AI_VERIFICATION_PROTOCOL.md](AI_VERIFICATION_PROTOCOL.md) | 带数字审查 / 汇报核实口径 |
+| [BREAKING_CHANGE_PROCESS.md](BREAKING_CHANGE_PROCESS.md) | 破坏性变更流程 |
+| [TECHNICAL_DEBT_INVENTORY.md](TECHNICAL_DEBT_INVENTORY.md) | 技术债 · 冻结 · OPEN |
+| [RECURRING_OPTIMIZATION_PLAYBOOK.md](RECURRING_OPTIMIZATION_PLAYBOOK.md) | 巡检手册（§8 日志） |
+| [PERF_PHASES.md](PERF_PHASES.md) | 性能/包体与协议验证快照 |
+| [GOOD_FIRST_ISSUES.md](GOOD_FIRST_ISSUES.md) | 新人 issue 策展 |
+| [PRODUCT_LINE_TASK_BUCKETS.md](PRODUCT_LINE_TASK_BUCKETS.md) | 产品线任务分桶 |
+| [DUAL_CORE_CURSOR_HANDOFF.md](DUAL_CORE_CURSOR_HANDOFF.md) | 双核实验运行时交接 |
+| [GITHUB_PLUGIN_INDEX_LINE.md](GITHUB_PLUGIN_INDEX_LINE.md) | GitHub 插件索引线 |
+| [COMMENT_ENGLISH_MIGRATION_PLAN.md](COMMENT_ENGLISH_MIGRATION_PLAN.md) | 注释英文化计划 |
+
+### 史料 / 批次快照（勿当现行 truth）
+
+见上文 [§耦合 / 过期审计](#耦合--过期审计-2026-06-25)（含 `04_4.6` · Phase closure · P4 审查 · 视觉 sprint 等）。**现行** → 上两表或 §文档分责链出的 SSOT。
+
+**登记规则**：`handoff/` 根目录新增 `*.md` 须出现在 **本 README 任一节**（`scripts/check-doc-registry.mjs` 强制，G16）。
 
 **Chat Pro（`desktop`）** = 主应用默认发行版；契约与工程文档在 `creator-docs/` 与本目录根级文件，**不单建 `handoff/desktop/`**。
 
