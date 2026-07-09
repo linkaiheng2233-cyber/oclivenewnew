@@ -16,6 +16,7 @@ use crate::domain::turn_thinking::{resolve_turn_thinking, TurnThinkingMode};
 use crate::models::knowledge::KnowledgeIndex;
 use crate::models::Memory;
 use crate::models::PersonalitySource;
+use oclive_kernel_types::PromptExtraSection;
 
 use super::super::turn_context::TurnContext;
 use super::super::turn_error::TurnResult;
@@ -238,6 +239,15 @@ pub(crate) async fn run_middle(
         "persona_source resolved"
     );
 
+    let extra_sections: Vec<PromptExtraSection<'_>> = role
+        .pack_prompt_extra_sections
+        .iter()
+        .map(|s| PromptExtraSection {
+            title: s.title.as_str(),
+            body: s.body.as_str(),
+        })
+        .collect();
+
     let prompt_input = PromptInput {
         role,
         personality: &personality,
@@ -266,7 +276,7 @@ pub(crate) async fn run_middle(
         host_prompt_overlay: host_overlay,
         host_state_expression_hint: host_state_hint,
         relation_transition_hint: pre.relation.relation_transition_hint.as_str(),
-        extra_sections: &[],
+        extra_sections: &extra_sections,
         persona_override,
         previous_assistant_reply: previous_assistant_reply.as_str(),
     };

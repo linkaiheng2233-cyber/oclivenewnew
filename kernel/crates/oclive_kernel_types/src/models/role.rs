@@ -8,7 +8,7 @@ use super::portrait_catalog_config::{PortraitCatalogFile, PortraitCatalogToggle}
 use super::reply_post_processor_config::RolePackReplyPostProcessorConfig;
 use super::role_pack_config::{
     RolePackChatStorageConfig, RolePackEvolutionConfig, RolePackMemoryConfig,
-    RolePackRelationConfig, RolePackTurnThinkingConfig,
+    RolePackPromptExtraSection, RolePackRelationConfig, RolePackTurnThinkingConfig,
 };
 use super::role_time_config::RoleTimeConfig;
 use super::scene_disk::DiskSceneConfig;
@@ -255,6 +255,9 @@ pub struct Role {
     /// `config.json` → `turn_thinking` (Fast/Deep routing, latch, ephemeral archive).
     #[serde(default)]
     pub pack_turn_thinking_config: Option<RolePackTurnThinkingConfig>,
+    /// `config.json` → `prompt_extra_sections` (generic prompt blocks before quality anchor).
+    #[serde(default)]
+    pub pack_prompt_extra_sections: Vec<RolePackPromptExtraSection>,
     /// `user_identities/` catalog (in-memory only; populated by [`RoleStorage::finish_role_pack_load`]).
     #[serde(skip)]
     pub user_identity_catalog: Option<Arc<UserIdentityCatalog>>,
@@ -358,6 +361,7 @@ impl Default for Role {
             portrait_catalog: None,
             pack_visual_presentation_config: RolePackVisualPresentationConfig::default(),
             pack_turn_thinking_config: None,
+            pack_prompt_extra_sections: Vec::new(),
             user_identity_catalog: None,
             runtime_config: None,
             pipeline_experimental: None,

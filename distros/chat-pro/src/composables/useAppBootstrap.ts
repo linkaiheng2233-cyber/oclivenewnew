@@ -16,6 +16,7 @@ import { markPresetPickerDone, resolveDefaultRoleId } from '@oclive/shared/utils
 import { getTheaterCastConfig } from '@oclive/theater/composables/theater/theaterCastConfig'
 import { resolveOcliveShell } from '@oclive/shared/composables/useOcliveShell'
 import { startVoiceExpansionWarmOnStartup } from '@oclive/shared/composables/useVoiceExpansionWarm'
+import { useRoleVoiceProfileSync } from '@oclive/shared/composables/useRoleVoiceProfileSync'
 import type { AppToastFn } from '@oclive/shared/composables/useAppToast'
 
 async function disposeTauriListener(
@@ -44,6 +45,8 @@ export function useAppBootstrap(options: {
   const roleStore = useRoleStore()
   const pluginStore = usePluginStore()
   const debugStore = useDebugStore()
+
+  useRoleVoiceProfileSync()
 
   let unlistenPluginFs: (() => void) | Promise<(() => void)> | undefined
   let unlistenProtocolInstall: (() => void) | Promise<(() => void)> | undefined

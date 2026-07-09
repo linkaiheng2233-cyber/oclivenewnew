@@ -1,14 +1,5 @@
-# Experimental pipeline method registry
+# Dual-core method registry (legacy stub)
 
-See [METHOD_REGISTRY.md](./METHOD_REGISTRY.md) for the canonical table. Action format:
+**Canonical English:** [`creator-docs-en/dual-core/METHOD_REGISTRY.md`](../../creator-docs-en/dual-core/METHOD_REGISTRY.md)
 
-```text
-slot.<registry_key>.<method>
-```
-
-CLI:
-
-```bash
-cargo run -p oclive-cli -- explain DUAL_CORE
-cargo run -p oclive-cli -- explain slot.emotion.analyze
-```
+**Canonical Chinese:** [METHOD_REGISTRY.md](./METHOD_REGISTRY.md)

@@ -268,6 +268,13 @@ impl Default for RolePackChatStorageConfig {
     }
 }
 
+/// Optional prompt blocks injected before the reply quality anchor (`PromptInput.extra_sections`).
+#[derive(Debug, Clone, Deserialize, Serialize, Default)]
+pub struct RolePackPromptExtraSection {
+    pub title: String,
+    pub body: String,
+}
+
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct RolePackConfigFile {
     #[serde(default)]
@@ -291,4 +298,7 @@ pub struct RolePackConfigFile {
     /// Co-present Turn Thinking policy (Deep routing, latch, ephemeral archive).
     #[serde(default)]
     pub turn_thinking: Option<RolePackTurnThinkingConfig>,
+    /// Host-orchestrated prompt blocks (K-CONTRACT-WIRING-01).
+    #[serde(default)]
+    pub prompt_extra_sections: Vec<RolePackPromptExtraSection>,
 }

@@ -45,10 +45,14 @@ for (const method of ['voice.import_tts_adapter', 'voice.list_tts_adapters']) {
   }
 }
 
-const pyCmd = process.env.OCLIVE_VOICE_PYTHON?.trim() || 'py'
-const pyArgs = process.env.OCLIVE_VOICE_PYTHON?.trim()
-  ? ['-c', `import sys; sys.path.insert(0, r'${voiceLoop.replace(/\\/g, '/')}'); from tts.engines.registry import get_registry; n=len(get_registry().list_engine_ids()); assert n>=${MIN_ENGINES}, f'expected>=${MIN_ENGINES}, got {n}'; print('engines', n)`]
-  : ['-3', '-c', `import sys; sys.path.insert(0, r'${voiceLoop.replace(/\\/g, '/')}'); from tts.engines.registry import get_registry; n=len(get_registry().list_engine_ids()); assert n>=${MIN_ENGINES}, f'expected>=${MIN_ENGINES}, got {n}'; print('engines', n)`]
+const pySnippet = `import sys; sys.path.insert(0, r'${voiceLoop.replace(/\\/g, '/')}'); from tts.engines.registry import get_registry; n=len(get_registry().list_engine_ids()); assert n>=${MIN_ENGINES}, f'expected>=${MIN_ENGINES}, got {n}'; print('engines', n)`
+const customPy = process.env.OCLIVE_VOICE_PYTHON?.trim()
+const pyCmd = customPy || (process.platform === 'win32' ? 'py' : 'python3')
+const pyArgs = customPy
+  ? ['-c', pySnippet]
+  : process.platform === 'win32'
+    ? ['-3', '-c', pySnippet]
+    : ['-c', pySnippet]
 
 const registry = spawnSync(pyCmd, pyArgs, {
   cwd: voiceLoop,

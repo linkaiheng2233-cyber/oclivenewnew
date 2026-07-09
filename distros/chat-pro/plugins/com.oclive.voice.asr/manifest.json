@@ -15,6 +15,7 @@
     "voice.import_model",
     "voice.import_tts_adapter",
     "voice.list_tts_adapters",
+    "voice.read_role_profile",
     "voice.transcribe",
     "voice.speak",
     "voice.build_directive"

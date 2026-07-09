@@ -63,5 +63,8 @@ tauri-plugin-deep-link = { version = "0.1.2", optional = true }
 tower = { version = "0.4", features = ["util"] }
 oclive_kernel_contracts = { path = "../../kernel/crates/oclive_kernel_contracts" }
 
+[target.'cfg(loom)'.dev-dependencies]
+loom = { version = "0.7", features = ["checkpoint"] }
+
 [build-dependencies]
 tauri-build = { version = "1.5", features = [] }

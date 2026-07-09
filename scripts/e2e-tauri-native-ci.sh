@@ -47,11 +47,11 @@ fi
 tauri-driver --port "$TAURI_DRIVER_PORT" --native-driver-port "$TAURI_NATIVE_DRIVER_PORT" >/tmp/tauri-driver.log 2>&1 &
 echo $! >/tmp/tauri-driver.pid
 
-for _ in $(seq 1 30); do
+for _ in $(seq 1 60); do
   if curl -sf "http://${TAURI_DRIVER_HOST}:${TAURI_DRIVER_PORT}/status" >/dev/null 2>&1; then
     break
   fi
-  sleep 1
+  sleep 2
 done
 if ! curl -sf "http://${TAURI_DRIVER_HOST}:${TAURI_DRIVER_PORT}/status" >/dev/null 2>&1; then
   echo "tauri-driver did not become ready on :${TAURI_DRIVER_PORT}" >&2

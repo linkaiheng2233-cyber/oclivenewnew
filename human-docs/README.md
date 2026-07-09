@@ -24,8 +24,8 @@
 | **模块注册表（深读）** | **handoff** | [`MODULE_MAP_AND_HANDOFF.md`](../handoff/MODULE_MAP_AND_HANDOFF.md) — 人类 L5+ 深读，不在 human-docs 复制 |
 | **AI 文档纪律 G10–G16** | **Done** | AI 详述 → [`AI_CHANGE_BOUNDARIES`](../handoff/AI_CHANGE_BOUNDARIES.md)；人类摘要 → [04 §8](04_ENGINEERING_RULES.md#8-文档贡献纪律人类版) |
 | **模块开工包（H-DOC-04）** | **Done** | [`modules/README.md`](modules/README.md) · 全类 Done 2026-06-26 |
-| **human-docs-en 镜像** | **Mirrored（L0–L8 + modules + paths）** | L0–L8 主干 · `modules/` 19/19 · `paths/` 三路径 · `team/` 仍中文（Phase 2） |
-| **creator-docs-en 镜像** | **Mirrored（≥95%）** | 高频契约/kernel/role-pack/testing/dual-core 已镜像；`video-script/`、`architecture/` 仍 pending · **`check-doc-mirror.mjs`** 门禁 |
+| **human-docs-en 镜像** | **Done** | L0–L8 主干 · `modules/` 19/19 · `paths/` 三路径 · `team/` 仍中文（intentional） |
+| **creator-docs-en 镜像** | **Done** | ≥95% 契约/kernel/role-pack/testing/dual-core 已镜像；`video-script/` index-only · **`check-doc-mirror.mjs`** 门禁 |
 
 **待办（文档债 · 非代码债）**
 

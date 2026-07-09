@@ -1,8 +1,5 @@
-# Dual-core developer guide (English)
+# Dual-core developer guide (legacy stub)
 
-See [DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md) for the full guide (Chinese canonical).
+**Canonical English:** [`creator-docs-en/dual-core/DEVELOPER_GUIDE.md`](../../creator-docs-en/dual-core/DEVELOPER_GUIDE.md)
 
-Quick links:
-
-- Method registry: [METHOD_REGISTRY.en.md](./METHOD_REGISTRY.en.md)
-- RFC: [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)
+**Canonical Chinese:** [DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md)

@@ -1,6 +1,7 @@
 {
   "schema_version": 2,
   "director_profile": "rules-v1",
+  "preferred_tts_profile": "bundled-cosyvoice2-zh",
   "synth_profile": "bundled-cosyvoice2-zh",
   "speed": 1.0,
   "energy": "soft",

@@ -159,6 +159,7 @@ pub fn disk_manifest_to_role(d: &DiskRoleManifest) -> Role {
         pack_visual_presentation_config:
             super::visual_presentation_config::RolePackVisualPresentationConfig::default(),
         pack_turn_thinking_config: None,
+        pack_prompt_extra_sections: Vec::new(),
         user_identity_catalog: None,
         runtime_config: None,
         pipeline_experimental: None,

@@ -65,6 +65,9 @@ jobs:
         with:
           node-version: "20"
           cache: npm
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
       - run: npm ci
       - name: Install ripgrep
         run: sudo apt-get update && sudo apt-get install -y ripgrep
@@ -170,11 +173,12 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
-      - name: Install cargo-loom
-        run: cargo install cargo-loom --locked
+      - uses: Swatinem/rust-cache@v2
       - name: loom model tests
         working-directory: distros/desktop-tauri
-        run: cargo loom test --test loom_concurrency -- --test-threads=1
+        env:
+          RUSTFLAGS: "--cfg loom"
+        run: cargo test --release --test loom_concurrency -- --test-threads=1
 
   fuzz:
     runs-on: ubuntu-latest

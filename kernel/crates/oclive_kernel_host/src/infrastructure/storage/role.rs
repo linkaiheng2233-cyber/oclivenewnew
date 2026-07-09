@@ -330,6 +330,7 @@ impl RoleStorage {
                         role.pack_portrait_catalog = cfg.portrait_catalog;
                         role.pack_visual_presentation_config = cfg.visual_presentation;
                         role.pack_turn_thinking_config = cfg.turn_thinking;
+                        role.pack_prompt_extra_sections = cfg.prompt_extra_sections;
                         if role.pack_portrait_catalog.enabled {
                             let catalog_path = role_dir.join("portrait_catalog.json");
                             if catalog_path.is_file() {

@@ -6,6 +6,8 @@
 
 ### Added
 
+- **Roadmap wave 合并（2026-07-10）**：CI dimension5 增 Python 3.11（voice TTS ratchet）；loom 改 `RUSTFLAGS --cfg loom`（`cargo-loom` 已不可用）；`preferred_tts_profile` 角色切换联动（`voice.read_role_profile` + `useRoleVoiceProfileSync`）；`config.json` → `prompt_extra_sections` 生产接线（K-CONTRACT-WIRING-01）；文档 Wave-3（human-docs EN Done、dual-core 遗留 stub、ai-package EN、USER_MANUAL §3.6 语音）；e2e-tauri readiness 加固；Vitest 冒烟（Fluent 默认壳 · 流式开关）。
+
 - **[docs] English mirror wave 2**：`README.en.md` 与中文首页结构对齐（四例子 · 三发行版 · 生态 · 路线图）；`creator-docs-en` 补齐 CREATOR_GOLDEN_PATH、role-pack 深读 8 篇、dual-core、PLUGIN_MARKET、RELEASE_VERSIONING、RFC summary；`human-docs-en` 补齐 modules 全槽/设施/侧通道 + paths 三路径；路径归一（`NAMING_CONVENTIONS`、`development/LIGHTWEIGHT_PROFILE`、合并 `APPLICATION_SCENARIOS`）；新增 **`scripts/check-doc-mirror.mjs`** 接入 `npm run check:rust` 与 dimension5。
 
 - **语音首字发声优化**：流式朗读经 `streamingVoiceChunker` 过滤旁白/内心/动作行；首块更早出句；CosyVoice2 `/warm` 默认 **prime** dummy 合成；角色切换触发侧车预热与 directive 预取；插件 manifest `rpcTimeoutsMs` 声明长 RPC 超时；CSP `connect-src` 收窄至侧车默认端口 `50000`。

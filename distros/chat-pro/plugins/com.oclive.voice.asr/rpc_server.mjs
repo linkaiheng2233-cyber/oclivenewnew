@@ -410,6 +410,28 @@ function readModelPackMeta(src) {
   }
   return null;
 }
+function handleReadRoleProfile(params) {
+  const rolePath = String(params?.role_path || "").trim();
+  const vp = loadVoiceProfileFromRole(rolePath);
+  if (!vp) {
+    return { ok: true, profile: null };
+  }
+  const preferred =
+    (typeof vp.preferred_tts_profile === "string" && vp.preferred_tts_profile.trim()) ||
+    (typeof vp.synth_profile === "string" && vp.synth_profile.trim()) ||
+    null;
+  return {
+    ok: true,
+    profile: {
+      preferred_tts_profile: preferred,
+      synth_profile:
+        typeof vp.synth_profile === "string" ? vp.synth_profile.trim() : null,
+      director_profile:
+        typeof vp.director_profile === "string" ? vp.director_profile.trim() : null,
+    },
+  };
+}
+
 function loadVoiceProfileFromRole(rolePath) {
   const base = String(rolePath || "").trim();
   if (!base) return null;
@@ -1451,6 +1473,7 @@ const server = http.createServer((req, res) => {
         else if (method === "voice.list_tts_adapters") result = handleListTtsAdapters();
         else if (method === "voice.import_tts_adapter") result = handleImportTtsAdapter(params);
         else if (method === "voice.build_directive") result = handleBuildDirective(params);
+        else if (method === "voice.read_role_profile") result = handleReadRoleProfile(params);
         else if (method === "config_updated") result = handleConfigUpdated(params);
         else {
           res.writeHead(200);

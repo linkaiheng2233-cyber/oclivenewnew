@@ -167,11 +167,11 @@ fn render_ci_yaml(kind: ProjectCiKind) -> String {
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - name: Install cargo-loom
-        run: cargo install cargo-loom --locked
       - name: loom model tests
-        working-directory: src-tauri
-        run: cargo loom test --test loom_concurrency -- --test-threads=1
+        working-directory: distros/desktop-tauri
+        env:
+          RUSTFLAGS: "--cfg loom"
+        run: cargo test --release --test loom_concurrency -- --test-threads=1
 "#;
 
     let extra_steps = if kind == ProjectCiKind::KernelServer {

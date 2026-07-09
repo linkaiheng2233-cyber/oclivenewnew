@@ -6,6 +6,8 @@
 
 ### Added
 
+- **Roadmap merge wave (2026-07-10)**: CI dimension5 Python 3.11 for voice TTS ratchet; loom via `RUSTFLAGS --cfg loom`; `preferred_tts_profile` role-switch sync; `prompt_extra_sections` production wiring; doc Wave-3 (EN mirrors Done, dual-core stubs, ai-package EN, USER_MANUAL §3.6 voice); e2e-tauri readiness; Vitest smoke (Fluent default shell, stream toggle).
+
 - **[docs] English mirror wave 2**: `README.en.md` aligned with Chinese homepage (four examples · three distros · ecosystem · roadmap); `creator-docs-en` adds CREATOR_GOLDEN_PATH, eight role-pack deep guides, dual-core, PLUGIN_MARKET, RELEASE_VERSIONING, RFC summaries; `human-docs-en` adds full modules/paths mirrors; path normalization (`NAMING_CONVENTIONS`, `development/LIGHTWEIGHT_PROFILE`, merged `APPLICATION_SCENARIOS`); new **`scripts/check-doc-mirror.mjs`** wired into `npm run check:rust` and dimension5.
 
 - **Voice first-utterance latency**: streaming TTS uses `streamingVoiceChunker` to skip aside/narration/action lines; earlier first chunk; CosyVoice2 `/warm` runs a default **prime** dummy synthesis; role switch triggers sidecar warm + directive prefetch; plugin manifest `rpcTimeoutsMs` for long RPC timeouts; CSP `connect-src` narrowed to default sidecar port `50000`.

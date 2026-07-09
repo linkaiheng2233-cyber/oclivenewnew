@@ -5,24 +5,19 @@ use std::path::Path;
 use std::process::Command;
 
 pub fn run_loom(root: &Path) -> Result<()> {
-    if !Command::new("cargo")
-        .args(["loom", "--version"])
-        .output()
-        .map(|o| o.status.success())
-        .unwrap_or(false)
-    {
-        bail!("cargo-loom not installed. Install: cargo install cargo-loom --locked");
-    }
     println!("oclive test --loom — {}", root.display());
     let st = Command::new("cargo")
         .args([
-            "loom",
             "test",
             "-p",
             "oclivenewnew-tauri",
-            "--",
+            "--release",
+            "--test",
             "loom_concurrency",
+            "--",
+            "--test-threads=1",
         ])
+        .env("RUSTFLAGS", "--cfg loom")
         .current_dir(root)
         .status()?;
     if st.success() {
