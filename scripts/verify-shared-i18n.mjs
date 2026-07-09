@@ -1,11 +1,11 @@
 /**
- * Verify sister repos mirror oclivenewnew/src/i18n/shared byte-for-byte.
+ * Verify sister repos mirror oclivenewnew/distros/shared/src/i18n/shared byte-for-byte.
  */
 import fs from 'node:fs'
 import path from 'node:path'
 
 const root = path.resolve(import.meta.dirname, '..')
-const canonicalDir = path.join(root, 'src/i18n/shared')
+const canonicalDir = path.join(root, 'distros/shared/src/i18n/shared')
 const mirrors = [
   ['oclive-launcher', path.join(root, '../oclive-launcher/src/i18n/shared')],
   ['oclive-pack-editor', path.join(root, '../oclive-pack-editor/src/i18n/shared')],
