@@ -158,6 +158,7 @@ mod tests {
             portrait_catalog: None,
             pack_visual_presentation_config: Default::default(),
             pack_turn_thinking_config: None,
+            pack_prompt_extra_sections: Vec::new(),
             slot_registry: None,
             slot_groups: None,
             runtime_config: None,

@@ -55,6 +55,7 @@ fn create_test_role() -> Role {
         portrait_catalog: None,
         pack_visual_presentation_config: Default::default(),
         pack_turn_thinking_config: None,
+        pack_prompt_extra_sections: Vec::new(),
         pack_reply_post_processor_config: Default::default(),
         user_identity_catalog: None,
         runtime_config: None,

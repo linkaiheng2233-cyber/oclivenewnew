@@ -445,6 +445,7 @@ mod persist_non_profile_tests {
             portrait_catalog: None,
             pack_visual_presentation_config: Default::default(),
             pack_turn_thinking_config: None,
+            pack_prompt_extra_sections: Vec::new(),
             source_dir: None,
         }
     }
