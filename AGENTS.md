@@ -4,6 +4,9 @@
 
 **人类开发者（不用 Cursor）**：请先 **[human-docs/README.md](human-docs/README.md)**（L0–L2 约 1 小时 · 排版面向人类认知）；**不要**从本文起步。
 
+**AI 深读分类目录**（架构 · 契约 · 代码锚点 · 场景路径）：**[handoff/AI_READING_INDEX.md](handoff/AI_READING_INDEX.md)**  
+**GitHub 首页 [`README.md`](README.md) 仅面向人类**；细节 **链 SSOT，禁止复制长表**（G14）。
+
 ---
 
 ## 改代码前必读（AI · 精简索引）

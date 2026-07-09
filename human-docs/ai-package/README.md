@@ -9,6 +9,7 @@
 
 | 部分 | 路径 | 何时读 |
 |------|------|--------|
+| **AI 深读分类目录** | [`handoff/AI_READING_INDEX.md`](../../handoff/AI_READING_INDEX.md) | **系统了解项目 · 按任务翻 SSOT** |
 | **Agent 索引（精简）** | [`AGENTS.md`](../../AGENTS.md) | 每次让 AI 改代码前 |
 | **改动 + 文档纪律** | [`AI_CHANGE_BOUNDARIES`](../../handoff/AI_CHANGE_BOUNDARIES.md) G1–G16 | 改代码/改文档 |
 | **模块注册表** | [`MODULE_MAP`](../../handoff/MODULE_MAP_AND_HANDOFF.md) | 模块/六槽/设施关系 |

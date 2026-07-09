@@ -96,23 +96,15 @@ Windows needs **VS Build Tools (MSVC)**. Ollama is optional for build. Step-by-s
 
 ---
 
-## 🤖 AI / Agent section
+## AI / Agent onboarding
 
-> **Humans**: use [human-docs/](human-docs/) first. **Agents**: this section + [AGENTS.md](AGENTS.md)—link to SSOT, do not duplicate long tables.
+**This homepage is for humans.** Cursor, Codex, and other agents should use the dedicated reading index:
 
-| Key | Value |
-|-----|-------|
-| Reply field | **`reply`** (not `response`) |
-| Orchestration SSOT | `kernel/crates/oclive_kernel_host/.../process_message.rs` |
-| Blueprint `steps[]` | **Not** on hot path |
-| Six slots | `memory` · `emotion` · `event` · `prompt` · `llm` · `agent` |
-| Side channels | e.g. `voice.asr` — **not** in six slots |
-
-**Frozen / build-mode (do not delete wiring as “unimplemented”)**: `dual_core` · expert_routing · blueprint v3 — **default off**; Monolith = compile weld; blueprint `steps[]` **not** scheduled; Turn Thinking = orchestration policy, **not** slot 7.
-
-**Before coding**: [AI_CHANGE_BOUNDARIES.md](handoff/AI_CHANGE_BOUNDARIES.md) (G1–G16) · [MODULE_MAP_AND_HANDOFF.md](handoff/MODULE_MAP_AND_HANDOFF.md) · [BUS_FACTOR_NOTES.md](handoff/BUS_FACTOR_NOTES.md)
-
-**Tests**: OOCP S0–S12 · invoke hot path **13** · Dimension 5 **15/14** · daily `npm run check:rust` (no doctest) · release `npm run check:release`
+| Doc | Purpose |
+|-----|---------|
+| **[handoff/AI_READING_INDEX.md](handoff/AI_READING_INDEX.md)** | **Categorized SSOT index** (architecture · contracts · code anchors · task paths) |
+| [AGENTS.md](AGENTS.md) | **Quick gate** before editing code (G1–G16 summary) |
+| [human-docs/ai-package/README.md](human-docs/ai-package/README.md) | AI package layout vs human docs |
 
 ---
 

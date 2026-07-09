@@ -17,7 +17,7 @@
 | **物理目录** | [`kernel/`](../../kernel/)（`kernel/crates/`、`kernel/fuzz/`、OOCP 示例） | [`distros/`](../../distros/)（`shared`、`chat-pro`、`theater`、`desktop-tauri`） |
 | **契约文档** | `creator-docs/kernel/`、`creator-docs/cli/`、六槽 / HTTP / 迁移 | `handoff/distros/`、`handoff/theater/`、`handoff/vscode/` |
 | **给人类** | [human-docs/06_KERNEL_LEARNING_PATH.md](../../human-docs/06_KERNEL_LEARNING_PATH.md) | [human-docs/README.md](../../human-docs/README.md) L0–L2 |
-| **给 AI** | [AGENTS.md](../../AGENTS.md) · [handoff/MODULE_MAP_AND_HANDOFF.md](../../handoff/MODULE_MAP_AND_HANDOFF.md) · [handoff/README.md](../../handoff/README.md) §文档分责 · [handoff/BUS_FACTOR_NOTES.md](../../handoff/BUS_FACTOR_NOTES.md) | [handoff/README.md](../../handoff/README.md) 发行版子目录 |
+| **给 AI** | [AI_READING_INDEX.md](../../handoff/AI_READING_INDEX.md) · [AGENTS.md](../../AGENTS.md) · [handoff/MODULE_MAP_AND_HANDOFF.md](../../handoff/MODULE_MAP_AND_HANDOFF.md) · [handoff/README.md](../../handoff/README.md) §文档分责 · [handoff/BUS_FACTOR_NOTES.md](../../handoff/BUS_FACTOR_NOTES.md) | [handoff/README.md](../../handoff/README.md) 发行版子目录 |
 
 编排 SSOT 在 **`kernel/crates/oclive_kernel_host`**；Tauri IPC 薄壳在 **`distros/desktop-tauri`**。勿将二者混写在同一「改 API」任务中。
 

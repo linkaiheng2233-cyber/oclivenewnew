@@ -39,6 +39,7 @@
 | 活跃债 / 冻结 / OPEN | [`TECHNICAL_DEBT_INVENTORY.md`](./TECHNICAL_DEBT_INVENTORY.md) | MODULE_MAP · VISION 路线图 |
 | 版本与文档地图 | [`PROJECT_STATUS_AND_ALIGNMENT.md`](../creator-docs/getting-started/PROJECT_STATUS_AND_ALIGNMENT.md) | — |
 | AI 改代码 / **文档**边界 | [`AI_CHANGE_BOUNDARIES.md`](./AI_CHANGE_BOUNDARIES.md) G1–G16 · §文档编写纪律 | `.cursor/rules` 摘要 |
+| **AI 深读分类目录** | [`AI_READING_INDEX.md`](./AI_READING_INDEX.md) | AGENTS · README · DOCUMENTATION_INDEX |
 | AI 审查数字核实 | [`AI_VERIFICATION_PROTOCOL.md`](./AI_VERIFICATION_PROTOCOL.md) | — |
 | 文档总索引 | [`DOCUMENTATION_INDEX.md`](../creator-docs/getting-started/DOCUMENTATION_INDEX.md) | 勿在 AGENTS 复制全表 |
 | **人类文档包进度** | [`human-docs/README.md`](../human-docs/README.md) §文档包进度 | TECHNICAL_DEBT（代码债） |
@@ -91,6 +92,7 @@
 | [INVOKE_HOTPATH_MATRIX.md](INVOKE_HOTPATH_MATRIX.md) | Tauri invoke 热路径矩阵 |
 | [04_4.6_PROJECT_TRUTH_CHECKLIST.md](04_4.6_PROJECT_TRUTH_CHECKLIST.md) | **已归档**认知快照（以 BUS_FACTOR + 源码为准） |
 | [AI_CHANGE_BOUNDARIES.md](AI_CHANGE_BOUNDARIES.md) | AI / Agent 改动边界与禁止区 |
+| [AI_READING_INDEX.md](AI_READING_INDEX.md) | **AI 深读分类目录**（链 SSOT · 场景阅读路径） |
 | [PERF_PHASES.md](PERF_PHASES.md) | 性能/包体与协议验证快照 |
 | [CHAT_STORAGE_ARCHITECTURE.md](CHAT_STORAGE_ARCHITECTURE.md) | 聊天混合存储架构 |
 | [GITHUB_PLUGIN_INDEX_LINE.md](GITHUB_PLUGIN_INDEX_LINE.md) | GitHub 插件索引线 |
