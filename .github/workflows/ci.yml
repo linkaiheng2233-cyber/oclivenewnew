@@ -168,7 +168,7 @@ jobs:
         run: cargo check -p oclive_kernel_server -p oclive_kernel_host -p oclive_kernel_runtime --target aarch64-unknown-linux-gnu
 
   loom:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     continue-on-error: true
     steps:
       - uses: actions/checkout@v5

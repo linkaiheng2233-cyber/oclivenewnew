@@ -54,9 +54,9 @@ pub use role::*;
 pub use role_manifest_disk::DiskRoleManifest;
 pub use role_pack_config::{
     RolePackChatStorageConfig, RolePackConfigFile, RolePackEvolutionConfig, RolePackMemoryConfig,
-    RolePackPromptExtraSection,
-    RolePackRelationConfig, RolePackTurnThinkingConfig, TurnThinkingAndGroup, TurnThinkingDeepWhen,
-    TurnThinkingEphemeralArchiveConfig, TurnThinkingLatchConfig, TurnThinkingSignalRule,
+    RolePackPromptExtraSection, RolePackRelationConfig, RolePackTurnThinkingConfig,
+    TurnThinkingAndGroup, TurnThinkingDeepWhen, TurnThinkingEphemeralArchiveConfig,
+    TurnThinkingLatchConfig, TurnThinkingSignalRule,
 };
 pub use role_settings_disk::{disk_role_settings_from_role, DiskRoleSettings};
 pub use role_time_config::{RoleTimeConfig, DEFAULT_REAL_TO_VIRTUAL_RATIO};
