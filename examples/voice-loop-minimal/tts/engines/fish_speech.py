@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import base64
+from pathlib import Path
 from typing import Any
 
 from tts.engines._http import http_audio, http_json, sidecar_base
@@ -72,6 +74,15 @@ class FishSpeechHttpEngine:
     def warm(self, **kwargs: Any) -> dict[str, Any]:
         return skipped_warm(self.engine_id)
 
+    @staticmethod
+    def _fish_references(directive: dict[str, Any]) -> list[dict[str, str]]:
+        ref_audio = str(directive.get("ref_audio") or "").strip()
+        if not ref_audio or not Path(ref_audio).is_file():
+            return []
+        ref_text = str(directive.get("ref_text") or "").strip() or "参考音频"
+        audio_b64 = base64.b64encode(Path(ref_audio).read_bytes()).decode("ascii")
+        return [{"audio": audio_b64, "text": ref_text}]
+
     def synthesize(
         self,
         *,
@@ -102,11 +113,14 @@ class FishSpeechHttpEngine:
                 payload["reference_audio"] = ref_audio
             result = http_audio(f"{base}/v1/audio/speech", payload=payload, timeout=300.0)
         else:
+            references = self._fish_references(d)
             payload = {
                 "text": text,
-                "speed": speed,
-                "reference_audio": str(d.get("ref_audio") or ""),
+                "format": "wav",
+                "references": references,
             }
+            if references:
+                payload["reference_id"] = None
             path = manifest.get("synthesize_path", "/v1/tts")
             result = http_audio(f"{base}{path}", payload=payload, timeout=300.0)
         if result.get("ok"):
