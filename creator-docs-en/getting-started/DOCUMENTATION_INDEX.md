@@ -48,7 +48,11 @@ Time-boxed “start here → ship”; **authoritative detail stays in each topic
 | Normative `code` + JSON bodies | **[KERNEL_ERROR_CODE_CONVENTION.md](KERNEL_ERROR_CODE_CONVENTION.md)** |
 | `slot_registry` / modules 1–6 | **[OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)** · **[../plugin-and-architecture/PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)** · **[../role-pack/ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)** |
 | Remote HTTP JSON-RPC | **[../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)** |
-| On-disk pack / `schema_version` | **[../role-pack/ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)** · **[../../creator-docs/role-pack/PACK_VERSIONING.md](../../creator-docs/role-pack/PACK_VERSIONING.md)** |
+| On-disk pack / `schema_version` | **[../role-pack/ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)** · **[../role-pack/PACK_VERSIONING.md](../role-pack/PACK_VERSIONING.md)** |
+| Cross-host memory (L1/L2/L3) | **[../role-pack/CROSS_HOST_MEMORY.md](../role-pack/CROSS_HOST_MEMORY.md)** |
+| Distro HostProfile · kernel lifecycle | **[../kernel/DISTRO_CAPABILITY_PROFILE.md](../kernel/DISTRO_CAPABILITY_PROFILE.md)** · **[../kernel/DISTRO_KERNEL_LIFECYCLE.md](../kernel/DISTRO_KERNEL_LIFECYCLE.md)** |
+| Plugin placement (six-slot vs side channel) | **[../plugin-and-architecture/PLUGIN_PLACEMENT_GUIDE.md](../plugin-and-architecture/PLUGIN_PLACEMENT_GUIDE.md)** |
+| Agent remote / directory | **[../plugin-and-architecture/AGENT_REMOTE_PROTOCOL.md](../plugin-and-architecture/AGENT_REMOTE_PROTOCOL.md)** |
 | **v1 → v2 blueprint migration** | **[../role-pack/V1_TO_V2_MIGRATION.md](../role-pack/V1_TO_V2_MIGRATION.md)**（[中文](../../creator-docs/role-pack/V1_TO_V2_MIGRATION.md)） |
 | OOCP HTTP black-box (CI) | **[../testing/OOCP_TEST_SUITE.md](../testing/OOCP_TEST_SUITE.md)** |
 | Directory whole-shell `invoke` · permissions & errors | **[../plugin-and-architecture/BRIDGE_API_REFERENCE.md](../plugin-and-architecture/BRIDGE_API_REFERENCE.md)** |

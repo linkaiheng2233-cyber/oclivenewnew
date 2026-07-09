@@ -92,7 +92,19 @@ Windows needs **VS Build Tools (MSVC)**. Ollama is optional for build. Step-by-s
 | End user | [USER_MANUAL.md](creator-docs-en/getting-started/USER_MANUAL.md) |
 | Human developer | [human-docs-en/README.md](human-docs-en/README.md) |
 | Contributors | [CONTRIBUTING.en.md](CONTRIBUTING.en.md) |
-| Full index | [DOCUMENTATION_INDEX.md](creator-docs/getting-started/DOCUMENTATION_INDEX.md) |
+| Full index (ZH SSOT) | [DOCUMENTATION_INDEX.md](creator-docs/getting-started/DOCUMENTATION_INDEX.md) |
+| English contract mirror | [creator-docs-en/README.md](creator-docs-en/README.md) |
+
+### English mirror policy
+
+**Chinese (`creator-docs/`, `human-docs/`) is the single source of truth** for normative contracts and role-pack wording. English trees (`creator-docs-en/`, `human-docs-en/`) are **hand-maintained mirrors** filled in by phase — not a second SSOT.
+
+| Tree | Role | When English is missing |
+|------|------|-------------------------|
+| [creator-docs-en/](creator-docs-en/) | Contracts, kernel, plugin, role-pack, testing | Follow `[中文](…)` links on each page, or the [coverage matrix](creator-docs-en/README.md#mirror-coverage-matrix) |
+| [human-docs-en/](human-docs-en/) | Human learning ladder L0–L8 | Fall back to [human-docs/README.md](human-docs/README.md) |
+
+**Maintenance**: when you change a Chinese page that already has an English mirror, update the mirror in the **same change-set** (or note Chinese-only in CHANGELOG). See [creator-docs-en/README.md § Sync rules](creator-docs-en/README.md#sync-rules).
 
 ---
 
