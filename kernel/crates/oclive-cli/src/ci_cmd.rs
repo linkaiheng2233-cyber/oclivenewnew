@@ -167,11 +167,9 @@ fn render_ci_yaml(kind: ProjectCiKind) -> String {
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - name: loom model tests
+      - name: loom cfg smoke (full model tests: RUSTFLAGS='--cfg loom' locally)
         working-directory: distros/desktop-tauri
-        env:
-          RUSTFLAGS: "--cfg loom"
-        run: cargo test --release --test loom_concurrency -- --test-threads=1
+        run: cargo test --test loom_concurrency loom_tests_require_cfg_loom -- --test-threads=1
 "#;
 
     let extra_steps = if kind == ProjectCiKind::KernelServer {

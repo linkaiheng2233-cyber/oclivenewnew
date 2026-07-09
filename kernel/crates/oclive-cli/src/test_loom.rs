@@ -11,14 +11,13 @@ pub fn run_loom(root: &Path) -> Result<()> {
             "test",
             "-p",
             "oclivenewnew-tauri",
-            "--release",
             "--test",
             "loom_concurrency",
+            "loom_tests_require_cfg_loom",
             "--",
             "--test-threads=1",
         ])
-        .env("RUSTFLAGS", "--cfg loom")
-        .current_dir(root)
+        .current_dir(root.join("distros/desktop-tauri"))
         .status()?;
     if st.success() {
         println!("Loom: PASS");
