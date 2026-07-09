@@ -1,5 +1,7 @@
 # Kernel error codes and JSON body convention (single source of truth)
 
+[中文](../../creator-docs/getting-started/KERNEL_ERROR_CODE_CONVENTION.md)
+
 **Status**: current contract (matches `oclive_kernel_runtime::KernelErrorBody` and `AppError::code`).
 
 ## 1. Machine `code` (one naming rule only)

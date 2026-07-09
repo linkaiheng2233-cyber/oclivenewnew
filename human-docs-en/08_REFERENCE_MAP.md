@@ -30,7 +30,7 @@
 
 | Doc | Purpose |
 |-----|---------|
-| [NAMING_CONVENTIONS](../creator-docs-en/getting-started/NAMING_CONVENTIONS.md) | Canonical names, imports |
+| [NAMING_CONVENTIONS](../creator-docs-en/NAMING_CONVENTIONS.md) | Canonical names, imports |
 | [dto.rs](../kernel/crates/oclive_kernel_types/src/models/dto.rs) | HTTP/IPC fields |
 | [KERNEL_ERROR_CODE_CONVENTION](../creator-docs-en/getting-started/KERNEL_ERROR_CODE_CONVENTION.md) | Error JSON |
 | [COMPATIBILITY](../creator-docs-en/COMPATIBILITY.md) | Version compatibility |
@@ -99,7 +99,7 @@
 | [RELEASE_VERSIONING](../creator-docs/development/RELEASE_VERSIONING.md) | SemVer (ZH) |
 | [KNOWN_VULNERABILITIES](../creator-docs-en/security/KNOWN_VULNERABILITIES.md) | Supply chain |
 | [SUPPLY_CHAIN](../creator-docs-en/security/SUPPLY_CHAIN.md) | Trust model |
-| [LIGHTWEIGHT_PROFILE](../creator-docs-en/LIGHTWEIGHT_PROFILE.md) | Binary size baseline |
+| [LIGHTWEIGHT_PROFILE](../creator-docs-en/development/LIGHTWEIGHT_PROFILE.md) | Binary size baseline |
 | [CHANGELOG.en.md](../CHANGELOG.en.md) | User-visible changes |
 
 ---

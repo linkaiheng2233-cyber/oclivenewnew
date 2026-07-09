@@ -1,5 +1,7 @@
 # Lightweight profile and supply-chain baseline (LIGHTWEIGHT_PROFILE)
 
+[中文](../../creator-docs/development/LIGHTWEIGHT_PROFILE.md)
+
 This document records **Release settings, dependency slimming, audits, and binary size baselines**, aligned with root `Cargo.toml` / `distros/desktop-tauri/Cargo.lock`. Audience: maintainers and release owners.
 
 **Related**: known vulns and upgrade path in **[security/KNOWN_VULNERABILITIES.md](../creator-docs/security/KNOWN_VULNERABILITIES.md)**; audit scope boundaries in **[security/SECURITY_AUDIT_SCOPE.md](../creator-docs/security/SECURITY_AUDIT_SCOPE.md)** (complements this doc §6.4).
@@ -24,7 +26,7 @@ This document records **Release settings, dependency slimming, audits, and binar
 ### §6.1 `cargo audit` toolchain
 
 - **Pinned version**: **cargo-audit 0.22.1** (matches CI `cargo-audit` job for comparable reports).
-- **Local run**: `cd src-tauri && cargo audit`  
+- **Local run**: `cargo audit` from repo root (lockfile: `distros/desktop-tauri/Cargo.lock`)  
   Offline: `cargo audit --no-fetch --stale` (requires a successful prior fetch of `advisory-db`).
 
 ### §6.4 Audit status (current)
@@ -63,7 +65,7 @@ Full output changes with the lockfile; spot-check before release.
 **Sample command** (adjust path when `target-dir` is external):
 
 ```bash
-cd src-tauri
+cd distros/desktop-tauri
 cargo bloat --release -n 8
 ```
 
@@ -96,7 +98,3 @@ cargo bloat --release -n 8
 |------|--------|
 | 2026-05-12 | §6.4 / §6.7: re-ran `cargo audit` and `cargo bloat --release -n 8`, refreshed summary date and bloat numbers (`.text` 7.6 MiB, PE 12.0 MiB). |
 | 2026-05-13 | First version: aligned with `main` lockfile, `cargo audit` / `cargo bloat` sampling; linked KNOWN_VULNERABILITIES. |
-
----
-
-[中文](../creator-docs/development/LIGHTWEIGHT_PROFILE.md)

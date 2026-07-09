@@ -1,5 +1,7 @@
 # Visual Presentation Facility (#4) — English summary
 
+[中文](../../creator-docs/rfc/RFC_VISUAL_PRESENTATION_FACILITY.md)
+
 See full RFC: [RFC_VISUAL_PRESENTATION_FACILITY.md](../../creator-docs/rfc/RFC_VISUAL_PRESENTATION_FACILITY.md) (Chinese SSOT).
 
 ## Role

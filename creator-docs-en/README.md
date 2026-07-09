@@ -31,6 +31,7 @@ When you change runtime or author-facing contracts (slots, `plugin_backends`, br
 1. If an **English mirror exists** for that Chinese file → update it in the **same PR**.
 2. If no mirror yet → update Chinese SSOT + add a CHANGELOG note, or add the English mirror in the same release train.
 3. Update the [coverage matrix](#mirror-coverage-matrix) row when a directory moves from **pending** to **mirrored** or **summary**.
+4. Run **`node scripts/check-doc-mirror.mjs`** (also in `npm run check:rust` and dimension5 CI) before merge.
 
 **Governance**: module definitions → [MODULE_MAP_AND_HANDOFF.md](../handoff/MODULE_MAP_AND_HANDOFF.md). Doc layer map → [handoff/README.md §文档分责](../handoff/README.md). Human ladder progress → [human-docs/README.md §文档包进度](../human-docs/README.md#文档包进度与-ai-包同步--2026-06-26). AI doc rules G10–G16 → [AI_CHANGE_BOUNDARIES.md](../handoff/AI_CHANGE_BOUNDARIES.md).
 
@@ -42,23 +43,24 @@ Last reviewed: **2026-07-10**. Counts are `*.md` files per directory (approximat
 
 | Directory | ZH files | EN status | Notes |
 |-----------|----------|-----------|-------|
-| `getting-started/` | ~22 | **Mirrored** | Hub + learning paths + error codes |
-| `plugin-and-architecture/` | ~12 | **Mirrored** | Includes PLUGIN_PLACEMENT_GUIDE, AGENT_REMOTE_PROTOCOL |
+| `getting-started/` | ~22 | **Mirrored** | Hub + CREATOR_GOLDEN_PATH + learning paths + error codes |
+| `plugin-and-architecture/` | ~12 | **Mirrored** | PLUGIN_V1, market submission, placement, agent remote |
 | `kernel/` | 5 | **Mirrored** | HostProfile, lifecycle, app data, none semantics |
-| `role-pack/` | ~16 | **Partial** | Spec, index, migrations, CROSS_HOST_MEMORY, PACK_VERSIONING mirrored; creator deep guides pending |
+| `role-pack/` | ~16 | **Mirrored** | Spec + creator deep guides + cross-host + versioning |
 | `testing/` | ~8 | **Mirrored** | OOCP, overview, fuzzing, narrative_hint, L03 |
 | `security/` | 3 | **Mirrored** | KNOWN_VULN, audit scope, supply chain |
 | `guides/` | 3 | **Mirrored** | Configuration, regression QA, mumu checklist |
-| `roadmap/` | ~7 | **Mirrored** | Vision + backlog; APPLICATION_SCENARIOS as `.en.md` |
-| `rfc/` | ~12 | **Partial** | Monolith, dual-core, turn-thinking summaries; long RFCs summary + ZH |
+| `roadmap/` | ~7 | **Mirrored** | Vision + APPLICATION_SCENARIOS |
+| `rfc/` | ~12 | **Partial** | Full mirror for Monolith/dual-core/Studio; long RFCs → `*_SUMMARY.md` + ZH |
 | `cli/` | 2 | **Mirrored** | CLI guide + settings reference |
 | `storage/` | 1 | **Mirrored** | STORAGE_BACKEND_GUIDE |
 | `legal/` | 1 | **Mirrored** | DISCLAIMER |
 | `studio/` | 1 | **Mirrored** | USER_GUIDE |
-| `development/` | 2 | **Pending** | RELEASE_VERSIONING, LIGHTWEIGHT_PROFILE (EN at repo root) |
-| `dual-core/` | 2 | **Pending** | Link to ZH + handoff DUAL_CORE_CURSOR_HANDOFF |
-| `video-script/` | 1 | **Pending** | Chinese-only script |
+| `development/` | 2 | **Mirrored** | RELEASE_VERSIONING, LIGHTWEIGHT_PROFILE |
+| `dual-core/` | 2 | **Mirrored** | DEVELOPER_GUIDE, METHOD_REGISTRY |
+| `video-script/` | 1 | **Pending** | Chinese-only script (index-only) |
 | `architecture/` | 1 | **Pending** | DESIGN_DECISIONS — link from human-docs-en/08 |
+| Root | 3 | **Mirrored** | FAQ, LICENSE_POLICY, COMPATIBILITY, NAMING_CONVENTIONS |
 
 **Legend**: **Mirrored** = English file per topic (full or intentional summary with ZH link). **Partial** = high-traffic paths done; long-tail creator/RFC pages may be ZH-only. **Pending** = index points to Chinese; mirror not committed yet.
 
@@ -154,7 +156,12 @@ Last reviewed: **2026-07-10**. Counts are `*.md` files per directory (approximat
 | `oclive-cli` | [cli/OCLIVE_CLI_GUIDE.md](cli/OCLIVE_CLI_GUIDE.md) · [cli/SETTINGS_REFERENCE.md](cli/SETTINGS_REFERENCE.md) |
 | Monolith RFC | [rfc/RFC_OCLIVE_MONOLITH_MODE.md](rfc/RFC_OCLIVE_MONOLITH_MODE.md) |
 | Turn Thinking summary | [rfc/RFC_TURN_THINKING_PERSISTENCE_SUMMARY.md](rfc/RFC_TURN_THINKING_PERSISTENCE_SUMMARY.md) |
-| Lightweight profile | [LIGHTWEIGHT_PROFILE.md](LIGHTWEIGHT_PROFILE.md) |
+| Lightweight profile | [development/LIGHTWEIGHT_PROFILE.md](development/LIGHTWEIGHT_PROFILE.md) |
+| Naming conventions | [NAMING_CONVENTIONS.md](NAMING_CONVENTIONS.md) |
+| Creator golden path | [getting-started/CREATOR_GOLDEN_PATH.md](getting-started/CREATOR_GOLDEN_PATH.md) |
+| Plugin market submission | [plugin-and-architecture/PLUGIN_MARKET_SUBMISSION.md](plugin-and-architecture/PLUGIN_MARKET_SUBMISSION.md) |
+| Dual-core developer guide | [dual-core/DEVELOPER_GUIDE.md](dual-core/DEVELOPER_GUIDE.md) |
+| Release versioning | [development/RELEASE_VERSIONING.md](development/RELEASE_VERSIONING.md) |
 
 ---
 

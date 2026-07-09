@@ -1,6 +1,6 @@
 # OCLive naming conventions (English summary)
 
-**Canonical SSOT (Chinese)**: [`../creator-docs/NAMING_CONVENTIONS.md`](../creator-docs/NAMING_CONVENTIONS.md)
+[中文](../creator-docs/NAMING_CONVENTIONS.md)
 
 ## Quick rules
 

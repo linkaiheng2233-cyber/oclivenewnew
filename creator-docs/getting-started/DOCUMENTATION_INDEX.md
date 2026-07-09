@@ -36,7 +36,7 @@
 | **AI 深读分类目录**（链 SSOT · 场景路径 · **非事实 SSOT**） | **[../../handoff/AI_READING_INDEX.md](../../handoff/AI_READING_INDEX.md)** |
 | **AI 改动边界**（代码 G1–G9 · **文档 G10–G16** · §文档编写纪律） | **[../../handoff/AI_CHANGE_BOUNDARIES.md](../../handoff/AI_CHANGE_BOUNDARIES.md)** · 审查核实 **[../../handoff/AI_VERIFICATION_PROTOCOL.md](../../handoff/AI_VERIFICATION_PROTOCOL.md)** |
 | **`handoff/` 活跃 vs 归档**（closure、旧周报、编号计划已迁入 `archive/`） | **[../../handoff/README.md](../../handoff/README.md)** · 关键路径 **[../../handoff/BUS_FACTOR_NOTES.md](../../handoff/BUS_FACTOR_NOTES.md)** · 认知清单（**已归档快照**）**[../../handoff/04_4.6_PROJECT_TRUTH_CHECKLIST.md](../../handoff/04_4.6_PROJECT_TRUTH_CHECKLIST.md)** |
-| **命名规范与 canonical import**（概念 SSOT、crate 边界、禁止别名） | **[../NAMING_CONVENTIONS.md](../NAMING_CONVENTIONS.md)** · [English summary](../../creator-docs-en/getting-started/NAMING_CONVENTIONS.md) · crate 速查 **[../../kernel/crates/README.md](../../kernel/crates/README.md)** §Canonical import |
+| **命名规范与 canonical import**（概念 SSOT、crate 边界、禁止别名） | **[../NAMING_CONVENTIONS.md](../NAMING_CONVENTIONS.md)** · [English summary](../../creator-docs-en/NAMING_CONVENTIONS.md) · crate 速查 **[../../kernel/crates/README.md](../../kernel/crates/README.md)** §Canonical import |
 | **独立通道能力增强模块**（注册表 · 非六槽 · 非设施子模块） | **[../rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md](../rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md)** · [OCLIVE_ARCHITECTURE_OVERVIEW §独立通道](OCLIVE_ARCHITECTURE_OVERVIEW.md#独立通道能力增强模块非六槽--非设施子模块编号) |
 
 ### 工程纪律 / 审查状态

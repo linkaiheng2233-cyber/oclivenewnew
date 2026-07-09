@@ -76,4 +76,4 @@ npm run dev:theater
 - **V4 完整版**：模式 2 可演示后，从本大纲扩为分步截图文档（含大纲模式截图）。
 - **专家路由演示**：`mumu` 包内 `blueprint/includes/expert_routing.json`（`enabled: false`，默认不 invoke）。
 
-[English](../creator-docs-en/getting-started/CREATOR_GOLDEN_PATH.md)（待镜像）
+[English](../creator-docs-en/getting-started/CREATOR_GOLDEN_PATH.md)

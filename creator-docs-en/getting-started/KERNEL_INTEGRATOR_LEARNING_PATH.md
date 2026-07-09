@@ -6,6 +6,8 @@ For **headless HTTP**, **embedded**, and **hardware** teams shipping an oclive-c
 
 ## Beginner (~30 min)
 
+[中文](../../creator-docs/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md)
+
 | Step | Goal | Read |
 |------|------|------|
 | 1 | Kernel-in-the-middle picture | [KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md) |

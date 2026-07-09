@@ -6,6 +6,8 @@
 
 ### Added
 
+- **[docs] English mirror wave 2**：`README.en.md` 与中文首页结构对齐（四例子 · 三发行版 · 生态 · 路线图）；`creator-docs-en` 补齐 CREATOR_GOLDEN_PATH、role-pack 深读 8 篇、dual-core、PLUGIN_MARKET、RELEASE_VERSIONING、RFC summary；`human-docs-en` 补齐 modules 全槽/设施/侧通道 + paths 三路径；路径归一（`NAMING_CONVENTIONS`、`development/LIGHTWEIGHT_PROFILE`、合并 `APPLICATION_SCENARIOS`）；新增 **`scripts/check-doc-mirror.mjs`** 接入 `npm run check:rust` 与 dimension5。
+
 - **语音首字发声优化**：流式朗读经 `streamingVoiceChunker` 过滤旁白/内心/动作行；首块更早出句；CosyVoice2 `/warm` 默认 **prime** dummy 合成；角色切换触发侧车预热与 directive 预取；插件 manifest `rpcTimeoutsMs` 声明长 RPC 超时；CSP `connect-src` 收窄至侧车默认端口 `50000`。
 - **语音扩展 v0.4（情感 TTS · 可选）**：`com.oclive.voice.asr` 升至 v0.4 · 默认纯文字；`tts_expansion_enabled` 开启后 CosyVoice2 侧车 + 模型 DLC（`voice_model_pack.json`）+ `synth_provider`（bundled / local_http / cloud）；RPC 增 `voice.probe_tts` · `voice.warm` · `voice.list_model_packs`；`rules-v1` 产出 `emo_text` + 角色包 `ref_map`；流式首句 `voice:stream-sentence` 提前 TTS；**移除 Piper 产品路径**（dev loop `--tts-sherpa` 保留）。详见插件 [`README.md`](distros/chat-pro/plugins/com.oclive.voice.asr/README.md) · [`TRACK_VOICE`](human-docs/team/TRACK_VOICE_RECOGNITION.md)。
 - **统一键位绑定系统（Phase 1–4）**：设置 → 常规 → 高级新增「键位绑定」（应用内 + 全局快捷键统一 UI）；全局插件快捷键继续复用 `save_hotkey_bindings` 注册系统级监听；`ShortcutHelp` 改为动态读取当前键位；语音插件新增 **V 按住说话**（`voice.holdToTalk`，窗口聚焦时生效，输入框聚焦不抢键）。

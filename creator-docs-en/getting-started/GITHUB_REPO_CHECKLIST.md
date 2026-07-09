@@ -1,5 +1,7 @@
 # GitHub repository checklist (English summary)
 
+[中文](../../creator-docs/getting-started/GITHUB_REPO_CHECKLIST.md)
+
 The **detailed checklist** (Chinese: Dependabot, CI, Pages, branch protection) is:
 
 **[../../creator-docs/getting-started/GITHUB_REPO_CHECKLIST.md](../../creator-docs/getting-started/GITHUB_REPO_CHECKLIST.md)**

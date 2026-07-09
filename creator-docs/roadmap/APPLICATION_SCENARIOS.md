@@ -273,7 +273,7 @@
 | [VISION_ROADMAP_MONTHLY.md](VISION_ROADMAP_MONTHLY.md) | 按月路线侧重内核工程里程碑；本文侧重产品级应用叙事 |
 | [OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) | 文中所用「六槽」「设施子模块」「OOCP/MCP」等术语以该文档为权威定义 |
 | [KERNEL_FACTORY_VISION.md](../getting-started/KERNEL_FACTORY_VISION.md) | S8/S9/S10 对应的模板（`robot-gateway`/`robot-soul`/`library-embed`）已由工厂 CLI 实现 |
-| [APPLICATION_SCENARIOS.en.md](../../creator-docs-en/roadmap/APPLICATION_SCENARIOS.en.md) | 英文版（待同步） |
+| [APPLICATION_SCENARIOS.md](../../creator-docs-en/roadmap/APPLICATION_SCENARIOS.md) | 英文镜像 |
 
 ---
 

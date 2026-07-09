@@ -8,7 +8,7 @@
 
 ---
 
-## 文档包进度（与 AI 包同步 · 2026-06-26）
+## 文档包进度（与 AI 包同步 · 2026-07-10）
 
 **维护纪律**：改架构/纪律时 **须同轮** 更新本表与 [`handoff/README.md`](../handoff/README.md) §文档分责；已有英文镜像的中文页变更时，**同轮**更新 `human-docs-en/` / `creator-docs-en/` 对应文件。台账见 [creator-docs-en/README § Coverage matrix](../creator-docs-en/README.md#mirror-coverage-matrix) · [human-docs-en/README § Mirror status](../human-docs-en/README.md#mirror-status-human-docs-en)。
 
@@ -24,8 +24,8 @@
 | **模块注册表（深读）** | **handoff** | [`MODULE_MAP_AND_HANDOFF.md`](../handoff/MODULE_MAP_AND_HANDOFF.md) — 人类 L5+ 深读，不在 human-docs 复制 |
 | **AI 文档纪律 G10–G16** | **Done** | AI 详述 → [`AI_CHANGE_BOUNDARIES`](../handoff/AI_CHANGE_BOUNDARIES.md)；人类摘要 → [04 §8](04_ENGINEERING_RULES.md#8-文档贡献纪律人类版) |
 | **模块开工包（H-DOC-04）** | **Done** | [`modules/README.md`](modules/README.md) · 全类 Done 2026-06-26 |
-| **human-docs-en 镜像** | **Mirrored（主干）** | L0–L8 主干已对齐；`modules/` 六槽部分摘要 · `paths/`/`team/` 仍中文 |
-| **creator-docs-en 镜像** | **分阶段补齐** | 高频契约/kernel/role-pack/testing 已镜像；长尾 RFC/创作者深读见 [coverage matrix](../creator-docs-en/README.md#mirror-coverage-matrix) · **契约以中文为准** |
+| **human-docs-en 镜像** | **Mirrored（L0–L8 + modules + paths）** | L0–L8 主干 · `modules/` 19/19 · `paths/` 三路径 · `team/` 仍中文（Phase 2） |
+| **creator-docs-en 镜像** | **Mirrored（≥95%）** | 高频契约/kernel/role-pack/testing/dual-core 已镜像；`video-script/`、`architecture/` 仍 pending · **`check-doc-mirror.mjs`** 门禁 |
 
 **待办（文档债 · 非代码债）**
 

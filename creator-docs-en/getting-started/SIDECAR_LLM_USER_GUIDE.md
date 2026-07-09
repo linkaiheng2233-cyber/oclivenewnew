@@ -1,5 +1,7 @@
 # Sidecar LLM + BYOK (English summary)
 
+[中文](../../creator-docs/getting-started/SIDECAR_LLM_USER_GUIDE.md)
+
 The **full user-facing guide** (Chinese) is:
 
 **[../../creator-docs/getting-started/SIDECAR_LLM_USER_GUIDE.md](../../creator-docs/getting-started/SIDECAR_LLM_USER_GUIDE.md)**

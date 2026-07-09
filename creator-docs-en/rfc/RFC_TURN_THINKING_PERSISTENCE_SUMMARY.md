@@ -1,5 +1,7 @@
 # Turn Thinking persistence & routing — English summary
 
+[中文](../../creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md)
+
 Full RFC (Chinese SSOT): [RFC_TURN_THINKING_PERSISTENCE.md](../../creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md).
 
 ## What it is

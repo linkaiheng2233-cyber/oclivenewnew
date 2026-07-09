@@ -1,5 +1,7 @@
 # Role pack format (ROLE_PACK_SPEC)
 
+[中文](../../creator-docs/role-pack/ROLE_PACK_SPEC.md)
+
 > **Boundary (required):** **Role packs contain only identity, personality, relations, and prompt content. System configuration (slots, backends, models, interaction mode, dual-core, etc.) is owned by the blueprint.** See **[handoff/ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md)** and **[SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)**.
 
 **Author learning path:** [CREATOR_LEARNING_PATH.md](CREATOR_LEARNING_PATH.md)

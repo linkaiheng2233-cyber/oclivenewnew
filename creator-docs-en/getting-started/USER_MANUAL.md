@@ -1,5 +1,7 @@
 # oclive user manual
 
+[中文](../../creator-docs/getting-started/USER_MANUAL.md)
+
 For people who **only use the app** (no role-pack authoring, no plugin development). Error triage: [ERROR_CODES.md](ERROR_CODES.md). Build/install from source: root [README.md](../../README.md).
 
 ---

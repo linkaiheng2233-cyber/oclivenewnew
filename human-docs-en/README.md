@@ -54,8 +54,9 @@ Last reviewed: **2026-07-10**.
 | **L5** | **Mirrored** | 06 kernel path |
 | **L6–L7** | **Mirrored** | 07_COMMON_TASKS, 08_REFERENCE_MAP |
 | **L8** | **Mirrored** | 08_PR_GATE_MATRIX, 09, 10 |
-| **modules/** | **Partial** | README + llm/agent/memory slots; other slots link to ZH |
-| **paths/** · **team/** | **Pending** | Chinese-only sprint tracks |
+| **modules/** | **Mirrored** | README + all 19 module EN summaries (ZH checklist links) |
+| **paths/** | **Mirrored** | frontend · integrator · plugin-author |
+| **team/** | **Pending** | Chinese-only sprint tracks |
 
 When you change Chinese ladder pages **00–10**, update the English mirror in the **same change-set** if it exists.
 

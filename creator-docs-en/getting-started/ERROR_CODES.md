@@ -1,5 +1,7 @@
 # Error codes and quick triage
 
+[中文](../../creator-docs/getting-started/ERROR_CODES.md)
+
 Audience: users and developers. Goal: **self-serve first**, then file a high-quality issue.
 
 **Normative machine `code` + JSON shape** (naming, transports, JSON-RPC boundary): **[KERNEL_ERROR_CODE_CONVENTION.md](KERNEL_ERROR_CODE_CONVENTION.md)**.

@@ -102,6 +102,10 @@ runStep('doc registry ratchet', () => {
   sh('node', ['scripts/check-doc-registry.mjs']);
 });
 
+runStep('doc mirror ratchet', () => {
+  sh('node', ['scripts/check-doc-mirror.mjs']);
+});
+
 runStep('voice TTS ratchet', () => {
   sh('node', ['scripts/check-voice-tts-ratchet.mjs']);
 });

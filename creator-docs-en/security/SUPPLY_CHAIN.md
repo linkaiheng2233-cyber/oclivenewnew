@@ -6,7 +6,7 @@
 > **We do not claim**: zero vulnerabilities, full manual audit of all deps, bit-identical reproducible builds (see §4 limits).  
 > **Ledger**: [TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md) § supply chain
 
-**Related**: [KNOWN_VULNERABILITIES.md](KNOWN_VULNERABILITIES.md) · [SECURITY_AUDIT_SCOPE.md](SECURITY_AUDIT_SCOPE.md) · [LICENSE_POLICY.md](../LICENSE_POLICY.md) · [LIGHTWEIGHT_PROFILE.md](../LIGHTWEIGHT_PROFILE.md)
+**Related**: [KNOWN_VULNERABILITIES.md](KNOWN_VULNERABILITIES.md) · [SECURITY_AUDIT_SCOPE.md](SECURITY_AUDIT_SCOPE.md) · [LICENSE_POLICY.md](../LICENSE_POLICY.md) · [LIGHTWEIGHT_PROFILE.md](../development/LIGHTWEIGHT_PROFILE.md)
 
 ---
 

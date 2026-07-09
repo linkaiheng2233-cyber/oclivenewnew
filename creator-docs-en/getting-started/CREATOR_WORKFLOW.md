@@ -1,5 +1,7 @@
 # Creator workflow (English summary)
 
+[中文](../../creator-docs/getting-started/CREATOR_WORKFLOW.md)
+
 The **authoritative** walkthrough (Chinese, kept current with imports and `OCLIVE_ROLES_DIR`) is:
 
 **[../../creator-docs/getting-started/CREATOR_WORKFLOW.md](../../creator-docs/getting-started/CREATOR_WORKFLOW.md)**

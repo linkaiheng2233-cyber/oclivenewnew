@@ -1,12 +1,12 @@
 # Performance baseline and known limitations (A7)
 
-This page is for **external disclosure**: Release **binary size sampling**, what **Monolith** means for dispatch, how to run **`oclive bench`**, and **known product-level performance boundaries**. Always cross-check numbers against the latest **`cargo-bloat`** run in [`LIGHTWEIGHT_PROFILE.md`](../LIGHTWEIGHT_PROFILE.md) (§6.7; Chinese canonical copy: [`creator-docs/development/LIGHTWEIGHT_PROFILE.md`](../../creator-docs/development/LIGHTWEIGHT_PROFILE.md)).
+This page is for **external disclosure**: Release **binary size sampling**, what **Monolith** means for dispatch, how to run **`oclive bench`**, and **known product-level performance boundaries**. Always cross-check numbers against the latest **`cargo-bloat`** run in [`LIGHTWEIGHT_PROFILE.md`](../development/LIGHTWEIGHT_PROFILE.md) (§6.7; Chinese canonical copy: [`creator-docs/development/LIGHTWEIGHT_PROFILE.md`](../../creator-docs/development/LIGHTWEIGHT_PROFILE.md)).
 
 ---
 
 ## 1. Binary size (Release sampling)
 
-Figures below are copied from **[`LIGHTWEIGHT_PROFILE.md`](../LIGHTWEIGHT_PROFILE.md) §6.7** (**Windows x86_64**, **Release**, sampled **2026-05-20**; `cargo bloat --release -n 8`, `oclivenewnew-tauri.exe`; external `target-dir` per repo config).
+Figures below are copied from **[`LIGHTWEIGHT_PROFILE.md`](../development/LIGHTWEIGHT_PROFILE.md) §6.7** (**Windows x86_64**, **Release**, sampled **2026-05-20**; `cargo bloat --release -n 8`, `oclivenewnew-tauri.exe`; external `target-dir` per repo config).
 
 **v2 blueprint packs** (e.g. `distros/chat-pro/roles/mumu/pipeline.ocblueprint`): the chat hot path remains `process_message` → `co_present`; no extra blueprint `steps[]` scheduler. Binary size is in the same ballpark as legacy twin-file packs.
 

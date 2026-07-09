@@ -1,5 +1,7 @@
 # Plugin author learning path
 
+[中文](../../creator-docs/plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)
+
 For **directory plugins**, **remote sidecars**, and **host slot** work. Contracts: [PLUGIN_V1.md](PLUGIN_V1.md). Diagram: [KERNEL_AND_MODULES_ARCHITECTURE.md](../getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md).
 
 ---

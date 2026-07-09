@@ -121,7 +121,7 @@ Time-boxed “start here → ship”; **authoritative detail stays in each topic
 | **Community web vision** | **[../roadmap/COMMUNITY_WEB_VISION.md](../roadmap/COMMUNITY_WEB_VISION.md)** (Chinese: [../../creator-docs/roadmap/COMMUNITY_WEB_VISION.md](../../creator-docs/roadmap/COMMUNITY_WEB_VISION.md)) |
 | **Plugin web section + `plugins.json`** | **[../roadmap/PLUGIN_WEB_SECTION.md](../roadmap/PLUGIN_WEB_SECTION.md)** (Chinese: [../../creator-docs/roadmap/PLUGIN_WEB_SECTION.md](../../creator-docs/roadmap/PLUGIN_WEB_SECTION.md)) |
 | **OVERVIEW alias** | **[OVERVIEW.md](OVERVIEW.md)** → [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) |
-| **Lightweight / `cargo audit` / `cargo-bloat`** | **[../LIGHTWEIGHT_PROFILE.md](../LIGHTWEIGHT_PROFILE.md)** (English mirror of `creator-docs/development/LIGHTWEIGHT_PROFILE.md`) |
+| **Lightweight / `cargo audit` / `cargo-bloat`** | **[../development/LIGHTWEIGHT_PROFILE.md](../development/LIGHTWEIGHT_PROFILE.md)** (English mirror of `creator-docs/development/LIGHTWEIGHT_PROFILE.md`) |
 | **Performance & known limits (A7)** | **[PERFORMANCE.md](PERFORMANCE.md)** (Chinese: [`creator-docs/getting-started/PERFORMANCE.md`](../../creator-docs/getting-started/PERFORMANCE.md)) |
 | **Support entry (A9 · GitHub Issues)** | Root [README.en.md](../../README.en.md) **Support** · [`.github/ISSUE_TEMPLATE`](../../.github/ISSUE_TEMPLATE) |
 | **Disclaimer (A10 · models / plugins / data)** | **[../legal/DISCLAIMER.md](../legal/DISCLAIMER.md)** (Chinese: [`creator-docs/legal/DISCLAIMER.md`](../../creator-docs/legal/DISCLAIMER.md)) |

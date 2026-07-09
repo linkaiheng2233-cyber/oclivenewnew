@@ -1,5 +1,7 @@
 # RFC: Runtime dual-core dual-mode (Stable · Experimental)
 
+[中文](../../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)
+
 | Field | Value |
 |-------|--------|
 | Status | **Opt-in Beta (default off)** — P2–P5 path is merged; Stable remains the default delivery path |
