@@ -55,7 +55,7 @@
       "name": "Voice ASR Input (Official)",
       "description": "独立通道 voice.asr + voice.speak：麦克风 → 文本 → send_message（Windows 首版 · sherpa-onnx）",
       "author": "oclive",
-      "version": "0.2.0",
+      "version": "0.4.0",
       "git": "https://github.com/linkaiheng2233-cyber/oclivenewnew.git",
       "gitSubdir": "distros/chat-pro/plugins/com.oclive.voice.asr",
       "tags": ["voice", "asr", "side_channel", "directory", "chat_toolbar"],

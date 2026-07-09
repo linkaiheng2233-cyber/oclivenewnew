@@ -27,7 +27,7 @@
 - **`human-docs/08_PR_GATE_MATRIX.md`**, **`09_GLOSSARY.md`**, **`10_SETUP_WINDOWS.md`**.
 - **`handoff/GOOD_FIRST_ISSUES.md`** curated issue table.
 - **`npm run check:ci-local`**; `package.json` `engines.node >=20`, **`.nvmrc`**.
-- Frontend: `src/api/plugin/*`, `useMainShell*`, `useChatStorageSettings`, `chatStoreSend`.
+- Frontend: `distros/shared/src/api/plugin/*`, `useMainShell*`, `useChatStorageSettings`, `chatStoreSend`.
 
 ### Changed
 

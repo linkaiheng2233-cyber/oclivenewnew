@@ -344,7 +344,7 @@ SSOT：[THREE_DISTRO_KERNEL_CLOSURE.md](handoff/THREE_DISTRO_KERNEL_CLOSURE.md)
 
 ```
 kernel/crates/          # oclive_kernel_host（编排+DB）· types · contracts · runtime · cli · validation
-distros/desktop-tauri/  # Tauri 薄壳；命令只在 src/api/*.rs，lib.rs 仅 generate_handler!
+distros/desktop-tauri/  # Tauri 薄壳；命令只在 distros/desktop-tauri/src/api/*.rs，lib.rs 仅 generate_handler!
 distros/chat-pro/       # Chat Pro 前端 + roles/ + plugins/
 distros/shared/         # @oclive/desktop-shared
 distros/theater/        # AI Theater 发行版

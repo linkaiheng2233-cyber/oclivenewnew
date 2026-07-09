@@ -32,7 +32,7 @@
 - **`human-docs/08_PR_GATE_MATRIX.md`**、**`09_GLOSSARY.md`**、**`10_SETUP_WINDOWS.md`**。
 - **`handoff/GOOD_FIRST_ISSUES.md`** 策展表。
 - **`npm run check:ci-local`**；`package.json` `engines.node >=20`、**`.nvmrc`**。
-- 前端：`src/api/plugin/*`、`useMainShell*`、`useChatStorageSettings`、`chatStoreSend`。
+- 前端：`distros/shared/src/api/plugin/*`、`useMainShell*`、`useChatStorageSettings`、`chatStoreSend`。
 
 ### Changed
 
