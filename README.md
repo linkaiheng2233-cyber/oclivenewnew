@@ -76,6 +76,99 @@
 
 ---
 
+## 架构设计（组装而不乱）
+
+OCLive 的优化目标不是「把所有能力塞进一个 App」，而是 **正交分层**：换 LLM 不动人设、加语音不污染主链、冻结实验能力不影响 Stable 发版。
+
+### 模块四大类（先建立地图）
+
+| 大类 | 占六槽 `plugin_backends`？ | 例子 |
+|------|---------------------------|------|
+| **第 1–6 后端模块（六槽）** | **是** | memory · emotion · event · prompt · llm · agent |
+| **第 N 设施子模块** | **否**（编排行内） | 复杂情感 hint · 专家路由 · 立绘 · 视觉舞台 |
+| **独立通道能力增强** | **否**（自有 Resolver） | 用户身份 · 回复后处理 · **voice.asr** · 剧场导演 API |
+| **后端模块插件** | 挂在某槽的 `backend` | 第 5 槽的 directory 插件、Remote 侧车 |
+
+**纪律**：插件实现 **不** 单独占「第 7 模块号」；设施 **不** 写进六槽键。逐槽定义 → [MODULE_MAP §2–§10](handoff/MODULE_MAP_AND_HANDOFF.md)。
+
+```mermaid
+flowchart TB
+  PM[process_message 主编排]
+  subgraph slots["六槽 · PluginHost"]
+    M1[memory] --- M2[emotion] --- M3[event]
+    M4[prompt] --- M5[llm] --- M6[agent]
+  end
+  subgraph fac["设施子模块 · 编排行内"]
+    F1[复杂情感] --- F2[专家路由]
+    F3[立绘] --- F4[视觉表现]
+  end
+  subgraph side["独立通道 · 不进六槽"]
+    S1[voice.asr]
+    S2[用户身份 / 后处理]
+  end
+  PM --> slots
+  PM --> fac
+  side -.->|侧钩或圈外 API| PM
+```
+
+### 六槽解耦：换模块，不改主链
+
+| 层 | 做什么 |
+|----|--------|
+| **编译期** | 每槽 `trait` + `PluginHost`；`process_message` 顺序 **固定** |
+| **配置期** | 蓝图 `slot_registry` 声明多实例 → 折叠为 `PluginBackends`（memory 去重合并 · llm last-wins） |
+| **运行期** | 会话级 override 可临时换 backend（**不写盘**） |
+
+同一角色里可以把 **memory=builtin**、**llm=remote 侧车**、**emotion=directory 插件** 自由组合——编排公式仍在 `co_present`，不随厂商而变。
+
+### 蓝图 · 角色包 · 发行版（正交四层）
+
+| 层 | 谁改 | 典型内容 |
+|----|------|----------|
+| **角色包** | 创作者 | `prompts/`、`core_personality`、场景文案、`voice_profile.json` |
+| **蓝图** | 管理员 | `pipeline.ocblueprint` → **`slot_registry`**、后端路由、`includes/` 卫星文件 |
+| **发行版** | 宿主 | `distro.oclive.toml` · HostProfile · Turn Thinking 持久化策略 |
+| **会话** | 运行时 | DB 临时 override、好感/记忆状态 |
+
+**重要**：蓝图里的 **`steps[]` 不参与首轮调度**——回合顺序由 Rust `turn_pipeline` 保证，避免「JSON DSL 与代码双 SSOT」漂移。  
+分责 SSOT：[ROLE_PACK_BOUNDARY.md](handoff/ROLE_PACK_BOUNDARY.md) · 蓝图目录：[BLUEPRINT_FOLDER_LAYOUT.md](handoff/BLUEPRINT_FOLDER_LAYOUT.md)
+
+### 单核双态构建：外核 vs 宏核（Monolith）
+
+**同一套** `process_message` 语义，**两种构建档位**（非运行时热切换）：
+
+| | **外核态（默认）** | **宏核态（Monolith）** |
+|--|-------------------|------------------------|
+| 耦合 | 低 · 动态 `PluginHost` | 高 · `monolith.toml` **编译期焊接** |
+| 适用 | 桌面宿主、插件生态、日常开发 | 嵌入式/无头极致性能、工厂脚手架 |
+| 六槽 | `settings` / 蓝图可换 backend | 静态焊死指定实现 |
+
+Monolith 演示 **七焊接键**（六槽 + `complex_emotion` 设施键）——与运行时六宿主槽 **不是同一计数概念**。详见 [RFC_OCLIVE_MONOLITH_MODE.md](creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md)。
+
+### 实验核（dual_core）— 机制在，默认关
+
+| 项 | 状态 |
+|----|------|
+| **Stable 核** | 当前 Chat Pro 主路径；`co_present` 共景链 |
+| **Experimental 核** | 蓝图 `dual_core.enabled` + **`expert_routing.json`** 条件触发子流程 |
+| **Cargo feature `dual_core`** | **默认不编译**；opt-in 解冻 |
+| **blueprint v3 / 专家路由 UI** | 机制已预埋；产品叙事 **勿暗示「即将默开」** |
+
+冻结登记：[TECHNICAL_DEBT_INVENTORY.md §2](handoff/TECHNICAL_DEBT_INVENTORY.md) · RFC：[RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)
+
+### 其它正交能力（易混 · 一句话）
+
+| 能力 | 与六槽关系 |
+|------|------------|
+| **Turn Thinking（Fast/Deep）** | 编排行策略 · **不是第七槽** |
+| **复杂情感 `narrative_hint`** | 第 1 设施子模块 · 消费 emotion 产出 |
+| **voice.asr / TTS 扩展** | 独立通道 · **不进** `process_message` 六槽链 |
+| **Kernel 工厂三层** | 配方 / 实现 / 代码 正交 · 双态只动实现层解析 |
+
+人类 45 分钟导读：[human-docs/01_ARCHITECTURE_SIMPLE.md](human-docs/01_ARCHITECTURE_SIMPLE.md)
+
+---
+
 ## 三十秒跑通（贡献者）
 
 ```bash
@@ -221,6 +314,20 @@ backend 种类：`builtin` · `remote` · `directory` · `none` ·（llm 另有 
 | ③ 长期 LTM | `long_term_memory` | **是** |
 
 删 ① ≠ 清空 ②③。SSOT：[CHAT_STORAGE_ARCHITECTURE.md](handoff/CHAT_STORAGE_ARCHITECTURE.md)
+
+### 模块归类 · 构建态 · 冻结项
+
+| 机制 | 默认 | AI 勿 |
+|------|------|-------|
+| Stable 核 / `co_present` | **开** | 改顺序前先读 `turn_pipeline/` |
+| `dual_core` Experimental 核 | **关** | 删 wiring 或当未实现移除 |
+| `expert_routing` / blueprint v3 | **关** | 文档勿写「即将默开」 |
+| 外核 PluginHost | 桌面默认 | 与 Monolith 焊接键 **不是** 同一计数 |
+| Monolith 宏核态 | 工厂/嵌入式 | 七焊接键含 `complex_emotion` |
+| 蓝图 `steps[]` | **不调度** | 勿用 steps 当 DSL 主路径 |
+| Turn Thinking Fast/Deep | 发行版/包级 | **非第七槽** |
+
+四大类 · 六槽三层解耦 · 配置四层：见上文「架构设计」· [MODULE_MAP §0–§3](handoff/MODULE_MAP_AND_HANDOFF.md)
 
 ### 改动边界（摘要 G1–G16）
 

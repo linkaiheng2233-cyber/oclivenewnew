@@ -50,6 +50,29 @@ Details: [OCLIVE_ARCHITECTURE_OVERVIEW.md](creator-docs/getting-started/OCLIVE_A
 
 ---
 
+## Architecture (why assembly stays sane)
+
+Design goal: **orthogonal layers**—swap LLM without touching persona; add voice without polluting the main chain; freeze experimental cores without blocking Stable releases.
+
+| Category | In six `plugin_backends` keys? | Examples |
+|----------|----------------------------------|----------|
+| **Backend modules (slots 1–6)** | **Yes** | memory · emotion · event · prompt · llm · agent |
+| **Facility submodules** | **No** (in orchestration) | complex emotion · expert routing · portrait · visual stage |
+| **Side channels** | **No** (own resolver) | user identity · reply post-process · **voice.asr** |
+| **Backend plugins** | Attached to a slot | directory LLM plugin · remote sidecar |
+
+**Six-slot decoupling**: compile-time traits + `PluginHost` (fixed `process_message` order) · config-time `slot_registry` multi-instance fold · runtime session override (not persisted).
+
+**Orthogonal config layers**: role pack (creator content) → blueprint (`slot_registry`, **`steps[]` not on hot path**) → distro HostProfile → session DB.
+
+**Single kernel, dual build modes**: **outer core** (default PluginHost, swappable backends) vs **Monolith macro core** (compile-time weld via `monolith.toml` for embedded/perf). Not runtime hot-switch.
+
+**Experimental core (`dual_core`)**: mechanism wired, **default off**—`dual_core` Cargo feature + blueprint opt-in; expert routing frozen per [TECHNICAL_DEBT_INVENTORY.md §2](handoff/TECHNICAL_DEBT_INVENTORY.md).
+
+Human 45-min guide: [human-docs-en/01_ARCHITECTURE_SIMPLE.md](human-docs-en/01_ARCHITECTURE_SIMPLE.md) · [human-docs/01_ARCHITECTURE_SIMPLE.md](human-docs/01_ARCHITECTURE_SIMPLE.md)
+
+---
+
 ## 30-minute contributor path
 
 ```bash
@@ -84,6 +107,8 @@ Windows needs **VS Build Tools (MSVC)**. Ollama is optional for build. Step-by-s
 | Blueprint `steps[]` | **Not** on hot path |
 | Six slots | `memory` · `emotion` · `event` · `prompt` · `llm` · `agent` |
 | Side channels | e.g. `voice.asr` — **not** in six slots |
+
+**Frozen / build-mode (do not delete wiring as “unimplemented”)**: `dual_core` · expert_routing · blueprint v3 — **default off**; Monolith = compile weld; blueprint `steps[]` **not** scheduled; Turn Thinking = orchestration policy, **not** slot 7.
 
 **Before coding**: [AI_CHANGE_BOUNDARIES.md](handoff/AI_CHANGE_BOUNDARIES.md) (G1–G16) · [MODULE_MAP_AND_HANDOFF.md](handoff/MODULE_MAP_AND_HANDOFF.md) · [BUS_FACTOR_NOTES.md](handoff/BUS_FACTOR_NOTES.md)
 
