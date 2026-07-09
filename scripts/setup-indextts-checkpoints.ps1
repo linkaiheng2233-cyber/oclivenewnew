@@ -6,7 +6,7 @@ $Workspace = if ($env:OCLIVE_TTS_SERVERS_DIR) { $env:OCLIVE_TTS_SERVERS_DIR } el
 $IndexRoot = Join-Path $Workspace "index-tts"
 $Py = Join-Path $IndexRoot ".venv\Scripts\python.exe"
 $Target = Join-Path $IndexRoot "checkpoints"
-$Repo = if ($env:OCLIVE_INDEXTTS_REPO) { $env:OCLIVE_INDEXTTS_REPO } else { "IndexTeam/IndexTTS-1.5" }
+$Repo = if ($env:OCLIVE_INDEXTTS_REPO) { $env:OCLIVE_INDEXTTS_REPO } else { "IndexTeam/IndexTTS-2" }
 
 if (-not (Test-Path $Py)) {
   throw "Missing $Py — run scripts/setup-indextts-bridge.ps1 first"
@@ -15,16 +15,11 @@ if (-not (Test-Path $Py)) {
 New-Item -ItemType Directory -Force -Path $Target | Out-Null
 Set-Location $IndexRoot
 
-Write-Host "Downloading IndexTTS checkpoints from $Repo into $Target"
-& $Py -m huggingface_hub download $Repo `
-  config.yaml `
-  bigvgan_discriminator.pth `
-  bigvgan_generator.pth `
-  bpe.model `
-  dvae.pth `
-  gpt.pth `
-  unigram_12000.vocab `
-  --local-dir $Target
+Write-Host "Downloading IndexTTS-2 checkpoints from $Repo into $Target"
+if (-not $env:HF_ENDPOINT) {
+  $env:HF_ENDPOINT = "https://huggingface.co"
+}
+& $Py -c "from indextts.utils.model_download import snapshot_download; snapshot_download('$Repo', local_dir=r'$Target')"
 
 Write-Host ""
 Write-Host "Checkpoint download complete."
