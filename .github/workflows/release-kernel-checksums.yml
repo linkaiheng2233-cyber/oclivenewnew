@@ -30,6 +30,7 @@ jobs:
         run: |
           set -euo pipefail
           TARGET="$(cargo metadata --format-version=1 --no-deps | node -e "let b='';process.stdin.on('data',c=>b+=c);process.stdin.on('end',()=>console.log(JSON.parse(b).target_directory))")"
+          TARGET="$(cd "$TARGET" && pwd)"
           BIN="$TARGET/release/oclive-kernel-server"
           MANIFEST="$TARGET/release/oclive-kernel-server.oclive-manifest.json"
           "$BIN" --version-json > "$MANIFEST"
@@ -40,7 +41,7 @@ jobs:
         shell: pwsh
         run: |
           $meta = cargo metadata --format-version=1 --no-deps | ConvertFrom-Json
-          $dir = Join-Path $meta.target_directory "release"
+          $dir = (Resolve-Path (Join-Path $meta.target_directory "release")).Path
           $bin = Join-Path $dir "oclive-kernel-server.exe"
           $manifest = Join-Path $dir "oclive-kernel-server.oclive-manifest.json"
           & $bin --version-json | Set-Content -Encoding utf8NoBOM $manifest
