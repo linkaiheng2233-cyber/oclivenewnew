@@ -59,7 +59,7 @@ Last reviewed: **2026-07-10**. Counts are `*.md` files per directory (approximat
 | `development/` | 2 | **Mirrored** | RELEASE_VERSIONING, LIGHTWEIGHT_PROFILE |
 | `dual-core/` | 2 | **Mirrored** | DEVELOPER_GUIDE, METHOD_REGISTRY |
 | `video-script/` | 1 | **Pending** | Chinese-only script (index-only) |
-| `architecture/` | 1 | **Pending** | DESIGN_DECISIONS — link from human-docs-en/08 |
+| `architecture/` | 1 | **Mirrored** | [`DESIGN_DECISIONS`](../creator-docs/architecture-en/DESIGN_DECISIONS.md) (EN lives under `creator-docs/architecture-en/`) |
 | Root | 3 | **Mirrored** | FAQ, LICENSE_POLICY, COMPATIBILITY, NAMING_CONVENTIONS |
 
 **Legend**: **Mirrored** = English file per topic (full or intentional summary with ZH link). **Partial** = high-traffic paths done; long-tail creator/RFC pages may be ZH-only. **Pending** = index points to Chinese; mirror not committed yet.

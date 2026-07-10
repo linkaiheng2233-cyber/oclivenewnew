@@ -1,5 +1,7 @@
 # Pack editor (oclive-pack-editor) ↔ host (oclivenewnew) compatibility
 
+[中文](../creator-docs/COMPATIBILITY.md)
+
 This page explains how **`ui.json` in role packs** relates to the **desktop host**, so authors do not ship fields the host ignores—or miss fields the host already supports.
 
 **Version format**: both repos use **SemVer** `MAJOR.MINOR.PATCH` from root **`package.json`** `version`.
