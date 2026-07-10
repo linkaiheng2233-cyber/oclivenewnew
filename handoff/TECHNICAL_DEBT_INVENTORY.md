@@ -169,7 +169,7 @@
 Done 项（K-PERF-01~26、D-READ-01/02/04、K-ROBUST-01~03、Opus 4.8 Wave 0–4、Fable 5 M0–M4、K-DOC-15/16 等）见：
 
 - [RECURRING_OPTIMIZATION_PLAYBOOK.md §8](./RECURRING_OPTIMIZATION_PLAYBOOK.md) 巡检日志
-- [CHANGELOG.md](../CHANGELOG.md) `[0.4.0]` · `[Unreleased]`
+- [CHANGELOG.md](../CHANGELOG.md) `[0.5.0]` · `[Unreleased]`
 - git log `handoff/` · `kernel/crates/oclive_kernel_host`
 
 ### 轮次 16 Done（2026-06-18）

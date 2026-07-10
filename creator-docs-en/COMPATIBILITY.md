@@ -1,83 +1,80 @@
-# oclive-pack-editor vs oclivenewnew — version compatibility
+# Pack editor (oclive-pack-editor) ↔ host (oclivenewnew) compatibility
 
-How **`ui.json` inside a role pack** relates to the **desktop host**, so you do not hit “the editor exports fields the host ignores” or “the host supports slots the editor cannot edit yet”.
+This page explains how **`ui.json` in role packs** relates to the **desktop host**, so authors do not ship fields the host ignores—or miss fields the host already supports.
 
-[中文](../creator-docs/COMPATIBILITY.md)
+**Version format**: both repos use **SemVer** `MAJOR.MINOR.PATCH` from root **`package.json`** `version`.
 
-**Version format**: both apps use **SemVer** `MAJOR.MINOR.PATCH` in each repo root **`package.json` `version`**.
+**Snapshot (aligned with release review)**:
 
-**Snapshot when this page was written (align with release review)**:
-
-- **oclivenewnew** (Tauri host): **`0.2.0`** (root `package.json` `version` must match `distros/desktop-tauri/Cargo.toml` `version`)
-- **oclive_kernel_runtime** (shared contracts crate): **`0.2.0`** (`kernel/crates/oclive_kernel_runtime/Cargo.toml`; DTO / `API_VERSION` live in that crate)
-- **oclive-cli** (scaffold CLI): **`0.1.0`** (`kernel/crates/oclive-cli/Cargo.toml`; **independent SemVer**, not forced to match the desktop host; `--kernel-source` path deps align contracts with this repo)
-- **oclive-pack-editor** (sister repo): **`0.2.x`** (that repo’s `package.json`; pair **`ui.json`** with host **0.2.x**)
-
-> Rows marked **0.3.x / 0.4.x** are **planned**; after each release, refresh the snapshot lines and matrix from **`CHANGELOG.md` / `CHANGELOG.en.md`** and **`ui.json.schema.json`**.
+- **oclivenewnew** (desktop / Tauri host): **`0.5.0`** (root `package.json` and `distros/desktop-tauri/Cargo.toml` must match)
+- **oclive_kernel_runtime** (shared contract crate): **`0.2.0`** (`kernel/crates/oclive_kernel_runtime/Cargo.toml`; DTO / `API_VERSION` live in that crate)
+- **oclive-cli** (scaffold CLI): **`0.1.0`** (`kernel/crates/oclive-cli/Cargo.toml`; **independent semver** from the desktop host)
+- **oclive-pack-editor** (sister repo): **`0.5.0`** (`ui.json` parity with host **0.5.x**)
+- **oclive-vscode** (VS Code extension, sister repo): **`0.4.1`** (independent semver; spawn/attach contract needs host **≥0.4.0**, **0.5.0** recommended)
 
 ---
 
 ## Compatibility matrix
 
-| Editor version | Minimum host version | New or hard‑dependent `ui.json` capability | Notes |
-|----------------|----------------------|---------------------------------------------|--------|
-| **0.2.x** | **0.2.0** | `shell`, `slots` (`chat_toolbar`, `settings_panel`, `role_detail`, …), basic `theme` / `layout` (per schema) | Current mainline; aligned with [role-pack/ui.json.schema.json](../creator-docs/role-pack/ui.json.schema.json) |
-| **0.3.x** (planned) | **0.3.0** (planned) | If the schema grows **theme/layout** subfields, follow release notes | Older hosts may **silently ignore** unknown JSON keys where models use optional serde fields |
-| **0.4.x** (planned) | **0.4.0** (planned) | When **`sidebar`**, **`chat.header`**, etc. are fully authored in the editor, the host **directory bootstrap** must already expose those slots (see [DIRECTORY_PLUGINS.md](plugin-and-architecture/DIRECTORY_PLUGINS.md)) | Slot names must match host `pluginStore` constants |
-| **Dev builds** | **Same dev branch** | Schema + host `UiConfig` on the same branch | For developers only |
+| Editor version | Minimum host | New or required `ui.json` capability | Notes |
+|----------------|--------------|--------------------------------------|-------|
+| **0.2.x** | **0.2.0** | `shell`, `slots` (`chat_toolbar`, `settings_panel`, `role_detail`, etc.), base `theme` / `layout` (see schema) | historical baseline |
+| **0.3.x** | **0.3.0** | extended theme/layout fields per release notes | lower hosts usually **ignore unknown fields** |
+| **0.4.x** | **0.4.0** | full **`sidebar`**, **`chat.header`**, etc. need host **directory bootstrap** for those slots ([DIRECTORY_PLUGINS.md](plugin-and-architecture/DIRECTORY_PLUGINS.md)) | slot names must match host `pluginStore` constants |
+| **0.5.x** | **0.5.0** | portrait catalog / `visual_presentation` export aligned with host `display_metrics` and voice side-channel `ui.json` slot seeds | see [CHANGELOG.en.md](../../CHANGELOG.en.md) `[0.5.0]` |
+| **dev** | **same dev** | schema and host `UiConfig` on the same branch | local pairing only |
 
 ---
 
-## Upgrade / downgrade behaviour
+## Upgrade and downgrade behavior
 
-1. **Host older than the editor target**  
-   - Fields the host **does not model**: usually **ignored** if Rust/TS uses optional serde fields; if a release flips to **reject unknown keys**, follow that release’s `CHANGELOG`.  
-   - Slots the host **does not implement yet**: UI may **hide** or **no‑op** until the host is upgraded.
+1. **Host older than editor target**  
+   - Unknown **`ui.json`** keys: usually **silently ignored** when models use **`serde` defaults + optional fields**; if a release rejects unknown keys, see that version’s `CHANGELOG`.  
+   - Declared but unimplemented slots: may **not render** or **do nothing** until the host is upgraded.
 
-2. **Editor older than the host**  
-   - New slots / theme keys may not be editable; you can still **hand‑edit `ui.json`** using [ui.json.schema.json](../creator-docs/role-pack/ui.json.schema.json).
+2. **Editor older than host**  
+   - New host slots / theme keys may be uneditable in the old editor; **edit `ui.json` manually** against [ui.json.schema.json](role-pack/ui.json.schema.json).
 
-3. **Pack `settings.json` / `plugin_backends`**  
-   - Tied to **`min_runtime_version`** and `load_role` validation — see [PACK_VERSIONING.md](../creator-docs/role-pack/PACK_VERSIONING.md), [CHANGELOG.md](../CHANGELOG.md).
-
----
-
-## Cross-app compatibility (host / runtime / CLI / editor / launcher / pack / DB)
-
-| Component | Version source | Relationship to host | Notes |
-|-----------|----------------|----------------------|--------|
-| **oclivenewnew** (host) | Root `package.json` / `distros/desktop-tauri/Cargo.toml` | — | Snapshot **0.2.0** |
-| **oclive_kernel_runtime** | `kernel/crates/oclive_kernel_runtime/Cargo.toml` | Path dep for GUI + headless HTTP; `SendMessageResponse.api_version` (`API_VERSION` **u32**, currently **1**), `RUNTIME_API_VERSION` (**0.2.0** string) | OOCP / black-box expectations: see [`OOCP_TEST_SUITE.md`](../creator-docs/testing/OOCP_TEST_SUITE.md) |
-| **oclive-cli** | `kernel/crates/oclive-cli/Cargo.toml` | Generates `kernel_server` / `library` skeletons; **does not ship** desktop `AppState` / SQLite policy | Contract alignment: [`OCLIVE_CLI_GUIDE.md`](../creator-docs/cli/OCLIVE_CLI_GUIDE.md), template `CONFIG_REFERENCE.md` |
-| **oclive-pack-editor** | That repo’s `package.json` | Produces `distros/chat-pro/roles/{id}/`; **`ui.json`** vs host: matrix above | `HOST_RUNTIME_VERSION` should track host `version` (editor README) |
-| **oclive-launcher** | That repo’s `package.json` | Injects **`OCLIVE_ROLES_DIR`**, optional model / zip install; **does not replace** host contracts | [Launcher README](https://github.com/linkaiheng2233-cyber/oclive-launcher/blob/main/README.md) |
-| **Role pack** | `manifest.json` (`schema_version`, `min_runtime_version`) | Older hosts may refuse or downgrade | [`PACK_VERSIONING.md`](../creator-docs/role-pack/PACK_VERSIONING.md), `RoleStorage::load_role` |
-| **Host SQLite** | `distros/desktop-tauri/migrations/*.sql` | Migrations ship **with the host** only; **do not** assume you can open a DB written by a newer host with an older binary (unless `CHANGELOG` explicitly supports rollback) | Breaking DB steps must be called out in **bilingual CHANGELOG** + this page |
-
-For breaking changes: update **`CHANGELOG.md` / `CHANGELOG.en.md`**, the planned matrix rows above, **`oclive_validation`** (if keys changed), and sister-repo README minimums.
-
-### Release review (maintainer self-check)
-
-1. Verify the three SemVer snapshots: root **`package.json`**, **`distros/desktop-tauri/Cargo.toml`**, **`oclive_kernel_runtime`** (often bumped together).  
-2. Open [`PRODUCT_RELEASE_CHECKLIST.md`](../handoff/archive/PRODUCT_RELEASE_CHECKLIST.md) **“对外说明”**: if contracts or sister-repo expectations changed, update this page.  
-3. **HTTP / OOCP**: if `API_VERSION` or `RUNTIME_API_VERSION` changes, update the test suite and docs ([`OOCP_TEST_SUITE.md`](../creator-docs/testing/OOCP_TEST_SUITE.md)).
-
-For the Chinese-maintained superset (same facts), see [COMPATIBILITY.md](../creator-docs/COMPATIBILITY.md).
+3. **Pack `settings.json` and `plugin_backends`**  
+   - Governed by **`min_runtime_version`** and host `load_role`; see [PACK_VERSIONING.md](role-pack/PACK_VERSIONING.md) and [CHANGELOG.en.md](../../CHANGELOG.en.md).
 
 ---
 
-## How to read the version
+## One-page external compatibility (host / editor / launcher / packs / kernel / CLI)
+
+| Component | Version source | Relation to host | Notes |
+|-----------|----------------|------------------|-------|
+| **oclivenewnew (host)** | root `package.json` / `distros/desktop-tauri/Cargo.toml` | — | snapshot **0.5.0** |
+| **oclive_kernel_runtime** | `kernel/crates/oclive_kernel_runtime/Cargo.toml` | path dep for host and headless HTTP; `SendMessageResponse.api_version` (`API_VERSION` **u32**, currently **1**), `RUNTIME_API_VERSION` (string **0.2.0**) | OOCP / black-box scripts: `creator-docs/testing/OOCP_TEST_SUITE.md` |
+| **oclive-cli** | `kernel/crates/oclive-cli/Cargo.toml` | scaffolds `kernel_server` / `library`; **no** desktop `AppState` / SQLite policy | [OCLIVE_CLI_GUIDE.md](cli/OCLIVE_CLI_GUIDE.md) |
+| **oclive-pack-editor** | sister `package.json` | writes `distros/chat-pro/roles/{id}/`; **`ui.json`** matrix above | `HOST_RUNTIME_VERSION` must match host `version` |
+| **oclive-vscode** | sister `package.json` | spawn/attach **`kernel_server --api`**; `distro.oclive.toml` mirrors `examples/distro-profiles/vscode.oclive.toml` | **0.4.1** today; host **0.5.0** recommended |
+| **oclive-launcher** | sister `package.json` | sets **`OCLIVE_ROLES_DIR`**, optional model name, zip install; **does not** replace host contract | [launcher README](https://github.com/linkaiheng2233-cyber/oclive-launcher/blob/main/README.md) |
+| **role packs** | `manifest.json` (`schema_version`, `min_runtime_version`) | older hosts may refuse load or degrade | [PACK_VERSIONING.md](role-pack/PACK_VERSIONING.md) |
+| **host SQLite** | `distros/desktop-tauri/migrations/*.sql` | ships only with **host** releases; do not downgrade DB after a forward migration unless `CHANGELOG` says so | breaking migrations need bilingual `CHANGELOG` + this table |
+
+On breaking changes: update **`CHANGELOG.md` / `CHANGELOG.en.md`**, this matrix, **`oclive_validation`** (if touched keys), and sister-repo README minimum versions.
+
+### Release review (maintainers)
+
+1. Verify snapshot semver: root **`package.json`**, **`distros/desktop-tauri/Cargo.toml`**, **`oclive_kernel_runtime`**.  
+2. [PRODUCT_RELEASE_CHECKLIST.md](../../handoff/archive/PRODUCT_RELEASE_CHECKLIST.md) **“External notes”** if contracts or sister deps changed.  
+3. **HTTP / OOCP**: if `API_VERSION` or `RUNTIME_API_VERSION` changes, sync tests and docs (`creator-docs/testing/OOCP_TEST_SUITE.md`).
+
+---
+
+## How to read versions
 
 | Product | Where |
 |---------|--------|
-| **Host** | In‑app **About** (if present); installer name; repo **`package.json`** / **`CHANGELOG.md`** |
-| **Editor** | Editor **About**; that repo’s **`package.json`** |
+| **Host** | in-app About (if present); install name; repo **`package.json`** / **`CHANGELOG.md`** |
+| **Editor** | editor About; repo **`package.json`** |
 
 ---
 
-## Related docs
+## Related
 
-- [`A5_CLOSURE_SUMMARY.md`](../handoff/A5_CLOSURE_SUMMARY.md)
-- [role-pack/ui.json.schema.json](../creator-docs/role-pack/ui.json.schema.json)
-- [plugin-and-architecture/DIRECTORY_PLUGINS.md](plugin-and-architecture/DIRECTORY_PLUGINS.md)
-- [CHANGELOG.md](../CHANGELOG.md)
+- [A5_CLOSURE_SUMMARY.md](../../handoff/A5_CLOSURE_SUMMARY.md)
+- [ui.json.schema.json](role-pack/ui.json.schema.json)
+- [DIRECTORY_PLUGINS.md](plugin-and-architecture/DIRECTORY_PLUGINS.md)
+- [CHANGELOG.en.md](../../CHANGELOG.en.md)

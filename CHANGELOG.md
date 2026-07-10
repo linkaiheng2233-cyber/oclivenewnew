@@ -4,6 +4,21 @@
 
 ## [Unreleased]
 
+(none)
+
+---
+
+## [0.5.0] - 2026-07-10
+
+**桌面宿主 `0.5.0`** · **角色包编写器 `0.5.0`** · 语音 side-channel v0.4 · Turn Thinking E/F · Fluent 默认壳 · Apache-2.0
+
+### Breaking
+
+- **许可证**：主程序由 AGPL-3.0 + 插件例外改为 **Apache-2.0**（根 `LICENSE` + `NOTICE`）。
+- **Turn Thinking 默认**：`desktop.oclive.toml` 启用 `fast_persistence = "strong_only"`（Fast 闲聊不涨好感/不进长期记忆；强关系事件仍巩固）。
+- **Affect 展示**：`RoleInfo` / `SendMessageResponse` 旧标量好感字段 deprecated；UI 改读 `display_metrics`。
+- **语音**：Piper 移除产品路径（dev loop `--tts-sherpa` 保留）。
+
 ### Added
 
 - **Roadmap wave 合并（2026-07-10）**：CI dimension5 增 Python 3.11（voice TTS ratchet）；loom 改 `RUSTFLAGS --cfg loom`（`cargo-loom` 已不可用）；`preferred_tts_profile` 角色切换联动（`voice.read_role_profile` + `useRoleVoiceProfileSync`）；`config.json` → `prompt_extra_sections` 生产接线（K-CONTRACT-WIRING-01）；文档 Wave-3（human-docs EN Done、dual-core 遗留 stub、ai-package EN、USER_MANUAL §3.6 语音）；e2e-tauri readiness 加固；Vitest 冒烟（Fluent 默认壳 · 流式开关）。

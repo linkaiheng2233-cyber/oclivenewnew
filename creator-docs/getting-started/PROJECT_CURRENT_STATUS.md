@@ -4,7 +4,7 @@
 
 [English](../../creator-docs-en/getting-started/PROJECT_CURRENT_STATUS.md)
 
-**快照日期**：2026-05-15（随大里程碑或版本号 bump 时应更新本页首段与日期）
+**快照日期**：2026-07-10（随大里程碑或版本号 bump 时应更新本页首段与日期）
 
 ---
 
@@ -12,7 +12,7 @@
 
 | 项 | 值 |
 |----|-----|
-| 桌面应用语义化版本 | **0.2.0**（以根目录 `package.json`、`distros/desktop-tauri/tauri.conf.json`、`distros/desktop-tauri/Cargo.toml` 对齐为准） |
+| 桌面应用语义化版本 | **0.5.0**（以根目录 `package.json`、`distros/desktop-tauri/tauri.conf.json`、`distros/desktop-tauri/Cargo.toml` 对齐为准） |
 | 默认 HTTP API（`--api`） | `http://127.0.0.1:8420`（健康检查 `GET /health`） |
 | 用户可见变更流水 | **[CHANGELOG.md](../../CHANGELOG.md)**（中文）· **[CHANGELOG.en.md](../../CHANGELOG.en.md)**（英文，与中文同步维护条目） |
 

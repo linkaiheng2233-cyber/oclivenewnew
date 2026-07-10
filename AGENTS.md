@@ -26,17 +26,17 @@
 
 ---
 
-## 发版版本（`main`，2026-06-12）
+## 发版版本（`main`，2026-07-10）
 
 | 产物 | 版本 | 位置 |
 |------|------|------|
-| **桌面宿主** | **0.4.0** | 根 `package.json`、`distros/desktop-tauri/Cargo.toml` |
-| **角色包编写器** | **0.4.0** | 姊妹仓 `oclive-pack-editor` |
-| **VS Code 扩展** | **0.3.0** | 姊妹仓 `oclive-vscode` |
+| **桌面宿主** | **0.5.0** | 根 `package.json`、`distros/desktop-tauri/Cargo.toml` |
+| **角色包编写器** | **0.5.0** | 姊妹仓 `oclive-pack-editor` |
+| **VS Code 扩展** | **0.4.1** | 姊妹仓 `oclive-vscode` |
 | **`oclive-cli`** | **0.1.0** | `kernel/crates/oclive-cli/Cargo.toml` |
 | **`oclive_kernel_runtime`** | **0.2.0** | `kernel/crates/oclive_kernel_runtime/Cargo.toml` |
 
-变更见 [CHANGELOG.md](CHANGELOG.md) **`[0.4.0]`** · SemVer [RELEASE_VERSIONING.md](creator-docs/development/RELEASE_VERSIONING.md)。
+变更见 [CHANGELOG.md](CHANGELOG.md) **`[0.5.0]`** · SemVer [RELEASE_VERSIONING.md](creator-docs/development/RELEASE_VERSIONING.md)。
 
 ---
 

@@ -4,6 +4,21 @@
 
 ## [Unreleased]
 
+(none)
+
+---
+
+## [0.5.0] - 2026-07-10
+
+**Desktop host `0.5.0`** · **Pack editor `0.5.0`** · voice side-channel v0.4 · Turn Thinking E/F · Fluent default shell · Apache-2.0
+
+### Breaking
+
+- **License**: host relicensed from AGPL-3.0 + plugin exception to **Apache-2.0** (root `LICENSE` + `NOTICE`).
+- **Turn Thinking default**: `desktop.oclive.toml` enables `fast_persistence = "strong_only"` (Fast casual chat skips favor/long-term memory; strong relationship events still consolidate).
+- **Affect display**: legacy scalar favor fields on `RoleInfo` / `SendMessageResponse` are deprecated; UIs should read `display_metrics`.
+- **Voice**: Piper removed from the product path (dev loop `--tts-sherpa` retained).
+
 ### Added
 
 - **Roadmap merge wave (2026-07-10)**: CI dimension5 Python 3.11 for voice TTS ratchet; loom via `RUSTFLAGS --cfg loom`; `preferred_tts_profile` role-switch sync; `prompt_extra_sections` production wiring; doc Wave-3 (EN mirrors Done, dual-core stubs, ai-package EN, USER_MANUAL §3.6 voice); e2e-tauri readiness; Vitest smoke (Fluent default shell, stream toggle).
@@ -100,6 +115,25 @@
 - **Chat history vanished in story scenes**: cold start uses unified `bootstrapChatForRole` (await fetch + `beginNewChatSessionOnRestart` fold); removed `interactionMode` watch `immediate` race; `loadedBucketKeys` prevents empty-placeholder short-circuit; role switch probes backend session scenes / pack scenes / IDB index fallback. Guards `chatStoreScene.test.ts`, `chatStoreLoad.test.ts`, see [`CHAT_STORAGE_ARCHITECTURE.md`](handoff/CHAT_STORAGE_ARCHITECTURE.md).
 - **Ctrl+Shift+S did not open Settings**: `useGlobalHotkeys` referenced an unpassed `opts.openSettingsView` (`undefined` at runtime); now calls the local `openSettingsView`; the theater shell still emits `theater:settings`.
 - **Voice plugin `get_plugin_settings_ui` bridge failure**: `ui_slots` invoked plugin settings read/write via `plugin_bridge_invoke`, but desktop `dispatch_local_bridge_command` did not route `get_plugin_settings_ui` / `set_plugin_settings_config` (surfaced as `unsupported bridge command`); now delegated to `plugin_config.rs`.
+
+---
+
+## [0.4.0] - 2026-06-12
+
+### Added
+
+- **Portrait catalog (A2/B1)**: `portrait_catalog.json` SSOT; seven fixed slots + advanced multi-entry; additive `visual_state_id` / `performance_directive` DTOs.
+- **Performance director**: `pick_portrait_with_catalog` + complex-emotion `narrative_hint` closed loop; legacy `portrait_emotion` seven-tag zero regression.
+- **Visual presentation v1**: `materialize_directive` (image/live2d/rig3d/procedural); distro `[visual_presentation].mode` gating (`off` / `image_only` / `stage_full`).
+- **OOCP S16**: catalog fixture asserts `visual_state_id` + `performance_directive`; mumu has no fields.
+- **Pack editor**: `PortraitCatalogEditor`, tiered export profiles (`desktop-full` / `vscode-lite` / `theater`), `visual_presentation` UI.
+- **VS Code Flash**: HTTP parses `visual_state_id` / `performance_directive`; catalog path preferred over tag filenames.
+- **Theater**: `TheaterStagePanel` + `Live2DStageAdapter` wiring (Cubism defer, PNG fallback).
+
+### Changed
+
+- RFC portrait/visual presentation status updated to Phase 1–4 delivered.
+- `theater.oclive.toml` bundled profile synced to `stage_full`.
 
 ---
 
