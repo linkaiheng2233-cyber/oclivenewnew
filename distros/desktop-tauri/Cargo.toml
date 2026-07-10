@@ -67,4 +67,4 @@ oclive_kernel_contracts = { path = "../../kernel/crates/oclive_kernel_contracts"
 loom = { version = "0.7", features = ["checkpoint"] }
 
 [build-dependencies]
-tauri-build = { version = "1.5", features = [] }
+tauri-build = { version = "=1.5.6", features = [] }

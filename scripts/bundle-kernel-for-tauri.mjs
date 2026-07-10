@@ -30,7 +30,7 @@ function manifestName() {
 }
 
 console.log(`[bundle-kernel-for-tauri] building oclive_kernel_server (${profile})...`);
-sh('cargo', ['build', '-p', 'oclive_kernel_server', ...releaseFlag], {
+sh('cargo', ['build', '--locked', '-p', 'oclive_kernel_server', ...releaseFlag], {
   cwd: repoRoot,
   stdio: 'inherit',
 });
