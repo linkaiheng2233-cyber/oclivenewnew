@@ -55,6 +55,17 @@ pub async fn send_message(
         .map_err(Into::into)
 }
 
+/// Returns absolute on-disk path for a role pack (for kernel HTTP `role_path`).
+#[tauri::command]
+pub fn get_role_pack_path(
+    role_id: String,
+    state: State<'_, SharedAppState>,
+) -> Result<String, crate::api::error::CommandError> {
+    Ok(role_dir_for_id(state.as_ref(), role_id.trim())
+        .to_string_lossy()
+        .into_owned())
+}
+
 /// Lists chat sessions for a role/scene through the active storage backend.
 #[tauri::command]
 pub async fn list_chat_sessions(

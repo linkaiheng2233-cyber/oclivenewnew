@@ -4,6 +4,8 @@
 
 **读者**：新贡献者、插件作者、fork 宿主集成方。
 
+**English summary:** [`creator-docs/architecture-en/DESIGN_DECISIONS.md`](../architecture-en/DESIGN_DECISIONS.md) · full EN mirror in [`creator-docs-en/architecture/DESIGN_DECISIONS.md`](../../creator-docs-en/architecture/DESIGN_DECISIONS.md).
+
 ---
 
 ## 1. 蓝图不再驱动主编排顺序

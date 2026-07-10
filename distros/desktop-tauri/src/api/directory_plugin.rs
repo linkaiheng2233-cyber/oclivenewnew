@@ -70,10 +70,14 @@ pub fn read_plugin_asset_text(
     let entry = roots.get(pid).ok_or_else(|| ApiError::PluginNotFound {
         plugin_id: pid.to_string(),
     })?;
-    let path_canon = find_plugin_asset_path(entry, &rel).map_err(|e| {
+    let path = find_plugin_asset_path(entry, &rel).map_err(|e| {
         if e == "path escapes plugin directory" {
             ApiError::PermissionDenied {
                 message: "path escapes plugin directory".into(),
+            }
+        } else if e.starts_with("not found") {
+            ApiError::InvalidParameter {
+                message: format!("plugin asset not found: {rel} ({e})"),
             }
         } else {
             ApiError::Io {
@@ -81,11 +85,9 @@ pub fn read_plugin_asset_text(
             }
         }
     })?;
-    Ok(
-        std::fs::read_to_string(&path_canon).map_err(|e| ApiError::Io {
-            message: e.to_string(),
-        })?,
-    )
+    Ok(std::fs::read_to_string(&path).map_err(|e| ApiError::Io {
+        message: e.to_string(),
+    })?)
 }
 /// # Errors
 ///
@@ -147,8 +149,17 @@ pub async fn directory_plugin_invoke(
             .directory_plugins
             .ensure_rpc_url(&pid)
             .map_err(|e| map_directory_rpc_url_error(&pid, e))?;
-        invoke_directory_plugin_rpc_blocking(&url, &method, params, RemoteRpcChannel::Plugin)
-            .map_err(Into::into)
+        let timeout_ms = shared
+            .directory_plugins
+            .rpc_timeout_override_ms(&pid, &method);
+        invoke_directory_plugin_rpc_blocking(
+            &url,
+            &method,
+            params,
+            RemoteRpcChannel::Plugin,
+            timeout_ms,
+        )
+        .map_err(Into::into)
     })
     .await
     .map_err(|e| crate::error::AppError::Unknown(format!("directory_plugin_invoke join: {e}")))?

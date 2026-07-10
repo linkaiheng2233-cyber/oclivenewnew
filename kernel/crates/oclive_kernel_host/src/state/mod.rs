@@ -11,6 +11,7 @@ use crate::infrastructure::db::DbManager;
 use crate::infrastructure::directory_plugins::DirectoryPluginRuntime;
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
 use crate::infrastructure::llm::LlmClient;
+use crate::infrastructure::ollama_client::OllamaClient;
 use crate::infrastructure::policy_registry::{
     build_policy_sets_from_registry, load_policy_registry_from_path, PolicyRuntime, PolicySet,
 };
@@ -27,6 +28,7 @@ use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::sync::{Mutex, OnceCell};
 
+mod affect_sink;
 mod app_state_builder;
 mod effective_session_config;
 pub(crate) mod host_backends;
@@ -35,6 +37,7 @@ pub(crate) mod profile_evolution;
 mod roles_dir;
 mod session_backends;
 mod session_cache;
+pub use affect_sink::{AffectMetricsSink, AffectSinkHandle, AffectSnapshotEvent};
 pub use app_state_builder::AppStateBuilder;
 pub use effective_session_config::EffectiveSessionConfig;
 pub use models_dir::{
@@ -76,6 +79,8 @@ pub struct AppState {
     pub favorability_repo: Arc<dyn FavorabilityRepository>,
     pub user_llm_secrets: Arc<dyn oclive_kernel_contracts::UserLlmSecretsPort>,
     pub llm: Arc<dyn LlmClient>,
+    /// Direct Ollama client for Deep prefix-cache metrics (`keep_alive`); `None` in mock-LLM tests.
+    pub ollama: Option<Arc<OllamaClient>>,
     /// Hot-path lock layering:
     /// - `role_cache` / `role_load_inflight`: dedupe role reads;
     /// - `session_cache`: session overrides;
@@ -92,8 +97,8 @@ pub struct AppState {
     pub session_cache: Arc<SessionCache>,
     pub storage: RoleStorage,
     policy_runtime: Arc<ArcSwap<PolicyRuntime>>,
-    /// Ollama model name (overridable via `OLLAMA_MODEL`).
-    pub ollama_model: String,
+    /// Ollama model name (global default; overridable via app settings / `OLLAMA_MODEL`).
+    pub ollama_model: parking_lot::RwLock<String>,
     /// Swappable subsystem implementations (selected by `Role.plugin_backends`).
     pub plugins: PluginHost,
     /// Directory plugins (`plugins/*/manifest.json`) scan and lazy start.
@@ -119,6 +124,8 @@ pub struct AppState {
     pub(crate) user_llm_env_dirty: AtomicBool,
     /// Distro capability profile (P4); loaded once at kernel startup from env.
     pub host_profile: Arc<crate::domain::host_profile::HostProfile>,
+    /// Optional callback when profile evolution commits new display metrics (desktop Tauri push).
+    affect_metrics_sink: AffectSinkHandle,
     /// Remote/directory reply post-processor wiring (infrastructure only).
     pub(crate) reply_post_processor_resolver:
         Arc<dyn oclive_kernel_contracts::ReplyPostProcessorResolver>,
@@ -181,6 +188,32 @@ impl AppState {
     pub fn mark_user_llm_env_dirty(&self) {
         self.user_llm_env_version.fetch_add(1, Ordering::AcqRel);
         self.user_llm_env_dirty.store(true, Ordering::Release);
+    }
+
+    #[must_use]
+    pub fn global_ollama_model(&self) -> String {
+        self.ollama_model.read().clone()
+    }
+
+    pub fn set_global_ollama_model_in_memory(&self, model: String) {
+        *self.ollama_model.write() = model;
+    }
+
+    /// Borrows [`DbManager`] as [`TurnThinkingStatePort`](crate::domain::ports::TurnThinkingStatePort).
+    pub fn turn_thinking_state(
+        &self,
+    ) -> crate::infrastructure::db_ports::TurnThinkingStateAdapter<'_> {
+        crate::infrastructure::db_ports::TurnThinkingStateAdapter(self.db_manager.as_ref())
+    }
+
+    #[must_use]
+    pub fn affect_sink_handle(&self) -> AffectSinkHandle {
+        self.affect_metrics_sink.clone()
+    }
+
+    /// Register host→UI push for affect display metrics (Tauri `affect:metricsChanged`).
+    pub fn set_affect_metrics_sink(&self, sink: Option<AffectMetricsSink>) {
+        self.affect_metrics_sink.set(sink);
     }
 
     pub fn policies_for_scene(&self, scene_id: Option<&str>) -> Arc<PolicySet> {

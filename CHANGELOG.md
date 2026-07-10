@@ -6,6 +6,28 @@
 
 ### Added
 
+- **Roadmap wave 合并（2026-07-10）**：CI dimension5 增 Python 3.11（voice TTS ratchet）；loom 改 `RUSTFLAGS --cfg loom`（`cargo-loom` 已不可用）；`preferred_tts_profile` 角色切换联动（`voice.read_role_profile` + `useRoleVoiceProfileSync`）；`config.json` → `prompt_extra_sections` 生产接线（K-CONTRACT-WIRING-01）；文档 Wave-3（human-docs EN Done、dual-core 遗留 stub、ai-package EN、USER_MANUAL §3.6 语音）；e2e-tauri readiness 加固；Vitest 冒烟（Fluent 默认壳 · 流式开关）。
+
+- **[docs] English mirror wave 2**：`README.en.md` 与中文首页结构对齐（四例子 · 三发行版 · 生态 · 路线图）；`creator-docs-en` 补齐 CREATOR_GOLDEN_PATH、role-pack 深读 8 篇、dual-core、PLUGIN_MARKET、RELEASE_VERSIONING、RFC summary；`human-docs-en` 补齐 modules 全槽/设施/侧通道 + paths 三路径；路径归一（`NAMING_CONVENTIONS`、`development/LIGHTWEIGHT_PROFILE`、合并 `APPLICATION_SCENARIOS`）；新增 **`scripts/check-doc-mirror.mjs`** 接入 `npm run check:rust` 与 dimension5。
+
+- **语音首字发声优化**：流式朗读经 `streamingVoiceChunker` 过滤旁白/内心/动作行；首块更早出句；CosyVoice2 `/warm` 默认 **prime** dummy 合成；角色切换触发侧车预热与 directive 预取；插件 manifest `rpcTimeoutsMs` 声明长 RPC 超时；CSP `connect-src` 收窄至侧车默认端口 `50000`。
+- **语音扩展 v0.4（情感 TTS · 可选）**：`com.oclive.voice.asr` 升至 v0.4 · 默认纯文字；`tts_expansion_enabled` 开启后 CosyVoice2 侧车 + 模型 DLC（`voice_model_pack.json`）+ `synth_provider`（bundled / local_http / cloud）；RPC 增 `voice.probe_tts` · `voice.warm` · `voice.list_model_packs`；`rules-v1` 产出 `emo_text` + 角色包 `ref_map`；流式首句 `voice:stream-sentence` 提前 TTS；**移除 Piper 产品路径**（dev loop `--tts-sherpa` 保留）。详见插件 [`README.md`](distros/chat-pro/plugins/com.oclive.voice.asr/README.md) · [`TRACK_VOICE`](human-docs/team/TRACK_VOICE_RECOGNITION.md)。
+- **统一键位绑定系统（Phase 1–4）**：设置 → 常规 → 高级新增「键位绑定」（应用内 + 全局快捷键统一 UI）；全局插件快捷键继续复用 `save_hotkey_bindings` 注册系统级监听；`ShortcutHelp` 改为动态读取当前键位；语音插件新增 **V 按住说话**（`voice.holdToTalk`，窗口聚焦时生效，输入框聚焦不抢键）。
+- **Chat Pro Windows 98 彩蛋皮肤**：Konami 解锁 → `data-skin=win98`（`oclive-runtime-skin`）；设置 → 常规开关；Fluent + Tool 正交叠加于 `data-theme` / `data-shell` / UI 缩放；合成 Win98 标题栏（`Win98TitleBar` + Tauri `setDecorations`）与对话框 3D 窗框；见 [`MODULE_MAP_AND_HANDOFF.md`](handoff/MODULE_MAP_AND_HANDOFF.md) §13.2。
+- **独立通道 `voice.asr`（Windows 已交付 · v0.2–0.3）**：官方目录插件 [`distros/chat-pro/plugins/com.oclive.voice.asr/`](distros/chat-pro/plugins/com.oclive.voice.asr/) · `provides: voice.asr` · **不进**六槽 / `process_message`；`chat_toolbar` 按住说话 + `plugin_rpc_invoke`（`voice.probe` / `voice.transcribe` / `voice.import_model` / `voice.list_profiles` / `voice.speak` / **`voice.build_directive`**) → `com.oclive.voice.asr:submit` → `send_message` 或 `chat:set_input_draft`（`mode: fill`）；**v0.3** 增 TTS `tts_profile` · `auto_tts` · `rules-v1` 导演 · 角色包可选 `voice_profile.json`；sherpa-onnx 引擎 SSOT 在 [`examples/voice-loop-minimal/asr/`](examples/voice-loop-minimal/asr/) · [`tts/`](examples/voice-loop-minimal/tts/) 经 `rpc_server.mjs` spawn；实验 synth：`edge-tts` · `pilot-tts` · `cosyvoice` adapter；官方角色包 `ui.json` 默认启用工具栏/设置插槽；Win98 覆写见 `win98/component-plugin-toolbar.css` / `component-voice-settings.css`；`plugin_bridge` RPC 白名单单测；Linux/macOS profile 返回 `unsupported_platform`；注册表见 [`RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md`](creator-docs/rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md) §4.1。
+- **Domain layering ports（#101 解阻塞）**：`LlmClient::supports_prefix_cache` / `generate_with_opts` / `generate_stream_with_opts`；`TurnThinkingStatePort`；`co_present` / `slot_runner` / `post` 去除 domain→infra 直连；`npm run check:rust` 前置 layering + CHANGELOG parity 守门。
+- **Affect 展示通道 `display_metrics`**：`RoleData` / `RoleInfo` / `SendMessageResponse` 增 UI-only 指标（`favor` / `traits[7]` / `relation_summary`）；旧标量字段标 deprecated；前端 `roleStore` 优先读新字段。
+- **CI flake 自动重跑**：`.github/workflows/ci-rerun-flake.yml` 对 `rust` / `e2e-tauri` 失败限次 `gh run rerun --failed`。
+- **Affect WS4.2–4.4（情感解耦）**：`apply_profile_evolution_atomic` 档案+七维同事务；深度档案 LLM 门控（强事件 OR 每 N 轮 OR 雷达 `radar_deep_pending`，默认 N=3）；`get_display_metrics` GET-only（Tauri + HTTP `/display_metrics`）；Tauri `affect:metricsChanged` 推送 + `roleStore` listen。
+- **RFC affect 漂移闸**：`scripts/check-rfc-affect-drift.mjs` 接入 dimension5。
+- **Wave E · Turn Thinking 持久化分流**：`[turn_thinking] fast_persistence = "strong_only"`（默认 `legacy`）；Fast 闲聊不写 long_term / favor / evolution；**Quarrel / Apology / Confession / Praise** 仍正常写入；RFC [`creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md`](creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md)。
+- **Wave F · Turn Thinking 包级路由**：`config.json` → `turn_thinking`（OR/AND · Deep latch · ephemeral 局面摘要 TTL）；迁移 `035_turn_thinking_runtime.sql`；本句 rule event Router 前 prepass；RFC §8–12。
+- **Chat Pro 流式取消**：新消息发出时 `AbortController` 打断上一轮 SSE；清理悬空 `streaming` 气泡。
+- **Chat Pro 流式开关**：设置 → 常规 → 高级「流式回复」（`localStorage` `oclive.chat.streamEnabled`，默认开启）。
+- **Wave D · Deep persona capsule**：`prompts/deep_capsule.txt`（≤2500 字）· `meta.deep_capsule_enabled` · Small+Deep 时 `PromptBuilder` 用 capsule 替代全量 Tier0；mumu 样例已启用。
+- **Wave C · Chat Pro 流式**：主 UI 经 `sendMessageStream` 接 `POST /chat/stream`（SSE `event:token`）；失败自动回退 blocking `/chat`。
+- **Chat Pro 正式 profile**：`desktop.oclive.toml` 启用 `[turn_thinking]` Auto/Fast/Deep（`event_impact_llm` 默认仍 true，仅 Deep 轮调 event LLM）。
+- **`measure-ttft.mjs --profile desktop|desktop-latency`**：区分正式 profile 与开发 bench；[`handoff/TTFT_BENCHMARK.md`](handoff/TTFT_BENCHMARK.md) 双表 + OOCP S15 命令。
 - **Monorepo 目录重组（kernel / distros）**：`kernel/` 收纳 Rust crates；`distros/{shared,chat-pro,theater,desktop-tauri}` 拆分桌面发行版；RFC 见 [`handoff/distros/ARCHITECTURE_DECOUPLING_RFC.md`](handoff/distros/ARCHITECTURE_DECOUPLING_RFC.md)。
 - **Theater Track A 工程卫生（轮次 16）**：[`handoff/theater/MODE2_UNFREEZE.md`](handoff/theater/MODE2_UNFREEZE.md) 模式 2 解冻 checklist；`theater-prompt-drift` 接入 `dimension5-acceptance.mjs` 与 `test:theater:smoke`；minimal 导演插件示例自包含 `prompts/`；`data/plugins.json` 登记 `com.oclive.theater_director_official`。
 - **AI 剧场 Patch 涟漪升级**：poke 默认 `mode=patch`（局部 prose 小剧情 + 保留 skeleton 尾部）；`patch_variant` 双候选后台生成 + `TheaterVariantBackdrop` 拖拽切换；设置 → 舞台 Tab 可选 ripple 降级与自定义 poke 主角。
@@ -14,10 +36,18 @@
 - **`human-docs/08_PR_GATE_MATRIX.md`**、**`09_GLOSSARY.md`**、**`10_SETUP_WINDOWS.md`**。
 - **`handoff/GOOD_FIRST_ISSUES.md`** 策展表。
 - **`npm run check:ci-local`**；`package.json` `engines.node >=20`、**`.nvmrc`**。
-- 前端：`src/api/plugin/*`、`useMainShell*`、`useChatStorageSettings`、`chatStoreSend`。
+- 前端：`distros/shared/src/api/plugin/*`、`useMainShell*`、`useChatStorageSettings`、`chatStoreSend`。
 
 ### Changed
 
+- **Voice ASR v0.2.1（识别质量）**：聊天栏录音 WebM/Opus 经 `audioCapture.ts` 解码并重采样为 **16 kHz mono WAV** 再送 sherpa（修复此前误当 PCM 导致的识别极差）；麦克风约束启用 echoCancellation / noiseSuppression / autoGainControl；最短录音 350ms；引擎侧识别器缓存、过静音门控（`audio_too_quiet`）、可选 **ffmpeg** 压缩音频回退；新增 **medium** ASR profile 占位（设置里切换，需自行导入模型）。
+
+- **Win98 皮肤 CSS 分层重构**：单体 `theme-win98.css` 拆为 `distros/shared/src/styles/win98/`（L0 tokens · L1 primitives · L2 壳 · L3 面板/组件 co-locate unscoped import）；最大化满框无青绿边、主窗 2px 圆角、对话框 navy 标题条贴边；见 [`MODULE_MAP_AND_HANDOFF.md`](handoff/MODULE_MAP_AND_HANDOFF.md) §13.2 样式依赖表。
+- **Win98 皮肤抛光**：补全 `modal-backdrop` / `TimeDial.backdrop` 遮罩；Tool `UiSidePanel` navy 标题条与 Win98 ✕；合成标题栏改用 OCLive 应用图标（`public/oclive-icon.png`）。
+- **Fluent「更多」面板 IA**：动作按钮顺序改为 设置 → 模型 → 插件 → 市场 → 快捷键说明；磁贴按 核心 / 插件 / 场景 / 开发 分组，Debug 移至末尾；设置 → 常规移除无内容的「快捷键」占位小节（说明入口保留在「更多」与 Ctrl 长按）。面板磁贴改为自适应栅格（`auto-fill minmax`），按占地大小从左到右排列（设置 / 场景跨两列，其余单列），日常聊 / 剧情两种模式下均整齐对齐。
+- **Chat Pro 默认壳 Fluent**：`resolveOcliveShell()` fallback 由 `tool` 改为 **`fluent`**（安静客厅）；`VITE_OCLIVE_SHELL=tool` 仍可显式启用 ToolShell；早启动 `index.html` `data-shell` 同步；暗色品牌黛绿与浅色同色相（`--fluent-accent`）；角色 `primaryColor` 轻度染色（focus / 用户气泡 / runtime rail）；FluentShell 挂载 `InteractionModeBar` 为壳内唯一模式切换；互动模式 IA 见 [`MODULE_MAP_AND_HANDOFF.md`](handoff/MODULE_MAP_AND_HANDOFF.md) §13.1。
+- **Prompt 力学彻底文本化（RFC #2 深化）**：`PromptBuilder` 不再向对话 prompt 注入任何好感/关系数值、关系阶段、事件块、边界语气指引或七维数值派生口吻（删除 `build_event_relation_state` / `build_boundary_tone_guideline` / `build_current_state` 及其数值辅助函数）；人设与语气完全由核心档案 + `mutable_personality` 叙事 + 用户情绪线索驱动，仅保留无数值的「真实性约束」防编造守门；七维/好感退场为 `display_metrics` 只读展示。
+- **Chat Pro 默认 profile**：`desktop.oclive.toml` 启用 `fast_persistence = "strong_only"`（Fast 闲聊不涨好感/不进长期记忆；强关系事件仍巩固）。旧 session 数据不回滚。
 - **仓库物理布局**：根 `crates/`、`src-tauri/`、`src/` 分别迁至 `kernel/crates/`、`distros/desktop-tauri/`、`distros/{shared,chat-pro,theater}/`；根 `npm run tauri:dev` / `tauri:dev:theater` 行为不变。
 - **Theater 文档 SSOT 扫尾**：`theater_director` 由「拟/Deferred」统一为**已交付（2026-06）**（DISTRO_DEFAULT_PLUGINS · ARCHITECTURE · NAMING · ROADMAP §7 · IA）；[`TECHNICAL_DEBT_INVENTORY.md`](handoff/TECHNICAL_DEBT_INVENTORY.md) 轮次 16；验收链指向 [`PLAYTEST_MATRIX.md`](handoff/theater/PLAYTEST_MATRIX.md)。
 - **hybrid 聊天镜像**：`rebuild_mirror_best_effort` / `delete_mirror_best_effort`（K-ROBUST-01）。
@@ -69,6 +99,12 @@
 - **长期记忆与操作日志索引（K-PERF-23）**：migration `034_perf_indexes.sql`（`idx_ltm_role_content` / `idx_operation_logs_role`）。
 - **post 阶段 Role clone 减少（K-PERF-24）**：`TurnContext.role_arc` 供 profile evolution spawn 复用。
 - **`pre_llm` Wave 1 并行（K-PERF-14）**：`turn_pipeline/pre.rs` 以 `tokio::try_join!` 并行 context / emotion / 模型 / narrative hint / 记忆五路只读；`oclive_turn` 输出 `pre_llm_wave1` 汇总；采样见 `PERFORMANCE.md` §6。
+
+### Fixed
+
+- **历史聊天记录在剧情场景下消失**：冷启动统一 `bootstrapChatForRole`（await 拉取 + `beginNewChatSessionOnRestart` 折叠）；移除 `interactionMode` watch 的 `immediate` 竞态；`loadedBucketKeys` 防止空占位桶短路；切角色时按后端有会话的场景 / 角色包场景 / IDB 索引回退加载。守门 `chatStoreScene.test.ts`、`chatStoreLoad.test.ts`，见 [`CHAT_STORAGE_ARCHITECTURE.md`](handoff/CHAT_STORAGE_ARCHITECTURE.md)。
+- **Ctrl+Shift+S 打开设置失效**：`useGlobalHotkeys` 误引用未传入的 `opts.openSettingsView`（运行时为 `undefined`），改为调用本地 `openSettingsView`；theater 壳仍发 `theater:settings`。
+- **语音插件 `get_plugin_settings_ui` 桥接失败**：`ui_slots` 经 `plugin_bridge_invoke` 调用插件设置读/写时，桌面未在 `dispatch_local_bridge_command` 分发 `get_plugin_settings_ui` / `set_plugin_settings_config`，报 `unsupported bridge command`；已路由至 `plugin_config.rs`。
 
 ---
 

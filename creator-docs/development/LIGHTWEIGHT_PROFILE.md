@@ -103,4 +103,4 @@ cargo bloat --release -n 8
 
 ---
 
-[English](../../creator-docs-en/LIGHTWEIGHT_PROFILE.md)
+[English](../../creator-docs-en/development/LIGHTWEIGHT_PROFILE.md)

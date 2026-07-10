@@ -20,4 +20,6 @@ alwaysApply: true
 
 7. **命名 SSOT**：canonical import 与禁止别名见 [`creator-docs/NAMING_CONVENTIONS.md`](creator-docs/NAMING_CONVENTIONS.md) §4.2（DTO → `oclive_kernel_types`；trait → `oclive_kernel_contracts`；编排 → `oclive_kernel_host`）。回复字段为 **`reply`**（非 `response`）；六槽键用 `plugin_backends` / `slot_registry.type`（非 `memory_backend` 等自造别名）。
 
-8. **AI 改动边界（禁止区摘要）**：见 [`handoff/AI_CHANGE_BOUNDARIES.md`](handoff/AI_CHANGE_BOUNDARIES.md)。角色任务不改 `slot_registry`；不把 RFC Draft 当未实现而删 wiring；路径改动须 grep 全仓 `roles/` / `src-tauri`；改 `Cargo.lock` 须 `cargo audit` 并更新 `KNOWN_VULNERABILITIES.md`。
+8. **AI 深读索引**：系统了解项目、按任务翻 SSOT → [`handoff/AI_READING_INDEX.md`](handoff/AI_READING_INDEX.md)；改代码前精简门禁 → [`AGENTS.md`](AGENTS.md)。**GitHub README 仅面向人类**。
+
+9. **AI 改动边界（禁止区摘要）**：见 [`handoff/AI_CHANGE_BOUNDARIES.md`](handoff/AI_CHANGE_BOUNDARIES.md)（G1–G16）。角色任务不改 `slot_registry`；不把 RFC Draft 当未实现而删 wiring；路径改动须 grep 全仓 `roles/` / `src-tauri`；改 `Cargo.lock` 须 `cargo audit` 并更新 `KNOWN_VULNERABILITIES.md`。**动文档前先读** [`handoff/README.md`](handoff/README.md) §文档分责；无 RFC **不新建**顶层 `.md`；**链接代替复制**（G14）。

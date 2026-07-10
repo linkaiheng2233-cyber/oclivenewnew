@@ -1,5 +1,7 @@
 # Role pack format (ROLE_PACK_SPEC)
 
+[中文](../../creator-docs/role-pack/ROLE_PACK_SPEC.md)
+
 > **Boundary (required):** **Role packs contain only identity, personality, relations, and prompt content. System configuration (slots, backends, models, interaction mode, dual-core, etc.) is owned by the blueprint.** See **[handoff/ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md)** and **[SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)**.
 
 **Author learning path:** [CREATOR_LEARNING_PATH.md](CREATOR_LEARNING_PATH.md)
@@ -61,6 +63,7 @@ Reference: `distros/chat-pro/roles/mumu/config.json`.
 | `time` | Virtual clock ratio and jump-time forgetting |
 | `memory` | Long-term memory decay and reinforcement |
 | `relation` | Intimacy estrangement and relation downgrade |
+| `turn_thinking` | Co-present Fast/Deep routing, Deep latch, ephemeral situation summary — see §9.11 |
 
 ### 9.3 `time`
 
@@ -92,3 +95,11 @@ Formula: remaining weight ≈ initial × e^(−λ × virtual_age), λ = ln(2) / 
 Estrangement runs at **turn start** in immersive mode only; each actual chat turn applies a small recovery bump so interaction is not fully erased by decay.
 
 Types: `oclive_kernel_types::RolePackConfigFile`. Parse errors: host **warns** and keeps defaults; role load continues.
+
+### 9.11 `turn_thinking` (Wave F · co-present routing)
+
+**Full schema (Chinese SSOT):** [ROLE_PACK_SPEC.md §9.11](../../creator-docs/role-pack/ROLE_PACK_SPEC.md#911-turn_thinkingwave-f) · RFC [RFC_TURN_THINKING_PERSISTENCE_SUMMARY.md](../rfc/RFC_TURN_THINKING_PERSISTENCE_SUMMARY.md).
+
+Optional object for **when to route Deep**, **latch until reconciliation** (e.g. Quarrel → Apology), and **ephemeral_archive** (rule-written situation summary with TTL, injected as `【局面摘要】`). Host defaults OR-merge with pack rules; **no player UI toggle**.
+
+Validated by `oclive pack validate` (signal enums, TTL 1–8). Pack editor UI: **PE-TURN-01** (open in `oclive-pack-editor`).

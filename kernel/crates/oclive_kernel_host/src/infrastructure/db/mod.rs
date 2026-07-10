@@ -329,6 +329,23 @@ impl oclive_kernel_contracts::MutablePersonalityStore for DbManager {
     async fn set_mutable_personality(&self, role_id: &str, text: &str) -> Result<()> {
         DbManager::set_mutable_personality(self, role_id, text).await
     }
+
+    async fn apply_profile_evolution_atomic(
+        &self,
+        role_id: &str,
+        mutable_text: &str,
+        core_json: &str,
+        delta_json: &str,
+    ) -> Result<()> {
+        DbManager::apply_profile_evolution_atomic(
+            self,
+            role_id,
+            mutable_text,
+            core_json,
+            delta_json,
+        )
+        .await
+    }
 }
 
 #[async_trait::async_trait]
@@ -736,6 +753,74 @@ mod tests {
 
         let count = db.count_memories("test_role").await.unwrap();
         assert_eq!(count, 500);
+    }
+
+    #[tokio::test]
+    async fn fast_persistence_zero_importance_skips_long_term_memory() {
+        let pool = setup_test_db().await.unwrap();
+        let db = DbManager::new(pool);
+        let personality = PersonalityVector {
+            stubbornness: 0.5,
+            clinginess: 0.5,
+            sensitivity: 0.5,
+            assertiveness: 0.5,
+            forgiveness: 0.5,
+            talkativeness: 0.5,
+            warmth: 0.5,
+        };
+        let casual_event = Event {
+            event_type: EventType::Ignore,
+            user_emotion: "neutral".to_string(),
+            bot_emotion: "neutral".to_string(),
+        };
+        for i in 0..3 {
+            db.apply_chat_turn_atomic(ChatTurnTxInput {
+                role_id: "test_role",
+                personality: &personality,
+                current_emotion: "Neutral",
+                relation_state: "Stranger",
+                user_relation_key: "stranger",
+                favor_delta: 0.0,
+                memory_content: &format!("casual line {}", i),
+                memory_importance: 0.0,
+                memory_fifo_limit: 500,
+                memory_similarity_threshold: 0.6,
+                event: &casual_event,
+                user_message: "你好",
+                bot_reply: "嗨",
+                scene_id: "default",
+            })
+            .await
+            .unwrap();
+        }
+        let casual_count = db.count_memories("test_role").await.unwrap();
+        assert_eq!(casual_count, 0);
+
+        let strong_event = Event {
+            event_type: EventType::Quarrel,
+            user_emotion: "angry".to_string(),
+            bot_emotion: "sad".to_string(),
+        };
+        db.apply_chat_turn_atomic(ChatTurnTxInput {
+            role_id: "test_role",
+            personality: &personality,
+            current_emotion: "Sad",
+            relation_state: "Stranger",
+            user_relation_key: "stranger",
+            favor_delta: -0.1,
+            memory_content: "quarrel line",
+            memory_importance: 0.6,
+            memory_fifo_limit: 500,
+            memory_similarity_threshold: 0.6,
+            event: &strong_event,
+            user_message: "你怎么这样",
+            bot_reply: "对不起",
+            scene_id: "default",
+        })
+        .await
+        .unwrap();
+        let after_strong = db.count_memories("test_role").await.unwrap();
+        assert_eq!(after_strong, 1);
     }
 
     #[tokio::test]

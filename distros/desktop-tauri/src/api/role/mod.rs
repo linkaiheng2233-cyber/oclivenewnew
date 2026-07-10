@@ -3,6 +3,7 @@
 //! Blueprint v2 disk writes go through [`save_role_slot_registry`]; there is **no** legacy Tauri command that only writes
 //! `manifest.json`/`settings.json` `plugin_backends` (old packs are read-only via [`RoleStorage::load_role_from_legacy_manifest_dir`]).
 
+pub mod affect;
 pub mod evolution;
 pub mod expert;
 pub mod identity;
@@ -11,6 +12,7 @@ pub mod slot_session;
 
 pub use oclive_kernel_host::service::role::{display, interaction, runtime};
 
+pub use affect::get_display_metrics;
 pub use evolution::{
     set_evolution_factor_impl, set_remote_life_enabled_impl, set_role_interaction_mode_impl,
 };

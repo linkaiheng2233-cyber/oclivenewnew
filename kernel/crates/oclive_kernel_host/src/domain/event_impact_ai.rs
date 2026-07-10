@@ -25,6 +25,36 @@ pub fn event_impact_ai_enabled() -> bool {
         .unwrap_or(true)
 }
 
+#[must_use]
+pub fn event_impact_llm_enabled(profile_allows: bool) -> bool {
+    profile_allows && event_impact_ai_enabled()
+}
+
+/// Rule-based event impact (no pre-LLM call).
+///
+/// # Errors
+///
+/// Propagates errors from [`EventDetector::detect_with_augment`] when rule detection fails.
+pub fn estimate_event_impact_rules_only(
+    user_message: &str,
+    user_emotion: &Emotion,
+    knowledge_augment: Option<&KnowledgeEventAugment>,
+) -> Result<EventImpactEstimate> {
+    let bot_emotion_placeholder = Emotion::Neutral;
+    let fallback_event = EventDetector::detect_with_augment(
+        user_message,
+        user_emotion,
+        &bot_emotion_placeholder,
+        knowledge_augment.filter(|a| !a.is_empty()),
+    )?;
+    let fallback_event_type = fallback_event.event_type;
+    Ok(EventImpactEstimate {
+        event_type: fallback_event_type,
+        impact_factor: EventDetector::get_impact_factor(&fallback_event_type),
+        confidence: EventDetector::get_confidence(&fallback_event_type),
+    })
+}
+
 fn parse_event_type_ai_token(raw: &str) -> Option<EventType> {
     let t = raw.trim();
     if t.is_empty() {
@@ -341,6 +371,7 @@ pub async fn estimate_event_impact(
     recent_turns: &[(String, String)],
     recent_events: &[Event],
     knowledge_augment: Option<&KnowledgeEventAugment>,
+    use_llm: bool,
 ) -> Result<EventImpactEstimate> {
     let bot_emotion_placeholder = Emotion::Neutral;
     let fallback_event = EventDetector::detect_with_augment(
@@ -353,7 +384,7 @@ pub async fn estimate_event_impact(
     let fallback_impact = EventDetector::get_impact_factor(&fallback_event_type);
     let fallback_confidence = EventDetector::get_confidence(&fallback_event_type);
 
-    if !event_impact_ai_enabled() {
+    if !event_impact_llm_enabled(use_llm) {
         return Ok(EventImpactEstimate {
             event_type: fallback_event_type,
             impact_factor: fallback_impact,
@@ -489,6 +520,7 @@ mod tests {
             &[],
             &[],
             None,
+            true,
         )
         .await
         .unwrap();

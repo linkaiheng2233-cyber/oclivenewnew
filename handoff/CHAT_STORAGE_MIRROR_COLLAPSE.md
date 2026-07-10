@@ -1,5 +1,7 @@
 # 聊天存储后端收敛 · hybrid + mirror（破坏性摘要）
 
+> **历史摘要 · 2026-06-05 已完成** — 现行架构 SSOT：[`CHAT_STORAGE_ARCHITECTURE.md`](./CHAT_STORAGE_ARCHITECTURE.md)。本文仅保留破坏性变更审计对照，**勿**当当前行为 truth。
+
 **日期**：2026-06-05 · 对应优化计划阶段三 `p3-storage-collapse`
 
 ## 变更

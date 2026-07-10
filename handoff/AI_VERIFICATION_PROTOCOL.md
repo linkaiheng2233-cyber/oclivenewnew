@@ -162,9 +162,32 @@ node -e "const fs=require('fs'),path=require('path');function walk(d,a=[]){for(c
 
 ---
 
-## 5. 相关
+## 5. 文档引用核实
+
+**禁止**在审查报告 / 技术债建议中引用下列来源作为 **现行行为** SSOT：
+
+| 禁止作 truth | 改用 |
+|--------------|------|
+| `handoff/archive/*` · `04_4.6_PROJECT_TRUTH_CHECKLIST.md` | BUS_FACTOR + 源码 |
+| 已完成 Phase closure（如 USER_IDENTITY Phase2 设计报告） | 源码 + MODULE_MAP §11 |
+| AGENTS 内核长节（未与 MODULE_MAP 对齐的段落） | [`MODULE_MAP_AND_HANDOFF.md`](./MODULE_MAP_AND_HANDOFF.md) |
+| 复制 MODULE_MAP 表格到其他 handoff 新文 | **链接** MODULE_MAP |
+
+**模块/槽位相关结论**须对照 [`MODULE_MAP_AND_HANDOFF.md`](./MODULE_MAP_AND_HANDOFF.md)；**文档分责**见 [`handoff/README.md`](./README.md) §文档分责 · G10–G16。
+
+**文档类 L2/L3 结论额外要求**：
+
+- 声称「文档缺失 / 应新建 XX.md」前：必须证明 [`handoff/README.md`](./README.md) §文档分责 **无** 覆盖 SSOT（G11）。
+- 声称「文档与源码不一致」：须给出 **SSOT 路径 + 源码路径** 各一，禁止只引用 AGENTS 长节。
+- 文档改动汇报须列出：**只改了哪一份 SSOT**；若 >1 份，须说明为何非 G12 违规或 maintainer 明示。
+
+---
+
+## 6. 相关
 
 - [AI_CHANGE_BOUNDARIES.md](./AI_CHANGE_BOUNDARIES.md) — 改动边界
 - [RECURRING_OPTIMIZATION_PLAYBOOK.md](./RECURRING_OPTIMIZATION_PLAYBOOK.md) — 巡检流程
 - [TECHNICAL_DEBT_INVENTORY.md](./TECHNICAL_DEBT_INVENTORY.md) — 台账
 - [INVOKE_HOTPATH_MATRIX.md](./INVOKE_HOTPATH_MATRIX.md) — invoke 条数 SSOT
+- [MODULE_MAP_AND_HANDOFF.md](./MODULE_MAP_AND_HANDOFF.md) — 模块注册表
+- [handoff/README.md](./README.md) §文档分责

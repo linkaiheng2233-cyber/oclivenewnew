@@ -1,5 +1,6 @@
 //! Role load / snapshot impls shared by HTTP routes and Tauri invoke.
 
+pub mod affect;
 pub mod delete;
 pub mod display;
 pub mod identity;
@@ -7,6 +8,7 @@ pub mod interaction;
 pub mod runtime;
 pub mod slot_session;
 
+pub use affect::get_display_metrics_impl;
 pub use delete::delete_role_impl;
 pub use identity::{
     get_user_identity_state_impl, set_scene_user_identity_impl, set_user_identity_impl,

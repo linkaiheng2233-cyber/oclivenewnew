@@ -97,6 +97,8 @@ pub struct HostProfile {
     pub distro_id: String,
     pub skip_agent: bool,
     pub skip_complex_emotion: bool,
+    /// When false, skip pre-LLM `generate_tag` for event impact (rules-only `EventDetector`).
+    pub event_impact_llm: bool,
     pub prompt_profile: PromptProfile,
     pub backends_ceiling: Option<PluginBackends>,
     pub user_identity: UserIdentityProfile,
@@ -110,6 +112,7 @@ pub struct HostProfile {
     /// Distro visual gating: `off` | `image_only` | `stage_full` (None = no gating).
     pub visual_presentation_mode: Option<String>,
     pub theater: TheaterProfile,
+    pub turn_thinking: TurnThinkingProfile,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -154,6 +157,113 @@ impl PromptProfile {
             Self::Full
         }
     }
+
+    #[must_use]
+    pub fn is_concise(self) -> bool {
+        matches!(self, Self::Concise)
+    }
+}
+
+/// Per-turn latency policy (`[turn_thinking]` in `distro.oclive.toml`).
+#[derive(Debug, Clone)]
+pub struct TurnThinkingProfile {
+    pub default: TurnThinkingDefault,
+    pub fast_skip_complex_emotion: bool,
+    pub auto_deep_min_chars: usize,
+    pub auto_deep_keywords: Vec<String>,
+    pub fast_knowledge_limit: usize,
+    pub fast_memory_cap: usize,
+    /// When `Some(true)`, force Deep capsule on Small+Deep when file exists; `Some(false)` blocks.
+    pub deep_capsule: Option<bool>,
+    /// When `Some(true)`, Deep+Ollama uses `build_prompt_segments` for llama.cpp prefix reuse.
+    pub prompt_prefix_cache: Option<bool>,
+    /// `legacy` = Fast rounds persist favor/memory/evolution as today; `strong_only` = Fast casual skips.
+    pub fast_persistence: FastPersistenceMode,
+    /// Profile-mode deep archive LLM every N co-present turns (default 3; 0 = disable interval gate).
+    pub deep_profile_update_every_n_turns: u32,
+}
+
+impl Default for TurnThinkingProfile {
+    fn default() -> Self {
+        Self {
+            default: TurnThinkingDefault::Auto,
+            fast_skip_complex_emotion: true,
+            auto_deep_min_chars: 80,
+            auto_deep_keywords: vec!["认真".into(), "很重要".into(), "别敷衍".into()],
+            fast_knowledge_limit: 4,
+            fast_memory_cap: 4,
+            deep_capsule: None,
+            prompt_prefix_cache: None,
+            fast_persistence: FastPersistenceMode::default(),
+            deep_profile_update_every_n_turns: 3,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum FastPersistenceMode {
+    #[default]
+    Legacy,
+    StrongOnly,
+}
+
+impl FastPersistenceMode {
+    #[must_use]
+    pub fn parse(s: &str) -> Self {
+        if s.trim().eq_ignore_ascii_case("strong_only") {
+            Self::StrongOnly
+        } else {
+            Self::Legacy
+        }
+    }
+}
+
+#[must_use]
+pub fn fast_persistence_effective(host: &HostProfile) -> FastPersistenceMode {
+    if std::env::var("OCLIVE_FAST_PERSISTENCE")
+        .ok()
+        .is_some_and(|v| v.eq_ignore_ascii_case("strong_only"))
+    {
+        return FastPersistenceMode::StrongOnly;
+    }
+    host.turn_thinking.fast_persistence
+}
+
+#[must_use]
+pub fn prompt_prefix_cache_effective(host: &HostProfile) -> bool {
+    if std::env::var("OCLIVE_PROMPT_PREFIX_CACHE")
+        .ok()
+        .is_some_and(|v| v == "1" || v.eq_ignore_ascii_case("true"))
+    {
+        return true;
+    }
+    host.turn_thinking.prompt_prefix_cache == Some(true)
+}
+
+#[must_use]
+pub fn bench_telemetry_enabled() -> bool {
+    std::env::var("OCLIVE_BENCH_TELEMETRY")
+        .ok()
+        .is_some_and(|v| v == "1" || v.eq_ignore_ascii_case("true"))
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum TurnThinkingDefault {
+    #[default]
+    Auto,
+    Fast,
+    Deep,
+}
+
+impl TurnThinkingDefault {
+    #[must_use]
+    pub fn parse(s: &str) -> Self {
+        match s.trim().to_ascii_lowercase().as_str() {
+            "fast" => Self::Fast,
+            "deep" => Self::Deep,
+            _ => Self::Auto,
+        }
+    }
 }
 
 fn host_profile_from_distro_file(
@@ -166,6 +276,11 @@ fn host_profile_from_distro_file(
     let (skip_agent, skip_complex_emotion) = file.parse_distro_skip_flags();
     profile.skip_agent = skip_agent;
     profile.skip_complex_emotion = skip_complex_emotion;
+    if let Some(ref hf) = file.host_flags {
+        if let Some(v) = hf.event_impact_llm {
+            profile.event_impact_llm = v;
+        }
+    }
     if let Some(ref p) = file.prompt {
         if let Some(ref prof) = p.profile {
             profile.prompt_profile = PromptProfile::parse(prof);
@@ -242,6 +357,42 @@ fn host_profile_from_distro_file(
             .map(|s| s.trim().to_string())
             .filter(|s| !s.is_empty());
     }
+    if let Some(ref tt) = file.turn_thinking {
+        if let Some(ref d) = tt.default {
+            profile.turn_thinking.default = TurnThinkingDefault::parse(d);
+        }
+        if let Some(v) = tt.fast_skip_complex_emotion {
+            profile.turn_thinking.fast_skip_complex_emotion = v;
+        }
+        if let Some(n) = tt.auto_deep_min_chars {
+            profile.turn_thinking.auto_deep_min_chars = n.max(20);
+        }
+        if let Some(ref kws) = tt.auto_deep_keywords {
+            profile.turn_thinking.auto_deep_keywords = kws
+                .iter()
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect();
+        }
+        if let Some(n) = tt.fast_knowledge_limit {
+            profile.turn_thinking.fast_knowledge_limit = n.clamp(1, 8);
+        }
+        if let Some(n) = tt.fast_memory_cap {
+            profile.turn_thinking.fast_memory_cap = n.clamp(1, 8);
+        }
+        if let Some(v) = tt.deep_capsule {
+            profile.turn_thinking.deep_capsule = Some(v);
+        }
+        if let Some(v) = tt.prompt_prefix_cache {
+            profile.turn_thinking.prompt_prefix_cache = Some(v);
+        }
+        if let Some(ref fp) = tt.fast_persistence {
+            profile.turn_thinking.fast_persistence = FastPersistenceMode::parse(fp);
+        }
+        if let Some(n) = tt.deep_profile_update_every_n_turns {
+            profile.turn_thinking.deep_profile_update_every_n_turns = n.max(1);
+        }
+    }
     Ok(profile)
 }
 
@@ -251,6 +402,7 @@ impl Default for HostProfile {
             distro_id: "default".into(),
             skip_agent: false,
             skip_complex_emotion: false,
+            event_impact_llm: true,
             prompt_profile: PromptProfile::Full,
             backends_ceiling: None,
             user_identity: UserIdentityProfile::default(),
@@ -261,11 +413,34 @@ impl Default for HostProfile {
             interaction: InteractionProfile::default(),
             visual_presentation_mode: None,
             theater: TheaterProfile::default(),
+            turn_thinking: TurnThinkingProfile::default(),
         }
     }
 }
 
+/// Whether theater director plugins should be indexed for the active host profile.
+#[must_use]
+pub fn theater_director_enabled(profile: &HostProfile) -> bool {
+    profile.theater_director_enabled()
+}
+
 impl HostProfile {
+    /// Whether this distro profile (or env override) enables the theater director directory plugin.
+    #[must_use]
+    pub fn theater_director_enabled(&self) -> bool {
+        if self
+            .theater
+            .director_plugin
+            .as_ref()
+            .is_some_and(|s| !s.trim().is_empty())
+        {
+            return true;
+        }
+        std::env::var(ENV_THEATER_DIRECTOR_PLUGIN)
+            .ok()
+            .is_some_and(|s| !s.trim().is_empty())
+    }
+
     #[must_use]
     pub fn state_expression_hint(&self, favorability: f64) -> &str {
         self.state_expression
@@ -633,6 +808,27 @@ favor_low = "保持距离与礼貌"
         assert_eq!(se.hint_for_favor(70.0), "更信任用户的技术判断，少寒暄");
         assert_eq!(se.hint_for_favor(50.0), "保持友好但不越界");
         assert_eq!(se.hint_for_favor(20.0), "保持距离与礼貌");
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn parse_turn_thinking_fast_persistence() {
+        let dir =
+            std::env::temp_dir().join(format!("oclive_host_profile_tt_{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let file = dir.join("distro.oclive.toml");
+        let raw = r#"
+distro_id = "desktop-latency"
+[turn_thinking]
+fast_persistence = "strong_only"
+"#;
+        let mut f = std::fs::File::create(&file).unwrap();
+        f.write_all(raw.as_bytes()).unwrap();
+        let p = load_host_profile_file(&file).unwrap();
+        assert_eq!(
+            p.turn_thinking.fast_persistence,
+            FastPersistenceMode::StrongOnly
+        );
         let _ = std::fs::remove_dir_all(dir);
     }
 

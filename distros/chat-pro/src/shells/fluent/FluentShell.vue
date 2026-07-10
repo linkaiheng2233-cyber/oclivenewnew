@@ -9,12 +9,12 @@ import StartupWarningsBanner from '@oclive/shared/components/StartupWarningsBann
 import PluginChatHeaderSlots from '@oclive/shared/components/PluginChatHeaderSlots.vue'
 import PluginSidebarSlots from '@oclive/shared/components/PluginSidebarSlots.vue'
 import PluginSlotEmbed from '@oclive/shared/components/PluginSlotEmbed.vue'
-import RoleIdentityControls from '@oclive/shared/components/role/RoleIdentityControls.vue'
 import RoleSelector from '@oclive/shared/components/role/RoleSelector.vue'
 import TopBarSceneModeDialog from '@oclive/shared/components/scene/TopBarSceneModeDialog.vue'
 import ShortcutHelp from '@oclive/shared/components/ShortcutHelp.vue'
 import Toast from '@oclive/shared/components/Toast.vue'
 import UiResizeHandle from '@oclive/shared/components/ui/UiResizeHandle.vue'
+import Win98TitleBar from '@oclive/shared/components/win98/Win98TitleBar.vue'
 import { MAIN_SHELL_KEY } from '@oclive/shared/composables/mainShellKey'
 import {
   getLayoutWidths,
@@ -22,7 +22,6 @@ import {
 } from '@oclive/shared/composables/useLayoutWidths'
 import ImmersiveModeIntro from '@oclive/shared/components/onboarding/ImmersiveModeIntro.vue'
 import ImmersiveUnlockBanner from '@oclive/shared/components/onboarding/ImmersiveUnlockBanner.vue'
-import IdentitySurpriseSheet from '@oclive/shared/components/onboarding/IdentitySurpriseSheet.vue'
 import InteractionModeBar from '@oclive/shared/components/onboarding/InteractionModeBar.vue'
 import PresetRolePicker from '@oclive/shared/components/onboarding/PresetRolePicker.vue'
 import {
@@ -45,7 +44,6 @@ if (!shell) {
 
 const {
   t,
-  localePreference,
   toast,
   showToast,
   roleStore,
@@ -103,7 +101,6 @@ const {
   portraitAssetRelPath,
   statusHeart,
   progressive,
-  onInteractionModeChange,
   onSend,
   onSwitchRole,
   onChangeRelation,
@@ -126,12 +123,12 @@ function onLeftRailResize(deltaX: number) {
 <template>
   <main class="layout">
     <div class="app-frame">
+      <Win98TitleBar />
       <header class="top-bar">
         <TopBarMorePanel
           v-model="topMoreOpen"
           :relation-options="relationOptions"
           :all-scene-options="allSceneOptions"
-          :show-identity-section="progressive.showIdentityControls"
           @open-settings="openSettingsView"
           @open-shortcut-help="openShortcutHelp"
           @open-plugin-manager="openPluginManagerPanel"
@@ -215,8 +212,8 @@ function onLeftRailResize(deltaX: number) {
               :layout="wideSplitLayout ? 'sidebar' : 'stack'"
               :role-id="roleStore.currentRoleId"
               :name="roleName"
-                :emotion="emotion"
-                :portrait-asset-rel-path="portraitAssetRelPath"
+              :emotion="emotion"
+              :portrait-asset-rel-path="portraitAssetRelPath"
               :bootstrap-epoch="pluginStore.bootstrapEpoch"
             />
             <RoleplayAsidePanel v-if="roleStore.interactionImmersive" :text="latestRoleplayAside" />
@@ -228,7 +225,6 @@ function onLeftRailResize(deltaX: number) {
             >
               {{ t("app.sidebar.favorability") }} {{ Math.round(roleStore.roleInfo.favorability) }} {{ statusHeart }}
             </div>
-            <RoleIdentityControls v-if="progressive.showIdentityControls" variant="compact" />
             <div
               v-if="roleStore.interactionImmersive && roleStore.roleInfo.currentLife?.label"
               class="left-pane-life"
@@ -268,21 +264,14 @@ function onLeftRailResize(deltaX: number) {
               </transition>
             </div>
             <section class="input-area">
-              <InteractionModeBar />
               <ImmersiveUnlockBanner
                 :visible="progressive.showImmersiveUnlockBanner"
                 @try-story="progressive.tryStoryMode"
                 @dismiss="progressive.dismissImmersiveHint"
               />
-              <IdentitySurpriseSheet
-                :visible="progressive.identitySheetVisible"
-                :options="progressive.identitySurpriseOptions"
-                @pick="progressive.pickIdentity"
-                @keep="progressive.keepIdentity"
-              />
               <ChatPluginToolbarSlots
-                v-if="roleStore.interactionImmersive"
                 :bootstrap-epoch="pluginStore.bootstrapEpoch"
+                :platform-only="!roleStore.interactionImmersive"
               />
               <SceneTravelBars
                 v-if="roleStore.interactionImmersive"
@@ -298,6 +287,7 @@ function onLeftRailResize(deltaX: number) {
                 @confirm-post-reply="confirmPostReplyScene"
                 @dismiss-post-reply="dismissPostReplySceneBar"
               />
+              <InteractionModeBar />
               <ChatInput ref="chatInputRef" :loading="chatStore.isLoading" @send="onSend" />
             </section>
           </div>
@@ -590,4 +580,8 @@ function onLeftRailResize(deltaX: number) {
   box-shadow: var(--shadow-sm);
   z-index: 2;
 }
+</style>
+
+<style>
+@import '@oclive/shared/styles/win98/shell-fluent.css';
 </style>

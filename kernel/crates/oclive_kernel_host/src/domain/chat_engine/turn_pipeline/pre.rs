@@ -69,6 +69,7 @@ pub(crate) fn skipped_complex_emotion() -> crate::domain::complex_emotion::Compl
 pub(crate) struct PreLlmMemory {
     pub event_runtime: f64,
     pub mutable_for_prompt: String,
+    pub ephemeral_for_prompt: String,
     pub personality: PersonalityVector,
     pub recent_turns: Vec<(String, String)>,
     pub recent_turns_for_event: Vec<(String, String)>,
@@ -102,6 +103,7 @@ pub(crate) struct PreLlmOutput {
 }
 
 pub(crate) struct MiddleOutput {
+    pub turn_thinking: crate::domain::turn_thinking::TurnThinkingPlan,
     pub complex_emotion_out: crate::domain::complex_emotion::ComplexEmotionOutput,
     pub knowledge_chunk_count: u32,
     pub ai_event_type: crate::models::EventType,
@@ -111,6 +113,10 @@ pub(crate) struct MiddleOutput {
     pub prompt: String,
     pub favor_delta: f64,
     pub relation_after: RelationState,
+    pub prompt_stable_hash: Option<u64>,
+    pub prompt_stable_len: Option<usize>,
+    pub prefix_cache_expected_hit: Option<bool>,
+    pub use_ollama_prefix_opts: bool,
 }
 
 pub(crate) struct MainLlmOutput {
@@ -118,12 +124,14 @@ pub(crate) struct MainLlmOutput {
     pub main_llm_fallback: bool,
     pub llm_fallback_reason: Option<String>,
     pub main_llm_ms: u64,
+    pub llm_prompt_eval_ms: Option<u64>,
 }
 
 async fn prefetch_context(
     ctx: &TurnContext<'_>,
 ) -> TurnResult<(
     f64,
+    String,
     String,
     PersonalityVector,
     (Vec<(String, String)>, Vec<(String, String)>, Vec<Event>),
@@ -136,6 +144,10 @@ async fn prefetch_context(
         .event_impact_factor
         .unwrap_or(role.evolution_config.event_impact_factor);
     let mutable_for_prompt = snapshot.mutable_personality.clone().unwrap_or_default();
+    let ephemeral_for_prompt = crate::domain::turn_thinking::ephemeral_for_prompt(
+        snapshot.ephemeral_ttl_turns,
+        snapshot.ephemeral_personality.as_deref(),
+    );
     let personality = if role.evolution_config.personality_source == PersonalitySource::Profile {
         STAGES
             .stage(ChatStage::CurrentPersonality, async {
@@ -159,6 +171,7 @@ async fn prefetch_context(
     Ok((
         event_runtime,
         mutable_for_prompt,
+        ephemeral_for_prompt,
         personality,
         (
             pf.recent_turns.to_vec(),
@@ -456,6 +469,7 @@ pub(crate) async fn pre_llm(ctx: &TurnContext<'_>) -> TurnResult<PreLlmOutput> {
         (
             event_runtime,
             mut mutable_for_prompt,
+            ephemeral_for_prompt,
             mut personality,
             (recent_turns, recent_turns_for_event, recent_events_for_event),
         ),
@@ -556,6 +570,7 @@ pub(crate) async fn pre_llm(ctx: &TurnContext<'_>) -> TurnResult<PreLlmOutput> {
         memory: PreLlmMemory {
             event_runtime,
             mutable_for_prompt,
+            ephemeral_for_prompt,
             personality,
             recent_turns,
             recent_turns_for_event,

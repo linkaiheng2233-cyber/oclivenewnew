@@ -18,10 +18,12 @@ import {
 
   splitRoleplayReply,
 } from '@oclive/shared/utils/roleplayReplySplit'
-import { loadRoleSceneMessages } from './chatStoreLoad'
+import { loadRoleSceneMessages, loadRoleSceneMessagesWithSceneFallback } from './chatStoreLoad'
 import { sendChatStoreMessage } from './chatStoreSend'
 import { useRoleStore } from './roleStore'
 import { useUiStore } from './uiStore'
+import { resolveUserNarrativeSceneId } from '../composables/narrativeScene'
+import { PURE_CHAT_DEFAULT_SCENE_ID } from '../utils/pureChatScene'
 
 export interface ChatMessage {
   id: string
@@ -36,6 +38,8 @@ export interface ChatMessage {
   replyIsFallback?: boolean
   /** Narration/inner thought/action split from main reply (assistant only; main content is dialogue) */
   aside?: string
+  /** True while SSE tokens are still arriving */
+  streaming?: boolean
 }
 
 /** Populated from `get_chat_storage_capabilities` on hydrate; backend SSOT is `DEFAULT_MAX_MESSAGES`. */
@@ -150,30 +154,18 @@ function adjustSplitAfterTrim(
   splitIndex[roleId][sid] = Math.max(0, splitIndex[roleId][sid] - removedFromHead)
 }
 
-/** After restart, if split folds all messages into history, main chat is blank; restore direct display. */
-function repairSplitsSoCurrentSessionVisible(
+/** After restart, fold all loaded messages into history so the main chat starts blank. */
+function beginNewChatSessionOnRestart(
   splitIndex: SceneHistorySplitIndex,
-  messageMap: RoleSceneMessageMap,
+  roleId: string,
+  sceneId: string,
+  messageCount: number,
 ): void {
-  for (const [roleId, roleBucket] of Object.entries(messageMap)) {
-    if (isLegacyRoleBucket(roleBucket)) {
-      const n = roleBucket.length
-      if (n > 0 && (splitIndex[roleId]?.default ?? 0) >= n) {
-        if (!splitIndex[roleId])
-          splitIndex[roleId] = {}
-        splitIndex[roleId].default = 0
-      }
-      continue
-    }
-    for (const [sceneId, messages] of Object.entries(roleBucket)) {
-      const n = messages.length
-      if (n > 0 && (splitIndex[roleId]?.[sceneId] ?? 0) >= n) {
-        if (!splitIndex[roleId])
-          splitIndex[roleId] = {}
-        splitIndex[roleId][sceneId] = 0
-      }
-    }
-  }
+  if (messageCount <= 0)
+    return
+  if (!splitIndex[roleId])
+    splitIndex[roleId] = {}
+  splitIndex[roleId][sceneId || 'default'] = messageCount
 }
 
 function sanitizeAllSceneHistorySplits(
@@ -234,6 +226,8 @@ export const useChatStore = defineStore(
       messagesLoadingKey: null as string | null,
       /** Per-session UI cap; synced from backend capabilities on hydrate. */
       messageCapPerSession: FALLBACK_MAX_MESSAGES_PER_CONVERSATION,
+      /** Role×scene buckets successfully fetched at least once this session. */
+      loadedBucketKeys: {} as Record<string, true>,
     }),
     getters: {
       messagesForRoleScene: (state) => {
@@ -261,7 +255,7 @@ export const useChatStore = defineStore(
       },
     },
     actions: {
-      /** Startup: migrate IndexedDB → backend, then load current role×scene from API (IDB cache fallback on failure). */
+      /** Startup: migrate IndexedDB → backend; defer bucket load until role info is ready (see useAppBootstrap). */
       async hydrateFromStorage() {
         if (this.messagesHydrated)
           return
@@ -274,12 +268,6 @@ export const useChatStore = defineStore(
         catch {
           // keep fallback cap
         }
-        const roleStore = useRoleStore()
-        const uiStore = useUiStore()
-        await this.loadMessagesForRoleScene(
-          roleStore.currentRoleId,
-          uiStore.sceneId || 'default',
-        )
         this.messagesHydrated = true
       },
 
@@ -290,6 +278,7 @@ export const useChatStore = defineStore(
       async loadMessagesForRoleScene(roleId: string, sceneId: string) {
         const sid = sceneId || 'default'
         const loadKey = bucketMapKey(roleId, sid)
+        delete this.loadedBucketKeys[loadKey]
         const gen = ++this.messageLoadGeneration
         this.messagesLoadingKey = loadKey
         this.ensureLegacyMigrated(roleId)
@@ -302,12 +291,58 @@ export const useChatStore = defineStore(
         }
         if (gen !== this.messageLoadGeneration)
           return
+        this.loadedBucketKeys[loadKey] = true
         const bucket = roleSceneBucket(this.messageMap, roleId, sid)
         syncLastAssistantAside(this.lastAssistantAside, roleId, sid, bucket)
         sanitizeAllSceneHistorySplits(this.sceneHistorySplitIndex, this.messageMap)
-        repairSplitsSoCurrentSessionVisible(
-          this.sceneHistorySplitIndex,
+      },
+
+      /** Daily chat: load `home` bucket and fold existing turns into collapsible history. */
+      async enterPureChatScene(roleId: string): Promise<void> {
+        await this.bootstrapChatForRole(roleId)
+      },
+
+      /**
+       * Cold start / role switch: load the mode-correct scene bucket and fold prior
+       * turns into collapsible history (restart session UX).
+       */
+      async bootstrapChatForRole(roleId: string): Promise<void> {
+        const roleStore = useRoleStore()
+        const uiStore = useUiStore()
+        const rid = roleId.trim()
+        if (!rid)
+          return
+
+        const primarySceneId = roleStore.interactionImmersive
+          ? resolveUserNarrativeSceneId(
+            roleStore.roleInfo.userPresenceScene,
+            roleStore.roleInfo.currentScene,
+            roleStore.roleInfo.scenes,
+            uiStore.sceneId,
+          )
+          : PURE_CHAT_DEFAULT_SCENE_ID
+
+        const loadedSceneId = await loadRoleSceneMessagesWithSceneFallback(
           this.messageMap,
+          rid,
+          primarySceneId,
+          roleStore.roleInfo.scenes,
+        )
+        this.loadedBucketKeys[bucketMapKey(rid, loadedSceneId)] = true
+        const bucket = roleSceneBucket(this.messageMap, rid, loadedSceneId)
+        syncLastAssistantAside(this.lastAssistantAside, rid, loadedSceneId, bucket)
+        sanitizeAllSceneHistorySplits(this.sceneHistorySplitIndex, this.messageMap)
+
+        if (roleStore.interactionImmersive)
+          uiStore.setScene(loadedSceneId)
+        else if (uiStore.sceneId !== PURE_CHAT_DEFAULT_SCENE_ID)
+          uiStore.setScene(PURE_CHAT_DEFAULT_SCENE_ID)
+
+        beginNewChatSessionOnRestart(
+          this.sceneHistorySplitIndex,
+          rid,
+          loadedSceneId,
+          this.getMessageCountForRoleScene(rid, loadedSceneId),
         )
       },
 
@@ -348,20 +383,25 @@ export const useChatStore = defineStore(
       ) {
         const uiStore = useUiStore()
         const roleStore = useRoleStore()
+        const roleId = roleStore.currentRoleId
         const prev = uiStore.sceneId
         const next = nextSceneId || 'default'
-        if (prev !== next && !options?.skipHistorySplit) {
-          const roleId = roleStore.currentRoleId
+        const loadKey = bucketMapKey(roleId, next)
+        // `roleSceneBucket` auto-creates empty arrays; only treat a bucket as loaded after
+        // `loadMessagesForRoleScene` completes (loadedBucketKeys), not merely when the key exists.
+        const bucketLoaded = this.loadedBucketKeys[loadKey] === true
+        const shouldReload = prev !== next || !bucketLoaded
+        if (shouldReload && !options?.skipHistorySplit) {
           this.ensureLegacyMigrated(roleId)
           if (!this.sceneHistorySplitIndex[roleId])
             this.sceneHistorySplitIndex[roleId] = {}
-          const count = this.getMessageCountForRoleScene(roleId, next)
+          const count = this.messageMap[roleId]?.[next]?.length ?? 0
           this.sceneHistorySplitIndex[roleId][next] = count
         }
-        if (prev !== next) {
-          this.messagesLoadingKey = bucketMapKey(roleStore.currentRoleId, next)
+        if (shouldReload) {
+          this.messagesLoadingKey = bucketMapKey(roleId, next)
           uiStore.setScene(next)
-          void this.loadMessagesForRoleScene(roleStore.currentRoleId, next)
+          void this.loadMessagesForRoleScene(roleId, next)
         }
         else {
           uiStore.setScene(next)
@@ -462,7 +502,7 @@ export const useChatStore = defineStore(
         roleId: string,
         sceneId: string,
         localId: string,
-        patch: Partial<Pick<ChatMessage, 'id' | 'timestamp'>>,
+        patch: Partial<Pick<ChatMessage, 'id' | 'timestamp' | 'content' | 'streaming' | 'emotion' | 'aside'>>,
       ) {
         const sid = sceneId || 'default'
         const bucket = roleSceneBucket(this.messageMap, roleId, sid)
@@ -508,7 +548,7 @@ export const useChatStore = defineStore(
         schedulePersistMessages(this.messageMap, roleId, sid)
       },
 
-      async sendMessage(content: string, sceneId: string): Promise<SendMessageResponse> {
+      async sendMessage(content: string, sceneId: string): Promise<SendMessageResponse | undefined> {
         return sendChatStoreMessage(
           {
             sceneHistorySplitIndex: this.sceneHistorySplitIndex,
@@ -525,9 +565,6 @@ export const useChatStore = defineStore(
           sceneId,
         )
       },
-    },
-    persist: {
-      pick: ['sceneHistorySplitIndex'],
     },
   },
 )

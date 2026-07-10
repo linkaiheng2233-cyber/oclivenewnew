@@ -35,6 +35,7 @@ function dismiss(): void {
 </script>
 
 <template>
+  <!-- Onboarding after programmatic immersive unlock (tryStoryMode); not a recurring mode switch. -->
   <Teleport to="body">
     <div
       v-if="open"
@@ -97,4 +98,8 @@ function dismiss(): void {
   font-size: 0.9rem;
   line-height: 1.5;
 }
+</style>
+
+<style>
+@import '@oclive/shared/styles/win98/dialogs-shared.css';
 </style>

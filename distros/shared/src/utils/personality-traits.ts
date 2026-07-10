@@ -1,4 +1,4 @@
-/** Matches backend `personality_vector` seven-dimension order and oclive-new dev panel. */
+/** Matches backend `personality_vector` / `display_metrics.traits` seven-dimension order. */
 export const PERSONALITY_TRAIT_KEYS = [
   'stubbornness',
   'clinginess',

@@ -140,3 +140,7 @@ function selectSubview(next: PluginsPanelSubview): void {
   font-weight: 600;
 }
 </style>
+
+<style>
+@import '@oclive/shared/styles/win98/panel-plugins.css';
+</style>

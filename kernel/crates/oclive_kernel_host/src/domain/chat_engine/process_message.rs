@@ -86,7 +86,7 @@ async fn try_agent_shortcut(
     let agent_enabled =
         !state.host_profile.skip_agent && !matches!(effective_backends.agent, AgentBackend::None);
     let agent_out: AgentOutput = if agent_enabled {
-        let model = role.resolve_ollama_model(state.ollama_model.as_str());
+        let model = role.resolve_ollama_model(state.global_ollama_model().as_str());
         let agent_input = build_agent_input(
             state,
             role,

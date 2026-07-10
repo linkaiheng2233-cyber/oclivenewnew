@@ -25,6 +25,14 @@
       "dialog": {
         "open": true,
         "save": true
+      },
+      "window": {
+        "minimize": true,
+        "maximize": true,
+        "unmaximize": true,
+        "close": true,
+        "startDragging": true,
+        "setDecorations": true
       }
     },
     "bundle": {
@@ -49,7 +57,7 @@
       ]
     },
     "security": {
-      "csp": "default-src 'self' tauri: https://ocliveplugin.localhost",
+      "csp": "default-src 'self' tauri: https://ocliveplugin.localhost; connect-src 'self' tauri: https://ocliveplugin.localhost http://127.0.0.1:50000 ws://127.0.0.1:50000",
       "dangerousRemoteDomainIpcAccess": [
         {
           "domain": "https://ocliveplugin.localhost",

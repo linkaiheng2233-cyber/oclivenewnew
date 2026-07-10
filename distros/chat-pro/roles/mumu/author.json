@@ -37,6 +37,13 @@
       "slots": ["chat.header"],
       "optional": false,
       "note": "顶栏状态与叙事入口"
+    },
+    {
+      "id": "com.oclive.voice.asr",
+      "version_range": "^0.1.0",
+      "slots": ["chat_toolbar", "settings.panel"],
+      "optional": true,
+      "note": "平台语音识别输入（独立通道 voice.asr）"
     }
   ]
 }

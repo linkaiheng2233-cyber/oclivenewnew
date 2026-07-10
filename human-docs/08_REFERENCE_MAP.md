@@ -11,10 +11,13 @@
 
 ## 1. 架构
 
+**人类开工（按模块）** → [modules/README.md](modules/README.md)（链 MODULE_MAP，不复制表）
+
 | 文档 | 用途 |
 |------|------|
 | [OCLIVE_ARCHITECTURE_OVERVIEW](../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) | 第 1–4 设施子模块 |
 | [RFC 立绘 / 视觉表现（草案）](../creator-docs/rfc/RFC_PORTRAIT_FACILITY.md) | catalog · 表现导演 · 角色舞台 |
+| [RFC Turn Thinking](../creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md) | Fast/Deep · `fast_persistence` · 包级 latch / ephemeral · [EN](../creator-docs-en/rfc/RFC_TURN_THINKING_PERSISTENCE_SUMMARY.md) |
 | [PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN](../handoff/PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md) | 分阶段实施 |
 | [kernel/crates/README](../kernel/crates/README.md) | Crate 依赖与改哪 |
 | [DESIGN_DECISIONS](../creator-docs/architecture/DESIGN_DECISIONS.md) | 取舍记录 |
@@ -65,11 +68,13 @@
 |------|------|
 | [DISTRO_KERNEL_LIFECYCLE](../creator-docs/kernel/DISTRO_KERNEL_LIFECYCLE.md) | attach / spawn（bundled 首选） |
 | [KERNEL_SCHEDULER_RESCOPE](../handoff/KERNEL_SCHEDULER_RESCOPE.md) | 单核 · 兜底 · Freeze 项 |
+| [DISTRO_CAPABILITY_PROFILE](../creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md) | HostProfile · `[turn_thinking]` |
 | [DISTRO_DEFAULT_PLUGINS](../creator-docs/kernel/DISTRO_DEFAULT_PLUGINS.md) | 发行版插件矩阵 |
 | [OCLIVE_APP_DATA](../creator-docs/kernel/OCLIVE_APP_DATA.md) | 数据目录 |
 | [KERNEL_INTEGRATOR_LEARNING_PATH](../creator-docs/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md) | 集成方 |
 | [OCLIVE_CLI_GUIDE](../creator-docs/cli/OCLIVE_CLI_GUIDE.md) | CLI 脚手架 |
 | [BUS_FACTOR_NOTES](../handoff/BUS_FACTOR_NOTES.md) | 关键路径 |
+| [MODULE_MAP_AND_HANDOFF](../handoff/MODULE_MAP_AND_HANDOFF.md) | 模块注册表 · 六槽关系 |
 
 ---
 
@@ -101,15 +106,18 @@
 
 | 文档 | 用途 |
 |------|------|
-| [handoff/README](../handoff/README.md) | 活跃 vs 归档 · **发行版子目录索引** |
-| [theater/](../handoff/theater/) | AI 剧场工作文档 · [DEVELOPMENT_ROADMAP](../handoff/theater/DEVELOPMENT_ROADMAP.md) |
+| [handoff/README §文档分责](../handoff/README.md) | **SSOT 分责 · 耦合审计 · 发行版子目录索引** |
+| [AI_CHANGE_BOUNDARIES](../handoff/AI_CHANGE_BOUNDARIES.md) | AI G1–G16 · 人类读 [04 §8](04_ENGINEERING_RULES.md#8-文档贡献纪律人类版) |
+| [theater/](../handoff/theater/) | AI 剧场 · [DEVELOPMENT_ROADMAP](../handoff/theater/DEVELOPMENT_ROADMAP.md) |
 | [vscode/](../handoff/vscode/) | VS Code Flash 工作文档 |
 | [pack-editor/](../handoff/pack-editor/) | 编写器路线图（主仓副本） |
 | [launcher/](../handoff/launcher/) · [studio/](../handoff/studio/) | 启动器 / 工作室协调入口 |
-| [TECHNICAL_DEBT_INVENTORY](../handoff/TECHNICAL_DEBT_INVENTORY.md) | 技术债 |
-| [04_4.6_PROJECT_TRUTH_CHECKLIST](../handoff/04_4.6_PROJECT_TRUTH_CHECKLIST.md) | **已归档快照** · 以 [BUS_FACTOR_NOTES](../handoff/BUS_FACTOR_NOTES.md) 为准 |
-| [CHAT_STORAGE_ARCHITECTURE](../handoff/CHAT_STORAGE_ARCHITECTURE.md) | 聊天存储 |
-| [DOCUMENTATION_INDEX](../creator-docs/getting-started/DOCUMENTATION_INDEX.md) | 全量契约索引（`creator-docs/`） |
+| [TECHNICAL_DEBT_INVENTORY](../handoff/TECHNICAL_DEBT_INVENTORY.md) | 活跃债 · **代码**进度 SSOT |
+| [04_4.6_PROJECT_TRUTH_CHECKLIST](../handoff/04_4.6_PROJECT_TRUTH_CHECKLIST.md) | **已归档** — 勿作 truth |
+| [CHAT_STORAGE_ARCHITECTURE](../handoff/CHAT_STORAGE_ARCHITECTURE.md) | 聊天 vs 记忆 |
+| [DOCUMENTATION_INDEX](../creator-docs/getting-started/DOCUMENTATION_INDEX.md) | 全量契约索引 |
+
+**人类文档包进度**：[human-docs/README §文档包进度](README.md#文档包进度与-ai-包同步--2026-06-25)
 
 ---
 

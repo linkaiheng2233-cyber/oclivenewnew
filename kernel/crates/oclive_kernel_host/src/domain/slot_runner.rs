@@ -23,7 +23,7 @@ use crate::domain::memory_retrieval::{MemoryRetrieval, MemoryRetrievalInput};
 use crate::domain::plugin_host::ResolvedRolePlugins;
 use crate::domain::ports::LlmClient;
 use crate::domain::prompt_assembler::PromptAssembler;
-use crate::domain::prompt_builder::PromptInput;
+use crate::domain::prompt_builder::{PromptBuilder, PromptInput, PromptSegments};
 use crate::domain::slot_resolver::{LlmMergePolicy, ResolvedRoleSlots};
 use crate::domain::user_emotion_analyzer::UserEmotionAnalyzer;
 use crate::error::Result;
@@ -144,7 +144,15 @@ impl SlotRunner {
         recent_turns: &[(String, String)],
         recent_events: &[Event],
         knowledge_augment: Option<&KnowledgeEventAugment>,
+        use_event_impact_llm: bool,
     ) -> Result<EventImpactEstimate> {
+        if !use_event_impact_llm {
+            return crate::domain::event_impact_ai::estimate_event_impact_rules_only(
+                user_message,
+                user_emotion,
+                knowledge_augment,
+            );
+        }
         let llm = Self::primary_llm(pl);
         let ollama_model = ollama_model.to_string();
         let user_message = user_message.to_string();
@@ -274,12 +282,47 @@ impl SlotRunner {
         )
     }
 
+    /// Deep prefix-cache segment builder (builtin only; directory/remote prompt backends use [`build_prompt`](Self::build_prompt)).
+    pub fn build_prompt_segments(
+        pl: &ResolvedRolePlugins,
+        input: &PromptInput<'_>,
+    ) -> Result<PromptSegments> {
+        Self::run_slot_sync(
+            &pl.slots,
+            |s| &s.prompt,
+            |_instances| Ok(PromptBuilder::build_prompt_segments(input)),
+            |_assembler| Ok(PromptBuilder::build_prompt_segments(input)),
+            || Ok(PromptBuilder::build_prompt_segments(input)),
+        )
+    }
+
+    async fn generate_llm_single(
+        llm: &Arc<dyn LlmClient>,
+        ollama_model: &str,
+        prompt: &str,
+        opts: Option<&LlmGenerateOpts>,
+    ) -> Result<LlmGenerateOutcome> {
+        llm.generate_with_opts(ollama_model, prompt, opts).await
+    }
+
+    async fn generate_llm_stream_single(
+        llm: &Arc<dyn LlmClient>,
+        ollama_model: &str,
+        prompt: &str,
+        on_token: oclive_kernel_contracts::LlmTokenSink,
+        opts: Option<&LlmGenerateOpts>,
+    ) -> Result<LlmGenerateOutcome> {
+        llm.generate_stream_with_opts(ollama_model, prompt, on_token, opts)
+            .await
+    }
+
     /// `llm`: serial **call all** (logged), **last-wins** as the final reply.
     pub async fn generate_llm(
         pl: &ResolvedRolePlugins,
         ollama_model: &str,
         prompt: &str,
-    ) -> Result<String> {
+        opts: Option<&LlmGenerateOpts>,
+    ) -> Result<LlmGenerateOutcome> {
         if let Some(instances) = registry_instances(&pl.slots, |s| &s.llm) {
             if instances.len() >= 2 {
                 let policy = pl
@@ -289,13 +332,13 @@ impl SlotRunner {
                     .unwrap_or(LlmMergePolicy::Ensemble);
                 return match policy {
                     LlmMergePolicy::Fastest => {
-                        Self::llm_fastest_wins(instances, ollama_model, prompt).await
+                        Self::llm_fastest_wins(instances, ollama_model, prompt, opts).await
                     }
                     LlmMergePolicy::Fallback => {
-                        Self::llm_fallback_first(instances, ollama_model, prompt).await
+                        Self::llm_fallback_first(instances, ollama_model, prompt, opts).await
                     }
                     LlmMergePolicy::Ensemble => {
-                        Self::llm_serial_last_wins(instances, ollama_model, prompt).await
+                        Self::llm_serial_last_wins(instances, ollama_model, prompt, opts).await
                     }
                 };
             }
@@ -307,19 +350,25 @@ impl SlotRunner {
                 let instances = clone_instances(instances);
                 let ollama_model = ollama_model.to_string();
                 let prompt = prompt.to_string();
-                async move { Self::llm_serial_last_wins(&instances, &ollama_model, &prompt).await }
+                async move {
+                    Self::llm_serial_last_wins(&instances, &ollama_model, &prompt, opts).await
+                }
             },
             |llm| {
                 let llm = Arc::clone(llm);
                 let ollama_model = ollama_model.to_string();
                 let prompt = prompt.to_string();
-                async move { llm.generate(&ollama_model, &prompt).await }
+                async move {
+                    Self::generate_llm_single(&llm, &ollama_model, &prompt, opts).await
+                }
             },
             || {
                 let llm = Arc::clone(&pl.llm);
                 let ollama_model = ollama_model.to_string();
                 let prompt = prompt.to_string();
-                async move { llm.generate(&ollama_model, &prompt).await }
+                async move {
+                    Self::generate_llm_single(&llm, &ollama_model, &prompt, opts).await
+                }
             },
         )
         .await
@@ -331,7 +380,8 @@ impl SlotRunner {
         ollama_model: &str,
         prompt: &str,
         on_token: oclive_kernel_contracts::LlmTokenSink,
-    ) -> Result<String> {
+        opts: Option<&LlmGenerateOpts>,
+    ) -> Result<LlmGenerateOutcome> {
         if let Some(instances) = registry_instances(&pl.slots, |s| &s.llm) {
             if instances.len() >= 2 {
                 let policy = pl
@@ -343,8 +393,14 @@ impl SlotRunner {
                     LlmMergePolicy::Fastest
                     | LlmMergePolicy::Fallback
                     | LlmMergePolicy::Ensemble => {
-                        Self::llm_serial_last_wins_stream(instances, ollama_model, prompt, on_token)
-                            .await
+                        Self::llm_serial_last_wins_stream(
+                            instances,
+                            ollama_model,
+                            prompt,
+                            on_token,
+                            opts,
+                        )
+                        .await
                     }
                 };
             }
@@ -358,8 +414,14 @@ impl SlotRunner {
                 let prompt = prompt.to_string();
                 let on_token = std::sync::Arc::clone(&on_token);
                 async move {
-                    Self::llm_serial_last_wins_stream(&instances, &ollama_model, &prompt, on_token)
-                        .await
+                    Self::llm_serial_last_wins_stream(
+                        &instances,
+                        &ollama_model,
+                        &prompt,
+                        on_token,
+                        opts,
+                    )
+                    .await
                 }
             },
             |llm| {
@@ -367,14 +429,20 @@ impl SlotRunner {
                 let ollama_model = ollama_model.to_string();
                 let prompt = prompt.to_string();
                 let on_token = std::sync::Arc::clone(&on_token);
-                async move { llm.generate_stream(&ollama_model, &prompt, on_token).await }
+                async move {
+                    Self::generate_llm_stream_single(&llm, &ollama_model, &prompt, on_token, opts)
+                        .await
+                }
             },
             || {
                 let llm = Arc::clone(&pl.llm);
                 let ollama_model = ollama_model.to_string();
                 let prompt = prompt.to_string();
                 let on_token = std::sync::Arc::clone(&on_token);
-                async move { llm.generate_stream(&ollama_model, &prompt, on_token).await }
+                async move {
+                    Self::generate_llm_stream_single(&llm, &ollama_model, &prompt, on_token, opts)
+                        .await
+                }
             },
         )
         .await
@@ -632,8 +700,13 @@ impl SlotRunner {
         instances: &[(String, Arc<dyn LlmClient>)],
         ollama_model: &str,
         prompt: &str,
-    ) -> Result<String> {
-        llm_merge::fallback_first(instances, ollama_model, prompt).await
+        _opts: Option<&LlmGenerateOpts>,
+    ) -> Result<LlmGenerateOutcome> {
+        let reply = llm_merge::fallback_first(instances, ollama_model, prompt).await?;
+        Ok(LlmGenerateOutcome {
+            reply,
+            prompt_eval_ms: None,
+        })
     }
 
     /// **llm fastest-wins**: concurrent calls; return on **first** success and cancel remaining tasks.
@@ -641,22 +714,30 @@ impl SlotRunner {
         instances: &[(String, Arc<dyn LlmClient>)],
         ollama_model: &str,
         prompt: &str,
-    ) -> Result<String> {
-        llm_merge::fastest_wins(instances, ollama_model, prompt).await
+        _opts: Option<&LlmGenerateOpts>,
+    ) -> Result<LlmGenerateOutcome> {
+        let reply = llm_merge::fastest_wins(instances, ollama_model, prompt).await?;
+        Ok(LlmGenerateOutcome {
+            reply,
+            prompt_eval_ms: None,
+        })
     }
 
     /// **llm serial last-wins**: multiple LLM instances generate on the **same prompt**; keep only the last successful reply.
-    ///
-    /// **Problem solved**: blueprint may configure multiple LLM slots (e.g. primary + fallback); runtime needs only **one** user-visible reply.
-    /// **Why serial**: calls share the same prompt context; even without chain dependencies, avoids hammering GPU/quota with concurrency.
-    /// **Why last-wins**: matches "final displayed reply" semantics; earlier successes are logged for comparison only.
-    /// **Limitation**: not ensemble voting; failed instances are skipped; error if all fail.
     async fn llm_serial_last_wins(
         instances: &[(String, Arc<dyn LlmClient>)],
         ollama_model: &str,
         prompt: &str,
-    ) -> Result<String> {
-        llm_merge::serial_last_wins(instances, ollama_model, prompt).await
+        opts: Option<&LlmGenerateOpts>,
+    ) -> Result<LlmGenerateOutcome> {
+        if instances.len() == 1 {
+            return Self::generate_llm_single(&instances[0].1, ollama_model, prompt, opts).await;
+        }
+        let reply = llm_merge::serial_last_wins(instances, ollama_model, prompt).await?;
+        Ok(LlmGenerateOutcome {
+            reply,
+            prompt_eval_ms: None,
+        })
     }
 
     async fn llm_serial_last_wins_stream(
@@ -664,10 +745,28 @@ impl SlotRunner {
         ollama_model: &str,
         prompt: &str,
         on_token: oclive_kernel_contracts::LlmTokenSink,
-    ) -> Result<String> {
-        llm_merge::serial_last_wins_stream(instances, ollama_model, prompt, on_token).await
+        opts: Option<&LlmGenerateOpts>,
+    ) -> Result<LlmGenerateOutcome> {
+        if instances.len() == 1 {
+            return Self::generate_llm_stream_single(
+                &instances[0].1,
+                ollama_model,
+                prompt,
+                on_token,
+                opts,
+            )
+            .await;
+        }
+        let reply =
+            llm_merge::serial_last_wins_stream(instances, ollama_model, prompt, on_token).await?;
+        Ok(LlmGenerateOutcome {
+            reply,
+            prompt_eval_ms: None,
+        })
     }
 }
+
+pub use crate::domain::ports::{LlmGenerateOpts, LlmGenerateOutcome};
 
 fn clone_instances<T: ?Sized>(instances: &[(String, Arc<T>)]) -> Vec<(String, Arc<T>)> {
     instances

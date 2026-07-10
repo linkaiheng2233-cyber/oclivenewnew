@@ -1,0 +1,10 @@
+{
+  "schema_version": 2,
+  "director_profile": "rules-v1",
+  "speed": 1.02,
+  "energy": "normal",
+  "emo_text_template": "用简短利落、口语化、略带一点傲娇感的年轻声线说话，表达清楚、不拖沓，情绪要自然；{tone}",
+  "engine_family": ["cosyvoice2", "local_http"],
+  "ref_default": "assets/voice/ref_neutral.wav",
+  "ref_text": "行吧，这次我帮你看一下。不过别太依赖我。"
+}

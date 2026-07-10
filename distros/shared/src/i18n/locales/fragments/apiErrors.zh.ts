@@ -31,6 +31,8 @@ export default {
   API_INVALID_MANIFEST: '插件 manifest 无效，请检查 manifest.json。',
   LLM_ERROR:
     '模型调用失败。请确认：① 若 `OCLIVE_LLM_BACKEND=ollama`（默认）：本机已安装并启动 Ollama，`ollama list` / `ollama pull` 与 `OLLAMA_MODEL` 一致，`OLLAMA_BASE_URL` 端口正确；② 若为 **remote**：`OCLIVE_REMOTE_LLM_URL` 可达、超时 `OCLIVE_REMOTE_LLM_TIMEOUT_MS` 合理且上游可用。设置 → 常规 → 环境自检可探测本机 Ollama。',
+  VOICE_RPC_TIMEOUT:
+    '语音插件调用超时（CosyVoice 预热/合成较慢）。请先在 设置 → 语音交互 点「预热 TTS 侧车」并等待完成；首次合成可能需数分钟。也可提高环境变量 `OCLIVE_VOICE_RPC_TIMEOUT_MS`（默认 speak 600000 / warm 900000 ms）。',
   ROLE_NOT_FOUND: '角色不存在，请确认 role_id 与 `OCLIVE_ROLES_DIR` 下目录结构。',
   ROLE_NOT_FOUND_DETAIL: '角色不存在或找不到 manifest。{detail}',
   ROLE_RUNTIME_NOT_READY:

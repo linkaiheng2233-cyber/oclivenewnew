@@ -23,6 +23,7 @@ pub struct DistroOcliveFile {
     pub interaction: Option<InteractionToml>,
     pub visual_presentation: Option<VisualPresentationToml>,
     pub theater: Option<TheaterToml>,
+    pub turn_thinking: Option<TurnThinkingToml>,
 }
 
 #[derive(Debug, Default, Clone, Deserialize)]
@@ -51,6 +52,24 @@ pub struct InteractionToml {
 pub struct HostFlagsToml {
     pub skip_agent: Option<bool>,
     pub skip_complex_emotion: Option<bool>,
+    /// When `false`, co-present event impact uses rule-based `EventDetector` only (no pre-LLM `generate_tag`).
+    pub event_impact_llm: Option<bool>,
+}
+
+#[derive(Debug, Default, Clone, Deserialize)]
+pub struct TurnThinkingToml {
+    /// `auto` | `fast` | `deep`
+    pub default: Option<String>,
+    pub fast_skip_complex_emotion: Option<bool>,
+    pub auto_deep_min_chars: Option<usize>,
+    #[serde(default)]
+    pub auto_deep_keywords: Option<Vec<String>>,
+    pub fast_knowledge_limit: Option<usize>,
+    pub fast_memory_cap: Option<usize>,
+    pub deep_capsule: Option<bool>,
+    pub prompt_prefix_cache: Option<bool>,
+    pub fast_persistence: Option<String>,
+    pub deep_profile_update_every_n_turns: Option<u32>,
 }
 
 #[derive(Debug, Default, Clone, Deserialize)]

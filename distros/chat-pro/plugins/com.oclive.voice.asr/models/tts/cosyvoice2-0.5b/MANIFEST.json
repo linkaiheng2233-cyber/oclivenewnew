@@ -1,0 +1,8 @@
+{
+  "id": "cosyvoice2-0.5b",
+  "engine": "cosyvoice2",
+  "pack_id": "oclive-tts-cosyvoice2-0.5b-zh",
+  "label": "CosyVoice2-0.5B Chinese",
+  "min_vram_gb_recommended": 6,
+  "sidecar_port": 50000
+}

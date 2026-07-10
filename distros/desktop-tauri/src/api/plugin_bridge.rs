@@ -7,13 +7,16 @@
 
 use crate::api::chat_backend::ChatBackend;
 use crate::api::directory_plugin::directory_plugin_bootstrap_dto;
-use crate::api::error::ApiError;
-use crate::api::error::CommandError;
+use crate::api::error::{map_directory_rpc_url_error, ApiError, CommandError};
+use crate::api::plugin_config::{get_plugin_settings_ui_impl, set_plugin_settings_config_impl};
 use crate::kernel_attach::{role_dir_for_id, KernelHttpClient};
 use oclive_kernel_host::infrastructure::directory_plugins::{
     normalize_plugin_rel, OclivePluginManifest,
 };
 use oclive_kernel_host::infrastructure::import_role_pack;
+use oclive_kernel_host::infrastructure::remote_plugin::{
+    invoke_directory_plugin_rpc_blocking, RemoteRpcChannel,
+};
 use oclive_kernel_host::infrastructure::role_pack::validate_bridge_import_role_source;
 use oclive_kernel_host::service::{
     bridge_command_needs_kernel_writer, dispatch_bridge_command, parse_send_message_request,
@@ -173,11 +176,97 @@ fn validate_bridge(
     Ok(())
 }
 
+fn validate_plugin_rpc_method(
+    state: &AppState,
+    plugin_id: &str,
+    method: &str,
+) -> Result<(), CommandError> {
+    let pid = plugin_id.trim();
+    let method = method.trim();
+    if pid.is_empty() || method.is_empty() {
+        return Err(bridge_invalid(
+            "plugin_rpc_invoke: plugin_id and method required",
+        ));
+    }
+    let roots = state.directory_plugins.plugin_roots.read();
+    let entry = roots.get(pid).ok_or_else(|| ApiError::PluginNotFound {
+        plugin_id: pid.to_string(),
+    })?;
+    let manifest = OclivePluginManifest::load_from_dir(&entry.root)
+        .map_err(|e| ApiError::InvalidManifest { message: e })?;
+    validate_rpc_method_for_manifest(&manifest, method)
+}
+
+fn validate_rpc_method_for_manifest(
+    manifest: &OclivePluginManifest,
+    method: &str,
+) -> Result<(), CommandError> {
+    if manifest.process.is_none() {
+        return Err(ApiError::PermissionDenied {
+            message: "plugin has no process block for RPC".into(),
+        }
+        .into());
+    }
+    if !manifest.rpc_methods.iter().any(|m| m.trim() == method) {
+        return Err(ApiError::PermissionDenied {
+            message: format!("method {:?} not declared in manifest rpcMethods", method),
+        }
+        .into());
+    }
+    Ok(())
+}
+
+async fn dispatch_plugin_rpc_invoke(
+    shared: SharedAppState,
+    plugin_id: &str,
+    params: Value,
+) -> Result<Value, CommandError> {
+    let method = params
+        .get("method")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .trim()
+        .to_string();
+    if method.is_empty() {
+        return Err(bridge_invalid("plugin_rpc_invoke: method required"));
+    }
+    let rpc_params = params.get("params").cloned().unwrap_or(Value::Null);
+    validate_plugin_rpc_method(shared.as_ref(), plugin_id, &method)?;
+    let pid = plugin_id.trim().to_string();
+    tokio::task::spawn_blocking(move || {
+        let url = shared
+            .directory_plugins
+            .ensure_rpc_url(&pid)
+            .map_err(|e| map_directory_rpc_url_error(&pid, e))?;
+        let timeout_ms = shared
+            .directory_plugins
+            .rpc_timeout_override_ms(&pid, &method);
+        invoke_directory_plugin_rpc_blocking(
+            &url,
+            &method,
+            rpc_params,
+            RemoteRpcChannel::Plugin,
+            timeout_ms,
+        )
+        .map_err(Into::into)
+    })
+    .await
+    .map_err(|e| {
+        CommandError::from(
+            ApiError::Io {
+                message: format!("plugin_rpc_invoke join: {e}"),
+            }
+            .to_string(),
+        )
+    })?
+}
+
 async fn dispatch_local_bridge_command(
     state: &AppState,
     backend: &ChatBackend,
     command: &str,
     params: Value,
+    _bridge_plugin_id: &str,
 ) -> Result<Value, CommandError> {
     if command == "send_message" {
         let req = parse_send_message_request(&params)?;
@@ -211,6 +300,44 @@ async fn dispatch_local_bridge_command(
                 .to_string(),
             )
         });
+    }
+
+    if command == "get_plugin_settings_ui" {
+        let plugin_id = params
+            .get("pluginId")
+            .or_else(|| params.get("plugin_id"))
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| bridge_invalid("get_plugin_settings_ui: pluginId required"))?;
+        let dto = get_plugin_settings_ui_impl(state, plugin_id)?;
+        return serde_json::to_value(dto).map_err(|e| {
+            CommandError::from(
+                ApiError::Io {
+                    message: format!("host json get_plugin_settings_ui: {e}"),
+                }
+                .to_string(),
+            )
+        });
+    }
+
+    if command == "set_plugin_settings_config" {
+        let plugin_id = params
+            .get("pluginId")
+            .or_else(|| params.get("plugin_id"))
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| bridge_invalid("set_plugin_settings_config: pluginId required"))?;
+        let config = params.get("config").cloned().unwrap_or(Value::Null);
+        set_plugin_settings_config_impl(state, plugin_id, &config)?;
+        return Ok(json!({ "ok": true }));
+    }
+
+    if command == "get_role_pack_path" {
+        let role_id = params
+            .get("roleId")
+            .or_else(|| params.get("role_id"))
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| bridge_invalid("get_role_pack_path: roleId required"))?;
+        let path = role_dir_for_id(state, role_id.trim());
+        return Ok(json!({ "role_path": path.to_string_lossy() }));
     }
 
     if command == "import_role" {
@@ -250,11 +377,15 @@ async fn dispatch_local_bridge_command(
 }
 
 async fn dispatch_bridge_command_routed(
-    state: &AppState,
+    state: &SharedAppState,
     backend: &ChatBackend,
     command: &str,
     params: Value,
+    bridge_plugin_id: &str,
 ) -> Result<Value, CommandError> {
+    if command == "plugin_rpc_invoke" {
+        return dispatch_plugin_rpc_invoke(Arc::clone(state), bridge_plugin_id, params).await;
+    }
     if let ChatBackend::Http(conn) = backend {
         if bridge_command_needs_kernel_writer(command) {
             return KernelHttpClient::bridge_dispatch_via_http(conn, command, params)
@@ -262,7 +393,7 @@ async fn dispatch_bridge_command_routed(
                 .map_err(CommandError::from);
         }
     }
-    dispatch_local_bridge_command(state, backend, command, params).await
+    dispatch_local_bridge_command(state.as_ref(), backend, command, params, bridge_plugin_id).await
 }
 
 /// # Errors
@@ -285,5 +416,101 @@ pub async fn plugin_bridge_invoke(
     }
     validate_bridge(&state, pid, &asset, cmd)?;
     let backend = ChatBackend::from_app(&app, state.inner().clone());
-    dispatch_bridge_command_routed(state.as_ref(), &backend, cmd, req.params).await
+    dispatch_bridge_command_routed(state.inner(), &backend, cmd, req.params, pid).await
+}
+
+#[cfg(test)]
+mod rpc_validation_tests {
+    use super::*;
+    use std::fs;
+    use tempfile::TempDir;
+
+    fn write_manifest(root: &std::path::Path, rpc_methods: &[&str], with_process: bool) {
+        let methods = rpc_methods
+            .iter()
+            .map(|m| format!("\"{m}\""))
+            .collect::<Vec<_>>()
+            .join(", ");
+        let process = if with_process {
+            r#""process": { "command": "node", "args": ["rpc_server.mjs"] },"#
+        } else {
+            ""
+        };
+        let json = format!(
+            r#"{{
+  "schema_version": 1,
+  "id": "com.test.voice",
+  "version": "1.0.0",
+  {process}
+  "rpcMethods": [{methods}]
+}}"#
+        );
+        fs::write(root.join("manifest.json"), json).expect("write manifest");
+    }
+
+    #[test]
+    fn declared_rpc_method_passes_manifest_whitelist() {
+        let tmp = TempDir::new().expect("temp");
+        write_manifest(
+            tmp.path(),
+            &[
+                "voice.probe",
+                "voice.transcribe",
+                "voice.speak",
+                "voice.build_directive",
+                "voice.import_tts_adapter",
+                "voice.list_tts_adapters",
+            ],
+            true,
+        );
+        let manifest = OclivePluginManifest::load_from_dir(tmp.path()).expect("load manifest");
+        assert!(validate_rpc_method_for_manifest(&manifest, "voice.transcribe").is_ok());
+        assert!(validate_rpc_method_for_manifest(&manifest, "voice.build_directive").is_ok());
+        assert!(validate_rpc_method_for_manifest(&manifest, "voice.import_tts_adapter").is_ok());
+        assert!(validate_rpc_method_for_manifest(&manifest, "voice.list_tts_adapters").is_ok());
+    }
+
+    #[test]
+    fn voice_asr_manifest_declares_tts_adapter_rpc() {
+        let repo = path_from_manifest_dir();
+        let manifest =
+            OclivePluginManifest::load_from_dir(&repo).expect("load com.oclive.voice.asr manifest");
+        for method in ["voice.import_tts_adapter", "voice.list_tts_adapters"] {
+            assert!(
+                manifest.rpc_methods.iter().any(|m| m == method),
+                "missing rpcMethods {method}"
+            );
+            assert!(
+                validate_rpc_method_for_manifest(&manifest, method).is_ok(),
+                "whitelist rejected {method}"
+            );
+        }
+    }
+
+    fn path_from_manifest_dir() -> std::path::PathBuf {
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../chat-pro/plugins/com.oclive.voice.asr")
+            .canonicalize()
+            .expect("voice.asr plugin dir")
+    }
+
+    #[test]
+    fn undeclared_rpc_method_rejected() {
+        let tmp = TempDir::new().expect("temp");
+        write_manifest(tmp.path(), &["voice.probe"], true);
+        let manifest = OclivePluginManifest::load_from_dir(tmp.path()).expect("load manifest");
+        let err = validate_rpc_method_for_manifest(&manifest, "voice.speak")
+            .expect_err("undeclared method");
+        assert!(err.to_string().contains("not declared"));
+    }
+
+    #[test]
+    fn manifest_without_process_rejects_rpc() {
+        let tmp = TempDir::new().expect("temp");
+        write_manifest(tmp.path(), &["voice.probe"], false);
+        let manifest = OclivePluginManifest::load_from_dir(tmp.path()).expect("load manifest");
+        let err =
+            validate_rpc_method_for_manifest(&manifest, "voice.probe").expect_err("no process");
+        assert!(err.to_string().contains("no process"));
+    }
 }

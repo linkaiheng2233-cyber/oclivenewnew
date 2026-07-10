@@ -1,0 +1,17 @@
+import { describe, expect, it } from 'vitest'
+import { formatVoiceSpeakFailure, shouldFallbackStreamToRpc } from './voiceSpeakErrors'
+
+describe('voiceSpeakErrors', () => {
+  it('formats stream timeout in Chinese', () => {
+    expect(formatVoiceSpeakFailure('stream', { reason: 'stream_timeout' }))
+      .toContain('流式')
+    expect(formatVoiceSpeakFailure('stream', { reason: 'stream_timeout' }))
+      .toContain('超时')
+  })
+
+  it('allows RPC fallback for stream failures', () => {
+    expect(shouldFallbackStreamToRpc({ ok: false, reason: 'stream_timeout' })).toBe(true)
+    expect(shouldFallbackStreamToRpc({ ok: true })).toBe(false)
+    expect(shouldFallbackStreamToRpc({ ok: false, reason: 'tts_expansion_disabled' })).toBe(false)
+  })
+})

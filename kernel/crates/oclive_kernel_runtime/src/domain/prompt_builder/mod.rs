@@ -27,7 +27,8 @@ pub const KERNEL_DIALOGUE_GUARDRAILS: &str = "【对话硬约束】（引擎预�
 - **倾诉优先**：用户透露委屈、挫败、被责备、压力时，先回应其遭遇与情绪，再给一个贴题追问或短反馈，让对话能继续；勿转去闲聊邀约或用一句话把话题封死。\n\
 - **禁止复读开场**：勿把用户刚说的句子、称呼或口头禅原样当作你的起句或主体。例：用户「晚上好哦沐沐」→ 勿以「晚上好哦」起句；改为你自己的措辞接情绪或话题。\n\
 - **禁止学舌式模仿**：勿逐句复制用户句式、口癖、昵称链或颜文字密度；保持本角色惯常说话方式。\n\
-- **篇幅随输入**：按用户本句的信息量与情绪强度调节密度。用户极短或仅确认时，宜 1–2 句精炼回复；用户倾诉或追问时再展开；勿为显得热情而重复同一关心或写成长段。\n";
+- **篇幅随输入**：按用户本句的信息量与情绪强度调节密度。用户极短或仅确认时，宜 1–2 句精炼回复；用户倾诉或追问时再展开；勿为显得热情而重复同一关心或写成长段。\n\
+- **勿与上一轮助手回复大段雷同**：用户短确认时勿重新展开已说过的关心清单。\n";
 
 const PROMPT_BLOCK_GUIDE: &str = "以下为语气/内容层次，请按序理解";
 
@@ -88,6 +89,37 @@ pub fn effective_reply_quality_anchor(role: &crate::models::Role) -> &str {
     }
 }
 
+/// Deep prefix-cache layout: byte-stable head + per-turn tail (see `handoff/DEEP_PROMPT_DISTILLATION.md` §4).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PromptSegments {
+    pub stable_prefix: String,
+    pub dynamic_suffix: String,
+}
+
+impl PromptSegments {
+    #[must_use]
+    pub fn full(&self) -> String {
+        let mut out = String::with_capacity(self.stable_prefix.len() + self.dynamic_suffix.len());
+        out.push_str(&self.stable_prefix);
+        out.push_str(&self.dynamic_suffix);
+        out
+    }
+
+    #[must_use]
+    pub fn stable_len(&self) -> usize {
+        self.stable_prefix.len()
+    }
+}
+
+/// Fingerprint stable prefix bytes for session prefix-cache telemetry (not cryptographic).
+#[must_use]
+pub fn hash_stable_prefix(stable: &str) -> u64 {
+    use std::hash::{Hash, Hasher};
+    let mut h = std::collections::hash_map::DefaultHasher::new();
+    stable.hash(&mut h);
+    h.finish()
+}
+
 pub struct PromptBuilder;
 
 impl PromptBuilder {
@@ -96,10 +128,13 @@ impl PromptBuilder {
         let family_id = user_relation_id.eq_ignore_ascii_case("family")
             || user_relation_id.eq_ignore_ascii_case("parent")
             || user_relation_id.eq_ignore_ascii_case("parents")
-            || user_relation_id.eq_ignore_ascii_case("guardian");
+            || user_relation_id.eq_ignore_ascii_case("guardian")
+            || user_relation_id.eq_ignore_ascii_case("father_daughter");
         let hint_suggests_family = relation_hint.contains("父母")
             || relation_hint.contains("长辈")
-            || relation_hint.contains("家长");
+            || relation_hint.contains("家长")
+            || relation_hint.contains("父亲")
+            || relation_hint.contains("女儿");
         family_id || hint_suggests_family
     }
 
@@ -167,7 +202,10 @@ impl PromptBuilder {
         let mut prompt = String::new();
 
         // Tier 0 — highest priority
-        prompt.push_str(&Self::build_core_hard_constraint(input.role));
+        prompt.push_str(&Self::build_core_hard_constraint(
+            input.role,
+            input.persona_override,
+        ));
         let scene_block = Self::build_scene_constraint_block(input);
         if !scene_block.is_empty() {
             prompt.push_str("\n\n");
@@ -178,14 +216,14 @@ impl PromptBuilder {
         prompt.push_str("\n\n---\n底线区块\n");
         prompt.push_str(PROMPT_BLOCK_GUIDE);
         prompt.push_str("\n\n");
-        let supplement = Self::build_personality_supplement(
-            input.role,
-            input.personality,
-            input.mutable_personality,
-        );
+        let supplement = Self::build_personality_supplement(input.role, input.mutable_personality);
         if !supplement.is_empty() {
             prompt.push_str(&supplement);
             prompt.push_str("\n\n");
+        }
+        let ephemeral = Self::build_ephemeral_archive_block(input.ephemeral_personality);
+        if !ephemeral.is_empty() {
+            prompt.push_str(&ephemeral);
         }
         if !input.worldview_snippet.trim().is_empty() {
             prompt.push_str(
@@ -202,32 +240,7 @@ impl PromptBuilder {
             prompt.push_str(&status);
             prompt.push_str("\n\n");
         }
-        if !input.relation_transition_hint.trim().is_empty() {
-            prompt.push_str("【关系过渡】\n");
-            prompt.push_str(input.relation_transition_hint.trim());
-            prompt.push_str("\n\n");
-        }
-        prompt.push_str(&Self::build_event_relation_state(
-            input.relation_before,
-            input.favorability_before,
-            input.relation_preview,
-            input.favorability_preview,
-            input.event_type,
-            input.impact_factor,
-        ));
-        prompt.push_str("\n\n");
-        if let Some(boundary_guide) = Self::build_boundary_tone_guideline(
-            input.personality,
-            input.relation_before,
-            input.relation_preview,
-        ) {
-            prompt.push_str(&boundary_guide);
-            prompt.push_str("\n\n");
-        }
-        prompt.push_str(&Self::build_current_state(
-            input.personality,
-            input.user_emotion,
-        ));
+        prompt.push_str(Self::build_authenticity_constraint());
         prompt.push_str("\n\n");
         if !input
             .previous_complex_emotion_narrative_hint
@@ -269,6 +282,12 @@ impl PromptBuilder {
                 prompt.push_str("\n\n");
             }
         }
+        if let Some(prev_block) =
+            Self::build_previous_reply_constraint(input.previous_assistant_reply)
+        {
+            prompt.push_str(&prev_block);
+            prompt.push_str("\n\n");
+        }
         if !input.reply_quality_anchor.trim().is_empty() {
             prompt.push_str(input.reply_quality_anchor.trim());
             prompt.push_str("\n\n");
@@ -279,6 +298,105 @@ impl PromptBuilder {
         prompt.push_str("\n\n请以角色身份自然地回复，保持一致的性格和语气。");
         prompt
     }
+
+    /// Deep + Ollama prefix-cache path: stable sections first (Tier0 · worldview · anchor · guardrails · scene).
+    #[must_use]
+    pub fn build_prompt_segments(input: &PromptInput<'_>) -> PromptSegments {
+        let mut stable_prefix = String::new();
+        stable_prefix.push_str(&Self::build_core_hard_constraint(
+            input.role,
+            input.persona_override,
+        ));
+        if !input.worldview_snippet.trim().is_empty() {
+            stable_prefix.push_str("\n\n【世界观设定】（角色包知识；与闲聊记忆冲突时以本段为权威事实，但不得覆盖【用户身份】与安全红线。）\n");
+            stable_prefix.push_str(input.worldview_snippet.trim());
+            stable_prefix.push_str("\n\n");
+        }
+        if !input.reply_quality_anchor.trim().is_empty() {
+            stable_prefix.push_str(input.reply_quality_anchor.trim());
+            stable_prefix.push_str("\n\n");
+        }
+        stable_prefix.push_str(KERNEL_DIALOGUE_GUARDRAILS);
+        stable_prefix.push_str("\n\n");
+        let scene_block = Self::build_scene_constraint_block(input);
+        if !scene_block.is_empty() {
+            stable_prefix.push_str(&scene_block);
+        }
+
+        let mut dynamic_suffix = String::new();
+        dynamic_suffix.push_str("\n\n---\n底线区块\n");
+        dynamic_suffix.push_str(PROMPT_BLOCK_GUIDE);
+        dynamic_suffix.push_str("\n\n");
+        let supplement = Self::build_personality_supplement(input.role, input.mutable_personality);
+        if !supplement.is_empty() {
+            dynamic_suffix.push_str(&supplement);
+            dynamic_suffix.push_str("\n\n");
+        }
+        let ephemeral = Self::build_ephemeral_archive_block(input.ephemeral_personality);
+        if !ephemeral.is_empty() {
+            dynamic_suffix.push_str(&ephemeral);
+        }
+
+        dynamic_suffix.push_str("---\n语气区块\n\n");
+        let status = Self::build_character_status_summary(input);
+        if !status.is_empty() {
+            dynamic_suffix.push_str(&status);
+            dynamic_suffix.push_str("\n\n");
+        }
+        dynamic_suffix.push_str(Self::build_authenticity_constraint());
+        dynamic_suffix.push_str("\n\n");
+        if !input
+            .previous_complex_emotion_narrative_hint
+            .trim()
+            .is_empty()
+        {
+            dynamic_suffix.push_str(
+                "【复杂情感叙事提示】（上一回合内置分析输出；自然落实，勿向用户复述本段标题或元信息）\n",
+            );
+            dynamic_suffix.push_str(input.previous_complex_emotion_narrative_hint.trim());
+            dynamic_suffix.push_str("\n\n");
+        }
+
+        dynamic_suffix.push_str("---\n内容区块\n\n");
+        if !input.memories.is_empty() {
+            dynamic_suffix.push_str(&Self::build_memory_context(input.memories));
+            dynamic_suffix.push_str("\n\n");
+        }
+        Self::push_user_identity_section(&mut dynamic_suffix, input);
+        if !input.life_context_line.is_empty() {
+            dynamic_suffix.push_str("【日程推断】\n");
+            dynamic_suffix.push_str(input.life_context_line.trim());
+            dynamic_suffix.push_str("\n\n");
+        }
+        for section in input.extra_sections {
+            if section.title.trim().is_empty() && section.body.trim().is_empty() {
+                continue;
+            }
+            if !section.title.trim().is_empty() {
+                dynamic_suffix.push('【');
+                dynamic_suffix.push_str(section.title.trim());
+                dynamic_suffix.push_str("】\n");
+            }
+            if !section.body.trim().is_empty() {
+                dynamic_suffix.push_str(section.body.trim());
+                dynamic_suffix.push_str("\n\n");
+            }
+        }
+        if let Some(prev_block) =
+            Self::build_previous_reply_constraint(input.previous_assistant_reply)
+        {
+            dynamic_suffix.push_str(&prev_block);
+            dynamic_suffix.push_str("\n\n");
+        }
+        dynamic_suffix.push_str(&format!("用户说: {}", input.user_input));
+        dynamic_suffix.push_str("\n\n请以角色身份自然地回复，保持一致的性格和语气。");
+
+        PromptSegments {
+            stable_prefix,
+            dynamic_suffix,
+        }
+    }
+
     #[must_use]
     pub fn build_simple_prompt(role_name: &str, user_input: &str) -> String {
         format!("你是{}。用户说: {}\n请自然地回复。", role_name, user_input)

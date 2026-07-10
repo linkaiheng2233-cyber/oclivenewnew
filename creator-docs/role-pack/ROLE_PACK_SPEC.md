@@ -38,7 +38,7 @@ distros/chat-pro/roles/{role_id}/
 ├── pipeline.ocblueprint    # **蓝图文件（v2 SSOT · 瘦）**：meta + slot_registry + includes；**不以** steps[] 调度；见 [BLUEPRINT_FOLDER_LAYOUT.md](../../handoff/BLUEPRINT_FOLDER_LAYOUT.md)
 ├── blueprint/              # 可选：includes/、overlays/、revisions/、docs/（卫星，不替代本体路径）
 ├── config.json             # 可选；遗忘曲线、虚拟时间（沉浸模式）；见 §9
-├── prompts/                # **可选创作辅助**（非 Tier0）：`reply_quality_anchor.md` 镜像等；`system.md` **非宿主必需、不参与 PromptBuilder**
+├── prompts/                # **可选创作辅助**（非 Tier0）：`reply_quality_anchor.md` 镜像等；`deep_capsule.txt`（Wave D · Deep 离线蒸馏胶囊）；`system.md` **非宿主必需、不参与 PromptBuilder**
 ├── user_identities/        # **可选**：User Identity Prompt Template（`index.json` + `*.md` 模板；见 RFC）
 │   ├── index.json
 │   └── {identity_id}.md
@@ -57,6 +57,8 @@ distros/chat-pro/roles/{role_id}/
 **说明**：v2 包 **不得** 同时存在 `manifest.json` / `settings.json` 与 `pipeline.ocblueprint`。七维人格在 v2 写入 **`meta.personality`**（对象或 7 元数组）。**人设 Tier0** 只读 **`core_personality.txt`**；`prompts/*.md` 为可选创作辅助（编写器 / creator profile 校验），**不参与** `PromptBuilder` Tier0。**回复质量锚点**运行时读 **`meta.reply_quality_anchor`**（或蓝图 `runtime_config.reply_quality_anchor`）或内核 **`DEFAULT_REPLY_QUALITY_ANCHOR`**；`prompts/reply_quality_anchor.md` 仅为人类可读镜像。
 
 **锚点 vs guardrails 分工**：包级 `reply_quality_anchor` **整段替换**内核默认锚点，但**不替换**引擎 **`KERNEL_DIALOGUE_GUARDRAILS`**（含状态延续、倾诉优先、禁止复读开场、篇幅随输入等通用纪律，每轮恒追加）。创作者宜在包级锚点只写**人设差异**，勿重复 guardrails 已覆盖的通用句。
+
+**Deep persona capsule（Wave D · 可选）**：`prompts/deep_capsule.txt` 为 **Turn Thinking Deep** 轮准备的 **离线蒸馏** 短人设（≤ **2500** 汉字）；**Small 模型 + Deep 轮**且 `meta.deep_capsule_enabled=true` 时替代 Tier0 全量 `core_personality.txt` 注入，Fast 轮仍读全文。蒸馏流程与 KV 前缀延续见 [`handoff/DEEP_PROMPT_DISTILLATION.md`](../../handoff/DEEP_PROMPT_DISTILLATION.md)。**禁止**运行时 LLM 动态压缩。
 
 ### 1.1 `user_identities/`（User Identity Prompt Template · 可选）
 
@@ -85,7 +87,9 @@ distros/chat-pro/roles/{role_id}/
 
 **兼容层**：无 `user_identities/` 时，宿主仍可使用蓝图 **`meta.relations`** 中各关系的 **`prompt_hint`**（legacy）。有 catalog 时以 catalog 模板为准；发行版可通过 `distro.oclive.toml` → `[user_identity].default_id` 覆盖会话默认（见 [DISTRO_CAPABILITY_PROFILE.md](../kernel/DISTRO_CAPABILITY_PROFILE.md)）。
 
-**示例**：`distros/chat-pro/roles/mumu/user_identities/`（演示 identity；**未**默认开启 `reply_post_processor`）。
+**示例**：`distros/chat-pro/roles/mumu/user_identities/`（含 **父亲/父女** 演示：`father.md` 映射 `father_daughter` 关系；**未**默认开启 `reply_post_processor`）。
+
+**Tier0 与身份冲突**：`core_personality.txt`（Tier0）中的通用叙事若与【用户身份】矛盾（例如 Tier0 写「照顾用户」而身份为父亲），**以【用户身份】段落为准**；创作者应在 Tier0 加显式退让句，并在 `user_identities/*.md` 写清 SSOT（见 mumu `father.md`）。
 
 **API / UI**：Tauri `get_user_identity_state` / `set_user_identity`；HTTP `GET /user_identity/state`、`POST /user_identity/set`。详见 [RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md](../rfc/RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md) §3。
 
@@ -351,6 +355,7 @@ auto_sync: false
 | `portrait_catalog` | object | 否 | **第 3 设施**立绘目录 + 表现导演（**默认未启用**）；见 §9.9 |
 | `visual_presentation` | object | 否 | **第 4 设施**视觉舞台（**默认 `enabled: false`**）；见 §9.10 |
 | `meta_action_templates` | object | 否 | 破壁元操作态度文案（undo/regenerate/edit/delete）；见 §9.8 |
+| `turn_thinking` | object | 否 | co-present Fast/Deep 路由、Deep latch、局面摘要 TTL；见 §9.11 · RFC [`RFC_TURN_THINKING_PERSISTENCE.md`](../rfc/RFC_TURN_THINKING_PERSISTENCE.md) §8–12 |
 
 ### 9.3 `time`（虚拟时间）
 
@@ -499,6 +504,75 @@ auto_sync: false
 | `resources` | object | — | backend 所需模型路径等 |
 
 **禁止**在本节配置二次 AI 选图；输入为第 3 设施 **`visual_state_id`**。
+
+### 9.11 `turn_thinking`（Wave F · co-present 路由）
+
+**RFC**：[RFC_TURN_THINKING_PERSISTENCE.md §8–12](../rfc/RFC_TURN_THINKING_PERSISTENCE.md) · 内核 `turn_thinking.rs`。
+
+| 字段 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `deep_when.or` | array | — | 追加 Host 默认 OR 项（signal 对象） |
+| `deep_when.and` | array | — | `{ "all": [ … ] }` 组；组内全 true → Deep |
+| `latch.enter_on` / `exit_on` | string[] | `[]` | 事件名（`Quarrel` 等）；Deep latch 直到和解 |
+| `ephemeral_archive.enabled` | bool | — | 节缺失 = 关闭 |
+| `ephemeral_archive.ttl_turns` | integer | `3` | 1–8；剩余轮数 |
+| `ephemeral_archive.max_chars` | integer | `200` | 局面摘要上限 |
+| `ephemeral_archive.update_on_events` | string[] | — | 命中时规则模板写入 |
+
+**signal 枚举**：`long_message` · `high_arousal` · `high_sadness` · `high_anger` · `high_fear` · `this_turn_event` · `recent_event` · `keyword` · `deep_latch_active`。
+
+**校验**：`oclive pack validate` 校验 signal / 事件名 / TTL / `max_chars`；节缺失则跳过。
+
+**示例**（注释版见 `distros/chat-pro/roles/mumu/config.json`）：
+
+```json
+{
+  "turn_thinking": {
+    "deep_when": {
+      "or": [{ "signal": "this_turn_event", "events": ["Quarrel"] }],
+      "and": [{
+        "all": [
+          { "signal": "long_message", "min_chars": 40 },
+          { "signal": "high_sadness" }
+        ]
+      }]
+    },
+    "latch": { "enter_on": ["Quarrel"], "exit_on": ["Apology"] },
+    "ephemeral_archive": {
+      "enabled": true,
+      "ttl_turns": 3,
+      "max_chars": 200,
+      "update_on_events": ["Quarrel", "Apology", "Confession", "Praise"]
+    }
+  }
+}
+```
+
+---
+
+## 10. 可选 · `voice_profile.json`（语音侧车 · 非六槽）
+
+> **架构**：独立通道 `voice.asr` / 导演 / synth profile 与主链正交；详见 [ARCHITECTURE_DECOUPLING_PANORAMA.md §11.2](../../human-docs/team/ARCHITECTURE_DECOUPLING_PANORAMA.md) · [TRACK_VOICE_RECOGNITION.md](../../human-docs/team/TRACK_VOICE_RECOGNITION.md)。
+
+角色包根目录可选 **`voice_profile.json`**（**不**写入 `slot_registry` · **不**进 `process_message`）。插件 `voice.build_directive` 在收到 `role_path` 时读取并覆盖默认 synth / director / baseline `speed`。
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `schema_version` | integer | 是 | **1** 或 **2**（v2 增 ref / engine_family） |
+| `director_profile` | string | 否 | 默认导演 profile id（如 `rules-v1`） |
+| `synth_profile` | string | 否 | 默认发声 profile id（如 `bundled-cosyvoice2-zh`） |
+| `preferred_tts_profile` | string | 否 | 设置页切换角色时的 TTS 档案建议（与 `synth_profile` 同 id 空间；未实现自动联动前为文档性 hint · K-VOICE-04） |
+| `speed` | number | 否 | baseline 语速乘数（0.5–2.0） |
+| `energy` | string | 否 | `soft` · `normal` · `strong` |
+| `engine_family` | string[] | 否 | v2：推荐引擎族（如 `cosyvoice2`） |
+| `ref_default` | string | 否 | v2：默认参考音相对路径（如 `assets/voice/ref_neutral.wav`） |
+| `ref_text` | string | 否 | v2：与 `ref_default` 对应的参考文本 |
+| `ref_map` | object | 否 | v2：emotion → ref 相对路径 |
+| `emo_text_template` | string | 否 | v2：含 `{tone}` 占位符的 instruct 模板 |
+
+**缺省派生**：未提供 `voice_profile.json`，或其中未写 `emo_text_template` / `speed` / `energy` 时，插件 `voice.build_directive` 会从同包 **`core_personality.txt`** 按 rules-v1 关键词规则自动派生 baseline 风格（显式字段始终优先）。详情与合规见 [TRACK_VOICE_RECOGNITION.md §1 VX-4b](../../human-docs/team/TRACK_VOICE_RECOGNITION.md)。
+
+示例见 [`distros/chat-pro/roles/mumu/voice_profile.json`](../../distros/chat-pro/roles/mumu/voice_profile.json)。契约 **`voice_directive` v1** 由插件 RPC 产出（可含 `ref_audio` · `ref_text` · `emo_text`），不进 `SendMessageResponse`。
 
 ---
 

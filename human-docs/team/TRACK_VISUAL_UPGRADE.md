@@ -1,5 +1,6 @@
 # 轨道 A · 视觉升级（立绘 / Live2D）
 
+> **架构归属** → [modules/facilities/portrait.md](../modules/facilities/portrait.md) · [visual-stage.md](../modules/facilities/visual-stage.md)  
 > **读者**：负责 Chat Pro 主界面视觉表现的工程师。  
 > **前置**：[DEV_ENVIRONMENT.md](./DEV_ENVIRONMENT.md)（§3 Windows 全套 · §9 视觉线验收）→ [CHAT_PRO_VERTICAL_HANDOFF.md](./CHAT_PRO_VERTICAL_HANDOFF.md) → [paths/frontend.md](../paths/frontend.md)  
 > **预计周期**：2–3 周（Live2D 实装取决于 SDK 决策，见 Week 3）  

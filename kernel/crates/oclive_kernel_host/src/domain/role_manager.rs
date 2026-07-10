@@ -169,6 +169,7 @@ impl RoleManager {
                 life_context_line: "",
                 worldview_snippet: "",
                 mutable_personality: "",
+                ephemeral_personality: "",
                 reply_quality_anchor: effective_reply_quality_anchor(&self.role),
                 previous_complex_emotion_narrative_hint: "",
                 user_identity_template: "",
@@ -177,6 +178,8 @@ impl RoleManager {
                 host_state_expression_hint: "",
                 relation_transition_hint: "",
                 extra_sections: &[],
+                persona_override: None,
+                previous_assistant_reply: "",
             })
             .expect("build_prompt");
 
@@ -267,6 +270,8 @@ mod tests {
             min_runtime_version: None,
             dev_only: false,
             featured: false,
+            deep_capsule_enabled: false,
+            deep_capsule: None,
             preset_order: 999,
             plugin_backends: std::sync::Arc::new(crate::models::PluginBackends::default()),
             slot_registry: None,
@@ -283,6 +288,8 @@ mod tests {
             pack_portrait_catalog: Default::default(),
             portrait_catalog: None,
             pack_visual_presentation_config: Default::default(),
+            pack_turn_thinking_config: None,
+            pack_prompt_extra_sections: Vec::new(),
             runtime_config: None,
             pipeline_experimental: None,
             scene_ids: std::sync::Arc::from(Vec::<String>::new()),

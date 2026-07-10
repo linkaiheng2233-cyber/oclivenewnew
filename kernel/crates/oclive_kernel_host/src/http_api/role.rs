@@ -1,15 +1,17 @@
 use super::{api_error, ApiError};
 use crate::models::dto::{
-    CreateEventRequest, CreateEventResponse, GetRoleInfoRequest, GetUserIdentityStateRequest,
-    JumpTimeRequest, JumpTimeResponse, RoleInfo, SetRoleInteractionModeRequest,
-    SetSceneUserIdentityRequest, SetUserIdentityRequest, SetUserPresenceSceneRequest,
-    SwitchSceneRequest, SwitchSceneResponse, TimeStateResponse, UserIdentityStateResponse,
+    CreateEventRequest, CreateEventResponse, DisplayMetricsDto, GetDisplayMetricsRequest,
+    GetRoleInfoRequest, GetUserIdentityStateRequest, JumpTimeRequest, JumpTimeResponse, RoleInfo,
+    SetRoleInteractionModeRequest, SetSceneUserIdentityRequest, SetUserIdentityRequest,
+    SetUserPresenceSceneRequest, SwitchSceneRequest, SwitchSceneResponse, TimeStateResponse,
+    UserIdentityStateResponse,
 };
 use crate::models::role::PersonalitySource;
 use crate::service::{
-    get_role_info_impl, get_time_state_impl, get_user_identity_state_impl, jump_time_impl,
-    load_role_impl, set_role_interaction_mode_impl, set_scene_user_identity_impl,
-    set_user_identity_impl, set_user_presence_scene_impl, switch_scene_impl,
+    get_display_metrics_impl, get_role_info_impl, get_time_state_impl,
+    get_user_identity_state_impl, jump_time_impl, load_role_impl, set_role_interaction_mode_impl,
+    set_scene_user_identity_impl, set_user_identity_impl, set_user_presence_scene_impl,
+    switch_scene_impl,
 };
 use crate::state::AppState;
 use axum::extract::{Query, State};
@@ -37,6 +39,7 @@ pub(crate) struct RoleSnapshotResponse {
     current_emotion: String,
     portrait_emotion: String,
     relation_state: String,
+    display_metrics: Option<DisplayMetricsDto>,
     personality_source: PersonalitySource,
     current_scene: Option<String>,
     user_presence_scene: Option<String>,
@@ -89,10 +92,28 @@ pub(crate) async fn role_snapshot_route(
         current_emotion: info.current_emotion.clone(),
         portrait_emotion: info.current_emotion,
         relation_state: info.relation_state,
+        display_metrics: info.display_metrics,
         personality_source: info.personality_source,
         current_scene: info.current_scene,
         user_presence_scene: info.user_presence_scene,
     }))
+}
+
+pub(crate) async fn display_metrics_route(
+    State(state): State<Arc<AppState>>,
+    Query(q): Query<RoleIdQuery>,
+) -> Result<Json<DisplayMetricsDto>, ApiError> {
+    let req = GetDisplayMetricsRequest {
+        role_id: q.role_id.trim().to_string(),
+        session_id: q.session_id.clone(),
+    };
+    get_display_metrics_impl(&state, &req.role_id, req.session_id.as_deref())
+        .await
+        .map(Json)
+        .map_err(|e| {
+            let k = e.kernel_error_body();
+            api_error(axum::http::StatusCode::BAD_REQUEST, k)
+        })
 }
 
 pub(crate) async fn load_role_route(

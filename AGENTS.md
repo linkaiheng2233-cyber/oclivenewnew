@@ -1,183 +1,87 @@
 # Agent / AI 协作说明（A.I.Live · oclivenewnew）
 
-本仓库为 **A.I.Live / OCLive** —— 开源、可组装、隐私优先的 **AI 角色运行时与开发者平台**（**Tauri + Vue 3 + Rust**；工程代号 **oclive**）。对外叙事强调 **六槽可替换架构、角色包独立分发、发行版 profile 适配、插件市场**；默认角色包（如 `distros/chat-pro/roles/mumu`）为**官方示例**，非产品上限。定位摘要见 [handoff/OCLIVE_POSITIONING_DIFFERENTIATION.md](handoff/OCLIVE_POSITIONING_DIFFERENTIATION.md)。
+本仓库为 **A.I.Live / OCLive** —— 开源、可组装、隐私优先的 **AI 角色运行时与开发者平台**（**Tauri + Vue 3 + Rust**）。默认角色包（如 `distros/chat-pro/roles/mumu`）为**官方示例**，非产品上限。
 
-**人类开发者（不用 Cursor）**：请先 [human-docs/README.md](human-docs/README.md)（30 分钟跑通与内核主链）；本文与 `creator-docs/` / `handoff/` 为 **AI 接手包** 组成部分。
+**人类开发者（不用 Cursor）**：请先 **[human-docs/README.md](human-docs/README.md)**（L0–L2 约 1 小时 · 排版面向人类认知）；**不要**从本文起步。
 
-自动化助手或外部 Agent 在修改代码前，请先阅读：
+**AI 深读分类目录**（架构 · 契约 · 代码锚点 · 场景路径）：**[handoff/AI_READING_INDEX.md](handoff/AI_READING_INDEX.md)**  
+**文档五层分工**：**[handoff/README.md](handoff/README.md) §文档分层**  
+**GitHub 首页 [`README.md`](README.md) 仅面向人类**；细节 **链 SSOT，禁止复制长表**（G14）。
 
-- **命名与 canonical import SSOT**：[creator-docs/NAMING_CONVENTIONS.md](creator-docs/NAMING_CONVENTIONS.md)（DTO → `oclive_kernel_types`；trait → `oclive_kernel_contracts`；编排 → `oclive_kernel_host`）
-- **改动边界 / 简洁优先**：[handoff/AI_CHANGE_BOUNDARIES.md](handoff/AI_CHANGE_BOUNDARIES.md)（G1–G9 硬约束 + **「代码编写纪律」**：先调研后动手 · correct-by-construction · 精简反屎山 · 解耦可维护）· 带数字的审查汇报先读 [handoff/AI_VERIFICATION_PROTOCOL.md](handoff/AI_VERIFICATION_PROTOCOL.md)
+---
 
-### 发版版本（`main`，2026-06-12）
+## 改代码前必读（AI · 精简索引）
+
+| 优先级 | 文档 | 用途 |
+|--------|------|------|
+| 1 | [handoff/AI_CHANGE_BOUNDARIES.md](handoff/AI_CHANGE_BOUNDARIES.md) | **G1–G16** · 代码编写纪律 · **文档编写纪律** |
+| 2 | [handoff/MODULE_MAP_AND_HANDOFF.md](handoff/MODULE_MAP_AND_HANDOFF.md) | 模块定义 · 六槽/设施/独立通道 · **逐槽关系** |
+| 3 | [creator-docs/NAMING_CONVENTIONS.md](creator-docs/NAMING_CONVENTIONS.md) §4.2 | canonical import |
+| 4 | [handoff/BUS_FACTOR_NOTES.md](handoff/BUS_FACTOR_NOTES.md) | `process_message` · DB · 错误码 **文件锚点** |
+| 5 | [handoff/AI_VERIFICATION_PROTOCOL.md](handoff/AI_VERIFICATION_PROTOCOL.md) | 带数字的审查 / 汇报 **须核实** |
+| 6 | [handoff/README.md](handoff/README.md) §文档分责 | 动文档前查 SSOT · **禁止冗余新建** |
+| 7 | [`.cursor/rules/oclivenewnew.mdc`](.cursor/rules/oclivenewnew.mdc) | 7 条硬约束镜像 |
+
+**文档纪律摘要（G10–G16）**：模块关系 **只**改 MODULE_MAP；无 RFC/关键决策 **不新建**顶层 `.md`；**先读**关联 SSOT 再写（可以慢）；**链接代替复制**；人类长文在 `human-docs/` / `creator-docs/`，本文 **不**堆架构长节。
+
+---
+
+## 发版版本（`main`，2026-06-12）
 
 | 产物 | 版本 | 位置 |
 |------|------|------|
-| **桌面宿主** | **0.4.0** | 根 `package.json`、`distros/desktop-tauri/Cargo.toml`、`distros/desktop-tauri/tauri.conf.json` |
-| **角色包编写器** | **0.4.0** | 姊妹仓 `oclive-pack-editor/package.json` |
-| **VS Code 扩展** | **0.3.0** | 姊妹仓 `oclive-vscode/package.json` |
+| **桌面宿主** | **0.4.0** | 根 `package.json`、`distros/desktop-tauri/Cargo.toml` |
+| **角色包编写器** | **0.4.0** | 姊妹仓 `oclive-pack-editor` |
+| **VS Code 扩展** | **0.3.0** | 姊妹仓 `oclive-vscode` |
 | **`oclive-cli`** | **0.1.0** | `kernel/crates/oclive-cli/Cargo.toml` |
 | **`oclive_kernel_runtime`** | **0.2.0** | `kernel/crates/oclive_kernel_runtime/Cargo.toml` |
-| **`oclive_validation`** | **0.1.0** | `kernel/crates/oclive_validation/Cargo.toml` |
 
-独立 SemVer 策略见 [`creator-docs/development/RELEASE_VERSIONING.md`](creator-docs/development/RELEASE_VERSIONING.md)；用户可见变更见 [`CHANGELOG.md`](CHANGELOG.md) **`[0.4.0]`**。
+变更见 [CHANGELOG.md](CHANGELOG.md) **`[0.4.0]`** · SemVer [RELEASE_VERSIONING.md](creator-docs/development/RELEASE_VERSIONING.md)。
 
-- **跨平台**：Windows 需 MSVC（见 [CONTRIBUTING.md §开发环境](CONTRIBUTING.md#开发环境)）；Cargo `target-dir` 见 [`.cargo/config.toml`](.cargo/config.toml)。
-- **Rust Release / workspace 依赖**：[`handoff/RUST_RELEASE_AND_DEPENDENCIES.md`](handoff/RUST_RELEASE_AND_DEPENDENCIES.md)。
-- **性能与包体**：阶段总表 [`handoff/PERF_PHASES.md`](handoff/PERF_PHASES.md)（v0.2 P1–P3 已收尾）；[`handoff/PERFORMANCE_BASELINE_ACCEPTANCE.md`](handoff/PERFORMANCE_BASELINE_ACCEPTANCE.md)、前端分包 SSOT [`distros/chat-pro/vite.config.ts`](distros/chat-pro/vite.config.ts) + [`distros/shared/src/build/manualChunks.ts`](distros/shared/src/build/manualChunks.ts)、[`handoff/BUNDLE_RESOURCES_SIZING.md`](handoff/BUNDLE_RESOURCES_SIZING.md)。
-- **项目约束**：根目录 [`.cursor/rules/oclivenewnew.mdc`](.cursor/rules/oclivenewnew.mdc)（编排、持久化、Tauri 命令注册、DTO、Prompt 约定）。
-- **创作者与架构文档**：[`creator-docs/README.md`](creator-docs/README.md) → [`creator-docs/getting-started/DOCUMENTATION_INDEX.md`](creator-docs/getting-started/DOCUMENTATION_INDEX.md)。
-- **愿景与路线**：[`creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md`](creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md)、[`creator-docs/roadmap/VISION_OPEN_LAB.md`](creator-docs/roadmap/VISION_OPEN_LAB.md)（开放实验场摘要）。
+---
 
-### 工程纪律（C2）
+## 架构与契约（详情链出 · 勿在本文双写）
 
-- **Breaking 变更流程**（识别、审阅、兼容层、`oclive_validation` 与契约文档同步、PR/迁移模板）：[`handoff/BREAKING_CHANGE_PROCESS.md`](handoff/BREAKING_CHANGE_PROCESS.md)。贡献者摘要见 [`CONTRIBUTING.md`](CONTRIBUTING.md)「破坏性变更」。
-- **关键路径交接（Bus factor）**（编排入口、`PluginHost`、错误码、迁移、OOCP/CI 定位）：[`handoff/BUS_FACTOR_NOTES.md`](handoff/BUS_FACTOR_NOTES.md)。索引入口见 [`creator-docs/getting-started/DOCUMENTATION_INDEX.md`](creator-docs/getting-started/DOCUMENTATION_INDEX.md)「工程纪律」。
-- **Phase 2 加固收尾**（六槽 `none`、memory decay、HostProfile retrieval、Agent remote/directory、Tauri canonical import）：[`handoff/TECHNICAL_DEBT_INVENTORY.md`](handoff/TECHNICAL_DEBT_INVENTORY.md) **§1 活跃台账 / §2 冻结**。
+| 主题 | SSOT |
+|------|------|
+| 模块注册表 · 记忆三套存储 · 六槽解耦 | [handoff/MODULE_MAP_AND_HANDOFF.md](handoff/MODULE_MAP_AND_HANDOFF.md) |
+| 对外架构叙述 | [OCLIVE_ARCHITECTURE_OVERVIEW.md](creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) |
+| 六槽 DTO · 编排顺序 | [PLUGIN_V1.md](creator-docs/plugin-and-architecture/PLUGIN_V1.md) |
+| 角色包 vs 蓝图 | [handoff/ROLE_PACK_BOUNDARY.md](handoff/ROLE_PACK_BOUNDARY.md) |
+| 聊天 vs 记忆 | [handoff/CHAT_STORAGE_ARCHITECTURE.md](handoff/CHAT_STORAGE_ARCHITECTURE.md) |
+| 发行版 HostProfile | [DISTRO_CAPABILITY_PROFILE.md](creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md) |
+| 活跃债 / 冻结 | [handoff/TECHNICAL_DEBT_INVENTORY.md](handoff/TECHNICAL_DEBT_INVENTORY.md) |
+| 文档总索引 | [DOCUMENTATION_INDEX.md](creator-docs/getting-started/DOCUMENTATION_INDEX.md) |
+| 人类接手阶梯 L0–L8 | [human-docs/README.md](human-docs/README.md) |
 
-### 脚手架（`oclive-cli`）
+**主编排**：`kernel/crates/oclive_kernel_host/.../process_message.rs` → `co_present` · 蓝图 **`steps[]` 不调度** · Tauri 命令只在 `distros/desktop-tauri/src/api/*.rs` · 回复字段 **`reply`**。
 
-- **crate**：[`kernel/crates/oclive-cli/`](kernel/crates/oclive-cli/)（workspace 成员）；`cargo run -p oclive-cli -- init` 交互或 `--non-interactive --preset` 生成**可独立 `cargo build`** 的最小内核/库骨架（当前占位依赖 `serde`/`serde_json`，便于硬件与无头场景先统一目录与 `settings.json` 形状）。
-- **文档**：[OCLIVE_CLI_GUIDE.md](creator-docs/cli/OCLIVE_CLI_GUIDE.md) · [SETTINGS_REFERENCE.md](creator-docs/cli/SETTINGS_REFERENCE.md)（`plugin_backends` 与预设矩阵）；接入真实 `oclive_kernel_runtime` / `oclive_kernel_server` 时在生成 `Cargo.toml` 中改为 path 依赖并替换入口代码。
-- **GitHub 插件索引缓存**：SSOT 为 [`data/plugins.json`](data/plugins.json)。桌面写入 `{app_data}/plugin_index_cache.json`；CLI 为 `~/.oclive/plugin_index_cache.json`（Windows：`%USERPROFILE%\.oclive\`）。离线或索引未 push 时可 `Copy-Item data/plugins.json` 到上述路径；GitHub 不可达时安装可设 **`OCLIVE_LOCAL_MONOREPO`** 指向本仓根目录。见 [handoff/GITHUB_PLUGIN_INDEX_LINE.md](handoff/GITHUB_PLUGIN_INDEX_LINE.md)。
+---
 
-### 架构 RFC
+## 测试（AI 须用 SSOT 条数）
 
-- **运行时双核双态（Stable / Experimental，Opt-in Beta，默认关）**：[RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md) · **Cursor 对齐进度** [handoff/DUAL_CORE_CURSOR_HANDOFF.md](handoff/DUAL_CORE_CURSOR_HANDOFF.md) · 速查 [handoff/DUAL_CORE_ALIGNMENT.md](handoff/DUAL_CORE_ALIGNMENT.md)（与 Monolith **构建态** 正交；**不阻塞**当前 v2 交付）。
-- **高耦合编译模式（Monolith）**：[RFC_OCLIVE_MONOLITH_MODE.md](creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md)（路线图见 RFC §9，已与 `oclive-cli` 实现对齐）。**`oclive-cli`**：`init --monolith` 或交互「开发者编译选项」生成 **`monolith.toml`**、`vendor/oclive_monolith_builtin/`（**七焊接键焊接桩唯一模板源**）、**`process_message_monolith.rs`**、双 **`[[bin]]`**（`main.rs` / `main_monolith.rs`）；**`cargo run -p oclive-cli -- build|bench`** 再生成与对比；**`bench --save` / `--compare`** 用于本地性能历史与对比（见 [OCLIVE_CLI_GUIDE.md](creator-docs/cli/OCLIVE_CLI_GUIDE.md)）。**`oclive dev`**：监听脚手架或内核项目下 **`distros/chat-pro/roles/`** 中 `manifest.json` / `settings.json` 变更，便于热重载脚本对接。
+- 审查汇报前：[AI_VERIFICATION_PROTOCOL.md](handoff/AI_VERIFICATION_PROTOCOL.md)
+- OOCP S0–S12（+ 可选 S13/S14）：[OOCP_TEST_SUITE.md](creator-docs/testing/OOCP_TEST_SUITE.md)
+- invoke 热路径 **13** 条：[INVOKE_HOTPATH_MATRIX.md](handoff/INVOKE_HOTPATH_MATRIX.md)
+- Dimension 5 门禁 **15** 项注册 / **14** 项 CI 执行（`node scripts/dimension5-acceptance.mjs --ci`）
+- 日常 `npm run check:rust` **不含 doctest**；发版 `npm run check:release` **含**
 
-### 内核架构（桌面 Tauri 宿主 `distros/desktop-tauri`）
+---
 
-- **Crate 速查**：[`kernel/crates/README.md`](kernel/crates/README.md)（依赖图、改哪个 crate、canonical import）
-- **架构总述（对外）**：契约型薄核 + **单核双态**；**第 1–6 模块** / **第 N 设施子模块** / **后端模块插件模块** — [`creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md`](creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)。
-- **主编排入口**：Tauri IPC 与 **`--api` HTTP** 均在 **`kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs`** 的 **`process_message`**（经 `chat_engine/mod.rs` re-export；及 `co_present` / `scene` 等子模块）内顺序编排；**`distros/desktop-tauri/src/lib.rs` 不 re-export domain 编排**。角色包 **v2** 以 **蓝图文件 `pipeline.ocblueprint`** 为磁盘 SSOT；**不以**蓝图 `steps[]` 作首轮调度 DSL。运行时行为以本仓库 `process_message` 为准。
-- **AI Theater 场景导演**（正交 · 非 `process_message` stage、非六槽）：**`generate_theater_scene`**（Tauri）/ **`POST /theater/scene`**（HTTP）→ [`domain/theater/scene_director.rs`](kernel/crates/oclive_kernel_host/src/domain/theater/scene_director.rs)；缺省 **`mode`** = 涟漪区 ripple 改写；**`mode=cast_adapt`** = 非默认卡司开场 + fork 罐头人设适配（`fork_templates` / `adapted_forks`）；LLM **`generate_tag`**；内核按 `cast_a`/`cast_b` **`role_id` 自加载人设摘要**；前端卡司绑定 SSOT 为 **`theaterCastConfig`**（`localStorage` `oclive.theater.cast.v1`；**`CastTier`** = `resolveCastTier` 由 roleId 推导，`default` | `applied`，混合即 applied）+ **`theaterCastAdapt`**（适配缓存 `oclive.theater.adapted.v1`；失败兜底 **`fallbackToDefaultCast`**) + 双 `load_role` 预热；环境变量 **`OCLIVE_THEATER_SCENE_TIMEOUT_SECS`**（默认 25）· **`OCLIVE_THEATER_RIPPLE_MAX_BEATS`**（默认 12）；前端竞态超时 30s。
-- **角色包与蓝图边界**：**角色包** = 身份、人格、关系、**`prompts/`**、**`reply_quality_anchor`**（初级创作者）。**蓝图** = **`slot_registry`**、**`groups`**、后端/模型/交互模式/记忆策略、**`runtime_config.dual_core`**（管理员；默认关）。逻辑分责见 **[handoff/ROLE_PACK_BOUNDARY.md](handoff/ROLE_PACK_BOUNDARY.md)** · [ROLE_PACK_SPEC.md](creator-docs/role-pack/ROLE_PACK_SPEC.md) §0 · [SETTINGS_REFERENCE.md](creator-docs/cli/SETTINGS_REFERENCE.md) §零。勿让 Agent 在「角色」任务中改 `slot_registry`。
-- **错误与日志**：统一错误类型见 **`distros/desktop-tauri/src/lib.rs`** 内联 `error` 模块（re-export `oclive_kernel_types::error`）；Tauri 命令层见 **`distros/desktop-tauri/src/api/error.rs`**（`ApiError` / `CommandError`）；**机器 `code` 与 JSON 体**以 **`oclive_kernel_types::KernelErrorBody`** 与 **`creator-docs/getting-started/KERNEL_ERROR_CODE_CONVENTION.md`** 为准（与 `AppError::code()`、`http_chat_codes`、目录插件 **`ApiError` JSON** 对齐；**Sentry / 用户可见错误扫尾**见 **`handoff/archive/A3_CLOSURE_SUMMARY.md`** / **`handoff/archive/A3_CLOSURE_SUMMARY.en.md`**）。结构化日志为 **`tracing`**：`init_tracing()` / `init_tracing_with_log_dir()`（`lib.rs`）默认 `info`，受 **`RUST_LOG`** 控制；设置 **`OCLIVE_LOG_DIR`** 或 **`--api`** 模式（`main.rs` → `temp/oclive_api_app_data/logs/`）可同时写入 rolling 文件；**`RUST_LOG` 含 `json`** 时 stdout/文件使用 JSON 行格式。
-- **启动健康检查**：首轮对话前 **`startup_health::ensure_once`**（槽位、`plugin_backends`、角色包文件、**`DbManager::health_ping`**、可选 LLM 探测）；环境变量 **`OCLIVE_SKIP_STARTUP_HEALTH`** / **`OCLIVE_SKIP_LLM_STARTUP_PROBE`** 可跳过。实现：**`kernel/crates/oclive_kernel_host/src/domain/startup_health.rs`**。
-- **实验性双核运行时（feature）**：`oclivenewnew-tauri` 的 Cargo feature **`dual_core`**（**默认关闭**）。Experimental `build_prompt` 已接 `relation_transition_hint` 与 `previous_complex_emotion_narrative_hint`（`dual_pipeline_steps.rs`）。OOCP **S13/S14** 在 CI `oocp-test-suite` 与本地 **`npm run check:release`**（`cargo test --workspace` 含 doctest）文档化；见 [`handoff/DUAL_CORE_CURSOR_HANDOFF.md`](handoff/DUAL_CORE_CURSOR_HANDOFF.md)。
-- **多发行版单写者（Phase 2）**：桌面与 VS Code **平等**——共享 Rust 策略 **`resolve_kernel_action`**（`kernel/crates/oclive_kernel_runtime/src/kernel_strategy.rs`）；`GET :8420/health` 返回 `kernel_manifest` + 可选 **`distro_id`**；宿主 **调用策略、本地执行** attach/spawn/replace。**单核**：固定 `:8420` + 单写者 `app.db`；spawn **bundled 首选 → shared 兜底**（见 [`handoff/KERNEL_SCHEDULER_RESCOPE.md`](handoff/KERNEL_SCHEDULER_RESCOPE.md)）。数据目录 **`OCLIVE_APP_DATA`** → `%LOCALAPPDATA%/OCLive/data`。桌面 **`distros/desktop-tauri/src/kernel_lifecycle/policy.rs`** + **`kernel_attach`** 为 HTTP 薄客户端，**不**内嵌 `api_router` 写库。VS Code 经 **`oclive-cli kernel ensure --plan-only`**（见姊妹仓 `oclive-vscode/src/kernelStrategy.ts`）。无头 HTTP 入口 crate：**[`kernel/crates/oclive_kernel_host/`](kernel/crates/oclive_kernel_host/)**；规范：[`creator-docs/kernel/DISTRO_KERNEL_LIFECYCLE.md`](creator-docs/kernel/DISTRO_KERNEL_LIFECYCLE.md) · [`OCLIVE_APP_DATA.md`](creator-docs/kernel/OCLIVE_APP_DATA.md) · [`CROSS_HOST_MEMORY.md`](creator-docs/role-pack/CROSS_HOST_MEMORY.md)。
-- **三主打产品（2026-06）**：**Chat Pro**（`desktop` · Tauri · open ceiling）· **VS Code Flash**（`vscode` · 显式六槽 builtin · Pro 简洁版）· **AI Theater**（`theater` · 模式 1 **已交付**；模式 2 **`outline_rewrite`** 已解冻 · [`handoff/theater/MODE2_RFC.md`](handoff/theater/MODE2_RFC.md)；模式 3 仍冻结）；`desktop-chat` = dev lab only（`examples/`）。
-- **内核自举与发行版适配（P1–P4）**：各发行版可在安装根提供 **`distro.oclive.toml`**（契约 [`DISTRO_CAPABILITY_PROFILE.md`](creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md) · 插件矩阵 [`DISTRO_DEFAULT_PLUGINS.md`](creator-docs/kernel/DISTRO_DEFAULT_PLUGINS.md) · 示例 `examples/distro-profiles/`）。**P2a** `KernelBinaryManifest` + sidecar + `GET /health` 的 `kernel_manifest` / **`distro_id`** + `oclive-kernel-server --version-json`。**P3a** `promote_with_backup` / `rollback_shared_kernel`（`kernel_runtime_ops.rs`）+ `cargo run -p oclive-cli -- kernel status|promote|rollback|ensure` — **promote 为开发者维护通道**，非终端默认。**P4** `HostProfile`（`host_profile.rs`）：spawn 时 `OCLIVE_DISTRO_ID` / `OCLIVE_DISTRO_PROFILE`。**`binary_upgrade` 产品面 Freeze**（见 KERNEL_SCHEDULER_RESCOPE §3.2）。延后：**P2b** 多发行版差异化 manifest 字段；**P3b** 内核进程内自升级；**per-distro 裁剪 binary** Deferred。
+## 仓库布局（速记）
 
-### 测试体系（三层归属）
+- **内核**：`kernel/crates/`（`oclive_kernel_host` = 编排 + DB）
+- **桌面**：`distros/desktop-tauri` · **前端**：`distros/chat-pro` + `distros/shared`
+- **角色包 SSOT**：`distros/chat-pro/roles/`
+- **Cargo target**：仓库外 `../oclive-dev-artifacts/oclivenewnew-cargo-target/`（见 `.cargo/config.toml`）
 
-**AI 审查 / 质量汇报**：输出含计数、覆盖率、unwrap 风险、P0/P1 分级前，必须先读并遵守 [`handoff/AI_VERIFICATION_PROTOCOL.md`](handoff/AI_VERIFICATION_PROTOCOL.md)（测试分层 SSOT、生产 vs `#[cfg(test)]` 统计、CI 硬门禁 vs `continue-on-error`、第三方报告核实流程）。
+---
 
-- **协议层 → 本仓**：**OOCP HTTP 黑盒（S0–S12，共 13 场景；可选 S13/S14）** 已入库且 **CI 已集成**——场景与 CI 说明见 [`creator-docs/testing/OOCP_TEST_SUITE.md`](creator-docs/testing/OOCP_TEST_SUITE.md)；可执行脚本在 [`examples/oocp-test-suite/`](examples/oocp-test-suite/)（`node run.mjs`）。CI **`.github/workflows/ci.yml`** 的 **`oocp-test-suite`** job（Ubuntu）会 `cargo build -p oclivenewnew-tauri --features dual_core`、拉起 **`oclivenewnew-tauri --api`**（默认 **`OCLIVE_HTTP_API_MOCK_LLM=1`**）、轮询 **`GET /health`** 后执行 **`node run.mjs --include-dual-core`**（S13/S14），再执行根目录 **`scripts/e2e-core-api-restart.mjs`**（**进程重启后再对话** 烟测，A1.1a）。**Ubuntu `frontend`** job 在 **`npm run build`** 后另跑 **Playwright + `vite preview` 首屏**（A1.1b；Windows `frontend` 不跑 Playwright）。另含 **`distros/desktop-tauri`** 下 **`cargo test`**、`tests/` 集成测与 HTTP 路由单测等。
-- **`invoke` 热路径集成（A1.2）**：矩阵 [`handoff/INVOKE_HOTPATH_MATRIX.md`](handoff/INVOKE_HOTPATH_MATRIX.md)（**条数 SSOT**），集成测 [`distros/desktop-tauri/tests/invoke_hotpath_matrix.rs`](distros/desktop-tauri/tests/invoke_hotpath_matrix.rs)（**13** 条 `*_impl` 烟测 + 主编排 `process_message`；`cargo test -p oclivenewnew-tauri --test invoke_hotpath_matrix`）。
-- **组件层 → oclive-pack-editor**：编写器 UI、Vitest、Playwright E2E 等（不在本仓重复维护用例树）。
-- **插件层 → oclive-pack-editor**：目录插件范式、**`official-vue-test-runner`** 等；主仓不复制该树。
-- **主仓前端最小烟测**：根目录 **`npm run test:unit`**（Vitest，`distros/chat-pro/src/smoke.test.ts`）；**Playwright + `vite preview`**（**`npm run test:e2e:preview`**，**CI 仅 Ubuntu `frontend`**，见 CONTRIBUTING）。
-- **Doctest 纪律**：日常 **`npm run check:rust`** = `cargo test --workspace --lib`（**不含 doctest**）；发版前 **`npm run check:release`** = `cargo test --workspace`（**含 doctest**）。详见 [`handoff/AI_VERIFICATION_PROTOCOL.md`](handoff/AI_VERIFICATION_PROTOCOL.md) §2.1。
-- **总览**：[creator-docs/testing/OVERVIEW.md](creator-docs/testing/OVERVIEW.md)。
+## 仅本文保留的易漏点
 
-### 供应链与安全审计
+- **Tauri invoke**：Rust `snake_case` → 前端 **camelCase**（`distros/shared/src/api/`）
+- **权限**：directory 插件 / MCP / remote env 须用户授权（`network:*` · `process:spawn`）
+- **Remotion 演示**：独立仓 `oclive-remotion-demo`，勿在主仓根跑 `npm run preview`
+- **姊妹仓**：`oclive-pack-editor` · `oclive-launcher` · `oclive-plugin-market` · `oclive-vscode`（各仓 `AGENTS.md` 指回本索引）
 
-- **当前状态**：**已知漏洞跟踪中**；**不宣称零漏洞**。摘要执行日期与命中条数见 [creator-docs/development/LIGHTWEIGHT_PROFILE.md](creator-docs/development/LIGHTWEIGHT_PROFILE.md) §6.4；**漏洞级清单与升级路线**见 [creator-docs/security/KNOWN_VULNERABILITIES.md](creator-docs/security/KNOWN_VULNERABILITIES.md)；**审查边界**见 [creator-docs/security/SECURITY_AUDIT_SCOPE.md](creator-docs/security/SECURITY_AUDIT_SCOPE.md)。
-- **CI**：**cargo-audit 0.22.1** 三层硬门禁——**`dimension5-acceptance`**（`scripts/dimension5-acceptance.mjs --ci`）、**`cargo-audit`** job（`.github/workflows/ci.yml`）、**`cargo-audit-lockfile.yml`**（`Cargo.lock` / `.cargo/audit.toml` PR 路径）；**`npm-audit`** 仍为 `continue-on-error: true` 可见性 job。
-
-### 第 1 设施子模块 — 复杂情感设施子模块（`narrative_hint` · 共景 → 下一轮 Prompt）
-
-### 独立通道能力增强模块（v0.3+ · 非六槽 · 非设施子模块）
-
-统称 **独立通道能力增强模块**（英文 **side-channel capability enhancement module**）；注册表 SSOT：[RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md](creator-docs/rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md) · 架构总述 [OCLIVE_ARCHITECTURE_OVERVIEW](creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) §独立通道能力增强模块。
-
-| `id` | 能力 | 锚点 |
-|------|------|------|
-| **`user_identity`** | **User Identity Prompt Template**：角色包 `user_identities/`；**`resolve_active_user_identity`** → **`PromptBuilder.push_user_identity_section`**（`turn_pipeline/pre`，LLM 之前）。Tauri / HTTP：`get_user_identity_state`、`set_user_identity`、`POST /user_identity/set` 等。 | 主链 pre |
-| **`reply_post_process`** | **Reply Post-Processor**：角色包 **`config.json` → `reply_post_processor`**（**默认 `enabled: false`**）；**`resolve_reply_post_processor`** → **`process_reply`**（内置 `post_llm` 之后）。backend：`builtin` / `remote` / `directory`；发行版 `[post_process].chain` 合并见 `host_profile.rs`。 | 主链 post |
-| **`theater_director`** | **Theater Scene Director**：**`generate_theater_scene`** / **`POST /theater/scene`**（**不进** `process_message`）；[`resolve_theater_director`](kernel/crates/oclive_kernel_host/src/domain/theater_director.rs) + `provides: theater_director`；官方 `distros/chat-pro/plugins/com.oclive.theater_director_official/`；env **`OCLIVE_THEATER_DIRECTOR_PLUGIN`** 覆盖 profile。 | 圈外 API |
-
-- **禁止**：将上述能力写入 **`slot_registry`**、蓝图 `runtime_config` 六槽键，或 Experimental 核 step。
-- **文档**：[ROLE_PACK_SPEC §1.1 / §9.7](creator-docs/role-pack/ROLE_PACK_SPEC.md) · 身份/后处理 RFC：[RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md](creator-docs/rfc/RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md) · handoff [USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md](handoff/USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md) · 剧场 [handoff/theater/DEVELOPMENT_ROADMAP.md](handoff/theater/DEVELOPMENT_ROADMAP.md)。
-
-### 第 2 设施子模块 — 专家模型设施子模块（专家路由 · `expert_routing.json` · `slot.expert.invoke`）
-
-编号与分层见 [`creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md`](creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)（**不是**第 1–6 后端模块；**不是**后端模块插件模块）。
-
-- **类型与内置规则**：[`kernel/crates/oclive_kernel_runtime/src/domain/complex_emotion.rs`](kernel/crates/oclive_kernel_runtime/src/domain/complex_emotion.rs)（`ComplexEmotionInput` / `ComplexEmotionOutput`、`BuiltinKeywordComplexEmotionProvider::resolve_turn_inner`）；可选 Remote 见 [`kernel/crates/oclive_kernel_host/src/infrastructure/remote_plugin/complex_emotion_http.rs`](kernel/crates/oclive_kernel_host/src/infrastructure/remote_plugin/complex_emotion_http.rs)。
-- **Opt-in 演示**：`distros/chat-pro/roles/mumu/blueprint/includes/expert_routing.json`（**`enabled: false`**，默认不 invoke）；校验见 `oclive_validation::validate_expert_routing_doc`。
-- **主路径 wiring**：[`kernel/crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/`](kernel/crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/) 在 `load_recent_context` 之后、**`build_prompt` 之前**解析本回合复杂情感；上一轮 `narrative_hint` 经 **`SessionCache`** / DB（`complex_emotion_hint` 表）按 `srid` 读取；通过 **`PromptInput::previous_complex_emotion_narrative_hint`** 传入 [`PromptBuilder::build_prompt`](kernel/crates/oclive_kernel_runtime/src/domain/prompt_builder/mod.rs)（定义在 `oclive_kernel_runtime`，经 `oclive_kernel_host::domain` re-export；段落公式见同目录 `sections.rs`；段落标题为「复杂情感叙事提示」）。
-- **集成测试**：[`distros/desktop-tauri/tests/narrative_hint_prompt_roundtrip.rs`](distros/desktop-tauri/tests/narrative_hint_prompt_roundtrip.rs)。
-
-### 第 3 设施子模块 — 立绘设施子模块（`portrait_catalog` · 表现导演 · post_llm）
-
-编号与分层见 [`creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md`](creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)（**不是**第 2 模块 emotion；**不是**第 4 设施渲染）。
-
-- **类型与 catalog**：角色包 `config.json` → `portrait_catalog`（RFC 草案）；AI **表现导演**从封闭 `assets[].id` 选 **`visual_state_id`**，避免文件名 SSOT。
-- **主路径 wiring**：[`kernel/crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/persistence.rs`](kernel/crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/persistence.rs) **post_llm** 合并/替换 `pick_portrait_emotion`；消费第 1 设施 **`narrative_hint`**。
-- **legacy**：保留 `portrait_emotion` 七 tag；未启用 catalog 时与 v0.3 一致。
-- **RFC / 计划**：[RFC_PORTRAIT_FACILITY.md](creator-docs/rfc/RFC_PORTRAIT_FACILITY.md) · [PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md](handoff/PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md)（**草案，未合入**）。
-
-### 第 4 设施子模块 — 视觉表现设施子模块（角色舞台 · Live2D / 3D / 演算）
-
-- **职责**：`visual_state_id` → **`performance_directive`**；渲染 adapter 在宿主 UI 帧循环，**禁止**二次 LLM 选图。
-- **配置**：`config.json` → `visual_presentation`（默认 `enabled: false`）；发行版 `[visual_presentation].mode` 草案见 RFC。
-- **RFC**：[RFC_VISUAL_PRESENTATION_FACILITY.md](creator-docs/rfc/RFC_VISUAL_PRESENTATION_FACILITY.md)（**草案，未合入**）。
-
-### Prompt 注入分层 + 状态机联动
-
-- **Tier0 / 三区块**：`PromptBuilder::build_prompt`（[`kernel/crates/oclive_kernel_runtime/src/domain/prompt_builder/mod.rs`](kernel/crates/oclive_kernel_runtime/src/domain/prompt_builder/mod.rs)，段落公式见同目录 `sections.rs`）按顺序组装 **系统 / 角色 / 用户** 三层；用户身份（`push_user_identity_section`）、复杂情感叙事提示、专家路由等作为独立段落注入，不占用六槽。
-- **页脚常量与顺序**：`DEFAULT_REPLY_QUALITY_ANCHOR`、`KERNEL_DIALOGUE_GUARDRAILS` 定义于 `mod.rs`；页脚四段顺序为 **锚点 → guardrails → `用户说` → 收尾句**；包级 `reply_quality_anchor` **仅替换**默认锚点，**不可替换** guardrails（详见 [`ROLE_PACK_SPEC.md`](creator-docs/role-pack/ROLE_PACK_SPEC.md) §锚点 vs guardrails）。
-- **角色当前状态**：`build_character_status_summary` 汇总场景、好感、情绪、host overlay（发行版 `state_expression`）等，写入 Prompt 中段。
-- **关系跃迁**：`relation_transition_hint` / `relation_transition_duration` 在关系变更时生成过渡提示，经 `PromptInput.relation_transition_hint` 进入 tone 区块；主路径 **`co_present`** 在 `setUserRelation` / 场景关系切换后下一回合生效。
-- **dual_pipeline preview**：Experimental 核 `build_prompt`（`dual_pipeline_steps.rs`）已接 relation transition 与复杂情感 hint；Stable 主路径以 `process_message` → `co_present` 为准。
-
-### 聊天记录混合存储（SQLite 真源 + JSON 镜像 · phase 1–3 架构完整）
-
-- **架构**：[`handoff/CHAT_STORAGE_ARCHITECTURE.md`](handoff/CHAT_STORAGE_ARCHITECTURE.md) · 创作者选型 [`creator-docs/storage/STORAGE_BACKEND_GUIDE.md`](creator-docs/storage/STORAGE_BACKEND_GUIDE.md) — `chat_sessions` / `chat_messages` 与 `short_term_memory` / `long_term_memory` **完全解耦**；删聊天记录**不**清记忆表。
-- **聊天存储（phase 3）**：运行时始终构造 **`HybridConversationStore`**（SQLite 真源 + 可选 JSON 镜像）；`OCLIVE_CHAT_STORAGE_BACKEND` / `config.json` → `chat_storage.backend` 的 **`file`** / **`sqlite`** 仅影响 **`resolve_mirror_enabled`**（镜像开关），不切换独立 `file_store` / `sqlite_store` 实现。脚手架 `oclive-cli init` 交互可选 **`location`**（`global` / `role_pack`）。
-- **能力探测（PATCH-1）**：`get_chat_storage_capabilities` 返回 `backend_kind` 与 `supports_search` / `supports_replay` / `supports_cleanup`；前端存储管理按后端 **隐藏不可用操作**（file 无自动清理）。
-- **记忆回放（phase 3）**：`replay_memory_extraction` / `get_replay_progress` — 从聊天记录**合并**重提取 AI 记忆（**不覆盖**已有 `long_term_memory`；阈值可配 `chat_storage.replay_similarity_threshold`，默认 0.6）。设置 → 存储管理 UI 可触发。
-- **实现**：[`kernel/crates/oclive_kernel_host/src/infrastructure/chat_storage/`](kernel/crates/oclive_kernel_host/src/infrastructure/chat_storage/) · `AppState::conversation_store` · CoPresent `post_llm` 写入并回填 `SendMessageResponse` 消息 id/时间戳 · 角色包 `config.json` → `chat_storage`（`backend`、`location`、`max_messages_per_session`、`auto_cleanup_*`、`replay_similarity_threshold`）。
-- **前端**：[`distros/shared/src/stores/chatStore.ts`](distros/shared/src/stores/chatStore.ts) 从 `fetch_chat_messages` 加载；IndexedDB 仅遗留迁移；设置 → **存储管理**（[`ChatStorageSettingsPanel.vue`](distros/shared/src/components/settings/ChatStorageSettingsPanel.vue)）显示当前后端名称，支持搜索、导出、自动清理（按能力）、单条删改、记忆回放。
-- **Tauri**：`list_chat_sessions` / `fetch_chat_messages` / … / `run_chat_auto_cleanup` / **`replay_memory_extraction`** / **`get_replay_progress`** / **`get_chat_storage_capabilities`**（完整表见架构文档）。
-- **助手勿**：让 `MemoryEngine` / 归档 LLM 读取 `{app_data}/chats/` 或 `chat_messages` 充当记忆真源；编排上下文仍走 `short_term_memory` / `long_term_memory`。
-- **投入边界**：聊天存储 **生产路径为 hybrid**（SQLite 真源 + 可选 JSON 镜像）；`file` / `sqlite` 枚举仅影响镜像开关，**保持可编译与最小测试即可，不再扩展新功能**。见 [handoff/CHAT_STORAGE_ARCHITECTURE.md](handoff/CHAT_STORAGE_ARCHITECTURE.md) §Investment boundary。
-
-**契约优先**：角色包 `manifest.json` / `settings.json` 键与行为以 `distros/chat-pro/roles/README_MANIFEST.md`、`RoleStorage::load_role` 及校验 crate 为准；新增顶层键需同步 `kernel/crates/oclive_validation` 与文档。
-
-**姊妹仓库**（同级目录常见）：`oclive-pack-editor`（角色包编写器）、`oclive-launcher`（启动器）、`oclive-plugin-market`（市场站）。各仓可有各自的 `AGENTS.md`，指向本仓文档索引即可。
-
-**演示视频（Remotion）**：独立仓库 **`oclive-remotion-demo`**（与主应用同级目录常见）。所有 `npm run preview` / `render:*` / `capture:validate` **须在该仓库根目录执行**，勿在主仓 `oclivenewnew` 根目录运行（会报 `Missing script`）。使用说明见该仓库根目录 **`README.md`**（本地常与主仓并列，例如 `D:\oclive-remotion-demo`）。
-
-**开发机磁盘**：本仓库根目录 [`.cargo/config.toml`](.cargo/config.toml) 将 **Cargo `target-dir`** 指到仓库外的 `../oclive-dev-artifacts/oclivenewnew-cargo-target/`，与源码分离；发版安装包体积与此无关。姊妹仓 **oclive-pack-editor**、**oclive-launcher** 使用同级目录下的 `oclive-pack-editor-cargo-target/`、`oclive-launcher-cargo-target/`（各仓自有 `.cargo/config.toml`）。旧版留在仓库内的 `target/`、`distros/desktop-tauri/target/` 可整夹删除。
-
-### 前端：插件管理入口与 Tauri `invoke`
-
-- **插件与模型入口**：**Ctrl+Shift+F** 打开极简已安装列表（[`SimplePluginManagerPanel`](distros/chat-pro/src/views/SimplePluginManagerPanel.vue)）；**Ctrl+Shift+M** 打开模型管理（[`ModelManagerPanel`](distros/chat-pro/src/views/ModelManagerPanel.vue) → [`ModelManagerBody`](distros/shared/src/components/model/ModelManagerBody.vue)，本会话 LLM 后端与 Ollama 探测）；顶栏「更多」另有插件市场。逻辑见 [`usePluginManagerWindow.ts`](distros/shared/src/composables/usePluginManagerWindow.ts)、[`useModelManagerWindow.ts`](distros/shared/src/composables/useModelManagerWindow.ts)。文案见 i18n `app.more.*`、`modelManager.*`。
-- **架构图专业面板（V1，已删除）**：旧 `PluginManagerPanel.vue` / `PluginBackendSessionPanel.vue` 已从主仓移除；插件管理统一走 `SimplePluginManagerPanel`，目录插件调试经 pack-editor / 目录插件范式。恢复历史代码见 git。
-- **`invoke` 参数名**：Tauri 将 Rust 命令的 `snake_case` 形参映射为前端的 **camelCase** 键（如 `plugin_id` → `pluginId`）。[`distros/shared/src/api/`](distros/shared/src/api/) 封装（如 `get_plugin_logs`、`spawn_plugin_for_test`）须与之一致；若命令仍手写 `snake_case` 载荷，会出现「missing required key `pluginId`」类错误。
-
-### Agent / Skill（最小闭环）
-
-- **agent 后端模块**（产品亦称扩展槽）：`plugin_backends.agent`（`builtin` / `remote` / `directory` / `none`）；remote/directory 经 host-orchestrated `agent.process` + 本机 MCP（见 [`creator-docs/plugin-and-architecture/AGENT_REMOTE_PROTOCOL.md`](creator-docs/plugin-and-architecture/AGENT_REMOTE_PROTOCOL.md)）；失败降级 builtin。会话覆盖与来源快照包含 `agent`。（`none` 语义见 `creator-docs/kernel/MODULE_NONE_SEMANTICS.md`。）
-- **后端骨架**：
-  - [`kernel/crates/oclive_kernel_host/src/domain/agent.rs`](kernel/crates/oclive_kernel_host/src/domain/agent.rs)：`AgentProvider` trait 与 `BuiltinReActAgent`。
-  - [`kernel/crates/oclive_kernel_host/src/infrastructure/mcp_client.rs`](kernel/crates/oclive_kernel_host/src/infrastructure/mcp_client.rs)：扫描 `{app_data}/mcp-servers/*.json`、列出 server、调用工具（http/stdio）。
-  - [`distros/desktop-tauri/src/api/agent.rs`](distros/desktop-tauri/src/api/agent.rs)：`list_mcp_servers` / `call_mcp_tool` / `get_agent_debug_traces` / `clear_agent_debug_traces`。
-- **调试 UI**：Agent 调试可经目录插件 [`examples/directory-plugin-minimal/`](examples/directory-plugin-minimal/) 或后续专用入口接入（主应用已移除独立 `AgentDebugPanel` 面板）。
-- **示例 Skill / MCP**：MCP server 接入形状见 [`kernel/crates/oclive_kernel_host/src/infrastructure/mcp_client.rs`](kernel/crates/oclive_kernel_host/src/infrastructure/mcp_client.rs) 与运行期 `{app_data}/mcp-servers/*.json`；在库可参考的最小 RPC server 示例为 [`examples/directory-plugin-minimal/`](examples/directory-plugin-minimal/) 与 [`examples/common/jsonrpc_http.py`](examples/common/jsonrpc_http.py)。（`examples/weather_skill/`（`get_weather(city)` 最小 MCP server）**尚未入库，为计划中的示例**。）
-
-### Agent / Skill 通用接入标准（v1）
-
-- **MCP 配置目录**：`{app_data}/mcp-servers/*.json`，支持 `transport=http|stdio`、`timeout_ms`、`tools` 预声明；运行时可 `list_mcp_servers`、`list_mcp_tools`、`call_mcp_tool`。
-- **Function Calling**：后端统一走 [`kernel/crates/oclive_kernel_host/src/infrastructure/function_call_parser.rs`](kernel/crates/oclive_kernel_host/src/infrastructure/function_call_parser.rs)：
-  - `parse_from_llm_response` 解析 `tool_calls[]` 与 `function_call` 两种主流输出；
-  - `to_function_calling_schema` 将 MCP tool 列表转为函数 schema。
-- **Agent 路由**：`plugin_backends.agent` 为六宿主槽之一，与 memory/emotion 等保持同样的包默认 / 会话覆盖 / 来源快照语义。
-
-## 内核约束 - 权限弹窗
-
-- **Directory 插件**：首次启用高风险能力（如 `process:spawn`、`network:*` 出站）前，必须经过用户确认授予；未授予则必须降级且有可见提示/审计。
-- **MCP servers**：任何 `transport=stdio` 的 server 必须显式授权（等同 `process:spawn`）；`transport=http` 必须显式授权（`network:*`）。未授权不得调用。
-- **Remote env providers**：检测到 env 配置不等于启用；必须先授予 `network:*`，否则 provider 只能降级为 placeholder 并提示。
-
-### 创作者工具链（v1）
-
-- **脚手架**：`create_plugin_scaffold`（Tauri 命令，见 [`distros/desktop-tauri/src/api/plugin_scaffold.rs`](distros/desktop-tauri/src/api/plugin_scaffold.rs)）生成 `manifest.json` + 语言模板 + README，并打开目标目录。
-- **一键打包**：`pack_plugin` 校验 manifest 后输出 `.oclive-plugin` 与 `*.signature.json`（SHA-256）。
-- **调试体验**：
-  - `EnvVarManager.vue` 管理 `OCLIVE_*` 会话草稿并复制 PowerShell 设置命令；
-  - 目录插件 `shell.bridge.invoke` 经 [`plugin_bridge_invoke`](distros/desktop-tauri/src/api/plugin_bridge.rs) 调用宿主命令（attach 模式下 `send_message` 等与主 UI 一致走 kernel HTTP）。
+**禁止当 truth**：`handoff/archive/*` · `handoff/04_4.6_PROJECT_TRUTH_CHECKLIST.md`（G3）

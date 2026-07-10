@@ -16,5 +16,6 @@ fn load_migrated_mumu_blueprint_pack() {
         .slot_registry
         .as_ref()
         .is_some_and(|r| r.contains_key("llm")));
-    assert_eq!(role.ollama_model.as_deref(), Some("qwen2.5:7b"));
+    // v2 blueprint: model is host-default (see user_llm_env), not embedded in pack settings.
+    assert!(role.ollama_model.is_none());
 }

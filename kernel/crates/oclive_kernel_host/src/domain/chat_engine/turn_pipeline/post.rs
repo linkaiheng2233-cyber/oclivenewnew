@@ -1,10 +1,16 @@
 //! Main LLM call and post-LLM orchestration.
 
 use crate::domain::chat_llm_fallback::{fallback_reply_for_llm_failure, FallbackReplyContext};
-use crate::domain::chat_turn_rules::{soft_append_guard, strip_hallucination_tokens};
+use crate::domain::chat_turn_rules::{
+    soft_append_guard, strip_hallucination_tokens, trim_template_repeat_reply,
+};
+use crate::domain::host_profile::bench_telemetry_enabled;
 use crate::domain::policy::PolicyContext;
 use crate::domain::slot_runner::SlotRunner;
-use crate::models::dto::SendMessageResponse;
+use crate::domain::turn_thinking::{
+    effective_turn_thinking_policy, update_turn_thinking_runtime_state,
+};
+use crate::models::dto::{DisplayMetricsDto, SendMessageResponse};
 use crate::models::{Event, PersonalitySource, Role};
 use std::sync::Arc;
 use std::time::Instant;
@@ -17,11 +23,12 @@ use super::persistence::{
     append_turn_to_chat_storage, persist_atomic_movement_portrait,
     persist_non_profile_personality_delta, ChatAppendIds, PostPersistOutcome, PostTurnPolicy,
 };
-use super::pre::{MainLlmOutput, MiddleOutput, PreLlmOutput, STAGES};
+use super::pre::{latest_recent_turn_pair, MainLlmOutput, MiddleOutput, PreLlmOutput, STAGES};
 use super::TurnMode;
 use crate::domain::chat_engine::chat_stage::ChatStage;
 use crate::domain::reply_post_processor::resolve_reply_post_processor;
 use oclive_kernel_contracts::reply_post_processor::PostProcessInput;
+use oclive_kernel_contracts::LlmGenerateOpts;
 
 /// Artifacts produced during post-LLM orchestration, passed to response assembly.
 pub(crate) struct TurnArtifacts<'a> {
@@ -60,20 +67,24 @@ pub(crate) async fn run_main_llm(
     let t_main_llm = Instant::now();
     let mut main_llm_fallback = false;
     let mut llm_fallback_reason = None;
-    let reply_raw = match SlotRunner::generate_llm(
+    let ollama_opts = middle
+        .use_ollama_prefix_opts
+        .then(LlmGenerateOpts::deep_prefix_cache);
+    let reply_out = match SlotRunner::generate_llm(
         pl,
         pre.memory.ollama_model.as_str(),
         &middle.prompt,
+        ollama_opts.as_ref(),
     )
     .await
     {
-        Ok(s) => s,
+        Ok(out) => out,
         Err(e) => {
             let reason = e.to_frontend_error();
             tracing::warn!("{path_label} LLM generate failed, fallback: {reason}");
             main_llm_fallback = true;
             llm_fallback_reason = Some(reason);
-            fallback_reply_for_llm_failure(
+            let fallback = fallback_reply_for_llm_failure(
                 role,
                 &middle.personality,
                 user_message,
@@ -84,12 +95,33 @@ pub(crate) async fn run_main_llm(
                     event_type: &middle.ai_event_type,
                     impact_factor: middle.ai_impact_factor_final,
                 },
-            )
+            );
+            oclive_kernel_contracts::LlmGenerateOutcome {
+                reply: fallback,
+                prompt_eval_ms: None,
+            }
         }
     };
+    if let (Some(hash), Some(len), Some(hit)) = (
+        middle.prompt_stable_hash,
+        middle.prompt_stable_len,
+        middle.prefix_cache_expected_hit,
+    ) {
+        tracing::debug!(
+            target: "oclive_turn",
+            prefix_hash = hash,
+            stable_len = len,
+            cache_expected_hit = hit,
+            prompt_eval_ms = ?reply_out.prompt_eval_ms,
+            "deep prefix cache llm metrics"
+        );
+    }
+    let reply_raw = reply_out.reply;
+    let llm_prompt_eval_ms = reply_out.prompt_eval_ms;
     let main_llm_ms = t_main_llm.elapsed().as_millis() as u64;
+    let (_, previous_assistant_reply) = latest_recent_turn_pair(&pre.memory.recent_turns);
     let reply = strip_hallucination_tokens(&soft_append_guard(
-        &reply_raw,
+        &trim_template_repeat_reply(previous_assistant_reply.as_str(), &reply_raw),
         &middle.ai_event_type,
         middle.ai_impact_factor_final,
         middle.relation_after.as_str(),
@@ -100,6 +132,7 @@ pub(crate) async fn run_main_llm(
         main_llm_fallback,
         llm_fallback_reason,
         main_llm_ms,
+        llm_prompt_eval_ms,
     })
 }
 
@@ -116,15 +149,19 @@ pub(crate) async fn run_main_llm_stream(
     let t_main_llm = Instant::now();
     let mut main_llm_fallback = false;
     let mut llm_fallback_reason = None;
-    let reply_raw = match SlotRunner::generate_llm_stream(
+    let ollama_opts = middle
+        .use_ollama_prefix_opts
+        .then(LlmGenerateOpts::deep_prefix_cache);
+    let reply_out = match SlotRunner::generate_llm_stream(
         pl,
         pre.memory.ollama_model.as_str(),
         &middle.prompt,
         Arc::clone(&on_token),
+        ollama_opts.as_ref(),
     )
     .await
     {
-        Ok(s) => s,
+        Ok(out) => out,
         Err(e) => {
             let reason = e.to_frontend_error();
             tracing::warn!("{path_label} LLM generate_stream failed, fallback: {reason}");
@@ -143,12 +180,18 @@ pub(crate) async fn run_main_llm_stream(
                 },
             );
             on_token(fallback.as_str());
-            fallback
+            oclive_kernel_contracts::LlmGenerateOutcome {
+                reply: fallback,
+                prompt_eval_ms: None,
+            }
         }
     };
+    let reply_raw = reply_out.reply;
+    let llm_prompt_eval_ms = reply_out.prompt_eval_ms;
     let main_llm_ms = t_main_llm.elapsed().as_millis() as u64;
+    let (_, previous_assistant_reply) = latest_recent_turn_pair(&pre.memory.recent_turns);
     let reply = strip_hallucination_tokens(&soft_append_guard(
-        &reply_raw,
+        &trim_template_repeat_reply(previous_assistant_reply.as_str(), &reply_raw),
         &middle.ai_event_type,
         middle.ai_impact_factor_final,
         middle.relation_after.as_str(),
@@ -159,6 +202,7 @@ pub(crate) async fn run_main_llm_stream(
         main_llm_fallback,
         llm_fallback_reason,
         main_llm_ms,
+        llm_prompt_eval_ms,
     })
 }
 
@@ -212,6 +256,11 @@ async fn analyze_bot_emotion_and_policy(
     } else {
         0.0
     };
+    let memory_importance = middle.turn_thinking.memory_importance_after_policy(
+        &state.host_profile,
+        &middle.ai_event_type,
+        memory_importance,
+    );
     let mut recent_events = Vec::with_capacity(pre.memory.recent_events_for_event.len() + 1);
     recent_events.push(event.clone());
     recent_events.extend(pre.memory.recent_events_for_event.iter().cloned());
@@ -239,6 +288,26 @@ fn spawn_profile_evolution_after_llm(
 ) {
     if role_arc.evolution_config.personality_source != PersonalitySource::Profile {
         return;
+    }
+    let turn_index = state.session_cache.increment_profile_evolution_turn(srid);
+    let interval_n = crate::domain::turn_thinking::effective_deep_profile_update_interval(
+        state.host_profile.as_ref(),
+        role_arc.as_ref(),
+    );
+    let applies_full = middle
+        .turn_thinking
+        .applies_full_persistence(state.host_profile.as_ref(), &middle.ai_event_type);
+    let radar_pending = state.session_cache.radar_deep_pending(srid);
+    if !crate::domain::turn_thinking::should_run_deep_profile_update(
+        applies_full,
+        turn_index,
+        interval_n,
+        radar_pending,
+    ) {
+        return;
+    }
+    if radar_pending {
+        state.session_cache.clear_radar_deep_pending(srid);
     }
     let impact_scaled = (middle.ai_impact_factor_final * pre.memory.event_runtime).clamp(-1.0, 1.0);
     crate::state::profile_evolution::spawn_mutable_profile_evolution(
@@ -300,6 +369,11 @@ fn assemble_send_message_response(ctx: &PostLlmCtx<'_>) -> SendMessageResponse {
         api_version: API_VERSION,
         schema: SCHEMA_VERSION,
         presence_mode,
+        display_metrics: Some(DisplayMetricsDto {
+            favor: persist.favor_current,
+            relation_summary: middle.relation_after.as_str().to_string(),
+            traits: middle.personality.to_vec7(),
+        }),
         relation_state: middle.relation_after.as_str().to_string(),
         reply,
         emotion: emotion_to_dto(&pre.hints.emotion_result),
@@ -331,6 +405,11 @@ fn assemble_send_message_response(ctx: &PostLlmCtx<'_>) -> SendMessageResponse {
         chat_persist_error: chat_ids.chat_persist_error.clone(),
         dual_core_degraded: (*dual_core_degraded).then_some(true),
         raw_reply: raw_reply.clone(),
+        llm_prompt_eval_ms: if bench_telemetry_enabled() {
+            llm.llm_prompt_eval_ms
+        } else {
+            None
+        },
     }
 }
 
@@ -470,6 +549,26 @@ pub(crate) async fn post_llm(
     .await;
 
     persist_non_profile_personality_delta(state, role, srid, middle).await;
+
+    if matches!(mode, TurnMode::CoPresent) {
+        let policy = effective_turn_thinking_policy(&state.host_profile, role);
+        if let Err(e) = update_turn_thinking_runtime_state(
+            &state.turn_thinking_state(),
+            srid,
+            &policy,
+            middle.ai_event_type,
+            user_message,
+        )
+        .await
+        {
+            tracing::warn!(
+                target: "oclive_turn",
+                role_id = %srid,
+                error = %e,
+                "turn_thinking runtime state update failed"
+            );
+        }
+    }
 
     let response = assemble_send_message_response(&PostLlmCtx {
         mode,

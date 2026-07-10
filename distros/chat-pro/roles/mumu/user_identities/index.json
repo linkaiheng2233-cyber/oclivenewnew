@@ -1,11 +1,16 @@
 {
   "schema_version": 1,
-  "default_identity_id": "classmate",
+  "default_identity_id": "father",
   "identities": {
     "classmate": {
       "display_name": "同班同学",
       "template_file": "classmate.md",
       "maps_to_relation_id": "classmate"
+    },
+    "father": {
+      "display_name": "父亲",
+      "template_file": "father.md",
+      "maps_to_relation_id": "father_daughter"
     }
   }
 }

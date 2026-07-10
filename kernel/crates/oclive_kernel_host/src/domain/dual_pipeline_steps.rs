@@ -24,7 +24,8 @@ use crate::domain::slot_runner::SlotRunner;
 use crate::domain::user_identity_loader::resolve_active_user_identity;
 use crate::error::AppError;
 use crate::models::dto::{
-    PresenceMode, SendMessageRequest, SendMessageResponse, API_VERSION, SCHEMA_VERSION,
+    DisplayMetricsDto, PresenceMode, SendMessageRequest, SendMessageResponse, API_VERSION,
+    SCHEMA_VERSION,
 };
 use crate::models::{EventType, KnowledgeIndex, PersonalityVector, Role};
 use crate::state::AppState;
@@ -209,7 +210,7 @@ impl<'a> ExperimentalStepCtx<'a> {
         let personality = self.ensure_personality().await?;
         let ollama_model = self
             .role
-            .resolve_ollama_model(self.state.ollama_model.as_str());
+            .resolve_ollama_model(self.state.global_ollama_model().as_str());
         let (_turns, recent_turns_for_event, recent_events_for_event) =
             load_recent_context(self.state, self.srid)
                 .await
@@ -232,6 +233,7 @@ impl<'a> ExperimentalStepCtx<'a> {
             &recent_turns_for_event,
             &recent_events_for_event,
             knowledge_augment_opt.as_ref(),
+            true,
         )
         .await
         .map_err(map_slot_err)?;
@@ -389,12 +391,15 @@ impl<'a> ExperimentalStepCtx<'a> {
                 life_context_line: "",
                 worldview_snippet: "",
                 mutable_personality: mutable_for_prompt.as_str(),
+                ephemeral_personality: "",
                 reply_quality_anchor: effective_reply_quality_anchor(self.role),
                 previous_complex_emotion_narrative_hint: prev_hint.as_str(),
                 host_prompt_overlay: "",
                 host_state_expression_hint: host_state_hint,
                 relation_transition_hint: transition.hint.as_str(),
                 extra_sections: &[],
+                persona_override: None,
+                previous_assistant_reply: "",
             },
         )
         .map_err(map_slot_err)?;
@@ -430,7 +435,7 @@ impl<'a> ExperimentalStepCtx<'a> {
         }
         let model = self
             .role
-            .resolve_ollama_model(self.state.ollama_model.as_str());
+            .resolve_ollama_model(self.state.global_ollama_model().as_str());
         let agent_input = build_agent_input(
             self.state,
             self.role,
@@ -502,6 +507,11 @@ impl<'a> ExperimentalStepCtx<'a> {
             api_version: API_VERSION,
             schema: SCHEMA_VERSION,
             presence_mode: PresenceMode::CoPresent,
+            display_metrics: Some(DisplayMetricsDto {
+                favor: favor_current,
+                relation_summary: relation_state.clone(),
+                traits: vec![],
+            }),
             relation_state,
             reply: agent_out.reply,
             emotion: crate::domain::chat_engine::emotion_to_dto(&emotion_result),
@@ -527,6 +537,7 @@ impl<'a> ExperimentalStepCtx<'a> {
             chat_persist_error: None,
             dual_core_degraded: None,
             raw_reply: None,
+            llm_prompt_eval_ms: None,
         })))
     }
 

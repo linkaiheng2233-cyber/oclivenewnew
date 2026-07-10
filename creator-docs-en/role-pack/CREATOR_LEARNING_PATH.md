@@ -1,5 +1,7 @@
 # Role pack author learning path
 
+[中文](../../creator-docs/role-pack/CREATOR_LEARNING_PATH.md)
+
 Time-boxed steps. **Normative layout** remains [ROLE_PACK_SPEC.md](ROLE_PACK_SPEC.md) and [distros/chat-pro/roles/README_MANIFEST.md](../../distros/chat-pro/roles/README_MANIFEST.md). CLI from repo root: **`cargo run -p oclive-cli -- pack …`**.
 
 ---

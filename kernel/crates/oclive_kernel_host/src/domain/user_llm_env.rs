@@ -15,6 +15,7 @@ pub const KEY_CLOUD_STYLE: &str = "user_llm_cloud_api_style";
 pub const KEY_CLOUD_VENDOR: &str = "user_llm_cloud_vendor";
 pub const KEY_LLM_PROVIDER: &str = "user_llm_provider";
 pub const KEY_LOCAL_MODELS_DIR: &str = "user_local_models_dir";
+pub const KEY_GLOBAL_OLLAMA_MODEL: &str = "global_ollama_model";
 
 pub const LLM_APP_SETTING_KEYS: &[&str] = &[
     KEY_LLM_PROVIDER,
@@ -25,7 +26,21 @@ pub const LLM_APP_SETTING_KEYS: &[&str] = &[
     KEY_CLOUD_STYLE,
     KEY_CLOUD_VENDOR,
     KEY_LOCAL_MODELS_DIR,
+    KEY_GLOBAL_OLLAMA_MODEL,
 ];
+
+const DEFAULT_GLOBAL_OLLAMA_MODEL: &str = "qwen2.5:7b";
+
+/// Resolve global default Ollama model: DB app_setting → `OLLAMA_MODEL` env → built-in default.
+pub async fn global_ollama_model_from_db_or_env(db: &impl AppSettingsPort) -> String {
+    if let Ok(Some(v)) = db.get_app_setting(KEY_GLOBAL_OLLAMA_MODEL).await {
+        let t = v.trim();
+        if !t.is_empty() {
+            return t.to_string();
+        }
+    }
+    std::env::var("OLLAMA_MODEL").unwrap_or_else(|_| DEFAULT_GLOBAL_OLLAMA_MODEL.to_string())
+}
 
 static USER_LLM_ENV: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
 
@@ -70,6 +85,10 @@ pub async fn apply_user_llm_env_from_db(db: &impl AppSettingsPort) -> crate::err
         _ => None,
     };
     let _guard = USER_LLM_ENV.lock();
+    let provider_for_env = settings
+        .get(KEY_LLM_PROVIDER)
+        .map(|s| s.trim().to_ascii_lowercase())
+        .unwrap_or_default();
     let env_pairs = [
         (KEY_OLLAMA_BASE, "OLLAMA_BASE_URL"),
         (KEY_REMOTE_URL, "OCLIVE_REMOTE_LLM_URL"),
@@ -77,6 +96,10 @@ pub async fn apply_user_llm_env_from_db(db: &impl AppSettingsPort) -> crate::err
         (KEY_CLOUD_STYLE, "OCLIVE_LLM_CLOUD_API_STYLE"),
     ];
     for (db_key, env_key) in env_pairs {
+        if db_key == KEY_REMOTE_URL && provider_for_env == "local" {
+            std::env::remove_var(env_key);
+            continue;
+        }
         match settings
             .get(db_key)
             .map(|s| s.trim())

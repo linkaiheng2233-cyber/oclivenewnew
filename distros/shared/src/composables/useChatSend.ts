@@ -6,6 +6,7 @@ import { useRoleStore } from '@oclive/shared/stores/roleStore'
 import { useUiStore } from '@oclive/shared/stores/uiStore'
 import { useNarrativeScene } from '@oclive/shared/composables/useNarrativeScene'
 import type { AppToastFn } from '@oclive/shared/composables/useAppToast'
+import { effectiveChatSceneId } from '@oclive/shared/utils/pureChatScene'
 
 export function useChatSend(options: {
   showToast: AppToastFn
@@ -13,7 +14,7 @@ export function useChatSend(options: {
   chatInputRef: Ref<{ focusInput?: () => void } | null>
   clearSceneBarsBeforeSend: () => void
   offerSceneBarsAfterReply: (together: boolean, destination: boolean) => void
-  onTurnRecorded?: (userMessage: string) => void
+  onTurnRecorded?: () => void
 }) {
   const chatStore = useChatStore()
   const roleStore = useRoleStore()
@@ -25,7 +26,13 @@ export function useChatSend(options: {
     options.clearSceneBarsBeforeSend()
     const userText = payload.content
     try {
-      const res = await chatStore.sendMessage(userText, uiStore.sceneId)
+      const sceneId = effectiveChatSceneId(
+        roleStore.roleInfo.interactionMode,
+        uiStore.sceneId,
+      )
+      const res = await chatStore.sendMessage(userText, sceneId)
+      if (!res)
+        return
       await roleStore.refreshRoleInfo()
       applyResolvedNarrativeScene()
       await debugStore.loadDebugData()

@@ -3,6 +3,8 @@
 **读者**：有经验的 Rust / Vue 工程师。  
 **目标**：在 **约半天** 内能定位任意主路径模块的 **入口文件**、**核心类型/函数**，并理解 **为何这样设计**（意图级，非逐行教程）。
 
+**模块关系与进度总览（先扫一眼）**：[`MODULE_MAP_AND_HANDOFF.md`](./MODULE_MAP_AND_HANDOFF.md) — **模块注册表**（定义 · 六槽/设施关系 · 改动约束；进度 → TECHNICAL_DEBT）。
+
 约定：路径以仓库根 **`oclivenewnew`** 为准；`src-tauri` 为桌面宿主内核与 Tauri 命令。
 
 ---
@@ -93,7 +95,7 @@
 | 项目 | 说明 |
 |------|------|
 | **迁移位置** | **`kernel/crates/oclive_kernel_host/migrations/*.sql`**，按序号递增；**勿虚构表名**（以迁移文件为准）。 |
-| **`role_runtime`** | 在 **`001_init.sql`** 创建；后续迁移追加列（如 `relation_state`、`virtual_time_ms`、`interaction_mode` 等）。 per-role 会话与立绘情绪等核心运行时态多在此表。 |
+| **`role_runtime`** | 在 **`001_init.sql`** 创建；后续迁移追加列（如 `relation_state`、`virtual_time_ms`、`interaction_mode`、`mutable_personality` **`013`**、Wave F `ephemeral_personality` / `ephemeral_ttl_turns` / `deep_latch_active` **`035_turn_thinking_runtime.sql`** 等）。 per-role 会话与立绘情绪等核心运行时态多在此表。 |
 | **`app_settings`** | **`011_app_settings.sql`**：`key` / `value` 文本键值；应用级（非角色包）如 `interaction_mode`、`remote_fallback_to_builtin`。 |
 | **新迁移步骤** | 新增 `0NN_*.sql` → 若需 ORM/仓库层映射，改 **`distros/desktop-tauri/src/infrastructure`** 与 **`domain/repository`** trait → 跑 `cargo test` 与相关集成测 → 文档若暴露给用户则更新 ERROR_CODES / FAQ。 |
 

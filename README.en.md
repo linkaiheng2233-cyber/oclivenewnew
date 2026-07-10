@@ -1,163 +1,240 @@
 # A.I.Live — Pluggable Role Artery Loom
 
-> Engineering repository: **oclivenewnew** (codename **oclive**)
+> Repository **oclivenewnew** (codename **oclive**) · Open source · Local-first · **Tauri + Vue 3 + Rust**
 
 [中文](README.md)
 
 [![CI](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/workflows/ci.yml/badge.svg)](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/workflows/ci.yml)
 
-A **local-first** desktop companion for roleplay dialogue: **Tauri + Vue 3 + Rust**. The engine supports scenes, virtual time, co-presence / remote presence, favorability and memory, and swappable subsystems (memory retrieval, emotion, event estimation, prompt assembly). Role content ships as **`distros/chat-pro/roles/{roleId}/`** packs.
+**Release**: desktop host **0.4.0** · see [CHANGELOG.en.md](CHANGELOG.en.md)
 
-## Repository layout (kernel + distros)
+---
 
-| Directory | Contents |
-|-----------|----------|
-| **[`kernel/`](kernel/)** | Rust kernel (`kernel/crates/`, `kernel/fuzz/`, OOCP examples) |
-| **[`distros/chat-pro/`](distros/chat-pro/)** | **OCLive Chat Pro** UI |
-| **[`distros/theater/`](distros/theater/)** | **AI Theater** distro UI |
-| **[`distros/shared/`](distros/shared/)** | Shared desktop UI (`@oclive/desktop-shared`) |
-| **[`distros/desktop-tauri/`](distros/desktop-tauri/)** | Shared Tauri host (formerly `src-tauri`) |
+## What is this?
 
-RFC: [handoff/distros/ARCHITECTURE_DECOUPLING_RFC.md](handoff/distros/ARCHITECTURE_DECOUPLING_RFC.md)
+**A.I.Live (OCLive)** is not “yet another fixed AI chat app.” It is an **assemble–contract–pack–distribute** platform for AI characters and agents:
 
-**Human developers start here → [human-docs-en/](human-docs-en/)** (30-minute path: `npm install` → `npm run tauri:dev` → `npm run check`). For AI assistants see [AGENTS.md](AGENTS.md).
+- **Six swappable slots** (memory, emotion, event, prompt, LLM, agent) compose your role runtime
+- **Role packs** (persona, scenes, prompts) ship independently
+- **Local-first** by default; cloud APIs optional (BYOK)
 
-| Contributing | |
-|--------------|--|
-| [human-docs-en/02_THIRTY_MINUTE_START.md](human-docs-en/02_THIRTY_MINUTE_START.md) | 30-minute run + verify tiers |
-| [CONTRIBUTING.en.md](CONTRIBUTING.en.md) | PR flow, tests, ownership |
-| [Good first issues](https://github.com/linkaiheng2233-cyber/oclivenewnew/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) | Curated list: [handoff/GOOD_FIRST_ISSUES.md](handoff/GOOD_FIRST_ISSUES.md) |
+Built-in roles (e.g. `distros/chat-pro/roles/mumu`) are **official examples**. Community packs and module ecosystems define the ceiling.
 
-Code of conduct: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) · Security: [SECURITY.md](SECURITY.md)
+> **One line**: OCLive = **cargo + docker-compose** for AI characters — an open, local-first thin kernel with swappable, validatable, packagable modules. Assemble and distribute your own role runtime in ~30 minutes. **Ceiling = module ecosystem ceiling** (competitors’ strengths can become a slot backend).
+>
+> Deep positioning: [handoff/OCLIVE_POSITIONING_DIFFERENTIATION.md](handoff/OCLIVE_POSITIONING_DIFFERENTIATION.md)
 
-**Architecture (summary):** A.I.Live uses a **contract-first thin kernel** and **single-kernel, dual-mode build architecture**—**six host backend modules** via `PluginHost`; **facility modules** (e.g. **complex-emotion** and **expert-model facility submodules**) sit in orchestration; **backend-module plugin modules** attach to modules 1–6 without their own module number. Delivery: **OOCP**, role packs, **`oclive-cli` kernel factory**; optional **Monolith macro-mode**. **[Architecture overview](creator-docs-en/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)** ([中文](creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)).
+---
 
-## Project status (summary)
+## Four quick examples (30 seconds)
 
-| Area | Status |
-|------|--------|
-| **Kernel orchestration** | Main flow in **`process_message`** under **`kernel/crates/oclive_kernel_host/src/domain/chat_engine/mod.rs`**; no entry blueprint DSL on the hot path; subsystems resolved via **`PluginHost`** (including **`agent`**). |
-| **Testing (three layers)** | **Protocol (this repo):** `cargo test` in `src-tauri` + `tests/`; **OOCP HTTP black-box S0–S12 (13 scenarios; optional S13)** in [`examples/oocp-test-suite/`](examples/oocp-test-suite/) with CI job **`oocp-test-suite`** (Ubuntu), followed by **`scripts/e2e-core-api-restart.mjs`** (HTTP API process restart smoke). **Components (editor):** **oclive-pack-editor** Vitest / Playwright. **Plugins (editor):** directory-plugin patterns / **`official-vue-test-runner`** live in **oclive-pack-editor**. **Frontend smoke:** CI **`npm ci` + `npm run test:unit` + `npm run build`**. See [creator-docs/testing/OVERVIEW.md](creator-docs/testing/OVERVIEW.md) and [creator-docs/testing/OOCP_TEST_SUITE.md](creator-docs/testing/OOCP_TEST_SUITE.md). |
-| **oclive-cli** | Workspace crate **`oclive-cli`**: **`dev`**, **`bench`** (`--save`, `--compare`, **`--cold-start`**), **`test --coverage`** / **`--miri`**, **`explain`**, **`completions`**, **`init --dry-run`** / **`--check`**, **`lint --audit-ci`**, **`doctor --sbom`**, **`pack`**, **Monolith** — [OCLIVE_CLI_GUIDE.md](creator-docs/cli/OCLIVE_CLI_GUIDE.md). |
-| **Startup health** | One-shot checks before the first **`process_message`** (slots, pack files, SQLite **`health_ping`**, optional LLM probe). Skip with **`OCLIVE_SKIP_STARTUP_HEALTH`** / **`OCLIVE_SKIP_LLM_STARTUP_PROBE`**. See `kernel/crates/oclive_kernel_host/src/domain/startup_health.rs`. |
-| **Monolith** | Compile-time welded slots for headless scaffolds; RFC + CLI in [creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md](creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md). |
-| **Security** | **`cargo audit` (0.22.1)** run; **vulnerability-level cleared** (warnings still tracked; counts in SSOT). See [creator-docs/security/KNOWN_VULNERABILITIES.md](creator-docs/security/KNOWN_VULNERABILITIES.md) and [creator-docs/security/SECURITY_AUDIT_SCOPE.md](creator-docs/security/SECURITY_AUDIT_SCOPE.md). |
-| **CI gates** | **`rustfmt` + workspace **`clippy` (`-D warnings`) + `cargo test --workspace`** + **`npm ci` / `npm run test:unit` / `npm run build`**; **`oocp-test-suite`**, **`layering-ratchet`**, **`dimension5-acceptance`**, **`cross-host-e2e`** (incl. profile scheduling), **`cargo-audit`** (fail on vulns; strict job on **`Cargo.lock`** PRs), **`npm-audit`** (visibility), **remote-plugin-demo**. |
-| **Lightweight baseline** | [creator-docs/development/LIGHTWEIGHT_PROFILE.md](creator-docs/development/LIGHTWEIGHT_PROFILE.md). |
+### Example 1 · Creator: a talkable OC
 
-Contributor notes: **[AGENTS.md](AGENTS.md)**.
+1. Clone [oclive-pack-editor](https://github.com/linkaiheng2233-cyber/oclive-pack-editor) (role pack editor)
+2. New pack: write `prompts/system.md`, save under `distros/chat-pro/roles/your_role_id/`
+3. In this repo: `npm run tauri:dev` → pick role → chat
 
-## Quick start (kernel factory / oclive-cli)
+**Do not touch** blueprint `slot_registry` or six slots on this path. 30-minute guide: [CREATOR_GOLDEN_PATH.md](creator-docs-en/getting-started/CREATOR_GOLDEN_PATH.md).
 
-A **~5 minute** path from zero to a buildable headless kernel scaffold: see **[Kernel factory vision — 5-minute walkthrough](creator-docs-en/getting-started/KERNEL_FACTORY_VISION.md)** (Chinese: [creator-docs/getting-started/KERNEL_FACTORY_VISION.md](creator-docs/getting-started/KERNEL_FACTORY_VISION.md)). Commands: `oclive doctor` → `oclive init --quick`.
+### Example 2 · Developer: swap LLM only
 
-### Platform capabilities (oclive-cli)
+In `pipeline.ocblueprint`, change **slot 5 (llm)** from `ollama` to `remote` or a **directory plugin** — persona, memory, and prompt formula stay the same. Ollama, llama.cpp sidecars, and OpenAI-compatible APIs are **different plugs on the same slot**.
 
-**`registry`**, **`compose`**, **`publish`** / **`init --template-url`**, **`init --tui`**, **`bench --watch`**, and **`debug`** extend the factory CLI. See [OCLIVE_CLI_GUIDE.md](creator-docs-en/cli/OCLIVE_CLI_GUIDE.md) and [KERNEL_FACTORY_VISION.md](creator-docs-en/getting-started/KERNEL_FACTORY_VISION.md).
+### Example 3 · Integrator: one pack, many hosts
 
-## Performance
+The same `manifest.json` + `pipeline.ocblueprint` is validated by **desktop Tauri**, **headless HTTP `--api`**, **editor WASM**, and **oclive-cli** — format SSOT lives in `oclive_validation`, not in one app. Desktop and VS Code can share **`OCLIVE_ROLES_DIR`** and **`app.db`** (L1 pack + L3 continuity): [CROSS_HOST_MEMORY.md](creator-docs-en/role-pack/CROSS_HOST_MEMORY.md).
 
-Release **`cargo-bloat` sampling**, **Monolith** vs **`oclive bench`**, and **known product limits**: **[creator-docs-en/getting-started/PERFORMANCE.md](creator-docs-en/getting-started/PERFORMANCE.md)** (Chinese: [creator-docs/getting-started/PERFORMANCE.md](creator-docs/getting-started/PERFORMANCE.md)). Figures track [LIGHTWEIGHT_PROFILE.md](creator-docs/development/LIGHTWEIGHT_PROFILE.md) §6.7.
+### Example 4 · Module author: new capability only
 
-## Support
+Fork `examples/directory-plugin-minimal` or `examples/voice-loop-minimal`, implement **one slot** or a **side channel** (e.g. TTS) — persona, UI, chat loop, validation, and packaging come from the platform. Directory plugins declaring `process:spawn` / `network:*` / `mcp:*` require **explicit user consent** before execution (otherwise degrade, no silent escalation).
 
-- **Single entry point:** [**GitHub Issues**](https://github.com/linkaiheng2233-cyber/oclivenewnew/issues) (this repository).  
-- **Suggested titles:** `[bug]: …` · `[feat]: …` · `[support]: …` (matches issue templates).  
-- **First response:** we usually triage within **3–5 business days** (best-effort volunteer window, **not an SLA**).  
-- **Attach environment context:** **OS**; **app version** (e.g. `package.json` / `distros/desktop-tauri/Cargo.toml` `version`); **`oclive-cli` version** (`kernel/crates/oclive-cli/Cargo.toml` or `cargo run -p oclive-cli -- --help`); plus a short summary from **Settings → General → Environment check**. **Do not** paste API keys, tokens, or full private paths.
+Start: [PLUGIN_AUTHOR_LEARNING_PATH.md](creator-docs-en/plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md) · permissions: [PLUGIN_V1.md](creator-docs-en/plugin-and-architecture/PLUGIN_V1.md)
 
-**Self-serve:** [User manual](creator-docs-en/getting-started/USER_MANUAL.md) (Chinese: [USER_MANUAL.md](creator-docs/getting-started/USER_MANUAL.md)) · [FAQ](creator-docs/FAQ.md) · [Documentation index (EN)](creator-docs-en/getting-started/DOCUMENTATION_INDEX.md) · [Documentation index (ZH)](creator-docs/getting-started/DOCUMENTATION_INDEX.md) · [ERROR_CODES](creator-docs/getting-started/ERROR_CODES.md). For bugs, include **error code** and **minimal repro** when possible.
+---
 
-## Early adopters & known limits
+## How is this different?
 
-- **0.2.x** desktop host focus; **no in-app updater** wired yet — ship **offline installers** (see **Observability & release** if present below).  
-- **Ollama** is the default local LLM path; missing daemon or models will fail chat — see [CREATOR_WORKFLOW.md](creator-docs/getting-started/CREATOR_WORKFLOW.md) and [ERROR_CODES.md](creator-docs/getting-started/ERROR_CODES.md) (§1.5 first-install subset).  
-- **Remote / directory plugins / MCP** may require outbound network or subprocesses per manifest + host prompts — [DIRECTORY_PLUGINS.md](creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md).  
-- **Product P0 gates** are tracked in [handoff/archive/PRODUCT_RELEASE_CHECKLIST.md](handoff/archive/PRODUCT_RELEASE_CHECKLIST.md) and [handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md).
+| | LangChain / AI SDK | EchoVessel / vertical engines | **OCLive** |
+|--|-------------------|-------------------------------|------------|
+| What you get | Blocks + glue — **write code** | A **finished dish** — fixed memory/affect | **Standard kitchen + plating rules** — **assemble and pack** your engine |
+| Swappable modules | Yes, no role-domain contract | Mostly fixed | **Six slots + builtin/remote/directory** unified contract |
+| Role content distribution | DIY | Bound to product | **`.ocpak` / zip**, editor export, deep-link install |
+| Ceiling | Your code | Vendor implementation | **Union of module ecosystem** |
 
-## Observability (Sentry)
+**SillyTavern**-class “frontend shell + many backends” (common question):
 
-- **Opt-in at build time:** set **`VITE_SENTRY_DSN`** during the frontend build to ship a DSN; otherwise nothing is sent.
-- **Vue only:** uncaught Vue errors may be reported; **Rust errors stay local** by default.
-- **Privacy defaults:** `sendDefaultPii: false`, query strings stripped from captured request URLs.
-- **User opt-out:** when a DSN is present, **Settings → General** offers **Disable crash reporting**; preference is stored under **`localStorage`** key **`oclive.telemetry.sentryOptOut`** (`1` = opted out). Uncheck and **restart the app** to resume reporting.
+| | SillyTavern class | **OCLive** |
+|--|-------------------|------------|
+| Core deliverable | Chat UI + API/extensions | **Six-slot contract + blueprint + pack format + cross-host validation** |
+| Module semantics | Extensions ad hoc | **builtin / remote / directory** unified backend surface |
+| Distribution | Community cards/files | **`.ocpak` / zip · SHA-256 · `oclive://` deep links** + market site |
+| Orchestration SSOT | Often frontend/extensions | Rust **`process_message`** fixed turn semantics |
 
-## Models, plugins, and data (three quick questions)
+---
 
-1. **Third-party models / APIs:** default **local Ollama**; cloud or sidecars are **user-configured** — [SIDECAR_LLM_USER_GUIDE.md](creator-docs/getting-started/SIDECAR_LLM_USER_GUIDE.md), [LICENSE_POLICY.md](creator-docs/LICENSE_POLICY.md).  
-2. **Plugins:** follow **manifest permissions** and host grants; host is **Apache-2.0** — see [LICENSE](LICENSE) and [LICENSE_POLICY.md](creator-docs/LICENSE_POLICY.md).  
-3. **Data on disk:** SQLite + `{app_data}` — [CONFIGURATION_FILES.md](creator-docs/guides/CONFIGURATION_FILES.md); do not paste private paths in public issues.
+## Three distros (one kernel · different HostProfile)
 
-## Vision (open lab)
+Orchestration is **one** (`process_message`); differences are **`distro.oclive.toml` HostProfile** and host UI — **not** a second chat engine.
 
-Local-first, swappable subsystems, role packs as the contract surface — see [creator-docs/roadmap/VISION_OPEN_LAB.md](creator-docs/roadmap/VISION_OPEN_LAB.md) and [creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md](creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md).
+| Distro | `distro_id` | Shape | Status |
+|--------|-------------|-------|--------|
+| **OCLive Chat Pro** | `desktop` | This repo Tauri desktop (Release hero) | **0.4.0** main path |
+| **VS Code Flash** | `vscode` | Sister repo [oclive-vscode](https://github.com/linkaiheng2233-cyber/oclive-vscode) | Penetration **pluginized**; core = chat platform |
+| **AI Theater** | `theater` | `distros/theater/` + theater profile | Bundled; mode 2 playtest **unfrozen** |
+| **dev lab** | `desktop-chat` | Experimental profile | Daily dev / low-latency trials |
 
-## Documentation (creators & extensions)
+Profile SSOT: [THREE_DISTRO_KERNEL_CLOSURE.md](handoff/THREE_DISTRO_KERNEL_CLOSURE.md) · [DISTRO_CAPABILITY_PROFILE.md](creator-docs-en/kernel/DISTRO_CAPABILITY_PROFILE.md)
 
-**English entry** (folder layout and reading order — same role as the Chinese hub **[creator-docs/README.md](creator-docs/README.md)**): **[creator-docs-en/README.md](creator-docs-en/README.md)**.
+---
 
-| Topic | Path |
-|------|------|
-| **User manual** (install → import pack → chat) | **[creator-docs-en/getting-started/USER_MANUAL.md](creator-docs-en/getting-started/USER_MANUAL.md)** (Chinese: [creator-docs/getting-started/USER_MANUAL.md](creator-docs/getting-started/USER_MANUAL.md)) |
-| **Documentation index (EN)** | **[creator-docs-en/getting-started/DOCUMENTATION_INDEX.md](creator-docs-en/getting-started/DOCUMENTATION_INDEX.md)** |
-| **Documentation index (ZH)** | [creator-docs/getting-started/DOCUMENTATION_INDEX.md](creator-docs/getting-started/DOCUMENTATION_INDEX.md) |
-| **Project overview (EN)** | [creator-docs-en/getting-started/PROJECT_OVERVIEW.md](creator-docs-en/getting-started/PROJECT_OVERVIEW.md) |
-| **Kernel & modules diagram (EN)** | [creator-docs-en/getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md](creator-docs-en/getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md) |
-| **Plugin contract summary (EN)** | [creator-docs-en/plugin-and-architecture/PLUGIN_V1.md](creator-docs-en/plugin-and-architecture/PLUGIN_V1.md) |
-| Plugin contract (full, ZH) | [creator-docs/plugin-and-architecture/PLUGIN_V1.md](creator-docs/plugin-and-architecture/PLUGIN_V1.md) |
-| Role manifest | [distros/chat-pro/roles/README_MANIFEST.md](distros/chat-pro/roles/README_MANIFEST.md) |
-| Directory plugins | [creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md](creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md) |
+## Why this is hard to clone as “just another chat UI”
 
-Legacy `docs/*.md` → see [docs/README.md](docs/README.md).
+Cross-cutting engineering, not a single feature:
 
-## Repositories
+| Asset | Meaning |
+|-------|---------|
+| **`oclive_validation`** | Same contract in runtime, editor WASM, CLI — no silent format drift |
+| **`process_message` + PluginHost** | Stable turn semantics; swap backends, not orchestration |
+| **Three memory stores** | Chat log / STM / LTM decoupled (deleting chat ≠ wiping AI memory) |
+| **G1–G16 + CI gates** | OOCP S0–S12, Dimension 5 **15** registered / **14** in CI, layering ratchet, doc registry |
+| **Role pack vs blueprint split** | Creators don’t touch `slot_registry`; admins don’t pollute content packs |
+| **Side channels (e.g. voice.asr)** | Voice/TTS **outside six slots** — does not pollute `process_message` |
 
-| Part | Role |
-|------|------|
-| **This repo** | Runtime desktop client + dialogue engine |
-| **Role packs** | Under `distros/chat-pro/roles/`; on-disk layout is the contract |
-| **oclive-pack-editor** | [oclive-pack-editor](https://github.com/linkaiheng2233-cyber/oclive-pack-editor) — pack authoring (persona, six slots, export) |
-| **oclive-launcher** | **Retired** (archive only); use **pack editor + this runtime** |
+Details: [OCLIVE_ARCHITECTURE_OVERVIEW.md](creator-docs-en/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) · [MODULE_MAP_AND_HANDOFF.md](handoff/MODULE_MAP_AND_HANDOFF.md)
 
-## Quick start: pack editor + runtime
+---
 
-1. Install Node.js, Rust, Ollama (default local LLM). See [CREATOR_WORKFLOW.md](creator-docs/getting-started/CREATOR_WORKFLOW.md).
-2. Clone **this repo** and **oclive-pack-editor** side by side; author a pack in the editor (export zip or write to `distros/chat-pro/roles/{id}/`), or use sample packs under `distros/chat-pro/roles/`.
-3. Set **`OCLIVE_ROLES_DIR`** to the roles root if needed; `npm install` then `npm run tauri:dev`.
-4. Optional: configure blueprint **groups** and slot overrides in Plugin manager; **expert routing** (`expert_routing.json`) is **mechanism-only** (`dual_core` feature)—**architecture-graph UI not mounted**; edit `includes/expert_routing.json` manually or via Tauri API; the pack editor preserves blueprint fields when you save persona edits later.
+## Architecture (why assembly stays sane)
 
-## Requirements
+Design goal: **orthogonal layers** — swap LLM without touching persona; add voice without polluting the main chain; freeze experimental cores without blocking Stable releases.
 
-- Node.js 18+, npm, Rust stable, Ollama (optional for some tests)
-- Windows: Visual Studio Build Tools
+### Four module categories (map first)
 
-## Develop
+| Category | In six `plugin_backends` keys? | Examples |
+|----------|----------------------------------|----------|
+| **Backend modules (slots 1–6)** | **Yes** | memory · emotion · event · prompt · llm · agent |
+| **Facility submodules** | **No** (in orchestration) | complex emotion · expert routing · portrait · visual stage |
+| **Side channels** | **No** (own resolver) | user identity · reply post-process · **voice.asr** · theater director API |
+| **Backend plugins** | Attached to a slot | directory LLM plugin · remote sidecar |
+
+**Discipline**: plugins do **not** get a “slot 7” number; facilities do **not** become six-slot keys. Per-slot definitions → [MODULE_MAP §2–§10](handoff/MODULE_MAP_AND_HANDOFF.md).
+
+**Six-slot decoupling**: compile-time traits + `PluginHost` (fixed `process_message` order) · config-time `slot_registry` multi-instance fold · runtime session override (not persisted).
+
+**Orthogonal config layers**: role pack (creator content) → blueprint (`slot_registry`, **`steps[]` not on hot path**) → distro HostProfile → session DB.
+
+**Single kernel, dual build modes**: **outer core** (default PluginHost, swappable backends) vs **Monolith macro core** (compile-time weld via `monolith.toml` for embedded/perf). Not runtime hot-switch.
+
+**Experimental core (`dual_core`)**: mechanism wired, **default off** — `dual_core` Cargo feature + blueprint opt-in; expert routing frozen per [TECHNICAL_DEBT_INVENTORY.md §2](handoff/TECHNICAL_DEBT_INVENTORY.md).
+
+Human 45-min guide: [human-docs-en/01_ARCHITECTURE_SIMPLE.md](human-docs-en/01_ARCHITECTURE_SIMPLE.md)
+
+---
+
+## Distribution · contracts · cross-host
+
+| Mechanism | Human-readable | Integration anchor |
+|-----------|----------------|-------------------|
+| **OOCP black-box** | Swap backend, same turn semantics | S0–S12 · `examples/oocp-test-suite/` |
+| **Pack signing** | Editor export zip / `.ocpak`, optional SHA-256 sidecar | `api/plugin_pack.rs` |
+| **Deep-link install** | Market → `oclive://` → host installs plugin/pack | [oclive-plugin-market](https://github.com/linkaiheng2233-cyber/oclive-plugin-market) |
+| **Cross-host memory** | Same roles dir + shared `app.db` → desktop ↔ VS Code continuity | L1/L2/L3 · [CROSS_HOST_MEMORY.md](creator-docs-en/role-pack/CROSS_HOST_MEMORY.md) |
+| **Kernel factory** | `oclive-cli init` → standalone `cargo build` skeleton | `kernel/crates/oclive-cli` |
+
+---
+
+## Roadmap · open lab
+
+Product axis: **local-first, swappable modules, role pack as the only integration surface** — an **open experiment harness**. Researchers/developers **write new modules**, plug into a slot, and try them in a full role; persona, storage, UI, and turn loop come from the platform.
+
+| Phase | Highlights |
+|-------|------------|
+| **Shipped** | Six slots + directory/Remote plugins · OOCP · three distro profiles · streaming `/chat/stream` · Turn Thinking Fast/Deep |
+| **In progress / wired** | Plugin market + launcher · Theater mode 2 · portrait/visual facility RFCs |
+| **Default off (not “shipping soon”)** | `dual_core` experimental core · expert routing · blueprint v3 |
+
+Vision: [VISION_OPEN_LAB.md](creator-docs-en/roadmap/VISION_OPEN_LAB.md) · monthly: [VISION_ROADMAP_MONTHLY.md](creator-docs-en/roadmap/VISION_ROADMAP_MONTHLY.md)
+
+---
+
+## 30-minute contributor path
 
 ```bash
+git clone https://github.com/linkaiheng2233-cyber/oclivenewnew.git
+cd oclivenewnew
 npm install
-npm run tauri:dev
+npm run tauri:dev    # desktop client
+npm run check        # daily gates (build + fmt + clippy + test --lib)
 ```
 
-### Local HTTP API
+| Prerequisite | Notes |
+|--------------|-------|
+| Node.js 18+, Rust stable | Windows also needs **VS Build Tools (MSVC)** |
+| Ollama | **Optional** for build; needed for local LLM chat |
+| Cargo artifacts | Default outside repo: `../oclive-dev-artifacts/oclivenewnew-cargo-target/` |
 
-Same binary with **`--api`** on **`127.0.0.1`** (default **8420**, **`OCLIVE_API_PORT`** / **`--port`**).
+**Installers**: GitHub [Releases](https://github.com/linkaiheng2233-cyber/oclivenewnew/releases) currently emphasize **role packs**; desktop client requires **clone + local build** (`npm run tauri:dev` / release flow in [CONTRIBUTING.en.md](CONTRIBUTING.en.md)).
 
-- **`GET /health`** → `ok`
-- **`POST /chat`** → JSON with **`reply`**, `personality_source`, etc. Set **`OCLIVE_HTTP_API_MOCK_LLM=1`** for CI / headless.
+Step-by-step: [human-docs-en/02_THIRTY_MINUTE_START.md](human-docs-en/02_THIRTY_MINUTE_START.md)
 
-## Test & CI
+---
 
-See **Testing** in this file (Chinese README mirrors commands). **`npm run check`**, **`npm run check:release`**, **`npm run test:unit`**.
+## Ecosystem (sister repos)
 
-## Disclaimer
+| Repo | Purpose |
+|------|---------|
+| **This repo** | Desktop runtime, Rust kernel, Chat Pro / Theater distros |
+| [oclive-pack-editor](https://github.com/linkaiheng2233-cyber/oclive-pack-editor) | Visual role pack editor · export zip / `.ocpak` |
+| [oclive-vscode](https://github.com/linkaiheng2233-cyber/oclive-vscode) | In-editor companion (penetration pluginized) |
+| [oclive-launcher](https://github.com/linkaiheng2233-cyber/oclive-launcher) | Multi-distro entry · market integration (roadmap) |
+| [oclive-plugin-market](https://github.com/linkaiheng2233-cyber/oclive-plugin-market) | Plugin/pack discovery · **`oclive://` deep links** |
 
-Full text on **model weights & licenses**, **third-party plugin responsibility**, and **local data & telemetry**: **[creator-docs/legal/DISCLAIMER.md](creator-docs/legal/DISCLAIMER.md)** (English-focused mirror: [creator-docs-en/legal/DISCLAIMER.md](creator-docs-en/legal/DISCLAIMER.md)). Third-party risk cross-link: [SECURITY_AUDIT_SCOPE.md](creator-docs/security/SECURITY_AUDIT_SCOPE.md).
+---
 
-## License
+## Documentation by role
 
-Apache License 2.0 (SPDX: `Apache-2.0`) — [LICENSE](LICENSE) and [NOTICE](NOTICE). Policy: [LICENSE_POLICY.md](creator-docs/LICENSE_POLICY.md).
+| Who you are | Start here |
+|-------------|------------|
+| **End user** (install → import pack → chat) | [USER_MANUAL.md](creator-docs-en/getting-started/USER_MANUAL.md) |
+| **Human developer** (no Cursor) | **[human-docs-en/README.md](human-docs-en/README.md)** · L0–L2 ~1 hour |
+| **Role pack creator** | [CREATOR_LEARNING_PATH.md](creator-docs-en/role-pack/CREATOR_LEARNING_PATH.md) |
+| **Plugin / module author** | [PLUGIN_AUTHOR_LEARNING_PATH.md](creator-docs-en/plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md) |
+| **Kernel integrator** | [KERNEL_INTEGRATOR_LEARNING_PATH.md](creator-docs-en/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md) |
+| **Code contributor** | [CONTRIBUTING.en.md](CONTRIBUTING.en.md) · [Good first issues](https://github.com/linkaiheng2233-cyber/oclivenewnew/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) |
 
-## Contributing
+Full index: [DOCUMENTATION_INDEX.md](creator-docs-en/getting-started/DOCUMENTATION_INDEX.md)
 
-- [CONTRIBUTING.md](CONTRIBUTING.md) · [CONTRIBUTING.en.md](CONTRIBUTING.en.md)
-- [SECURITY.md](SECURITY.md)
+### English mirror policy
+
+**Chinese (`creator-docs/`, `human-docs/`) is SSOT** for normative contracts. English trees are **hand-maintained mirrors** — not a second SSOT.
+
+| Tree | Role | When English is missing |
+|------|------|-------------------------|
+| [creator-docs-en/](creator-docs-en/) | Contracts, kernel, plugin, role-pack, testing | Follow `[中文](…)` links or [coverage matrix](creator-docs-en/README.md#mirror-coverage-matrix) |
+| [human-docs-en/](human-docs-en/) | Human learning ladder L0–L8 | Fall back to [human-docs/README.md](human-docs/README.md) |
+
+**Maintenance**: update the English mirror in the **same change-set** when you change a mirrored Chinese page. See [creator-docs-en/README.md § Sync rules](creator-docs-en/README.md#sync-rules).
+
+---
+
+## AI / Agent onboarding
+
+**This homepage is for humans.** Cursor, Codex, and other agents should use the dedicated reading index:
+
+| Doc | Purpose |
+|-----|---------|
+| **[handoff/AI_READING_INDEX.md](handoff/AI_READING_INDEX.md)** | **Categorized SSOT index** (architecture · contracts · code anchors · task paths) |
+| [AGENTS.md](AGENTS.md) | **Quick gate** before editing code (G1–G16 summary) |
+| [human-docs/ai-package/README.md](human-docs/ai-package/README.md) | AI package layout vs human docs |
+
+---
+
+## Support · license
+
+- **Issues**: [GitHub Issues](https://github.com/linkaiheng2233-cyber/oclivenewnew/issues) (prefix `[bug]` / `[feat]` / `[support]`)
+- **License**: Apache-2.0 · [LICENSE](LICENSE) · [LICENSE_POLICY.md](creator-docs-en/LICENSE_POLICY.md)
+- **Code of conduct**: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) · **Security**: [SECURITY.md](SECURITY.md)
+
+---
+
+*Human learning ladder: [human-docs-en/README.md](human-docs-en/README.md)*

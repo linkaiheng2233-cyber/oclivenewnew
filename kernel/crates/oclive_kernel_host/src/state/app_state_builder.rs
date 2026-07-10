@@ -1,7 +1,7 @@
 //! [`AppState`] construction (production DB, in-memory tests).
 
 use super::session_cache::SessionCache;
-use super::AppState;
+use super::{AffectSinkHandle, AppState};
 use crate::domain::host_profile::{self, HostProfile};
 use crate::domain::repository::{FavorabilityRepository, MemoryRepository};
 use crate::error::Result;
@@ -12,8 +12,7 @@ use crate::infrastructure::chat_storage::{
 use crate::infrastructure::db::DbManager;
 use crate::infrastructure::directory_plugins::DirectoryPluginRuntime;
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
-use crate::infrastructure::llm::ollama_llm;
-use crate::infrastructure::llm::LlmClient;
+use crate::infrastructure::llm::{LlmClient, SharedOllamaClient};
 use crate::infrastructure::ollama_client::OllamaClient;
 use crate::infrastructure::policy_registry::{
     build_policy_sets_from_registry, load_policy_registry_from_path, PolicyRegistryFile,
@@ -133,20 +132,25 @@ impl AppStateBuilder {
         let favorability_repo: Arc<dyn FavorabilityRepository> =
             Arc::new(SqliteFavorabilityRepository::new(db_manager.clone()));
 
-        let llm = match self.llm {
-            Some(l) => l,
+        let (llm, ollama) = match self.llm {
+            Some(l) => (l, None),
             None => {
-                let ollama = OllamaClient::new(
+                let client = Arc::new(OllamaClient::new(
                     std::env::var("OLLAMA_BASE_URL")
                         .unwrap_or_else(|_| "http://localhost:11434".to_string()),
-                );
-                ollama_llm(ollama)
+                ));
+                let llm: Arc<dyn LlmClient> = Arc::new(SharedOllamaClient(Arc::clone(&client)));
+                (llm, Some(client))
             }
         };
 
-        let ollama_model = self.ollama_model.unwrap_or_else(|| {
-            std::env::var("OLLAMA_MODEL").unwrap_or_else(|_| "qwen2.5:7b".to_string())
-        });
+        let ollama_model = match self.ollama_model {
+            Some(m) => m,
+            None => {
+                let settings = crate::infrastructure::db_ports::DbSettingsPort(db_manager.as_ref());
+                crate::domain::user_llm_env::global_ollama_model_from_db_or_env(&settings).await
+            }
+        };
 
         let policy_runtime = Arc::new(ArcSwap::from_pointee(build_policy_sets_from_registry(
             PolicyRegistryFile::with_defaults(),
@@ -165,11 +169,17 @@ impl AppStateBuilder {
         }
         let storage = RoleStorage::new(self.roles_dir);
         let _ = fs::create_dir_all(&self.app_data_dir);
+        let host_profile = Arc::new(
+            self.host_profile
+                .unwrap_or_else(host_profile::load_host_profile_from_env),
+        );
         if let Some(parent) = storage.roles_dir().parent() {
-            crate::infrastructure::theater_director_plugin_seed::seed_official_theater_director_plugin(
-                &self.app_data_dir,
-                Some(&parent.join("plugins")),
-            );
+            if host_profile::theater_director_enabled(host_profile.as_ref()) {
+                crate::infrastructure::theater_director_plugin_seed::seed_official_theater_director_plugin(
+                    &self.app_data_dir,
+                    Some(&parent.join("plugins")),
+                );
+            }
         }
         let high_risk_grants =
             HighRiskGrantStore::load(self.app_data_dir.clone(), self.high_risk_strict);
@@ -217,11 +227,6 @@ impl AppStateBuilder {
             None,
         );
 
-        let host_profile = Arc::new(
-            self.host_profile
-                .unwrap_or_else(host_profile::load_host_profile_from_env),
-        );
-
         let reply_post_processor_resolver: Arc<
             dyn oclive_kernel_contracts::ReplyPostProcessorResolver,
         > = Arc::new(
@@ -252,6 +257,7 @@ impl AppStateBuilder {
             favorability_repo,
             user_llm_secrets,
             llm,
+            ollama,
             role_cache: Arc::new(RwLock::new(indexmap::IndexMap::new())),
             role_load_inflight: DashMap::new(),
             http_api_roles: DashMap::new(),
@@ -259,7 +265,7 @@ impl AppStateBuilder {
             session_cache: SessionCache::shared(),
             storage,
             policy_runtime,
-            ollama_model,
+            ollama_model: parking_lot::RwLock::new(ollama_model),
             plugins,
             directory_plugins,
             high_risk_grants,
@@ -275,6 +281,7 @@ impl AppStateBuilder {
             user_llm_env_applied_version: AtomicU64::new(0),
             user_llm_env_dirty: AtomicBool::new(true),
             host_profile,
+            affect_metrics_sink: AffectSinkHandle::new(),
             reply_post_processor_resolver,
             theater_director_resolver,
         };

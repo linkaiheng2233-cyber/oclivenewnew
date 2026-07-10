@@ -89,6 +89,20 @@
 
 **回复后处理** 用于在 LLM 生成文本后再做修饰（如截断、去引号）。属于 **高级 / 创作者配置**（角色包 `config.json` → `reply_post_processor`），**默认不启用**；普通用户通常无感。启用后可在调试面板 **运行时** 区域看到只读状态行（后端类型与 profile）。详见 [ROLE_PACK_SPEC §9.7](../role-pack/ROLE_PACK_SPEC.md)。
 
+### 3.6 语音（Windows · 侧通道 `voice.asr`）
+
+> **架构**：语音 **不进**六槽 / 主编排；经官方目录插件 [`com.oclive.voice.asr`](../../distros/chat-pro/plugins/com.oclive.voice.asr/) 与 `plugin_rpc_invoke` 工作。详见 [`TRACK_VOICE_RECOGNITION.md`](../../human-docs/team/TRACK_VOICE_RECOGNITION.md)。
+
+| 能力 | 说明 |
+|------|------|
+| **按住说话** | 聊天工具栏麦克风；默认 **V 键按住**（窗口聚焦、输入框未聚焦时） |
+| **识别结果** | 设置 → 语音：可选「直接发送」或「填入输入框」 |
+| **TTS 朗读** | 开启「语音扩展」后可自动朗读回复；引擎与档案在设置页选择 |
+| **角色声线** | 角色包可选 `voice_profile.json`；切换角色时 **TTS 档案** 可随 `preferred_tts_profile` / `synth_profile` 联动 |
+| **平台** | Windows 产品路径已交付；Linux/macOS 侧车 profile 可能返回 `unsupported_platform` |
+
+**常见问题**：识别差 → 确认麦克风权限、最短录音约 350ms、引擎 profile 为 **medium** 时需自行导入模型；CosyVoice 流式在 Windows 默认 **非流式** 合成（整句出声，见技术债 K-VOICE-01）。
+
 ---
 
 ## 4. 设置指南

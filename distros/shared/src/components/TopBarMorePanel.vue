@@ -3,16 +3,15 @@ import type { JumpTimeResponse } from '@oclive/shared/api'
 import type { RelationOptionRow } from '@oclive/shared/utils/relationOptions'
 import { useAppToast } from '@oclive/shared/composables/useAppToast'
 import { useSceneDestination } from '@oclive/shared/composables/useSceneDestination'
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
-import HelpHint from './shared/HelpHint.vue'
-import RoleSelector from './role/RoleSelector.vue'
-import VirtualTimeBar from './scene/VirtualTimeBar.vue'
 import { useChatStore } from '@oclive/shared/stores/chatStore'
 import { useDebugStore } from '@oclive/shared/stores/debugStore'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
 import { useUiStore } from '@oclive/shared/stores/uiStore'
-const open = defineModel<boolean>({ required: true })
+import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import RoleSelector from './role/RoleSelector.vue'
+import VirtualTimeBar from './scene/VirtualTimeBar.vue'
+import HelpHint from './shared/HelpHint.vue'
 
 withDefaults(
   defineProps<{
@@ -37,6 +36,8 @@ const emit = defineEmits<{
   notify: [payload: { type: 'success' | 'error' | 'info', message: string }]
   virtualTimeJumpComplete: [res: JumpTimeResponse]
 }>()
+
+const open = defineModel<boolean>({ required: true })
 
 const { t } = useI18n()
 const { showToast } = useAppToast()
@@ -108,101 +109,37 @@ onBeforeUnmount(() => {
       @click.stop
     >
       <div class="more-grid">
-        <div v-if="showIdentitySection" class="more-tile more-tile--sm">
-          <div class="more-tile-head">
-            <span class="more-label">{{ t("app.more.identity") }}</span>
-            <HelpHint :text="t('app.more.identityHelp')" />
-          </div>
-          <div class="more-tile-body more-tile-body--selector">
-            <RoleSelector
-              variant="topbar"
-              :sections="['relation']"
-              :current-role-id="roleStore.currentRoleId"
-              :current-relation="roleStore.relationSelectValue"
-              :roles="roleStore.roles"
-              :relations="relationOptions"
-              :loading="chatStore.isLoading"
-              @change-role="emit('changeRole', $event)"
-              @change-relation="emit('changeRelation', $event)"
-            />
-          </div>
-        </div>
-
-        <div class="more-tile more-tile--action settings-entry-tile">
-          <div class="more-tile-head">
-            <span class="more-label">{{ t("app.more.settingsEntry") }}</span>
-            <HelpHint :text="t('app.more.settingsTileHelp')" />
-          </div>
-          <div class="more-tile-body settings-entry-actions" role="group" :aria-label="t('app.more.settingsEntry')">
-            <button type="button" class="more-debug-btn more-debug-btn--fill settings-entry-btn" @click="emit('openShortcutHelp')">
-              {{ t("app.more.shortcutHelp") }}
-            </button>
-            <button
-              type="button"
-              class="more-debug-btn more-debug-btn--fill settings-entry-btn settings-entry-btn--primary settings-gear-btn"
-              @click="emit('openSettings')"
-            >
-              {{ t("app.more.openSettings") }}
-            </button>
-            <button
-              type="button"
-              class="more-debug-btn more-debug-btn--fill settings-entry-btn"
-              @click="emit('openModelManager')"
-            >
-              {{ t("app.more.modelManager") }}
-            </button>
-            <template v-if="roleStore.interactionImmersive">
+        <!-- Tiles ordered by footprint, largest → smallest (left → right). -->
+        <div class="more-group more-group--core">
+          <div class="more-tile more-tile--action more-tile--wide settings-entry-tile">
+            <div class="more-tile-head">
+              <span class="more-label">{{ t("app.more.settingsEntry") }}</span>
+              <HelpHint :text="t('app.more.settingsTileHelp')" />
+            </div>
+            <div class="more-tile-body settings-entry-actions" role="group" :aria-label="t('app.more.settingsEntry')">
               <button
                 type="button"
-                class="more-debug-btn more-debug-btn--fill settings-entry-btn"
-                @click="emit('openPluginManager')"
+                class="more-debug-btn more-debug-btn--fill settings-entry-btn settings-entry-btn--primary settings-gear-btn"
+                @click="emit('openSettings')"
               >
-                {{ t("app.more.pluginBtnSimple") }}
+                {{ t("app.more.openSettings") }}
               </button>
               <button
                 type="button"
                 class="more-debug-btn more-debug-btn--fill settings-entry-btn"
-                @click="emit('openPluginMarket')"
+                @click="emit('openModelManager')"
               >
-                {{ t("app.more.pluginMarket") }}
+                {{ t("app.more.modelManager") }}
               </button>
-            </template>
+              <button type="button" class="more-debug-btn more-debug-btn--fill settings-entry-btn" @click="emit('openShortcutHelp')">
+                {{ t("app.more.shortcutHelp") }}
+              </button>
+            </div>
           </div>
         </div>
 
-        <div v-if="roleStore.interactionImmersive" class="more-tile more-tile--action">
-          <div class="more-tile-head">
-            <span class="more-label">{{ t("app.more.debug") }}</span>
-            <HelpHint :text="t('app.more.debugHelp')" />
-          </div>
-          <div class="more-tile-body">
-            <button type="button" class="more-debug-btn more-debug-btn--fill" @click="debugStore.toggle">
-              {{ t("app.more.openDebugPanel") }}
-            </button>
-          </div>
-        </div>
-
-        <template v-if="roleStore.interactionImmersive">
-          <div class="more-tile more-tile--third">
-            <div class="more-tile-head more-tile-head--tight">
-              <span class="more-label">{{ t("app.more.virtualTime") }}</span>
-              <HelpHint
-                :paragraphs="[t('app.more.virtualTimeHint1'), t('app.more.virtualTimeHint2')]"
-              />
-            </div>
-            <div class="more-tile-body more-tile-body--row">
-              <VirtualTimeBar
-                compact
-                class="more-vtime"
-                :role-id="roleStore.currentRoleId"
-                @notify="(p) => emit('notify', p)"
-                @refreshed="roleStore.refreshRoleInfo"
-                @jump-complete="(res) => emit('virtualTimeJumpComplete', res)"
-              />
-            </div>
-          </div>
-
-          <div v-if="allSceneOptions.length > 0" class="more-tile more-tile--third">
+        <div v-if="roleStore.interactionImmersive" class="more-group more-group--scene">
+          <div v-if="allSceneOptions.length > 0" class="more-tile more-tile--scene more-tile--wide">
             <div class="more-tile-head more-tile-head--tight">
               <span class="more-label">{{ t("app.more.narrativeScene") }}</span>
               <HelpHint :text="t('app.more.narrativeSceneHelp')" />
@@ -221,7 +158,83 @@ onBeforeUnmount(() => {
               <span class="scene-row-hint scene-row-hint--tile">{{ t('app.more.characterAt', { label: characterSceneLabel() }) }}</span>
             </div>
           </div>
-        </template>
+
+          <div class="more-tile more-tile--scene">
+            <div class="more-tile-head more-tile-head--tight">
+              <span class="more-label">{{ t("app.more.virtualTime") }}</span>
+              <HelpHint
+                :paragraphs="[t('app.more.virtualTimeHint1'), t('app.more.virtualTimeHint2')]"
+              />
+            </div>
+            <div class="more-tile-body more-tile-body--row">
+              <VirtualTimeBar
+                compact
+                class="more-vtime"
+                :role-id="roleStore.currentRoleId"
+                @notify="(p) => emit('notify', p)"
+                @refreshed="roleStore.refreshRoleInfo"
+                @jump-complete="(res) => emit('virtualTimeJumpComplete', res)"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div v-if="roleStore.interactionImmersive" class="more-group more-group--plugin">
+          <div class="more-tile more-tile--action plugin-entry-tile">
+            <div class="more-tile-body plugin-entry-actions" role="group" :aria-label="t('app.more.pluginBtnSimple')">
+              <button
+                type="button"
+                class="more-debug-btn more-debug-btn--fill settings-entry-btn"
+                @click="emit('openPluginManager')"
+              >
+                {{ t("app.more.pluginBtnSimple") }}
+              </button>
+              <button
+                type="button"
+                class="more-debug-btn more-debug-btn--fill settings-entry-btn"
+                @click="emit('openPluginMarket')"
+              >
+                {{ t("app.more.pluginMarket") }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="showIdentitySection" class="more-group more-group--identity">
+          <div class="more-tile more-tile--sm">
+            <div class="more-tile-head">
+              <span class="more-label">{{ t("app.more.identity") }}</span>
+              <HelpHint :text="t('app.more.identityHelp')" />
+            </div>
+            <div class="more-tile-body more-tile-body--selector">
+              <RoleSelector
+                variant="topbar"
+                :sections="['relation']"
+                :current-role-id="roleStore.currentRoleId"
+                :current-relation="roleStore.relationSelectValue"
+                :roles="roleStore.roles"
+                :relations="relationOptions"
+                :loading="chatStore.isLoading"
+                @change-role="emit('changeRole', $event)"
+                @change-relation="emit('changeRelation', $event)"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div v-if="roleStore.interactionImmersive" class="more-group more-group--dev">
+          <div class="more-tile more-tile--action">
+            <div class="more-tile-head">
+              <span class="more-label">{{ t("app.more.debug") }}</span>
+              <HelpHint :text="t('app.more.debugHelp')" />
+            </div>
+            <div class="more-tile-body">
+              <button type="button" class="more-debug-btn more-debug-btn--fill" @click="debugStore.toggle">
+                {{ t("app.more.openDebugPanel") }}
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -266,27 +279,23 @@ onBeforeUnmount(() => {
   padding-top: 12px;
   border-top: 1px solid var(--border-light);
 }
-.top-more-panel .interaction-mode-select,
 .top-more-panel .scene-select {
   font-size: 13px;
   padding: 6px 10px;
   line-height: 1.4;
 }
-.top-more-panel .appearance-icon-btn,
-.top-more-panel .appearance-theme-btn {
-  font-size: 13px;
-  min-height: 30px;
-}
 .top-more-panel .more-debug-btn {
   font-size: 13px;
   padding: 8px 12px;
 }
-.settings-entry-tile {
-  min-width: min(24rem, 100%);
-}
 .settings-entry-actions {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
+  gap: 8px;
+}
+.plugin-entry-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
   gap: 8px;
 }
 .settings-entry-btn {
@@ -303,17 +312,32 @@ onBeforeUnmount(() => {
   justify-content: center;
 }
 @media (max-width: 680px) {
-  .settings-entry-actions {
+  .settings-entry-actions,
+  .plugin-entry-actions {
     grid-template-columns: 1fr;
   }
 }
 .more-grid {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-start;
-  align-items: flex-start;
-  align-content: flex-start;
-  gap: 12px 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(13rem, 100%), 1fr));
+  gap: 12px;
+  align-items: start;
+}
+/* Groups are layout-transparent so every tile aligns to one shared grid. */
+.more-group {
+  display: contents;
+}
+/* Larger-footprint tiles take two tracks so the panel reads big → small, left → right. */
+.more-tile--wide {
+  grid-column: span 2;
+}
+@media (max-width: 30rem) {
+  .more-grid {
+    grid-template-columns: 1fr;
+  }
+  .more-tile--wide {
+    grid-column: 1 / -1;
+  }
 }
 .more-tile {
   box-sizing: border-box;
@@ -326,22 +350,6 @@ onBeforeUnmount(() => {
   flex-direction: column;
   gap: 10px;
   box-shadow: var(--shadow-sm);
-}
-.more-tile--xs {
-  flex: 0 0 auto;
-  width: min(12rem, 100%);
-}
-.more-tile--sm {
-  flex: 0 0 auto;
-  width: min(17rem, 100%);
-}
-.more-tile--lg {
-  flex: 0 0 auto;
-  width: min(22rem, 100%);
-}
-.more-tile--action {
-  flex: 0 0 auto;
-  width: min(13rem, 100%);
 }
 .more-tile--third {
   flex: 0 0 calc((100% - 32px) / 3);
@@ -360,19 +368,6 @@ onBeforeUnmount(() => {
 }
 .more-tile-head--tight .more-label {
   padding-top: 0;
-}
-@media (max-width: 560px) {
-  .more-tile--xs,
-  .more-tile--sm,
-  .more-tile--lg,
-  .more-tile--action {
-    width: 100%;
-  }
-  .more-tile--third {
-    flex: 1 1 100%;
-    width: 100%;
-    max-width: 100%;
-  }
 }
 .more-tile-head {
   display: flex;
@@ -482,78 +477,8 @@ onBeforeUnmount(() => {
   color: var(--text-primary);
   border-color: var(--border-focus);
 }
-.top-bar-appearance {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-}
-.top-more-panel .top-bar-appearance {
-  margin-left: 0;
-}
-.appearance-scale {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 6px;
-  border-radius: var(--radius-btn);
-  border: 1px solid var(--border-light);
-  background: color-mix(in srgb, var(--bg-elevated) 88%, transparent);
-  box-shadow: var(--shadow-sm), var(--frame-inset-highlight);
-}
-.appearance-scale-value {
-  min-width: 2.6rem;
-  text-align: center;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  font-variant-numeric: tabular-nums;
-}
-.appearance-icon-btn,
-.appearance-theme-btn {
-  padding: 4px 8px;
-  min-height: 28px;
-  border-radius: var(--radius-btn);
-  border: 1px solid var(--border-light);
-  background: var(--bg-elevated);
-  color: var(--text-primary);
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 500;
-  font-family: var(--font-ui);
-  transition: var(--control-transition);
-}
-.appearance-icon-btn:hover,
-.appearance-theme-btn:hover {
-  border-color: var(--accent);
-  color: var(--text-accent);
-}
-.appearance-icon-btn:focus,
-.appearance-theme-btn:focus {
-  outline: none;
-}
-.appearance-icon-btn:focus-visible,
-.appearance-theme-btn:focus-visible {
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus-ring-color) 35%, transparent);
-}
-.appearance-theme-btn {
-  white-space: nowrap;
-}
-.interaction-mode-select {
-  min-width: 88px;
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius-btn);
-  padding: 4px 8px;
-  font-size: 12px;
-  color: var(--text-primary);
-  background: var(--bg-elevated);
-}
-.interaction-mode-select:focus {
-  outline: none;
-}
-.interaction-mode-select:focus-visible {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus-ring-color) 35%, transparent);
-}
+</style>
+
+<style>
+@import '@oclive/shared/styles/win98/component-top-bar.css';
 </style>

@@ -1,0 +1,146 @@
+{
+  "schema_version": 1,
+  "id": "com.oclive.voice.asr",
+  "name": "OCLive Voice ASR (Official)",
+  "version": "0.4.0",
+  "description": "Side-channel voice.asr + optional voice expansion (CosyVoice2 TTS) + voice.build_directive. ASR in base; emotional TTS requires expansion.",
+  "provides": ["voice.asr"],
+  "rpcMethods": [
+    "config_updated",
+    "voice.probe",
+    "voice.probe_tts",
+    "voice.warm",
+    "voice.list_profiles",
+    "voice.list_model_packs",
+    "voice.import_model",
+    "voice.import_tts_adapter",
+    "voice.list_tts_adapters",
+    "voice.read_role_profile",
+    "voice.transcribe",
+    "voice.speak",
+    "voice.build_directive"
+  ],
+  "rpcTimeoutsMs": {
+    "voice.warm": 900000,
+    "voice.speak": 600000,
+    "voice.probe_tts": 120000,
+    "voice.transcribe": 120000,
+    "voice.import_model": 300000,
+    "voice.import_tts_adapter": 300000
+  },
+  "process": {
+    "command": "node",
+    "args": ["rpc_server.mjs"]
+  },
+  "permissions": ["process:spawn"],
+  "ui_schema": {
+    "fields": [
+      {
+        "key": "submit_mode",
+        "label": "识别结果",
+        "type": "select",
+        "default": "send",
+        "required": false
+      },
+      {
+        "key": "tts_expansion_enabled",
+        "label": "语音扩展（情感 TTS）",
+        "type": "boolean",
+        "default": false,
+        "required": false
+      },
+      {
+        "key": "auto_tts",
+        "label": "自动朗读回复",
+        "type": "boolean",
+        "default": false,
+        "required": false
+      },
+      {
+        "key": "asr_profile",
+        "label": "ASR 档案",
+        "type": "string",
+        "default": "sherpa-paraformer-zh-small",
+        "required": false
+      },
+      {
+        "key": "tts_profile",
+        "label": "TTS 档案",
+        "type": "string",
+        "default": "bundled-cosyvoice2-zh",
+        "required": false
+      },
+      {
+        "key": "director_profile",
+        "label": "声音导演",
+        "type": "string",
+        "default": "rules-v1",
+        "required": false
+      },
+      {
+        "key": "synth_provider",
+        "label": "发声提供方",
+        "type": "string",
+        "default": "bundled",
+        "required": false
+      },
+      {
+        "key": "local_synth_endpoint",
+        "label": "本地 HTTP TTS",
+        "type": "string",
+        "default": "http://127.0.0.1:50000",
+        "required": false
+      },
+      {
+        "key": "cloud_tts_url",
+        "label": "云端 TTS URL",
+        "type": "string",
+        "default": "",
+        "required": false
+      },
+      {
+        "key": "cloud_tts_token",
+        "label": "云端 TTS Token",
+        "type": "string",
+        "default": "",
+        "required": false
+      },
+      {
+        "key": "cloud_tts_voice_id",
+        "label": "云端 Voice ID",
+        "type": "string",
+        "default": "",
+        "required": false
+      },
+      {
+        "key": "cloud_tts_model",
+        "label": "云端 TTS Model",
+        "type": "string",
+        "default": "tts-1",
+        "required": false
+      }
+    ]
+  },
+  "ui_slots": [
+    {
+      "slot": "chat_toolbar",
+      "entry": "slots/toolbar.html",
+      "vueComponent": "slots/VoiceToolbar.vue",
+      "label": "语音输入",
+      "bridge": {
+        "invoke": ["plugin_rpc_invoke", "get_plugin_settings_ui", "get_role_pack_path"],
+        "events": ["message:sent"]
+      }
+    },
+    {
+      "slot": "settings.panel",
+      "entry": "slots/settings.html",
+      "vueComponent": "slots/VoiceSettings.vue",
+      "label": "语音识别",
+      "bridge": {
+        "invoke": ["plugin_rpc_invoke", "get_plugin_settings_ui", "set_plugin_settings_config", "get_role_pack_path"],
+        "events": []
+      }
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 {
   "scene": "way_home",
-  "sceneId": "home",
+  "sceneId": "theater:home",
   "defaultPairRelation": "family",
   "pairRelations": {
     "family": {

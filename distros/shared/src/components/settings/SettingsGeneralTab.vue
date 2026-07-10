@@ -1,51 +1,83 @@
 <script setup lang="ts">
 import type { EnvironmentDiagnostics } from '@oclive/shared/api'
 import type { LocalePreference } from '@oclive/shared/i18n'
-import { defineAsyncComponent, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 import {
   getRemoteFallbackAppSettings,
   runEnvironmentDiagnostics,
   setRemoteFallbackToBuiltin,
 } from '@oclive/shared/api'
+import { useAppToast } from '@oclive/shared/composables/useAppToast'
+import { useDistroUxProfile } from '@oclive/shared/composables/useDistroUxProfile'
+import { useInteractionModeSettings } from '@oclive/shared/composables/useInteractionModeSettings'
+import { getLayoutWidths, resetLayoutWidths } from '@oclive/shared/composables/useLayoutWidths'
+import { useEasterEggSkin } from '@oclive/shared/composables/useEasterEggSkin'
+import { useOcliveAppearance } from '@oclive/shared/composables/useOcliveAppearance'
+import { useUserIdentityState } from '@oclive/shared/composables/useUserIdentityState'
+import { getLocalePreference, setLocalePreference } from '@oclive/shared/i18n'
+import { SLOT_SETTINGS_ADVANCED, usePluginStore } from '@oclive/shared/stores/pluginStore'
+import { useRoleStore } from '@oclive/shared/stores/roleStore'
+import { isChatStreamEnabled, setChatStreamEnabled } from '@oclive/shared/utils/chatStreamSettings'
+import { isSentryOptOut, setSentryOptOut } from '@oclive/shared/utils/telemetrySentry'
+import { defineAsyncComponent, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import PluginSlotEmbed from '../PluginSlotEmbed.vue'
 import HelpHint from '../shared/HelpHint.vue'
 import UiButton from '../ui/UiButton.vue'
 import UiFieldRow from '../ui/UiFieldRow.vue'
 import UiSection from '../ui/UiSection.vue'
 import UiSelect from '../ui/UiSelect.vue'
-import { useAppToast } from '@oclive/shared/composables/useAppToast'
-import { getLayoutWidths, resetLayoutWidths } from '@oclive/shared/composables/useLayoutWidths'
-import { useOcliveAppearance } from '@oclive/shared/composables/useOcliveAppearance'
-import { getLocalePreference, setLocalePreference } from '@oclive/shared/i18n'
-import { SLOT_SETTINGS_ADVANCED, usePluginStore } from '@oclive/shared/stores/pluginStore'
-import { isSentryOptOut, setSentryOptOut } from '@oclive/shared/utils/telemetrySentry'
-
-const ReplyPostProcessorStatus = defineAsyncComponent(() => import('../role/ReplyPostProcessorStatus.vue'))
-const RoleIdentityControls = defineAsyncComponent(() => import('../role/RoleIdentityControls.vue'))
-const KernelConnectionSettingsPanel = defineAsyncComponent(() => import('./KernelConnectionSettingsPanel.vue'))
-
-type GeneralSubTab = 'simple' | 'advanced'
+import KeybindingsSettingsSection from '../hotkey/KeybindingsSettingsSection.vue'
 
 const props = defineProps<{
   visible: boolean
   embedded: boolean
   generalSubTab: GeneralSubTab
 }>()
-
 const emit = defineEmits<{
   'update:generalSubTab': [value: GeneralSubTab]
 }>()
+const ReplyPostProcessorStatus = defineAsyncComponent(() => import('../role/ReplyPostProcessorStatus.vue'))
+const RoleIdentityControls = defineAsyncComponent(() => import('../role/RoleIdentityControls.vue'))
+const KernelConnectionSettingsPanel = defineAsyncComponent(() => import('./KernelConnectionSettingsPanel.vue'))
+
+type GeneralSubTab = 'simple' | 'advanced'
 
 const { t } = useI18n()
 const pluginStore = usePluginStore()
+const roleStore = useRoleStore()
 const { showToast } = useAppToast()
+const { allowModeSwitch, ensureDistroUxProfileLoaded } = useDistroUxProfile()
+const { onInteractionModeSelect } = useInteractionModeSettings()
+const { hasCatalog } = useUserIdentityState()
 const { themeCycleLabel, cycleTheme, bumpScale, scaleLabel } = useOcliveAppearance()
+const { skinUnlocked, win98Enabled, toggleWin98 } = useEasterEggSkin()
+
+function onWin98SkinChange(e: Event) {
+  const checked = (e.target as HTMLInputElement).checked
+  if (checked !== win98Enabled.value)
+    toggleWin98()
+}
 const localePreference = ref<LocalePreference>(getLocalePreference())
+
+onMounted(() => {
+  void ensureDistroUxProfileLoaded()
+})
+
+async function onSettingsInteractionModeChange(ev: Event): Promise<void> {
+  // Primary user entry alongside in-shell InteractionModeBar (FluentShell).
+  await onInteractionModeSelect(ev)
+}
 
 const hasSentryDsn
   = typeof import.meta.env.VITE_SENTRY_DSN === 'string' && import.meta.env.VITE_SENTRY_DSN.length > 0
 const sentryOptOut = ref(isSentryOptOut())
+const chatStreamEnabled = ref(isChatStreamEnabled())
+
+function onChatStreamEnabledChange(e: Event) {
+  const enabled = (e.target as HTMLInputElement).checked
+  setChatStreamEnabled(enabled)
+  chatStreamEnabled.value = enabled
+}
 
 async function onSentryOptOutChange(e: Event) {
   const optOut = (e.target as HTMLInputElement).checked
@@ -195,10 +227,35 @@ async function onToggleForceIframe(e: Event) {
       </button>
     </nav>
 
-    <UiSection :title="t('settings.shortcutsLabel')">
+    <UiSection
+      v-show="generalSubTab === 'simple'"
+      :title="t('settings.interactionModeSectionTitle')"
+      :description="t('settings.interactionModeSectionLead')"
+    >
       <template #extra>
-        <HelpHint :text="t('settings.shortcutsHelp')" />
+        <HelpHint :text="t('settings.interactionModePersistNote')" />
       </template>
+      <UiFieldRow v-if="allowModeSwitch" :label="t('settings.interactionModeFieldLabel')">
+        <UiSelect
+          :model-value="roleStore.roleInfo.interactionMode"
+          @change="onSettingsInteractionModeChange"
+        >
+          <option value="pure_chat">
+            {{ t('app.more.interactionPureChat') }}
+          </option>
+          <option value="immersive">
+            {{ t('app.more.interactionImmersive') }}
+          </option>
+        </UiSelect>
+      </UiFieldRow>
+      <p v-else class="sv-muted">
+        {{ t('settings.interactionModeLockedNote') }}
+      </p>
+      <RoleIdentityControls
+        v-if="hasCatalog"
+        variant="full"
+        settings-layout
+      />
     </UiSection>
 
     <UiSection
@@ -235,25 +292,45 @@ async function onToggleForceIframe(e: Event) {
           </UiButton>
         </div>
       </UiFieldRow>
+      <UiFieldRow v-if="skinUnlocked" :label="t('settings.skinWin98Label')">
+        <label class="sv-toggle-row">
+          <input
+            type="checkbox"
+            :checked="win98Enabled"
+            @change="onWin98SkinChange"
+          >
+          <span class="sv-toggle-text">
+            <strong>{{ t('settings.skinWin98Help') }}</strong>
+          </span>
+        </label>
+      </UiFieldRow>
     </UiSection>
 
     <p v-if="generalSubTab === 'advanced'" class="sv-muted">
       {{ t("onboarding.settings.advancedLead") }}
     </p>
 
-    <UiSection
-      v-show="generalSubTab === 'advanced'"
-      :title="t('settings.userIdentitySectionTitle')"
-      :description="t('settings.userIdentitySectionLead')"
-    >
-      <template #extra>
-        <HelpHint :text="t('settings.userIdentitySectionLeadSecondary')" />
-      </template>
-      <RoleIdentityControls variant="full" settings-layout />
-    </UiSection>
-
     <UiSection v-show="generalSubTab === 'advanced'" :title="t('settings.postProcessorSectionTitle')">
       <ReplyPostProcessorStatus :show-title="false" />
+    </UiSection>
+
+    <UiSection
+      v-show="generalSubTab === 'advanced'"
+      :title="t('settings.chatStreamSectionTitle')"
+      :description="t('settings.chatStreamSectionHelp')"
+    >
+      <UiFieldRow :label="t('settings.chatStreamEnabledLabel')">
+        <label class="sv-toggle-row">
+          <input
+            type="checkbox"
+            :checked="chatStreamEnabled"
+            @change="onChatStreamEnabledChange"
+          >
+          <span class="sv-toggle-text">
+            <strong>{{ t('settings.chatStreamEnabledHint') }}</strong>
+          </span>
+        </label>
+      </UiFieldRow>
     </UiSection>
 
     <UiSection
@@ -271,6 +348,8 @@ async function onToggleForceIframe(e: Event) {
         {{ t("settings.layoutResetWidths") }}
       </UiButton>
     </UiSection>
+
+    <KeybindingsSettingsSection v-show="generalSubTab === 'advanced'" />
 
     <UiSection
       v-show="generalSubTab === 'advanced'"

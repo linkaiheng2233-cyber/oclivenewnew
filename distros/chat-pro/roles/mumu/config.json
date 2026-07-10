@@ -45,6 +45,24 @@
     "diary_header": "VS Code 工作区片段",
     "diary_path": ".oclive/{roleId}/diary.md",
     "letter_template": "这是一封留在仓库里的信。",
-    "idle_message": "木木：代码写累了的话，来聊两句？"
+    "idle_message": "沐沐：代码写累了的话，来聊两句？"
+  },
+  "turn_thinking": {
+    "deep_when": {
+      "or": [{ "signal": "this_turn_event", "events": ["Quarrel"] }],
+      "and": [{
+        "all": [
+          { "signal": "long_message", "min_chars": 40 },
+          { "signal": "high_sadness" }
+        ]
+      }]
+    },
+    "latch": { "enter_on": ["Quarrel"], "exit_on": ["Apology"] },
+    "ephemeral_archive": {
+      "enabled": true,
+      "ttl_turns": 3,
+      "max_chars": 200,
+      "update_on_events": ["Quarrel", "Apology", "Confession", "Praise"]
+    }
   }
 }

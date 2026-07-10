@@ -2,7 +2,7 @@
 
 > **读者**：改 Vue / Pinia / Tauri `invoke` 的工程师。  
 > **耗时**：约 1 天入门。  
-> **下一篇**：[05 调试](../05_DEBUGGING.md) · [08 资料地图](../08_REFERENCE_MAP.md)
+> **下一篇**：[modules/surfaces/](../modules/surfaces/) · [05 调试](../05_DEBUGGING.md)
 
 ---
 
@@ -11,7 +11,10 @@
 1. [02 三十分钟跑通](../02_THIRTY_MINUTE_START.md) — `npm run tauri:dev` + `npm run check`
 2. [03 术语表](../03_GLOSSARY.md) — **`reply`** 非 `response`；invoke **camelCase**
 3. [04 工程约束](../04_ENGINEERING_RULES.md) §3、§4、§7
-4. 读本仓 `distros/shared/src/api/` 封装与 `distros/shared/src/stores/chatStore.ts`
+4. **宿主面开工包**（约 30–45 min）：
+   - Chat Pro UI → [modules/surfaces/frontend-chat-pro.md](../modules/surfaces/frontend-chat-pro.md)
+   - 新 invoke → [modules/surfaces/tauri-invoke.md](../modules/surfaces/tauri-invoke.md)
+5. 读本仓 `distros/shared/src/api/` 封装与 `distros/shared/src/stores/chatStore.ts`
 
 ---
 
@@ -39,5 +42,6 @@
 
 ## 深度链接
 
+- [modules/ 选择器](../modules/README.md)
 - [NAMING §8 前端对照](../../creator-docs/NAMING_CONVENTIONS.md#8-前端--后端术语对照)
 - [COMPATIBILITY](../../creator-docs/COMPATIBILITY.md)

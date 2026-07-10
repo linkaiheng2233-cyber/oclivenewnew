@@ -1,5 +1,5 @@
 import type { TheaterScenePresetId } from './theaterSceneCatalog'
-import { getPokeChipsForPreset, getTheaterScenePreset, LEGACY_BREAKFAST_SKELETON_URL } from './theaterSceneCatalog'
+import { getPokeChipsForPreset, getTheaterScenePreset, LEGACY_BREAKFAST_SKELETON_URL, THEATER_RUNTIME_SCENE_ID } from './theaterSceneCatalog'
 
 export type TheaterCast = 'a' | 'b'
 
@@ -130,7 +130,7 @@ export const FALLBACK_OPENING_BEATS: ScriptLine[] = [
 
 export const FALLBACK_SKELETON: TheaterSkeleton = {
   scene: 'breakfast',
-  sceneId: 'home',
+  sceneId: THEATER_RUNTIME_SCENE_ID,
   cast: {
     a: { roleId: 'mumu', name: '木木' },
     b: { roleId: '枫侵月', name: '枫侵月' },
@@ -182,21 +182,21 @@ const FALLBACK_SKELETON_BY_PRESET: Record<TheaterScenePresetId, TheaterSkeleton>
   breakfast: FALLBACK_SKELETON,
   supermarket: {
     scene: 'supermarket',
-    sceneId: 'home',
+    sceneId: THEATER_RUNTIME_SCENE_ID,
     cast: FALLBACK_SKELETON.cast,
     beats: FALLBACK_SUPERMARKET_BEATS,
     forks: {},
   },
   way_home: {
     scene: 'way_home',
-    sceneId: 'home',
+    sceneId: THEATER_RUNTIME_SCENE_ID,
     cast: FALLBACK_SKELETON.cast,
     beats: FALLBACK_WAY_HOME_BEATS,
     forks: {},
   },
   bedtime: {
     scene: 'bedtime',
-    sceneId: 'home',
+    sceneId: THEATER_RUNTIME_SCENE_ID,
     cast: FALLBACK_SKELETON.cast,
     beats: FALLBACK_BEDTIME_BEATS,
     forks: {},

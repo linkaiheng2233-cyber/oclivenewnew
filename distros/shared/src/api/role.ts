@@ -6,6 +6,13 @@ import type {
   PluginBackendsSourceMap,
 } from './settings'
 
+/** UI-only affect metrics from kernel simulation (not injected into Prompt). */
+export interface DisplayMetricsDto {
+  favor: number
+  relation_summary: string
+  traits: number[]
+}
+
 export interface UserRelationDto {
   id: string
   name: string
@@ -92,13 +99,17 @@ export interface RoleData {
   version: string
   author: string
   description: string
+  /** @deprecated prefer `display_metrics.traits` */
   personality_vector: number[]
+  /** @deprecated prefer `display_metrics.favor` */
   current_favorability: number
+  display_metrics?: DisplayMetricsDto | null
   current_emotion: string
   memory_count: number
   event_count: number
   user_relations: UserRelationDto[]
   default_relation: string
+  /** @deprecated prefer `display_metrics.relation_summary` */
   relation_state: string
   current_user_relation: string
   /** Whether "default identity" is selected (manifest `default_relation`) */
@@ -155,9 +166,12 @@ export interface RoleInfo {
   version: string
   author: string
   description: string
+  /** @deprecated prefer `display_metrics.favor` */
   current_favorability: number
   current_emotion: string
+  /** @deprecated prefer `display_metrics.traits` */
   personality_vector: number[]
+  display_metrics?: DisplayMetricsDto | null
   /** `evolution.personality_source`; defaults to vector */
   personality_source?: PersonalitySource
   last_interaction?: string | null
@@ -174,6 +188,7 @@ export interface RoleInfo {
   /** Whether "default identity" is selected; sentinel is `OCLIVE_DEFAULT_RELATION_SENTINEL` */
   use_manifest_default: boolean
   /** Relation stage from `role_runtime.relation_state` */
+  /** @deprecated prefer `display_metrics.relation_summary` */
   relation_state: string
   remote_life_enabled: boolean
   remote_life_pack_default: boolean | null
@@ -256,6 +271,18 @@ export async function getRoleInfo(
   })
 }
 
+/** GET-only affect snapshot; sets kernel `radar_deep_pending` for next deep profile refresh. */
+export async function getDisplayMetrics(
+  roleId: string,
+  sessionId?: string | null,
+): Promise<DisplayMetricsDto> {
+  return invokeWithFriendlyError<DisplayMetricsDto>('get_display_metrics', {
+    req: {
+      role_id: roleId,
+      session_id: sessionId ?? null,
+    },
+  })
+}
 
 export interface RoleSummaryDto {
   id: string

@@ -1,0 +1,71 @@
+/* Win98 skin — co-locate SSOT: see MODULE_MAP §13.2 dependency table */
+/* Scope: html[data-skin="win98"] only */
+/* Imported by: UiSidePanel.vue */
+
+html[data-skin="win98"] .ui-side-panel {
+  border: 2px outset #dfdfdf;
+  border-radius: 0;
+  box-shadow: 1px 1px 0 #000000;
+  background: #c0c0c0;
+}
+
+html[data-skin="win98"] .ui-side-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0;
+  min-height: 20px;
+  height: auto;
+  padding: 2px 2px 2px 4px;
+  background: linear-gradient(90deg, #000080 0%, #1084d0 100%);
+  color: #ffffff;
+  border-bottom: none;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: bold;
+}
+
+html[data-skin="win98"] .ui-side-panel__title {
+  margin: 0;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+html[data-skin="win98"] .ui-side-panel__scroll {
+  padding: 8px;
+}
+
+html[data-skin="win98"] .ui-side-panel__scroll--flush {
+  padding: 0;
+}
+
+html[data-skin="win98"] .ui-side-panel__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 16px;
+  height: 14px;
+  min-width: 16px;
+  padding: 0;
+  border: 2px outset #dfdfdf;
+  border-radius: 0;
+  background: #c0c0c0;
+  color: #000000;
+  font-family: var(--font-ui);
+  font-size: 9px;
+  font-weight: bold;
+  line-height: 1;
+  cursor: default;
+  box-shadow: none;
+}
+
+html[data-skin="win98"] .ui-side-panel__close:hover {
+  background: #c0c0c0;
+}
+
+html[data-skin="win98"] .ui-side-panel__close:active {
+  border-style: inset;
+}

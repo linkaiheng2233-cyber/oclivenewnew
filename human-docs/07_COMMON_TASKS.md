@@ -37,6 +37,8 @@
 
 ## 3. 加 `config.json` 字段
 
+**人类开工包**：[modules/packs/role-pack-config.md](modules/packs/role-pack-config.md)（turn_thinking · validation · G1 边界）
+
 | 步骤 | 位置 |
 |------|------|
 | 解析 | `RoleStorage::load_role` / 相关 loader |

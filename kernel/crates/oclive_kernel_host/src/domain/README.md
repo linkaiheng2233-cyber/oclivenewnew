@@ -31,11 +31,12 @@ Chinese handoff notes: [COMMENT_ENGLISH_MIGRATION_PLAN.md](../../../../handoff/C
 
 `startup_health.rs` uses **`DbHealthPort`** ([`infrastructure/db_ports.rs`](../infrastructure/db_ports.rs)). `role_manager.rs` resolves plugins via constructor injection; `test_plugin_host` lives under `#[cfg(test)]` only.
 
-Turn hot-path persistence now goes through **`domain/ports/`** traits with implementations in [`infrastructure/turn_ports.rs`](../infrastructure/turn_ports.rs):
+Turn hot-path persistence now goes through **`domain/ports/`** traits with implementations in [`infrastructure/turn_ports.rs`](../infrastructure/turn_ports.rs) and [`infrastructure/db_ports.rs`](../infrastructure/db_ports.rs):
 
 - `ChatTurnPersistencePort` → `DbChatTurnPersistencePort`
 - `TurnPoliciesPort` → `AppTurnPoliciesPort`
 - `ConversationPersistPort` → `StoreConversationPersistPort`
+- `TurnThinkingStatePort` → `TurnThinkingStateAdapter` (via `AppState::turn_thinking_state()`)
 
 `turn_pipeline/persistence.rs` consumes these ports; `post.rs` still calls `state.policies_for_scene` in-domain (D-LAYER-05b follow-up).
 

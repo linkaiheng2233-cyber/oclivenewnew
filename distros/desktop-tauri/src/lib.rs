@@ -169,7 +169,14 @@ pub fn run() {
                 e
             })?;
             app.manage(kernel_conn.clone());
-            app.manage(app_state);
+            app.manage(app_state.clone());
+            {
+                let shell = app_state.clone();
+                let app_handle = app.handle().clone();
+                shell.set_affect_metrics_sink(Some(std::sync::Arc::new(move |ev| {
+                    let _ = app_handle.emit_all("affect:metricsChanged", &ev);
+                })));
+            }
             desktop_host::finish_desktop_setup(
                 &app.handle(),
                 kernel_conn,
@@ -221,6 +228,8 @@ pub fn run() {
             api::llm_settings::list_ollama_models,
             api::llm_settings::list_cloud_models,
             api::llm_settings::save_llm_user_settings,
+            api::llm_settings::get_global_ollama_model,
+            api::llm_settings::set_global_ollama_model,
             api::llm_settings::probe_cloud_llm,
             api::llm_settings::scan_local_model_files,
             api::llm_settings::open_path_in_file_manager,
@@ -230,6 +239,7 @@ pub fn run() {
             api::settings::set_remote_fallback_to_builtin,
             // ?? chat ??
             api::chat::send_message,
+            api::chat::get_role_pack_path,
             api::chat::list_chat_sessions,
             api::chat::fetch_chat_messages,
             api::chat::rebuild_chat_mirror,
@@ -253,6 +263,7 @@ pub fn run() {
             // ?? role / session / slot registry ??
             api::role::load_role,
             api::role::get_role_info,
+            api::role::affect::get_display_metrics,
             api::role::list_roles,
             api::role::switch_role,
             api::role::relation::set_user_relation,

@@ -133,6 +133,19 @@ pub trait MutablePersonalityStore: Send + Sync {
     ///
     /// Returns `Err` on database write failure.
     async fn set_mutable_personality(&self, role_id: &str, text: &str) -> Result<()>;
+
+    /// Profile archive + seven-dim core/delta in one transaction (profile evolution path).
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err` when either step fails; the transaction is rolled back.
+    async fn apply_profile_evolution_atomic(
+        &self,
+        role_id: &str,
+        mutable_text: &str,
+        core_json: &str,
+        delta_json: &str,
+    ) -> Result<()>;
 }
 
 /// Relation identity + favorability persistence (estrangement / per-user relation stats).

@@ -1,5 +1,7 @@
 # Portrait Facility (#3) — English summary
 
+[中文](../../creator-docs/rfc/RFC_PORTRAIT_FACILITY.md)
+
 See full RFC: [RFC_PORTRAIT_FACILITY.md](../../creator-docs/rfc/RFC_PORTRAIT_FACILITY.md) (Chinese SSOT).
 
 ## Disk layout (A2)

@@ -38,7 +38,7 @@ pub async fn generate_patch_scene(
     let Some(ctx) = resolve_patch_context(req) else {
         return Ok(patch_fallback_response(
             req,
-            state.ollama_model.as_str(),
+            state.global_ollama_model().as_str(),
             "fallback",
             "patch_no_tweak",
         ));
@@ -53,7 +53,7 @@ pub async fn generate_patch_scene(
             return Ok(patch_merge_fallback(
                 &ctx,
                 req,
-                state.ollama_model.as_str(),
+                state.global_ollama_model().as_str(),
                 "fallback",
             ));
         }

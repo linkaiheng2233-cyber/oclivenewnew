@@ -156,6 +156,7 @@ impl RoleStorage {
         };
         role.interaction_mode = loaded.interaction_mode;
         role.featured = loaded.featured;
+        role.deep_capsule_enabled = loaded.deep_capsule_enabled;
         role.preset_order = loaded.preset_order;
         role.remote_presence = loaded.remote_presence;
         role.autonomous_scene = loaded.autonomous_scene;
@@ -201,6 +202,7 @@ impl RoleStorage {
         };
         role.interaction_mode = loaded.interaction_mode;
         role.featured = loaded.featured;
+        role.deep_capsule_enabled = loaded.deep_capsule_enabled;
         role.preset_order = loaded.preset_order;
         role.remote_presence = loaded.remote_presence;
         role.autonomous_scene = loaded.autonomous_scene;
@@ -327,6 +329,8 @@ impl RoleStorage {
                         role.pack_reply_post_processor_config = cfg.reply_post_processor;
                         role.pack_portrait_catalog = cfg.portrait_catalog;
                         role.pack_visual_presentation_config = cfg.visual_presentation;
+                        role.pack_turn_thinking_config = cfg.turn_thinking;
+                        role.pack_prompt_extra_sections = cfg.prompt_extra_sections;
                         if role.pack_portrait_catalog.enabled {
                             let catalog_path = role_dir.join("portrait_catalog.json");
                             if catalog_path.is_file() {
@@ -386,6 +390,12 @@ impl RoleStorage {
         if core_personality_path.exists() {
             role.core_personality =
                 fs::read_to_string(&core_personality_path).map_err(AppError::IoError)?;
+        }
+
+        let deep_capsule_path = role_dir.join("prompts/deep_capsule.txt");
+        if deep_capsule_path.is_file() {
+            role.deep_capsule =
+                Some(fs::read_to_string(&deep_capsule_path).map_err(AppError::IoError)?);
         }
 
         role.user_identity_catalog = load_user_identity_catalog(role_dir)?;

@@ -10,6 +10,7 @@
 
 | 文档 | 侧重 |
 |------|------|
+| **[MODULE_MAP_AND_HANDOFF.md](../../handoff/MODULE_MAP_AND_HANDOFF.md)** | **模块注册表**（定义 · 划分 · 六槽/设施关系；进度 → TECHNICAL_DEBT） |
 | **[PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)** | 三件套仓库分工、常用命令、发版与检查习惯 |
 | **[PROJECT_CURRENT_STATUS.md](PROJECT_CURRENT_STATUS.md)** | **事实快照**：版本号、交付面摘要、CHANGELOG 中英入口、姊妹仓与 i18n 指针 |
 | **[KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md)** | 内核里程碑 **K0–K5**、北极星、**验收留痕**（本地/CI） |

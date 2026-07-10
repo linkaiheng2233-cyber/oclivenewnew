@@ -3,6 +3,7 @@ import type { JumpTimeResponse } from '@oclive/shared/api'
 import { computed, nextTick, ref } from 'vue'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
 import { useUiStore } from '@oclive/shared/stores/uiStore'
+import { PURE_CHAT_DEFAULT_SCENE_ID } from '@oclive/shared/utils/pureChatScene'
 
 export interface UseSceneTravelBarsOptions {
   applySceneDestination: (sceneId: string, together: boolean) => Promise<void>
@@ -42,6 +43,7 @@ export function useSceneTravelBars(opts: UseSceneTravelBarsOptions) {
   })
 
   function resetPureChatSceneUi(): void {
+    uiStore.setScene(PURE_CHAT_DEFAULT_SCENE_ID)
     postReplySceneBarVisible.value = false
     postReplySceneSelectedId.value = ''
     togetherTravelBarVisible.value = false

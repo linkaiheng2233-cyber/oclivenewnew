@@ -46,7 +46,10 @@ async fn week3_004_load_role_and_get_info() {
         .expect("load_role");
     assert_eq!(data.role_id, "mumu");
     assert_eq!(data.identity_binding, IdentityBinding::Global);
-    assert_eq!(data.personality_vector.len(), 7);
+    #[allow(deprecated)]
+    {
+        assert_eq!(data.personality_vector.len(), 7);
+    }
     assert_eq!(
         data.current_emotion.to_ascii_lowercase(),
         "neutral",
@@ -793,10 +796,13 @@ async fn week3_004_get_role_info_favor_follows_scene_identity_not_global_column(
     .await
     .expect("switch back default");
 
-    assert!(
-        (back_default.role.current_favorability - 10.0).abs() < 1e-6,
-        "expected parent identity favor 10, got {} (global column is stale 90)",
-        back_default.role.current_favorability
-    );
+    #[allow(deprecated)]
+    {
+        assert!(
+            (back_default.role.current_favorability - 10.0).abs() < 1e-6,
+            "expected parent identity favor 10, got {} (global column is stale 90)",
+            back_default.role.current_favorability
+        );
+    }
     assert_eq!(back_default.role.current_user_relation, "parent");
 }

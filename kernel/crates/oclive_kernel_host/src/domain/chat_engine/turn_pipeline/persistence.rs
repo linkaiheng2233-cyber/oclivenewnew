@@ -417,6 +417,8 @@ mod persist_non_profile_tests {
             min_runtime_version: None,
             dev_only: false,
             featured: false,
+            deep_capsule_enabled: false,
+            deep_capsule: None,
             preset_order: 999,
             plugin_backends: Arc::new(crate::models::PluginBackends::default()),
             slot_registry: None,
@@ -442,12 +444,18 @@ mod persist_non_profile_tests {
             pack_portrait_catalog: Default::default(),
             portrait_catalog: None,
             pack_visual_presentation_config: Default::default(),
+            pack_turn_thinking_config: None,
+            pack_prompt_extra_sections: Vec::new(),
             source_dir: None,
         }
     }
 
     fn middle_with_personality(personality: PersonalityVector) -> MiddleOutput {
         MiddleOutput {
+            turn_thinking: crate::domain::turn_thinking::TurnThinkingPlan {
+                mode: crate::domain::turn_thinking::TurnThinkingMode::Deep,
+                reasons: vec![],
+            },
             complex_emotion_out: ComplexEmotionOutput {
                 source: "builtin".to_string(),
                 narrative_hint: String::new(),
@@ -467,6 +475,10 @@ mod persist_non_profile_tests {
             prompt: String::new(),
             favor_delta: 0.0,
             relation_after: RelationState::Stranger,
+            prompt_stable_hash: None,
+            prompt_stable_len: None,
+            prefix_cache_expected_hit: None,
+            use_ollama_prefix_opts: false,
         }
     }
 

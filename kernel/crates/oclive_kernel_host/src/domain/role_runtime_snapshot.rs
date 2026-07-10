@@ -13,4 +13,8 @@ pub struct RoleRuntimeSnapshot {
     pub remote_life_enabled: Option<bool>,
     pub mutable_personality: Option<String>,
     pub event_impact_factor: Option<f64>,
+    /// Ephemeral situation summary (Wave F); empty when `ephemeral_ttl_turns == 0`.
+    pub ephemeral_personality: Option<String>,
+    pub ephemeral_ttl_turns: Option<u32>,
+    pub deep_latch_active: Option<bool>,
 }

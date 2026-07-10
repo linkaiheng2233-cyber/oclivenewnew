@@ -28,6 +28,11 @@ export interface RoleSnapshot {
   current_emotion: string
   portrait_emotion: string
   relation_state: string
+  display_metrics?: {
+    favor: number
+    relation_summary: string
+    traits: number[]
+  } | null
   personality_source: string
   current_scene: string | null
   user_presence_scene: string | null

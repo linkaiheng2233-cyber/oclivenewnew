@@ -4,6 +4,7 @@ import { open as openDialog } from '@tauri-apps/api/dialog'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
+  getGlobalOllamaModel,
   getLlmUserSettings,
   importGgufToOllama,
   listCloudModels,
@@ -13,6 +14,7 @@ import {
   probeCloudLlm,
   saveLlmUserSettings,
   scanLocalModelFiles,
+  setGlobalOllamaModel,
 } from '@oclive/shared/api/llmSettings'
 import { useAppToast } from '@oclive/shared/composables/useAppToast'
 import {
@@ -37,6 +39,8 @@ const probing = ref(false)
 const cloudModelsLoading = ref(false)
 const modelsLoading = ref(false)
 const importing = ref(false)
+const savingGlobal = ref(false)
+const globalDefaultModel = ref('')
 const settings = ref<LlmUserSettings | null>(null)
 const ollamaModels = ref<string[]>([])
 const folderModelFiles = ref<LocalModelFile[]>([])
@@ -50,6 +54,38 @@ const remoteToken = ref('')
 const remoteModel = ref('')
 const cloudModels = ref<string[]>([])
 const cloudModelHistory = ref<string[]>(getCloudModelHistory())
+
+function isUsableOllamaModelId(model: string | null | undefined): boolean {
+  const t = model?.trim() ?? ''
+  if (!t || t.startsWith('file:'))
+    return false
+  if (t.includes('\\'))
+    return false
+  if (/^[a-zA-Z]:/.test(t))
+    return false
+  if (t.startsWith('/') || t.startsWith('\\\\'))
+    return false
+  return true
+}
+
+function resolveLocalModelSelection(s: LlmUserSettings): string {
+  const session = s.sessionOllamaModel?.trim()
+  if (session && isUsableOllamaModelId(session)) {
+    if (folderModelFiles.value.some(f => f.path === session))
+      return `file:${session}`
+    return session
+  }
+  const global = globalDefaultModel.value.trim()
+  if (global && isUsableOllamaModelId(global))
+    return global
+  const effective = s.effectiveModel?.trim()
+  if (effective && isUsableOllamaModelId(effective))
+    return effective
+  const pack = s.packOllamaModel?.trim()
+  if (pack && isUsableOllamaModelId(pack))
+    return pack
+  return ''
+}
 
 const localModelSelectOptions = computed(() => {
   const ollama = ollamaModels.value.map(id => ({
@@ -82,9 +118,41 @@ const effectiveModel = computed(
   () => settings.value?.effectiveModel?.trim() || roleStore.roleInfo.effectiveOllamaModel?.trim() || '',
 )
 
+async function loadGlobalDefaultModel(): Promise<void> {
+  try {
+    const g = await getGlobalOllamaModel()
+    globalDefaultModel.value = g.model?.trim() || ''
+  }
+  catch (e) {
+    showToast('error', e instanceof Error ? e.message : String(e))
+  }
+}
+
+async function saveGlobalDefaultModel(): Promise<void> {
+  const model = globalDefaultModel.value.trim()
+  if (!model) {
+    showToast('error', t('modelManager.globalDefaultModelNeedModel'))
+    return
+  }
+  savingGlobal.value = true
+  try {
+    const g = await setGlobalOllamaModel(model, roleStore.currentRoleId)
+    globalDefaultModel.value = g.model
+    await roleStore.loadRoleInfo()
+    showToast('success', t('modelManager.globalDefaultModelSaveOk'))
+  }
+  catch (e) {
+    showToast('error', e instanceof Error ? e.message : String(e))
+  }
+  finally {
+    savingGlobal.value = false
+  }
+}
+
 async function loadSettings(): Promise<void> {
   loading.value = true
   try {
+    await loadGlobalDefaultModel()
     const s = await getLlmUserSettings(roleStore.currentRoleId)
     settings.value = s
     providerTab.value = s.provider === 'cloud' ? 'cloud' : 'local'
@@ -95,13 +163,7 @@ async function loadSettings(): Promise<void> {
     remoteModel.value = s.remoteModel || s.sessionOllamaModel || ''
     remoteToken.value = ''
 
-    const session = s.sessionOllamaModel?.trim()
-    if (session && folderModelFiles.value.some(f => f.path === session)) {
-      selectedLocalModel.value = `file:${session}`
-    }
-    else {
-      selectedLocalModel.value = session || s.packOllamaModel?.trim() || s.effectiveModel || ''
-    }
+    selectedLocalModel.value = resolveLocalModelSelection(s)
 
     if (providerTab.value === 'local') {
       await refreshOllamaModels()
@@ -153,7 +215,12 @@ async function refreshOllamaModels(): Promise<void> {
   try {
     ollamaModels.value = await listOllamaModels(ollamaBaseUrl.value)
     const cur = selectedLocalModel.value
-    if (cur && !cur.startsWith('file:') && !ollamaModels.value.includes(cur)) {
+    if (
+      cur
+      && !cur.startsWith('file:')
+      && isUsableOllamaModelId(cur)
+      && !ollamaModels.value.includes(cur)
+    ) {
       ollamaModels.value = [cur, ...ollamaModels.value]
     }
   }
@@ -177,7 +244,9 @@ async function pickModelsFolder(): Promise<void> {
   localModelsDir.value = picked
   folderModelFiles.value = await scanLocalModelFiles(picked)
   if (folderModelFiles.value.length > 0 && !selectedLocalModel.value) {
-    selectedLocalModel.value = `file:${folderModelFiles.value[0].path}`
+    const first = folderModelFiles.value[0]
+    if (first)
+      selectedLocalModel.value = `file:${first.path}`
   }
 }
 
@@ -342,6 +411,7 @@ watch(
   () => roleStore.currentRoleId,
   () => {
     void loadSettings()
+    void refreshOllamaModels()
   },
   { immediate: true },
 )
@@ -358,6 +428,54 @@ watch(
     </p>
 
     <template v-else>
+      <section class="mm-panel mm-global-default">
+        <h3 class="mm-h3">
+          {{ t("modelManager.globalDefaultModelLabel") }}
+        </h3>
+        <p class="mm-muted mm-small">
+          {{ t("modelManager.globalDefaultModelLead") }}
+        </p>
+        <label class="mm-field">
+          <span>{{ t("modelManager.globalDefaultModelLabel") }}</span>
+          <select
+            v-model="globalDefaultModel"
+            class="mm-select"
+            :disabled="modelsLoading || savingGlobal"
+          >
+            <option v-if="!globalDefaultModel && ollamaModels.length === 0" value="">
+              {{ t("modelManager.noLocalModels") }}
+            </option>
+            <option v-for="m in ollamaModels" :key="`global-${m}`" :value="m">
+              {{ m }}
+            </option>
+            <option
+              v-if="globalDefaultModel && !ollamaModels.includes(globalDefaultModel)"
+              :value="globalDefaultModel"
+            >
+              {{ globalDefaultModel }}
+            </option>
+          </select>
+        </label>
+        <div class="mm-row-actions">
+          <button
+            type="button"
+            class="mm-btn mm-btn-primary"
+            :disabled="savingGlobal || !globalDefaultModel.trim()"
+            @click="saveGlobalDefaultModel"
+          >
+            {{ savingGlobal ? t("modelManager.globalDefaultModelSaving") : t("modelManager.globalDefaultModelSave") }}
+          </button>
+          <button
+            type="button"
+            class="mm-btn"
+            :disabled="modelsLoading || savingGlobal"
+            @click="refreshOllamaModels"
+          >
+            {{ modelsLoading ? t("modelManager.refreshingModels") : t("modelManager.refreshModels") }}
+          </button>
+        </div>
+      </section>
+
       <div class="mm-effective" role="status">
         <span class="mm-effective-label">{{ t("modelManager.effectiveModelLabel") }}</span>
         <code class="mm-mono">{{ effectiveModel || t("modelManager.effectiveModelEmpty") }}</code>

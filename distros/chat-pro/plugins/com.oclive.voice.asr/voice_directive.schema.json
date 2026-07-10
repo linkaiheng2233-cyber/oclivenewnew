@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "voice_directive v1",
+  "type": "object",
+  "required": ["schema_version", "emotion_tag", "speed", "energy", "emo_text", "synth_profile"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "emotion_tag": { "type": "string" },
+    "speed": { "type": "number", "minimum": 0.5, "maximum": 2.0 },
+    "energy": { "type": "string", "enum": ["soft", "normal", "strong"] },
+    "emo_text": { "type": "string" },
+    "synth_profile": { "type": "string" },
+    "ref_audio": { "type": "string" },
+    "ref_text": { "type": "string" }
+  },
+  "additionalProperties": false
+}

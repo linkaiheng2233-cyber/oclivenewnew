@@ -32,6 +32,17 @@ pub struct SendMessageRequest {
     pub include_raw_reply: Option<bool>,
 }
 
+/// UI-only affect metrics (simulation values; must not drive PromptBuilder mechanics).
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct DisplayMetricsDto {
+    /// Favor score 0–100.
+    pub favor: f64,
+    /// Relation stage label (e.g. Stranger / Friend).
+    pub relation_summary: String,
+    /// Seven personality dimensions (stubbornness … warmth).
+    pub traits: Vec<f64>,
+}
+
 /// Seven-dimensional emotion snapshot returned to the UI.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct EmotionDto {
@@ -67,7 +78,11 @@ pub struct SendMessageResponse {
     pub schema: u32,
     /// Co-present / remote-presence stub / remote inner voice.
     pub presence_mode: PresenceMode,
+    /// UI-only affect snapshot (favor / traits / relation stage); simulation still runs in kernel.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub display_metrics: Option<DisplayMetricsDto>,
     /// Relation state after this turn (`role_runtime.relation_state`).
+    #[deprecated(note = "use display_metrics.relation_summary")]
     pub relation_state: String,
     pub reply: String,
     /// User-input emotion analysis (seven dimensions); for debugging or advanced UI display.
@@ -83,6 +98,7 @@ pub struct SendMessageResponse {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub performance_directive: Option<super::visual_presentation_config::PerformanceDirective>,
     pub favorability_delta: f32,
+    #[deprecated(note = "use display_metrics.favor")]
     pub favorability_current: f32,
     pub events: Vec<DetectedEventDto>,
     pub scene_id: String,
@@ -122,6 +138,9 @@ pub struct SendMessageResponse {
     /// Pre–post-processor LLM text; only when `include_raw_reply` was requested and text changed.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub raw_reply: Option<String>,
+    /// Ollama `prompt_eval_duration` (ms) when `OCLIVE_BENCH_TELEMETRY=1` and Deep prefix-cache path.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub llm_prompt_eval_ms: Option<u64>,
 }
 
 // ----- WEEK3-004: role / memory / event queries -----
@@ -192,8 +211,13 @@ pub struct RoleData {
     pub version: String,
     pub author: String,
     pub description: String,
+    #[deprecated(note = "use display_metrics.traits")]
     pub personality_vector: Vec<f64>,
+    #[deprecated(note = "use display_metrics.favor")]
     pub current_favorability: f64,
+    /// UI-only affect snapshot (favor / traits / relation stage).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub display_metrics: Option<DisplayMetricsDto>,
     /// Placeholder; persisted bot emotion deferred to a later milestone.
     pub current_emotion: String,
     pub memory_count: i32,
@@ -203,6 +227,7 @@ pub struct RoleData {
     /// Manifest default relation key.
     pub default_relation: String,
     /// Relation state (favorability-driven stage, e.g. Stranger / Friend).
+    #[deprecated(note = "use display_metrics.relation_summary")]
     pub relation_state: String,
     /// Current runtime relation (resolved manifest key).
     pub current_user_relation: String,
@@ -315,9 +340,14 @@ pub struct RoleInfo {
     pub version: String,
     pub author: String,
     pub description: String,
+    #[deprecated(note = "use display_metrics.favor")]
     pub current_favorability: f64,
     pub current_emotion: String,
+    #[deprecated(note = "use display_metrics.traits")]
     pub personality_vector: Vec<f64>,
+    /// UI-only affect snapshot (favor / traits / relation stage).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub display_metrics: Option<DisplayMetricsDto>,
     /// `evolution.personality_source`：`vector` | `profile`
     #[serde(default)]
     pub personality_source: PersonalitySource,
@@ -337,6 +367,7 @@ pub struct RoleInfo {
     /// Whether the user selected "default identity" (follows manifest `default_relation`); when true the dropdown should show `OCLIVE_DEFAULT_RELATION_SENTINEL`.
     pub use_manifest_default: bool,
     /// Relation state (`role_runtime.relation_state`).
+    #[deprecated(note = "use display_metrics.relation_summary")]
     pub relation_state: String,
     /// Remote inner voice toggle.
     pub remote_life_enabled: bool,
@@ -520,6 +551,14 @@ pub struct SetSessionPluginBackendRequest {
 /// Query runtime snapshot; `session_id` same semantics as the same-named field in `SendMessageRequest` (multi-path trial chat, etc.).
 #[derive(Debug, Clone, Deserialize)]
 pub struct GetRoleInfoRequest {
+    pub role_id: String,
+    #[serde(default)]
+    pub session_id: Option<String>,
+}
+
+/// GET-only affect display snapshot (`get_display_metrics` / HTTP `/display_metrics`).
+#[derive(Debug, Clone, Deserialize)]
+pub struct GetDisplayMetricsRequest {
     pub role_id: String,
     #[serde(default)]
     pub session_id: Option<String>,

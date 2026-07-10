@@ -1,0 +1,13 @@
+# CosyVoice2 voice expansion — install pointer (not a full dependency lockfile).
+#
+# SSOT for inference pins:
+#   pip install -r requirements-cosyvoice-inference.txt
+#
+# One-time setup (see plugin models/README.md):
+#   py -3.12 -m venv .venv-cosyvoice
+#   clone FunAudioLLM/CosyVoice + Matcha-TTS submodule
+#   write .venv-cosyvoice/Lib/site-packages/oclive_cosyvoice_paths.pth
+#
+# Model weights: %APPDATA%/OCLive/models/tts/cosyvoice2-0.5b/
+
+-r requirements-cosyvoice-inference.txt

@@ -28,6 +28,16 @@
 
 → 官方示例：`distros/chat-pro/plugins/com.oclive.theater_director_official/`
 
+### 4. 要把麦克风语音转成文字再聊天（不进六槽、不进 `process_message` 钩子）？
+
+→ `provides: voice.asr` · RPC `voice.probe` / `voice.transcribe` / `voice.import_model` / **`voice.speak`**
+
+→ UI：`ui_slots` → **`chat_toolbar`**（按住说话）+ **`settings.panel`**（模型目录 / 导入 / `auto_tts`）
+
+→ 文本：`com.oclive.voice.asr:submit` 事件 → 宿主 `send_message` 或 `chat:set_input_draft`（`mode: fill`）（见 [`voiceAsrEvents.ts`](../../distros/shared/src/lib/voiceAsrEvents.ts)）
+
+→ 官方示例：[`distros/chat-pro/plugins/com.oclive.voice.asr/`](../../distros/chat-pro/plugins/com.oclive.voice.asr/) · HTTP 烟测 [`examples/voice-loop-minimal/`](../../examples/voice-loop-minimal/)
+
 ## 附录（非六槽、非上述独立通道）
 
 | 能力 | 放置位置 | 说明 |

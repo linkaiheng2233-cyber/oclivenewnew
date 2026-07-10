@@ -1,5 +1,7 @@
 # A.I.Live Studio User Guide
 
+[中文](../../creator-docs/studio/USER_GUIDE.md)
+
 **A.I.Live Studio** (repository **`oclive-studio`**, codename unchanged) combines the former launcher and pack editor: **Launch mode** and **Create mode** in one app, linked to the **oclivenewnew** runtime via a shared **roles root** on disk.
 
 ## Install and bundled zip

@@ -99,6 +99,7 @@ pub struct BlueprintV2LoadResult {
     pub groups: BTreeMap<String, SlotGroupEntry>,
     pub interaction_mode: Option<String>,
     pub featured: bool,
+    pub deep_capsule_enabled: bool,
     pub preset_order: u32,
     pub remote_presence: Option<RemotePresenceConfig>,
     pub autonomous_scene: Option<AutonomousSceneConfig>,
@@ -163,6 +164,9 @@ pub struct BlueprintMeta {
     /// Official preset gallery: show in first-run picker when `true`.
     #[serde(default)]
     pub featured: bool,
+    /// When true, Small+Deep may use `prompts/deep_capsule.txt` (Wave D).
+    #[serde(default)]
+    pub deep_capsule_enabled: bool,
     /// Sort order in preset gallery (lower first); default 999.
     #[serde(default = "default_preset_order")]
     pub preset_order: u32,
@@ -487,6 +491,7 @@ fn blueprint_v2_file_to_load_result(bp: &BlueprintV2File) -> BlueprintV2LoadResu
         groups: bp.groups.clone(),
         interaction_mode: bp.meta.interaction_mode.clone(),
         featured: bp.meta.featured,
+        deep_capsule_enabled: bp.meta.deep_capsule_enabled,
         preset_order: bp.meta.preset_order,
         remote_presence: bp.meta.remote_presence.clone(),
         autonomous_scene: bp.meta.autonomous_scene.clone(),

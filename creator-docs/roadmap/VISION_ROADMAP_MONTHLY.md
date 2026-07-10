@@ -15,6 +15,8 @@
 | 角色即工作流 | 每个角色包是一套可声明的配置 + 可选后端 | manifest 扩展、`min_runtime`、后端枚举 |
 | 记忆 / 情感可换 | 七维等只是**当前默认模块**，非平台上限 | Memory/Emotion 门面、第二套实现、远期侧车/WASM |
 | **灵魂权重层** | 口癖、节奏、直播态等可沉淀为 **LoRA/SFT adapter**，与 prompt / 记忆并列；运行时由 **专家模型设施子模块** 按条件切换（`slot.lora.apply`），而非再做一个封闭「性格引擎」 | 微调工坊（独立创作者工具）、角色包 adapter 卫星文件、`expert_routing.json`、directory 推理插件 |
+| **TTFT · 双档思考** | 闲聊 **Fast**（规则 event · 裁剪上下文）保首字；高价值轮 **Deep** 保质量；Deep 侧用 **离线 persona capsule + 稳定前缀 KV 延续** 压 prefill | Turn Thinking · `handoff/TTFT_BENCHMARK.md` · `handoff/DEEP_PROMPT_DISTILLATION.md` |
+| **具身互动 · 性格驱动的「手脚」** | 角色不只会说：按人设 **被动调工具** 与 **idle 自发动作**；沙盒 playroom + 用户授权 + 频率/撤销策略；聊天仍走 co-present | 第 6 槽 agent/MCP · 拟 **独立通道** 行为导演 · [APPLICATION_SCENARIOS.md](APPLICATION_SCENARIOS.md) **S12** |
 
 ---
 
@@ -107,6 +109,20 @@
 
 ## 第 7 月及以后（ backlog，按需排）
 
+### TTFT 与 Deep 精炼（Wave A–D · 2026-06 起）
+
+**已交付（Wave A–E）**：发行版 `event_impact_llm` · Turn Thinking Auto/Fast/Deep · co-present Fast 裁剪 · `scripts/measure-ttft.mjs` · Chat Pro co-present **p50 ~243ms**（bench profile `desktop-latency`，见 [`handoff/TTFT_BENCHMARK.md`](../../handoff/TTFT_BENCHMARK.md)）· **Wave C** 主 UI `/chat/stream` · **Wave D** Small+Deep **`prompts/deep_capsule.txt`** · **Wave E** `fast_persistence = strong_only`（RFC [`RFC_TURN_THINKING_PERSISTENCE.md`](../rfc/RFC_TURN_THINKING_PERSISTENCE.md)）。
+
+**第 7 月+ backlog（Wave D-T3）**：
+
+| Wave | 目标 | 说明 |
+|------|------|------|
+| **D-T3 / D+** | **上下文延续（Large + KV）** | Prompt 拆 **稳定前缀 / 可变后缀**；**Large 模型全文 + KV 延续** — 待 34B+ 默认用户或 bench 需求 |
+
+**架构归类 SSOT**：规则 event = **第 3 模块** optional 子路径 + **HostProfile** 开关；Turn Thinking = **编排行无编号设施**；capsule = **角色包卫星 + 第 4 模块组装分支**。详见 **[`handoff/DEEP_PROMPT_DISTILLATION.md`](../../handoff/DEEP_PROMPT_DISTILLATION.md)**。
+
+**纪律**：蒸馏 **仅离线/包内**；不新增 `process_message` LLM 压缩 stage；`KERNEL_DIALOGUE_GUARDRAILS` 不可被 capsule 替换。
+
 | 方向 | 说明 |
 |------|------|
 | WASM 插件 | 在进程插件稳定后，对计算型扩展做沙箱化。 |
@@ -144,7 +160,33 @@
 - **`expert_routing` / `dual_core` 产品冻结期内**：仅推进 T0 契约 + T1 工坊原型（可选 feature 分支），**不接 Stable 主链**；解冻条件见 [TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md) §冻结决定。
 - **Theater v0 陌生人测试** 完成前，不把微调工坊标为 P0 阻塞项；与 [RECURRING_OPTIMIZATION_PLAYBOOK.md](../../handoff/RECURRING_OPTIMIZATION_PLAYBOOK.md) §9 元纪律一致——先让样板「发光」，再扩创作者楔子。
 
-**体验向细化**见 [BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md](BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md) §五；场景矩阵见 [APPLICATION_SCENARIOS.md](APPLICATION_SCENARIOS.md) **S11**。
+**体验向细化**见 [BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md](BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md) §五–§六；场景矩阵见 [APPLICATION_SCENARIOS.md](APPLICATION_SCENARIOS.md) **S11** · **S12**。
+
+### 具身互动 · 性格驱动的「手脚」（Playroom · 2026-06 起 · backlog）
+
+**定位**：让角色 **长出手脚**——在宿主上执行与性格一致的小动作（如高好奇心「小孩」在沙盒里建/删文件夹），同时 **共在聊天** 仍是 mumu，不被整包通用 Agent 短路。
+
+**两种模式（均须人格约束，触发不同）**：
+
+| 模式 | 触发 | 典型能力 | 现状 |
+|------|------|----------|------|
+| **被动** | 用户消息（「帮我在小房间里建个文件夹」） | 第 6 槽 **agent** + **MCP** 工具；`AgentRoleConstraints` 已带七维/关系/场景 | 骨架已有；Chat Pro 常 `skip_agent`；须 **playroom 沙盒** 工具契约 |
+| **自发** | idle、虚拟时间、用户开启「允许自主探索」 | **行为导演**（拟独立通道，不进六槽主链）→ LLM 选意图 → 沙盒执行 → 记忆/UI 反馈 | **未产品化**；区别于 `autonomous_scene`（仅虚拟位移） |
+
+**分阶段交付（P1→P3，按需排期）**：
+
+| 阶段 | 交付物 | 验收 |
+|------|--------|------|
+| **P1 · 被动手脚** | playroom 目录 + 宿主 MCP（`mkdir` / `list` / 限频 `delete`）；用户显式请求时 agent 可调用；可选 UI 展示「角色小房间」 | 固定用例：授权后用户一句话可在 playroom 建文件夹；**不可**写用户真实桌面 |
+| **P2 · 半主动** | 行为导演 + idle 调度；包级或七维策略（好奇心高 → 探索型动作）；通知 + 写入长期记忆；设置项「允许自主探索 playroom」 | idle 触发可观测沙盒动作 + in-character 反馈；可一键撤销/清空 playroom |
+| **P3 ·  richer** | VS Code 等发行版：**虚拟/沙盒** 工作区互动（非真删仓库）；可选外部执行器（OpenClaw/Hermes 等）**仅**在 playroom 工具集内多步探索 | 与渗透插件模型对齐；外部引擎不接管 `process_message` |
+
+**纪律**：
+
+- **聊天**走 co-present；**动手**走 agent 或独立通道，失败不拖垮主链。
+- 破坏性动作 **默认 playroom**；`high_risk_grants` 与 [`AGENT_REMOTE_PROTOCOL.md`](../plugin-and-architecture/AGENT_REMOTE_PROTOCOL.md) 边界不变。
+- 不把 OpenClaw/Hermes **整包**塞进 `plugin_backends.agent` 当默认聊天大脑；至多作 P3 沙盒内 skill 执行器。
+- 模块归类 SSOT：agent = **第 6 槽**；行为导演 = **独立通道**（见 [`handoff/MODULE_MAP_AND_HANDOFF.md`](../../handoff/MODULE_MAP_AND_HANDOFF.md) §11）；T0 契约 RFC **待开**。
 
 **补充（体验向 backlog）**：编写器内试聊、启动器智能依赖、角色/插件市场与愿景对照的合并清单见 **[BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md](BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md)**（与本文并行维护，供排期引用）。
 
@@ -184,4 +226,6 @@
 
 *本文档随愿景迭代更新；重大方向变更时请改日期与版本说明。*
 
-*2026-06-15：新增愿景支柱「灵魂权重层」与「三发行版后 · 微调工坊」专节（T0–T3）。*
+*2026-06-15：新增愿景支柱「灵魂权重层」与「三发行版后 · 微调工坊」专节（T0–T3）。*  
+*2026-06-25：新增愿景支柱「TTFT · 双档思考」与 §Wave A–D（Deep persona capsule · 前缀 KV 延续）。*  
+*2026-06-26：新增愿景支柱「具身互动 · 性格驱动的手脚」与 §Playroom P1–P3 backlog。*

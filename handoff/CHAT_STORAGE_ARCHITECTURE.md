@@ -184,6 +184,10 @@ Under `{root}/{role_id}/{scene_id}/{created_at_compact}_{session_id_prefix}.json
 - `distros/shared/src/api/chatStorage.ts` — all invoke wrappers
 - `distros/shared/src/stores/chatStore.ts` — loads from `fetch_chat_messages`
 
+### Scene bucket ↔ `uiStore.sceneId` 不变量（回归守门）
+
+消息按 **role × scene** 分桶（`messageMap[roleId][sceneId]`）。**`hydrateFromStorage` 不再预加载桶**；冷启动/切角色统一走 `chatStore.bootstrapChatForRole`：`refreshRoleInfo` 后按互动模式解析主场景，`loadRoleSceneMessagesWithSceneFallback` 在主场景为空时依次尝试「后端 `get_chat_storage_stats` 有会话的场景 → 角色包 `scenes` → `home`/`default` → IDB 全索引」；`await` 拉取后 `beginNewChatSessionOnRestart` 折叠历史。无 SQLite session 时 `loadRoleSceneMessages` 仍读 IDB 桶。`useMainShell` 的 `interactionMode` watch **不得** `immediate`。守门：`chatStoreScene.test.ts`、`chatStoreLoad.test.ts`。
+
 ## Code map
 
 - `distros/desktop-tauri/migrations/027_chat_storage.sql`

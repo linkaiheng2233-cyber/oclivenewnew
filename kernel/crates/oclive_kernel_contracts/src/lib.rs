@@ -53,7 +53,7 @@ pub use agent_provider::AgentProvider;
 pub use complex_emotion::ComplexEmotionProvider;
 pub use event_estimator::EventEstimator;
 pub use function_calling_parser::FunctionCallingParserPort;
-pub use llm::{LlmClient, LlmTokenSink};
+pub use llm::{LlmClient, LlmGenerateOpts, LlmGenerateOutcome, LlmTokenSink};
 pub use local_plugin_bridge::LocalPluginBridge;
 pub use local_plugin_registry_port::LocalPluginRegistryPort;
 pub use mcp_bridge::McpBridgePort;

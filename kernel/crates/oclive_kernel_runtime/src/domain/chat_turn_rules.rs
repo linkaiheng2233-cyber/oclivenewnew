@@ -192,9 +192,105 @@ pub fn strip_hallucination_tokens(reply: &str) -> String {
     lines.join("\n").trim().to_string()
 }
 
+const CARE_PACKAGE_KEYWORDS: &[&str] = &[
+    "出门",
+    "晒太阳",
+    "作业",
+    "早睡",
+    "熬夜",
+    "热水",
+    "暖手",
+    "喝水",
+    "记得",
+    "注意安全",
+    "早点睡",
+    "写完",
+    "多穿",
+];
+
+fn split_sentences(text: &str) -> Vec<String> {
+    let mut sentences = Vec::new();
+    let mut current = String::new();
+    for ch in text.chars() {
+        current.push(ch);
+        if matches!(ch, '。' | '！' | '？' | '!' | '?') {
+            let trimmed = current.trim().to_string();
+            if !trimmed.is_empty() {
+                sentences.push(trimmed);
+            }
+            current.clear();
+        }
+    }
+    let tail = current.trim();
+    if !tail.is_empty() {
+        sentences.push(tail.to_string());
+    }
+    sentences
+}
+
+fn sentence_repeats_care_template(sentence: &str, previous: &str) -> bool {
+    count_matches(sentence, CARE_PACKAGE_KEYWORDS) >= 2
+        && CARE_PACKAGE_KEYWORDS
+            .iter()
+            .filter(|w| previous.contains(**w) && sentence.contains(**w))
+            .count()
+            >= 2
+}
+
+/// Trims care-package template sentences when the model repeats the previous turn's concern list.
+#[must_use]
+pub fn trim_template_repeat_reply(previous: &str, reply: &str) -> String {
+    let previous = previous.trim();
+    let reply = reply.trim();
+    if previous.is_empty() || reply.is_empty() {
+        return reply.to_string();
+    }
+    if count_matches(previous, CARE_PACKAGE_KEYWORDS) < 2
+        || count_matches(reply, CARE_PACKAGE_KEYWORDS) < 2
+    {
+        return reply.to_string();
+    }
+    let shared = CARE_PACKAGE_KEYWORDS
+        .iter()
+        .filter(|w| previous.contains(**w) && reply.contains(**w))
+        .count();
+    if shared < 2 {
+        return reply.to_string();
+    }
+
+    let sentences = split_sentences(reply);
+    if sentences.is_empty() {
+        return reply.to_string();
+    }
+    if sentences.len() == 1 {
+        if sentence_repeats_care_template(&sentences[0], previous) {
+            return String::new();
+        }
+        return sentences[0].clone();
+    }
+
+    let mut kept = Vec::new();
+    for (idx, sentence) in sentences.iter().enumerate() {
+        if idx == 0 || !sentence_repeats_care_template(sentence, previous) {
+            kept.push(sentence.as_str());
+        }
+    }
+    let trimmed = kept.join("");
+    if trimmed.trim().is_empty() {
+        sentences
+            .into_iter()
+            .take(2)
+            .filter(|s| count_matches(s, CARE_PACKAGE_KEYWORDS) < 2)
+            .collect::<Vec<_>>()
+            .join("")
+    } else {
+        trimmed
+    }
+}
+
 #[cfg(test)]
 mod hallucination_tests {
-    use super::strip_hallucination_tokens;
+    use super::{strip_hallucination_tokens, trim_template_repeat_reply};
 
     #[test]
     fn strip_removes_uppyuppy_variants() {
@@ -202,5 +298,22 @@ mod hallucination_tests {
         assert!(!s.to_lowercase().contains("uppyuppy"));
         assert!(s.contains("早安"));
         assert!(s.contains("蛋糕"));
+    }
+
+    #[test]
+    fn trim_removes_care_package_repeat_sentences() {
+        let prev = "记得出门晒晒太阳呀，作业写完没？早点睡别熬夜，多喝热水暖暖手。";
+        let reply = "在呢。记得出门晒晒太阳，作业写完没？早点睡，多喝热水哦。";
+        let out = trim_template_repeat_reply(prev, reply);
+        assert!(out.contains("在呢"));
+        assert!(!out.contains("作业写完没"));
+        assert!(!out.contains("多喝热水"));
+    }
+
+    #[test]
+    fn trim_skips_when_no_template_overlap() {
+        let prev = "今天天气不错。";
+        let reply = "嗯，我也觉得。";
+        assert_eq!(trim_template_repeat_reply(prev, reply), "嗯，我也觉得。");
     }
 }

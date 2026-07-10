@@ -68,7 +68,6 @@
       }
     },
     "name": "诗梦",
-    "ollama_model": "qwen2.5:7b",
     "personality": [
       0.8500000238418579,
       0.25,

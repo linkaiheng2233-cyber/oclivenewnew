@@ -2,27 +2,67 @@
 
 [中文总索引](../creator-docs/getting-started/DOCUMENTATION_INDEX.md)
 
-This tree mirrors **`creator-docs/`** with hand-maintained English pages. For topics without an English file yet, use the Chinese hub or follow links inside each page.
+This tree mirrors **`creator-docs/`** with hand-maintained English pages. **Normative contracts remain Chinese SSOT** — English pages link back with **`[中文](…)`** on every mirrored topic.
+
+## Mirror policy
+
+| Principle | Detail |
+|-----------|--------|
+| **SSOT** | Simplified Chinese under `creator-docs/` (and `human-docs/` for the human ladder) |
+| **English goal** | Full mirror by directory, phased — not a permanent “minimal subset” |
+| **Page types** | **Full mirror** · **Summary + ZH link** · **Index-only (pending)** — see [coverage matrix](#mirror-coverage-matrix) |
+| **Fallback** | No English file → open the linked Chinese page; do not treat English README tables as normative if ZH differs |
+| **AI agents** | Use [handoff/AI_READING_INDEX.md](../handoff/AI_READING_INDEX.md) + [AGENTS.md](../AGENTS.md); this tree is for human readers and integrators |
 
 ## Navigate by role
 
 | Who you are | Start here |
 |-------------|------------|
-| **End users** (desktop app only; no pack/plugin authoring) | [getting-started/USER_MANUAL.md](getting-started/USER_MANUAL.md) (Chinese: [../creator-docs/getting-started/USER_MANUAL.md](../creator-docs/getting-started/USER_MANUAL.md)) |
-| **Role pack authors** | [role-pack/CREATOR_LEARNING_PATH.md](role-pack/CREATOR_LEARNING_PATH.md) (Chinese: [../creator-docs/role-pack/CREATOR_LEARNING_PATH.md](../creator-docs/role-pack/CREATOR_LEARNING_PATH.md)) · format [role-pack/ROLE_PACK_SPEC.md](role-pack/ROLE_PACK_SPEC.md) |
-| **Plugin authors** | [plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md](plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md) (Chinese: [../creator-docs/plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md](../creator-docs/plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)) · contract [plugin-and-architecture/PLUGIN_V1.md](plugin-and-architecture/PLUGIN_V1.md) |
-| **Kernel / hardware integrators** | [getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md](getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md) (Chinese: [../creator-docs/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md](../creator-docs/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md)) · diagram [getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md](getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md) |
+| **End users** (desktop app only; no pack/plugin authoring) | [getting-started/USER_MANUAL.md](getting-started/USER_MANUAL.md) ([中文](../creator-docs/getting-started/USER_MANUAL.md)) |
+| **Role pack authors** | [role-pack/CREATOR_LEARNING_PATH.md](role-pack/CREATOR_LEARNING_PATH.md) · [role-pack/ROLE_PACK_SPEC.md](role-pack/ROLE_PACK_SPEC.md) |
+| **Plugin authors** | [plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md](plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md) · [plugin-and-architecture/PLUGIN_V1.md](plugin-and-architecture/PLUGIN_V1.md) · [plugin-and-architecture/PLUGIN_PLACEMENT_GUIDE.md](plugin-and-architecture/PLUGIN_PLACEMENT_GUIDE.md) |
+| **Kernel / hardware integrators** | [getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md](getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md) · [kernel/DISTRO_CAPABILITY_PROFILE.md](kernel/DISTRO_CAPABILITY_PROFILE.md) · [kernel/DISTRO_KERNEL_LIFECYCLE.md](kernel/DISTRO_KERNEL_LIFECYCLE.md) |
 | **Maintainers** (breaking changes, critical-path handoff) | [../handoff/BREAKING_CHANGE_PROCESS.md](../handoff/BREAKING_CHANGE_PROCESS.md) · [../handoff/BUS_FACTOR_NOTES.md](../handoff/BUS_FACTOR_NOTES.md) |
 
-## Documentation bilingual closure baseline
+## Sync rules
 
-**Source of truth**: Simplified Chinese under **`creator-docs/`** (including all normative wording for contracts and role packs).
+When you change runtime or author-facing contracts (slots, `plugin_backends`, bridge, OOCP, pack schema):
 
-**English “closure” scope (maintained)** — tables below plus [getting-started/DOCUMENTATION_INDEX.md](getting-started/DOCUMENTATION_INDEX.md) quick links: **getting-started** hub pages listed here; **learning paths** ([USER_MANUAL.md](getting-started/USER_MANUAL.md), [CREATOR_LEARNING_PATH.md](role-pack/CREATOR_LEARNING_PATH.md), [PLUGIN_AUTHOR_LEARNING_PATH.md](plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md), [KERNEL_INTEGRATOR_LEARNING_PATH.md](getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md)); **examples** [directory-plugin-llamacpp/README.en.md](../examples/directory-plugin-llamacpp/README.en.md) (LLM slot + llama.cpp); **plugin-and-architecture** (PLUGIN_V1, Remote, directory, bridge, extension points, creator architecture, HOW_TO_REPLACE, LOCAL bridge); **guides/** (configuration paths, mumu acceptance, regression QA); **FAQ**, **COMPATIBILITY**, **LICENSE_POLICY**; **testing/**, **security/**, **cli/**, **rfc/**, **role-pack/** (ROLE_PACK_SPEC, ROLE_PACK_INDEX), **LIGHTWEIGHT_PROFILE**; **handoff** A3 closure summaries ([A3_CLOSURE_SUMMARY.en.md](../handoff/archive/A3_CLOSURE_SUMMARY.en.md) / [A3_CLOSURE_SUMMARY.md](../handoff/archive/A3_CLOSURE_SUMMARY.md)) when touching crash reporting or invoke error UX. Each mirrored page should keep a **`[中文](…)`** link to the matching `creator-docs/` file where one exists.
+1. If an **English mirror exists** for that Chinese file → update it in the **same PR**.
+2. If no mirror yet → update Chinese SSOT + add a CHANGELOG note, or add the English mirror in the same release train.
+3. Update the [coverage matrix](#mirror-coverage-matrix) row when a directory moves from **pending** to **mirrored** or **summary**.
+4. Run **`node scripts/check-doc-mirror.mjs`** (also in `npm run check:rust` and dimension5 CI) before merge.
 
-**Chinese-only for now (expected)** — no standing commitment to full English mirrors unless a release needs them: e.g. **`creator-docs/roadmap/`** vision and ecosystem long reads, **`creator-docs/video-script/`**, deeper **`creator-docs/role-pack/`** beyond the two spec/index pages, and ad-hoc **`creator-docs/testing/`** notes only linked from the EN hub. The EN index may still point at those Chinese files by relative URL; that is intentional.
+**Governance**: module definitions → [MODULE_MAP_AND_HANDOFF.md](../handoff/MODULE_MAP_AND_HANDOFF.md). Doc layer map → [handoff/README.md §文档分责](../handoff/README.md). Human ladder progress → [human-docs/README.md §文档包进度](../human-docs/README.md#文档包进度与-ai-包同步--2026-06-26). AI doc rules G10–G16 → [AI_CHANGE_BOUNDARIES.md](../handoff/AI_CHANGE_BOUNDARIES.md).
 
-**Update discipline (as development continues)** — When you change runtime or author-facing contracts (slots, `plugin_backends`, bridge, OOCP, pack schema), update the **English mirror in the same change-set** when a mirror exists, or add a **CHANGELOG** note that docs were updated Chinese-only. For small copy edits, batching EN sync in the same release is fine.
+---
+
+## Mirror coverage matrix
+
+Last reviewed: **2026-07-10**. Counts are `*.md` files per directory (approximate).
+
+| Directory | ZH files | EN status | Notes |
+|-----------|----------|-----------|-------|
+| `getting-started/` | ~22 | **Mirrored** | Hub + CREATOR_GOLDEN_PATH + learning paths + error codes |
+| `plugin-and-architecture/` | ~12 | **Mirrored** | PLUGIN_V1, market submission, placement, agent remote |
+| `kernel/` | 5 | **Mirrored** | HostProfile, lifecycle, app data, none semantics |
+| `role-pack/` | ~16 | **Mirrored** | Spec + creator deep guides + cross-host + versioning |
+| `testing/` | ~8 | **Mirrored** | OOCP, overview, fuzzing, narrative_hint, L03 |
+| `security/` | 3 | **Mirrored** | KNOWN_VULN, audit scope, supply chain |
+| `guides/` | 3 | **Mirrored** | Configuration, regression QA, mumu checklist |
+| `roadmap/` | ~7 | **Mirrored** | Vision + APPLICATION_SCENARIOS |
+| `rfc/` | ~12 | **Partial** | Full mirror for Monolith/dual-core/Studio; long RFCs → `*_SUMMARY.md` + ZH |
+| `cli/` | 2 | **Mirrored** | CLI guide + settings reference |
+| `storage/` | 1 | **Mirrored** | STORAGE_BACKEND_GUIDE |
+| `legal/` | 1 | **Mirrored** | DISCLAIMER |
+| `studio/` | 1 | **Mirrored** | USER_GUIDE |
+| `development/` | 2 | **Mirrored** | RELEASE_VERSIONING, LIGHTWEIGHT_PROFILE |
+| `dual-core/` | 2 | **Mirrored** | DEVELOPER_GUIDE, METHOD_REGISTRY |
+| `video-script/` | 1 | **Pending** | Chinese-only script (index-only) |
+| `architecture/` | 1 | **Pending** | DESIGN_DECISIONS — link from human-docs-en/08 |
+| Root | 3 | **Mirrored** | FAQ, LICENSE_POLICY, COMPATIBILITY, NAMING_CONVENTIONS |
+
+**Legend**: **Mirrored** = English file per topic (full or intentional summary with ZH link). **Partial** = high-traffic paths done; long-tail creator/RFC pages may be ZH-only. **Pending** = index points to Chinese; mirror not committed yet.
 
 ---
 
@@ -30,13 +70,25 @@ This tree mirrors **`creator-docs/`** with hand-maintained English pages. For to
 
 | Topic | English |
 |-------|---------|
-| Documentation hub (quick links, RFC, reading order) | [getting-started/DOCUMENTATION_INDEX.md](getting-started/DOCUMENTATION_INDEX.md) |
-| **User manual** (install → import pack → chat) | [getting-started/USER_MANUAL.md](getting-started/USER_MANUAL.md) (Chinese: [../creator-docs/getting-started/USER_MANUAL.md](../creator-docs/getting-started/USER_MANUAL.md)) |
-| **Status & goal alignment (one-page hub)** | [getting-started/PROJECT_STATUS_AND_ALIGNMENT.md](getting-started/PROJECT_STATUS_AND_ALIGNMENT.md) |
-| **Current status (version, ships, changelog)** | [getting-started/PROJECT_CURRENT_STATUS.md](getting-started/PROJECT_CURRENT_STATUS.md) |
-| Project overview (repos, commands, checklist) | [getting-started/PROJECT_OVERVIEW.md](getting-started/PROJECT_OVERVIEW.md) |
-| Kernel-centric module diagram (Mermaid + static figure) | [getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md](getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md) |
-| Error codes & triage | [getting-started/ERROR_CODES.md](getting-started/ERROR_CODES.md) · [KERNEL_ERROR_CODE_CONVENTION.md](getting-started/KERNEL_ERROR_CODE_CONVENTION.md) (normative) · A3 closure [EN](../handoff/archive/A3_CLOSURE_SUMMARY.en.md) / [ZH](../handoff/archive/A3_CLOSURE_SUMMARY.md) |
+| Documentation hub | [getting-started/DOCUMENTATION_INDEX.md](getting-started/DOCUMENTATION_INDEX.md) |
+| User manual | [getting-started/USER_MANUAL.md](getting-started/USER_MANUAL.md) |
+| Status & alignment | [getting-started/PROJECT_STATUS_AND_ALIGNMENT.md](getting-started/PROJECT_STATUS_AND_ALIGNMENT.md) |
+| Current status | [getting-started/PROJECT_CURRENT_STATUS.md](getting-started/PROJECT_CURRENT_STATUS.md) |
+| Project overview | [getting-started/PROJECT_OVERVIEW.md](getting-started/PROJECT_OVERVIEW.md) |
+| Kernel-centric diagram | [getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md](getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md) |
+| Error codes | [getting-started/ERROR_CODES.md](getting-started/ERROR_CODES.md) · [KERNEL_ERROR_CODE_CONVENTION.md](getting-started/KERNEL_ERROR_CODE_CONVENTION.md) |
+
+---
+
+## Kernel
+
+| Topic | English |
+|-------|---------|
+| Distro capability profile (`distro.oclive.toml`) | [kernel/DISTRO_CAPABILITY_PROFILE.md](kernel/DISTRO_CAPABILITY_PROFILE.md) |
+| Kernel lifecycle (attach / spawn / replace) | [kernel/DISTRO_KERNEL_LIFECYCLE.md](kernel/DISTRO_KERNEL_LIFECYCLE.md) |
+| Default plugin matrix per distro | [kernel/DISTRO_DEFAULT_PLUGINS.md](kernel/DISTRO_DEFAULT_PLUGINS.md) |
+| Six-slot `none` semantics | [kernel/MODULE_NONE_SEMANTICS.md](kernel/MODULE_NONE_SEMANTICS.md) |
+| Cross-host `OCLIVE_APP_DATA` | [kernel/OCLIVE_APP_DATA.md](kernel/OCLIVE_APP_DATA.md) |
 
 ---
 
@@ -44,10 +96,13 @@ This tree mirrors **`creator-docs/`** with hand-maintained English pages. For to
 
 | Topic | English |
 |-------|---------|
-| Where tests live (main repo vs pack editor) | [testing/OVERVIEW.md](testing/OVERVIEW.md) |
-| OOCP HTTP suite (S0–S12, 13 scenarios; optional S13) | [testing/OOCP_TEST_SUITE.md](testing/OOCP_TEST_SUITE.md) |
-| Test output and contracts | [testing/TEST_OUTPUT_SCHEMA.md](testing/TEST_OUTPUT_SCHEMA.md) |
-| Rust integration tests for swappable backends | [testing/ADAPTING_TEST_PLUGIN.md](testing/ADAPTING_TEST_PLUGIN.md) |
+| Where tests live | [testing/OVERVIEW.md](testing/OVERVIEW.md) |
+| OOCP HTTP suite (S0–S12) | [testing/OOCP_TEST_SUITE.md](testing/OOCP_TEST_SUITE.md) |
+| Test output schema | [testing/TEST_OUTPUT_SCHEMA.md](testing/TEST_OUTPUT_SCHEMA.md) |
+| Swappable backend integration tests | [testing/ADAPTING_TEST_PLUGIN.md](testing/ADAPTING_TEST_PLUGIN.md) |
+| Fuzzing (proptest + cargo-fuzz) | [testing/FUZZING.md](testing/FUZZING.md) |
+| `narrative_hint` contract | [testing/NARRATIVE_HINT_CONTRACT.md](testing/NARRATIVE_HINT_CONTRACT.md) |
+| L03 generation cancel (planned) | [testing/L03_GENERATION_CANCEL.md](testing/L03_GENERATION_CANCEL.md) |
 
 ---
 
@@ -55,8 +110,11 @@ This tree mirrors **`creator-docs/`** with hand-maintained English pages. For to
 
 | Topic | English |
 |-------|---------|
-| On-disk role pack format | [role-pack/ROLE_PACK_SPEC.md](role-pack/ROLE_PACK_SPEC.md) |
+| On-disk format | [role-pack/ROLE_PACK_SPEC.md](role-pack/ROLE_PACK_SPEC.md) |
 | Community index JSON | [role-pack/ROLE_PACK_INDEX.md](role-pack/ROLE_PACK_INDEX.md) |
+| Versioning & compatibility | [role-pack/PACK_VERSIONING.md](role-pack/PACK_VERSIONING.md) |
+| Cross-host memory (L1/L2/L3) | [role-pack/CROSS_HOST_MEMORY.md](role-pack/CROSS_HOST_MEMORY.md) |
+| v1 → v2 migration | [role-pack/V1_TO_V2_MIGRATION.md](role-pack/V1_TO_V2_MIGRATION.md) |
 
 ---
 
@@ -64,26 +122,9 @@ This tree mirrors **`creator-docs/`** with hand-maintained English pages. For to
 
 | Topic | English |
 |-------|---------|
-| Known vulnerabilities (`cargo-audit`) | [security/KNOWN_VULNERABILITIES.md](security/KNOWN_VULNERABILITIES.md) |
-| Audit scope and limitations | [security/SECURITY_AUDIT_SCOPE.md](security/SECURITY_AUDIT_SCOPE.md) |
-
----
-
-## CLI and RFC
-
-| Topic | English |
-|-------|---------|
-| `oclive-cli` user guide | [cli/OCLIVE_CLI_GUIDE.md](cli/OCLIVE_CLI_GUIDE.md) |
-| `settings.json` → `plugin_backends` reference | [cli/SETTINGS_REFERENCE.md](cli/SETTINGS_REFERENCE.md) |
-| Monolith / high-coupling compile mode (RFC) | [rfc/RFC_OCLIVE_MONOLITH_MODE.md](rfc/RFC_OCLIVE_MONOLITH_MODE.md) |
-
----
-
-## Release engineering baseline
-
-| Topic | English |
-|-------|---------|
-| Lightweight profile, `cargo audit`, `cargo-bloat` | [LIGHTWEIGHT_PROFILE.md](LIGHTWEIGHT_PROFILE.md) |
+| Known vulnerabilities | [security/KNOWN_VULNERABILITIES.md](security/KNOWN_VULNERABILITIES.md) |
+| Audit scope | [security/SECURITY_AUDIT_SCOPE.md](security/SECURITY_AUDIT_SCOPE.md) |
+| Supply chain | [security/SUPPLY_CHAIN.md](security/SUPPLY_CHAIN.md) |
 
 ---
 
@@ -91,52 +132,49 @@ This tree mirrors **`creator-docs/`** with hand-maintained English pages. For to
 
 | Topic | English |
 |-------|---------|
-| PLUGIN_V1 — `plugin_backends` contract | [plugin-and-architecture/PLUGIN_V1.md](plugin-and-architecture/PLUGIN_V1.md) |
-| Remote HTTP JSON-RPC (host ↔ sidecar) | [plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md](plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) |
-| Directory plugins (`distros/chat-pro/plugins/`, manifest, shell, invoke) | [plugin-and-architecture/DIRECTORY_PLUGINS.md](plugin-and-architecture/DIRECTORY_PLUGINS.md) |
-| Whole-shell bridge `invoke` reference | [plugin-and-architecture/BRIDGE_API_REFERENCE.md](plugin-and-architecture/BRIDGE_API_REFERENCE.md) |
-| Extension points index (traits → source files) | [plugin-and-architecture/EXTENSION_POINTS.md](plugin-and-architecture/EXTENSION_POINTS.md) |
-| Creator architecture (sidecar vs directory vs fork) | [plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md](plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md) |
-| How to replace modules (builtin / remote / directory) | [plugin-and-architecture/HOW_TO_REPLACE_MODULES.md](plugin-and-architecture/HOW_TO_REPLACE_MODULES.md) |
-| Local plugin bridge (`memory = local`, `_local_plugins`) | [plugin-and-architecture/LOCAL_PLUGIN_BRIDGE_SPEC.md](plugin-and-architecture/LOCAL_PLUGIN_BRIDGE_SPEC.md) |
-| Plugin & pack FAQ | [FAQ.md](FAQ.md) |
-| Pack editor vs host compatibility (`ui.json`) | [COMPATIBILITY.md](COMPATIBILITY.md) |
+| PLUGIN_V1 | [plugin-and-architecture/PLUGIN_V1.md](plugin-and-architecture/PLUGIN_V1.md) |
+| **Placement guide** (decision tree) | [plugin-and-architecture/PLUGIN_PLACEMENT_GUIDE.md](plugin-and-architecture/PLUGIN_PLACEMENT_GUIDE.md) |
+| Remote HTTP JSON-RPC | [plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md](plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) |
+| **Agent remote / directory** | [plugin-and-architecture/AGENT_REMOTE_PROTOCOL.md](plugin-and-architecture/AGENT_REMOTE_PROTOCOL.md) |
+| Directory plugins | [plugin-and-architecture/DIRECTORY_PLUGINS.md](plugin-and-architecture/DIRECTORY_PLUGINS.md) |
+| Bridge `invoke` reference | [plugin-and-architecture/BRIDGE_API_REFERENCE.md](plugin-and-architecture/BRIDGE_API_REFERENCE.md) |
+| Extension points | [plugin-and-architecture/EXTENSION_POINTS.md](plugin-and-architecture/EXTENSION_POINTS.md) |
+| Creator plugin architecture | [plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md](plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md) |
+| Replace modules | [plugin-and-architecture/HOW_TO_REPLACE_MODULES.md](plugin-and-architecture/HOW_TO_REPLACE_MODULES.md) |
+| Local plugin bridge | [plugin-and-architecture/LOCAL_PLUGIN_BRIDGE_SPEC.md](plugin-and-architecture/LOCAL_PLUGIN_BRIDGE_SPEC.md) |
+| FAQ · Compatibility | [FAQ.md](FAQ.md) · [COMPATIBILITY.md](COMPATIBILITY.md) |
 
 ---
 
-## Guides
+## Guides · Legal · CLI · RFC
 
 | Topic | English |
 |-------|---------|
-| Configuration paths (`plugin_state`, `ui.json`, `{app_data}`) | [guides/CONFIGURATION_FILES.md](guides/CONFIGURATION_FILES.md) |
-| mumu UI release checklist (`ui.json` + directory slots) | [`handoff/distros/MUMU_UI_ACCEPTANCE_CHECKLIST.md`](../../handoff/distros/MUMU_UI_ACCEPTANCE_CHECKLIST.md) |
-| Regression: Plugin Manager V2 & Complex Emotion | [guides/REGRESSION_COMPLEX_EMOTION_QA.md](guides/REGRESSION_COMPLEX_EMOTION_QA.md) |
-
----
-
-## Legal & licensing
-
-| Topic | English |
-|-------|---------|
-| Open-source policy (host & plugins) | [LICENSE_POLICY.md](LICENSE_POLICY.md) |
+| Configuration paths | [guides/CONFIGURATION_FILES.md](guides/CONFIGURATION_FILES.md) |
+| Regression QA (complex emotion) | [guides/REGRESSION_COMPLEX_EMOTION_QA.md](guides/REGRESSION_COMPLEX_EMOTION_QA.md) |
+| License policy | [LICENSE_POLICY.md](LICENSE_POLICY.md) |
+| `oclive-cli` | [cli/OCLIVE_CLI_GUIDE.md](cli/OCLIVE_CLI_GUIDE.md) · [cli/SETTINGS_REFERENCE.md](cli/SETTINGS_REFERENCE.md) |
+| Monolith RFC | [rfc/RFC_OCLIVE_MONOLITH_MODE.md](rfc/RFC_OCLIVE_MONOLITH_MODE.md) |
+| Turn Thinking summary | [rfc/RFC_TURN_THINKING_PERSISTENCE_SUMMARY.md](rfc/RFC_TURN_THINKING_PERSISTENCE_SUMMARY.md) |
+| Lightweight profile | [development/LIGHTWEIGHT_PROFILE.md](development/LIGHTWEIGHT_PROFILE.md) |
+| Naming conventions | [NAMING_CONVENTIONS.md](NAMING_CONVENTIONS.md) |
+| Creator golden path | [getting-started/CREATOR_GOLDEN_PATH.md](getting-started/CREATOR_GOLDEN_PATH.md) |
+| Plugin market submission | [plugin-and-architecture/PLUGIN_MARKET_SUBMISSION.md](plugin-and-architecture/PLUGIN_MARKET_SUBMISSION.md) |
+| Dual-core developer guide | [dual-core/DEVELOPER_GUIDE.md](dual-core/DEVELOPER_GUIDE.md) |
+| Release versioning | [development/RELEASE_VERSIONING.md](development/RELEASE_VERSIONING.md) |
 
 ---
 
 ## Full Chinese corpus
 
 - [creator-docs/getting-started/DOCUMENTATION_INDEX.md](../creator-docs/getting-started/DOCUMENTATION_INDEX.md)
+- [human-docs-en/README.md](../human-docs-en/README.md) — human learning ladder (English)
 
 ---
 
 ## Application README
 
 - [README.en.md](../README.en.md) (English) · [README.md](../README.md) (中文)
-
----
-
-## Contributing
-
-- [CONTRIBUTING.en.md](../CONTRIBUTING.en.md) · [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ---
 

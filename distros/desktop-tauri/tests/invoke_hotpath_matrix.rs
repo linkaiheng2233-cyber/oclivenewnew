@@ -9,8 +9,8 @@ mod common;
 use oclive_kernel_host::domain::chat_engine::process_message;
 use oclive_kernel_host::infrastructure::MockLlmClient;
 use oclive_kernel_host::service::{
-    grant_high_risk_capability_impl, list_high_risk_grants_impl, revoke_high_risk_capability_impl,
-    switch_scene_impl, MutateHighRiskGrantRequest,
+    get_display_metrics_impl, grant_high_risk_capability_impl, list_high_risk_grants_impl,
+    revoke_high_risk_capability_impl, switch_scene_impl, MutateHighRiskGrantRequest,
 };
 use oclive_kernel_host::state::AppState;
 use oclive_kernel_types::models::dto::SetSessionSlotOverrideRequest;
@@ -63,6 +63,16 @@ async fn invoke_hotpath_smoke_list_load_info_time_chat_memories_catalog_plugin_h
             .as_ref()
             .is_some_and(|m| m.contains_key("llm")),
         "mumu v2 blueprint should expose slot_registry_pack"
+    );
+
+    // GET-only affect snapshot (read-only); sets radar_deep_pending side effect.
+    let metrics = get_display_metrics_impl(&state, "mumu", None)
+        .await
+        .expect("get_display_metrics");
+    assert_eq!(
+        metrics.traits.len(),
+        7,
+        "display metrics expose 7-dim traits"
     );
 
     let info2 = set_session_slot_override_impl(
@@ -157,7 +167,10 @@ async fn invoke_hotpath_role_info_full_shape() {
     assert_eq!(info.role_id, "mumu");
     assert!(!info.role_name.is_empty());
     assert!(!info.version.is_empty());
-    assert_eq!(info.personality_vector.len(), 7);
+    #[allow(deprecated)]
+    {
+        assert_eq!(info.personality_vector.len(), 7);
+    }
     assert!(!info.scenes.is_empty());
     assert_eq!(info.scenes.len(), info.scene_labels.len());
     assert!(!info.effective_ollama_model.is_empty());

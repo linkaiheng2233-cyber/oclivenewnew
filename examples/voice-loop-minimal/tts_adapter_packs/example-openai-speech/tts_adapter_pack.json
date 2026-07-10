@@ -1,0 +1,10 @@
+{
+  "adapter_id": "example-openai-speech",
+  "label": "Example OpenAI-compatible TTS",
+  "api_style": "openai-speech-v1",
+  "base_url": "http://127.0.0.1:8080",
+  "probe_path": "/health",
+  "synthesize_path": "/v1/audio/speech",
+  "method": "POST",
+  "default_voice": "alloy"
+}

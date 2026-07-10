@@ -1,19 +1,23 @@
 # 06 · 内核学习路径（Day 1–5）
 
+> **最后更新**：2026-06-26  
 > **读者**：准备改 `process_message` / 持久化 / 插件 wiring 的内核贡献者。  
 > **读完能做什么**：按时间盒读完主链；完成第一个 domain 单测 PR 草稿。  
 > **耗时**：约 3–5 个工作日（维护者带教可 1–2 天）。  
 > **下一篇**：[07 常见任务](07_COMMON_TASKS.md)。
 
+> **插件 / 六槽 / 设施作者**：**可跳过本文**，完成 L0–L3 后直接进入 [modules/](modules/README.md) 选对应开工包。
+
 ---
 
-## 内核 PR 前必读 Top 5
+## 内核 PR 前必读 Top 6
 
 1. [kernel/crates/README.md](../kernel/crates/README.md) — 依赖图与改 X 去哪  
-2. [BUS_FACTOR_NOTES.md §0–2](../handoff/BUS_FACTOR_NOTES.md) — `process_message`、`PluginHost`  
-3. [OCLIVE_ARCHITECTURE_OVERVIEW](../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) — 单节「模块三层」  
-4. [NAMING_CONVENTIONS §4.2](../creator-docs/NAMING_CONVENTIONS.md#42-canonical-import-路径)  
-5. [CONTRIBUTING.md §测试要求](../CONTRIBUTING.md#测试要求合并前建议全绿)
+2. [MODULE_MAP_AND_HANDOFF.md](../handoff/MODULE_MAP_AND_HANDOFF.md) — **模块注册表 · 逐槽**（2026-06 起 SSOT）  
+3. [BUS_FACTOR_NOTES.md §0–2](../handoff/BUS_FACTOR_NOTES.md) — `process_message`、`PluginHost`  
+4. [01 简架构](01_ARCHITECTURE_SIMPLE.md) — 记忆三套 · 六槽导读  
+5. [NAMING_CONVENTIONS §4.2](../creator-docs/NAMING_CONVENTIONS.md#42-canonical-import-路径)  
+6. [CONTRIBUTING.md §测试要求](../CONTRIBUTING.md#测试要求合并前建议全绿)
 
 ---
 
@@ -22,7 +26,7 @@
 | 步骤 | 文档 / 动作 | 验收 |
 |------|-------------|------|
 | 1 | [02 三十分钟跑通](02_THIRTY_MINUTE_START.md) | `npm run check` 绿 |
-| 2 | [03 术语表](03_GLOSSARY.md) + [04 工程约束](04_ENGINEERING_RULES.md) | 能解释 `srid` / `reply` / 六槽 |
+| 2 | [03 术语表](03_GLOSSARY.md) + [04 工程约束](04_ENGINEERING_RULES.md) | 能解释 `srid` / `reply` / 六槽 / **记忆三套** |
 | 3 | 浏览 `process_message.rs` 文件头注释 | 能说出 Agent / 共景 / 异地三分支 |
 
 ---
@@ -33,8 +37,8 @@
 |------|------|--------|
 | 1 | `process_message.rs` | `run()`：`srid`、健康检查、分支 |
 | 2 | `turn_pipeline/mod.rs` | `execute_turn` 四阶段 |
-| 3 | `turn_pipeline/pre.rs` | Prompt 输入、复杂情感 |
-| 4 | `plugin_host/mod.rs` + `slot_resolver.rs` | 六槽解析 |
+| 3 | `turn_pipeline/pre.rs` | Prompt 输入、复杂情感、**memory 检索** |
+| 4 | [MODULE_MAP §4–§9](../handoff/MODULE_MAP_AND_HANDOFF.md) + `plugin_host/mod.rs` | **逐槽**对照源码 |
 | 5 | `prompt_builder/mod.rs` | 段落顺序、guardrails |
 
 **验收**：能手绘 Tauri → `process_message` → `turn_pipeline` → `PluginHost`（见 [01 简架构](01_ARCHITECTURE_SIMPLE.md)）。

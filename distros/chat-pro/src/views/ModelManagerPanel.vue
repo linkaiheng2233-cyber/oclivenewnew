@@ -113,3 +113,7 @@ useModalFocusRestore(toRef(props, 'visible'), dialogRef)
   font-size: 12px;
 }
 </style>
+
+<style>
+@import '@oclive/shared/styles/win98/panel-model.css';
+</style>

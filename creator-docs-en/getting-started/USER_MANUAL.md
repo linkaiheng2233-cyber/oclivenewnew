@@ -1,5 +1,7 @@
 # oclive user manual
 
+[中文](../../creator-docs/getting-started/USER_MANUAL.md)
+
 For people who **only use the app** (no role-pack authoring, no plugin development). Error triage: [ERROR_CODES.md](ERROR_CODES.md). Build/install from source: root [README.md](../../README.md).
 
 ---
@@ -85,6 +87,18 @@ When a role pack includes **`user_identities/`** (e.g. `mumu`), open the **debug
 ### 3.5 Reply post-processor (creators · off by default)
 
 Optional text shaping after the LLM reply (`config.json` → `reply_post_processor`). **Disabled by default**; when enabled, the debug runtime panel shows a read-only status line. See [ROLE_PACK_SPEC §9.7](../role-pack/ROLE_PACK_SPEC.md).
+
+### 3.6 Voice (Windows · side-channel `voice.asr`)
+
+> **Architecture:** voice does **not** enter six slots / main orchestration; it uses the official directory plugin [`com.oclive.voice.asr`](../../distros/chat-pro/plugins/com.oclive.voice.asr/). See [`TRACK_VOICE_RECOGNITION.md`](../../human-docs/team/TRACK_VOICE_RECOGNITION.md).
+
+| Feature | Notes |
+|---------|--------|
+| **Hold to talk** | Chat toolbar mic; default **V hold** when the window is focused and the input is not |
+| **ASR result** | Settings → Voice: send immediately or fill the input draft |
+| **TTS playback** | Enable voice expansion for auto-read; pick engine/profile in settings |
+| **Role voice hints** | Optional pack `voice_profile.json`; switching roles can sync **TTS profile** via `preferred_tts_profile` / `synth_profile` |
+| **Platform** | Windows product path shipped; Linux/macOS profiles may return `unsupported_platform` |
 
 ---
 

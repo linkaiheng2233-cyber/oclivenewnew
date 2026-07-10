@@ -1,0 +1,123 @@
+/* Win98 skin — co-locate SSOT: see MODULE_MAP §13.2 dependency table */
+/* Scope: html[data-skin="win98"] only */
+/* Imported by: ShortcutHelp, HotkeyHost, PluginUiSlotSelectorDialog, ImmersiveModeIntro, TopBarSceneModeDialog, PresetRolePicker */
+
+html[data-skin="win98"] .pss-backdrop,
+html[data-skin="win98"] .hk-backdrop,
+html[data-skin="win98"] .sh-backdrop,
+html[data-skin="win98"] .scene-mode-dialog-overlay,
+html[data-skin="win98"] .preset-picker-overlay,
+html[data-skin="win98"] .immersive-intro-overlay,
+html[data-skin="win98"] .css-modal-backdrop,
+html[data-skin="win98"] .modal-backdrop,
+html[data-skin="win98"] .backdrop {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+html[data-skin="win98"] .modal-card,
+html[data-skin="win98"] .pss-dialog,
+html[data-skin="win98"] .hk-dialog,
+html[data-skin="win98"] .sh-dialog,
+html[data-skin="win98"] .panel,
+html[data-skin="win98"] .scene-mode-dialog,
+html[data-skin="win98"] .immersive-intro-card,
+html[data-skin="win98"] .preset-picker-card,
+html[data-skin="win98"] .css-modal,
+html[data-skin="win98"] .debug {
+  border: 2px outset #dfdfdf;
+  border-radius: 0;
+  box-shadow: 1px 1px 0 #000000;
+  background: #c0c0c0;
+}
+
+html[data-skin="win98"] .pss-dialog,
+html[data-skin="win98"] .hk-dialog,
+html[data-skin="win98"] .sh-dialog,
+html[data-skin="win98"] .css-modal {
+  padding: 0;
+  overflow: hidden;
+}
+
+html[data-skin="win98"] .hk-head,
+html[data-skin="win98"] .sh-head,
+html[data-skin="win98"] .debug > .title,
+html[data-skin="win98"] .pss-dialog > .pss-title,
+html[data-skin="win98"] .scene-mode-dialog > .scene-mode-title,
+html[data-skin="win98"] .immersive-intro-card > .immersive-intro-card__title,
+html[data-skin="win98"] .preset-picker-card > .preset-picker-card__header,
+html[data-skin="win98"] .css-modal > :first-child,
+html[data-skin="win98"] .modal-card > :first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0;
+  padding: 2px 2px 2px 4px;
+  background: linear-gradient(90deg, #000080 0%, #1084d0 100%);
+  color: #ffffff;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: bold;
+}
+
+html[data-skin="win98"] .hk-title,
+html[data-skin="win98"] .sh-title,
+html[data-skin="win98"] .pss-title,
+html[data-skin="win98"] .scene-mode-title,
+html[data-skin="win98"] .immersive-intro-card__title,
+html[data-skin="win98"] .preset-picker-card__title,
+html[data-skin="win98"] .debug > .title strong {
+  margin: 0;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+html[data-skin="win98"] .preset-picker-card__lead {
+  color: #ffffff;
+  opacity: 0.9;
+}
+
+html[data-skin="win98"] .pss-dialog > :not(.pss-title),
+html[data-skin="win98"] .sh-dialog > :not(.sh-head),
+html[data-skin="win98"] .hk-dialog > :not(.hk-head),
+html[data-skin="win98"] .scene-mode-dialog > :not(.scene-mode-title),
+html[data-skin="win98"] .immersive-intro-card > :not(.immersive-intro-card__title),
+html[data-skin="win98"] .preset-picker-card > :not(.preset-picker-card__header),
+html[data-skin="win98"] .css-modal > :not(:first-child) {
+  padding-left: 8px;
+  padding-right: 8px;
+  padding-bottom: 8px;
+}
+
+html[data-skin="win98"] .hk-close,
+html[data-skin="win98"] .sh-close,
+html[data-skin="win98"] .spm-close,
+html[data-skin="win98"] .close-x,
+html[data-skin="win98"] .debug > .title > button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 16px;
+  height: 14px;
+  min-width: 16px;
+  padding: 0;
+  border: 2px outset #dfdfdf;
+  border-radius: 0;
+  background: #c0c0c0;
+  color: #000000;
+  font-family: var(--font-ui);
+  font-size: 9px;
+  font-weight: bold;
+  line-height: 1;
+  cursor: default;
+  box-shadow: none;
+}
+
+html[data-skin="win98"] .hk-close:active,
+html[data-skin="win98"] .sh-close:active,
+html[data-skin="win98"] .close-x:active,
+html[data-skin="win98"] .debug > .title > button:active {
+  border-style: inset;
+}

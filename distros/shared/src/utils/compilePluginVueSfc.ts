@@ -2,6 +2,7 @@ import type { Component } from 'vue'
 import * as Vue from 'vue'
 import { i18n } from '@oclive/shared/i18n'
 import { readPluginAssetText } from '@oclive/shared/api'
+import { ApiInvokeError } from '@oclive/shared/api/helpers'
 
 const SCHEME = 'oclive-plugin://'
 
@@ -49,6 +50,79 @@ function joinUnder(baseDir: string, rel: string): string {
   return stack.join('/')
 }
 
+function stripQuery(rel: string): string {
+  return rel.split('?')[0]?.split('#')[0] ?? rel
+}
+
+/** Extract plugin-root-relative path from loader URL, if present. */
+function pluginRelFromUrl(pluginId: string, url: string): string | null {
+  const p = stripQuery(String(url).replace(/\\/g, '/'))
+  if (p.startsWith(SCHEME)) {
+    const body = p.slice(SCHEME.length)
+    const slash = body.indexOf('/')
+    if (slash === -1 || body.slice(0, slash) !== pluginId)
+      return null
+    return stripQuery(body.slice(slash + 1))
+  }
+  const needle = `/plugins/${pluginId}/`
+  const idx = p.lastIndexOf(needle)
+  if (idx !== -1)
+    return stripQuery(p.slice(idx + needle.length))
+  return null
+}
+
+/** Map vue3-sfc-loader request paths to plugin-root-relative paths. */
+function resolvePluginAssetRel(
+  pluginId: string,
+  entryRel: string,
+  requestPath: string,
+): string {
+  const fromUrl = pluginRelFromUrl(pluginId, requestPath)
+  if (fromUrl)
+    return fromUrl
+
+  const baseDir = dirname(entryRel)
+  const raw = stripQuery(String(requestPath).replace(/\\/g, '/'))
+  // Already plugin-root-relative (avoid slots/ + slots/foo → slots/slots/foo).
+  if (baseDir && (raw === baseDir || raw.startsWith(`${baseDir}/`)))
+    return raw
+  if (raw.includes('/') && !raw.startsWith('./') && !raw.startsWith('../'))
+    return raw.replace(/^\/+/, '')
+  return joinUnder(baseDir, raw)
+}
+
+async function readPluginAssetWithExtensions(
+  pluginId: string,
+  rel: string,
+): Promise<string> {
+  const base = rel.replace(/\\/g, '/').replace(/^\/+/, '')
+  const fileName = base.split('/').pop() ?? base
+  const hasExt = /\.[a-z0-9]+$/i.test(fileName)
+  const candidates: string[] = hasExt ? [base] : [base, `${base}.ts`, `${base}.js`, `${base}.vue`]
+  if (base.endsWith('.js'))
+    candidates.push(`${base.slice(0, -3)}.ts`)
+  let lastErr: unknown
+  const tried: string[] = []
+  for (const candidate of [...new Set(candidates)]) {
+    tried.push(candidate)
+    try {
+      return await readPluginAssetText(pluginId, candidate)
+    }
+    catch (e) {
+      lastErr = e
+    }
+  }
+  if (import.meta.env.DEV) {
+    console.warn('[compilePluginVueSfc] read_plugin_asset_text failed', {
+      pluginId,
+      rel,
+      tried,
+      lastErr,
+    })
+  }
+  throw lastErr
+}
+
 function buildCompileError(
   pluginId: string,
   vueRel: string,
@@ -56,7 +130,9 @@ function buildCompileError(
 ): PluginVueCompileError {
   const raw
     = err instanceof Error ? err.stack || err.message : String(err ?? 'unknown error')
-  const short = err instanceof Error ? err.message : String(err ?? '')
+  let short = err instanceof Error ? err.message : String(err ?? '')
+  if (err instanceof ApiInvokeError && err.kernel?.message)
+    short = err.kernel.message
   const lineHint
     = short.match(/\((\d+),(\d+)\)|:(\d+):(\d+)|line\s*(\d+)/i)?.[0] ?? short.slice(0, 240)
   const friendly = String(
@@ -93,21 +169,11 @@ export async function loadPluginVueComponent(
 
   const getFile = async (path: { toString: () => string }) => {
     const p = String(path)
-    let full: string
-    if (p.startsWith(SCHEME)) {
-      full = p
+    const rel = resolvePluginAssetRel(pluginId, rel0, p)
+    if (import.meta.env.DEV) {
+      console.debug('[compilePluginVueSfc.getFile]', { pluginId, request: p, rel })
     }
-    else {
-      full = uri(pluginId, joinUnder(dirname(rel0), p))
-    }
-    const body = full.slice(SCHEME.length)
-    const slash = body.indexOf('/')
-    const pid = body.slice(0, slash)
-    const rel = body.slice(slash + 1)
-    if (pid !== pluginId) {
-      throw new Error(`cross-plugin import denied: ${p}`)
-    }
-    if (pre !== undefined && pre.length > 0 && full === entry) {
+    if (pre !== undefined && pre.length > 0 && stripQuery(p) === stripQuery(entry)) {
       const text = pre
       return {
         getContentData: (asBinary: boolean) =>
@@ -116,7 +182,7 @@ export async function loadPluginVueComponent(
             : Promise.resolve(text),
       }
     }
-    const text = await readPluginAssetText(pid, rel)
+    const text = await readPluginAssetWithExtensions(pluginId, rel)
     return {
       getContentData: (asBinary: boolean) =>
         asBinary

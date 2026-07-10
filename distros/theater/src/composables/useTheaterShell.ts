@@ -74,6 +74,7 @@ import {
   listTheaterScenePresets,
   resolveActivePokeChips,
   setTheaterScenePresetId,
+  THEATER_RUNTIME_SCENE_ID,
   type TheaterScenePreset,
   type TheaterScenePresetId,
 } from './theater/theaterSceneCatalog'
@@ -411,7 +412,7 @@ export function useTheaterShell() {
   }
 
   async function ensureBothCastLoaded(sk: TheaterSkeleton) {
-    const sceneId = sk.sceneId ?? 'home'
+    const sceneId = sk.sceneId ?? THEATER_RUNTIME_SCENE_ID
     await loadRole(sk.cast.a.roleId)
     await loadRole(sk.cast.b.roleId)
     await ensureRole(sk.cast.a.roleId, sceneId)

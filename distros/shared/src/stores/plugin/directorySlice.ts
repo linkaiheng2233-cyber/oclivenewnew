@@ -35,6 +35,8 @@ export function directoryState() {
     bootstrapUiSlots: [] as PluginUiSlotInfo[],
     /** Embed slot components re-fetch bootstrap after this changes */
     bootstrapEpoch: 0,
+    /** Per-plugin slot remount generation (plugin FS hot reload; independent of catalog refresh). */
+    slotReloadByPluginId: {} as Record<string, number>,
     /** Latest `check_plugin_updates` result (by plugin id) */
     pluginUpdateById: {} as Record<string, PluginUpdateInfo>,
     pluginUpdatesCheckLoading: false,
@@ -145,10 +147,23 @@ export const directoryActions = {
       this.extractingPluginId = null
     }
   },
+  bumpPluginSlotReload(this: DirectorySliceStore, pluginIds?: readonly string[]) {
+    const ids
+      = pluginIds && pluginIds.length > 0
+        ? pluginIds
+        : (this.bootstrapUiSlots ?? []).map(s => s.pluginId)
+    if (ids.length === 0)
+      return
+    const next = { ...this.slotReloadByPluginId }
+    for (const id of new Set(ids))
+      next[id] = (next[id] ?? 0) + 1
+    this.slotReloadByPluginId = next
+    this.bootstrapEpoch += 1
+  },
   /** Developer mode: refresh catalog and bootstrap after file watcher fires (full-shell / slot hot reload) */
   async onPluginFilesChanged(this: DirectorySliceStore) {
+    this.bumpPluginSlotReload()
     await this.refresh()
-    this.bootstrapEpoch += 1
     await this.syncDirectoryPluginBootstrap()
   },
 }
@@ -161,6 +176,8 @@ export interface DirectorySliceStore extends InstalledSliceStore {
   developerMode: boolean
   bootstrapUiSlots: PluginUiSlotInfo[]
   bootstrapEpoch: number
+  slotReloadByPluginId: Record<string, number>
+  bumpPluginSlotReload(pluginIds?: readonly string[]): void
   pluginUpdateById: Record<string, PluginUpdateInfo>
   pluginUpdatesCheckLoading: boolean
   extractingPluginId: string | null

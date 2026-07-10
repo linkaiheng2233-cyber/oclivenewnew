@@ -11,6 +11,8 @@ const props = withDefaults(
     presenceVariant?: 'co_present' | 'remote_stub' | 'remote_life'
     /** Matches backend `reply_is_fallback` */
     replyIsFallback?: boolean
+    /** True while SSE tokens are still arriving */
+    streaming?: boolean
     /** When non-empty, highlight matching substrings in body (e.g. history search) */
     highlightQuery?: string
   }>(),
@@ -79,6 +81,7 @@ function hhmm(ts: number): string {
             <mark v-if="seg.hit" class="search-hit">{{ seg.text }}</mark>
             <span v-else>{{ seg.text }}</span>
           </template>
+          <span v-if="props.streaming" class="stream-cursor" aria-hidden="true">▍</span>
         </div>
         <div v-if="props.replyIsFallback && props.role === 'assistant'" class="fallback-hint">
           {{ t("chat.fallbackBadge") }}
@@ -237,6 +240,17 @@ function hhmm(ts: number): string {
   scrollbar-color: var(--scrollbar-chat-thumb) var(--scrollbar-chat-track);
   scrollbar-width: thin;
 }
+.stream-cursor {
+  display: inline-block;
+  margin-left: 2px;
+  animation: stream-blink 1s step-end infinite;
+  opacity: 0.85;
+}
+@keyframes stream-blink {
+  50% {
+    opacity: 0;
+  }
+}
 .bubble.assistant .content::-webkit-scrollbar,
 .bubble.user .content::-webkit-scrollbar {
   width: 4px;
@@ -289,4 +303,8 @@ function hhmm(ts: number): string {
     animation: none;
   }
 }
+</style>
+
+<style>
+@import '@oclive/shared/styles/win98/component-chat.css';
 </style>

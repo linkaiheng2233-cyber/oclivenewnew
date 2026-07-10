@@ -14,8 +14,8 @@ use super::turn_context::TurnContext;
 use super::turn_error::TurnResult;
 
 pub(crate) use pre::{
-    build_complex_emotion_turn_input, compute_turn_favor, skipped_complex_emotion,
-    worldview_snippet_from_chunks, MiddleOutput, PreLlmOutput, STAGES,
+    build_complex_emotion_turn_input, compute_turn_favor, latest_recent_turn_pair,
+    skipped_complex_emotion, worldview_snippet_from_chunks, MiddleOutput, PreLlmOutput, STAGES,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -89,6 +89,7 @@ export default {
       pluginReviewSource:
         'Plugin {id} installed at {path}. Review manifest.json and source before use; high-risk permissions require explicit host grants.',
       pluginFilesChanged: 'Plugin files changed; refreshed',
+      eggUnlocked: 'Easter egg unlocked: Windows 98 skin enabled.',
     },
     sceneTransition: {
       going: 'Going to “{label}”…',

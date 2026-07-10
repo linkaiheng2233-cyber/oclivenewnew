@@ -60,11 +60,27 @@
 
 ---
 
+## Phase E — 对话节奏 · Turn Thinking（Wave F · 待 schema）
+
+**台账**：主仓 **K-TURN-F1** · 编写器 **PE-TURN-01**（[`TECHNICAL_DEBT_INVENTORY.md`](../TECHNICAL_DEBT_INVENTORY.md) §3 Observe）。
+
+| 能力 | 说明 |
+|------|------|
+| UI | **简单**：`auto_deep_min_chars`、Deep 关键词列表、强事件 latch（争吵→直到道歉）；**高级**：可选 AND 规则组（角色包内，内核 OR 默认 + 包内叠加） |
+| 导出 | 写入角色包 **`config.json` → `turn_thinking`**（路径待 RFC 定稿；与 `memory` / `relation` 同级） |
+| 校验 | 与 `oclive_validation` + 内核 `HostProfile` merge 一致；**不提供**玩家端 Deep/Fast 开关 |
+| 试聊 | 编写器内试聊显示本轮 `TurnThinkingMode` + reasons（debug，非 P0） |
+
+**依赖**：[`RFC_TURN_THINKING_PERSISTENCE.md`](../../creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md) 扩展 · 角色包 schema RFC（K-TURN-F1）。
+
+---
+
 ## 优先级（2026-06）
 
 1. 主仓 Phase 1–2 + 编写器 Phase A–B  
 2. 主仓 Phase 3 表现导演 AI  
 3. 编写器 Phase D 分级导出  
-4. 主仓 Phase 4–5 + 编写器 Phase C  
+4. **Wave F**：角色包 Turn Thinking（Phase E）+ 内核 K-TURN-F1  
+5. 主仓 Phase 4–5 + 编写器 Phase C  
 
 原 **Phase B「扩展 Emotion 枚举」** 已由 **portrait_catalog + AI 选 id** 取代。

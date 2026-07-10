@@ -1,6 +1,7 @@
 //! Directory plugin scan roots, asset path resolution, and RPC URL transport helpers.
 
 use super::super::manifest::{normalize_plugin_rel, OclivePluginManifest};
+use crate::domain::host_profile::{self, HostProfile};
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -31,13 +32,38 @@ pub(crate) fn manifest_json_mtime(root: &Path) -> u64 {
         .unwrap_or(0)
 }
 
+/// Strip vue3-sfc-loader / Vite query suffixes (`?vue&type=script`, etc.).
+fn strip_asset_rel_query(rel: &str) -> &str {
+    rel.split(['?', '#']).next().unwrap_or(rel)
+}
+
+/// When `vue3-sfc-loader` resolves `./audioCapture`, the rel may be extensionless or `.js` while
+/// the on-disk plugin source is `.ts`.
+fn resolve_existing_plugin_asset(resolved: &Path) -> Option<PathBuf> {
+    if resolved.is_file() {
+        return Some(resolved.to_path_buf());
+    }
+    let stem = match resolved.extension() {
+        Some(_) => resolved.with_extension(""),
+        None => resolved.to_path_buf(),
+    };
+    for ext in ["ts", "tsx", "js", "mjs", "vue"] {
+        let candidate = stem.with_extension(ext);
+        if candidate.is_file() {
+            return Some(candidate);
+        }
+    }
+    None
+}
+
 /// Resolve a normalized relative asset path under a plugin root without `canonicalize`.
 ///
 /// # Errors
 ///
 /// Returns [`Err`] when `rel` is empty, contains `..`, escapes the plugin root, or the path does not exist.
 pub fn find_plugin_asset_path(entry: &PluginRootEntry, rel: &str) -> Result<PathBuf, String> {
-    let rel = normalize_plugin_rel(rel);
+    let rel_norm = normalize_plugin_rel(rel);
+    let rel = strip_asset_rel_query(&rel_norm);
     if rel.is_empty() {
         return Err("empty rel".into());
     }
@@ -51,10 +77,7 @@ pub fn find_plugin_asset_path(entry: &PluginRootEntry, rel: &str) -> Result<Path
     if !resolved.starts_with(&entry.canonical) {
         return Err("path escapes plugin directory".into());
     }
-    if !resolved.exists() {
-        return Err("not found".into());
-    }
-    Ok(resolved)
+    resolve_existing_plugin_asset(&resolved).ok_or_else(|| format!("not found: {rel}"))
 }
 
 pub(crate) fn plugin_roots_from_scan(
@@ -118,7 +141,11 @@ pub struct PluginScanSummary {
     pub roots: HashMap<String, PathBuf>,
 }
 
-fn collect_plugin_dirs(root: &Path, out: &mut HashMap<String, PathBuf>) {
+fn collect_plugin_dirs(
+    root: &Path,
+    out: &mut HashMap<String, PathBuf>,
+    host_profile: &HostProfile,
+) {
     let Ok(rd) = std::fs::read_dir(root) else {
         return;
     };
@@ -133,6 +160,15 @@ fn collect_plugin_dirs(root: &Path, out: &mut HashMap<String, PathBuf>) {
         }
         match OclivePluginManifest::load_from_dir(&p) {
             Ok(m) => {
+                if should_skip_plugin_at_scan(&m, host_profile) {
+                    tracing::debug!(
+                        target: "oclive_plugin",
+                        plugin_id = %m.id,
+                        path = %p.display(),
+                        "skipping theater director plugin (host profile)"
+                    );
+                    continue;
+                }
                 let id = m.id.trim().to_string();
                 if let Some(prev) = out.insert(id.clone(), p.clone()) {
                     tracing::warn!(
@@ -154,6 +190,14 @@ fn collect_plugin_dirs(root: &Path, out: &mut HashMap<String, PathBuf>) {
             }
         }
     }
+}
+
+fn should_skip_plugin_at_scan(manifest: &OclivePluginManifest, host_profile: &HostProfile) -> bool {
+    let provides_theater = manifest
+        .provides
+        .iter()
+        .any(|p| p.trim() == "theater_director");
+    provides_theater && !host_profile::theater_director_enabled(host_profile)
 }
 
 /// Container directories holding plugin packages (`plugins/`, etc.) for scan and (developer mode) file watching.
@@ -198,9 +242,10 @@ pub fn scan_plugins(
     app_data: &Path,
     host: &HostPluginsFile,
 ) -> PluginScanSummary {
+    let host_profile = host_profile::load_host_profile_from_env();
     let mut roots = HashMap::new();
     for r in default_scan_roots(roles_dir, app_data, host) {
-        collect_plugin_dirs(&r, &mut roots);
+        collect_plugin_dirs(&r, &mut roots, &host_profile);
     }
     let mut plugin_ids: Vec<String> = roots.keys().cloned().collect();
     plugin_ids.sort();

@@ -1,11 +1,10 @@
 import { computed, onMounted, reactive, ref } from 'vue'
-import { setRoleInteractionMode } from '@oclive/shared/api'
 import { useAppToast } from '@oclive/shared/composables/useAppToast'
 import { useDistroUxProfile } from '@oclive/shared/composables/useDistroUxProfile'
-import { useUserIdentityState } from '@oclive/shared/composables/useUserIdentityState'
-import { messageHintsUserIdentity } from '@oclive/shared/utils/identitySurpriseTriggers'
+import { useInteractionModeSettings } from '@oclive/shared/composables/useInteractionModeSettings'
 import { useEngagementStore } from '@oclive/shared/stores/engagementStore'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
+
 const IMMERSIVE_INTRO_KEY = 'oclive_immersive_intro_seen'
 
 export function useProgressiveDisclosure() {
@@ -13,10 +12,9 @@ export function useProgressiveDisclosure() {
   const engagementStore = useEngagementStore()
   const { showToast } = useAppToast()
   const { immersiveUnlockHintAfterTurns, allowModeSwitch, ensureDistroUxProfileLoaded } = useDistroUxProfile()
-  const { identityState, hasCatalog, setIdentity } = useUserIdentityState()
+  const { setInteractionMode } = useInteractionModeSettings()
 
   const immersiveIntroVisible = ref(false)
-  const identitySheetVisible = ref(false)
 
   onMounted(() => {
     void ensureDistroUxProfileLoaded()
@@ -39,53 +37,18 @@ export function useProgressiveDisclosure() {
     return e.turnCount >= immersiveUnlockHintAfterTurns.value
   })
 
-  const identitySurpriseUnlocked = computed(() => {
-    const e = engagement.value
-    return Boolean(e?.identitySurpriseSeen)
-  })
-
-  const showIdentityControls = computed(() => {
-    if (roleStore.interactionImmersive)
-      return true
-    return identitySurpriseUnlocked.value
-  })
-
-  const identitySurpriseOptions = computed(() => {
-    const rows = identityState.value?.identities ?? []
-    return rows.slice(0, 3).map(r => ({
-      id: r.id,
-      name: r.display_name || r.id,
-    }))
-  })
-
-  function recordTurn(userMessage: string): void {
+  function recordTurn(): void {
     if (!roleId.value)
       return
-    const count = engagementStore.recordSuccessfulTurn(roleId.value)
-    maybeShowIdentitySurprise(count, userMessage)
-  }
-
-  function maybeShowIdentitySurprise(turnCount: number, userMessage: string): void {
-    if (!roleId.value || !hasCatalog.value)
-      return
-    const e = engagementStore.roleState(roleId.value)
-    if (e.identitySurpriseSeen)
-      return
-    const enoughTurns = turnCount >= 5
-    const hinted = messageHintsUserIdentity(userMessage)
-    if (!enoughTurns && !hinted)
-      return
-    if (identitySurpriseOptions.value.length < 2)
-      return
-    identitySheetVisible.value = true
+    engagementStore.recordSuccessfulTurn(roleId.value)
   }
 
   async function tryStoryMode(): Promise<void> {
+    // Discovery path from ImmersiveUnlockBanner; user-facing switch is InteractionModeBar + Settings.
     if (!roleId.value)
       return
     try {
-      const info = await setRoleInteractionMode(roleId.value, 'immersive')
-      roleStore.applyRoleInfo(info)
+      await setInteractionMode('immersive')
       engagementStore.dismissImmersiveHint(roleId.value)
       if (!localStorage.getItem(IMMERSIVE_INTRO_KEY)) {
         immersiveIntroVisible.value = true
@@ -106,37 +69,12 @@ export function useProgressiveDisclosure() {
     immersiveIntroVisible.value = false
   }
 
-  async function pickIdentity(id: string): Promise<void> {
-    identitySheetVisible.value = false
-    if (!roleId.value)
-      return
-    try {
-      await setIdentity(id)
-      engagementStore.markIdentitySurpriseSeen(roleId.value)
-    }
-    catch (err) {
-      showToast('error', err instanceof Error ? err.message : String(err))
-    }
-  }
-
-  function keepIdentity(): void {
-    identitySheetVisible.value = false
-    if (roleId.value)
-      engagementStore.markIdentitySurpriseSeen(roleId.value)
-  }
-
-  // reactive() so refs/computeds stay tracked when accessed as `progressive.*` via provide/inject.
   return reactive({
     showImmersiveUnlockBanner,
-    showIdentityControls,
-    identitySurpriseOptions,
-    identitySheetVisible,
     immersiveIntroVisible,
     recordTurn,
     tryStoryMode,
     dismissImmersiveHint,
     dismissImmersiveIntro,
-    pickIdentity,
-    keepIdentity,
   })
 }

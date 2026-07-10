@@ -1,12 +1,20 @@
 <script setup lang="ts">
-import { defineAsyncComponent, nextTick, ref, Teleport, watch } from 'vue'
+import { computed, defineAsyncComponent, nextTick, ref, Teleport, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { usePluginStore } from '@oclive/shared/stores/pluginStore'
+import {
+  isPureChatPlatformPlugin,
+  SLOT_SETTINGS_PANEL,
+  usePluginStore,
+} from '@oclive/shared/stores/pluginStore'
+import { VOICE_ASR_PLUGIN_ID } from '@oclive/shared/lib/voiceAsrEvents'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
 
 const ChatStorageSettingsPanel = defineAsyncComponent(() => import('@oclive/shared/components/settings/ChatStorageSettingsPanel.vue'))
 const SettingsGeneralTab = defineAsyncComponent(() => import('@oclive/shared/components/settings/SettingsGeneralTab.vue'))
 const SettingsPluginsTab = defineAsyncComponent(() => import('@oclive/shared/components/settings/SettingsPluginsTab.vue'))
+const SettingsVoiceTab = defineAsyncComponent(() => import('@oclive/shared/components/settings/SettingsVoiceTab.vue'))
+
+export type SettingsTab = 'general' | 'voice' | 'plugins' | 'storage'
 
 const props = withDefaults(
   defineProps<{
@@ -26,11 +34,29 @@ const { t } = useI18n()
 const pluginStore = usePluginStore()
 const roleStore = useRoleStore()
 
-type SettingsTab = 'general' | 'plugins' | 'storage'
 type GeneralSubTab = 'simple' | 'advanced'
 
 const tab = ref<SettingsTab>('general')
 const generalSubTab = ref<GeneralSubTab>('simple')
+
+const showVoiceSettingsTab = computed(() =>
+  (pluginStore.bootstrapUiSlots ?? []).some(
+    s => s.slot === SLOT_SETTINGS_PANEL && s.pluginId === VOICE_ASR_PLUGIN_ID,
+  ),
+)
+
+const showPluginsSettingsTab = computed(() => {
+  if (roleStore.interactionImmersive) {
+    return (pluginStore.bootstrapUiSlots ?? []).some(
+      s => s.slot === SLOT_SETTINGS_PANEL && s.pluginId !== VOICE_ASR_PLUGIN_ID,
+    )
+  }
+  return (pluginStore.bootstrapUiSlots ?? []).some(
+    s => s.slot === SLOT_SETTINGS_PANEL
+      && isPureChatPlatformPlugin(s.pluginId)
+      && s.pluginId !== VOICE_ASR_PLUGIN_ID,
+  )
+})
 
 watch(
   () => props.focusTab,
@@ -53,7 +79,9 @@ const settingsDialogRef = ref<HTMLElement | null>(null)
 watch(
   () => roleStore.roleInfo.interactionMode,
   (mode) => {
-    if (mode === 'pure_chat' && tab.value === 'plugins')
+    if (mode === 'pure_chat' && tab.value === 'plugins' && !showPluginsSettingsTab.value)
+      tab.value = 'general'
+    if (tab.value === 'voice' && !showVoiceSettingsTab.value)
       tab.value = 'general'
   },
 )
@@ -68,6 +96,11 @@ watch(
     }
   },
 )
+
+function openGeneralAdvancedKeybindings(): void {
+  tab.value = 'general'
+  generalSubTab.value = 'advanced'
+}
 </script>
 
 <template>
@@ -86,7 +119,10 @@ watch(
     >
       <div
         ref="settingsDialogRef"
-        :class="embedded ? 'sv-embedded' : 'sv-dialog'"
+        :class="[
+          embedded ? 'sv-embedded' : 'sv-dialog',
+          !embedded && tab === 'voice' ? 'sv-dialog--voice' : '',
+        ]"
         tabindex="-1"
         @click.stop
         @keydown.escape.stop="emit('close')"
@@ -110,7 +146,16 @@ watch(
             {{ t("settings.tabGeneral") }}
           </button>
           <button
-            v-if="roleStore.interactionImmersive"
+            v-if="showVoiceSettingsTab"
+            type="button"
+            class="sv-nav-btn"
+            :aria-current="tab === 'voice' ? 'page' : undefined"
+            @click="tab = 'voice'"
+          >
+            {{ t("settings.tabVoice") }}
+          </button>
+          <button
+            v-if="showPluginsSettingsTab"
             type="button"
             class="sv-nav-btn"
             :aria-current="tab === 'plugins' ? 'page' : undefined"
@@ -135,9 +180,16 @@ watch(
           :embedded="embedded"
         />
 
+        <SettingsVoiceTab
+          v-show="tab === 'voice'"
+          :bootstrap-epoch="pluginStore.bootstrapEpoch"
+        />
+
         <SettingsPluginsTab
           v-show="tab === 'plugins'"
           :bootstrap-epoch="pluginStore.bootstrapEpoch"
+          :platform-only="!roleStore.interactionImmersive"
+          @request-general-advanced="openGeneralAdvancedKeybindings"
         />
 
         <div v-show="tab === 'storage'" class="sv-body">
@@ -155,6 +207,7 @@ watch(
   min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .sv-embedded {
@@ -162,19 +215,22 @@ watch(
   min-height: 0;
   display: flex;
   flex-direction: row;
-  align-items: flex-start;
+  align-items: stretch;
   gap: 0;
   padding: 0;
   border: none;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
+  overflow: hidden;
 }
 
 .sv-embedded :deep(.sv-body) {
   flex: 1;
   min-width: 0;
-  overflow: visible;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
   padding: var(--tool-space-4, 16px);
   max-width: none;
   background: var(--tool-chrome-editor, var(--tool-elevated, var(--bg-primary)));
@@ -252,6 +308,22 @@ watch(
   display: flex;
   flex-direction: column;
   gap: 12px;
+  min-height: 0;
+}
+.sv-dialog--voice {
+  width: min(760px, 100%);
+  height: min(92vh, 880px);
+  max-height: min(92vh, 880px);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.sv-dialog--voice > .sv-body--voice {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 .sv-head {
   display: flex;
@@ -301,4 +373,8 @@ watch(
   flex: 1;
   min-height: 0;
 }
+</style>
+
+<style>
+@import '@oclive/shared/styles/win98/panel-settings.css';
 </style>

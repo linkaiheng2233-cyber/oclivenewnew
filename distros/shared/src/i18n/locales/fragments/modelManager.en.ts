@@ -6,6 +6,12 @@ export const modelManagerEn = {
   lead:
     'Local: Ollama. Cloud: OpenAI-compatible API. Saves apply to this session.',
   loading: 'Loading…',
+  globalDefaultModelLabel: 'Global default model',
+  globalDefaultModelLead: 'All roles use this Ollama model unless overridden per session. Takes effect immediately after save.',
+  globalDefaultModelSave: 'Save global default',
+  globalDefaultModelSaving: 'Saving…',
+  globalDefaultModelSaveOk: 'Global default model saved',
+  globalDefaultModelNeedModel: 'Select or enter a global default model',
   effectiveModelLabel: 'Effective model',
   effectiveModelEmpty: '(No model name resolved)',
   providerTabsAria: 'Model source',

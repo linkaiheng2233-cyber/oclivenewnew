@@ -48,6 +48,94 @@ fn default_replay_similarity_threshold() -> f64 {
     0.6
 }
 
+fn default_ephemeral_ttl_turns() -> u32 {
+    3
+}
+
+fn default_ephemeral_max_chars() -> usize {
+    200
+}
+
+fn default_true() -> bool {
+    true
+}
+
+/// One Deep-routing signal in `config.json` → `turn_thinking.deep_when`.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(tag = "signal", rename_all = "snake_case")]
+pub enum TurnThinkingSignalRule {
+    LongMessage {
+        #[serde(default)]
+        min_chars: Option<u32>,
+    },
+    HighArousal,
+    HighSadness,
+    HighAnger,
+    HighFear,
+    ThisTurnEvent {
+        events: Vec<String>,
+    },
+    RecentEvent {
+        events: Vec<String>,
+    },
+    Keyword {
+        #[serde(default)]
+        keywords: Vec<String>,
+    },
+    DeepLatchActive,
+}
+
+/// AND group: all signals must match for Deep.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct TurnThinkingAndGroup {
+    pub all: Vec<TurnThinkingSignalRule>,
+}
+
+/// `config.json` → `turn_thinking.deep_when`
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+pub struct TurnThinkingDeepWhen {
+    #[serde(default)]
+    pub or: Vec<TurnThinkingSignalRule>,
+    #[serde(default)]
+    pub and: Vec<TurnThinkingAndGroup>,
+}
+
+/// `config.json` → `turn_thinking.latch`
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+pub struct TurnThinkingLatchConfig {
+    #[serde(default)]
+    pub enter_on: Vec<String>,
+    #[serde(default)]
+    pub exit_on: Vec<String>,
+}
+
+/// `config.json` → `turn_thinking.ephemeral_archive`
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct TurnThinkingEphemeralArchiveConfig {
+    #[serde(default = "default_true")]
+    pub enabled: bool,
+    #[serde(default = "default_ephemeral_ttl_turns")]
+    pub ttl_turns: u32,
+    #[serde(default = "default_ephemeral_max_chars")]
+    pub max_chars: usize,
+    #[serde(default)]
+    pub update_on_events: Vec<String>,
+}
+
+/// `config.json` → `turn_thinking` (co-present Fast/Deep routing + ephemeral archive).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+pub struct RolePackTurnThinkingConfig {
+    #[serde(default)]
+    pub deep_when: TurnThinkingDeepWhen,
+    #[serde(default)]
+    pub latch: TurnThinkingLatchConfig,
+    #[serde(default)]
+    pub ephemeral_archive: Option<TurnThinkingEphemeralArchiveConfig>,
+    /// Profile-mode deep archive refresh every N turns; `0` = use host `[turn_thinking]` default.
+    #[serde(default)]
+    pub deep_profile_update_every_n_turns: u32,
+}
+
 /// Default chat log storage location is the global path (backward compatible).
 fn default_chat_storage_location() -> String {
     "global".to_string()
@@ -180,6 +268,13 @@ impl Default for RolePackChatStorageConfig {
     }
 }
 
+/// Optional prompt blocks injected before the reply quality anchor (`PromptInput.extra_sections`).
+#[derive(Debug, Clone, Deserialize, Serialize, Default)]
+pub struct RolePackPromptExtraSection {
+    pub title: String,
+    pub body: String,
+}
+
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct RolePackConfigFile {
     #[serde(default)]
@@ -200,4 +295,10 @@ pub struct RolePackConfigFile {
     pub visual_presentation: RolePackVisualPresentationConfig,
     #[serde(default)]
     pub meta_action_templates: RolePackMetaActionTemplatesConfig,
+    /// Co-present Turn Thinking policy (Deep routing, latch, ephemeral archive).
+    #[serde(default)]
+    pub turn_thinking: Option<RolePackTurnThinkingConfig>,
+    /// Host-orchestrated prompt blocks (K-CONTRACT-WIRING-01).
+    #[serde(default)]
+    pub prompt_extra_sections: Vec<RolePackPromptExtraSection>,
 }

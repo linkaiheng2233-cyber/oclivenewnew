@@ -1,0 +1,87 @@
+/* Win98 skin — voice.asr settings.panel slot */
+/* Scope: html[data-skin="win98"] only */
+/* Imported by: PluginSettingsPanelSlots.vue */
+
+html[data-skin="win98"] .voice-asr-settings {
+  border: 2px inset #808080;
+  border-radius: 0;
+  background: #c0c0c0;
+  padding: 8px;
+  color: #000000;
+}
+
+html[data-skin="win98"] .voice-asr-settings .title {
+  background: linear-gradient(90deg, #000080, #1084d0);
+  color: #ffffff;
+  padding: 2px 4px;
+  margin: -8px -8px 8px;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+html[data-skin="win98"] .voice-asr-settings .panel-footer,
+html[data-skin="win98"] .voice-asr-settings .actions {
+  background: #c0c0c0;
+  border-top: 1px solid #808080;
+}
+
+html[data-skin="win98"] .voice-asr-settings .btn {
+  border-radius: 0;
+  border: 2px outset #dfdfdf;
+  background: #c0c0c0;
+  color: #000000;
+  box-shadow: none;
+}
+
+html[data-skin="win98"] .voice-asr-settings .btn:active:not(:disabled) {
+  border-style: inset;
+}
+
+html[data-skin="win98"] .voice-asr-settings .probe {
+  border: 2px inset #808080;
+  border-radius: 0;
+  background: #ffffff;
+  color: #000000;
+}
+
+html[data-skin="win98"] .voice-asr-settings .voice-toggle-box,
+html[data-skin="win98"] .voice-asr-settings .voice-reveal {
+  border-radius: 0;
+  border: 2px outset #dfdfdf;
+  background: #c0c0c0;
+  box-shadow: none;
+}
+
+html[data-skin="win98"] .voice-asr-settings .voice-toggle-box--on,
+html[data-skin="win98"] .voice-asr-settings .voice-reveal[open] .voice-reveal__trigger {
+  border-color: #000080;
+  background: #d4d0c8;
+  box-shadow: none;
+}
+
+html[data-skin="win98"] .voice-asr-settings .voice-reveal__trigger:hover {
+  background: #d4d0c8;
+}
+
+html[data-skin="win98"] .voice-asr-settings .voice-reveal__chev {
+  color: #000080;
+}
+
+html[data-skin="win98"] .voice-asr-settings .panel-body.panel-scroll::-webkit-scrollbar {
+  width: 16px;
+}
+
+html[data-skin="win98"] .voice-asr-settings .panel-body.panel-scroll::-webkit-scrollbar-track {
+  background: #c0c0c0;
+  border-left: 1px solid #808080;
+}
+
+html[data-skin="win98"] .voice-asr-settings .panel-body.panel-scroll::-webkit-scrollbar-thumb {
+  background: #c0c0c0;
+  border: 2px outset #dfdfdf;
+}
+
+html[data-skin="win98"] .voice-asr-settings .panel-body.panel-scroll {
+  scrollbar-color: #808080 #c0c0c0;
+  scrollbar-width: auto;
+}

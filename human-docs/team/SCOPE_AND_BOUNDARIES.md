@@ -108,9 +108,9 @@ npm run build              # PR 前
 
 | 路径 | 用途 |
 |------|------|
-| `examples/voice-loop-minimal/` | **主战场**：loop、ASR/TTS、README |
-| （可选）`examples/voice-loop-minimal/asr/` | Vosk/Whisper 封装 |
-| （进阶，需组长批准）`examples/directory-plugin-minimal/` 派生 | 插件形态 ASR sidecar |
+| `examples/voice-loop-minimal/` | **主战场**：loop、ASR/TTS Python 引擎、HTTP 烟测（`loop.py --mic`） |
+| （可选）`examples/voice-loop-minimal/asr/` · `tts/` | sherpa-onnx 封装（SSOT）；插件 `rpc_server.mjs` spawn 同模块 |
+| **产品插件** | [`distros/chat-pro/plugins/com.oclive.voice.asr/`](../../distros/chat-pro/plugins/com.oclive.voice.asr/) · 独立通道 UI（不进六槽） |
 
 **建议**：语音代码 **尽量只写在 `examples/voice-loop-minimal/`**，与 Chat Pro 前端 **零耦合**，方便以后原样搬到开发板。
 

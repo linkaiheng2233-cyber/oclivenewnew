@@ -226,3 +226,7 @@ function closeLauncher(): void {
   color: var(--text-secondary);
 }
 </style>
+
+<style>
+@import '@oclive/shared/styles/win98/dialogs-shared.css';
+</style>

@@ -13,7 +13,10 @@ pub use oclive_kernel_host::domain::user_llm_env::{
     apply_user_llm_env, apply_user_llm_env_from_db,
 };
 pub use oclive_kernel_host::infrastructure::llm_models::LocalModelFileDto;
-pub use oclive_kernel_host::service::{LlmUserSettingsDto, SaveLlmUserSettingsRequest};
+pub use oclive_kernel_host::service::{
+    GlobalOllamaModelDto, LlmUserSettingsDto, SaveLlmUserSettingsRequest,
+    SetGlobalOllamaModelRequest,
+};
 
 #[tauri::command]
 pub async fn get_llm_user_settings(
@@ -84,4 +87,21 @@ pub async fn save_llm_user_settings(
     req: SaveLlmUserSettingsRequest,
 ) -> Result<oclive_kernel_types::models::dto::RoleInfo, crate::api::error::CommandError> {
     commands::save_llm_user_settings(app, state, req).await
+}
+
+#[tauri::command]
+pub async fn get_global_ollama_model(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, oclive_kernel_host::state::SharedAppState>,
+) -> Result<GlobalOllamaModelDto, crate::api::error::CommandError> {
+    commands::get_global_ollama_model(app, state).await
+}
+
+#[tauri::command]
+pub async fn set_global_ollama_model(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, oclive_kernel_host::state::SharedAppState>,
+    req: SetGlobalOllamaModelRequest,
+) -> Result<GlobalOllamaModelDto, crate::api::error::CommandError> {
+    commands::set_global_ollama_model(app, state, req).await
 }

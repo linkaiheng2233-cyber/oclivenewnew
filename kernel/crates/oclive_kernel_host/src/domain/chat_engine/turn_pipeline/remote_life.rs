@@ -11,6 +11,7 @@ use super::{
     PreLlmOutput,
 };
 use crate::domain::life_schedule::{format_life_prompt_line, pick_life_state};
+use crate::domain::turn_thinking::{TurnThinkingMode, TurnThinkingPlan};
 
 pub(crate) async fn run_middle(
     ctx: &TurnContext<'_>,
@@ -97,6 +98,10 @@ pub(crate) async fn run_middle(
     );
 
     Ok(MiddleOutput {
+        turn_thinking: TurnThinkingPlan {
+            mode: TurnThinkingMode::Deep,
+            reasons: vec![],
+        },
         complex_emotion_out,
         knowledge_chunk_count,
         ai_event_type,
@@ -106,5 +111,9 @@ pub(crate) async fn run_middle(
         prompt,
         favor_delta,
         relation_after,
+        prompt_stable_hash: None,
+        prompt_stable_len: None,
+        prefix_cache_expected_hit: None,
+        use_ollama_prefix_opts: false,
     })
 }

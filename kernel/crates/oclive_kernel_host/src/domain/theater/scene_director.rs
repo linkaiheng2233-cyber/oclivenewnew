@@ -160,7 +160,7 @@ pub async fn generate_scene(
             tracing::warn!(target: "oclive_theater", "resolve_theater_llm failed: {e}");
             return Ok(fallback_response(
                 req,
-                state.ollama_model.as_str(),
+                state.global_ollama_model().as_str(),
                 "fallback",
             ));
         }
@@ -262,7 +262,7 @@ async fn generate_cast_adapt_scene(
             tracing::warn!(target: "oclive_theater", "cast_adapt resolve_theater_llm failed: {e}");
             return Ok(cast_adapt_fallback_response(
                 req,
-                state.ollama_model.as_str(),
+                state.global_ollama_model().as_str(),
                 "fallback",
             ));
         }
@@ -354,7 +354,7 @@ async fn generate_cast_rewrite_scene(
             tracing::warn!(target: "oclive_theater", "cast_rewrite resolve_theater_llm failed: {e}");
             return Ok(cast_rewrite_fallback_response(
                 req,
-                state.ollama_model.as_str(),
+                state.global_ollama_model().as_str(),
                 "fallback",
                 "rewrite_llm_resolve_failed",
             ));
@@ -506,7 +506,7 @@ async fn generate_outline_rewrite_scene(
             tracing::warn!(target: "oclive_theater", "outline_rewrite resolve_theater_llm failed: {e}");
             return Ok(cast_rewrite_fallback_response(
                 req,
-                state.ollama_model.as_str(),
+                state.global_ollama_model().as_str(),
                 "fallback",
                 "outline_llm_resolve_failed",
             ));

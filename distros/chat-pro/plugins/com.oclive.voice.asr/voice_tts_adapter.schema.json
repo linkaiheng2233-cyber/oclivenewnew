@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "oclive_voice_tts_adapter",
+  "type": "object",
+  "required": ["adapter_id", "api_style", "base_url"],
+  "properties": {
+    "adapter_id": { "type": "string" },
+    "label": { "type": "string" },
+    "api_style": {
+      "type": "string",
+      "enum": [
+        "openai-speech-v1",
+        "cosyvoice2-synthesize",
+        "gpt-sovits-v2",
+        "custom-json-template"
+      ]
+    },
+    "base_url": { "type": "string" },
+    "probe_path": { "type": "string", "default": "/health" },
+    "synthesize_path": { "type": "string", "default": "/v1/audio/speech" },
+    "method": { "type": "string", "enum": ["GET", "POST"], "default": "POST" },
+    "default_voice": { "type": "string" },
+    "text_language": { "type": "string" },
+    "request_template": { "type": "object" },
+    "response_audio_field": { "type": "string" },
+    "field_map": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    }
+  },
+  "additionalProperties": false
+}

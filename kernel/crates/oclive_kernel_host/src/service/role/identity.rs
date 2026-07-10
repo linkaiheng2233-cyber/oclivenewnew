@@ -103,6 +103,7 @@ pub async fn set_user_identity_impl(
     req: &SetUserIdentityRequest,
 ) -> Result<UserIdentityStateResponse, CommandError> {
     ensure_manifest_role_ready(state, &req.role_id).await?;
+    state.invalidate_role_cache(&req.role_id);
     let role = state.load_role_cached_async(&req.role_id).await?;
 
     if role.user_identity_catalog.is_none() {
@@ -124,6 +125,10 @@ pub async fn set_user_identity_impl(
             .db_manager
             .set_use_manifest_default_identity(&req.role_id, true)
             .await?;
+        let default_id = default_identity_id(&role);
+        if !default_id.is_empty() {
+            sync_relation_for_identity(state, &role, &req.role_id, default_id.as_str()).await?;
+        }
     } else {
         let catalog = role.user_identity_catalog.as_ref().expect("checked");
         if !catalog.identities.contains_key(&req.identity_id) {
@@ -167,6 +172,7 @@ pub async fn set_scene_user_identity_impl(
     req: &SetSceneUserIdentityRequest,
 ) -> Result<UserIdentityStateResponse, CommandError> {
     ensure_manifest_role_ready(state, &req.role_id).await?;
+    state.invalidate_role_cache(&req.role_id);
     let role = state.load_role_cached_async(&req.role_id).await?;
     if matches!(role.identity_binding, IdentityBinding::Global) {
         return Err(crate::error::AppError::InvalidParameter(
@@ -240,6 +246,7 @@ pub async fn get_user_identity_state_impl(
     req: &GetUserIdentityStateRequest,
 ) -> Result<UserIdentityStateResponse, CommandError> {
     ensure_manifest_role_ready(state, &req.role_id).await?;
+    state.invalidate_role_cache(&req.role_id);
     let role = state.load_role_cached_async(&req.role_id).await?;
     let resolved =
         resolve_active_user_identity(state, &role, &req.role_id, req.scene_id.as_deref()).await?;

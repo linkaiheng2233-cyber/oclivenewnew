@@ -49,6 +49,7 @@ pub mod event_impact_ai;
 pub mod expert_routing;
 pub mod fallback_agent;
 pub mod host_profile;
+pub mod model_tier;
 pub mod mutable_profile_llm;
 pub mod noop_slot_backends;
 pub mod plugin_host;
@@ -59,6 +60,7 @@ pub mod role_manager;
 pub mod slot_resolver;
 pub mod slot_runner;
 pub mod theater;
+pub mod turn_thinking;
 pub mod visual_presentation;
 
 pub use agent::{AgentDebugTrace, AgentInput, AgentOutput, AgentProvider, BuiltinReActAgent};
@@ -83,7 +85,9 @@ pub use policy::{
 pub use prompt_assembler::{
     BuiltinPromptAssembler, PromptAssembler, RemotePromptAssemblerPlaceholder,
 };
-pub use prompt_builder::{effective_reply_quality_anchor, PromptBuilder, PromptInput};
+pub use prompt_builder::{
+    effective_reply_quality_anchor, hash_stable_prefix, PromptBuilder, PromptInput, PromptSegments,
+};
 #[cfg(test)]
 pub use role_manager::RoleManager;
 pub use user_emotion_analyzer::{

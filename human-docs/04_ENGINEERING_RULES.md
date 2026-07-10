@@ -1,5 +1,6 @@
-# 04 · 工程约束（7 条）
+# 04 · 工程约束（代码 7 条 + 文档纪律）
 
+> **最后更新**：2026-06-26  
 > **读者**：准备提内核 PR 的工程师。  
 > **读完能做什么**：避免 review 高频打回项（编排位置、DTO 字段、Prompt、`import` 路径）。  
 > **耗时**：约 25 分钟。  
@@ -74,9 +75,48 @@
 
 ---
 
+## 8. 文档贡献纪律（人类版）
+
+> AI 完整条文见 [AI_CHANGE_BOUNDARIES G10–G16](../handoff/AI_CHANGE_BOUNDARIES.md)。本节用 **人类可读** 方式说明：大项目靠文档有条理，**效率来自限制**——写得多不如写得 **准、准在一处**。
+
+### 8.1 动笔前先找「唯一 SSOT」
+
+1. 打开 [`handoff/README.md` §文档分责](../handoff/README.md) — 你的主题是否 **已有** 负责文档？  
+2. **有** → 只改那一份（或只加一节），**不要** 新建 `handoff/某某.md`  
+3. **没有** → 需要维护者/RFC 认定「必须新开」；并登记进分责表  
+
+**模块 / 六槽 / 设施关系**：只维护 [`MODULE_MAP_AND_HANDOFF.md`](../handoff/MODULE_MAP_AND_HANDOFF.md)。人类入门读 [01 简架构](01_ARCHITECTURE_SIMPLE.md)；**按模块开工**读 [`modules/`](modules/README.md)（checklist · 链 SSOT）；定义仍只在 MODULE_MAP，**不要在 human-docs 复制整表**。
+
+### 8.2 人类包 vs AI 包
+
+| | human-docs（本目录） | handoff / creator-docs / AGENTS |
+|--|----------------------|----------------------------------|
+| 读者 | 人 · 顺序学 | AI · 索引 · 契约 |
+| 篇幅 | **可长、可细、排版友好** | **短、链出、不重复** |
+| 进度 | [human-docs/README 文档包进度](README.md#文档包进度与-ai-包同步--2026-06-25) | [TECHNICAL_DEBT §1](../handoff/TECHNICAL_DEBT_INVENTORY.md) |
+
+改架构时：**同一次 PR** 更新 MODULE_MAP（若动模块）+ 相关 human-docs 节 + 本 README 进度表日期，避免「文档进度不统一」被误当技术债。
+
+### 8.3 写作风格（人类阅读体验）
+
+- 文首：**读者 · 读完能做什么 · 耗时 · 下一篇**（与本页一致）  
+- 用 **表格** 列事实；用 **短节** + 小标题；避免单段超过 15 行  
+- 状态词统一：`Done` / `OPEN` / `冻结` / `草案` / `已归档`  
+- 跨主题：**链接 + 一句**，不粘贴 PLUGIN_V1 / MODULE_MAP 全文  
+- **禁止** 把 `handoff/archive/` 或 `04_4.6` 当现行 truth  
+
+### 8.4 PR 里改文档时的自检
+
+- [ ] 只动了一个 SSOT 范围？  
+- [ ] human-docs 与 handoff 进度表日期一致？  
+- [ ] 英文 human-docs-en 若受影响，至少更新了 README 索引一行？  
+
+---
+
 ## 验收
 
-- [ ] 能说出 7 条各对应哪类典型 PR 失误
+- [ ] 能说出 7 条代码约束各对应哪类 PR 失误  
+- [ ] 能说出「改六槽定义去 MODULE_MAP，改 human 入门去 01/06」  
 - [ ] 改 DTO 时知道先打开 `dto.rs`
 
 ---
@@ -85,3 +125,4 @@
 
 - [BREAKING_CHANGE_PROCESS](../handoff/BREAKING_CHANGE_PROCESS.md)
 - [KERNEL_ERROR_CODE_CONVENTION](../creator-docs/getting-started/KERNEL_ERROR_CODE_CONVENTION.md)
+- [handoff/README §文档分责](../handoff/README.md)

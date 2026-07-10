@@ -154,3 +154,7 @@ watch(
   flex-direction: column;
 }
 </style>
+
+<style>
+@import '@oclive/shared/styles/win98/component-side-panel.css';
+</style>

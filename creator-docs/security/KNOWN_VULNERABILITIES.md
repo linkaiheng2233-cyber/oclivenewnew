@@ -12,10 +12,10 @@
 | 项 | 值 |
 |----|-----|
 | **cargo-audit 版本** | **0.22.1**（建议固定该主版本以便报告可比） |
-| **最近扫描日期** | **2026-06-24**（本地，`cargo audit --no-fetch --stale` + 已缓存 `~/.cargo/advisory-db`）；**`Cargo.lock` 基线** workspace `oclive_sqlx` 直引 `sqlx-sqlite` |
+| **最近扫描日期** | **2026-07-09**（本地 `cargo audit`；`crossbeam-epoch` **0.9.20** · `plist` **1.10.0** · `quick-xml` **0.41.0**） |
 | **扫描路径** | 工作区根目录 `Cargo.lock` |
-| **漏洞级命中数** | **0**（`cargo audit` 退出码 **0**；`sqlx-mysql` / `rsa` 已从锁文件解析图移除，见 `kernel/crates/oclive_sqlx`） |
-| **警告级命中数** | **3**（`cargo audit` + [`.cargo/audit.toml`](../../.cargo/audit.toml) 已记录并忽略 **11** 条 gtk-rs GTK3 / 工具链 *unmaintained*；见下表） |
+| **漏洞级命中数** | **0**（`cargo audit` 退出码 **0**） |
+| **警告级命中数** | **4**（`fxhash` · `glib` · `rand` 0.7 · `anyhow`；gtk-rs 簇见 `.cargo/audit.toml` ignore **11** 条） |
 
 > 若 CI 或本机无法拉取 advisory-db，可使用：`cargo audit --no-fetch --stale`（依赖本地已 fetch 的数据库）。
 
@@ -31,6 +31,9 @@
 | [RUSTSEC-2026-0104](https://rustsec.org/advisories/RUSTSEC-2026-0104) | rustls-webpki 0.101 | **已清零** | |
 | [RUSTSEC-2024-0363](https://rustsec.org/advisories/RUSTSEC-2024-0363) | sqlx 0.7.4 | **已清零** — 已升级至 **0.8.6** | |
 | [RUSTSEC-2026-0185](https://rustsec.org/advisories/RUSTSEC-2026-0185) | quinn-proto &lt; 0.11.15 | **已修复** — 锁文件 **0.11.15** | 2026-06-24 条理优化波次 A 升级 |
+| [RUSTSEC-2026-0204](https://rustsec.org/advisories/RUSTSEC-2026-0204) | crossbeam-epoch 0.9.18 | **已修复** — **0.9.20** | 2026-07-09 PR #101 CI 供应链 |
+| [RUSTSEC-2026-0194](https://rustsec.org/advisories/RUSTSEC-2026-0194) | quick-xml 0.39.4 | **已修复** — **0.41.0**（经 plist 1.10） | 同上 |
+| [RUSTSEC-2026-0195](https://rustsec.org/advisories/RUSTSEC-2026-0195) | quick-xml 0.39.4 | **已修复** — **0.41.0** | 同上 |
 
 ---
 
@@ -62,6 +65,7 @@
 | **RUSTSEC-2025-0057** | `fxhash` | **开放** | 经 Tauri HTML 解析传递；无直接 API |
 | **RUSTSEC-2024-0429** | `glib` | **开放** | `VariantStrIter` 路径；宿主未使用 |
 | **RUSTSEC-2026-0097** | `rand` 0.7 | **开放** | 经 `phf`/Tauri 宏；需上游 Tauri 2 |
+| **RUSTSEC-2026-0190** | `anyhow` | **开放** | 经 wit-bindgen / Tauri build 链；跟踪上游 |
 
 忽略列表与理由见 [`.cargo/audit.toml`](../.cargo/audit.toml) 与 [SECURITY_AUDIT_SCOPE.md](./SECURITY_AUDIT_SCOPE.md)。
 

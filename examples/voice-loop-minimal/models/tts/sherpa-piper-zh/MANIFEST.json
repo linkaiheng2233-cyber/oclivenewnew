@@ -1,0 +1,12 @@
+{
+  "id": "sherpa-piper-zh",
+  "engine": "sherpa-onnx-tts",
+  "label": "Sherpa Piper zh (Windows first)",
+  "model_file": "model.onnx",
+  "tokens_file": "tokens.txt",
+  "data_dir": "espeak-ng-data",
+  "num_threads": 2,
+  "speaker_id": 0,
+  "speed": 1.0,
+  "note": "Download Piper/sherpa TTS model files separately; not bundled in git."
+}

@@ -4,7 +4,6 @@ import { useI18n } from 'vue-i18n'
 import {
   loadRole,
   OCLIVE_DEFAULT_RELATION_SENTINEL,
-  setRoleInteractionMode,
   setUserRelation,
 } from '@oclive/shared/api'
 import { getLocalePreference } from '@oclive/shared/i18n'
@@ -22,13 +21,14 @@ import { useRoleSnapshotPoll } from '@oclive/shared/composables/useKernelStatus'
 import { useMainShellChat } from './useMainShellChat'
 import { useMainShellHotkeys } from './useMainShellHotkeys'
 import { useMainShellWindows } from './useMainShellWindows'
-import { useNarrativeScene } from '@oclive/shared/composables/useNarrativeScene'
 import { usePluginEvents } from '@oclive/shared/composables/usePluginEvents'
+import { useVoiceAutoTts } from '@oclive/shared/composables/useVoiceAutoTts'
 import { useReturnFocusOnClose } from '@oclive/shared/composables/useReturnFocusOnClose'
 import { useSceneDestination } from '@oclive/shared/composables/useSceneDestination'
 import { useSceneTravelBars } from '@oclive/shared/composables/useSceneTravelBars'
 import { usePackUiTheme } from '@oclive/shared/composables/useTheme'
 import { useProgressiveDisclosure } from '@oclive/shared/composables/useProgressiveDisclosure'
+import { useInteractionModeSettings } from '@oclive/shared/composables/useInteractionModeSettings'
 import { markPresetPickerDone } from '@oclive/shared/utils/presetRolePicker'
 import { resolveOcliveShell } from '@oclive/shared/composables/useOcliveShell'
 
@@ -61,8 +61,8 @@ export function useMainShell() {
 
   const { toast, showToast } = useAppToast()
   const progressive = useProgressiveDisclosure()
+  const { applyPureChatSceneIsolation, onInteractionModeSelect } = useInteractionModeSettings()
   useRoleSnapshotPoll()
-  const { applyResolvedNarrativeScene } = useNarrativeScene()
   const {
     sceneTransition,
     applySceneDestination,
@@ -178,12 +178,6 @@ export function useMainShell() {
     settingsFocusTab,
   })
 
-  usePluginEvents({
-    showToast,
-    onQuickActionTravel: onPluginQuickActionTravel,
-    onPureChatMode: resetPureChatSceneUi,
-  })
-
   useReturnFocusOnClose(settingsViewOpen)
   useReturnFocusOnClose(simplePluginManagerOpen)
   useReturnFocusOnClose(modelManagerOpen)
@@ -205,11 +199,19 @@ export function useMainShell() {
   watch(
     () => roleStore.roleInfo.interactionMode,
     (mode) => {
+      // Default state is pure_chat before refreshRoleInfo; cold start is handled by
+      // completeRoleBootstrap.bootstrapChatForRole — do not race-load the wrong bucket.
+      if (!roleStore.roleInfo.version)
+        return
       if (mode === 'pure_chat') {
+        applyPureChatSceneIsolation()
         resetPureChatSceneUi()
         closePluginSurfaces()
         if (settingsFocusTab.value === 'plugins')
           settingsFocusTab.value = 'general'
+        const roleId = roleStore.currentRoleId
+        if (roleId)
+          void chatStore.enterPureChatScene(roleId)
       }
     },
   )
@@ -250,22 +252,11 @@ export function useMainShell() {
   })
 
   async function onInteractionModeChange(ev: Event) {
+    // Primary in-shell handler for InteractionModeBar (Settings → General is the other user entry).
     const v = (ev.target as HTMLSelectElement).value as 'immersive' | 'pure_chat'
-    try {
-      const info = await setRoleInteractionMode(roleStore.currentRoleId, v)
-      roleStore.applyRoleInfo(info)
-      if (v === 'pure_chat')
-        resetPureChatSceneUi()
-      showToast(
-        'info',
-        v === 'pure_chat'
-          ? t('app.toast.interactionPureChat')
-          : t('app.toast.interactionImmersive'),
-      )
-    }
-    catch (err) {
-      showToast('error', err instanceof Error ? err.message : String(err))
-    }
+    await onInteractionModeSelect(ev)
+    if (v === 'pure_chat')
+      resetPureChatSceneUi()
   }
 
   useAppBootstrap({
@@ -314,18 +305,34 @@ export function useMainShell() {
     t,
     clearSceneBarsBeforeSend,
     offerSceneBarsAfterReply,
-    onTurnRecorded: msg => progressive.recordTurn(msg),
+    onTurnRecorded: () => progressive.recordTurn(),
   })
+
+  usePluginEvents({
+    showToast,
+    onQuickActionTravel: onPluginQuickActionTravel,
+    onPureChatMode: resetPureChatSceneUi,
+    onVoiceAsrSubmit: ({ text, mode }) => {
+      if (!text?.trim())
+        return
+      if (mode === 'fill') {
+        hostEventBus.emit('chat:set_input_draft', { text: text.trim() })
+        return
+      }
+      void onSend({ content: text.trim() })
+    },
+  })
+
+  useVoiceAutoTts({ showToast })
 
   async function onSwitchRole(nextRoleId: string) {
     const savedLeftScroll = leftPaneRef.value?.scrollTop ?? 0
     try {
       roleSwitching.value = true
       await roleStore.switchRole(nextRoleId)
-      await chatStore.loadMessagesForRoleScene(nextRoleId, uiStore.sceneId || 'default')
+      await chatStore.bootstrapChatForRole(nextRoleId)
       await pluginStore.syncDirectoryPluginBootstrap()
       hostEventBus.emitBuiltin('role:switched', { roleId: nextRoleId })
-      applyResolvedNarrativeScene()
       await debugStore.loadDebugData()
       showToast('success', t('app.toast.roleSwitched', { id: nextRoleId }))
     }
@@ -377,7 +384,7 @@ export function useMainShell() {
       await pluginStore.refresh()
       await roleStore.refreshRoleInfo()
       await roleStore.loadRoles()
-      applyResolvedNarrativeScene()
+      await chatStore.bootstrapChatForRole(roleId)
       await debugStore.loadDebugData()
     }
     catch (err) {

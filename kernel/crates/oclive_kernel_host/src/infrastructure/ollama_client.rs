@@ -23,6 +23,49 @@ pub struct OllamaRequest {
     pub temperature: Option<f32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub top_p: Option<f32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub keep_alive: Option<String>,
+}
+
+/// Optional knobs for Deep prefix-cache sessions (Ollama-only; ignored by `LlmClient` trait).
+#[derive(Debug, Clone, Default)]
+pub struct OllamaGenerateOpts {
+    pub keep_alive: Option<String>,
+    pub want_metrics: bool,
+}
+
+impl OllamaGenerateOpts {
+    #[must_use]
+    pub fn deep_prefix_cache() -> Self {
+        Self {
+            keep_alive: std::env::var("OCLIVE_OLLAMA_KEEP_ALIVE")
+                .ok()
+                .filter(|s| !s.trim().is_empty())
+                .or_else(|| Some("30m".to_string())),
+            want_metrics: true,
+        }
+    }
+}
+
+/// Timing fields from Ollama `/api/generate` (nanoseconds).
+#[derive(Debug, Clone, Default)]
+pub struct OllamaGenerateMetrics {
+    pub prompt_eval_duration_ns: Option<u64>,
+    pub prompt_eval_count: Option<u64>,
+    pub eval_duration_ns: Option<u64>,
+}
+
+impl OllamaGenerateMetrics {
+    #[must_use]
+    pub fn prompt_eval_ms(&self) -> Option<u64> {
+        self.prompt_eval_duration_ns.map(|ns| ns / 1_000_000)
+    }
+}
+
+#[derive(Debug)]
+pub struct OllamaGenerateResult {
+    pub response: String,
+    pub metrics: OllamaGenerateMetrics,
 }
 
 /// Ollama response body.
@@ -32,6 +75,12 @@ pub struct OllamaResponse {
     pub model: String,
     pub created_at: String,
     pub done: bool,
+    #[serde(default)]
+    pub prompt_eval_duration: Option<u64>,
+    #[serde(default)]
+    pub prompt_eval_count: Option<u64>,
+    #[serde(default)]
+    pub eval_duration: Option<u64>,
 }
 
 /// Ollama HTTP client.
@@ -123,6 +172,25 @@ impl OllamaClient {
         temperature: Option<f32>,
         top_p: Option<f32>,
     ) -> Result<String> {
+        let out = self
+            .generate_with_opts(model, prompt, temperature, top_p, None)
+            .await?;
+        Ok(out.response)
+    }
+
+    /// Like [`generate`](Self::generate) but accepts Deep-session `keep_alive` and returns bench metrics.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`anyhow::Error`] when the Ollama HTTP request fails or the response is invalid.
+    pub async fn generate_with_opts(
+        &self,
+        model: &str,
+        prompt: &str,
+        temperature: Option<f32>,
+        top_p: Option<f32>,
+        opts: Option<&OllamaGenerateOpts>,
+    ) -> Result<OllamaGenerateResult> {
         let url = format!("{}/api/generate", self.base_url);
 
         let request = OllamaRequest {
@@ -131,6 +199,7 @@ impl OllamaClient {
             stream: false,
             temperature,
             top_p,
+            keep_alive: opts.and_then(|o| o.keep_alive.clone()),
         };
 
         let response = self
@@ -149,7 +218,6 @@ impl OllamaClient {
             .map_err(|e| AppError::OllamaError(format!("Failed to read response body: {}", e)))?;
 
         if !status.is_success() {
-            // 404 often means missing model or wrong URL; body often contains {"error":"..."}
             return Err(AppError::OllamaError(format!(
                 "HTTP {} — {} (请求: POST {}/api/generate, model={})",
                 status,
@@ -167,7 +235,20 @@ impl OllamaClient {
             ))
         })?;
 
-        Ok(ollama_response.response)
+        let metrics = if opts.is_some_and(|o| o.want_metrics) {
+            OllamaGenerateMetrics {
+                prompt_eval_duration_ns: ollama_response.prompt_eval_duration,
+                prompt_eval_count: ollama_response.prompt_eval_count,
+                eval_duration_ns: ollama_response.eval_duration,
+            }
+        } else {
+            OllamaGenerateMetrics::default()
+        };
+
+        Ok(OllamaGenerateResult {
+            response: ollama_response.response,
+            metrics,
+        })
     }
     /// # Errors
     ///
@@ -181,6 +262,33 @@ impl OllamaClient {
         top_p: Option<f32>,
         on_token: Arc<dyn Fn(&str) + Send + Sync>,
     ) -> Result<String> {
+        let out = self
+            .generate_stream_with_callback_and_opts(
+                model,
+                prompt,
+                temperature,
+                top_p,
+                on_token,
+                None,
+            )
+            .await?;
+        Ok(out.response)
+    }
+
+    /// Streaming generate with optional `keep_alive` and final-frame metrics.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`anyhow::Error`] when the Ollama stream request fails or the final frame is invalid.
+    pub async fn generate_stream_with_callback_and_opts(
+        &self,
+        model: &str,
+        prompt: &str,
+        temperature: Option<f32>,
+        top_p: Option<f32>,
+        on_token: Arc<dyn Fn(&str) + Send + Sync>,
+        opts: Option<&OllamaGenerateOpts>,
+    ) -> Result<OllamaGenerateResult> {
         use futures_util::StreamExt;
 
         let url = format!("{}/api/generate", self.base_url);
@@ -191,6 +299,7 @@ impl OllamaClient {
             stream: true,
             temperature,
             top_p,
+            keep_alive: opts.and_then(|o| o.keep_alive.clone()),
         };
 
         let response = self
@@ -215,6 +324,7 @@ impl OllamaClient {
         let mut stream = response.bytes_stream();
         let mut line_buf = String::new();
         let mut full_response = String::new();
+        let mut final_metrics = OllamaGenerateMetrics::default();
 
         while let Some(chunk) = stream.next().await {
             let chunk =
@@ -230,6 +340,13 @@ impl OllamaClient {
                     if !json.response.is_empty() {
                         full_response.push_str(&json.response);
                         on_token(json.response.as_str());
+                    }
+                    if json.done {
+                        final_metrics = OllamaGenerateMetrics {
+                            prompt_eval_duration_ns: json.prompt_eval_duration,
+                            prompt_eval_count: json.prompt_eval_count,
+                            eval_duration_ns: json.eval_duration,
+                        };
                     }
                 } else {
                     tracing::warn!(
@@ -247,6 +364,13 @@ impl OllamaClient {
                         full_response.push_str(&json.response);
                         on_token(json.response.as_str());
                     }
+                    if json.done {
+                        final_metrics = OllamaGenerateMetrics {
+                            prompt_eval_duration_ns: json.prompt_eval_duration,
+                            prompt_eval_count: json.prompt_eval_count,
+                            eval_duration_ns: json.eval_duration,
+                        };
+                    }
                 }
                 Err(e) => {
                     tracing::warn!(
@@ -258,7 +382,16 @@ impl OllamaClient {
             }
         }
 
-        Ok(full_response)
+        let metrics = if opts.is_some_and(|o| o.want_metrics) {
+            final_metrics
+        } else {
+            OllamaGenerateMetrics::default()
+        };
+
+        Ok(OllamaGenerateResult {
+            response: full_response,
+            metrics,
+        })
     }
 
     /// Buffered streaming (legacy): reads full body then merges lines.
@@ -338,6 +471,7 @@ mod tests {
             stream: false,
             temperature: Some(0.7),
             top_p: None,
+            keep_alive: None,
         };
 
         let json = serde_json::to_string(&request).unwrap();

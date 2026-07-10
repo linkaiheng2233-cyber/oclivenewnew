@@ -6,6 +6,7 @@ import { useRoleStore } from '@oclive/shared/stores/roleStore'
 import { useUiStore } from '@oclive/shared/stores/uiStore'
 import { useChatSend } from '@oclive/shared/composables/useChatSend'
 import type { AppToastFn } from '@oclive/shared/composables/useAppToast'
+import { effectiveChatSceneId } from '@oclive/shared/utils/pureChatScene'
 
 export function useMainShellChat(options: {
   roleStore: ReturnType<typeof useRoleStore>
@@ -14,32 +15,39 @@ export function useMainShellChat(options: {
   t: ComposerTranslation
   clearSceneBarsBeforeSend: () => void
   offerSceneBarsAfterReply: (together: boolean, destination: boolean) => void
-  onTurnRecorded: (userMessage: string) => void
+  onTurnRecorded: () => void
 }) {
   const chatStore = useChatStore()
   const chatListRef = ref<InstanceType<typeof ChatMessageList> | null>(null)
   const chatInputRef = ref<{ focusInput?: () => void } | null>(null)
 
+  const activeSceneId = computed(() =>
+    effectiveChatSceneId(
+      options.roleStore.roleInfo.interactionMode,
+      options.uiStore.sceneId,
+    ),
+  )
+
   const messages = computed(() =>
-    chatStore.messagesForRoleScene(options.roleStore.currentRoleId, options.uiStore.sceneId),
+    chatStore.messagesForRoleScene(options.roleStore.currentRoleId, activeSceneId.value),
   )
 
   const chatListLoading = computed(() =>
     chatStore.isLoading
-    || chatStore.isMessagesLoadingFor(options.roleStore.currentRoleId, options.uiStore.sceneId),
+    || chatStore.isMessagesLoadingFor(options.roleStore.currentRoleId, activeSceneId.value),
   )
 
   const latestRoleplayAside = computed(() => {
     const roleId = options.roleStore.currentRoleId
-    const sceneId = options.uiStore.sceneId || 'default'
-    return chatStore.lastAssistantAsideFor(roleId, sceneId)
+    return chatStore.lastAssistantAsideFor(roleId, activeSceneId.value)
   })
 
-  const sceneHistorySplitIndex = computed(() => {
-    if (!options.roleStore.interactionImmersive)
-      return 0
-    return chatStore.sceneHistorySplitForRoleScene(options.roleStore.currentRoleId, options.uiStore.sceneId)
-  })
+  const sceneHistorySplitIndex = computed(() =>
+    chatStore.sceneHistorySplitForRoleScene(
+      options.roleStore.currentRoleId,
+      activeSceneId.value,
+    ),
+  )
 
   const { onSend } = useChatSend({
     showToast: options.showToast,

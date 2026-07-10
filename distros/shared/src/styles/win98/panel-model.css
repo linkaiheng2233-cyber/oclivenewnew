@@ -1,0 +1,75 @@
+/* Win98 skin — co-locate SSOT: see MODULE_MAP §13.2 dependency table */
+/* Scope: html[data-skin="win98"] only */
+/* Imported by: ModelManagerPanel.vue */
+
+html[data-skin="win98"] .mm-backdrop {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+html[data-skin="win98"] .mm-dialog {
+  border: 2px outset #dfdfdf;
+  border-radius: 0;
+  box-shadow: 1px 1px 0 #000000;
+  background: #c0c0c0;
+  padding: 0;
+  overflow: hidden;
+}
+
+html[data-skin="win98"] .mm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0;
+  padding: 2px 2px 2px 4px;
+  background: linear-gradient(90deg, #000080 0%, #1084d0 100%);
+  color: #ffffff;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: bold;
+}
+
+html[data-skin="win98"] .mm-heading {
+  margin: 0;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+html[data-skin="win98"] .mm-dialog > :not(.mm-header) {
+  padding-left: 8px;
+  padding-right: 8px;
+  padding-bottom: 8px;
+}
+
+html[data-skin="win98"] .mm-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 16px;
+  height: 14px;
+  min-width: 16px;
+  padding: 0;
+  border: 2px outset #dfdfdf;
+  border-radius: 0;
+  background: #c0c0c0;
+  color: #000000;
+  font-family: var(--font-ui);
+  font-size: 9px;
+  font-weight: bold;
+  line-height: 1;
+  cursor: default;
+  box-shadow: none;
+}
+
+html[data-skin="win98"] .mm-close:active {
+  border-style: inset;
+}
+
+/* Embedded mode in Tool shell */
+html[data-skin="win98"] .mm-embedded {
+  border: none;
+  box-shadow: none;
+  background: transparent;
+}

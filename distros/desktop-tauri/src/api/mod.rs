@@ -37,6 +37,6 @@ pub use memory::query_memories;
 pub use monologue::generate_monologue;
 pub use plugin_bridge::plugin_bridge_invoke;
 pub use policy::reload_policy_plugins;
-pub use role::{get_role_info, list_roles, load_role, switch_role};
+pub use role::{get_display_metrics, get_role_info, list_roles, load_role, switch_role};
 pub use scene::switch_scene;
 pub use time::{get_time_state, jump_time};

@@ -1,9 +1,10 @@
 import type { StoredMessage } from '@oclive/shared/api/chatStorage'
 import type { RoleSceneMessageMap } from '@oclive/shared/utils/chatMessageDb'
 import type { ChatMessage } from './chatStore'
-import { fetchChatMessages, listChatSessions } from '@oclive/shared/api/chatStorage'
+import { fetchChatMessages, getChatStorageStats, listChatSessions } from '@oclive/shared/api/chatStorage'
 import {
   loadBucketFromIdb,
+  loadMessageMapFromIdb,
 
   saveBucketToIdb,
 } from '@oclive/shared/utils/chatMessageDb'
@@ -67,6 +68,49 @@ function splitRecentAssistantMessages(messages: ChatMessage[]): ChatMessage[] {
   return messages
 }
 
+/** Scene probe order when the narrative-resolved bucket is empty (cross-scene / IDB recovery). */
+export function buildSceneLoadCandidates(
+  primarySceneId: string,
+  packScenes: string[],
+  scenesWithSessions: string[] = [],
+): string[] {
+  const seen = new Set<string>()
+  const out: string[] = []
+  const push = (raw: string | undefined | null) => {
+    const id = (raw ?? '').trim() || 'default'
+    if (seen.has(id))
+      return
+    seen.add(id)
+    out.push(id)
+  }
+  for (const s of scenesWithSessions)
+    push(s)
+  push(primarySceneId)
+  for (const s of packScenes)
+    push(s)
+  push('home')
+  push('default')
+  return out
+}
+
+async function loadBucketFromIdbOrMap(
+  messageMap: RoleSceneMessageMap,
+  roleId: string,
+  sid: string,
+  previousLocal: ChatMessage[],
+): Promise<ChatMessage[] | null> {
+  const cached = await loadBucketFromIdb(roleId, sid)
+  if (cached?.length) {
+    return splitRecentAssistantMessages(
+      mergeMessagesFromServer(cached, previousLocal),
+    )
+  }
+  const roleBucket = messageMap[roleId]
+  if (roleBucket && !Array.isArray(roleBucket) && roleBucket[sid]?.length)
+    return roleBucket[sid]!
+  return null
+}
+
 /** Resolve backend `session_id` for a role×scene bucket; null when the scene has no session yet. */
 export async function resolveChatSessionId(
   roleId: string,
@@ -85,6 +129,63 @@ export async function resolveChatSessionId(
       return conversationSessionId(roleId, null)
     return null
   }
+}
+
+/** Scenes that have at least one backend session for `roleId` (storage stats). */
+export async function listScenesWithBackendSessions(roleId: string): Promise<string[]> {
+  try {
+    const stats = await getChatStorageStats()
+    const row = stats.find(s => s.role_id === roleId)
+    if (!row)
+      return []
+    return row.scenes
+      .filter(s => s.session_count > 0)
+      .sort((a, b) => (b.last_active ?? '').localeCompare(a.last_active ?? ''))
+      .map(s => s.scene_id)
+  }
+  catch {
+    return []
+  }
+}
+
+/**
+ * Load the best non-empty bucket for a role: primary narrative scene first, then other
+ * scenes with backend sessions, then pack scenes / home / default, then IDB index scan.
+ */
+export async function loadRoleSceneMessagesWithSceneFallback(
+  messageMap: RoleSceneMessageMap,
+  roleId: string,
+  primarySceneId: string,
+  packScenes: string[],
+): Promise<string> {
+  const scenesWithSessions = await listScenesWithBackendSessions(roleId)
+  const candidates = buildSceneLoadCandidates(
+    primarySceneId,
+    packScenes,
+    scenesWithSessions,
+  )
+  for (const sceneId of candidates) {
+    const messages = await loadRoleSceneMessages(messageMap, roleId, sceneId)
+    if (messages.length > 0)
+      return sceneId
+  }
+  const idbMap = await loadMessageMapFromIdb()
+  const idbRole = idbMap?.[roleId]
+  if (idbRole && !Array.isArray(idbRole)) {
+    let bestScene: string | null = null
+    let bestCount = 0
+    for (const [sceneId, msgs] of Object.entries(idbRole)) {
+      if (msgs.length > bestCount) {
+        bestCount = msgs.length
+        bestScene = sceneId
+      }
+    }
+    if (bestScene) {
+      await loadRoleSceneMessages(messageMap, roleId, bestScene)
+      return bestScene
+    }
+  }
+  return primarySceneId
 }
 
 /** Merge server-fetched messages with local bucket, keeping optimistic rows absent from server. */
@@ -128,6 +229,16 @@ export async function loadRoleSceneMessages(
   const previousLocal = messageMap[roleId]?.[sid] ?? []
   const sessionId = await resolveChatSessionId(roleId, sid)
   if (!sessionId) {
+    const fromIdb = await loadBucketFromIdbOrMap(
+      messageMap,
+      roleId,
+      sid,
+      previousLocal,
+    )
+    if (fromIdb) {
+      writeBucket(messageMap, roleId, sid, fromIdb)
+      return fromIdb
+    }
     return writeBucket(messageMap, roleId, sid, previousLocal)
   }
   try {

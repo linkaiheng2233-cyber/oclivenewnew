@@ -15,6 +15,7 @@ const { t } = useI18n()
 </script>
 
 <template>
+  <!-- Discovery entry: nudges pure_chat users toward immersive; not a primary mode switch (see InteractionModeBar + Settings). -->
   <div v-if="visible" class="immersive-unlock-banner" role="status">
     <p class="immersive-unlock-banner__title">
       {{ t('onboarding.immersiveUnlock.title') }}

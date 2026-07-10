@@ -1,5 +1,6 @@
 //! Tauri-desktop-only hooks (plugin FS watcher, chat auto-cleanup scheduler).
 
+use notify::event::{EventKind, ModifyKind};
 use notify::{Config, RecommendedWatcher, RecursiveMode, Watcher};
 use oclive_kernel_host::infrastructure::chat_storage::run_global_auto_cleanup;
 use oclive_kernel_host::infrastructure::directory_plugins::{
@@ -32,11 +33,37 @@ async fn run_if_ready(app: &AppHandle) {
     run_global_auto_cleanup(state.inner()).await;
 }
 
+fn plugin_fs_event_needs_rescan(paths: &[PathBuf]) -> bool {
+    paths.iter().any(|p| {
+        let lossy = p.to_string_lossy().replace('\\', "/");
+        if lossy.ends_with("/manifest.json") || lossy.ends_with("manifest.json") {
+            return true;
+        }
+        if lossy.ends_with("/rpc_server.mjs") || lossy.ends_with("rpc_server.mjs") {
+            return true;
+        }
+        if lossy.ends_with("/package.json") || lossy.ends_with("package.json") {
+            return true;
+        }
+        false
+    })
+}
+
+fn plugin_fs_event_is_relevant(kind: &EventKind) -> bool {
+    matches!(
+        kind,
+        EventKind::Modify(ModifyKind::Data(_))
+            | EventKind::Modify(ModifyKind::Name(_))
+            | EventKind::Create(_)
+            | EventKind::Remove(_)
+    )
+}
+
 /// Watch plugin container dirs in developer mode; debounced rescan + `plugin:changed` emit.
 pub fn start_plugin_fs_watcher(app: tauri::AppHandle, state: &AppState, roles_dir: PathBuf) {
     let app_data = state.directory_plugins.app_data_dir().to_path_buf();
     let host: HostPluginsFile = state.directory_plugins.host().clone();
-    if !host.developer_effective() {
+    if !host.developer_effective() && !cfg!(debug_assertions) {
         return;
     }
     let roots = plugin_scan_container_roots(&roles_dir, &app_data, &host);
@@ -48,11 +75,11 @@ pub fn start_plugin_fs_watcher(app: tauri::AppHandle, state: &AppState, roles_di
         return;
     }
 
-    let (tx, rx) = channel::<()>();
+    let (tx, rx) = channel::<notify::Event>();
     let mut watcher = match RecommendedWatcher::new(
         move |res: Result<notify::Event, notify::Error>| {
-            if res.is_ok() {
-                let _ = tx.send(());
+            if let Ok(ev) = res {
+                let _ = tx.send(ev);
             }
         },
         Config::default(),
@@ -83,14 +110,29 @@ pub fn start_plugin_fs_watcher(app: tauri::AppHandle, state: &AppState, roles_di
     let n_roots = roots.len();
     std::thread::spawn(move || {
         let _keep = watcher;
-        while let Ok(()) = rx.recv() {
+        while let Ok(ev) = rx.recv() {
+            if !plugin_fs_event_is_relevant(&ev.kind) {
+                continue;
+            }
             std::thread::sleep(Duration::from_millis(500));
-            while rx.try_recv().is_ok() {}
+            let mut batch = ev;
+            while let Ok(more) = rx.try_recv() {
+                if plugin_fs_event_is_relevant(&more.kind) {
+                    batch.paths.extend(more.paths);
+                }
+            }
 
-            runtime.rescan_plugin_roots(roles_for_rescan.as_path());
+            let needs_rescan = plugin_fs_event_needs_rescan(&batch.paths);
+            if needs_rescan {
+                runtime.rescan_plugin_roots(roles_for_rescan.as_path());
+            }
             let _ = app_emit.emit_all(
                 "plugin:changed",
-                json!({ "source": "fs", "containerRoots": n_roots }),
+                json!({
+                    "source": "fs",
+                    "containerRoots": n_roots,
+                    "rescan": needs_rescan,
+                }),
             );
         }
     });

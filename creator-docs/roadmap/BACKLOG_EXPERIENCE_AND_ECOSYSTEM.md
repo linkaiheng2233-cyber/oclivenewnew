@@ -54,6 +54,16 @@
 | 状态 | **愿景已纳入 · 待排期**；T0 RFC 未开。`expert_routing` / `dual_core` **冻结期内**仅契约+工坊原型，不接 Stable 主链。 |
 | 场景参考 | [APPLICATION_SCENARIOS.md](APPLICATION_SCENARIOS.md) **S11** |
 
+### 6. 具身互动 · 性格驱动的「手脚」（Playroom）
+
+| 含义 | 角色除对话外，按人设 **在宿主上动手**：**被动**（用户开口 → agent + MCP）与 **自发**（idle → 行为导演按七维/包策略选动作）。例：高好奇心「小孩」在 **playroom 沙盒** 里建/删文件夹，并反馈到通知与记忆。 |
+|------|------|
+| 涉及仓库 | **oclivenewnew**（内核独立通道 · agent/MCP · Tauri 沙盒目录 · 记忆写入）；可选 **oclive-vscode** 渗透侧 **虚拟工作区**（P3）。 |
+| 与定位关系 | 补 **具身层**，不变成 OpenClaw 式「整台电脑通用 Agent」；聊天仍 co-present，动手走沙盒 + 授权。详见 [VISION_ROADMAP_MONTHLY.md](VISION_ROADMAP_MONTHLY.md)「具身互动」专节。 |
+| 实现时需考虑 | playroom 路径硬编码在宿主；delete 限频与撤销；`skip_agent` 与 Chat Pro 默认 profile；与 `autonomous_scene`（仅虚拟位移）区分。 |
+| 状态 | **愿景已纳入 · 待排期**；P1 被动手脚 → P2 idle 自发 → P3 跨发行版；T0 RFC 未开。 |
+| 场景参考 | [APPLICATION_SCENARIOS.md](APPLICATION_SCENARIOS.md) **S12** |
+
 ---
 
 ## 二、相较于愿景：仍在路上 / 可深化的项
@@ -70,6 +80,7 @@
 | **双软件叙事 + 启动器（月 6）** | README 分工、新用户路径；与第一节「依赖管理」叠加时需统一对外说法。 |
 | **远期 backlog** | WASM 插件、关系/多模式细化、动态 `.dll`/`.so`（谨慎）等，见愿景文「第 7 月及以后」。 |
 | **微调工坊（T0–T3）** | 三发行版后创作者权重层；与专家路由组合；见愿景文专节与本文 §五。 |
+| **具身互动（P1–P3）** | playroom 沙盒 + 被动/自发手脚；见愿景文专节与本文 §六。 |
 
 ---
 
@@ -81,7 +92,8 @@
 2. **玩家上手**：启动器环境检测 → 可选进阶为 Ollama + 模型引导。  
 3. **分发与生态**：市场/UGC（角色包、插件）= 新系统层，依赖版本、签名、信任模型。  
 4. **愿景地基**：契约、第二套 backend、Remote、知识、测试与文档。  
-5. **灵魂权重层**：微调工坊产物、adapter 卫星文件、专家路由运行时切换、评测台对比（晚于三发行版 smoke，非 Theater P0 阻塞）。
+5. **灵魂权重层**：微调工坊产物、adapter 卫星文件、专家路由运行时切换、评测台对比（晚于三发行版 smoke，非 Theater P0 阻塞）。  
+6. **具身互动**：playroom 沙盒 MCP、行为导演独立通道、idle 自发与跨发行版虚拟工作区（非 P0 阻塞）。
 
 ---
 

@@ -1,0 +1,36 @@
+/* Win98 skin — co-locate SSOT: see MODULE_MAP §13.2 dependency table */
+/* Scope: html[data-skin="win98"] only */
+/* Imported by: ChatMessage.vue */
+
+html[data-skin="win98"] .bubble {
+  border-radius: 0;
+  border: 1px solid var(--bubble-border);
+  box-shadow: none;
+  animation: none;
+}
+
+html[data-skin="win98"] .bubble.user {
+  border-radius: 0;
+  background: var(--bubble-user-bg);
+  box-shadow: none;
+}
+
+html[data-skin="win98"] .bubble.assistant {
+  border-radius: 0;
+  background: var(--bubble-bot-bg);
+  box-shadow: none;
+}
+
+html[data-skin="win98"] .bubble.assistant.presence-remote-life,
+html[data-skin="win98"] .bubble.assistant.presence-remote-stub {
+  border-radius: 0;
+  background: var(--bubble-bot-bg);
+  box-shadow: none;
+}
+
+html[data-skin="win98"] .system-line {
+  border-radius: 0;
+  background: #dfdfdf;
+  border: 1px solid #808080;
+  box-shadow: none;
+}

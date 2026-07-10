@@ -1,0 +1,98 @@
+/* Win98 skin — co-locate SSOT: see MODULE_MAP §13.2 dependency table */
+/* Scope: html[data-skin="win98"] only */
+/* Imported by: SettingsView.vue */
+
+html[data-skin="win98"] .sv-backdrop {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+html[data-skin="win98"] .sv-dialog {
+  border: 2px outset #dfdfdf;
+  border-radius: 0;
+  box-shadow: 1px 1px 0 #000000;
+  background: #c0c0c0;
+  padding: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+html[data-skin="win98"] .sv-dialog.sv-dialog--voice {
+  overflow: hidden;
+}
+
+html[data-skin="win98"] .sv-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0;
+  padding: 2px 2px 2px 4px;
+  background: linear-gradient(90deg, #000080 0%, #1084d0 100%);
+  color: #ffffff;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: bold;
+}
+
+html[data-skin="win98"] .sv-title {
+  margin: 0;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+html[data-skin="win98"] .sv-nav,
+html[data-skin="win98"] .sv-body {
+  padding-left: 8px;
+  padding-right: 8px;
+  padding-bottom: 8px;
+}
+
+html[data-skin="win98"] .sv-nav-btn {
+  border-radius: 0;
+  border: 2px outset #dfdfdf;
+  background: #c0c0c0;
+  color: #000000;
+}
+
+html[data-skin="win98"] .sv-nav-btn[aria-current="page"] {
+  border-style: inset;
+  background: #c0c0c0;
+  color: #000000;
+}
+
+html[data-skin="win98"] .sv-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 16px;
+  height: 14px;
+  min-width: 16px;
+  padding: 0;
+  border: 2px outset #dfdfdf;
+  border-radius: 0;
+  background: #c0c0c0;
+  color: #000000;
+  font-family: var(--font-ui);
+  font-size: 9px;
+  font-weight: bold;
+  line-height: 1;
+  cursor: default;
+  box-shadow: none;
+}
+
+html[data-skin="win98"] .sv-close:hover {
+  background: #c0c0c0;
+}
+
+html[data-skin="win98"] .sv-close:active {
+  border-style: inset;
+}
+
+/* Embedded mode in Tool shell — keep flat chrome, no dialog frame */
+html[data-skin="win98"] .sv-embedded {
+  border: none;
+  box-shadow: none;
+  background: transparent;
+}

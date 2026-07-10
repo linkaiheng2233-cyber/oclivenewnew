@@ -9,13 +9,14 @@ import {
 } from '@oclive/shared/api'
 import { hostEventBus } from '@oclive/shared/lib/hostEventBus'
 import { useDebugStore } from '@oclive/shared/stores/debugStore'
+import { useChatStore } from '@oclive/shared/stores/chatStore'
 import { usePluginStore } from '@oclive/shared/stores/pluginStore'
-import { useRoleStore } from '@oclive/shared/stores/roleStore'
+import { useRoleStore, bindAffectMetricsListener } from '@oclive/shared/stores/roleStore'
 import { markPresetPickerDone, resolveDefaultRoleId } from '@oclive/shared/utils/presetRolePicker'
 import { getTheaterCastConfig } from '@oclive/theater/composables/theater/theaterCastConfig'
 import { resolveOcliveShell } from '@oclive/shared/composables/useOcliveShell'
-import { useNarrativeScene } from '@oclive/shared/composables/useNarrativeScene'
-import { showPluginInstallReviewHint } from '@oclive/shared/composables/usePluginInstallReviewHint'
+import { startVoiceExpansionWarmOnStartup } from '@oclive/shared/composables/useVoiceExpansionWarm'
+import { useRoleVoiceProfileSync } from '@oclive/shared/composables/useRoleVoiceProfileSync'
 import type { AppToastFn } from '@oclive/shared/composables/useAppToast'
 
 async function disposeTauriListener(
@@ -44,7 +45,8 @@ export function useAppBootstrap(options: {
   const roleStore = useRoleStore()
   const pluginStore = usePluginStore()
   const debugStore = useDebugStore()
-  const { applyResolvedNarrativeScene } = useNarrativeScene()
+
+  useRoleVoiceProfileSync()
 
   let unlistenPluginFs: (() => void) | Promise<(() => void)> | undefined
   let unlistenProtocolInstall: (() => void) | Promise<(() => void)> | undefined
@@ -57,9 +59,11 @@ export function useAppBootstrap(options: {
     }
     await loadRole(rid)
     await pluginStore.refresh()
+    startVoiceExpansionWarmOnStartup(id => pluginStore.isPluginDisabled(id))
     await roleStore.refreshRoleInfo()
     hostEventBus.emitBuiltin('role:switched', { roleId: rid })
-    applyResolvedNarrativeScene()
+    const chatStore = useChatStore()
+    await chatStore.bootstrapChatForRole(rid)
     await debugStore.loadDebugData()
   }
 
@@ -123,6 +127,7 @@ export function useAppBootstrap(options: {
   }
 
   onMounted(() => {
+    void bindAffectMetricsListener()
     options.syncBrowserChromeFromLocale()
     setErrorReporter((err) => {
       options.showToast('error', err.message)

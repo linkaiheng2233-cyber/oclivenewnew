@@ -27,7 +27,7 @@ oclive_kernel_host = { path = "../../kernel/crates/oclive_kernel_host", features
 oclive_kernel_types = { path = "../../kernel/crates/oclive_kernel_types" }
 oclive_validation = { path = "../../kernel/crates/oclive_validation" }
 oclive_kernel_runtime = { path = "../../kernel/crates/oclive_kernel_runtime" }
-tauri = { version = "1.5", features = [ "protocol-asset", "shell-open", "dialog-open", "dialog-save", "global-shortcut"] }
+tauri = { version = "1.5", features = [ "window-minimize", "window-unmaximize", "window-set-decorations", "window-close", "window-maximize", "window-start-dragging", "protocol-asset", "shell-open", "dialog-open", "dialog-save", "global-shortcut"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 serde_yaml_ng = { workspace = true }
@@ -42,7 +42,8 @@ anyhow = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["env-filter", "fmt", "std", "json"] }
-reqwest = { workspace = true, features = ["json", "rustls-tls"] }
+reqwest = { workspace = true, features = ["json", "rustls-tls", "stream"] }
+futures-util = "0.3"
 dashmap = { workspace = true }
 tracing-appender = { workspace = true }
 once_cell = { workspace = true }
@@ -61,6 +62,9 @@ tauri-plugin-deep-link = { version = "0.1.2", optional = true }
 [dev-dependencies]
 tower = { version = "0.4", features = ["util"] }
 oclive_kernel_contracts = { path = "../../kernel/crates/oclive_kernel_contracts" }
+
+[target.'cfg(loom)'.dev-dependencies]
+loom = { version = "0.7", features = ["checkpoint"] }
 
 [build-dependencies]
 tauri-build = { version = "1.5", features = [] }

@@ -1,0 +1,68 @@
+/* Win98 skin — co-locate SSOT: see MODULE_MAP §13.2 dependency table */
+/* Scope: html[data-skin="win98"] only */
+/* Imported by: Win98TitleBar.vue */
+
+html[data-skin="win98"] .win98-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  height: 20px;
+  padding: 2px 2px 2px 4px;
+  background: linear-gradient(90deg, #000080 0%, #1084d0 100%);
+  color: #ffffff;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: bold;
+  line-height: 1;
+  user-select: none;
+}
+
+html[data-skin="win98"] .win98-titlebar__icon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+html[data-skin="win98"] .win98-titlebar__title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[data-skin="win98"] .win98-titlebar__controls {
+  display: flex;
+  flex-shrink: 0;
+  gap: 2px;
+  margin-left: auto;
+}
+
+html[data-skin="win98"] .win98-titlebar__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 14px;
+  padding: 0;
+  border: 2px outset #dfdfdf;
+  border-radius: 0;
+  background: #c0c0c0;
+  color: #000000;
+  font-family: var(--font-ui);
+  font-size: 9px;
+  font-weight: bold;
+  line-height: 1;
+  cursor: default;
+}
+
+html[data-skin="win98"] .win98-titlebar__btn:active {
+  border-style: inset;
+}
+
+html[data-skin="win98"] .win98-titlebar__btn--close span {
+  font-size: 8px;
+}

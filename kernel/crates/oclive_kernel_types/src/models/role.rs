@@ -8,7 +8,7 @@ use super::portrait_catalog_config::{PortraitCatalogFile, PortraitCatalogToggle}
 use super::reply_post_processor_config::RolePackReplyPostProcessorConfig;
 use super::role_pack_config::{
     RolePackChatStorageConfig, RolePackEvolutionConfig, RolePackMemoryConfig,
-    RolePackRelationConfig,
+    RolePackPromptExtraSection, RolePackRelationConfig, RolePackTurnThinkingConfig,
 };
 use super::role_time_config::RoleTimeConfig;
 use super::scene_disk::DiskSceneConfig;
@@ -192,6 +192,12 @@ pub struct Role {
     /// Blueprint `meta.featured`: show in first-run preset gallery.
     #[serde(default)]
     pub featured: bool,
+    /// Blueprint `meta.deep_capsule_enabled`: use `prompts/deep_capsule.txt` on Small+Deep when true.
+    #[serde(default)]
+    pub deep_capsule_enabled: bool,
+    /// Wave D: offline-distilled Deep persona (`prompts/deep_capsule.txt`; in-memory only).
+    #[serde(skip)]
+    pub deep_capsule: Option<String>,
     /// Blueprint `meta.preset_order`: gallery sort (lower first).
     #[serde(default = "default_preset_order")]
     pub preset_order: u32,
@@ -246,6 +252,12 @@ pub struct Role {
     /// `config.json` → `visual_presentation` (facility #4; default disabled).
     #[serde(default)]
     pub pack_visual_presentation_config: RolePackVisualPresentationConfig,
+    /// `config.json` → `turn_thinking` (Fast/Deep routing, latch, ephemeral archive).
+    #[serde(default)]
+    pub pack_turn_thinking_config: Option<RolePackTurnThinkingConfig>,
+    /// `config.json` → `prompt_extra_sections` (generic prompt blocks before quality anchor).
+    #[serde(default)]
+    pub pack_prompt_extra_sections: Vec<RolePackPromptExtraSection>,
     /// `user_identities/` catalog (in-memory only; populated by [`RoleStorage::finish_role_pack_load`]).
     #[serde(skip)]
     pub user_identity_catalog: Option<Arc<UserIdentityCatalog>>,
@@ -329,6 +341,8 @@ impl Default for Role {
             min_runtime_version: None,
             dev_only: false,
             featured: false,
+            deep_capsule_enabled: false,
+            deep_capsule: None,
             preset_order: default_preset_order(),
             plugin_backends: default_plugin_backends(),
             slot_registry: None,
@@ -346,6 +360,8 @@ impl Default for Role {
             pack_portrait_catalog: PortraitCatalogToggle::default(),
             portrait_catalog: None,
             pack_visual_presentation_config: RolePackVisualPresentationConfig::default(),
+            pack_turn_thinking_config: None,
+            pack_prompt_extra_sections: Vec::new(),
             user_identity_catalog: None,
             runtime_config: None,
             pipeline_experimental: None,

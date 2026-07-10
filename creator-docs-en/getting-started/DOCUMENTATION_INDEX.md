@@ -36,6 +36,7 @@ Time-boxed “start here → ship”; **authoritative detail stays in each topic
 | Kernel factory & three layers | [KERNEL_FACTORY_VISION.md](KERNEL_FACTORY_VISION.md) |
 | Kernel-centric diagram | [KERNEL_AND_MODULES_ARCHITECTURE.md](../../creator-docs/getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md) |
 | Monolith (macro-mode) | [RFC_OCLIVE_MONOLITH_MODE.md](../../creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md) |
+| Turn Thinking (Fast/Deep · persistence · pack routing) | [RFC_TURN_THINKING_PERSISTENCE_SUMMARY.md](../rfc/RFC_TURN_THINKING_PERSISTENCE_SUMMARY.md) (full: [Chinese RFC](../../creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md)) |
 
 ---
 
@@ -47,7 +48,11 @@ Time-boxed “start here → ship”; **authoritative detail stays in each topic
 | Normative `code` + JSON bodies | **[KERNEL_ERROR_CODE_CONVENTION.md](KERNEL_ERROR_CODE_CONVENTION.md)** |
 | `slot_registry` / modules 1–6 | **[OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)** · **[../plugin-and-architecture/PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)** · **[../role-pack/ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)** |
 | Remote HTTP JSON-RPC | **[../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)** |
-| On-disk pack / `schema_version` | **[../role-pack/ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)** · **[../../creator-docs/role-pack/PACK_VERSIONING.md](../../creator-docs/role-pack/PACK_VERSIONING.md)** |
+| On-disk pack / `schema_version` | **[../role-pack/ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)** · **[../role-pack/PACK_VERSIONING.md](../role-pack/PACK_VERSIONING.md)** |
+| Cross-host memory (L1/L2/L3) | **[../role-pack/CROSS_HOST_MEMORY.md](../role-pack/CROSS_HOST_MEMORY.md)** |
+| Distro HostProfile · kernel lifecycle | **[../kernel/DISTRO_CAPABILITY_PROFILE.md](../kernel/DISTRO_CAPABILITY_PROFILE.md)** · **[../kernel/DISTRO_KERNEL_LIFECYCLE.md](../kernel/DISTRO_KERNEL_LIFECYCLE.md)** |
+| Plugin placement (six-slot vs side channel) | **[../plugin-and-architecture/PLUGIN_PLACEMENT_GUIDE.md](../plugin-and-architecture/PLUGIN_PLACEMENT_GUIDE.md)** |
+| Agent remote / directory | **[../plugin-and-architecture/AGENT_REMOTE_PROTOCOL.md](../plugin-and-architecture/AGENT_REMOTE_PROTOCOL.md)** |
 | **v1 → v2 blueprint migration** | **[../role-pack/V1_TO_V2_MIGRATION.md](../role-pack/V1_TO_V2_MIGRATION.md)**（[中文](../../creator-docs/role-pack/V1_TO_V2_MIGRATION.md)） |
 | OOCP HTTP black-box (CI) | **[../testing/OOCP_TEST_SUITE.md](../testing/OOCP_TEST_SUITE.md)** |
 | Directory whole-shell `invoke` · permissions & errors | **[../plugin-and-architecture/BRIDGE_API_REFERENCE.md](../plugin-and-architecture/BRIDGE_API_REFERENCE.md)** |
@@ -116,7 +121,7 @@ Time-boxed “start here → ship”; **authoritative detail stays in each topic
 | **Community web vision** | **[../roadmap/COMMUNITY_WEB_VISION.md](../roadmap/COMMUNITY_WEB_VISION.md)** (Chinese: [../../creator-docs/roadmap/COMMUNITY_WEB_VISION.md](../../creator-docs/roadmap/COMMUNITY_WEB_VISION.md)) |
 | **Plugin web section + `plugins.json`** | **[../roadmap/PLUGIN_WEB_SECTION.md](../roadmap/PLUGIN_WEB_SECTION.md)** (Chinese: [../../creator-docs/roadmap/PLUGIN_WEB_SECTION.md](../../creator-docs/roadmap/PLUGIN_WEB_SECTION.md)) |
 | **OVERVIEW alias** | **[OVERVIEW.md](OVERVIEW.md)** → [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) |
-| **Lightweight / `cargo audit` / `cargo-bloat`** | **[../LIGHTWEIGHT_PROFILE.md](../LIGHTWEIGHT_PROFILE.md)** (English mirror of `creator-docs/development/LIGHTWEIGHT_PROFILE.md`) |
+| **Lightweight / `cargo audit` / `cargo-bloat`** | **[../development/LIGHTWEIGHT_PROFILE.md](../development/LIGHTWEIGHT_PROFILE.md)** (English mirror of `creator-docs/development/LIGHTWEIGHT_PROFILE.md`) |
 | **Performance & known limits (A7)** | **[PERFORMANCE.md](PERFORMANCE.md)** (Chinese: [`creator-docs/getting-started/PERFORMANCE.md`](../../creator-docs/getting-started/PERFORMANCE.md)) |
 | **Support entry (A9 · GitHub Issues)** | Root [README.en.md](../../README.en.md) **Support** · [`.github/ISSUE_TEMPLATE`](../../.github/ISSUE_TEMPLATE) |
 | **Disclaimer (A10 · models / plugins / data)** | **[../legal/DISCLAIMER.md](../legal/DISCLAIMER.md)** (Chinese: [`creator-docs/legal/DISCLAIMER.md`](../../creator-docs/legal/DISCLAIMER.md)) |
@@ -133,6 +138,7 @@ Architecture-level design converges in RFCs (**drafts do not imply merged code o
 | Document | Notes |
 |----------|--------|
 | **[RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md)** | **Monolith**: `monolith.toml`, `--monolith`, dual `[[bin]]`; **`build` / `bench`** and partial welding (see RFC and CLI guide). |
+| **[RFC_TURN_THINKING_PERSISTENCE_SUMMARY.md](../rfc/RFC_TURN_THINKING_PERSISTENCE_SUMMARY.md)** | **Turn Thinking**: Wave E `fast_persistence`; Wave F pack OR/AND · latch · ephemeral; **not** a seventh slot. Full RFC: [Chinese](../../creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md). |
 
 ---
 

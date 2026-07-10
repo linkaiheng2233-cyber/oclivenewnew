@@ -4,23 +4,27 @@ use crate::error::AppError;
 use crate::kernel_lifecycle::KernelConnection;
 use oclive_kernel_host::infrastructure::chat_storage::{SessionMeta, StoredMessage};
 use oclive_kernel_host::service::{
-    ListCloudModelsRequest, LlmUserSettingsDto, SaveLlmUserSettingsRequest,
+    GlobalOllamaModelDto, ListCloudModelsRequest, LlmUserSettingsDto, SaveLlmUserSettingsRequest,
+    SetGlobalOllamaModelRequest,
 };
 use oclive_kernel_host::state::AppState;
 pub(crate) use oclive_kernel_runtime::app_error_from_http_response;
 use oclive_kernel_runtime::KernelBinaryManifest;
 use oclive_kernel_runtime::RUNTIME_API_VERSION;
 use oclive_kernel_types::models::dto::{
-    CreateEventRequest, CreateEventResponse, GetRoleInfoRequest, JumpTimeRequest, JumpTimeResponse,
-    RoleInfo, SendMessageRequest, SendMessageResponse, SetRoleInteractionModeRequest,
-    SetUserPresenceSceneRequest, SwitchSceneRequest, SwitchSceneResponse, TheaterSceneRequest,
-    TheaterSceneResponse, TimeStateResponse,
+    CreateEventRequest, CreateEventResponse, DisplayMetricsDto, GetDisplayMetricsRequest,
+    GetRoleInfoRequest, JumpTimeRequest, JumpTimeResponse, RoleInfo, SendMessageRequest,
+    SendMessageResponse, SetRoleInteractionModeRequest, SetUserPresenceSceneRequest,
+    SwitchSceneRequest, SwitchSceneResponse, TheaterSceneRequest, TheaterSceneResponse,
+    TimeStateResponse,
 };
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Mutex, OnceLock};
 use std::time::{Duration, Instant};
+
+use futures_util::StreamExt;
 
 const HEALTH_GATE_TTL: Duration = Duration::from_millis(1500);
 
@@ -214,6 +218,85 @@ impl KernelHttpClient {
             .map_err(|e| AppError::OllamaError(format!("remote chat JSON: {e}")))
     }
 
+    /// `POST /chat/stream` — SSE `event:token` + final `event:done` with `SendMessageResponse`.
+    pub async fn send_message_stream_via_http(
+        conn: &KernelConnection,
+        role_path: &Path,
+        req: &SendMessageRequest,
+        mut on_token: impl FnMut(&str) + Send,
+    ) -> Result<SendMessageResponse, AppError> {
+        if !Self::ensure_healthy(conn).await {
+            return Err(Self::offline_err());
+        }
+        let url = format!("{}/chat/stream", conn.base_url);
+        let body = serde_json::json!({
+            "role_path": role_path.to_string_lossy(),
+            "message": req.user_message,
+            "session_id": req.session_id,
+            "scene_id": req.scene_id,
+        });
+        let res = conn
+            .http_client()
+            .post(&url)
+            .header("Accept", "text/event-stream")
+            .json(&body)
+            .send()
+            .await
+            .map_err(|e| Self::map_send_err(&conn.base_url, "remote chat stream request", e))?;
+        let status = res.status();
+        if !status.is_success() {
+            let text = res
+                .text()
+                .await
+                .map_err(|e| AppError::OllamaError(format!("remote chat stream body: {e}")))?;
+            return Err(app_error_from_http_response(status.as_u16(), &text));
+        }
+
+        #[derive(Deserialize)]
+        struct StreamDoneEnvelope {
+            data: SendMessageResponse,
+        }
+
+        let mut buffer = String::new();
+        let mut final_response: Option<SendMessageResponse> = None;
+        let mut byte_stream = res.bytes_stream();
+        while let Some(chunk) = byte_stream.next().await {
+            let chunk = chunk
+                .map_err(|e| AppError::OllamaError(format!("remote chat stream chunk: {e}")))?;
+            buffer.push_str(&String::from_utf8_lossy(&chunk));
+            while let Some(sep) = buffer.find("\n\n") {
+                let block = buffer[..sep].to_string();
+                buffer = buffer[sep + 2..].to_string();
+                let (event_name, data) = parse_sse_block(&block);
+                if data.is_empty() {
+                    continue;
+                }
+                match event_name.as_str() {
+                    "token" => {
+                        if let Ok(v) = serde_json::from_str::<serde_json::Value>(&data) {
+                            if let Some(t) = v.get("token").and_then(|x| x.as_str()) {
+                                on_token(t);
+                            }
+                        }
+                    }
+                    "done" => {
+                        final_response = serde_json::from_str::<StreamDoneEnvelope>(&data)
+                            .ok()
+                            .map(|w| w.data)
+                            .or_else(|| serde_json::from_str::<SendMessageResponse>(&data).ok());
+                    }
+                    "error" => {
+                        return Err(app_error_from_http_response(status.as_u16(), &data));
+                    }
+                    _ => {}
+                }
+            }
+        }
+        final_response.ok_or_else(|| {
+            AppError::OllamaError("remote chat stream ended without done event".into())
+        })
+    }
+
     pub async fn generate_theater_scene_via_http(
         conn: &KernelConnection,
         req: &TheaterSceneRequest,
@@ -295,6 +378,36 @@ impl KernelHttpClient {
         }
         serde_json::from_str(&text)
             .map_err(|e| AppError::OllamaError(format!("role_info JSON: {e}")))
+    }
+
+    pub async fn get_display_metrics_via_http(
+        conn: &KernelConnection,
+        req: &GetDisplayMetricsRequest,
+    ) -> Result<DisplayMetricsDto, AppError> {
+        if !Self::ensure_healthy(conn).await {
+            return Err(Self::offline_err());
+        }
+        let mut req_builder = conn
+            .http_client()
+            .get(format!("{}/display_metrics", conn.base_url))
+            .query(&[("role_id", req.role_id.as_str())]);
+        if let Some(sid) = req.session_id.as_deref().filter(|s| !s.is_empty()) {
+            req_builder = req_builder.query(&[("session_id", sid)]);
+        }
+        let res = req_builder
+            .send()
+            .await
+            .map_err(|e| Self::map_send_err(&conn.base_url, "display_metrics request", e))?;
+        let status = res.status();
+        let text = res
+            .text()
+            .await
+            .map_err(|e| AppError::OllamaError(format!("display_metrics body: {e}")))?;
+        if !status.is_success() {
+            return Err(app_error_from_http_response(status.as_u16(), &text));
+        }
+        serde_json::from_str(&text)
+            .map_err(|e| AppError::OllamaError(format!("display_metrics JSON: {e}")))
     }
 
     pub async fn get_time_state_via_http(
@@ -626,6 +739,55 @@ impl KernelHttpClient {
             .map_err(|e| AppError::OllamaError(format!("llm/user_settings POST JSON: {e}")))
     }
 
+    pub async fn get_global_ollama_model_via_http(
+        conn: &KernelConnection,
+    ) -> Result<GlobalOllamaModelDto, AppError> {
+        if !Self::ensure_healthy(conn).await {
+            return Err(Self::offline_err());
+        }
+        let res = conn
+            .http_client()
+            .get(format!("{}/llm/global_ollama_model", conn.base_url))
+            .send()
+            .await
+            .map_err(|e| Self::map_send_err(&conn.base_url, "llm/global_ollama_model GET", e))?;
+        let status = res.status();
+        let text = res
+            .text()
+            .await
+            .map_err(|e| AppError::OllamaError(format!("llm/global_ollama_model body: {e}")))?;
+        if !status.is_success() {
+            return Err(app_error_from_http_response(status.as_u16(), &text));
+        }
+        serde_json::from_str(&text)
+            .map_err(|e| AppError::OllamaError(format!("llm/global_ollama_model JSON: {e}")))
+    }
+
+    pub async fn set_global_ollama_model_via_http(
+        conn: &KernelConnection,
+        req: &SetGlobalOllamaModelRequest,
+    ) -> Result<GlobalOllamaModelDto, AppError> {
+        if !Self::ensure_healthy(conn).await {
+            return Err(Self::offline_err());
+        }
+        let res = conn
+            .http_client()
+            .post(format!("{}/llm/global_ollama_model", conn.base_url))
+            .json(req)
+            .send()
+            .await
+            .map_err(|e| Self::map_send_err(&conn.base_url, "llm/global_ollama_model POST", e))?;
+        let status = res.status();
+        let text = res.text().await.map_err(|e| {
+            AppError::OllamaError(format!("llm/global_ollama_model POST body: {e}"))
+        })?;
+        if !status.is_success() {
+            return Err(app_error_from_http_response(status.as_u16(), &text));
+        }
+        serde_json::from_str(&text)
+            .map_err(|e| AppError::OllamaError(format!("llm/global_ollama_model POST JSON: {e}")))
+    }
+
     pub async fn probe_cloud_llm_via_http(
         conn: &KernelConnection,
         role_id: &str,
@@ -749,4 +911,17 @@ impl KernelHttpClient {
 /// Resolve on-disk role directory for `role_id`.
 pub fn role_dir_for_id(state: &AppState, role_id: &str) -> PathBuf {
     state.storage.roles_dir().join(role_id)
+}
+
+fn parse_sse_block(block: &str) -> (String, String) {
+    let mut event_name = "message".to_string();
+    let mut data_lines = Vec::new();
+    for line in block.lines() {
+        if let Some(rest) = line.strip_prefix("event:") {
+            event_name = rest.trim().to_string();
+        } else if let Some(rest) = line.strip_prefix("data:") {
+            data_lines.push(rest.trim());
+        }
+    }
+    (event_name, data_lines.join("\n"))
 }
