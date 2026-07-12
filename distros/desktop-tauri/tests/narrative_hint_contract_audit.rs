@@ -151,3 +151,45 @@ async fn fast_skip_does_not_persist_or_inject_narrative_hint() {
         "with fast_skip and no prior persist, turn2 must omit narrative section"
     );
 }
+
+#[tokio::test]
+async fn fast_skip_after_prior_hint_still_injects_stored_hint() {
+    let (state, prompts) = capture_state_async(true).await;
+    let srid = conversation_state_role_id("mumu", Some("contract-audit"));
+    oclive_kernel_host::domain::complex_emotion_store::persist_stored_narrative_hint(
+        &state,
+        &srid,
+        TURN1_HINT.to_string(),
+    )
+    .await;
+
+    run_turn(&state, "第二轮跟进").await;
+    let guard = prompts.lock();
+    let p2 = main_prompt_for_user(&guard, "第二轮跟进").expect("turn2 main prompt");
+    assert!(p2.contains(SECTION));
+    assert!(
+        p2.contains(TURN1_HINT),
+        "fast_skip turn must still inject prior stored hint"
+    );
+}
+
+#[tokio::test]
+async fn fast_skip_does_not_clear_prior_stored_hint() {
+    let (state, _prompts) = capture_state_async(true).await;
+    let srid = conversation_state_role_id("mumu", Some("contract-audit"));
+    oclive_kernel_host::domain::complex_emotion_store::persist_stored_narrative_hint(
+        &state,
+        &srid,
+        TURN1_HINT.to_string(),
+    )
+    .await;
+
+    run_turn(&state, "随便啦都行").await;
+    let stored = load_stored_narrative_hint(&state, &srid)
+        .await
+        .expect("load hint");
+    assert!(
+        stored.contains(TURN1_HINT),
+        "empty fast_skip hint must not overwrite prior stored narrative_hint"
+    );
+}

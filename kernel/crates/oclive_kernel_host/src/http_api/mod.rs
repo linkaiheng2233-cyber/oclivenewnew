@@ -94,6 +94,7 @@ pub(crate) fn kernel_http_error(
         code: code.to_string(),
         message: message.into(),
         hint,
+        context: None,
     }
 }
 

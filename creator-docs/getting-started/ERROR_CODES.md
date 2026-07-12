@@ -60,6 +60,10 @@
 | `SERDE_ERROR` | JSON 解析或序列化失败 | 损坏的配置、非 JSON 响应 | 校验 `pipeline.ocblueprint` / 插件 manifest；`pack validate` |
 <!-- code:UNKNOWN_ERROR -->
 | `UNKNOWN_ERROR` | 未分类内部错误 | 兜底路径 | 带完整日志提 issue；前端可能显示 `UNKNOWN_WITH_CODE` |
+<!-- code:KERNEL_OFFLINE -->
+| `KERNEL_OFFLINE` | 共享内核 HTTP 不可达 | 桌面 / VS Code attach 模式内核未启动 | 启动内核进程或检查 `:8420` 端口 |
+<!-- code:THEATER_SCENE_GEN_FAILED -->
+| `THEATER_SCENE_GEN_FAILED` | 剧场场景生成失败 | 导演插件 RPC / LLM 超时 | 检查 theater 插件与日志 |
 
 **事务类**：[`AppError::TransactionError`](../../kernel/crates/oclive_kernel_runtime/src/error.rs) 的 `code` 为**动态字符串**（如好感/记忆事务子步骤），不在上表逐条列出；`oclive explain <CODE>` 仅覆盖静态 `AppError` 变体与 HTTP 补充码。
 

@@ -28,6 +28,7 @@ pub mod complex_emotion;
 pub mod emotion;
 pub mod error;
 pub mod event_impact;
+pub mod kernel_error_codes;
 pub mod local_plugin;
 pub mod mcp;
 pub mod memory_retrieval;

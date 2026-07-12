@@ -452,6 +452,29 @@ SSOT：[TRACK_VOICE](./TRACK_VOICE_RECOGNITION.md) · [§7 语音侧车](#7-语�
 
 ---
 
+## 15. 前端 ↔ 内核契约边界（脉络 · 2026-07-13）
+
+> **定义条文 SSOT** → [`MODULE_MAP_AND_HANDOFF.md` §12.5](../../handoff/MODULE_MAP_AND_HANDOFF.md) · 本文只保留 **解耦全景** 视角。
+
+```text
+  Chat Pro / theater / VS Code 壳          内核 (Rust)
+  ─────────────────────────────           ─────────────────
+  api/*.ts 手写 DTO 镜像        ──待生成──▶  oclive_kernel_types::dto
+  helpers.ts code + context     ◀──JSON──   KernelErrorBody + AppError::code()
+  slotRegistry.ts 硬编码        ──待导出──▶  plugin_backends / slot_registry
+  invoke(camelCase)             ◀────────▶  Tauri api/*.rs (102 命令)
+```
+
+**不变式**
+
+1. 内核 **不得** 假设唯一前端是 chat-pro（HTTP / VS Code attach 同契约）。
+2. 前端 **不得** 依赖内核内部实现细节（`plugin_backends` 内部命名、英文 `message` 子串）。
+3. 契约漂移由 **门禁** 拦截：`check-error-codes-drift.mjs`（错误码）→ 后续 DTO / invoke ratchet。
+
+详情：[ERROR_CODES.md](../../creator-docs/getting-started/ERROR_CODES.md) · [KERNEL_ERROR_CODE_CONVENTION.md](../../creator-docs/getting-started/KERNEL_ERROR_CODE_CONVENTION.md) · [`distros/shared/src/api/generated/kernelErrorCodes.ts`](../../distros/shared/src/api/generated/kernelErrorCodes.ts)。
+
+---
+
 ## 14. 相关链接
 
 | 文档 | 用途 |

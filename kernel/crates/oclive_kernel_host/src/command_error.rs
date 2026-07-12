@@ -54,10 +54,21 @@ impl ApiError {
 
     #[must_use]
     pub fn kernel_error_body(&self) -> KernelErrorBody {
+        let message = self.kernel_message();
+        let context = match self {
+            Self::InvalidParameter { message: m } if m.contains("plugin_backends:") => {
+                Some(serde_json::json!({ "kind": "plugin_backends_directory_slot" }))
+            }
+            Self::Io { message: m } if m.contains("host json") => {
+                Some(serde_json::json!({ "kind": "host_json" }))
+            }
+            _ => None,
+        };
         KernelErrorBody {
             code: self.code().to_string(),
-            message: self.kernel_message(),
+            message,
             hint: None,
+            context,
         }
     }
 

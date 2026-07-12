@@ -64,6 +64,10 @@ Example:
 | `SERDE_ERROR` | JSON parse/serialize failure | Corrupt config or non-JSON body | `pack validate`; check manifests |
 <!-- code:UNKNOWN_ERROR -->
 | `UNKNOWN_ERROR` | Unclassified internal error | Catch-all | File issue with logs; UI may show `UNKNOWN_WITH_CODE` |
+<!-- code:KERNEL_OFFLINE -->
+| `KERNEL_OFFLINE` | Shared kernel HTTP unreachable | Desktop / VS Code attach without kernel | Start kernel process or check `:8420` |
+<!-- code:THEATER_SCENE_GEN_FAILED -->
+| `THEATER_SCENE_GEN_FAILED` | Theater scene generation failed | Director plugin RPC / LLM timeout | Check theater plugin and logs |
 
 **Transactions**: [`AppError::TransactionError`](../../kernel/crates/oclive_kernel_runtime/src/error.rs) uses a **dynamic** `code` string; not listed above. `oclive explain` covers static `AppError` variants and HTTP supplement codes only.
 

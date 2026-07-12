@@ -106,6 +106,10 @@ runStep('doc mirror ratchet', () => {
   sh('node', ['scripts/check-doc-mirror.mjs']);
 });
 
+runStep('kernel error codes drift', () => {
+  sh('node', ['scripts/check-error-codes-drift.mjs']);
+});
+
 runStep('voice TTS ratchet', () => {
   sh('node', ['scripts/check-voice-tts-ratchet.mjs']);
 });

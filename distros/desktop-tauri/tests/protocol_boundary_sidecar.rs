@@ -40,6 +40,7 @@ fn kernel_http_wrapper_never_uses_integer_code_field() {
         code: "REMOTE_SERVICE_UNAVAILABLE".into(),
         message: "sidecar down".into(),
         hint: None,
+        context: None,
     };
     let v = serde_json::to_value(&body).unwrap();
     assert!(v.get("code").unwrap().is_string());

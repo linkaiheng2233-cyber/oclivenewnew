@@ -518,12 +518,11 @@ pub(crate) async fn post_llm(
     if matches!(mode, TurnMode::CoPresent)
         && !middle.complex_emotion_out.source.eq("turn_thinking_fast")
     {
-        crate::domain::complex_emotion_store::persist_stored_narrative_hint(
-            state,
-            srid,
-            middle.complex_emotion_out.narrative_hint.clone(),
-        )
-        .await;
+        let hint = middle.complex_emotion_out.narrative_hint.clone();
+        if !hint.trim().is_empty() {
+            crate::domain::complex_emotion_store::persist_stored_narrative_hint(state, srid, hint)
+                .await;
+        }
     }
 
     let (display_reply, raw_reply) = apply_reply_post_processor(

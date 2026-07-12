@@ -15,7 +15,7 @@ This file records **vulnerability-level** hits from **`cargo audit`** on the **w
 | **Last scan date** | **2026-07-12** (local `cargo audit`; `crossbeam-epoch` **0.9.20** · `plist` **1.10.0** · `quick-xml` **0.41.0**) |
 | **Scan path** | Workspace root `Cargo.lock` |
 | **Vulnerability-level count** | **0** (`cargo audit` exit code **0**; `sqlx-mysql` / `rsa` removed from lockfile graph) |
-| **Warning-level count** | **3** (`cargo audit` + [`.cargo/audit.toml`](../../.cargo/audit.toml) ignores **11** gtk-rs GTK3 / toolchain *unmaintained*; see table below) |
+| **Warning-level count** | **4** (`fxhash` · `glib` · `rand` 0.7 · `anyhow`; gtk-rs cluster see `.cargo/audit.toml` ignore **11** entries) |
 
 > If CI or your machine cannot fetch advisory-db: `cargo audit --no-fetch --stale` (requires a previously fetched local DB).
 
@@ -31,6 +31,9 @@ This file records **vulnerability-level** hits from **`cargo audit`** on the **w
 | [RUSTSEC-2026-0104](https://rustsec.org/advisories/RUSTSEC-2026-0104) | rustls-webpki 0.101 | **Cleared** | |
 | [RUSTSEC-2024-0363](https://rustsec.org/advisories/RUSTSEC-2024-0363) | sqlx 0.7.4 | **Cleared** — upgraded to **0.8.6** | |
 | [RUSTSEC-2026-0185](https://rustsec.org/advisories/RUSTSEC-2026-0185) | quinn-proto &lt; 0.11.15 | **Fixed** — lockfile **0.11.15** (2026-06-24) | |
+| [RUSTSEC-2026-0204](https://rustsec.org/advisories/RUSTSEC-2026-0204) | crossbeam-epoch 0.9.18 | **Fixed** — **0.9.20** | 2026-07-09 PR #101 CI supply chain |
+| [RUSTSEC-2026-0194](https://rustsec.org/advisories/RUSTSEC-2026-0194) | quick-xml 0.39.4 | **Fixed** — **0.41.0** (via plist 1.10) | same |
+| [RUSTSEC-2026-0195](https://rustsec.org/advisories/RUSTSEC-2026-0195) | quick-xml 0.39.4 | **Fixed** — **0.41.0** | same |
 
 ---
 
@@ -50,14 +53,17 @@ This file records **vulnerability-level** hits from **`cargo audit`** on the **w
 
 ---
 
-## Warning-level tracking
+## Warning-level tracking (2026-05-20 batch three)
 
 | RUSTSEC / category | Crate | Status | Reason |
 |--------------------|-------|--------|--------|
-| gtk-rs GTK3 cluster (11 IDs) | `gtk`/`gdk`/… | **Recorded + audit.toml ignore** | Tauri 1.x / wry Linux WebView |
-| **RUSTSEC-2025-0057** | `fxhash` | **Open** | via Tauri HTML parse |
-| **RUSTSEC-2024-0429** | `glib` | **Open** | transitive |
-| **RUSTSEC-2026-0097** | `rand` 0.7 | **Open** | via `phf`/Tauri macros |
+| **RUSTSEC-2026-0002** | `lru` | **Fixed** | `oclive-cli` upgraded **ratatui 0.30** → `lru` ≥ 0.16 |
+| **RUSTSEC-2025-0134** | `rustls-pemfile` | **Fixed** | `reqwest` **0.12** chain no longer depends on this crate |
+| gtk-rs GTK3 cluster (11 IDs) | `gtk`/`gdk`/… | **Recorded + audit.toml ignore** | Tauri 1.x / wry Linux WebView; needs Tauri 2 to remove |
+| **RUSTSEC-2025-0057** | `fxhash` | **Open** | via Tauri HTML parse; no direct API |
+| **RUSTSEC-2024-0429** | `glib` | **Open** | `VariantStrIter` path; host does not use |
+| **RUSTSEC-2026-0097** | `rand` 0.7 | **Open** | via `phf`/Tauri macros; needs upstream Tauri 2 |
+| **RUSTSEC-2026-0190** | `anyhow` | **Open** | via wit-bindgen / Tauri build chain; track upstream |
 
 See [`.cargo/audit.toml`](../../.cargo/audit.toml) and [SECURITY_AUDIT_SCOPE.md](./SECURITY_AUDIT_SCOPE.md).
 

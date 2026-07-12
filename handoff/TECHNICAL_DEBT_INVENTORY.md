@@ -1,14 +1,14 @@
 # Technical debt inventory
 
-**Last updated:** 2026-07-12（技术债收敛波 · narrative_hint 契约修复 · ensure-tauri-dist · check:rust:integration · MODULE_MAP/CHAT_STORAGE SSOT）
+**Last updated:** 2026-07-13（技术债收敛波收尾 · 错误码 SSOT 门禁 · 契约边界文档 · supply-chain EN 镜像对齐）
 
 **Product freeze (Theater v0):** **Lifted** — 朋友 cohort 产品门通过（7/10 卧槽）；模式 2 playtest 扩展中；**模式 3 仍冻结**。见 [theater/MODE2_UNFREEZE.md](./theater/MODE2_UNFREEZE.md)。
 
-**综合评分：** A− · 本地 dimension5 **十八检** PASS（--ci 十七检执行 + 1 项 SKIP 仍计入）· workspace **doctest** 见 check:release · 审查汇报 SSOT：[AI_VERIFICATION_PROTOCOL.md](./AI_VERIFICATION_PROTOCOL.md)
+**综合评分：** A− · 本地 dimension5 **十九检** PASS（--ci 十八检执行 + 1 项 SKIP 仍计入）· workspace **doctest** 见 check:release · 审查汇报 SSOT：[AI_VERIFICATION_PROTOCOL.md](./AI_VERIFICATION_PROTOCOL.md)
 
 **下一动作：** **P1** — 模式 2 playtest 扩展至陌生人 cohort；**Observe** K-SUPPLY-05 依赖去重
 
-**Verification (2026-07-12 · 收敛波进行中)：** 定向集成测（narrative_hint / slot_resolution / memory_lifecycle / error_code）+ `node scripts/ensure-tauri-dist.mjs` + `check:rust:integration` 纳入 `check:ci-local`；**全量 `check:release` / 远程 CI 待本波验收后回写 Done**。
+**Verification (2026-07-13 · 收敛波收尾)：** narrative_hint / memory_lifecycle / config-resolve / error_code 契约测 + `check-error-codes-drift` + 全量 `check:release` 绿后回写 Done（HEAD 见提交 SHA）。
 
 ---
 
@@ -44,7 +44,7 @@
 | **D-MAINT-01** | 远程 dependabot 陈旧分支（实测 **39**，**9** 含 `src-tauri`） | P2 | `gh api` 列表 + 批量 `git push origin --delete` | **Done**（轮次 22 · 维护者确认后清理） |
 | **BUILD-TAURI-01** | `tauri.conf.json` `beforeBuildCommand` 误写 `../../scripts` | **P0** | 改为 `node scripts/tauri-run.cjs` + dimension5 ratchet | **Done**（轮次 22） |
 | **BUILD-TAURI-02** | `tauri.conf` roles 污染（`resources/roles` 误提交 / shell-dist 累积） | **P0** | canonical 单条 `../chat-pro/roles` + shell-dist 去重 + tauri-run restore + dimension5 ratchet | **Done**（2026-06-29） |
-| **D-DOC-EN-01** | `creator-docs-en/security/KNOWN_VULNERABILITIES.md` 扫描日期滞后中文 | P2 | 对齐 `creator-docs/security/` 日期与命中条数 | **Done**（Wave 1 · 2026-06-25） |
+| **D-DOC-EN-01** | `creator-docs-en/security/KNOWN_VULNERABILITIES.md` 扫描日期滞后中文 | P2 | 对齐 `creator-docs/security/` 日期与命中条数 | **Done**（2026-07-13 · warning **4** 含 `anyhow` · 三条 2026-07  advisory 对齐） |
 | **D-ORDER-05** | `desktop-tauri/src/lib.rs` L203 仍写 `src-tauri/src/api/` | P2 | 改注释为 `distros/desktop-tauri/src/api/`；评估移出 stale-path 豁免 | **Done**（Wave 1） |
 | **D-ORDER-06** | `distributions/vscode/out/` 与 `distros/` 命名并存 | P3 | gitignore 或删除构建产物 | **Done**（根 `.gitignore` 已含 `distributions/`） |
 | **D-AI-VERIFY-02** | AGENTS 测试段链 `AI_VERIFICATION_PROTOCOL` + `check:rust` vs `check:release` doctest | P2 | AGENTS §测试体系 | **Done**（Wave 1） |
@@ -66,27 +66,42 @@
 
 ---
 
-## 前瞻性结构风险（2026-07-12 审查增补）
+## 前瞻性结构风险（2026-07-12 审查增补 · 2026-07-13 拆项）
 
 | ID | 项 | 优先级 | 解决/完成条件 | 状态 |
 |----|-----|--------|----------------|------|
-| **K-PLATFORM-01** | Tauri v1 → v2 迁移 | **P1** | 内核/前端/权限/schema 全量迁移 + CI 绿 | **OPEN** |
-| **K-LLM-01** | LLM 后端单一依赖 Ollama | **P1** | 至少 1 个主流 API + 1 个本地替代 | **OPEN** |
+| **K-PLATFORM-01** | Tauri v1 → v2 迁移 | **P1** | **契约**：权限/capability schema 对照 + **测试**：最小 smoke + **改动面**：desktop-tauri / 三 distro 分 PR | **OPEN** |
+| **K-LLM-01** | LLM 后端单一依赖 Ollama | **P1** | **契约**：`LlmBackend` env 矩阵 + **测试**：1 API + 1 本地 mock + **改动面**：adapter 接线 PR | **OPEN** |
 | **K-CROSS-01** | 跨平台系统策略缺失 | **P2** | 三平台语音 smoke + distro profile 差异声明 | **OPEN** |
 | **K-DIST-01** | 分发体验缺口 | **P2** | 签名/updater/Linux 包/macOS dmg | **OPEN** |
-| **D-I18N-02** | creator-docs-en 镜像滞后 | **P2** | check-doc-mirror 扩展 | **OPEN** |
+| **D-I18N-02** | creator-docs-en 镜像滞后 | **P2** | **契约**：`check-doc-mirror` 扩展 + **测试**：mirror ratchet 样例 + **改动面**：creator-docs-en 补链 PR | **OPEN** |
 | **V-MARKET-01** | 插件市场生态 | **P2** | 市场 UI + 社区插件 | **OPEN** |
+
+**K-PLATFORM-01 子项（立项条件，本批不实施）**
+
+| 子 ID | 契约 | 测试 | 改动面 |
+|-------|------|------|--------|
+| K-PLATFORM-01a | Tauri v2 permission manifest 对照 | 单命令 invoke smoke | `tauri.conf.json` + ACL |
+| K-PLATFORM-01b | `@tauri-apps/api` v2 迁移表 | chat-pro 发消息 E2E | `distros/shared` IPC |
+| K-PLATFORM-01c | CI 镜像 + dimension5 口径 | workflow 绿 | `.github/workflows` |
+
+**K-LLM-01 子项**
+
+| 子 ID | 契约 | 测试 | 改动面 |
+|-------|------|------|--------|
+| K-LLM-01a | OpenAI-compatible API env SSOT | mock HTTP 集成测 | `openai_compatible_llm.rs` |
+| K-LLM-01b | 第二本地后端选型 | 可选 feature gate 测 | 新 adapter 模块 |
 
 **系统性债务（2026-07-12 审查增补）**
 
 | ID | 项 | 优先级 | 解决/完成条件 | 状态 |
 |----|-----|--------|----------------|------|
-| **D-ARCH-01** | 六槽解析链 SSOT | **P1** | MODULE_MAP §3.2 + 集成测试（legacy/v2 + session override + host ceiling） | **Partial**（2026-07-12 · host ceiling 测已加；待全量门禁绿） |
-| **K-MEM-01** | STM→LTM 生命周期分散 | **P1** | CHAT_STORAGE 表 + 集成测试 | **Partial**（2026-07-12 · STM/LTM 分断言已加；待全量门禁绿） |
+| **D-ARCH-01** | 六槽解析链 SSOT | **P1** | MODULE_MAP §3.2 + 集成测试（legacy/v2 + session override + host ceiling） | **Done**（2026-07-13 · `slot_resolution_chain.rs` 四测 + MODULE_MAP §12.5） |
+| **K-MEM-01** | STM→LTM 生命周期分散 | **P1** | CHAT_STORAGE 表 + 集成测试 | **Done**（2026-07-13 · `memory_lifecycle_integration.rs` 六测 · merge/strong_only/prompt 读取） |
 | **K-FREEZE-01** | 冻结状态不透明 | **P1** | 技术债 §2 收敛 | **Done**（2026-07-12） |
 | **K-TEST-01** | check:rust 仅 --lib | **P2** | check:rust:integration；**盲区在本地而非 CI** | **Done**（2026-07-12） |
-| **K-CONFIG-01** | 配置无诊断 | **P2** | oclive-cli doctor config-resolve + `--json` + 自动测试 | **Partial**（2026-07-12 · host 依赖已裁决；纯 JSON + crate 内测已加） |
-| **K-ERR-01** | 热路径错误码 | **P2** | 插件/manifest/迁移结构化码 + 契约测 | **Partial**（2026-07-12 · `DB_MIGRATION_FAILED` / `PLUGIN_MANIFEST_INVALID` 已接线；测与 ERROR_CODES 镜像已加） |
+| **K-CONFIG-01** | 配置无诊断 | **P2** | oclive-cli doctor config-resolve + `--json` + 自动测试 | **Done**（2026-07-13 · CLI 单 JSON stdout · env 锁 · `cargo tree` 无 Tauri） |
+| **K-ERR-01** | 热路径错误码 | **P2** | 插件/manifest/迁移结构化码 + 契约测 | **Done**（2026-07-13 · `KernelErrorBody.context` · `kernelErrorCodes.ts` · dimension5 drift 门禁） |
 | **D-ROLEVER-01** | 角色包版本迁移 | **P2** | ROLE_PACK_SPEC 章节 | **OPEN** |
 | **T-DOC-02** | Theater 状态单页 | **P2** | theater STATUS | **OPEN** |
 | **K-RPP-01** | RPP 无契约 | **P2** | PLUGIN_V1 或 RPP_CONTRACT | **OPEN** |

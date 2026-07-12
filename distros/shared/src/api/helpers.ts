@@ -2,6 +2,10 @@ import { invoke } from '@tauri-apps/api/tauri'
 
 import { useAppToast } from '@oclive/shared/composables/useAppToast'
 import { i18n } from '@oclive/shared/i18n/index'
+import {
+  KERNEL_ERROR_CONTEXT_KINDS,
+  kernelErrorContextKind,
+} from '@oclive/shared/api/generated/kernelErrorCodes'
 
 function translateApiError(code: string): string | undefined {
   const key = `apiErrors.${code}`
@@ -15,6 +19,7 @@ export interface KernelErrorPayload {
   code: string
   message: string
   hint?: string | null
+  context?: Record<string, unknown> | null
 }
 
 function parseBackendError(err: unknown): {
@@ -108,7 +113,8 @@ export function toFriendlyErrorMessage(err: unknown): string {
     }
   }
   if (code === 'INVALID_PARAMETER') {
-    if (text.includes('plugin_backends:')) {
+    const kind = kernelErrorContextKind(kernel?.context)
+    if (kind === KERNEL_ERROR_CONTEXT_KINDS.PLUGIN_BACKENDS_DIRECTORY_SLOT) {
       const mapped = translateApiError('PLUGIN_BACKENDS_DIRECTORY_SLOT')
       if (mapped)
         return mapped
@@ -153,18 +159,21 @@ export function toFriendlyErrorMessage(err: unknown): string {
       }
     }
   }
-  if (code === 'IO_ERROR' && (text.includes('host json') || raw.includes('host json'))) {
-    const mapped = translateApiError('IO_ERROR_HOST_JSON')
-    if (mapped)
-      return mapped
+  if (code === 'IO_ERROR') {
+    const kind = kernelErrorContextKind(kernel?.context)
+    if (kind === KERNEL_ERROR_CONTEXT_KINDS.HOST_JSON) {
+      const mapped = translateApiError('IO_ERROR_HOST_JSON')
+      if (mapped)
+        return mapped
+    }
   }
-  if (
-    code === 'LLM_ERROR'
-    && /remote_plugin transport kind=timeout method=voice\./.test(`${text} ${raw}`)
-  ) {
-    const mapped = translateApiError('VOICE_RPC_TIMEOUT')
-    if (mapped)
-      return mapped
+  if (code === 'LLM_ERROR') {
+    const kind = kernelErrorContextKind(kernel?.context)
+    if (kind === KERNEL_ERROR_CONTEXT_KINDS.VOICE_RPC_TIMEOUT) {
+      const mapped = translateApiError('VOICE_RPC_TIMEOUT')
+      if (mapped)
+        return mapped
+    }
   }
   const mapped = translateApiError(code)
   if (mapped)

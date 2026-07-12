@@ -12,6 +12,9 @@ pub struct KernelErrorBody {
     pub message: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub hint: Option<String>,
+    /// Structured sub-classification for host i18n (e.g. `{"kind":"plugin_backends_directory_slot"}`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub context: Option<serde_json::Value>,
 }
 
 /// **`code`** values specific to `POST /chat` (and similar HTTP boundaries): they have no corresponding [`AppError`] variant, but follow the same naming rule as [`AppError::code`] (`SCREAMING_SNAKE_CASE`).
@@ -124,6 +127,27 @@ impl AppError {
         }
     }
 
+    /// Optional structured context for host shells (avoid parsing English `message`).
+    #[must_use]
+    pub fn error_context(&self) -> Option<serde_json::Value> {
+        match self {
+            Self::InvalidParameter(m) if m.contains("plugin_backends:") => {
+                Some(serde_json::json!({
+                    "kind": "plugin_backends_directory_slot"
+                }))
+            }
+            Self::OllamaError(m)
+                if m.contains("transport kind=timeout") && m.contains("method=voice.") =>
+            {
+                Some(serde_json::json!({ "kind": "voice_rpc_timeout" }))
+            }
+            Self::IoError(e) if e.to_string().contains("host json") => {
+                Some(serde_json::json!({ "kind": "host_json" }))
+            }
+            _ => None,
+        }
+    }
+
     /// Build a JSON error body whose fields match the HTTP `error` object (without the outer `{ "error": … }` wrapper).
     #[must_use]
     pub fn kernel_error_body(&self) -> KernelErrorBody {
@@ -131,6 +155,7 @@ impl AppError {
             code: self.code().to_string(),
             message: self.to_string(),
             hint: None,
+            context: self.error_context(),
         }
     }
 
@@ -142,6 +167,7 @@ impl AppError {
                 code: "UNKNOWN_ERROR".into(),
                 message: self.to_string(),
                 hint: None,
+                context: None,
             })
             .unwrap_or_else(|_| {
                 "{\"code\":\"UNKNOWN_ERROR\",\"message\":\"serialization failed\",\"hint\":null}"
@@ -276,6 +302,36 @@ mod tests {
         let j: KernelErrorBody = serde_json::from_str(&e.to_kernel_json()).expect("json");
         assert_eq!(j.code, "PLUGIN_MANIFEST_INVALID");
         assert!(j.message.contains("missing id"));
+    }
+
+    #[test]
+    fn invalid_parameter_plugin_backends_context() {
+        let e = AppError::InvalidParameter(
+            "plugin_backends: `memory` 使用 directory 时必须配置".into(),
+        );
+        let j = e.kernel_error_body();
+        assert_eq!(
+            j.context
+                .as_ref()
+                .and_then(|c| c.get("kind"))
+                .and_then(|v| v.as_str()),
+            Some("plugin_backends_directory_slot")
+        );
+    }
+
+    #[test]
+    fn ollama_voice_timeout_context() {
+        let e = AppError::OllamaError(
+            "remote_plugin transport kind=timeout method=voice.speak url=http://x err=t".into(),
+        );
+        let j = e.kernel_error_body();
+        assert_eq!(
+            j.context
+                .as_ref()
+                .and_then(|c| c.get("kind"))
+                .and_then(|v| v.as_str()),
+            Some("voice_rpc_timeout")
+        );
     }
 
     #[test]

@@ -177,7 +177,8 @@ mod tests {
     #[tokio::test]
     async fn env_llm_override_surfaces_in_report() {
         use oclive_kernel_host::service::role::slot_session::build_plugin_resolution_debug_info;
-        static ENV_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+        static ENV_LOCK: std::sync::LazyLock<tokio::sync::Mutex<()>> =
+            std::sync::LazyLock::new(|| tokio::sync::Mutex::new(()));
         let llm = Arc::new(MockLlmClient {
             reply: "ok".to_string(),
         });
@@ -188,18 +189,76 @@ mod tests {
             .load_role_cached_async("mumu")
             .await
             .expect("load mumu");
-        {
-            let _guard = ENV_LOCK.lock().expect("env lock");
-            std::env::remove_var("OCLIVE_LLM_BACKEND");
-            std::env::set_var("OCLIVE_LLM_BACKEND", "remote");
-        }
+        let _guard = ENV_LOCK.lock().await;
+        std::env::remove_var("OCLIVE_LLM_BACKEND");
+        std::env::set_var("OCLIVE_LLM_BACKEND", "remote");
         let debug = build_plugin_resolution_debug_info(&state, "mumu", None)
             .await
             .expect("debug");
+        std::env::remove_var("OCLIVE_LLM_BACKEND");
+        drop(_guard);
         assert_eq!(debug.llm_env_override.as_deref(), Some("remote"));
-        {
-            let _guard = ENV_LOCK.lock().expect("env lock");
-            std::env::remove_var("OCLIVE_LLM_BACKEND");
+    }
+
+    #[test]
+    fn cli_dependency_tree_excludes_tauri() {
+        let out = std::process::Command::new("cargo")
+            .args(["tree", "-p", "oclive-cli", "--depth", "1"])
+            .output()
+            .expect("cargo tree");
+        assert!(
+            out.status.success(),
+            "cargo tree failed: {}",
+            String::from_utf8_lossy(&out.stderr)
+        );
+        let tree = String::from_utf8_lossy(&out.stdout);
+        assert!(
+            !tree.contains("tauri"),
+            "oclive-cli must not activate desktop Tauri dependency:\n{tree}"
+        );
+    }
+
+    #[test]
+    fn config_resolve_json_stdout_is_single_document() {
+        let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let repo_root = manifest_dir.join("../..");
+        let roles = chat_pro_roles_dir(std::slice::from_ref(&manifest_dir)).expect("roles");
+        let exe = std::env::var("CARGO_BIN_EXE_oclive-cli").unwrap_or_else(|_| {
+            manifest_dir
+                .join("../../target/debug/oclive-cli.exe")
+                .to_string_lossy()
+                .into_owned()
+        });
+        if !std::path::Path::new(&exe).is_file() {
+            eprintln!("skip config_resolve_json_stdout_is_single_document: {exe} missing");
+            return;
         }
+        let output = std::process::Command::new(&exe)
+            .current_dir(&repo_root)
+            .args([
+                "doctor",
+                "config-resolve",
+                "mumu",
+                "--json",
+                "-o",
+                roles.to_string_lossy().as_ref(),
+            ])
+            .output()
+            .expect("spawn oclive-cli");
+        assert!(
+            output.status.success(),
+            "config-resolve failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let trimmed = stdout.trim();
+        assert!(
+            trimmed.starts_with('{') && trimmed.ends_with('}'),
+            "stdout must be a single JSON document"
+        );
+        let v: serde_json::Value = serde_json::from_str(trimmed).expect("parse stdout json");
+        assert_eq!(v["schema_version"], 1);
+        assert_eq!(v["role_id"], "mumu");
+        assert!(v.get("plugin_resolution").is_some());
     }
 }

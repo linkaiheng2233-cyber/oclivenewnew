@@ -101,6 +101,7 @@ pub(crate) async fn bridge_dispatch_route(
             code: "INVALID_PARAMETER".to_string(),
             message: "bridge dispatch: command required".into(),
             hint: None,
+            context: None,
         };
         return Err(api_error(axum::http::StatusCode::BAD_REQUEST, k));
     }
