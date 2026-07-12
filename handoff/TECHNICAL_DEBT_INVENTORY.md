@@ -8,7 +8,7 @@
 
 **下一动作：** **P1** — 模式 2 playtest 扩展至陌生人 cohort；**Observe** K-SUPPLY-05 依赖去重
 
-**Verification (2026-07-13 · 收敛波收尾)：** narrative_hint / memory_lifecycle / config-resolve / error_code 契约测 + `check-error-codes-drift` + 全量 `check:release` 绿后回写 Done（HEAD 见提交 SHA）。
+**Verification (2026-07-13 · 收敛波收尾)：** narrative_hint / memory_lifecycle / config-resolve / error_code 契约测 + `check-error-codes-drift` + dimension5 十九检 PASS · HEAD **`f1608799`**（待远程 CI 绿）。
 
 ---
 
