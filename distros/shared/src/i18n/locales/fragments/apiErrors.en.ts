@@ -22,6 +22,8 @@ export default {
   TXN_RUNTIME_MIRROR_FAILED: 'Runtime mirror sync failed. Retry.',
   TXN_MEMORY_FIFO_TRIM_FAILED: 'Short-term memory FIFO trim failed. Retry.',
   DB_ERROR: 'Database error. Try again.',
+  DB_MIGRATION_FAILED:
+    'Database migration failed. Back up app.db under your app data directory and retry; if it persists, check migration_failed.json and logs.',
   IO_ERROR:
     'Local file I/O failed. Check: (1) app data dir is writable (Settings → General → Environment check); (2) antivirus/permissions; (3) do not put data on read-only media. See CONFIGURATION_FILES.md.',
   IO_ERROR_HOST_JSON:
@@ -29,6 +31,7 @@ export default {
   API_PLUGIN_NOT_FOUND: 'Directory plugin not found or not scanned. Check plugin id and install path.',
   API_PERMISSION_DENIED: 'Insufficient plugin permissions. Declare required permissions in manifest.json.',
   API_INVALID_MANIFEST: 'Invalid plugin manifest. Check manifest.json.',
+  PLUGIN_MANIFEST_INVALID: 'Invalid plugin manifest. Check manifest.json against PLUGIN_V1.',
   LLM_ERROR:
     'Model call failed. Check: (1) If `OCLIVE_LLM_BACKEND=ollama` (default): Ollama is running, `ollama list` / `ollama pull` matches `OLLAMA_MODEL`, and `OLLAMA_BASE_URL` is correct; (2) If **remote**: `OCLIVE_REMOTE_LLM_URL` is reachable, timeouts (`OCLIVE_REMOTE_LLM_TIMEOUT_MS`) are reasonable, and upstream is healthy. Settings → General → Environment check probes local Ollama.',
   VOICE_RPC_TIMEOUT:

@@ -265,7 +265,7 @@ pub fn install_plugin(
     git_clone_with_fallback(git_url.trim(), &url, &clone_dir)?;
     let plugin_root = find_plugin_root_after_clone(&clone_dir, git_subdir)?;
     let manifest = OclivePluginManifest::load_from_dir(&plugin_root)
-        .map_err(|e| AppError::Unknown(format!("manifest validation failed: {}", e)))?;
+        .map_err(|e| AppError::PluginManifestInvalid(e.to_string()))?;
     let pid = manifest.id.trim().to_string();
     if pid.is_empty() {
         cleanup_clone_dir(&clone_dir, &plugin_root);
@@ -526,7 +526,7 @@ pub fn update_plugin(state: &AppState, plugin_id: &str) -> Result<(), AppError> 
     };
     run_git(&["pull", "--ff-only"], Some(&root))?;
     let _ = OclivePluginManifest::load_from_dir(&root)
-        .map_err(|e| AppError::Unknown(format!("manifest validation failed after pull: {}", e)))?;
+        .map_err(|e| AppError::PluginManifestInvalid(e.to_string()))?;
     state
         .directory_plugins
         .rescan_plugin_roots(state.storage.roles_dir());

@@ -35,7 +35,7 @@
 
 | 层 | 位置 | 条数 / 规模 SSOT | 验证命令 |
 |----|------|------------------|----------|
-| 工程门禁 | dimension5 | **13** checks（`--ci` 跳过 sample lib tests 仍计 13） | `node scripts/dimension5-acceptance.mjs --ci` |
+| 工程门禁 | dimension5 | **18** checks（`--ci` 执行 17 + 1 SKIP 仍计 18） | `node scripts/dimension5-acceptance.mjs --ci` |
 | OOCP 黑盒 | `examples/oocp-test-suite/` | **S0–S12** + S15 SSE；可选 S13/S14 | `creator-docs/testing/OOCP_TEST_SUITE.md` |
 | invoke 热路径 | `distros/desktop-tauri/tests/invoke_hotpath_matrix.rs` | **13** 条 `*_impl` + `process_message` | `INVOKE_HOTPATH_MATRIX.md` |
 | 桌面集成测 | `distros/desktop-tauri/tests/` | 多文件；行数随版本变 | `cargo test -p oclivenewnew-tauri` |

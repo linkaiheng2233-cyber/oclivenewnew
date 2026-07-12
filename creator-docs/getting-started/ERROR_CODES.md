@@ -35,7 +35,9 @@
 <!-- code:LLM_ERROR -->
 | `LLM_ERROR` | LLM 提供方失败 | Ollama 未启动、模型未 pull、Remote 超时 | 启动 Ollama 并 `ollama pull`；核对角色包模型名；试聊可设 `OCLIVE_HTTP_API_MOCK_LLM=1` | 见 §1.5 |
 <!-- code:DB_ERROR -->
-| `DB_ERROR` | 数据库错误 | `app.db` 损坏、磁盘满、迁移失败 | 检查数据目录可写；备份后重建库；见日志 `Database error` |
+| `DB_ERROR` | 数据库错误 | `app.db` 损坏、磁盘满、事务失败 | 检查数据目录可写；备份后重建库；见日志 `Database error` |
+<!-- code:DB_MIGRATION_FAILED -->
+| `DB_MIGRATION_FAILED` | 数据库迁移失败 | 迁移 SQL 校验失败、版本冲突、磁盘不可写 | 备份 `app.db`；查看 `migration_failed.json` 与启动日志 |
 <!-- code:ROLE_RUNTIME_NOT_READY -->
 | `ROLE_RUNTIME_NOT_READY` | 尚未加载角色 | 未 `load_role` 或未在 UI 选角色 | 先加载角色再发消息 |
 <!-- code:STARTUP_HEALTH_FAILED -->
@@ -48,6 +50,8 @@
 | `ROLE_PACK_EXISTS` | 导入角色已存在且未允许覆盖 | 重复导入同 id 包 | 删除旧目录或导入时勾选覆盖 |
 <!-- code:INVALID_PARAMETER -->
 | `INVALID_PARAMETER` | 请求参数不合法 | 空 `role_id`、未知模块名、v2 包缺 `slot_registry` 等 | 对照 API 文档与 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) |
+<!-- code:PLUGIN_MANIFEST_INVALID -->
+| `PLUGIN_MANIFEST_INVALID` | 目录插件 manifest 无效 | 安装/更新后 `manifest.json` 缺字段或权限声明错误 | 对照 PLUGIN_V1；`oclive plugin validate` 或插件工作台 |
 <!-- code:HIGH_RISK_CAPABILITY_NOT_GRANTED -->
 | `HIGH_RISK_CAPABILITY_NOT_GRANTED` | 高风险能力未授权 | MCP stdio/http、目录插件 `process:spawn` / `network:*` 未确认 | 在插件管理或 MCP 设置中显式授权；见 AGENTS.md 权限约定 |
 <!-- code:REMOTE_SERVICE_UNAVAILABLE -->

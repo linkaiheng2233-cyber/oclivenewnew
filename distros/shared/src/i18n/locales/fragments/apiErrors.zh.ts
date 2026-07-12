@@ -22,6 +22,8 @@ export default {
   TXN_RUNTIME_MIRROR_FAILED: '运行时镜像同步失败，请重试。',
   TXN_MEMORY_FIFO_TRIM_FAILED: '短期记忆整理（FIFO）失败，请重试。',
   DB_ERROR: '数据库操作失败，请稍后重试。',
+  DB_MIGRATION_FAILED:
+    '数据库迁移失败。请备份应用数据目录中的 app.db 后重试；若持续失败请查看 migration_failed.json 与日志。',
   IO_ERROR:
     '本地文件读写失败。请检查：① 应用数据目录是否可写（设置 → 常规 → 环境自检）；② 杀毒/权限是否拦截；③ 勿将数据目录放在只读介质。详见 CONFIGURATION_FILES.md。',
   IO_ERROR_HOST_JSON:
@@ -29,6 +31,7 @@ export default {
   API_PLUGIN_NOT_FOUND: '未找到该目录插件或插件未扫描到，请检查插件 id 与安装路径。',
   API_PERMISSION_DENIED: '插件权限不足，请在 manifest 中声明所需权限。',
   API_INVALID_MANIFEST: '插件 manifest 无效，请检查 manifest.json。',
+  PLUGIN_MANIFEST_INVALID: '插件 manifest 无效，请对照 PLUGIN_V1 检查 manifest.json。',
   LLM_ERROR:
     '模型调用失败。请确认：① 若 `OCLIVE_LLM_BACKEND=ollama`（默认）：本机已安装并启动 Ollama，`ollama list` / `ollama pull` 与 `OLLAMA_MODEL` 一致，`OLLAMA_BASE_URL` 端口正确；② 若为 **remote**：`OCLIVE_REMOTE_LLM_URL` 可达、超时 `OCLIVE_REMOTE_LLM_TIMEOUT_MS` 合理且上游可用。设置 → 常规 → 环境自检可探测本机 Ollama。',
   VOICE_RPC_TIMEOUT:

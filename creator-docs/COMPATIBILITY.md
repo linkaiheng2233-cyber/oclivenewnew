@@ -8,7 +8,7 @@
 
 - **oclivenewnew**（主程序 / Tauri 宿主）：**`0.5.0`**（根 `package.json` `version` 与 `distros/desktop-tauri/Cargo.toml` `version` 须一致）
 - **oclive_kernel_runtime**（共享契约 crate）：**`0.2.0`**（`kernel/crates/oclive_kernel_runtime/Cargo.toml`；DTO / `API_VERSION` 等见该 crate）
-- **oclive-cli**（脚手架 CLI）：**`0.1.0`**（`kernel/crates/oclive-cli/Cargo.toml`；**独立 semver**，不强制与桌面宿主同号；`init --kernel-source` 接主仓时以 path 依赖对齐契约）
+- **oclive-cli**（脚手架 CLI）：**`0.1.0`**（`kernel/crates/oclive-cli/Cargo.toml`；**独立 semver**，不强制与桌面宿主同号；`init --kernel-source` 接主仓时以 path 依赖对齐契约）。**`doctor config-resolve`** 为诊断子命令，依赖 `oclive_kernel_host`（in-memory `AppState` + 六槽解析；**不**拉取 Tauri）。
 - **oclive-pack-editor**（编写器，姊妹仓）：**`0.5.0`**（该仓 `package.json`；与主程序 **0.5.x** 对拍 `ui.json`）
 - **oclive-vscode**（VS Code 扩展，姊妹仓）：**`0.4.1`**（独立 semver；spawn/attach 契约对齐主程序 **≥0.4.0**，推荐 **0.5.0**）
 

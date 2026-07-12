@@ -44,7 +44,7 @@ if command -v WebKitWebDriver >/dev/null 2>&1; then
   sleep 1
 fi
 
-tauri-driver --port "$TAURI_DRIVER_PORT" --native-driver-port "$TAURI_NATIVE_DRIVER_PORT" >/tmp/tauri-driver.log 2>&1 &
+tauri-driver --port "$TAURI_DRIVER_PORT" --native-port "$TAURI_NATIVE_DRIVER_PORT" >/tmp/tauri-driver.log 2>&1 &
 echo $! >/tmp/tauri-driver.pid
 
 for _ in $(seq 1 60); do

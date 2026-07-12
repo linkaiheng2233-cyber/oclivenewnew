@@ -59,6 +59,8 @@ impl TurnThinkingPlan {
         self.mode == TurnThinkingMode::Deep && host.event_impact_llm
     }
 
+    /// Distro-wide off, or Fast + `fast_skip_complex_emotion` (performance). Prompt injection of
+    /// the prior-turn hint is independent — see `co_present` / `NARRATIVE_HINT_CONTRACT.md` §2.
     #[must_use]
     pub fn skip_complex_emotion(&self, host: &HostProfile) -> bool {
         host.skip_complex_emotion

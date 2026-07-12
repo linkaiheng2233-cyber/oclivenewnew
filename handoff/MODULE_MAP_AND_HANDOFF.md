@@ -57,21 +57,32 @@
 ### 3.2 有效 backends 解析链
 
 ```text
-slot_registry（或 legacy plugin_backends）
-  → 用户 LLM 设置 / env
-  → 发行版 [plugin_backends] 整表替换（若声明）
-  → host_flags（skip_agent → agent=none 等）
-  → 会话 PluginBackendsOverride
-  → startup_health
-  → PluginHost::resolve_for_role
+角色包 blueprint
+  ├─ legacy `plugin_backends`（manifest/settings 直写六键）
+  └─ v2 `slot_registry`（多实例 → 折叠为 `PluginBackends`，同 type last-wins）
+       ↓
+用户 LLM 设置（DB `app_settings`）/ `OCLIVE_LLM_BACKEND` 等 env
+       ↓
+发行版 `distro.oclive.toml` `[plugin_backends]` 整表替换（若声明）
+       ↓
+`host_flags`（`skip_agent` → `agent=none`；`skip_complex_emotion` 等）
+       ↓
+**内存** `SessionCache` 会话槽 override（`set_session_slot_override` / UI「会话后端」；**不写盘**）
+       ↓
+`startup_health`（Remote 槽探测；失败可降级并写 `startup_warnings`）
+       ↓
+`PluginHost::resolve_for_role` → `ResolvedRolePlugins`
 ```
 
-| 代码 | 路径 |
-|------|------|
-| 折叠 | `slot_resolver.rs` · `plugin_backends.rs` |
-| 合并 | `host_backends.rs` |
-| 装配 | `plugin_host.rs` · `backend_registry.rs` |
-| 共在调用 | `slot_runner.rs` · `co_present.rs` |
+| 层 | 代码锚点 | 说明 |
+|----|----------|------|
+| 折叠 v2 | `slot_resolver.rs` · `plugin_backends.rs` | `slot_registry_to_plugin_backends` |
+| 发行版/env 合并 | `host_backends.rs` · `effective_llm_model.rs` | HostProfile + env 天花板 |
+| 会话 override | `state/session_cache.rs` · `service/role/slot_session.rs` | **进程内** `PluginBackendsOverride` |
+| 每回合快照 | `state/effective_session_config.rs` | `EffectiveSessionConfig`（`process_message` 每轮一次） |
+| 诊断输出 | `build_plugin_resolution_debug_info` · `oclive doctor config-resolve` | 禁止第二套解析 |
+| 装配 | `plugin_host.rs` · `backend_registry.rs` | `resolve_for_role` |
+| 共在调用 | `slot_runner.rs` · `co_present.rs` | 六槽 + `complex_emotion` 设施 |
 
 ### 3.3 多实例合并
 

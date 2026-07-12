@@ -10,6 +10,9 @@ use std::time::Duration;
 
 #[derive(Parser, Debug)]
 pub struct DoctorArgs {
+    #[command(subcommand)]
+    pub subcommand: Option<DoctorSubcommand>,
+
     /// Machine-readable JSON (`schema_version` + `checks[]`)
     #[arg(long)]
     pub json: bool,
@@ -37,6 +40,13 @@ pub struct DoctorArgs {
     /// SBOM format: cyclonedx (default) or spdx
     #[arg(long = "sbom-format", default_value = "cyclonedx")]
     pub sbom_format: String,
+}
+
+#[derive(clap::Subcommand, Debug)]
+pub enum DoctorSubcommand {
+    /// Print effective six-slot backend resolution for a role/session
+    #[command(name = "config-resolve")]
+    ConfigResolve(crate::doctor_config_resolve::ConfigResolveArgs),
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -92,6 +102,15 @@ impl DoctorCheck {
 }
 
 pub fn run(args: DoctorArgs) -> Result<()> {
+    if let Some(sub) = args.subcommand {
+        match sub {
+            DoctorSubcommand::ConfigResolve(cfg) => {
+                let rt = tokio::runtime::Runtime::new().context("tokio runtime")?;
+                rt.block_on(crate::doctor_config_resolve::run(cfg))
+            }
+        }?;
+        return Ok(());
+    }
     let root = if args.path.is_absolute() {
         args.path.clone()
     } else {

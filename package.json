@@ -36,12 +36,13 @@
     "check:rust:fmt": "cargo fmt --all -- --check",
     "check:rust:clippy": "cargo clippy --workspace --all-targets --all-features -- -D warnings",
     "check:rust:test": "cargo test --workspace --lib",
+    "check:rust:integration": "node scripts/ensure-tauri-dist.mjs && cargo test --locked --workspace --tests",
     "check:rust:test:all": "cargo test --workspace",
-    "check:rust": "node scripts/check-domain-layering.mjs && node scripts/check-changelog-parity.mjs && node scripts/check-doc-mirror.mjs && npm run check:rust:fmt && npm run check:rust:clippy && npm run check:rust:test",
+    "check:rust": "node scripts/ensure-tauri-dist.mjs && node scripts/check-domain-layering.mjs && node scripts/check-changelog-parity.mjs && node scripts/check-doc-mirror.mjs && npm run check:rust:fmt && npm run check:rust:clippy && npm run check:rust:test",
     "check:license": "node scripts/check-license-readiness.mjs",
     "check": "npm run build && npm run check:rust",
     "check:release": "npm run build && npm run test:unit && npm run verify:ui && npm run verify:shared-i18n && npm run check:rust:fmt && npm run check:rust:clippy && npm run check:rust:test:all",
-    "check:ci-local": "node scripts/dimension5-acceptance.mjs --ci && npm run check",
+    "check:ci-local": "node scripts/dimension5-acceptance.mjs --ci && npm run check && npm run check:rust:integration",
     "verify:shared-i18n": "node scripts/verify-shared-i18n.mjs",
     "test:distro-profile-mirror": "node scripts/diff-vscode-distro-profile.mjs",
     "test:distro:smoke": "npm run test:distro-profile-mirror && npm run test:e2e:distro-kernel && npm run test:e2e:tauri-bundled-kernel",
@@ -69,6 +70,9 @@
     "vue": "^3.5.13",
     "vue-i18n": "^11.4.2",
     "vue3-sfc-loader": "^0.9.5"
+  },
+  "overrides": {
+    "defu": "6.1.5"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^9.0.0",

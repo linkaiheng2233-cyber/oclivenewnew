@@ -311,10 +311,10 @@ async fn connect_db(db_path: &Path) -> Result<SqlitePool> {
 
 async fn run_migrations(db: &SqlitePool) -> Result<()> {
     let migrations_dir = crate::infrastructure::sql_migrate::find_migrations_dir()
-        .map_err(crate::error::AppError::DatabaseError)?;
+        .map_err(|e| crate::error::AppError::DbMigrationFailed(e.to_string()))?;
     crate::infrastructure::sql_migrate::run_sql_migrations(db, &migrations_dir)
         .await
-        .map_err(crate::error::AppError::DatabaseError)
+        .map_err(|e| crate::error::AppError::DbMigrationFailed(e.to_string()))
 }
 
 async fn remote_fallback_switch(db_manager: &DbManager) -> Result<Arc<AtomicBool>> {

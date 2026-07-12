@@ -39,7 +39,9 @@ Example:
 <!-- code:LLM_ERROR -->
 | `LLM_ERROR` | LLM provider failure | Ollama down, model not pulled, remote timeout | Start Ollama and `ollama pull`; verify model name in role pack; use `OCLIVE_HTTP_API_MOCK_LLM=1` for bench | See §1.5 |
 <!-- code:DB_ERROR -->
-| `DB_ERROR` | Database error | Corrupt `app.db`, disk full, migration failure | Ensure data dir is writable; see `Database error` in logs |
+| `DB_ERROR` | Database error | Corrupt `app.db`, disk full, transaction failure | Ensure data dir is writable; see `Database error` in logs |
+<!-- code:DB_MIGRATION_FAILED -->
+| `DB_MIGRATION_FAILED` | Database migration failed | Migration SQL checksum/version failure, disk not writable | Back up `app.db`; check `migration_failed.json` and startup logs |
 <!-- code:ROLE_RUNTIME_NOT_READY -->
 | `ROLE_RUNTIME_NOT_READY` | Role not loaded | No `load_role` / no role selected in UI | Load a role before chatting |
 <!-- code:STARTUP_HEALTH_FAILED -->
@@ -52,6 +54,8 @@ Example:
 | `ROLE_PACK_EXISTS` | Import target exists without overwrite | Duplicate role id | Remove old dir or enable overwrite on import |
 <!-- code:INVALID_PARAMETER -->
 | `INVALID_PARAMETER` | Invalid request parameter | Empty `role_id`, unknown module, v2 pack without `slot_registry` | See API docs and [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) |
+<!-- code:PLUGIN_MANIFEST_INVALID -->
+| `PLUGIN_MANIFEST_INVALID` | Directory plugin manifest invalid | Install/update `manifest.json` missing fields or bad permissions | See PLUGIN_V1; `oclive plugin validate` or plugin workbench |
 <!-- code:HIGH_RISK_CAPABILITY_NOT_GRANTED -->
 | `HIGH_RISK_CAPABILITY_NOT_GRANTED` | High-risk capability not granted | MCP stdio/http or directory `process:spawn` / `network:*` | Grant in plugin manager / MCP settings |
 <!-- code:REMOTE_SERVICE_UNAVAILABLE -->

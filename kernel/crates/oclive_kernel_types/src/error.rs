@@ -29,9 +29,17 @@ pub mod http_chat_codes {
 /// The frontend should prefer mapping i18n via [`Self::code`] (`apiErrors` / `UNKNOWN_WITH_CODE`) rather than parsing the English `message`.
 #[derive(Error, Debug)]
 pub enum AppError {
-    /// **When**: SQLx / migration / transaction failure. **Show**: retry or contact support. **User**: usually no config change needed.
+    /// **When**: SQLx / transaction failure (not schema migration). **Show**: retry or contact support.
     #[error("Database error: {0}")]
     DatabaseError(String),
+
+    /// **When**: SQLite migration apply/checksum fails at startup. **Show**: backup `app.db`, check disk; see `migration_failed.json`.
+    #[error("Database migration failed: {0}")]
+    DbMigrationFailed(String),
+
+    /// **When**: directory plugin `manifest.json` fails validation after install/update. **Show**: fix manifest per PLUGIN_V1.
+    #[error("Plugin manifest invalid: {0}")]
+    PluginManifestInvalid(String),
 
     /// **When**: failure reading/writing role packs, logs, or grant files. **Show**: check the path and disk permissions.
     #[error("IO error: {0}")]
@@ -97,6 +105,8 @@ impl AppError {
     pub fn code(&self) -> &'static str {
         match self {
             AppError::DatabaseError(_) => "DB_ERROR",
+            AppError::DbMigrationFailed(_) => "DB_MIGRATION_FAILED",
+            AppError::PluginManifestInvalid(_) => "PLUGIN_MANIFEST_INVALID",
             AppError::IoError(_) => "IO_ERROR",
             AppError::OllamaError(_) => "LLM_ERROR",
             AppError::RoleNotFound(_) => "ROLE_NOT_FOUND",
@@ -151,6 +161,12 @@ impl AppError {
     pub fn with_chat_stage(self, stage: &'static str) -> Self {
         match self {
             Self::DatabaseError(m) => Self::DatabaseError(format!("send_message[{stage}]: {m}")),
+            Self::DbMigrationFailed(m) => {
+                Self::DbMigrationFailed(format!("send_message[{stage}]: {m}"))
+            }
+            Self::PluginManifestInvalid(m) => {
+                Self::PluginManifestInvalid(format!("send_message[{stage}]: {m}"))
+            }
             Self::IoError(e) => Self::IoError(e),
             Self::OllamaError(m) => Self::OllamaError(format!("send_message[{stage}]: {m}")),
             Self::RoleNotFound(m) => Self::RoleNotFound(format!("send_message[{stage}]: {m}")),
@@ -242,6 +258,32 @@ mod tests {
         let j: KernelErrorBody = serde_json::from_str(&s).unwrap();
         assert_eq!(j.code, "ROLE_NOT_FOUND");
         assert!(j.message.contains('x'));
+    }
+
+    #[test]
+    fn db_migration_failed_code_and_json() {
+        let e = AppError::DbMigrationFailed("checksum mismatch".into());
+        assert_eq!(e.code(), "DB_MIGRATION_FAILED");
+        let j: KernelErrorBody = serde_json::from_str(&e.to_kernel_json()).expect("json");
+        assert_eq!(j.code, "DB_MIGRATION_FAILED");
+        assert!(j.message.contains("checksum"));
+    }
+
+    #[test]
+    fn plugin_manifest_invalid_code_and_json() {
+        let e = AppError::PluginManifestInvalid("missing id".into());
+        assert_eq!(e.code(), "PLUGIN_MANIFEST_INVALID");
+        let j: KernelErrorBody = serde_json::from_str(&e.to_kernel_json()).expect("json");
+        assert_eq!(j.code, "PLUGIN_MANIFEST_INVALID");
+        assert!(j.message.contains("missing id"));
+    }
+
+    #[test]
+    fn with_chat_stage_preserves_migration_and_manifest_codes() {
+        let mig = AppError::DbMigrationFailed("x".into()).with_chat_stage("persist");
+        assert_eq!(mig.code(), "DB_MIGRATION_FAILED");
+        let man = AppError::PluginManifestInvalid("y".into()).with_chat_stage("plugin");
+        assert_eq!(man.code(), "PLUGIN_MANIFEST_INVALID");
     }
 
     #[test]

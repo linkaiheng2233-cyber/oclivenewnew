@@ -12,7 +12,7 @@
 | 项 | 值 |
 |----|-----|
 | **cargo-audit 版本** | **0.22.1**（建议固定该主版本以便报告可比） |
-| **最近扫描日期** | **2026-07-09**（本地 `cargo audit`；`crossbeam-epoch` **0.9.20** · `plist` **1.10.0** · `quick-xml` **0.41.0**） |
+| **最近扫描日期** | **2026-07-12**（本地 `cargo audit`；`crossbeam-epoch` **0.9.20** · `plist` **1.10.0** · `quick-xml` **0.41.0**） |
 | **扫描路径** | 工作区根目录 `Cargo.lock` |
 | **漏洞级命中数** | **0**（`cargo audit` 退出码 **0**） |
 | **警告级命中数** | **4**（`fxhash` · `glib` · `rand` 0.7 · `anyhow`；gtk-rs 簇见 `.cargo/audit.toml` ignore **11** 条） |

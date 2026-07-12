@@ -515,7 +515,9 @@ pub(crate) async fn post_llm(
     )
     .await?;
 
-    if matches!(mode, TurnMode::CoPresent) {
+    if matches!(mode, TurnMode::CoPresent)
+        && !middle.complex_emotion_out.source.eq("turn_thinking_fast")
+    {
         crate::domain::complex_emotion_store::persist_stored_narrative_hint(
             state,
             srid,

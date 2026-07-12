@@ -12,7 +12,7 @@ This file records **vulnerability-level** hits from **`cargo audit`** on the **w
 | Item | Value |
 |------|-----|
 | **cargo-audit version** | **0.22.1** (pin this major line for comparable reports) |
-| **Last scan date** | **2026-06-24** (local, `cargo audit --no-fetch --stale` + cached `~/.cargo/advisory-db`); workspace `oclive_sqlx` pins `sqlx-sqlite` |
+| **Last scan date** | **2026-07-12** (local `cargo audit`; `crossbeam-epoch` **0.9.20** · `plist` **1.10.0** · `quick-xml` **0.41.0**) |
 | **Scan path** | Workspace root `Cargo.lock` |
 | **Vulnerability-level count** | **0** (`cargo audit` exit code **0**; `sqlx-mysql` / `rsa` removed from lockfile graph) |
 | **Warning-level count** | **3** (`cargo audit` + [`.cargo/audit.toml`](../../.cargo/audit.toml) ignores **11** gtk-rs GTK3 / toolchain *unmaintained*; see table below) |

@@ -223,11 +223,8 @@ pub(crate) async fn run_middle(
             .host_profile
             .state_expression_hint(pre.relation.favorability_before)
     };
-    let complex_hint = if thinking.skip_complex_emotion(&state.host_profile) {
-        ""
-    } else {
-        pre.hints.prev_stored_narrative_hint.as_str()
-    };
+    // Prior-turn hint (pre_llm load) is independent of this turn's CE resolve (NARRATIVE_HINT_CONTRACT §2).
+    let complex_hint = pre.hints.prev_stored_narrative_hint.as_str();
     let tier = resolve_model_tier(pre.memory.ollama_model.as_str());
     let persona_source = resolve_persona_source(tier, thinking.mode, role, &state.host_profile);
     let persona_override = persona_override_for_source(role, persona_source);
