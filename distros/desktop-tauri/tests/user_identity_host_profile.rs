@@ -9,10 +9,11 @@ use oclive_kernel_host::domain::host_profile::load_host_profile_file;
 use oclive_kernel_host::domain::reply_post_processor::apply_effective_post_processor_config;
 use oclive_kernel_host::domain::user_identity_loader::resolve_active_user_identity;
 use oclive_kernel_host::infrastructure::llm::LlmClient;
-use oclive_kernel_host::state::AppState;
+use oclive_kernel_host::state::AppStateBuilder;
 use oclive_kernel_types::models::{
     RolePackBuiltinReplyPostProcessorConfig, RolePackReplyPostProcessorConfig,
 };
+use oclivenewnew_tauri::api::role::load_role_impl;
 use oclivenewnew_tauri::error::Result;
 use std::io::Write;
 use std::sync::Arc;
@@ -51,19 +52,25 @@ default_id = "classmate"
     let host = load_host_profile_file(&profile_file).expect("profile");
     assert_eq!(host.user_identity.default_id.as_deref(), Some("classmate"));
 
-    std::env::set_var("OCLIVE_DISTRO_PROFILE", profile_file.display().to_string());
     let roles_dir = common::roles_dir();
     let llm: Arc<dyn LlmClient> = Arc::new(StubLlm);
-    let state = AppState::new_in_memory_with_llm(llm, roles_dir)
+    let state = AppStateBuilder::in_memory_test(llm, roles_dir, None)
+        .with_host_profile(host)
+        .build()
         .await
         .expect("state");
 
+    load_role_impl(&state, "mumu", true).await.expect("load");
+    state
+        .db_manager
+        .set_use_manifest_default_identity("mumu", false)
+        .await
+        .expect("manifest off");
     let role = state.load_role_cached_async("mumu").await.expect("role");
     let resolved = resolve_active_user_identity(&state, &role, "mumu", None)
         .await
         .expect("resolve");
     assert_eq!(resolved.identity_id, "classmate");
-    std::env::remove_var("OCLIVE_DISTRO_PROFILE");
 }
 
 #[test]

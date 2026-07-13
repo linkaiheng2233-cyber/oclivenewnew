@@ -112,6 +112,9 @@ async fn v2_pack_session_memory_override_in_memory_only() {
 
 #[tokio::test]
 async fn legacy_plugin_backends_pack_resolves_without_slot_registry() {
+    let _guard = ENV_TEST_LOCK.lock().expect("env lock");
+    std::env::remove_var("OCLIVE_LLM_BACKEND");
+
     let tmp = TempDir::new().unwrap();
     write_legacy_role(&tmp, "legacy_slot", "builtin", "ollama");
     let llm = Arc::new(MockLlmClient {
@@ -139,14 +142,14 @@ async fn legacy_plugin_backends_pack_resolves_without_slot_registry() {
         MemoryBackend::Builtin
     );
     assert_eq!(debug.plugin_backends_effective.llm, LlmBackend::Ollama);
+    assert!(debug.llm_env_override.is_none());
 }
 
 #[tokio::test]
 async fn env_llm_override_surfaces_in_debug_chain() {
-    {
-        let _guard = ENV_TEST_LOCK.lock().expect("env lock");
-        std::env::remove_var("OCLIVE_LLM_BACKEND");
-    }
+    let _guard = ENV_TEST_LOCK.lock().expect("env lock");
+    std::env::remove_var("OCLIVE_LLM_BACKEND");
+
     let llm = Arc::new(MockLlmClient {
         reply: "ok".to_string(),
     });
@@ -154,10 +157,7 @@ async fn env_llm_override_surfaces_in_debug_chain() {
         .await
         .expect("state");
     load_role_impl(&state, "mumu", true).await.expect("load");
-    {
-        let _guard = ENV_TEST_LOCK.lock().expect("env lock");
-        std::env::set_var("OCLIVE_LLM_BACKEND", "remote");
-    }
+    std::env::set_var("OCLIVE_LLM_BACKEND", "remote");
 
     let debug = get_plugin_resolution_debug_impl(
         &state,
@@ -170,10 +170,7 @@ async fn env_llm_override_surfaces_in_debug_chain() {
     .expect("debug");
 
     assert_eq!(debug.llm_env_override.as_deref(), Some("remote"));
-    {
-        let _guard = ENV_TEST_LOCK.lock().expect("env lock");
-        std::env::remove_var("OCLIVE_LLM_BACKEND");
-    }
+    std::env::remove_var("OCLIVE_LLM_BACKEND");
 }
 
 #[tokio::test]
