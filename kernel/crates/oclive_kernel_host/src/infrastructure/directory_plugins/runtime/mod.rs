@@ -129,7 +129,13 @@ impl DirectoryPluginRuntime {
         host_profile: HostProfile,
         scan_now: bool,
     ) -> Arc<Self> {
-        Self::bootstrap_inner(roles_dir, app_data, high_risk_grants, scan_now, host_profile)
+        Self::bootstrap_inner(
+            roles_dir,
+            app_data,
+            high_risk_grants,
+            scan_now,
+            host_profile,
+        )
     }
 
     fn bootstrap_inner(
