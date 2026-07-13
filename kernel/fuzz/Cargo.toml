@@ -13,7 +13,7 @@ libfuzzer-sys = "0.4"
 oclive_validation = { path = "../crates/oclive_validation" }
 oclive_kernel_host = { path = "../crates/oclive_kernel_host" }
 oclivenewnew-tauri = { path = "../../distros/desktop-tauri", default-features = false }
-serde_json = "1"
+serde_json = { workspace = true }
 
 [[bin]]
 name = "fuzz_manifest_load"

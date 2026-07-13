@@ -30,7 +30,7 @@ impl EnvironmentProbe {
 }
 
 fn probe_ollama() -> (OllamaProbe, u32) {
-    let agent = ureq::AgentBuilder::new()
+    let agent = crate::http_client::AgentBuilder::new()
         .timeout(Duration::from_secs(3))
         .build();
     match agent.get("http://127.0.0.1:11434/api/tags").call() {

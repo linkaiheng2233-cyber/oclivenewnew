@@ -60,7 +60,7 @@ indexmap = { workspace = true }
 tauri-plugin-deep-link = { version = "0.1.2", optional = true }
 
 [dev-dependencies]
-tower = { version = "0.4", features = ["util"] }
+tower = { workspace = true, features = ["util"] }
 oclive_kernel_contracts = { path = "../../kernel/crates/oclive_kernel_contracts" }
 
 [target.'cfg(loom)'.dev-dependencies]

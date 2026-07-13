@@ -172,7 +172,7 @@ pub fn fetch_market_index() -> Result<MarketIndexFile> {
 }
 
 pub fn fetch_online(url: &str) -> Result<MarketIndexFile> {
-    let body = ureq::get(url)
+    let body = crate::http_client::get(url)
         .call()
         .map_err(|e| anyhow::anyhow!("failed to fetch market index: {e}"))?
         .into_string()?;

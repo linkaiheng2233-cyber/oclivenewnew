@@ -86,7 +86,7 @@ pub fn run(args: DebugArgs) -> Result<()> {
         "scene_id": "default"
     });
     eprintln!("[oclive debug] POST {chat_url}");
-    let resp = ureq::post(&chat_url)
+    let resp = crate::http_client::post(&chat_url)
         .set("Content-Type", "application/json")
         .send_string(&body.to_string());
     match resp {

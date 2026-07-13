@@ -119,7 +119,7 @@ pub fn run_push(args: RegistryPushArgs) -> Result<()> {
     publish_cmd::pack_template_tarball(&root, &archive)?;
     let bytes = fs::read(&archive)?;
     let url = format!("{base}/api/v1/projects/{}", url_encode(&args.name));
-    let resp = ureq::post(&url)
+    let resp = crate::http_client::post(&url)
         .set("Authorization", &format!("Bearer {token}"))
         .set("Content-Type", "application/gzip")
         .send_bytes(&bytes)
@@ -151,7 +151,7 @@ pub fn run_pull(args: RegistryPullArgs) -> Result<()> {
         base,
         url_encode(&args.name)
     );
-    let resp = ureq::get(&url)
+    let resp = crate::http_client::get(&url)
         .set("Authorization", &format!("Bearer {token}"))
         .call()
         .map_err(|e| anyhow::anyhow!("pull failed: {e}"))?;
@@ -177,7 +177,7 @@ pub fn run_search(args: RegistrySearchArgs) -> Result<()> {
     let base = registry_base_url()?;
     let token = bearer_token()?;
     let url = format!("{}/api/v1/projects?q={}", base, url_encode(&args.keyword));
-    let resp = ureq::get(&url)
+    let resp = crate::http_client::get(&url)
         .set("Authorization", &format!("Bearer {token}"))
         .call()
         .map_err(|e| anyhow::anyhow!("search failed: {e}"))?;

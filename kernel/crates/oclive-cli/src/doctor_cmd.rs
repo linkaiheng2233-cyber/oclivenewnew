@@ -360,7 +360,7 @@ fn check_disk_space(path: &Path) -> DoctorCheck {
 }
 
 fn check_ollama() -> DoctorCheck {
-    let agent = ureq::AgentBuilder::new()
+    let agent = crate::http_client::AgentBuilder::new()
         .timeout(Duration::from_secs(3))
         .build();
     match agent.get("http://127.0.0.1:11434/api/tags").call() {
@@ -398,7 +398,7 @@ fn check_ollama() -> DoctorCheck {
 }
 
 fn check_network_github() -> DoctorCheck {
-    let agent = ureq::AgentBuilder::new()
+    let agent = crate::http_client::AgentBuilder::new()
         .timeout(Duration::from_secs(5))
         .build();
     match agent.get("https://github.com").call() {

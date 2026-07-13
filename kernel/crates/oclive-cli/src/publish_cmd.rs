@@ -135,7 +135,9 @@ pub fn init_from_template_url(url: &str, output: &Path) -> Result<()> {
     let tmp = tempfile::tempdir()?;
     let archive = tmp.path().join("dl.tar.gz");
     eprintln!("Downloading {url} …");
-    let resp = ureq::get(url).call().context("HTTP GET template")?;
+    let resp = crate::http_client::get(url)
+        .call()
+        .context("HTTP GET template")?;
     let mut reader = resp.into_reader();
     let mut file = File::create(&archive)?;
     std::io::copy(&mut reader, &mut file)?;

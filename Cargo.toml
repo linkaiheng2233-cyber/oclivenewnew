@@ -51,7 +51,8 @@ semver = "1.0"
 notify = "6"
 zip = { version = "2", default-features = false, features = ["deflate"] }
 axum = "0.7"
-tower-http = { version = "0.5", features = ["cors"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors"] }
 sha2 = "0.10"
 indexmap = "2"
 arc-swap = "1.7"

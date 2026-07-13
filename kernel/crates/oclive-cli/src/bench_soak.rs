@@ -138,7 +138,7 @@ fn post_chat(port: u16, message: &str) -> Result<()> {
     let url = format!("http://127.0.0.1:{port}/chat");
     let body =
         serde_json::json!({ "message": message, "role_id": "default", "scene_id": "default" });
-    let resp = ureq::post(&url)
+    let resp = crate::http_client::post(&url)
         .set("Content-Type", "application/json")
         .timeout(Duration::from_secs(60))
         .send_string(&body.to_string())?;

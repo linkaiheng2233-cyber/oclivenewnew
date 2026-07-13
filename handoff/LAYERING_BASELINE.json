@@ -2,8 +2,8 @@
   "description": "Max allowed domain→infrastructure coupling under crates/oclive_kernel_host/src/domain/**/*.rs (ratchet down only).",
   "domain_to_infrastructure_imports": 3,
   "domain_to_infrastructure_fq_refs": 1,
-  "cargo_duplicate_groups": 103,
-  "updated": "2026-07-13",
-  "note": "D-ERR-01 remainder: user_llm_env + startup_health DbManager → AppSettingsPort / DbHealthPort (Wave 1).",
+  "cargo_duplicate_groups": 97,
+  "updated": "2026-07-14",
+  "note": "K-SUPPLY-05: tower-http 0.6 / tower 0.5; ureq→reqwest blocking; cargo update pruned transitive dups (−6 vs 103).",
   "check_command": "node scripts/check-domain-layering.mjs"
 }

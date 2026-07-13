@@ -37,6 +37,7 @@ mod env_probe;
 mod explain_cmd;
 mod explain_dual_core;
 mod generator;
+mod http_client;
 mod init_bench;
 mod init_check;
 mod init_from_existing;

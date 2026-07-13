@@ -12,10 +12,10 @@
 | 项 | 值 |
 |----|-----|
 | **cargo-audit 版本** | **0.22.1**（建议固定该主版本以便报告可比） |
-| **最近扫描日期** | **2026-07-12**（本地 `cargo audit`；`crossbeam-epoch` **0.9.20** · `plist` **1.10.0** · `quick-xml` **0.41.0**） |
+| **最近扫描日期** | **2026-07-14**（本地 `cargo audit`；K-SUPPLY-05 lock 更新后） |
 | **扫描路径** | 工作区根目录 `Cargo.lock` |
 | **漏洞级命中数** | **0**（`cargo audit` 退出码 **0**） |
-| **警告级命中数** | **4**（`fxhash` · `glib` · `rand` 0.7 · `anyhow`；gtk-rs 簇见 `.cargo/audit.toml` ignore **11** 条） |
+| **警告级命中数** | **3**（`fxhash` · `glib` · `rand` 0.7；gtk-rs 簇见 `.cargo/audit.toml` ignore **11** 条） |
 
 > 若 CI 或本机无法拉取 advisory-db，可使用：`cargo audit --no-fetch --stale`（依赖本地已 fetch 的数据库）。
 
@@ -65,7 +65,7 @@
 | **RUSTSEC-2025-0057** | `fxhash` | **开放** | 经 Tauri HTML 解析传递；无直接 API |
 | **RUSTSEC-2024-0429** | `glib` | **开放** | `VariantStrIter` 路径；宿主未使用 |
 | **RUSTSEC-2026-0097** | `rand` 0.7 | **开放** | 经 `phf`/Tauri 宏；需上游 Tauri 2 |
-| **RUSTSEC-2026-0190** | `anyhow` | **开放** | 经 wit-bindgen / Tauri build 链；跟踪上游 |
+| **RUSTSEC-2026-0190** | `anyhow` | **已修复** — 锁文件 **1.0.103** | 2026-07-14 K-SUPPLY-05 `cargo update` |
 
 忽略列表与理由见 [`.cargo/audit.toml`](../.cargo/audit.toml) 与 [SECURITY_AUDIT_SCOPE.md](./SECURITY_AUDIT_SCOPE.md)。
 

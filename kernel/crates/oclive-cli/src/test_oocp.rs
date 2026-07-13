@@ -96,7 +96,7 @@ fn wait_for_health(url: &str) -> Result<()> {
 }
 
 fn health_ok(url: &str) -> bool {
-    let Ok(resp) = ureq::get(url).call() else {
+    let Ok(resp) = crate::http_client::get(url).call() else {
         return false;
     };
     resp.status() == 200

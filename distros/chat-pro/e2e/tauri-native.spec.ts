@@ -41,14 +41,28 @@ test.describe("Tauri native window (A1.1c smoke)", () => {
 
     try {
       await browser.setTimeout({ implicit: 15_000 });
+      // FluentShell is defineAsyncComponent — wait for shell chrome, not only window title.
+      await browser.waitUntil(
+        async () => {
+          const t = await browser.getTitle();
+          return /OCLIVE|oclivenewnew|沐沐/i.test(t);
+        },
+        {
+          timeout: 60_000,
+          timeoutMsg: "window title never matched OCLIVE / oclivenewnew / 沐沐",
+        },
+      );
       const title = await browser.getTitle();
       expect(title).toMatch(/OCLIVE|oclivenewnew|沐沐/i);
 
       const leftPane = await browser.$(".left-pane");
-      await expect(leftPane).toBeDisplayed();
+      // Use WebdriverIO wait (Playwright expect has no toBeDisplayed for WDIO elements).
+      await leftPane.waitForDisplayed({ timeout: 60_000 });
+      expect(await leftPane.isDisplayed()).toBe(true);
 
       const roleSelect = await browser.$(".selector-row--topbar select");
-      await expect(roleSelect).toBeDisplayed();
+      await roleSelect.waitForDisplayed({ timeout: 30_000 });
+      expect(await roleSelect.isDisplayed()).toBe(true);
     } finally {
       await browser.deleteSession();
     }

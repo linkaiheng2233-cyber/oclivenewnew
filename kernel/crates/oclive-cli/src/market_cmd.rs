@@ -289,7 +289,9 @@ fn install_role_pack_item(item: &MarketItem, out: &Path) -> Result<()> {
     if url.ends_with(".tar.gz") || url.ends_with(".tgz") {
         let tmp = tempfile::tempdir()?;
         let archive = tmp.path().join("pack.tar.gz");
-        let resp = ureq::get(url).call().context("download role pack")?;
+        let resp = crate::http_client::get(url)
+            .call()
+            .context("download role pack")?;
         let mut reader = resp.into_reader();
         let mut file = std::fs::File::create(&archive)?;
         std::io::copy(&mut reader, &mut file)?;

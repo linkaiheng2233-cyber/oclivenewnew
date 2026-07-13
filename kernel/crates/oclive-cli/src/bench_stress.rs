@@ -40,7 +40,7 @@ pub fn run_stress(root: &std::path::Path, args: &BenchArgs) -> Result<()> {
         .and_then(|p| p.parse().ok())
         .unwrap_or(DEFAULT_API_PORT);
     let url = format!("http://127.0.0.1:{port}/chat");
-    let agent = ureq::AgentBuilder::new()
+    let agent = crate::http_client::AgentBuilder::new()
         .timeout(Duration::from_secs(30))
         .build();
     let body = r#"{"message":"bench stress ping"}"#;

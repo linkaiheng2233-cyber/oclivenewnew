@@ -12,10 +12,10 @@ This file records **vulnerability-level** hits from **`cargo audit`** on the **w
 | Item | Value |
 |------|-----|
 | **cargo-audit version** | **0.22.1** (pin this major line for comparable reports) |
-| **Last scan date** | **2026-07-12** (local `cargo audit`; `crossbeam-epoch` **0.9.20** · `plist` **1.10.0** · `quick-xml` **0.41.0**) |
+| **Last scan date** | **2026-07-14** (local `cargo audit`; after K-SUPPLY-05 lock update) |
 | **Scan path** | Workspace root `Cargo.lock` |
 | **Vulnerability-level count** | **0** (`cargo audit` exit code **0**; `sqlx-mysql` / `rsa` removed from lockfile graph) |
-| **Warning-level count** | **4** (`fxhash` · `glib` · `rand` 0.7 · `anyhow`; gtk-rs cluster see `.cargo/audit.toml` ignore **11** entries) |
+| **Warning-level count** | **3** (`fxhash` · `glib` · `rand` 0.7; gtk-rs cluster see `.cargo/audit.toml` ignore **11** entries) |
 
 > If CI or your machine cannot fetch advisory-db: `cargo audit --no-fetch --stale` (requires a previously fetched local DB).
 
@@ -63,7 +63,7 @@ This file records **vulnerability-level** hits from **`cargo audit`** on the **w
 | **RUSTSEC-2025-0057** | `fxhash` | **Open** | via Tauri HTML parse; no direct API |
 | **RUSTSEC-2024-0429** | `glib` | **Open** | `VariantStrIter` path; host does not use |
 | **RUSTSEC-2026-0097** | `rand` 0.7 | **Open** | via `phf`/Tauri macros; needs upstream Tauri 2 |
-| **RUSTSEC-2026-0190** | `anyhow` | **Open** | via wit-bindgen / Tauri build chain; track upstream |
+| **RUSTSEC-2026-0190** | `anyhow` | **Fixed** — lockfile **1.0.103** | 2026-07-14 K-SUPPLY-05 `cargo update` |
 
 See [`.cargo/audit.toml`](../../.cargo/audit.toml) and [SECURITY_AUDIT_SCOPE.md](./SECURITY_AUDIT_SCOPE.md).
 

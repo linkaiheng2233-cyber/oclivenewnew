@@ -265,7 +265,7 @@ fn run_status(args: KernelStatusArgs) -> Result<()> {
 
 fn probe_health(port: u16) -> Option<bool> {
     let url = format!("http://127.0.0.1:{port}/health");
-    let agent = ureq::AgentBuilder::new()
+    let agent = crate::http_client::AgentBuilder::new()
         .timeout(std::time::Duration::from_secs(3))
         .build();
     agent.get(&url).call().ok().map(|r| r.status() == 200)

@@ -137,7 +137,7 @@ fn post_chat_extract(port: u16, message: &str) -> Result<String> {
         "role_id": "default",
         "scene_id": "default"
     });
-    let resp = ureq::post(&url)
+    let resp = crate::http_client::post(&url)
         .set("Content-Type", "application/json")
         .timeout(Duration::from_secs(120))
         .send_string(&body.to_string())?;

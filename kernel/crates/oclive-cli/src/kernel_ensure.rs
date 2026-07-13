@@ -192,7 +192,7 @@ fn execute_plan(
 
 fn fetch_health_json(port: u16) -> Option<HealthProbeJson> {
     let url = format!("http://127.0.0.1:{port}/health");
-    let agent = ureq::AgentBuilder::new()
+    let agent = crate::http_client::AgentBuilder::new()
         .timeout(Duration::from_secs(3))
         .build();
     let resp = agent
