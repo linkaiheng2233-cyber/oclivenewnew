@@ -5,24 +5,36 @@
  * 2. creator-docs markdown (excl. video-script/) has EN peer, RFC summary, or registry pending entry.
  * 3. human-docs L0–L8 numbered pages have EN peer (04 may use 04_ENGINEERING_RULES_SUMMARY).
  * 4. Optional drift hints when ZH mtime > EN + 30 days.
+ * 5. High-traffic drift is a hard failure with --warn-drift-high-traffic (independent of --warn-drift).
  *
- * Usage: node scripts/check-doc-mirror.mjs [--warn-drift]
+ * Usage:
+ *   node scripts/check-doc-mirror.mjs [--warn-drift] [--warn-drift-high-traffic]
+ *   node scripts/check-doc-mirror.mjs --self-test
  */
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const WARN_DRIFT = process.argv.includes('--warn-drift');
 const WARN_DRIFT_HIGH_TRAFFIC = process.argv.includes('--warn-drift-high-traffic');
+const SELF_TEST = process.argv.includes('--self-test');
 const DRIFT_DAYS = 30;
 
-/** High-traffic ZH paths: drift >30d vs EN peer is a hard failure when --warn-drift-high-traffic. */
+/**
+ * High-traffic ZH paths under creator-docs: drift >30d vs EN peer is a hard failure
+ * when --warn-drift-high-traffic is set. Only creator-docs paths (walker-reachable).
+ */
 const HIGH_TRAFFIC_DRIFT_ZH = new Set([
   'creator-docs/role-pack/ROLE_PACK_SPEC.md',
   'creator-docs/plugin-and-architecture/PLUGIN_V1.md',
   'creator-docs/security/KNOWN_VULNERABILITIES.md',
-  'handoff/TECHNICAL_DEBT_INVENTORY.md',
+  'creator-docs/cli/OCLIVE_CLI_GUIDE.md',
+  'creator-docs/COMPATIBILITY.md',
+  'creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md',
+  'creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md',
+  'creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md',
 ]);
 
 /** ZH paths (posix, from repo root) intentionally without 1:1 EN file yet. */
@@ -81,8 +93,8 @@ function walkMd(dirAbs, relPrefix, out = []) {
   return out;
 }
 
-function exists(relPosix) {
-  return fs.existsSync(path.join(ROOT, relPosix));
+function exists(relPosix, root = ROOT) {
+  return fs.existsSync(path.join(root, relPosix));
 }
 
 function enPeerForZh(zhRel) {
@@ -92,8 +104,8 @@ function enPeerForZh(zhRel) {
   return `creator-docs-en/${tail}`;
 }
 
-function checkZhLink(fileRel) {
-  const abs = path.join(ROOT, fileRel);
+function checkZhLink(fileRel, root = ROOT) {
+  const abs = path.join(root, fileRel);
   const content = fs.readFileSync(abs, 'utf8');
   const head = content.split('\n').slice(0, 50).join('\n');
   const m = head.match(/\[中文\]\(([^)]+)\)/) ?? content.match(/\[中文\]\(([^)]+)\)/);
@@ -112,17 +124,42 @@ function checkZhLink(fileRel) {
       .normalize(path.join(path.dirname(fileRel), target))
       .replace(/\\/g, '/');
   }
-  if (!exists(resolved)) {
+  if (!exists(resolved, root)) {
     return { ok: false, reason: `[中文] target missing: ${resolved}` };
   }
   return { ok: true };
 }
 
-function checkCoverage() {
+/**
+ * Evaluate mtime drift for a ZH/EN pair.
+ * High-traffic paths are hard errors when warnHighTraffic (even without warnAll).
+ * Other paths warn only when warnAll.
+ */
+function evaluateDrift(zh, peer, root, highTrafficSet, warnAll, warnHighTraffic) {
+  const zhM = fs.statSync(path.join(root, zh)).mtimeMs;
+  const enM = fs.statSync(path.join(root, peer)).mtimeMs;
+  const days = (zhM - enM) / (86400 * 1000);
+  if (days <= DRIFT_DAYS) return { error: null, warning: null };
+  const msg = `drift hint: ${zh} newer than EN by ${Math.round(days)}d`;
+  if (warnHighTraffic && highTrafficSet.has(zh)) {
+    return { error: msg, warning: null };
+  }
+  if (warnAll) {
+    return { error: null, warning: msg };
+  }
+  return { error: null, warning: null };
+}
+
+function checkCoverage(
+  root = ROOT,
+  highTrafficSet = HIGH_TRAFFIC_DRIFT_ZH,
+  warnAll = WARN_DRIFT,
+  warnHighTraffic = WARN_DRIFT_HIGH_TRAFFIC,
+) {
   const errors = [];
   const warnings = [];
 
-  const zhFiles = walkMd(path.join(ROOT, 'creator-docs'), 'creator-docs').filter(
+  const zhFiles = walkMd(path.join(root, 'creator-docs'), 'creator-docs').filter(
     (f) =>
       !f.includes('/video-script/') &&
       f !== 'creator-docs/README.md' &&
@@ -133,19 +170,11 @@ function checkCoverage() {
   for (const zh of zhFiles) {
     if (CREATOR_PENDING.has(zh)) continue;
     const peer = enPeerForZh(zh);
-    if (peer && exists(peer)) {
-      if (WARN_DRIFT) {
-        const zhM = fs.statSync(path.join(ROOT, zh)).mtimeMs;
-        const enM = fs.statSync(path.join(ROOT, peer)).mtimeMs;
-        const days = (zhM - enM) / (86400 * 1000);
-        if (days > DRIFT_DAYS) {
-          const msg = `drift hint: ${zh} newer than EN by ${Math.round(days)}d`;
-          if (WARN_DRIFT_HIGH_TRAFFIC && HIGH_TRAFFIC_DRIFT_ZH.has(zh)) {
-            errors.push(msg);
-          } else if (WARN_DRIFT) {
-            warnings.push(msg);
-          }
-        }
+    if (peer && exists(peer, root)) {
+      if (warnAll || warnHighTraffic) {
+        const d = evaluateDrift(zh, peer, root, highTrafficSet, warnAll, warnHighTraffic);
+        if (d.error) errors.push(d.error);
+        if (d.warning) warnings.push(d.warning);
       }
       continue;
     }
@@ -155,20 +184,21 @@ function checkCoverage() {
   return { errors, warnings };
 }
 
-function checkEnLinks() {
+function checkEnLinks(root = ROOT) {
   const errors = [];
-  const enFiles = walkMd(path.join(ROOT, 'creator-docs-en'), 'creator-docs-en');
+  const enFiles = walkMd(path.join(root, 'creator-docs-en'), 'creator-docs-en');
   for (const f of enFiles) {
     if (EN_HUB_SKIP.has(f)) continue;
-    const r = checkZhLink(f);
+    const r = checkZhLink(f, root);
     if (!r.ok) errors.push(`${f}: ${r.reason}`);
   }
   return errors;
 }
 
-function checkHumanLadder() {
+function checkHumanLadder(root = ROOT) {
   const errors = [];
-  const humanRoot = path.join(ROOT, 'human-docs');
+  const humanRoot = path.join(root, 'human-docs');
+  if (!fs.existsSync(humanRoot)) return errors;
   const numbered = fs
     .readdirSync(humanRoot)
     .filter((n) => /^(0[0-9]|10)_.*\.md$/.test(n))
@@ -177,14 +207,73 @@ function checkHumanLadder() {
   for (const name of numbered) {
     const zh = `human-docs/${name}`;
     const en = HUMAN_LADDER_EXCEPTIONS[zh] ?? `human-docs-en/${name}`;
-    if (!exists(en)) {
+    if (!exists(en, root)) {
       errors.push(`human ladder missing EN: ${zh} → expected ${en}`);
     }
   }
   return errors;
 }
 
+function runSelfTest() {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'oclive-doc-mirror-'));
+  try {
+    const zhRel = 'creator-docs/security/KNOWN_VULNERABILITIES.md';
+    const enRel = 'creator-docs-en/security/KNOWN_VULNERABILITIES.md';
+    fs.mkdirSync(path.join(tmp, 'creator-docs/security'), { recursive: true });
+    fs.mkdirSync(path.join(tmp, 'creator-docs-en/security'), { recursive: true });
+    fs.writeFileSync(path.join(tmp, zhRel), '# ZH fixture\n');
+    fs.writeFileSync(
+      path.join(tmp, enRel),
+      '# EN fixture\n\n[中文](../../creator-docs/security/KNOWN_VULNERABILITIES.md)\n',
+    );
+
+    const now = Date.now() / 1000;
+    const enStale = now - (DRIFT_DAYS + 5) * 86400;
+    fs.utimesSync(path.join(tmp, zhRel), now, now);
+    fs.utimesSync(path.join(tmp, enRel), enStale, enStale);
+
+    const highSet = new Set([zhRel]);
+
+    // dimension5 argv shape: ONLY --warn-drift-high-traffic (no --warn-drift)
+    const htOnly = checkCoverage(tmp, highSet, /*warnAll*/ false, /*warnHighTraffic*/ true);
+    if (htOnly.errors.length === 0) {
+      console.error(
+        'check-doc-mirror --self-test: expected hard failure with --warn-drift-high-traffic alone',
+      );
+      process.exit(1);
+    }
+    if (!htOnly.errors.some((e) => e.includes(zhRel))) {
+      console.error(`check-doc-mirror --self-test: unexpected errors: ${htOnly.errors.join('; ')}`);
+      process.exit(1);
+    }
+
+    // Neither flag → silent (the old CI bug mode)
+    const silent = checkCoverage(tmp, highSet, false, false);
+    if (silent.errors.length !== 0 || silent.warnings.length !== 0) {
+      console.error('check-doc-mirror --self-test: no-flag mode should skip drift');
+      process.exit(1);
+    }
+
+    // Fresh EN peer must pass high-traffic gate
+    fs.utimesSync(path.join(tmp, enRel), now, now);
+    const fresh = checkCoverage(tmp, highSet, false, true);
+    if (fresh.errors.some((e) => e.includes('drift hint'))) {
+      console.error('check-doc-mirror --self-test: fresh EN should not drift-fail');
+      process.exit(1);
+    }
+
+    console.log('check-doc-mirror --self-test: OK');
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+}
+
 function main() {
+  if (SELF_TEST) {
+    runSelfTest();
+    return;
+  }
+
   const allErrors = [
     ...checkEnLinks().map((e) => `[pair-link] ${e}`),
     ...checkCoverage().errors.map((e) => `[coverage] ${e}`),

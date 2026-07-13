@@ -2,9 +2,17 @@
 
 **Plugin author learning path:** [PLUGIN_AUTHOR_LEARNING_PATH.md](PLUGIN_AUTHOR_LEARNING_PATH.md)
 
-**Current authority:** role-pack **`pipeline.ocblueprint` → `slot_registry`** ([ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)). This English summary covers host orchestration contracts, facade traits, and **v2 instance resolution**; **legacy** `settings.json` → `plugin_backends` sections are **v1 (deprecated)** for migration only. **Full tables (Chinese authority):** [../../creator-docs/plugin-and-architecture/PLUGIN_V1.md](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md). Rust anchors: `slot_resolver.rs`, `plugin_host.rs`, `plugin_backends.rs`.
+**Current authority:** role-pack **`pipeline.ocblueprint` → `slot_registry`** ([ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)). This English page is **condensed** (not a quiet 1:1 of ZH). It covers host orchestration contracts, facade traits, and **v2 instance resolution**; **legacy** `settings.json` → `plugin_backends` sections are **v1 (deprecated)** for migration only. **Full tables (Chinese SSOT):** [../../creator-docs/plugin-and-architecture/PLUGIN_V1.md](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md). Rust anchors: `slot_resolver.rs`, `plugin_host.rs`, `plugin_backends.rs`.
 
 **Index (ZH):** [DOCUMENTATION_INDEX.md](../../creator-docs/getting-started/DOCUMENTATION_INDEX.md) · **Architecture overview:** [../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) · **Kernel diagram:** [../getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md](../getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md) · **Pack versioning:** [PACK_VERSIONING.md](../../creator-docs/role-pack/PACK_VERSIONING.md) · **Remote JSON-RPC:** [REMOTE_PLUGIN_PROTOCOL.md](../../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) · **Directory plugins:** [DIRECTORY_PLUGINS.md](../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md).
+
+| ZH section (normative) | EN coverage |
+|------------------------|-------------|
+| Blueprint v2 / design rules / six slots / `send_message` order | Condensed below |
+| Per-slot input/output facet tables | Backend enum table only → [ZH](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md) |
+| Plugin Manager V2 `ui_template` / `ui_schema` / `provides` | Pointer → [ZH §前端 UI](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md) |
+| `reply_post_process` / `theater_director` / `voice.asr` side channels | Permission + pointer; full RPC in ZH |
+| Directory `permissions` / `slot_attachment` | Condensed permission table below |
 
 ---
 
@@ -117,6 +125,17 @@ TypeScript **`SendMessageResponse`** (`distros/shared/src/api/`) must match `mod
 `get_role_info`, `load_role`, and **`POST /chat`** (with `--api`) expose **`personality_source`** as **`vector` | `profile`**, aligned with pack **`evolution.personality_source`**.
 
 For the complete RPC tables and manifest examples, open the **[full PLUGIN_V1 (ZH)](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md)**.
+
+### Side-channel capabilities (condensed)
+
+Directory / remote plugins may declare **`provides`** beyond the six slots. Host-enforced side channels (not six-slot `SlotResolver`):
+
+| `provides` | Channel | Notes |
+|------------|---------|-------|
+| `reply_post_process` | Reply Post-Processor | `config.json` → `reply_post_processor`; RPC `reply_post_process.process` |
+| `theater_director` | Theater Scene Director | Distro `[theater].director_plugin`; RPC `theater.build_prompt` |
+| `voice.asr` | Voice ASR | Host UI via `plugin_rpc_invoke`; see ZH PLUGIN_V1 + side-channel RFC summary |
+| `complex_emotion` | Slot type (v2) | Blueprint `type: complex_emotion` when `backend: directory` |
 
 ---
 

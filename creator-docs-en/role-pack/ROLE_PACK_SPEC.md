@@ -63,7 +63,12 @@ Reference: `distros/chat-pro/roles/mumu/config.json`.
 | `time` | Virtual clock ratio and jump-time forgetting |
 | `memory` | Long-term memory decay and reinforcement |
 | `relation` | Intimacy estrangement and relation downgrade |
-| `turn_thinking` | Co-present Fast/Deep routing, Deep latch, ephemeral situation summary — see §9.11 |
+| `chat_storage` | Chat persistence / mirror policy — see §9.5a |
+| `reply_post_processor` | Optional post-LLM shaping — see §9.7 |
+| `portrait_catalog` | Portrait facility (facility 3) — see §9.9 |
+| `visual_presentation` | Visual stage (facility 4) — see §9.10 |
+| `meta_action_templates` | Break-wall meta-action attitude copy — see §9.8 |
+| `turn_thinking` | Co-present Fast/Deep routing — see §9.11 |
 
 ### 9.3 `time`
 
@@ -96,6 +101,27 @@ Estrangement runs at **turn start** in immersive mode only; each actual chat tur
 
 Types: `oclive_kernel_types::RolePackConfigFile`. Parse errors: host **warns** and keeps defaults; role load continues.
 
+### 9.5a `chat_storage` (chat backend & replay · hybrid)
+
+Runtime always uses **HybridConversationStore** (SQLite truth + optional JSON mirror). `backend` enum **`hybrid` \| `file` \| `sqlite`** controls the **JSON mirror** only (`hybrid` on; `file`/`sqlite` off) — it does **not** swap independent store implementations. Full tables: [ZH ROLE_PACK_SPEC §9.5a](../../creator-docs/role-pack/ROLE_PACK_SPEC.md#95a-chat_storage聊天记录后端与回放--phase-3-hybrid) · [CHAT_STORAGE_ARCHITECTURE.md](../../handoff/CHAT_STORAGE_ARCHITECTURE.md).
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `backend` | string | `hybrid` | Mirror policy |
+| `location` | string | `global` | `"role_pack"` or `"global"` for JSON mirror path |
+| `replay_similarity_threshold` | number | `0.6` | Replay dedupe (0.1–1.0) |
+
+Validated by `oclive pack validate` when the section is present.
+
+### 9.6 Relation to blueprint / DB
+
+| Concept | `config.json` | Blueprint / DB |
+|---------|---------------|----------------|
+| Memory FIFO size | — | `runtime_config.memory_config` / `policy.toml` |
+| Favor baseline / event deltas | — | `meta.relations` + turn event engine |
+| LTM content / `mention_count` | Decay/reinforce knobs | SQLite `long_term_memory` |
+| Virtual time anchors | `time.speed` etc. | `role_runtime.virtual_time_*` |
+
 ### 9.11 `turn_thinking` (Wave F · co-present routing)
 
 **Full schema (Chinese SSOT):** [ROLE_PACK_SPEC.md §9.11](../../creator-docs/role-pack/ROLE_PACK_SPEC.md#911-turn_thinkingwave-f) · RFC [RFC_TURN_THINKING_PERSISTENCE_SUMMARY.md](../rfc/RFC_TURN_THINKING_PERSISTENCE_SUMMARY.md).
@@ -123,3 +149,21 @@ Optional post-LLM reply shaping in **`config.json`**. **Independent channel** �
 **Validation:** `oclive pack validate` requires non-empty `remote.url` when `enabled=true` and `backend=remote`; directory requires non-empty `plugin_id`.
 
 **DTO:** `include_raw_reply: true` may surface `raw_reply` when post-processing changes text (`SendMessageResponse` schema **15**).
+
+### 9.8 `meta_action_templates` (break-wall meta actions · optional)
+
+Host does **not** require this; VS Code / clients may inject attitude copy as a normal user turn after storage edits. Keys: `undo` / `regenerate` / `edit` / `delete` (`enabled`, `attitude_text`). Empty attitude or `enabled: false` → silent. Full tables: [ZH §9.8](../../creator-docs/role-pack/ROLE_PACK_SPEC.md#98-meta_action_templates破壁元操作--可选).
+
+### 9.9 `portrait_catalog` (portrait facility · optional)
+
+RFC summary: [RFC_PORTRAIT_FACILITY_SUMMARY.md](../rfc/RFC_PORTRAIT_FACILITY_SUMMARY.md). `config.json` → `portrait_catalog.enabled` loads sibling `portrait_catalog.json`. **Condensed:** EN does not duplicate the full asset-field table — see [ZH §9.9](../../creator-docs/role-pack/ROLE_PACK_SPEC.md#99-portrait_catalog立绘设施--v04--a2-磁盘).
+
+### 9.10 `visual_presentation` (visual stage · draft · off by default)
+
+RFC summary: [RFC_VISUAL_PRESENTATION_FACILITY_SUMMARY.md](../rfc/RFC_VISUAL_PRESENTATION_FACILITY_SUMMARY.md). Fields: `enabled`, `backend` (`none` \| `image` \| `live2d` \| `rig3d` \| `procedural` \| `directory`), `resources`. **No** second AI image-pick here; input is facility-3 `visual_state_id`. Full tables: [ZH §9.10](../../creator-docs/role-pack/ROLE_PACK_SPEC.md#910-visual_presentation视觉表现设施--草案--默认关闭).
+
+---
+
+## Missing-section policy (this EN page)
+
+This English page is **condensed**. Normative field tables for directory layout, legacy `manifest`/`settings`, RobotSoulPack, and any section not expanded above remain in the **[Chinese ROLE_PACK_SPEC](../../creator-docs/role-pack/ROLE_PACK_SPEC.md)** (SSOT). Do not treat EN silence as “absent from product.”

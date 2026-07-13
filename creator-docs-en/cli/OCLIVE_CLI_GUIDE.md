@@ -28,6 +28,31 @@ The end of `init --help` lists **presets and the `plugin_backends` matrix** (sam
 
 ---
 
+## `doctor`: environment diagnostics
+
+```bash
+cargo run -p oclive-cli -- doctor
+cargo run -p oclive-cli -- doctor --json
+cargo run -p oclive-cli -- doctor -o ./my-project
+cargo run -p oclive-cli -- doctor --fix
+```
+
+Checks Rust/Cargo, C++ toolchain, memory/disk, Ollama (`http://127.0.0.1:11434/api/tags`), GitHub reachability, workspace writability. At the **oclivenewnew root** with `distros/chat-pro/roles/*/pipeline.ocblueprint`, also runs three v2 blueprint checks: **`blueprint_file_format`**, **`slot_registry_llm`** (at least one `type: llm`), **`slot_position_unique`**. Fail items → non-zero exit. JSON Schema: `kernel/crates/oclive-cli/schemas/oclive_doctor_report.schema.json`.
+
+**`doctor config-resolve`** (effective six-slot backends + source chain; **default** uses `oclive_kernel_runtime::resolve_session_plugin_backends` **pure resolution** + on-disk role packs — **no** SQLite / Axum / Tauri):
+
+```bash
+cargo run -p oclive-cli -- doctor config-resolve mumu
+cargo run -p oclive-cli -- doctor config-resolve mumu --session-id demo --json
+cargo run -p oclive-cli -- doctor config-resolve mumu -o distros/chat-pro/roles --json
+# Optional deep diagnosis: in-memory AppState full-chain parity (needs diagnostics-host feature)
+cargo run -p oclive-cli --features diagnostics-host -- doctor config-resolve mumu --via-host --json
+```
+
+With `--json`, **stdout is a single JSON document**; human-readable titles go to stderr. Dependency boundary: [COMPATIBILITY.md](../COMPATIBILITY.md) · [`doctor_config_resolve.rs`](../../kernel/crates/oclive-cli/src/doctor_config_resolve.rs) · runtime SSOT [`plugin_resolution.rs`](../../kernel/crates/oclive_kernel_runtime/src/domain/plugin_resolution.rs).
+
+---
+
 ## `pack`: validate and publish role packs
 
 From repo root:

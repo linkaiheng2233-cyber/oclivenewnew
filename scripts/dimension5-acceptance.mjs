@@ -103,6 +103,7 @@ runStep('doc registry ratchet', () => {
 });
 
 runStep('doc mirror ratchet', () => {
+  sh('node', ['scripts/check-doc-mirror.mjs', '--self-test']);
   sh('node', ['scripts/check-doc-mirror.mjs', '--warn-drift-high-traffic']);
 });
 
