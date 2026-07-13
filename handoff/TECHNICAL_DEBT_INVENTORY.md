@@ -1,16 +1,16 @@
 # Technical debt inventory
 
-**Last updated:** 2026-07-14（D-I18N-02 mirror hard-gate fix · Wave A CI `29271807644` hard gates green）
+**Last updated:** 2026-07-14（D-I18N-02 Done · CI `29277340250` / HEAD `f18b6176`）
 
 **Product freeze (Theater v0):** **Lifted** — 朋友 cohort 产品门通过（7/10 卧槽）；模式 2 playtest 扩展中；**模式 3 仍冻结**。见 [theater/MODE2_UNFREEZE.md](./theater/MODE2_UNFREEZE.md)。
 
 **综合评分：** A− · 本地 dimension5 **二十检** PASS（--ci）· workspace **doctest** 见 check:release · 审查数字 SSOT：[AI_VERIFICATION_PROTOCOL.md](./AI_VERIFICATION_PROTOCOL.md)
 
-**下一动作：** **P1** — 模式 2 playtest 扩展至陌生人 cohort；D-I18N-02 本波脚本+EN 提交后看远程 `dimension5-acceptance`（K-SUPPLY-05 仍 Partial；`deny` 未翻）
+**下一动作：** **P1** — 模式 2 playtest 扩展至陌生人 cohort；K-SUPPLY-05 仍 Partial（`deny` 未翻）；CI-E2E-TAURI-01 仍 soft fail
 
 **Verification (2026-07-14 · K-SUPPLY-05 dedup wave):** local ratchet **97** · HEAD `07fc5573` · CI run [`29271807644`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29271807644) **硬门禁 success**（`rust`/`dimension5`/`cargo-audit`/`cli`/`oocp`/`cross-host-e2e`）· `e2e-tauri` **soft failure**（仍 Partial）· `deny.toml` multiple-versions **仍 warn** → K-SUPPLY-05 **仍 Partial**。
 
-**Verification (2026-07-14 · D-I18N-02):** `--warn-drift-high-traffic` 独立跑漂移（修空转）· HIGH_TRAFFIC **8** creator-docs 路径 · `--self-test` ratchet · EN CLI/`COMPATIBILITY`/`PLUGIN_V1`/`ROLE_PACK_SPEC` condensed+ZH 锚点 · **远程 dim5 证据未齐 → 暂 Partial**。
+**Verification (2026-07-14 · D-I18N-02 Done):** HEAD `f18b6176` · CI [`29277340250`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29277340250) · `dimension5-acceptance` **success** · `--warn-drift-high-traffic` 独立硬门禁 · HIGH_TRAFFIC **8** creator-docs · `--self-test` · EN CLI/`COMPATIBILITY`/`PLUGIN_V1`/`ROLE_PACK_SPEC` condensed+ZH 锚点。
 
 ---
 
@@ -77,7 +77,7 @@
 | **K-LLM-01** | LLM 后端单一依赖 Ollama | **P1** | **契约**：`LlmBackend` env 矩阵 + **测试**：1 API + 1 本地 mock + **改动面**：adapter 接线 PR | **OPEN** |
 | **K-CROSS-01** | 跨平台系统策略缺失 | **P2** | 三平台语音 smoke + distro profile 差异声明 | **OPEN** |
 | **K-DIST-01** | 分发体验缺口 | **P2** | 签名/updater/Linux 包/macOS dmg | **OPEN** |
-| **D-I18N-02** | creator-docs-en 镜像滞后 | **P2** | **契约**：`check-doc-mirror` 扩展 + **测试**：mirror ratchet 样例 + **改动面**：creator-docs-en 补链 PR | **Partial**（2026-07-14 · 修 `--warn-drift-high-traffic` 空转 · HIGH_TRAFFIC×8 · `--self-test` · EN CLI/COMPAT/PLUGIN_V1/ROLE_PACK condensed · **待远程 dim5**） |
+| **D-I18N-02** | creator-docs-en 镜像滞后 | **P2** | **契约**：`check-doc-mirror` 扩展 + **测试**：mirror ratchet 样例 + **改动面**：creator-docs-en 补链 PR | **Done**（2026-07-14 · HEAD `f18b6176` · CI `29277340250` dim5 success · HIGH_TRAFFIC×8 + `--self-test`） |
 | **V-MARKET-01** | 插件市场生态 | **P2** | 市场 UI + 社区插件 | **OPEN** |
 
 **K-PLATFORM-01 子项（立项条件，本批不实施）**
