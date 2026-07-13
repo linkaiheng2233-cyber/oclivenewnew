@@ -8,7 +8,7 @@
 
 **下一动作：** **P1** — 模式 2 playtest 扩展至陌生人 cohort；**Observe** K-SUPPLY-05 依赖去重
 
-**Verification (2026-07-13 · 收敛波收尾)：** narrative_hint / memory_lifecycle / config-resolve / error_code 契约测 + `check-error-codes-drift` + dimension5 十九检 PASS · HEAD **`f1608799`**（待远程 CI 绿）。
+**Verification (2026-07-13 · 内核解耦波收尾)：** `plugin_resolution` runtime 单测 + `slot_resolution_chain` / `memory_lifecycle` / `rpp_contract_audit` / `theater_director_resolver` 集成测 + `oclive-cli`（`diagnostics-host` 默认 off）+ dimension5 二十检 PASS + 远程 CI run **`29238028141`** 绿 · HEAD **`8f1a9b99`**。
 
 ---
 
@@ -29,7 +29,7 @@
 | **K-SUPPLY-02** | Release 预编译内核 **SHA256SUMS**（防换包） | P1 | workflow + `bundle-kernel-for-tauri.mjs` 钩子已入库；tag `oclivenewnew-v*` 触发 CI artifact | **Done**（轮次 22） |
 | **K-SUPPLY-03** | 插件安装后「请审本地源码」固定提示 | P2 | 市场/git/zip + CLI | **Done**（轮次 19） |
 | **K-SUPPLY-04** | 前端 `npm-audit` 仅可见性（`continue-on-error`） | P2 | 连续 2 周期高危命中 → 升格硬门禁或文档豁免 | **Observe**（2026-07-12：`defu` override **6.1.5** 清零高危；`npm audit --omit=dev` **0 高危 / 4 中危 / 1 低危** — `vue3-sfc-loader` 链待专项） |
-| **K-SUPPLY-05** | `deny.toml` `multiple-versions = warn` | P2 | 依赖树去重后改 `deny` | **OPEN**（2026-07-10：无 breaking 去重 PR；仍 warn） |
+| **K-SUPPLY-05** | `deny.toml` `multiple-versions = warn` | P2 | 依赖树去重后改 `deny` | **Partial**（2026-07-13 · `check-cargo-dedup-ratchet.mjs` baseline **103** · dimension5 门禁；`deny` 仍 warn） |
 | **K-CHATPRO-01** | Chat Pro 流式取消 UX | P2 | `AbortController` 打断上一轮 + 清理 `streaming` 气泡；设置可关流式 | **Done**（Chat Pro 正式启用 · 2026-06-26） |
 | **D-ORDER-01** | monorepo `roles` 路径 SSOT（27 集成测 + oclive-cli `join("roles")`） | P0 | `chat_pro_roles_dir()` / `tests/common` / `resolve_project_roles_dir()` | **Done**（条理优化 Wave A · 2026-06-24） |
 | **D-ORDER-02** | `roles_dir.rs` debug 回退、`test_oocp.rs` 旧 `src-tauri` 路径 | P0 | 指向 `distros/chat-pro/roles` + `distros/desktop-tauri/Cargo.toml` | **Done**（Wave A） |
@@ -74,7 +74,7 @@
 | **K-LLM-01** | LLM 后端单一依赖 Ollama | **P1** | **契约**：`LlmBackend` env 矩阵 + **测试**：1 API + 1 本地 mock + **改动面**：adapter 接线 PR | **OPEN** |
 | **K-CROSS-01** | 跨平台系统策略缺失 | **P2** | 三平台语音 smoke + distro profile 差异声明 | **OPEN** |
 | **K-DIST-01** | 分发体验缺口 | **P2** | 签名/updater/Linux 包/macOS dmg | **OPEN** |
-| **D-I18N-02** | creator-docs-en 镜像滞后 | **P2** | **契约**：`check-doc-mirror` 扩展 + **测试**：mirror ratchet 样例 + **改动面**：creator-docs-en 补链 PR | **OPEN** |
+| **D-I18N-02** | creator-docs-en 镜像滞后 | **P2** | **契约**：`check-doc-mirror` 扩展 + **测试**：mirror ratchet 样例 + **改动面**：creator-docs-en 补链 PR | **Partial**（2026-07-13 · `--warn-drift-high-traffic` 四路径硬门禁 + ROLE_PACK_SPEC §9.7 EN 补链） |
 | **V-MARKET-01** | 插件市场生态 | **P2** | 市场 UI + 社区插件 | **OPEN** |
 
 **K-PLATFORM-01 子项（立项条件，本批不实施）**
@@ -100,11 +100,11 @@
 | **K-MEM-01** | STM→LTM 生命周期分散 | **P1** | CHAT_STORAGE 表 + 集成测试 | **Done**（2026-07-13 · `memory_lifecycle_integration.rs` 六测 · merge/strong_only/prompt 读取） |
 | **K-FREEZE-01** | 冻结状态不透明 | **P1** | 技术债 §2 收敛 | **Done**（2026-07-12） |
 | **K-TEST-01** | check:rust 仅 --lib | **P2** | check:rust:integration；**盲区在本地而非 CI** | **Done**（2026-07-12） |
-| **K-CONFIG-01** | 配置无诊断 | **P2** | oclive-cli doctor config-resolve + `--json` + 自动测试 | **Done**（2026-07-13 · CLI 单 JSON stdout · env 锁 · `cargo tree` 无 Tauri） |
+| **K-CONFIG-01** | 配置无诊断 | **P2** | oclive-cli doctor config-resolve + `--json` + 自动测试 | **Done**（2026-07-13 · runtime `plugin_resolution` 纯路径默认 · `diagnostics-host` feature 可选 host · `cargo tree` 无 sqlite/axum/tauri） |
 | **K-ERR-01** | 热路径错误码 | **P2** | 插件/manifest/迁移结构化码 + 契约测 | **Done**（2026-07-13 · `KernelErrorBody.context` · `kernelErrorCodes.ts` · dimension5 drift 门禁） |
 | **D-ROLEVER-01** | 角色包版本迁移 | **P2** | ROLE_PACK_SPEC 章节 | **OPEN** |
 | **T-DOC-02** | Theater 状态单页 | **P2** | theater STATUS | **OPEN** |
-| **K-RPP-01** | RPP 无契约 | **P2** | PLUGIN_V1 或 RPP_CONTRACT | **OPEN** |
+| **K-RPP-01** | RPP 无契约 | **P2** | PLUGIN_V1 或 RPP_CONTRACT | **Done**（2026-07-13 · `rpp_contract_audit.rs` 四测 · manifest/RPC/roundtrip/mumu 默认关） |
 | **K-RESILIENCE-01** | Remote 弹性分散 | **P2** | ResilienceLayer | **OPEN** |
 
 ## §1.5 供应链安全（Supply Chain · 2026-06-24）
@@ -130,7 +130,7 @@
 | **K-SUPPLY-02** | Release SHA256SUMS | P1 | **Done** — `generate-sha256sums.mjs` · `release-kernel-checksums.yml` · `bundle-kernel-for-tauri.mjs` |
 | **K-SUPPLY-03** | 插件安装审源码提示 | P2 | **Done**（轮次 19） |
 | **K-SUPPLY-04** | npm-audit 升格策略 | P2 | **Observe** — `defu` override 6.1.5 清零高危（2026-07-12）；`vue3-sfc-loader`/postcss 链 **0 高危 / 4 中危 / 1 低危** 待专项；下复核 **2026-08** |
-| **K-SUPPLY-05** | deny 重复依赖 warn→deny | P2 | **OPEN** — `deny.toml` 已标注 K-SUPPLY-05；待 `cargo tree -d` 去重 |
+| **K-SUPPLY-05** | deny 重复依赖 warn→deny | P2 | **Partial** — `LAYERING_BASELINE.json` `cargo_duplicate_groups: 103` · dimension5 ratchet；`deny.toml` 仍 warn |
 | **K-SUPPLY-06** | 位级可重复构建（reproducible） | — | **Deferred** · 见 SECURITY_AUDIT_SCOPE 局限 |
 | **K-SUPPLY-07** | SBOM（CycloneDX/SPDX） | — | **Deferred** · 政企/校企采购需求触发 |
 | **MEGA-SD-01** | `scene_director.rs` 巨无霸拆分 | 见 §2 解冻条件；零语义变更 PR |
