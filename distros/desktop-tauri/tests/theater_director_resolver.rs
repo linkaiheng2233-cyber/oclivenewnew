@@ -193,9 +193,9 @@ async fn build_theater_prompt_uses_directory_plugin_prefix() {
         ..Default::default()
     };
     let prompt = build_theater_prompt(&harness.state, &input);
+    let preview: String = prompt.chars().take(120).collect();
     assert!(
         prompt.starts_with("[test-td]"),
-        "expected directory plugin prefix, got: {}",
-        &prompt[..prompt.len().min(120)]
+        "expected directory plugin prefix, got: {preview}"
     );
 }

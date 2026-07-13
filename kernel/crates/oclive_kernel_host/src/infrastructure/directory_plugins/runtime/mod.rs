@@ -10,6 +10,7 @@ use std::sync::Arc;
 use dashmap::DashMap;
 
 use super::manifest::{normalize_ui_slot_appearance_id, OclivePluginManifest};
+use crate::domain::host_profile::{self, HostProfile};
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
 use crate::infrastructure::plugin_state::{PluginStateFile, PluginStateStore, RolePluginState};
 use crate::models::ui_config::UiConfig;
@@ -76,6 +77,7 @@ pub struct DirectoryPluginRuntime {
     /// Child process start time (Unix milliseconds).
     process_started_ms: Mutex<HashMap<String, u64>>,
     host: HostPluginsFile,
+    host_profile: HostProfile,
     app_data_dir: PathBuf,
     /// `app_data_dir/plugin_state.json` (v2: isolated per `role_id`)
     plugin_state_store: Arc<RwLock<PluginStateStore>>,
@@ -96,7 +98,13 @@ impl DirectoryPluginRuntime {
         app_data: &Path,
         high_risk_grants: Arc<HighRiskGrantStore>,
     ) -> Arc<Self> {
-        Self::bootstrap_inner(roles_dir, app_data, high_risk_grants, true)
+        Self::bootstrap_inner(
+            roles_dir,
+            app_data,
+            high_risk_grants,
+            true,
+            host_profile::load_host_profile_from_env(),
+        )
     }
 
     /// Skip directory scan; background [`Self::rescan_plugin_roots`] lazy-loads after startup.
@@ -105,7 +113,23 @@ impl DirectoryPluginRuntime {
         app_data: &Path,
         high_risk_grants: Arc<HighRiskGrantStore>,
     ) -> Arc<Self> {
-        Self::bootstrap_inner(roles_dir, app_data, high_risk_grants, false)
+        Self::bootstrap_inner(
+            roles_dir,
+            app_data,
+            high_risk_grants,
+            false,
+            host_profile::load_host_profile_from_env(),
+        )
+    }
+
+    pub fn bootstrap_with_host_profile(
+        roles_dir: &Path,
+        app_data: &Path,
+        high_risk_grants: Arc<HighRiskGrantStore>,
+        host_profile: HostProfile,
+        scan_now: bool,
+    ) -> Arc<Self> {
+        Self::bootstrap_inner(roles_dir, app_data, high_risk_grants, scan_now, host_profile)
     }
 
     fn bootstrap_inner(
@@ -113,10 +137,11 @@ impl DirectoryPluginRuntime {
         app_data: &Path,
         high_risk_grants: Arc<HighRiskGrantStore>,
         scan_now: bool,
+        host_profile: HostProfile,
     ) -> Arc<Self> {
         let host = HostPluginsFile::load(app_data);
         let roots = if scan_now {
-            let scan = scan_plugins(roles_dir, app_data, &host);
+            let scan = scan_plugins(roles_dir, app_data, &host, &host_profile);
             tracing::info!(
                 target: "oclive_plugin",
                 "directory plugins scanned count={} ids={:?}",
@@ -144,6 +169,7 @@ impl DirectoryPluginRuntime {
             debug_log_rings: Mutex::new(HashMap::new()),
             process_started_ms: Mutex::new(HashMap::new()),
             host,
+            host_profile,
             app_data_dir,
             plugin_state_store,
             active_role_id: Arc::new(RwLock::new(None)),
@@ -507,7 +533,12 @@ impl DirectoryPluginRuntime {
         }
         self.catalog_invalidate_gen.fetch_add(1, Ordering::Relaxed);
         self.manifest_cache.clear();
-        let scan = scan_plugins(roles_dir, &self.app_data_dir, &self.host);
+        let scan = scan_plugins(
+            roles_dir,
+            &self.app_data_dir,
+            &self.host,
+            &self.host_profile,
+        );
         let n = scan.roots.len();
         *self.plugin_roots.write() = plugin_roots_from_scan(scan.roots);
         tracing::info!(

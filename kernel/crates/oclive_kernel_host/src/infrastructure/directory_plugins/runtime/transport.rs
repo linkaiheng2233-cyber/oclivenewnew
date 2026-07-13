@@ -241,8 +241,8 @@ pub fn scan_plugins(
     roles_dir: &Path,
     app_data: &Path,
     host: &HostPluginsFile,
+    host_profile: &HostProfile,
 ) -> PluginScanSummary {
-    let host_profile = host_profile::load_host_profile_from_env();
     let mut roots = HashMap::new();
     for r in default_scan_roots(roles_dir, app_data, host) {
         collect_plugin_dirs(&r, &mut roots, &host_profile);

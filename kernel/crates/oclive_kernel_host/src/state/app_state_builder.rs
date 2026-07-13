@@ -184,16 +184,20 @@ impl AppStateBuilder {
         let high_risk_grants =
             HighRiskGrantStore::load(self.app_data_dir.clone(), self.high_risk_strict);
         let directory_plugins = if self.high_risk_strict {
-            DirectoryPluginRuntime::bootstrap_deferred_scan(
+            DirectoryPluginRuntime::bootstrap_with_host_profile(
                 storage.roles_dir(),
                 &self.app_data_dir,
                 high_risk_grants.clone(),
+                host_profile.as_ref().clone(),
+                false,
             )
         } else {
-            DirectoryPluginRuntime::bootstrap(
+            DirectoryPluginRuntime::bootstrap_with_host_profile(
                 storage.roles_dir(),
                 &self.app_data_dir,
                 high_risk_grants.clone(),
+                host_profile.as_ref().clone(),
+                true,
             )
         };
         let plugins = crate::infrastructure::plugin_wiring::build_plugin_host(
