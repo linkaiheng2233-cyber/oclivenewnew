@@ -16,6 +16,7 @@ pub mod local_plugin_memory_pick;
 pub mod memory_engine;
 pub mod memory_retrieval;
 pub mod personality_engine;
+pub mod plugin_resolution;
 pub mod policy;
 pub mod profile_personality;
 pub mod prompt_assembler;
@@ -40,6 +41,12 @@ pub use memory_retrieval::{
     RemoteMemoryRetrievalPlaceholder,
 };
 pub use personality_engine::PersonalityEngine;
+pub use plugin_resolution::{
+    apply_host_ceiling, host_ceiling_from_distro_file, pick_llm_backend_env_override,
+    plugin_backends_from_distro_toml, remote_llm_url_token_configured,
+    resolve_session_plugin_backends, session_namespace_for_role, HostBackendCeiling,
+    SessionPluginResolution, SessionPluginResolutionInput,
+};
 pub use policy::{
     DefaultEmotionPolicy, DefaultEventPolicy, DefaultMemoryPolicy, EmotionPolicy,
     EmotionPolicyConfig, EventPolicy, MemoryPolicy, MemoryPolicyConfig, PolicyConfig,

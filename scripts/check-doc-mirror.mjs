@@ -14,7 +14,16 @@ import { fileURLToPath } from 'url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const WARN_DRIFT = process.argv.includes('--warn-drift');
+const WARN_DRIFT_HIGH_TRAFFIC = process.argv.includes('--warn-drift-high-traffic');
 const DRIFT_DAYS = 30;
+
+/** High-traffic ZH paths: drift >30d vs EN peer is a hard failure when --warn-drift-high-traffic. */
+const HIGH_TRAFFIC_DRIFT_ZH = new Set([
+  'creator-docs/role-pack/ROLE_PACK_SPEC.md',
+  'creator-docs/plugin-and-architecture/PLUGIN_V1.md',
+  'creator-docs/security/KNOWN_VULNERABILITIES.md',
+  'handoff/TECHNICAL_DEBT_INVENTORY.md',
+]);
 
 /** ZH paths (posix, from repo root) intentionally without 1:1 EN file yet. */
 const CREATOR_PENDING = new Set([
@@ -130,7 +139,12 @@ function checkCoverage() {
         const enM = fs.statSync(path.join(ROOT, peer)).mtimeMs;
         const days = (zhM - enM) / (86400 * 1000);
         if (days > DRIFT_DAYS) {
-          warnings.push(`drift hint: ${zh} newer than EN by ${Math.round(days)}d`);
+          const msg = `drift hint: ${zh} newer than EN by ${Math.round(days)}d`;
+          if (WARN_DRIFT_HIGH_TRAFFIC && HIGH_TRAFFIC_DRIFT_ZH.has(zh)) {
+            errors.push(msg);
+          } else if (WARN_DRIFT) {
+            warnings.push(msg);
+          }
         }
       }
       continue;

@@ -1,19 +1,26 @@
 //! `oclive doctor config-resolve` — print effective six-slot resolution (no duplicate parser).
 //!
-//! **Dependency boundary**: reuses `oclive_kernel_host::AppState` + `build_plugin_resolution_debug_info`
-//! (in-memory SQLite, no Tauri). Keeps CLI diagnostics aligned with desktop resolution without a
-//! second parser. See `creator-docs/COMPATIBILITY.md` · `creator-docs/cli/OCLIVE_CLI_GUIDE.md`.
+//! **Default path**: `oclive_kernel_runtime::resolve_session_plugin_backends` + on-disk role pack
+//! (no SQLite / Axum). **`--via-host`** (feature `diagnostics-host`): full `AppState` bootstrap for
+//! deep parity with desktop. See `creator-docs/COMPATIBILITY.md` · `creator-docs/cli/OCLIVE_CLI_GUIDE.md`.
 
 use anyhow::{Context, Result};
 use clap::Parser;
-use oclive_kernel_host::infrastructure::MockLlmClient;
-use oclive_kernel_host::models::dto::PluginResolutionDebugInfo;
-use oclive_kernel_host::service::role::slot_session::build_plugin_resolution_debug_info;
-use oclive_kernel_host::state::AppState;
-use oclive_kernel_runtime::resolve_project_roles_dir;
+use oclive_kernel_runtime::domain::plugin_resolution::{
+    host_ceiling_from_distro_file, pick_llm_backend_env_override, remote_llm_url_token_configured,
+    resolve_session_plugin_backends, session_namespace_for_role, SessionPluginResolutionInput,
+};
+use oclive_kernel_runtime::{
+    parse_distro_oclive_file, resolve_project_roles_dir, ENV_DISTRO_PROFILE,
+};
+use oclive_kernel_types::models::dto::{PluginResolutionDebugInfo, API_VERSION, SCHEMA_VERSION};
+use oclive_validation::{
+    load_blueprint_v2_for_role_dir, slot_registry_to_plugin_backends, DiskRoleSettings,
+    PluginBackends, SlotRegistryEntry, PIPELINE_BLUEPRINT_FILENAME,
+};
 use serde::Serialize;
-use std::path::PathBuf;
-use std::sync::Arc;
+use std::collections::BTreeMap;
+use std::path::{Path, PathBuf};
 
 #[derive(Parser, Debug, Clone)]
 pub struct ConfigResolveArgs {
@@ -31,6 +38,10 @@ pub struct ConfigResolveArgs {
     /// Machine-readable JSON
     #[arg(long)]
     pub json: bool,
+
+    /// Deep diagnostic via full in-memory host bootstrap (requires `diagnostics-host` build)
+    #[arg(long)]
+    pub via_host: bool,
 }
 
 #[derive(Serialize, Debug, Clone)]
@@ -42,11 +53,142 @@ pub struct ConfigResolveReport {
     pub plugin_resolution: PluginResolutionDebugInfo,
 }
 
+struct RolePackResolutionSnapshot {
+    pack_default: PluginBackends,
+    slot_registry: Option<BTreeMap<String, SlotRegistryEntry>>,
+}
+
+fn load_role_pack_snapshot(role_dir: &Path) -> Result<RolePackResolutionSnapshot> {
+    let blueprint_path = role_dir.join(PIPELINE_BLUEPRINT_FILENAME);
+    if blueprint_path.is_file() {
+        let loaded = load_blueprint_v2_for_role_dir(role_dir, "0.0.0").map_err(|e| {
+            anyhow::anyhow!(
+                "load blueprint {}: {}",
+                blueprint_path.display(),
+                e.join("; ")
+            )
+        })?;
+        let pack_default = slot_registry_to_plugin_backends(&loaded.slot_registry);
+        return Ok(RolePackResolutionSnapshot {
+            pack_default,
+            slot_registry: Some(loaded.slot_registry),
+        });
+    }
+    let settings_path = role_dir.join("settings.json");
+    let raw = std::fs::read_to_string(&settings_path)
+        .with_context(|| format!("read {}", settings_path.display()))?;
+    let settings: DiskRoleSettings = serde_json::from_str(&raw).context("parse settings.json")?;
+    let pack_default = settings.plugin_backends.clone().unwrap_or_default();
+    Ok(RolePackResolutionSnapshot {
+        pack_default,
+        slot_registry: None,
+    })
+}
+
+fn default_host_profile_path(cwd: &Path) -> Option<PathBuf> {
+    if let Ok(p) = std::env::var(ENV_DISTRO_PROFILE) {
+        let t = p.trim();
+        if !t.is_empty() {
+            return Some(PathBuf::from(t));
+        }
+    }
+    let roles_dir = resolve_project_roles_dir(cwd);
+    let repo_root = roles_dir.parent()?.parent()?.parent()?;
+    let candidate =
+        repo_root.join("distros/desktop-tauri/resources/distro-profiles/desktop.oclive.toml");
+    if candidate.is_file() {
+        Some(candidate)
+    } else {
+        None
+    }
+}
+
+fn build_runtime_debug_info(
+    role_id: &str,
+    session_id: Option<&str>,
+    roles_dir: &Path,
+) -> Result<PluginResolutionDebugInfo> {
+    let role_dir = roles_dir.join(role_id);
+    if !role_dir.is_dir() {
+        anyhow::bail!("role directory not found: {}", role_dir.display());
+    }
+    let pack = load_role_pack_snapshot(&role_dir)?;
+    let session_ns = session_namespace_for_role(role_id, session_id);
+    let host_ceiling = default_host_profile_path(roles_dir)
+        .and_then(|p| parse_distro_oclive_file(&p).ok())
+        .map(|f| host_ceiling_from_distro_file(&f))
+        .unwrap_or_default();
+    let resolved = resolve_session_plugin_backends(&SessionPluginResolutionInput {
+        pack_plugin_backends: pack.pack_default.clone(),
+        pack_slot_registry: pack.slot_registry.clone(),
+        session_slot_overrides: BTreeMap::new(),
+        user_llm_provider: String::new(),
+        llm_env_override: pick_llm_backend_env_override(),
+        remote_llm_url_token_configured: remote_llm_url_token_configured(),
+        host_ceiling,
+    });
+    let session_override = None;
+    let llm_env_override = pick_llm_backend_env_override().map(|b| match b {
+        oclive_validation::LlmBackend::Ollama => "ollama".to_string(),
+        oclive_validation::LlmBackend::Remote => "remote".to_string(),
+        oclive_validation::LlmBackend::Directory => "directory".to_string(),
+        oclive_validation::LlmBackend::None => "none".to_string(),
+    });
+    let remote_plugin_url_configured = std::env::var("OCLIVE_REMOTE_PLUGIN_URL")
+        .ok()
+        .is_some_and(|v| !v.trim().is_empty());
+    let remote_llm_url_configured = std::env::var("OCLIVE_REMOTE_LLM_URL")
+        .ok()
+        .is_some_and(|v| !v.trim().is_empty());
+
+    Ok(PluginResolutionDebugInfo {
+        app_version: env!("CARGO_PKG_VERSION").to_string(),
+        api_version: API_VERSION,
+        schema_version: SCHEMA_VERSION,
+        role_id: role_id.to_string(),
+        session_namespace: session_ns,
+        plugin_backends_pack_default: pack.pack_default,
+        plugin_backends_session_override: session_override,
+        plugin_backends_effective: resolved.backends,
+        plugin_backends_effective_sources: resolved.sources,
+        llm_env_override,
+        remote_plugin_url_configured,
+        remote_llm_url_configured,
+        local_provider_ids: Vec::new(),
+        local_provider_count: 0,
+    })
+}
+
+#[cfg(feature = "diagnostics-host")]
+async fn resolve_via_host(
+    args: &ConfigResolveArgs,
+    roles_dir: &Path,
+) -> Result<PluginResolutionDebugInfo> {
+    use oclive_kernel_host::infrastructure::MockLlmClient;
+    use oclive_kernel_host::service::role::slot_session::build_plugin_resolution_debug_info;
+    use oclive_kernel_host::state::AppState;
+    use std::sync::Arc;
+
+    let llm = Arc::new(MockLlmClient {
+        reply: "ok".to_string(),
+    });
+    let state = AppState::new_in_memory_with_llm(llm, roles_dir)
+        .await
+        .context("bootstrap in-memory AppState")?;
+    state
+        .load_role_cached_async(args.role_id.as_str())
+        .await
+        .context("load role")?;
+    build_plugin_resolution_debug_info(&state, args.role_id.as_str(), args.session_id.as_deref())
+        .await
+        .map_err(|e| anyhow::anyhow!("{e}"))
+}
+
 /// Resolve effective six-slot backends without printing (test + programmatic use).
 ///
 /// # Errors
 ///
-/// Returns when roles dir resolution, in-memory bootstrap, role load, or debug resolution fails.
+/// Returns when roles dir resolution, role load, or debug resolution fails.
 pub async fn resolve_report(args: &ConfigResolveArgs) -> Result<ConfigResolveReport> {
     let roles_dir = match &args.roles_dir {
         Some(p) => p.clone(),
@@ -55,23 +197,26 @@ pub async fn resolve_report(args: &ConfigResolveArgs) -> Result<ConfigResolveRep
             resolve_project_roles_dir(&cwd)
         }
     };
-    let llm = Arc::new(MockLlmClient {
-        reply: "ok".to_string(),
-    });
-    let state = AppState::new_in_memory_with_llm(llm, &roles_dir)
-        .await
-        .context("bootstrap in-memory AppState")?;
-    state
-        .load_role_cached_async(args.role_id.as_str())
-        .await
-        .context("load role")?;
-    let plugin_resolution = build_plugin_resolution_debug_info(
-        &state,
-        args.role_id.as_str(),
-        args.session_id.as_deref(),
-    )
-    .await
-    .map_err(|e| anyhow::anyhow!("{e}"))?;
+
+    let plugin_resolution = if args.via_host {
+        #[cfg(feature = "diagnostics-host")]
+        {
+            resolve_via_host(args, &roles_dir).await?
+        }
+        #[cfg(not(feature = "diagnostics-host"))]
+        {
+            anyhow::bail!(
+                "`--via-host` requires building oclive-cli with feature `diagnostics-host`"
+            );
+        }
+    } else {
+        build_runtime_debug_info(
+            args.role_id.as_str(),
+            args.session_id.as_deref(),
+            &roles_dir,
+        )?
+    };
+
     Ok(ConfigResolveReport {
         schema_version: 1,
         role_id: args.role_id.clone(),
@@ -136,6 +281,7 @@ mod tests {
             session_id: None,
             roles_dir: Some(roles_dir()),
             json: false,
+            via_host: false,
         })
         .await
         .expect("mumu");
@@ -150,10 +296,11 @@ mod tests {
             session_id: None,
             roles_dir: Some(roles_dir()),
             json: true,
+            via_host: false,
         })
         .await
         .expect_err("missing role");
-        assert!(err.to_string().contains("load role"));
+        assert!(err.to_string().contains("role directory not found"));
     }
 
     #[tokio::test]
@@ -163,6 +310,7 @@ mod tests {
             session_id: Some("snap".into()),
             roles_dir: Some(roles_dir()),
             json: true,
+            via_host: false,
         })
         .await
         .expect("report");
@@ -176,34 +324,39 @@ mod tests {
 
     #[tokio::test]
     async fn env_llm_override_surfaces_in_report() {
-        use oclive_kernel_host::service::role::slot_session::build_plugin_resolution_debug_info;
         static ENV_LOCK: std::sync::LazyLock<tokio::sync::Mutex<()>> =
             std::sync::LazyLock::new(|| tokio::sync::Mutex::new(()));
-        let llm = Arc::new(MockLlmClient {
-            reply: "ok".to_string(),
-        });
-        let state = AppState::new_in_memory_with_llm(llm, roles_dir())
-            .await
-            .expect("state");
-        state
-            .load_role_cached_async("mumu")
-            .await
-            .expect("load mumu");
         let _guard = ENV_LOCK.lock().await;
         std::env::remove_var("OCLIVE_LLM_BACKEND");
         std::env::set_var("OCLIVE_LLM_BACKEND", "remote");
-        let debug = build_plugin_resolution_debug_info(&state, "mumu", None)
-            .await
-            .expect("debug");
+        let report = resolve_report(&ConfigResolveArgs {
+            role_id: "mumu".into(),
+            session_id: None,
+            roles_dir: Some(roles_dir()),
+            json: false,
+            via_host: false,
+        })
+        .await
+        .expect("report");
         std::env::remove_var("OCLIVE_LLM_BACKEND");
         drop(_guard);
-        assert_eq!(debug.llm_env_override.as_deref(), Some("remote"));
+        assert_eq!(
+            report.plugin_resolution.llm_env_override.as_deref(),
+            Some("remote")
+        );
     }
 
     #[test]
-    fn cli_dependency_tree_excludes_tauri() {
+    fn cli_dependency_tree_excludes_sqlite_without_diagnostics_host() {
         let out = std::process::Command::new("cargo")
-            .args(["tree", "-p", "oclive-cli", "--depth", "1"])
+            .args([
+                "tree",
+                "-p",
+                "oclive-cli",
+                "--no-default-features",
+                "--depth",
+                "4",
+            ])
             .output()
             .expect("cargo tree");
         assert!(
@@ -212,6 +365,14 @@ mod tests {
             String::from_utf8_lossy(&out.stderr)
         );
         let tree = String::from_utf8_lossy(&out.stdout);
+        assert!(
+            !tree.contains("libsqlite3-sys"),
+            "oclive-cli default build must not pull SQLite:\n{tree}"
+        );
+        assert!(
+            !tree.contains("axum"),
+            "oclive-cli default build must not pull axum:\n{tree}"
+        );
         assert!(
             !tree.contains("tauri"),
             "oclive-cli must not activate desktop Tauri dependency:\n{tree}"

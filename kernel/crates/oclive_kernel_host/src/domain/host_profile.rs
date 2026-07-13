@@ -736,7 +736,7 @@ llm = "ollama"
         use crate::models::plugin_backends::{
             EmotionBackend, EventBackend, PluginBackends, PromptBackend,
         };
-        use crate::state::host_backends::apply_host_ceiling;
+        use crate::state::host_backends::apply_host_ceiling_from_profile;
         let role = PluginBackends {
             memory: MemoryBackend::Remote,
             emotion: EmotionBackend::Remote,
@@ -758,7 +758,7 @@ llm = "ollama"
             }),
             ..HostProfile::default()
         };
-        let eff = apply_host_ceiling(&role, &host);
+        let eff = apply_host_ceiling_from_profile(&role, &host);
         assert_eq!(eff.memory, MemoryBackend::Builtin);
         assert_eq!(eff.llm, LlmBackend::Ollama);
     }

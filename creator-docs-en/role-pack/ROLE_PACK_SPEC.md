@@ -103,3 +103,23 @@ Types: `oclive_kernel_types::RolePackConfigFile`. Parse errors: host **warns** a
 Optional object for **when to route Deep**, **latch until reconciliation** (e.g. Quarrel → Apology), and **ephemeral_archive** (rule-written situation summary with TTL, injected as `【局面摘要】`). Host defaults OR-merge with pack rules; **no player UI toggle**.
 
 Validated by `oclive pack validate` (signal enums, TTL 1–8). Pack editor UI: **PE-TURN-01** (open in `oclive-pack-editor`).
+
+### 9.7 `reply_post_processor` (Reply Post-Processor · off by default)
+
+Optional post-LLM reply shaping in **`config.json`**. **Independent channel** — not a six-slot entry and **not** configured in `slot_registry` or blueprints.
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `enabled` | bool | **`false`** | When `false`, pass-through (users unaffected) |
+| `backend` | string | `"builtin"` | `builtin` \| `remote` \| `directory` |
+| `builtin` | object | — | `profile` (`standard` \| `minimal`), `max_chars`, `strip_leading_quote` |
+| `remote` | object | — | `url`, `timeout_ms`; JSON-RPC `reply_post_process.process` |
+| `directory` | object | — | `plugin_id`; plugin `provides` must include `reply_post_process` |
+
+**Distro merge:** `distro.oclive.toml` → `[post_process].chain=minimal` forces effective `builtin.profile=minimal` when enabled. See [DISTRO_CAPABILITY_PROFILE.md](../kernel/DISTRO_CAPABILITY_PROFILE.md).
+
+**RPC contract (directory / remote):** method `reply_post_process.process`; params `raw_reply`, `user_message`, `role_id`, `scene_id`, `locale`; result `display_reply` (+ optional `diagnostic`). Normative detail: [PLUGIN_V1.md §reply_post_process](../plugin-and-architecture/PLUGIN_V1.md).
+
+**Validation:** `oclive pack validate` requires non-empty `remote.url` when `enabled=true` and `backend=remote`; directory requires non-empty `plugin_id`.
+
+**DTO:** `include_raw_reply: true` may surface `raw_reply` when post-processing changes text (`SendMessageResponse` schema **15**).

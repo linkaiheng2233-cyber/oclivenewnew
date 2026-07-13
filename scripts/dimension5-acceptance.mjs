@@ -103,7 +103,11 @@ runStep('doc registry ratchet', () => {
 });
 
 runStep('doc mirror ratchet', () => {
-  sh('node', ['scripts/check-doc-mirror.mjs']);
+  sh('node', ['scripts/check-doc-mirror.mjs', '--warn-drift-high-traffic']);
+});
+
+runStep('cargo dedup ratchet (K-SUPPLY-05)', () => {
+  sh('node', ['scripts/check-cargo-dedup-ratchet.mjs']);
 });
 
 runStep('kernel error codes drift', () => {

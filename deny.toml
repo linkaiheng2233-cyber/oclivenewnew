@@ -21,5 +21,5 @@ allow = [
 confidence-threshold = 0.8
 
 [bans]
-# K-SUPPLY-05: raise to "deny" after `cargo tree -d` duplicate cleanup.
+# K-SUPPLY-05: raise to "deny" after `cargo tree -d` duplicate cleanup (ratchet: scripts/check-cargo-dedup-ratchet.mjs).
 multiple-versions = "warn"

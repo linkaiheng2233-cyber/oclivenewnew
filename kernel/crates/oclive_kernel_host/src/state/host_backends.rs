@@ -2,28 +2,24 @@
 
 use crate::domain::host_profile::HostProfile;
 use crate::models::plugin_backends::PluginBackends;
+pub use oclive_kernel_runtime::domain::plugin_resolution::{
+    apply_host_ceiling, HostBackendCeiling,
+};
 
 /// Apply host ceiling: when `distro.oclive.toml` declares `[plugin_backends]`, those values cap the role pack.
 #[must_use]
-pub fn apply_host_ceiling(role: &PluginBackends, host: &HostProfile) -> PluginBackends {
-    let mut backends = if let Some(ref ceiling) = host.backends_ceiling {
-        PluginBackends {
-            memory: ceiling.memory,
-            local_memory_provider_id: role.local_memory_provider_id.clone(),
-            emotion: ceiling.emotion,
-            event: ceiling.event,
-            prompt: ceiling.prompt,
-            llm: ceiling.llm,
-            agent: ceiling.agent,
-            directory_plugins: role.directory_plugins.clone(),
-        }
-    } else {
-        role.clone()
-    };
-    if host.skip_agent {
-        backends.agent = crate::models::plugin_backends::AgentBackend::None;
-    }
-    backends
+#[allow(dead_code)] // host_profile unit test + future host callers
+pub fn apply_host_ceiling_from_profile(
+    role: &PluginBackends,
+    host: &HostProfile,
+) -> PluginBackends {
+    apply_host_ceiling(
+        role,
+        &HostBackendCeiling {
+            skip_agent: host.skip_agent,
+            backends_ceiling: host.backends_ceiling.clone(),
+        },
+    )
 }
 
 #[cfg(test)]
@@ -42,7 +38,7 @@ mod tests {
             skip_agent: true,
             ..HostProfile::default()
         };
-        let out = apply_host_ceiling(&role, &host);
+        let out = apply_host_ceiling_from_profile(&role, &host);
         assert_eq!(out.agent, AgentBackend::None);
     }
 }

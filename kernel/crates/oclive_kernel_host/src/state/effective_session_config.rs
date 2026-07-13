@@ -1,7 +1,10 @@
 //! Per-turn session plugin backend / slot registry resolution (computed once per turn).
 
 use crate::infrastructure::storage::pick_llm_backend_env_override;
-use crate::models::{PluginBackendSource, PluginBackends, PluginBackendsSourceMap, Role};
+use crate::models::{PluginBackends, PluginBackendsSourceMap, Role};
+use oclive_kernel_runtime::domain::plugin_resolution::{
+    remote_llm_url_token_configured, resolve_session_plugin_backends, SessionPluginResolutionInput,
+};
 use oclive_validation::SlotRegistryEntry;
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -23,61 +26,26 @@ impl EffectiveSessionConfig {
             .as_ref()
             .map(|pack| oclive_validation::effective_slot_registry(pack, &slot_overrides));
 
-        let mut backends = if let Some(ref eff) = slot_registry {
-            oclive_validation::slot_registry_to_plugin_backends(eff)
-        } else {
-            (*role.plugin_backends).clone()
+        let host_ceiling = oclive_kernel_runtime::domain::plugin_resolution::HostBackendCeiling {
+            skip_agent: state.host_profile.skip_agent,
+            backends_ceiling: state.host_profile.backends_ceiling.clone(),
         };
-
-        let provider = state.user_llm_provider.read().trim().to_ascii_lowercase();
-        if provider == "cloud" {
-            backends.llm = crate::models::plugin_backends::LlmBackend::Remote;
-        } else if provider == "local" {
-            backends.llm = crate::models::plugin_backends::LlmBackend::Ollama;
-        } else if let Some(llm) = pick_llm_backend_env_override() {
-            backends.llm = llm;
-        } else if std::env::var("OCLIVE_REMOTE_LLM_URL")
-            .ok()
-            .is_some_and(|u| !u.trim().is_empty())
-            && std::env::var("OCLIVE_REMOTE_LLM_TOKEN")
-                .ok()
-                .is_some_and(|t| !t.trim().is_empty())
-        {
-            backends.llm = crate::models::plugin_backends::LlmBackend::Remote;
-        }
-        let backends =
-            super::host_backends::apply_host_ceiling(&backends, state.host_profile.as_ref());
-        let sanitized = oclive_validation::sanitize_unimplemented_agent_backend(backends);
-        for msg in &sanitized.warnings {
+        let resolved = resolve_session_plugin_backends(&SessionPluginResolutionInput {
+            pack_plugin_backends: (*role.plugin_backends).clone(),
+            pack_slot_registry: role.slot_registry.clone(),
+            session_slot_overrides: slot_overrides,
+            user_llm_provider: state.user_llm_provider.read().trim().to_string(),
+            llm_env_override: pick_llm_backend_env_override(),
+            remote_llm_url_token_configured: remote_llm_url_token_configured(),
+            host_ceiling,
+        });
+        for msg in &resolved.warnings {
             tracing::warn!(target: "oclive_plugin", "session={session_namespace} {msg}");
         }
 
-        let mut sources = PluginBackendsSourceMap::default();
-        if let Some(reg) = role.slot_registry.as_ref() {
-            for key in slot_overrides.keys() {
-                let Some(entry) = reg.get(key) else {
-                    continue;
-                };
-                match entry.slot_type.as_str() {
-                    "memory" => sources.memory = PluginBackendSource::SessionOverride,
-                    "emotion" => sources.emotion = PluginBackendSource::SessionOverride,
-                    "event" => sources.event = PluginBackendSource::SessionOverride,
-                    "prompt" => sources.prompt = PluginBackendSource::SessionOverride,
-                    "llm" => sources.llm = PluginBackendSource::SessionOverride,
-                    "agent" => sources.agent = PluginBackendSource::SessionOverride,
-                    _ => {}
-                }
-            }
-        }
-        if sources.llm == PluginBackendSource::PackDefault
-            && pick_llm_backend_env_override().is_some()
-        {
-            sources.llm = PluginBackendSource::EnvOverride;
-        }
-
         Arc::new(Self {
-            backends: Arc::new(sanitized.backends),
-            sources,
+            backends: Arc::new(resolved.backends),
+            sources: resolved.sources,
             slot_registry,
         })
     }

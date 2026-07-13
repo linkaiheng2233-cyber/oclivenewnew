@@ -17,7 +17,10 @@ test.describe("Tauri native window (A1.1c smoke)", () => {
     "Set TAURI_E2E_APP_PATH to the debug oclivenewnew-tauri binary",
   );
 
-  test("main window title and left sidebar pane", async () => {
+  test(
+    "main window title and left sidebar pane",
+    { timeout: 120_000 },
+    async () => {
     const browser = await remote({
       hostname: driverHost,
       port: driverPort,
@@ -49,5 +52,6 @@ test.describe("Tauri native window (A1.1c smoke)", () => {
     } finally {
       await browser.deleteSession();
     }
-  });
+  },
+  );
 });

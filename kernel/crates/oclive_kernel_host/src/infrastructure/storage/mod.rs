@@ -34,22 +34,7 @@ mod user_identities;
 /// Matches values injected by oclive-launcher: `ollama` / `remote` (case-insensitive).
 #[must_use]
 pub fn pick_llm_backend_env_override() -> Option<LlmBackend> {
-    let Ok(v) = std::env::var("OCLIVE_LLM_BACKEND") else {
-        return None;
-    };
-    let t = v.trim();
-    if t.is_empty() {
-        return None;
-    }
-    if t.eq_ignore_ascii_case("ollama") {
-        Some(LlmBackend::Ollama)
-    } else if t.eq_ignore_ascii_case("remote") {
-        Some(LlmBackend::Remote)
-    } else if t.eq_ignore_ascii_case("directory") {
-        Some(LlmBackend::Directory)
-    } else {
-        None
-    }
+    oclive_kernel_runtime::domain::plugin_resolution::pick_llm_backend_env_override()
 }
 
 /// Matches values injected by oclive-launcher: `ollama` / `remote` (case-insensitive); overrides on-disk `plugin_backends.llm`.
