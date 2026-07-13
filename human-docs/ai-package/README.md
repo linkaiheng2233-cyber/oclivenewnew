@@ -15,6 +15,7 @@
 | **模块注册表** | [`MODULE_MAP`](../../handoff/MODULE_MAP_AND_HANDOFF.md) | 模块/六槽/设施关系 |
 | **文档分责** | [`handoff/README`](../../handoff/README.md) §文档分责 · §文档分层 | **新建/大改文档前** |
 | **Cursor 规则** | [`.cursor/rules/oclivenewnew.mdc`](../../.cursor/rules/oclivenewnew.mdc) | 7 条硬约束；人类版见 [04 工程约束](../04_ENGINEERING_RULES.md) |
+| **开发流水线** | 通用 `~/.cursor/skills/dev-pipeline/` · OCLive [`.cursor/skills/oclive-dev-pipeline/`](../../.cursor/skills/oclive-dev-pipeline/SKILL.md) | 通用七阶段框架 + 本仓 G/验收/纪律定制；Plan→实现→审查→**工程纪律**→文档→总审 |
 | **契约百科** | [`creator-docs/`](../../creator-docs/) | manifest、六槽、插件、角色包 |
 | **英文镜像** | [`creator-docs-en/`](../../creator-docs-en/) | 对外英文；契约以中文 `creator-docs/` 为准 |
 | **维护者深读** | [`handoff/`](../../handoff/) | Bus factor、技术债 |

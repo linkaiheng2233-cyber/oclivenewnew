@@ -309,15 +309,17 @@ cargo run -p oclive-cli -- doctor --fix --yes
 
 检查 Rust/Cargo、C++ 工具链、系统内存、磁盘剩余、Ollama（`http://127.0.0.1:11434/api/tags`）、GitHub 连通、工作区可写。在 **oclivenewnew 根**且存在 `distros/chat-pro/roles/*/pipeline.ocblueprint` 时，额外三项 v2 蓝图检查：**`blueprint_file_format`**（文件存在且 JSON 合法）、**`slot_registry_llm`**（至少一个 `type: llm`）、**`slot_position_unique`**（同 type 下 `position` 不重复）。`--fix` 可对 Rust（`rustup update stable`）、Ollama（尝试启动 serve）等项自动修复。存在 **fail** 项时退出码非 0。JSON Schema：`kernel/crates/oclive-cli/schemas/oclive_doctor_report.schema.json`。
 
-**`doctor config-resolve`**（六槽有效 backends，复用 `oclive_kernel_host` 内存 `AppState`，无 Tauri）：
+**`doctor config-resolve`**（六槽有效 backends + 来源链；**默认**走 `oclive_kernel_runtime::resolve_session_plugin_backends` 纯解析 + 磁盘角色包，**无** SQLite / Axum / Tauri）：
 
 ```bash
 cargo run -p oclive-cli -- doctor config-resolve mumu
 cargo run -p oclive-cli -- doctor config-resolve mumu --session-id demo --json
 cargo run -p oclive-cli -- doctor config-resolve mumu -o distros/chat-pro/roles --json
+# 深度诊断（可选）：in-memory AppState 全链 parity，需 diagnostics-host feature
+cargo run -p oclive-cli --features diagnostics-host -- doctor config-resolve mumu --via-host --json
 ```
 
-`--json` 时 **stdout 仅输出一个 JSON 文档**；人类可读模式的标题行走 stderr。依赖边界见 [COMPATIBILITY.md](../COMPATIBILITY.md) · `doctor_config_resolve.rs`。
+`--json` 时 **stdout 仅输出一个 JSON 文档**；人类可读模式的标题行走 stderr。依赖边界见 [COMPATIBILITY.md](../COMPATIBILITY.md) · [`doctor_config_resolve.rs`](../../kernel/crates/oclive-cli/src/doctor_config_resolve.rs) · runtime SSOT [`plugin_resolution.rs`](../../kernel/crates/oclive_kernel_runtime/src/domain/plugin_resolution.rs)。
 
 ### `test --oocp`（本地 OOCP 闭环）
 

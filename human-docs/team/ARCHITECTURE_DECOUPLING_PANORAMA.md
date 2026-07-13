@@ -3,7 +3,7 @@
 > **读者**：要把「六槽、设施、独立通道、目录插件、正交轴」一次看清的工程师或产品讨论参与者。  
 > **先读**：**§1 核心术语**（六槽 · 独立通道 · 正交 的含义与边界）。  
 > **SSOT 分工**：**模块定义与关系** → [`handoff/MODULE_MAP_AND_HANDOFF.md`](../../handoff/MODULE_MAP_AND_HANDOFF.md)；**六槽 DTO 与顺序** → [`PLUGIN_V1.md`](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md)；**本文** = **脉络展开 + 插件清单 + 正交轴索引**（不替代 MODULE_MAP 定义条文）。  
-> **最后更新**：2026-07-05
+> **最后更新**：2026-07-14（六槽纯解析 runtime SSOT · CLI 默认去 host）
 
 ---
 
@@ -186,6 +186,18 @@
 | 蓝图 | 六槽多实例、directory 插件 id | 内核编排顺序 |
 | 发行版 | 默认 agent 关、concise、剧场导演 id | 角色文本 |
 | 会话 | 临时 backend override | 磁盘上的包内容 |
+
+### 3.1 六槽解析纯函数（runtime · CLI 共用）
+
+**有效 backends** 的折叠与 override 合并已下沉 **`oclive_kernel_runtime::plugin_resolution`**（`resolve_session_plugin_backends`）：输入角色包快照 + env + 发行版 ceiling + 会话 override，输出 `PluginBackends` + 来源链；**不含** SQLite / `AppState` 副作用。
+
+| 消费方 | 路径 | 说明 |
+|--------|------|------|
+| 内核 host | `effective_session_config.rs` | 每回合快照；DB 层只负责读 override，解析调 runtime |
+| **oclive-cli** | `doctor config-resolve`（**默认**） | 读盘 role pack + distro file；`cargo tree -p oclive-cli --no-default-features` 无 sqlite/axum |
+| 深度诊断 | `doctor config-resolve --via-host` | feature `diagnostics-host` 可选 in-memory `AppState` parity |
+
+细节与测试锚点：[`MODULE_MAP` §3.2](../../handoff/MODULE_MAP_AND_HANDOFF.md) · [`COMPATIBILITY.md`](../../creator-docs/COMPATIBILITY.md) · `slot_resolution_chain.rs` 集成测。
 
 ---
 

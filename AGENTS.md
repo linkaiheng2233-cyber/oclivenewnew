@@ -21,6 +21,7 @@
 | 5 | [handoff/AI_VERIFICATION_PROTOCOL.md](handoff/AI_VERIFICATION_PROTOCOL.md) | 带数字的审查 / 汇报 **须核实** |
 | 6 | [handoff/README.md](handoff/README.md) §文档分责 | 动文档前查 SSOT · **禁止冗余新建** |
 | 7 | [`.cursor/rules/oclivenewnew.mdc`](.cursor/rules/oclivenewnew.mdc) | 7 条硬约束镜像 |
+| — | [`.cursor/skills/oclive-dev-pipeline/SKILL.md`](.cursor/skills/oclive-dev-pipeline/SKILL.md) | **七阶段开发流水线（OCLive 定制层）**；通用框架 `~/.cursor/skills/dev-pipeline/` |
 
 **文档纪律摘要（G10–G16）**：模块关系 **只**改 MODULE_MAP；无 RFC/关键决策 **不新建**顶层 `.md`；**先读**关联 SSOT 再写（可以慢）；**链接代替复制**；人类长文在 `human-docs/` / `creator-docs/`，本文 **不**堆架构长节。
 

@@ -1,6 +1,6 @@
 # Technical debt inventory
 
-**Last updated:** 2026-07-13（技术债收敛波收尾 · 错误码 SSOT 门禁 · 契约边界文档 · supply-chain EN 镜像对齐）
+**Last updated:** 2026-07-14（内核解耦文档对齐 · 开发流水线索引 · 远程 CI 收尾验证）
 
 **Product freeze (Theater v0):** **Lifted** — 朋友 cohort 产品门通过（7/10 卧槽）；模式 2 playtest 扩展中；**模式 3 仍冻结**。见 [theater/MODE2_UNFREEZE.md](./theater/MODE2_UNFREEZE.md)。
 
@@ -8,7 +8,7 @@
 
 **下一动作：** **P1** — 模式 2 playtest 扩展至陌生人 cohort；**Observe** K-SUPPLY-05 依赖去重
 
-**Verification (2026-07-13 · 内核解耦波收尾)：** `plugin_resolution` runtime 单测 + `slot_resolution_chain` / `memory_lifecycle` / `rpp_contract_audit` / `theater_director_resolver` 集成测 + `oclive-cli`（`diagnostics-host` 默认 off）+ dimension5 二十检 PASS + 远程 CI run **`29238028141`** 绿 · HEAD **`8f1a9b99`**。
+**Verification (2026-07-14 · 内核解耦波收尾)：** `plugin_resolution` runtime 单测 + `slot_resolution_chain` / `memory_lifecycle` / `rpp_contract_audit` / `narrative_hint_*` 集成测 + `oclive-cli`（`diagnostics-host` 默认 off）+ dimension5 二十检 PASS + 远程 CI run **`29243074286`** 绿（硬门禁全过；`e2e-tauri` 软失败 WebDriver smoke）· HEAD **`f26c4f51`**。
 
 ---
 

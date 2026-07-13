@@ -217,6 +217,12 @@ Vue invoke / HTTP --api
 2. [`AI_CHANGE_BOUNDARIES.md`](./AI_CHANGE_BOUNDARIES.md) G10–G16  
 3. 模块关系 **只**改 MODULE_MAP；**链接代替复制**
 
+### 技术债收口 / 按开发流水线走
+
+1. 通用 `~/.cursor/skills/dev-pipeline/SKILL.md` + 本仓 [`.cursor/skills/oclive-dev-pipeline/SKILL.md`](../.cursor/skills/oclive-dev-pipeline/SKILL.md)  
+2. [`.cursor/skills/oclive-dev-pipeline/discipline-checklist.md`](../.cursor/skills/oclive-dev-pipeline/discipline-checklist.md)  
+3. [`TECHNICAL_DEBT_INVENTORY.md`](./TECHNICAL_DEBT_INVENTORY.md) · [`AI_VERIFICATION_PROTOCOL.md`](./AI_VERIFICATION_PROTOCOL.md)（远程 CI 硬门禁）
+
 ---
 
 ## 10. 模块化开工包（按需深读）

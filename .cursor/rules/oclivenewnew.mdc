@@ -23,3 +23,5 @@ alwaysApply: true
 8. **AI 深读索引**：系统了解项目、按任务翻 SSOT → [`handoff/AI_READING_INDEX.md`](handoff/AI_READING_INDEX.md)；改代码前精简门禁 → [`AGENTS.md`](AGENTS.md)。**GitHub README 仅面向人类**。
 
 9. **AI 改动边界（禁止区摘要）**：见 [`handoff/AI_CHANGE_BOUNDARIES.md`](handoff/AI_CHANGE_BOUNDARIES.md)（G1–G16）。角色任务不改 `slot_registry`；不把 RFC Draft 当未实现而删 wiring；路径改动须 grep 全仓 `roles/` / `src-tauri`；改 `Cargo.lock` 须 `cargo audit` 并更新 `KNOWN_VULNERABILITIES.md`。**动文档前先读** [`handoff/README.md`](handoff/README.md) §文档分责；无 RFC **不新建**顶层 `.md`；**链接代替复制**（G14）。
+
+10. **开发流水线（可选）**：用户要求完整流程时，先读通用 `~/.cursor/skills/dev-pipeline/SKILL.md`，再读本仓 [`.cursor/skills/oclive-dev-pipeline/SKILL.md`](.cursor/skills/oclive-dev-pipeline/SKILL.md)（OCLive 定制层）。
