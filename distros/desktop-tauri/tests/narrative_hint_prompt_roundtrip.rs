@@ -6,8 +6,9 @@ mod common;
 
 use async_trait::async_trait;
 use oclive_kernel_host::domain::chat_engine::process_message;
+use oclive_kernel_host::domain::host_profile::HostProfile;
 use oclive_kernel_host::infrastructure::llm::LlmClient;
-use oclive_kernel_host::state::AppState;
+use oclive_kernel_host::state::AppStateBuilder;
 use oclive_kernel_types::models::dto::SendMessageRequest;
 use oclivenewnew_tauri::error::Result;
 use parking_lot::Mutex;
@@ -41,8 +42,11 @@ async fn prior_narrative_hint_injected_into_second_turn_main_prompt() {
         prompts: prompts.clone(),
         reply: "mock".to_string(),
     });
-    let roles_dir = common::roles_dir();
-    let state = AppState::new_in_memory_with_llm(llm, roles_dir)
+    let mut host = HostProfile::default();
+    host.turn_thinking.fast_skip_complex_emotion = false;
+    let state = AppStateBuilder::in_memory_test(llm, common::roles_dir(), None)
+        .with_host_profile(host)
+        .build()
         .await
         .expect("state");
 
@@ -52,6 +56,7 @@ async fn prior_narrative_hint_injected_into_second_turn_main_prompt() {
             role_id: "mumu".to_string(),
             user_message: "随便啦都行".to_string(),
             scene_id: None,
+            session_id: Some("prompt-roundtrip".to_string()),
             ..Default::default()
         },
     )
@@ -64,6 +69,7 @@ async fn prior_narrative_hint_injected_into_second_turn_main_prompt() {
             role_id: "mumu".to_string(),
             user_message: "接着说正事".to_string(),
             scene_id: None,
+            session_id: Some("prompt-roundtrip".to_string()),
             ..Default::default()
         },
     )
