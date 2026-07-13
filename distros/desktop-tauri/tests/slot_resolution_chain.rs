@@ -19,10 +19,10 @@ use oclivenewnew_tauri::api::role::{
     get_plugin_resolution_debug_impl, load_role_impl, set_session_plugin_backend_impl,
 };
 use std::fs;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use tempfile::TempDir;
 
-static ENV_TEST_LOCK: Mutex<()> = Mutex::new(());
+static ENV_TEST_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
 fn write_legacy_role(roles_root: &TempDir, role_id: &str, memory: &str, llm: &str) {
     let role_dir = roles_root.path().join(role_id);
@@ -112,7 +112,7 @@ async fn v2_pack_session_memory_override_in_memory_only() {
 
 #[tokio::test]
 async fn legacy_plugin_backends_pack_resolves_without_slot_registry() {
-    let _guard = ENV_TEST_LOCK.lock().expect("env lock");
+    let _guard = ENV_TEST_LOCK.lock().await;
     std::env::remove_var("OCLIVE_LLM_BACKEND");
 
     let tmp = TempDir::new().unwrap();
@@ -147,7 +147,7 @@ async fn legacy_plugin_backends_pack_resolves_without_slot_registry() {
 
 #[tokio::test]
 async fn env_llm_override_surfaces_in_debug_chain() {
-    let _guard = ENV_TEST_LOCK.lock().expect("env lock");
+    let _guard = ENV_TEST_LOCK.lock().await;
     std::env::remove_var("OCLIVE_LLM_BACKEND");
 
     let llm = Arc::new(MockLlmClient {
