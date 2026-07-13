@@ -245,7 +245,7 @@ pub fn scan_plugins(
 ) -> PluginScanSummary {
     let mut roots = HashMap::new();
     for r in default_scan_roots(roles_dir, app_data, host) {
-        collect_plugin_dirs(&r, &mut roots, &host_profile);
+        collect_plugin_dirs(&r, &mut roots, host_profile);
     }
     let mut plugin_ids: Vec<String> = roots.keys().cloned().collect();
     plugin_ids.sort();
