@@ -31,11 +31,11 @@ jobs:
         run: npm ci && npm run build
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - name: Install Linux dependencies (Tauri 1.5 / webkit2gtk-4.0)
+      - name: Install Linux dependencies (Tauri 2 / webkit2gtk-4.1)
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.0-dev libsoup2.4-dev build-essential curl wget \
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libsoup-3.0-dev build-essential curl wget \
             libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf
       - name: Bundle kernel server for Tauri resources
         run: node scripts/bundle-kernel-for-tauri.mjs --profile debug
@@ -178,10 +178,10 @@ jobs:
         run: node scripts/ensure-tauri-dist.mjs
       - name: Bundle kernel server for Tauri resources (loom compile)
         run: node scripts/bundle-kernel-for-tauri.mjs
-      - name: Install Linux dependencies (Tauri / glib for loom test build)
+      - name: Install Linux dependencies (Tauri 2 / webkit2gtk-4.1 for loom)
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.0-dev libsoup2.4-dev build-essential curl wget \
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libsoup-3.0-dev build-essential curl wget \
             libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf
       - name: "loom cfg smoke (full model tests: RUSTFLAGS='--cfg loom' locally)"
         working-directory: distros/desktop-tauri
@@ -311,10 +311,10 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: "20"
-      - name: Install Linux dependencies (Tauri 1.5 / webkit2gtk-4.0)
+      - name: Install Linux dependencies (Tauri 2 / webkit2gtk-4.1)
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.0-dev libsoup2.4-dev build-essential curl wget \
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libsoup-3.0-dev build-essential curl wget \
             libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf
       - name: Build frontend (Tauri generate_context)
         run: npm ci && npm run build
@@ -389,10 +389,10 @@ jobs:
           cache: npm
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - name: Install Linux dependencies (Tauri + WebDriver)
+      - name: Install Linux dependencies (Tauri 2 + WebDriver)
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.0-dev libsoup2.4-dev build-essential curl wget \
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libsoup-3.0-dev build-essential curl wget \
             libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf \
             webkit2gtk-driver xvfb dbus-x11
       - name: Install tauri-driver

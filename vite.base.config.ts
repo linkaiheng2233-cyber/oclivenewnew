@@ -83,9 +83,10 @@ export function createBaseViteConfig(mode: string): UserConfig {
       mode === 'e2e'
         ? {
             alias: {
-              '@tauri-apps/api/tauri': path.join(repoRoot, 'e2e-mock/tauri.ts'),
+              '@tauri-apps/api/core': path.join(repoRoot, 'e2e-mock/tauri.ts'),
               '@tauri-apps/api/event': path.join(repoRoot, 'e2e-mock/event.ts'),
-              '@tauri-apps/api/dialog': path.join(repoRoot, 'e2e-mock/dialog.ts'),
+              '@tauri-apps/plugin-dialog': path.join(repoRoot, 'e2e-mock/dialog.ts'),
+              '@tauri-apps/plugin-opener': path.join(repoRoot, 'e2e-mock/opener.ts'),
               '@tauri-apps/api/fs': path.join(repoRoot, 'e2e-mock/fs.ts'),
             },
           }

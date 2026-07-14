@@ -5,9 +5,9 @@
 **权威配置：** [`distros/desktop-tauri/tauri.conf.json`](../../distros/desktop-tauri/tauri.conf.json) · [`capabilities/`](../../distros/desktop-tauri/capabilities/) · [`Cargo.toml`](../../distros/desktop-tauri/Cargo.toml) · [`src/lib.rs`](../../distros/desktop-tauri/src/lib.rs)  
 **上游迁移指南：** [Upgrade from Tauri 1.0](https://v2.tauri.app/start/migrate/from-tauri-1/)
 
-> **本波已做：** Rust `tauri` 2.x + plugins · ACL（窄权限 · 无 remote `*`）· invoke smoke · npm **最小齐步**（`@tauri-apps/api` v2 + dialog/shell/opener 插件 import）。  
-> **npm 最小齐步 ≠ 01b Done**（chat-pro 发消息 E2E 迁移表收口另波）。  
-> **01c：** workflow/dimension5 全量 v2 门禁叙事另波（本波硬门禁以 `cargo build -p oclivenewnew-tauri` + smoke + audit 为准）。
+> **本波已做：** Rust `tauri` 2.x + plugins · ACL（窄权限 · 无 remote `*`）· invoke smoke · npm **最小齐步**（`@tauri-apps/api` v2 + dialog/shell/opener 插件 import）· CI apt `webkit2gtk-4.1`（构建硬门禁必需，非 01c 门禁叙事重写）。  
+> **npm 最小齐步 ≠ 01b Done**（chat-pro 发消息 E2E 迁移表收口另波；本波仅修 e2e-mock alias 使 preview E2E 能找到 v2 模块）。  
+> **01c：** workflow/dimension5 全量 v2 门禁叙事另波。
 
 ---
 
