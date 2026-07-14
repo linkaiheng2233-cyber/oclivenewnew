@@ -1,4 +1,4 @@
-import { open } from '@tauri-apps/api/shell'
+import { openPath, openUrl } from '@tauri-apps/plugin-opener'
 
 function isTauri(): boolean {
   return typeof window !== 'undefined' && '__TAURI__' in window
@@ -16,7 +16,10 @@ export async function openPackEditorForRole(roleId: string): Promise<{ ok: boole
       const target = editorPath.includes('?')
         ? `${editorPath}&role=${encodeURIComponent(roleId)}`
         : `${editorPath}?role=${encodeURIComponent(roleId)}`
-      await open(target)
+      if (/^https?:\/\//i.test(target))
+        await openUrl(target)
+      else
+        await openPath(target)
       return { ok: true }
     }
     catch (e) {
@@ -27,7 +30,7 @@ export async function openPackEditorForRole(roleId: string): Promise<{ ok: boole
   if (rolesHint && isTauri()) {
     try {
       const folder = `${rolesHint.replace(/\\/g, '/').replace(/\/+$/, '')}/${roleId}`
-      await open(folder)
+      await openPath(folder)
       return { ok: true, message: folder }
     }
     catch (e) {

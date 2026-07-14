@@ -167,7 +167,7 @@ runStep('tauri beforeBuildCommand path ratchet', () => {
   if (!build.includes('tauri-run.cjs') || !dev.includes('tauri-run.cjs')) {
     throw new Error('tauri.conf.json beforeBuildCommand/beforeDevCommand must invoke tauri-run.cjs');
   }
-  const resources = parsed.tauri?.bundle?.resources;
+  const resources = parsed.bundle?.resources ?? parsed.tauri?.bundle?.resources;
   if (!Array.isArray(resources)) {
     throw new Error('tauri.conf.json bundle.resources must be an array');
   }

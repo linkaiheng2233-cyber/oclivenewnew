@@ -17,13 +17,13 @@ function isTauriWebview(): boolean {
 }
 
 async function withCurrentWindow(
-  action: (win: import('@tauri-apps/api/window').WebviewWindow) => Promise<void> | void,
+  action: (win: import('@tauri-apps/api/webviewWindow').WebviewWindow) => Promise<void> | void,
 ): Promise<void> {
   if (!isTauriWebview())
     return
   try {
-    const { getCurrent } = await import('@tauri-apps/api/window')
-    await action(getCurrent())
+    const { getCurrentWebviewWindow } = await import('@tauri-apps/api/webviewWindow')
+    await action(getCurrentWebviewWindow())
   }
   catch {
     /* web build or permission denied */

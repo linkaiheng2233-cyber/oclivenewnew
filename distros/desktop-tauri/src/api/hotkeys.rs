@@ -4,7 +4,8 @@ use crate::api::error::CommandError;
 use oclive_kernel_host::infrastructure::hotkey_bindings::{HotkeyAction, HotkeyBindingsFile};
 use oclive_kernel_host::state::{AppState, SharedAppState};
 use serde::Serialize;
-use tauri::{AppHandle, GlobalShortcutManager, Manager, State};
+use tauri::{AppHandle, Emitter, State};
+use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -38,8 +39,8 @@ pub fn apply_global_hotkeys(
     file: &HotkeyBindingsFile,
 ) -> Result<(), CommandError> {
     validate_hotkey_bindings(file)?;
-    let mut mgr = app.global_shortcut_manager();
-    mgr.unregister_all()
+    app.global_shortcut()
+        .unregister_all()
         .map_err(|e| CommandError::from(e.to_string()))?;
     for b in &file.bindings {
         if !b.enabled {
@@ -49,18 +50,25 @@ pub fn apply_global_hotkeys(
         if acc.is_empty() {
             continue;
         }
+        let shortcut: Shortcut = acc
+            .parse()
+            .map_err(|e| CommandError::from(format!("parse {}: {}", acc, e)))?;
         let app_clone = app.clone();
         let id = b.id.clone();
         let action = b.action.clone();
         let acc_owned = acc.to_string();
-        mgr.register(&acc_owned, move || {
-            let payload = HotkeyActionEvent {
-                binding_id: id.clone(),
-                action: action.clone(),
-            };
-            let _ = app_clone.emit_all("hotkey-action", payload);
-        })
-        .map_err(|e| CommandError::from(format!("register {}: {}", acc_owned, e)))?;
+        app.global_shortcut()
+            .on_shortcut(shortcut, move |_app, _shortcut, event| {
+                if event.state() != ShortcutState::Pressed {
+                    return;
+                }
+                let payload = HotkeyActionEvent {
+                    binding_id: id.clone(),
+                    action: action.clone(),
+                };
+                let _ = app_clone.emit("hotkey-action", payload);
+            })
+            .map_err(|e| CommandError::from(format!("register {}: {}", acc_owned, e)))?;
     }
     Ok(())
 }

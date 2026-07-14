@@ -1,5 +1,5 @@
 # Documented warning-level advisories (see creator-docs/security/KNOWN_VULNERABILITIES.md).
-# gtk-rs GTK3 bindings: required by Tauri 1.x / wry on Linux until a Tauri 2 migration.
+# gtk-rs GTK3 bindings: still pulled by wry/webkit2gtk on Linux under Tauri 2; keep ignored until upstream migrates.
 
 [advisories]
 ignore = [

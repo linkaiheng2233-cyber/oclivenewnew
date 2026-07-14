@@ -1,0 +1,13 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "plugin-shell-remote",
+  "description": "Narrow remote IPC for ocliveplugin custom protocol (replaces dangerousRemoteDomainIpcAccess plugins:*)",
+  "windows": ["main"],
+  "remote": {
+    "urls": ["https://ocliveplugin.localhost/**"]
+  },
+  "permissions": [
+    "core:default",
+    "core:event:default"
+  ]
+}

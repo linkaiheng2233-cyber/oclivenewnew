@@ -12,10 +12,10 @@
 | 项 | 值 |
 |----|-----|
 | **cargo-audit 版本** | **0.22.1**（建议固定该主版本以便报告可比） |
-| **最近扫描日期** | **2026-07-14**（本地 `cargo audit`；K-SUPPLY-05 叶级 dedup：dialoguer 0.12 / proptest &lt;1.7） |
+| **最近扫描日期** | **2026-07-14**（本地 `cargo audit`；K-PLATFORM-01a Full Tauri 2 bump） |
 | **扫描路径** | 工作区根目录 `Cargo.lock` |
 | **漏洞级命中数** | **0**（`cargo audit` 退出码 **0**） |
-| **警告级命中数** | **3**（`fxhash` · `glib` · `rand` 0.7；gtk-rs 簇见 `.cargo/audit.toml` ignore **11** 条） |
+| **警告级命中数** | **约 8**（gtk/webkit Linux 簇仍 ignored · `glib` · `unic-*` unmaintained · `spin` yanked；**`fxhash` / `rand` 0.7 已随 Tauri 2 清出**） |
 
 > 若 CI 或本机无法拉取 advisory-db，可使用：`cargo audit --no-fetch --stale`（依赖本地已 fetch 的数据库）。
 
@@ -61,10 +61,10 @@
 |----------------|-------|------|------|
 | **RUSTSEC-2026-0002** | `lru` | **已修复** | `oclive-cli` 升级 **ratatui 0.30** → `lru` ≥ 0.16 |
 | **RUSTSEC-2025-0134** | `rustls-pemfile` | **已修复** | `reqwest` **0.12** 链不再依赖该 crate |
-| gtk-rs GTK3 簇（11 ID） | `gtk`/`gdk`/… | **已记录 + audit.toml ignore** | **Tauri 1.x / wry** Linux WebView；需 Tauri 2 方可移除 |
-| **RUSTSEC-2025-0057** | `fxhash` | **开放** | 经 Tauri HTML 解析传递；无直接 API |
-| **RUSTSEC-2024-0429** | `glib` | **开放** | `VariantStrIter` 路径；宿主未使用 |
-| **RUSTSEC-2026-0097** | `rand` 0.7 | **开放** | 经 `phf`/Tauri 宏；需上游 Tauri 2 |
+| gtk-rs GTK3 簇（11 ID） | `gtk`/`gdk`/… | **已记录 + audit.toml ignore** | Linux WebView（wry/webkit2gtk）仍拉 GTK3；Tauri 2 后仍需上游切换方可移除 ignore |
+| **RUSTSEC-2025-0057** | `fxhash` | **已清零** | 2026-07-14 K-PLATFORM-01a Full · Tauri 2 锁图无 `fxhash` |
+| **RUSTSEC-2024-0429** | `glib` | **开放** | `VariantStrIter` 路径；宿主未使用（Linux wry） |
+| **RUSTSEC-2026-0097** | `rand` 0.7 | **已清零** | 2026-07-14 K-PLATFORM-01a Full · Tauri 2 后无 `rand` 0.7 |
 | **RUSTSEC-2026-0190** | `anyhow` | **已修复** — 锁文件 **1.0.103** | 2026-07-14 K-SUPPLY-05 `cargo update` |
 
 忽略列表与理由见 [`.cargo/audit.toml`](../.cargo/audit.toml) 与 [SECURITY_AUDIT_SCOPE.md](./SECURITY_AUDIT_SCOPE.md)。

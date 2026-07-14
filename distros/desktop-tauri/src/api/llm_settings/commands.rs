@@ -113,7 +113,9 @@ pub async fn open_path_in_file_manager(path: String, app: AppHandle) -> Result<(
     if p.is_empty() {
         return Err(AppError::InvalidParameter("empty path".into()).into());
     }
-    tauri::api::shell::open(&app.shell_scope(), p, None)
+    use tauri_plugin_opener::OpenerExt;
+    app.opener()
+        .open_path(p, None::<&str>)
         .map_err(|e| CommandError::from(AppError::InvalidParameter(format!("shell open: {e}"))))?;
     Ok(())
 }

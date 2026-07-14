@@ -93,11 +93,21 @@ impl From<ApiError> for String {
     }
 }
 
-/// Tauri command error bridge (orphan-safe mapping to [`tauri::InvokeError`]).
+/// Tauri command error bridge (orphan-safe; serializes as kernel JSON string for IPC).
 #[derive(Debug)]
 pub enum CommandError {
     App(crate::error::AppError),
     Api(ApiError),
+}
+
+#[cfg(feature = "tauri-commands")]
+impl serde::Serialize for CommandError {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&self.to_kernel_json())
+    }
 }
 
 impl CommandError {
@@ -127,13 +137,6 @@ impl From<crate::error::AppError> for CommandError {
 impl From<ApiError> for CommandError {
     fn from(e: ApiError) -> Self {
         Self::Api(e)
-    }
-}
-
-#[cfg(feature = "tauri-commands")]
-impl From<CommandError> for tauri::InvokeError {
-    fn from(e: CommandError) -> Self {
-        tauri::InvokeError::from(e.to_kernel_json())
     }
 }
 

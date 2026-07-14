@@ -20,7 +20,7 @@ dual_core = []
 tauri-commands = ["dep:tauri"]
 
 [dependencies]
-tauri = { version = "1.5", optional = true, default-features = false }
+tauri = { version = "2", optional = true, default-features = false }
 oclive_kernel_types = { path = "../oclive_kernel_types" }
 oclive_kernel_contracts = { path = "../oclive_kernel_contracts" }
 oclive_validation = { path = "../oclive_validation" }

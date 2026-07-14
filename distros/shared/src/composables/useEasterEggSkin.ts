@@ -53,8 +53,8 @@ async function syncNativeDecorations(skinEnabled: boolean): Promise<void> {
   if (!isTauriWebview())
     return
   try {
-    const { getCurrent } = await import('@tauri-apps/api/window')
-    await getCurrent().setDecorations(!skinEnabled)
+    const { getCurrentWebviewWindow } = await import('@tauri-apps/api/webviewWindow')
+    await getCurrentWebviewWindow().setDecorations(!skinEnabled)
   }
   catch {
     /* web build or permission denied */

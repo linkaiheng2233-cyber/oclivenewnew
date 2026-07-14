@@ -6,8 +6,7 @@ use oclive_kernel_host::state::SharedAppState;
 use oclive_kernel_types::models::dto::RolePackPeekResponse;
 use std::path::PathBuf;
 use std::sync::Arc;
-use tauri::Manager;
-use tauri::State;
+use tauri::{Emitter, State};
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
@@ -49,7 +48,7 @@ pub async fn import_role_pack_command(
     let app = app.clone();
     let role_id = tokio::task::spawn_blocking(move || {
         import_role_pack(&storage, &path, overwrite, |prog| {
-            let _ = app.emit_all("import_progress", prog);
+            let _ = app.emit("import_progress", prog);
         })
     })
     .await

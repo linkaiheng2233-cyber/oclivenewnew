@@ -1,5 +1,5 @@
 import type { DirectoryPluginBootstrap } from '@oclive/shared/api'
-import { invoke } from '@tauri-apps/api/tauri'
+import { invoke } from '@tauri-apps/api/core'
 import { createPinia } from 'pinia'
 import { createApp } from 'vue'
 import DirectoryShellApp from '@oclive/shared/components/DirectoryShellApp.vue'

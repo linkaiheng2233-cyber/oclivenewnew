@@ -7,7 +7,7 @@ import type {
   SessionMeta,
   StoredMessage,
 } from '@oclive/shared/api/chatStorage'
-import { open } from '@tauri-apps/api/dialog'
+import { open } from '@tauri-apps/plugin-dialog'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {

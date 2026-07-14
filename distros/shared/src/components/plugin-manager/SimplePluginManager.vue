@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { open } from '@tauri-apps/api/dialog'
+import { open } from '@tauri-apps/plugin-dialog'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { installPluginFromZip } from '@oclive/shared/api'

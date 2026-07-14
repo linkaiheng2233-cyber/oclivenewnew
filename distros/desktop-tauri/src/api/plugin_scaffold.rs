@@ -4,8 +4,8 @@ use oclive_kernel_host::state::{AppState, SharedAppState};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
-use tauri::Manager;
 use tauri::State;
+use tauri_plugin_opener::OpenerExt;
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -210,7 +210,9 @@ pub fn create_plugin_scaffold(
     ) {
         return Err(e.into());
     }
-    let _ = tauri::api::shell::open(&app.shell_scope(), &*plugin_dir.to_string_lossy(), None);
+    let _ = app
+        .opener()
+        .open_path(plugin_dir.to_string_lossy().as_ref(), None::<&str>);
     Ok(CreatePluginScaffoldResponse {
         plugin_dir: plugin_dir.to_string_lossy().to_string(),
     })

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { LlmUserSettings, LocalModelFile } from '@oclive/shared/api/llmSettings'
-import { open as openDialog } from '@tauri-apps/api/dialog'
+import { open as openDialog } from '@tauri-apps/plugin-dialog'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {

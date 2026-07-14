@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { save } from '@tauri-apps/api/dialog'
+import { save } from '@tauri-apps/plugin-dialog'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { downloadTextFile } from '@oclive/shared/utils/download'

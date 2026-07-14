@@ -45,8 +45,9 @@ pub async fn reconnect_kernel(
     }
 
     let bundled_binary = app
-        .path_resolver()
+        .path()
         .resource_dir()
+        .ok()
         .and_then(|res| {
             let name = if cfg!(windows) {
                 "oclive-kernel-server.exe"

@@ -11,7 +11,7 @@ use serde_json::json;
 use std::path::PathBuf;
 use std::sync::mpsc::channel;
 use std::time::Duration;
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter, Manager};
 
 const CLEANUP_INTERVAL: Duration = Duration::from_secs(24 * 60 * 60);
 
@@ -126,7 +126,7 @@ pub fn start_plugin_fs_watcher(app: tauri::AppHandle, state: &AppState, roles_di
             if needs_rescan {
                 runtime.rescan_plugin_roots(roles_for_rescan.as_path());
             }
-            let _ = app_emit.emit_all(
+            let _ = app_emit.emit(
                 "plugin:changed",
                 json!({
                     "source": "fs",

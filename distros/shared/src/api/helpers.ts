@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api/tauri'
+import { invoke } from '@tauri-apps/api/core'
 
 import { useAppToast } from '@oclive/shared/composables/useAppToast'
 import { i18n } from '@oclive/shared/i18n/index'
@@ -226,7 +226,7 @@ export async function invokeWithFriendlyError<T>(
     throw new ApiInvokeError(friendly)
   }
 }
-/** snake_case â†’ camelCase for a single key (Tauri IPC top-level args). */
+/** snake_case â†?camelCase for a single key (Tauri IPC top-level args). */
 export function snakeToCamelKey(key: string): string {
   return key.replace(/_([a-z0-9])/g, (_, c) => c.toUpperCase())
 }

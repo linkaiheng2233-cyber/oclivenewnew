@@ -22,7 +22,7 @@ if (!fs.existsSync(confPath)) {
 }
 
 const conf = JSON.parse(fs.readFileSync(confPath, 'utf8'));
-const distRel = conf.build?.distDir ?? '../chat-pro/dist';
+const distRel = conf.build?.frontendDist ?? conf.build?.distDir ?? '../chat-pro/dist';
 const distAbs = path.resolve(tauriRoot, distRel);
 const indexPath = path.join(distAbs, 'index.html');
 

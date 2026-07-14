@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Component } from 'vue'
 import type { OcliveApi } from '@oclive/shared/composables/useOclive'
-import { confirm } from '@tauri-apps/api/dialog'
+import { confirm } from '@tauri-apps/plugin-dialog'
 import { storeToRefs } from 'pinia'
 import {
   computed,

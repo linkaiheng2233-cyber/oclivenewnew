@@ -161,13 +161,13 @@
 | `distro.oclive.toml` | [DISTRO_CAPABILITY_PROFILE.md](../creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md) | 发行版差异化 | 在角色任务里改 profile |
 | `runtime_config.dual_core` | 蓝图 · **默认关** | 解冻后 | 默认开启 Experimental 核 |
 
-### 6. Desktop 宿主（Tauri v1 allowlist）
+### 6. Desktop 宿主（Tauri v2 capability ACL）
 
-**v2 迁移立项对照（零运行时）：** [`distros/TAURI_V2_MIGRATION_INVENTORY.md`](./distros/TAURI_V2_MIGRATION_INVENTORY.md)（K-PLATFORM-01a Partial · allowlist→capability · 版本快照 · CI 留 v1）。**禁止**在债波内 silent bump `tauri` / `@tauri-apps/*`。
+**SSOT：** [`distros/TAURI_V2_MIGRATION_INVENTORY.md`](./distros/TAURI_V2_MIGRATION_INVENTORY.md)（K-PLATFORM-01a **Full** · capability ACL · bump 完成）。继续：01b（前端 E2E）· 01c（CI 口径）。**勿** silent 扩大 capability / 写 remote `*`。
 
 | 项 | SSOT | 允许改动条件 | 禁止 |
 |----|------|--------------|------|
-| `tauri.conf.json` `allowlist.window` | [`distros/desktop-tauri/tauri.conf.json`](../distros/desktop-tauri/tauri.conf.json) | Win98 彩蛋皮肤合成标题栏（`setDecorations` · `minimize` · `maximize` · `unmaximize` · `close` · `startDragging`）；须同步 [MODULE_MAP §13.2](./MODULE_MAP_AND_HANDOFF.md) | 无产品需求时 `all: true` 或扩大无关 API |
+| `capabilities/` window 权限 | [`distros/desktop-tauri/capabilities/main.json`](../distros/desktop-tauri/capabilities/main.json) | Win98 合成标题栏所需 `core:window:allow-*`（minimize/maximize/unmaximize/close/start-dragging/set-decorations）；须同步 [MODULE_MAP §13.2](./MODULE_MAP_AND_HANDOFF.md) | 无产品需求时 `core:window:default` 全开或扩大无关 API |
 | **`plugin_bridge_invoke`** | [`plugin_bridge.rs`](../distros/desktop-tauri/src/api/plugin_bridge.rs) · [DIRECTORY_PLUGINS.md §4.1](../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md) | 新桥接命令：manifest `bridge.invoke` + **`dispatch_local_bridge_command`**（桌面本地）或内核 `dispatch_bridge_command`（DB 写路径）；`plugin_rpc_invoke` 走 manifest `rpcMethods` | 假定 `ui_slots` 可直接调顶层 Tauri 命令而不经 bridge 分发 |
 | **统一键位** | [`keybindings.ts`](../distros/shared/src/lib/keybindings.ts) · `useUnifiedKeybindings.ts` | 应用内 / 全局 / hold 动作目录；`voice.holdToTalk` 默认 **V** | 在 `useGlobalHotkeys` 硬编码 Ctrl+Shift 组合作 SSOT |
 

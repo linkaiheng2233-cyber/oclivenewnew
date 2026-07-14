@@ -12,10 +12,10 @@ This file records **vulnerability-level** hits from **`cargo audit`** on the **w
 | Item | Value |
 |------|-----|
 | **cargo-audit version** | **0.22.1** (pin this major line for comparable reports) |
-| **Last scan date** | **2026-07-14** (local `cargo audit`; K-SUPPLY-05 leaf dedup: dialoguer 0.12 / proptest &lt;1.7) |
+| **Last scan date** | **2026-07-14** (local `cargo audit`; K-PLATFORM-01a Full Tauri 2 bump) |
 | **Scan path** | Workspace root `Cargo.lock` |
 | **Vulnerability-level count** | **0** (`cargo audit` exit code **0**; `sqlx-mysql` / `rsa` removed from lockfile graph) |
-| **Warning-level count** | **3** (`fxhash` · `glib` · `rand` 0.7; gtk-rs cluster see `.cargo/audit.toml` ignore **11** entries) |
+| **Warning-level count** | **~8** (gtk/webkit Linux cluster still ignored · `glib` · `unic-*` unmaintained · `spin` yanked; **`fxhash` / `rand` 0.7 cleared with Tauri 2**) |
 
 > If CI or your machine cannot fetch advisory-db: `cargo audit --no-fetch --stale` (requires a previously fetched local DB).
 
@@ -59,10 +59,10 @@ This file records **vulnerability-level** hits from **`cargo audit`** on the **w
 |--------------------|-------|--------|--------|
 | **RUSTSEC-2026-0002** | `lru` | **Fixed** | `oclive-cli` upgraded **ratatui 0.30** → `lru` ≥ 0.16 |
 | **RUSTSEC-2025-0134** | `rustls-pemfile` | **Fixed** | `reqwest` **0.12** chain no longer depends on this crate |
-| gtk-rs GTK3 cluster (11 IDs) | `gtk`/`gdk`/… | **Recorded + audit.toml ignore** | Tauri 1.x / wry Linux WebView; needs Tauri 2 to remove |
-| **RUSTSEC-2025-0057** | `fxhash` | **Open** | via Tauri HTML parse; no direct API |
-| **RUSTSEC-2024-0429** | `glib` | **Open** | `VariantStrIter` path; host does not use |
-| **RUSTSEC-2026-0097** | `rand` 0.7 | **Open** | via `phf`/Tauri macros; needs upstream Tauri 2 |
+| gtk-rs GTK3 cluster (11 IDs) | `gtk`/`gdk`/… | **Recorded + audit.toml ignore** | Linux WebView (wry/webkit2gtk) still pulls GTK3; ignore remains after Tauri 2 until upstream shifts |
+| **RUSTSEC-2025-0057** | `fxhash` | **Cleared** | 2026-07-14 K-PLATFORM-01a Full · no `fxhash` in Tauri 2 lock graph |
+| **RUSTSEC-2024-0429** | `glib` | **Open** | `VariantStrIter` path; host does not use (Linux wry) |
+| **RUSTSEC-2026-0097** | `rand` 0.7 | **Cleared** | 2026-07-14 K-PLATFORM-01a Full · no `rand` 0.7 after Tauri 2 |
 | **RUSTSEC-2026-0190** | `anyhow` | **Fixed** — lockfile **1.0.103** | 2026-07-14 K-SUPPLY-05 `cargo update` |
 
 See [`.cargo/audit.toml`](../../.cargo/audit.toml) and [SECURITY_AUDIT_SCOPE.md](./SECURITY_AUDIT_SCOPE.md).

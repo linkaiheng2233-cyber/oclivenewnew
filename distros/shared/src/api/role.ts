@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api/tauri'
+import { invoke } from '@tauri-apps/api/core'
 import { invokeWithFriendlyError } from './helpers'
 import type {
   PluginBackends,
@@ -18,7 +18,7 @@ export interface UserRelationDto {
   name: string
   prompt_hint: string
   favor_multiplier: number
-  /** Role pack configured initial favorability (0â€“100); switching top-bar identity re-seeds favorability */
+  /** Role pack configured initial favorability (0â€?00); switching top-bar identity re-seeds favorability */
   initial_favorability: number
 }
 
@@ -116,7 +116,7 @@ export interface RoleData {
   use_manifest_default: boolean
   /** Remote life enabled (DB) */
   remote_life_enabled: boolean
-  /** Role pack suggested default for remote life (`settings.json` â†’ `remote_presence.default_enabled`) */
+  /** Role pack suggested default for remote life (`settings.json` â†?`remote_presence.default_enabled`) */
   remote_life_pack_default: boolean | null
   event_impact_factor: number
   /** `evolution.personality_source`; defaults to vector */

@@ -10,7 +10,7 @@ use parking_lot::Mutex;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter};
 
 /// Inputs for attach-first then spawn reconnect.
 pub struct ReconnectOptions {
@@ -71,13 +71,13 @@ pub enum StatusEmit {
 
 /// Emit UI-safe status; keeps legacy event names for older frontends.
 pub fn emit_kernel_status(app: &AppHandle, status: &KernelConnectionStatus, kind: StatusEmit) {
-    let _ = app.emit_all("kernel:status_changed", status);
+    let _ = app.emit("kernel:status_changed", status);
     match kind {
         StatusEmit::UpstreamLost => {
-            let _ = app.emit_all("kernel:upstream_lost", status);
+            let _ = app.emit("kernel:upstream_lost", status);
         }
         StatusEmit::Reconnected => {
-            let _ = app.emit_all("kernel:reconnected", status);
+            let _ = app.emit("kernel:reconnected", status);
         }
         StatusEmit::None => {}
     }

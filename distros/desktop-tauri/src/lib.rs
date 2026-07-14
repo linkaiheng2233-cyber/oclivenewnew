@@ -18,10 +18,10 @@ pub use oclive_kernel_host::{
 pub mod error {
     pub use oclive_kernel_types::error::*;
 
-    /// Map kernel [`AppError`] to Tauri invoke failure (orphan-safe helper).
+    /// Map kernel [`AppError`] to a serializable invoke failure payload (kernel JSON string).
     #[must_use]
-    pub fn to_invoke_error(err: AppError) -> tauri::InvokeError {
-        tauri::InvokeError::from(err.to_kernel_json())
+    pub fn to_invoke_error(err: AppError) -> String {
+        err.to_kernel_json()
     }
 }
 
@@ -33,9 +33,10 @@ fn sanitize_plugin_id_for_log(plugin_id: &str) -> String {
         .collect()
 }
 
+use std::borrow::Cow;
 use std::fs;
-use tauri::http::{Request, Response, ResponseBuilder};
-use tauri::{AppHandle, Manager};
+use tauri::http::{Request, Response};
+use tauri::{AppHandle, Emitter, Manager};
 
 use crate::desktop_integration::start_plugin_fs_watcher;
 use oclive_kernel_host::infrastructure::deep_link::seed_pending_install_urls_from_args;
@@ -45,66 +46,63 @@ use oclive_kernel_host::infrastructure::plugin_protocol::{
 };
 use oclive_kernel_host::state;
 
+fn http_text(status: u16, body: impl Into<Vec<u8>>, mime: &str) -> Response<Cow<'static, [u8]>> {
+    Response::builder()
+        .status(status)
+        .header("Content-Type", mime)
+        .body(Cow::Owned(body.into()))
+        .unwrap_or_else(|_| {
+            Response::builder()
+                .status(500)
+                .body(Cow::Borrowed(b"response build failed" as &[u8]))
+                .expect("fallback response")
+        })
+}
+
 fn serve_ocliveplugin_asset(
     app: &AppHandle,
-    request: &Request,
-) -> Result<Response, Box<dyn std::error::Error>> {
-    let state = app
-        .try_state::<state::SharedAppState>()
-        .ok_or_else(|| Box::<dyn std::error::Error>::from("app state not ready"))?;
+    request: &Request<Vec<u8>>,
+) -> Response<Cow<'static, [u8]>> {
+    let Some(state) = app.try_state::<state::SharedAppState>() else {
+        return http_text(503, b"app state not ready".to_vec(), "text/plain; charset=utf-8");
+    };
     let uri = request.uri().to_string();
     let Some((plugin_id, rel)) = plugin_asset_from_request_uri(&uri) else {
-        return ResponseBuilder::new()
-            .status(404)
-            .mimetype("text/plain; charset=utf-8")
-            .body(b"unknown uri".to_vec());
+        return http_text(404, b"unknown uri".to_vec(), "text/plain; charset=utf-8");
     };
     if state
         .directory_plugins
         .plugin_state_snapshot()
         .is_plugin_disabled(plugin_id.trim())
     {
-        return ResponseBuilder::new()
-            .status(403)
-            .mimetype("text/plain; charset=utf-8")
-            .body(b"plugin disabled".to_vec());
+        return http_text(403, b"plugin disabled".to_vec(), "text/plain; charset=utf-8");
     }
     let roots = state.directory_plugins.plugin_roots.read();
     let Some(entry) = roots.get(&plugin_id) else {
-        return ResponseBuilder::new()
-            .status(404)
-            .mimetype("text/plain; charset=utf-8")
-            .body(
-                format!(
-                    "unknown plugin_id={}",
-                    sanitize_plugin_id_for_log(plugin_id.as_str())
-                )
-                .into_bytes(),
-            );
+        return http_text(
+            404,
+            format!(
+                "unknown plugin_id={}",
+                sanitize_plugin_id_for_log(plugin_id.as_str())
+            )
+            .into_bytes(),
+            "text/plain; charset=utf-8",
+        );
     };
     let root = &entry.root;
     let path_norm = match find_plugin_asset_path(entry, &rel) {
         Ok(p) => p,
         Err(e) if e == "path escapes plugin directory" => {
-            return ResponseBuilder::new()
-                .status(403)
-                .mimetype("text/plain; charset=utf-8")
-                .body(b"forbidden".to_vec());
+            return http_text(403, b"forbidden".to_vec(), "text/plain; charset=utf-8");
         }
         Err(_) => {
-            return ResponseBuilder::new()
-                .status(404)
-                .mimetype("text/plain; charset=utf-8")
-                .body(b"not found".to_vec());
+            return http_text(404, b"not found".to_vec(), "text/plain; charset=utf-8");
         }
     };
     let mut data = match fs::read(&path_norm) {
         Ok(b) => b,
         Err(_) => {
-            return ResponseBuilder::new()
-                .status(404)
-                .mimetype("text/plain; charset=utf-8")
-                .body(b"not found".to_vec());
+            return http_text(404, b"not found".to_vec(), "text/plain; charset=utf-8");
         }
     };
     if mime_for_plugin_asset(&rel).starts_with("text/html") {
@@ -119,33 +117,47 @@ fn serve_ocliveplugin_asset(
             }
         }
     }
-    ResponseBuilder::new()
-        .status(200)
-        .mimetype(mime_for_plugin_asset(&rel))
-        .body(data)
+    http_text(200, data, mime_for_plugin_asset(&rel))
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    // Align with `bundle.identifier` in `tauri.conf.json`; `tauri-plugin-deep-link` must register before setup.
+    let mut builder = tauri::Builder::default()
+        .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_opener::init());
+
+    #[cfg(desktop)]
+    {
+        builder = builder.plugin(tauri_plugin_global_shortcut::Builder::new().build());
+    }
+
     #[cfg(all(desktop, feature = "desktop"))]
-    tauri_plugin_deep_link::prepare("com.oclivenewnew.app");
-    tauri::Builder::default()
-        .register_uri_scheme_protocol("ocliveplugin", |app, request| {
-            serve_ocliveplugin_asset(app, request)
+    {
+        builder = builder.plugin(tauri_plugin_deep_link::init());
+    }
+
+    builder
+        .register_uri_scheme_protocol("ocliveplugin", |ctx, request| {
+            serve_ocliveplugin_asset(ctx.app_handle(), &request)
         })
         .setup(|app| -> Result<(), Box<dyn std::error::Error>> {
             #[cfg(all(desktop, feature = "desktop"))]
             {
+                use tauri_plugin_deep_link::DeepLinkExt;
                 let app_h = app.handle().clone();
-                if let Err(e) = tauri_plugin_deep_link::register("oclive", move |url: String| {
-                    tracing::info!(target: "oclive_deep_link", "oclive deep link: {}", url);
-                    seed_pending_install_urls_from_args(std::iter::once(url));
-                    let _ = app_h.emit_all(
+                app.deep_link().on_open_url(move |event| {
+                    for url in event.urls() {
+                        let url_s = url.to_string();
+                        tracing::info!(target: "oclive_deep_link", "oclive deep link: {}", url_s);
+                        seed_pending_install_urls_from_args(std::iter::once(url_s));
+                    }
+                    let _ = app_h.emit(
                         "protocol:pending_install",
                         serde_json::json!({ "reason": "deep-link" }),
                     );
-                }) {
+                });
+                if let Err(e) = app.deep_link().register("oclive") {
                     tracing::warn!(
                         target: "oclive_deep_link",
                         "register oclive:// handler failed: {}",
@@ -154,7 +166,7 @@ pub fn run() {
                 }
             }
             seed_pending_install_urls_from_args(std::env::args());
-            let resource_dir = app.path_resolver().resource_dir();
+            let resource_dir = app.path().resource_dir().ok();
             let roles_dir = state::find_roles_dir(resource_dir.as_deref());
             let roles_for_watcher = roles_dir.clone();
             let (app_state, kernel_conn, _api_port) = desktop_host::bootstrap_desktop_blocking(
@@ -174,7 +186,7 @@ pub fn run() {
                 let shell = app_state.clone();
                 let app_handle = app.handle().clone();
                 shell.set_affect_metrics_sink(Some(std::sync::Arc::new(move |ev| {
-                    let _ = app_handle.emit_all("affect:metricsChanged", &ev);
+                    let _ = app_handle.emit("affect:metricsChanged", &ev);
                 })));
             }
             desktop_host::finish_desktop_setup(
@@ -204,7 +216,7 @@ pub fn run() {
                 app.state::<state::SharedAppState>().as_ref(),
                 roles_for_watcher,
             );
-            crate::desktop_integration::spawn_auto_cleanup_scheduler(app.handle());
+            crate::desktop_integration::spawn_auto_cleanup_scheduler(app.handle().clone());
             Ok(())
         })
         // Tauri invoke commands — grouped by domain (see `distros/desktop-tauri/src/api/`).
