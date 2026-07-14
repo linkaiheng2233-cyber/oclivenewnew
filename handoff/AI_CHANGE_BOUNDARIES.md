@@ -163,6 +163,8 @@
 
 ### 6. Desktop 宿主（Tauri v1 allowlist）
 
+**v2 迁移立项对照（零运行时）：** [`distros/TAURI_V2_MIGRATION_INVENTORY.md`](./distros/TAURI_V2_MIGRATION_INVENTORY.md)（K-PLATFORM-01a Partial · allowlist→capability · 版本快照 · CI 留 v1）。**禁止**在债波内 silent bump `tauri` / `@tauri-apps/*`。
+
 | 项 | SSOT | 允许改动条件 | 禁止 |
 |----|------|--------------|------|
 | `tauri.conf.json` `allowlist.window` | [`distros/desktop-tauri/tauri.conf.json`](../distros/desktop-tauri/tauri.conf.json) | Win98 彩蛋皮肤合成标题栏（`setDecorations` · `minimize` · `maximize` · `unmaximize` · `close` · `startDragging`）；须同步 [MODULE_MAP §13.2](./MODULE_MAP_AND_HANDOFF.md) | 无产品需求时 `all: true` 或扩大无关 API |

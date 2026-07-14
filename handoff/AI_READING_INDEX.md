@@ -200,9 +200,10 @@ Vue invoke / HTTP --api
 ### 改 Tauri / 前端 Chat Pro
 
 1. [`INVOKE_HOTPATH_MATRIX.md`](./INVOKE_HOTPATH_MATRIX.md)  
-2. `distros/desktop-tauri/src/api/*.rs`（薄封装）  
-3. `distros/shared/src/stores/` · `distros/chat-pro/src/shells/`  
-4. [`human-docs/modules/surfaces/frontend-chat-pro.md`](../human-docs/modules/surfaces/frontend-chat-pro.md)
+2. [`distros/TAURI_V2_MIGRATION_INVENTORY.md`](./distros/TAURI_V2_MIGRATION_INVENTORY.md)（v1→v2 对照 · 版本 · CI 留 v1；K-PLATFORM-01）  
+3. `distros/desktop-tauri/src/api/*.rs`（薄封装）  
+4. `distros/shared/src/stores/` · `distros/chat-pro/src/shells/`  
+5. [`human-docs/modules/surfaces/frontend-chat-pro.md`](../human-docs/modules/surfaces/frontend-chat-pro.md)
 
 ### 内核集成 / 新发行版
 

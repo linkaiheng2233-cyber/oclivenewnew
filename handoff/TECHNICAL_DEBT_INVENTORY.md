@@ -1,12 +1,12 @@
 # Technical debt inventory
 
-**Last updated:** 2026-07-14（K-LLM-01b / 父 K-LLM-01 Done · CI `29328015057` / HEAD `3b6e2a5e`）
+**Last updated:** 2026-07-14（K-PLATFORM-01a Partial · inventory SSOT；父 K-PLATFORM-01 仍 OPEN）
 
 **Product freeze (Theater v0):** **Lifted** — 朋友 cohort 产品门通过（7/10 卧槽）；模式 2 playtest 扩展中；**模式 3 仍冻结**。见 [theater/MODE2_UNFREEZE.md](./theater/MODE2_UNFREEZE.md)。
 
 **综合评分：** A− · 本地 dimension5 **二十检** PASS（--ci）· workspace **doctest** 见 check:release · 审查数字 SSOT：[AI_VERIFICATION_PROTOCOL.md](./AI_VERIFICATION_PROTOCOL.md)
 
-**下一动作：** **P1** — K-PLATFORM-01（Tauri v1 → v2）；模式 2 playtest 扩展至陌生人 cohort；K-SUPPLY-05 仍 Partial（`deny` 未翻；剩 Tauri1 树）
+**下一动作：** **P1** — K-PLATFORM-01 **bump 波**（01a Full ACL + invoke smoke → 01b → 01c）；模式 2 playtest 扩展至陌生人 cohort；K-SUPPLY-05 仍 Partial（`deny` 未翻；剩 Tauri1 树）
 
 **Verification (2026-07-14 · K-LLM-01b / K-LLM-01 Done):** HEAD `3b6e2a5e` · CI [`29328015057`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29328015057) **硬门禁 success**（`rust`/`dimension5`/`cargo-audit`/`cli`/`oocp`/`cross-host-e2e`）· 选型 SSOT [REMOTE_PLUGIN_PROTOCOL.md §2.0](../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)「本机 OpenAI 兼容第二本地」· registry 测 [`openai_compatible_llm_http_roundtrip.rs`](../distros/desktop-tauri/tests/openai_compatible_llm_http_roundtrip.rs) `openai_compatible_llm_via_registry_remote`。
 
@@ -81,20 +81,20 @@
 
 | ID | 项 | 优先级 | 解决/完成条件 | 状态 |
 |----|-----|--------|----------------|------|
-| **K-PLATFORM-01** | Tauri v1 → v2 迁移 | **P1** | **契约**：权限/capability schema 对照 + **测试**：最小 smoke + **改动面**：desktop-tauri / 三 distro 分 PR | **OPEN** |
+| **K-PLATFORM-01** | Tauri v1 → v2 迁移 | **P1** | **契约**：权限/capability schema 对照 + **测试**：最小 smoke + **改动面**：desktop-tauri / 三 distro 分 PR | **OPEN**（01a Partial · 见下；**非** Done） |
 | **K-LLM-01** | LLM 后端单一依赖 Ollama | **P1** | **契约**：`LlmBackend` env 矩阵 + **测试**：1 API + 1 本地 mock + **改动面**：adapter 接线 PR | **Done**（01a+01b · 2026-07-14；第二本地 = Remote+localhost OpenAI-compat ∥ directory/llamacpp；无新 enum） |
 | **K-CROSS-01** | 跨平台系统策略缺失 | **P2** | 三平台语音 smoke + distro profile 差异声明 | **OPEN** |
 | **K-DIST-01** | 分发体验缺口 | **P2** | 签名/updater/Linux 包/macOS dmg | **OPEN** |
 | **D-I18N-02** | creator-docs-en 镜像滞后 | **P2** | **契约**：`check-doc-mirror` 扩展 + **测试**：mirror ratchet 样例 + **改动面**：creator-docs-en 补链 PR | **Done**（2026-07-14 · HEAD `0be7f2df` · CI [`29278403237`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29278403237) dim5 success · HIGH_TRAFFIC×8 + `--self-test`） |
 | **V-MARKET-01** | 插件市场生态 | **P2** | 市场 UI + 社区插件 | **OPEN** |
 
-**K-PLATFORM-01 子项（立项条件，本批不实施）**
+**K-PLATFORM-01 子项**
 
-| 子 ID | 契约 | 测试 | 改动面 |
-|-------|------|------|--------|
-| K-PLATFORM-01a | Tauri v2 permission manifest 对照 | 单命令 invoke smoke | `tauri.conf.json` + ACL |
-| K-PLATFORM-01b | `@tauri-apps/api` v2 迁移表 | chat-pro 发消息 E2E | `distros/shared` IPC |
-| K-PLATFORM-01c | CI 镜像 + dimension5 口径 | workflow 绿 | `.github/workflows` |
+| 子 ID | 契约 | 测试 | 改动面 | 状态 |
+|-------|------|------|--------|------|
+| K-PLATFORM-01a | Tauri v2 permission manifest 对照 | 单命令 invoke smoke（Full 波） | `tauri.conf.json` + ACL | **Partial**（2026-07-14 · 立项资产 [`distros/TAURI_V2_MIGRATION_INVENTORY.md`](./distros/TAURI_V2_MIGRATION_INVENTORY.md)；零运行时 bump；Full = ACL 实装 + invoke smoke） |
+| K-PLATFORM-01b | `@tauri-apps/api` v2 迁移表 | chat-pro 发消息 E2E | `distros/shared` IPC | **OPEN**（未动） |
+| K-PLATFORM-01c | CI 镜像 + dimension5 口径 | workflow 绿 | `.github/workflows` | **OPEN**（未动；升档前 workflow **留 v1**） |
 
 **K-LLM-01 子项**
 
