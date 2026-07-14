@@ -8,7 +8,7 @@
 
 **下一动作：** **P1** — **V-VSCODE-PERF-05**（姊妹仓 VS Code F5 / `.vsix` 实机）；模式 2 playtest 扩展至陌生人 cohort；K-SUPPLY-05 仍 Partial（`deny` 未翻；baseline **80**）
 
-**Verification (2026-07-15 · K-PLATFORM-01c → main):** _pending remote CI_ · **01c Done** · 父 **K-PLATFORM-01 Done** · CONTRIBUTING/setup 叙事 Tauri **2** / `webkit2gtk-4.1` · dimension5 `tauri major 2 + docs narrative` · inventory 父可关 · 下一动作 **V-VSCODE-PERF-05**。
+**Verification (2026-07-15 · K-PLATFORM-01c → main):** 已合 `origin/main` · HEAD `30140ee2` · CI [`29362067494`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29362067494) **硬门禁 success**（`rust`/`dimension5`/`cargo-audit`/`cli`/`oocp`/`cross-host-e2e`/`stale-paths`；`frontend`/`e2e-tauri`/`loom` success）· CONTRIBUTING/setup 叙事 Tauri **2** / `webkit2gtk-4.1` · dimension5 `tauri major 2 + docs narrative`（**22** checks）· inventory 父可关 · **01c Done** · 父 **K-PLATFORM-01 Done** · 下一动作 **V-VSCODE-PERF-05**。
 
 **Verification (2026-07-15 · K-PLATFORM-01b → main):** 已合 `origin/main` · HEAD `bd99175b` · CI [`29354276811`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29354276811) **硬门禁 success**（`rust`/`dimension5`/`cargo-audit`/`cli`/`oocp`/`cross-host-e2e`/`stale-paths`；`frontend`/`e2e-tauri`/`loom` success）· inventory §6 Frontend IPC · 生产残留 **0** · preview `send-message` 经 `frontend` job · **01b Done** · 父当时 **OPEN**（已由 01c 关闭）。
 
@@ -91,7 +91,7 @@
 
 | ID | 项 | 优先级 | 解决/完成条件 | 状态 |
 |----|-----|--------|----------------|------|
-| **K-PLATFORM-01** | Tauri v1 → v2 迁移 | **P1** | **契约**：权限/capability schema 对照 + **测试**：最小 smoke + **改动面**：desktop-tauri / 三 distro 分 PR | **Done**（01a+01b+01c · 2026-07-15） |
+| **K-PLATFORM-01** | Tauri v1 → v2 迁移 | **P1** | **契约**：权限/capability schema 对照 + **测试**：最小 smoke + **改动面**：desktop-tauri / 三 distro 分 PR | **Done**（01a+01b+01c · 2026-07-15 · CI [`29362067494`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29362067494)） |
 | **K-LLM-01** | LLM 后端单一依赖 Ollama | **P1** | **契约**：`LlmBackend` env 矩阵 + **测试**：1 API + 1 本地 mock + **改动面**：adapter 接线 PR | **Done**（01a+01b · 2026-07-14；第二本地 = Remote+localhost OpenAI-compat ∥ directory/llamacpp；无新 enum） |
 | **K-CROSS-01** | 跨平台系统策略缺失 | **P2** | 三平台语音 smoke + distro profile 差异声明 | **OPEN** |
 | **K-DIST-01** | 分发体验缺口 | **P2** | 签名/updater/Linux 包/macOS dmg | **OPEN** |
@@ -104,7 +104,7 @@
 |-------|------|------|--------|------|
 | K-PLATFORM-01a | Tauri v2 permission / ACL + bump | 单命令 invoke smoke | `tauri.conf.json` + `capabilities/` + Cargo | **Done**（2026-07-15 **已合 main** · 分支 HEAD `3c08cb5e` · CI [`29344170555`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29344170555) · inventory Full · smoke `tauri_invoke_smoke` · npm 最小齐步 ≠ 01b） |
 | K-PLATFORM-01b | `@tauri-apps/api` v2 迁移表 | chat-pro preview 发消息 E2E（`frontend` job） | `distros/shared` IPC · inventory §6 | **Done**（2026-07-15 · HEAD `bd99175b` · CI [`29354276811`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29354276811) · §6 · 生产残留 0 · `send-message` via `frontend`） |
-| K-PLATFORM-01c | 人类/门禁叙事 + dimension5 口径 | CONTRIBUTING/setup 无 `webkit2gtk-4.0`；dim5 `tauri` major 2 | CONTRIBUTING · human-docs setup · `dimension5-acceptance.mjs` · inventory | **Done**（2026-07-15 · 见文首 Verification；CI 回填中） |
+| K-PLATFORM-01c | 人类/门禁叙事 + dimension5 口径 | CONTRIBUTING/setup 无 `webkit2gtk-4.0`；dim5 `tauri` major 2 | CONTRIBUTING · human-docs setup · `dimension5-acceptance.mjs` · inventory | **Done**（2026-07-15 · HEAD `30140ee2` · CI [`29362067494`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29362067494)） |
 
 **K-LLM-01 子项**
 
