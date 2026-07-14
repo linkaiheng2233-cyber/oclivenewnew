@@ -15,6 +15,12 @@ export ROOT="$ROOT"
 DIAG_DIR="${E2E_TAURI_DIAG_DIR:-/tmp/e2e-tauri-diagnostics}"
 mkdir -p "$DIAG_DIR"
 
+# GTK/WebKit under xvfb often needs a session bus (artifact showed DBUS_SESSION_BUS_ADDRESS=).
+if [[ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ]] && command -v dbus-launch >/dev/null 2>&1; then
+  eval "$(dbus-launch --sh-syntax)"
+  echo "dbus-launch: DBUS_SESSION_BUS_ADDRESS=$DBUS_SESSION_BUS_ADDRESS"
+fi
+
 TARGET="$(python - <<'PY'
 import json, os, subprocess
 root = os.environ["ROOT"]
@@ -41,6 +47,11 @@ if ! command -v tauri-driver >/dev/null 2>&1; then
   exit 1
 fi
 
+if ! command -v WebKitWebDriver >/dev/null 2>&1; then
+  echo "WebKitWebDriver not on PATH (required for Linux tauri-driver sessions)" >&2
+  exit 1
+fi
+
 dump_diagnostics() {
   echo "=== e2e-tauri diagnostics (session / driver) ===" >&2
   {
@@ -64,13 +75,13 @@ dump_diagnostics() {
 
   cp -f /tmp/tauri-driver.log "$DIAG_DIR/tauri-driver.log" 2>/dev/null || true
   cp -f /tmp/webkit-webdriver.log "$DIAG_DIR/webkit-webdriver.log" 2>/dev/null || true
-  # Keep copies at well-known /tmp paths for CI artifact glob.
   cp -f "$DIAG_DIR/diagnostics.txt" /tmp/e2e-tauri-diagnostics.txt 2>/dev/null || true
 }
 
 cleanup() {
   if [[ -f /tmp/tauri-driver.pid ]]; then kill "$(cat /tmp/tauri-driver.pid)" 2>/dev/null || true; fi
-  if [[ -f /tmp/webkit-webdriver.pid ]]; then kill "$(cat /tmp/webkit-webdriver.pid)" 2>/dev/null || true; fi
+  # Kill any WebKitWebDriver children tauri-driver may have spawned on the native port.
+  pkill -f "WebKitWebDriver --port=${TAURI_NATIVE_DRIVER_PORT}" 2>/dev/null || true
 }
 
 on_exit() {
@@ -82,14 +93,9 @@ on_exit() {
 }
 trap on_exit EXIT
 
-if command -v WebKitWebDriver >/dev/null 2>&1; then
-  WebKitWebDriver --port="$TAURI_NATIVE_DRIVER_PORT" >/tmp/webkit-webdriver.log 2>&1 &
-  echo $! >/tmp/webkit-webdriver.pid
-  sleep 1
-else
-  echo "WebKitWebDriver not on PATH (tauri-driver may fail to create a Linux session)" >&2
-fi
-
+# Do NOT pre-start WebKitWebDriver on TAURI_NATIVE_DRIVER_PORT: tauri-driver also
+# spawns one there (artifact: FATAL Unable to listen on port 4445 + zombie WebKit).
+: > /tmp/webkit-webdriver.log
 tauri-driver --port "$TAURI_DRIVER_PORT" --native-port "$TAURI_NATIVE_DRIVER_PORT" >/tmp/tauri-driver.log 2>&1 &
 echo $! >/tmp/tauri-driver.pid
 
@@ -101,7 +107,7 @@ for _ in $(seq 1 60); do
 done
 if ! curl -sf "http://${TAURI_DRIVER_HOST}:${TAURI_DRIVER_PORT}/status" >/dev/null 2>&1; then
   echo "tauri-driver did not become ready on :${TAURI_DRIVER_PORT}" >&2
-  tail -n 40 /tmp/tauri-driver.log >&2 || true
+  dump_diagnostics || true
   exit 1
 fi
 

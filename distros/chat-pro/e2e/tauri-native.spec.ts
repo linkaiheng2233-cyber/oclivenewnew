@@ -39,9 +39,10 @@ test.describe("Tauri native window (A1.1c smoke)", () => {
             },
           },
         },
-        // Fail fast on session create — long connectionRetry only extended silent hangs.
+        // connectionRetryTimeout also sets undici headersTimeout (artifact: 10s UND_ERR_HEADERS_TIMEOUT).
+        // Keep retries at 0 (no silent multi-minute hangs); allow one long session create.
         connectionRetryCount: 0,
-        connectionRetryTimeout: 10_000,
+        connectionRetryTimeout: 120_000,
       });
     } catch (err) {
       const detail = err instanceof Error ? err.message : String(err);
