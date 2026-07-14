@@ -76,7 +76,7 @@ fn pick_factory_template() -> Result<Option<InitTemplateArg>> {
     }
     let idx = Select::with_theme(&ColorfulTheme::default())
         .with_prompt("Choose scenario template (kernel factory recipe)")
-        .items(&labels)
+        .items(labels)
         .default(0)
         .interact()
         .context("template select")?;
@@ -93,7 +93,7 @@ fn pick_project_type(default_kernel: bool) -> Result<ProjectType> {
     let default = if default_kernel { 0 } else { 1 };
     let pt_idx = Select::with_theme(&ColorfulTheme::default())
         .with_prompt("Project type")
-        .items(&[
+        .items([
             "Headless service (kernel_server)",
             "Embedded library (library)",
         ])
@@ -144,7 +144,7 @@ fn pick_slots_manual() -> Result<BackendSlots> {
 fn pick_plugins() -> Result<PluginSelection> {
     let plug_idx: Vec<usize> = MultiSelect::with_theme(&ColorfulTheme::default())
         .with_prompt("Optional plugins")
-        .items(&[
+        .items([
             "directory-plugins (directory plugin placeholder docs)",
             "kernel-server (README: how to wire oclive_kernel_server)",
             "oocp (README: OOCP black-box test entry)",
@@ -169,7 +169,7 @@ fn pick_monolith_for_kernel(template_default_on: bool) -> Result<bool> {
     }
     let mode_idx = Select::with_theme(&ColorfulTheme::default())
         .with_prompt("Compile mode")
-        .items(&[
+        .items([
             "Standard (loosely coupled, modules stay swappable; recommended)",
             "Monolith — weld all seven keys statically (modules 1-6 + complex_emotion)",
             "Monolith — custom weld scope (edit monolith.toml after generate, then run oclive build)",
@@ -197,7 +197,7 @@ fn pick_cargo_metadata(args: &InitArgs, cfg: &mut ProjectConfig) -> Result<()> {
     let licenses = ["Apache-2.0", "MIT", "GPL-3.0", "AGPL-3.0"];
     let lic_idx = Select::with_theme(&ColorfulTheme::default())
         .with_prompt("License (SPDX)")
-        .items(&licenses)
+        .items(licenses)
         .default(0)
         .interact()
         .context("license")?;
@@ -238,7 +238,7 @@ fn pick_chat_storage_backend() -> Result<ChatStorageBackend> {
     ];
     let i = Select::with_theme(&ColorfulTheme::default())
         .with_prompt("Chat history storage backend")
-        .items(&labels)
+        .items(labels)
         .default(0)
         .interact()
         .context("chat storage backend")?;
@@ -256,7 +256,7 @@ fn pick_chat_storage_location() -> Result<String> {
     ];
     let i = Select::with_theme(&ColorfulTheme::default())
         .with_prompt("聊天记录存储位置")
-        .items(&labels)
+        .items(labels)
         .default(0)
         .interact()
         .context("chat storage location")?;

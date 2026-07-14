@@ -151,7 +151,7 @@ fn run_create(args: PluginCreateArgs) -> Result<()> {
         ];
         let idx = Select::with_theme(&ColorfulTheme::default())
             .with_prompt("Plugin type")
-            .items(&items)
+            .items(items)
             .default(0)
             .interact()
             .context("plugin type")?;
@@ -181,7 +181,7 @@ fn run_create(args: PluginCreateArgs) -> Result<()> {
         ];
         let chosen: Vec<usize> = MultiSelect::with_theme(&ColorfulTheme::default())
             .with_prompt("Which slots to provide (RPC method stubs)")
-            .items(&labels)
+            .items(labels)
             .defaults(&[true, false, false, false, false, false, false])
             .interact()
             .context("provides")?;
