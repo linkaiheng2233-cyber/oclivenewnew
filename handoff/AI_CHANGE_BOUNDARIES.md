@@ -199,8 +199,9 @@
 ## 门禁与验收
 
 - `node scripts/check-stale-paths.mjs` — 文档 + 代码路径（dimension5 拆为 doc/code 两检）
+- `node scripts/check-markdown-links.mjs` — 人类模块开工包的本地 Markdown 相对链接
 - `node scripts/check-doc-registry.mjs` — handoff 根级文档登记 + 重复块哨兵（G14/G16）
-- `node scripts/dimension5-acceptance.mjs --ci` — **14** 项（含 `cargo deny` · doc registry）
+- `node scripts/dimension5-acceptance.mjs --ci` — 检查项总数以脚本结尾 `PASS (N checks)` 为准（含 `cargo deny` · doc registry · 人类模块链接）
 - 关键路径索引：[BUS_FACTOR_NOTES.md](./BUS_FACTOR_NOTES.md)
 - 技术债 / 冻结：[TECHNICAL_DEBT_INVENTORY.md](./TECHNICAL_DEBT_INVENTORY.md)
 - **审查 / 汇报核实**（带数字的质量报告、第三方审查入账前）：[AI_VERIFICATION_PROTOCOL.md](./AI_VERIFICATION_PROTOCOL.md)

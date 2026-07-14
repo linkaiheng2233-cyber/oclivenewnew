@@ -3,15 +3,15 @@
 > **读者**：改 `performance_directive`、宿主 UI 帧循环与视觉表现的工程师。  
 > **读完能做什么**：在设施④边界内改表现层，**无** AI 选图。  
 > **耗时**：约 **40 min**  
-> **SSOT 范围**：人类 checklist；RFC 见 [RFC_VISUAL_PRESENTATION](../../creator-docs/rfc/RFC_VISUAL_PRESENTATION.md)（草案链 RFC_PORTRAIT 族）  
-> **最后更新**：2026-06-26  
+> **SSOT 范围**：人类 checklist；RFC 见 [RFC_VISUAL_PRESENTATION_FACILITY](../../../creator-docs/rfc/RFC_VISUAL_PRESENTATION_FACILITY.md)（草案链 RFC_PORTRAIT 族）
+> **最后更新**：2026-07-14
 > **下一篇**：[portrait](portrait.md) · [surfaces/frontend-chat-pro](../surfaces/frontend-chat-pro.md)
 
 ---
 
 ## 1. 你插在哪
 
-- **MODULE_MAP**：[§10 设施④ 视觉表现](../../handoff/MODULE_MAP_AND_HANDOFF.md#10-第-n-设施子模块编排行内--非六键)  
+- **MODULE_MAP**：[§10 设施④ 视觉表现](../../../handoff/MODULE_MAP_AND_HANDOFF.md#10-第-n-设施子模块编排行内--非六键)
 - **输入**：`visual_state_id`（来自设施③）  
 - **输出**：`performance_directive` → 宿主 UI 帧循环  
 - **默认**：**关**
@@ -30,8 +30,8 @@
 
 ## 3. 阅读清单
 
-1. [MODULE_MAP §10 设施④](../../handoff/MODULE_MAP_AND_HANDOFF.md#10-第-n-设施子模块编排行内--非六键)  
-2. [RFC_PORTRAIT_FACILITY](../../creator-docs/rfc/RFC_PORTRAIT_FACILITY.md) — 表现导演与舞台  
+1. [MODULE_MAP §10 设施④](../../../handoff/MODULE_MAP_AND_HANDOFF.md#10-第-n-设施子模块编排行内--非六键)
+2. [RFC_PORTRAIT_FACILITY](../../../creator-docs/rfc/RFC_PORTRAIT_FACILITY.md) — 表现导演与舞台
 3. [team/TRACK_VISUAL_UPGRADE](../../team/TRACK_VISUAL_UPGRADE.md)  
 4. [surfaces/frontend-chat-pro](../surfaces/frontend-chat-pro.md)  
 5. [01 简架构 §设施](../../01_ARCHITECTURE_SIMPLE.md)

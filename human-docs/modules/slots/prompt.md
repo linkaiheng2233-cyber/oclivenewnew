@@ -3,15 +3,15 @@
 > **读者**：改 Prompt 段落公式、overlay 或 prompt 后端的工程师。  
 > **读完能做什么**：在 `PromptBuilder::build_prompt` 边界内改组装逻辑，守 guardrails 纪律。  
 > **耗时**：约 **50 min**  
-> **SSOT 范围**：人类 checklist；定义见 [MODULE_MAP §7](../../handoff/MODULE_MAP_AND_HANDOFF.md)  
-> **最后更新**：2026-06-26  
+> **SSOT 范围**：人类 checklist；定义见 [MODULE_MAP §7](../../../handoff/MODULE_MAP_AND_HANDOFF.md)
+> **最后更新**：2026-07-14
 > **下一篇**：[07 §2](../../07_COMMON_TASKS.md#2-改-prompt-段落) · [llm](llm.md)
 
 ---
 
 ## 1. 你插在哪
 
-- **MODULE_MAP**：[§7 第 4 模块 · `prompt`](../../handoff/MODULE_MAP_AND_HANDOFF.md#7-第-4-模块--prompt)  
+- **MODULE_MAP**：[§7 第 4 模块 · `prompt`](../../../handoff/MODULE_MAP_AND_HANDOFF.md#7-第-4-模块--prompt)
 - **`plugin_backends` 键**：`prompt`  
 - **Trait**：`PromptAssembler` → 内置 **`PromptBuilder::build_prompt`**  
 - **主链 hook**：`co_present` `BuildPrompt` · `PromptInput`  
@@ -32,11 +32,11 @@
 
 ## 3. 阅读清单
 
-1. [MODULE_MAP §7](../../handoff/MODULE_MAP_AND_HANDOFF.md#7-第-4-模块--prompt)  
+1. [MODULE_MAP §7](../../../handoff/MODULE_MAP_AND_HANDOFF.md#7-第-4-模块--prompt)
 2. [04 工程约束 §5–§6](../../04_ENGINEERING_RULES.md) — PromptBuilder · guardrails  
 3. [07 §2 改 Prompt 段落](../../07_COMMON_TASKS.md#2-改-prompt-段落)  
-4. [DEEP_PROMPT_DISTILLATION](../../handoff/DEEP_PROMPT_DISTILLATION.md) — Deep capsule  
-5. [ROLE_PACK_BOUNDARY](../../handoff/ROLE_PACK_BOUNDARY.md) — Tier0 真源
+4. [DEEP_PROMPT_DISTILLATION](../../../handoff/DEEP_PROMPT_DISTILLATION.md) — Deep capsule
+5. [ROLE_PACK_BOUNDARY](../../../handoff/ROLE_PACK_BOUNDARY.md) — Tier0 真源
 
 ---
 

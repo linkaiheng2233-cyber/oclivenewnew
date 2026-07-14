@@ -3,18 +3,18 @@
 > **读者**：Chat Pro 立绘 catalog、`visual_state_id` 与表现导演链路的工程师。  
 > **读完能做什么**：在 RFC 边界内改 post_llm 立绘设施，不把选图逻辑塞进 UI LLM。  
 > **耗时**：约 **45 min**  
-> **SSOT 范围**：人类 checklist；RFC 见 [RFC_PORTRAIT_FACILITY](../../creator-docs/rfc/RFC_PORTRAIT_FACILITY.md)  
-> **最后更新**：2026-06-26  
+> **SSOT 范围**：人类 checklist；RFC 见 [RFC_PORTRAIT_FACILITY](../../../creator-docs/rfc/RFC_PORTRAIT_FACILITY.md)
+> **最后更新**：2026-07-14
 > **下一篇**：[visual-stage](visual-stage.md) · [team/TRACK_VISUAL_UPGRADE](../../team/TRACK_VISUAL_UPGRADE.md)
 
 ---
 
 ## 1. 你插在哪
 
-- **MODULE_MAP**：[§10 设施③ 立绘](../../handoff/MODULE_MAP_AND_HANDOFF.md#10-第-n-设施子模块编排行内--非六键)  
+- **MODULE_MAP**：[§10 设施③ 立绘](../../../handoff/MODULE_MAP_AND_HANDOFF.md#10-第-n-设施子模块编排行内--非六键)
 - **默认**：**关**（HostProfile / 角色包启用）  
 - **主链 hook**：`post_llm` · 表现导演 LLM → 封闭 catalog → `visual_state_id`  
-- **RFC**：[RFC_PORTRAIT_FACILITY](../../creator-docs/rfc/RFC_PORTRAIT_FACILITY.md)
+- **RFC**：[RFC_PORTRAIT_FACILITY](../../../creator-docs/rfc/RFC_PORTRAIT_FACILITY.md)
 
 ---
 
@@ -30,11 +30,11 @@
 
 ## 3. 阅读清单
 
-1. [RFC_PORTRAIT_FACILITY](../../creator-docs/rfc/RFC_PORTRAIT_FACILITY.md)  
-2. [MODULE_MAP §10 设施③](../../handoff/MODULE_MAP_AND_HANDOFF.md#10-第-n-设施子模块编排行内--非六键)  
+1. [RFC_PORTRAIT_FACILITY](../../../creator-docs/rfc/RFC_PORTRAIT_FACILITY.md)
+2. [MODULE_MAP §10 设施③](../../../handoff/MODULE_MAP_AND_HANDOFF.md#10-第-n-设施子模块编排行内--非六键)
 3. [team/TRACK_VISUAL_UPGRADE](../../team/TRACK_VISUAL_UPGRADE.md)  
-4. [PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN](../../handoff/PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md)（阶段笔记）  
-5. [theater/DEVELOPMENT_ROADMAP](../../handoff/theater/DEVELOPMENT_ROADMAP.md)（剧场线交叉时）
+4. [PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN](../../../handoff/PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md)（阶段笔记）
+5. [theater/DEVELOPMENT_ROADMAP](../../../handoff/theater/DEVELOPMENT_ROADMAP.md)（剧场线交叉时）
 
 ---
 

@@ -64,7 +64,7 @@
 - 审查汇报前：[AI_VERIFICATION_PROTOCOL.md](handoff/AI_VERIFICATION_PROTOCOL.md)
 - OOCP S0–S12（+ 可选 S13/S14）：[OOCP_TEST_SUITE.md](creator-docs/testing/OOCP_TEST_SUITE.md)
 - invoke 热路径 **13** 条：[INVOKE_HOTPATH_MATRIX.md](handoff/INVOKE_HOTPATH_MATRIX.md)
-- Dimension 5 门禁 **18** 项注册 / **17** 项 CI 执行（`node scripts/dimension5-acceptance.mjs --ci` 跳过 sample lib tests 仍计 18）
+- Dimension 5 门禁：`node scripts/dimension5-acceptance.mjs --ci`；检查项总数以脚本结尾 `PASS (N checks)` 为准（`--ci` 跳过 sample lib tests，但仍计入结果）。
 - 日常 `npm run check:rust` **不含 doctest**；发版 `npm run check:release` **含**
 
 ---

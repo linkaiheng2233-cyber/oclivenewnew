@@ -3,8 +3,8 @@
 > **读者**：新增或修改 Tauri 命令、前后端 IPC 封装的工程师。  
 > **读完能做什么**：按注册纪律接线 invoke，热路径对齐 INVOKE_HOTPATH_MATRIX。  
 > **耗时**：约 **40 min**  
-> **SSOT 范围**：人类 checklist；矩阵见 [INVOKE_HOTPATH_MATRIX](../../handoff/INVOKE_HOTPATH_MATRIX.md)  
-> **最后更新**：2026-06-26  
+> **SSOT 范围**：人类 checklist；矩阵见 [INVOKE_HOTPATH_MATRIX](../../../handoff/INVOKE_HOTPATH_MATRIX.md)
+> **最后更新**：2026-07-14
 > **下一篇**：[07 §1](../../07_COMMON_TASKS.md#1-新增-tauri-命令) · [frontend-chat-pro](frontend-chat-pro.md)
 
 ---
@@ -31,10 +31,10 @@
 ## 3. 阅读清单
 
 1. [07 §1 新增 Tauri 命令](../../07_COMMON_TASKS.md#1-新增-tauri-命令)  
-2. [INVOKE_HOTPATH_MATRIX](../../handoff/INVOKE_HOTPATH_MATRIX.md)  
+2. [INVOKE_HOTPATH_MATRIX](../../../handoff/INVOKE_HOTPATH_MATRIX.md)
 3. [04 工程约束 §3](../../04_ENGINEERING_RULES.md)  
-4. [BUS_FACTOR](../../handoff/BUS_FACTOR_NOTES.md)  
-5. [ERROR_CODES](../../creator-docs/getting-started/ERROR_CODES.md)
+4. [BUS_FACTOR](../../../handoff/BUS_FACTOR_NOTES.md)
+5. [ERROR_CODES](../../../creator-docs/getting-started/ERROR_CODES.md)
 
 ---
 

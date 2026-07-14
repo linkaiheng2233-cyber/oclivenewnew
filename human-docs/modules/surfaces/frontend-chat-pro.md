@@ -4,7 +4,7 @@
 > **读完能做什么**：在不动内核编排的前提下改聊天界面与状态管理。  
 > **耗时**：约 **45 min**  
 > **SSOT 范围**：人类 checklist；invoke 契约见 [tauri-invoke](tauri-invoke.md)  
-> **最后更新**：2026-06-26  
+> **最后更新**：2026-07-14
 > **下一篇**：[paths/frontend](../../paths/frontend.md) · [08 资料地图](../../08_REFERENCE_MAP.md)
 
 ---
@@ -33,7 +33,7 @@
 1. [paths/frontend](../../paths/frontend.md)  
 2. [tauri-invoke](tauri-invoke.md)  
 3. [04 工程约束 §3–§4](../../04_ENGINEERING_RULES.md)  
-4. [NAMING §8 前端对照](../../creator-docs/NAMING_CONVENTIONS.md#8-前端--后端术语对照)  
+4. [NAMING §8 前端对照](../../../creator-docs/NAMING_CONVENTIONS.md#8-前端--后端术语对照)
 5. [facilities/visual-stage](../facilities/visual-stage.md)（视觉线）
 
 ---

@@ -3,15 +3,15 @@
 > **读者**：改 `distro.oclive.toml`、发行版能力、无头 HTTP 或三发行版内核生命周期的工程师。  
 > **读完能做什么**：在 HostProfile 四层配置最上层改动，不越界改角色人设。  
 > **耗时**：约 **50 min**  
-> **SSOT 范围**：人类 checklist；字段 SSOT 见 [DISTRO_CAPABILITY_PROFILE](../../creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md)  
-> **最后更新**：2026-06-26  
+> **SSOT 范围**：人类 checklist；字段 SSOT 见 [DISTRO_CAPABILITY_PROFILE](../../../creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md)
+> **最后更新**：2026-07-14
 > **下一篇**：[paths/integrator](../../paths/integrator.md) · [orchestration/turn-thinking](../orchestration/turn-thinking.md)
 
 ---
 
 ## 1. 你插在哪
 
-- **MODULE_MAP**：[§14 发行版层](../../handoff/MODULE_MAP_AND_HANDOFF.md#14-配置四层谁可改什么)  
+- **MODULE_MAP**：[§14 发行版层](../../../handoff/MODULE_MAP_AND_HANDOFF.md#14-配置四层谁可改什么)
 - **文件**：`distros/*/distro.oclive.toml` → `HostProfile`  
 - **能力门控**：`host_flags` · `[turn_thinking]` · `[plugin_backends]` 整表替换等  
 - **无头**：`oclivenewnew-tauri --api` · `oclive-kernel-server`
@@ -30,11 +30,11 @@
 
 ## 3. 阅读清单
 
-1. [DISTRO_CAPABILITY_PROFILE](../../creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md)  
-2. [KERNEL_INTEGRATOR_LEARNING_PATH](../../creator-docs/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md)  
-3. [DISTRO_KERNEL_LIFECYCLE](../../creator-docs/kernel/DISTRO_KERNEL_LIFECYCLE.md)  
-4. [THREE_DISTRO_KERNEL_CLOSURE](../../handoff/THREE_DISTRO_KERNEL_CLOSURE.md)  
-5. [MODULE_MAP §3.2 有效 backends 解析链](../../handoff/MODULE_MAP_AND_HANDOFF.md#32-有效-backends-解析链)
+1. [DISTRO_CAPABILITY_PROFILE](../../../creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md)
+2. [KERNEL_INTEGRATOR_LEARNING_PATH](../../../creator-docs/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md)
+3. [DISTRO_KERNEL_LIFECYCLE](../../../creator-docs/kernel/DISTRO_KERNEL_LIFECYCLE.md)
+4. [THREE_DISTRO_KERNEL_CLOSURE](../../../handoff/THREE_DISTRO_KERNEL_CLOSURE.md)
+5. [MODULE_MAP §3.2 有效 backends 解析链](../../../handoff/MODULE_MAP_AND_HANDOFF.md#32-有效-backends-解析链)
 
 ---
 

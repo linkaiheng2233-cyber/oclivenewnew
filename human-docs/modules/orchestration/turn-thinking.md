@@ -3,15 +3,15 @@
 > **读者**：改 Fast/Deep/Auto、持久化分流或包级 `turn_thinking` 路由的工程师。  
 > **读完能做什么**：把 Turn Thinking 当 **编排行策略** 改动，**不**登记为第七槽。  
 > **耗时**：约 **50 min**  
-> **SSOT 范围**：人类 checklist；RFC 见 [RFC_TURN_THINKING_PERSISTENCE](../../creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md)  
-> **最后更新**：2026-06-26  
-> **下一篇**：[packs/role-pack-config](../packs/role-pack-config.md) · [MODULE_MAP §12](../../handoff/MODULE_MAP_AND_HANDOFF.md#12-编排行策略非模块号--易与六槽混淆)
+> **SSOT 范围**：人类 checklist；RFC 见 [RFC_TURN_THINKING_PERSISTENCE](../../../creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md)
+> **最后更新**：2026-07-14
+> **下一篇**：[packs/role-pack-config](../packs/role-pack-config.md) · [MODULE_MAP §12](../../../handoff/MODULE_MAP_AND_HANDOFF.md#12-编排行策略非模块号--易与六槽混淆)
 
 ---
 
 ## 1. 你插在哪
 
-- **MODULE_MAP**：[§12 Turn Thinking](../../handoff/MODULE_MAP_AND_HANDOFF.md#12-编排行策略非模块号--易与六槽混淆)  
+- **MODULE_MAP**：[§12 Turn Thinking](../../../handoff/MODULE_MAP_AND_HANDOFF.md#12-编排行策略非模块号--易与六槽混淆)
 - **非六槽** · **非** `plugin_backends` 键  
 - **代码**：`turn_thinking.rs` · `co_present` / `TurnThinkingRouter`  
 - **配置**：发行版 `[turn_thinking]` · 角色包 `config.json` → `turn_thinking`（RFC §8–12）
@@ -32,10 +32,10 @@
 
 ## 3. 阅读清单
 
-1. [RFC_TURN_THINKING_PERSISTENCE](../../creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md)（含 §8–12）  
-2. [MODULE_MAP §12](../../handoff/MODULE_MAP_AND_HANDOFF.md#12-编排行策略非模块号--易与六槽混淆)  
+1. [RFC_TURN_THINKING_PERSISTENCE](../../../creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md)（含 §8–12）
+2. [MODULE_MAP §12](../../../handoff/MODULE_MAP_AND_HANDOFF.md#12-编排行策略非模块号--易与六槽混淆)
 3. [01 简架构 §Turn Thinking](../../01_ARCHITECTURE_SIMPLE.md#turn-thinkingfast--deep--编排行)  
-4. [DISTRO_CAPABILITY_PROFILE §3.2.1](../../creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md)  
+4. [DISTRO_CAPABILITY_PROFILE §3.2.1](../../../creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md)
 5. [role-pack-config](../packs/role-pack-config.md)
 
 ---

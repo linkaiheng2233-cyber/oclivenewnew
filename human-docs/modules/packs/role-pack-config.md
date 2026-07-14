@@ -3,8 +3,8 @@
 > **读者**：为角色包增加或修改 `config.json` 字段、turn_thinking 路由的工程师。  
 > **读完能做什么**：走通 loader → validation → runtime 使用链，不破坏 G1。  
 > **耗时**：约 **50 min**  
-> **SSOT 范围**：人类 checklist；字段 SSOT 见 [ROLE_PACK_SPEC](../../creator-docs/role-pack/ROLE_PACK_SPEC.md)  
-> **最后更新**：2026-06-26  
+> **SSOT 范围**：人类 checklist；字段 SSOT 见 [ROLE_PACK_SPEC](../../../creator-docs/role-pack/ROLE_PACK_SPEC.md)
+> **最后更新**：2026-07-14
 > **下一篇**：[orchestration/turn-thinking](../orchestration/turn-thinking.md) · [07 §3](../../07_COMMON_TASKS.md#3-加-configjson-字段)
 
 ---
@@ -15,7 +15,7 @@
 - **解析**：`RoleStorage::load_role` 及相关 loader  
 - **校验**：`kernel/crates/oclive_validation`  
 - **运行时**：`turn_thinking.rs` · 各 `*_engine`（**非** API 层）  
-- **MODULE_MAP**：[§12 Turn Thinking 包级路由](../../handoff/MODULE_MAP_AND_HANDOFF.md#12-编排行策略非模块号--易与六槽混淆)
+- **MODULE_MAP**：[§12 Turn Thinking 包级路由](../../../handoff/MODULE_MAP_AND_HANDOFF.md#12-编排行策略非模块号--易与六槽混淆)
 
 ---
 
@@ -31,10 +31,10 @@
 
 ## 3. 阅读清单
 
-1. [ROLE_PACK_SPEC §9](../../creator-docs/role-pack/ROLE_PACK_SPEC.md) — `config.json`  
-2. [RFC_TURN_THINKING_PERSISTENCE §8–12](../../creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md)  
+1. [ROLE_PACK_SPEC §9](../../../creator-docs/role-pack/ROLE_PACK_SPEC.md) — `config.json`
+2. [RFC_TURN_THINKING_PERSISTENCE §8–12](../../../creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md)
 3. [07 常见任务 §3](../../07_COMMON_TASKS.md#3-加-configjson-字段)  
-4. [MODULE_MAP §12](../../handoff/MODULE_MAP_AND_HANDOFF.md#12-编排行策略非模块号--易与六槽混淆)  
+4. [MODULE_MAP §12](../../../handoff/MODULE_MAP_AND_HANDOFF.md#12-编排行策略非模块号--易与六槽混淆)
 5. 迁移：`035_turn_thinking_runtime.sql`（若涉持久化字段）
 
 ---
@@ -51,7 +51,7 @@
 
 ## 5. 验收
 
-- [ ] 非法 `config.json` 在校验层失败，错误码符合 [KERNEL_ERROR_CODE_CONVENTION](../../creator-docs/getting-started/KERNEL_ERROR_CODE_CONVENTION.md)  
+- [ ] 非法 `config.json` 在校验层失败，错误码符合 [KERNEL_ERROR_CODE_CONVENTION](../../../creator-docs/getting-started/KERNEL_ERROR_CODE_CONVENTION.md)
 - [ ] HostProfile 与包级 `turn_thinking` 合并行为符合 RFC  
 - [ ] 未改 `slot_registry` 结构
 

@@ -3,15 +3,15 @@
 > **读者**：开发 Ollama / remote / directory LLM 后端的插件作者。  
 > **读完能做什么**：在不读 `process_message` 全文的前提下，接入或调试 `llm` 槽。  
 > **耗时**：约 **45 min**  
-> **SSOT 范围**：人类 checklist；定义见 [MODULE_MAP §8](../../handoff/MODULE_MAP_AND_HANDOFF.md)  
-> **最后更新**：2026-06-26  
+> **SSOT 范围**：人类 checklist；定义见 [MODULE_MAP §8](../../../handoff/MODULE_MAP_AND_HANDOFF.md)
+> **最后更新**：2026-07-14
 > **下一篇**：[agent](agent.md) · [plugin-author 路径](../../paths/plugin-author.md)
 
 ---
 
 ## 1. 你插在哪
 
-- **MODULE_MAP**：[§8 第 5 模块 · `llm`](../../handoff/MODULE_MAP_AND_HANDOFF.md#8-第-5-模块--llm)  
+- **MODULE_MAP**：[§8 第 5 模块 · `llm`](../../../handoff/MODULE_MAP_AND_HANDOFF.md#8-第-5-模块--llm)
 - **`plugin_backends` 键**：`llm`  
 - **Trait**：`LlmClient`（`oclive_kernel_contracts`）  
 - **主链 hook**：`co_present` generate / stream（经 `slot_runner`）
@@ -30,11 +30,11 @@
 
 ## 3. 阅读清单
 
-1. [MODULE_MAP §8](../../handoff/MODULE_MAP_AND_HANDOFF.md#8-第-5-模块--llm)  
-2. [PLUGIN_V1](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md) — `send_message` 中 llm 阶段顺序  
-3. [DIRECTORY_PLUGINS](../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md) · [REMOTE_PLUGIN_PROTOCOL](../../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)  
-4. [SLOT_BACKEND_REALITY_MATRIX](../../handoff/SLOT_BACKEND_REALITY_MATRIX.md) — `llm` 行真值  
-5. 示例：[`examples/directory-plugin-minimal/`](../../examples/directory-plugin-minimal/)
+1. [MODULE_MAP §8](../../../handoff/MODULE_MAP_AND_HANDOFF.md#8-第-5-模块--llm)
+2. [PLUGIN_V1](../../../creator-docs/plugin-and-architecture/PLUGIN_V1.md) — `send_message` 中 llm 阶段顺序
+3. [DIRECTORY_PLUGINS](../../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md) · [REMOTE_PLUGIN_PROTOCOL](../../../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)
+4. [SLOT_BACKEND_REALITY_MATRIX](../../../handoff/SLOT_BACKEND_REALITY_MATRIX.md) — `llm` 行真值
+5. 示例：[`examples/directory-plugin-minimal/`](../../../examples/directory-plugin-minimal/)
 
 ---
 

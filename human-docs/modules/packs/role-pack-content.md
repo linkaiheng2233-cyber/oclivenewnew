@@ -3,15 +3,15 @@
 > **读者**：只改 `roles/{id}/` 内文案、场景、人设文件的创作者（非内核）。  
 > **读完能做什么**：在 G1 边界内改 mumu 等人设，不碰 `slot_registry` 与主链代码。  
 > **耗时**：约 **40 min**  
-> **SSOT 范围**：人类 checklist；边界见 [ROLE_PACK_BOUNDARY](../../handoff/ROLE_PACK_BOUNDARY.md)  
-> **最后更新**：2026-06-26  
-> **下一篇**：[role-pack-config](role-pack-config.md) · [CREATOR_LEARNING_PATH](../../creator-docs/role-pack/CREATOR_LEARNING_PATH.md)
+> **SSOT 范围**：人类 checklist；边界见 [ROLE_PACK_BOUNDARY](../../../handoff/ROLE_PACK_BOUNDARY.md)
+> **最后更新**：2026-07-14
+> **下一篇**：[role-pack-config](role-pack-config.md) · [CREATOR_LEARNING_PATH](../../../creator-docs/role-pack/CREATOR_LEARNING_PATH.md)
 
 ---
 
 ## 1. 你插在哪
 
-- **MODULE_MAP**：[§14 配置四层 · 角色包层](../../handoff/MODULE_MAP_AND_HANDOFF.md#14-配置四层谁可改什么)  
+- **MODULE_MAP**：[§14 配置四层 · 角色包层](../../../handoff/MODULE_MAP_AND_HANDOFF.md#14-配置四层谁可改什么)
 - **目录 SSOT**：`distros/chat-pro/roles/{role_id}/`  
 - **Tier0 人设真源**：`core_personality.txt`（**非** `prompts/system.md`）  
 - **不进**：`process_message` · 蓝图 `slot_registry`
@@ -30,11 +30,11 @@
 
 ## 3. 阅读清单
 
-1. [ROLE_PACK_BOUNDARY](../../handoff/ROLE_PACK_BOUNDARY.md)  
-2. [ROLE_PACK_SPEC](../../creator-docs/role-pack/ROLE_PACK_SPEC.md)  
+1. [ROLE_PACK_BOUNDARY](../../../handoff/ROLE_PACK_BOUNDARY.md)
+2. [ROLE_PACK_SPEC](../../../creator-docs/role-pack/ROLE_PACK_SPEC.md)
 3. [01 简架构 §六槽 vs 角色包](../../01_ARCHITECTURE_SIMPLE.md)  
-4. [distros/chat-pro/roles/README_MANIFEST](../../distros/chat-pro/roles/README_MANIFEST.md)  
-5. [PACK_VERSIONING](../../creator-docs/role-pack/PACK_VERSIONING.md)
+4. [distros/chat-pro/roles/README_MANIFEST](../../../distros/chat-pro/roles/README_MANIFEST.md)
+5. [PACK_VERSIONING](../../../creator-docs/role-pack/PACK_VERSIONING.md)
 
 ---
 

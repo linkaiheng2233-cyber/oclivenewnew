@@ -102,6 +102,11 @@ runStep('doc registry ratchet', () => {
   sh('node', ['scripts/check-doc-registry.mjs']);
 });
 
+runStep('human module Markdown links', () => {
+  sh('node', ['scripts/check-markdown-links.mjs', '--self-test']);
+  sh('node', ['scripts/check-markdown-links.mjs']);
+});
+
 runStep('doc mirror ratchet', () => {
   sh('node', ['scripts/check-doc-mirror.mjs', '--self-test']);
   sh('node', ['scripts/check-doc-mirror.mjs', '--warn-drift-high-traffic']);

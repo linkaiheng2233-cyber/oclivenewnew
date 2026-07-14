@@ -3,15 +3,15 @@
 > **读者**：改事件检测、影响因子或 event 后端的工程师。  
 > **读完能做什么**：理解规则路径 vs LLM 路径，以及 `event_impact_llm` 开关（HostProfile，非六槽）。  
 > **耗时**：约 **45 min**  
-> **SSOT 范围**：人类 checklist；定义见 [MODULE_MAP §6](../../handoff/MODULE_MAP_AND_HANDOFF.md)  
-> **最后更新**：2026-06-26  
+> **SSOT 范围**：人类 checklist；定义见 [MODULE_MAP §6](../../../handoff/MODULE_MAP_AND_HANDOFF.md)
+> **最后更新**：2026-07-14
 > **下一篇**：[prompt](prompt.md) · [orchestration/turn-thinking](../orchestration/turn-thinking.md)
 
 ---
 
 ## 1. 你插在哪
 
-- **MODULE_MAP**：[§6 第 3 模块 · `event`](../../handoff/MODULE_MAP_AND_HANDOFF.md#6-第-3-模块--event)  
+- **MODULE_MAP**：[§6 第 3 模块 · `event`](../../../handoff/MODULE_MAP_AND_HANDOFF.md#6-第-3-模块--event)
 - **`plugin_backends` 键**：`event`  
 - **Trait**：`EventEstimator`  
 - **主链 hook**：`co_present` `EventEstimate` stage → `PersonalityEngine::evolve_by_event`
@@ -26,17 +26,17 @@
 | `remote` / `directory` backend | 在 Fast 轮强行走 LLM 路径（受 HostProfile 约束） |
 | `builtin` 双路径（规则 / LLM） | 角色任务改 `slot_registry`（G1） |
 
-**LLM 开关**：`HostProfile.event_impact_llm` — 见 [DISTRO_CAPABILITY_PROFILE](../../creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md)。
+**LLM 开关**：`HostProfile.event_impact_llm` — 见 [DISTRO_CAPABILITY_PROFILE](../../../creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md)。
 
 ---
 
 ## 3. 阅读清单
 
-1. [MODULE_MAP §6](../../handoff/MODULE_MAP_AND_HANDOFF.md#6-第-3-模块--event)  
-2. [MODULE_MAP §12 `event_impact_llm`](../../handoff/MODULE_MAP_AND_HANDOFF.md#12-编排行策略非模块号--易与六槽混淆)  
+1. [MODULE_MAP §6](../../../handoff/MODULE_MAP_AND_HANDOFF.md#6-第-3-模块--event)
+2. [MODULE_MAP §12 `event_impact_llm`](../../../handoff/MODULE_MAP_AND_HANDOFF.md#12-编排行策略非模块号--易与六槽混淆)
 3. `event_impact_ai.rs` · `EventDetector` 源码  
-4. [RFC_TURN_THINKING](../../creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md) — Fast 轮不调 LLM event 路径  
-5. [PLUGIN_V1](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md)
+4. [RFC_TURN_THINKING](../../../creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md) — Fast 轮不调 LLM event 路径
+5. [PLUGIN_V1](../../../creator-docs/plugin-and-architecture/PLUGIN_V1.md)
 
 ---
 

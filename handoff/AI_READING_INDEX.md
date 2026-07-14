@@ -129,7 +129,7 @@ Vue invoke / HTTP --api
 |------|-------------|
 | 日常门禁 | `npm run check` · `npm run check:rust`（**不含 doctest**） |
 | 发版门禁 | `npm run check:release`（**含 doctest**） |
-| Dimension 5 | **15** 项注册 / **14** 项 CI · `node scripts/dimension5-acceptance.mjs --ci` |
+| Dimension 5 | `node scripts/dimension5-acceptance.mjs --ci` · 检查项总数以脚本结尾 `PASS (N checks)` 为准 |
 | 分层 ratchet | `node scripts/check-domain-layering.mjs` |
 | 文档 registry | `node scripts/check-doc-registry.mjs` |
 | 路径/stale 别名 | `node scripts/check-stale-paths.mjs` |

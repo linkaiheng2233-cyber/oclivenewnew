@@ -3,9 +3,9 @@
 > **读者**：改聊天日志、会话列表、导出，或澄清「聊天 vs 记忆」的工程师。  
 > **读完能做什么**：在不动 memory 槽真源的前提下改 HybridConversationStore 边界。  
 > **耗时**：约 **45 min**  
-> **SSOT 范围**：人类 checklist；架构见 [CHAT_STORAGE_ARCHITECTURE](../../handoff/CHAT_STORAGE_ARCHITECTURE.md)  
-> **最后更新**：2026-06-26  
-> **下一篇**：[slots/memory](../slots/memory.md) · [MODULE_MAP §11](../../handoff/MODULE_MAP_AND_HANDOFF.md#11-独立通道能力增强注册表--非六槽)
+> **SSOT 范围**：人类 checklist；架构见 [CHAT_STORAGE_ARCHITECTURE](../../../handoff/CHAT_STORAGE_ARCHITECTURE.md)
+> **最后更新**：2026-07-14
+> **下一篇**：[slots/memory](../slots/memory.md) · [MODULE_MAP §11](../../../handoff/MODULE_MAP_AND_HANDOFF.md#11-独立通道能力增强注册表--非六槽)
 
 ---
 
@@ -13,8 +13,8 @@
 
 - **归类**：独立通道（**非**六槽 `memory`）  
 - **组件**：`HybridConversationStore` · `chat_sessions` / `chat_messages`  
-- **MODULE_MAP**：[§4 与聊天存储无关](../../handoff/MODULE_MAP_AND_HANDOFF.md#4-第-1-模块--memory)（memory 模块显式声明）  
-- **深读 SSOT**：[CHAT_STORAGE_ARCHITECTURE](../../handoff/CHAT_STORAGE_ARCHITECTURE.md)
+- **MODULE_MAP**：[§4 与聊天存储无关](../../../handoff/MODULE_MAP_AND_HANDOFF.md#4-第-1-模块--memory)（memory 模块显式声明）
+- **深读 SSOT**：[CHAT_STORAGE_ARCHITECTURE](../../../handoff/CHAT_STORAGE_ARCHITECTURE.md)
 
 ---
 
@@ -30,10 +30,10 @@
 
 ## 3. 阅读清单
 
-1. [CHAT_STORAGE_ARCHITECTURE](../../handoff/CHAT_STORAGE_ARCHITECTURE.md)  
+1. [CHAT_STORAGE_ARCHITECTURE](../../../handoff/CHAT_STORAGE_ARCHITECTURE.md)
 2. [01 简架构 §记忆三套](../../01_ARCHITECTURE_SIMPLE.md#记忆三套存储最易混--必背)  
-3. [MODULE_MAP §4](../../handoff/MODULE_MAP_AND_HANDOFF.md#4-第-1-模块--memory)  
-4. [BUS_FACTOR](../../handoff/BUS_FACTOR_NOTES.md) — 持久化锚点  
+3. [MODULE_MAP §4](../../../handoff/MODULE_MAP_AND_HANDOFF.md#4-第-1-模块--memory)
+4. [BUS_FACTOR](../../../handoff/BUS_FACTOR_NOTES.md) — 持久化锚点
 5. 迁移：`001_init.sql` — `chat_*` 表
 
 ---

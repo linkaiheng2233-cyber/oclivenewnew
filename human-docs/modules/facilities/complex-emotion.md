@@ -3,15 +3,15 @@
 > **读者**：改 `narrative_hint`、复杂情感叙事链路的工程师。  
 > **读完能做什么**：区分 **emotion 六槽** 与本设施，在 `complex_emotion.rs` 边界内改动。  
 > **耗时**：约 **40 min**  
-> **SSOT 范围**：人类 checklist；定义见 [MODULE_MAP §10 设施①](../../handoff/MODULE_MAP_AND_HANDOFF.md)  
-> **最后更新**：2026-06-26  
+> **SSOT 范围**：人类 checklist；定义见 [MODULE_MAP §10 设施①](../../../handoff/MODULE_MAP_AND_HANDOFF.md)
+> **最后更新**：2026-07-14
 > **下一篇**：[slots/emotion](../slots/emotion.md) · [prompt](../slots/prompt.md)
 
 ---
 
 ## 1. 你插在哪
 
-- **MODULE_MAP**：[§10 设施① 复杂情感](../../handoff/MODULE_MAP_AND_HANDOFF.md#10-第-n-设施子模块编排行内--非六键)  
+- **MODULE_MAP**：[§10 设施① 复杂情感](../../../handoff/MODULE_MAP_AND_HANDOFF.md#10-第-n-设施子模块编排行内--非六键)
 - **非六键**：**不**写入 `plugin_backends` 六键  
 - **代码锚点**：`complex_emotion.rs` · `turn_pipeline/pre.rs`  
 - **输出**：`PromptInput.previous_complex_emotion_narrative_hint`（下一轮消费）
@@ -30,11 +30,11 @@
 
 ## 3. 阅读清单
 
-1. [MODULE_MAP §10](../../handoff/MODULE_MAP_AND_HANDOFF.md#10-第-n-设施子模块编排行内--非六键)  
+1. [MODULE_MAP §10](../../../handoff/MODULE_MAP_AND_HANDOFF.md#10-第-n-设施子模块编排行内--非六键)
 2. [slots/emotion](../slots/emotion.md)  
 3. [slots/prompt](../slots/prompt.md)  
 4. `complex_emotion.rs` 源码  
-5. [AI_CHANGE_BOUNDARIES G1](../../handoff/AI_CHANGE_BOUNDARIES.md) — 新设施须 RFC
+5. [AI_CHANGE_BOUNDARIES G1](../../../handoff/AI_CHANGE_BOUNDARIES.md) — 新设施须 RFC
 
 ---
 
