@@ -1,12 +1,14 @@
 # Technical debt inventory
 
-**Last updated:** 2026-07-14（K-SUPPLY-05 leaf dedup · ratchet **92** · CI `29314455743` / HEAD `68befa20`）
+**Last updated:** 2026-07-14（K-LLM-01a Done · CI `29323544103` / HEAD `16781309`；父项 K-LLM-01 仍 OPEN）
 
 **Product freeze (Theater v0):** **Lifted** — 朋友 cohort 产品门通过（7/10 卧槽）；模式 2 playtest 扩展中；**模式 3 仍冻结**。见 [theater/MODE2_UNFREEZE.md](./theater/MODE2_UNFREEZE.md)。
 
 **综合评分：** A− · 本地 dimension5 **二十检** PASS（--ci）· workspace **doctest** 见 check:release · 审查数字 SSOT：[AI_VERIFICATION_PROTOCOL.md](./AI_VERIFICATION_PROTOCOL.md)
 
-**下一动作：** **P1** — 模式 2 playtest 扩展至陌生人 cohort；K-SUPPLY-05 仍 Partial（`deny` 未翻；剩 Tauri1 树）
+**下一动作：** **P1** — K-LLM-01b（第二本地后端）；模式 2 playtest 扩展至陌生人 cohort；K-SUPPLY-05 仍 Partial（`deny` 未翻；剩 Tauri1 树）
+
+**Verification (2026-07-14 · K-LLM-01a Done):** HEAD `16781309` · CI [`29323544103`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29323544103) **硬门禁 success**（`rust`/`dimension5`/`cargo-audit`/`cli`/`oocp`/`cross-host-e2e`）· env SSOT [REMOTE_PLUGIN_PROTOCOL.md §2.0](../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) · mock HTTP [`openai_compatible_llm_http_roundtrip.rs`](../distros/desktop-tauri/tests/openai_compatible_llm_http_roundtrip.rs) · 父 **K-LLM-01** 仍 OPEN（待 01b）。
 
 **Verification (2026-07-14 · K-SUPPLY-05 leaf dedup):** local ratchet **92**（dialoguer **0.12** · proptest **&lt;1.7**）· HEAD `68befa20` · CI run [`29314455743`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29314455743) **硬门禁 success**（`rust`/`dimension5`/`cargo-audit`/`cli`/`oocp`/`cross-host-e2e`）· `deny.toml` multiple-versions **仍 warn** → K-SUPPLY-05 **仍 Partial**（不升 Done）。
 
@@ -78,7 +80,7 @@
 | ID | 项 | 优先级 | 解决/完成条件 | 状态 |
 |----|-----|--------|----------------|------|
 | **K-PLATFORM-01** | Tauri v1 → v2 迁移 | **P1** | **契约**：权限/capability schema 对照 + **测试**：最小 smoke + **改动面**：desktop-tauri / 三 distro 分 PR | **OPEN** |
-| **K-LLM-01** | LLM 后端单一依赖 Ollama | **P1** | **契约**：`LlmBackend` env 矩阵 + **测试**：1 API + 1 本地 mock + **改动面**：adapter 接线 PR | **OPEN** |
+| **K-LLM-01** | LLM 后端单一依赖 Ollama | **P1** | **契约**：`LlmBackend` env 矩阵 + **测试**：1 API + 1 本地 mock + **改动面**：adapter 接线 PR | **OPEN**（01a 闭合 · 待 01b） |
 | **K-CROSS-01** | 跨平台系统策略缺失 | **P2** | 三平台语音 smoke + distro profile 差异声明 | **OPEN** |
 | **K-DIST-01** | 分发体验缺口 | **P2** | 签名/updater/Linux 包/macOS dmg | **OPEN** |
 | **D-I18N-02** | creator-docs-en 镜像滞后 | **P2** | **契约**：`check-doc-mirror` 扩展 + **测试**：mirror ratchet 样例 + **改动面**：creator-docs-en 补链 PR | **Done**（2026-07-14 · HEAD `0be7f2df` · CI [`29278403237`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29278403237) dim5 success · HIGH_TRAFFIC×8 + `--self-test`） |
@@ -94,10 +96,10 @@
 
 **K-LLM-01 子项**
 
-| 子 ID | 契约 | 测试 | 改动面 |
-|-------|------|------|--------|
-| K-LLM-01a | OpenAI-compatible API env SSOT | mock HTTP 集成测 | `openai_compatible_llm.rs` |
-| K-LLM-01b | 第二本地后端选型 | 可选 feature gate 测 | 新 adapter 模块 |
+| 子 ID | 契约 | 测试 | 改动面 | 状态 |
+|-------|------|------|--------|------|
+| K-LLM-01a | OpenAI-compatible API env SSOT（[REMOTE_PLUGIN_PROTOCOL §2.0](../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)） | [`openai_compatible_llm_http_roundtrip.rs`](../distros/desktop-tauri/tests/openai_compatible_llm_http_roundtrip.rs) | `openai_compatible_llm.rs`（本波未改生产码） | **Done**（2026-07-14 · HEAD `16781309` · CI [`29323544103`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29323544103)） |
+| K-LLM-01b | 第二本地后端选型 | 可选 feature gate 测 | 新 adapter 模块 | **OPEN** |
 
 **系统性债务（2026-07-12 审查增补）**
 
