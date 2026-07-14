@@ -153,6 +153,26 @@ runStep('frontend verify:ui anchors', () => {
   sh('node', ['scripts/verify-frontend-patches.mjs']);
 });
 
+runStep('tauri major 2 + docs narrative (K-PLATFORM-01c)', () => {
+  const cargoToml = fs.readFileSync(
+    path.join(repoRoot, 'distros', 'desktop-tauri', 'Cargo.toml'),
+    'utf8',
+  );
+  if (!/^\s*tauri\s*=\s*\{[^}]*version\s*=\s*"2"/m.test(cargoToml)) {
+    throw new Error('distros/desktop-tauri/Cargo.toml must declare tauri version "2"');
+  }
+  const narrativePaths = [
+    path.join(repoRoot, 'CONTRIBUTING.md'),
+    path.join(repoRoot, 'human-docs', '10_SETUP_WINDOWS.md'),
+  ];
+  for (const p of narrativePaths) {
+    const text = fs.readFileSync(p, 'utf8');
+    if (/webkit2gtk-4\.0/.test(text)) {
+      throw new Error(`${path.relative(repoRoot, p)} must not require webkit2gtk-4.0 (use 4.1 / Tauri 2)`);
+    }
+  }
+});
+
 runStep('tauri beforeBuildCommand path ratchet', () => {
   const confPath = path.join(repoRoot, 'distros', 'desktop-tauri', 'tauri.conf.json');
   const conf = fs.readFileSync(confPath, 'utf8');
