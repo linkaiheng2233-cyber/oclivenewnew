@@ -64,7 +64,11 @@ fn serve_ocliveplugin_asset(
     request: &Request<Vec<u8>>,
 ) -> Response<Cow<'static, [u8]>> {
     let Some(state) = app.try_state::<state::SharedAppState>() else {
-        return http_text(503, b"app state not ready".to_vec(), "text/plain; charset=utf-8");
+        return http_text(
+            503,
+            b"app state not ready".to_vec(),
+            "text/plain; charset=utf-8",
+        );
     };
     let uri = request.uri().to_string();
     let Some((plugin_id, rel)) = plugin_asset_from_request_uri(&uri) else {
@@ -75,7 +79,11 @@ fn serve_ocliveplugin_asset(
         .plugin_state_snapshot()
         .is_plugin_disabled(plugin_id.trim())
     {
-        return http_text(403, b"plugin disabled".to_vec(), "text/plain; charset=utf-8");
+        return http_text(
+            403,
+            b"plugin disabled".to_vec(),
+            "text/plain; charset=utf-8",
+        );
     }
     let roots = state.directory_plugins.plugin_roots.read();
     let Some(entry) = roots.get(&plugin_id) else {
