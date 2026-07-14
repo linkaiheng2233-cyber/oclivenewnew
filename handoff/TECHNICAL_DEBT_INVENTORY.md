@@ -8,7 +8,7 @@
 
 **下一动作：** **P1** — K-PLATFORM-01 **01c**（workflow/dimension5 切 v2 口径）；模式 2 playtest 扩展至陌生人 cohort；K-SUPPLY-05 仍 Partial（`deny` 未翻；baseline 已随 Tauri2 降至 **80**）
 
-**Verification (2026-07-15 · K-PLATFORM-01b):** 本地 `build:e2e` + `playwright` [`send-message.spec.ts`](../distros/chat-pro/e2e/send-message.spec.ts) **2 passed** · inventory §6 Frontend IPC · 生产 `distros/**/*.{ts,vue}` **零** `@tauri-apps/api/{tauri,dialog,shell,window,fs}` · `split-tauri-api.mjs` 模板 → `core` · **01b Done** · 父 **OPEN** · 下一动作 **01c** · 远程 CI 见下条 push 后回填。
+**Verification (2026-07-15 · K-PLATFORM-01b → main):** 已合 `origin/main` · HEAD `bd99175b` · CI [`29354276811`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29354276811) **硬门禁 success**（`rust`/`dimension5`/`cargo-audit`/`cli`/`oocp`/`cross-host-e2e`/`stale-paths`；`frontend`/`e2e-tauri`/`loom` success）· inventory §6 Frontend IPC · 生产残留 **0** · preview `send-message` 经 `frontend` job · **01b Done** · 父 **OPEN** · 下一动作 **01c**。
 
 **Verification (2026-07-15 · K-PLATFORM-01a Full → main):** 已合 `origin/main` · HEAD `751a8319` · CI [`29349270841`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29349270841) **硬门禁 success**（`rust`/`dimension5`/`cargo-audit`/`cli`/`oocp`/`cross-host-e2e`/`stale-paths`；`e2e-tauri`/`frontend`/`loom` success）· `LAYERING_BASELINE.json` `cargo_duplicate_groups` **92→80**（`cargo tree -d` 实测；Tauri2 副产品）· **01a Done** · 父 **OPEN** · 下一动作 **01b** · K-SUPPLY-05 **仍 Partial**。
 
@@ -76,7 +76,7 @@
 | **K-VOICE-01** | CosyVoice2 `stream=True` 在 Windows 死锁（侧车多进程 worker）→ 默认非流式合成，牺牲首字流式增益（整句 ~3s 出声） | P2 | 上游修复 or `num_workers=0`/spawn 规避经 `OCLIVE_COSYVOICE_STREAM=1` 实测不卡后解冻 | **Deferred**（默认非流式已上线 · 排查见 [`TRACK_VOICE_RECOGNITION.md`](../human-docs/team/TRACK_VOICE_RECOGNITION.md) §10） |
 | **K-VOICE-02** | Tier-2 TTS（ChatTTS · XTTS · Bark · VITS · 国内云 API · Piper 产品化） | P3 | VX-9 generic pack 模板或社区 adapter | **OPEN** |
 | **K-VOICE-03** | Linux/macOS CosyVoice2 产品 profile | P2 | 随上游 CosyVoice 跨平台稳定后解冻 `asr_profiles.json` platforms | **OPEN** |
-| **K-VOICE-04** | 角色包 `preferred_tts_profile` 可选字段 | P3 | ROLE_PACK_SPEC §10 已增补字段 · 设置页默认联动待实现 | **Done**（`voice.read_role_profile` + `useRoleVoiceProfileSync` · 2026-07-10） |
+| **K-VOICE-04** | 角色包可选 TTS 覆盖与全局配置冲突 | P3 | 全局 profile 必须服务所有角色；角色 `synth_profile` 只覆盖播报任务，不得在切换角色时改写设置 | **Done**（任务级 profile/engine/provider/endpoint 路由 + 按 profile 隔离预热 · 2026-07-15） |
 | **K-VOICE-05** | Qwen3-TTS 官方 REST 契约稳定化（社区 server 方言多） | P2 | 随上游收敛后收紧 adapter；Fish 默认端口已改 **9881** 避免与 Qwen **8080** 冲突 | **Observe** |
 | **K-VOICE-06** | 社区 directory 插件 `com.user.tts.*`（自带 sidecar/RPC） | P2 | VX-10 · `plugin_rpc_invoke` 白名单 | **OPEN** |
 | **K-VOICE-07** | `voice_directive` v2 + `engine_extras` 透传 bag | P2 | RFC §4.1 小节后实现 | **OPEN** |
@@ -101,7 +101,7 @@
 | 子 ID | 契约 | 测试 | 改动面 | 状态 |
 |-------|------|------|--------|------|
 | K-PLATFORM-01a | Tauri v2 permission / ACL + bump | 单命令 invoke smoke | `tauri.conf.json` + `capabilities/` + Cargo | **Done**（2026-07-15 **已合 main** · 分支 HEAD `3c08cb5e` · CI [`29344170555`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29344170555) · inventory Full · smoke `tauri_invoke_smoke` · npm 最小齐步 ≠ 01b） |
-| K-PLATFORM-01b | `@tauri-apps/api` v2 迁移表 | chat-pro preview 发消息 E2E（`frontend` job） | `distros/shared` IPC · inventory §6 | **Done**（2026-07-15 · §6 Frontend IPC · 生产残留 0 · `send-message.spec.ts` 2 passed · 远程 CI 见顶部 Verification） |
+| K-PLATFORM-01b | `@tauri-apps/api` v2 迁移表 | chat-pro preview 发消息 E2E（`frontend` job） | `distros/shared` IPC · inventory §6 | **Done**（2026-07-15 · HEAD `bd99175b` · CI [`29354276811`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29354276811) · §6 · 生产残留 0 · `send-message` via `frontend`） |
 | K-PLATFORM-01c | CI 镜像 + dimension5 口径 | workflow 绿 | `.github/workflows` | **OPEN**（未动；寸步切 v2 门禁叙事） |
 
 **K-LLM-01 子项**
