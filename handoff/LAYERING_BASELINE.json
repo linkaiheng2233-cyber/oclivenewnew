@@ -2,8 +2,8 @@
   "description": "Max allowed domain→infrastructure coupling under crates/oclive_kernel_host/src/domain/**/*.rs (ratchet down only).",
   "domain_to_infrastructure_imports": 3,
   "domain_to_infrastructure_fq_refs": 1,
-  "cargo_duplicate_groups": 92,
-  "updated": "2026-07-14",
-  "note": "K-SUPPLY-05 leaf dedup: dialoguer 0.12 (drop windows-sys 0.59); proptest <1.7 (drop rand 0.9/getrandom 0.3); −5 vs 97.",
+  "cargo_duplicate_groups": 80,
+  "updated": "2026-07-15",
+  "note": "K-PLATFORM-01a Full Tauri 2 merge side-effect: cargo tree -d 80 (−12 vs 92). K-SUPPLY-05 still Partial (deny.toml multiple-versions not flipped).",
   "check_command": "node scripts/check-domain-layering.mjs"
 }

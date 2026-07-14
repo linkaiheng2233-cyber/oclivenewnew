@@ -1,14 +1,16 @@
 # Technical debt inventory
 
-**Last updated:** 2026-07-14（K-PLATFORM-01a **Full** · 本地门禁绿；父 K-PLATFORM-01 仍 OPEN）
+**Last updated:** 2026-07-15（K-PLATFORM-01a **Full 已合 main** · ratchet **80**；父 K-PLATFORM-01 仍 OPEN · 下一动作 **01b**）
 
 **Product freeze (Theater v0):** **Lifted** — 朋友 cohort 产品门通过（7/10 卧槽）；模式 2 playtest 扩展中；**模式 3 仍冻结**。见 [theater/MODE2_UNFREEZE.md](./theater/MODE2_UNFREEZE.md)。
 
 **综合评分：** A− · 本地 dimension5 **二十一检** PASS（--ci）· workspace **doctest** 见 check:release · 审查数字 SSOT：[AI_VERIFICATION_PROTOCOL.md](./AI_VERIFICATION_PROTOCOL.md)
 
-**下一动作：** **P1** — K-PLATFORM-01 **01b**（`@tauri-apps/api` 迁移表 + chat-pro 发消息 E2E）→ **01c**（workflow/dimension5 口径）；模式 2 playtest 扩展至陌生人 cohort；K-SUPPLY-05 仍 Partial（`deny` 未翻）
+**下一动作：** **P1** — K-PLATFORM-01 **01b**（`@tauri-apps/api` 迁移表 + chat-pro 发消息 E2E）→ **01c**（workflow/dimension5 口径）；模式 2 playtest 扩展至陌生人 cohort；K-SUPPLY-05 仍 Partial（`deny` 未翻；baseline 已随 Tauri2 降至 **80**）
 
-**Verification (2026-07-14 · K-PLATFORM-01a Full):** HEAD `3c08cb5e` · CI [`29344170555`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29344170555) **硬门禁 success**（`rust`/`dimension5`/`cargo-audit`/`cli`/`oocp`/`cross-host-e2e`/`stale-paths`；`e2e-tauri`/`frontend`/`loom` success）· inventory [`distros/TAURI_V2_MIGRATION_INVENTORY.md`](./distros/TAURI_V2_MIGRATION_INVENTORY.md) Full · **npm 最小齐步 ≠ 01b** · 父 **K-PLATFORM-01 仍 OPEN**。
+**Verification (2026-07-15 · K-PLATFORM-01a Full → main):** 已合 `origin/main` · HEAD _pending push_ · origin/main CI _pending_ · `LAYERING_BASELINE.json` `cargo_duplicate_groups` **92→80**（`cargo tree -d` 实测；Tauri2 副产品）· **01a Done** · 父 **OPEN** · 下一动作 **01b** · K-SUPPLY-05 **仍 Partial**。
+
+**Verification (2026-07-14 · K-PLATFORM-01a Full):** HEAD `3c08cb5e` · CI [`29344170555`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29344170555) **硬门禁 success**（`rust`/`dimension5`/`cargo-audit`/`cli`/`oocp`/`cross-host-e2e`/`stale-paths`；`e2e-tauri`/`frontend`/`loom` success）· inventory [`distros/TAURI_V2_MIGRATION_INVENTORY.md`](./distros/TAURI_V2_MIGRATION_INVENTORY.md) Full · **npm 最小齐步 ≠ 01b** · 父 **K-PLATFORM-01 仍 OPEN**（已由上条覆盖「合入 main」）。
 
 **Verification (2026-07-14 · K-PLATFORM-01a Partial):** HEAD `031fc0e6` · CI [`29334069010`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29334069010) **硬门禁 success**（`rust`/`dimension5`/`cargo-audit`/`cli`/`oocp`/`cross-host-e2e`/`stale-paths`；`e2e-tauri` success）· inventory Partial · **零** Tauri bump（已被 Full 取代）。
 
@@ -43,7 +45,7 @@
 | **K-SUPPLY-02** | Release 预编译内核 **SHA256SUMS**（防换包） | P1 | workflow + `bundle-kernel-for-tauri.mjs` 钩子已入库；tag `oclivenewnew-v*` 触发 CI artifact | **Done**（轮次 22） |
 | **K-SUPPLY-03** | 插件安装后「请审本地源码」固定提示 | P2 | 市场/git/zip + CLI | **Done**（轮次 19） |
 | **K-SUPPLY-04** | 前端 `npm-audit` 仅可见性（`continue-on-error`） | P2 | 连续 2 周期高危命中 → 升格硬门禁或文档豁免 | **Observe**（2026-07-12：`defu` override **6.1.5** 清零高危；`npm audit --omit=dev` **0 高危 / 4 中危 / 1 低危** — `vue3-sfc-loader` 链待专项） |
-| **K-SUPPLY-05** | `deny.toml` `multiple-versions = warn` | P2 | 依赖树去重后改 `deny` | **Partial**（2026-07-14 · ratchet **92** · CI [`29314455743`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29314455743) 硬门禁绿 · `deny` 仍 warn） |
+| **K-SUPPLY-05** | `deny.toml` `multiple-versions = warn` | P2 | 依赖树去重后改 `deny` | **Partial**（2026-07-15 · ratchet **80**（Tauri2 副产品）· `deny` 仍 warn；不升 Done） |
 | **CI-E2E-TAURI-01** | e2e-tauri WebDriver smoke（sidebar/title） | P2 | 远程 `e2e-tauri` 过；勿弱化断言 | **Done**（2026-07-14 · CI [`29311703046`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29311703046) / HEAD `8988f49d` · session+title+sidebar 全绿；仍 soft gate） |
 | **K-CHATPRO-01** | Chat Pro 流式取消 UX | P2 | `AbortController` 打断上一轮 + 清理 `streaming` 气泡；设置可关流式 | **Done**（Chat Pro 正式启用 · 2026-06-26） |
 | **D-ORDER-01** | monorepo `roles` 路径 SSOT（27 集成测 + oclive-cli `join("roles")`） | P0 | `chat_pro_roles_dir()` / `tests/common` / `resolve_project_roles_dir()` | **Done**（条理优化 Wave A · 2026-06-24） |
@@ -96,7 +98,7 @@
 
 | 子 ID | 契约 | 测试 | 改动面 | 状态 |
 |-------|------|------|--------|------|
-| K-PLATFORM-01a | Tauri v2 permission / ACL + bump | 单命令 invoke smoke | `tauri.conf.json` + `capabilities/` + Cargo | **Done**（2026-07-14 · Full · HEAD `3c08cb5e` · CI [`29344170555`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29344170555) · inventory [`distros/TAURI_V2_MIGRATION_INVENTORY.md`](./distros/TAURI_V2_MIGRATION_INVENTORY.md) · smoke `tauri_invoke_smoke` · npm 最小齐步 ≠ 01b） |
+| K-PLATFORM-01a | Tauri v2 permission / ACL + bump | 单命令 invoke smoke | `tauri.conf.json` + `capabilities/` + Cargo | **Done**（2026-07-15 **已合 main** · 分支 HEAD `3c08cb5e` · CI [`29344170555`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29344170555) · inventory Full · smoke `tauri_invoke_smoke` · npm 最小齐步 ≠ 01b） |
 | K-PLATFORM-01b | `@tauri-apps/api` v2 迁移表 | chat-pro 发消息 E2E | `distros/shared` IPC | **OPEN**（未做 E2E 收口；npm 最小齐步已随 01a） |
 | K-PLATFORM-01c | CI 镜像 + dimension5 口径 | workflow 绿 | `.github/workflows` | **OPEN**（未动；寸步切 v2 门禁叙事） |
 
@@ -145,7 +147,7 @@
 | **K-SUPPLY-02** | Release SHA256SUMS | P1 | **Done** — `generate-sha256sums.mjs` · `release-kernel-checksums.yml` · `bundle-kernel-for-tauri.mjs` |
 | **K-SUPPLY-03** | 插件安装审源码提示 | P2 | **Done**（轮次 19） |
 | **K-SUPPLY-04** | npm-audit 升格策略 | P2 | **Observe** — `defu` override 6.1.5 清零高危（2026-07-12）；`vue3-sfc-loader`/postcss 链 **0 高危 / 4 中危 / 1 低危** 待专项；下复核 **2026-08** |
-| **K-SUPPLY-05** | deny 重复依赖 warn→deny | P2 | **Partial** — ratchet **92**（2026-07-14 leaf）· CI `29314455743` hard gates green · `deny.toml` 仍 warn |
+| **K-SUPPLY-05** | deny 重复依赖 warn→deny | P2 | **Partial** — ratchet **80**（2026-07-15 · Tauri2 合入副产品；≠ Done）· `deny.toml` 仍 warn |
 | **K-SUPPLY-06** | 位级可重复构建（reproducible） | — | **Deferred** · 见 SECURITY_AUDIT_SCOPE 局限 |
 | **K-SUPPLY-07** | SBOM（CycloneDX/SPDX） | — | **Deferred** · 政企/校企采购需求触发 |
 | **MEGA-SD-01** | `scene_director.rs` 巨无霸拆分 | 见 §2 解冻条件；零语义变更 PR |
