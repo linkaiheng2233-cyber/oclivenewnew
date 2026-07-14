@@ -1,13 +1,21 @@
 //! OpenAI-compatible LLM client E2E against mock `POST /v1/chat/completions`.
+//!
+//! Covers direct `OpenAiCompatibleLlm::from_env` (K-LLM-01a) and the
+//! `BackendRegistry` → `llm_remote_backend` Remote path (K-LLM-01b).
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use axum::{extract::Json, http::HeaderMap, routing::post, Router};
 use oclive_kernel_host::domain::ports::LlmClient;
+use oclive_kernel_host::infrastructure::backend_registry::BackendRegistry;
 use oclive_kernel_host::infrastructure::high_risk_grants::HighRiskGrantStore;
 use oclive_kernel_host::infrastructure::openai_compatible_llm::OpenAiCompatibleLlm;
+use oclive_kernel_host::infrastructure::remote_fallback_policy::new_remote_fallback_switch;
+use oclive_kernel_host::infrastructure::MockLlmClient;
+use oclive_kernel_types::models::plugin_backends::LlmBackend;
 use oclive_validation::NETWORK_GRANT_REMOTE_LLM;
 use serde_json::{json, Value};
+use std::sync::Arc;
 use tempfile::tempdir;
 
 async fn mock_chat_completions(headers: HeaderMap, Json(body): Json<Value>) -> Json<Value> {
@@ -66,6 +74,60 @@ async fn openai_compatible_llm_generate_via_chat_completions() {
         client.endpoint().ends_with("/v1/chat/completions"),
         "endpoint should normalize to chat/completions, got {}",
         client.endpoint()
+    );
+
+    let reply = client.generate("test-model", "hello prompt").await.unwrap();
+    assert_eq!(reply, "openai-compat-ok");
+    let tag = client
+        .generate_tag("test-model", "tag prompt")
+        .await
+        .unwrap();
+    assert_eq!(tag, "neutral");
+
+    std::env::remove_var("OCLIVE_REMOTE_LLM_URL");
+    std::env::remove_var("OCLIVE_REMOTE_LLM_TOKEN");
+    std::env::remove_var("OCLIVE_REMOTE_LLM_TIMEOUT_MS");
+    server.abort();
+}
+
+/// Registry wiring: fresh [`BackendRegistry`] `llm_for(Remote)` → `llm_remote_backend`
+/// (OpenAI-compat when `OCLIVE_LLM_CLOUD_API_STYLE` is not `oclive_jsonrpc`).
+#[tokio::test(flavor = "multi_thread")]
+async fn openai_compatible_llm_via_registry_remote() {
+    let app = Router::new().route("/v1/chat/completions", post(mock_chat_completions));
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    let server = tokio::spawn(async move {
+        axum::serve(listener, app).await.unwrap();
+    });
+
+    // Isolate process env for this slice (fresh registry avoids OnceLock contamination).
+    std::env::set_var("OCLIVE_REMOTE_LLM_URL", format!("http://{addr}"));
+    std::env::set_var("OCLIVE_REMOTE_LLM_TOKEN", "openai-compat-test-token");
+    std::env::set_var("OCLIVE_REMOTE_LLM_TIMEOUT_MS", "5000");
+    std::env::remove_var("OCLIVE_LLM_CLOUD_API_STYLE");
+    std::env::remove_var("OPENAI_API_BASE");
+    std::env::remove_var("OPENAI_BASE_URL");
+    std::env::remove_var("OPENAI_API_KEY");
+
+    let dir = tempdir().unwrap();
+    let grants = HighRiskGrantStore::load(dir.path().to_path_buf(), true);
+    grants.grant_network(NETWORK_GRANT_REMOTE_LLM).unwrap();
+
+    let default_llm: Arc<dyn LlmClient> = Arc::new(MockLlmClient {
+        reply: "registry-fallback-should-not-win".into(),
+    });
+    let registry = BackendRegistry::from_runtime(
+        default_llm.clone(),
+        None,
+        dir.path().to_path_buf(),
+        grants,
+        new_remote_fallback_switch(true),
+    );
+    let client = registry.llm_for(LlmBackend::Remote);
+    assert!(
+        !Arc::ptr_eq(&client, &default_llm),
+        "Remote path must not return the Ollama/default client when OpenAI-compat URL is set"
     );
 
     let reply = client.generate("test-model", "hello prompt").await.unwrap();

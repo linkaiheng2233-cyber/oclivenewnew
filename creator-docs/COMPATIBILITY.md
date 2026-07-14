@@ -74,7 +74,7 @@
 
 ## Remote LLM env（指针）
 
-Remote LLM 的 **`OCLIVE_LLM_BACKEND` / `OCLIVE_REMOTE_LLM_*` / `OCLIVE_LLM_CLOUD_API_STYLE` / OpenAI 别名** 与 JSON-RPC vs OpenAI-compatible 分叉，以 **[REMOTE_PLUGIN_PROTOCOL.md](plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) §2.0** 为 SSOT；本文不另维护 env 长表。
+Remote LLM 的 **`OCLIVE_LLM_BACKEND` / `OCLIVE_REMOTE_LLM_*` / `OCLIVE_LLM_CLOUD_API_STYLE` / OpenAI 别名**、JSON-RPC vs OpenAI-compatible 分叉，以及**本机第二本地选型**，以 **[REMOTE_PLUGIN_PROTOCOL.md](plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) §2.0** 为 SSOT；本文不另维护 env 长表。
 
 ## 相关文档
 

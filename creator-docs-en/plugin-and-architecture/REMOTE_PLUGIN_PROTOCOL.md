@@ -6,8 +6,8 @@
 
 ### Test coverage & LLM env matrix
 
-- **JSON-RPC / OpenAI-compatible Remote LLM tests** and the full **`OCLIVE_LLM_*` / `OCLIVE_REMOTE_LLM_*` / OpenAI alias** matrix (JSON-RPC vs `OpenAiCompatibleLlm` fork): authoritative Chinese SSOT → [REMOTE_PLUGIN_PROTOCOL.md §2.0](../../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) (do not duplicate the long table here).
-- Integration test: [`openai_compatible_llm_http_roundtrip.rs`](../../distros/desktop-tauri/tests/openai_compatible_llm_http_roundtrip.rs).
+- **JSON-RPC / OpenAI-compatible Remote LLM tests**, the full **`OCLIVE_LLM_*` / `OCLIVE_REMOTE_LLM_*` / OpenAI alias** matrix, and **second-local (localhost OpenAI-compat ∥ directory/llamacpp) selection**: authoritative Chinese SSOT → [REMOTE_PLUGIN_PROTOCOL.md §2.0](../../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) (do not duplicate tables here).
+- Integration tests: [`openai_compatible_llm_http_roundtrip.rs`](../../distros/desktop-tauri/tests/openai_compatible_llm_http_roundtrip.rs) (`from_env` + `BackendRegistry::llm_for(Remote)`).
 
 ---
 

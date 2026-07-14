@@ -9,6 +9,7 @@
 | `RemoteLlmHttp` JSON-RPC 客户端 | **Done** | [`remote_llm_jsonrpc_roundtrip.rs`](../../distros/desktop-tauri/tests/remote_llm_jsonrpc_roundtrip.rs) |
 | `plugin_backends.llm = remote` 经 `process_message` | **Done** | [`remote_llm_process_message_roundtrip.rs`](../../distros/desktop-tauri/tests/remote_llm_process_message_roundtrip.rs) |
 | OpenAI-compatible（`OpenAiCompatibleLlm`） | **Done** | [`openai_compatible_llm_http_roundtrip.rs`](../../distros/desktop-tauri/tests/openai_compatible_llm_http_roundtrip.rs) · mock `POST …/v1/chat/completions` |
+| OpenAI-compatible 经 `BackendRegistry` Remote | **Done** | 同文件 `openai_compatible_llm_via_registry_remote` · `llm_for(Remote)` → `llm_remote_backend` |
 
 ---
 
@@ -118,6 +119,18 @@ OCLIVE_LLM_BACKEND=remote（或包内 llm=remote）
 ```
 
 两路径均需高危网络授权 **`NETWORK_GRANT_REMOTE_LLM`**。未配置 URL 时即使包写 `remote`，宿主走占位/内置回退（可能警告日志）。
+
+#### 本机 OpenAI 兼容「第二本地」（选型 SSOT）
+
+第一本地仍为 **`LlmBackend::Ollama`**。官方**第二本地**不新增枚举，走既有 Remote / Directory 路径：
+
+| 角色 | 路径 |
+|------|------|
+| **官方第二本地** | `OCLIVE_LLM_BACKEND=remote`（或包内 `llm=remote`）+ `OCLIVE_REMOTE_LLM_URL=http://127.0.0.1:…`（LM Studio / `llama-server` OpenAI 模式 / LocalAI 等）；默认 OpenAI-compat wire（勿设 `OCLIVE_LLM_CLOUD_API_STYLE=oclive_jsonrpc`）；需 **`NETWORK_GRANT_REMOTE_LLM`** |
+| **进阶本机** | `llm=directory` + [`examples/directory-plugin-llamacpp`](../../examples/directory-plugin-llamacpp/README.md)（见 [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)） |
+| **明确不做** | `LlmBackend::LmStudio` / `LlamaCpp`；设置页「local」强制 Ollama 的产品语义改造属 follow-up（非本契约） |
+
+包级 `plugin_backends` / 加载覆盖见 [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md) §`plugin_backends`；版本相容指针见 [COMPATIBILITY.md](../COMPATIBILITY.md)（勿复制本表）。
 
 ### 2.1 插件侧车与 Remote LLM URL（摘要）
 
