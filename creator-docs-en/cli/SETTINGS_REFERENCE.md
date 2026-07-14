@@ -71,7 +71,7 @@ Full table and JSON-RPC method names are in **[PLUGIN_V1.md](../plugin-and-archi
 | emotion | `builtin` / `remote` / `directory` (`builtin_v2` read alias) | same |
 | event | `builtin` / `remote` / `directory` (`builtin_v2` read alias) | same |
 | prompt | `builtin` / `remote` / `directory` (`builtin_v2` read alias) | same |
-| llm | **`ollama`** / `remote` / `directory` | **`remote`**: `OCLIVE_REMOTE_LLM_URL`; **`OCLIVE_LLM_BACKEND`** may override at load |
+| llm | **`ollama`** / `remote` / `directory` | **`remote`**: `OCLIVE_REMOTE_LLM_URL`; **`OCLIVE_LLM_BACKEND`** may override at load; JSON‑RPC vs OpenAI‑compat fork → [REMOTE_PLUGIN_PROTOCOL.md §2.0](../../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) |
 | agent | `builtin` / `remote` / `directory` | `remote`: sidecar JSON-RPC; `directory`: configure `directory_plugins.agent` |
 
 **Strings not in the v1 enum** (e.g. literal `none`) cause **role pack parse failure**. If scaffolds or docs say “none”, that means **logically off / undeclared**; for host-loadable JSON **omit the key** (fall back to default) or use a legal enum value.

@@ -1,0 +1,86 @@
+//! OpenAI-compatible LLM client E2E against mock `POST /v1/chat/completions`.
+
+#![allow(clippy::unwrap_used, clippy::expect_used)]
+
+use axum::{extract::Json, http::HeaderMap, routing::post, Router};
+use oclive_kernel_host::domain::ports::LlmClient;
+use oclive_kernel_host::infrastructure::high_risk_grants::HighRiskGrantStore;
+use oclive_kernel_host::infrastructure::openai_compatible_llm::OpenAiCompatibleLlm;
+use oclive_validation::NETWORK_GRANT_REMOTE_LLM;
+use serde_json::{json, Value};
+use tempfile::tempdir;
+
+async fn mock_chat_completions(headers: HeaderMap, Json(body): Json<Value>) -> Json<Value> {
+    let auth = headers
+        .get(axum::http::header::AUTHORIZATION)
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("");
+    assert!(
+        auth == "Bearer openai-compat-test-token",
+        "expected Bearer token, got {auth:?}"
+    );
+    let prompt = body
+        .pointer("/messages/0/content")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+    let content = if prompt.contains("tag") {
+        "neutral"
+    } else {
+        "openai-compat-ok"
+    };
+    Json(json!({
+        "id": "chatcmpl-test",
+        "object": "chat.completion",
+        "choices": [{
+            "index": 0,
+            "message": { "role": "assistant", "content": content },
+            "finish_reason": "stop"
+        }]
+    }))
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn openai_compatible_llm_generate_via_chat_completions() {
+    let app = Router::new().route("/v1/chat/completions", post(mock_chat_completions));
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    let server = tokio::spawn(async move {
+        axum::serve(listener, app).await.unwrap();
+    });
+
+    // Isolate from parallel tests: prefer OCLIVE_* keys; clear OpenAI aliases for this process slice.
+    std::env::set_var(
+        "OCLIVE_REMOTE_LLM_URL",
+        format!("http://{addr}"),
+    );
+    std::env::set_var("OCLIVE_REMOTE_LLM_TOKEN", "openai-compat-test-token");
+    std::env::set_var("OCLIVE_REMOTE_LLM_TIMEOUT_MS", "5000");
+    std::env::remove_var("OPENAI_API_BASE");
+    std::env::remove_var("OPENAI_BASE_URL");
+    std::env::remove_var("OPENAI_API_KEY");
+
+    let dir = tempdir().unwrap();
+    let grants = HighRiskGrantStore::load(dir.path().to_path_buf(), true);
+    grants.grant_network(NETWORK_GRANT_REMOTE_LLM).unwrap();
+
+    let client = OpenAiCompatibleLlm::from_env(reqwest::Client::new(), grants)
+        .expect("OpenAiCompatibleLlm::from_env with mock URL");
+    assert!(
+        client.endpoint().ends_with("/v1/chat/completions"),
+        "endpoint should normalize to chat/completions, got {}",
+        client.endpoint()
+    );
+
+    let reply = client.generate("test-model", "hello prompt").await.unwrap();
+    assert_eq!(reply, "openai-compat-ok");
+    let tag = client
+        .generate_tag("test-model", "tag prompt")
+        .await
+        .unwrap();
+    assert_eq!(tag, "neutral");
+
+    std::env::remove_var("OCLIVE_REMOTE_LLM_URL");
+    std::env::remove_var("OCLIVE_REMOTE_LLM_TOKEN");
+    std::env::remove_var("OCLIVE_REMOTE_LLM_TIMEOUT_MS");
+    server.abort();
+}

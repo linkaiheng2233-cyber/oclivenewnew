@@ -16,7 +16,7 @@
 |------|------|------|
 | JSON-RPC 客户端（`RemoteLlmHttp`） | **已覆盖** | [`remote_llm_jsonrpc_roundtrip.rs`](../../distros/desktop-tauri/tests/remote_llm_jsonrpc_roundtrip.rs) |
 | 完整 `process_message`（`plugin_backends.llm = remote`） | **已覆盖** | [`remote_llm_process_message_roundtrip.rs`](../../distros/desktop-tauri/tests/remote_llm_process_message_roundtrip.rs) |
-| OpenAI-compatible 路径（`OCLIVE_LLM_CLOUD_API_STYLE`） | **未覆盖** | 见 [REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) §测试覆盖 |
+| OpenAI-compatible 路径（`OpenAiCompatibleLlm`） | **已覆盖** | [`openai_compatible_llm_http_roundtrip.rs`](../../distros/desktop-tauri/tests/openai_compatible_llm_http_roundtrip.rs)；env 分叉 SSOT 见 [REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) §2.0 |
 
 ## 组件与插件壳（编写器 `oclive-pack-editor`）
 

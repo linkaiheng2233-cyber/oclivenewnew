@@ -2,13 +2,13 @@
 
 **实现状态**：宿主在 `kernel/crates/oclive_kernel_host/src/infrastructure/remote_plugin/` 中实现 **HTTP POST + JSON-RPC 2.0** 客户端。角色包将子系统设为 `remote` 且配置环境变量后，请求发往侧车；**网络错误、HTTP 非 2xx、JSON-RPC `error`、或 result 无法反序列化**时，宿主**回退内置实现**并写日志（`target: oclive_plugin`），对话一般仍可继续。
 
-### 测试覆盖（2026-06-07）
+### 测试覆盖（2026-07-14）
 
 | 范围 | 状态 | 说明 |
 |------|------|------|
 | `RemoteLlmHttp` JSON-RPC 客户端 | **Done** | [`remote_llm_jsonrpc_roundtrip.rs`](../../distros/desktop-tauri/tests/remote_llm_jsonrpc_roundtrip.rs) |
 | `plugin_backends.llm = remote` 经 `process_message` | **Done** | [`remote_llm_process_message_roundtrip.rs`](../../distros/desktop-tauri/tests/remote_llm_process_message_roundtrip.rs) |
-| OpenAI-compatible（`OCLIVE_LLM_CLOUD_API_STYLE`） | **未覆盖** | 走 `OpenAiCompatibleLlm`，与 JSON-RPC 侧车 wire 不同 |
+| OpenAI-compatible（`OpenAiCompatibleLlm`） | **Done** | [`openai_compatible_llm_http_roundtrip.rs`](../../distros/desktop-tauri/tests/openai_compatible_llm_http_roundtrip.rs) · mock `POST …/v1/chat/completions` |
 
 ---
 
@@ -95,16 +95,38 @@
 
 ## 2. 环境变量（宿主）
 
+### 2.0 Remote LLM：JSON-RPC vs OpenAI-compatible（env 矩阵 SSOT）
+
+角色包 `plugin_backends.llm` 与加载覆盖见 [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md) §`plugin_backends`、[PLUGIN_V1.md](PLUGIN_V1.md)；版本/发行相容见 [COMPATIBILITY.md](../COMPATIBILITY.md)。**本表为 Remote LLM 宿主 env 与 API 分叉的权威矩阵**（勿在其它文档复制长表）。
+
+| 变量 | 作用 |
+|------|------|
+| `OCLIVE_LLM_BACKEND` | 加载角色时覆盖包内 `plugin_backends.llm`：`ollama`（默认本地）/ `remote` / `directory`。未设或 `local` → **Ollama**（进程内客户端） |
+| `OCLIVE_REMOTE_LLM_URL` | `llm = remote` 时的端点。**JSON-RPC**：完整 POST URL（如 `…/rpc`）。**OpenAI-compatible**：Base URL（宿主规范化为 `…/v1/chat/completions`；见 `openai_compatible_llm::chat_completions_url`） |
+| `OCLIVE_REMOTE_LLM_TOKEN` | 可选 Bearer（两路径共用） |
+| `OCLIVE_REMOTE_LLM_TIMEOUT_MS` | 可选；默认 `120000`（毫秒；宿主钳制上下限） |
+| `OCLIVE_LLM_CLOUD_API_STYLE` | Remote LLM wire 分叉。**`oclive_jsonrpc`** → `RemoteLlmHttp`（本文 §1 / §4.6）。**未设 / 其它值** → `OpenAiCompatibleLlm`（`POST /v1/chat/completions`） |
+| `OPENAI_API_BASE` / `OPENAI_BASE_URL` | OpenAI-compat **别名**：仅当 `OCLIVE_REMOTE_LLM_URL` 未设时，`OpenAiCompatibleLlm::from_env` 回退读取 |
+| `OPENAI_API_KEY` | OpenAI-compat **别名**：仅当 `OCLIVE_REMOTE_LLM_TOKEN` 未设时回退读取 |
+
+```text
+OCLIVE_LLM_BACKEND=remote（或包内 llm=remote）
+  └─ OCLIVE_LLM_CLOUD_API_STYLE=oclive_jsonrpc  →  RemoteLlmHttp（JSON-RPC llm.generate*）
+  └─ 默认（未设 / 非 oclive_jsonrpc）          →  OpenAiCompatibleLlm（chat/completions）
+         URL：OCLIVE_REMOTE_LLM_URL ∥ OPENAI_API_BASE ∥ OPENAI_BASE_URL
+         Token：OCLIVE_REMOTE_LLM_TOKEN ∥ OPENAI_API_KEY
+```
+
+两路径均需高危网络授权 **`NETWORK_GRANT_REMOTE_LLM`**。未配置 URL 时即使包写 `remote`，宿主走占位/内置回退（可能警告日志）。
+
+### 2.1 插件侧车与 Remote LLM URL（摘要）
+
 | 变量 | 作用 |
 |------|------|
 | `OCLIVE_REMOTE_PLUGIN_URL` | 非空时，为 **memory / emotion / event / prompt** 四类 Remote 提供**同一** HTTP 端点；以 `method` 区分行为 |
 | `OCLIVE_REMOTE_PLUGIN_TIMEOUT_MS` | 可选；默认 `8000`（毫秒） |
 | `OCLIVE_REMOTE_PLUGIN_TOKEN` | 可选；Bearer |
-| `OCLIVE_REMOTE_LLM_URL` | 非空且角色包 `plugin_backends.llm = remote` 时，**LLM** 请求发往该 URL |
-| `OCLIVE_REMOTE_LLM_TIMEOUT_MS` | 可选；默认 `120000` |
-| `OCLIVE_REMOTE_LLM_TOKEN` | 可选；Bearer |
-
-未设置对应 URL 时，即使角色包写了 `remote`，宿主也会使用**占位回退**（builtin 或进程内 LLM），并可能打一次警告日志。
+| `OCLIVE_REMOTE_LLM_*` | 见 **§2.0**（勿在此重复展开） |
 
 ---
 

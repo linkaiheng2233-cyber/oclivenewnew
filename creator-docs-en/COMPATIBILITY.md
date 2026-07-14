@@ -74,9 +74,14 @@ On breaking changes: update **`CHANGELOG.md` / `CHANGELOG.en.md`**, this matrix,
 
 ---
 
+## Remote LLM env (pointer)
+
+Env matrix for Remote LLM (`OCLIVE_LLM_BACKEND`, `OCLIVE_REMOTE_LLM_*`, `OCLIVE_LLM_CLOUD_API_STYLE`, OpenAI aliases) lives in the Chinese SSOT [REMOTE_PLUGIN_PROTOCOL.md §2.0](../../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md); EN protocol page links there.
+
 ## Related
 
 - [A5_CLOSURE_SUMMARY.md](../../handoff/A5_CLOSURE_SUMMARY.md)
 - [ui.json.schema.json](role-pack/ui.json.schema.json)
 - [DIRECTORY_PLUGINS.md](plugin-and-architecture/DIRECTORY_PLUGINS.md)
+- [REMOTE_PLUGIN_PROTOCOL.md](../../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) §2.0 — Remote LLM env matrix
 - [CHANGELOG.en.md](../../CHANGELOG.en.md)

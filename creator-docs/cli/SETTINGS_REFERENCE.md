@@ -90,7 +90,7 @@
 | emotion | `builtin`（`builtin_v2` alias）/ `remote` / `directory` | 同上 |
 | event | `builtin`（`builtin_v2` alias）/ `remote` / `directory` | 同上 |
 | prompt | `builtin`（`builtin_v2` alias）/ `remote` / `directory` | 同上 |
-| llm | **`ollama`** / `remote` / `directory` | **`remote`**：`OCLIVE_REMOTE_LLM_URL`；可用 **`OCLIVE_LLM_BACKEND`** 在加载时覆盖 |
+| llm | **`ollama`** / `remote` / `directory` | **`remote`**：`OCLIVE_REMOTE_LLM_URL`；可用 **`OCLIVE_LLM_BACKEND`** 在加载时覆盖；JSON-RPC vs OpenAI-compat 分叉与别名见 [REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) **§2.0** |
 | agent | `builtin` / `remote` / `directory` / `none` | `remote`：侧车 `agent.process`（`OCLIVE_REMOTE_AGENT_URL` 或回退 `OCLIVE_REMOTE_PLUGIN_URL`）；`directory`：配置 `directory_plugins.agent`；协议见 [AGENT_REMOTE_PROTOCOL.md](../plugin-and-architecture/AGENT_REMOTE_PROTOCOL.md) |
 
 **不存在于 v1 枚举的字符串**（如字面量 `none`）会导致 **角色包解析失败**。若脚手架或文档写「none」，表示**逻辑上关闭/不声明**；写入主应用可加载的 JSON 时请 **省略该键**（回退默认）或改为合法枚举。
