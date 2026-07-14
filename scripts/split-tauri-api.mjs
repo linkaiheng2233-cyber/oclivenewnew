@@ -11,7 +11,7 @@ const apiDir = path.join(root, "src/api");
 const src = fs.readFileSync(srcPath, "utf8");
 const lines = src.split("\n");
 
-const helpersHeader = `import { invoke } from '@tauri-apps/api/tauri'
+const helpersHeader = `import { invoke } from '@tauri-apps/api/core'
 
 import { i18n } from '../i18n/index'
 
@@ -49,7 +49,7 @@ const helpersContent =
   toCamelPayload +
   "\n\nexport { invokeWithFriendlyError }\n";
 
-const domainImports = `import { invoke } from '@tauri-apps/api/tauri'
+const domainImports = `import { invoke } from '@tauri-apps/api/core'
 import { invokeWithFriendlyError } from './helpers'
 
 `;

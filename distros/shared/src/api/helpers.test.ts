@@ -23,7 +23,7 @@ import { ApiInvokeError, snakeToCamelKey, toastAsyncError, toCamelPayload } from
 
 const API_DIR = join(import.meta.dirname)
 
-/** Top-level invoke payload keys must be camelCase (Tauri v1 IPC). */
+/** Top-level invoke payload keys must be camelCase (Tauri v2 IPC via `@tauri-apps/api/core`). */
 function collectInvokeTopLevelKeys(filePath: string): string[] {
   const src = readFileSync(filePath, 'utf8')
   const keys: string[] = []

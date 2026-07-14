@@ -1,12 +1,14 @@
 # Technical debt inventory
 
-**Last updated:** 2026-07-15（K-PLATFORM-01a **Full 已合 main** · ratchet **80**；父 K-PLATFORM-01 仍 OPEN · 下一动作 **01b**）
+**Last updated:** 2026-07-15（K-PLATFORM-01b **Done** · 父 K-PLATFORM-01 仍 OPEN · 下一动作 **01c**）
 
 **Product freeze (Theater v0):** **Lifted** — 朋友 cohort 产品门通过（7/10 卧槽）；模式 2 playtest 扩展中；**模式 3 仍冻结**。见 [theater/MODE2_UNFREEZE.md](./theater/MODE2_UNFREEZE.md)。
 
 **综合评分：** A− · 本地 dimension5 **二十一检** PASS（--ci）· workspace **doctest** 见 check:release · 审查数字 SSOT：[AI_VERIFICATION_PROTOCOL.md](./AI_VERIFICATION_PROTOCOL.md)
 
-**下一动作：** **P1** — K-PLATFORM-01 **01b**（`@tauri-apps/api` 迁移表 + chat-pro 发消息 E2E）→ **01c**（workflow/dimension5 口径）；模式 2 playtest 扩展至陌生人 cohort；K-SUPPLY-05 仍 Partial（`deny` 未翻；baseline 已随 Tauri2 降至 **80**）
+**下一动作：** **P1** — K-PLATFORM-01 **01c**（workflow/dimension5 切 v2 口径）；模式 2 playtest 扩展至陌生人 cohort；K-SUPPLY-05 仍 Partial（`deny` 未翻；baseline 已随 Tauri2 降至 **80**）
+
+**Verification (2026-07-15 · K-PLATFORM-01b):** 本地 `build:e2e` + `playwright` [`send-message.spec.ts`](../distros/chat-pro/e2e/send-message.spec.ts) **2 passed** · inventory §6 Frontend IPC · 生产 `distros/**/*.{ts,vue}` **零** `@tauri-apps/api/{tauri,dialog,shell,window,fs}` · `split-tauri-api.mjs` 模板 → `core` · **01b Done** · 父 **OPEN** · 下一动作 **01c** · 远程 CI 见下条 push 后回填。
 
 **Verification (2026-07-15 · K-PLATFORM-01a Full → main):** 已合 `origin/main` · HEAD `751a8319` · CI [`29349270841`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29349270841) **硬门禁 success**（`rust`/`dimension5`/`cargo-audit`/`cli`/`oocp`/`cross-host-e2e`/`stale-paths`；`e2e-tauri`/`frontend`/`loom` success）· `LAYERING_BASELINE.json` `cargo_duplicate_groups` **92→80**（`cargo tree -d` 实测；Tauri2 副产品）· **01a Done** · 父 **OPEN** · 下一动作 **01b** · K-SUPPLY-05 **仍 Partial**。
 
@@ -87,7 +89,7 @@
 
 | ID | 项 | 优先级 | 解决/完成条件 | 状态 |
 |----|-----|--------|----------------|------|
-| **K-PLATFORM-01** | Tauri v1 → v2 迁移 | **P1** | **契约**：权限/capability schema 对照 + **测试**：最小 smoke + **改动面**：desktop-tauri / 三 distro 分 PR | **OPEN**（01a **Done** · 01b/01c 未齐；**非** 父 Done） |
+| **K-PLATFORM-01** | Tauri v1 → v2 迁移 | **P1** | **契约**：权限/capability schema 对照 + **测试**：最小 smoke + **改动面**：desktop-tauri / 三 distro 分 PR | **OPEN**（01a+01b **Done** · **01c** 未齐；**非** 父 Done） |
 | **K-LLM-01** | LLM 后端单一依赖 Ollama | **P1** | **契约**：`LlmBackend` env 矩阵 + **测试**：1 API + 1 本地 mock + **改动面**：adapter 接线 PR | **Done**（01a+01b · 2026-07-14；第二本地 = Remote+localhost OpenAI-compat ∥ directory/llamacpp；无新 enum） |
 | **K-CROSS-01** | 跨平台系统策略缺失 | **P2** | 三平台语音 smoke + distro profile 差异声明 | **OPEN** |
 | **K-DIST-01** | 分发体验缺口 | **P2** | 签名/updater/Linux 包/macOS dmg | **OPEN** |
@@ -99,7 +101,7 @@
 | 子 ID | 契约 | 测试 | 改动面 | 状态 |
 |-------|------|------|--------|------|
 | K-PLATFORM-01a | Tauri v2 permission / ACL + bump | 单命令 invoke smoke | `tauri.conf.json` + `capabilities/` + Cargo | **Done**（2026-07-15 **已合 main** · 分支 HEAD `3c08cb5e` · CI [`29344170555`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29344170555) · inventory Full · smoke `tauri_invoke_smoke` · npm 最小齐步 ≠ 01b） |
-| K-PLATFORM-01b | `@tauri-apps/api` v2 迁移表 | chat-pro 发消息 E2E | `distros/shared` IPC | **OPEN**（未做 E2E 收口；npm 最小齐步已随 01a） |
+| K-PLATFORM-01b | `@tauri-apps/api` v2 迁移表 | chat-pro preview 发消息 E2E（`frontend` job） | `distros/shared` IPC · inventory §6 | **Done**（2026-07-15 · §6 Frontend IPC · 生产残留 0 · `send-message.spec.ts` 2 passed · 远程 CI 见顶部 Verification） |
 | K-PLATFORM-01c | CI 镜像 + dimension5 口径 | workflow 绿 | `.github/workflows` | **OPEN**（未动；寸步切 v2 门禁叙事） |
 
 **K-LLM-01 子项**

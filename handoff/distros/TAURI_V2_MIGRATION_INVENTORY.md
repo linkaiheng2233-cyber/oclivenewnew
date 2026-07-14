@@ -1,12 +1,12 @@
-# Tauri v1 → v2 迁移清单（K-PLATFORM-01a **Full**）
+# Tauri v1 → v2 迁移清单（K-PLATFORM-01a **Full** · **01b** 前端 IPC）
 
-**状态：** **01a Full 完成**（Tauri 2 bump · capability ACL · Rust API · 单命令 invoke smoke）  
-**债项：** [`TECHNICAL_DEBT_INVENTORY.md`](../TECHNICAL_DEBT_INVENTORY.md) · 父 **K-PLATFORM-01 OPEN** · 子 **01a Done** · **01b** / **01c** 另波  
+**状态：** **01a Full 完成** + **01b 完成**（前端 IPC 迁移表 · preview 发消息 E2E · 生产零 v1 import）  
+**债项：** [`TECHNICAL_DEBT_INVENTORY.md`](../TECHNICAL_DEBT_INVENTORY.md) · 父 **K-PLATFORM-01 OPEN** · 子 **01a Done** · **01b Done** · **01c** 另波  
 **权威配置：** [`distros/desktop-tauri/tauri.conf.json`](../../distros/desktop-tauri/tauri.conf.json) · [`capabilities/`](../../distros/desktop-tauri/capabilities/) · [`Cargo.toml`](../../distros/desktop-tauri/Cargo.toml) · [`src/lib.rs`](../../distros/desktop-tauri/src/lib.rs)  
 **上游迁移指南：** [Upgrade from Tauri 1.0](https://v2.tauri.app/start/migrate/from-tauri-1/)
 
-> **本波已做：** Rust `tauri` 2.x + plugins · ACL（窄权限 · 无 remote `*`）· invoke smoke · npm **最小齐步**（`@tauri-apps/api` v2 + dialog/shell/opener 插件 import）· CI apt `webkit2gtk-4.1`（构建硬门禁必需，非 01c 门禁叙事重写）。  
-> **npm 最小齐步 ≠ 01b Done**（chat-pro 发消息 E2E 迁移表收口另波；本波仅修 e2e-mock alias 使 preview E2E 能找到 v2 模块）。  
+> **01a 已做：** Rust `tauri` 2.x + plugins · ACL（窄权限 · 无 remote `*`）· invoke smoke · npm **最小齐步** · CI apt `webkit2gtk-4.1`（构建硬门禁必需，非 01c 门禁叙事重写）。  
+> **01b 已做：** §6 Frontend IPC 迁移表 · `helpers`/`role` 走 `@tauri-apps/api/core` · 生产 TS/Vue **零** `@tauri-apps/api/{tauri,dialog,shell,window,fs}` · preview E2E [`send-message.spec.ts`](../../distros/chat-pro/e2e/send-message.spec.ts)（证据面 = `frontend` job / `test:e2e:preview`，**非** soft `e2e-tauri`）。  
 > **01c：** workflow/dimension5 全量 v2 门禁叙事另波。
 
 ---
@@ -67,8 +67,8 @@
 | 面 | 说明 |
 |----|------|
 | Tauri 命令 | `generate_handler!` 仍约 **122** 条；ACL 绑定 `main` |
-| 前端 | 最小齐步：`api/core` · `webviewWindow` · plugin dialog/opener；**完整迁移表 + E2E = 01b** |
-| CI | 本波 **不以 01c 改门禁叙事**；仍跑既有 `cargo build -p oclivenewnew-tauri` / dimension5 / audit |
+| 前端 | 生产已 v2（§6）；preview E2E 经 `e2e-mock` alias；原生壳发消息 E2E **非** 01b 硬门禁 |
+| CI | **不以 01c 改门禁叙事**；01b 证据面 = `frontend`（含 `test:e2e:preview` / send-message） |
 
 ---
 
@@ -77,8 +77,36 @@
 | 子项 | 范围 | 状态 |
 |------|------|------|
 | **01a Partial** | inventory 对照（历史） | 被 Full 取代 |
-| **01a Full** | bump + ACL + smoke + audit | **本波 Done**（见 TECHNICAL_DEBT 验证行） |
-| **01b** | 前端 IPC 迁移表 + chat-pro E2E | **OPEN**（下波） |
+| **01a Full** | bump + ACL + smoke + audit | **Done**（见 TECHNICAL_DEBT 验证行） |
+| **01b** | 前端 IPC 迁移表 + chat-pro preview 发消息 E2E | **Done**（§6 · TECHNICAL_DEBT 验证行） |
 | **01c** | workflow + dimension5 切 v2 口径 | **OPEN** |
 
-父 **K-PLATFORM-01** 在 01b–01c 未齐前 **保持 OPEN**；**勿**标父 Done。
+父 **K-PLATFORM-01** 在 **01c** 未齐前 **保持 OPEN**；**勿**标父 Done。
+
+---
+
+## 6. Frontend IPC 迁移表（01b）
+
+生产路径（`distros/shared` · `distros/chat-pro` · `distros/theater` 的 `.ts`/`.vue`）grep：  
+`@tauri-apps/api/(tauri|dialog|shell|window|fs)` → **生产残留 = 0**。
+
+| v1 | v2 / 替代 | 落点 |
+|----|-----------|------|
+| `@tauri-apps/api/tauri` `invoke` | `@tauri-apps/api/core` | [`helpers.ts`](../../distros/shared/src/api/helpers.ts)（SSOT）· 少量 direct 如 [`role.ts`](../../distros/shared/src/api/role.ts) · [`directoryShellBootstrap.ts`](../../distros/shared/src/utils/directoryShellBootstrap.ts) |
+| `@tauri-apps/api/dialog` | `@tauri-apps/plugin-dialog` | shared composables / components（`useRolePackImport` · `useChatStorageSettings` · `RolePackBar` · `ChatExportBar` · `ModelManagerBody` · `SimplePluginManager` · `AsyncPluginVue`） |
+| shell open | `@tauri-apps/plugin-opener`（+ Rust shell/opener 插件） | [`openPackEditor.ts`](../../distros/shared/src/utils/openPackEditor.ts)（`openPath` / `openUrl`） |
+| `@tauri-apps/api/window` / `appWindow` | `webviewWindow` `getCurrentWebviewWindow` | [`useEasterEggSkin.ts`](../../distros/shared/src/composables/useEasterEggSkin.ts) · [`Win98TitleBar.vue`](../../distros/shared/src/components/win98/Win98TitleBar.vue) |
+| `@tauri-apps/api/fs` | **自定义** `desktop_fs` commands（非 npm `fs`） | 生产：[`desktop.ts`](../../distros/shared/src/api/desktop.ts) `write_user_text_file` · **零** `@tauri-apps/api/fs` import；preview alias → [`e2e-mock/fs.ts`](../../e2e-mock/fs.ts)（**E2E-only**，见 [`vite.base.config.ts`](../../vite.base.config.ts)） |
+| event / listen | `@tauri-apps/api/event` | `roleStore` · `kernelConnectionStore` · `useAppBootstrap` · `HotkeyHost` · `useRolePackImport` |
+
+### 残留清单（允许声明）
+
+| 项 | 说明 |
+|----|------|
+| [`scripts/split-tauri-api.mjs`](../../scripts/split-tauri-api.mjs) | 模板已改为 `@tauri-apps/api/core`（避免再生成脏码） |
+| [`helpers.test.ts`](../../distros/shared/src/api/helpers.test.ts) | 注释已改为「Tauri v2 IPC」 |
+| `@tauri-apps/plugin-shell`（npm） | `distros/shared/package.json` 仍声明；**生产 TS/Vue 零 import** → **Observe**（卸载另波，非 01b） |
+| `e2e-mock` / vite `--mode e2e` alias | preview 硬门禁所需；**非**生产路径 |
+| archive / CHANGELOG 历史叙述 | **不改**（G3） |
+
+**证据面：** `npm run build:e2e` + `npm run test:e2e:preview`（[`send-message.spec.ts`](../../distros/chat-pro/e2e/send-message.spec.ts)）· CI job **`frontend`**。不以 soft `e2e-tauri` 卡 01b Done。
