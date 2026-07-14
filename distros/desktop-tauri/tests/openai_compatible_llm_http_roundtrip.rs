@@ -49,10 +49,7 @@ async fn openai_compatible_llm_generate_via_chat_completions() {
     });
 
     // Isolate from parallel tests: prefer OCLIVE_* keys; clear OpenAI aliases for this process slice.
-    std::env::set_var(
-        "OCLIVE_REMOTE_LLM_URL",
-        format!("http://{addr}"),
-    );
+    std::env::set_var("OCLIVE_REMOTE_LLM_URL", format!("http://{addr}"));
     std::env::set_var("OCLIVE_REMOTE_LLM_TOKEN", "openai-compat-test-token");
     std::env::set_var("OCLIVE_REMOTE_LLM_TIMEOUT_MS", "5000");
     std::env::remove_var("OPENAI_API_BASE");
