@@ -1,12 +1,14 @@
 # Technical debt inventory
 
-**Last updated:** 2026-07-14（K-PLATFORM-01a Partial · inventory SSOT；父 K-PLATFORM-01 仍 OPEN）
+**Last updated:** 2026-07-14（K-PLATFORM-01a Partial · CI 绿；父 K-PLATFORM-01 仍 OPEN）
 
 **Product freeze (Theater v0):** **Lifted** — 朋友 cohort 产品门通过（7/10 卧槽）；模式 2 playtest 扩展中；**模式 3 仍冻结**。见 [theater/MODE2_UNFREEZE.md](./theater/MODE2_UNFREEZE.md)。
 
 **综合评分：** A− · 本地 dimension5 **二十检** PASS（--ci）· workspace **doctest** 见 check:release · 审查数字 SSOT：[AI_VERIFICATION_PROTOCOL.md](./AI_VERIFICATION_PROTOCOL.md)
 
 **下一动作：** **P1** — K-PLATFORM-01 **bump 波**（01a Full ACL + invoke smoke → 01b → 01c）；模式 2 playtest 扩展至陌生人 cohort；K-SUPPLY-05 仍 Partial（`deny` 未翻；剩 Tauri1 树）
+
+**Verification (2026-07-14 · K-PLATFORM-01a Partial):** HEAD `031fc0e6` · CI [`29334069010`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29334069010) **硬门禁 success**（`rust`/`dimension5`/`cargo-audit`/`cli`/`oocp`/`cross-host-e2e`/`stale-paths`；`e2e-tauri` success）· inventory [`distros/TAURI_V2_MIGRATION_INVENTORY.md`](./distros/TAURI_V2_MIGRATION_INVENTORY.md) · **零** Tauri bump · 父 **K-PLATFORM-01 仍 OPEN**（**不**标 Done）。
 
 **Verification (2026-07-14 · K-LLM-01b / K-LLM-01 Done):** HEAD `3b6e2a5e` · CI [`29328015057`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29328015057) **硬门禁 success**（`rust`/`dimension5`/`cargo-audit`/`cli`/`oocp`/`cross-host-e2e`）· 选型 SSOT [REMOTE_PLUGIN_PROTOCOL.md §2.0](../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)「本机 OpenAI 兼容第二本地」· registry 测 [`openai_compatible_llm_http_roundtrip.rs`](../distros/desktop-tauri/tests/openai_compatible_llm_http_roundtrip.rs) `openai_compatible_llm_via_registry_remote`。
 
@@ -92,7 +94,7 @@
 
 | 子 ID | 契约 | 测试 | 改动面 | 状态 |
 |-------|------|------|--------|------|
-| K-PLATFORM-01a | Tauri v2 permission manifest 对照 | 单命令 invoke smoke（Full 波） | `tauri.conf.json` + ACL | **Partial**（2026-07-14 · 立项资产 [`distros/TAURI_V2_MIGRATION_INVENTORY.md`](./distros/TAURI_V2_MIGRATION_INVENTORY.md)；零运行时 bump；Full = ACL 实装 + invoke smoke） |
+| K-PLATFORM-01a | Tauri v2 permission manifest 对照 | 单命令 invoke smoke（Full 波） | `tauri.conf.json` + ACL | **Partial**（2026-07-14 · inventory [`distros/TAURI_V2_MIGRATION_INVENTORY.md`](./distros/TAURI_V2_MIGRATION_INVENTORY.md) · CI [`29334069010`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29334069010) · 零 bump；Full = ACL + invoke smoke） |
 | K-PLATFORM-01b | `@tauri-apps/api` v2 迁移表 | chat-pro 发消息 E2E | `distros/shared` IPC | **OPEN**（未动） |
 | K-PLATFORM-01c | CI 镜像 + dimension5 口径 | workflow 绿 | `.github/workflows` | **OPEN**（未动；升档前 workflow **留 v1**） |
 
@@ -148,7 +150,7 @@
 | **MEGA-TS-01** | `useTheaterShell.ts` 巨无霸拆分 | 见 §2；`mapTheaterInvokeError` 已先行减负（轮次 22） |
 | **K-SUPPLY-08** | crate 作者信誉 / 发布历史系统审计 | — | **Observe** · 无成熟自动化方案 |
 
-**现在就能做（低成本）**：维持 dimension5 十八检绿 · `Cargo.lock` PR 更新 KNOWN_VULN · 发版前本地 `oclive lint --deny` · 校企仓要求组员 `npm ci && cargo build` 从源码跑通。
+**现在就能做（低成本）**：维持 dimension5 全检绿（项数以脚本输出为准）· `Cargo.lock` PR 更新 KNOWN_VULN · 发版前本地 `oclive lint --deny` · 校企仓要求组员 `npm ci && cargo build` 从源码跑通。
 
 **下一工程动作（P1）**：K-SUPPLY-02 Release 哈希清单（与 `kernel_manifest` / bundled kernel 发版对齐）。
 
