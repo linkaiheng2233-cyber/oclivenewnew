@@ -12,7 +12,7 @@ This file records **vulnerability-level** hits from **`cargo audit`** on the **w
 | Item | Value |
 |------|-----|
 | **cargo-audit version** | **0.22.1** (pin this major line for comparable reports) |
-| **Last scan date** | **2026-07-14** (local `cargo audit`; after K-SUPPLY-05 lock update) |
+| **Last scan date** | **2026-07-14** (local `cargo audit`; K-SUPPLY-05 leaf dedup: dialoguer 0.12 / proptest &lt;1.7) |
 | **Scan path** | Workspace root `Cargo.lock` |
 | **Vulnerability-level count** | **0** (`cargo audit` exit code **0**; `sqlx-mysql` / `rsa` removed from lockfile graph) |
 | **Warning-level count** | **3** (`fxhash` · `glib` · `rand` 0.7; gtk-rs cluster see `.cargo/audit.toml` ignore **11** entries) |

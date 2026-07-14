@@ -26,4 +26,4 @@ wasm = ["dep:wasm-bindgen"]
 
 [dev-dependencies]
 tempfile = { workspace = true }
-proptest = "1.4"
+proptest = ">=1.4, <1.7"
