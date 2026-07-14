@@ -8,7 +8,7 @@
 
 **下一动作：** **P1** — K-PLATFORM-01 **01b**（`@tauri-apps/api` 迁移表 + chat-pro 发消息 E2E）→ **01c**（workflow/dimension5 口径）；模式 2 playtest 扩展至陌生人 cohort；K-SUPPLY-05 仍 Partial（`deny` 未翻；baseline 已随 Tauri2 降至 **80**）
 
-**Verification (2026-07-15 · K-PLATFORM-01a Full → main):** 已合 `origin/main` · HEAD _pending push_ · origin/main CI _pending_ · `LAYERING_BASELINE.json` `cargo_duplicate_groups` **92→80**（`cargo tree -d` 实测；Tauri2 副产品）· **01a Done** · 父 **OPEN** · 下一动作 **01b** · K-SUPPLY-05 **仍 Partial**。
+**Verification (2026-07-15 · K-PLATFORM-01a Full → main):** 已合 `origin/main` · HEAD `751a8319` · CI [`29349270841`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29349270841) **硬门禁 success**（`rust`/`dimension5`/`cargo-audit`/`cli`/`oocp`/`cross-host-e2e`/`stale-paths`；`e2e-tauri`/`frontend`/`loom` success）· `LAYERING_BASELINE.json` `cargo_duplicate_groups` **92→80**（`cargo tree -d` 实测；Tauri2 副产品）· **01a Done** · 父 **OPEN** · 下一动作 **01b** · K-SUPPLY-05 **仍 Partial**。
 
 **Verification (2026-07-14 · K-PLATFORM-01a Full):** HEAD `3c08cb5e` · CI [`29344170555`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29344170555) **硬门禁 success**（`rust`/`dimension5`/`cargo-audit`/`cli`/`oocp`/`cross-host-e2e`/`stale-paths`；`e2e-tauri`/`frontend`/`loom` success）· inventory [`distros/TAURI_V2_MIGRATION_INVENTORY.md`](./distros/TAURI_V2_MIGRATION_INVENTORY.md) Full · **npm 最小齐步 ≠ 01b** · 父 **K-PLATFORM-01 仍 OPEN**（已由上条覆盖「合入 main」）。
 
