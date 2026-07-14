@@ -17,27 +17,38 @@ test.describe("Tauri native window (A1.1c smoke)", () => {
     "Set TAURI_E2E_APP_PATH to the debug oclivenewnew-tauri binary",
   );
 
-  test(
-    "main window title and left sidebar pane",
-    { timeout: 120_000 },
-    async () => {
-    const browser = await remote({
-      hostname: driverHost,
-      port: driverPort,
-      path: "/",
-      capabilities: {
-        "tauri:options": {
-          application: appPath,
-          env: {
-            OCLIVE_ROLES_DIR: rolesDir,
-            OCLIVE_SKIP_STARTUP_HEALTH: "1",
-            OCLIVE_SKIP_LLM_STARTUP_PROBE: "1",
+  test("main window title and left sidebar pane", async () => {
+    // Playwright global/config timeout alone has been observed as 30s in CI; pin again here.
+    test.setTimeout(180_000);
+
+    let browser;
+    try {
+      browser = await remote({
+        hostname: driverHost,
+        port: driverPort,
+        path: "/",
+        capabilities: {
+          // WDIO 9+ injects BiDi `webSocketUrl`; Ubuntu WebKitWebDriver (pre-2.46) rejects/hangs.
+          "wdio:enforceWebDriverClassic": true,
+          "tauri:options": {
+            application: appPath,
+            env: {
+              OCLIVE_ROLES_DIR: rolesDir,
+              OCLIVE_SKIP_STARTUP_HEALTH: "1",
+              OCLIVE_SKIP_LLM_STARTUP_PROBE: "1",
+            },
           },
         },
-      },
-      connectionRetryCount: 3,
-      connectionRetryTimeout: 120_000,
-    });
+        // Fail fast on session create — long connectionRetry only extended silent hangs.
+        connectionRetryCount: 0,
+        connectionRetryTimeout: 10_000,
+      });
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      throw new Error(
+        `tauri-driver session create failed (POST http://${driverHost}:${driverPort}/session): ${detail}`,
+      );
+    }
 
     try {
       await browser.setTimeout({ implicit: 15_000 });
@@ -66,6 +77,5 @@ test.describe("Tauri native window (A1.1c smoke)", () => {
     } finally {
       await browser.deleteSession();
     }
-  },
-  );
+  });
 });

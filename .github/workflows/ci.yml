@@ -405,9 +405,22 @@ jobs:
         working-directory: distros/desktop-tauri
         run: cargo build --locked -p oclivenewnew-tauri
       - name: Native window smoke — A1.1c (WebDriver)
+        id: e2e_tauri_smoke
         run: |
           chmod +x scripts/e2e-tauri-native-ci.sh
           xvfb-run -a bash scripts/e2e-tauri-native-ci.sh
+      - name: Upload e2e-tauri driver logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-tauri-driver-logs-${{ github.run_id }}
+          path: |
+            /tmp/tauri-driver.log
+            /tmp/webkit-webdriver.log
+            /tmp/e2e-tauri-diagnostics.txt
+            /tmp/e2e-tauri-diagnostics/**
+          if-no-files-found: warn
+          retention-days: 14
 
   remote-plugin-demo:
     runs-on: ubuntu-latest

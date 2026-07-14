@@ -4,6 +4,8 @@ const PREVIEW_PORT = process.env.OCLIVE_PREVIEW_PORT ?? "4180";
 const previewOrigin = `http://127.0.0.1:${PREVIEW_PORT}`;
 /** CI（Ubuntu）由 workflow 先拉起 `vite preview` 时再设为 `1`，跳过内置 webServer。 */
 const externalPreview = process.env.PW_TEST_USE_EXTERNAL === "1";
+/** Native tauri-driver smoke — needs longer timeout than browser preview suite. */
+const tauriE2e = process.env.OCLIVE_TAURI_E2E === "1";
 
 /**
  * A1.1b 子项：静态构建 + `vite preview` 下的浏览器壳烟测（不经 Tauri 原生窗口）。
@@ -11,6 +13,8 @@ const externalPreview = process.env.PW_TEST_USE_EXTERNAL === "1";
  * 端口默认 **4180**（可用 **`OCLIVE_PREVIEW_PORT`** 覆盖）。
  *
  * **Windows**：若内置 `webServer` 超时，可先 `npm run preview` 再设 **`PW_TEST_USE_EXTERNAL=1`** 后执行 **`npm run test:e2e:preview`**。CI 仅在 **Ubuntu** 跑本套（见 `.github/workflows/ci.yml`）。
+ *
+ * **`OCLIVE_TAURI_E2E=1`**：跑 `tauri-native.spec.ts`，全局 timeout **180s**（覆盖默认 30s，避免卡在 WebDriver session create）。
  */
 export default defineConfig({
   testDir: "distros/chat-pro/e2e",
@@ -18,19 +22,22 @@ export default defineConfig({
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
   workers: 1,
+  timeout: tauriE2e ? 180_000 : 30_000,
   reporter: [["list"]],
   use: {
     baseURL: previewOrigin,
     trace: "on-first-retry",
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
-  testIgnore: process.env.OCLIVE_TAURI_E2E === "1" ? undefined : [/tauri-native\.spec\.ts/],
-  webServer: externalPreview
+  testIgnore: tauriE2e ? undefined : [/tauri-native\.spec\.ts/],
+  webServer: tauriE2e
     ? undefined
-    : {
-        command: `node ./node_modules/vite/bin/vite.js preview --host 127.0.0.1 --port ${PREVIEW_PORT} --strictPort`,
-        url: `${previewOrigin}/`,
-        reuseExistingServer: !process.env.CI,
-        timeout: 180_000,
-      },
+    : externalPreview
+      ? undefined
+      : {
+          command: `node ./node_modules/vite/bin/vite.js preview --host 127.0.0.1 --port ${PREVIEW_PORT} --strictPort`,
+          url: `${previewOrigin}/`,
+          reuseExistingServer: !process.env.CI,
+          timeout: 180_000,
+        },
 });
