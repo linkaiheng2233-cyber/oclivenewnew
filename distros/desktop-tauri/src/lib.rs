@@ -198,7 +198,7 @@ pub fn run() {
                 })));
             }
             desktop_host::finish_desktop_setup(
-                &app.handle(),
+                app.handle(),
                 kernel_conn,
                 roles_for_watcher.clone(),
                 resource_dir,
@@ -216,7 +216,7 @@ pub fn run() {
                     .directory_plugins
                     .app_data_dir(),
             );
-            if let Err(e) = crate::api::hotkeys::apply_global_hotkeys(&app.handle(), &hk) {
+            if let Err(e) = crate::api::hotkeys::apply_global_hotkeys(app.handle(), &hk) {
                 tracing::warn!(target: "oclive_hotkey", "initial global shortcuts: {}", e);
             }
             start_plugin_fs_watcher(
