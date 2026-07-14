@@ -1,6 +1,6 @@
 # Technical debt inventory
 
-**Last updated:** 2026-07-14（K-LLM-01b / 父 K-LLM-01 Done · CI pending push）
+**Last updated:** 2026-07-14（K-LLM-01b / 父 K-LLM-01 Done · CI `29328015057` / HEAD `3b6e2a5e`）
 
 **Product freeze (Theater v0):** **Lifted** — 朋友 cohort 产品门通过（7/10 卧槽）；模式 2 playtest 扩展中；**模式 3 仍冻结**。见 [theater/MODE2_UNFREEZE.md](./theater/MODE2_UNFREEZE.md)。
 
@@ -8,7 +8,7 @@
 
 **下一动作：** **P1** — K-PLATFORM-01（Tauri v1 → v2）；模式 2 playtest 扩展至陌生人 cohort；K-SUPPLY-05 仍 Partial（`deny` 未翻；剩 Tauri1 树）
 
-**Verification (2026-07-14 · K-LLM-01b / K-LLM-01 Done):** HEAD _pending push_ · CI _pending_ · 选型 SSOT [REMOTE_PLUGIN_PROTOCOL.md §2.0](../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)「本机 OpenAI 兼容第二本地」· registry 测 [`openai_compatible_llm_http_roundtrip.rs`](../distros/desktop-tauri/tests/openai_compatible_llm_http_roundtrip.rs) `openai_compatible_llm_via_registry_remote` · 本地 `cargo test -p oclivenewnew-tauri --test openai_compatible_llm_http_roundtrip` **2 ok**。
+**Verification (2026-07-14 · K-LLM-01b / K-LLM-01 Done):** HEAD `3b6e2a5e` · CI [`29328015057`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29328015057) **硬门禁 success**（`rust`/`dimension5`/`cargo-audit`/`cli`/`oocp`/`cross-host-e2e`）· 选型 SSOT [REMOTE_PLUGIN_PROTOCOL.md §2.0](../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)「本机 OpenAI 兼容第二本地」· registry 测 [`openai_compatible_llm_http_roundtrip.rs`](../distros/desktop-tauri/tests/openai_compatible_llm_http_roundtrip.rs) `openai_compatible_llm_via_registry_remote`。
 
 **Verification (2026-07-14 · K-LLM-01a Done):** HEAD `16781309` · CI [`29323544103`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29323544103) **硬门禁 success**（`rust`/`dimension5`/`cargo-audit`/`cli`/`oocp`/`cross-host-e2e`）· env SSOT [REMOTE_PLUGIN_PROTOCOL.md §2.0](../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) · mock HTTP [`openai_compatible_llm_http_roundtrip.rs`](../distros/desktop-tauri/tests/openai_compatible_llm_http_roundtrip.rs)。
 
@@ -101,7 +101,7 @@
 | 子 ID | 契约 | 测试 | 改动面 | 状态 |
 |-------|------|------|--------|------|
 | K-LLM-01a | OpenAI-compatible API env SSOT（[REMOTE_PLUGIN_PROTOCOL §2.0](../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)） | [`openai_compatible_llm_http_roundtrip.rs`](../distros/desktop-tauri/tests/openai_compatible_llm_http_roundtrip.rs) | `openai_compatible_llm.rs`（本波未改生产码） | **Done**（2026-07-14 · HEAD `16781309` · CI [`29323544103`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29323544103)） |
-| K-LLM-01b | 第二本地后端选型（§2.0 SSOT；无新 enum / 空壳 adapter） | [`openai_compatible_llm_via_registry_remote`](../distros/desktop-tauri/tests/openai_compatible_llm_http_roundtrip.rs)（registry Remote） | 既有 `openai_compatible_llm` + `examples/directory-plugin-llamacpp` | **Done**（2026-07-14 · CI pending push） |
+| K-LLM-01b | 第二本地后端选型（§2.0 SSOT；无新 enum / 空壳 adapter） | [`openai_compatible_llm_via_registry_remote`](../distros/desktop-tauri/tests/openai_compatible_llm_http_roundtrip.rs)（registry Remote） | 既有 `openai_compatible_llm` + `examples/directory-plugin-llamacpp` | **Done**（2026-07-14 · HEAD `3b6e2a5e` · CI [`29328015057`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29328015057)） |
 
 **系统性债务（2026-07-12 审查增补）**
 
