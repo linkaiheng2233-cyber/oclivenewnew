@@ -1,16 +1,18 @@
 # Technical debt inventory
 
-**Last updated:** 2026-07-14（D-I18N-02 Done · CI `29278403237` / HEAD `0be7f2df`）
+**Last updated:** 2026-07-14（CI-E2E-TAURI-01 Done · CI `29311703046` / HEAD `8988f49d`）
 
 **Product freeze (Theater v0):** **Lifted** — 朋友 cohort 产品门通过（7/10 卧槽）；模式 2 playtest 扩展中；**模式 3 仍冻结**。见 [theater/MODE2_UNFREEZE.md](./theater/MODE2_UNFREEZE.md)。
 
 **综合评分：** A− · 本地 dimension5 **二十检** PASS（--ci）· workspace **doctest** 见 check:release · 审查数字 SSOT：[AI_VERIFICATION_PROTOCOL.md](./AI_VERIFICATION_PROTOCOL.md)
 
-**下一动作：** **P1** — 模式 2 playtest 扩展至陌生人 cohort；K-SUPPLY-05 仍 Partial（`deny` 未翻）；CI-E2E-TAURI-01 仍 soft fail
+**下一动作：** **P1** — 模式 2 playtest 扩展至陌生人 cohort；K-SUPPLY-05 仍 Partial（`deny` 未翻）
 
 **Verification (2026-07-14 · K-SUPPLY-05 dedup wave):** local ratchet **97** · HEAD `07fc5573` · CI run [`29271807644`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29271807644) **硬门禁 success**（`rust`/`dimension5`/`cargo-audit`/`cli`/`oocp`/`cross-host-e2e`）· `e2e-tauri` **soft failure**（仍 Partial）· `deny.toml` multiple-versions **仍 warn** → K-SUPPLY-05 **仍 Partial**。
 
-**Verification (2026-07-14 · D-I18N-02 Done):** HEAD `0be7f2df` · CI [`29278403237`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29278403237) · `dimension5-acceptance` **success** · `--warn-drift-high-traffic` 独立硬门禁 · HIGH_TRAFFIC **8** creator-docs · `--self-test` · EN CLI/`COMPATIBILITY`/`PLUGIN_V1`/`ROLE_PACK_SPEC` condensed+ZH 锚点 · 同跑 `e2e-tauri` **soft fail**（卡在 `POST /session`，未达 title/sidebar 断言）。
+**Verification (2026-07-14 · D-I18N-02 Done):** HEAD `0be7f2df` · CI [`29278403237`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29278403237) · `dimension5-acceptance` **success** · `--warn-drift-high-traffic` 独立硬门禁 · HIGH_TRAFFIC **8** creator-docs · `--self-test` · EN CLI/`COMPATIBILITY`/`PLUGIN_V1`/`ROLE_PACK_SPEC` condensed+ZH 锚点 · 同跑 `e2e-tauri` 曾 soft fail（卡在 `POST /session`）。
+
+**Verification (2026-07-14 · CI-E2E-TAURI-01 Done):** HEAD `8988f49d` · CI [`29311703046`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29311703046) · `e2e-tauri` **success**（session 已创建 · `getTitle`=`OCLIVE — Desktop AI companion` · `.left-pane` / role select `waitForDisplayed`）· 根因：CRLF shell → dual WebKit `:4445` bind → 空 dbus → 过短 `connectionRetryTimeout`；仍为 soft gate（`continue-on-error`），未升硬门禁。
 
 ---
 
@@ -32,7 +34,7 @@
 | **K-SUPPLY-03** | 插件安装后「请审本地源码」固定提示 | P2 | 市场/git/zip + CLI | **Done**（轮次 19） |
 | **K-SUPPLY-04** | 前端 `npm-audit` 仅可见性（`continue-on-error`） | P2 | 连续 2 周期高危命中 → 升格硬门禁或文档豁免 | **Observe**（2026-07-12：`defu` override **6.1.5** 清零高危；`npm audit --omit=dev` **0 高危 / 4 中危 / 1 低危** — `vue3-sfc-loader` 链待专项） |
 | **K-SUPPLY-05** | `deny.toml` `multiple-versions = warn` | P2 | 依赖树去重后改 `deny` | **Partial**（2026-07-14 · ratchet **97** · CI `29271807644` 硬门禁绿 · `deny` 仍 warn） |
-| **CI-E2E-TAURI-01** | e2e-tauri WebDriver smoke（sidebar/title） | P2 | 远程 `e2e-tauri` 过；勿弱化断言 | **Partial**（2026-07-14 · WebDriver **session hang** at `POST /session` · Playwright 30s timeout；从未执行 `getTitle`/`waitForDisplayed`；runs [`29278403237`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29278403237) / [`29271807644`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29271807644)） |
+| **CI-E2E-TAURI-01** | e2e-tauri WebDriver smoke（sidebar/title） | P2 | 远程 `e2e-tauri` 过；勿弱化断言 | **Done**（2026-07-14 · CI [`29311703046`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29311703046) / HEAD `8988f49d` · session+title+sidebar 全绿；仍 soft gate） |
 | **K-CHATPRO-01** | Chat Pro 流式取消 UX | P2 | `AbortController` 打断上一轮 + 清理 `streaming` 气泡；设置可关流式 | **Done**（Chat Pro 正式启用 · 2026-06-26） |
 | **D-ORDER-01** | monorepo `roles` 路径 SSOT（27 集成测 + oclive-cli `join("roles")`） | P0 | `chat_pro_roles_dir()` / `tests/common` / `resolve_project_roles_dir()` | **Done**（条理优化 Wave A · 2026-06-24） |
 | **D-ORDER-02** | `roles_dir.rs` debug 回退、`test_oocp.rs` 旧 `src-tauri` 路径 | P0 | 指向 `distros/chat-pro/roles` + `distros/desktop-tauri/Cargo.toml` | **Done**（Wave A） |
