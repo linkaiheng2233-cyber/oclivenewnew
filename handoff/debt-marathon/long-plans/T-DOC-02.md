@@ -10,7 +10,7 @@
 | **尺寸** | L（文档债升 Done） |
 | **Minimal / Full** | Minimal |
 | **Owner / runner** | main-repo / **auto** |
-| **状态** | Ready |
+| **状态** | Ready · pr-open（等合入后 Stage 3） |
 | **最后更新** | 2026-07-16 |
 
 <!-- oclive-marathon-contract
@@ -20,7 +20,7 @@
   "runner": "auto",
   "planStatus": "ready",
   "parentDebtDisposition": "done-eligible",
-  "currentStage": 0,
+  "currentStage": 3,
   "prerequisites": [],
   "stages": [
     {"id": 0, "title": "Align Theater SSOT", "files": ["read-only"], "actions": ["Read gates, Theater README and status sources; verify STATUS.md is absent"], "checks": [{"command": "npm run check:debt-marathon -- --id T-DOC-02", "why": "The Ready plan contract must be valid before dispatch"}], "outputs": ["Confirmed non-duplicative STATUS scope"], "rollback": "No writes; report needs-reconcile if an existing SSOT already covers the scope"},

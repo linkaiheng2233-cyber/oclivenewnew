@@ -28,7 +28,7 @@
 | seq | 债 ID | runner | 计划书 | 进度 |
 |-----|-------|--------|--------|------|
 | 10 | FOLLOWUP-VOICE-04-PR123 | auto | [long-plans/FOLLOWUP-VOICE-04-PR123.md](./long-plans/FOLLOWUP-VOICE-04-PR123.md) | done |
-| 20 | T-DOC-02 | auto | [long-plans/T-DOC-02.md](./long-plans/T-DOC-02.md) | pending |
+| 20 | T-DOC-02 | auto | [long-plans/T-DOC-02.md](./long-plans/T-DOC-02.md) | pr-open |
 | 30 | D-ROLEVER-01 | auto | [long-plans/D-ROLEVER-01.md](./long-plans/D-ROLEVER-01.md) | pending |
 | 40 | K-RESILIENCE-01 | auto | [long-plans/K-RESILIENCE-01.md](./long-plans/K-RESILIENCE-01.md) | pending |
 | 50 | K-SUPPLY-05-Full | auto | [long-plans/K-SUPPLY-05-Full.md](./long-plans/K-SUPPLY-05-Full.md) | pending |
