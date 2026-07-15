@@ -42,4 +42,16 @@ describe('resolveVoiceTtsRouting', () => {
       resolveVoiceTtsRouting(globalRouting, 'removed-role-profile', profiles),
     ).toEqual(globalRouting)
   })
+
+  it('keeps settings-page provider when the directive only echoes the global profile', () => {
+    const globalWithLocalHttp = {
+      tts_profile: 'bundled-cosyvoice2-zh',
+      tts_engine: 'cosyvoice2',
+      synth_provider: 'local_http',
+      local_synth_endpoint: 'http://127.0.0.1:9880',
+    }
+    expect(
+      resolveVoiceTtsRouting(globalWithLocalHttp, 'bundled-cosyvoice2-zh', profiles),
+    ).toEqual(globalWithLocalHttp)
+  })
 })
