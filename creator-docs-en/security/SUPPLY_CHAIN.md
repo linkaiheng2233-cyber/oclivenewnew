@@ -28,7 +28,7 @@ We **do not solve** root causes like XZ-style attacks; guardrails **lower probab
 | Guardrail | Location |
 |-----------|----------|
 | Vulnerability scan | `cargo audit` · dimension5 · `ci.yml` |
-| Licenses / duplicate deps | `deny.toml` · `cargo deny check licenses bans` |
+| Licenses / duplicate deps | `deny.toml` (`multiple-versions = deny` + documented `[bans.skip]`) · `cargo deny check licenses bans` · dedup ratchet · dimension5 |
 | Lockfile ratchet | dimension5 blocks `sqlx-mysql` / `rsa` regression |
 | Vuln SSOT | [KNOWN_VULNERABILITIES.md](KNOWN_VULNERABILITIES.md) |
 | Audit scope | [SECURITY_AUDIT_SCOPE.md](SECURITY_AUDIT_SCOPE.md) |
@@ -66,7 +66,7 @@ Local dev: `npm run bundle-kernel:tauri` writes `distros/desktop-tauri/resources
 | **K-SUPPLY-02** | Attach `SHA256SUMS` to GitHub Release | P1 | Workflow in repo; first Release asset = maintainer |
 | **K-SUPPLY-03** | Plugin install review prompt | P2 | **Done** |
 | **K-SUPPLY-04** | Elevate `npm-audit` | P2 | **Observe** |
-| **K-SUPPLY-05** | `deny.toml` multiple-versions → deny | P2 | **OPEN** |
+| **K-SUPPLY-05** | `deny.toml` multiple-versions → deny | P2 | **Done** (Minimal · 2026-07-15) — `deny` + documented skips; remaining families in [LIGHTWEIGHT_PROFILE §6.6](../development/LIGHTWEIGHT_PROFILE.md); Full zero-skip is a separate campaign |
 | **K-SUPPLY-06** | Bit-identical reproducible builds | — | Deferred |
 | **K-SUPPLY-07** | SBOM | — | Deferred |
 

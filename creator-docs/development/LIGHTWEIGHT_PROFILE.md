@@ -53,14 +53,30 @@ CI：三层 **cargo-audit 0.22.1** 硬门禁——**`dimension5-acceptance`**（
 
 ### §6.6 重复依赖审查（`cargo tree -d`）
 
-**结论（摘要）**：锁文件中常见 **多版本** 来自 **Tauri / WebView / tower / bitflags / sha2** 等与 **sqlx / axum** 栈的叠加，属 **可接受技术债**；**优先**随 **sqlx 0.8+** 与 **Tauri 大版本** 升级收敛，而非手工 pin 单 crate。
+**结论（摘要）**：锁文件中常见 **多版本** 来自 **Tauri / WebView / windows-\*** 与 **sqlx / reqwest / toml** 栈叠层，属 **可接受技术债**；**优先**随上游大版本齐步收敛，而非手工 pin 单 crate。
 
-示例（节选 `cargo tree -d`）：
+**门禁（K-SUPPLY-05 Minimal · 2026-07-15）**：
 
-- `bitflags` v1 vs v2（`tauri` / `tower-http`）
-- `block-buffer` / `crypto-common` 多版本（`sha2` 0.10 vs 0.11 链）
+| 护栏 | 行为 |
+|------|------|
+| `deny.toml` `multiple-versions` | **`deny`**（新重复硬失败） |
+| `[bans.skip]` | 对下列 **生态不可消** 族写明理由（非零 dup ≠ 失控） |
+| ratchet | `handoff/LAYERING_BASELINE.json` → `cargo_duplicate_groups`（当前 **80**）· `scripts/check-cargo-dedup-ratchet.mjs` |
 
-全量输出随锁文件变化；发版前可抽样复查。**2026-05-20 最终扫尾**：`base64` 0.21（reqwest/sqlx/tauri）与 0.22（`oclive-cli`→`ureq`）并存，不 pin；待 `oclive-cli` 与主程序 HTTP 栈收敛后再统一。
+**剩余族分类（`cargo deny check bans` 视角；默认不含纯 dev 边）**：
+
+| 类别 | 代表 crate | 处置 |
+|------|------------|------|
+| **生态不可消 → skip** | `windows*` / `windows-sys` 多代、`toml`/`toml_edit`/`winnow`、`thiserror` 1\|2、`hashbrown`/`getrandom`/`bitflags` 1\|2、`base64`/`reqwest` | 见 `deny.toml` 每条 `reason`；等 Tauri/sqlx/HTTP 齐步 |
+| **叶子可钉（本波不钉）** | 偶发单点可用 `[patch]` / 升依赖消掉 | Full 零 skip 另战役；本波 **不**为跳 ratchet 强改 `Cargo.lock` |
+
+示例（节选）：
+
+- `bitflags` v1 vs v2（legacy WebView/tao vs Tauri 2）
+- `toml` 0.8（`oclive-cli` / `system-deps`）vs 0.9/1.x（`tauri-build`）
+- `windows-sys` 0.48–0.61（mio / webview2 / tauri 插件）
+
+全量输出随锁文件变化；发版前抽样 `cargo tree -d` + `cargo deny check bans`。**历史**：`base64` 0.21 vs 0.22（ureq）仍 skip，待 CLI 与主程序 HTTP 栈收敛。
 
 ### §6.7 `cargo-bloat` 基线（Windows x86_64，Release）
 
@@ -98,6 +114,7 @@ cargo bloat --release -n 8
 
 | 日期 | 说明 |
 |------|------|
+| 2026-07-15 | §6.6：K-SUPPLY-05 Minimal gate（deny + skip 族分类） |
 | 2026-05-12 | §6.4 / §6.7：`cargo audit` 与 `cargo bloat --release -n 8` 复测，更新摘要日期与 bloat 数值（`.text` 7.6 MiB、PE 12.0 MiB）。 |
 | 2026-05-13 | 初版：与当前 `main` 锁文件、`cargo audit` / `cargo bloat` 采样对齐；链接 KNOWN_VULNERABILITIES。 |
 

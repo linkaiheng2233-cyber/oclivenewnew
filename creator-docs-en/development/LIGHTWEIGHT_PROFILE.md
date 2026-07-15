@@ -51,14 +51,24 @@ CI: `.github/workflows/ci.yml` **`cargo-audit`** job uses **`continue-on-error: 
 
 ### §6.6 Duplicate dependency review (`cargo tree -d`)
 
-**Conclusion (summary)**: common **multiple versions** in the lockfile come from **Tauri / WebView / tower / bitflags / sha2** stacked with **sqlx / axum**—acceptable technical debt; **prioritize** converging with **sqlx 0.8+** and **major Tauri** upgrades rather than manually pinning single crates.
+**Conclusion (summary)**: common **multiple versions** come from **Tauri / WebView / windows-\*** stacked with **sqlx / reqwest / toml**—acceptable technical debt; **prefer** upstream major alignment over hand-pinning single crates.
 
-Examples (excerpt from `cargo tree -d`):
+**Gate (K-SUPPLY-05 Minimal · 2026-07-15)**:
 
-- `bitflags` v1 vs v2 (`tauri` / `tower-http`)
-- `block-buffer` / `crypto-common` multiple versions (`sha2` 0.10 vs 0.11 chains)
+| Guard | Behavior |
+|-------|----------|
+| `deny.toml` `multiple-versions` | **`deny`** (new duplicates hard-fail) |
+| `[bans.skip]` | Documented skips for **eco-unfixable** families (nonzero dup ≠ uncontrolled) |
+| Ratchet | `handoff/LAYERING_BASELINE.json` → `cargo_duplicate_groups` (currently **80**) · `scripts/check-cargo-dedup-ratchet.mjs` |
 
-Full output changes with the lockfile; spot-check before release.
+**Remaining families (`cargo deny check bans`; default excludes pure-dev edges)**:
+
+| Class | Examples | Disposition |
+|-------|----------|-------------|
+| **Eco-unfixable → skip** | `windows*` / multi-gen `windows-sys`, `toml`/`winnow`, `thiserror` 1\|2, `hashbrown`/`getrandom`/`bitflags` 1\|2, `base64`/`reqwest` | Per-crate `reason` in `deny.toml`; wait Tauri/sqlx/HTTP alignment |
+| **Leaf-pinnable (not this wave)** | Occasional single crates via `[patch]` / bump | Full zero-skip is a separate campaign; **no** lock churn just to dodge the ratchet |
+
+Examples: `bitflags` 1 vs 2 · `toml` 0.8 vs 0.9/1.x · `windows-sys` 0.48–0.61. Spot-check before release.
 
 ### §6.7 `cargo-bloat` baseline (Windows x86_64, Release)
 
