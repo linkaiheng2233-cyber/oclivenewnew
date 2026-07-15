@@ -28,7 +28,10 @@ const portraitLoadFailed = ref(false)
 let portraitGeneration = 0
 
 function isTauri(): boolean {
-  return typeof window !== 'undefined' && '__TAURI__' in window
+  return (
+    typeof window !== 'undefined'
+    && Object.hasOwn(window, '__TAURI_INTERNALS__')
+  )
 }
 
 function revokeBlob(): void {
