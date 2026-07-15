@@ -1,12 +1,14 @@
 # Technical debt inventory
 
-**Last updated:** 2026-07-15（K-SUPPLY-05 Minimal **Done** · K-VOICE-04 诚实化为 Partial · 下一动作跨仓 VSCODE）
+**Last updated:** 2026-07-15（K-SUPPLY-05 Minimal **已合 main** · K-VOICE-04 Partial · 下一动作跨仓 VSCODE）
 
 **Product freeze (Theater v0):** **Lifted** — 朋友 cohort 产品门通过（7/10 卧槽）；模式 2 playtest 扩展中；**模式 3 仍冻结**。见 [theater/MODE2_UNFREEZE.md](./theater/MODE2_UNFREEZE.md)。
 
 **综合评分：** A− · 本地 dimension5 **二十二检** PASS（--ci）· workspace **doctest** 见 check:release · 审查数字 SSOT：[AI_VERIFICATION_PROTOCOL.md](./AI_VERIFICATION_PROTOCOL.md)
 
-**下一动作：** **P1** — **V-VSCODE-PERF-05**（姊妹仓 VS Code F5 / `.vsix` 实机）；模式 2 playtest 扩展至陌生人 cohort；主仓 **K-SUPPLY-05 Minimal 已结**（`deny` + documented skip；ratchet **80**；Full 零 skip 另战役）
+**下一动作：** **P1** — **V-VSCODE-PERF-05**（姊妹仓 VS Code F5 / `.vsix` 实机）；模式 2 playtest 扩展至陌生人 cohort；主仓 **K-SUPPLY-05 Minimal 已在 main**（`deny` + documented skip；ratchet **80**；Full 零 skip 另战役）
+
+**Verification (2026-07-15 · K-SUPPLY-05 Minimal → main):** 已合 `origin/main` · merge `1857dbb5` · CI [`29391724148`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29391724148) **硬门禁 success**（`rust` windows+ubuntu / `dimension5` / `cargo-audit` / `cli` / `oocp` / `cross-host-e2e` / `stale-paths`；`frontend` / `e2e-tauri` / `loom` success）· `multiple-versions = deny` + `[bans.skip]` · ratchet **80** · **Done（Minimal · on main）** · K-VOICE-04 仍 **Partial** · PR [#121](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/121)。
 
 **Verification (2026-07-15 · K-SUPPLY-05 Minimal):** HEAD `e294dc12` · CI [`29386960532`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29386960532) **硬门禁 success**（`rust`/`dimension5`/`cargo-audit`/`cli`/`oocp`/`cross-host-e2e`/`stale-paths`；`frontend`/`e2e-tauri`/`loom` success）· `multiple-versions = deny` + `[bans.skip]` · ratchet **80** · **Done（Minimal）** · K-VOICE-04 纠偏为 **Partial**（`voiceTtsRouting` 未合入；`useRoleVoiceProfileSync` 仍写全局配置）· PR [#121](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/121)。
 
