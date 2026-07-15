@@ -15,7 +15,26 @@ dist-ssr
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
-.cursor/
+.cursor/*
+!.cursor/rules/
+.cursor/rules/*
+!.cursor/rules/oclivenewnew.mdc
+!.cursor/skills/
+.cursor/skills/*
+!.cursor/skills/oclive-dev-pipeline/
+!.cursor/skills/oclive-dev-pipeline/SKILL.md
+!.cursor/skills/oclive-dev-pipeline/discipline-checklist.md
+!.cursor/skills/oclive-dev-pipeline/plan-template.md
+!.cursor/skills/oclive-debt-marathon/
+!.cursor/skills/oclive-debt-marathon/SKILL.md
+!.cursor/skills/oclive-debt-marathon/README.md
+!.cursor/agents/
+.cursor/agents/*
+!.cursor/agents/oclive-debt-stage.md
+!.cursor/hooks/
+.cursor/hooks/*
+!.cursor/hooks/oclive-marathon-stop.mjs
+!.cursor/hooks.json
 .idea
 .DS_Store
 *.suo
