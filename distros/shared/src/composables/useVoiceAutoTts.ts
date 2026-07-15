@@ -506,9 +506,13 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
     speakOpts: SpeakOptions = {},
   ): Promise<void> {
     const rawDirective = await resolveDirective(payload, cfg, speakOpts)
-    const roleProfile = typeof rawDirective?.synth_profile === 'string'
-      ? rawDirective.synth_profile
-      : undefined
+    // build_directive always stamps synth_profile (global fill when the pack
+    // omits one). Only a pack id that differs from the user's settings profile
+    // is a true task override.
+    const stamped = typeof rawDirective?.synth_profile === 'string'
+      ? rawDirective.synth_profile.trim()
+      : ''
+    const roleProfile = stamped && stamped !== cfg.tts_profile ? stamped : undefined
     const routing = resolveVoiceTtsRouting(
       cfg,
       roleProfile,
