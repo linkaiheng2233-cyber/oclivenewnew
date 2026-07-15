@@ -81,6 +81,16 @@ async function main() {
 
   let failed = 0
   try {
+    // K-VOICE-04 / VX-11: pin a non-default global TTS profile so roles without
+    // synth_profile inherit it, while roles with an override keep their own.
+    const globalTtsProfile = 'edge-tts-zh'
+    await rpcCall(rpcUrl, 'config_updated', {
+      config: {
+        tts_expansion_enabled: true,
+        tts_profile: globalTtsProfile,
+        synth_provider: 'cloud',
+      },
+    })
     for (const role of ROLES) {
       const rolePath = path.join(repoRoot, role.dir)
       assert(fs.existsSync(rolePath), `missing role dir ${rolePath}`)
@@ -96,6 +106,13 @@ async function main() {
         }
         const emo = result.directive?.emo_text || ''
         console.log('OK', role.id, botEmotion, emo.slice(0, 80))
+        const expectedSynthProfile = role.id === 'mumu'
+          ? 'bundled-cosyvoice2-zh'
+          : globalTtsProfile
+        assert(
+          result.directive?.synth_profile === expectedSynthProfile,
+          `${role.id}: expected synth_profile ${expectedSynthProfile}, got ${result.directive?.synth_profile}`,
+        )
         if (role.expectHandwritten && botEmotion === 'neutral') {
           const vp = JSON.parse(
             fs.readFileSync(path.join(rolePath, 'voice_profile.json'), 'utf8'),

@@ -26,6 +26,10 @@ import {
 import { formatVoiceSpeakFailure, shouldFallbackStreamToRpc } from '@oclive/shared/utils/voiceSpeakErrors'
 import { voiceDialogueFromRaw } from '@oclive/shared/utils/voiceDialogueFromRaw'
 import { VoiceSpeakDeduper } from '@oclive/shared/utils/voiceSpeakDeduper'
+import {
+  resolveVoiceTtsRouting,
+  type VoiceTtsProfileRouting,
+} from '@oclive/shared/lib/voiceTtsRouting'
 import { remainderAfterSpokenPrefix } from '@oclive/shared/utils/extractFirstSpeakableChunk'
 import { onBeforeUnmount, onMounted } from 'vue'
 import { usePluginStore } from '@oclive/shared/stores/pluginStore'
@@ -62,7 +66,7 @@ type VoiceRuntimeConfig = {
 }
 
 type SpeakOptions = {
-  /** Stream chunks: use cached directive only — do not block on build_directive. */
+  /** Stream chunks normally hit the directive cache populated at message submit. */
   fastPath?: boolean
 }
 
@@ -71,7 +75,7 @@ type SpeakJob = {
   text: string
   payload: { bot_emotion?: string, role_id?: string }
   cfg: VoiceRuntimeConfig
-  speakOpts: SpeakOptions
+  directive: Record<string, unknown>
 }
 
 type RpcSpeakResult = {
@@ -116,36 +120,43 @@ function speakJobKey(text: string, payload: SpeakJob['payload'], cfg: VoiceRunti
 export function invalidateVoiceRuntimeConfig(): void {
   cachedConfig = null
   cachedConfigAt = 0
-  cachedProfileEngines = null
+  cachedTtsProfiles = null
 }
 
-let cachedProfileEngines: Map<string, string> | null = null
+let cachedTtsProfiles: Map<string, VoiceTtsProfileRouting> | null = null
 
-async function loadTtsProfileEngines(): Promise<Map<string, string>> {
-  if (cachedProfileEngines)
-    return cachedProfileEngines
+async function loadTtsProfiles(): Promise<Map<string, VoiceTtsProfileRouting>> {
+  if (cachedTtsProfiles)
+    return cachedTtsProfiles
   try {
     const list = (await directoryPluginInvoke(
       VOICE_ASR_PLUGIN_ID,
       'voice.list_profiles',
       {},
-    )) as { profiles?: Array<{ id: string, engine?: string }> }
-    const map = new Map<string, string>()
-    for (const row of list.profiles || []) {
-      if (row.id && row.engine)
-        map.set(row.id, row.engine)
+    )) as {
+      profiles?: Array<{
+        id: string
+        engine?: string
+        synth_provider?: string
+        sidecar_endpoint?: string
+      }>
     }
-    cachedProfileEngines = map
+    const map = new Map<string, VoiceTtsProfileRouting>()
+    for (const row of list.profiles || []) {
+      if (row.id) {
+        map.set(row.id, {
+          engine: row.engine,
+          synth_provider: row.synth_provider,
+          sidecar_endpoint: row.sidecar_endpoint,
+        })
+      }
+    }
+    cachedTtsProfiles = map
     return map
   }
   catch {
     return new Map()
   }
-}
-
-async function resolveTtsEngine(profileId: string): Promise<string> {
-  const map = await loadTtsProfileEngines()
-  return map.get(profileId) || 'cosyvoice2'
 }
 
 async function loadVoiceRuntimeConfig(
@@ -163,12 +174,12 @@ async function loadVoiceRuntimeConfig(
       typeof cfg.tts_profile === 'string' && cfg.tts_profile.trim()
         ? cfg.tts_profile.trim()
         : DEFAULT_TTS_PROFILE
-    const engines = await loadTtsProfileEngines()
+    const profiles = await loadTtsProfiles()
     cachedConfig = {
       tts_expansion_enabled: cfg.tts_expansion_enabled === true,
       auto_tts: cfg.auto_tts === true,
       tts_profile: ttsProfile,
-      tts_engine: engines.get(ttsProfile) || 'cosyvoice2',
+      tts_engine: profiles.get(ttsProfile)?.engine || 'cosyvoice2',
       director_profile:
         typeof cfg.director_profile === 'string'
           ? cfg.director_profile.trim() || 'none'
@@ -213,8 +224,6 @@ async function prefetchVoiceDirective(
   director: string,
   emotion: string,
 ): Promise<void> {
-  if (!director || director === 'none')
-    return
   const cacheKey = directiveCacheKey(roleId, director, emotion)
   if (directiveCache.has(cacheKey))
     return
@@ -252,15 +261,15 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
     speakOpts: SpeakOptions,
   ): Promise<Record<string, unknown> | undefined> {
     const director = cfg.director_profile
-    if (!director || director === 'none')
-      return undefined
     const emotion = payload.bot_emotion || 'neutral'
     const roleId = payload.role_id?.trim() || ''
     const cacheKey = directiveCacheKey(roleId, director, emotion)
     const cachedDirective = directiveCache.get(cacheKey)
     if (cachedDirective)
       return cachedDirective
-    if (speakOpts.fastPath)
+    // Routing correctness wins over the fast path: a role-level synth_profile
+    // must be known before choosing direct CosyVoice streaming vs RPC.
+    if (speakOpts.fastPath && !roleId)
       return undefined
     const rolePath = roleId ? await resolveRolePackPath(roleId) : ''
     try {
@@ -315,27 +324,18 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
     await audioEl.play()
   }
 
-  async function rpcSpeak(
-    text: string,
-    payload: { bot_emotion?: string, role_id?: string },
-    cfg: VoiceRuntimeConfig,
-    speakOpts: SpeakOptions,
-  ): Promise<RpcSpeakResult> {
-    const rawDirective = await resolveDirective(payload, cfg, speakOpts)
-    const rolePath = payload.role_id?.trim()
-      ? await resolveRolePackPath(payload.role_id)
+  async function rpcSpeak(job: SpeakJob): Promise<RpcSpeakResult> {
+    const rolePath = job.payload.role_id?.trim()
+      ? await resolveRolePackPath(job.payload.role_id)
       : ''
-    const directive = finalizeSpeakDirective(rawDirective, cfg, payload)
-    const profile
-      = (directive.synth_profile as string | undefined) || cfg.tts_profile
     return (await directoryPluginInvoke(
       VOICE_ASR_PLUGIN_ID,
       'voice.speak',
       {
-        text,
-        profile,
-        directive,
-        bot_emotion: payload.bot_emotion || 'neutral',
+        text: job.text,
+        profile: job.cfg.tts_profile,
+        directive: job.directive,
+        bot_emotion: job.payload.bot_emotion || 'neutral',
         role_path: rolePath,
       },
     )) as RpcSpeakResult
@@ -345,7 +345,7 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
     const existing = preparedRpcSpeak.get(job.key)
     if (existing)
       return existing
-    const promise = rpcSpeak(job.text, job.payload, job.cfg, job.speakOpts)
+    const promise = rpcSpeak(job)
     preparedRpcSpeak.set(job.key, promise)
     promise.finally(() => {
       if (preparedRpcSpeak.get(job.key) === promise)
@@ -385,13 +385,12 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
     /** One sidecar synthesis at a time — avoid GPU contention (cosyvoice_empty). */
     if (streamPrefetchByKey.size > 0)
       return
-    const directive = await resolveDirective(job.payload, job.cfg, job.speakOpts)
     const endpoint = await sidecarEndpointFor(job.cfg)
     const prefetch = startCosyvoiceSidecarPrefetch(
       job.key,
       endpoint,
       job.text,
-      finalizeSpeakDirective(directive, job.cfg, job.payload),
+      job.directive,
     )
     streamPrefetchByKey.set(job.key, prefetch)
     void prefetch.done.finally(() => {
@@ -413,8 +412,6 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
 
       const useStream = shouldUseDirectSidecarStream(job.cfg.synth_provider, job.cfg.tts_engine)
       if (useStream) {
-        const rawDirective = await resolveDirective(job.payload, job.cfg, job.speakOpts)
-        const directive = finalizeSpeakDirective(rawDirective, job.cfg, job.payload)
         if (generation !== speakGeneration)
           return
         const endpoint = await sidecarEndpointFor(job.cfg)
@@ -422,7 +419,7 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
         const streamRes = await playCosyvoiceSidecarStream(
           endpoint,
           reply,
-          directive,
+          job.directive,
           prefetch,
         )
         if (streamRes.ok && (streamRes.chunks ?? 0) > 0) {
@@ -502,16 +499,27 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
     void drainSpeakQueue()
   }
 
-  function queueSpeakText(
+  async function queueSpeakText(
     text: string,
     payload: { bot_emotion?: string, role_id?: string },
     cfg: VoiceRuntimeConfig,
     speakOpts: SpeakOptions = {},
-  ): void {
-    const key = speakJobKey(text, payload, cfg)
+  ): Promise<void> {
+    const rawDirective = await resolveDirective(payload, cfg, speakOpts)
+    const roleProfile = typeof rawDirective?.synth_profile === 'string'
+      ? rawDirective.synth_profile
+      : undefined
+    const routing = resolveVoiceTtsRouting(
+      cfg,
+      roleProfile,
+      await loadTtsProfiles(),
+    )
+    const effectiveCfg: VoiceRuntimeConfig = { ...cfg, ...routing }
+    const directive = finalizeSpeakDirective(rawDirective, effectiveCfg, payload)
+    const key = speakJobKey(text, payload, effectiveCfg)
     if (!speakDeduper.markQueued(key))
       return
-    enqueueSpeakJob({ key, text, payload, cfg, speakOpts })
+    enqueueSpeakJob({ key, text, payload, cfg: effectiveCfg, directive })
   }
 
   function handleSpeakError(err: unknown): void {
@@ -537,7 +545,7 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
       return
 
     await scheduleVoiceExpansionWarm(id => pluginStore.isPluginDisabled(id))
-    queueSpeakText(reply, payload, cfg)
+    await queueSpeakText(reply, payload, cfg)
   }
 
   async function onStreamSentence(payload: unknown): Promise<void> {
@@ -556,7 +564,7 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
       (streamSpokenPrefixById.get(streamId) || '') + sentence,
     )
     void scheduleVoiceExpansionWarm(id => pluginStore.isPluginDisabled(id))
-    queueSpeakText(sentence, p, cfg, { fastPath: true })
+    await queueSpeakText(sentence, p, cfg, { fastPath: true })
   }
 
   async function onMessageSent(payload: unknown): Promise<void> {
@@ -591,7 +599,7 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
       return
 
     await scheduleVoiceExpansionWarm(id => pluginStore.isPluginDisabled(id))
-    queueSpeakText(toSpeak, p, cfg)
+    await queueSpeakText(toSpeak, p, cfg)
   }
 
   function onMessageSubmit(payload: unknown): void {
