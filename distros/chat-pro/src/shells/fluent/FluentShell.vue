@@ -527,6 +527,8 @@ function onLeftRailResize(deltaX: number) {
   line-height: 1.4;
 }
 .right-pane {
+  --chat-reading-width: 52rem;
+
   flex: 1;
   min-width: 0;
   min-height: 0;
@@ -551,6 +553,8 @@ function onLeftRailResize(deltaX: number) {
 .chat-scroll-wrap :deep(.chat-list-root) {
   flex: 1;
   min-height: 0;
+  width: min(100%, var(--chat-reading-width));
+  margin-inline: auto;
 }
 .input-area {
   flex-shrink: 0;
@@ -559,6 +563,10 @@ function onLeftRailResize(deltaX: number) {
   border-top: 1px solid var(--border-light);
   background: var(--bg-primary);
   box-shadow: 0 -2px 14px color-mix(in srgb, var(--text-primary) 8%, transparent);
+}
+.input-area :deep(.input-row) {
+  width: min(100%, var(--chat-reading-width));
+  margin-inline: auto;
 }
 .fade-enter-active,
 .fade-leave-active {
