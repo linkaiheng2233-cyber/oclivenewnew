@@ -19,9 +19,9 @@
 | 项 | 值 |
 |----|-----|
 | Base SHA | `f7e723001a797450753354e3b6f5da7ef084eaad` |
-| Commit SHA | （commit 后回填） |
-| PR URL | （create 后回填） |
-| `git diff --check` | **PASS**（EN §11 已 LF 规范化） |
+| Commit SHA | `6bab627654258ca0ac916e6b21295162237fc183`（初始）；EN 最小 diff 修正另提交 |
+| PR URL | https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/125 |
+| `git diff --check` | **PASS**（EN §11 最小插入） |
 | `check-doc-mirror` | PASS（Stage 1） |
 | TECHNICAL_DEBT | **仍 OPEN**（无 merge+CI · 禁止超前 Done） |
 
