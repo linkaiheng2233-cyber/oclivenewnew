@@ -560,8 +560,8 @@ auto_sync: false
 |------|------|------|------|
 | `schema_version` | integer | 是 | **1** 或 **2**（v2 增 ref / engine_family） |
 | `director_profile` | string | 否 | 默认导演 profile id（如 `rules-v1`） |
-| `synth_profile` | string | 否 | 默认发声 profile id（如 `bundled-cosyvoice2-zh`） |
-| `preferred_tts_profile` | string | 否 | 设置页切换角色时的 TTS 档案建议（与 `synth_profile` 同 id 空间；未实现自动联动前为文档性 hint · K-VOICE-04） |
+| `synth_profile` | string | 否 | 该角色每次播报的 profile 覆盖（如 `bundled-cosyvoice2-zh`）；缺省时继承设置页全局 TTS，且角色切换不改写全局设置 |
+| `preferred_tts_profile` | string | 否 | 兼容旧角色包的建议字段；运行时优先读取 `synth_profile`，不得用它在角色切换时改写用户全局 TTS |
 | `speed` | number | 否 | baseline 语速乘数（0.5–2.0） |
 | `energy` | string | 否 | `soft` · `normal` · `strong` |
 | `engine_family` | string[] | 否 | v2：推荐引擎族（如 `cosyvoice2`） |

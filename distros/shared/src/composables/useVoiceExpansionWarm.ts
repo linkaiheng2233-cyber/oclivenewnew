@@ -4,8 +4,8 @@ import { VOICE_ASR_PLUGIN_ID } from '@oclive/shared/lib/voiceAsrEvents'
 const DEFAULT_TTS_PROFILE = 'bundled-cosyvoice2-zh'
 const DEFAULT_SIDECAR = 'http://127.0.0.1:50000'
 
-let warmPromise: Promise<void> | null = null
-let cachedSidecarEndpoint: string | null = null
+const warmPromises = new Map<string, Promise<void>>()
+const cachedSidecarEndpoints = new Map<string, string>()
 
 type VoiceWarmResult = {
   ok?: boolean
@@ -14,10 +14,10 @@ type VoiceWarmResult = {
   sidecar_endpoint?: string
 }
 
-function rememberSidecarEndpoint(result: unknown): void {
+function rememberSidecarEndpoint(profile: string, result: unknown): void {
   const ep = (result as VoiceWarmResult | null)?.sidecar_endpoint?.trim()
   if (ep)
-    cachedSidecarEndpoint = ep
+    cachedSidecarEndpoints.set(profile, ep)
 }
 
 function isSidecarAlreadyWarmed(result: unknown): boolean {
@@ -30,17 +30,20 @@ function isSidecarAlreadyWarmed(result: unknown): boolean {
 }
 
 /** Sidecar URL from the last successful plugin warm/probe (authoritative for stream fetch). */
-export function getVoiceSidecarEndpoint(): string | null {
-  return cachedSidecarEndpoint
+export function getVoiceSidecarEndpoint(profile = DEFAULT_TTS_PROFILE): string | null {
+  return cachedSidecarEndpoints.get(profile) || null
 }
 
-export function resetVoiceSidecarEndpoint(): void {
-  cachedSidecarEndpoint = null
+export function resetVoiceSidecarEndpoint(profile?: string): void {
+  if (profile)
+    cachedSidecarEndpoints.delete(profile)
+  else
+    cachedSidecarEndpoints.clear()
 }
 
 /** Clear in-flight warm (e.g. after voice settings change). */
 export function resetVoiceExpansionWarmSchedule(): void {
-  warmPromise = null
+  warmPromises.clear()
   resetVoiceSidecarEndpoint()
 }
 
@@ -62,19 +65,23 @@ async function probeTtsSidecar(
 function startBackgroundWarm(
   profile: string,
 ): void {
-  if (warmPromise)
+  if (warmPromises.has(profile))
     return
-  warmPromise = (async () => {
+  const promise = (async () => {
     const probe = await probeTtsSidecar(profile)
     if (probe)
-      rememberSidecarEndpoint(probe)
+      rememberSidecarEndpoint(profile, probe)
     if (isSidecarAlreadyWarmed(probe))
       return
     const result = await directoryPluginInvoke(VOICE_ASR_PLUGIN_ID, 'voice.warm', {
       profile,
     })
-    rememberSidecarEndpoint(result)
-  })().catch(() => {})
+    rememberSidecarEndpoint(profile, result)
+  })().catch(() => {}).finally(() => {
+    if (warmPromises.get(profile) === promise)
+      warmPromises.delete(profile)
+  })
+  warmPromises.set(profile, promise)
 }
 
 /**
@@ -97,16 +104,14 @@ export async function scheduleVoiceExpansionWarm(
         : DEFAULT_TTS_PROFILE
     const probe = await probeTtsSidecar(profile)
     if (probe)
-      rememberSidecarEndpoint(probe)
+      rememberSidecarEndpoint(profile, probe)
     if (isSidecarAlreadyWarmed(probe))
       return
     startBackgroundWarm(profile)
-    if (cachedSidecarEndpoint)
+    if (cachedSidecarEndpoints.has(profile))
       return
   }
-  catch {
-    warmPromise = null
-  }
+  catch {}
 }
 
 /**
@@ -118,13 +123,14 @@ export async function resolveVoiceSidecarEndpoint(
   fallbackEndpoint: string,
   isPluginDisabled: (id: string) => boolean = () => false,
 ): Promise<string> {
-  if (cachedSidecarEndpoint)
-    return cachedSidecarEndpoint
+  const cachedEndpoint = cachedSidecarEndpoints.get(profile)
+  if (cachedEndpoint)
+    return cachedEndpoint
 
   if (!isPluginDisabled(VOICE_ASR_PLUGIN_ID)) {
     const probe = await probeTtsSidecar(profile)
     if (probe)
-      rememberSidecarEndpoint(probe)
+      rememberSidecarEndpoint(profile, probe)
     if (!isSidecarAlreadyWarmed(probe)) {
       try {
         const ui = await getPluginSettingsUi(VOICE_ASR_PLUGIN_ID)
@@ -135,8 +141,9 @@ export async function resolveVoiceSidecarEndpoint(
         /* ignore */
       }
     }
-    if (cachedSidecarEndpoint)
-      return cachedSidecarEndpoint
+    const resolvedEndpoint = cachedSidecarEndpoints.get(profile)
+    if (resolvedEndpoint)
+      return resolvedEndpoint
   }
 
   const trimmed = fallbackEndpoint.trim()

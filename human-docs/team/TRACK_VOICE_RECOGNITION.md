@@ -73,6 +73,7 @@ python loop.py
 | **VX-8** | 主流 TTS adapter | Tier-1：`gpt-sovits-http` · `qwen3-tts-http` · `edge-tts` · `cloud-tts-openai` · `fish-speech-http` · `indextts-http` |
 | **VX-9** | 通用 HTTP 适配包 | `voice_tts_adapter.schema.json` · `generic-http-adapter` · `voice.import_tts_adapter` · 设置页导入 UI |
 | **VX-10** | 愿景与生态 | 社区 directory 插件 · 插件市场 adapter 分类 · `voice_directive` v2 · 全引擎流式 — 见 TECHNICAL_DEBT K-VOICE-02–08 |
+| **VX-11** | 任务级 TTS 路由 | 全局 profile 为所有角色的基础设施；角色 `synth_profile` 仅覆盖单次播报；profile/engine/provider/endpoint 按任务一起路由；预热端点按 profile 隔离；`preferred_tts_profile` 不得写全局（K-VOICE-04） |
 
 **产品原则**：文字默认；情感 TTS 为扩展；不为发声订阅；probe 失败诚实提示，无 Piper 降级。
 
@@ -105,7 +106,7 @@ node distros/chat-pro/plugins/com.oclive.voice.asr/rpc_server.mjs
 
 期望示例（2026-07 · rules-v1）：`mumu` 用手写 `voice_profile`；`shimeng` 偏清冷毒舌少女；`枫侵月` 偏温和少年感；仅一句人设的 `polish-dev` 得泛角色 + 嘴硬修饰。
 
-**自动化矩阵（2026-07-08 · L1）**：`node scripts/test-voice-build-directive.mjs` → 四角色 × neutral/happy/shy **PASS**；`node scripts/test-voice-speak-path.mjs --probe-only` → bundled CosyVoice **ok** · GPT-SoVITS **probe ok**（本地 :9880 在线时）· 离线 engine 诚实 `endpoint_unreachable` / `engine_not_installed`。
+**自动化矩阵（2026-07-15 · L1 · VX-11）**：`node scripts/test-voice-build-directive.mjs` → 四角色 × neutral/happy/shy **PASS**，并断言全局 TTS 固定后 `mumu` `synth_profile` 覆盖、其余角色继承全局；`node scripts/test-voice-speak-path.mjs --probe-only` → bundled CosyVoice **ok** · GPT-SoVITS **probe ok**（本地 :9880 在线时）· 离线 engine 诚实 `endpoint_unreachable` / `engine_not_installed`。
 
 **不在本轨道：** Live2D、Chat Pro Vue、`kernel/crates/` 内核、**Chat Pro UI 流式打字机**（见 [CHAT_PRO §2 延迟/stream](./CHAT_PRO_VERTICAL_HANDOFF.md) · 组长或视觉线）。
 

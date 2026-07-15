@@ -63,4 +63,25 @@ describe('useVoiceExpansionWarm', () => {
       expect.anything(),
     )
   })
+
+  it('keeps sidecar endpoints isolated by TTS profile', async () => {
+    invokeMock.mockImplementation(async (_id: string, method: string, params: { profile?: string }) => {
+      if (method === 'voice.probe_tts') {
+        const port = params.profile === 'profile-a' ? 50101 : 50102
+        return { ok: true, warmed: true, sidecar_endpoint: `http://127.0.0.1:${port}` }
+      }
+      return { ok: false }
+    })
+
+    const mod = await import('./useVoiceExpansionWarm')
+    mod.resetVoiceExpansionWarmSchedule()
+    await expect(
+      mod.resolveVoiceSidecarEndpoint('profile-a', '', () => false),
+    ).resolves.toBe('http://127.0.0.1:50101')
+    await expect(
+      mod.resolveVoiceSidecarEndpoint('profile-b', '', () => false),
+    ).resolves.toBe('http://127.0.0.1:50102')
+    expect(mod.getVoiceSidecarEndpoint('profile-a')).toBe('http://127.0.0.1:50101')
+    expect(mod.getVoiceSidecarEndpoint('profile-b')).toBe('http://127.0.0.1:50102')
+  })
 })
