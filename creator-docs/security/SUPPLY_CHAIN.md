@@ -26,7 +26,7 @@
 | 护栏 | 位置 |
 |------|------|
 | **漏洞扫描** | `cargo audit` 0.22.1 · dimension5 · `ci.yml` · `cargo-audit-lockfile.yml` |
-| **许可证 / 重复依赖** | 根 `deny.toml` · `cargo deny check licenses bans` · dimension5 · `oclive lint --deny` |
+| **许可证 / 重复依赖** | 根 `deny.toml`（`multiple-versions = deny` + 有理由 `[bans.skip]`）· `cargo deny check licenses bans` · dedup ratchet · dimension5 · `oclive lint --deny` |
 | **锁文件 ratchet** | dimension5 禁止 `sqlx-mysql` / `rsa` 回潮 |
 | **漏洞 SSOT** | [KNOWN_VULNERABILITIES.md](./KNOWN_VULNERABILITIES.md) |
 | **审查边界** | [SECURITY_AUDIT_SCOPE.md](./SECURITY_AUDIT_SCOPE.md) |
@@ -66,7 +66,7 @@ sha256sum oclive-kernel-server
 | **K-SUPPLY-02** | GitHub Release 挂 `SHA256SUMS` asset | P1 | workflow 已入库；**首次 Release 挂 asset = 维护者** |
 | **K-SUPPLY-03** | 插件安装审源码提示 | P2 | **Done** |
 | **K-SUPPLY-04** | `npm-audit` 升格 | P2 | **Observe** — 连续 2 周期 high/critical 再硬红 |
-| **K-SUPPLY-05** | `deny.toml` multiple-versions → deny | P2 | **OPEN** — 先 `cargo tree -d` 去重 |
+| **K-SUPPLY-05** | `deny.toml` multiple-versions → deny | P2 | **Done**（Minimal · 2026-07-15）— `deny` + 有理由 skip；剩余族见 [LIGHTWEIGHT_PROFILE §6.6](../development/LIGHTWEIGHT_PROFILE.md)；Full 零 skip 另战役 |
 | **K-SUPPLY-06** | 位级可重复构建 | — | Deferred |
 | **K-SUPPLY-07** | SBOM | — | Deferred |
 
@@ -93,5 +93,6 @@ sha256sum oclive-kernel-server
 
 | 日期 | 说明 |
 |------|------|
+| 2026-07-15 | K-SUPPLY-05 Minimal：`multiple-versions = deny` + documented `[bans.skip]`；族分类链 LIGHTWEIGHT §6.6 |
 | 2026-06-24 | Wave 1–2：SHA256 workflow、插件 installPath + 审源码 toast |
 | 2026-06-24 | 初版：信任模型、基线护栏、与技术债 K-SUPPLY-* 对齐 |

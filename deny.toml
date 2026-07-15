@@ -21,5 +21,60 @@ allow = [
 confidence-threshold = 0.8
 
 [bans]
-# K-SUPPLY-05: raise to "deny" after `cargo tree -d` duplicate cleanup (ratchet: scripts/check-cargo-dedup-ratchet.mjs).
-multiple-versions = "warn"
+# K-SUPPLY-05 Minimal (2026-07-15): hard-fail new duplicates; documented skips for
+# eco co-existence that cannot be collapsed without upstream Tauri/sqlx/windows alignment.
+# Ratchet: scripts/check-cargo-dedup-ratchet.mjs · family notes: LIGHTWEIGHT_PROFILE §6.6.
+multiple-versions = "deny"
+
+# Skip list: each entry is a crate still present in multiple versions under `cargo deny
+# check bans` (default: exclude pure-dev edges). Reasons group by eco family.
+# Full zero-dup (no skips) is a separate campaign — not this Minimal Done.
+skip = [
+    # --- HTTP / crypto shared across ureq · reqwest · sqlx ---
+    { crate = "base64", reason = "reqwest/sqlx vs oclive-cli→ureq pin different majors; converge HTTP stack later" },
+    { crate = "reqwest", reason = "workspace crates pull different reqwest feature/version sets (kernel vs tools)" },
+    { crate = "png", reason = "image/ico vs tauri resource packing; leave until shared image crate aligns" },
+    { crate = "mio", reason = "tokio vs older notify/socket2 peers; upstream tokio alignment only" },
+    { crate = "wasm-streams", reason = "reqwest wasm feature matrix retains dual wasm-streams for browser target" },
+    { crate = "r-efi", reason = "getrandom 0.2/0.3 EFI stubs; leave with getrandom family" },
+
+    # --- hash / RNG leaf stack ---
+    { crate = "bitflags", reason = "bitflags 1 (legacy WebView/tao peers) vs 2 (Tauri 2 / tower-http)" },
+    { crate = "foldhash", reason = "hashbrown major skew pulls foldhash 0.1 vs 0.2" },
+    { crate = "getrandom", reason = "0.2/0.3/0.4 co-exist across ring/rand/tauri; no single pin without breakage" },
+    { crate = "hashbrown", reason = "indexmap/ahash/sqlx/tauri each pin different hashbrown majors" },
+    { crate = "indexmap", reason = "indexmap 1 (schemars/older toml) vs 2 (serde_yaml/tauri-utils)" },
+
+    # --- proc-macro / serde ecosystem ---
+    { crate = "heck", reason = "clap/serde derive vs older strum/tauri-codegen heck pins" },
+    { crate = "proc-macro-crate", reason = "toml 0.8 vs 0.9/1.x resolve different proc-macro-crate majors" },
+    { crate = "syn", reason = "syn 1 leftover via older derive vs syn 2 workspace; waits leaf upgrades" },
+    { crate = "serde_spanned", reason = "toml 0.8 vs toml 1.x each vendor their serde_spanned major" },
+    { crate = "thiserror", reason = "thiserror 1 (sqlx/older) vs 2 (tauri/newer workspace)" },
+    { crate = "thiserror-impl", reason = "paired with thiserror 1 vs 2 dual" },
+
+    # --- TOML stack (cli + tauri-build + cargo_toml) ---
+    { crate = "toml", reason = "toml 0.8 (oclive-cli/system-deps) vs 0.9/1.x (tauri-build/embed-resource)" },
+    { crate = "toml_datetime", reason = "follows toml major split; cannot unify without pin wars" },
+    { crate = "toml_edit", reason = "toml_edit majors track toml 0.8 vs 1.x / cargo_toml" },
+    { crate = "winnow", reason = "winnow 0.5/0.7/1.x pulled by toml parsers across Tauri build graph" },
+
+    # --- windows / WebView2 eco (Tauri 2 host) ---
+    { crate = "windows", reason = "windows 0.57 (webview2-com) vs 0.61 (newer tauri plugins)" },
+    { crate = "windows-core", reason = "paired with windows crate major split" },
+    { crate = "windows-implement", reason = "paired with windows crate major split" },
+    { crate = "windows-interface", reason = "paired with windows crate major split" },
+    { crate = "windows-link", reason = "windows-link 0.1 vs 0.2 across windows-sys generations" },
+    { crate = "windows-result", reason = "windows-result majors track windows-core 0.57 vs 0.61" },
+    { crate = "windows-strings", reason = "windows-strings dual with windows-core majors" },
+    { crate = "windows-sys", reason = "0.48–0.61 multi-gen from mio/socket2/webview2/tauri; eco cannot collapse yet" },
+    { crate = "windows-targets", reason = "target meta crates track windows-sys generations" },
+    { crate = "windows_aarch64_gnullvm", reason = "windows-sys target triple crates; multi-gen with windows-sys" },
+    { crate = "windows_aarch64_msvc", reason = "windows-sys target triple crates; multi-gen with windows-sys" },
+    { crate = "windows_i686_gnu", reason = "windows-sys target triple crates; multi-gen with windows-sys" },
+    { crate = "windows_i686_gnullvm", reason = "windows-sys target triple crates; multi-gen with windows-sys" },
+    { crate = "windows_i686_msvc", reason = "windows-sys target triple crates; multi-gen with windows-sys" },
+    { crate = "windows_x86_64_gnu", reason = "windows-sys target triple crates; multi-gen with windows-sys" },
+    { crate = "windows_x86_64_gnullvm", reason = "windows-sys target triple crates; multi-gen with windows-sys" },
+    { crate = "windows_x86_64_msvc", reason = "windows-sys target triple crates; multi-gen with windows-sys" },
+]

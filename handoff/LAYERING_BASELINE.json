@@ -4,6 +4,6 @@
   "domain_to_infrastructure_fq_refs": 1,
   "cargo_duplicate_groups": 80,
   "updated": "2026-07-15",
-  "note": "K-PLATFORM-01a Full Tauri 2 merge side-effect: cargo tree -d 80 (−12 vs 92). K-SUPPLY-05 still Partial (deny.toml multiple-versions not flipped).",
+  "note": "cargo_duplicate_groups 80 (Tauri2 side-effect). K-SUPPLY-05 Minimal Done 2026-07-15: multiple-versions=deny + documented bans.skip (nonzero dup OK; Full zero-skip separate).",
   "check_command": "node scripts/check-domain-layering.mjs"
 }
