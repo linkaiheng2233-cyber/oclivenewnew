@@ -10,6 +10,8 @@
 
 **马拉松计划书：** [`debt-marathon/`](./debt-marathon/README.md) · 总索引 [`MARATHON_QUEUE.md`](./debt-marathon/MARATHON_QUEUE.md) · **AI+流水线硬门禁** [`AI_AND_PIPELINE_GATES.md`](./debt-marathon/AI_AND_PIPELINE_GATES.md) · 覆盖 [`COVERAGE.md`](./debt-marathon/COVERAGE.md)；Skill：`oclive-debt-marathon`。
 
+**Verification (2026-07-16 · T-DOC-02 → main):** 已合 `origin/main` · merge `94b380ce` · CI [`29498022046`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29498022046) **硬门禁 success**（`rust` windows+ubuntu / `dimension5` / `cargo-audit` / `cli` / `oocp` / `cross-host-e2e` / `stale-paths`；`frontend` / `e2e-tauri` / `loom` success）· [`theater/STATUS.md`](./theater/STATUS.md) 一页姿态 + README 链 · **Done** · PR [#124](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/124)。
+
 **Verification (2026-07-16 · K-VOICE-06 Minimal):** HEAD `b8cb0c48` · CI [`29465172205`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29465172205) **硬门禁 success**（`rust` windows+ubuntu / `dimension5` / `cargo-audit` / `cli` / `oocp` / `cross-host-e2e` / `stale-paths`；`frontend` / `e2e-tauri` / `loom` success）· PLUGIN_V1 双镜 `com.user.tts.*` RPC 契约 · 拒测 `community_tts_plugin_rpc_rejects_undeclared_speak` · **Done（Minimal · VX-10）** · ≠ K-VOICE-02 产品化 · PR [#126](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/126)。
 
 **Verification (2026-07-16 · K-VOICE-04 inherit-provider → main):** 已合 `origin/main` · merge `262c9ac4` · CI [`29432835462`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29432835462) **硬门禁 success**（`rust` windows+ubuntu / `dimension5` / `cargo-audit` / `cli` / `oocp` / `cross-host-e2e` / `stale-paths`；`frontend` / `e2e-tauri` / `loom` success）· 继承 TTS 时保留 settings `synth_provider` · K-VOICE-04 仍 **Done**（不降级）· 下一动作仍 **V-VSCODE-PERF-05** · PR [#123](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/123)。
@@ -136,7 +138,7 @@
 | **K-CONFIG-01** | 配置无诊断 | **P2** | oclive-cli doctor config-resolve + `--json` + 自动测试 | **Done**（2026-07-13 · runtime `plugin_resolution` 纯路径默认 · `diagnostics-host` feature 可选 host · `cargo tree` 无 sqlite/axum/tauri） |
 | **K-ERR-01** | 热路径错误码 | **P2** | 插件/manifest/迁移结构化码 + 契约测 | **Done**（2026-07-13 · `KernelErrorBody.context` · `kernelErrorCodes.ts` · dimension5 drift 门禁） |
 | **D-ROLEVER-01** | 角色包版本迁移 | **P2** | ROLE_PACK_SPEC 章节 | **OPEN** |
-| **T-DOC-02** | Theater 状态单页 | **P2** | theater STATUS | **OPEN** |
+| **T-DOC-02** | Theater 状态单页 | **P2** | theater STATUS | **Done**（2026-07-16 · merge `94b380ce` · CI [`29498022046`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29498022046) · PR [#124](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/124) · [`theater/STATUS.md`](./theater/STATUS.md)） |
 | **K-RPP-01** | RPP 无契约 | **P2** | PLUGIN_V1 或 RPP_CONTRACT | **Done**（2026-07-13 · `rpp_contract_audit.rs` 四测 · manifest/RPC/roundtrip/mumu 默认关） |
 | **K-RESILIENCE-01** | Remote 弹性分散 | **P2** | ResilienceLayer | **Partial**（Minimal · 2026-07-16 · PROTOCOL 锚点 + `prompt_http`→`call_with_builtin_fallback` · Full 仍 OPEN） |
 
