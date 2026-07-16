@@ -10,7 +10,7 @@
 | **尺寸** | L |
 | **Minimal / Full** | Minimal = SCOPE 单页；Full = 实现市场 UI |
 | **Owner** | main-repo + 可能 `oclive-plugin-market` |
-| **状态** | Ready |
+| **状态** | Ready · pr-open（Partial · 姊妹仓 human/cross-repo） |
 | **更新** | 2026-07-16 |
 
 <!-- oclive-marathon-contract
