@@ -39,7 +39,7 @@
 | 100 | PE-TURN-01 | human | [long-plans/PE-TURN-01.md](./long-plans/PE-TURN-01.md) | human |
 | 110 | PE-UID-01 | human | [long-plans/PE-UID-01.md](./long-plans/PE-UID-01.md) | human |
 | 120 | K-DIST-01 | auto | [long-plans/K-DIST-01.md](./long-plans/K-DIST-01.md) | pr-open |
-| 130 | V-MARKET-01 | auto | [long-plans/V-MARKET-01.md](./long-plans/V-MARKET-01.md) | s0-done |
+| 130 | V-MARKET-01 | auto | [long-plans/V-MARKET-01.md](./long-plans/V-MARKET-01.md) | pr-open |
 | 140 | K-VOICE-02 | skip | [long-plans/K-VOICE-02.md](./long-plans/K-VOICE-02.md) | skip |
 | 150 | K-VOICE-03 | skip | [long-plans/K-VOICE-03.md](./long-plans/K-VOICE-03.md) | skip |
 | 160 | K-VOICE-05 | skip | [long-plans/K-VOICE-05.md](./long-plans/K-VOICE-05.md) | skip |
