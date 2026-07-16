@@ -18,7 +18,7 @@
   "version": 1,
   "id": "V-MARKET-01",
   "runner": "auto",
-  "planStatus": "pr-open",
+  "planStatus": "ready",
   "parentDebtDisposition": "keep-open",
   "currentStage": 2,
   "prerequisites": [],
