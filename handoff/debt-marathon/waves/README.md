@@ -24,5 +24,7 @@
 | [WAVE-20260716-K-CROSS-01-s1.md](./WAVE-20260716-K-CROSS-01-s1.md) | K-CROSS-01 | 1 | n/a | DISTRO+TRACK 平台矩阵 · Locally verified |
 | [WAVE-20260716-K-CROSS-01-s2.md](./WAVE-20260716-K-CROSS-01-s2.md) | K-CROSS-01 | 2 | [#126](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/126) | Partial · pr-open · 缺三平台实机 |
 | [WAVE-20260716-K-DIST-01-s0.md](./WAVE-20260716-K-DIST-01-s0.md) | K-DIST-01 | 0 | n/a | gap inventory PASS · 进 Stage 1 |
+| [WAVE-20260716-K-DIST-01-s1.md](./WAVE-20260716-K-DIST-01-s1.md) | K-DIST-01 | 1 | n/a | distros README gaps · Locally verified |
+| [WAVE-20260716-K-DIST-01-s2.md](./WAVE-20260716-K-DIST-01-s2.md) | K-DIST-01 | 2 | [#126](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/126) | Partial · pr-open · needs-signing-secrets |
 
 回填历史债（PLATFORM / SUPPLY / VOICE）时可另开简表行；**Verification 真值仍以 TECHNICAL_DEBT 为准**。
