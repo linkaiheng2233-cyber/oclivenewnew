@@ -18,6 +18,8 @@
 | [`WAVE_LOG_TEMPLATE.md`](./WAVE_LOG_TEMPLATE.md) | 波次工作记录模板 |
 | [`long-plans/`](./long-plans/) | 一书一债 |
 | [`waves/`](./waves/) | 波次日志 |
+| [`ROUND-01-CLOSEOUT.md`](./ROUND-01-CLOSEOUT.md) | 第一轮马拉松收尾证据 |
+| [`ROUND-02-PLAN.md`](./ROUND-02-PLAN.md) | 第二轮解除阻断与再开放计划 |
 
 ---
 
