@@ -20,5 +20,6 @@
 | [WAVE-20260716-K-SUPPLY-05-Full-s1.md](./WAVE-20260716-K-SUPPLY-05-Full-s1.md) | K-SUPPLY-05-Full | 1 | n/a | toml 0.8→1 · ratchet 75 · skips 保留 |
 | [WAVE-20260716-K-SUPPLY-05-Full-s2.md](./WAVE-20260716-K-SUPPLY-05-Full-s2.md) | K-SUPPLY-05-Full | 2 | n/a | 诚实不删 skip · 不准假 Full Done |
 | [WAVE-20260716-K-SUPPLY-05-Full-s3.md](./WAVE-20260716-K-SUPPLY-05-Full-s3.md) | K-SUPPLY-05-Full | 3 | [#126](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/126) | Full Partial · toml 收敛 · 零 skip 仍 OPEN |
+| [WAVE-20260716-K-CROSS-01-s0.md](./WAVE-20260716-K-CROSS-01-s0.md) | K-CROSS-01 | 0 | n/a | profile mirror PASS · 进 Stage 1 |
 
 回填历史债（PLATFORM / SUPPLY / VOICE）时可另开简表行；**Verification 真值仍以 TECHNICAL_DEBT 为准**。
