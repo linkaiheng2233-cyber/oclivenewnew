@@ -10,7 +10,7 @@
 | **尺寸** | L |
 | **Minimal / Full** | Minimal：文档矩阵；不做真跑三平台矩阵 CI |
 | **Owner** | main-repo |
-| **状态** | Ready |
+| **状态** | Ready · pr-open（Partial · 等实机） |
 | **更新** | 2026-07-16 |
 
 <!-- oclive-marathon-contract
@@ -20,7 +20,7 @@
   "runner": "auto",
   "planStatus": "ready",
   "parentDebtDisposition": "keep-open",
-  "currentStage": 1,
+  "currentStage": 2,
   "prerequisites": [],
   "stages": [
     {"id": 0, "title": "Verify platform facts", "files": ["read-only"], "actions": ["Read distro profiles, voice track and existing smoke entry points"], "checks": [{"command": "npm run test:distro-profile-mirror", "why": "The documented platform matrix must start from current profile parity"}], "outputs": ["Source-backed platform capability facts"], "rollback": "No writes; mark unknown hardware facts as human evidence"},

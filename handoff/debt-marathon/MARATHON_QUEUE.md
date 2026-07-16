@@ -32,7 +32,7 @@
 | 30 | D-ROLEVER-01 | auto | [long-plans/D-ROLEVER-01.md](./long-plans/D-ROLEVER-01.md) | pr-open |
 | 40 | K-RESILIENCE-01 | auto | [long-plans/K-RESILIENCE-01.md](./long-plans/K-RESILIENCE-01.md) | pr-open |
 | 50 | K-SUPPLY-05-Full | auto | [long-plans/K-SUPPLY-05-Full.md](./long-plans/K-SUPPLY-05-Full.md) | pr-open |
-| 60 | K-CROSS-01 | auto | [long-plans/K-CROSS-01.md](./long-plans/K-CROSS-01.md) | s0-done |
+| 60 | K-CROSS-01 | auto | [long-plans/K-CROSS-01.md](./long-plans/K-CROSS-01.md) | pr-open |
 | 70 | K-PERF-10 | skip | [long-plans/K-PERF-10.md](./long-plans/K-PERF-10.md) | skip |
 | 80 | K-SUPPLY-04 | skip | [long-plans/K-SUPPLY-04.md](./long-plans/K-SUPPLY-04.md) | skip |
 | 90 | V-VSCODE-PERF-05 | human | [long-plans/V-VSCODE-PERF-05.md](./long-plans/V-VSCODE-PERF-05.md) | human |
