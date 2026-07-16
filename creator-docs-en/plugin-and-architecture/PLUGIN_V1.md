@@ -11,7 +11,7 @@
 | Blueprint v2 / design rules / six slots / `send_message` order | Condensed below |
 | Per-slot input/output facet tables | Backend enum table only → [ZH](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md) |
 | Plugin Manager V2 `ui_template` / `ui_schema` / `provides` | Pointer → [ZH §前端 UI](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md) |
-| `reply_post_process` / `theater_director` / `voice.asr` side channels | Permission + pointer; full RPC in ZH |
+| `reply_post_process` / `theater_director` / `voice.asr` / `com.user.tts.*` side channels | Permission + pointer; full RPC in ZH |
 | Directory `permissions` / `slot_attachment` | Condensed permission table below |
 
 ---
@@ -130,12 +130,29 @@ For the complete RPC tables and manifest examples, open the **[full PLUGIN_V1 (Z
 
 Directory / remote plugins may declare **`provides`** beyond the six slots. Host-enforced side channels (not six-slot `SlotResolver`):
 
-| `provides` | Channel | Notes |
+| `provides` / pattern | Channel | Notes |
 |------------|---------|-------|
 | `reply_post_process` | Reply Post-Processor | `config.json` → `reply_post_processor`; RPC `reply_post_process.process` |
 | `theater_director` | Theater Scene Director | Distro `[theater].director_plugin`; RPC `theater.build_prompt` |
-| `voice.asr` | Voice ASR | Host UI via `plugin_rpc_invoke`; see ZH PLUGIN_V1 + side-channel RFC summary |
+| `voice.asr` | Voice ASR (official) | Host UI via `plugin_rpc_invoke`; see ZH PLUGIN_V1 + [RFC §4.1 summary](../rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS_SUMMARY.md) |
+| **`com.user.tts.*`** | Community TTS sidecar | Same **`voice.*` RPC namespace** as official voice; **not** K-VOICE-02 productization; **no** new runtime permissions — see below |
 | `complex_emotion` | Slot type (v2) | Blueprint `type: complex_emotion` when `backend: directory` |
+
+#### Community TTS (`com.user.tts.*`)
+
+Community directory TTS plugins share the official **`voice.*` method namespace** and the same per-plugin authorization path. This documents the allowed RPC surface; it does **not** broaden host-global whitelists or implement ChatTTS/XTTS (K-VOICE-02).
+
+| Item | Contract |
+|------|----------|
+| **Plugin ID** | `com.user.tts.*` (creator namespace; e.g. `com.user.tts.xtts-sidecar`) |
+| **Bridge gate** | manifest **`bridge.invoke`** must include **`plugin_rpc_invoke`** ([DIRECTORY_PLUGINS.md](../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md)) |
+| **RPC gate** | method ∈ **this plugin's** manifest **`rpcMethods`**; **`process`** block required; enforced by [`validate_rpc_method_for_manifest`](../../distros/desktop-tauri/src/api/plugin_bridge.rs) (**per-plugin allowlist**, not a host-global table) |
+| **`provides`** | **No** separate `voice.tts` token. TTS-only sidecars **need not** declare `voice.asr`; plugins that also serve the ASR UI channel **may** declare **`voice.asr`** (same token as official; **no** new permission surface) |
+| **Recommended minimal `rpcMethods`** | at least **`voice.speak`**; typical sidecars also declare **`voice.probe_tts`**, **`voice.warm`**, **`voice.list_tts_adapters`**. Full `voice.*` list: [RFC §4.1 (ZH SSOT)](../../creator-docs/rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md#41-voiceasr-插件通道windows-已交付--宿主侧) — each method must be listed in **this** manifest to be invocable |
+
+Host UI / `ui_slots` call declared methods via **`plugin_rpc_invoke`**; undeclared methods are rejected (same as official voice plugins).
+
+Full Chinese normative section: **[PLUGIN_V1 §社区 TTS](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md)**.
 
 ---
 

@@ -369,6 +369,20 @@ TypeScript 侧 `SendMessageResponse`（`distros/shared/src/api/`）必须与 `mo
 
 解析时 [`SlotResolver`](../../kernel/crates/oclive_kernel_host/src/domain/slot_resolver.rs) 会校验 directory 插件是否声明 `provides` 含目标能力（含 `complex_emotion`）。**独立通道**项由专用 Resolver 解析（如 [`resolve_reply_post_processor`](../../kernel/crates/oclive_kernel_host/src/domain/reply_post_processor.rs) 校验 `reply_post_process`；[`resolve_theater_director`](../../kernel/crates/oclive_kernel_host/src/domain/theater_director.rs) 校验 `theater_director`），**不**经六槽 `SlotResolver`。**`voice.asr`** 由宿主 UI 经 **`plugin_rpc_invoke`** 调本插件 RPC，**无**内核 `resolve_*`（调试面板仍可用 Tauri `directory_plugin_invoke`）。
 
+### 社区 TTS 目录插件（`com.user.tts.*`）
+
+**非** K-VOICE-02 官方引擎产品化；**不**扩大运行时权限面或宿主全局 RPC 白名单。社区 TTS 侧车与官方 `com.oclive.voice.asr` 共用 **`voice.*` 方法命名空间**与同一执法路径（[`validate_rpc_method_for_manifest`](../../distros/desktop-tauri/src/api/plugin_bridge.rs)）。
+
+| 项 | 契约 |
+|----|------|
+| **插件 ID 约定** | `com.user.tts.*`（创作者命名空间；例 `com.user.tts.xtts-sidecar`） |
+| **桥接门禁** | manifest **`bridge.invoke`** 须含 **`plugin_rpc_invoke`**（见 [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)） |
+| **RPC 门禁** | 方法 ∈ **本插件** manifest **`rpcMethods`**；须含 **`process`** 块；**按插件 allowlist** 执法，非宿主全局方法表 |
+| **`provides`** | **无**独立 `voice.tts` token。纯 TTS 侧车**无需**声明 `voice.asr`；若同时承接 ASR UI 通道，可声明 **`voice.asr`**（与官方相同 token，**不**新增权限面） |
+| **推荐 `rpcMethods`（最小）** | 至少 **`voice.speak`**；典型侧车亦声明 **`voice.probe_tts`** · **`voice.warm`** · **`voice.list_tts_adapters`**。完整 `voice.*` 列见 [RFC §4.1](../rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md#41-voiceasr-插件通道windows-已交付--宿主侧)（须在自身 manifest 逐条声明方可 invoke） |
+
+宿主 UI 或 `ui_slots` 经 **`plugin_rpc_invoke`** 调用已声明方法；未在 `rpcMethods` 中声明的方法一律拒绝。
+
 ### Reply Post-Processor · 润色场景（可选 · 非默认）
 
 - **builtin**：仅格式治理（空白、引号、`max_chars`）；**不做 LLM 润色**。
