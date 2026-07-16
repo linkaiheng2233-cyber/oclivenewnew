@@ -43,7 +43,7 @@
 | 140 | K-VOICE-02 | skip | [long-plans/K-VOICE-02.md](./long-plans/K-VOICE-02.md) | skip |
 | 150 | K-VOICE-03 | skip | [long-plans/K-VOICE-03.md](./long-plans/K-VOICE-03.md) | skip |
 | 160 | K-VOICE-05 | skip | [long-plans/K-VOICE-05.md](./long-plans/K-VOICE-05.md) | skip |
-| 170 | K-VOICE-06 | auto | [long-plans/K-VOICE-06.md](./long-plans/K-VOICE-06.md) | s1-done |
+| 170 | K-VOICE-06 | auto | [long-plans/K-VOICE-06.md](./long-plans/K-VOICE-06.md) | s2-done |
 | 180 | K-VOICE-07 | auto | [long-plans/K-VOICE-07.md](./long-plans/K-VOICE-07.md) | blocked:needs-directive-v2-rfc-anchor |
 | 190–330 | （其余 skip/human 同前版） | | 见下表续 |
 
