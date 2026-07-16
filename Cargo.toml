@@ -48,7 +48,7 @@ tempfile = "3.8"
 toml = "1"
 walkdir = "2.5"
 semver = "1.0"
-notify = "6"
+notify = "8"
 zip = { version = "2", default-features = false, features = ["deflate"] }
 axum = "0.7"
 tower = "0.5"
