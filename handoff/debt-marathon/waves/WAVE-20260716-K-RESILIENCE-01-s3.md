@@ -20,8 +20,9 @@
 | 项 | 值 |
 |----|-----|
 | Base SHA | `6d55a007415784225b0d64f448562873a68f378d` |
-| Commit / PR | （回填） |
-| `npm run check:debt-marathon` | （checkpoint 时） |
+| Commit SHA | `bce2fe94e8c488e66f3b069377754a3dac793f4b` |
+| PR URL | https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/126（同 stop-hook 分支） |
+| `npm run check:debt-marathon` | **PASS** |
 | TECHNICAL_DEBT | **Partial**（Minimal）· **Full ResilienceLayer 仍 OPEN** · **禁止 Done** |
 
 ## 做了什么
