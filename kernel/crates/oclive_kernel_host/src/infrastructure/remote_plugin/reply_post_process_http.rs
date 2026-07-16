@@ -90,6 +90,7 @@ mod integration_mock {
     use std::sync::Arc;
     use std::thread;
     use std::time::Duration;
+    use tempfile::TempDir;
 
     fn spawn_mock_reply_rpc() -> String {
         let listener = TcpListener::bind("127.0.0.1:0").expect("bind");
@@ -132,10 +133,15 @@ mod integration_mock {
         let url = spawn_mock_reply_rpc();
         let cfg =
             RemotePluginHttpConfig::for_reply_post_processor_remote(&url, Some(3000)).expect("cfg");
+        let grant_dir = TempDir::new().expect("grant dir");
+        let grants = HighRiskGrantStore::load(grant_dir.path().to_path_buf(), true);
+        grants
+            .grant_network(NETWORK_GRANT_REMOTE_PLUGIN)
+            .expect("grant remote plugin network");
         let http = RemoteReplyPostProcessorHttp::new(
             cfg,
-            Arc::new(AtomicBool::new(true)),
-            HighRiskGrantStore::load(std::env::temp_dir(), false),
+            Arc::new(AtomicBool::new(false)),
+            grants,
             RolePackBuiltinReplyPostProcessorConfig::default(),
         )
         .expect("client");

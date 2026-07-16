@@ -78,7 +78,8 @@ function writeState(state) {
       return;
     } catch (error) {
       lastError = error;
-      if (!["EPERM", "EACCES", "EEXIST", "EBUSY"].includes(error.code)) throw error;
+      if (!["EPERM", "EACCES", "EEXIST", "EBUSY"].includes(error.code))
+        throw error;
       try {
         fs.copyFileSync(temp, statePath);
         fs.rmSync(temp, { force: true });
@@ -107,8 +108,7 @@ function appendHookLog(line) {
 
 function normalizeHookInput(raw) {
   const input = raw && typeof raw === "object" ? raw : {};
-  const conversationId =
-    input.conversation_id ?? input.conversationId ?? null;
+  const conversationId = input.conversation_id ?? input.conversationId ?? null;
   const status = input.status ?? null;
   return { ...input, conversation_id: conversationId, status };
 }
@@ -170,7 +170,9 @@ function parseHookInput() {
     });
     process.stdin.on("end", () => {
       try {
-        resolve(normalizeHookInput(parseJsonFlexible(input, "hook stdin JSON")));
+        resolve(
+          normalizeHookInput(parseJsonFlexible(input, "hook stdin JSON")),
+        );
       } catch (error) {
         reject(error);
       }
@@ -222,6 +224,18 @@ function changedFiles() {
         name.includes(" -> ") ? name.split(" -> ").at(-1) : name
       ).replaceAll("\\", "/");
     });
+}
+
+function changedFilesSince(baseSha) {
+  const tracked = execFileSync(
+    "git",
+    ["diff", "--name-only", "-z", baseSha, "--"],
+    { cwd: repoRoot, encoding: "utf8" },
+  )
+    .split("\0")
+    .filter(Boolean)
+    .map((file) => file.replaceAll("\\", "/"));
+  return [...new Set([...tracked, ...changedFiles()])].sort();
 }
 
 function pathAllowed(file, allowed) {
@@ -325,6 +339,7 @@ async function claim() {
     if (!state?.active) throw new Error("no active marathon session");
     if (state.current)
       throw new Error(`claim already active: ${state.current.claimId}`);
+    assertCleanWorktree();
     const key = `${debt}:s${stage}`;
     state.attempts[key] = (state.attempts[key] ?? 0) + 1;
     state.current = {
@@ -337,7 +352,6 @@ async function claim() {
       heartbeatAt: now(),
       leaseExpiresAt: new Date(Date.now() + LEASE_MS).toISOString(),
       baseSha: git(["rev-parse", "HEAD"]),
-      baselineChangedFiles: changedFiles(),
       capabilities,
       authorizationRef: authorizationRef ?? null,
       stageContract,
@@ -441,11 +455,8 @@ async function checkpoint() {
     } catch {
       throw new Error("current HEAD is not descended from the claim base SHA");
     }
-    const currentChangedFiles = changedFiles();
-    const newChangedFiles = currentChangedFiles.filter(
-      (file) => !completedClaim.baselineChangedFiles.includes(file),
-    );
-    const scopeViolations = newChangedFiles.filter(
+    const claimChangedFiles = changedFilesSince(completedClaim.baseSha);
+    const scopeViolations = claimChangedFiles.filter(
       (file) => !pathAllowed(file, completedClaim.stageContract.files),
     );
     if (scopeViolations.length)
@@ -476,7 +487,7 @@ async function checkpoint() {
       outcome,
       baseSha: completedClaim.baseSha,
       headSha: currentHead,
-      changedFiles: currentChangedFiles,
+      changedFiles: claimChangedFiles,
       wave: path.relative(repoRoot, wavePath).replaceAll("\\", "/"),
       lastCommand,
       nextExactCommand: nextCommand,
@@ -499,6 +510,16 @@ async function finish() {
       throw new Error(
         `cannot finish done with active claim ${state.current.claimId}`,
       );
+    if (outcome === "done" && state.lastCheckpoint?.outcome !== "done") {
+      throw new Error("cannot finish done without a terminal done checkpoint");
+    }
+    if (outcome === "done") {
+      execFileSync(
+        process.execPath,
+        ["scripts/check-debt-marathon.mjs", "--assert-no-runnable"],
+        { cwd: repoRoot, stdio: "inherit" },
+      );
+    }
     state.active = false;
     state.outcome = outcome;
     state.stopReason = reason;

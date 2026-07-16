@@ -20,8 +20,16 @@ const queuePath = path.join(marathonRoot, "MARATHON_QUEUE.md");
 const onlyId = valueAfter("--id");
 const onlyStage = valueAfter("--stage");
 const requireReady = process.argv.includes("--require-ready");
+const assertNoRunnable = process.argv.includes("--assert-no-runnable");
 const VALID_PLAN_STATES = new Set(["ready", "blocked", "closed"]);
 const VALID_PARENT_DISPOSITIONS = new Set(["keep-open", "done-eligible"]);
+const RUNNABLE_PROGRESS = new Set([
+  "pending",
+  "ready",
+  "implemented",
+  "locally-verified",
+]);
+const VALID_AUTO_PROGRESS = new Set([...RUNNABLE_PROGRESS, "pr-open", "done"]);
 
 function valueAfter(flag) {
   const index = process.argv.indexOf(flag);
@@ -118,6 +126,12 @@ function validateContract(contract, row, planPath) {
       `${planPath}: invalid parentDebtDisposition ${contract.parentDebtDisposition}`,
     );
   }
+  if (
+    !VALID_AUTO_PROGRESS.has(row.progress) &&
+    !row.progress.startsWith("blocked:")
+  ) {
+    fail(`${planPath}: invalid auto queue progress ${row.progress}`);
+  }
   if (!Number.isInteger(contract.currentStage) || contract.currentStage < 0)
     fail(`${planPath}: currentStage must be a non-negative integer`);
   if (!Array.isArray(contract.prerequisites))
@@ -173,6 +187,7 @@ function main() {
     fail(`auto queue id not found: ${onlyId}`);
   if (!onlyId && autoRows.length === 0) fail("queue contains no auto plans");
 
+  const runnable = [];
   for (const row of autoRows) {
     const planPath = path.resolve(marathonRoot, row.plan);
     if (
@@ -187,8 +202,14 @@ function main() {
       fail(`${row.id}: plan does not link the mandatory gates`);
     const contract = parseContract(markdown, path.relative(repoRoot, planPath));
     validateContract(contract, row, path.relative(repoRoot, planPath));
-    if (requireReady && contract.planStatus !== "ready")
-      fail(`${row.id}: plan is ${contract.planStatus}, not ready`);
+    const isRunnable =
+      contract.planStatus === "ready" && RUNNABLE_PROGRESS.has(row.progress);
+    if (isRunnable) runnable.push(`${row.id}:s${contract.currentStage}`);
+    if (requireReady && !isRunnable) {
+      fail(
+        `${row.id}: not runnable (plan=${contract.planStatus}, queue=${row.progress})`,
+      );
+    }
     if (onlyStage !== undefined) {
       const stage = Number(onlyStage);
       if (
@@ -201,6 +222,10 @@ function main() {
           `${row.id}: stage ${stage} is not currentStage ${contract.currentStage}`,
         );
     }
+  }
+
+  if (assertNoRunnable && runnable.length > 0) {
+    fail(`runnable auto stages remain: ${runnable.join(", ")}`);
   }
 
   console.log(`debt-marathon contracts: PASS (${autoRows.length} auto plans)`);

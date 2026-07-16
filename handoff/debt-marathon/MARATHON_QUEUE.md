@@ -13,7 +13,7 @@
 1. **先 GATES，后计划书，再改代码。**  
 2. **一次会话 = 一本债 × 一个 Stage。**  
 3. 只跑 `runner=auto`；`human`/`skip` 禁止假装 Done。  
-4. 无 Ready 书 → 停。  
+4. runnable 仅 `auto + planStatus=ready + progress=pending|ready|implemented|locally-verified`；`pr-open` 等外部事件，不重复 claim；无 runnable → 停。
 5. 默认 **PR 不开合 main**；Done 要 CI 证据。  
 6. 严格七阶段与 G1–G16；`todo completed` ≠ Done。  
 7. 上下文将满 → 停并写续跑坐标。
@@ -91,11 +91,11 @@
 
 每个 Stage：
 A. 父 Agent 先跑 check:debt-marathon，并 reconcile queue / plan / inventory / Git / PR-CI
-B. 取 seq 最小 auto + Ready + 非 done/blocked；调用自定义子 Agent oclive-debt-stage
+B. 取 seq 最小 runnable auto（`pr-open` 不可重跑）；调用自定义子 Agent oclive-debt-stage
 C. 普通实现 Stage 由子 Agent 做；Wave/QUEUE/TECHNICAL_DEBT 证据 Stage 由父 Agent 做，子 Agent 不得改 QUEUE
 D. 父 Agent 校验返回 JSON 与实际 base SHA / diff / checks
 E. 父 Agent 写 waves/WAVE-YYYYMMDD-<ID>-sN.md（勾选 GATES 清单）
-F. 父 Agent 更新本表进度并写 cursor-marathon checkpoint；外部写入仅按 capability snapshot
+F. 父 Agent 更新本表进度并写 cursor-marathon checkpoint；最终轮用 outcome=done 后再 finish done；外部写入仅按 capability snapshot
 G. 需人类决策/权限/RFC → blocked:<稳定错误码>；达到预算/无进展 → 写坐标并 finish
 
 禁止：跳 Stage、扩 Full、动 skip/human「做完」、无 CI 写 Done、改无关 process_message、新建顶层 md、混入无关 dirty。

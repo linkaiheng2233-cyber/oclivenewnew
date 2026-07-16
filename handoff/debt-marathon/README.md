@@ -47,12 +47,16 @@
 
 合法运行态：`running → progress → done|blocked|failed`。两轮没有新 checkpoint、达到 `max-turns`、Cursor 返回 aborted/error，都会自动停机。Stage 完成、Plan Closed、Done-eligible、父技术债 Done 是四个不同层级。
 
+每次 claim 前控制器重新检查 clean worktree；checkpoint 从 claim `baseSha` 核对已提交、未提交和未跟踪文件，因此先 commit 不能绕过 Stage scope。最终收口必须先写 `--outcome done` terminal checkpoint；控制器还会拒绝仍有 runnable auto 的 `finish done`。`pr-open` 表示等待审查/合入，不是可重复执行态。
+
 ### Checkpoint
 
 ```powershell
 node scripts/cursor-marathon.mjs claim --debt <ID> --stage <N> --agent oclive-debt-stage --capabilities local-write,test
 node scripts/cursor-marathon.mjs checkpoint --claim <CLAIM_ID> --debt <ID> --stage <N> --outcome progress --wave <WAVE_PATH> --last-command "<COMMAND>" --next "<EXACT_NEXT_COMMAND>"
 ```
+
+最后一个 Stage 将上述 `--outcome progress` 改为 `--outcome done`，再执行 `finish --outcome done`。
 
 默认 capability 只有 `local-write,test`。`commit,push,open-pr,merge,sibling-repo,network,secrets` 必须来自用户对本轮的明确授权，并用 `--authorization` 记录授权引用；缺能力时记录稳定 blocker code，不从自然语言猜权限。
 
