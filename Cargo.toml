@@ -49,7 +49,7 @@ toml = "1"
 walkdir = "2.5"
 semver = "1.0"
 notify = "6"
-zip = { version = "2", default-features = false, features = ["deflate"] }
+zip = { version = "8", default-features = false, features = ["deflate"] }
 axum = "0.7"
 tower = "0.5"
 tower-http = { version = "0.6", features = ["cors"] }
