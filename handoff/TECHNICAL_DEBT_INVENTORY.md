@@ -136,7 +136,7 @@
 | **D-ROLEVER-01** | 角色包版本迁移 | **P2** | ROLE_PACK_SPEC 章节 | **OPEN** |
 | **T-DOC-02** | Theater 状态单页 | **P2** | theater STATUS | **OPEN** |
 | **K-RPP-01** | RPP 无契约 | **P2** | PLUGIN_V1 或 RPP_CONTRACT | **Done**（2026-07-13 · `rpp_contract_audit.rs` 四测 · manifest/RPC/roundtrip/mumu 默认关） |
-| **K-RESILIENCE-01** | Remote 弹性分散 | **P2** | ResilienceLayer | **OPEN** |
+| **K-RESILIENCE-01** | Remote 弹性分散 | **P2** | ResilienceLayer | **Partial**（Minimal · 2026-07-16 · PROTOCOL 锚点 + `prompt_http`→`call_with_builtin_fallback` · Full 仍 OPEN） |
 
 ## §1.5 供应链安全（Supply Chain · 2026-06-24）
 

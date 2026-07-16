@@ -13,5 +13,8 @@
 | [WAVE-20260716-D-ROLEVER-01-s1.md](./WAVE-20260716-D-ROLEVER-01-s1.md) | D-ROLEVER-01 | 1 | n/a | SPEC §11 中英 · mirror PASS |
 | [WAVE-20260716-D-ROLEVER-01-s2.md](./WAVE-20260716-D-ROLEVER-01-s2.md) | D-ROLEVER-01 | 2 | [#125](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/125) | stack on #124 · pr-open · TD 仍 OPEN |
 | [WAVE-20260716-K-RESILIENCE-01-s0.md](./WAVE-20260716-K-RESILIENCE-01-s0.md) | K-RESILIENCE-01 | 0 | n/a | inventory PASS · 进 Stage 1 |
+| [WAVE-20260716-K-RESILIENCE-01-s1.md](./WAVE-20260716-K-RESILIENCE-01-s1.md) | K-RESILIENCE-01 | 1 | n/a | PROTOCOL 锚点节 · Locally verified |
+| [WAVE-20260716-K-RESILIENCE-01-s2.md](./WAVE-20260716-K-RESILIENCE-01-s2.md) | K-RESILIENCE-01 | 2 | n/a | prompt_http → adapter · 25 tests PASS |
+| [WAVE-20260716-K-RESILIENCE-01-s3.md](./WAVE-20260716-K-RESILIENCE-01-s3.md) | K-RESILIENCE-01 | 3 | （URL 回填） | Partial · pr-open · Full 仍 OPEN |
 
 回填历史债（PLATFORM / SUPPLY / VOICE）时可另开简表行；**Verification 真值仍以 TECHNICAL_DEBT 为准**。

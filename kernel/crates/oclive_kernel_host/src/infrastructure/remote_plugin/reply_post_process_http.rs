@@ -98,8 +98,23 @@ mod integration_mock {
         thread::spawn(move || {
             for mut stream in listener.incoming().flatten() {
                 let mut buf = vec![0u8; 8192];
-                let _ = stream.read(&mut buf);
-                let body = r#"{"jsonrpc":"2.0","id":1,"result":{"display_reply":"[remote] polished","diagnostic":"mock"}}"#;
+                let n = stream.read(&mut buf).unwrap_or(0);
+                let req = String::from_utf8_lossy(&buf[..n]);
+                // Echo JSON-RPC id so this mock stays valid after other tests advance the shared counter.
+                let id = req
+                    .rsplit("\r\n\r\n")
+                    .next()
+                    .and_then(|body| serde_json::from_str::<serde_json::Value>(body).ok())
+                    .and_then(|v| v.get("id").cloned())
+                    .map(|id| match id {
+                        serde_json::Value::Number(n) => n.to_string(),
+                        serde_json::Value::String(s) => s,
+                        other => other.to_string(),
+                    })
+                    .unwrap_or_else(|| "1".into());
+                let body = format!(
+                    r#"{{"jsonrpc":"2.0","id":{id},"result":{{"display_reply":"[remote] polished","diagnostic":"mock"}}}}"#
+                );
                 let resp = format!(
                     "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nx-oclive-remote-protocol: oclive-remote-jsonrpc-v1\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
                     body.len(),

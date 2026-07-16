@@ -185,9 +185,13 @@ impl RemotePluginHttpConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Mutex;
+
+    static ENV_LOCK: Mutex<()> = Mutex::new(());
 
     #[test]
     fn directory_plugin_timeout_defaults_to_eight_seconds() {
+        let _guard = ENV_LOCK.lock().expect("env lock");
         std::env::remove_var("OCLIVE_DIRECTORY_PLUGIN_TIMEOUT_MS");
         let d =
             RemotePluginHttpConfig::directory_plugin_rpc_timeout_for_method("voice.warm", false);
@@ -196,6 +200,7 @@ mod tests {
 
     #[test]
     fn directory_plugin_timeout_honors_env() {
+        let _guard = ENV_LOCK.lock().expect("env lock");
         std::env::set_var("OCLIVE_DIRECTORY_PLUGIN_TIMEOUT_MS", "600000");
         let d =
             RemotePluginHttpConfig::directory_plugin_rpc_timeout_for_method("voice.speak", false);
@@ -205,6 +210,7 @@ mod tests {
 
     #[test]
     fn plugin_timeout_is_clamped() {
+        let _guard = ENV_LOCK.lock().expect("env lock");
         std::env::set_var("OCLIVE_REMOTE_PLUGIN_URL", "http://127.0.0.1:9999/rpc");
         std::env::set_var("OCLIVE_REMOTE_PLUGIN_TIMEOUT_MS", "1");
         let cfg = RemotePluginHttpConfig::from_env_plugin().expect("cfg");
@@ -236,6 +242,7 @@ mod tests {
 
     #[test]
     fn llm_token_trims_empty_to_none() {
+        let _guard = ENV_LOCK.lock().expect("env lock");
         std::env::set_var("OCLIVE_REMOTE_LLM_URL", "http://127.0.0.1:9999/rpc");
         std::env::set_var("OCLIVE_REMOTE_LLM_TOKEN", "   ");
         let cfg = RemotePluginHttpConfig::from_env_llm().expect("cfg");
