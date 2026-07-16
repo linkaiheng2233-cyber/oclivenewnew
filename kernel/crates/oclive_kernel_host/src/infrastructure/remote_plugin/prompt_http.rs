@@ -95,7 +95,11 @@ impl PromptAssembler for RemotePromptAssemblerHttp {
             "role": role,
             "scene_id": scene_id,
         });
-        match self.adapter.http.call_plugin(METHOD_PROMPT_TOPIC_HINT, params) {
+        match self
+            .adapter
+            .http
+            .call_plugin(METHOD_PROMPT_TOPIC_HINT, params)
+        {
             Ok(v) => v
                 .get("hint")
                 .and_then(|x| x.as_str())
