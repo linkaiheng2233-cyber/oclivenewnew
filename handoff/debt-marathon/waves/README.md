@@ -29,5 +29,6 @@
 | [WAVE-20260716-V-MARKET-01-s0.md](./WAVE-20260716-V-MARKET-01-s0.md) | V-MARKET-01 | 0 | n/a | market inventory PASS · 进 Stage 1 |
 | [WAVE-20260716-V-MARKET-01-s1.md](./WAVE-20260716-V-MARKET-01-s1.md) | V-MARKET-01 | 1 | n/a | PRODUCT_LINE SCOPE · Locally verified |
 | [WAVE-20260716-V-MARKET-01-s2.md](./WAVE-20260716-V-MARKET-01-s2.md) | V-MARKET-01 | 2 | [#126](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/126) | Partial · human/cross-repo · pr-open |
+| [WAVE-20260716-K-VOICE-06-s0.md](./WAVE-20260716-K-VOICE-06-s0.md) | K-VOICE-06 | 0 | n/a | RPC auth inventory PASS · 进 Stage 1 |
 
 回填历史债（PLATFORM / SUPPLY / VOICE）时可另开简表行；**Verification 真值仍以 TECHNICAL_DEBT 为准**。
