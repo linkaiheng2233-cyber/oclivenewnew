@@ -43,6 +43,8 @@
 
 本机运行态是 `.cursor/oclive-marathon-session.json`，由 `scripts/cursor-marathon.mjs` 原子写入并绑定 Cursor `conversation_id`。它只负责续轮与熔断，不是技术债真值；跨机器恢复仍以 Git SHA、long-plan、Wave 和 TECHNICAL_DEBT 为准。
 
+**Stop hook 续轮要点（2026-07-16 修复）**：首轮父 Agent 常 >5 分钟才第一次 `stop`；因此 **不按墙钟超时解绑**，在首次 `status=completed` 时绑定 `conversation_id`。`.cursor/hooks.json` 设 `loop_limit: 50`（Cursor 默认仅 5）。hook 脚本失败时 **fail-open**（不 `finish` 杀掉 session）；诊断写入 `.cursor/oclive-marathon-hook.log`。自检：`npm run test:cursor-marathon-hook`。
+
 合法运行态：`running → progress → done|blocked|failed`。两轮没有新 checkpoint、达到 `max-turns`、Cursor 返回 aborted/error，都会自动停机。Stage 完成、Plan Closed、Done-eligible、父技术债 Done 是四个不同层级。
 
 ### Checkpoint

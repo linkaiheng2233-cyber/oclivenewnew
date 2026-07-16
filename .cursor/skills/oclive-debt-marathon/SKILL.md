@@ -54,7 +54,8 @@ description: >-
 - 自动续轮仅保证 **Cursor IDE**；Cursor Background/Cloud Agent 当前不依赖 lifecycle hook，按 Wave 手动续跑。
 - 父 Agent 每次最多派发一个会写同一 worktree 的 Implementer；只有 Cursor 原生 worktree 隔离后才可并行。
 - `.cursor/oclive-marathon-session.json` 是本机运行态，不进 Git；长久恢复真值仍是 Wave + Git SHA。
-- stop hook 只在 `cursor-marathon start` 激活后续轮，并绑定首个 `conversation_id`；普通聊天不受影响。
+- stop hook 只在 `cursor-marathon start` 激活后续轮，并在**首次** `status=completed` 时绑定 `conversation_id`（不按墙钟 5 分钟超时）；普通聊天不受影响。
+- hook 失败 fail-open（不杀 session）；`hooks.json` `loop_limit` 须 ≥ `max-turns`；自检 `npm run test:cursor-marathon-hook`。
 
 ### Cursor 父 Agent 每轮
 
