@@ -20,7 +20,7 @@
   "runner": "auto",
   "planStatus": "ready",
   "parentDebtDisposition": "keep-open",
-  "currentStage": 0,
+  "currentStage": 1,
   "prerequisites": [],
   "stages": [
     {"id": 0, "title": "Inventory remote resilience", "files": ["read-only"], "actions": ["Map timeout, retry and fallback call sites against REMOTE_PLUGIN_PROTOCOL"], "checks": [{"command": "rg -n \"timeout|retry|fallback\" kernel/crates/oclive_kernel_host/src/infrastructure/remote_plugin", "why": "The inventory must be derived from current source"}], "outputs": ["Verified call-site inventory and candidate canonical helper"], "rollback": "No writes; block if the scope requires an unapproved architecture decision"},
