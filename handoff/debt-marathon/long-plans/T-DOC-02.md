@@ -10,7 +10,7 @@
 | **尺寸** | L（文档债升 Done） |
 | **Minimal / Full** | Minimal |
 | **Owner / runner** | main-repo / **auto** |
-| **状态** | Ready · pr-open（等合入后 Stage 3） |
+| **状态** | Ready · locally-verified（#124 已合 · Stage 3 证据待写） |
 | **最后更新** | 2026-07-16 |
 
 <!-- oclive-marathon-contract

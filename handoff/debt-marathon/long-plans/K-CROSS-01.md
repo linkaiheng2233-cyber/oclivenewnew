@@ -10,7 +10,7 @@
 | **尺寸** | L |
 | **Minimal / Full** | Minimal：文档矩阵；不做真跑三平台矩阵 CI |
 | **Owner** | main-repo |
-| **状态** | Ready · pr-open（Partial · 等实机） |
+| **状态** | Blocked（Minimal 文档已合；缺三平台实机） |
 | **更新** | 2026-07-16 |
 
 <!-- oclive-marathon-contract
@@ -18,10 +18,10 @@
   "version": 1,
   "id": "K-CROSS-01",
   "runner": "auto",
-  "planStatus": "ready",
+  "planStatus": "blocked",
   "parentDebtDisposition": "keep-open",
   "currentStage": 2,
-  "prerequisites": [],
+  "prerequisites": ["Three-platform real-device voice/host smoke evidence is required before Done; documentation Minimal is not enough"],
   "stages": [
     {"id": 0, "title": "Verify platform facts", "files": ["read-only"], "actions": ["Read distro profiles, voice track and existing smoke entry points"], "checks": [{"command": "npm run test:distro-profile-mirror", "why": "The documented platform matrix must start from current profile parity"}], "outputs": ["Source-backed platform capability facts"], "rollback": "No writes; mark unknown hardware facts as human evidence"},
     {"id": 1, "title": "Document platform matrix", "files": ["creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md", "human-docs/team/TRACK_VOICE_RECOGNITION.md"], "actions": ["Add links and a compact platform-capability declaration without claiming unrun smoke"], "checks": [{"command": "node scripts/check-stale-paths.mjs --docs-only", "why": "The matrix links profiles and smoke commands"}], "outputs": ["Platform declaration; parent debt remains OPEN until real three-platform smoke"], "rollback": "Remove unsupported platform claims"},

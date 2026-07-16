@@ -10,7 +10,7 @@
 | **尺寸** | L |
 | **Minimal / Full** | **Full** |
 | **Owner** | main-repo |
-| **状态** | Ready |
+| **状态** | Blocked（零 skip 仍 needs-ecosystem） |
 | **更新** | 2026-07-16 |
 
 <!-- oclive-marathon-contract
@@ -18,10 +18,10 @@
   "version": 1,
   "id": "K-SUPPLY-05-Full",
   "runner": "auto",
-  "planStatus": "ready",
+  "planStatus": "blocked",
   "parentDebtDisposition": "done-eligible",
   "currentStage": 3,
-  "prerequisites": [],
+  "prerequisites": ["cargo deny bans with empty [bans.skip] requires upstream Tauri/windows/sqlx/toml ecosystem convergence"],
   "stages": [
     {"id": 0, "title": "Baseline duplicate families", "files": ["read-only"], "actions": ["Capture deny skips, duplicate tree and current ratchet"], "checks": [{"command": "cargo tree -d", "why": "Full scope is defined by current duplicate families"}, {"command": "cargo deny check bans", "why": "The initial deny state is the comparison baseline"}], "outputs": ["Prioritized duplicate-family baseline"], "rollback": "No writes"},
     {"id": 1, "title": "Converge one dependency family", "files": ["Cargo.toml", "Cargo.lock", "deny.toml"], "actions": ["Converge exactly one compatible family per dispatch"], "checks": [{"command": "cargo deny check bans", "why": "The family change must not require an undocumented skip"}, {"command": "cargo audit", "why": "Cargo.lock changes require supply-chain verification"}], "outputs": ["One reviewed dependency-family reduction"], "rollback": "Revert the family change when compatibility or audit regresses"},

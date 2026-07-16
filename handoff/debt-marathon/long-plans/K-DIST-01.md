@@ -10,7 +10,7 @@
 | **尺寸** | L |
 | **Minimal / Full** | Minimal = 缺口 STATUS；Full = 真签名+updater 另册 |
 | **Owner** | main-repo（文档）；Full 或需 Human 证书 |
-| **状态** | Ready · pr-open（Partial · Full needs-signing-secrets） |
+| **状态** | Blocked（Minimal 文档已合；Full needs-signing-secrets） |
 | **更新** | 2026-07-16 |
 
 <!-- oclive-marathon-contract
@@ -18,10 +18,10 @@
   "version": 1,
   "id": "K-DIST-01",
   "runner": "auto",
-  "planStatus": "ready",
+  "planStatus": "blocked",
   "parentDebtDisposition": "keep-open",
   "currentStage": 2,
-  "prerequisites": [],
+  "prerequisites": ["Signing secrets, updater keys, and real platform packaging authorization are required for Full; Minimal docs alone cannot close the debt"],
   "stages": [
     {"id": 0, "title": "Inventory distribution gaps", "files": ["read-only"], "actions": ["Inspect current Tauri bundling, updater and platform packaging declarations"], "checks": [{"command": "npm run check:debt-marathon -- --id K-DIST-01", "why": "The documentation milestone must not be confused with Full distribution closure"}], "outputs": ["Verified signing, updater and package gap list"], "rollback": "No writes"},
     {"id": 1, "title": "Write distribution status", "files": ["handoff/distros/README.md"], "actions": ["Add a bounded gap and human-dependency section to the existing distro SSOT"], "checks": [{"command": "node scripts/check-stale-paths.mjs --docs-only", "why": "The gap list references packaging paths"}], "outputs": ["Distribution milestone and explicit human prerequisites"], "rollback": "Remove the section if it duplicates another distro SSOT"},

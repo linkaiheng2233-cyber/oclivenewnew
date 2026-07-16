@@ -10,7 +10,7 @@
 | **尺寸** | L |
 | **Minimal / Full** | **本册=Minimal**。Full ResilienceLayer 另开书 |
 | **Owner** | main-repo |
-| **状态** | Ready |
+| **状态** | Closed（Minimal · Partial 已合 main；Full 另册） |
 | **更新** | 2026-07-16 |
 
 <!-- oclive-marathon-contract
@@ -18,7 +18,7 @@
   "version": 1,
   "id": "K-RESILIENCE-01",
   "runner": "auto",
-  "planStatus": "ready",
+  "planStatus": "closed",
   "parentDebtDisposition": "keep-open",
   "currentStage": 3,
   "prerequisites": [],
