@@ -20,7 +20,7 @@
   "runner": "auto",
   "planStatus": "ready",
   "parentDebtDisposition": "keep-open",
-  "currentStage": 0,
+  "currentStage": 1,
   "prerequisites": [],
   "stages": [
     {"id": 0, "title": "Inventory current market surfaces", "files": ["read-only"], "actions": ["Inspect main-repo CLI market code and existing product documentation; do not open sibling repositories"], "checks": [{"command": "rg -n \"market\" kernel/crates/oclive-cli/src handoff creator-docs", "why": "The SCOPE must be grounded in current main-repo surfaces"}], "outputs": ["Current capability and gap inventory"], "rollback": "No writes; sibling-repo facts remain human/cross-repo prerequisites"},
