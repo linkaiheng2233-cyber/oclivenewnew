@@ -10,7 +10,7 @@
 | **尺寸** | L |
 | **Minimal / Full** | Minimal：白名单文档+1 测；非多个社区插件产品化 |
 | **Owner** | main-repo |
-| **状态** | Ready |
+| **状态** | **Done**（Minimal · CI success） |
 | **更新** | 2026-07-16 |
 
 <!-- oclive-marathon-contract
@@ -18,7 +18,7 @@
   "version": 1,
   "id": "K-VOICE-06",
   "runner": "auto",
-  "planStatus": "ready",
+  "planStatus": "closed",
   "parentDebtDisposition": "done-eligible",
   "currentStage": 3,
   "prerequisites": [],
