@@ -31,7 +31,7 @@
 | 20 | T-DOC-02 | auto | [long-plans/T-DOC-02.md](./long-plans/T-DOC-02.md) | pr-open |
 | 30 | D-ROLEVER-01 | auto | [long-plans/D-ROLEVER-01.md](./long-plans/D-ROLEVER-01.md) | pr-open |
 | 40 | K-RESILIENCE-01 | auto | [long-plans/K-RESILIENCE-01.md](./long-plans/K-RESILIENCE-01.md) | pr-open |
-| 50 | K-SUPPLY-05-Full | auto | [long-plans/K-SUPPLY-05-Full.md](./long-plans/K-SUPPLY-05-Full.md) | pending |
+| 50 | K-SUPPLY-05-Full | auto | [long-plans/K-SUPPLY-05-Full.md](./long-plans/K-SUPPLY-05-Full.md) | pr-open |
 | 60 | K-CROSS-01 | auto | [long-plans/K-CROSS-01.md](./long-plans/K-CROSS-01.md) | pending |
 | 70 | K-PERF-10 | skip | [long-plans/K-PERF-10.md](./long-plans/K-PERF-10.md) | skip |
 | 80 | K-SUPPLY-04 | skip | [long-plans/K-SUPPLY-04.md](./long-plans/K-SUPPLY-04.md) | skip |

@@ -59,7 +59,7 @@
 | **K-SUPPLY-02** | Release 预编译内核 **SHA256SUMS**（防换包） | P1 | workflow + `bundle-kernel-for-tauri.mjs` 钩子已入库；tag `oclivenewnew-v*` 触发 CI artifact | **Done**（轮次 22） |
 | **K-SUPPLY-03** | 插件安装后「请审本地源码」固定提示 | P2 | 市场/git/zip + CLI | **Done**（轮次 19） |
 | **K-SUPPLY-04** | 前端 `npm-audit` 仅可见性（`continue-on-error`） | P2 | 连续 2 周期高危命中 → 升格硬门禁或文档豁免 | **Observe**（2026-07-12：`defu` override **6.1.5** 清零高危；`npm audit --omit=dev` **0 高危 / 4 中危 / 1 低危** — `vue3-sfc-loader` 链待专项） |
-| **K-SUPPLY-05** | `deny.toml` `multiple-versions` warn→deny | P2 | Minimal：`deny` + 有理由 `[bans.skip]`；Full 零 skip 另战役 | **Done**（Minimal · 2026-07-15 · deny+skip · ratchet **80**；非零 dup） |
+| **K-SUPPLY-05** | `deny.toml` `multiple-versions` warn→deny | P2 | Minimal：`deny` + 有理由 `[bans.skip]`；Full 零 skip 另战役 | **Done**（Minimal · 2026-07-15）· **Full Partial**（2026-07-16 · workspace `toml` 0.8→1 · ratchet **75**；`[bans.skip]` 仍须保留 · 不准假 Full Done · PR [#126](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/126)） |
 | **CI-E2E-TAURI-01** | e2e-tauri WebDriver smoke（sidebar/title） | P2 | 远程 `e2e-tauri` 过；勿弱化断言 | **Done**（2026-07-14 · CI [`29311703046`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29311703046) / HEAD `8988f49d` · session+title+sidebar 全绿；仍 soft gate） |
 | **K-CHATPRO-01** | Chat Pro 流式取消 UX | P2 | `AbortController` 打断上一轮 + 清理 `streaming` 气泡；设置可关流式 | **Done**（Chat Pro 正式启用 · 2026-06-26） |
 | **D-ORDER-01** | monorepo `roles` 路径 SSOT（27 集成测 + oclive-cli `join("roles")`） | P0 | `chat_pro_roles_dir()` / `tests/common` / `resolve_project_roles_dir()` | **Done**（条理优化 Wave A · 2026-06-24） |
@@ -161,7 +161,7 @@
 | **K-SUPPLY-02** | Release SHA256SUMS | P1 | **Done** — `generate-sha256sums.mjs` · `release-kernel-checksums.yml` · `bundle-kernel-for-tauri.mjs` |
 | **K-SUPPLY-03** | 插件安装审源码提示 | P2 | **Done**（轮次 19） |
 | **K-SUPPLY-04** | npm-audit 升格策略 | P2 | **Observe** — `defu` override 6.1.5 清零高危（2026-07-12）；`vue3-sfc-loader`/postcss 链 **0 高危 / 4 中危 / 1 低危** 待专项；下复核 **2026-08** |
-| **K-SUPPLY-05** | deny 重复依赖 warn→deny | P2 | **Done**（Minimal · 2026-07-15）— `multiple-versions = deny` + documented `[bans.skip]` · ratchet **80** · Full 零 skip 另战役 |
+| **K-SUPPLY-05** | deny 重复依赖 warn→deny | P2 | **Done**（Minimal · 2026-07-15）— `multiple-versions = deny` + documented `[bans.skip]` · ratchet **80** · **Full Partial**（2026-07-16 · toml workspace→1 · ratchet **75** · 零 skip 仍 blocked:needs-ecosystem） |
 | **K-SUPPLY-06** | 位级可重复构建（reproducible） | — | **Deferred** · 见 SECURITY_AUDIT_SCOPE 局限 |
 | **K-SUPPLY-07** | SBOM（CycloneDX/SPDX） | — | **Deferred** · 政企/校企采购需求触发 |
 | **MEGA-SD-01** | `scene_director.rs` 巨无霸拆分 | 见 §2 解冻条件；零语义变更 PR |
