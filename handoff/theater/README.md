@@ -10,6 +10,8 @@
 
 |------|------|
 
+| [`STATUS.md`](STATUS.md) | 产品状态单页（模式 / 冻结 / playtest 指针） |
+
 | [`DEVELOPMENT_ROADMAP.md`](DEVELOPMENT_ROADMAP.md) | 思路与开发路线 SSOT |
 
 | [`INFORMATION_ARCHITECTURE.md`](INFORMATION_ARCHITECTURE.md) | 信息架构（模式 1 · 舞台壳 / 区域 / 组件 / 状态机 / 开发顺序） |

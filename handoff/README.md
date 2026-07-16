@@ -61,6 +61,7 @@
 | **Turn Thinking 包级路由 + ephemeral**（Wave F） | [`RFC_TURN_THINKING_PERSISTENCE.md` §8–12](../creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md) | ROLE_PACK_SPEC §9.11 · `035_turn_thinking_runtime.sql` |
 | 发行版 HostProfile 字段 | [`DISTRO_CAPABILITY_PROFILE.md`](../creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md) | — |
 | 活跃债 / 冻结 / OPEN | [`TECHNICAL_DEBT_INVENTORY.md`](./TECHNICAL_DEBT_INVENTORY.md) | MODULE_MAP · VISION 路线图 |
+| **债偿还马拉松 · 长计划书 · 波次日志** | [`debt-marathon/`](./debt-marathon/README.md) | TECHNICAL_DEBT（状态）；Skill：`.cursor/skills/oclive-debt-marathon` |
 | **Tauri v1→v2 迁移清单**（allowlist↔capability · 版本 · CI） | [`distros/TAURI_V2_MIGRATION_INVENTORY.md`](./distros/TAURI_V2_MIGRATION_INVENTORY.md) | TECHNICAL_DEBT K-PLATFORM-01 · BOUNDARIES §6 |
 | 版本与文档地图 | [`PROJECT_STATUS_AND_ALIGNMENT.md`](../creator-docs/getting-started/PROJECT_STATUS_AND_ALIGNMENT.md) | — |
 | AI 改代码 / **文档**边界 | [`AI_CHANGE_BOUNDARIES.md`](./AI_CHANGE_BOUNDARIES.md) G1–G16 · §文档编写纪律 | `.cursor/rules` 摘要 |

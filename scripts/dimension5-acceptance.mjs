@@ -102,6 +102,10 @@ runStep('doc registry ratchet', () => {
   sh('node', ['scripts/check-doc-registry.mjs']);
 });
 
+runStep('debt marathon contracts', () => {
+  sh('node', ['scripts/check-debt-marathon.mjs']);
+});
+
 runStep('human module Markdown links', () => {
   sh('node', ['scripts/check-markdown-links.mjs', '--self-test']);
   sh('node', ['scripts/check-markdown-links.mjs']);
