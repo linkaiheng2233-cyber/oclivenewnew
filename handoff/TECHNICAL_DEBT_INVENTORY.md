@@ -10,6 +10,8 @@
 
 **马拉松计划书：** [`debt-marathon/`](./debt-marathon/README.md) · 总索引 [`MARATHON_QUEUE.md`](./debt-marathon/MARATHON_QUEUE.md) · **AI+流水线硬门禁** [`AI_AND_PIPELINE_GATES.md`](./debt-marathon/AI_AND_PIPELINE_GATES.md) · 覆盖 [`COVERAGE.md`](./debt-marathon/COVERAGE.md)；Skill：`oclive-debt-marathon`。
 
+**Verification (2026-07-16 · K-VOICE-06 Minimal):** HEAD `b8cb0c48` · CI [`29465172205`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29465172205) **硬门禁 success**（`rust` windows+ubuntu / `dimension5` / `cargo-audit` / `cli` / `oocp` / `cross-host-e2e` / `stale-paths`；`frontend` / `e2e-tauri` / `loom` success）· PLUGIN_V1 双镜 `com.user.tts.*` RPC 契约 · 拒测 `community_tts_plugin_rpc_rejects_undeclared_speak` · **Done（Minimal · VX-10）** · ≠ K-VOICE-02 产品化 · PR [#126](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/126)。
+
 **Verification (2026-07-16 · K-VOICE-04 inherit-provider → main):** 已合 `origin/main` · merge `262c9ac4` · CI [`29432835462`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29432835462) **硬门禁 success**（`rust` windows+ubuntu / `dimension5` / `cargo-audit` / `cli` / `oocp` / `cross-host-e2e` / `stale-paths`；`frontend` / `e2e-tauri` / `loom` success）· 继承 TTS 时保留 settings `synth_provider` · K-VOICE-04 仍 **Done**（不降级）· 下一动作仍 **V-VSCODE-PERF-05** · PR [#123](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/123)。
 
 **Verification (2026-07-15 · K-VOICE-04 Minimal):** HEAD `2d5123af` · CI [`29408795870`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29408795870) **硬门禁 success**（`rust` windows+ubuntu / `dimension5` / `cargo-audit` / `cli` / `oocp` / `cross-host-e2e` / `stale-paths`；`frontend` / `e2e-tauri` / `loom` success）· 删除 `useRoleVoiceProfileSync` · `voiceTtsRouting` 任务级路由 · Warm 按 profile 隔离 · **Done（Minimal · VX-11）** · 下一动作仍 **V-VSCODE-PERF-05** · PR [#122](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/122)。
@@ -59,7 +61,7 @@
 | **K-SUPPLY-02** | Release 预编译内核 **SHA256SUMS**（防换包） | P1 | workflow + `bundle-kernel-for-tauri.mjs` 钩子已入库；tag `oclivenewnew-v*` 触发 CI artifact | **Done**（轮次 22） |
 | **K-SUPPLY-03** | 插件安装后「请审本地源码」固定提示 | P2 | 市场/git/zip + CLI | **Done**（轮次 19） |
 | **K-SUPPLY-04** | 前端 `npm-audit` 仅可见性（`continue-on-error`） | P2 | 连续 2 周期高危命中 → 升格硬门禁或文档豁免 | **Observe**（2026-07-12：`defu` override **6.1.5** 清零高危；`npm audit --omit=dev` **0 高危 / 4 中危 / 1 低危** — `vue3-sfc-loader` 链待专项） |
-| **K-SUPPLY-05** | `deny.toml` `multiple-versions` warn→deny | P2 | Minimal：`deny` + 有理由 `[bans.skip]`；Full 零 skip 另战役 | **Done**（Minimal · 2026-07-15 · deny+skip · ratchet **80**；非零 dup） |
+| **K-SUPPLY-05** | `deny.toml` `multiple-versions` warn→deny | P2 | Minimal：`deny` + 有理由 `[bans.skip]`；Full 零 skip 另战役 | **Done**（Minimal · 2026-07-15）· **Full Partial**（2026-07-16 · workspace `toml` 0.8→1 · ratchet **75**；`[bans.skip]` 仍须保留 · 不准假 Full Done · PR [#126](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/126)） |
 | **CI-E2E-TAURI-01** | e2e-tauri WebDriver smoke（sidebar/title） | P2 | 远程 `e2e-tauri` 过；勿弱化断言 | **Done**（2026-07-14 · CI [`29311703046`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29311703046) / HEAD `8988f49d` · session+title+sidebar 全绿；仍 soft gate） |
 | **K-CHATPRO-01** | Chat Pro 流式取消 UX | P2 | `AbortController` 打断上一轮 + 清理 `streaming` 气泡；设置可关流式 | **Done**（Chat Pro 正式启用 · 2026-06-26） |
 | **D-ORDER-01** | monorepo `roles` 路径 SSOT（27 集成测 + oclive-cli `join("roles")`） | P0 | `chat_pro_roles_dir()` / `tests/common` / `resolve_project_roles_dir()` | **Done**（条理优化 Wave A · 2026-06-24） |
@@ -90,7 +92,7 @@
 | **K-VOICE-03** | Linux/macOS CosyVoice2 产品 profile | P2 | 随上游 CosyVoice 跨平台稳定后解冻 `asr_profiles.json` platforms | **OPEN** |
 | **K-VOICE-04** | 角色包可选 TTS 覆盖与全局配置冲突 | P3 | 全局 profile 必须服务所有角色；角色 `synth_profile` 只覆盖播报任务，不得在切换角色时改写设置 | **Done**（Minimal · VX-11 · `2d5123af` · CI [`29408795870`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29408795870) · PR [#122](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/122)；inherit-provider 跟随 [#123](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/123) → `262c9ac4`） |
 | **K-VOICE-05** | Qwen3-TTS 官方 REST 契约稳定化（社区 server 方言多） | P2 | 随上游收敛后收紧 adapter；Fish 默认端口已改 **9881** 避免与 Qwen **8080** 冲突 | **Observe** |
-| **K-VOICE-06** | 社区 directory 插件 `com.user.tts.*`（自带 sidecar/RPC） | P2 | VX-10 · `plugin_rpc_invoke` 白名单 | **OPEN** |
+| **K-VOICE-06** | 社区 directory 插件 `com.user.tts.*`（自带 sidecar/RPC） | P2 | VX-10 · `plugin_rpc_invoke` 白名单 | **Done**（Minimal · 2026-07-16 · `b8cb0c48` · CI [`29465172205`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29465172205) · PR [#126](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/126)） |
 | **K-VOICE-07** | `voice_directive` v2 + `engine_extras` 透传 bag | P2 | RFC §4.1 小节后实现 | **OPEN** |
 | **K-VOICE-08** | 全引擎统一流式 playback contract | P2 | 非 CosyVoice chunked audio 抽象 | **Deferred** |
 
@@ -103,10 +105,10 @@
 |----|-----|--------|----------------|------|
 | **K-PLATFORM-01** | Tauri v1 → v2 迁移 | **P1** | **契约**：权限/capability schema 对照 + **测试**：最小 smoke + **改动面**：desktop-tauri / 三 distro 分 PR | **Done**（01a+01b+01c · 2026-07-15 · CI [`29362067494`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29362067494)） |
 | **K-LLM-01** | LLM 后端单一依赖 Ollama | **P1** | **契约**：`LlmBackend` env 矩阵 + **测试**：1 API + 1 本地 mock + **改动面**：adapter 接线 PR | **Done**（01a+01b · 2026-07-14；第二本地 = Remote+localhost OpenAI-compat ∥ directory/llamacpp；无新 enum） |
-| **K-CROSS-01** | 跨平台系统策略缺失 | **P2** | 三平台语音 smoke + distro profile 差异声明 | **OPEN** |
-| **K-DIST-01** | 分发体验缺口 | **P2** | 签名/updater/Linux 包/macOS dmg | **OPEN** |
+| **K-CROSS-01** | 跨平台系统策略缺失 | **P2** | 三平台语音 smoke + distro profile 差异声明 | **Partial**（Minimal 文档 · 2026-07-16 · DISTRO+TRACK 平台矩阵 · 缺三平台实机 smoke · PR [#126](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/126)） |
+| **K-DIST-01** | 分发体验缺口 | **P2** | 签名/updater/Linux 包/macOS dmg | **Partial**（Minimal 文档 · 2026-07-16 · `handoff/distros/README.md` gaps · Full `blocked:needs-signing-secrets` · PR [#126](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/126)） |
 | **D-I18N-02** | creator-docs-en 镜像滞后 | **P2** | **契约**：`check-doc-mirror` 扩展 + **测试**：mirror ratchet 样例 + **改动面**：creator-docs-en 补链 PR | **Done**（2026-07-14 · HEAD `0be7f2df` · CI [`29278403237`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29278403237) dim5 success · HIGH_TRAFFIC×8 + `--self-test`） |
-| **V-MARKET-01** | 插件市场生态 | **P2** | 市场 UI + 社区插件 | **OPEN** |
+| **V-MARKET-01** | 插件市场生态 | **P2** | 市场 UI + 社区插件 | **Partial**（Minimal SCOPE · 2026-07-16 · `PRODUCT_LINE_TASK_BUCKETS` · 姊妹仓 human/cross-repo · ≠ Full Done · PR [#126](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/126)） |
 
 **K-PLATFORM-01 子项**
 
@@ -136,7 +138,7 @@
 | **D-ROLEVER-01** | 角色包版本迁移 | **P2** | ROLE_PACK_SPEC 章节 | **OPEN** |
 | **T-DOC-02** | Theater 状态单页 | **P2** | theater STATUS | **OPEN** |
 | **K-RPP-01** | RPP 无契约 | **P2** | PLUGIN_V1 或 RPP_CONTRACT | **Done**（2026-07-13 · `rpp_contract_audit.rs` 四测 · manifest/RPC/roundtrip/mumu 默认关） |
-| **K-RESILIENCE-01** | Remote 弹性分散 | **P2** | ResilienceLayer | **OPEN** |
+| **K-RESILIENCE-01** | Remote 弹性分散 | **P2** | ResilienceLayer | **Partial**（Minimal · 2026-07-16 · PROTOCOL 锚点 + `prompt_http`→`call_with_builtin_fallback` · Full 仍 OPEN） |
 
 ## §1.5 供应链安全（Supply Chain · 2026-06-24）
 
@@ -161,7 +163,7 @@
 | **K-SUPPLY-02** | Release SHA256SUMS | P1 | **Done** — `generate-sha256sums.mjs` · `release-kernel-checksums.yml` · `bundle-kernel-for-tauri.mjs` |
 | **K-SUPPLY-03** | 插件安装审源码提示 | P2 | **Done**（轮次 19） |
 | **K-SUPPLY-04** | npm-audit 升格策略 | P2 | **Observe** — `defu` override 6.1.5 清零高危（2026-07-12）；`vue3-sfc-loader`/postcss 链 **0 高危 / 4 中危 / 1 低危** 待专项；下复核 **2026-08** |
-| **K-SUPPLY-05** | deny 重复依赖 warn→deny | P2 | **Done**（Minimal · 2026-07-15）— `multiple-versions = deny` + documented `[bans.skip]` · ratchet **80** · Full 零 skip 另战役 |
+| **K-SUPPLY-05** | deny 重复依赖 warn→deny | P2 | **Done**（Minimal · 2026-07-15）— `multiple-versions = deny` + documented `[bans.skip]` · ratchet **80** · **Full Partial**（2026-07-16 · toml workspace→1 · ratchet **75** · 零 skip 仍 blocked:needs-ecosystem） |
 | **K-SUPPLY-06** | 位级可重复构建（reproducible） | — | **Deferred** · 见 SECURITY_AUDIT_SCOPE 局限 |
 | **K-SUPPLY-07** | SBOM（CycloneDX/SPDX） | — | **Deferred** · 政企/校企采购需求触发 |
 | **MEGA-SD-01** | `scene_director.rs` 巨无霸拆分 | 见 §2 解冻条件；零语义变更 PR |

@@ -164,6 +164,38 @@ RFC summary: [RFC_VISUAL_PRESENTATION_FACILITY_SUMMARY.md](../rfc/RFC_VISUAL_PRE
 
 ---
 
+## 11. Versioning and migration
+
+Role packs have two version layers — do not mix them:
+
+| Layer | Where | Expectation |
+|-------|--------|-------------|
+| **Pack release version** | `meta.version` (v2 blueprint) or legacy `manifest.version` | **semver string** (e.g. `1.2.0`); creator-facing release id |
+| **Format / contract version** | Blueprint `schema_version`; legacy `settings.schema_version`; optional `manifest.min_runtime_version` | Controls parse path and load rejection; detail in [PACK_VERSIONING.md](PACK_VERSIONING.md) |
+
+**Relation to schema / manifest**
+
+- **Authoritative v2+ shape** is `pipeline.ocblueprint` (`schema_version` **2** or **3**) plus `slot_registry`; pack layout and validation follow the [Chinese ROLE_PACK_SPEC](../../creator-docs/role-pack/ROLE_PACK_SPEC.md) §§1–2 / §6.
+- **Legacy** still uses `manifest.json` + `settings.json`; key whitelist, `min_runtime_version` (host semver gate), and unknown-key policy live in [PACK_VERSIONING.md](PACK_VERSIONING.md) — do not restate those tables here.
+- JSON Schema / CLI: `oclive pack validate`; implementation SSOT is `oclive_validation`.
+
+**Breaking fields (must rewrite on migration; silent ignore is wrong)**
+
+- Blueprint bump: `schema_version` change (2→3); v3 consolidates engine/system config under top-level **`runtime_config`** (see migration guides).
+- Legacy → v2: fold dual files into blueprint **`meta`** + **`slot_registry`**; **must not** coexist with legacy dual files; blueprints **must not** carry `steps[]` / `entry` / `module_relations` (first-turn path remains `process_message` → `co_present`, not old DSL scheduling).
+- Unknown top-level keys or invalid backend enum values fail validation; slot/backend names must match PLUGIN_V1 (`plugin_backends` · `slot_registry.type`).
+
+**Recommended migration steps (high-level · details linked only)**
+
+1. Back up the pack; confirm whether you have legacy dual files or an existing `pipeline.ocblueprint`.
+2. **Legacy → v2**: follow [V1_TO_V2_MIGRATION.md](V1_TO_V2_MIGRATION.md), then `pack validate`.
+3. **v2 → v3** (when you need `runtime_config` / optional dual-core): follow [V2_TO_V3_MIGRATION.md](V2_TO_V3_MIGRATION.md), then validate and smoke-chat.
+4. When declaring a minimum host, align `min_runtime_version` / `--host-version` with [PACK_VERSIONING.md](PACK_VERSIONING.md).
+
+> **Non-goal:** no batch auto-migration CLI in-tree; hand-edit + validate. Index: [DOCUMENTATION_INDEX.md](../getting-started/DOCUMENTATION_INDEX.md). Full Chinese §11: [ROLE_PACK_SPEC §11](../../creator-docs/role-pack/ROLE_PACK_SPEC.md#11-版本与迁移).
+
+---
+
 ## Missing-section policy (this EN page)
 
 This English page is **condensed**. Normative field tables for directory layout, legacy `manifest`/`settings`, RobotSoulPack, and any section not expanded above remain in the **[Chinese ROLE_PACK_SPEC](../../creator-docs/role-pack/ROLE_PACK_SPEC.md)** (SSOT). Do not treat EN silence as “absent from product.”

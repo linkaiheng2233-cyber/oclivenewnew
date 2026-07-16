@@ -81,6 +81,20 @@
 
 ---
 
+## V-MARKET-01 · 插件市场 SCOPE（Minimal）
+
+> 债台账 **V-MARKET-01**（OPEN P2）。本页 = **Minimal SCOPE** 单页；**≠** Full 社区市场 Done。马拉松计划书：[debt-marathon/long-plans/V-MARKET-01.md](./debt-marathon/long-plans/V-MARKET-01.md)。
+
+| 面 | 现状 / 锚点 |
+|----|-------------|
+| **Today（主仓）** | CLI **`oclive market`**（experimental）· 桌面 **MarketView** + git 索引同步 · 契约与安装语义见下表链接 |
+| **索引 / 文档** | [GITHUB_PLUGIN_INDEX_LINE.md](./GITHUB_PLUGIN_INDEX_LINE.md) · [OCLIVE_CLI_GUIDE § `market`](../creator-docs/cli/OCLIVE_CLI_GUIDE.md#market--插件--模板市场) · 提交流程 [PLUGIN_MARKET_SUBMISSION.md](../creator-docs/plugin-and-architecture/PLUGIN_MARKET_SUBMISSION.md) |
+| **代码锚点** | [`distros/chat-pro/src/views/MarketView.vue`](../distros/chat-pro/src/views/MarketView.vue) · [`distros/desktop-tauri/src/api/plugin_index.rs`](../distros/desktop-tauri/src/api/plugin_index.rs) · CLI [`kernel/crates/oclive-cli/src/market_cmd.rs`](../kernel/crates/oclive-cli/src/market_cmd.rs) / [`market_index.rs`](../kernel/crates/oclive-cli/src/market_index.rs) |
+| **Gaps / 非目标** | **不含** UGC 上传审核、支付、Full 社区站 UI；一夜做完社区闭环 **非本 SCOPE** |
+| **跨仓** | 姊妹仓 **`oclive-plugin-market`** / launcher = **human / cross-repo**（本仓 Agent 不打开、不冒充实现证据）。**V-MARKET-01 保持 OPEN**，直至有该侧人工证据；本页 **Minimal ≠ Full Done** |
+
+---
+
 ## 相关链接
 
 - 主清单：[PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](./archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md)  

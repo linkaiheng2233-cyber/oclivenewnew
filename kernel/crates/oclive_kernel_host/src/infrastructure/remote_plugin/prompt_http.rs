@@ -7,8 +7,8 @@ use crate::domain::BuiltinPromptAssembler;
 use crate::error::{AppError, Result};
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
 use crate::infrastructure::remote_fallback_policy::remote_fallback_load;
+use crate::infrastructure::remote_plugin::adapter::RemotePluginAdapterBlocking;
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
-use crate::infrastructure::remote_plugin::RemoteHttpClientBlocking;
 use crate::models::{PersonalitySource, Role};
 use serde_json::json;
 use std::sync::atomic::AtomicBool;
@@ -18,7 +18,7 @@ const METHOD_PROMPT_BUILD: &str = "prompt.build_prompt";
 const METHOD_PROMPT_TOPIC_HINT: &str = "prompt.top_topic_hint";
 
 pub struct RemotePromptAssemblerHttp {
-    http: RemoteHttpClientBlocking,
+    adapter: RemotePluginAdapterBlocking,
     fallback: BuiltinPromptAssembler,
     remote_fallback_allowed: Arc<AtomicBool>,
 }
@@ -32,12 +32,17 @@ impl RemotePromptAssemblerHttp {
         high_risk_grants: Arc<HighRiskGrantStore>,
         network_grant_id: Option<String>,
     ) -> Self {
-        let http =
-            RemoteHttpClientBlocking::new(http_client, cfg, high_risk_grants, network_grant_id);
+        let fb = remote_fallback_allowed.clone();
         Self {
-            http,
+            adapter: RemotePluginAdapterBlocking::new(
+                http_client,
+                cfg,
+                fb.clone(),
+                high_risk_grants,
+                network_grant_id,
+            ),
             fallback: BuiltinPromptAssembler,
-            remote_fallback_allowed,
+            remote_fallback_allowed: fb,
         }
     }
 }
@@ -58,8 +63,10 @@ impl PromptAssembler for RemotePromptAssemblerHttp {
                 return Err(serde_to_ollama("prompt snapshot serialize", e));
             }
         };
-        match self.http.call_plugin(METHOD_PROMPT_BUILD, params) {
-            Ok(v) => {
+        self.adapter.call_with_builtin_fallback(
+            METHOD_PROMPT_BUILD,
+            params,
+            |v| {
                 if let Some(s) = v.get("prompt").and_then(|x| x.as_str()) {
                     return Ok(s.to_string());
                 }
@@ -75,31 +82,12 @@ impl PromptAssembler for RemotePromptAssemblerHttp {
                 } else {
                     Err(AppError::RemoteServiceUnavailable(format!(
                         "prompt.build_prompt: bad shape endpoint={}",
-                        self.http.endpoint()
+                        self.adapter.http.endpoint()
                     )))
                 }
-            }
-            Err(e) => {
-                if matches!(e, AppError::HighRiskCapabilityNotGranted { .. }) {
-                    return Err(e);
-                }
-                if remote_fallback_load(&self.remote_fallback_allowed) {
-                    tracing::warn!(
-                        target: "oclive_plugin",
-                        "prompt.build_prompt remote failed endpoint={} err={}; fallback=builtin",
-                        self.http.endpoint(),
-                        e
-                    );
-                    self.fallback.build_prompt(input)
-                } else {
-                    Err(AppError::RemoteServiceUnavailable(format!(
-                        "prompt.build_prompt remote failed endpoint={} err={}",
-                        self.http.endpoint(),
-                        e
-                    )))
-                }
-            }
-        }
+            },
+            || self.fallback.build_prompt(input),
+        )
     }
 
     fn top_topic_hint(&self, role: &Role, scene_id: &str) -> Option<String> {
@@ -107,7 +95,11 @@ impl PromptAssembler for RemotePromptAssemblerHttp {
             "role": role,
             "scene_id": scene_id,
         });
-        match self.http.call_plugin(METHOD_PROMPT_TOPIC_HINT, params) {
+        match self
+            .adapter
+            .http
+            .call_plugin(METHOD_PROMPT_TOPIC_HINT, params)
+        {
             Ok(v) => v
                 .get("hint")
                 .and_then(|x| x.as_str())
@@ -121,7 +113,7 @@ impl PromptAssembler for RemotePromptAssemblerHttp {
                     tracing::warn!(
                         target: "oclive_plugin",
                         "prompt.top_topic_hint remote failed endpoint={} err={}; fallback=builtin",
-                        self.http.endpoint(),
+                        self.adapter.http.endpoint(),
                         e
                     );
                     self.fallback.top_topic_hint(role, scene_id)

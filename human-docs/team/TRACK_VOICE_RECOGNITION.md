@@ -120,6 +120,32 @@ node distros/chat-pro/plugins/com.oclive.voice.asr/rpc_server.mjs
 | 全引擎流式 playback | 统一 chunked audio contract | K-VOICE-08 Deferred |
 | Tier-2 引擎（ChatTTS · XTTS · Piper 产品化等） | 靠 VX-9 generic pack 或社区 | K-VOICE-02–05 |
 
+### 平台 × ASR / TTS / webview（差异声明）
+
+发行版 [`DISTRO_CAPABILITY_PROFILE`](../../creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md)（`HostProfile`）**不**替代本表。平台真值锚点：[`asr_profiles.json`](../../distros/chat-pro/plugins/com.oclive.voice.asr/asr_profiles.json)。
+
+| 平台 | ASR（sherpa 产品） | TTS `bundled-cosyvoice2-zh` | `local_http` / `cloud` TTS | Chat Pro webview（🎤 / 朗读） |
+|------|--------------------|-----------------------------|------------------------------|-------------------------------|
+| **Windows** | 已交付 | 已交付 | `platforms` 为空 `{}`（用户自建 endpoint；非 OS 门禁） | 已交付 |
+| **Linux** | `unsupported` | `unsupported`（产品化 → **K-VOICE-03**；本文不发明交付） | 同上空 `{}` | 宿主 UI 可存在；**不**宣称三 OS 语音闭环已验 |
+| **macOS** | `unsupported` | `unsupported`（同上） | 同上 | 同上 |
+
+**已有自动化入口（明确：≠ 三 OS 实机语音证明）**
+
+| 命令 | 证明什么 | 不证明什么 |
+|------|----------|------------|
+| `npm run test:distro-profile-mirror` | vscode/desktop profile 镜像 | OS × 语音 |
+| `npm run test:distro:smoke` | 发行版/内核 e2e 链 | 三平台 ASR/TTS |
+| `npm run test:theater:smoke` | Theater 提示词/单元 | 语音 |
+| `node scripts/test-voice-build-directive.mjs` | director / `synth_profile` 路由 | 三 OS 设备 |
+| `node scripts/test-voice-speak-path.mjs --probe-only` | TTS probe 路径诚实失败 | 三 OS 实机出声 |
+| `node scripts/check-voice-tts-ratchet.mjs` | TTS 契约棘轮 | 三 OS |
+
+| **human-only** | 说明 |
+|----------------|------|
+| 三平台实机 smoke（Win / Linux / mac 各跑 ASR → chat → TTS） | K-CROSS-01 保持 OPEN 直至有证据；本 Stage **未**跑、**不**冒充已跑 |
+| CosyVoice Linux / mac 产品化 | 台账 **K-VOICE-03** · 与本矩阵声明正交 |
+
 ---
 
 ## 2. 架构边界（必须遵守）

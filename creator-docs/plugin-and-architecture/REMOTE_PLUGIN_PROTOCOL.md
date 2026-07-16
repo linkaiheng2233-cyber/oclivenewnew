@@ -152,6 +152,20 @@ OCLIVE_LLM_BACKEND=remote（或包内 llm=remote）
 | **HTTP 侧车（当前）** | 宿主仅向用户配置的 **URL** 发起 **POST**；**不**随角色包自动下载或执行任意本地可执行文件。Token 经环境变量注入，**勿**把密钥写入角色包或提交到仓库。 |
 | **未来：子进程 / 可执行插件** | 若以后支持启动本地侧车 exe，须在**单独文档**中定义：路径声明位置、首次运行**用户确认**、沙箱与签名策略；未落地前以本 HTTP 模型为准。 |
 
+### 宿主弹性代码锚点（Minimal）
+
+本小节为 **Minimal** 清单与新代码入口约定（债 **K-RESILIENCE-01**）。**Full ResilienceLayer** 仍属台账 OPEN，不在本文展开、亦不发明统一大层。
+
+| 主题 | 代码锚点 | 说明 |
+|------|----------|------|
+| **Timeout SSOT** | `kernel/crates/oclive_kernel_host/src/infrastructure/remote_plugin/config.rs`（`RemotePluginHttpConfig.timeout`）→ `remote_plugin/jsonrpc.rs`（`.timeout(request_timeout)`） | env 钳制后的超时写入配置，再注入 HTTP 请求 |
+| **Fallback 闸门** | `kernel/crates/oclive_kernel_host/src/infrastructure/remote_fallback_policy.rs` · `remote_fallback_load` | 运行时是否允许失败后回退内置 |
+| **Canonical fallback** | `remote_plugin/adapter.rs` · `RemotePluginAdapterBlocking::call_with_builtin_fallback`（及 async 孪生 `RemotePluginAdapterAsync::call_with_async_builtin_fallback`） | 成功 decode；失败且闸门开则 `builtin`，否则 `RemoteServiceUnavailable` |
+| **Host-side retry** | **无** | 宿主当前不对 Remote 调用做自动重试；Minimal **不**发明重试层 |
+| **离群（非 canonical）** | `remote_plugin/prompt_http.rs`、`memory_http.rs` | 仍内联 `remote_fallback_load`；接线候选，**非**新代码范本 |
+
+**新代码约定**：新增 Remote HTTP 调用路径 **必须**经 `RemotePluginAdapterBlocking::call_with_builtin_fallback`（或 async 孪生），**禁止**在业务文件内重复内联 `remote_fallback_load`。目录根见上文 `remote_plugin/`。
+
 ---
 
 ## 3. Rust 枚举的 JSON 形状（侧车必看）

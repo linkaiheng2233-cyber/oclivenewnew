@@ -53,8 +53,10 @@ description: >-
 
 - 自动续轮仅保证 **Cursor IDE**；Cursor Background/Cloud Agent 当前不依赖 lifecycle hook，按 Wave 手动续跑。
 - 父 Agent 每次最多派发一个会写同一 worktree 的 Implementer；只有 Cursor 原生 worktree 隔离后才可并行。
+- 每次 `claim` 都重新要求 clean worktree；checkpoint 以 claim `baseSha` 对比 **已提交 + 未提交 + 未跟踪**文件，commit 不能绕过 Stage 文件范围。
 - `.cursor/oclive-marathon-session.json` 是本机运行态，不进 Git；长久恢复真值仍是 Wave + Git SHA。
-- stop hook 只在 `cursor-marathon start` 激活后续轮，并绑定首个 `conversation_id`；普通聊天不受影响。
+- stop hook 只在 `cursor-marathon start` 激活后续轮，并在**首次** `status=completed` 时绑定 `conversation_id`（不按墙钟 5 分钟超时）；普通聊天不受影响。
+- hook 失败 fail-open（不杀 session）；`hooks.json` `loop_limit` 须 ≥ `max-turns`；自检 `npm run test:cursor-marathon-hook`。
 
 ### Cursor 父 Agent 每轮
 
@@ -73,6 +75,8 @@ node scripts/cursor-marathon.mjs claim --debt <ID> --stage <N> --agent oclive-de
 ```powershell
 node scripts/cursor-marathon.mjs checkpoint --claim <CLAIM_ID> --debt <ID> --stage <N> --outcome progress --wave <WAVE_PATH> --last-command "<COMMAND>" --next "<EXACT_NEXT_COMMAND>"
 ```
+
+最终一轮须用 `--outcome done` 写 terminal checkpoint；`finish --outcome done` 会拒绝 `progress` checkpoint，并确认不存在 queue=`pending|ready|implemented|locally-verified` 的 Ready auto Stage。`pr-open` 是等待外部审查/合入的暂停态，不得重复 claim。
 
 6. 完成/阻断/失败时：
 

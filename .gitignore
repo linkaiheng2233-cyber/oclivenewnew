@@ -35,6 +35,9 @@ dist-ssr
 .cursor/hooks/*
 !.cursor/hooks/oclive-marathon-stop.mjs
 !.cursor/hooks.json
+.cursor/oclive-marathon-session.json
+.cursor/oclive-marathon-session.lock
+.cursor/oclive-marathon-hook.log
 .idea
 .DS_Store
 *.suo

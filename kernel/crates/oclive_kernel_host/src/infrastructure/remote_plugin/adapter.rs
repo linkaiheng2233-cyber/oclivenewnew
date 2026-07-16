@@ -186,3 +186,58 @@ pub fn invoke_turn_rpc(
         },
     )
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
+    use serde_json::json;
+    use std::time::Duration;
+
+    fn adapter_to_dead_endpoint(fallback_allowed: bool) -> RemotePluginAdapterBlocking {
+        let cfg = RemotePluginHttpConfig {
+            endpoint: "http://127.0.0.1:1/rpc".into(),
+            timeout: Duration::from_millis(400),
+            bearer_token: None,
+        };
+        let client = reqwest::Client::builder()
+            .connect_timeout(Duration::from_millis(200))
+            .build()
+            .expect("reqwest client");
+        RemotePluginAdapterBlocking::new(
+            Arc::new(client),
+            cfg,
+            Arc::new(AtomicBool::new(fallback_allowed)),
+            HighRiskGrantStore::load(std::env::temp_dir(), false),
+            None,
+        )
+    }
+
+    #[test]
+    fn call_with_builtin_fallback_uses_builtin_when_remote_fails() {
+        let adapter = adapter_to_dead_endpoint(true);
+        let out = adapter
+            .call_with_builtin_fallback(
+                "test.method",
+                json!({}),
+                |_| Ok("remote".to_string()),
+                || Ok("builtin".to_string()),
+            )
+            .expect("fallback ok");
+        assert_eq!(out, "builtin");
+    }
+
+    #[test]
+    fn call_with_builtin_fallback_errors_when_fallback_disabled() {
+        let adapter = adapter_to_dead_endpoint(false);
+        let err = adapter
+            .call_with_builtin_fallback(
+                "test.method",
+                json!({}),
+                |_| Ok("remote".to_string()),
+                || Ok("builtin".to_string()),
+            )
+            .expect_err("must fail without fallback");
+        assert!(matches!(err, AppError::RemoteServiceUnavailable(_)));
+    }
+}

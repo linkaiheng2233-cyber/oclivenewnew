@@ -3,7 +3,9 @@
   "hooks": {
     "stop": [
       {
-        "command": "node .cursor/hooks/oclive-marathon-stop.mjs"
+        "command": "node .cursor/hooks/oclive-marathon-stop.mjs",
+        "loop_limit": 50,
+        "timeout": 30
       }
     ]
   }

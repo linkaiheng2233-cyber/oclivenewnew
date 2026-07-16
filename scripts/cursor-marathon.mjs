@@ -14,6 +14,7 @@ const repoRoot = path.resolve(
 const cursorDir = path.join(repoRoot, ".cursor");
 const statePath = path.join(cursorDir, "oclive-marathon-session.json");
 const lockPath = path.join(cursorDir, "oclive-marathon-session.lock");
+const hookLogPath = path.join(cursorDir, "oclive-marathon-hook.log");
 const command = process.argv[2] ?? "status";
 const VALID_CAPABILITIES = new Set([
   "local-write",
@@ -48,16 +49,68 @@ function now() {
   return new Date().toISOString();
 }
 
+function parseJsonFlexible(text, label) {
+  const trimmed = String(text ?? "")
+    .replace(/^\uFEFF/, "")
+    .trim();
+  if (!trimmed) return {};
+  try {
+    return JSON.parse(trimmed);
+  } catch (error) {
+    throw new Error(`${label}: ${error.message}`);
+  }
+}
+
 function readState() {
   if (!fs.existsSync(statePath)) return null;
-  return JSON.parse(fs.readFileSync(statePath, "utf8"));
+  return parseJsonFlexible(fs.readFileSync(statePath, "utf8"), "session JSON");
 }
 
 function writeState(state) {
   fs.mkdirSync(cursorDir, { recursive: true });
   const temp = `${statePath}.${process.pid}.${crypto.randomUUID()}.tmp`;
   fs.writeFileSync(temp, `${JSON.stringify(state, null, 2)}\n`, "utf8");
-  fs.renameSync(temp, statePath);
+  // Windows: rename-over-existing can transiently EPERM under AV/IDE watchers.
+  let lastError;
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    try {
+      fs.renameSync(temp, statePath);
+      return;
+    } catch (error) {
+      lastError = error;
+      if (!["EPERM", "EACCES", "EEXIST", "EBUSY"].includes(error.code))
+        throw error;
+      try {
+        fs.copyFileSync(temp, statePath);
+        fs.rmSync(temp, { force: true });
+        return;
+      } catch (copyError) {
+        lastError = copyError;
+      }
+      const waitUntil = Date.now() + 25;
+      while (Date.now() < waitUntil) {
+        /* sync backoff for Windows rename races */
+      }
+    }
+  }
+  fs.rmSync(temp, { force: true });
+  throw lastError ?? new Error("failed to persist marathon session");
+}
+
+function appendHookLog(line) {
+  try {
+    fs.mkdirSync(cursorDir, { recursive: true });
+    fs.appendFileSync(hookLogPath, `${now()} ${line}\n`, "utf8");
+  } catch {
+    // best-effort diagnostics only
+  }
+}
+
+function normalizeHookInput(raw) {
+  const input = raw && typeof raw === "object" ? raw : {};
+  const conversationId = input.conversation_id ?? input.conversationId ?? null;
+  const status = input.status ?? null;
+  return { ...input, conversation_id: conversationId, status };
 }
 
 async function withLock(fn) {
@@ -117,7 +170,9 @@ function parseHookInput() {
     });
     process.stdin.on("end", () => {
       try {
-        resolve(input.trim() ? JSON.parse(input) : {});
+        resolve(
+          normalizeHookInput(parseJsonFlexible(input, "hook stdin JSON")),
+        );
       } catch (error) {
         reject(error);
       }
@@ -169,6 +224,18 @@ function changedFiles() {
         name.includes(" -> ") ? name.split(" -> ").at(-1) : name
       ).replaceAll("\\", "/");
     });
+}
+
+function changedFilesSince(baseSha) {
+  const tracked = execFileSync(
+    "git",
+    ["diff", "--name-only", "-z", baseSha, "--"],
+    { cwd: repoRoot, encoding: "utf8" },
+  )
+    .split("\0")
+    .filter(Boolean)
+    .map((file) => file.replaceAll("\\", "/"));
+  return [...new Set([...tracked, ...changedFiles()])].sort();
 }
 
 function pathAllowed(file, allowed) {
@@ -272,6 +339,7 @@ async function claim() {
     if (!state?.active) throw new Error("no active marathon session");
     if (state.current)
       throw new Error(`claim already active: ${state.current.claimId}`);
+    assertCleanWorktree();
     const key = `${debt}:s${stage}`;
     state.attempts[key] = (state.attempts[key] ?? 0) + 1;
     state.current = {
@@ -284,7 +352,6 @@ async function claim() {
       heartbeatAt: now(),
       leaseExpiresAt: new Date(Date.now() + LEASE_MS).toISOString(),
       baseSha: git(["rev-parse", "HEAD"]),
-      baselineChangedFiles: changedFiles(),
       capabilities,
       authorizationRef: authorizationRef ?? null,
       stageContract,
@@ -388,11 +455,8 @@ async function checkpoint() {
     } catch {
       throw new Error("current HEAD is not descended from the claim base SHA");
     }
-    const currentChangedFiles = changedFiles();
-    const newChangedFiles = currentChangedFiles.filter(
-      (file) => !completedClaim.baselineChangedFiles.includes(file),
-    );
-    const scopeViolations = newChangedFiles.filter(
+    const claimChangedFiles = changedFilesSince(completedClaim.baseSha);
+    const scopeViolations = claimChangedFiles.filter(
       (file) => !pathAllowed(file, completedClaim.stageContract.files),
     );
     if (scopeViolations.length)
@@ -423,7 +487,7 @@ async function checkpoint() {
       outcome,
       baseSha: completedClaim.baseSha,
       headSha: currentHead,
-      changedFiles: currentChangedFiles,
+      changedFiles: claimChangedFiles,
       wave: path.relative(repoRoot, wavePath).replaceAll("\\", "/"),
       lastCommand,
       nextExactCommand: nextCommand,
@@ -446,6 +510,16 @@ async function finish() {
       throw new Error(
         `cannot finish done with active claim ${state.current.claimId}`,
       );
+    if (outcome === "done" && state.lastCheckpoint?.outcome !== "done") {
+      throw new Error("cannot finish done without a terminal done checkpoint");
+    }
+    if (outcome === "done") {
+      execFileSync(
+        process.execPath,
+        ["scripts/check-debt-marathon.mjs", "--assert-no-runnable"],
+        { cwd: repoRoot, stdio: "inherit" },
+      );
+    }
     state.active = false;
     state.outcome = outcome;
     state.stopReason = reason;
@@ -460,26 +534,24 @@ async function hook() {
   const output = await withLock(async () => {
     const state = readState();
     if (!state?.active) return {};
+    // Incomplete Cursor payloads: fail open (do not kill the overnight session).
     if (!input.conversation_id || !input.status) {
-      state.active = false;
-      state.outcome = "failed";
-      state.stopReason = "Cursor stop hook omitted conversation_id or status";
+      state.lastHookError = {
+        at: now(),
+        reason: "Cursor stop hook omitted conversation_id or status",
+      };
       state.updatedAt = now();
       writeState(state);
+      appendHookLog("omit-fields fail-open");
       return {};
     }
     if (state.conversationId && state.conversationId !== input.conversation_id)
       return {};
+    // Bind on first stop for this armed session. Do NOT expire by wall clock:
+    // parent Stage turns routinely exceed 5 minutes before the first stop event.
     if (!state.conversationId) {
-      if (Date.now() - Date.parse(state.startedAt) > 5 * 60 * 1000) {
-        state.active = false;
-        state.outcome = "failed";
-        state.stopReason = "unbound Cursor session expired";
-        state.updatedAt = now();
-        writeState(state);
-        return {};
-      }
       state.conversationId = input.conversation_id;
+      appendHookLog(`bound conversation ${state.conversationId}`);
     }
     if (input.status !== "completed") {
       state.active = false;
@@ -526,10 +598,10 @@ async function hook() {
     }
     writeState(state);
     return {
-      followup_message: `[OCLive debt marathon ${state.stopTurns + 1}/${state.maxTurns}] Continue as the parent controller. Read .cursor/oclive-marathon-session.json and the last Wave. Validate the previous subagent result before dispatching exactly one next Stage. Never stash/switch/reset the shared worktree. Record a checkpoint before stopping; finish explicitly on done, blocked, or failure.`,
+      followup_message: `[OCLive debt marathon ${state.stopTurns}/${state.maxTurns}] Continue as the parent controller. Read .cursor/oclive-marathon-session.json and the last Wave. Validate the previous subagent result before dispatching exactly one next Stage. Never stash/switch/reset the shared worktree. Record a checkpoint before stopping; finish explicitly on done, blocked, or failure.`,
     };
   });
-  process.stdout.write(JSON.stringify(output));
+  process.stdout.write(JSON.stringify(output ?? {}));
 }
 
 async function status() {

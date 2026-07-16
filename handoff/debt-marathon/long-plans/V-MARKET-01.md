@@ -10,7 +10,7 @@
 | **尺寸** | L |
 | **Minimal / Full** | Minimal = SCOPE 单页；Full = 实现市场 UI |
 | **Owner** | main-repo + 可能 `oclive-plugin-market` |
-| **状态** | Ready |
+| **状态** | Ready · pr-open（Partial · 姊妹仓 human/cross-repo） |
 | **更新** | 2026-07-16 |
 
 <!-- oclive-marathon-contract
@@ -20,7 +20,7 @@
   "runner": "auto",
   "planStatus": "ready",
   "parentDebtDisposition": "keep-open",
-  "currentStage": 0,
+  "currentStage": 2,
   "prerequisites": [],
   "stages": [
     {"id": 0, "title": "Inventory current market surfaces", "files": ["read-only"], "actions": ["Inspect main-repo CLI market code and existing product documentation; do not open sibling repositories"], "checks": [{"command": "rg -n \"market\" kernel/crates/oclive-cli/src handoff creator-docs", "why": "The SCOPE must be grounded in current main-repo surfaces"}], "outputs": ["Current capability and gap inventory"], "rollback": "No writes; sibling-repo facts remain human/cross-repo prerequisites"},

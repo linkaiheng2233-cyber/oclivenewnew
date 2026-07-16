@@ -20,7 +20,7 @@
   "runner": "auto",
   "planStatus": "ready",
   "parentDebtDisposition": "done-eligible",
-  "currentStage": 0,
+  "currentStage": 2,
   "prerequisites": [],
   "stages": [
     {"id": 0, "title": "Locate canonical migration wording", "files": ["read-only"], "actions": ["Read ROLE_PACK_SPEC and its English mirror; reject duplicate sections"], "checks": [{"command": "npm run check:debt-marathon -- --id D-ROLEVER-01", "why": "The Ready contract must be complete before editing creator contracts"}], "outputs": ["Exact insertion anchors and mirror decision"], "rollback": "No writes; block on conflicting SSOT"},

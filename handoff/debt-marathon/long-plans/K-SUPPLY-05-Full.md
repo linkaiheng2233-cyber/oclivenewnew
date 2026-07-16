@@ -20,7 +20,7 @@
   "runner": "auto",
   "planStatus": "ready",
   "parentDebtDisposition": "done-eligible",
-  "currentStage": 0,
+  "currentStage": 3,
   "prerequisites": [],
   "stages": [
     {"id": 0, "title": "Baseline duplicate families", "files": ["read-only"], "actions": ["Capture deny skips, duplicate tree and current ratchet"], "checks": [{"command": "cargo tree -d", "why": "Full scope is defined by current duplicate families"}, {"command": "cargo deny check bans", "why": "The initial deny state is the comparison baseline"}], "outputs": ["Prioritized duplicate-family baseline"], "rollback": "No writes"},

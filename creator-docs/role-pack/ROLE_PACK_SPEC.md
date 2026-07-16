@@ -576,4 +576,36 @@ auto_sync: false
 
 ---
 
+## 11. 版本与迁移
+
+角色包有两层「版本」语义，勿混用：
+
+| 层 | 落点 | 期望 |
+|----|------|------|
+| **包发布版本** | `meta.version`（v2 蓝图）或 legacy `manifest.version` | **semver 字符串**（如 `1.2.0`）；创作者发布节奏的对外版本号 |
+| **格式 / 契约版本** | 蓝图 `schema_version`；legacy `settings.schema_version`；可选 `manifest.min_runtime_version` | 决定宿主如何解析与是否拒绝加载；细则见 [PACK_VERSIONING.md](PACK_VERSIONING.md) |
+
+**与 schema / manifest 的关系**
+
+- **v2+ 权威格式**为本 SPEC 的 `pipeline.ocblueprint`（`schema_version` **2** 或 **3**）+ `slot_registry`；包形状与校验以本 SPEC §1–§2 / §6 为准。
+- **Legacy** 仍可用 `manifest.json` + `settings.json`；字段白名单、`min_runtime_version`（宿主 semver 门槛）、未知键策略见 [PACK_VERSIONING.md](PACK_VERSIONING.md)，勿在本节约表复述。
+- JSON Schema / CLI：`oclive pack validate`（见 §6）；实现以 `oclive_validation` 为准。
+
+**破坏性字段（迁移时须改写，不可默默忽略）**
+
+- 蓝图升档：`schema_version` 变更（2→3）；v3 将引擎/系统配置收敛到顶层 **`runtime_config`**（见迁移指南）。
+- Legacy → v2：双文件须折叠进蓝图 **`meta`** + **`slot_registry`**；**不得**与 legacy 双文件并存；蓝图中 **禁止** 写 `steps[]` / `entry` / `module_relations`（首轮仍由 `process_message` → `co_present` 编排，不按旧 DSL 调度）。
+- 顶层未知键、错误枚举后端值可导致校验失败；`plugin_backends` / 槽位键名须对齐 PLUGIN_V1（`plugin_backends` · `slot_registry.type`）。
+
+**推荐迁移步骤（高层 · 细节只链出）**
+
+1. 备份角色包目录；确认当前是 legacy 双文件还是已有 `pipeline.ocblueprint`。
+2. **Legacy → v2**：按 [V1_TO_V2_MIGRATION.md](V1_TO_V2_MIGRATION.md) 映射字段并写出蓝图，再 `pack validate`。
+3. **v2 → v3**（需要 `runtime_config` / 可选双核时）：按 [V2_TO_V3_MIGRATION.md](V2_TO_V3_MIGRATION.md) 调整 `schema_version` 与配置落点，再校验与试聊。
+4. 需要声明最低宿主时，对齐 [PACK_VERSIONING.md](PACK_VERSIONING.md) 的 `min_runtime_version` / `--host-version`。
+
+> **非目标**：本仓不提供批量自动迁移 CLI；手改 + 校验即可。全库索引见 [DOCUMENTATION_INDEX.md](../getting-started/DOCUMENTATION_INDEX.md)。
+
+---
+
 [English](../../creator-docs-en/role-pack/ROLE_PACK_SPEC.md)

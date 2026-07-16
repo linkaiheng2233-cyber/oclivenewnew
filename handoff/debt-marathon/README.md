@@ -18,6 +18,8 @@
 | [`WAVE_LOG_TEMPLATE.md`](./WAVE_LOG_TEMPLATE.md) | 波次工作记录模板 |
 | [`long-plans/`](./long-plans/) | 一书一债 |
 | [`waves/`](./waves/) | 波次日志 |
+| [`ROUND-01-CLOSEOUT.md`](./ROUND-01-CLOSEOUT.md) | 第一轮马拉松收尾证据 |
+| [`ROUND-02-PLAN.md`](./ROUND-02-PLAN.md) | 第二轮解除阻断与再开放计划 |
 
 ---
 
@@ -43,7 +45,11 @@
 
 本机运行态是 `.cursor/oclive-marathon-session.json`，由 `scripts/cursor-marathon.mjs` 原子写入并绑定 Cursor `conversation_id`。它只负责续轮与熔断，不是技术债真值；跨机器恢复仍以 Git SHA、long-plan、Wave 和 TECHNICAL_DEBT 为准。
 
+**Stop hook 续轮要点（2026-07-16 修复）**：首轮父 Agent 常 >5 分钟才第一次 `stop`；因此 **不按墙钟超时解绑**，在首次 `status=completed` 时绑定 `conversation_id`。`.cursor/hooks.json` 设 `loop_limit: 50`（Cursor 默认仅 5）。hook 脚本失败时 **fail-open**（不 `finish` 杀掉 session）；诊断写入 `.cursor/oclive-marathon-hook.log`。自检：`npm run test:cursor-marathon-hook`。
+
 合法运行态：`running → progress → done|blocked|failed`。两轮没有新 checkpoint、达到 `max-turns`、Cursor 返回 aborted/error，都会自动停机。Stage 完成、Plan Closed、Done-eligible、父技术债 Done 是四个不同层级。
+
+每次 claim 前控制器重新检查 clean worktree；checkpoint 从 claim `baseSha` 核对已提交、未提交和未跟踪文件，因此先 commit 不能绕过 Stage scope。最终收口必须先写 `--outcome done` terminal checkpoint；控制器还会拒绝仍有 runnable auto 的 `finish done`。`pr-open` 表示等待审查/合入，不是可重复执行态。
 
 ### Checkpoint
 
@@ -51,6 +57,8 @@
 node scripts/cursor-marathon.mjs claim --debt <ID> --stage <N> --agent oclive-debt-stage --capabilities local-write,test
 node scripts/cursor-marathon.mjs checkpoint --claim <CLAIM_ID> --debt <ID> --stage <N> --outcome progress --wave <WAVE_PATH> --last-command "<COMMAND>" --next "<EXACT_NEXT_COMMAND>"
 ```
+
+最后一个 Stage 将上述 `--outcome progress` 改为 `--outcome done`，再执行 `finish --outcome done`。
 
 默认 capability 只有 `local-write,test`。`commit,push,open-pr,merge,sibling-repo,network,secrets` 必须来自用户对本轮的明确授权，并用 `--authorization` 记录授权引用；缺能力时记录稳定 blocker code，不从自然语言猜权限。
 

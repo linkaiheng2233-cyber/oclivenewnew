@@ -10,7 +10,7 @@
 | **尺寸** | L |
 | **Minimal / Full** | Minimal：白名单文档+1 测；非多个社区插件产品化 |
 | **Owner** | main-repo |
-| **状态** | Ready |
+| **状态** | **Done**（Minimal · CI success） |
 | **更新** | 2026-07-16 |
 
 <!-- oclive-marathon-contract
@@ -18,9 +18,9 @@
   "version": 1,
   "id": "K-VOICE-06",
   "runner": "auto",
-  "planStatus": "ready",
+  "planStatus": "closed",
   "parentDebtDisposition": "done-eligible",
-  "currentStage": 0,
+  "currentStage": 3,
   "prerequisites": [],
   "stages": [
     {"id": 0, "title": "Locate RPC authorization SSOT", "files": ["read-only"], "actions": ["Read PLUGIN_V1, voice track and plugin_rpc_invoke enforcement code"], "checks": [{"command": "rg -n \"plugin_rpc_invoke|rpcMethods|voice\\.speak\" creator-docs distros/desktop-tauri/src", "why": "The whitelist contract must match implemented authorization"}], "outputs": ["Exact whitelist and enforcement anchors"], "rollback": "No writes; block if the desired method requires a new permission model"},

@@ -18,6 +18,20 @@
 
 **与内核二进制的关系**：配置文件描述「该发行版 spawn 时期望的有效模块矩阵 + prompt/memory 偏好」；**不**声明裁剪内核二进制。进程选择见 [DISTRO_KERNEL_LIFECYCLE.md](./DISTRO_KERNEL_LIFECYCLE.md)（bundled-first spawn · attach/replace）；范围裁定见 [KERNEL_SCHEDULER_RESCOPE.md](../../handoff/KERNEL_SCHEDULER_RESCOPE.md)。
 
+### HostProfile ≠ OS 能力矩阵
+
+`HostProfile` / `distro.oclive.toml` 只锁定**发行版模块矩阵**（六槽 · `host_flags` · prompt/memory），**不**声明 Windows / Linux / macOS 上的 ASR、TTS、webview 真值。OS × 语音差异 SSOT：
+
+| OS | ASR（产品 sherpa） | TTS CosyVoice2（bundled） | Chat Pro webview 语音 UI |
+|----|--------------------|---------------------------|--------------------------|
+| Windows | 已交付 | 已交付 | 已交付 |
+| Linux | `unsupported`（[`asr_profiles.json`](../../distros/chat-pro/plugins/com.oclive.voice.asr/asr_profiles.json)） | `unsupported`（产品化属 **K-VOICE-03**，本文不宣称） | 宿主可跑；**不**宣称三 OS 语音闭环已验 |
+| macOS | 同上 `unsupported` | 同上 `unsupported` | 同上 |
+
+详表与 human-only 行 → [`TRACK_VOICE_RECOGNITION.md`](../../human-docs/team/TRACK_VOICE_RECOGNITION.md)（平台差异节）。
+
+**已有自动化入口（≠ 三平台实机语音证明）**：`npm run test:distro-profile-mirror` · `npm run test:distro:smoke` · `npm run test:theater:smoke` · `node scripts/test-voice-build-directive.mjs` · `node scripts/test-voice-speak-path.mjs --probe-only` · `node scripts/check-voice-tts-ratchet.mjs`。三平台设备 smoke 仅人工；本债文档化阶段**未**跑。
+
 ---
 
 ## 2. 文件位置与命名
@@ -234,6 +248,7 @@ mode = "off"   # off | image_only | stage_full
 - [DISTRO_KERNEL_LIFECYCLE.md](./DISTRO_KERNEL_LIFECYCLE.md)
 - [KERNEL_SCHEDULER_RESCOPE.md](../../handoff/KERNEL_SCHEDULER_RESCOPE.md) — 进程调度收窄 · 与插件矩阵分责
 - [DISTRO_DEFAULT_PLUGINS.md](./DISTRO_DEFAULT_PLUGINS.md) — 发行版默认六槽矩阵与三 personas
+- [TRACK_VOICE_RECOGNITION.md](../../human-docs/team/TRACK_VOICE_RECOGNITION.md) — OS × ASR/TTS/webview 差异 · smoke 入口（≠ HostProfile）
 - [TTFT_BENCHMARK.md](../../handoff/TTFT_BENCHMARK.md) — co-present 首字延迟复现
 - [DEEP_PROMPT_DISTILLATION.md](../../handoff/DEEP_PROMPT_DISTILLATION.md) — Deep capsule · 前缀 KV 延续（Wave D）
 - [VSCODE_DISTRIBUTION.md](../../handoff/vscode/VSCODE_DISTRIBUTION.md)

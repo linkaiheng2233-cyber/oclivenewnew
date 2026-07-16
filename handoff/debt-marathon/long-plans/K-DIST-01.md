@@ -10,7 +10,7 @@
 | **尺寸** | L |
 | **Minimal / Full** | Minimal = 缺口 STATUS；Full = 真签名+updater 另册 |
 | **Owner** | main-repo（文档）；Full 或需 Human 证书 |
-| **状态** | Ready |
+| **状态** | Ready · pr-open（Partial · Full needs-signing-secrets） |
 | **更新** | 2026-07-16 |
 
 <!-- oclive-marathon-contract
@@ -20,7 +20,7 @@
   "runner": "auto",
   "planStatus": "ready",
   "parentDebtDisposition": "keep-open",
-  "currentStage": 0,
+  "currentStage": 2,
   "prerequisites": [],
   "stages": [
     {"id": 0, "title": "Inventory distribution gaps", "files": ["read-only"], "actions": ["Inspect current Tauri bundling, updater and platform packaging declarations"], "checks": [{"command": "npm run check:debt-marathon -- --id K-DIST-01", "why": "The documentation milestone must not be confused with Full distribution closure"}], "outputs": ["Verified signing, updater and package gap list"], "rollback": "No writes"},

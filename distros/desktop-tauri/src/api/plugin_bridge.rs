@@ -425,7 +425,12 @@ mod rpc_validation_tests {
     use std::fs;
     use tempfile::TempDir;
 
-    fn write_manifest(root: &std::path::Path, rpc_methods: &[&str], with_process: bool) {
+    fn write_manifest(
+        root: &std::path::Path,
+        plugin_id: &str,
+        rpc_methods: &[&str],
+        with_process: bool,
+    ) {
         let methods = rpc_methods
             .iter()
             .map(|m| format!("\"{m}\""))
@@ -439,7 +444,7 @@ mod rpc_validation_tests {
         let json = format!(
             r#"{{
   "schema_version": 1,
-  "id": "com.test.voice",
+  "id": "{plugin_id}",
   "version": "1.0.0",
   {process}
   "rpcMethods": [{methods}]
@@ -453,6 +458,7 @@ mod rpc_validation_tests {
         let tmp = TempDir::new().expect("temp");
         write_manifest(
             tmp.path(),
+            "com.test.voice",
             &[
                 "voice.probe",
                 "voice.transcribe",
@@ -497,17 +503,39 @@ mod rpc_validation_tests {
     #[test]
     fn undeclared_rpc_method_rejected() {
         let tmp = TempDir::new().expect("temp");
-        write_manifest(tmp.path(), &["voice.probe"], true);
+        write_manifest(tmp.path(), "com.test.voice", &["voice.probe"], true);
         let manifest = OclivePluginManifest::load_from_dir(tmp.path()).expect("load manifest");
         let err = validate_rpc_method_for_manifest(&manifest, "voice.speak")
             .expect_err("undeclared method");
         assert!(err.to_string().contains("not declared"));
     }
 
+    /// Community TTS sidecar (`com.user.tts.*`) must reject undeclared `voice.speak`
+    /// when manifest only declares minimal probe surface (per-plugin allowlist).
+    #[test]
+    fn community_tts_plugin_rpc_rejects_undeclared_speak() {
+        let tmp = TempDir::new().expect("temp");
+        write_manifest(
+            tmp.path(),
+            "com.user.tts.test-sidecar",
+            &["voice.probe_tts"],
+            true,
+        );
+        let manifest = OclivePluginManifest::load_from_dir(tmp.path()).expect("load manifest");
+        assert_eq!(manifest.id, "com.user.tts.test-sidecar");
+        assert!(
+            validate_rpc_method_for_manifest(&manifest, "voice.probe_tts").is_ok(),
+            "declared probe_tts must pass"
+        );
+        let err = validate_rpc_method_for_manifest(&manifest, "voice.speak")
+            .expect_err("undeclared speak on minimal community TTS manifest");
+        assert!(err.to_string().contains("not declared"));
+    }
+
     #[test]
     fn manifest_without_process_rejects_rpc() {
         let tmp = TempDir::new().expect("temp");
-        write_manifest(tmp.path(), &["voice.probe"], false);
+        write_manifest(tmp.path(), "com.test.voice", &["voice.probe"], false);
         let manifest = OclivePluginManifest::load_from_dir(tmp.path()).expect("load manifest");
         let err =
             validate_rpc_method_for_manifest(&manifest, "voice.probe").expect_err("no process");

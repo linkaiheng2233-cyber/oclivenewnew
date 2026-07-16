@@ -92,7 +92,9 @@ Plan/Stage 勾选的命令必须有「因何 applicable」。欠债默认参考�
 | Cursor 长跑 | Cursor IDE 父 Agent 用 stop hook 续轮；一个子 Agent 只做一个 Stage；Cloud/CLI 不假定 lifecycle hook 可用 |
 | 单写者 | 只有父 controller 更新 QUEUE / session；子 Agent 只返回结构化结果与代码 diff |
 | 隔离 | 一次 claim 一个 Cursor worktree；禁止 `stash` / `switch` / `reset` / `clean` 共享工作树 |
+| claim 范围 | 每次 claim 前 worktree 必须 clean；checkpoint 校验 base SHA 后全部 committed/uncommitted/untracked diff，禁止先 commit 绕过 Stage scope |
 | 熔断 | 同一前置条件、权限或确定性失败不得无限重试；两轮无 checkpoint 自动停止 |
+| 正常收口 | 最后一轮必须 terminal `done` checkpoint，且机器确认无 runnable auto；`pr-open` 只等待外部事件，不重复 claim |
 
 ---
 
