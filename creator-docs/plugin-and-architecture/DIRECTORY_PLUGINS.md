@@ -97,20 +97,20 @@
 
 当 **`shell_plugin_id`**（文件或 `OCLIVE_SHELL_PLUGIN_ID`）指向已扫描到的插件，且其 manifest 含 **`shell.entry`** 时，内置前端在挂载主应用**之前**调用 **`get_directory_plugin_bootstrap`**（可省略 `role_id`，与旧行为一致）。
 
-- **发行构建始终忽略 `shell.vueEntry`**，若存在 **`shellUrl`** 且当前文档 URL 与之不同，则 **`location.replace(shellUrl)`**（custom-protocol HTML 整壳）。
+- **发行构建始终忽略 `shell.vueEntry`**；若存在 **`shellUrl`**，宿主将其挂载为覆盖主界面的 `sandbox="allow-scripts"` 全屏 iframe。该 frame 为不透明源，不能访问宿主 DOM，也不会获得仅注入主 frame 的 Tauri IPC 初始化脚本。
 - 只有 Vite DEV + **`VITE_OCLIVE_UNSAFE_INLINE_PLUGIN_VUE=1`** + `force_iframe_mode=false` 三项同时满足时，宿主才会挂载 **`DirectoryShellApp.vue`** + **`AsyncPluginVue`**。该模式继承主 WebView 权限，只用于审过源码的本地调试。
 - HTML 入口缺失或不可达时回退内置主界面，不再为了体验自动执行不可信 Vue。
 
 **`shellUrl` 形态**：`https://ocliveplugin.localhost/<manifest.id>/<entry>`（Windows WebView2 下由 Tauri 将自定义协议映射为该 HTTPS 主机名）。
 
-**静态资源**：由宿主自定义 `ocliveplugin` protocol 从磁盘插件根读取（路径穿越会拒绝）。Tauri 2 的远端 IPC 只由 [`capabilities/plugin-shell-remote.json`](../../distros/desktop-tauri/capabilities/plugin-shell-remote.json) 授予窄 `core` / event 权限；禁止恢复旧式 `dangerousRemoteDomainIpcAccess` `plugins: ["*"]`。
+**静态资源**：由宿主自定义 `ocliveplugin` protocol 从磁盘插件根读取（路径穿越会拒绝）。整壳 frame **没有** custom-protocol remote IPC capability；所有调用经 source-bound parent broker 转发。broker 在首次 `load` 后发放一次性随机绑定 token；同一 frame 后续导航会被撤销权限，避免跨插件页面继承旧身份。禁止为 `https://ocliveplugin.localhost/**` 恢复 remote capability 或旧式 `dangerousRemoteDomainIpcAccess`。
 
 ### 4.1 整壳前端桥接（`shell.bridge`）
 
 若 **`shell`** 下声明 **`bridge`**，且 **`invoke`** / **`events`** 非空：宿主在提供 **`shell.entry` 对应 HTML** 时会在 `</body>` 前注入脚本，挂载 **`window.OclivePluginBridge`**；若走 **`shell.vueEntry`** Vue 整壳，则由 **`provide('oclive', …)`** 注入同一套 **`invoke` / `events`**（底层仍走 **`plugin_bridge_invoke`**）。
 
 - **`invoke(command, params)`**：manifest 的 **`bridge.invoke`** 为**权限列表**：可写 **命令名**（如 `send_message`）或 **权限别名**（如 `read:conversation`）；与下表对应。由 **`plugin_bridge_invoke`** 二次校验。
-- **`listen(event, handler)`**：仅允许 **`bridge.events`** 中的事件名（依赖 WebView 内 `__TAURI__.event`）。
+- **`listen(event, handler)`**：隔离 frame 当前仅转发插件自身命名空间事件（`<pluginId>:*`）；宿主事件仍 fail closed，待身份绑定阶段提供逐插件声明校验。unsafe DEV Vue 可使用宿主事件总线。
 
 **整壳深度集成**：下列命令除需 **`bridge.invoke`** 命中外，还要求 manifest 顶层 **`"type": "ocliveplugin"`**，且调用来源为 **`shell.entry` 对应 HTML** 或 **`shell.vueEntry` 宿主 Vue 页**（**`ui_slots` 页不得调用**，避免越权）：
 
@@ -311,10 +311,10 @@ npm run scaffold:ui-plugin -- --id com.example.my-slot --slot role.detail --titl
 | 现象 | 可能原因 |
 |------|----------|
 | 仍走 builtin / Ollama，日志提示 directory 缺失槽位 | `plugin_backends.* = directory` 但 **`directory_plugins.<槽>`** 未填或与 manifest **`id`** 不一致 |
-| 整壳未跳转 / 仍显示内置 UI | **`shell_plugin_id`** 未设或插件未扫描到；manifest 缺 **`shell.entry`**；`get_directory_plugin_bootstrap` 返回的 **`shellUrl`** 为空；或 **`force_iframe_mode`** 为真且未发生 `location.replace` |
+| 整壳未显示 / 仍显示内置 UI | **`shell_plugin_id`** 未设或插件未扫描到；manifest 缺 **`shell.entry`**；`get_directory_plugin_bootstrap` 返回的 **`shellUrl`** 为空；URL 身份校验失败；或入口文件不可读 |
 | Vue 整壳使用 HTML | 发行构建的安全默认；只有 unsafe DEV 双重 opt-in 后才检查 `shell.vueEntry` / Vue 编译 |
 | 插件管理「从本地 zip 更新」失败 | zip 内无有效 **`manifest.json`**（根或单一顶层目录）；**`manifest.id`** 与所选插件 id 不一致；目标目录无法删除（占用中） |
-| 整壳页里 **`invoke` 失败** | `capabilities/plugin-shell-remote.json` 未覆盖该 URL / 权限，bridge manifest 未声明命令，或页面不在 Tauri WebView |
+| 整壳页里 **`invoke` 失败** | frame 未由宿主 broker 注册、bridge manifest 未声明命令，或插件/入口身份与 `shellUrl` 不一致 |
 | 子进程启动失败 / 无 RPC | **`process.command`** 在 PATH 中不可用（如未装 Node）；**`manifest.json`** 语法错误；子进程未在超时内向 stdout 打印 **`OCLIVE_READY <url>`** |
 | **`directory_plugin_invoke`** 报错 | **`pluginId`** 未扫描到；目标插件缺 **`process`** 节无法懒启动 RPC |
 

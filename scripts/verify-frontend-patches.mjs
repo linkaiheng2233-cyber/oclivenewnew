@@ -65,6 +65,20 @@ const checks = [
     },
   },
   {
+    name: 'production directory shell uses opaque-origin parent-broker isolation',
+    ok: () => {
+      const source = readFileSync(
+        join(shared, 'utils/directoryShellBootstrap.ts'),
+        'utf8',
+      )
+      return source.includes("setAttribute('sandbox', 'allow-scripts')")
+        && source.includes('createPluginFrameBridge(pluginBridgeInvoke')
+        && source.includes('parseDirectoryShellIdentity(shellUrl, shellPid)')
+        && !source.includes('window.location.replace(shellUrl)')
+        && !existsSync(join(root, 'distros/desktop-tauri/capabilities/plugin-shell-remote.json'))
+    },
+  },
+  {
     name: 'embedded plugin frames use opaque-origin script-only sandbox',
     ok: () => {
       const source = readFileSync(
@@ -92,8 +106,11 @@ const checks = [
       )
       return component.includes('frameBridge.register(value.contentWindow')
         && broker.includes("event.origin !== 'null'")
+        && broker.includes('request.token !== registration.token')
+        && broker.includes('registration.activated')
         && broker.includes('registration.seenRequestIds.has')
         && injectedBridge.includes('oclive-plugin-frame-bridge-v1')
+        && injectedBridge.includes('kind==="bind"')
         && injectedBridge.includes('parent.postMessage')
     },
   },

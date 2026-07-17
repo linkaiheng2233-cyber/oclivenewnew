@@ -11,7 +11,7 @@
 | **Minimal / Full** | Minimal 已阻断发行版 inline Vue；本书推进 P1 Full |
 | **Owner** | main-repo |
 | **runner** | auto（本地实现）；原生 WebView 与远程 CI 证据不可省略 |
-| **状态** | Ready · Stage 0 已完成 |
+| **状态** | Ready · Stage 0–2 已完成；Stage 3 已实现，等待原生 WebView 证据 |
 | **更新** | 2026-07-17 |
 
 ## AI + OCLive
@@ -103,7 +103,23 @@
         "distros/desktop-tauri/capabilities/plugin-shell-remote.json",
         "distros/desktop-tauri/tauri.conf.json",
         "distros/shared/src/utils/directoryShellBootstrap.ts",
-        "distros/chat-pro/e2e/tauri-native.spec.ts"
+        "distros/shared/src/components/PluginSlotEmbed.vue",
+        "distros/shared/src/utils/pluginFrameBridge.ts",
+        "distros/shared/src/utils/pluginFrameBridge.test.ts",
+        "distros/chat-pro/src/plugin-bridge.js",
+        "kernel/crates/oclive_kernel_host/assets/plugin-bridge.iife.js",
+        "distros/chat-pro/src/__tests__/directoryShellBootstrap.spec.ts",
+        "distros/chat-pro/e2e/tauri-native.spec.ts",
+        "creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md",
+        "creator-docs-en/plugin-and-architecture/DIRECTORY_PLUGINS.md",
+        "creator-docs/plugin-and-architecture/BRIDGE_API_REFERENCE.md",
+        "handoff/distros/TAURI_V2_MIGRATION_INVENTORY.md",
+        "distros/chat-pro/plugins/com.oclive.example.minimal/README.md",
+        "distros/chat-pro/plugins/com.oclive.example.minimal/ui/index.html",
+        "examples/directory-plugin-minimal/README.md",
+        "examples/directory-plugin-minimal/ui/index.html",
+        "scripts/verify-frontend-patches.mjs",
+        "package.json"
       ],
       "actions": ["Move full-shell plugins to a distinct child WebView or an equivalent strong isolation boundary", "Bind Tauri capabilities to the isolated surface and remove broad custom-protocol remote IPC", "Add native tests proving host DOM and another plugin are inaccessible"],
       "checks": [

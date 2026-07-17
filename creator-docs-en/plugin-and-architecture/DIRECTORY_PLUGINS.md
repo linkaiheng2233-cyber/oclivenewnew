@@ -86,20 +86,20 @@ If id missing, scan miss, spawn/handshake fails → log + fallback: **memory/emo
 
 When **`shell_plugin_id`** (file or `OCLIVE_SHELL_PLUGIN_ID`) points at a scanned plugin with **`shell.entry`**, the built‑in frontend calls **`get_directory_plugin_bootstrap`** before mounting the main app (`role_id` optional, legacy behavior).
 
-- Release builds always ignore **`shell.vueEntry`** and navigate to **`shellUrl`** (custom-protocol HTML shell) when available.
+- Release builds always ignore **`shell.vueEntry`** and mount **`shellUrl`** in a full-viewport `sandbox="allow-scripts"` iframe. Its opaque origin cannot access host DOM and does not receive Tauri IPC initialization, which is main-frame-only.
 - In-process Vue requires Vite DEV + **`VITE_OCLIVE_UNSAFE_INLINE_PLUGIN_VUE=1`** + `force_iframe_mode=false`. It inherits host-WebView authority and is only for locally reviewed source.
 - If the HTML entry is missing or unreachable, the host falls back to the built-in UI instead of executing untrusted Vue for convenience.
 
 **`shellUrl` shape**: `https://ocliveplugin.localhost/<manifest.id>/<entry>` (WebView2 maps custom scheme to that HTTPS host).
 
-**Static assets**: the host's custom `ocliveplugin` protocol reads from disk and rejects traversal. Tauri 2 remote IPC is limited by [`capabilities/plugin-shell-remote.json`](../../distros/desktop-tauri/capabilities/plugin-shell-remote.json); do not restore legacy `dangerousRemoteDomainIpcAccess` with `plugins: ["*"]`.
+**Static assets**: the host's custom `ocliveplugin` protocol reads from disk and rejects traversal. The shell frame has no custom-protocol remote IPC capability; every call is forwarded by the source-bound parent broker. The broker issues a one-time random binding token after the first `load`; later navigation of the same frame revokes authority so another plugin page cannot inherit the prior identity. Do not add a remote capability for `https://ocliveplugin.localhost/**` or restore legacy `dangerousRemoteDomainIpcAccess`.
 
 ### 4.1 Whole‑shell bridge (`shell.bridge`)
 
 If **`shell.bridge`** declares non‑empty **`invoke`** / **`events`**: for **`shell.entry` HTML** the host injects **`window.OclivePluginBridge`** before `</body>`; for **`shell.vueEntry`** Vue shell, **`provide('oclive', …)`** exposes the same **`invoke` / `events`** (still **`plugin_bridge_invoke`** underneath).
 
 - **`invoke(command, params)`**: manifest **`bridge.invoke`** is the allowlist — command names or permission aliases.  
-- **`listen(event, handler)`**: only **`bridge.events`** names (uses `__TAURI__.event` inside WebView).
+- **`listen(event, handler)`**: isolated frames currently forward only events in their own `<pluginId>:*` namespace. Host events fail closed until the identity-binding stage can validate declarations per plugin; unsafe DEV Vue can use the host event bus.
 
 **Deep integration**: commands in the sensitive table below also need root **`"type": "ocliveplugin"`** and caller must be **`shell.entry` HTML** or **`shell.vueEntry` page** — **not** `ui_slots` pages.
 
@@ -265,10 +265,10 @@ npm run scaffold:ui-plugin -- --id com.example.my-slot --slot role.detail --titl
 | symptom | likely cause |
 |---------|----------------|
 | Still builtin / Ollama, logs say directory | **`directory_plugins.<slot>`** empty or wrong `id` |
-| Shell not switching | bad **`shell_plugin_id`**, missing **`shell.entry`**, empty **`shellUrl`**, or `force_iframe_mode` edge case |
+| Shell not showing | bad **`shell_plugin_id`**, missing **`shell.entry`**, empty or identity-mismatched **`shellUrl`**, or unreadable entry |
 | Vue shell uses HTML | release security default; `shell.vueEntry` is considered only after unsafe DEV double opt-in |
 | zip update fails | invalid **`manifest.json`** layout, **`id`** mismatch, files locked |
-| `invoke` fails in shell page | remote capability does not cover the URL/permission, the bridge manifest omits the command, or the page is outside Tauri WebView |
+| `invoke` fails in shell page | the host broker did not register the frame, the bridge manifest omits the command, or plugin/entry identity does not match **`shellUrl`** |
 | child never ready | **`process.command`** not on PATH, bad JSON, no **`OCLIVE_READY <url>`** line within timeout |
 | `directory_plugin_invoke` errors | unknown `pluginId`, missing **`process`** |
 

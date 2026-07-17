@@ -15,10 +15,10 @@
 - **iframe 整壳**：宿主在 `shell.entry` 对应 HTML 中注入 `window.OclivePluginBridge`，使用 **`OclivePluginBridge.invoke(command, params)`**。
 - **Vue 整壳（仅 unsafe DEV）**：双重显式 opt-in 后，`shell.vueEntry` 可使用 **`const oclive = inject('oclive'); await oclive.invoke(command, params)`**；发行构建不会执行该源码。
 
-底层均为 Tauri 命令 **`plugin_bridge_invoke`**，请求体包含：
+发行版 iframe 不直接拥有 Tauri IPC：frame 只向 parent broker 发消息，由 broker 绑定实际 `contentWindow` 并在首次加载后完成一次性随机 token 握手，再调用 Tauri 命令 **`plugin_bridge_invoke`**；frame 后续导航会撤销该绑定。unsafe DEV Vue 仍在宿主页内直接调用。最终请求体包含：
 
-- `pluginId`：插件 `manifest.id`
-- `assetRel`：当前页面对应资源相对路径（整壳须为 **`shell.entry`** 或 **`shell.vueEntry`** 的规范化相对路径，与 manifest 中 `bridge` 校验一致）
+- `pluginId`：插件 `manifest.id`；发行版中由 parent 注册 frame 时绑定，frame 不能自报
+- `assetRel`：当前页面对应资源相对路径；发行版中由规范 `shellUrl` 解析并绑定，frame 不能自报
 - `command`：下表中的命令名字符串
 - `params`：JSON 对象（各命令字段见下表）
 

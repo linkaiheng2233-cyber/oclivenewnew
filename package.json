@@ -58,7 +58,7 @@
     "test:theater:smoke": "node scripts/theater-prompt-drift.mjs && node scripts/theater-stranger-proxy.mjs && npm run test:unit -w @oclive/theater",
     "test:e2e:tauri-bundled-kernel": "node scripts/e2e-tauri-bundled-kernel.mjs",
     "test:e2e:preview": "playwright test",
-    "test:e2e:tauri-native": "playwright test distros/chat-pro/e2e/tauri-native.spec.ts"
+    "test:e2e:tauri-native": "playwright test tauri-native.spec.ts"
   },
   "dependencies": {
     "@sentry/vue": "^10.47.0",

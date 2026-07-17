@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { pluginBridgeInvoke, type PluginUiSlotInfo } from '@oclive/shared/api'
+import type { PluginUiSlotInfo } from '@oclive/shared/api'
+import type { PluginFrameRegistration } from '@oclive/shared/utils/pluginFrameBridge'
+import { pluginBridgeInvoke } from '@oclive/shared/api'
 import { useDirectoryPluginSlotEmbed } from '@oclive/shared/composables/useDirectoryPluginSlotEmbed'
 import { hostEventBus } from '@oclive/shared/lib/hostEventBus'
 import { VOICE_ASR_PLUGIN_ID } from '@oclive/shared/lib/voiceAsrEvents'
 import { createPluginFrameBridge } from '@oclive/shared/utils/pluginFrameBridge'
+import { computed, onBeforeUnmount, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import AsyncPluginVue from './AsyncPluginVue.vue'
 import PluginErrorPlaceholder from './PluginErrorPlaceholder.vue'
 
@@ -54,7 +56,7 @@ const frameBridge = createPluginFrameBridge(pluginBridgeInvoke, {
 })
 const registeredFrames = new Map<
   string,
-  { element: HTMLIFrameElement, unregister: () => void }
+  { element: HTMLIFrameElement, registration: PluginFrameRegistration }
 >()
 
 function frameKey(slot: PluginUiSlotInfo): string {
@@ -72,25 +74,34 @@ function bindPluginFrame(slot: PluginUiSlotInfo, value: unknown): void {
   const current = registeredFrames.get(key)
   if (current?.element === value)
     return
-  current?.unregister()
+  current?.registration.unregister()
   registeredFrames.delete(key)
 
   if (!(value instanceof HTMLIFrameElement) || !value.contentWindow)
     return
   registeredFrames.set(key, {
     element: value,
-    unregister: frameBridge.register(value.contentWindow, {
+    registration: frameBridge.register(value.contentWindow, {
       pluginId: slot.pluginId,
       assetRel: slot.entry,
     }),
   })
 }
 
+function onPluginFrameLoad(slot: PluginUiSlotInfo): void {
+  const current = registeredFrames.get(frameKey(slot))
+  if (!current?.registration.activate()) {
+    onFrameError(slot.pluginId)
+    return
+  }
+  onFrameLoad(slot.pluginId)
+}
+
 onMounted(() => window.addEventListener('message', frameBridge.handleMessage))
 onBeforeUnmount(() => {
   window.removeEventListener('message', frameBridge.handleMessage)
   for (const frame of registeredFrames.values())
-    frame.unregister()
+    frame.registration.unregister()
   registeredFrames.clear()
   frameBridge.dispose()
 })
@@ -119,15 +130,15 @@ onBeforeUnmount(() => {
       <iframe
         v-if="showIframe(s)"
         :key="`if-${s.pluginId}-${s.appearanceId ?? ''}-${reloadNonceFor(s.pluginId)}`"
+        :ref="el => bindPluginFrame(s, el)"
         class="pse-frame"
         :src="s.url"
         :title="`plugin ${s.pluginId}`"
-        :ref="el => bindPluginFrame(s, el)"
         :allow="framePermissions(s)"
         sandbox="allow-scripts"
         loading="lazy"
         referrerpolicy="no-referrer"
-        @load="onFrameLoad(s.pluginId)"
+        @load="onPluginFrameLoad(s)"
         @error="onFrameError(s.pluginId)"
       />
       <PluginErrorPlaceholder

@@ -12,11 +12,27 @@ function message(source: Window, data: unknown, origin = 'null'): MessageEvent {
   return { source, data, origin } as unknown as MessageEvent
 }
 
-function invokeRequest(requestId = 'request-1') {
+function activateFrame(
+  broker: ReturnType<typeof createPluginFrameBridge>,
+  frame: Window,
+  identity = { pluginId: 'plugin.a', assetRel: 'a.html' },
+) {
+  const registration = broker.register(frame, identity)
+  expect(registration.activate()).toBe(true)
+  const calls = vi.mocked(frame.postMessage).mock.calls
+  const bind = calls.at(-1)?.[0] as { value?: { token?: string } }
+  const token = bind.value?.token
+  expect(token).toMatch(/^[\w.:-]{32,128}$/)
+  vi.mocked(frame.postMessage).mockClear()
+  return { registration, token: token! }
+}
+
+function invokeRequest(token: string, requestId = 'request-1') {
   return {
     channel: PLUGIN_FRAME_BRIDGE_CHANNEL,
     kind: 'invoke',
     requestId,
+    token,
     command: 'get_current_role',
     params: { detail: true },
   }
@@ -27,9 +43,12 @@ describe('pluginFrameBridge', () => {
     const invoke = vi.fn().mockResolvedValue({ roleId: 'mumu' })
     const broker = createPluginFrameBridge(invoke)
     const frame = frameSource()
-    broker.register(frame, { pluginId: 'plugin.a', assetRel: 'slots/a.html' })
+    const { token } = activateFrame(broker, frame, {
+      pluginId: 'plugin.a',
+      assetRel: 'slots/a.html',
+    })
 
-    await broker.handleMessage(message(frame, invokeRequest()))
+    await broker.handleMessage(message(frame, invokeRequest(token)))
 
     expect(invoke).toHaveBeenCalledWith({
       pluginId: 'plugin.a',
@@ -48,10 +67,10 @@ describe('pluginFrameBridge', () => {
     const broker = createPluginFrameBridge(invoke)
     const registered = frameSource()
     const attacker = frameSource()
-    broker.register(registered, { pluginId: 'plugin.a', assetRel: 'a.html' })
+    const { token } = activateFrame(broker, registered)
 
-    await broker.handleMessage(message(attacker, invokeRequest()))
-    await broker.handleMessage(message(registered, invokeRequest(), 'https://evil.test'))
+    await broker.handleMessage(message(attacker, invokeRequest(token)))
+    await broker.handleMessage(message(registered, invokeRequest(token), 'https://evil.test'))
 
     expect(invoke).not.toHaveBeenCalled()
     expect(attacker.postMessage).not.toHaveBeenCalled()
@@ -62,14 +81,14 @@ describe('pluginFrameBridge', () => {
     const invoke = vi.fn()
     const broker = createPluginFrameBridge(invoke)
     const frame = frameSource()
-    broker.register(frame, { pluginId: 'plugin.a', assetRel: 'a.html' })
+    const { token } = activateFrame(broker, frame)
 
     await broker.handleMessage(message(frame, {
-      ...invokeRequest('forged-id'),
+      ...invokeRequest(token, 'forged-id'),
       pluginId: 'plugin.b',
     }))
     await broker.handleMessage(message(frame, {
-      ...invokeRequest('bad-params'),
+      ...invokeRequest(token, 'bad-params'),
       params: ['not', 'an', 'object'],
     }))
 
@@ -80,8 +99,8 @@ describe('pluginFrameBridge', () => {
     const invoke = vi.fn().mockResolvedValue('ok')
     const broker = createPluginFrameBridge(invoke)
     const frame = frameSource()
-    broker.register(frame, { pluginId: 'plugin.a', assetRel: 'a.html' })
-    const request = invokeRequest('same-request')
+    const { token } = activateFrame(broker, frame)
+    const request = invokeRequest(token, 'same-request')
 
     await broker.handleMessage(message(frame, request))
     await broker.handleMessage(message(frame, request))
@@ -96,16 +115,29 @@ describe('pluginFrameBridge', () => {
     )
   })
 
+  it('revokes bridge authority when the registered frame navigates', async () => {
+    const invoke = vi.fn()
+    const broker = createPluginFrameBridge(invoke)
+    const frame = frameSource()
+    const { registration, token } = activateFrame(broker, frame)
+
+    expect(registration.activate()).toBe(false)
+    await broker.handleMessage(message(frame, invokeRequest(token, 'after-navigation')))
+
+    expect(invoke).not.toHaveBeenCalled()
+  })
+
   it('emits only events in the registered plugin namespace', async () => {
     const emit = vi.fn()
     const broker = createPluginFrameBridge(vi.fn(), { emit })
     const frame = frameSource()
-    broker.register(frame, { pluginId: 'plugin.a', assetRel: 'a.html' })
+    const { token } = activateFrame(broker, frame)
 
     await broker.handleMessage(message(frame, {
       channel: PLUGIN_FRAME_BRIDGE_CHANNEL,
       kind: 'emit',
       requestId: 'emit-ok',
+      token,
       event: 'plugin.a:submit',
       data: { text: 'hello' },
     }))
@@ -113,6 +145,7 @@ describe('pluginFrameBridge', () => {
       channel: PLUGIN_FRAME_BRIDGE_CHANNEL,
       kind: 'emit',
       requestId: 'emit-forged',
+      token,
       event: 'plugin.b:submit',
     }))
 
@@ -133,7 +166,7 @@ describe('pluginFrameBridge', () => {
     })
     const broker = createPluginFrameBridge(vi.fn(), { subscribe })
     const frame = frameSource()
-    const unregister = broker.register(frame, {
+    const { registration, token } = activateFrame(broker, frame, {
       pluginId: 'plugin.a',
       assetRel: 'a.html',
     })
@@ -142,6 +175,7 @@ describe('pluginFrameBridge', () => {
       channel: PLUGIN_FRAME_BRIDGE_CHANNEL,
       kind: 'subscribe',
       requestId: 'subscription-1',
+      token,
       event: 'plugin.a:hold',
     }))
     handler?.({ phase: 'start' })
@@ -154,7 +188,7 @@ describe('pluginFrameBridge', () => {
       }),
       '*',
     )
-    unregister()
+    registration.unregister()
     expect(unsubscribe).toHaveBeenCalledOnce()
   })
 })

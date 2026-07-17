@@ -1,6 +1,6 @@
 export const PLUGIN_FRAME_BRIDGE_CHANNEL = 'oclive-plugin-frame-bridge-v1'
 
-const REQUEST_ID_PATTERN = /^[A-Za-z0-9._:-]{1,128}$/
+const REQUEST_ID_PATTERN = /^[\w.:-]{1,128}$/
 const COMMAND_PATTERN = /^[a-z][a-z0-9_]{0,63}$/
 const MAX_SEEN_REQUESTS = 4_096
 
@@ -24,14 +24,22 @@ export interface PluginFrameBridgeOptions {
 }
 
 interface FrameRegistration extends PluginFrameIdentity {
+  token: string
+  activated: boolean
   seenRequestIds: Set<string>
   subscriptions: Map<string, () => void>
+}
+
+export interface PluginFrameRegistration {
+  activate: () => boolean
+  unregister: () => void
 }
 
 interface FrameRequestMessage {
   channel: typeof PLUGIN_FRAME_BRIDGE_CHANNEL
   kind: 'invoke' | 'emit' | 'subscribe' | 'unsubscribe'
   requestId: string
+  token: string
   command?: string
   params?: Record<string, unknown>
   event?: string
@@ -41,7 +49,7 @@ interface FrameRequestMessage {
 
 interface FrameResponseMessage {
   channel: typeof PLUGIN_FRAME_BRIDGE_CHANNEL
-  kind: 'result' | 'event'
+  kind: 'bind' | 'result' | 'event'
   requestId: string
   ok: boolean
   value?: unknown
@@ -60,6 +68,8 @@ function parseRequest(value: unknown): FrameRequestMessage | null {
     || !['invoke', 'emit', 'subscribe', 'unsubscribe'].includes(String(value.kind))
     || typeof value.requestId !== 'string'
     || !REQUEST_ID_PATTERN.test(value.requestId)
+    || typeof value.token !== 'string'
+    || !REQUEST_ID_PATTERN.test(value.token)
     || ('pluginId' in value)
     || ('assetRel' in value)) {
     return null
@@ -88,6 +98,17 @@ function errorMessage(error: unknown): string {
   return String(error)
 }
 
+function createFrameToken(): string {
+  const cryptoApi = globalThis.crypto
+  if (!cryptoApi)
+    throw new Error('secure plugin frame token unavailable')
+  if (typeof cryptoApi.randomUUID === 'function')
+    return cryptoApi.randomUUID()
+  const bytes = new Uint8Array(32)
+  cryptoApi.getRandomValues(bytes)
+  return Array.from(bytes, value => value.toString(16).padStart(2, '0')).join('')
+}
+
 /**
  * Parent-side broker for opaque-origin plugin frames.
  *
@@ -113,15 +134,17 @@ export function createPluginFrameBridge(
   function register(
     source: Window,
     identity: PluginFrameIdentity,
-  ): () => void {
+  ): PluginFrameRegistration {
     const registration: FrameRegistration = {
       pluginId: identity.pluginId,
       assetRel: identity.assetRel,
+      token: createFrameToken(),
+      activated: false,
       seenRequestIds: new Set(),
       subscriptions: new Map(),
     }
     registrations.set(source, registration)
-    return () => {
+    const unregister = () => {
       if (registrations.get(source) === registration) {
         for (const unsubscribe of registration.subscriptions.values())
           unsubscribe()
@@ -129,6 +152,24 @@ export function createPluginFrameBridge(
         registrations.delete(source)
       }
     }
+    const activate = () => {
+      if (registrations.get(source) !== registration)
+        return false
+      if (registration.activated) {
+        unregister()
+        return false
+      }
+      registration.activated = true
+      postResult(source, {
+        channel: PLUGIN_FRAME_BRIDGE_CHANNEL,
+        kind: 'bind',
+        requestId: registration.token,
+        ok: true,
+        value: { token: registration.token },
+      })
+      return true
+    }
+    return { activate, unregister }
   }
 
   async function handleMessage(event: MessageEvent): Promise<void> {
@@ -141,6 +182,8 @@ export function createPluginFrameBridge(
 
     const request = parseRequest(event.data)
     if (!request)
+      return
+    if (!registration.activated || request.token !== registration.token)
       return
 
     if (registration.seenRequestIds.has(request.requestId)) {

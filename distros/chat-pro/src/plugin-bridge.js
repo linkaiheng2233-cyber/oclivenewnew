@@ -28,6 +28,11 @@ function injectOclivePluginBridge(pluginId, assetRel, inv, ev) {
   const eventAllowlist = Object.freeze([...ev])
   const pending = new Map()
   const subscriptions = new Map()
+  let frameToken = null
+  let resolveFrameBinding
+  const frameBinding = new Promise((resolve) => {
+    resolveFrameBinding = resolve
+  })
   let requestSequence = 0
 
   function nextRequestId() {
@@ -38,8 +43,8 @@ function injectOclivePluginBridge(pluginId, assetRel, inv, ev) {
   }
 
   function requestThroughParent(kind, payload) {
-    const requestId = nextRequestId()
-    return new Promise((resolve, reject) => {
+    return frameBinding.then(token => new Promise((resolve, reject) => {
+      const requestId = nextRequestId()
       const timer = window.setTimeout(() => {
         pending.delete(requestId)
         reject(new Error('plugin frame bridge timeout'))
@@ -49,9 +54,10 @@ function injectOclivePluginBridge(pluginId, assetRel, inv, ev) {
         channel: FRAME_CHANNEL,
         kind,
         requestId,
+        token,
         ...payload,
       }, '*')
-    })
+    }))
   }
 
   if (window.parent !== window) {
@@ -61,6 +67,14 @@ function injectOclivePluginBridge(pluginId, assetRel, inv, ev) {
       const data = event.data
       if (!data || data.channel !== FRAME_CHANNEL)
         return
+      if (data.kind === 'bind') {
+        const token = data.value && data.value.token
+        if (!frameToken && typeof token === 'string' && token.length >= 32) {
+          frameToken = token
+          resolveFrameBinding(token)
+        }
+        return
+      }
       if (data.kind === 'event') {
         const callback = subscriptions.get(data.requestId)
         if (callback)

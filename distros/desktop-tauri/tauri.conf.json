@@ -23,7 +23,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self' tauri: https://ocliveplugin.localhost; connect-src 'self' tauri: https://ocliveplugin.localhost http://127.0.0.1:50000 ws://127.0.0.1:50000",
+      "csp": "default-src 'self' tauri: https://ocliveplugin.localhost; connect-src 'self' tauri: http://127.0.0.1:50000 ws://127.0.0.1:50000",
       "assetProtocol": {
         "enable": true,
         "scope": ["$RESOURCE/**"]
