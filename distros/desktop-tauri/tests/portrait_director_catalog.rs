@@ -33,6 +33,23 @@ impl LlmClient for TagFromHintLlm {
     }
 }
 
+struct ExactCatalogIdLlm;
+
+#[async_trait]
+impl LlmClient for ExactCatalogIdLlm {
+    async fn generate(&self, _model: &str, _prompt: &str) -> Result<String> {
+        Ok("ok".to_string())
+    }
+
+    async fn generate_tag(&self, _model: &str, _prompt: &str) -> Result<String> {
+        Ok("happy_severe".to_string())
+    }
+
+    async fn startup_probe(&self) -> Result<()> {
+        Ok(())
+    }
+}
+
 fn write_catalog_role(base: &std::path::Path, role_id: &str) {
     let role_dir = base.join(role_id);
     fs::create_dir_all(role_dir.join("assets/images")).unwrap();
@@ -43,6 +60,7 @@ fn write_catalog_role(base: &std::path::Path, role_id: &str) {
     let catalog = serde_json::json!({
         "schema_version": 1,
         "assets": [
+            { "id": "happy_severe", "path": "assets/images/happy.webp", "desc": "strong happiness", "tags": ["happy"], "kind": "image", "cluster": "happy" },
             { "id": "happy_default", "path": "assets/images/happy.webp", "desc": "开心", "tags": ["happy"], "kind": "image" },
             { "id": "sad_default", "path": "assets/images/sad.webp", "desc": "低落", "tags": ["sad"], "kind": "image" }
         ]
@@ -103,6 +121,7 @@ async fn narrative_hint_changes_visual_state_id() {
         &[],
         &[],
         Some("用户可能缺乏兴致"),
+        0.5,
     )
     .await
     .expect("pick");
@@ -138,9 +157,48 @@ async fn without_hint_prefers_happy_id() {
         &[],
         &[],
         None,
+        0.5,
     )
     .await
     .expect("pick");
 
-    assert_eq!(vsid, "happy_default");
+    // The catalog has a severe variant but no moderate variant; the intensity
+    // resolver therefore falls back to the first matching happy asset.
+    assert_eq!(vsid, "happy_severe");
+}
+
+#[tokio::test]
+async fn preserves_exact_catalog_id_within_the_same_emotion_cluster() {
+    std::env::set_var("OCLIVE_PORTRAIT_EMOTION_LLM", "1");
+
+    let dir = tempfile::tempdir().unwrap();
+    write_catalog_role(dir.path(), "director_role3");
+    let storage = RoleStorage::new(dir.path());
+    let role = storage.load_role("director_role3").expect("load");
+    let catalog = role.portrait_catalog.as_ref().expect("catalog");
+    let llm: Arc<dyn LlmClient> = Arc::new(ExactCatalogIdLlm);
+    let core = PersonalityVector::from(&role.default_personality);
+
+    let (tag, vsid) = pick_portrait_with_catalog(
+        &llm,
+        "test-model",
+        &role,
+        catalog,
+        &core,
+        &core,
+        50.0,
+        "a very happy moment",
+        "I am especially happy too!",
+        "happy",
+        &Emotion::Happy,
+        &[],
+        &[],
+        None,
+        0.9,
+    )
+    .await
+    .expect("pick");
+
+    assert_eq!(tag, "happy");
+    assert_eq!(vsid, "happy_severe");
 }

@@ -1,9 +1,7 @@
 //! Post-LLM persistence: atomic DB writes, chat storage, profile evolution.
 
 use crate::domain::portrait_emotion_engine::pick_portrait_emotion;
-use crate::domain::portrait_facility::{
-    pick_portrait_with_catalog, portrait_catalog_active, resolve_visual_state_rule,
-};
+use crate::domain::portrait_facility::{enhanced_portrait_active, pick_portrait_with_catalog};
 use crate::domain::ports::conversation_persist::{TurnAutoCleanupConfig, TurnPersistRequest};
 use crate::domain::ports::turn_persistence::ChatTurnAtomicInput;
 use crate::models::{Event, PersonalitySource, PersonalityVector, Role};
@@ -58,6 +56,8 @@ pub(crate) async fn persist_atomic_movement_portrait(
 ) -> TurnResult<PostPersistOutcome> {
     let TurnIds { srid, scene_id, .. } = ids;
     let turn_policies = state.turn_policies_for_scene(Some(scene_id));
+    let enhanced_portrait =
+        enhanced_portrait_active(role, state.host_profile.visual_presentation_mode.as_deref());
     let turn_persistence = state.chat_turn_persistence_port();
     let core_v = PersonalityVector::from(&role.default_personality);
     let reply_for_portrait = reply.to_string();
@@ -77,7 +77,7 @@ pub(crate) async fn persist_atomic_movement_portrait(
         Some(STAGES.stage(
             ChatStage::PortraitEmotionLlm,
             async {
-                if role.pack_portrait_catalog.enabled {
+                if enhanced_portrait {
                     let Some(catalog) = role.portrait_catalog.as_ref() else {
                         tracing::warn!(
                             target: "oclive_chat",
@@ -132,6 +132,7 @@ pub(crate) async fn persist_atomic_movement_portrait(
                         &policy.recent_events,
                         &pre.memory.recent_turns,
                         narrative_hint_owned.as_deref(),
+                        middle.complex_emotion_out.intensity,
                     )
                     .await?;
                     Ok((tag, Some(vsid)))
@@ -219,7 +220,12 @@ pub(crate) async fn persist_atomic_movement_portrait(
             favor_current,
             movement,
             portrait_emotion_str: policy.bot_emotion_str.clone(),
-            visual_state_id: resolve_visual_state_for_role(role, policy.bot_emotion_str.as_str()),
+            visual_state_id: resolve_visual_state_for_role(
+                role,
+                policy.bot_emotion_str.as_str(),
+                Some(middle.complex_emotion_out.intensity),
+                state.host_profile.visual_presentation_mode.as_deref(),
+            ),
         })
     }
 }
@@ -366,12 +372,21 @@ pub(crate) async fn persist_non_profile_personality_delta(
         .set(srid.to_string(), middle.personality.clone());
 }
 
-fn resolve_visual_state_for_role(role: &Role, emotion_tag: &str) -> Option<String> {
-    if !portrait_catalog_active(role) {
+fn resolve_visual_state_for_role(
+    role: &Role,
+    emotion_tag: &str,
+    intensity: Option<f64>,
+    distro_mode: Option<&str>,
+) -> Option<String> {
+    if !enhanced_portrait_active(role, distro_mode) {
         return None;
     }
     let catalog = role.portrait_catalog.as_ref()?;
-    resolve_visual_state_rule(catalog, emotion_tag)
+    crate::domain::portrait_facility::resolve_visual_state_rule_with_intensity(
+        catalog,
+        emotion_tag,
+        intensity,
+    )
 }
 
 #[cfg(test)]
@@ -537,7 +552,12 @@ mod persist_non_profile_tests {
         let mut role = vector_role();
         role.pack_portrait_catalog.enabled = true;
         role.portrait_catalog = None;
-        assert!(!portrait_catalog_active(&role));
-        assert_eq!(resolve_visual_state_for_role(&role, "happy"), None);
+        assert!(!crate::domain::portrait_facility::portrait_catalog_active(
+            &role
+        ));
+        assert_eq!(
+            resolve_visual_state_for_role(&role, "happy", None, None),
+            None
+        );
     }
 }

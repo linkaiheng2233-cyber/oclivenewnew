@@ -5,7 +5,8 @@
 mod common;
 
 use oclive_kernel_host::domain::portrait_facility::{
-    portrait_catalog_active, resolve_visual_state_rule,
+    enhanced_portrait_active, portrait_catalog_active, resolve_visual_state_rule,
+    resolve_visual_state_rule_with_intensity,
 };
 use oclive_kernel_host::infrastructure::storage::RoleStorage;
 use oclive_kernel_types::models::{
@@ -15,11 +16,33 @@ use std::fs;
 use std::io::Write;
 
 #[test]
-fn mumu_has_no_portrait_catalog_active() {
+fn mumu_catalog_resolves_intensity_variants() {
     let storage = RoleStorage::new(common::roles_dir());
     let role = storage.load_role("mumu").expect("mumu");
-    assert!(!portrait_catalog_active(&role));
-    assert!(role.portrait_catalog.is_none());
+    assert!(portrait_catalog_active(&role));
+    let catalog = role.portrait_catalog.as_ref().expect("mumu catalog");
+    assert_eq!(
+        resolve_visual_state_rule_with_intensity(catalog, "shy", Some(0.2)),
+        Some("shy_mild".to_string())
+    );
+    assert_eq!(
+        resolve_visual_state_rule_with_intensity(catalog, "shy", Some(0.5)),
+        Some("shy_moderate".to_string())
+    );
+    assert_eq!(
+        resolve_visual_state_rule_with_intensity(catalog, "shy", Some(0.9)),
+        Some("shy_severe".to_string())
+    );
+}
+
+#[test]
+fn visual_disabled_uses_fallback_route_gate() {
+    let storage = RoleStorage::new(common::roles_dir());
+    let mut role = storage.load_role("mumu").expect("mumu");
+    assert!(enhanced_portrait_active(&role, None));
+    assert!(!enhanced_portrait_active(&role, Some("off")));
+    role.pack_visual_presentation_config.enabled = false;
+    assert!(!enhanced_portrait_active(&role, None));
 }
 
 #[test]

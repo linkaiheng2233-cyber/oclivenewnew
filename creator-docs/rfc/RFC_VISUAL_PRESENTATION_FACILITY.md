@@ -85,7 +85,7 @@ flowchart LR
 
 ---
 
-## 4. `performance_directive`（草案形状）
+## 4. `performance_directive`（当前契约形状）
 
 ```json
 {
@@ -107,14 +107,14 @@ flowchart LR
 | backend | v1 | 说明 |
 |---------|-----|------|
 | `none` / `image` | ✓ | 等价今日 PNG 立绘位；directive 仅含 path |
-| `live2d` | Phase B | AI Theater / Chat Pro；Cubism 参数映射 |
-| `rig3d` | Phase C | glTF/VRM + clip |
-| `procedural` | Phase C | 实时演算参数；帧循环在 UI |
-| `directory` | Phase C+ | 插件 manifest `provides: ["visual_presentation"]` |
+| `live2d` | directive 已交付；渲染器 partial | AI Theater / Chat Pro；Cubism 参数映射由宿主适配器负责 |
+| `rig3d` | directive 已交付；渲染器 stub | glTF/VRM + clip 由宿主适配器负责 |
+| `procedural` | directive 已交付；渲染器 stub | 实时演算参数；帧循环在 UI |
+| `directory` | 配置/适配器 stub | 插件 manifest `provides: ["visual_presentation"]`；RPC materialize 尚未开放 |
 
 ---
 
-## 6. 发行版 gating（`distro.oclive.toml` 草案）
+## 6. 发行版 gating（`distro.oclive.toml`）
 
 ```toml
 [visual_presentation]
@@ -141,10 +141,10 @@ mode = "off"   # off | image_only | stage_full
 
 ## 8. 验收
 
-- [ ] `enabled: false`：零 directive 字段，PNG 路径不变
-- [ ] `backend: image`：directive.path 与 catalog 一致
-- [ ] 第 3 设施未产出 id 时，第 4 设施不调用
-- [ ] Theater profile 打开 live2d 时，post_llm 墙钟不增加帧逻辑
+- [x] `enabled: false`：零 directive 字段，PNG 路径不变
+- [x] `backend: image`：directive.path 与 catalog 一致
+- [x] 第 3 设施未产出 id 时，第 4 设施不调用
+- [x] Theater profile 打开 live2d 时，post_llm 墙钟不增加帧逻辑
 
 ---
 
