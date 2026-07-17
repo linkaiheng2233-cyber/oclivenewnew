@@ -2,6 +2,26 @@
 //!
 //! Provides foundational services and data access.
 
+/// Return whether an HTTP endpoint resolves to the local machine.
+///
+/// Loopback traffic must bypass inherited proxy environment variables so local
+/// sidecars and test servers cannot be redirected to an external proxy.
+#[must_use]
+pub(crate) fn is_loopback_endpoint(endpoint: &str) -> bool {
+    let Ok(url) = reqwest::Url::parse(endpoint) else {
+        return false;
+    };
+    let Some(host) = url.host_str() else {
+        return false;
+    };
+    host.eq_ignore_ascii_case("localhost")
+        || host
+            .trim_start_matches('[')
+            .trim_end_matches(']')
+            .parse::<std::net::IpAddr>()
+            .is_ok_and(|address| address.is_loopback())
+}
+
 pub mod agent_mcp_bridge;
 pub mod app_data_migration;
 pub mod backend_registry;

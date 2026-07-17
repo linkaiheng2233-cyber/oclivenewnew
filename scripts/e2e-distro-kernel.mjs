@@ -4,6 +4,7 @@
  * Usage: node scripts/e2e-distro-kernel.mjs [--scenario spawn|attach|role-snapshot|bundled-first|theater|all]
  */
 import { spawn, spawnSync } from 'child_process';
+import { randomUUID } from 'crypto';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -16,6 +17,7 @@ const repoRoot = resolveRepoRoot();
 const port = Number(process.env.OCLIVE_E2E_PORT || 18421);
 const appData = path.join(os.tmpdir(), `oclive_distro_e2e_${Date.now()}`);
 const rolesDir = chatProRolesDir(repoRoot);
+const apiToken = process.env.OCLIVE_API_TOKEN?.trim() || randomUUID();
 
 const scenario = (() => {
   const i = process.argv.indexOf('--scenario');
@@ -26,9 +28,15 @@ function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+function apiFetch(url, init) {
+  const headers = new Headers(init?.headers || {});
+  headers.set('x-oclive-api-token', apiToken);
+  return fetch(url, { ...init, headers });
+}
+
 async function healthOk(p = port) {
   try {
-    const res = await fetch(`http://127.0.0.1:${p}/health`, { signal: AbortSignal.timeout(2000) });
+    const res = await apiFetch(`http://127.0.0.1:${p}/health`, { signal: AbortSignal.timeout(2000) });
     return res.ok;
   } catch {
     return false;
@@ -47,6 +55,7 @@ function spawnKernel(extraEnv = {}) {
       OCLIVE_APP_DATA: appData,
       OCLIVE_USE_CANONICAL_APP_DATA: '1',
       OCLIVE_HTTP_API_MOCK_LLM: '1',
+      OCLIVE_API_TOKEN: apiToken,
       OCLIVE_ROLES_DIR: rolesDir,
       ...extraEnv,
     },
@@ -71,7 +80,7 @@ async function scenarioSpawn() {
   const { child } = spawnKernel();
   try {
     await waitReady();
-    const res = await fetch(`http://127.0.0.1:${port}/chat`, {
+    const res = await apiFetch(`http://127.0.0.1:${port}/chat`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
@@ -111,12 +120,12 @@ async function scenarioRoleSnapshot() {
   const { child } = spawnKernel();
   try {
     await waitReady();
-    await fetch(`http://127.0.0.1:${port}/role/load`, {
+    await apiFetch(`http://127.0.0.1:${port}/role/load`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ role_id: 'mumu' }),
     });
-    const snapRes = await fetch(`http://127.0.0.1:${port}/role_snapshot?role_id=mumu&scene_id=desktop`);
+    const snapRes = await apiFetch(`http://127.0.0.1:${port}/role_snapshot?role_id=mumu&scene_id=desktop`);
     const text = await snapRes.text();
     const snap = text ? JSON.parse(text) : null;
     if (!snapRes.ok || typeof snap.current_favorability !== 'number') {
@@ -192,7 +201,7 @@ async function scenarioTheater() {
   });
   try {
     await waitReady();
-    const res = await fetch(`http://127.0.0.1:${port}/health`, {
+    const res = await apiFetch(`http://127.0.0.1:${port}/health`, {
       headers: { Accept: 'application/json' },
     });
     const body = await res.json();

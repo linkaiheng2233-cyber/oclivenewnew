@@ -6,6 +6,7 @@ mod common;
 
 use axum::body::{to_bytes, Body};
 use axum::http::{Request, StatusCode};
+use oclive_kernel_host::http_api::api_router_with_auth;
 use oclive_kernel_host::infrastructure::MockLlmClient;
 use oclive_kernel_host::state::AppState;
 use oclivenewnew_tauri::http_api::api_router;
@@ -114,4 +115,45 @@ async fn high_risk_routes_bridge_token_auth_matrix() {
     assert_eq!(v["ok"], true);
 
     std::env::remove_var("OCLIVE_BRIDGE_TOKEN");
+}
+
+#[tokio::test]
+async fn api_token_auth_keeps_health_public() {
+    let app = api_router_with_auth(test_state().await, Some("test-api-token".to_string()));
+
+    let health = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .uri("/health")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .expect("health request");
+    assert_ne!(health.status(), StatusCode::UNAUTHORIZED);
+
+    let denied = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .uri("/llm/global_ollama_model")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .expect("unauthenticated request");
+    assert_eq!(denied.status(), StatusCode::UNAUTHORIZED);
+
+    let allowed = app
+        .oneshot(
+            Request::builder()
+                .uri("/llm/global_ollama_model")
+                .header("x-oclive-api-token", "test-api-token")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .expect("authenticated request");
+    assert_ne!(allowed.status(), StatusCode::UNAUTHORIZED);
 }

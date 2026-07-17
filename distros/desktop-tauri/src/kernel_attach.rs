@@ -909,8 +909,8 @@ impl KernelHttpClient {
 }
 
 /// Resolve on-disk role directory for `role_id`.
-pub fn role_dir_for_id(state: &AppState, role_id: &str) -> PathBuf {
-    state.storage.roles_dir().join(role_id)
+pub fn role_dir_for_id(state: &AppState, role_id: &str) -> Result<PathBuf, AppError> {
+    state.storage.role_dir_path(role_id)
 }
 
 fn parse_sse_block(block: &str) -> (String, String) {

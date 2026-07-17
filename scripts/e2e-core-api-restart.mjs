@@ -10,12 +10,14 @@
  */
 
 import { spawn, execFileSync } from 'node:child_process'
+import { randomUUID } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { chatProRolesDir, resolveRepoRoot } from './lib/chat-pro-roles-dir.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
+const apiToken = process.env.OCLIVE_API_TOKEN?.trim() || randomUUID()
 
 function repoRoot() {
   return resolveRepoRoot()
@@ -48,6 +50,12 @@ function rolePathDefault() {
   return join(chatRolesRoot(), 'mumu')
 }
 
+function apiFetch(url, init) {
+  const headers = new Headers(init?.headers || {})
+  headers.set('x-oclive-api-token', apiToken)
+  return fetch(url, { ...init, headers })
+}
+
 async function sleep(ms) {
   await new Promise((r) => setTimeout(r, ms))
 }
@@ -57,7 +65,7 @@ async function waitHealth(base, timeoutMs) {
   let lastErr = ''
   while (Date.now() < deadline) {
     try {
-      const r = await fetch(`${base}/health`)
+      const r = await apiFetch(`${base}/health`)
       const t = await r.text()
       if (r.ok && t.trim() === 'ok') return
       lastErr = `status ${r.status} body ${JSON.stringify(t)}`
@@ -70,7 +78,7 @@ async function waitHealth(base, timeoutMs) {
 }
 
 async function postChat(base, rolePath, message) {
-  const res = await fetch(`${base}/chat`, {
+  const res = await apiFetch(`${base}/chat`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ role_path: rolePath, message, session_id: null }),
@@ -98,6 +106,7 @@ function startApi(port) {
     ...process.env,
     OCLIVE_ROLES_DIR: process.env.OCLIVE_ROLES_DIR || chatRolesRoot(),
     OCLIVE_HTTP_API_MOCK_LLM: process.env.OCLIVE_HTTP_API_MOCK_LLM || '1',
+    OCLIVE_API_TOKEN: apiToken,
   }
   const child = spawn(bin, ['--api', '--port', String(port)], {
     env,

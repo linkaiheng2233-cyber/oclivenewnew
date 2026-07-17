@@ -48,8 +48,19 @@ function defaultRolePath() {
   return join(chatRolesRoot(), 'mumu')
 }
 
+function withApiToken(init = {}) {
+  const headers = new Headers(init.headers || {})
+  const token = env('OCLIVE_API_TOKEN', '')
+  if (token) headers.set('x-oclive-api-token', token)
+  return { ...init, headers }
+}
+
+function apiFetch(url, init) {
+  return fetch(url, withApiToken(init))
+}
+
 async function fetchJson(url, init) {
-  const res = await fetch(url, init)
+  const res = await apiFetch(url, init)
   const text = await res.text()
   let body
   try {
@@ -66,7 +77,7 @@ async function scenarioHandlers(base, rolePath) {
 
   return {
     S0: async () => {
-      const r = await fetch(`${base}/health`)
+      const r = await apiFetch(`${base}/health`)
       const t = await r.text()
       if (!r.ok) throw new Error(`health status ${r.status}`)
       if (t.trim() !== 'ok') throw new Error(`health body expected ok, got ${JSON.stringify(t)}`)
@@ -274,7 +285,7 @@ async function scenarioHandlers(base, rolePath) {
       }
     },
     S15_chat_stream_sse: async () => {
-      const res = await fetch(`${base}/chat/stream`, {
+      const res = await apiFetch(`${base}/chat/stream`, {
         method: 'POST',
         headers: {
           'content-type': 'application/json',

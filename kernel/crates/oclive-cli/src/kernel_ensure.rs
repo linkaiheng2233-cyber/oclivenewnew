@@ -214,6 +214,9 @@ fn spawn_kernel(
     distro_profile: Option<&Path>,
     mock_llm: bool,
 ) -> Result<()> {
+    let api_token = crate::http_client::configured_api_token().context(
+        "OCLIVE_API_TOKEN is required when `oclive kernel ensure` spawns a long-lived HTTP kernel",
+    )?;
     let app_data = find_app_data_dir_for_host();
     ensure_app_data_dir(&app_data).map_err(|e| anyhow::anyhow!(e.to_string()))?;
 
@@ -227,6 +230,7 @@ fn spawn_kernel(
         .env("OCLIVE_API_PORT", port.to_string())
         .env("OCLIVE_APP_DATA", app_data)
         .env("OCLIVE_USE_CANONICAL_APP_DATA", "1")
+        .env("OCLIVE_API_TOKEN", api_token)
         .env(ENV_ROLES_DIR, roles_dir);
 
     if mock_llm {

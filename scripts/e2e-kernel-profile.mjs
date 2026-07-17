@@ -5,6 +5,7 @@
  * Usage: node scripts/e2e-kernel-profile.mjs
  */
 import { spawn, execFileSync } from 'child_process';
+import { randomUUID } from 'crypto';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -18,6 +19,7 @@ const port = Number(process.env.OCLIVE_E2E_PORT || 18422);
 const rolesDir = chatProRolesDir(repoRoot);
 const vscodeProfile = path.join(repoRoot, 'examples/distro-profiles/vscode.oclive.toml');
 const desktopProfile = path.join(repoRoot, 'examples/distro-profiles/desktop.oclive.toml');
+const apiToken = process.env.OCLIVE_API_TOKEN?.trim() || randomUUID();
 
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
@@ -38,6 +40,7 @@ function spawnKernel(extraEnv = {}) {
       OCLIVE_APP_DATA: appData,
       OCLIVE_USE_CANONICAL_APP_DATA: '1',
       OCLIVE_HTTP_API_MOCK_LLM: '1',
+      OCLIVE_API_TOKEN: apiToken,
       OCLIVE_ROLES_DIR: rolesDir,
       ...extraEnv,
     },
