@@ -4,6 +4,7 @@
 
 | WAVE 文件 | 债 ID | Stage | PR / CI | 结果 |
 |-----------|-------|-------|---------|------|
+| [WAVE-20260717-K-PLUGIN-SEC-01-s0.md](./WAVE-20260717-K-PLUGIN-SEC-01-s0.md) | K-PLUGIN-SEC-01 | 0 | n/a | trust-boundary inventory PASS · 进 Stage 1 |
 | [WAVE-20260716-T-DOC-02-s0.md](./WAVE-20260716-T-DOC-02-s0.md) | T-DOC-02 | 0 | n/a | align PASS · 进 Stage 1 |
 | [WAVE-20260716-T-DOC-02-s1.md](./WAVE-20260716-T-DOC-02-s1.md) | T-DOC-02 | 1 | n/a · 未 commit | STATUS+README · Locally verified |
 | [WAVE-20260716-T-DOC-02-s2.md](./WAVE-20260716-T-DOC-02-s2.md) | T-DOC-02 | 2 | 无 PR（缺 capability） | locally-verified · 等 Stage 3 授权 |
