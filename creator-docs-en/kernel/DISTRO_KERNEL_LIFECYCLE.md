@@ -85,7 +85,7 @@ Bundled fail + shared OK → suspect **distro binary**; both fail → suspect **
 
 - Desktop: `kernel_lifecycle/` — `policy.rs`, `ensure.rs`, `spawn.rs`, `watchdog.rs`
 - VS Code: `kernelStrategy.ts` + `kernelClient.ts`; requires built `oclive-cli` in dev
-- CLI: `cargo run -p oclive-cli -- kernel ensure --json --plan-only --distro vscode`
+- CLI: `cargo run -p oclive-cli -- kernel ensure --json --plan-only --distro vscode`; spawning a long-lived kernel requires `OCLIVE_API_TOKEN` (the CLI will not create an unrecoverable token). `GET /health` remains public for readiness; send `x-oclive-api-token` on all other routes.
 
 ## HTTP routes (kernel)
 

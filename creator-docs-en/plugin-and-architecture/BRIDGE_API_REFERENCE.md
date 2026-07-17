@@ -1,6 +1,6 @@
 # Whole‑shell bridge API — full reference
 
-Commands callable from **directory plugins** in an HTML whole shell or a **`shell.vueEntry`** host Vue page via **`OclivePluginBridge.invoke`** (or **`inject('oclive').invoke`** in native Vue slots).
+Commands callable from **directory plugins** in the release HTML whole shell via **`OclivePluginBridge.invoke`**. `shell.vueEntry` / `inject('oclive')` exist only in unsafe Vite DEV mode enabled with `VITE_OCLIVE_UNSAFE_INLINE_PLUGIN_VUE=1`.
 
 **Implementation**: `distros/desktop-tauri/src/api/plugin_bridge.rs` (`required_permission_token`, `dispatch_bridge_command`, `validate_bridge`).
 
@@ -15,7 +15,7 @@ Commands callable from **directory plugins** in an HTML whole shell or a **`shel
 ### How to call
 
 - **iframe whole shell**: the host injects `window.OclivePluginBridge` into `shell.entry` HTML — use **`OclivePluginBridge.invoke(command, params)`**.
-- **Vue whole shell**: for `shell.vueEntry`, use **`const oclive = inject('oclive'); await oclive.invoke(command, params)`** — same backend as **`plugin_bridge_invoke`**.
+- **Vue whole shell (unsafe DEV only)**: after explicit double opt-in, `shell.vueEntry` may use **`const oclive = inject('oclive'); await oclive.invoke(command, params)`**. Release builds never execute that source.
 
 Request body always includes:
 

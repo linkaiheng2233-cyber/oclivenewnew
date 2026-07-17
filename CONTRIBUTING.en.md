@@ -60,7 +60,7 @@ npm run build
 | **Core HTTP restart smoke (A1.1a)** | **`npm run test:e2e:core-api-restart`** (requires `cargo build -p oclivenewnew-tauri`; defaults to Mock LLM) |
 | **Web preview shell E2E (A1.1b)** | **`npm run build && npm run test:e2e:preview`** (Playwright + `vite preview`; **CI: Ubuntu `frontend` only**). **Windows local:** if the built-in `webServer` times out, run **`npm run preview -- --host 127.0.0.1 --port 4180 --strictPort`** in one terminal, then in another set **`$env:PW_TEST_USE_EXTERNAL='1'`** (PowerShell) and run **`npm run test:e2e:preview`** |
 
-**CI alignment:** **`npm run check:release`** already chains **`npm run test:unit`** and **`npm run verify:ui`** (see root `package.json`); **Playwright (`npm run test:e2e:preview`) is not in `check:release`** and runs on Ubuntu **`frontend` only** (Windows `frontend` skips it). If you touched the UI, on **Linux/macOS** also run **`npm run build && npm run test:e2e:preview`**, or rely on a green **Actions → frontend (ubuntu)** run. Full release gates: [handoff/archive/PRODUCT_RELEASE_CHECKLIST.md](handoff/archive/PRODUCT_RELEASE_CHECKLIST.md).
+**CI alignment:** **`npm run check:release`** already chains **`npm run test:unit`** and **`npm run verify:ui`** (see root `package.json`); **Playwright (`npm run test:e2e:preview`) is not in `check:release`** and runs on Ubuntu **`frontend` only** (Windows `frontend` skips it). If you touched the UI, on **Linux/macOS** also run **`npm run build && npm run test:e2e:preview`**, or rely on a green **Actions → frontend (ubuntu)** run. Current release sign-off is [PROJECT_OVERVIEW.md §8](creator-docs-en/getting-started/PROJECT_OVERVIEW.md#8-minimal-pre-release-checklist) plus CI.
 
 **CI:** `.github/workflows/ci.yml` runs Rust + **`npm run build`** + **`npm run test:unit`** on Ubuntu and Windows; **Ubuntu `frontend`** also runs **`npm run test:e2e:preview`**; Ubuntu also runs **OOCP** and **`oclive-cli`** jobs. See root README **Testing**.
 
@@ -136,20 +136,20 @@ Aligned with [`handoff/DIMENSION5_CLOSURE_SIGNOFF.md`](handoff/DIMENSION5_CLOSUR
 
 ## Breaking changes
 
-**Full process, compatibility expectations, and PR/migration templates:** read **[`handoff/BREAKING_CHANGE_PROCESS.md`](handoff/BREAKING_CHANGE_PROCESS.md)** (engineering discipline §C2; aligned with [`PRODUCT_AND_KERNEL_GAP_CHECKLIST.md`](handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md)).
+**Full process, compatibility expectations, and PR/migration templates:** read **[`handoff/BREAKING_CHANGE_PROCESS.md`](handoff/BREAKING_CHANGE_PROCESS.md)** (engineering discipline §C2; product execution items live in [`handoff/PRODUCT_LINE_TASK_BUCKETS.md`](handoff/PRODUCT_LINE_TASK_BUCKETS.md)).
 
 Summary:
 
 1. **Open an issue** (or RFC for large surface) describing migration impact on role packs, `plugin_backends`, HTTP OOCP / `invoke` DTOs; label the PR **BREAKING**.  
 2. **PR must include:** updates to **`kernel/crates/oclive_validation`** (if manifest/settings keys change), **`PLUGIN_V1.md` / `ERROR_CODES.md` / `COMPATIBILITY.md`** as applicable, **`creator-docs/`** / **`creator-docs-en/`** mirrors, and **`CHANGELOG.md` + `CHANGELOG.en.md`** entries.  
-3. **Review:** at least one maintainer confirms **compatibility shims + migration path**, CI, and [PRODUCT_RELEASE_CHECKLIST.md](handoff/archive/PRODUCT_RELEASE_CHECKLIST.md) P0 rows touched.
+3. **Review:** at least one maintainer confirms **compatibility shims + migration path**, CI, and the release items in [PROJECT_OVERVIEW.md §8](creator-docs-en/getting-started/PROJECT_OVERVIEW.md#8-minimal-pre-release-checklist).
 
 ## Documentation
 
 - **User-visible copy:** avoid duplicated hard-coded strings (see [AGENTS.md](AGENTS.md) for the plugin manager entry pattern).
 - **Contracts & DB:** follow `distros/chat-pro/roles/README_MANIFEST.md`, `RoleStorage::load_role`, and **`kernel/crates/oclive_validation`**; **do not invent** SQL table names.
 - **Doc index:** [creator-docs/getting-started/DOCUMENTATION_INDEX.md](creator-docs/getting-started/DOCUMENTATION_INDEX.md).
-- **Releases & compatibility:** on semver bumps or contract changes, review [`creator-docs/COMPATIBILITY.md`](creator-docs/COMPATIBILITY.md) snapshots and the one-pager table, and walk [handoff/archive/PRODUCT_RELEASE_CHECKLIST.md](handoff/archive/PRODUCT_RELEASE_CHECKLIST.md) “对外说明”; pack rules stay in [PACK_VERSIONING.md](creator-docs/role-pack/PACK_VERSIONING.md).
+- **Releases & compatibility:** on semver bumps or contract changes, review [`creator-docs/COMPATIBILITY.md`](creator-docs/COMPATIBILITY.md) snapshots and the one-pager table, then update the external notes in [PROJECT_OVERVIEW.md §8](creator-docs-en/getting-started/PROJECT_OVERVIEW.md#8-minimal-pre-release-checklist); pack rules stay in [PACK_VERSIONING.md](creator-docs/role-pack/PACK_VERSIONING.md).
 
 ## Do not commit
 

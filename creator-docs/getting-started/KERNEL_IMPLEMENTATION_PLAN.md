@@ -1,6 +1,6 @@
 # 纯净内核 / 平台目标 — 实施计划（内核优先）
 
-**当前策略**：先完成内核与平台里程碑（K0–K5）；**桌面产品级首发**暂缓，见 [handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](../../handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) §A。
+**当前策略**：先完成内核与平台里程碑（K0–K5）；桌面产品执行项按 [PRODUCT_LINE_TASK_BUCKETS.md](../../handoff/PRODUCT_LINE_TASK_BUCKETS.md) 与 [TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md) 排期。
 
 **权威契约**：[KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md) · [PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md) · [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)
 
@@ -147,7 +147,7 @@ cd examples/oocp-test-suite && node run.mjs
 | K2–K4 | 可 ship 独立进程 / lib |
 | K5 | 第三方按单线接入 |
 
-**产品级 P0** 建议在 **K1 绿灯 + K2 收口**（已达成）后集中收口 **产品级 A 区**（见 gap 清单 §A）。
+**产品级 P0** 建议在 **K1 绿灯 + K2 收口**（已达成）后，按 [PRODUCT_LINE_TASK_BUCKETS.md](../../handoff/PRODUCT_LINE_TASK_BUCKETS.md) 的硬骨头顺序集中收口。
 
 ---
 

@@ -133,7 +133,7 @@ Optional text shaping after the LLM reply (`config.json` → `reply_post_process
 ### 5.2 I switched to English but still see Chinese
 
 - **Plugins / packs** ship their own strings.  
-- **Residual UI** may still be tracked under checklist §A6 ([PRODUCT_AND_KERNEL_GAP_CHECKLIST](../../handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md)).  
+- **Residual UI** is tracked in the active [PRODUCT_LINE_TASK_BUCKETS.md](../../handoff/PRODUCT_LINE_TASK_BUCKETS.md) and debt inventory.
 - File an issue with **screenshot + version** for host UI gaps.
 
 ### 5.3 How do I remove a plugin?

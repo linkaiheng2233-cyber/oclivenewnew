@@ -15,7 +15,7 @@
 | **[KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md)** | Kernel milestones **K0–K5**, north star, **verification log** |
 | **[../../creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md](../../creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md)** | Monthly vision |
 | **[../../creator-docs/roadmap/BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md](../../creator-docs/roadmap/BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md)** | Experience backlog; **does not replace** the monthly roadmap |
-| **[../../handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](../../handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md)** | **Product P0–P2** + kernel/platform **section B** gaps |
+| **[../../handoff/PRODUCT_LINE_TASK_BUCKETS.md](../../handoff/PRODUCT_LINE_TASK_BUCKETS.md)** | Current product engineering execution view; old gap lists are historical context |
 
 ---
 
@@ -85,7 +85,7 @@
 
 | Topic | Entry |
 |-------|--------|
-| Product + kernel gap list | [../../handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](../../handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) |
+| Product execution view | [../../handoff/PRODUCT_LINE_TASK_BUCKETS.md](../../handoff/PRODUCT_LINE_TASK_BUCKETS.md) · [TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md) |
 | Four-repo i18n baseline | [../../handoff/I18N_FOUR_REPO_BASELINE.md](../../handoff/I18N_FOUR_REPO_BASELINE.md) |
 
 ---
@@ -94,7 +94,7 @@
 
 - **Kernel K0–K5**: closed in plan except **P2 (OTA / remote logs)** — see [KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md) and [AGENTS.md](../../AGENTS.md) for CI.
 - **Role pack blueprint v2 (P0–P8)**: `pipeline.ocblueprint` is the recommended SSOT; **`pack validate` defaults to v2**; golden pack `distros/chat-pro/roles/mumu`; architecture graph **`save_role_slot_registry`**. See [BLUEPRINT_V2_IMPLEMENTATION_PLAN.md](../../handoff/BLUEPRINT_V2_IMPLEMENTATION_PLAN.md).
-- **Product launch**: still driven by gap checklist **§A**, decoupled as in checklist **§D**. **A1 (CI-attainable slice)** is closed (**A1.1a** HTTP restart, **A1.1b** `vite preview` + Playwright, **A1.2** nine `invoke` hot-path `*_impl` chains). **Default next engineering focus** is **A2.2 / A2.3 / A4.2** and **A1.1c (native installer / Tauri-window E2E)** — see [PRODUCT_LINE_TASK_BUCKETS.md](../../handoff/PRODUCT_LINE_TASK_BUCKETS.md) **§四 (Hard items)** — **one issue per item**.
+- **Product launch**: current checks are [PROJECT_OVERVIEW.md §8](PROJECT_OVERVIEW.md#8-minimal-pre-release-checklist), the CI workflow, and the active debt inventory. **A1 (CI-attainable slice)** is closed (**A1.1a** HTTP restart, **A1.1b** `vite preview` + Playwright, **A1.2** nine `invoke` hot-path `*_impl` chains). **Default next engineering focus** is **A2.2 / A2.3 / A4.2** and **A1.1c (native installer / Tauri-window E2E)** — see [PRODUCT_LINE_TASK_BUCKETS.md](../../handoff/PRODUCT_LINE_TASK_BUCKETS.md) **§四 (Hard items)** — **one issue per item**. The old gap checklist remains historical context only.
 - **Experience**: use monthly vision + backlog; do not merge into the kernel milestone table.
 - **Creator docs bilingual (`creator-docs-en/`)**: hub + plugin contracts + `guides/` etc. are aligned with the Chinese corpus for a **closure baseline**; long-form vision under `creator-docs/roadmap/` stays **Chinese-first** until a release needs EN. Update mirrors in the same change-set as contract changes, or note Chinese-only doc updates in CHANGELOG — see [Documentation bilingual closure baseline](../README.md#documentation-bilingual-closure-baseline) in `creator-docs-en/README.md`.
 
@@ -105,7 +105,7 @@
 | Track | Source of truth |
 |-------|-----------------|
 | Kernel follow-up (incl. P2) | [KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md) |
-| Product P0–P2 | [PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](../../handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) |
+| Product P0–P2 | [PRODUCT_LINE_TASK_BUCKETS.md](../../handoff/PRODUCT_LINE_TASK_BUCKETS.md) · [TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md) |
 | Vision / narrative | [../../creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md](../../creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md) · [../../creator-docs/roadmap/VISION_OPEN_LAB.md](../../creator-docs/roadmap/VISION_OPEN_LAB.md) |
 
 **Habit**: before release or contract changes, run checks in [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md); when changing kernel boundaries, sync [PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md) and the kernel plan.

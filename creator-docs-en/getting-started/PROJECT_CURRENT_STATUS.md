@@ -13,7 +13,7 @@
 | Item | Value |
 |------|--------|
 | Desktop app semver | **0.5.0** (align `package.json`, `distros/desktop-tauri/tauri.conf.json`, `distros/desktop-tauri/Cargo.toml`) |
-| Default HTTP API (`--api`) | `http://127.0.0.1:8420` (`GET /health`) |
+| Default HTTP API (`--api`) | `http://127.0.0.1:8420` (`GET /health` is public for readiness; all other routes require `OCLIVE_API_TOKEN` by default) |
 | User-visible change log | **[CHANGELOG.en.md](../../CHANGELOG.en.md)** (English) · **[CHANGELOG.md](../../CHANGELOG.md)** (Chinese; keep both in sync for each entry) |
 
 ---
@@ -22,7 +22,7 @@
 
 - **Runtime**: Tauri desktop; role pack import (`.ocpak` / `.zip` / folder); chat orchestration **`process_message`**; six-slot `plugin_backends`; directory plugins; remote sidecar; local HTTP `--api`; startup health checks (see [PROJECT_OVERVIEW.md](../../creator-docs/getting-started/PROJECT_OVERVIEW.md)).
 - **Kernel programme**: milestones **K0–K5** are closed in plan except **P2 (OTA / remote logs, etc.)**; verification and CI: [KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md) and root [AGENTS.md](../../AGENTS.md).
-- **Product “first launch” hard gates**: still governed by [PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](../../handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) **§A**, decoupled from kernel milestones per **§D** of that checklist.
+- **Product “first launch” gates**: current release checks are [PROJECT_OVERVIEW.md §8](PROJECT_OVERVIEW.md#8-minimal-pre-release-checklist), the CI workflow, and the active [TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md); the old gap checklist is historical context only, not current truth.
 
 ---
 

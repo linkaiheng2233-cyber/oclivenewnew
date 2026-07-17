@@ -260,7 +260,7 @@ function hasBareMonorepoRolesDoc(line, rel = '') {
   return false;
 }
 
-/** Active docs must link archived closure checklists under handoff/archive/. */
+/** Active docs may link archived closure checklists only through their archive path. */
 function lineHasStaleHandoffClosure(line, rel = '') {
   if (rel.startsWith('handoff/archive/')) return [];
   const checks = [
@@ -276,6 +276,18 @@ function lineHasStaleHandoffClosure(line, rel = '') {
     }
   }
   return hits;
+}
+
+/** G3/G12: archived product checklists may be cited as history, never as current truth. */
+function lineHasArchivedProductTruth(line, rel = '') {
+  if (rel.startsWith('handoff/archive/')) return [];
+  if (!/archive\/PRODUCT_(?:RELEASE_CHECKLIST|AND_KERNEL_GAP_CHECKLIST)\.md/.test(line)) {
+    return [];
+  }
+  if (/历史|归档|追溯|不作.*truth|historical|not current truth|history only/i.test(line)) {
+    return [];
+  }
+  return ['archived product checklist used as current truth (G3/G12)'];
 }
 
 function scanDocLine(line, rel = '') {
@@ -304,6 +316,7 @@ function scanDocLine(line, rel = '') {
     hits.push('bare roles/ path (use distros/chat-pro/roles/)');
   }
   hits.push(...lineHasStaleHandoffClosure(line, rel));
+  hits.push(...lineHasArchivedProductTruth(line, rel));
   return hits;
 }
 
@@ -403,7 +416,7 @@ if (runCode) {
 
 if (violations === 0) {
   const scope = runDocs && runCode ? 'docs + code' : runDocs ? 'docs' : 'code';
-  console.log(`check-stale-paths: OK (${scope}; no legacy paths or banned aliases)`);
+  console.log(`check-stale-paths: OK (${scope}; no legacy paths, banned aliases, or archive truth)`);
 } else {
   console.error(`check-stale-paths: ${violations} violation(s) — see NAMING_CONVENTIONS.md`);
   process.exit(1);

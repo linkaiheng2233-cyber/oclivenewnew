@@ -13,7 +13,7 @@
 | 项 | 值 |
 |----|-----|
 | 桌面应用语义化版本 | **0.5.0**（以根目录 `package.json`、`distros/desktop-tauri/tauri.conf.json`、`distros/desktop-tauri/Cargo.toml` 对齐为准） |
-| 默认 HTTP API（`--api`） | `http://127.0.0.1:8420`（健康检查 `GET /health`） |
+| 默认 HTTP API（`--api`） | `http://127.0.0.1:8420`（`GET /health` 公开探活；其余路由默认强制 `OCLIVE_API_TOKEN`） |
 | 用户可见变更流水 | **[CHANGELOG.md](../../CHANGELOG.md)**（中文）· **[CHANGELOG.en.md](../../CHANGELOG.en.md)**（英文，与中文同步维护条目） |
 
 ---
@@ -22,7 +22,7 @@
 
 - **运行时**：Tauri 桌面端；角色包导入（`.ocpak` / `.zip` / 目录）、对话主路径 **`process_message`**、**第 1–6 模块** `plugin_backends`、**第 1–2 设施子模块**（复杂情感、专家模型/专家路由）、后端模块插件模块（目录/Remote）、本地 HTTP `--api`、启动健康检查等（架构见 [OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)；细节见 [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)）。
 - **内核工程**：里程碑 **K0–K5** 在计划中除 **P2（OTA / 远程日志等）** 外已收口；验收留痕与 CI 见 [KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md) 与根目录 [AGENTS.md](../../AGENTS.md)。
-- **产品级「首发」硬门槛**：仍以 [handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](../../handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) **§A** 为准，与内核里程碑解耦排期（见该文 **§D**）。
+- **产品级「首发」门槛**：当前以 [PROJECT_OVERVIEW.md §8](PROJECT_OVERVIEW.md#8-发版前可勾选的极简清单)、CI workflow 与 [TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md) 的活跃台账为准；旧 gap 清单仅作历史背景，不作为现行 truth。
 
 ---
 

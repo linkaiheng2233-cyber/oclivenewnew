@@ -110,7 +110,7 @@ runStep('debt marathon stop-hook self-test', () => {
   sh('node', ['scripts/test-cursor-marathon-hook.mjs']);
 });
 
-runStep('human module Markdown links', () => {
+runStep('human module and critical SSOT Markdown links', () => {
   sh('node', ['scripts/check-markdown-links.mjs', '--self-test']);
   sh('node', ['scripts/check-markdown-links.mjs']);
 });

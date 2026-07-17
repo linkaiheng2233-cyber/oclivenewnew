@@ -1,6 +1,6 @@
 # 整壳桥接 API 完整参考
 
-本文档描述 **目录插件** 在 HTML 整壳或 **`shell.vueEntry` 宿主 Vue 页** 中，通过 **`OclivePluginBridge.invoke`**（或原生 Vue 插槽的 **`inject('oclive').invoke`）可调用的**命令列表、权限别名与典型参数/返回值。
+本文档描述 **目录插件** 在发行版 HTML 整壳中通过 **`OclivePluginBridge.invoke`** 可调用的命令。`shell.vueEntry` / `inject('oclive')` 仅存在于 Vite DEV + `VITE_OCLIVE_UNSAFE_INLINE_PLUGIN_VUE=1` 的不安全调试模式。
 
 **权威实现**：`distros/desktop-tauri/src/api/plugin_bridge.rs`（`required_permission_token`、`dispatch_bridge_command`、`validate_bridge`）。
 
@@ -13,7 +13,7 @@
 ### 调用方式
 
 - **iframe 整壳**：宿主在 `shell.entry` 对应 HTML 中注入 `window.OclivePluginBridge`，使用 **`OclivePluginBridge.invoke(command, params)`**。
-- **Vue 整壳**：`shell.vueEntry` 由宿主挂载时，使用 **`const oclive = inject('oclive'); await oclive.invoke(command, params)`**，与 iframe 走同一后端 `plugin_bridge_invoke`。
+- **Vue 整壳（仅 unsafe DEV）**：双重显式 opt-in 后，`shell.vueEntry` 可使用 **`const oclive = inject('oclive'); await oclive.invoke(command, params)`**；发行构建不会执行该源码。
 
 底层均为 Tauri 命令 **`plugin_bridge_invoke`**，请求体包含：
 

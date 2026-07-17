@@ -7,7 +7,7 @@
 - **脚本**：根目录 **`scripts/e2e-core-api-restart.mjs`**（Node 20+ 内置 `fetch`，无额外 npm 依赖）。  
 - **行为**：在同一端口上 **启动 `--api` → `/health` → `POST /chat` → 终止进程 → 再次启动 → 再 `/health` + `/chat`**；两轮均须成功。默认 **`OCLIVE_HTTP_API_MOCK_LLM=1`**，**无需 Ollama**。  
 - **本地**：`cargo build -p oclivenewnew-tauri` 后，仓库根目录执行 **`npm run test:e2e:core-api-restart`**（或手动设置 `OCLIVE_ROLES_DIR` / `OCLIVE_E2E_PORT` / `OCLIVE_E2E_BINARY`）。  
-- **说明**：覆盖 **「关开恢复」** 的 **HTTP 宿主进程** 维度；**`vite build` + `vite preview` + Playwright** 首屏烟测见下文 **A1.1b**，CI 在 **`frontend`** job。**安装包 / Tauri 原生窗 / WebDriver 全屋** 另立项，见 [PRODUCT_RELEASE_CHECKLIST.md](../../handoff/archive/PRODUCT_RELEASE_CHECKLIST.md) **A1.1c**。
+- **说明**：覆盖 **「关开恢复」** 的 **HTTP 宿主进程** 维度；**`vite build` + `vite preview` + Playwright** 首屏烟测见下文 **A1.1b**，CI 在 **`frontend`** job。**安装包 / Tauri 原生窗 / WebDriver 全屋** 仍作为独立工程项，见 [PRODUCT_LINE_TASK_BUCKETS.md](../../handoff/PRODUCT_LINE_TASK_BUCKETS.md) **§四**。
 
 ## A1.1b：Web 预览壳 Playwright 烟测
 
@@ -22,6 +22,7 @@
   - `OCLIVE_API_BASE`：默认 `http://127.0.0.1:8420`
   - `OCLIVE_OOCP_ROLE_PATH`：角色包目录（默认 `<repo>/distros/chat-pro/roles/mumu`，**v2** `pipeline.ocblueprint`；勿指向仅含 legacy `manifest.json` 的目录）
   - **`OCLIVE_HTTP_API_MOCK_LLM=1`**（仅 `--api`）：使用内存库 + 固定回复的 Mock LLM，**CI 默认开启**，无需本机 Ollama。
+  - **`OCLIVE_API_TOKEN`**：启动无头 `--api` 时必需；测试脚本自动发送 `x-oclive-api-token`，`GET /health` 仍保持公开探活。进程重启烟测未收到外部 token 时会自动生成随机 token。
 
 ## 场景表（HTTP 黑盒）
 

@@ -4,7 +4,14 @@
 
 ## [Unreleased]
 
-(none)
+### Added
+
+- **Local HTTP API authentication**: the desktop host now generates and injects a random `OCLIVE_API_TOKEN` when spawning the kernel; headless `--api` now also requires that variable by default, and every route except public readiness `GET /health` requires `x-oclive-api-token`. Only isolated local development may explicitly opt out with `OCLIVE_API_ALLOW_UNAUTHENTICATED=1`; CORS is limited to local-development/Tauri origins, and OOCP plus restart smoke tests attach the token automatically.
+
+### Fixed
+
+- **Loopback endpoint proxy compatibility**: IPv4/IPv6 loopback endpoints for remote plugins, remote agents, and OpenAI-compatible LLMs no longer inherit user HTTP proxies, preventing `localhost` calls from being redirected into 502s/timeouts; the test mock now validates and echoes the JSON-RPC request id.
+- **Active-doc truth convergence**: product execution and release links now point to current SSOTs; `check-stale-paths` adds a G3/G12 guard against restoring `handoff/archive/*` product checklists as current truth.
 
 ---
 

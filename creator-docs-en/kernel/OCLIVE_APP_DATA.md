@@ -28,6 +28,8 @@ SQLite SSOT: `{OCLIVE_APP_DATA}/app.db` (via `resolve_db_path`).
 | `OCLIVE_USE_CANONICAL_APP_DATA=1` | Headless `--api` uses brand dir when `OCLIVE_APP_DATA` unset |
 | `OCLIVE_API_USE_TEMP_APP_DATA=1` | Force temp DB (**CI / OOCP default**) |
 | `OCLIVE_SKIP_APP_DATA_MIGRATION=1` | Skip Tauri legacy → canonical one-time copy (tests) |
+| `OCLIVE_API_TOKEN` | Required headless HTTP API access token; only `/health` remains public |
+| `OCLIVE_API_ALLOW_UNAUTHENTICATED=1` | Explicit unauthenticated escape hatch for isolated local development only; never for production or persistent data |
 
 ---
 

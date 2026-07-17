@@ -6,6 +6,8 @@
 
 **与 `plugin_backends` 的关系**：各模块枚举值可为 **`directory`**；同包（或会话覆盖）内嵌对象 **`directory_plugins`** 为各槽位指定 **`manifest.id`**（见下节）。就绪行：子进程 stdout 打印 **`{ready_prefix} {rpc_url}`**（默认前缀 `OCLIVE_READY`，与一行 URL，空格分隔）。
 
+**`manifest.id` 安全约束**：1–128 字节；首尾必须为 ASCII 字母或数字；中间仅允许 ASCII 字母、数字、`.`、`_`、`-`，且禁止 `..`。该 id 会同时进入 URL、授权表与插件目录名，宿主在扫描/安装前统一校验，路径分隔符与穿越片段会直接拒绝。
+
 ---
 
 ## 1. 目录布局与扫描顺序
@@ -37,7 +39,7 @@
 | `schema_version` | `number` | 当前仅接受 **`1`** |
 | `id` | `string` | 全局唯一；与 `directory_plugins.*` 槽位对应 |
 | `version` | `string` | 建议 SemVer 文本 |
-| `shell` | `object?` | **`entry`**：相对插件根的 HTML 入口（整壳 B1，回退用）；**`vueEntry?`**：相对插件根的 `.vue`，在 **`force_iframe_mode` 关闭** 且文件可读时由宿主用 Vue 渲染整壳（与插槽 `vueComponent` 体验一致；失败则回退 `entry`） |
+| `shell` | `object?` | **`entry`**：相对插件根的 HTML 入口（发行版整壳必走）；**`vueEntry?`**：仅供本地调试的 `.vue` 入口；必须同时为 Vite DEV、`VITE_OCLIVE_UNSAFE_INLINE_PLUGIN_VUE=1` 且 `force_iframe_mode` 关闭才会同进程挂载 |
 | `process` | `object?` | **`command`** / **`args[]`** / **`cwd?`**（`cwd` 相对插件根，可省略则默认为插件根） |
 | `ready_prefix` | `string?` | 默认 **`OCLIVE_READY`**；就绪行 = 此前缀 + 空格 + **JSON-RPC 根 URL**（须 `http://` 或 `https://`） |
 | `dependencies` | `object?` | 可选：其它目录插件 **`id` → semver 范围**（如 `">=1.0.0"`、`"^2.0.0"`）；缺失或版本不符时该插件在管理面板标记为依赖不满足且不可启用 |
@@ -95,24 +97,13 @@
 
 当 **`shell_plugin_id`**（文件或 `OCLIVE_SHELL_PLUGIN_ID`）指向已扫描到的插件，且其 manifest 含 **`shell.entry`** 时，内置前端在挂载主应用**之前**调用 **`get_directory_plugin_bootstrap`**（可省略 `role_id`，与旧行为一致）。
 
-- **`force_iframe_mode`**（bootstrap 与 `plugin_state` 一致）：为真时**忽略** **`shell.vueEntry`**，若存在 **`shellUrl`** 且当前文档 URL 与之不同，则 **`location.replace(shellUrl)`**（HTML 整壳）。
-- 否则若 manifest 含非空的 **`shell.vueEntry`**，且 **`read_plugin_asset_text`** 能读到该 `.vue`：宿主在 **`#app`** 挂载轻量 Vue 根（**`DirectoryShellApp.vue`** + **`AsyncPluginVue`**），`inject('oclive')` 与插槽一致；**`plugin_bridge_invoke` 的 `assetRel` 应传 `vueEntry` 路径**（与敏感命令门禁「整壳页」判定一致）。
-- 若未走 Vue（无 `vueEntry`、读文件失败、或用户强制 iframe）：若 **`shellUrl`** 与当前页不同，则 **`location.replace(shellUrl)`**。
+- **发行构建始终忽略 `shell.vueEntry`**，若存在 **`shellUrl`** 且当前文档 URL 与之不同，则 **`location.replace(shellUrl)`**（custom-protocol HTML 整壳）。
+- 只有 Vite DEV + **`VITE_OCLIVE_UNSAFE_INLINE_PLUGIN_VUE=1`** + `force_iframe_mode=false` 三项同时满足时，宿主才会挂载 **`DirectoryShellApp.vue`** + **`AsyncPluginVue`**。该模式继承主 WebView 权限，只用于审过源码的本地调试。
+- HTML 入口缺失或不可达时回退内置主界面，不再为了体验自动执行不可信 Vue。
 
 **`shellUrl` 形态**：`https://ocliveplugin.localhost/<manifest.id>/<entry>`（Windows WebView2 下由 Tauri 将自定义协议映射为该 HTTPS 主机名）。
 
-**静态资源**：由宿主 **`register_uri_scheme_protocol("ocliveplugin", …)`** 从磁盘插件根读取（路径穿越会 403）。需在 **`tauri.conf.json`** 中配置 **`dangerousRemoteDomainIpcAccess`**，使该来源页面可调用 Tauri IPC（与内置 `invoke` 一致）。条目内需 **`enableTauriAPI`: true**（字段名随 Tauri 版本以 schema 为准；勿使用无效的 `enable`）。
-
-```json
-"dangerousRemoteDomainIpcAccess": [
-  {
-    "domain": "https://ocliveplugin.localhost",
-    "windows": ["main"],
-    "enableTauriAPI": true,
-    "plugins": ["*"]
-  }
-]
-```
+**静态资源**：由宿主自定义 `ocliveplugin` protocol 从磁盘插件根读取（路径穿越会拒绝）。Tauri 2 的远端 IPC 只由 [`capabilities/plugin-shell-remote.json`](../../distros/desktop-tauri/capabilities/plugin-shell-remote.json) 授予窄 `core` / event 权限；禁止恢复旧式 `dangerousRemoteDomainIpcAccess` `plugins: ["*"]`。
 
 ### 4.1 整壳前端桥接（`shell.bridge`）
 
@@ -162,12 +153,12 @@
 通用规则：
 
 - 若 manifest **无** **`shell`** 段，可在 **`ui_slots`** 中声明嵌入 UI：**`entry`** 为相对插件根的 HTML（**iframe 回退**）。
-- 可选 **`vueComponent`**：相对插件根的 **`.vue`** 路径（如 `"slots/ToolbarButton.vue"`）。主界面优先在宿主 Vue 内用运行时编译器加载该组件；**加载失败时自动回退**到上述 iframe（`https://ocliveplugin.localhost/<id>/<entry>`）。
+- 可选 **`vueComponent`**：相对插件根的 **`.vue`** 路径（如 `"slots/ToolbarButton.vue"`），仅供显式 unsafe DEV 调试；发行构建始终使用 `entry` HTML（`https://ocliveplugin.localhost/<id>/<entry>`）。
 - **含 `shell` 的插件不参与插槽**（避免与整壳重复）。
 - 插槽页若需调用宿主能力：在对应 **`ui_slots[]` 条目**上配置 **`bridge`**。iframe 页仅当请求资源与 **`entry`** 一致时注入 `OclivePluginBridge`；**原生 Vue 插槽**通过 `inject('oclive')` 获得 API（见下），`plugin_bridge_invoke` 校验时使用 manifest 中的 **`entry`** 作为 **`assetRel`**（与 `bridge` 白名单一致）。
 - 示例：`examples/directory-plugin-ui-slot/`（仅 iframe）；**`examples/directory-plugin-ui-slot-vue/`**（`vueComponent` + 回退 HTML）。
 
-### 4.2.1 原生 Vue 插槽（`vueComponent`）
+### 4.2.1 原生 Vue 插槽（`vueComponent` · 仅 unsafe DEV）
 
 | 字段 | 说明 |
 |------|------|
@@ -184,7 +175,7 @@
 
 样式可直接使用宿主 **CSS 变量**（如 `--fluent-accent`、`--bg-primary`、`--font-ui`、`--border-light` 等，见 `distros/shared/src/styles/theme.css`）。
 
-**安全说明**：插件组件与主界面同 JS 上下文；请勿在插件中直接使用 `window.__TAURI__`，应只通过 `oclive.invoke` 访问白名单命令。宿主不对插件做完整沙箱隔离。
+**安全说明**：插件组件与主界面同 JS 上下文，静态扫描不是安全边界。发行构建一律禁用；开发者只有在审过源码后才应设置 `VITE_OCLIVE_UNSAFE_INLINE_PLUGIN_VUE=1`，并仍只通过 `oclive.invoke` 访问白名单命令。
 
 ### 4.3 事件总线（宿主内置）
 
@@ -205,15 +196,15 @@
 
 ### 4.3.1 原生 Vue 安全扫描（开发者模式）
 
-当 **`get_directory_plugin_bootstrap.developerMode`** 为真时，宿主在编译 `.vue` 前会对脚本做静态 AST 扫描；若匹配危险模式（如 `fetch`、`eval`、`document.cookie`、`localStorage`、`window.__TAURI__` 等），会弹出确认框，用户取消则该插槽回退行为与编译失败一致（可再走 iframe）。
+只有 unsafe inline Vue 已显式启用时该扫描才有意义；它用于提示 `fetch`、`eval`、`document.cookie`、`localStorage`、`window.__TAURI__` 等模式，**可绕过且不是沙箱**。
 
 **编译失败提示**：`vue3-sfc-loader` 报错时，插槽 UI 展示 **插件 id、组件路径、可读摘要**；可通过 **「查看详情」** 展开原始堆栈。
 
 **`ui_slots` 脚本纪律**：插槽 `.vue` **勿** `import` 同级或子目录的 **`.ts` / `.js` 模块**（宿主经 `read_plugin_asset_text` 按请求路径解析，loader 常将 `./foo.ts` 解析为 `foo.js` 导致 `not found`）。可复用逻辑请 **内联进 `.vue`**，或仅保留 `import "vue"`（与 mumu 其它 toolbar 插件一致）。语音侧车踩坑记录见 [TRACK_VOICE_RECOGNITION §10](../../human-docs/team/TRACK_VOICE_RECOGNITION.md)。
 
-### 4.3.2 强制 iframe 模式
+### 4.3.2 发行版隔离 / 强制 iframe 模式
 
-应用数据 **`plugin_state.json`** 按角色存储的 **`force_iframe_mode`**（默认 `false`）为真时，宿主**忽略** manifest 的 **`vueComponent`**，嵌入插槽一律使用 iframe（`entry` URL），以获得更强隔离。设置页可切换该项；保存后建议**重启应用**以完全生效。
+发行构建无条件按 **`force_iframe_mode=true` 的有效语义**运行；设置页显示为锁定。磁盘字段仅在 Vite DEV + `VITE_OCLIVE_UNSAFE_INLINE_PLUGIN_VUE=1` 时可进一步控制是否允许 inline Vue。
 
 **`get_directory_plugin_bootstrap` → `uiSlots`** 会返回上述插槽的条目（已按 `app_data/plugin_state.json` 中的 **`slot_order`** 分插槽排序）。示例：
 
@@ -321,9 +312,9 @@ npm run scaffold:ui-plugin -- --id com.example.my-slot --slot role.detail --titl
 |------|----------|
 | 仍走 builtin / Ollama，日志提示 directory 缺失槽位 | `plugin_backends.* = directory` 但 **`directory_plugins.<槽>`** 未填或与 manifest **`id`** 不一致 |
 | 整壳未跳转 / 仍显示内置 UI | **`shell_plugin_id`** 未设或插件未扫描到；manifest 缺 **`shell.entry`**；`get_directory_plugin_bootstrap` 返回的 **`shellUrl`** 为空；或 **`force_iframe_mode`** 为真且未发生 `location.replace` |
-| Vue 整壳回退到 HTML | **`shell.vueEntry`** 路径错误或文件不存在；Vue 编译失败（`AsyncPluginVue` 触发失败回退）；**`force_iframe_mode`** 开启 |
+| Vue 整壳使用 HTML | 发行构建的安全默认；只有 unsafe DEV 双重 opt-in 后才检查 `shell.vueEntry` / Vue 编译 |
 | 插件管理「从本地 zip 更新」失败 | zip 内无有效 **`manifest.json`**（根或单一顶层目录）；**`manifest.id`** 与所选插件 id 不一致；目标目录无法删除（占用中） |
-| 整壳页里 **`invoke` 失败** | **`tauri.conf.json`** 未为 **`https://ocliveplugin.localhost`** 配置 **`dangerousRemoteDomainIpcAccess`**；或页面未在 Tauri WebView 内打开 |
+| 整壳页里 **`invoke` 失败** | `capabilities/plugin-shell-remote.json` 未覆盖该 URL / 权限，bridge manifest 未声明命令，或页面不在 Tauri WebView |
 | 子进程启动失败 / 无 RPC | **`process.command`** 在 PATH 中不可用（如未装 Node）；**`manifest.json`** 语法错误；子进程未在超时内向 stdout 打印 **`OCLIVE_READY <url>`** |
 | **`directory_plugin_invoke`** 报错 | **`pluginId`** 未扫描到；目标插件缺 **`process`** 节无法懒启动 RPC |
 

@@ -132,8 +132,8 @@
 | 设施 | SSOT | 允许改动条件 | 禁止 |
 |------|------|--------------|------|
 | 复杂情感 `narrative_hint` | `complex_emotion.rs` · `turn_pipeline/pre` | 设施 bug、Prompt 段落公式 | 写入 `slot_registry` |
-| 立绘 `portrait_catalog` | `config.json` · `persistence.rs` post_llm | RFC 合入后的表现导演 | 用文件名当 SSOT |
-| 视觉表现 `visual_presentation` | RFC 草案 · `config.json` | **RFC 未合入前**仅文档/占位 | 默认开启或二次 LLM 选图 |
+| 立绘 `portrait_catalog` | `config.json` · `persistence.rs` post_llm | 目录解析、规则/导演选择、DTO 回填的契约演进；改动须补设施/热路径测试 | 用文件名当 SSOT |
+| 视觉表现 `visual_presentation` | `config.json` · `visual_presentation` 模块 · RFC | 已交付 directive 物化与发行版 gating；渲染器仍由宿主/适配器负责 | 未经显式配置默认开启或二次 LLM 选图 |
 | 专家路由 `expert_routing.json` | **冻结** · 见 TECHNICAL_DEBT §2 | 仅解冻后 | 扩大默认开启面 |
 
 ### 3. 独立通道能力增强（非六槽 · 非设施编号）
@@ -199,7 +199,7 @@
 ## 门禁与验收
 
 - `node scripts/check-stale-paths.mjs` — 文档 + 代码路径（dimension5 拆为 doc/code 两检）
-- `node scripts/check-markdown-links.mjs` — 人类模块开工包的本地 Markdown 相对链接
+- `node scripts/check-markdown-links.mjs` — 人类中英文模块包与关键 AI/SSOT 锚点的本地 Markdown 相对链接
 - `node scripts/check-doc-registry.mjs` — handoff 根级文档登记 + 重复块哨兵（G14/G16）
 - `node scripts/dimension5-acceptance.mjs --ci` — 检查项总数以脚本结尾 `PASS (N checks)` 为准（含 `cargo deny` · doc registry · 人类模块链接）
 - 关键路径索引：[BUS_FACTOR_NOTES.md](./BUS_FACTOR_NOTES.md)

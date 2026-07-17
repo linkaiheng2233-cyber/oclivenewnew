@@ -1,7 +1,7 @@
 # Orchestration pack · Turn Thinking (EN summary)
 
-> Full checklist (ZH): [`human-docs/modules/orchestration/turn-thinking.md`](../../human-docs/modules/orchestration/turn-thinking.md)  
-> RFC SSOT: [RFC_TURN_THINKING_PERSISTENCE](../../creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md) · [MODULE_MAP §12](../../handoff/MODULE_MAP_AND_HANDOFF.md)
+> Full checklist (ZH): [`human-docs/modules/orchestration/turn-thinking.md`](../../../human-docs/modules/orchestration/turn-thinking.md)
+> RFC SSOT: [RFC_TURN_THINKING_PERSISTENCE](../../../creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md) · [MODULE_MAP §12](../../../handoff/MODULE_MAP_AND_HANDOFF.md)
 
 **You plug in**: **Not** a six-slot · **not** a `plugin_backends` key · code `turn_thinking.rs` · `co_present` / `TurnThinkingRouter` · distro `[turn_thinking]` · role pack `config.json` → `turn_thinking` (RFC §8–12).
 

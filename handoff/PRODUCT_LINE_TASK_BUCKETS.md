@@ -1,10 +1,10 @@
 # 产品线任务分桶（按复杂度 · 执行视图）
 
-**用途**：把 [PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](./archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) **§A / §C** 拆成「可先打包的细碎活」与「需单独攻坚的硬骨头」，便于排期。**不替代**主清单里的 `[ ]` / `[x]`；发版仍以主清单与 [PROJECT_OVERVIEW.md](../creator-docs/getting-started/PROJECT_OVERVIEW.md) §8 为准。
+**用途**：维护当前产品工程执行视图：按复杂度把已知风险拆成「可先打包的细碎活」与「需单独攻坚的硬骨头」，便于排期。现行验收以源码、CI、[PROJECT_OVERVIEW.md](../creator-docs/getting-started/PROJECT_OVERVIEW.md) §8 与 [TECHNICAL_DEBT_INVENTORY.md](./TECHNICAL_DEBT_INVENTORY.md) 为准；旧 gap 清单只作历史背景，不作为 truth。
 
 **排序原则**：先做**低风险、短平快、文档/流程类**（可合并为「文档与闸门日」）；再做**有边界的中小工程**；**硬骨头**各自独立里程碑，避免与细碎混在同一 PR。
 
-**当前阶段（2026-05）**：**批次一**（§一 细碎 + §二 中小块中的文档/闸门/兼容表/ERROR_CODES §1.5/高风险演示表/README·SECURITY·CONTRIBUTING 等）**已入库**（见仓库 `CHANGELOG` `[Unreleased]` 与提交 **`33be1c4`** 一带）。**A5.1** 兼容表基线已于 **A5 结项** 再次充实（`handoff/A5_CLOSURE_SUMMARY.md`）。**默认下一焦点**：本分桶 **§四 硬骨头** — 每条单独 issue / 里程碑，勿与文档批次混 PR。
+**当前阶段（2026-07-16）**：前序文档/闸门批次已入库，后续按本文件 **§四 硬骨头**逐条拆 issue / 里程碑，勿与无关文档批次混 PR。
 
 ---
 
@@ -16,7 +16,7 @@
 
 | 主清单锚点 | 内容 | 备注 |
 |------------|------|------|
-| **C1** | 新建 **`handoff/archive/PRODUCT_RELEASE_CHECKLIST.md`** 骨架：只列 **§A 的 P0 行**（引用主清单 §A1–A5 文案或编号），发版会议只过此表 | **已建**：[`PRODUCT_RELEASE_CHECKLIST.md`](./archive/PRODUCT_RELEASE_CHECKLIST.md)；高风险演示表见 [`PLUGIN_HIGH_RISK_ACCEPTANCE.md`](./archive/PLUGIN_HIGH_RISK_ACCEPTANCE.md) |
+| **C1** | 历史批次曾建立 P0 发版清单骨架 | 产物已归档；当前 sign-off 以 [PROJECT_OVERVIEW.md §8](../creator-docs/getting-started/PROJECT_OVERVIEW.md#8-发版前可勾选的极简清单) 与 CI 为准 |
 | **C1（路线图互链）** | **路线图互链**：在 `VISION_ROADMAP_MONTHLY.md`、`BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md` 各加一节或一段，指向主清单 §A / 本分桶 | 对应主清单 §C1 第二项 |
 | **A9.1** | **单一支持入口**：根 `README.md` 固定一句「提问先去…」+ Issue 模板指向 [FAQ](../creator-docs/FAQ.md) / [DOCUMENTATION_INDEX](../creator-docs/getting-started/DOCUMENTATION_INDEX.md) | 机械活 |
 | **A9.2** | **首发预期**：`README` 或 `README.en.md` 增加「早期采用者 / 已知限制」短段落（5～10 行级） | 与 A9.1 同 PR 亦可 |
@@ -97,6 +97,6 @@
 
 ## 相关链接
 
-- 主清单：[PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](./archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md)  
+- 历史背景：[PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](./archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md)（仅供追溯，不作现行 truth）
 - 发版习惯：[PROJECT_OVERVIEW.md §8](../creator-docs/getting-started/PROJECT_OVERVIEW.md)  
 - 贡献与闸门：[CONTRIBUTING.md](../CONTRIBUTING.md)

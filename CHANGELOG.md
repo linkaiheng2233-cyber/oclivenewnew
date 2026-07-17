@@ -4,7 +4,14 @@
 
 ## [Unreleased]
 
-(none)
+### Added
+
+- **本地 HTTP API 认证**：桌面宿主启动 kernel 时自动生成并注入随机 `OCLIVE_API_TOKEN`；无头 `--api` 现在也默认要求显式设置同名变量，除公开探活 `GET /health` 外的路由须发送 `x-oclive-api-token`。仅隔离的本地开发可显式设置 `OCLIVE_API_ALLOW_UNAUTHENTICATED=1` 逃生；CORS 收窄至本机开发/Tauri 来源，OOCP 与进程重启烟测自动附加 token。
+
+### Fixed
+
+- **本机端点代理兼容**：Remote 插件、Remote Agent 与 OpenAI-compatible LLM 的 IPv4/IPv6 回环端点不再继承用户 HTTP 代理，避免 `localhost` 请求被错误转发后出现 502/超时；测试 mock 同步校验并回显 JSON-RPC request id。
+- **活跃文档 truth 收敛**：产品执行与发版入口改链现行 SSOT；`check-stale-paths` 新增 G3/G12 守卫，禁止将 `handoff/archive/*` 产品清单重新写成现行依据。
 
 ---
 

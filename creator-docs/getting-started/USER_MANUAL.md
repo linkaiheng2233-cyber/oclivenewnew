@@ -136,7 +136,7 @@
 ### 5.2 为什么我切到英文后还是看到中文？
 
 - 部分 **插件、角色包自带文案** 未走宿主 i18n。  
-- **长尾界面** 仍在翻译收口中，见 [产品清单 §A6](../../handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md)。  
+- **长尾界面** 仍在翻译收口中，见 [PRODUCT_LINE_TASK_BUCKETS.md](../../handoff/PRODUCT_LINE_TASK_BUCKETS.md) 与活跃债务台账。
 - 若确认是主界面遗漏，欢迎带 **截图与版本号** 提 issue。
 
 ### 5.3 如何卸载插件？

@@ -16,7 +16,7 @@
 |-------|----------|-----------|
 | **Rust deps** | `Cargo.lock` + `cargo audit` + `cargo deny` | Reproducible `cargo build`; CI + KNOWN_VULN table public |
 | **Official prebuilt kernel** | Release workflow + `SHA256SUMS` | Verify hash after download |
-| **Third-party plugins/packs** | Source on disk + high-risk grants | **Review `manifest` / source before run** |
+| **Third-party plugins/packs** | Release builds block inline Vue + high-risk grants; signing is not default yet | **Review `manifest` / source before run**; do not treat as trusted code |
 | **Process boundary** | Kernel separate process, HTTP contract, directory plugin gates | Plugin/LLM crash ≠ hardware runaway by default |
 
 We **do not solve** root causes like XZ-style attacks; guardrails **lower probability and improve traceability**.
@@ -33,6 +33,7 @@ We **do not solve** root causes like XZ-style attacks; guardrails **lower probab
 | Vuln SSOT | [KNOWN_VULNERABILITIES.md](KNOWN_VULNERABILITIES.md) |
 | Audit scope | [SECURITY_AUDIT_SCOPE.md](SECURITY_AUDIT_SCOPE.md) |
 | Plugin permissions | `plugin_permissions` / `high_risk_grants` |
+| Minimum plugin-UI isolation | Release builds force HTML/custom-protocol paths; inline Vue requires DEV + `VITE_OCLIVE_UNSAFE_INLINE_PLUGIN_VUE=1` |
 | Migration integrity | SQL migration checksum (`sql_migrate.rs`) |
 | Plugin install review | Market/git/zip install → info toast + `installPath`; strict `OCLIVE_PLUGIN_SIGNATURE_STRICT` |
 | Release hashes | `scripts/generate-sha256sums.mjs` · `release-kernel-checksums.yml` |
@@ -67,6 +68,10 @@ Local dev: `npm run bundle-kernel:tauri` writes `distros/desktop-tauri/resources
 | **K-SUPPLY-03** | Plugin install review prompt | P2 | **Done** |
 | **K-SUPPLY-04** | Elevate `npm-audit` | P2 | **Observe** |
 | **K-SUPPLY-05** | `deny.toml` multiple-versions → deny | P2 | **Done** (Minimal · 2026-07-15) — `deny` + documented skips; remaining families in [LIGHTWEIGHT_PROFILE §6.6](../development/LIGHTWEIGHT_PROFILE.md); Full zero-skip is a separate campaign |
+| **K-SUPPLY-09** | Plugin signature strict mode is opt-in | P1 | **OPEN** — sidecar SHA-256 is checked only with explicit `OCLIVE_PLUGIN_SIGNATURE_STRICT=1`; source-review prompts are not signature proof, and official/market signing plus revocation remain pending |
+| **K-SUPPLY-10** | Pin GitHub Actions to full commit SHAs | P2 | **OPEN** — workflows currently use mutable `@v*` / `@stable` tags |
+| **K-PLUGIN-SEC-01** | Per-plugin origin and native isolation E2E | P1 | **Partial** — inline Vue is blocked in releases; HTML fallbacks still share `ocliveplugin.localhost`, so this is not a complete sandbox |
+| **K-SECRET-01** | Revoke historical API credential and decide history handling | **P0** | **OPEN** — working tree now uses a secret reference; the provider must revoke the old credential |
 | **K-SUPPLY-06** | Bit-identical reproducible builds | — | Deferred |
 | **K-SUPPLY-07** | SBOM | — | Deferred |
 
@@ -78,6 +83,7 @@ Local dev: `npm run bundle-kernel:tauri` writes `distros/desktop-tauri/resources
 2. Before release: `cargo audit` · `cargo deny` · `oclive lint --deny`.
 3. Each feature cycle: revisit [SECURITY_AUDIT_SCOPE.md](SECURITY_AUDIT_SCOPE.md) limits.
 4. **`npm-audit`**: CI `continue-on-error: true` today; escalation per K-SUPPLY-04.
+5. **Plugin installation**: until signing is the default, do not treat third-party plugins as trusted code; `process:spawn`, MCP, and network capabilities still require grants and user authorization. Blocking inline Vue in releases is containment, not a substitute for signing and per-plugin origins.
 
 ---
 

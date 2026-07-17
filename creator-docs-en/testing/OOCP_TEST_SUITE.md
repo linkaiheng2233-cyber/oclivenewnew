@@ -7,7 +7,7 @@
 - **Script:** repo root **`scripts/e2e-core-api-restart.mjs`** (Node 20+ `fetch`, no extra npm deps).  
 - **Behaviour:** **start `--api` → `/health` → `POST /chat` → terminate → start again → `/health` + `POST /chat`** on the same port; both cycles must pass. Defaults to **`OCLIVE_HTTP_API_MOCK_LLM=1`** (**no Ollama**).  
 - **Local:** after `cargo build -p oclivenewnew-tauri`, from repo root **`npm run test:e2e:core-api-restart`** (or set `OCLIVE_ROLES_DIR` / `OCLIVE_E2E_PORT` / `OCLIVE_E2E_BINARY`).  
-- **Scope:** **host process** “restart and recover” for HTTP (**A1.1a**); **`vite build` + `vite preview` + Playwright** first-screen smoke is **A1.1b** below (CI **`frontend`** job). **Installer / native Tauri window / full WebDriver** is tracked as **A1.1c** in [PRODUCT_RELEASE_CHECKLIST.md](../../handoff/archive/PRODUCT_RELEASE_CHECKLIST.md).
+- **Scope:** **host process** “restart and recover” for HTTP (**A1.1a**); **`vite build` + `vite preview` + Playwright** first-screen smoke is **A1.1b** below (CI **`frontend`** job). **Installer / native Tauri window / full WebDriver** remains a separate engineering item in [PRODUCT_LINE_TASK_BUCKETS.md](../../handoff/PRODUCT_LINE_TASK_BUCKETS.md) **§四**.
 
 ## A1.1b: Web preview shell (Playwright)
 
@@ -22,6 +22,7 @@
   - `OCLIVE_API_BASE`: default `http://127.0.0.1:8420`
   - `OCLIVE_OOCP_ROLE_PATH`: role pack directory (default `<repo>/distros/chat-pro/roles/mumu`)
   - **`OCLIVE_HTTP_API_MOCK_LLM=1`** (with `--api` only): in-memory store + fixed-reply mock LLM; **enabled by default in CI**, no local Ollama required.
+  - **`OCLIVE_API_TOKEN`**: required when starting headless `--api`; test scripts add `x-oclive-api-token` automatically while `GET /health` remains public. The restart smoke test generates a random token when none is supplied.
 
 ## Scenario table (HTTP black-box)
 

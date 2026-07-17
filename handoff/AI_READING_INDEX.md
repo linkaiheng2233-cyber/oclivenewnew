@@ -29,7 +29,7 @@
 | 2 | [`MODULE_MAP_AND_HANDOFF.md`](./MODULE_MAP_AND_HANDOFF.md) | 六槽 / 设施 / 独立通道 **定义与关系** |
 | 3 | [`NAMING_CONVENTIONS.md`](../creator-docs/NAMING_CONVENTIONS.md) §4.2 | canonical import · 禁止别名 |
 | 4 | [`BUS_FACTOR_NOTES.md`](./BUS_FACTOR_NOTES.md) | `process_message` · DB · 错误码 **文件锚点** |
-| 5 | [`.cursor/rules/oclivenewnew.mdc`](../.cursor/rules/oclivenewnew.mdc) | 7 条硬约束镜像 |
+| 5 | [`.cursor/rules/oclivenewnew.mdc`](../.cursor/rules/oclivenewnew.mdc) | 10 条硬约束镜像 |
 
 **必背常量（勿查错字段）**：回复 DTO 字段 **`reply`**（不是 `response`）· 六槽键 `plugin_backends` / `slot_registry` · 蓝图 **`steps[]` 不参与首轮调度**。
 

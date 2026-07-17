@@ -20,7 +20,7 @@
 | 4 | [handoff/BUS_FACTOR_NOTES.md](handoff/BUS_FACTOR_NOTES.md) | `process_message` · DB · 错误码 **文件锚点** |
 | 5 | [handoff/AI_VERIFICATION_PROTOCOL.md](handoff/AI_VERIFICATION_PROTOCOL.md) | 带数字的审查 / 汇报 **须核实** |
 | 6 | [handoff/README.md](handoff/README.md) §文档分责 | 动文档前查 SSOT · **禁止冗余新建** |
-| 7 | [`.cursor/rules/oclivenewnew.mdc`](.cursor/rules/oclivenewnew.mdc) | 7 条硬约束镜像 |
+| 7 | [`.cursor/rules/oclivenewnew.mdc`](.cursor/rules/oclivenewnew.mdc) | 10 条硬约束镜像 |
 | — | [`.cursor/skills/oclive-dev-pipeline/SKILL.md`](.cursor/skills/oclive-dev-pipeline/SKILL.md) | **七阶段开发流水线（OCLive 定制层）**；通用框架 `~/.cursor/skills/dev-pipeline/` |
 | — | [`.cursor/skills/oclive-debt-marathon/SKILL.md`](.cursor/skills/oclive-debt-marathon/SKILL.md) · [`handoff/debt-marathon/`](handoff/debt-marathon/README.md) | **债偿还马拉松**：长流程计划书 · 分阶段子 Agent · 波次日志 |
 

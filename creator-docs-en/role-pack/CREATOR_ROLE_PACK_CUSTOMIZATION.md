@@ -15,7 +15,7 @@ A **role pack** is a folder loaded from disk:
 distros/chat-pro/roles/<role id>/
 ```
 
-`<role id>` must match top-level **`id`** in `manifest.json` and should be **stable lowercase English** (digits/underscores OK); avoid renaming to prevent save/import path conflicts.
+`<role id>` must match top-level **`id`** in `manifest.json`. The host rejects path separators, `.`/`..`, control characters, Windows reserved device names, and surrounding whitespace. Stable lowercase English (digits/underscores/hyphens) or stable Unicode names are supported; avoid renaming to prevent save/import path conflicts.
 
 ---
 

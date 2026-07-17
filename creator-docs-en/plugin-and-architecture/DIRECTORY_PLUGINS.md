@@ -39,7 +39,7 @@ Env **`OCLIVE_SHELL_PLUGIN_ID`** (non‑empty trim) overrides file `shell_plugin
 | `schema_version` | `number` | currently **`1`** only |
 | `id` | `string` | globally unique; referenced by `directory_plugins.*` |
 | `version` | `string` | SemVer text recommended |
-| `shell` | `object?` | **`entry`**: HTML path relative to plugin root (whole shell B1 fallback); **`vueEntry?`**: `.vue` path; when **`force_iframe_mode` is off** and file reads succeed, host mounts Vue whole shell (same UX idea as slot `vueComponent`; else fallback `entry`) |
+| `shell` | `object?` | **`entry`**: HTML path relative to plugin root (required release path); **`vueEntry?`**: dev-only `.vue` entry, mounted in-process only when Vite DEV, `VITE_OCLIVE_UNSAFE_INLINE_PLUGIN_VUE=1`, and `force_iframe_mode` is off |
 | `process` | `object?` | **`command`**, **`args[]`**, optional **`cwd`** (relative to plugin root; default = plugin root) |
 | `ready_prefix` | `string?` | default **`OCLIVE_READY`**; ready line = prefix + space + **JSON‑RPC base URL** (`http`/`https`) |
 | `dependencies` | `object?` | optional map **`other plugin id` → semver range**; missing / mismatch marks plugin disabled in manager |
@@ -86,24 +86,13 @@ If id missing, scan miss, spawn/handshake fails → log + fallback: **memory/emo
 
 When **`shell_plugin_id`** (file or `OCLIVE_SHELL_PLUGIN_ID`) points at a scanned plugin with **`shell.entry`**, the built‑in frontend calls **`get_directory_plugin_bootstrap`** before mounting the main app (`role_id` optional, legacy behavior).
 
-- **`force_iframe_mode`** (bootstrap + `plugin_state`): if true, **ignore** **`shell.vueEntry`**; if **`shellUrl`** exists and differs from current document, **`location.replace(shellUrl)`** (HTML shell).  
-- Else if non‑empty **`shell.vueEntry`** and **`read_plugin_asset_text`** succeeds: host mounts lightweight Vue root (**`DirectoryShellApp.vue`** + **`AsyncPluginVue`**); `inject('oclive')` like slots; **`plugin_bridge_invoke` `assetRel` must be the `vueEntry` path** (matches sensitive “whole shell page” checks).  
-- Else if **`shellUrl`** differs: **`location.replace(shellUrl)`**.
+- Release builds always ignore **`shell.vueEntry`** and navigate to **`shellUrl`** (custom-protocol HTML shell) when available.
+- In-process Vue requires Vite DEV + **`VITE_OCLIVE_UNSAFE_INLINE_PLUGIN_VUE=1`** + `force_iframe_mode=false`. It inherits host-WebView authority and is only for locally reviewed source.
+- If the HTML entry is missing or unreachable, the host falls back to the built-in UI instead of executing untrusted Vue for convenience.
 
 **`shellUrl` shape**: `https://ocliveplugin.localhost/<manifest.id>/<entry>` (WebView2 maps custom scheme to that HTTPS host).
 
-**Static assets**: host **`register_uri_scheme_protocol("ocliveplugin", …)`** reads from disk (path traversal → 403). **`tauri.conf.json`** needs **`dangerousRemoteDomainIpcAccess`** for that origin with **`enableTauriAPI`: true** (exact field names per Tauri version schema).
-
-```json
-"dangerousRemoteDomainIpcAccess": [
-  {
-    "domain": "https://ocliveplugin.localhost",
-    "windows": ["main"],
-    "enableTauriAPI": true,
-    "plugins": ["*"]
-  }
-]
-```
+**Static assets**: the host's custom `ocliveplugin` protocol reads from disk and rejects traversal. Tauri 2 remote IPC is limited by [`capabilities/plugin-shell-remote.json`](../../distros/desktop-tauri/capabilities/plugin-shell-remote.json); do not restore legacy `dangerousRemoteDomainIpcAccess` with `plugins: ["*"]`.
 
 ### 4.1 Whole‑shell bridge (`shell.bridge`)
 
@@ -151,12 +140,12 @@ Supported **`slot`** values:
 Rules:
 
 - No **`shell`** segment → declare embeds in **`ui_slots`**: **`entry`** HTML (iframe fallback).  
-- Optional **`vueComponent`**: `.vue` path; host compiles in‑tree, else iframe to `https://ocliveplugin.localhost/<id>/<entry>`.  
+- Optional **`vueComponent`**: `.vue` path for explicit unsafe DEV debugging; releases always use `entry` HTML at `https://ocliveplugin.localhost/<id>/<entry>`.
 - Plugins **with `shell`** do **not** contribute slots (avoid duplicate UI).  
 - Slot pages calling the host: put **`bridge`** on the matching **`ui_slots[]`** entry. iframe injection only when asset URL matches **`entry`**; native Vue slots use **`inject('oclive')`**; `plugin_bridge_invoke` uses manifest **`entry`** as **`assetRel`**.  
 - Examples: `examples/directory-plugin-ui-slot/` (iframe only); **`examples/directory-plugin-ui-slot-vue/`** (Vue + HTML fallback).
 
-### 4.2.1 Native Vue slots (`vueComponent`)
+### 4.2.1 Native Vue slots (`vueComponent`, unsafe DEV only)
 
 | field | meaning |
 |-------|---------|
@@ -173,7 +162,7 @@ Rules:
 
 You may use host CSS variables (`--fluent-accent`, `--bg-primary`, … — `distros/shared/src/styles/theme.css`).
 
-**Security**: slot code shares JS context with the app; **do not** use raw `window.__TAURI__` — use **`oclive.invoke`** only.
+**Security**: slot code shares the app's JS context, and static scanning is not a security boundary. Release builds disable it. Only set `VITE_OCLIVE_UNSAFE_INLINE_PLUGIN_VUE=1` after reviewing local source, and still use **`oclive.invoke`** instead of raw `window.__TAURI__`.
 
 ### 4.3 Event bus (built‑in)
 
@@ -192,11 +181,11 @@ You may use host CSS variables (`--fluent-accent`, `--bg-primary`, … — `dist
 
 ### 4.3.1 Vue static scan (developer mode)
 
-When bootstrap **`developerMode`** is true, the host AST‑scans `.vue` scripts before compile; dangerous patterns (`fetch`, `eval`, `document.cookie`, `localStorage`, `window.__TAURI__`, …) show a confirm dialog — cancel behaves like compile failure (may fall back to iframe).
+This scan matters only after unsafe inline Vue is explicitly enabled. It warns about patterns such as `fetch`, `eval`, `document.cookie`, `localStorage`, and `window.__TAURI__`; it is bypassable and is not a sandbox.
 
-### 4.3.2 Force iframe mode
+### 4.3.2 Release isolation / force iframe mode
 
-App data **`plugin_state.json`** per role: when **`force_iframe_mode`** is true, the host **ignores** `vueComponent` and uses iframe (`entry`) for stronger isolation. Toggle in settings; **restart** recommended for full effect.
+Release builds always apply the effective semantics of **`force_iframe_mode=true`**, and Settings shows the control locked. The disk field only affects inline Vue when Vite DEV and `VITE_OCLIVE_UNSAFE_INLINE_PLUGIN_VUE=1` are both active.
 
 Bootstrap **`uiSlots`** reflects `slot_order` / `disabled_slot_contributions` from `plugin_state.json`. The **plugin manager** (`Ctrl+Shift+F`) reorders per slot and can hide embeds without necessarily stopping the child process unless the plugin is disabled.
 
@@ -277,9 +266,9 @@ npm run scaffold:ui-plugin -- --id com.example.my-slot --slot role.detail --titl
 |---------|----------------|
 | Still builtin / Ollama, logs say directory | **`directory_plugins.<slot>`** empty or wrong `id` |
 | Shell not switching | bad **`shell_plugin_id`**, missing **`shell.entry`**, empty **`shellUrl`**, or `force_iframe_mode` edge case |
-| Vue shell → HTML | bad **`shell.vueEntry`**, compile error, or forced iframe |
+| Vue shell uses HTML | release security default; `shell.vueEntry` is considered only after unsafe DEV double opt-in |
 | zip update fails | invalid **`manifest.json`** layout, **`id`** mismatch, files locked |
-| `invoke` fails in shell page | missing **`dangerousRemoteDomainIpcAccess`** for `https://ocliveplugin.localhost` |
+| `invoke` fails in shell page | remote capability does not cover the URL/permission, the bridge manifest omits the command, or the page is outside Tauri WebView |
 | child never ready | **`process.command`** not on PATH, bad JSON, no **`OCLIVE_READY <url>`** line within timeout |
 | `directory_plugin_invoke` errors | unknown `pluginId`, missing **`process`** |
 

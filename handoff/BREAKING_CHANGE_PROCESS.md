@@ -82,7 +82,7 @@
 ### 实际案例：A4.2 grant 与 `permissions` 键统一
 
 - **变更**：目录插件 manifest `permissions`、校验 crate、运行时门禁统一为 `process:spawn`、`network:*`、`mcp:http`、`mcp:stdio`；grant 与 API 对齐规范 id。
-- **兼容层**：`high_risk_grants.rs` **读盘兼容旧 snake_case 键**；`high_risk` API **接受规范 id 与旧别名**（见 [`handoff/A4_CLOSURE_SUMMARY.md`](./A4_CLOSURE_SUMMARY.md)）。
+- **兼容层**：`high_risk_grants.rs` **读盘兼容旧 snake_case 键**；`high_risk` API **接受规范 id 与旧别名**（见 [`PLUGIN_V1.md`](../creator-docs/plugin-and-architecture/PLUGIN_V1.md)）。
 - **迁移**：作者更新 manifest 权限数组；用户侧重新授权时使用新键；文档见 PLUGIN_V1 §权限规范。
 
 ### 近期非破坏性配置变更（记录）
@@ -151,12 +151,12 @@
 
 ## 6. 与发版清单的关系
 
-发版前仍须按 [`handoff/archive/PRODUCT_RELEASE_CHECKLIST.md`](./archive/PRODUCT_RELEASE_CHECKLIST.md) 核对：Breaking 是否已写入 CHANGELOG、兼容表、对外说明。
+发版前按 [PROJECT_OVERVIEW.md §8](../creator-docs/getting-started/PROJECT_OVERVIEW.md#8-发版前可勾选的极简清单) 核对：Breaking 是否已写入 CHANGELOG、兼容表、对外说明。
 
 ---
 
 ## 7. 相关链接
 
 - [`CONTRIBUTING.md`](../CONTRIBUTING.md) / [`CONTRIBUTING.en.md`](../CONTRIBUTING.en.md) — Breaking 小节入口
-- [`handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md`](./archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) — §C2 工程纪律
+- [`handoff/PRODUCT_LINE_TASK_BUCKETS.md`](./PRODUCT_LINE_TASK_BUCKETS.md) — 当前产品工程执行视图
 - [`creator-docs/getting-started/DOCUMENTATION_INDEX.md`](../creator-docs/getting-started/DOCUMENTATION_INDEX.md) — 文档索引

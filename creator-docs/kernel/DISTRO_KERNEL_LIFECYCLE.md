@@ -139,8 +139,10 @@ Desktop **does not** bind in-process `:8420` or open canonical `app.db` for writ
 
 ```bash
 cargo run -p oclive-cli -- kernel ensure --json --plan-only --distro vscode --path .
-cargo run -p oclive-cli -- kernel ensure --distro desktop --roles-dir ./roles
+OCLIVE_API_TOKEN="replace-with-a-long-random-token" cargo run -p oclive-cli -- kernel ensure --distro desktop --roles-dir ./roles
 ```
+
+实际 spawn 长生命周期 kernel 时必须提供 `OCLIVE_API_TOKEN`；CLI 不会生成一个调用方无法获得的临时 token。`GET /health` 可无令牌探活，其他 HTTP 路由发送 `x-oclive-api-token`。
 
 See also `kernel status|promote|rollback`.
 

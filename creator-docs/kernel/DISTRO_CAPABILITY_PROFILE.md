@@ -169,7 +169,7 @@ Release 安装包 bundled [`resources/distro-profiles/desktop.oclive.toml`](../.
 | `prompt.profile` | 角色包 + 引擎锚点完整叠加 | 额外叠加「简洁回复」overlay，不删减包级人设 |
 | `memory.retrieval` | 默认 8 条相关记忆 | `light`：4 条（`HostProfile.memory_retrieval`） |
 | `post_process.chain` | `standard` | `minimal`（强制 builtin `profile=minimal`；`enabled=false` 仍关闭） |
-| `visual_presentation.mode` | 未设（跟随角色包 `visual_presentation.enabled`） | `off` \| `image_only` \| `stage_full`（草案；Theater 示例 `stage_full`） |
+| `visual_presentation.mode` | 未设（跟随角色包 `visual_presentation.enabled`） | `off` \| `image_only` \| `stage_full`（已接线；Theater 可用 `stage_full`） |
 | `user_identity.default_id` | 未设 | 会话无显式身份且非 sentinel 时作为默认 catalog id |
 | `user_identity.allowed_ids` | 未设（不限制） | API 层拒绝列表外 id |
 | `state_expression.favor_*` | 未设 | 按好感分档追加一句语气调节到 Prompt「角色当前状态」 |
@@ -186,7 +186,7 @@ director_plugin = "com.oclive.theater_director_official"
 
 **合并规则（Reply Post-Processor）**：`post_process.chain=minimal` 时 effective `builtin.profile=minimal`；remote/directory 仍可按角色包配置解析，失败降级 builtin → raw。
 
-**合并规则（Visual Presentation · 草案）**：`visual_presentation.mode=off` 时宿主不下发 `performance_directive`；`image_only` 仅 `kind=image`；`stage_full` 允许 `live2d` / `rig3d` adapter（Theater）。
+**合并规则（Visual Presentation）**：`visual_presentation.mode=off` 时宿主不下发 `performance_directive`；`image_only` 仅 `kind=image`；`stage_full` 允许 `live2d` / `rig3d` adapter（Theater）。
 
 ```toml
 [visual_presentation]

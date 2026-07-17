@@ -51,15 +51,17 @@
 | **oclive-vscode（VS Code 扩展）** | 另仓 `package.json` | spawn/attach **`kernel_server --api`**；`distro.oclive.toml` 镜像主仓 `examples/distro-profiles/vscode.oclive.toml` | 当前 **0.4.1**；推荐主程序 **0.5.0** |
 | **oclive-launcher（启动器）** | 另仓 `package.json` | 注入 **`OCLIVE_ROLES_DIR`**、可选模型名与 zip 安装；**不替代**主程序契约 | [启动器 README](https://github.com/linkaiheng2233-cyber/oclive-launcher/blob/main/README.md) |
 | **角色包** | `manifest.json`（`schema_version`、`min_runtime_version`） | 低版本主程序可能拒载或降级能力 | [PACK_VERSIONING.md](role-pack/PACK_VERSIONING.md)、`RoleStorage::load_role` |
-| **宿主 SQLite** | `distros/desktop-tauri/migrations/*.sql` | 仅随 **主程序** 发版迁移；**不可**用旧主程序打开新迁移写过的 DB 再降级（除非 CHANGELOG 明确支持） | 破坏性迁移须在 **CHANGELOG 双语** + 本表「破坏性」段写明 |
+| **宿主 SQLite** | `kernel/crates/oclive_kernel_host/migrations/*.sql` | 仅随 **主程序** 发版迁移；**不可**用旧主程序打开新迁移写过的 DB 再降级（除非 CHANGELOG 明确支持） | 破坏性迁移须在 **CHANGELOG 双语** + 本表「破坏性」段写明 |
 
 破坏性变更时：同步 **`CHANGELOG.md` / `CHANGELOG.en.md`**、上文「兼容性表」、**`oclive_validation`**（若 touched 键）、及姊妹仓 README 中的最低版本说明。
 
 ### 发版审阅（维护者自检）
 
 1. 核对本节「快照」三处 semver：**根 `package.json`**、**`distros/desktop-tauri/Cargo.toml`**、**`oclive_kernel_runtime`**（发版 bump 时常需同改）。  
-2. 打开 [handoff/archive/PRODUCT_RELEASE_CHECKLIST.md](../handoff/archive/PRODUCT_RELEASE_CHECKLIST.md) **「对外说明」**：若 bump 了契约或姊妹仓依赖，更新本页表格或快照句。  
+2. 按 [PROJECT_OVERVIEW.md §8](getting-started/PROJECT_OVERVIEW.md#8-发版前可勾选的极简清单) 的发版项更新 **对外说明**：若 bump 了契约或姊妹仓依赖，更新本页表格或快照句。
 3. **HTTP / OOCP**：若 `API_VERSION` 或 `RUNTIME_API_VERSION` 变更，必须同步测试套件与文档（见 `creator-docs/testing/OOCP_TEST_SUITE.md`）。
+
+无头 HTTP 的认证属于宿主启动契约：`--api` 默认要求 `OCLIVE_API_TOKEN`，调用方在除 `/health` 外的请求发送 `x-oclive-api-token`；不得把 `OCLIVE_API_ALLOW_UNAUTHENTICATED=1` 用于生产或持久化数据目录。
 
 ---
 

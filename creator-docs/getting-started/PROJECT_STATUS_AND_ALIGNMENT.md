@@ -16,7 +16,7 @@
 | **[KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md)** | 内核里程碑 **K0–K5**、北极星、**验收留痕**（本地/CI） |
 | **[../roadmap/VISION_ROADMAP_MONTHLY.md](../roadmap/VISION_ROADMAP_MONTHLY.md)** | 按月愿景与阶段目标 |
 | **[../roadmap/BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md](../roadmap/BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md)** | 体验向 backlog（试聊、启动器、市场等），**不替代**月度路线图 |
-| **[../../handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](../../handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md)** | **产品级 P0–P2** 与 **内核/平台 B 区**缺口清单；与内核计划 §A 互参 |
+| **[../../handoff/PRODUCT_LINE_TASK_BUCKETS.md](../../handoff/PRODUCT_LINE_TASK_BUCKETS.md)** | 当前产品工程执行视图（按复杂度分桶）；历史 gap 清单仅作背景 |
 
 ---
 
@@ -85,7 +85,7 @@
 
 | 主题 | 入口 |
 |------|------|
-| 产品级 + 内核缺口合并清单 | [../../handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](../../handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) |
+| 产品级执行视图 | [../../handoff/PRODUCT_LINE_TASK_BUCKETS.md](../../handoff/PRODUCT_LINE_TASK_BUCKETS.md) · [TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md) |
 | 四仓 i18n 基线与 Han 扫描说明 | [../../handoff/I18N_FOUR_REPO_BASELINE.md](../../handoff/I18N_FOUR_REPO_BASELINE.md) |
 
 ---
@@ -94,7 +94,7 @@
 
 - **内核（K0–K5）**：除 **P2（OTA / 远程日志）** 外，已在 [KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md) 标为收口；**验收留痕**与 CI `oocp-test-suite` 见该文与 [AGENTS.md](../../AGENTS.md)。
 - **角色包蓝图 v2（P0–P8）**：`pipeline.ocblueprint` 为推荐 SSOT；`pack validate` 默认 v2；黄金包 `distros/chat-pro/roles/mumu`；架构图 **`save_role_slot_registry`**。路线图与 CI 说明见 [BLUEPRINT_V2_IMPLEMENTATION_PLAN.md](../../handoff/BLUEPRINT_V2_IMPLEMENTATION_PLAN.md)。
-- **产品级首发**：仍按 gap 清单 **§A** 为硬门槛集合；与「内核里程碑」解耦排期，见 [PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](../../handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) **§D**。**A1（可 CI 子集）**已收口（A1.1a HTTP、A1.1b Web 预览 Playwright、A1.2 九条 `invoke`）；**下一默认焦点**为 **A2.2 / A2.3 / A4.2** 与 **A1.1c（原生安装包 GUI）**，见 [PRODUCT_LINE_TASK_BUCKETS.md](../../handoff/PRODUCT_LINE_TASK_BUCKETS.md) **§四**，逐项单独立项。
+- **产品级首发**：当前按 [PROJECT_OVERVIEW.md §8](PROJECT_OVERVIEW.md#8-发版前可勾选的极简清单)、CI workflow 与 [TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md) 的活跃台账执行；**A1（可 CI 子集）**已收口（A1.1a HTTP、A1.1b Web 预览 Playwright、A1.2 九条 `invoke`），**下一默认焦点**为 **A2.2 / A2.3 / A4.2** 与 **A1.1c（原生安装包 GUI）**，见 [PRODUCT_LINE_TASK_BUCKETS.md](../../handoff/PRODUCT_LINE_TASK_BUCKETS.md) **§四**，逐项单独立项。旧 gap 清单只保留历史背景。
 - **体验与生态**：以 [VISION_ROADMAP_MONTHLY.md](../roadmap/VISION_ROADMAP_MONTHLY.md) + [BACKLOG…](../roadmap/BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md) 对照，避免与内核表格混为一谈。
 - **创作者文档双语（`creator-docs-en/`）**：主干（索引、插件契约、`guides/`、LICENSE、FAQ 等）已与中文总索引对拍收尾；**`roadmap/` 等愿景长文**仍以 `creator-docs/` 为准。后续契约或行为变更时同步更新英文镜像或于 CHANGELOG 声明；约定全文见 [creator-docs-en/README.md](../../creator-docs-en/README.md#documentation-bilingual-closure-baseline)。
 
@@ -105,7 +105,7 @@
 | 方向 | 以何为准 |
 |------|-----------|
 | 内核后续（含 P2） | [KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md) §K5 与「近期动作」 |
-| 产品 P0–P2 | [PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](../../handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) §A–§C |
+| 产品 P0–P2 | [PRODUCT_LINE_TASK_BUCKETS.md](../../handoff/PRODUCT_LINE_TASK_BUCKETS.md) · [TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md) |
 | 月度/开放实验叙事 | [VISION_ROADMAP_MONTHLY.md](../roadmap/VISION_ROADMAP_MONTHLY.md) · [VISION_OPEN_LAB.md](../roadmap/VISION_OPEN_LAB.md) |
 
 **实时对齐习惯**：发版或改契约前跑 [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) 中的检查命令；改内核边界时同步 [PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md) 与内核计划。

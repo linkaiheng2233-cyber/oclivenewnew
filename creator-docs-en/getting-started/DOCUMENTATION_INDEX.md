@@ -72,7 +72,7 @@ Time-boxed “start here → ship”; **authoritative detail stays in each topic
 | **Kernel / hardware integrators: scaffold → device (learning path)** | **[KERNEL_INTEGRATOR_LEARNING_PATH.md](KERNEL_INTEGRATOR_LEARNING_PATH.md)** (Chinese: [../../creator-docs/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md](../../creator-docs/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md)) |
 | **Current status (version, what ships, changelog entry points)** | **[PROJECT_CURRENT_STATUS.md](PROJECT_CURRENT_STATUS.md)** |
 | **Align progress and goals (one page: summary + doc map by purpose)** | **[PROJECT_STATUS_AND_ALIGNMENT.md](PROJECT_STATUS_AND_ALIGNMENT.md)** |
-| **Product launch gates + kernel/platform gaps** | **[../../handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](../../handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md)** |
+| **Product launch execution + kernel/platform debt** | **[../../handoff/PRODUCT_LINE_TASK_BUCKETS.md](../../handoff/PRODUCT_LINE_TASK_BUCKETS.md)** · **[../../handoff/TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md)** |
 | **Four-repo i18n baseline (CJK scan, vue-i18n wiring)** | **[../../handoff/I18N_FOUR_REPO_BASELINE.md](../../handoff/I18N_FOUR_REPO_BASELINE.md)** |
 | **Install zip packs via launcher, pick local Ollama, one-click pull** | **[oclive-launcher README](https://github.com/linkaiheng2233-cyber/oclive-launcher/blob/main/README.md)** (separate repo) |
 | **High-coupling compile mode (Monolith)** | [RFC section](#rfc) (`monolith.toml`, compile-time welding) |

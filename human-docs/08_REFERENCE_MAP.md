@@ -95,7 +95,7 @@
 | 文档 | 用途 |
 |------|------|
 | [RELEASE_VERSIONING](../creator-docs/development/RELEASE_VERSIONING.md) | SemVer |
-| [PRODUCT_RELEASE_CHECKLIST（归档）](../handoff/archive/PRODUCT_RELEASE_CHECKLIST.md) | 发版勾选 |
+| [PROJECT_OVERVIEW.md §8](../creator-docs/getting-started/PROJECT_OVERVIEW.md#8-发版前可勾选的极简清单) | 发版勾选 |
 | [KNOWN_VULNERABILITIES](../creator-docs/security/KNOWN_VULNERABILITIES.md) | 供应链 |
 | [LIGHTWEIGHT_PROFILE](../creator-docs/development/LIGHTWEIGHT_PROFILE.md) | 包体基线 |
 | [CHANGELOG](../CHANGELOG.md) | 用户可见变更 |
