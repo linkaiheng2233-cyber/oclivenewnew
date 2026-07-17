@@ -6,7 +6,7 @@
 
 **综合评分：** A− · 本地 dimension5 PASS（--ci；检查项总数以脚本结尾 `PASS (N checks)` 为准）· workspace **doctest** 见 check:release · 审查数字 SSOT：[AI_VERIFICATION_PROTOCOL.md](./AI_VERIFICATION_PROTOCOL.md)
 
-**下一动作：** **P0 owner action** — **K-SECRET-01** 由维护者在服务端彻底撤销 N1N API 密钥（已决定保留 Git 历史）；**P1** — **K-PLUGIN-SEC-01** 插件独立 origin / 签名信任闭环；其后才是 **V-VSCODE-PERF-05**（姊妹仓 VS Code F5 / `.vsix` 实机）。
+**下一动作：** **P1** — **K-PLUGIN-SEC-01** 插件独立 origin / 签名信任闭环；其后才是 **V-VSCODE-PERF-05**（姊妹仓 VS Code F5 / `.vsix` 实机）。K-SECRET-01 已收到维护者的提供商侧销毁确认；按既定决策保留 Git 历史。
 
 **马拉松计划书：** [`debt-marathon/`](./debt-marathon/README.md) · 总索引 [`MARATHON_QUEUE.md`](./debt-marathon/MARATHON_QUEUE.md) · **AI+流水线硬门禁** [`AI_AND_PIPELINE_GATES.md`](./debt-marathon/AI_AND_PIPELINE_GATES.md) · 覆盖 [`COVERAGE.md`](./debt-marathon/COVERAGE.md)；Skill：`oclive-debt-marathon`。
 
@@ -16,7 +16,7 @@
 
 **Verification (2026-07-17 · local security/documentation pass):** 本地 `cargo test -p oclive_validation`（95 tests）、`cargo test -p oclive_kernel_host --lib`（283 tests）、Tauri `http_api_high_risk_auth`（2）与 `invoke_hotpath_matrix`（5）通过；全量 Tauri 集成编译曾因 Windows 页面文件耗尽（`os error 1455`）中止，**不视为远端 CI 结论**。本轮收敛 HTTP API 默认令牌、角色/插件/ZIP 路径 containment、活跃文档链接与边界叙述。
 
-**Verification (2026-07-17 · local P0 security follow-up):** 高置信 secret scan 定位 `.continue/agents/new-config.yaml` 自初始提交 `cdfa20e6` 起含同一枚 API 密钥；工作树已改用 `${{ secrets.N1N_API_KEY }}`，但旧密钥在服务端撤销前仍按泄露处理。发行构建现禁止目录插件 Vue 在主 WebView 同进程执行；不安全 inline Vue 仅限 Vite DEV + `VITE_OCLIVE_UNSAFE_INLINE_PLUGIN_VUE=1` 双重显式 opt-in。独立插件 origin / 签名默认开启尚未完成，见 K-PLUGIN-SEC-01 / K-SUPPLY-09。
+**Verification (2026-07-17 · local P0 security follow-up):** 高置信 secret scan 定位 `.continue/agents/new-config.yaml` 自初始提交 `cdfa20e6` 起含同一枚 API 密钥；工作树已改用 `${{ secrets.N1N_API_KEY }}`。维护者已于 2026-07-17 确认在 N1N 提供商侧彻底销毁旧密钥，并明确保留 Git 历史，因此 K-SECRET-01 关闭；历史明文仍可见，但已不再具备服务端权限。发行构建现禁止目录插件 Vue 在主 WebView 同进程执行；不安全 inline Vue 仅限 Vite DEV + `VITE_OCLIVE_UNSAFE_INLINE_PLUGIN_VUE=1` 双重显式 opt-in。独立插件 origin / 签名默认开启尚未完成，见 K-PLUGIN-SEC-01 / K-SUPPLY-09。
 
 **Verification (2026-07-17 · local closeout):** `cargo clippy --workspace --all-targets --all-features -- -D warnings`、宿主 lib **285/285**、validation **95/95**、workspace doctest **6/6**、Chat Pro **77/77**、shared **63/63**、Theater **52/52**、Dimension 5 **PASS (23 checks)**；`npm audit --omit=dev --audit-level=high` 为 **0 高危 / 4 中危 / 0 低危**，均在 `vue3-sfc-loader` 的旧 Vue 编译依赖链，未当作已清零。
 
@@ -68,7 +68,7 @@
 | **K-SUPPLY-03** | 插件安装后「请审本地源码」固定提示 | P2 | 市场/git/zip + CLI | **Done**（轮次 19） |
 | **K-SUPPLY-04** | 前端 `npm-audit` 仅可见性（`continue-on-error`） | P2 | 连续 2 周期高危命中 → 升格硬门禁或文档豁免 | **Observe**（2026-07-17：`npm audit --omit=dev --audit-level=high` **0 高危 / 4 中危 / 0 低危**；均来自 `vue3-sfc-loader` 旧 Vue 编译链，待 K-PLUGIN-SEC-01 专项移出发行依赖图） |
 | **K-SUPPLY-05** | `deny.toml` `multiple-versions` warn→deny | P2 | Minimal：`deny` + 有理由 `[bans.skip]`；Full 零 skip 另战役 | **Done**（Minimal · 2026-07-15）· **Full Partial**（2026-07-16 · workspace `toml` 0.8→1 · ratchet **75**；`[bans.skip]` 仍须保留 · 不准假 Full Done · PR [#126](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/126)） |
-| **K-SECRET-01** | 已跟踪 N1N API 密钥进入 Git 历史 | **P0** | 服务端撤销旧密钥；新密钥只进 Continue secrets；维护者已明确接受保留历史的残余可见性 | **OPEN · owner action**（2026-07-17：维护者负责彻底销毁旧密钥并决定不重写 Git 历史；收到服务端撤销确认后关闭） |
+| **K-SECRET-01** | 已跟踪 N1N API 密钥进入 Git 历史 | **P0** | 服务端撤销旧密钥；新密钥只进 Continue secrets；维护者已明确接受保留历史的残余可见性 | **Done · owner confirmed**（2026-07-17：维护者确认已在 N1N 提供商侧彻底销毁旧密钥；Git 历史按决定保留） |
 | **K-PLUGIN-SEC-01** | 目录插件 UI 信任边界：同进程 Vue / 共享 custom-protocol origin | **P1** | Minimal：发行构建禁 inline Vue；Full：每插件独立 origin 或等价强隔离 + 原生 E2E + 可信签名绑定 + 官方 HTML fallback 功能对等，并将 `vue3-sfc-loader` 移出发行依赖图 | **Partial**（Minimal 已落地；HTML fallback 仍共享 `ocliveplugin.localhost`，Voice fallback 仅占位，不得宣称完整沙箱或无功能回退） |
 | **CI-E2E-TAURI-01** | e2e-tauri WebDriver smoke（sidebar/title） | P2 | 远程 `e2e-tauri` 过；勿弱化断言 | **Done**（2026-07-14 · CI [`29311703046`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29311703046) / HEAD `8988f49d` · session+title+sidebar 全绿；仍 soft gate） |
 | **K-CHATPRO-01** | Chat Pro 流式取消 UX | P2 | `AbortController` 打断上一轮 + 清理 `streaming` 气泡；设置可关流式 | **Done**（Chat Pro 正式启用 · 2026-06-26） |

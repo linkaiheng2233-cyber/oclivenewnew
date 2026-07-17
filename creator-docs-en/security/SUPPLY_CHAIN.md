@@ -71,7 +71,7 @@ Local dev: `npm run bundle-kernel:tauri` writes `distros/desktop-tauri/resources
 | **K-SUPPLY-09** | Plugin signature strict mode is opt-in | P1 | **OPEN** — sidecar SHA-256 is checked only with explicit `OCLIVE_PLUGIN_SIGNATURE_STRICT=1`; source-review prompts are not signature proof, and official/market signing plus revocation remain pending |
 | **K-SUPPLY-10** | Pin GitHub Actions to full commit SHAs | P2 | **OPEN** — workflows currently use mutable `@v*` / `@stable` tags |
 | **K-PLUGIN-SEC-01** | Per-plugin origin and native isolation E2E | P1 | **Partial** — inline Vue is blocked in releases; HTML fallbacks still share `ocliveplugin.localhost`, so this is not a complete sandbox |
-| **K-SECRET-01** | Revoke historical API credential and decide history handling | **P0** | **OPEN** — working tree now uses a secret reference; the provider must revoke the old credential |
+| **K-SECRET-01** | Revoke historical API credential and decide history handling | **P0** | **Done (2026-07-17)** — the working tree uses a secret reference; the maintainer confirms N1N destroyed the old credential provider-side, and history is retained by decision |
 | **K-SUPPLY-06** | Bit-identical reproducible builds | — | Deferred |
 | **K-SUPPLY-07** | SBOM | — | Deferred |
 

@@ -15,7 +15,7 @@ This document states **what security-related work exists in this repo today** an
 - **Local HTTP API**: every route except `/health` requires `OCLIVE_API_TOKEN` by default; startup fails closed without a token unless `OCLIVE_API_ALLOW_UNAUTHENTICATED=1` is explicit.
 - **Untrusted paths**: role/scene/directory-plugin IDs, role asset paths, and role-pack ZIP extraction now use single-segment validation, containment, and Windows-path regression tests.
 - **Minimum plugin-UI isolation**: release builds no longer compile directory-plugin Vue into the host WebView. Unsafe inline Vue requires both a Vite dev build and `VITE_OCLIVE_UNSAFE_INLINE_PLUGIN_VUE=1`.
-- **Credential scan**: a high-confidence scan found an API key present since the initial commit. The working tree is clean, but provider-side revocation and optional history cleanup remain P0 (K-SECRET-01).
+- **Credential scan**: a high-confidence scan found an API key present since the initial commit. The working tree is clean, and the maintainer confirms N1N destroyed the old credential provider-side. History is retained by decision, and K-SECRET-01 is closed.
 
 ---
 
@@ -27,7 +27,7 @@ This document states **what security-related work exists in this repo today** an
 - **Side channels**: no timing/power side-channel analysis.
 - **Threat modeling (STRIDE, etc.)**: no full-product model; only concurrency/cancel-oriented review on the **main dialogue orchestration** path.
 - **Strong plugin isolation**: HTML fallbacks still share the `https://ocliveplugin.localhost` origin; per-plugin origins and native iframe E2E are not complete, and signature strict mode remains opt-in. Disabling inline Vue in releases is containment, not a completed sandbox.
-- **Historical credentials**: plaintext is gone from the working tree, but old commits remain readable. The incident is not closed until the provider revokes the old credential.
+- **Historical credentials**: plaintext is gone from the working tree. Old commits still expose the revoked value; that visibility is an accepted residual risk and does not mean the credential remains valid.
 
 ---
 

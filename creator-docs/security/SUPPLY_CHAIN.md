@@ -71,7 +71,7 @@ sha256sum oclive-kernel-server
 | **K-SUPPLY-09** | 插件签名严格模式默认关闭 | P1 | **OPEN** — 当前只有显式 `OCLIVE_PLUGIN_SIGNATURE_STRICT=1` 才校验 sidecar SHA-256；源码审查提示不是签名证明，官方/市场默认签名与撤销流程仍待落地 |
 | **K-SUPPLY-10** | GitHub Actions 固定完整 commit SHA | P2 | **OPEN** — 当前 workflow 使用可变 `@v*` / `@stable` tag |
 | **K-PLUGIN-SEC-01** | 每插件独立 origin / 原生隔离 E2E | P1 | **Partial** — 发行版已禁 inline Vue；HTML fallback 仍共享 `ocliveplugin.localhost`，不能宣称完整沙箱 |
-| **K-SECRET-01** | 历史 API 密钥撤销与历史处置 | **P0** | **OPEN** — 工作树已改 secrets 引用；旧密钥必须由提供商撤销 |
+| **K-SECRET-01** | 历史 API 密钥撤销与历史处置 | **P0** | **Done（2026-07-17）** — 工作树已改 secrets 引用；维护者确认旧密钥已由 N1N 提供商彻底销毁，Git 历史按决定保留 |
 | **K-SUPPLY-06** | 位级可重复构建 | — | Deferred |
 | **K-SUPPLY-07** | SBOM | — | Deferred |
 

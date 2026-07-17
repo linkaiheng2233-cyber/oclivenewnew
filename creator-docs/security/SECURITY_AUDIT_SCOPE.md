@@ -16,7 +16,7 @@
 - **本机 HTTP API**：除 `/health` 外默认要求 `OCLIVE_API_TOKEN`；无令牌时服务拒绝启动，只有显式 `OCLIVE_API_ALLOW_UNAUTHENTICATED=1` 可降级。
 - **不可信路径**：角色/场景/目录插件 ID、角色资源路径与角色包 ZIP 解包已加入单段校验、containment 与 Windows 路径回归测试。
 - **插件 UI 最小隔离**：发行构建不再把目录插件 Vue 编译进主 WebView；不安全 inline Vue 仅允许 Vite DEV + `VITE_OCLIVE_UNSAFE_INLINE_PLUGIN_VUE=1` 双重显式 opt-in。
-- **凭据扫描**：高置信扫描发现一枚自初始提交存在的 API 密钥；工作树已清除，但服务端撤销和可选历史清理仍是 P0（K-SECRET-01）。
+- **凭据扫描**：高置信扫描发现一枚自初始提交存在的 API 密钥；工作树已清除，维护者确认 N1N 已在提供商侧彻底销毁旧密钥。Git 历史按决定保留，K-SECRET-01 已关闭。
 
 ---
 
@@ -29,7 +29,7 @@
 - **侧信道**：**未**分析时序、功耗等侧信道风险。
 - **威胁建模（STRIDE 等）**：**未**对全产品做完整建模；仅对 **对话主编排链路** 做并发与取消向审查。
 - **插件强隔离**：HTML fallback 仍共享 `https://ocliveplugin.localhost` origin，尚未完成每插件独立 origin / iframe 原生 E2E；签名严格模式仍是 opt-in。发行版禁 inline Vue 是最小止血，不等于插件沙箱已经完成。
-- **Git 历史凭据**：仓库工作树不再含明文密钥，但旧提交仍可读取；在提供商侧撤销之前，任何“已修复”表述都不成立。
+- **Git 历史凭据**：仓库工作树不再含明文密钥；旧提交仍可读取已撤销的值，因此历史可见性作为已接受残余风险保留，不等同于仍有效的凭据。
 
 ---
 
