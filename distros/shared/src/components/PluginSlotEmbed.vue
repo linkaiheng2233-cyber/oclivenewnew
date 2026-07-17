@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { pluginBridgeInvoke, type PluginUiSlotInfo } from '@oclive/shared/api'
 import { useDirectoryPluginSlotEmbed } from '@oclive/shared/composables/useDirectoryPluginSlotEmbed'
+import { createPluginFrameBridge } from '@oclive/shared/utils/pluginFrameBridge'
 import AsyncPluginVue from './AsyncPluginVue.vue'
 import PluginErrorPlaceholder from './PluginErrorPlaceholder.vue'
 
@@ -40,6 +42,44 @@ const {
   slot: () => props.slotName,
   bootstrapEpoch: () => props.bootstrapEpoch,
 })
+
+const frameBridge = createPluginFrameBridge(pluginBridgeInvoke)
+const registeredFrames = new Map<
+  string,
+  { element: HTMLIFrameElement, unregister: () => void }
+>()
+
+function frameKey(slot: PluginUiSlotInfo): string {
+  return `${slot.pluginId}:${slot.appearanceId ?? ''}`
+}
+
+function bindPluginFrame(slot: PluginUiSlotInfo, value: unknown): void {
+  const key = frameKey(slot)
+  const current = registeredFrames.get(key)
+  if (current?.element === value)
+    return
+  current?.unregister()
+  registeredFrames.delete(key)
+
+  if (!(value instanceof HTMLIFrameElement) || !value.contentWindow)
+    return
+  registeredFrames.set(key, {
+    element: value,
+    unregister: frameBridge.register(value.contentWindow, {
+      pluginId: slot.pluginId,
+      assetRel: slot.entry,
+    }),
+  })
+}
+
+onMounted(() => window.addEventListener('message', frameBridge.handleMessage))
+onBeforeUnmount(() => {
+  window.removeEventListener('message', frameBridge.handleMessage)
+  for (const frame of registeredFrames.values())
+    frame.unregister()
+  registeredFrames.clear()
+  frameBridge.dispose()
+})
 </script>
 
 <template>
@@ -68,6 +108,8 @@ const {
         class="pse-frame"
         :src="s.url"
         :title="`plugin ${s.pluginId}`"
+        :ref="el => bindPluginFrame(s, el)"
+        sandbox="allow-scripts"
         loading="lazy"
         referrerpolicy="no-referrer"
         @load="onFrameLoad(s.pluginId)"

@@ -29,7 +29,7 @@
   "runner": "auto",
   "planStatus": "ready",
   "parentDebtDisposition": "done-eligible",
-  "currentStage": 1,
+  "currentStage": 2,
   "prerequisites": [],
   "stages": [
     {
@@ -50,6 +50,8 @@
       "files": [
         "distros/shared/src/components/PluginSlotEmbed.vue",
         "distros/shared/src/utils/pluginFrameBridge.ts",
+        "distros/shared/src/utils/pluginFrameBridge.test.ts",
+        "distros/chat-pro/src/plugin-bridge.js",
         "kernel/crates/oclive_kernel_host/assets/plugin-bridge.iife.js",
         "kernel/crates/oclive_kernel_host/src/infrastructure/plugin_protocol.rs",
         "scripts/verify-frontend-patches.mjs"

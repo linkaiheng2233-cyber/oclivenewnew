@@ -64,6 +64,39 @@ const checks = [
       return source.includes('!isUnsafeInlinePluginVueEnabled()')
     },
   },
+  {
+    name: 'embedded plugin frames use opaque-origin script-only sandbox',
+    ok: () => {
+      const source = readFileSync(
+        join(shared, 'components/PluginSlotEmbed.vue'),
+        'utf8',
+      )
+      return source.includes('sandbox="allow-scripts"')
+        && !source.includes('allow-same-origin')
+    },
+  },
+  {
+    name: 'embedded plugin bridge binds calls in the parent host',
+    ok: () => {
+      const component = readFileSync(
+        join(shared, 'components/PluginSlotEmbed.vue'),
+        'utf8',
+      )
+      const broker = readFileSync(
+        join(shared, 'utils/pluginFrameBridge.ts'),
+        'utf8',
+      )
+      const injectedBridge = readFileSync(
+        join(root, 'kernel/crates/oclive_kernel_host/assets/plugin-bridge.iife.js'),
+        'utf8',
+      )
+      return component.includes('frameBridge.register(value.contentWindow')
+        && broker.includes("event.origin !== 'null'")
+        && broker.includes('registration.seenRequestIds.has')
+        && injectedBridge.includes('oclive-plugin-frame-bridge-v1')
+        && injectedBridge.includes('parent.postMessage')
+    },
+  },
 ]
 
 let failed = false
