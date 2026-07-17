@@ -18,21 +18,30 @@ export type PluginFrameInvoke = (
   request: PluginFrameInvokeRequest,
 ) => Promise<unknown>
 
+export interface PluginFrameBridgeOptions {
+  emit?: (event: string, data?: unknown) => void
+  subscribe?: (event: string, handler: (data: unknown) => void) => () => void
+}
+
 interface FrameRegistration extends PluginFrameIdentity {
   seenRequestIds: Set<string>
+  subscriptions: Map<string, () => void>
 }
 
 interface FrameRequestMessage {
   channel: typeof PLUGIN_FRAME_BRIDGE_CHANNEL
-  kind: 'invoke'
+  kind: 'invoke' | 'emit' | 'subscribe' | 'unsubscribe'
   requestId: string
-  command: string
+  command?: string
   params?: Record<string, unknown>
+  event?: string
+  data?: unknown
+  subscriptionId?: string
 }
 
 interface FrameResponseMessage {
   channel: typeof PLUGIN_FRAME_BRIDGE_CHANNEL
-  kind: 'result'
+  kind: 'result' | 'event'
   requestId: string
   ok: boolean
   value?: unknown
@@ -48,14 +57,26 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function parseRequest(value: unknown): FrameRequestMessage | null {
   if (!isRecord(value)
     || value.channel !== PLUGIN_FRAME_BRIDGE_CHANNEL
-    || value.kind !== 'invoke'
+    || !['invoke', 'emit', 'subscribe', 'unsubscribe'].includes(String(value.kind))
     || typeof value.requestId !== 'string'
     || !REQUEST_ID_PATTERN.test(value.requestId)
-    || typeof value.command !== 'string'
-    || !COMMAND_PATTERN.test(value.command)
     || ('pluginId' in value)
-    || ('assetRel' in value)
-    || (value.params !== undefined && !isRecord(value.params))) {
+    || ('assetRel' in value)) {
+    return null
+  }
+  if (value.kind === 'invoke'
+    && (typeof value.command !== 'string'
+      || !COMMAND_PATTERN.test(value.command)
+      || (value.params !== undefined && !isRecord(value.params)))) {
+    return null
+  }
+  if ((value.kind === 'emit' || value.kind === 'subscribe')
+    && (typeof value.event !== 'string' || value.event.length > 192)) {
+    return null
+  }
+  if (value.kind === 'unsubscribe'
+    && (typeof value.subscriptionId !== 'string'
+      || !REQUEST_ID_PATTERN.test(value.subscriptionId))) {
     return null
   }
   return value as unknown as FrameRequestMessage
@@ -74,7 +95,10 @@ function errorMessage(error: unknown): string {
  * messages cannot select a plugin id or asset path. The Rust bridge remains the
  * command allowlist authority.
  */
-export function createPluginFrameBridge(invoke: PluginFrameInvoke) {
+export function createPluginFrameBridge(
+  invoke: PluginFrameInvoke,
+  options: PluginFrameBridgeOptions = {},
+) {
   const registrations = new Map<MessageEventSource, FrameRegistration>()
 
   function postResult(
@@ -94,11 +118,16 @@ export function createPluginFrameBridge(invoke: PluginFrameInvoke) {
       pluginId: identity.pluginId,
       assetRel: identity.assetRel,
       seenRequestIds: new Set(),
+      subscriptions: new Map(),
     }
     registrations.set(source, registration)
     return () => {
-      if (registrations.get(source) === registration)
+      if (registrations.get(source) === registration) {
+        for (const unsubscribe of registration.subscriptions.values())
+          unsubscribe()
+        registration.subscriptions.clear()
         registrations.delete(source)
+      }
     }
   }
 
@@ -137,12 +166,49 @@ export function createPluginFrameBridge(invoke: PluginFrameInvoke) {
     registration.seenRequestIds.add(request.requestId)
 
     try {
-      const value = await invoke({
-        pluginId: registration.pluginId,
-        assetRel: registration.assetRel,
-        command: request.command,
-        params: request.params ?? {},
-      })
+      let value: unknown
+      if (request.kind === 'invoke') {
+        value = await invoke({
+          pluginId: registration.pluginId,
+          assetRel: registration.assetRel,
+          command: request.command!,
+          params: request.params ?? {},
+        })
+      }
+      else if (request.kind === 'emit') {
+        const expectedPrefix = `${registration.pluginId}:`
+        if (!request.event!.startsWith(expectedPrefix) || request.event!.length === expectedPrefix.length)
+          throw new Error('plugin event namespace denied')
+        if (!options.emit)
+          throw new Error('plugin event bridge unavailable')
+        options.emit(request.event!, request.data)
+        value = null
+      }
+      else if (request.kind === 'subscribe') {
+        const expectedPrefix = `${registration.pluginId}:`
+        if (!request.event!.startsWith(expectedPrefix) || request.event!.length === expectedPrefix.length)
+          throw new Error('plugin event subscription denied')
+        if (!options.subscribe)
+          throw new Error('plugin event bridge unavailable')
+        const subscriptionId = request.requestId
+        const unsubscribe = options.subscribe(request.event!, (data) => {
+          postResult(source, {
+            channel: PLUGIN_FRAME_BRIDGE_CHANNEL,
+            kind: 'event',
+            requestId: subscriptionId,
+            ok: true,
+            value: { event: request.event, data },
+          })
+        })
+        registration.subscriptions.set(subscriptionId, unsubscribe)
+        value = { subscriptionId }
+      }
+      else {
+        const unsubscribe = registration.subscriptions.get(request.subscriptionId!)
+        unsubscribe?.()
+        registration.subscriptions.delete(request.subscriptionId!)
+        value = null
+      }
       postResult(source, {
         channel: PLUGIN_FRAME_BRIDGE_CHANNEL,
         kind: 'result',
@@ -163,6 +229,10 @@ export function createPluginFrameBridge(invoke: PluginFrameInvoke) {
   }
 
   function dispose(): void {
+    for (const registration of registrations.values()) {
+      for (const unsubscribe of registration.subscriptions.values())
+        unsubscribe()
+    }
     registrations.clear()
   }
 

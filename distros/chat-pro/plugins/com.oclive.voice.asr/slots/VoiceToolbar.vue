@@ -10,7 +10,7 @@ type OcliveApi = {
   };
 };
 
-// Inlined from slots/audioCapture.ts — vue3-sfc-loader cannot load sibling .ts in ui_slots.
+// Unsafe DEV-only Vue implementation; release HTML parity lives in voice-toolbar.js.
 const TARGET_SAMPLE_RATE = 16000;
 const MIN_RECORD_MS = 350;
 const MIC_CONSTRAINTS: MediaTrackConstraints = {

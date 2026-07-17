@@ -95,4 +95,66 @@ describe('pluginFrameBridge', () => {
       '*',
     )
   })
+
+  it('emits only events in the registered plugin namespace', async () => {
+    const emit = vi.fn()
+    const broker = createPluginFrameBridge(vi.fn(), { emit })
+    const frame = frameSource()
+    broker.register(frame, { pluginId: 'plugin.a', assetRel: 'a.html' })
+
+    await broker.handleMessage(message(frame, {
+      channel: PLUGIN_FRAME_BRIDGE_CHANNEL,
+      kind: 'emit',
+      requestId: 'emit-ok',
+      event: 'plugin.a:submit',
+      data: { text: 'hello' },
+    }))
+    await broker.handleMessage(message(frame, {
+      channel: PLUGIN_FRAME_BRIDGE_CHANNEL,
+      kind: 'emit',
+      requestId: 'emit-forged',
+      event: 'plugin.b:submit',
+    }))
+
+    expect(emit).toHaveBeenCalledTimes(1)
+    expect(emit).toHaveBeenCalledWith('plugin.a:submit', { text: 'hello' })
+    expect(frame.postMessage).toHaveBeenLastCalledWith(
+      expect.objectContaining({ ok: false, error: 'plugin event namespace denied' }),
+      '*',
+    )
+  })
+
+  it('cleans source-bound custom event subscriptions on unregister', async () => {
+    let handler: ((data: unknown) => void) | undefined
+    const unsubscribe = vi.fn()
+    const subscribe = vi.fn((_event, next) => {
+      handler = next
+      return unsubscribe
+    })
+    const broker = createPluginFrameBridge(vi.fn(), { subscribe })
+    const frame = frameSource()
+    const unregister = broker.register(frame, {
+      pluginId: 'plugin.a',
+      assetRel: 'a.html',
+    })
+
+    await broker.handleMessage(message(frame, {
+      channel: PLUGIN_FRAME_BRIDGE_CHANNEL,
+      kind: 'subscribe',
+      requestId: 'subscription-1',
+      event: 'plugin.a:hold',
+    }))
+    handler?.({ phase: 'start' })
+
+    expect(subscribe).toHaveBeenCalledWith('plugin.a:hold', expect.any(Function))
+    expect(frame.postMessage).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        kind: 'event',
+        value: { event: 'plugin.a:hold', data: { phase: 'start' } },
+      }),
+      '*',
+    )
+    unregister()
+    expect(unsubscribe).toHaveBeenCalledOnce()
+  })
 })

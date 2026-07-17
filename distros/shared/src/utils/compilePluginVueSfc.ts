@@ -159,6 +159,8 @@ export async function loadPluginVueComponent(
   vueRel: string,
   opts?: LoadPluginVueOptions,
 ): Promise<Component | null> {
+  if (!import.meta.env.DEV)
+    return null
   const rel0 = vueRel.replace(/\\/g, '/').replace(/^\/+/, '')
   const entry = uri(pluginId, rel0)
   const pre = opts?.preloadedEntrySource

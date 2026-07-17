@@ -3,6 +3,8 @@ import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { pluginBridgeInvoke, type PluginUiSlotInfo } from '@oclive/shared/api'
 import { useDirectoryPluginSlotEmbed } from '@oclive/shared/composables/useDirectoryPluginSlotEmbed'
+import { hostEventBus } from '@oclive/shared/lib/hostEventBus'
+import { VOICE_ASR_PLUGIN_ID } from '@oclive/shared/lib/voiceAsrEvents'
 import { createPluginFrameBridge } from '@oclive/shared/utils/pluginFrameBridge'
 import AsyncPluginVue from './AsyncPluginVue.vue'
 import PluginErrorPlaceholder from './PluginErrorPlaceholder.vue'
@@ -43,7 +45,13 @@ const {
   bootstrapEpoch: () => props.bootstrapEpoch,
 })
 
-const frameBridge = createPluginFrameBridge(pluginBridgeInvoke)
+const frameBridge = createPluginFrameBridge(pluginBridgeInvoke, {
+  emit: (event, data) => hostEventBus.emit(event, data),
+  subscribe: (event, handler) => {
+    hostEventBus.on(event, handler)
+    return () => hostEventBus.off(event, handler)
+  },
+})
 const registeredFrames = new Map<
   string,
   { element: HTMLIFrameElement, unregister: () => void }
@@ -51,6 +59,12 @@ const registeredFrames = new Map<
 
 function frameKey(slot: PluginUiSlotInfo): string {
   return `${slot.pluginId}:${slot.appearanceId ?? ''}`
+}
+
+function framePermissions(slot: PluginUiSlotInfo): string | undefined {
+  return slot.pluginId === VOICE_ASR_PLUGIN_ID && slot.entry === 'slots/toolbar.html'
+    ? 'microphone'
+    : undefined
 }
 
 function bindPluginFrame(slot: PluginUiSlotInfo, value: unknown): void {
@@ -109,6 +123,7 @@ onBeforeUnmount(() => {
         :src="s.url"
         :title="`plugin ${s.pluginId}`"
         :ref="el => bindPluginFrame(s, el)"
+        :allow="framePermissions(s)"
         sandbox="allow-scripts"
         loading="lazy"
         referrerpolicy="no-referrer"

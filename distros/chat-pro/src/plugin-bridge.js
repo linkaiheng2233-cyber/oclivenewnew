@@ -27,6 +27,7 @@ function injectOclivePluginBridge(pluginId, assetRel, inv, ev) {
   const invokeAllowlist = Object.freeze([...inv])
   const eventAllowlist = Object.freeze([...ev])
   const pending = new Map()
+  const subscriptions = new Map()
   let requestSequence = 0
 
   function nextRequestId() {
@@ -36,7 +37,7 @@ function injectOclivePluginBridge(pluginId, assetRel, inv, ev) {
     return `${Date.now().toString(36)}-${requestSequence.toString(36)}`
   }
 
-  function invokeThroughParent(command, params) {
+  function requestThroughParent(kind, payload) {
     const requestId = nextRequestId()
     return new Promise((resolve, reject) => {
       const timer = window.setTimeout(() => {
@@ -46,10 +47,9 @@ function injectOclivePluginBridge(pluginId, assetRel, inv, ev) {
       pending.set(requestId, { resolve, reject, timer })
       window.parent.postMessage({
         channel: FRAME_CHANNEL,
-        kind: 'invoke',
+        kind,
         requestId,
-        command,
-        params: params ?? {},
+        ...payload,
       }, '*')
     })
   }
@@ -59,7 +59,15 @@ function injectOclivePluginBridge(pluginId, assetRel, inv, ev) {
       if (event.source !== window.parent)
         return
       const data = event.data
-      if (!data || data.channel !== FRAME_CHANNEL || data.kind !== 'result')
+      if (!data || data.channel !== FRAME_CHANNEL)
+        return
+      if (data.kind === 'event') {
+        const callback = subscriptions.get(data.requestId)
+        if (callback)
+          callback(data.value?.data)
+        return
+      }
+      if (data.kind !== 'result')
         return
       const waiter = pending.get(data.requestId)
       if (!waiter)
@@ -77,7 +85,7 @@ function injectOclivePluginBridge(pluginId, assetRel, inv, ev) {
     if (!bridgeAllowed(n, invokeAllowlist))
       return Promise.reject(new Error(`invoke denied:${n}`))
     if (window.parent !== window)
-      return invokeThroughParent(n, p)
+      return requestThroughParent('invoke', { command: n, params: p ?? {} })
     const _inv = window.__TAURI__
       && (window.__TAURI__.invoke || (window.__TAURI__.tauri && window.__TAURI__.tauri.invoke))
     if (!_inv)
@@ -93,6 +101,15 @@ function injectOclivePluginBridge(pluginId, assetRel, inv, ev) {
   }
 
   function listen(e, c) {
+    if (window.parent !== window && e.startsWith(`${pluginId}:`)) {
+      return requestThroughParent('subscribe', { event: e }).then(({ subscriptionId }) => {
+        subscriptions.set(subscriptionId, c)
+        return () => {
+          subscriptions.delete(subscriptionId)
+          return requestThroughParent('unsubscribe', { subscriptionId })
+        }
+      })
+    }
     if (!eventAllowlist.includes(e))
       return Promise.reject(new Error(`event denied:${e}`))
     if (window.parent !== window)
@@ -104,9 +121,18 @@ function injectOclivePluginBridge(pluginId, assetRel, inv, ev) {
     return t.listen(e, c)
   }
 
+  function emit(e, data) {
+    if (!e.startsWith(`${pluginId}:`) || e.length === pluginId.length + 1)
+      return Promise.reject(new Error(`event namespace denied:${e}`))
+    if (window.parent !== window)
+      return requestThroughParent('emit', { event: e, data })
+    return Promise.reject(new Error('plugin event emit is only available in isolated frames'))
+  }
+
   window.OclivePluginBridge = {
     invoke,
     listen,
+    emit,
     allowedInvoke: invokeAllowlist,
     allowedEvents: eventAllowlist,
   }

@@ -97,6 +97,34 @@ const checks = [
         && injectedBridge.includes('parent.postMessage')
     },
   },
+  {
+    name: 'release compiler stays development-only and tree-shakeable',
+    ok: () => {
+      const rootPackage = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
+      const chatPackage = JSON.parse(readFileSync(join(root, 'distros/chat-pro/package.json'), 'utf8'))
+      const sharedPackage = JSON.parse(readFileSync(join(root, 'distros/shared/package.json'), 'utf8'))
+      const compiler = readFileSync(join(shared, 'utils/compilePluginVueSfc.ts'), 'utf8')
+      return !rootPackage.dependencies?.['vue3-sfc-loader']
+        && !chatPackage.dependencies?.['vue3-sfc-loader']
+        && !sharedPackage.dependencies?.['vue3-sfc-loader']
+        && rootPackage.devDependencies?.['vue3-sfc-loader']
+        && compiler.includes('if (!import.meta.env.DEV)')
+    },
+  },
+  {
+    name: 'official Voice HTML fallbacks expose functional isolated controls',
+    ok: () => {
+      const slots = join(root, 'distros/chat-pro/plugins/com.oclive.voice.asr/slots')
+      const toolbar = readFileSync(join(slots, 'voice-toolbar.js'), 'utf8')
+      const settings = readFileSync(join(slots, 'voice-settings.js'), 'utf8')
+      const component = readFileSync(join(shared, 'components/PluginSlotEmbed.vue'), 'utf8')
+      return toolbar.includes("rpc('voice.transcribe'")
+        && toolbar.includes('bridge.emit(submitEvent')
+        && settings.includes("bridge.invoke('set_plugin_settings_config'")
+        && settings.includes("rpc('voice.warm'")
+        && component.includes("slot.pluginId === VOICE_ASR_PLUGIN_ID && slot.entry === 'slots/toolbar.html'")
+    },
+  },
 ]
 
 let failed = false

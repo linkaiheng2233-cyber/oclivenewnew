@@ -266,7 +266,7 @@ async fn dispatch_local_bridge_command(
     backend: &ChatBackend,
     command: &str,
     params: Value,
-    _bridge_plugin_id: &str,
+    bridge_plugin_id: &str,
 ) -> Result<Value, CommandError> {
     if command == "send_message" {
         let req = parse_send_message_request(&params)?;
@@ -303,12 +303,17 @@ async fn dispatch_local_bridge_command(
     }
 
     if command == "get_plugin_settings_ui" {
-        let plugin_id = params
+        let requested_plugin_id = params
             .get("pluginId")
             .or_else(|| params.get("plugin_id"))
             .and_then(|v| v.as_str())
             .ok_or_else(|| bridge_invalid("get_plugin_settings_ui: pluginId required"))?;
-        let dto = get_plugin_settings_ui_impl(state, plugin_id)?;
+        require_settings_plugin_identity(
+            bridge_plugin_id,
+            requested_plugin_id,
+            "get_plugin_settings_ui",
+        )?;
+        let dto = get_plugin_settings_ui_impl(state, bridge_plugin_id)?;
         return serde_json::to_value(dto).map_err(|e| {
             CommandError::from(
                 ApiError::Io {
@@ -320,13 +325,18 @@ async fn dispatch_local_bridge_command(
     }
 
     if command == "set_plugin_settings_config" {
-        let plugin_id = params
+        let requested_plugin_id = params
             .get("pluginId")
             .or_else(|| params.get("plugin_id"))
             .and_then(|v| v.as_str())
             .ok_or_else(|| bridge_invalid("set_plugin_settings_config: pluginId required"))?;
+        require_settings_plugin_identity(
+            bridge_plugin_id,
+            requested_plugin_id,
+            "set_plugin_settings_config",
+        )?;
         let config = params.get("config").cloned().unwrap_or(Value::Null);
-        set_plugin_settings_config_impl(state, plugin_id, &config)?;
+        set_plugin_settings_config_impl(state, bridge_plugin_id, &config)?;
         return Ok(json!({ "ok": true }));
     }
 
@@ -374,6 +384,20 @@ async fn dispatch_local_bridge_command(
     }
 
     dispatch_bridge_command(state, command, params).await
+}
+
+fn require_settings_plugin_identity(
+    bridge_plugin_id: &str,
+    requested_plugin_id: &str,
+    command: &str,
+) -> Result<(), CommandError> {
+    if requested_plugin_id.trim() != bridge_plugin_id.trim() {
+        return Err(ApiError::PermissionDenied {
+            message: format!("{command}: pluginId must match the authenticated bridge plugin"),
+        }
+        .into());
+    }
+    Ok(())
 }
 
 async fn dispatch_bridge_command_routed(
@@ -540,5 +564,22 @@ mod rpc_validation_tests {
         let err =
             validate_rpc_method_for_manifest(&manifest, "voice.probe").expect_err("no process");
         assert!(err.to_string().contains("no process"));
+    }
+
+    #[test]
+    fn settings_commands_reject_cross_plugin_identity() {
+        assert!(require_settings_plugin_identity(
+            "com.example.a",
+            "com.example.a",
+            "get_plugin_settings_ui"
+        )
+        .is_ok());
+        let err = require_settings_plugin_identity(
+            "com.example.a",
+            "com.example.b",
+            "set_plugin_settings_config",
+        )
+        .expect_err("cross-plugin settings identity must fail");
+        assert!(err.to_string().contains("authenticated bridge plugin"));
     }
 }

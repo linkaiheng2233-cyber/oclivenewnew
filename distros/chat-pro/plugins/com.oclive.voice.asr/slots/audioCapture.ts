@@ -1,4 +1,4 @@
-/** Browser mic blob → 16 kHz mono WAV (base64). SSOT mirror: inlined in `VoiceToolbar.vue` (ui_slots vue3-sfc-loader cannot load sibling .ts). */
+/** Browser mic blob → 16 kHz mono WAV (base64), retained for unsafe DEV Vue diagnostics. */
 
 export const TARGET_SAMPLE_RATE = 16000
 export const MIN_RECORD_MS = 350

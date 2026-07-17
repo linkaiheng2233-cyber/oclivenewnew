@@ -29,7 +29,7 @@
   "runner": "auto",
   "planStatus": "ready",
   "parentDebtDisposition": "done-eligible",
-  "currentStage": 2,
+  "currentStage": 3,
   "prerequisites": [],
   "stages": [
     {
@@ -70,8 +70,19 @@
       "title": "Official HTML parity and release compiler removal",
       "files": [
         "distros/chat-pro/plugins/com.oclive.voice.asr/slots/",
+        "distros/chat-pro/src/__tests__/voiceHtmlFallback.spec.ts",
+        "distros/chat-pro/src/plugin-bridge.js",
+        "distros/chat-pro/package.json",
+        "distros/desktop-tauri/src/api/plugin_bridge.rs",
         "distros/shared/src/components/AsyncPluginVue.vue",
+        "distros/shared/src/components/PluginSlotEmbed.vue",
+        "distros/shared/src/utils/pluginFrameBridge.ts",
+        "distros/shared/src/utils/pluginFrameBridge.test.ts",
         "distros/shared/src/utils/compilePluginVueSfc.ts",
+        "distros/shared/src/build/manualChunks.ts",
+        "distros/shared/package.json",
+        "kernel/crates/oclive_kernel_host/assets/plugin-bridge.iife.js",
+        "scripts/verify-frontend-patches.mjs",
         "package.json",
         "package-lock.json"
       ],
