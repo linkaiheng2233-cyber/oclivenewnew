@@ -136,7 +136,7 @@ pub fn read_role_asset_bytes(
     relative: String,
     state: State<'_, SharedAppState>,
 ) -> Result<Option<Vec<u8>>, CommandError> {
-    let p = state.storage.role_asset_path(&role_id, &relative);
+    let p = state.storage.role_asset_path(&role_id, &relative)?;
     if !p.is_file() {
         return Ok(None);
     }
@@ -151,7 +151,7 @@ pub fn find_role_asset_path(
     relative: String,
     state: State<'_, SharedAppState>,
 ) -> Option<String> {
-    let p = state.storage.role_asset_path(&role_id, &relative);
+    let p = state.storage.role_asset_path(&role_id, &relative).ok()?;
     if p.is_file() {
         return Some(path_string_for_frontend(&p));
     }

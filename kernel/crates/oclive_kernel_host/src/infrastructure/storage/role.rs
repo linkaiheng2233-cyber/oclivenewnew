@@ -44,10 +44,61 @@ impl RoleStorage {
         &self.roles_dir
     }
 
-    /// `roles/{role_id}/{relative}`; existence is not checked.
-    #[must_use]
-    pub fn role_asset_path(&self, role_id: &str, relative: &str) -> PathBuf {
-        self.roles_dir.join(role_id).join(relative)
+    /// Resolve a validated `roles/{role_id}` path and reject symlink escapes.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`AppError::InvalidParameter`] when `role_id` is invalid or an existing role
+    /// directory resolves outside the configured roles root. Returns [`AppError::IoError`] when
+    /// an existing path cannot be canonicalized.
+    pub fn role_dir_path(&self, role_id: &str) -> Result<PathBuf> {
+        oclive_validation::validate_role_id(role_id).map_err(AppError::InvalidParameter)?;
+        let candidate = self.roles_dir.join(role_id);
+        if candidate.exists() {
+            let root = self.roles_dir.canonicalize().map_err(AppError::IoError)?;
+            let resolved = candidate.canonicalize().map_err(AppError::IoError)?;
+            if !resolved.starts_with(&root) {
+                return Err(AppError::InvalidParameter(
+                    "role directory escapes roles root".into(),
+                ));
+            }
+            return Ok(resolved);
+        }
+        Ok(candidate)
+    }
+
+    /// Resolve a role asset while rejecting absolute paths, `..`, and symlink escapes.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`AppError::InvalidParameter`] when the role id or relative asset path is invalid,
+    /// or when an existing asset resolves outside its role directory. Returns
+    /// [`AppError::IoError`] when an existing path cannot be canonicalized.
+    pub fn role_asset_path(&self, role_id: &str, relative: &str) -> Result<PathBuf> {
+        let role_dir = self.role_dir_path(role_id)?;
+        let normalized = relative.replace('\\', "/");
+        let rel = Path::new(&normalized);
+        if normalized.trim().is_empty()
+            || rel.is_absolute()
+            || rel
+                .components()
+                .any(|part| !matches!(part, std::path::Component::Normal(_)))
+        {
+            return Err(AppError::InvalidParameter(
+                "role asset path must be a non-empty relative path without '.' or '..'".into(),
+            ));
+        }
+        let candidate = role_dir.join(rel);
+        if candidate.exists() {
+            let resolved = candidate.canonicalize().map_err(AppError::IoError)?;
+            if !resolved.starts_with(&role_dir) {
+                return Err(AppError::InvalidParameter(
+                    "role asset escapes role directory".into(),
+                ));
+            }
+            return Ok(resolved);
+        }
+        Ok(candidate)
     }
 
     /// Loads all roles.
@@ -84,7 +135,7 @@ impl RoleStorage {
             let entry = entry.map_err(AppError::IoError)?;
             let path = entry.path();
 
-            if path.is_dir() {
+            if path.is_dir() && !entry.file_type().map_err(AppError::IoError)?.is_symlink() {
                 let dir_name = entry.file_name().to_string_lossy().into_owned();
                 if should_skip_roles_subdir(&dir_name) {
                     tracing::debug!(
@@ -415,7 +466,7 @@ impl RoleStorage {
                 self.roles_dir.display()
             )));
         }
-        let role_dir = self.roles_dir.join(rid);
+        let role_dir = self.role_dir_path(rid)?;
         self.load_role_from_dir(&role_dir)
     }
     /// # Errors
@@ -424,7 +475,7 @@ impl RoleStorage {
     /// Scene id list: manifest top-level `scenes` array + `roles/{role_id}/scenes/` subdirectory names, deduplicated and sorted.
     /// Returns `["default"]` when both are empty.
     pub fn list_scene_ids(&self, role_id: &str) -> Result<Vec<String>> {
-        let role_dir = self.roles_dir.join(role_id);
+        let role_dir = self.role_dir_path(role_id)?;
         let manifest_path = role_dir.join("manifest.json");
 
         let manifest_scenes: Vec<String> = if manifest_path.exists() {
@@ -472,12 +523,38 @@ impl RoleStorage {
 
 #[cfg(test)]
 mod tests {
-    use super::should_skip_roles_subdir;
+    use super::{should_skip_roles_subdir, RoleStorage};
+    use std::fs;
+    use tempfile::tempdir;
 
     #[test]
     fn skip_reserved_roles_root_dirs() {
         assert!(should_skip_roles_subdir(".oclive_directory_plugin_data"));
         assert!(should_skip_roles_subdir("blueprint"));
         assert!(!should_skip_roles_subdir("mumu"));
+    }
+
+    #[test]
+    fn role_asset_path_rejects_role_and_asset_traversal() {
+        let roles = tempdir().unwrap();
+        fs::create_dir_all(roles.path().join("mumu")).unwrap();
+        let storage = RoleStorage::new(roles.path());
+
+        assert!(storage
+            .role_asset_path("../outside", "manifest.json")
+            .is_err());
+        assert!(storage.role_asset_path("mumu", "../outside.json").is_err());
+        assert!(storage.role_asset_path("mumu", "C:\\outside.json").is_err());
+        assert_eq!(
+            storage
+                .role_asset_path("mumu", "scenes/default/scene.json")
+                .unwrap(),
+            roles
+                .path()
+                .join("mumu")
+                .canonicalize()
+                .unwrap()
+                .join("scenes/default/scene.json")
+        );
     }
 }

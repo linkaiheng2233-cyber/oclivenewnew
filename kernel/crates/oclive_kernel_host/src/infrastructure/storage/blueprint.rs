@@ -25,7 +25,7 @@ impl RoleStorage {
         role_id: &str,
         registry: &BTreeMap<String, SlotRegistryEntry>,
     ) -> Result<()> {
-        let role_dir = self.roles_dir.join(role_id);
+        let role_dir = self.role_dir_path(role_id)?;
         if !role_dir.join(PIPELINE_BLUEPRINT_FILENAME).is_file() {
             return Err(AppError::InvalidParameter(format!(
                 "角色 {role_id} 无 {PIPELINE_BLUEPRINT_FILENAME}，无法写 slot_registry"
@@ -46,7 +46,7 @@ impl RoleStorage {
     /// Returns [`Err`] with a human-readable message when the operation fails.
     /// Save core persona (creator-editable only).
     pub fn save_core_personality(&self, role_id: &str, content: &str) -> Result<()> {
-        let role_dir = self.roles_dir.join(role_id);
+        let role_dir = self.role_dir_path(role_id)?;
         let core_personality_path = role_dir.join("core_personality.txt");
 
         fs::write(&core_personality_path, content).map_err(AppError::IoError)?;

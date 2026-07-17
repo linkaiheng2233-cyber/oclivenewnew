@@ -154,9 +154,8 @@ pub fn validate_disk_manifest(
     disk: &DiskRoleManifest,
     merged_scene_ids: &[String],
 ) -> Result<(), String> {
-    if disk.id.trim().is_empty() {
-        return Err("角色包 manifest / settings：字段 id 不能为空".to_string());
-    }
+    validate_role_id(&disk.id)
+        .map_err(|e| format!("角色包 manifest / settings：字段 id 非法：{e}"))?;
     if disk.name.trim().is_empty() {
         return Err("角色包 manifest / settings：字段 name 不能为空".to_string());
     }
@@ -177,6 +176,10 @@ pub fn validate_disk_manifest(
     }
 
     let scenes: HashSet<&str> = merged_scene_ids.iter().map(|s| s.as_str()).collect();
+    for scene_id in merged_scene_ids {
+        validate_scene_id(scene_id)
+            .map_err(|e| format!("角色包 scene id「{scene_id}」非法：{e}"))?;
+    }
     for scene_key in disk.memory_config.topic_weights.keys() {
         if !scenes.contains(scene_key.as_str()) {
             return Err(format!(
@@ -215,6 +218,86 @@ pub fn validate_disk_manifest(
         }
     }
 
+    Ok(())
+}
+
+/// Validate a role identifier before it is used as a directory name, URL value,
+/// database namespace, or cache key. Unicode names are supported, but the value
+/// must be one portable filesystem path segment.
+///
+/// # Errors
+///
+/// Returns a localized validation message when `id` is empty, ambiguous, too
+/// long, reserved by Windows, or can escape a single portable path segment.
+pub fn validate_role_id(id: &str) -> Result<(), String> {
+    validate_portable_path_segment(id)
+}
+
+/// Validate a scene identifier before it is used below `roles/{role}/scenes/`.
+///
+/// # Errors
+///
+/// Returns a localized validation message when `id` is not a single portable
+/// path segment.
+pub fn validate_scene_id(id: &str) -> Result<(), String> {
+    validate_portable_path_segment(id)
+}
+
+fn validate_portable_path_segment(id: &str) -> Result<(), String> {
+    let trimmed = id.trim();
+    if trimmed.is_empty() {
+        return Err("不能为空".to_string());
+    }
+    if trimmed != id {
+        return Err("首尾不能含空白".to_string());
+    }
+    if trimmed.len() > 128 {
+        return Err("不能超过 128 字节".to_string());
+    }
+    if matches!(trimmed, "." | "..") || trimmed.starts_with('.') {
+        return Err("不能是隐藏目录或点路径".to_string());
+    }
+    if trimmed.ends_with('.') {
+        return Err("不能以点结尾".to_string());
+    }
+    if trimmed.chars().any(|ch| {
+        ch.is_control() || matches!(ch, '/' | '\\' | '<' | '>' | ':' | '"' | '|' | '?' | '*')
+    }) {
+        return Err("包含路径分隔符、控制字符或跨平台禁用字符".to_string());
+    }
+    let windows_stem = trimmed
+        .split('.')
+        .next()
+        .unwrap_or(trimmed)
+        .to_ascii_uppercase();
+    let reserved = matches!(
+        windows_stem.as_str(),
+        "CON"
+            | "PRN"
+            | "AUX"
+            | "NUL"
+            | "COM1"
+            | "COM2"
+            | "COM3"
+            | "COM4"
+            | "COM5"
+            | "COM6"
+            | "COM7"
+            | "COM8"
+            | "COM9"
+            | "LPT1"
+            | "LPT2"
+            | "LPT3"
+            | "LPT4"
+            | "LPT5"
+            | "LPT6"
+            | "LPT7"
+            | "LPT8"
+            | "LPT9"
+    );
+    if reserved {
+        return Err("不能使用 Windows 保留设备名".to_string());
+    }
     Ok(())
 }
 
@@ -460,5 +543,29 @@ mod tests {
     fn settings_schema_version_accepts_current_or_lower() {
         assert!(validate_settings_schema_version(1, 1).is_ok());
         assert!(validate_settings_schema_version(1, 2).is_ok());
+    }
+
+    #[test]
+    fn role_id_accepts_unicode_and_portable_segments() {
+        for id in ["mumu", "polish-dev", "角色_01", "枫侵月"] {
+            assert!(validate_role_id(id).is_ok(), "{id}");
+        }
+    }
+
+    #[test]
+    fn role_id_rejects_traversal_and_non_portable_segments() {
+        for id in [
+            "../outside",
+            r"..\outside",
+            ".hidden",
+            "trailing.",
+            " has-space",
+            "CON",
+            "nul.json",
+            "bad:name",
+            "",
+        ] {
+            assert!(validate_role_id(id).is_err(), "{id:?}");
+        }
     }
 }

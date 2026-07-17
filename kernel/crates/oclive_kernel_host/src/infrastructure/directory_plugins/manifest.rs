@@ -199,9 +199,8 @@ impl OclivePluginManifest {
                 m.schema_version
             ));
         }
-        if m.id.trim().is_empty() {
-            return Err(format!("manifest {}: id empty", p.display()));
-        }
+        validate_plugin_id(&m.id)
+            .map_err(|reason| format!("manifest {}: {reason}", p.display()))?;
         if m.version.trim().is_empty() {
             return Err(format!("manifest {}: version empty", p.display()));
         }
@@ -231,6 +230,45 @@ impl OclivePluginManifest {
     }
 }
 
+/// Validate a directory-plugin identifier before it is used as a map key, URL
+/// segment, grant subject, or filesystem directory name.
+pub(crate) fn validate_plugin_id(id: &str) -> Result<(), String> {
+    let trimmed = id.trim();
+    if trimmed.is_empty() {
+        return Err("id empty".to_string());
+    }
+    if trimmed != id {
+        return Err("id must not contain leading or trailing whitespace".to_string());
+    }
+    if trimmed.len() > 128 {
+        return Err("id exceeds 128 bytes".to_string());
+    }
+    if trimmed.contains("..") {
+        return Err("id must not contain '..'".to_string());
+    }
+    let mut chars = trimmed.chars();
+    let Some(first) = chars.next() else {
+        return Err("id empty".to_string());
+    };
+    if !first.is_ascii_alphanumeric() {
+        return Err("id must start with an ASCII letter or digit".to_string());
+    }
+    if !trimmed
+        .chars()
+        .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '.' | '_' | '-'))
+    {
+        return Err("id may contain only ASCII letters, digits, '.', '_' and '-'".to_string());
+    }
+    if !trimmed
+        .chars()
+        .next_back()
+        .is_some_and(|ch| ch.is_ascii_alphanumeric())
+    {
+        return Err("id must end with an ASCII letter or digit".to_string());
+    }
+    Ok(())
+}
+
 /// Normalized `appearance_id` for persistence and `plugin_state` comparison (trim).
 #[must_use]
 pub fn normalize_ui_slot_appearance_id(s: &str) -> String {
@@ -257,4 +295,37 @@ fn validate_ui_slot_appearance_ids(m: &OclivePluginManifest) -> Result<(), Strin
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::validate_plugin_id;
+
+    #[test]
+    fn plugin_id_accepts_existing_wire_shapes() {
+        for id in [
+            "com.oclive.voice.asr",
+            "com.oclive.official_vue_test_runner",
+            "reply-post-process-minimal",
+            "plug.auth_test",
+        ] {
+            assert!(validate_plugin_id(id).is_ok(), "{id}");
+        }
+    }
+
+    #[test]
+    fn plugin_id_rejects_path_traversal_and_ambiguous_names() {
+        for id in [
+            "../outside",
+            "com.oclive/evil",
+            r"com.oclive\evil",
+            ".hidden",
+            "trailing.",
+            " has-space",
+            "contains space",
+            "",
+        ] {
+            assert!(validate_plugin_id(id).is_err(), "{id:?}");
+        }
+    }
 }

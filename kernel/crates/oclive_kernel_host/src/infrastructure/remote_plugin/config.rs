@@ -11,6 +11,12 @@ pub struct RemotePluginHttpConfig {
 }
 
 impl RemotePluginHttpConfig {
+    /// Whether this endpoint is a loopback target that must not be routed through a user proxy.
+    #[must_use]
+    pub fn is_loopback_endpoint(&self) -> bool {
+        crate::infrastructure::is_loopback_endpoint(&self.endpoint)
+    }
+
     /// Connect-phase timeout: roughly 1/4 of the total timeout, clamped to 500ms–15s, to avoid the TCP handshake hanging for a long time.
     #[must_use]
     pub fn connect_timeout(&self) -> Duration {
@@ -249,5 +255,21 @@ mod tests {
         assert!(cfg.bearer_token.is_none());
         std::env::remove_var("OCLIVE_REMOTE_LLM_URL");
         std::env::remove_var("OCLIVE_REMOTE_LLM_TOKEN");
+    }
+
+    #[test]
+    fn loopback_endpoint_detection_ignores_user_proxy_configuration() {
+        let local = RemotePluginHttpConfig {
+            endpoint: "http://127.0.0.1:8420/rpc".into(),
+            timeout: Duration::from_secs(1),
+            bearer_token: None,
+        };
+        let remote = RemotePluginHttpConfig {
+            endpoint: "https://example.com/rpc".into(),
+            timeout: Duration::from_secs(1),
+            bearer_token: None,
+        };
+        assert!(local.is_loopback_endpoint());
+        assert!(!remote.is_loopback_endpoint());
     }
 }

@@ -119,6 +119,9 @@ pub fn load_storage_root_with_role(
 /// Read `chat_storage.location` from `{roles_dir}/{role_id}/config.json`.
 #[must_use]
 pub fn read_role_chat_storage_location(roles_dir: &Path, role_id: &str) -> String {
+    if oclive_validation::validate_role_id(role_id).is_err() {
+        return "global".to_string();
+    }
     let path = roles_dir.join(role_id).join("config.json");
     std::fs::read_to_string(path)
         .ok()
@@ -145,7 +148,10 @@ pub fn load_role_chat_storage_root(
         location: loc,
         ..Default::default()
     };
-    load_storage_root_with_role(app_data_dir, &cfg, Some(&roles_dir.join(role_id)))
+    let role_dir = oclive_validation::validate_role_id(role_id)
+        .is_ok()
+        .then(|| roles_dir.join(role_id));
+    load_storage_root_with_role(app_data_dir, &cfg, role_dir.as_deref())
 }
 
 /// Copy mirror tree when changing storage root (best-effort).

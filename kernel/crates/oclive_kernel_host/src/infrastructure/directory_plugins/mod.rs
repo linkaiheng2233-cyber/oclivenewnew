@@ -8,6 +8,7 @@ mod manifest;
 mod runtime;
 mod version;
 pub use dependency::dependency_report;
+pub(crate) use manifest::validate_plugin_id;
 pub use manifest::{
     normalize_plugin_rel, normalize_ui_slot_appearance_id, BridgeConfig, OclivePluginManifest,
     ShellSection, UiSchemaField, UiSchemaSection, UiSlotDecl,

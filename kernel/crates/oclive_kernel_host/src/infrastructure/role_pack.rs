@@ -13,7 +13,14 @@ use zip::{CompressionMethod, ZipArchive};
 use crate::models::role_manifest_disk::DiskRoleManifest;
 
 fn safe_zip_path(name: &str) -> bool {
-    !name.contains("..") && !name.starts_with('/') && !name.starts_with('\\')
+    let normalized = name.replace('\\', "/");
+    !normalized.is_empty()
+        && !normalized.starts_with('/')
+        && !normalized.contains(':')
+        && !normalized.chars().any(char::is_control)
+        && normalized
+            .split('/')
+            .all(|part| !part.is_empty() && part != "." && part != "..")
 }
 
 /// `manifest.json` path priority inside ZIP: pack root first, then single top-level folder, then deeper paths (matches standard export).
@@ -45,7 +52,7 @@ fn zip_manifest_path_priority(name: &str) -> Option<u8> {
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 pub fn export_role_pack(storage: &RoleStorage, role_id: &str, dest: &Path) -> Result<()> {
-    let src = storage.roles_dir().join(role_id);
+    let src = storage.role_dir_path(role_id)?;
     if !src.is_dir() {
         return Err(AppError::RoleNotFound(role_id.to_string()));
     }
@@ -60,7 +67,7 @@ pub fn export_role_pack(storage: &RoleStorage, role_id: &str, dest: &Path) -> Re
                 .strip_prefix(&src)
                 .map_err(|_| AppError::InvalidParameter("zip strip".into()))?;
             let name = rel.to_string_lossy().replace('\\', "/");
-            if !safe_zip_path(&name) {
+            if !entry.file_type().is_file() {
                 continue;
             }
             zip.start_file(name, options)
@@ -153,12 +160,13 @@ fn unzip_to(
             .by_index(i)
             .map_err(|e| AppError::Unknown(e.to_string()))?;
         let name = file.name().to_string();
+        let normalized_name = name.replace('\\', "/");
         if !safe_zip_path(&name) {
             on_entry(i + 1, total, None);
             continue;
         }
-        let outpath = dest.join(&name);
-        if name.ends_with('/') {
+        let outpath = dest.join(&normalized_name);
+        if normalized_name.ends_with('/') {
             fs::create_dir_all(&outpath)?;
         } else {
             if let Some(p) = outpath.parent() {
@@ -167,7 +175,7 @@ fn unzip_to(
             let mut outfile = File::create(&outpath)?;
             std::io::copy(&mut file, &mut outfile)?;
         }
-        on_entry(i + 1, total, Some(name.as_str()));
+        on_entry(i + 1, total, Some(normalized_name.as_str()));
     }
     Ok(())
 }
@@ -214,7 +222,8 @@ where
 {
     let role = load_role_for_pack_import(storage, root)?;
     let id = role.id.clone();
-    let dest = storage.roles_dir().join(&id);
+    oclive_validation::validate_role_id(&id).map_err(AppError::InvalidParameter)?;
+    let dest = storage.role_dir_path(&id)?;
     if dest.exists() {
         if !overwrite {
             return Err(AppError::RolePackExists(id));
@@ -251,7 +260,7 @@ fn copy_role_tree(
         .min_depth(1)
         .into_iter()
         .filter_map(|e| e.ok())
-        .filter(|e| e.path().is_file())
+        .filter(|e| e.file_type().is_file())
         .map(|e| e.path().to_path_buf())
         .collect();
     let total = files.len().max(1);
@@ -402,6 +411,21 @@ mod tests {
     use crate::infrastructure::storage::RoleStorage;
     use std::io::Write;
     use tempfile::tempdir;
+
+    #[test]
+    fn zip_entry_paths_reject_platform_specific_traversal() {
+        for unsafe_path in [
+            "../manifest.json",
+            "..\\manifest.json",
+            "C:\\manifest.json",
+            "C:/manifest.json",
+            "\\\\server\\share\\manifest.json",
+            "/absolute/manifest.json",
+        ] {
+            assert!(!safe_zip_path(unsafe_path), "accepted {unsafe_path:?}");
+        }
+        assert!(safe_zip_path("mumu/scenes/default/scene.json"));
+    }
 
     #[test]
     fn export_import_roundtrip() {

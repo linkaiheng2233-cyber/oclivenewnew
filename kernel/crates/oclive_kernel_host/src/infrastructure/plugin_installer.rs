@@ -271,6 +271,10 @@ pub fn install_plugin(
         cleanup_clone_dir(&clone_dir, &plugin_root);
         return Err(AppError::InvalidParameter("manifest.id required".into()));
     }
+    if let Err(reason) = crate::infrastructure::directory_plugins::validate_plugin_id(&pid) {
+        cleanup_clone_dir(&clone_dir, &plugin_root);
+        return Err(AppError::PluginManifestInvalid(reason));
+    }
     let final_dir = base.join(pid.as_str());
     if final_dir.exists() {
         cleanup_clone_dir(&clone_dir, &plugin_root);

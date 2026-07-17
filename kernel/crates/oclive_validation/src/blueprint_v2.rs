@@ -505,8 +505,8 @@ pub fn validate_blueprint_meta_core(
     folder_name: Option<&str>,
     errs: &mut Vec<String>,
 ) {
-    if meta.id.trim().is_empty() {
-        errs.push("meta.id 不能为空".into());
+    if let Err(e) = crate::validate::validate_role_id(&meta.id) {
+        errs.push(format!("meta.id 非法：{e}"));
     }
     if let Some(dir) = folder_name {
         if meta.id.trim() != dir {
@@ -520,6 +520,11 @@ pub fn validate_blueprint_meta_core(
     if let Some(ref p) = meta.personality {
         if let Err(e) = validate_meta_personality(p) {
             errs.push(e);
+        }
+    }
+    for scene_id in &meta.scenes {
+        if let Err(e) = crate::validate::validate_scene_id(scene_id) {
+            errs.push(format!("meta.scenes 中的「{scene_id}」非法：{e}"));
         }
     }
     if meta.relations.is_empty() {

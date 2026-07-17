@@ -48,7 +48,7 @@ pub async fn send_message(
     }
     let mut req = req;
     req.user_message = user_message;
-    let role_path = role_dir_for_id(state.as_ref(), &req.role_id);
+    let role_path = role_dir_for_id(state.as_ref(), &req.role_id)?;
     ChatBackend::from_app(&app, state.inner().clone())
         .send_message(&role_path, &req)
         .await
@@ -61,7 +61,7 @@ pub fn get_role_pack_path(
     role_id: String,
     state: State<'_, SharedAppState>,
 ) -> Result<String, crate::api::error::CommandError> {
-    Ok(role_dir_for_id(state.as_ref(), role_id.trim())
+    Ok(role_dir_for_id(state.as_ref(), role_id.trim())?
         .to_string_lossy()
         .into_owned())
 }

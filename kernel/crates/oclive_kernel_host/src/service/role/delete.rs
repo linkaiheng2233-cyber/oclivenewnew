@@ -15,6 +15,7 @@ pub async fn delete_role_impl(state: &AppState, role_id: String) -> Result<Value
     if rid.is_empty() {
         return Err(AppError::InvalidParameter("role_id required".into()).into());
     }
+    oclive_validation::validate_role_id(rid).map_err(AppError::InvalidParameter)?;
     let removed_ns = state
         .db_manager
         .delete_all_data_for_manifest_role(rid)
@@ -43,7 +44,7 @@ pub async fn delete_role_impl(state: &AppState, role_id: String) -> Result<Value
     for ns in &removed_ns {
         state.clear_all_session_slot_overrides(ns);
     }
-    let dir = state.storage.roles_dir().join(rid);
+    let dir = state.storage.role_dir_path(rid)?;
     if dir.exists() {
         let dir_owned = dir.clone();
         tokio::task::spawn_blocking(move || std::fs::remove_dir_all(&dir_owned))

@@ -270,7 +270,7 @@ async fn dispatch_local_bridge_command(
 ) -> Result<Value, CommandError> {
     if command == "send_message" {
         let req = parse_send_message_request(&params)?;
-        let role_path = role_dir_for_id(state, &req.role_id);
+        let role_path = role_dir_for_id(state, &req.role_id)?;
         let res = backend
             .send_message(&role_path, &req)
             .await
@@ -336,7 +336,7 @@ async fn dispatch_local_bridge_command(
             .or_else(|| params.get("role_id"))
             .and_then(|v| v.as_str())
             .ok_or_else(|| bridge_invalid("get_role_pack_path: roleId required"))?;
-        let path = role_dir_for_id(state, role_id.trim());
+        let path = role_dir_for_id(state, role_id.trim())?;
         return Ok(json!({ "role_path": path.to_string_lossy() }));
     }
 

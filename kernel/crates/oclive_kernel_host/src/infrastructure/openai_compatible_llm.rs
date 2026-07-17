@@ -55,6 +55,19 @@ pub fn models_list_url(base: &str) -> String {
     format!("{b}/v1/models")
 }
 
+/// Clone the caller's client for normal remote traffic, but construct an explicit
+/// no-proxy client for loopback endpoints. `reqwest::Client::clone` is cheap and
+/// preserves connection pooling for the common cloud case.
+fn client_for_endpoint(client: &Client, endpoint: &str) -> Client {
+    if !crate::infrastructure::is_loopback_endpoint(endpoint) {
+        return client.clone();
+    }
+    Client::builder()
+        .no_proxy()
+        .build()
+        .unwrap_or_else(|_| client.clone())
+}
+
 pub struct OpenAiCompatibleLlm {
     chat_url: String,
     bearer_token: Option<String>,
@@ -90,10 +103,11 @@ impl OpenAiCompatibleLlm {
             .ok()
             .and_then(|s| s.parse::<u64>().ok())
             .unwrap_or(120_000);
+        let client = client_for_endpoint(&http, &chat_url);
         Some(Self {
             chat_url,
             bearer_token,
-            client: http,
+            client,
             timeout: Duration::from_millis(timeout_ms.clamp(1_000, 600_000)),
             grants,
             network_grant_id: NETWORK_GRANT_REMOTE_LLM.to_string(),
@@ -205,6 +219,7 @@ pub async fn list_openai_compatible_models(
     if models_url.is_empty() {
         return Err(AppError::InvalidParameter("云端 Base URL 为空".into()));
     }
+    let client = client_for_endpoint(client, &models_url);
     let mut req = client
         .get(&models_url)
         .timeout(timeout)
@@ -299,6 +314,23 @@ mod tests {
             models_list_url("https://api.openai.com/v1/chat/completions"),
             "https://api.openai.com/v1/models"
         );
+    }
+
+    #[test]
+    fn loopback_endpoint_detection_is_strict() {
+        assert!(crate::infrastructure::is_loopback_endpoint(
+            "http://localhost:1234/v1/chat/completions"
+        ));
+        assert!(crate::infrastructure::is_loopback_endpoint(
+            "http://127.0.0.1:1234/v1/chat/completions"
+        ));
+        assert!(crate::infrastructure::is_loopback_endpoint(
+            "http://[::1]:1234/v1/chat/completions"
+        ));
+        assert!(!crate::infrastructure::is_loopback_endpoint(
+            "https://api.openai.com/v1/chat/completions"
+        ));
+        assert!(!crate::infrastructure::is_loopback_endpoint("not a URL"));
     }
 
     #[test]

@@ -7,6 +7,20 @@ use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
 use serde_json::Value;
 use std::sync::Arc;
 
+fn client_for_endpoint(
+    client: Arc<reqwest::Client>,
+    cfg: &RemotePluginHttpConfig,
+) -> Arc<reqwest::Client> {
+    if !cfg.is_loopback_endpoint() {
+        return client;
+    }
+    let local = reqwest::Client::builder()
+        .no_proxy()
+        .build()
+        .unwrap_or_else(|_| client.as_ref().clone());
+    Arc::new(local)
+}
+
 /// Plugin sidecar (`OCLIVE_REMOTE_PLUGIN_URL`) shared endpoint — sync API over async reqwest.
 pub struct RemoteHttpClientBlocking {
     client: Arc<reqwest::Client>,
@@ -23,6 +37,7 @@ impl RemoteHttpClientBlocking {
         grants: Arc<HighRiskGrantStore>,
         network_grant_id: Option<String>,
     ) -> Self {
+        let client = client_for_endpoint(client, &cfg);
         Self {
             client,
             cfg,
@@ -41,9 +56,11 @@ impl RemoteHttpClientBlocking {
         grants: Arc<HighRiskGrantStore>,
         network_grant_id: Option<String>,
     ) -> std::result::Result<Self, reqwest::Error> {
-        let client = reqwest::Client::builder()
-            .connect_timeout(cfg.connect_timeout())
-            .build()?;
+        let mut builder = reqwest::Client::builder().connect_timeout(cfg.connect_timeout());
+        if cfg.is_loopback_endpoint() {
+            builder = builder.no_proxy();
+        }
+        let client = builder.build()?;
         Ok(Self::new(Arc::new(client), cfg, grants, network_grant_id))
     }
 
@@ -125,6 +142,7 @@ impl RemoteHttpClientAsync {
         grants: Arc<HighRiskGrantStore>,
         network_grant_id: Option<String>,
     ) -> Self {
+        let client = client_for_endpoint(client, &cfg);
         Self {
             client,
             cfg,
