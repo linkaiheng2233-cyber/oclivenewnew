@@ -1,10 +1,11 @@
 import type { DirectoryPluginBootstrap } from '@oclive/shared/api'
+import { readPluginAssetText } from '@oclive/shared/api'
+import DirectoryShellApp from '@oclive/shared/components/DirectoryShellApp.vue'
+import { i18n } from '@oclive/shared/i18n/index'
+import { isUnsafeInlinePluginVueEnabled } from '@oclive/shared/utils/vueComponentSecurity'
 import { invoke } from '@tauri-apps/api/core'
 import { createPinia } from 'pinia'
 import { createApp } from 'vue'
-import DirectoryShellApp from '@oclive/shared/components/DirectoryShellApp.vue'
-import { i18n } from '@oclive/shared/i18n/index'
-import { readPluginAssetText } from '@oclive/shared/api'
 
 export function isTauriRuntime(): boolean {
   return (
@@ -19,8 +20,8 @@ export function isDirectoryShellDisabled(): boolean {
 }
 
 /**
- * When a full-shell directory plugin is configured: prefer host Vue mount when **`shell.vueEntry` + non-forced iframe**;
- * otherwise `location.replace(shellUrl)` when **`shellUrl`** differs from current page (HTML full shell).
+ * When a full-shell directory plugin is configured, release builds navigate to
+ * `shellUrl`. Same-process `shell.vueEntry` mounting is unsafe DEV-only.
  *
  * @returns true if full shell was handled (Vue mounted or HTML navigation started); caller must not mount app root.
  */
@@ -43,7 +44,11 @@ export async function tryReplaceWithDirectoryShell(): Promise<boolean> {
       return false
     }
 
-    const forceIframe = boot.forceIframeMode === true
+    // A directory shell's Vue source would otherwise execute with the host
+    // page's full authority. Production always navigates to the constrained
+    // custom-protocol HTML surface; inline Vue is an explicit dev-only escape.
+    const forceIframe
+      = boot.forceIframeMode === true || !isUnsafeInlinePluginVueEnabled()
     const vueEntry
       = typeof boot.shellVueEntry === 'string' ? boot.shellVueEntry.trim() : ''
 

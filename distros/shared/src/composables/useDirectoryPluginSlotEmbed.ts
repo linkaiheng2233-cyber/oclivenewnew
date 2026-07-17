@@ -1,12 +1,13 @@
-import type { MaybeRefOrGetter } from 'vue'
-import type { PluginVueCompileError } from '@oclive/shared/utils/compilePluginVueSfc'
 import type { PluginUiSlotInfo } from '@oclive/shared/api'
+import type { PluginVueCompileError } from '@oclive/shared/utils/compilePluginVueSfc'
+import type { MaybeRefOrGetter } from 'vue'
+import { useKeyedPluginErrors } from '@oclive/shared/composables/usePluginError'
+import { usePluginStore } from '@oclive/shared/stores/pluginStore'
+import { useRoleStore } from '@oclive/shared/stores/roleStore'
+import { isUnsafeInlinePluginVueEnabled } from '@oclive/shared/utils/vueComponentSecurity'
 import { storeToRefs } from 'pinia'
 import { computed, ref, toValue, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { usePluginStore } from '@oclive/shared/stores/pluginStore'
-import { useRoleStore } from '@oclive/shared/stores/roleStore'
-import { useKeyedPluginErrors } from '@oclive/shared/composables/usePluginError'
 
 /**
  * Shared directory-plugin slot embed logic: filter from `pluginStore.bootstrapUiSlots`, Vue/iframe fallback, iframe error copy.
@@ -107,6 +108,8 @@ export function useDirectoryPluginSlotEmbed(options: {
   }
 
   function showIframe(s: PluginUiSlotInfo): boolean {
+    if (!isUnsafeInlinePluginVueEnabled())
+      return true
     if (pluginStore.pluginState.force_iframe_mode)
       return true
     const vc = s.vueComponent?.trim()
@@ -116,6 +119,8 @@ export function useDirectoryPluginSlotEmbed(options: {
   }
 
   function showVue(s: PluginUiSlotInfo): boolean {
+    if (!isUnsafeInlinePluginVueEnabled())
+      return false
     if (pluginStore.pluginState.force_iframe_mode)
       return false
     const vc = s.vueComponent?.trim()

@@ -69,9 +69,9 @@ export default {
       'Plugins that declare <code>settings.advanced</code> in the manifest render here.',
     advancedSlotAria: 'Settings advanced slot',
     securityLabel: 'Security',
-    forceIframeTitle: 'Force iframe mode',
+    forceIframeTitle: 'Plugin UI isolation (enforced in releases)',
     forceIframeDesc:
-      'When on, all plugin UIs load in iframes (safer, may reduce quality). Restart the app for full effect after saving.',
+      'Release builds always use constrained HTML/iframes and never execute plugin Vue in the host page. Disabling this requires both a Vite dev build and VITE_OCLIVE_UNSAFE_INLINE_PLUGIN_VUE=1; that mode inherits host-window authority.',
     pluginsPanelTitle: 'Directory plugins · settings slots',
     pluginsPanelHint1:
       'Declare <code>settings.panel</code> in the plugin manifest ui_slots to embed a settings page here.',

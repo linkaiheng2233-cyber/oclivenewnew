@@ -83,9 +83,9 @@ export async function readPluginAssetText(
 export interface DirectoryPluginBootstrap {
   shellUrl?: string | null
   shellPluginId?: string | null
-  /** Shell `manifest.shell.vueEntry`, path relative to plugin root; skipped when `forceIframeMode` */
+  /** Dev-only shell Vue entry; release builds always use `shellUrl` HTML. */
   shellVueEntry?: string | null
-  /** From `plugin_state.force_iframe_mode`; when true, skip Vue shell and use iframe */
+  /** Persisted preference; release builds enforce HTML regardless of false. */
   forceIframeMode?: boolean
   pluginIds: string[]
   developerMode: boolean
@@ -130,7 +130,7 @@ export interface PluginStateFile {
   disabled_slot_contributions: Record<string, string[]>
   /** `plugin_id` → `slot` → `appearance_id` */
   slot_appearance?: Record<string, Record<string, string>>
-  /** When true, ignore `vueComponent` and force iframe for all slot embeds */
+  /** Persisted preference; release builds force HTML/iframe regardless of false. */
   force_iframe_mode?: boolean
 }
 

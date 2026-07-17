@@ -151,7 +151,7 @@ export interface LoadPluginVueOptions {
 }
 
 /**
- * Compile and load `.vue` from directory plugin root (runtime `vue3-sfc-loader`).
+ * Compile and load `.vue` from a directory plugin root for explicit unsafe DEV mode.
  * Compile failure throws {@link PluginVueCompileError}; disk/network issues return `null` for iframe fallback.
  */
 export async function loadPluginVueComponent(

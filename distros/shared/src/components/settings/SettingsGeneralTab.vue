@@ -8,9 +8,9 @@ import {
 } from '@oclive/shared/api'
 import { useAppToast } from '@oclive/shared/composables/useAppToast'
 import { useDistroUxProfile } from '@oclive/shared/composables/useDistroUxProfile'
+import { useEasterEggSkin } from '@oclive/shared/composables/useEasterEggSkin'
 import { useInteractionModeSettings } from '@oclive/shared/composables/useInteractionModeSettings'
 import { getLayoutWidths, resetLayoutWidths } from '@oclive/shared/composables/useLayoutWidths'
-import { useEasterEggSkin } from '@oclive/shared/composables/useEasterEggSkin'
 import { useOcliveAppearance } from '@oclive/shared/composables/useOcliveAppearance'
 import { useUserIdentityState } from '@oclive/shared/composables/useUserIdentityState'
 import { getLocalePreference, setLocalePreference } from '@oclive/shared/i18n'
@@ -18,15 +18,16 @@ import { SLOT_SETTINGS_ADVANCED, usePluginStore } from '@oclive/shared/stores/pl
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
 import { isChatStreamEnabled, setChatStreamEnabled } from '@oclive/shared/utils/chatStreamSettings'
 import { isSentryOptOut, setSentryOptOut } from '@oclive/shared/utils/telemetrySentry'
+import { isUnsafeInlinePluginVueEnabled } from '@oclive/shared/utils/vueComponentSecurity'
 import { defineAsyncComponent, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import KeybindingsSettingsSection from '../hotkey/KeybindingsSettingsSection.vue'
 import PluginSlotEmbed from '../PluginSlotEmbed.vue'
 import HelpHint from '../shared/HelpHint.vue'
 import UiButton from '../ui/UiButton.vue'
 import UiFieldRow from '../ui/UiFieldRow.vue'
 import UiSection from '../ui/UiSection.vue'
 import UiSelect from '../ui/UiSelect.vue'
-import KeybindingsSettingsSection from '../hotkey/KeybindingsSettingsSection.vue'
 
 const props = defineProps<{
   visible: boolean
@@ -51,6 +52,7 @@ const { onInteractionModeSelect } = useInteractionModeSettings()
 const { hasCatalog } = useUserIdentityState()
 const { themeCycleLabel, cycleTheme, bumpScale, scaleLabel } = useOcliveAppearance()
 const { skinUnlocked, win98Enabled, toggleWin98 } = useEasterEggSkin()
+const inlinePluginVueLocked = !isUnsafeInlinePluginVueEnabled()
 
 function onWin98SkinChange(e: Event) {
   const checked = (e.target as HTMLInputElement).checked
@@ -478,7 +480,8 @@ async function onToggleForceIframe(e: Event) {
           <label class="sv-toggle-row">
             <input
               type="checkbox"
-              :checked="pluginStore.pluginState.force_iframe_mode === true"
+              :checked="inlinePluginVueLocked || pluginStore.pluginState.force_iframe_mode === true"
+              :disabled="inlinePluginVueLocked"
               @change="onToggleForceIframe"
             >
             <span class="sv-toggle-text">
@@ -538,7 +541,8 @@ async function onToggleForceIframe(e: Event) {
         <label class="sv-toggle-row">
           <input
             type="checkbox"
-            :checked="pluginStore.pluginState.force_iframe_mode === true"
+            :checked="inlinePluginVueLocked || pluginStore.pluginState.force_iframe_mode === true"
+            :disabled="inlinePluginVueLocked"
             @change="onToggleForceIframe"
           >
           <span class="sv-toggle-text">

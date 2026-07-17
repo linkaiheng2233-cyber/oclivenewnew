@@ -8,6 +8,16 @@ export interface ScanResult {
   warnings: string[]
 }
 
+/**
+ * Same-process plugin Vue runs with the host page's authority and is therefore
+ * never enabled in production. Local developers must opt in explicitly as
+ * well as use a Vite development build.
+ */
+export function isUnsafeInlinePluginVueEnabled(): boolean {
+  return import.meta.env.DEV
+    && import.meta.env.VITE_OCLIVE_UNSAFE_INLINE_PLUGIN_VUE === '1'
+}
+
 export const DANGEROUS_PATTERNS = [
   {
     token: 'window.__TAURI__',

@@ -66,9 +66,9 @@ export default {
       'manifest 中声明 <code>settings.advanced</code> 的插件显示于此。',
     advancedSlotAria: '设置扩展区',
     securityLabel: '安全',
-    forceIframeTitle: '强制 iframe 模式',
+    forceIframeTitle: '插件界面隔离（发行版强制）',
     forceIframeDesc:
-      '开启后，所有插件界面将使用 iframe 加载，更安全但体验可能下降。保存后需重启应用以完全生效。',
+      '发行构建始终使用受限 HTML/iframe，不执行同进程插件 Vue。仅 Vite 开发构建同时显式设置 VITE_OCLIVE_UNSAFE_INLINE_PLUGIN_VUE=1 时可关闭；该模式会继承主窗口权限。',
     pluginsPanelTitle: '目录插件 · 设置页插槽',
     pluginsPanelHint1:
       '在插件 manifest 的 ui_slots 中声明 slot 为 settings.panel，即可在此嵌入配置页。',

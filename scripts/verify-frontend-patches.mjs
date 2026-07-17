@@ -42,6 +42,28 @@ const checks = [
         'modelManagerOpen',
       ),
   },
+  {
+    name: 'production directory plugin slots fail closed to iframe',
+    ok: () => {
+      const source = readFileSync(
+        join(shared, 'composables/useDirectoryPluginSlotEmbed.ts'),
+        'utf8',
+      )
+      return source.includes('!isUnsafeInlinePluginVueEnabled()')
+        && source.includes('return true')
+        && source.includes('return false')
+    },
+  },
+  {
+    name: 'production directory shell blocks same-process Vue',
+    ok: () => {
+      const source = readFileSync(
+        join(shared, 'utils/directoryShellBootstrap.ts'),
+        'utf8',
+      )
+      return source.includes('!isUnsafeInlinePluginVueEnabled()')
+    },
+  },
 ]
 
 let failed = false
