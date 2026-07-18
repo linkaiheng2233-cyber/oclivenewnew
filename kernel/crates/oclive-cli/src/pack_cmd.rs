@@ -3,6 +3,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use crate::role_pack::write_empty_memory_seed;
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use oclive_validation::{
@@ -179,6 +180,23 @@ fn run_create(args: PackCreateArgs) -> Result<()> {
     };
     fs::create_dir_all(root.join("scenes").join("default"))
         .with_context(|| format!("create scenes/default under {}", root.display()))?;
+    write_empty_memory_seed(&root)?;
+    fs::write(
+        root.join("core_personality.txt"),
+        "# Core personality (UTF-8 text). Replace with the role's immutable identity and behavior boundaries.\n",
+    )
+    .context("write core_personality.txt")?;
+    let scene = json!({
+        "name": "Default",
+        "time_windows": [],
+        "keywords": [],
+        "events": []
+    });
+    fs::write(
+        root.join("scenes").join("default").join("scene.json"),
+        serde_json::to_string_pretty(&scene).context("scene.json")?,
+    )
+    .context("write scene.json")?;
 
     let manifest = json!({
         "id": id,
@@ -255,24 +273,6 @@ fn run_create(args: PackCreateArgs) -> Result<()> {
         serde_json::to_string_pretty(&settings).context("serialize settings")?,
     )
     .context("write settings.json")?;
-
-    fs::write(
-        root.join("core_personality.txt"),
-        "# Core personality (UTF-8 text). Optional alongside manifest default_personality.\n",
-    )
-    .context("write core_personality.txt")?;
-
-    let scene = json!({
-        "name": "Default",
-        "time_windows": [],
-        "keywords": [],
-        "events": []
-    });
-    fs::write(
-        root.join("scenes").join("default").join("scene.json"),
-        serde_json::to_string_pretty(&scene).context("scene.json")?,
-    )
-    .context("write scene.json")?;
 
     println!("Role pack directory created: {}", root.display());
     Ok(())

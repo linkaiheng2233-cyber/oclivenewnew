@@ -42,6 +42,7 @@ fn e2e_template_robot_soul_matches_manual_combo() {
     let v_man: Value = serde_json::from_str(&s_man).unwrap();
     assert_eq!(v_tpl.get("plugin_backends"), v_man.get("plugin_backends"));
     assert!(out_tpl.join("roles/default/prompts/system.md").is_file());
+    assert!(out_tpl.join("roles/default/memory_seed.json").is_file());
     assert!(out_tpl.join("plugins/README.md").is_file());
     let m: Value = serde_json::from_str(
         &fs::read_to_string(out_tpl.join("roles/default/manifest.json")).unwrap(),
@@ -119,6 +120,8 @@ fn e2e_template_robot_gateway_matches_manual_combo() {
     assert!(out_tpl.join("monolith.toml").is_file());
     assert!(out_manual.join("monolith.toml").is_file());
     assert!(out_tpl.join("roles/gateway/settings.json").is_file());
+    assert!(out_tpl.join("roles/gateway/core_personality.txt").is_file());
+    assert!(out_tpl.join("roles/gateway/memory_seed.json").is_file());
     assert!(out_tpl.join("mcp_servers/README.md").is_file());
     assert!(!out_manual.join("roles").exists());
     let mt_tpl = fs::read_to_string(out_tpl.join("monolith.toml")).unwrap();

@@ -53,6 +53,7 @@
 | 路径 | 说明 |
 |------|------|
 | **`core_personality.txt`** | **Tier0 人设唯一真源**（`PromptBuilder` 只读此文件 + 蓝图 `meta` 元数据；**不**接入 `prompts/system.md`） |
+| `memory_seed.json` | 可选、创作者维护的只读前置记忆；与用户运行时 LTM、STM、聊天记录分离，详见 [`ROLE_PACK_SPEC`](../creator-docs/role-pack/ROLE_PACK_SPEC.md#persona--memory-独立迁移契约) |
 | `prompts/` | **可选创作辅助**：`reply_quality_anchor.md` 人类可读镜像（运行时 SSOT 为 `meta.reply_quality_anchor` 或内核默认）、creator profile 校验目录；**非** Tier0 人设来源 |
 | `scenes/{id}/` | 场景 `scene.json`、`description.txt` 等 |
 | `knowledge/` | 世界观 Markdown（内容向） |

@@ -344,6 +344,7 @@ fn write_robot_gateway_extras(out: &Path) -> Result<()> {
 
     let role_root = out.join("roles/gateway");
     fs::create_dir_all(role_root.join("scenes").join("default")).context("create roles/gateway")?;
+    crate::role_pack::write_empty_memory_seed(&role_root)?;
 
     let mut settings: serde_json::Value =
         serde_json::from_str(&render_settings_json(&preset_gateway_config())?)
@@ -387,6 +388,11 @@ fn write_robot_gateway_extras(out: &Path) -> Result<()> {
         "# Gateway persona (OEM)\n\nCoordinate smart home devices via Agent + MCP.\n",
     )
     .context("write character.md")?;
+    fs::write(
+        role_root.join("core_personality.txt"),
+        "You are a smart-home gateway assistant. Coordinate authorized devices through Agent + MCP, confirm ambiguous or high-impact actions, and never claim an action succeeded without tool evidence.\n",
+    )
+    .context("write core_personality.txt")?;
     let scene = json!({
         "name": "Default",
         "time_windows": [],
@@ -631,6 +637,11 @@ mod tests {
         write_project(&cfg, dir.path()).unwrap();
         assert!(dir.path().join("mcp_servers/README.md").is_file());
         assert!(dir.path().join("roles/gateway/settings.json").is_file());
+        assert!(dir
+            .path()
+            .join("roles/gateway/core_personality.txt")
+            .is_file());
+        assert!(dir.path().join("roles/gateway/memory_seed.json").is_file());
     }
 
     #[test]

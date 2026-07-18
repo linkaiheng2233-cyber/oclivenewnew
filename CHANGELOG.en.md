@@ -6,7 +6,7 @@
 
 ### Added
 
-- **Independent cross-distro Persona / Memory transfer**: added versioned `.ocpersona` and `.ocmemory` JSON contracts, shared validation, and desktop-host import/export APIs. Role packs may provide read-only creator-authored `memory_seed.json`; persona import restores only the mutable profile without overwriting core persona, while memory import merges LTM and excludes chats, short-term cache, and ephemeral situation state.
+- **Independent cross-distro Persona / Memory transfer**: added versioned `.ocpersona` and `.ocmemory` JSON contracts, shared validation, and desktop-host import/export APIs. Role packs may provide read-only creator-authored `memory_seed.json`; persona import restores only the mutable profile without overwriting core persona, while memory import merges LTM and excludes chats, short-term cache, and ephemeral situation state. Bundled role packs, the Robot Soul example, and CLI create/init scaffolds now generate this seed container consistently.
 
 - **Local HTTP API authentication**: the desktop host now generates and injects a random `OCLIVE_API_TOKEN` when spawning the kernel; headless `--api` now also requires that variable by default, and every route except public readiness `GET /health` requires `x-oclive-api-token`. Only isolated local development may explicitly opt out with `OCLIVE_API_ALLOW_UNAUTHENTICATED=1`; CORS is limited to local-development/Tauri origins, and OOCP plus restart smoke tests attach the token automatically.
 

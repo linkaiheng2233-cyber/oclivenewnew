@@ -26,6 +26,13 @@ fn e2e_pack_create_validate_publish() {
     ])
     .success());
     assert!(root.join("pipeline.ocblueprint").exists());
+    assert!(root.join("core_personality.txt").exists());
+    assert!(root.join("scenes/default/scene.json").exists());
+    let seed: Value =
+        serde_json::from_str(&std::fs::read_to_string(root.join("memory_seed.json")).unwrap())
+            .unwrap();
+    assert_eq!(seed["schema_version"], 1);
+    assert_eq!(seed["memories"].as_array().map(Vec::len), Some(0));
     assert!(run_cli(&[
         "pack",
         "validate",
