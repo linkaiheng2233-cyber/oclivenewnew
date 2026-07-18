@@ -29,6 +29,15 @@ pub enum PackCommands {
     Publish(PackPublishArgs),
     /// Migrate manifest.json + settings.json → pipeline.ocblueprint v2
     MigrateToBlueprint(MigrateToBlueprintArgs),
+    /// Validate a portable `.ocpersona` JSON document
+    ValidatePersona(PortableDocumentArgs),
+    /// Validate a portable `.ocmemory` JSON document
+    ValidateMemory(PortableDocumentArgs),
+}
+
+#[derive(Parser, Debug)]
+pub struct PortableDocumentArgs {
+    pub path: PathBuf,
 }
 
 #[derive(Parser, Debug)]
@@ -91,7 +100,25 @@ pub fn run_pack(args: PackArgs) -> Result<()> {
         PackCommands::Create(a) => run_create(a),
         PackCommands::Publish(a) => run_publish(a),
         PackCommands::MigrateToBlueprint(a) => run_migrate_to_blueprint(a),
+        PackCommands::ValidatePersona(a) => run_validate_portable(a, true),
+        PackCommands::ValidateMemory(a) => run_validate_portable(a, false),
     }
+}
+
+fn run_validate_portable(args: PortableDocumentArgs, persona: bool) -> Result<()> {
+    let raw =
+        fs::read_to_string(&args.path).with_context(|| format!("read {}", args.path.display()))?;
+    let result = if persona {
+        oclive_validation::parse_portable_persona(&raw).map(|_| ())
+    } else {
+        oclive_validation::parse_portable_memory(&raw).map(|_| ())
+    };
+    result.map_err(|errors| anyhow::anyhow!(errors.join("\n")))?;
+    println!(
+        "Portable {} validation passed",
+        if persona { "persona" } else { "memory" }
+    );
+    Ok(())
 }
 
 fn run_validate(args: PackValidateArgs) -> Result<()> {

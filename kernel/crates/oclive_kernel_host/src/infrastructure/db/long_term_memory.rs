@@ -21,6 +21,63 @@ type MemoryRowTuple = (
 );
 
 impl DbManager {
+    /// Merge one portable long-term memory while preserving its bounded runtime metadata.
+    pub async fn import_portable_memory(
+        &self,
+        role_id: &str,
+        entry: &oclive_kernel_types::PortableLongTermMemoryEntry,
+    ) -> Result<()> {
+        let existing: Option<(i64, f64, f64, i32)> = sqlx::query_as(
+            "SELECT id, importance, weight, mention_count FROM long_term_memory
+             WHERE role_id = ? AND content = ? ORDER BY id DESC LIMIT 1",
+        )
+        .bind(role_id)
+        .bind(entry.content.trim())
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+
+        if let Some((id, importance, weight, mention_count)) = existing {
+            sqlx::query(
+                "UPDATE long_term_memory
+                 SET importance = ?, weight = ?, mention_count = ?, accessed_at = COALESCE(?, accessed_at)
+                 WHERE id = ? AND role_id = ?",
+            )
+            .bind(importance.max(entry.importance))
+            .bind(weight.max(entry.weight))
+            .bind(mention_count.max(entry.mention_count))
+            .bind(entry.accessed_at.as_deref())
+            .bind(id)
+            .bind(role_id)
+            .execute(&self.pool)
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+            return Ok(());
+        }
+
+        let created_at = entry
+            .created_at
+            .clone()
+            .unwrap_or_else(|| Utc::now().to_rfc3339());
+        sqlx::query(
+            "INSERT INTO long_term_memory
+             (role_id, content, importance, weight, created_at, accessed_at, scene_id, mention_count)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        )
+        .bind(role_id)
+        .bind(entry.content.trim())
+        .bind(entry.importance)
+        .bind(entry.weight)
+        .bind(created_at)
+        .bind(entry.accessed_at.as_deref())
+        .bind(entry.scene_id.as_deref())
+        .bind(entry.mention_count)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(())
+    }
+
     pub async fn save_memory(
         &self,
         role_id: &str,

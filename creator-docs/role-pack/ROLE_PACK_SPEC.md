@@ -45,6 +45,7 @@ distros/chat-pro/roles/{role_id}/
 ├── manifest.json           # **已废弃（legacy）**：勿与 v2 蓝图并存
 ├── settings.json           # **已废弃（legacy）**：勿与 v2 蓝图并存
 ├── core_personality.txt    # **人设真源**（Tier0）；profile 模式长文；`prompts/system.md` 不替代本文件
+├── memory_seed.json        # 可选：创作者预置、只读的初始记忆；与用户运行时 LTM 分离
 ├── ui.json                 # 可选；前端布局
 ├── author.json             # 可选；作者元数据
 ├── scenes/
@@ -276,6 +277,41 @@ cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/mumu --profile
 
 `portable-core` 只验证包的通用底座，不宣称各发行版的 UI、语音、视觉、插件或硬件能力完全等价；这些能力应由发行版自己的 capability-conformance 验收负责。
 
+### Persona / Memory 独立迁移契约
+
+跨发行版搬运使用两个互不嵌套的 JSON 产物：
+
+| 产物 | 内容 | 明确排除 |
+|------|------|----------|
+| `.ocpersona` | 角色 id/版本、只读核心人设、七维基础值、可选可变人设快照 | 聊天记录、STM、LTM、临时局面状态 |
+| `.ocmemory` | 可选 `memory_seed` 与用户长期记忆（含场景、权重、强化次数） | 核心/可变人设、聊天记录、STM、临时局面状态 |
+
+导入 `.ocpersona` 时，宿主必须校验 `role_id` 与核心人设一致，且**只能恢复可变人设**；不得覆盖已安装角色包的 `core_personality.txt`。导入 `.ocmemory` 使用合并语义，不重复插入相同内容。短期记忆是可从聊天恢复的宿主缓存，临时人设实际语义是数轮有效的**临时局面状态**，两者均不进入默认迁移产物。
+
+包内可选 `memory_seed.json`：
+
+```json
+{
+  "schema_version": 1,
+  "memories": [
+    {
+      "id": "first_meeting",
+      "content": "角色记得与用户初次见面的背景事件。",
+      "importance": 0.8,
+      "scene_id": "default"
+    }
+  ],
+  "extensions": {}
+}
+```
+
+`memory_seed` 由创作者/编写器维护，运行时只读：可参与相关记忆检索，但不受遗忘衰减、不被模型覆写，也不会因为导入 `.ocmemory` 写入用户 LTM。发行版扩展只能写入顶层 `extensions`，不得改变上述基础字段语义。格式校验：
+
+```bash
+oclive-cli pack validate-persona ./mumu.ocpersona
+oclive-cli pack validate-memory ./mumu.ocmemory
+```
+
 ### RobotSoulPack（`--profile robot-soul`）
 
 在标准目录校验通过后追加，用于 **机器人 / 无头 / 嵌入式** 最小可交付「灵魂包」：
@@ -303,6 +339,8 @@ cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/my-role --host
 |------|------|
 | `pack validate <dir>` | **默认** v2 蓝图目录校验 |
 | `pack validate <dir> --profile portable-core` | v2/v3 + Portable Core（基础人格 + 七张默认情绪图） |
+| `pack validate-persona <file>` | 校验 `.ocpersona` Persona 迁移文件 |
+| `pack validate-memory <file>` | 校验 `.ocmemory` Memory 迁移文件 |
 | `pack validate <dir> --profile legacy` | legacy manifest/settings |
 | `pack validate <dir> --profile robot-soul` | legacy + RobotSoulPack（见 §6） |
 | `pack create -o <out> --id <id> [--flat]` | 生成最小可校验包（`--flat` 时 `<out>` 即为角色根） |

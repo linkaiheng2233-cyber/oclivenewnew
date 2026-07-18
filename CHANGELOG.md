@@ -6,6 +6,8 @@
 
 ### Added
 
+- **Persona / Memory 跨发行版独立迁移**：新增 `.ocpersona` 与 `.ocmemory` JSON v1 契约、共享校验和桌面宿主导入导出 API；角色包可选 `memory_seed.json` 作为创作者只读初始记忆。Persona 导入只恢复可变人设且不得覆盖核心人设；Memory 使用合并导入，明确排除聊天记录、短期记忆缓存与临时局面状态。
+
 - **本地 HTTP API 认证**：桌面宿主启动 kernel 时自动生成并注入随机 `OCLIVE_API_TOKEN`；无头 `--api` 现在也默认要求显式设置同名变量，除公开探活 `GET /health` 外的路由须发送 `x-oclive-api-token`。仅隔离的本地开发可显式设置 `OCLIVE_API_ALLOW_UNAUTHENTICATED=1` 逃生；CORS 收窄至本机开发/Tauri 来源，OOCP 与进程重启烟测自动附加 token。
 
 ### Fixed

@@ -55,7 +55,11 @@ pub use policy::{EmotionPolicyConfig, MemoryPolicyConfig, PolicyConfig, PolicyCo
 pub use prompt::{PromptExtraSection, PromptInput};
 pub use slot_extension::SlotExtension;
 
-pub use oclive_validation::{SlotGroupEntry, SlotRegistryEntry};
+pub use oclive_validation::{
+    MemorySeedEntry, MemorySeedFile, PortableLongTermMemoryEntry, PortableMemoryFile,
+    PortablePersonaFile, SlotGroupEntry, SlotRegistryEntry, MEMORY_SEED_SCHEMA_VERSION,
+    PORTABLE_MEMORY_SCHEMA_VERSION, PORTABLE_PERSONA_SCHEMA_VERSION,
+};
 
 pub use models::{
     author_pack::{AuthorPackFile, AuthorRecommendedPlugin},
@@ -66,9 +70,10 @@ pub use models::{
         ExportChatLogsResponse, GenerateMonologueRequest, GenerateMonologueResponse,
         GetPluginResolutionDebugRequest, GetRoleInfoRequest, GetUserIdentityStateRequest,
         ImportProgress, JumpTimeRequest, JumpTimeResponse, LifeStateDto, MemoryItem,
-        PluginResolutionDebugInfo, PresenceMode, QueryEventsRequest, QueryMemoriesRequest,
-        RoleData, RoleInfo, RoleSummary, SaveRoleSlotRegistryRequest, SceneLabelEntry,
-        SendMessageRequest, SendMessageResponse, SetEvolutionFactorRequest,
+        PluginResolutionDebugInfo, PortableStateExportResponse, PortableStateImportRequest,
+        PortableStateImportResponse, PortableStateRequest, PresenceMode, QueryEventsRequest,
+        QueryMemoriesRequest, RoleData, RoleInfo, RoleSummary, SaveRoleSlotRegistryRequest,
+        SceneLabelEntry, SendMessageRequest, SendMessageResponse, SetEvolutionFactorRequest,
         SetRemoteLifeEnabledRequest, SetRoleInteractionModeRequest, SetSceneUserIdentityRequest,
         SetSceneUserRelationRequest, SetSessionPluginBackendRequest, SetSessionSlotOverrideRequest,
         SetUserIdentityRequest, SetUserPresenceSceneRequest, SetUserRelationRequest,

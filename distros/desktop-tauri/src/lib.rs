@@ -311,6 +311,10 @@ pub fn run() {
             api::desktop_fs::write_user_text_file,
             // ?? role pack import/export ??
             api::role_pack::export_role_pack_command,
+            api::portable_state::export_portable_persona,
+            api::portable_state::import_portable_persona,
+            api::portable_state::export_portable_memory,
+            api::portable_state::import_portable_memory,
             api::role_pack::peek_role_pack_command,
             api::role_pack::import_role_pack_command,
             // ?? scene / presence ??

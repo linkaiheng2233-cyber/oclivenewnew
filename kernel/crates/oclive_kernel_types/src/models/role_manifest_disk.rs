@@ -117,6 +117,7 @@ pub fn disk_manifest_to_role(d: &DiskRoleManifest) -> Role {
         version: d.version.clone(),
         author: d.author.clone(),
         core_personality: String::new(),
+        memory_seed: Vec::new(),
         default_personality: def,
         evolution_bounds: bounds,
         user_relations,

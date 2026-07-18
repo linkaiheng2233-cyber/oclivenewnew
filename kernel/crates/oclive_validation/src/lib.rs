@@ -26,6 +26,7 @@ pub mod plugin_backends;
 pub mod plugin_dependencies;
 pub mod plugin_permissions;
 pub mod plugin_slot_attachment;
+pub mod portable_state;
 pub mod portrait_catalog;
 pub mod protocol_boundary;
 pub mod reply_post_processor;
@@ -109,6 +110,11 @@ pub use plugin_permissions::{
 pub use plugin_slot_attachment::{
     apply_slot_attachments_to_registry, parse_slot_attachments_from_manifest_json,
     validate_slot_attachment_decl, SlotAttachmentDecl,
+};
+pub use portable_state::{
+    parse_memory_seed, parse_portable_memory, parse_portable_persona, MemorySeedEntry,
+    MemorySeedFile, PortableLongTermMemoryEntry, PortableMemoryFile, PortablePersonaFile,
+    MEMORY_SEED_SCHEMA_VERSION, PORTABLE_MEMORY_SCHEMA_VERSION, PORTABLE_PERSONA_SCHEMA_VERSION,
 };
 pub use portrait_catalog::{
     validate_portable_core_files, validate_portrait_catalog_files, PORTABLE_CORE_PORTRAIT_IDS,

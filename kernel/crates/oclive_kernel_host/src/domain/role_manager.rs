@@ -240,6 +240,7 @@ mod tests {
 
     fn create_test_role() -> Role {
         Role {
+            memory_seed: Vec::new(),
             id: "test".to_string(),
             name: "TestBot".to_string(),
             description: "A test bot".to_string(),

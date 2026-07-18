@@ -694,6 +694,38 @@ pub struct ExportChatLogsResponse {
     pub suggested_filename: String,
 }
 
+/// Selects one role/persona runtime namespace for portable persona or memory transfer.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PortableStateRequest {
+    pub role_id: String,
+    #[serde(default)]
+    pub session_id: Option<String>,
+}
+
+/// JSON payload returned for saving as `.ocpersona` or `.ocmemory`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PortableStateExportResponse {
+    pub content: String,
+    pub suggested_filename: String,
+}
+
+/// Imports a portable document into an installed role's runtime namespace.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PortableStateImportRequest {
+    pub role_id: String,
+    #[serde(default)]
+    pub session_id: Option<String>,
+    pub content: String,
+}
+
+/// Import result. Seed memories remain read-only role-pack data and are not written to LTM.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PortableStateImportResponse {
+    pub imported_long_term: u32,
+    pub skipped_memory_seed: u32,
+    pub mutable_profile_restored: bool,
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct QueryMemoriesRequest {
     pub role_id: String,

@@ -443,6 +443,14 @@ impl RoleStorage {
                 fs::read_to_string(&core_personality_path).map_err(AppError::IoError)?;
         }
 
+        let memory_seed_path = role_dir.join("memory_seed.json");
+        if memory_seed_path.is_file() {
+            let raw = fs::read_to_string(&memory_seed_path).map_err(AppError::IoError)?;
+            role.memory_seed = oclive_validation::parse_memory_seed(&raw)
+                .map_err(|errors| AppError::InvalidParameter(errors.join("; ")))?
+                .memories;
+        }
+
         let deep_capsule_path = role_dir.join("prompts/deep_capsule.txt");
         if deep_capsule_path.is_file() {
             role.deep_capsule =

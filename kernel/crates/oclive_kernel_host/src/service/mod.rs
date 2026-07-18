@@ -7,6 +7,7 @@ pub mod high_risk;
 pub mod llm_settings;
 pub mod mcp;
 pub mod plugin_bridge;
+pub mod portable_state;
 pub mod role;
 pub mod scene;
 pub mod settings_bridge;
@@ -31,6 +32,10 @@ pub use mcp::{
 };
 pub use plugin_bridge::{
     bridge_command_needs_kernel_writer, dispatch_bridge_command, parse_send_message_request,
+};
+pub use portable_state::{
+    export_portable_memory_impl, export_portable_persona_impl, import_portable_memory_impl,
+    import_portable_persona_impl,
 };
 pub use role::{
     delete_role_impl, get_display_metrics_impl, get_role_info_impl, get_user_identity_state_impl,

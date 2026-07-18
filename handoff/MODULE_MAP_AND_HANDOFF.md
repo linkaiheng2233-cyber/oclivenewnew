@@ -112,6 +112,7 @@
 | **主链 hook** | `turn_pipeline/pre.rs` 检索 · `post_llm` 写入 STM/LTM |
 | **与聊天存储** | **无关** — `chat_messages` 不进 MemoryEngine；回放见 `replay_memory_extraction` |
 | **合并** | 多 memory 实例 → 去重合并 |
+| **可移植边界** | `.ocmemory` 只携带 `memory_seed` + LTM；STM 是可重建缓存，临时局面状态不属于 memory/persona 迁移 |
 | **`none`** | `NoopMemoryRetrieval`；共景路径通常 **禁止** none（见 MODULE_NONE_SEMANTICS） |
 | **允许改** | 检索算法、decay、archive 阈值、remote/directory 协议 |
 | **禁止** | 用聊天记录表当记忆真源；角色任务改 `slot_registry` |

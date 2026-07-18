@@ -94,6 +94,10 @@ pub fn validate_portrait_catalog_files(role_dir: &Path) -> Result<(), Vec<String
 ///
 /// Unlike the optional portrait facility, Portable Core requires an explicitly
 /// enabled catalog with one local `image` asset for each stable emotion id.
+///
+/// # Errors
+///
+/// Returns validation messages when the baseline files or assets are missing or invalid.
 pub fn validate_portable_core_files(role_dir: &Path) -> Result<(), Vec<String>> {
     let mut errs = Vec::new();
     let config_path = role_dir.join("config.json");

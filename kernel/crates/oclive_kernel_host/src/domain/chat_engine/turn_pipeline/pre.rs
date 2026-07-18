@@ -297,6 +297,27 @@ async fn load_memories_and_relation_key(
         );
     }
     memories = MemoryEngine::filter_for_prompt_threshold(memories, cfg);
+
+    // Creator seeds are immutable role-pack evidence. They participate in retrieval but are
+    // appended after decay/filtering, so runtime forgetting never rewrites or suppresses them.
+    let now = chrono::Utc::now();
+    let mut seed_memories: Vec<Memory> = role
+        .memory_seed
+        .iter()
+        .map(|seed| Memory {
+            id: format!("seed:{}", seed.id),
+            role_id: srid.to_string(),
+            content: seed.content.clone(),
+            importance: seed.importance,
+            weight: 1.0,
+            created_at: now,
+            scene_id: seed.scene_id.clone(),
+            mention_count: 1,
+            accessed_at: None,
+        })
+        .collect();
+    weight_memories_for_scene(&mut seed_memories, scene_id, scene_m);
+    memories.extend(seed_memories);
     Ok((memories, resolved_identity))
 }
 

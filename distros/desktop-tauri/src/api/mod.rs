@@ -22,6 +22,7 @@ pub mod plugin_pack;
 pub mod plugin_scaffold;
 pub mod plugin_update;
 pub mod policy;
+pub mod portable_state;
 pub mod role;
 pub mod role_pack;
 pub mod scene;

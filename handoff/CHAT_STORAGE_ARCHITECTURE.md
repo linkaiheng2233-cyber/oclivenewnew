@@ -18,6 +18,18 @@
 
 **Do not** route `MemoryEngine` or archive LLM through chat JSON files. **Deleting chat logs never clears memory tables.**
 
+## Portable-state boundary
+
+| State | Portable artifact | Rule |
+|-------|-------------------|------|
+| Core + mutable persona | `.ocpersona` | Core is a compatibility guard; import restores mutable profile only |
+| Creator seed + LTM | `.ocmemory` | Merge LTM; package `memory_seed` remains read-only |
+| `short_term_memory` | none by default | Rebuildable recent-context cache, not migration truth |
+| Ephemeral situation state | none | Reply-optimization state with TTL; despite the legacy column name `ephemeral_personality`, it is not a persona archive |
+| `chat_messages` | existing chat export | Separate consent/export path; never silently bundled with persona or memory |
+
+Current STM rows retain user input, reply, emotion, scene and timestamp with a per-role FIFO policy; the hot path reads the latest six turns. It supports event continuity, anti-repeat, agent and presentation context, but does not replace LTM retrieval. Session/identity-granular STM isolation remains a separate schema evolution; portable exports intentionally exclude STM until that boundary is explicit.
+
 ## STM → LTM lifecycle (orchestration memory)
 
 | Stage | When | Code anchor | Persisted |

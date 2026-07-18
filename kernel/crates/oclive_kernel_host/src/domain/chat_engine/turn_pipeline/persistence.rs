@@ -399,6 +399,7 @@ mod persist_non_profile_tests {
 
     fn vector_role() -> Role {
         Role {
+            memory_seed: Vec::new(),
             id: "test".to_string(),
             name: "Test".to_string(),
             description: String::new(),

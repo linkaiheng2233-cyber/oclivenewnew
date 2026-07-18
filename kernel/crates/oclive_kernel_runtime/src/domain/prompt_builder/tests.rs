@@ -6,6 +6,7 @@ use crate::models::{Memory, PersonalityVector, Role};
 use chrono::Utc;
 fn create_test_role() -> Role {
     Role {
+        memory_seed: Vec::new(),
         id: "test".to_string(),
         name: "Test Role".to_string(),
         description: "A test role".to_string(),

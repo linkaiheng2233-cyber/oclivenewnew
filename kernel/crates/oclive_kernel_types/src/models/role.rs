@@ -153,6 +153,9 @@ pub struct Role {
     pub author: String,
     /// **Core personality profile**: the fixed persona set by the creator and user; the **AI must not rewrite** it at runtime (see `mutable_profile_llm`), and together with the mutable profile it forms the complete persona.
     pub core_personality: String,
+    /// Creator-authored read-only memories from optional `memory_seed.json`.
+    #[serde(skip)]
+    pub memory_seed: Vec<oclive_validation::MemorySeedEntry>,
     pub default_personality: PersonalityDefaults,
     pub evolution_bounds: EvolutionBounds,
     pub user_relations: Vec<UserRelation>,
@@ -317,6 +320,7 @@ impl Default for Role {
             version: String::new(),
             author: String::new(),
             core_personality: String::new(),
+            memory_seed: Vec::new(),
             default_personality: PersonalityDefaults {
                 stubbornness: 0.5,
                 clinginess: 0.5,

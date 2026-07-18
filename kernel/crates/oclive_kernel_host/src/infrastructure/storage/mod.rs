@@ -81,6 +81,7 @@ mod tests {
         );
 
         let role = Role {
+            memory_seed: Vec::new(),
             id: "test_role".to_string(),
             name: "Test Role".to_string(),
             description: "A test role".to_string(),

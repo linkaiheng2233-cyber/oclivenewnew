@@ -411,6 +411,59 @@ export async function exportRolePack(
   })
 }
 
+export interface PortableStateExport {
+  content: string
+  suggested_filename: string
+}
+
+export interface PortableStateImportResult {
+  imported_long_term: number
+  skipped_memory_seed: number
+  mutable_profile_restored: boolean
+}
+
+function portableStateRequest(roleId: string, sessionId?: string) {
+  return { role_id: roleId, session_id: sessionId }
+}
+
+export async function exportPortablePersona(
+  roleId: string,
+  sessionId?: string,
+): Promise<PortableStateExport> {
+  return invokeWithFriendlyError<PortableStateExport>('export_portable_persona', {
+    req: portableStateRequest(roleId, sessionId),
+  })
+}
+
+export async function importPortablePersona(
+  roleId: string,
+  content: string,
+  sessionId?: string,
+): Promise<PortableStateImportResult> {
+  return invokeWithFriendlyError<PortableStateImportResult>('import_portable_persona', {
+    req: { ...portableStateRequest(roleId, sessionId), content },
+  })
+}
+
+export async function exportPortableMemory(
+  roleId: string,
+  sessionId?: string,
+): Promise<PortableStateExport> {
+  return invokeWithFriendlyError<PortableStateExport>('export_portable_memory', {
+    req: portableStateRequest(roleId, sessionId),
+  })
+}
+
+export async function importPortableMemory(
+  roleId: string,
+  content: string,
+  sessionId?: string,
+): Promise<PortableStateImportResult> {
+  return invokeWithFriendlyError<PortableStateImportResult>('import_portable_memory', {
+    req: { ...portableStateRequest(roleId, sessionId), content },
+  })
+}
+
 export interface RolePackPeek {
   id: string
   name: string

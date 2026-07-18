@@ -551,6 +551,12 @@ fn validate_role_pack_optional_extensions(role_dir: &Path) -> Result<(), Vec<Str
     )?;
     crate::turn_thinking::validate_turn_thinking_config_file(&role_dir.join("config.json"))?;
     crate::portrait_catalog::validate_portrait_catalog_files(role_dir)?;
+    let memory_seed_path = role_dir.join("memory_seed.json");
+    if memory_seed_path.is_file() {
+        let raw = fs::read_to_string(&memory_seed_path)
+            .map_err(|e| vec![format!("读取 memory_seed.json 失败: {e}")])?;
+        crate::portable_state::parse_memory_seed(&raw)?;
+    }
     let capsule_enabled = crate::deep_capsule::blueprint_meta_deep_capsule_enabled(role_dir);
     crate::deep_capsule::validate_deep_capsule_file(role_dir, capsule_enabled)?;
     if !warns.is_empty() {

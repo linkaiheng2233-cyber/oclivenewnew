@@ -354,6 +354,7 @@ mod tests {
 
     fn sample_role() -> Role {
         Role {
+            memory_seed: Vec::new(),
             id: "r".into(),
             name: "n".into(),
             description: "".into(),

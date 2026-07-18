@@ -348,6 +348,8 @@ cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/legacy-example
 cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/mumu --profile creator
 # Portable Core：跨发行版基础人格 + 七张默认情绪图
 cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/mumu --profile portable-core
+cargo run -p oclive-cli -- pack validate-persona ./exports/mumu.ocpersona
+cargo run -p oclive-cli -- pack validate-memory ./exports/mumu.ocmemory
 cargo run -p oclive-cli -- pack create -o ./out/my-role --flat --id com.example.demo --name Demo --format-blueprint-v2
 cargo run -p oclive-cli -- pack publish ./out/my-role -o ./dist/com.example.demo-0.1.0.oclivepack
 ```
