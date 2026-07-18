@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Distro kernel e2e — spawn / attach / role_snapshot scenarios.
- * Usage: node scripts/e2e-distro-kernel.mjs [--scenario spawn|attach|role-snapshot|bundled-first|theater|all]
+ * Usage: node scripts/e2e-distro-kernel.mjs [--scenario spawn|attach|role-snapshot|bundled-first|theater|role-portability|all]
  */
 import { spawn, spawnSync } from 'child_process';
 import { randomUUID } from 'crypto';
@@ -218,13 +218,69 @@ async function scenarioTheater() {
   }
 }
 
+async function stopKernel(child) {
+  if (child.exitCode !== null || child.signalCode !== null) return;
+  const exited = new Promise((resolve) => child.once('exit', resolve));
+  child.kill();
+  await exited;
+}
+
+async function scenarioRolePortability() {
+  console.log('[e2e-distro] scenario: role-portability');
+  const rolePath = path.join(rolesDir, 'mumu');
+  const profiles = [
+    { distroId: 'desktop', profile: 'desktop.oclive.toml', sceneId: 'home' },
+    { distroId: 'vscode', profile: 'vscode.oclive.toml', sceneId: 'vscode' },
+    { distroId: 'theater', profile: 'theater.oclive.toml', sceneId: 'home' },
+  ];
+
+  for (const entry of profiles) {
+    const profile = path.join(repoRoot, 'examples', 'distro-profiles', entry.profile);
+    if (!fs.existsSync(profile)) {
+      throw new Error(`missing distro profile: ${profile}`);
+    }
+    const { child } = spawnKernel({
+      OCLIVE_DISTRO_ID: entry.distroId,
+      OCLIVE_DISTRO_PROFILE: profile,
+    });
+    try {
+      await waitReady();
+      const loadRes = await apiFetch(`http://127.0.0.1:${port}/role/load`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ role_id: 'mumu' }),
+      });
+      if (!loadRes.ok) {
+        throw new Error(`${entry.distroId} role load failed: ${await loadRes.text()}`);
+      }
+      const chatRes = await apiFetch(`http://127.0.0.1:${port}/chat`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          role_path: rolePath,
+          message: `role portability e2e (${entry.distroId})`,
+          session_id: `e2e-portability-${entry.distroId}`,
+          scene_id: entry.sceneId,
+        }),
+      });
+      const body = await chatRes.json();
+      if (!chatRes.ok || !body.reply) {
+        throw new Error(`${entry.distroId} chat failed: ${JSON.stringify(body)}`);
+      }
+      console.log(`[e2e-distro] role-portability ${entry.distroId} ok`);
+    } finally {
+      await stopKernel(child);
+    }
+  }
+}
+
 async function main() {
   if (!findKernelBinary(repoRoot)) {
     console.warn('[e2e-distro] skip: build oclive-kernel-server first');
     process.exit(0);
   }
   const run = scenario === 'all'
-    ? ['spawn', 'attach', 'role-snapshot', 'bundled-first', 'theater']
+    ? ['spawn', 'attach', 'role-snapshot', 'bundled-first', 'theater', 'role-portability']
     : [scenario];
   for (const s of run) {
     if (s === 'spawn') await scenarioSpawn();
@@ -232,6 +288,7 @@ async function main() {
     else if (s === 'role-snapshot') await scenarioRoleSnapshot();
     else if (s === 'bundled-first') await scenarioBundledFirst();
     else if (s === 'theater') await scenarioTheater();
+    else if (s === 'role-portability') await scenarioRolePortability();
     else {
       console.error(`unknown scenario: ${s}`);
       process.exit(1);

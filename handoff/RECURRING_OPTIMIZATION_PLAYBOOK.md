@@ -4,7 +4,7 @@
 >
 > **核心信条**：保证地基稳固才能走得远。但**地基是为了承载"惊喜"（官方剧场 demo / 发行版），不是为了自身完美**——见文末「§9 元纪律」。
 >
-> **创建**：2026-06-09 · **最后更新**：2026-07-14 · **维护者**：内核作者本人 · **状态**：活跃手册（§8 仅保留最近五轮，完整历史见 Git）
+> **创建**：2026-06-09 · **最后更新**：2026-07-18 · **维护者**：内核作者本人 · **状态**：活跃手册（§8 仅保留最近五轮，完整历史见 Git）
 
 ---
 
@@ -182,7 +182,7 @@ git status                                      # 确认工作树状态 / 与 or
 
 **正确性 checklist**
 - [ ] D-PORT-02：`PluginBackendRegistryPort` god-port 现状（22 方法 / 纯转发）
-- [ ] D-SLOT-01：各槽 `BuiltinV1/V2/Placeholder` 并行 + 选择逻辑散落 `BackendRegistry`
+- [ ] D-SLOT-01 防回退：`builtin_v2` 仍仅为读兼容 alias，不得重新长出独立 V2 / Placeholder 实现
 - [ ] 错误模型一致性（`AppError / TurnError / ProcessMessageError`）
 - [ ] 单实现 trait 普查（~24 contracts trait）：保留为 DI 端口 / 降级具体类型
 - [ ] `resolve_*` 命名混淆度 + rustdoc 覆盖率

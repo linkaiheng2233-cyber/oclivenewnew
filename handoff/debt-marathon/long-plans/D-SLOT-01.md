@@ -1,3 +1,3 @@
-# D-SLOT-01（skip stub）
+# D-SLOT-01（Done）
 
-runner=skip · Observe。触发：D-PORT 后续或调度噪音。Stage0：skip。
+四槽已无 BuiltinV1/V2 双实现；`builtin_v2` 仅保留读兼容 alias 并归一为 `builtin`。现行巡检只防止双实现回退，不再以此为重构触发器。

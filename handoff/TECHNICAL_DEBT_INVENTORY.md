@@ -1,12 +1,12 @@
 # Technical debt inventory
 
-**Last updated:** 2026-07-18（工程质量、测试与文档收尾；分支本地验证，尚未声称远端 CI）
+**Last updated:** 2026-07-18（低风险工程债收口 + V1/V2/V3 愿景实现对标；本轮新增代码仅本地验证）
 
 **Product freeze (Theater v0):** **Lifted** — 朋友 cohort 产品门通过（7/10 卧槽）；模式 2 playtest 扩展中；**模式 3 仍冻结**。见 [theater/MODE2_UNFREEZE.md](./theater/MODE2_UNFREEZE.md)。
 
 **综合评分：** A− · 本地 dimension5 PASS（--ci；检查项总数以脚本结尾 `PASS (N checks)` 为准）· workspace **doctest** 见 check:release · 审查数字 SSOT：[AI_VERIFICATION_PROTOCOL.md](./AI_VERIFICATION_PROTOCOL.md)
 
-**下一动作：** 工程地基收尾后优先回到发行版与 **V-VSCODE-PERF-05**（姊妹仓 VS Code F5 / `.vsix` 实机）；维护者已明确将剩余供应链 / 安全专项留待后续。**K-PLUGIN-SEC-01、K-SUPPLY-09、K-SUPPLY-10 仍须保持显式 OPEN / Partial，不因排期后移而降格或消失。** K-SECRET-01 已收到维护者的提供商侧销毁确认；按既定决策保留 Git 历史。
+**下一动作：** 工程地基收尾后，按愿景验证顺序推进 **V-MODULE-QUALITY-01 → V-PORTABLE-01 Full → V-EMBED-01**；发行版仍需 **V-VSCODE-PERF-05** 的姊妹仓 F5 / `.vsix` 实机证据。维护者已明确将剩余供应链 / 安全专项留待后续；**K-PLUGIN-SEC-01、K-SUPPLY-09、K-SUPPLY-10 仍须保持显式 OPEN / Partial，不因排期后移而降格或消失。**
 
 **马拉松计划书：** [`debt-marathon/`](./debt-marathon/README.md) · 总索引 [`MARATHON_QUEUE.md`](./debt-marathon/MARATHON_QUEUE.md) · **AI+流水线硬门禁** [`AI_AND_PIPELINE_GATES.md`](./debt-marathon/AI_AND_PIPELINE_GATES.md) · 覆盖 [`COVERAGE.md`](./debt-marathon/COVERAGE.md)；Skill：`oclive-debt-marathon`。
 
@@ -73,7 +73,7 @@
 | **K-SECRET-01** | 已跟踪 N1N API 密钥进入 Git 历史 | **P0** | 服务端撤销旧密钥；新密钥只进 Continue secrets；维护者已明确接受保留历史的残余可见性 | **Done · owner confirmed**（2026-07-17：维护者确认已在 N1N 提供商侧彻底销毁旧密钥；Git 历史按决定保留） |
 | **K-PLUGIN-SEC-01** | 目录插件 UI 信任边界：同进程 Vue / 共享 custom-protocol origin | **P1** | Minimal：发行构建禁 inline Vue；Full：每插件独立 origin 或等价强隔离 + 原生 E2E + 可信签名绑定 + 官方 HTML fallback 功能对等，并将 `vue3-sfc-loader` 移出发行依赖图 | **Partial**（Stage 0–3 已实现：发行禁 inline Vue；embedded / full-shell 使用 opaque iframe sandbox + parent broker；能力令牌绑定插件并在导航时撤销；Voice HTML fallback 已补功能对等；`vue3-sfc-loader` 已移至 dev-only。仍缺 Windows `tauri-driver` 原生实跑证据、可信签名/身份绑定与远端 CI，见 [`K-PLUGIN-SEC-01` 计划](./debt-marathon/long-plans/K-PLUGIN-SEC-01.md)） |
 | **D-QUALITY-LINT-01** | 根 lint 曾漏扫 Theater / Playwright / 配置文件，且未进入 `check` / `check:release`，长期积压可自动修复与少量死代码 | P1 | 全维护面 lint 绿；生成器与漂移门禁兼容；日常 / 发版检查强制执行 | **Done**（2026-07-18：扩展 lint 范围并接入两级门禁；移除未使用聊天重建函数与无效局部变量；修复错误码生成器单引号输出和漂移解析兼容） |
-| **K-I18N-HTML-01** | 静态本地化文案含 `<strong>` / `<code>` 并经受控 `v-html` 渲染，Vitest 全键翻译测试持续输出 vue-i18n HTML 警告 | P2 | 将富文本拆为组件插槽，或建立只允许静态受信 key 的集中 allowlist + 注入拒绝测试；不得直接全局关闭 HTML 警告掩盖新增入口 | **OPEN · Deferred**（当前文案来自随发行版编译的静态 locale，不是插件 / 用户输入；仍保留显式债务，后续与安全专项一并裁决） |
+| **K-I18N-HTML-01** | 静态本地化文案含 `<strong>` / `<code>` 并经受控 `v-html` 渲染，Vitest 全键翻译测试持续输出 vue-i18n HTML 警告 | P2 | 将富文本拆为组件插槽，或建立只允许静态受信 key 的集中 allowlist + 注入拒绝测试；不得直接全局关闭 HTML 警告掩盖新增入口 | **Implemented · locally verified**（2026-07-18：移除 settings `v-html`，强调/代码样式改为组件模板；全 locale 增 HTML-like 标记拒绝测试；待远端 CI 后转 Done） |
 | **CI-E2E-TAURI-01** | e2e-tauri WebDriver smoke（sidebar/title） | P2 | 远程 `e2e-tauri` 过；勿弱化断言 | **Done**（2026-07-14 · CI [`29311703046`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29311703046) / HEAD `8988f49d` · session+title+sidebar 全绿；仍 soft gate） |
 | **K-CHATPRO-01** | Chat Pro 流式取消 UX | P2 | `AbortController` 打断上一轮 + 清理 `streaming` 气泡；设置可关流式 | **Done**（Chat Pro 正式启用 · 2026-06-26） |
 | **D-ORDER-01** | monorepo `roles` 路径 SSOT（27 集成测 + oclive-cli `join("roles")`） | P0 | `chat_pro_roles_dir()` / `tests/common` / `resolve_project_roles_dir()` | **Done**（条理优化 Wave A · 2026-06-24） |
@@ -97,7 +97,7 @@
 | **K-CI-01** | GitHub CI main 红：doctest 漂移 | **P0** | 修 doctest；`cargo test --workspace` 绿 | **Done**（Wave 0 · doctest 三处） |
 | **D-READ-05** | `backend_registry.rs` 拆 `directory_slots` | P2 | 零语义变更 | **Done**（Wave 4 · `directory_slots_impl.rs`） |
 | **D-PORT-02** | `PluginBackendRegistryPort` 拆窄 trait | P1 | `MemoryBackendPort` phase 1 | **Done**（`memory_backend_port.rs` + `SlotBackendFactoryPort` 组合 · 2026-07-10） |
-| **D-SLOT-01** | BuiltinV1/V2 选择收到 resolver | P2 | 依赖 D-PORT-02 后续 | **Observe** |
+| **D-SLOT-01** | BuiltinV1/V2 选择收敛到 resolver | P2 | 四槽不再保留双实现；`builtin_v2` 仅作读兼容 alias 并统一归一为 `builtin` | **Done**（现行源码 + `plugin_backends_v2_resolve` / `slot_resolver_v3`；已由 CI [`29465172205`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29465172205) 覆盖） |
 | **D-TRAIT-01** | 单实现 trait 合并 | P3 | 仅明显 DI 噪音 | **Observe** |
 | **K-VOICE-01** | CosyVoice2 `stream=True` 在 Windows 死锁（侧车多进程 worker）→ 默认非流式合成，牺牲首字流式增益（整句 ~3s 出声） | P2 | 上游修复 or `num_workers=0`/spawn 规避经 `OCLIVE_COSYVOICE_STREAM=1` 实测不卡后解冻 | **Deferred**（默认非流式已上线 · 排查见 [`TRACK_VOICE_RECOGNITION.md`](../human-docs/team/TRACK_VOICE_RECOGNITION.md) §10） |
 | **K-VOICE-02** | Tier-2 TTS（ChatTTS · XTTS · Bark · VITS · 国内云 API · Piper 产品化） | P3 | VX-9 generic pack 模板或社区 adapter | **OPEN** |
@@ -121,6 +121,9 @@
 | **K-DIST-01** | 分发体验缺口 | **P2** | 签名/updater/Linux 包/macOS dmg | **Partial**（Minimal 文档 · 2026-07-16 · `handoff/distros/README.md` gaps · Full `blocked:needs-signing-secrets` · PR [#126](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/126)） |
 | **D-I18N-02** | creator-docs-en 镜像滞后 | **P2** | **契约**：`check-doc-mirror` 扩展 + **测试**：mirror ratchet 样例 + **改动面**：creator-docs-en 补链 PR | **Done**（2026-07-14 · HEAD `0be7f2df` · CI [`29278403237`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29278403237) dim5 success · HIGH_TRAFFIC×8 + `--self-test`） |
 | **V-MARKET-01** | 插件市场生态 | **P2** | 市场 UI + 社区插件 | **Partial**（Minimal SCOPE · 2026-07-16 · `PRODUCT_LINE_TASK_BUCKETS` · 姊妹仓 human/cross-repo · ≠ Full Done · PR [#126](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/126)） |
+| **V-MODULE-QUALITY-01** | “上限 = 模块上限”缺少组件质量对比 harness | **P1** | 固定角色/场景/replay 输入；可复现比较 memory / emotion / prompt / LLM 模块的质量与行为指标，而非只比延迟 | **OPEN**（已有 OOCP、replay、MOCK_LLM 与 CLI bench 零件；尚未组成第三方模块可复现评测台） |
+| **V-PORTABLE-01** | 同一角色包跨发行版通用的分层验收 | **P1** | Minimal：同包通过 desktop / vscode / theater profile 的 load + mock chat；Full：各发行版 UI、资产、独立通道与降级差异形成 capability-conformance 报告 | **Partial**（Minimal implemented · 2026-07-18 · `e2e-distro-kernel --scenario role-portability` 本地三 profile 全绿；Full 未完成） |
+| **V-EMBED-01** | 跨平台 / 硬件的完整内核嵌入证明 | **P2** | host-independent `library` 提供完整 `process_message` 对称 API；至少一个 Linux/ARM 或硬件网关真实靶验证角色包、持久化、插件与资源预算 | **Partial**（无头 HTTP / CLI / ARM64 cross 已有；纯 library 仅暴露 runtime/DTO，完整编排仍在 host；参考 §2 冻结项与 K-CROSS-01） |
 
 **K-PLATFORM-01 子项**
 
@@ -147,8 +150,8 @@
 | **K-TEST-01** | check:rust 仅 --lib | **P2** | check:rust:integration；**盲区在本地而非 CI** | **Done**（2026-07-12） |
 | **K-CONFIG-01** | 配置无诊断 | **P2** | oclive-cli doctor config-resolve + `--json` + 自动测试 | **Done**（2026-07-13 · runtime `plugin_resolution` 纯路径默认 · `diagnostics-host` feature 可选 host · `cargo tree` 无 sqlite/axum/tauri） |
 | **K-ERR-01** | 热路径错误码 | **P2** | 插件/manifest/迁移结构化码 + 契约测 | **Done**（2026-07-13 · `KernelErrorBody.context` · `kernelErrorCodes.ts` · dimension5 drift 门禁） |
-| **D-ROLEVER-01** | 角色包版本迁移 | **P2** | ROLE_PACK_SPEC 章节 | **OPEN** |
-| **T-DOC-02** | Theater 状态单页 | **P2** | theater STATUS | **OPEN** |
+| **D-ROLEVER-01** | 角色包版本迁移 | **P2** | ROLE_PACK_SPEC 章节 | **Done**（`6bab6276` · PR [#125](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/125) 已合入；后续 CI [`29465172205`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29465172205) success） |
+| **T-DOC-02** | Theater 状态单页 | **P2** | theater STATUS | **Done**（`e541f805` · PR [#124](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/124) 已合入；CI [`29441239048`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29441239048) success） |
 | **K-RPP-01** | RPP 无契约 | **P2** | PLUGIN_V1 或 RPP_CONTRACT | **Done**（2026-07-13 · `rpp_contract_audit.rs` 四测 · manifest/RPC/roundtrip/mumu 默认关） |
 | **K-RESILIENCE-01** | Remote 弹性分散 | **P2** | ResilienceLayer | **Partial**（Minimal · 2026-07-16 · PROTOCOL 锚点 + `prompt_http`→`call_with_builtin_fallback` · Full 仍 OPEN） |
 
@@ -197,7 +200,7 @@
 | **Deep / deep_capsule** | Turn Thinking Deep 路由 + deep_capsule 资产 | **已交付**（K-PERF-D1 / K-TURN-F1 Done；非冻结） |
 | **dual_core** / **expert_routing** / **blueprint v3** | 实验管线 | **可选解冻 · 默认仍关**（蓝图 `dual_core.enabled` / 角色包 `expert_routing.json` 显式配置） |
 | **D-READ-03** | `dual_pipeline` 表驱动 | 随 `dual_core` opt-in |
-| **D-PORT-02** / **D-SLOT-01** | god-port collapse / 槽调度 | phase 1 memory 已拆；余组 Observe |
+| **D-PORT-03** | `BackendRegistry` UFCS 转发层 | 等第二 remote policy 实现或对应 RFC 再评估；D-PORT-02 / D-SLOT-01 已完成，不再以旧双实现为由解冻 |
 | **§3.1** | 纯 library API 对称化 | [`RFC_OCLIVE_KERNEL_LIBRARY.md`](./RFC_OCLIVE_KERNEL_LIBRARY.md) T0 |
 | **模式 3** | 用户大纲演绎 / Mode 3 `send_message` 长对话 | 模式 2 playtest 扩展后另开计划 |
 | **MEGA-SD-01** | `scene_director.rs` 拆 `theater/parse/` + `theater/modes/` | 模式 2 playtest 稳定 **或** 生产段 >2500 行 **或** 第二 remote 剧场插件 |

@@ -1,7 +1,7 @@
 # 跨宿主记忆与角色包携带数据（契约）
 
 **读者**：VS Code 扩展、赌场 POC、启动器、无头 `kernel_server` 等 **多发行版集成方**。  
-**状态**：**Phase 1 已确认**（2026-05-20）；与 [`ROLE_PACK_SPEC.md`](ROLE_PACK_SPEC.md)、[`handoff/CHAT_STORAGE_ARCHITECTURE.md`](../../handoff/CHAT_STORAGE_ARCHITECTURE.md) 对齐。
+**状态**：**Phase 1 已确认**（2026-05-20）；2026-07-18 增加三发行版 profile 黑盒验收；与 [`ROLE_PACK_SPEC.md`](ROLE_PACK_SPEC.md)、[`handoff/CHAT_STORAGE_ARCHITECTURE.md`](../../handoff/CHAT_STORAGE_ARCHITECTURE.md) 对齐。
 
 ---
 
@@ -10,6 +10,8 @@
 **角色包** = 跨发行版可读的 **身份、内容、策略**（不含动态 runtime）。  
 **内核** = 统一的 **加载规范**（`load_role`、`config.json` 语义、`POST /chat` 契约）。  
 **各宿主** = **L2 私有状态** 自定；**L3 陪伴连续** 通过 **共用 `app.db`** 实现。
+
+“跨发行版可读”不等于“所有宿主功能完全相同”：同一包的身份、内容、策略由统一 loader/validator 读取；发行版 `HostProfile` 可以收紧六槽、关闭设施或改变 Prompt / memory / post-process 策略，宿主 UI 与语音/视觉独立通道也可不同。可携带性的硬保证是**包可校验、可加载、核心回合可运行**；功能对等须另做 capability conformance。
 
 ---
 
@@ -75,6 +77,8 @@ distros/chat-pro/roles/{id}/  ──load_role──►  桌面 / VS Code / kerne
 | **演示角色** | **`mumu` v2**；包内须含 **`scenes/vscode/`** |
 | **HTTP 表面** | `GET /health` + `POST /chat` |
 | **测试** | OOCP / Codex 轨道 A（[`CODEX_测试指南.md`](../../dev-notes/codex-testing/CODEX_测试指南.md)） |
+
+**自动化证据（Minimal）**：`node scripts/e2e-distro-kernel.mjs --scenario role-portability` 使用同一 `mumu` 包、同一 app-data 根与 mock LLM，依次在 `desktop` / `vscode` / `theater` profile 下执行 `role/load` + `/chat`。该测试证明内核级可携带；不代替三套 UI、语音、视觉资产和真实模型的 Full 验收。
 
 **Phase 1 注意**：桌面与 VS Code 均为 **HTTP 客户端**（经共享策略 `resolve_kernel_action` 决定 attach / spawn / replace），唯一写者为 `oclive-kernel-server @ :8420`。详见 [`DISTRO_KERNEL_LIFECYCLE.md`](../kernel/DISTRO_KERNEL_LIFECYCLE.md)。
 
