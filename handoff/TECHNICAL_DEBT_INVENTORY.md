@@ -1,12 +1,12 @@
 # Technical debt inventory
 
-**Last updated:** 2026-07-17（本轮安全/文档巡检；分支本地验证，尚未声称远端 CI）
+**Last updated:** 2026-07-18（工程质量、测试与文档收尾；分支本地验证，尚未声称远端 CI）
 
 **Product freeze (Theater v0):** **Lifted** — 朋友 cohort 产品门通过（7/10 卧槽）；模式 2 playtest 扩展中；**模式 3 仍冻结**。见 [theater/MODE2_UNFREEZE.md](./theater/MODE2_UNFREEZE.md)。
 
 **综合评分：** A− · 本地 dimension5 PASS（--ci；检查项总数以脚本结尾 `PASS (N checks)` 为准）· workspace **doctest** 见 check:release · 审查数字 SSOT：[AI_VERIFICATION_PROTOCOL.md](./AI_VERIFICATION_PROTOCOL.md)
 
-**下一动作：** **P1** — **K-PLUGIN-SEC-01** 插件独立 origin / 签名信任闭环；其后才是 **V-VSCODE-PERF-05**（姊妹仓 VS Code F5 / `.vsix` 实机）。K-SECRET-01 已收到维护者的提供商侧销毁确认；按既定决策保留 Git 历史。
+**下一动作：** 工程地基收尾后优先回到发行版与 **V-VSCODE-PERF-05**（姊妹仓 VS Code F5 / `.vsix` 实机）；维护者已明确将剩余供应链 / 安全专项留待后续。**K-PLUGIN-SEC-01、K-SUPPLY-09、K-SUPPLY-10 仍须保持显式 OPEN / Partial，不因排期后移而降格或消失。** K-SECRET-01 已收到维护者的提供商侧销毁确认；按既定决策保留 Git 历史。
 
 **马拉松计划书：** [`debt-marathon/`](./debt-marathon/README.md) · 总索引 [`MARATHON_QUEUE.md`](./debt-marathon/MARATHON_QUEUE.md) · **AI+流水线硬门禁** [`AI_AND_PIPELINE_GATES.md`](./debt-marathon/AI_AND_PIPELINE_GATES.md) · 覆盖 [`COVERAGE.md`](./debt-marathon/COVERAGE.md)；Skill：`oclive-debt-marathon`。
 
@@ -17,6 +17,8 @@
 **Verification (2026-07-17 · local security/documentation pass):** 本地 `cargo test -p oclive_validation`（95 tests）、`cargo test -p oclive_kernel_host --lib`（283 tests）、Tauri `http_api_high_risk_auth`（2）与 `invoke_hotpath_matrix`（5）通过；全量 Tauri 集成编译曾因 Windows 页面文件耗尽（`os error 1455`）中止，**不视为远端 CI 结论**。本轮收敛 HTTP API 默认令牌、角色/插件/ZIP 路径 containment、活跃文档链接与边界叙述。
 
 **Verification (2026-07-17 · local P0 security follow-up):** 高置信 secret scan 定位 `.continue/agents/new-config.yaml` 自初始提交 `cdfa20e6` 起含同一枚 API 密钥；工作树已改用 `${{ secrets.N1N_API_KEY }}`。维护者已于 2026-07-17 确认在 N1N 提供商侧彻底销毁旧密钥，并明确保留 Git 历史，因此 K-SECRET-01 关闭；历史明文仍可见，但已不再具备服务端权限。发行构建现禁止目录插件 Vue 在主 WebView 同进程执行；不安全 inline Vue 仅限 Vite DEV + `VITE_OCLIVE_UNSAFE_INLINE_PLUGIN_VUE=1` 双重显式 opt-in。独立插件 origin / 签名默认开启尚未完成，见 K-PLUGIN-SEC-01 / K-SUPPLY-09。
+
+**Verification (2026-07-18 · local engineering closeout):** `npm run lint` 已覆盖 Chat Pro、shared、Theater、Playwright E2E 与主要 Vite/Vitest 配置并通过，且已接入日常 `check` 与 `check:release`；Vite 生产构建 **784 modules**；前端 shared **18 files / 70 tests**、Chat Pro（含 Theater）**21 files / 83 tests**、浏览器 preview E2E **6 tests** 全绿；`npm run check`、`npm run check:release`（含 workspace doctest）、`npm run check:rust:integration`、Dimension 5 **PASS (24 checks)**。文档镜像、stale paths、注册表（**43** 个 handoff 根文档）、canonical blocks（**5**）、Markdown links（**49** 个文档）均通过；生产依赖 `npm audit --omit=dev --audit-level=high` 为 **0 vulnerabilities**。本条仅代表本地证据，未声称远端 CI / 原生 WebView E2E。
 
 **Verification (2026-07-17 · local closeout):** `cargo clippy --workspace --all-targets --all-features -- -D warnings`、宿主 lib **285/285**、validation **95/95**、workspace doctest **6/6**、Chat Pro **77/77**、shared **63/63**、Theater **52/52**、Dimension 5 **PASS (23 checks)**；`npm audit --omit=dev --audit-level=high` 为 **0 高危 / 4 中危 / 0 低危**，均在 `vue3-sfc-loader` 的旧 Vue 编译依赖链，未当作已清零。
 
@@ -66,10 +68,12 @@
 | **D-DOC-RELOC-01** | 三份名实不符文档仍在 `creator-docs/`（VS Code 契约 / Studio 指南 / mumu 验收） | P2 | 物理迁至 `handoff/{vscode,studio,distros}/` + 原位 stub + 入链更新 | **Done**（轮次 18） |
 | **K-SUPPLY-02** | Release 预编译内核 **SHA256SUMS**（防换包） | P1 | workflow + `bundle-kernel-for-tauri.mjs` 钩子已入库；tag `oclivenewnew-v*` 触发 CI artifact | **Done**（轮次 22） |
 | **K-SUPPLY-03** | 插件安装后「请审本地源码」固定提示 | P2 | 市场/git/zip + CLI | **Done**（轮次 19） |
-| **K-SUPPLY-04** | 前端 `npm-audit` 仅可见性（`continue-on-error`） | P2 | 连续 2 周期高危命中 → 升格硬门禁或文档豁免 | **Observe**（2026-07-17：`npm audit --omit=dev --audit-level=high` **0 高危 / 4 中危 / 0 低危**；均来自 `vue3-sfc-loader` 旧 Vue 编译链，待 K-PLUGIN-SEC-01 专项移出发行依赖图） |
+| **K-SUPPLY-04** | 前端 `npm-audit` 仅可见性（`continue-on-error`） | P2 | 连续 2 个复核周期生产依赖零漏洞，或出现高危时升格硬门禁 / 文档豁免 | **Observe**（2026-07-18：`npm audit --omit=dev --audit-level=high` **0 vulnerabilities**；旧 `vue3-sfc-loader` 已移至 dev-only，生产依赖图已清出。仍需下一周期复核，不提前关账） |
 | **K-SUPPLY-05** | `deny.toml` `multiple-versions` warn→deny | P2 | Minimal：`deny` + 有理由 `[bans.skip]`；Full 零 skip 另战役 | **Done**（Minimal · 2026-07-15）· **Full Partial**（2026-07-16 · workspace `toml` 0.8→1 · ratchet **75**；`[bans.skip]` 仍须保留 · 不准假 Full Done · PR [#126](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/126)） |
 | **K-SECRET-01** | 已跟踪 N1N API 密钥进入 Git 历史 | **P0** | 服务端撤销旧密钥；新密钥只进 Continue secrets；维护者已明确接受保留历史的残余可见性 | **Done · owner confirmed**（2026-07-17：维护者确认已在 N1N 提供商侧彻底销毁旧密钥；Git 历史按决定保留） |
-| **K-PLUGIN-SEC-01** | 目录插件 UI 信任边界：同进程 Vue / 共享 custom-protocol origin | **P1** | Minimal：发行构建禁 inline Vue；Full：每插件独立 origin 或等价强隔离 + 原生 E2E + 可信签名绑定 + 官方 HTML fallback 功能对等，并将 `vue3-sfc-loader` 移出发行依赖图 | **Partial**（Minimal 已落地；HTML fallback 仍共享 `ocliveplugin.localhost`，Voice fallback 仅占位，不得宣称完整沙箱或无功能回退） |
+| **K-PLUGIN-SEC-01** | 目录插件 UI 信任边界：同进程 Vue / 共享 custom-protocol origin | **P1** | Minimal：发行构建禁 inline Vue；Full：每插件独立 origin 或等价强隔离 + 原生 E2E + 可信签名绑定 + 官方 HTML fallback 功能对等，并将 `vue3-sfc-loader` 移出发行依赖图 | **Partial**（Stage 0–3 已实现：发行禁 inline Vue；embedded / full-shell 使用 opaque iframe sandbox + parent broker；能力令牌绑定插件并在导航时撤销；Voice HTML fallback 已补功能对等；`vue3-sfc-loader` 已移至 dev-only。仍缺 Windows `tauri-driver` 原生实跑证据、可信签名/身份绑定与远端 CI，见 [`K-PLUGIN-SEC-01` 计划](./debt-marathon/long-plans/K-PLUGIN-SEC-01.md)） |
+| **D-QUALITY-LINT-01** | 根 lint 曾漏扫 Theater / Playwright / 配置文件，且未进入 `check` / `check:release`，长期积压可自动修复与少量死代码 | P1 | 全维护面 lint 绿；生成器与漂移门禁兼容；日常 / 发版检查强制执行 | **Done**（2026-07-18：扩展 lint 范围并接入两级门禁；移除未使用聊天重建函数与无效局部变量；修复错误码生成器单引号输出和漂移解析兼容） |
+| **K-I18N-HTML-01** | 静态本地化文案含 `<strong>` / `<code>` 并经受控 `v-html` 渲染，Vitest 全键翻译测试持续输出 vue-i18n HTML 警告 | P2 | 将富文本拆为组件插槽，或建立只允许静态受信 key 的集中 allowlist + 注入拒绝测试；不得直接全局关闭 HTML 警告掩盖新增入口 | **OPEN · Deferred**（当前文案来自随发行版编译的静态 locale，不是插件 / 用户输入；仍保留显式债务，后续与安全专项一并裁决） |
 | **CI-E2E-TAURI-01** | e2e-tauri WebDriver smoke（sidebar/title） | P2 | 远程 `e2e-tauri` 过；勿弱化断言 | **Done**（2026-07-14 · CI [`29311703046`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29311703046) / HEAD `8988f49d` · session+title+sidebar 全绿；仍 soft gate） |
 | **K-CHATPRO-01** | Chat Pro 流式取消 UX | P2 | `AbortController` 打断上一轮 + 清理 `streaming` 气泡；设置可关流式 | **Done**（Chat Pro 正式启用 · 2026-06-26） |
 | **D-ORDER-01** | monorepo `roles` 路径 SSOT（27 集成测 + oclive-cli `join("roles")`） | P0 | `chat_pro_roles_dir()` / `tests/common` / `resolve_project_roles_dir()` | **Done**（条理优化 Wave A · 2026-06-24） |
@@ -170,7 +174,7 @@
 | **K-SUPPLY-01** | `cargo deny` 进 dimension5 / CI 硬门禁 | P1 | **Done**（轮次 19） |
 | **K-SUPPLY-02** | Release SHA256SUMS | P1 | **Done** — `generate-sha256sums.mjs` · `release-kernel-checksums.yml` · `bundle-kernel-for-tauri.mjs` |
 | **K-SUPPLY-03** | 插件安装审源码提示 | P2 | **Done**（轮次 19） |
-| **K-SUPPLY-04** | npm-audit 升格策略 | P2 | **Observe** — `defu` override 6.1.5 清零高危（2026-07-12）；`vue3-sfc-loader`/postcss 链 **0 高危 / 4 中危 / 1 低危** 待专项；下复核 **2026-08** |
+| **K-SUPPLY-04** | npm-audit 升格策略 | P2 | **Observe** — 2026-07-18 生产依赖 `npm audit --omit=dev --audit-level=high` **0 vulnerabilities**；`vue3-sfc-loader` 已为 dev-only；下复核 **2026-08**，满两个复核周期后再决定关闭或升格 |
 | **K-SUPPLY-05** | deny 重复依赖 warn→deny | P2 | **Done**（Minimal · 2026-07-15）— `multiple-versions = deny` + documented `[bans.skip]` · ratchet **80** · **Full Partial**（2026-07-16 · toml workspace→1 · ratchet **75** · 零 skip 仍 blocked:needs-ecosystem） |
 | **K-SUPPLY-06** | 位级可重复构建（reproducible） | — | **Deferred** · 见 SECURITY_AUDIT_SCOPE 局限 |
 | **K-SUPPLY-07** | SBOM（CycloneDX/SPDX） | — | **Deferred** · 政企/校企采购需求触发 |
