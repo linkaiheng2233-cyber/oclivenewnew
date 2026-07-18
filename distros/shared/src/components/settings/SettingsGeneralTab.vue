@@ -208,7 +208,9 @@ async function onToggleForceIframe(e: Event) {
     :class="{ 'sv-body--embedded': embedded }"
     @submit.prevent
   >
-    <p class="sv-lead" v-html="t('settings.generalLeadHtml')" />
+    <p class="sv-lead">
+      <span>{{ t("settings.generalLeadPrefix") }}</span><strong>{{ t("settings.generalLeadShortcut") }}</strong><span>{{ t("settings.generalLeadSuffix") }}</span>
+    </p>
 
     <nav class="sv-general-subnav" :aria-label="t('onboarding.settings.simpleTab')">
       <button
@@ -469,7 +471,9 @@ async function onToggleForceIframe(e: Event) {
           </label>
         </UiSection>
         <UiSection :title="t('settings.advancedTitle')">
-          <p class="sv-muted" v-html="t('settings.advancedDesc')" />
+          <p class="sv-muted">
+            <span>{{ t("settings.advancedDescPrefix") }}</span><code>{{ t("settings.advancedDescCode") }}</code><span>{{ t("settings.advancedDescSuffix") }}</span>
+          </p>
           <PluginSlotEmbed
             :slot-name="SLOT_SETTINGS_ADVANCED"
             :aria-label="t('settings.advancedSlotAria')"
@@ -530,7 +534,9 @@ async function onToggleForceIframe(e: Event) {
         </label>
       </UiSection>
       <UiSection v-show="generalSubTab === 'advanced'" :title="t('settings.advancedTitle')">
-        <p class="sv-muted" v-html="t('settings.advancedDesc')" />
+        <p class="sv-muted">
+          <span>{{ t("settings.advancedDescPrefix") }}</span><code>{{ t("settings.advancedDescCode") }}</code><span>{{ t("settings.advancedDescSuffix") }}</span>
+        </p>
         <PluginSlotEmbed
           :slot-name="SLOT_SETTINGS_ADVANCED"
           :aria-label="t('settings.advancedSlotAria')"

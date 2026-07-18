@@ -11,9 +11,9 @@ export default {
     tabStorage: '存储管理',
     voicePanelLead:
       '语音识别（按住说话）、识别结果处理方式，以及可选的情感 TTS 扩展与模型包管理。',
-    generalLeadHtml:
-      '侧栏 Activity Bar 或 <strong>Ctrl+Shift+S / M</strong> 打开设置与模型；'
-      + '外观与语言在设置 → 常规；插件仅在剧情模式下可用。',
+    generalLeadPrefix: '侧栏 Activity Bar 或',
+    generalLeadShortcut: 'Ctrl+Shift+S / M',
+    generalLeadSuffix: '打开设置与模型；外观与语言在设置 → 常规；插件仅在剧情模式下可用。',
     appearanceSectionTitle: '外观',
     appearanceSectionHelp: '界面语言、主题与 UI 缩放；保存在本机。',
     skinWin98Label: 'Windows 98 皮肤（彩蛋）',
@@ -58,12 +58,13 @@ export default {
     remoteFallbackSectionTitle: '远端插件失败策略',
     remoteFallbackLabel: '远端 HTTP 失败时自动降级内置',
     remoteFallbackHelp:
-      '关闭后，若角色包将记忆/情绪/事件/Prompt/LLM 等槽设为 remote 且侧车不可达，将返回错误码 REMOTE_SERVICE_UNAVAILABLE，而不再静默用内置实现。与「高风险网络授权」互补：授权决定能否发起出站请求，本项决定在失败出口是否允许降级。可用环境变量 <code>OCLIVE_REMOTE_FALLBACK_TO_BUILTIN</code> 覆盖（设置后本开关对进程内有效值锁定）。',
+      '关闭后，若角色包将记忆/情绪/事件/Prompt/LLM 等槽设为 remote 且侧车不可达，将返回错误码 REMOTE_SERVICE_UNAVAILABLE，而不再静默用内置实现。与「高风险网络授权」互补：授权决定能否发起出站请求，本项决定在失败出口是否允许降级。可用环境变量 OCLIVE_REMOTE_FALLBACK_TO_BUILTIN 覆盖（设置后本开关对进程内有效值锁定）。',
     remoteFallbackEnvLocked: '已设置环境变量，进程内以此为准；数据库值仍可保存供未设置环境时生效。',
     remoteFallbackSavedToast: '已保存。',
     advancedTitle: '扩展区（settings.advanced）',
-    advancedDesc:
-      'manifest 中声明 <code>settings.advanced</code> 的插件显示于此。',
+    advancedDescPrefix: 'manifest 中声明',
+    advancedDescCode: 'settings.advanced',
+    advancedDescSuffix: '的插件显示于此。',
     advancedSlotAria: '设置扩展区',
     securityLabel: '安全',
     forceIframeTitle: '插件界面隔离（发行版强制）',
@@ -73,7 +74,7 @@ export default {
     pluginsPanelHint1:
       '在插件 manifest 的 ui_slots 中声明 slot 为 settings.panel，即可在此嵌入配置页。',
     pluginsPanelHint2:
-      '与 chat_toolbar 相同，使用 https://ocliveplugin.localhost/<id>/<entry> 加载；可在插件管理中调整顺序或隐藏。',
+      '与 chat_toolbar 相同，使用 https://ocliveplugin.localhost/plugin-id/entry 加载；可在插件管理中调整顺序或隐藏。',
     iframeSavedInfo: '已保存。重启应用后强制 iframe 模式将完全生效。',
     userIdentitySectionTitle: '用户身份',
     userIdentitySectionLead:

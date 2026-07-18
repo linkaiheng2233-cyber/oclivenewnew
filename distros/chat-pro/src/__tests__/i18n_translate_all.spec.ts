@@ -17,6 +17,18 @@ function collectPaths(value: unknown, path: string, out: string[]): void {
   }
 }
 
+function collectMessages(value: unknown, path: string, out: Array<[string, string]>): void {
+  if (typeof value === 'string') {
+    out.push([path, value])
+    return
+  }
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      collectMessages(v, path ? `${path}.${k}` : k, out)
+    }
+  }
+}
+
 describe('i18n translate all keys', () => {
   for (const [locale, catalog] of [
     ['zh-CN', zhCN],
@@ -41,6 +53,15 @@ describe('i18n translate all keys', () => {
         }
       }
       expect(failures, failures.join('\n')).toEqual([])
+    })
+
+    it(`keeps ${locale} messages free of HTML-like markup`, () => {
+      const messages: Array<[string, string]> = []
+      collectMessages(catalog, '', messages)
+      const htmlMessages = messages
+        .filter(([, message]) => /<\/?[a-z][^>]*>/i.test(message))
+        .map(([path, message]) => `${path}: ${message}`)
+      expect(htmlMessages, htmlMessages.join('\n')).toEqual([])
     })
   }
 })
