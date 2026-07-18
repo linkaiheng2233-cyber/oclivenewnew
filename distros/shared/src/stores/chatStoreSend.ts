@@ -1,10 +1,11 @@
 import type { SendMessageResponse } from '@oclive/shared/api'
+import type { ChatMessage, SceneHistorySplitIndex } from './chatStore'
 import { sendMessage, sendMessageStream } from '@oclive/shared/api'
 import { hostEventBus } from '@oclive/shared/lib/hostEventBus'
 import { VOICE_STREAM_SENTENCE_EVENT } from '@oclive/shared/lib/voiceAsrEvents'
+import { isChatStreamEnabled } from '@oclive/shared/utils/chatStreamSettings'
 import { getRelationUpgradeMessage } from '@oclive/shared/utils/relation'
 import { presentationFromSendResponse } from '@oclive/shared/utils/replyPresentation'
-import { isChatStreamEnabled } from '@oclive/shared/utils/chatStreamSettings'
 import {
   assistantDialogueFromSplit,
   splitRoleplayReply,
@@ -13,7 +14,6 @@ import { StreamingVoiceChunker } from '@oclive/shared/utils/streamingVoiceChunke
 import { parseMessageTimestamp } from './chatStoreLoad'
 import { useDebugStore } from './debugStore'
 import { useRoleStore } from './roleStore'
-import type { ChatMessage, SceneHistorySplitIndex } from './chatStore'
 
 export interface ChatStoreSendContext {
   sceneHistorySplitIndex: SceneHistorySplitIndex
@@ -77,24 +77,24 @@ export async function sendChatStoreMessage(
   context.setLoading(true)
   hostEventBus.emitBuiltin('message:submit', { role_id: roleId, scene_id: sid })
   const relationBefore = roleStore.roleInfo.relationState
-    const assistantLocalId = `a-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
-    const streamId = assistantLocalId
-    let streamBubbleActive = false
-    let streamSpokenPrefix = ''
-    let lastStreamAccumulated = ''
-    const voiceChunker = new StreamingVoiceChunker()
+  const assistantLocalId = `a-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+  const streamId = assistantLocalId
+  let streamBubbleActive = false
+  let streamSpokenPrefix = ''
+  let lastStreamAccumulated = ''
+  const voiceChunker = new StreamingVoiceChunker()
 
-    function emitStreamVoiceChunks(chunks: string[]): void {
-      for (const chunk of chunks) {
-        streamSpokenPrefix += chunk
-        hostEventBus.emitBuiltin(VOICE_STREAM_SENTENCE_EVENT, {
-          sentence: chunk,
-          stream_id: streamId,
-          role_id: roleId,
-          bot_emotion: 'neutral',
-        })
-      }
+  function emitStreamVoiceChunks(chunks: string[]): void {
+    for (const chunk of chunks) {
+      streamSpokenPrefix += chunk
+      hostEventBus.emitBuiltin(VOICE_STREAM_SENTENCE_EVENT, {
+        sentence: chunk,
+        stream_id: streamId,
+        role_id: roleId,
+        bot_emotion: 'neutral',
+      })
     }
+  }
   try {
     let res: SendMessageResponse
     const streamEnabled = isChatStreamEnabled()

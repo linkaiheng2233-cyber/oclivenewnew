@@ -1,12 +1,11 @@
-import { invokeWithFriendlyError } from './helpers'
 import type { DisplayMetricsDto, RoleInfo } from './role'
+import { invokeWithFriendlyError } from './helpers'
 
 export interface SendMessageRequest {
   role_id: string
   user_message: string
   scene_id?: string | null
 }
-
 
 export interface EmotionDto {
   joy: number
@@ -18,12 +17,10 @@ export interface EmotionDto {
   neutral: number
 }
 
-
 export interface DetectedEventDto {
   event_type: string
   confidence: number
 }
-
 
 export type PresenceMode = 'co_present' | 'remote_stub' | 'remote_life'
 
@@ -83,12 +80,10 @@ export type SwitchSceneResponse = RoleInfo & {
   scene_welcome?: string | null
 }
 
-
 export interface TimeStateResponse {
   virtual_time_ms: number
   iso_datetime: string
 }
-
 
 export interface JumpTimeResponse {
   virtual_time_ms: number
@@ -101,19 +96,16 @@ export interface JumpTimeResponse {
   autonomous_scene_to?: string | null
 }
 
-
 export interface ExportChatLogsResponse {
   content: string
   suggested_filename: string
 }
-
 
 export interface QueryMemoriesRequest {
   role_id: string
   limit: number
   offset: number
 }
-
 
 export interface MemoryItem {
   id: string
@@ -124,13 +116,11 @@ export interface MemoryItem {
   importance: number
 }
 
-
 export interface QueryEventsRequest {
   role_id: string
   limit: number
   offset: number
 }
-
 
 export interface EventItem {
   id: number
@@ -142,13 +132,11 @@ export interface EventItem {
   description?: string | null
 }
 
-
 export interface CreateEventRequest {
   role_id: string
   event_type: string
   description?: string | null
 }
-
 
 export interface CreateEventResponse {
   id: number
@@ -157,7 +145,6 @@ export interface CreateEventResponse {
   timestamp: string
   description?: string | null
 }
-
 
 export async function sendMessage(
   req: SendMessageRequest,
@@ -199,7 +186,7 @@ export async function sendMessageStream(
     method: 'POST',
     headers: {
       'content-type': 'application/json',
-      accept: 'text/event-stream',
+      'accept': 'text/event-stream',
     },
     body: JSON.stringify({
       role_path: rolePath,
@@ -263,18 +250,15 @@ export async function sendMessageStream(
   return finalResponse
 }
 
-
 export async function queryMemories(
   req: QueryMemoriesRequest,
 ): Promise<MemoryItem[]> {
   return invokeWithFriendlyError<MemoryItem[]>('query_memories', { req })
 }
 
-
 export async function queryEvents(req: QueryEventsRequest): Promise<EventItem[]> {
   return invokeWithFriendlyError<EventItem[]>('query_events', { req })
 }
-
 
 export async function createEvent(
   req: CreateEventRequest,
@@ -282,11 +266,9 @@ export async function createEvent(
   return invokeWithFriendlyError<CreateEventResponse>('create_event', { req })
 }
 
-
 export async function reloadPolicyPlugins(): Promise<string> {
   return invokeWithFriendlyError<string>('reload_policy_plugins', {})
 }
-
 
 export async function switchScene(
   roleId: string,
@@ -299,7 +281,6 @@ export async function switchScene(
   })
 }
 
-
 export async function setUserPresenceScene(
   roleId: string,
   sceneId: string,
@@ -309,13 +290,11 @@ export async function setUserPresenceScene(
   })
 }
 
-
 export async function getTimeState(roleId: string): Promise<TimeStateResponse> {
   return invokeWithFriendlyError<TimeStateResponse>('get_time_state', {
     roleId,
   })
 }
-
 
 export async function jumpTime(
   roleId: string,
@@ -326,7 +305,6 @@ export async function jumpTime(
     req: { role_id: roleId, timestamp_ms: timestampMs ?? null, preset: preset ?? null },
   })
 }
-
 
 export async function generateMonologue(roleId: string): Promise<string> {
   const res = await invokeWithFriendlyError<{ text: string }>(
@@ -366,4 +344,3 @@ export interface PluginBridgeSendMessageParams {
   /** Alias for `user_message` */
   text?: string
 }
-

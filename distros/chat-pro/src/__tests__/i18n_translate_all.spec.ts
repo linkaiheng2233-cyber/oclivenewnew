@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 
-import { createI18n } from 'vue-i18n'
-import { describe, expect, it } from 'vitest'
 import enUS from '@oclive/shared/i18n/locales/en-US'
 import zhCN from '@oclive/shared/i18n/locales/zh-CN'
+import { describe, expect, it } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
 function collectPaths(value: unknown, path: string, out: string[]): void {
   if (typeof value === 'string') {

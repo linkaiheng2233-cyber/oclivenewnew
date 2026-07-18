@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
-  StreamingVoiceChunker,
   stableStreamingPrefix,
+  StreamingVoiceChunker,
 } from './streamingVoiceChunker'
 
 describe('stableStreamingPrefix', () => {
@@ -17,7 +17,7 @@ describe('stableStreamingPrefix', () => {
   })
 })
 
-describe('StreamingVoiceChunker', () => {
+describe('streamingVoiceChunker', () => {
   it('skips inner monologue in parentheses', () => {
     const chunker = new StreamingVoiceChunker()
     const chunks = chunker.push('你好呀（心里默默）今天很好！')

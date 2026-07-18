@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest'
 import enUS from '@oclive/shared/i18n/locales/en-US'
 import zhCN from '@oclive/shared/i18n/locales/zh-CN'
+import { describe, expect, it } from 'vitest'
 
 /** Leaf key paths for nested message objects (arrays skipped). */
 function flattenMessageKeys(obj: unknown, prefix = ''): Set<string> {

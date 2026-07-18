@@ -1,3 +1,4 @@
+import type { AppliedTweak } from './theaterLogic'
 import { describe, expect, it } from 'vitest'
 import {
   buildPatchPrompt,
@@ -14,7 +15,6 @@ import {
   timeoutReject,
   validateSkeleton,
 } from './theaterLogic'
-import type { AppliedTweak } from './theaterLogic'
 
 const sampleBeat = {
   id: 'b1',
@@ -133,7 +133,7 @@ describe('theaterLogic', () => {
     expect(resolveChipLeadCast(sk, 'tea')).toBeNull()
   })
 
-  it('SCENE_GEN_TIMEOUT_MS is 30 seconds', () => {
+  it('sCENE_GEN_TIMEOUT_MS is 30 seconds', () => {
     expect(SCENE_GEN_TIMEOUT_MS).toBe(30_000)
   })
 

@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
 import type { TheaterSkeleton } from './theaterLogic'
+import { describe, expect, it } from 'vitest'
 import {
   getPokeChipsForPreset,
   listTheaterScenePresets,

@@ -1,19 +1,19 @@
+import type { KeybindingActionId, UnifiedBinding, UnifiedBindingsFileV1 } from '@oclive/shared/lib/keybindings'
 import type { ComputedRef, Ref } from 'vue'
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import {
   actionScope,
   bindingMatchesEvent,
   detectBindingConflicts,
   getPrimaryEffectiveAcceleratorForAction,
   isValidHoldAccelerator,
+
   loadUnifiedBindingsFile,
   normalizeAccelerator,
   saveUnifiedBindingsFile,
   shouldIgnoreTarget,
-  type KeybindingActionId,
-  type UnifiedBinding,
-  type UnifiedBindingsFileV1,
+
 } from '@oclive/shared/lib/keybindings'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 export interface KeybindingRuntimeAction {
   actionId: Extract<KeybindingActionId, `app.${string}`>
@@ -185,4 +185,3 @@ export function useUnifiedKeybindings(options: {
     holdRowsForAction,
   }
 }
-

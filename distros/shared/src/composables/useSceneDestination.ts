@@ -1,10 +1,10 @@
 import type { ToastType } from '@oclive/shared/composables/useAppToast'
-import { ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { setUserPresenceScene, switchScene } from '@oclive/shared/api'
 import { useChatStore } from '@oclive/shared/stores/chatStore'
 import { useDebugStore } from '@oclive/shared/stores/debugStore'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
+import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const SCENE_TRANSITION_MS = 520
 

@@ -1,11 +1,11 @@
-import { describe, expect, it } from 'vitest'
 import { ApiInvokeError } from '@oclive/shared/api/helpers'
-import { SceneGenTimeoutError } from './theaterLogic'
+import { describe, expect, it } from 'vitest'
 import {
   isKernelOfflineError,
   mapTheaterInvokeError,
   mapTheaterOutlineInvokeError,
 } from './mapTheaterInvokeError'
+import { SceneGenTimeoutError } from './theaterLogic'
 
 describe('mapTheaterInvokeError', () => {
   it('maps client timeout', () => {

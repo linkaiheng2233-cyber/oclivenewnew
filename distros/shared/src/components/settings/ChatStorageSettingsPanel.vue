@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
 import { useChatStorageSettings } from '@oclive/shared/composables/useChatStorageSettings'
+import { useI18n } from 'vue-i18n'
 import UiButton from '../ui/UiButton.vue'
 import ChatStorageMessageEditor from './chat-storage/ChatStorageMessageEditor.vue'
 import ChatStorageReplayBar from './chat-storage/ChatStorageReplayBar.vue'

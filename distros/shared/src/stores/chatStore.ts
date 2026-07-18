@@ -1,7 +1,6 @@
 import type { PresenceMode, SendMessageResponse } from '@oclive/shared/api'
 import type { RoleSceneMessageMap } from '@oclive/shared/utils/chatMessageDb'
 import type { RoleplaySplit } from '@oclive/shared/utils/roleplayReplySplit'
-import { defineStore } from 'pinia'
 import {
   getChatStorageCapabilities,
 } from '@oclive/shared/api/chatStorage'
@@ -11,19 +10,20 @@ import {
 
   saveDirtyBucketsToIdb,
 } from '@oclive/shared/utils/chatMessageDb'
-
 import { isChatStorageMigrated, runChatStorageMigrationIfNeeded } from '@oclive/shared/utils/chatStorageMigration'
+
 import {
   assistantDialogueFromSplit,
 
   splitRoleplayReply,
 } from '@oclive/shared/utils/roleplayReplySplit'
+import { defineStore } from 'pinia'
+import { resolveUserNarrativeSceneId } from '../composables/narrativeScene'
+import { PURE_CHAT_DEFAULT_SCENE_ID } from '../utils/pureChatScene'
 import { loadRoleSceneMessages, loadRoleSceneMessagesWithSceneFallback } from './chatStoreLoad'
 import { sendChatStoreMessage } from './chatStoreSend'
 import { useRoleStore } from './roleStore'
 import { useUiStore } from './uiStore'
-import { resolveUserNarrativeSceneId } from '../composables/narrativeScene'
-import { PURE_CHAT_DEFAULT_SCENE_ID } from '../utils/pureChatScene'
 
 export interface ChatMessage {
   id: string
@@ -96,20 +96,6 @@ function syncLastAssistantAside(
   messages: ChatMessage[],
 ): void {
   map[roleSceneAsideKey(roleId, sceneId)] = lastAssistantAsideFromMessages(messages)
-}
-
-function rebuildLastAssistantAsideMap(messageMap: RoleSceneMessageMap): Record<string, string> {
-  const out: Record<string, string> = {}
-  for (const [roleId, roleBucket] of Object.entries(messageMap)) {
-    if (isLegacyRoleBucket(roleBucket)) {
-      syncLastAssistantAside(out, roleId, 'default', roleBucket)
-      continue
-    }
-    for (const [sceneId, messages] of Object.entries(roleBucket)) {
-      syncLastAssistantAside(out, roleId, sceneId, messages)
-    }
-  }
-  return out
 }
 
 let persistMessagesTimer: ReturnType<typeof setTimeout> | null = null
@@ -315,11 +301,11 @@ export const useChatStore = defineStore(
 
         const primarySceneId = roleStore.interactionImmersive
           ? resolveUserNarrativeSceneId(
-            roleStore.roleInfo.userPresenceScene,
-            roleStore.roleInfo.currentScene,
-            roleStore.roleInfo.scenes,
-            uiStore.sceneId,
-          )
+              roleStore.roleInfo.userPresenceScene,
+              roleStore.roleInfo.currentScene,
+              roleStore.roleInfo.scenes,
+              uiStore.sceneId,
+            )
           : PURE_CHAT_DEFAULT_SCENE_ID
 
         const loadedSceneId = await loadRoleSceneMessagesWithSceneFallback(

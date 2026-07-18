@@ -1,12 +1,12 @@
 import type ChatMessageList from '@oclive/shared/components/chat/ChatMessageList.vue'
-import type { ComposerTranslation } from 'vue-i18n'
-import { computed, ref } from 'vue'
-import { useChatStore } from '@oclive/shared/stores/chatStore'
-import { useRoleStore } from '@oclive/shared/stores/roleStore'
-import { useUiStore } from '@oclive/shared/stores/uiStore'
-import { useChatSend } from '@oclive/shared/composables/useChatSend'
 import type { AppToastFn } from '@oclive/shared/composables/useAppToast'
+import type { useRoleStore } from '@oclive/shared/stores/roleStore'
+import type { useUiStore } from '@oclive/shared/stores/uiStore'
+import type { ComposerTranslation } from 'vue-i18n'
+import { useChatSend } from '@oclive/shared/composables/useChatSend'
+import { useChatStore } from '@oclive/shared/stores/chatStore'
 import { effectiveChatSceneId } from '@oclive/shared/utils/pureChatScene'
+import { computed, ref } from 'vue'
 
 export function useMainShellChat(options: {
   roleStore: ReturnType<typeof useRoleStore>

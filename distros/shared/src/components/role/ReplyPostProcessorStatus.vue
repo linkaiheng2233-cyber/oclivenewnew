@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { useRoleStore } from '@oclive/shared/stores/roleStore'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoleStore } from '@oclive/shared/stores/roleStore'
 
 withDefaults(
   defineProps<{

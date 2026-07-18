@@ -1,3 +1,4 @@
+import type { TheaterSkeleton } from './theaterLogic'
 import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_PAIR_RELATION_ID,
@@ -5,7 +6,6 @@ import {
   resolvePairRelationHint,
   THEATER_PAIR_RELATIONS,
 } from './theaterPairRelation'
-import type { TheaterSkeleton } from './theaterLogic'
 
 describe('theaterPairRelation', () => {
   it('defaults unknown ids to family', () => {

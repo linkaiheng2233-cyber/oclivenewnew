@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { defineAsyncComponent, onMounted, provide } from 'vue'
-import { useEasterEggSkin } from '@oclive/shared/composables/useEasterEggSkin'
 import { MAIN_SHELL_KEY } from '@oclive/shared/composables/mainShellKey'
-import { useMainShell } from './composables/useMainShell'
+import { useEasterEggSkin } from '@oclive/shared/composables/useEasterEggSkin'
 import { resolveOcliveShell } from '@oclive/shared/composables/useOcliveShell'
+import { defineAsyncComponent, onMounted, provide } from 'vue'
+import { useMainShell } from './composables/useMainShell'
 
 const FluentShell = defineAsyncComponent(() => import('./shells/fluent/FluentShell.vue'))
 const ToolShell = defineAsyncComponent(() => import('./shells/tool/ToolShell.vue'))

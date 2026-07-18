@@ -1,5 +1,5 @@
-import { invokeWithFriendlyError } from '../helpers'
 import type { PackUiConfig, PackUiSlotConfig, PackUiSlots } from '../role'
+import { invokeWithFriendlyError } from '../helpers'
 
 export const OCLIVE_DEFAULT_RELATION_SENTINEL = '__oclive_default__'
 

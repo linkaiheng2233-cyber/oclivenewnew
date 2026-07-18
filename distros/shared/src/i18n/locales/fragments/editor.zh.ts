@@ -60,5 +60,5 @@ export default {
       presenceRemoteStub: '异地占位',
       presenceRemoteLife: '异地心声',
     },
-  }
+  },
 }

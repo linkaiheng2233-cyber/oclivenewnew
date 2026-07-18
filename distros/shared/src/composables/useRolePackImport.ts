@@ -1,12 +1,12 @@
 import type { UnlistenFn } from '@tauri-apps/api/event'
-import { open } from '@tauri-apps/plugin-dialog'
-import { listen } from '@tauri-apps/api/event'
-import { ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { importRolePack, peekRolePack } from '@oclive/shared/api'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
+import { listen } from '@tauri-apps/api/event'
+import { open } from '@tauri-apps/plugin-dialog'
+import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-export type RolePackNotifyPayload = {
+export interface RolePackNotifyPayload {
   type: 'success' | 'error' | 'info' | 'warning'
   message: string
 }

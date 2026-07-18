@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest'
-import { createPinia, setActivePinia } from 'pinia'
 import type { KernelConnectionStatus } from '@oclive/shared/api/kernel'
+import { createPinia, setActivePinia } from 'pinia'
+import { describe, expect, it } from 'vitest'
 import { useKernelConnectionStore } from './kernelConnectionStore'
 
 function status(

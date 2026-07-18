@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import type { CastTier } from '../../composables/theater/theaterCastConfig'
 import type { TheaterScenePreset, TheaterScenePresetId } from '../../composables/theater/theaterSceneCatalog'
+import UiButton from '@oclive/shared/components/ui/UiButton.vue'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import UiButton from '@oclive/shared/components/ui/UiButton.vue'
 
 defineProps<{
   castLabel: string

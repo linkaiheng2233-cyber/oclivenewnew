@@ -10,7 +10,7 @@ const FIRST_MAX_CHARS_WITHOUT_BREAK = 8
 const STRONG_BREAK = /^[\s\S]*?[。！？!?；;\n]/
 const WEAK_BREAK = /^[\s\S]*?[，、：:]/
 
-export type SpeakableChunkOptions = {
+export interface SpeakableChunkOptions {
   /** First streaming chunk: lower char cap, weak punctuation exits earlier. */
   isFirst?: boolean
 }

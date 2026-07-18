@@ -1,5 +1,5 @@
-import { invokeWithFriendlyError } from './helpers'
 import type { RoleInfo } from './role'
+import { invokeWithFriendlyError } from './helpers'
 
 export interface LocalModelFile {
   name: string

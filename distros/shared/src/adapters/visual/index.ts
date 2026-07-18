@@ -12,8 +12,8 @@ export interface VisualAdapterContext {
 
 export interface VisualAdapterHandle {
   kind: VisualAdapterKind
-  mount(el: HTMLElement): void
-  dispose(): void
+  mount: (el: HTMLElement) => void
+  dispose: () => void
 }
 
 /** Image adapter: PNG/WebP hero (default Chat Pro path). */

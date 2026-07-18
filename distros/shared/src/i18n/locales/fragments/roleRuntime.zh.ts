@@ -24,5 +24,5 @@ export default {
     backendRemote: '远程',
     backendDirectory: '目录插件',
     currentIdentity: '身份：{name}',
-  }
+  },
 }

@@ -1,4 +1,16 @@
+import type { RoleSceneMessageMap } from './chatMessageDb'
+
+import { get, setMany } from 'idb-keyval'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  bucketMapKey,
+  IDB_BUCKET_INDEX_KEY,
+  IDB_MONOLITH_KEY,
+  loadMessageMapFromIdb,
+  migrateMonolithBlobToBuckets,
+
+  saveDirtyBucketsToIdb,
+} from './chatMessageDb'
 
 const idbStore = new Map<string, unknown>()
 
@@ -18,17 +30,6 @@ vi.mock('idb-keyval', () => ({
     return Promise.resolve()
   }),
 }))
-
-import { get, setMany } from 'idb-keyval'
-import {
-  bucketMapKey,
-  IDB_BUCKET_INDEX_KEY,
-  IDB_MONOLITH_KEY,
-  loadMessageMapFromIdb,
-  migrateMonolithBlobToBuckets,
-  saveDirtyBucketsToIdb,
-  type RoleSceneMessageMap,
-} from './chatMessageDb'
 
 describe('chatMessageDb bucket persistence', () => {
   beforeEach(() => {

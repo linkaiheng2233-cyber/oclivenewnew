@@ -7,7 +7,7 @@ defineProps<{
 
 const emit = defineEmits<{
   'update:modelValue': [value: string]
-  change: [event: Event]
+  'change': [event: Event]
 }>()
 
 function onChange(e: Event) {

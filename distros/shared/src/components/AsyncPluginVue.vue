@@ -1,6 +1,14 @@
 <script setup lang="ts">
-import type { Component } from 'vue'
 import type { OcliveApi } from '@oclive/shared/composables/useOclive'
+import type { Component } from 'vue'
+import { readPluginAssetText } from '@oclive/shared/api'
+import { createOcliveApi } from '@oclive/shared/composables/useOclive'
+import { usePluginStore } from '@oclive/shared/stores/pluginStore'
+import {
+  loadPluginVueComponent,
+  PluginVueCompileError,
+} from '@oclive/shared/utils/compilePluginVueSfc'
+import { scanVueComponentSource } from '@oclive/shared/utils/vueComponentSecurity'
 import { confirm } from '@tauri-apps/plugin-dialog'
 import { storeToRefs } from 'pinia'
 import {
@@ -13,14 +21,6 @@ import {
   watch,
 } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { createOcliveApi } from '@oclive/shared/composables/useOclive'
-import { usePluginStore } from '@oclive/shared/stores/pluginStore'
-import {
-  loadPluginVueComponent,
-  PluginVueCompileError,
-} from '@oclive/shared/utils/compilePluginVueSfc'
-import { readPluginAssetText } from '@oclive/shared/api'
-import { scanVueComponentSource } from '@oclive/shared/utils/vueComponentSecurity'
 import PluginSkeleton from './PluginSkeleton.vue'
 
 const props = withDefaults(

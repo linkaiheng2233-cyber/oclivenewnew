@@ -1,4 +1,5 @@
 import type { DirectoryPluginCatalogEntry, RolePluginState } from '@oclive/shared/api'
+import type { PluginPersistScope, SlotOrderMemo } from './constants'
 import {
   resetPluginStateToRoleDefault,
   saveGlobalPluginState,
@@ -10,9 +11,9 @@ import {
   buildSlotOrderSignature,
   clonePluginState,
   emptyState,
+
   SLOT_CHAT_TOOLBAR,
-  type PluginPersistScope,
-  type SlotOrderMemo,
+
 } from './constants'
 
 export function installedState() {
@@ -281,8 +282,8 @@ export interface InstalledSliceStore {
   catalogCandidatesBySlot: Record<string, string[]>
   pluginUpdateById: Record<string, { hasUpdate?: boolean }>
   bootstrapEpoch: number
-  refresh(): Promise<void>
-  syncDirectoryPluginBootstrap(): Promise<void>
-  checkPluginUpdatesFromRegistry(): Promise<void>
-  pluginsOrderedForSlot(slot: string): string[]
+  refresh: () => Promise<void>
+  syncDirectoryPluginBootstrap: () => Promise<void>
+  checkPluginUpdatesFromRegistry: () => Promise<void>
+  pluginsOrderedForSlot: (slot: string) => string[]
 }

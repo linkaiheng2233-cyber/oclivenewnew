@@ -1,10 +1,10 @@
-import { invoke } from '@tauri-apps/api/core'
-import { invokeWithFriendlyError } from './helpers'
 import type {
   PluginBackends,
   PluginBackendsOverride,
   PluginBackendsSourceMap,
 } from './settings'
+import { invoke } from '@tauri-apps/api/core'
+import { invokeWithFriendlyError } from './helpers'
 
 /** UI-only affect metrics from kernel simulation (not injected into Prompt). */
 export interface DisplayMetricsDto {
@@ -18,7 +18,7 @@ export interface UserRelationDto {
   name: string
   prompt_hint: string
   favor_multiplier: number
-  /** Role pack configured initial favorability (0â€?00); switching top-bar identity re-seeds favorability */
+  /** Role pack configured initial favorability (0â€“100); switching top-bar identity re-seeds favorability */
   initial_favorability: number
 }
 
@@ -42,7 +42,6 @@ export interface PackUiSlotConfig {
   visible: string[]
 }
 
-
 export interface PackUiSlots {
   'chat_toolbar': PackUiSlotConfig
   'settings.panel': PackUiSlotConfig
@@ -51,19 +50,16 @@ export interface PackUiSlots {
   'chat.header': PackUiSlotConfig
 }
 
-
 export interface PackUiTheme {
   primaryColor?: string
   backgroundColor?: string
   fontFamily?: string
 }
 
-
 export interface PackUiLayout {
   sidebar?: string
   chatInput?: string
 }
-
 
 export interface PackUiConfig {
   shell: string
@@ -71,7 +67,6 @@ export interface PackUiConfig {
   layout: PackUiLayout
   slots: PackUiSlots
 }
-
 
 export interface AuthorRecommendedPlugin {
   id: string
@@ -82,7 +77,6 @@ export interface AuthorRecommendedPlugin {
   note?: string | null
 }
 
-
 export interface AuthorPackFile {
   schema_version: number
   summary?: string
@@ -91,7 +85,6 @@ export interface AuthorPackFile {
   suggested_ui?: PackUiConfig | null
   suggested_plugin_backends?: PluginBackends | null
 }
-
 
 export interface RoleData {
   role_id: string
@@ -116,7 +109,7 @@ export interface RoleData {
   use_manifest_default: boolean
   /** Remote life enabled (DB) */
   remote_life_enabled: boolean
-  /** Role pack suggested default for remote life (`settings.json` â†?`remote_presence.default_enabled`) */
+  /** Role pack suggested default for remote life (`settings.json` â†’ `remote_presence.default_enabled`) */
   remote_life_pack_default: boolean | null
   event_impact_factor: number
   /** `evolution.personality_source`; defaults to vector */
@@ -151,7 +144,6 @@ export interface RoleData {
   slot_session_overridden_keys?: string[]
   blueprint_groups_pack?: import('@oclive/shared/lib/slotRegistry').SlotGroupsMap | null
 }
-
 
 export interface SceneLabelEntry {
   id: string
@@ -299,11 +291,9 @@ export async function listRoles(): Promise<RoleSummaryDto[]> {
   return invokeWithFriendlyError<RoleSummaryDto[]>('list_roles', {})
 }
 
-
 export async function switchRole(roleId: string): Promise<RoleInfo> {
   return invokeWithFriendlyError<RoleInfo>('switch_role', { roleId })
 }
-
 
 export async function setUserRelation(
   roleId: string,
@@ -314,7 +304,6 @@ export async function setUserRelation(
   })
 }
 
-
 export async function setEvolutionFactor(
   roleId: string,
   eventImpactFactor: number,
@@ -323,7 +312,6 @@ export async function setEvolutionFactor(
     req: { role_id: roleId, event_impact_factor: eventImpactFactor },
   })
 }
-
 
 export async function setRemoteLifeEnabled(
   roleId: string,
@@ -334,7 +322,6 @@ export async function setRemoteLifeEnabled(
   })
 }
 
-
 export async function setRoleInteractionMode(
   roleId: string,
   mode: 'immersive' | 'pure_chat',
@@ -343,7 +330,6 @@ export async function setRoleInteractionMode(
     req: { role_id: roleId, mode },
   })
 }
-
 
 export async function setSceneUserRelation(
   roleId: string,
@@ -415,7 +401,6 @@ export async function setSceneUserIdentity(
   })
 }
 
-
 export async function exportRolePack(
   roleId: string,
   destPath: string,
@@ -425,7 +410,6 @@ export async function exportRolePack(
     destPath,
   })
 }
-
 
 export interface RolePackPeek {
   id: string
@@ -452,4 +436,3 @@ export async function importRolePack(
     overwrite,
   })
 }
-

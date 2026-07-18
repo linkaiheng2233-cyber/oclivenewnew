@@ -1,6 +1,8 @@
-import { readFileSync, readdirSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
+
+import { ApiInvokeError, snakeToCamelKey, toastAsyncError, toCamelPayload } from './helpers'
 
 const { showToastMock } = vi.hoisted(() => ({
   showToastMock: vi.fn(),
@@ -19,25 +21,23 @@ vi.stubGlobal('window', {
   },
 })
 
-import { ApiInvokeError, snakeToCamelKey, toastAsyncError, toCamelPayload } from './helpers'
-
 const API_DIR = join(import.meta.dirname)
 
 /** Top-level invoke payload keys must be camelCase (Tauri v2 IPC via `@tauri-apps/api/core`). */
 function collectInvokeTopLevelKeys(filePath: string): string[] {
   const src = readFileSync(filePath, 'utf8')
   const keys: string[] = []
-  const re = /invokeWithFriendlyError(?:<[^>]*>)?\(\s*['"`][^'"`]+['"`]\s*,\s*\{([^}]*)\}/gs
+  const re = /invokeWithFriendlyError(?:<[^>]*>)?\(\s*['"`][^'"`]+['"`]\s*,\s*\{([^}]*)\}/g
   for (const m of src.matchAll(re)) {
     const body = m[1] ?? ''
-    for (const km of body.matchAll(/(?:^|[,{]\s*)(['"`])([a-zA-Z_][\w]*)\1\s*:/g)) {
+    for (const km of body.matchAll(/(?:^|[,{]\s*)(['"`])([a-z_]\w*)\1\s*:/gi)) {
       keys.push(km[2]!)
     }
   }
-  const bareRe = /invoke(?:WithFriendlyError)?(?:<[^>]*>)?\(\s*['"`][^'"`]+['"`]\s*,\s*\{([^}]*)\}/gs
+  const bareRe = /invoke(?:WithFriendlyError)?(?:<[^>]*>)?\(\s*['"`][^'"`]+['"`]\s*,\s*\{([^}]*)\}/g
   for (const m of src.matchAll(bareRe)) {
     const body = m[1] ?? ''
-    for (const km of body.matchAll(/(?:^|[,{]\s*)(['"`])([a-zA-Z_][\w]*)\1\s*:/g)) {
+    for (const km of body.matchAll(/(?:^|[,{]\s*)(['"`])([a-z_]\w*)\1\s*:/gi)) {
       keys.push(km[2]!)
     }
   }

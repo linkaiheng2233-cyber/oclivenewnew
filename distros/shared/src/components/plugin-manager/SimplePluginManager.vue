@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { open } from '@tauri-apps/plugin-dialog'
-import { computed, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { installPluginFromZip } from '@oclive/shared/api'
-import { showPluginInstallReviewHint } from '@oclive/shared/composables/usePluginInstallReviewHint'
 import { useAppToast } from '@oclive/shared/composables/useAppToast'
+import { showPluginInstallReviewHint } from '@oclive/shared/composables/usePluginInstallReviewHint'
 import { usePluginSlotEnable } from '@oclive/shared/composables/usePluginSlotEnable'
 import { usePluginMarketStore } from '@oclive/shared/stores/pluginMarketStore'
 import { usePluginStore } from '@oclive/shared/stores/pluginStore'
+import { open } from '@tauri-apps/plugin-dialog'
+import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import PluginUiSlotSelectorDialog from '../PluginUiSlotSelectorDialog.vue'
 import UiButton from '../ui/UiButton.vue'
 

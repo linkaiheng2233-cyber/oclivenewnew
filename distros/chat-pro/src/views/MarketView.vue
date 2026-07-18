@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import type { PluginMarketEntryDto } from '@oclive/shared/api'
-import { computed, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { useAppToast } from '@oclive/shared/composables/useAppToast'
 import { useModalFocusRestore } from '@oclive/shared/composables/useModalFocusRestore'
 import { ensurePluginWorkbenchI18n } from '@oclive/shared/i18n/loadPluginWorkbench'
 import { hostEventBus } from '@oclive/shared/lib/hostEventBus'
 import { usePluginMarketStore } from '@oclive/shared/stores/pluginMarketStore'
+import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const props = withDefaults(
   defineProps<{

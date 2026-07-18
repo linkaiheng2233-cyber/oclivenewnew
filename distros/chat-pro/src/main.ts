@@ -1,12 +1,12 @@
+import { hydrateLayoutWidths } from '@oclive/shared/composables/useLayoutWidths'
+import { i18n } from '@oclive/shared/i18n'
+import { useChatStore } from '@oclive/shared/stores/chatStore'
+import { tryReplaceWithDirectoryShell } from '@oclive/shared/utils/directoryShellBootstrap'
+import { shouldLoadSentry } from '@oclive/shared/utils/telemetrySentry'
 import { createPinia } from 'pinia'
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 import { createApp } from 'vue'
 import App from './App.vue'
-import { useChatStore } from '@oclive/shared/stores/chatStore'
-import { i18n } from '@oclive/shared/i18n'
-import { tryReplaceWithDirectoryShell } from '@oclive/shared/utils/directoryShellBootstrap'
-import { shouldLoadSentry } from '@oclive/shared/utils/telemetrySentry'
-import { hydrateLayoutWidths } from '@oclive/shared/composables/useLayoutWidths'
 import '@oclive/shared/styles/theme.css'
 import '@oclive/shared/styles/theme-tool.css'
 import '@oclive/shared/styles/theme-tool-management.css'
@@ -28,6 +28,8 @@ void (async () => {
 
   const tookShell = await shellPromise
   if (tookShell) {
+    // This one-time startup diagnostic is intentionally visible in development consoles.
+    // eslint-disable-next-line no-console
     console.info('[oclive] directory shell plugin active (main UI skipped). Set VITE_OCLIVE_DISABLE_DIRECTORY_SHELL=1 to force main app.')
     return
   }

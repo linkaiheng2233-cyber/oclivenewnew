@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { useModalFocusRestore } from '@oclive/shared/composables/useModalFocusRestore'
 import { computed, ref, toRef } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useModalFocusRestore } from '@oclive/shared/composables/useModalFocusRestore'
 
 const props = defineProps<{
   open: boolean

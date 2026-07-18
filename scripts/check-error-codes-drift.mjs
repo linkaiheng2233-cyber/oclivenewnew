@@ -44,7 +44,11 @@ function readFrontendCodes() {
   if (!m) {
     throw new Error('KERNEL_STATIC_ERROR_CODES block not found in kernelErrorCodes.ts');
   }
-  return JSON.parse(m[1]).sort();
+  const codes = [...m[1].matchAll(/['"]([A-Z][A-Z0-9_]*)['"]/g)].map(match => match[1]);
+  if (codes.length === 0) {
+    throw new Error('KERNEL_STATIC_ERROR_CODES contains no string literals');
+  }
+  return codes.sort();
 }
 
 function diffSets(labelA, a, labelB, b) {

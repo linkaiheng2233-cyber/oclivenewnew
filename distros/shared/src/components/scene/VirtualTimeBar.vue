@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { JumpTimeResponse } from '@oclive/shared/api'
+import { getTimeState } from '@oclive/shared/api'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { getTimeState } from '@oclive/shared/api'
 import TimeDial from '../TimeDial.vue'
 
 const props = withDefaults(

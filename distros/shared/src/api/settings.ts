@@ -1,6 +1,6 @@
+import type { RoleInfo } from './role'
 import { normalizeSlotBackendWire } from '@oclive/shared/lib/slotRegistry'
 import { invokeWithFriendlyError } from './helpers'
-import type { RoleInfo } from './role'
 
 export interface DirectoryPluginSlots {
   memory?: string | null
@@ -11,8 +11,10 @@ export interface DirectoryPluginSlots {
   agent?: string | null
 }
 
-/** Matches `settings.json` → `plugin_backends` (snake_case, aligned with backend serde).
- *  Read path may include legacy `builtin_v2` wire alias; call `normalizePluginBackends` after load. */
+/**
+ * Matches `settings.json` → `plugin_backends` (snake_case, aligned with backend serde).
+ *  Read path may include legacy `builtin_v2` wire alias; call `normalizePluginBackends` after load.
+ */
 
 export interface PluginBackends {
   memory: 'builtin' | 'builtin_v2' | 'remote' | 'local' | 'directory'
@@ -40,7 +42,6 @@ export function normalizePluginBackends<T extends PluginBackends | PluginBackend
   return next
 }
 
-
 export interface PluginBackendsOverride {
   memory?: PluginBackends['memory'] | null
   local_memory_provider_id?: string | null
@@ -53,9 +54,7 @@ export interface PluginBackendsOverride {
   directory_plugins?: DirectoryPluginSlots | null
 }
 
-
 export type PluginBackendSource = 'pack_default' | 'session_override' | 'env_override'
-
 
 export interface PluginBackendsSourceMap {
   memory: PluginBackendSource
@@ -65,7 +64,6 @@ export interface PluginBackendsSourceMap {
   llm: PluginBackendSource
   agent: PluginBackendSource
 }
-
 
 export interface PluginResolutionDebugInfo {
   app_version: string
@@ -120,7 +118,6 @@ export async function setSessionPluginBackend(
   })
 }
 
-
 export async function setSessionSlotOverride(
   roleId: string,
   slotKey: string,
@@ -147,7 +144,6 @@ export async function setSessionSlotOverride(
   })
 }
 
-
 export async function clearSessionSlotOverride(
   roleId: string,
   slotKey: string,
@@ -161,7 +157,6 @@ export async function clearSessionSlotOverride(
     },
   })
 }
-
 
 export async function clearAllSessionSlotOverrides(
   roleId: string,
@@ -203,7 +198,6 @@ export async function applyAuthorSuggestedPluginBackends(
   })
 }
 
-
 export async function getPluginResolutionDebug(
   roleId: string,
   sessionId?: string | null,
@@ -219,7 +213,6 @@ export async function getPluginResolutionDebug(
   )
 }
 
-
 export type HotkeyAction
   = | {
     type: 'openPluginSlot'
@@ -229,7 +222,6 @@ export type HotkeyAction
   }
   | { type: 'openLauncherList' }
 
-
 export interface HotkeyBinding {
   id: string
   accelerator: string
@@ -237,17 +229,14 @@ export interface HotkeyBinding {
   action: HotkeyAction
 }
 
-
 export interface HotkeyBindingsFile {
   schemaVersion: number
   bindings: HotkeyBinding[]
 }
 
-
 export async function getHotkeyBindings(): Promise<HotkeyBindingsFile> {
   return invokeWithFriendlyError<HotkeyBindingsFile>('get_hotkey_bindings', {})
 }
-
 
 export async function saveHotkeyBindings(
   file: HotkeyBindingsFile,

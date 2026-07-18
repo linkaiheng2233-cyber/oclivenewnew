@@ -1,11 +1,13 @@
 import type { AppToastFn } from '@oclive/shared/composables/useAppToast'
+import type { VoiceTtsProfileRouting } from '@oclive/shared/lib/voiceTtsRouting'
+import type { CosyvoiceStreamPrefetch } from '@oclive/shared/utils/cosyvoiceStreamPlayback'
+import { directoryPluginInvoke, getPluginSettingsUi } from '@oclive/shared/api'
+import { invokeWithFriendlyError } from '@oclive/shared/api/helpers'
 import {
   resetVoiceExpansionWarmSchedule,
   resolveVoiceSidecarEndpoint,
   scheduleVoiceExpansionWarm,
 } from '@oclive/shared/composables/useVoiceExpansionWarm'
-import { directoryPluginInvoke, getPluginSettingsUi } from '@oclive/shared/api'
-import { invokeWithFriendlyError } from '@oclive/shared/api/helpers'
 import { hostEventBus } from '@oclive/shared/lib/hostEventBus'
 import {
   VOICE_ASR_CONFIG_UPDATED_EVENT,
@@ -13,31 +15,31 @@ import {
   VOICE_STREAM_SENTENCE_EVENT,
 } from '@oclive/shared/lib/voiceAsrEvents'
 import {
-  DEFAULT_COSYVOICE_EMO_TEXT,
+  resolveVoiceTtsRouting,
+
+} from '@oclive/shared/lib/voiceTtsRouting'
+import { usePluginStore } from '@oclive/shared/stores/pluginStore'
+import { useRoleStore } from '@oclive/shared/stores/roleStore'
+import {
   abortCosyvoiceStreamPrefetch,
+
+  DEFAULT_COSYVOICE_EMO_TEXT,
   ensureVoiceAudioReady,
   playCosyvoiceSidecarStream,
   resolveBundledSidecarEndpoint,
   resolveStreamDirective,
   shouldUseDirectSidecarStream,
   startCosyvoiceSidecarPrefetch,
-  type CosyvoiceStreamPrefetch,
 } from '@oclive/shared/utils/cosyvoiceStreamPlayback'
-import { formatVoiceSpeakFailure, shouldFallbackStreamToRpc } from '@oclive/shared/utils/voiceSpeakErrors'
+import { remainderAfterSpokenPrefix } from '@oclive/shared/utils/extractFirstSpeakableChunk'
 import { voiceDialogueFromRaw } from '@oclive/shared/utils/voiceDialogueFromRaw'
 import { VoiceSpeakDeduper } from '@oclive/shared/utils/voiceSpeakDeduper'
-import {
-  resolveVoiceTtsRouting,
-  type VoiceTtsProfileRouting,
-} from '@oclive/shared/lib/voiceTtsRouting'
-import { remainderAfterSpokenPrefix } from '@oclive/shared/utils/extractFirstSpeakableChunk'
+import { formatVoiceSpeakFailure, shouldFallbackStreamToRpc } from '@oclive/shared/utils/voiceSpeakErrors'
 import { onBeforeUnmount, onMounted } from 'vue'
-import { usePluginStore } from '@oclive/shared/stores/pluginStore'
-import { useRoleStore } from '@oclive/shared/stores/roleStore'
 
 const DEFAULT_TTS_PROFILE = 'bundled-cosyvoice2-zh'
 
-type MessageSentPayload = {
+interface MessageSentPayload {
   reply?: string
   bot_emotion?: string
   role_id?: string
@@ -47,7 +49,7 @@ type MessageSentPayload = {
   stream_spoken_end_index?: number
 }
 
-type StreamSentencePayload = {
+interface StreamSentencePayload {
   reply?: string
   bot_emotion?: string
   role_id?: string
@@ -55,7 +57,7 @@ type StreamSentencePayload = {
   stream_id?: string
 }
 
-type VoiceRuntimeConfig = {
+interface VoiceRuntimeConfig {
   tts_expansion_enabled: boolean
   auto_tts: boolean
   tts_profile: string
@@ -65,12 +67,12 @@ type VoiceRuntimeConfig = {
   local_synth_endpoint: string
 }
 
-type SpeakOptions = {
+interface SpeakOptions {
   /** Stream chunks normally hit the directive cache populated at message submit. */
   fastPath?: boolean
 }
 
-type SpeakJob = {
+interface SpeakJob {
   key: string
   text: string
   payload: { bot_emotion?: string, role_id?: string }
@@ -78,7 +80,7 @@ type SpeakJob = {
   directive: Record<string, unknown>
 }
 
-type RpcSpeakResult = {
+interface RpcSpeakResult {
   ok?: boolean
   audio_base64?: string
   audio_mime?: string
@@ -100,6 +102,7 @@ const streamPrefetchByKey = new Map<string, CosyvoiceStreamPrefetch>()
 const speakDeduper = new VoiceSpeakDeduper()
 let drainingSpeakQueue = false
 let speakGeneration = 0
+let cachedTtsProfiles: Map<string, VoiceTtsProfileRouting> | null = null
 
 function resetSpeakPipeline(): void {
   speakGeneration += 1
@@ -122,8 +125,6 @@ export function invalidateVoiceRuntimeConfig(): void {
   cachedConfigAt = 0
   cachedTtsProfiles = null
 }
-
-let cachedTtsProfiles: Map<string, VoiceTtsProfileRouting> | null = null
 
 async function loadTtsProfiles(): Promise<Map<string, VoiceTtsProfileRouting>> {
   if (cachedTtsProfiles)
@@ -170,8 +171,8 @@ async function loadVoiceRuntimeConfig(
   try {
     const ui = await getPluginSettingsUi(VOICE_ASR_PLUGIN_ID)
     const cfg = ui.config ?? {}
-    const ttsProfile =
-      typeof cfg.tts_profile === 'string' && cfg.tts_profile.trim()
+    const ttsProfile
+      = typeof cfg.tts_profile === 'string' && cfg.tts_profile.trim()
         ? cfg.tts_profile.trim()
         : DEFAULT_TTS_PROFILE
     const profiles = await loadTtsProfiles()
@@ -446,7 +447,6 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
       if (generation !== speakGeneration)
         return
       if (!res.ok || !res.audio_base64) {
-        const hint = res.reason || res.message || '合成无音频'
         if (res.reason === 'tts_expansion_disabled')
           return
         console.warn('[voice-auto-tts] RPC speak failed', res)
@@ -472,7 +472,9 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
     drainingSpeakQueue = true
     const generation = speakGeneration
     try {
-      while (speakQueue.length > 0 && generation === speakGeneration) {
+      while (speakQueue.length > 0) {
+        if (generation !== speakGeneration)
+          break
         const job = speakQueue[0]
         const next = speakQueue[1]
         if (next && generation === speakGeneration) {

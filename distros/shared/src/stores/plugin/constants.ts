@@ -215,4 +215,3 @@ export function clonePluginState(s: RolePluginState): RolePluginState {
     force_iframe_mode: s.force_iframe_mode ?? false,
   }
 }
-

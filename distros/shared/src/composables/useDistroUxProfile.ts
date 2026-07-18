@@ -1,5 +1,5 @@
-import { computed, ref } from 'vue'
 import { getKernelDiagnostics } from '@oclive/shared/api/kernel'
+import { computed, ref } from 'vue'
 
 const DEFAULT_UNLOCK_TURNS = 10
 

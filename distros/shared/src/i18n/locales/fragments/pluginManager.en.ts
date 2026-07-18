@@ -221,5 +221,5 @@ export default {
       v2:
         'Lightweight overview from slot_registry instances and session overrides. Full add/remove, groups, and pack writes: V1 advanced mode → Architecture graph (Ctrl+Shift+F).',
     },
-  }
+  },
 }

@@ -1,7 +1,7 @@
-import type { AuthorPackFile, LifeStateDto, PackUiConfig, PluginBackends, PluginBackendsOverride, PluginBackendsSourceMap, RoleInfo, UserRelationDto, DisplayMetricsDto } from '@oclive/shared/api'
-import { normalizePluginBackends } from '@oclive/shared/api/settings'
-import { defineStore } from 'pinia'
-import { listen, type UnlistenFn } from '@tauri-apps/api/event'
+import type { AuthorPackFile, DisplayMetricsDto, LifeStateDto, PackUiConfig, PluginBackends, PluginBackendsOverride, PluginBackendsSourceMap, RoleInfo, UserRelationDto } from '@oclive/shared/api'
+import type { SlotRegistryMap } from '@oclive/shared/lib/slotRegistry'
+import type { PresetRoleOption } from '@oclive/shared/utils/presetRolePicker'
+import type { UnlistenFn } from '@tauri-apps/api/event'
 import {
 
   clearSceneUserRelation,
@@ -18,18 +18,21 @@ import {
 
   toastAsyncError,
 } from '@oclive/shared/api'
+import { normalizePluginBackends } from '@oclive/shared/api/settings'
 import { rt } from '@oclive/shared/i18n/runtimeT'
 import { hostEventBus } from '@oclive/shared/lib/hostEventBus'
-import { normalizeSlotBackendWire, type SlotRegistryMap } from '@oclive/shared/lib/slotRegistry'
+import { normalizeSlotBackendWire } from '@oclive/shared/lib/slotRegistry'
 import {
   normalizeInteractionMode,
   packDefaultFromApi,
 } from '@oclive/shared/utils/interactionMode'
 import {
+
   resolveDefaultRoleId,
   shouldShowPresetPicker,
-  type PresetRoleOption,
 } from '@oclive/shared/utils/presetRolePicker'
+import { listen } from '@tauri-apps/api/event'
+import { defineStore } from 'pinia'
 
 export interface RoleOption extends PresetRoleOption {
   id: string
@@ -210,6 +213,8 @@ export async function bindAffectMetricsListener(): Promise<void> {
         const payload = event.payload
         if (!payload?.metrics)
           return
+        // The listener runs only after module initialization; the store declaration below is ready by then.
+        // eslint-disable-next-line ts/no-use-before-define
         const store = useRoleStore()
         if (!roleIdMatchesPayload(store.currentRoleId, payload.role_id))
           return

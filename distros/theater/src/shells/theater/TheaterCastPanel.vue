@@ -1,12 +1,17 @@
 <script setup lang="ts">
+import type { CastAdaptIssue } from '../../composables/theater/theaterCastAdapt'
 import type { TheaterCastConfig } from '../../composables/theater/theaterCastConfig'
-import { computed, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
+import type { TheaterPairRelationId } from '../../composables/theater/theaterPairRelation'
 import ImportProgressModal from '@oclive/shared/components/ImportProgressModal.vue'
 import UiButton from '@oclive/shared/components/ui/UiButton.vue'
 import UiFieldRow from '@oclive/shared/components/ui/UiFieldRow.vue'
 import UiSection from '@oclive/shared/components/ui/UiSection.vue'
 import UiSelect from '@oclive/shared/components/ui/UiSelect.vue'
+import { useRolePackImport } from '@oclive/shared/composables/useRolePackImport'
+import { useRoleStore } from '@oclive/shared/stores/roleStore'
+import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { countAdaptedCacheEntries, resolveCastAdaptStatus } from '../../composables/theater/theaterCastAdapt'
 import {
   DEFAULT_THEATER_CAST_CONFIG,
   enrichCastConfigFromRoles,
@@ -14,10 +19,7 @@ import {
   isHybridCast,
   resolveCastTier,
 } from '../../composables/theater/theaterCastConfig'
-import { THEATER_PAIR_RELATION_IDS, type TheaterPairRelationId } from '../../composables/theater/theaterPairRelation'
-import { countAdaptedCacheEntries, resolveCastAdaptStatus, type CastAdaptIssue } from '../../composables/theater/theaterCastAdapt'
-import { useRolePackImport } from '@oclive/shared/composables/useRolePackImport'
-import { useRoleStore } from '@oclive/shared/stores/roleStore'
+import { THEATER_PAIR_RELATION_IDS } from '../../composables/theater/theaterPairRelation'
 import TheaterCastAdaptProgress from './TheaterCastAdaptProgress.vue'
 
 const props = defineProps<{
@@ -96,6 +98,7 @@ const castAdaptStatusHintKey = computed(() => {
     case 'renameOnly':
       return 'theater.cast.renameOnlyHint'
   }
+  return 'theater.cast.statusDefault'
 })
 
 const castAdaptLastIssueLabel = computed(() => {

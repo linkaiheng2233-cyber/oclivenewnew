@@ -1,5 +1,4 @@
 import type { UserIdentityStateResponse } from '@oclive/shared/api'
-import { computed, onMounted, ref, watch } from 'vue'
 import {
   getUserIdentityState,
   OCLIVE_DEFAULT_IDENTITY_SENTINEL,
@@ -8,6 +7,7 @@ import {
 } from '@oclive/shared/api'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
 import { useUiStore } from '@oclive/shared/stores/uiStore'
+import { computed, onMounted, ref, watch } from 'vue'
 
 const identityState = ref<UserIdentityStateResponse | null>(null)
 const loading = ref(false)

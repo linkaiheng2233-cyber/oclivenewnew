@@ -23,7 +23,6 @@ const progressPercent = computed(() => {
     return 0
   return Math.round(((props.progressCurrent ?? 0) / props.progressTotal) * 100)
 })
-
 </script>
 
 <template>

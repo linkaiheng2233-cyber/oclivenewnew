@@ -1,5 +1,4 @@
 import type { PresenceMode, SendMessageResponse } from '@oclive/shared/api'
-import { defineStore } from 'pinia'
 import {
 
   getDisplayMetrics,
@@ -9,6 +8,7 @@ import {
   toastAsyncError,
 
 } from '@oclive/shared/api'
+import { defineStore } from 'pinia'
 import { useRoleStore } from './roleStore'
 
 export const useDebugStore = defineStore('debug', {

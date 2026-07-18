@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import type { ScriptLine, TheaterCast, TheaterCastSide, TheaterStageState } from '../../composables/theater/theaterLogic'
-import { buildCastRoster, resolveCastPortraitState, rosterBySide } from '../../composables/theater/theaterPortrait'
-import { setTheaterPortraitWidth, THEATER_PORTRAIT_DEFAULTS } from '../../composables/useTheaterPortraitLayout'
+import UiResizeHandle from '@oclive/shared/components/ui/UiResizeHandle.vue'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import UiResizeHandle from '@oclive/shared/components/ui/UiResizeHandle.vue'
+import { buildCastRoster, resolveCastPortraitState, rosterBySide } from '../../composables/theater/theaterPortrait'
+import { setTheaterPortraitWidth, THEATER_PORTRAIT_DEFAULTS } from '../../composables/useTheaterPortraitLayout'
 import TheaterCastColumn from './TheaterCastColumn.vue'
 import TheaterScriptLine from './TheaterScriptLine.vue'
 

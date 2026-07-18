@@ -1,9 +1,10 @@
 import type { KernelConnectionStatus } from '@oclive/shared/api/kernel'
-import { listen, type UnlistenFn } from '@tauri-apps/api/event'
-import { defineStore } from 'pinia'
+import type { UnlistenFn } from '@tauri-apps/api/event'
 import { getKernelConnectionStatus, reconnectKernel } from '@oclive/shared/api/kernel'
 import { i18n } from '@oclive/shared/i18n'
 import { kernelProfileDetailKey, kernelStatusLabelKey } from '@oclive/shared/lib/kernelProfileUx'
+import { listen } from '@tauri-apps/api/event'
+import { defineStore } from 'pinia'
 import { useChatStore } from './chatStore'
 
 export type KernelPhase = 'checking' | 'ready'

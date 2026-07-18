@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, toRef } from 'vue'
-import { useI18n } from 'vue-i18n'
 import ModelManagerBody from '@oclive/shared/components/model/ModelManagerBody.vue'
 import { useModalFocusRestore } from '@oclive/shared/composables/useModalFocusRestore'
+import { ref, toRef } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const props = withDefaults(
   defineProps<{

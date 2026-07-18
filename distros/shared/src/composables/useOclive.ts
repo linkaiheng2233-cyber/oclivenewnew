@@ -1,7 +1,7 @@
-import { getCurrentInstance, onUnmounted } from 'vue'
+import { pluginBridgeInvoke } from '@oclive/shared/api'
 import { readHostAppearance } from '@oclive/shared/lib/hostAppearance'
 import { hostEventBus } from '@oclive/shared/lib/hostEventBus'
-import { pluginBridgeInvoke } from '@oclive/shared/api'
+import { getCurrentInstance, onUnmounted } from 'vue'
 
 /** Event names must be `namespace:suffix`; namespace is `[a-zA-Z0-9.-]+` (same charset as manifest id). */
 const PLUGIN_EVENT_NS = /^([a-z0-9.-]+):(.+)$/i

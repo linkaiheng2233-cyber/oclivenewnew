@@ -3,7 +3,7 @@ import type { ScriptLine } from '../../composables/theater/theaterLogic'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-const props = defineProps<{
+defineProps<{
   visible: boolean
   patchA: ScriptLine[]
   patchB: ScriptLine[]

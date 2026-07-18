@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import type { JumpTimeResponse } from '@oclive/shared/api'
-import { computed, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { jumpTime } from '@oclive/shared/api'
 import { useChatStore } from '@oclive/shared/stores/chatStore'
 import { useUiStore } from '@oclive/shared/stores/uiStore'
-import { jumpTime } from '@oclive/shared/api'
+import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import PickerWheel from './PickerWheel.vue'
 
 const props = defineProps<{

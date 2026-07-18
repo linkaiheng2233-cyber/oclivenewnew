@@ -5,7 +5,6 @@ export interface McpToolManifest {
   description?: string | null
 }
 
-
 export interface McpServerManifest {
   id: string
   name: string
@@ -16,13 +15,11 @@ export interface McpServerManifest {
   tools?: McpToolManifest[]
 }
 
-
 export interface McpToolCallResult {
   server_id: string
   tool_name: string
   result: unknown
 }
-
 
 export interface AgentToolCallTrace {
   server_id: string
@@ -30,7 +27,6 @@ export interface AgentToolCallTrace {
   params: unknown
   result: unknown
 }
-
 
 export interface AgentDebugTrace {
   timestamp_ms: number
@@ -43,18 +39,15 @@ export interface AgentDebugTrace {
   error?: string | null
 }
 
-
 export async function listMcpServers(): Promise<McpServerManifest[]> {
   return invokeWithFriendlyError<McpServerManifest[]>('list_mcp_servers', {})
 }
-
 
 export async function listMcpTools(serverId: string): Promise<McpToolManifest[]> {
   return invokeWithFriendlyError<McpToolManifest[]>('list_mcp_tools', {
     req: { server_id: serverId },
   })
 }
-
 
 export async function callMcpTool(
   serverId: string,
@@ -70,16 +63,13 @@ export async function callMcpTool(
   })
 }
 
-
 export async function getAgentDebugTraces(): Promise<AgentDebugTrace[]> {
   return invokeWithFriendlyError<AgentDebugTrace[]>('get_agent_debug_traces', {})
 }
 
-
 export async function clearAgentDebugTraces(): Promise<void> {
   return invokeWithFriendlyError<void>('clear_agent_debug_traces', {})
 }
-
 
 export interface HighRiskGrantsSnapshot {
   'mcp:http': string[]
@@ -88,18 +78,15 @@ export interface HighRiskGrantsSnapshot {
   'network:*': string[]
 }
 
-
 export type HighRiskGrantKind
   = | 'mcp:http'
     | 'mcp:stdio'
     | 'process:spawn'
     | 'network:*'
 
-
 export async function listHighRiskGrants(): Promise<HighRiskGrantsSnapshot> {
   return invokeWithFriendlyError<HighRiskGrantsSnapshot>('list_high_risk_grants', {})
 }
-
 
 export async function grantHighRiskCapability(
   kind: HighRiskGrantKind,
@@ -110,7 +97,6 @@ export async function grantHighRiskCapability(
   })
 }
 
-
 export async function revokeHighRiskCapability(
   kind: HighRiskGrantKind,
   id: string,
@@ -119,4 +105,3 @@ export async function revokeHighRiskCapability(
     req: { kind, id },
   })
 }
-

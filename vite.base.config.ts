@@ -1,9 +1,10 @@
+import type { Plugin, UserConfig } from 'vite'
 /// <reference types="vitest/config" />
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { defineConfig, type Plugin, type UserConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { visualizer } from 'rollup-plugin-visualizer'
+import { defineConfig } from 'vite'
 import { resolveManualChunk } from './distros/shared/src/build/manualChunks'
 
 const host = process.env.TAURI_DEV_HOST

@@ -1,9 +1,9 @@
-import { computed, onMounted, reactive, ref } from 'vue'
 import { useAppToast } from '@oclive/shared/composables/useAppToast'
 import { useDistroUxProfile } from '@oclive/shared/composables/useDistroUxProfile'
 import { useInteractionModeSettings } from '@oclive/shared/composables/useInteractionModeSettings'
 import { useEngagementStore } from '@oclive/shared/stores/engagementStore'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
+import { computed, onMounted, reactive, ref } from 'vue'
 
 const IMMERSIVE_INTRO_KEY = 'oclive_immersive_intro_seen'
 

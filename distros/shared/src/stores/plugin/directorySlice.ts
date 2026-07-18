@@ -4,6 +4,7 @@ import type {
   PluginUiSlotInfo,
   PluginUpdateInfo,
 } from '@oclive/shared/api'
+import type { InstalledSliceStore } from './installedSlice'
 import {
   checkPluginUpdates,
   extractPluginZip,
@@ -20,7 +21,6 @@ import {
   rolePluginStateEqual,
   setRefreshPromise,
 } from './constants'
-import type { InstalledSliceStore } from './installedSlice'
 
 export function directoryState() {
   return {
@@ -177,10 +177,10 @@ export interface DirectorySliceStore extends InstalledSliceStore {
   bootstrapUiSlots: PluginUiSlotInfo[]
   bootstrapEpoch: number
   slotReloadByPluginId: Record<string, number>
-  bumpPluginSlotReload(pluginIds?: readonly string[]): void
+  bumpPluginSlotReload: (pluginIds?: readonly string[]) => void
   pluginUpdateById: Record<string, PluginUpdateInfo>
   pluginUpdatesCheckLoading: boolean
   extractingPluginId: string | null
-  applyDirectoryBootstrap(boot: DirectoryPluginBootstrap): void
-  syncDirectoryPluginBootstrap(): Promise<void>
+  applyDirectoryBootstrap: (boot: DirectoryPluginBootstrap) => void
+  syncDirectoryPluginBootstrap: () => Promise<void>
 }

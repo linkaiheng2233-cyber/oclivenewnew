@@ -60,5 +60,5 @@ export default {
       presenceRemoteStub: 'Remote placeholder',
       presenceRemoteLife: 'Remote inner voice',
     },
-  }
+  },
 }

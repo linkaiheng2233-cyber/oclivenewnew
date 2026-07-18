@@ -1,15 +1,15 @@
+import type { TheaterSkeleton } from './theaterLogic'
 import { describe, expect, it } from 'vitest'
 import {
   bindCastToSkeleton,
   DEFAULT_CAST_CONFIG,
   DEFAULT_THEATER_CAST_CONFIG,
   isHybridCast,
-  resolveCastTier,
   resolveCanonicalReplacementNames,
+  resolveCastTier,
   swapCanonicalNamesInBeats,
   swapCanonicalNamesInForks,
 } from './theaterCastConfig'
-import type { TheaterSkeleton } from './theaterLogic'
 
 const canonicalSkeleton: TheaterSkeleton = {
   scene: 'breakfast',

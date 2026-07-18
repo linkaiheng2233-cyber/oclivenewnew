@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { computed, inject } from 'vue'
-import { useI18n } from 'vue-i18n'
 import KernelStatusBar from '@oclive/shared/components/KernelStatusBar.vue'
 import { MAIN_SHELL_KEY } from '@oclive/shared/composables/mainShellKey'
 import { useUserIdentityState } from '@oclive/shared/composables/useUserIdentityState'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
 import { useUiStore } from '@oclive/shared/stores/uiStore'
+import { computed, inject } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const props = defineProps<{
   statusHeart: string

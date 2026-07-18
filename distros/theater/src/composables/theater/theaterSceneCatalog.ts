@@ -1,10 +1,10 @@
-import type { PokeChipDef, PokeChipId, TheaterSkeleton } from './theaterLogic'
+import type { PokeChipDef, TheaterSkeleton } from './theaterLogic'
 
-export type TheaterScenePresetId =
-  | 'breakfast'
-  | 'supermarket'
-  | 'way_home'
-  | 'bedtime'
+export type TheaterScenePresetId
+  = | 'breakfast'
+    | 'supermarket'
+    | 'way_home'
+    | 'bedtime'
 
 export const THEATER_RUNTIME_SCENE_ID = 'theater:home' as const
 

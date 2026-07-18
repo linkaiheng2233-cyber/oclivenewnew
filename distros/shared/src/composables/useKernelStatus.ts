@@ -1,9 +1,9 @@
 import type { DesktopKernelMode } from '@oclive/shared/api/kernel'
-import { onBeforeUnmount, onMounted } from 'vue'
 import { fetchRoleSnapshot } from '@oclive/shared/api/kernel'
+import { useChatStore } from '@oclive/shared/stores/chatStore'
 import { useKernelConnectionStore } from '@oclive/shared/stores/kernelConnectionStore'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
-import { useChatStore } from '@oclive/shared/stores/chatStore'
+import { onBeforeUnmount, onMounted } from 'vue'
 
 const POLL_MS_VISIBLE = 8000
 const POLL_MS_HIDDEN = 60000
@@ -57,7 +57,9 @@ export function useRoleSnapshotPoll() {
     if (timer) {
       clearInterval(timer)
     }
-    timer = setInterval(() => { void tick() }, pollIntervalMs())
+    timer = setInterval(() => {
+      void tick()
+    }, pollIntervalMs())
   }
 
   function start() {

@@ -1,8 +1,8 @@
 <script setup lang="ts">
+import UiSidePanel from '@oclive/shared/components/ui/UiSidePanel.vue'
+import { useRoleStore } from '@oclive/shared/stores/roleStore'
 import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoleStore } from '@oclive/shared/stores/roleStore'
-import UiSidePanel from '@oclive/shared/components/ui/UiSidePanel.vue'
 import {
   ModelManagerPanel,
   SettingsView,

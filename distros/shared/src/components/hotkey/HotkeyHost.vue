@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { UnlistenFn } from '@tauri-apps/api/event'
 import type { HotkeyAction } from '@oclive/shared/api'
+import type { UnlistenFn } from '@tauri-apps/api/event'
+import { usePluginStore } from '@oclive/shared/stores/pluginStore'
 import { listen } from '@tauri-apps/api/event'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { usePluginStore } from '@oclive/shared/stores/pluginStore'
 
 const { t } = useI18n()
 const pluginStore = usePluginStore()

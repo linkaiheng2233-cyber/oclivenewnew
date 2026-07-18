@@ -7,7 +7,7 @@ const DEFAULT_SIDECAR = 'http://127.0.0.1:50000'
 const warmPromises = new Map<string, Promise<void>>()
 const cachedSidecarEndpoints = new Map<string, string>()
 
-type VoiceWarmResult = {
+interface VoiceWarmResult {
   ok?: boolean
   warmed?: boolean
   already_warmed?: boolean

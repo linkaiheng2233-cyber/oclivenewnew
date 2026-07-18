@@ -1,9 +1,9 @@
-import { describe, expect, it } from 'vitest'
 import {
   isImmersiveMode,
   normalizeInteractionMode,
   packDefaultFromApi,
 } from '@oclive/shared/utils/interactionMode'
+import { describe, expect, it } from 'vitest'
 
 describe('interactionMode', () => {
   it('normalizeInteractionMode maps immersive and defaults unknown to pure_chat', () => {

@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import type { HotkeyBinding, HotkeyBindingsFile } from '@oclive/shared/api'
+import type { KeybindingActionId, UnifiedBinding, UnifiedBindingsFileV1 } from '@oclive/shared/lib/keybindings'
 import { getHotkeyBindings, saveHotkeyBindings } from '@oclive/shared/api'
 import { useAppToast } from '@oclive/shared/composables/useAppToast'
 import {
-  KEYBINDING_ACTIONS,
   actionScope,
   createDefaultUnifiedBindingsFile,
   describeBindingOrUnbound,
@@ -13,12 +13,12 @@ import {
   getKeybindingAction,
   getPrimaryEffectiveAcceleratorForAction,
   isValidHoldAccelerator,
+  KEYBINDING_ACTIONS,
+
   loadUnifiedBindingsFile,
   normalizeAccelerator,
   saveUnifiedBindingsFile,
-  type KeybindingActionId,
-  type UnifiedBinding,
-  type UnifiedBindingsFileV1,
+
 } from '@oclive/shared/lib/keybindings'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -618,4 +618,3 @@ function isGlobalRow(b: UnifiedBinding): boolean {
   flex-wrap: wrap;
 }
 </style>
-

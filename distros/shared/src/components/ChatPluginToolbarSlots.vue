@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { useDirectoryPluginSlotEmbed } from '@oclive/shared/composables/useDirectoryPluginSlotEmbed'
 import { PURE_CHAT_PLATFORM_PLUGIN_IDS, SLOT_CHAT_TOOLBAR } from '@oclive/shared/stores/pluginStore'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import AsyncPluginVue from './AsyncPluginVue.vue'
 import PluginErrorPlaceholder from './PluginErrorPlaceholder.vue'
 

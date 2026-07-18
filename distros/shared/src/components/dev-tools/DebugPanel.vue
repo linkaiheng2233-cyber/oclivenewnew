@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { generateMonologue } from '@oclive/shared/api'
 import { useChatStore } from '@oclive/shared/stores/chatStore'
 import { useDebugStore } from '@oclive/shared/stores/debugStore'
 import { SLOT_DEBUG_DOCK, usePluginStore } from '@oclive/shared/stores/pluginStore'
@@ -10,12 +9,13 @@ import {
   PERSONALITY_TRAIT_KEYS,
   vec7ToRecord,
 } from '@oclive/shared/utils/personality-traits'
-import { generateMonologue } from '@oclive/shared/api'
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import ChatExportBar from '../ChatExportBar.vue'
-import HelpHint from '../shared/HelpHint.vue'
 import PluginSlotEmbed from '../PluginSlotEmbed.vue'
-import RolePackBar from '../RolePackBar.vue'
 import RoleRuntimePanel from '../role/RoleRuntimePanel.vue'
+import RolePackBar from '../RolePackBar.vue'
+import HelpHint from '../shared/HelpHint.vue'
 
 const props = defineProps<{
   visible: boolean

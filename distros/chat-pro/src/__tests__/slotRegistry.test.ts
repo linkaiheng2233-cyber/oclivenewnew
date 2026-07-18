@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'vitest'
 import { patchSlotRegistryBackend } from '@oclive/shared/lib/archGraphSlotBackend'
 import {
   addSlotToRegistry,
@@ -7,6 +6,7 @@ import {
   SLOT_REGISTRY_LAST_LLM,
   sortedSlotRegistryEntries,
 } from '@oclive/shared/lib/slotRegistry'
+import { describe, expect, it } from 'vitest'
 
 const basePack = {
   llm: { type: 'llm', label: 'L', backend: 'ollama', position: 0 },

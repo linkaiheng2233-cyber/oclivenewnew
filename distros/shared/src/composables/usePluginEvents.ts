@@ -1,16 +1,17 @@
 import type { AppToastFn } from '@oclive/shared/composables/useAppToast'
-import { onBeforeUnmount, onMounted } from 'vue'
-import { useI18n } from 'vue-i18n'
+import type { VoiceAsrSubmitPayload } from '@oclive/shared/lib/voiceAsrEvents'
 import { setRemoteLifeEnabled, setRoleInteractionMode } from '@oclive/shared/api'
-import { hostEventBus } from '@oclive/shared/lib/hostEventBus'
-import { usePluginStore } from '@oclive/shared/stores/pluginStore'
-import { useRoleStore } from '@oclive/shared/stores/roleStore'
 import { resetLayoutWidths } from '@oclive/shared/composables/useLayoutWidths'
 import { useOcliveAppearance } from '@oclive/shared/composables/useOcliveAppearance'
+import { hostEventBus } from '@oclive/shared/lib/hostEventBus'
 import {
   VOICE_ASR_SUBMIT_EVENT,
-  type VoiceAsrSubmitPayload,
+
 } from '@oclive/shared/lib/voiceAsrEvents'
+import { usePluginStore } from '@oclive/shared/stores/pluginStore'
+import { useRoleStore } from '@oclive/shared/stores/roleStore'
+import { onBeforeUnmount, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const quickActionTravelEvent = 'com.oclive.mumu.quick-actions:travel'
 const settingsSetRemoteLifeEvent = 'com.oclive.mumu.settings-panel:set_remote_life'

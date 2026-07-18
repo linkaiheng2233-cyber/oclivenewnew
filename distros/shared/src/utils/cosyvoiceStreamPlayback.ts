@@ -10,14 +10,14 @@ export const SIDECAR_STREAM_BODY_READ_TIMEOUT_MS = 60_000
 /** CosyVoice instruct2 fallback when director directive is not ready yet. */
 export const DEFAULT_COSYVOICE_EMO_TEXT = '用自然平静的语气'
 
-export type CosyvoiceDirective = {
+export interface CosyvoiceDirective {
   emo_text?: string
   ref_audio?: string
   ref_text?: string
   speed?: number
 }
 
-export type CosyvoiceStreamResult = {
+export interface CosyvoiceStreamResult {
   ok: boolean
   reason?: string
   message?: string
@@ -31,6 +31,8 @@ function logVoiceStreamTelemetry(result: CosyvoiceStreamResult): void {
     return
   if (result.ttfc_ms == null && result.elapsed_ms == null)
     return
+  // Development-only latency telemetry; production returns above.
+  // eslint-disable-next-line no-console
   console.debug('[voice-tts] stream telemetry', {
     ttfc_ms: result.ttfc_ms,
     elapsed_ms: result.elapsed_ms,
@@ -38,12 +40,12 @@ function logVoiceStreamTelemetry(result: CosyvoiceStreamResult): void {
   })
 }
 
-type PcmChunk = {
+interface PcmChunk {
   pcm_base64: string
   sample_rate: number
 }
 
-type NdjsonEvent = {
+interface NdjsonEvent {
   ok?: boolean
   event?: string
   reason?: string
@@ -226,11 +228,11 @@ async function readNdjsonStream(
   }
 }
 
-export type CosyvoiceStreamPrefetch = {
+export interface CosyvoiceStreamPrefetch {
   key: string
   chunks: PcmChunk[]
   done: Promise<CosyvoiceStreamResult>
-  waitForChunk(afterIndex: number): Promise<void>
+  waitForChunk: (afterIndex: number) => Promise<void>
   abort: () => void
 }
 

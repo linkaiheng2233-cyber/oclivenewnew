@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { PluginSlotSelectorState } from '@oclive/shared/composables/usePluginSlotEnable'
+import { useModalFocusRestore } from '@oclive/shared/composables/useModalFocusRestore'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useModalFocusRestore } from '@oclive/shared/composables/useModalFocusRestore'
 
 const props = defineProps<{
   state: PluginSlotSelectorState

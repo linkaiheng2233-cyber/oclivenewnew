@@ -27,7 +27,7 @@ describe('official Voice HTML fallbacks', () => {
 
     expect(html).toContain('voice-toolbar.js')
     expect(html).toContain('id="record"')
-    expect(script).toContain("rpc('voice.transcribe'")
+    expect(script).toContain('rpc(\'voice.transcribe\'')
     expect(script).toContain('navigator.mediaDevices.getUserMedia')
     expect(script).toContain('bridge.emit(submitEvent')
     expect(script).toContain('bridge.listen(holdEvent')
@@ -70,6 +70,8 @@ describe('official Voice HTML fallbacks', () => {
       listen,
     }
 
+    // The fixture is shipped as a classic browser script; executing that exact artifact is the test subject.
+    // eslint-disable-next-line no-eval
     window.eval(readSlot('voice-toolbar.js'))
 
     await vi.waitFor(() => expect(listen).toHaveBeenCalledWith(
@@ -101,10 +103,14 @@ describe('official Voice HTML fallbacks', () => {
           { id: 'director-a', label: 'Director A', engine: 'test', kind: 'director' },
         ] }
       }
-      if (method === 'voice.list_model_packs') return { packs: [] }
-      if (method === 'voice.list_tts_adapters') return { adapters: [] }
-      if (method === 'voice.probe') return { ok: true }
-      if (method === 'config_updated') return { ok: true }
+      if (method === 'voice.list_model_packs')
+        return { packs: [] }
+      if (method === 'voice.list_tts_adapters')
+        return { adapters: [] }
+      if (method === 'voice.probe')
+        return { ok: true }
+      if (method === 'config_updated')
+        return { ok: true }
       return {}
     })
     const emit = vi.fn().mockResolvedValue(null)
@@ -114,6 +120,8 @@ describe('official Voice HTML fallbacks', () => {
       listen: vi.fn(),
     }
 
+    // The fixture is shipped as a classic browser script; executing that exact artifact is the test subject.
+    // eslint-disable-next-line no-eval
     window.eval(readSlot('voice-settings.js'))
     await vi.waitFor(() => expect(document.querySelector('#asr-profile option')?.textContent).toBe('ASR A'))
     document.querySelector<HTMLButtonElement>('#save')?.click()

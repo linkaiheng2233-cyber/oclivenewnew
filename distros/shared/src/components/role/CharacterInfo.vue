@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { convertFileSrc } from '@tauri-apps/api/core'
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { readRoleAssetBytes, resolveRoleAssetPath } from '@oclive/shared/api'
 import {
   emotionToAssetFilename,
   emotionToEmoji,
 } from '@oclive/shared/utils/emotion-assets'
+import { convertFileSrc } from '@tauri-apps/api/core'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const props = withDefaults(
   defineProps<{

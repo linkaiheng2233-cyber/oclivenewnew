@@ -1,8 +1,5 @@
 <script setup lang="ts">
 import type { LlmUserSettings, LocalModelFile } from '@oclive/shared/api/llmSettings'
-import { open as openDialog } from '@tauri-apps/plugin-dialog'
-import { computed, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 import {
   getGlobalOllamaModel,
   getLlmUserSettings,
@@ -23,6 +20,9 @@ import {
   rememberCloudModel,
 } from '@oclive/shared/composables/useCloudModelHistory'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
+import { open as openDialog } from '@tauri-apps/plugin-dialog'
+import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import UiButton from '../ui/UiButton.vue'
 
 const emit = defineEmits<{
@@ -61,7 +61,7 @@ function isUsableOllamaModelId(model: string | null | undefined): boolean {
     return false
   if (t.includes('\\'))
     return false
-  if (/^[a-zA-Z]:/.test(t))
+  if (/^[a-z]:/i.test(t))
     return false
   if (t.startsWith('/') || t.startsWith('\\\\'))
     return false

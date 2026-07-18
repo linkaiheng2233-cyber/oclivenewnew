@@ -1,6 +1,6 @@
+import type { ScriptLine } from './theaterLogic'
 import { describe, expect, it } from 'vitest'
 import { pickCastRewritePreviewLine } from './theaterCastAdaptPasses'
-import type { ScriptLine } from './theaterLogic'
 
 describe('theaterCastAdaptPasses', () => {
   it('pickCastRewritePreviewLine returns first beat snippet', () => {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
 import { useDirectoryPluginSlotEmbed } from '@oclive/shared/composables/useDirectoryPluginSlotEmbed'
 import { SLOT_ROLE_DETAIL } from '@oclive/shared/stores/pluginStore'
+import { useI18n } from 'vue-i18n'
 import AsyncPluginVue from './AsyncPluginVue.vue'
 import PluginErrorPlaceholder from './PluginErrorPlaceholder.vue'
 

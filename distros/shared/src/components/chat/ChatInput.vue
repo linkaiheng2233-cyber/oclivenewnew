@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { hostEventBus } from '@oclive/shared/lib/hostEventBus'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const props = defineProps<{ loading: boolean }>()
 

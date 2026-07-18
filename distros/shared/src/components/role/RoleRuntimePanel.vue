@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 import {
   OCLIVE_DEFAULT_RELATION_SENTINEL,
   setEvolutionFactor,
@@ -11,6 +9,8 @@ import { hostEventBus } from '@oclive/shared/lib/hostEventBus'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
 import { useUiStore } from '@oclive/shared/stores/uiStore'
 import { buildRelationDropdownOptions } from '@oclive/shared/utils/relationOptions'
+import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import HelpHint from '../shared/HelpHint.vue'
 import RoleIdentityControls from './RoleIdentityControls.vue'
 

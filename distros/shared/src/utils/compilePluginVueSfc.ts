@@ -1,8 +1,8 @@
 import type { Component } from 'vue'
-import * as Vue from 'vue'
-import { i18n } from '@oclive/shared/i18n'
 import { readPluginAssetText } from '@oclive/shared/api'
 import { ApiInvokeError } from '@oclive/shared/api/helpers'
+import { i18n } from '@oclive/shared/i18n'
+import * as Vue from 'vue'
 
 const SCHEME = 'oclive-plugin://'
 
@@ -173,6 +173,8 @@ export async function loadPluginVueComponent(
     const p = String(path)
     const rel = resolvePluginAssetRel(pluginId, rel0, p)
     if (import.meta.env.DEV) {
+      // Useful only while diagnosing third-party SFC asset resolution.
+      // eslint-disable-next-line no-console
       console.debug('[compilePluginVueSfc.getFile]', { pluginId, request: p, rel })
     }
     if (pre !== undefined && pre.length > 0 && stripQuery(p) === stripQuery(entry)) {

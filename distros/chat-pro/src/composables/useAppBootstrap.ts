@@ -1,5 +1,5 @@
-import { listen } from '@tauri-apps/api/event'
-import { onBeforeUnmount, onMounted, type Ref } from 'vue'
+import type { AppToastFn } from '@oclive/shared/composables/useAppToast'
+import type { Ref } from 'vue'
 import type { ComposerTranslation } from 'vue-i18n'
 import {
   consumePendingProtocolInstalls,
@@ -7,16 +7,17 @@ import {
   loadRole,
   setErrorReporter,
 } from '@oclive/shared/api'
-import { hostEventBus } from '@oclive/shared/lib/hostEventBus'
-import { useDebugStore } from '@oclive/shared/stores/debugStore'
-import { useChatStore } from '@oclive/shared/stores/chatStore'
-import { usePluginStore } from '@oclive/shared/stores/pluginStore'
-import { useRoleStore, bindAffectMetricsListener } from '@oclive/shared/stores/roleStore'
-import { markPresetPickerDone, resolveDefaultRoleId } from '@oclive/shared/utils/presetRolePicker'
-import { getTheaterCastConfig } from '@oclive/theater/composables/theater/theaterCastConfig'
 import { resolveOcliveShell } from '@oclive/shared/composables/useOcliveShell'
 import { startVoiceExpansionWarmOnStartup } from '@oclive/shared/composables/useVoiceExpansionWarm'
-import type { AppToastFn } from '@oclive/shared/composables/useAppToast'
+import { hostEventBus } from '@oclive/shared/lib/hostEventBus'
+import { useChatStore } from '@oclive/shared/stores/chatStore'
+import { useDebugStore } from '@oclive/shared/stores/debugStore'
+import { usePluginStore } from '@oclive/shared/stores/pluginStore'
+import { bindAffectMetricsListener, useRoleStore } from '@oclive/shared/stores/roleStore'
+import { markPresetPickerDone, resolveDefaultRoleId } from '@oclive/shared/utils/presetRolePicker'
+import { getTheaterCastConfig } from '@oclive/theater/composables/theater/theaterCastConfig'
+import { listen } from '@tauri-apps/api/event'
+import { onBeforeUnmount, onMounted } from 'vue'
 
 async function disposeTauriListener(
   handle: (() => void) | Promise<(() => void)> | undefined,
