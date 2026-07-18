@@ -33,6 +33,8 @@ pub enum RolePackValidationProfile {
     Creator,
     /// Robot / headless minimal soul pack: extra rules after legacy disk validation passes.
     RobotSoul,
+    /// Portable Core: v2/v3 blueprint plus the cross-distro persona and seven-image baseline.
+    PortableCore,
 }
 
 impl FromStr for RolePackValidationProfile {
@@ -44,8 +46,9 @@ impl FromStr for RolePackValidationProfile {
             "legacy" => Ok(Self::Legacy),
             "creator" => Ok(Self::Creator),
             "robot-soul" | "robotsoul" | "robot_soul" => Ok(Self::RobotSoul),
+            "portable-core" | "portable_core" | "portable" => Ok(Self::PortableCore),
             other => Err(format!(
-                "未知 pack validate profile「{other}」（支持 default | legacy | creator | robot-soul）"
+                "未知 pack validate profile「{other}」（支持 default | legacy | creator | robot-soul | portable-core）"
             )),
         }
     }
@@ -343,6 +346,12 @@ pub fn validate_role_pack_loaded_with_profile(
     settings_schema_supported: u32,
     profile: RolePackValidationProfile,
 ) -> Result<(), Vec<String>> {
+    if matches!(profile, RolePackValidationProfile::PortableCore) {
+        return Err(vec![
+            "portable-core：需使用目录校验，以检查 core_personality.txt 与七张基础情绪图".into(),
+        ]);
+    }
+
     let disk = validate_role_pack_manifest_settings_core(
         manifest_json,
         settings_json,
@@ -392,6 +401,11 @@ pub fn validate_role_pack_directory_with_profile(
 ) -> Result<(), Vec<String>> {
     if matches!(profile, RolePackValidationProfile::Creator) {
         return validate_role_pack_creator_directory(role_dir);
+    }
+
+    if matches!(profile, RolePackValidationProfile::PortableCore) {
+        validate_role_pack_blueprint_directory(role_dir, host_version)?;
+        return crate::portrait_catalog::validate_portable_core_files(role_dir);
     }
 
     if matches!(profile, RolePackValidationProfile::BlueprintV2) {
@@ -612,6 +626,39 @@ mod tests {
             RolePackValidationProfile::Legacy,
         )
         .unwrap();
+    }
+
+    #[test]
+    fn portable_core_accepts_mumu_baseline() {
+        let role = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../distros/chat-pro/roles/mumu");
+        validate_role_pack_directory_with_profile(
+            &role,
+            "999.0.0",
+            1,
+            RolePackValidationProfile::PortableCore,
+        )
+        .expect("mumu should satisfy Portable Core");
+    }
+
+    #[test]
+    fn portable_core_rejects_missing_baseline_assets() {
+        let dir = tempfile::tempdir().unwrap();
+        let role = dir.path();
+        std::fs::write(role.join("core_personality.txt"), "A stable persona.").unwrap();
+        std::fs::write(
+            role.join("config.json"),
+            r#"{"portrait_catalog":{"enabled":true}}"#,
+        )
+        .unwrap();
+        std::fs::write(
+            role.join("portrait_catalog.json"),
+            r#"{"schema_version":1,"assets":[]}"#,
+        )
+        .unwrap();
+
+        let errs = crate::portrait_catalog::validate_portable_core_files(role).unwrap_err();
+        assert!(errs.iter().any(|e| e.contains("基础情绪 id")));
     }
 
     #[test]

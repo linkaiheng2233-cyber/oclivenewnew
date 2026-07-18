@@ -130,6 +130,8 @@
 | `headless-api` | full | 关闭 | kernel_server |
 | `library-embed` | minimal | 关闭 | library |
 
+角色包跨发行版底座：`pack validate --profile portable-core`。它只检查 Portable Core（基础人格 Prompt + 七张默认情绪图片），不限制发行版自己的 HostProfile、UI、语音、视觉或硬件扩展。
+
 **`--monolith-preset`**（Monolith 启用时）：`latency` | `memory` | `embedded` — 预填 `weld_modules`（见生成工程 `CONFIG_REFERENCE.md`）。
 
 **`--monolith-bench-preset`**：同上档位；生成后自动 bench（5 轮），结果见 `bench_results/report.json` 与 `docs/WELD_BENCH_REPORT.md`。

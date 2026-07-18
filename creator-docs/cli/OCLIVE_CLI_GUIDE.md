@@ -346,6 +346,8 @@ cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/legacy-example
 cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/legacy-example --profile robot-soul
 # 创作者 profile：仅 meta 子集 + prompts/（不校验 slot_registry / runtime_config）
 cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/mumu --profile creator
+# Portable Core：跨发行版基础人格 + 七张默认情绪图
+cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/mumu --profile portable-core
 cargo run -p oclive-cli -- pack create -o ./out/my-role --flat --id com.example.demo --name Demo --format-blueprint-v2
 cargo run -p oclive-cli -- pack publish ./out/my-role -o ./dist/com.example.demo-0.1.0.oclivepack
 ```
@@ -354,6 +356,7 @@ cargo run -p oclive-cli -- pack publish ./out/my-role -o ./dist/com.example.demo
 - **`validate --profile creator`**：仅角色包（`meta` 创作者子集 + **`prompts/`**）；不校验 `slot_registry` / `runtime_config`。见 [ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md)。
 - **`validate --profile legacy`**：校验 `manifest.json` / `settings.json` 合并、`plugin_backends`、`min_runtime_version` 与 `--host-version` 等（旧包路径）。
 - **`validate --profile robot-soul`**：在 **legacy** 校验通过后追加 RobotSoulPack 规则（见 ROLE_PACK_SPEC §6）。
+- **`validate --profile portable-core`**：校验 v2/v3 蓝图，以及非空 `core_personality.txt`、启用的 `portrait_catalog` 和七个固定默认情绪图片 ID；发行版增强能力不在此 profile 内。
 - **`create`**：生成最小可校验目录；推荐 **`--format-blueprint-v2`**（写入 `pipeline.ocblueprint`）；`--flat` 时 `-o` 即为角色根。
 - **`publish`**：将角色目录打成 **ZIP**，扩展名 **`.oclivepack`**；ZIP 内顶层文件夹名为包内 **`meta.id`**（v2）或 **`manifest.id`**（legacy）。
 

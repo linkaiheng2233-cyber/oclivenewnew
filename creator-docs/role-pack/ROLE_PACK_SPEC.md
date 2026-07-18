@@ -256,6 +256,26 @@ cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/mumu --host-ve
 
 **JSON Schema**（IDE 提示 / 外部校验器）：`kernel/crates/oclive-cli/schemas/role_pack_manifest.schema.json`、`role_pack_settings.schema.json`。
 
+### Portable Core（`--profile portable-core`）
+
+Portable Core 是跨发行版的**最低通用契约**，不是发行版功能上限。它要求角色包使用 v2/v3 `pipeline.ocblueprint`，并携带所有合规宿主都能理解的基础人格 Prompt 与七张默认情绪图：
+
+| 规则 | 说明 |
+|------|------|
+| `core_personality.txt` | 必须存在且非空；这是 Portable Core 的基础人格 Prompt 真源 |
+| `config.json` | 必须设置 `portrait_catalog.enabled = true` |
+| `portrait_catalog.json` | 必须存在并通过路径安全校验 |
+| 七个固定资源 | `happy_default`、`sad_default`、`angry_default`、`neutral_default`、`excited_default`、`confused_default`、`shy_default`；每项 `kind` 必须为 `image` |
+| 发行版扩展 | UI、语音、Live2D/3D、Agent、硬件与高级模块由发行版 `HostProfile` / 扩展命名空间决定，不属于 Portable Core 必需项 |
+
+合规宿主至少应能加载人格并运行基础对话；有视觉能力时显示对应基础图，没有视觉能力时安全忽略图片。高级资源可以追加，不能改变七个固定 ID 的语义。校验命令：
+
+```bash
+cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/mumu --profile portable-core
+```
+
+`portable-core` 只验证包的通用底座，不宣称各发行版的 UI、语音、视觉、插件或硬件能力完全等价；这些能力应由发行版自己的 capability-conformance 验收负责。
+
 ### RobotSoulPack（`--profile robot-soul`）
 
 在标准目录校验通过后追加，用于 **机器人 / 无头 / 嵌入式** 最小可交付「灵魂包」：
@@ -282,6 +302,7 @@ cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/my-role --host
 | 命令 | 作用 |
 |------|------|
 | `pack validate <dir>` | **默认** v2 蓝图目录校验 |
+| `pack validate <dir> --profile portable-core` | v2/v3 + Portable Core（基础人格 + 七张默认情绪图） |
 | `pack validate <dir> --profile legacy` | legacy manifest/settings |
 | `pack validate <dir> --profile robot-soul` | legacy + RobotSoulPack（见 §6） |
 | `pack create -o <out> --id <id> [--flat]` | 生成最小可校验包（`--flat` 时 `<out>` 即为角色根） |

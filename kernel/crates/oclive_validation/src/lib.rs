@@ -110,7 +110,9 @@ pub use plugin_slot_attachment::{
     apply_slot_attachments_to_registry, parse_slot_attachments_from_manifest_json,
     validate_slot_attachment_decl, SlotAttachmentDecl,
 };
-pub use portrait_catalog::validate_portrait_catalog_files;
+pub use portrait_catalog::{
+    validate_portable_core_files, validate_portrait_catalog_files, PORTABLE_CORE_PORTRAIT_IDS,
+};
 pub use protocol_boundary::{
     assert_layers_do_not_overlap, validate_jsonrpc_error_response, validate_kernel_error_body,
     ProtocolValidationError,

@@ -38,7 +38,7 @@ pub struct PackValidateArgs {
     /// Host semver for `manifest.min_runtime_version` (default: this CLI `CARGO_PKG_VERSION`)
     #[arg(long)]
     pub host_version: Option<String>,
-    /// Profile: `default` (blueprint v2/v3) | `legacy` | `creator` | `robot-soul` (see ROLE_PACK_SPEC)
+    /// Profile: `default` (blueprint v2/v3) | `legacy` | `creator` | `robot-soul` | `portable-core` (see ROLE_PACK_SPEC)
     #[arg(long, default_value = "default")]
     pub profile: String,
 }

@@ -179,6 +179,10 @@ Role packs have two version layers — do not mix them:
 - **Legacy** still uses `manifest.json` + `settings.json`; key whitelist, `min_runtime_version` (host semver gate), and unknown-key policy live in [PACK_VERSIONING.md](PACK_VERSIONING.md) — do not restate those tables here.
 - JSON Schema / CLI: `oclive pack validate`; implementation SSOT is `oclive_validation`.
 
+### Portable Core (`--profile portable-core`)
+
+Portable Core is the cross-distro minimum, not a ceiling on distro features. A v2/v3 pack validated with this profile must provide a non-empty `core_personality.txt`, enable `config.json` → `portrait_catalog.enabled`, and include local `image` assets for the seven stable IDs: `happy_default`, `sad_default`, `angry_default`, `neutral_default`, `excited_default`, `confused_default`, and `shy_default`. Hosts must be able to load the persona and run a basic turn; visual, voice, UI, agent, and hardware extensions remain distro `HostProfile` concerns. Validate with `oclive pack validate <role-dir> --profile portable-core`. Full capability parity is a separate distro conformance test.
+
 **Breaking fields (must rewrite on migration; silent ignore is wrong)**
 
 - Blueprint bump: `schema_version` change (2→3); v3 consolidates engine/system config under top-level **`runtime_config`** (see migration guides).
