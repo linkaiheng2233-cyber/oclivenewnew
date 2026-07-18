@@ -186,7 +186,7 @@ async fn http_api_theater_scene_cast_adapt_ok() {
     let app = api_router(state);
     let body = json!({
         "cast_a": { "role_id": "mumu", "name": "小木" },
-        "cast_b": { "role_id": "shimeng", "name": "小枫" },
+        "cast_b": { "role_id": "枫侵月", "name": "小枫" },
         "scene_id": "home",
         "mode": "cast_adapt",
         "base_beats": [
@@ -272,7 +272,7 @@ async fn http_api_theater_scene_cast_rewrite_ok() {
     let app = api_router(state);
     let body = json!({
         "cast_a": { "role_id": "mumu", "name": "木木" },
-        "cast_b": { "role_id": "shimeng", "name": "诗梦" },
+        "cast_b": { "role_id": "枫侵月", "name": "诗梦" },
         "scene_id": "home",
         "base_beats": [],
         "applied_tweaks": [],
@@ -321,7 +321,7 @@ async fn http_api_theater_scene_cast_rewrite_beats_only_ok() {
     let app = api_router(state);
     let body = json!({
         "cast_a": { "role_id": "mumu", "name": "木木" },
-        "cast_b": { "role_id": "shimeng", "name": "诗梦" },
+        "cast_b": { "role_id": "枫侵月", "name": "诗梦" },
         "scene_id": "home",
         "theater_scene": "supermarket",
         "scene_brief": "超市采购：推购物车、抢特价。",
@@ -371,7 +371,7 @@ async fn http_api_theater_scene_cast_rewrite_beats_only_array_ok() {
     let app = api_router(state);
     let body = json!({
         "cast_a": { "role_id": "mumu", "name": "木木" },
-        "cast_b": { "role_id": "shimeng", "name": "诗梦" },
+        "cast_b": { "role_id": "枫侵月", "name": "诗梦" },
         "scene_id": "home",
         "theater_scene": "supermarket",
         "scene_brief": "超市采购：推购物车、抢特价。",

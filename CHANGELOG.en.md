@@ -15,6 +15,10 @@
 - **Loopback endpoint proxy compatibility**: IPv4/IPv6 loopback endpoints for remote plugins, remote agents, and OpenAI-compatible LLMs no longer inherit user HTTP proxies, preventing `localhost` calls from being redirected into 502s/timeouts; the test mock now validates and echoes the JSON-RPC request id.
 - **Active-doc truth convergence**: product execution and release links now point to current SSOTs; `check-stale-paths` adds a G3/G12 guard against restoring `handoff/archive/*` product checklists as current truth.
 
+### Removed
+
+- **Bundled role-pack adjustment**: removed the `shimeng` role pack; tests and examples that require an on-disk bundled role now use a remaining shipped pack or an isolated fixture.
+
 ---
 
 ## [0.5.0] - 2026-07-10

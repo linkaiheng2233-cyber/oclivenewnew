@@ -39,14 +39,14 @@ impl LlmClient for CapturePromptLlm {
 }
 
 #[tokio::test]
-async fn shimeng_pack_anchor_replaces_default_in_main_prompt() {
+async fn fengqinyue_pack_anchor_replaces_default_in_main_prompt() {
     let roles_dir = common::roles_dir();
     let storage = RoleStorage::new(&roles_dir);
     let role = storage
-        .load_role_from_dir(&roles_dir.join("shimeng"))
-        .expect("load shimeng");
+        .load_role_from_dir(&roles_dir.join("枫侵月"))
+        .expect("load 枫侵月");
     let anchor = effective_reply_quality_anchor(&role);
-    assert!(anchor.contains("诗梦"));
+    assert!(anchor.contains("枫侵月"));
     assert!(!anchor.contains(DEFAULT_REPLY_QUALITY_ANCHOR.trim()));
 
     let prompts = Arc::new(Mutex::new(Vec::<String>::new()));
@@ -61,7 +61,7 @@ async fn shimeng_pack_anchor_replaces_default_in_main_prompt() {
     process_message(
         &state,
         &SendMessageRequest {
-            role_id: "shimeng".to_string(),
+            role_id: "枫侵月".to_string(),
             user_message: "你好".to_string(),
             scene_id: None,
             ..Default::default()
@@ -78,7 +78,7 @@ async fn shimeng_pack_anchor_replaces_default_in_main_prompt() {
             .expect("main prompt for turn1 should include user line")
             .clone()
     };
-    assert!(p1.contains("诗梦"));
+    assert!(p1.contains("枫侵月"));
     assert!(p1.contains("【对话硬约束】"));
     assert!(p1.contains("禁止复读开场"));
     assert!(p1.contains("状态延续"));

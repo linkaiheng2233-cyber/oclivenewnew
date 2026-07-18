@@ -3,7 +3,7 @@
 将旧版嵌套 personality 的 manifest.json 转为 DiskRoleManifest（扁平 default_personality + evolution 块）。
 
 用法:
-  python scripts/migrate_role_manifest.py roles/shimeng/manifest.json.bak -o roles/shimeng/manifest.json
+  python scripts/migrate_role_manifest.py distros/chat-pro/roles/mumu/manifest.json.bak -o distros/chat-pro/roles/mumu/manifest.json
 
 不覆盖目标文件除非指定 -o；默认打印到 stdout。
 """

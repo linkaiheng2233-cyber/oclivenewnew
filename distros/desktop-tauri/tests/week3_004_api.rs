@@ -30,7 +30,66 @@ use oclivenewnew_tauri::api::role::{
     set_user_relation_impl, switch_role_impl,
 };
 use oclivenewnew_tauri::api::scene::switch_scene_impl;
+use std::fs;
 use std::sync::Arc;
+use tempfile::TempDir;
+
+const PER_SCENE_ROLE_ID: &str = "test.per-scene-relations";
+
+fn per_scene_role_fixture() -> TempDir {
+    let dir = TempDir::new().expect("temp roles");
+    let role = dir.path().join(PER_SCENE_ROLE_ID);
+    for scene_id in ["home", "school"] {
+        let scene = role.join("scenes").join(scene_id);
+        fs::create_dir_all(&scene).expect("scene dir");
+        fs::write(
+            scene.join("scene.json"),
+            format!(r#"{{"name":"{scene_id}","time_windows":[]}}"#),
+        )
+        .expect("scene config");
+    }
+    let blueprint = serde_json::json!({
+        "schema_version": 2,
+        "meta": {
+            "id": PER_SCENE_ROLE_ID,
+            "name": "Per-scene relation fixture",
+            "version": "0.1.0",
+            "author": "test",
+            "description": "isolated integration fixture",
+            "personality": [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
+            "relations": {
+                "classmate": {
+                    "initial_favorability": 20.0,
+                    "favor_multiplier": 1.0,
+                    "prompt_hint": "同学"
+                },
+                "father_daughter": {
+                    "initial_favorability": 72.0,
+                    "favor_multiplier": 1.15,
+                    "prompt_hint": "父女"
+                }
+            },
+            "default_relation": "classmate",
+            "identity_binding": "per_scene",
+            "scenes": ["home", "school"]
+        },
+        "slot_registry": {
+            "memory": { "type": "memory", "label": "Memory", "backend": "builtin", "position": 0 },
+            "emotion": { "type": "emotion", "label": "Emotion", "backend": "builtin", "position": 0 },
+            "event": { "type": "event", "label": "Event", "backend": "builtin", "position": 0 },
+            "prompt": { "type": "prompt", "label": "Prompt", "backend": "builtin", "position": 0 },
+            "llm": { "type": "llm", "label": "LLM", "backend": "ollama", "position": 0 },
+            "agent": { "type": "agent", "label": "Agent", "backend": "builtin", "position": 0 }
+        }
+    });
+    fs::write(
+        role.join("pipeline.ocblueprint"),
+        serde_json::to_string_pretty(&blueprint).expect("blueprint json"),
+    )
+    .expect("blueprint");
+    fs::write(role.join("core_personality.txt"), "测试角色。\n").expect("core persona");
+    dir
+}
 
 #[tokio::test]
 async fn week3_004_load_role_and_get_info() {
@@ -616,38 +675,39 @@ async fn week3_004_set_scene_user_relation_validates_and_persists() {
     let llm = Arc::new(MockLlmClient {
         reply: "ok".to_string(),
     });
-    let state = AppState::new_in_memory_with_llm(llm, common::roles_dir())
+    let roles = per_scene_role_fixture();
+    let state = AppState::new_in_memory_with_llm(llm, roles.path().to_path_buf())
         .await
         .expect("state");
-    load_role_impl(&state, "shimeng", true)
+    load_role_impl(&state, PER_SCENE_ROLE_ID, true)
         .await
         .expect("load_role");
 
     let info = set_scene_user_relation_impl(
         &state,
         &SetSceneUserRelationRequest {
-            role_id: "shimeng".to_string(),
-            scene_id: "default".to_string(),
-            relation: "parent".to_string(),
+            role_id: PER_SCENE_ROLE_ID.to_string(),
+            scene_id: "home".to_string(),
+            relation: "father_daughter".to_string(),
         },
     )
     .await
     .expect("set_scene_user_relation");
-    assert_eq!(info.role_id, "shimeng");
+    assert_eq!(info.role_id, PER_SCENE_ROLE_ID);
 
     let scene_relation = state
         .db_manager
-        .get_user_relation_for_scene("shimeng", "default")
+        .get_user_relation_for_scene(PER_SCENE_ROLE_ID, "home")
         .await
         .expect("read scene relation");
-    assert_eq!(scene_relation.as_deref(), Some("parent"));
+    assert_eq!(scene_relation.as_deref(), Some("father_daughter"));
 
     let bad_scene = set_scene_user_relation_impl(
         &state,
         &SetSceneUserRelationRequest {
-            role_id: "shimeng".to_string(),
+            role_id: PER_SCENE_ROLE_ID.to_string(),
             scene_id: "not_exist".to_string(),
-            relation: "parent".to_string(),
+            relation: "father_daughter".to_string(),
         },
     )
     .await
@@ -660,17 +720,18 @@ async fn week3_004_scene_relation_overrides_global_in_chat() {
     let llm = Arc::new(MockLlmClient {
         reply: "ok".to_string(),
     });
-    let state = AppState::new_in_memory_with_llm(llm, common::roles_dir())
+    let roles = per_scene_role_fixture();
+    let state = AppState::new_in_memory_with_llm(llm, roles.path().to_path_buf())
         .await
         .expect("state");
-    load_role_impl(&state, "shimeng", true)
+    load_role_impl(&state, PER_SCENE_ROLE_ID, true)
         .await
         .expect("load_role");
 
     set_user_relation_impl(
         &state,
         &SetUserRelationRequest {
-            role_id: "shimeng".to_string(),
+            role_id: PER_SCENE_ROLE_ID.to_string(),
             relation: "classmate".to_string(),
         },
     )
@@ -679,9 +740,9 @@ async fn week3_004_scene_relation_overrides_global_in_chat() {
     set_scene_user_relation_impl(
         &state,
         &SetSceneUserRelationRequest {
-            role_id: "shimeng".to_string(),
-            scene_id: "default".to_string(),
-            relation: "parent".to_string(),
+            role_id: PER_SCENE_ROLE_ID.to_string(),
+            scene_id: "home".to_string(),
+            relation: "father_daughter".to_string(),
         },
     )
     .await
@@ -690,9 +751,9 @@ async fn week3_004_scene_relation_overrides_global_in_chat() {
     let in_default = process_message(
         &state,
         &SendMessageRequest {
-            role_id: "shimeng".to_string(),
+            role_id: PER_SCENE_ROLE_ID.to_string(),
             user_message: "你今天怎么样".to_string(),
-            scene_id: Some("default".to_string()),
+            scene_id: Some("home".to_string()),
             ..Default::default()
         },
     )
@@ -701,7 +762,7 @@ async fn week3_004_scene_relation_overrides_global_in_chat() {
     let in_school = process_message(
         &state,
         &SendMessageRequest {
-            role_id: "shimeng".to_string(),
+            role_id: PER_SCENE_ROLE_ID.to_string(),
             user_message: "你今天怎么样".to_string(),
             scene_id: Some("school".to_string()),
             ..Default::default()
@@ -712,7 +773,7 @@ async fn week3_004_scene_relation_overrides_global_in_chat() {
 
     assert!(
         in_default.favorability_delta.abs() >= in_school.favorability_delta.abs(),
-        "default scene relation should apply parent multiplier >= global classmate"
+        "home scene relation should apply father_daughter multiplier >= global classmate"
     );
 }
 
@@ -723,23 +784,24 @@ async fn week3_004_get_role_info_favor_follows_scene_identity_not_global_column(
     let llm = Arc::new(MockLlmClient {
         reply: "ok".to_string(),
     });
-    let state = AppState::new_in_memory_with_llm(llm, common::roles_dir())
+    let roles = per_scene_role_fixture();
+    let state = AppState::new_in_memory_with_llm(llm, roles.path().to_path_buf())
         .await
         .expect("state");
 
-    let rid = "shimeng";
+    let rid = PER_SCENE_ROLE_ID;
     load_role_impl(&state, rid, true).await.expect("load_role");
 
     set_scene_user_relation_impl(
         &state,
         &SetSceneUserRelationRequest {
             role_id: rid.to_string(),
-            scene_id: "default".to_string(),
-            relation: "parent".to_string(),
+            scene_id: "home".to_string(),
+            relation: "father_daughter".to_string(),
         },
     )
     .await
-    .expect("set default -> parent");
+    .expect("set home -> father_daughter");
     set_scene_user_relation_impl(
         &state,
         &SetSceneUserRelationRequest {
@@ -755,18 +817,18 @@ async fn week3_004_get_role_info_favor_follows_scene_identity_not_global_column(
         &state,
         &SwitchSceneRequest {
             role_id: rid.to_string(),
-            scene_id: "default".to_string(),
+            scene_id: "home".to_string(),
             together: true,
         },
     )
     .await
-    .expect("switch default");
+    .expect("switch home");
 
     state
         .db_manager
-        .set_identity_favorability_value(rid, "parent", 10.0)
+        .set_identity_favorability_value(rid, "father_daughter", 10.0)
         .await
-        .expect("parent favor 10");
+        .expect("father_daughter favor 10");
 
     switch_scene_impl(
         &state,
@@ -789,20 +851,20 @@ async fn week3_004_get_role_info_favor_follows_scene_identity_not_global_column(
         &state,
         &SwitchSceneRequest {
             role_id: rid.to_string(),
-            scene_id: "default".to_string(),
+            scene_id: "home".to_string(),
             together: true,
         },
     )
     .await
-    .expect("switch back default");
+    .expect("switch back home");
 
     #[allow(deprecated)]
     {
         assert!(
             (back_default.role.current_favorability - 10.0).abs() < 1e-6,
-            "expected parent identity favor 10, got {} (global column is stale 90)",
+            "expected father_daughter identity favor 10, got {} (global column is stale 90)",
             back_default.role.current_favorability
         );
     }
-    assert_eq!(back_default.role.current_user_relation, "parent");
+    assert_eq!(back_default.role.current_user_relation, "father_daughter");
 }

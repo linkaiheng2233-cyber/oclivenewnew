@@ -29,7 +29,7 @@ In a **local** role pack `config.json` (see `roles/polish-dev/`):
 }
 ```
 
-Do **not** enable by default in shipped golden packs (mumu / shimeng / 枫侵月).
+Do **not** enable by default in shipped golden packs (mumu / 枫侵月).
 
 ## Environment
 

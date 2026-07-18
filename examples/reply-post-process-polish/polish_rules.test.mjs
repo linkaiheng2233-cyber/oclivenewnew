@@ -11,7 +11,7 @@ import {
 import { shouldPolish } from "./polish_rules.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const SHIMENG_DIR = path.resolve(__dirname, "../../distros/chat-pro/roles/shimeng");
+const FENGQINYUE_DIR = path.resolve(__dirname, "../../distros/chat-pro/roles/枫侵月");
 
 test("shouldPolish detects user echo at opening", () => {
   assert.equal(
@@ -41,17 +41,17 @@ test("truncateExcerpt adds ellipsis when over limit", () => {
   assert.match(out, /^abc…$/);
 });
 
-test("readReplyQualityAnchor reads shimeng blueprint", () => {
-  const anchor = readReplyQualityAnchor(path.join(SHIMENG_DIR, "pipeline.ocblueprint"));
+test("readReplyQualityAnchor reads fengqinyue blueprint", () => {
+  const anchor = readReplyQualityAnchor(path.join(FENGQINYUE_DIR, "pipeline.ocblueprint"));
   assert.ok(anchor);
   assert.match(anchor, /回复质量锚点/);
-  assert.match(anchor, /毒舌/);
+  assert.match(anchor, /温柔/);
 });
 
-test("buildPresetFromRolePack includes shimeng personality excerpt and anchor", () => {
-  const preset = buildPresetFromRolePack(SHIMENG_DIR, { maxExcerpt: 200 });
+test("buildPresetFromRolePack includes fengqinyue personality excerpt and anchor", () => {
+  const preset = buildPresetFromRolePack(FENGQINYUE_DIR, { maxExcerpt: 200 });
   assert.match(preset, /【角色润色器 · 非扮演】/);
-  assert.match(preset, /柳木诗梦/);
+  assert.match(preset, /枫侵月/);
   assert.match(preset, /【不可违背】/);
   assert.match(preset, /回复质量锚点/);
   assert.ok(preset.length < 2000);

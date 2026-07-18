@@ -15,6 +15,10 @@
 - **本机端点代理兼容**：Remote 插件、Remote Agent 与 OpenAI-compatible LLM 的 IPv4/IPv6 回环端点不再继承用户 HTTP 代理，避免 `localhost` 请求被错误转发后出现 502/超时；测试 mock 同步校验并回显 JSON-RPC request id。
 - **活跃文档 truth 收敛**：产品执行与发版入口改链现行 SSOT；`check-stale-paths` 新增 G3/G12 守卫，禁止将 `handoff/archive/*` 产品清单重新写成现行依据。
 
+### Removed
+
+- **官方角色包调整**：移除 `shimeng`（诗梦）角色包；依赖官方磁盘角色的测试与示例改用仍发行的角色包或独立测试夹具。
+
 ---
 
 ## [0.5.0] - 2026-07-10

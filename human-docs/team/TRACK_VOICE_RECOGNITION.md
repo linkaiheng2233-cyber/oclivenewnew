@@ -104,9 +104,9 @@ node distros/chat-pro/plugins/com.oclive.voice.asr/rpc_server.mjs
 # 另开终端对 /rpc POST voice.build_directive，params 含 role_path + bot_emotion
 ```
 
-期望示例（2026-07 · rules-v1）：`mumu` 用手写 `voice_profile`；`shimeng` 偏清冷毒舌少女；`枫侵月` 偏温和少年感；仅一句人设的 `polish-dev` 得泛角色 + 嘴硬修饰。
+期望示例（2026-07 · rules-v1）：`mumu` 用手写 `voice_profile`；测试期间动态生成的 sharp persona fixture 偏清冷毒舌；`枫侵月` 偏温和少年感；仅一句人设的 `polish-dev` 得泛角色 + 嘴硬修饰。
 
-**自动化矩阵（2026-07-15 · L1 · VX-11）**：`node scripts/test-voice-build-directive.mjs` → 四角色 × neutral/happy/shy **PASS**，并断言全局 TTS 固定后 `mumu` `synth_profile` 覆盖、其余角色继承全局；`node scripts/test-voice-speak-path.mjs --probe-only` → bundled CosyVoice **ok** · GPT-SoVITS **probe ok**（本地 :9880 在线时）· 离线 engine 诚实 `endpoint_unreachable` / `engine_not_installed`。
+**自动化矩阵（2026-07-15 · L1 · VX-11）**：`node scripts/test-voice-build-directive.mjs` → 三个发行角色 + 一个动态 fixture × neutral/happy/shy **PASS**，并断言全局 TTS 固定后 `mumu` `synth_profile` 覆盖、其余角色继承全局；`node scripts/test-voice-speak-path.mjs --probe-only` → bundled CosyVoice **ok** · GPT-SoVITS **probe ok**（本地 :9880 在线时）· 离线 engine 诚实 `endpoint_unreachable` / `engine_not_installed`。
 
 **不在本轨道：** Live2D、Chat Pro Vue、`kernel/crates/` 内核、**Chat Pro UI 流式打字机**（见 [CHAT_PRO §2 延迟/stream](./CHAT_PRO_VERTICAL_HANDOFF.md) · 组长或视觉线）。
 
