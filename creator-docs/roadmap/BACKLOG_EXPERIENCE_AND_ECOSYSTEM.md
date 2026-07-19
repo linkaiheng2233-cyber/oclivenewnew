@@ -102,7 +102,7 @@
 - 按月里程碑：[VISION_ROADMAP_MONTHLY.md](VISION_ROADMAP_MONTHLY.md)  
 - **产品首发执行视图（P0/P1）**：[../../handoff/PRODUCT_LINE_TASK_BUCKETS.md](../../handoff/PRODUCT_LINE_TASK_BUCKETS.md) · [../../handoff/TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md)
 - **产品线任务分桶（按复杂度）**：[../../handoff/PRODUCT_LINE_TASK_BUCKETS.md](../../handoff/PRODUCT_LINE_TASK_BUCKETS.md)  
-- **发版前勾选表**：[../getting-started/PROJECT_OVERVIEW.md#8-发版前可勾选的极简清单](../getting-started/PROJECT_OVERVIEW.md#8-发版前可勾选的极简清单)
+- **发版前检查**：[CONTRIBUTING](../../CONTRIBUTING.md) · [版本规则](../development/RELEASE_VERSIONING.md)
 - 包版本：[PACK_VERSIONING.md](../role-pack/PACK_VERSIONING.md)  
 - 创作者工作流：[../getting-started/CREATOR_WORKFLOW.md](../getting-started/CREATOR_WORKFLOW.md)  
 - 角色包导入测试清单：[../../distros/chat-pro/roles/TESTING_ROLE_PACK_IMPORT.md](../../distros/chat-pro/roles/TESTING_ROLE_PACK_IMPORT.md)  

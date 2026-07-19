@@ -33,7 +33,7 @@ Aligned with [human-docs/README.md §学习阶梯](../human-docs/README.md#学�
 | **L5** | [06_KERNEL_LEARNING_PATH.md](06_KERNEL_LEARNING_PATH.md) | [06](../human-docs/06_KERNEL_LEARNING_PATH.md) | Main-chain maintainer Day 1–5 | ½–3 days |
 | **L6** | [07_COMMON_TASKS.md](07_COMMON_TASKS.md) | [07](../human-docs/07_COMMON_TASKS.md) | Where to edit for task X | On demand |
 | **L7** | [08_REFERENCE_MAP.md](08_REFERENCE_MAP.md) | [08](../human-docs/08_REFERENCE_MAP.md) | Deep docs by topic | On demand |
-| **L8** | [08_PR_GATE_MATRIX.md](08_PR_GATE_MATRIX.md) · [09_GLOSSARY.md](09_GLOSSARY.md) · [10_SETUP_WINDOWS.md](10_SETUP_WINDOWS.md) | same | CI gates · abbreviations · MSVC | On demand |
+| **L8** | [08_PR_GATE_MATRIX.md](08_PR_GATE_MATRIX.md) · [03_GLOSSARY.md](03_GLOSSARY.md) · [10_SETUP_WINDOWS.md](10_SETUP_WINDOWS.md) | same | CI gates · abbreviations · MSVC | On demand |
 
 **Extra (EN-only shortcut)**: [07_FIRST_PR.md](07_FIRST_PR.md) — first PR recipe; complements L6 [07_COMMON_TASKS.md](07_COMMON_TASKS.md).
 

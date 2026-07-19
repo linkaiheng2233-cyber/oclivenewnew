@@ -242,7 +242,7 @@ JSON Schema：`kernel/crates/oclive-cli/schemas/pipeline.ocblueprint.v2.schema.j
 | 会话槽覆盖 | 内存 overlay；架构图改包默认经 `save_role_slot_registry` 写盘 | `set_session_plugin_backend` |
 | Monolith 焊接 | **仅** 脚手架 `monolith.toml` / `process_message_monolith.rs`，**不**随角色包分发 | 同左 |
 
-校验：`cargo run -p oclive-cli -- pack validate <dir>`（**默认 v2**）；legacy 包用 `--profile legacy`。另：`blueprint validate <dir>`。路线图 [`handoff/BLUEPRINT_V2_IMPLEMENTATION_PLAN.md`](../../handoff/BLUEPRINT_V2_IMPLEMENTATION_PLAN.md)。
+校验：`cargo run -p oclive-cli -- pack validate <dir>`（**默认 v2**）；legacy 包用 `--profile legacy`。另：`blueprint validate <dir>`。历史实施路线图见 [`BLUEPRINT_V2_IMPLEMENTATION_PLAN.md`](../../handoff/archive/BLUEPRINT_V2_IMPLEMENTATION_PLAN.md)。
 
 ---
 

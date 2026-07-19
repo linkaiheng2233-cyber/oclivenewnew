@@ -201,7 +201,7 @@
 | **dual_core** / **expert_routing** / **blueprint v3** | 实验管线 | **可选解冻 · 默认仍关**（蓝图 `dual_core.enabled` / 角色包 `expert_routing.json` 显式配置） |
 | **D-READ-03** | `dual_pipeline` 表驱动 | 随 `dual_core` opt-in |
 | **D-PORT-03** | `BackendRegistry` UFCS 转发层 | 等第二 remote policy 实现或对应 RFC 再评估；D-PORT-02 / D-SLOT-01 已完成，不再以旧双实现为由解冻 |
-| **§3.1** | 纯 library API 对称化 | [`RFC_OCLIVE_KERNEL_LIBRARY.md`](./RFC_OCLIVE_KERNEL_LIBRARY.md) T0 |
+| **§3.1** | 纯 library API 对称化 | 历史 [`RFC_OCLIVE_KERNEL_LIBRARY.md`](./archive/RFC_OCLIVE_KERNEL_LIBRARY.md) T0 |
 | **模式 3** | 用户大纲演绎 / Mode 3 `send_message` 长对话 | 模式 2 playtest 扩展后另开计划 |
 | **MEGA-SD-01** | `scene_director.rs` 拆 `theater/parse/` + `theater/modes/` | 模式 2 playtest 稳定 **或** 生产段 >2500 行 **或** 第二 remote 剧场插件 |
 | **MEGA-TS-01** | `useTheaterShell.ts` 拆 poke/cast/outline composable | 同上；Shell 仅编排 |
@@ -227,7 +227,7 @@
 | **K-TURN-F1** | Wave F · 角色包 `turn_thinking` 策略（Deep 路由 + Deep latch 直到和解） | P1 | RFC 定稿 + `config.json` schema + 内核 merge HostProfile；**无 UI 开关** | **Done** |
 | **PE-TURN-01** | 编写器 · Turn Thinking / 对话节奏编辑（阈值、关键词、latch、可选 AND 规则） | P2 | 依赖 K-TURN-F1 schema · 简单/高级分档 | **OPEN**（姊妹仓 `oclive-pack-editor`） |
 | **PE-UID-01** | 编写器 · `user_identities/` 可视化编辑（模板正文、`maps_to_relation_id`、与 `meta.relations.prompt_hint` 对齐预览） | P2 | ROLE_PACK_SPEC §1.1 · mumu `father.md` 手写 SSOT 已落地 | **OPEN**（姊妹仓 `oclive-pack-editor`） |
-| **K-UID-POST-01** | mumu 可选 `reply_post_processor` profile（care-package 句级裁剪 · remote/builtin） | P3 | 主链已用 `trim_template_repeat_reply` + Prompt 上一轮约束兜底；见 [USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md](./USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md) | **Deferred**（不默认开启 post-processor） |
+| **K-UID-POST-01** | mumu 可选 `reply_post_processor` profile（care-package 句级裁剪 · remote/builtin） | P3 | 主链已用 `trim_template_repeat_reply` + Prompt 上一轮约束兜底；见历史 [Phase 2 记录](./archive/USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md) | **Deferred**（不默认开启 post-processor） |
 | **K-PERF-10** | Chat chrome 懒加载 | **Partial** — overlay 已 lazy；chat chrome 仍 eager | 真人 playtest 归因首屏慢 **或** perf mark 超阈值 | 激活 chat chrome lazy PR |
 
 ### K-PERF-10 条件门（2026-06-18）

@@ -2,7 +2,7 @@
 
 This document breaks down the platform vision—**open platform + dual apps + role packs + swappable memory/emotion + optional multilingual plugins**—into **monthly, shippable milestones**. Order may shift with staffing, but **contracts before implementation, default implementations before real plugins** stays fixed.
 
-**Product launch (P0)**: current desktop execution lives in **[`handoff/PRODUCT_LINE_TASK_BUCKETS.md`](../../handoff/PRODUCT_LINE_TASK_BUCKETS.md)** and **[`handoff/TECHNICAL_DEBT_INVENTORY.md`](../../handoff/TECHNICAL_DEBT_INVENTORY.md)**; release sign-off follows **[PROJECT_OVERVIEW.md §8](../getting-started/PROJECT_OVERVIEW.md#8-minimal-pre-release-checklist)** and CI.
+**Product launch (P0)**: current desktop execution lives in **[`handoff/PRODUCT_LINE_TASK_BUCKETS.md`](../../handoff/PRODUCT_LINE_TASK_BUCKETS.md)** and **[`handoff/TECHNICAL_DEBT_INVENTORY.md`](../../handoff/TECHNICAL_DEBT_INVENTORY.md)**; release sign-off follows **[CONTRIBUTING](../../CONTRIBUTING.en.md)** and CI.
 
 [中文](../../creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md)
 

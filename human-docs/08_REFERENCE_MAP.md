@@ -18,7 +18,7 @@
 | [OCLIVE_ARCHITECTURE_OVERVIEW](../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) | 第 1–4 设施子模块 |
 | [RFC 立绘 / 视觉表现（草案）](../creator-docs/rfc/RFC_PORTRAIT_FACILITY.md) | catalog · 表现导演 · 角色舞台 |
 | [RFC Turn Thinking](../creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md) | Fast/Deep · `fast_persistence` · 包级 latch / ephemeral · [EN](../creator-docs-en/rfc/RFC_TURN_THINKING_PERSISTENCE_SUMMARY.md) |
-| [PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN](../handoff/PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md) | 分阶段实施 |
+| [RFC_PORTRAIT_FACILITY](../creator-docs/rfc/RFC_PORTRAIT_FACILITY.md) · [RFC_VISUAL_PRESENTATION_FACILITY](../creator-docs/rfc/RFC_VISUAL_PRESENTATION_FACILITY.md) | 立绘与视觉表现边界 |
 | [kernel/crates/README](../kernel/crates/README.md) | Crate 依赖与改哪 |
 | [DESIGN_DECISIONS](../creator-docs/architecture/DESIGN_DECISIONS.md) | 取舍记录 |
 | [ARCHITECTURE_LAYERING](../handoff/ARCHITECTURE_LAYERING.md) | 分层 ratchet |
@@ -86,7 +86,7 @@
 | [OOCP_TEST_SUITE](../creator-docs/testing/OOCP_TEST_SUITE.md) | HTTP 黑盒 |
 | [OVERVIEW](../creator-docs/testing/OVERVIEW.md) | 三层测试 |
 | [INVOKE_HOTPATH_MATRIX](../handoff/INVOKE_HOTPATH_MATRIX.md) | invoke 矩阵 |
-| [DIMENSION5_CLOSURE_SIGNOFF](../handoff/DIMENSION5_CLOSURE_SIGNOFF.md) | ratchet 门禁 |
+| [`dimension5-acceptance.mjs`](../scripts/dimension5-acceptance.mjs) · [AI_VERIFICATION_PROTOCOL](../handoff/AI_VERIFICATION_PROTOCOL.md) | ratchet 门禁与核实口径 |
 
 ---
 
@@ -95,7 +95,7 @@
 | 文档 | 用途 |
 |------|------|
 | [RELEASE_VERSIONING](../creator-docs/development/RELEASE_VERSIONING.md) | SemVer |
-| [PROJECT_OVERVIEW.md §8](../creator-docs/getting-started/PROJECT_OVERVIEW.md#8-发版前可勾选的极简清单) | 发版勾选 |
+| [CONTRIBUTING](../CONTRIBUTING.md) · [RELEASE_VERSIONING](../creator-docs/development/RELEASE_VERSIONING.md) | 发版勾选 |
 | [KNOWN_VULNERABILITIES](../creator-docs/security/KNOWN_VULNERABILITIES.md) | 供应链 |
 | [LIGHTWEIGHT_PROFILE](../creator-docs/development/LIGHTWEIGHT_PROFILE.md) | 包体基线 |
 | [CHANGELOG](../CHANGELOG.md) | 用户可见变更 |
@@ -113,7 +113,7 @@
 | [pack-editor/](../handoff/pack-editor/) | 编写器路线图（主仓副本） |
 | [launcher/](../handoff/launcher/) · [studio/](../handoff/studio/) | 启动器 / 工作室协调入口 |
 | [TECHNICAL_DEBT_INVENTORY](../handoff/TECHNICAL_DEBT_INVENTORY.md) | 活跃债 · **代码**进度 SSOT |
-| [04_4.6_PROJECT_TRUTH_CHECKLIST](../handoff/04_4.6_PROJECT_TRUTH_CHECKLIST.md) | **已归档** — 勿作 truth |
+| [`handoff/archive/`](../handoff/archive/ARCHIVE_PROJECT_HISTORY.md) | **历史归档** — 勿作 truth |
 | [CHAT_STORAGE_ARCHITECTURE](../handoff/CHAT_STORAGE_ARCHITECTURE.md) | 聊天 vs 记忆 |
 | [DOCUMENTATION_INDEX](../creator-docs/getting-started/DOCUMENTATION_INDEX.md) | 全量契约索引 |
 

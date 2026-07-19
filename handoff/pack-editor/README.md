@@ -11,6 +11,6 @@
 | 文件 | 用途 |
 |------|------|
 | [PACK_EDITOR_ROADMAP.md](PACK_EDITOR_ROADMAP.md) | 立绘 catalog · 视觉舞台 · 分级导出路线图（主仓副本） |
-| [PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md](../PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md) | 分阶段实施（handoff 根目录） |
+| [RFC_PORTRAIT_FACILITY](../../creator-docs/rfc/RFC_PORTRAIT_FACILITY.md) · [RFC_VISUAL_PRESENTATION_FACILITY](../../creator-docs/rfc/RFC_VISUAL_PRESENTATION_FACILITY.md) | 现行设施边界 |
 
 姊妹仓同步副本：`oclive-pack-editor/handoff/PACK_EDITOR_ROADMAP.md`

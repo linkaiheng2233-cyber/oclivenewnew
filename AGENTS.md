@@ -86,4 +86,4 @@
 - **Remotion 演示**：独立仓 `oclive-remotion-demo`，勿在主仓根跑 `npm run preview`
 - **姊妹仓**：`oclive-pack-editor` · `oclive-launcher` · `oclive-plugin-market` · `oclive-vscode`（各仓 `AGENTS.md` 指回本索引）
 
-**禁止当 truth**：`handoff/archive/*` · `handoff/04_4.6_PROJECT_TRUTH_CHECKLIST.md`（G3）
+**禁止当 truth**：`handoff/archive/*`（含已归档的 `04_4.6_PROJECT_TRUTH_CHECKLIST.md`，G3）

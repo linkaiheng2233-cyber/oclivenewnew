@@ -61,7 +61,7 @@
 - **AI 剧场 Patch 涟漪升级**：poke 默认 `mode=patch`（局部 prose 小剧情 + 保留 skeleton 尾部）；`patch_variant` 双候选后台生成 + `TheaterVariantBackdrop` 拖拽切换；设置 → 舞台 Tab 可选 ripple 降级与自定义 poke 主角。
 - **`CODE_OF_CONDUCT.md`**（Contributor Covenant）。
 - **`human-docs-en/`** 最小集（L0–L3 + 08/09/10 英文摘要）。
-- **`human-docs/08_PR_GATE_MATRIX.md`**、**`09_GLOSSARY.md`**、**`10_SETUP_WINDOWS.md`**。
+- **`human-docs/08_PR_GATE_MATRIX.md`**、**`03_GLOSSARY.md`**、**`10_SETUP_WINDOWS.md`**。
 - **`handoff/GOOD_FIRST_ISSUES.md`** 策展表。
 - **`npm run check:ci-local`**；`package.json` `engines.node >=20`、**`.nvmrc`**。
 - 前端：`distros/shared/src/api/plugin/*`、`useMainShell*`、`useChatStorageSettings`、`chatStoreSend`。
@@ -171,7 +171,7 @@
 
 ### Added
 
-- **User Identity & Reply Post-Processor Phase 2（收尾）**：HostProfile `[user_identity]` / `[post_process]` 合并；remote/directory 后处理后端；HTTP `/user_identity/*`；桌面与 VS Code 身份切换；`RoleInfo` / `GET /role_info` 后处理只读字段；调试面板后处理状态行。见 [handoff/USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md](handoff/USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md)。
+- **User Identity & Reply Post-Processor Phase 2（收尾）**：HostProfile `[user_identity]` / `[post_process]` 合并；remote/directory 后处理后端；HTTP `/user_identity/*`；桌面与 VS Code 身份切换；`RoleInfo` / `GET /role_info` 后处理只读字段；调试面板后处理状态行。见 [历史 Phase 2 记录](handoff/archive/USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md)。
 - **文档**：ROLE_PACK_SPEC §1.1 / §9.7、架构总览「正交能力单元」、USER_MANUAL §3.4–3.5、RFC Phase 2 验收勾选。
 - **遗忘曲线与关系演化（`config.json`）**：艾宾浩斯长期记忆衰减（`memory.decay_halflife_days`）；重复提及强化（`mention_count` + `reinforcement_factor`）；沉浸模式下亲密值疏远与关系阶段降级（`relation.*`）；虚拟时间流速（`time.speed`）与首次沉浸对齐 `life_schedule` 起点；强化记忆微幅推动七维人格 / 可变档案「记忆塑造」。规范见 [ROLE_PACK_SPEC §9](creator-docs/role-pack/ROLE_PACK_SPEC.md)。
 - **双核质量验收补强**：OOCP 新增可选 **S14**（experimental 合法 DAG 成功路径）；`oocp-test-suite` CI job 现以 `--features dual_core` 构建并执行 `run.mjs --include-dual-core`（覆盖 S13 降级 + S14 成功路径）；新增 `src-tauri/tests/dual_core_happy_path.rs` 集成测验证 `DualPipelineRunner::run_experimental` 成功路径。

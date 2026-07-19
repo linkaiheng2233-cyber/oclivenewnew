@@ -72,9 +72,7 @@ Last reviewed: **2026-07-10**. Counts are `*.md` files per directory (approximat
 |-------|---------|
 | Documentation hub | [getting-started/DOCUMENTATION_INDEX.md](getting-started/DOCUMENTATION_INDEX.md) |
 | User manual | [getting-started/USER_MANUAL.md](getting-started/USER_MANUAL.md) |
-| Status & alignment | [getting-started/PROJECT_STATUS_AND_ALIGNMENT.md](getting-started/PROJECT_STATUS_AND_ALIGNMENT.md) |
 | Current status | [getting-started/PROJECT_CURRENT_STATUS.md](getting-started/PROJECT_CURRENT_STATUS.md) |
-| Project overview | [getting-started/PROJECT_OVERVIEW.md](getting-started/PROJECT_OVERVIEW.md) |
 | Kernel-centric diagram | [getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md](getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md) |
 | Error codes | [getting-started/ERROR_CODES.md](getting-started/ERROR_CODES.md) · [KERNEL_ERROR_CODE_CONVENTION.md](getting-started/KERNEL_ERROR_CODE_CONVENTION.md) |
 

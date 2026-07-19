@@ -7,6 +7,6 @@
 
 **Do**: Polish rules · remote post-processors · documented `config.json` switches · keep DTO field **`reply`**.
 
-**Don't**: Use `response` instead of **`reply`** · rewrite in Vue bypassing kernel · paste full [REPLY_POST_PROCESSOR_DESIGN_REPORT](../../../handoff/REPLY_POST_PROCESSOR_DESIGN_REPORT.md) into PRs.
+**Don't**: Use `response` instead of **`reply`** · rewrite in Vue bypassing kernel · paste historical phase reports into PRs. Current contract: [RFC](../../../creator-docs/rfc/RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md).
 
 **Read next**: [RFC_SIDE_CHANNEL](../../../creator-docs/rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md) · [role-pack-config](../packs/role-pack-config.md) · [slots/llm](../slots/llm.md) · [slots/agent](../slots/agent.md).

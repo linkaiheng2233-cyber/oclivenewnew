@@ -60,7 +60,7 @@ On breaking changes: update **`CHANGELOG.md` / `CHANGELOG.en.md`**, this matrix,
 ### Release review (maintainers)
 
 1. Verify snapshot semver: root **`package.json`**, **`distros/desktop-tauri/Cargo.toml`**, **`oclive_kernel_runtime`**.  
-2. Follow [PROJECT_OVERVIEW.md §8](getting-started/PROJECT_OVERVIEW.md#8-minimal-pre-release-checklist) for **external notes** if contracts or sister deps changed.
+2. Follow [CONTRIBUTING](../CONTRIBUTING.en.md) and [release versioning](development/RELEASE_VERSIONING.md) for external notes when contracts or sister dependencies change.
 3. **HTTP / OOCP**: if `API_VERSION` or `RUNTIME_API_VERSION` changes, sync tests and docs (`creator-docs/testing/OOCP_TEST_SUITE.md`).
 
 Headless HTTP authentication is part of the host launch contract: `--api` requires `OCLIVE_API_TOKEN` by default, and callers send `x-oclive-api-token` on every route except `/health`. Never use `OCLIVE_API_ALLOW_UNAUTHENTICATED=1` with production or persistent data.

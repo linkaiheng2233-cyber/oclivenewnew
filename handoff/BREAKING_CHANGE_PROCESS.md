@@ -151,7 +151,7 @@
 
 ## 6. 与发版清单的关系
 
-发版前按 [PROJECT_OVERVIEW.md §8](../creator-docs/getting-started/PROJECT_OVERVIEW.md#8-发版前可勾选的极简清单) 核对：Breaking 是否已写入 CHANGELOG、兼容表、对外说明。
+发版前按 [CONTRIBUTING](../CONTRIBUTING.md) 与 CI 核对：Breaking 是否已写入 CHANGELOG、兼容表和对外说明。
 
 ---
 

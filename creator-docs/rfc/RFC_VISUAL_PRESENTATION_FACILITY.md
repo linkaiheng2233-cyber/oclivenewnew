@@ -151,4 +151,4 @@ mode = "off"   # off | image_only | stage_full
 ## 9. 相关链接
 
 - 立绘决策 RFC：[RFC_PORTRAIT_FACILITY.md](RFC_PORTRAIT_FACILITY.md)
-- 分阶段计划：[../../handoff/PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md](../../handoff/PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md)
+- 历史分阶段计划已归档；现行状态查 [TECHNICAL_DEBT_INVENTORY](../../handoff/TECHNICAL_DEBT_INVENTORY.md)。

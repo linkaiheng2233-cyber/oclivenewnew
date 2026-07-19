@@ -4,7 +4,6 @@ import path from "path";
 const roots = ["creator-docs", "creator-docs-en"];
 const keyFiles = [
   "getting-started/DOCUMENTATION_INDEX.md",
-  "getting-started/PROJECT_OVERVIEW.md",
   "getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md",
   "role-pack/CREATOR_LEARNING_PATH.md",
   "plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md",

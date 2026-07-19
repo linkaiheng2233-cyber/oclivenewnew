@@ -8,6 +8,15 @@
 
 **发版**：桌面宿主 **0.5.0** · 详见 [CHANGELOG.md](CHANGELOG.md)
 
+## 从哪里开始
+
+| 你的身份 | 入口 | 多久可以开工 |
+|----------|------|----------------|
+| 角色包创作者 | [创作者黄金路径](creator-docs/getting-started/CREATOR_GOLDEN_PATH.md) | 约 30 分钟 |
+| 主仓开发者 | [人类开发者接手包](human-docs/README.md) | 30 分钟跑通，再按模块开工 |
+| 插件 / 集成开发者 | [文档索引](creator-docs/getting-started/DOCUMENTATION_INDEX.md) | 30–60 分钟 |
+| AI Agent | [AGENTS.md](AGENTS.md) | 按任务读取 SSOT |
+
 ---
 
 <!-- ═══════════════════════════════════════════════════════════════════════ -->
@@ -87,7 +96,7 @@ fork `examples/directory-plugin-minimal` 或 `examples/voice-loop-minimal`，实
 | **AI Theater** | `theater` | `distros/theater/` + theater profile | 打包预埋；模式 2 playtest **已解冻** |
 | **dev lab** | `desktop-chat` | 实验场 profile | 日常开发 / 低延迟试验 |
 
-Profile SSOT：[THREE_DISTRO_KERNEL_CLOSURE.md](handoff/THREE_DISTRO_KERNEL_CLOSURE.md) · [DISTRO_CAPABILITY_PROFILE.md](creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md)
+Profile SSOT：[DISTRO_CAPABILITY_PROFILE.md](creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md)；三发行版结项约束见 [THREE_DISTRO_KERNEL_CLOSURE.md](handoff/THREE_DISTRO_KERNEL_CLOSURE.md)。
 
 ---
 

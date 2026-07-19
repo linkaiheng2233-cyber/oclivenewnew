@@ -60,7 +60,7 @@ npm run build
 | **Core HTTP restart smoke (A1.1a)** | **`npm run test:e2e:core-api-restart`** (requires `cargo build -p oclivenewnew-tauri`; defaults to Mock LLM) |
 | **Web preview shell E2E (A1.1b)** | **`npm run build && npm run test:e2e:preview`** (Playwright + `vite preview`; **CI: Ubuntu `frontend` only**). **Windows local:** if the built-in `webServer` times out, run **`npm run preview -- --host 127.0.0.1 --port 4180 --strictPort`** in one terminal, then in another set **`$env:PW_TEST_USE_EXTERNAL='1'`** (PowerShell) and run **`npm run test:e2e:preview`** |
 
-**CI alignment:** **`npm run check:release`** already chains **`npm run test:unit`** and **`npm run verify:ui`** (see root `package.json`); **Playwright (`npm run test:e2e:preview`) is not in `check:release`** and runs on Ubuntu **`frontend` only** (Windows `frontend` skips it). If you touched the UI, on **Linux/macOS** also run **`npm run build && npm run test:e2e:preview`**, or rely on a green **Actions → frontend (ubuntu)** run. Current release sign-off is [PROJECT_OVERVIEW.md §8](creator-docs-en/getting-started/PROJECT_OVERVIEW.md#8-minimal-pre-release-checklist) plus CI.
+**CI alignment:** **`npm run check:release`** already chains **`npm run test:unit`** and **`npm run verify:ui`** (see root `package.json`); **Playwright (`npm run test:e2e:preview`) is not in `check:release`** and runs on Ubuntu **`frontend` only**. For UI changes, also run **`npm run build && npm run test:e2e:preview`** on Linux/macOS or rely on a green Ubuntu frontend job. Release sign-off also checks CI, CHANGELOG, [compatibility](creator-docs-en/COMPATIBILITY.md), and [versioning](creator-docs-en/development/RELEASE_VERSIONING.md).
 
 **CI:** `.github/workflows/ci.yml` runs Rust + **`npm run build`** + **`npm run test:unit`** on Ubuntu and Windows; **Ubuntu `frontend`** also runs **`npm run test:e2e:preview`**; Ubuntu also runs **OOCP** and **`oclive-cli`** jobs. See root README **Testing**.
 
@@ -109,7 +109,7 @@ See **[`handoff/BUS_FACTOR_NOTES.md`](handoff/BUS_FACTOR_NOTES.md)** for entry p
 
 ### Dimension 5 baseline (before PR / release)
 
-Aligned with [`handoff/DIMENSION5_CLOSURE_SIGNOFF.md`](handoff/DIMENSION5_CLOSURE_SIGNOFF.md). **Re-run when touching:**
+Dimension 5 is defined by `node scripts/dimension5-acceptance.mjs --ci`. **Re-run when touching:**
 
 | Path | ID | Command |
 |------|-----|---------|
@@ -142,14 +142,14 @@ Summary:
 
 1. **Open an issue** (or RFC for large surface) describing migration impact on role packs, `plugin_backends`, HTTP OOCP / `invoke` DTOs; label the PR **BREAKING**.  
 2. **PR must include:** updates to **`kernel/crates/oclive_validation`** (if manifest/settings keys change), **`PLUGIN_V1.md` / `ERROR_CODES.md` / `COMPATIBILITY.md`** as applicable, **`creator-docs/`** / **`creator-docs-en/`** mirrors, and **`CHANGELOG.md` + `CHANGELOG.en.md`** entries.  
-3. **Review:** at least one maintainer confirms **compatibility shims + migration path**, CI, and the release items in [PROJECT_OVERVIEW.md §8](creator-docs-en/getting-started/PROJECT_OVERVIEW.md#8-minimal-pre-release-checklist).
+3. **Review:** at least one maintainer confirms compatibility shims, migration paths, CI, CHANGELOG, and compatibility docs.
 
 ## Documentation
 
 - **User-visible copy:** avoid duplicated hard-coded strings (see [AGENTS.md](AGENTS.md) for the plugin manager entry pattern).
 - **Contracts & DB:** follow `distros/chat-pro/roles/README_MANIFEST.md`, `RoleStorage::load_role`, and **`kernel/crates/oclive_validation`**; **do not invent** SQL table names.
 - **Doc index:** [creator-docs/getting-started/DOCUMENTATION_INDEX.md](creator-docs/getting-started/DOCUMENTATION_INDEX.md).
-- **Releases & compatibility:** on semver bumps or contract changes, review [`creator-docs/COMPATIBILITY.md`](creator-docs/COMPATIBILITY.md) snapshots and the one-pager table, then update the external notes in [PROJECT_OVERVIEW.md §8](creator-docs-en/getting-started/PROJECT_OVERVIEW.md#8-minimal-pre-release-checklist); pack rules stay in [PACK_VERSIONING.md](creator-docs/role-pack/PACK_VERSIONING.md).
+- **Releases & compatibility:** on semver bumps or contract changes, review [compatibility](creator-docs-en/COMPATIBILITY.md), [versioning](creator-docs-en/development/RELEASE_VERSIONING.md), and both CHANGELOG files; pack rules stay in [PACK_VERSIONING.md](creator-docs/role-pack/PACK_VERSIONING.md).
 
 ## Do not commit
 

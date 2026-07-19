@@ -88,7 +88,7 @@
 | [OVERVIEW](../creator-docs-en/testing/OVERVIEW.md) | Three test layers |
 | [FUZZING](../creator-docs-en/testing/FUZZING.md) | Fuzz targets |
 | [INVOKE_HOTPATH_MATRIX](../handoff/INVOKE_HOTPATH_MATRIX.md) | invoke matrix |
-| [DIMENSION5_CLOSURE_SIGNOFF](../handoff/DIMENSION5_CLOSURE_SIGNOFF.md) | ratchet gates |
+| [`dimension5-acceptance.mjs`](../scripts/dimension5-acceptance.mjs) · [AI verification](../handoff/AI_VERIFICATION_PROTOCOL.md) | ratchet gates and evidence rules |
 
 ---
 

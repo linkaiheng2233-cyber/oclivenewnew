@@ -186,7 +186,7 @@ flowchart TB
 | **与第 1 设施** | **消费** `narrative_hint`；**不**生成 hint |
 | **与第 4 设施** | 输出 `visual_state_id`；**唯一**允许 LLM 选表现状态的设施 |
 | **legacy** | 保留 `portrait_emotion` 七 tag；未启用 catalog 时行为与 v0.3 一致 |
-| **RFC** | [RFC_PORTRAIT_FACILITY.md](../rfc/RFC_PORTRAIT_FACILITY.md) · 计划 [PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md](../../handoff/PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md) |
+| **RFC** | [RFC_PORTRAIT_FACILITY.md](../rfc/RFC_PORTRAIT_FACILITY.md) · [RFC_VISUAL_PRESENTATION_FACILITY.md](../rfc/RFC_VISUAL_PRESENTATION_FACILITY.md) |
 
 ---
 

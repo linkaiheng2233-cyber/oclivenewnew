@@ -56,7 +56,7 @@
 - **Theater Track A engineering hygiene (round 16)**: [`handoff/theater/MODE2_UNFREEZE.md`](handoff/theater/MODE2_UNFREEZE.md) Mode 2 unfreeze checklist; `theater-prompt-drift` wired into `dimension5-acceptance.mjs` and `test:theater:smoke`; self-contained `prompts/` in minimal director example; `data/plugins.json` entry for `com.oclive.theater_director_official`.
 - **`CODE_OF_CONDUCT.md`** (Contributor Covenant).
 - **`human-docs-en/`** minimal set (L0–L3 + 08/09/10 English summaries).
-- **`human-docs/08_PR_GATE_MATRIX.md`**, **`09_GLOSSARY.md`**, **`10_SETUP_WINDOWS.md`**.
+- **`human-docs/08_PR_GATE_MATRIX.md`**, **`03_GLOSSARY.md`**, **`10_SETUP_WINDOWS.md`**.
 - **`handoff/GOOD_FIRST_ISSUES.md`** curated issue table.
 - **`npm run check:ci-local`**; `package.json` `engines.node >=20`, **`.nvmrc`**.
 - Frontend: `distros/shared/src/api/plugin/*`, `useMainShell*`, `useChatStorageSettings`, `chatStoreSend`.
@@ -166,7 +166,7 @@
 
 ### Added
 
-- **User Identity & Reply Post-Processor Phase 2 (closure)**: HostProfile merge; remote/directory backends; HTTP `/user_identity/*`; desktop & VS Code identity switch; `RoleInfo` / `GET /role_info` read-only post-processor fields; debug panel status line. See [handoff/USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md](handoff/USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md).
+- **User Identity & Reply Post-Processor Phase 2 (closure)**: HostProfile merge; remote/directory backends; HTTP `/user_identity/*`; desktop & VS Code identity switch; `RoleInfo` / `GET /role_info` read-only post-processor fields; debug panel status line. See the [archived Phase 2 record](handoff/archive/USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md).
 - **Docs**: ROLE_PACK_SPEC §1.1 / §9.7, architecture overview orthogonal units, USER_MANUAL §3.4–3.5, RFC Phase 2 acceptance checked.
 - **Forgetting curve & relation evolution (`config.json`)**: Ebbinghaus long-term memory decay; mention reinforcement; immersive favorability estrangement; virtual time ratio; memory-shaped personality nudges. See [ROLE_PACK_SPEC §9](creator-docs/role-pack/ROLE_PACK_SPEC.md).
 - **Dual-core quality hardening**: optional **S14** OOCP scenario; CI dual-core build + `--include-dual-core`; `dual_core_happy_path.rs` integration test.

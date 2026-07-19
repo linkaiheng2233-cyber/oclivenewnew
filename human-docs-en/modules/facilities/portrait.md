@@ -9,4 +9,4 @@
 
 **Don't**: Second LLM portrait pick in UI (MODULE_MAP §8) · write to `plugin_backends` six keys · treat undecided Live2D SDK as shipped truth.
 
-**Read next**: [visual-stage](visual-stage.md) · [team/TRACK_VISUAL_UPGRADE](../../../handoff/PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md) · [PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN](../../../handoff/PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md).
+**Read next**: [visual-stage](visual-stage.md) · [portrait RFC](../../../creator-docs/rfc/RFC_PORTRAIT_FACILITY.md) · [visual presentation RFC](../../../creator-docs/rfc/RFC_VISUAL_PRESENTATION_FACILITY.md).

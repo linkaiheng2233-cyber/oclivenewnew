@@ -85,4 +85,4 @@ Pro + Flash smoke **已通过** → Theater **模式 1** greenfield 重建中（
 
 - [KERNEL_SCHEDULER_RESCOPE.md](./KERNEL_SCHEDULER_RESCOPE.md) · K-SCHED-01/02/04/05 Done
 - [DISTRO_KERNEL_LIFECYCLE.md](../creator-docs/kernel/DISTRO_KERNEL_LIFECYCLE.md)
-- [PHASE4_ECOSYSTEM_NOTES.md](./PHASE4_ECOSYSTEM_NOTES.md)
+- 历史记录：[PHASE4_ECOSYSTEM_NOTES.md](./archive/PHASE4_ECOSYSTEM_NOTES.md)

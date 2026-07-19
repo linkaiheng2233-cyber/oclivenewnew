@@ -112,7 +112,7 @@ flowchart TB
 
 ### 3.3 与专利的关系
 
-[handoff/PATENT_SUBMISSION_PRIORITY.md](./PATENT_SUBMISSION_PRIORITY.md) A 类交底仍覆盖 **profile-aware attach/replace**。**封存的是产品扩展面**，不是删 Rust 模块。
+历史 [PATENT_SUBMISSION_PRIORITY.md](./archive/PATENT_SUBMISSION_PRIORITY.md) A 类交底仍覆盖 **profile-aware attach/replace**。**封存的是产品扩展面**，不是删 Rust 模块。
 
 ---
 

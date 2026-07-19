@@ -58,7 +58,7 @@
 ### 发版审阅（维护者自检）
 
 1. 核对本节「快照」三处 semver：**根 `package.json`**、**`distros/desktop-tauri/Cargo.toml`**、**`oclive_kernel_runtime`**（发版 bump 时常需同改）。  
-2. 按 [PROJECT_OVERVIEW.md §8](getting-started/PROJECT_OVERVIEW.md#8-发版前可勾选的极简清单) 的发版项更新 **对外说明**：若 bump 了契约或姊妹仓依赖，更新本页表格或快照句。
+2. 按 [CONTRIBUTING](../CONTRIBUTING.md) 与 [版本规则](development/RELEASE_VERSIONING.md) 更新 **对外说明**：若 bump 了契约或姊妹仓依赖，更新本页表格或快照句。
 3. **HTTP / OOCP**：若 `API_VERSION` 或 `RUNTIME_API_VERSION` 变更，必须同步测试套件与文档（见 `creator-docs/testing/OOCP_TEST_SUITE.md`）。
 
 无头 HTTP 的认证属于宿主启动契约：`--api` 默认要求 `OCLIVE_API_TOKEN`，调用方在除 `/health` 外的请求发送 `x-oclive-api-token`；不得把 `OCLIVE_API_ALLOW_UNAUTHENTICATED=1` 用于生产或持久化数据目录。

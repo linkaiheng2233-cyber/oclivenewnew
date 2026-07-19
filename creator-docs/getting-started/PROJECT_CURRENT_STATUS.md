@@ -1,6 +1,6 @@
 # 项目现状（事实快照）
 
-**用途**：给协作者与发布流程一个**短、可核对**的当前状态摘要（版本、交付面、内核与产品门槛、变更日志入口）。**不替代** [KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md) 的验收细节或 [PROJECT_STATUS_AND_ALIGNMENT.md](PROJECT_STATUS_AND_ALIGNMENT.md) 的文档地图。
+**用途**：给协作者与发布流程一个**短、可核对**的当前状态摘要（版本、交付面、变更日志入口）。文档查找统一从 [DOCUMENTATION_INDEX](DOCUMENTATION_INDEX.md) 开始。
 
 [English](../../creator-docs-en/getting-started/PROJECT_CURRENT_STATUS.md)
 
@@ -20,16 +20,16 @@
 
 ## 交付面（本仓库 `oclivenewnew`）
 
-- **运行时**：Tauri 桌面端；角色包导入（`.ocpak` / `.zip` / 目录）、对话主路径 **`process_message`**、**第 1–6 模块** `plugin_backends`、**第 1–2 设施子模块**（复杂情感、专家模型/专家路由）、后端模块插件模块（目录/Remote）、本地 HTTP `--api`、启动健康检查等（架构见 [OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)；细节见 [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)）。
+- **运行时**：Tauri 桌面端、角色包导入、`process_message` 主链、六槽模块、目录 / Remote 插件与本地 HTTP `--api`；架构见 [OCLIVE_ARCHITECTURE_OVERVIEW](OCLIVE_ARCHITECTURE_OVERVIEW.md)。
 - **内核工程**：里程碑 **K0–K5** 在计划中除 **P2（OTA / 远程日志等）** 外已收口；验收留痕与 CI 见 [KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md) 与根目录 [AGENTS.md](../../AGENTS.md)。
-- **产品级「首发」门槛**：当前以 [PROJECT_OVERVIEW.md §8](PROJECT_OVERVIEW.md#8-发版前可勾选的极简清单)、CI workflow 与 [TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md) 的活跃台账为准；旧 gap 清单仅作历史背景，不作为现行 truth。
+- **产品级「首发」门槛**：以 [CONTRIBUTING](../../CONTRIBUTING.md)、CI workflow 与 [TECHNICAL_DEBT_INVENTORY](../../handoff/TECHNICAL_DEBT_INVENTORY.md) 为准。
 
 ---
 
 ## 姊妹仓与国际化
 
-- **编写器** `oclive-pack-editor`、**启动器** `oclive-launcher`、**插件市场站** `oclive-plugin-market`：与本仓通过角色包与文档索引协作；详见 [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)。
-- **四仓 UI 文案双语基线**：见 [handoff/I18N_FOUR_REPO_BASELINE.md](../../handoff/I18N_FOUR_REPO_BASELINE.md)。
+- **编写器** `oclive-pack-editor`、**VS Code 扩展** `oclive-vscode`、**插件市场站** `oclive-plugin-market`：通过角色包、插件契约与发行版 profile 协作；启动器已归档。
+- **四仓 UI 文案双语基线**：见历史 [I18N_FOUR_REPO_BASELINE.md](../../handoff/archive/I18N_FOUR_REPO_BASELINE.md)。
 - **创作者英文文档（`creator-docs-en/`）**：收尾范围与更新约定见 [creator-docs-en/README.md](../../creator-docs-en/README.md#documentation-bilingual-closure-baseline)（与中文 `creator-docs/` 对拍；路线图等长尾仍为中文）。
 
 ## 路线图与对齐习惯
@@ -38,6 +38,6 @@
 |------|------|
 | 按月愿景与阶段 | [../roadmap/VISION_ROADMAP_MONTHLY.md](../roadmap/VISION_ROADMAP_MONTHLY.md) |
 | 体验向 backlog（试聊、市场等） | [../roadmap/BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md](../roadmap/BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md) |
-| 一页：进度 + 目标 + 按用途分类的文档地图 | [PROJECT_STATUS_AND_ALIGNMENT.md](PROJECT_STATUS_AND_ALIGNMENT.md) |
+| 当前工程债与冻结 | [TECHNICAL_DEBT_INVENTORY](../../handoff/TECHNICAL_DEBT_INVENTORY.md) |
 
 发版或改契约前：根 [README.md](../../README.md) 中的 `npm run check` / `check:release` 与 CHANGELOG 双语更新。
