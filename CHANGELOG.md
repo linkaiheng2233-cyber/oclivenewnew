@@ -12,6 +12,7 @@
 
 ### Fixed
 
+- **纯蓝图角色包导入闭环**：Chat Pro 的 `.ocpak` / `.zip` / 已解压目录预览与安装现在原生识别 `pipeline.ocblueprint`，同层存在 legacy `manifest.json` 时以蓝图 `meta` 为准；运行时导出统一使用 `{role_id}/...` 顶层目录，修复编写器 v2 包无法经应用内入口导入的问题。
 - **本机端点代理兼容**：Remote 插件、Remote Agent 与 OpenAI-compatible LLM 的 IPv4/IPv6 回环端点不再继承用户 HTTP 代理，避免 `localhost` 请求被错误转发后出现 502/超时；测试 mock 同步校验并回显 JSON-RPC request id。
 - **活跃文档 truth 收敛**：产品执行与发版入口改链现行 SSOT；`check-stale-paths` 新增 G3/G12 守卫，禁止将 `handoff/archive/*` 产品清单重新写成现行依据。
 

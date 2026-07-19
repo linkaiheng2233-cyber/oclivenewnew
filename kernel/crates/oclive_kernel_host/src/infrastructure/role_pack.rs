@@ -11,6 +11,20 @@ use zip::write::{SimpleFileOptions, ZipWriter};
 use zip::{CompressionMethod, ZipArchive};
 
 use crate::models::role_manifest_disk::DiskRoleManifest;
+use oclive_validation::PIPELINE_BLUEPRINT_FILENAME;
+use serde::Deserialize;
+
+#[derive(Deserialize)]
+struct BlueprintPackPreview {
+    meta: BlueprintPackPreviewMeta,
+}
+
+#[derive(Deserialize)]
+struct BlueprintPackPreviewMeta {
+    id: String,
+    name: String,
+    version: String,
+}
 
 fn safe_zip_path(name: &str) -> bool {
     let normalized = name.replace('\\', "/");
@@ -23,8 +37,8 @@ fn safe_zip_path(name: &str) -> bool {
             .all(|part| !part.is_empty() && part != "." && part != "..")
 }
 
-/// `manifest.json` path priority inside ZIP: pack root first, then single top-level folder, then deeper paths (matches standard export).
-fn zip_manifest_path_priority(name: &str) -> Option<u8> {
+/// Role metadata path priority inside ZIP: shallower paths first, then blueprint before legacy manifest.
+fn zip_preview_path_priority(name: &str) -> Option<(u8, u8)> {
     if !safe_zip_path(name) {
         return None;
     }
@@ -33,20 +47,44 @@ fn zip_manifest_path_priority(name: &str) -> Option<u8> {
     if n.is_empty() || n.ends_with('/') {
         return None;
     }
-    if n == "manifest.json" {
-        return Some(0);
-    }
-    let prefix = n.strip_suffix("/manifest.json")?;
-    if prefix.is_empty() {
-        return Some(0);
-    }
-    if !prefix.contains('/') {
-        Some(1)
+    let (prefix, format_priority) = if n == PIPELINE_BLUEPRINT_FILENAME {
+        ("", 0)
+    } else if n == "manifest.json" {
+        ("", 1)
+    } else if let Some(prefix) = n.strip_suffix(&format!("/{PIPELINE_BLUEPRINT_FILENAME}")) {
+        (prefix, 0)
+    } else if let Some(prefix) = n.strip_suffix("/manifest.json") {
+        (prefix, 1)
     } else {
-        Some(2)
+        return None;
+    };
+    let depth_priority = if prefix.is_empty() {
+        0
+    } else if !prefix.contains('/') {
+        1
+    } else {
+        2
+    };
+    Some((depth_priority, format_priority))
+}
+
+fn parse_pack_preview(name: &str, raw: &str) -> Option<(String, String, String)> {
+    if name
+        .replace('\\', "/")
+        .ends_with(PIPELINE_BLUEPRINT_FILENAME)
+    {
+        let blueprint: BlueprintPackPreview = serde_json::from_str(raw).ok()?;
+        Some((
+            blueprint.meta.id,
+            blueprint.meta.name,
+            blueprint.meta.version,
+        ))
+    } else {
+        let manifest: DiskRoleManifest = serde_json::from_str(raw).ok()?;
+        Some((manifest.id, manifest.name, manifest.version))
     }
 }
-/// Pack `roles/{role_id}/` into `.ocpak` (ZIP).
+/// Pack `roles/{role_id}/` into `.ocpak` (ZIP with a `{role_id}/` top-level directory).
 ///
 /// # Errors
 ///
@@ -66,7 +104,8 @@ pub fn export_role_pack(storage: &RoleStorage, role_id: &str, dest: &Path) -> Re
             let rel = path
                 .strip_prefix(&src)
                 .map_err(|_| AppError::InvalidParameter("zip strip".into()))?;
-            let name = rel.to_string_lossy().replace('\\', "/");
+            let rel_name = rel.to_string_lossy().replace('\\', "/");
+            let name = format!("{role_id}/{rel_name}");
             if !entry.file_type().is_file() {
                 continue;
             }
@@ -80,22 +119,26 @@ pub fn export_role_pack(storage: &RoleStorage, role_id: &str, dest: &Path) -> Re
     Ok(())
 }
 
-/// Read `manifest.json` from an extracted directory (same layout as after zip extract).
+/// Read role metadata from an extracted directory (same layout as after zip extract).
 fn peek_role_folder_manifest(dir: &Path) -> Result<(String, String, String)> {
     let root = find_extracted_role_root(dir)?;
-    let manifest_path = root.join("manifest.json");
-    if !manifest_path.is_file() {
-        return Err(AppError::InvalidParameter(
-            "Role pack format: manifest.json not found".into(),
-        ));
+    for file_name in [PIPELINE_BLUEPRINT_FILENAME, "manifest.json"] {
+        let path = root.join(file_name);
+        if !path.is_file() {
+            continue;
+        }
+        let raw = fs::read_to_string(&path).map_err(AppError::IoError)?;
+        return parse_pack_preview(file_name, &raw).ok_or_else(|| {
+            AppError::InvalidParameter(format!(
+                "Role pack format: {file_name} has invalid role metadata"
+            ))
+        });
     }
-    let s = fs::read_to_string(&manifest_path).map_err(AppError::IoError)?;
-    let disk: DiskRoleManifest = serde_json::from_str(&s).map_err(|_| {
-        AppError::InvalidParameter("Role pack format: manifest.json is invalid JSON".into())
-    })?;
-    Ok((disk.id, disk.name, disk.version))
+    Err(AppError::InvalidParameter(format!(
+        "Role pack format: {PIPELINE_BLUEPRINT_FILENAME} or manifest.json not found"
+    )))
 }
-/// Read `manifest.json` from `.ocpak` / `.zip` or an **extracted directory** for pre-import preview and conflict checks.
+/// Read role metadata from `.ocpak` / `.zip` or an **extracted directory** for pre-import preview and conflict checks.
 ///
 /// # Errors
 ///
@@ -110,7 +153,7 @@ pub fn peek_role_pack_manifest(src: &Path) -> Result<(String, String, String)> {
     let mut archive = ZipArchive::new(file).map_err(|_| {
         AppError::InvalidParameter("Role pack format: not a valid ZIP/ocpak archive".into())
     })?;
-    let mut candidates: Vec<(u8, usize)> = Vec::new();
+    let mut candidates: Vec<(u8, u8, usize)> = Vec::new();
     for i in 0..archive.len() {
         let f = archive.by_index(i).map_err(|_| {
             AppError::InvalidParameter("Role pack format: archive is corrupted".into())
@@ -119,28 +162,31 @@ pub fn peek_role_pack_manifest(src: &Path) -> Result<(String, String, String)> {
         if name.ends_with('/') {
             continue;
         }
-        if let Some(p) = zip_manifest_path_priority(&name) {
-            candidates.push((p, i));
+        if let Some((depth, format)) = zip_preview_path_priority(&name) {
+            candidates.push((depth, format, i));
         }
     }
-    candidates.sort_by(|a, b| a.0.cmp(&b.0).then_with(|| a.1.cmp(&b.1)));
-    for (_, i) in candidates {
+    candidates.sort_by(|a, b| {
+        a.0.cmp(&b.0)
+            .then_with(|| a.1.cmp(&b.1))
+            .then_with(|| a.2.cmp(&b.2))
+    });
+    for (_, _, i) in candidates {
         let mut f = archive.by_index(i).map_err(|_| {
             AppError::InvalidParameter("Role pack format: archive is corrupted".into())
         })?;
+        let name = f.name().to_string();
         let mut s = String::new();
         std::io::Read::read_to_string(&mut f, &mut s).map_err(|_| {
             AppError::InvalidParameter("Role pack format: cannot read manifest from archive".into())
         })?;
-        let disk: DiskRoleManifest = match serde_json::from_str(&s) {
-            Ok(d) => d,
-            Err(_) => continue,
-        };
-        return Ok((disk.id, disk.name, disk.version));
+        if let Some(preview) = parse_pack_preview(&name, &s) {
+            return Ok(preview);
+        }
     }
-    Err(AppError::InvalidParameter(
-        "Role pack format: manifest.json not found in archive".into(),
-    ))
+    Err(AppError::InvalidParameter(format!(
+        "Role pack format: {PIPELINE_BLUEPRINT_FILENAME} or manifest.json not found in archive"
+    )))
 }
 
 fn unzip_to(
@@ -181,7 +227,7 @@ fn unzip_to(
 }
 
 fn find_extracted_role_root(extract_dir: &Path) -> Result<PathBuf> {
-    if extract_dir.join("manifest.json").exists() {
+    if has_role_pack_marker(extract_dir) {
         return Ok(extract_dir.to_path_buf());
     }
     let dirs: Vec<PathBuf> = fs::read_dir(extract_dir)
@@ -190,13 +236,16 @@ fn find_extracted_role_root(extract_dir: &Path) -> Result<PathBuf> {
         .map(|e| e.path())
         .filter(|p| p.is_dir())
         .collect();
-    if dirs.len() == 1 && dirs[0].join("manifest.json").exists() {
+    if dirs.len() == 1 && has_role_pack_marker(&dirs[0]) {
         return Ok(dirs[0].clone());
     }
-    Err(AppError::InvalidParameter(
-        "manifest.json not found: expected at pack root or inside a single top-level folder (same layout as a zip extract)."
-            .into(),
-    ))
+    Err(AppError::InvalidParameter(format!(
+        "{PIPELINE_BLUEPRINT_FILENAME} or manifest.json not found: expected at pack root or inside a single top-level folder (same layout as a zip extract)."
+    )))
+}
+
+fn has_role_pack_marker(dir: &Path) -> bool {
+    dir.join(PIPELINE_BLUEPRINT_FILENAME).is_file() || dir.join("manifest.json").is_file()
 }
 
 fn load_role_for_pack_import(storage: &RoleStorage, root: &Path) -> Result<Role> {
@@ -208,7 +257,7 @@ fn load_role_for_pack_import(storage: &RoleStorage, root: &Path) -> Result<Role>
     })
 }
 
-/// Install parsed `root` (with `manifest.json`) into `roles/{id}/`.
+/// Install parsed role-pack `root` into `roles/{id}/`.
 fn install_role_from_resolved_root<F, P>(
     storage: &RoleStorage,
     root: &Path,
@@ -412,6 +461,52 @@ mod tests {
     use std::io::Write;
     use tempfile::tempdir;
 
+    fn write_minimal_blueprint_role(roles_root: &Path, id: &str) {
+        let role = roles_root.join(id);
+        fs::create_dir_all(role.join("scenes").join("default")).unwrap();
+        fs::write(
+            role.join("core_personality.txt"),
+            "A stable test personality.\n",
+        )
+        .unwrap();
+        fs::write(
+            role.join("scenes").join("default").join("scene.json"),
+            r#"{"name":"Default","time_windows":[],"keywords":[],"events":[]}"#,
+        )
+        .unwrap();
+        let blueprint = serde_json::json!({
+            "schema_version": 2,
+            "meta": {
+                "id": id,
+                "name": "Blueprint Role",
+                "version": "0.1.0",
+                "author": "test",
+                "description": "pure v2 import fixture",
+                "personality": [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
+                "relations": {
+                    "friend": { "initial_favorability": 50.0, "favor_multiplier": 1.0 }
+                },
+                "default_relation": "friend",
+                "scenes": ["default"],
+                "interaction_mode": "immersive"
+            },
+            "slot_registry": {
+                "memory": { "type": "memory", "label": "Memory", "backend": "builtin", "position": 0 },
+                "emotion": { "type": "emotion", "label": "Emotion", "backend": "builtin", "position": 0 },
+                "complex_emotion": { "type": "complex_emotion", "label": "Complex emotion", "backend": "builtin", "position": 1 },
+                "event": { "type": "event", "label": "Event", "backend": "builtin", "position": 0 },
+                "prompt": { "type": "prompt", "label": "Prompt", "backend": "builtin", "position": 0 },
+                "llm": { "type": "llm", "label": "LLM", "backend": "ollama", "position": 0 },
+                "agent": { "type": "agent", "label": "Agent", "backend": "builtin", "position": 0 }
+            }
+        });
+        fs::write(
+            role.join(PIPELINE_BLUEPRINT_FILENAME),
+            serde_json::to_string_pretty(&blueprint).unwrap(),
+        )
+        .unwrap();
+    }
+
     #[test]
     fn zip_entry_paths_reject_platform_specific_traversal() {
         for unsafe_path in [
@@ -466,6 +561,91 @@ mod tests {
             import_role_pack(&st, roles_src.path().join("mumu").as_path(), true, |_| {}).unwrap();
         assert_eq!(id, "mumu");
         assert!(st.load_role("mumu").is_ok());
+    }
+
+    #[test]
+    fn import_pure_blueprint_pack_from_zip_and_directory() {
+        let roles_src = tempdir().unwrap();
+        let roles_zip_dst = tempdir().unwrap();
+        let roles_dir_dst = tempdir().unwrap();
+        write_minimal_blueprint_role(roles_src.path(), "blueprint_role");
+
+        let source = RoleStorage::new(roles_src.path());
+        let archive_dir = tempdir().unwrap();
+        let archive = archive_dir.path().join("blueprint.ocpak");
+        export_role_pack(&source, "blueprint_role", &archive).unwrap();
+
+        let preview = peek_role_pack_manifest(&archive).unwrap();
+        assert_eq!(
+            preview,
+            (
+                "blueprint_role".into(),
+                "Blueprint Role".into(),
+                "0.1.0".into()
+            )
+        );
+
+        let zip_target = RoleStorage::new(roles_zip_dst.path());
+        let zip_id = import_role_pack(&zip_target, &archive, false, |_| {}).unwrap();
+        assert_eq!(zip_id, "blueprint_role");
+        assert_eq!(
+            zip_target.load_role(&zip_id).unwrap().name,
+            "Blueprint Role"
+        );
+
+        let dir_target = RoleStorage::new(roles_dir_dst.path());
+        let dir_id = import_role_pack(
+            &dir_target,
+            &roles_src.path().join("blueprint_role"),
+            false,
+            |_| {},
+        )
+        .unwrap();
+        assert_eq!(dir_id, "blueprint_role");
+        assert_eq!(
+            dir_target.load_role(&dir_id).unwrap().name,
+            "Blueprint Role"
+        );
+    }
+
+    #[test]
+    fn blueprint_preview_wins_over_legacy_manifest_at_same_depth() {
+        let dir = tempdir().unwrap();
+        write_minimal_blueprint_role(dir.path(), "preferred");
+        let role = dir.path().join("preferred");
+        fs::write(
+            role.join("manifest.json"),
+            r#"{"id":"legacy","name":"Legacy","version":"9.9.9"}"#,
+        )
+        .unwrap();
+
+        assert_eq!(
+            peek_role_pack_manifest(&role).unwrap(),
+            ("preferred".into(), "Blueprint Role".into(), "0.1.0".into())
+        );
+    }
+
+    #[test]
+    fn zip_preview_prefers_blueprint_over_manifest_at_same_depth() {
+        let dir = tempdir().unwrap();
+        let pak = dir.path().join("mixed.zip");
+        let file = File::create(&pak).unwrap();
+        let mut zip = ZipWriter::new(file);
+        let opts = SimpleFileOptions::default().compression_method(CompressionMethod::Stored);
+        zip.start_file("role/manifest.json", opts).unwrap();
+        zip.write_all(br#"{"id":"legacy","name":"Legacy","version":"9.9.9"}"#)
+            .unwrap();
+        zip.start_file("role/pipeline.ocblueprint", opts).unwrap();
+        zip.write_all(
+            br#"{"schema_version":2,"meta":{"id":"blueprint","name":"Blueprint","version":"1.2.3"},"slot_registry":{}}"#,
+        )
+        .unwrap();
+        zip.finish().unwrap();
+
+        assert_eq!(
+            peek_role_pack_manifest(&pak).unwrap(),
+            ("blueprint".into(), "Blueprint".into(), "1.2.3".into())
+        );
     }
 
     #[test]

@@ -40,7 +40,7 @@ export default {
     envCheckRolesUnreadable: '存在但不可读',
     envCheckRolesOk: '可读',
     envCheckRolesHint:
-      '路径来自 OCLIVE_ROLES_DIR 或默认；需为各角色子文件夹的父目录，且子目录含 manifest.json。',
+      '路径来自 OCLIVE_ROLES_DIR 或默认；需为各角色子文件夹的父目录，且子目录含 pipeline.ocblueprint（推荐）或 legacy manifest.json。',
     envCheckAppData: '应用数据目录',
     envCheckAppDataOk: '可写',
     envCheckAppDataFail: '不可写',

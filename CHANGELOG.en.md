@@ -12,6 +12,7 @@
 
 ### Fixed
 
+- **Pure-blueprint role-pack import loop**: Chat Pro preview and installation for `.ocpak`, `.zip`, and extracted directories now recognize `pipeline.ocblueprint` directly and prefer blueprint `meta` over a same-level legacy `manifest.json`. Runtime exports now use a `{role_id}/...` top-level directory, fixing in-app imports of v2 packs produced by the editor.
 - **Loopback endpoint proxy compatibility**: IPv4/IPv6 loopback endpoints for remote plugins, remote agents, and OpenAI-compatible LLMs no longer inherit user HTTP proxies, preventing `localhost` calls from being redirected into 502s/timeouts; the test mock now validates and echoes the JSON-RPC request id.
 - **Active-doc truth convergence**: product execution and release links now point to current SSOTs; `check-stale-paths` adds a G3/G12 guard against restoring `handoff/archive/*` product checklists as current truth.
 

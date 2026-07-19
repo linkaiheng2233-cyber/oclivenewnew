@@ -19,12 +19,12 @@
 
 | 来源 | 要求 |
 |------|------|
-| **`.ocpak` 或 `.zip`** | 标准 ZIP 容器，解压后须与 **`roles/{角色id}/`** 目录结构一致（根目录或唯一子目录下含 `manifest.json`，与编写器导出一致）。 |
-| **已解压目录** | 直接选择等同于 **`roles/{角色id}/`** 的那一文件夹（内含 `manifest.json`）；无需再打包。 |
+| **`.ocpak` 或 `.zip`** | 标准 ZIP 容器，推荐以 `{角色id}/` 为唯一顶层目录，并在其中包含 `pipeline.ocblueprint`；仍兼容 legacy `manifest.json` 包。 |
+| **已解压目录** | 直接选择等同于 **`roles/{角色id}/`** 的文件夹（含 `pipeline.ocblueprint`，或 legacy `manifest.json`）；无需再打包。 |
 
-导入前会读取 `manifest.json` 做预览；若本地已存在相同 **角色 ID**，会提示是否覆盖。与手动复制到 `roles/` 相比，应用内导入会走同一套校验与进度反馈。
+导入前优先读取 `pipeline.ocblueprint` → `meta` 做预览，legacy 包回退读取 `manifest.json`；若本地已存在相同 **角色 ID**，会提示是否覆盖。与手动复制到 `roles/` 相比，应用内导入会走同一套校验与进度反馈。
 
-**压缩包内多路径**：预览时优先 **`manifest.json`（ZIP 根）**，其次 **`{单层目录}/manifest.json`**，再才是更深路径下的 `manifest.json`（与 oclive 导出布局一致）。手工验收清单见 **[TESTING_ROLE_PACK_IMPORT.md](TESTING_ROLE_PACK_IMPORT.md)**。
+**压缩包内多路径**：预览按目录深度选择包根；同一深度同时存在两种格式时，优先 `pipeline.ocblueprint`。Chat Pro 导出、编写器与 CLI 统一使用 `{角色id}/...` 单层顶层目录。手工验收清单见 **[TESTING_ROLE_PACK_IMPORT.md](TESTING_ROLE_PACK_IMPORT.md)**。
 
 ---
 

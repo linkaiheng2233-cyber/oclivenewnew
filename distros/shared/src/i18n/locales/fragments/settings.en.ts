@@ -43,7 +43,7 @@ export default {
     envCheckRolesUnreadable: 'exists but not readable',
     envCheckRolesOk: 'readable',
     envCheckRolesHint:
-      'Path from OCLIVE_ROLES_DIR or default; must be the parent of per-role folders, each with manifest.json.',
+      'Path from OCLIVE_ROLES_DIR or default; must be the parent of per-role folders containing pipeline.ocblueprint (preferred) or a legacy manifest.json.',
     envCheckAppData: 'App data directory',
     envCheckAppDataOk: 'writable',
     envCheckAppDataFail: 'not writable',

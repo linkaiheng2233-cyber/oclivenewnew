@@ -344,7 +344,7 @@ cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/my-role --host
 | `pack validate <dir> --profile legacy` | legacy manifest/settings |
 | `pack validate <dir> --profile robot-soul` | legacy + RobotSoulPack（见 §6） |
 | `pack create -o <out> --id <id> [--flat]` | 生成最小可校验包（`--flat` 时 `<out>` 即为角色根） |
-| `pack publish <dir> [-o file.oclivepack]` | ZIP 打包；根目录为 `manifest.id` |
+| `pack publish <dir> [-o file.oclivepack]` | ZIP 打包；唯一顶层目录名为 `meta.id`（v2/v3）或 `manifest.id`（legacy） |
 | `init … --skip-role-pack` | 生成内核工程时不创建 `distros/chat-pro/roles/` |
 
 详见 [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md)。
