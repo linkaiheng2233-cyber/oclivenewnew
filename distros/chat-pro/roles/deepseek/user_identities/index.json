@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "default_identity_id": "research_partner",
+  "identities": {
+    "research_partner": {
+      "display_name": "研究搭档",
+      "template_file": "research_partner.md",
+      "maps_to_relation_id": "research_partner"
+    },
+    "friend": {
+      "display_name": "朋友",
+      "template_file": "friend.md",
+      "maps_to_relation_id": "friend"
+    },
+    "learner": {
+      "display_name": "学习伙伴",
+      "template_file": "learner.md",
+      "maps_to_relation_id": "learner"
+    }
+  }
+}
