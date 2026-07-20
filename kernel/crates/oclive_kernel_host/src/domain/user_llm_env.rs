@@ -77,7 +77,7 @@ pub async fn apply_user_llm_env_from_db(db: &impl AppSettingsPort) -> crate::err
     if provider.is_empty() && !remote_url.is_empty() && cloud_api_token_configured(db, None).await?
     {
         provider = "cloud".to_string();
-        let _ = db.upsert_app_setting(KEY_LLM_PROVIDER, "cloud").await;
+        db.upsert_app_setting(KEY_LLM_PROVIDER, "cloud").await?;
     }
     let backend_env = match provider.as_str() {
         "cloud" if !remote_url.is_empty() => Some("remote"),
@@ -153,7 +153,15 @@ pub async fn apply_user_llm_env(state: &AppState) -> crate::error::Result<()> {
             .db_manager
             .upsert_app_setting(KEY_REMOTE_TOKEN, t.trim())
             .await?;
-        let _ = secrets.write_token_file(app_data, t.trim());
+        if let Err(error) = secrets.write_token_file(app_data, t.trim()) {
+            tracing::warn!(
+                target: "oclive_llm",
+                error_code = "LLM_TOKEN_BACKUP_WRITE_FAILED",
+                app_data = %app_data.display(),
+                %error,
+                "cloud LLM token file backup could not be written"
+            );
+        }
     } else {
         secrets.set_cached_remote_llm_token(None);
     }

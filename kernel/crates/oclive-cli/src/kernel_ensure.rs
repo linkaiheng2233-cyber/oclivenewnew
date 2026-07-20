@@ -4,10 +4,10 @@ use anyhow::{Context, Result};
 use clap::Parser;
 use oclive_kernel_runtime::{
     apply_promote_to_candidate, build_resolve_plan, discover_spawn_kernel_candidates,
-    ensure_app_data_dir, find_app_data_dir_for_host, promote_with_backup,
-    terminate_listeners_on_port, ActiveProfileSummary, DistroProfileRequirements, KernelActionKind,
-    KernelBinaryManifest, KernelCandidate, KernelHealthJson, PolicyContext, ProfileCompat,
-    DEFAULT_API_PORT, ENV_DISTRO_ID, ENV_DISTRO_PROFILE, ENV_HTTP_API_MOCK_LLM, ENV_ROLES_DIR,
+    ensure_app_data_dir, find_app_data_dir_for_host, terminate_listeners_on_port,
+    ActiveProfileSummary, DistroProfileRequirements, KernelActionKind, KernelBinaryManifest,
+    KernelCandidate, KernelHealthJson, PolicyContext, ProfileCompat, DEFAULT_API_PORT,
+    ENV_DISTRO_ID, ENV_DISTRO_PROFILE, ENV_HTTP_API_MOCK_LLM, ENV_ROLES_DIR,
 };
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
@@ -162,11 +162,6 @@ fn execute_plan(
         .context("candidate binary not in discovery list")?;
 
     if sel.promote_to_shared {
-        if let Some(m) = KernelBinaryManifest::read_sidecar(&candidate.binary) {
-            let _ = promote_with_backup(&candidate.binary, Some(&m));
-        } else {
-            let _ = promote_with_backup(&candidate.binary, None);
-        }
         apply_promote_to_candidate(&mut candidate);
     }
 

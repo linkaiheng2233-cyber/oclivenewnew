@@ -31,6 +31,7 @@ pub fn apply_promote_to_candidate(candidate: &mut KernelCandidate) {
         Err(e) => {
             tracing::warn!(
                 target: "oclive_desktop",
+                error_code = "KERNEL_PROMOTION_FAILED",
                 error = %e,
                 "promote_with_backup failed; spawning from original candidate"
             );
@@ -83,7 +84,8 @@ fn backup_current_shared() -> Result<Option<PathBuf>, String> {
     let dest_bin = dir.join(name);
     std::fs::copy(&shared, &dest_bin).map_err(|e| format!("backup copy: {e}"))?;
     if let Some(m) = KernelBinaryManifest::read_sidecar(&shared) {
-        let _ = m.write_sidecar(&dest_bin);
+        m.write_sidecar(&dest_bin)
+            .map_err(|e| format!("backup manifest {}: {e}", dest_bin.display()))?;
     }
     prune_old_backups();
     Ok(Some(dir))
@@ -93,7 +95,15 @@ fn prune_old_backups() {
     let mut backups = list_runtime_backups();
     while backups.len() > MAX_BACKUPS {
         if let Some(old) = backups.pop() {
-            let _ = std::fs::remove_dir_all(old);
+            if let Err(error) = std::fs::remove_dir_all(&old) {
+                tracing::warn!(
+                    target: "oclive_desktop",
+                    error_code = "KERNEL_BACKUP_PRUNE_FAILED",
+                    backup_path = %old.display(),
+                    %error,
+                    "old shared-kernel backup could not be removed"
+                );
+            }
         }
     }
 }
@@ -170,7 +180,8 @@ pub fn rollback_shared_kernel() -> Result<PathBuf, String> {
                 .is_some_and(|n| n.contains("oclive-kernel-server") || n.contains("kernel-server"))
         })
         .ok_or_else(|| "backup folder has no kernel binary".to_string())?;
-    let _ = backup_current_shared();
+    backup_current_shared()
+        .map_err(|e| format!("backup current shared kernel before rollback: {e}"))?;
     let dest = promote_to_shared_runtime(&binary)?;
     if let Some(m) = KernelBinaryManifest::read_sidecar(&binary) {
         m.write_sidecar(&dest)?;

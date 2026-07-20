@@ -67,7 +67,7 @@
 | **RUSTSEC-2026-0097** | `rand` 0.7 | **已清零** | 2026-07-14 K-PLATFORM-01a Full · Tauri 2 后无 `rand` 0.7 |
 | **RUSTSEC-2026-0190** | `anyhow` | **已修复** — 锁文件 **1.0.103** | 2026-07-14 K-SUPPLY-05 `cargo update` |
 
-忽略列表与理由见 [`.cargo/audit.toml`](../.cargo/audit.toml) 与 [SECURITY_AUDIT_SCOPE.md](./SECURITY_AUDIT_SCOPE.md)。
+忽略列表与理由见 [`.cargo/audit.toml`](../../.cargo/audit.toml) 与 [SECURITY_AUDIT_SCOPE.md](./SECURITY_AUDIT_SCOPE.md)。
 
 ---
 

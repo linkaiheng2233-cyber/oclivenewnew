@@ -16,4 +16,4 @@
 | [VSCODE_MCP_HTTP_GATE.md](VSCODE_MCP_HTTP_GATE.md) | MCP HTTP 门禁 |
 | [VSCODE_STREAM_THEATER_GATE.md](VSCODE_STREAM_THEATER_GATE.md) | 流式剧场 gate |
 
-**Chat Pro（desktop）** = 主应用默认发行版；工作文档散见 `handoff/` 根目录与 [`creator-docs/`](../creator-docs/)，不单建 `handoff/desktop/`。
+**Chat Pro（desktop）** = 主应用默认发行版；工作文档散见 `handoff/` 根目录与 [`creator-docs/`](../../creator-docs/)，不单建 `handoff/desktop/`。

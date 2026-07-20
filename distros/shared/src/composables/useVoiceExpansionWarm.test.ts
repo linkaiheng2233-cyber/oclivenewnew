@@ -84,4 +84,28 @@ describe('useVoiceExpansionWarm', () => {
     expect(mod.getVoiceSidecarEndpoint('profile-a')).toBe('http://127.0.0.1:50101')
     expect(mod.getVoiceSidecarEndpoint('profile-b')).toBe('http://127.0.0.1:50102')
   })
+
+  it('does not expose an unconfirmed fallback endpoint to direct fetch', async () => {
+    invokeMock.mockImplementation(async (_id: string, method: string) => {
+      if (method === 'voice.probe_tts') {
+        return {
+          ok: false,
+          reason: 'http_unreachable',
+          sidecar_endpoint: 'http://127.0.0.1:50000',
+        }
+      }
+      return { ok: false }
+    })
+
+    const mod = await import('./useVoiceExpansionWarm')
+    mod.resetVoiceExpansionWarmSchedule()
+    await expect(
+      mod.resolveVoiceSidecarEndpoint(
+        'bundled-cosyvoice2-zh',
+        'http://127.0.0.1:50000',
+        () => false,
+      ),
+    ).resolves.toBeNull()
+    expect(mod.getVoiceSidecarEndpoint('bundled-cosyvoice2-zh')).toBeNull()
+  })
 })

@@ -370,7 +370,7 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
     }
   }
 
-  async function sidecarEndpointFor(cfg: VoiceRuntimeConfig): Promise<string> {
+  async function sidecarEndpointFor(cfg: VoiceRuntimeConfig): Promise<string | null> {
     return resolveVoiceSidecarEndpoint(
       cfg.tts_profile,
       resolveBundledSidecarEndpoint(cfg.local_synth_endpoint),
@@ -387,6 +387,8 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
     if (streamPrefetchByKey.size > 0)
       return
     const endpoint = await sidecarEndpointFor(job.cfg)
+    if (!endpoint)
+      return
     const prefetch = startCosyvoiceSidecarPrefetch(
       job.key,
       endpoint,
@@ -411,11 +413,11 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
       if (generation !== speakGeneration)
         return
 
-      const useStream = shouldUseDirectSidecarStream(job.cfg.synth_provider, job.cfg.tts_engine)
-      if (useStream) {
+      const wantsStream = shouldUseDirectSidecarStream(job.cfg.synth_provider, job.cfg.tts_engine)
+      const endpoint = wantsStream ? await sidecarEndpointFor(job.cfg) : null
+      if (endpoint) {
         if (generation !== speakGeneration)
           return
-        const endpoint = await sidecarEndpointFor(job.cfg)
         const prefetch = takeStreamPrefetch(job.key)
         const streamRes = await playCosyvoiceSidecarStream(
           endpoint,

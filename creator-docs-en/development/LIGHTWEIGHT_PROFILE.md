@@ -4,7 +4,7 @@
 
 This document records **Release settings, dependency slimming, audits, and binary size baselines**, aligned with root `Cargo.toml` / `distros/desktop-tauri/Cargo.lock`. Audience: maintainers and release owners.
 
-**Related**: known vulns and upgrade path in **[security/KNOWN_VULNERABILITIES.md](../creator-docs/security/KNOWN_VULNERABILITIES.md)**; audit scope boundaries in **[security/SECURITY_AUDIT_SCOPE.md](../creator-docs/security/SECURITY_AUDIT_SCOPE.md)** (complements this doc §6.4).
+**Related**: known vulns and upgrade path in **[security/KNOWN_VULNERABILITIES.md](../../creator-docs/security/KNOWN_VULNERABILITIES.md)**; audit scope boundaries in **[security/SECURITY_AUDIT_SCOPE.md](../../creator-docs/security/SECURITY_AUDIT_SCOPE.md)** (complements this doc §6.4).
 
 ---
 
@@ -17,7 +17,7 @@ This document records **Release settings, dependency slimming, audits, and binar
 | `profile.release.strip` | *(unset)* | Optionally add `strip = "debuginfo"` or `"symbols"` to shrink release artifacts further (validate crash symbol needs per release) |
 | `profile.release.codegen-units` | *(unset)* | Optionally `codegen-units = 1` for smaller binary and more reproducible perf (slower compile) |
 
-**`target-dir`**: see repo root [`.cargo/config.toml`](../.cargo/config.toml); build output can live outside the tree under `../oclive-dev-artifacts/oclivenewnew-cargo-target/`.
+**`target-dir`**: see repo root [`.cargo/config.toml`](../../.cargo/config.toml); build output can live outside the tree under `../oclive-dev-artifacts/oclivenewnew-cargo-target/`.
 
 ---
 
@@ -31,7 +31,7 @@ This document records **Release settings, dependency slimming, audits, and binar
 
 ### §6.4 Audit status (current)
 
-**Known vulnerabilities under tracking**; **do not claim zero vulns**. Vulnerability-level hits and roadmap: **[KNOWN_VULNERABILITIES.md](../creator-docs/security/KNOWN_VULNERABILITIES.md)** (see that file for last update date).
+**Known vulnerabilities under tracking**; **do not claim zero vulns**. Vulnerability-level hits and roadmap: **[KNOWN_VULNERABILITIES.md](../../creator-docs/security/KNOWN_VULNERABILITIES.md)** (see that file for last update date).
 
 Summary (**2026-05-12**, `cargo audit --no-fetch --stale`, `distros/desktop-tauri/Cargo.lock`; matches that CLI run):
 

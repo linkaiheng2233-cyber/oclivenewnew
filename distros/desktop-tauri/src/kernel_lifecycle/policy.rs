@@ -6,8 +6,7 @@ use super::spawn::{spawn_kernel, wait_for_health};
 use crate::kernel_attach::{KernelHealthJson, KernelHttpClient};
 use oclive_kernel_runtime::{
     apply_promote_to_candidate, build_resolve_plan, discover_spawn_kernel_candidates,
-    promote_with_backup, KernelActionKind, KernelActionPlan, KernelBinaryManifest, PolicyContext,
-    ReplaceReason, ENV_DISTRO_PROFILE,
+    KernelActionKind, KernelActionPlan, PolicyContext, ReplaceReason, ENV_DISTRO_PROFILE,
 };
 use oclive_kernel_types::AttachReason;
 use std::path::PathBuf;
@@ -185,8 +184,6 @@ async fn spawn_from_plan(
     };
 
     if sel.promote_to_shared {
-        let manifest = KernelBinaryManifest::read_sidecar(&candidate.binary);
-        let _ = promote_with_backup(&candidate.binary, manifest.as_ref());
         apply_promote_to_candidate(&mut candidate);
     }
 

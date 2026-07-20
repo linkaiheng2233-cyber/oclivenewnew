@@ -72,7 +72,25 @@ fn serve_ocliveplugin_asset(
     };
     let uri = request.uri().to_string();
     let Some((plugin_id, rel)) = plugin_asset_from_request_uri(&uri) else {
-        return http_text(404, b"unknown uri".to_vec(), "text/plain; charset=utf-8");
+        let safe_uri = uri
+            .split(['?', '#'])
+            .next()
+            .unwrap_or_default()
+            .chars()
+            .filter(|c| !c.is_control())
+            .take(256)
+            .collect::<String>();
+        tracing::warn!(
+            target: "oclive_plugin",
+            error_code = "PLUGIN_ASSET_URI_INVALID",
+            request_uri = %safe_uri,
+            "plugin asset request URI rejected"
+        );
+        return http_text(
+            404,
+            b"PLUGIN_ASSET_URI_INVALID: see oclive_plugin logs".to_vec(),
+            "text/plain; charset=utf-8",
+        );
     };
     if state
         .directory_plugins

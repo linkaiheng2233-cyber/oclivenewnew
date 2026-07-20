@@ -3,7 +3,7 @@
 //! **Role**: kernel-shared **DTOs, error types, and config structs** (`Role`, `SendMessageRequest`, `AppError`, etc.); **contains no business logic or I/O**.
 //!
 //! **Upstream**: [`oclive_validation`](https://docs.rs/oclive_validation) (blueprint / manifest validation types such as `SlotRegistryEntry`).
-//! **Downstream**: `oclive_kernel_contracts`, `oclive_kernel_runtime`, and `src-tauri` model re-exports.
+//! **Downstream**: `oclive_kernel_contracts`, `oclive_kernel_runtime`, and `distros/desktop-tauri` model re-exports.
 //!
 //! **Decoupling note**: `oclive_validation` is a path dependency today; some manifest/blueprint types are
 //! re-exported for convenience. A future split may move validation-only types behind a narrower boundary

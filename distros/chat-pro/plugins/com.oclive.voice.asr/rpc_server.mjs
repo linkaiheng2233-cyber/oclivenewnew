@@ -19,8 +19,25 @@ const DEFAULT_TTS_PROFILE = "bundled-cosyvoice2-zh";
 const COSYVOICE_SYNTH_TIMEOUT_MS = 600_000;
 const COSYVOICE_WARM_TIMEOUT_MS = 900_000;
 
+function readInitialPluginConfig() {
+  const raw = String(
+    process.env.OCLIVE_PLUGIN_CONFIG || process.env.OCLIVE_DEBUG_PLUGIN_CONFIG || "",
+  ).trim();
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) return parsed;
+    console.error("[PLUGIN_CONFIG_INVALID] startup config must be a JSON object");
+  } catch (error) {
+    console.error(
+      `[PLUGIN_CONFIG_INVALID] startup config parse failed: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+  return null;
+}
+
 /** @type {Record<string, unknown> | null} */
-let pluginConfig = null;
+let pluginConfig = readInitialPluginConfig();
 
 /** @type {import("node:child_process").ChildProcess | null} */
 let cosyvoiceSidecarChild = null;
@@ -1150,10 +1167,12 @@ async function handleProbeTts(params) {
   const profileRec = resolveTtsProfileRecord(profileId);
   const routing = synthRoutingFromConfig(profileRec);
   let sidecarEndpoint = routing.localEndpoint;
+  let sidecarReady = false;
   if (shouldRunBundledSidecar(profileRec) && pluginConfig?.tts_expansion_enabled === true) {
     const sidecar = await ensureCosyvoiceSidecar(profileId);
     if (sidecar.ok) {
       sidecarEndpoint = sidecar.sidecar_endpoint || sidecarEndpoint;
+      sidecarReady = true;
     }
   }
   const modelDir = resolveTtsModelDir(profileId);
@@ -1184,6 +1203,7 @@ async function handleProbeTts(params) {
     supports_stream: engineSupportsStream(engine, routing.provider),
     supports_warm: engineSupportsWarm(engine),
     expansion_enabled: pluginConfig?.tts_expansion_enabled === true,
+    sidecar_ready: sidecarReady || probe.ok === true,
   };
 }
 

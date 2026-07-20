@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Print live project scale metrics (review snapshot baseline: 2026-06-26).
+ * Print live project scale metrics.
  * Usage: node scripts/project-scale.mjs
  */
 import fs from 'fs';
@@ -67,8 +67,6 @@ function main() {
   console.log(`  Rust .rs files (kernel + desktop-tauri): ${rsFiles}`);
   console.log(`  frontend .vue + .ts (shared + chat-pro + theater): ${frontendFiles}`);
   console.log(`  SQL migrations: ${migrations}`);
-  console.log('');
-  console.log('Snapshot reference (2026-06-26 quality review): 12 / ~578 / 252 / 34');
 }
 
 main();

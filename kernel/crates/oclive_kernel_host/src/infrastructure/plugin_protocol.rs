@@ -75,15 +75,33 @@ pub fn mime_for_plugin_asset(rel: &str) -> &'static str {
 
 #[must_use]
 pub fn plugin_asset_from_request_uri(uri: &str) -> Option<(String, String)> {
-    let lower = uri.to_ascii_lowercase();
-    let marker = "ocliveplugin.localhost/";
-    let idx = lower.find(marker)?;
-    let after = uri.get(idx + marker.len()..)?;
+    // Wry maps custom protocols to HTTPS on Windows/Linux and converts the
+    // request back to `ocliveplugin://localhost/...` before invoking Tauri's
+    // protocol handler. Accept both exact representations, but never search
+    // for the host marker inside an arbitrary URI.
+    const PREFIXES: [&str; 3] = [
+        "ocliveplugin://localhost/",
+        "https://ocliveplugin.localhost/",
+        "http://ocliveplugin.localhost/",
+    ];
+    let after = PREFIXES.iter().find_map(|prefix| {
+        let candidate = uri.get(..prefix.len())?;
+        candidate
+            .eq_ignore_ascii_case(prefix)
+            .then(|| uri.get(prefix.len()..))
+            .flatten()
+    })?;
     let path_only = after.split(['?', '#']).next()?;
     let mut parts = path_only.split('/').filter(|s| !s.is_empty());
     let plugin_id = parts.next()?.to_string();
     let rest: Vec<&str> = parts.collect();
-    if rest.contains(&"..") {
+    if plugin_id == "."
+        || plugin_id == ".."
+        || plugin_id.contains('\\')
+        || rest
+            .iter()
+            .any(|segment| *segment == "." || *segment == ".." || segment.contains('\\'))
+    {
         return None;
     }
     let rel = rest.join("/");
@@ -91,4 +109,53 @@ pub fn plugin_asset_from_request_uri(uri: &str) -> Option<(String, String)> {
         return None;
     }
     Some((plugin_id, rel))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::plugin_asset_from_request_uri;
+
+    #[test]
+    fn parses_wry_custom_protocol_uri() {
+        assert_eq!(
+            plugin_asset_from_request_uri(
+                "ocliveplugin://localhost/com.oclive.voice.asr/ui/sidebar.html"
+            ),
+            Some((
+                "com.oclive.voice.asr".to_string(),
+                "ui/sidebar.html".to_string()
+            ))
+        );
+    }
+
+    #[test]
+    fn parses_mapped_http_uri_case_insensitively() {
+        assert_eq!(
+            plugin_asset_from_request_uri(
+                "HTTPS://OCLIVEPLUGIN.LOCALHOST/com.oclive.voice.asr/ui/asr.html?slot=voice#root"
+            ),
+            Some((
+                "com.oclive.voice.asr".to_string(),
+                "ui/asr.html".to_string()
+            ))
+        );
+    }
+
+    #[test]
+    fn rejects_marker_in_untrusted_uri_and_path_traversal() {
+        assert_eq!(
+            plugin_asset_from_request_uri(
+                "https://example.invalid/?next=https://ocliveplugin.localhost/p/ui.html"
+            ),
+            None
+        );
+        assert_eq!(
+            plugin_asset_from_request_uri("ocliveplugin://localhost/p/../secret.txt"),
+            None
+        );
+        assert_eq!(
+            plugin_asset_from_request_uri("ocliveplugin://localhost/p"),
+            None
+        );
+    }
 }

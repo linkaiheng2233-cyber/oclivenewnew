@@ -13,7 +13,12 @@ const MIGRATION_MARKER: &str = ".migrated_from_tauri";
 /// Returns an error when migration is required but copying fails (caller must not open DB for write).
 pub fn ensure_canonical_app_data_ready(canonical: &Path) -> Result<(), String> {
     if paths::env_flag_is_truthy(ENV_SKIP_APP_DATA_MIGRATION) {
-        let _ = fs::create_dir_all(canonical);
+        fs::create_dir_all(canonical).map_err(|e| {
+            format!(
+                "create canonical dir while migration is skipped {}: {e}",
+                canonical.display()
+            )
+        })?;
         return Ok(());
     }
 

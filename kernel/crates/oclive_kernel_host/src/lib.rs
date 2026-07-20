@@ -98,7 +98,7 @@ pub fn init_tracing_with_log_dir(
         .with(layers)
         .try_init()
     {
-        eprintln!("tracing subscriber init failed: {e}");
+        eprintln!("[OCLIVE_TRACING_INIT_FAILED] tracing subscriber init failed: {e}");
     }
 
     file_guard
@@ -116,13 +116,13 @@ pub fn run_api_server(port: u16) {
     {
         Ok(rt) => rt,
         Err(e) => {
-            eprintln!("failed to build tokio runtime: {e}");
+            eprintln!("[OCLIVE_API_RUNTIME_INIT_FAILED] failed to build tokio runtime: {e}");
             std::process::exit(1);
         }
     };
     let r = rt.block_on(http_api::serve_api(port));
     if let Err(e) = r {
-        eprintln!("{e}");
+        eprintln!("[OCLIVE_API_SERVER_FAILED] {e}");
         std::process::exit(1);
     }
 }

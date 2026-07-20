@@ -1,6 +1,6 @@
 # 角色包 `manifest.json` 与 `settings.json`（创作者 · legacy）
 
-> **新包推荐**：使用 **`pipeline.ocblueprint`**（`schema_version: 2`）为 SSOT，勿与 legacy 双文件并存。格式与校验见 **[creator-docs/role-pack/ROLE_PACK_SPEC.md](../creator-docs/role-pack/ROLE_PACK_SPEC.md)** · 职责边界 **[handoff/ROLE_PACK_BOUNDARY.md](../handoff/ROLE_PACK_BOUNDARY.md)**。默认 **`oclive pack validate`** 走 v2；仅维护旧包时加 **`--profile legacy`**。
+> **新包推荐**：使用 **`pipeline.ocblueprint`**（`schema_version: 2`）为 SSOT，勿与 legacy 双文件并存。格式与校验见 **[creator-docs/role-pack/ROLE_PACK_SPEC.md](../../../creator-docs/role-pack/ROLE_PACK_SPEC.md)** · 职责边界 **[handoff/ROLE_PACK_BOUNDARY.md](../../../handoff/ROLE_PACK_BOUNDARY.md)**。默认 **`oclive pack validate`** 走 v2；仅维护旧包时加 **`--profile legacy`**。
 >
 > **v0.3 契约摘要**：**人设 Tier0** = **`core_personality.txt`**（`prompts/system.md` 不参与运行时 Prompt）。**回复质量锚点** = 蓝图 **`meta.reply_quality_anchor`** 或内核默认；`prompts/reply_quality_anchor.md` 为可选镜像。编写器 **0.3.x** 导出须含 `pipeline.ocblueprint`、`core_personality.txt`，并可选 `config.json`、`user_identities/index.json`。
 
@@ -298,7 +298,7 @@
 
 ### 5.3 演化参数 `evolution`
 
-控制事件与 **档案模式** 下游走（细项以源码 `EvolutionConfig` / `EvolutionConfigDisk` 为准）。设计理念见仓库 **[docs/personality-archive-notes.md](../docs/personality-archive-notes.md)**。
+控制事件与 **档案模式** 下游走（细项以源码 `EvolutionConfig` / `EvolutionConfigDisk` 为准）。设计理念见仓库 **[docs/personality-archive-notes.md](../../../docs/personality-archive-notes.md)**。
 
 | 字段 | 说明 |
 |------|------|

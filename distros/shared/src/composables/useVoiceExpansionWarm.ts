@@ -2,8 +2,6 @@ import { directoryPluginInvoke, getPluginSettingsUi } from '@oclive/shared/api'
 import { VOICE_ASR_PLUGIN_ID } from '@oclive/shared/lib/voiceAsrEvents'
 
 const DEFAULT_TTS_PROFILE = 'bundled-cosyvoice2-zh'
-const DEFAULT_SIDECAR = 'http://127.0.0.1:50000'
-
 const warmPromises = new Map<string, Promise<void>>()
 const cachedSidecarEndpoints = new Map<string, string>()
 
@@ -12,10 +10,14 @@ interface VoiceWarmResult {
   warmed?: boolean
   already_warmed?: boolean
   sidecar_endpoint?: string
+  sidecar_ready?: boolean
 }
 
 function rememberSidecarEndpoint(profile: string, result: unknown): void {
-  const ep = (result as VoiceWarmResult | null)?.sidecar_endpoint?.trim()
+  const candidate = result as VoiceWarmResult | null
+  if (candidate?.ok !== true && candidate?.sidecar_ready !== true)
+    return
+  const ep = candidate.sidecar_endpoint?.trim()
   if (ep)
     cachedSidecarEndpoints.set(profile, ep)
 }
@@ -120,9 +122,9 @@ export async function scheduleVoiceExpansionWarm(
  */
 export async function resolveVoiceSidecarEndpoint(
   profile: string,
-  fallbackEndpoint: string,
+  _fallbackEndpoint: string,
   isPluginDisabled: (id: string) => boolean = () => false,
-): Promise<string> {
+): Promise<string | null> {
   const cachedEndpoint = cachedSidecarEndpoints.get(profile)
   if (cachedEndpoint)
     return cachedEndpoint
@@ -146,8 +148,7 @@ export async function resolveVoiceSidecarEndpoint(
       return resolvedEndpoint
   }
 
-  const trimmed = fallbackEndpoint.trim()
-  return trimmed || DEFAULT_SIDECAR
+  return null
 }
 
 /** Fire-and-forget startup warm after plugins are ready. */

@@ -103,7 +103,6 @@
 
 | 项 | 说明 |
 |----|------|
-| [`scripts/split-tauri-api.mjs`](../../scripts/split-tauri-api.mjs) | 模板已改为 `@tauri-apps/api/core`（避免再生成脏码） |
 | [`helpers.test.ts`](../../distros/shared/src/api/helpers.test.ts) | 注释已改为「Tauri v2 IPC」 |
 | `@tauri-apps/plugin-shell`（npm） | `distros/shared/package.json` 仍声明；**生产 TS/Vue 零 import** → **Observe**（卸载另波，非 01b） |
 | `e2e-mock` / vite `--mode e2e` alias | preview 硬门禁所需；**非**生产路径 |

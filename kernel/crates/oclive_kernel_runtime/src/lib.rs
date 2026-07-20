@@ -3,7 +3,7 @@
 //! **Role**: hosts domain engine fragments and HTTP constants reusable in **headless / embedded** scenarios; the **main orchestration** lives in [`oclive_kernel_host`](https://docs.rs/oclive_kernel_host)'s `chat_engine::process_message` (re-exported by `oclivenewnew-tauri`).
 //!
 //! **Upstream**: [`oclive_kernel_contracts`](https://docs.rs/oclive_kernel_contracts), [`oclive_kernel_types`](https://docs.rs/oclive_kernel_types).
-//! **Downstream**: `oclive_kernel_server`, `src-tauri` (paths / kernel discovery only).
+//! **Downstream**: `oclive_kernel_server`, `distros/desktop-tauri` (paths / kernel discovery only).
 //!
 //! **Key decision**: DTOs and port traits live in `oclive_kernel_types` / `oclive_kernel_contracts`; import them directly — this crate does not re-export them.
 
@@ -104,6 +104,37 @@ pub fn resolve_api_port(cli_port: Option<u16>) -> u16 {
         .unwrap_or(DEFAULT_API_PORT)
 }
 
+/// Parse the shared `--port PORT` command-line option used by kernel hosts.
+///
+/// Unknown options are left to the host because the desktop and headless
+/// binaries expose different flags.
+///
+/// # Errors
+///
+/// Returns a diagnostic when `--port` has no value or the value is not a
+/// non-zero `u16`.
+pub fn parse_api_port_arg(args: &[String]) -> Result<Option<u16>, String> {
+    let mut cli_port = None;
+    let mut i = 1usize;
+    while i < args.len() {
+        if args[i] == "--port" {
+            let raw = args
+                .get(i + 1)
+                .ok_or_else(|| "--port requires a value".to_string())?;
+            let port = raw
+                .parse::<u16>()
+                .map_err(|_| format!("invalid --port value: {raw}"))?;
+            if port == 0 {
+                return Err("invalid --port value: 0".to_string());
+            }
+            cli_port = Some(port);
+            i += 1;
+        }
+        i += 1;
+    }
+    Ok(cli_port)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -116,5 +147,22 @@ mod tests {
     #[test]
     fn resolve_api_port_default() {
         assert_eq!(resolve_api_port(None), DEFAULT_API_PORT);
+    }
+
+    #[test]
+    fn parse_api_port_arg_rejects_missing_invalid_and_zero_values() {
+        let args = |values: &[&str]| {
+            values
+                .iter()
+                .map(|value| (*value).to_string())
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(
+            parse_api_port_arg(&args(&["oclive", "--api", "--port", "9123"])).unwrap(),
+            Some(9123)
+        );
+        assert!(parse_api_port_arg(&args(&["oclive", "--port"])).is_err());
+        assert!(parse_api_port_arg(&args(&["oclive", "--port", "invalid"])).is_err());
+        assert!(parse_api_port_arg(&args(&["oclive", "--port", "0"])).is_err());
     }
 }

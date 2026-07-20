@@ -10,7 +10,7 @@ impl DirectoryPluginRuntime {
     /// # Errors
     ///
     /// Returns [`Err`] with a human-readable message when the operation fails.
-    /// Same as [`Self::ensure_rpc_url`] but does not reject disabled plugins; may inject `OCLIVE_DEBUG_PLUGIN_CONFIG`.
+    /// Same as [`Self::ensure_rpc_url`] but does not reject disabled plugins; may override the child `OCLIVE_PLUGIN_CONFIG`.
     pub fn ensure_rpc_url_for_debug(
         &self,
         plugin_id: &str,

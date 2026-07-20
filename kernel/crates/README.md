@@ -48,7 +48,7 @@ flowchart BT
 
 - 单条消息流程 → `oclive_kernel_host/.../process_message.rs`
 - Prompt 段落 → `oclive_kernel_runtime/.../prompt_builder/mod.rs`（段落公式 `sections.rs`）
-- Tauri 命令 → `src-tauri/src/api/*.rs` + `lib.rs` 注册
+- Tauri 命令 → `../../distros/desktop-tauri/src/api/*.rs` + `lib.rs` 注册
 - 角色包校验 → `oclive_validation`
 - 分层纪律 → [handoff/ARCHITECTURE_LAYERING.md](../../handoff/ARCHITECTURE_LAYERING.md) + [oclive_kernel_host/src/domain/README.md](oclive_kernel_host/src/domain/README.md)
 

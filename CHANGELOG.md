@@ -13,12 +13,15 @@
 
 ### Fixed
 
+- **工程路径与启动诊断收敛**：修复 `oclive-cli init --kernel-source` 仍生成旧 `src-tauri` / 根 `crates` 路径的问题，并加入真实仓库布局断言；桌面、无头服务与生成工程共享同一 `--port` 解析，缺失、零值或非法端口均给出稳定诊断并以退出码 2 终止；应用数据目录初始化、共享内核备份/回滚与云模型 token 文件备份失败不再静默，共享内核提升也不再重复执行。
+- **目录插件界面与语音侧车启动**：修复 Windows/WebView2 回传 `ocliveplugin://localhost/...` 时语音识别区和侧栏插件显示 `unknown uri`；目录插件子进程启动即载入持久化 `config.json`，流式朗读只直连已确认可用的侧车，否则直接走 RPC；协议与配置失败写入带稳定标识的 `oclive_plugin` 日志。
 - **纯蓝图角色包导入闭环**：Chat Pro 的 `.ocpak` / `.zip` / 已解压目录预览与安装现在原生识别 `pipeline.ocblueprint`，同层存在 legacy `manifest.json` 时以蓝图 `meta` 为准；运行时导出统一使用 `{role_id}/...` 顶层目录，修复编写器 v2 包无法经应用内入口导入的问题。
 - **本机端点代理兼容**：Remote 插件、Remote Agent 与 OpenAI-compatible LLM 的 IPv4/IPv6 回环端点不再继承用户 HTTP 代理，避免 `localhost` 请求被错误转发后出现 502/超时；测试 mock 同步校验并回显 JSON-RPC request id。
 - **活跃文档 truth 收敛**：产品执行与发版入口改链现行 SSOT；`check-stale-paths` 新增 G3/G12 守卫，禁止将 `handoff/archive/*` 产品清单重新写成现行依据。
 
 ### Removed
 
+- **已完成使命的维护脚本**：移除已执行完毕的布局迁移、文件拆分、批量修复脚本，以及未形成受支持工作流的实验性本地 TTS 安装脚本；现行路径由 `check-stale-paths` / 文档链接门禁和正式 CLI 持续验证，历史仍可由 Git 恢复。
 - **官方角色包调整**：移除 `shimeng`（诗梦）角色包；依赖官方磁盘角色的测试与示例改用仍发行的角色包或独立测试夹具。
 
 ---
@@ -196,7 +199,7 @@
 ### Breaking
 
 - **角色包 v2**：新包以 **`pipeline.ocblueprint`**（`schema_version: 2`）为唯一配置中枢；`oclive pack validate` **默认 v2**。旧包迁移：[V1_TO_V2_MIGRATION.md](creator-docs/role-pack/V1_TO_V2_MIGRATION.md)。
-- **CLI**：移除顶层 `publish`、`plugin search/update`、`registry login`（见 [DEPRECATED_COMMANDS.md](crates/oclive-cli/DEPRECATED_COMMANDS.md)）。
+- **CLI**：移除顶层 `publish`、`plugin search/update`、`registry login`（见 [DEPRECATED_COMMANDS.md](./kernel/crates/oclive-cli/DEPRECATED_COMMANDS.md)）。
 
 ### Added
 

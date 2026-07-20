@@ -445,6 +445,8 @@ v1 可用 **按住空格录音、松开识别**（`loop.py --mic`），或 Chat 
 | `role_path not found` | `OCLIVE_ROLE_PATH` 或 `--role-path` 指向真实目录 |
 | `unsupported bridge command: get_plugin_settings_ui` | 见 [DEV_ENVIRONMENT §10](./DEV_ENVIRONMENT.md)；桌面 `plugin_bridge.rs` 须分发插件设置命令 |
 | `vueCompileFailed` / 插槽加载失败（`audioCapture` 等） | **`ui_slots` 的 `.vue` 勿 `import` 同级 `.ts`**（`vue3-sfc-loader` 经 `read_plugin_asset_text` 常请求 `.js` 而磁盘仅有 `.ts`）。逻辑内联进 `.vue` 或仅 `import "vue"`；见 [DIRECTORY_PLUGINS §4.3.1](../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md) |
+| 侧栏 / 语音插槽显示 `PLUGIN_ASSET_URI_INVALID` | 查看 `oclive_plugin` 日志中的 `request_uri`；宿主仅接受 `ocliveplugin://localhost/<id>/<entry>` 与 `http(s)://ocliveplugin.localhost/<id>/<entry>`，不要把外部 URL 或查询参数中的伪地址作为插件入口 |
+| 流式朗读提示 `Failed to fetch` 后回退 RPC | 新版仅对 `voice.probe_tts` 确认可用的侧车直连；若仍出现，检查插件进程日志中的 `PLUGIN_CONFIG_INVALID` / `PLUGIN_CONFIG_READ_FAILED`，以及持久化 `config.json` 是否为 JSON 对象 |
 | Chat Pro 切模式 DB_ERROR | 勿留测试用 `oclive-kernel-server` 占 `:8420`；见 [DEV_ENVIRONMENT §10](./DEV_ENVIRONMENT.md) |
 | directive 一直 null | 正常（mumu 无 catalog）；联调用 `distros/chat-pro/roles/demo-doll` |
 | 预热成功但发消息无声 / 首句卡住数分钟 | CosyVoice2 `stream=True` 在 Windows 会死锁；侧车 `_collect_synthesis_tensors` 默认已改**非流式**（`OCLIVE_COSYVOICE_STREAM=1` 才尝试流式）。整句合成 ~3s 出声属正常 |

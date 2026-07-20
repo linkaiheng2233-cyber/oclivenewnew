@@ -278,7 +278,7 @@ Done 项（K-PERF-01~26、D-READ-01/02/04、K-ROBUST-01~03、Opus 4.8 Wave 0–4
 
 | ID | 项 | 说明 |
 |----|-----|------|
-| **D-DOCDRIFT-01** | monorepo 后文档路径机械迁移 | `migrate-doc-paths.mjs` / `fix-remaining-doc-paths.mjs`；206 文件；`check-stale-paths` 硬门禁 |
+| **D-DOCDRIFT-01** | monorepo 后文档路径机械迁移 | 一次性迁移脚本已在完成后删除（历史见 `git log -- scripts/migrate-doc-paths.mjs`）；现由 `check-stale-paths.mjs` 持续门禁 |
 | **D-SCRIPT-02** | `check-stale-paths.mjs` 扩范围 | dimension5 十一检 |
 | **D-ORPHAN-04** | 删 `kernel/crates/models/` 空目录 | workspace 无引用 |
 

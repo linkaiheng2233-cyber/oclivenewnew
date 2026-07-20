@@ -35,27 +35,17 @@ fn main() {
     }
 
     let args: Vec<String> = std::env::args().collect();
-    let mut cli_port: Option<u16> = None;
-    let mut i = 1usize;
-    while i < args.len() {
-        match args[i].as_str() {
-            "--port" => {
-                if i + 1 < args.len() {
-                    cli_port = args[i + 1].parse().ok();
-                    i += 1;
-                }
-            }
-            "-h" | "--help" => {
-                eprintln!(
-                    "Usage: {} [--api] [--port PORT]\nEnv: OCLIVE_API_PORT, OCLIVE_HTTP_API_MOCK_LLM, OCLIVE_ROLES_DIR, RUST_LOG",
-                    args[0]
-                );
-                return;
-            }
-            _ => {}
-        }
-        i += 1;
+    if args.iter().skip(1).any(|arg| arg == "-h" || arg == "--help") {
+        eprintln!(
+            "Usage: {} [--api] [--port PORT]\nEnv: OCLIVE_API_PORT, OCLIVE_HTTP_API_MOCK_LLM, OCLIVE_ROLES_DIR, RUST_LOG",
+            args[0]
+        );
+        return;
     }
+    let cli_port = oclive_kernel_runtime::parse_api_port_arg(&args).unwrap_or_else(|error| {
+        eprintln!("[OCLIVE_CLI_INVALID_ARGUMENT] {error}");
+        std::process::exit(2);
+    });
     let port = oclive_kernel_runtime::resolve_api_port(cli_port);
     tracing::info!(
         target: "oclive_kernel_server",

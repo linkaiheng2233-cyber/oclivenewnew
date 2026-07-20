@@ -5,8 +5,8 @@
   "identifier": "com.oclivenewnew.app",
   "mainBinaryName": "OCLive Chat Pro",
   "build": {
-    "beforeBuildCommand": "node ../scripts/tauri-run.cjs build",
-    "beforeDevCommand": "node ../scripts/tauri-run.cjs dev",
+    "beforeBuildCommand": "node scripts/tauri-run.cjs build",
+    "beforeDevCommand": "node scripts/tauri-run.cjs dev",
     "devUrl": "http://localhost:1420",
     "frontendDist": "../chat-pro/dist"
   },

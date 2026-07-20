@@ -5,9 +5,9 @@
 | 发行版 | 目录 | 说明 |
 |--------|------|------|
 | **共享桌面层** | [`shared/`](shared/) | `@oclive/desktop-shared` — API、stores、通用 chat 组件 |
-| **Chat Pro** | [`chat-pro/`](../distros/chat-pro/) | 桌面主产品（ToolShell / FluentShell） |
-| **AI Theater** | [`theater/`](../distros/theater/) | 剧场第三发行版前端 |
-| **Tauri 宿主** | [`desktop-tauri/`](../distros/desktop-tauri/) | 共享桌面壳（原 `src-tauri`） |
+| **Chat Pro** | [`chat-pro/`](../../distros/chat-pro/) | 桌面主产品（ToolShell / FluentShell） |
+| **AI Theater** | [`theater/`](../../distros/theater/) | 剧场第三发行版前端 |
+| **Tauri 宿主** | [`desktop-tauri/`](../../distros/desktop-tauri/) | 共享桌面壳（原 `src-tauri`） |
 
 **架构 RFC**：[ARCHITECTURE_DECOUPLING_RFC.md](./ARCHITECTURE_DECOUPLING_RFC.md)
 

@@ -13,12 +13,15 @@
 
 ### Fixed
 
+- **Engineering paths and startup diagnostics**: fixed `oclive-cli init --kernel-source` still generating the retired `src-tauri` and root `crates` paths, with assertions against the real repository layout. Desktop, headless, and generated hosts now share one `--port` parser; missing, zero, or invalid values produce a stable diagnostic and exit code 2. App-data initialization, shared-kernel backup/rollback, and cloud-token file-backup failures are no longer silent, and shared-kernel promotion no longer runs twice.
+- **Directory-plugin UI and voice-sidecar startup**: fixed voice/sidebar slots rendering `unknown uri` when Windows/WebView2 returns `ocliveplugin://localhost/...`; directory-plugin children now receive persisted `config.json` at startup, and streaming TTS only fetches a confirmed sidecar endpoint before falling back directly to RPC. Protocol/config failures carry stable identifiers in `oclive_plugin` logs.
 - **Pure-blueprint role-pack import loop**: Chat Pro preview and installation for `.ocpak`, `.zip`, and extracted directories now recognize `pipeline.ocblueprint` directly and prefer blueprint `meta` over a same-level legacy `manifest.json`. Runtime exports now use a `{role_id}/...` top-level directory, fixing in-app imports of v2 packs produced by the editor.
 - **Loopback endpoint proxy compatibility**: IPv4/IPv6 loopback endpoints for remote plugins, remote agents, and OpenAI-compatible LLMs no longer inherit user HTTP proxies, preventing `localhost` calls from being redirected into 502s/timeouts; the test mock now validates and echoes the JSON-RPC request id.
 - **Active-doc truth convergence**: product execution and release links now point to current SSOTs; `check-stale-paths` adds a G3/G12 guard against restoring `handoff/archive/*` product checklists as current truth.
 
 ### Removed
 
+- **Completed maintenance scripts**: removed one-shot layout migration, file-splitting, and bulk-fix scripts, together with experimental local-TTS installers that never became a supported workflow. Current paths remain guarded by `check-stale-paths`, Markdown-link checks, and the supported CLI; Git retains the historical implementations.
 - **Bundled role-pack adjustment**: removed the `shimeng` role pack; tests and examples that require an on-disk bundled role now use a remaining shipped pack or an isolated fixture.
 
 ---
@@ -191,7 +194,7 @@
 ### Breaking
 
 - **Role pack v2:** new packs use **`pipeline.ocblueprint`** (`schema_version: 2`) as the sole config hub; **`oclive pack validate` defaults to v2**. Migration: [V1_TO_V2_MIGRATION.md](creator-docs/role-pack/V1_TO_V2_MIGRATION.md).
-- **CLI:** removed top-level `publish`, `plugin search/update`, `registry login` (see [DEPRECATED_COMMANDS.md](crates/oclive-cli/DEPRECATED_COMMANDS.md)).
+- **CLI:** removed top-level `publish`, `plugin search/update`, `registry login` (see [DEPRECATED_COMMANDS.md](./kernel/crates/oclive-cli/DEPRECATED_COMMANDS.md)).
 
 ### Added
 

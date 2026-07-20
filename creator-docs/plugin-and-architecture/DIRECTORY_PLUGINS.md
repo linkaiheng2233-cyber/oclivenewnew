@@ -103,7 +103,7 @@
 
 **`shellUrl` 形态**：`https://ocliveplugin.localhost/<manifest.id>/<entry>`（Windows WebView2 下由 Tauri 将自定义协议映射为该 HTTPS 主机名）。
 
-**静态资源**：由宿主自定义 `ocliveplugin` protocol 从磁盘插件根读取（路径穿越会拒绝）。整壳 frame **没有** custom-protocol remote IPC capability；所有调用经 source-bound parent broker 转发。broker 在首次 `load` 后发放一次性随机绑定 token；同一 frame 后续导航会被撤销权限，避免跨插件页面继承旧身份。禁止为 `https://ocliveplugin.localhost/**` 恢复 remote capability 或旧式 `dangerousRemoteDomainIpcAccess`。
+**静态资源**：由宿主自定义 `ocliveplugin` protocol 从磁盘插件根读取（路径穿越会拒绝）。协议处理器只接受 Wry 回传的 `ocliveplugin://localhost/<id>/<entry>` 与映射后的 `http(s)://ocliveplugin.localhost/<id>/<entry>`；拒绝时返回 `PLUGIN_ASSET_URI_INVALID`，并写入 `oclive_plugin` 日志。整壳 frame **没有** custom-protocol remote IPC capability；所有调用经 source-bound parent broker 转发。broker 在首次 `load` 后发放一次性随机绑定 token；同一 frame 后续导航会被撤销权限，避免跨插件页面继承旧身份。禁止为 `https://ocliveplugin.localhost/**` 恢复 remote capability 或旧式 `dangerousRemoteDomainIpcAccess`。
 
 ### 4.1 整壳前端桥接（`shell.bridge`）
 
