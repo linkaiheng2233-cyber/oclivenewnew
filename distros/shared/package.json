@@ -10,7 +10,7 @@
     "@oclive/chat-pro": "^0.5.0",
     "@oclive/theater": "^0.5.0",
     "@tauri-apps/api": "^2.11.1",
-    "@tauri-apps/plugin-dialog": "^2.7.1",
+    "@tauri-apps/plugin-dialog": "^2.7.2",
     "@tauri-apps/plugin-opener": "^2.5.4",
     "@tauri-apps/plugin-shell": "^2.3.5",
     "idb-keyval": "^6.2.1",
