@@ -53,9 +53,11 @@ const {
   slots: panelSlots,
   frameErrors,
   frameErrorDetails,
+  bindPluginFrame,
+  framePermissions,
   reloadNonceFor,
   onFrameError,
-  onFrameLoad,
+  onPluginFrameLoad,
   onVueFailed,
   onVueCompileError,
   retrySlot,
@@ -122,12 +124,15 @@ watch(panelSlots, (list) => {
         <iframe
           v-if="showIframe(s)"
           :key="`if-${s.pluginId}-${s.appearanceId ?? ''}-${reloadNonceFor(s.pluginId)}`"
+          :ref="el => bindPluginFrame(s, el)"
           class="psp-frame"
           :src="s.url"
           :title="`plugin settings ${s.pluginId}`"
+          :allow="framePermissions(s)"
+          sandbox="allow-scripts"
           loading="lazy"
           referrerpolicy="no-referrer"
-          @load="onFrameLoad(s.pluginId)"
+          @load="onPluginFrameLoad(s, $event)"
           @error="onFrameError(s.pluginId)"
         />
         <PluginErrorPlaceholder

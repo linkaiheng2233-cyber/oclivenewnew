@@ -19,6 +19,7 @@ pub struct PluginUiSlotDto {
     pub entry: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub vue_component: Option<String>,
+    pub bridge_events: Vec<String>,
     pub url: String,
 }
 
@@ -75,6 +76,19 @@ fn plugin_ui_slot_dto_from_decl(pid: &str, decl: &UiSlotDecl) -> Option<PluginUi
         .filter(|s| !s.is_empty())
         .map(|s| s.replace('\\', "/"));
     let url = format!("https://ocliveplugin.localhost/{}/{}", pid, entry_norm);
+    let bridge_events = decl
+        .bridge
+        .as_ref()
+        .map(|bridge| {
+            bridge
+                .events
+                .iter()
+                .map(|event| event.trim())
+                .filter(|event| !event.is_empty())
+                .map(str::to_string)
+                .collect()
+        })
+        .unwrap_or_default();
     Some(PluginUiSlotDto {
         plugin_id: pid.to_string(),
         slot: decl.slot.clone(),
@@ -82,6 +96,7 @@ fn plugin_ui_slot_dto_from_decl(pid: &str, decl: &UiSlotDecl) -> Option<PluginUi
         label: decl.label.clone(),
         entry: entry_norm,
         vue_component,
+        bridge_events,
         url,
     })
 }
@@ -304,5 +319,29 @@ pub fn directory_plugin_bootstrap_dto(
         developer_mode: host.developer_effective(),
         subscribed_host_events,
         ui_slots,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::plugin_ui_slot_dto_from_decl;
+    use crate::infrastructure::directory_plugins::UiSlotDecl;
+
+    #[test]
+    fn slot_dto_carries_its_bridge_event_allowlist() {
+        let decl: UiSlotDecl = serde_json::from_value(serde_json::json!({
+            "slot": "sidebar",
+            "entry": "slots/sidebar.html",
+            "bridge": { "events": [" role:switched ", "message:sent", ""] }
+        }))
+        .unwrap();
+
+        let dto = plugin_ui_slot_dto_from_decl("plugin.a", &decl).unwrap();
+        assert_eq!(dto.bridge_events, ["role:switched", "message:sent"]);
+        let json = serde_json::to_value(dto).unwrap();
+        assert_eq!(
+            json["bridgeEvents"],
+            serde_json::json!(["role:switched", "message:sent"])
+        );
     }
 }

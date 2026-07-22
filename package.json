@@ -41,6 +41,7 @@
     "check:rust": "node scripts/ensure-tauri-dist.mjs && node scripts/check-domain-layering.mjs && node scripts/check-changelog-parity.mjs && node scripts/check-doc-mirror.mjs && npm run check:rust:fmt && npm run check:rust:clippy && npm run check:rust:test",
     "check:license": "node scripts/check-license-readiness.mjs",
     "check:debt-marathon": "node scripts/check-debt-marathon.mjs",
+    "check:module-compat": "node scripts/check-module-compat.mjs && node scripts/validate-plugins-index.mjs",
     "test:cursor-marathon-hook": "node scripts/test-cursor-marathon-hook.mjs",
     "check": "npm run lint && npm run build && npm run check:rust",
     "check:release": "npm run lint && npm run build && npm run test:unit && npm run verify:ui && npm run verify:shared-i18n && npm run check:rust:fmt && npm run check:rust:clippy && npm run check:rust:test:all",

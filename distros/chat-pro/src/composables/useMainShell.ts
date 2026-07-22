@@ -319,6 +319,8 @@ export function useMainShell() {
         hostEventBus.emit('chat:set_input_draft', { text: text.trim() })
         return
       }
+      if (chatListLoading.value)
+        return
       void onSend({ content: text.trim() })
     },
   })
@@ -326,9 +328,12 @@ export function useMainShell() {
   useVoiceAutoTts({ showToast })
 
   async function onSwitchRole(nextRoleId: string) {
+    if (roleSwitching.value || !nextRoleId.trim() || nextRoleId === roleStore.currentRoleId)
+      return
     const savedLeftScroll = leftPaneRef.value?.scrollTop ?? 0
     try {
       roleSwitching.value = true
+      chatStore.cancelPendingSend()
       await roleStore.switchRole(nextRoleId)
       await chatStore.bootstrapChatForRole(nextRoleId)
       await pluginStore.syncDirectoryPluginBootstrap()
@@ -352,6 +357,7 @@ export function useMainShell() {
   }
 
   async function onChangeRelation(nextRelation: string) {
+    const roleId = roleStore.currentRoleId
     try {
       const perScene = roleStore.roleInfo.identityBinding === 'per_scene'
       if (nextRelation === OCLIVE_DEFAULT_RELATION_SENTINEL) {
@@ -364,9 +370,13 @@ export function useMainShell() {
         await roleStore.setSceneUserRelation(uiStore.sceneId, nextRelation)
       }
       else {
-        const info = await setUserRelation(roleStore.currentRoleId, nextRelation)
+        const info = await setUserRelation(roleId, nextRelation)
+        if (roleStore.currentRoleId !== roleId)
+          return
         roleStore.applyRoleInfo(info)
       }
+      if (roleStore.currentRoleId !== roleId)
+        return
       const relationName
         = relationOptions.value.find(r => r.id === nextRelation)?.name ?? nextRelation
       const scopeKey = perScene ? 'app.toast.relationSetPerScene' : 'app.toast.relationSetGlobal'

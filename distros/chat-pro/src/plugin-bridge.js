@@ -115,7 +115,10 @@ function injectOclivePluginBridge(pluginId, assetRel, inv, ev) {
   }
 
   function listen(e, c) {
-    if (window.parent !== window && e.startsWith(`${pluginId}:`)) {
+    const isPluginEvent = e.startsWith(`${pluginId}:`) && e.length > pluginId.length + 1
+    if (!isPluginEvent && !eventAllowlist.includes(e))
+      return Promise.reject(new Error(`event denied:${e}`))
+    if (window.parent !== window) {
       return requestThroughParent('subscribe', { event: e }).then(({ subscriptionId }) => {
         subscriptions.set(subscriptionId, c)
         return () => {
@@ -124,10 +127,6 @@ function injectOclivePluginBridge(pluginId, assetRel, inv, ev) {
         }
       })
     }
-    if (!eventAllowlist.includes(e))
-      return Promise.reject(new Error(`event denied:${e}`))
-    if (window.parent !== window)
-      return Promise.reject(new Error('event subscriptions are unavailable in isolated plugin frames'))
     const T = window.__TAURI__
     const t = T && (T.event || (T.tauri && T.tauri.event))
     if (!t)
@@ -143,10 +142,29 @@ function injectOclivePluginBridge(pluginId, assetRel, inv, ev) {
     return Promise.reject(new Error('plugin event emit is only available in isolated frames'))
   }
 
+  const audioCapture = Object.freeze({
+    start() {
+      if (window.parent === window)
+        return Promise.reject(new Error('host audio capture requires an isolated frame'))
+      return requestThroughParent('audio-start', {})
+    },
+    stop() {
+      if (window.parent === window)
+        return Promise.reject(new Error('host audio capture requires an isolated frame'))
+      return requestThroughParent('audio-stop', {})
+    },
+    cancel() {
+      if (window.parent === window)
+        return Promise.reject(new Error('host audio capture requires an isolated frame'))
+      return requestThroughParent('audio-cancel', {})
+    },
+  })
+
   window.OclivePluginBridge = {
     invoke,
     listen,
     emit,
+    audioCapture,
     allowedInvoke: invokeAllowlist,
     allowedEvents: eventAllowlist,
   }

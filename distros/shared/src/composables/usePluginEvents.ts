@@ -6,7 +6,7 @@ import { useOcliveAppearance } from '@oclive/shared/composables/useOcliveAppeara
 import { hostEventBus } from '@oclive/shared/lib/hostEventBus'
 import {
   VOICE_ASR_SUBMIT_EVENT,
-
+  VoiceAsrSubmitDeduper,
 } from '@oclive/shared/lib/voiceAsrEvents'
 import { usePluginStore } from '@oclive/shared/stores/pluginStore'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
@@ -33,6 +33,7 @@ export function usePluginEvents(opts: UsePluginEventsOptions) {
   const roleStore = useRoleStore()
   const pluginStore = usePluginStore()
   const { cycleTheme } = useOcliveAppearance()
+  const voiceAsrSubmitDeduper = new VoiceAsrSubmitDeduper()
 
   async function onPluginSetRemoteLife(payload: unknown): Promise<void> {
     if (!roleStore.interactionImmersive) {
@@ -42,8 +43,11 @@ export function usePluginEvents(opts: UsePluginEventsOptions) {
     const enabledRaw = (payload as { enabled?: boolean } | null)?.enabled
     if (typeof enabledRaw !== 'boolean')
       return
+    const roleId = roleStore.currentRoleId
     try {
-      const info = await setRemoteLifeEnabled(roleStore.currentRoleId, enabledRaw)
+      const info = await setRemoteLifeEnabled(roleId, enabledRaw)
+      if (roleStore.currentRoleId !== roleId)
+        return
       roleStore.applyRoleInfo(info)
       opts.showToast('success', enabledRaw ? t('app.toast.remoteLifeOn') : t('app.toast.remoteLifeOff'))
     }
@@ -57,8 +61,11 @@ export function usePluginEvents(opts: UsePluginEventsOptions) {
     const mode = (payload as { mode?: string } | null)?.mode
     if (mode !== 'immersive' && mode !== 'pure_chat')
       return
+    const roleId = roleStore.currentRoleId
     try {
-      const info = await setRoleInteractionMode(roleStore.currentRoleId, mode)
+      const info = await setRoleInteractionMode(roleId, mode)
+      if (roleStore.currentRoleId !== roleId)
+        return
       roleStore.applyRoleInfo(info)
       if (mode === 'pure_chat')
         opts.onPureChatMode()
@@ -83,7 +90,10 @@ export function usePluginEvents(opts: UsePluginEventsOptions) {
     const text = p?.text?.trim()
     if (!text)
       return
-    opts.onVoiceAsrSubmit?.({ text, mode: p?.mode })
+    const normalized = { text, mode: p?.mode, submissionId: p?.submissionId }
+    if (!voiceAsrSubmitDeduper.accept(normalized))
+      return
+    opts.onVoiceAsrSubmit?.(normalized)
   }
 
   async function onPluginResetLayout(): Promise<void> {

@@ -54,9 +54,6 @@ export function extractFirstSpeakableChunk(
   if (text.length >= maxWithoutBreak)
     return text.slice(0, maxWithoutBreak).trim()
 
-  if (text.length >= MIN_CHUNK_CHARS)
-    return text
-
   return null
 }
 

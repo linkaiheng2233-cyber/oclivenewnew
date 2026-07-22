@@ -5,11 +5,24 @@ export interface SlotOrderMemo {
   value: string[]
 }
 
-/** Coalesce concurrent `refresh()` into a single run (shared Promise). */
-export let refreshPromise: Promise<void> | null = null
+/** Coalesce concurrent `refresh()` calls only within the same role dimension. */
+const refreshPromisesByRole = new Map<string, Promise<void>>()
 
-export function setRefreshPromise(p: Promise<void> | null): void {
-  refreshPromise = p
+export function pluginRefreshKey(roleId: string): string {
+  const normalized = roleId.trim()
+  return normalized || '__default__'
+}
+
+export function getRefreshPromise(roleId: string): Promise<void> | undefined {
+  return refreshPromisesByRole.get(pluginRefreshKey(roleId))
+}
+
+export function setRefreshPromise(roleId: string, promise: Promise<void> | null): void {
+  const key = pluginRefreshKey(roleId)
+  if (promise)
+    refreshPromisesByRole.set(key, promise)
+  else
+    refreshPromisesByRole.delete(key)
 }
 
 /** Side-channel plugins that stay available in `pure_chat` (not gated by story mode). */

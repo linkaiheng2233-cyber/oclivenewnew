@@ -25,7 +25,7 @@
 
 | 序 | 文档 | 何时 |
 |----|------|------|
-| 1 | [`AI_CHANGE_BOUNDARIES.md`](./AI_CHANGE_BOUNDARIES.md) | **G1–G16** · 代码 + 文档纪律 |
+| 1 | [`AI_CHANGE_BOUNDARIES.md`](./AI_CHANGE_BOUNDARIES.md) | **G1–G17** · 代码 + 关联改动 + 文档纪律 |
 | 2 | [`MODULE_MAP_AND_HANDOFF.md`](./MODULE_MAP_AND_HANDOFF.md) | 六槽 / 设施 / 独立通道 **定义与关系** |
 | 3 | [`NAMING_CONVENTIONS.md`](../creator-docs/NAMING_CONVENTIONS.md) §4.2 | canonical import · 禁止别名 |
 | 4 | [`BUS_FACTOR_NOTES.md`](./BUS_FACTOR_NOTES.md) | `process_message` · DB · 错误码 **文件锚点** |

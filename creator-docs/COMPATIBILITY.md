@@ -40,6 +40,28 @@
 
 ---
 
+## 仓内模块兼容契约
+
+OCLive 的能力上限取决于整条模块链，而不是某一个组件的最新版。功能更新须同时核对：
+
+```text
+角色包/插件资源 → 内核契约与编排 → Tauri/Bridge → distros/shared → Chat Pro/Theater → Vue/iframe/legacy 回退
+```
+
+| 边界 | 当前兼容机制 | 限制 / 开发要求 |
+|------|--------------|-----------------|
+| 角色包 ↔ 内核 | `schema_version`、`min_runtime_version`、`oclive_validation` | 新键优先可选并有默认；Breaking 留至少一个发布周期读兼容 |
+| 内核 ↔ 前端 | `api_version`、Rust DTO、`distros/shared/src/api` 镜像、错误码 drift | DTO/命令变化必须同步消费者与契约测，不能只保证 Rust 编译 |
+| Tauri ↔ 目录插件 | manifest `schema_version: 1`、插槽名、`bridge.invoke`、事件与 `rpcMethods` 白名单 | 插件 `version` 仅标识插件自身，**不代表宿主兼容范围**；无法表达的新宿主依赖须保留回退或走 Breaking/RFC |
+| Chat Pro ↔ 插件 UI | `entry` iframe + 可选 `vueComponent`、共享 `PluginSlotEmbed` | 两种入口都存在时必须同能力；不能只更新 Vue 后让 iframe 落后 |
+| Chat Pro 壳 ↔ shared | Fluent / Tool 共用 shared store/composable | 壳特有布局可分叉，契约、状态归属、事件与取消语义不可分叉 |
+
+**结构门禁**：`npm run check:module-compat` 对拍内核与前端插槽注册表、官方插件 manifest、Vue/iframe 文件、RPC timeout 声明和插件索引版本。该门禁不证明 sidecar、音频设备或真实 WebView 行为，相关功能仍须定向集成/烟测。
+
+关联改动与完成声明遵循 [`AI_CHANGE_BOUNDARIES.md`](../handoff/AI_CHANGE_BOUNDARIES.md) G17；破坏性变化遵循 [`BREAKING_CHANGE_PROCESS.md`](../handoff/BREAKING_CHANGE_PROCESS.md)。
+
+---
+
 ## 对外兼容一页表（主程序 / 编写器 / 启动器 / 包 / 内核 / CLI）
 
 | 组件 | 版本来源 | 与主程序关系 | 备注 |

@@ -14,6 +14,15 @@ if (process.env.OCLIVE_SKIP_VERIFY === '1') {
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const chatPro = join(root, 'distros', 'chat-pro', 'src')
 const shared = join(root, 'distros', 'shared', 'src')
+const embeddedPluginFrameHosts = [
+  'components/ChatPluginToolbarSlots.vue',
+  'components/PluginChatHeaderSlots.vue',
+  'components/PluginRoleDetailSlots.vue',
+  'components/PluginSettingsPanelSlots.vue',
+  'components/PluginSidebarSlots.vue',
+  'components/PluginSlotEmbed.vue',
+  'components/hotkey/HotkeyHost.vue',
+]
 
 const checks = [
   {
@@ -80,20 +89,19 @@ const checks = [
   },
   {
     name: 'embedded plugin frames use opaque-origin script-only sandbox',
-    ok: () => {
-      const source = readFileSync(
-        join(shared, 'components/PluginSlotEmbed.vue'),
-        'utf8',
-      )
+    ok: () => embeddedPluginFrameHosts.every((relativePath) => {
+      const source = readFileSync(join(shared, relativePath), 'utf8')
       return source.includes('sandbox="allow-scripts"')
+        && source.includes('bindPluginFrame')
+        && source.includes('onPluginFrameLoad')
         && !source.includes('allow-same-origin')
-    },
+    }),
   },
   {
     name: 'embedded plugin bridge binds calls in the parent host',
     ok: () => {
-      const component = readFileSync(
-        join(shared, 'components/PluginSlotEmbed.vue'),
+      const frameHost = readFileSync(
+        join(shared, 'composables/usePluginFrameBridge.ts'),
         'utf8',
       )
       const broker = readFileSync(
@@ -104,7 +112,7 @@ const checks = [
         join(root, 'kernel/crates/oclive_kernel_host/assets/plugin-bridge.iife.js'),
         'utf8',
       )
-      return component.includes('frameBridge.register(value.contentWindow')
+      return frameHost.includes('frameBridge.register(value.contentWindow')
         && broker.includes("event.origin !== 'null'")
         && broker.includes('request.token !== registration.token')
         && broker.includes('registration.activated')
@@ -134,12 +142,17 @@ const checks = [
       const slots = join(root, 'distros/chat-pro/plugins/com.oclive.voice.asr/slots')
       const toolbar = readFileSync(join(slots, 'voice-toolbar.js'), 'utf8')
       const settings = readFileSync(join(slots, 'voice-settings.js'), 'utf8')
-      const component = readFileSync(join(shared, 'components/PluginSlotEmbed.vue'), 'utf8')
+      const frameHost = readFileSync(join(shared, 'composables/usePluginFrameBridge.ts'), 'utf8')
+      const capture = readFileSync(join(shared, 'utils/hostAudioCapture.ts'), 'utf8')
       return toolbar.includes("rpc('voice.transcribe'")
         && toolbar.includes('bridge.emit(submitEvent')
+        && toolbar.includes('bridge.audioCapture.start()')
+        && !toolbar.includes('navigator.mediaDevices.getUserMedia')
         && settings.includes("bridge.invoke('set_plugin_settings_config'")
         && settings.includes("rpc('voice.warm'")
-        && component.includes("slot.pluginId === VOICE_ASR_PLUGIN_ID && slot.entry === 'slots/toolbar.html'")
+        && frameHost.includes("slot.pluginId === VOICE_ASR_PLUGIN_ID && slot.entry === 'slots/toolbar.html'")
+        && frameHost.includes('allowAudioCapture:')
+        && capture.includes('navigator.mediaDevices.getUserMedia')
     },
   },
 ]

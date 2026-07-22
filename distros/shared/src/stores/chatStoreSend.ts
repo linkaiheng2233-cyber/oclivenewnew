@@ -45,6 +45,12 @@ export interface ChatStoreSendContext {
 let activeSendSeq = 0
 let inFlightStreamAbort: AbortController | null = null
 
+export function cancelActiveChatSend(): void {
+  activeSendSeq += 1
+  inFlightStreamAbort?.abort()
+  inFlightStreamAbort = null
+}
+
 function isAbortError(err: unknown, signal?: AbortSignal): boolean {
   if (signal?.aborted)
     return true
@@ -62,7 +68,7 @@ export async function sendChatStoreMessage(
   const countBeforeTurn = context.getMessageCountForRoleScene(roleId, sid)
   const userLocalId = `u-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
   const sendSeq = ++activeSendSeq
-  const isStale = () => sendSeq !== activeSendSeq
+  const isStale = () => sendSeq !== activeSendSeq || roleStore.currentRoleId !== roleId
 
   inFlightStreamAbort?.abort()
   const streamAbort = new AbortController()

@@ -37,8 +37,30 @@ This page explains how **`ui.json` in role packs** relates to the **desktop host
 2. **Editor older than host**  
    - New host slots / theme keys may be uneditable in the old editor; **edit `ui.json` manually** against [ui.json.schema.json](role-pack/ui.json.schema.json).
 
-3. **Pack `settings.json` and `plugin_backends`**  
+3. **Pack `settings.json` and `plugin_backends`**
    - Governed by **`min_runtime_version`** and host `load_role`; see [PACK_VERSIONING.md](role-pack/PACK_VERSIONING.md) and [CHANGELOG.en.md](../../CHANGELOG.en.md).
+
+---
+
+## In-repository module compatibility contract
+
+OCLive capability is bounded by the complete module chain, not by the newest individual component. Every capability update must check:
+
+```text
+pack/plugin assets → kernel contract and orchestration → Tauri/Bridge → distros/shared → Chat Pro/Theater → Vue/iframe/legacy fallback
+```
+
+| Boundary | Current mechanism | Constraint |
+|----------|-------------------|------------|
+| Pack ↔ kernel | `schema_version`, `min_runtime_version`, `oclive_validation` | Prefer optional fields with defaults; Breaking changes keep read compatibility for at least one release cycle |
+| Kernel ↔ frontend | `api_version`, Rust DTOs, `distros/shared/src/api` mirrors, error-code drift gate | DTO/command changes must update consumers and contract tests; Rust compilation alone is insufficient |
+| Tauri ↔ directory plugin | manifest `schema_version: 1`, slot names, `bridge.invoke`, events, and `rpcMethods` allowlists | Plugin `version` identifies the plugin only; it is **not a host compatibility range**. Unexpressed host requirements need a fallback or the Breaking/RFC process |
+| Chat Pro ↔ plugin UI | iframe `entry` plus optional `vueComponent`, shared `PluginSlotEmbed` | When both entries exist, they must expose the same capability; updating Vue alone is incomplete |
+| Chat Pro shells ↔ shared | Fluent and Tool consume shared stores/composables | Layout may differ, but contracts, state ownership, events, and cancellation semantics must not drift |
+
+**Structural gate**: `npm run check:module-compat` compares kernel/frontend slot registries, bundled manifests, Vue/iframe files, RPC timeout declarations, and plugin-index versions. It does not prove sidecar, device, or real-WebView behavior; those still require targeted integration/smoke tests.
+
+Follow [`AI_CHANGE_BOUNDARIES.md`](../../handoff/AI_CHANGE_BOUNDARIES.md) G17 for associated changes and completion claims, and [`BREAKING_CHANGE_PROCESS.md`](../../handoff/BREAKING_CHANGE_PROCESS.md) for incompatible changes.
 
 ---
 

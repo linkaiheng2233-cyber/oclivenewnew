@@ -14,7 +14,8 @@
 ### Fixed
 
 - **工程路径与启动诊断收敛**：修复 `oclive-cli init --kernel-source` 仍生成旧 `src-tauri` / 根 `crates` 路径的问题，并加入真实仓库布局断言；桌面、无头服务与生成工程共享同一 `--port` 解析，缺失、零值或非法端口均给出稳定诊断并以退出码 2 终止；应用数据目录初始化、共享内核备份/回滚与云模型 token 文件备份失败不再静默，共享内核提升也不再重复执行。
-- **目录插件界面与语音侧车启动**：修复 Windows/WebView2 回传 `ocliveplugin://localhost/...` 时语音识别区和侧栏插件显示 `unknown uri`；目录插件子进程启动即载入持久化 `config.json`，流式朗读只直连已确认可用的侧车，否则直接走 RPC；协议与配置失败写入带稳定标识的 `oclive_plugin` 日志。
+- **目录插件界面与语音侧车启动**：修复 Windows/WebView2 回传 `ocliveplugin://localhost/...` 时语音识别区和侧栏插件显示 `unknown uri`；受限 iframe 现在统一在插件脚本执行前注入桥接并由父宿主注册 broker，修复语音识别 `OCLive bridge unavailable`；麦克风采集改由可信父宿主代理给官方语音工具栏，避免 opaque-origin iframe 报 `Invalid security origin`，且不放宽 `allow-same-origin`；采集启停采用串行状态机，授权途中取消不会遗留录音流。Voice v0.5 的转写提交带幂等 id，兼容旧插件的短窗重复事件，并恢复不受插件订阅白名单影响的宿主内部预热/流式朗读事件；流式 TTS 现在只按完整播放结束的音频扣除最终回复、首段不再切成三字碎片或等待额外 directive RPC，切换消息/角色会中止旧合成与已排程 PCM；正式 desktop profile 启用已通过基准的 Deep 前缀缓存。mumu 的安全回退卡片在 iframe 首次 load 时会补注册 broker，状态刷新保留旧内容并按角色/身份事件原位更新；插件 bootstrap、身份、轮询与卡片刷新均拒绝旧角色/旧代次结果回写。目录插件子进程启动即载入持久化 `config.json`，流式朗读只直连已确认可用的侧车，否则直接走 RPC；协议与配置失败写入带稳定标识的 `oclive_plugin` 日志。
+- **回复复读与模型错误呈现**：标准回复后处理器会安全移除模型输出开头对本轮用户原句的完整复读（保留“你好”→“你好呀”等自然接话）；SSE/IPC 携带的结构化 `LLM_ERROR` 统一映射为可操作的本地化提示，不再直接向聊天界面显示原始 JSON。
 - **纯蓝图角色包导入闭环**：Chat Pro 的 `.ocpak` / `.zip` / 已解压目录预览与安装现在原生识别 `pipeline.ocblueprint`，同层存在 legacy `manifest.json` 时以蓝图 `meta` 为准；运行时导出统一使用 `{role_id}/...` 顶层目录，修复编写器 v2 包无法经应用内入口导入的问题。
 - **本机端点代理兼容**：Remote 插件、Remote Agent 与 OpenAI-compatible LLM 的 IPv4/IPv6 回环端点不再继承用户 HTTP 代理，避免 `localhost` 请求被错误转发后出现 502/超时；测试 mock 同步校验并回显 JSON-RPC request id。
 - **活跃文档 truth 收敛**：产品执行与发版入口改链现行 SSOT；`check-stale-paths` 新增 G3/G12 守卫，禁止将 `handoff/archive/*` 产品清单重新写成现行依据。

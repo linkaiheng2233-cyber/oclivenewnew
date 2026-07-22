@@ -1,12 +1,6 @@
 <script setup lang="ts">
-import type { PluginUiSlotInfo } from '@oclive/shared/api'
-import type { PluginFrameRegistration } from '@oclive/shared/utils/pluginFrameBridge'
-import { pluginBridgeInvoke } from '@oclive/shared/api'
 import { useDirectoryPluginSlotEmbed } from '@oclive/shared/composables/useDirectoryPluginSlotEmbed'
-import { hostEventBus } from '@oclive/shared/lib/hostEventBus'
-import { VOICE_ASR_PLUGIN_ID } from '@oclive/shared/lib/voiceAsrEvents'
-import { createPluginFrameBridge } from '@oclive/shared/utils/pluginFrameBridge'
-import { computed, onBeforeUnmount, onMounted } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AsyncPluginVue from './AsyncPluginVue.vue'
 import PluginErrorPlaceholder from './PluginErrorPlaceholder.vue'
@@ -34,9 +28,11 @@ const {
   slots,
   frameErrors,
   frameErrorDetails,
+  bindPluginFrame,
+  framePermissions,
   reloadNonceFor,
   onFrameError,
-  onFrameLoad,
+  onPluginFrameLoad,
   onVueFailed,
   onVueCompileError,
   retrySlot,
@@ -45,65 +41,6 @@ const {
 } = useDirectoryPluginSlotEmbed({
   slot: () => props.slotName,
   bootstrapEpoch: () => props.bootstrapEpoch,
-})
-
-const frameBridge = createPluginFrameBridge(pluginBridgeInvoke, {
-  emit: (event, data) => hostEventBus.emit(event, data),
-  subscribe: (event, handler) => {
-    hostEventBus.on(event, handler)
-    return () => hostEventBus.off(event, handler)
-  },
-})
-const registeredFrames = new Map<
-  string,
-  { element: HTMLIFrameElement, registration: PluginFrameRegistration }
->()
-
-function frameKey(slot: PluginUiSlotInfo): string {
-  return `${slot.pluginId}:${slot.appearanceId ?? ''}`
-}
-
-function framePermissions(slot: PluginUiSlotInfo): string | undefined {
-  return slot.pluginId === VOICE_ASR_PLUGIN_ID && slot.entry === 'slots/toolbar.html'
-    ? 'microphone'
-    : undefined
-}
-
-function bindPluginFrame(slot: PluginUiSlotInfo, value: unknown): void {
-  const key = frameKey(slot)
-  const current = registeredFrames.get(key)
-  if (current?.element === value)
-    return
-  current?.registration.unregister()
-  registeredFrames.delete(key)
-
-  if (!(value instanceof HTMLIFrameElement) || !value.contentWindow)
-    return
-  registeredFrames.set(key, {
-    element: value,
-    registration: frameBridge.register(value.contentWindow, {
-      pluginId: slot.pluginId,
-      assetRel: slot.entry,
-    }),
-  })
-}
-
-function onPluginFrameLoad(slot: PluginUiSlotInfo): void {
-  const current = registeredFrames.get(frameKey(slot))
-  if (!current?.registration.activate()) {
-    onFrameError(slot.pluginId)
-    return
-  }
-  onFrameLoad(slot.pluginId)
-}
-
-onMounted(() => window.addEventListener('message', frameBridge.handleMessage))
-onBeforeUnmount(() => {
-  window.removeEventListener('message', frameBridge.handleMessage)
-  for (const frame of registeredFrames.values())
-    frame.registration.unregister()
-  registeredFrames.clear()
-  frameBridge.dispose()
 })
 </script>
 
@@ -138,7 +75,7 @@ onBeforeUnmount(() => {
         sandbox="allow-scripts"
         loading="lazy"
         referrerpolicy="no-referrer"
-        @load="onPluginFrameLoad(s)"
+        @load="onPluginFrameLoad(s, $event)"
         @error="onFrameError(s.pluginId)"
       />
       <PluginErrorPlaceholder

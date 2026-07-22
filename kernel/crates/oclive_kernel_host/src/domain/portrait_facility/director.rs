@@ -4,7 +4,7 @@ use crate::domain::portrait_emotion_engine::{
     apply_persona_event_overrides, fallback_base_from_emotion,
 };
 use crate::domain::portrait_facility::rule::{
-    resolve_visual_state_rule, resolve_visual_state_rule_with_intensity, validate_asset_id,
+    resolve_visual_state_rule_with_intensity, validate_asset_id,
 };
 use crate::domain::ports::LlmClient;
 use crate::error::Result;
@@ -254,7 +254,9 @@ pub async fn pick_portrait_with_catalog(
         apply_persona_event_overrides(portrait_tag, user_emotion_str, recent_events, personality);
 
     if !portrait_tag.eq_ignore_ascii_case(&selected_portrait_tag) {
-        if let Some(rule_id) = resolve_visual_state_rule(catalog, &portrait_tag) {
+        if let Some(rule_id) =
+            resolve_visual_state_rule_with_intensity(catalog, &portrait_tag, Some(intensity))
+        {
             visual_state_id = rule_id;
         }
     }

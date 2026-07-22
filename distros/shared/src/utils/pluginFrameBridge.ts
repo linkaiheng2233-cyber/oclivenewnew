@@ -7,6 +7,8 @@ const MAX_SEEN_REQUESTS = 4_096
 export interface PluginFrameIdentity {
   pluginId: string
   assetRel: string
+  allowedEvents?: readonly string[]
+  allowAudioCapture?: boolean
 }
 
 export interface PluginFrameInvokeRequest extends PluginFrameIdentity {
@@ -21,6 +23,11 @@ export type PluginFrameInvoke = (
 export interface PluginFrameBridgeOptions {
   emit?: (event: string, data?: unknown) => void
   subscribe?: (event: string, handler: (data: unknown) => void) => () => void
+  audioCapture?: {
+    start: () => Promise<unknown>
+    stop: () => Promise<unknown>
+    cancel: () => Promise<unknown> | unknown
+  }
 }
 
 interface FrameRegistration extends PluginFrameIdentity {
@@ -28,6 +35,7 @@ interface FrameRegistration extends PluginFrameIdentity {
   activated: boolean
   seenRequestIds: Set<string>
   subscriptions: Map<string, () => void>
+  allowedHostEvents: Set<string>
 }
 
 export interface PluginFrameRegistration {
@@ -37,7 +45,7 @@ export interface PluginFrameRegistration {
 
 interface FrameRequestMessage {
   channel: typeof PLUGIN_FRAME_BRIDGE_CHANNEL
-  kind: 'invoke' | 'emit' | 'subscribe' | 'unsubscribe'
+  kind: 'invoke' | 'emit' | 'subscribe' | 'unsubscribe' | 'audio-start' | 'audio-stop' | 'audio-cancel'
   requestId: string
   token: string
   command?: string
@@ -65,7 +73,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function parseRequest(value: unknown): FrameRequestMessage | null {
   if (!isRecord(value)
     || value.channel !== PLUGIN_FRAME_BRIDGE_CHANNEL
-    || !['invoke', 'emit', 'subscribe', 'unsubscribe'].includes(String(value.kind))
+    || !['invoke', 'emit', 'subscribe', 'unsubscribe', 'audio-start', 'audio-stop', 'audio-cancel'].includes(String(value.kind))
     || typeof value.requestId !== 'string'
     || !REQUEST_ID_PATTERN.test(value.requestId)
     || typeof value.token !== 'string'
@@ -121,6 +129,22 @@ export function createPluginFrameBridge(
   options: PluginFrameBridgeOptions = {},
 ) {
   const registrations = new Map<MessageEventSource, FrameRegistration>()
+  let audioOperationTail: Promise<void> = Promise.resolve()
+
+  function runAudioOperation(kind: FrameRequestMessage['kind']): Promise<unknown> {
+    const run = async () => {
+      if (!options.audioCapture)
+        throw new Error('host audio capture unavailable')
+      if (kind === 'audio-start')
+        return options.audioCapture.start()
+      if (kind === 'audio-stop')
+        return options.audioCapture.stop()
+      return options.audioCapture.cancel()
+    }
+    const result = audioOperationTail.then(run, run)
+    audioOperationTail = result.then(() => {}, () => {})
+    return result
+  }
 
   function postResult(
     target: MessageEventSource,
@@ -142,10 +166,14 @@ export function createPluginFrameBridge(
       activated: false,
       seenRequestIds: new Set(),
       subscriptions: new Map(),
+      allowedHostEvents: new Set(identity.allowedEvents ?? []),
+      allowAudioCapture: identity.allowAudioCapture === true,
     }
     registrations.set(source, registration)
     const unregister = () => {
       if (registrations.get(source) === registration) {
+        if (registration.allowAudioCapture && options.audioCapture)
+          void Promise.resolve(options.audioCapture.cancel()).catch(() => {})
         for (const unsubscribe of registration.subscriptions.values())
           unsubscribe()
         registration.subscriptions.clear()
@@ -229,7 +257,10 @@ export function createPluginFrameBridge(
       }
       else if (request.kind === 'subscribe') {
         const expectedPrefix = `${registration.pluginId}:`
-        if (!request.event!.startsWith(expectedPrefix) || request.event!.length === expectedPrefix.length)
+        const isPluginEvent
+          = request.event!.startsWith(expectedPrefix)
+            && request.event!.length > expectedPrefix.length
+        if (!isPluginEvent && !registration.allowedHostEvents.has(request.event!))
           throw new Error('plugin event subscription denied')
         if (!options.subscribe)
           throw new Error('plugin event bridge unavailable')
@@ -246,11 +277,16 @@ export function createPluginFrameBridge(
         registration.subscriptions.set(subscriptionId, unsubscribe)
         value = { subscriptionId }
       }
-      else {
+      else if (request.kind === 'unsubscribe') {
         const unsubscribe = registration.subscriptions.get(request.subscriptionId!)
         unsubscribe?.()
         registration.subscriptions.delete(request.subscriptionId!)
         value = null
+      }
+      else {
+        if (!registration.allowAudioCapture)
+          throw new Error('plugin audio capture denied')
+        value = await runAudioOperation(request.kind)
       }
       postResult(source, {
         channel: PLUGIN_FRAME_BRIDGE_CHANNEL,
@@ -273,6 +309,8 @@ export function createPluginFrameBridge(
 
   function dispose(): void {
     for (const registration of registrations.values()) {
+      if (registration.allowAudioCapture && options.audioCapture)
+        void Promise.resolve(options.audioCapture.cancel()).catch(() => {})
       for (const unsubscribe of registration.subscriptions.values())
         unsubscribe()
     }

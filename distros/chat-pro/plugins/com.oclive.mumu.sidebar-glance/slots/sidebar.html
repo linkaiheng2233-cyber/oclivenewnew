@@ -3,36 +3,60 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Mumu Sidebar Glance</title>
+    <title>Mumu 侧栏概览</title>
     <style>
-      :root {
-        color-scheme: light dark;
-      }
-      body {
-        margin: 0;
-        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-        background: transparent;
-      }
-      .fallback {
-        box-sizing: border-box;
-        width: 100%;
-        min-height: 108px;
-        padding: 12px;
-        border-radius: 14px;
-        border: 1px solid rgba(150, 140, 126, 0.26);
-        background: rgba(252, 247, 240, 0.72);
-        backdrop-filter: blur(14px);
-        -webkit-backdrop-filter: blur(14px);
-        color: #4b443b;
-        font-size: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-      }
+      * { box-sizing: border-box; }
+      body { margin: 0; font: 12px system-ui, -apple-system, "Segoe UI", sans-serif; color: #4b443b; background: transparent; }
+      .card { min-height: 108px; padding: 11px; border: 1px solid rgba(150,140,126,.3); border-radius: 13px; background: #faf5ed; }
+      header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px; } h3 { margin: 0; font-size: 13px; }
+      button { border: 1px solid #d8cdbc; border-radius: 7px; padding: 3px 7px; color: inherit; background: #fffaf3; cursor: pointer; }
+      dl { margin: 0; display: grid; grid-template-columns: 38px 1fr; gap: 6px 8px; } dt { color: #81776a; } dd { margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      #error { margin: 7px 0 0; color: #a33; }
     </style>
   </head>
   <body>
-    <div class="fallback">mumu 侧栏概览（iframe 回退）</div>
+    <aside class="card" aria-label="此刻情境">
+      <header><h3>此刻</h3><button id="refresh" type="button">刷新</button></header>
+      <dl><dt>关系</dt><dd id="relation">同步中…</dd><dt>所在</dt><dd id="scene">—</dd><dt>日程</dt><dd id="life">—</dd></dl>
+      <p id="error" role="status"></p>
+    </aside>
+    <script>
+      (() => {
+        const bridge = window.OclivePluginBridge
+        const text = (id, value) => { document.querySelector(id).textContent = value }
+        let activeRoleId = ''
+        let refreshGeneration = 0
+        async function refresh(preferredRoleId) {
+          const generation = ++refreshGeneration
+          text('#error', '')
+          try {
+            const roles = await bridge.invoke('list_roles', {})
+            if (generation !== refreshGeneration) return
+            const roleId = String(preferredRoleId || activeRoleId || roles?.[0]?.id || '').trim()
+            if (!roleId) throw new Error('未找到当前角色')
+            activeRoleId = roleId
+            const info = await bridge.invoke('get_role_info', { role_id: roleId, session_id: null })
+            if (generation !== refreshGeneration) return
+            const relId = String(info?.current_user_relation || info?.default_relation || '')
+            const rel = (Array.isArray(info?.user_relations) ? info.user_relations : []).find(x => x?.id === relId)
+            text('#relation', String(rel?.name || relId || '—'))
+            const userScene = String(info?.user_presence_scene || '')
+            const roleScene = String(info?.current_scene || '')
+            text('#scene', userScene && roleScene && userScene !== roleScene ? `${userScene} · 角色在 ${roleScene}` : (userScene || roleScene || '—'))
+            text('#life', String(info?.current_life?.label || '暂无日程'))
+          } catch (reason) {
+            if (generation !== refreshGeneration) return
+            text('#error', reason instanceof Error ? reason.message : String(reason))
+          }
+        }
+        document.querySelector('#refresh').addEventListener('click', () => void refresh())
+        if (!bridge) text('#error', '宿主桥接不可用')
+        else {
+          for (const event of ['role:switched', 'role:info:updated', 'message:sent', 'appearance:changed'])
+            void bridge.listen(event, payload => void refresh(payload?.roleId)).catch(reason => text('#error', String(reason)))
+          void refresh()
+        }
+      })()
+    </script>
   </body>
 </html>

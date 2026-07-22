@@ -65,6 +65,8 @@ export interface PluginUiSlotInfo {
   entry: string
   /** manifest `vueComponent`; host compiles Vue when set; on failure falls back to `url` iframe */
   vueComponent?: string | null
+  /** Host events declared by this slot's manifest `bridge.events`. */
+  bridgeEvents: string[]
   url: string
 }
 

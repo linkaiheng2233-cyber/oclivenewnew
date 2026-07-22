@@ -12,23 +12,36 @@ import { computed, onMounted, ref, watch } from 'vue'
 const identityState = ref<UserIdentityStateResponse | null>(null)
 const loading = ref(false)
 let watchersBound = false
+let identityRefreshGeneration = 0
+let identitySetGeneration = 0
 
 async function refreshIdentityState(): Promise<void> {
   const roleStore = useRoleStore()
   const uiStore = useUiStore()
   const roleId = roleStore.currentRoleId
+  const sceneId = uiStore.sceneId
+  const identityBinding = roleStore.roleInfo.identityBinding
+  const generation = ++identityRefreshGeneration
   if (!roleId) {
     identityState.value = null
     return
   }
   try {
-    identityState.value = await getUserIdentityState(
+    const next = await getUserIdentityState(
       roleId,
-      roleStore.roleInfo.identityBinding === 'per_scene' ? uiStore.sceneId : null,
+      identityBinding === 'per_scene' ? sceneId : null,
     )
+    if (generation !== identityRefreshGeneration
+      || roleStore.currentRoleId !== roleId
+      || uiStore.sceneId !== sceneId
+      || roleStore.roleInfo.identityBinding !== identityBinding) {
+      return
+    }
+    identityState.value = next
   }
   catch {
-    identityState.value = null
+    if (generation === identityRefreshGeneration && roleStore.currentRoleId === roleId)
+      identityState.value = null
   }
 }
 
@@ -85,16 +98,27 @@ export function useUserIdentityState() {
     if (!roleId || nextId === identitySelectValue.value)
       return identityState.value
     loading.value = true
+    const sceneId = uiStore.sceneId
+    const identityBinding = roleStore.roleInfo.identityBinding
+    const generation = ++identitySetGeneration
+    identityRefreshGeneration += 1
     try {
-      const perScene = roleStore.roleInfo.identityBinding === 'per_scene'
-      identityState.value = perScene
-        ? await setSceneUserIdentity(roleId, uiStore.sceneId, nextId)
+      const next = identityBinding === 'per_scene'
+        ? await setSceneUserIdentity(roleId, sceneId, nextId)
         : await setUserIdentity(roleId, nextId)
+      if (generation !== identitySetGeneration
+        || roleStore.currentRoleId !== roleId
+        || uiStore.sceneId !== sceneId
+        || roleStore.roleInfo.identityBinding !== identityBinding) {
+        return identityState.value
+      }
+      identityState.value = next
       await roleStore.refreshRoleInfo()
       return identityState.value
     }
     finally {
-      loading.value = false
+      if (generation === identitySetGeneration)
+        loading.value = false
     }
   }
 

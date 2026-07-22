@@ -20,9 +20,11 @@ const {
   slots,
   frameErrors,
   frameErrorDetails,
+  bindPluginFrame,
+  framePermissions,
   reloadNonceFor,
   onFrameError,
-  onFrameLoad,
+  onPluginFrameLoad,
   onVueFailed,
   onVueCompileError,
   retrySlot,
@@ -53,12 +55,15 @@ const {
       <iframe
         v-if="showIframe(s)"
         :key="`if-${s.pluginId}-${s.appearanceId ?? ''}-${reloadNonceFor(s.pluginId)}`"
+        :ref="el => bindPluginFrame(s, el)"
         class="prd-frame"
         :src="s.url"
         :title="`plugin role.detail ${s.pluginId}`"
+        :allow="framePermissions(s)"
+        sandbox="allow-scripts"
         loading="lazy"
         referrerpolicy="no-referrer"
-        @load="onFrameLoad(s.pluginId)"
+        @load="onPluginFrameLoad(s, $event)"
         @error="onFrameError(s.pluginId)"
       />
       <PluginErrorPlaceholder

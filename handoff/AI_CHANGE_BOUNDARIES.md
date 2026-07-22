@@ -26,6 +26,7 @@
 | G14 | **文档零冗余**：同一事实 **一处** 维护；他处 **一行链接**；禁止把 MODULE_MAP / PLUGIN_V1 表复制进 handoff 新文 | 文档屎山 · 改一处牵十处 |
 | G15 | **统一风格**（见下 §文档编写纪律）：文首 **SSOT 范围 / 最后更新**；事实用 **表**；流程用 **简图**；中文简体；状态词 **Done / OPEN / 冻结 / 草案** 与 TECHNICAL_DEBT 一致 | AI/人类无法快速扫读 |
 | G16 | **新建或变更文档 SSOT 范围**时，须更新 [`handoff/README.md`](./README.md) §文档分责 **一行**（或 maintainer 确认无需登记）；**禁止** silent 新增顶层 `.md`（**由 `scripts/check-doc-registry.mjs` 强制**） | 索引失效 · 下一只 AI 找不到 |
+| G17 | **按能力闭环做关联改动**：改生产者、契约或宿主行为前，先列出同一能力的生产者 → 契约/协议 → 适配层 → 消费者 → 状态/回退 → 测试；逐项核对内核、Tauri、`distros/shared`、Chat Pro/Theater、官方插件、角色包及姊妹仓，按需同步或明确“已核对无需改”。**最小改动面不等于单文件改动**；只改一端不得声称完成。 | 新旧实现并存、iframe/语音/侧栏等关联部件滞后，局部修复引出连锁回归 |
 
 ---
 
@@ -52,7 +53,29 @@
 - 一事一 **SSOT**；函数短、单一职责；公共逻辑下沉到一个 helper，不在多处镜像。
 - 改动面最小化：与当前任务无关的代码**不顺手重写**（避免「修 A 带崩 B」；大重构走 §9 判定）。
 
-**收尾自检（声称「写完」前）**：`cargo test --workspace --doc`（G8）+ 受影响的集成测 + `node scripts/dimension5-acceptance.mjs --ci`；`cargo clippy` 无新增 warning。
+**5. 关联改动闭环（G17；改能力，不只改文件）**
+
+> **经验固化**：Chat Pro 宿主升级后，语音插件、侧栏 Vue/iframe 回退与角色视觉状态曾分别保留旧路径，形成“主壳已更新、关联部件仍在旧协议”的连锁问题。此后同类任务一律按能力链核对，不按最初报错文件核对。
+
+动手前写出最小影响链；没有对应节点时写「无」，不得省略：
+
+```text
+输入/资源 → 生产者 → wire/DTO/event/RPC → 适配与权限 → UI/宿主消费者 → 状态/回退 → 测试
+```
+
+| 变更触点 | 必查关联面 | 最小兼容证据 |
+|----------|------------|--------------|
+| DTO / 错误 / Tauri command | `oclive_kernel_types` → host/Tauri → `distros/shared/src/api` → 各发行版消费者 | 契约测；公开 Rust API 加 doctest；旧可选字段仍可读 |
+| Host event / 插件 Bridge / RPC | 事件或命令生产者 → manifest 白名单 / `rpcMethods` → iframe bridge + Vue 注入 → 插件两种入口 | 原生 Vue 与 iframe 回退至少各一条契约/烟测；权限拒绝路径仍成立 |
+| Chat Pro 壳、共享 store/composable | Fluent + Tool → `distros/shared` → 插件插槽 → Theater 是否适用 | 两壳或明确单壳范围；角色切换、刷新、卸载的状态归属测试 |
+| 角色包资源 / 配置 | pack schema / catalog → loader/validation → 编排 → DTO/directive → 渲染与 legacy fallback → 编写器导出 | 实际官方包夹具 + 缺省/旧包兼容 + 编写器影响核对 |
+| 语音 / 侧通道 | UI 入口 → host capture/event → plugin RPC → reply event/流式 → 播放取消与回退 | 基础能力与扩展开关；启动、切换、取消、重试；不得只测 sidecar |
+
+- **关联修改不等于扩范围重构**：只同步同一能力链上的必要节点；发现旁支债务单独报告。
+- **向后兼容优先**：优先新增可选字段、能力探测、读旧写新和明确降级；插件自身 `version` 不是宿主兼容保证。Breaking 走 [`BREAKING_CHANGE_PROCESS.md`](./BREAKING_CHANGE_PROCESS.md)。
+- **完成声明**必须列出：已改节点、已核对无需改节点、兼容/回退行为、跨边界测试。模块关系与兼容层见 [`MODULE_MAP_AND_HANDOFF.md`](./MODULE_MAP_AND_HANDOFF.md) §12.5–§12.6 与 [`COMPATIBILITY.md`](../creator-docs/COMPATIBILITY.md)。
+
+**收尾自检（声称「写完」前）**：`cargo test --workspace --doc`（G8）+ 受影响的集成测 + `node scripts/dimension5-acceptance.mjs --ci`；`cargo clippy` 无新增 warning。涉及 Chat Pro / 目录插件 / 插槽时另跑 `npm run check:module-compat`。
 
 ---
 

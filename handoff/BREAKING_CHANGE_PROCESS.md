@@ -34,7 +34,8 @@
 ### 步骤 1：识别
 
 - 对照 [`creator-docs/COMPATIBILITY.md`](../creator-docs/COMPATIBILITY.md) 与 [`creator-docs/plugin-and-architecture/PLUGIN_V1.md`](../creator-docs/plugin-and-architecture/PLUGIN_V1.md)。
-- 自问：旧版宿主 / 编写器 / 侧车是否仍能与新数据互通？若否 → Breaking。
+- 按 [`AI_CHANGE_BOUNDARIES.md`](./AI_CHANGE_BOUNDARIES.md) G17 列出生产者 → 契约 → 适配 → 消费者 → 状态/回退 → 测试；自问旧版宿主 / 编写器 / 侧车 / 官方插件是否仍能与新数据互通。若否 → Breaking。
+- 即使最终判定为非 Breaking，也须保留关联影响核对；“仅新增可选字段”不能免除消费者、回退和测试同步。
 
 ### 步骤 2：声明
 
@@ -105,6 +106,8 @@
 
 ### 影响面
 - [ ] 桌面宿主 Tauri / HTTP API
+- [ ] `distros/shared` / Chat Pro / Theater 消费者
+- [ ] 官方目录插件的 Vue 入口 / iframe 回退 / Bridge / RPC
 - [ ] 角色包 manifest / settings
 - [ ] oclive_validation / 编写器 wasm
 - [ ] 姊妹仓（launcher / pack-editor / market）需同步版本或行为

@@ -186,7 +186,7 @@ function onSidePanelResize(deltaX: number) {
               :current-relation="roleStore.relationSelectValue"
               :roles="roleStore.roles"
               :relations="relationOptions"
-              :loading="chatListLoading"
+              :loading="chatListLoading || roleSwitching"
               @change-role="onSwitchRole"
               @change-relation="onChangeRelation"
             />

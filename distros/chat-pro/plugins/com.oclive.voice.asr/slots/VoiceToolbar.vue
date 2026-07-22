@@ -216,9 +216,9 @@ async function transcribeBlob(blob: Blob): Promise<void> {
       return;
     }
     if (submitMode.value === "fill") {
-      oclive.events.emit(EVT_SUBMIT, { text, mode: "fill" });
+      oclive.events.emit(EVT_SUBMIT, { text, mode: "fill", submissionId: crypto.randomUUID() });
     } else {
-      oclive.events.emit(EVT_SUBMIT, { text, mode: "send" });
+      oclive.events.emit(EVT_SUBMIT, { text, mode: "send", submissionId: crypto.randomUUID() });
     }
   } catch (e) {
     errText.value = e instanceof Error ? e.message : String(e);

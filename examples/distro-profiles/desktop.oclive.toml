@@ -41,4 +41,4 @@ auto_deep_min_chars = 80
 fast_knowledge_limit = 4
 fast_memory_cap = 4
 fast_persistence = "strong_only"
-# prompt_prefix_cache = false  # Wave D-T3：bench 通过后可在正式 profile 开启
+prompt_prefix_cache = true

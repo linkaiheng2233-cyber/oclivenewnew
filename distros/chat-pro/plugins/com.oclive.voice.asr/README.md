@@ -1,12 +1,12 @@
 # com.oclive.voice.asr
 
-Official **side-channel** `voice.asr` + optional **voice expansion** (CosyVoice2 TTS) + `voice.build_directive` for Chat Pro (Windows first, **v0.4.0**).
+Official **side-channel** `voice.asr` + optional **voice expansion** (CosyVoice2 TTS) + `voice.build_directive` for Chat Pro (Windows first, **v0.5.0**).
 
 - **Registry**: [`RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md`](../../../../creator-docs/rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md) §4.1
 - **Does not** enter six slots or `process_message`
-- **Base**: hold-to-talk ASR → `send_message` (text chat default)
+- **Base**: trusted-host microphone capture → ASR → idempotent `com.oclive.voice.asr:submit` event → Chat Pro's canonical `onSend` / draft path
 - **Expansion** (optional): `tts_expansion_enabled` → CosyVoice2 sidecar → `voice.speak` on `reply`
-- **No subscription gate**; users bring GPU, model DLC, or own cloud API keys
+- **Optional expansion**: users bring GPU, model DLC, or their own cloud API keys; iframe host events remain manifest-allowlisted
 
 ## Product split
 

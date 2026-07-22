@@ -27,11 +27,26 @@ function parseBackendError(err: unknown): {
   raw: string
   kernel?: KernelErrorPayload
 } {
-  const raw = String(err ?? '')
+  const raw = err instanceof Error
+    ? err.message
+    : typeof err === 'string'
+      ? err
+      : (() => {
+          try {
+            return JSON.stringify(err ?? '')
+          }
+          catch {
+            return String(err ?? '')
+          }
+        })()
   const trimmed = raw.trim()
-  if (trimmed.startsWith('{')) {
+  const jsonStart = trimmed.indexOf('{')
+  if (jsonStart !== -1) {
     try {
-      const j = JSON.parse(trimmed) as Partial<KernelErrorPayload>
+      const parsed = JSON.parse(trimmed.slice(jsonStart)) as
+        | Partial<KernelErrorPayload>
+        | { error?: Partial<KernelErrorPayload> }
+      const j = 'error' in parsed && parsed.error ? parsed.error : parsed
       if (j && typeof j.code === 'string' && typeof j.message === 'string') {
         return { code: j.code, raw, kernel: j as KernelErrorPayload }
       }

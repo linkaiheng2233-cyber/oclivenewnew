@@ -28,7 +28,9 @@ describe('official Voice HTML fallbacks', () => {
     expect(html).toContain('voice-toolbar.js')
     expect(html).toContain('id="record"')
     expect(script).toContain('rpc(\'voice.transcribe\'')
-    expect(script).toContain('navigator.mediaDevices.getUserMedia')
+    expect(script).toContain('bridge.audioCapture.start()')
+    expect(script).toContain('bridge.audioCapture.stop()')
+    expect(script).not.toContain('navigator.mediaDevices.getUserMedia')
     expect(script).toContain('bridge.emit(submitEvent')
     expect(script).toContain('bridge.listen(holdEvent')
     expect(html).not.toContain('iframe fallback')
@@ -68,6 +70,11 @@ describe('official Voice HTML fallbacks', () => {
       invoke,
       emit: vi.fn(),
       listen,
+      audioCapture: {
+        start: vi.fn().mockResolvedValue({ mimeType: 'audio/webm' }),
+        stop: vi.fn(),
+        cancel: vi.fn().mockResolvedValue(null),
+      },
     }
 
     // The fixture is shipped as a classic browser script; executing that exact artifact is the test subject.

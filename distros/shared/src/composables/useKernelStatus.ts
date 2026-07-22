@@ -20,6 +20,7 @@ export function useRoleSnapshotPoll() {
   const chatStore = useChatStore()
   const kernelConn = useKernelConnectionStore()
   let timer: ReturnType<typeof setInterval> | undefined
+  let pollGeneration = 0
 
   async function tick() {
     if (chatStore.isLoading) {
@@ -32,10 +33,14 @@ export function useRoleSnapshotPoll() {
     if (!kernelConn.status?.healthy) {
       return
     }
-    const snap = await fetchRoleSnapshot(
-      roleId,
-      roleStore.roleInfo.userPresenceScene ?? roleStore.roleInfo.currentScene ?? undefined,
-    )
+    const sceneId = roleStore.roleInfo.userPresenceScene ?? roleStore.roleInfo.currentScene ?? undefined
+    const generation = ++pollGeneration
+    const snap = await fetchRoleSnapshot(roleId, sceneId)
+    if (generation !== pollGeneration
+      || roleStore.currentRoleId !== roleId
+      || (roleStore.roleInfo.userPresenceScene ?? roleStore.roleInfo.currentScene ?? undefined) !== sceneId) {
+      return
+    }
     if (!snap) {
       if (kernelConn.status?.healthy) {
         console.warn('[useKernelStatus] role snapshot poll returned empty', { roleId })
@@ -70,6 +75,7 @@ export function useRoleSnapshotPoll() {
   }
 
   function stop() {
+    pollGeneration += 1
     if (timer) {
       clearInterval(timer)
       timer = undefined

@@ -1,5 +1,5 @@
 import type { DisplayMetricsDto, RoleInfo } from './role'
-import { invokeWithFriendlyError } from './helpers'
+import { invokeWithFriendlyError, toFriendlyErrorMessage } from './helpers'
 
 export interface SendMessageRequest {
   role_id: string
@@ -241,7 +241,7 @@ export async function sendMessageStream(
         }
       }
       else if (eventName === 'error') {
-        throw new Error(data.slice(0, 400))
+        throw new Error(toFriendlyErrorMessage(data.slice(0, 400)))
       }
     }
   }

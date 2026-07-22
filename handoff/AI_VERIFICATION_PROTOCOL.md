@@ -134,6 +134,19 @@ node -e "const fs=require('fs'),path=require('path');function walk(d,a=[]){for(c
 
 ---
 
+### 2.8 关联改动与模块兼容性结论
+
+声称「已完成」「已兼容」「不会影响其它模块」前，须按 [`AI_CHANGE_BOUNDARIES.md`](./AI_CHANGE_BOUNDARIES.md) G17 给出能力闭环证据：
+
+1. **影响链**：生产者 → wire/DTO/event/RPC → 适配/权限 → 消费者 → 状态/回退 → 测试。
+2. **核对范围**：内核、Tauri、`distros/shared`、Chat Pro/Theater、官方插件、角色包/编写器；不适用项明确写「无需改 + 原因」。
+3. **兼容口径**：区分 schema 兼容、结构兼容、行为兼容、跨版本兼容；只跑构建不得声称四者全部成立。
+4. **证据**：边界两侧至少各一条测试；Chat Pro / 目录插件另附 `npm run check:module-compat`。Breaking 变更附迁移/回退与 [`BREAKING_CHANGE_PROCESS.md`](./BREAKING_CHANGE_PROCESS.md) 清单。
+
+**禁止**：以「改动文件少」证明风险低；以插件 `version` 相同证明宿主兼容；只验证 Vue 入口而不验证 iframe 回退（或反之）。
+
+---
+
 ## 3. 汇报模板（审查 / 优化轮次必填）
 
 ```markdown
@@ -149,6 +162,7 @@ node -e "const fs=require('fs'),path=require('path');function walk(d,a=[]){for(c
 |----|------|------|-----------------|------|------|
 
 ### 本轮 Done / Deferred
+### 关联影响闭环（已改 / 已核对无需改 / 兼容与回退 / 跨边界测试）
 ### 误报剔除（第三方审查若适用）
 ```
 

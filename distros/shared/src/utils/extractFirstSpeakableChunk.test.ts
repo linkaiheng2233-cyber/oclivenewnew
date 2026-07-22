@@ -6,9 +6,15 @@ import {
 } from './extractFirstSpeakableChunk'
 
 describe('extractFirstSpeakableChunk', () => {
+  it('waits for punctuation or the first-chunk cap instead of emitting tiny fragments', () => {
+    expect(extractFirstSpeakableChunk('你好呀', { isFirst: true })).toBeNull()
+    expect(extractFirstSpeakableChunk('你好呀，', { isFirst: true })).toBe('你好呀，')
+    expect(extractFirstSpeakableChunk('一二三四五六七八', { isFirst: true })).toBe('一二三四五六七八')
+  })
+
   it('waits for minimum length', () => {
     expect(extractFirstSpeakableChunk('你好')).toBeNull()
-    expect(extractFirstSpeakableChunk('你好呀')).toBe('你好呀')
+    expect(extractFirstSpeakableChunk('你好呀')).toBeNull()
   })
 
   it('prefers earliest break for lower speak latency', () => {

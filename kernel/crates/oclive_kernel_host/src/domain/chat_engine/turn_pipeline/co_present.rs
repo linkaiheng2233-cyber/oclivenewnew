@@ -1,6 +1,8 @@
 //! Co-present turn path: complex emotion, event estimate, prompt build.
 
-use crate::domain::complex_emotion::ComplexEmotionOutput;
+use crate::domain::complex_emotion::{
+    BuiltinKeywordComplexEmotionProvider, ComplexEmotionInput, ComplexEmotionOutput,
+};
 use crate::domain::event_impact_ai::estimate_event_impact_rules_only;
 use crate::domain::host_profile::{prompt_prefix_cache_effective, DISTRO_CONCISE_PROMPT_OVERLAY};
 use crate::domain::life_schedule::{format_life_prompt_line, pick_life_state};
@@ -26,6 +28,21 @@ use super::{
 };
 use crate::domain::chat_engine::chat_stage::ChatStage;
 use crate::state::SessionCache;
+
+fn resolve_fast_complex_emotion(input: &ComplexEmotionInput) -> ComplexEmotionOutput {
+    let inferred = BuiltinKeywordComplexEmotionProvider.resolve_turn_inner(input);
+    ComplexEmotionOutput {
+        source: "turn_thinking_fast_builtin_intensity".into(),
+        narrative_hint: String::new(),
+        labels: vec![],
+        pattern: None,
+        confidence: 0.0,
+        intensity: inferred.intensity,
+        dissonance_score: 0.0,
+        degraded_to_builtin: false,
+        extension: None,
+    }
+}
 
 pub(crate) async fn run_middle(
     ctx: &TurnContext<'_>,
@@ -80,17 +97,10 @@ pub(crate) async fn run_middle(
     );
     let complex_emotion_out: ComplexEmotionOutput =
         if thinking.skip_complex_emotion(&state.host_profile) {
-            ComplexEmotionOutput {
-                source: "turn_thinking_fast".into(),
-                narrative_hint: String::new(),
-                labels: vec![],
-                pattern: None,
-                confidence: 0.0,
-                intensity: 0.0,
-                dissonance_score: 0.0,
-                degraded_to_builtin: false,
-                extension: None,
-            }
+            // Keep Fast turns local and deterministic, but do not erase the
+            // emotion signal: portrait intensity and other downstream users
+            // still need a meaningful mild/moderate value.
+            resolve_fast_complex_emotion(&complex_emotion_input)
         } else {
             STAGES
                 .stage(ChatStage::ComplexEmotionResolveTurn, async {
@@ -350,4 +360,37 @@ pub(crate) async fn run_middle(
         prefix_cache_expected_hit,
         use_ollama_prefix_opts,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn fast_input(message: &str) -> ComplexEmotionInput {
+        ComplexEmotionInput {
+            role_id: "mumu".into(),
+            scene_id: "home".into(),
+            user_message: message.into(),
+            bot_reply: String::new(),
+            recent_dialogue_summary: None,
+            previous_narrative_hint: String::new(),
+            user_valence: Some(0.0),
+            user_dominance: Some(0.0),
+            previous_user_message: None,
+        }
+    }
+
+    #[test]
+    fn fast_complex_emotion_keeps_a_mild_baseline() {
+        let output = resolve_fast_complex_emotion(&fast_input("你好"));
+        assert_eq!(output.source, "turn_thinking_fast_builtin_intensity");
+        assert!((output.intensity - 0.25).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn fast_complex_emotion_can_reach_moderate_for_known_patterns() {
+        let output = resolve_fast_complex_emotion(&fast_input("随便吧"));
+        assert!(output.pattern.is_none());
+        assert!((output.intensity - 0.5).abs() < f64::EPSILON);
+    }
 }

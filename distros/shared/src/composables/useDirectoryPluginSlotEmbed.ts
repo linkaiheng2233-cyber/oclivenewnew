@@ -2,8 +2,8 @@ import type { PluginUiSlotInfo } from '@oclive/shared/api'
 import type { PluginVueCompileError } from '@oclive/shared/utils/compilePluginVueSfc'
 import type { MaybeRefOrGetter } from 'vue'
 import { useKeyedPluginErrors } from '@oclive/shared/composables/usePluginError'
+import { usePluginFrameBridge } from '@oclive/shared/composables/usePluginFrameBridge'
 import { usePluginStore } from '@oclive/shared/stores/pluginStore'
-import { useRoleStore } from '@oclive/shared/stores/roleStore'
 import { isUnsafeInlinePluginVueEnabled } from '@oclive/shared/utils/vueComponentSecurity'
 import { storeToRefs } from 'pinia'
 import { computed, ref, toValue, watch } from 'vue'
@@ -23,8 +23,6 @@ export function useDirectoryPluginSlotEmbed(options: {
   pluginIdDenylist?: MaybeRefOrGetter<readonly string[] | null | undefined>
 }) {
   const { t } = useI18n()
-  const roleStore = useRoleStore()
-  const { currentRoleId } = storeToRefs(roleStore)
   const pluginStore = usePluginStore()
   const { error: pluginError, bootstrapUiSlots } = storeToRefs(pluginStore)
 
@@ -53,10 +51,12 @@ export function useDirectoryPluginSlotEmbed(options: {
   const vueFallback = ref<Record<string, boolean>>({})
   /** Increment to force remount of iframe / Vue. */
   const reloadEpoch = ref<Record<string, number>>({})
+  const slotSignature = computed(() => slots.value
+    .map(s => [s.pluginId, s.appearanceId ?? '', s.entry, s.url, s.vueComponent ?? ''].join('|'))
+    .join('\n'))
 
   watch(
-    () =>
-      [toValue(options.bootstrapEpoch), currentRoleId?.value ?? '', bootstrapUiSlots.value] as const,
+    () => [toValue(options.bootstrapEpoch), slotSignature.value] as const,
     () => {
       vueFallback.value = {}
       clearAllKeyedErrors()
@@ -84,6 +84,9 @@ export function useDirectoryPluginSlotEmbed(options: {
     }
     clearKeyedError(pluginId)
   }
+
+  const { bindPluginFrame, framePermissions, onPluginFrameLoad }
+    = usePluginFrameBridge({ onFrameError, onFrameLoad })
 
   function onVueFailed(pluginId: string): void {
     vueFallback.value = { ...vueFallback.value, [pluginId]: true }
@@ -134,9 +137,11 @@ export function useDirectoryPluginSlotEmbed(options: {
     slots,
     frameErrors,
     frameErrorDetails,
+    bindPluginFrame,
+    framePermissions,
     reloadNonceFor,
     onFrameError,
-    onFrameLoad,
+    onPluginFrameLoad,
     onVueFailed,
     onVueCompileError,
     retrySlot,

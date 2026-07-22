@@ -58,6 +58,9 @@ interface NdjsonEvent {
 }
 
 let sharedAudioContext: AudioContext | null = null
+const activePcmSchedulers = new Set<PcmStreamScheduler>()
+const activeStreamControllers = new Set<AbortController>()
+const activePlaybackPrefetches = new Set<CosyvoiceStreamPrefetch>()
 
 /** Resume Web Audio on user-adjacent paths so first auto-TTS chunk plays without delay. */
 export async function ensureVoiceAudioReady(): Promise<void> {
@@ -71,8 +74,13 @@ export async function ensureVoiceAudioReady(): Promise<void> {
 
 class PcmStreamScheduler {
   private nextStart = 0
+  private readonly sources = new Set<AudioBufferSourceNode>()
+  private cancelWaiters: Array<() => void> = []
+  private cancelled = false
 
   schedulePcm16(pcmBase64: string, sampleRate: number): void {
+    if (this.cancelled)
+      return
     const ctx = sharedAudioContext
     if (!ctx)
       return
@@ -87,6 +95,8 @@ class PcmStreamScheduler {
     const buffer = ctx.createBuffer(1, float32.length, sampleRate)
     buffer.copyToChannel(float32, 0)
     const source = ctx.createBufferSource()
+    this.sources.add(source)
+    source.onended = () => this.sources.delete(source)
     source.buffer = buffer
     source.connect(ctx.destination)
     const now = ctx.currentTime
@@ -100,14 +110,45 @@ class PcmStreamScheduler {
     if (!ctx)
       return
     const waitMs = Math.max(0, (this.nextStart - ctx.currentTime) * 1000)
-    if (waitMs > 0)
-      await new Promise(resolve => window.setTimeout(resolve, waitMs))
+    if (waitMs > 0 && !this.cancelled) {
+      await Promise.race([
+        new Promise(resolve => window.setTimeout(resolve, waitMs)),
+        new Promise<void>(resolve => this.cancelWaiters.push(resolve)),
+      ])
+    }
   }
 
   resetSchedule(): void {
     const ctx = sharedAudioContext
     this.nextStart = ctx ? Math.max(ctx.currentTime, this.nextStart) : 0
   }
+
+  cancel(): void {
+    this.cancelled = true
+    for (const source of this.sources) {
+      try {
+        source.stop()
+      }
+      catch {
+        // The source may already have ended between iteration and stop().
+      }
+    }
+    this.sources.clear()
+    const waiters = this.cancelWaiters
+    this.cancelWaiters = []
+    for (const resolve of waiters)
+      resolve()
+  }
+}
+
+/** Abort all active CosyVoice fetches/prefetches and stop scheduled PCM immediately. */
+export function cancelVoiceAudioPlayback(): void {
+  for (const controller of activeStreamControllers)
+    controller.abort()
+  for (const prefetch of activePlaybackPrefetches)
+    prefetch.abort()
+  for (const scheduler of activePcmSchedulers)
+    scheduler.cancel()
 }
 
 function sidecarStreamUrl(endpoint: string): string {
@@ -119,8 +160,8 @@ async function fetchSidecarStream(
   endpoint: string,
   text: string,
   directive?: CosyvoiceDirective | null,
+  controller = new AbortController(),
 ): Promise<Response> {
-  const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), SIDECAR_STREAM_TIMEOUT_MS)
   try {
     return await fetch(sidecarStreamUrl(endpoint), {
@@ -341,14 +382,15 @@ export function startCosyvoiceSidecarPrefetch(
   return { key, chunks, done, waitForChunk, abort }
 }
 
-async function playBufferedOrLiveStream(
+async function playBufferedOrLiveStreamCore(
   prefetch: CosyvoiceStreamPrefetch | undefined,
   endpoint: string,
   text: string,
+  player: PcmStreamScheduler,
+  controller: AbortController,
   directive?: CosyvoiceDirective | null,
 ): Promise<CosyvoiceStreamResult> {
   await ensureVoiceAudioReady()
-  const player = new PcmStreamScheduler()
 
   if (prefetch) {
     let played = 0
@@ -409,7 +451,7 @@ async function playBufferedOrLiveStream(
     return { ok: false, reason: 'empty_text' }
 
   try {
-    const res = await fetchSidecarStream(endpoint, cleaned, directive)
+    const res = await fetchSidecarStream(endpoint, cleaned, directive, controller)
     if (!res.ok || !res.body)
       return { ok: false, reason: 'http_error', message: `HTTP ${res.status}` }
 
@@ -446,6 +488,36 @@ async function playBufferedOrLiveStream(
   const out = { ok: true as const, chunks, ttfc_ms: meta.ttfc_ms, elapsed_ms: meta.elapsed_ms }
   logVoiceStreamTelemetry(out)
   return out
+}
+
+async function playBufferedOrLiveStream(
+  prefetch: CosyvoiceStreamPrefetch | undefined,
+  endpoint: string,
+  text: string,
+  directive?: CosyvoiceDirective | null,
+): Promise<CosyvoiceStreamResult> {
+  const player = new PcmStreamScheduler()
+  const controller = new AbortController()
+  activePcmSchedulers.add(player)
+  activeStreamControllers.add(controller)
+  if (prefetch)
+    activePlaybackPrefetches.add(prefetch)
+  try {
+    return await playBufferedOrLiveStreamCore(
+      prefetch,
+      endpoint,
+      text,
+      player,
+      controller,
+      directive,
+    )
+  }
+  finally {
+    activePcmSchedulers.delete(player)
+    activeStreamControllers.delete(controller)
+    if (prefetch)
+      activePlaybackPrefetches.delete(prefetch)
+  }
 }
 
 /**

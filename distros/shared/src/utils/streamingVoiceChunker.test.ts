@@ -42,6 +42,13 @@ describe('streamingVoiceChunker', () => {
     expect(c.join('')).toMatch(/今天/)
   })
 
+  it('does not synthesize unstable three-character fragments', () => {
+    const chunker = new StreamingVoiceChunker()
+    expect(chunker.push('你好呀')).toEqual([])
+    expect(chunker.push('你好呀今')).toEqual([])
+    expect(chunker.push('你好呀今天真不错')).toEqual(['你好呀今天真不错'])
+  })
+
   it('flush speaks dialogue tail only', () => {
     const chunker = new StreamingVoiceChunker()
     chunker.push('你好呀，今天很好！')

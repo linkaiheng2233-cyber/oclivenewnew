@@ -2,7 +2,13 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 
-import { ApiInvokeError, snakeToCamelKey, toastAsyncError, toCamelPayload } from './helpers'
+import {
+  ApiInvokeError,
+  snakeToCamelKey,
+  toastAsyncError,
+  toCamelPayload,
+  toFriendlyError,
+} from './helpers'
 
 const { showToastMock } = vi.hoisted(() => ({
   showToastMock: vi.fn(),
@@ -78,5 +84,15 @@ describe('api/helpers', () => {
       code: 'ROLE_NOT_FOUND',
     }))
     expect(showToastMock).toHaveBeenCalledWith('error', 'role not found')
+  })
+
+  it('maps JSON kernel errors carried by stream Error objects', () => {
+    const friendly = toFriendlyError(new Error(JSON.stringify({
+      code: 'LLM_ERROR',
+      message: 'Ollama request failed',
+    })))
+
+    expect(friendly.code).toBe('LLM_ERROR')
+    expect(friendly.message).toContain('模型调用失败')
   })
 })

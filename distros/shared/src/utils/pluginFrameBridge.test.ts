@@ -1,3 +1,4 @@
+import type { PluginFrameIdentity } from './pluginFrameBridge'
 import { describe, expect, it, vi } from 'vitest'
 import {
   createPluginFrameBridge,
@@ -15,7 +16,7 @@ function message(source: Window, data: unknown, origin = 'null'): MessageEvent {
 function activateFrame(
   broker: ReturnType<typeof createPluginFrameBridge>,
   frame: Window,
-  identity = { pluginId: 'plugin.a', assetRel: 'a.html' },
+  identity: PluginFrameIdentity = { pluginId: 'plugin.a', assetRel: 'a.html' },
 ) {
   const registration = broker.register(frame, identity)
   expect(registration.activate()).toBe(true)
@@ -190,5 +191,112 @@ describe('pluginFrameBridge', () => {
     )
     registration.unregister()
     expect(unsubscribe).toHaveBeenCalledOnce()
+  })
+
+  it('subscribes only to host events declared for the registered slot', async () => {
+    const subscribe = vi.fn(() => vi.fn())
+    const broker = createPluginFrameBridge(vi.fn(), { subscribe })
+    const frame = frameSource()
+    const { token } = activateFrame(broker, frame, {
+      pluginId: 'plugin.a',
+      assetRel: 'a.html',
+      allowedEvents: ['role:switched'],
+    })
+
+    await broker.handleMessage(message(frame, {
+      channel: PLUGIN_FRAME_BRIDGE_CHANNEL,
+      kind: 'subscribe',
+      requestId: 'allowed-host-event',
+      token,
+      event: 'role:switched',
+    }))
+    await broker.handleMessage(message(frame, {
+      channel: PLUGIN_FRAME_BRIDGE_CHANNEL,
+      kind: 'subscribe',
+      requestId: 'denied-host-event',
+      token,
+      event: 'message:sent',
+    }))
+
+    expect(subscribe).toHaveBeenCalledOnce()
+    expect(subscribe).toHaveBeenCalledWith('role:switched', expect.any(Function))
+    expect(frame.postMessage).toHaveBeenLastCalledWith(
+      expect.objectContaining({ ok: false, error: 'plugin event subscription denied' }),
+      '*',
+    )
+  })
+
+  it('allows host audio capture only for the registered trusted frame', async () => {
+    const audioCapture = {
+      start: vi.fn().mockResolvedValue({ mimeType: 'audio/webm' }),
+      stop: vi.fn().mockResolvedValue({ audioBase64: 'AA==', mimeType: 'audio/webm' }),
+      cancel: vi.fn().mockResolvedValue(null),
+    }
+    const broker = createPluginFrameBridge(vi.fn(), { audioCapture })
+    const voiceFrame = frameSource()
+    const otherFrame = frameSource()
+    const voice = activateFrame(broker, voiceFrame, {
+      pluginId: 'com.oclive.voice.asr',
+      assetRel: 'slots/toolbar.html',
+      allowAudioCapture: true,
+    })
+    const other = activateFrame(broker, otherFrame)
+
+    await broker.handleMessage(message(voiceFrame, {
+      channel: PLUGIN_FRAME_BRIDGE_CHANNEL,
+      kind: 'audio-start',
+      requestId: 'voice-start',
+      token: voice.token,
+    }))
+    await broker.handleMessage(message(otherFrame, {
+      channel: PLUGIN_FRAME_BRIDGE_CHANNEL,
+      kind: 'audio-start',
+      requestId: 'other-start',
+      token: other.token,
+    }))
+
+    expect(audioCapture.start).toHaveBeenCalledOnce()
+    expect(otherFrame.postMessage).toHaveBeenLastCalledWith(
+      expect.objectContaining({ ok: false, error: 'plugin audio capture denied' }),
+      '*',
+    )
+    voice.registration.unregister()
+    expect(audioCapture.cancel).toHaveBeenCalledOnce()
+  })
+
+  it('serializes audio commands from the trusted frame', async () => {
+    let resolveStart!: (value: unknown) => void
+    const startResult = new Promise(resolve => (resolveStart = resolve))
+    const audioCapture = {
+      start: vi.fn(() => startResult),
+      stop: vi.fn().mockResolvedValue({ audioBase64: 'AA==', mimeType: 'audio/webm' }),
+      cancel: vi.fn().mockResolvedValue(null),
+    }
+    const broker = createPluginFrameBridge(vi.fn(), { audioCapture })
+    const frame = frameSource()
+    const { token } = activateFrame(broker, frame, {
+      pluginId: 'com.oclive.voice.asr',
+      assetRel: 'slots/toolbar.html',
+      allowAudioCapture: true,
+    })
+
+    const starting = broker.handleMessage(message(frame, {
+      channel: PLUGIN_FRAME_BRIDGE_CHANNEL,
+      kind: 'audio-start',
+      requestId: 'serial-start',
+      token,
+    }))
+    const stopping = broker.handleMessage(message(frame, {
+      channel: PLUGIN_FRAME_BRIDGE_CHANNEL,
+      kind: 'audio-stop',
+      requestId: 'serial-stop',
+      token,
+    }))
+    await Promise.resolve()
+    expect(audioCapture.stop).not.toHaveBeenCalled()
+
+    resolveStart({ mimeType: 'audio/webm' })
+    await Promise.all([starting, stopping])
+    expect(audioCapture.stop).toHaveBeenCalledOnce()
   })
 })

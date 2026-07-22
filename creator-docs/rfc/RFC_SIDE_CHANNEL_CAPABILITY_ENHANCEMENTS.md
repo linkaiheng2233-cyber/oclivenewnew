@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |--------|-----|
-| 状态 | **Registry v1**（`user_identity` / `reply_post_process` / **`theater_director`** 已交付；**`voice.asr`** Windows 已交付 · v0.4 语音扩展可选） |
+| 状态 | **Registry v1**（`user_identity` / `reply_post_process` / **`theater_director`** 已交付；**`voice.asr`** Windows 已交付 · v0.5 语音扩展可选） |
 | 受众 | Cursor / 内核 / 编写器 / 发行版 / 社区插件作者 |
 | 前置 | [OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) · [NAMING_CONVENTIONS.md](../NAMING_CONVENTIONS.md) §1.2 · [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) |
 | 权威中文名 | **独立通道能力增强模块** |
@@ -47,7 +47,7 @@
 | **`user_identity`** | 用户身份 Prompt 模板 | **User Identity Prompt Template** | `turn_pipeline/pre` → `resolve_active_user_identity` → `PromptBuilder.push_user_identity_section`（**LLM 之前**） | 角色包 `user_identities/`；发行版 `[user_identity]` | **无**（内容在角色包；非 directory 槽） | **已交付** |
 | **`reply_post_process`** | 回复后处理 | **Reply Post-Processor Plugin** | 内置 `post_llm` 之后 → `resolve_reply_post_processor` → `process_reply` | 角色包 `config.json` → `reply_post_processor`；发行版 `[post_process].chain` | **`reply_post_process`** · RPC `reply_post_process.process` | **已交付** |
 | **`theater_director`** | 剧场场景导演 | **Theater Scene Director** | **`generate_theater_scene`** / **`POST /theater/scene`**（**不进** `process_message`） | `distro.oclive.toml` → `[theater].director_plugin`；env `OCLIVE_THEATER_DIRECTOR_PLUGIN`；fallback 内置 `scene_director.rs` / `patch_scene.rs` | **`theater_director`** · RPC `theater.build_prompt` | **已交付**（官方 `com.oclive.theater_director_official`） |
-| **`voice.asr`** | 语音识别输入 | **Voice ASR Input** | 宿主 **`chat_toolbar`** + **`plugin_rpc_invoke`** → `com.oclive.voice.asr:submit` → **`send_message`**（**不进** `process_message` 钩子） | 插件 `models/` + `set_plugin_settings_config`；默认档案见插件内 `asr_profiles.json` | **`voice.asr`** · RPC 见 §4.1 | **Windows 已交付**（`com.oclive.voice.asr` v0.4 · Linux/macOS profile 占位） |
+| **`voice.asr`** | 语音识别输入 | **Voice ASR Input** | 宿主 **`chat_toolbar`** + **`plugin_rpc_invoke`** → `com.oclive.voice.asr:submit` → 统一消息提交入口（**不进** `process_message` 钩子） | 插件 `models/` + `set_plugin_settings_config`；默认档案见插件内 `asr_profiles.json` | **`voice.asr`** · RPC 见 §4.1 | **Windows 已交付**（`com.oclive.voice.asr` v0.5 · Linux/macOS profile 占位） |
 
 ### 2.1 附录：宿主工具向（非对话内核编排）
 
@@ -104,7 +104,7 @@ chat_toolbar (VoiceToolbar.vue)
         message:sent / voice:stream-sentence → voice.build_directive → voice.speak
 ```
 
-- **官方包**：[`distros/chat-pro/plugins/com.oclive.voice.asr/`](../../distros/chat-pro/plugins/com.oclive.voice.asr/) · **v0.4.0**
+- **官方包**：[`distros/chat-pro/plugins/com.oclive.voice.asr/`](../../distros/chat-pro/plugins/com.oclive.voice.asr/) · **v0.5.0**
 - **UI 插槽**：`chat_toolbar`（按住说话）+ `settings.panel`（**语音识别** + **语音扩展** 分区）
 - **RPC**：`voice.probe` · `voice.probe_tts` · `voice.warm` · `voice.list_profiles` · `voice.list_model_packs` · `voice.import_model` · **`voice.list_tts_adapters`** · **`voice.import_tts_adapter`** · `voice.transcribe` · **`voice.speak`** · **`voice.build_directive`**
 - **引擎**：Node `rpc_server.mjs` + Python [`examples/voice-loop-minimal/`](../../examples/voice-loop-minimal/)（ASR sherpa-onnx；TTS **`tts/engines/registry.py`** 注册 CosyVoice2 · GPT-SoVITS · Qwen3 · edge/cloud · generic-http-adapter；dev Piper 仅 loop）

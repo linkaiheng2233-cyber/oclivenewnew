@@ -59,6 +59,93 @@ impl BuiltinReplyPostProcessor {
         }
         text.to_string()
     }
+
+    fn strip_echo_remainder(remainder: &str) -> Option<String> {
+        let first = remainder.chars().next()?;
+        if !first.is_whitespace()
+            && !matches!(
+                first,
+                '，' | ','
+                    | '。'
+                    | '.'
+                    | '！'
+                    | '!'
+                    | '？'
+                    | '?'
+                    | '：'
+                    | ':'
+                    | '；'
+                    | ';'
+                    | '—'
+                    | '-'
+                    | '」'
+                    | '』'
+                    | '”'
+                    | '"'
+                    | '\''
+            )
+        {
+            return None;
+        }
+        let cleaned = remainder
+            .trim_start_matches(|c: char| {
+                c.is_whitespace()
+                    || matches!(
+                        c,
+                        '，' | ','
+                            | '。'
+                            | '.'
+                            | '！'
+                            | '!'
+                            | '？'
+                            | '?'
+                            | '：'
+                            | ':'
+                            | '；'
+                            | ';'
+                            | '—'
+                            | '-'
+                            | '」'
+                            | '』'
+                            | '”'
+                            | '"'
+                            | '\''
+                    )
+            })
+            .trim();
+        (!cleaned.is_empty()).then(|| cleaned.to_string())
+    }
+
+    /// Remove only a leading, exact copy of this turn's user message. The
+    /// boundary requirement preserves natural replies such as user `你好` →
+    /// assistant `你好呀`, while filtering `用户说：“你好。” ……` and plain
+    /// `你好。……` echo openings that slipped past prompt guardrails.
+    fn strip_leading_user_echo(text: &str, user_message: &str) -> String {
+        let user = user_message.trim();
+        if user.is_empty() {
+            return text.to_string();
+        }
+
+        let mut candidate = text.trim_start();
+        for label in ["用户说：", "用户说:", "用户：", "用户:", "User:", "user:"] {
+            if let Some(rest) = candidate.strip_prefix(label) {
+                candidate = rest.trim_start();
+                break;
+            }
+        }
+        for open in ['「', '『', '“', '"', '\''] {
+            if let Some(rest) = candidate.strip_prefix(open) {
+                candidate = rest.trim_start();
+                break;
+            }
+        }
+        if let Some(remainder) = candidate.strip_prefix(user) {
+            if let Some(cleaned) = Self::strip_echo_remainder(remainder) {
+                return cleaned;
+            }
+        }
+        text.to_string()
+    }
 }
 
 impl ReplyPostProcessor for BuiltinReplyPostProcessor {
@@ -67,6 +154,9 @@ impl ReplyPostProcessor for BuiltinReplyPostProcessor {
         let mut out = Self::normalize_whitespace(input.raw_reply, minimal);
         if self.config.strip_leading_quote.unwrap_or(!minimal) {
             out = Self::strip_leading_quote(&out);
+        }
+        if !minimal {
+            out = Self::strip_leading_user_echo(&out, input.user_message);
         }
         if let Some(max) = self.config.max_chars {
             if out.chars().count() > max as usize {
@@ -134,5 +224,50 @@ mod tests {
             })
             .expect("ok");
         assert_eq!(out.display_reply, "abc");
+    }
+
+    #[test]
+    fn standard_profile_strips_exact_leading_user_echo() {
+        let p = BuiltinReplyPostProcessor::new(RolePackBuiltinReplyPostProcessorConfig {
+            profile: "standard".to_string(),
+            max_chars: None,
+            strip_leading_quote: Some(false),
+        });
+        for raw in [
+            "晚上好哦沐沐。今天怎么突然这么乖？",
+            "用户说：\"晚上好哦沐沐\"。今天怎么突然这么乖？",
+        ] {
+            let out = p
+                .process_reply(PostProcessInput {
+                    raw_reply: raw,
+                    user_message: "晚上好哦沐沐",
+                    role_id: "mumu",
+                    scene_id: "home",
+                    srid: "mumu",
+                    locale: "zh",
+                })
+                .expect("ok");
+            assert_eq!(out.display_reply, "今天怎么突然这么乖？");
+        }
+    }
+
+    #[test]
+    fn standard_profile_preserves_non_echo_prefix_word() {
+        let p = BuiltinReplyPostProcessor::new(RolePackBuiltinReplyPostProcessorConfig {
+            profile: "standard".to_string(),
+            max_chars: None,
+            strip_leading_quote: Some(false),
+        });
+        let out = p
+            .process_reply(PostProcessInput {
+                raw_reply: "你好呀，今天回来得挺早。",
+                user_message: "你好",
+                role_id: "mumu",
+                scene_id: "home",
+                srid: "mumu",
+                locale: "zh",
+            })
+            .expect("ok");
+        assert_eq!(out.display_reply, "你好呀，今天回来得挺早。");
     }
 }

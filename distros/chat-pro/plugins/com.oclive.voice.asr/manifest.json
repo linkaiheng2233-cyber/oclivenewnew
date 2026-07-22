@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "com.oclive.voice.asr",
   "name": "OCLive Voice ASR (Official)",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Side-channel voice.asr + optional voice expansion (CosyVoice2 TTS) + voice.build_directive. ASR in base; emotional TTS requires expansion.",
   "provides": ["voice.asr"],
   "rpcMethods": [
@@ -129,7 +129,7 @@
       "label": "语音输入",
       "bridge": {
         "invoke": ["plugin_rpc_invoke", "get_plugin_settings_ui", "get_role_pack_path"],
-        "events": ["message:sent"]
+        "events": []
       }
     },
     {

@@ -15,7 +15,7 @@
 3. 只跑 `runner=auto`；`human`/`skip` 禁止假装 Done。  
 4. runnable 仅 `auto + planStatus=ready + progress=pending|ready|implemented|locally-verified`；`pr-open` 等外部事件，不重复 claim；无 runnable → 停。
 5. 默认 **PR 不开合 main**；Done 要 CI 证据。  
-6. 严格七阶段与 G1–G16；`todo completed` ≠ Done。  
+6. 严格七阶段与 G1–G17；`todo completed` ≠ Done。
 7. 上下文将满 → 停并写续跑坐标。
 8. 父 Agent 是 QUEUE / Wave / session 单写者；子 Agent 禁止自行选下一债或改队列。
 9. Cursor IDE 必须使用 clean worktree；禁止用 `git stash`、切分支、reset/clean 隔离 dirty。

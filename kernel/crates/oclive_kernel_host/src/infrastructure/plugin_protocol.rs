@@ -38,14 +38,18 @@ pub fn inject_plugin_bridge_script(
         ev = ev
     );
     let lower = html.to_ascii_lowercase();
-    if let Some(idx) = lower.rfind("</body>") {
+    if let Some(head_start) = lower.find("<head") {
+        let Some(head_end_offset) = lower[head_start..].find('>') else {
+            return format!("{script}{html}");
+        };
+        let idx = head_start + head_end_offset + 1;
         let mut out = String::with_capacity(html.len() + script.len());
         out.push_str(&html[..idx]);
         out.push_str(&script);
         out.push_str(&html[idx..]);
         out
     } else {
-        format!("{html}{script}")
+        format!("{script}{html}")
     }
 }
 
@@ -113,7 +117,38 @@ pub fn plugin_asset_from_request_uri(uri: &str) -> Option<(String, String)> {
 
 #[cfg(test)]
 mod tests {
-    use super::plugin_asset_from_request_uri;
+    use super::{inject_plugin_bridge_script, plugin_asset_from_request_uri};
+    use crate::infrastructure::directory_plugins::OclivePluginManifest;
+
+    #[test]
+    fn injects_bridge_before_plugin_scripts() {
+        let manifest: OclivePluginManifest = serde_json::from_value(serde_json::json!({
+            "schema_version": 1,
+            "id": "com.example.plugin",
+            "version": "1.0.0",
+            "ui_slots": [{
+                "slot": "chat_toolbar",
+                "entry": "slots/toolbar.html",
+                "bridge": { "invoke": ["plugin_rpc_invoke"] }
+            }]
+        }))
+        .unwrap();
+        let html = "<!doctype html><html><head><script src=\"plugin.js\"></script></head><body></body></html>";
+
+        let injected = inject_plugin_bridge_script(
+            html,
+            "com.example.plugin",
+            "slots/toolbar.html",
+            &manifest,
+        );
+
+        let bridge = injected.find("__oclivSetupPluginBridge").unwrap();
+        let plugin = injected.find("plugin.js").unwrap();
+        assert!(
+            bridge < plugin,
+            "bridge must exist before plugin scripts execute"
+        );
+    }
 
     #[test]
     fn parses_wry_custom_protocol_uri() {

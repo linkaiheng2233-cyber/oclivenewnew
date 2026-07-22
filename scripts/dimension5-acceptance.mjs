@@ -173,6 +173,11 @@ runStep('frontend verify:ui anchors', () => {
   sh('node', ['scripts/verify-frontend-patches.mjs']);
 });
 
+runStep('module compatibility ratchet', () => {
+  sh('node', ['scripts/check-module-compat.mjs']);
+  sh('node', ['scripts/validate-plugins-index.mjs']);
+});
+
 runStep('tauri major 2 + docs narrative (K-PLATFORM-01c)', () => {
   const cargoToml = fs.readFileSync(
     path.join(repoRoot, 'distros', 'desktop-tauri', 'Cargo.toml'),

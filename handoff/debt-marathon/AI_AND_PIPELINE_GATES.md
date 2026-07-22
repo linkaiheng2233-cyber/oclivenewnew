@@ -9,7 +9,7 @@ SSOT 链（禁止在本文双写长表）：
 |------|------|
 | 七阶段流水线 | `~/.cursor/skills/dev-pipeline/SKILL.md` |
 | OCLive 定制 | `.cursor/skills/oclive-dev-pipeline/SKILL.md` · `discipline-checklist.md` |
-| G1–G16 | `handoff/AI_CHANGE_BOUNDARIES.md` |
+| G1–G17 | `handoff/AI_CHANGE_BOUNDARIES.md` |
 | 改代码索引 | `AGENTS.md` · `handoff/AI_READING_INDEX.md` §9 |
 | 数字核实 | `handoff/AI_VERIFICATION_PROTOCOL.md` |
 | 命名 | `creator-docs/NAMING_CONVENTIONS.md` §4.2 |

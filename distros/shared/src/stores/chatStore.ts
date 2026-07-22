@@ -21,7 +21,7 @@ import { defineStore } from 'pinia'
 import { resolveUserNarrativeSceneId } from '../composables/narrativeScene'
 import { PURE_CHAT_DEFAULT_SCENE_ID } from '../utils/pureChatScene'
 import { loadRoleSceneMessages, loadRoleSceneMessagesWithSceneFallback } from './chatStoreLoad'
-import { sendChatStoreMessage } from './chatStoreSend'
+import { cancelActiveChatSend, sendChatStoreMessage } from './chatStoreSend'
 import { useRoleStore } from './roleStore'
 import { useUiStore } from './uiStore'
 
@@ -550,6 +550,10 @@ export const useChatStore = defineStore(
           content,
           sceneId,
         )
+      },
+      cancelPendingSend() {
+        cancelActiveChatSend()
+        this.isLoading = false
       },
     },
   },

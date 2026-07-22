@@ -10,15 +10,24 @@
   const button = document.querySelector('#record')
   const status = document.querySelector('#status')
   const error = document.querySelector('#error')
-  let stream = null
-  let recorder = null
-  let chunks = []
   let startedAt = 0
   let busy = false
   let recording = false
   let submitMode = 'send'
   let asrProfile = 'sherpa-paraformer-zh-small'
   let stopListening = null
+
+  function base64ToBlob(base64, mimeType) {
+    const binary = atob(base64)
+    const bytes = new Uint8Array(binary.length)
+    for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i)
+    return new Blob([bytes], { type: mimeType || 'audio/webm' })
+  }
+
+  function nextSubmissionId() {
+    return globalThis.crypto?.randomUUID?.()
+      || `voice-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
+  }
 
   function setState(next = {}) {
     if (typeof next.busy === 'boolean') busy = next.busy
@@ -87,8 +96,7 @@
   }
 
   function cleanup() {
-    stream?.getTracks().forEach(track => track.stop())
-    stream = null; recorder = null
+    void bridge?.audioCapture?.cancel().catch(() => {})
     setState({ recording: false })
   }
 
@@ -110,7 +118,11 @@
         setState({ error: hint, status: '' })
         return
       }
-      await bridge.emit(submitEvent, { text, mode: submitMode })
+      await bridge.emit(submitEvent, {
+        text,
+        mode: submitMode,
+        submissionId: nextSubmissionId(),
+      })
       setState({ status: '识别完成' })
     }
     catch (reason) {
@@ -125,23 +137,10 @@
     if (!bridge || busy || recording) return
     setState({ error: '' })
     try {
-      if (!navigator.mediaDevices?.getUserMedia) throw new Error('此环境不支持麦克风')
-      stream = await navigator.mediaDevices.getUserMedia({ audio: {
-        echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1,
-      } })
-      chunks = []; startedAt = Date.now()
-      const mime = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4']
-        .find(type => MediaRecorder.isTypeSupported(type))
-      recorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream)
-      recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data) }
-      recorder.onstop = () => {
-        const elapsed = Date.now() - startedAt
-        const blob = new Blob(chunks, { type: recorder?.mimeType || 'audio/webm' })
-        cleanup()
-        if (elapsed < minRecordMs) setState({ error: '录音太短，请按住多说一会', status: '' })
-        else void transcribe(blob)
-      }
-      recorder.start(); setState({ recording: true, status: '录音中…' })
+      if (!bridge.audioCapture) throw new Error('Host audio capture unavailable')
+      await bridge.audioCapture.start()
+      startedAt = Date.now()
+      setState({ recording: true, status: '录音中…' })
     }
     catch (reason) {
       cleanup()
@@ -149,8 +148,21 @@
     }
   }
 
-  function stopRecording() {
-    if (recorder && recording) recorder.stop()
+  async function stopRecording() {
+    if (!recording || !bridge?.audioCapture) return
+    setState({ recording: false })
+    try {
+      const captured = await bridge.audioCapture.stop()
+      const elapsed = Number(captured?.durationMs) || Date.now() - startedAt
+      if (elapsed < minRecordMs) {
+        setState({ error: '录音太短，请按住多说一会', status: '' })
+        return
+      }
+      await transcribe(base64ToBlob(captured.audioBase64, captured.mimeType))
+    }
+    catch (reason) {
+      setState({ error: reason instanceof Error ? reason.message : String(reason), status: '' })
+    }
   }
 
   button.addEventListener('pointerdown', (event) => {
@@ -160,7 +172,7 @@
   for (const type of ['pointerup', 'pointercancel', 'pointerleave']) {
     button.addEventListener(type, (event) => {
       if (type === 'pointerup') button.releasePointerCapture?.(event.pointerId)
-      stopRecording()
+      void stopRecording()
     })
   }
 
@@ -175,7 +187,7 @@
       setState({ status: probe?.message || (probe?.ok ? '就绪' : probe?.reason || '未就绪'), error: '' })
       stopListening = await bridge.listen(holdEvent, payload => {
         if (payload?.phase === 'start') void startRecording()
-        if (payload?.phase === 'stop') stopRecording()
+        if (payload?.phase === 'stop') void stopRecording()
       })
     }
     catch (reason) {
