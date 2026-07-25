@@ -154,6 +154,7 @@ struct PromptInputFlat<'a> {
     life_context_line: &'a str,
     worldview_snippet: &'a str,
     mutable_personality: &'a str,
+    ephemeral_personality: &'a str,
     reply_quality_anchor: &'a str,
     previous_complex_emotion_narrative_hint: &'a str,
     user_identity_template: &'a str,
@@ -161,6 +162,9 @@ struct PromptInputFlat<'a> {
     host_prompt_overlay: &'a str,
     host_state_expression_hint: &'a str,
     relation_transition_hint: &'a str,
+    extra_sections: &'a [oclive_kernel_types::PromptExtraSection<'a>],
+    persona_override: Option<&'a str>,
+    previous_assistant_reply: &'a str,
 }
 
 impl<'a> PromptInputSnapshot<'a> {
@@ -187,6 +191,7 @@ impl<'a> PromptInputSnapshot<'a> {
                 life_context_line: input.life_context_line,
                 worldview_snippet: input.worldview_snippet,
                 mutable_personality: input.mutable_personality,
+                ephemeral_personality: input.ephemeral_personality,
                 reply_quality_anchor: input.reply_quality_anchor,
                 previous_complex_emotion_narrative_hint: input
                     .previous_complex_emotion_narrative_hint,
@@ -195,6 +200,9 @@ impl<'a> PromptInputSnapshot<'a> {
                 host_prompt_overlay: input.host_prompt_overlay,
                 host_state_expression_hint: input.host_state_expression_hint,
                 relation_transition_hint: input.relation_transition_hint,
+                extra_sections: input.extra_sections,
+                persona_override: input.persona_override,
+                previous_assistant_reply: input.previous_assistant_reply,
             },
         }
     }
@@ -203,10 +211,61 @@ impl<'a> PromptInputSnapshot<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::models::{EventType, PersonalityVector};
+    use oclive_kernel_types::PromptExtraSection;
 
     #[test]
     fn method_names_match_remote_protocol() {
         assert_eq!(METHOD_PROMPT_BUILD, "prompt.build_prompt");
         assert_eq!(METHOD_PROMPT_TOPIC_HINT, "prompt.top_topic_hint");
+    }
+
+    #[test]
+    fn prompt_snapshot_keeps_dynamic_extension_fields() {
+        let role = Role::default();
+        let personality = PersonalityVector::zero();
+        let memories = [];
+        let extra_sections = [PromptExtraSection {
+            title: "行动连续性状态",
+            body: "当前子地点：客厅",
+        }];
+        let input = PromptInput {
+            role: &role,
+            personality: &personality,
+            memories: &memories,
+            user_input: "你好",
+            user_emotion: "neutral",
+            user_relation_id: "friend",
+            relation_hint: "",
+            relation_before: "Friend",
+            favorability_before: 50.0,
+            relation_preview: "Friend",
+            favorability_preview: 50.0,
+            event_type: &EventType::Praise,
+            impact_factor: 0.0,
+            scene_label: "家",
+            scene_detail: "",
+            topic_hint_line: "",
+            life_context_line: "",
+            worldview_snippet: "",
+            mutable_personality: "",
+            ephemeral_personality: "短期状态",
+            reply_quality_anchor: "",
+            previous_complex_emotion_narrative_hint: "",
+            user_identity_template: "",
+            user_identity_id: "",
+            host_prompt_overlay: "",
+            host_state_expression_hint: "",
+            relation_transition_hint: "",
+            extra_sections: &extra_sections,
+            persona_override: Some("persona capsule"),
+            previous_assistant_reply: "上一轮回复",
+        };
+        let value =
+            serde_json::to_value(PromptInputSnapshot::from_input(&input)).expect("serialize");
+        assert_eq!(value["extra_sections"][0]["title"], "行动连续性状态");
+        assert_eq!(value["ephemeral_personality"], "短期状态");
+        assert_eq!(value["persona_override"], "persona capsule");
+        assert_eq!(value["previous_assistant_reply"], "上一轮回复");
     }
 }

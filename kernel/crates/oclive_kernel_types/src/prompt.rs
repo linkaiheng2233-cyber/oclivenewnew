@@ -3,7 +3,7 @@
 use crate::models::{EventType, Memory, PersonalityVector, Role};
 
 /// Generic prompt section injected before the reply-quality anchor footer.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
 pub struct PromptExtraSection<'a> {
     pub title: &'a str,
     pub body: &'a str,
