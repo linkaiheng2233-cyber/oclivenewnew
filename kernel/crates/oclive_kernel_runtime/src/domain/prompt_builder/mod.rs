@@ -26,9 +26,16 @@ pub const KERNEL_DIALOGUE_GUARDRAILS: &str = "【对话硬约束】（引擎预�
 - **状态延续**：用户「嗯/好/知道了」等短确认 → 顺势落实当前话题或你上一句提议，勿重新寒暄、勿重复已说过的关心。\n\
 - **倾诉优先**：用户透露委屈、挫败、被责备、压力时，先回应其遭遇与情绪，再给一个贴题追问或短反馈，让对话能继续；勿转去闲聊邀约或用一句话把话题封死。\n\
 - **禁止复读开场**：勿把用户刚说的句子、称呼或口头禅原样当作你的起句或主体。例：用户「晚上好哦沐沐」→ 勿以「晚上好哦」起句；改为你自己的措辞接情绪或话题。\n\
+- **禁止同义转述**：用户已经给出判断、选择、计划或答案时，勿先换词总结、确认一遍再回答；直接给出角色自己的态度、行动、补充或必要追问。仅在信息有歧义时才简短核对。\n\
+- **禁止事实臆补**：不要把用户刚说的食物、计划或判断重新列一遍再评价；也不要凭空补充用户未提及的症状、经历、喜好或外部事实。需要关心时，只基于当前对话已知内容；优先用一句短反应接一个新动作或贴题关心。\n\
+- **单声道输出**：只输出当前角色本人对用户说的这一轮台词；不要代写用户的台词、想法、动作、立场或下一轮回答，也不要模拟双方对话。\n\
 - **禁止学舌式模仿**：勿逐句复制用户句式、口癖、昵称链或颜文字密度；保持本角色惯常说话方式。\n\
 - **篇幅随输入**：按用户本句的信息量与情绪强度调节密度。用户极短或仅确认时，宜 1–2 句精炼回复；用户倾诉或追问时再展开；勿为显得热情而重复同一关心或写成长段。\n\
+- **长短句交替**：日常可用一句短反应接一两句展开；勿连续多句都写成「原因＋建议＋追问」的长复句，也勿把关心、解释和新问题全塞进一句。\n\
 - **勿与上一轮助手回复大段雷同**：用户短确认时勿重新展开已说过的关心清单。\n";
+
+const REPLY_OUTPUT_BOUNDARY: &str =
+    "【输出边界】只输出当前角色本人的这一轮台词；不要替用户发言或补写用户的回答，角色说完这一轮就停止。";
 
 const PROMPT_BLOCK_GUIDE: &str = "以下为语气/内容层次，请按序理解";
 
@@ -295,7 +302,8 @@ impl PromptBuilder {
         prompt.push_str(KERNEL_DIALOGUE_GUARDRAILS);
         prompt.push_str("\n\n");
         prompt.push_str(&format!("用户说: {}", input.user_input));
-        prompt.push_str("\n\n请以角色身份自然地回复，保持一致的性格和语气。");
+        prompt.push_str("\n\n请以角色身份自然地回复，保持一致的性格和语气。\n\n");
+        prompt.push_str(REPLY_OUTPUT_BOUNDARY);
         prompt
     }
 
@@ -389,7 +397,8 @@ impl PromptBuilder {
             dynamic_suffix.push_str("\n\n");
         }
         dynamic_suffix.push_str(&format!("用户说: {}", input.user_input));
-        dynamic_suffix.push_str("\n\n请以角色身份自然地回复，保持一致的性格和语气。");
+        dynamic_suffix.push_str("\n\n请以角色身份自然地回复，保持一致的性格和语气。\n\n");
+        dynamic_suffix.push_str(REPLY_OUTPUT_BOUNDARY);
 
         PromptSegments {
             stable_prefix,
@@ -399,7 +408,10 @@ impl PromptBuilder {
 
     #[must_use]
     pub fn build_simple_prompt(role_name: &str, user_input: &str) -> String {
-        format!("你是{}。用户说: {}\n请自然地回复。", role_name, user_input)
+        format!(
+            "你是{}。用户说: {}\n请自然地回复。\n\n{}",
+            role_name, user_input, REPLY_OUTPUT_BOUNDARY
+        )
     }
 
     #[must_use]

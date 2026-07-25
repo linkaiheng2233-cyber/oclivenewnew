@@ -17,7 +17,7 @@ use crate::domain::slot_runner::SlotRunner;
 use crate::domain::turn_thinking::{resolve_turn_thinking, TurnThinkingMode};
 use crate::models::knowledge::KnowledgeIndex;
 use crate::models::Memory;
-use crate::models::PersonalitySource;
+use crate::models::{PersonalitySource, PromptBackend};
 use oclive_kernel_types::PromptExtraSection;
 
 use super::super::turn_context::TurnContext;
@@ -42,6 +42,16 @@ fn resolve_fast_complex_emotion(input: &ComplexEmotionInput) -> ComplexEmotionOu
         degraded_to_builtin: false,
         extension: None,
     }
+}
+
+fn should_use_stable_prompt_segments(
+    prompt_prefix_cache_enabled: bool,
+    llm_supports_prefix_cache: bool,
+    prompt_backend: PromptBackend,
+) -> bool {
+    prompt_prefix_cache_enabled
+        && llm_supports_prefix_cache
+        && matches!(prompt_backend, PromptBackend::Builtin)
 }
 
 pub(crate) async fn run_middle(
@@ -236,7 +246,7 @@ pub(crate) async fn run_middle(
     // Prior-turn hint (pre_llm load) is independent of this turn's CE resolve (NARRATIVE_HINT_CONTRACT §2).
     let complex_hint = pre.hints.prev_stored_narrative_hint.as_str();
     let tier = resolve_model_tier(pre.memory.ollama_model.as_str());
-    let persona_source = resolve_persona_source(tier, thinking.mode, role, &state.host_profile);
+    let persona_source = resolve_persona_source(tier, role, &state.host_profile);
     let persona_override = persona_override_for_source(role, persona_source);
     let (_, previous_assistant_reply) = latest_recent_turn_pair(&pre.memory.recent_turns);
     tracing::debug!(
@@ -289,9 +299,11 @@ pub(crate) async fn run_middle(
     };
 
     let llm_supports_prefix_cache = SlotRunner::primary_llm(pl).supports_prefix_cache();
-    let use_prefix_segments = thinking.mode == TurnThinkingMode::Deep
-        && prompt_prefix_cache_effective(&state.host_profile)
-        && llm_supports_prefix_cache;
+    let use_prefix_segments = should_use_stable_prompt_segments(
+        prompt_prefix_cache_effective(&state.host_profile),
+        llm_supports_prefix_cache,
+        ctx.effective_backends.prompt,
+    );
 
     let (
         prompt,
@@ -307,13 +319,18 @@ pub(crate) async fn run_middle(
             .await?;
         let stable_hash = hash_stable_prefix(&segments.stable_prefix);
         let stable_len = segments.stable_len();
+        let mode_key = match thinking.mode {
+            TurnThinkingMode::Fast => "fast",
+            TurnThinkingMode::Deep => "deep",
+        };
+        let persona_key = match persona_source {
+            PersonaSource::PersonaCapsule => "persona_capsule",
+            PersonaSource::FullCore => "full_core",
+        };
         let cache_key = SessionCache::prefix_cache_key(
             ctx.srid,
             pre.memory.ollama_model.as_str(),
-            match persona_source {
-                PersonaSource::DeepCapsule => "deep_capsule",
-                PersonaSource::FullCore => "full_core",
-            },
+            format!("{mode_key}:{persona_key}").as_str(),
             scene_id,
             pre.relation.user_identity_id.as_str(),
         );
@@ -326,7 +343,8 @@ pub(crate) async fn run_middle(
             prefix_hash = stable_hash,
             stable_len,
             cache_expected_hit = expected_hit,
-            "deep prompt prefix cache"
+            mode = mode_key,
+            "prompt prefix cache"
         );
         (
             segments.full(),
@@ -392,5 +410,34 @@ mod tests {
         let output = resolve_fast_complex_emotion(&fast_input("随便吧"));
         assert!(output.pattern.is_none());
         assert!((output.intensity - 0.5).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn stable_prompt_segments_require_builtin_prompt_and_cacheable_llm() {
+        assert!(should_use_stable_prompt_segments(
+            true,
+            true,
+            PromptBackend::Builtin
+        ));
+        assert!(!should_use_stable_prompt_segments(
+            false,
+            true,
+            PromptBackend::Builtin
+        ));
+        assert!(!should_use_stable_prompt_segments(
+            true,
+            false,
+            PromptBackend::Builtin
+        ));
+        assert!(!should_use_stable_prompt_segments(
+            true,
+            true,
+            PromptBackend::Directory
+        ));
+        assert!(!should_use_stable_prompt_segments(
+            true,
+            true,
+            PromptBackend::Remote
+        ));
     }
 }

@@ -195,10 +195,11 @@ pub struct Role {
     /// Blueprint `meta.featured`: show in first-run preset gallery.
     #[serde(default)]
     pub featured: bool,
-    /// Blueprint `meta.deep_capsule_enabled`: use `prompts/deep_capsule.txt` on Small+Deep when true.
+    /// Blueprint `meta.deep_capsule_enabled`: allow Small models to use the offline persona capsule.
+    /// The field name and `prompts/deep_capsule.txt` path are retained for role-pack compatibility.
     #[serde(default)]
     pub deep_capsule_enabled: bool,
-    /// Wave D: offline-distilled Deep persona (`prompts/deep_capsule.txt`; in-memory only).
+    /// Wave D: offline-distilled persona (`prompts/deep_capsule.txt`; in-memory only).
     #[serde(skip)]
     pub deep_capsule: Option<String>,
     /// Blueprint `meta.preset_order`: gallery sort (lower first).

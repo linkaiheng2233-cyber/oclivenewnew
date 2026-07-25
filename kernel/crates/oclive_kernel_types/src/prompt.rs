@@ -53,7 +53,7 @@ pub struct PromptInput<'a> {
     pub relation_transition_hint: &'a str,
     /// Host-orchestrated extra sections rendered before the reply-quality anchor (ordered).
     pub extra_sections: &'a [PromptExtraSection<'a>],
-    /// When set, replaces Tier0 `core_personality` injection (Wave D Deep capsule).
+    /// When set, replaces Tier0 `core_personality` injection (Wave D persona capsule).
     pub persona_override: Option<&'a str>,
     /// Previous turn assistant reply; when non-empty, injects anti-repeat constraint before the quality anchor.
     pub previous_assistant_reply: &'a str,

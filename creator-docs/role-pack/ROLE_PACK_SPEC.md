@@ -59,7 +59,7 @@ distros/chat-pro/roles/{role_id}/
 
 **锚点 vs guardrails 分工**：包级 `reply_quality_anchor` **整段替换**内核默认锚点，但**不替换**引擎 **`KERNEL_DIALOGUE_GUARDRAILS`**（含状态延续、倾诉优先、禁止复读开场、篇幅随输入等通用纪律，每轮恒追加）。创作者宜在包级锚点只写**人设差异**，勿重复 guardrails 已覆盖的通用句。
 
-**Deep persona capsule（Wave D · 可选）**：`prompts/deep_capsule.txt` 为 **Turn Thinking Deep** 轮准备的 **离线蒸馏** 短人设（≤ **2500** 汉字）；**Small 模型 + Deep 轮**且 `meta.deep_capsule_enabled=true` 时替代 Tier0 全量 `core_personality.txt` 注入，Fast 轮仍读全文。蒸馏流程与 KV 前缀延续见 [`handoff/DEEP_PROMPT_DISTILLATION.md`](../../handoff/DEEP_PROMPT_DISTILLATION.md)。**禁止**运行时 LLM 动态压缩。
+**Persona capsule（Wave D · 可选，沿用 `deep_capsule` 文件名）**：`prompts/deep_capsule.txt` 是 **离线蒸馏** 的短人设（≤ **2500** 汉字）；Small 模型且 `meta.deep_capsule_enabled=true` 时，Fast/Deep 轮均可用它替代 Tier0 全量 `core_personality.txt` 注入。Large 模型与未启用角色仍读全文。蒸馏流程与 KV 前缀延续见 [`handoff/DEEP_PROMPT_DISTILLATION.md`](../../handoff/DEEP_PROMPT_DISTILLATION.md)。**禁止**运行时 LLM 动态压缩。
 
 ### 1.1 `user_identities/`（User Identity Prompt Template · 可选）
 
@@ -98,8 +98,6 @@ distros/chat-pro/roles/{role_id}/
 
 - **整个 `user_identities/` 目录缺失** → legacy 回退（`meta.relations` 的 `prompt_hint`），不阻塞 `load_role`。
 - **目录存在且含 `index.json`** → 每条 `template_file` 指向的 `*.md` **必须可读**；`oclive pack validate` 与 `load_role` 均会 **失败**（非 warn）。
-
----
 
 ## 2. `pipeline.ocblueprint`（v2 SSOT）
 

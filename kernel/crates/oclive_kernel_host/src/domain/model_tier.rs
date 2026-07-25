@@ -1,7 +1,6 @@
 //! Ollama model tier heuristic for Wave D persona capsule routing (编排行 · 非六槽).
 
 use crate::domain::host_profile::{HostProfile, TurnThinkingProfile};
-use crate::domain::turn_thinking::TurnThinkingMode;
 use crate::models::Role;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -13,7 +12,7 @@ pub enum ModelTier {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PersonaSource {
     FullCore,
-    DeepCapsule,
+    PersonaCapsule,
 }
 
 #[must_use]
@@ -39,13 +38,8 @@ pub fn resolve_model_tier(ollama_model: &str) -> ModelTier {
 }
 
 #[must_use]
-pub fn resolve_persona_source(
-    tier: ModelTier,
-    mode: TurnThinkingMode,
-    role: &Role,
-    host: &HostProfile,
-) -> PersonaSource {
-    if mode != TurnThinkingMode::Deep || tier != ModelTier::Small {
+pub fn resolve_persona_source(tier: ModelTier, role: &Role, host: &HostProfile) -> PersonaSource {
+    if tier != ModelTier::Small {
         return PersonaSource::FullCore;
     }
     let has_capsule = role
@@ -55,9 +49,9 @@ pub fn resolve_persona_source(
     if !has_capsule {
         return PersonaSource::FullCore;
     }
-    let enabled = deep_capsule_effective_enabled(role.deep_capsule_enabled, &host.turn_thinking);
+    let enabled = persona_capsule_effective_enabled(role.deep_capsule_enabled, &host.turn_thinking);
     if enabled {
-        PersonaSource::DeepCapsule
+        PersonaSource::PersonaCapsule
     } else {
         PersonaSource::FullCore
     }
@@ -66,12 +60,12 @@ pub fn resolve_persona_source(
 #[must_use]
 pub fn persona_override_for_source(role: &Role, source: PersonaSource) -> Option<&str> {
     match source {
-        PersonaSource::DeepCapsule => role.deep_capsule.as_deref(),
+        PersonaSource::PersonaCapsule => role.deep_capsule.as_deref(),
         PersonaSource::FullCore => None,
     }
 }
 
-fn deep_capsule_effective_enabled(role_enabled: bool, host: &TurnThinkingProfile) -> bool {
+fn persona_capsule_effective_enabled(role_enabled: bool, host: &TurnThinkingProfile) -> bool {
     match host.deep_capsule {
         Some(true) => true,
         Some(false) => false,
@@ -82,7 +76,6 @@ fn deep_capsule_effective_enabled(role_enabled: bool, host: &TurnThinkingProfile
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::turn_thinking::TurnThinkingMode;
 
     fn role_with_capsule(enabled: bool) -> Role {
         Role {
@@ -103,19 +96,15 @@ mod tests {
     }
 
     #[test]
-    fn capsule_only_small_deep_enabled() {
+    fn capsule_is_used_for_all_small_model_turns_when_enabled() {
         let role = role_with_capsule(true);
         let host = HostProfile::default();
         assert_eq!(
-            resolve_persona_source(ModelTier::Small, TurnThinkingMode::Deep, &role, &host),
-            PersonaSource::DeepCapsule
+            resolve_persona_source(ModelTier::Small, &role, &host),
+            PersonaSource::PersonaCapsule
         );
         assert_eq!(
-            resolve_persona_source(ModelTier::Large, TurnThinkingMode::Deep, &role, &host),
-            PersonaSource::FullCore
-        );
-        assert_eq!(
-            resolve_persona_source(ModelTier::Small, TurnThinkingMode::Fast, &role, &host),
+            resolve_persona_source(ModelTier::Large, &role, &host),
             PersonaSource::FullCore
         );
     }
@@ -126,7 +115,7 @@ mod tests {
         let mut host = HostProfile::default();
         host.turn_thinking.deep_capsule = Some(false);
         assert_eq!(
-            resolve_persona_source(ModelTier::Small, TurnThinkingMode::Deep, &role, &host),
+            resolve_persona_source(ModelTier::Small, &role, &host),
             PersonaSource::FullCore
         );
     }

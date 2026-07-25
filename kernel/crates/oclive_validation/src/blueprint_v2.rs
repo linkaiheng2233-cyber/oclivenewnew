@@ -164,7 +164,7 @@ pub struct BlueprintMeta {
     /// Official preset gallery: show in first-run picker when `true`.
     #[serde(default)]
     pub featured: bool,
-    /// When true, Small+Deep may use `prompts/deep_capsule.txt` (Wave D).
+    /// When true, Small models may use `prompts/deep_capsule.txt` as an offline persona capsule.
     #[serde(default)]
     pub deep_capsule_enabled: bool,
     /// Sort order in preset gallery (lower first); default 999.

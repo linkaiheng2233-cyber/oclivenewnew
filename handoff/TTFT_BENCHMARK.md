@@ -74,9 +74,9 @@ $env:RUST_LOG = "oclive_turn=debug"
 |------|------|
 | `[host_flags] event_impact_llm = false` | 全局跳过 event `generate_tag`（`desktop-latency` 默认） |
 | `[turn_thinking] default = "auto"` | 闲聊 Fast / 高情绪 Deep |
-| `meta.deep_capsule_enabled` + `prompts/deep_capsule.txt` | Small+Deep 用离线 capsule（见 [`DEEP_PROMPT_DISTILLATION.md`](DEEP_PROMPT_DISTILLATION.md)） |
+| `meta.deep_capsule_enabled` + `prompts/deep_capsule.txt` | Small 模型 Fast/Deep 共用离线 persona capsule（沿用字段/文件名，见 [`DEEP_PROMPT_DISTILLATION.md`](DEEP_PROMPT_DISTILLATION.md)） |
 | `node scripts/measure-ttft.mjs --deep-only` | 仅测 Deep 轮 TTFT（长句触发） |
-| `[turn_thinking] prompt_prefix_cache = true` | Deep+Ollama 稳定前缀分段 + `keep_alive`（`desktop-latency` 默认开启） |
+| `[turn_thinking] prompt_prefix_cache = true` | Fast/Deep + Ollama + 内置 prompt 后端使用稳定前缀分段与 `keep_alive`（`desktop-latency` 默认开启；目录/远程 prompt 不改写） |
 | `OCLIVE_PROMPT_PREFIX_CACHE=1` | 环境变量强制开启前缀缓存（覆盖 profile） |
 | `OCLIVE_BENCH_TELEMETRY=1` | `SendMessageResponse.llm_prompt_eval_ms`（仅 bench，不进产品 UI） |
 | `node scripts/measure-ttft.mjs --deep-multi --runs 5` | 连续 5 轮 Deep **prefill**（`prompt_eval_ms`，非 stream TTFT） |
@@ -98,7 +98,7 @@ node scripts/measure-ttft.mjs --profile desktop-latency --runs 5 --ollama-model 
 
 | 场景 | 期望 |
 |------|------|
-| Fast 10 轮闲聊（短句「你好」等） | stream TTFT p50 **维持** Wave B 量级（~243ms）；`role_runtime.favorability` 变化 **&lt; 0.01** |
+| Fast 10 轮闲聊（短句「你好」等） | stream TTFT p50 **维持** Wave B 量级（历史 ~243ms）；`role_runtime.favorability` 变化 **&lt; 0.01** |
 | 1 轮 Deep（≥80 字或高情绪句） | `long_term_memory` 有新增；好感可观测变化 |
 | Fast + 强事件（争吵/道歉等） | 仍写入 long_term / favor（与 `legacy` 一致） |
 
@@ -135,7 +135,7 @@ node examples/oocp-test-suite/run.mjs
 
 在 `desktop.oclive.toml`（`event_impact_llm` 默认 true）下复测；Deep 轮可能调 event LLM，TTFT 高于 Fast 路径属预期。发版前用 `--profile desktop` 记录一行 p50 填入 [`PERF_PHASES.md`](PERF_PHASES.md)。
 
-**Deep 路径（Wave D · Small+Deep capsule）**：启用 mumu `deep_capsule_enabled` + `--deep-only` 测 Deep TTFT；capsule ~2k 字 vs 全量 ~4.9k 字，目标 prefill 下降 ≥20%。人设 checklist 见 [`DEEP_PROMPT_DISTILLATION.md`](DEEP_PROMPT_DISTILLATION.md) §3.2。
+**Deep 路径（Wave D · Small persona capsule）**：启用 mumu `deep_capsule_enabled` + `--deep-only` 测 Deep TTFT；capsule ~2k 字 vs 全量 ~4.9k 字，目标 prefill 下降 ≥20%。人设 checklist 见 [`DEEP_PROMPT_DISTILLATION.md`](DEEP_PROMPT_DISTILLATION.md) §3.2。
 
 ### 表 3 · 多轮 Deep prefill（Wave D-T3 · `desktop-latency`）
 
@@ -149,6 +149,12 @@ node examples/oocp-test-suite/run.mjs
 | **Round 2–5 p50** | **28**（&lt; Round 1 · **PASS**） |
 
 环境：mumu · `qwen2.5:7b` · `prompt_prefix_cache=true` · `OCLIVE_BENCH_TELEMETRY=1` · 2026-06-26。
+
+### 表 5 · 当前优化波次（2026-07-23 · `desktop-latency`）
+
+同一角色、场景、模型与本地 Ollama 0.32.1 下，Fast 由全量 core（prompt 约 4071 token，stream TTFT p50 **1761ms**）切换为 persona capsule + 稳定前缀布局后，7 轮 stream TTFT 为 **min 193 / p50 221 / max 1320ms**；首轮冷 prompt eval **686ms**，后续命中稳定前缀为 **27–29ms**。一次 max 属于冷/调度离群值，p50 通过 1s 门禁。直连 Ollama 极短 prompt p50 **151ms**。
+
+该结果证明 `keep_alive` 本身只保证模型驻留；稳定前缀必须先把输入压到上下文窗口内，才能让 Ollama 复用 KV。目录/远程 prompt 后端不使用该重排路径。
 
 ### 表 4 · Wave F 手测（`desktop-latency` · 可选）
 

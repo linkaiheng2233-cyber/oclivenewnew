@@ -97,7 +97,7 @@ async fn mumu_pack_anchor_and_guardrails_in_main_prompt() {
         .expect("load mumu");
     let anchor = effective_reply_quality_anchor(&role);
     assert!(anchor.contains("沐沐"));
-    assert!(anchor.contains("嘴硬藏心软"));
+    assert!(anchor.contains("温柔先行"));
     assert!(!anchor.contains("状态延续"));
     assert!(!anchor.contains(DEFAULT_REPLY_QUALITY_ANCHOR.trim()));
 
@@ -130,11 +130,45 @@ async fn mumu_pack_anchor_and_guardrails_in_main_prompt() {
             .expect("main prompt for turn1 should include user line")
             .clone()
     };
-    assert!(p1.contains("嘴硬藏心软"));
+    assert!(p1.contains("温柔先行"));
     assert!(p1.contains("【对话硬约束】"));
     assert!(p1.contains("状态延续"));
     assert!(p1.contains("倾诉优先"));
+    assert!(p1.contains("禁止同义转述"));
+    assert!(p1.contains("禁止事实臆补"));
+    assert!(p1.contains("单声道输出"));
+    assert!(p1.contains("输出边界"));
+    assert!(p1.contains("长短句交替"));
     assert!(!p1.contains("影响因子(已归一)"));
     assert!(!p1.contains("warmup_level="));
     assert!(!p1.contains("【回复结构】"));
+}
+
+#[test]
+fn mumu_persona_surfaces_share_reply_discipline() {
+    let role_dir = common::roles_dir().join("mumu");
+    let storage = RoleStorage::new(common::roles_dir());
+    let role = storage.load_role_from_dir(&role_dir).expect("load mumu");
+    let anchor = effective_reply_quality_anchor(&role);
+    let core = std::fs::read_to_string(role_dir.join("core_personality.txt"))
+        .expect("mumu core personality");
+    let capsule = std::fs::read_to_string(role_dir.join("prompts/deep_capsule.txt"))
+        .expect("mumu deep capsule");
+    let father = std::fs::read_to_string(role_dir.join("user_identities/father.md"))
+        .expect("mumu father identity");
+
+    assert!(anchor.contains("温柔先行"));
+    assert!(anchor.contains("口语有呼吸感"));
+    assert!(anchor.contains("不要擅自添加用户没说过的身体状况或经历"));
+    assert!(anchor.contains("优先用一句短反应接一个新动作或贴题关心"));
+    assert!(!anchor.contains("关心、夸赞、依赖先用吐槽"));
+    assert!(core.contains("长短句自然交替"));
+    assert!(core.contains("不要先把对方的话换个说法复述一遍"));
+    assert!(capsule.contains("长短句自然交替"));
+    assert!(capsule.contains("勿把对方刚说的内容换词再讲一遍"));
+    assert!(capsule.contains("勿擅自补充对方没说过的症状或经历"));
+    assert!(capsule.contains("优先用一句短反应接一个新动作或贴题关心"));
+    assert!(father.contains("日常对你温柔直接"));
+    assert!(father.contains("女儿的自然口吻"));
+    assert!(!father.contains("你回应时用父亲式"));
 }

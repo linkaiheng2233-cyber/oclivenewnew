@@ -214,6 +214,7 @@ fn test_build_simple_prompt() {
     let prompt = PromptBuilder::build_simple_prompt("TestBot", "Hi");
     assert!(prompt.contains("TestBot"));
     assert!(prompt.contains("Hi"));
+    assert!(prompt.contains("输出边界"));
 }
 
 #[test]
@@ -546,6 +547,10 @@ fn default_reply_quality_anchor_and_guardrails_constants_present() {
     assert!(!DEFAULT_REPLY_QUALITY_ANCHOR.contains("倾诉优先"));
     assert!(KERNEL_DIALOGUE_GUARDRAILS.contains("【对话硬约束】"));
     assert!(KERNEL_DIALOGUE_GUARDRAILS.contains("禁止复读开场"));
+    assert!(KERNEL_DIALOGUE_GUARDRAILS.contains("禁止同义转述"));
+    assert!(KERNEL_DIALOGUE_GUARDRAILS.contains("禁止事实臆补"));
+    assert!(KERNEL_DIALOGUE_GUARDRAILS.contains("单声道输出"));
+    assert!(KERNEL_DIALOGUE_GUARDRAILS.contains("长短句交替"));
     assert!(KERNEL_DIALOGUE_GUARDRAILS.contains("状态延续"));
     assert!(KERNEL_DIALOGUE_GUARDRAILS.contains("倾诉优先"));
 }
@@ -591,6 +596,7 @@ fn reply_quality_anchor_custom_overrides_default() {
     assert!(!prompt.contains("【回复质量锚点】（每轮须遵守）"));
     assert!(prompt.contains("【对话硬约束】"));
     assert!(prompt.contains("禁止复读开场"));
+    assert!(prompt.contains("输出边界"));
     assert!(prompt.contains("状态延续"));
     assert!(prompt.contains("倾诉优先"));
 }
