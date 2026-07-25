@@ -24,6 +24,27 @@ pub struct DistroOcliveFile {
     pub visual_presentation: Option<VisualPresentationToml>,
     pub theater: Option<TheaterToml>,
     pub turn_thinking: Option<TurnThinkingToml>,
+    pub llm_runtime: Option<LlmRuntimeToml>,
+}
+
+/// Distro-owned local LLM runtime policy.
+///
+/// This is deliberately separate from role-pack `plugin_backends.llm`: roles select the
+/// logical LLM slot while the distro selects how its builtin local slot is implemented.
+#[derive(Debug, Default, Clone, Deserialize)]
+pub struct LlmRuntimeToml {
+    /// `ollama` | `performance`.
+    pub mode: Option<String>,
+    /// OpenAI-compatible llama-server root URL.
+    pub endpoint: Option<String>,
+    /// Whether the host may start an installed llama-server runtime pack.
+    pub auto_start: Option<bool>,
+    /// Maximum wait for a newly spawned runtime to become healthy.
+    pub startup_timeout_ms: Option<u64>,
+    /// Cooldown after an unavailable primary before probing it again.
+    pub retry_cooldown_ms: Option<u64>,
+    /// Model alias sent to llama-server's OpenAI-compatible endpoint.
+    pub model_alias: Option<String>,
 }
 
 #[derive(Debug, Default, Clone, Deserialize)]
@@ -231,6 +252,16 @@ mod tests {
         assert_eq!(ix.default_mode.as_deref(), Some("pure_chat"));
         assert_eq!(ix.allow_mode_switch, Some(true));
         assert_eq!(ix.immersive_unlock_hint_after_turns, Some(10));
+    }
+
+    #[test]
+    fn parse_desktop_performance_llm_runtime() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../examples/distro-profiles");
+        let file = parse_distro_oclive_file(&root.join("desktop.oclive.toml")).unwrap();
+        let runtime = file.llm_runtime.as_ref().expect("llm_runtime");
+        assert_eq!(runtime.mode.as_deref(), Some("performance"));
+        assert_eq!(runtime.endpoint.as_deref(), Some("http://127.0.0.1:8421"));
+        assert_eq!(runtime.auto_start, Some(true));
     }
 
     #[test]

@@ -8,6 +8,7 @@ export const modelManagerEn = {
   loading: 'Loading…',
   globalDefaultModelLabel: 'Global default model',
   globalDefaultModelLead: 'All roles use this Ollama model unless overridden per session. Takes effect immediately after save.',
+  ollamaFallbackModelLabel: 'Ollama fallback model',
   globalDefaultModelSave: 'Save global default',
   globalDefaultModelSaving: 'Saving…',
   globalDefaultModelSaveOk: 'Global default model saved',
@@ -20,6 +21,14 @@ export const modelManagerEn = {
   localTitle: 'Ollama (local)',
   localLead:
     'Pick a folder with GGUF/BIN files to import into Ollama, or choose an existing Ollama model.',
+  performanceTitle: 'Performance local LLM',
+  performanceLead:
+    'Use a GGUF model directly through the optional llama-server runtime pack. If the pack, model, or runtime is unavailable before the first token, OCLive falls back to Ollama.',
+  performanceStatusLabel: 'Runtime',
+  performanceReady: 'llama-server ready',
+  performanceFallbackActive: 'Ollama fallback active',
+  ollamaFallbackUnavailable: 'Ollama fallback unavailable',
+  performanceModelsLabel: 'GGUF models (direct)',
   ollamaBaseUrlLabel: 'Ollama base URL',
   refreshModels: 'Refresh Ollama list',
   refreshingModels: 'Refreshing…',

@@ -20,6 +20,56 @@ pub struct TheaterProfile {
     pub director_plugin: Option<String>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum LocalLlmRuntimeMode {
+    #[default]
+    Ollama,
+    Performance,
+}
+
+impl LocalLlmRuntimeMode {
+    #[must_use]
+    pub fn parse(value: &str) -> Option<Self> {
+        match value.trim().to_ascii_lowercase().as_str() {
+            "ollama" => Some(Self::Ollama),
+            "performance" => Some(Self::Performance),
+            _ => None,
+        }
+    }
+
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Ollama => "ollama",
+            Self::Performance => "performance",
+        }
+    }
+}
+
+/// Distro policy for the builtin local LLM implementation.
+#[derive(Debug, Clone)]
+pub struct LocalLlmRuntimeProfile {
+    pub mode: LocalLlmRuntimeMode,
+    pub endpoint: String,
+    pub auto_start: bool,
+    pub startup_timeout_ms: u64,
+    pub retry_cooldown_ms: u64,
+    pub model_alias: String,
+}
+
+impl Default for LocalLlmRuntimeProfile {
+    fn default() -> Self {
+        Self {
+            mode: LocalLlmRuntimeMode::Ollama,
+            endpoint: "http://127.0.0.1:8421".into(),
+            auto_start: true,
+            startup_timeout_ms: 90_000,
+            retry_cooldown_ms: 30_000,
+            model_alias: "oclive-performance".into(),
+        }
+    }
+}
+
 /// Distro default User Identity Prompt Template id (when session has no explicit choice).
 #[derive(Debug, Clone, Default)]
 pub struct UserIdentityProfile {
@@ -113,6 +163,7 @@ pub struct HostProfile {
     pub visual_presentation_mode: Option<String>,
     pub theater: TheaterProfile,
     pub turn_thinking: TurnThinkingProfile,
+    pub llm_runtime: LocalLlmRuntimeProfile,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -173,7 +224,8 @@ pub struct TurnThinkingProfile {
     pub auto_deep_keywords: Vec<String>,
     pub fast_knowledge_limit: usize,
     pub fast_memory_cap: usize,
-    /// When `Some(true)`, force Deep capsule on Small+Deep when file exists; `Some(false)` blocks.
+    /// When `Some(true)`, force the offline persona capsule for Small models when the file exists;
+    /// `Some(false)` blocks it. The field name remains `deep_capsule` for profile compatibility.
     pub deep_capsule: Option<bool>,
     /// When `Some(true)`, Deep+Ollama uses `build_prompt_segments` for llama.cpp prefix reuse.
     pub prompt_prefix_cache: Option<bool>,
@@ -393,6 +445,34 @@ fn host_profile_from_distro_file(
             profile.turn_thinking.deep_profile_update_every_n_turns = n.max(1);
         }
     }
+    if let Some(ref llm) = file.llm_runtime {
+        if let Some(ref mode) = llm.mode {
+            profile.llm_runtime.mode = LocalLlmRuntimeMode::parse(mode).ok_or_else(|| {
+                AppError::InvalidParameter(format!("unknown llm_runtime mode: {mode}"))
+            })?;
+        }
+        if let Some(ref endpoint) = llm.endpoint {
+            let endpoint = endpoint.trim().trim_end_matches('/');
+            if !endpoint.is_empty() {
+                profile.llm_runtime.endpoint = endpoint.to_string();
+            }
+        }
+        if let Some(auto_start) = llm.auto_start {
+            profile.llm_runtime.auto_start = auto_start;
+        }
+        if let Some(ms) = llm.startup_timeout_ms {
+            profile.llm_runtime.startup_timeout_ms = ms.clamp(1_000, 600_000);
+        }
+        if let Some(ms) = llm.retry_cooldown_ms {
+            profile.llm_runtime.retry_cooldown_ms = ms.clamp(250, 600_000);
+        }
+        if let Some(ref alias) = llm.model_alias {
+            let alias = alias.trim();
+            if !alias.is_empty() {
+                profile.llm_runtime.model_alias = alias.to_string();
+            }
+        }
+    }
     Ok(profile)
 }
 
@@ -414,6 +494,7 @@ impl Default for HostProfile {
             visual_presentation_mode: None,
             theater: TheaterProfile::default(),
             turn_thinking: TurnThinkingProfile::default(),
+            llm_runtime: LocalLlmRuntimeProfile::default(),
         }
     }
 }
@@ -692,6 +773,17 @@ mod tests {
         assert_eq!(p.distro_id, "desktop-chat");
         assert!(!p.interaction.default_mode.is_immersive());
         assert_eq!(p.interaction.immersive_unlock_hint_after_turns, 10);
+    }
+
+    #[test]
+    fn desktop_profile_uses_performance_runtime_without_changing_llm_backend_enum() {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../examples/distro-profiles");
+        let p = load_host_profile_file(&root.join("desktop.oclive.toml")).unwrap();
+        assert_eq!(p.llm_runtime.mode, LocalLlmRuntimeMode::Performance);
+        assert_eq!(p.llm_runtime.endpoint, "http://127.0.0.1:8421");
+        assert!(p.llm_runtime.auto_start);
+        assert!(p.backends_ceiling.is_none());
     }
 
     #[test]

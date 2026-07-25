@@ -12,6 +12,7 @@ use crate::infrastructure::directory_plugins::DirectoryPluginRuntime;
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
 use crate::infrastructure::llm::LlmClient;
 use crate::infrastructure::ollama_client::OllamaClient;
+use crate::infrastructure::performance_llm::PerformanceLlmClient;
 use crate::infrastructure::policy_registry::{
     build_policy_sets_from_registry, load_policy_registry_from_path, PolicyRuntime, PolicySet,
 };
@@ -81,6 +82,8 @@ pub struct AppState {
     pub llm: Arc<dyn LlmClient>,
     /// Direct Ollama client for Deep prefix-cache metrics (`keep_alive`); `None` in mock-LLM tests.
     pub ollama: Option<Arc<OllamaClient>>,
+    /// Distro performance-mode runtime; absent for Ollama-only profiles and mock tests.
+    pub performance_llm: Option<Arc<PerformanceLlmClient>>,
     /// Hot-path lock layering:
     /// - `role_cache` / `role_load_inflight`: dedupe role reads;
     /// - `session_cache`: session overrides;
@@ -197,6 +200,49 @@ impl AppState {
 
     pub fn set_global_ollama_model_in_memory(&self, model: String) {
         *self.ollama_model.write() = model;
+    }
+
+    /// Preload the selected local model in the background. Failures are non-fatal.
+    pub fn schedule_ollama_preload(&self, model: String) {
+        if self.performance_llm.as_ref().is_some_and(|performance| {
+            let status = performance.status_snapshot();
+            status.ready || (status.runtime_installed && status.model_configured)
+        }) {
+            return;
+        }
+        let enabled = std::env::var("OCLIVE_OLLAMA_PRELOAD")
+            .map(|v| !matches!(v.trim().to_ascii_lowercase().as_str(), "0" | "false" | "no"))
+            .unwrap_or(true);
+        let remote_backend = std::env::var("OCLIVE_LLM_BACKEND")
+            .map(|v| v.trim().eq_ignore_ascii_case("remote"))
+            .unwrap_or(false);
+        if !enabled || remote_backend || self.user_llm_provider.read().as_str() == "cloud" {
+            return;
+        }
+        let Some(client) = self.ollama.as_ref().cloned() else {
+            return;
+        };
+        let keep_alive = std::env::var("OCLIVE_OLLAMA_KEEP_ALIVE")
+            .ok()
+            .filter(|v| !v.trim().is_empty())
+            .unwrap_or_else(|| "30m".to_string());
+        tokio::spawn(async move {
+            let started = std::time::Instant::now();
+            match client.preload(model.as_str(), keep_alive.as_str()).await {
+                Ok(()) => tracing::info!(
+                    target: "oclive_llm",
+                    model,
+                    preload_ms = started.elapsed().as_millis(),
+                    "Ollama model preloaded"
+                ),
+                Err(error) => tracing::warn!(
+                    target: "oclive_llm",
+                    model,
+                    %error,
+                    "Ollama preload failed; first chat will retry normally"
+                ),
+            }
+        });
     }
 
     /// Borrows [`DbManager`] as [`TurnThinkingStatePort`](crate::domain::ports::TurnThinkingStatePort).

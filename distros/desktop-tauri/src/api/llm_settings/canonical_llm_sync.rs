@@ -1,7 +1,8 @@
 //! Sync UI-shell LLM settings with canonical kernel `app.db`.
 
 use oclive_kernel_host::domain::user_llm_env::{
-    apply_user_llm_env, KEY_LOCAL_MODELS_DIR, KEY_REMOTE_TOKEN, LLM_APP_SETTING_KEYS,
+    apply_user_llm_env, KEY_LOCAL_MODELS_DIR, KEY_LOCAL_MODEL_PATH, KEY_REMOTE_TOKEN,
+    LLM_APP_SETTING_KEYS,
 };
 use oclive_kernel_host::infrastructure::user_llm_secrets::{read_token_file, write_token_file};
 use oclive_kernel_host::state::{is_managed_legacy_models_path, AppState};
@@ -47,7 +48,7 @@ pub async fn sync_shell_llm_settings_to_canonical(state: &AppState) {
             continue;
         };
         let t = v.trim();
-        if t.is_empty() {
+        if t.is_empty() && *key != KEY_LOCAL_MODEL_PATH {
             continue;
         }
         if let Err(e) = upsert_canonical_app_setting(&pool, key, t).await {
@@ -167,7 +168,7 @@ pub async fn seed_shell_llm_from_canonical(state: &AppState) {
             continue;
         };
         let t = v.trim();
-        if t.is_empty() {
+        if t.is_empty() && *key != KEY_LOCAL_MODEL_PATH {
             continue;
         }
         if state.db_manager.upsert_app_setting(key, t).await.is_ok() {

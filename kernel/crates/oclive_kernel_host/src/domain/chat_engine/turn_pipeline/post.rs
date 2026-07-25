@@ -131,9 +131,11 @@ pub(crate) async fn run_main_llm(
     let t_main_llm = Instant::now();
     let mut main_llm_fallback = false;
     let mut llm_fallback_reason = None;
-    let ollama_opts = middle
-        .use_ollama_prefix_opts
-        .then(LlmGenerateOpts::deep_prefix_cache);
+    let ollama_opts = Some(if middle.use_ollama_prefix_opts {
+        LlmGenerateOpts::deep_prefix_cache()
+    } else {
+        LlmGenerateOpts::interactive()
+    });
     #[cfg(feature = "dual_core")]
     let selected_lora = selected_lora_llm(ctx);
     #[cfg(feature = "dual_core")]
@@ -230,7 +232,7 @@ pub(crate) async fn run_main_llm(
             stable_len = len,
             cache_expected_hit = hit,
             prompt_eval_ms = ?reply_out.prompt_eval_ms,
-            "deep prefix cache llm metrics"
+            "prompt prefix cache llm metrics"
         );
     }
     let reply_raw = reply_out.reply;
@@ -266,9 +268,11 @@ pub(crate) async fn run_main_llm_stream(
     let t_main_llm = Instant::now();
     let mut main_llm_fallback = false;
     let mut llm_fallback_reason = None;
-    let ollama_opts = middle
-        .use_ollama_prefix_opts
-        .then(LlmGenerateOpts::deep_prefix_cache);
+    let ollama_opts = Some(if middle.use_ollama_prefix_opts {
+        LlmGenerateOpts::deep_prefix_cache()
+    } else {
+        LlmGenerateOpts::interactive()
+    });
     #[cfg(feature = "dual_core")]
     let selected_lora = selected_lora_llm(ctx);
     #[cfg(feature = "dual_core")]

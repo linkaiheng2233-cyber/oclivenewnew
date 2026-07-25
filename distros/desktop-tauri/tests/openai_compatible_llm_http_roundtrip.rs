@@ -5,7 +5,14 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
-use axum::{extract::Json, http::HeaderMap, routing::post, Router};
+use axum::{
+    body::Body,
+    extract::Json,
+    http::HeaderMap,
+    response::{IntoResponse, Response},
+    routing::post,
+    Router,
+};
 use oclive_kernel_host::domain::ports::LlmClient;
 use oclive_kernel_host::infrastructure::backend_registry::BackendRegistry;
 use oclive_kernel_host::infrastructure::high_risk_grants::HighRiskGrantStore;
@@ -18,7 +25,7 @@ use serde_json::{json, Value};
 use std::sync::Arc;
 use tempfile::tempdir;
 
-async fn mock_chat_completions(headers: HeaderMap, Json(body): Json<Value>) -> Json<Value> {
+async fn mock_chat_completions(headers: HeaderMap, Json(body): Json<Value>) -> Response {
     let auth = headers
         .get(axum::http::header::AUTHORIZATION)
         .and_then(|v| v.to_str().ok())
@@ -36,6 +43,19 @@ async fn mock_chat_completions(headers: HeaderMap, Json(body): Json<Value>) -> J
     } else {
         "openai-compat-ok"
     };
+    if body.get("stream").and_then(Value::as_bool).unwrap_or(false) {
+        let first = &content[..content.len() / 2];
+        let second = &content[content.len() / 2..];
+        let sse = format!(
+            "data: {}\n\ndata: {}\n\ndata: [DONE]\n\n",
+            json!({"choices":[{"delta":{"content": first}}]}),
+            json!({"choices":[{"delta":{"content": second}}]}),
+        );
+        return Response::builder()
+            .header("content-type", "text/event-stream")
+            .body(Body::from(sse))
+            .unwrap();
+    }
     Json(json!({
         "id": "chatcmpl-test",
         "object": "chat.completion",
@@ -45,6 +65,7 @@ async fn mock_chat_completions(headers: HeaderMap, Json(body): Json<Value>) -> J
             "finish_reason": "stop"
         }]
     }))
+    .into_response()
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -83,6 +104,21 @@ async fn openai_compatible_llm_generate_via_chat_completions() {
         .await
         .unwrap();
     assert_eq!(tag, "neutral");
+    let chunks = Arc::new(std::sync::Mutex::new(Vec::<String>::new()));
+    let chunks_for_sink = Arc::clone(&chunks);
+    let streamed = client
+        .generate_stream(
+            "test-model",
+            "hello prompt",
+            Arc::new(move |token| {
+                chunks_for_sink.lock().unwrap().push(token.to_string());
+            }),
+        )
+        .await
+        .unwrap();
+    assert_eq!(streamed, "openai-compat-ok");
+    assert_eq!(chunks.lock().unwrap().concat(), streamed);
+    assert!(chunks.lock().unwrap().len() >= 2);
 
     std::env::remove_var("OCLIVE_REMOTE_LLM_URL");
     std::env::remove_var("OCLIVE_REMOTE_LLM_TOKEN");

@@ -13,6 +13,21 @@ use std::sync::Arc;
 
 pub use crate::domain::ports::LlmClient;
 
+fn log_ollama_metrics(
+    model: &str,
+    metrics: &crate::infrastructure::ollama_client::OllamaGenerateMetrics,
+) {
+    tracing::debug!(
+        target: "oclive_llm",
+        model,
+        load_ms = ?metrics.load_ms(),
+        prompt_eval_ms = ?metrics.prompt_eval_ms(),
+        prompt_tokens = ?metrics.prompt_eval_count,
+        eval_tokens = ?metrics.eval_count,
+        "ollama generation metrics"
+    );
+}
+
 #[async_trait]
 impl LlmClient for OllamaClient {
     fn supports_prefix_cache(&self) -> bool {
@@ -44,6 +59,7 @@ impl LlmClient for OllamaClient {
         );
         let out = OllamaClient::generate_with_opts(self, model, prompt, t, p, ollama_opts.as_ref())
             .await?;
+        log_ollama_metrics(model, &out.metrics);
         Ok(LlmGenerateOutcome {
             reply: out.response,
             prompt_eval_ms: out.metrics.prompt_eval_ms(),
@@ -84,6 +100,7 @@ impl LlmClient for OllamaClient {
             ollama_opts.as_ref(),
         )
         .await?;
+        log_ollama_metrics(model, &out.metrics);
         Ok(LlmGenerateOutcome {
             reply: out.response,
             prompt_eval_ms: out.metrics.prompt_eval_ms(),

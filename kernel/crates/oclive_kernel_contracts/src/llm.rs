@@ -15,9 +15,9 @@ pub struct LlmGenerateOpts {
 }
 
 impl LlmGenerateOpts {
-    /// Deep prefix-cache session: keep model loaded and request Ollama bench metrics.
+    /// Interactive local session: keep the model resident and collect backend timings.
     #[must_use]
-    pub fn deep_prefix_cache() -> Self {
+    pub fn interactive() -> Self {
         Self {
             keep_alive: std::env::var("OCLIVE_OLLAMA_KEEP_ALIVE")
                 .ok()
@@ -25,6 +25,12 @@ impl LlmGenerateOpts {
                 .or_else(|| Some("30m".to_string())),
             want_metrics: true,
         }
+    }
+
+    /// Deep prefix-cache session: keep model loaded and request Ollama bench metrics.
+    #[must_use]
+    pub fn deep_prefix_cache() -> Self {
+        Self::interactive()
     }
 }
 
@@ -154,5 +160,24 @@ pub trait LlmClient: Send + Sync {
     /// Does not panic.
     async fn startup_probe(&self) -> Result<()> {
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::LlmGenerateOpts;
+
+    #[test]
+    fn interactive_and_deep_sessions_keep_the_local_model_resident() {
+        let interactive = LlmGenerateOpts::interactive();
+        let deep = LlmGenerateOpts::deep_prefix_cache();
+
+        assert!(interactive.want_metrics);
+        assert!(interactive
+            .keep_alive
+            .as_deref()
+            .is_some_and(|v| !v.is_empty()));
+        assert_eq!(deep.keep_alive, interactive.keep_alive);
+        assert_eq!(deep.want_metrics, interactive.want_metrics);
     }
 }

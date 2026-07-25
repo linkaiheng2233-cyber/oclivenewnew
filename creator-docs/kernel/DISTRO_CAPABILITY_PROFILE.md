@@ -77,6 +77,15 @@ skip_agent = true
 skip_complex_emotion = true
 event_impact_llm = false          # optional; default true — false 跳过 event LLM generate_tag
 
+# --- builtin local LLM 的发行版实现（不是角色包 backend）---
+[llm_runtime]
+mode = "performance"              # ollama | performance
+endpoint = "http://127.0.0.1:8421"
+auto_start = true                 # 已安装运行时包时允许宿主拉起 llama-server
+startup_timeout_ms = 90000
+retry_cooldown_ms = 30000
+model_alias = "oclive-performance"
+
 [turn_thinking]
 default = "auto"                  # fast | deep | auto
 fast_skip_complex_emotion = true  # optional
@@ -131,7 +140,29 @@ favor_low  = "…"              # optional; favor < 40
 - **`host_flags.event_impact_llm`**：为 `false` 时，**全局**跳过第 3 模块 event 的 LLM `estimate_event_impact`（`generate_tag`）；仍走规则 `EventDetector` / `estimate_event_impact_rules_only`。环境变量 `OCLIVE_EVENT_IMPACT_LLM=0` 等价。与 **Turn Thinking** 组合：Fast 轮本就不调 event LLM；Deep 轮仍受本开关约束。见 [`handoff/TTFT_BENCHMARK.md`](../../handoff/TTFT_BENCHMARK.md)。
 - **`slots.complex_emotion`**：`off` 等价于 `skip_complex_emotion`（二者任一为 off 即关闭）。
 
-### 3.2.1 `[turn_thinking]`（编排行 · 非六槽）
+### 3.2.1 `[llm_runtime]`（发行版运行时 · 非角色包 backend）
+
+`plugin_backends.llm` 仍只有 `ollama | remote | directory | none`。`[llm_runtime]` 只决定发行版本身如何实现 builtin local 槽，因此不要求角色包、编写器或目录插件增加新的 backend 枚举。
+
+| `mode` | 主路径 | 降级 |
+|--------|--------|------|
+| `ollama` | 现有 `OllamaClient` | 无第二本地运行时 |
+| `performance` | loopback OpenAI-compatible `llama-server` 真流式接口 | 仅在首个 token 尚未发出时回退 Ollama；已输出部分内容后禁止重跑，避免重复回复 |
+
+性能模式的可选组件边界：
+
+1. **本体**：只包含 `LlmClient` 契约、运行时发现/生命周期、SSE 流式适配和 Ollama fallback，不捆绑权重。
+2. **LLM runtime 组件**：安装到 `{app_data}/components/llm-runtime/`；manifest 固定名 `llm_runtime_pack.json`，必填 `schema_version = 1`、非空 `component_id`、`component_type = "llm_runtime"`、`engine = "llama.cpp"`、SemVer `version`、相对 `executable` 与 64 位十六进制 `executable_sha256`。宿主拒绝哈希不符、绝对路径和含 `..` 的路径。无 manifest 的约定路径仅限 debug 构建；开发环境也可显式设置 `OCLIVE_LLAMA_SERVER_PATH`。
+3. **官方模型组件**：千问 7B GGUF 与本体分发；安装后由模型管理器选择文件。用户自带 GGUF/BIN 走相同选择路径，不先导入 Ollama。
+4. **语音组件**：保持独立扩展；不得因为安装语音包而改变 LLM backend/schema。
+
+有效模型路径保存在用户设置 `user_local_llm_model_path`，进程镜像为 `OCLIVE_LOCAL_LLM_MODEL_PATH`。Ollama 模型名仍单独保存，作为降级目标；不得把 Windows/GGUF 路径写入 Ollama model id。
+
+运行时在发行版启动后后台预热：性能组件和模型齐全时只加载 llama-server；任一缺失时才预热 Ollama，避免两个模型同时占用显存。GGUF 切换会终止宿主管理的旧 llama-server 并按新路径重启。
+
+当前显存互斥只覆盖 OCLive 管理的 llama-server 与已知 Ollama fallback 模型。语音组件与本地 7B 模型同时启用前，发行版还必须由统一资源协调器根据显存预算决定 GPU 分层、暂停或 CPU 降级；语音包不得各自偷偷预热并与 LLM 抢占显存。
+
+### 3.2.2 `[turn_thinking]`（编排行 · 非六槽）
 
 每轮 **Fast / Deep** 思考档位，由 `co_present` 内 `TurnThinkingRouter` stage 解析（`turn_thinking.rs`）。**不是**设施子模块号，**不**写入 `plugin_backends`。
 
@@ -142,8 +173,8 @@ favor_low  = "…"              # optional; favor < 40
 | `auto_deep_min_chars` | usize | Auto 触发 Deep 的最小用户句字符数 |
 | `fast_knowledge_limit` | usize | Fast 轮知识检索条数上限 |
 | `fast_memory_cap` | usize | Fast 轮注入 prompt 的记忆条数上限 |
-| `deep_capsule` | bool（**Wave D**） | 发行版强制开/关 Deep capsule；`true` 且角色含 `prompts/deep_capsule.txt` + `meta.deep_capsule_enabled` 时，**Small+Deep** 用 capsule 替代全量 `core_personality` |
-| `prompt_prefix_cache` | bool（**Wave D-T3**） | `true` 时 Deep+Ollama 走 `build_prompt_segments`（稳定前缀在前）+ `keep_alive`；亦可用 `OCLIVE_PROMPT_PREFIX_CACHE=1` 覆盖。bench 见 [`handoff/TTFT_BENCHMARK.md`](../../handoff/TTFT_BENCHMARK.md) `--deep-multi` |
+| `deep_capsule` | bool（**Wave D**，兼容字段名） | 发行版强制开/关离线 persona capsule；`true` 且角色含 `prompts/deep_capsule.txt` + `meta.deep_capsule_enabled` 时，Small 模型的 Fast/Deep 轮均用 capsule 替代全量 `core_personality` |
+| `prompt_prefix_cache` | bool（**Wave D-T3**） | `true` 时 Fast/Deep + builtin local LLM + 内置 prompt 后端走 `build_prompt_segments`（稳定前缀在前）；Ollama 使用 `keep_alive`，llama-server 复用稳定前缀。目录/远程 prompt 后端保持自身 `build_prompt` 契约。亦可用 `OCLIVE_PROMPT_PREFIX_CACHE=1` 覆盖。bench 见 [`handoff/TTFT_BENCHMARK.md`](../../handoff/TTFT_BENCHMARK.md) |
 | `fast_persistence` | `"legacy"` \| `"strong_only"`（**Wave E**） | 默认 **`legacy`**（Fast 仍全量巩固）；`strong_only` 时 Fast 闲聊不写 long_term / 好感 / 演化，**Quarrel / Apology / Confession / Praise** 仍正常写入。RFC [`RFC_TURN_THINKING_PERSISTENCE.md`](../rfc/RFC_TURN_THINKING_PERSISTENCE.md) |
 
 示例（latency bench）：[`examples/distro-profiles/desktop-latency.oclive.toml`](../../examples/distro-profiles/desktop-latency.oclive.toml)。架构归类与 Deep 蒸馏路线图：[`handoff/DEEP_PROMPT_DISTILLATION.md`](../../handoff/DEEP_PROMPT_DISTILLATION.md)。
@@ -156,7 +187,8 @@ Release 安装包 bundled [`resources/distro-profiles/desktop.oclive.toml`](../.
 |------|------|----------|
 | **`[turn_thinking]`** | `default = "auto"` · `fast_persistence = "strong_only"` | 闲聊走 Fast；长句 / 高唤醒情绪 / Quarrel 链 → Deep；Fast 闲聊不写 long_term / favor（强事件仍写） |
 | **流式回复** | 主 UI `sendMessageStream` → `POST /chat/stream` | 回复**逐字显示**（降低**感知延迟**）；SSE 失败自动回退 blocking `/chat` |
-| **Deep capsule** | 角色包 `meta.deep_capsule_enabled` + `prompts/deep_capsule.txt` | Small 模型 + Deep 轮用离线 capsule（见 Wave D） |
+| **Persona capsule** | 角色包 `meta.deep_capsule_enabled` + `prompts/deep_capsule.txt` | Small 模型的 Fast/Deep 轮使用离线 capsule（沿用 Wave D 文件名） |
+| **本地性能模式** | `[llm_runtime].mode = "performance"` | 可选 llama-server runtime + GGUF；组件缺失或首 token 前失败时降级 Ollama |
 
 **Bench 区分**：`desktop-latency` profile（`event_impact_llm = false`）用于 TTFT 开发 bench；**正式用户默认**为 `desktop` profile。流式改善**感知延迟**，不改变 [`handoff/TTFT_BENCHMARK.md`](../../handoff/TTFT_BENCHMARK.md) 中 stream TTFT 数值定义。设置 → 常规 → 高级可关闭「流式回复」。
 

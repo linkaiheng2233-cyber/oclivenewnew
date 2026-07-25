@@ -16,6 +16,14 @@ export interface LlmUserSettings {
   ollamaDetail: string
   localModelsDir: string
   localModelFiles: LocalModelFile[]
+  localModelPath: string
+  localRuntimeMode: 'performance' | 'ollama' | string
+  performanceEndpoint: string
+  performanceRuntimeAvailable: boolean
+  performanceModelConfigured: boolean
+  performanceReady: boolean
+  performanceActiveBackend: 'performance' | 'ollama' | 'pending' | string
+  performanceDetail: string
   packOllamaModel: string | null
   sessionOllamaModel: string | null
   effectiveModel: string
@@ -34,6 +42,7 @@ export interface SaveLlmUserSettingsRequest {
   cloudApiStyle?: 'openai' | 'oclive_jsonrpc'
   ollamaBaseUrl?: string
   localModelsDir?: string
+  localModelPath?: string
   ollamaModel?: string
   remoteUrl?: string
   remoteToken?: string
@@ -125,6 +134,7 @@ export async function saveLlmUserSettings(
       cloudApiStyle: req.cloudApiStyle,
       ollamaBaseUrl: req.ollamaBaseUrl,
       localModelsDir: req.localModelsDir,
+      localModelPath: req.localModelPath,
       ollamaModel: req.ollamaModel,
       remoteUrl: req.remoteUrl,
       remoteToken: req.remoteToken,

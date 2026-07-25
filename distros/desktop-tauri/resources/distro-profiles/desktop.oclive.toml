@@ -32,6 +32,14 @@ retrieval = "default"
 [post_process]
 chain = "standard"
 
+[llm_runtime]
+mode = "performance"
+endpoint = "http://127.0.0.1:8421"
+auto_start = true
+startup_timeout_ms = 90000
+retry_cooldown_ms = 30000
+model_alias = "oclive-performance"
+
 [turn_thinking]
 default = "auto"
 fast_skip_complex_emotion = true

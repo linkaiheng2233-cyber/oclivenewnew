@@ -6,8 +6,8 @@ use crate::domain::effective_llm_model::{
 };
 use crate::domain::user_llm_env::{
     apply_user_llm_env, cloud_api_token_configured, load_remote_token, ollama_base_from_db_or_env,
-    KEY_CLOUD_STYLE, KEY_CLOUD_VENDOR, KEY_GLOBAL_OLLAMA_MODEL, KEY_LLM_PROVIDER, KEY_OLLAMA_BASE,
-    KEY_REMOTE_MODEL, KEY_REMOTE_TOKEN, KEY_REMOTE_URL,
+    KEY_CLOUD_STYLE, KEY_CLOUD_VENDOR, KEY_GLOBAL_OLLAMA_MODEL, KEY_LLM_PROVIDER,
+    KEY_LOCAL_MODEL_PATH, KEY_OLLAMA_BASE, KEY_REMOTE_MODEL, KEY_REMOTE_TOKEN, KEY_REMOTE_URL,
 };
 use crate::error::AppError;
 use crate::infrastructure::llm_models::{
@@ -40,6 +40,14 @@ pub struct LlmUserSettingsDto {
     pub ollama_detail: String,
     pub local_models_dir: String,
     pub local_model_files: Vec<LocalModelFileDto>,
+    pub local_model_path: String,
+    pub local_runtime_mode: String,
+    pub performance_endpoint: String,
+    pub performance_runtime_available: bool,
+    pub performance_model_configured: bool,
+    pub performance_ready: bool,
+    pub performance_active_backend: String,
+    pub performance_detail: String,
     pub pack_ollama_model: Option<String>,
     pub session_ollama_model: Option<String>,
     pub effective_model: String,
@@ -60,6 +68,7 @@ pub struct SaveLlmUserSettingsRequest {
     pub cloud_api_style: Option<String>,
     pub ollama_base_url: Option<String>,
     pub local_models_dir: Option<String>,
+    pub local_model_path: Option<String>,
     pub ollama_model: Option<String>,
     pub remote_url: Option<String>,
     pub remote_token: Option<String>,
@@ -161,6 +170,24 @@ pub async fn get_llm_user_settings_impl(
     let local_models_dir = local_models_dir_for_state(state).await?;
     let local_model_files =
         scan_local_model_files_in(std::path::Path::new(local_models_dir.trim()));
+    let local_model_path = state
+        .db_manager
+        .get_app_setting(KEY_LOCAL_MODEL_PATH)
+        .await?
+        .unwrap_or_default();
+    let performance = if let Some(runtime) = state.performance_llm.as_ref() {
+        runtime.inspect().await
+    } else {
+        crate::infrastructure::performance_llm::PerformanceLlmStatus {
+            mode: state.host_profile.llm_runtime.mode.as_str().into(),
+            endpoint: state.host_profile.llm_runtime.endpoint.clone(),
+            ready: false,
+            runtime_installed: false,
+            model_configured: !local_model_path.trim().is_empty(),
+            active_backend: "ollama".into(),
+            detail: "distro profile uses Ollama-only local runtime".into(),
+        }
+    };
 
     Ok(LlmUserSettingsDto {
         provider: provider.to_string(),
@@ -171,6 +198,14 @@ pub async fn get_llm_user_settings_impl(
         ollama_detail,
         local_models_dir,
         local_model_files,
+        local_model_path,
+        local_runtime_mode: performance.mode,
+        performance_endpoint: performance.endpoint,
+        performance_runtime_available: performance.runtime_installed,
+        performance_model_configured: performance.model_configured,
+        performance_ready: performance.ready,
+        performance_active_backend: performance.active_backend,
+        performance_detail: performance.detail,
         pack_ollama_model,
         session_ollama_model,
         effective_model: effective,
@@ -454,6 +489,28 @@ pub async fn save_llm_user_settings_impl(
             }
         }
     }
+    if let Some(ref model_path) = req.local_model_path {
+        let trimmed = model_path.trim();
+        if !trimmed.is_empty() {
+            let path = PathBuf::from(trimmed);
+            let valid_extension =
+                path.extension()
+                    .and_then(|ext| ext.to_str())
+                    .is_some_and(|ext| {
+                        ext.eq_ignore_ascii_case("gguf") || ext.eq_ignore_ascii_case("bin")
+                    });
+            if !path.is_file() || !valid_extension {
+                return Err(AppError::InvalidParameter(
+                    "performance model must be an existing GGUF/BIN file".into(),
+                )
+                .into());
+            }
+        }
+        state
+            .db_manager
+            .upsert_app_setting(KEY_LOCAL_MODEL_PATH, trimmed)
+            .await?;
+    }
     if let Some(ref url) = req.remote_url {
         state
             .db_manager
@@ -521,6 +578,13 @@ pub async fn save_llm_user_settings_impl(
 
     state.mark_user_llm_env_dirty();
     apply_user_llm_env(state).await?;
+    if provider == "local" {
+        if let Some(performance) = state.performance_llm.as_ref() {
+            performance.schedule_warmup();
+        }
+    } else if let Some(performance) = state.performance_llm.as_ref() {
+        performance.suspend_managed_runtime("cloud provider is active");
+    }
 
     let ns = session_namespace(&req.role_id, req.session_id.as_deref());
     state.db_manager.ensure_role_runtime(ns.as_str()).await?;
@@ -626,6 +690,10 @@ pub async fn set_global_ollama_model_impl(
         .upsert_app_setting(KEY_GLOBAL_OLLAMA_MODEL, t)
         .await?;
     state.set_global_ollama_model_in_memory(t.to_string());
+    if let Some(performance) = state.performance_llm.as_ref() {
+        performance.record_fallback_model(t);
+    }
+    state.schedule_ollama_preload(t.to_string());
     if let Some(role_id) = req
         .role_id
         .as_deref()

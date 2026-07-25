@@ -69,6 +69,9 @@ function isUsableOllamaModelId(model: string | null | undefined): boolean {
 }
 
 function resolveLocalModelSelection(s: LlmUserSettings): string {
+  const localPath = s.localModelPath?.trim()
+  if (localPath)
+    return `file:${localPath}`
   const session = s.sessionOllamaModel?.trim()
   if (session && isUsableOllamaModelId(session)) {
     if (folderModelFiles.value.some(f => f.path === session))
@@ -87,13 +90,30 @@ function resolveLocalModelSelection(s: LlmUserSettings): string {
   return ''
 }
 
+const selectableModelFiles = computed<LocalModelFile[]>(() => {
+  const files = [...folderModelFiles.value]
+  const configured = settings.value?.localModelPath?.trim()
+  if (
+    settings.value?.localRuntimeMode === 'performance'
+    && configured
+    && !files.some(file => file.path === configured)
+  ) {
+    files.unshift({
+      path: configured,
+      name: configured,
+      sizeBytes: 0,
+    })
+  }
+  return files
+})
+
 const localModelSelectOptions = computed(() => {
   const ollama = ollamaModels.value.map(id => ({
     value: id,
     label: id,
     group: 'ollama' as const,
   }))
-  const files = folderModelFiles.value.map(f => ({
+  const files = selectableModelFiles.value.map(f => ({
     value: `file:${f.path}`,
     label: f.name,
     group: 'file' as const,
@@ -115,7 +135,14 @@ function canListCloudModels(): boolean {
 }
 
 const effectiveModel = computed(
-  () => settings.value?.effectiveModel?.trim() || roleStore.roleInfo.effectiveOllamaModel?.trim() || '',
+  () => (
+    settings.value?.localRuntimeMode === 'performance'
+    && settings.value.localModelPath?.trim()
+      ? settings.value.localModelPath.trim()
+      : settings.value?.effectiveModel?.trim()
+        || roleStore.roleInfo.effectiveOllamaModel?.trim()
+        || ''
+  ),
 )
 
 async function loadGlobalDefaultModel(): Promise<void> {
@@ -225,7 +252,8 @@ async function refreshOllamaModels(): Promise<void> {
     }
   }
   catch (e) {
-    showToast('error', e instanceof Error ? e.message : String(e))
+    if (settings.value?.localRuntimeMode !== 'performance')
+      showToast('error', e instanceof Error ? e.message : String(e))
   }
   finally {
     modelsLoading.value = false
@@ -302,6 +330,23 @@ async function resolveLocalModelForSave(): Promise<string> {
   return sel
 }
 
+async function resolveLocalRuntimeSelectionForSave(): Promise<{
+  localModelPath: string
+  ollamaModel: string
+}> {
+  const selected = selectedLocalModel.value.trim()
+  if (selected.startsWith('file:') && settings.value?.localRuntimeMode === 'performance') {
+    return {
+      localModelPath: selected.slice('file:'.length),
+      ollamaModel: globalDefaultModel.value.trim(),
+    }
+  }
+  return {
+    localModelPath: '',
+    ollamaModel: await resolveLocalModelForSave(),
+  }
+}
+
 async function runCloudProbeAfterSave(): Promise<void> {
   try {
     await probeCloudLlm(roleStore.currentRoleId)
@@ -344,13 +389,14 @@ async function onSave(): Promise<void> {
   saving.value = true
   try {
     if (providerTab.value === 'local') {
-      const model = await resolveLocalModelForSave()
+      const local = await resolveLocalRuntimeSelectionForSave()
       const info = await saveLlmUserSettings({
         roleId: roleStore.currentRoleId,
         provider: 'local',
         ollamaBaseUrl: ollamaBaseUrl.value.trim(),
         localModelsDir: localModelsDir.value.trim(),
-        ollamaModel: model,
+        localModelPath: local.localModelPath,
+        ollamaModel: local.ollamaModel,
         cloudApiStyle: 'openai',
       })
       roleStore.applyRoleInfo(info)
@@ -430,7 +476,9 @@ watch(
     <template v-else>
       <section class="mm-panel mm-global-default">
         <h3 class="mm-h3">
-          {{ t("modelManager.globalDefaultModelLabel") }}
+          {{ settings?.localRuntimeMode === 'performance'
+            ? t("modelManager.ollamaFallbackModelLabel")
+            : t("modelManager.globalDefaultModelLabel") }}
         </h3>
         <p class="mm-muted mm-small">
           {{ t("modelManager.globalDefaultModelLead") }}
@@ -506,11 +554,30 @@ watch(
 
       <section v-show="providerTab === 'local'" class="mm-panel" role="tabpanel">
         <h3 class="mm-h3">
-          {{ t("modelManager.localTitle") }}
+          {{ settings?.localRuntimeMode === 'performance'
+            ? t("modelManager.performanceTitle")
+            : t("modelManager.localTitle") }}
         </h3>
         <p class="mm-muted">
-          {{ t("modelManager.localLead") }}
+          {{ settings?.localRuntimeMode === 'performance'
+            ? t("modelManager.performanceLead")
+            : t("modelManager.localLead") }}
         </p>
+
+        <div
+          v-if="settings?.localRuntimeMode === 'performance'"
+          class="mm-effective"
+          role="status"
+        >
+          <span class="mm-effective-label">{{ t("modelManager.performanceStatusLabel") }}</span>
+          <span :class="settings.performanceReady ? 'mm-ok' : 'mm-muted'">
+            {{ settings.performanceReady
+              ? t("modelManager.performanceReady")
+              : t("modelManager.performanceFallbackActive") }}
+          </span>
+          <code class="mm-mono">{{ settings.performanceEndpoint }}</code>
+          <span class="mm-muted mm-small">{{ settings.performanceDetail }}</span>
+        </div>
 
         <label class="mm-field">
           <span>{{ t("modelManager.ollamaBaseUrlLabel") }}</span>
@@ -555,7 +622,9 @@ watch(
             {{
               settings.ollamaReachable
                 ? t("settings.envCheckOllamaOk")
-                : t("settings.envCheckOllamaFail")
+                : settings.localRuntimeMode === 'performance'
+                  ? t("modelManager.ollamaFallbackUnavailable")
+                  : t("settings.envCheckOllamaFail")
             }}
           </span>
         </div>
@@ -570,16 +639,24 @@ watch(
             <option v-if="localModelSelectOptions.length === 0" value="">
               {{ t("modelManager.noLocalModels") }}
             </option>
-            <optgroup v-if="folderModelFiles.length" :label="t('modelManager.folderModelsLabel')">
+            <optgroup
+              v-if="selectableModelFiles.length"
+              :label="settings?.localRuntimeMode === 'performance'
+                ? t('modelManager.performanceModelsLabel')
+                : t('modelManager.folderModelsLabel')"
+            >
               <option
-                v-for="f in folderModelFiles"
+                v-for="f in selectableModelFiles"
                 :key="f.path"
                 :value="`file:${f.path}`"
               >
                 {{ f.name }}
               </option>
             </optgroup>
-            <optgroup v-if="ollamaModels.length" label="Ollama">
+            <optgroup
+              v-if="ollamaModels.length"
+              :label="settings?.localRuntimeMode === 'performance' ? 'Ollama fallback' : 'Ollama'"
+            >
               <option v-for="m in ollamaModels" :key="m" :value="m">
                 {{ m }}
               </option>
@@ -588,7 +665,7 @@ watch(
         </label>
 
         <button
-          v-if="selectedLocalIsFile"
+          v-if="selectedLocalIsFile && settings?.localRuntimeMode !== 'performance'"
           type="button"
           class="mm-btn"
           :disabled="importing || saving"

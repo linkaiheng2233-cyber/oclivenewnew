@@ -185,9 +185,12 @@
 | **键** | `llm` |
 | **Trait** | `LlmClient` |
 | **Backend** | `ollama` · `remote` · `directory` · `none`（共景 **禁止** none） |
+| **发行版 builtin 实现** | `[llm_runtime].mode=performance`：`llama-server/GGUF → Ollama`；不新增角色包 backend 枚举 |
 | **合并** | 多 llm 实例 → **last-wins** |
 | **主链 hook** | `co_present` generate / stream |
-| **允许改** | Ollama 适配、directory RPC、TTFT 客户端选项 |
+| **性能闭环** | `performance_llm.rs` 管理 runtime pack/进程/熔断；`openai_compatible_llm.rs` 解析 SSE；GGUF 路径与 Ollama fallback model 分开保存 |
+| **流式回退规则** | 首 token 前失败可回退 Ollama；已产生 token 后必须返回错误，不得重跑造成重复文本/语音 |
+| **允许改** | Ollama 适配、llama-server builtin 适配、directory RPC、TTFT 客户端选项 |
 | **禁止** | UI 内二次调 LLM 选立绘 |
 
 ---
