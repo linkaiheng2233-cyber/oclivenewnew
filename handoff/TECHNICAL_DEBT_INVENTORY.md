@@ -1,6 +1,6 @@
 # Technical debt inventory
 
-**Last updated:** 2026-07-25（登记叙事连续性微状态机与编写器场景初始状态候选）
+**Last updated:** 2026-07-25（登记叙事连续性微状态机、编写器场景初始状态候选及角色 LoRA 炼丹炉后续边界）
 
 **Product freeze (Theater v0):** **Lifted** — 朋友 cohort 产品门通过（7/10 卧槽）；模式 2 playtest 扩展中；**模式 3 仍冻结**。见 [theater/MODE2_UNFREEZE.md](./theater/MODE2_UNFREEZE.md)。
 
@@ -253,6 +253,8 @@
 | **§3.5–3.7** | 多模态 / 参考硬件 / Edge OTA | 路线图 |
 | **§5.3** | 插件市场 UGC | 路线图 |
 | **V-LORA-WORKSHOP-01** | 创作者微调工坊（T0–T3）+ `slot.lora.apply` 运行时 | **Partial（2026-07-25）**：运行时已按 `plugin_id` 选择预声明、授权的 directory LLM，回流 Stable completion，并以 manifest 能力探测接通 NDJSON 原生逐 token；示例支持 adapter 模型别名与 OpenAI-compatible SSE 转换。仍 OPEN：训练工坊、adapter 包 schema/导入 UI、真实模型评测矩阵 |
+| **V-LORA-FORGE-02** | 角色 LoRA「炼丹炉」产品层 | **Deferred · 后续追加开发**：不复制上游 WebUI、不在 OCLive 内核重写训练算法；定义独立 `TrainingProvider` 边界，首个 provider 优先封装 LLaMA-Factory CLI，可选 Unsloth 加速，未来允许 Axolotl/远端 GPU。OCLive 只拥有角色语料转换、训练预设、任务状态、角色一致性评测和产物打包 |
+| **V-LORA-PACK-03** | `.ocadapter` 契约与导入/管理 UI | **Deferred · T0 先于工坊 UI**：冻结基础模型/revision/tokenizer/chat-template 指纹、权重哈希、训练参数、许可证与推理后端要求；导入链负责兼容检查、安装/回滚和专家路由绑定。禁止让 `expert_routing` 猜测权重兼容性，也禁止内核直接解释框架私有 `.safetensors` 加载协议 |
 | **D-OPUS-05 Phase 2** | re-export import 清零 | ratchet ≤76 只降不升 |
 | **K-SUPPLY-06** | 位级可重复构建 | 内核 `kernel-v0.x` tag 稳定 + 专用 CI 镜像 |
 | **K-SUPPLY-07** | SBOM 导出 | 校企/商业客户采购或合规要求 |
