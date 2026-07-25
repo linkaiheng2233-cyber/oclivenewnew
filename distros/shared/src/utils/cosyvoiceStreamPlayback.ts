@@ -24,6 +24,11 @@ export interface CosyvoiceStreamResult {
   chunks?: number
   ttfc_ms?: number
   elapsed_ms?: number
+  stream_mode?: string
+}
+
+export interface CosyvoicePlaybackObserver {
+  onFirstChunkScheduled?: () => void
 }
 
 function logVoiceStreamTelemetry(result: CosyvoiceStreamResult): void {
@@ -37,6 +42,7 @@ function logVoiceStreamTelemetry(result: CosyvoiceStreamResult): void {
     ttfc_ms: result.ttfc_ms,
     elapsed_ms: result.elapsed_ms,
     chunks: result.chunks,
+    stream_mode: result.stream_mode,
   })
 }
 
@@ -55,6 +61,7 @@ interface NdjsonEvent {
   chunks?: number
   ttfc_ms?: number
   elapsed_ms?: number
+  stream_mode?: string
 }
 
 let sharedAudioContext: AudioContext | null = null
@@ -118,11 +125,6 @@ class PcmStreamScheduler {
     }
   }
 
-  resetSchedule(): void {
-    const ctx = sharedAudioContext
-    this.nextStart = ctx ? Math.max(ctx.currentTime, this.nextStart) : 0
-  }
-
   cancel(): void {
     this.cancelled = true
     for (const source of this.sources) {
@@ -182,7 +184,7 @@ function streamFetchError(err: unknown): CosyvoiceStreamResult {
   const readTimeout = msg === 'ndjson_read_timeout'
   return {
     ok: false,
-    reason: aborted ? 'stream_timeout' : readTimeout ? 'stream_read_failed' : 'stream_read_failed',
+    reason: aborted ? 'stream_timeout' : 'stream_read_failed',
     message: readTimeout ? 'Sidecar stream body read timed out' : msg,
   }
 }
@@ -216,6 +218,29 @@ function parseNdjsonLine(line: string): NdjsonEvent | null {
   return JSON.parse(trimmed) as NdjsonEvent
 }
 
+function readStreamChunkWithDeadline(
+  reader: ReadableStreamDefaultReader<Uint8Array>,
+  deadline: number,
+  onTimeout?: () => void,
+): Promise<ReadableStreamReadResult<Uint8Array>> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      onTimeout?.()
+      reject(new Error('ndjson_read_timeout'))
+    }, Math.max(0, deadline - Date.now()))
+    void reader.read().then(
+      (chunk) => {
+        clearTimeout(timer)
+        resolve(chunk)
+      },
+      (error) => {
+        clearTimeout(timer)
+        reject(error)
+      },
+    )
+  })
+}
+
 async function readNdjsonStream(
   body: ReadableStream<Uint8Array>,
   onEvent: (evt: NdjsonEvent) => void,
@@ -233,19 +258,9 @@ async function readNdjsonStream(
         options?.onTimeout?.()
         throw new Error('ndjson_read_timeout')
       }
-      const readPromise = reader.read()
       const chunk = deadline !== null
-        ? await Promise.race([
-            readPromise,
-            new Promise<ReadableStreamReadResult<Uint8Array>>((_, reject) => {
-              const wait = deadline - Date.now()
-              setTimeout(
-                () => reject(new Error('ndjson_read_timeout')),
-                Math.max(0, wait),
-              )
-            }),
-          ])
-        : await readPromise
+        ? await readStreamChunkWithDeadline(reader, deadline, options?.onTimeout)
+        : await reader.read()
       const { done, value } = chunk
       if (done)
         break
@@ -273,7 +288,7 @@ export interface CosyvoiceStreamPrefetch {
   key: string
   chunks: PcmChunk[]
   done: Promise<CosyvoiceStreamResult>
-  waitForChunk: (afterIndex: number) => Promise<void>
+  waitForChunk: (consumedCount: number) => Promise<void>
   abort: () => void
 }
 
@@ -281,6 +296,91 @@ export function abortCosyvoiceStreamPrefetch(
   prefetch: CosyvoiceStreamPrefetch | undefined,
 ): void {
   prefetch?.abort()
+}
+
+/**
+ * Owns one-segment look-ahead state.
+ *
+ * A pending entry is registered before endpoint probing, so the playback path
+ * can await and reuse that exact request instead of starting a duplicate.
+ */
+export class CosyvoiceStreamPrefetchRegistry {
+  private readonly readyByKey = new Map<string, CosyvoiceStreamPrefetch>()
+  private readonly pendingByKey
+    = new Map<string, Promise<CosyvoiceStreamPrefetch | undefined>>()
+
+  get busy(): boolean {
+    return this.readyByKey.size > 0 || this.pendingByKey.size > 0
+  }
+
+  readyFor(key: string): CosyvoiceStreamPrefetch | undefined {
+    return this.readyByKey.get(key)
+  }
+
+  pendingFor(
+    key: string,
+  ): Promise<CosyvoiceStreamPrefetch | undefined> | undefined {
+    return this.pendingByKey.get(key)
+  }
+
+  setPending(
+    key: string,
+    promise: Promise<CosyvoiceStreamPrefetch | undefined>,
+  ): void {
+    this.pendingByKey.set(key, promise)
+  }
+
+  clearPending(
+    key: string,
+    promise: Promise<CosyvoiceStreamPrefetch | undefined>,
+  ): void {
+    if (this.pendingByKey.get(key) === promise)
+      this.pendingByKey.delete(key)
+  }
+
+  setReady(key: string, prefetch: CosyvoiceStreamPrefetch): void {
+    this.readyByKey.set(key, prefetch)
+  }
+
+  async take(key: string): Promise<CosyvoiceStreamPrefetch | undefined> {
+    let prefetch = this.readyByKey.get(key)
+    if (!prefetch) {
+      const pending = this.pendingByKey.get(key)
+      if (pending)
+        prefetch = await pending
+    }
+    if (prefetch && this.readyByKey.get(key) === prefetch)
+      this.readyByKey.delete(key)
+    return prefetch
+  }
+
+  cancel(key: string): void {
+    const ready = this.readyByKey.get(key)
+    if (ready) {
+      abortCosyvoiceStreamPrefetch(ready)
+      this.readyByKey.delete(key)
+    }
+    const pending = this.pendingByKey.get(key)
+    if (pending) {
+      this.pendingByKey.delete(key)
+      void pending.then((resolved) => {
+        abortCosyvoiceStreamPrefetch(resolved)
+        if (resolved && this.readyByKey.get(key) === resolved)
+          this.readyByKey.delete(key)
+      }).catch(() => {})
+    }
+  }
+
+  reset(): void {
+    for (const ready of this.readyByKey.values())
+      abortCosyvoiceStreamPrefetch(ready)
+    for (const pending of this.pendingByKey.values()) {
+      void pending.then(prefetch => abortCosyvoiceStreamPrefetch(prefetch))
+        .catch(() => {})
+    }
+    this.readyByKey.clear()
+    this.pendingByKey.clear()
+  }
 }
 
 export function startCosyvoiceSidecarPrefetch(
@@ -293,6 +393,7 @@ export function startCosyvoiceSidecarPrefetch(
   const chunks: PcmChunk[] = []
   let ttfc_ms: number | undefined
   let elapsed_ms: number | undefined
+  let stream_mode: string | undefined
   let errorResult: CosyvoiceStreamResult | undefined
   let chunkWaiters: Array<(value: void) => void> = []
 
@@ -303,8 +404,8 @@ export function startCosyvoiceSidecarPrefetch(
       w()
   }
 
-  function waitForChunk(afterIndex: number): Promise<void> {
-    if (chunks.length > afterIndex || errorResult)
+  function waitForChunk(consumedCount: number): Promise<void> {
+    if (chunks.length > consumedCount || errorResult)
       return Promise.resolve()
     return new Promise((resolve) => {
       chunkWaiters.push(resolve)
@@ -350,6 +451,7 @@ export function startCosyvoiceSidecarPrefetch(
         else if (evt.event === 'done') {
           ttfc_ms = evt.ttfc_ms
           elapsed_ms = evt.elapsed_ms
+          stream_mode = evt.stream_mode
           totalChunks = evt.chunks ?? totalChunks
           notifyChunk()
         }
@@ -361,13 +463,16 @@ export function startCosyvoiceSidecarPrefetch(
           }
           notifyChunk()
         }
-      }, { deadlineMs: SIDECAR_STREAM_BODY_READ_TIMEOUT_MS })
+      }, {
+        deadlineMs: SIDECAR_STREAM_BODY_READ_TIMEOUT_MS,
+        onTimeout: () => abortController.abort(),
+      })
 
       if (errorResult)
         return errorResult
       if (chunks.length === 0)
         return { ok: false, reason: 'cosyvoice_empty', message: 'No audio chunks received' }
-      return { ok: true, chunks: totalChunks, ttfc_ms, elapsed_ms }
+      return { ok: true, chunks: totalChunks, ttfc_ms, elapsed_ms, stream_mode }
     }
     catch (err) {
       if (errorResult)
@@ -389,28 +494,45 @@ async function playBufferedOrLiveStreamCore(
   player: PcmStreamScheduler,
   controller: AbortController,
   directive?: CosyvoiceDirective | null,
+  observer?: CosyvoicePlaybackObserver,
 ): Promise<CosyvoiceStreamResult> {
   await ensureVoiceAudioReady()
+  let firstChunkScheduled = false
+  function scheduleChunk(chunk: PcmChunk): void {
+    player.schedulePcm16(chunk.pcm_base64, chunk.sample_rate)
+    if (!firstChunkScheduled) {
+      firstChunkScheduled = true
+      observer?.onFirstChunkScheduled?.()
+    }
+  }
 
   if (prefetch) {
+    const activePrefetch = prefetch
     let played = 0
     const waitStarted = Date.now()
+    function scheduleAvailableChunks(): void {
+      while (played < activePrefetch.chunks.length) {
+        const chunk = activePrefetch.chunks[played]
+        scheduleChunk(chunk)
+        // The AudioBuffer now owns decoded samples. Drop the much larger
+        // base64 payload immediately instead of retaining every streamed PCM
+        // chunk until the complete utterance finishes.
+        chunk.pcm_base64 = ''
+        played += 1
+      }
+    }
     while (true) {
       if (Date.now() - waitStarted > SIDECAR_STREAM_PLAYBACK_TIMEOUT_MS) {
-        abortCosyvoiceStreamPrefetch(prefetch)
+        abortCosyvoiceStreamPrefetch(activePrefetch)
         return {
           ok: false,
           reason: 'stream_playback_timeout',
           message: 'Timed out waiting for sidecar stream playback',
         }
       }
-      while (played < prefetch.chunks.length) {
-        const chunk = prefetch.chunks[played]
-        player.schedulePcm16(chunk.pcm_base64, chunk.sample_rate)
-        played += 1
-      }
+      scheduleAvailableChunks()
       if (played === 0 && Date.now() - waitStarted > SIDECAR_STREAM_FIRST_CHUNK_TIMEOUT_MS) {
-        abortCosyvoiceStreamPrefetch(prefetch)
+        abortCosyvoiceStreamPrefetch(activePrefetch)
         return {
           ok: false,
           reason: 'stream_first_chunk_timeout',
@@ -418,15 +540,14 @@ async function playBufferedOrLiveStreamCore(
         }
       }
       const meta = await Promise.race([
-        prefetch.done,
-        prefetch.waitForChunk(Math.max(0, played - 1)).then(() => null),
+        activePrefetch.done,
+        // `played` is a consumed count, not the last consumed index. Waiting
+        // for `played - 1` resolves immediately while no new chunk exists and
+        // creates a microtask spin that can exhaust the WebView heap.
+        activePrefetch.waitForChunk(played).then(() => null),
       ])
       if (meta !== null) {
-        while (played < prefetch.chunks.length) {
-          const chunk = prefetch.chunks[played]
-          player.schedulePcm16(chunk.pcm_base64, chunk.sample_rate)
-          played += 1
-        }
+        scheduleAvailableChunks()
         await player.waitUntilFinished()
         if (!meta.ok && played === 0)
           return meta
@@ -437,6 +558,7 @@ async function playBufferedOrLiveStreamCore(
           chunks: played,
           ttfc_ms: meta.ttfc_ms,
           elapsed_ms: meta.elapsed_ms,
+          stream_mode: meta.stream_mode,
         }
         logVoiceStreamTelemetry(out)
         return out
@@ -457,7 +579,10 @@ async function playBufferedOrLiveStreamCore(
 
     await readNdjsonStream(res.body, (evt) => {
       if (evt.event === 'chunk' && evt.pcm_base64) {
-        player.schedulePcm16(evt.pcm_base64, evt.sample_rate || 22050)
+        scheduleChunk({
+          pcm_base64: evt.pcm_base64,
+          sample_rate: evt.sample_rate || 22050,
+        })
         chunks += 1
       }
       else if (evt.event === 'done') {
@@ -466,6 +591,7 @@ async function playBufferedOrLiveStreamCore(
           chunks: evt.chunks ?? chunks,
           ttfc_ms: evt.ttfc_ms,
           elapsed_ms: evt.elapsed_ms,
+          stream_mode: evt.stream_mode,
         }
       }
       else if (evt.ok === false) {
@@ -475,7 +601,10 @@ async function playBufferedOrLiveStreamCore(
           message: evt.message,
         }
       }
-    }, { deadlineMs: SIDECAR_STREAM_BODY_READ_TIMEOUT_MS })
+    }, {
+      deadlineMs: SIDECAR_STREAM_BODY_READ_TIMEOUT_MS,
+      onTimeout: () => controller.abort(),
+    })
   }
   catch (err) {
     return streamFetchError(err)
@@ -485,7 +614,13 @@ async function playBufferedOrLiveStreamCore(
     return meta
   if (chunks === 0)
     return { ok: false, reason: 'cosyvoice_empty', message: 'No audio chunks received' }
-  const out = { ok: true as const, chunks, ttfc_ms: meta.ttfc_ms, elapsed_ms: meta.elapsed_ms }
+  const out = {
+    ok: true as const,
+    chunks,
+    ttfc_ms: meta.ttfc_ms,
+    elapsed_ms: meta.elapsed_ms,
+    stream_mode: meta.stream_mode,
+  }
   logVoiceStreamTelemetry(out)
   return out
 }
@@ -495,6 +630,7 @@ async function playBufferedOrLiveStream(
   endpoint: string,
   text: string,
   directive?: CosyvoiceDirective | null,
+  observer?: CosyvoicePlaybackObserver,
 ): Promise<CosyvoiceStreamResult> {
   const player = new PcmStreamScheduler()
   const controller = new AbortController()
@@ -510,6 +646,7 @@ async function playBufferedOrLiveStream(
       player,
       controller,
       directive,
+      observer,
     )
   }
   finally {
@@ -528,8 +665,9 @@ export async function playCosyvoiceSidecarStream(
   text: string,
   directive?: CosyvoiceDirective | null,
   prefetch?: CosyvoiceStreamPrefetch,
+  observer?: CosyvoicePlaybackObserver,
 ): Promise<CosyvoiceStreamResult> {
-  return playBufferedOrLiveStream(prefetch, endpoint, text, directive)
+  return playBufferedOrLiveStream(prefetch, endpoint, text, directive, observer)
 }
 
 export function resolveBundledSidecarEndpoint(

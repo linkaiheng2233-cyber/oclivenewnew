@@ -81,10 +81,15 @@ export async function sendChatStoreMessage(
     timestamp: Date.now(),
   }, { persistIdbCache: false })
   context.setLoading(true)
-  hostEventBus.emitBuiltin('message:submit', { role_id: roleId, scene_id: sid })
-  const relationBefore = roleStore.roleInfo.relationState
   const assistantLocalId = `a-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
   const streamId = assistantLocalId
+  hostEventBus.emitBuiltin('message:submit', {
+    role_id: roleId,
+    scene_id: sid,
+    stream_id: streamId,
+    submitted_at_ms: Date.now(),
+  })
+  const relationBefore = roleStore.roleInfo.relationState
   let streamBubbleActive = false
   let streamSpokenPrefix = ''
   let lastStreamAccumulated = ''

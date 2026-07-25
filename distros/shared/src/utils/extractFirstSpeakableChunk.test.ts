@@ -6,10 +6,10 @@ import {
 } from './extractFirstSpeakableChunk'
 
 describe('extractFirstSpeakableChunk', () => {
-  it('waits for punctuation or the first-chunk cap instead of emitting tiny fragments', () => {
+  it('emits only at a natural punctuation boundary', () => {
     expect(extractFirstSpeakableChunk('你好呀', { isFirst: true })).toBeNull()
     expect(extractFirstSpeakableChunk('你好呀，', { isFirst: true })).toBe('你好呀，')
-    expect(extractFirstSpeakableChunk('一二三四五六七八', { isFirst: true })).toBe('一二三四五六七八')
+    expect(extractFirstSpeakableChunk('一二三四五六', { isFirst: true })).toBeNull()
   })
 
   it('waits for minimum length', () => {
@@ -17,28 +17,60 @@ describe('extractFirstSpeakableChunk', () => {
     expect(extractFirstSpeakableChunk('你好呀')).toBeNull()
   })
 
-  it('prefers earliest break for lower speak latency', () => {
+  it('uses the earliest valid punctuation boundary', () => {
     expect(extractFirstSpeakableChunk('你好，世界！后面还有')).toBe('你好，')
   })
 
-  it('breaks early on weak clause punctuation', () => {
+  it('uses weak clause punctuation for later chunks too', () => {
     expect(extractFirstSpeakableChunk('你好呀，今天天气')).toBe('你好呀，')
   })
 
-  it('falls back to char cap without punctuation', () => {
+  it('does not split unpunctuated CJK text at a character cap', () => {
     const long = '这是一段没有任何标点但已经很长的话继续输出'
-    const chunk = extractFirstSpeakableChunk(long)
-    expect(chunk).toBe(long.slice(0, 12))
+    expect(extractFirstSpeakableChunk(long)).toBeNull()
   })
 
-  it('first chunk caps earlier without punctuation', () => {
+  it('does not split an unpunctuated first chunk either', () => {
     const long = '这是一段没有任何标点但已经很长的话继续输出'
-    const chunk = extractFirstSpeakableChunk(long, { isFirst: true })
-    expect(chunk).toBe(long.slice(0, 8))
+    expect(extractFirstSpeakableChunk(long, { isFirst: true })).toBeNull()
+  })
+
+  it('waits for distant punctuation instead of cutting between characters', () => {
+    expect(
+      extractFirstSpeakableChunk('一二三四五六七八九。', { isFirst: true }),
+    ).toBe('一二三四五六七八九。')
+  })
+
+  it('keeps a near-complete first sentence together', () => {
+    expect(
+      extractFirstSpeakableChunk('今天买了模型。', { isFirst: true }),
+    ).toBe('今天买了模型。')
+  })
+
+  it('keeps a long later phrase intact until punctuation', () => {
+    const text = '一二三四五六七八九十一二三四五六七八九十二三四。'
+    expect(extractFirstSpeakableChunk(text)).toBe(text)
   })
 
   it('first chunk exits on weak punctuation immediately', () => {
     expect(extractFirstSpeakableChunk('你好呀，后面还有', { isFirst: true })).toBe('你好呀，')
+  })
+
+  it('skips a too-short leading clause before the first voice chunk', () => {
+    expect(
+      extractFirstSpeakableChunk('喂，爸，晚', { isFirst: true }),
+    ).toBe('喂，爸，')
+  })
+
+  it('supports punctuation from multiple writing systems', () => {
+    expect(extractFirstSpeakableChunk('Hello, world.')).toBe('Hello,')
+    expect(extractFirstSpeakableChunk('مرحبا، كيف حالك؟')).toBe('مرحبا،')
+    expect(extractFirstSpeakableChunk('नमस्ते। आप कैसे हैं?')).toBe('नमस्ते।')
+  })
+
+  it('does not split a streamed decimal number', () => {
+    expect(extractFirstSpeakableChunk('价格是 3.')).toBeNull()
+    expect(extractFirstSpeakableChunk('价格是 3.14，继续')).toBe('价格是 3.14，')
   })
 
   it('extracts sequential chunks from a stream buffer', () => {

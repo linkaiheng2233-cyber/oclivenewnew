@@ -3,7 +3,7 @@ export const VOICE_ASR_PLUGIN_ID = 'com.oclive.voice.asr'
 export const VOICE_ASR_SUBMIT_EVENT = 'com.oclive.voice.asr:submit'
 /** Emitted from VoiceSettings after save; host invalidates cached voice config. */
 export const VOICE_ASR_CONFIG_UPDATED_EVENT = 'com.oclive.voice.asr:config-updated'
-/** First complete sentence during streaming reply — optional early TTS (Phase 6). */
+/** Incremental speakable fragment during streaming reply — early TTS side channel. */
 export const VOICE_STREAM_SENTENCE_EVENT = 'com.oclive.voice:stream-sentence'
 
 export interface VoiceAsrSubmitPayload {
