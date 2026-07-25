@@ -1,7 +1,8 @@
-use serde::Deserialize;
+use oclive_validation::SceneContinuityConfig;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-#[derive(Debug, Clone, Deserialize, Default)]
+#[derive(Debug, Clone, Deserialize, Serialize, Default)]
 pub struct DiskSceneConfig {
     #[serde(default)]
     pub name: Option<String>,
@@ -21,9 +22,12 @@ pub struct DiskSceneConfig {
     /// Trajectory material overrides keyed by user conversation-context scene id.
     #[serde(default)]
     pub away_life_by_user_scene: HashMap<String, String>,
+    /// Optional narrative-continuity presets and deterministic transitions.
+    #[serde(default)]
+    pub continuity: Option<SceneContinuityConfig>,
 }
 
-#[derive(Debug, Clone, Deserialize, Default)]
+#[derive(Debug, Clone, Deserialize, Serialize, Default)]
 pub struct DiskSceneTimeWindow {
     pub start: String,
     pub end: String,

@@ -39,6 +39,10 @@ pub use memory::*;
 pub use meta_action_templates_config::{
     MetaActionTemplateEntry, RolePackMetaActionTemplatesConfig,
 };
+pub use oclive_validation::{
+    SceneContinuityConfig, SceneContinuityInitialState, SceneContinuityTimeWindow,
+    SceneContinuityTransition,
+};
 pub use personality::*;
 pub use plugin_backends::*;
 pub use portrait_catalog_config::{

@@ -32,6 +32,7 @@ pub mod protocol_boundary;
 pub mod reply_post_processor;
 pub mod role_pack;
 pub mod runtime_config;
+pub mod scene_continuity;
 pub mod turn_thinking;
 pub mod user_identities;
 pub mod validate;
@@ -133,6 +134,10 @@ pub use role_pack::{
     validate_role_pack_tail, RolePackValidationProfile,
 };
 pub use runtime_config::{DualCoreConfig, RuntimeConfig};
+pub use scene_continuity::{
+    validate_scene_continuity_config, validate_scene_continuity_directory, SceneContinuityConfig,
+    SceneContinuityInitialState, SceneContinuityTimeWindow, SceneContinuityTransition,
+};
 pub use user_identities::validate_user_identities_directory;
 #[doc(hidden)]
 pub use user_identities::validate_user_identities_index;

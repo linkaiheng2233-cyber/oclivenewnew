@@ -1,6 +1,6 @@
 # Technical debt inventory
 
-**Last updated:** 2026-07-18（低风险工程债收口 + V1/V2/V3 愿景实现对标；本轮新增代码仅本地验证）
+**Last updated:** 2026-07-25（登记叙事连续性微状态机与编写器场景初始状态候选）
 
 **Product freeze (Theater v0):** **Lifted** — 朋友 cohort 产品门通过（7/10 卧槽）；模式 2 playtest 扩展中；**模式 3 仍冻结**。见 [theater/MODE2_UNFREEZE.md](./theater/MODE2_UNFREEZE.md)。
 
@@ -227,6 +227,8 @@
 | **K-TURN-F1** | Wave F · 角色包 `turn_thinking` 策略（Deep 路由 + Deep latch 直到和解） | P1 | RFC 定稿 + `config.json` schema + 内核 merge HostProfile；**无 UI 开关** | **Done** |
 | **PE-TURN-01** | 编写器 · Turn Thinking / 对话节奏编辑（阈值、关键词、latch、可选 AND 规则） | P2 | 依赖 K-TURN-F1 schema · 简单/高级分档 | **OPEN**（姊妹仓 `oclive-pack-editor`） |
 | **PE-UID-01** | 编写器 · `user_identities/` 可视化编辑（模板正文、`maps_to_relation_id`、与 `meta.relations.prompt_hint` 对齐预览） | P2 | ROLE_PACK_SPEC §1.1 · mumu `father.md` 手写 SSOT 已落地 | **OPEN**（姊妹仓 `oclive-pack-editor`） |
+| **K-CONTINUITY-01** | 运行时叙事连续性微状态机 | 与核心 / 可变 / 短期情绪档案彻底分离；数据库按 `srid` 保存 `scene_id + state_id + revision`，位置、锚点、姿态、活动从角色包解析。运行时默认保持，仅在最终可见回复命中显式动作标记时转移，并通过动态 Prompt 段服务 Fast / Deep，不在热路径临时调用 LLM 生成状态 | **Partial**（2026-07-23：schema / validation / loader / CAS 持久化 / Prompt / 回复后迁移 / 场景失效 / Mumu 23 个候选已实现；workspace fmt/clippy/lib tests/doctest、pack validate、module-compat、Dimension 5 **26 checks** 本地通过；待提交后 CI 与 playtest） | 实测同场景多轮保持、显式动作迁移与切场景重选，再以 CI 证据关闭 |
+| **PE-CONTINUITY-01** | 编写器 · 场景初始状态候选生成 | 在**创作期**让模型根据场景描述生成 **3～8** 个候选初始状态，由创作者审核、修改、排序并写入角色包；运行期不临场生成，避免首字延迟和世界事实漂移 | **K-CONTINUITY-01** 可选 schema 冻结并进入编写器更新批次 | 增加生成 / 审核 / 默认项 / 条件与权重编辑；补 import-export roundtrip、非法锚点校验及旧角色包无字段兼容；姊妹仓 `oclive-pack-editor` 实施 |
 | **K-UID-POST-01** | mumu 可选 `reply_post_processor` profile（care-package 句级裁剪 · remote/builtin） | P3 | 主链已用 `trim_template_repeat_reply` + Prompt 上一轮约束兜底；见历史 [Phase 2 记录](./archive/USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md) | **Deferred**（不默认开启 post-processor） |
 | **K-PERF-10** | Chat chrome 懒加载 | **Partial** — overlay 已 lazy；chat chrome 仍 eager | 真人 playtest 归因首屏慢 **或** perf mark 超阈值 | 激活 chat chrome lazy PR |
 

@@ -17,4 +17,10 @@ pub struct RoleRuntimeSnapshot {
     pub ephemeral_personality: Option<String>,
     pub ephemeral_ttl_turns: Option<u32>,
     pub deep_latch_active: Option<bool>,
+    /// Scene id owning the persisted narrative-continuity state.
+    pub continuity_scene_id: Option<String>,
+    /// Role-pack continuity state id; its descriptive payload is resolved at read time.
+    pub continuity_state_id: Option<String>,
+    /// Compare-and-set revision used by post-turn transitions.
+    pub continuity_revision: u64,
 }

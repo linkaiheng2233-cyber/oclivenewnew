@@ -107,4 +107,6 @@ pub use models::{
     role_settings_disk::{disk_role_settings_from_role, DiskRoleSettings},
     scene_disk::{DiskSceneConfig, DiskSceneTimeWindow},
     ui_config::{LayoutConfig, SlotConfig, ThemeConfig, UiConfig, UiSlots},
+    SceneContinuityConfig, SceneContinuityInitialState, SceneContinuityTimeWindow,
+    SceneContinuityTransition,
 };

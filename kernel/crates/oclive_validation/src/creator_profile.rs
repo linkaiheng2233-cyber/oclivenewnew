@@ -108,6 +108,11 @@ pub fn validate_role_pack_creator_directory(role_dir: &Path) -> Result<(), Vec<S
             prompts_dir.display()
         ));
     }
+    if let Err(mut scene_errors) =
+        crate::scene_continuity::validate_scene_continuity_directory(role_dir)
+    {
+        errs.append(&mut scene_errors);
+    }
 
     if errs.is_empty() {
         Ok(())

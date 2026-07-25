@@ -31,6 +31,17 @@ On disk, v2 often uses **one file** `pipeline.ocblueprint` with both **`meta`** 
 
 See the [Chinese ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) for directory layout, legacy manifest/settings, validation, and `oclive collab`.
 
+### Optional scene narrative continuity
+
+`scenes/{scene_id}/scene.json` may contain a `continuity` object. It is separate from core, mutable, and ephemeral personality data, and old packs without it keep legacy behavior.
+
+- `initial_states` contains 1–8 creator-authored states with a unique `id`, `weight` (1–100), optional `time_windows` (`HH:mm`, including overnight windows), and required `sub_location`, `anchor`, `posture`, and `activity`.
+- `default_state_id`, when present, references one initial state. The host makes a stable weighted selection from time-eligible states using the session, scene, and virtual day.
+- `transitions` contains at most 32 explicit edges. `from` may be empty for any source; `to` references a state; `assistant_reply_markers` are scene-unique explicit action phrases in the final visible assistant reply.
+- The host stores only scene/state IDs plus a CAS revision, injects the resolved state through dynamic `PromptInput.extra_sections` for Fast and Deep turns, and does not add a runtime LLM call. Scene switches invalidate the previous state.
+
+The canonical schema example and validation semantics are in [Chinese §1.2](../../creator-docs/role-pack/ROLE_PACK_SPEC.md#12-scenesscene_idscenejson-叙事连续性可选). Editor-side generation of 3–8 reviewable candidates remains tracked as `PE-CONTINUITY-01`.
+
 ---
 
 ## 9. Configuration file (`config.json`)

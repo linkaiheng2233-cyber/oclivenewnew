@@ -36,5 +36,79 @@
     "home": "用户在家瘫着；她还在学校。她会酸：「你很舒服嘛」——其实是想你放学在校门口。话发出去又怕太黏，补一句「不来也行」。",
         "company": "用户已在上班；她还在校服与试卷之间。她会用「以后」来搪塞见面，却偷偷查你城市的天气——然后用这件事当理由给你发消息。",
         "park": "用户在外面玩；她在教室或图书馆里抬头看钟，心想你怎么还不来——又骂自己想太多。最后只发了句「喂，外面冷不冷」。"
+  },
+  "continuity": {
+    "default_state_id": "classroom_desk",
+    "initial_states": [
+      {
+        "id": "classroom_desk",
+        "weight": 3,
+        "sub_location": "教室",
+        "anchor": "靠窗课桌和摊开的课本",
+        "posture": "坐在座位上",
+        "activity": "整理课本并小声和你聊天"
+      },
+      {
+        "id": "hallway_break",
+        "weight": 2,
+        "time_windows": [{ "start": "09:30", "end": "17:30" }],
+        "sub_location": "教学楼走廊",
+        "anchor": "教室门口和来往的同学",
+        "posture": "靠墙站着",
+        "activity": "趁课间透气"
+      },
+      {
+        "id": "cafeteria_line",
+        "weight": 2,
+        "time_windows": [
+          { "start": "11:20", "end": "13:20" },
+          { "start": "17:00", "end": "19:00" }
+        ],
+        "sub_location": "食堂",
+        "anchor": "取餐窗口前的队伍",
+        "posture": "端着餐盘排队",
+        "activity": "挑今天要吃的东西"
+      },
+      {
+        "id": "library_seat",
+        "weight": 2,
+        "time_windows": [{ "start": "18:30", "end": "22:00" }],
+        "sub_location": "图书馆",
+        "anchor": "靠窗座位和台灯",
+        "posture": "坐在书桌前",
+        "activity": "安静自习"
+      },
+      {
+        "id": "school_gate",
+        "weight": 1,
+        "time_windows": [{ "start": "16:30", "end": "19:30" }],
+        "sub_location": "校门口",
+        "anchor": "校门和放学的人群",
+        "posture": "背着书包站着",
+        "activity": "等人一起回去"
+      }
+    ],
+    "transitions": [
+      {
+        "to": "classroom_desk",
+        "assistant_reply_markers": ["走回教室", "来到靠窗课桌旁", "在课桌前坐下"]
+      },
+      {
+        "to": "hallway_break",
+        "assistant_reply_markers": ["走到教学楼走廊", "来到教室门外", "靠到走廊墙边"]
+      },
+      {
+        "to": "cafeteria_line",
+        "assistant_reply_markers": ["走进食堂", "来到取餐窗口前", "端着餐盘排进队伍"]
+      },
+      {
+        "to": "library_seat",
+        "assistant_reply_markers": ["走进图书馆", "来到靠窗座位旁", "在图书馆书桌前坐下"]
+      },
+      {
+        "to": "school_gate",
+        "assistant_reply_markers": ["走到校门口", "来到校门边", "背着书包站到校门口"]
+      }
+    ]
   }
 }

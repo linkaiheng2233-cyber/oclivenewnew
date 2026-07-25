@@ -99,6 +99,45 @@ distros/chat-pro/roles/{role_id}/
 - **整个 `user_identities/` 目录缺失** → legacy 回退（`meta.relations` 的 `prompt_hint`），不阻塞 `load_role`。
 - **目录存在且含 `index.json`** → 每条 `template_file` 指向的 `*.md` **必须可读**；`oclive pack validate` 与 `load_role` 均会 **失败**（非 warn）。
 
+### 1.2 `scenes/{scene_id}/scene.json` 叙事连续性（可选）
+
+场景可以声明独立于核心人格、可变人格和短期情绪档案的 `continuity`。它只描述角色在一个大场景内的微观位置与动作连续性；旧角色包不含该字段时保持原行为。
+
+```json
+{
+  "continuity": {
+    "default_state_id": "sofa_lounge",
+    "initial_states": [
+      {
+        "id": "sofa_lounge",
+        "weight": 3,
+        "time_windows": [{ "start": "18:00", "end": "23:00" }],
+        "sub_location": "客厅",
+        "anchor": "沙发和茶几",
+        "posture": "坐在沙发一角",
+        "activity": "和用户聊天"
+      }
+    ],
+    "transitions": [
+      {
+        "from": ["sofa_lounge"],
+        "to": "bedroom_wind_down",
+        "assistant_reply_markers": ["走进卧室", "来到床边"]
+      }
+    ]
+  }
+}
+```
+
+- `initial_states`：**1～8** 项；`id` 在本场景内唯一；`weight` 为 **1～100**，默认 `1`。`time_windows` 可省略，支持跨午夜的 `HH:mm` 区间。
+- `default_state_id`：可选，必须引用已有状态。运行时优先在符合虚拟时间的候选中做按会话、场景与虚拟日期稳定的加权选择。
+- `sub_location` / `anchor` / `posture` / `activity`：均为必填创作事实；运行时数据库只保存状态 ID 与修订号，正文始终从当前角色包解析。
+- `transitions`：最多 **32** 项；`from` 省略或为空表示任意来源，`to` 必须引用已有状态；`assistant_reply_markers` 在本场景内不得重复。状态只在**最终可见的角色回复**包含其中的显式动作时迁移；普通聊天保持原状态。
+
+宿主把当前状态作为动态 `PromptInput.extra_sections` 同时提供给 Fast / Deep，不额外调用 LLM，且场景切换会使旧状态失效。编写器的 3～8 个候选生成与审核界面见技术债 `PE-CONTINUITY-01`，运行时不临场生成候选。
+
+---
+
 ## 2. `pipeline.ocblueprint`（v2 SSOT）
 
 | 顶层键 | 归属 | 必填 | 说明 |

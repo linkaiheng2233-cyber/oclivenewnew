@@ -755,6 +755,26 @@ pub(crate) async fn post_llm(
     )
     .await;
 
+    if matches!(mode, TurnMode::CoPresent) {
+        if let Err(error) = crate::domain::narrative_continuity::update_after_reply(
+            state,
+            role,
+            srid,
+            scene_id,
+            display_reply.as_str(),
+        )
+        .await
+        {
+            tracing::warn!(
+                target: "oclive_continuity",
+                role_id = %srid,
+                scene_id,
+                error = %error,
+                "narrative continuity transition failed; preserving previous state"
+            );
+        }
+    }
+
     persist_non_profile_personality_delta(state, role, srid, middle).await;
 
     if matches!(mode, TurnMode::CoPresent) {

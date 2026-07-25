@@ -51,6 +51,7 @@ pub mod fallback_agent;
 pub mod host_profile;
 pub mod model_tier;
 pub mod mutable_profile_llm;
+pub mod narrative_continuity;
 pub mod noop_slot_backends;
 pub mod plugin_host;
 pub mod portrait_emotion_engine;

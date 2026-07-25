@@ -456,6 +456,7 @@ pub fn validate_role_pack_directory_with_profile(
     };
 
     validate_role_pack_tail(&disk, &merged_scenes, host_version)?;
+    crate::scene_continuity::validate_scene_continuity_directory(role_dir)?;
     if matches!(profile, RolePackValidationProfile::RobotSoul) {
         let extra = robot_soul_profile_errors(Some(role_dir), &disk, settings_raw.as_deref());
         if !extra.is_empty() {
@@ -550,6 +551,7 @@ fn validate_role_pack_optional_extensions(role_dir: &Path) -> Result<(), Vec<Str
         &role_dir.join("config.json"),
     )?;
     crate::turn_thinking::validate_turn_thinking_config_file(&role_dir.join("config.json"))?;
+    crate::scene_continuity::validate_scene_continuity_directory(role_dir)?;
     crate::portrait_catalog::validate_portrait_catalog_files(role_dir)?;
     let memory_seed_path = role_dir.join("memory_seed.json");
     if memory_seed_path.is_file() {

@@ -256,7 +256,29 @@ pub(crate) async fn run_middle(
         "persona_source resolved"
     );
 
-    let extra_sections: Vec<PromptExtraSection<'_>> = role
+    let continuity_prompt = match crate::domain::narrative_continuity::prompt_for_turn(
+        state,
+        role,
+        ctx.srid,
+        scene_id,
+        virtual_time_ms,
+        &ctx.runtime_snapshot,
+    )
+    .await
+    {
+        Ok(value) => value,
+        Err(error) => {
+            tracing::warn!(
+                target: "oclive_continuity",
+                role_id = %ctx.srid,
+                scene_id,
+                error = %error,
+                "narrative continuity prompt unavailable; continuing without it"
+            );
+            String::new()
+        }
+    };
+    let mut extra_sections: Vec<PromptExtraSection<'_>> = role
         .pack_prompt_extra_sections
         .iter()
         .map(|s| PromptExtraSection {
@@ -264,6 +286,12 @@ pub(crate) async fn run_middle(
             body: s.body.as_str(),
         })
         .collect();
+    if !continuity_prompt.is_empty() {
+        extra_sections.push(PromptExtraSection {
+            title: "行动连续性状态",
+            body: continuity_prompt.as_str(),
+        });
+    }
 
     let prompt_input = PromptInput {
         role,

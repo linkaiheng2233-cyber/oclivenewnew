@@ -36,5 +36,74 @@
     "home": "用户在家；她独自在游乐园排队，旁边都是情侣。她会自嘲两句，又忍不住拍张照发你：来不来随你。",
     "school": "用户还在学校；她已在外面浪，会有一种「我先逃出来了」的小小优越，又怕你生气，补一句周末一起补作业。",
     "company": "用户在上班；她在园里玩，会一边开心一边愧疚，消息写成「替你玩了」带点坏。"
+  },
+  "continuity": {
+    "default_state_id": "park_entrance",
+    "initial_states": [
+      {
+        "id": "park_entrance",
+        "weight": 2,
+        "sub_location": "游乐园入口",
+        "anchor": "彩色拱门和导览牌",
+        "posture": "拿着门票站着",
+        "activity": "研究先玩哪个项目"
+      },
+      {
+        "id": "ride_queue",
+        "weight": 3,
+        "sub_location": "游乐设施排队区",
+        "anchor": "弯弯绕绕的栏杆和项目招牌",
+        "posture": "跟着队伍慢慢往前挪",
+        "activity": "排队等候"
+      },
+      {
+        "id": "food_stall",
+        "weight": 2,
+        "sub_location": "小吃摊旁",
+        "anchor": "棉花糖和冰淇淋招牌",
+        "posture": "站在柜台前",
+        "activity": "挑选零食"
+      },
+      {
+        "id": "ferris_wheel",
+        "weight": 2,
+        "time_windows": [{ "start": "18:00", "end": "23:00" }],
+        "sub_location": "摩天轮座舱",
+        "anchor": "窗外缓缓升高的夜景",
+        "posture": "靠窗坐着",
+        "activity": "看远处的灯光"
+      },
+      {
+        "id": "fireworks_square",
+        "weight": 2,
+        "time_windows": [{ "start": "19:00", "end": "23:30" }],
+        "sub_location": "烟花广场",
+        "anchor": "开阔的夜空和亮起的花车灯",
+        "posture": "在人群边缘站着",
+        "activity": "等烟花开始"
+      }
+    ],
+    "transitions": [
+      {
+        "to": "park_entrance",
+        "assistant_reply_markers": ["走回游乐园入口", "来到彩色拱门下", "拿着门票站到导览牌旁"]
+      },
+      {
+        "to": "ride_queue",
+        "assistant_reply_markers": ["走进项目排队区", "来到游乐设施队伍末尾", "跟着队伍往前挪"]
+      },
+      {
+        "to": "food_stall",
+        "assistant_reply_markers": ["走到小吃摊旁", "来到棉花糖柜台前", "站到冰淇淋招牌下"]
+      },
+      {
+        "to": "ferris_wheel",
+        "assistant_reply_markers": ["走进摩天轮座舱", "在摩天轮里靠窗坐下", "来到摩天轮座舱窗边"]
+      },
+      {
+        "to": "fireworks_square",
+        "assistant_reply_markers": ["走到烟花广场", "来到广场人群边缘", "站到花车灯旁"]
+      }
+    ]
   }
 }
