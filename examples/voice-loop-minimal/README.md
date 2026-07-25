@@ -161,6 +161,13 @@ $env:RUST_LOG = "info"
 - 立绘情感 LLM：`OCLIVE_PORTRAIT_EMOTION_LLM=0`（玩偶场景）  
 - 优先小模型 + `POST /chat/stream`（`loop.py --stream` 可测 ttft）  
 - ASR/TTS 模型放 AP 本地存储，避免云端依赖
+- CosyVoice2 实机 warm TTFC 回归（先设置 `OCLIVE_COSYVOICE_PYTHON`）：
+
+```powershell
+node scripts/test-voice-speak-path.mjs --role-path distros/chat-pro/roles/mumu --text "我一直都在。" --runs 5 --warmup-runs 1 --stream-only --max-ttfc-ms 2500
+```
+
+默认使用真实 PCM 流式；仅诊断模型/驱动兼容问题时临时设置 `OCLIVE_COSYVOICE_STREAM=0` 回退整句缓冲。非 `1.0` 语速会自动使用缓冲路径以保留语速控制。
 
 ---
 

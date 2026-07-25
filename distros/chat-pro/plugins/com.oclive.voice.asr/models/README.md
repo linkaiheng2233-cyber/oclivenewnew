@@ -108,10 +108,37 @@ Write `.venv-cosyvoice/Lib/site-packages/oclive_cosyvoice_paths.pth` with two li
 
 - `OCLIVE_COSYVOICE_PYTHON` — venv python path
 - `OCLIVE_COSYVOICE_MODEL_DIR` — `%APPDATA%\OCLive\models\tts\cosyvoice2-0.5b`
+- `OCLIVE_COSYVOICE_PRECISION` — `auto` (default), `mixed_fp16`, or `fp32`
+- `OCLIVE_COSYVOICE_MIN_FREE_VRAM_MIB` — optional cold-load admission override
+
+On CUDA, `auto` loads checkpoints on CPU in stages, moves the CosyVoice LLM and
+flow model to CUDA as FP16, and leaves the HiFT vocoder in FP32. This avoids the
+old "load every FP32 checkpoint onto CUDA, then convert" cold peak. Before a
+cold load, the sidecar uses the driver-wide `nvidia-smi` memory view when
+available; the default minimum free VRAM is 2560 MiB for mixed precision and
+4096 MiB for forced FP32. An unsafe load returns retryable
+`gpu_admission_denied` instead of provoking CUDA OOM.
+
+The sidecar reports precision plus `load_strategy`, `load_vram_probe`,
+`load_free_vram_before_mib`, `load_min_free_vram_mib`, and process peak memory
+through `/health` and `/warm`. If mixed precision fails during prime, FP32 is
+retried only when its own admission check passes. Set
+`OCLIVE_COSYVOICE_PRECISION=fp32` to force the legacy compatibility path, or
+set the minimum-free override to `0` only for controlled diagnostics.
 
 Windows uses **wetext** frontend by default; `CosyVoice-ttsfrd` is Linux-only (see upstream README).
 
 ### Manual test checklist (after env install)
+
+Shared-GPU cold-load and concurrency stress (llama-server first, then voice):
+
+```powershell
+.\examples\voice-loop-minimal\.venv-cosyvoice\Scripts\python.exe `
+  scripts\stress-voice-gpu-runtime.py --gpu-layers 24 --voice-runs 10
+
+.\examples\voice-loop-minimal\.venv-cosyvoice\Scripts\python.exe `
+  scripts\stress-voice-gpu-runtime.py --gpu-layers 99 --expect-admission-denied
+```
 
 1. **Sidecar + warm + prime** (first run may take several minutes; watch stderr `elapsed_ms`):
 

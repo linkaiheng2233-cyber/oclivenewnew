@@ -23,7 +23,12 @@ fs.writeFileSync(
 process.on('exit', () => fs.rmSync(sharpFixtureDir, { recursive: true, force: true }))
 
 const ROLES = [
-  { id: 'mumu', dir: 'distros/chat-pro/roles/mumu', expectHandwritten: true },
+  {
+    id: 'mumu',
+    dir: 'distros/chat-pro/roles/mumu',
+    expectHandwritten: true,
+    expectReference: true,
+  },
   { id: 'sharp-fixture', dir: sharpFixtureDir, expectSharp: true },
   { id: '枫侵月', dir: 'distros/chat-pro/roles/枫侵月', expectMasculine: true },
   { id: 'polish-dev', dir: 'distros/chat-pro/roles/polish-dev', expectGeneric: true },
@@ -128,6 +133,16 @@ async function main() {
           assert(
             emo.includes(vp.emo_text_template?.replace('{tone}', '').slice(0, 6) || '软萌'),
             `${role.id}: expected handwritten voice_profile emo_text`,
+          )
+        }
+        if (role.expectReference) {
+          const refAudio = result.directive?.ref_audio || ''
+          assert(refAudio.endsWith('ref_neutral.wav'), `${role.id}: expected neutral ref audio`)
+          assert(fs.existsSync(refAudio), `${role.id}: missing resolved ref audio ${refAudio}`)
+          assert(
+            result.directive?.ref_text
+              === '早上好呀，我是沐沐。今天也会陪着你，所以不用一个人硬撑啦。慢慢来就好，我一直都在这里。',
+            `${role.id}: reference transcript drift`,
           )
         }
         if (role.expectSharp && botEmotion === 'neutral') {

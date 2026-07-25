@@ -5,14 +5,8 @@
   "synth_profile": "bundled-cosyvoice2-zh",
   "speed": 1.0,
   "energy": "soft",
-  "emo_text_template": "用软萌可爱、孩子气十足的小女孩嗓音说话，声音软软的、自然有起伏、带一点点撒娇感，语气生动不平淡；{tone}",
+  "emo_text_template": "使用沐沐固定的年轻、轻盈、温暖声线，保留清晰稳定、略带数字感的 AI 音色；语气亲近自然，尾音柔和，情绪变化克制，不要幼儿音、夹子音或播音腔；{tone}",
   "engine_family": ["cosyvoice2", "local_http"],
   "ref_default": "assets/voice/ref_neutral.wav",
-  "ref_text": "这是一段参考文本，与参考音频对应。",
-  "ref_map": {
-    "happy": "assets/voice/ref_happy.wav",
-    "sad": "assets/voice/ref_sad.wav",
-    "shy": "assets/voice/ref_shy.wav",
-    "neutral": "assets/voice/ref_neutral.wav"
-  }
+  "ref_text": "早上好呀，我是沐沐。今天也会陪着你，所以不用一个人硬撑啦。慢慢来就好，我一直都在这里。"
 }

@@ -8,6 +8,25 @@ from typing import Any
 from tts.engines._http import http_json, sidecar_base
 
 
+def _runtime_status(health: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "warmed": health.get("warmed", False),
+        "primed": health.get("primed", False),
+        "precision_requested": health.get("precision_requested", "auto"),
+        "precision_active": health.get("precision_active", "fp32"),
+        "precision_fallback_reason": health.get("precision_fallback_reason", ""),
+        "load_strategy": health.get("load_strategy", "unknown"),
+        "load_admission_detail": health.get("load_admission_detail", ""),
+        "load_vram_probe": health.get("load_vram_probe", "unavailable"),
+        "load_free_vram_before_mib": health.get("load_free_vram_before_mib", 0),
+        "load_total_vram_mib": health.get("load_total_vram_mib", 0),
+        "load_min_free_vram_mib": health.get("load_min_free_vram_mib", 0),
+        "load_peak_allocated_mib": health.get("load_peak_allocated_mib", 0),
+        "load_peak_reserved_mib": health.get("load_peak_reserved_mib", 0),
+        "retryable": health.get("retryable", False),
+    }
+
+
 class Cosyvoice2Engine:
     engine_id = "cosyvoice2"
     supports_stream = True
@@ -47,7 +66,7 @@ class Cosyvoice2Engine:
                 "profile": manifest.get("id", path.name),
                 "model_dir": str(path),
                 "sidecar_endpoint": base,
-                "warmed": health.get("warmed", False),
+                **_runtime_status(health),
                 "supports_stream": True,
                 "supports_warm": True,
                 "message": health.get("message", "CosyVoice2 sidecar ready"),
@@ -60,6 +79,7 @@ class Cosyvoice2Engine:
             or "Start voice expansion sidecar and import CosyVoice2 weights",
             "model_dir": str(path),
             "sidecar_endpoint": base,
+            **_runtime_status(health),
             "supports_stream": True,
             "supports_warm": True,
         }
@@ -74,9 +94,16 @@ class Cosyvoice2Engine:
         **kwargs: Any,
     ) -> dict[str, Any]:
         base = sidecar_base(manifest=manifest, sidecar_endpoint=sidecar_endpoint)
+        payload = {
+            "model_dir": str(model_dir),
+            "prime": prime,
+            "emo_text": str(kwargs.get("emo_text") or ""),
+            "ref_audio": str(kwargs.get("ref_audio") or ""),
+            "ref_text": str(kwargs.get("ref_text") or ""),
+        }
         return http_json(
             f"{base}/warm",
-            {"model_dir": str(model_dir), "prime": prime},
+            payload,
             method="POST",
             timeout=900.0,
         )
