@@ -43,22 +43,45 @@ pub fn resolve_visual_state_rule_with_intensity(
     if tag.is_empty() {
         return default_neutral_id(catalog);
     }
-    if let Some(level) = intensity.and_then(intensity_level) {
-        let id = format!("{tag}_{level}");
-        if catalog.assets.iter().any(|asset| asset.id == id) {
-            return Some(id);
-        }
-    }
-    for asset in &catalog.assets {
-        if asset
-            .tags
+    let family_assets = || {
+        catalog
+            .assets
             .iter()
-            .any(|t| t.trim().eq_ignore_ascii_case(&tag))
+            .filter(|asset| asset_belongs_to_family(asset, &tag))
+    };
+    if let Some(level) = intensity.and_then(intensity_level) {
+        if let Some(asset) = family_assets().find(|asset| asset.id.ends_with(&format!("_{level}")))
         {
             return Some(asset.id.clone());
         }
+        if let Some(asset) = family_assets().find(|asset| !asset.id.ends_with("_default")) {
+            return Some(asset.id.clone());
+        }
+    }
+    if let Some(asset) = family_assets().find(|asset| asset.id.ends_with("_default")) {
+        return Some(asset.id.clone());
+    }
+    if let Some(asset) = family_assets().next() {
+        return Some(asset.id.clone());
     }
     default_neutral_id(catalog)
+}
+
+fn asset_belongs_to_family(
+    asset: &oclive_kernel_types::models::PortraitCatalogAsset,
+    family: &str,
+) -> bool {
+    if let Some(cluster) = asset
+        .cluster
+        .as_deref()
+        .filter(|cluster| !cluster.trim().is_empty())
+    {
+        return cluster.trim().eq_ignore_ascii_case(family);
+    }
+    asset
+        .tags
+        .iter()
+        .any(|tag| tag.trim().eq_ignore_ascii_case(family))
 }
 
 fn intensity_level(intensity: f64) -> Option<&'static str> {
@@ -175,6 +198,25 @@ mod tests {
         assert_eq!(
             resolve_visual_state_rule_with_intensity(&catalog, "sad", Some(0.9)),
             Some("sad_default".to_string())
+        );
+    }
+
+    #[test]
+    fn cluster_is_the_emotion_family_even_when_tags_are_descriptive() {
+        let mut catalog = sample_catalog();
+        catalog.assets.push(PortraitCatalogAsset {
+            id: "warm_smile_moderate".to_string(),
+            path: "assets/images/warm.png".to_string(),
+            desc: "warm smile".to_string(),
+            tags: vec!["warm".to_string(), "smile".to_string()],
+            kind: Default::default(),
+            cluster: Some("happy".to_string()),
+            context: None,
+            resources: None,
+        });
+        assert_eq!(
+            resolve_visual_state_rule_with_intensity(&catalog, "happy", Some(0.5)),
+            Some("warm_smile_moderate".to_string())
         );
     }
 

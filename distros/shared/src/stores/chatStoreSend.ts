@@ -198,11 +198,10 @@ export async function sendChatStoreMessage(
       pres.assistantEmotionLabel,
       res.favorability_current,
       {
-        visualStateId: res.visual_state_id ?? null,
+        visualStateId: res.visual_state_id,
         portraitAssetPath:
           res.performance_directive?.path
-          ?? res.performance_directive?.fallback_image
-          ?? null,
+          ?? res.performance_directive?.fallback_image,
       },
     )
     if (res.relation_state) {

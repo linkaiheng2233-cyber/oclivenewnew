@@ -46,4 +46,22 @@ describe('role portrait state ownership', () => {
     expect(role.roleInfo.portraitAssetPath).toBeUndefined()
     expect(role.portraitStateRoleId).toBe('')
   })
+
+  it('keeps the latest catalog portrait when a compatibility response omits visual fields', () => {
+    const role = useRoleStore()
+    role.currentRoleId = 'mumu'
+    role.applyRoleInfo(roleInfo('mumu'))
+    role.updateLocalAfterMessage('happy', 12, {
+      visualStateId: 'happy_mild',
+      portraitAssetPath: 'assets/images/happy_mild.png',
+    })
+
+    role.updateLocalAfterMessage('neutral', 13, {
+      visualStateId: undefined,
+      portraitAssetPath: undefined,
+    })
+
+    expect(role.roleInfo.visualStateId).toBe('happy_mild')
+    expect(role.roleInfo.portraitAssetPath).toBe('assets/images/happy_mild.png')
+  })
 })

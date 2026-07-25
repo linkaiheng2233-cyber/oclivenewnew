@@ -36,6 +36,41 @@ fn mumu_catalog_resolves_intensity_variants() {
 }
 
 #[test]
+fn mumu_catalog_has_complete_upgraded_emotion_families() {
+    let storage = RoleStorage::new(common::roles_dir());
+    let role = storage.load_role("mumu").expect("mumu");
+    let catalog = role.portrait_catalog.as_ref().expect("mumu catalog");
+    for family in [
+        "happy", "sad", "angry", "neutral", "excited", "confused", "shy",
+    ] {
+        let default_id = format!("{family}_default");
+        let default_asset = catalog
+            .assets
+            .iter()
+            .find(|asset| asset.id == default_id)
+            .expect("default asset");
+        assert!(
+            default_asset.path.contains("_mild") || default_asset.path.ends_with("normal-v2.png")
+        );
+        for level in ["mild", "moderate", "severe"] {
+            let expected = format!("{family}_{level}");
+            assert_eq!(
+                resolve_visual_state_rule_with_intensity(
+                    catalog,
+                    family,
+                    Some(match level {
+                        "mild" => 0.2,
+                        "moderate" => 0.5,
+                        _ => 0.9,
+                    })
+                ),
+                Some(expected),
+            );
+        }
+    }
+}
+
+#[test]
 fn visual_disabled_uses_fallback_route_gate() {
     let storage = RoleStorage::new(common::roles_dir());
     let mut role = storage.load_role("mumu").expect("mumu");

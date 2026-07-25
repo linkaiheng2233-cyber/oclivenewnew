@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { readRoleAssetBytes, resolveRoleAssetPath } from '@oclive/shared/api'
 import {
-  emotionToAssetFilename,
+  emotionAssetCandidates,
   emotionToEmoji,
 } from '@oclive/shared/utils/emotion-assets'
 import { convertFileSrc } from '@tauri-apps/api/core'
@@ -37,24 +37,6 @@ function revokeBlob(): void {
     URL.revokeObjectURL(portraitBlobUrl.value)
     portraitBlobUrl.value = null
   }
-}
-
-function emotionAssetCandidates(key: string): string[] {
-  const primary = emotionToAssetFilename(key)
-  const out = new Set<string>()
-  const pushExpanded = (file: string) => {
-    const idx = file.lastIndexOf('.')
-    const base = idx >= 0 ? file.slice(0, idx) : file
-    for (const ext of ['png', 'jpg', 'jpeg', 'webp'])
-      out.add(`${base}.${ext}`)
-  }
-  pushExpanded(primary)
-  if (key === 'neutral') {
-    pushExpanded('neutral.png')
-  }
-  pushExpanded('normal.png')
-  pushExpanded('neutral.png')
-  return Array.from(out)
 }
 
 async function tryLoadBytes(roleId: string, rel: string, filename: string, gen: number): Promise<boolean> {
