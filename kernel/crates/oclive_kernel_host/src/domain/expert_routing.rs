@@ -507,6 +507,44 @@ fn apply_trait_delta(p: &mut PersonalityVector, trait_name: &str, delta: f64) {
     }
 }
 
+async fn apply_expert_fallback(
+    ctx: &mut ExperimentalStepCtx<'_>,
+    fallback: ExpertFallback,
+    route_id: &str,
+    reason: &str,
+) -> Result<StepOutcome, ProcessMessageError> {
+    match fallback {
+        ExpertFallback::Skip => Ok(StepOutcome::Continue),
+        ExpertFallback::RetryWithDefault => {
+            let key = ctx
+                .role
+                .slot_registry
+                .as_ref()
+                .and_then(|r| {
+                    r.iter()
+                        .find(|(_, e)| e.slot_type.trim() == "llm")
+                        .map(|(k, _)| k.clone())
+                })
+                .unwrap_or_else(|| "llm".into());
+            tracing::warn!(
+                target: "oclive_expert",
+                session_ns = %ctx.srid,
+                route_id = %route_id,
+                llm_key = %key,
+                reason = %reason,
+                fallback_hint = %format!("route={route_id}; reason={reason}"),
+                "专家流程降级：默认 LLM generate"
+            );
+            match ctx.run_method(key.as_str(), "generate").await? {
+                StepOutcome::NeedsStableCompletion | StepOutcome::Continue => {
+                    Ok(StepOutcome::NeedsStableCompletion)
+                }
+                other => Ok(other),
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod lora_tests {
     use super::*;
@@ -565,43 +603,5 @@ mod lora_tests {
             entry("llm", "directory", Some("com.example.mumu-lora")),
         );
         assert!(resolve_lora_llm_selection(&registry, "com.example.mumu-lora").is_err());
-    }
-}
-
-async fn apply_expert_fallback(
-    ctx: &mut ExperimentalStepCtx<'_>,
-    fallback: ExpertFallback,
-    route_id: &str,
-    reason: &str,
-) -> Result<StepOutcome, ProcessMessageError> {
-    match fallback {
-        ExpertFallback::Skip => Ok(StepOutcome::Continue),
-        ExpertFallback::RetryWithDefault => {
-            let key = ctx
-                .role
-                .slot_registry
-                .as_ref()
-                .and_then(|r| {
-                    r.iter()
-                        .find(|(_, e)| e.slot_type.trim() == "llm")
-                        .map(|(k, _)| k.clone())
-                })
-                .unwrap_or_else(|| "llm".into());
-            tracing::warn!(
-                target: "oclive_expert",
-                session_ns = %ctx.srid,
-                route_id = %route_id,
-                llm_key = %key,
-                reason = %reason,
-                fallback_hint = %format!("route={route_id}; reason={reason}"),
-                "专家流程降级：默认 LLM generate"
-            );
-            match ctx.run_method(key.as_str(), "generate").await? {
-                StepOutcome::NeedsStableCompletion | StepOutcome::Continue => {
-                    Ok(StepOutcome::NeedsStableCompletion)
-                }
-                other => Ok(other),
-            }
-        }
     }
 }
