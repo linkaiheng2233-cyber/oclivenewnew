@@ -59,8 +59,8 @@ bench_history.json
 .env.*
 !.env.example
 
-# Local directory-plugin runtime state under roles root (dev)
-distros/chat-pro/roles/.oclive_directory_plugin_data/
+# Local directory-plugin runtime state under any roles/fixture root (dev/test)
+.oclive_directory_plugin_data/
 
 # Local GGUF/BIN weights (default folder: repo-root models/)
 models/*.gguf

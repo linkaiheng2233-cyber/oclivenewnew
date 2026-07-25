@@ -157,7 +157,7 @@
 | 复杂情感 `narrative_hint` | `complex_emotion.rs` · `turn_pipeline/pre` | 设施 bug、Prompt 段落公式 | 写入 `slot_registry` |
 | 立绘 `portrait_catalog` | `config.json` · `persistence.rs` post_llm | 目录解析、规则/导演选择、DTO 回填的契约演进；改动须补设施/热路径测试 | 用文件名当 SSOT |
 | 视觉表现 `visual_presentation` | `config.json` · `visual_presentation` 模块 · RFC | 已交付 directive 物化与发行版 gating；渲染器仍由宿主/适配器负责 | 未经显式配置默认开启或二次 LLM 选图 |
-| 专家路由 `expert_routing.json` | **冻结** · 见 TECHNICAL_DEBT §2 | 仅解冻后 | 扩大默认开启面 |
+| 专家路由 `expert_routing.json` | **可选启用 · 默认关** · 见 TECHNICAL_DEBT §2 | 用户显式立项；按 G17 同步路由、插件、Stable 消费、回退、契约、样例与测试 | 扩大默认开启面；让未预声明/未授权的 adapter 绕过目录插件与权限边界 |
 
 ### 3. 独立通道能力增强（非六槽 · 非设施编号）
 

@@ -269,6 +269,14 @@ fn zones_of_entry(zone: Option<&Value>) -> HashSet<String> {
     set
 }
 
+/// Whether a v3-compatible slot entry belongs to `stable` or `experimental`.
+///
+/// Missing or empty `zone` follows the v3 contract and belongs to `stable`.
+#[must_use]
+pub fn slot_registry_entry_in_zone(entry: &SlotRegistryEntry, zone: &str) -> bool {
+    zones_of_entry(entry.zone.as_ref()).contains(&normalize_zone(zone))
+}
+
 fn normalize_zone(s: &str) -> String {
     match s.trim().to_ascii_lowercase().as_str() {
         "stable" => "stable".into(),
@@ -685,5 +693,28 @@ mod tests {
         }"#;
         let warnings = validate_blueprint_json_by_schema_version(raw, None).unwrap();
         assert!(!warnings.is_empty());
+    }
+
+    #[test]
+    fn slot_zone_defaults_to_stable_and_supports_dual_membership() {
+        let mut entry = SlotRegistryEntry {
+            slot_type: "llm".into(),
+            label: "LLM".into(),
+            backend: "directory".into(),
+            position: 0,
+            plugin: Some("com.example.lora".into()),
+            plugins: None,
+            model: None,
+            url: None,
+            local_memory_provider_id: None,
+            zone: None,
+            policy: None,
+        };
+        assert!(slot_registry_entry_in_zone(&entry, "stable"));
+        assert!(!slot_registry_entry_in_zone(&entry, "experimental"));
+
+        entry.zone = Some(serde_json::json!(["stable", "experimental"]));
+        assert!(slot_registry_entry_in_zone(&entry, "stable"));
+        assert!(slot_registry_entry_in_zone(&entry, "experimental"));
     }
 }

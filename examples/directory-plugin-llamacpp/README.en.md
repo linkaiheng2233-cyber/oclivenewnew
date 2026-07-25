@@ -82,3 +82,66 @@ The host still passes **`effective_ollama_model`** as the **`model`** string; ll
 2. `curl` the llama base URL; connection refused means the server is not up.  
 3. Host logs **`remote_llm`** / **`oclive_plugin`**; JSON-RPC errors prefixed with **`llamacpp proxy:`** usually mean upstream non-2xx or unexpected JSON.  
 4. For a long-lived proxy, consider **`plugin_backends.llm = remote`** with the same logic in a standalone sidecar ([REMOTE_PLUGIN_PROTOCOL.md](../../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)).
+
+## Use as a LoRA expert plugin
+
+This plugin can also target a LoRA model alias already registered by llama.cpp,
+vLLM, or another OpenAI-compatible inference service. A non-empty
+`adapter_model` in the plugin configuration overrides the base model name sent
+by the host. The inference service remains responsible for loading weights,
+VRAM management, and adapter hot switching.
+
+Predeclare the plugin as a separate `llm + directory` blueprint instance:
+
+```json
+{
+  "slot_registry": {
+    "llm": {
+      "type": "llm",
+      "label": "Default LLM",
+      "backend": "ollama",
+      "position": 0
+    },
+    "mumu_lora": {
+      "type": "llm",
+      "label": "Mumu LoRA",
+      "backend": "directory",
+      "position": 10,
+      "plugin": "com.oclive.example.llamacpp_llm",
+      "zone": "experimental"
+    }
+  }
+}
+```
+
+Select the same plugin id from an expert route:
+
+```json
+{
+  "action": "slot.lora.apply",
+  "params": {
+    "plugin_id": "com.oclive.example.llamacpp_llm"
+  }
+}
+```
+
+Requirements:
+
+- Build the host with `dual_core`; use blueprint v3 with
+  `runtime_config.dual_core.enabled`.
+- Include `slot.expert.invoke` and a final `slot.<llm-key>.generate` in
+  `pipeline.experimental`.
+- The plugin must declare `provides: ["llm"]` and receive its
+  `process:spawn` / `network:*` grants.
+- `adapter_model` is an inference-service model alias. The kernel intentionally
+  does not interpret `.safetensors` or hard-code one framework's loader API.
+- The plugin converts OpenAI-compatible SSE into OCLive
+  `llm.generate_stream` NDJSON. Its manifest explicitly declares the method, so
+  dual-core Stable completion forwards tokens incrementally. If the upstream
+  lacks SSE, the plugin falls back to full generation and one callback.
+- The selection is session-scoped. Invalid configuration, an unavailable
+  plugin, or generation failure logs `LORA_ADAPTER_INVALID`,
+  `LORA_ADAPTER_UNAVAILABLE`, or `LORA_ADAPTER_GENERATE_FAILED` and falls back
+  to the normal LLM. A failure after streaming starts records
+  `LORA_ADAPTER_STREAM_PARTIAL` and preserves the partial reply instead of
+  appending a second model response.

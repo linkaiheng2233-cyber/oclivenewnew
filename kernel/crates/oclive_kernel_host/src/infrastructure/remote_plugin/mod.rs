@@ -28,6 +28,7 @@ pub use config::RemotePluginHttpConfig;
 pub use emotion_http::RemoteUserEmotionAnalyzerHttp;
 pub use event_http::RemoteEventEstimatorHttp;
 pub use llm_http::RemoteLlmHttp;
+pub(crate) use llm_http::METHOD_LLM_GENERATE_STREAM;
 pub use memory_http::RemoteMemoryRetrievalHttp;
 pub use prompt_http::RemotePromptAssemblerHttp;
 pub use reply_post_process_directory_http::DirectoryReplyPostProcessor;

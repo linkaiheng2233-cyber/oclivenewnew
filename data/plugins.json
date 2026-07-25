@@ -69,10 +69,10 @@
       "name": "LlamaCpp LLM (示例)",
       "description": "目录插件示例：本地 llama.cpp RPC LLM 槽位（需自行准备模型与 llama-server）",
       "author": "oclive",
-      "version": "0.1.0",
+      "version": "0.3.0",
       "git": "https://github.com/linkaiheng2233-cyber/oclivenewnew.git",
       "gitSubdir": "examples/directory-plugin-llamacpp",
-      "tags": ["example", "llm", "directory"],
+      "tags": ["example", "llm", "lora", "directory"],
       "category": "example",
       "source": "official",
       "permissions": ["process:spawn", "network:*"]

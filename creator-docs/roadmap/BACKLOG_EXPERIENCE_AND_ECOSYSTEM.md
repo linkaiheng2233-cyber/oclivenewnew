@@ -51,7 +51,7 @@
 | 涉及仓库 | 新仓或 **oclive-pack-editor** 姊妹工具（推荐独立 Tauri，避免训练/GPU 拖慢编写器）；主仓 `expert_routing` + `slot.lora.apply` + `oclive_validation` 契约；可选 directory 推理插件。 |
 | 与定位关系 | 补 **权重层**，不变成封闭「性格引擎」；对标 AI 主播类实践的微调投入，但产物走 **组装—契约—打包—分发** 标准层。详见 [VISION_ROADMAP_MONTHLY.md](VISION_ROADMAP_MONTHLY.md)「微调工坊」小节。 |
 | 实现时需考虑 | 语料隐私与授权；基座模型（优先 Ollama 生态小参）；默认 **expert 子流程** 切换 adapter，不强制替换主 `plugin_backends.llm`；评测（prompt-only vs LoRA vs LoRA+专家）。 |
-| 状态 | **愿景已纳入 · 待排期**；T0 RFC 未开。`expert_routing` / `dual_core` **冻结期内**仅契约+工坊原型，不接 Stable 主链。 |
+| 状态 | **Partial（2026-07-24）**：`expert_routing` / `dual_core` 仍为可选 feature、默认关闭；`slot.lora.apply` 已选择预声明 directory LLM 并回流 Stable completion。训练工坊、adapter 包契约/导入 UI、真实模型评测仍待排期。 |
 | 场景参考 | [APPLICATION_SCENARIOS.md](APPLICATION_SCENARIOS.md) **S11** |
 
 ### 6. 具身互动 · 性格驱动的「手脚」（Playroom）

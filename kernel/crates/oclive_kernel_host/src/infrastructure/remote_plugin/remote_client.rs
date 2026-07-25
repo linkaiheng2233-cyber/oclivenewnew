@@ -4,6 +4,7 @@ use super::config::RemotePluginHttpConfig;
 use super::jsonrpc::{self, RemoteRpcChannel};
 use crate::error::{AppError, Result};
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
+use oclive_kernel_contracts::LlmTokenSink;
 use serde_json::Value;
 use std::sync::Arc;
 
@@ -186,6 +187,31 @@ impl RemoteHttpClientAsync {
     /// Same as [`Self::call`] with [`RemoteRpcChannel::Llm`].
     pub async fn call_llm(&self, method: &str, params: Value) -> Result<Value> {
         self.call(RemoteRpcChannel::Llm, method, params).await
+    }
+
+    /// Incremental JSON-RPC-over-NDJSON call on the LLM channel.
+    ///
+    /// # Errors
+    ///
+    /// Propagates authorization, transport, framing, and remote JSON-RPC errors.
+    pub async fn call_llm_stream(
+        &self,
+        method: &str,
+        params: Value,
+        on_token: LlmTokenSink,
+    ) -> Result<Value> {
+        jsonrpc::call_async_stream(
+            RemoteRpcChannel::Llm,
+            self.client.as_ref(),
+            &self.cfg.endpoint,
+            method,
+            params,
+            self.cfg.bearer_token.as_deref(),
+            self.network_grant(),
+            self.cfg.timeout,
+            on_token.as_ref(),
+        )
+        .await
     }
 
     /// # Errors

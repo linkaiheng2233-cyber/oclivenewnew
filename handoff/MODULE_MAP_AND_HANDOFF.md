@@ -213,7 +213,7 @@
 | # | 名称 | 输入 / 输出 | 主链锚点 | 默认 | 改动 SSOT |
 |---|------|-------------|----------|------|-----------|
 | **1** | 复杂情感 | emotion + 上下文 → `narrative_hint` | `pre.rs` → 下一轮 `PromptInput.previous_complex_emotion_narrative_hint` | on（可 skip） | `complex_emotion.rs` |
-| **2** | 专家模型 | 条件 → 专家子流程 | `expert_routing.json` · `dual_core` | **冻结关** | TECHNICAL_DEBT §2 |
+| **2** | 专家模型 | 条件 → 专家子流程；`slot.lora.apply` 选择预声明的 directory LLM adapter | `expert_routing.json` · `dual_core` · `post::run_main_llm*` | **可选启用；默认关** | TECHNICAL_DEBT §2 |
 | **3** | 立绘 | 封闭 catalog → `visual_state_id` | `post_llm` · 表现导演 LLM | **平台默认关；角色包可 opt in** | RFC_PORTRAIT |
 | **4** | 视觉表现 | `visual_state_id` → `performance_directive` | 宿主 UI 帧循环 · **无** AI 选图 | **平台默认关；角色包可 opt in** | RFC_VISUAL_PRESENTATION |
 

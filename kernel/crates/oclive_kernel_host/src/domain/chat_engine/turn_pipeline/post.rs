@@ -13,6 +13,8 @@ use crate::domain::turn_thinking::{
 use crate::models::dto::{DisplayMetricsDto, SendMessageResponse};
 use crate::models::{Event, PersonalitySource, Role};
 use std::sync::Arc;
+#[cfg(feature = "dual_core")]
+use std::sync::Mutex;
 use std::time::Instant;
 
 use super::super::emotion_to_dto;
@@ -29,6 +31,68 @@ use crate::domain::chat_engine::chat_stage::ChatStage;
 use crate::domain::reply_post_processor::resolve_reply_post_processor;
 use oclive_kernel_contracts::reply_post_processor::PostProcessInput;
 use oclive_kernel_contracts::LlmGenerateOpts;
+#[cfg(feature = "dual_core")]
+use oclive_validation::plugin_backends_for_slot_entry;
+
+#[cfg(feature = "dual_core")]
+fn selected_lora_llm(
+    ctx: &TurnContext<'_>,
+) -> Option<(String, String, Arc<dyn oclive_kernel_contracts::LlmClient>)> {
+    let plugin_id = ctx.state.session_cache.expert_lora_plugin_id(ctx.srid)?;
+    let registry = match ctx.session_config.slot_registry.as_ref() {
+        Some(registry) => registry,
+        None => {
+            tracing::warn!(
+                target: "oclive_expert",
+                error_code = "LORA_ADAPTER_INVALID",
+                session_ns = %ctx.srid,
+                plugin_id = %plugin_id,
+                "clearing LoRA selection because effective slot_registry is missing"
+            );
+            ctx.state
+                .session_cache
+                .set_expert_lora_plugin(ctx.srid, None);
+            return None;
+        }
+    };
+    let selection =
+        match crate::domain::expert_routing::resolve_lora_llm_selection(registry, &plugin_id) {
+            Ok(selection) => selection,
+            Err(message) => {
+                tracing::warn!(
+                    target: "oclive_expert",
+                    error_code = "LORA_ADAPTER_INVALID",
+                    session_ns = %ctx.srid,
+                    plugin_id = %plugin_id,
+                    reason = %message,
+                    "clearing invalid LoRA selection and using the normal LLM path"
+                );
+                ctx.state
+                    .session_cache
+                    .set_expert_lora_plugin(ctx.srid, None);
+                return None;
+            }
+        };
+    if let Err(message) = ctx
+        .state
+        .directory_plugins
+        .ensure_rpc_url(&selection.plugin_id)
+    {
+        tracing::warn!(
+            target: "oclive_expert",
+            error_code = "LORA_ADAPTER_UNAVAILABLE",
+            session_ns = %ctx.srid,
+            plugin_id = %selection.plugin_id,
+            slot_key = %selection.slot_key,
+            reason = %message,
+            "LoRA plugin unavailable; using the normal LLM path"
+        );
+        return None;
+    }
+    let backends = plugin_backends_for_slot_entry(&selection.entry);
+    let llm = ctx.state.plugins.llm_for_plugin_backends(&backends);
+    Some((selection.slot_key, selection.plugin_id, llm))
+}
 
 /// Artifacts produced during post-LLM orchestration, passed to response assembly.
 pub(crate) struct TurnArtifacts<'a> {
@@ -70,14 +134,67 @@ pub(crate) async fn run_main_llm(
     let ollama_opts = middle
         .use_ollama_prefix_opts
         .then(LlmGenerateOpts::deep_prefix_cache);
-    let reply_out = match SlotRunner::generate_llm(
+    #[cfg(feature = "dual_core")]
+    let selected_lora = selected_lora_llm(ctx);
+    #[cfg(feature = "dual_core")]
+    let generation = async {
+        if let Some((slot_key, plugin_id, llm)) = selected_lora.as_ref() {
+            tracing::info!(
+                target: "oclive_expert",
+                session_ns = %ctx.srid,
+                plugin_id = %plugin_id,
+                slot_key = %slot_key,
+                "generating reply with selected LoRA directory LLM"
+            );
+            match SlotRunner::generate_llm_single(
+                llm,
+                pre.memory.ollama_model.as_str(),
+                &middle.prompt,
+                ollama_opts.as_ref(),
+            )
+            .await
+            {
+                Ok(out) => Ok(out),
+                Err(error) => {
+                    tracing::warn!(
+                        target: "oclive_expert",
+                        error_code = "LORA_ADAPTER_GENERATE_FAILED",
+                        session_ns = %ctx.srid,
+                        plugin_id = %plugin_id,
+                        slot_key = %slot_key,
+                        reason = %error,
+                        "LoRA generation failed; clearing selection and retrying the normal LLM"
+                    );
+                    ctx.state
+                        .session_cache
+                        .set_expert_lora_plugin(ctx.srid, None);
+                    SlotRunner::generate_llm(
+                        pl,
+                        pre.memory.ollama_model.as_str(),
+                        &middle.prompt,
+                        ollama_opts.as_ref(),
+                    )
+                    .await
+                }
+            }
+        } else {
+            SlotRunner::generate_llm(
+                pl,
+                pre.memory.ollama_model.as_str(),
+                &middle.prompt,
+                ollama_opts.as_ref(),
+            )
+            .await
+        }
+    };
+    #[cfg(not(feature = "dual_core"))]
+    let generation = SlotRunner::generate_llm(
         pl,
         pre.memory.ollama_model.as_str(),
         &middle.prompt,
         ollama_opts.as_ref(),
-    )
-    .await
-    {
+    );
+    let reply_out = match generation.await {
         Ok(out) => out,
         Err(e) => {
             let reason = e.to_frontend_error();
@@ -152,15 +269,100 @@ pub(crate) async fn run_main_llm_stream(
     let ollama_opts = middle
         .use_ollama_prefix_opts
         .then(LlmGenerateOpts::deep_prefix_cache);
-    let reply_out = match SlotRunner::generate_llm_stream(
+    #[cfg(feature = "dual_core")]
+    let selected_lora = selected_lora_llm(ctx);
+    #[cfg(feature = "dual_core")]
+    let generation = async {
+        if let Some((slot_key, plugin_id, llm)) = selected_lora.as_ref() {
+            tracing::info!(
+                target: "oclive_expert",
+                session_ns = %ctx.srid,
+                plugin_id = %plugin_id,
+                slot_key = %slot_key,
+                "streaming reply with selected LoRA directory LLM"
+            );
+            let streamed = Arc::new(Mutex::new(String::new()));
+            let streamed_for_sink = Arc::clone(&streamed);
+            let downstream = Arc::clone(&on_token);
+            let passthrough_sink: oclive_kernel_contracts::LlmTokenSink = Arc::new(move |token| {
+                if let Ok(mut output) = streamed_for_sink.lock() {
+                    output.push_str(token);
+                }
+                downstream(token);
+            });
+            match SlotRunner::generate_llm_stream_single(
+                llm,
+                pre.memory.ollama_model.as_str(),
+                &middle.prompt,
+                passthrough_sink,
+                ollama_opts.as_ref(),
+            )
+            .await
+            {
+                Ok(out) => Ok(out),
+                Err(error) => {
+                    let partial = streamed
+                        .lock()
+                        .map(|output| output.clone())
+                        .unwrap_or_default();
+                    ctx.state
+                        .session_cache
+                        .set_expert_lora_plugin(ctx.srid, None);
+                    if !partial.is_empty() {
+                        tracing::warn!(
+                            target: "oclive_expert",
+                            error_code = "LORA_ADAPTER_STREAM_PARTIAL",
+                            session_ns = %ctx.srid,
+                            plugin_id = %plugin_id,
+                            slot_key = %slot_key,
+                            emitted_bytes = partial.len(),
+                            reason = %error,
+                            "LoRA stream failed after emitting output; preserving the partial reply without duplicate fallback tokens"
+                        );
+                        return Ok(oclive_kernel_contracts::LlmGenerateOutcome {
+                            reply: partial,
+                            prompt_eval_ms: None,
+                        });
+                    }
+                    tracing::warn!(
+                        target: "oclive_expert",
+                        error_code = "LORA_ADAPTER_GENERATE_FAILED",
+                        session_ns = %ctx.srid,
+                        plugin_id = %plugin_id,
+                        slot_key = %slot_key,
+                        reason = %error,
+                        "LoRA stream failed before first token; retrying the normal LLM"
+                    );
+                    SlotRunner::generate_llm_stream(
+                        pl,
+                        pre.memory.ollama_model.as_str(),
+                        &middle.prompt,
+                        Arc::clone(&on_token),
+                        ollama_opts.as_ref(),
+                    )
+                    .await
+                }
+            }
+        } else {
+            SlotRunner::generate_llm_stream(
+                pl,
+                pre.memory.ollama_model.as_str(),
+                &middle.prompt,
+                Arc::clone(&on_token),
+                ollama_opts.as_ref(),
+            )
+            .await
+        }
+    };
+    #[cfg(not(feature = "dual_core"))]
+    let generation = SlotRunner::generate_llm_stream(
         pl,
         pre.memory.ollama_model.as_str(),
         &middle.prompt,
         Arc::clone(&on_token),
         ollama_opts.as_ref(),
-    )
-    .await
-    {
+    );
+    let reply_out = match generation.await {
         Ok(out) => out,
         Err(e) => {
             let reason = e.to_frontend_error();

@@ -1,0 +1,22 @@
+{
+  "routing_path": "blueprint/includes/expert_routing.json",
+  "fallback": "skip",
+  "routes": [
+    {
+      "id": "select_test_lora",
+      "enabled": true,
+      "priority": 100,
+      "trigger": {
+        "keywords": ["activate-lora"]
+      },
+      "steps": [
+        {
+          "action": "slot.lora.apply",
+          "params": {
+            "plugin_id": "com.oclive.test.lora"
+          }
+        }
+      ]
+    }
+  ]
+}

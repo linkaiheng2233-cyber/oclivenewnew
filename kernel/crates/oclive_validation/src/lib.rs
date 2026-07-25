@@ -58,7 +58,7 @@ pub use blueprint_v2::{
     SlotRegistryEntry, BLUEPRINT_V2_SCHEMA_VERSION, GROUP_SLOT_TYPES, PIPELINE_BLUEPRINT_FILENAME,
 };
 pub use blueprint_v3::{
-    blueprint_schema_version_from_raw, load_blueprint_v3_for_role_dir,
+    blueprint_schema_version_from_raw, load_blueprint_v3_for_role_dir, slot_registry_entry_in_zone,
     validate_blueprint_json_by_schema_version, validate_blueprint_v3_json,
     validate_role_pack_blueprint_v3_directory, BlueprintV3LoadResult, DualPipelineDef,
     PipelineStep, BLUEPRINT_V3_SCHEMA_VERSION, PLUGIN_HOST_SLOT_TYPES,

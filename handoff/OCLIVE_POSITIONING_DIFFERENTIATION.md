@@ -194,8 +194,8 @@
 - **1 个惊艳样板应用**（现有聊天 App 不是包袱，是招牌——打磨它）；
 - 争取 **第 2 个非聊天真实应用** 验证契约。
 
-**重新定性（叙事与代码冻结对齐，2026-06-08）：**
-- **双核双态 / blueprint v3 / expert_routing**：代码**保持冻结、默认关闭**；对外表述为 **机制已预埋**，解冻条件见 [TECHNICAL_DEBT_INVENTORY.md](./TECHNICAL_DEBT_INVENTORY.md) §冻结决定；勿在文档中暗示「即将可用」。
+**重新定性（叙事与代码对齐，2026-07-24）：**
+- **双核双态 / blueprint v3 / expert_routing**：仍为 **可选 feature、默认关闭**。`slot.lora.apply` 已接通「预声明 directory LLM → 会话选择 → Stable completion」运行时切片；训练工坊、adapter 包导入和真实模型评测仍未交付。准确状态见 [TECHNICAL_DEBT_INVENTORY.md](./TECHNICAL_DEBT_INVENTORY.md) §2 与 V-LORA-WORKSHOP-01。
 - **bench**：维持性能基准；扩展为「组件质量评测台」为可选升级方向，非阻塞项。
 
 **降级维护 / 别再投入（学习产物，非护城河）：**
@@ -216,4 +216,4 @@
 3. [ ] 把 **bench 升级为"组件质量评测台"**：定义场景集 + 可复现对比指标（召回/连贯/行为），复用 OOCP / replay / MOCK_LLM；**含微调工坊 T3**（prompt-only vs LoRA vs LoRA+专家路由）；
 4. [ ] 选定并打磨 1 个样板应用；物色第 2 个非聊天应用；
 5. [ ] 定位定稿后，再谈宣传（样板 + DX + 一句话三者齐备前不宣传）。
-6. [ ] **三发行版结项后**：微调工坊 T0 契约（adapter 卫星文件 + `expert_routing` / `slot.lora.apply`）→ T1 独立创作者工具 MVP；冻结期内不接 Stable 主链，见 [VISION_ROADMAP_MONTHLY.md](../creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md)「微调工坊」。
+6. [ ] **LoRA 后续**：在已接通的 directory LLM 运行时切片上补 T0 adapter 卫星契约 → T1 独立创作者工具 MVP → T3 真实模型评测，见 [VISION_ROADMAP_MONTHLY.md](../creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md)「微调工坊」。

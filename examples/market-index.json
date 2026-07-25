@@ -4,10 +4,10 @@
     {
       "id": "com.oclive.example.llamacpp_llm",
       "name": "LlamaCpp LLM (示例)",
-      "version": "0.1.0",
+      "version": "0.3.0",
       "author": "oclive",
       "description": "目录插件示例：本地 llama.cpp RPC LLM 槽位",
-      "tags": ["llm", "directory", "example"],
+      "tags": ["llm", "lora", "directory", "example"],
       "install_count": 128,
       "kind": "plugin"
     }

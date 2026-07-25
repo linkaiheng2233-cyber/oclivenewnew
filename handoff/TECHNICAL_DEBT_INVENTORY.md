@@ -198,7 +198,7 @@
 | ID | 项 | 解冻条件 |
 |----|-----|----------|
 | **Deep / deep_capsule** | Turn Thinking Deep 路由 + deep_capsule 资产 | **已交付**（K-PERF-D1 / K-TURN-F1 Done；非冻结） |
-| **dual_core** / **expert_routing** / **blueprint v3** | 实验管线 | **可选解冻 · 默认仍关**（蓝图 `dual_core.enabled` / 角色包 `expert_routing.json` 显式配置） |
+| **dual_core** / **expert_routing** / **blueprint v3** | 实验管线 | **可选启用 · 默认仍关**（2026-07-24 LoRA directory LLM 选择链已接通；仍须 Cargo feature + 蓝图 `dual_core.enabled` + 角色包 `expert_routing.json` 显式配置） |
 | **D-READ-03** | `dual_pipeline` 表驱动 | 随 `dual_core` opt-in |
 | **D-PORT-03** | `BackendRegistry` UFCS 转发层 | 等第二 remote policy 实现或对应 RFC 再评估；D-PORT-02 / D-SLOT-01 已完成，不再以旧双实现为由解冻 |
 | **§3.1** | 纯 library API 对称化 | 历史 [`RFC_OCLIVE_KERNEL_LIBRARY.md`](./archive/RFC_OCLIVE_KERNEL_LIBRARY.md) T0 |
@@ -250,7 +250,7 @@
 | **V-FUSED-01** | 多 `slot_registry` 实例融合 | Phase 3 |
 | **§3.5–3.7** | 多模态 / 参考硬件 / Edge OTA | 路线图 |
 | **§5.3** | 插件市场 UGC | 路线图 |
-| **V-LORA-WORKSHOP-01** | 创作者微调工坊（T0–T3）+ `slot.lora.apply` 运行时 | 三发行版 smoke 后；愿景 [VISION_ROADMAP_MONTHLY.md](../creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md)「微调工坊」；冻结期内仅 T0 契约 + T1 原型 |
+| **V-LORA-WORKSHOP-01** | 创作者微调工坊（T0–T3）+ `slot.lora.apply` 运行时 | **Partial（2026-07-25）**：运行时已按 `plugin_id` 选择预声明、授权的 directory LLM，回流 Stable completion，并以 manifest 能力探测接通 NDJSON 原生逐 token；示例支持 adapter 模型别名与 OpenAI-compatible SSE 转换。仍 OPEN：训练工坊、adapter 包 schema/导入 UI、真实模型评测矩阵 |
 | **D-OPUS-05 Phase 2** | re-export import 清零 | ratchet ≤76 只降不升 |
 | **K-SUPPLY-06** | 位级可重复构建 | 内核 `kernel-v0.x` tag 稳定 + 专用 CI 镜像 |
 | **K-SUPPLY-07** | SBOM 导出 | 校企/商业客户采购或合规要求 |

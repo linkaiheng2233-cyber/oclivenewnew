@@ -9,9 +9,27 @@ import http from "node:http";
 const PROTOCOL_HEADER = "x-oclive-remote-protocol";
 const PROTOCOL_VALUE = "oclive-remote-jsonrpc-v1";
 
-const LLAMA_BASE = (
-  process.env.OCLIVE_LLAMACPP_SERVER_URL || "http://127.0.0.1:8080"
+function readPluginConfig() {
+  const raw = String(process.env.OCLIVE_PLUGIN_CONFIG || "").trim();
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`invalid OCLIVE_PLUGIN_CONFIG: ${message}`);
+  }
+}
+
+const PLUGIN_CONFIG = readPluginConfig();
+const LLAMA_BASE = String(
+  PLUGIN_CONFIG.base_url ||
+    process.env.OCLIVE_LLAMACPP_SERVER_URL ||
+    "http://127.0.0.1:8080"
 ).replace(/\/$/, "");
+const ADAPTER_MODEL = String(
+  PLUGIN_CONFIG.adapter_model || process.env.OCLIVE_LORA_MODEL || ""
+).trim();
 
 function jsonRpcResult(id, result) {
   return JSON.stringify({ jsonrpc: "2.0", id, result });
@@ -41,19 +59,106 @@ async function fetchJson(url, init) {
   return body;
 }
 
+function openaiChatBody(model, prompt, temperature, max_tokens, stream) {
+  return {
+    model: ADAPTER_MODEL || model || "gpt-3.5-turbo",
+    messages: [{ role: "user", content: prompt }],
+    temperature,
+    max_tokens,
+    stream,
+  };
+}
+
 /** OpenAI-compatible chat completions（llama-server 常见路径） */
 async function openaiChat(model, prompt, temperature, max_tokens) {
   const url = `${LLAMA_BASE}/v1/chat/completions`;
   return fetchJson(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: model || "gpt-3.5-turbo",
-      messages: [{ role: "user", content: prompt }],
-      temperature,
-      max_tokens,
-    }),
+    body: JSON.stringify(
+      openaiChatBody(model, prompt, temperature, max_tokens, false)
+    ),
   });
+}
+
+async function openaiChatStream(
+  model,
+  prompt,
+  temperature,
+  max_tokens,
+  onToken
+) {
+  const url = `${LLAMA_BASE}/v1/chat/completions`;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(
+      openaiChatBody(model, prompt, temperature, max_tokens, true)
+    ),
+  });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(
+      `upstream ${response.status}: ${text.slice(0, 400) || "(empty)"}`
+    );
+  }
+
+  const contentType = String(response.headers.get("content-type") || "");
+  if (!contentType.includes("text/event-stream")) {
+    const body = await response.json();
+    const text = extractChatText(body);
+    if (text == null) {
+      throw new Error(
+        `chat completions shape not recognized: ${JSON.stringify(body).slice(0, 500)}`
+      );
+    }
+    onToken(text);
+    return text;
+  }
+
+  const decoder = new TextDecoder();
+  let pending = "";
+  let dataLines = [];
+  let full = "";
+  const consumeEvent = () => {
+    if (dataLines.length === 0) return;
+    const data = dataLines.join("\n").trim();
+    dataLines = [];
+    if (!data || data === "[DONE]") return;
+    const event = JSON.parse(data);
+    const token =
+      event?.choices?.[0]?.delta?.content ??
+      event?.choices?.[0]?.text ??
+      "";
+    if (typeof token === "string" && token.length > 0) {
+      full += token;
+      onToken(token);
+    }
+  };
+  const consumeLine = (rawLine) => {
+    const line = rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine;
+    if (line === "") {
+      consumeEvent();
+    } else if (line.startsWith("data:")) {
+      dataLines.push(line.slice(5).trimStart());
+    }
+  };
+
+  for await (const chunk of response.body) {
+    pending += decoder.decode(chunk, { stream: true });
+    let newline;
+    while ((newline = pending.indexOf("\n")) >= 0) {
+      consumeLine(pending.slice(0, newline));
+      pending = pending.slice(newline + 1);
+    }
+  }
+  pending += decoder.decode();
+  if (pending) consumeLine(pending);
+  consumeEvent();
+  if (!full) {
+    throw new Error("chat stream completed without text");
+  }
+  return full;
 }
 
 /** 旧版 /completion 回退（部分 llama-server 构建） */
@@ -118,6 +223,46 @@ async function runLlm(model, prompt, { temperature, max_tokens, tag }) {
   return text;
 }
 
+async function runLlmStream(model, prompt, { temperature, max_tokens }, onToken) {
+  let emitted = false;
+  const forwardToken = (token) => {
+    emitted = true;
+    onToken(token);
+  };
+  try {
+    return await openaiChatStream(
+      model,
+      prompt,
+      temperature,
+      max_tokens,
+      forwardToken
+    );
+  } catch (streamError) {
+    if (emitted) {
+      throw streamError;
+    }
+    try {
+      const text = await runLlm(model, prompt, {
+        temperature,
+        max_tokens,
+        tag: false,
+      });
+      onToken(text);
+      return text;
+    } catch (fallbackError) {
+      const streamMessage =
+        streamError instanceof Error ? streamError.message : String(streamError);
+      const fallbackMessage =
+        fallbackError instanceof Error
+          ? fallbackError.message
+          : String(fallbackError);
+      throw new Error(
+        `stream: ${streamMessage} | full-response fallback: ${fallbackMessage}`
+      );
+    }
+  }
+}
+
 async function handleLlmGenerate(params) {
   const model = params && typeof params.model === "string" ? params.model : "";
   const prompt = params && typeof params.prompt === "string" ? params.prompt : "";
@@ -144,6 +289,32 @@ async function handleLlmGenerateTag(params) {
     tag: true,
   });
   return { text };
+}
+
+async function handleLlmGenerateStream(params, onToken) {
+  const model = params && typeof params.model === "string" ? params.model : "";
+  const prompt = params && typeof params.prompt === "string" ? params.prompt : "";
+  if (!prompt) {
+    throw new Error("missing params.prompt");
+  }
+  const text = await runLlmStream(
+    model,
+    prompt,
+    {
+      temperature: 0.7,
+      max_tokens: 2048,
+    },
+    onToken
+  );
+  return { text };
+}
+
+function streamResult(id, event, fields = {}) {
+  return `${JSON.stringify({
+    jsonrpc: "2.0",
+    id,
+    result: { event, ...fields },
+  })}\n`;
 }
 
 const server = http.createServer((req, res) => {
@@ -175,7 +346,16 @@ const server = http.createServer((req, res) => {
       res.setHeader(PROTOCOL_HEADER, PROTOCOL_VALUE);
       try {
         let result;
-        if (msg.method === "llm.generate") {
+        if (msg.method === "llm.generate_stream") {
+          res.writeHead(200, {
+            "Content-Type": "application/x-ndjson; charset=utf-8",
+          });
+          await handleLlmGenerateStream(msg.params, (token) => {
+            res.write(streamResult(id, "token", { text: token }));
+          });
+          res.end(streamResult(id, "done"));
+          return;
+        } else if (msg.method === "llm.generate") {
           result = await handleLlmGenerate(msg.params);
         } else if (msg.method === "llm.generate_tag") {
           result = await handleLlmGenerateTag(msg.params);
@@ -188,8 +368,12 @@ const server = http.createServer((req, res) => {
         res.end(jsonRpcResult(id, result));
       } catch (e) {
         const m = e instanceof Error ? e.message : String(e);
-        res.writeHead(200);
-        res.end(jsonRpcError(id, -32603, `llamacpp proxy: ${m}`));
+        if (res.headersSent) {
+          res.end(`${jsonRpcError(id, -32603, `llamacpp proxy: ${m}`)}\n`);
+        } else {
+          res.writeHead(200);
+          res.end(jsonRpcError(id, -32603, `llamacpp proxy: ${m}`));
+        }
       }
     })();
   });

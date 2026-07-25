@@ -84,3 +84,61 @@ llama-server -m /path/to/model.gguf --host 127.0.0.1 --port 8080
 2. 在浏览器或 `curl` 直接访问 llama 根地址，确认 **未** 返回连接拒绝。  
 3. 看宿主日志中 **`remote_llm`** / **`oclive_plugin`** 相关行；JSON-RPC 返回 **`llamacpp proxy:`** 前缀多为上游 HTTP 非 2xx 或 JSON 形状不符。  
 4. 若长期大包传输不稳定，可考虑改为 **`plugin_backends.llm = remote`**，把本逻辑挪到独立常驻侧车（同一协议），减少子进程启停。
+
+## 作为 LoRA 专家插件使用
+
+本插件也可承载已经由 llama.cpp、vLLM 或其它 OpenAI-compatible 服务注册的 LoRA
+模型别名。插件配置中的 `adapter_model` 非空时，它会覆盖宿主传入的基础模型名；
+权重加载、显存管理和 adapter 热切换仍由推理服务负责。
+
+角色蓝图必须把插件预声明为独立的 `llm + directory` 实例：
+
+```json
+{
+  "slot_registry": {
+    "llm": {
+      "type": "llm",
+      "label": "Default LLM",
+      "backend": "ollama",
+      "position": 0
+    },
+    "mumu_lora": {
+      "type": "llm",
+      "label": "Mumu LoRA",
+      "backend": "directory",
+      "position": 10,
+      "plugin": "com.oclive.example.llamacpp_llm",
+      "zone": "experimental"
+    }
+  }
+}
+```
+
+专家路由命中时选择同一个插件 ID：
+
+```json
+{
+  "action": "slot.lora.apply",
+  "params": {
+    "plugin_id": "com.oclive.example.llamacpp_llm"
+  }
+}
+```
+
+运行要求：
+
+- 宿主使用 `dual_core` feature，角色为 blueprint v3 且启用
+  `runtime_config.dual_core.enabled`。
+- `pipeline.experimental` 包含 `slot.expert.invoke` 和最终的
+  `slot.<llm-key>.generate`。
+- 插件必须声明 `provides: ["llm"]`，并获得 `process:spawn` /
+  `network:*` 授权。
+- `adapter_model` 应是推理服务已经注册的 LoRA 模型别名。内核不直接解释
+  `.safetensors`，因此不会把某个框架的私有加载协议写死在角色包中。
+- 插件把 OpenAI-compatible SSE 转换为 OCLive `llm.generate_stream` NDJSON；
+  manifest 已显式声明该能力，因此双核 Stable completion 会逐 token 转发。上游不支持
+  SSE 时插件兼容回退为整段生成并单次回调。
+- LoRA 选择按会话保存；配置失效、插件不可用或生成失败时，宿主记录
+  `LORA_ADAPTER_INVALID` / `LORA_ADAPTER_UNAVAILABLE` /
+  `LORA_ADAPTER_GENERATE_FAILED` 并回退普通 LLM；流式已输出后失败则记录
+  `LORA_ADAPTER_STREAM_PARTIAL` 并保留部分回复，避免拼接第二份回复。

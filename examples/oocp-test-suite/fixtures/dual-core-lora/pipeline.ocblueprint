@@ -1,0 +1,94 @@
+{
+  "schema_version": 3,
+  "meta": {
+    "id": "dual-core-lora",
+    "name": "Dual-core LoRA integration fixture",
+    "version": "0.1.0",
+    "author": "oclive",
+    "description": "Expert routing selects one predeclared directory LLM as a LoRA adapter.",
+    "personality": [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
+    "relations": {
+      "friend": {
+        "initial_favorability": 50.0,
+        "favor_multiplier": 1.0
+      }
+    },
+    "default_relation": "friend",
+    "scenes": ["default"]
+  },
+  "slot_registry": {
+    "memory": {
+      "type": "memory",
+      "label": "Memory",
+      "backend": "builtin",
+      "position": 0
+    },
+    "emotion": {
+      "type": "emotion",
+      "label": "Emotion",
+      "backend": "builtin",
+      "position": 0
+    },
+    "complex_emotion": {
+      "type": "complex_emotion",
+      "label": "Complex",
+      "backend": "builtin",
+      "position": 1
+    },
+    "event": {
+      "type": "event",
+      "label": "Event",
+      "backend": "builtin",
+      "position": 0
+    },
+    "prompt": {
+      "type": "prompt",
+      "label": "Prompt",
+      "backend": "builtin",
+      "position": 0
+    },
+    "llm": {
+      "type": "llm",
+      "label": "Default LLM",
+      "backend": "ollama",
+      "position": 0
+    },
+    "lora_llm": {
+      "type": "llm",
+      "label": "LoRA LLM",
+      "backend": "directory",
+      "position": 10,
+      "plugin": "com.oclive.test.lora",
+      "zone": "experimental"
+    },
+    "agent": {
+      "type": "agent",
+      "label": "Agent",
+      "backend": "builtin",
+      "position": 0
+    }
+  },
+  "runtime_config": {
+    "dual_core": {
+      "enabled": true
+    }
+  },
+  "pipeline": {
+    "stable": [
+      {
+        "action": "slot.llm.generate",
+        "depends_on": []
+      }
+    ],
+    "experimental": [
+      {
+        "action": "slot.expert.invoke",
+        "depends_on": []
+      },
+      {
+        "action": "slot.llm.generate",
+        "depends_on": ["slot.expert.invoke"]
+      }
+    ]
+  }
+}

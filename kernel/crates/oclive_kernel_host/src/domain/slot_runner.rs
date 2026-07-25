@@ -296,7 +296,7 @@ impl SlotRunner {
         )
     }
 
-    async fn generate_llm_single(
+    pub(crate) async fn generate_llm_single(
         llm: &Arc<dyn LlmClient>,
         ollama_model: &str,
         prompt: &str,
@@ -305,7 +305,7 @@ impl SlotRunner {
         llm.generate_with_opts(ollama_model, prompt, opts).await
     }
 
-    async fn generate_llm_stream_single(
+    pub(crate) async fn generate_llm_stream_single(
         llm: &Arc<dyn LlmClient>,
         ollama_model: &str,
         prompt: &str,

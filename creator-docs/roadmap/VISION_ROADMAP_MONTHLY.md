@@ -141,7 +141,7 @@
 | 项 | 说明 |
 |----|------|
 | **第 2 设施子模块** | **专家模型设施子模块** · `blueprint/includes/expert_routing.json` · 条件触发子流程 |
-| **`slot.lora.apply`** | 专家步骤：会话标记 `plugin_id` 以切换 adapter（`dual_core` + Experimental 核；Stable 主链不接，直至解冻决策） |
+| **`slot.lora.apply`** | 专家步骤：会话标记 `plugin_id`，选择角色预声明且已授权的 directory LLM adapter（`dual_core` + Experimental 核）；Stable completion 已消费该选择，默认构建仍不启用 dual core |
 | **第 5 模块 `llm`** | 主对话仍走通用 `plugin_backends.llm`；**默认**微调 adapter 仅在 expert 子流程切换，不强制替换主槽 |
 | **编写器** | 导出 `.ocpak` / `distros/chat-pro/roles/`；工坊产出写入包内卫星文件（契约待 RFC） |
 
@@ -151,13 +151,13 @@
 |------|--------|------|
 | **T0 · 契约** | RFC：语料来源与隐私、`lora_adapters`（或等价）卫星 schema、与 `expert_routing` / `slot.lora.apply` 引用关系、导出 profile（`desktop-full` / `vscode-lite` / `theater`） | 文档评审；`oclive_validation` 键表草案 |
 | **T1 · 工坊 MVP** | **独立桌面/Tauri 工具**（推荐与 pack-editor 并列，避免 GPU/训练进程拖慢编写器）：导入对话/人设样本 → 单 base 模型 LoRA 或等价 → 导出 adapter 清单进角色包目录 | 产物经校验 crate 检查；零手写 JSON 可装入 `distros/chat-pro/roles/{id}/` |
-| **T2 · 运行时** | directory 推理插件或 Ollama modelfile 等路径；`slot.lora.apply` **真加载** adapter 并参与 generate | 专家路由命中时，同一角色可观测 prompt-only vs adapter 差异（固定用例或日志） |
+| **T2 · 运行时** | **Partial（2026-07-25）**：`slot.lora.apply` 已选择预声明 directory LLM 并参与 Stable generate；manifest 能力探测接通 NDJSON 逐 token，具体权重加载由插件/推理服务负责 | 已有确定性 directory 插件整段/流式/失败集成测试；仍需真实模型 prompt-only vs adapter 差异评测 |
 | **T3 · 评测** | 扩展 bench / OOCP / replay：**prompt-only · LoRA · LoRA+专家路由** 可复现对比（连贯 / 口癖 / 人设一致性 checklist） | 维护者可跑一轮对比报告 |
 
 **纪律（与冻结期对齐）**：
 
 - **训练、显存、数据集清洗** 放在工坊或 directory 侧车；**内核仍薄编排**，不新增 `process_message` stage 承载训练。
-- **`expert_routing` / `dual_core` 产品冻结期内**：仅推进 T0 契约 + T1 工坊原型（可选 feature 分支），**不接 Stable 主链**；解冻条件见 [TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md) §冻结决定。
+- **`expert_routing` / `dual_core` 仍是可选 feature、默认关闭**：LoRA directory LLM 选择已接 Stable completion；训练工坊、adapter 包导入和真实模型评测仍按 T0–T3 分阶段推进。状态见 [TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md)。
 - **Theater v0 陌生人测试** 完成前，不把微调工坊标为 P0 阻塞项；与 [RECURRING_OPTIMIZATION_PLAYBOOK.md](../../handoff/RECURRING_OPTIMIZATION_PLAYBOOK.md) §9 元纪律一致——先让样板「发光」，再扩创作者楔子。
 
 **体验向细化**见 [BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md](BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md) §五–§六；场景矩阵见 [APPLICATION_SCENARIOS.md](APPLICATION_SCENARIOS.md) **S11** · **S12**。

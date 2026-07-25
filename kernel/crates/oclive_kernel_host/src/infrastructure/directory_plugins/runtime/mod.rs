@@ -571,6 +571,28 @@ impl DirectoryPluginRuntime {
             .is_some_and(|m| m.provides.iter().any(|p| p.trim() == cap))
     }
 
+    /// Whether a directory plugin explicitly opts into one RPC method.
+    #[must_use]
+    pub fn manifest_declares_rpc_method(&self, plugin_id: &str, method: &str) -> bool {
+        let id = plugin_id.trim();
+        let method = method.trim();
+        if id.is_empty() || method.is_empty() {
+            return false;
+        }
+        let root = match self.plugin_roots.read().get(id) {
+            Some(entry) => entry.root.clone(),
+            None => return false,
+        };
+        self.load_manifest_cached(id, &root)
+            .ok()
+            .is_some_and(|manifest| {
+                manifest
+                    .rpc_methods
+                    .iter()
+                    .any(|declared| declared.trim() == method)
+            })
+    }
+
     pub fn shell_url_for(&self, plugin_id: &str, entry: &str) -> Option<String> {
         let roots = self.plugin_roots.read();
         if !roots.contains_key(plugin_id) {
