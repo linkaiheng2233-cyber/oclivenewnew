@@ -28,7 +28,7 @@
 | seq | 债 ID | runner | 计划书 | 进度 |
 |-----|-------|--------|--------|------|
 | 10 | FOLLOWUP-VOICE-04-PR123 | auto | [long-plans/FOLLOWUP-VOICE-04-PR123.md](./long-plans/FOLLOWUP-VOICE-04-PR123.md) | done |
-| 14 | V-MODULE-QUALITY-01 | auto | [long-plans/V-MODULE-QUALITY-01.md](./long-plans/V-MODULE-QUALITY-01.md) | ready |
+| 14 | V-MODULE-QUALITY-01 | auto | [long-plans/V-MODULE-QUALITY-01.md](./long-plans/V-MODULE-QUALITY-01.md) | locally-verified |
 | 15 | K-PLUGIN-SEC-01 | auto | [long-plans/K-PLUGIN-SEC-01.md](./long-plans/K-PLUGIN-SEC-01.md) | implemented |
 | 20 | T-DOC-02 | auto | [long-plans/T-DOC-02.md](./long-plans/T-DOC-02.md) | done |
 | 30 | D-ROLEVER-01 | auto | [long-plans/D-ROLEVER-01.md](./long-plans/D-ROLEVER-01.md) | done |

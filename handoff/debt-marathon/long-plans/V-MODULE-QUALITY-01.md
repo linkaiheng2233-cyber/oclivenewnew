@@ -11,7 +11,7 @@
 | **Minimal / Full** | 本书推进 Full；各 Stage 必须保持可独立回滚 |
 | **Owner** | main-repo |
 | **runner** | auto |
-| **状态** | Ready · Stage 0 已完成；Stage 1 待实施 |
+| **状态** | Ready · Stage 1 Locally verified；Stage 2 待实施 |
 | **更新** | 2026-07-27 |
 
 ## AI + OCLive
@@ -29,7 +29,7 @@
   "runner": "auto",
   "planStatus": "ready",
   "parentDebtDisposition": "keep-open",
-  "currentStage": 1,
+  "currentStage": 2,
   "prerequisites": [],
   "stages": [
     {
@@ -153,4 +153,4 @@
 
 ## 下一跳
 
-Stage 1：建立可版本化的固定用例、观察合同与离线确定性评分器；先证明“相同输入可得到可解释、可复现的行为报告”，再接真实内核运行。
+Stage 2：通过既有 HTTP / OOCP 与 mock-provider 链路采集同一套观察合同；不得复制聊天编排，也不得向普通响应泄露 prompt 或私密记忆。
