@@ -21,10 +21,11 @@ pub use high_risk::{
     MutateHighRiskGrantRequest,
 };
 pub use llm_settings::{
-    get_global_ollama_model_impl, get_llm_user_settings_impl, list_cloud_models_impl,
-    list_ollama_models_impl, probe_cloud_llm_impl, save_llm_user_settings_impl,
-    set_global_ollama_model_impl, set_session_llm_model_impl, GlobalOllamaModelDto,
-    ListCloudModelsRequest, LlmUserSettingsDto, SaveLlmUserSettingsRequest,
+    activate_local_lora_adapter_impl, delete_local_lora_adapter_impl, get_global_ollama_model_impl,
+    get_llm_user_settings_impl, import_local_lora_adapter_impl, list_cloud_models_impl,
+    list_ollama_models_impl, probe_cloud_llm_impl, reload_llm_user_env_impl,
+    save_llm_user_settings_impl, set_global_ollama_model_impl, set_session_llm_model_impl,
+    GlobalOllamaModelDto, ListCloudModelsRequest, LlmUserSettingsDto, SaveLlmUserSettingsRequest,
     SetGlobalOllamaModelRequest, SetSessionLlmModelRequest,
 };
 pub use mcp::{

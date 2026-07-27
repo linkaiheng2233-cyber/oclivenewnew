@@ -243,6 +243,28 @@ impl DbManager {
     ) -> Result<()> {
         let pattern = manifest_sess_glob_pattern(manifest_role_id);
         sqlx::query(
+            "DELETE FROM adult_staged_beats WHERE generation_id IN (
+                SELECT generation_id FROM adult_stage_generations
+                WHERE role_id = ? OR session_id = ? OR session_id GLOB ?
+             )",
+        )
+        .bind(manifest_role_id)
+        .bind(manifest_role_id)
+        .bind(&pattern)
+        .execute(tx.as_mut())
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        sqlx::query(
+            "DELETE FROM adult_stage_generations
+             WHERE role_id = ? OR session_id = ? OR session_id GLOB ?",
+        )
+        .bind(manifest_role_id)
+        .bind(manifest_role_id)
+        .bind(&pattern)
+        .execute(tx.as_mut())
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        sqlx::query(
             "DELETE FROM chat_messages WHERE session_id IN (
                 SELECT session_id FROM chat_sessions
                 WHERE role_id = ? OR session_id = ? OR session_id GLOB ?
@@ -310,6 +332,23 @@ impl DbManager {
         let mut tx = self
             .pool
             .begin()
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        sqlx::query(
+            "DELETE FROM adult_staged_beats WHERE generation_id IN (
+                SELECT generation_id FROM adult_stage_generations
+                WHERE role_id = ? AND scene_id = ?
+             )",
+        )
+        .bind(role_id)
+        .bind(scene)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        sqlx::query("DELETE FROM adult_stage_generations WHERE role_id = ? AND scene_id = ?")
+            .bind(role_id)
+            .bind(scene)
+            .execute(&mut *tx)
             .await
             .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         sqlx::query(

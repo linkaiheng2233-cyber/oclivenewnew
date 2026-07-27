@@ -94,3 +94,5 @@ pub use role_manager::RoleManager;
 pub use user_emotion_analyzer::{
     BuiltinUserEmotionAnalyzer, RemoteUserEmotionAnalyzerPlaceholder, UserEmotionAnalyzer,
 };
+pub mod adult_interaction;
+pub mod adult_stage;

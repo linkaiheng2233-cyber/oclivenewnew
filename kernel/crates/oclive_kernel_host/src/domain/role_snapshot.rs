@@ -345,6 +345,7 @@ pub async fn assemble_role_info(
         version: role.version.clone(),
         author: role.author.clone(),
         description: role.description.clone(),
+        adult_extension_available: role.adult_extension.is_some(),
         current_favorability,
         display_metrics: Some(build_display_metrics(
             current_favorability,

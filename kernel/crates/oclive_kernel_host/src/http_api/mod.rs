@@ -56,6 +56,8 @@ pub struct ChatApiRequest {
     pub scene_id: Option<String>,
     #[serde(default)]
     pub include_raw_reply: Option<bool>,
+    #[serde(default)]
+    pub adult: Option<crate::models::dto::AdultInteractionRequest>,
 }
 
 /// Mirrors the `SendMessageResponse` fields and additionally echoes back `session_id` and `personality_source`; used by the pack editor's try-chat to display a status bar.
@@ -132,6 +134,26 @@ pub fn api_router_with_auth(app_state: Arc<AppState>, api_token: Option<String>)
     let protected = Router::new()
         .route("/chat", post(chat::chat))
         .route("/chat/stream", post(chat::chat_stream))
+        .route(
+            "/chat/adult-stage/begin",
+            post(chat::begin_adult_stage_route),
+        )
+        .route(
+            "/chat/adult-stage/beat",
+            post(chat::generate_adult_staged_beat_route),
+        )
+        .route(
+            "/chat/adult-stage/commit",
+            post(chat::commit_adult_staged_beat_route),
+        )
+        .route(
+            "/chat/adult-stage/cancel",
+            post(chat::cancel_adult_stage_route),
+        )
+        .route(
+            "/chat/adult-stage/list",
+            post(chat::list_adult_staged_beats_route),
+        )
         .route("/role_info", get(role::role_info_route))
         .route("/role_snapshot", get(role::role_snapshot_route))
         .route("/display_metrics", get(role::display_metrics_route))
@@ -176,6 +198,8 @@ pub fn api_router_with_auth(app_state: Arc<AppState>, api_token: Option<String>)
             get(llm::llm_user_settings_get_route).post(llm::llm_user_settings_post_route),
         )
         .route("/llm/probe_cloud", post(llm::llm_probe_cloud_route))
+        .route("/llm/lora/activate", post(llm::llm_lora_activate_route))
+        .route("/llm/lora/delete", post(llm::llm_lora_delete_route))
         .route("/llm/ollama_models", get(llm::llm_ollama_models_route))
         .route("/llm/cloud_models", post(llm::llm_cloud_models_route))
         .route("/llm/session_model", post(llm::llm_session_model_route))

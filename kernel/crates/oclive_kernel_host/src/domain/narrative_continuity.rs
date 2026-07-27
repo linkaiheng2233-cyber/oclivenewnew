@@ -222,6 +222,7 @@ pub async fn prompt_for_turn(
     scene_id: &str,
     virtual_time_ms: i64,
     snapshot: &RoleRuntimeSnapshot,
+    initialize: bool,
 ) -> Result<String> {
     let Some(scene_config) = app.storage.get_scene_config(role, scene_id) else {
         return Ok(String::new());
@@ -254,6 +255,9 @@ pub async fn prompt_for_turn(
     ) else {
         return Ok(String::new());
     };
+    if !initialize {
+        return Ok(render_prompt(config, selected));
+    }
     let initialized = app
         .db_manager
         .set_narrative_continuity_state(

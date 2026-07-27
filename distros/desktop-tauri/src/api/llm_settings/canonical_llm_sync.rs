@@ -1,12 +1,19 @@
 //! Sync UI-shell LLM settings with canonical kernel `app.db`.
 
 use oclive_kernel_host::domain::user_llm_env::{
-    apply_user_llm_env, KEY_LOCAL_MODELS_DIR, KEY_LOCAL_MODEL_PATH, KEY_REMOTE_TOKEN,
-    LLM_APP_SETTING_KEYS,
+    apply_user_llm_env, KEY_LOCAL_LORA_ADAPTER_ID, KEY_LOCAL_LORA_ADAPTER_PATH,
+    KEY_LOCAL_MODELS_DIR, KEY_LOCAL_MODEL_PATH, KEY_REMOTE_TOKEN, LLM_APP_SETTING_KEYS,
 };
 use oclive_kernel_host::infrastructure::user_llm_secrets::{read_token_file, write_token_file};
 use oclive_kernel_host::state::{is_managed_legacy_models_path, AppState};
 use std::path::{Path, PathBuf};
+
+fn setting_supports_explicit_clear(key: &str) -> bool {
+    matches!(
+        key,
+        KEY_LOCAL_MODEL_PATH | KEY_LOCAL_LORA_ADAPTER_ID | KEY_LOCAL_LORA_ADAPTER_PATH
+    )
+}
 
 async fn open_canonical_pool() -> Option<(sqlx::SqlitePool, PathBuf)> {
     use oclive_kernel_runtime::{find_app_data_dir_for_host, find_db_path};
@@ -48,7 +55,7 @@ pub async fn sync_shell_llm_settings_to_canonical(state: &AppState) {
             continue;
         };
         let t = v.trim();
-        if t.is_empty() && *key != KEY_LOCAL_MODEL_PATH {
+        if t.is_empty() && !setting_supports_explicit_clear(key) {
             continue;
         }
         if let Err(e) = upsert_canonical_app_setting(&pool, key, t).await {
@@ -168,7 +175,7 @@ pub async fn seed_shell_llm_from_canonical(state: &AppState) {
             continue;
         };
         let t = v.trim();
-        if t.is_empty() && *key != KEY_LOCAL_MODEL_PATH {
+        if t.is_empty() && !setting_supports_explicit_clear(key) {
             continue;
         }
         if state.db_manager.upsert_app_setting(key, t).await.is_ok() {

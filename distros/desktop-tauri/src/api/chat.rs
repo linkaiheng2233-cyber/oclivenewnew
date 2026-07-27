@@ -7,7 +7,11 @@ use oclive_kernel_host::infrastructure::chat_storage::{
 };
 use oclive_kernel_host::service::ChatStorageProxyOp;
 use oclive_kernel_host::state::SharedAppState;
-use oclive_kernel_types::models::dto::{SendMessageRequest, SendMessageResponse};
+use oclive_kernel_types::models::dto::{
+    AdultStagedBeatDto, BeginAdultStageGenerationRequest, BeginAdultStageGenerationResponse,
+    CancelAdultStageGenerationRequest, CommitAdultStagedBeatRequest, ListAdultStagedBeatsRequest,
+    ListAdultStagedBeatsResponse, SendMessageRequest, SendMessageResponse, StageAdultBeatRequest,
+};
 use oclive_kernel_types::models::RolePackChatStorageConfig;
 use serde::de::DeserializeOwned;
 use tauri::{AppHandle, State};
@@ -51,6 +55,66 @@ pub async fn send_message(
     let role_path = role_dir_for_id(state.as_ref(), &req.role_id)?;
     ChatBackend::from_app(&app, state.inner().clone())
         .send_message(&role_path, &req)
+        .await
+        .map_err(Into::into)
+}
+
+#[tauri::command]
+pub async fn begin_adult_stage_generation(
+    req: BeginAdultStageGenerationRequest,
+    app: AppHandle,
+    state: State<'_, SharedAppState>,
+) -> Result<BeginAdultStageGenerationResponse, crate::api::error::CommandError> {
+    ChatBackend::from_app(&app, state.inner().clone())
+        .begin_adult_stage(req)
+        .await
+        .map_err(Into::into)
+}
+
+#[tauri::command]
+pub async fn generate_adult_staged_beat(
+    req: StageAdultBeatRequest,
+    app: AppHandle,
+    state: State<'_, SharedAppState>,
+) -> Result<AdultStagedBeatDto, crate::api::error::CommandError> {
+    ChatBackend::from_app(&app, state.inner().clone())
+        .generate_adult_staged_beat(req)
+        .await
+        .map_err(Into::into)
+}
+
+#[tauri::command]
+pub async fn commit_adult_staged_beat(
+    req: CommitAdultStagedBeatRequest,
+    app: AppHandle,
+    state: State<'_, SharedAppState>,
+) -> Result<SendMessageResponse, crate::api::error::CommandError> {
+    ChatBackend::from_app(&app, state.inner().clone())
+        .commit_adult_staged_beat(req)
+        .await
+        .map_err(Into::into)
+}
+
+#[tauri::command]
+pub async fn cancel_adult_stage_generation(
+    req: CancelAdultStageGenerationRequest,
+    app: AppHandle,
+    state: State<'_, SharedAppState>,
+) -> Result<(), crate::api::error::CommandError> {
+    ChatBackend::from_app(&app, state.inner().clone())
+        .cancel_adult_stage(req)
+        .await
+        .map_err(Into::into)
+}
+
+#[tauri::command]
+pub async fn list_adult_staged_beats(
+    req: ListAdultStagedBeatsRequest,
+    app: AppHandle,
+    state: State<'_, SharedAppState>,
+) -> Result<ListAdultStagedBeatsResponse, crate::api::error::CommandError> {
+    ChatBackend::from_app(&app, state.inner().clone())
+        .list_adult_staged_beats(req)
         .await
         .map_err(Into::into)
 }

@@ -56,7 +56,7 @@ pub async fn build_agent_input(
         )
         .await?;
         let (turns, _, _) =
-            crate::domain::chat_engine::context::load_recent_context(state, srid).await?;
+            crate::domain::chat_engine::context::load_recent_context(state, srid, false).await?;
         (
             resolved_identity.relation_key,
             turns.into_iter().take(RECENT_TURN_LIMIT).collect(),

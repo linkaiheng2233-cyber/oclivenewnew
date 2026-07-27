@@ -18,21 +18,29 @@ pub async fn query_memories_impl(
     if req.offset < 0 {
         return Err(AppError::InvalidParameter("offset must be >= 0".to_string()).into());
     }
+    let content_scope = req.content_scope.as_deref().map(str::trim);
+    if content_scope.is_some_and(|scope| !matches!(scope, "ordinary" | "adult")) {
+        return Err(AppError::InvalidParameter(
+            "content_scope must be ordinary or adult".to_string(),
+        )
+        .into());
+    }
 
     let memories = state
         .memory_repo
-        .load_memories_paged(&req.role_id, req.limit, req.offset)
+        .load_memories_paged_for_scope(&req.role_id, req.limit, req.offset, content_scope)
         .await?;
 
     Ok(memories
         .into_iter()
-        .map(|m| MemoryItem {
+        .map(|(m, content_scope)| MemoryItem {
             id: m.id,
             role_id: m.role_id,
             content: m.content,
             memory_type: "long_term".to_string(),
             timestamp: m.created_at.to_rfc3339(),
             importance: m.importance,
+            content_scope,
         })
         .collect())
 }

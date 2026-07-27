@@ -45,7 +45,38 @@ async fn http_api_llm_user_settings_get_ok() {
     assert!(v.get("ollamaBaseUrl").is_some());
     assert!(v.get("localRuntimeMode").is_some());
     assert!(v.get("localModelPath").is_some());
+    assert!(v.get("localLoraAdapters").is_some_and(Value::is_array));
+    assert!(v.get("activeLocalLoraAdapterId").is_some());
     assert!(v.get("performanceActiveBackend").is_some());
+}
+
+#[tokio::test]
+async fn http_api_lora_activation_rejects_unconfigured_runtime() {
+    let llm = Arc::new(MockLlmClient {
+        reply: "ok".to_string(),
+    });
+    let state = Arc::new(
+        AppState::new_in_memory_with_llm(llm, common::roles_dir())
+            .await
+            .expect("state"),
+    );
+    let app = api_router(state);
+    let body = json!({
+        "adapterId": null,
+        "adultContentAcknowledged": false,
+    });
+    let res = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/llm/lora/activate")
+                .header("content-type", "application/json")
+                .body(Body::from(serde_json::to_vec(&body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .expect("oneshot");
+    assert_eq!(res.status(), StatusCode::BAD_REQUEST);
 }
 
 #[tokio::test]

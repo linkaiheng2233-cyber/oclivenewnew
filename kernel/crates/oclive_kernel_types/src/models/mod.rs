@@ -1,5 +1,7 @@
+pub mod adult_role;
 pub mod author_pack;
 pub mod chat;
+pub mod content_rating;
 pub mod dto;
 pub mod emotion;
 pub mod event;
@@ -7,6 +9,8 @@ pub mod favorability;
 pub mod interaction_mode;
 pub mod kernel;
 pub mod knowledge;
+pub mod local_model;
+pub mod lora_adapter;
 pub mod memory;
 pub mod meta_action_templates_config;
 pub mod personality;
@@ -23,8 +27,12 @@ pub mod ui_config;
 pub mod user_identity;
 pub mod visual_presentation_config;
 
+pub use adult_role::{
+    AdultPacingConfig, AdultRoleExtension, AdultSceneDirection, ADULT_ROLE_EXTENSION_SCHEMA_VERSION,
+};
 pub use author_pack::{AuthorPackFile, AuthorRecommendedPlugin};
 pub use chat::*;
+pub use content_rating::ContentRating;
 pub use dto::*;
 pub use emotion::*;
 pub use event::*;
@@ -35,6 +43,14 @@ pub use kernel::{
     ReplaceReason,
 };
 pub use knowledge::{KnowledgeEventAugment, KnowledgeIndex, KnowledgePackConfigDisk};
+pub use local_model::{
+    LocalModelFileDto, LocalModelManifest, LOCAL_MODEL_MANIFEST_KIND,
+    LOCAL_MODEL_MANIFEST_SCHEMA_VERSION, LOCAL_MODEL_MANIFEST_SUFFIX,
+};
+pub use lora_adapter::{
+    ActivateLocalLoraAdapterRequest, DeleteLocalLoraAdapterRequest, ImportLocalLoraAdapterRequest,
+    LocalLoraAdapterDto, LoraContentRating,
+};
 pub use memory::*;
 pub use meta_action_templates_config::{
     MetaActionTemplateEntry, RolePackMetaActionTemplatesConfig,

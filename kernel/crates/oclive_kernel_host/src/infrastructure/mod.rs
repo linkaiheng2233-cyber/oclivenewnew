@@ -38,6 +38,7 @@ pub mod hotkey_bindings;
 pub mod llm;
 pub mod llm_models;
 pub mod llm_params;
+pub mod lora_adapters;
 pub mod mcp_client;
 pub mod ollama_client;
 pub mod ollama_timeouts;

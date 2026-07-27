@@ -27,7 +27,7 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
-use tokio::sync::{Mutex, OnceCell};
+use tokio::sync::{Mutex, Notify, OnceCell};
 
 mod affect_sink;
 mod app_state_builder;
@@ -53,6 +53,35 @@ pub use session_cache::SessionCache;
 struct TurnLockEntry {
     lock: Arc<Mutex<()>>,
     last_touch_ms: AtomicU64,
+}
+
+pub struct AdultStageCancellation {
+    cancelled: AtomicBool,
+    notify: Notify,
+}
+
+impl AdultStageCancellation {
+    fn new() -> Self {
+        Self {
+            cancelled: AtomicBool::new(false),
+            notify: Notify::new(),
+        }
+    }
+
+    pub async fn cancelled(&self) {
+        loop {
+            let notified = self.notify.notified();
+            if self.cancelled.load(Ordering::Acquire) {
+                return;
+            }
+            notified.await;
+        }
+    }
+
+    fn cancel(&self) {
+        self.cancelled.store(true, Ordering::Release);
+        self.notify.notify_waiters();
+    }
 }
 
 const TURN_LOCK_SOFT_CAP: usize = 512;
@@ -110,6 +139,8 @@ pub struct AppState {
     pub high_risk_grants: Arc<HighRiskGrantStore>,
     /// Per-session (`srid`) mutex: serializes concurrent turns on the same namespace (`--api` / parallel invoke).
     turn_locks: DashMap<String, TurnLockEntry>,
+    /// Cancellation signals for in-flight staged adult beat generation.
+    adult_stage_cancellations: DashMap<String, Arc<AdultStageCancellation>>,
     /// Startup self-check cache (success is permanent; failures retry per role with TTL).
     pub(crate) startup_health: parking_lot::RwLock<StartupHealthCache>,
     /// Read `OCLIVE_REMOTE_FALLBACK_TO_BUILTIN` once at startup; `sync_remote_fallback_from_db_value` does not re-read env.
@@ -544,6 +575,38 @@ impl AppState {
             self.prune_idle_turn_locks();
         }
         lock
+    }
+
+    #[must_use]
+    pub fn register_adult_stage_generation(
+        &self,
+        generation_id: &str,
+    ) -> Arc<AdultStageCancellation> {
+        let signal = Arc::new(AdultStageCancellation::new());
+        if let Some((_, previous)) = self.adult_stage_cancellations.remove(generation_id) {
+            previous.cancel();
+        }
+        self.adult_stage_cancellations
+            .insert(generation_id.to_string(), Arc::clone(&signal));
+        signal
+    }
+
+    #[must_use]
+    pub fn adult_stage_cancellation(&self, generation_id: &str) -> Arc<AdultStageCancellation> {
+        self.adult_stage_cancellations
+            .get(generation_id)
+            .map(|entry| Arc::clone(entry.value()))
+            .unwrap_or_else(|| self.register_adult_stage_generation(generation_id))
+    }
+
+    pub fn cancel_adult_stage_generation_in_flight(&self, generation_id: &str) {
+        if let Some((_, signal)) = self.adult_stage_cancellations.remove(generation_id) {
+            signal.cancel();
+        }
+    }
+
+    pub fn finish_adult_stage_generation_in_flight(&self, generation_id: &str) {
+        self.adult_stage_cancellations.remove(generation_id);
     }
 
     /// Drop idle `srid` locks with no external `Arc` holders when the map grows too large.

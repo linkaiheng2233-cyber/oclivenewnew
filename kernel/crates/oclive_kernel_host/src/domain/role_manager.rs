@@ -291,6 +291,7 @@ mod tests {
             pack_visual_presentation_config: Default::default(),
             pack_turn_thinking_config: None,
             pack_prompt_extra_sections: Vec::new(),
+            adult_extension: None,
             runtime_config: None,
             pipeline_experimental: None,
             scene_ids: std::sync::Arc::from(Vec::<String>::new()),

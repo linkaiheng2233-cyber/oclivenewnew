@@ -472,6 +472,7 @@ async fn week3_004_query_memories_and_events() {
             role_id: "mumu".to_string(),
             limit: 10,
             offset: 0,
+            content_scope: None,
         },
     )
     .await
@@ -575,6 +576,7 @@ async fn week3_004_query_limits_return_invalid_parameter_code() {
             role_id: "mumu".to_string(),
             limit: 0,
             offset: 0,
+            content_scope: None,
         },
     )
     .await

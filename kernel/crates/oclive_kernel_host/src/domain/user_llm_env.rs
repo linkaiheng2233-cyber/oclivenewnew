@@ -16,6 +16,8 @@ pub const KEY_CLOUD_VENDOR: &str = "user_llm_cloud_vendor";
 pub const KEY_LLM_PROVIDER: &str = "user_llm_provider";
 pub const KEY_LOCAL_MODELS_DIR: &str = "user_local_models_dir";
 pub const KEY_LOCAL_MODEL_PATH: &str = "user_local_llm_model_path";
+pub const KEY_LOCAL_LORA_ADAPTER_ID: &str = "user_local_lora_adapter_id";
+pub const KEY_LOCAL_LORA_ADAPTER_PATH: &str = "user_local_lora_adapter_path";
 pub const KEY_GLOBAL_OLLAMA_MODEL: &str = "global_ollama_model";
 
 pub const LLM_APP_SETTING_KEYS: &[&str] = &[
@@ -28,6 +30,8 @@ pub const LLM_APP_SETTING_KEYS: &[&str] = &[
     KEY_CLOUD_VENDOR,
     KEY_LOCAL_MODELS_DIR,
     KEY_LOCAL_MODEL_PATH,
+    KEY_LOCAL_LORA_ADAPTER_ID,
+    KEY_LOCAL_LORA_ADAPTER_PATH,
     KEY_GLOBAL_OLLAMA_MODEL,
 ];
 
@@ -67,6 +71,7 @@ pub async fn apply_user_llm_env_from_db(db: &impl AppSettingsPort) -> crate::err
         KEY_CLOUD_STYLE,
         KEY_LLM_PROVIDER,
         KEY_LOCAL_MODEL_PATH,
+        KEY_LOCAL_LORA_ADAPTER_PATH,
     ];
     let settings = db.get_app_settings(LLM_ENV_KEYS).await?;
     let remote_url = settings
@@ -98,6 +103,7 @@ pub async fn apply_user_llm_env_from_db(db: &impl AppSettingsPort) -> crate::err
         (KEY_REMOTE_TOKEN, "OCLIVE_REMOTE_LLM_TOKEN"),
         (KEY_CLOUD_STYLE, "OCLIVE_LLM_CLOUD_API_STYLE"),
         (KEY_LOCAL_MODEL_PATH, "OCLIVE_LOCAL_LLM_MODEL_PATH"),
+        (KEY_LOCAL_LORA_ADAPTER_PATH, "OCLIVE_LOCAL_LLM_LORA_PATH"),
     ];
     for (db_key, env_key) in env_pairs {
         if db_key == KEY_REMOTE_URL && provider_for_env == "local" {

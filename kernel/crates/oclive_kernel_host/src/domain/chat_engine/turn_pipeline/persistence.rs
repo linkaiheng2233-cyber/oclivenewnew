@@ -53,6 +53,7 @@ pub(crate) async fn persist_atomic_movement_portrait(
     middle: &MiddleOutput,
     policy: &PostTurnPolicy,
     reply: &str,
+    memory_scope: &str,
 ) -> TurnResult<PostPersistOutcome> {
     let TurnIds { srid, scene_id, .. } = ids;
     let turn_policies = state.turn_policies_for_scene(Some(scene_id));
@@ -167,7 +168,12 @@ pub(crate) async fn persist_atomic_movement_portrait(
             user_relation_key: pre.relation.user_relation_key.as_str(),
             favor_delta: middle.favor_delta,
             memory_content: &policy.memory_line,
-            memory_importance: policy.memory_importance,
+            memory_scope,
+            memory_importance: if user_message.is_empty() {
+                0.0
+            } else {
+                policy.memory_importance
+            },
             memory_fifo_limit: turn_policies.memory_fifo_limit,
             memory_similarity_threshold: role.pack_memory_config.similarity_threshold,
             event: &policy.event,
@@ -270,6 +276,7 @@ pub(crate) async fn append_turn_to_chat_storage(
     policy: &PostTurnPolicy,
     user_message: &str,
     reply: &str,
+    user_message_hidden: bool,
 ) -> ChatAppendIds {
     let TurnIds {
         mrid,
@@ -280,10 +287,12 @@ pub(crate) async fn append_turn_to_chat_storage(
         return ChatAppendIds::default();
     }
     let persist = TurnPersistRequest {
+        idempotency_key: None,
         session_id: srid.to_string(),
         role_id: mrid.to_string(),
         scene_id: scene_id.to_string(),
         user_message: user_message.to_string(),
+        user_message_hidden,
         assistant_reply: reply.to_string(),
         reply_is_fallback: llm.main_llm_fallback,
         model_name: Some(pre.memory.ollama_model.clone()),
@@ -317,10 +326,12 @@ pub(crate) async fn append_agent_turn_to_chat_storage(
         return ChatAppendIds::default();
     }
     let persist = TurnPersistRequest {
+        idempotency_key: None,
         session_id: srid.to_string(),
         role_id: mrid.to_string(),
         scene_id: scene_id.to_string(),
         user_message: user_message.to_string(),
+        user_message_hidden: false,
         assistant_reply: reply.to_string(),
         reply_is_fallback: false,
         model_name: None,
@@ -372,7 +383,7 @@ pub(crate) async fn persist_non_profile_personality_delta(
         .set(srid.to_string(), middle.personality.clone());
 }
 
-fn resolve_visual_state_for_role(
+pub(crate) fn resolve_visual_state_for_role(
     role: &Role,
     emotion_tag: &str,
     intensity: Option<f64>,
@@ -462,6 +473,7 @@ mod persist_non_profile_tests {
             pack_visual_presentation_config: Default::default(),
             pack_turn_thinking_config: None,
             pack_prompt_extra_sections: Vec::new(),
+            adult_extension: None,
             source_dir: None,
         }
     }

@@ -37,6 +37,7 @@ pub fn load_user_identity_catalog(role_dir: &Path) -> Result<Option<Arc<UserIden
                 display_name: entry.display_name.clone(),
                 template_body: Arc::from(body.trim()),
                 maps_to_relation_id: entry.maps_to_relation_id.clone(),
+                adult_eligible: entry.adult_eligible,
             },
         );
     }

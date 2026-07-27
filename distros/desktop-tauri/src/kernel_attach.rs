@@ -12,13 +12,18 @@ pub(crate) use oclive_kernel_runtime::app_error_from_http_response;
 use oclive_kernel_runtime::KernelBinaryManifest;
 use oclive_kernel_runtime::RUNTIME_API_VERSION;
 use oclive_kernel_types::models::dto::{
-    CreateEventRequest, CreateEventResponse, DisplayMetricsDto, GetDisplayMetricsRequest,
-    GetRoleInfoRequest, JumpTimeRequest, JumpTimeResponse, RoleInfo, SendMessageRequest,
-    SendMessageResponse, SetRoleInteractionModeRequest, SetUserPresenceSceneRequest,
-    SwitchSceneRequest, SwitchSceneResponse, TheaterSceneRequest, TheaterSceneResponse,
-    TimeStateResponse,
+    AdultStagedBeatDto, BeginAdultStageGenerationRequest, BeginAdultStageGenerationResponse,
+    CancelAdultStageGenerationRequest, CommitAdultStagedBeatRequest, CreateEventRequest,
+    CreateEventResponse, DisplayMetricsDto, GetDisplayMetricsRequest, GetRoleInfoRequest,
+    JumpTimeRequest, JumpTimeResponse, ListAdultStagedBeatsRequest, ListAdultStagedBeatsResponse,
+    RoleInfo, SendMessageRequest, SendMessageResponse, SetRoleInteractionModeRequest,
+    SetUserPresenceSceneRequest, StageAdultBeatRequest, SwitchSceneRequest, SwitchSceneResponse,
+    TheaterSceneRequest, TheaterSceneResponse, TimeStateResponse,
 };
-use serde::Deserialize;
+use oclive_kernel_types::models::{
+    ActivateLocalLoraAdapterRequest, DeleteLocalLoraAdapterRequest, LocalLoraAdapterDto,
+};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Mutex, OnceLock};
@@ -198,6 +203,8 @@ impl KernelHttpClient {
             "message": req.user_message,
             "session_id": req.session_id,
             "scene_id": req.scene_id,
+            "include_raw_reply": req.include_raw_reply,
+            "adult": req.adult,
         });
         let res = conn
             .http_client()
@@ -234,6 +241,8 @@ impl KernelHttpClient {
             "message": req.user_message,
             "session_id": req.session_id,
             "scene_id": req.scene_id,
+            "include_raw_reply": req.include_raw_reply,
+            "adult": req.adult,
         });
         let res = conn
             .http_client()
@@ -295,6 +304,75 @@ impl KernelHttpClient {
         final_response.ok_or_else(|| {
             AppError::OllamaError("remote chat stream ended without done event".into())
         })
+    }
+
+    async fn post_adult_stage<Req, Res>(
+        conn: &KernelConnection,
+        route: &str,
+        request: &Req,
+    ) -> Result<Res, AppError>
+    where
+        Req: Serialize + ?Sized,
+        Res: DeserializeOwned,
+    {
+        if !Self::ensure_healthy(conn).await {
+            return Err(Self::offline_err());
+        }
+        let response = conn
+            .http_client()
+            .post(format!(
+                "{}/chat/adult-stage/{route}",
+                conn.base_url.trim_end_matches('/')
+            ))
+            .json(request)
+            .send()
+            .await
+            .map_err(|error| Self::map_send_err(&conn.base_url, "adult stage request", error))?;
+        let status = response.status();
+        let text = response
+            .text()
+            .await
+            .map_err(|error| AppError::OllamaError(format!("adult stage body: {error}")))?;
+        if !status.is_success() {
+            return Err(app_error_from_http_response(status.as_u16(), &text));
+        }
+        serde_json::from_str(&text)
+            .map_err(|error| AppError::OllamaError(format!("adult stage JSON: {error}")))
+    }
+
+    pub async fn begin_adult_stage_via_http(
+        conn: &KernelConnection,
+        request: &BeginAdultStageGenerationRequest,
+    ) -> Result<BeginAdultStageGenerationResponse, AppError> {
+        Self::post_adult_stage(conn, "begin", request).await
+    }
+
+    pub async fn generate_adult_staged_beat_via_http(
+        conn: &KernelConnection,
+        request: &StageAdultBeatRequest,
+    ) -> Result<AdultStagedBeatDto, AppError> {
+        Self::post_adult_stage(conn, "beat", request).await
+    }
+
+    pub async fn commit_adult_staged_beat_via_http(
+        conn: &KernelConnection,
+        request: &CommitAdultStagedBeatRequest,
+    ) -> Result<SendMessageResponse, AppError> {
+        Self::post_adult_stage(conn, "commit", request).await
+    }
+
+    pub async fn cancel_adult_stage_via_http(
+        conn: &KernelConnection,
+        request: &CancelAdultStageGenerationRequest,
+    ) -> Result<serde_json::Value, AppError> {
+        Self::post_adult_stage(conn, "cancel", request).await
+    }
+
+    pub async fn list_adult_staged_beats_via_http(
+        conn: &KernelConnection,
+        request: &ListAdultStagedBeatsRequest,
+    ) -> Result<ListAdultStagedBeatsResponse, AppError> {
+        Self::post_adult_stage(conn, "list", request).await
     }
 
     pub async fn generate_theater_scene_via_http(
@@ -737,6 +815,57 @@ impl KernelHttpClient {
         }
         serde_json::from_str(&text)
             .map_err(|e| AppError::OllamaError(format!("llm/user_settings POST JSON: {e}")))
+    }
+
+    pub async fn activate_local_lora_adapter_via_http(
+        conn: &KernelConnection,
+        req: &ActivateLocalLoraAdapterRequest,
+    ) -> Result<Option<LocalLoraAdapterDto>, AppError> {
+        if !Self::ensure_healthy(conn).await {
+            return Err(Self::offline_err());
+        }
+        let res = conn
+            .http_client()
+            .post(format!("{}/llm/lora/activate", conn.base_url))
+            .json(req)
+            .send()
+            .await
+            .map_err(|e| Self::map_send_err(&conn.base_url, "llm/lora/activate POST", e))?;
+        let status = res.status();
+        let text = res
+            .text()
+            .await
+            .map_err(|e| AppError::OllamaError(format!("llm/lora/activate body: {e}")))?;
+        if !status.is_success() {
+            return Err(app_error_from_http_response(status.as_u16(), &text));
+        }
+        serde_json::from_str(&text)
+            .map_err(|e| AppError::OllamaError(format!("llm/lora/activate JSON: {e}")))
+    }
+
+    pub async fn delete_local_lora_adapter_via_http(
+        conn: &KernelConnection,
+        req: &DeleteLocalLoraAdapterRequest,
+    ) -> Result<(), AppError> {
+        if !Self::ensure_healthy(conn).await {
+            return Err(Self::offline_err());
+        }
+        let res = conn
+            .http_client()
+            .post(format!("{}/llm/lora/delete", conn.base_url))
+            .json(req)
+            .send()
+            .await
+            .map_err(|e| Self::map_send_err(&conn.base_url, "llm/lora/delete POST", e))?;
+        let status = res.status();
+        let text = res
+            .text()
+            .await
+            .map_err(|e| AppError::OllamaError(format!("llm/lora/delete body: {e}")))?;
+        if !status.is_success() {
+            return Err(app_error_from_http_response(status.as_u16(), &text));
+        }
+        Ok(())
     }
 
     pub async fn get_global_ollama_model_via_http(

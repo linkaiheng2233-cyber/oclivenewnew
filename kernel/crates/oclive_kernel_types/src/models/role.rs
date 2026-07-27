@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
 
+use super::adult_role::AdultRoleExtension;
 use super::author_pack::AuthorPackFile;
 use super::knowledge::KnowledgeIndex;
 use super::plugin_backends::PluginBackends;
@@ -262,6 +263,9 @@ pub struct Role {
     /// `config.json` → `prompt_extra_sections` (generic prompt blocks before quality anchor).
     #[serde(default)]
     pub pack_prompt_extra_sections: Vec<RolePackPromptExtraSection>,
+    /// Optional Chat Pro-only `adult_extension.json`; universal runtimes may ignore it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub adult_extension: Option<AdultRoleExtension>,
     /// `user_identities/` catalog (in-memory only; populated by [`RoleStorage::finish_role_pack_load`]).
     #[serde(skip)]
     pub user_identity_catalog: Option<Arc<UserIdentityCatalog>>,
@@ -367,6 +371,7 @@ impl Default for Role {
             pack_visual_presentation_config: RolePackVisualPresentationConfig::default(),
             pack_turn_thinking_config: None,
             pack_prompt_extra_sections: Vec::new(),
+            adult_extension: None,
             user_identity_catalog: None,
             runtime_config: None,
             pipeline_experimental: None,

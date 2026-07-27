@@ -38,6 +38,7 @@ impl ChatTurnPersistencePort for DbChatTurnPersistencePort {
                 user_relation_key: input.user_relation_key,
                 favor_delta: input.favor_delta,
                 memory_content: input.memory_content,
+                memory_scope: input.memory_scope,
                 memory_importance: input.memory_importance,
                 memory_fifo_limit: input.memory_fifo_limit,
                 memory_similarity_threshold: input.memory_similarity_threshold,
@@ -98,10 +99,12 @@ impl ConversationPersistPort for StoreConversationPersistPort {
         let stored = self
             .store
             .append_turn(crate::infrastructure::chat_storage::TurnPersistInput {
+                idempotency_key: input.idempotency_key,
                 session_id: input.session_id,
                 role_id: input.role_id,
                 scene_id: input.scene_id,
                 user_message: input.user_message,
+                user_message_hidden: input.user_message_hidden,
                 assistant_reply: input.assistant_reply,
                 reply_is_fallback: input.reply_is_fallback,
                 model_name: input.model_name,

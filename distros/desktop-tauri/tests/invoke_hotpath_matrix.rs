@@ -130,6 +130,7 @@ async fn invoke_hotpath_smoke_list_load_info_time_chat_memories_catalog_plugin_h
             role_id: "mumu".to_string(),
             limit: 10,
             offset: 0,
+            content_scope: None,
         },
     )
     .await

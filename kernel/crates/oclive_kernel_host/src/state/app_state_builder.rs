@@ -306,6 +306,7 @@ impl AppStateBuilder {
             directory_plugins,
             high_risk_grants,
             turn_locks: dashmap::DashMap::new(),
+            adult_stage_cancellations: dashmap::DashMap::new(),
             startup_health: parking_lot::RwLock::new(
                 crate::domain::startup_health::StartupHealthCache::default(),
             ),

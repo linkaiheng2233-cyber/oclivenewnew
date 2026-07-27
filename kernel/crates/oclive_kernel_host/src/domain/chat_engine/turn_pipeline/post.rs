@@ -10,7 +10,7 @@ use crate::domain::slot_runner::SlotRunner;
 use crate::domain::turn_thinking::{
     effective_turn_thinking_policy, update_turn_thinking_runtime_state,
 };
-use crate::models::dto::{DisplayMetricsDto, SendMessageResponse};
+use crate::models::dto::{AdultBeatDto, DisplayMetricsDto, SendMessageResponse};
 use crate::models::{Event, PersonalitySource, Role};
 use std::sync::Arc;
 #[cfg(feature = "dual_core")]
@@ -23,7 +23,8 @@ use super::super::turn_context::TurnContext;
 use super::super::turn_error::TurnResult;
 use super::persistence::{
     append_turn_to_chat_storage, persist_atomic_movement_portrait,
-    persist_non_profile_personality_delta, ChatAppendIds, PostPersistOutcome, PostTurnPolicy,
+    persist_non_profile_personality_delta, resolve_visual_state_for_role, ChatAppendIds,
+    PostPersistOutcome, PostTurnPolicy,
 };
 use super::pre::{latest_recent_turn_pair, MainLlmOutput, MiddleOutput, PreLlmOutput, STAGES};
 use super::TurnMode;
@@ -112,6 +113,7 @@ pub(crate) struct PostLlmCtx<'a> {
     pub role: &'a Role,
     pub user_message: &'a str,
     pub display_reply: String,
+    pub adult_beat: Option<AdultBeatDto>,
     pub raw_reply: Option<String>,
     pub dual_core_degraded: bool,
     pub distro_visual_mode: Option<&'a str>,
@@ -541,6 +543,7 @@ fn assemble_send_message_response(ctx: &PostLlmCtx<'_>) -> SendMessageResponse {
         role,
         user_message,
         display_reply,
+        adult_beat,
         raw_reply,
         dual_core_degraded,
         distro_visual_mode,
@@ -582,6 +585,7 @@ fn assemble_send_message_response(ctx: &PostLlmCtx<'_>) -> SendMessageResponse {
         }),
         relation_state: middle.relation_after.as_str().to_string(),
         reply,
+        adult_beat: adult_beat.clone(),
         emotion: emotion_to_dto(&pre.hints.emotion_result),
         bot_emotion: policy.bot_emotion_str.clone(),
         portrait_emotion: persist.portrait_emotion_str.clone(),
@@ -680,6 +684,28 @@ pub(crate) async fn post_llm(
 
     let t_post_llm = Instant::now();
     let reply = llm.reply.clone();
+    let parsed_adult_beat = matches!(mode, TurnMode::CoPresent)
+        .then(|| {
+            crate::domain::adult_interaction::parse_reply(
+                &reply,
+                role,
+                ctx.req.adult.as_ref(),
+                pre.relation.user_identity_allows_adult,
+            )
+        })
+        .flatten();
+    let semantic_reply = parsed_adult_beat
+        .as_ref()
+        .map(crate::domain::adult_interaction::transcript_reply)
+        .unwrap_or_else(|| reply.clone());
+    let synthetic_adult_action = ctx.req.adult.as_ref().is_some_and(|adult| {
+        adult.gates_open()
+            && pre.relation.user_identity_allows_adult
+            && !matches!(
+                adult.action,
+                crate::models::dto::AdultInteractionAction::Message
+            )
+    });
 
     let policy = analyze_bot_emotion_and_policy(
         state,
@@ -687,24 +713,94 @@ pub(crate) async fn post_llm(
         scene_id,
         srid,
         user_message,
-        &reply,
+        &semantic_reply,
         pre,
         middle,
         ctx.runtime_snapshot.emotion.clone(),
     )
     .await?;
 
-    spawn_profile_evolution_after_llm(
-        state,
-        Arc::clone(&primary_llm),
-        Arc::clone(&ctx.role_arc),
-        srid,
-        path_label,
-        pre,
-        middle,
-        user_message,
-        &reply,
-    );
+    if ctx.is_staged() {
+        let (display_reply, raw_reply, adult_beat) =
+            if let Some(mut beat) = parsed_adult_beat.clone() {
+                let (dialogue, processed_raw) = apply_reply_post_processor(
+                    state,
+                    role,
+                    mrid,
+                    scene_id,
+                    srid,
+                    user_message,
+                    beat.dialogue.as_str(),
+                    ctx.req.include_raw_reply == Some(true),
+                );
+                beat.dialogue = dialogue.clone();
+                let raw = if ctx.req.include_raw_reply == Some(true) {
+                    Some(reply.clone())
+                } else {
+                    processed_raw
+                };
+                (dialogue, raw, Some(beat))
+            } else {
+                let (display, raw) = apply_reply_post_processor(
+                    state,
+                    role,
+                    mrid,
+                    scene_id,
+                    srid,
+                    user_message,
+                    &reply,
+                    ctx.req.include_raw_reply == Some(true),
+                );
+                (display, raw, None)
+            };
+        let persist = PostPersistOutcome {
+            favor_current: pre.relation.favorability_before,
+            movement: false,
+            portrait_emotion_str: policy.bot_emotion_str.clone(),
+            visual_state_id: resolve_visual_state_for_role(
+                role,
+                policy.bot_emotion_str.as_str(),
+                Some(middle.complex_emotion_out.intensity),
+                state.host_profile.visual_presentation_mode.as_deref(),
+            ),
+        };
+        let chat_ids = ChatAppendIds::default();
+        return Ok(assemble_send_message_response(&PostLlmCtx {
+            mode,
+            immersive,
+            scene_id,
+            role,
+            user_message,
+            display_reply,
+            adult_beat,
+            raw_reply,
+            dual_core_degraded: ctx.dual_core_degraded,
+            distro_visual_mode: ctx.state.host_profile.visual_presentation_mode.as_deref(),
+            movement: false,
+            artifacts: TurnArtifacts {
+                middle,
+                pre,
+                llm,
+                policy: &policy,
+                persist: &persist,
+                chat_ids: &chat_ids,
+            },
+        }));
+    }
+
+    if !synthetic_adult_action {
+        spawn_profile_evolution_after_llm(
+            state,
+            Arc::clone(&primary_llm),
+            Arc::clone(&ctx.role_arc),
+            srid,
+            path_label,
+            pre,
+            middle,
+            user_message,
+            &semantic_reply,
+        );
+    }
 
     let persist_out = persist_atomic_movement_portrait(
         state,
@@ -713,11 +809,26 @@ pub(crate) async fn post_llm(
         role,
         ctx.ids(),
         scenes,
-        user_message,
+        if synthetic_adult_action {
+            ""
+        } else {
+            user_message
+        },
         pre,
         middle,
         &policy,
-        &reply,
+        &semantic_reply,
+        if ctx
+            .req
+            .adult
+            .as_ref()
+            .is_some_and(crate::models::dto::AdultInteractionRequest::gates_open)
+            && pre.relation.user_identity_allows_adult
+        {
+            "adult"
+        } else {
+            "ordinary"
+        },
     )
     .await?;
 
@@ -731,16 +842,39 @@ pub(crate) async fn post_llm(
         }
     }
 
-    let (display_reply, raw_reply) = apply_reply_post_processor(
-        state,
-        role,
-        mrid,
-        scene_id,
-        srid,
-        user_message,
-        &reply,
-        ctx.req.include_raw_reply == Some(true),
-    );
+    let (display_reply, raw_reply, adult_beat, transcript_reply) =
+        if let Some(mut beat) = parsed_adult_beat {
+            let (dialogue, processed_raw) = apply_reply_post_processor(
+                state,
+                role,
+                mrid,
+                scene_id,
+                srid,
+                user_message,
+                beat.dialogue.as_str(),
+                ctx.req.include_raw_reply == Some(true),
+            );
+            beat.dialogue = dialogue.clone();
+            let transcript = crate::domain::adult_interaction::transcript_reply(&beat);
+            let raw = if ctx.req.include_raw_reply == Some(true) {
+                Some(reply.clone())
+            } else {
+                processed_raw
+            };
+            (dialogue, raw, Some(beat), transcript)
+        } else {
+            let (display, raw) = apply_reply_post_processor(
+                state,
+                role,
+                mrid,
+                scene_id,
+                srid,
+                user_message,
+                &reply,
+                ctx.req.include_raw_reply == Some(true),
+            );
+            (display.clone(), raw, None, display)
+        };
 
     let chat_ids = append_turn_to_chat_storage(
         state,
@@ -751,7 +885,8 @@ pub(crate) async fn post_llm(
         llm,
         &policy,
         user_message,
-        &display_reply,
+        &transcript_reply,
+        synthetic_adult_action,
     )
     .await;
 
@@ -761,7 +896,7 @@ pub(crate) async fn post_llm(
             role,
             srid,
             scene_id,
-            display_reply.as_str(),
+            transcript_reply.as_str(),
         )
         .await
         {
@@ -804,6 +939,7 @@ pub(crate) async fn post_llm(
         role,
         user_message,
         display_reply,
+        adult_beat,
         raw_reply,
         dual_core_degraded: ctx.dual_core_degraded,
         distro_visual_mode: ctx.state.host_profile.visual_presentation_mode.as_deref(),

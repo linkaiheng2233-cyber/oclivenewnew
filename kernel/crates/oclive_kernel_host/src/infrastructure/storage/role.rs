@@ -6,7 +6,8 @@ use crate::error::{AppError, Result};
 use crate::models::role_manifest_disk::disk_manifest_to_role;
 use crate::models::{
     author_pack::AuthorPackFile, role_settings_disk::CURRENT_SETTINGS_SCHEMA_VERSION,
-    DiskRoleManifest, DiskRoleSettings, PortraitCatalogFile, Role, RolePackConfigFile, UiConfig,
+    AdultRoleExtension, DiskRoleManifest, DiskRoleSettings, PortraitCatalogFile, Role,
+    RolePackConfigFile, UiConfig,
 };
 use oclive_validation::{
     blueprint_schema_version_from_raw, load_blueprint_v2_for_role_dir,
@@ -435,6 +436,23 @@ impl RoleStorage {
         log_plugin_backends_remote_missing_env(&role);
 
         let scene_list = Self::merge_scene_ids(role_dir, &disk.scenes)?;
+        let adult_extension_path = role_dir.join("adult_extension.json");
+        if adult_extension_path.is_file() {
+            let raw = fs::read_to_string(&adult_extension_path).map_err(AppError::IoError)?;
+            let extension: AdultRoleExtension = serde_json::from_str(&raw).map_err(|error| {
+                AppError::InvalidParameter(format!(
+                    "adult_extension.json parse failed: {} — {error}",
+                    adult_extension_path.display()
+                ))
+            })?;
+            extension.validate(&scene_list).map_err(|errors| {
+                AppError::InvalidParameter(format!(
+                    "adult_extension.json invalid: {}",
+                    errors.join("; ")
+                ))
+            })?;
+            role.adult_extension = Some(extension);
+        }
         role.scene_ids = Arc::from(scene_list.into_boxed_slice());
 
         let core_personality_path = role_dir.join("core_personality.txt");

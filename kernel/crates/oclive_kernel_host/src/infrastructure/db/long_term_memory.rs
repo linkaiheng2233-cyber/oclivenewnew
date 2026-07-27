@@ -20,6 +20,19 @@ type MemoryRowTuple = (
     Option<String>,
 );
 
+type ScopedMemoryRowTuple = (
+    i64,
+    String,
+    String,
+    f64,
+    f64,
+    String,
+    Option<String>,
+    i32,
+    Option<String>,
+    String,
+);
+
 impl DbManager {
     /// Merge one portable long-term memory while preserving its bounded runtime metadata.
     pub async fn import_portable_memory(
@@ -287,6 +300,117 @@ impl DbManager {
         .bind(offset)
         .fetch_all(&self.pool)
         .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+
+        Ok(Self::memory_rows_to_models(rows))
+    }
+
+    pub async fn load_memories_paged_for_scope(
+        &self,
+        role_id: &str,
+        limit: i32,
+        offset: i32,
+        scope: Option<&str>,
+    ) -> Result<Vec<(Memory, String)>> {
+        let rows = if let Some(scope) = scope {
+            sqlx::query_as::<_, ScopedMemoryRowTuple>(
+                "SELECT id, role_id, content, importance, weight, created_at, scene_id, mention_count, accessed_at, content_scope
+                 FROM long_term_memory
+                 WHERE role_id = ? AND content_scope = ?
+                 ORDER BY created_at DESC
+                 LIMIT ? OFFSET ?",
+            )
+            .bind(role_id)
+            .bind(scope)
+            .bind(limit)
+            .bind(offset)
+            .fetch_all(&self.pool)
+            .await
+        } else {
+            sqlx::query_as::<_, ScopedMemoryRowTuple>(
+                "SELECT id, role_id, content, importance, weight, created_at, scene_id, mention_count, accessed_at, content_scope
+                 FROM long_term_memory
+                 WHERE role_id = ?
+                 ORDER BY created_at DESC
+                 LIMIT ? OFFSET ?",
+            )
+            .bind(role_id)
+            .bind(limit)
+            .bind(offset)
+            .fetch_all(&self.pool)
+            .await
+        }
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+
+        Ok(rows
+            .into_iter()
+            .map(
+                |(
+                    id,
+                    role_id,
+                    content,
+                    importance,
+                    weight,
+                    created_at,
+                    scene_id,
+                    mention_count,
+                    accessed_at,
+                    content_scope,
+                )| {
+                    (
+                        Memory {
+                            id: id.to_string(),
+                            role_id,
+                            content,
+                            importance,
+                            weight,
+                            created_at: parse_memory_created_at(&created_at),
+                            scene_id,
+                            mention_count: mention_count.max(1),
+                            accessed_at: accessed_at.and_then(|value| {
+                                DateTime::parse_from_rfc3339(&value)
+                                    .ok()
+                                    .map(|date| date.with_timezone(&Utc))
+                            }),
+                        },
+                        content_scope,
+                    )
+                },
+            )
+            .collect())
+    }
+
+    pub async fn load_memories_for_context(
+        &self,
+        role_id: &str,
+        limit: i32,
+        include_adult: bool,
+    ) -> Result<Vec<Memory>> {
+        let rows = if include_adult {
+            sqlx::query_as::<_, MemoryRowTuple>(
+                "SELECT id, role_id, content, importance, weight, created_at, scene_id, mention_count, accessed_at
+                 FROM long_term_memory
+                 WHERE role_id = ?
+                 ORDER BY created_at DESC
+                 LIMIT ?",
+            )
+            .bind(role_id)
+            .bind(limit)
+            .fetch_all(&self.pool)
+            .await
+        } else {
+            sqlx::query_as::<_, MemoryRowTuple>(
+                "SELECT id, role_id, content, importance, weight, created_at, scene_id, mention_count, accessed_at
+                 FROM long_term_memory
+                 WHERE role_id = ? AND content_scope = 'ordinary'
+                 ORDER BY created_at DESC
+                 LIMIT ?",
+            )
+            .bind(role_id)
+            .bind(limit)
+            .fetch_all(&self.pool)
+            .await
+        }
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
         Ok(Self::memory_rows_to_models(rows))

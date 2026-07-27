@@ -75,7 +75,7 @@ async fn dual_pipeline_run_experimental_happy_path_returns_ok() {
         .preflight_turn_runtime(srid, scene_id.as_str(), false)
         .await
         .expect("runtime snapshot");
-    let prefetch = build_turn_prefetch(&state, role.as_ref(), srid, scene_id.as_str())
+    let prefetch = build_turn_prefetch(&state, role.as_ref(), srid, scene_id.as_str(), false)
         .await
         .expect("prefetch");
     let scenes = Arc::clone(&role.scene_ids);

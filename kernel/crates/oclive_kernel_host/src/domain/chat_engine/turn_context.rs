@@ -56,4 +56,15 @@ impl<'a> TurnContext<'a> {
             scene_id: self.scene_id,
         }
     }
+
+    /// Background adult beats are generated speculatively and must remain
+    /// side-effect free until the foreground explicitly commits them.
+    #[must_use]
+    pub fn is_staged(&self) -> bool {
+        self.req
+            .adult
+            .as_ref()
+            .and_then(|adult| adult.stage.as_ref())
+            .is_some()
+    }
 }

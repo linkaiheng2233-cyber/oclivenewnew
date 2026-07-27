@@ -141,6 +141,7 @@ pub(super) async fn process_remote_stub(ctx: &TurnContext<'_>) -> Result<SendMes
         }),
         relation_state: relation_before,
         reply,
+        adult_beat: None,
         emotion: emotion_to_dto(&emotion_result),
         bot_emotion: "neutral".to_string(),
         portrait_emotion: portrait_emotion_str,

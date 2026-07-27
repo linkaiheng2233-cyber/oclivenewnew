@@ -7,12 +7,18 @@ use crate::domain::effective_llm_model::{
 use crate::domain::user_llm_env::{
     apply_user_llm_env, cloud_api_token_configured, load_remote_token, ollama_base_from_db_or_env,
     KEY_CLOUD_STYLE, KEY_CLOUD_VENDOR, KEY_GLOBAL_OLLAMA_MODEL, KEY_LLM_PROVIDER,
-    KEY_LOCAL_MODEL_PATH, KEY_OLLAMA_BASE, KEY_REMOTE_MODEL, KEY_REMOTE_TOKEN, KEY_REMOTE_URL,
+    KEY_LOCAL_LORA_ADAPTER_ID, KEY_LOCAL_LORA_ADAPTER_PATH, KEY_LOCAL_MODEL_PATH, KEY_OLLAMA_BASE,
+    KEY_REMOTE_MODEL, KEY_REMOTE_TOKEN, KEY_REMOTE_URL,
 };
 use crate::error::AppError;
 use crate::infrastructure::llm_models::{
-    canonical_models_dir, local_models_dir_for_state, persist_local_models_dir,
-    scan_local_model_files_in, LocalModelFileDto,
+    canonical_models_dir, describe_local_model_file, local_models_dir_for_state,
+    persist_local_models_dir, scan_local_model_files_in, verify_local_model_file,
+    LocalModelFileDto,
+};
+use crate::infrastructure::lora_adapters::{
+    delete_local_lora_adapter, gguf_base_model_architecture, import_local_lora_adapter,
+    list_local_lora_adapters, resolve_local_lora_adapter,
 };
 use crate::infrastructure::ollama_client::OllamaClient;
 use crate::infrastructure::openai_compatible_llm::list_openai_compatible_models;
@@ -21,13 +27,22 @@ use crate::models::dto::{RoleInfo, SetSessionPluginBackendRequest};
 use crate::service::role::{
     get_role_info_impl, session_namespace, set_session_plugin_backend_impl,
 };
-use crate::state::{is_managed_legacy_models_path, migrate_and_cleanup_models, AppState};
+use crate::state::{
+    is_managed_legacy_models_path, migrate_and_cleanup_models, paths_equal, AppState,
+};
 use oclive_kernel_types::models::plugin_backends::LlmBackend;
-use oclive_kernel_types::models::PluginBackendsOverride;
+use oclive_kernel_types::models::{
+    ActivateLocalLoraAdapterRequest, ContentRating, DeleteLocalLoraAdapterRequest,
+    ImportLocalLoraAdapterRequest, LocalLoraAdapterDto, LoraContentRating, PluginBackendsOverride,
+};
 use oclive_validation::NETWORK_GRANT_REMOTE_LLM;
+use once_cell::sync::Lazy;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
+
+static LOCAL_LORA_MUTATION: Lazy<tokio::sync::Mutex<()>> =
+    Lazy::new(|| tokio::sync::Mutex::new(()));
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -41,6 +56,8 @@ pub struct LlmUserSettingsDto {
     pub local_models_dir: String,
     pub local_model_files: Vec<LocalModelFileDto>,
     pub local_model_path: String,
+    pub local_lora_adapters: Vec<LocalLoraAdapterDto>,
+    pub active_local_lora_adapter_id: Option<String>,
     pub local_runtime_mode: String,
     pub performance_endpoint: String,
     pub performance_runtime_available: bool,
@@ -69,6 +86,8 @@ pub struct SaveLlmUserSettingsRequest {
     pub ollama_base_url: Option<String>,
     pub local_models_dir: Option<String>,
     pub local_model_path: Option<String>,
+    #[serde(default)]
+    pub adult_content_acknowledged: bool,
     pub ollama_model: Option<String>,
     pub remote_url: Option<String>,
     pub remote_token: Option<String>,
@@ -84,6 +103,18 @@ pub struct SetSessionLlmModelRequest {
     /// Model id; null/empty clears override.
     #[serde(default)]
     pub model: Option<String>,
+}
+
+/// Re-apply persisted LLM environment settings without racing model/LoRA mutations.
+///
+/// # Errors
+///
+/// Returns database or environment-application errors.
+pub async fn reload_llm_user_env_impl(state: &AppState) -> Result<String, CommandError> {
+    let _guard = LOCAL_LORA_MUTATION.lock().await;
+    state.mark_user_llm_env_dirty();
+    apply_user_llm_env(state).await?;
+    Ok(state.user_llm_provider.read().clone())
 }
 
 /// # Errors
@@ -168,13 +199,50 @@ pub async fn get_llm_user_settings_impl(
         .await?
         .unwrap_or_else(|| "openai".to_string());
     let local_models_dir = local_models_dir_for_state(state).await?;
-    let local_model_files =
+    let mut local_model_files =
         scan_local_model_files_in(std::path::Path::new(local_models_dir.trim()));
     let local_model_path = state
         .db_manager
         .get_app_setting(KEY_LOCAL_MODEL_PATH)
         .await?
         .unwrap_or_default();
+    if !local_model_path.trim().is_empty()
+        && !local_model_files.iter().any(|model| {
+            paths_equal(
+                std::path::Path::new(&model.path),
+                std::path::Path::new(local_model_path.trim()),
+            )
+        })
+    {
+        match describe_local_model_file(std::path::Path::new(local_model_path.trim())) {
+            Ok(model) => {
+                local_model_files.push(model);
+                local_model_files.sort_by_key(|model| model.name.to_lowercase());
+            }
+            Err(error) => {
+                tracing::warn!(
+                    target: "oclive_models",
+                    path = local_model_path.trim(),
+                    %error,
+                    "configured local base model metadata could not be loaded"
+                );
+            }
+        }
+    }
+    let configured_lora_id = state
+        .db_manager
+        .get_app_setting(KEY_LOCAL_LORA_ADAPTER_ID)
+        .await?
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty());
+    let managed_models_dir = canonical_models_dir(state);
+    let local_lora_adapters =
+        list_local_lora_adapters(&managed_models_dir, configured_lora_id.as_deref());
+    let active_local_lora_adapter_id = configured_lora_id.filter(|configured| {
+        local_lora_adapters
+            .iter()
+            .any(|adapter| adapter.active && adapter.id == *configured)
+    });
     let performance = if let Some(runtime) = state.performance_llm.as_ref() {
         runtime.inspect().await
     } else {
@@ -199,6 +267,8 @@ pub async fn get_llm_user_settings_impl(
         local_models_dir,
         local_model_files,
         local_model_path,
+        local_lora_adapters,
+        active_local_lora_adapter_id,
         local_runtime_mode: performance.mode,
         performance_endpoint: performance.endpoint,
         performance_runtime_available: performance.runtime_installed,
@@ -219,6 +289,250 @@ pub async fn get_llm_user_settings_impl(
             .map(|s| !s.trim().is_empty())
             .unwrap_or(false),
     })
+}
+
+async fn persist_local_lora_selection(
+    state: &AppState,
+    adapter_id: Option<&str>,
+    adapter_path: Option<&std::path::Path>,
+) -> Result<(), CommandError> {
+    state
+        .db_manager
+        .upsert_app_setting(KEY_LOCAL_LORA_ADAPTER_ID, adapter_id.unwrap_or_default())
+        .await?;
+    let path = adapter_path
+        .map(|path| path.to_string_lossy().into_owned())
+        .unwrap_or_default();
+    state
+        .db_manager
+        .upsert_app_setting(KEY_LOCAL_LORA_ADAPTER_PATH, path.trim())
+        .await?;
+    state.mark_user_llm_env_dirty();
+    apply_user_llm_env(state).await?;
+    Ok(())
+}
+
+/// Import a local llama.cpp LoRA GGUF into managed storage.
+///
+/// This service is intentionally exposed only through the local Tauri command;
+/// the HTTP API never accepts arbitrary filesystem source paths.
+///
+/// # Errors
+///
+/// Returns validation, checksum, package, or filesystem errors.
+pub async fn import_local_lora_adapter_impl(
+    state: &AppState,
+    request: &ImportLocalLoraAdapterRequest,
+) -> Result<LocalLoraAdapterDto, CommandError> {
+    let _guard = LOCAL_LORA_MUTATION.lock().await;
+    let models_dir = canonical_models_dir(state);
+    let active_id = state
+        .db_manager
+        .get_app_setting(KEY_LOCAL_LORA_ADAPTER_ID)
+        .await?
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty());
+    let request = request.clone();
+    tokio::task::spawn_blocking(move || {
+        import_local_lora_adapter(&models_dir, &request, active_id.as_deref())
+            .map_err(CommandError::from)
+    })
+    .await
+    .map_err(|error| {
+        CommandError::from(AppError::InvalidParameter(format!(
+            "LoRA import worker failed: {error}"
+        )))
+    })?
+}
+
+/// Apply one installed adapter to the managed llama-server, or deactivate LoRA.
+///
+/// Persistence and runtime changes are transactional from the user's point of
+/// view: when the new selection cannot start, the previous selection is restored.
+///
+/// # Errors
+///
+/// Returns an error for unsupported distro modes, missing base models, adult
+/// content without acknowledgement, invalid adapters, or runtime startup failure.
+pub async fn activate_local_lora_adapter_impl(
+    state: &AppState,
+    request: &ActivateLocalLoraAdapterRequest,
+) -> Result<Option<LocalLoraAdapterDto>, CommandError> {
+    let _guard = LOCAL_LORA_MUTATION.lock().await;
+    let performance = state.performance_llm.as_ref().ok_or_else(|| {
+        CommandError::from(AppError::InvalidParameter(
+            "LoRA activation requires the managed performance llama.cpp runtime".into(),
+        ))
+    })?;
+    let provider = state
+        .db_manager
+        .get_app_setting(KEY_LLM_PROVIDER)
+        .await?
+        .unwrap_or_else(|| "local".to_string());
+    if provider.trim() != "local" {
+        return Err(AppError::InvalidParameter(
+            "switch to the local model provider before activating a LoRA adapter".into(),
+        )
+        .into());
+    }
+    let base_model = state
+        .db_manager
+        .get_app_setting(KEY_LOCAL_MODEL_PATH)
+        .await?
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty())
+        .ok_or_else(|| {
+            CommandError::from(AppError::InvalidParameter(
+                "select and save a local GGUF base model before activating LoRA".into(),
+            ))
+        })?;
+    if !std::path::Path::new(&base_model).is_file() {
+        return Err(AppError::InvalidParameter(
+            "the selected local GGUF base model no longer exists".into(),
+        )
+        .into());
+    }
+    if !std::path::Path::new(&base_model)
+        .extension()
+        .and_then(|extension| extension.to_str())
+        .is_some_and(|extension| extension.eq_ignore_ascii_case("gguf"))
+    {
+        return Err(AppError::InvalidParameter(
+            "llama.cpp LoRA activation requires a GGUF base model".into(),
+        )
+        .into());
+    }
+
+    let adapter_id = request
+        .adapter_id
+        .as_deref()
+        .map(str::trim)
+        .filter(|id| !id.is_empty())
+        .map(str::to_string);
+    let selected = if let Some(id) = adapter_id.as_deref() {
+        let models_dir = canonical_models_dir(state);
+        let id_owned = id.to_string();
+        let resolved = tokio::task::spawn_blocking(move || {
+            resolve_local_lora_adapter(&models_dir, &id_owned, Some(&id_owned))
+                .map_err(CommandError::from)
+        })
+        .await
+        .map_err(|error| {
+            CommandError::from(AppError::InvalidParameter(format!(
+                "LoRA verification worker failed: {error}"
+            )))
+        })??;
+        let base_model_path = PathBuf::from(&base_model);
+        let base_architecture =
+            tokio::task::spawn_blocking(move || gguf_base_model_architecture(&base_model_path))
+                .await
+                .map_err(|error| {
+                    CommandError::from(AppError::InvalidParameter(format!(
+                        "base-model GGUF verification worker failed: {error}"
+                    )))
+                })??;
+        if let (Some(adapter_architecture), Some(base_architecture)) = (
+            resolved.dto.architecture.as_deref(),
+            base_architecture.as_deref(),
+        ) {
+            if !adapter_architecture.eq_ignore_ascii_case(base_architecture) {
+                return Err(AppError::InvalidParameter(format!(
+                    "LoRA/base architecture mismatch: adapter '{adapter_architecture}', base model '{base_architecture}'"
+                ))
+                .into());
+            }
+        }
+        if resolved.dto.content_rating == LoraContentRating::Adult
+            && !request.adult_content_acknowledged
+        {
+            return Err(AppError::InvalidParameter(
+                "adult-rated LoRA activation requires explicit acknowledgement".into(),
+            )
+            .into());
+        }
+        Some(resolved)
+    } else {
+        None
+    };
+
+    let previous_id = state
+        .db_manager
+        .get_app_setting(KEY_LOCAL_LORA_ADAPTER_ID)
+        .await?
+        .unwrap_or_default();
+    let previous_path = state
+        .db_manager
+        .get_app_setting(KEY_LOCAL_LORA_ADAPTER_PATH)
+        .await?
+        .unwrap_or_default();
+    persist_local_lora_selection(
+        state,
+        adapter_id.as_deref(),
+        selected.as_ref().map(|adapter| adapter.gguf_path.as_path()),
+    )
+    .await?;
+
+    if let Err(error) = performance.apply_runtime_selection().await {
+        let rollback_id = (!previous_id.trim().is_empty()).then_some(previous_id.trim());
+        let rollback_path =
+            (!previous_path.trim().is_empty()).then(|| std::path::Path::new(previous_path.trim()));
+        if let Err(rollback_error) =
+            persist_local_lora_selection(state, rollback_id, rollback_path).await
+        {
+            tracing::error!(
+                target: "oclive_lora",
+                %rollback_error,
+                "failed to restore previous LoRA settings after activation failure"
+            );
+        } else if let Err(rollback_runtime_error) = performance.apply_runtime_selection().await {
+            tracing::error!(
+                target: "oclive_lora",
+                %rollback_runtime_error,
+                "previous llama.cpp selection was restored but could not be restarted"
+            );
+        }
+        return Err(AppError::InvalidParameter(format!(
+            "LoRA activation failed and the previous selection was restored: {error}"
+        ))
+        .into());
+    }
+
+    Ok(selected.map(|resolved| resolved.dto))
+}
+
+/// Delete one inactive managed adapter.
+///
+/// # Errors
+///
+/// Returns an error when the adapter is active, invalid, missing, or cannot be removed.
+pub async fn delete_local_lora_adapter_impl(
+    state: &AppState,
+    request: &DeleteLocalLoraAdapterRequest,
+) -> Result<(), CommandError> {
+    let _guard = LOCAL_LORA_MUTATION.lock().await;
+    let id = request.adapter_id.trim();
+    let active_id = state
+        .db_manager
+        .get_app_setting(KEY_LOCAL_LORA_ADAPTER_ID)
+        .await?
+        .unwrap_or_default();
+    if !id.is_empty() && id == active_id.trim() {
+        return Err(AppError::InvalidParameter(
+            "deactivate the LoRA adapter before deleting it".into(),
+        )
+        .into());
+    }
+    let models_dir = canonical_models_dir(state);
+    let id = id.to_string();
+    tokio::task::spawn_blocking(move || {
+        delete_local_lora_adapter(&models_dir, &id).map_err(CommandError::from)
+    })
+    .await
+    .map_err(|error| {
+        CommandError::from(AppError::InvalidParameter(format!(
+            "LoRA delete worker failed: {error}"
+        )))
+    })?
 }
 
 /// # Errors
@@ -426,9 +740,110 @@ pub async fn save_llm_user_settings_impl(
     state: &AppState,
     req: &SaveLlmUserSettingsRequest,
 ) -> Result<RoleInfo, CommandError> {
+    let _lora_guard = LOCAL_LORA_MUTATION.lock().await;
     let provider = req.provider.trim().to_ascii_lowercase();
     if provider != "local" && provider != "cloud" {
         return Err(AppError::InvalidParameter("provider must be local or cloud".into()).into());
+    }
+
+    let active_lora_id = state
+        .db_manager
+        .get_app_setting(KEY_LOCAL_LORA_ADAPTER_ID)
+        .await?
+        .unwrap_or_default();
+    let current_model_path = state
+        .db_manager
+        .get_app_setting(KEY_LOCAL_MODEL_PATH)
+        .await?
+        .unwrap_or_default();
+    let mut deactivate_lora_for_base_change = false;
+
+    if let Some(model_path) = req.local_model_path.as_deref() {
+        let model_path = model_path.trim();
+        let base_changed = if current_model_path.trim().is_empty() || model_path.is_empty() {
+            current_model_path.trim() != model_path
+        } else {
+            !paths_equal(
+                PathBuf::from(current_model_path.trim()).as_path(),
+                PathBuf::from(model_path).as_path(),
+            )
+        };
+        deactivate_lora_for_base_change = base_changed && !active_lora_id.trim().is_empty();
+
+        if !model_path.is_empty() {
+            let base_path = PathBuf::from(model_path);
+            let descriptor = if base_changed {
+                tokio::task::spawn_blocking({
+                    let base_path = base_path.clone();
+                    move || verify_local_model_file(&base_path)
+                })
+                .await
+                .map_err(|error| {
+                    CommandError::from(AppError::InvalidParameter(format!(
+                        "base-model verification worker failed: {error}"
+                    )))
+                })??
+            } else {
+                describe_local_model_file(&base_path)?
+            };
+            if base_changed
+                && descriptor.content_rating == ContentRating::Adult
+                && !req.adult_content_acknowledged
+            {
+                return Err(AppError::InvalidParameter(
+                    "selecting an adult-only local base model requires explicit acknowledgement"
+                        .into(),
+                )
+                .into());
+            }
+
+            // A base switch never carries the old adapter implicitly. When the
+            // path is unchanged, keep validating the active pair so corrupt or
+            // replaced files cannot bypass the architecture check.
+            if !active_lora_id.trim().is_empty() && !base_changed {
+                if !base_path
+                    .extension()
+                    .and_then(|extension| extension.to_str())
+                    .is_some_and(|extension| extension.eq_ignore_ascii_case("gguf"))
+                {
+                    return Err(AppError::InvalidParameter(
+                        "an active llama.cpp LoRA requires an existing GGUF base model".into(),
+                    )
+                    .into());
+                }
+                let models_dir = canonical_models_dir(state);
+                let active_id = active_lora_id.trim().to_string();
+                let adapter = tokio::task::spawn_blocking(move || {
+                    resolve_local_lora_adapter(&models_dir, &active_id, Some(&active_id))
+                        .map_err(CommandError::from)
+                })
+                .await
+                .map_err(|error| {
+                    CommandError::from(AppError::InvalidParameter(format!(
+                        "LoRA verification worker failed: {error}"
+                    )))
+                })??;
+                let base_architecture =
+                    tokio::task::spawn_blocking(move || gguf_base_model_architecture(&base_path))
+                        .await
+                        .map_err(|error| {
+                            CommandError::from(AppError::InvalidParameter(format!(
+                                "base-model GGUF verification worker failed: {error}"
+                            )))
+                        })??;
+                if let (Some(adapter_architecture), Some(base_architecture)) = (
+                    adapter.dto.architecture.as_deref(),
+                    base_architecture.as_deref(),
+                ) {
+                    if !adapter_architecture.eq_ignore_ascii_case(base_architecture) {
+                        return Err(AppError::InvalidParameter(format!(
+                            "the active LoRA is incompatible with base architecture '{base_architecture}'"
+                        ))
+                        .into());
+                    }
+                }
+            }
+        }
     }
 
     state
@@ -491,25 +906,27 @@ pub async fn save_llm_user_settings_impl(
     }
     if let Some(ref model_path) = req.local_model_path {
         let trimmed = model_path.trim();
-        if !trimmed.is_empty() {
-            let path = PathBuf::from(trimmed);
-            let valid_extension =
-                path.extension()
-                    .and_then(|ext| ext.to_str())
-                    .is_some_and(|ext| {
-                        ext.eq_ignore_ascii_case("gguf") || ext.eq_ignore_ascii_case("bin")
-                    });
-            if !path.is_file() || !valid_extension {
-                return Err(AppError::InvalidParameter(
-                    "performance model must be an existing GGUF/BIN file".into(),
-                )
-                .into());
-            }
-        }
         state
             .db_manager
             .upsert_app_setting(KEY_LOCAL_MODEL_PATH, trimmed)
             .await?;
+    }
+    if deactivate_lora_for_base_change {
+        state
+            .db_manager
+            .upsert_app_setting(KEY_LOCAL_LORA_ADAPTER_ID, "")
+            .await?;
+        state
+            .db_manager
+            .upsert_app_setting(KEY_LOCAL_LORA_ADAPTER_PATH, "")
+            .await?;
+        tracing::info!(
+            target: "oclive_lora",
+            previous_adapter_id = active_lora_id.trim(),
+            previous_base = current_model_path.trim(),
+            next_base = req.local_model_path.as_deref().unwrap_or_default().trim(),
+            "deactivated local LoRA because the base model changed"
+        );
     }
     if let Some(ref url) = req.remote_url {
         state

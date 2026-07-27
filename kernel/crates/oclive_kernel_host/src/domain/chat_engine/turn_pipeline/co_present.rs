@@ -54,6 +54,14 @@ fn should_use_stable_prompt_segments(
         && matches!(prompt_backend, PromptBackend::Builtin)
 }
 
+fn apply_adult_output_boundary(mut prompt: String, adult_prompt: &str) -> String {
+    if !adult_prompt.is_empty() {
+        prompt.push_str("\n\n");
+        prompt.push_str(crate::domain::adult_interaction::output_boundary());
+    }
+    prompt
+}
+
 pub(crate) async fn run_middle(
     ctx: &TurnContext<'_>,
     pre: &PreLlmOutput,
@@ -181,7 +189,15 @@ pub(crate) async fn run_middle(
         ai_event_confidence,
     );
     let favor_scale = thinking.favor_delta_scale(&state.host_profile, &ai_event_type);
-    let (favor_delta, relation_after) = if favor_scale == 0.0 {
+    let synthetic_adult_action = req.adult.as_ref().is_some_and(|adult| {
+        adult.gates_open()
+            && pre.relation.user_identity_allows_adult
+            && !matches!(
+                adult.action,
+                crate::models::dto::AdultInteractionAction::Message
+            )
+    });
+    let (favor_delta, relation_after) = if favor_scale == 0.0 || synthetic_adult_action {
         (
             0.0,
             oclive_kernel_runtime::domain::relation_engine::RelationState::parse(
@@ -263,6 +279,7 @@ pub(crate) async fn run_middle(
         scene_id,
         virtual_time_ms,
         &ctx.runtime_snapshot,
+        !ctx.is_staged(),
     )
     .await
     {
@@ -278,6 +295,13 @@ pub(crate) async fn run_middle(
             String::new()
         }
     };
+    let adult_prompt = crate::domain::adult_interaction::prompt_section(
+        role,
+        scene_id,
+        ctx.req.adult.as_ref(),
+        pre.relation.user_identity_allows_adult,
+    )
+    .unwrap_or_default();
     let mut extra_sections: Vec<PromptExtraSection<'_>> = role
         .pack_prompt_extra_sections
         .iter()
@@ -290,6 +314,12 @@ pub(crate) async fn run_middle(
         extra_sections.push(PromptExtraSection {
             title: "行动连续性状态",
             body: continuity_prompt.as_str(),
+        });
+    }
+    if !adult_prompt.is_empty() {
+        extra_sections.push(PromptExtraSection {
+            title: crate::domain::adult_interaction::prompt_title(),
+            body: adult_prompt.as_str(),
         });
     }
 
@@ -389,6 +419,7 @@ pub(crate) async fn run_middle(
             .await?;
         (prompt, None, None, None, false)
     };
+    let prompt = apply_adult_output_boundary(prompt, adult_prompt.as_str());
 
     Ok(MiddleOutput {
         turn_thinking: thinking,
@@ -467,5 +498,15 @@ mod tests {
             true,
             PromptBackend::Remote
         ));
+    }
+
+    #[test]
+    fn adult_output_contract_is_the_last_prompt_instruction() {
+        let prompt = apply_adult_output_boundary(
+            "【输出边界】只输出当前角色本人的这一轮台词。".to_string(),
+            "adult enabled",
+        );
+        assert!(prompt.ends_with(crate::domain::adult_interaction::output_boundary()));
+        assert!(prompt.find("只输出当前角色") < prompt.find("本轮最终输出契约"));
     }
 }

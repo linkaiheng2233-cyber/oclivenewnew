@@ -78,6 +78,7 @@ mod tests {
     fn role() -> Role {
         Role {
             memory_seed: Vec::new(),
+            adult_extension: None,
             id: "r".to_string(),
             name: "测试".to_string(),
             description: String::new(),

@@ -23,6 +23,7 @@ use std::time::{Duration, Instant};
 
 pub const ENV_LLAMA_SERVER_PATH: &str = "OCLIVE_LLAMA_SERVER_PATH";
 pub const ENV_LOCAL_LLM_MODEL_PATH: &str = "OCLIVE_LOCAL_LLM_MODEL_PATH";
+pub const ENV_LOCAL_LLM_LORA_PATH: &str = "OCLIVE_LOCAL_LLM_LORA_PATH";
 pub const RUNTIME_PACK_MANIFEST: &str = "llm_runtime_pack.json";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -50,7 +51,20 @@ struct RuntimePackManifest {
 
 struct SpawnedRuntime {
     child: Child,
+    selection: RuntimeSelection,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct RuntimeSelection {
     model_path: PathBuf,
+    adapter_path: Option<PathBuf>,
+}
+
+fn append_runtime_selection_args(command: &mut Command, selection: &RuntimeSelection) {
+    command.arg("-m").arg(&selection.model_path);
+    if let Some(adapter_path) = selection.adapter_path.as_ref() {
+        command.arg("--lora").arg(adapter_path);
+    }
 }
 
 impl Drop for SpawnedRuntime {
@@ -72,7 +86,7 @@ pub struct PerformanceLlmClient {
     health_client: reqwest::Client,
     start_lock: tokio::sync::Mutex<()>,
     process: Mutex<Option<SpawnedRuntime>>,
-    selected_model: Mutex<Option<PathBuf>>,
+    selected_runtime: Mutex<Option<RuntimeSelection>>,
     retry_after: Mutex<Option<Instant>>,
     status: RwLock<PerformanceLlmStatus>,
     fallback_warned: AtomicBool,
@@ -125,7 +139,7 @@ impl PerformanceLlmClient {
             health_client,
             start_lock: tokio::sync::Mutex::new(()),
             process: Mutex::new(None),
-            selected_model: Mutex::new(configured_model_path()),
+            selected_runtime: Mutex::new(configured_runtime_selection().ok().flatten()),
             retry_after: Mutex::new(None),
             status: RwLock::new(initial_status),
             fallback_warned: AtomicBool::new(false),
@@ -144,6 +158,16 @@ impl PerformanceLlmClient {
     /// Probe the configured endpoint without starting a process.
     pub async fn inspect(&self) -> PerformanceLlmStatus {
         if self.endpoint_ready().await {
+            if let Ok(Some(selection)) = configured_runtime_selection() {
+                if selection.adapter_path.is_some() && !self.managed_process_matches(&selection) {
+                    self.set_status(
+                        false,
+                        "ollama",
+                        "selected LoRA is not loaded by the running external llama-server",
+                    );
+                    return self.status_snapshot();
+                }
+            }
             self.set_status(true, "performance", "llama-server is ready");
         } else {
             let runtime = self.discover_runtime_binary().is_some();
@@ -181,6 +205,17 @@ impl PerformanceLlmClient {
     /// Returns the runtime discovery, spawn, or readiness error. Callers may then warm
     /// the Ollama fallback without loading both GPU runtimes at the same time.
     pub async fn warmup_primary(&self) -> Result<()> {
+        self.ensure_primary_ready().await
+    }
+
+    /// Re-enable the managed runtime and synchronously apply the current model/LoRA selection.
+    ///
+    /// # Errors
+    ///
+    /// Returns the runtime discovery, spawn, adapter-load, or readiness error.
+    pub async fn apply_runtime_selection(&self) -> Result<()> {
+        self.primary_enabled.store(true, Ordering::Release);
+        *self.retry_after.lock() = None;
         self.ensure_primary_ready().await
     }
 
@@ -336,10 +371,10 @@ impl PerformanceLlmClient {
             .is_some_and(|until| *until > Instant::now())
     }
 
-    fn reconcile_selected_model(&self) {
-        let selected = configured_model_path();
+    fn reconcile_selected_runtime(&self) -> Result<(Option<RuntimeSelection>, bool)> {
+        let selected = configured_runtime_selection()?;
         let selection_changed = {
-            let mut previous = self.selected_model.lock();
+            let mut previous = self.selected_runtime.lock();
             if *previous == selected {
                 false
             } else {
@@ -351,7 +386,7 @@ impl PerformanceLlmClient {
             .process
             .lock()
             .as_ref()
-            .is_some_and(|running| selected.as_ref() != Some(&running.model_path));
+            .is_some_and(|running| selected.as_ref() != Some(&running.selection));
         if running_model_changed {
             self.process.lock().take();
         }
@@ -360,12 +395,28 @@ impl PerformanceLlmClient {
             self.set_status(
                 false,
                 "pending",
-                "selected GGUF changed; managed llama-server will restart",
+                "selected GGUF or LoRA changed; managed llama-server will restart",
             );
+        }
+        Ok((selected, running_model_changed))
+    }
+
+    fn managed_process_matches(&self, selection: &RuntimeSelection) -> bool {
+        self.process.lock().as_mut().is_some_and(|running| {
+            running.selection == *selection && running.child.try_wait().ok().flatten().is_none()
+        })
+    }
+
+    async fn wait_for_stopped_endpoint(&self) {
+        for _ in 0..20 {
+            if !self.endpoint_ready().await {
+                return;
+            }
+            tokio::time::sleep(Duration::from_millis(100)).await;
         }
     }
 
-    fn spawn_runtime(&self, binary: &Path, model_path: &Path) -> Result<Child> {
+    fn spawn_runtime(&self, binary: &Path, selection: &RuntimeSelection) -> Result<Child> {
         let url = reqwest::Url::parse(&self.profile.endpoint)
             .map_err(|e| AppError::InvalidParameter(format!("llama-server endpoint: {e}")))?;
         let host = url.host_str().unwrap_or("127.0.0.1");
@@ -384,9 +435,8 @@ impl PerformanceLlmClient {
             .map_or_else(Stdio::null, Stdio::from);
         let stderr = log_file.map_or_else(Stdio::null, Stdio::from);
         let mut command = Command::new(binary);
+        append_runtime_selection_args(&mut command, selection);
         command
-            .arg("-m")
-            .arg(model_path)
             .arg("--host")
             .arg(host)
             .arg("--port")
@@ -416,8 +466,18 @@ impl PerformanceLlmClient {
 
     async fn ensure_primary_ready(&self) -> Result<()> {
         self.ensure_primary_enabled()?;
-        self.reconcile_selected_model();
+        let (selection, stopped_managed_runtime) = self.reconcile_selected_runtime()?;
+        if stopped_managed_runtime {
+            self.wait_for_stopped_endpoint().await;
+        }
         if self.endpoint_ready().await {
+            if let Some(selection) = selection.as_ref() {
+                if selection.adapter_path.is_some() && !self.managed_process_matches(selection) {
+                    return Err(AppError::RemoteServiceUnavailable(
+                        "selected LoRA cannot be applied to an external llama-server; stop it so OCLive can start the managed runtime".into(),
+                    ));
+                }
+            }
             self.ensure_primary_enabled()?;
             if self.status.read().active_backend != "performance" {
                 self.unload_ollama_for_primary().await;
@@ -439,7 +499,18 @@ impl PerformanceLlmClient {
 
         let _guard = self.start_lock.lock().await;
         self.ensure_primary_enabled()?;
+        let (selection, stopped_managed_runtime) = self.reconcile_selected_runtime()?;
+        if stopped_managed_runtime {
+            self.wait_for_stopped_endpoint().await;
+        }
         if self.endpoint_ready().await {
+            if let Some(selection) = selection.as_ref() {
+                if selection.adapter_path.is_some() && !self.managed_process_matches(selection) {
+                    return Err(AppError::RemoteServiceUnavailable(
+                        "selected LoRA cannot be applied to an external llama-server; stop it so OCLive can start the managed runtime".into(),
+                    ));
+                }
+            }
             self.ensure_primary_enabled()?;
             if self.status.read().active_backend != "performance" {
                 self.unload_ollama_for_primary().await;
@@ -451,7 +522,7 @@ impl PerformanceLlmClient {
             self.mark_retry_cooldown("llama-server runtime pack is not installed");
             AppError::RemoteServiceUnavailable("llama-server runtime pack is not installed".into())
         })?;
-        let model_path = configured_model_path().ok_or_else(|| {
+        let selection = selection.ok_or_else(|| {
             self.mark_retry_cooldown("no GGUF model is selected for performance mode");
             AppError::RemoteServiceUnavailable(
                 "no GGUF model is selected for performance mode".into(),
@@ -464,12 +535,11 @@ impl PerformanceLlmClient {
             let mut process = self.process.lock();
             self.ensure_primary_enabled()?;
             let reuse = process.as_mut().is_some_and(|running| {
-                running.model_path == model_path
-                    && running.child.try_wait().ok().flatten().is_none()
+                running.selection == selection && running.child.try_wait().ok().flatten().is_none()
             });
             if !reuse {
                 *process = None;
-                let child = match self.spawn_runtime(&binary, &model_path) {
+                let child = match self.spawn_runtime(&binary, &selection) {
                     Ok(child) => child,
                     Err(error) => {
                         self.mark_retry_cooldown("llama-server process could not be started");
@@ -478,15 +548,19 @@ impl PerformanceLlmClient {
                 };
                 *process = Some(SpawnedRuntime {
                     child,
-                    model_path: model_path.clone(),
+                    selection: selection.clone(),
                 });
                 tracing::info!(
                     target: "oclive_llm",
                     binary = %binary.display(),
-                    model = %model_path.display(),
-                endpoint = %self.profile.endpoint,
-                log = %self.app_data_dir.join("logs").join("llama-server.log").display(),
-                "spawned performance llama-server runtime"
+                    model = %selection.model_path.display(),
+                    lora = selection.adapter_path.as_ref().map_or_else(
+                        || "none".to_string(),
+                        |path| path.display().to_string()
+                    ),
+                    endpoint = %self.profile.endpoint,
+                    log = %self.app_data_dir.join("logs").join("llama-server.log").display(),
+                    "spawned performance llama-server runtime"
                 );
             }
         }
@@ -600,6 +674,37 @@ fn configured_model_path() -> Option<PathBuf> {
         .and_then(|ext| ext.to_str())
         .is_some_and(|ext| ext.eq_ignore_ascii_case("gguf") || ext.eq_ignore_ascii_case("bin"));
     (path.is_file() && valid_extension).then_some(path)
+}
+
+fn configured_lora_path() -> Result<Option<PathBuf>> {
+    let Some(value) = std::env::var(ENV_LOCAL_LLM_LORA_PATH)
+        .ok()
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty())
+    else {
+        return Ok(None);
+    };
+    let path = PathBuf::from(value);
+    let valid_extension = path
+        .extension()
+        .and_then(|ext| ext.to_str())
+        .is_some_and(|ext| ext.eq_ignore_ascii_case("gguf"));
+    if !path.is_file() || !valid_extension {
+        return Err(AppError::InvalidParameter(
+            "configured llama.cpp LoRA GGUF is missing or invalid".into(),
+        ));
+    }
+    Ok(Some(path))
+}
+
+fn configured_runtime_selection() -> Result<Option<RuntimeSelection>> {
+    let Some(model_path) = configured_model_path() else {
+        return Ok(None);
+    };
+    Ok(Some(RuntimeSelection {
+        model_path,
+        adapter_path: configured_lora_path()?,
+    }))
 }
 
 #[async_trait]
@@ -752,6 +857,21 @@ mod tests {
             retry_cooldown_ms: 1_000,
             model_alias: "test-performance".into(),
         }
+    }
+
+    #[test]
+    fn managed_runtime_passes_selected_lora_to_llama_server() {
+        let selection = RuntimeSelection {
+            model_path: PathBuf::from("base.gguf"),
+            adapter_path: Some(PathBuf::from("adapter.gguf")),
+        };
+        let mut command = Command::new("llama-server");
+        append_runtime_selection_args(&mut command, &selection);
+        let args = command
+            .get_args()
+            .map(|arg| arg.to_string_lossy().into_owned())
+            .collect::<Vec<_>>();
+        assert_eq!(args, ["-m", "base.gguf", "--lora", "adapter.gguf"]);
     }
 
     #[tokio::test]

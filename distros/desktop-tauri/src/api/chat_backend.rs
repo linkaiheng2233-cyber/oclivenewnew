@@ -10,7 +10,11 @@ use crate::kernel_lifecycle::SharedKernelConnection;
 use oclive_kernel_host::infrastructure::chat_storage::{SessionMeta, StoredMessage};
 use oclive_kernel_host::service::{execute_chat_storage_proxy, ChatStorageProxyOp};
 use oclive_kernel_host::state::AppState;
-use oclive_kernel_types::models::dto::{SendMessageRequest, SendMessageResponse};
+use oclive_kernel_types::models::dto::{
+    AdultStagedBeatDto, BeginAdultStageGenerationRequest, BeginAdultStageGenerationResponse,
+    CancelAdultStageGenerationRequest, CommitAdultStagedBeatRequest, ListAdultStagedBeatsRequest,
+    ListAdultStagedBeatsResponse, SendMessageRequest, SendMessageResponse, StageAdultBeatRequest,
+};
 use std::sync::Arc;
 use tauri::{AppHandle, Manager};
 
@@ -107,6 +111,94 @@ impl ChatBackend {
                         let mut f = sink_on.lock();
                         f(t);
                     }),
+                )
+                .await
+            }
+        }
+    }
+
+    pub async fn begin_adult_stage(
+        &self,
+        request: BeginAdultStageGenerationRequest,
+    ) -> Result<BeginAdultStageGenerationResponse, AppError> {
+        match self {
+            Self::Http(conn) => KernelHttpClient::begin_adult_stage_via_http(conn, &request).await,
+            Self::Local(state) => {
+                oclive_kernel_host::domain::adult_stage::begin_adult_stage_generation(
+                    state.as_ref(),
+                    request,
+                )
+                .await
+            }
+        }
+    }
+
+    pub async fn generate_adult_staged_beat(
+        &self,
+        request: StageAdultBeatRequest,
+    ) -> Result<AdultStagedBeatDto, AppError> {
+        match self {
+            Self::Http(conn) => {
+                KernelHttpClient::generate_adult_staged_beat_via_http(conn, &request).await
+            }
+            Self::Local(state) => {
+                oclive_kernel_host::domain::adult_stage::generate_adult_staged_beat(
+                    state.as_ref(),
+                    request,
+                )
+                .await
+            }
+        }
+    }
+
+    pub async fn commit_adult_staged_beat(
+        &self,
+        request: CommitAdultStagedBeatRequest,
+    ) -> Result<SendMessageResponse, AppError> {
+        match self {
+            Self::Http(conn) => {
+                KernelHttpClient::commit_adult_staged_beat_via_http(conn, &request).await
+            }
+            Self::Local(state) => {
+                oclive_kernel_host::domain::adult_stage::commit_adult_staged_beat(
+                    state.as_ref(),
+                    request,
+                )
+                .await
+            }
+        }
+    }
+
+    pub async fn cancel_adult_stage(
+        &self,
+        request: CancelAdultStageGenerationRequest,
+    ) -> Result<(), AppError> {
+        match self {
+            Self::Http(conn) => KernelHttpClient::cancel_adult_stage_via_http(conn, &request)
+                .await
+                .map(|_| ()),
+            Self::Local(state) => {
+                oclive_kernel_host::domain::adult_stage::cancel_adult_stage_generation(
+                    state.as_ref(),
+                    request,
+                )
+                .await
+            }
+        }
+    }
+
+    pub async fn list_adult_staged_beats(
+        &self,
+        request: ListAdultStagedBeatsRequest,
+    ) -> Result<ListAdultStagedBeatsResponse, AppError> {
+        match self {
+            Self::Http(conn) => {
+                KernelHttpClient::list_adult_staged_beats_via_http(conn, &request).await
+            }
+            Self::Local(state) => {
+                oclive_kernel_host::domain::adult_stage::list_adult_staged_beats(
+                    state.as_ref(),
+                    request,
                 )
                 .await
             }

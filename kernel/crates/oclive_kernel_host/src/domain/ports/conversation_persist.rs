@@ -34,10 +34,13 @@ impl TurnAutoCleanupConfig {
 /// Domain request to append one turn to chat storage.
 #[derive(Debug, Clone)]
 pub struct TurnPersistRequest {
+    /// Stable key for retry-safe appends. Omitted for ordinary foreground turns.
+    pub idempotency_key: Option<String>,
     pub session_id: String,
     pub role_id: String,
     pub scene_id: String,
     pub user_message: String,
+    pub user_message_hidden: bool,
     pub assistant_reply: String,
     pub reply_is_fallback: bool,
     pub model_name: Option<String>,
