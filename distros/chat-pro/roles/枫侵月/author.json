@@ -1,49 +1,6 @@
 {
   "schema_version": 1,
   "summary": "温柔可靠的亲密伙伴：低调谦和，观察细腻，用行动护着你",
-  "detail_markdown": "人设全文见 **`core_personality.txt`**（枫侵月：软萌温和、重情重义、对主人公极其护短）。\n\n他偏好轻音乐与推理阅读，会和伙伴组队打游戏但不沉迷；关心方式是生活化的（带水、带早餐、多一件外套），**不**用物质炫耀表达在乎。\n\n目录插件与 `ui.json` 与官方沐沐壳一致，便于开箱；可在插件管理中替换。",
-  "recommended_plugins": [
-    {
-      "id": "com.oclive.mumu.quick-actions",
-      "version_range": "^1.0.0",
-      "slots": ["chat_toolbar"],
-      "optional": false,
-      "note": "聊天工具栏"
-    },
-    {
-      "id": "com.oclive.mumu.settings-panel",
-      "version_range": "^1.0.0",
-      "slots": ["settings.panel"],
-      "optional": false,
-      "note": "设置侧栏面板"
-    },
-    {
-      "id": "com.oclive.mumu.role-detail-card",
-      "version_range": "^1.0.0",
-      "slots": ["role.detail"],
-      "optional": false,
-      "note": "角色详情卡片"
-    },
-    {
-      "id": "com.oclive.mumu.sidebar-glance",
-      "version_range": "^1.0.0",
-      "slots": ["sidebar"],
-      "optional": false,
-      "note": "侧边栏一览"
-    },
-    {
-      "id": "com.oclive.mumu.chat-header-status",
-      "version_range": "^1.0.0",
-      "slots": ["chat.header"],
-      "optional": false,
-      "note": "顶栏状态与叙事"
-    },
-    {
-      "id": "com.oclive.voice.asr",
-      "version_range": "^0.1.0",
-      "slots": ["chat_toolbar", "settings.panel"],
-      "optional": true,
-      "note": "平台语音识别输入（独立通道 voice.asr）"
-    }
-  ]
+  "detail_markdown": "人设全文见 **`core_personality.txt`**。本包保留枫侵月自己的三场景、七张基础立绘、叙事连续性和可选语音配置，不依赖沐沐专属 UI 插件。\n\n立绘以经授权的约稿为基础进行 AI 情绪扩展，约稿委托方及相关权利人已许可本角色包使用与处理。\n\n他偏好轻音乐与推理阅读，会和伙伴组队打游戏但不沉迷；关心方式是生活化的（带水、带早餐、多一件外套），不以物质炫耀表达在乎。",
+  "recommended_plugins": []
 }

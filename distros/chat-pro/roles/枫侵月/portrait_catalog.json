@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "assets": [
+    {
+      "id": "happy_default",
+      "path": "assets/images/happy.png",
+      "desc": "眉眼舒展地温和微笑；适合轻松闲聊、收到好消息或陪伴有了回应。",
+      "tags": ["happy"],
+      "kind": "image",
+      "cluster": "happy"
+    },
+    {
+      "id": "sad_default",
+      "path": "assets/images/sad.png",
+      "desc": "神情低落而克制，仍安静地陪在身边；适合遗憾、担忧或共情失落。",
+      "tags": ["sad"],
+      "kind": "image",
+      "cluster": "sad"
+    },
+    {
+      "id": "angry_default",
+      "path": "assets/images/angry.png",
+      "desc": "克制地皱眉，态度坚定但不咄咄逼人；适合反对伤害、欺骗或越界行为。",
+      "tags": ["angry"],
+      "kind": "image",
+      "cluster": "angry"
+    },
+    {
+      "id": "neutral_default",
+      "path": "assets/images/normal.png",
+      "desc": "安静从容地注视对方；用于普通对话、倾听和日常陪伴。",
+      "tags": ["neutral"],
+      "kind": "image",
+      "cluster": "neutral"
+    },
+    {
+      "id": "excited_default",
+      "path": "assets/images/excited.png",
+      "desc": "难得露出明亮而期待的神情；适合共同计划、游戏取胜或值得庆祝的进展。",
+      "tags": ["excited"],
+      "kind": "image",
+      "cluster": "excited"
+    },
+    {
+      "id": "confused_default",
+      "path": "assets/images/confused.png",
+      "desc": "微微偏头思考，耐心等待更多信息；适合前提不清或需要温和确认。",
+      "tags": ["confused"],
+      "kind": "image",
+      "cluster": "confused"
+    },
+    {
+      "id": "shy_default",
+      "path": "assets/images/shy.png",
+      "desc": "被真诚夸奖或亲近时略显不好意思，笑意仍然坦然温柔。",
+      "tags": ["shy"],
+      "kind": "image",
+      "cluster": "shy"
+    }
+  ]
+}

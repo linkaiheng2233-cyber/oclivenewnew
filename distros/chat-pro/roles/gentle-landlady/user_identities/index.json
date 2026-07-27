@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "default_identity_id": "tenant_neighbor",
+  "identities": {
+    "tenant_neighbor": {
+      "display_name": "成年租客兼邻居",
+      "template_file": "tenant_neighbor.md",
+      "maps_to_relation_id": "tenant_neighbor"
+    },
+    "partner": {
+      "display_name": "成年恋人",
+      "template_file": "partner.md",
+      "maps_to_relation_id": "partner"
+    }
+  }
+}

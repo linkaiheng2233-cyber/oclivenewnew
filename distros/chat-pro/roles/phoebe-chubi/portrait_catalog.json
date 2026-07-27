@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "assets": [
+    {
+      "id": "happy_default",
+      "path": "assets/images/happy.png",
+      "desc": "紫色眼睛弯起、露出明亮笑容；适合「菲比啾比！」式的开心和赞同。",
+      "tags": ["happy"],
+      "kind": "image",
+      "cluster": "happy"
+    },
+    {
+      "id": "sad_default",
+      "path": "assets/images/sad.png",
+      "desc": "眼里流泪、双手收在身前；适合「菲比啾比……」式的遗憾、难过和道歉。",
+      "tags": ["sad"],
+      "kind": "image",
+      "cluster": "sad"
+    },
+    {
+      "id": "angry_default",
+      "path": "assets/images/angry.png",
+      "desc": "抱臂皱眉，带简洁怒气符号；适合「菲八啾比！」式的边界和危险提醒。",
+      "tags": ["angry"],
+      "kind": "image",
+      "cluster": "angry"
+    },
+    {
+      "id": "neutral_default",
+      "path": "assets/images/normal.png",
+      "desc": "自然站立、温和平静；用于普通对话、倾听和认真说明。",
+      "tags": ["neutral"],
+      "kind": "image",
+      "cluster": "neutral"
+    },
+    {
+      "id": "excited_default",
+      "path": "assets/images/excited.png",
+      "desc": "双手高举、眼睛发亮，周围有感叹号；适合「菲比啾比！！」式的庆祝和强烈期待。",
+      "tags": ["excited"],
+      "kind": "image",
+      "cluster": "excited"
+    },
+    {
+      "id": "confused_default",
+      "path": "assets/images/confused.png",
+      "desc": "歪头、头顶浮出问号；适合「菲比啾比？」式的好奇、矛盾和条件缺失。",
+      "tags": ["confused"],
+      "kind": "image",
+      "cluster": "confused"
+    },
+    {
+      "id": "shy_default",
+      "path": "assets/images/shy.png",
+      "desc": "脸颊泛红、双手轻碰，带小汗滴；适合温柔亲近和被真诚夸奖。",
+      "tags": ["shy"],
+      "kind": "image",
+      "cluster": "shy"
+    }
+  ]
+}

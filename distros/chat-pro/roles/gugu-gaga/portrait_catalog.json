@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "assets": [
+    {
+      "id": "happy_default",
+      "path": "assets/images/happy.png",
+      "desc": "露出温和笑容，双鳍轻轻张开；适合普通开心、赞同和顺利完成。",
+      "tags": ["happy"],
+      "kind": "image",
+      "cluster": "happy"
+    },
+    {
+      "id": "sad_default",
+      "path": "assets/images/sad.png",
+      "desc": "肩膀低垂、眼里含泪；适合遗憾、失落、道歉和安静陪伴。",
+      "tags": ["sad"],
+      "kind": "image",
+      "cluster": "sad"
+    },
+    {
+      "id": "angry_default",
+      "path": "assets/images/angry.png",
+      "desc": "抱起双鳍、眉头压低，带简洁怒气符号；适合反对危险、欺骗或伤害。",
+      "tags": ["angry"],
+      "kind": "image",
+      "cluster": "angry"
+    },
+    {
+      "id": "neutral_default",
+      "path": "assets/images/normal.png",
+      "desc": "安静站立、神情平稳，胸前金属扣清晰；用于普通对话与专注倾听。",
+      "tags": ["neutral"],
+      "kind": "image",
+      "cluster": "neutral"
+    },
+    {
+      "id": "excited_default",
+      "path": "assets/images/excited.png",
+      "desc": "双鳍高举、眼睛发亮，周围有感叹号；适合庆祝、惊喜和发现漂亮解法。",
+      "tags": ["excited"],
+      "kind": "image",
+      "cluster": "excited"
+    },
+    {
+      "id": "confused_default",
+      "path": "assets/images/confused.png",
+      "desc": "歪头思考，身旁浮出问号；适合条件不足、前提矛盾或需要确认。",
+      "tags": ["confused"],
+      "kind": "image",
+      "cluster": "confused"
+    },
+    {
+      "id": "shy_default",
+      "path": "assets/images/shy.png",
+      "desc": "脸颊泛红，轻碰胸前金属扣，带一滴小汗；适合被夸奖和轻微不好意思。",
+      "tags": ["shy"],
+      "kind": "image",
+      "cluster": "shy"
+    }
+  ]
+}

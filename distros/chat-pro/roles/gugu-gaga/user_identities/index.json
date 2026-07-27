@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "default_identity_id": "partner",
+  "identities": {
+    "partner": {
+      "display_name": "搭档",
+      "template_file": "partner.md",
+      "maps_to_relation_id": "partner"
+    },
+    "friend": {
+      "display_name": "朋友",
+      "template_file": "friend.md",
+      "maps_to_relation_id": "friend"
+    }
+  }
+}

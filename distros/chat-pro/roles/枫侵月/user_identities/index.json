@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "default_identity_id": "partner",
+  "identities": {
+    "classmate": {
+      "display_name": "同学",
+      "template_file": "classmate.md",
+      "maps_to_relation_id": "classmate"
+    },
+    "friend": {
+      "display_name": "好友",
+      "template_file": "friend.md",
+      "maps_to_relation_id": "friend"
+    },
+    "partner": {
+      "display_name": "亲密伙伴",
+      "template_file": "partner.md",
+      "maps_to_relation_id": "partner"
+    }
+  }
+}
