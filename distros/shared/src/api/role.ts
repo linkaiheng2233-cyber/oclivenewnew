@@ -92,6 +92,7 @@ export interface RoleData {
   version: string
   author: string
   description: string
+  adult_extension_available?: boolean
   /** @deprecated prefer `display_metrics.traits` */
   personality_vector: number[]
   /** @deprecated prefer `display_metrics.favor` */
@@ -158,6 +159,7 @@ export interface RoleInfo {
   version: string
   author: string
   description: string
+  adult_extension_available?: boolean
   /** @deprecated prefer `display_metrics.favor` */
   current_favorability: number
   current_emotion: string
@@ -285,6 +287,7 @@ export interface RoleSummaryDto {
   featured?: boolean
   preset_order?: number
   interaction_mode_suggestion?: string | null
+  adult_extension_available?: boolean
 }
 
 export async function listRoles(): Promise<RoleSummaryDto[]> {
@@ -359,6 +362,7 @@ export interface UserIdentityDto {
   id: string
   display_name: string
   maps_to_relation_id?: string | null
+  adult_eligible?: boolean
 }
 
 export interface UserIdentityStateResponse {

@@ -61,5 +61,26 @@ export function useChatSend(options: {
     }
   }
 
-  return { onSend }
+  async function onAdultAction(payload: { action: 'exit' }) {
+    options.clearSceneBarsBeforeSend()
+    try {
+      const sceneId = effectiveChatSceneId(
+        roleStore.roleInfo.interactionMode,
+        uiStore.sceneId,
+      )
+      const res = await chatStore.sendAdultAction(payload.action, sceneId)
+      if (!res)
+        return
+      await roleStore.refreshRoleInfo()
+      await debugStore.loadDebugData()
+    }
+    catch (err) {
+      options.showToast('error', err instanceof Error ? err.message : String(err))
+    }
+    finally {
+      options.chatInputRef.value?.focusInput?.()
+    }
+  }
+
+  return { onSend, onAdultAction }
 }

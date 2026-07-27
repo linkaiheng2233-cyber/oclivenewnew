@@ -25,8 +25,9 @@ const ChatStorageSettingsPanel = defineAsyncComponent(() => import('@oclive/shar
 const SettingsGeneralTab = defineAsyncComponent(() => import('@oclive/shared/components/settings/SettingsGeneralTab.vue'))
 const SettingsPluginsTab = defineAsyncComponent(() => import('@oclive/shared/components/settings/SettingsPluginsTab.vue'))
 const SettingsVoiceTab = defineAsyncComponent(() => import('@oclive/shared/components/settings/SettingsVoiceTab.vue'))
+const SettingsAdultTab = defineAsyncComponent(() => import('@oclive/shared/components/settings/SettingsAdultTab.vue'))
 
-export type SettingsTab = 'general' | 'voice' | 'plugins' | 'storage'
+export type SettingsTab = 'general' | 'voice' | 'plugins' | 'storage' | 'adult'
 
 const { t } = useI18n()
 const pluginStore = usePluginStore()
@@ -169,6 +170,14 @@ function openGeneralAdvancedKeybindings(): void {
           >
             {{ t("settings.tabStorage") }}
           </button>
+          <button
+            type="button"
+            class="sv-nav-btn"
+            :aria-current="tab === 'adult' ? 'page' : undefined"
+            @click="tab = 'adult'"
+          >
+            {{ t("settings.tabAdult") }}
+          </button>
         </nav>
 
         <SettingsGeneralTab
@@ -193,6 +202,8 @@ function openGeneralAdvancedKeybindings(): void {
         <div v-show="tab === 'storage'" class="sv-body">
           <ChatStorageSettingsPanel />
         </div>
+
+        <SettingsAdultTab v-show="tab === 'adult'" />
       </div>
     </div>
   </component>

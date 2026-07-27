@@ -166,6 +166,7 @@ defineExpose({ scrollToBottom })
         :timestamp="m.timestamp"
         :presence-variant="m.presenceVariant"
         :reply-is-fallback="m.replyIsFallback"
+        :aside="m.aside"
       />
     </div>
 
@@ -194,6 +195,7 @@ defineExpose({ scrollToBottom })
             :timestamp="item.timestamp"
             :presence-variant="item.presenceVariant"
             :reply-is-fallback="item.replyIsFallback"
+            :aside="item.aside"
             :streaming="item.streaming"
           />
         </div>

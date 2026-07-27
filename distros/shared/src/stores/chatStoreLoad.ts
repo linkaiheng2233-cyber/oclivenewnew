@@ -54,6 +54,18 @@ export function storedMessageToChatMessage(m: StoredMessage): ChatMessage {
   }
 }
 
+export function storedMessageIsHidden(m: StoredMessage): boolean {
+  if (!m.metadata)
+    return false
+  try {
+    const meta = JSON.parse(m.metadata) as Record<string, unknown>
+    return meta.hidden === true
+  }
+  catch {
+    return false
+  }
+}
+
 const LAZY_SPLIT_TAIL = 80
 
 function splitRecentAssistantMessages(messages: ChatMessage[]): ChatMessage[] {
@@ -244,7 +256,10 @@ export async function loadRoleSceneMessages(
   try {
     const stored = await fetchChatMessages(sessionId, 500, 0)
     const serverMessages = stored
-      .filter(m => m.sender === 'user' || m.sender === 'assistant')
+      .filter(m =>
+        (m.sender === 'user' || m.sender === 'assistant')
+        && !storedMessageIsHidden(m),
+      )
       .map(storedMessageToChatMessage)
     const messages = splitRecentAssistantMessages(
       mergeMessagesFromServer(serverMessages, previousLocal),

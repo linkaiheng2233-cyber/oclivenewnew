@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const props = withDefaults(
@@ -31,10 +31,24 @@ const segments = computed(() => {
 })
 
 const open = ref(false)
+const triggerLabel = computed(() =>
+  open.value ? t('app.helpHintCloseAria') : t('app.helpHintAria'),
+)
 const root = ref<HTMLElement | null>(null)
+const trigger = ref<HTMLButtonElement | null>(null)
+const popover = ref<HTMLElement | null>(null)
+const popoverReady = ref(false)
+const popoverPlacement = ref<'top' | 'bottom'>('bottom')
+const popoverStyle = ref<Record<string, string>>({})
+const popoverId = `help-hint-${useId()}`
+
+let positionFrame: number | null = null
+let popoverResizeObserver: ResizeObserver | null = null
 
 function toggle(e: Event) {
   e.stopPropagation()
+  if (segments.value.length === 0)
+    return
   open.value = !open.value
 }
 
@@ -43,70 +57,173 @@ function onDocPointerDownCapture(e: PointerEvent) {
   if (!open.value)
     return
   const el = root.value
-  if (el && !el.contains(e.target as Node))
+  const pop = popover.value
+  if (
+    el
+    && !el.contains(e.target as Node)
+    && !pop?.contains(e.target as Node)
+  ) {
     open.value = false
+  }
 }
 
 function onDocKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape')
-    open.value = false
+  if (e.key !== 'Escape' || !open.value)
+    return
+  e.preventDefault()
+  e.stopImmediatePropagation()
+  open.value = false
+  trigger.value?.focus()
 }
 
-function onWindowResize() {
-  if (open.value)
+function updatePopoverPosition() {
+  positionFrame = null
+  const button = trigger.value
+  const pop = popover.value
+  if (!open.value || !button || !pop)
+    return
+
+  const buttonRect = button.getBoundingClientRect()
+  const viewportWidth = document.documentElement.clientWidth || window.innerWidth
+  const viewportHeight = document.documentElement.clientHeight || window.innerHeight
+  const viewportMargin = 10
+  const gap = 8
+
+  if (
+    buttonRect.bottom < viewportMargin
+    || buttonRect.top > viewportHeight - viewportMargin
+    || buttonRect.right < viewportMargin
+    || buttonRect.left > viewportWidth - viewportMargin
+  ) {
     open.value = false
+    return
+  }
+
+  const popRect = pop.getBoundingClientRect()
+  const preferredLeft = props.popAlign === 'end'
+    ? buttonRect.right - popRect.width
+    : buttonRect.left
+  const maxLeft = Math.max(viewportMargin, viewportWidth - popRect.width - viewportMargin)
+  const left = Math.min(Math.max(preferredLeft, viewportMargin), maxLeft)
+  const availableBelow = Math.max(0, viewportHeight - buttonRect.bottom - gap - viewportMargin)
+  const availableAbove = Math.max(0, buttonRect.top - gap - viewportMargin)
+  const placeBelow = popRect.height <= availableBelow
+    || (popRect.height > availableAbove && availableBelow >= availableAbove)
+  const availableHeight = placeBelow ? availableBelow : availableAbove
+
+  popoverPlacement.value = placeBelow ? 'bottom' : 'top'
+  const maxReadableHeight = Math.min(availableHeight, viewportHeight * 0.78, 544)
+
+  popoverStyle.value = {
+    left: `${Math.round(left)}px`,
+    top: placeBelow ? `${Math.round(buttonRect.bottom + gap)}px` : 'auto',
+    bottom: placeBelow ? 'auto' : `${Math.round(viewportHeight - buttonRect.top + gap)}px`,
+    maxHeight: `${Math.max(1, Math.floor(maxReadableHeight))}px`,
+  }
+  popoverReady.value = true
+}
+
+function queuePopoverPosition() {
+  if (!open.value || positionFrame !== null)
+    return
+  positionFrame = window.requestAnimationFrame(updatePopoverPosition)
+}
+
+function startPositionTracking() {
+  window.addEventListener('resize', queuePopoverPosition)
+  document.addEventListener('scroll', queuePopoverPosition, true)
+  if (typeof ResizeObserver !== 'undefined' && popover.value) {
+    popoverResizeObserver = new ResizeObserver(queuePopoverPosition)
+    popoverResizeObserver.observe(popover.value)
+  }
+}
+
+function stopPositionTracking() {
+  window.removeEventListener('resize', queuePopoverPosition)
+  document.removeEventListener('scroll', queuePopoverPosition, true)
+  popoverResizeObserver?.disconnect()
+  popoverResizeObserver = null
+  if (positionFrame !== null) {
+    window.cancelAnimationFrame(positionFrame)
+    positionFrame = null
+  }
 }
 
 const CAPTURE_OPTS = true
 
 onMounted(() => {
   document.addEventListener('pointerdown', onDocPointerDownCapture, CAPTURE_OPTS)
-  document.addEventListener('keydown', onDocKeydown)
+  document.addEventListener('keydown', onDocKeydown, CAPTURE_OPTS)
 })
 
 watch(open, (isOpen) => {
   if (isOpen) {
-    window.addEventListener('resize', onWindowResize)
+    popoverReady.value = false
+    void nextTick(() => {
+      if (!open.value)
+        return
+      updatePopoverPosition()
+      startPositionTracking()
+    })
   }
   else {
-    window.removeEventListener('resize', onWindowResize)
+    stopPositionTracking()
   }
+})
+
+watch(segments, () => {
+  if (open.value)
+    void nextTick(queuePopoverPosition)
 })
 
 onUnmounted(() => {
   document.removeEventListener('pointerdown', onDocPointerDownCapture, CAPTURE_OPTS)
-  document.removeEventListener('keydown', onDocKeydown)
-  window.removeEventListener('resize', onWindowResize)
+  document.removeEventListener('keydown', onDocKeydown, CAPTURE_OPTS)
+  stopPositionTracking()
 })
 </script>
 
 <template>
   <span
+    v-if="segments.length"
     ref="root"
     class="help-hint"
     :class="{ 'help-hint--open': open, 'help-hint--compact': compact }"
   >
     <button
+      ref="trigger"
       type="button"
       class="help-btn"
       :aria-expanded="open"
-      :aria-label="t('app.helpHintAria')"
+      :aria-controls="popoverId"
+      :aria-describedby="open ? popoverId : undefined"
+      :aria-label="triggerLabel"
       @click="toggle"
     >
       ?
     </button>
+  </span>
+  <Teleport to="body">
     <div
       v-if="open && segments.length"
+      :id="popoverId"
+      ref="popover"
       class="help-pop"
       :class="{
-        'help-pop--end': popAlign === 'end',
         'help-pop--compact': compact,
+      }"
+      :data-placement="popoverPlacement"
+      :style="{
+        ...popoverStyle,
+        visibility: popoverReady ? 'visible' : 'hidden',
       }"
       role="tooltip"
     >
-      <p v-for="(seg, i) in segments" :key="i" class="help-pop-p">{{ seg }}</p>
+      <p v-for="(seg, i) in segments" :key="i" class="help-pop-p">
+        {{ seg }}
+      </p>
     </div>
-  </span>
+  </Teleport>
 </template>
 
 <style scoped>
@@ -116,11 +233,6 @@ onUnmounted(() => {
   vertical-align: middle;
   margin-left: 0.25rem;
   position: relative;
-  z-index: 900;
-}
-
-.help-hint.help-hint--open {
-  z-index: 980;
 }
 
 .help-btn {
@@ -154,10 +266,9 @@ onUnmounted(() => {
 }
 
 .help-pop {
-  position: absolute;
-  left: 0;
-  top: calc(100% + 8px);
-  z-index: 901;
+  position: fixed;
+  z-index: 11000;
+  box-sizing: border-box;
   /* Comfortable reading width: ~55–65 chars per line, scales with viewport */
   width: min(65ch, calc(100vw - 2rem));
   max-width: min(40rem, calc(100vw - 1.25rem));
@@ -177,6 +288,7 @@ onUnmounted(() => {
   max-height: min(78vh, 34rem);
   overflow-y: auto;
   overflow-x: hidden;
+  overscroll-behavior: contain;
   text-wrap: pretty;
 }
 
@@ -188,11 +300,6 @@ onUnmounted(() => {
 
 .help-pop-p:last-child {
   margin-bottom: 0;
-}
-
-.help-pop--end {
-  left: auto;
-  right: 0;
 }
 
 .help-pop--compact {

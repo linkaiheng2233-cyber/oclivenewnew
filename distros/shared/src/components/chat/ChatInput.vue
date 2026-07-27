@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { hostEventBus } from '@oclive/shared/lib/hostEventBus'
+import { useAdultInteractionStore } from '@oclive/shared/stores/adultInteractionStore'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
+import { useUiStore } from '@oclive/shared/stores/uiStore'
+import { effectiveChatSceneId } from '@oclive/shared/utils/pureChatScene'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -8,9 +11,19 @@ const props = defineProps<{ loading: boolean }>()
 
 const emit = defineEmits<{
   send: [payload: { content: string }]
+  adultAction: [payload: { action: 'exit' }]
 }>()
 const { t } = useI18n()
 const roleStore = useRoleStore()
+const adultStore = useAdultInteractionStore()
+const uiStore = useUiStore()
+
+const activeSceneId = computed(() =>
+  effectiveChatSceneId(roleStore.roleInfo.interactionMode, uiStore.sceneId),
+)
+const adultInteractionActive = computed(() =>
+  adultStore.sessionFor(roleStore.currentRoleId, activeSceneId.value).active,
+)
 
 const text = ref('')
 const textAreaEl = ref<HTMLTextAreaElement | null>(null)
@@ -48,6 +61,11 @@ function submit() {
   focusInput()
 }
 
+function exitAdultInteraction() {
+  if (!props.loading)
+    emit('adultAction', { action: 'exit' })
+}
+
 defineExpose({ focusInput })
 
 function onKeydown(e: KeyboardEvent) {
@@ -72,6 +90,14 @@ onBeforeUnmount(() => {
 <template>
   <section class="input-row">
     <div class="input-col">
+      <button
+        v-if="adultInteractionActive"
+        type="button"
+        class="adult-exit"
+        @click="exitAdultInteraction"
+      >
+        {{ t("chat.adultExit") }}
+      </button>
       <label class="sr-only" for="chat-user-message">{{ t("common.chatInputLabel") }}</label>
       <textarea
         id="chat-user-message"
@@ -111,6 +137,20 @@ onBeforeUnmount(() => {
   flex-direction: column;
   gap: 8px;
   min-width: 0;
+}
+.adult-exit {
+  width: fit-content;
+  padding: 4px 9px;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--border-light));
+  border-radius: 999px;
+  color: var(--text-secondary);
+  background: var(--bg-elevated);
+  font-size: 11px;
+  cursor: pointer;
+}
+.adult-exit:hover {
+  color: var(--text-primary);
+  border-color: var(--accent);
 }
 .input {
   width: 100%;

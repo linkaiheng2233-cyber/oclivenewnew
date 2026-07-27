@@ -61,7 +61,7 @@ export default {
       pluginMarket: '插件市场',
       modelManager: '模型管理',
       settingsTileHelp:
-        '将快捷键说明、设置、插件与模型管理集中到同一处。Ctrl+Shift+S 设置；Ctrl+Shift+F 已安装插件；'
+        '将快捷键说明、设置、插件与模型管理集中到同一处。\n\nCtrl+Shift+S 设置；Ctrl+Shift+F 已安装插件；'
         + 'Ctrl+Shift+M 模型管理；Ctrl+Shift+D 调试面板。',
     },
     toast: {
@@ -117,6 +117,7 @@ export default {
       noPlugins: '未扫描到插件。',
     },
     helpHintAria: '查看说明',
+    helpHintCloseAria: '关闭说明',
     roleSelector: {
       role: '🎭 角色',
       identity: '👤 身份',

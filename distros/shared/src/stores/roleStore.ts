@@ -33,10 +33,12 @@ import {
 } from '@oclive/shared/utils/presetRolePicker'
 import { listen } from '@tauri-apps/api/event'
 import { defineStore } from 'pinia'
+import { useAdultInteractionStore } from './adultInteractionStore'
 
 export interface RoleOption extends PresetRoleOption {
   id: string
   name: string
+  adultExtensionAvailable?: boolean
 }
 
 interface RoleInfoState {
@@ -44,6 +46,7 @@ interface RoleInfoState {
   version: string
   author: string
   description: string
+  adultExtensionAvailable: boolean
   favorability: number
   currentEmotion: string
   /** Latest catalog visual_state_id from send_message (optional). */
@@ -127,6 +130,7 @@ function mapRoleInfo(info: RoleInfo): RoleInfoState {
     version: info.version ?? '',
     author: info.author ?? '',
     description: info.description ?? '',
+    adultExtensionAvailable: info.adult_extension_available ?? false,
     favorability: metrics?.favor ?? info.current_favorability,
     currentEmotion: info.current_emotion,
     personality: metrics?.traits ?? info.personality_vector ?? [],
@@ -248,6 +252,7 @@ export const useRoleStore = defineStore(
         version: '',
         author: '',
         description: '',
+        adultExtensionAvailable: false,
         favorability: 0,
         currentEmotion: 'neutral',
         personality: [],
@@ -322,6 +327,7 @@ export const useRoleStore = defineStore(
           featured: r.featured ?? false,
           preset_order: r.preset_order ?? 999,
           interaction_mode_suggestion: r.interaction_mode_suggestion ?? null,
+          adultExtensionAvailable: r.adult_extension_available ?? false,
         }))
         if (this.roles.length === 0) {
           this.currentRoleId = ''
@@ -403,6 +409,11 @@ export const useRoleStore = defineStore(
       },
       async setSceneUserRelation(sceneId: string, relation: string) {
         const roleId = this.currentRoleId
+        const { cancelAdultBeatQueue } = await import(
+          '@oclive/shared/lib/adultBeatQueue',
+        )
+        await cancelAdultBeatQueue(roleId, sceneId)
+        useAdultInteractionStore().clearSession(roleId, sceneId)
         const info = await invokeSetSceneUserRelation(
           roleId,
           sceneId,
@@ -419,6 +430,18 @@ export const useRoleStore = defineStore(
        */
       async setManifestDefaultRelation(clearSceneId?: string) {
         const roleId = this.currentRoleId
+        const sceneId = clearSceneId
+          ?? this.roleInfo.userPresenceScene
+          ?? this.roleInfo.currentScene
+          ?? 'default'
+        const { cancelAdultBeatQueue } = await import(
+          '@oclive/shared/lib/adultBeatQueue',
+        )
+        await cancelAdultBeatQueue(roleId, sceneId)
+        useAdultInteractionStore().clearSession(
+          roleId,
+          sceneId,
+        )
         if (clearSceneId) {
           await clearSceneUserRelation(roleId, clearSceneId)
           if (this.currentRoleId !== roleId)

@@ -14,6 +14,7 @@ import {
   VOICE_ASR_PLUGIN_ID,
   VOICE_STREAM_SENTENCE_EVENT,
 } from '@oclive/shared/lib/voiceAsrEvents'
+import { markVoicePlaybackSettled } from '@oclive/shared/lib/voicePlaybackSettlement'
 import {
   resolveVoiceTtsRouting,
 } from '@oclive/shared/lib/voiceTtsRouting'
@@ -47,6 +48,8 @@ interface MessageSentPayload {
   stream_spoken_prefix?: string
   stream_full_raw?: string
   stream_spoken_end_index?: number
+  turn_id?: string
+  skip_auto_tts?: boolean
 }
 
 interface StreamSentencePayload {
@@ -123,6 +126,7 @@ const speakDeduper = new VoiceSpeakDeduper()
 let drainingSpeakQueue = false
 let speakIdleWaiters: Array<() => void> = []
 let speakGeneration = 0
+let speakFailureSerial = 0
 let cachedTtsProfiles: Map<string, VoiceTtsProfileRouting> | null = null
 let activeRpcAudio: HTMLAudioElement | null = null
 let cancelActiveRpcPlayback: (() => void) | null = null
@@ -657,6 +661,7 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
           )
         }
         else {
+          options.showToast('warning', formatVoiceSpeakFailure('stream', streamRes))
           return
         }
       }
@@ -686,6 +691,8 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
         activeStreamLookahead = null
       if (generation === speakGeneration) {
         speakDeduper.finish(job.key, spoken)
+        if (!spoken)
+          speakFailureSerial += 1
         if (job.streamId) {
           if (spoken && !streamPlaybackFailed.has(job.streamId)) {
             streamSpokenPrefixById.set(
@@ -873,47 +880,69 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
   async function onMessageSent(payload: unknown): Promise<void> {
     const p = payload as MessageSentPayload
     const generation = speakGeneration
-    if (!p.stream_id?.trim()) {
-      void speakReply(p, generation)
-      return
+    const turnId = p.turn_id?.trim()
+    let settlement: 'complete' | 'disabled' | 'error' = 'disabled'
+    try {
+      if (p.skip_auto_tts)
+        return
+      if (!p.stream_id?.trim()) {
+        const failedBefore = speakFailureSerial
+        await speakReply(p, generation)
+        await waitForSpeakQueueIdle()
+        settlement = speakFailureSerial > failedBefore ? 'error' : 'complete'
+        return
+      }
+
+      const streamId = p.stream_id.trim()
+      await streamPendingById.get(streamId)?.catch(() => {})
+      await waitForSpeakQueueIdle()
+      if (generation !== speakGeneration)
+        return
+      // Only audio jobs that actually finished playback count as spoken. If any
+      // streamed job failed, replay the final reply in full rather than dropping
+      // text based on optimistic enqueue state.
+      const streamFailed = streamPlaybackFailed.has(streamId)
+      const spokenPrefix = streamFailed
+        ? ''
+        : streamSpokenPrefixById.get(streamId) || ''
+      streamSpokenPrefixById.delete(streamId)
+      streamPendingById.delete(streamId)
+      streamPlaybackFailed.delete(streamId)
+
+      const reply = p.reply?.trim()
+      if (!reply) {
+        settlement = streamFailed ? 'error' : 'complete'
+        return
+      }
+
+      const cfg = await loadVoiceRuntimeConfig(id => pluginStore.isPluginDisabled(id))
+      if (generation !== speakGeneration || !cfg?.tts_expansion_enabled || !cfg.auto_tts)
+        return
+
+      // The raw SSE buffer is pre-post-processing and may contain a model-echoed
+      // prompt tail. The final `reply` is the authoritative host-processed text.
+      const fullDialogue = voiceDialogueFromRaw(reply) || reply
+      const toSpeak = spokenPrefix
+        ? remainderAfterSpokenPrefix(fullDialogue, spokenPrefix)
+        : fullDialogue
+      if (!toSpeak) {
+        settlement = streamFailed ? 'error' : 'complete'
+        return
+      }
+
+      await scheduleVoiceExpansionWarm(id => pluginStore.isPluginDisabled(id))
+      if (generation !== speakGeneration)
+        return
+      await queueSpeakText(toSpeak, p, cfg, {}, generation)
+      await waitForSpeakQueueIdle()
+      settlement = streamPlaybackFailed.has(streamId) || streamFailed
+        ? 'error'
+        : 'complete'
     }
-
-    const streamId = p.stream_id.trim()
-    await streamPendingById.get(streamId)?.catch(() => {})
-    await waitForSpeakQueueIdle()
-    if (generation !== speakGeneration)
-      return
-    // Only audio jobs that actually finished playback count as spoken. If any
-    // streamed job failed, replay the final reply in full rather than dropping
-    // text based on optimistic enqueue state.
-    const spokenPrefix = streamPlaybackFailed.has(streamId)
-      ? ''
-      : streamSpokenPrefixById.get(streamId) || ''
-    streamSpokenPrefixById.delete(streamId)
-    streamPendingById.delete(streamId)
-    streamPlaybackFailed.delete(streamId)
-
-    const reply = p.reply?.trim()
-    if (!reply)
-      return
-
-    const cfg = await loadVoiceRuntimeConfig(id => pluginStore.isPluginDisabled(id))
-    if (generation !== speakGeneration || !cfg?.tts_expansion_enabled || !cfg.auto_tts)
-      return
-
-    // The raw SSE buffer is pre-post-processing and may contain a model-echoed
-    // prompt tail. The final `reply` is the authoritative host-processed text.
-    const fullDialogue = voiceDialogueFromRaw(reply) || reply
-    const toSpeak = spokenPrefix
-      ? remainderAfterSpokenPrefix(fullDialogue, spokenPrefix)
-      : fullDialogue
-    if (!toSpeak)
-      return
-
-    await scheduleVoiceExpansionWarm(id => pluginStore.isPluginDisabled(id))
-    if (generation !== speakGeneration)
-      return
-    await queueSpeakText(toSpeak, p, cfg, {}, generation)
+    finally {
+      if (turnId)
+        markVoicePlaybackSettled(turnId, settlement)
+    }
   }
 
   function onMessageSubmit(payload: unknown): void {

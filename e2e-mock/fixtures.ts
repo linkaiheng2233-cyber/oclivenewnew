@@ -121,6 +121,78 @@ function roleData(roleId: string) {
   }
 }
 
+function llmUserSettings() {
+  const baseModelPath = 'C:\\Models\\mumu-base.gguf'
+  return {
+    provider: 'local',
+    cloudVendor: 'openai_compatible',
+    cloudApiStyle: 'openai',
+    ollamaBaseUrl: 'http://127.0.0.1:11434',
+    ollamaReachable: true,
+    ollamaDetail: 'E2E mock Ollama',
+    localModelsDir: 'C:\\Models',
+    localModelFiles: [
+      {
+        name: 'mumu-base.gguf',
+        path: baseModelPath,
+        sizeBytes: 4_294_967_296,
+        contentRating: 'general',
+        description: 'E2E base-model fixture',
+        license: 'Apache-2.0',
+        source: null,
+        sha256: null,
+      },
+      {
+        name: 'Qwen2.5-7B-Instruct Abliterated v3 Q4_K_M（成人基座）',
+        path: 'C:\\Models\\qwen2.5-7b-instruct-abliterated-v3.Q4_K_M.gguf',
+        sizeBytes: 4_683_074_560,
+        contentRating: 'adult',
+        description:
+          '独立完整消融基座，可与任意经兼容性验证的 GGUF LoRA 自由组合；“第二套”仅是当前测试称呼，不是固定配置或绑定关系。',
+        license: 'Apache-2.0',
+        source: 'https://huggingface.co/mradermacher/Qwen2.5-7B-Instruct-abliterated-v3-GGUF',
+        sha256: 'fb4821c8707f89b03bd6738c07a382744184a3f15bd6668e6500cb313fbcaa75',
+      },
+    ],
+    localModelPath: baseModelPath,
+    localLoraAdapters: [
+      {
+        id: 'mumu-dialogue',
+        name: 'Mumu dialogue',
+        version: '1.0.0',
+        format: 'gguf',
+        contentRating: 'general',
+        fileName: 'mumu-dialogue.gguf',
+        sizeBytes: 134_217_728,
+        sha256: 'e2e-mock-sha256',
+        baseModel: 'mumu-base',
+        architecture: 'llama',
+        description: 'E2E adapter fixture',
+        license: 'Apache-2.0',
+        source: null,
+        installedAt: '2026-07-25T00:00:00Z',
+        active: true,
+      },
+    ],
+    activeLocalLoraAdapterId: 'mumu-dialogue',
+    localRuntimeMode: 'performance',
+    performanceEndpoint: 'http://127.0.0.1:18080',
+    performanceRuntimeAvailable: true,
+    performanceModelConfigured: true,
+    performanceReady: true,
+    performanceActiveBackend: 'performance',
+    performanceDetail: 'E2E mock llama-server',
+    packOllamaModel: null,
+    sessionOllamaModel: 'mock',
+    effectiveModel: baseModelPath,
+    remoteUrl: '',
+    remoteTokenConfigured: false,
+    remoteModel: '',
+    remoteUrlEnvActive: false,
+    remoteTokenEnvActive: false,
+  }
+}
+
 const emptyPluginState = {
   shellPluginId: '',
   disabled_plugins: [] as string[],
@@ -212,7 +284,7 @@ export function mockInvoke(command: string, payload: Record<string, unknown> = {
     case 'find_role_asset_path':
       return null
     case 'get_hotkey_bindings':
-      return { bindings: {} }
+      return { schemaVersion: 1, bindings: [] }
     case 'list_mcp_servers':
       return []
     case 'get_agent_debug_traces':
@@ -230,6 +302,17 @@ export function mockInvoke(command: string, payload: Record<string, unknown> = {
         app_data_writable: true,
         app_data_detail: 'mock',
       }
+    case 'get_time_state':
+      return {
+        virtual_time_ms: Date.UTC(2026, 6, 25, 20, 0),
+        iso_datetime: '2026-07-25T20:00:00.000Z',
+      }
+    case 'get_global_ollama_model':
+      return { model: 'mock' }
+    case 'get_llm_user_settings':
+      return llmUserSettings()
+    case 'list_ollama_models':
+      return ['mock']
     case 'get_remote_fallback_app_settings':
       return { allow_remote_fallback: false }
   }

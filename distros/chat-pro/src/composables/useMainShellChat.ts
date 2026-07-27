@@ -49,7 +49,7 @@ export function useMainShellChat(options: {
     ),
   )
 
-  const { onSend } = useChatSend({
+  const { onSend, onAdultAction } = useChatSend({
     showToast: options.showToast,
     t: options.t,
     chatInputRef,
@@ -67,5 +67,6 @@ export function useMainShellChat(options: {
     latestRoleplayAside,
     sceneHistorySplitIndex,
     onSend,
+    onAdultAction,
   }
 }

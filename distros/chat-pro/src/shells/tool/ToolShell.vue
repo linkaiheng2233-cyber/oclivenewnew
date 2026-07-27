@@ -102,6 +102,7 @@ const {
   statusHeart,
   progressive,
   onSend,
+  onAdultAction,
   onSwitchRole,
   onChangeRelation,
   onPackImported,
@@ -329,7 +330,12 @@ function onSidePanelResize(deltaX: number) {
                   @confirm-post-reply="confirmPostReplyScene"
                   @dismiss-post-reply="dismissPostReplySceneBar"
                 />
-                <ChatInput ref="chatInputRef" :loading="chatStore.isLoading" @send="onSend" />
+                <ChatInput
+                  ref="chatInputRef"
+                  :loading="chatStore.isLoading"
+                  @send="onSend"
+                  @adult-action="onAdultAction"
+                />
               </section>
             </div>
           </div>

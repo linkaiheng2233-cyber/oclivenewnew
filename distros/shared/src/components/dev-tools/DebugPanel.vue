@@ -482,12 +482,6 @@ function presenceLabel(mode: string): string {
   gap: 6px 8px;
   min-width: 0;
 }
-.title-leading :deep(.help-hint) {
-  z-index: 10050;
-}
-.title-leading :deep(.help-hint.help-hint--open) {
-  z-index: 10060;
-}
 .title strong {
   color: var(--text-accent);
   font-size: 15px;

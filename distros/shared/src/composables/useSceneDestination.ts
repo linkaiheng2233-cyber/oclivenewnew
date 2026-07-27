@@ -1,8 +1,10 @@
 import type { ToastType } from '@oclive/shared/composables/useAppToast'
 import { setUserPresenceScene, switchScene } from '@oclive/shared/api'
+import { useAdultInteractionStore } from '@oclive/shared/stores/adultInteractionStore'
 import { useChatStore } from '@oclive/shared/stores/chatStore'
 import { useDebugStore } from '@oclive/shared/stores/debugStore'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
+import { useUiStore } from '@oclive/shared/stores/uiStore'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -21,6 +23,8 @@ export function useSceneDestination(showToast: ShowToast) {
   const { t } = useI18n()
   const roleStore = useRoleStore()
   const chatStore = useChatStore()
+  const adultStore = useAdultInteractionStore()
+  const uiStore = useUiStore()
   const debugStore = useDebugStore()
 
   const sceneTransition = ref({ visible: false, label: '' })
@@ -45,10 +49,18 @@ export function useSceneDestination(showToast: ShowToast) {
       return
     }
     const label = sceneLabelForId(id)
+    const previousSceneId = uiStore.sceneId || 'default'
     if (together) {
       sceneTransition.value = { visible: true, label }
     }
     try {
+      if (adultStore.sessionFor(roleStore.currentRoleId, previousSceneId).active) {
+        await chatStore.sendAdultAction(
+          'exit',
+          previousSceneId,
+          `用户即将进入“${label}”场景。请自然结束旧场景中的当前互动，并按照角色人设对这次场景变化简短说一句。`,
+        )
+      }
       if (together) {
         const res = await switchScene(roleStore.currentRoleId, id, true)
         await sleep(SCENE_TRANSITION_MS)

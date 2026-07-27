@@ -6,5 +6,6 @@ export interface ChatMsg {
   timestamp: number
   presenceVariant?: 'co_present' | 'remote_stub' | 'remote_life'
   replyIsFallback?: boolean
+  aside?: string
   streaming?: boolean
 }
