@@ -29,7 +29,7 @@ On disk, v2 often uses **one file** `pipeline.ocblueprint` with both **`meta`** 
 
 ## 1–8. Full specification
 
-See the [Chinese ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) for directory layout, legacy manifest/settings, validation, and `oclive collab`.
+See the [Chinese ROLE_PACK_SPEC.md](../../creator-docs/role-pack/ROLE_PACK_SPEC.md) for directory layout, legacy manifest/settings, validation, and `oclive collab`.
 
 ### Optional scene narrative continuity
 
@@ -159,7 +159,7 @@ Optional post-LLM reply shaping in **`config.json`**. **Independent channel** �
 
 **Validation:** `oclive pack validate` requires non-empty `remote.url` when `enabled=true` and `backend=remote`; directory requires non-empty `plugin_id`.
 
-**DTO:** `include_raw_reply: true` may surface `raw_reply` when post-processing changes text (`SendMessageResponse` schema **15**).
+**DTO:** `include_raw_reply: true` may surface `raw_reply` when post-processing changes text (`SendMessageResponse` schema **16**).
 
 ### 9.8 `meta_action_templates` (break-wall meta actions · optional)
 
@@ -195,6 +195,16 @@ Role packs have two version layers — do not mix them:
 Portable Core is the cross-distro minimum, not a ceiling on distro features. A v2/v3 pack validated with this profile must provide a non-empty `core_personality.txt`, enable `config.json` → `portrait_catalog.enabled`, and include local `image` assets for the seven stable IDs: `happy_default`, `sad_default`, `angry_default`, `neutral_default`, `excited_default`, `confused_default`, and `shy_default`. Hosts must be able to load the persona and run a basic turn; visual, voice, UI, agent, and hardware extensions remain distro `HostProfile` concerns. Validate with `oclive pack validate <role-dir> --profile portable-core`. Full capability parity is a separate distro conformance test.
 
 Portable state is split into two JSON documents. `.ocpersona` carries the immutable core identity plus an optional mutable-profile snapshot; import may restore only the mutable profile after matching the installed role id and core. `.ocmemory` carries optional creator-authored `memory_seed` entries and runtime long-term memories. Chat logs, short-term cache, and ephemeral situation state are excluded from both. Optional role-pack `memory_seed.json` is read-only at runtime, participates in retrieval without decay, and is never merged into user LTM. Validate with `oclive-cli pack validate-persona` and `validate-memory`; extension data belongs under the top-level `extensions` object.
+
+### Chat Pro adult role extension (`adult_extension.json`, optional)
+
+Adult behavior is an optional distro extension inside the same role pack, not a Portable Core requirement. Unsupported distros must ignore the root-level file and continue to run the base persona, scenes, and identities. Adult persona, dialogue guidance, and scene directions belong only in this file and must not be copied into base prompt files.
+
+The v1 object requires `character_is_adult: true`; `pacing.mode` is `creator` or `ai`, `suggested_interval_ms` is positive, and every `scenes` key must reference a base scene id. Chat Pro injects it only after local adult confirmation plus the global and per-role gates. `SendMessageResponse.schema` **16** returns `adult_beat` with dialogue, silent narration, interaction state, and an optional interval while retaining dialogue in the base `reply` compatibility field. Malformed envelopes use a prompt-safe fallback.
+
+Interaction state persists by role/chat scene. Disabling either gate clears active state immediately; scene or identity changes first request a natural ending. Adult memories use a separate `content_scope=adult`; ordinary chat only reads ordinary memory plus a non-explicit relationship bridge. The pack editor exposes an independent adult-extension page only after the complete base pack validates, and exports one combined pack.
+
+Chat Pro background pre-generation is a host runtime capability; it adds no `adult_extension.json` field and does not change Portable Core. Future model beats first enter cancellable staged-beat storage and must not update chat history, memory, relationship, events, personality, or narrative continuity. Only after that chat is foreground and both pacing and prior-voice gates are satisfied does the host commit and render one beat in order; narration remains silent. New user input, exit, gate shutdown, or identity change cancels in-flight work and discards beats not yet committed. Queue capacity is one positive-integer Chat Pro setting shared across all roles and chats; lowering it pauses new generation without deleting staged beats.
 
 **Breaking fields (must rewrite on migration; silent ignore is wrong)**
 

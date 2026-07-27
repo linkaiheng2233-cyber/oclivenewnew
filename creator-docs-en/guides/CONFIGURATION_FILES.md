@@ -44,7 +44,7 @@ First load of a role without a record can seed from pack **`ui.json`** (`RolePlu
 
 ## 2. `ui.json` (role pack)
 
-- **Path**: pack root next to **`settings.json`** / **`manifest.json`** (see [distros/chat-pro/roles/README_MANIFEST.md](../../distros/chat-pro/roles/README_MANIFEST.md)).
+- **Path**: pack root next to **`pipeline.ocblueprint`** (see [ROLE_PACK_SPEC.md](../../creator-docs/role-pack/ROLE_PACK_SPEC.md)).
 - **Purpose**: author **recommended front‑end layout**: whole‑shell plugin, per official slot order/visibility, theme/layout, …
 - **Format**: JSON; machine schema **[role-pack/ui.json.schema.json](../role-pack/ui.json.schema.json)**.
 
@@ -86,7 +86,16 @@ First load of a role without a record can seed from pack **`ui.json`** (`RolePlu
 
 ---
 
-## 6. `oclive_host_plugins.json` (optional)
+## 6. `adult_extension.json` (optional Chat Pro role-pack extension)
+
+- **Path**: role-pack root next to `pipeline.ocblueprint`.
+- **Purpose**: adult-state persona, dialogue guidance, base-scene adult directions, and creator pacing recommendations, loaded only after local adult confirmation plus the Chat Pro global and per-role gates.
+- **Compatibility**: not part of the universal base pack; other distros may ignore it. The base persona, identities, and scenes must work without this file.
+- **Validation**: current `schema_version` is `1`, `character_is_adult` must be `true`, and scene keys must reference base scenes. See [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md#chat-pro-adult-role-extension-adult_extensionjson-optional).
+
+---
+
+## 7. `oclive_host_plugins.json` (optional)
 
 - **Path**: `{app_data}/oclive_host_plugins.json`
 - **Purpose**: developer mode, extra plugin roots, default whole‑shell id, … ([DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md) §1 and the `oclive_host_plugins.json` table).

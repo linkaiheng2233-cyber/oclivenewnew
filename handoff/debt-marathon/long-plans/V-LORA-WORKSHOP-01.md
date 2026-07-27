@@ -21,14 +21,16 @@ runner=skip · 自动债务马拉松仍不得擅自扩面。2026-07-24 用户显
 | 首 token 前回退、部分流失败不重复回复 | Done |
 | llama.cpp/OpenAI-compatible adapter 模型别名示例 | Done |
 | 确定性整段、流式、失败集成测试 | Done |
-| `.ocadapter` schema、兼容指纹与导入回滚 | Deferred（V-LORA-PACK-03） |
+| llama.cpp GGUF / `.ocadapter` v1、导入管理、启用回滚 | Done（本地 performance；V-LORA-PACK-03 Partial） |
+| 完整兼容指纹、签名、多 adapter 与专家绑定 | Deferred（V-LORA-PACK-03） |
+| Hugging Face/PEFT 导入转换 | Deferred（独立插件 V-LORA-PEFT-04） |
 | 角色炼丹炉与 `TrainingProvider` | Deferred（V-LORA-FORGE-02） |
 | 真实模型 Base/LoRA/LoRA+专家路由评测矩阵 | OPEN（T3） |
 
 ## 后续解冻顺序
 
-1. T0：冻结 `.ocadapter` 契约、兼容指纹和验证错误码。
-2. T0.5：完成无 UI 的导入、安装、回滚与真实推理 smoke。
-3. T1：实现 adapter 库、导入向导及角色/专家路由绑定 UI。
+1. T0（已完成本地 v1）：`.ocadapter` 基础契约、GGUF/SHA/architecture 校验、导入/安装/回滚与管理 UI。
+2. T0.5：补真实模型远端 CI smoke、完整兼容指纹与包签名。
+3. T1：实现角色/专家路由绑定 UI；PEFT 仅由独立转换插件产出 v1 包。
 4. T2：实现独立角色炼丹炉，以 `TrainingProvider` 接入成熟开源训练引擎。
 5. T3：建立角色一致性、重复、Prompt 泄漏和基础能力退化的可复现对照评测。

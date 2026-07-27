@@ -287,6 +287,7 @@ TTFT / Deep capsule：**设计** [`DEEP_PROMPT_DISTILLATION.md`](./DEEP_PROMPT_D
 | `distros/shared` | API 镜像、store/composable、通用插槽与状态归属 | 不假设 Chat Pro 是唯一消费者；异步结果须绑定 role/scene/generation |
 | Chat Pro / Theater | 壳、页面挂载、发行版策略 | 明确能力适用发行版；Chat Pro 的 Fluent/Tool 不得只更新一壳 |
 | 目录插件 | manifest、Vue 入口、iframe 回退、RPC/事件声明 | `entry` 与 `vueComponent` 均可解析；Bridge/RPC 声明与宿主实现对齐；失败可降级且可诊断 |
+| Chat Pro staged beat | `types::dto` → `domain/adult_stage.rs` → `db/adult_stage.rs` → HTTP/Tauri → `adultBeatQueue.ts` | stage 只生成并持久化结构化文本，不得触发正式 turn 的聊天/记忆/关系/事件/人格写入；commit 按 generation+sequence 有序且幂等，cancel 删除未提交拍；其他发行版无需实现此 Chat Pro 扩展 |
 
 **仓内结构门禁**：`npm run check:module-compat` 对拍内核/前端 10 个嵌入插槽、官方插件 manifest、Vue/iframe 资源、RPC timeout 声明与插件索引版本。它证明结构兼容，**不替代**行为集成测或跨版本能力协商。
 

@@ -3,7 +3,7 @@
 [中文](../../creator-docs/getting-started/DOCUMENTATION_INDEX.md)
 
 **Scope**: routing only. Architecture, contracts, status, and test facts stay in their topic SSOTs.
-**Last updated**: 2026-07-19.
+**Last updated**: 2026-07-25.
 
 ## Choose your role
 
@@ -21,11 +21,13 @@
 | Topic | SSOT |
 |-------|------|
 | Role-pack format | [ROLE_PACK_SPEC](../role-pack/ROLE_PACK_SPEC.md) |
+| Chat Pro adult role extension | [ROLE_PACK_SPEC · `adult_extension.json`](../role-pack/ROLE_PACK_SPEC.md#chat-pro-adult-role-extension-adult_extensionjson-optional) |
 | Pack / blueprint boundary | [ROLE_PACK_BOUNDARY](../../handoff/ROLE_PACK_BOUNDARY.md) |
 | Module map and six slots | [MODULE_MAP](../../handoff/MODULE_MAP_AND_HANDOFF.md) |
 | Plugin contract | [PLUGIN_V1](../plugin-and-architecture/PLUGIN_V1.md) |
 | Directory plugins | [DIRECTORY_PLUGINS](../plugin-and-architecture/DIRECTORY_PLUGINS.md) |
 | Remote protocol | [REMOTE_PLUGIN_PROTOCOL](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) |
+| llama.cpp LoRA GGUF / `.ocadapter` | [LORA_ADAPTER_PACKAGE](../plugin-and-architecture/LORA_ADAPTER_PACKAGE.md) |
 | Host profiles | [DISTRO_CAPABILITY_PROFILE](../kernel/DISTRO_CAPABILITY_PROFILE.md) |
 | Testing | [Testing overview](../testing/OVERVIEW.md) |
 | Security | [SECURITY_AUDIT_SCOPE](../security/SECURITY_AUDIT_SCOPE.md) |

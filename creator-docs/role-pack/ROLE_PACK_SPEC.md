@@ -6,7 +6,8 @@
 
 本文档描述 **与 A.I.Live 主宿主加载逻辑一致** 的磁盘角色包形状，便于 **多发行版**（桌面 Tauri、无头 `kernel_server`、未来启动器）共用同一包。权威细节仍以源码与既有文档为准：
 
-- 创作者门面与字段语义：[README_MANIFEST.md](../../distros/chat-pro/roles/README_MANIFEST.md)
+- 发行角色目录说明：[README_MANIFEST.md](../../distros/chat-pro/roles/README_MANIFEST.md)
+- 创作者门面与字段语义：[CREATOR_ROLE_PACK_CUSTOMIZATION.md](CREATOR_ROLE_PACK_CUSTOMIZATION.md)
 - 六宿主槽与编排：[PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)、[SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)
 - 以内核为中心的模块图：[KERNEL_AND_MODULES_ARCHITECTURE.md](../getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md)
 
@@ -85,6 +86,7 @@ distros/chat-pro/roles/{role_id}/
 | `display_name` | string | 是 | UI 下拉展示名 |
 | `template_file` | string | 是 | 相对 `user_identities/` 的 `*.md` 文件名 |
 | `maps_to_relation_id` | string | 否 | 映射到 `meta.relations` 键，用于好感初值与关系阶段 |
+| `adult_eligible` | boolean | 否 | 默认 `true`；身份明确设定为未成年人时必须写 `false`，内核据此禁止该身份读取成人扩展与成人记忆 |
 
 **兼容层**：无 `user_identities/` 时，宿主仍可使用蓝图 **`meta.relations`** 中各关系的 **`prompt_hint`**（legacy）。有 catalog 时以 catalog 模板为准；发行版可通过 `distro.oclive.toml` → `[user_identity].default_id` 覆盖会话默认（见 [DISTRO_CAPABILITY_PROFILE.md](../kernel/DISTRO_CAPABILITY_PROFILE.md)）。
 
@@ -248,10 +250,10 @@ JSON Schema：`kernel/crates/oclive-cli/schemas/pipeline.ocblueprint.v2.schema.j
 | `scenes` | string[] | 否 | 场景 id；可与 `scenes/` 子目录合并（见 `merge_role_pack_scene_ids`） |
 | `user_relations` | object | 是 | 键为关系 id；值含 `initial_favorability`（0～100）、`favor_multiplier`（正数）等 |
 | `default_relation` | string | 否 | 须在 `user_relations` 中存在；可空则加载时回退 |
-| `evolution` | object | 否 | 见 README_MANIFEST；`personality_source`：`vector` \| `profile` |
+| `evolution` | object | 否 | `personality_source`：`vector` \| `profile`；人格语义见 [`personality-archive-notes.md`](../../docs/personality-archive-notes.md) |
 | `memory_config` | object | 否 | `topic_weights` 的键须为已声明场景 |
 | `identity_binding` | string | 否 | `global` \| `per_scene` |
-| `life_trajectory` / `life_schedule` / `knowledge` / … | 可选块 | 否 | 见 README_MANIFEST |
+| `life_trajectory` / `life_schedule` / `knowledge` / … | 可选块 | 否 | legacy 兼容字段；迁移时写入蓝图 `meta` |
 | `min_runtime_version` | string | 否 | semver；与校验时传入的宿主版本比较 |
 | `dev_only` | bool | 否 | 调试包标记 |
 
@@ -264,7 +266,7 @@ JSON Schema：`kernel/crates/oclive-cli/schemas/pipeline.ocblueprint.v2.schema.j
 | `schema_version` | u32 | 是 | 当前宿主支持 **1**（见 `CURRENT_SETTINGS_SCHEMA_VERSION`） |
 | `plugin_backends` | object | 否 | **六宿主槽** + `directory_plugins` + `local_memory_provider_id`；与 `PluginBackends` 一致（见 SETTINGS_REFERENCE）。脚手架可写 **`complex_emotion`** 扩展键，**宿主反序列化时忽略** |
 | `interaction_mode` | string | 否 | `immersive` \| `pure_chat` |
-| `evolution` / `memory_config` / `ollama_model` / `remote_presence` / `autonomous_scene` / `knowledge` / `reply_quality_anchor` | 可选 | 否 | 合并进 manifest 后再校验；见 README_MANIFEST |
+| `evolution` / `memory_config` / `ollama_model` / `remote_presence` / `autonomous_scene` / `knowledge` / `reply_quality_anchor` | 可选 | 否 | 合并进 manifest 后再校验；新包写入蓝图 `meta` |
 
 ---
 
@@ -313,6 +315,45 @@ cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/mumu --profile
 ```
 
 `portable-core` 只验证包的通用底座，不宣称各发行版的 UI、语音、视觉、插件或硬件能力完全等价；这些能力应由发行版自己的 capability-conformance 验收负责。
+
+### Chat Pro 成人角色扩展（`adult_extension.json` · 可选）
+
+成人能力是**同一角色包中的发行版可选扩展**，不是 Portable Core 或通用基础角色包的必需部分。文件位于角色包根目录；不支持该能力的发行版必须能够忽略它，并继续以 `core_personality.txt`、基础场景和身份文件运行普通聊天。成人状态人设、成人对话指导和成人场景走向不得反向复制到基础文件，否则关闭扩展后仍会污染普通 Prompt。
+
+```json
+{
+  "schema_version": 1,
+  "character_is_adult": true,
+  "persona": "仅在成人功能启用时叠加的人设增量。",
+  "dialogue_guidance": "角色成人状态下的对话、边界与风格指导。",
+  "pacing": {
+    "mode": "ai",
+    "suggested_interval_ms": 4000
+  },
+  "scenes": {
+    "default": {
+      "direction": "基础场景可自然发展的成人走向。",
+      "action_flow": "动作连续性与每拍推进建议。",
+      "dialogue_guidance": "该场景专用的对话建议。"
+    }
+  }
+}
+```
+
+| 字段 | 规则 |
+|------|------|
+| `schema_version` | 当前固定为 **1** |
+| `character_is_adult` | 必须为 `true`；无需填写具体年龄 |
+| `persona` / `dialogue_guidance` | 只作为基础人设之上的成人增量 |
+| `pacing.mode` | `creator` 或 `ai` |
+| `pacing.suggested_interval_ms` | 正整数；Chat Pro 全局用户覆盖值拥有最终优先级 |
+| `scenes` | 键必须引用基础角色包已声明的场景 id |
+
+Chat Pro 只有在本机成年确认、全局成人开关和当前角色开关同时成立时才注入扩展。响应通过 `SendMessageResponse.schema` **16** 的 `adult_beat` 返回 `dialogue`、静音 `narration`、`interaction_state` 与可选节拍间隔；基础 `reply` 保持对话兼容值。结构化输出异常必须使用安全兜底，不能把 JSON 字段或 Prompt 残片显示给用户。
+
+当前互动状态按角色与聊天场景持久化；关闭任一级开关立即清除互动状态，场景或身份切换先自然收束。成人记忆写入独立 `content_scope=adult` 分区；普通聊天只读取普通记忆和非露骨关系桥接摘要，关闭扩展不会删除成人记忆。编写器只能在完整基础包通过校验后进入独立成人扩展页，导出时仍生成一个合并角色包。
+
+Chat Pro 的“后台连续预生成”是宿主运行时能力，不增加 `adult_extension.json` 字段，也不改变 Portable Core。启用后，模型生成的未来拍先进入可取消的 staged beat 存储；此时不得写入聊天记录、记忆、关系、事件、人格或叙事连续性。只有该聊天回到前台、节拍与上一段语音门均满足后，宿主才按序 commit 一拍并渲染；旁白保持静音。用户新输入、退出、关闭开关或切换身份会取消在途生成并丢弃尚未 commit 的拍。队列容量是所有角色与聊天共享的 Chat Pro 本机全局正整数设置；降低容量只暂停新生成，不删除已经暂存的拍。
 
 ### Persona / Memory 独立迁移契约
 
@@ -546,7 +587,7 @@ auto_sync: false
 
 **校验**：`oclive pack validate` 在 `enabled=true` 且 `backend=remote` 时要求非空 `remote.url`；directory 要求非空 `plugin_id`。
 
-**DTO**：请求 `include_raw_reply: true` 且后处理改变文本时，响应可选 `raw_reply`（`SendMessageResponse.schema` **14**）。
+**DTO**：请求 `include_raw_reply: true` 且后处理改变文本时，响应可选 `raw_reply`（`SendMessageResponse.schema` **16**）。
 
 编排与 RPC 见 [RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md](../rfc/RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md) · [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) `reply_post_process` 能力。
 

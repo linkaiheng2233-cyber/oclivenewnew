@@ -1,129 +1,116 @@
-# 角色包「用户自定义」创作者教学
+# 角色包定制指南
 
-本文面向**准备自制或维护角色包**的创作者，说明如何在包内配置**用户身份、展示名、好感与记忆相关选项**，使玩家在应用里看到符合你设计的关系称谓与初始体验。  
-更细的场景目录与 `scene.json` 写法，请参阅 [《角色包场景系统 — 创作者使用指南》](./CREATOR_SCENE_GUIDE.md)；身份字段与校验规则的细节摘要见 [《创作者说明：用户身份与初始好感》](./CREATOR_USER_RELATIONS.md)。
+本页说明如何直接维护当前 OCLive 角色包。完整字段契约以
+[ROLE_PACK_SPEC.md](ROLE_PACK_SPEC.md) 为准；这里提供最短、可执行的创作路径。
+用户关系细节见 [CREATOR_USER_RELATIONS.md](CREATOR_USER_RELATIONS.md)，场景写法见
+[CREATOR_SCENE_GUIDE.md](CREATOR_SCENE_GUIDE.md)；本页不替代这些专项说明。
 
----
+## 1. 当前格式
 
-## 1. 角色包是什么？
+新角色包只使用 **`pipeline.ocblueprint`** 作为主清单（SSOT），支持
+`schema_version: 2` 或 `3`。不要在同一目录新增 `manifest.json` /
+`settings.json`；这两个文件只属于 legacy 迁移路径。
 
-**角色包**是应用从磁盘加载的一个文件夹，路径形如：
-
-```text
-distros/chat-pro/roles/<角色 id>/
-```
-
-其中 `<角色 id>` 必须与 `manifest.json` 顶层的 **`id`** 一致。宿主会拒绝路径分隔符、`.`/`..`、控制字符、Windows 保留设备名和首尾空白；可使用稳定的小写英文（数字、下划线、短横线）或稳定的 Unicode 名称，避免随意改名，以免与存档、导入导出路径冲突。
-
----
-
-## 2. 推荐目录结构
+推荐目录：
 
 ```text
-distros/chat-pro/roles/<角色 id>/
-├── manifest.json           # 必填：角色元数据、用户身份、场景列表、记忆策略等
-├── core_personality.txt    # 强烈建议：核心性格档案（包内长文），供主模型阅读；运行时不可由模型改写
-├── config.json             # 可选：虚拟时间等
-└── scenes/                 # 推荐：按场景分子目录
-    ├── <scene_id>/
-    │   ├── scene.json
-    │   └── description.txt
-    └── ...
+roles/<角色 id>/
+├── pipeline.ocblueprint        # 必填：角色元数据、关系、场景和模块槽位
+├── core_personality.txt        # 必填：Tier 0 核心人设
+├── config.json                 # 可选：时间、记忆、立绘、思考节奏等运行策略
+├── memory_seed.json            # 可选：只读初始记忆种子
+├── portrait_catalog.json       # Portable Core 需要
+├── user_identities/
+│   ├── index.json              # 可选：用户身份目录
+│   └── <identity>.md
+├── scenes/
+│   └── <scene id>/
+│       ├── scene.json
+│       └── description.txt
+├── knowledge/
+│   └── *.md
+└── assets/
+    └── images/
 ```
 
-加载时，程序会读取 `manifest.json` 并校验；再通过 `core_personality.txt`、`scenes/` 补全对话与展示信息。若 `settings.json` 中 **`evolution.personality_source`** 为 **`profile`**，对话后的 **可变性格档案**仅存本地数据库并由模型维护，包内不可手写；详见 **[docs/personality-archive-notes.md](../../docs/personality-archive-notes.md)**。
+`<角色 id>` 必须与 `pipeline.ocblueprint` 的 `meta.id` 一致。请使用稳定名称；
+宿主会拒绝路径分隔符、`.` / `..`、控制字符、Windows 保留设备名和首尾空白。
 
----
+## 2. 人设与关系
 
-## 3. `manifest.json` 里与「用户自定义」最相关的部分
+- `core_personality.txt` 是不可被运行时演化覆盖的核心人设。
+- `meta.personality` 是七维数值参考；非空时必须恰好七项且每项在 `0.0–1.0`。
+- `meta.relations` 定义可选关系，`meta.default_relation` 必须引用其中一项。
+- `user_identities/index.json` 可把更完整的用户身份模板映射到关系。
+- 运行时可变人格存数据库，不写回角色包。
 
-### 3.1 顶层常用字段（与展示相关）
+关系和身份应该一一可解释。身份模板描述“用户是谁”和互动边界，不要复制角色的
+整份核心人设，也不要让角色替用户发言或擅自升级关系。
 
-| 字段 | 说明 |
-|------|------|
-| `id` | 角色唯一标识，与文件夹名一致。 |
-| `name` | 角色在列表里显示的名称（可与内部称呼不同）。 |
-| `version` / `author` / `description` | 版本、作者、简介。 |
-| `model` | 可选；指定本角色默认使用的 Ollama 模型名（也可在应用环境或界面中选择）。 |
-| `default_personality` | 可选；七维性格初值（倔强、黏人、敏感、强势、宽容、话多、温暖），每项约 0～1。`profile` 人格来源下多为视图，仍建议填写。 |
-| `scenes` | 场景 id 列表；会与 `scenes/` 下子目录**合并去重**，详见场景指南。 |
+## 3. 场景
 
-### 3.2 `user_relations`：玩家「身份」的核心配置
+`meta.scenes` 与 `scenes/<scene id>/` 共同形成场景集合。每个场景可包含：
 
-每个**用户身份**对应 `user_relations` 里的一个**键值对**：
+- `description.txt`：该场景的气氛、行为和话题约束；
+- `scene.json`：展示名、时间窗口、异地素材和可选叙事连续性；
+- `continuity.initial_states`：创作期确定的初始状态候选；
+- `continuity.transitions`：只由最终可见回复中的明确动作标记触发。
 
-- **键（key）**：程序内部使用的 **英文关系 id**（如 `friend`、`classmate`、`parent`）。存档、接口、默认关系都引用它，**发布后请尽量保持稳定**。
-- **值（对象）**：该身份下的提示、倍率与初始好感等。
+连续性状态用于保持位置、姿态、活动等微状态，不替代长期记忆、短期情绪或核心人设。
 
-示例：
+## 4. 立绘与 Portable Core
 
-```json
-"user_relations": {
-  "classmate": {
-    "display_name": "同学",
-    "prompt_hint": "你和角色是同班同学，说话随意，会聊功课与课间琐事",
-    "favor_multiplier": 1.0,
-    "initial_favorability": 30
-  },
-  "parent": {
-    "display_name": "父母",
-    "prompt_hint": "你扮演孩子的家长，角色会嘴硬但在意你们的感受",
-    "favor_multiplier": 1.15,
-    "initial_favorability": 70
-  }
-}
+需要跨发行版携带基础视觉能力时：
+
+1. 在 `config.json` 设置 `portrait_catalog.enabled: true`；
+2. 创建 `portrait_catalog.json`；
+3. 提供七个固定 ID：
+   `happy_default`、`sad_default`、`angry_default`、`neutral_default`、
+   `excited_default`、`confused_default`、`shy_default`；
+4. 确保每个 `path` 都是包内安全相对路径且文件真实存在。
+
+Portable Core 只定义通用人格与七张基础立绘，不限制角色还可以携带多少场景、语音、
+知识或发行版专属能力。
+
+## 5. 语音与其它侧通道
+
+`voice_profile.json` 是可选语音侧通道。角色级语音配置只覆盖该角色的播报任务，
+不得在切换角色时改写用户的全局语音设置。
+
+`memory_seed.json` 只是随包分发的初始事件，不是运行时长期记忆数据库。
+`.ocpersona` 与 `.ocmemory` 是独立迁移格式，也不应塞回角色包主清单。
+
+## 6. 创建与验收
+
+可以复制结构接近的正式角色，再逐项替换内容；不要把沐沐视为所有角色的能力上限，
+它是针对 Chat Pro 体验定制的完整角色。较轻量的跨发行版结构可参考
+`distros/chat-pro/roles/deepseek/`。
+
+每次修改至少执行：
+
+```powershell
+cargo run -p oclive-cli -- pack validate .\distros\chat-pro\roles\<角色 id>
 ```
 
-字段含义简述：
+需要 Portable Core 时再执行：
 
-| 字段 | 是否必填 | 说明 |
-|------|----------|------|
-| `display_name` | 否 | **界面里展示的名称**（中文或其它文案）。不写或留空时，展示会退回为英文键；应用对常见英文键（如 `classmate`、`friend`）还提供**界面级中文 fallback**，方便测试，但**正式作品仍建议写明 `display_name`**，以免与默认翻译不一致。 |
-| `prompt_hint` | 否 | 给模型看的**关系提示**，说明当前身份下用户与角色如何相处。 |
-| `favor_multiplier` | 有默认值 | 好感变化倍率，须为**正数**；加载时会校验。 |
-| `initial_favorability` | 有默认值 | 该身份下**首次建立关系**时的初始好感，范围 **0～100**；加载时会校验。 |
+```powershell
+cargo run -p oclive-cli -- pack validate .\distros\chat-pro\roles\<角色 id> --profile portable-core
+```
 
-### 3.3 `default_relation`
+验证通过只代表文件与契约正确；新增语音、视觉后端或发行版专属功能仍需各自的运行时
+验收。导入压缩包建议保持 `{角色 id}/...` 单一顶层目录。
 
-填写一个**必须存在于 `user_relations` 键**中的英文 id，表示新对话或未单独指定时的默认身份。若写错键名，角色包**无法加载**。
+## 7. Legacy 包
 
-### 3.4 `memory_config` 与场景一致
+仅维护旧包时才使用 `manifest.json` / `settings.json` 和
+`pack validate --profile legacy`。迁移新格式请阅读
+[V1_TO_V2_MIGRATION.md](V1_TO_V2_MIGRATION.md)。迁移完成后删除 legacy 双文件，
+避免同一角色出现两套事实来源。
 
-若使用 `memory_config.topic_weights`，其**顶层键必须是场景 id**，且该场景须出现在 `manifest.scenes` 或 `scenes/` 子目录合并后的列表中，否则加载会失败并提示**中文错误信息**。详见 [《创作者说明：用户身份与初始好感》](./CREATOR_USER_RELATIONS.md)。
+## 8. 延伸阅读
 
-### 3.5 `evolution`（可选）
-
-与事件影响、**人格来源**（`personality_source`）、可变档案更新步长（`max_change_per_event`）等相关；可按作品节奏调整，缺省亦有合理默认。摘要见 [distros/chat-pro/roles/README_MANIFEST.md](../../distros/chat-pro/roles/README_MANIFEST.md) §5.3。
-
----
-
-## 4. `core_personality.txt`：核心性格档案与用户身份的配合
-
-`core_personality.txt` 是包内 **核心性格档案**：描述**角色本身**是谁、如何说话、有哪些禁区；运行时 **不得**由模型改写该正文。  
-**用户身份**（父母 / 同学 / 恋人等）主要在 `user_relations` 与 `prompt_hint` 里定义。两者应一致：例如「用户扮演父母」的包，档案侧应写子女视角，避免与 `prompt_hint` 冲突。
-
----
-
-## 5. 加载校验与排错
-
-在从目录加载角色时，程序会对 `manifest.json` 做校验（非空 id、非空 `name`、`user_relations` 非空、`default_relation` 合法、`topic_weights` 与场景一致、数值合法等）。**失败时会返回明确的中文说明**，请按提示修改 JSON 后重试。
-
----
-
-## 6. 创作者工作流建议
-
-1. 新建 `distros/chat-pro/roles/<你的角色 id>/`，先写好 **`manifest.json`** 的 `id`、`name`、`user_relations`、`default_relation`。  
-2. 为每个身份写好 **`display_name`** 与 **`prompt_hint`**，并设好 **`initial_favorability`** 与 **`favor_multiplier`**。  
-3. 配置 **`scenes`** 与 `scenes/<scene_id>/`，需要时再填 **`topic_weights`**。  
-4. 撰写 **`core_personality.txt`**（核心性格档案），与身份设定对齐；若使用 **`profile`** 人格来源，在 `settings.json` 的 **`evolution`** 中配置 `max_change_per_event` 等，勿尝试在包内手写运行时可变档案。  
-5. 在应用内加载角色，检查**身份下拉框**称谓、场景列表与对话是否符合预期。  
-
----
-
-## 7. 延伸阅读
-
-- [docs/personality-archive-notes.md](../../docs/personality-archive-notes.md) — 核心/可变档案与 `personality_source` 设计轴心。  
-- [《创作者说明：用户身份与初始好感》](./CREATOR_USER_RELATIONS.md) — `display_name`、`default_relation`、好感与 `topic_weights` 校验要点。  
-- [《角色包场景系统 — 创作者使用指南》](./CREATOR_SCENE_GUIDE.md) — 场景目录、`scene.json`、`description.txt` 与场景切换。  
-
-若在遵守上述规范的前提下仍遇到加载失败或界面显示异常，请把**完整报错文案**与 `manifest.json` 相关片段一并反馈，便于定位问题。
+- [CREATOR_LEARNING_PATH.md](CREATOR_LEARNING_PATH.md)：按创作任务选择能力；
+- [PACK_VERSIONING.md](PACK_VERSIONING.md)：版本升级与兼容策略；
+- [CROSS_HOST_MEMORY.md](CROSS_HOST_MEMORY.md)：跨发行版人格与记忆边界；
+- [docs/personality-archive-notes.md](../../docs/personality-archive-notes.md)：核心与可变人格档案。

@@ -167,6 +167,30 @@ node examples/oocp-test-suite/run.mjs
 
 示例包：`distros/chat-pro/roles/mumu/config.json` → `turn_thinking`（注释见 RFC §12 示例）。
 
+## Chat Pro 成人 staged-beat 队列（D29）
+
+后台多拍使用单个全局串行生成泵；缓存深度不会并行加载多份模型。启动带真实本地模型的 Chat Pro HTTP 内核后运行：
+
+```powershell
+node scripts/measure-adult-stage.mjs `
+  --base http://127.0.0.1:8430 `
+  --role gentle-landlady `
+  --scene default `
+  --caps 1,2,4,8
+```
+
+脚本会为每个深度创建独立会话，按序执行 begin/beat/list/cancel，验证结构化字段和持久化数量，只输出耗时、长度、状态与可选 NVIDIA GPU 采样，不打印生成正文。
+
+2026-07-27 参考结果：RTX 5060 Laptop 8GB、Qwen2.5 7B Q4_K_M + 消融 LoRA、全 GPU offload；15/15 拍结构化成功且零回退，热态单拍 p50 **1754ms**、p95 **2112ms**，显存 **6208～6228MiB**。缓存深度 8 未见延迟或显存递增。默认值保持 `2`，同档 8GB + 7B Q4 建议 `2～4`；更高值的主要风险是持续功耗以及用户输入使未展示剧情失效。
+
+语音共存使用：
+
+```powershell
+python scripts/stress-voice-gpu-runtime.py --gpu-layers 24 --voice-runs 5
+```
+
+同机 CosyVoice2 mixed-fp16 结果：峰值 **6751/8151MiB**、峰值余量 **1400MiB**、稳态增长 **0MiB**；LLM 热态 TTFT p50 **142ms**，语音 TTFC p50 **4293ms**。后台队列只缓存文本，不预生成语音；返回前台后仍按单拍顺序合成。
+
 ## Related
 
 - [`DEEP_PROMPT_DISTILLATION.md`](DEEP_PROMPT_DISTILLATION.md)

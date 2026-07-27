@@ -49,7 +49,7 @@
 ## `evolution.personality_source`（摘要）
 
 - **字段**：`vector`（默认）或 `profile`，见 `EvolutionConfigDisk` / 共享校验。
-- **语义摘要**：`profile` 表示 **核心性格档案**（`core_personality.txt`）+ **运行时可变档案**（DB，模型维护）；**七维**多为视图。细则见 **[docs/personality-archive-notes.md](../../docs/personality-archive-notes.md)** 与 [distros/chat-pro/roles/README_MANIFEST.md](../../distros/chat-pro/roles/README_MANIFEST.md) §5.3。
+- **语义摘要**：`profile` 表示 **核心性格档案**（`core_personality.txt`）+ **运行时可变档案**（DB，模型维护）；**七维**多为视图。细则见 **[docs/personality-archive-notes.md](../../docs/personality-archive-notes.md)** 与 [ROLE_PACK_SPEC.md](ROLE_PACK_SPEC.md)。
 
 ## 相关文档
 

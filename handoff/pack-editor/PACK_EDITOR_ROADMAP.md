@@ -60,18 +60,33 @@
 
 ---
 
-## Phase E — 对话节奏 · Turn Thinking（Wave F · 待 schema）
+## Phase E — 对话节奏 · Turn Thinking（Wave F · schema 已落地，编写器暂缓）
 
 **台账**：主仓 **K-TURN-F1** · 编写器 **PE-TURN-01**（[`TECHNICAL_DEBT_INVENTORY.md`](../TECHNICAL_DEBT_INVENTORY.md) §3 Observe）。
 
 | 能力 | 说明 |
 |------|------|
 | UI | **简单**：`auto_deep_min_chars`、Deep 关键词列表、强事件 latch（争吵→直到道歉）；**高级**：可选 AND 规则组（角色包内，内核 OR 默认 + 包内叠加） |
-| 导出 | 写入角色包 **`config.json` → `turn_thinking`**（路径待 RFC 定稿；与 `memory` / `relation` 同级） |
+| 导出 | 写入角色包 **`config.json` → `turn_thinking`**（契约已落地；与 `memory` / `relation` 同级） |
 | 校验 | 与 `oclive_validation` + 内核 `HostProfile` merge 一致；**不提供**玩家端 Deep/Fast 开关 |
 | 试聊 | 编写器内试聊显示本轮 `TurnThinkingMode` + reasons（debug，非 P0） |
 
-**依赖**：[`RFC_TURN_THINKING_PERSISTENCE.md`](../../creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md) 扩展 · 角色包 schema RFC（K-TURN-F1）。
+**依赖状态**：[`RFC_TURN_THINKING_PERSISTENCE.md`](../../creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md)
+与 K-TURN-F1 已落地；PE-TURN-01 按当前产品安排暂缓，不阻塞角色内容扩展。
+
+---
+
+## Phase F — 成人角色扩展（v1 已落地）
+
+| 能力 | 说明 |
+|------|------|
+| 独立页面 | “成人扩展”与简单/高级编辑职责分离，不把成人内容塞回基础人设和基础场景 |
+| 进入前置 | 必须先有一份完整且通过基础校验的角色包 |
+| 编辑分区 | 成人状态人设、成人对话指导、创作者/AI 节奏、按基础场景映射的走向/动作/对话 |
+| 导入导出 | 根文件 `adult_extension.json` v1 与完整基础包合并 roundtrip；旧包无扩展时不生成文件 |
+| 校验 | 角色成年声明、schema、正数间隔、节奏枚举与基础场景引用一致性 |
+
+运行时契约见 [`ROLE_PACK_SPEC.md`](../../creator-docs/role-pack/ROLE_PACK_SPEC.md#chat-pro-成人角色扩展adult_extensionjson--可选)；后台预生成队列仍由主仓 `K-ADULT-01` 的 D25～D29 跟踪，不在编写器中提前发明第二套状态格式。
 
 ---
 
@@ -80,7 +95,7 @@
 1. 主仓 Phase 1–2 + 编写器 Phase A–B  
 2. 主仓 Phase 3 表现导演 AI  
 3. 编写器 Phase D 分级导出  
-4. **Wave F**：角色包 Turn Thinking（Phase E）+ 内核 K-TURN-F1  
+4. **Wave F**：内核 K-TURN-F1 已完成；角色包可手工配置，编写器 Phase E 暂缓
 5. 主仓 Phase 4–5 + 编写器 Phase C  
 
 原 **Phase B「扩展 Emotion 枚举」** 已由 **portrait_catalog + AI 选 id** 取代。

@@ -51,7 +51,7 @@ Roadmap “month 1” **swappable subsystems** in this repo:
 ## `evolution.personality_source` (summary)
 
 - **Field**: `vector` (default) or `profile`, see `EvolutionConfigDisk`.
-- **Summary**: `profile` = **core personality archive** (`core_personality.txt`) + **runtime mutable archive** (DB, model-maintained); **seven dimensions** are mostly a view. Details: [personality-archive-notes.md](../../docs/personality-archive-notes.md) and README_MANIFEST §5.3.
+- **Summary**: `profile` = **core personality archive** (`core_personality.txt`) + **runtime mutable archive** (DB, model-maintained); **seven dimensions** are mostly a view. Details: [personality-archive-notes.md](../../docs/personality-archive-notes.md) and [ROLE_PACK_SPEC.md](ROLE_PACK_SPEC.md).
 
 ## Related
 

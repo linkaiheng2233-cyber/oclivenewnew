@@ -144,20 +144,21 @@
 | **`slot.lora.apply`** | 专家步骤：会话标记 `plugin_id`，选择角色预声明且已授权的 directory LLM adapter（`dual_core` + Experimental 核）；Stable completion 已消费该选择，默认构建仍不启用 dual core |
 | **第 5 模块 `llm`** | 主对话仍走通用 `plugin_backends.llm`；**默认**微调 adapter 仅在 expert 子流程切换，不强制替换主槽 |
 | **编写器** | 导出 `.ocpak` / `distros/chat-pro/roles/`；工坊产出写入包内卫星文件（契约待 RFC） |
+| **本地模型设置** | 已交付单个 llama.cpp LoRA GGUF / `.ocadapter` v1 的导入、校验、`--lora` 启用与失败回滚；这是全局本地 runtime 选择，不等同于角色专家路由绑定 |
 
 **分阶段交付（T0→T3，按需排期）**：
 
 | 阶段 | 交付物 | 验收 |
 |------|--------|------|
-| **T0 · 契约** | RFC：语料来源与隐私、`lora_adapters`（或等价）卫星 schema、与 `expert_routing` / `slot.lora.apply` 引用关系、导出 profile（`desktop-full` / `vscode-lite` / `theater`） | 文档评审；`oclive_validation` 键表草案 |
+| **T0 · 契约** | **Partial**：本地 llama.cpp `.ocadapter` v1 已冻结；仍需角色包 adapter 卫星 schema、与 `expert_routing` / `slot.lora.apply` 引用关系、导出 profile（`desktop-full` / `vscode-lite` / `theater`） | v1 见 `LORA_ADAPTER_PACKAGE.md`；角色包键表仍待评审 |
 | **T1 · 工坊 MVP** | **独立桌面/Tauri 工具**（推荐与 pack-editor 并列，避免 GPU/训练进程拖慢编写器）：导入对话/人设样本 → 单 base 模型 LoRA 或等价 → 导出 adapter 清单进角色包目录 | 产物经校验 crate 检查；零手写 JSON 可装入 `distros/chat-pro/roles/{id}/` |
-| **T2 · 运行时** | **Partial（2026-07-25）**：`slot.lora.apply` 已选择预声明 directory LLM 并参与 Stable generate；manifest 能力探测接通 NDJSON 逐 token，具体权重加载由插件/推理服务负责 | 已有确定性 directory 插件整段/流式/失败集成测试；仍需真实模型 prompt-only vs adapter 差异评测 |
+| **T2 · 运行时** | **Partial（2026-07-25）**：`slot.lora.apply` 已选择预声明 directory LLM 并参与 Stable generate；本地 performance 另可托管单个 `llama-server --lora` | 已有确定性 directory 插件与本地导入/参数/回滚测试；仍需真实模型 prompt-only vs adapter 差异评测 |
 | **T3 · 评测** | 扩展 bench / OOCP / replay：**prompt-only · LoRA · LoRA+专家路由** 可复现对比（连贯 / 口癖 / 人设一致性 checklist） | 维护者可跑一轮对比报告 |
 
 **纪律（与冻结期对齐）**：
 
 - **训练、显存、数据集清洗** 放在工坊或 directory 侧车；**内核仍薄编排**，不新增 `process_message` stage 承载训练。
-- **`expert_routing` / `dual_core` 仍是可选 feature、默认关闭**：LoRA directory LLM 选择已接 Stable completion；训练工坊、adapter 包导入和真实模型评测仍按 T0–T3 分阶段推进。状态见 [TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md)。
+- **`expert_routing` / `dual_core` 仍是可选 feature、默认关闭**：LoRA directory LLM 选择已接 Stable completion；本地 `.ocadapter` v1 已交付，但训练工坊、角色/专家绑定、完整兼容指纹与真实模型评测仍按 T0–T3 推进。状态见 [TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md)。
 - **Theater v0 陌生人测试** 完成前，不把微调工坊标为 P0 阻塞项；与 [RECURRING_OPTIMIZATION_PLAYBOOK.md](../../handoff/RECURRING_OPTIMIZATION_PLAYBOOK.md) §9 元纪律一致——先让样板「发光」，再扩创作者楔子。
 
 **体验向细化**见 [BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md](BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md) §五–§六；场景矩阵见 [APPLICATION_SCENARIOS.md](APPLICATION_SCENARIOS.md) **S11** · **S12**。

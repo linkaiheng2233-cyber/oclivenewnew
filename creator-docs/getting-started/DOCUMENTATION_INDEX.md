@@ -1,7 +1,7 @@
 # A.I.Live 文档索引
 
 **SSOT 范围**：本文只负责“去哪里读”，不复制架构、契约、进度或测试表。
-**最后更新**：2026-07-19。
+**最后更新**：2026-07-25。
 **原则**：先按身份选择一条入口；遇到具体问题再查专题文档。
 
 ## 先选择你的身份
@@ -22,6 +22,7 @@
 | 角色包与蓝图职责边界 | [ROLE_PACK_BOUNDARY](../../handoff/ROLE_PACK_BOUNDARY.md) |
 | 角色包磁盘格式 | [ROLE_PACK_SPEC](../role-pack/ROLE_PACK_SPEC.md) |
 | 人格、记忆种子与身份文件 | [ROLE_PACK_SPEC](../role-pack/ROLE_PACK_SPEC.md) · [角色包创作流程](CREATOR_WORKFLOW.md) |
+| Chat Pro 成人角色扩展 | [ROLE_PACK_SPEC · `adult_extension.json`](../role-pack/ROLE_PACK_SPEC.md#chat-pro-成人角色扩展adult_extensionjson--可选) |
 | 世界观与知识文件 | [WORLDVIEW_KNOWLEDGE](../role-pack/WORLDVIEW_KNOWLEDGE.md) |
 | 包版本与迁移 | [PACK_VERSIONING](../role-pack/PACK_VERSIONING.md) · [v1→v2](../role-pack/V1_TO_V2_MIGRATION.md) · [v2→v3](../role-pack/V2_TO_V3_MIGRATION.md) |
 | 编写器兼容 | [COMPATIBILITY](../COMPATIBILITY.md) |
@@ -46,6 +47,7 @@
 | 插件总体契约 | [PLUGIN_V1](../plugin-and-architecture/PLUGIN_V1.md) |
 | 目录插件与权限 | [DIRECTORY_PLUGINS](../plugin-and-architecture/DIRECTORY_PLUGINS.md) |
 | Remote JSON-RPC | [REMOTE_PLUGIN_PROTOCOL](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) |
+| llama.cpp LoRA GGUF / `.ocadapter` | [LORA_ADAPTER_PACKAGE](../plugin-and-architecture/LORA_ADAPTER_PACKAGE.md) |
 | Agent / MCP | [AGENT_REMOTE_PROTOCOL](../plugin-and-architecture/AGENT_REMOTE_PROTOCOL.md) |
 | Bridge API | [BRIDGE_API_REFERENCE](../plugin-and-architecture/BRIDGE_API_REFERENCE.md) |
 | HostProfile / 跨平台 | [DISTRO_CAPABILITY_PROFILE](../kernel/DISTRO_CAPABILITY_PROFILE.md) |

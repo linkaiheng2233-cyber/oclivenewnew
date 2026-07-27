@@ -6,13 +6,16 @@
 
 ### Added
 
+- **llama.cpp LoRA GGUF 本地闭环**：Chat Pro 与 AI Theater 共用的“本地模型设置”现可导入原始 LoRA GGUF 或 `.ocadapter` v1；内核校验 ZIP 路径/大小、SHA-256、GGUF adapter 元数据与基础模型 architecture，采用暂存+原子替换管理本地副本，并以托管 `llama-server --lora` 启用。独立完整基座可用同名 `.ocmodel.json` 声明来源与成人分级；基座与 LoRA 不固定绑定，可自由选择通过兼容性验证的组合。成人基座和适配器均要求显式确认，切换基座会自动停用旧 LoRA，防止相同架构的错误适配器或消融 LoRA 串入新组合。启用失败恢复此前数据库、环境和进程选择；Hugging Face/PEFT 明确留给后续独立转换插件。
 - **DeepSeek 拟人示例角色包**：新增社区创作、非官方的 `deepseek` Portable Core 角色包，包含核心人设、空的只读记忆种子、三种用户身份、认知边界、默认场景与七张透明立绘；该角色包不代表 DeepSeek 官方授权或背书。
 - **Persona / Memory 跨发行版独立迁移**：新增 `.ocpersona` 与 `.ocmemory` JSON v1 契约、共享校验和桌面宿主导入导出 API；角色包可选 `memory_seed.json` 作为创作者只读初始记忆。Persona 导入只恢复可变人设且不得覆盖核心人设；Memory 使用合并导入，明确排除聊天记录、短期记忆缓存与临时局面状态。内置角色包、Robot Soul 示例与 CLI 新建/初始化脚手架已统一生成该 seed 容器。
+- **Chat Pro 成人角色扩展 v1**：角色包可选根文件 `adult_extension.json` 与 Portable Core 基础内容分离；Chat Pro 提供本机成年确认、全局与分角色两级开关、导入提示、独立管理页、结构化角色对话/静音旁白双气泡、自然退出与自动节拍。成人记忆按 `content_scope` 独立存储，普通聊天只保留非露骨关系桥接；语音只朗读角色对话，节拍同时等待展示间隔与当前语音完成，失败后仅本次互动降级文本。后台连续预生成使用可取消、可恢复的 staged beat：后台只缓存结构化文本，回到对应聊天后才逐拍提交、显示并生成语音；所有聊天共享用户可配置容量，用户输入会抢占并丢弃未展示拍。编写器新增依赖完整基础包校验的独立成人扩展页，并与基础包合并导入导出。
 
 - **本地 HTTP API 认证**：桌面宿主启动 kernel 时自动生成并注入随机 `OCLIVE_API_TOKEN`；无头 `--api` 现在也默认要求显式设置同名变量，除公开探活 `GET /health` 外的路由须发送 `x-oclive-api-token`。仅隔离的本地开发可显式设置 `OCLIVE_API_ALLOW_UNAUTHENTICATED=1` 逃生；CORS 收窄至本机开发/Tauri 来源，OOCP 与进程重启烟测自动附加 token。
 
 ### Fixed
 
+- **成人分拍结构化输出与实机容量标定**：修复通用 Prompt 末尾“只输出角色台词”覆盖 Chat Pro 成人 JSON 契约的问题；成人请求现在以最终专用输出边界收尾，真实 Qwen2.5 7B GGUF 在缓存深度 1/2/4/8 下 15/15 拍完整结构化、零回退。新增 `scripts/measure-adult-stage.mjs` 复现脚本，并依据 RTX 5060 Laptop 8GB 与 CosyVoice2 共享显存测试把默认值保持为 2、建议范围标定为 2～4。
 - **工程路径与启动诊断收敛**：修复 `oclive-cli init --kernel-source` 仍生成旧 `src-tauri` / 根 `crates` 路径的问题，并加入真实仓库布局断言；桌面、无头服务与生成工程共享同一 `--port` 解析，缺失、零值或非法端口均给出稳定诊断并以退出码 2 终止；应用数据目录初始化、共享内核备份/回滚与云模型 token 文件备份失败不再静默，共享内核提升也不再重复执行。
 - **目录插件界面与语音侧车启动**：修复 Windows/WebView2 回传 `ocliveplugin://localhost/...` 时语音识别区和侧栏插件显示 `unknown uri`；受限 iframe 现在统一在插件脚本执行前注入桥接并由父宿主注册 broker，修复语音识别 `OCLive bridge unavailable`；麦克风采集改由可信父宿主代理给官方语音工具栏，避免 opaque-origin iframe 报 `Invalid security origin`，且不放宽 `allow-same-origin`；采集启停采用串行状态机，授权途中取消不会遗留录音流。Voice v0.5 的转写提交带幂等 id，兼容旧插件的短窗重复事件，并恢复不受插件订阅白名单影响的宿主内部预热/流式朗读事件；流式 TTS 现在只按完整播放结束的音频扣除最终回复、首段不再切成三字碎片或等待额外 directive RPC，切换消息/角色会中止旧合成与已排程 PCM；正式 desktop profile 启用已通过基准的 Deep 前缀缓存。mumu 的安全回退卡片在 iframe 首次 load 时会补注册 broker，状态刷新保留旧内容并按角色/身份事件原位更新；插件 bootstrap、身份、轮询与卡片刷新均拒绝旧角色/旧代次结果回写。目录插件子进程启动即载入持久化 `config.json`，流式朗读只直连已确认可用的侧车，否则直接走 RPC；协议与配置失败写入带稳定标识的 `oclive_plugin` 日志。
 - **回复复读与模型错误呈现**：标准回复后处理器会安全移除模型输出开头对本轮用户原句的完整复读（保留“你好”→“你好呀”等自然接话）；SSE/IPC 携带的结构化 `LLM_ERROR` 统一映射为可操作的本地化提示，不再直接向聊天界面显示原始 JSON。
