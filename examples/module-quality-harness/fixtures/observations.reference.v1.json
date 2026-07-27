@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "suite_id": "core-behavior-v1",
+  "run_id": "reference-modules-v1",
+  "modules": {
+    "memory": {
+      "id": "reference.memory",
+      "version": "1"
+    },
+    "emotion": {
+      "id": "reference.emotion",
+      "version": "1"
+    },
+    "prompt": {
+      "id": "reference.prompt",
+      "version": "1"
+    },
+    "llm": {
+      "id": "reference.llm",
+      "version": "1"
+    }
+  },
+  "cases": [
+    {
+      "id": "remember-food-safety",
+      "observation": {
+        "memory": {
+          "text": "用户对草莓过敏；早餐建议必须避开该食材。"
+        },
+        "emotion": {
+          "label": "neutral"
+        },
+        "prompt": {
+          "text": "记忆事实：用户对草莓过敏。回复规则：不要代替用户说话，给出安全的早餐建议。"
+        },
+        "llm": {
+          "reply": "可以喝点粥，再配鸡蛋和蔬菜；我会避开草莓。"
+        }
+      }
+    },
+    {
+      "id": "preserve-role-voice",
+      "observation": {
+        "memory": {
+          "text": "用户刚才确认项目跑通，当前是值得庆祝的进展。"
+        },
+        "emotion": {
+          "label": "happy"
+        },
+        "prompt": {
+          "text": "保持菲比啾比的高频口头禅；庆祝时不替用户宣布结果。"
+        },
+        "llm": {
+          "reply": "菲比啾比！这下可以松口气啦，快给自己记一功～"
+        }
+      }
+    },
+    {
+      "id": "respect-conversation-boundary",
+      "observation": {
+        "memory": {
+          "text": "用户现在想安静坐着，并明确表示不要追问。"
+        },
+        "emotion": {
+          "label": "neutral"
+        },
+        "prompt": {
+          "text": "尊重拒绝并自然退回陪伴状态；doro 可称呼用户为人，但不要继续推进话题。"
+        },
+        "llm": {
+          "reply": "doro 知道啦，那就安静陪你一会儿，人～"
+        }
+      }
+    }
+  ]
+}
