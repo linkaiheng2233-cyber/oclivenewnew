@@ -32,7 +32,7 @@ import {
   confirm as confirmDialog,
   open as openDialog,
 } from '@tauri-apps/plugin-dialog'
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import HelpHint from '../shared/HelpHint.vue'
 import UiButton from '../ui/UiButton.vue'
@@ -70,6 +70,11 @@ const remoteToken = ref('')
 const remoteModel = ref('')
 const cloudModels = ref<string[]>([])
 const cloudModelHistory = ref<string[]>(getCloudModelHistory())
+let settingsLoadGeneration = 0
+let ollamaModelsLoadGeneration = 0
+let cloudModelsLoadGeneration = 0
+let settingsSaveGeneration = 0
+let globalSaveGeneration = 0
 
 function formatAdapterSize(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes <= 0)
@@ -203,42 +208,70 @@ const effectiveModel = computed(
   ),
 )
 
-async function loadGlobalDefaultModel(): Promise<void> {
-  try {
-    const g = await getGlobalOllamaModel()
-    globalDefaultModel.value = g.model?.trim() || ''
-  }
-  catch (e) {
-    showToast('error', e instanceof Error ? e.message : String(e))
-  }
-}
-
 async function saveGlobalDefaultModel(): Promise<void> {
   const model = globalDefaultModel.value.trim()
   if (!model) {
     showToast('error', t('modelManager.globalDefaultModelNeedModel'))
     return
   }
+  const generation = ++globalSaveGeneration
   savingGlobal.value = true
   try {
     const g = await setGlobalOllamaModel(model, roleStore.currentRoleId)
+    if (generation !== globalSaveGeneration)
+      return
     globalDefaultModel.value = g.model
-    await roleStore.loadRoleInfo()
+    await roleStore.refreshRoleInfo()
+    if (generation !== globalSaveGeneration)
+      return
     showToast('success', t('modelManager.globalDefaultModelSaveOk'))
   }
   catch (e) {
-    showToast('error', e instanceof Error ? e.message : String(e))
+    if (generation === globalSaveGeneration)
+      showToast('error', e instanceof Error ? e.message : String(e))
   }
   finally {
-    savingGlobal.value = false
+    if (generation === globalSaveGeneration)
+      savingGlobal.value = false
   }
 }
 
 async function loadSettings(): Promise<void> {
+  const generation = ++settingsLoadGeneration
+  const roleId = roleStore.currentRoleId
+  // A role switch owns all loading indicators from this point onward. Older
+  // provider-list requests may still settle, but their generations cannot
+  // overwrite the new role's form or leave its spinners active.
+  ollamaModelsLoadGeneration += 1
+  cloudModelsLoadGeneration += 1
+  modelsLoading.value = false
+  cloudModelsLoading.value = false
   loading.value = true
+  void getGlobalOllamaModel()
+    .then((global) => {
+      if (
+        generation === settingsLoadGeneration
+        && roleStore.currentRoleId === roleId
+      ) {
+        globalDefaultModel.value = global.model?.trim() || ''
+      }
+    })
+    .catch((error) => {
+      if (
+        generation === settingsLoadGeneration
+        && roleStore.currentRoleId === roleId
+      ) {
+        showToast('error', error instanceof Error ? error.message : String(error))
+      }
+    })
   try {
-    await loadGlobalDefaultModel()
-    const s = await getLlmUserSettings(roleStore.currentRoleId)
+    const s = await getLlmUserSettings(roleId)
+    if (
+      generation !== settingsLoadGeneration
+      || roleStore.currentRoleId !== roleId
+    ) {
+      return
+    }
     settings.value = s
     providerTab.value = s.provider === 'cloud' ? 'cloud' : 'local'
     ollamaBaseUrl.value = s.ollamaBaseUrl
@@ -250,26 +283,41 @@ async function loadSettings(): Promise<void> {
 
     selectedLocalModel.value = resolveLocalModelSelection(s)
 
-    if (providerTab.value === 'local') {
+    if (providerTab.value === 'local')
       await refreshOllamaModels()
-    }
+    else if (canListCloudModels())
+      await refreshCloudModels({ silent: true })
   }
   catch (e) {
-    showToast('error', e instanceof Error ? e.message : String(e))
+    if (
+      generation === settingsLoadGeneration
+      && roleStore.currentRoleId === roleId
+    ) {
+      showToast('error', e instanceof Error ? e.message : String(e))
+    }
   }
   finally {
-    loading.value = false
+    if (
+      generation === settingsLoadGeneration
+      && roleStore.currentRoleId === roleId
+    ) {
+      loading.value = false
+    }
   }
 }
 
 async function refreshCloudModels(opts?: { silent?: boolean }): Promise<void> {
-  if (!remoteUrl.value.trim()) {
+  const generation = ++cloudModelsLoadGeneration
+  cloudModelsLoading.value = false
+  const requestUrl = remoteUrl.value.trim()
+  const tokenInput = remoteToken.value.trim()
+  const tokenAlreadyConfigured = Boolean(settings.value?.remoteTokenConfigured)
+  if (!requestUrl) {
     if (!opts?.silent)
       showToast('error', t('modelManager.needRemoteUrl'))
     return
   }
-  const tokenInput = remoteToken.value.trim()
-  const hasKey = tokenInput.length > 0 || Boolean(settings.value?.remoteTokenConfigured)
+  const hasKey = tokenInput.length > 0 || tokenAlreadyConfigured
   if (!hasKey) {
     if (!opts?.silent)
       showToast('error', t('modelManager.needApiKey'))
@@ -278,27 +326,46 @@ async function refreshCloudModels(opts?: { silent?: boolean }): Promise<void> {
   cloudModelsLoading.value = true
   try {
     const req: { remoteUrl: string, remoteToken?: string } = {
-      remoteUrl: remoteUrl.value.trim(),
+      remoteUrl: requestUrl,
     }
     if (tokenInput.length > 0)
       req.remoteToken = tokenInput
-    cloudModels.value = await listCloudModels(req)
+    const models = await listCloudModels(req)
+    if (
+      generation !== cloudModelsLoadGeneration
+      || remoteUrl.value.trim() !== requestUrl
+      || remoteToken.value.trim() !== tokenInput
+      || Boolean(settings.value?.remoteTokenConfigured) !== tokenAlreadyConfigured
+    ) {
+      return
+    }
+    cloudModels.value = models
     if (!opts?.silent)
       showToast('success', t('modelManager.cloudModelsOk', { count: cloudModels.value.length }))
   }
   catch (e) {
-    if (!opts?.silent)
+    if (generation === cloudModelsLoadGeneration && !opts?.silent)
       showToast('error', e instanceof Error ? e.message : String(e))
   }
   finally {
-    cloudModelsLoading.value = false
+    if (generation === cloudModelsLoadGeneration)
+      cloudModelsLoading.value = false
   }
 }
 
 async function refreshOllamaModels(): Promise<void> {
+  const generation = ++ollamaModelsLoadGeneration
+  const requestBaseUrl = ollamaBaseUrl.value
   modelsLoading.value = true
   try {
-    ollamaModels.value = await listOllamaModels(ollamaBaseUrl.value)
+    const models = await listOllamaModels(requestBaseUrl)
+    if (
+      generation !== ollamaModelsLoadGeneration
+      || ollamaBaseUrl.value !== requestBaseUrl
+    ) {
+      return
+    }
+    ollamaModels.value = models
     const cur = selectedLocalModel.value
     if (
       cur
@@ -310,11 +377,16 @@ async function refreshOllamaModels(): Promise<void> {
     }
   }
   catch (e) {
-    if (settings.value?.localRuntimeMode !== 'performance')
+    if (
+      generation === ollamaModelsLoadGeneration
+      && settings.value?.localRuntimeMode !== 'performance'
+    ) {
       showToast('error', e instanceof Error ? e.message : String(e))
+    }
   }
   finally {
-    modelsLoading.value = false
+    if (generation === ollamaModelsLoadGeneration)
+      modelsLoading.value = false
   }
 }
 
@@ -541,6 +613,8 @@ async function onProbeCloud(): Promise<void> {
 }
 
 async function onSave(): Promise<void> {
+  const generation = ++settingsSaveGeneration
+  const roleId = roleStore.currentRoleId
   saving.value = true
   try {
     if (providerTab.value === 'local') {
@@ -562,7 +636,7 @@ async function onSave(): Promise<void> {
       }
       const deactivatedLora = baseSwitchWillDeactivateLora.value
       const info = await saveLlmUserSettings({
-        roleId: roleStore.currentRoleId,
+        roleId,
         provider: 'local',
         ollamaBaseUrl: ollamaBaseUrl.value.trim(),
         localModelsDir: localModelsDir.value.trim(),
@@ -571,6 +645,12 @@ async function onSave(): Promise<void> {
         ollamaModel: local.ollamaModel,
         cloudApiStyle: 'openai',
       })
+      if (
+        generation !== settingsSaveGeneration
+        || roleStore.currentRoleId !== roleId
+      ) {
+        return
+      }
       roleStore.applyRoleInfo(info)
       showToast('success', t('modelManager.saveOk'))
       if (deactivatedLora)
@@ -592,7 +672,7 @@ async function onSave(): Promise<void> {
         return
       }
       const req: Parameters<typeof saveLlmUserSettings>[0] = {
-        roleId: roleStore.currentRoleId,
+        roleId,
         provider: 'cloud',
         cloudApiStyle: 'openai',
         remoteUrl: remoteUrl.value.trim(),
@@ -602,6 +682,12 @@ async function onSave(): Promise<void> {
         req.remoteToken = tokenInput
       }
       const info = await saveLlmUserSettings(req)
+      if (
+        generation !== settingsSaveGeneration
+        || roleStore.currentRoleId !== roleId
+      ) {
+        return
+      }
       roleStore.applyRoleInfo(info)
       rememberCloudModel(remoteModel.value.trim())
       cloudModelHistory.value = getCloudModelHistory()
@@ -611,14 +697,22 @@ async function onSave(): Promise<void> {
     await loadSettings()
   }
   catch (e) {
-    showToast('error', e instanceof Error ? e.message : String(e))
+    if (
+      generation === settingsSaveGeneration
+      && roleStore.currentRoleId === roleId
+    ) {
+      showToast('error', e instanceof Error ? e.message : String(e))
+    }
   }
   finally {
-    saving.value = false
+    if (generation === settingsSaveGeneration)
+      saving.value = false
   }
 }
 
 watch(providerTab, (tab) => {
+  if (loading.value)
+    return
   if (tab === 'local' && ollamaModels.value.length === 0) {
     void refreshOllamaModels()
   }
@@ -629,12 +723,17 @@ watch(providerTab, (tab) => {
 
 watch(
   () => roleStore.currentRoleId,
-  () => {
-    void loadSettings()
-    void refreshOllamaModels()
-  },
+  () => void loadSettings(),
   { immediate: true },
 )
+
+onBeforeUnmount(() => {
+  settingsLoadGeneration += 1
+  ollamaModelsLoadGeneration += 1
+  cloudModelsLoadGeneration += 1
+  settingsSaveGeneration += 1
+  globalSaveGeneration += 1
+})
 </script>
 
 <template>

@@ -31,6 +31,11 @@ const segments = computed(() => {
 })
 
 const open = ref(false)
+const pinned = ref(false)
+const pointerInside = ref(false)
+const focusInside = ref(false)
+const suppressHoverUntilLeave = ref(false)
+const suppressFocusUntilBlur = ref(false)
 const triggerLabel = computed(() =>
   open.value ? t('app.helpHintCloseAria') : t('app.helpHintAria'),
 )
@@ -45,11 +50,56 @@ const popoverId = `help-hint-${useId()}`
 let positionFrame: number | null = null
 let popoverResizeObserver: ResizeObserver | null = null
 
+function closePopover(
+  suppressCurrentHover = false,
+  suppressCurrentFocus = false,
+) {
+  pinned.value = false
+  suppressHoverUntilLeave.value = suppressCurrentHover && pointerInside.value
+  suppressFocusUntilBlur.value = suppressCurrentFocus
+  open.value = false
+}
+
+function syncTransientOpen() {
+  open.value = pinned.value
+    || (!suppressHoverUntilLeave.value && pointerInside.value)
+    || (!suppressFocusUntilBlur.value && focusInside.value)
+}
+
 function toggle(e: Event) {
   e.stopPropagation()
   if (segments.value.length === 0)
     return
-  open.value = !open.value
+  if (pinned.value) {
+    closePopover(true, true)
+    return
+  }
+  pinned.value = true
+  suppressHoverUntilLeave.value = false
+  suppressFocusUntilBlur.value = false
+  open.value = true
+}
+
+function onPointerEnter() {
+  pointerInside.value = true
+  syncTransientOpen()
+}
+
+function onPointerLeave() {
+  pointerInside.value = false
+  suppressHoverUntilLeave.value = false
+  syncTransientOpen()
+}
+
+function onFocusIn() {
+  focusInside.value = true
+  syncTransientOpen()
+}
+
+function onFocusOut() {
+  focusInside.value = false
+  suppressFocusUntilBlur.value = false
+  syncTransientOpen()
 }
 
 /** Capture phase: runs before subtree @click.stop so clicks on panel chrome (e.g. More menu) still close the popover */
@@ -63,7 +113,7 @@ function onDocPointerDownCapture(e: PointerEvent) {
     && !el.contains(e.target as Node)
     && !pop?.contains(e.target as Node)
   ) {
-    open.value = false
+    closePopover(true, true)
   }
 }
 
@@ -72,7 +122,7 @@ function onDocKeydown(e: KeyboardEvent) {
     return
   e.preventDefault()
   e.stopImmediatePropagation()
-  open.value = false
+  closePopover(true, true)
   trigger.value?.focus()
 }
 
@@ -95,7 +145,7 @@ function updatePopoverPosition() {
     || buttonRect.right < viewportMargin
     || buttonRect.left > viewportWidth - viewportMargin
   ) {
-    open.value = false
+    closePopover()
     return
   }
 
@@ -172,6 +222,10 @@ watch(open, (isOpen) => {
 })
 
 watch(segments, () => {
+  if (segments.value.length === 0) {
+    closePopover()
+    return
+  }
   if (open.value)
     void nextTick(queuePopoverPosition)
 })
@@ -189,6 +243,10 @@ onUnmounted(() => {
     ref="root"
     class="help-hint"
     :class="{ 'help-hint--open': open, 'help-hint--compact': compact }"
+    @pointerenter="onPointerEnter"
+    @pointerleave="onPointerLeave"
+    @focusin="onFocusIn"
+    @focusout="onFocusOut"
   >
     <button
       ref="trigger"

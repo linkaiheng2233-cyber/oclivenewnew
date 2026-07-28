@@ -71,6 +71,42 @@ describe('help hint', () => {
     wrapper.unmount()
   })
 
+  it('shows explanatory text on pointer hover and closes after leaving', async () => {
+    const wrapper = mountHint('悬停说明')
+
+    await wrapper.get('.help-hint').trigger('pointerenter')
+    await nextTick()
+
+    expect(document.body.querySelector('.help-pop')?.textContent).toContain('悬停说明')
+    expect(wrapper.get('button').attributes('aria-expanded')).toBe('true')
+
+    await wrapper.get('.help-hint').trigger('pointerleave')
+    await nextTick()
+
+    expect(document.body.querySelector('.help-pop')).toBeNull()
+    expect(wrapper.get('button').attributes('aria-expanded')).toBe('false')
+
+    wrapper.unmount()
+  })
+
+  it('keeps a hovered hint open after click until it is explicitly closed', async () => {
+    const wrapper = mountHint('固定说明')
+
+    await wrapper.get('.help-hint').trigger('pointerenter')
+    await wrapper.get('button').trigger('click')
+    await wrapper.get('.help-hint').trigger('pointerleave')
+    await nextTick()
+
+    expect(document.body.querySelector('.help-pop')?.textContent).toContain('固定说明')
+
+    await wrapper.get('button').trigger('click')
+    await nextTick()
+
+    expect(document.body.querySelector('.help-pop')).toBeNull()
+
+    wrapper.unmount()
+  })
+
   it('uses Escape for the help layer first and restores trigger focus', async () => {
     const wrapper = mountHint()
     const trigger = wrapper.get('button').element
@@ -112,5 +148,45 @@ describe('help hint', () => {
 
     first.unmount()
     second.unmount()
+  })
+
+  it('can reopen with one click after scrolling the trigger offscreen', async () => {
+    const wrapper = mountHint('离屏说明')
+    const button = wrapper.get('button').element
+
+    await wrapper.get('button').trigger('click')
+    await nextTick()
+    vi.spyOn(button, 'getBoundingClientRect').mockReturnValue({
+      x: -100,
+      y: -100,
+      width: 20,
+      height: 20,
+      top: -100,
+      right: -80,
+      bottom: -80,
+      left: -100,
+      toJSON: () => ({}),
+    })
+    document.dispatchEvent(new Event('scroll'))
+    await nextTick()
+    expect(document.body.querySelector('.help-pop')).toBeNull()
+
+    vi.mocked(button.getBoundingClientRect).mockReturnValue({
+      x: 20,
+      y: 20,
+      width: 20,
+      height: 20,
+      top: 20,
+      right: 40,
+      bottom: 40,
+      left: 20,
+      toJSON: () => ({}),
+    })
+    await wrapper.get('button').trigger('click')
+    await nextTick()
+
+    expect(document.body.querySelector('.help-pop')?.textContent)
+      .toContain('离屏说明')
+    wrapper.unmount()
   })
 })
