@@ -212,7 +212,9 @@ fn validate_extension_declarations(
 }
 
 fn validate_namespaced_id(value: &str) -> Result<(), String> {
-    let value = value.trim();
+    if value != value.trim() {
+        return Err("不得含首尾空白，须使用规范命名空间原文".into());
+    }
     if value.is_empty() || value.len() > 160 {
         return Err("须为 1–160 字符的命名空间标识".into());
     }
@@ -455,6 +457,36 @@ mod tests {
               }"#,
         );
         validate_blueprint_v4_json(&raw, Some("demo")).unwrap();
+    }
+
+    #[test]
+    fn rejects_namespaced_ids_with_outer_whitespace() {
+        for value in [
+            " com.example.live2d",
+            "com.example.live2d ",
+            "\tcom.example.live2d",
+        ] {
+            let error = validate_namespaced_id(value).unwrap_err();
+            assert!(error.contains("首尾空白"));
+        }
+
+        let raw = minimal_v4(
+            r#",
+              "extensions": {
+                "com.example.live2d": {
+                  "capability": " com.example.live2d ",
+                  "provider": "com.example.live2d.runtime ",
+                  "config_schema_version": 1,
+                  "config_ref": "blueprint/extensions/com.example.live2d/config.json"
+                }
+              }"#,
+        );
+        let message = validate_blueprint_v4_json(&raw, Some("demo"))
+            .unwrap_err()
+            .join("\n");
+        assert!(message.contains("capability 非法"));
+        assert!(message.contains("provider 非法"));
+        assert!(message.contains("首尾空白"));
     }
 
     #[test]
