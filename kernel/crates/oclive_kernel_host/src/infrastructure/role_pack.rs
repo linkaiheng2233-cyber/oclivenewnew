@@ -53,10 +53,9 @@ fn zip_preview_path_priority(name: &str) -> Option<(u8, u8)> {
         ("", 1)
     } else if let Some(prefix) = n.strip_suffix(&format!("/{PIPELINE_BLUEPRINT_FILENAME}")) {
         (prefix, 0)
-    } else if let Some(prefix) = n.strip_suffix("/manifest.json") {
-        (prefix, 1)
     } else {
-        return None;
+        let prefix = n.strip_suffix("/manifest.json")?;
+        (prefix, 1)
     };
     let depth_priority = if prefix.is_empty() {
         0
