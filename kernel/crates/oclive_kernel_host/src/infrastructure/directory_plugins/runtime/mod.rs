@@ -712,8 +712,10 @@ mod asset_path_tests {
     #[test]
     fn deferred_plugin_scan_is_completed_on_first_demand() {
         let tmp = TempDir::new().expect("temp");
-        let roles = tmp.path().join("roles");
-        let plugin = tmp.path().join("plugins/com.example.deferred");
+        let roles = tmp.path().join("distros/chat-pro/roles");
+        let plugin = tmp
+            .path()
+            .join("distros/chat-pro/plugins/com.example.deferred");
         let app_data = tmp.path().join("app-data");
         fs::create_dir_all(&roles).expect("roles");
         fs::create_dir_all(&plugin).expect("plugin");
