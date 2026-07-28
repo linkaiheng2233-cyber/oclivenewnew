@@ -187,6 +187,7 @@ Role packs have two version layers — do not mix them:
 **Relation to schema / manifest**
 
 - **Authoritative v2+ shape** is `pipeline.ocblueprint` (`schema_version` **2** or **3**) plus `slot_registry`; pack layout and validation follow the [Chinese ROLE_PACK_SPEC](../../creator-docs/role-pack/ROLE_PACK_SPEC.md) §§1–2 / §6.
+- Declared `includes[]` are strict activation dependencies: paths use portable ASCII letters/digits plus `_` `.` `/` `-`; missing, escaping, unreadable, malformed, or contract-invalid merged fragments fail both `pack validate` and role loading. Best-effort merging is preview-only; expert routing uses its dedicated loader rather than a generic include target.
 - **Legacy** still uses `manifest.json` + `settings.json`; key whitelist, `min_runtime_version` (host semver gate), and unknown-key policy live in [PACK_VERSIONING.md](PACK_VERSIONING.md) — do not restate those tables here.
 - JSON Schema / CLI: `oclive pack validate`; implementation SSOT is `oclive_validation`.
 
@@ -200,7 +201,7 @@ Portable state is split into two JSON documents. `.ocpersona` carries the immuta
 
 Adult behavior is an optional distro extension inside the same role pack, not a Portable Core requirement. Unsupported distros must ignore the root-level file and continue to run the base persona, scenes, and identities. Adult persona, dialogue guidance, and scene directions belong only in this file and must not be copied into base prompt files.
 
-The v1 object requires `character_is_adult: true`; `pacing.mode` is `creator` or `ai`, `suggested_interval_ms` is positive, and every `scenes` key must reference a base scene id. Chat Pro injects it only after local adult confirmation plus the global and per-role gates. `SendMessageResponse.schema` **16** returns `adult_beat` with dialogue, silent narration, interaction state, and an optional interval while retaining dialogue in the base `reply` compatibility field. Malformed envelopes use a prompt-safe fallback.
+The v1 object requires `character_is_adult: true`; `pacing.mode` is `creator` or `ai`, `suggested_interval_ms` is positive, and every `scenes` key must reference a base scene id. Chat Pro injects it only after local adult confirmation plus the global and per-role gates. Legacy user-identity `adult_eligible` metadata remains readable for pack compatibility and creator guidance, but is not a hidden fourth authorization gate. `SendMessageResponse.schema` **16** returns `adult_beat` with dialogue, silent narration, interaction state, and an optional interval while retaining dialogue in the base `reply` compatibility field. Malformed envelopes use a prompt-safe fallback.
 
 Interaction state persists by role/chat scene. Disabling either gate clears active state immediately; scene or identity changes first request a natural ending. Adult memories use a separate `content_scope=adult`; ordinary chat only reads ordinary memory plus a non-explicit relationship bridge. The pack editor exposes an independent adult-extension page only after the complete base pack validates, and exports one combined pack.
 

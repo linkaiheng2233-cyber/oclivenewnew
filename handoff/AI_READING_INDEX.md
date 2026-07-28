@@ -97,6 +97,7 @@ Vue invoke / HTTP --api
 | 六槽 backend 24 格真值 | [`SLOT_BACKEND_REALITY_MATRIX.md`](./SLOT_BACKEND_REALITY_MATRIX.md) |
 | 角色包磁盘格式 | [`ROLE_PACK_SPEC.md`](../creator-docs/role-pack/ROLE_PACK_SPEC.md) |
 | 蓝图 settings / `slot_registry` | [`SETTINGS_REFERENCE.md`](../creator-docs/cli/SETTINGS_REFERENCE.md) |
+| 蓝图扩展外壳 / `ExecutionPlan` / 统一资源协调 | [`RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md`](../creator-docs/rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md) |
 | Remote JSON-RPC | [`REMOTE_PLUGIN_PROTOCOL.md`](../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) |
 | 目录插件 · bridge · 权限 | [`DIRECTORY_PLUGINS.md`](../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md) · [`BRIDGE_API_REFERENCE.md`](../creator-docs/plugin-and-architecture/BRIDGE_API_REFERENCE.md) |
 | 插件放置决策 | [`PLUGIN_PLACEMENT_GUIDE.md`](../creator-docs/plugin-and-architecture/PLUGIN_PLACEMENT_GUIDE.md) |

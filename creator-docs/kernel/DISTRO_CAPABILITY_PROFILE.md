@@ -160,7 +160,7 @@ favor_low  = "…"              # optional; favor < 40
 
 运行时在发行版启动后后台预热：性能组件和模型齐全时只加载 llama-server；任一缺失时才预热 Ollama，避免两个模型同时占用显存。GGUF 切换会终止宿主管理的旧 llama-server 并按新路径重启。
 
-当前显存互斥只覆盖 OCLive 管理的 llama-server 与已知 Ollama fallback 模型。语音组件与本地 7B 模型同时启用前，发行版还必须由统一资源协调器根据显存预算决定 GPU 分层、暂停或 CPU 降级；语音包不得各自偷偷预热并与 LLM 抢占显存。
+当前显存互斥只覆盖 OCLive 管理的 llama-server 与已知 Ollama fallback 模型。语音组件与本地 7B 模型同时启用前，发行版还必须由统一资源协调器根据显存预算决定 GPU 分层、暂停或 CPU 降级；语音包不得各自偷偷预热并与 LLM 抢占显存。`HostProfile` 只提供发行版预算上限与默认偏好，蓝图只表达能力/降级意图，实际租约由协调器决定；目标契约见 [蓝图扩展与资源协调 RFC](../rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md)。
 
 ### 3.2.2 `[turn_thinking]`（编排行 · 非六槽）
 

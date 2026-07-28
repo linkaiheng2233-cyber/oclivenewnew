@@ -502,11 +502,13 @@ TypeScript 侧 `SendMessageResponse`（`distros/shared/src/api/`）必须与 `mo
 | 字段 | 说明 |
 |------|------|
 | `type` | 槽位类型：`memory` / `emotion` / `event` / `prompt` / `llm` / `agent` / `complex_emotion` |
-| `backend` | 可选，默认 `directory` |
+| `backend` | 可选，默认 `directory`；必须属于对应 `type` 的既有 backend 枚举，安装前按最终蓝图同一规则校验 |
 | `label` | 可选，蓝图实例展示名 |
 | `position` | 可选，实例排序；缺省 `0` |
 
 校验：`kernel/crates/oclive_validation/src/plugin_slot_attachment.rs`。未声明 `slot_attachment` 时仅复制插件目录，需手动 **`oclive plugin manage link`**。
+
+`openai_compatible` 是 LLM Remote 实现方式，不是 `slot_registry.backend` 枚举；此类插件应声明 `backend: "remote"`，端点与协议按 [REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md) 配置。自动装配不得生成最终蓝图无法通过的 backend。
 
 ### 主应用：极简插件管理（唯一入口）
 

@@ -28,6 +28,7 @@
 - **Default implementations** are the built-in Rust paths; switching backend **does not rename API fields** (especially **`SendMessageResponse.reply`**).
 - **Remote:** the host speaks **HTTP JSON-RPC** ([REMOTE_PLUGIN_PROTOCOL.md](../../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)). Missing `OCLIVE_REMOTE_*` URLs → fall back to builtin / in-process LLM with logs.
 - **Directory:** `distros/chat-pro/plugins/*/manifest.json` child processes; same JSON-RPC wire as Remote; slot ids in `plugin_backends.directory_plugins` ([DIRECTORY_PLUGINS.md](../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md)).
+- **Auto-attachment:** `slot_attachment.backend` must be legal for its declared slot type and survive the same final-blueprint validation. OpenAI-compatible LLMs use the `remote` backend; `openai_compatible` is an implementation mode, not a blueprint backend token.
 
 ---
 

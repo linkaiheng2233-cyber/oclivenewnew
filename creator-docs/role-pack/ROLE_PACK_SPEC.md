@@ -86,7 +86,7 @@ distros/chat-pro/roles/{role_id}/
 | `display_name` | string | 是 | UI 下拉展示名 |
 | `template_file` | string | 是 | 相对 `user_identities/` 的 `*.md` 文件名 |
 | `maps_to_relation_id` | string | 否 | 映射到 `meta.relations` 键，用于好感初值与关系阶段 |
-| `adult_eligible` | boolean | 否 | 默认 `true`；身份明确设定为未成年人时必须写 `false`，内核据此禁止该身份读取成人扩展与成人记忆 |
+| `adult_eligible` | boolean | 否 | 默认 `true`；仅作为旧角色包兼容与创作者提示元数据保留，不参与 Chat Pro 成人功能授权。运行时只认本机成年确认、全局开关与角色开关 |
 
 **兼容层**：无 `user_identities/` 时，宿主仍可使用蓝图 **`meta.relations`** 中各关系的 **`prompt_hint`**（legacy）。有 catalog 时以 catalog 模板为准；发行版可通过 `distro.oclive.toml` → `[user_identity].default_id` 覆盖会话默认（见 [DISTRO_CAPABILITY_PROFILE.md](../kernel/DISTRO_CAPABILITY_PROFILE.md)）。
 
@@ -219,15 +219,15 @@ distros/chat-pro/roles/{role_id}/
 
 ### 2.6 `includes[]`（蓝图 · 卫星拉取）
 
-加载角色包时，宿主按数组顺序将卫星文件合并进蓝图内存态（`oclive_validation::resolve_blueprint_includes_*`）。
+加载角色包时，宿主按数组顺序将卫星文件合并进蓝图内存态（`oclive_validation::merge_blueprint_includes_strict`）。
 
 | 字段 | 说明 |
 |------|------|
-| `path` | 相对 **`distros/chat-pro/roles/{role_id}/`** 的正斜杠路径；禁止 `..` |
-| `target` | 点分路径，如 `meta.personality`、`expert_routing`、`runtime_config.expert_hints`、`slot_registry.<key>` |
+| `path` | 相对 **`distros/chat-pro/roles/{role_id}/`** 的可移植正斜杠路径；只允许 ASCII 字母、数字、`_`、`.`、`/`、`-`，禁止 `..`、绝对路径、反斜杠和空路径段 |
+| `target` | 严格白名单：`meta.personality`、`meta.life_trajectory`、`meta.life_schedule`、`expert_overlay` 或 `slot_registry.<key>` |
 | `mode` | `merge`（JSON 深合并）或 `replace`（整段替换） |
 
-缺失或非法卫星文件：**warn 并跳过**，不阻塞 `load_role`。**第 2 设施子模块**（**专家模型设施子模块**）默认文件：**`blueprint/includes/expert_routing.json`**（专家路由）；实验核 pipeline 可使用 action **`slot.expert.invoke`**（须 `dual_core` + v3 `pipeline.experimental`）。命名见 [OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md#设施模块命名规范规定)。
+缺失、越界、不可读或非法 JSON 卫星文件会让 **`pack validate` 与 `load_role` 失败**；合并后的蓝图还会再次执行完整契约校验。best-effort merge 只供不激活的预览使用。**第 2 设施子模块**（**专家模型设施子模块**）默认文件 **`blueprint/includes/expert_routing.json`** 由专家设施 loader 独立读取，不作为通用 `includes.target`；实验核 pipeline 可使用 action **`slot.expert.invoke`**（须 `dual_core` + v3 `pipeline.experimental`）。命名见 [OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md#设施模块命名规范规定)。
 
 ### 2.7 `module_relations`（仅运行时）
 
@@ -691,7 +691,7 @@ auto_sync: false
 
 > **架构**：独立通道 `voice.asr` / 导演 / synth profile 与主链正交；详见 [ARCHITECTURE_DECOUPLING_PANORAMA.md §11.2](../../human-docs/team/ARCHITECTURE_DECOUPLING_PANORAMA.md) · [TRACK_VOICE_RECOGNITION.md](../../human-docs/team/TRACK_VOICE_RECOGNITION.md)。
 
-角色包根目录可选 **`voice_profile.json`**（**不**写入 `slot_registry` · **不**进 `process_message`）。插件 `voice.build_directive` 在收到 `role_path` 时读取并覆盖默认 synth / director / baseline `speed`。
+角色包根目录可选 **`voice_profile.json`**（**不**写入 `slot_registry` · **不**进 `process_message`）。插件 `voice.build_directive` 在收到 `role_path` 时读取并覆盖默认 synth / director / baseline `speed`。Chat Pro 自动朗读还要求用户先开启全局 TTS，再在角色列表中单独启用该角色；缺少本文件的角色不可启用自动朗读，也不会静默复用其他角色的参考音。
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
@@ -707,7 +707,7 @@ auto_sync: false
 | `ref_map` | object | 否 | v2：emotion → ref 相对路径 |
 | `emo_text_template` | string | 否 | v2：含 `{tone}` 占位符的 instruct 模板 |
 
-**缺省派生**：未提供 `voice_profile.json`，或其中未写 `emo_text_template` / `speed` / `energy` 时，插件 `voice.build_directive` 会从同包 **`core_personality.txt`** 按 rules-v1 关键词规则自动派生 baseline 风格（显式字段始终优先）。详情与合规见 [TRACK_VOICE_RECOGNITION.md §1 VX-4b](../../human-docs/team/TRACK_VOICE_RECOGNITION.md)。
+**缺省派生**：对显式调用 `voice.build_directive` 的工具路径，未提供 `voice_profile.json`，或其中未写 `emo_text_template` / `speed` / `energy` 时，插件仍可从同包 **`core_personality.txt`** 按 rules-v1 关键词规则派生 baseline 风格（显式字段始终优先）。这不等于 Chat Pro 自动朗读授权：自动朗读必须存在 `voice_profile.json` 并通过全局 + 角色两级开关。详情与合规见 [TRACK_VOICE_RECOGNITION.md §1 VX-4b](../../human-docs/team/TRACK_VOICE_RECOGNITION.md)。
 
 示例见 [`distros/chat-pro/roles/mumu/voice_profile.json`](../../distros/chat-pro/roles/mumu/voice_profile.json)。契约 **`voice_directive` v1** 由插件 RPC 产出（可含 `ref_audio` · `ref_text` · `emo_text`），不进 `SendMessageResponse`。
 

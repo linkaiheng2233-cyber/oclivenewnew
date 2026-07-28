@@ -1,6 +1,6 @@
 # 模块注册表（Module Registry）
 
-**最后更新**：2026-07-05  
+**最后更新**：2026-07-28
 **SSOT 范围**：**模块定义 · 架构划分 · 槽位/设施/独立通道之间的联系 · 在边界内如何改**。  
 **非 SSOT**：发版进度 → [`TECHNICAL_DEBT_INVENTORY.md`](./TECHNICAL_DEBT_INVENTORY.md) · 版本快照 → [`PROJECT_CURRENT_STATUS.md`](../creator-docs/getting-started/PROJECT_CURRENT_STATUS.md) · 关键文件路径 → [`BUS_FACTOR_NOTES.md`](./BUS_FACTOR_NOTES.md) · 文档分责 → [`handoff/README.md`](./README.md) §文档分层。
 
@@ -8,7 +8,7 @@
 
 ---
 
-## 0. 四条铁律（关系骨架）
+## 0. 五条铁律（关系骨架）
 
 | # | 铁律 | 一句话 |
 |---|------|--------|
@@ -16,6 +16,7 @@
 | 2 | **六槽** | `slot_registry` → `PluginBackends` → `PluginHost::resolve_for_role`；键 **`memory` · `emotion` · `event` · `prompt` · `llm` · `agent`**。 |
 | 3 | **记忆三套存储** | 聊天日志 **`chat_messages`** ≠ **`short_term_memory`** ≠ **`long_term_memory`**；删聊天 **不清** 记忆表。 |
 | 4 | **配置四层** | 角色包 → 蓝图 → 发行版 `HostProfile` → 会话 DB；分责 [`ROLE_PACK_BOUNDARY.md`](./ROLE_PACK_BOUNDARY.md)。 |
+| 5 | **图纸 ≠ 资源执行** | 蓝图只声明能力意图；宿主编译内部 `ExecutionPlan`；Resource Coordinator 根据真实设备和策略发放资源租约。 |
 
 ---
 
@@ -41,6 +42,8 @@
 | **后端模块插件** | 挂在某槽 `backend` | 无独立号 | [`DIRECTORY_PLUGINS.md`](../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md) · [`SLOT_BACKEND_REALITY_MATRIX.md`](./SLOT_BACKEND_REALITY_MATRIX.md) |
 
 **对外叙述**（产品文案、编号脚注）：[`OCLIVE_ARCHITECTURE_OVERVIEW.md`](../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) — **不**在此重复长文。
+
+**蓝图 `extensions` 不是第五类模块**：它是跨上述分类的声明/装配外壳。扩展声明的 Capability 必须解析为已有六槽实现、设施、独立通道或宿主 UI/硬件消费者；仅出现一个未知 JSON 节点不构成新模块。目标契约见 [`RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md`](../creator-docs/rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md)。
 
 ---
 
@@ -261,6 +264,32 @@ TTFT / Deep capsule：**设计** [`DEEP_PROMPT_DISTILLATION.md`](./DEEP_PROMPT_D
 
 ---
 
+## 12.1 蓝图扩展、执行计划与资源协调（目标边界）
+
+| 概念 | 职责 | 禁止 |
+|------|------|------|
+| 蓝图扩展外壳 | `capability`、可选 `provider`、`required`、外置 `config_ref` | 携带卸载进程、固定显存或任意脚本命令 |
+| Capability Provider | 实现业务能力并声明权限/兼容性 | 仅有配置、没有生产者或消费者便宣称交付 |
+| `ExecutionPlan` | 合并蓝图、`HostProfile`、用户设置、能力注册表与设备状态；进程内使用 | 落盘进角色包或允许第三方直接写 |
+| Resource Coordinator | 集中预算、租约、优先级、压力和降级决策 | 传输 token/PCM/渲染帧或包含各模块业务逻辑 |
+| Resource Adapter | LLM、语音、渲染等领域的探测与 start/suspend/unload/degrade 执行 | 自行绕过中央租约偷偷预热 |
+
+```text
+Blueprint + HostProfile + user/session + Capability Registry
+                          ↓
+                     Plan Compiler
+                          ↓
+                     ExecutionPlan
+                          ↓
+                 Resource Coordinator
+                    ↓       ↓       ↓
+               LLM adapter Voice adapter Render adapter
+```
+
+资源协调是**无编号控制面设施**，不是第七后端模块、不是独立通道注册表项，也不是 [`resolve_kernel_action`](./KERNEL_SCHEDULER_RESCOPE.md) 的进程 attach/replace 调度。新扩展首先实现 Capability Provider；只有占用共享 GPU/内存/受管进程时才增加 Resource Adapter。完整字段、缺失语义和实施顺序只维护于 [蓝图扩展与资源协调 RFC](../creator-docs/rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md)。
+
+---
+
 ## 12.5 前端 ↔ 内核契约边界（2026-07-13）
 
 | 主题 | SSOT | 消费方 | 不变式 |
@@ -372,7 +401,7 @@ Agent 短路、异地 stub：**并列**于上链，见 `process_message.rs`。
 | 层 | 典型内容 | 谁改 | AI 任务边界 |
 |----|----------|------|-------------|
 | 角色包 | `core_personality.txt` · scenes · prompts | 创作者 | **不改** slot_registry |
-| 蓝图 | `slot_registry` · `runtime_config` | 管理员 | 须 validation |
+| 蓝图 | `slot_registry` · `runtime_config` · 目标 `extensions` 外壳 | 管理员 / 集成方 | 须 validation；扩展载荷由对应作者维护 |
 | 发行版 | `distro.oclive.toml` → HostProfile | 产品 | **不改**角色人设任务 |
 | 会话 | `role_runtime` · slot override | 运行时 | override 不写盘 |
 
@@ -387,6 +416,7 @@ Agent 短路、异地 stub：**并列**于上链，见 `process_message.rs`。
 | 改 Prompt 段落 | 第 4 模块 + 角色锚点 | prompt_builder · G7 `reply` |
 | 改发行版延迟 | HostProfile · Turn Thinking | DISTRO_CAPABILITY_PROFILE |
 | 新设施子模块 | RFC + 本文 §10 登记 | 禁止 silent 第七槽 |
+| 新蓝图扩展 / GPU 能力 | RFC + 本文 §12.1 + 完整 G17 链 | 蓝图只声明；资源敏感项必须接统一协调 |
 | 新 handoff 文档 | **关键决策 / RFC 仅** | [`AI_CHANGE_BOUNDARIES.md`](./AI_CHANGE_BOUNDARIES.md) G10–G12 |
 | 改 Chat Pro / 插件 / 角色能力 | §12.5–§12.6 全链核对 | G17 · `npm run check:module-compat` · 行为集成测 |
 

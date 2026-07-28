@@ -96,8 +96,8 @@ Optional text shaping after the LLM reply (`config.json` → `reply_post_process
 |---------|--------|
 | **Hold to talk** | Chat toolbar mic; default **V hold** when the window is focused and the input is not |
 | **ASR result** | Settings → Voice: send immediately or fill the input draft |
-| **TTS playback** | Enable voice expansion for auto-read; pick engine/profile in settings |
-| **Role voice hints** | Every role inherits the global TTS from settings; an optional pack `synth_profile` overrides only that role's speak jobs and must not rewrite global settings on role switch |
+| **TTS playback** | Enable global voice expansion and auto-read, then enable individual roles in the role list; pick engine/profile in settings |
+| **Role voice hints** | Auto-read requires both a per-role user toggle and that pack's `voice_profile.json`; an optional `synth_profile` overrides only that role's speak jobs and must not rewrite global settings on role switch |
 | **Platform** | Windows product path shipped; Linux/macOS profiles may return `unsupported_platform` |
 
 ---

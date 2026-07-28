@@ -191,6 +191,8 @@ python scripts/stress-voice-gpu-runtime.py --gpu-layers 24 --voice-runs 5
 
 同机 CosyVoice2 mixed-fp16 结果：峰值 **6751/8151MiB**、峰值余量 **1400MiB**、稳态增长 **0MiB**；LLM 热态 TTFT p50 **142ms**，语音 TTFC p50 **4293ms**。后台队列只缓存文本，不预生成语音；返回前台后仍按单拍顺序合成。
 
+2026-07-28 关联竞态与恢复修复后的复验：Ollama `qwen2.5:7b` 深度 1/2/4 共 **7/7** 拍结构化成功、零回退，热态总体 p50 **1047ms**，显存稳定 **5523MiB**；另以深度 8 连跑三轮共 **24/24** 拍，p50 为 **896/893/942ms**，内核工作集 **38.9→39.6MiB** 后稳定、句柄 **242→243** 后稳定。`--gpu-layers 24 --voice-runs 20` 共存压力中峰值 **6657/8151MiB**、余量 **1494MiB**、稳态增长 **0MiB**，热态 LLM TTFT p50 **145ms**、语音 TTFC p50 **3927ms**。同次普通聊天 7 轮真实流式 TTFT p50 **209ms**（直连 Ollama p50 **123ms**）。
+
 ## Related
 
 - [`DEEP_PROMPT_DISTILLATION.md`](DEEP_PROMPT_DISTILLATION.md)

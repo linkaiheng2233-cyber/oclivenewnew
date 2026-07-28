@@ -8,6 +8,7 @@
 | 角色包（入门） | [ROLE_PACK_SPEC.md](../creator-docs/role-pack/ROLE_PACK_SPEC.md) |
 | 蓝图 / 系统配置 | [SETTINGS_REFERENCE.md](../creator-docs/cli/SETTINGS_REFERENCE.md) |
 | **蓝图目录 `blueprint/`（拉取式、本体保持瘦）** | **[BLUEPRINT_FOLDER_LAYOUT.md](./BLUEPRINT_FOLDER_LAYOUT.md)** |
+| **蓝图扩展外壳 / 资源协调（目标契约）** | **[RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md](../creator-docs/rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md)** |
 | 双核对齐 | [DUAL_CORE_CURSOR_HANDOFF.md](DUAL_CORE_CURSOR_HANDOFF.md) |
 
 ---
@@ -88,6 +89,22 @@
 
 **`blueprint/` 卫星目录**（可选）：`includes/`、`overlays/`、`revisions/`、`docs/` — **不**替代 `pipeline.ocblueprint` 路径；专家文档放此处**不影响**默认蓝图校验（详见 [BLUEPRINT_FOLDER_LAYOUT.md](./BLUEPRINT_FOLDER_LAYOUT.md)）。
 
+### 3.2 通用蓝图扩展外壳（下一非冻结 schema · 目标）
+
+通用扩展沿用“底座归 OCLive、载荷归扩展作者”的原则，但不把第三方字段不断追加到蓝图根：
+
+| OCLive 维护 | 扩展作者维护 |
+|-------------|--------------|
+| `extensions` 容器、实例 ID、`capability`、可选 `provider`、`required`、安全 `config_ref`、缺失/降级语义 | `config_ref` 指向的载荷 schema、实现、UI、迁移、许可证、文档与支持 |
+
+- **角色内容扩展**（例如 Chat Pro `adult_extension.json`）与**蓝图能力扩展**是两种契约；可以使用同一分责原则，但不得互相冒充。
+- 蓝图只声明能力意图；宿主把蓝图、`HostProfile`、用户设置和能力注册表编译为进程内 `ExecutionPlan`。
+- 使用共享 GPU/内存/进程的能力另接 Resource Adapter；纯文本或纯配置扩展不需要资源适配器。
+- 未知可选扩展须保留并可见降级；未知必需扩展允许查看角色以修复，但不得激活该蓝图。
+- 当前 v2/v3 **尚未实现**该字段，且 v3 已冻结；正式包不得提前写入并声称生效。
+
+完整边界与接入闭环只维护于 [蓝图扩展与资源协调 RFC](../creator-docs/rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md)，本文不复制其字段和资源协议。
+
 ### 3.3 `runtime_config`（蓝图 · v3 目标 SSOT）
 
 | 子字段 | 说明 |
@@ -120,6 +137,7 @@ v2 文件若含 `runtime_config`：`pack validate` **警告并忽略**；请升 
 | Monolith `weld_modules` | 工程根 **`monolith.toml`**（不随角色包分发） |
 | 目录插件 **`permissions`** | 插件 **`manifest.json`** + 用户 **`high_risk_grants.json`** |
 | MCP server | `{app_data}/mcp-servers/*.json` + 用户授权 |
+| GPU/内存预算、租约与抢占 | 宿主 Resource Coordinator + `HostProfile` / 用户本机策略；蓝图只声明能力和降级意图 |
 
 ---
 
@@ -170,9 +188,10 @@ distros/chat-pro/roles/{id}/pipeline.ocblueprint
   ├─ meta（创作者子集 + 过渡期引擎字段）
   ├─ runtime_config（目标：系统配置 SSOT）
   ├─ slot_registry（蓝图）
-  └─ groups / pipeline（蓝图 · 双核 Proposed）
+  ├─ groups / pipeline（蓝图 · 双核 Proposed）
+  └─ extensions（下一非冻结 schema · 目标；当前未加载）
         ↓
-SlotResolver → PluginHost → process_message
+Plan Compiler（目标）→ SlotResolver / PluginHost → process_message
 ```
 
 会话 **`set_session_plugin_backend`** 覆盖槽位枚举，**不写回**角色包；高危能力仍走 **插件 manifest + grants**。

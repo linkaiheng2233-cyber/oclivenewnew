@@ -1,7 +1,7 @@
 # A.I.Live 文档索引
 
 **SSOT 范围**：本文只负责“去哪里读”，不复制架构、契约、进度或测试表。
-**最后更新**：2026-07-25。
+**最后更新**：2026-07-28。
 **原则**：先按身份选择一条入口；遇到具体问题再查专题文档。
 
 ## 先选择你的身份
@@ -52,6 +52,7 @@
 | Bridge API | [BRIDGE_API_REFERENCE](../plugin-and-architecture/BRIDGE_API_REFERENCE.md) |
 | HostProfile / 跨平台 | [DISTRO_CAPABILITY_PROFILE](../kernel/DISTRO_CAPABILITY_PROFILE.md) |
 | 内核生命周期 | [DISTRO_KERNEL_LIFECYCLE](../kernel/DISTRO_KERNEL_LIFECYCLE.md) |
+| 蓝图扩展外壳 / ExecutionPlan / 统一资源协调 | [RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION](../rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md) |
 
 ## 测试、安全与发布
 

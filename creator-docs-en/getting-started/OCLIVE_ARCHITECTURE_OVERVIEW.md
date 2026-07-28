@@ -16,6 +16,8 @@ This page is the **authoritative public narrative** and **module numbering & tax
 
 **Open lab** product axis: [VISION_OPEN_LAB.md](../../creator-docs/roadmap/VISION_OPEN_LAB.md).
 
+**Blueprint extensions and resource coordination (target contract; not implemented):** a blueprint keeps only a small namespaced capability declaration. The host compiles an internal `ExecutionPlan`, then a unified Resource Coordinator coordinates LLM, voice, Live2D/3D, and future resource adapters. The extension envelope is not a fifth module category, and resource coordination is not a seventh slot. See [RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md](../rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md).
+
 ---
 
 ## Facility-module naming (normative)
@@ -205,3 +207,4 @@ See the Chinese page for diagrams and disambiguation vs Experimental `dual_core`
 | `plugin_backends` & complex_emotion key | [SETTINGS_REFERENCE.md](../../creator-docs/cli/SETTINGS_REFERENCE.md) |
 | Expert routing & includes | [ROLE_PACK_SPEC.md](../../creator-docs/role-pack/ROLE_PACK_SPEC.md) · [BLUEPRINT_FOLDER_LAYOUT.md](../../handoff/BLUEPRINT_FOLDER_LAYOUT.md) |
 | Diagram | [KERNEL_AND_MODULES_ARCHITECTURE.md](../../creator-docs/getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md) |
+| Blueprint extension envelope / Resource Coordinator | [RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md](../rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md) |

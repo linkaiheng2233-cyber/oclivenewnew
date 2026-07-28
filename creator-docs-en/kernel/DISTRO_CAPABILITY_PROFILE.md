@@ -101,6 +101,10 @@ Fast / Deep per turn via `TurnThinkingRouter` in `co_present`. Fields: `default`
 
 **Chat Pro default (`desktop`)**: `default = auto`, `fast_persistence = strong_only`; streaming via `POST /chat/stream`; Deep capsule when pack enables it.
 
+### Resource coordination target
+
+Current VRAM exclusion covers only OCLive-managed llama-server and known Ollama fallback models. `HostProfile` may provide distro budget ceilings and default preferences, while blueprints express capability/degradation intent; a future Resource Coordinator owns actual leases and coordinates local LLM, voice, and render adapters. See the [blueprint extension and resource coordination RFC](../rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md). This target is not implemented by the current profile schema.
+
 ### 3.3 Prompt / memory / post_process mapping
 
 | Field | `full` (desktop) | `concise` (vscode example) |
@@ -157,5 +161,6 @@ See [DISTRO_KERNEL_LIFECYCLE.md](DISTRO_KERNEL_LIFECYCLE.md).
 - [DISTRO_KERNEL_LIFECYCLE.md](DISTRO_KERNEL_LIFECYCLE.md)
 - [DISTRO_DEFAULT_PLUGINS.md](DISTRO_DEFAULT_PLUGINS.md)
 - [KERNEL_SCHEDULER_RESCOPE.md](../../handoff/KERNEL_SCHEDULER_RESCOPE.md)
+- [Blueprint extension and resource coordination RFC](../rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md)
 - [CROSS_HOST_MEMORY.md](../role-pack/CROSS_HOST_MEMORY.md)
 - [OCLIVE_APP_DATA.md](OCLIVE_APP_DATA.md)
