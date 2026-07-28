@@ -165,6 +165,7 @@ pub fn disk_manifest_to_role(d: &DiskRoleManifest) -> Role {
         user_identity_catalog: None,
         runtime_config: None,
         pipeline_experimental: None,
+        blueprint_extensions: std::collections::BTreeMap::new(),
         scene_ids: std::sync::Arc::from(Vec::<String>::new()),
         scene_config_cache: std::sync::Arc::new(parking_lot::RwLock::new(
             std::collections::HashMap::new(),

@@ -17,9 +17,9 @@ use super::ui_config::UiConfig;
 use super::user_identity::UserIdentityCatalog;
 use super::visual_presentation_config::RolePackVisualPresentationConfig;
 pub use oclive_validation::{
-    AutonomousSceneConfig, AutonomousSceneRule, IdentityBinding, LifeAvailability,
-    LifeScheduleDisk, LifeScheduleEntryDisk, LifeTrajectoryDisk, PersonalitySource, PipelineStep,
-    RemotePresenceConfig, RuntimeConfig,
+    AutonomousSceneConfig, AutonomousSceneRule, BlueprintExtensionDecl, IdentityBinding,
+    LifeAvailability, LifeScheduleDisk, LifeScheduleEntryDisk, LifeTrajectoryDisk,
+    PersonalitySource, PipelineStep, RemotePresenceConfig, RuntimeConfig,
 };
 use parking_lot::RwLock;
 use std::path::PathBuf;
@@ -275,6 +275,10 @@ pub struct Role {
     /// v3 blueprint `pipeline.experimental` (`pipeline.stable` does not participate in runtime execution).
     #[serde(default)]
     pub pipeline_experimental: Option<Vec<PipelineStep>>,
+    /// Stable v4 extension declarations. Optional declarations are preserved even
+    /// when this host has no matching capability provider.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub blueprint_extensions: BTreeMap<String, BlueprintExtensionDecl>,
     /// Scene id list (manifest `scenes` + the `scenes/` subdirectory); populated by [`RoleStorage::finish_role_pack_load`].
     #[serde(skip)]
     pub scene_ids: Arc<[String]>,
@@ -375,6 +379,7 @@ impl Default for Role {
             user_identity_catalog: None,
             runtime_config: None,
             pipeline_experimental: None,
+            blueprint_extensions: BTreeMap::new(),
             scene_ids: Arc::from(Vec::<String>::new()),
             scene_config_cache: Arc::new(RwLock::new(HashMap::new())),
             scene_text_cache: Arc::new(RwLock::new(HashMap::new())),

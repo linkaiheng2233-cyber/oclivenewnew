@@ -11,18 +11,34 @@ use crate::models::{
 };
 use oclive_validation::{
     blueprint_schema_version_from_raw, load_blueprint_v2_for_role_dir,
-    load_blueprint_v3_for_role_dir, slot_registry_to_plugin_backends, validate_min_runtime_version,
-    validate_settings_schema_version, validate_settings_top_level_keys,
-    BLUEPRINT_V3_SCHEMA_VERSION, PIPELINE_BLUEPRINT_FILENAME,
+    load_blueprint_v3_for_role_dir, load_blueprint_v4_for_role_dir,
+    slot_registry_to_plugin_backends, validate_min_runtime_version,
+    validate_settings_schema_version, validate_settings_top_level_keys, BlueprintExtensionDecl,
+    RuntimeConfig, SlotGroupEntry, SlotRegistryEntry, BLUEPRINT_V2_SCHEMA_VERSION,
+    BLUEPRINT_V3_SCHEMA_VERSION, BLUEPRINT_V4_SCHEMA_VERSION, PIPELINE_BLUEPRINT_FILENAME,
 };
 use serde_json;
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use super::user_identities::load_user_identity_catalog;
 use super::{apply_llm_backend_env_override, RoleStorage};
+
+struct BlueprintRoleFields {
+    slot_registry: BTreeMap<String, SlotRegistryEntry>,
+    groups: BTreeMap<String, SlotGroupEntry>,
+    runtime_config: Option<RuntimeConfig>,
+    extensions: BTreeMap<String, BlueprintExtensionDecl>,
+    interaction_mode: Option<String>,
+    featured: bool,
+    deep_capsule_enabled: bool,
+    preset_order: u32,
+    remote_presence: Option<oclive_validation::RemotePresenceConfig>,
+    autonomous_scene: Option<oclive_validation::AutonomousSceneConfig>,
+    reply_quality_anchor: Option<String>,
+}
 
 /// Non-role entries under `roles/` root (runtime data, shared docs/templates).
 fn should_skip_roles_subdir(name: &str) -> bool {
@@ -167,7 +183,7 @@ impl RoleStorage {
     /// # Errors
     ///
     /// Returns [`Err`] with a human-readable message when the operation fails.
-    /// Loads a single role from a directory (prefers `pipeline.ocblueprint` v2, otherwise legacy manifest/settings).
+    /// Loads a single role from a directory (prefers `pipeline.ocblueprint`, otherwise legacy manifest/settings).
     pub fn load_role_from_dir(&self, role_dir: &Path) -> Result<Role> {
         if role_dir.join(PIPELINE_BLUEPRINT_FILENAME).is_file() {
             return self.load_role_from_blueprint_dir(role_dir);
@@ -175,15 +191,19 @@ impl RoleStorage {
         self.load_role_from_legacy_manifest_dir(role_dir)
     }
 
-    /// v2/v3 blueprint pack: load by `schema_version` dispatch.
+    /// v2/v3/v4 blueprint pack: load by exact `schema_version` dispatch.
     fn load_role_from_blueprint_dir(&self, role_dir: &Path) -> Result<Role> {
         let blueprint_path = role_dir.join(PIPELINE_BLUEPRINT_FILENAME);
         let raw = std::fs::read_to_string(&blueprint_path).map_err(AppError::IoError)?;
         let version = blueprint_schema_version_from_raw(&raw).unwrap_or(0);
-        if version == BLUEPRINT_V3_SCHEMA_VERSION {
-            return self.load_role_from_blueprint_v3_dir(role_dir);
+        match version {
+            BLUEPRINT_V2_SCHEMA_VERSION => self.load_role_from_blueprint_v2_dir(role_dir),
+            BLUEPRINT_V3_SCHEMA_VERSION => self.load_role_from_blueprint_v3_dir(role_dir),
+            BLUEPRINT_V4_SCHEMA_VERSION => self.load_role_from_blueprint_v4_dir(role_dir),
+            unsupported => Err(AppError::InvalidParameter(format!(
+                "pipeline.ocblueprint：不支持的 schema_version {unsupported}（支持 {BLUEPRINT_V2_SCHEMA_VERSION}、{BLUEPRINT_V3_SCHEMA_VERSION} 或 {BLUEPRINT_V4_SCHEMA_VERSION}）"
+            ))),
         }
-        self.load_role_from_blueprint_v2_dir(role_dir)
     }
 
     /// v3 blueprint pack: loads `runtime_config` and `pipeline.experimental`.
@@ -201,35 +221,27 @@ impl RoleStorage {
             },
         )?;
         let mut role = disk_manifest_to_role(&loaded.disk);
-        role.plugin_backends = Arc::new(slot_registry_to_plugin_backends(&loaded.slot_registry));
-        role.slot_registry = Some(loaded.slot_registry);
-        role.slot_groups = if loaded.groups.is_empty() {
-            None
-        } else {
-            Some(loaded.groups)
-        };
-        role.interaction_mode = loaded.interaction_mode;
-        role.featured = loaded.featured;
-        role.deep_capsule_enabled = loaded.deep_capsule_enabled;
-        role.preset_order = loaded.preset_order;
-        role.remote_presence = loaded.remote_presence;
-        role.autonomous_scene = loaded.autonomous_scene;
-        role.reply_quality_anchor = loaded.reply_quality_anchor;
-        role.runtime_config = loaded.runtime_config;
+        Self::apply_blueprint_role_fields(
+            &mut role,
+            BlueprintRoleFields {
+                slot_registry: loaded.slot_registry,
+                groups: loaded.groups,
+                runtime_config: loaded.runtime_config,
+                extensions: BTreeMap::new(),
+                interaction_mode: loaded.interaction_mode,
+                featured: loaded.featured,
+                deep_capsule_enabled: loaded.deep_capsule_enabled,
+                preset_order: loaded.preset_order,
+                remote_presence: loaded.remote_presence,
+                autonomous_scene: loaded.autonomous_scene,
+                reply_quality_anchor: loaded.reply_quality_anchor,
+            },
+        );
         role.pipeline_experimental = if loaded.pipeline_experimental.is_empty() {
             None
         } else {
             Some(loaded.pipeline_experimental)
         };
-        for entry in role.slot_registry.as_ref().into_iter().flatten() {
-            if entry.1.slot_type.trim() == "llm"
-                && entry.1.backend.trim() == "ollama"
-                && entry.1.model.as_ref().is_some_and(|m| !m.trim().is_empty())
-            {
-                role.ollama_model = entry.1.model.clone();
-                break;
-            }
-        }
         self.finish_role_pack_load(role_dir, &loaded.disk, role, None)
     }
 
@@ -247,32 +259,106 @@ impl RoleStorage {
 
         // 2) Compose runtime Role: six-slot summary (plugin_backends) + full registry for multi-instance resolution
         let mut role = disk_manifest_to_role(&loaded.disk);
-        role.plugin_backends = Arc::new(slot_registry_to_plugin_backends(&loaded.slot_registry));
-        role.slot_registry = Some(loaded.slot_registry);
-        role.slot_groups = if loaded.groups.is_empty() {
-            None
-        } else {
-            Some(loaded.groups)
-        };
-        role.interaction_mode = loaded.interaction_mode;
-        role.featured = loaded.featured;
-        role.deep_capsule_enabled = loaded.deep_capsule_enabled;
-        role.preset_order = loaded.preset_order;
-        role.remote_presence = loaded.remote_presence;
-        role.autonomous_scene = loaded.autonomous_scene;
-        role.reply_quality_anchor = loaded.reply_quality_anchor;
-
-        for entry in role.slot_registry.as_ref().into_iter().flatten() {
-            if entry.1.slot_type.trim() == "llm"
-                && entry.1.backend.trim() == "ollama"
-                && entry.1.model.as_ref().is_some_and(|m| !m.trim().is_empty())
-            {
-                role.ollama_model = entry.1.model.clone();
-                break;
-            }
-        }
+        Self::apply_blueprint_role_fields(
+            &mut role,
+            BlueprintRoleFields {
+                slot_registry: loaded.slot_registry,
+                groups: loaded.groups,
+                runtime_config: None,
+                extensions: BTreeMap::new(),
+                interaction_mode: loaded.interaction_mode,
+                featured: loaded.featured,
+                deep_capsule_enabled: loaded.deep_capsule_enabled,
+                preset_order: loaded.preset_order,
+                remote_presence: loaded.remote_presence,
+                autonomous_scene: loaded.autonomous_scene,
+                reply_quality_anchor: loaded.reply_quality_anchor,
+            },
+        );
 
         self.finish_role_pack_load(role_dir, &loaded.disk, role, None)
+    }
+
+    /// Stable v4 blueprint pack: activates `runtime_config` and preserves
+    /// optional extension declarations. Until the capability registry lands,
+    /// required declarations fail closed instead of pretending to execute.
+    fn load_role_from_blueprint_v4_dir(&self, role_dir: &Path) -> Result<Role> {
+        let loaded = load_blueprint_v4_for_role_dir(role_dir, env!("CARGO_PKG_VERSION")).map_err(
+            |errors| {
+                AppError::InvalidParameter(format!(
+                    "pipeline.ocblueprint (v4) 校验失败:\n{}",
+                    errors.join("\n")
+                ))
+            },
+        )?;
+        let required: Vec<&str> = loaded
+            .extensions
+            .iter()
+            .filter_map(|(instance_id, declaration)| {
+                declaration.required.then_some(instance_id.as_str())
+            })
+            .collect();
+        if !required.is_empty() {
+            return Err(AppError::InvalidParameter(format!(
+                "pipeline.ocblueprint (v4)：必需扩展尚无可用能力解析器，角色不能激活：{}",
+                required.join("、")
+            )));
+        }
+        if !loaded.extensions.is_empty() {
+            tracing::info!(
+                target: "oclive_role",
+                role_dir = %role_dir.display(),
+                optional_extension_count = loaded.extensions.len(),
+                "preserving optional v4 extension declarations; providers are not activated yet"
+            );
+        }
+
+        let mut role = disk_manifest_to_role(&loaded.disk);
+        Self::apply_blueprint_role_fields(
+            &mut role,
+            BlueprintRoleFields {
+                slot_registry: loaded.slot_registry,
+                groups: loaded.groups,
+                runtime_config: loaded.runtime_config,
+                extensions: loaded.extensions,
+                interaction_mode: loaded.interaction_mode,
+                featured: loaded.featured,
+                deep_capsule_enabled: loaded.deep_capsule_enabled,
+                preset_order: loaded.preset_order,
+                remote_presence: loaded.remote_presence,
+                autonomous_scene: loaded.autonomous_scene,
+                reply_quality_anchor: loaded.reply_quality_anchor,
+            },
+        );
+        self.finish_role_pack_load(role_dir, &loaded.disk, role, None)
+    }
+
+    fn apply_blueprint_role_fields(role: &mut Role, fields: BlueprintRoleFields) {
+        role.plugin_backends = Arc::new(slot_registry_to_plugin_backends(&fields.slot_registry));
+        role.slot_registry = Some(fields.slot_registry);
+        role.slot_groups = (!fields.groups.is_empty()).then_some(fields.groups);
+        role.runtime_config = fields.runtime_config;
+        role.blueprint_extensions = fields.extensions;
+        role.interaction_mode = fields.interaction_mode;
+        role.featured = fields.featured;
+        role.deep_capsule_enabled = fields.deep_capsule_enabled;
+        role.preset_order = fields.preset_order;
+        role.remote_presence = fields.remote_presence;
+        role.autonomous_scene = fields.autonomous_scene;
+        role.reply_quality_anchor = fields.reply_quality_anchor;
+
+        if let Some((_, entry)) = role.slot_registry.as_ref().and_then(|registry| {
+            registry.iter().find(|(_, entry)| {
+                entry.slot_type.trim() == "llm"
+                    && entry.backend.trim() == "ollama"
+                    && entry
+                        .model
+                        .as_ref()
+                        .is_some_and(|model| !model.trim().is_empty())
+            })
+        }) {
+            role.ollama_model.clone_from(&entry.model);
+        }
     }
 
     fn load_role_from_legacy_manifest_dir(&self, role_dir: &Path) -> Result<Role> {
@@ -553,7 +639,59 @@ impl RoleStorage {
 mod tests {
     use super::{should_skip_roles_subdir, RoleStorage};
     use std::fs;
+    use std::path::Path;
     use tempfile::tempdir;
+
+    fn write_v4_pack(role_dir: &Path, required: bool) {
+        let extension_id = "com.example.live2d";
+        let extension_dir = role_dir.join("blueprint/extensions").join(extension_id);
+        fs::create_dir_all(&extension_dir).unwrap();
+        fs::write(extension_dir.join("config.json"), r#"{"enabled":true}"#).unwrap();
+        fs::write(
+            role_dir.join(oclive_validation::PIPELINE_BLUEPRINT_FILENAME),
+            serde_json::json!({
+                "schema_version": 4,
+                "meta": {
+                    "id": role_dir.file_name().unwrap().to_string_lossy(),
+                    "name": "V4",
+                    "version": "1.0.0",
+                    "author": "test",
+                    "description": "test",
+                    "relations": {
+                        "friend": {
+                            "initial_favorability": 50,
+                            "favor_multiplier": 1
+                        }
+                    },
+                    "default_relation": "friend"
+                },
+                "slot_registry": {
+                    "llm": {
+                        "type": "llm",
+                        "label": "LLM",
+                        "backend": "ollama",
+                        "position": 0,
+                        "model": "qwen:test"
+                    }
+                },
+                "runtime_config": {
+                    "interaction_mode": "pure_chat"
+                },
+                "extensions": {
+                    extension_id: {
+                        "capability": extension_id,
+                        "required": required,
+                        "config_schema_version": 1,
+                        "config_ref": format!(
+                            "blueprint/extensions/{extension_id}/config.json"
+                        )
+                    }
+                }
+            })
+            .to_string(),
+        )
+        .unwrap();
+    }
 
     #[test]
     fn skip_reserved_roles_root_dirs() {
@@ -590,5 +728,50 @@ mod tests {
                 .unwrap()
                 .join("scenes/default/scene.json")
         );
+    }
+
+    #[test]
+    fn v4_loads_runtime_config_and_preserves_optional_extensions() {
+        let roles = tempdir().unwrap();
+        let role_dir = roles.path().join("demo");
+        write_v4_pack(&role_dir, false);
+        let role = RoleStorage::new(roles.path())
+            .load_role_from_dir(&role_dir)
+            .unwrap();
+        assert_eq!(role.interaction_mode.as_deref(), Some("pure_chat"));
+        assert_eq!(role.ollama_model.as_deref(), Some("qwen:test"));
+        assert!(role.blueprint_extensions.contains_key("com.example.live2d"));
+        assert!(role.pipeline_experimental.is_none());
+    }
+
+    #[test]
+    fn v4_required_extension_fails_closed_without_capability_resolver() {
+        let roles = tempdir().unwrap();
+        let role_dir = roles.path().join("required");
+        write_v4_pack(&role_dir, true);
+        let error = RoleStorage::new(roles.path())
+            .load_role_from_dir(&role_dir)
+            .unwrap_err()
+            .to_string();
+        assert!(error.contains("必需扩展尚无可用能力解析器"), "{error}");
+        assert!(error.contains("com.example.live2d"), "{error}");
+    }
+
+    #[test]
+    fn unknown_blueprint_version_does_not_fall_back_to_v2() {
+        let roles = tempdir().unwrap();
+        let role_dir = roles.path().join("unknown");
+        fs::create_dir_all(&role_dir).unwrap();
+        fs::write(
+            role_dir.join(oclive_validation::PIPELINE_BLUEPRINT_FILENAME),
+            r#"{"schema_version":99}"#,
+        )
+        .unwrap();
+        let error = RoleStorage::new(roles.path())
+            .load_role_from_dir(&role_dir)
+            .unwrap_err()
+            .to_string();
+        assert!(error.contains("schema_version 99"), "{error}");
+        assert!(error.contains("2、3 或 4"), "{error}");
     }
 }

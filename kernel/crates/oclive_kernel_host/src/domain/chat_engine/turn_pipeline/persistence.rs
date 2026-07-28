@@ -461,6 +461,7 @@ mod persist_non_profile_tests {
             pack_chat_storage_config: crate::models::RolePackChatStorageConfig::default(),
             runtime_config: None,
             pipeline_experimental: None,
+            blueprint_extensions: std::collections::BTreeMap::new(),
             scene_ids: Arc::from(Vec::<String>::new()),
             scene_config_cache: Arc::new(
                 parking_lot::RwLock::new(std::collections::HashMap::new()),

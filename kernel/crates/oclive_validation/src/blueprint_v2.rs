@@ -107,7 +107,7 @@ pub struct SlotRegistryEntry {
     /// v3 optional: `stable` / `experimental` (architecture diagram zone).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub zone: Option<serde_json::Value>,
-    /// Internal-only merge-policy hook. It is not part of the frozen v2/v3 disk contract.
+    /// Internal-only merge-policy hook. It is not part of the v2/v3/v4 disk contract.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub policy: Option<String>,
 }
@@ -267,7 +267,7 @@ fn parse_blueprint_v2_root(raw: &str) -> Result<BlueprintV2File, Vec<String>> {
                 for field in entry.keys() {
                     if !V2_SLOT_ENTRY_KEYS.contains(&field.as_str()) {
                         errs.push(format!(
-                            "slot_registry[{slot_key}]：未知字段「{field}」（zone 仅属于冻结 v3；policy 未进入 v2/v3 磁盘契约）"
+                            "slot_registry[{slot_key}]：未知字段「{field}」（zone 仅属于冻结 v3；policy 未进入 v2/v3/v4 磁盘契约）"
                         ));
                     }
                 }
@@ -419,7 +419,9 @@ pub fn validate_role_pack_blueprint_v2_directory(
     )
 }
 
-/// Writes `slot_registry` back to `pipeline.ocblueprint` (keeps `meta` and other fields); full validation before write.
+/// Writes `slot_registry` back to a supported `pipeline.ocblueprint` version
+/// while preserving all other fields; validates the matching v2/v3/v4
+/// contract before write.
 ///
 /// # Errors
 ///
@@ -439,6 +441,7 @@ pub fn write_role_pack_blueprint_slot_registry(
     }
     let raw = fs::read_to_string(&blueprint_path)
         .map_err(|e| vec![format!("读取 {} 失败: {}", PIPELINE_BLUEPRINT_FILENAME, e)])?;
+    let version = crate::blueprint_dispatch::blueprint_schema_version_from_raw(&raw).unwrap_or(0);
     let mut root: Value = serde_json::from_str(&raw).map_err(|e| {
         vec![format!(
             "{} JSON 解析失败: {}",
@@ -454,26 +457,49 @@ pub fn write_role_pack_blueprint_slot_registry(
     let out = serde_json::to_string_pretty(&root)
         .map_err(|e| vec![format!("{} 序列化失败: {e}", PIPELINE_BLUEPRINT_FILENAME)])?;
     let folder_name = role_dir.file_name().and_then(|s| s.to_str()).unwrap_or("");
-    validate_blueprint_v2_json_with_context(
-        &out,
-        BlueprintV2ValidateContext {
-            folder_name: Some(folder_name),
-            role_dir: Some(role_dir),
-            host_version: Some(host_version),
-        },
-    )?;
+    validate_blueprint_for_slot_registry_write(&out, version, folder_name, role_dir, host_version)?;
     let resolved = crate::blueprint_includes::merge_blueprint_includes_strict(role_dir, &out)?;
-    validate_blueprint_v2_json_with_context(
+    validate_blueprint_for_slot_registry_write(
         &resolved,
-        BlueprintV2ValidateContext {
-            folder_name: Some(folder_name),
-            role_dir: Some(role_dir),
-            host_version: Some(host_version),
-        },
+        version,
+        folder_name,
+        role_dir,
+        host_version,
     )?;
     fs::write(&blueprint_path, format!("{out}\n"))
         .map_err(|e| vec![format!("写入 {} 失败: {e}", blueprint_path.display())])?;
     Ok(())
+}
+
+fn validate_blueprint_for_slot_registry_write(
+    raw: &str,
+    version: u32,
+    folder_name: &str,
+    role_dir: &Path,
+    host_version: &str,
+) -> Result<(), Vec<String>> {
+    match version {
+        BLUEPRINT_V2_SCHEMA_VERSION => validate_blueprint_v2_json_with_context(
+            raw,
+            BlueprintV2ValidateContext {
+                folder_name: Some(folder_name),
+                role_dir: Some(role_dir),
+                host_version: Some(host_version),
+            },
+        ),
+        crate::blueprint_v3::BLUEPRINT_V3_SCHEMA_VERSION => {
+            crate::blueprint_v3::validate_blueprint_v3_json(raw, Some(folder_name))
+        }
+        crate::blueprint_v4::BLUEPRINT_V4_SCHEMA_VERSION => {
+            crate::blueprint_v4::validate_blueprint_v4_json(raw, Some(folder_name))?;
+            crate::blueprint_v4::validate_blueprint_v4_extension_payloads_for_raw(role_dir, raw)
+        }
+        unsupported => Err(vec![format!(
+            "pipeline.ocblueprint：不支持的 schema_version {unsupported}（支持 {BLUEPRINT_V2_SCHEMA_VERSION}、{} 或 {}）",
+            crate::blueprint_v3::BLUEPRINT_V3_SCHEMA_VERSION,
+            crate::blueprint_v4::BLUEPRINT_V4_SCHEMA_VERSION
+        )]),
+    }
 }
 
 /// Reads and validates v2 blueprint in role pack directory; returns host load structure.
@@ -699,7 +725,7 @@ pub(crate) fn validate_slot_registry_contract(
         }
         if slot.policy.is_some() {
             errs.push(format!(
-                "slot_registry[{key}].policy 未进入 v2/v3 磁盘契约；当前公开语义保持按 position 的既定合并策略"
+                "slot_registry[{key}].policy 未进入 v2/v3/v4 磁盘契约；当前公开语义保持按 position 的既定合并策略"
             ));
         }
 
@@ -828,7 +854,7 @@ pub(crate) fn allowed_backends_for_type(slot_type: &str) -> &'static [&'static s
     }
 }
 
-/// Converts blueprint `meta` to disk manifest (shared by v2/v3).
+/// Converts blueprint `meta` to disk manifest (shared by v2/v3/v4).
 #[must_use]
 pub fn meta_to_disk_manifest(meta: &BlueprintMeta) -> DiskRoleManifest {
     let default_personality = meta

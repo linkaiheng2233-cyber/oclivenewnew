@@ -1,4 +1,5 @@
-//! Blueprint `runtime_config` section (v3 target SSOT; v2 presence is non-fatal—host still reads transitional `meta` fields).
+//! Blueprint `runtime_config` section (Stable v4 SSOT; frozen v3 keeps the
+//! dual-core Beta field; v2 presence is non-fatal and ignored by its load path).
 
 use serde::{Deserialize, Serialize};
 

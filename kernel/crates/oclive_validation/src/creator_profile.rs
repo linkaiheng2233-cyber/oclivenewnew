@@ -31,7 +31,7 @@ pub fn validate_role_pack_creator_directory(role_dir: &Path) -> Result<(), Vec<S
     let blueprint_path = role_dir.join(PIPELINE_BLUEPRINT_FILENAME);
     if !blueprint_path.is_file() {
         errs.push(format!(
-            "creator profile：缺少 {}（请使用 v2/v3 蓝图包）",
+            "creator profile：缺少 {}（请使用 v2/v3/v4 蓝图包）",
             PIPELINE_BLUEPRINT_FILENAME
         ));
         return Err(errs);

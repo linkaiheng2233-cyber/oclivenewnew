@@ -24,7 +24,7 @@ use std::path::Path;
 
 use crate::blueprint_v2::{
     meta_to_disk_manifest, validate_slot_registry_contract, BlueprintMeta, SlotGroupEntry,
-    SlotRegistryEntry, BLUEPRINT_V2_SCHEMA_VERSION, PIPELINE_BLUEPRINT_FILENAME,
+    SlotRegistryEntry, PIPELINE_BLUEPRINT_FILENAME,
 };
 use crate::pipeline_action::{parse_pipeline_action_kind, PipelineActionKind};
 use crate::role_pack::merge_role_pack_scene_ids;
@@ -106,48 +106,6 @@ pub struct SlotRegistryEntryV3 {
     pub local_memory_provider_id: Option<String>,
     #[serde(default)]
     pub zone: Option<Value>,
-}
-
-/// Dispatch by `schema_version`: 2 → v2 validation; 3 → v3 validation.
-///
-/// # Errors
-///
-/// Returns `Err(Vec<String>)` on an unknown version or contract failure.
-pub fn validate_blueprint_json_by_schema_version(
-    raw: &str,
-    folder_name: Option<&str>,
-) -> Result<Vec<String>, Vec<String>> {
-    let root: Value = serde_json::from_str(raw)
-        .map_err(|e| vec![format!("pipeline.ocblueprint JSON 语法错误: {}", e)])?;
-    let version = root
-        .get("schema_version")
-        .and_then(|v| v.as_u64())
-        .unwrap_or(0) as u32;
-    match version {
-        BLUEPRINT_V2_SCHEMA_VERSION => {
-            crate::blueprint_v2::validate_blueprint_v2_json(raw)?;
-            Ok(warnings_for_v2_runtime_config(&root))
-        }
-        BLUEPRINT_V3_SCHEMA_VERSION => {
-            validate_blueprint_v3_json(raw, folder_name)?;
-            Ok(Vec::new())
-        }
-        other => Err(vec![format!(
-            "pipeline.ocblueprint：不支持的 schema_version {other}（支持 {} 或 {}）",
-            BLUEPRINT_V2_SCHEMA_VERSION, BLUEPRINT_V3_SCHEMA_VERSION
-        )]),
-    }
-}
-
-fn warnings_for_v2_runtime_config(root: &Value) -> Vec<String> {
-    if root.get("runtime_config").is_some() {
-        vec![
-            "注意：schema_version 2 下顶层 runtime_config 不参与宿主加载（将被忽略）；请升级到 schema_version 3 或把字段写在 meta（过渡期）"
-                .into(),
-        ]
-    } else {
-        Vec::new()
-    }
 }
 
 /// Validate v3 blueprint JSON.
@@ -449,15 +407,6 @@ pub struct BlueprintV3LoadResult {
     pub reply_quality_anchor: Option<String>,
 }
 
-/// Read `schema_version` from blueprint JSON (`None` when parsing fails).
-#[must_use]
-pub fn blueprint_schema_version_from_raw(raw: &str) -> Option<u32> {
-    serde_json::from_str::<Value>(raw)
-        .ok()
-        .and_then(|v| v.get("schema_version").and_then(|n| n.as_u64()))
-        .map(|n| n as u32)
-}
-
 fn v3_entry_to_slot_registry_entry(e: &SlotRegistryEntryV3) -> SlotRegistryEntry {
     SlotRegistryEntry {
         slot_type: e.slot_type.clone(),
@@ -483,7 +432,10 @@ fn v3_registry_to_btree(
         .collect()
 }
 
-fn apply_runtime_config_to_disk(disk: &mut crate::manifest::DiskRoleManifest, rc: &RuntimeConfig) {
+pub(crate) fn apply_runtime_config_to_disk(
+    disk: &mut crate::manifest::DiskRoleManifest,
+    rc: &RuntimeConfig,
+) {
     if let Some(ref m) = rc.memory_config {
         disk.memory_config = m.clone();
     }
@@ -647,6 +599,7 @@ fn dfs_cycle(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::blueprint_dispatch::validate_blueprint_json_by_schema_version;
 
     fn minimal_v3_json() -> String {
         r#"{

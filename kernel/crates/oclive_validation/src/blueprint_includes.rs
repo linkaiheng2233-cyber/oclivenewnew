@@ -46,7 +46,7 @@ pub fn validate_includes(
             errs.push(format!("{label}: path 不能为空"));
             continue;
         }
-        if let Err(e) = validate_include_path(role_dir, &inc.path) {
+        if let Err(e) = validate_blueprint_relative_path(role_dir, &inc.path) {
             errs.push(format!("{label}: {e}"));
             continue;
         }
@@ -54,7 +54,7 @@ pub fn validate_includes(
         if !file_path.is_file() {
             errs.push(format!("{label}: 文件不存在: {}", file_path.display()));
         } else {
-            if let Err(e) = validate_existing_include_file(role_dir, &file_path) {
+            if let Err(e) = validate_existing_blueprint_file(role_dir, &file_path) {
                 errs.push(format!("{label}: {e}"));
             }
             match std::fs::read_to_string(&file_path) {
@@ -171,7 +171,7 @@ fn apply_include_strict(
     root: &mut Value,
     inc: &BlueprintIncludeEntry,
 ) -> Result<(), String> {
-    validate_include_path(role_dir, &inc.path)?;
+    validate_blueprint_relative_path(role_dir, &inc.path)?;
     let file_path = role_dir.join(&inc.path);
     let fragment: Value =
         serde_json::from_str(&std::fs::read_to_string(&file_path).map_err(|e| e.to_string())?)
@@ -181,7 +181,16 @@ fn apply_include_strict(
     Ok(())
 }
 
-fn validate_include_path(role_dir: &Path, path: &str) -> Result<(), String> {
+pub(crate) fn validate_blueprint_relative_path(role_dir: &Path, path: &str) -> Result<(), String> {
+    validate_blueprint_relative_path_syntax(path)?;
+    let joined = role_dir.join(path);
+    if !is_path_inside_role(role_dir, &joined) {
+        return Err("path 逃逸角色包目录".into());
+    }
+    Ok(())
+}
+
+pub(crate) fn validate_blueprint_relative_path_syntax(path: &str) -> Result<(), String> {
     let rel = path.trim();
     if rel.is_empty() {
         return Err("path 不能为空".into());
@@ -214,14 +223,13 @@ fn validate_include_path(role_dir: &Path, path: &str) -> Result<(), String> {
             _ => {}
         }
     }
-    let joined = role_dir.join(p);
-    if !is_path_inside_role(role_dir, &joined) {
-        return Err("path 逃逸角色包目录".into());
-    }
     Ok(())
 }
 
-fn validate_existing_include_file(role_dir: &Path, file_path: &Path) -> Result<(), String> {
+pub(crate) fn validate_existing_blueprint_file(
+    role_dir: &Path,
+    file_path: &Path,
+) -> Result<(), String> {
     let canonical_role = std::fs::canonicalize(role_dir)
         .map_err(|e| format!("无法规范化角色包目录 {}: {e}", role_dir.display()))?;
     let canonical_file = std::fs::canonicalize(file_path)

@@ -115,6 +115,7 @@ mod tests {
             plugin_backends: std::sync::Arc::new(crate::models::PluginBackends::default()),
             slot_registry: None,
             slot_groups: None,
+            blueprint_extensions: Default::default(),
             ui_config: crate::models::UiConfig::default(),
             knowledge_index: None,
             author_pack: None,

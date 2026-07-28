@@ -7,11 +7,15 @@ use std::str::FromStr;
 
 use serde_json::Value;
 
-use crate::blueprint_v2::{validate_role_pack_blueprint_v2_directory, PIPELINE_BLUEPRINT_FILENAME};
-use crate::blueprint_v3::{
-    validate_blueprint_json_by_schema_version, validate_role_pack_blueprint_v3_directory,
-    BLUEPRINT_V3_SCHEMA_VERSION,
+use crate::blueprint_dispatch::{
+    blueprint_schema_version_from_raw, validate_blueprint_json_by_schema_version,
 };
+use crate::blueprint_v2::{
+    validate_role_pack_blueprint_v2_directory, BLUEPRINT_V2_SCHEMA_VERSION,
+    PIPELINE_BLUEPRINT_FILENAME,
+};
+use crate::blueprint_v3::{validate_role_pack_blueprint_v3_directory, BLUEPRINT_V3_SCHEMA_VERSION};
+use crate::blueprint_v4::{validate_role_pack_blueprint_v4_directory, BLUEPRINT_V4_SCHEMA_VERSION};
 use crate::creator_profile::validate_role_pack_creator_directory;
 use crate::disk_role_settings::DiskRoleSettings;
 use crate::json_keys::{validate_manifest_top_level_keys, validate_settings_top_level_keys};
@@ -24,7 +28,7 @@ use crate::validate::{
 /// Extended role pack directory validation profile (rules appended after standard disk validation passes).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum RolePackValidationProfile {
-    /// `pipeline.ocblueprint` v2 SSOT (`pack validate` default).
+    /// `pipeline.ocblueprint` SSOT (`pack validate` default; v2/v3/v4 dispatch).
     #[default]
     BlueprintV2,
     /// Legacy: `manifest.json` + `settings.json` (`--profile legacy`).
@@ -33,7 +37,7 @@ pub enum RolePackValidationProfile {
     Creator,
     /// Robot / headless minimal soul pack: extra rules after legacy disk validation passes.
     RobotSoul,
-    /// Portable Core: v2/v3 blueprint plus the cross-distro persona and seven-image baseline.
+    /// Portable Core: v2/v3/v4 blueprint plus the cross-distro persona and seven-image baseline.
     PortableCore,
 }
 
@@ -466,7 +470,13 @@ pub fn validate_role_pack_directory_with_profile(
     Ok(())
 }
 
-fn validate_role_pack_blueprint_directory(
+/// Validates a role pack whose blueprint uses any supported schema version.
+///
+/// # Errors
+///
+/// Returns every structural, path, compatibility, and referenced-file error
+/// found by the exact v2/v3/v4 validation path.
+pub fn validate_role_pack_blueprint_directory(
     role_dir: &Path,
     host_version: &str,
 ) -> Result<(), Vec<String>> {
@@ -474,14 +484,14 @@ fn validate_role_pack_blueprint_directory(
     let manifest_path = role_dir.join("manifest.json");
     if manifest_path.is_file() {
         errs.push(format!(
-            "v2/v3 角色包不得包含 manifest.json（已废弃）：{}",
+            "v2/v3/v4 角色包不得包含 manifest.json（已废弃）：{}",
             manifest_path.display()
         ));
     }
     let settings_path = role_dir.join("settings.json");
     if settings_path.is_file() {
         errs.push(format!(
-            "v2/v3 角色包不得包含 settings.json（已废弃）：{}",
+            "v2/v3/v4 角色包不得包含 settings.json（已废弃）：{}",
             settings_path.display()
         ));
     }
@@ -504,21 +514,24 @@ fn validate_role_pack_blueprint_directory(
 
     let warnings = validate_blueprint_json_by_schema_version(&raw, folder_name)?;
 
-    let version = serde_json::from_str::<serde_json::Value>(&raw)
-        .ok()
-        .and_then(|v| v.get("schema_version").and_then(|n| n.as_u64()))
-        .unwrap_or(0) as u32;
-
-    if version == BLUEPRINT_V3_SCHEMA_VERSION {
-        validate_role_pack_blueprint_v3_directory(role_dir, host_version)?;
-        if !warnings.is_empty() {
-            print_pack_warnings(&warnings);
+    let version = blueprint_schema_version_from_raw(&raw).unwrap_or(0);
+    match version {
+        BLUEPRINT_V2_SCHEMA_VERSION => {
+            validate_role_pack_blueprint_v2_directory(role_dir, host_version)?
         }
-        validate_role_pack_optional_extensions(role_dir)?;
-        return Ok(());
+        BLUEPRINT_V3_SCHEMA_VERSION => {
+            validate_role_pack_blueprint_v3_directory(role_dir, host_version)?
+        }
+        BLUEPRINT_V4_SCHEMA_VERSION => {
+            validate_role_pack_blueprint_v4_directory(role_dir, host_version)?
+        }
+        _ => {
+            return Err(vec![format!(
+                "pipeline.ocblueprint：不支持的 schema_version {version}（支持 {BLUEPRINT_V2_SCHEMA_VERSION}、{BLUEPRINT_V3_SCHEMA_VERSION} 或 {BLUEPRINT_V4_SCHEMA_VERSION}）"
+            )])
+        }
     }
 
-    validate_role_pack_blueprint_v2_directory(role_dir, host_version)?;
     if !warnings.is_empty() {
         print_pack_warnings(&warnings);
     }

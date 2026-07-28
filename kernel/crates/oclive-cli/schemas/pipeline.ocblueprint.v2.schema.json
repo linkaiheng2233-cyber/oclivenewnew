@@ -148,7 +148,7 @@
     },
     "runtime_config": {
       "type": "object",
-      "description": "v3 system configuration SSOT. Present on v2 files: ignored at load with pack validate warning; use schema_version 3 for hosts.",
+      "description": "Present on v2 files only for read compatibility: ignored at load with a pack validate warning. Use Stable schema_version 4; schema_version 3 is reserved for the frozen dual-core Beta.",
       "additionalProperties": false,
       "properties": {
         "interaction_mode": { "type": "string", "enum": ["immersive", "pure_chat"] },

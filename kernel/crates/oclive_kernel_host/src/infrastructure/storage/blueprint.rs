@@ -10,7 +10,7 @@ use std::path::Path;
 
 /// Best-effort `includes[]` merge for non-activating previews.
 ///
-/// Production role activation uses the strict `oclive_validation::load_blueprint_v2/v3_for_role_dir`
+/// Production role activation uses the strict `oclive_validation::load_blueprint_v2/v3/v4_for_role_dir`
 /// paths; missing or malformed satellite files block activation.
 #[must_use]
 #[allow(dead_code)] // For RoleStorage / toolchain explicit calls; host default uses oclive_validation load_* path
@@ -22,7 +22,7 @@ impl RoleStorage {
     /// # Errors
     ///
     /// Returns [`Err`] with a human-readable message when the operation fails.
-    /// Write `slot_registry` back to `roles/{role_id}/pipeline.ocblueprint` (must be a v2 blueprint pack).
+    /// Write `slot_registry` back to a supported v2/v3/v4 blueprint pack.
     pub fn save_blueprint_v2_slot_registry(
         &self,
         role_id: &str,
