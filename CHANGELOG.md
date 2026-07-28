@@ -152,7 +152,7 @@
 - **立绘 catalog（A2/B1）**：`portrait_catalog.json` SSOT；7 固定槽 + 高级多条目；`visual_state_id` / `performance_directive` additive DTO。
 - **表现导演**：`pick_portrait_with_catalog` + 复杂情感 `narrative_hint` 闭环；legacy `portrait_emotion` 七 tag 零回归。
 - **视觉表现 v1**：`materialize_directive`（image/live2d/rig3d/procedural）；distro `[visual_presentation].mode` gating（`off` / `image_only` / `stage_full`）。
-- **OOCP S16**：catalog fixture 断言 `visual_state_id` + `performance_directive`；mumu 无字段。
+- **OOCP S16**：固定的关闭/开启 fixture 分别断言视觉字段省略，以及 `visual_state_id` + `performance_directive` 输出，避免官方角色配置演进使协议测试失真。
 - **编写器**：`PortraitCatalogEditor`、分级导出 profile（`desktop-full` / `vscode-lite` / `theater`）、`visual_presentation` UI。
 - **VS Code Flash**：HTTP 解析 `visual_state_id` / `performance_directive`；catalog 路径优先于 tag 文件名。
 - **Theater**：`TheaterStagePanel` + `Live2DStageAdapter` 接线（Cubism defer，PNG fallback）。

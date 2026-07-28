@@ -1,0 +1,9 @@
+{
+  "portrait_catalog": {
+    "enabled": false
+  },
+  "visual_presentation": {
+    "enabled": false,
+    "backend": "image"
+  }
+}

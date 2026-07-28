@@ -1,4 +1,4 @@
-# OOCP 协议测试套件（S0–S12，共 13 场景；可选 S13 / S14）
+# OOCP 协议测试套件（默认 16 场景；可选 S13 / S14）
 
 **状态（`main`）**：已入库 **`examples/oocp-test-suite/`**（`run.mjs` + JSON schema）；CI 工作流 **`.github/workflows/ci.yml`** 中的 **`oocp-test-suite`** job 会构建 `oclivenewnew-tauri --features dual_core`、拉起 **`--api` HTTP 服务**、轮询 **`GET /health`**、执行 **`node run.mjs --include-dual-core`**（S13/S14），随后执行 **`scripts/e2e-core-api-restart.mjs`**（**进程重启后再对话** 烟测；失败则 job 失败）。**`frontend`** job 在 **Ubuntu** 上在 **`npm run build`** 后另跑 **Playwright + `vite preview` 首屏**（**A1.1b**；Windows `frontend` 不跑 Playwright）。
 
@@ -29,6 +29,7 @@
 | ID | 断言要点 |
 |----|-----------|
 | S0 | `GET /health` → 200，body `ok` |
+| S0b | `GET /health` JSON 探活 → `ok=true`，并暴露启动告警契约 |
 | S1 | `POST /chat` 空消息 → 400，`error.code=EMPTY_MESSAGE` |
 | S2 | 非法 `role_path` → 400，`INVALID_ROLE_PATH` 或内核加载码（如 `ROLE_NOT_FOUND`） |
 | S3 | `role_path=""` → 400，带错误体 |
@@ -42,8 +43,9 @@
 | S11 | 成功体含 `api_version`、`schema`、`timestamp` |
 | S12 | 错误体 `error.code` 为 **字符串**（`KernelErrorBody`），非 JSON-RPC 整数码 |
 | S15 | `POST /chat/stream` → SSE `token` 事件 + 末帧 `done`（含非空 `reply`）；Mock LLM 整段 fallback 亦须至少 1 个 `token` |
+| S16 | 固定关闭/开启 fixture 分别断言视觉字段省略，以及 `visual_state_id` + image `performance_directive` 输出 |
 
-**默认套件**：`run.mjs` 按序执行 **S0–S12** 与 **S15**（**14** 项核心 HTTP 场景）。双核场景为可选：**S13**（experimental 失败静默降级 Stable 仍返回 `reply`）与 **S14**（experimental 合法 method DAG 成功路径仍返回 `reply`）。可通过 `--include-s13` / `--include-s14`、`OCLIVE_OOCP_INCLUDE_S13=1` / `OCLIVE_OOCP_INCLUDE_S14=1` 单独开启，或 `--include-dual-core` / `OCLIVE_OOCP_INCLUDE_DUAL_CORE=1` 一次开启两者。
+**默认套件**：`run.mjs` 按序执行 **S0、S0b、S1–S12、S15、S16**（**16** 项核心 HTTP 场景）。双核场景为可选：**S13**（experimental 失败静默降级 Stable 仍返回 `reply`）与 **S14**（experimental 合法 method DAG 成功路径仍返回 `reply`）。可通过 `--include-s13` / `--include-s14`、`OCLIVE_OOCP_INCLUDE_S13=1` / `OCLIVE_OOCP_INCLUDE_S14=1` 单独开启，或 `--include-dual-core` / `OCLIVE_OOCP_INCLUDE_DUAL_CORE=1` 一次开启两者。
 
 ## 协议符合性报告
 
@@ -58,7 +60,7 @@
 
 当前主程序 **`--api`** 为 **HTTP**（`GET /health`、`POST /chat`），**无 WebSocket 方法链**。本套件校验的是 **HTTP 试聊契约** 与编排结果；若规范中的 WS 语义落地，应在本目录扩展脚本与 CI 步骤。
 
-**文档口径**：与本仓库根 **`README.md`**、**`AGENTS.md`** 一致：**OOCP 13 场景（S0–S12）**，另有可选 **S13/S14** 双核场景；CI job **`oocp-test-suite`**；目录 **`examples/oocp-test-suite/`**。
+**文档口径**：根索引中的 **S0–S12** 指基础编号段；当前可执行默认集还包括 **S0b/S15/S16，共 16 场景**，另有可选 **S13/S14** 双核场景。场景真值以本页和 `run.mjs` 为准。
 
 ## 测试体系统览
 

@@ -147,7 +147,7 @@
 - **Portrait catalog (A2/B1)**: `portrait_catalog.json` SSOT; seven fixed slots + advanced multi-entry; additive `visual_state_id` / `performance_directive` DTOs.
 - **Performance director**: `pick_portrait_with_catalog` + complex-emotion `narrative_hint` closed loop; legacy `portrait_emotion` seven-tag zero regression.
 - **Visual presentation v1**: `materialize_directive` (image/live2d/rig3d/procedural); distro `[visual_presentation].mode` gating (`off` / `image_only` / `stage_full`).
-- **OOCP S16**: catalog fixture asserts `visual_state_id` + `performance_directive`; mumu has no fields.
+- **OOCP S16**: fixed disabled/enabled fixtures assert visual-field omission and `visual_state_id` + `performance_directive` output, so official role evolution cannot invalidate the protocol test.
 - **Pack editor**: `PortraitCatalogEditor`, tiered export profiles (`desktop-full` / `vscode-lite` / `theater`), `visual_presentation` UI.
 - **VS Code Flash**: HTTP parses `visual_state_id` / `performance_directive`; catalog path preferred over tag filenames.
 - **Theater**: `TheaterStagePanel` + `Live2DStageAdapter` wiring (Cubism defer, PNG fallback).

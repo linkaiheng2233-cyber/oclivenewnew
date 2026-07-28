@@ -258,14 +258,20 @@ async function scenarioHandlers(base, rolePath) {
       if (typeof body?.timestamp !== 'number') throw new Error(`S11 timestamp`)
     },
     S16_visual_presentation_fields: async () => {
-      const { res: mumuRes, body: mumuBody } = await fetchJson(`${base}/chat`, {
+      const visualDisabledRole = join(__dirname, 'fixtures', 'visual-disabled')
+      const { res: disabledRes, body: disabledBody } = await fetchJson(`${base}/chat`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ role_path: mumu, message: 'OOCP S16 legacy mumu' }),
+        body: JSON.stringify({
+          role_path: visualDisabledRole,
+          message: 'OOCP S16 visual disabled',
+        }),
       })
-      if (!mumuRes.ok) throw new Error(`S16 mumu status ${mumuRes.status}`)
-      if (mumuBody?.visual_state_id != null) {
-        throw new Error(`S16 mumu should omit visual_state_id, got ${JSON.stringify(mumuBody?.visual_state_id)}`)
+      if (!disabledRes.ok) {
+        throw new Error(`S16 disabled status ${disabledRes.status} ${JSON.stringify(disabledBody)}`)
+      }
+      if (disabledBody?.visual_state_id != null || disabledBody?.performance_directive != null) {
+        throw new Error(`S16 disabled fixture should omit visual fields: ${JSON.stringify(disabledBody).slice(0, 300)}`)
       }
       const catalogRole = join(__dirname, 'fixtures', 'portrait-catalog')
       const { res: catRes, body: catBody } = await fetchJson(`${base}/chat`, {
