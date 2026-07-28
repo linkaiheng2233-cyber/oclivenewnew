@@ -271,7 +271,11 @@ async function main() {
   console.log(`API: ${base}`)
   console.log(`Profile: ${profileKey} → ${profileRel}`)
   console.log(`  Set on API process: OCLIVE_DISTRO_PROFILE=${profilePath}`)
-  const actualDistroId = healthBody.distro_id ?? healthBody.active_profile_summary?.distro_id ?? null
+  const actualDistroId
+    = healthBody.distro_id
+      ?? healthBody.active_profile_summary?.distro_id
+      ?? healthBody.active_profile_summary?.distroId
+      ?? null
   if (actualDistroId && actualDistroId !== expectedDistroId) {
     console.warn(
       `  WARN: health distro_id=${actualDistroId} (expected ${expectedDistroId} for --profile ${profileKey})`,

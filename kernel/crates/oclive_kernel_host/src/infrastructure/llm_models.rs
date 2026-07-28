@@ -17,6 +17,8 @@ use std::path::{Path, PathBuf};
 
 pub use oclive_kernel_types::models::LocalModelFileDto;
 
+const MAX_LOCAL_MODEL_MANIFEST_BYTES: u64 = 1024 * 1024;
+
 pub fn canonical_models_dir(state: &AppState) -> PathBuf {
     ensure_models_dir_for_roles(state.storage.roles_dir())
 }
@@ -220,11 +222,49 @@ fn describe_local_model_file_inner(
 
 fn read_local_model_manifest(path: &Path) -> Result<Option<LocalModelManifest>, String> {
     let manifest_path = local_model_manifest_path(path);
-    if !manifest_path.is_file() {
-        return Ok(None);
+    let metadata = match std::fs::symlink_metadata(&manifest_path) {
+        Ok(metadata) => metadata,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(error) => {
+            return Err(format!(
+                "read {} metadata: {error}",
+                manifest_path.display()
+            ))
+        }
+    };
+    if metadata.file_type().is_symlink() {
+        return Err(format!(
+            "{} must be a regular file, not a symbolic link",
+            manifest_path.display()
+        ));
     }
-    let bytes = std::fs::read(&manifest_path)
+    if !metadata.is_file() {
+        return Err(format!(
+            "{} must be a regular file",
+            manifest_path.display()
+        ));
+    }
+    if metadata.len() > MAX_LOCAL_MODEL_MANIFEST_BYTES {
+        return Err(format!(
+            "{} exceeds the {} byte manifest limit",
+            manifest_path.display(),
+            MAX_LOCAL_MODEL_MANIFEST_BYTES
+        ));
+    }
+    let file = std::fs::File::open(&manifest_path)
         .map_err(|error| format!("read {}: {error}", manifest_path.display()))?;
+    let mut reader = BufReader::new(file).take(MAX_LOCAL_MODEL_MANIFEST_BYTES + 1);
+    let mut bytes = Vec::with_capacity(metadata.len() as usize);
+    reader
+        .read_to_end(&mut bytes)
+        .map_err(|error| format!("read {}: {error}", manifest_path.display()))?;
+    if bytes.len() as u64 > MAX_LOCAL_MODEL_MANIFEST_BYTES {
+        return Err(format!(
+            "{} exceeds the {} byte manifest limit",
+            manifest_path.display(),
+            MAX_LOCAL_MODEL_MANIFEST_BYTES
+        ));
+    }
     let manifest: LocalModelManifest = serde_json::from_slice(&bytes)
         .map_err(|error| format!("parse {}: {error}", manifest_path.display()))?;
     if manifest.schema_version != LOCAL_MODEL_MANIFEST_SCHEMA_VERSION {
@@ -386,6 +426,21 @@ mod tests {
 
         let error = describe_local_model_file(&model).expect_err("must reject sidecar");
         assert!(error.to_string().contains("targets 'other.gguf'"));
+    }
+
+    #[test]
+    fn rejects_an_oversized_sidecar_before_parsing_it() {
+        let temp = tempfile::tempdir().expect("temp dir");
+        let model = temp.path().join("base.gguf");
+        write_file(&model);
+        let sidecar = local_model_manifest_path(&model);
+        let file = std::fs::File::create(&sidecar).expect("create sidecar");
+        file.set_len(MAX_LOCAL_MODEL_MANIFEST_BYTES + 1)
+            .expect("size oversized sidecar");
+
+        let error = describe_local_model_file(&model).expect_err("must reject oversized sidecar");
+        assert!(error.to_string().contains("exceeds"));
+        assert!(error.to_string().contains("manifest limit"));
     }
 
     #[test]
