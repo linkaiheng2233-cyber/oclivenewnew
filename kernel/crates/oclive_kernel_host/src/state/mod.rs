@@ -78,6 +78,11 @@ impl AdultStageCancellation {
         }
     }
 
+    #[must_use]
+    pub fn is_cancelled(&self) -> bool {
+        self.cancelled.load(Ordering::Acquire)
+    }
+
     fn cancel(&self) {
         self.cancelled.store(true, Ordering::Release);
         self.notify.notify_waiters();
@@ -194,6 +199,27 @@ impl AppState {
         roles_dir: impl AsRef<Path>,
     ) -> Result<Self> {
         Self::new_in_memory_with_llm_and_policy_file(llm, roles_dir, None).await
+    }
+
+    #[cfg(test)]
+    /// Builds a test state backed by a real SQLite file so restart recovery can
+    /// be exercised without contacting an external model service.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the database, migrations, role storage, or test
+    /// runtime cannot be initialized.
+    pub async fn new_file_test_with_llm(
+        db_path: impl AsRef<Path>,
+        llm: Arc<dyn LlmClient>,
+        roles_dir: impl AsRef<Path>,
+        app_data_dir: impl AsRef<Path>,
+    ) -> Result<Self> {
+        AppStateBuilder::in_memory_test(llm, roles_dir, None)
+            .with_test_db_path(db_path)
+            .with_app_data_dir(app_data_dir)
+            .build()
+            .await
     }
     /// # Errors
     ///
@@ -575,6 +601,18 @@ impl AppState {
             self.prune_idle_turn_locks();
         }
         lock
+    }
+
+    /// Serialize staged adult lifecycle operations for one session and scene.
+    ///
+    /// This lock is deliberately separate from the ordinary turn lock because
+    /// staged generation calls `process_message`, which acquires the turn lock
+    /// itself. Every adult begin/generate/commit/cancel path must take this
+    /// scope lock before touching durable staged state.
+    #[must_use]
+    pub fn adult_stage_lock_for(&self, srid: &str, scene_id: &str) -> Arc<Mutex<()>> {
+        let key = format!("__adult_stage_scope__:{}:{}{}", srid.len(), srid, scene_id);
+        self.turn_lock_for(key.as_str())
     }
 
     #[must_use]

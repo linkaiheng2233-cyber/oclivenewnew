@@ -1,9 +1,7 @@
 import type { LocalePreference } from '@oclive/shared/i18n'
 import {
-  getUserIdentityState,
   loadRole,
   OCLIVE_DEFAULT_RELATION_SENTINEL,
-  setUserRelation,
 } from '@oclive/shared/api'
 import { useAppToast } from '@oclive/shared/composables/useAppToast'
 import { useInteractionModeSettings } from '@oclive/shared/composables/useInteractionModeSettings'
@@ -365,13 +363,9 @@ export function useMainShell() {
     try {
       const relationName
         = relationOptions.value.find(r => r.id === nextRelation)?.name ?? nextRelation
-      if (adultStore.sessionFor(roleId, uiStore.sceneId).active) {
-        await chatStore.sendAdultAction(
-          'exit',
-          uiStore.sceneId,
-          `用户即将把当前身份切换为“${relationName}”。请自然结束原身份下的当前互动，并按照角色人设回应这次身份变化。`,
-        )
-      }
+      const sceneId = uiStore.sceneId || 'default'
+      const endedAdultInteraction
+        = adultStore.sessionFor(roleId, sceneId).active
       const perScene = roleStore.roleInfo.identityBinding === 'per_scene'
       if (nextRelation === OCLIVE_DEFAULT_RELATION_SENTINEL) {
         if (perScene)
@@ -383,13 +377,17 @@ export function useMainShell() {
         await roleStore.setSceneUserRelation(uiStore.sceneId, nextRelation)
       }
       else {
-        const info = await setUserRelation(roleId, nextRelation)
-        if (roleStore.currentRoleId !== roleId)
-          return
-        roleStore.applyRoleInfo(info)
+        await roleStore.setGlobalUserRelation(nextRelation, sceneId)
       }
       if (roleStore.currentRoleId !== roleId)
         return
+      if (endedAdultInteraction) {
+        await chatStore.sendAdultAction(
+          'exit',
+          sceneId,
+          `用户身份已经切换为“${relationName}”。原身份下的互动已经结束；请从普通聊天状态开始，按照角色人设自然回应这次身份变化。`,
+        )
+      }
       const scopeKey = perScene ? 'app.toast.relationSetPerScene' : 'app.toast.relationSetGlobal'
       showToast('success', t(scopeKey, { name: relationName }))
     }
@@ -408,14 +406,6 @@ export function useMainShell() {
       await chatStore.bootstrapChatForRole(roleId)
       await debugStore.loadDebugData()
       if (roleStore.roleInfo.adultExtensionAvailable) {
-        const identityState = await getUserIdentityState(roleId, uiStore.sceneId)
-        const currentIdentity = identityState.identities.find(
-          identity => identity.id === identityState.current_identity_id,
-        )
-        if (currentIdentity?.adult_eligible === false) {
-          window.alert(String(t('settings.adult.minorIdentityBlocked')))
-          return
-        }
         const accepted = window.confirm(
           adultStore.confirmedAdult
             ? String(t('settings.adult.importPrompt'))

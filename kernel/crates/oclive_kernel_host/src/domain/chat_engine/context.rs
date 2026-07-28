@@ -35,7 +35,7 @@ pub(crate) async fn load_recent_context(
     ))
 }
 
-pub(super) fn validate_scene_id(
+pub(crate) fn validate_scene_id(
     role_id: &str,
     scene_ids: &Arc<[String]>,
     requested_scene_id: String,

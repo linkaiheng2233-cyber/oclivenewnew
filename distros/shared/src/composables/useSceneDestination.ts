@@ -54,20 +54,20 @@ export function useSceneDestination(showToast: ShowToast) {
       sceneTransition.value = { visible: true, label }
     }
     try {
-      if (adultStore.sessionFor(roleStore.currentRoleId, previousSceneId).active) {
-        await chatStore.sendAdultAction(
-          'exit',
-          previousSceneId,
-          `用户即将进入“${label}”场景。请自然结束旧场景中的当前互动，并按照角色人设对这次场景变化简短说一句。`,
-        )
-      }
+      const endedAdultInteraction
+        = adultStore.sessionFor(roleStore.currentRoleId, previousSceneId).active
+          ? await chatStore.clearAdultInteractionForContextChange(
+              roleStore.currentRoleId,
+              previousSceneId,
+            )
+          : false
       if (together) {
         const res = await switchScene(roleStore.currentRoleId, id, true)
         await sleep(SCENE_TRANSITION_MS)
         sceneTransition.value = { visible: false, label: '' }
         roleStore.applyRoleInfo(res)
         const narrative = res.user_presence_scene ?? id
-        chatStore.applySceneChange(narrative)
+        await chatStore.applySceneChange(narrative)
         if (res.scene_welcome) {
           chatStore.addSystemMessage(res.scene_welcome, narrative)
         }
@@ -77,7 +77,7 @@ export function useSceneDestination(showToast: ShowToast) {
         const info = await setUserPresenceScene(roleStore.currentRoleId, id)
         roleStore.applyRoleInfo(info)
         const narrative = info.user_presence_scene ?? id
-        chatStore.applySceneChange(narrative)
+        await chatStore.applySceneChange(narrative)
         chatStore.addSystemMessage(
           t('app.scene.systemLine', {
             narrative: label,
@@ -86,6 +86,14 @@ export function useSceneDestination(showToast: ShowToast) {
           narrative,
         )
         showToast('success', t('app.scene.toastNarrativeOnly'))
+      }
+      if (endedAdultInteraction) {
+        const narrative = roleStore.roleInfo.userPresenceScene ?? id
+        await chatStore.sendAdultAction(
+          'exit',
+          narrative,
+          `用户已经进入“${label}”场景。旧场景中的互动已经结束；请从普通聊天状态开始，按照角色人设和新场景自然回应这次变化。`,
+        )
       }
       await debugStore.loadDebugData()
     }

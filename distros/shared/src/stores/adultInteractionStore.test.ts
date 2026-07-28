@@ -62,6 +62,26 @@ describe('adult interaction gates and session state', () => {
     expect(store.sessionFor('mumu', 'home').active).toBe(false)
   })
 
+  it('keeps an inactive cancellation tombstone until the generation is cleared', () => {
+    const store = useAdultInteractionStore()
+    store.confirmAndEnableGlobal()
+    store.setRoleEnabled('mumu', true)
+    store.updateSession('mumu', 'home', 'active')
+    store.setSessionGeneration('mumu', 'home', 'generation-1')
+
+    store.setGlobalEnabled(false)
+
+    expect(store.sessionFor('mumu', 'home')).toMatchObject({
+      active: false,
+      generationId: 'generation-1',
+      roleId: 'mumu',
+      sceneId: 'home',
+    })
+
+    store.setSessionGeneration('mumu', 'home')
+    expect(store.sessions['mumu:home']).toBeUndefined()
+  })
+
   it('normalizes the global staged queue cap to a positive integer', () => {
     const store = useAdultInteractionStore()
     store.setBackgroundQueue(true, 4, true)

@@ -30,6 +30,18 @@ async fn list_roles_invoke_smoke() {
         "expected mumu role; got {:?}",
         roles.iter().map(|r| r.id.as_str()).collect::<Vec<_>>()
     );
+    let landlady = roles
+        .iter()
+        .find(|role| role.id == "gentle-landlady")
+        .expect("gentle-landlady must be visible in the normal Chat Pro role list");
+    assert_eq!(
+        landlady.name, "邻居阿姨",
+        "gentle-landlady must use the user-facing role name"
+    );
+    assert!(
+        landlady.adult_extension_available,
+        "gentle-landlady must advertise its optional adult extension"
+    );
 
     // IPC Err payload: CommandError serializes as kernel JSON string (Tauri 2 replaces InvokeError).
     let err = CommandError::from(AppError::RoleNotFound("missing".into()));

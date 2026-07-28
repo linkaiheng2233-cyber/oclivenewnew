@@ -15,8 +15,7 @@ pub struct TurnPrefetch {
     pub resolved_identity: ResolvedUserIdentity,
 }
 
-/// Load the active identity before dialogue so an explicitly ineligible
-/// identity can never cause adult-scoped memories to enter the turn.
+/// Load the active identity and recent context once before dialogue.
 ///
 /// # Errors
 ///
@@ -29,12 +28,7 @@ pub async fn build_turn_prefetch(
     include_adult: bool,
 ) -> Result<TurnPrefetch> {
     let resolved_identity = resolve_active_user_identity(state, role, srid, Some(scene_id)).await?;
-    let context = load_recent_context(
-        state,
-        srid,
-        include_adult && resolved_identity.adult_eligible,
-    )
-    .await?;
+    let context = load_recent_context(state, srid, include_adult).await?;
     let (recent_turns, recent_turns_for_event, recent_events) = context;
     Ok(TurnPrefetch {
         recent_turns,

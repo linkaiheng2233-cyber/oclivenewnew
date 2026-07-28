@@ -44,11 +44,128 @@ interface AdultBeatQueueRuntime {
 }
 
 const queues = new Map<string, AdultBeatQueueRuntime>()
+const queueIntentVersions = new Map<string, number>()
+const queueSetupTails = new Map<string, Promise<void>>()
+const pendingSetupTargets = new Map<string, {
+  roleId: string
+  sceneId: string
+  version: number
+}>()
 let pumpRunning = false
-let fairCursor = 0
+let lastGeneratedQueueKey: string | null = null
 
 function queueKey(roleId: string, sceneId: string): string {
   return `${roleId.trim()}:${sceneId.trim() || 'default'}`
+}
+
+function invalidateQueueIntent(key: string): number {
+  const next = (queueIntentVersions.get(key) ?? 0) + 1
+  queueIntentVersions.set(key, next)
+  return next
+}
+
+function queueIntentIsCurrent(key: string, version: number): boolean {
+  return queueIntentVersions.get(key) === version
+}
+
+function cleanupQueueIntentIfIdle(key: string): void {
+  if (!queues.has(key) && !queueSetupTails.has(key)) {
+    queueIntentVersions.delete(key)
+    pendingSetupTargets.delete(key)
+  }
+}
+
+function scheduleQueueSetup(
+  roleId: string,
+  sceneId: string,
+  setup: (version: number) => Promise<void>,
+): Promise<void> {
+  const key = queueKey(roleId, sceneId)
+  const version = invalidateQueueIntent(key)
+  const previous = queueSetupTails.get(key) ?? Promise.resolve()
+  const run: Promise<void> = previous
+    .catch(() => undefined)
+    .then(() => setup(version))
+    .finally(() => {
+      if (queueSetupTails.get(key) === run) {
+        queueSetupTails.delete(key)
+        pendingSetupTargets.delete(key)
+        cleanupQueueIntentIfIdle(key)
+      }
+    })
+  queueSetupTails.set(key, run)
+  pendingSetupTargets.set(key, { roleId, sceneId, version })
+  return run
+}
+
+function clearSessionGenerationIfMatches(
+  roleId: string,
+  sceneId: string,
+  generationId: string,
+): void {
+  const adultStore = useAdultInteractionStore()
+  if (adultStore.sessionFor(roleId, sceneId).generationId === generationId)
+    adultStore.setSessionGeneration(roleId, sceneId)
+}
+
+function detachQueue(queue: AdultBeatQueueRuntime): void {
+  queue.stopped = true
+  if (queues.get(queue.key) === queue) {
+    queues.delete(queue.key)
+    cleanupQueueIntentIfIdle(queue.key)
+  }
+}
+
+async function cancelKnownGeneration(
+  roleId: string,
+  sceneId: string,
+  generationId: string,
+): Promise<void> {
+  try {
+    await cancelAdultStageGeneration({
+      role_id: roleId,
+      scene_id: sceneId,
+      generation_id: generationId,
+    })
+    clearSessionGenerationIfMatches(roleId, sceneId, generationId)
+  }
+  catch (error) {
+    // Keep the persisted generation id on failure so a later lifecycle cleanup
+    // can retry instead of silently orphaning the kernel-side generation.
+    console.warn('[adult-stage] cancel failed', error)
+  }
+  finally {
+    void pumpGeneration()
+  }
+}
+
+function stopQueueAndCancel(queue: AdultBeatQueueRuntime): void {
+  if (queue.stopped)
+    return
+  detachQueue(queue)
+  void cancelKnownGeneration(
+    queue.roleId,
+    queue.sceneId,
+    queue.generationId,
+  )
+}
+
+function failQueue(queue: AdultBeatQueueRuntime, error: unknown): void {
+  if (queue.stopped)
+    return
+  queue.hooks.reportError?.(
+    error instanceof Error ? error.message : String(error),
+  )
+  stopQueueAndCancel(queue)
+}
+
+function finishQueue(queue: AdultBeatQueueRuntime): void {
+  detachQueue(queue)
+  clearSessionGenerationIfMatches(
+    queue.roleId,
+    queue.sceneId,
+    queue.generationId,
+  )
 }
 
 function persistedGenerationTargets(): Array<{
@@ -123,8 +240,11 @@ function selectQueueForGeneration(): AdultBeatQueueRuntime | undefined {
   )
   if (candidates.length === 0)
     return undefined
-  const selected = candidates[fairCursor % candidates.length]
-  fairCursor = (fairCursor + 1) % Math.max(1, candidates.length)
+  const previousIndex = lastGeneratedQueueKey
+    ? candidates.findIndex(queue => queue.key === lastGeneratedQueueKey)
+    : -1
+  const selected = candidates[(previousIndex + 1) % candidates.length]
+  lastGeneratedQueueKey = selected.key
   return selected
 }
 
@@ -166,12 +286,7 @@ async function pumpGeneration(): Promise<void> {
           queue.generationDone = true
       }
       catch (error) {
-        if (!queue.stopped) {
-          queue.generationDone = true
-          queue.hooks.reportError?.(
-            error instanceof Error ? error.message : String(error),
-          )
-        }
+        failQueue(queue, error)
       }
       finally {
         queue.generating = false
@@ -222,35 +337,16 @@ async function displayLoop(queue: AdultBeatQueueRuntime): Promise<void> {
         return
       const staged = await waitForSequence(queue, queue.nextCommit)
       if (!staged) {
-        queue.stopped = true
-        queues.delete(queue.key)
-        useAdultInteractionStore().setSessionGeneration(
-          queue.roleId,
-          queue.sceneId,
-        )
+        stopQueueAndCancel(queue)
         return
       }
       const committedSequence = queue.nextCommit
-      const commitAndDisplay = async (): Promise<SendMessageResponse> => {
-        const response = await commitAdultStagedBeat({
-          role_id: queue.roleId,
-          scene_id: queue.sceneId,
-          generation_id: queue.generationId,
-          sequence: committedSequence,
-        })
-        queue.pending.delete(committedSequence)
-        queue.nextCommit = committedSequence + 1
-        void pumpGeneration()
-        const displayTurnId = `adult-stage-${queue.generationId}-${committedSequence}`
-        await queue.hooks.display(
-          response,
-          queue.roleId,
-          queue.sceneId,
-          displayTurnId,
-        )
-        return response
-      }
-      queue.commitSettled = commitAndDisplay()
+      queue.commitSettled = commitAdultStagedBeat({
+        role_id: queue.roleId,
+        scene_id: queue.sceneId,
+        generation_id: queue.generationId,
+        sequence: committedSequence,
+      })
       let committed: SendMessageResponse
       try {
         committed = await queue.commitSettled
@@ -258,6 +354,23 @@ async function displayLoop(queue: AdultBeatQueueRuntime): Promise<void> {
       finally {
         queue.commitSettled = null
       }
+      queue.pending.delete(committedSequence)
+      queue.nextCommit = committedSequence + 1
+      void pumpGeneration()
+      if (queue.stopped)
+        return
+      // The durable commit belongs to the old chat even if the user switched
+      // away while the RPC was in flight. Delay only the visible bubble/TTS
+      // until that role and scene own the foreground again.
+      if (!await waitUntilForeground(queue))
+        return
+      const displayTurnId = `adult-stage-${queue.generationId}-${committedSequence}`
+      await queue.hooks.display(
+        committed,
+        queue.roleId,
+        queue.sceneId,
+        displayTurnId,
+      )
       const turnId = `adult-stage-${queue.generationId}-${committedSequence}`
       queue.previousVoiceTurnId = turnId
       queue.previousIntervalMs = useAdultInteractionStore().pacingOverrideEnabled
@@ -265,22 +378,13 @@ async function displayLoop(queue: AdultBeatQueueRuntime): Promise<void> {
         : (committed.adult_beat?.next_beat_interval_ms ?? 4_000)
       if (committed.adult_beat?.interaction_state !== 'active') {
         queue.generationDone = true
-        queue.stopped = true
-        queues.delete(queue.key)
-        useAdultInteractionStore().setSessionGeneration(
-          queue.roleId,
-          queue.sceneId,
-        )
+        finishQueue(queue)
         return
       }
     }
   }
   catch (error) {
-    if (!queue.stopped) {
-      queue.hooks.reportError?.(
-        error instanceof Error ? error.message : String(error),
-      )
-    }
+    failQueue(queue, error)
   }
   finally {
     queue.displaying = false
@@ -303,39 +407,72 @@ export async function startAdultBeatQueue(
     return
   }
   const key = queueKey(roleId, sid)
-  if (queues.has(key))
+  const pendingSetup = pendingSetupTargets.get(key)
+  if (
+    queues.has(key)
+    || (
+      pendingSetup
+      && queueIntentIsCurrent(key, pendingSetup.version)
+    )
+  ) {
     return
+  }
   const adult = adultStore.requestFor(roleId, sid, 'continue')
   if (!adult)
     return
-  const begun = await beginAdultStageGeneration({
-    role_id: roleId,
-    scene_id: sid,
-    adult,
+  return scheduleQueueSetup(roleId, sid, async (version) => {
+    if (
+      !queueIntentIsCurrent(key, version)
+      || queues.has(key)
+      || !adultStore.backgroundQueueEnabled
+      || firstResponse.adult_beat?.interaction_state !== 'active'
+    ) {
+      return
+    }
+    const currentAdult = adultStore.requestFor(roleId, sid, 'continue')
+    if (!currentAdult)
+      return
+    const begun = await beginAdultStageGeneration({
+      role_id: roleId,
+      scene_id: sid,
+      adult: currentAdult,
+    })
+    // Persist ownership before any stale-intent check. If the matching cancel
+    // RPC fails, this tombstone remains available for lifecycle retry.
+    adultStore.setSessionGeneration(roleId, sid, begun.generation_id)
+    if (
+      !queueIntentIsCurrent(key, version)
+      || queues.has(key)
+      || !adultStore.backgroundQueueEnabled
+      || firstResponse.adult_beat?.interaction_state !== 'active'
+      || !adultStore.requestFor(roleId, sid, 'continue')
+    ) {
+      await cancelKnownGeneration(roleId, sid, begun.generation_id)
+      return
+    }
+    const queue: AdultBeatQueueRuntime = {
+      key,
+      roleId,
+      sceneId: sid,
+      generationId: begun.generation_id,
+      nextSequence: begun.next_sequence,
+      nextCommit: 0,
+      pending: new Map(),
+      generating: false,
+      generationDone: false,
+      stopped: false,
+      displaying: false,
+      commitSettled: null,
+      previousVoiceTurnId: firstVoiceTurnId,
+      previousIntervalMs: adultStore.pacingOverrideEnabled
+        ? adultStore.pacingIntervalMs
+        : (firstResponse.adult_beat.next_beat_interval_ms ?? 4_000),
+      hooks,
+    }
+    queues.set(key, queue)
+    void pumpGeneration()
+    void displayLoop(queue)
   })
-  const queue: AdultBeatQueueRuntime = {
-    key,
-    roleId,
-    sceneId: sid,
-    generationId: begun.generation_id,
-    nextSequence: begun.next_sequence,
-    nextCommit: 0,
-    pending: new Map(),
-    generating: false,
-    generationDone: false,
-    stopped: false,
-    displaying: false,
-    commitSettled: null,
-    previousVoiceTurnId: firstVoiceTurnId,
-    previousIntervalMs: adultStore.pacingOverrideEnabled
-      ? adultStore.pacingIntervalMs
-      : (firstResponse.adult_beat.next_beat_interval_ms ?? 4_000),
-    hooks,
-  }
-  queues.set(key, queue)
-  adultStore.setSessionGeneration(roleId, sid, queue.generationId)
-  void pumpGeneration()
-  void displayLoop(queue)
 }
 
 export async function resumeAdultBeatQueue(
@@ -346,8 +483,13 @@ export async function resumeAdultBeatQueue(
   const adultStore = useAdultInteractionStore()
   const sid = sceneId || 'default'
   const key = queueKey(roleId, sid)
+  const pendingSetup = pendingSetupTargets.get(key)
   if (
     queues.has(key)
+    || (
+      pendingSetup
+      && queueIntentIsCurrent(key, pendingSetup.version)
+    )
     || !adultStore.backgroundQueueEnabled
     || !adultStore.sessionFor(roleId, sid).active
   ) {
@@ -356,50 +498,66 @@ export async function resumeAdultBeatQueue(
   const generationId = adultStore.sessionFor(roleId, sid).generationId
   if (!generationId)
     return
-  try {
-    const restored = await listAdultStagedBeats({
-      role_id: roleId,
-      scene_id: sid,
-      generation_id: generationId,
-    })
-    const pending = new Map(
-      restored.beats.map(beat => [beat.sequence, beat] as const),
-    )
-    if (!restored.active && pending.size === 0) {
-      adultStore.setSessionGeneration(roleId, sid)
-      return
+  return scheduleQueueSetup(roleId, sid, async (version) => {
+    try {
+      const restored = await listAdultStagedBeats({
+        role_id: roleId,
+        scene_id: sid,
+        generation_id: generationId,
+      })
+      const currentSession = adultStore.sessionFor(roleId, sid)
+      if (
+        !queueIntentIsCurrent(key, version)
+        || queues.has(key)
+        || !adultStore.backgroundQueueEnabled
+        || !currentSession.active
+        || currentSession.generationId !== generationId
+        || !adultStore.requestFor(roleId, sid, 'continue')
+      ) {
+        void cancelKnownGeneration(roleId, sid, generationId)
+        return
+      }
+      const pending = new Map(
+        restored.beats.map(beat => [beat.sequence, beat] as const),
+      )
+      if (!restored.active && pending.size === 0) {
+        clearSessionGenerationIfMatches(roleId, sid, generationId)
+        return
+      }
+      const nextCommit = restored.beats.length > 0
+        ? Math.min(...restored.beats.map(beat => beat.sequence))
+        : restored.next_sequence
+      const queue: AdultBeatQueueRuntime = {
+        key,
+        roleId,
+        sceneId: sid,
+        generationId,
+        nextSequence: restored.next_sequence,
+        nextCommit,
+        pending,
+        generating: false,
+        generationDone: !restored.active
+          || restored.beats.some(
+            beat => beat.response.adult_beat?.interaction_state !== 'active',
+          ),
+        stopped: false,
+        displaying: false,
+        commitSettled: null,
+        previousVoiceTurnId: null,
+        previousIntervalMs: 1,
+        hooks,
+      }
+      queues.set(key, queue)
+      void pumpGeneration()
+      void displayLoop(queue)
     }
-    const nextCommit = restored.beats.length > 0
-      ? Math.min(...restored.beats.map(beat => beat.sequence))
-      : restored.next_sequence
-    const queue: AdultBeatQueueRuntime = {
-      key,
-      roleId,
-      sceneId: sid,
-      generationId,
-      nextSequence: restored.next_sequence,
-      nextCommit,
-      pending,
-      generating: false,
-      generationDone: !restored.active
-        || restored.beats.some(
-          beat => beat.response.adult_beat?.interaction_state !== 'active',
-        ),
-      stopped: false,
-      displaying: false,
-      commitSettled: null,
-      previousVoiceTurnId: null,
-      previousIntervalMs: 1,
-      hooks,
+    catch (error) {
+      hooks.reportError?.(
+        error instanceof Error ? error.message : String(error),
+      )
+      void cancelKnownGeneration(roleId, sid, generationId)
     }
-    queues.set(key, queue)
-    void pumpGeneration()
-    void displayLoop(queue)
-  }
-  catch (error) {
-    adultStore.setSessionGeneration(roleId, sid)
-    hooks.reportError?.(error instanceof Error ? error.message : String(error))
-  }
+  })
 }
 
 export async function cancelAdultBeatQueue(
@@ -408,32 +566,35 @@ export async function cancelAdultBeatQueue(
 ): Promise<void> {
   const sid = sceneId || 'default'
   const key = queueKey(roleId, sid)
+  invalidateQueueIntent(key)
+  const setupTail = queueSetupTails.get(key)
   const runtime = queues.get(key)
-  const generationId = runtime?.generationId
-    ?? useAdultInteractionStore().sessionFor(roleId, sid).generationId
+  const generationIds = new Set<string>()
+  if (runtime?.generationId)
+    generationIds.add(runtime.generationId)
+  const persistedBefore = useAdultInteractionStore()
+    .sessionFor(roleId, sid)
+    .generationId
+  if (persistedBefore)
+    generationIds.add(persistedBefore)
   if (runtime) {
-    runtime.stopped = true
-    queues.delete(key)
+    detachQueue(runtime)
     // A beat that crossed the commit boundary is already ordered for display.
     // Let it settle before cancelling only the later, still-unshown beats.
     await runtime.commitSettled?.catch(() => undefined)
   }
-  useAdultInteractionStore().setSessionGeneration(roleId, sid)
-  if (!generationId)
-    return
-  try {
-    await cancelAdultStageGeneration({
-      role_id: roleId,
-      scene_id: sid,
-      generation_id: generationId,
-    })
-  }
-  catch (error) {
-    console.warn('[adult-stage] cancel failed', error)
-  }
-  finally {
-    void pumpGeneration()
-  }
+  // Begin/list are local DB operations and must settle before cancellation is
+  // considered complete. A late generation persists its id before issuing its
+  // own cancel, so a failed cancel remains retryable here and after restart.
+  await setupTail?.catch(() => undefined)
+  const persistedAfter = useAdultInteractionStore()
+    .sessionFor(roleId, sid)
+    .generationId
+  if (persistedAfter)
+    generationIds.add(persistedAfter)
+  cleanupQueueIntentIfIdle(key)
+  for (const generationId of generationIds)
+    await cancelKnownGeneration(roleId, sid, generationId)
 }
 
 export async function cancelAllAdultBeatQueues(): Promise<void> {
@@ -444,6 +605,8 @@ export async function cancelAllAdultBeatQueues(): Promise<void> {
       sceneId: queue.sceneId,
     })
   }
+  for (const [key, target] of pendingSetupTargets)
+    targets.set(key, { roleId: target.roleId, sceneId: target.sceneId })
   for (const target of persistedGenerationTargets())
     targets.set(queueKey(target.roleId, target.sceneId), target)
   await Promise.all(
@@ -459,6 +622,10 @@ export async function cancelAdultBeatQueuesForRole(roleId: string): Promise<void
       .filter(queue => queue.roleId === roleId)
       .map(queue => queue.sceneId),
   )
+  for (const target of pendingSetupTargets.values()) {
+    if (target.roleId === roleId)
+      scenes.add(target.sceneId)
+  }
   for (const target of persistedGenerationTargets()) {
     if (target.roleId === roleId)
       scenes.add(target.sceneId)

@@ -4,6 +4,7 @@ import type { RoleplaySplit } from '@oclive/shared/utils/roleplayReplySplit'
 import {
   getChatStorageCapabilities,
 } from '@oclive/shared/api/chatStorage'
+import { cancelAdultBeatQueue } from '@oclive/shared/lib/adultBeatQueue'
 import {
   bucketMapKey,
   migrateMessageMapShape,
@@ -387,10 +388,10 @@ export const useChatStore = defineStore(
         return roleSceneBucket(this.messageMap, roleId, sceneId).length
       },
 
-      applySceneChange(
+      async applySceneChange(
         nextSceneId: string,
         options?: { skipHistorySplit?: boolean },
-      ) {
+      ): Promise<void> {
         const uiStore = useUiStore()
         const roleStore = useRoleStore()
         const roleId = roleStore.currentRoleId
@@ -414,7 +415,7 @@ export const useChatStore = defineStore(
         if (shouldReload) {
           this.messagesLoadingKey = bucketMapKey(roleId, next)
           uiStore.setScene(next)
-          void this.loadMessagesForRoleScene(roleId, next)
+          await this.loadMessagesForRoleScene(roleId, next)
         }
         else {
           uiStore.setScene(next)
@@ -577,6 +578,22 @@ export const useChatStore = defineStore(
           content,
           sceneId,
         )
+      },
+      /**
+       * Stop the old context without generating a reply. Scene/identity
+       * transitions use the returned flag to decide whether the new context
+       * should produce one ordinary, character-aware transition response.
+       */
+      async clearAdultInteractionForContextChange(
+        roleId: string,
+        sceneId: string,
+      ): Promise<boolean> {
+        const sid = sceneId || 'default'
+        const adultStore = useAdultInteractionStore()
+        const wasActive = adultStore.sessionFor(roleId, sid).active
+        await cancelAdultBeatQueue(roleId, sid)
+        adultStore.clearSession(roleId, sid)
+        return wasActive
       },
       async sendAdultAction(
         action: 'continue' | 'exit',

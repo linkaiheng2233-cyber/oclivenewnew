@@ -122,8 +122,19 @@ export const useAdultInteractionStore = defineStore('adult-interaction', {
         return false
       this.globalEnabled = enabled
       if (!enabled) {
-        for (const key of Object.keys(this.sessions))
-          delete this.sessions[key]
+        for (const [key, session] of Object.entries(this.sessions)) {
+          if (session.generationId) {
+            this.sessions[key] = {
+              ...session,
+              active: false,
+              voiceTextOnly: false,
+              updatedAt: Date.now(),
+            }
+          }
+          else {
+            delete this.sessions[key]
+          }
+        }
       }
       this.persist()
       return true
@@ -134,9 +145,20 @@ export const useAdultInteractionStore = defineStore('adult-interaction', {
         return
       this.roleEnabled[id] = enabled
       if (!enabled) {
-        for (const key of Object.keys(this.sessions)) {
-          if (key.startsWith(`${id}:`))
+        for (const [key, session] of Object.entries(this.sessions)) {
+          if (!key.startsWith(`${id}:`))
+            continue
+          if (session.generationId) {
+            this.sessions[key] = {
+              ...session,
+              active: false,
+              voiceTextOnly: false,
+              updatedAt: Date.now(),
+            }
+          }
+          else {
             delete this.sessions[key]
+          }
         }
       }
       this.persist()
@@ -161,12 +183,24 @@ export const useAdultInteractionStore = defineStore('adult-interaction', {
         }
       }
       else {
-        delete this.sessions[key]
+        this.clearSession(roleId, sceneId)
       }
       this.persist()
     },
     clearSession(roleId: string, sceneId: string) {
-      delete this.sessions[sessionKey(roleId, sceneId)]
+      const key = sessionKey(roleId, sceneId)
+      const current = this.sessions[key]
+      if (current?.generationId) {
+        this.sessions[key] = {
+          ...current,
+          active: false,
+          voiceTextOnly: false,
+          updatedAt: Date.now(),
+        }
+      }
+      else {
+        delete this.sessions[key]
+      }
       this.persist()
     },
     markVoiceTextOnly(roleId: string, sceneId: string) {
@@ -214,17 +248,22 @@ export const useAdultInteractionStore = defineStore('adult-interaction', {
     setSessionGeneration(roleId: string, sceneId: string, generationId?: string) {
       const key = sessionKey(roleId, sceneId)
       const current = this.sessions[key]
-      if (!current?.active)
+      if (!current && !generationId)
         return
       this.sessions[key] = {
+        active: current?.active ?? false,
+        voiceTextOnly: current?.voiceTextOnly ?? false,
         ...current,
         roleId: roleId.trim(),
         sceneId: sceneId.trim() || 'default',
         ...(generationId ? { generationId } : {}),
         updatedAt: Date.now(),
       }
-      if (!generationId)
+      if (!generationId) {
         delete this.sessions[key]!.generationId
+        if (!this.sessions[key]!.active)
+          delete this.sessions[key]
+      }
       this.persist()
     },
   },

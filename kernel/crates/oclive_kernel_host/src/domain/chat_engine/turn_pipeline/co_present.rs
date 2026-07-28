@@ -191,7 +191,6 @@ pub(crate) async fn run_middle(
     let favor_scale = thinking.favor_delta_scale(&state.host_profile, &ai_event_type);
     let synthetic_adult_action = req.adult.as_ref().is_some_and(|adult| {
         adult.gates_open()
-            && pre.relation.user_identity_allows_adult
             && !matches!(
                 adult.action,
                 crate::models::dto::AdultInteractionAction::Message
@@ -295,13 +294,29 @@ pub(crate) async fn run_middle(
             String::new()
         }
     };
-    let adult_prompt = crate::domain::adult_interaction::prompt_section(
-        role,
-        scene_id,
-        ctx.req.adult.as_ref(),
-        pre.relation.user_identity_allows_adult,
-    )
-    .unwrap_or_default();
+    let adult_prompt =
+        crate::domain::adult_interaction::prompt_section(role, scene_id, ctx.req.adult.as_ref())
+            .unwrap_or_default();
+    let staged_adult_continuity = if ctx.is_staged() {
+        let prior: Vec<&str> = pre
+            .memory
+            .recent_turns
+            .iter()
+            .filter(|(user, _)| user == crate::domain::adult_stage::ADULT_CONTINUATION_INPUT)
+            .map(|(_, assistant)| assistant.as_str())
+            .rev()
+            .take(8)
+            .collect();
+        prior
+            .into_iter()
+            .rev()
+            .enumerate()
+            .map(|(index, transcript)| format!("前一拍 {}：{}", index + 1, transcript.trim()))
+            .collect::<Vec<_>>()
+            .join("\n")
+    } else {
+        String::new()
+    };
     let mut extra_sections: Vec<PromptExtraSection<'_>> = role
         .pack_prompt_extra_sections
         .iter()
@@ -320,6 +335,12 @@ pub(crate) async fn run_middle(
         extra_sections.push(PromptExtraSection {
             title: crate::domain::adult_interaction::prompt_title(),
             body: adult_prompt.as_str(),
+        });
+    }
+    if !staged_adult_continuity.is_empty() {
+        extra_sections.push(PromptExtraSection {
+            title: "成人互动前拍连续性（只作为上下文，不得代写用户）",
+            body: staged_adult_continuity.as_str(),
         });
     }
 

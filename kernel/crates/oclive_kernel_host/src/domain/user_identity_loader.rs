@@ -13,7 +13,6 @@ pub struct ResolvedUserIdentity {
     pub template_body: String,
     pub relation_key: String,
     pub relation_hint: String,
-    pub adult_eligible: bool,
 }
 
 /// DB identity pick + manifest-default flag in one round-trip per binding mode.
@@ -98,7 +97,6 @@ pub async fn resolve_active_user_identity(
                 template_body: entry.template_body.to_string(),
                 relation_key,
                 relation_hint: rf.relation_hint.to_string(),
-                adult_eligible: entry.adult_eligible,
             });
         }
     }
@@ -110,7 +108,6 @@ pub async fn resolve_active_user_identity(
         template_body: String::new(),
         relation_key,
         relation_hint: rf.relation_hint.to_string(),
-        adult_eligible: true,
     })
 }
 

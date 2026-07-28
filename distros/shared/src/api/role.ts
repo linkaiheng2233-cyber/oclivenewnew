@@ -362,6 +362,7 @@ export interface UserIdentityDto {
   id: string
   display_name: string
   maps_to_relation_id?: string | null
+  /** Legacy/advisory pack metadata; Chat Pro does not use it as an authorization gate. */
   adult_eligible?: boolean
 }
 

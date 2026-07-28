@@ -82,7 +82,6 @@ pub(crate) struct PreLlmRelation {
     pub user_relation_key: String,
     pub user_identity_id: String,
     pub user_identity_template: String,
-    pub user_identity_allows_adult: bool,
     pub relation_hint: String,
     pub relation_before: String,
     pub favorability_before: f64,
@@ -262,8 +261,7 @@ async fn load_memories_and_relation_key(
         .req
         .adult
         .as_ref()
-        .is_some_and(crate::models::dto::AdultInteractionRequest::gates_open)
-        && resolved_identity.adult_eligible;
+        .is_some_and(crate::models::dto::AdultInteractionRequest::gates_open);
     let mut memories = STAGES
         .stage(
             ChatStage::LoadMemories,
@@ -612,7 +610,6 @@ pub(crate) async fn pre_llm(ctx: &TurnContext<'_>) -> TurnResult<PreLlmOutput> {
             user_relation_key,
             user_identity_id: resolved_identity.identity_id,
             user_identity_template: resolved_identity.template_body,
-            user_identity_allows_adult: resolved_identity.adult_eligible,
             relation_hint: resolved_identity.relation_hint,
             relation_before,
             favorability_before,

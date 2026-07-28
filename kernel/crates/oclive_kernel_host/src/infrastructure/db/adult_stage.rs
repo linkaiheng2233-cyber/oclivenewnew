@@ -33,7 +33,7 @@ impl DbManager {
         session_id: &str,
         role_id: &str,
         scene_id: &str,
-    ) -> Result<String> {
+    ) -> Result<(String, Vec<String>)> {
         let now = Utc::now().to_rfc3339();
         let generation_id = Uuid::new_v4().to_string();
         let mut tx = self
@@ -56,6 +56,15 @@ impl DbManager {
              WHERE status != 'active' AND datetime(updated_at) < datetime('now', '-7 days')",
         )
         .execute(&mut *tx)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        let invalidated_generation_ids = sqlx::query_scalar::<_, String>(
+            "SELECT generation_id FROM adult_stage_generations
+             WHERE session_id = ? AND scene_id = ? AND status = 'active'",
+        )
+        .bind(session_id)
+        .bind(scene_id)
+        .fetch_all(&mut *tx)
         .await
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         sqlx::query(
@@ -100,7 +109,7 @@ impl DbManager {
         tx.commit()
             .await
             .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-        Ok(generation_id)
+        Ok((generation_id, invalidated_generation_ids))
     }
 
     pub async fn adult_stage_generation_active(
@@ -248,14 +257,21 @@ impl DbManager {
             .collect()
     }
 
-    pub async fn adult_stage_generation_state(
+    pub async fn adult_stage_generation_state_for_chat(
         &self,
         generation_id: &str,
+        session_id: &str,
+        role_id: &str,
+        scene_id: &str,
     ) -> Result<Option<(bool, u32)>> {
         let row = sqlx::query(
-            "SELECT status, next_sequence FROM adult_stage_generations WHERE generation_id = ?",
+            "SELECT status, next_sequence FROM adult_stage_generations
+             WHERE generation_id = ? AND session_id = ? AND role_id = ? AND scene_id = ?",
         )
         .bind(generation_id)
+        .bind(session_id)
+        .bind(role_id)
+        .bind(scene_id)
         .fetch_optional(&self.pool)
         .await
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
@@ -477,16 +493,78 @@ impl DbManager {
 mod tests {
     use super::*;
     use crate::domain::adult_stage::{
-        begin_adult_stage_generation, commit_adult_staged_beat, generate_adult_staged_beat,
+        begin_adult_stage_generation, cancel_adult_stage_generation, commit_adult_staged_beat,
+        generate_adult_staged_beat, list_adult_staged_beats, ADULT_CONTINUATION_INPUT,
     };
+    use crate::domain::ports::conversation_persist::{TurnAutoCleanupConfig, TurnPersistRequest};
     use crate::infrastructure::llm::MockLlmClient;
     use crate::models::dto::{
         AdultBeatDto, AdultInteractionAction, AdultInteractionRequest, AdultInteractionState,
-        BeginAdultStageGenerationRequest, CommitAdultStagedBeatRequest, EmotionDto, PresenceMode,
+        BeginAdultStageGenerationRequest, CancelAdultStageGenerationRequest,
+        CommitAdultStagedBeatRequest, EmotionDto, ListAdultStagedBeatsRequest, PresenceMode,
         StageAdultBeatRequest, API_VERSION, SCHEMA_VERSION,
     };
     use crate::state::AppState;
+    use async_trait::async_trait;
+    use oclive_kernel_contracts::LlmClient;
+    use std::sync::atomic::{AtomicUsize, Ordering as AtomicOrdering};
     use std::sync::Arc;
+    use std::time::Duration;
+    use tokio::sync::Notify;
+
+    struct BlockingSequenceLlm {
+        calls: AtomicUsize,
+        first_entered: Notify,
+        release_first: Notify,
+        prompts: parking_lot::Mutex<Vec<String>>,
+    }
+
+    impl BlockingSequenceLlm {
+        fn new() -> Self {
+            Self {
+                calls: AtomicUsize::new(0),
+                first_entered: Notify::new(),
+                release_first: Notify::new(),
+                prompts: parking_lot::Mutex::new(Vec::new()),
+            }
+        }
+    }
+
+    #[async_trait]
+    impl LlmClient for BlockingSequenceLlm {
+        async fn generate(&self, _model: &str, prompt: &str) -> Result<String> {
+            let call = self.calls.fetch_add(1, AtomicOrdering::SeqCst);
+            self.prompts.lock().push(prompt.to_string());
+            if call == 0 {
+                self.first_entered.notify_one();
+                self.release_first.notified().await;
+            }
+            Ok(format!(
+                r#"{{"dialogue":"beat-{call}","narration":"","interaction_state":"active","next_beat_interval_ms":10}}"#
+            ))
+        }
+
+        async fn generate_tag(&self, _model: &str, _prompt: &str) -> Result<String> {
+            Ok("neutral".to_string())
+        }
+    }
+
+    struct DelayedAdultLlm;
+
+    #[async_trait]
+    impl LlmClient for DelayedAdultLlm {
+        async fn generate(&self, _model: &str, _prompt: &str) -> Result<String> {
+            tokio::time::sleep(Duration::from_millis(5)).await;
+            Ok(
+                r#"{"dialogue":"durable","narration":"beat","interaction_state":"active","next_beat_interval_ms":10}"#
+                    .to_string(),
+            )
+        }
+
+        async fn generate_tag(&self, _model: &str, _prompt: &str) -> Result<String> {
+            Ok("neutral".to_string())
+        }
+    }
 
     fn open_adult_request() -> AdultInteractionRequest {
         AdultInteractionRequest {
@@ -557,10 +635,11 @@ mod tests {
         let pool = crate::infrastructure::test_db::connect_memory_migrated().await;
         let db = DbManager::new(pool);
         db.ensure_role_runtime("role").await.expect("runtime");
-        let generation = db
+        let (generation, invalidated) = db
             .begin_adult_stage_generation("role", "role", "home")
             .await
             .expect("begin");
+        assert!(invalidated.is_empty());
         db.store_adult_staged_beat(
             &generation,
             "role",
@@ -633,10 +712,11 @@ mod tests {
     async fn new_generation_invalidates_old_pending_beats() {
         let pool = crate::infrastructure::test_db::connect_memory_migrated().await;
         let db = DbManager::new(pool);
-        let first = db
+        let (first, first_invalidated) = db
             .begin_adult_stage_generation("role", "role", "home")
             .await
             .expect("begin first");
+        assert!(first_invalidated.is_empty());
         db.store_adult_staged_beat(
             &first,
             "role",
@@ -650,11 +730,12 @@ mod tests {
         )
         .await
         .expect("stage");
-        let second = db
+        let (second, second_invalidated) = db
             .begin_adult_stage_generation("role", "role", "home")
             .await
             .expect("begin second");
         assert_ne!(first, second);
+        assert_eq!(second_invalidated, vec![first.clone()]);
         assert!(db
             .load_adult_staged_beat(&first, 0)
             .await
@@ -671,7 +752,7 @@ mod tests {
         let pool = crate::infrastructure::test_db::connect_memory_migrated().await;
         let db = DbManager::new(pool);
         for sequence in 0..32 {
-            let generation = db
+            let (generation, _invalidated) = db
                 .begin_adult_stage_generation("role", "role", "home")
                 .await
                 .expect("begin");
@@ -702,6 +783,35 @@ mod tests {
                 .expect("list")
                 .is_empty());
         }
+    }
+
+    #[tokio::test]
+    async fn replacing_a_domain_generation_cancels_its_in_flight_signal() {
+        let state = AppState::new_in_memory_with_llm(
+            Arc::new(MockLlmClient {
+                reply: String::new(),
+            }),
+            roles_dir(),
+        )
+        .await
+        .expect("state");
+        let request = || BeginAdultStageGenerationRequest {
+            role_id: "gentle-landlady".to_string(),
+            scene_id: Some("default".to_string()),
+            session_id: None,
+            adult: open_adult_request(),
+        };
+        let first = begin_adult_stage_generation(&state, request())
+            .await
+            .expect("first");
+        let first_signal = state.adult_stage_cancellation(first.generation_id.as_str());
+
+        let second = begin_adult_stage_generation(&state, request())
+            .await
+            .expect("second");
+
+        assert_ne!(first.generation_id, second.generation_id);
+        assert!(first_signal.is_cancelled());
     }
 
     #[tokio::test]
@@ -789,5 +899,561 @@ mod tests {
         .await
         .expect("short after");
         assert_eq!(short_after, 1);
+    }
+
+    #[tokio::test]
+    async fn concurrent_staged_sequences_wait_for_prior_storage_and_context() {
+        let llm = Arc::new(BlockingSequenceLlm::new());
+        let state = Arc::new(
+            AppState::new_in_memory_with_llm(llm.clone(), roles_dir())
+                .await
+                .expect("state"),
+        );
+        let begun = begin_adult_stage_generation(
+            state.as_ref(),
+            BeginAdultStageGenerationRequest {
+                role_id: "gentle-landlady".to_string(),
+                scene_id: Some("default".to_string()),
+                session_id: None,
+                adult: open_adult_request(),
+            },
+        )
+        .await
+        .expect("begin");
+        let request = |sequence| StageAdultBeatRequest {
+            role_id: "gentle-landlady".to_string(),
+            scene_id: Some("default".to_string()),
+            session_id: None,
+            generation_id: begun.generation_id.clone(),
+            sequence,
+            adult: open_adult_request(),
+        };
+        let first_state = Arc::clone(&state);
+        let first_request = request(0);
+        let first = tokio::spawn(async move {
+            generate_adult_staged_beat(first_state.as_ref(), first_request).await
+        });
+        llm.first_entered.notified().await;
+        let second_state = Arc::clone(&state);
+        let second_request = request(1);
+        let second = tokio::spawn(async move {
+            generate_adult_staged_beat(second_state.as_ref(), second_request).await
+        });
+        tokio::task::yield_now().await;
+        assert_eq!(llm.calls.load(AtomicOrdering::SeqCst), 1);
+
+        llm.release_first.notify_one();
+        first.await.expect("first join").expect("first generation");
+        second
+            .await
+            .expect("second join")
+            .expect("second generation");
+
+        assert_eq!(llm.calls.load(AtomicOrdering::SeqCst), 2);
+        let prompts = llm.prompts.lock();
+        assert!(
+            prompts
+                .get(1)
+                .is_some_and(|prompt| prompt.contains("beat-0")),
+            "second staged prompt must include the prior staged transcript: {prompts:?}"
+        );
+    }
+
+    #[tokio::test]
+    async fn duplicate_sequence_is_rejected_before_a_second_llm_call() {
+        let llm = Arc::new(BlockingSequenceLlm::new());
+        let state = Arc::new(
+            AppState::new_in_memory_with_llm(llm.clone(), roles_dir())
+                .await
+                .expect("state"),
+        );
+        let begun = begin_adult_stage_generation(
+            state.as_ref(),
+            BeginAdultStageGenerationRequest {
+                role_id: "gentle-landlady".to_string(),
+                scene_id: Some("default".to_string()),
+                session_id: None,
+                adult: open_adult_request(),
+            },
+        )
+        .await
+        .expect("begin");
+        let request = || StageAdultBeatRequest {
+            role_id: "gentle-landlady".to_string(),
+            scene_id: Some("default".to_string()),
+            session_id: None,
+            generation_id: begun.generation_id.clone(),
+            sequence: 0,
+            adult: open_adult_request(),
+        };
+        let first_state = Arc::clone(&state);
+        let first_request = request();
+        let first = tokio::spawn(async move {
+            generate_adult_staged_beat(first_state.as_ref(), first_request).await
+        });
+        llm.first_entered.notified().await;
+        let second_state = Arc::clone(&state);
+        let second_request = request();
+        let second = tokio::spawn(async move {
+            generate_adult_staged_beat(second_state.as_ref(), second_request).await
+        });
+        tokio::task::yield_now().await;
+        assert_eq!(llm.calls.load(AtomicOrdering::SeqCst), 1);
+
+        llm.release_first.notify_one();
+        first.await.expect("first join").expect("first generation");
+        assert!(second.await.expect("second join").is_err());
+        assert_eq!(llm.calls.load(AtomicOrdering::SeqCst), 1);
+    }
+
+    #[tokio::test]
+    async fn staged_scene_is_canonicalized_before_generation_and_commit() {
+        let state = AppState::new_in_memory_with_llm(
+            Arc::new(MockLlmClient {
+                reply: r#"{"dialogue":"next","narration":"","interaction_state":"active","next_beat_interval_ms":10}"#
+                    .to_string(),
+            }),
+            roles_dir(),
+        )
+        .await
+        .expect("state");
+        let begun = begin_adult_stage_generation(
+            &state,
+            BeginAdultStageGenerationRequest {
+                role_id: "gentle-landlady".to_string(),
+                scene_id: Some("not-a-scene".to_string()),
+                session_id: None,
+                adult: open_adult_request(),
+            },
+        )
+        .await
+        .expect("begin");
+        assert!(state
+            .db_manager
+            .adult_stage_generation_state_for_chat(
+                begun.generation_id.as_str(),
+                "gentle-landlady",
+                "gentle-landlady",
+                "default",
+            )
+            .await
+            .expect("state")
+            .is_some());
+        let staged = generate_adult_staged_beat(
+            &state,
+            StageAdultBeatRequest {
+                role_id: "gentle-landlady".to_string(),
+                scene_id: Some("still-not-a-scene".to_string()),
+                session_id: None,
+                generation_id: begun.generation_id.clone(),
+                sequence: 0,
+                adult: open_adult_request(),
+            },
+        )
+        .await
+        .expect("generate");
+        assert_eq!(staged.response.scene_id, "default");
+        let committed = commit_adult_staged_beat(
+            &state,
+            CommitAdultStagedBeatRequest {
+                role_id: "gentle-landlady".to_string(),
+                scene_id: Some("also-invalid".to_string()),
+                session_id: None,
+                generation_id: begun.generation_id,
+                sequence: 0,
+            },
+        )
+        .await
+        .expect("commit");
+        assert_eq!(committed.scene_id, "default");
+    }
+
+    #[tokio::test]
+    async fn staged_list_rejects_generation_owned_by_another_chat() {
+        let state = AppState::new_in_memory_with_llm(
+            Arc::new(MockLlmClient {
+                reply: String::new(),
+            }),
+            roles_dir(),
+        )
+        .await
+        .expect("state");
+        let begun = begin_adult_stage_generation(
+            &state,
+            BeginAdultStageGenerationRequest {
+                role_id: "gentle-landlady".to_string(),
+                scene_id: Some("default".to_string()),
+                session_id: None,
+                adult: open_adult_request(),
+            },
+        )
+        .await
+        .expect("begin");
+
+        let mismatched = list_adult_staged_beats(
+            &state,
+            ListAdultStagedBeatsRequest {
+                role_id: "mumu".to_string(),
+                scene_id: Some("default".to_string()),
+                session_id: None,
+                generation_id: begun.generation_id,
+            },
+        )
+        .await;
+
+        assert!(mismatched.is_err());
+    }
+
+    #[tokio::test]
+    async fn cancellation_queued_before_commit_wins_the_stage_scope_lock() {
+        let state = Arc::new(
+            AppState::new_in_memory_with_llm(
+                Arc::new(MockLlmClient {
+                    reply: r#"{"dialogue":"next","narration":"","interaction_state":"active","next_beat_interval_ms":10}"#
+                        .to_string(),
+                }),
+                roles_dir(),
+            )
+            .await
+            .expect("state"),
+        );
+        let begun = begin_adult_stage_generation(
+            state.as_ref(),
+            BeginAdultStageGenerationRequest {
+                role_id: "gentle-landlady".to_string(),
+                scene_id: Some("default".to_string()),
+                session_id: None,
+                adult: open_adult_request(),
+            },
+        )
+        .await
+        .expect("begin");
+        generate_adult_staged_beat(
+            state.as_ref(),
+            StageAdultBeatRequest {
+                role_id: "gentle-landlady".to_string(),
+                scene_id: Some("default".to_string()),
+                session_id: None,
+                generation_id: begun.generation_id.clone(),
+                sequence: 0,
+                adult: open_adult_request(),
+            },
+        )
+        .await
+        .expect("generate");
+        let held = state
+            .adult_stage_lock_for("gentle-landlady", "default")
+            .lock_owned()
+            .await;
+        let cancel_state = Arc::clone(&state);
+        let cancel_generation = begun.generation_id.clone();
+        let cancel = tokio::spawn(async move {
+            cancel_adult_stage_generation(
+                cancel_state.as_ref(),
+                CancelAdultStageGenerationRequest {
+                    role_id: "gentle-landlady".to_string(),
+                    scene_id: Some("default".to_string()),
+                    session_id: None,
+                    generation_id: cancel_generation,
+                },
+            )
+            .await
+        });
+        tokio::task::yield_now().await;
+        let commit_state = Arc::clone(&state);
+        let commit_generation = begun.generation_id;
+        let commit = tokio::spawn(async move {
+            commit_adult_staged_beat(
+                commit_state.as_ref(),
+                CommitAdultStagedBeatRequest {
+                    role_id: "gentle-landlady".to_string(),
+                    scene_id: Some("default".to_string()),
+                    session_id: None,
+                    generation_id: commit_generation,
+                    sequence: 0,
+                },
+            )
+            .await
+        });
+        drop(held);
+
+        cancel.await.expect("cancel join").expect("cancel");
+        assert!(commit.await.expect("commit join").is_err());
+        assert!(state
+            .conversation_store
+            .fetch_messages("gentle-landlady", 10, 0)
+            .await
+            .expect("messages")
+            .is_empty());
+    }
+
+    #[tokio::test]
+    async fn commit_queued_before_cancellation_finishes_before_cancel_returns() {
+        let state = Arc::new(
+            AppState::new_in_memory_with_llm(
+                Arc::new(MockLlmClient {
+                    reply: r#"{"dialogue":"next","narration":"","interaction_state":"active","next_beat_interval_ms":10}"#
+                        .to_string(),
+                }),
+                roles_dir(),
+            )
+            .await
+            .expect("state"),
+        );
+        let begun = begin_adult_stage_generation(
+            state.as_ref(),
+            BeginAdultStageGenerationRequest {
+                role_id: "gentle-landlady".to_string(),
+                scene_id: Some("default".to_string()),
+                session_id: None,
+                adult: open_adult_request(),
+            },
+        )
+        .await
+        .expect("begin");
+        generate_adult_staged_beat(
+            state.as_ref(),
+            StageAdultBeatRequest {
+                role_id: "gentle-landlady".to_string(),
+                scene_id: Some("default".to_string()),
+                session_id: None,
+                generation_id: begun.generation_id.clone(),
+                sequence: 0,
+                adult: open_adult_request(),
+            },
+        )
+        .await
+        .expect("generate");
+        let held = state
+            .adult_stage_lock_for("gentle-landlady", "default")
+            .lock_owned()
+            .await;
+        let commit_state = Arc::clone(&state);
+        let commit_generation = begun.generation_id.clone();
+        let commit = tokio::spawn(async move {
+            commit_adult_staged_beat(
+                commit_state.as_ref(),
+                CommitAdultStagedBeatRequest {
+                    role_id: "gentle-landlady".to_string(),
+                    scene_id: Some("default".to_string()),
+                    session_id: None,
+                    generation_id: commit_generation,
+                    sequence: 0,
+                },
+            )
+            .await
+        });
+        tokio::task::yield_now().await;
+        let cancel_state = Arc::clone(&state);
+        let cancel_generation = begun.generation_id;
+        let cancel = tokio::spawn(async move {
+            cancel_adult_stage_generation(
+                cancel_state.as_ref(),
+                CancelAdultStageGenerationRequest {
+                    role_id: "gentle-landlady".to_string(),
+                    scene_id: Some("default".to_string()),
+                    session_id: None,
+                    generation_id: cancel_generation,
+                },
+            )
+            .await
+        });
+        drop(held);
+
+        commit.await.expect("commit join").expect("commit");
+        cancel.await.expect("cancel join").expect("cancel");
+        assert_eq!(
+            state
+                .conversation_store
+                .fetch_messages("gentle-landlady", 10, 0)
+                .await
+                .expect("messages")
+                .len(),
+            2
+        );
+    }
+
+    #[tokio::test]
+    async fn staged_beat_recovers_across_each_file_database_crash_point() {
+        let temp = tempfile::tempdir().expect("temp");
+        let db_path = temp.path().join("adult-stage.sqlite3");
+        let app_data = temp.path().join("app-data");
+        let llm: Arc<dyn LlmClient> = Arc::new(DelayedAdultLlm);
+        let reopen =
+            || AppState::new_file_test_with_llm(&db_path, Arc::clone(&llm), roles_dir(), &app_data);
+
+        // Crash point 1: text is staged but nothing is committed yet.
+        let state = reopen().await.expect("initial state");
+        let begun = begin_adult_stage_generation(
+            &state,
+            BeginAdultStageGenerationRequest {
+                role_id: "gentle-landlady".to_string(),
+                scene_id: Some("default".to_string()),
+                session_id: None,
+                adult: open_adult_request(),
+            },
+        )
+        .await
+        .expect("begin");
+        generate_adult_staged_beat(
+            &state,
+            StageAdultBeatRequest {
+                role_id: "gentle-landlady".to_string(),
+                scene_id: Some("default".to_string()),
+                session_id: None,
+                generation_id: begun.generation_id.clone(),
+                sequence: 0,
+                adult: open_adult_request(),
+            },
+        )
+        .await
+        .expect("generate");
+        let stored = state
+            .db_manager
+            .load_adult_staged_beat(&begun.generation_id, 0)
+            .await
+            .expect("load staged")
+            .expect("staged row");
+        assert!(
+            stored.response_ms > 0,
+            "generation latency must be measured"
+        );
+        state.db_manager.pool.close().await;
+        drop(state);
+
+        let state = reopen().await.expect("reopen pending");
+        let pending = list_adult_staged_beats(
+            &state,
+            ListAdultStagedBeatsRequest {
+                role_id: "gentle-landlady".to_string(),
+                scene_id: Some("default".to_string()),
+                session_id: None,
+                generation_id: begun.generation_id.clone(),
+            },
+        )
+        .await
+        .expect("list pending");
+        assert!(pending.active);
+        assert_eq!(pending.beats.len(), 1);
+
+        // Crash point 2: short-term context committed, chat append not started.
+        let stored = state
+            .db_manager
+            .load_adult_staged_beat(&begun.generation_id, 0)
+            .await
+            .expect("load before memory")
+            .expect("staged row");
+        state
+            .db_manager
+            .commit_adult_staged_short_term(
+                &stored,
+                "gentle-landlady",
+                "default",
+                ADULT_CONTINUATION_INPUT,
+                500,
+            )
+            .await
+            .expect("commit short term");
+        state.db_manager.pool.close().await;
+        drop(state);
+
+        let state = reopen().await.expect("reopen memory committed");
+        let recoverable = list_adult_staged_beats(
+            &state,
+            ListAdultStagedBeatsRequest {
+                role_id: "gentle-landlady".to_string(),
+                scene_id: Some("default".to_string()),
+                session_id: None,
+                generation_id: begun.generation_id.clone(),
+            },
+        )
+        .await
+        .expect("list memory committed");
+        assert_eq!(recoverable.beats.len(), 1);
+
+        // Crash point 3: idempotent chat append succeeded, final stage marker did not.
+        let role = state
+            .load_role_cached_async("gentle-landlady")
+            .await
+            .expect("role");
+        state
+            .conversation_persist_port()
+            .append_turn(TurnPersistRequest {
+                idempotency_key: Some(format!("{}:0", begun.generation_id)),
+                session_id: "gentle-landlady".to_string(),
+                role_id: "gentle-landlady".to_string(),
+                scene_id: "default".to_string(),
+                user_message: ADULT_CONTINUATION_INPUT.to_string(),
+                user_message_hidden: true,
+                assistant_reply: stored.transcript_reply.clone(),
+                reply_is_fallback: stored.response.reply_is_fallback,
+                model_name: stored.model_name.clone(),
+                response_ms: stored.response_ms,
+                user_emotion: Some("neutral".to_string()),
+                bot_emotion: stored.bot_emotion.clone(),
+                max_messages_per_session: role.pack_chat_storage_config.max_messages_per_session,
+                auto_cleanup_config: TurnAutoCleanupConfig::from_role_config(
+                    &role.pack_chat_storage_config,
+                ),
+                chat_storage_location: role.pack_chat_storage_config.location.clone(),
+            })
+            .await
+            .expect("append before crash");
+        state.db_manager.pool.close().await;
+        drop(state);
+
+        let state = reopen().await.expect("reopen append committed");
+        let committed = commit_adult_staged_beat(
+            &state,
+            CommitAdultStagedBeatRequest {
+                role_id: "gentle-landlady".to_string(),
+                scene_id: Some("default".to_string()),
+                session_id: None,
+                generation_id: begun.generation_id.clone(),
+                sequence: 0,
+            },
+        )
+        .await
+        .expect("finish recovered commit");
+        assert!(committed.assistant_message_id.is_some());
+        assert_eq!(
+            state
+                .conversation_store
+                .fetch_messages("gentle-landlady", 10, 0)
+                .await
+                .expect("messages after recovery")
+                .len(),
+            2
+        );
+        let short_term_count: i64 = sqlx::query_scalar(
+            "SELECT COUNT(*) FROM short_term_memory WHERE role_id = 'gentle-landlady'",
+        )
+        .fetch_one(&state.db_manager.pool)
+        .await
+        .expect("short-term count");
+        assert_eq!(short_term_count, 1);
+
+        // A client retry after finalization remains idempotent too.
+        commit_adult_staged_beat(
+            &state,
+            CommitAdultStagedBeatRequest {
+                role_id: "gentle-landlady".to_string(),
+                scene_id: Some("default".to_string()),
+                session_id: None,
+                generation_id: begun.generation_id,
+                sequence: 0,
+            },
+        )
+        .await
+        .expect("idempotent retry");
+        assert_eq!(
+            state
+                .conversation_store
+                .fetch_messages("gentle-landlady", 10, 0)
+                .await
+                .expect("messages after retry")
+                .len(),
+            2
+        );
     }
 }

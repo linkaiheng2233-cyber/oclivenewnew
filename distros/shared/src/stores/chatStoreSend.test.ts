@@ -1,0 +1,203 @@
+// @vitest-environment jsdom
+
+import type { SendMessageResponse } from '@oclive/shared/api'
+import type { ChatMessage } from './chatStore'
+import type { ChatStoreSendContext } from './chatStoreSend'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { sendChatStoreMessage } from './chatStoreSend'
+
+const mocks = vi.hoisted(() => ({
+  sendMessage: vi.fn(),
+  startQueue: vi.fn(),
+  cancelQueue: vi.fn(),
+  emitBuiltin: vi.fn(),
+  recordKnowledge: vi.fn(),
+  updateLocal: vi.fn(),
+  updateRelation: vi.fn(),
+  updateSession: vi.fn(),
+  uiStore: {
+    sceneId: 'home',
+  },
+  roleStore: {
+    currentRoleId: 'role',
+    roleInfo: {
+      adultExtensionAvailable: true,
+      relationState: 'Friend',
+    },
+    updateLocalAfterMessage: vi.fn(),
+    updateRelationState: vi.fn(),
+  },
+  adultStore: {
+    backgroundQueueEnabled: true,
+    requestFor: vi.fn(() => ({
+      confirmed_adult: true,
+      global_enabled: true,
+      role_enabled: true,
+      interaction_active: true,
+      action: 'message',
+    })),
+    sessionFor: vi.fn(() => ({
+      active: true,
+      voiceTextOnly: false,
+      updatedAt: 1,
+    })),
+    updateSession: vi.fn(),
+  },
+}))
+
+vi.mock('@oclive/shared/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@oclive/shared/api')>()
+  return {
+    ...actual,
+    sendMessage: mocks.sendMessage,
+    sendMessageStream: vi.fn(),
+    toastAsyncError: vi.fn(),
+  }
+})
+
+vi.mock('@oclive/shared/lib/adultBeatQueue', () => ({
+  cancelAdultBeatQueue: mocks.cancelQueue,
+  resumeAdultBeatQueue: vi.fn(),
+  startAdultBeatQueue: mocks.startQueue,
+}))
+
+vi.mock('@oclive/shared/lib/hostEventBus', () => ({
+  hostEventBus: { emitBuiltin: mocks.emitBuiltin },
+}))
+
+vi.mock('@oclive/shared/utils/chatStreamSettings', () => ({
+  isChatStreamEnabled: () => false,
+}))
+
+vi.mock('./adultInteractionStore', () => ({
+  useAdultInteractionStore: () => mocks.adultStore,
+}))
+
+vi.mock('./debugStore', () => ({
+  useDebugStore: () => ({ recordKnowledgeFromSend: mocks.recordKnowledge }),
+}))
+
+vi.mock('./roleStore', () => ({
+  useRoleStore: () => mocks.roleStore,
+}))
+
+vi.mock('./uiStore', () => ({
+  useUiStore: () => mocks.uiStore,
+}))
+
+function response(): SendMessageResponse {
+  return {
+    api_version: 1,
+    schema: 1,
+    presence_mode: 'co_present',
+    relation_state: 'Friend',
+    reply: 'dialogue',
+    adult_beat: {
+      dialogue: '只朗读这句对白',
+      narration: '她把杯子轻轻放在桌上。',
+      interaction_state: 'active',
+      next_beat_interval_ms: 10,
+    },
+    emotion: {
+      joy: 0,
+      sadness: 0,
+      anger: 0,
+      fear: 0,
+      surprise: 0,
+      disgust: 0,
+      neutral: 1,
+    },
+    bot_emotion: 'neutral',
+    portrait_emotion: 'neutral',
+    favorability_delta: 0,
+    favorability_current: 1,
+    events: [],
+    scene_id: 'home',
+    offer_destination_picker: false,
+    offer_together_travel: false,
+    reply_is_fallback: false,
+    knowledge_chunks_in_prompt: 0,
+    timestamp: 1,
+    user_message_id: 'user-1',
+    assistant_message_id: 'assistant-1',
+    user_message_timestamp: 1,
+    assistant_message_timestamp: 2,
+  }
+}
+
+function context(messages: ChatMessage[]): ChatStoreSendContext {
+  return {
+    sceneHistorySplitIndex: {},
+    setLoading: vi.fn(),
+    getMessageCountForRoleScene: () => messages.length,
+    addMessage: (_roleId, _sceneId, message) => messages.push(message),
+    patchMessageById: vi.fn(),
+    deleteMessage: vi.fn(),
+    addSystemMessage: vi.fn(),
+    clampSceneHistorySplitForBucket: vi.fn(),
+  }
+}
+
+describe('chat store structured adult presentation', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mocks.roleStore.currentRoleId = 'role'
+    mocks.uiStore.sceneId = 'home'
+    mocks.roleStore.updateLocalAfterMessage = mocks.updateLocal
+    mocks.roleStore.updateRelationState = mocks.updateRelation
+    mocks.adultStore.updateSession = mocks.updateSession
+    mocks.sendMessage.mockResolvedValue(response())
+    mocks.cancelQueue.mockResolvedValue(undefined)
+    mocks.startQueue.mockResolvedValue(undefined)
+  })
+
+  it('renders dialogue and narration separately and emits only dialogue for TTS', async () => {
+    const messages: ChatMessage[] = []
+
+    await sendChatStoreMessage(
+      context(messages),
+      '继续',
+      'home',
+    )
+
+    const assistant = messages.find(message => message.role === 'assistant')
+    expect(assistant).toMatchObject({
+      content: '只朗读这句对白',
+      aside: '她把杯子轻轻放在桌上。',
+    })
+    const sentEvent = mocks.emitBuiltin.mock.calls.find(
+      call => call[0] === 'message:sent',
+    )
+    expect(sentEvent?.[1]).toMatchObject({
+      reply: '只朗读这句对白',
+      reply_aside: '她把杯子轻轻放在桌上。',
+      role_id: 'role',
+      scene_id: 'home',
+      skip_auto_tts: false,
+    })
+    expect(String(sentEvent?.[1]?.reply)).not.toContain('她把杯子')
+  })
+
+  it('drops a late reply after the foreground scene changes', async () => {
+    let resolveSend: ((value: SendMessageResponse) => void) | undefined
+    mocks.sendMessage.mockReturnValueOnce(new Promise((resolve) => {
+      resolveSend = resolve
+    }))
+    const messages: ChatMessage[] = []
+
+    const pending = sendChatStoreMessage(context(messages), '继续', 'home')
+    await vi.waitFor(() => expect(mocks.sendMessage).toHaveBeenCalledTimes(1))
+    mocks.uiStore.sceneId = 'garden'
+    resolveSend?.(response())
+    await pending
+
+    expect(messages).toHaveLength(1)
+    expect(messages[0]).toMatchObject({ role: 'user', content: '继续' })
+    expect(mocks.emitBuiltin).not.toHaveBeenCalledWith(
+      'message:sent',
+      expect.anything(),
+    )
+    expect(mocks.updateLocal).not.toHaveBeenCalled()
+    expect(mocks.updateRelation).not.toHaveBeenCalled()
+  })
+})

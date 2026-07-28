@@ -23,7 +23,10 @@ pub struct UserIdentityIndexEntry {
     pub template_file: String,
     #[serde(default)]
     pub maps_to_relation_id: Option<String>,
-    /// Set to `false` for an identity explicitly authored as a minor.
+    /// Legacy/advisory author metadata retained for role-pack compatibility.
+    ///
+    /// Chat Pro authorization is determined by local adult confirmation plus
+    /// the global and per-role switches; this field is not a hidden fourth gate.
     #[serde(default = "default_adult_eligible")]
     pub adult_eligible: bool,
 }

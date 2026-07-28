@@ -424,6 +424,23 @@ export const useRoleStore = defineStore(
         this.applyRoleInfo(info)
         return info
       },
+      async setGlobalUserRelation(relation: string, sceneId?: string) {
+        const roleId = this.currentRoleId
+        const sid = sceneId
+          ?? this.roleInfo.userPresenceScene
+          ?? this.roleInfo.currentScene
+          ?? 'default'
+        const { cancelAdultBeatQueue } = await import(
+          '@oclive/shared/lib/adultBeatQueue',
+        )
+        await cancelAdultBeatQueue(roleId, sid)
+        useAdultInteractionStore().clearSession(roleId, sid)
+        const info = await setUserRelation(roleId, relation)
+        if (this.currentRoleId !== roleId)
+          return info
+        this.applyRoleInfo(info)
+        return info
+      },
       /**
        * Select manifest default relation (top-bar relation sentinel).
        * When `clearSceneId` is passed, remove per-scene relation override first.

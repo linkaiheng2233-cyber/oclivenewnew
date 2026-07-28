@@ -686,12 +686,7 @@ pub(crate) async fn post_llm(
     let reply = llm.reply.clone();
     let parsed_adult_beat = matches!(mode, TurnMode::CoPresent)
         .then(|| {
-            crate::domain::adult_interaction::parse_reply(
-                &reply,
-                role,
-                ctx.req.adult.as_ref(),
-                pre.relation.user_identity_allows_adult,
-            )
+            crate::domain::adult_interaction::parse_reply(&reply, role, ctx.req.adult.as_ref())
         })
         .flatten();
     let semantic_reply = parsed_adult_beat
@@ -700,7 +695,6 @@ pub(crate) async fn post_llm(
         .unwrap_or_else(|| reply.clone());
     let synthetic_adult_action = ctx.req.adult.as_ref().is_some_and(|adult| {
         adult.gates_open()
-            && pre.relation.user_identity_allows_adult
             && !matches!(
                 adult.action,
                 crate::models::dto::AdultInteractionAction::Message
@@ -823,7 +817,6 @@ pub(crate) async fn post_llm(
             .adult
             .as_ref()
             .is_some_and(crate::models::dto::AdultInteractionRequest::gates_open)
-            && pre.relation.user_identity_allows_adult
         {
             "adult"
         } else {

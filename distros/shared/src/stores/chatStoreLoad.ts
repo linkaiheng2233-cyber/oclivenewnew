@@ -21,7 +21,7 @@ export function parseMessageTimestamp(iso?: string | null): number {
   return Number.isFinite(ms) ? ms : Date.now()
 }
 
-/** Load path: keep raw assistant content; split lazily when rendering or syncing aside. */
+/** Convert one durable chat row into the shared UI message shape. */
 export function storedMessageToChatMessage(m: StoredMessage): ChatMessage {
   let emotion: string | undefined
   let replyIsFallback: boolean | undefined
@@ -66,13 +66,11 @@ export function storedMessageIsHidden(m: StoredMessage): boolean {
   }
 }
 
-const LAZY_SPLIT_TAIL = 80
-
-function splitRecentAssistantMessages(messages: ChatMessage[]): ChatMessage[] {
+/** Normalize every loaded assistant transcript so old adult history keeps two bubbles. */
+export function splitAssistantMessages(messages: ChatMessage[]): ChatMessage[] {
   if (messages.length === 0)
     return messages
-  const start = Math.max(0, messages.length - LAZY_SPLIT_TAIL)
-  for (let i = start; i < messages.length; i++) {
+  for (let i = 0; i < messages.length; i++) {
     const m = messages[i]
     if (m?.role === 'assistant' && !m.aside)
       messages[i] = applyAssistantSplit(m)
@@ -113,7 +111,7 @@ async function loadBucketFromIdbOrMap(
 ): Promise<ChatMessage[] | null> {
   const cached = await loadBucketFromIdb(roleId, sid)
   if (cached?.length) {
-    return splitRecentAssistantMessages(
+    return splitAssistantMessages(
       mergeMessagesFromServer(cached, previousLocal),
     )
   }
@@ -261,7 +259,7 @@ export async function loadRoleSceneMessages(
         && !storedMessageIsHidden(m),
       )
       .map(storedMessageToChatMessage)
-    const messages = splitRecentAssistantMessages(
+    const messages = splitAssistantMessages(
       mergeMessagesFromServer(serverMessages, previousLocal),
     )
     writeBucket(messageMap, roleId, sid, messages)
@@ -273,7 +271,7 @@ export async function loadRoleSceneMessages(
     console.warn('[chatStore] fetch_chat_messages failed; using IDB cache', err)
     const cached = await loadBucketFromIdb(roleId, sid)
     if (cached) {
-      const messages = splitRecentAssistantMessages(
+      const messages = splitAssistantMessages(
         mergeMessagesFromServer(cached, previousLocal),
       )
       writeBucket(messageMap, roleId, sid, messages)

@@ -3,6 +3,7 @@
 //! Generation is speculative. Only `commit_adult_staged_beat` may make a beat
 //! visible to future turns by appending short-term context and chat history.
 
+use crate::domain::chat_engine::context::validate_scene_id;
 use crate::domain::chat_engine::{conversation_state_role_id, process_message};
 use crate::domain::ports::conversation_persist::{TurnAutoCleanupConfig, TurnPersistRequest};
 use crate::error::{AppError, Result};
@@ -25,6 +26,10 @@ fn normalized_scene(scene_id: Option<&str>) -> String {
         .to_string()
 }
 
+fn canonical_scene(role_id: &str, role: &crate::models::Role, scene_id: Option<&str>) -> String {
+    validate_scene_id(role_id, &role.scene_ids, normalized_scene(scene_id))
+}
+
 fn validate_open_gates(request: &crate::models::dto::AdultInteractionRequest) -> Result<()> {
     if request.gates_open() {
         Ok(())
@@ -35,29 +40,14 @@ fn validate_open_gates(request: &crate::models::dto::AdultInteractionRequest) ->
     }
 }
 
-async fn validate_role_and_identity(
+async fn validate_role(
     state: &AppState,
     role_id: &str,
-    session_id: Option<&str>,
-    scene_id: &str,
 ) -> Result<std::sync::Arc<crate::models::Role>> {
     let role = state.load_role_cached_async(role_id).await?;
     if role.adult_extension.is_none() {
         return Err(AppError::InvalidParameter(
             "role has no adult extension".to_string(),
-        ));
-    }
-    let srid = conversation_state_role_id(role_id, session_id);
-    let identity = crate::domain::user_identity_loader::resolve_active_user_identity(
-        state,
-        role.as_ref(),
-        srid.as_str(),
-        Some(scene_id),
-    )
-    .await?;
-    if !identity.adult_eligible {
-        return Err(AppError::InvalidParameter(
-            "active identity is not eligible for adult interaction".to_string(),
         ));
     }
     Ok(role)
@@ -67,27 +57,44 @@ async fn validate_role_and_identity(
 ///
 /// # Errors
 ///
-/// Returns an error when adult gates or identity eligibility fail, the role
-/// extension cannot be loaded, or durable generation state cannot be created.
+/// Returns an error when adult gates fail, the role extension cannot be
+/// loaded, or durable generation state cannot be created.
 pub async fn begin_adult_stage_generation(
     state: &AppState,
     request: BeginAdultStageGenerationRequest,
 ) -> Result<BeginAdultStageGenerationResponse> {
     validate_open_gates(&request.adult)?;
-    let scene_id = normalized_scene(request.scene_id.as_deref());
-    validate_role_and_identity(
-        state,
-        request.role_id.trim(),
-        request.session_id.as_deref(),
-        scene_id.as_str(),
-    )
-    .await?;
-    let srid = conversation_state_role_id(request.role_id.trim(), request.session_id.as_deref());
-    let generation_id = state
+    let role_id = request.role_id.trim();
+    let role = validate_role(state, role_id).await?;
+    let scene_id = canonical_scene(role_id, role.as_ref(), request.scene_id.as_deref());
+    let srid = conversation_state_role_id(role_id, request.session_id.as_deref());
+    let _stage_guard = state
+        .adult_stage_lock_for(srid.as_str(), scene_id.as_str())
+        .lock_owned()
+        .await;
+    let (generation_id, invalidated_generation_ids) = state
         .db_manager
-        .begin_adult_stage_generation(srid.as_str(), request.role_id.trim(), scene_id.as_str())
+        .begin_adult_stage_generation(srid.as_str(), role_id, scene_id.as_str())
         .await?;
+    for invalidated in invalidated_generation_ids {
+        state.cancel_adult_stage_generation_in_flight(invalidated.as_str());
+    }
     let _ = state.register_adult_stage_generation(generation_id.as_str());
+    if !state
+        .db_manager
+        .adult_stage_generation_active(
+            generation_id.as_str(),
+            srid.as_str(),
+            role_id,
+            scene_id.as_str(),
+        )
+        .await?
+    {
+        state.cancel_adult_stage_generation_in_flight(generation_id.as_str());
+        return Err(AppError::InvalidParameter(
+            "adult stage generation was superseded during startup".to_string(),
+        ));
+    }
     Ok(BeginAdultStageGenerationResponse {
         generation_id,
         next_sequence: 0,
@@ -98,7 +105,7 @@ pub async fn begin_adult_stage_generation(
 ///
 /// # Errors
 ///
-/// Returns an error for invalid gates, identity, generation or sequence state,
+/// Returns an error for invalid gates, generation or sequence state,
 /// cancellation, model failure, malformed structured output, or stage storage.
 pub async fn generate_adult_staged_beat(
     state: &AppState,
@@ -106,27 +113,28 @@ pub async fn generate_adult_staged_beat(
 ) -> Result<AdultStagedBeatDto> {
     validate_open_gates(&request.adult)?;
     let role_id = request.role_id.trim();
-    let scene_id = normalized_scene(request.scene_id.as_deref());
-    let role = validate_role_and_identity(
-        state,
-        role_id,
-        request.session_id.as_deref(),
-        scene_id.as_str(),
-    )
-    .await?;
+    let role = validate_role(state, role_id).await?;
+    let scene_id = canonical_scene(role_id, role.as_ref(), request.scene_id.as_deref());
     let srid = conversation_state_role_id(role_id, request.session_id.as_deref());
-    if !state
+    let _stage_guard = state
+        .adult_stage_lock_for(srid.as_str(), scene_id.as_str())
+        .lock_owned()
+        .await;
+    let generation_state = state
         .db_manager
-        .adult_stage_generation_active(
+        .adult_stage_generation_state_for_chat(
             request.generation_id.as_str(),
             srid.as_str(),
             role_id,
             scene_id.as_str(),
         )
-        .await?
-    {
+        .await?;
+    if !matches!(
+        generation_state,
+        Some((true, next_sequence)) if next_sequence == request.sequence
+    ) {
         return Err(AppError::InvalidParameter(
-            "adult stage generation is no longer active".to_string(),
+            "adult stage generation is inactive or sequence is no longer current".to_string(),
         ));
     }
 
@@ -146,6 +154,7 @@ pub async fn generate_adult_staged_beat(
         include_raw_reply: None,
         adult: Some(adult),
     };
+    let started_at = std::time::Instant::now();
     let response = tokio::select! {
         biased;
         () = signal.cancelled() => {
@@ -177,7 +186,7 @@ pub async fn generate_adult_staged_beat(
             &response,
             transcript.as_str(),
             model_name.as_deref(),
-            0,
+            u64::try_from(started_at.elapsed().as_millis()).unwrap_or(u64::MAX),
         )
         .await?;
     Ok(AdultStagedBeatDto {
@@ -198,9 +207,13 @@ pub async fn commit_adult_staged_beat(
     request: CommitAdultStagedBeatRequest,
 ) -> Result<SendMessageResponse> {
     let role_id = request.role_id.trim();
-    let scene_id = normalized_scene(request.scene_id.as_deref());
     let role = state.load_role_cached_async(role_id).await?;
+    let scene_id = canonical_scene(role_id, role.as_ref(), request.scene_id.as_deref());
     let srid = conversation_state_role_id(role_id, request.session_id.as_deref());
+    let _stage_guard = state
+        .adult_stage_lock_for(srid.as_str(), scene_id.as_str())
+        .lock_owned()
+        .await;
     let _guard = state.turn_lock_for(srid.as_str()).lock_owned().await;
     let mut stored = state
         .db_manager
@@ -281,9 +294,14 @@ pub async fn cancel_adult_stage_generation(
     request: CancelAdultStageGenerationRequest,
 ) -> Result<()> {
     let role_id = request.role_id.trim();
-    let scene_id = normalized_scene(request.scene_id.as_deref());
+    let role = state.load_role_cached_async(role_id).await?;
+    let scene_id = canonical_scene(role_id, role.as_ref(), request.scene_id.as_deref());
     let srid = conversation_state_role_id(role_id, request.session_id.as_deref());
     state.cancel_adult_stage_generation_in_flight(request.generation_id.as_str());
+    let _stage_guard = state
+        .adult_stage_lock_for(srid.as_str(), scene_id.as_str())
+        .lock_owned()
+        .await;
     state
         .db_manager
         .cancel_adult_stage_generation(
@@ -307,23 +325,20 @@ pub async fn list_adult_staged_beats(
     request: ListAdultStagedBeatsRequest,
 ) -> Result<ListAdultStagedBeatsResponse> {
     let role_id = request.role_id.trim();
-    let scene_id = normalized_scene(request.scene_id.as_deref());
+    let role = state.load_role_cached_async(role_id).await?;
+    let scene_id = canonical_scene(role_id, role.as_ref(), request.scene_id.as_deref());
     let srid = conversation_state_role_id(role_id, request.session_id.as_deref());
-    let valid = state
+    let state_row = state
         .db_manager
-        .adult_stage_generation_active(
+        .adult_stage_generation_state_for_chat(
             request.generation_id.as_str(),
             srid.as_str(),
             role_id,
             scene_id.as_str(),
         )
-        .await?;
-    let state_row = state
-        .db_manager
-        .adult_stage_generation_state(request.generation_id.as_str())
         .await?
         .ok_or_else(|| {
-            AppError::InvalidParameter("adult stage generation not found".to_string())
+            AppError::InvalidParameter("adult stage generation not found for this chat".to_string())
         })?;
     let beats = state
         .db_manager
@@ -331,7 +346,7 @@ pub async fn list_adult_staged_beats(
         .await?;
     Ok(ListAdultStagedBeatsResponse {
         generation_id: request.generation_id,
-        active: valid && state_row.0,
+        active: state_row.0,
         next_sequence: state_row.1,
         beats,
     })

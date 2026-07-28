@@ -313,7 +313,7 @@ pub struct UserIdentityDto {
     pub display_name: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub maps_to_relation_id: Option<String>,
-    /// False only when the role-pack author explicitly marks this identity as a minor.
+    /// Legacy/advisory role-pack metadata; not an adult runtime gate.
     #[serde(default = "default_true")]
     pub adult_eligible: bool,
 }

@@ -21,6 +21,7 @@ import { useAdultInteractionStore } from './adultInteractionStore'
 import { parseMessageTimestamp } from './chatStoreLoad'
 import { useDebugStore } from './debugStore'
 import { useRoleStore } from './roleStore'
+import { useUiStore } from './uiStore'
 
 export interface ChatStoreSendContext {
   sceneHistorySplitIndex: SceneHistorySplitIndex
@@ -83,6 +84,7 @@ export async function sendChatStoreMessage(
 ): Promise<SendMessageResponse | void> {
   const roleStore = useRoleStore()
   const adultStore = useAdultInteractionStore()
+  const uiStore = useUiStore()
   const roleId = roleStore.currentRoleId
   const sid = sceneId || 'default'
   if (options.adultAction !== 'continue')
@@ -96,7 +98,10 @@ export async function sendChatStoreMessage(
   const countBeforeTurn = context.getMessageCountForRoleScene(roleId, sid)
   const userLocalId = `u-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
   const sendSeq = ++activeSendSeq
-  const isStale = () => sendSeq !== activeSendSeq || roleStore.currentRoleId !== roleId
+  const isStale = () =>
+    sendSeq !== activeSendSeq
+    || roleStore.currentRoleId !== roleId
+    || (uiStore.sceneId || 'default') !== sid
 
   inFlightStreamAbort?.abort()
   const streamAbort = new AbortController()

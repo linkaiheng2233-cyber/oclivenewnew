@@ -20,7 +20,6 @@ struct AdultBeatWire {
     dialogue: String,
     #[serde(default)]
     narration: String,
-    #[serde(default)]
     interaction_state: AdultInteractionState,
     #[serde(default)]
     next_beat_interval_ms: Option<u64>,
@@ -52,11 +51,10 @@ pub fn prompt_section(
     role: &Role,
     scene_id: &str,
     request: Option<&AdultInteractionRequest>,
-    identity_allows_adult: bool,
 ) -> Option<String> {
     let extension = role.adult_extension.as_ref()?;
     let request = request?;
-    if !request.gates_open() || !identity_allows_adult {
+    if !request.gates_open() {
         return None;
     }
 
@@ -181,11 +179,8 @@ pub fn parse_reply(
     raw: &str,
     role: &Role,
     request: Option<&AdultInteractionRequest>,
-    identity_allows_adult: bool,
 ) -> Option<AdultBeatDto> {
-    if role.adult_extension.is_none() || !identity_allows_adult {
-        return None;
-    }
+    role.adult_extension.as_ref()?;
     let request = request.filter(|request| request.gates_open())?;
     let Some(candidate) = json_candidate(raw) else {
         return Some(malformed_reply(raw, request));
@@ -253,8 +248,8 @@ mod tests {
     #[test]
     fn closed_gate_does_not_inject_or_parse() {
         let role = adult_role();
-        assert!(prompt_section(&role, "home", None, true).is_none());
-        assert!(parse_reply(r#"{"dialogue":"hi"}"#, &role, None, true).is_none());
+        assert!(prompt_section(&role, "home", None).is_none());
+        assert!(parse_reply(r#"{"dialogue":"hi"}"#, &role, None).is_none());
     }
 
     #[test]
@@ -263,7 +258,7 @@ mod tests {
         let raw = r#"```json
 {"dialogue":"你好","narration":"她挥了挥手。","interaction_state":"active","next_beat_interval_ms":2500}
 ```"#;
-        let beat = parse_reply(raw, &role, Some(&open_request()), true).expect("beat");
+        let beat = parse_reply(raw, &role, Some(&open_request())).expect("beat");
         assert_eq!(beat.dialogue, "你好");
         assert_eq!(beat.interaction_state, AdultInteractionState::Active);
         assert_eq!(transcript_reply(&beat), "你好\n\n【旁白】她挥了挥手。");
@@ -282,8 +277,7 @@ mod tests {
     #[test]
     fn malformed_plain_reply_is_kept_inside_a_structured_beat() {
         let role = adult_role();
-        let beat =
-            parse_reply("普通回复", &role, Some(&open_request()), true).expect("fallback beat");
+        let beat = parse_reply("普通回复", &role, Some(&open_request())).expect("fallback beat");
         assert_eq!(beat.dialogue, "普通回复");
         assert_eq!(beat.interaction_state, AdultInteractionState::Inactive);
     }
@@ -295,7 +289,6 @@ mod tests {
             r#"{"dialogue":"你好","interaction_state":"active""#,
             &role,
             Some(&open_request()),
-            true,
         )
         .expect("fallback beat");
         assert!(!beat.dialogue.contains("dialogue"));
@@ -308,14 +301,46 @@ mod tests {
         let mut request = open_request();
         request.interaction_active = true;
         request.action = AdultInteractionAction::Exit;
-        let beat = parse_reply("", &role, Some(&request), true).expect("fallback beat");
+        let beat = parse_reply("", &role, Some(&request)).expect("fallback beat");
         assert_eq!(beat.interaction_state, AdultInteractionState::Ended);
     }
 
     #[test]
-    fn explicitly_ineligible_identity_never_injects_or_parses() {
+    fn missing_interaction_state_uses_action_aware_fallback() {
         let role = adult_role();
-        assert!(prompt_section(&role, "home", Some(&open_request()), false).is_none());
-        assert!(parse_reply("普通回复", &role, Some(&open_request()), false).is_none());
+        let mut request = open_request();
+        request.interaction_active = true;
+        request.action = AdultInteractionAction::Continue;
+        let beat = parse_reply(
+            r#"{"dialogue":"继续","narration":"","next_beat_interval_ms":10}"#,
+            &role,
+            Some(&request),
+        )
+        .expect("fallback beat");
+        assert_eq!(beat.interaction_state, AdultInteractionState::Active);
+    }
+
+    #[test]
+    fn the_three_open_gates_are_the_complete_runtime_gate() {
+        let role = adult_role();
+        for confirmed_adult in [false, true] {
+            for global_enabled in [false, true] {
+                for role_enabled in [false, true] {
+                    let mut request = open_request();
+                    request.confirmed_adult = confirmed_adult;
+                    request.global_enabled = global_enabled;
+                    request.role_enabled = role_enabled;
+                    let expected = confirmed_adult && global_enabled && role_enabled;
+                    assert_eq!(
+                        prompt_section(&role, "home", Some(&request)).is_some(),
+                        expected
+                    );
+                    assert_eq!(
+                        parse_reply("普通回复", &role, Some(&request)).is_some(),
+                        expected
+                    );
+                }
+            }
+        }
     }
 }

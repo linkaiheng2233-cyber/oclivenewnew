@@ -97,6 +97,13 @@ impl AppStateBuilder {
         self
     }
 
+    #[cfg(test)]
+    #[must_use]
+    pub fn with_test_db_path(mut self, path: impl AsRef<Path>) -> Self {
+        self.db_path = path.as_ref().to_path_buf();
+        self
+    }
+
     /// # Errors
     ///
     /// Database connect/migrate, policy load, or plugin bootstrap failures.
