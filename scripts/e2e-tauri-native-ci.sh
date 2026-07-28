@@ -79,9 +79,15 @@ dump_diagnostics() {
 }
 
 cleanup() {
-  if [[ -f /tmp/tauri-driver.pid ]]; then kill "$(cat /tmp/tauri-driver.pid)" 2>/dev/null || true; fi
+  if [[ -f /tmp/tauri-driver.pid ]]; then
+    local driver_pid
+    driver_pid="$(cat /tmp/tauri-driver.pid)"
+    kill "$driver_pid" 2>/dev/null || true
+    wait "$driver_pid" 2>/dev/null || true
+  fi
   # Kill any WebKitWebDriver children tauri-driver may have spawned on the native port.
   pkill -f "WebKitWebDriver --port=${TAURI_NATIVE_DRIVER_PORT}" 2>/dev/null || true
+  rm -f /tmp/tauri-driver.pid
 }
 
 on_exit() {
@@ -93,22 +99,34 @@ on_exit() {
 }
 trap on_exit EXIT
 
-# Do NOT pre-start WebKitWebDriver on TAURI_NATIVE_DRIVER_PORT: tauri-driver also
-# spawns one there (artifact: FATAL Unable to listen on port 4445 + zombie WebKit).
-: > /tmp/webkit-webdriver.log
-tauri-driver --port "$TAURI_DRIVER_PORT" --native-port "$TAURI_NATIVE_DRIVER_PORT" >/tmp/tauri-driver.log 2>&1 &
-echo $! >/tmp/tauri-driver.pid
+start_driver() {
+  # Do NOT pre-start WebKitWebDriver on TAURI_NATIVE_DRIVER_PORT: tauri-driver also
+  # spawns one there (artifact: FATAL Unable to listen on port 4445 + zombie WebKit).
+  : > /tmp/webkit-webdriver.log
+  : > /tmp/tauri-driver.log
+  tauri-driver --port "$TAURI_DRIVER_PORT" --native-port "$TAURI_NATIVE_DRIVER_PORT" >/tmp/tauri-driver.log 2>&1 &
+  echo $! >/tmp/tauri-driver.pid
 
-for _ in $(seq 1 60); do
-  if curl -sf "http://${TAURI_DRIVER_HOST}:${TAURI_DRIVER_PORT}/status" >/dev/null 2>&1; then
-    break
-  fi
-  sleep 2
-done
-if ! curl -sf "http://${TAURI_DRIVER_HOST}:${TAURI_DRIVER_PORT}/status" >/dev/null 2>&1; then
+  for _ in $(seq 1 60); do
+    if curl -sf "http://${TAURI_DRIVER_HOST}:${TAURI_DRIVER_PORT}/status" >/dev/null 2>&1; then
+      return
+    fi
+    sleep 2
+  done
   echo "tauri-driver did not become ready on :${TAURI_DRIVER_PORT}" >&2
   dump_diagnostics || true
   exit 1
-fi
+}
 
-npm run test:e2e:tauri-native
+# tauri-driver 2.0.x only forwards `application` and `args` from
+# `tauri:options`; per-session environment maps are ignored. Start the driver
+# separately for each startup policy so its child application inherits the
+# intended environment.
+unset OCLIVE_SHELL_PLUGIN_ID
+start_driver
+npm run test:e2e:tauri-native -- --grep "main window title"
+cleanup
+
+export OCLIVE_SHELL_PLUGIN_ID="com.oclive.example.minimal"
+start_driver
+npm run test:e2e:tauri-native -- --grep "plugin isolation"

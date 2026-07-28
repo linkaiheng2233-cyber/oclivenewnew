@@ -9,9 +9,10 @@ import { remote } from 'webdriverio'
 const appPath = process.env.TAURI_E2E_APP_PATH?.trim()
 const driverHost = process.env.TAURI_DRIVER_HOST ?? '127.0.0.1'
 const driverPort = Number(process.env.TAURI_DRIVER_PORT ?? '4444')
-const rolesDir = process.env.OCLIVE_ROLES_DIR ?? `${process.cwd()}/roles`
+const shellPluginId = process.env.OCLIVE_SHELL_PLUGIN_ID?.trim() ?? ''
+const isolationShellPluginId = 'com.oclive.example.minimal'
 
-async function openNativeSession(extraEnv: Record<string, string> = {}) {
+async function openNativeSession() {
   try {
     return await remote({
       hostname: driverHost,
@@ -22,12 +23,6 @@ async function openNativeSession(extraEnv: Record<string, string> = {}) {
         'wdio:enforceWebDriverClassic': true,
         'tauri:options': {
           application: appPath,
-          env: {
-            OCLIVE_ROLES_DIR: rolesDir,
-            OCLIVE_SKIP_STARTUP_HEALTH: '1',
-            OCLIVE_SKIP_LLM_STARTUP_PROBE: '1',
-            ...extraEnv,
-          },
         },
       },
       // Keep retries at 0 (no silent multi-minute hangs); allow one long session create.
@@ -50,6 +45,10 @@ test.describe('Tauri native window (A1.1c smoke)', () => {
   )
 
   test('main window title and left sidebar pane', async () => {
+    test.skip(
+      shellPluginId.length > 0,
+      'The main-shell smoke requires OCLIVE_SHELL_PLUGIN_ID to be unset',
+    )
     // Playwright global/config timeout alone has been observed as 30s in CI; pin again here.
     test.setTimeout(180_000)
 
@@ -86,10 +85,12 @@ test.describe('Tauri native window (A1.1c smoke)', () => {
   })
 
   test('plugin isolation: full shell cannot access host DOM or Tauri IPC', async () => {
+    test.skip(
+      shellPluginId !== isolationShellPluginId,
+      `Set OCLIVE_SHELL_PLUGIN_ID=${isolationShellPluginId} before starting tauri-driver`,
+    )
     test.setTimeout(180_000)
-    const browser = await openNativeSession({
-      OCLIVE_SHELL_PLUGIN_ID: 'com.oclive.example.minimal',
-    })
+    const browser = await openNativeSession()
 
     try {
       await browser.setTimeout({ implicit: 15_000 })
