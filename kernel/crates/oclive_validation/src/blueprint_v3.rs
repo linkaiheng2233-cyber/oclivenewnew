@@ -22,10 +22,9 @@ use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
 
-use crate::blueprint_includes::validate_includes;
 use crate::blueprint_v2::{
-    meta_to_disk_manifest, BlueprintMeta, SlotGroupEntry, SlotRegistryEntry,
-    BLUEPRINT_V2_SCHEMA_VERSION, PIPELINE_BLUEPRINT_FILENAME,
+    meta_to_disk_manifest, validate_slot_registry_contract, BlueprintMeta, SlotGroupEntry,
+    SlotRegistryEntry, BLUEPRINT_V2_SCHEMA_VERSION, PIPELINE_BLUEPRINT_FILENAME,
 };
 use crate::pipeline_action::{parse_pipeline_action_kind, PipelineActionKind};
 use crate::role_pack::merge_role_pack_scene_ids;
@@ -50,6 +49,7 @@ pub const PLUGIN_HOST_SLOT_TYPES: &[&str] = &[
 ];
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct PipelineStep {
     pub action: String,
     #[serde(default)]
@@ -57,6 +57,7 @@ pub struct PipelineStep {
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct DualPipelineDef {
     #[serde(default)]
     pub stable: Vec<PipelineStep>,
@@ -65,6 +66,7 @@ pub struct DualPipelineDef {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct BlueprintV3File {
     pub schema_version: u32,
     pub meta: BlueprintMeta,
@@ -76,14 +78,16 @@ pub struct BlueprintV3File {
     #[serde(default)]
     pub pipeline: Option<DualPipelineDef>,
     #[serde(default)]
+    #[allow(dead_code)]
     includes: Vec<crate::blueprint_includes::BlueprintIncludeEntry>,
     #[serde(default)]
     #[allow(dead_code)]
-    expert_overlay: Option<serde_json::Value>,
+    expert_overlay: Option<BTreeMap<String, serde_json::Value>>,
 }
 
 /// v3 `slot_registry` instance (extends the v2 fields with `zone`).
 #[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
 pub struct SlotRegistryEntryV3 {
     #[serde(rename = "type")]
     pub slot_type: String,
@@ -152,7 +156,23 @@ fn warnings_for_v2_runtime_config(root: &Value) -> Vec<String> {
 ///
 /// Returns `Err(Vec<String>)` when the contract is not satisfied.
 pub fn validate_blueprint_v3_json(raw: &str, folder_name: Option<&str>) -> Result<(), Vec<String>> {
-    let bp: BlueprintV3File = serde_json::from_str(raw)
+    let root: Value = serde_json::from_str(raw)
+        .map_err(|e| vec![format!("pipeline.ocblueprint v3 JSON 语法错误: {}", e)])?;
+    let object = root
+        .as_object()
+        .ok_or_else(|| vec!["pipeline.ocblueprint v3 根节点须为 JSON 对象".into()])?;
+    let mut shape_errors = Vec::new();
+    for field in ["expert_overlay", "runtime_config", "pipeline"] {
+        if object.get(field).is_some_and(|value| !value.is_object()) {
+            shape_errors.push(format!(
+                "pipeline.ocblueprint v3.{field} 若存在则须为 JSON 对象"
+            ));
+        }
+    }
+    if !shape_errors.is_empty() {
+        return Err(shape_errors);
+    }
+    let bp: BlueprintV3File = serde_json::from_value(root)
         .map_err(|e| vec![format!("pipeline.ocblueprint v3 结构不符合契约: {}", e)])?;
     validate_blueprint_v3_parsed(&bp, folder_name)
 }
@@ -184,11 +204,14 @@ fn validate_blueprint_v3_parsed(
         }
     }
 
-    if bp.slot_registry.is_empty() {
-        errs.push("slot_registry 不能为空".into());
-    }
+    let registry = v3_registry_to_btree(&bp.slot_registry);
+    let groups: BTreeMap<String, SlotGroupEntry> = bp
+        .groups
+        .iter()
+        .map(|(key, group)| (key.clone(), group.clone()))
+        .collect();
+    errs.extend(validate_slot_registry_contract(&registry, &groups, true));
 
-    let mut llm_count = 0usize;
     let zone_map: HashMap<String, HashSet<String>> = bp
         .slot_registry
         .iter()
@@ -196,22 +219,9 @@ fn validate_blueprint_v3_parsed(
         .collect();
 
     for (key, slot) in &bp.slot_registry {
-        if slot.label.trim().is_empty() {
-            errs.push(format!("slot_registry[{key}].label 不能为空"));
+        if let Err(e) = validate_zone_value(slot.zone.as_ref()) {
+            errs.push(format!("slot_registry[{key}].zone {e}"));
         }
-        let t = slot.slot_type.trim();
-        if !PLUGIN_HOST_SLOT_TYPES.contains(&t) {
-            errs.push(format!(
-                "slot_registry[{key}].type「{t}」不在 PluginHost 门面集合（允许: {}）",
-                PLUGIN_HOST_SLOT_TYPES.join(", ")
-            ));
-        }
-        if t == "llm" {
-            llm_count += 1;
-        }
-    }
-    if llm_count == 0 {
-        errs.push("slot_registry 须至少包含一个 type: llm 实例".into());
     }
 
     if let Some(ref pipe) = bp.pipeline {
@@ -267,6 +277,26 @@ fn zones_of_entry(zone: Option<&Value>) -> HashSet<String> {
         set.insert("stable".into());
     }
     set
+}
+
+fn validate_zone_value(zone: Option<&Value>) -> Result<(), String> {
+    let is_valid_name = |value: &str| matches!(value, "stable" | "experimental");
+    match zone {
+        None => Ok(()),
+        Some(Value::String(value)) if is_valid_name(value) => Ok(()),
+        Some(Value::Array(values)) if !values.is_empty() => {
+            if values
+                .iter()
+                .all(|value| value.as_str().is_some_and(is_valid_name))
+            {
+                Ok(())
+            } else {
+                Err("数组元素只能是 stable / experimental".into())
+            }
+        }
+        Some(Value::Array(_)) => Err("数组不能为空".into()),
+        Some(_) => Err("须为 stable / experimental 字符串或非空数组".into()),
+    }
 }
 
 /// Whether a v3-compatible slot entry belongs to `stable` or `experimental`.
@@ -530,6 +560,20 @@ pub fn validate_role_pack_blueprint_v3_directory(
     role_dir: &Path,
     host_version: &str,
 ) -> Result<(), Vec<String>> {
+    let mut legacy_errors = Vec::new();
+    for legacy_name in ["manifest.json", "settings.json"] {
+        let legacy_path = role_dir.join(legacy_name);
+        if legacy_path.is_file() {
+            legacy_errors.push(format!(
+                "v3 角色包不得包含 {legacy_name}（已废弃）：{}",
+                legacy_path.display()
+            ));
+        }
+    }
+    if !legacy_errors.is_empty() {
+        return Err(legacy_errors);
+    }
+
     let blueprint_path = role_dir.join(PIPELINE_BLUEPRINT_FILENAME);
     if !blueprint_path.is_file() {
         return Err(vec![format!(
@@ -541,14 +585,11 @@ pub fn validate_role_pack_blueprint_v3_directory(
     let raw = fs::read_to_string(&blueprint_path)
         .map_err(|e| vec![format!("读取 {} 失败: {}", blueprint_path.display(), e)])?;
     let folder_name = role_dir.file_name().and_then(|s| s.to_str());
-    if let Ok(bp) = serde_json::from_str::<BlueprintV3File>(&raw) {
-        if !bp.includes.is_empty() {
-            validate_includes(role_dir, &bp.includes)?;
-        }
-    }
     validate_blueprint_v3_json(&raw, folder_name)?;
+    let resolved = crate::blueprint_includes::merge_blueprint_includes_strict(role_dir, &raw)?;
+    validate_blueprint_v3_json(&resolved, folder_name)?;
 
-    let bp: BlueprintV3File = serde_json::from_str(&raw)
+    let bp: BlueprintV3File = serde_json::from_str(&resolved)
         .map_err(|e| vec![format!("pipeline.ocblueprint v3 结构不符合契约: {}", e)])?;
     let mut disk = meta_to_disk_manifest(&bp.meta);
     if let Some(ref rc) = bp.runtime_config {
@@ -573,7 +614,7 @@ pub fn load_blueprint_v3_for_role_dir(
     validate_role_pack_blueprint_v3_directory(role_dir, host_version)?;
     let raw = fs::read_to_string(role_dir.join(PIPELINE_BLUEPRINT_FILENAME))
         .map_err(|e| vec![format!("读取 {} 失败: {}", PIPELINE_BLUEPRINT_FILENAME, e)])?;
-    let resolved = crate::blueprint_includes::merge_blueprint_includes_lenient(role_dir, &raw);
+    let resolved = crate::blueprint_includes::merge_blueprint_includes_strict(role_dir, &raw)?;
     let folder_name = role_dir.file_name().and_then(|s| s.to_str()).unwrap_or("");
     validate_blueprint_v3_json(&resolved, Some(folder_name))?;
     let bp: BlueprintV3File = serde_json::from_str(&resolved)
@@ -631,6 +672,67 @@ mod tests {
     #[test]
     fn accepts_valid_v3() {
         validate_blueprint_v3_json(&minimal_v3_json(), Some("test")).unwrap();
+    }
+
+    #[test]
+    fn rejects_unknown_fields_invalid_zone_and_invalid_backend() {
+        let mut unknown: Value = serde_json::from_str(&minimal_v3_json()).unwrap();
+        unknown["vendor_blob"] = serde_json::json!({});
+        let unknown_errors =
+            validate_blueprint_v3_json(&unknown.to_string(), Some("test")).unwrap_err();
+        assert!(unknown_errors
+            .iter()
+            .any(|error| error.contains("unknown field") || error.contains("未知")));
+
+        let mut legacy_runtime_alias: Value = serde_json::from_str(&minimal_v3_json()).unwrap();
+        legacy_runtime_alias["runtime_config"]["model"] = serde_json::json!("qwen");
+        let alias_errors =
+            validate_blueprint_v3_json(&legacy_runtime_alias.to_string(), Some("test"))
+                .unwrap_err();
+        assert!(alias_errors.iter().any(|error| error.contains("model")));
+
+        let mut invalid_overlay: Value = serde_json::from_str(&minimal_v3_json()).unwrap();
+        invalid_overlay["expert_overlay"] = Value::Null;
+        let overlay_errors =
+            validate_blueprint_v3_json(&invalid_overlay.to_string(), Some("test")).unwrap_err();
+        assert!(overlay_errors
+            .iter()
+            .any(|error| error.contains("expert_overlay")));
+
+        let mut bad_zone: Value = serde_json::from_str(&minimal_v3_json()).unwrap();
+        bad_zone["slot_registry"]["llm"]["zone"] = serde_json::json!("background");
+        let zone_errors =
+            validate_blueprint_v3_json(&bad_zone.to_string(), Some("test")).unwrap_err();
+        assert!(zone_errors.iter().any(|error| error.contains("zone")));
+
+        let mut bad_backend: Value = serde_json::from_str(&minimal_v3_json()).unwrap();
+        bad_backend["slot_registry"]["emotion"]["backend"] = serde_json::json!("ollama");
+        let backend_errors =
+            validate_blueprint_v3_json(&bad_backend.to_string(), Some("test")).unwrap_err();
+        assert!(backend_errors.iter().any(|error| error.contains("backend")));
+    }
+
+    #[test]
+    fn rejects_duplicate_positions_and_group_type_mismatch() {
+        let mut value: Value = serde_json::from_str(&minimal_v3_json()).unwrap();
+        value["slot_registry"]["emotion_second"] = serde_json::json!({
+            "type": "emotion",
+            "label": "E2",
+            "backend": "builtin",
+            "position": 1
+        });
+        value["groups"] = serde_json::json!({
+            "bad": {
+                "label": "Bad",
+                "type": "memory",
+                "members": ["llm"]
+            }
+        });
+        let errors = validate_blueprint_v3_json(&value.to_string(), Some("test")).unwrap_err();
+        assert!(errors.iter().any(|error| error.contains("position")));
+        assert!(errors
+            .iter()
+            .any(|error| error.contains("不一致") || error.contains("groups")));
     }
 
     #[test]

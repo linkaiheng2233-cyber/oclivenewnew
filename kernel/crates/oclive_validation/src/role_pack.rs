@@ -7,11 +7,11 @@ use std::str::FromStr;
 
 use serde_json::Value;
 
-use crate::blueprint_v2::{
-    validate_blueprint_v2_json_with_context, BlueprintV2ValidateContext,
-    PIPELINE_BLUEPRINT_FILENAME,
+use crate::blueprint_v2::{validate_role_pack_blueprint_v2_directory, PIPELINE_BLUEPRINT_FILENAME};
+use crate::blueprint_v3::{
+    validate_blueprint_json_by_schema_version, validate_role_pack_blueprint_v3_directory,
+    BLUEPRINT_V3_SCHEMA_VERSION,
 };
-use crate::blueprint_v3::{validate_blueprint_json_by_schema_version, BLUEPRINT_V3_SCHEMA_VERSION};
 use crate::creator_profile::validate_role_pack_creator_directory;
 use crate::disk_role_settings::DiskRoleSettings;
 use crate::json_keys::{validate_manifest_top_level_keys, validate_settings_top_level_keys};
@@ -510,6 +510,7 @@ fn validate_role_pack_blueprint_directory(
         .unwrap_or(0) as u32;
 
     if version == BLUEPRINT_V3_SCHEMA_VERSION {
+        validate_role_pack_blueprint_v3_directory(role_dir, host_version)?;
         if !warnings.is_empty() {
             print_pack_warnings(&warnings);
         }
@@ -517,14 +518,7 @@ fn validate_role_pack_blueprint_directory(
         return Ok(());
     }
 
-    validate_blueprint_v2_json_with_context(
-        &raw,
-        BlueprintV2ValidateContext {
-            folder_name,
-            role_dir: Some(role_dir),
-            host_version: Some(host_version),
-        },
-    )?;
+    validate_role_pack_blueprint_v2_directory(role_dir, host_version)?;
     if !warnings.is_empty() {
         print_pack_warnings(&warnings);
     }

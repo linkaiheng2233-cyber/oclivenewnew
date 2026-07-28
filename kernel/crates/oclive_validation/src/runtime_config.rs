@@ -8,6 +8,7 @@ use crate::validate::validate_interaction_mode_pack_setting;
 
 /// Dual-core toggle (blueprint only; off by default).
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
 pub struct DualCoreConfig {
     #[serde(default)]
     pub enabled: bool,
@@ -15,6 +16,7 @@ pub struct DualCoreConfig {
 
 /// System runtime configuration (blueprint-only; not the role-pack creator view).
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct RuntimeConfig {
     #[serde(default)]
     pub interaction_mode: Option<String>,
@@ -31,7 +33,7 @@ pub struct RuntimeConfig {
     pub identity_binding: Option<crate::manifest::IdentityBinding>,
     #[serde(default)]
     pub evolution: Option<EvolutionConfigDisk>,
-    #[serde(default, alias = "model")]
+    #[serde(default)]
     pub ollama_model: Option<String>,
     #[serde(default)]
     pub remote_presence: Option<RemotePresenceConfig>,

@@ -16,7 +16,7 @@ pub use crate::blueprint_v2_slot_registry::{
 use crate::disk_role_settings::{AutonomousSceneConfig, RemotePresenceConfig};
 use crate::manifest::{
     DiskRoleManifest, EvolutionConfigDisk, IdentityBinding, KnowledgePackConfigDisk,
-    MemoryConfigDisk, UserRelationDisk,
+    LifeScheduleDisk, LifeTrajectoryDisk, MemoryConfigDisk, UserRelationDisk,
 };
 use crate::role_pack::{merge_role_pack_scene_ids, validate_default_personality_vector};
 use crate::runtime_config::RuntimeConfig;
@@ -30,6 +30,26 @@ pub const PIPELINE_BLUEPRINT_FILENAME: &str = "pipeline.ocblueprint";
 
 /// Do not persist: `module_relations` is derived at runtime by the host/frontend from `slot_registry` for diagram edges only — do not hand-edit JSON.
 const FORBIDDEN_ROOT_KEYS: &[&str] = &["module_relations", "steps", "entry"];
+const V2_ROOT_KEYS: &[&str] = &[
+    "schema_version",
+    "meta",
+    "slot_registry",
+    "groups",
+    "includes",
+    "expert_overlay",
+    "runtime_config",
+];
+const V2_SLOT_ENTRY_KEYS: &[&str] = &[
+    "type",
+    "label",
+    "backend",
+    "position",
+    "plugin",
+    "plugins",
+    "model",
+    "url",
+    "local_memory_provider_id",
+];
 
 const SLOT_TYPES: &[&str] = &[
     "memory",
@@ -56,6 +76,7 @@ const PERSONALITY_OBJECT_KEYS: &[&str] = &[
 
 /// One blueprint `groups` entry: logical grouping of `slot_registry` instances sharing a `type`.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
 pub struct SlotGroupEntry {
     pub label: String,
     #[serde(default)]
@@ -84,10 +105,10 @@ pub struct SlotRegistryEntry {
     #[serde(default)]
     pub local_memory_provider_id: Option<String>,
     /// v3 optional: `stable` / `experimental` (architecture diagram zone).
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub zone: Option<serde_json::Value>,
-    /// Multi-instance merge policy: `fastest` | `fallback` | `ensemble` (default; LLM etc. use last-wins).
-    #[serde(default)]
+    /// Internal-only merge-policy hook. It is not part of the frozen v2/v3 disk contract.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub policy: Option<String>,
 }
 
@@ -111,6 +132,7 @@ fn default_preset_order() -> u32 {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct BlueprintV2File {
     schema_version: u32,
     meta: BlueprintMeta,
@@ -123,7 +145,7 @@ struct BlueprintV2File {
     /// Expert facility pointer (optional; no long-form content).
     #[serde(default)]
     #[allow(dead_code)]
-    expert_overlay: Option<serde_json::Value>,
+    expert_overlay: Option<BTreeMap<String, serde_json::Value>>,
     /// v3 target segment; passes v2 validation but is not loaded on the v2 path (see `validate_blueprint_json_by_schema_version` warning).
     #[serde(default)]
     #[allow(dead_code)]
@@ -151,6 +173,10 @@ pub struct BlueprintMeta {
     pub memory_config: MemoryConfigDisk,
     #[serde(default)]
     pub identity_binding: IdentityBinding,
+    #[serde(default)]
+    pub life_trajectory: Option<LifeTrajectoryDisk>,
+    #[serde(default)]
+    pub life_schedule: Option<LifeScheduleDisk>,
     #[serde(default, alias = "model")]
     pub ollama_model: Option<String>,
     #[serde(default)]
@@ -223,6 +249,34 @@ fn parse_blueprint_v2_root(raw: &str) -> Result<BlueprintV2File, Vec<String>> {
             if map.contains_key(*key) {
                 errs.push(format!(
                     "pipeline.ocblueprint：禁止顶层字段「{key}」（B3：module_relations 仅运行时派生；steps/entry 已废弃）"
+                ));
+            }
+        }
+        for key in map.keys() {
+            if !V2_ROOT_KEYS.contains(&key.as_str()) {
+                errs.push(format!(
+                    "pipeline.ocblueprint：未知顶层字段「{key}」（v2 根契约为严格模式）"
+                ));
+            }
+        }
+        if let Some(Value::Object(registry)) = map.get("slot_registry") {
+            for (slot_key, entry) in registry {
+                let Some(entry) = entry.as_object() else {
+                    continue;
+                };
+                for field in entry.keys() {
+                    if !V2_SLOT_ENTRY_KEYS.contains(&field.as_str()) {
+                        errs.push(format!(
+                            "slot_registry[{slot_key}]：未知字段「{field}」（zone 仅属于冻结 v3；policy 未进入 v2/v3 磁盘契约）"
+                        ));
+                    }
+                }
+            }
+        }
+        for field in ["expert_overlay", "runtime_config"] {
+            if map.get(field).is_some_and(|value| !value.is_object()) {
+                errs.push(format!(
+                    "pipeline.ocblueprint.{field} 若存在则须为 JSON 对象"
                 ));
             }
         }
@@ -352,6 +406,16 @@ pub fn validate_role_pack_blueprint_v2_directory(
             role_dir: Some(role_dir),
             host_version: Some(host_version),
         },
+    )?;
+
+    let resolved = crate::blueprint_includes::merge_blueprint_includes_strict(role_dir, &raw)?;
+    validate_blueprint_v2_json_with_context(
+        &resolved,
+        BlueprintV2ValidateContext {
+            folder_name: Some(folder_name),
+            role_dir: Some(role_dir),
+            host_version: Some(host_version),
+        },
     )
 }
 
@@ -398,6 +462,15 @@ pub fn write_role_pack_blueprint_slot_registry(
             host_version: Some(host_version),
         },
     )?;
+    let resolved = crate::blueprint_includes::merge_blueprint_includes_strict(role_dir, &out)?;
+    validate_blueprint_v2_json_with_context(
+        &resolved,
+        BlueprintV2ValidateContext {
+            folder_name: Some(folder_name),
+            role_dir: Some(role_dir),
+            host_version: Some(host_version),
+        },
+    )?;
     fs::write(&blueprint_path, format!("{out}\n"))
         .map_err(|e| vec![format!("写入 {} 失败: {e}", blueprint_path.display())])?;
     Ok(())
@@ -415,7 +488,7 @@ pub fn load_blueprint_v2_for_role_dir(
     validate_role_pack_blueprint_v2_directory(role_dir, host_version)?;
     let raw = fs::read_to_string(role_dir.join(PIPELINE_BLUEPRINT_FILENAME))
         .map_err(|e| vec![format!("读取 {} 失败: {}", PIPELINE_BLUEPRINT_FILENAME, e)])?;
-    let resolved = crate::blueprint_includes::merge_blueprint_includes_lenient(role_dir, &raw);
+    let resolved = crate::blueprint_includes::merge_blueprint_includes_strict(role_dir, &raw)?;
     let folder_name = role_dir.file_name().and_then(|s| s.to_str()).unwrap_or("");
     validate_blueprint_v2_json_with_context(
         &resolved,
@@ -550,14 +623,39 @@ fn validate_blueprint_v2_parsed(
 
     validate_blueprint_meta_core(&bp.meta, folder_name, &mut errs);
 
-    if bp.slot_registry.is_empty() {
+    errs.extend(validate_slot_registry_contract(
+        &bp.slot_registry,
+        &bp.groups,
+        false,
+    ));
+
+    if let Some(ref k) = bp.meta.knowledge {
+        if let Err(e) = validate_knowledge_manifest_disk(k) {
+            errs.push(e);
+        }
+    }
+
+    if errs.is_empty() {
+        Ok(())
+    } else {
+        Err(errs)
+    }
+}
+
+pub(crate) fn validate_slot_registry_contract(
+    registry: &BTreeMap<String, SlotRegistryEntry>,
+    groups: &BTreeMap<String, SlotGroupEntry>,
+    allow_zone: bool,
+) -> Vec<String> {
+    let mut errs = Vec::new();
+    if registry.is_empty() {
         errs.push("slot_registry 不能为空".into());
     }
 
     let mut llm_count = 0usize;
     let mut positions_by_type: HashMap<&str, HashSet<i64>> = HashMap::new();
 
-    for (key, slot) in &bp.slot_registry {
+    for (key, slot) in registry {
         if key.trim().is_empty() {
             errs.push("slot_registry 键名不能为空".into());
             continue;
@@ -594,6 +692,17 @@ fn validate_blueprint_v2_parsed(
             llm_count += 1;
         }
 
+        if !allow_zone && slot.zone.is_some() {
+            errs.push(format!(
+                "slot_registry[{key}].zone 仅属于冻结 v3，v2 不接受该字段"
+            ));
+        }
+        if slot.policy.is_some() {
+            errs.push(format!(
+                "slot_registry[{key}].policy 未进入 v2/v3 磁盘契约；当前公开语义保持按 position 的既定合并策略"
+            ));
+        }
+
         if let Err(e) = validate_slot_backend_and_fields(key, slot) {
             errs.push(e);
         }
@@ -603,19 +712,8 @@ fn validate_blueprint_v2_parsed(
         errs.push("slot_registry 须至少包含一个 type: llm 的实例".into());
     }
 
-    errs.extend(validate_blueprint_groups(&bp.groups, &bp.slot_registry));
-
-    if let Some(ref k) = bp.meta.knowledge {
-        if let Err(e) = validate_knowledge_manifest_disk(k) {
-            errs.push(e);
-        }
-    }
-
-    if errs.is_empty() {
-        Ok(())
-    } else {
-        Err(errs)
-    }
+    errs.extend(validate_blueprint_groups(groups, registry));
+    errs
 }
 
 /// Validates `meta.personality` object or seven-dimensional array.
@@ -719,7 +817,7 @@ fn validate_slot_backend_and_fields(key: &str, slot: &SlotRegistryEntry) -> Resu
     Ok(())
 }
 
-fn allowed_backends_for_type(slot_type: &str) -> &'static [&'static str] {
+pub(crate) fn allowed_backends_for_type(slot_type: &str) -> &'static [&'static str] {
     match slot_type {
         "memory" => &["builtin", "remote", "directory", "local", "none"],
         "emotion" | "event" | "prompt" => &["builtin", "remote", "directory", "none"],
@@ -753,8 +851,8 @@ pub fn meta_to_disk_manifest(meta: &BlueprintMeta) -> DiskRoleManifest {
         default_relation: meta.default_relation.clone(),
         memory_config: meta.memory_config.clone(),
         identity_binding: meta.identity_binding,
-        life_trajectory: None,
-        life_schedule: None,
+        life_trajectory: meta.life_trajectory.clone(),
+        life_schedule: meta.life_schedule.clone(),
         dev_only: meta.dev_only,
         knowledge: meta.knowledge.clone(),
         min_runtime_version: meta.min_runtime_version.clone(),

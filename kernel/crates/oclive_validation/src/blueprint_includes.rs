@@ -7,6 +7,7 @@ use serde_json::Value;
 
 /// A single include: a path relative to the role pack root and its merge target.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
 pub struct BlueprintIncludeEntry {
     #[serde(default)]
     pub id: Option<String>,
@@ -20,9 +21,7 @@ const ALLOWED_TARGETS: &[&str] = &[
     "meta.personality",
     "meta.life_trajectory",
     "meta.life_schedule",
-    "runtime_config.expert_hints",
     "expert_overlay",
-    "expert_routing",
 ];
 
 const ALLOWED_MODES: &[&str] = &["merge", "replace"];
@@ -54,6 +53,24 @@ pub fn validate_includes(
         let file_path = role_dir.join(&inc.path);
         if !file_path.is_file() {
             errs.push(format!("{label}: 文件不存在: {}", file_path.display()));
+        } else {
+            if let Err(e) = validate_existing_include_file(role_dir, &file_path) {
+                errs.push(format!("{label}: {e}"));
+            }
+            match std::fs::read_to_string(&file_path) {
+                Ok(raw) => {
+                    if let Err(e) = serde_json::from_str::<Value>(&raw) {
+                        errs.push(format!(
+                            "{label}: JSON 解析失败 {}: {e}",
+                            file_path.display()
+                        ));
+                    }
+                }
+                Err(e) => errs.push(format!(
+                    "{label}: 读取文件失败 {}: {e}",
+                    file_path.display()
+                )),
+            }
         }
 
         let target = inc.target.trim();
@@ -61,8 +78,8 @@ pub fn validate_includes(
             errs.push(format!("{label}: target 不能为空"));
         } else if !is_allowed_target(target) {
             errs.push(format!(
-                "{label}: target「{target}」非法（允许: {}）",
-                ALLOWED_TARGETS.join(", ")
+                "{label}: target「{target}」非法（允许: {}, slot_registry.<key>[.<field>]）",
+                ALLOWED_TARGETS.join(", "),
             ));
         }
 
@@ -85,11 +102,15 @@ fn is_allowed_target(target: &str) -> bool {
     if ALLOWED_TARGETS.contains(&target) {
         return true;
     }
-    // Advanced: allow slot_registry sub-paths (e.g. slot_registry.llm.model).
-    target.starts_with("slot_registry.")
+    // Advanced: allow non-empty slot_registry sub-paths (e.g. slot_registry.llm.model).
+    target
+        .strip_prefix("slot_registry.")
+        .is_some_and(|suffix| suffix.split('.').all(|segment| !segment.is_empty()))
 }
 
-/// Merge includes into the blueprint JSON text; missing or invalid entries only warn and do not block (for host loading).
+/// Best-effort merge for non-activating previews; invalid entries are skipped.
+///
+/// Production validation and loading must use [`merge_blueprint_includes_strict`].
 #[must_use]
 pub fn merge_blueprint_includes_lenient(role_dir: &Path, raw: &str) -> String {
     let mut root: Value = match serde_json::from_str(raw) {
@@ -114,7 +135,7 @@ pub fn merge_blueprint_includes_lenient(role_dir: &Path, raw: &str) -> String {
 pub fn merge_blueprint_includes_strict(role_dir: &Path, raw: &str) -> Result<String, Vec<String>> {
     let mut root: Value = serde_json::from_str(raw)
         .map_err(|e| vec![format!("pipeline.ocblueprint JSON 语法错误: {e}")])?;
-    let includes = take_includes(&mut root).unwrap_or_default();
+    let includes = take_includes_strict(&mut root)?;
     if !includes.is_empty() {
         validate_includes(role_dir, &includes)?;
         for inc in &includes {
@@ -128,6 +149,17 @@ fn take_includes(root: &mut Value) -> Option<Vec<BlueprintIncludeEntry>> {
     let obj = root.as_object_mut()?;
     let v = obj.remove("includes")?;
     serde_json::from_value(v).ok()
+}
+
+fn take_includes_strict(root: &mut Value) -> Result<Vec<BlueprintIncludeEntry>, Vec<String>> {
+    let obj = root
+        .as_object_mut()
+        .ok_or_else(|| vec!["pipeline.ocblueprint 根节点须为 JSON 对象".into()])?;
+    let Some(value) = obj.remove("includes") else {
+        return Ok(Vec::new());
+    };
+    serde_json::from_value(value)
+        .map_err(|e| vec![format!("pipeline.ocblueprint includes 结构错误: {e}")])
 }
 
 fn apply_include_lenient(role_dir: &Path, root: &mut Value, inc: &BlueprintIncludeEntry) {
@@ -157,6 +189,18 @@ fn validate_include_path(role_dir: &Path, path: &str) -> Result<(), String> {
     if rel.contains('\\') {
         return Err("path 须使用正斜杠 /".into());
     }
+    if rel.contains("..") {
+        return Err("path 不得包含 ..".into());
+    }
+    if rel.contains("//") {
+        return Err("path 不得包含空路径段 //".into());
+    }
+    if !rel
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | '/' | '-'))
+    {
+        return Err("path 只能包含 ASCII 字母、数字、_、.、/、-".into());
+    }
     let p = Path::new(rel);
     if p.is_absolute() {
         return Err("path 须为相对路径".into());
@@ -175,6 +219,21 @@ fn validate_include_path(role_dir: &Path, path: &str) -> Result<(), String> {
         return Err("path 逃逸角色包目录".into());
     }
     Ok(())
+}
+
+fn validate_existing_include_file(role_dir: &Path, file_path: &Path) -> Result<(), String> {
+    let canonical_role = std::fs::canonicalize(role_dir)
+        .map_err(|e| format!("无法规范化角色包目录 {}: {e}", role_dir.display()))?;
+    let canonical_file = std::fs::canonicalize(file_path)
+        .map_err(|e| format!("无法规范化 include 文件 {}: {e}", file_path.display()))?;
+    if canonical_file.starts_with(&canonical_role) {
+        Ok(())
+    } else {
+        Err(format!(
+            "include 文件通过链接逃逸角色包目录: {}",
+            file_path.display()
+        ))
+    }
 }
 
 fn is_path_inside_role(role_dir: &Path, candidate: &Path) -> bool {
@@ -284,6 +343,31 @@ mod tests {
             mode: "file_text".into(),
         };
         assert!(validate_includes(&role, &[inc]).is_err());
+    }
+
+    #[test]
+    fn validate_rejects_non_portable_path_and_empty_slot_target_segment() {
+        let tmp = TempDir::new().unwrap();
+        let role = tmp.path().join("role");
+        fs::create_dir_all(&role).unwrap();
+        fs::write(role.join("p.json"), "{}").unwrap();
+        let entries = [
+            BlueprintIncludeEntry {
+                id: None,
+                path: "含 空格.json".into(),
+                target: "meta.personality".into(),
+                mode: "merge".into(),
+            },
+            BlueprintIncludeEntry {
+                id: None,
+                path: "p.json".into(),
+                target: "slot_registry..model".into(),
+                mode: "replace".into(),
+            },
+        ];
+        let errors = validate_includes(&role, &entries).unwrap_err();
+        assert!(errors.iter().any(|error| error.contains("ASCII")));
+        assert!(errors.iter().any(|error| error.contains("target")));
     }
 
     #[test]

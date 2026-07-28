@@ -8,7 +8,10 @@ use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
 
-/// Merge `pipeline.ocblueprint` `includes[]` when loading a role pack (missing satellite files do not block).
+/// Best-effort `includes[]` merge for non-activating previews.
+///
+/// Production role activation uses the strict `oclive_validation::load_blueprint_v2/v3_for_role_dir`
+/// paths; missing or malformed satellite files block activation.
 #[must_use]
 #[allow(dead_code)] // For RoleStorage / toolchain explicit calls; host default uses oclive_validation load_* path
 pub fn merge_blueprint_includes_for_role_dir(role_dir: &Path, raw: &str) -> String {

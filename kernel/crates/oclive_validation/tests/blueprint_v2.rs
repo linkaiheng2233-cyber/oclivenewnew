@@ -53,6 +53,49 @@ fn rejects_module_relations() {
 }
 
 #[test]
+fn rejects_unknown_root_and_slot_fields() {
+    let mut root: Value = serde_json::from_str(&minimal_v2_json()).unwrap();
+    root.as_object_mut()
+        .unwrap()
+        .insert("vendor_blob".into(), serde_json::json!({}));
+    let root_errors = validate_blueprint_v2_json(&root.to_string()).unwrap_err();
+    assert!(root_errors
+        .iter()
+        .any(|error| error.contains("未知顶层字段")));
+
+    let mut slot: Value = serde_json::from_str(&minimal_v2_json()).unwrap();
+    slot["slot_registry"]["llm"]["vendor_flag"] = serde_json::json!(true);
+    let slot_errors = validate_blueprint_v2_json(&slot.to_string()).unwrap_err();
+    assert!(slot_errors
+        .iter()
+        .any(|error| error.contains("vendor_flag")));
+
+    let mut overlay: Value = serde_json::from_str(&minimal_v2_json()).unwrap();
+    overlay["expert_overlay"] = serde_json::json!("not-an-object");
+    let overlay_errors = validate_blueprint_v2_json(&overlay.to_string()).unwrap_err();
+    assert!(overlay_errors
+        .iter()
+        .any(|error| error.contains("expert_overlay")));
+}
+
+#[test]
+fn rejects_uncontracted_policy_and_v3_zone_on_v2() {
+    for field in ["policy", "zone"] {
+        let mut value: Value = serde_json::from_str(&minimal_v2_json()).unwrap();
+        value["slot_registry"]["llm"][field] = if field == "policy" {
+            serde_json::json!("fastest")
+        } else {
+            serde_json::json!("stable")
+        };
+        let errors = validate_blueprint_v2_json(&value.to_string()).unwrap_err();
+        assert!(
+            errors.iter().any(|error| error.contains(field)),
+            "field={field}, errors={errors:?}"
+        );
+    }
+}
+
+#[test]
 fn rejects_schema_version_not_2() {
     let raw = minimal_v2_json().replace("\"schema_version\": 2", "\"schema_version\": 1");
     let errs = validate_blueprint_v2_json(&raw).unwrap_err();
@@ -158,6 +201,61 @@ fn blueprint_v2_directory_minimal_pack() {
     let bp = minimal_v2_json();
     fs::write(role.join(PIPELINE_BLUEPRINT_FILENAME), bp).unwrap();
     validate_role_pack_blueprint_v2_directory(&role, "999.0.0").unwrap();
+}
+
+#[test]
+fn blueprint_v2_directory_rejects_malformed_include_json() {
+    let dir = tempfile::tempdir().unwrap();
+    let role = dir.path().join("demo.pack");
+    fs::create_dir_all(role.join("scenes").join("default")).unwrap();
+    fs::write(role.join("broken.json"), "{not-json").unwrap();
+    let mut blueprint: Value = serde_json::from_str(&minimal_v2_json()).unwrap();
+    blueprint["includes"] = serde_json::json!([{
+        "path": "broken.json",
+        "target": "meta.personality",
+        "mode": "merge"
+    }]);
+    fs::write(
+        role.join(PIPELINE_BLUEPRINT_FILENAME),
+        serde_json::to_string_pretty(&blueprint).unwrap(),
+    )
+    .unwrap();
+
+    let errors = validate_role_pack_blueprint_v2_directory(&role, "999.0.0").unwrap_err();
+    assert!(errors.iter().any(|error| error.contains("JSON 解析失败")));
+}
+
+#[test]
+fn blueprint_v2_include_life_trajectory_reaches_load_result() {
+    let dir = tempfile::tempdir().unwrap();
+    let role = dir.path().join("demo.pack");
+    fs::create_dir_all(role.join("scenes").join("default")).unwrap();
+    fs::write(
+        role.join("life.json"),
+        r#"{"summary":"kept through strict include loading"}"#,
+    )
+    .unwrap();
+    let mut blueprint: Value = serde_json::from_str(&minimal_v2_json()).unwrap();
+    blueprint["includes"] = serde_json::json!([{
+        "path": "life.json",
+        "target": "meta.life_trajectory",
+        "mode": "replace"
+    }]);
+    fs::write(
+        role.join(PIPELINE_BLUEPRINT_FILENAME),
+        serde_json::to_string_pretty(&blueprint).unwrap(),
+    )
+    .unwrap();
+
+    let loaded = load_blueprint_v2_for_role_dir(&role, "999.0.0").unwrap();
+    assert_eq!(
+        loaded
+            .disk
+            .life_trajectory
+            .and_then(|trajectory| trajectory.summary)
+            .as_deref(),
+        Some("kept through strict include loading")
+    );
 }
 
 #[test]
@@ -278,4 +376,32 @@ fn write_role_pack_blueprint_slot_registry_persists_and_validates() {
     write_role_pack_blueprint_slot_registry(&role, &reg, "999.0.0").unwrap();
     let loaded = load_blueprint_v2_for_role_dir(&role, "999.0.0").unwrap();
     assert_eq!(loaded.slot_registry.get("llm").unwrap().backend, "remote");
+}
+
+#[test]
+fn write_slot_registry_rejects_invalid_resolved_include_before_persisting() {
+    let dir = tempfile::tempdir().unwrap();
+    let role = dir.path().join("demo.pack");
+    fs::create_dir_all(role.join("scenes").join("default")).unwrap();
+    fs::write(role.join("backend.json"), r#""openai_compatible""#).unwrap();
+    let mut blueprint: Value = serde_json::from_str(&minimal_v2_json()).unwrap();
+    blueprint["includes"] = serde_json::json!([{
+        "path": "backend.json",
+        "target": "slot_registry.llm.backend",
+        "mode": "replace"
+    }]);
+    let original = serde_json::to_string_pretty(&blueprint).unwrap();
+    fs::write(role.join(PIPELINE_BLUEPRINT_FILENAME), &original).unwrap();
+    let registry: BTreeMap<String, SlotRegistryEntry> =
+        serde_json::from_value(blueprint["slot_registry"].clone()).unwrap();
+
+    let errors = write_role_pack_blueprint_slot_registry(&role, &registry, "999.0.0").unwrap_err();
+
+    assert!(errors
+        .iter()
+        .any(|error| error.contains("openai_compatible")));
+    assert_eq!(
+        fs::read_to_string(role.join(PIPELINE_BLUEPRINT_FILENAME)).unwrap(),
+        original
+    );
 }
