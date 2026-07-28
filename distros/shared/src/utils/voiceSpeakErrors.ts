@@ -11,6 +11,7 @@ const REASON_LABELS: Record<string, string> = {
   empty_text: '朗读文本为空',
   sidecar_model_mismatch: '侧车模型不匹配',
   not_warmed: '侧车未预热',
+  gpu_admission_denied: '显存安全余量不足，已停止本轮语音',
   tts_expansion_disabled: '语音扩展未开启',
   ref_audio_missing: '缺少参考音频',
 }
@@ -34,5 +35,9 @@ export function shouldFallbackStreamToRpc(result: { ok?: boolean, reason?: strin
   const reason = result.reason?.trim()
   if (!reason)
     return true
-  return reason !== 'tts_expansion_disabled' && reason !== 'empty_text'
+  return ![
+    'tts_expansion_disabled',
+    'empty_text',
+    'gpu_admission_denied',
+  ].includes(reason)
 }

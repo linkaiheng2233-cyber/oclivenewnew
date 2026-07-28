@@ -16,6 +16,11 @@ import {
 } from '@oclive/shared/lib/voiceAsrEvents'
 import { markVoicePlaybackSettled } from '@oclive/shared/lib/voicePlaybackSettlement'
 import {
+  explicitVoiceRoleTtsDecision,
+  hasExplicitVoiceRoleTtsPolicy,
+  normalizeVoiceRoleTtsEnabled,
+} from '@oclive/shared/lib/voiceRolePolicy'
+import {
   resolveVoiceTtsRouting,
 } from '@oclive/shared/lib/voiceTtsRouting'
 import { usePluginStore } from '@oclive/shared/stores/pluginStore'
@@ -70,6 +75,8 @@ interface VoiceLatencyTrace {
 interface VoiceRuntimeConfig {
   tts_expansion_enabled: boolean
   auto_tts: boolean
+  role_tts_enabled: Record<string, true>
+  role_tts_policy_explicit: boolean
   tts_profile: string
   tts_engine: string
   director_profile: string
@@ -115,6 +122,7 @@ const streamSpokenPrefixById = new Map<string, string>()
 const streamPendingById = new Map<string, Promise<void>>()
 const streamPlaybackFailed = new Set<string>()
 const rolePathCache = new Map<string, string>()
+const roleVoiceProfileConfiguredCache = new Map<string, boolean>()
 const directiveCache = new Map<string, Record<string, unknown>>()
 const directivePending = new Map<string, Promise<Record<string, unknown> | undefined>>()
 const voiceLatencyByStreamId = new Map<string, VoiceLatencyTrace>()
@@ -131,9 +139,11 @@ let cachedTtsProfiles: Map<string, VoiceTtsProfileRouting> | null = null
 let activeRpcAudio: HTMLAudioElement | null = null
 let cancelActiveRpcPlayback: (() => void) | null = null
 let activeStreamLookahead: ActiveStreamLookahead | null = null
+let blockedSpeakGeneration = -1
 
 function resetSpeakPipeline(): void {
   speakGeneration += 1
+  blockedSpeakGeneration = -1
   speakQueue.length = 0
   preparedRpcSpeak.clear()
   streamPrefetches.reset()
@@ -188,6 +198,8 @@ export function invalidateVoiceRuntimeConfig(): void {
   loadingConfig = null
   cachedTtsProfiles = null
   loadingTtsProfiles = null
+  rolePathCache.clear()
+  roleVoiceProfileConfiguredCache.clear()
 }
 
 async function loadTtsProfiles(): Promise<Map<string, VoiceTtsProfileRouting>> {
@@ -263,6 +275,8 @@ async function loadVoiceRuntimeConfig(
       const loaded: VoiceRuntimeConfig = {
         tts_expansion_enabled: cfg.tts_expansion_enabled === true,
         auto_tts: cfg.auto_tts === true,
+        role_tts_enabled: normalizeVoiceRoleTtsEnabled(cfg.role_tts_enabled),
+        role_tts_policy_explicit: hasExplicitVoiceRoleTtsPolicy(cfg),
         tts_profile: ttsProfile,
         tts_engine: profiles.get(ttsProfile)?.engine || 'cosyvoice2',
         director_profile:
@@ -314,6 +328,55 @@ async function resolveRolePackPath(roleId: string): Promise<string> {
     rolePathCache.set(rid, '')
     return ''
   }
+}
+
+async function roleHasVoiceProfile(roleId: string): Promise<boolean> {
+  const rid = roleId.trim()
+  if (!rid)
+    return false
+  const cached = roleVoiceProfileConfiguredCache.get(rid)
+  if (cached !== undefined)
+    return cached
+  const rolePath = await resolveRolePackPath(rid)
+  if (!rolePath) {
+    roleVoiceProfileConfiguredCache.set(rid, false)
+    return false
+  }
+  try {
+    const result = (await directoryPluginInvoke(
+      VOICE_ASR_PLUGIN_ID,
+      'voice.read_role_profile',
+      { role_path: rolePath },
+    )) as { profile?: unknown }
+    const configured = typeof result.profile === 'object' && result.profile !== null
+    roleVoiceProfileConfiguredCache.set(rid, configured)
+    return configured
+  }
+  catch {
+    roleVoiceProfileConfiguredCache.set(rid, false)
+    return false
+  }
+}
+
+async function canAutoSpeakRole(
+  cfg: VoiceRuntimeConfig | null,
+  roleId: string,
+): Promise<boolean> {
+  if (!cfg?.tts_expansion_enabled || !cfg.auto_tts)
+    return false
+  const rid = roleId.trim()
+  if (!rid)
+    return false
+  if (cfg.role_tts_policy_explicit) {
+    const enabled = explicitVoiceRoleTtsDecision(
+      { role_tts_enabled: cfg.role_tts_enabled },
+      rid,
+    ) === true
+    return enabled && await roleHasVoiceProfile(rid)
+  }
+  // Compatibility for configs saved before the role map existed: only packs
+  // that actually contain voice_profile.json remain eligible.
+  return roleHasVoiceProfile(rid)
 }
 
 async function prefetchVoiceDirective(
@@ -570,8 +633,13 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
     generation: number,
   ): Promise<void> {
     const reply = job.text.trim()
-    if (!reply || generation !== speakGeneration)
+    if (
+      !reply
+      || generation !== speakGeneration
+      || blockedSpeakGeneration === generation
+    ) {
       return
+    }
 
     let spoken = false
     try {
@@ -662,6 +730,8 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
         }
         else {
           options.showToast('warning', formatVoiceSpeakFailure('stream', streamRes))
+          if (streamRes.reason === 'gpu_admission_denied')
+            blockedSpeakGeneration = generation
           return
         }
       }
@@ -676,6 +746,8 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
           return
         console.warn('[voice-auto-tts] RPC speak failed', res)
         options.showToast('warning', formatVoiceSpeakFailure('rpc', res))
+        if (res.reason === 'gpu_admission_denied')
+          blockedSpeakGeneration = generation
         return
       }
       await playRpcAudio(res)
@@ -759,6 +831,8 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
     speakOpts: SpeakOptions = {},
     generation = speakGeneration,
   ): Promise<void> {
+    if (blockedSpeakGeneration === generation)
+      return
     const rawDirective = await resolveDirective(payload, cfg, speakOpts)
     if (generation !== speakGeneration)
       return
@@ -795,6 +869,8 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
     cfg: VoiceRuntimeConfig,
     generation: number,
   ): Promise<void> {
+    if (!await canAutoSpeakRole(cfg, roleId))
+      return
     const [directive] = await Promise.all([
       prefetchVoiceDirective(roleId, cfg.director_profile, 'neutral'),
       // Profile metadata is needed by the first streamed phrase too. Resolve it
@@ -833,12 +909,22 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
 
   async function speakReply(payload: MessageSentPayload, generation = speakGeneration): Promise<void> {
     const reply = payload.reply?.trim()
-    if (!reply)
+    const payloadRoleId = payload.role_id?.trim()
+    if (
+      !reply
+      || (payloadRoleId && payloadRoleId !== roleStore.currentRoleId)
+    ) {
       return
+    }
 
     const cfg = await loadVoiceRuntimeConfig(id => pluginStore.isPluginDisabled(id))
-    if (generation !== speakGeneration || !cfg?.tts_expansion_enabled || !cfg.auto_tts)
+    if (
+      generation !== speakGeneration
+      || (payloadRoleId && payloadRoleId !== roleStore.currentRoleId)
+      || !await canAutoSpeakRole(cfg, payloadRoleId || roleStore.currentRoleId)
+    ) {
       return
+    }
 
     await scheduleVoiceExpansionWarm(id => pluginStore.isPluginDisabled(id))
     if (generation !== speakGeneration)
@@ -848,9 +934,17 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
 
   async function queueStreamSentence(p: StreamSentencePayload, generation: number): Promise<void> {
     const sentence = p.sentence!.trim()
-    const cfg = await loadVoiceRuntimeConfig(id => pluginStore.isPluginDisabled(id))
-    if (generation !== speakGeneration || !cfg?.tts_expansion_enabled || !cfg.auto_tts)
+    const payloadRoleId = p.role_id?.trim()
+    if (payloadRoleId && payloadRoleId !== roleStore.currentRoleId)
       return
+    const cfg = await loadVoiceRuntimeConfig(id => pluginStore.isPluginDisabled(id))
+    if (
+      generation !== speakGeneration
+      || (payloadRoleId && payloadRoleId !== roleStore.currentRoleId)
+      || !await canAutoSpeakRole(cfg, payloadRoleId || roleStore.currentRoleId)
+    ) {
+      return
+    }
 
     void scheduleVoiceExpansionWarm(id => pluginStore.isPluginDisabled(id))
     await queueSpeakText(sentence, p, cfg, { fastPath: true }, generation)
@@ -883,6 +977,9 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
     const turnId = p.turn_id?.trim()
     let settlement: 'complete' | 'disabled' | 'error' = 'disabled'
     try {
+      const payloadRoleId = p.role_id?.trim()
+      if (payloadRoleId && payloadRoleId !== roleStore.currentRoleId)
+        return
       if (p.skip_auto_tts)
         return
       if (!p.stream_id?.trim()) {
@@ -916,8 +1013,12 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
       }
 
       const cfg = await loadVoiceRuntimeConfig(id => pluginStore.isPluginDisabled(id))
-      if (generation !== speakGeneration || !cfg?.tts_expansion_enabled || !cfg.auto_tts)
+      if (
+        generation !== speakGeneration
+        || !await canAutoSpeakRole(cfg, payloadRoleId || roleStore.currentRoleId)
+      ) {
         return
+      }
 
       // The raw SSE buffer is pre-post-processing and may contain a model-echoed
       // prompt tail. The final `reply` is the authoritative host-processed text.
@@ -946,7 +1047,6 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
   }
 
   function onMessageSubmit(payload: unknown): void {
-    void ensureVoiceAudioReady()
     resetSpeakPipeline()
     const generation = speakGeneration
     const p = payload as {
@@ -965,9 +1065,14 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
     }
     const disabled = (id: string) => pluginStore.isPluginDisabled(id)
     void loadVoiceRuntimeConfig(disabled).then((cfg) => {
-      if (generation !== speakGeneration || !cfg?.tts_expansion_enabled || !cfg.auto_tts)
+      if (generation !== speakGeneration || !cfg)
         return
-      void prewarmRoleVoice(roleId, cfg, generation)
+      void canAutoSpeakRole(cfg, roleId).then((enabled) => {
+        if (!enabled || generation !== speakGeneration)
+          return
+        void ensureVoiceAudioReady()
+        void prewarmRoleVoice(roleId, cfg, generation)
+      })
     })
   }
 
@@ -976,9 +1081,16 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
     streamSpokenPrefixById.clear()
     directiveCache.clear()
     directivePending.clear()
+    roleVoiceProfileConfiguredCache.clear()
     resetSpeakPipeline()
     resetVoiceExpansionWarmSchedule()
-    void scheduleVoiceExpansionWarm(id => pluginStore.isPluginDisabled(id))
+    const generation = speakGeneration
+    const roleId = roleStore.currentRoleId
+    void loadVoiceRuntimeConfig(id => pluginStore.isPluginDisabled(id)).then((cfg) => {
+      if (!cfg || generation !== speakGeneration)
+        return
+      void prewarmRoleVoice(roleId, cfg, generation)
+    })
   }
 
   function onRoleSwitched(payload: unknown): void {
@@ -988,7 +1100,7 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
     const roleId = p.roleId?.trim() || roleStore.currentRoleId
     const disabled = (id: string) => pluginStore.isPluginDisabled(id)
     void loadVoiceRuntimeConfig(disabled).then((cfg) => {
-      if (generation !== speakGeneration || !cfg?.tts_expansion_enabled || !cfg.auto_tts)
+      if (generation !== speakGeneration || !cfg)
         return
       void prewarmRoleVoice(roleId, cfg, generation)
     })
@@ -1002,11 +1114,10 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
     hostEventBus.on('role:switched', onRoleSwitched)
     const disabled = (id: string) => pluginStore.isPluginDisabled(id)
     void loadVoiceRuntimeConfig(disabled).then((cfg) => {
-      if (!cfg?.tts_expansion_enabled)
+      if (!cfg)
         return
       void prewarmRoleVoice(roleStore.currentRoleId, cfg, speakGeneration)
     })
-    void scheduleVoiceExpansionWarm(disabled)
   })
 
   onBeforeUnmount(() => {

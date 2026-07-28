@@ -51,9 +51,16 @@
       },
       {
         "key": "auto_tts",
-        "label": "自动朗读回复",
+        "label": "自动朗读已启用角色",
         "type": "boolean",
         "default": false,
+        "required": false
+      },
+      {
+        "key": "role_tts_enabled",
+        "label": "启用 TTS 的角色",
+        "type": "object",
+        "default": {},
         "required": false
       },
       {
@@ -138,7 +145,7 @@
       "vueComponent": "slots/VoiceSettings.vue",
       "label": "语音识别",
       "bridge": {
-        "invoke": ["plugin_rpc_invoke", "get_plugin_settings_ui", "set_plugin_settings_config", "get_role_pack_path"],
+        "invoke": ["plugin_rpc_invoke", "get_plugin_settings_ui", "set_plugin_settings_config", "get_role_pack_path", "list_roles"],
         "events": []
       }
     }

@@ -19,6 +19,14 @@
       .hidden { display: none !important; } .error { color: #d33; } .ok { color: #16844b; }
       pre { max-height: 150px; overflow: auto; white-space: pre-wrap; padding: 8px; border: 1px solid GrayText; border-radius: 6px; font-size: 11px; }
       ul { margin: 0; padding-left: 20px; } .footer { position: sticky; bottom: 0; padding: 8px 0; background: Canvas; border-top: 1px solid GrayText; }
+      .role-policy { display: flex; flex-direction: column; gap: 7px; padding: 9px; border: 1px solid GrayText; border-radius: 7px; }
+      .role-policy__head, .role-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+      .role-list { display: flex; flex-direction: column; gap: 5px; padding: 0; list-style: none; }
+      .role-row { padding: 6px 7px; border: 1px solid GrayText; border-radius: 6px; }
+      .role-row label { flex: 1; flex-direction: row; align-items: center; min-width: 0; }
+      .role-row__name { display: flex; flex-direction: column; min-width: 0; }
+      .role-row__status { flex-shrink: 0; color: GrayText; font-size: 11px; }
+      .role-row__status.ready { color: #16844b; }
     </style>
   </head>
   <body>
@@ -40,7 +48,15 @@
       <fieldset>
         <legend>语音扩展（TTS）</legend>
         <label class="row"><input id="tts-enabled" type="checkbox" />启用情感 TTS</label>
-        <label class="row"><input id="auto-tts" type="checkbox" />自动朗读回复</label>
+        <label class="row"><input id="auto-tts" type="checkbox" />自动朗读已启用角色</label>
+        <section id="role-policy" class="role-policy">
+          <div class="role-policy__head">
+            <strong>角色语音</strong>
+            <span id="role-count" class="hint"></span>
+          </div>
+          <p class="hint">只有带 voice_profile.json 的角色可以启用；未配置角色不会共用其他角色声线。</p>
+          <ul id="role-list" class="role-list"></ul>
+        </section>
         <label>发声提供方
           <select id="synth-provider"><option value="bundled">本地 bundled</option><option value="local_http">本地 HTTP</option><option value="cloud">云端 API</option></select>
         </label>

@@ -5,7 +5,7 @@ Official **side-channel** `voice.asr` + optional **voice expansion** (CosyVoice2
 - **Registry**: [`RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md`](../../../../creator-docs/rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md) §4.1
 - **Does not** enter six slots or `process_message`
 - **Base**: trusted-host microphone capture → ASR → idempotent `com.oclive.voice.asr:submit` event → Chat Pro's canonical `onSend` / draft path
-- **Expansion** (optional): `tts_expansion_enabled` → CosyVoice2 sidecar → `voice.speak` on `reply`
+- **Expansion** (optional): `tts_expansion_enabled` + `auto_tts` + `role_tts_enabled[role_id]` + pack `voice_profile.json` → CosyVoice2 sidecar → `voice.speak` on `reply`
 - **Optional expansion**: users bring GPU, model DLC, or their own cloud API keys; iframe host events remain manifest-allowlisted
 
 ## Product split
@@ -14,7 +14,7 @@ Official **side-channel** `voice.asr` + optional **voice expansion** (CosyVoice2
 |-------|---------|----------|
 | Text chat | On | — |
 | ASR (mic) | On (model import) | — |
-| Emotional TTS | **Off** | `tts_expansion_enabled` + model pack |
+| Emotional TTS | **Off** | Global enable + per-role enable + `voice_profile.json` + model pack |
 | Cloud TTS | — | `synth_provider: cloud` or `edge-tts-zh` |
 
 **Piper** removed from Chat Pro product path; retained in [`examples/voice-loop-minimal/`](../../../../examples/voice-loop-minimal/) for dev/CI only.
@@ -87,7 +87,8 @@ Unchanged entry; `rules-v1` now fills `emo_text` + role-pack `ref_map`.
 ## UX
 
 - Settings → **插件扩展** → **语音识别** (ASR) + **语音扩展** (TTS, collapsed by default)
-- `auto_tts` only when expansion enabled
+- `auto_tts` only when expansion is enabled; automatic playback additionally requires the role id in `role_tts_enabled` and that pack's `voice_profile.json`
+- Legacy configs without `role_tts_enabled` migrate only roles that actually contain `voice_profile.json`; new installs start with no role enabled
 - Win98 styles: `distros/shared/src/styles/win98/component-voice-settings.css`
 
 ## HTTP dev loop

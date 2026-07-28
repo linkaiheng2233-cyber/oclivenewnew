@@ -1,23 +1,33 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const invokeMock = vi.fn()
+const mocks = vi.hoisted(() => ({
+  invoke: vi.fn(),
+  settingsConfig: {
+    tts_expansion_enabled: true,
+    tts_profile: 'bundled-cosyvoice2-zh',
+  } as Record<string, unknown>,
+}))
 
 vi.mock('@oclive/shared/api', () => ({
-  directoryPluginInvoke: (...args: unknown[]) => invokeMock(...args),
+  directoryPluginInvoke: (...args: unknown[]) => mocks.invoke(...args),
   getPluginSettingsUi: vi.fn(async () => ({
-    config: { tts_expansion_enabled: true, tts_profile: 'bundled-cosyvoice2-zh' },
+    config: mocks.settingsConfig,
   })),
 }))
 
 describe('useVoiceExpansionWarm', () => {
   beforeEach(async () => {
     vi.resetModules()
-    invokeMock.mockReset()
+    mocks.invoke.mockReset()
+    mocks.settingsConfig = {
+      tts_expansion_enabled: true,
+      tts_profile: 'bundled-cosyvoice2-zh',
+    }
   })
 
   it('resolveVoiceSidecarEndpoint does not await long warm', async () => {
     let warmResolve: ((value: unknown) => void) | null = null
-    invokeMock.mockImplementation(async (_id: string, method: string) => {
+    mocks.invoke.mockImplementation(async (_id: string, method: string) => {
       if (method === 'voice.warm') {
         return new Promise((resolve) => {
           warmResolve = resolve
@@ -44,7 +54,7 @@ describe('useVoiceExpansionWarm', () => {
   })
 
   it('scheduleVoiceExpansionWarm skips warm when probe reports warmed', async () => {
-    invokeMock.mockImplementation(async (_id: string, method: string) => {
+    mocks.invoke.mockImplementation(async (_id: string, method: string) => {
       if (method === 'voice.probe_tts') {
         return { ok: true, warmed: true, sidecar_endpoint: 'http://127.0.0.1:50000' }
       }
@@ -57,7 +67,7 @@ describe('useVoiceExpansionWarm', () => {
     const mod = await import('./useVoiceExpansionWarm')
     mod.resetVoiceExpansionWarmSchedule()
     await mod.scheduleVoiceExpansionWarm(() => false)
-    expect(invokeMock).not.toHaveBeenCalledWith(
+    expect(mocks.invoke).not.toHaveBeenCalledWith(
       expect.anything(),
       'voice.warm',
       expect.anything(),
@@ -65,7 +75,7 @@ describe('useVoiceExpansionWarm', () => {
   })
 
   it('prepares a role directive even when the model is already warmed', async () => {
-    invokeMock.mockImplementation(async (_id: string, method: string) => {
+    mocks.invoke.mockImplementation(async (_id: string, method: string) => {
       if (method === 'voice.probe_tts') {
         return { ok: true, warmed: true, sidecar_endpoint: 'http://127.0.0.1:50000' }
       }
@@ -86,7 +96,7 @@ describe('useVoiceExpansionWarm', () => {
       },
     })
     await vi.waitFor(() => {
-      expect(invokeMock).toHaveBeenCalledWith(
+      expect(mocks.invoke).toHaveBeenCalledWith(
         expect.anything(),
         'voice.warm',
         expect.objectContaining({
@@ -98,13 +108,13 @@ describe('useVoiceExpansionWarm', () => {
       )
     })
     expect(
-      invokeMock.mock.calls.filter(([, method]) => method === 'voice.probe_tts'),
+      mocks.invoke.mock.calls.filter(([, method]) => method === 'voice.probe_tts'),
     ).toHaveLength(1)
   })
 
   it('can retry a background warm after GPU admission defers the first attempt', async () => {
     let warmAttempts = 0
-    invokeMock.mockImplementation(async (_id: string, method: string) => {
+    mocks.invoke.mockImplementation(async (_id: string, method: string) => {
       if (method === 'voice.probe_tts') {
         return {
           ok: false,
@@ -131,7 +141,7 @@ describe('useVoiceExpansionWarm', () => {
   })
 
   it('keeps sidecar endpoints isolated by TTS profile', async () => {
-    invokeMock.mockImplementation(async (_id: string, method: string, params: { profile?: string }) => {
+    mocks.invoke.mockImplementation(async (_id: string, method: string, params: { profile?: string }) => {
       if (method === 'voice.probe_tts') {
         const port = params.profile === 'profile-a' ? 50101 : 50102
         return { ok: true, warmed: true, sidecar_endpoint: `http://127.0.0.1:${port}` }
@@ -152,7 +162,7 @@ describe('useVoiceExpansionWarm', () => {
   })
 
   it('does not expose an unconfirmed fallback endpoint to direct fetch', async () => {
-    invokeMock.mockImplementation(async (_id: string, method: string) => {
+    mocks.invoke.mockImplementation(async (_id: string, method: string) => {
       if (method === 'voice.probe_tts') {
         return {
           ok: false,
@@ -173,5 +183,19 @@ describe('useVoiceExpansionWarm', () => {
       ),
     ).resolves.toBeNull()
     expect(mod.getVoiceSidecarEndpoint('bundled-cosyvoice2-zh')).toBeNull()
+  })
+
+  it('does not warm when the explicit role policy enables no roles', async () => {
+    mocks.settingsConfig = {
+      tts_expansion_enabled: true,
+      tts_profile: 'bundled-cosyvoice2-zh',
+      role_tts_enabled: {},
+    }
+
+    const mod = await import('./useVoiceExpansionWarm')
+    mod.resetVoiceExpansionWarmSchedule()
+    await mod.scheduleVoiceExpansionWarm(() => false)
+
+    expect(mocks.invoke).not.toHaveBeenCalled()
   })
 })

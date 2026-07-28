@@ -11,15 +11,20 @@
     localEndpoint: byId('local-endpoint'), cloudUrl: byId('cloud-url'), cloudToken: byId('cloud-token'),
     cloudVoice: byId('cloud-voice'), cloudModel: byId('cloud-model'), ttsProfile: byId('tts-profile'),
     directorProfile: byId('director-profile'), ttsImport: byId('tts-import'), adapterImport: byId('adapter-import'),
+    roleList: byId('role-list'), roleCount: byId('role-count'),
   }
   const defaults = {
     submit_mode: 'send', tts_expansion_enabled: false, auto_tts: false,
+    role_tts_enabled: {},
     asr_profile: 'sherpa-paraformer-zh-small', tts_profile: 'bundled-cosyvoice2-zh',
     director_profile: 'rules-v1', synth_provider: 'bundled',
     local_synth_endpoint: 'http://127.0.0.1:50000', cloud_tts_url: '', cloud_tts_token: '',
     cloud_tts_voice_id: '', cloud_tts_model: 'tts-1',
   }
   let profiles = []
+  let roleRows = []
+  let roleTtsEnabled = {}
+  let rolePolicyExplicit = false
 
   function setMessage(error = '', ok = '') {
     byId('error').textContent = error
@@ -56,7 +61,24 @@
     }
   }
 
+  function normalizeRoleTtsEnabled(value) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
+    return Object.fromEntries(
+      Object.entries(value)
+        .map(([roleId, enabled]) => [roleId.trim(), enabled])
+        .filter(([roleId, enabled]) => roleId && enabled === true)
+        .map(([roleId]) => [roleId, true]),
+    )
+  }
+
   function applyConfig(config) {
+    rolePolicyExplicit = Boolean(
+      config &&
+      Object.prototype.hasOwnProperty.call(config, 'role_tts_enabled') &&
+      config.role_tts_enabled &&
+      typeof config.role_tts_enabled === 'object' &&
+      !Array.isArray(config.role_tts_enabled),
+    )
     const value = { ...defaults, ...(config || {}) }
     controls.submitMode.value = value.submit_mode === 'fill' ? 'fill' : 'send'
     controls.ttsEnabled.checked = value.tts_expansion_enabled === true
@@ -70,6 +92,8 @@
     controls.cloudToken.value = value.cloud_tts_token || ''
     controls.cloudVoice.value = value.cloud_tts_voice_id || ''
     controls.cloudModel.value = value.cloud_tts_model || defaults.cloud_tts_model
+    roleTtsEnabled = normalizeRoleTtsEnabled(value.role_tts_enabled)
+    renderRoleRows()
     updateVisibility()
   }
 
@@ -78,6 +102,7 @@
       submit_mode: controls.submitMode.value,
       tts_expansion_enabled: controls.ttsEnabled.checked,
       auto_tts: controls.ttsEnabled.checked && controls.autoTts.checked,
+      role_tts_enabled: roleTtsEnabled,
       asr_profile: controls.asrProfile.value,
       tts_profile: controls.ttsProfile.value,
       director_profile: controls.directorProfile.value,
@@ -94,6 +119,96 @@
     byId('local-endpoint-row').classList.toggle('hidden', controls.synthProvider.value !== 'local_http')
     byId('cloud-fields').classList.toggle('hidden', controls.synthProvider.value !== 'cloud')
     controls.autoTts.disabled = !controls.ttsEnabled.checked
+    byId('role-policy').classList.toggle('hidden', !controls.ttsEnabled.checked)
+  }
+
+  function renderRoleRows() {
+    controls.roleList.replaceChildren()
+    controls.roleCount.textContent = `已启用 ${Object.keys(roleTtsEnabled).length} / ${roleRows.length}`
+    for (const role of roleRows) {
+      const item = document.createElement('li')
+      item.className = 'role-row'
+      const label = document.createElement('label')
+      const checkbox = document.createElement('input')
+      checkbox.type = 'checkbox'
+      checkbox.checked = roleTtsEnabled[role.id] === true
+      checkbox.disabled = role.voiceConfigured !== true
+      checkbox.addEventListener('change', () => {
+        rolePolicyExplicit = true
+        if (checkbox.checked) roleTtsEnabled = { ...roleTtsEnabled, [role.id]: true }
+        else {
+          const next = { ...roleTtsEnabled }
+          delete next[role.id]
+          roleTtsEnabled = next
+        }
+        renderRoleRows()
+      })
+      const name = document.createElement('span')
+      name.className = 'role-row__name'
+      const strong = document.createElement('strong')
+      strong.textContent = role.name || role.id
+      const small = document.createElement('small')
+      small.textContent = role.id
+      name.append(strong, small)
+      label.append(checkbox, name)
+      const status = document.createElement('span')
+      status.className = `role-row__status${role.voiceConfigured === true ? ' ready' : ''}`
+      status.textContent = role.voiceConfigured === true
+        ? `已配置${role.profileLabel ? ` · ${role.profileLabel}` : ''}`
+        : role.voiceConfigured === false ? '未配置角色声线' : '检测失败'
+      item.append(label, status)
+      controls.roleList.append(item)
+    }
+  }
+
+  function rolePackPath(value) {
+    if (typeof value === 'string') return value.trim()
+    return typeof value?.role_path === 'string' ? value.role_path.trim() : ''
+  }
+
+  async function inspectRoleVoice(role) {
+    try {
+      const path = rolePackPath(await bridge.invoke('get_role_pack_path', { roleId: role.id }))
+      if (!path) return { ...role, voiceConfigured: null, profileLabel: '' }
+      const result = await rpc('voice.read_role_profile', { role_path: path })
+      const profile = result?.profile
+      return {
+        ...role,
+        voiceConfigured: profile !== null && typeof profile === 'object',
+        profileLabel: profile?.preferred_tts_profile || profile?.synth_profile || '',
+      }
+    }
+    catch {
+      return { ...role, voiceConfigured: null, profileLabel: '' }
+    }
+  }
+
+  async function loadRoles() {
+    const result = await bridge.invoke('list_roles', {})
+    const roles = Array.isArray(result)
+      ? result
+          .filter(role => role && typeof role.id === 'string')
+          .map(role => ({
+            id: role.id.trim(),
+            name: typeof role.name === 'string' && role.name.trim() ? role.name.trim() : role.id.trim(),
+          }))
+          .filter(role => role.id)
+      : []
+    roleRows = await Promise.all(roles.map(inspectRoleVoice))
+    if (!rolePolicyExplicit) {
+      roleTtsEnabled = Object.fromEntries(
+        roleRows.filter(role => role.voiceConfigured === true).map(role => [role.id, true]),
+      )
+    }
+    else {
+      const missing = new Set(
+        roleRows.filter(role => role.voiceConfigured === false).map(role => role.id),
+      )
+      roleTtsEnabled = Object.fromEntries(
+        Object.entries(roleTtsEnabled).filter(([roleId]) => !missing.has(roleId)),
+      )
+    }
+    renderRoleRows()
   }
 
   function applyProfileDefaults() {
@@ -205,7 +320,7 @@
       const ui = await bridge.invoke('get_plugin_settings_ui', { pluginId })
       applyConfig(ui?.config)
       await pushConfig(collectConfig())
-      await reload()
+      await Promise.all([loadRoles(), reload()])
     }
     catch (reason) { setMessage(errorText(reason)) }
   }

@@ -18,6 +18,7 @@ use oclive_kernel_host::infrastructure::remote_plugin::{
     invoke_directory_plugin_rpc_blocking, RemoteRpcChannel,
 };
 use oclive_kernel_host::infrastructure::role_pack::validate_bridge_import_role_source;
+use oclive_kernel_host::service::role::list_roles_impl;
 use oclive_kernel_host::service::{
     bridge_command_needs_kernel_writer, dispatch_bridge_command, parse_send_message_request,
 };
@@ -350,6 +351,18 @@ async fn dispatch_local_bridge_command(
         return Ok(json!({ "role_path": path.to_string_lossy() }));
     }
 
+    if command == "list_roles" {
+        let roles = list_roles_impl(state).await?;
+        return serde_json::to_value(roles).map_err(|e| {
+            CommandError::from(
+                ApiError::Io {
+                    message: format!("host json list_roles: {e}"),
+                }
+                .to_string(),
+            )
+        });
+    }
+
     if command == "import_role" {
         let path = params
             .get("path")
@@ -515,6 +528,17 @@ mod rpc_validation_tests {
                 "whitelist rejected {method}"
             );
         }
+        let settings_bridge = manifest
+            .bridge_for_asset_rel("slots/settings.html")
+            .expect("voice settings bridge");
+        assert!(
+            invoke_list_allows(&settings_bridge.invoke, "list_roles"),
+            "voice settings must be able to list roles for per-role TTS policy"
+        );
+        assert!(
+            !requires_typed_shell("list_roles"),
+            "read-only role catalog must remain available to a settings slot"
+        );
     }
 
     fn path_from_manifest_dir() -> std::path::PathBuf {

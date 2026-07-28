@@ -39,6 +39,16 @@ type ModelPackRow = {
   download_url?: string;
 };
 
+type RoleSummaryRow = {
+  id: string;
+  name: string;
+};
+
+type RoleVoiceRow = RoleSummaryRow & {
+  voiceConfigured: boolean | null;
+  profileLabel: string;
+};
+
 const PLUGIN_ID = "com.oclive.voice.asr";
 const EVT_CONFIG_UPDATED = "com.oclive.voice.asr:config-updated";
 const DEFAULT_TTS = "bundled-cosyvoice2-zh";
@@ -70,28 +80,47 @@ const adapterImportPath = ref("");
 const importKind = ref<"asr" | "tts">("asr");
 const saving = ref(false);
 const warming = ref(false);
+const roleRows = ref<RoleVoiceRow[]>([]);
+const roleTtsEnabled = ref<Record<string, true>>({});
+const rolePolicyExplicit = ref(false);
+const roleCatalogLoaded = ref(false);
 
 async function rpc(method: string, params: Record<string, unknown> = {}) {
   if (!oclive) throw new Error("oclive bridge missing");
   return oclive.invoke("plugin_rpc_invoke", { method, params });
 }
 
+function normalizeRoleTtsEnabled(value: unknown): Record<string, true> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const normalized: Record<string, true> = {};
+  for (const [rawRoleId, enabled] of Object.entries(value as Record<string, unknown>)) {
+    const roleId = rawRoleId.trim();
+    if (roleId && enabled === true) normalized[roleId] = true;
+  }
+  return normalized;
+}
+
+function collectConfig(): Record<string, unknown> {
+  return {
+    submit_mode: submitMode.value,
+    tts_expansion_enabled: ttsExpansionEnabled.value,
+    auto_tts: ttsExpansionEnabled.value ? autoTts.value : false,
+    role_tts_enabled: roleTtsEnabled.value,
+    asr_profile: asrProfile.value,
+    tts_profile: ttsProfile.value,
+    director_profile: directorProfile.value,
+    synth_provider: synthProvider.value,
+    local_synth_endpoint: localSynthEndpoint.value,
+    cloud_tts_url: cloudTtsUrl.value,
+    cloud_tts_token: cloudTtsToken.value,
+    cloud_tts_voice_id: cloudTtsVoiceId.value,
+    cloud_tts_model: cloudTtsModel.value,
+  };
+}
+
 async function pushConfigToSidecar(): Promise<void> {
   await rpc("config_updated", {
-    config: {
-      submit_mode: submitMode.value,
-      tts_expansion_enabled: ttsExpansionEnabled.value,
-      auto_tts: autoTts.value,
-      asr_profile: asrProfile.value,
-      tts_profile: ttsProfile.value,
-      director_profile: directorProfile.value,
-      synth_provider: synthProvider.value,
-      local_synth_endpoint: localSynthEndpoint.value,
-      cloud_tts_url: cloudTtsUrl.value,
-      cloud_tts_token: cloudTtsToken.value,
-      cloud_tts_voice_id: cloudTtsVoiceId.value,
-      cloud_tts_model: cloudTtsModel.value,
-    },
+    config: collectConfig(),
   });
 }
 
@@ -105,6 +134,12 @@ async function loadConfig(): Promise<void> {
     submitMode.value = cfg.submit_mode === "fill" ? "fill" : "send";
     ttsExpansionEnabled.value = cfg.tts_expansion_enabled === true;
     autoTts.value = cfg.auto_tts === true;
+    rolePolicyExplicit.value =
+      Object.prototype.hasOwnProperty.call(cfg, "role_tts_enabled") &&
+      typeof cfg.role_tts_enabled === "object" &&
+      cfg.role_tts_enabled !== null &&
+      !Array.isArray(cfg.role_tts_enabled);
+    roleTtsEnabled.value = normalizeRoleTtsEnabled(cfg.role_tts_enabled);
     if (typeof cfg.asr_profile === "string") asrProfile.value = cfg.asr_profile;
     if (typeof cfg.tts_profile === "string") ttsProfile.value = cfg.tts_profile;
     if (typeof cfg.director_profile === "string") {
@@ -134,20 +169,7 @@ async function saveConfig(): Promise<void> {
   errText.value = "";
   try {
     applyTtsProfileDefaults(ttsProfile.value);
-    const config = {
-      submit_mode: submitMode.value,
-      tts_expansion_enabled: ttsExpansionEnabled.value,
-      auto_tts: ttsExpansionEnabled.value ? autoTts.value : false,
-      asr_profile: asrProfile.value,
-      tts_profile: ttsProfile.value,
-      director_profile: directorProfile.value,
-      synth_provider: synthProvider.value,
-      local_synth_endpoint: localSynthEndpoint.value,
-      cloud_tts_url: cloudTtsUrl.value,
-      cloud_tts_token: cloudTtsToken.value,
-      cloud_tts_voice_id: cloudTtsVoiceId.value,
-      cloud_tts_model: cloudTtsModel.value,
-    };
+    const config = collectConfig();
     await oclive.invoke("set_plugin_settings_config", {
       pluginId: PLUGIN_ID,
       config,
@@ -160,6 +182,94 @@ async function saveConfig(): Promise<void> {
   } finally {
     saving.value = false;
   }
+}
+
+function rolePackPathFromResult(value: unknown): string {
+  if (typeof value === "string") return value.trim();
+  if (!value || typeof value !== "object") return "";
+  const rolePath = (value as { role_path?: unknown }).role_path;
+  return typeof rolePath === "string" ? rolePath.trim() : "";
+}
+
+async function inspectRoleVoice(role: RoleSummaryRow): Promise<RoleVoiceRow> {
+  try {
+    const pathResult = await oclive?.invoke("get_role_pack_path", { roleId: role.id });
+    const rolePath = rolePackPathFromResult(pathResult);
+    if (!rolePath) return { ...role, voiceConfigured: null, profileLabel: "" };
+    const result = (await rpc("voice.read_role_profile", {
+      role_path: rolePath,
+    })) as {
+      profile?: {
+        preferred_tts_profile?: string | null;
+        synth_profile?: string | null;
+      } | null;
+    };
+    const profile = result.profile;
+    return {
+      ...role,
+      voiceConfigured: profile !== null && typeof profile === "object",
+      profileLabel:
+        profile?.preferred_tts_profile?.trim() ||
+        profile?.synth_profile?.trim() ||
+        "",
+    };
+  } catch {
+    return { ...role, voiceConfigured: null, profileLabel: "" };
+  }
+}
+
+async function loadRoleCatalog(): Promise<void> {
+  if (!oclive) return;
+  try {
+    const result = await oclive.invoke("list_roles", {});
+    const roles = Array.isArray(result)
+      ? result
+          .filter((row): row is RoleSummaryRow => {
+            if (!row || typeof row !== "object") return false;
+            const value = row as Partial<RoleSummaryRow>;
+            return typeof value.id === "string" && typeof value.name === "string";
+          })
+          .map((row) => ({ id: row.id.trim(), name: row.name.trim() || row.id.trim() }))
+          .filter((row) => row.id)
+      : [];
+    roleRows.value = await Promise.all(roles.map(inspectRoleVoice));
+    roleCatalogLoaded.value = true;
+    if (!rolePolicyExplicit.value) {
+      roleTtsEnabled.value = Object.fromEntries(
+        roleRows.value
+          .filter((row) => row.voiceConfigured === true)
+          .map((row) => [row.id, true] as const),
+      );
+    } else {
+      const missingIds = new Set(
+        roleRows.value
+          .filter((row) => row.voiceConfigured === false)
+          .map((row) => row.id),
+      );
+      roleTtsEnabled.value = Object.fromEntries(
+        Object.entries(roleTtsEnabled.value).filter(([roleId]) => !missingIds.has(roleId)),
+      );
+    }
+  } catch (e) {
+    roleCatalogLoaded.value = false;
+    errText.value = e instanceof Error ? e.message : String(e);
+  }
+}
+
+function setRoleTtsEnabled(roleId: string, enabled: boolean): void {
+  const next = { ...roleTtsEnabled.value };
+  if (enabled) next[roleId] = true;
+  else delete next[roleId];
+  roleTtsEnabled.value = next;
+  rolePolicyExplicit.value = true;
+}
+
+function onRoleTtsToggle(roleId: string, event: Event): void {
+  const target = event.target;
+  setRoleTtsEnabled(
+    roleId,
+    target instanceof HTMLInputElement && target.checked,
+  );
 }
 
 function applyTtsProfileDefaults(profileId: string): void {
@@ -339,7 +449,7 @@ async function warmTts(): Promise<void> {
 }
 
 onMounted(() => {
-  void loadConfig().then(() => reload());
+  void loadConfig().then(() => Promise.all([loadRoleCatalog(), reload()]));
 });
 </script>
 
@@ -429,10 +539,57 @@ onMounted(() => {
         <label class="voice-toggle-box voice-toggle-box--compact" :class="{ 'voice-toggle-box--on': autoTts }">
           <input v-model="autoTts" class="voice-toggle-box__input" type="checkbox" />
           <span class="voice-toggle-box__text">
-            <span class="voice-toggle-box__title">自动朗读回复</span>
-            <span class="voice-toggle-box__hint">整段 reply 完成后 speak</span>
+            <span class="voice-toggle-box__title">自动朗读已启用角色</span>
+            <span class="voice-toggle-box__hint">全局行为开关；仍需在下方逐个启用角色</span>
           </span>
         </label>
+
+        <div class="voice-role-policy">
+          <div class="voice-role-policy__head">
+            <div>
+              <p class="label">角色语音</p>
+              <p class="hint">
+                只有带 <code>voice_profile.json</code> 的角色可以启用；未配置角色不会共用其他角色声线。
+              </p>
+            </div>
+            <span class="meta">
+              已启用 {{ Object.keys(roleTtsEnabled).length }} / {{ roleRows.length }}
+            </span>
+          </div>
+          <p v-if="!roleCatalogLoaded && roleRows.length === 0" class="hint">
+            角色列表尚未加载，请保存后重试或检查插件桥接。
+          </p>
+          <ul v-else class="voice-role-list">
+            <li v-for="role in roleRows" :key="role.id" class="voice-role-row">
+              <label class="voice-role-row__toggle">
+                <input
+                  type="checkbox"
+                  :checked="roleTtsEnabled[role.id] === true"
+                  :disabled="role.voiceConfigured !== true"
+                  @change="onRoleTtsToggle(role.id, $event)"
+                />
+                <span>
+                  <strong>{{ role.name }}</strong>
+                  <small>{{ role.id }}</small>
+                </span>
+              </label>
+              <span
+                class="voice-role-row__status"
+                :class="{ 'voice-role-row__status--ready': role.voiceConfigured === true }"
+              >
+                <template v-if="role.voiceConfigured === true">
+                  已配置{{ role.profileLabel ? ` · ${role.profileLabel}` : "" }}
+                </template>
+                <template v-else-if="role.voiceConfigured === false">
+                  未配置角色声线
+                </template>
+                <template v-else>
+                  检测失败
+                </template>
+              </span>
+            </li>
+          </ul>
+        </div>
 
         <label class="field">
           <span class="label">发声提供方</span>
@@ -678,6 +835,64 @@ onMounted(() => {
   font-size: 0.6875rem;
   color: var(--text-secondary, #666);
   line-height: 1.35;
+}
+.voice-role-policy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.625rem;
+  border: 1px solid var(--border-light, #ccc);
+  border-radius: var(--radius-btn, 8px);
+  background: var(--bg-elevated, #f5f5f5);
+}
+.voice-role-policy__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.voice-role-policy__head p {
+  margin: 0;
+}
+.voice-role-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.voice-role-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0.625rem;
+  border: 1px solid color-mix(in srgb, var(--border-light, #ccc) 70%, transparent);
+  border-radius: 6px;
+  background: var(--bg-primary, #fff);
+}
+.voice-role-row__toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.voice-role-row__toggle span {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.voice-role-row__toggle small {
+  color: var(--text-secondary, #666);
+}
+.voice-role-row__status {
+  flex-shrink: 0;
+  font-size: 0.6875rem;
+  color: var(--text-secondary, #666);
+}
+.voice-role-row__status--ready {
+  color: var(--success, #0a7a3e);
 }
 .voice-reveal {
   margin: 0;

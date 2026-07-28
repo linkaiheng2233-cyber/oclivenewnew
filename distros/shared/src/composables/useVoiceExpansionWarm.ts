@@ -1,5 +1,6 @@
 import { directoryPluginInvoke, getPluginSettingsUi } from '@oclive/shared/api'
 import { VOICE_ASR_PLUGIN_ID } from '@oclive/shared/lib/voiceAsrEvents'
+import { hasAnyExplicitVoiceRoleEnabled } from '@oclive/shared/lib/voiceRolePolicy'
 
 const DEFAULT_TTS_PROFILE = 'bundled-cosyvoice2-zh'
 const warmPromises = new Map<string, Promise<void>>()
@@ -138,6 +139,8 @@ export async function scheduleVoiceExpansionWarm(
     const cfg = ui.config ?? {}
     if (cfg.tts_expansion_enabled !== true)
       return
+    if (hasAnyExplicitVoiceRoleEnabled(cfg) === false)
+      return
     const profile = options.profile?.trim()
       || (typeof cfg.tts_profile === 'string' && cfg.tts_profile.trim()
         ? cfg.tts_profile.trim()
@@ -175,8 +178,12 @@ export async function resolveVoiceSidecarEndpoint(
     if (!isSidecarAlreadyWarmed(probe)) {
       try {
         const ui = await getPluginSettingsUi(VOICE_ASR_PLUGIN_ID)
-        if (ui.config?.tts_expansion_enabled === true)
+        if (
+          ui.config?.tts_expansion_enabled === true
+          && hasAnyExplicitVoiceRoleEnabled(ui.config) !== false
+        ) {
           startBackgroundWarm(profile, undefined, probe)
+        }
       }
       catch {
         /* ignore */
