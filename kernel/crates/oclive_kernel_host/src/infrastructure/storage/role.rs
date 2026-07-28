@@ -80,13 +80,15 @@ impl RoleStorage {
         let normalized = relative.replace('\\', "/");
         let rel = Path::new(&normalized);
         if normalized.trim().is_empty()
+            || normalized.starts_with('/')
+            || normalized.contains(':')
             || rel.is_absolute()
             || rel
                 .components()
                 .any(|part| !matches!(part, std::path::Component::Normal(_)))
         {
             return Err(AppError::InvalidParameter(
-                "role asset path must be a non-empty relative path without '.' or '..'".into(),
+                "role asset path must be a portable relative path without roots, drive prefixes, '.' or '..'".into(),
             ));
         }
         let candidate = role_dir.join(rel);
@@ -571,6 +573,12 @@ mod tests {
             .is_err());
         assert!(storage.role_asset_path("mumu", "../outside.json").is_err());
         assert!(storage.role_asset_path("mumu", "C:\\outside.json").is_err());
+        assert!(storage.role_asset_path("mumu", "C:/outside.json").is_err());
+        assert!(storage.role_asset_path("mumu", "C:outside.json").is_err());
+        assert!(storage
+            .role_asset_path("mumu", "\\\\server\\share.json")
+            .is_err());
+        assert!(storage.role_asset_path("mumu", "/outside.json").is_err());
         assert_eq!(
             storage
                 .role_asset_path("mumu", "scenes/default/scene.json")
