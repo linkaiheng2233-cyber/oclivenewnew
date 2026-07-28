@@ -1,8 +1,7 @@
-//! Reading and validation of role pack blueprints (`pipeline.ocblueprint` v2).
+//! Reading and version-dispatched validation of role pack blueprints.
 
 use anyhow::{Context, Result};
-use oclive_validation::{validate_blueprint_v2_json_with_context, BlueprintV2ValidateContext};
-use serde_json::Value;
+use oclive_validation::validate_blueprint_json_by_schema_version;
 use std::fs;
 use std::path::Path;
 
@@ -45,46 +44,12 @@ pub fn load_blueprint_text(path: &Path) -> Result<String> {
     fs::read_to_string(path).with_context(|| format!("read blueprint: {}", path.display()))
 }
 
-/// Validates `pipeline.ocblueprint` (schema_version 2 only; the steps[] DSL is deprecated).
+/// Validates `pipeline.ocblueprint` using the v2 / frozen-v3 / Stable-v4 contract.
 pub fn validate_blueprint_file(raw: &str) -> ValidationReport {
-    let v: Value = match serde_json::from_str(raw) {
-        Ok(x) => x,
-        Err(e) => {
-            return ValidationReport::from_strings(vec![format!("parse blueprint JSON: {}", e)]);
-        }
-    };
-
-    if let Value::Object(map) = &v {
-        if map.contains_key("steps") {
-            return ValidationReport::from_strings(vec![
-                "legacy pipeline DSL (steps[]/entry) is deprecated; use schema_version 2 with meta + slot_registry".into(),
-            ]);
-        }
-        if let Some(Value::Number(n)) = map.get("schema_version") {
-            if n.as_u64() != Some(2) {
-                return ValidationReport::from_strings(vec![format!(
-                    "unsupported schema_version {} (only integer 2 is accepted)",
-                    n
-                )]);
-            }
-        } else {
-            return ValidationReport::from_strings(vec![
-                "pipeline.ocblueprint must include schema_version: 2".into(),
-            ]);
-        }
+    match validate_blueprint_json_by_schema_version(raw, None) {
+        Ok(_) => ValidationReport::success(),
+        Err(errors) => ValidationReport::from_strings(errors),
     }
-
-    ValidationReport::from_strings(
-        validate_blueprint_v2_json_with_context(
-            raw,
-            BlueprintV2ValidateContext {
-                host_version: Some(env!("CARGO_PKG_VERSION")),
-                ..BlueprintV2ValidateContext::default()
-            },
-        )
-        .err()
-        .unwrap_or_default(),
-    )
 }
 
 #[cfg(test)]
@@ -119,5 +84,19 @@ mod tests {
     fn legacy_steps_rejected() {
         let raw = r#"{"schema_version":1,"steps":[{"id":"s1","type":"call_llm"}]}"#;
         assert!(!validate_blueprint_file(raw).ok);
+    }
+
+    #[test]
+    fn stable_v4_passes() {
+        let raw = MINIMAL.replacen("\"schema_version\": 2", "\"schema_version\": 4", 1);
+        assert!(validate_blueprint_file(&raw).ok);
+    }
+
+    #[test]
+    fn unknown_version_is_not_treated_as_v2() {
+        let raw = MINIMAL.replacen("\"schema_version\": 2", "\"schema_version\": 99", 1);
+        let report = validate_blueprint_file(&raw);
+        assert!(!report.ok);
+        assert!(report.errors[0].message.contains("schema_version 99"));
     }
 }

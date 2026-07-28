@@ -22,7 +22,7 @@ pub struct PackArgs {
 
 #[derive(Subcommand, Debug)]
 pub enum PackCommands {
-    /// Validate role pack directory (default: pipeline.ocblueprint v2; --profile legacy: manifest+settings)
+    /// Validate role pack directory (default: exact blueprint v2/v3/v4 dispatch)
     Validate(PackValidateArgs),
     /// Generate a minimal valid role pack directory
     Create(PackCreateArgs),
@@ -48,7 +48,7 @@ pub struct PackValidateArgs {
     /// Host semver for `manifest.min_runtime_version` (default: this CLI `CARGO_PKG_VERSION`)
     #[arg(long)]
     pub host_version: Option<String>,
-    /// Profile: `default` (blueprint v2/v3) | `legacy` | `creator` | `robot-soul` | `portable-core` (see ROLE_PACK_SPEC)
+    /// Profile: `default` (blueprint v2/v3/v4) | `legacy` | `creator` | `robot-soul` | `portable-core` (see ROLE_PACK_SPEC)
     #[arg(long, default_value = "default")]
     pub profile: String,
 }
@@ -73,8 +73,11 @@ pub struct PackCreateArgs {
     #[arg(long, default_value_t = false)]
     pub flat: bool,
     /// Output v2 blueprint pack (`pipeline.ocblueprint` only) instead of manifest/settings
-    #[arg(long, default_value_t = false)]
+    #[arg(long, default_value_t = false, conflicts_with = "format_blueprint_v4")]
     pub format_blueprint_v2: bool,
+    /// Output Stable v4 blueprint pack (`pipeline.ocblueprint` only) instead of manifest/settings
+    #[arg(long, default_value_t = false, conflicts_with = "format_blueprint_v2")]
+    pub format_blueprint_v4: bool,
 }
 
 #[derive(Parser, Debug)]
@@ -215,9 +218,10 @@ fn run_create(args: PackCreateArgs) -> Result<()> {
         },
         "default_relation": "friend"
     });
-    if args.format_blueprint_v2 {
-        let bp = serde_json::json!({
-            "schema_version": 2,
+    if args.format_blueprint_v2 || args.format_blueprint_v4 {
+        let schema_version = if args.format_blueprint_v4 { 4 } else { 2 };
+        let mut bp = serde_json::json!({
+            "schema_version": schema_version,
             "meta": {
                 "id": id,
                 "name": args.name,
@@ -228,8 +232,7 @@ fn run_create(args: PackCreateArgs) -> Result<()> {
                 "relations": {
                     "friend": { "initial_favorability": 50.0, "favor_multiplier": 1.0 }
                 },
-                "default_relation": "friend",
-                "interaction_mode": "immersive"
+                "default_relation": "friend"
             },
             "slot_registry": {
                 "memory": { "type": "memory", "label": "Memory", "backend": "builtin", "position": 0 },
@@ -241,12 +244,22 @@ fn run_create(args: PackCreateArgs) -> Result<()> {
                 "agent": { "type": "agent", "label": "Agent", "backend": "builtin", "position": 0 }
             }
         });
+        if args.format_blueprint_v4 {
+            bp["runtime_config"] = serde_json::json!({
+                "interaction_mode": "immersive"
+            });
+        } else {
+            bp["meta"]["interaction_mode"] = serde_json::json!("immersive");
+        }
         fs::write(
             root.join(PIPELINE_BLUEPRINT_FILENAME),
             serde_json::to_string_pretty(&bp).context("serialize blueprint")?,
         )
         .context("write pipeline.ocblueprint")?;
-        println!("Role pack directory created (v2): {}", root.display());
+        println!(
+            "Role pack directory created (v{schema_version}): {}",
+            root.display()
+        );
         return Ok(());
     }
 

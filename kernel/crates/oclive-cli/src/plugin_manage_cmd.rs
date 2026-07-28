@@ -3,8 +3,8 @@
 use anyhow::{bail, Context, Result};
 use clap::{Parser, Subcommand};
 use oclive_validation::{
-    load_blueprint_v2_for_role_dir, write_role_pack_blueprint_slot_registry, SlotOverridePatch,
-    SlotRegistryEntry, PIPELINE_BLUEPRINT_FILENAME,
+    load_blueprint_slot_registry_for_role_dir, write_role_pack_blueprint_slot_registry,
+    SlotOverridePatch, SlotRegistryEntry, PIPELINE_BLUEPRINT_FILENAME,
 };
 use serde::Serialize;
 use std::collections::BTreeMap;
@@ -108,9 +108,8 @@ pub fn find_role_dir(role: Option<&std::path::Path>) -> Result<PathBuf> {
 }
 
 pub fn load_registry(role_dir: &std::path::Path) -> Result<BTreeMap<String, SlotRegistryEntry>> {
-    let loaded = load_blueprint_v2_for_role_dir(role_dir, HOST_VERSION)
-        .map_err(|e| anyhow::anyhow!(e.join("; ")))?;
-    Ok(loaded.slot_registry)
+    load_blueprint_slot_registry_for_role_dir(role_dir, HOST_VERSION)
+        .map_err(|e| anyhow::anyhow!(e.join("; ")))
 }
 
 fn save_registry(

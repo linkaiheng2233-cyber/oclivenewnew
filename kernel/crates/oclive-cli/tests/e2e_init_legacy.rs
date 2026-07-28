@@ -22,10 +22,15 @@ fn e2e_pack_create_validate_publish() {
         "com.example.demo",
         "--name",
         "Demo",
-        "--format-blueprint-v2",
+        "--format-blueprint-v4",
     ])
     .success());
     assert!(root.join("pipeline.ocblueprint").exists());
+    let blueprint: Value =
+        serde_json::from_str(&std::fs::read_to_string(root.join("pipeline.ocblueprint")).unwrap())
+            .unwrap();
+    assert_eq!(blueprint["schema_version"], 4);
+    assert_eq!(blueprint["runtime_config"]["interaction_mode"], "immersive");
     assert!(root.join("core_personality.txt").exists());
     assert!(root.join("scenes/default/scene.json").exists());
     let seed: Value =
@@ -51,6 +56,29 @@ fn e2e_pack_create_validate_publish() {
     ])
     .success());
     assert!(zip_path.is_file());
+}
+
+#[test]
+fn e2e_pack_create_keeps_explicit_v2_compatibility() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path().join("com.example.v2");
+    assert!(run_cli(&[
+        "pack",
+        "create",
+        "-o",
+        root.to_str().unwrap(),
+        "--flat",
+        "--id",
+        "com.example.v2",
+        "--format-blueprint-v2",
+    ])
+    .success());
+    let blueprint: Value =
+        serde_json::from_str(&std::fs::read_to_string(root.join("pipeline.ocblueprint")).unwrap())
+            .unwrap();
+    assert_eq!(blueprint["schema_version"], 2);
+    assert_eq!(blueprint["meta"]["interaction_mode"], "immersive");
+    assert!(blueprint.get("runtime_config").is_none());
 }
 
 #[test]
