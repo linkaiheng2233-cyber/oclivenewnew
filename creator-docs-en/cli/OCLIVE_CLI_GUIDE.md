@@ -58,20 +58,20 @@ With `--json`, **stdout is a single JSON document**; human-readable titles go to
 From repo root:
 
 ```bash
-# Default: v2 blueprint (pipeline.ocblueprint schema_version 2)
+# Blueprint pack (dispatched by exact schema_version)
 cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/mumu --host-version 0.2.0
 cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/legacy-example --profile legacy
-cargo run -p oclive-cli -- pack create -o ./out/my-role --flat --id com.example.demo --name Demo --format-blueprint-v2
+cargo run -p oclive-cli -- pack create -o ./out/my-role --flat --id com.example.demo --name Demo --format-blueprint-v4
 cargo run -p oclive-cli -- pack publish ./out/my-role -o ./dist/com.example.demo-0.1.0.oclivepack
 ```
 
-- **`validate` (default v2)**: `pipeline.ocblueprint` (`meta`, `slot_registry`, at least one `type: llm`, etc.) — see [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md).
+- **`validate` (exact v2/v3/v4 dispatch)**: `pipeline.ocblueprint` (`meta`, `slot_registry`, at least one `type: llm`, etc.). v4 is Stable; v3 is the frozen dual-core Beta — see [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md).
 - **`validate --profile legacy`**: merged `manifest.json` / `settings.json`, `plugin_backends`, `min_runtime_version` vs `--host-version`, etc.
 - **`validate --profile robot-soul`**: RobotSoulPack rules after legacy validation (ROLE_PACK_SPEC §6).
-- **`create`**: minimal pack; prefer **`--format-blueprint-v2`**; with `--flat`, `-o` is the role root.
-- **`publish`**: **`.oclivepack`** ZIP; top-level folder is **`meta.id`** (v2) or **`manifest.id`** (legacy).
+- **`create`**: minimal pack; prefer **`--format-blueprint-v4`** for new Stable packs. `--format-blueprint-v2` remains for compatibility; with `--flat`, `-o` is the role root.
+- **`publish`**: **`.oclivepack`** ZIP; top-level folder is **`meta.id`** (v2/v3/v4) or **`manifest.id`** (legacy).
 
-**JSON Schema**: `kernel/crates/oclive-cli/schemas/pipeline.ocblueprint.v2.schema.json` (v2); legacy: `role_pack_manifest.schema.json`, `role_pack_settings.schema.json`, `role_pack_index.schema.json`.
+**JSON Schema**: `kernel/crates/oclive-cli/schemas/pipeline.ocblueprint.v2.schema.json`, `pipeline.ocblueprint.v3.schema.json`, and `pipeline.ocblueprint.v4.schema.json`; legacy: `role_pack_manifest.schema.json`, `role_pack_settings.schema.json`, `role_pack_index.schema.json`.
 
 ---
 

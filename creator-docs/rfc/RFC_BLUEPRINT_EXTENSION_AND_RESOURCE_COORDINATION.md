@@ -2,8 +2,8 @@
 
 | 元数据 | 值 |
 |--------|-----|
-| 状态 | **边界已确认 · Contract Draft · 运行时未实现** |
-| 最后更新 | 2026-07-28 |
+| 状态 | **边界已确认 · v4 扩展外壳已实现 · Capability / Resource 仍未实现** |
+| 最后更新 | 2026-07-29 |
 | 受众 | 内核、编写器、发行版、目录插件与商业扩展开发者 |
 | 维护范围 | 蓝图扩展最小外壳、能力解析、`ExecutionPlan`、资源协调器与适配器分责 |
 | 非维护范围 | 第三方扩展载荷内部格式、具体 GPU 分配算法、现有 v3 双核 DSL |
@@ -50,9 +50,9 @@
 
 ## 3. 蓝图扩展最小外壳
 
-### 3.1 目标磁盘形状
+### 3.1 Stable v4 磁盘形状
 
-以下是**下一非冻结蓝图 schema 的目标**，不是当前 v2/v3 已实现字段。v3 已冻结，不在 v3 上追加该契约。
+以下外壳已进入 **`schema_version: 4`**。v4 是 v2 的 Stable 后继；v3 继续冻结为双核 Beta，不从 v3 继承 `pipeline`、`zone` 或 `dual_core`。
 
 ```json
 {
@@ -103,6 +103,12 @@ role/
 | Provider 运行时失败 | 走结构化 fallback / degraded；不得静默假装扩展已运行 |
 
 编写器、CLI 和宿主保存蓝图时必须原样保留自己不认识的可选扩展及其文件。只有用户明确删除扩展时才能移除。
+
+**当前实现边界（2026-07-29）**：
+
+- Rust/JSON Schema、CLI/doctor、Host 与角色包编写器已支持 v4 外壳、路径安全和未知载荷 round-trip。
+- Capability Registry 尚未落地，因此可选扩展会保留但不执行；必需扩展会阻止角色激活。
+- “可安装 Provider”与结构化可见降级仍属于下一切片；当前日志不能替代未来的 UI 诊断。
 
 ---
 
@@ -268,8 +274,8 @@ flowchart TD
 
 ## 9. 兼容与版本治理
 
-- 当前 v2/v3 不认识该目标字段；实现前不得把 `extensions` 写入正式蓝图并声称生效。
-- v3 已冻结；使用下一非冻结 schema revision，版本号在 schema/loader/CLI/编写器迁移方案齐备后确定。
+- v4 已登记 `extensions`；v2/v3 仍严格拒绝该字段。
+- v3 已冻结；v4 不继承或解冻 v3 的任意 `steps[]` / `zone` 语义。
 - 核心蓝图结构使用严格未知字段策略；扩展载荷通过外置文件隔离。
 - Core envelope breaking change 走 OCLive 版本与迁移流程；扩展载荷 breaking change 由扩展作者按 `config_schema_version` 负责。
 - 宿主至少保留一个明确的旧格式读取/迁移窗口；编写器只写一个当前 canonical 格式。
@@ -282,7 +288,7 @@ flowchart TD
 ## 10. 实施顺序
 
 1. 收敛当前 JSON Schema、Rust serde 校验、include 与插件挂载口径。
-2. 实现最小 extension envelope、路径安全、required/optional 与编写器 round-trip。
+2. ~~实现最小 extension envelope、路径安全、required/optional 与编写器 round-trip。~~ **已完成（v4）**
 3. 建立 Capability Registry 和只读 Plan Compiler 诊断。
 4. 以 llama-server / Ollama / CosyVoice 建立 Resource Coordinator 最小闭环。
 5. 加入压力、租约、取消、崩溃恢复和不可控外部进程测试。

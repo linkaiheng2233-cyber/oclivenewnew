@@ -4,7 +4,7 @@
 
 ## 零、蓝图专属字段（非角色包）
 
-### `runtime_config`（v3 目标 SSOT）
+### `runtime_config`（Stable v4 SSOT；v3 双核 Beta）
 
 顶层可选段 **`runtime_config`**（**仅蓝图**；角色包创作者视图不暴露）：
 
@@ -21,7 +21,8 @@
 | `remote_presence` / `autonomous_scene` | object | 异地心声 / 虚拟时间换场景 |
 
 - **`schema_version: 2`** 文件若含 `runtime_config`：`pack validate` **警告**，宿主**忽略**该段。  
-- **`schema_version: 3`**：以 `runtime_config` 为准；`meta` 仅保留角色包字段（见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) §0）。
+- **`schema_version: 4`**：Stable 路径，以 `runtime_config` 为准；不接受 v3 专属 `dual_core`。
+- **`schema_version: 3`**：仅保留冻结的双核 Beta；以 `runtime_config` 为准，并允许 `dual_core`。
 
 ---
 

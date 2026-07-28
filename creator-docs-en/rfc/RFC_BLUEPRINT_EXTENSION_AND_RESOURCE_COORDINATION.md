@@ -4,8 +4,8 @@
 
 | Metadata | Value |
 |----------|-------|
-| Status | **Boundary accepted · Contract Draft · runtime not implemented** |
-| Last updated | 2026-07-28 |
+| Status | **Boundary accepted · v4 envelope implemented · Capability/Resource pending** |
+| Last updated | 2026-07-29 |
 | Audience | Kernel, editor, distro, directory-plugin, and commercial extension developers |
 | Scope | Minimal blueprint extension envelope, capability resolution, `ExecutionPlan`, Resource Coordinator, and adapter ownership |
 
@@ -20,9 +20,9 @@
 
 The design follows the same ownership principle as Chat Pro's `adult_extension.json`, but content extensions and blueprint capability extensions remain different contracts.
 
-## Target envelope
+## Stable v4 envelope
 
-This shape belongs to the next non-frozen blueprint schema. It is **not implemented by v2/v3**, and v3 must not be expanded for it.
+This envelope is implemented by **`schema_version: 4`**. v4 is the Stable successor to v2. Frozen dual-core Beta v3 remains separate; v4 does not inherit v3 `pipeline`, `zone`, or `dual_core`.
 
 ```json
 {
@@ -41,6 +41,12 @@ This shape belongs to the next non-frozen blueprint schema. It is **not implemen
 The core owns the instance id, `capability`, optional `provider`, `required`, positive payload version, and safe package-relative `config_ref`. The extension author owns the referenced payload. Large inline configuration and arbitrary root keys are intentionally excluded.
 
 If an optional extension is unavailable, the host preserves it, removes it from the effective plan, and reports a visible degradation. If a required extension is unavailable, role metadata may remain inspectable for repair, but the blueprint cannot be activated. Editors and CLIs must round-trip unknown optional extensions without deleting their payload.
+
+Current implementation boundary (2026-07-29):
+
+- Rust/JSON Schema, CLI/doctor, Host, and the pack editor implement the v4 envelope, path safety, and opaque payload round-trip.
+- The Capability Registry is not implemented yet. Optional declarations are preserved but inactive; required declarations block role activation.
+- Installable-provider suggestions and structured visible degradation remain a later slice; current logs are not the future UI diagnostic.
 
 ## Capability Provider versus Resource Adapter
 
@@ -96,8 +102,8 @@ The first contract should cover resource snapshots, admission results, lease gra
 
 ## Compatibility and rollout
 
-- Do not write `extensions` into production blueprints until schema, loader, CLI, and editor support exist.
-- Use the next non-frozen schema revision; decide its number only with a migration plan.
+- Write `extensions` only in v4; strict v2/v3 contracts still reject it.
+- Frozen v3 remains separate. v4 does not reuse or unfreeze arbitrary `steps[]` / `zone` semantics.
 - Keep the core schema strict and payload schemas namespaced and extension-owned.
 - A role pack may declare minimum capabilities but must not trigger self-updates.
 - First converge current schema/runtime drift, then implement envelope round-trip, capability resolution, a diagnostic Plan Compiler, and finally the LLM/voice resource-coordination slice.

@@ -87,7 +87,7 @@ cargo run -p oclive-cli -- pack migrate-to-blueprint roles\my_role
 |------|------|------|
 | `path` | （位置参数） | 角色包根目录，须含 `manifest.json` |
 | `--remove-legacy` | **true** | 写入 `pipeline.ocblueprint` 后删除 `manifest.json` 与 `settings.json` |
-| （省略 `--remove-legacy`） | — | 加 `--no-remove-legacy` 可保留旧文件（**不推荐**；`pack validate` 默认 v2 会拒绝双轨并存） |
+| （省略 `--remove-legacy`） | — | 加 `--no-remove-legacy` 可保留旧文件（**不推荐**；`pack validate` 默认蓝图 profile 会拒绝双轨并存） |
 
 成功输出示例：`Migrated to roles\my_role\pipeline.ocblueprint (legacy files removed)`。
 
@@ -101,7 +101,7 @@ cargo run -p oclive-cli -- pack migrate-to-blueprint roles\my_role
 cargo run -p oclive-cli -- pack validate roles\my_role
 ```
 
-- 默认 profile 为 **v2**（等同 `default` / `blueprint-v2`）。
+- 默认 profile 为蓝图目录校验（按 `schema_version` 精确分派；本迁移产物为 v2）。
 - 仅维护未迁完的 legacy 包时使用：`pack validate roles\legacy_role --profile legacy`。
 
 **编写器**：打开包 →「运行全部检查」。**主应用**：设置页环境自检 → 加载角色 → 试聊一条。
@@ -139,7 +139,7 @@ cargo run -p oclive-cli -- pack validate roles\my_role
 |------|------|
 | 0–2 | 备份角色目录；阅读本文 §2 映射 |
 | 2–4 | `pack migrate-to-blueprint <角色根>` |
-| 4–6 | `pack validate <角色根>`（默认 v2） |
+| 4–6 | `pack validate <角色根>`（默认蓝图 profile；迁移产物为 v2） |
 | 6–8 | 编写器打开，核对 `meta` 与 `slot_registry`（至少一个 `type: llm`） |
 | 8–10 | 主应用 `load_role` + 试聊；必要时 `oclive doctor` 蓝图项 |
 

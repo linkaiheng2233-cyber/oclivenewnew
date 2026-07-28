@@ -127,7 +127,7 @@ This page is the **naming SSOT** for OCLive. Key rules:
 改一条消息的执行顺序/分支？      → oclive_kernel_host::process_message
 改 Tauri 命令名/前端 invoke？    → distros/desktop-tauri/src/api/*.rs
 改角色包 JSON 能否通过校验？     → oclive_validation
-改磁盘 blueprint 文件名/顶层键？ → 冻结（v2/v3）；仅 RFC 可动
+改磁盘 blueprint 文件名/顶层键？ → 冻结（v2/v3/v4）；仅 RFC 可动
 ```
 
 ### 3.1 Schema 类型例外（`oclive_validation` vs `oclive_kernel_types`）

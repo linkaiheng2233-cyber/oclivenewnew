@@ -8,6 +8,14 @@
 - **默认值**：`1`（见 `default_schema_version`）。
 - **用途**：为未来「破坏性结构调整」预留；当前运行时以 **最新契约** 解析，若将来引入不兼容变更，可提高版本并由加载器分支处理。
 
+## `pipeline.ocblueprint`：精确版本分派
+
+- **v2（兼容）**：保留既有角色包；若出现 `runtime_config`，校验会警告且 v2 加载链忽略该字段。
+- **v3（冻结的双核 Beta）**：保留 `pipeline`、槽位 `zone` 与 `runtime_config.dual_core`，不再承接通用扩展。
+- **v4（Stable）**：新建包的 canonical 格式；`runtime_config` 生效，并支持最小 `extensions` 声明外壳与外置 JSON 载荷；明确拒绝 v3 专属字段。
+- 加载器、CLI 与 doctor 按 `schema_version` **精确分派**；未知版本不会回落为 v2。编写器新建包默认 v4，CLI 以 `pack create --format-blueprint-v4` 生成 v4；导入的 v2 包继续以 v2 无损导出。
+- 当前 v4 只完成声明、命名空间、required/optional、安全 `config_ref`、宿主激活边界与编写器 round-trip。Capability Registry 尚未落地，因此可选扩展保留但不执行，必需扩展阻止激活。
+
 ## `plugin_backends` 与 PLUGIN_V1
 
 - **`plugin_backends`**：可选；省略时记忆 / 情绪 / 事件 / Prompt / **Agent** 为 **builtin**，**`llm` 为 `ollama`**（见 [`PluginBackends`](../../kernel/crates/oclive_kernel_types/src/models/plugin_backends.rs)）。

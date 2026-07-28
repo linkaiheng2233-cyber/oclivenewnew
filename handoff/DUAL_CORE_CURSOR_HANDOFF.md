@@ -29,7 +29,7 @@
 | **P5** | `--monolith --dual-core` 双 pipeline 焊接 | **已完成** | 保留调度器 |
 | **深化** | Method 注册表 · 开发者指南 · 架构图双核条 | **已完成** | [METHOD_REGISTRY.md](../creator-docs/dual-core/METHOD_REGISTRY.md) · [DEVELOPER_GUIDE.md](../creator-docs/dual-core/DEVELOPER_GUIDE.md) · `oclive explain DUAL_CORE` |
 
-**当前发布边界**：默认仍 **v2 + Stable 等价单路径**；双核须蓝图显式 `enabled` + 非空 `experimental`。本地全量验证含 OOCP S13/S14：`npm run check:release` 或 `node examples/oocp-test-suite/run.mjs --include-dual-core`（须 `--features dual_core` 构建）。
+**当前发布边界**：默认仍是 **Stable 单路径**（v2 兼容或 v4 Stable）；双核仅属于冻结的 v3，须蓝图显式 `enabled` + 非空 `experimental`。本地全量验证含 OOCP S13/S14：`npm run check:release` 或 `node examples/oocp-test-suite/run.mjs --include-dual-core`（须 `--features dual_core` 构建）。
 
 ---
 

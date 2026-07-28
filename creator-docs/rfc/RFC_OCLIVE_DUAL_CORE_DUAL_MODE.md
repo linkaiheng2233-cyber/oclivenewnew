@@ -42,7 +42,7 @@
 
 ## 2. 入口控制：默认关闭
 
-- **默认**：与今日相同 — 仅 **Stable 路径**（等价于当前 v2 单编排，`SlotResolver` → `PluginHost` → `process_message`）。
+- **默认**：与今日相同 — 仅 **Stable 路径**（v2 兼容或 v4 Stable 单编排，`SlotResolver` → `PluginHost` → `process_message`）。
 - **显式开启**：脚手架 **`oclive init --dual-core`** 在 **蓝图** 写入 **`runtime_config.dual_core.enabled: true`**（v3 目标形；与 [ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md) 一致）。
 - **非角色包字段**：初级创作者角色包 **不得** 单独开启双核；开关仅蓝图 / 宿主管理员。
 - **legacy `settings.json`**：**不**承载 `dual_core`。

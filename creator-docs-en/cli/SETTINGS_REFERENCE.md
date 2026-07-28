@@ -4,7 +4,7 @@
 
 ## 0. Blueprint-only fields
 
-### `runtime_config` (v3 target SSOT)
+### `runtime_config` (Stable v4 SSOT; v3 dual-core Beta)
 
 | Field | Notes |
 |-------|--------|
@@ -15,6 +15,7 @@
 | `dual_core.enabled` | Dual-core switch; default **false** |
 
 On **schema_version 2**, `runtime_config` triggers a **pack validate warning** and is **ignored** at load.
+On **schema_version 4**, `runtime_config` is active on the Stable path and `dual_core` is rejected. Frozen **schema_version 3** remains only for the dual-core Beta.
 
 [中文](../cli/SETTINGS_REFERENCE.md)
 

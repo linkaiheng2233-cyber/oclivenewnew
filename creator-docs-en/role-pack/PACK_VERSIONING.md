@@ -10,6 +10,14 @@ This page explains **manifest / settings** version fields, unknown-key policy, a
 - **Default**: `1` (`default_schema_version`).
 - **Purpose**: Reserved for future breaking structural changes; runtime currently parses the **latest contract**. If incompatible changes ship, raise the version and branch in the loader.
 
+## `pipeline.ocblueprint`: exact version dispatch
+
+- **v2 (compatibility)**: Existing role packs remain valid. A `runtime_config` member produces a warning and is ignored by the v2 load path.
+- **v3 (frozen dual-core Beta)**: Retains `pipeline`, slot `zone`, and `runtime_config.dual_core`; it does not accept the generic extension envelope.
+- **v4 (Stable)**: Canonical format for newly created packs. `runtime_config` is active and the minimal `extensions` declaration envelope may reference external JSON payloads; v3-only fields are rejected.
+- The host, CLI, and doctor dispatch **exactly** by `schema_version`; an unknown version never falls back to v2. The editor creates v4 packs by default, the CLI offers `pack create --format-blueprint-v4`, and an imported v2 pack round-trips as v2.
+- This v4 slice covers declarations, namespaces, required/optional semantics, safe `config_ref`, host activation boundaries, and editor round-trip only. Until the Capability Registry lands, optional extensions are preserved but inactive and required extensions block activation.
+
 ## `plugin_backends` and PLUGIN_V1
 
 - **`plugin_backends`**: Optional; when omitted, memory / emotion / event / prompt / **Agent** default to **builtin**, **`llm` to `ollama`** (see [`PluginBackends`](../../kernel/crates/oclive_kernel_types/src/models/plugin_backends.rs)).

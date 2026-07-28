@@ -1,6 +1,6 @@
 # 蓝图目录布局（`blueprint/` · 拉取式 SSOT）
 
-**状态**：架构约定（实验功能与 v3 双核可并行）；**宿主加载路径以源码为准**（今日仍读 `distros/chat-pro/roles/{id}/pipeline.ocblueprint`）。  
+**状态**：Stable v4 扩展外壳已落地；v2 兼容、v3 双核 Beta 并行；**宿主加载路径以源码为准**（今日仍读 `distros/chat-pro/roles/{id}/pipeline.ocblueprint`）。
 **读者**：创作者、编写器、Cursor / Agent。  
 **关联**：[ROLE_PACK_BOUNDARY.md](./ROLE_PACK_BOUNDARY.md) · [ROLE_PACK_SPEC.md](../creator-docs/role-pack/ROLE_PACK_SPEC.md)
 
@@ -10,10 +10,10 @@
 
 | 原则 | 说明 |
 |------|------|
-| **蓝图本体干净** | `pipeline.ocblueprint` 只保留 `schema_version`、`meta`（门面子集或指针）、`slot_registry`、`groups`、`runtime_config`、**`includes`**；禁止大段 Markdown、脚本、Comfy 式 `steps[]`。 |
+| **蓝图本体干净** | `pipeline.ocblueprint` 只保留 `schema_version`、`meta`（门面子集或指针）、`slot_registry`、`groups`、`runtime_config`、**`includes`** 与 v4 最小 **`extensions`** 外壳；禁止大段 Markdown、脚本、Comfy 式 `steps[]`。 |
 | **文本与代码外置** | 性格长文与角色文案留在包根 `core_personality.txt` / `prompts/`，由编写器或 Prompt 链管理；专家表单结果、LoRA 说明、修订历史进入 **`blueprint/` 子目录**，只有契约白名单内的 JSON 片段由蓝图 **拉取（include）** 合并。 |
 | **专家模型设施子模块（蓝图侧）独立** | 专家路由 UI、revision、说明文档 → **`blueprint/expert/`**（或 `includes/expert_routing.json`），**不**参与默认 `pack validate` 失败条件。 |
-| **第三方扩展载荷隔离** | 下一非冻结 schema 只在本体保留最小 `extensions` 外壳；载荷进入 `blueprint/extensions/<namespace>/` 并由扩展作者维护。当前 v2/v3 尚未加载该外壳。 |
+| **第三方扩展载荷隔离** | Stable v4 只在本体保留最小 `extensions` 外壳；载荷进入 `blueprint/extensions/<instance>/` 并由扩展作者维护。v2/v3 严格拒绝该字段。 |
 | **弃用类 ComfyUI** | 无节点图执行器；「按钮 → 表单 → 生成 revision → apply」即可。 |
 
 ---
@@ -31,7 +31,7 @@ distros/chat-pro/roles/{role_id}/
 │   │   └── expert.facility.blueprint
 │   ├── revisions/            # 专家/向导 apply 前后快照（降级栈）
 │   │   └── 20260520-143022.json
-│   ├── extensions/           # 目标：第三方扩展载荷；当前 v2/v3 不加载
+│   ├── extensions/           # v4 第三方扩展载荷；核心只校验/保留，不解释载荷
 │   │   └── com.example.live2d.main/
 │   │       └── config.json
 │   └── docs/                 # 给人看的说明（宿主可忽略）
@@ -53,15 +53,15 @@ distros/chat-pro/roles/{role_id}/
 
 | 键 | 说明 |
 |----|------|
-| `schema_version` | `2` 或 `3` |
+| `schema_version` | `2`、冻结的双核 Beta `3`，或 Stable `4` |
 | `meta` | 创作者门面 + 过渡期引擎字段（目标迁至 `runtime_config`） |
 | `slot_registry` | 槽位实例（管理员） |
 | `groups` | 架构图分组（可选） |
-| `runtime_config` | v3 已登记的引擎策略；未知子键按严格契约拒绝 |
+| `runtime_config` | v4 Stable 引擎策略；v3 仅为双核 Beta 兼容；未知子键按严格契约拒绝 |
 | `pipeline` | v3 双核 `stable` / `experimental`（Proposed） |
 | `includes` | **拉取清单**（见 §4） |
 | `expert_overlay` | 可选指针：`active_revision`、`facility_path`（≤ 少量字段） |
-| `extensions` | **目标字段，当前禁止作为已生效能力使用**；进入下一非冻结 schema 后只保存最小外壳，载荷外置 |
+| `extensions` | **仅 v4**：最小声明外壳，载荷由安全 `config_ref` 外置；当前核心不执行未知 Provider |
 
 ### 3.2 禁止出现在本体
 
@@ -115,15 +115,15 @@ distros/chat-pro/roles/{role_id}/
 
 ---
 
-### 4.1 通用扩展载荷（目标契约）
+### 4.1 通用扩展载荷（Stable v4）
 
-通用扩展不复用 `includes` 把任意载荷合并进核心结构。下一非冻结 schema 由 `extensions.<instance>.config_ref` 指向 `blueprint/extensions/<instance>/config.json`：
+通用扩展不复用 `includes` 把任意载荷合并进核心结构。Stable v4 由 `extensions.<instance>.config_ref` 指向 `blueprint/extensions/<instance>/config.json`：
 
 - 核心只校验外壳、路径、必需/可选语义并保持 round-trip。
 - 扩展 Provider 校验和解释自己的载荷。
 - 蓝图不得写显存卸载、进程终止或固定资源分配命令。
 - 资源敏感 Provider 通过 Resource Adapter 接入宿主统一协调；不消耗共享资源的扩展无需实现。
-- 当前 v2/v3 对该外壳没有加载语义，不能提前用于正式包。
+- v2/v3 严格拒绝该外壳；v4 可选声明会保留但暂不执行，必需声明在 Capability Registry 落地前阻止角色激活。
 
 字段与 `ExecutionPlan` / Resource Coordinator 分责见 [RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md](../creator-docs/rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md)。
 
@@ -151,7 +151,7 @@ distros/chat-pro/roles/{role_id}/
 | SSOT 路径 | `distros/chat-pro/roles/{id}/pipeline.ocblueprint` | 可迁至 `blueprint/pipeline.ocblueprint`，根路径保留兼容或 symlink 文档 |
 | `pack validate` | 校验本体、已声明 include 文件及合并后的有效蓝图；`blueprint/docs` 忽略 | 编写器复用同一 Rust/WASM 校验链并显示结构化定位 |
 | `includes` 解析 | **已实现**；现行目录校验要求文件存在，mode 仅 `merge` / `replace`，缺失会阻止 load | 若未来改为可选 include，须新增显式 required/optional 契约，不能靠 lenient helper 猜测 |
-| `extensions` | **未实现**；未知根键不可当作兼容承诺 | 下一非冻结 schema + Provider 校验 + round-trip |
+| `extensions` | **v4 外壳已实现**：声明/路径/载荷 JSON 校验、required/optional、宿主激活边界与编写器 round-trip | Capability Registry、Provider 载荷语义校验与跨发行版结构化诊断 |
 | 专家目录缺失 | 不阻塞加载 | 保持 |
 
 实现前：专家人格等白名单片段放 `blueprint/`，**手动** merge 或由 CLI `expert apply` 写入对应 `includes` 目标文件；`expert_routing.json` 仍由专家设施专用 loader 读取。

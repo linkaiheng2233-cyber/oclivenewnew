@@ -11,7 +11,7 @@
 | 层级 | 文件位置 | 作用 |
 |------|----------|------|
 | **发行版** | 发行版根目录 `distro.oclive.toml`（与 bundled `bin/` 同级） | spawn 时加载的 **HostProfile**：prompt/memory/post_process、`host_flags`、可选 **`[plugin_backends]` 整表替换** |
-| **角色包** | `distros/chat-pro/roles/<id>/pipeline.ocblueprint` → `slot_registry`（v2）；legacy `settings.json` | 六槽默认；可被发行版 profile **整表替换**（若 profile 声明 `[plugin_backends]`） |
+| **角色包** | `distros/chat-pro/roles/<id>/pipeline.ocblueprint` → `slot_registry`（v2/v3/v4 精确分派）；legacy `settings.json` | 六槽默认；可被发行版 profile **整表替换**（若 profile 声明 `[plugin_backends]`） |
 | **会话** | 宿主 DB / 会话覆盖 | 在有效 backends 上临时覆盖字段 |
 
 **不承载于**：蓝图文件 `pipeline.ocblueprint` / blueprint v3 `runtime_config`（v3 冻结，见 handoff）。**不替代** Monolith `monolith.toml`（仅编译期）。后处理链扩展点 RFC（预留）：[RFC_OCLIVE_POST_PROCESS_CHAIN.md](../rfc/RFC_OCLIVE_POST_PROCESS_CHAIN.md)。

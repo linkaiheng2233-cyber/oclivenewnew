@@ -233,7 +233,7 @@ distros/chat-pro/roles/{role_id}/
 
 **禁止**在 `pipeline.ocblueprint` 文件中出现 `module_relations`、`steps`、`entry`（校验报错）。运行时由 `slot_registry` **派生**模块间示意关系，供架构图只读连线。
 
-JSON Schema：`kernel/crates/oclive-cli/schemas/pipeline.ocblueprint.v2.schema.json`。
+JSON Schema：`kernel/crates/oclive-cli/schemas/pipeline.ocblueprint.v2.schema.json`、`pipeline.ocblueprint.v3.schema.json`、`pipeline.ocblueprint.v4.schema.json`。
 
 ---
 
@@ -281,7 +281,7 @@ JSON Schema：`kernel/crates/oclive-cli/schemas/pipeline.ocblueprint.v2.schema.j
 | 会话槽覆盖 | 内存 overlay；架构图改包默认经 `save_role_slot_registry` 写盘 | `set_session_plugin_backend` |
 | Monolith 焊接 | **仅** 脚手架 `monolith.toml` / `process_message_monolith.rs`，**不**随角色包分发 | 同左 |
 
-校验：`cargo run -p oclive-cli -- pack validate <dir>`（**默认 v2**）；legacy 包用 `--profile legacy`。另：`blueprint validate <dir>`。历史实施路线图见 [`BLUEPRINT_V2_IMPLEMENTATION_PLAN.md`](../../handoff/archive/BLUEPRINT_V2_IMPLEMENTATION_PLAN.md)。
+校验：`cargo run -p oclive-cli -- pack validate <dir>`（按声明精确分派 **v2/v3/v4**）；legacy 包用 `--profile legacy`。另：`blueprint validate <dir>`。历史实施路线图见 [`BLUEPRINT_V2_IMPLEMENTATION_PLAN.md`](../../handoff/archive/BLUEPRINT_V2_IMPLEMENTATION_PLAN.md)。
 
 ---
 
@@ -298,7 +298,7 @@ cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/mumu --host-ve
 
 ### Portable Core（`--profile portable-core`）
 
-Portable Core 是跨发行版的**最低通用契约**，不是发行版功能上限。它要求角色包使用 v2/v3 `pipeline.ocblueprint`，并携带所有合规宿主都能理解的基础人格 Prompt 与七张默认情绪图：
+Portable Core 是跨发行版的**最低通用契约**，不是发行版功能上限。它要求角色包使用 v2/v3/v4 `pipeline.ocblueprint`，并携带所有合规宿主都能理解的基础人格 Prompt 与七张默认情绪图：
 
 | 规则 | 说明 |
 |------|------|
@@ -415,14 +415,14 @@ cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/my-role --host
 
 | 命令 | 作用 |
 |------|------|
-| `pack validate <dir>` | **默认** v2 蓝图目录校验 |
-| `pack validate <dir> --profile portable-core` | v2/v3 + Portable Core（基础人格 + 七张默认情绪图） |
+| `pack validate <dir>` | 按 `schema_version` 精确分派 v2/v3/v4 蓝图目录校验 |
+| `pack validate <dir> --profile portable-core` | v2/v3/v4 + Portable Core（基础人格 + 七张默认情绪图） |
 | `pack validate-persona <file>` | 校验 `.ocpersona` Persona 迁移文件 |
 | `pack validate-memory <file>` | 校验 `.ocmemory` Memory 迁移文件 |
 | `pack validate <dir> --profile legacy` | legacy manifest/settings |
 | `pack validate <dir> --profile robot-soul` | legacy + RobotSoulPack（见 §6） |
 | `pack create -o <out> --id <id> [--flat]` | 生成最小可校验包（`--flat` 时 `<out>` 即为角色根） |
-| `pack publish <dir> [-o file.oclivepack]` | ZIP 打包；唯一顶层目录名为 `meta.id`（v2/v3）或 `manifest.id`（legacy） |
+| `pack publish <dir> [-o file.oclivepack]` | ZIP 打包；唯一顶层目录名为 `meta.id`（v2/v3/v4）或 `manifest.id`（legacy） |
 | `init … --skip-role-pack` | 生成内核工程时不创建 `distros/chat-pro/roles/` |
 
 详见 [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md)。

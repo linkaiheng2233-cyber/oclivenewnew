@@ -6,6 +6,7 @@
 
 ### Added
 
+- **Stable v4 蓝图扩展外壳**：`pipeline.ocblueprint` 新增严格、最小的 `extensions` 声明与安全外置 JSON 载荷，v4 作为 v2 的 Stable 后继并明确不继承冻结的 v3 双核字段。Host、CLI、doctor、插件槽位写回与角色包编写器均按 v2/v3/v4 精确分派；未知版本不再回落 v2。可选扩展会无损保留但暂不执行，必需扩展在 Capability Registry 落地前阻止角色激活；编写器新建包默认 v4，CLI 新增 `pack create --format-blueprint-v4`，旧 v2 保持兼容且不自动改写。
 - **llama.cpp LoRA GGUF 本地闭环**：Chat Pro 与 AI Theater 共用的“本地模型设置”现可导入原始 LoRA GGUF 或 `.ocadapter` v1；内核校验 ZIP 路径/大小、SHA-256、GGUF adapter 元数据与基础模型 architecture，采用暂存+原子替换管理本地副本，并以托管 `llama-server --lora` 启用。独立完整基座可用同名 `.ocmodel.json` 声明来源与成人分级；基座与 LoRA 不固定绑定，可自由选择通过兼容性验证的组合。成人基座和适配器均要求显式确认，切换基座会自动停用旧 LoRA，防止相同架构的错误适配器或消融 LoRA 串入新组合。启用失败恢复此前数据库、环境和进程选择；Hugging Face/PEFT 明确留给后续独立转换插件。
 - **DeepSeek 拟人示例角色包**：新增社区创作、非官方的 `deepseek` Portable Core 角色包，包含核心人设、空的只读记忆种子、三种用户身份、认知边界、默认场景与七张透明立绘；该角色包不代表 DeepSeek 官方授权或背书。
 - **Persona / Memory 跨发行版独立迁移**：新增 `.ocpersona` 与 `.ocmemory` JSON v1 契约、共享校验和桌面宿主导入导出 API；角色包可选 `memory_seed.json` 作为创作者只读初始记忆。Persona 导入只恢复可变人设且不得覆盖核心人设；Memory 使用合并导入，明确排除聊天记录、短期记忆缓存与临时局面状态。内置角色包、Robot Soul 示例与 CLI 新建/初始化脚手架已统一生成该 seed 容器。

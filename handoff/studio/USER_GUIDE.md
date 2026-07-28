@@ -33,7 +33,7 @@
 ### 创作模式编辑流程
 
 1. **选择或新建角色包**：在左侧列表选中 `distros/chat-pro/roles/<roleId>/`，或「新建角色包」生成 **v2** 骨架（**`pipeline.ocblueprint`** + `core_personality.txt` 等，见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)）。**v1（已废弃）** 的 `manifest.json` / `settings.json` 仅用于迁移，见 [V1_TO_V2_MIGRATION.md](../role-pack/V1_TO_V2_MIGRATION.md)。
-2. **编辑蓝图**：在 **`pipeline.ocblueprint`** 中维护 `meta`（名称、描述、人格等）与 **`slot_registry`**（多实例槽位、`type` + `backend`）。保存后运行 **校验**（对齐 `oclive pack validate`，默认 v2）。
+2. **编辑蓝图**：在 **`pipeline.ocblueprint`** 中维护 `meta`（名称、描述、人格等）与 **`slot_registry`**（多实例槽位、`type` + `backend`）。保存后运行 **校验**（对齐 `oclive pack validate`，精确分派 v2/v3/v4；Stable 新包用 v4）。
 3. **资源与场景**：编辑 `core_personality.txt`、场景目录等；顶栏 **架构图** 展示 `slot_registry` 与可选 **`groups`**（只读归组，不落盘边表）。
 4. **保存**：写入当前 roles 根；若配置了 `ocliveProjectRoot`，部分操作可触发运行时热重载（见 `oclive dev`）。
 

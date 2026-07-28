@@ -1,14 +1,14 @@
 # 角色包与蓝图 · 职责边界（SSOT）
 
 **读者**：创作者、宿主集成方、Cursor / Agent。  
-**状态**：与 **v2 已交付** 对齐；**双核** 字段见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)（Opt-in Beta，默认关）。
+**状态**：与 **Stable v4 扩展外壳已交付** 对齐；v2 保持兼容，**v3 双核**见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)（Opt-in Beta，默认关）。
 
 | 文档 | 用途 |
 |------|------|
 | 角色包（入门） | [ROLE_PACK_SPEC.md](../creator-docs/role-pack/ROLE_PACK_SPEC.md) |
 | 蓝图 / 系统配置 | [SETTINGS_REFERENCE.md](../creator-docs/cli/SETTINGS_REFERENCE.md) |
 | **蓝图目录 `blueprint/`（拉取式、本体保持瘦）** | **[BLUEPRINT_FOLDER_LAYOUT.md](./BLUEPRINT_FOLDER_LAYOUT.md)** |
-| **蓝图扩展外壳 / 资源协调（目标契约）** | **[RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md](../creator-docs/rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md)** |
+| **蓝图扩展外壳 / 资源协调** | **[RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md](../creator-docs/rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md)** |
 | 双核对齐 | [DUAL_CORE_CURSOR_HANDOFF.md](DUAL_CORE_CURSOR_HANDOFF.md) |
 
 ---
@@ -20,7 +20,7 @@
 | **角色包** | 角色身份、人格、关系、提示词与场景**内容** | **初级创作者** |
 | **蓝图** | 槽位实例、后端路由、模型名、交互/记忆/远程策略、双核开关等**系统配置** | **高级开发者 / 宿主管理员** |
 
-**物理落盘（今日）**：v2 仍以 **`distros/chat-pro/roles/{id}/pipeline.ocblueprint`** 为宿主加载入口（`meta` + `slot_registry` + 可选 `groups`）。**逻辑上**分责；外置片段、专家修订与说明放入 **`distros/chat-pro/roles/{id}/blueprint/`**，经本体 **`includes`** 拉取合并（见 [BLUEPRINT_FOLDER_LAYOUT.md](./BLUEPRINT_FOLDER_LAYOUT.md)），**禁止**把长文与向导结果搅进蓝图 JSON。编写器 / CLI 应按角色分视图编辑，避免初级创作者改 `slot_registry`。
+**物理落盘（今日）**：v2/v3/v4 均以 **`distros/chat-pro/roles/{id}/pipeline.ocblueprint`** 为宿主加载入口；新包 canonical 格式为 **Stable v4**。**逻辑上**分责；外置片段、扩展载荷、专家修订与说明放入 **`distros/chat-pro/roles/{id}/blueprint/`**，经 `includes` 或 v4 `extensions.*.config_ref` 引用（见 [BLUEPRINT_FOLDER_LAYOUT.md](./BLUEPRINT_FOLDER_LAYOUT.md)），**禁止**把长文与向导结果搅进蓝图 JSON。
 
 **legacy**：`manifest.json` + `settings.json` 已废弃，**不得**与 v2 蓝图并存；引擎字段应视为**蓝图侧**，非「角色门面」。
 
@@ -89,7 +89,7 @@
 
 **`blueprint/` 卫星目录**（可选）：`includes/`、`overlays/`、`revisions/`、`docs/` — **不**替代 `pipeline.ocblueprint` 路径；专家文档放此处**不影响**默认蓝图校验（详见 [BLUEPRINT_FOLDER_LAYOUT.md](./BLUEPRINT_FOLDER_LAYOUT.md)）。
 
-### 3.2 通用蓝图扩展外壳（下一非冻结 schema · 目标）
+### 3.2 通用蓝图扩展外壳（Stable v4）
 
 通用扩展沿用“底座归 OCLive、载荷归扩展作者”的原则，但不把第三方字段不断追加到蓝图根：
 
@@ -101,11 +101,12 @@
 - 蓝图只声明能力意图；宿主把蓝图、`HostProfile`、用户设置和能力注册表编译为进程内 `ExecutionPlan`。
 - 使用共享 GPU/内存/进程的能力另接 Resource Adapter；纯文本或纯配置扩展不需要资源适配器。
 - 未知可选扩展须保留并可见降级；未知必需扩展允许查看角色以修复，但不得激活该蓝图。
-- 当前 v2/v3 **尚未实现**该字段，且 v3 已冻结；正式包不得提前写入并声称生效。
+- v4 已实现外壳、路径安全、required/optional 与编写器 round-trip；v2/v3 仍严格拒绝该字段。
+- Capability Registry 尚未落地：可选声明保留但暂不执行；必需声明阻止激活。结构化可见降级仍是后续工作。
 
 完整边界与接入闭环只维护于 [蓝图扩展与资源协调 RFC](../creator-docs/rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md)，本文不复制其字段和资源协议。
 
-### 3.3 `runtime_config`（蓝图 · v3 目标 SSOT）
+### 3.3 `runtime_config`（Stable v4 SSOT；v3 双核 Beta 兼容）
 
 | 子字段 | 说明 |
 |--------|------|
@@ -116,7 +117,7 @@
 | `dual_core.enabled` | 双核开关，默认 **`false`** |
 | `identity_binding` / `evolution` / `ollama_model` / `remote_presence` / `autonomous_scene` | 引擎策略（可选） |
 
-v2 文件若含 `runtime_config`：`pack validate` **警告并忽略**；请升 **`schema_version: 3`**。
+v2 文件若含 `runtime_config`：`pack validate` **警告并忽略**；稳定蓝图请升 **`schema_version: 4`**，只有双核 Beta 使用 v3。
 
 ### 3.4 自 `settings.json` 剥离的引擎字段（legacy → 蓝图）
 
@@ -146,13 +147,13 @@ v2 文件若含 `runtime_config`：`pack validate` **警告并忽略**；请升 
 | 项 | 今日 | 目标 |
 |----|------|------|
 | 文件 | 单文件 `pipeline.ocblueprint` | 可选拆 `role.meta.json` + `pipeline.ocblueprint`（未排期） |
-| 引擎字段 | 多在 `meta.*` | 顶层 **`runtime_config`**（v3 草案） |
-| CLI | `pack validate` 全量 v2/v3 | **`--profile creator`** 已实现（§2 子集 + `prompts/`；**不**校验 `slot_registry` / `pipeline`） |
+| 引擎字段 | v2 多在 `meta.*` | v4 顶层 **`runtime_config`** |
+| CLI | `pack validate` 全量 v2/v3/v4 | **`--profile creator`** 已实现（§2 子集 + `prompts/`；**不**校验 `slot_registry` / `pipeline`） |
+| 编写器 | 新建 v4；导入 v2 后无损保持 v2 | 默认「角色」视图 / 高级「蓝图」视图 |
 
-**`--profile creator` 与完整示例包**：`distros/chat-pro/roles/mumu` 等**完整示例包**含 evolution、`slot_registry` 与引擎向字段，应用**默认** `pack validate`（全量 v2/v3）。对 **`--profile creator`** 会失败 — **不是 bug**，说明该包超出「纯创作者子集」。验证 creator profile 请用 `pack create` 生成的最小包或仅含 §2 字段的包。
-| 编写器 | 全字段编辑 | 默认「角色」视图 / 高级「蓝图」视图 |
+**`--profile creator` 与完整示例包**：`distros/chat-pro/roles/mumu` 等**完整示例包**含 evolution、`slot_registry` 与引擎向字段，应用**默认** `pack validate`（全量 v2/v3/v4）。对 **`--profile creator`** 会失败 — **不是 bug**，说明该包超出「纯创作者子集」。验证 creator profile 请用 `pack create` 生成的最小包或仅含 §2 字段的包。
 
-**v2 与 v3 并存**：`schema_version: 3` 不自动升级 v2 包（见 [DUAL_CORE_CURSOR_HANDOFF.md](DUAL_CORE_CURSOR_HANDOFF.md) Q10）。
+**v2 / v3 / v4 并存**：宿主不自动改写旧包；编写器导入 v2 后仍以 v2 导出，新建包默认 v4。
 
 ---
 
@@ -186,12 +187,13 @@ v2 文件若含 `runtime_config`：`pack validate` **警告并忽略**；请升 
 ```text
 distros/chat-pro/roles/{id}/pipeline.ocblueprint
   ├─ meta（创作者子集 + 过渡期引擎字段）
-  ├─ runtime_config（目标：系统配置 SSOT）
+  ├─ runtime_config（v4 Stable 系统配置 SSOT；v3 双核 Beta 兼容）
   ├─ slot_registry（蓝图）
-  ├─ groups / pipeline（蓝图 · 双核 Proposed）
-  └─ extensions（下一非冻结 schema · 目标；当前未加载）
+  ├─ groups / includes（蓝图）
+  ├─ pipeline（仅 v3 双核 Beta）
+  └─ extensions（仅 v4；可选保留、必需声明在当前阶段阻止激活）
         ↓
-Plan Compiler（目标）→ SlotResolver / PluginHost → process_message
+Capability Registry / Plan Compiler（目标）→ SlotResolver / PluginHost → process_message
 ```
 
 会话 **`set_session_plugin_backend`** 覆盖槽位枚举，**不写回**角色包；高危能力仍走 **插件 manifest + grants**。

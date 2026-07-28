@@ -338,7 +338,7 @@ cargo run -p oclive-cli -- test --oocp -o .
 在仓库根目录：
 
 ```bash
-# 默认：v2 蓝图（pipeline.ocblueprint schema_version 2）
+# 蓝图角色包（按 schema_version 精确分派）
 cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/mumu --host-version 0.2.0
 # legacy manifest/settings 包
 cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/legacy-example --profile legacy
@@ -350,19 +350,19 @@ cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/mumu --profile
 cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/mumu --profile portable-core
 cargo run -p oclive-cli -- pack validate-persona ./exports/mumu.ocpersona
 cargo run -p oclive-cli -- pack validate-memory ./exports/mumu.ocmemory
-cargo run -p oclive-cli -- pack create -o ./out/my-role --flat --id com.example.demo --name Demo --format-blueprint-v2
+cargo run -p oclive-cli -- pack create -o ./out/my-role --flat --id com.example.demo --name Demo --format-blueprint-v4
 cargo run -p oclive-cli -- pack publish ./out/my-role -o ./dist/com.example.demo-0.1.0.oclivepack
 ```
 
-- **`validate`（默认 v2/v3）**：校验 `pipeline.ocblueprint`（`meta`、`slot_registry`、至少一个 `type: llm` 等）；**v3** 含 `runtime_config` / `pipeline`；**v2** 含 `runtime_config` 时仅警告。见 [`ROLE_PACK_SPEC.md`](../role-pack/ROLE_PACK_SPEC.md)。
+- **`validate`（精确 v2/v3/v4 分派）**：校验 `pipeline.ocblueprint`（`meta`、`slot_registry`、至少一个 `type: llm` 等）；**v4** 是 Stable，**v3** 为冻结的双核 Beta，**v2** 含 `runtime_config` 时仅警告。见 [`ROLE_PACK_SPEC.md`](../role-pack/ROLE_PACK_SPEC.md)。
 - **`validate --profile creator`**：仅角色包（`meta` 创作者子集 + **`prompts/`**）；不校验 `slot_registry` / `runtime_config`。见 [ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md)。
 - **`validate --profile legacy`**：校验 `manifest.json` / `settings.json` 合并、`plugin_backends`、`min_runtime_version` 与 `--host-version` 等（旧包路径）。
 - **`validate --profile robot-soul`**：在 **legacy** 校验通过后追加 RobotSoulPack 规则（见 ROLE_PACK_SPEC §6）。
-- **`validate --profile portable-core`**：校验 v2/v3 蓝图，以及非空 `core_personality.txt`、启用的 `portrait_catalog` 和七个固定默认情绪图片 ID；发行版增强能力不在此 profile 内。
-- **`create`**：生成最小可校验目录；推荐 **`--format-blueprint-v2`**（写入 `pipeline.ocblueprint`）；`--flat` 时 `-o` 即为角色根。
-- **`publish`**：将角色目录打成 **ZIP**，扩展名 **`.oclivepack`**；ZIP 内顶层文件夹名为包内 **`meta.id`**（v2）或 **`manifest.id`**（legacy）。
+- **`validate --profile portable-core`**：校验 v2/v3/v4 蓝图，以及非空 `core_personality.txt`、启用的 `portrait_catalog` 和七个固定默认情绪图片 ID；发行版增强能力不在此 profile 内。
+- **`create`**：生成最小可校验目录；Stable 新包推荐 **`--format-blueprint-v4`**，`--format-blueprint-v2` 仅保留兼容；`--flat` 时 `-o` 即为角色根。
+- **`publish`**：将角色目录打成 **ZIP**，扩展名 **`.oclivepack`**；ZIP 内顶层文件夹名为包内 **`meta.id`**（v2/v3/v4）或 **`manifest.id`**（legacy）。
 
-**JSON Schema**（IDE / `ajv` 等）：`kernel/crates/oclive-cli/schemas/pipeline.ocblueprint.v2.schema.json`（v2）；legacy 见 `role_pack_manifest.schema.json`、`role_pack_settings.schema.json`、`role_pack_index.schema.json`。
+**JSON Schema**（IDE / `ajv` 等）：`kernel/crates/oclive-cli/schemas/pipeline.ocblueprint.v2.schema.json`、`pipeline.ocblueprint.v3.schema.json`、`pipeline.ocblueprint.v4.schema.json`；legacy 见 `role_pack_manifest.schema.json`、`role_pack_settings.schema.json`、`role_pack_index.schema.json`。
 
 ---
 
