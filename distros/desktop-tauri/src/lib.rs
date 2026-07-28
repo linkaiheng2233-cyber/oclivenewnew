@@ -221,13 +221,12 @@ pub fn run() {
                 roles_for_watcher.clone(),
                 resource_dir,
             );
-            let roles_bg = roles_for_watcher.clone();
             let directory_plugins = app
                 .state::<state::SharedAppState>()
                 .directory_plugins
                 .clone();
             tauri::async_runtime::spawn(async move {
-                directory_plugins.rescan_plugin_roots(roles_bg.as_path());
+                directory_plugins.ensure_plugin_roots_scanned();
             });
             let hk = oclive_kernel_host::infrastructure::hotkey_bindings::HotkeyBindingsFile::load(
                 app.state::<state::SharedAppState>()

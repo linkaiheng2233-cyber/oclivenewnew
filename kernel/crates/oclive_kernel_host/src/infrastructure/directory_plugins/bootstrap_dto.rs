@@ -208,6 +208,7 @@ pub fn directory_plugin_bootstrap_dto(
     role_id: Option<String>,
 ) -> DirectoryPluginBootstrapDto {
     let rt = &state.directory_plugins;
+    rt.ensure_plugin_roots_scanned();
     let host = rt.host();
     let rid = role_id
         .as_deref()
