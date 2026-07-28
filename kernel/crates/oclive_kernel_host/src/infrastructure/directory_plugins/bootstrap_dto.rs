@@ -3,6 +3,7 @@
 use crate::infrastructure::directory_plugins::{
     normalize_ui_slot_appearance_id, HostPluginsFile, OclivePluginManifest, UiSlotDecl,
 };
+use crate::infrastructure::plugin_protocol::plugin_asset_url;
 use crate::infrastructure::plugin_state::{PluginStateFile, RolePluginState};
 use crate::state::AppState;
 use serde::Serialize;
@@ -75,7 +76,7 @@ fn plugin_ui_slot_dto_from_decl(pid: &str, decl: &UiSlotDecl) -> Option<PluginUi
         .map(|s| s.trim())
         .filter(|s| !s.is_empty())
         .map(|s| s.replace('\\', "/"));
-    let url = format!("https://ocliveplugin.localhost/{}/{}", pid, entry_norm);
+    let url = plugin_asset_url(pid, &entry_norm);
     let bridge_events = decl
         .bridge
         .as_ref()
@@ -327,6 +328,7 @@ pub fn directory_plugin_bootstrap_dto(
 mod tests {
     use super::plugin_ui_slot_dto_from_decl;
     use crate::infrastructure::directory_plugins::UiSlotDecl;
+    use crate::infrastructure::plugin_protocol::plugin_asset_url;
 
     #[test]
     fn slot_dto_carries_its_bridge_event_allowlist() {
@@ -338,6 +340,7 @@ mod tests {
         .unwrap();
 
         let dto = plugin_ui_slot_dto_from_decl("plugin.a", &decl).unwrap();
+        assert_eq!(dto.url, plugin_asset_url("plugin.a", "slots/sidebar.html"));
         assert_eq!(dto.bridge_events, ["role:switched", "message:sent"]);
         let json = serde_json::to_value(dto).unwrap();
         assert_eq!(

@@ -29,6 +29,10 @@ describe('directoryShellBootstrap', () => {
       'plugin.a',
     )).toEqual({ pluginId: 'plugin.a', assetRel: 'ui/index.html' })
     expect(parseDirectoryShellIdentity(
+      'ocliveplugin://localhost/plugin.a/ui/index.html',
+      'plugin.a',
+    )).toEqual({ pluginId: 'plugin.a', assetRel: 'ui/index.html' })
+    expect(parseDirectoryShellIdentity(
       'https://ocliveplugin.localhost/plugin.b/ui/index.html',
       'plugin.a',
     )).toBeNull()

@@ -97,6 +97,10 @@ test.describe('Tauri native window (A1.1c smoke)', () => {
       const frame = await browser.$('#oclive-directory-shell-frame')
       await frame.waitForDisplayed({ timeout: 60_000 })
       expect(await frame.getAttribute('sandbox')).toBe('allow-scripts')
+      const expectedShellUrl = process.platform === 'win32'
+        ? 'https://ocliveplugin.localhost/com.oclive.example.minimal/ui/index.html'
+        : 'ocliveplugin://localhost/com.oclive.example.minimal/ui/index.html'
+      expect(await frame.getAttribute('src')).toBe(expectedShellUrl)
       expect(await browser.$('.left-pane').isExisting()).toBe(false)
 
       await browser.switchToFrame(frame)

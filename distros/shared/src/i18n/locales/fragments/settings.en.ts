@@ -124,7 +124,7 @@ export default {
     pluginsPanelHint1:
       'Declare settings.panel in the plugin manifest ui_slots to embed a settings page here.',
     pluginsPanelHint2:
-      'Same loading rules as chat_toolbar: https://ocliveplugin.localhost/plugin-id/entry; order/hide in plugin manager.',
+      'Same loading rules as chat_toolbar through the platform-mapped OCLive plugin asset URL; order/hide in plugin manager.',
     iframeSavedInfo: 'Saved. Restart the app for forced iframe to apply fully.',
     userIdentitySectionTitle: 'User identity',
     userIdentitySectionLead:

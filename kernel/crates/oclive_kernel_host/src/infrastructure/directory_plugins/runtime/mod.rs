@@ -12,6 +12,7 @@ use dashmap::DashMap;
 use super::manifest::{normalize_ui_slot_appearance_id, OclivePluginManifest};
 use crate::domain::host_profile::{self, HostProfile};
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
+use crate::infrastructure::plugin_protocol::plugin_asset_url;
 use crate::infrastructure::plugin_state::{PluginStateFile, PluginStateStore, RolePluginState};
 use crate::models::ui_config::UiConfig;
 
@@ -625,11 +626,7 @@ impl DirectoryPluginRuntime {
         if entry.is_empty() {
             return None;
         }
-        // Windows WebView2 uses https://scheme.localhost/…
-        Some(format!(
-            "https://ocliveplugin.localhost/{}/{}",
-            plugin_id, entry
-        ))
+        Some(plugin_asset_url(plugin_id, entry))
     }
 }
 

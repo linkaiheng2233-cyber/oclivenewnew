@@ -36,6 +36,7 @@ fn cors_origin_accepts_local_tools_and_rejects_public_websites() {
         "tauri://localhost",
         "https://tauri.localhost",
         "https://ocliveplugin.localhost",
+        "ocliveplugin://localhost",
     ] {
         let value = origin
             .parse::<axum::http::HeaderValue>()

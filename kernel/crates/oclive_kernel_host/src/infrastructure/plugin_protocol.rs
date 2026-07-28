@@ -8,6 +8,23 @@
 use crate::infrastructure::directory_plugins::OclivePluginManifest;
 use std::path::Path;
 
+/// Build the platform-specific URL that Tauri maps to the `ocliveplugin` protocol.
+///
+/// Windows and Android map custom protocols onto HTTP(S) hostnames. The
+/// desktop window enables `useHttpsScheme`, so those targets use HTTPS.
+/// macOS, iOS and Linux retain the native custom scheme.
+#[must_use]
+pub fn plugin_asset_url(plugin_id: &str, asset_rel: &str) -> String {
+    #[cfg(any(target_os = "windows", target_os = "android"))]
+    {
+        format!("https://ocliveplugin.localhost/{}/{}", plugin_id, asset_rel)
+    }
+    #[cfg(not(any(target_os = "windows", target_os = "android")))]
+    {
+        format!("ocliveplugin://localhost/{}/{}", plugin_id, asset_rel)
+    }
+}
+
 /// Inject `window.OclivePluginBridge` into the HTML; enabled when the manifest contains `bridge` and the asset path matches.
 pub fn inject_plugin_bridge_script(
     html: &str,
@@ -117,7 +134,7 @@ pub fn plugin_asset_from_request_uri(uri: &str) -> Option<(String, String)> {
 
 #[cfg(test)]
 mod tests {
-    use super::{inject_plugin_bridge_script, plugin_asset_from_request_uri};
+    use super::{inject_plugin_bridge_script, plugin_asset_from_request_uri, plugin_asset_url};
     use crate::infrastructure::directory_plugins::OclivePluginManifest;
 
     #[test]
@@ -160,6 +177,21 @@ mod tests {
                 "com.oclive.voice.asr".to_string(),
                 "ui/sidebar.html".to_string()
             ))
+        );
+    }
+
+    #[test]
+    fn emits_platform_mapped_plugin_asset_url() {
+        let url = plugin_asset_url("com.example.plugin", "ui/index.html");
+        #[cfg(any(target_os = "windows", target_os = "android"))]
+        assert_eq!(
+            url,
+            "https://ocliveplugin.localhost/com.example.plugin/ui/index.html"
+        );
+        #[cfg(not(any(target_os = "windows", target_os = "android")))]
+        assert_eq!(
+            url,
+            "ocliveplugin://localhost/com.example.plugin/ui/index.html"
         );
     }
 

@@ -120,7 +120,7 @@ export default {
     pluginsPanelHint1:
       '在插件 manifest 的 ui_slots 中声明 slot 为 settings.panel，即可在此嵌入配置页。',
     pluginsPanelHint2:
-      '与 chat_toolbar 相同，使用 https://ocliveplugin.localhost/plugin-id/entry 加载；可在插件管理中调整顺序或隐藏。',
+      '与 chat_toolbar 相同，使用平台映射的 OCLive 插件资源地址加载；可在插件管理中调整顺序或隐藏。',
     iframeSavedInfo: '已保存。重启应用后强制 iframe 模式将完全生效。',
     userIdentitySectionTitle: '用户身份',
     userIdentitySectionLead:

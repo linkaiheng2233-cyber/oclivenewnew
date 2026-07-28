@@ -229,7 +229,7 @@ fn is_allowed_api_origin(origin: &axum::http::HeaderValue) -> bool {
     };
     if matches!(
         origin,
-        "https://tauri.localhost" | "https://ocliveplugin.localhost"
+        "https://tauri.localhost" | "https://ocliveplugin.localhost" | "ocliveplugin://localhost"
     ) {
         return true;
     }

@@ -36,7 +36,11 @@ export function parseDirectoryShellIdentity(
 ): DirectoryShellIdentity | null {
   try {
     const url = new URL(shellUrl)
-    if (url.protocol !== 'https:' || url.hostname !== 'ocliveplugin.localhost')
+    const isNativeCustomProtocol
+      = url.protocol === 'ocliveplugin:' && url.hostname === 'localhost'
+    const isMappedHttpsProtocol
+      = url.protocol === 'https:' && url.hostname === 'ocliveplugin.localhost'
+    if (!isNativeCustomProtocol && !isMappedHttpsProtocol)
       return null
     const segments = url.pathname.split('/').filter(Boolean).map((segment) => {
       const decoded = decodeURIComponent(segment)

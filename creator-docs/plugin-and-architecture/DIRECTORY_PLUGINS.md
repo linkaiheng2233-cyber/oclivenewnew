@@ -1,6 +1,6 @@
 # 目录式进程插件（Directory Plugins）— 架构与契约
 
-本文描述用户选型 **A1–C1** 下**当前实现**：`distros/chat-pro/plugins/` 扫描、`manifest.json`、子进程 JSON-RPC、**整壳 UI**（`https://ocliveplugin.localhost/…`）、**统一门面命令** `directory_plugin_invoke`（等价于「动态 Tauri 命令」），以及**开发者模式**从额外根目录加载。
+本文描述用户选型 **A1–C1** 下**当前实现**：`distros/chat-pro/plugins/` 扫描、`manifest.json`、子进程 JSON-RPC、**整壳 UI**（平台映射的 `ocliveplugin` 自定义协议）、**统一门面命令** `directory_plugin_invoke`（等价于「动态 Tauri 命令」），以及**开发者模式**从额外根目录加载。
 
 **Wire 格式**：与现有 Remote 侧车一致（HTTP POST JSON-RPC 2.0、请求头 `x-oclive-remote-protocol` 等），见 [REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md)。
 
@@ -101,7 +101,7 @@
 - 只有 Vite DEV + **`VITE_OCLIVE_UNSAFE_INLINE_PLUGIN_VUE=1`** + `force_iframe_mode=false` 三项同时满足时，宿主才会挂载 **`DirectoryShellApp.vue`** + **`AsyncPluginVue`**。该模式继承主 WebView 权限，只用于审过源码的本地调试。
 - HTML 入口缺失或不可达时回退内置主界面，不再为了体验自动执行不可信 Vue。
 
-**`shellUrl` 形态**：`https://ocliveplugin.localhost/<manifest.id>/<entry>`（Windows WebView2 下由 Tauri 将自定义协议映射为该 HTTPS 主机名）。
+**`shellUrl` 形态**：Linux / macOS / iOS 使用 `ocliveplugin://localhost/<manifest.id>/<entry>`；Windows / Android 在宿主启用 `useHttpsScheme` 后使用 `https://ocliveplugin.localhost/<manifest.id>/<entry>`。两种形式均由同一个 `ocliveplugin` 协议处理器提供资源。
 
 **静态资源**：由宿主自定义 `ocliveplugin` protocol 从磁盘插件根读取（路径穿越会拒绝）。协议处理器只接受 Wry 回传的 `ocliveplugin://localhost/<id>/<entry>` 与映射后的 `http(s)://ocliveplugin.localhost/<id>/<entry>`；拒绝时返回 `PLUGIN_ASSET_URI_INVALID`，并写入 `oclive_plugin` 日志。整壳 frame **没有** custom-protocol remote IPC capability；所有调用经 source-bound parent broker 转发。broker 在首次 `load` 后发放一次性随机绑定 token；同一 frame 后续导航会被撤销权限，避免跨插件页面继承旧身份。禁止为 `https://ocliveplugin.localhost/**` 恢复 remote capability 或旧式 `dangerousRemoteDomainIpcAccess`。
 
@@ -153,7 +153,7 @@
 通用规则：
 
 - 若 manifest **无** **`shell`** 段，可在 **`ui_slots`** 中声明嵌入 UI：**`entry`** 为相对插件根的 HTML（**iframe 回退**）。
-- 可选 **`vueComponent`**：相对插件根的 **`.vue`** 路径（如 `"slots/ToolbarButton.vue"`），仅供显式 unsafe DEV 调试；发行构建始终使用 `entry` HTML（`https://ocliveplugin.localhost/<id>/<entry>`）。
+- 可选 **`vueComponent`**：相对插件根的 **`.vue`** 路径（如 `"slots/ToolbarButton.vue"`），仅供显式 unsafe DEV 调试；发行构建始终使用平台映射的 `ocliveplugin` 自定义协议加载 `entry` HTML。
 - **含 `shell` 的插件不参与插槽**（避免与整壳重复）。
 - 插槽页若需调用宿主能力：在对应 **`ui_slots[]` 条目**上配置 **`bridge`**。iframe 页仅当请求资源与 **`entry`** 一致时注入 `OclivePluginBridge`；**原生 Vue 插槽**通过 `inject('oclive')` 获得 API（见下），`plugin_bridge_invoke` 校验时使用 manifest 中的 **`entry`** 作为 **`assetRel`**（与 `bridge` 白名单一致）。
 - 示例：`examples/directory-plugin-ui-slot/`（仅 iframe）；**`examples/directory-plugin-ui-slot-vue/`**（`vueComponent` + 回退 HTML）。
