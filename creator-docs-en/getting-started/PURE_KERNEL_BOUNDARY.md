@@ -44,7 +44,7 @@ Externally: **soul = versioned data + configurable slot policy**, loaded at runt
 
 | Part | Description |
 |------|-------------|
-| **Role pack (v2 SSOT)** | **`pipeline.ocblueprint`** (`meta` + `slot_registry`) · `core_personality.txt` · scenes/knowledge ([ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)) |
+| **Role pack (Stable v4 canonical; v2 compatible)** | **`pipeline.ocblueprint`** (`meta` + `slot_registry` + optional `runtime_config` / `extensions`) · `core_personality.txt` · scenes/knowledge ([ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)) |
 | **Effective backends** | Blueprint `slot_registry` fold + **`set_session_slot_override`** + env ([SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)) |
 | **Relation & memory** | `role_runtime`, long-term memory via Repository; `memory` slot implements policy |
 

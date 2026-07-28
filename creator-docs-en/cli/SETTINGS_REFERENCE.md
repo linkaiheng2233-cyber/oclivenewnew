@@ -27,7 +27,7 @@ On **schema_version 4**, `runtime_config` is active on the Stable path and `dual
 |----------|--------|
 | Slots | **`slot_registry`** (`type`, `backend`, `plugin`, `model`, `url`, `position`, …) |
 | Graph | **`groups`**; **`module_relations`** must **not** be stored (derived at runtime) |
-| Engine | **`interaction_mode`**, **`memory_config`**, **`identity_binding`**, **`evolution`** (engine params), **`remote_presence`**, **`autonomous_scene`** — target: **`runtime_config.*`** (today often still under **`meta.*`**) |
+| Engine | **`interaction_mode`**, **`memory_config`**, **`identity_binding`**, **`evolution`**, **`remote_presence`**, **`autonomous_scene`** — Stable v4 uses **`runtime_config.*`** only; **`meta.*`** is a v2 compatibility fallback |
 | Dual-core (RFC) | **`runtime_config.dual_core.enabled`**, **`pipeline.*`**, **`zone`** — default off; creators must not enable alone |
 | Host app (not in pack) | **`remote_fallback_to_builtin`**, **`monolith.toml`** |
 

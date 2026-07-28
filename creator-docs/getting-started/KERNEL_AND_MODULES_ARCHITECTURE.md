@@ -4,7 +4,7 @@
 
 **架构叙述与编号**（第 1–6 模块、第 N 设施子模块、后端模块插件模块）：[OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)（[English](../../creator-docs-en/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)）。
 
-本文用 **一张「内核居中、模块环绕」的示意图** 对齐当前主仓能力。角色包 **v2** 以 **`pipeline.ocblueprint`** 为配置中枢：`slot_registry` 开放多实例，可选 **`groups`** 在架构图归拢同类型实例；`module_relations` 仅运行时派生、禁止落盘。细节仍以 **[PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)**（六槽契约）和 **[ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)** 为准；v2 的历史设计记录已归档为 [RFC_ROLE_BLUEPRINT_V2.md](../../handoff/archive/RFC_ROLE_BLUEPRINT_V2.md)。
+本文用 **一张「内核居中、模块环绕」的示意图** 对齐当前主仓能力。角色包以 **`pipeline.ocblueprint`** 为配置中枢（新包 Stable v4，v2 兼容，v3 为冻结双核 Beta）：`slot_registry` 开放多实例，可选 **`groups`** 在架构图归拢同类型实例；`module_relations` 仅运行时派生、禁止落盘。细节仍以 **[PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)**（六槽契约）和 **[ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)** 为准；v2 的历史设计记录已归档为 [RFC_ROLE_BLUEPRINT_V2.md](../../handoff/archive/RFC_ROLE_BLUEPRINT_V2.md)。
 
 ---
 

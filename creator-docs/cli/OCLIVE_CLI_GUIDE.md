@@ -307,7 +307,7 @@ cargo run -p oclive-cli -- doctor --fix
 cargo run -p oclive-cli -- doctor --fix --yes
 ```
 
-检查 Rust/Cargo、C++ 工具链、系统内存、磁盘剩余、Ollama（`http://127.0.0.1:11434/api/tags`）、GitHub 连通、工作区可写。在 **oclivenewnew 根**且存在 `distros/chat-pro/roles/*/pipeline.ocblueprint` 时，额外三项 v2 蓝图检查：**`blueprint_file_format`**（文件存在且 JSON 合法）、**`slot_registry_llm`**（至少一个 `type: llm`）、**`slot_position_unique`**（同 type 下 `position` 不重复）。`--fix` 可对 Rust（`rustup update stable`）、Ollama（尝试启动 serve）等项自动修复。存在 **fail** 项时退出码非 0。JSON Schema：`kernel/crates/oclive-cli/schemas/oclive_doctor_report.schema.json`。
+检查 Rust/Cargo、C++ 工具链、系统内存、磁盘剩余、Ollama（`http://127.0.0.1:11434/api/tags`）、GitHub 连通、工作区可写。在 **oclivenewnew 根**且存在 `distros/chat-pro/roles/*/pipeline.ocblueprint` 时，按 `schema_version` 精确分派 v2/v3/v4，并额外执行三项蓝图检查：**`blueprint_file_format`**（文件存在且 JSON 合法）、**`slot_registry_llm`**（至少一个 `type: llm`）、**`slot_position_unique`**（同 type 下 `position` 不重复）。`--fix` 可对 Rust（`rustup update stable`）、Ollama（尝试启动 serve）等项自动修复。存在 **fail** 项时退出码非 0。JSON Schema：`kernel/crates/oclive-cli/schemas/oclive_doctor_report.schema.json`。
 
 **`doctor config-resolve`**（六槽有效 backends + 来源链；**默认**走 `oclive_kernel_runtime::resolve_session_plugin_backends` 纯解析 + 磁盘角色包，**无** SQLite / Axum / Tauri）：
 

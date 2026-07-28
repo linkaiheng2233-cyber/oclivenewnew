@@ -22,13 +22,13 @@
 
 **物理落盘（今日）**：v2/v3/v4 均以 **`distros/chat-pro/roles/{id}/pipeline.ocblueprint`** 为宿主加载入口；新包 canonical 格式为 **Stable v4**。**逻辑上**分责；外置片段、扩展载荷、专家修订与说明放入 **`distros/chat-pro/roles/{id}/blueprint/`**，经 `includes` 或 v4 `extensions.*.config_ref` 引用（见 [BLUEPRINT_FOLDER_LAYOUT.md](./BLUEPRINT_FOLDER_LAYOUT.md)），**禁止**把长文与向导结果搅进蓝图 JSON。
 
-**legacy**：`manifest.json` + `settings.json` 已废弃，**不得**与 v2 蓝图并存；引擎字段应视为**蓝图侧**，非「角色门面」。
+**legacy**：`manifest.json` + `settings.json` 已废弃，**不得**与 `pipeline.ocblueprint` 并存；引擎字段应视为**蓝图侧**，非「角色门面」。
 
 ---
 
 ## 2. 角色包可编辑（创作者）
 
-### 2.1 `meta` 创作者子集（v2）
+### 2.1 `meta` 创作者子集（v2/v4）
 
 | 字段 | 说明 |
 |------|------|
@@ -47,7 +47,7 @@
 | 字段 | 说明 |
 |------|------|
 | `life_trajectory` / `life_schedule` | 异地/人生轨迹文案（见 README_MANIFEST） |
-| `evolution.personality_source` | `vector` \| `profile`（人格载体模式，非槽位后端） |
+| `evolution.personality_source` | **仅 v2 兼容落点**；Stable v4 由高级运行时视图写入 `runtime_config.evolution.personality_source` |
 
 ### 2.2 目录与文件（非 JSON 槽位）
 
@@ -55,7 +55,7 @@
 |------|------|
 | **`core_personality.txt`** | **Tier0 人设唯一真源**（`PromptBuilder` 只读此文件 + 蓝图 `meta` 元数据；**不**接入 `prompts/system.md`） |
 | `memory_seed.json` | 可选、创作者维护的只读前置记忆；与用户运行时 LTM、STM、聊天记录分离，详见 [`ROLE_PACK_SPEC`](../creator-docs/role-pack/ROLE_PACK_SPEC.md#persona--memory-独立迁移契约) |
-| `prompts/` | **可选创作辅助**：`reply_quality_anchor.md` 人类可读镜像（运行时 SSOT 为 `meta.reply_quality_anchor` 或内核默认）、creator profile 校验目录；**非** Tier0 人设来源 |
+| `prompts/` | **可选创作辅助**：`reply_quality_anchor.md` 人类可读镜像（Stable v4 运行时 SSOT 为 `runtime_config.reply_quality_anchor`；v2 兼容 `meta`；否则用内核默认）、creator profile 校验目录；**非** Tier0 人设来源 |
 | `scenes/{id}/` | 场景 `scene.json`、`description.txt` 等 |
 | `knowledge/` | 世界观 Markdown（内容向） |
 | `assets/` | 立绘、头像等；**v0.4+ 草案**：`config.json` → `portrait_catalog` 指向 `assets/images/` 等路径（见 [RFC_PORTRAIT_FACILITY.md](../creator-docs/rfc/RFC_PORTRAIT_FACILITY.md)） |
@@ -65,7 +65,7 @@
 
 ### 2.3 创作者不应直接改（属蓝图）
 
-写入 **`meta` 但属系统配置**（今日宿主仍从 `meta` 读取，**目标**迁至 `runtime_config`，见 §4）：
+v2 兼容包可能把系统配置写在 **`meta`**；Stable v4 必须只写 **`runtime_config`**，宿主对 `meta.*` 的读取仅用于旧包回退：
 
 - 已迁至 **`runtime_config.*`**（见 §3.3）：`interaction_mode`、`memory_config`、`reply_quality_anchor`、`remote_fallback_to_builtin`（包级建议）、`dual_core` 等
 - 过渡期仍可能出现在 **`meta.*`**（宿主只读兼容）
@@ -121,14 +121,14 @@ v2 文件若含 `runtime_config`：`pack validate` **警告并忽略**；稳定�
 
 ### 3.4 自 `settings.json` 剥离的引擎字段（legacy → 蓝图）
 
-| legacy `settings.json` | v2 目标落点 |
+| legacy `settings.json` | canonical 蓝图落点 |
 |------------------------|-------------|
 | `plugin_backends` | `slot_registry` |
-| `interaction_mode` | **`runtime_config.interaction_mode`**（目标）或暂 `meta.interaction_mode` |
+| `interaction_mode` | **`runtime_config.interaction_mode`**；v2 仅兼容 `meta.interaction_mode` |
 | `memory_config` | **`runtime_config.memory_config`** |
 | `evolution`（引擎参数） | **`runtime_config.evolution`** |
 | `remote_presence` / `autonomous_scene` | **`runtime_config.*`** |
-| `ollama_model` | `slot_registry` 中 `type: llm` 的 `model` 或 `runtime_config` |
+| `ollama_model` | `slot_registry` 中 `type: llm` 的 `model` 或 `runtime_config.ollama_model` |
 
 ### 3.3 不属于角色包、也不属于角色蓝图文件
 
@@ -147,7 +147,7 @@ v2 文件若含 `runtime_config`：`pack validate` **警告并忽略**；稳定�
 | 项 | 今日 | 目标 |
 |----|------|------|
 | 文件 | 单文件 `pipeline.ocblueprint` | 可选拆 `role.meta.json` + `pipeline.ocblueprint`（未排期） |
-| 引擎字段 | v2 多在 `meta.*` | v4 顶层 **`runtime_config`** |
+| 引擎字段 | v2 兼容读取 `meta.*` | v4 顶层 **`runtime_config`**，禁止与 `meta` 双写 |
 | CLI | `pack validate` 全量 v2/v3/v4 | **`--profile creator`** 已实现（§2 子集 + `prompts/`；**不**校验 `slot_registry` / `pipeline`） |
 | 编写器 | 新建 v4；导入 v2 后无损保持 v2 | 默认「角色」视图 / 高级「蓝图」视图 |
 

@@ -19,11 +19,11 @@ This specification describes on-disk role packs **aligned with the A.I.Live host
 | **Role pack** | `meta` identity, **`personality`**, **`relations`**, **`prompts/`**, scene prose | — |
 | **Blueprint** | **Do not edit** unless you integrate hosts | **`slot_registry`**, **`groups`**, **`backend`**, **`model`**, **`interaction_mode`**, **`memory_config`**, **`runtime_config.dual_core.enabled`** (RFC), … |
 
-On disk, v2 often uses **one file** `pipeline.ocblueprint` with both **`meta`** (creator slice) and **`slot_registry`** (blueprint). Editors should expose a **role** view vs an **advanced blueprint** view.
+On disk, every supported blueprint version uses **one entry file** `pipeline.ocblueprint`. New packs use Stable v4; v2 remains compatible, while v3 is the frozen dual-core Beta. Editors should expose a **role** view vs an **advanced blueprint** view.
 
-**Creator `meta` fields:** `id`, `name`, `version`, `author`, `description`, `personality`, `relations`, `default_relation`, `scenes`, `reply_quality_anchor`.
+**Creator `meta` fields:** `id`, `name`, `version`, `author`, `description`, `personality`, `relations`, `default_relation`, and `scenes`.
 
-**Not for creators:** `slot_registry`, `groups`, **`runtime_config`**, **`pipeline`**, backends/models, enabling dual-core. **`reply_quality_anchor`** lives in **`runtime_config`** (see SETTINGS_REFERENCE §0).
+**Not for creators:** `slot_registry`, `groups`, **`runtime_config`**, **`pipeline`**, backends/models, enabling dual-core. Stable v4 writes engine settings such as **`reply_quality_anchor`** only under **`runtime_config`**; `meta.*` remains a v2 compatibility fallback (see SETTINGS_REFERENCE §0).
 
 ---
 
@@ -181,12 +181,12 @@ Role packs have two version layers — do not mix them:
 
 | Layer | Where | Expectation |
 |-------|--------|-------------|
-| **Pack release version** | `meta.version` (v2 blueprint) or legacy `manifest.version` | **semver string** (e.g. `1.2.0`); creator-facing release id |
+| **Pack release version** | Blueprint `meta.version` or legacy `manifest.version` | **semver string** (e.g. `1.2.0`); creator-facing release id |
 | **Format / contract version** | Blueprint `schema_version`; legacy `settings.schema_version`; optional `manifest.min_runtime_version` | Controls parse path and load rejection; detail in [PACK_VERSIONING.md](PACK_VERSIONING.md) |
 
 **Relation to schema / manifest**
 
-- **Authoritative v2+ shape** is `pipeline.ocblueprint` (`schema_version` **2** or **3**) plus `slot_registry`; pack layout and validation follow the [Chinese ROLE_PACK_SPEC](../../creator-docs/role-pack/ROLE_PACK_SPEC.md) §§1–2 / §6.
+- **Canonical shape** is `pipeline.ocblueprint`: new packs use Stable `schema_version` **4**, existing **2** remains compatible, and **3** is reserved for the frozen dual-core Beta. Pack layout and validation follow the [Chinese ROLE_PACK_SPEC](../../creator-docs/role-pack/ROLE_PACK_SPEC.md) §§1–2 / §6.
 - Declared `includes[]` are strict activation dependencies: paths use portable ASCII letters/digits plus `_` `.` `/` `-`; missing, escaping, unreadable, malformed, or contract-invalid merged fragments fail both `pack validate` and role loading. Best-effort merging is preview-only; expert routing uses its dedicated loader rather than a generic include target.
 - **Legacy** still uses `manifest.json` + `settings.json`; key whitelist, `min_runtime_version` (host semver gate), and unknown-key policy live in [PACK_VERSIONING.md](PACK_VERSIONING.md) — do not restate those tables here.
 - JSON Schema / CLI: `oclive pack validate`; implementation SSOT is `oclive_validation`.
@@ -209,7 +209,7 @@ Chat Pro background pre-generation is a host runtime capability; it adds no `adu
 
 **Breaking fields (must rewrite on migration; silent ignore is wrong)**
 
-- Blueprint bump: `schema_version` change (2→3); v3 consolidates engine/system config under top-level **`runtime_config`** (see migration guides).
+- Blueprint bumps select explicit contracts: v2 keeps legacy engine fields under `meta`; Stable v4 makes top-level **`runtime_config`** the single engine-settings source; v3 remains the opt-in dual-core Beta.
 - Legacy → v2: fold dual files into blueprint **`meta`** + **`slot_registry`**; **must not** coexist with legacy dual files; blueprints **must not** carry `steps[]` / `entry` / `module_relations` (first-turn path remains `process_message` → `co_present`, not old DSL scheduling).
 - Unknown top-level keys or invalid backend enum values fail validation; slot/backend names must match PLUGIN_V1 (`plugin_backends` · `slot_registry.type`).
 
@@ -217,7 +217,7 @@ Chat Pro background pre-generation is a host runtime capability; it adds no `adu
 
 1. Back up the pack; confirm whether you have legacy dual files or an existing `pipeline.ocblueprint`.
 2. **Legacy → v2**: follow [V1_TO_V2_MIGRATION.md](V1_TO_V2_MIGRATION.md), then `pack validate`.
-3. **v2 → v3** (when you need `runtime_config` / optional dual-core): follow [V2_TO_V3_MIGRATION.md](V2_TO_V3_MIGRATION.md), then validate and smoke-chat.
+3. Keep existing v2 packs on v2 unless intentionally migrating. Use v3 only for the frozen dual-core Beta ([V2_TO_V3_MIGRATION.md](V2_TO_V3_MIGRATION.md)); otherwise create or migrate to Stable v4 and move engine fields to `runtime_config` without duplicating them in `meta`.
 4. When declaring a minimum host, align `min_runtime_version` / `--host-version` with [PACK_VERSIONING.md](PACK_VERSIONING.md).
 
 > **Non-goal:** no batch auto-migration CLI in-tree; hand-edit + validate. Index: [DOCUMENTATION_INDEX.md](../getting-started/DOCUMENTATION_INDEX.md). Full Chinese §11: [ROLE_PACK_SPEC §11](../../creator-docs/role-pack/ROLE_PACK_SPEC.md#11-版本与迁移).

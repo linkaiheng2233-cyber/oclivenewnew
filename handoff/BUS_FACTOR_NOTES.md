@@ -16,7 +16,7 @@
 | **`oclive_kernel_types`** | `kernel/crates/oclive_kernel_types/` | DTO、`AppError`、纯数据结构 |
 | **`oclive_kernel_contracts`** | `kernel/crates/oclive_kernel_contracts/` | `LlmClient`、`PluginHostPort`、`EventEstimator`、`AgentProvider` 等 trait |
 | **`oclive_kernel_runtime`** | `kernel/crates/oclive_kernel_runtime/` | 策略、Prompt、kernel discovery；**编排实现**在 `oclive_kernel_host` |
-| **`oclive_validation`** | `kernel/crates/oclive_validation/` | manifest / **`pipeline.ocblueprint` v2** 校验 |
+| **`oclive_validation`** | `kernel/crates/oclive_validation/` | manifest / **`pipeline.ocblueprint` v2/v3/v4** 分派与校验 |
 | **`oclive-cli`** | `kernel/crates/oclive-cli/` | 脚手架、`bench` / `test` / `doctor` / `ci init` |
 
 **`kernel/crates/oclive_kernel_host/src/domain/ports/`** 放宿主侧编排端口；跨 crate trait 的权威定义在 `kernel/crates/oclive_kernel_contracts/src/`。编排应依赖 **`dyn`** 端口，见 [`ARCHITECTURE_LAYERING.md`](./ARCHITECTURE_LAYERING.md)。
@@ -31,7 +31,7 @@
 | **蓝图** | 同文件 `pipeline.ocblueprint` 内 **`slot_registry`**、**`groups`**、（目标）**`runtime_config`** | 管理员 / `oclive plugin manage` / `save_role_slot_registry` | [SETTINGS_REFERENCE.md](../creator-docs/cli/SETTINGS_REFERENCE.md) §零 |
 | **边界 SSOT** | — | — | **[ROLE_PACK_BOUNDARY.md](./ROLE_PACK_BOUNDARY.md)** |
 
-**今日实现**：引擎字段（如 `meta.interaction_mode`）仍在 `meta`，与边界文档「目标迁至 `runtime_config`」并存；改边界时同步 `oclive_validation` 与 `RoleStorage::load_role_from_dir`。
+**今日实现**：Stable v4 以顶层 `runtime_config` 为引擎字段 SSOT；v2 继续从 `meta.*` 兼容读取，v3 只服务冻结的双核 Beta。改边界时同步 `oclive_validation` 与 `RoleStorage::load_role_from_dir`。
 
 **双核**：`dual_core.enabled` 仅蓝图（[DUAL_CORE_CURSOR_HANDOFF.md](./DUAL_CORE_CURSOR_HANDOFF.md)）；非创作者字段。
 
@@ -169,7 +169,7 @@
 | 蓝图加载 | `kernel/crates/oclive_kernel_host/src/infrastructure/storage.rs` | `load_blueprint_v2_for_role_dir` | 校验失败看 `oclive_validation` 报错拼接 |
 | 端口 trait | `kernel/crates/oclive_kernel_contracts/src/` | `LlmClient`、`MemoryRetrieval`… | 插件作者实现 trait，见各文件 **When to implement** |
 | 纯类型 | `kernel/crates/oclive_kernel_types/` | DTO、`AppError` | 无 I/O；契约变更同步 validation |
-| 蓝图校验 | `kernel/crates/oclive_validation/` | v2 schema、`slot_registry` | 改 JSON 形状必跑 `pack validate` + 单测 |
+| 蓝图校验 | `kernel/crates/oclive_validation/` | v2/v3/v4 分派、`slot_registry`、`runtime_config`、v4 `extensions` | 改 JSON 形状必跑 `pack validate` + 单测 |
 | 前端架构图 | `distros/shared/src/composables/useArchitectureGraphModel.ts` | `buildBlueprintEdges`、`groups` | 边只读派生，勿写回 blueprint |
 
 ---

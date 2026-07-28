@@ -54,7 +54,7 @@ distros/chat-pro/roles/{role_id}/
 | 键 | 说明 |
 |----|------|
 | `schema_version` | `2`、冻结的双核 Beta `3`，或 Stable `4` |
-| `meta` | 创作者门面 + 过渡期引擎字段（目标迁至 `runtime_config`） |
+| `meta` | 创作者门面；v2 旧包可含兼容引擎字段，Stable v4 禁止与 `runtime_config` 双写 |
 | `slot_registry` | 槽位实例（管理员） |
 | `groups` | 架构图分组（可选） |
 | `runtime_config` | v4 Stable 引擎策略；v3 仅为双核 Beta 兼容；未知子键按严格契约拒绝 |

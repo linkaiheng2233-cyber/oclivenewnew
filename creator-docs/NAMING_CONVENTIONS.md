@@ -272,7 +272,7 @@ This page is the **naming SSOT** for OCLive. Key rules:
 
 | 名称 | 是什么 | 不是什么 | 能否 rename |
 |------|--------|----------|-------------|
-| **`pipeline.ocblueprint`** | 角色包磁盘上的**蓝图文件**（v2 SSOT） | 调度 DSL 文件 | **文件名冻结** |
+| **`pipeline.ocblueprint`** | 角色包磁盘上的**蓝图文件**（Stable v4 canonical；v2 兼容） | 调度 DSL 文件 | **文件名冻结** |
 | **`slot_registry`** | 多实例后端配置总表 | 执行顺序表 | 键名冻结 |
 | **蓝图 JSON 键 `pipeline`** | v3 双核下的 `{ stable, experimental }` 步骤 DAG | 与文件名 `pipeline.` 前缀同义 | v3 冻结 |
 | **`dual_pipeline.rs`** | Rust 模块：`DualPipelineRunner` 运行时编排 | 蓝图文件 | 代码模块；见 §5.3 |

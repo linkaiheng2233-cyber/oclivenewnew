@@ -1,14 +1,14 @@
-﻿# PLUGIN_V1 — 编排层契约与后端枚举（v2 蓝图 · legacy 六槽）
+﻿# PLUGIN_V1 — 编排层契约与后端枚举（蓝图 v2/v3/v4 · legacy 六槽）
 
 > **2026-06-10 起**：`builtin_v2` 为 **已废弃 wire alias**（serde 读兼容），行为等同 `builtin`；四槽无独立 V2 实现（D-SLOT-01）。下文 legacy 表中 `builtin_v2` 行仅作迁移对照。
 
 **插件作者学习路径**：[PLUGIN_AUTHOR_LEARNING_PATH.md](PLUGIN_AUTHOR_LEARNING_PATH.md)
 
-**当前权威**：角色包 **`pipeline.ocblueprint` → `slot_registry`**（见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)）。本文档描述宿主（Tauri / `chat_engine`）与可替换子系统之间的 **编排契约**：DTO 形状、槽位门面 trait、**v2 实例解析**；下文 **legacy** 段落中的 `settings.json` → `plugin_backends` 仅用于 **v1（已废弃）** 迁移对照。实现以源码为准：`slot_resolver.rs`、`plugin_host.rs`、`kernel/crates/oclive_kernel_types/src/models/plugin_backends.rs`。
+**当前权威**：角色包 **`pipeline.ocblueprint` → `slot_registry`**（见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)）。本文档描述宿主（Tauri / `chat_engine`）与可替换子系统之间的 **编排契约**：DTO 形状、槽位门面 trait、蓝图实例解析；下文 **legacy** 段落中的 `settings.json` → `plugin_backends` 仅用于 **v1（已废弃）** 迁移对照。实现以源码为准：`slot_resolver.rs`、`plugin_host.rs`、`kernel/crates/oclive_kernel_types/src/models/plugin_backends.rs`。
 
 **全库文档索引**：[../getting-started/DOCUMENTATION_INDEX.md](../getting-started/DOCUMENTATION_INDEX.md)。**架构总览（单核双态 · 后端/插件/设施 · `{专名}设施子模块`）**：[../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)。**以内核为中心、模块环绕的总览（图 + Mermaid）**：[../getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md](../getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md)。包版本与 `schema_version` 见 **[../role-pack/PACK_VERSIONING.md](../role-pack/PACK_VERSIONING.md)**。HTTP 侧车 JSON-RPC 全文见 **[REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md)**；创作者总览见 **[CREATOR_PLUGIN_ARCHITECTURE.md](CREATOR_PLUGIN_ARCHITECTURE.md)**。**目录式进程插件**（`plugin_backends.* = directory`、整壳、`directory_plugin_invoke` 等）见 **[DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)**。
 
-## 蓝图 v2 角色包（`pipeline.ocblueprint`）
+## 蓝图角色包（`pipeline.ocblueprint`）
 
 自 **schema_version: 2** 起，角色包 **SSOT** 为 [`pipeline.ocblueprint`](../role-pack/ROLE_PACK_SPEC.md) 的 **`slot_registry`**（开放多实例键），不再使用 `settings.json` → `plugin_backends` 六键固定形状。宿主经 **`SlotResolver` / `SlotRunner`** 按实例解析；同 `type` 折叠为 `PluginBackends` 时 **last-wins**（`position` 最大者优先）。
 
@@ -389,7 +389,7 @@ TypeScript 侧 `SendMessageResponse`（`distros/shared/src/api/`）必须与 `mo
 - **directory / remote**：承接 **可选 LLM 润色**；契约方法 `reply_post_process.process`，参数含 `raw_reply`、`user_message`、`role_id`、`scene_id`、`locale`；返回 `display_reply` 与可选 `diagnostic`。
 - **脚手架**：[`examples/reply-post-process-polish/`](../../examples/reply-post-process-polish/)（pass-through 默认；在 `rpc_server.mjs` 内替换 `polishReply` 接入你的模型）。
 - **设计契约**：[RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR](../rfc/RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md)。
-- **与 Prompt 分工**：生成阶段用 `meta.reply_quality_anchor`；润色在后处理阶段，默认 **`reply_post_processor.enabled: false`**。
+- **与 Prompt 分工**：生成阶段使用蓝图有效回复质量锚点（Stable v4 `runtime_config.reply_quality_anchor`；v2 兼容 `meta`）；润色在后处理阶段，默认 **`reply_post_processor.enabled: false`**。
 
 ### Theater Scene Director · `theater.build_prompt`（独立通道 · 已交付）
 

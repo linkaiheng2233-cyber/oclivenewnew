@@ -16,7 +16,7 @@
 | `remote_fallback_to_builtin` | bool | 包级 Remote 降级建议（全局仍以 `app_settings` / 环境变量为准） |
 | `dual_core.enabled` | bool | 双核开关，默认 **`false`**（见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)） |
 | `identity_binding` | string | `global` \| `per_scene` |
-| `evolution` | object | 演化引擎参数（非 `personality_source` 门面） |
+| `evolution` | object | 演化引擎参数（含 `personality_source` 与数值策略） |
 | `ollama_model` | string | 默认 Ollama 模型（亦可写在 `slot_registry` llm 实例 `model`） |
 | `remote_presence` / `autonomous_scene` | object | 异地心声 / 虚拟时间换场景 |
 
@@ -33,8 +33,8 @@
 | 槽位实例 | **`slot_registry`**（`type`、`backend`、`plugin`、`model`、`url`、`position`…） | 六槽路由与 directory 插件 id |
 | 架构图 | **`groups`** | 同 type 实例分组 |
 | 运行时派生 | **`module_relations`** | **禁止落盘**；由 `slot_registry` 派生 |
-| 交互与记忆 | **`interaction_mode`**、**`memory_config`**、**`identity_binding`** | 目标：`runtime_config.*`；今日多仍在 **`meta.*`** |
-| 演化引擎 | **`evolution`**（除 `personality_source` 外数值策略） | 蓝图 |
+| 交互与记忆 | **`interaction_mode`**、**`memory_config`**、**`identity_binding`** | Stable v4：`runtime_config.*`；v2 仅兼容 **`meta.*`** |
+| 演化引擎 | **`evolution`**（含 `personality_source` 与数值策略） | Stable v4 `runtime_config.evolution`；v2 兼容 `meta.evolution` |
 | 模型 | **`ollama_model`** 或 **`slot_registry` 内 `model`** | 蓝图 |
 | 远程 / 场景引擎 | **`remote_presence`**、**`autonomous_scene`** | 蓝图 |
 | 知识引擎块 | **`meta.knowledge`**（检索配置） | 蓝图，与 `knowledge/` 内容目录区分 |
@@ -48,13 +48,13 @@
 | **`remote_fallback_to_builtin`** | `app_settings` / **`OCLIVE_REMOTE_FALLBACK_TO_BUILTIN`** |
 | Monolith **`weld_modules`** | 工程 **`monolith.toml`** |
 
-**legacy `settings.json`**（已废弃，勿与 v2 蓝图并存）：下表 §一 的 `plugin_backends` 等价于今日 **`slot_registry`**。
+**legacy `settings.json`**（已废弃，勿与 `pipeline.ocblueprint` 并存）：下表 §一 的 `plugin_backends` 等价于今日 **`slot_registry`**。
 
 ---
 
 **校验**：`pack validate`（默认蓝图全量）· **`pack validate --profile creator`**（仅角色包，见 [ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md)）。
 
-**v2 角色包（当前）**：后端实例写在 **`pipeline.ocblueprint` → `slot_registry`**。CLI 总览 **`oclive plugin manage --tui`**。下文 §一 **`settings.json` → `plugin_backends`** 仅 **legacy** 对照。
+**当前蓝图包（新包 Stable v4，兼容 v2）**：后端实例写在 **`pipeline.ocblueprint` → `slot_registry`**。CLI 总览 **`oclive plugin manage --tui`**。下文 §一 **`settings.json` → `plugin_backends`** 仅 **legacy** 对照。
 
 本文档描述 **桌面宿主（Tauri）** 与 **`oclive-cli` 脚手架** 共用的配置语义。单一事实来源以源码为准：
 
