@@ -26,6 +26,9 @@ pub enum ExecutionPlanFlowTemplate {
 #[serde(rename_all = "snake_case")]
 pub enum ResourceCoordinationDiagnosticState {
     NotEvaluated,
+    Ready,
+    Degraded,
+    Blocked,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

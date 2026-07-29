@@ -9,6 +9,7 @@ pub mod llm_settings;
 pub mod mcp;
 pub mod plugin_bridge;
 pub mod portable_state;
+pub mod resource_coordination;
 pub mod role;
 pub mod scene;
 pub mod settings_bridge;
@@ -42,6 +43,11 @@ pub use plugin_bridge::{
 pub use portable_state::{
     export_portable_memory_impl, export_portable_persona_impl, import_portable_memory_impl,
     import_portable_persona_impl,
+};
+pub use resource_coordination::{
+    finalize_directory_plugin_resource_rpc, get_resource_coordination_diagnostics_impl,
+    prepare_directory_plugin_resource_rpc, release_directory_plugin_resources_for_config,
+    DirectoryPluginResourceAdmission,
 };
 pub use role::{
     delete_role_impl, get_display_metrics_impl, get_role_info_impl, get_user_identity_state_impl,

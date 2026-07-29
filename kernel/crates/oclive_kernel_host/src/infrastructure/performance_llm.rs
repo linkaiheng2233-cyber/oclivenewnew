@@ -5,11 +5,17 @@
 
 use crate::domain::host_profile::LocalLlmRuntimeProfile;
 use crate::domain::ports::LlmClient;
+use crate::domain::resource_coordinator::{configured_gpu_device_index, ResourceCoordinator};
 use crate::error::{AppError, Result};
 use crate::infrastructure::ollama_client::OllamaClient;
 use crate::infrastructure::openai_compatible_llm::OpenAiCompatibleLlm;
+use crate::infrastructure::resource_snapshot::NvidiaSmiResourceSnapshotSource;
 use async_trait::async_trait;
 use oclive_kernel_contracts::{LlmGenerateOpts, LlmGenerateOutcome, LlmTokenSink};
+use oclive_kernel_types::{
+    ResourceAdmissionDecision, ResourceAdmissionMode, ResourceAdmissionRequest,
+    ResourceControlMode, ResourceCoordinatorPolicy, ResourcePriority,
+};
 use parking_lot::{Mutex, RwLock};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -24,7 +30,11 @@ use std::time::{Duration, Instant};
 pub const ENV_LLAMA_SERVER_PATH: &str = "OCLIVE_LLAMA_SERVER_PATH";
 pub const ENV_LOCAL_LLM_MODEL_PATH: &str = "OCLIVE_LOCAL_LLM_MODEL_PATH";
 pub const ENV_LOCAL_LLM_LORA_PATH: &str = "OCLIVE_LOCAL_LLM_LORA_PATH";
+pub const ENV_LLAMA_GPU_RESERVATION_MIB: &str = "OCLIVE_LLAMA_GPU_RESERVATION_MIB";
 pub const RUNTIME_PACK_MANIFEST: &str = "llm_runtime_pack.json";
+const LLAMA_RUNTIME_ADAPTER_ID: &str = "builtin.llm.llama_server";
+const LLAMA_RUNTIME_WORKLOAD_ID: &str = "managed-runtime";
+const OLLAMA_ADAPTER_ID: &str = "builtin.llm.ollama";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -83,6 +93,8 @@ pub struct PerformanceLlmClient {
     fallback: Arc<dyn LlmClient>,
     ollama_runtime: Option<Arc<OllamaClient>>,
     fallback_models: Mutex<BTreeSet<String>>,
+    resource_coordinator: Arc<ResourceCoordinator>,
+    runtime_lease_id: Mutex<Option<String>>,
     health_client: reqwest::Client,
     start_lock: tokio::sync::Mutex<()>,
     process: Mutex<Option<SpawnedRuntime>>,
@@ -106,6 +118,34 @@ impl PerformanceLlmClient {
         fallback: Arc<dyn LlmClient>,
         ollama_runtime: Option<Arc<OllamaClient>>,
         fallback_model: String,
+    ) -> Result<Self> {
+        Self::new_with_resource_coordinator(
+            profile,
+            app_data_dir,
+            resource_root,
+            fallback,
+            ollama_runtime,
+            fallback_model,
+            Arc::new(ResourceCoordinator::new(
+                ResourceCoordinatorPolicy::default(),
+                Arc::new(NvidiaSmiResourceSnapshotSource),
+            )),
+        )
+    }
+
+    /// Build the performance-mode client with the host-wide resource coordinator.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error for an invalid endpoint or HTTP client construction failure.
+    pub fn new_with_resource_coordinator(
+        profile: LocalLlmRuntimeProfile,
+        app_data_dir: PathBuf,
+        resource_root: Option<PathBuf>,
+        fallback: Arc<dyn LlmClient>,
+        ollama_runtime: Option<Arc<OllamaClient>>,
+        fallback_model: String,
+        resource_coordinator: Arc<ResourceCoordinator>,
     ) -> Result<Self> {
         let timeout = Duration::from_millis(profile.startup_timeout_ms.max(120_000));
         let primary = OpenAiCompatibleLlm::for_local_runtime(&profile.endpoint, timeout)?;
@@ -136,6 +176,8 @@ impl PerformanceLlmClient {
             fallback,
             ollama_runtime,
             fallback_models: Mutex::new(fallback_models),
+            resource_coordinator,
+            runtime_lease_id: Mutex::new(None),
             health_client,
             start_lock: tokio::sync::Mutex::new(()),
             process: Mutex::new(None),
@@ -223,6 +265,7 @@ impl PerformanceLlmClient {
     pub fn suspend_managed_runtime(&self, reason: &str) {
         self.primary_enabled.store(false, Ordering::Release);
         self.process.lock().take();
+        self.release_runtime_lease();
         *self.retry_after.lock() = None;
         self.set_status(false, "inactive", reason);
     }
@@ -232,6 +275,13 @@ impl PerformanceLlmClient {
         if !model.is_empty() {
             self.fallback_models.lock().insert(model.to_string());
         }
+    }
+
+    /// Unload only Ollama models that this OCLive runtime has used.
+    ///
+    /// The caller must first ensure that no foreground Ollama request is active.
+    pub async fn unload_fallback_models_for_resource_pressure(&self) {
+        self.unload_ollama_for_primary().await;
     }
 
     fn set_status(&self, ready: bool, active_backend: &str, detail: &str) {
@@ -335,7 +385,100 @@ impl PerformanceLlmClient {
 
     fn degrade_to_ollama(&self, detail: &str) {
         self.process.lock().take();
+        self.release_runtime_lease();
         self.mark_retry_cooldown(detail);
+    }
+
+    fn release_runtime_lease(&self) {
+        if let Some(lease_id) = self.runtime_lease_id.lock().take() {
+            self.resource_coordinator.release(&lease_id);
+        }
+    }
+
+    fn runtime_reservation_mib(selection: &RuntimeSelection) -> u64 {
+        if let Ok(value) = std::env::var(ENV_LLAMA_GPU_RESERVATION_MIB) {
+            if let Ok(value) = value.trim().parse::<u64>() {
+                return value.min(65_536);
+            }
+        }
+        let gpu_layers = std::env::var("OCLIVE_LLAMA_GPU_LAYERS")
+            .ok()
+            .and_then(|value| value.trim().parse::<i64>().ok())
+            .unwrap_or(0);
+        if gpu_layers <= 0 {
+            return 0;
+        }
+        let model_mib = std::fs::metadata(&selection.model_path)
+            .map(|metadata| metadata.len().saturating_add(1024 * 1024 - 1) / (1024 * 1024))
+            .unwrap_or(0);
+        let estimated_layer_share = model_mib
+            .saturating_mul((gpu_layers as u64).min(32))
+            .saturating_add(31)
+            / 32;
+        estimated_layer_share.saturating_add(512).min(65_536)
+    }
+
+    async fn reserve_runtime_start(&self, selection: &RuntimeSelection) -> Result<String> {
+        let reservation_mib = Self::runtime_reservation_mib(selection);
+        let admission = self
+            .resource_coordinator
+            .admit(ResourceAdmissionRequest {
+                adapter_id: LLAMA_RUNTIME_ADAPTER_ID.into(),
+                workload_id: LLAMA_RUNTIME_WORKLOAD_ID.into(),
+                gpu_device_index: configured_gpu_device_index(),
+                reservation_mib,
+                priority: ResourcePriority::BackgroundWarmup,
+                control_mode: ResourceControlMode::Managed,
+                admission_mode: if reservation_mib == 0 {
+                    ResourceAdmissionMode::ObserveOnly
+                } else {
+                    ResourceAdmissionMode::Enforced
+                },
+            })
+            .await;
+        if admission.decision == ResourceAdmissionDecision::Denied {
+            return Err(AppError::RemoteServiceUnavailable(format!(
+                "llama-server resource admission denied: {}",
+                admission.reason_codes.join(",")
+            )));
+        }
+        let lease_id = admission.lease.map(|lease| lease.lease_id).ok_or_else(|| {
+            AppError::RemoteServiceUnavailable(
+                "llama-server resource admission returned no lease".into(),
+            )
+        })?;
+        *self.runtime_lease_id.lock() = Some(lease_id.clone());
+        Ok(lease_id)
+    }
+
+    async fn track_ready_managed_runtime(&self, selection: &RuntimeSelection) {
+        if self.runtime_lease_id.lock().is_some() {
+            return;
+        }
+        let admission = self
+            .resource_coordinator
+            .admit(ResourceAdmissionRequest {
+                adapter_id: LLAMA_RUNTIME_ADAPTER_ID.into(),
+                workload_id: LLAMA_RUNTIME_WORKLOAD_ID.into(),
+                gpu_device_index: configured_gpu_device_index(),
+                reservation_mib: 0,
+                priority: ResourcePriority::Resident,
+                control_mode: ResourceControlMode::Managed,
+                admission_mode: ResourceAdmissionMode::ObserveOnly,
+            })
+            .await;
+        if let Some(lease) = admission.lease {
+            self.resource_coordinator.activate(
+                &lease.lease_id,
+                Some(Self::runtime_reservation_mib(selection)),
+            );
+            *self.runtime_lease_id.lock() = Some(lease.lease_id);
+        }
+    }
+
+    fn activate_runtime_lease(&self, lease_id: &str, selection: &RuntimeSelection) {
+        self.resource_coordinator
+            .activate(lease_id, Some(Self::runtime_reservation_mib(selection)));
     }
 
     async fn unload_ollama_for_primary(&self) {
@@ -389,6 +532,7 @@ impl PerformanceLlmClient {
             .is_some_and(|running| selected.as_ref() != Some(&running.selection));
         if running_model_changed {
             self.process.lock().take();
+            self.release_runtime_lease();
         }
         if selection_changed {
             *self.retry_after.lock() = None;
@@ -477,6 +621,11 @@ impl PerformanceLlmClient {
                         "selected LoRA cannot be applied to an external llama-server; stop it so OCLive can start the managed runtime".into(),
                     ));
                 }
+                if self.managed_process_matches(selection) {
+                    self.track_ready_managed_runtime(selection).await;
+                } else {
+                    self.release_runtime_lease();
+                }
             }
             self.ensure_primary_enabled()?;
             if self.status.read().active_backend != "performance" {
@@ -510,6 +659,11 @@ impl PerformanceLlmClient {
                         "selected LoRA cannot be applied to an external llama-server; stop it so OCLive can start the managed runtime".into(),
                     ));
                 }
+                if self.managed_process_matches(selection) {
+                    self.track_ready_managed_runtime(selection).await;
+                } else {
+                    self.release_runtime_lease();
+                }
             }
             self.ensure_primary_enabled()?;
             if self.status.read().active_backend != "performance" {
@@ -529,7 +683,17 @@ impl PerformanceLlmClient {
             )
         })?;
         self.ensure_primary_enabled()?;
+        if self
+            .resource_coordinator
+            .has_active_adapter(OLLAMA_ADAPTER_ID)
+        {
+            return Err(AppError::RemoteServiceUnavailable(
+                "Ollama is serving another foreground request; managed llama-server start deferred"
+                    .into(),
+            ));
+        }
         self.unload_ollama_for_primary().await;
+        let runtime_lease_id = self.reserve_runtime_start(&selection).await?;
 
         {
             let mut process = self.process.lock();
@@ -542,6 +706,7 @@ impl PerformanceLlmClient {
                 let child = match self.spawn_runtime(&binary, &selection) {
                     Ok(child) => child,
                     Err(error) => {
+                        self.release_runtime_lease();
                         self.mark_retry_cooldown("llama-server process could not be started");
                         return Err(error);
                     }
@@ -570,9 +735,11 @@ impl PerformanceLlmClient {
         while Instant::now() < deadline {
             if let Err(error) = self.ensure_primary_enabled() {
                 self.process.lock().take();
+                self.release_runtime_lease();
                 return Err(error);
             }
             if self.endpoint_ready().await {
+                self.activate_runtime_lease(&runtime_lease_id, &selection);
                 *self.retry_after.lock() = None;
                 self.set_status(true, "performance", "llama-server is ready");
                 return Ok(());
@@ -584,12 +751,15 @@ impl PerformanceLlmClient {
                 .and_then(|running| running.child.try_wait().ok().flatten());
             if let Some(status) = exited {
                 let detail = format!("llama-server exited during startup: {status}");
+                self.process.lock().take();
+                self.release_runtime_lease();
                 self.mark_retry_cooldown(&detail);
                 return Err(AppError::RemoteServiceUnavailable(detail));
             }
             tokio::time::sleep(Duration::from_millis(250)).await;
         }
         self.process.lock().take();
+        self.release_runtime_lease();
         self.mark_retry_cooldown("llama-server startup timed out");
         Err(AppError::RemoteServiceUnavailable(
             "llama-server startup timed out".into(),

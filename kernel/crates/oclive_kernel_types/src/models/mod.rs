@@ -18,6 +18,7 @@ pub mod personality;
 pub mod plugin_backends;
 pub mod portrait_catalog_config;
 pub mod reply_post_processor_config;
+pub mod resource_coordination;
 pub mod role;
 pub mod role_manifest_disk;
 pub mod role_pack_config;
@@ -72,6 +73,7 @@ pub use reply_post_processor_config::{
     RolePackDirectoryReplyPostProcessorConfig, RolePackRemoteReplyPostProcessorConfig,
     RolePackReplyPostProcessorConfig,
 };
+pub use resource_coordination::*;
 pub use role::*;
 pub use role_manifest_disk::DiskRoleManifest;
 pub use role_pack_config::{

@@ -93,6 +93,15 @@ export type CapabilityProviderAvailability
     | 'permission_required'
 export type ExtensionPlanStatus = 'ready' | 'degraded' | 'blocked'
 export type ExecutionPlanDiagnosticSeverity = 'info' | 'warning' | 'error'
+export type ResourceCoordinationState = 'not_evaluated' | 'ready' | 'degraded' | 'blocked'
+export type ResourcePressureLevel = 'unknown' | 'normal' | 'elevated' | 'critical'
+export type ResourcePriority
+  = | 'resident'
+    | 'background_warmup'
+    | 'foreground_media'
+    | 'foreground_interactive'
+export type ResourceControlMode = 'managed' | 'observe_only'
+export type ResourceLeaseState = 'reserved' | 'active'
 
 export interface CapabilityConsumerDiagnostic {
   capability: string
@@ -165,10 +174,59 @@ export interface ExecutionPlanDiagnostics {
     core_backends: PluginBackends
     extensions: ExecutionPlanExtension[]
     activatable: boolean
-    resource_coordination: 'not_evaluated'
+    resource_coordination: ResourceCoordinationState
     diagnostics: ExecutionPlanDiagnostic[]
   }
   capability_registry: CapabilityRegistryDiagnostic
+}
+
+export interface GpuDeviceSnapshot {
+  device_index: number
+  name: string
+  total_mib: number
+  free_mib: number
+  used_mib: number
+}
+
+export interface ResourceSnapshot {
+  captured_at_ms: number
+  source: string
+  available: boolean
+  gpu_devices: GpuDeviceSnapshot[]
+  reason_codes: string[]
+}
+
+export interface ResourceCoordinatorPolicy {
+  gpu_safety_reserve_mib: number
+  pending_lease_ttl_ms: number
+  active_lease_ttl_ms: number
+  allow_unverified_admission: boolean
+}
+
+export interface ResourceLeaseDiagnostic {
+  lease_id: string
+  adapter_id: string
+  workload_id: string
+  gpu_device_index?: number | null
+  reservation_mib: number
+  actual_mib: number
+  priority: ResourcePriority
+  control_mode: ResourceControlMode
+  state: ResourceLeaseState
+  granted_at_ms: number
+  /** Omitted for host-managed resident runtimes that require explicit release. */
+  expires_at_ms?: number | null
+  reason_codes: string[]
+}
+
+export interface ResourceCoordinationDiagnostics {
+  schema_version: number
+  state: ResourceCoordinationState
+  pressure: ResourcePressureLevel
+  policy: ResourceCoordinatorPolicy
+  snapshot: ResourceSnapshot
+  leases: ResourceLeaseDiagnostic[]
+  reason_codes: string[]
 }
 
 /**
@@ -315,6 +373,13 @@ export async function getExecutionPlanDiagnostics(
         session_id: sessionId ?? null,
       },
     },
+  )
+}
+
+/** Refresh host device telemetry and return ephemeral resource leases/pressure. */
+export async function getResourceCoordinationDiagnostics(): Promise<ResourceCoordinationDiagnostics> {
+  return invokeWithFriendlyError<ResourceCoordinationDiagnostics>(
+    'get_resource_coordination_diagnostics',
   )
 }
 

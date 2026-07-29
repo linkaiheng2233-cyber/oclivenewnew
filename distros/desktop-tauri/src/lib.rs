@@ -328,6 +328,7 @@ pub fn run() {
             api::role::slot_session::apply_author_suggested_plugin_backends,
             api::role::slot_session::get_plugin_resolution_debug,
             api::execution_plan::get_execution_plan_diagnostics,
+            api::resource_coordination::get_resource_coordination_diagnostics,
             api::role::find_role_asset_path,
             api::role::read_role_asset_bytes,
             api::role::expert::list_blueprint_includes,

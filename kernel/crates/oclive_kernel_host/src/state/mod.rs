@@ -118,6 +118,8 @@ pub struct AppState {
     pub ollama: Option<Arc<OllamaClient>>,
     /// Distro performance-mode runtime; absent for Ollama-only profiles and mock tests.
     pub performance_llm: Option<Arc<PerformanceLlmClient>>,
+    /// Host-owned global resource budget, leases, pressure, and diagnostics.
+    pub resource_coordinator: Arc<crate::domain::resource_coordinator::ResourceCoordinator>,
     /// Hot-path lock layering:
     /// - `role_cache` / `role_load_inflight`: dedupe role reads;
     /// - `session_cache`: session overrides;

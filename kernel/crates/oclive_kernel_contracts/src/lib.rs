@@ -42,6 +42,7 @@ pub(crate) mod policy;
 pub(crate) mod prompt_assembler;
 pub mod reply_post_processor;
 pub(crate) mod repository;
+pub(crate) mod resource_coordination;
 pub(crate) mod slot_backend_factory;
 pub(crate) mod slot_resolver;
 pub mod theater_director;
@@ -71,6 +72,7 @@ pub use repository::{
     ComplexEmotionHintStore, FavorabilityRepository, MemoryRepository, MutablePersonalityStore,
     RelationIdentityStore, VirtualTimeStore,
 };
+pub use resource_coordination::ResourceSnapshotSource;
 pub use slot_backend_factory::SlotBackendFactoryPort;
 pub use slot_resolver::SlotRegistryResolver;
 pub use theater_director::{

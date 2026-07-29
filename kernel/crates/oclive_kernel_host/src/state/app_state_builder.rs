@@ -9,6 +9,7 @@ use crate::infrastructure::chat_storage::{
     build_conversation_store, pick_chat_storage_backend_kind, set_persisted_storage_root,
     ReplayTaskRegistry, APP_SETTING_CHAT_STORAGE_ROOT,
 };
+use crate::infrastructure::coordinated_llm::CoordinatedExternalLlm;
 use crate::infrastructure::db::DbManager;
 use crate::infrastructure::directory_plugins::DirectoryPluginRuntime;
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
@@ -22,6 +23,7 @@ use crate::infrastructure::remote_fallback_policy::{
     new_remote_fallback_switch, remote_fallback_env_override, remote_fallback_from_db_value,
 };
 use crate::infrastructure::repositories::{SqliteFavorabilityRepository, SqliteMemoryRepository};
+use crate::infrastructure::resource_snapshot::NvidiaSmiResourceSnapshotSource;
 use crate::infrastructure::sqlite_pool;
 use crate::infrastructure::storage::RoleStorage;
 use arc_swap::ArcSwap;
@@ -138,6 +140,12 @@ impl AppStateBuilder {
             self.host_profile
                 .unwrap_or_else(host_profile::load_host_profile_from_env),
         );
+        let resource_coordinator = Arc::new(
+            crate::domain::resource_coordinator::ResourceCoordinator::new(
+                host_profile::effective_resource_coordination_policy(host_profile.as_ref()),
+                Arc::new(NvidiaSmiResourceSnapshotSource),
+            ),
+        );
 
         let memory_repo: Arc<dyn MemoryRepository> =
             Arc::new(SqliteMemoryRepository::new(db_manager.clone()));
@@ -159,24 +167,35 @@ impl AppStateBuilder {
                     std::env::var("OLLAMA_BASE_URL")
                         .unwrap_or_else(|_| "http://localhost:11434".to_string()),
                 ));
-                let fallback: Arc<dyn LlmClient> =
+                let raw_fallback: Arc<dyn LlmClient> =
                     Arc::new(SharedOllamaClient(Arc::clone(&client)));
+                let fallback: Arc<dyn LlmClient> = Arc::new(CoordinatedExternalLlm::new(
+                    raw_fallback,
+                    Arc::clone(&resource_coordinator),
+                    "builtin.llm.ollama",
+                ));
                 if matches!(
                     host_profile.llm_runtime.mode,
                     crate::domain::host_profile::LocalLlmRuntimeMode::Performance
                 ) {
                     let resource_root = self.roles_dir.parent().map(Path::to_path_buf);
-                    match PerformanceLlmClient::new(
+                    match PerformanceLlmClient::new_with_resource_coordinator(
                         host_profile.llm_runtime.clone(),
                         self.app_data_dir.clone(),
                         resource_root,
                         fallback.clone(),
                         Some(client.clone()),
                         ollama_model.clone(),
+                        Arc::clone(&resource_coordinator),
                     ) {
                         Ok(performance) => {
                             let performance = Arc::new(performance);
-                            let llm: Arc<dyn LlmClient> = performance.clone();
+                            let performance_client: Arc<dyn LlmClient> = performance.clone();
+                            let llm: Arc<dyn LlmClient> = Arc::new(CoordinatedExternalLlm::new(
+                                performance_client,
+                                Arc::clone(&resource_coordinator),
+                                "builtin.llm.performance_request",
+                            ));
                             (llm, Some(client), Some(performance))
                         }
                         Err(error) => {
@@ -301,6 +320,7 @@ impl AppStateBuilder {
             llm,
             ollama,
             performance_llm,
+            resource_coordinator,
             role_cache: Arc::new(RwLock::new(indexmap::IndexMap::new())),
             role_load_inflight: DashMap::new(),
             http_api_roles: DashMap::new(),

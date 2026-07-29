@@ -40,6 +40,12 @@ startup_timeout_ms = 90000
 retry_cooldown_ms = 30000
 model_alias = "oclive-performance"
 
+[resource_coordination]
+gpu_safety_reserve_mib = 768
+pending_lease_ttl_ms = 120000
+active_lease_ttl_ms = 1800000
+allow_unverified_admission = true
+
 [turn_thinking]
 default = "auto"
 fast_skip_complex_emotion = true

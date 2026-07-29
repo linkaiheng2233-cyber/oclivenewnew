@@ -8,11 +8,14 @@ use crate::models::plugin_backends::{
 use oclive_kernel_runtime::distro_oclive_file::{
     parse_distro_oclive_file, DistroOcliveFile, PluginBackendsToml,
 };
+use oclive_kernel_types::ResourceCoordinatorPolicy;
 use std::path::{Path, PathBuf};
 
 pub const ENV_DISTRO_ID: &str = "OCLIVE_DISTRO_ID";
 pub const ENV_DISTRO_PROFILE: &str = "OCLIVE_DISTRO_PROFILE";
 pub const ENV_THEATER_DIRECTOR_PLUGIN: &str = "OCLIVE_THEATER_DIRECTOR_PLUGIN";
+pub const ENV_GPU_SAFETY_RESERVE_MIB: &str = "OCLIVE_GPU_SAFETY_RESERVE_MIB";
+pub const ENV_RESOURCE_ALLOW_UNVERIFIED: &str = "OCLIVE_RESOURCE_ALLOW_UNVERIFIED";
 
 /// Distro theater scene director directory plugin id.
 #[derive(Debug, Clone, Default)]
@@ -164,6 +167,7 @@ pub struct HostProfile {
     pub theater: TheaterProfile,
     pub turn_thinking: TurnThinkingProfile,
     pub llm_runtime: LocalLlmRuntimeProfile,
+    pub resource_coordination: ResourceCoordinatorPolicy,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -473,6 +477,20 @@ fn host_profile_from_distro_file(
             }
         }
     }
+    if let Some(ref resources) = file.resource_coordination {
+        if let Some(value) = resources.gpu_safety_reserve_mib {
+            profile.resource_coordination.gpu_safety_reserve_mib = value.min(65_536);
+        }
+        if let Some(value) = resources.pending_lease_ttl_ms {
+            profile.resource_coordination.pending_lease_ttl_ms = value.clamp(1_000, 3_600_000);
+        }
+        if let Some(value) = resources.active_lease_ttl_ms {
+            profile.resource_coordination.active_lease_ttl_ms = value.clamp(10_000, 86_400_000);
+        }
+        if let Some(value) = resources.allow_unverified_admission {
+            profile.resource_coordination.allow_unverified_admission = value;
+        }
+    }
     Ok(profile)
 }
 
@@ -495,8 +513,28 @@ impl Default for HostProfile {
             theater: TheaterProfile::default(),
             turn_thinking: TurnThinkingProfile::default(),
             llm_runtime: LocalLlmRuntimeProfile::default(),
+            resource_coordination: ResourceCoordinatorPolicy::default(),
         }
     }
+}
+
+#[must_use]
+pub fn effective_resource_coordination_policy(profile: &HostProfile) -> ResourceCoordinatorPolicy {
+    let mut policy = profile.resource_coordination.clone();
+    if let Ok(raw) = std::env::var(ENV_GPU_SAFETY_RESERVE_MIB) {
+        if let Ok(value) = raw.trim().parse::<u64>() {
+            policy.gpu_safety_reserve_mib = value.min(65_536);
+        }
+    }
+    if let Ok(raw) = std::env::var(ENV_RESOURCE_ALLOW_UNVERIFIED) {
+        let normalized = raw.trim().to_ascii_lowercase();
+        if matches!(normalized.as_str(), "1" | "true" | "yes" | "on") {
+            policy.allow_unverified_admission = true;
+        } else if matches!(normalized.as_str(), "0" | "false" | "no" | "off") {
+            policy.allow_unverified_admission = false;
+        }
+    }
+    policy
 }
 
 /// Whether theater director plugins should be indexed for the active host profile.

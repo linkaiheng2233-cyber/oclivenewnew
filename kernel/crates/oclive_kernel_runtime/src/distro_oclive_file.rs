@@ -25,6 +25,20 @@ pub struct DistroOcliveFile {
     pub theater: Option<TheaterToml>,
     pub turn_thinking: Option<TurnThinkingToml>,
     pub llm_runtime: Option<LlmRuntimeToml>,
+    pub resource_coordination: Option<ResourceCoordinationToml>,
+}
+
+/// Distro ceilings and compatibility policy for the host Resource Coordinator.
+#[derive(Debug, Default, Clone, Deserialize)]
+pub struct ResourceCoordinationToml {
+    /// GPU memory kept outside new OCLive reservations.
+    pub gpu_safety_reserve_mib: Option<u64>,
+    /// Maximum age of an admission that has not reported runtime activation.
+    pub pending_lease_ttl_ms: Option<u64>,
+    /// Heartbeat window for an active adapter lease.
+    pub active_lease_ttl_ms: Option<u64>,
+    /// Compatibility fallback when no supported device telemetry is available.
+    pub allow_unverified_admission: Option<bool>,
 }
 
 /// Distro-owned local LLM runtime policy.
@@ -262,6 +276,12 @@ mod tests {
         assert_eq!(runtime.mode.as_deref(), Some("performance"));
         assert_eq!(runtime.endpoint.as_deref(), Some("http://127.0.0.1:8421"));
         assert_eq!(runtime.auto_start, Some(true));
+        let resources = file
+            .resource_coordination
+            .as_ref()
+            .expect("resource_coordination");
+        assert_eq!(resources.gpu_safety_reserve_mib, Some(768));
+        assert_eq!(resources.allow_unverified_admission, Some(true));
     }
 
     #[test]

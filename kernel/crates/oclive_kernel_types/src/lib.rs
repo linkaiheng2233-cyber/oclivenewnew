@@ -121,6 +121,13 @@ pub use models::{
     memory::{Memory, MemoryContext},
     personality::PersonalityVector,
     plugin_backends::*,
+    resource_coordination::{
+        GpuDeviceSnapshot, ResourceAdmissionDecision, ResourceAdmissionMode,
+        ResourceAdmissionRequest, ResourceAdmissionResult, ResourceControlMode,
+        ResourceCoordinationDiagnostics, ResourceCoordinatorPolicy, ResourceLeaseDiagnostic,
+        ResourceLeaseState, ResourcePressureLevel, ResourcePriority, ResourceSnapshot,
+        RESOURCE_COORDINATION_SCHEMA_VERSION,
+    },
     role::{
         EvolutionBounds, EvolutionConfig, LifeState, MemoryConfig, PersonalityDefaults,
         PersonalitySource, Role, UserRelation,
