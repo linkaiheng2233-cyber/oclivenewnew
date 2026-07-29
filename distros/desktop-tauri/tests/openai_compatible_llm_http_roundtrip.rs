@@ -25,6 +25,10 @@ use serde_json::{json, Value};
 use std::sync::Arc;
 use tempfile::tempdir;
 
+// Both tests mutate the same process-wide remote-LLM environment variables.
+// Keep their mock servers and captured endpoints in one serialized lifetime.
+static REMOTE_LLM_ENV_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+
 async fn mock_chat_completions(headers: HeaderMap, Json(body): Json<Value>) -> Response {
     let auth = headers
         .get(axum::http::header::AUTHORIZATION)
@@ -70,6 +74,7 @@ async fn mock_chat_completions(headers: HeaderMap, Json(body): Json<Value>) -> R
 
 #[tokio::test(flavor = "multi_thread")]
 async fn openai_compatible_llm_generate_via_chat_completions() {
+    let _env_guard = REMOTE_LLM_ENV_LOCK.lock().await;
     let app = Router::new().route("/v1/chat/completions", post(mock_chat_completions));
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();
@@ -130,6 +135,7 @@ async fn openai_compatible_llm_generate_via_chat_completions() {
 /// (OpenAI-compat when `OCLIVE_LLM_CLOUD_API_STYLE` is not `oclive_jsonrpc`).
 #[tokio::test(flavor = "multi_thread")]
 async fn openai_compatible_llm_via_registry_remote() {
+    let _env_guard = REMOTE_LLM_ENV_LOCK.lock().await;
     let app = Router::new().route("/v1/chat/completions", post(mock_chat_completions));
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();
