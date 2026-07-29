@@ -86,6 +86,12 @@ startup_timeout_ms = 90000
 retry_cooldown_ms = 30000
 model_alias = "oclive-performance"
 
+[resource_coordination]
+gpu_safety_reserve_mib = 768      # 冷启动后仍须保留的设备安全余量
+pending_lease_ttl_ms = 120000     # 未激活租约的竞态/取消兜底
+active_lease_ttl_ms = 1800000     # 活跃租约诊断 TTL
+allow_unverified_admission = true # nvidia-smi 不可用时允许内置适配器保守尝试
+
 [turn_thinking]
 default = "auto"                  # fast | deep | auto
 fast_skip_complex_emotion = true  # optional
@@ -160,9 +166,22 @@ favor_low  = "…"              # optional; favor < 40
 
 运行时在发行版启动后后台预热：性能组件和模型齐全时只加载 llama-server；任一缺失时才预热 Ollama，避免两个模型同时占用显存。GGUF 切换会终止宿主管理的旧 llama-server 并按新路径重启。
 
-当前显存互斥只覆盖 OCLive 管理的 llama-server 与已知 Ollama fallback 模型。语音组件与本地 7B 模型同时启用前，发行版还必须由统一资源协调器根据显存预算决定 GPU 分层、暂停或 CPU 降级；语音包不得各自偷偷预热并与 LLM 抢占显存。`HostProfile` 只提供发行版预算上限与默认偏好，蓝图只表达能力/降级意图，实际租约由协调器决定；目标契约见 [蓝图扩展与资源协调 RFC](../rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md)。
+### 3.2.2 `[resource_coordination]`（宿主控制面 · 非蓝图字段）
 
-### 3.2.2 `[turn_thinking]`（编排行 · 非六槽）
+该段提供发行版级默认策略，不允许蓝图直接分配显存或发出卸载命令。桌面默认值为：
+
+| 字段 | 默认 | 语义 |
+|------|------|------|
+| `gpu_safety_reserve_mib` | `768` | 新冷启动工作负载批准后仍需保留的显存余量 |
+| `pending_lease_ttl_ms` | `120000` | reserved 租约在取消/崩溃时的兜底过期时间 |
+| `active_lease_ttl_ms` | `1800000` | observe-only 活动租约的诊断 TTL；managed 常驻运行时由适配器显式释放 |
+| `allow_unverified_admission` | `true` | `nvidia-smi` 不可用时允许内置适配器继续保守尝试，并把状态标为 degraded |
+
+环境覆盖：`OCLIVE_GPU_SAFETY_RESERVE_MIB`、`OCLIVE_RESOURCE_ALLOW_UNVERIFIED`。适配器估算可用 `OCLIVE_LLAMA_GPU_RESERVATION_MIB`、`OCLIVE_COSYVOICE_GPU_RESERVATION_MIB` 覆盖；目标设备可用 `OCLIVE_GPU_DEVICE_INDEX`（其次读取 `CUDA_VISIBLE_DEVICES`）选择。这些适配器覆盖不属于角色包格式。
+
+当前统一协调器已覆盖 NVIDIA 设备快照、并发 pending reservation、managed llama-server 冷启动/释放、observe-only Ollama 前台活动与官方 bundled CosyVoice2 准入。纯 Plan Compiler / CLI doctor 不探测硬件，返回 `not_evaluated`；桌面 `get_execution_plan_diagnostics` 与 `get_resource_coordination_diagnostics` 刷新运行态。自动抢占/恢复、RAM/CPU、渲染适配器和真实共享显存 soak 仍是后续债务。完整边界见 [蓝图扩展与资源协调 RFC](../rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md)。
+
+### 3.2.3 `[turn_thinking]`（编排行 · 非六槽）
 
 每轮 **Fast / Deep** 思考档位，由 `co_present` 内 `TurnThinkingRouter` stage 解析（`turn_thinking.rs`）。**不是**设施子模块号，**不**写入 `plugin_backends`。
 

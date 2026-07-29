@@ -151,7 +151,7 @@ distros/chat-pro/roles/{role_id}/
 | SSOT 路径 | `distros/chat-pro/roles/{id}/pipeline.ocblueprint` | 可迁至 `blueprint/pipeline.ocblueprint`，根路径保留兼容或 symlink 文档 |
 | `pack validate` | 校验本体、已声明 include 文件及合并后的有效蓝图；`blueprint/docs` 忽略 | 编写器复用同一 Rust/WASM 校验链并显示结构化定位 |
 | `includes` 解析 | **已实现**；现行目录校验要求文件存在，mode 仅 `merge` / `replace`，缺失会阻止 load | 若未来改为可选 include，须新增显式 required/optional 契约，不能靠 lenient helper 猜测 |
-| `extensions` | **v4 外壳与能力计划已实现**：声明/路径/载荷 JSON 校验、round-trip、目录 Provider Registry、required/optional 激活门禁及跨发行版结构化诊断 | Provider 自有载荷语义校验；Resource Coordinator 与资源适配 |
+| `extensions` | **v4 外壳与能力计划已实现**：声明/路径/载荷 JSON 校验、round-trip、目录 Provider Registry、required/optional 激活门禁及跨发行版结构化诊断 | Provider 自有载荷语义校验；宿主 Resource Coordinator 已有内置 LLM/Voice 首切片，第三方资源适配注册仍待后续 |
 | 专家目录缺失 | 不阻塞加载 | 保持 |
 
 实现前：专家人格等白名单片段放 `blueprint/`，**手动** merge 或由 CLI `expert apply` 写入对应 `includes` 目标文件；`expert_routing.json` 仍由专家设施专用 loader 读取。

@@ -1,7 +1,7 @@
 # 内核调度系统 — 范围重划（Rescope · 2026-06-11）
 
 **状态**：架构决策 · **不删代码** · 产品面 **收窄 + 封存扩展**  
-**最后更新**：2026-07-28（补充统一资源协调边界；实现仍 OPEN）
+**最后更新**：2026-07-29（统一资源协调首个 LLM/Voice 切片已实现）
 **关联**：[DISTRO_DEFAULT_PLUGINS.md](../creator-docs/kernel/DISTRO_DEFAULT_PLUGINS.md) · [DISTRO_KERNEL_LIFECYCLE.md](../creator-docs/kernel/DISTRO_KERNEL_LIFECYCLE.md)
 
 ---
@@ -15,7 +15,7 @@
 | **A · 进程调度** | `resolve_kernel_action` · promote · attach/replace | **哪个 `oclive-kernel-server` 进程**、是否重启 | **要，但应收窄** |
 | **B · 发行版策略** | `HostProfile` · `distro.oclive.toml` · 蓝图 `slot_registry` | **同一进程内**有效六槽 + prompt/memory | **要 — 新主战场** |
 | **C · 槽位降级** | remote/directory → builtin · Agent fallback · Theater 前端 Ollama fallback | **单回合**模块失败时的备选实现 | **要 — 可靠性，不是层级** |
-| **D · 资源协调** | 目标 `ExecutionPlan` · Resource Coordinator · LLM/语音/渲染适配器 | **同一设备上** GPU/内存/进程预算、租约、优先级与降级 | **要 — OPEN，不能塞进 A/B/C** |
+| **D · 资源协调** | `ExecutionPlan` · Resource Coordinator · LLM/语音/渲染适配器 | **同一设备上** GPU/内存/进程预算、租约、优先级与降级 | **要 — Partial；LLM/Voice 首切片已接，不能塞进 A/B/C** |
 
 **结论**：发行版差异应主要在 **B（插件矩阵）** 解决；**A 不应再承担「为每个发行版裁剪不同内核能力」**；**C 不是上下级，是 fail-open**；**D 根据 B 编译出的意图和真实设备状态落实资源，但不得反向把硬件决策写死进蓝图**。
 

@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |--------|-----|
-| 状态 | **边界已确认 · v4 外壳与 Capability/Plan 诊断已实现 · Resource 仍未实现** |
+| 状态 | **边界已确认 · v4 外壳与 Capability/Plan 诊断已实现 · Resource 首个 LLM/Voice 切片已实现** |
 | 最后更新 | 2026-07-29 |
 | 受众 | 内核、编写器、发行版、目录插件与商业扩展开发者 |
 | 维护范围 | 蓝图扩展最小外壳、能力解析、`ExecutionPlan`、资源协调器与适配器分责 |
@@ -109,7 +109,10 @@ role/
 - Rust/JSON Schema、CLI/doctor、Host 与角色包编写器已支持 v4 外壳、路径安全和未知载荷 round-trip。
 - 宿主已实现目录 Provider 的 Capability Registry、确定性 Provider 选择、权限/依赖/启停检查、required/optional 激活门禁，以及 Tauri/CLI 只读结构化诊断；同一角色包可按 `HostProfile` 得到不同计划。
 - 计划只有在宿主已登记真实消费者时才将 capability 标为 active。首个登记项为 Chat Pro `voice.asr`；任意 manifest `provides` 不能自行扩张内核。
-- `ExecutionPlan` 当前只解析能力与有效六槽，不启动 Provider、不写回角色包。设备快照、资源声明与 Resource Coordinator 尚未落地，明确报告 `resource_coordination: not_evaluated`。
+- `ExecutionPlan` 仍只解析能力与有效六槽，不启动 Provider、不写回角色包；纯编译与 CLI doctor 明确保留 `resource_coordination: not_evaluated`。桌面 Tauri 诊断会刷新宿主 Resource Coordinator，并返回 `ready | degraded | blocked`。
+- 宿主已提供 NVIDIA 多设备快照、准入、租约、优先级、压力和诊断 DTO；`HostProfile` 提供全局安全余量与租约 TTL。
+- 首个资源适配闭环覆盖宿主管理的 llama-server 冷启动、只能观测的 Ollama/LLM 前台活动，以及官方 bundled CosyVoice2 的 `voice.warm` / `voice.speak`。云 TTS、用户自建 HTTP TTS 与社区插件不被误认为宿主可控资源。
+- 当前仍是首期切片：通用第三方 Resource Adapter 注册、公平队列/抢占、系统内存/CPU、渲染适配器及共享显存实机压力/soak 仍待后续验证。
 
 ---
 
@@ -128,7 +131,7 @@ Capability Provider 是业务能力的实现边界，不等于 Resource Adapter�
 Provider manifest 的职责：
 
 - **当前 `schema_version: 1`**：`provides`、Provider `version`、目录 `process`、插件依赖与 `permissions` 已进入 Registry 诊断；字段和权限语义以 [`PLUGIN_V1`](../plugin-and-architecture/PLUGIN_V1.md) 为准。
-- **尚未实现**：宿主/API semver range、Resource Adapter 注册入口及资源声明。当前显示 Provider 版本不代表 API 兼容性已协商。
+- **尚未实现**：宿主/API semver range、第三方 Resource Adapter 注册入口及 manifest 资源声明。当前内置 LLM/Voice 适配不扩大目录插件 schema；显示 Provider 版本仍不代表 API 兼容性已协商。
 
 本 RFC 不提前把尚未实现的字段写成现行插件契约。
 
@@ -160,7 +163,7 @@ Provider manifest 的职责：
 
 `ExecutionPlan` 不落盘、不放进角色包、不成为第三方 schema。蓝图只表达意图；计划编译器拥有依赖闭包与实际选择。
 
-当前 `co_present_stable` 计划已包含六槽有效后端、扩展 Provider/版本、候选、权限/依赖原因与是否可激活；设备、资源声明、生命周期和优先级留到 Resource Coordinator 切片。只读诊断不执行 Provider。
+当前 `co_present_stable` 计划已包含六槽有效后端、扩展 Provider/版本、候选、权限/依赖原因与是否可激活。设备与租约仍由宿主 Resource Coordinator 单独评估，不写回蓝图；只读诊断不执行 Provider。纯 Plan Compiler / CLI doctor 不探测设备，桌面诊断才刷新设备状态。
 
 当前 Stable 顺序继续由 `process_message` / `turn_pipeline` 维护。未来“快速反应”“情感优先”等有限自由应通过宿主登记的模板或受约束偏序实现，不能恢复任意 `steps[]`。本 RFC 不复用或解冻 v3 `pipeline.stable` / `pipeline.experimental`。
 
@@ -225,6 +228,15 @@ flowchart TD
 
 外部 Ollama、外部 llama-server 或第三方渲染进程可能只可观察、不可控制。适配器必须显式报告 `managed` / `observe_only`，协调器不得假设自己拥有所有 GPU 进程。
 
+### 6.2.1 当前首期实现边界
+
+- `NvidiaSmiResourceSnapshotSource` 最佳努力读取设备快照；不可用时显式返回 unavailable，不伪造 0 MiB。
+- 冷启动准入按目标 GPU、当前空闲显存、并发 pending reservation 与 `gpu_safety_reserve_mib` 原子判断；`OCLIVE_GPU_DEVICE_INDEX` / `CUDA_VISIBLE_DEVICES` 可指定目标设备。
+- managed llama-server 启动前申请租约，模型切换、启动失败、超时、降级或停用时释放；外部 Ollama 只登记前台活动且不在 token 热路径启动 `nvidia-smi`。
+- 官方 `com.oclive.voice.asr` 的 bundled CosyVoice2 才接宿主准入。宿主租约只替代 mixed-fp16 的旧固定冷启动门槛；FP32 扩张继续走侧车更严格的二次门禁。
+- 取消/调用失败通过 RAII 释放 pending lease；关闭 TTS 或切换到非 bundled provider 会释放语音租约。同一适配器的冷启动 RPC 串行化，避免复用租约时的竞态。
+- 当前不会为了加载语音强杀正在进行的 LLM 请求，也不会声称能卸载任意外部 Ollama。自动抢占、恢复与真实共享显存压力测仍是 K-RESOURCE-COORD-01 后续完成条件。
+
 ### 6.3 资源描述不是角色包硬编码
 
 蓝图不得写固定“分配 2048 MiB”作为执行命令。资源需求来自：
@@ -239,7 +251,7 @@ flowchart TD
 
 ## 7. 共通控制消息
 
-首版资源控制面可围绕以下语义收敛，具体 DTO 名在实现前再由 contracts crate 定稿：
+首版公共 DTO 已在 `oclive_kernel_types::resource_coordination` 收敛 snapshot、admission、lease、priority、pressure 与 diagnostics；设备采集端口为 `oclive_kernel_contracts::ResourceSnapshotSource`。下表后两类主动控制消息仍待后续适配器协议：
 
 | 消息语义 | 用途 |
 |----------|------|

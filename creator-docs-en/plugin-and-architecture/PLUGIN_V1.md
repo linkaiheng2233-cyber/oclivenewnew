@@ -145,7 +145,7 @@ Directory / remote plugins may declare **`provides`** beyond the six slots. Host
 - A directory Provider must pass manifest `schema_version: 1` validation, declare the capability, have an executable `process`, and satisfy dependencies, per-role enablement, and high-risk grants. Legacy process manifests without `permissions` still require `process:spawn`.
 - Provider `version` is reported for diagnostics. The v4 envelope currently has no Provider API semver range, so the displayed version is not an API-compatibility promise.
 - The first registered v4 consumer is Chat Pro `voice.asr`; other capabilities degrade or block until their consumer and call path exist.
-- `get_execution_plan_diagnostics` and `oclive doctor execution-plan` never spawn a Provider, allocate resources, or rewrite a role pack. `resource_coordination: not_evaluated` means the unified coordinator has not run.
+- Neither entry point spawns a Provider or rewrites a role pack. `oclive doctor execution-plan` / pure Plan Compiler diagnostics do not probe devices and report `resource_coordination: not_evaluated`; desktop `get_execution_plan_diagnostics` refreshes read-only Resource Coordinator state without starting a model.
 
 DTO and implementation anchors: [`models/execution_plan.rs`](../../kernel/crates/oclive_kernel_types/src/models/execution_plan.rs) · [`capability_registry.rs`](../../kernel/crates/oclive_kernel_host/src/infrastructure/capability_registry.rs) · [`execution_plan.rs`](../../kernel/crates/oclive_kernel_host/src/domain/execution_plan.rs).
 
@@ -161,7 +161,7 @@ Community directory TTS plugins share the official **`voice.*` method namespace*
 | **`provides`** | **No** separate `voice.tts` token. TTS-only sidecars **need not** declare `voice.asr`; plugins that also serve the ASR UI channel **may** declare **`voice.asr`** (same token as official; **no** new permission surface) |
 | **Recommended minimal `rpcMethods`** | at least **`voice.speak`**; typical sidecars also declare **`voice.probe_tts`**, **`voice.warm`**, **`voice.list_tts_adapters`**. Full `voice.*` list: [RFC §4.1 (ZH SSOT)](../../creator-docs/rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md#41-voiceasr-插件通道windows-已交付--宿主侧) — each method must be listed in **this** manifest to be invocable |
 
-Host UI / `ui_slots` call declared methods via **`plugin_rpc_invoke`**; undeclared methods are rejected (same as official voice plugins).
+Host UI / `ui_slots` call declared methods via **`plugin_rpc_invoke`**; undeclared methods are rejected (same as official voice plugins). Unified resource coordination currently recognizes only official `com.oclive.voice.asr` with `bundled-cosyvoice2-zh`. Community `com.user.tts.*`, user-hosted HTTP, and cloud TTS are not treated as host-managed GPU runtimes merely because they share `voice.*` method names.
 
 Full Chinese normative section: **[PLUGIN_V1 §社区 TTS](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md)**.
 

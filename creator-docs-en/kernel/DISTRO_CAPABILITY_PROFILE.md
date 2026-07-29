@@ -59,6 +59,20 @@ skip_agent = true
 skip_complex_emotion = true
 event_impact_llm = false
 
+[llm_runtime]
+mode = "performance"
+endpoint = "http://127.0.0.1:8421"
+auto_start = true
+startup_timeout_ms = 90000
+retry_cooldown_ms = 30000
+model_alias = "oclive-performance"
+
+[resource_coordination]
+gpu_safety_reserve_mib = 768
+pending_lease_ttl_ms = 120000
+active_lease_ttl_ms = 1800000
+allow_unverified_admission = true
+
 [turn_thinking]
 default = "auto"
 fast_skip_complex_emotion = true
@@ -101,9 +115,20 @@ Fast / Deep per turn via `TurnThinkingRouter` in `co_present`. Fields: `default`
 
 **Chat Pro default (`desktop`)**: `default = auto`, `fast_persistence = strong_only`; streaming via `POST /chat/stream`; Deep capsule when pack enables it.
 
-### Resource coordination target
+### 3.2.2 `[resource_coordination]` (host control plane, not a blueprint field)
 
-Current VRAM exclusion covers only OCLive-managed llama-server and known Ollama fallback models. `HostProfile` may provide distro budget ceilings and default preferences, while blueprints express capability/degradation intent; a future Resource Coordinator owns actual leases and coordinates local LLM, voice, and render adapters. See the [blueprint extension and resource coordination RFC](../rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md). This target is not implemented by the current profile schema.
+The distro policy defaults are:
+
+| Field | Desktop default | Meaning |
+|-------|-----------------|---------|
+| `gpu_safety_reserve_mib` | `768` | VRAM that must remain after a newly admitted cold load |
+| `pending_lease_ttl_ms` | `120000` | fallback expiry for an unactivated/cancelled reservation |
+| `active_lease_ttl_ms` | `1800000` | diagnostics TTL for observe-only activity; managed resident runtimes release explicitly |
+| `allow_unverified_admission` | `true` | permit a conservative built-in attempt when `nvidia-smi` is unavailable and report degraded state |
+
+Environment overrides: `OCLIVE_GPU_SAFETY_RESERVE_MIB`, `OCLIVE_RESOURCE_ALLOW_UNVERIFIED`; adapter estimates may be overridden with `OCLIVE_LLAMA_GPU_RESERVATION_MIB` and `OCLIVE_COSYVOICE_GPU_RESERVATION_MIB`. `OCLIVE_GPU_DEVICE_INDEX` (then `CUDA_VISIBLE_DEVICES`) selects the target device. These adapter controls are not role-pack fields.
+
+The first implementation covers NVIDIA snapshots, concurrent pending reservations, managed llama-server cold start/release, observe-only Ollama foreground activity, and official bundled CosyVoice2 admission. Pure Plan Compiler / CLI diagnostics remain `not_evaluated`; desktop diagnostics refresh runtime state. Automatic preemption/recovery, RAM/CPU, render adapters, and real shared-VRAM soak remain future work. See the [blueprint extension and resource coordination RFC](../rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md).
 
 ### 3.3 Prompt / memory / post_process mapping
 

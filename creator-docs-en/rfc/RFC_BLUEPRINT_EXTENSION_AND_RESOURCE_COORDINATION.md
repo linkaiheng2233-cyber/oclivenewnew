@@ -4,7 +4,7 @@
 
 | Metadata | Value |
 |----------|-------|
-| Status | **Boundary accepted · v4 envelope and Capability/Plan diagnostics implemented · Resource pending** |
+| Status | **Boundary accepted · v4 envelope and Capability/Plan diagnostics implemented · first LLM/voice resource slice implemented** |
 | Last updated | 2026-07-29 |
 | Audience | Kernel, editor, distro, directory-plugin, and commercial extension developers |
 | Scope | Minimal blueprint extension envelope, capability resolution, `ExecutionPlan`, Resource Coordinator, and adapter ownership |
@@ -47,7 +47,10 @@ Current implementation boundary (2026-07-29):
 - Rust/JSON Schema, CLI/doctor, Host, and the pack editor implement the v4 envelope, path safety, and opaque payload round-trip.
 - The host implements a directory-Provider Capability Registry, deterministic Provider selection, permission/dependency/enablement checks, required/optional activation gates, and read-only structured diagnostics through Tauri and the CLI. The same pack can produce different plans under different `HostProfile`s.
 - A capability becomes active only when the host has registered a real consumer. The first registration is Chat Pro `voice.asr`; an arbitrary manifest `provides` entry cannot expand kernel behavior.
-- The current `ExecutionPlan` resolves capabilities and effective six-slot backends only. It does not start Providers or rewrite packs. Device snapshots, resource claims, and the Resource Coordinator remain unimplemented and report `resource_coordination: not_evaluated`.
+- `ExecutionPlan` still resolves capabilities and effective six-slot backends without starting Providers or rewriting packs. Pure compilation and the CLI doctor retain `resource_coordination: not_evaluated`; desktop Tauri diagnostics refresh the host coordinator and report `ready | degraded | blocked`.
+- The host now exposes NVIDIA multi-device snapshots plus admission, lease, priority, pressure, and diagnostics DTOs. `HostProfile` supplies the safety reserve and lease TTL policy.
+- The first adapter loop covers managed llama-server cold starts, observe-only Ollama/LLM foreground activity, and official bundled CosyVoice2 `voice.warm` / `voice.speak`. Cloud TTS, user-hosted HTTP TTS, and community plugins are not misclassified as host-managed resources.
+- General third-party Resource Adapter registration, fair queues/preemption, RAM/CPU, render adapters, and real shared-VRAM stress/soak remain future work.
 
 ## Capability Provider versus Resource Adapter
 
@@ -60,7 +63,7 @@ Current implementation boundary (2026-07-29):
 | Cloud TTS | Required | Usually no |
 | Live2D renderer | Required | Yes when it shares managed GPU resources |
 
-Current directory manifest `schema_version: 1` contributes `provides`, Provider `version`, `process`, dependencies, and `permissions` to Registry diagnostics; [`PLUGIN_V1`](../plugin-and-architecture/PLUGIN_V1.md) owns those field semantics. Host/API semver ranges, Resource Adapter entry points, and resource declarations are not implemented. A displayed Provider version is not an API-compatibility negotiation.
+Current directory manifest `schema_version: 1` contributes `provides`, Provider `version`, `process`, dependencies, and `permissions` to Registry diagnostics; [`PLUGIN_V1`](../plugin-and-architecture/PLUGIN_V1.md) owns those field semantics. Host/API semver ranges, third-party Resource Adapter entry points, and manifest resource declarations are not implemented. Built-in LLM/voice adapters do not expand the directory-plugin schema. A displayed Provider version is not an API-compatibility negotiation.
 
 ## `ExecutionPlan`
 
@@ -78,7 +81,7 @@ role content + blueprint intent
 
 It resolves providers, permissions, dependencies, required/optional degradation, registered stable templates, and resource claims. It is not persisted and is not a third-party schema.
 
-The current `co_present_stable` plan contains effective six-slot backends, extension Provider/version selection, candidates, permission/dependency reasons, and activation status. Device/resource claims, lifecycle, and priority remain for the Resource Coordinator slice; read-only diagnostics do not execute Providers.
+The current `co_present_stable` plan contains effective six-slot backends, extension Provider/version selection, candidates, permission/dependency reasons, and activation status. Device and lease evaluation remains a separate host-owned Resource Coordinator concern and is never written into the blueprint. Pure Plan Compiler / CLI diagnostics do not probe devices; desktop diagnostics do.
 
 The current Stable order remains owned by `process_message` / `turn_pipeline`. Future limited freedom must use registered templates or constrained partial orders, not arbitrary `steps[]`. This RFC does not reuse or unfreeze v3 `pipeline.stable` / `pipeline.experimental`.
 
@@ -99,9 +102,18 @@ LLM, voice, render, and future adapters own runtime discovery, static/dynamic es
 
 Blueprints may express quality and degradation intent, but they do not hard-code executable VRAM allocations. Actual claims combine adapter estimates, the selected model/configuration, telemetry, and host/user policy.
 
+### Current first-slice boundary
+
+- `NvidiaSmiResourceSnapshotSource` provides best-effort snapshots and an explicit unavailable state instead of invented zero-capacity data.
+- Cold-start admission atomically evaluates the target GPU, current free VRAM, concurrent pending reservations, and `gpu_safety_reserve_mib`. `OCLIVE_GPU_DEVICE_INDEX` / `CUDA_VISIBLE_DEVICES` may select the device.
+- Managed llama-server acquires a lease before spawn and releases it on model changes, startup failure/timeout, degradation, or suspension. External Ollama records foreground activity without adding an `nvidia-smi` process to the token hot path.
+- Only official bundled CosyVoice2 is host-admitted. The host lease replaces the old fixed mixed-fp16 cold-load gate; FP32 expansion keeps the stricter sidecar-local gate.
+- RAII releases pending leases on cancellation/failure. Disabling TTS or switching away from bundled synthesis releases the voice lease, and per-adapter cold-start RPC serialization closes lease-reuse races.
+- This slice does not kill an active LLM request to load voice and does not claim control over arbitrary external Ollama processes. Automatic preemption/recovery and shared-VRAM stress/soak remain debt.
+
 ## Control messages
 
-The first contract should cover resource snapshots, admission results, lease grant/release, pressure events, degrade/suspend/resume requests, and runtime-state changes. Tokens, PCM, image frames, and renderer parameters stay on their existing domain channels.
+Public DTOs in `oclive_kernel_types::resource_coordination` now cover snapshots, admission, leases, priorities, pressure, and diagnostics; `oclive_kernel_contracts::ResourceSnapshotSource` owns device collection. Active degrade/suspend/resume requests and generic runtime-state messages remain future adapter protocol. Tokens, PCM, image frames, and renderer parameters stay on their existing domain channels.
 
 ## Compatibility and rollout
 

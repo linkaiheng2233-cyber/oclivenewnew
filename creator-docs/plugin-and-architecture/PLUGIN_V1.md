@@ -375,7 +375,7 @@ TypeScript 侧 `SendMessageResponse`（`distros/shared/src/api/`）必须与 `mo
 - 当前目录 Provider 必须通过 manifest `schema_version: 1` 校验、声明目标 capability、包含可执行 `process`，并满足插件依赖、角色级启停状态与高危授权；旧 manifest 省略 `permissions` 但含 `process` 时仍按 `process:spawn` 授权处理。
 - Provider `version` 会进入诊断快照；v4 外壳当前没有 Provider API semver range，不能把版本显示误当成 API 兼容承诺。未来新增兼容字段时须先扩展本契约。
 - 首个已登记的 v4 消费者是 Chat Pro `voice.asr`。其它 capability 在有真实消费者与调用链之前会结构化降级/阻断。
-- `get_execution_plan_diagnostics` 与 `oclive doctor execution-plan` 只解析候选、权限、依赖和发行版差异；不会 spawn Provider、分配资源或改写角色包。`resource_coordination: not_evaluated` 表示统一资源协调尚未参与。
+- 两个入口都不会 spawn Provider 或改写角色包。`oclive doctor execution-plan` / 纯 Plan Compiler 不探测设备，返回 `resource_coordination: not_evaluated`；桌面 `get_execution_plan_diagnostics` 会刷新只读 Resource Coordinator 诊断，但不会因查看诊断而启动模型。
 
 公共 DTO 与实现锚点见 [`models/execution_plan.rs`](../../kernel/crates/oclive_kernel_types/src/models/execution_plan.rs) · [`capability_registry.rs`](../../kernel/crates/oclive_kernel_host/src/infrastructure/capability_registry.rs) · [`execution_plan.rs`](../../kernel/crates/oclive_kernel_host/src/domain/execution_plan.rs)。
 
@@ -391,7 +391,7 @@ TypeScript 侧 `SendMessageResponse`（`distros/shared/src/api/`）必须与 `mo
 | **`provides`** | **无**独立 `voice.tts` token。纯 TTS 侧车**无需**声明 `voice.asr`；若同时承接 ASR UI 通道，可声明 **`voice.asr`**（与官方相同 token，**不**新增权限面） |
 | **推荐 `rpcMethods`（最小）** | 至少 **`voice.speak`**；典型侧车亦声明 **`voice.probe_tts`** · **`voice.warm`** · **`voice.list_tts_adapters`**。完整 `voice.*` 列见 [RFC §4.1](../rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md#41-voiceasr-插件通道windows-已交付--宿主侧)（须在自身 manifest 逐条声明方可 invoke） |
 
-宿主 UI 或 `ui_slots` 经 **`plugin_rpc_invoke`** 调用已声明方法；未在 `rpcMethods` 中声明的方法一律拒绝。
+宿主 UI 或 `ui_slots` 经 **`plugin_rpc_invoke`** 调用已声明方法；未在 `rpcMethods` 中声明的方法一律拒绝。统一资源协调当前只内置识别官方 `com.oclive.voice.asr` 的 `bundled-cosyvoice2-zh`；社区 `com.user.tts.*`、用户自建 HTTP 与云 TTS 保持各自责任边界，不会仅凭相同 `voice.*` 方法名就被冒充为宿主管理的 GPU 运行时。
 
 ### Reply Post-Processor · 润色场景（可选 · 非默认）
 

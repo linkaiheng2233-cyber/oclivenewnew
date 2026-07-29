@@ -288,7 +288,9 @@ Blueprint + HostProfile + user/session + Capability Registry
 
 资源协调是**无编号控制面设施**，不是第七后端模块、不是独立通道注册表项，也不是 [`resolve_kernel_action`](./KERNEL_SCHEDULER_RESCOPE.md) 的进程 attach/replace 调度。新扩展首先实现 Capability Provider；只有占用共享 GPU/内存/受管进程时才增加 Resource Adapter。完整字段、缺失语义和实施顺序只维护于 [蓝图扩展与资源协调 RFC](../creator-docs/rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md)。
 
-**当前实现边界（2026-07-29）**：宿主已能从 v4 `extensions`、有效六槽、`HostProfile`、目录插件 manifest、插件启停状态、依赖与高危授权编译**只读、进程内** `ExecutionPlan`；计划不会启动 Provider，也不会写回角色包。只有宿主登记了真实消费者的 capability 才可进入 ready，插件单独声明任意 `provides` 不构成可执行能力。首个登记项为 Chat Pro 的 `voice.asr`；其它发行版会对同一声明给出 `capability_consumer_unavailable`。Resource Coordinator 及 LLM/Voice 资源租约仍未实现，诊断固定返回 `resource_coordination: not_evaluated`。
+**当前实现边界（2026-07-29）**：宿主已能从 v4 `extensions`、有效六槽、`HostProfile`、目录插件 manifest、插件启停状态、依赖与高危授权编译**只读、进程内** `ExecutionPlan`；计划不会启动 Provider，也不会写回角色包。只有宿主登记了真实消费者的 capability 才可进入 ready，插件单独声明任意 `provides` 不构成可执行能力。首个登记项为 Chat Pro 的 `voice.asr`；其它发行版会对同一声明给出 `capability_consumer_unavailable`。
+
+Resource Coordinator 首期已落地 NVIDIA 多设备 snapshot、admission、lease、priority、pressure 与诊断；managed llama-server、observe-only Ollama/LLM 活动和官方 bundled CosyVoice2 已接入同一宿主实例。纯计划编译/CLI 不碰硬件，保留 `not_evaluated`；桌面诊断刷新为 `ready | degraded | blocked`。云/社区 TTS 不被误管，token/PCM 仍走原数据通道。尚未落地的是第三方 Resource Adapter 注册、公平队列/自动抢占恢复、RAM/CPU 与渲染适配器；状态见 `K-RESOURCE-COORD-01`。
 
 实现锚点：[`execution_plan.rs`](../kernel/crates/oclive_kernel_host/src/domain/execution_plan.rs)（纯编译）· [`capability_registry.rs`](../kernel/crates/oclive_kernel_host/src/infrastructure/capability_registry.rs)（宿主适配）· [`service/execution_plan.rs`](../kernel/crates/oclive_kernel_host/src/service/execution_plan.rs)（激活门禁/只读查询）· [`models/execution_plan.rs`](../kernel/crates/oclive_kernel_types/src/models/execution_plan.rs)（公共诊断 DTO）。
 
