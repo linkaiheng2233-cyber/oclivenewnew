@@ -1,6 +1,6 @@
 # Technical debt inventory
 
-**Last updated:** 2026-07-29（Stable v4 蓝图扩展外壳、Capability Registry 与只读 `ExecutionPlan` 已本地验证；统一资源协调仍保持 OPEN）
+**Last updated:** 2026-07-29（Stable v4 蓝图扩展外壳、Capability Registry 与只读 `ExecutionPlan` 已远端验证；统一资源协调仍保持 OPEN）
 
 **Product freeze (Theater v0):** **Lifted** — 朋友 cohort 产品门通过（7/10 卧槽）；模式 2 playtest 扩展中；**模式 3 仍冻结**。见 [theater/MODE2_UNFREEZE.md](./theater/MODE2_UNFREEZE.md)。
 
@@ -125,7 +125,7 @@
 | **V-PORTABLE-01** | 同一角色包跨发行版通用的分层验收 | **P1** | Minimal：同包通过 desktop / vscode / theater profile 的 load + mock chat；Full：各发行版 UI、资产、独立通道与降级差异形成 capability-conformance 报告 | **Partial**（Minimal implemented · 2026-07-18 · `e2e-distro-kernel --scenario role-portability` 本地三 profile 全绿；Full 未完成） |
 | **V-EMBED-01** | 跨平台 / 硬件的完整内核嵌入证明 | **P2** | host-independent `library` 提供完整 `process_message` 对称 API；至少一个 Linux/ARM 或硬件网关真实靶验证角色包、持久化、插件与资源预算 | **Partial**（无头 HTTP / CLI / ARM64 cross 已有；纯 library 仅暴露 runtime/DTO，完整编排仍在 host；参考 §2 冻结项与 K-CROSS-01） |
 | **D-BLUEPRINT-CONTRACT-02** | JSON Schema、Rust serde、`includes` 与插件自动挂载口径漂移 | **P1** | 未知字段策略一致；v2 `policy` / v3 `zone` 契约对齐；include mode/缺失行为与文档一致；自动挂载 backend 通过最终蓝图校验 | **Done**（2026-07-28 · 主仓实现 `f9d0a701`，验证收口 HEAD `43db1d20`，CI [`30373054084`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30373054084) `21/21` jobs success；编写器实现 `5a88227`，验证收口 HEAD `0d8164c5`，CI [`30364549132`](https://github.com/linkaiheng2233-cyber/oclive-pack-editor/actions/runs/30364549132) success；本地 Rust workspace fmt/clippy/lib/doctest、validation `92 + 18 + 4`、编写器 `38 files / 166 tests`、官方 `8` 角色包、module-compat 与 Dimension 5 `26 checks` 通过） |
-| **V-BLUEPRINT-EXT-01** | 第三方能力会推动蓝图根 schema 无界增长 | **P1** | Stable v4 实现最小 `extensions` 外壳、命名空间、required/optional、安全 `config_ref`、未知可选 round-trip、Capability Registry 与跨发行版诊断 | **Partial · full slice locally verified, CI pending**（2026-07-29：外壳/round-trip 基础之上，目录 Provider Registry、确定性解析、权限/依赖/启停诊断、required 激活门禁、Tauri/CLI 只读计划及同包跨发行版差异测试已落地；`ExecutionPlan` 不启动 Provider、不写回角色包；待远端 CI 后收口 Done；[RFC](../creator-docs/rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md)） |
+| **V-BLUEPRINT-EXT-01** | 第三方能力会推动蓝图根 schema 无界增长 | **P1** | Stable v4 实现最小 `extensions` 外壳、命名空间、required/optional、安全 `config_ref`、未知可选 round-trip、Capability Registry 与跨发行版诊断 | **Done**（2026-07-29：外壳/round-trip 基础之上，目录 Provider Registry、确定性解析、权限/依赖/启停诊断、required 激活门禁、Tauri/CLI 只读计划及同包跨发行版差异测试已落地；`ExecutionPlan` 不启动 Provider、不写回角色包；主仓实现 `56ad4f5f`、SSOT 收口 `43a51afc`，CI [`30421846109`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30421846109) `21/21` jobs success；[RFC](../creator-docs/rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md)） |
 | **K-RESOURCE-COORD-01** | llama-server / Ollama / CosyVoice 与未来 Live2D 各自决策资源，缺少统一预算和租约 | **P1** | 内部 `ExecutionPlan` + Resource Coordinator；LLM/Voice 两适配器先闭环 snapshot/admission/lease/pressure/degrade/release；覆盖不可控外部进程、取消、故障恢复与真实共享显存压力测，再接第三类渲染适配器 | **Contract accepted · coordinator implementation OPEN**（能力计划诊断已提供 `resource_coordination: not_evaluated` 边界；当前独立 VRAM admission 继续作为临时安全门，不冒充统一调度） |
 
 **K-PLATFORM-01 子项**
