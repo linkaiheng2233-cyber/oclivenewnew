@@ -9,14 +9,14 @@ use serde_json::{json, Value};
 use std::sync::Arc;
 
 use crate::domain::resource_coordinator::{configured_gpu_device_index, ResourceCoordinator};
+use crate::infrastructure::resource_adapters::{
+    cosyvoice_reservation_mib, COSYVOICE_ADAPTER_ID, COSYVOICE_PROFILE_ID,
+};
 use crate::state::AppState;
 
 const OFFICIAL_VOICE_PLUGIN_ID: &str = "com.oclive.voice.asr";
 const BUNDLED_COSYVOICE_PROFILE_ID: &str = "bundled-cosyvoice2-zh";
-const COSYVOICE_ADAPTER_ID: &str = "builtin.voice.cosyvoice2";
 const COSYVOICE_WORKLOAD_ID: &str = "bundled-runtime";
-const ENV_COSYVOICE_GPU_RESERVATION_MIB: &str = "OCLIVE_COSYVOICE_GPU_RESERVATION_MIB";
-const DEFAULT_COSYVOICE_GPU_RESERVATION_MIB: u64 = 768;
 
 pub enum DirectoryPluginResourceAdmission {
     NotApplicable,
@@ -69,14 +69,11 @@ fn bundled_voice_resource_request(
     if !profile.is_empty() && profile != BUNDLED_COSYVOICE_PROFILE_ID {
         return None;
     }
-    let reservation_mib = std::env::var(ENV_COSYVOICE_GPU_RESERVATION_MIB)
-        .ok()
-        .and_then(|value| value.trim().parse::<u64>().ok())
-        .unwrap_or(DEFAULT_COSYVOICE_GPU_RESERVATION_MIB)
-        .min(65_536);
+    let reservation_mib = cosyvoice_reservation_mib();
     Some(ResourceAdmissionRequest {
         adapter_id: COSYVOICE_ADAPTER_ID.into(),
         workload_id: COSYVOICE_WORKLOAD_ID.into(),
+        profile_id: Some(COSYVOICE_PROFILE_ID.into()),
         gpu_device_index: configured_gpu_device_index(),
         reservation_mib,
         priority: if method == "voice.speak" {
@@ -207,6 +204,11 @@ mod tests {
         assert!(
             bundled_voice_resource_request(OFFICIAL_VOICE_PLUGIN_ID, "voice.warm", &bundled)
                 .is_some()
+        );
+        assert_eq!(
+            bundled_voice_resource_request(OFFICIAL_VOICE_PLUGIN_ID, "voice.warm", &bundled)
+                .and_then(|request| request.profile_id),
+            Some(COSYVOICE_PROFILE_ID.into())
         );
         assert!(
             bundled_voice_resource_request(OFFICIAL_VOICE_PLUGIN_ID, "voice.speak", &bundled)

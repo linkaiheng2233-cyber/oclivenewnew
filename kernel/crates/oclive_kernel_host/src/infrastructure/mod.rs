@@ -56,6 +56,7 @@ pub mod remote_fallback_policy;
 pub mod remote_plugin;
 pub mod reply_post_processor_wiring;
 pub mod repositories;
+pub mod resource_adapters;
 pub mod resource_snapshot;
 pub mod role_pack;
 pub mod slot_resolver_port;

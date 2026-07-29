@@ -102,6 +102,18 @@ export type ResourcePriority
     | 'foreground_interactive'
 export type ResourceControlMode = 'managed' | 'observe_only'
 export type ResourceLeaseState = 'reserved' | 'active'
+export type ResourceAdapterKind = 'runtime' | 'activity_observer'
+export type ResourceAdapterDomain = 'llm' | 'voice'
+export type ResourceExecutionTarget = 'gpu' | 'cpu' | 'external'
+export type ResourceAdapterOperation
+  = | 'observe'
+    | 'start'
+    | 'resume'
+    | 'suspend'
+    | 'unload'
+    | 'release'
+export type ResourceResidencyMode = 'resident' | 'on_demand' | 'suspended' | 'unloaded' | 'external'
+export type ResourceAdapterRuntimeState = 'unknown' | 'inactive' | 'reserved' | 'active'
 
 export interface CapabilityConsumerDiagnostic {
   capability: string
@@ -203,10 +215,40 @@ export interface ResourceCoordinatorPolicy {
   allow_unverified_admission: boolean
 }
 
+export interface ResourceOperatingProfile {
+  profile_id: string
+  /** Adapter-local quality order; do not compare ranks across different adapters. */
+  quality_rank: number
+  execution_target: ResourceExecutionTarget
+  estimated_reservation_mib?: number | null
+  requires_restart: boolean
+  coordinator_selectable: boolean
+}
+
+export interface ResourceAdapterDescriptor {
+  adapter_id: string
+  kind: ResourceAdapterKind
+  domain: ResourceAdapterDomain
+  provider_id?: string | null
+  control_mode: ResourceControlMode
+  profiles: ResourceOperatingProfile[]
+  lifecycle_operations: ResourceAdapterOperation[]
+  residency_modes: ResourceResidencyMode[]
+}
+
+export interface ResourceAdapterDiagnostic {
+  descriptor: ResourceAdapterDescriptor
+  runtime_state: ResourceAdapterRuntimeState
+  current_profile_id?: string | null
+  lease_ids: string[]
+  reason_codes: string[]
+}
+
 export interface ResourceLeaseDiagnostic {
   lease_id: string
   adapter_id: string
   workload_id: string
+  profile_id?: string | null
   gpu_device_index?: number | null
   reservation_mib: number
   actual_mib: number
@@ -225,6 +267,7 @@ export interface ResourceCoordinationDiagnostics {
   pressure: ResourcePressureLevel
   policy: ResourceCoordinatorPolicy
   snapshot: ResourceSnapshot
+  adapters: ResourceAdapterDiagnostic[]
   leases: ResourceLeaseDiagnostic[]
   reason_codes: string[]
 }

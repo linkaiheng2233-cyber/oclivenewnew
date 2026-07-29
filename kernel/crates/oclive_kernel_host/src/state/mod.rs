@@ -771,6 +771,28 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn injected_llm_state_registers_only_the_builtin_voice_resource_hook() {
+        let tmp = TempDir::new().expect("temp");
+        let state = AppState::new_in_memory_with_llm(
+            Arc::new(crate::infrastructure::llm::MockLlmClient {
+                reply: "ok".to_string(),
+            }),
+            tmp.path(),
+        )
+        .await
+        .expect("state");
+        let diagnostics = state.resource_coordinator.diagnostics_snapshot();
+        assert_eq!(
+            diagnostics
+                .adapters
+                .iter()
+                .map(|adapter| adapter.descriptor.adapter_id.as_str())
+                .collect::<Vec<_>>(),
+            vec![crate::infrastructure::resource_adapters::COSYVOICE_ADAPTER_ID]
+        );
+    }
+
+    #[tokio::test]
     async fn test_scene_policy_fallback_works() {
         let state = AppState::new_in_memory_with_llm(
             Arc::new(crate::infrastructure::llm::MockLlmClient {

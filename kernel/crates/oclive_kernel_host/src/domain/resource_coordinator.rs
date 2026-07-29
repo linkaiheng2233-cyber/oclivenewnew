@@ -12,12 +12,15 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use dashmap::DashMap;
 use oclive_kernel_contracts::ResourceSnapshotSource;
 use oclive_kernel_types::{
-    ResourceAdmissionDecision, ResourceAdmissionMode, ResourceAdmissionRequest,
-    ResourceAdmissionResult, ResourceCoordinationDiagnosticState, ResourceCoordinationDiagnostics,
-    ResourceCoordinatorPolicy, ResourceLeaseDiagnostic, ResourceLeaseState, ResourcePressureLevel,
-    ResourcePriority, ResourceSnapshot, RESOURCE_COORDINATION_SCHEMA_VERSION,
+    ResourceAdapterDescriptor, ResourceAdmissionDecision, ResourceAdmissionMode,
+    ResourceAdmissionRequest, ResourceAdmissionResult, ResourceCoordinationDiagnosticState,
+    ResourceCoordinationDiagnostics, ResourceCoordinatorPolicy, ResourceLeaseDiagnostic,
+    ResourceLeaseState, ResourcePressureLevel, ResourcePriority, ResourceSnapshot,
+    RESOURCE_COORDINATION_SCHEMA_VERSION,
 };
 use parking_lot::Mutex;
+
+use super::resource_adapter_registry::ResourceAdapterRegistry;
 
 #[derive(Debug)]
 struct CoordinatorState {
@@ -45,6 +48,7 @@ pub struct ResourceCoordinator {
     policy: ResourceCoordinatorPolicy,
     snapshot_source: Arc<dyn ResourceSnapshotSource>,
     state: Mutex<CoordinatorState>,
+    adapter_registry: ResourceAdapterRegistry,
     next_lease_id: AtomicU64,
     adapter_operation_locks: DashMap<String, Arc<tokio::sync::Mutex<()>>>,
 }
@@ -71,6 +75,7 @@ impl ResourceCoordinator {
             policy,
             snapshot_source,
             state: Mutex::new(CoordinatorState::default()),
+            adapter_registry: ResourceAdapterRegistry::new(),
             next_lease_id: AtomicU64::new(1),
             adapter_operation_locks: DashMap::new(),
         }
@@ -79,6 +84,15 @@ impl ResourceCoordinator {
     #[must_use]
     pub fn policy(&self) -> &ResourceCoordinatorPolicy {
         &self.policy
+    }
+
+    /// Register a resource-sensitive runtime or activity observer.
+    ///
+    /// # Errors
+    ///
+    /// Returns a validation error for malformed or conflicting descriptors.
+    pub fn register_adapter(&self, descriptor: ResourceAdapterDescriptor) -> Result<(), String> {
+        self.adapter_registry.register(descriptor)
     }
 
     pub async fn lock_adapter_operation(
@@ -105,7 +119,7 @@ impl ResourceCoordinator {
         );
         state.last_reason_codes = pressure_reason_codes(&snapshot, state.last_pressure);
         state.last_snapshot = snapshot;
-        diagnostics_from_state(&self.policy, &state)
+        diagnostics_from_state(&self.policy, &self.adapter_registry, &state)
     }
 
     /// Record an already-running external request without launching a device probe.
@@ -117,17 +131,20 @@ impl ResourceCoordinator {
         &self,
         adapter_id: impl Into<String>,
         workload_id: impl Into<String>,
+        profile_id: Option<String>,
         priority: ResourcePriority,
     ) -> String {
         let now_ms = now_epoch_ms();
+        let adapter_id = adapter_id.into();
         let lease_id = format!(
             "resource-lease-{}",
             self.next_lease_id.fetch_add(1, Ordering::Relaxed)
         );
         let lease = ResourceLeaseDiagnostic {
             lease_id: lease_id.clone(),
-            adapter_id: adapter_id.into(),
+            adapter_id,
             workload_id: workload_id.into(),
+            profile_id,
             gpu_device_index: None,
             reservation_mib: 0,
             actual_mib: 0,
@@ -143,6 +160,24 @@ impl ResourceCoordinator {
     }
 
     pub async fn admit(&self, request: ResourceAdmissionRequest) -> ResourceAdmissionResult {
+        if let Some(profile_id) = request.profile_id.as_deref() {
+            if self.adapter_registry.contains(&request.adapter_id)
+                && !self
+                    .adapter_registry
+                    .profile_is_registered(&request.adapter_id, profile_id)
+            {
+                return ResourceAdmissionResult {
+                    decision: ResourceAdmissionDecision::Denied,
+                    lease: None,
+                    snapshot: ResourceSnapshot::unavailable(
+                        "not_evaluated",
+                        "resource_profile_unregistered",
+                    ),
+                    pressure: ResourcePressureLevel::Unknown,
+                    reason_codes: vec!["resource_profile_unregistered".into()],
+                };
+            }
+        }
         let snapshot = self.snapshot_source.snapshot().await;
         let now_ms = now_epoch_ms();
         let mut state = self.state.lock();
@@ -160,6 +195,7 @@ impl ResourceCoordinator {
             .find(|lease| {
                 lease.adapter_id == request.adapter_id
                     && lease.workload_id == request.workload_id
+                    && lease.profile_id == request.profile_id
                     && lease.gpu_device_index == request.gpu_device_index
             })
             .map(|lease| {
@@ -262,6 +298,7 @@ impl ResourceCoordinator {
             lease_id: lease_id.clone(),
             adapter_id: request.adapter_id,
             workload_id: request.workload_id,
+            profile_id: request.profile_id,
             gpu_device_index: request.gpu_device_index,
             reservation_mib: request.reservation_mib,
             actual_mib: 0,
@@ -347,7 +384,7 @@ impl ResourceCoordinator {
         let now_ms = now_epoch_ms();
         let mut state = self.state.lock();
         prune_expired(&mut state.leases, now_ms);
-        diagnostics_from_state(&self.policy, &state)
+        diagnostics_from_state(&self.policy, &self.adapter_registry, &state)
     }
 }
 
@@ -420,6 +457,7 @@ fn free_mib_for_device(snapshot: &ResourceSnapshot, requested_index: Option<u32>
 
 fn diagnostics_from_state(
     policy: &ResourceCoordinatorPolicy,
+    adapter_registry: &ResourceAdapterRegistry,
     state: &CoordinatorState,
 ) -> ResourceCoordinationDiagnostics {
     let coordination_state = if state.last_snapshot.source == "not_evaluated" {
@@ -433,14 +471,22 @@ fn diagnostics_from_state(
             ResourcePressureLevel::Critical => ResourceCoordinationDiagnosticState::Blocked,
         }
     };
+    let (adapters, registry_reason_codes) = adapter_registry.diagnostics(&state.leases);
+    let mut reason_codes = state.last_reason_codes.clone();
+    for reason in registry_reason_codes {
+        if !reason_codes.contains(&reason) {
+            reason_codes.push(reason);
+        }
+    }
     ResourceCoordinationDiagnostics {
         schema_version: RESOURCE_COORDINATION_SCHEMA_VERSION,
         state: coordination_state,
         pressure: state.last_pressure,
         policy: policy.clone(),
         snapshot: state.last_snapshot.clone(),
+        adapters,
         leases: state.leases.values().cloned().collect(),
-        reason_codes: state.last_reason_codes.clone(),
+        reason_codes,
     }
 }
 
@@ -449,7 +495,9 @@ mod tests {
     use super::*;
     use async_trait::async_trait;
     use oclive_kernel_types::{
-        GpuDeviceSnapshot, ResourceAdmissionMode, ResourceControlMode, ResourceSnapshot,
+        GpuDeviceSnapshot, ResourceAdapterDescriptor, ResourceAdapterDomain, ResourceAdapterKind,
+        ResourceAdapterOperation, ResourceAdmissionMode, ResourceControlMode,
+        ResourceExecutionTarget, ResourceOperatingProfile, ResourceResidencyMode, ResourceSnapshot,
     };
 
     struct FixedSnapshot(ResourceSnapshot);
@@ -481,11 +529,38 @@ mod tests {
         ResourceAdmissionRequest {
             adapter_id: adapter.into(),
             workload_id: workload.into(),
+            profile_id: None,
             gpu_device_index: None,
             reservation_mib,
             priority: ResourcePriority::BackgroundWarmup,
             control_mode: ResourceControlMode::Managed,
             admission_mode: ResourceAdmissionMode::Enforced,
+        }
+    }
+
+    fn registered_adapter(adapter_id: &str) -> ResourceAdapterDescriptor {
+        ResourceAdapterDescriptor {
+            adapter_id: adapter_id.into(),
+            kind: ResourceAdapterKind::Runtime,
+            domain: ResourceAdapterDomain::Voice,
+            provider_id: Some("builtin.test".into()),
+            control_mode: ResourceControlMode::Managed,
+            profiles: vec![ResourceOperatingProfile {
+                profile_id: "full".into(),
+                quality_rank: 100,
+                execution_target: ResourceExecutionTarget::Gpu,
+                estimated_reservation_mib: None,
+                requires_restart: true,
+                coordinator_selectable: false,
+            }],
+            lifecycle_operations: vec![
+                ResourceAdapterOperation::Start,
+                ResourceAdapterOperation::Unload,
+            ],
+            residency_modes: vec![
+                ResourceResidencyMode::Resident,
+                ResourceResidencyMode::Unloaded,
+            ],
         }
     }
 
@@ -602,5 +677,34 @@ mod tests {
         secondary_request.gpu_device_index = Some(1);
         let secondary = coordinator.admit(secondary_request).await;
         assert_eq!(secondary.decision, ResourceAdmissionDecision::Granted);
+    }
+
+    #[tokio::test]
+    async fn registered_profile_is_joined_to_lease_and_unknown_profile_is_rejected() {
+        let coordinator = ResourceCoordinator::new(
+            ResourceCoordinatorPolicy::default(),
+            Arc::new(FixedSnapshot(snapshot(4096))),
+        );
+        coordinator
+            .register_adapter(registered_adapter("voice"))
+            .unwrap();
+
+        let mut unknown = request("voice", "bad", 768);
+        unknown.profile_id = Some("missing".into());
+        let denied = coordinator.admit(unknown).await;
+        assert_eq!(denied.decision, ResourceAdmissionDecision::Denied);
+        assert_eq!(denied.reason_codes, vec!["resource_profile_unregistered"]);
+
+        let mut known = request("voice", "good", 768);
+        known.profile_id = Some("full".into());
+        let granted = coordinator.admit(known).await;
+        assert_eq!(granted.decision, ResourceAdmissionDecision::Granted);
+        let diagnostics = coordinator.diagnostics_snapshot();
+        assert_eq!(diagnostics.adapters.len(), 1);
+        assert_eq!(
+            diagnostics.adapters[0].current_profile_id.as_deref(),
+            Some("full")
+        );
+        assert_eq!(diagnostics.leases[0].reservation_mib, 768);
     }
 }

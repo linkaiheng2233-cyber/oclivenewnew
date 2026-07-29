@@ -122,10 +122,13 @@ pub use models::{
     personality::PersonalityVector,
     plugin_backends::*,
     resource_coordination::{
-        GpuDeviceSnapshot, ResourceAdmissionDecision, ResourceAdmissionMode,
+        GpuDeviceSnapshot, ResourceAdapterDescriptor, ResourceAdapterDiagnostic,
+        ResourceAdapterDomain, ResourceAdapterKind, ResourceAdapterOperation,
+        ResourceAdapterRuntimeState, ResourceAdmissionDecision, ResourceAdmissionMode,
         ResourceAdmissionRequest, ResourceAdmissionResult, ResourceControlMode,
-        ResourceCoordinationDiagnostics, ResourceCoordinatorPolicy, ResourceLeaseDiagnostic,
-        ResourceLeaseState, ResourcePressureLevel, ResourcePriority, ResourceSnapshot,
+        ResourceCoordinationDiagnostics, ResourceCoordinatorPolicy, ResourceExecutionTarget,
+        ResourceLeaseDiagnostic, ResourceLeaseState, ResourceOperatingProfile,
+        ResourcePressureLevel, ResourcePriority, ResourceResidencyMode, ResourceSnapshot,
         RESOURCE_COORDINATION_SCHEMA_VERSION,
     },
     role::{

@@ -4,7 +4,7 @@ use super::session_cache::SessionCache;
 use super::{AffectSinkHandle, AppState};
 use crate::domain::host_profile::{self, HostProfile};
 use crate::domain::repository::{FavorabilityRepository, MemoryRepository};
-use crate::error::Result;
+use crate::error::{AppError, Result};
 use crate::infrastructure::chat_storage::{
     build_conversation_store, pick_chat_storage_backend_kind, set_persisted_storage_root,
     ReplayTaskRegistry, APP_SETTING_CHAT_STORAGE_ROOT,
@@ -169,11 +169,13 @@ impl AppStateBuilder {
                 ));
                 let raw_fallback: Arc<dyn LlmClient> =
                     Arc::new(SharedOllamaClient(Arc::clone(&client)));
-                let fallback: Arc<dyn LlmClient> = Arc::new(CoordinatedExternalLlm::new(
-                    raw_fallback,
-                    Arc::clone(&resource_coordinator),
-                    "builtin.llm.ollama",
-                ));
+                let fallback: Arc<dyn LlmClient> =
+                    Arc::new(CoordinatedExternalLlm::new_with_profile(
+                        raw_fallback,
+                        Arc::clone(&resource_coordinator),
+                        crate::infrastructure::resource_adapters::OLLAMA_ADAPTER_ID,
+                        Some(crate::infrastructure::resource_adapters::OLLAMA_PROFILE_ID.into()),
+                    ));
                 if matches!(
                     host_profile.llm_runtime.mode,
                     crate::domain::host_profile::LocalLlmRuntimeMode::Performance
@@ -194,7 +196,7 @@ impl AppStateBuilder {
                             let llm: Arc<dyn LlmClient> = Arc::new(CoordinatedExternalLlm::new(
                                 performance_client,
                                 Arc::clone(&resource_coordinator),
-                                "builtin.llm.performance_request",
+                                crate::infrastructure::resource_adapters::PERFORMANCE_ACTIVITY_ADAPTER_ID,
                             ));
                             (llm, Some(client), Some(performance))
                         }
@@ -212,6 +214,20 @@ impl AppStateBuilder {
                 }
             }
         };
+        let mut resource_adapters =
+            vec![crate::infrastructure::resource_adapters::cosyvoice_descriptor()];
+        if ollama.is_some() {
+            resource_adapters.push(crate::infrastructure::resource_adapters::ollama_descriptor());
+        }
+        if performance_llm.is_some() {
+            resource_adapters
+                .push(crate::infrastructure::resource_adapters::performance_activity_descriptor());
+        }
+        for descriptor in resource_adapters {
+            resource_coordinator
+                .register_adapter(descriptor)
+                .map_err(AppError::InvalidParameter)?;
+        }
 
         let policy_runtime = Arc::new(ArcSwap::from_pointee(build_policy_sets_from_registry(
             PolicyRegistryFile::with_defaults(),

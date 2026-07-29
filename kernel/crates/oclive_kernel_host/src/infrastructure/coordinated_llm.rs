@@ -13,6 +13,7 @@ pub struct CoordinatedExternalLlm {
     inner: Arc<dyn LlmClient>,
     coordinator: Arc<ResourceCoordinator>,
     adapter_id: String,
+    profile_id: Option<String>,
     next_request_id: AtomicU64,
 }
 
@@ -34,10 +35,21 @@ impl CoordinatedExternalLlm {
         coordinator: Arc<ResourceCoordinator>,
         adapter_id: impl Into<String>,
     ) -> Self {
+        Self::new_with_profile(inner, coordinator, adapter_id, None)
+    }
+
+    #[must_use]
+    pub fn new_with_profile(
+        inner: Arc<dyn LlmClient>,
+        coordinator: Arc<ResourceCoordinator>,
+        adapter_id: impl Into<String>,
+        profile_id: Option<String>,
+    ) -> Self {
         Self {
             inner,
             coordinator,
             adapter_id: adapter_id.into(),
+            profile_id,
             next_request_id: AtomicU64::new(1),
         }
     }
@@ -48,6 +60,7 @@ impl CoordinatedExternalLlm {
         let lease_id = self.coordinator.begin_observed_activity(
             self.adapter_id.clone(),
             workload_id,
+            self.profile_id.clone(),
             ResourcePriority::ForegroundInteractive,
         );
         ObservedActivityGuard {

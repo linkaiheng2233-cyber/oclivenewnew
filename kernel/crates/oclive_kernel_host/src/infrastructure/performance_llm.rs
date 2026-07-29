@@ -9,6 +9,10 @@ use crate::domain::resource_coordinator::{configured_gpu_device_index, ResourceC
 use crate::error::{AppError, Result};
 use crate::infrastructure::ollama_client::OllamaClient;
 use crate::infrastructure::openai_compatible_llm::OpenAiCompatibleLlm;
+use crate::infrastructure::resource_adapters::{
+    llama_server_descriptor, ollama_descriptor, LLAMA_RUNTIME_ADAPTER_ID, LLAMA_RUNTIME_PROFILE_ID,
+    OLLAMA_ADAPTER_ID,
+};
 use crate::infrastructure::resource_snapshot::NvidiaSmiResourceSnapshotSource;
 use async_trait::async_trait;
 use oclive_kernel_contracts::{LlmGenerateOpts, LlmGenerateOutcome, LlmTokenSink};
@@ -32,9 +36,7 @@ pub const ENV_LOCAL_LLM_MODEL_PATH: &str = "OCLIVE_LOCAL_LLM_MODEL_PATH";
 pub const ENV_LOCAL_LLM_LORA_PATH: &str = "OCLIVE_LOCAL_LLM_LORA_PATH";
 pub const ENV_LLAMA_GPU_RESERVATION_MIB: &str = "OCLIVE_LLAMA_GPU_RESERVATION_MIB";
 pub const RUNTIME_PACK_MANIFEST: &str = "llm_runtime_pack.json";
-const LLAMA_RUNTIME_ADAPTER_ID: &str = "builtin.llm.llama_server";
 const LLAMA_RUNTIME_WORKLOAD_ID: &str = "managed-runtime";
-const OLLAMA_ADAPTER_ID: &str = "builtin.llm.ollama";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -167,6 +169,14 @@ impl PerformanceLlmClient {
         let mut fallback_models = BTreeSet::new();
         if !fallback_model.trim().is_empty() {
             fallback_models.insert(fallback_model.trim().to_string());
+        }
+        resource_coordinator
+            .register_adapter(llama_server_descriptor())
+            .map_err(AppError::InvalidParameter)?;
+        if ollama_runtime.is_some() {
+            resource_coordinator
+                .register_adapter(ollama_descriptor())
+                .map_err(AppError::InvalidParameter)?;
         }
         Ok(Self {
             profile,
@@ -425,6 +435,7 @@ impl PerformanceLlmClient {
             .admit(ResourceAdmissionRequest {
                 adapter_id: LLAMA_RUNTIME_ADAPTER_ID.into(),
                 workload_id: LLAMA_RUNTIME_WORKLOAD_ID.into(),
+                profile_id: Some(LLAMA_RUNTIME_PROFILE_ID.into()),
                 gpu_device_index: configured_gpu_device_index(),
                 reservation_mib,
                 priority: ResourcePriority::BackgroundWarmup,
@@ -460,6 +471,7 @@ impl PerformanceLlmClient {
             .admit(ResourceAdmissionRequest {
                 adapter_id: LLAMA_RUNTIME_ADAPTER_ID.into(),
                 workload_id: LLAMA_RUNTIME_WORKLOAD_ID.into(),
+                profile_id: Some(LLAMA_RUNTIME_PROFILE_ID.into()),
                 gpu_device_index: configured_gpu_device_index(),
                 reservation_mib: 0,
                 priority: ResourcePriority::Resident,
@@ -1059,6 +1071,12 @@ mod tests {
             "fallback-model".into(),
         )
         .unwrap();
+        assert!(client
+            .resource_coordinator
+            .diagnostics_snapshot()
+            .adapters
+            .iter()
+            .any(|adapter| adapter.descriptor.adapter_id == LLAMA_RUNTIME_ADAPTER_ID));
         assert_eq!(
             client.generate("fallback-model", "hello").await.unwrap(),
             "fallback-ok"
