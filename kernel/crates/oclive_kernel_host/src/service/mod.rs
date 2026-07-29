@@ -2,6 +2,7 @@
 
 pub mod chat_storage_proxy;
 pub mod conversation;
+pub mod execution_plan;
 pub mod export;
 pub mod high_risk;
 pub mod llm_settings;
@@ -15,6 +16,10 @@ pub mod time;
 
 pub use chat_storage_proxy::{execute_chat_storage_proxy, ChatStorageProxyOp};
 pub use conversation::get_conversation_list_impl;
+pub use execution_plan::{
+    build_execution_plan_diagnostics_for_role, ensure_role_execution_plan_activatable,
+    get_execution_plan_diagnostics_impl,
+};
 pub use export::export_chat_logs_impl;
 pub use high_risk::{
     grant_high_risk_capability_impl, list_high_risk_grants_impl, revoke_high_risk_capability_impl,

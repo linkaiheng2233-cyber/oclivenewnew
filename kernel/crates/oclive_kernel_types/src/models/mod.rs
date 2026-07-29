@@ -5,6 +5,7 @@ pub mod content_rating;
 pub mod dto;
 pub mod emotion;
 pub mod event;
+pub mod execution_plan;
 pub mod favorability;
 pub mod interaction_mode;
 pub mod kernel;
@@ -36,6 +37,7 @@ pub use content_rating::ContentRating;
 pub use dto::*;
 pub use emotion::*;
 pub use event::*;
+pub use execution_plan::*;
 pub use favorability::*;
 pub use interaction_mode::InteractionMode;
 pub use kernel::{

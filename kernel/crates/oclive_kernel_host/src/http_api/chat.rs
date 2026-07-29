@@ -163,6 +163,16 @@ pub(crate) async fn chat(
 
     let personality_source = role.evolution_config.personality_source;
     let role = Arc::new(role);
+    crate::service::execution_plan::ensure_role_execution_plan_activatable(
+        state.as_ref(),
+        role.as_ref(),
+    )
+    .map_err(|error| {
+        api_error(
+            axum::http::StatusCode::BAD_REQUEST,
+            error.kernel_error_body(),
+        )
+    })?;
 
     state.invalidate_personality_cache_for_role(role.id.as_str());
 
@@ -249,6 +259,16 @@ pub(crate) async fn chat_stream(
 
     let personality_source = role.evolution_config.personality_source;
     let role = Arc::new(role);
+    crate::service::execution_plan::ensure_role_execution_plan_activatable(
+        state.as_ref(),
+        role.as_ref(),
+    )
+    .map_err(|error| {
+        api_error(
+            axum::http::StatusCode::BAD_REQUEST,
+            error.kernel_error_body(),
+        )
+    })?;
 
     state.invalidate_personality_cache_for_role(role.id.as_str());
     state.insert_http_api_role(role.id.clone(), Arc::clone(&role));

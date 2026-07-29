@@ -7,6 +7,7 @@ pub mod diagnostics;
 pub mod directory_plugin;
 pub mod error;
 pub mod event;
+pub mod execution_plan;
 pub mod export;
 pub mod high_risk;
 pub mod hotkeys;

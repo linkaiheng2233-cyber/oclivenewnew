@@ -17,14 +17,14 @@ export interface DirectoryPluginSlots {
  */
 
 export interface PluginBackends {
-  memory: 'builtin' | 'builtin_v2' | 'remote' | 'local' | 'directory'
+  memory: 'builtin' | 'builtin_v2' | 'remote' | 'local' | 'directory' | 'none'
   /** When `memory === "local"`: optional `_local_plugins` descriptor `provider_id` */
   local_memory_provider_id?: string | null
-  emotion: 'builtin' | 'builtin_v2' | 'remote' | 'directory'
-  event: 'builtin' | 'builtin_v2' | 'remote' | 'directory'
-  prompt: 'builtin' | 'builtin_v2' | 'remote' | 'directory'
-  llm: 'ollama' | 'remote' | 'directory'
-  agent: 'builtin' | 'remote' | 'directory'
+  emotion: 'builtin' | 'builtin_v2' | 'remote' | 'directory' | 'none'
+  event: 'builtin' | 'builtin_v2' | 'remote' | 'directory' | 'none'
+  prompt: 'builtin' | 'builtin_v2' | 'remote' | 'directory' | 'none'
+  llm: 'ollama' | 'remote' | 'directory' | 'none'
+  agent: 'builtin' | 'remote' | 'directory' | 'none'
   /** Manifest `id` for each module when backend is `directory` (see DIRECTORY_PLUGINS.md) */
   directory_plugins?: DirectoryPluginSlots
 }
@@ -80,6 +80,95 @@ export interface PluginResolutionDebugInfo {
   remote_llm_url_configured: boolean
   local_provider_ids: string[]
   local_provider_count: number
+}
+
+export type CapabilityConsumerKind = 'six_slot' | 'facility' | 'side_channel' | 'host'
+export type CapabilityProviderSource = 'builtin' | 'directory' | 'remote'
+export type CapabilityProviderAvailability
+  = | 'ready'
+    | 'disabled'
+    | 'manifest_incompatible'
+    | 'not_executable'
+    | 'dependency_unavailable'
+    | 'permission_required'
+export type ExtensionPlanStatus = 'ready' | 'degraded' | 'blocked'
+export type ExecutionPlanDiagnosticSeverity = 'info' | 'warning' | 'error'
+
+export interface CapabilityConsumerDiagnostic {
+  capability: string
+  kind: CapabilityConsumerKind
+  consumer_id: string
+}
+
+export interface CapabilityPermissionDiagnostic {
+  permission: string
+  granted: boolean
+}
+
+export interface CapabilityProviderDiagnostic {
+  provider_id: string
+  version: string
+  manifest_schema_version: number
+  source: CapabilityProviderSource
+  provides: string[]
+  availability: CapabilityProviderAvailability
+  permissions: CapabilityPermissionDiagnostic[]
+  dependency_issues: string[]
+  reason_codes: string[]
+}
+
+export interface CapabilityRegistryDiagnostic {
+  schema_version: number
+  distro_id: string
+  consumers: CapabilityConsumerDiagnostic[]
+  providers: CapabilityProviderDiagnostic[]
+}
+
+export interface ExecutionPlanCoreNode {
+  node_id: string
+  backend: string
+  enabled: boolean
+}
+
+export interface ExecutionPlanExtension {
+  instance_id: string
+  capability: string
+  required: boolean
+  config_schema_version: number
+  config_ref: string
+  requested_provider_id?: string | null
+  selected_provider_id?: string | null
+  selected_provider_version?: string | null
+  status: ExtensionPlanStatus
+  active: boolean
+  provider_candidates: string[]
+  reason_codes: string[]
+}
+
+export interface ExecutionPlanDiagnostic {
+  code: string
+  severity: ExecutionPlanDiagnosticSeverity
+  message: string
+  instance_id?: string | null
+  provider_id?: string | null
+  suggested_provider_id?: string | null
+}
+
+export interface ExecutionPlanDiagnostics {
+  schema_version: number
+  plan: {
+    schema_version: number
+    role_id: string
+    distro_id: string
+    flow_template: 'co_present_stable'
+    core_nodes: ExecutionPlanCoreNode[]
+    core_backends: PluginBackends
+    extensions: ExecutionPlanExtension[]
+    activatable: boolean
+    resource_coordination: 'not_evaluated'
+    diagnostics: ExecutionPlanDiagnostic[]
+  }
+  capability_registry: CapabilityRegistryDiagnostic
 }
 
 /**
@@ -204,6 +293,22 @@ export async function getPluginResolutionDebug(
 ): Promise<PluginResolutionDebugInfo> {
   return invokeWithFriendlyError<PluginResolutionDebugInfo>(
     'get_plugin_resolution_debug',
+    {
+      req: {
+        role_id: roleId,
+        session_id: sessionId ?? null,
+      },
+    },
+  )
+}
+
+/** Read-only host plan snapshot; never writes back into the role pack. */
+export async function getExecutionPlanDiagnostics(
+  roleId: string,
+  sessionId?: string | null,
+): Promise<ExecutionPlanDiagnostics> {
+  return invokeWithFriendlyError<ExecutionPlanDiagnostics>(
+    'get_execution_plan_diagnostics',
     {
       req: {
         role_id: roleId,

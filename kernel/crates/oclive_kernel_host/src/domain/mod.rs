@@ -45,6 +45,7 @@ pub mod dual_pipeline_registry;
 pub mod dual_pipeline_steps;
 pub mod event_estimator;
 pub mod event_impact_ai;
+pub mod execution_plan;
 #[cfg(feature = "dual_core")]
 pub mod expert_routing;
 pub mod fallback_agent;

@@ -432,6 +432,12 @@ impl AppState {
             }
         };
 
+        if let Err(error) =
+            crate::service::execution_plan::ensure_role_execution_plan_activatable(self, loaded)
+        {
+            self.role_load_inflight.remove(role_id);
+            return Err(error);
+        }
         self.insert_role_cache(role_id, loaded);
         self.role_load_inflight.remove(role_id);
         Ok(Arc::clone(loaded))

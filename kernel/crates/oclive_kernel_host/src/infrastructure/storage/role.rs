@@ -280,8 +280,8 @@ impl RoleStorage {
     }
 
     /// Stable v4 blueprint pack: activates `runtime_config` and preserves
-    /// optional extension declarations. Until the capability registry lands,
-    /// required declarations fail closed instead of pretending to execute.
+    /// extension declarations. Required capability enforcement belongs to the
+    /// host activation plan so metadata remains readable for repair.
     fn load_role_from_blueprint_v4_dir(&self, role_dir: &Path) -> Result<Role> {
         let loaded = load_blueprint_v4_for_role_dir(role_dir, env!("CARGO_PKG_VERSION")).map_err(
             |errors| {
@@ -291,25 +291,12 @@ impl RoleStorage {
                 ))
             },
         )?;
-        let required: Vec<&str> = loaded
-            .extensions
-            .iter()
-            .filter_map(|(instance_id, declaration)| {
-                declaration.required.then_some(instance_id.as_str())
-            })
-            .collect();
-        if !required.is_empty() {
-            return Err(AppError::InvalidParameter(format!(
-                "pipeline.ocblueprint (v4)：必需扩展尚无可用能力解析器，角色不能激活：{}",
-                required.join("、")
-            )));
-        }
         if !loaded.extensions.is_empty() {
             tracing::info!(
                 target: "oclive_role",
                 role_dir = %role_dir.display(),
-                optional_extension_count = loaded.extensions.len(),
-                "preserving optional v4 extension declarations; providers are not activated yet"
+                extension_count = loaded.extensions.len(),
+                "preserving v4 extension declarations for host plan compilation"
             );
         }
 
@@ -745,16 +732,14 @@ mod tests {
     }
 
     #[test]
-    fn v4_required_extension_fails_closed_without_capability_resolver() {
+    fn v4_required_extension_metadata_loads_for_plan_diagnostics() {
         let roles = tempdir().unwrap();
         let role_dir = roles.path().join("required");
         write_v4_pack(&role_dir, true);
-        let error = RoleStorage::new(roles.path())
+        let role = RoleStorage::new(roles.path())
             .load_role_from_dir(&role_dir)
-            .unwrap_err()
-            .to_string();
-        assert!(error.contains("必需扩展尚无可用能力解析器"), "{error}");
-        assert!(error.contains("com.example.live2d"), "{error}");
+            .unwrap();
+        assert!(role.blueprint_extensions["com.example.live2d"].required);
     }
 
     #[test]

@@ -47,6 +47,9 @@ pub enum DoctorSubcommand {
     /// Print effective six-slot backend resolution for a role/session
     #[command(name = "config-resolve")]
     ConfigResolve(crate::doctor_config_resolve::ConfigResolveArgs),
+    /// Compile read-only capability registry and execution-plan diagnostics
+    #[command(name = "execution-plan")]
+    ExecutionPlan(crate::doctor_execution_plan::ExecutionPlanArgs),
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -108,6 +111,7 @@ pub fn run(args: DoctorArgs) -> Result<()> {
                 let rt = tokio::runtime::Runtime::new().context("tokio runtime")?;
                 rt.block_on(crate::doctor_config_resolve::run(cfg))
             }
+            DoctorSubcommand::ExecutionPlan(plan) => crate::doctor_execution_plan::run(plan),
         }?;
         return Ok(());
     }

@@ -94,6 +94,15 @@ pub use models::{
     },
     emotion::Emotion,
     event::{Event, EventType},
+    execution_plan::{
+        CapabilityConsumerDiagnostic, CapabilityConsumerKind, CapabilityPermissionDiagnostic,
+        CapabilityProviderAvailability, CapabilityProviderDiagnostic, CapabilityProviderSource,
+        CapabilityRegistryDiagnostic, ExecutionPlan, ExecutionPlanCoreNode,
+        ExecutionPlanDiagnostic, ExecutionPlanDiagnosticSeverity, ExecutionPlanDiagnostics,
+        ExecutionPlanExtension, ExecutionPlanFlowTemplate, ExtensionPlanStatus,
+        GetExecutionPlanDiagnosticsRequest, ResourceCoordinationDiagnosticState,
+        EXECUTION_PLAN_DIAGNOSTIC_SCHEMA_VERSION,
+    },
     favorability::Favorability,
     interaction_mode::InteractionMode,
     kernel::{

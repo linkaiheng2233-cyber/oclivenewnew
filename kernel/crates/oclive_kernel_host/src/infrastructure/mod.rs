@@ -26,6 +26,7 @@ pub mod agent_mcp_bridge;
 pub mod app_data_migration;
 pub mod backend_registry;
 pub mod cache;
+pub mod capability_registry;
 pub mod chat_storage;
 pub mod db;
 pub mod db_ports;
