@@ -123,7 +123,7 @@ distros/chat-pro/roles/{role_id}/
 - 扩展 Provider 校验和解释自己的载荷。
 - 蓝图不得写显存卸载、进程终止或固定资源分配命令。
 - 资源敏感 Provider 通过 Resource Adapter 接入宿主统一协调；不消耗共享资源的扩展无需实现。
-- v2/v3 严格拒绝该外壳；v4 可选声明会保留但暂不执行，必需声明在 Capability Registry 落地前阻止角色激活。
+- v2/v3 严格拒绝该外壳；v4 声明进入宿主只读能力计划：消费者/Provider/依赖/权限齐备才为 ready，可选缺失降级，必需缺失阻止角色激活。
 
 字段与 `ExecutionPlan` / Resource Coordinator 分责见 [RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md](../creator-docs/rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md)。
 
@@ -151,7 +151,7 @@ distros/chat-pro/roles/{role_id}/
 | SSOT 路径 | `distros/chat-pro/roles/{id}/pipeline.ocblueprint` | 可迁至 `blueprint/pipeline.ocblueprint`，根路径保留兼容或 symlink 文档 |
 | `pack validate` | 校验本体、已声明 include 文件及合并后的有效蓝图；`blueprint/docs` 忽略 | 编写器复用同一 Rust/WASM 校验链并显示结构化定位 |
 | `includes` 解析 | **已实现**；现行目录校验要求文件存在，mode 仅 `merge` / `replace`，缺失会阻止 load | 若未来改为可选 include，须新增显式 required/optional 契约，不能靠 lenient helper 猜测 |
-| `extensions` | **v4 外壳已实现**：声明/路径/载荷 JSON 校验、required/optional、宿主激活边界与编写器 round-trip | Capability Registry、Provider 载荷语义校验与跨发行版结构化诊断 |
+| `extensions` | **v4 外壳与能力计划已实现**：声明/路径/载荷 JSON 校验、round-trip、目录 Provider Registry、required/optional 激活门禁及跨发行版结构化诊断 | Provider 自有载荷语义校验；Resource Coordinator 与资源适配 |
 | 专家目录缺失 | 不阻塞加载 | 保持 |
 
 实现前：专家人格等白名单片段放 `blueprint/`，**手动** merge 或由 CLI `expert apply` 写入对应 `includes` 目标文件；`expert_routing.json` 仍由专家设施专用 loader 读取。

@@ -4,7 +4,7 @@
 
 | Metadata | Value |
 |----------|-------|
-| Status | **Boundary accepted · v4 envelope implemented · Capability/Resource pending** |
+| Status | **Boundary accepted · v4 envelope and Capability/Plan diagnostics implemented · Resource pending** |
 | Last updated | 2026-07-29 |
 | Audience | Kernel, editor, distro, directory-plugin, and commercial extension developers |
 | Scope | Minimal blueprint extension envelope, capability resolution, `ExecutionPlan`, Resource Coordinator, and adapter ownership |
@@ -45,8 +45,9 @@ If an optional extension is unavailable, the host preserves it, removes it from 
 Current implementation boundary (2026-07-29):
 
 - Rust/JSON Schema, CLI/doctor, Host, and the pack editor implement the v4 envelope, path safety, and opaque payload round-trip.
-- The Capability Registry is not implemented yet. Optional declarations are preserved but inactive; required declarations block role activation.
-- Installable-provider suggestions and structured visible degradation remain a later slice; current logs are not the future UI diagnostic.
+- The host implements a directory-Provider Capability Registry, deterministic Provider selection, permission/dependency/enablement checks, required/optional activation gates, and read-only structured diagnostics through Tauri and the CLI. The same pack can produce different plans under different `HostProfile`s.
+- A capability becomes active only when the host has registered a real consumer. The first registration is Chat Pro `voice.asr`; an arbitrary manifest `provides` entry cannot expand kernel behavior.
+- The current `ExecutionPlan` resolves capabilities and effective six-slot backends only. It does not start Providers or rewrite packs. Device snapshots, resource claims, and the Resource Coordinator remain unimplemented and report `resource_coordination: not_evaluated`.
 
 ## Capability Provider versus Resource Adapter
 
@@ -59,7 +60,7 @@ Current implementation boundary (2026-07-29):
 | Cloud TTS | Required | Usually no |
 | Live2D renderer | Required | Yes when it shares managed GPU resources |
 
-Provider manifests will eventually declare capabilities, host compatibility, permissions, optional resource-adapter entry points, publisher/version/license metadata, and diagnostics. Those fields must enter `PLUGIN_V1` only when their implementation slice exists.
+Current directory manifest `schema_version: 1` contributes `provides`, Provider `version`, `process`, dependencies, and `permissions` to Registry diagnostics; [`PLUGIN_V1`](../plugin-and-architecture/PLUGIN_V1.md) owns those field semantics. Host/API semver ranges, Resource Adapter entry points, and resource declarations are not implemented. A displayed Provider version is not an API-compatibility negotiation.
 
 ## `ExecutionPlan`
 
@@ -76,6 +77,8 @@ role content + blueprint intent
 ```
 
 It resolves providers, permissions, dependencies, required/optional degradation, registered stable templates, and resource claims. It is not persisted and is not a third-party schema.
+
+The current `co_present_stable` plan contains effective six-slot backends, extension Provider/version selection, candidates, permission/dependency reasons, and activation status. Device/resource claims, lifecycle, and priority remain for the Resource Coordinator slice; read-only diagnostics do not execute Providers.
 
 The current Stable order remains owned by `process_message` / `turn_pipeline`. Future limited freedom must use registered templates or constrained partial orders, not arbitrary `steps[]`. This RFC does not reuse or unfreeze v3 `pipeline.stable` / `pipeline.experimental`.
 

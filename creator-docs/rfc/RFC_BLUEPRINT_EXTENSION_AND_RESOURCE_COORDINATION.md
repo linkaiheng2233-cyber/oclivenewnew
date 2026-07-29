@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |--------|-----|
-| 状态 | **边界已确认 · v4 扩展外壳已实现 · Capability / Resource 仍未实现** |
+| 状态 | **边界已确认 · v4 外壳与 Capability/Plan 诊断已实现 · Resource 仍未实现** |
 | 最后更新 | 2026-07-29 |
 | 受众 | 内核、编写器、发行版、目录插件与商业扩展开发者 |
 | 维护范围 | 蓝图扩展最小外壳、能力解析、`ExecutionPlan`、资源协调器与适配器分责 |
@@ -107,8 +107,9 @@ role/
 **当前实现边界（2026-07-29）**：
 
 - Rust/JSON Schema、CLI/doctor、Host 与角色包编写器已支持 v4 外壳、路径安全和未知载荷 round-trip。
-- Capability Registry 尚未落地，因此可选扩展会保留但不执行；必需扩展会阻止角色激活。
-- “可安装 Provider”与结构化可见降级仍属于下一切片；当前日志不能替代未来的 UI 诊断。
+- 宿主已实现目录 Provider 的 Capability Registry、确定性 Provider 选择、权限/依赖/启停检查、required/optional 激活门禁，以及 Tauri/CLI 只读结构化诊断；同一角色包可按 `HostProfile` 得到不同计划。
+- 计划只有在宿主已登记真实消费者时才将 capability 标为 active。首个登记项为 Chat Pro `voice.asr`；任意 manifest `provides` 不能自行扩张内核。
+- `ExecutionPlan` 当前只解析能力与有效六槽，不启动 Provider、不写回角色包。设备快照、资源声明与 Resource Coordinator 尚未落地，明确报告 `resource_coordination: not_evaluated`。
 
 ---
 
@@ -124,15 +125,12 @@ Capability Provider 是业务能力的实现边界，不等于 Resource Adapter�
 | LLM 推理 | prompt → token/reply | 本地模型是；云 API 通常只需网络配额 |
 | TTS | 文本/指令 → 音频 | 本地模型是；云 TTS 通常否 |
 
-Provider manifest 的目标职责：
+Provider manifest 的职责：
 
-- `provides`：稳定 Capability ID。
-- 宿主/API 兼容范围。
-- `permissions`：网络、进程、文件、设备等授权。
-- 可选 Resource Adapter 注册入口。
-- 发布者、版本、许可证和诊断元数据。
+- **当前 `schema_version: 1`**：`provides`、Provider `version`、目录 `process`、插件依赖与 `permissions` 已进入 Registry 诊断；字段和权限语义以 [`PLUGIN_V1`](../plugin-and-architecture/PLUGIN_V1.md) 为准。
+- **尚未实现**：宿主/API semver range、Resource Adapter 注册入口及资源声明。当前显示 Provider 版本不代表 API 兼容性已协商。
 
-具体 manifest 字段在实现切片中进入 `PLUGIN_V1`；本 RFC 不提前把未实现字段写成现行插件契约。
+本 RFC 不提前把尚未实现的字段写成现行插件契约。
 
 ---
 
@@ -161,6 +159,8 @@ Provider manifest 的目标职责：
 - 用户可见诊断和不能激活的原因。
 
 `ExecutionPlan` 不落盘、不放进角色包、不成为第三方 schema。蓝图只表达意图；计划编译器拥有依赖闭包与实际选择。
+
+当前 `co_present_stable` 计划已包含六槽有效后端、扩展 Provider/版本、候选、权限/依赖原因与是否可激活；设备、资源声明、生命周期和优先级留到 Resource Coordinator 切片。只读诊断不执行 Provider。
 
 当前 Stable 顺序继续由 `process_message` / `turn_pipeline` 维护。未来“快速反应”“情感优先”等有限自由应通过宿主登记的模板或受约束偏序实现，不能恢复任意 `steps[]`。本 RFC 不复用或解冻 v3 `pipeline.stable` / `pipeline.experimental`。
 

@@ -369,6 +369,16 @@ TypeScript 侧 `SendMessageResponse`（`distros/shared/src/api/`）必须与 `mo
 
 解析时 [`SlotResolver`](../../kernel/crates/oclive_kernel_host/src/domain/slot_resolver.rs) 会校验 directory 插件是否声明 `provides` 含目标能力（含 `complex_emotion`）。**独立通道**项由专用 Resolver 解析（如 [`resolve_reply_post_processor`](../../kernel/crates/oclive_kernel_host/src/domain/reply_post_processor.rs) 校验 `reply_post_process`；[`resolve_theater_director`](../../kernel/crates/oclive_kernel_host/src/domain/theater_director.rs) 校验 `theater_director`），**不**经六槽 `SlotResolver`。**`voice.asr`** 由宿主 UI 经 **`plugin_rpc_invoke`** 调本插件 RPC，**无**内核 `resolve_*`（调试面板仍可用 Tauri `directory_plugin_invoke`）。
 
+#### Capability Registry v1（蓝图 v4 · 只读计划）
+
+- `provides` 也可广告命名空间化的 v4 capability；但**只有宿主已登记消费者**时，Plan Compiler 才会选择 Provider。单独写入任意字符串不会扩张内核能力。
+- 当前目录 Provider 必须通过 manifest `schema_version: 1` 校验、声明目标 capability、包含可执行 `process`，并满足插件依赖、角色级启停状态与高危授权；旧 manifest 省略 `permissions` 但含 `process` 时仍按 `process:spawn` 授权处理。
+- Provider `version` 会进入诊断快照；v4 外壳当前没有 Provider API semver range，不能把版本显示误当成 API 兼容承诺。未来新增兼容字段时须先扩展本契约。
+- 首个已登记的 v4 消费者是 Chat Pro `voice.asr`。其它 capability 在有真实消费者与调用链之前会结构化降级/阻断。
+- `get_execution_plan_diagnostics` 与 `oclive doctor execution-plan` 只解析候选、权限、依赖和发行版差异；不会 spawn Provider、分配资源或改写角色包。`resource_coordination: not_evaluated` 表示统一资源协调尚未参与。
+
+公共 DTO 与实现锚点见 [`models/execution_plan.rs`](../../kernel/crates/oclive_kernel_types/src/models/execution_plan.rs) · [`capability_registry.rs`](../../kernel/crates/oclive_kernel_host/src/infrastructure/capability_registry.rs) · [`execution_plan.rs`](../../kernel/crates/oclive_kernel_host/src/domain/execution_plan.rs)。
+
 ### 社区 TTS 目录插件（`com.user.tts.*`）
 
 **非** K-VOICE-02 官方引擎产品化；**不**扩大运行时权限面或宿主全局 RPC 白名单。社区 TTS 侧车与官方 `com.oclive.voice.asr` 共用 **`voice.*` 方法命名空间**与同一执法路径（[`validate_rpc_method_for_manifest`](../../distros/desktop-tauri/src/api/plugin_bridge.rs)）。

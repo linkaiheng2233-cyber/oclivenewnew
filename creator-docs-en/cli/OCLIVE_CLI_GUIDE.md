@@ -51,6 +51,19 @@ cargo run -p oclive-cli --features diagnostics-host -- doctor config-resolve mum
 
 With `--json`, **stdout is a single JSON document**; human-readable titles go to stderr. Dependency boundary: [COMPATIBILITY.md](../COMPATIBILITY.md) · [`doctor_config_resolve.rs`](../../kernel/crates/oclive-cli/src/doctor_config_resolve.rs) · runtime SSOT [`plugin_resolution.rs`](../../kernel/crates/oclive_kernel_runtime/src/domain/plugin_resolution.rs).
 
+**`doctor execution-plan`** resolves v4 extensions, Provider candidates, permissions/dependencies, and distro-specific degradation. It is read-only and never starts a plugin:
+
+```bash
+cargo run -p oclive-cli --features diagnostics-host -- doctor execution-plan mumu --json
+cargo run -p oclive-cli --features diagnostics-host -- doctor execution-plan my-role \
+  -o ./distros/chat-pro/roles \
+  --app-data-dir ./tmp/app-data \
+  --distro-profile ./distros/desktop-tauri/resources/distro-profiles/theater.oclive.toml \
+  --json
+```
+
+The command explicitly requires `diagnostics-host` because it reuses the host role parser, Capability Registry, and Plan Compiler; the default CLI dependency surface remains lightweight. The `ExecutionPlan` is in memory only. `resource_coordination: not_evaluated` means the unified coordinator did not run. An unavailable required extension is `blocked`; an unavailable optional extension is `degraded`.
+
 ---
 
 ## `pack`: validate and publish role packs

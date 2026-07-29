@@ -16,7 +16,7 @@ This page is the **authoritative public narrative** and **module numbering & tax
 
 **Open lab** product axis: [VISION_OPEN_LAB.md](../../creator-docs/roadmap/VISION_OPEN_LAB.md).
 
-**Blueprint extensions and resource coordination (target contract; not implemented):** a blueprint keeps only a small namespaced capability declaration. The host compiles an internal `ExecutionPlan`, then a unified Resource Coordinator coordinates LLM, voice, Live2D/3D, and future resource adapters. The extension envelope is not a fifth module category, and resource coordination is not a seventh slot. See [RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md](../rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md).
+**Blueprint extensions and resource coordination (phased implementation):** a blueprint keeps only a small namespaced capability declaration. The host now implements a Capability Registry and read-only, in-memory `ExecutionPlan` diagnostics. The unified Resource Coordinator and LLM/voice/Live2D/3D resource adapters remain future work. The extension envelope is not a fifth module category, and resource coordination is not a seventh slot. See [RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md](../rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md).
 
 ---
 

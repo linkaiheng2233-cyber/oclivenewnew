@@ -20,7 +20,7 @@
 
 **开放实验场** 为产品主轴（见 [VISION_OPEN_LAB.md](../roadmap/VISION_OPEN_LAB.md)）。
 
-**蓝图扩展与资源协调（目标契约，未实现）**：蓝图只保存最小、命名空间化的能力声明；宿主编译内部 `ExecutionPlan`，再由统一 Resource Coordinator 协调 LLM、语音、Live2D/3D 等资源适配器。扩展外壳不是第五类模块，资源协调也不是第七槽。详见 [RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md](../rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md)。
+**蓝图扩展与资源协调（分阶段实现）**：蓝图只保存最小、命名空间化的能力声明；宿主已实现 Capability Registry 与只读、进程内 `ExecutionPlan` 诊断。统一 Resource Coordinator 及 LLM/语音/Live2D/3D 资源适配器仍待后续实现。扩展外壳不是第五类模块，资源协调也不是第七槽。详见 [RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md](../rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md)。
 
 ---
 

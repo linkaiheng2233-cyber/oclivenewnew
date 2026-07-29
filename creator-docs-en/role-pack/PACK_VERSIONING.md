@@ -16,7 +16,7 @@ This page explains **manifest / settings** version fields, unknown-key policy, a
 - **v3 (frozen dual-core Beta)**: Retains `pipeline`, slot `zone`, and `runtime_config.dual_core`; it does not accept the generic extension envelope.
 - **v4 (Stable)**: Canonical format for newly created packs. `runtime_config` is active and the minimal `extensions` declaration envelope may reference external JSON payloads; v3-only fields are rejected.
 - The host, CLI, and doctor dispatch **exactly** by `schema_version`; an unknown version never falls back to v2. The editor creates v4 packs by default, the CLI offers `pack create --format-blueprint-v4`, and an imported v2 pack round-trips as v2.
-- This v4 slice covers declarations, namespaces, required/optional semantics, safe `config_ref`, host activation boundaries, and editor round-trip only. Until the Capability Registry lands, optional extensions are preserved but inactive and required extensions block activation.
+- The current v4 slice covers declarations, namespaces, required/optional semantics, safe `config_ref`, editor round-trip, a directory-Provider Capability Registry, and read-only cross-distro plan diagnostics. An extension is ready only when the host registers a consumer and its Provider/dependencies/permissions are available; an unavailable optional extension degrades and an unavailable required extension blocks activation. Diagnostics do not start Providers; the Resource Coordinator remains unimplemented.
 
 ## `plugin_backends` and PLUGIN_V1
 

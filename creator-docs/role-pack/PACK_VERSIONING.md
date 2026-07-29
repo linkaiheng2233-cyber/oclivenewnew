@@ -14,7 +14,7 @@
 - **v3（冻结的双核 Beta）**：保留 `pipeline`、槽位 `zone` 与 `runtime_config.dual_core`，不再承接通用扩展。
 - **v4（Stable）**：新建包的 canonical 格式；`runtime_config` 生效，并支持最小 `extensions` 声明外壳与外置 JSON 载荷；明确拒绝 v3 专属字段。
 - 加载器、CLI 与 doctor 按 `schema_version` **精确分派**；未知版本不会回落为 v2。编写器新建包默认 v4，CLI 以 `pack create --format-blueprint-v4` 生成 v4；导入的 v2 包继续以 v2 无损导出。
-- 当前 v4 只完成声明、命名空间、required/optional、安全 `config_ref`、宿主激活边界与编写器 round-trip。Capability Registry 尚未落地，因此可选扩展保留但不执行，必需扩展阻止激活。
+- 当前 v4 已完成声明、命名空间、required/optional、安全 `config_ref`、编写器 round-trip、目录 Provider Capability Registry 与只读跨发行版计划诊断。只有宿主登记消费者且 Provider/依赖/权限可用时扩展才为 ready；可选缺失降级，必需缺失阻止激活。计划不启动 Provider；Resource Coordinator 仍未实现。
 
 ## `plugin_backends` 与 PLUGIN_V1
 

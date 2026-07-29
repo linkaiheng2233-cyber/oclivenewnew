@@ -321,6 +321,19 @@ cargo run -p oclive-cli --features diagnostics-host -- doctor config-resolve mum
 
 `--json` 时 **stdout 仅输出一个 JSON 文档**；人类可读模式的标题行走 stderr。依赖边界见 [COMPATIBILITY.md](../COMPATIBILITY.md) · [`doctor_config_resolve.rs`](../../kernel/crates/oclive-cli/src/doctor_config_resolve.rs) · runtime SSOT [`plugin_resolution.rs`](../../kernel/crates/oclive_kernel_runtime/src/domain/plugin_resolution.rs)。
 
+**`doctor execution-plan`**（v4 扩展、Provider 候选、权限/依赖和跨发行版降级；只读，不启动插件）：
+
+```bash
+cargo run -p oclive-cli --features diagnostics-host -- doctor execution-plan mumu --json
+cargo run -p oclive-cli --features diagnostics-host -- doctor execution-plan my-role \
+  -o ./distros/chat-pro/roles \
+  --app-data-dir ./tmp/app-data \
+  --distro-profile ./distros/desktop-tauri/resources/distro-profiles/theater.oclive.toml \
+  --json
+```
+
+该命令因复用宿主角色解析、Capability Registry 与 Plan Compiler 而显式要求 `diagnostics-host` feature；默认 CLI 依赖面保持轻量。输出中的 `ExecutionPlan` 只存在于内存，不写回 `pipeline.ocblueprint`；`resource_coordination: not_evaluated` 表示本轮未执行统一资源协调。无 Provider 或权限时，必需扩展为 `blocked`，可选扩展为 `degraded`。
+
 ### `test --oocp`（本地 OOCP 闭环）
 
 在 **oclivenewnew 仓库根**执行（需已能 `cargo build -p oclivenewnew-tauri --release`）：

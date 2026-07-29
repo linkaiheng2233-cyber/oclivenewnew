@@ -139,6 +139,16 @@ Directory / remote plugins may declare **`provides`** beyond the six slots. Host
 | **`com.user.tts.*`** | Community TTS sidecar | Same **`voice.*` RPC namespace** as official voice; **not** K-VOICE-02 productization; **no** new runtime permissions — see below |
 | `complex_emotion` | Slot type (v2) | Blueprint `type: complex_emotion` when `backend: directory` |
 
+#### Capability Registry v1 (blueprint v4, read-only plan)
+
+- A manifest may advertise a namespaced v4 capability in `provides`, but the Plan Compiler selects it only when the host has registered a real consumer. An arbitrary string does not expand kernel behavior.
+- A directory Provider must pass manifest `schema_version: 1` validation, declare the capability, have an executable `process`, and satisfy dependencies, per-role enablement, and high-risk grants. Legacy process manifests without `permissions` still require `process:spawn`.
+- Provider `version` is reported for diagnostics. The v4 envelope currently has no Provider API semver range, so the displayed version is not an API-compatibility promise.
+- The first registered v4 consumer is Chat Pro `voice.asr`; other capabilities degrade or block until their consumer and call path exist.
+- `get_execution_plan_diagnostics` and `oclive doctor execution-plan` never spawn a Provider, allocate resources, or rewrite a role pack. `resource_coordination: not_evaluated` means the unified coordinator has not run.
+
+DTO and implementation anchors: [`models/execution_plan.rs`](../../kernel/crates/oclive_kernel_types/src/models/execution_plan.rs) · [`capability_registry.rs`](../../kernel/crates/oclive_kernel_host/src/infrastructure/capability_registry.rs) · [`execution_plan.rs`](../../kernel/crates/oclive_kernel_host/src/domain/execution_plan.rs).
+
 #### Community TTS (`com.user.tts.*`)
 
 Community directory TTS plugins share the official **`voice.*` method namespace** and the same per-plugin authorization path. This documents the allowed RPC surface; it does **not** broaden host-global whitelists or implement ChatTTS/XTTS (K-VOICE-02).
