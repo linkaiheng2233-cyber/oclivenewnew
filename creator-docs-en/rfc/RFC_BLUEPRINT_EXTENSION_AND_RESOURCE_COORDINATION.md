@@ -4,7 +4,7 @@
 
 | Metadata | Value |
 |----------|-------|
-| Status | **Boundary accepted · v4 envelope and Capability/Plan diagnostics implemented · first LLM/voice resource slice implemented** |
+| Status | **Boundary accepted · v4 envelope and Capability/Plan diagnostics implemented · Resource Adapter Registry and first LLM/voice slice implemented** |
 | Last updated | 2026-07-29 |
 | Audience | Kernel, editor, distro, directory-plugin, and commercial extension developers |
 | Scope | Minimal blueprint extension envelope, capability resolution, `ExecutionPlan`, Resource Coordinator, and adapter ownership |
@@ -48,9 +48,9 @@ Current implementation boundary (2026-07-29):
 - The host implements a directory-Provider Capability Registry, deterministic Provider selection, permission/dependency/enablement checks, required/optional activation gates, and read-only structured diagnostics through Tauri and the CLI. The same pack can produce different plans under different `HostProfile`s.
 - A capability becomes active only when the host has registered a real consumer. The first registration is Chat Pro `voice.asr`; an arbitrary manifest `provides` entry cannot expand kernel behavior.
 - `ExecutionPlan` still resolves capabilities and effective six-slot backends without starting Providers or rewriting packs. Pure compilation and the CLI doctor retain `resource_coordination: not_evaluated`; desktop Tauri diagnostics refresh the host coordinator and report `ready | degraded | blocked`.
-- The host now exposes NVIDIA multi-device snapshots plus admission, lease, priority, pressure, and diagnostics DTOs. `HostProfile` supplies the safety reserve and lease TTL policy.
-- The first adapter loop covers managed llama-server cold starts, observe-only Ollama/LLM foreground activity, and official bundled CosyVoice2 `voice.warm` / `voice.speak`. Cloud TTS, user-hosted HTTP TTS, and community plugins are not misclassified as host-managed resources.
-- General third-party Resource Adapter registration, fair queues/preemption, RAM/CPU, render adapters, and real shared-VRAM stress/soak remain future work.
+- The host exposes NVIDIA multi-device snapshots plus admission, lease, priority, pressure, and resource diagnostics v2. `HostProfile` supplies the safety reserve and lease TTL policy. The Resource Adapter Registry reports control mode, adapter-local profiles, residency support, lifecycle operations, and current leases without scheduling them.
+- The first adapter loop covers managed llama-server cold starts, observe-only Ollama/LLM foreground activity, and official bundled CosyVoice2 `voice.warm` / `voice.speak`. Leases carry `profile_id`, and registered adapters reject unknown profiles. Cloud TTS, user-hosted HTTP TTS, and community plugins are not misclassified as host-managed resources.
+- Existing profiles remain `coordinator_selectable=false`; automatic switching is not claimed. Third-party registration, fair queues/preemption and recovery, real multi-profile transitions, RAM/CPU, render adapters, and shared-VRAM stress/soak remain future work.
 
 ## Capability Provider versus Resource Adapter
 
@@ -110,10 +110,11 @@ Blueprints may express quality and degradation intent, but they do not hard-code
 - Only official bundled CosyVoice2 is host-admitted. The host lease replaces the old fixed mixed-fp16 cold-load gate; FP32 expansion keeps the stricter sidecar-local gate.
 - RAII releases pending leases on cancellation/failure. Disabling TTS or switching away from bundled synthesis releases the voice lease, and per-adapter cold-start RPC serialization closes lease-reuse races.
 - This slice does not kill an active LLM request to load voice and does not claim control over arbitrary external Ollama processes. Automatic preemption/recovery and shared-VRAM stress/soak remain debt.
+- The host Resource Adapter Registry records truthful control, profile, residency, and lifecycle support for llama-server, Ollama, the performance activity observer, and bundled CosyVoice2. Observe-only entries may claim only `observe`; generic lifecycle/profile commands are not dispatched yet.
 
 ## Control messages
 
-Public DTOs in `oclive_kernel_types::resource_coordination` now cover snapshots, admission, leases, priorities, pressure, and diagnostics; `oclive_kernel_contracts::ResourceSnapshotSource` owns device collection. Active degrade/suspend/resume requests and generic runtime-state messages remain future adapter protocol. Tokens, PCM, image frames, and renderer parameters stay on their existing domain channels.
+Public DTOs in `oclive_kernel_types::resource_coordination` now cover snapshots, adapter descriptors/profiles, admission, leases, priorities, pressure, and diagnostics; `oclive_kernel_contracts::ResourceSnapshotSource` owns device collection. Active degrade/suspend/resume requests and generic runtime-state messages remain future adapter protocol. Tokens, PCM, image frames, and renderer parameters stay on their existing domain channels.
 
 ## Compatibility and rollout
 

@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |--------|-----|
-| 状态 | **边界已确认 · v4 外壳与 Capability/Plan 诊断已实现 · Resource 首个 LLM/Voice 切片已实现** |
+| 状态 | **边界已确认 · v4 外壳与 Capability/Plan 诊断已实现 · Resource Adapter Registry 与首个 LLM/Voice 切片已实现** |
 | 最后更新 | 2026-07-29 |
 | 受众 | 内核、编写器、发行版、目录插件与商业扩展开发者 |
 | 维护范围 | 蓝图扩展最小外壳、能力解析、`ExecutionPlan`、资源协调器与适配器分责 |
@@ -110,9 +110,9 @@ role/
 - 宿主已实现目录 Provider 的 Capability Registry、确定性 Provider 选择、权限/依赖/启停检查、required/optional 激活门禁，以及 Tauri/CLI 只读结构化诊断；同一角色包可按 `HostProfile` 得到不同计划。
 - 计划只有在宿主已登记真实消费者时才将 capability 标为 active。首个登记项为 Chat Pro `voice.asr`；任意 manifest `provides` 不能自行扩张内核。
 - `ExecutionPlan` 仍只解析能力与有效六槽，不启动 Provider、不写回角色包；纯编译与 CLI doctor 明确保留 `resource_coordination: not_evaluated`。桌面 Tauri 诊断会刷新宿主 Resource Coordinator，并返回 `ready | degraded | blocked`。
-- 宿主已提供 NVIDIA 多设备快照、准入、租约、优先级、压力和诊断 DTO；`HostProfile` 提供全局安全余量与租约 TTL。
-- 首个资源适配闭环覆盖宿主管理的 llama-server 冷启动、只能观测的 Ollama/LLM 前台活动，以及官方 bundled CosyVoice2 的 `voice.warm` / `voice.speak`。云 TTS、用户自建 HTTP TTS 与社区插件不被误认为宿主可控资源。
-- 当前仍是首期切片：通用第三方 Resource Adapter 注册、公平队列/抢占、系统内存/CPU、渲染适配器及共享显存实机压力/soak 仍待后续验证。
+- 宿主已提供 NVIDIA 多设备快照、准入、租约、优先级、压力和资源诊断 v2；`HostProfile` 提供全局安全余量与租约 TTL。Resource Adapter Registry 登记控制模式、adapter-local 档位、驻留能力、生命周期动作和当前租约，注册表本身不调度。
+- 首个资源适配闭环覆盖宿主管理的 llama-server 冷启动、只能观测的 Ollama/LLM 前台活动，以及官方 bundled CosyVoice2 的 `voice.warm` / `voice.speak`。租约携带 `profile_id`，已登记适配器的未知档位会被拒绝；云 TTS、用户自建 HTTP TTS 与社区插件不被误认为宿主可控资源。
+- 当前仍是早期切片：所有现有档位保持 `coordinator_selectable=false`，不冒充自动切档；第三方注册入口、公平队列/抢占恢复、真正的多档切换、系统内存/CPU、渲染适配器及共享显存实机压力/soak 仍待后续验证。
 
 ---
 
@@ -236,6 +236,7 @@ flowchart TD
 - 官方 `com.oclive.voice.asr` 的 bundled CosyVoice2 才接宿主准入。宿主租约只替代 mixed-fp16 的旧固定冷启动门槛；FP32 扩张继续走侧车更严格的二次门禁。
 - 取消/调用失败通过 RAII 释放 pending lease；关闭 TTS 或切换到非 bundled provider 会释放语音租约。同一适配器的冷启动 RPC 串行化，避免复用租约时的竞态。
 - 当前不会为了加载语音强杀正在进行的 LLM 请求，也不会声称能卸载任意外部 Ollama。自动抢占、恢复与真实共享显存压力测仍是 K-RESOURCE-COORD-01 后续完成条件。
+- 宿主 Resource Adapter Registry 已登记 llama-server、Ollama、performance 活动观察器和 bundled CosyVoice2 的真实控制边界、档位、驻留与生命周期能力；observe-only 条目只能声明 `observe`。注册表通过现有资源诊断返回状态，但当前不下发通用 lifecycle/profile 切换。
 
 ### 6.3 资源描述不是角色包硬编码
 
@@ -251,7 +252,7 @@ flowchart TD
 
 ## 7. 共通控制消息
 
-首版公共 DTO 已在 `oclive_kernel_types::resource_coordination` 收敛 snapshot、admission、lease、priority、pressure 与 diagnostics；设备采集端口为 `oclive_kernel_contracts::ResourceSnapshotSource`。下表后两类主动控制消息仍待后续适配器协议：
+公共 DTO 已在 `oclive_kernel_types::resource_coordination` 收敛 snapshot、adapter descriptor/profile、admission、lease、priority、pressure 与 diagnostics；设备采集端口为 `oclive_kernel_contracts::ResourceSnapshotSource`。下表后两类主动控制消息仍待后续适配器协议：
 
 | 消息语义 | 用途 |
 |----------|------|
