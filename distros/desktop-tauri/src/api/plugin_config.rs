@@ -126,6 +126,7 @@ pub(crate) fn set_plugin_settings_config_impl(
             timeout_ms,
         );
     }
+    oclive_kernel_host::service::release_directory_plugin_resources_for_config(state, pid, config);
     Ok(())
 }
 

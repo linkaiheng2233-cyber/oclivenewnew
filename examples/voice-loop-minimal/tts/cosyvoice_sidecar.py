@@ -233,6 +233,28 @@ def _gpu_load_admission(
     return admitted, free_mib, total_mib, required, detail, probe_source
 
 
+def _valid_host_resource_admission(value: Any) -> tuple[bool, str]:
+    """Accept the host lease only for the mixed cold-load gate.
+
+    This is a coordination hand-off, not a security boundary: the sidecar is
+    loopback-only and the local machine owner already controls both processes.
+    FP32 expansion keeps its stricter sidecar-local gate because it can require
+    substantially more VRAM than the mixed runtime reservation.
+    """
+    if not isinstance(value, dict) or value.get("granted") is not True:
+        return False, ""
+    if int(value.get("schema_version") or 0) != 1:
+        return False, ""
+    lease_id = str(value.get("lease_id") or "").strip()
+    try:
+        reservation_mib = max(0, int(value.get("reservation_mib") or 0))
+    except (TypeError, ValueError):
+        return False, ""
+    if not lease_id.startswith("resource-lease-"):
+        return False, ""
+    return True, f"lease_id={lease_id};reservation_mib={reservation_mib}"
+
+
 def _global_gpu_memory_info_mib(torch_api: Any) -> tuple[int, int, str]:
     """Prefer the driver-wide view; Windows WDDM CUDA may hide peer processes."""
     logical_index = int(torch_api.cuda.current_device())
@@ -424,7 +446,10 @@ def _fallback_model_to_fp32(model: Any, reason: str) -> bool:
     return True
 
 
-def _load_cosyvoice_model(path: Path) -> tuple[Any | None, str]:
+def _load_cosyvoice_model(
+    path: Path,
+    host_resource_admission: Any | None = None,
+) -> tuple[Any | None, str]:
     global _model, _model_dir, _warmed, _primed, _prime_failed_reason
     global _precision_requested, _precision_active, _precision_fallback_reason
     global _last_load_error, _load_strategy, _load_admission_detail, _load_vram_probe
@@ -485,6 +510,20 @@ def _load_cosyvoice_model(path: Path) -> tuple[Any | None, str]:
                 _load_admission_detail,
                 _load_vram_probe,
             ) = _gpu_load_admission(target_precision)
+            host_admitted, host_admission_detail = _valid_host_resource_admission(
+                host_resource_admission
+            )
+            if host_admitted and target_precision == _PRECISION_MIXED_FP16:
+                admitted = True
+                coordination_detail = (
+                    f"host_resource_coordinator:{host_admission_detail}"
+                )
+                _load_admission_detail = (
+                    f"{coordination_detail};sidecar_gate:{_load_admission_detail}"
+                    if _load_admission_detail
+                    else coordination_detail
+                )
+                _load_vram_probe = f"{_load_vram_probe}+host_coordinator"
             if not admitted:
                 _last_load_error = "gpu_admission_denied"
                 sys.stderr.write(
@@ -1023,7 +1062,10 @@ class Handler(BaseHTTPRequestHandler):
                 _model_dir = Path(md)
             path = _model_dir or _resolve_model_dir()
             load_started = time.perf_counter()
-            model, err = _load_cosyvoice_model(path)
+            model, err = _load_cosyvoice_model(
+                path,
+                body.get("host_resource_admission"),
+            )
             load_ms = int((time.perf_counter() - load_started) * 1000)
             if model is None:
                 failure = health_payload()

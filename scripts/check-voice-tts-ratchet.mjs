@@ -251,6 +251,20 @@ try:
     assert admitted[1:4] == (2500, 8192, 2560)
     assert 'required_mib=2560' in admitted[4]
     assert admitted[5] == 'test'
+    valid_host, host_detail = sidecar._valid_host_resource_admission({
+        'schema_version': 1,
+        'granted': True,
+        'lease_id': 'resource-lease-42',
+        'reservation_mib': 768,
+    })
+    assert valid_host and 'reservation_mib=768' in host_detail
+    invalid_host, _ = sidecar._valid_host_resource_admission({
+        'schema_version': 1,
+        'granted': True,
+        'lease_id': 'forged-shape',
+        'reservation_mib': 768,
+    })
+    assert not invalid_host
 finally:
     sidecar._cuda_available = old_cuda_available
     sidecar._gpu_load_admission = old_gpu_admission
@@ -265,17 +279,34 @@ finally:
 
 old_http_json = cosyvoice_engine.http_json
 try:
-    cosyvoice_engine.http_json = lambda *_args, **_kwargs: {
-        'ok': True,
-        'warmed': True,
-        'primed': True,
-        'precision_requested': 'auto',
-        'precision_active': 'mixed_fp16',
-        'precision_fallback_reason': '',
-        'load_strategy': 'staged_cpu_mixed_fp16',
-        'load_vram_probe': 'nvidia_smi',
-        'load_peak_reserved_mib': 1500,
+    captured_payloads = []
+    def fake_http_json(_url, payload=None, **_kwargs):
+        captured_payloads.append(payload)
+        return {
+            'ok': True,
+            'warmed': True,
+            'primed': True,
+            'precision_requested': 'auto',
+            'precision_active': 'mixed_fp16',
+            'precision_fallback_reason': '',
+            'load_strategy': 'staged_cpu_mixed_fp16',
+            'load_vram_probe': 'nvidia_smi',
+            'load_peak_reserved_mib': 1500,
+        }
+    cosyvoice_engine.http_json = fake_http_json
+    host_admission = {
+        'schema_version': 1,
+        'granted': True,
+        'lease_id': 'resource-lease-42',
+        'reservation_mib': 768,
     }
+    warm = cosyvoice_engine.Cosyvoice2Engine().warm(
+        model_dir='.',
+        manifest={'id': 'test'},
+        host_resource_admission=host_admission,
+    )
+    assert warm['ok'] is True
+    assert captured_payloads[-1]['host_resource_admission'] == host_admission
     with tempfile.TemporaryDirectory() as temp_dir:
         probe_dir = Path(temp_dir)
         (probe_dir / 'MANIFEST.json').write_text('{}', encoding='utf-8')

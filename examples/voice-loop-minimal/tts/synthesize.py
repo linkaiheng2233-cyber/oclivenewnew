@@ -49,6 +49,7 @@ def main() -> int:
                     emo_text=str(directive.get("emo_text") or ""),
                     ref_audio=str(directive.get("ref_audio") or ""),
                     ref_text=str(directive.get("ref_text") or ""),
+                    host_resource_admission=payload.get("host_resource_admission"),
                 ),
                 ensure_ascii=False,
             )

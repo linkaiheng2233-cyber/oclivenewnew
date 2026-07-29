@@ -101,6 +101,9 @@ class Cosyvoice2Engine:
             "ref_audio": str(kwargs.get("ref_audio") or ""),
             "ref_text": str(kwargs.get("ref_text") or ""),
         }
+        host_resource_admission = kwargs.get("host_resource_admission")
+        if isinstance(host_resource_admission, dict):
+            payload["host_resource_admission"] = host_resource_admission
         return http_json(
             f"{base}/warm",
             payload,

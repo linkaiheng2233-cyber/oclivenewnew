@@ -210,7 +210,12 @@ function stopCosyvoiceSidecar() {
   }
 }
 
-async function ensureCosyvoiceSidecarWarmed(profileId, sidecarEndpoint, directive = null) {
+async function ensureCosyvoiceSidecarWarmed(
+  profileId,
+  sidecarEndpoint,
+  directive = null,
+  hostResourceAdmission = null,
+) {
   const hasRolePrompt = directiveHasCosyvoiceInput(directive);
   if (cosyvoiceSidecarWarmed && !hasRolePrompt) {
     return { ok: true, already_warmed: true, warmed: true };
@@ -232,10 +237,17 @@ async function ensureCosyvoiceSidecarWarmed(profileId, sidecarEndpoint, directiv
     sidecarEndpoint,
     modelDir,
     directive,
+    hostResourceAdmission,
   );
 }
 
-async function runCosyvoiceWarm(profileId, sidecarEndpoint, modelDir, directive = null) {
+async function runCosyvoiceWarm(
+  profileId,
+  sidecarEndpoint,
+  modelDir,
+  directive = null,
+  hostResourceAdmission = null,
+) {
   const warm = await spawnPythonJson(
     "tts.synthesize",
     {
@@ -244,6 +256,9 @@ async function runCosyvoiceWarm(profileId, sidecarEndpoint, modelDir, directive 
       model_dir: modelDir,
       engine: "cosyvoice2",
       sidecar_endpoint: sidecarEndpoint,
+      ...(hostResourceAdmission && typeof hostResourceAdmission === "object"
+        ? { host_resource_admission: hostResourceAdmission }
+        : {}),
       ...(directiveHasCosyvoiceInput(directive) ? { directive } : {}),
     },
     COSYVOICE_WARM_TIMEOUT_MS,
@@ -264,6 +279,7 @@ async function runCosyvoiceWarmSerialized(
   sidecarEndpoint,
   modelDir,
   directive = null,
+  hostResourceAdmission = null,
 ) {
   const previous = cosyvoiceWarmInFlight;
   const promise = (previous ? previous.catch(() => {}) : Promise.resolve())
@@ -273,6 +289,7 @@ async function runCosyvoiceWarmSerialized(
         sidecarEndpoint,
         modelDir,
         directive,
+        hostResourceAdmission,
       ),
     );
   cosyvoiceWarmInFlight = promise;
@@ -1143,7 +1160,12 @@ async function handleSpeak(params) {
       };
     }
     sidecarEndpoint = sidecar.sidecar_endpoint || sidecarEndpoint;
-    const warm = await ensureCosyvoiceSidecarWarmed(profileId, sidecarEndpoint);
+    const warm = await ensureCosyvoiceSidecarWarmed(
+      profileId,
+      sidecarEndpoint,
+      null,
+      params?._oclive_resource_admission,
+    );
     if (!warm.ok) {
       return {
         ok: false,
@@ -1313,6 +1335,7 @@ async function handleWarm(params) {
     endpoint,
     modelDir,
     directive,
+    params?._oclive_resource_admission,
   );
 }
 
@@ -1471,16 +1494,7 @@ function handleConfigUpdated(params) {
     const profileId =
       pluginConfig.tts_profile || readProfiles().default_tts_profile || DEFAULT_TTS_PROFILE;
     const profileRec = resolveTtsProfileRecord(profileId);
-    if (
-      pluginConfig.tts_expansion_enabled === true &&
-      shouldRunBundledSidecar(profileRec)
-    ) {
-      void ensureCosyvoiceSidecar(profileId).then((sidecar) => {
-        if (sidecar.ok) {
-          void ensureCosyvoiceSidecarWarmed(profileId, sidecar.sidecar_endpoint);
-        }
-      });
-    } else if (prev?.tts_expansion_enabled === true && pluginConfig.tts_expansion_enabled !== true) {
+    if (prev?.tts_expansion_enabled === true && pluginConfig.tts_expansion_enabled !== true) {
       stopCosyvoiceSidecar();
     } else if (
       prev?.tts_expansion_enabled === true &&

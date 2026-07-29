@@ -231,15 +231,36 @@ async fn dispatch_plugin_rpc_invoke(
     if method.is_empty() {
         return Err(bridge_invalid("plugin_rpc_invoke: method required"));
     }
-    let rpc_params = params.get("params").cloned().unwrap_or(Value::Null);
+    let mut rpc_params = params.get("params").cloned().unwrap_or(Value::Null);
     validate_plugin_rpc_method(shared.as_ref(), plugin_id, &method)?;
+    let resource_admission =
+        match oclive_kernel_host::service::prepare_directory_plugin_resource_rpc(
+            shared.as_ref(),
+            plugin_id,
+            &method,
+            &mut rpc_params,
+        )
+        .await
+        {
+            oclive_kernel_host::service::DirectoryPluginResourceAdmission::Denied(admission) => {
+                return Ok(json!({
+                    "ok": false,
+                    "reason": "gpu_admission_denied",
+                    "retryable": true,
+                    "message": "Resource Coordinator denied the bundled voice runtime because GPU headroom is below the active safety policy",
+                    "resource_admission": admission,
+                }));
+            }
+            admission => admission,
+        };
     let pid = plugin_id.trim().to_string();
-    tokio::task::spawn_blocking(move || {
-        let url = shared
+    let rpc_state = Arc::clone(&shared);
+    let rpc_result = match tokio::task::spawn_blocking(move || {
+        let url = rpc_state
             .directory_plugins
             .ensure_rpc_url(&pid)
             .map_err(|e| map_directory_rpc_url_error(&pid, e))?;
-        let timeout_ms = shared
+        let timeout_ms = rpc_state
             .directory_plugins
             .rpc_timeout_override_ms(&pid, &method);
         invoke_directory_plugin_rpc_blocking(
@@ -252,14 +273,21 @@ async fn dispatch_plugin_rpc_invoke(
         .map_err(Into::into)
     })
     .await
-    .map_err(|e| {
-        CommandError::from(
+    {
+        Ok(result) => result,
+        Err(error) => Err(CommandError::from(
             ApiError::Io {
-                message: format!("plugin_rpc_invoke join: {e}"),
+                message: format!("plugin_rpc_invoke join: {error}"),
             }
             .to_string(),
-        )
-    })?
+        )),
+    };
+    oclive_kernel_host::service::finalize_directory_plugin_resource_rpc(
+        shared.as_ref(),
+        resource_admission,
+        rpc_result.as_ref().ok(),
+    );
+    rpc_result
 }
 
 async fn dispatch_local_bridge_command(
