@@ -179,7 +179,7 @@ favor_low  = "…"              # optional; favor < 40
 
 环境覆盖：`OCLIVE_GPU_SAFETY_RESERVE_MIB`、`OCLIVE_RESOURCE_ALLOW_UNVERIFIED`。适配器估算可用 `OCLIVE_LLAMA_GPU_RESERVATION_MIB`、`OCLIVE_COSYVOICE_GPU_RESERVATION_MIB` 覆盖；目标设备可用 `OCLIVE_GPU_DEVICE_INDEX`（其次读取 `CUDA_VISIBLE_DEVICES`）选择。这些适配器覆盖不属于角色包格式。
 
-当前统一协调器已覆盖 NVIDIA 设备快照、并发 pending reservation、managed llama-server 冷启动/释放、observe-only Ollama 前台活动与官方 bundled CosyVoice2 准入。宿主 Resource Adapter Registry 同时通过资源诊断 v2 暴露这些适配器的控制模式、adapter-local 运行档位、驻留能力、生命周期动作和当前租约；注册表描述能力但不自行调度。纯 Plan Compiler / CLI doctor 不探测硬件，返回 `not_evaluated`；桌面 `get_execution_plan_diagnostics` 与 `get_resource_coordination_diagnostics` 刷新运行态。当前适配器尚不允许协调器自动切档；自动抢占/恢复、第三方注册入口、RAM/CPU、渲染适配器和真实共享显存 soak 仍是后续债务。完整边界见 [蓝图扩展与资源协调 RFC](../rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md)。
+当前统一协调器已覆盖 NVIDIA 设备快照、并发 pending reservation、managed llama-server 冷启动/释放、observe-only Ollama 前台活动与官方 bundled CosyVoice2 准入。Performance LLM 的资源暂停会关闭 Ollama fallback 门、排空在途 fallback 并卸载本运行时追踪的模型；普通故障降级不受影响，显式预热/应用模型选择负责恢复。宿主 Resource Adapter Registry 同时通过资源诊断 v2 暴露这些适配器的控制模式、adapter-local 运行档位、驻留能力、生命周期动作和当前租约；注册表描述能力但不自行调度。纯 Plan Compiler / CLI doctor 不探测硬件，返回 `not_evaluated`；桌面 `get_execution_plan_diagnostics` 与 `get_resource_coordination_diagnostics` 刷新运行态。当前适配器尚不允许协调器自动切档；Voice 尚未接入自动暂停/失败回滚/释放后恢复，第三方注册入口、RAM/CPU、渲染适配器和真实共享显存 soak 仍是后续债务。完整边界见 [蓝图扩展与资源协调 RFC](../rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md)。
 
 ### 3.2.3 `[turn_thinking]`（编排行 · 非六槽）
 

@@ -112,7 +112,7 @@ role/
 - `ExecutionPlan` 仍只解析能力与有效六槽，不启动 Provider、不写回角色包；纯编译与 CLI doctor 明确保留 `resource_coordination: not_evaluated`。桌面 Tauri 诊断会刷新宿主 Resource Coordinator，并返回 `ready | degraded | blocked`。
 - 宿主已提供 NVIDIA 多设备快照、准入、租约、优先级、压力和资源诊断 v2；`HostProfile` 提供全局安全余量与租约 TTL。Resource Adapter Registry 登记控制模式、adapter-local 档位、驻留能力、生命周期动作和当前租约，注册表本身不调度。
 - 首个资源适配闭环覆盖宿主管理的 llama-server 冷启动、只能观测的 Ollama/LLM 前台活动，以及官方 bundled CosyVoice2 的 `voice.warm` / `voice.speak`。租约携带 `profile_id`，已登记适配器的未知档位会被拒绝；云 TTS、用户自建 HTTP TTS 与社区插件不被误认为宿主可控资源。
-- 当前仍是早期切片：所有现有档位保持 `coordinator_selectable=false`，不冒充自动切档；第三方注册入口、公平队列/抢占恢复、真正的多档切换、系统内存/CPU、渲染适配器及共享显存实机压力/soak 仍待后续验证。
+- 当前仍是早期切片：所有现有档位保持 `coordinator_selectable=false`，不冒充自动切档；受协调的 Performance LLM fallback 门禁已经落地，但第三方注册入口、公平队列/自动抢占恢复、真正的多档切换、系统内存/CPU、渲染适配器及共享显存实机压力/soak 仍待后续验证。
 
 ---
 
@@ -236,7 +236,8 @@ flowchart TD
 - 官方 `com.oclive.voice.asr` 的 bundled CosyVoice2 才接宿主准入。宿主租约只替代 mixed-fp16 的旧固定冷启动门槛；FP32 扩张继续走侧车更严格的二次门禁。
 - 取消/调用失败通过 RAII 释放 pending lease；关闭 TTS 或切换到非 bundled provider 时，宿主下发带 adapter/runtime profile 的 `unload`，侧车等待当前合成结束、校验目标模型并释放模型，宿主仅在收到匹配成功确认后撤销语音租约；未确认时保守保留租约并写入 `resource_release_unconfirmed`。同一适配器的冷启动 RPC 与配置转换共用串行锁，避免卸载确认、租约复用及连续配置保存之间的竞态。
 - 当前不会为了加载语音强杀正在进行的 LLM 请求，也不会声称能卸载任意外部 Ollama。自动抢占、恢复与真实共享显存压力测仍是 K-RESOURCE-COORD-01 后续完成条件。
-- 暂不自动执行 llama-server → Voice 抢占：暂停 managed primary 后现有请求会回退到 observe-only Ollama，而宿主无法保证其不重新占用同一 GPU；须先补受协调的 fallback 门禁与恢复策略。
+- Performance LLM 已提供受协调的 fallback 门禁：资源转换先拒绝新的 Ollama fallback，等待已经获准的 fallback 请求自然排空，再卸载仅由本 OCLive 运行时追踪的 Ollama 模型；普通 primary 故障与云 provider 切换仍保留原有降级语义。`generate`、标签生成、opts、流式生成和启动探针共用同一门禁；并发到达的显式预热/模型应用只登记为 supersede，排空与卸载完成前不会提前开门。
+- 暂不自动执行 llama-server → Voice 抢占：门禁只是安全前置条件，Voice 准入尚未负责发起 managed llama 暂停、失败回滚和 Voice 释放后的恢复；取消资源暂停会保守保持门禁关闭，后续编排必须显式恢复，不能依赖隐式超时。
 - 宿主 Resource Adapter Registry 已登记 llama-server、Ollama、performance 活动观察器和 bundled CosyVoice2 的真实控制边界、档位、驻留与生命周期能力；observe-only 条目只能声明 `observe`。注册表通过现有资源诊断返回状态，但当前不下发通用 lifecycle/profile 切换。
 
 ### 6.3 资源描述不是角色包硬编码
