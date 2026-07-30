@@ -21,6 +21,7 @@
     "voice.build_directive"
   ],
   "rpcTimeoutsMs": {
+    "config_updated": 30000,
     "voice.warm": 900000,
     "voice.speak": 600000,
     "voice.probe_tts": 120000,

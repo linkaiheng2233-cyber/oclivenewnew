@@ -12,6 +12,7 @@ import { fileURLToPath } from "node:url";
 
 const PROTOCOL_HEADER = "x-oclive-remote-protocol";
 const PROTOCOL_VALUE = "oclive-remote-jsonrpc-v1";
+const COSYVOICE_RESOURCE_ADAPTER_ID = "builtin.voice.cosyvoice2";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PLATFORM = process.platform;
 const DEFAULT_TTS_PROFILE = "bundled-cosyvoice2-zh";
@@ -208,6 +209,99 @@ function stopCosyvoiceSidecar() {
     cosyvoiceSidecarUrl = null;
     cosyvoiceSidecarWarmed = false;
   }
+}
+
+function waitForChildClose(child, timeoutMs = 5000) {
+  return new Promise((resolve) => {
+    if (!child || child.exitCode !== null || child.signalCode !== null) {
+      resolve(true);
+      return;
+    }
+    let settled = false;
+    let timer = null;
+    const finish = (closed) => {
+      if (settled) return;
+      settled = true;
+      if (timer) clearTimeout(timer);
+      child.off("close", onClose);
+      resolve(closed);
+    };
+    const onClose = () => finish(true);
+    child.once("close", onClose);
+    timer = setTimeout(() => finish(false), timeoutMs);
+  });
+}
+
+async function releaseCosyvoiceSidecar(profileId) {
+  const modelDir = resolveTtsModelDir(profileId);
+  const profileRec = resolveTtsProfileRecord(profileId);
+  const port = Number(profileRec.profile?.sidecar_port || 50000) || 50000;
+  const endpoint = cosyvoiceSidecarUrl || `http://127.0.0.1:${port}`;
+  let remoteRelease = null;
+  let endpointRefusedConnection = false;
+  try {
+    const response = await fetch(`${endpoint.replace(/\/+$/, "")}/unload`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model_dir: modelDir }),
+      signal: AbortSignal.timeout(15_000),
+    });
+    remoteRelease = response.ok ? await response.json() : {
+      ok: false,
+      released: false,
+      reason: `unload_http_${response.status}`,
+    };
+  } catch (error) {
+    const causeCode =
+      error && typeof error === "object" && error.cause && typeof error.cause === "object"
+        ? String(error.cause.code || "")
+        : "";
+    endpointRefusedConnection = causeCode === "ECONNREFUSED";
+    remoteRelease = {
+      ok: false,
+      released: false,
+      reason: "unload_unreachable",
+      message: error instanceof Error ? error.message : String(error),
+    };
+  }
+
+  const child = cosyvoiceSidecarChild;
+  let managedChildStopped = false;
+  if (child) {
+    try {
+      const signaled = child.kill("SIGTERM");
+      managedChildStopped = signaled && await waitForChildClose(child);
+    } catch {
+      managedChildStopped = false;
+    }
+  }
+  const alreadyStopped = !child && endpointRefusedConnection;
+  if (remoteRelease?.released === true || managedChildStopped || alreadyStopped) {
+    if (managedChildStopped || alreadyStopped) {
+      cosyvoiceSidecarChild = null;
+      cosyvoiceSidecarUrl = null;
+    }
+    cosyvoiceSidecarWarmed = false;
+    return {
+      ok: true,
+      released: true,
+      release_mode: managedChildStopped
+        ? "managed_process_stopped"
+        : alreadyStopped
+          ? "already_stopped"
+          : "model_unloaded",
+      sidecar_endpoint: endpoint,
+      model_dir: modelDir,
+    };
+  }
+  return {
+    ok: false,
+    released: false,
+    reason: remoteRelease?.reason || "resource_release_unconfirmed",
+    message: remoteRelease?.message || "CosyVoice2 resource release was not confirmed",
+    sidecar_endpoint: endpoint,
+    model_dir: modelDir,
+  };
 }
 
 async function ensureCosyvoiceSidecarWarmed(
@@ -1487,23 +1581,39 @@ function handleImportTtsAdapter(params) {
   };
 }
 
-function handleConfigUpdated(params) {
+async function handleConfigUpdated(params) {
+  let resourceTransition = null;
   if (params?.config && typeof params.config === "object") {
     const prev = pluginConfig;
     pluginConfig = params.config;
     const profileId =
       pluginConfig.tts_profile || readProfiles().default_tts_profile || DEFAULT_TTS_PROFILE;
     const profileRec = resolveTtsProfileRecord(profileId);
-    if (prev?.tts_expansion_enabled === true && pluginConfig.tts_expansion_enabled !== true) {
-      stopCosyvoiceSidecar();
-    } else if (
-      prev?.tts_expansion_enabled === true &&
-      !shouldRunBundledSidecar(profileRec)
+    const requestedTransition =
+      params?.resource_transition &&
+      typeof params.resource_transition === "object" &&
+      params.resource_transition.adapter_id === COSYVOICE_RESOURCE_ADAPTER_ID &&
+      params.resource_transition.operation === "unload";
+    const leavingBundledRuntime =
+      pluginConfig.tts_expansion_enabled !== true || !shouldRunBundledSidecar(profileRec);
+    if (
+      leavingBundledRuntime &&
+      (requestedTransition || prev?.tts_expansion_enabled === true)
     ) {
-      stopCosyvoiceSidecar();
+      const releaseProfileId = requestedTransition
+        ? String(params.resource_transition.runtime_profile_id || DEFAULT_TTS_PROFILE)
+        : String(prev?.tts_profile || DEFAULT_TTS_PROFILE);
+      resourceTransition = {
+        adapter_id: COSYVOICE_RESOURCE_ADAPTER_ID,
+        operation: "unload",
+        ...(await releaseCosyvoiceSidecar(releaseProfileId)),
+      };
     }
   }
-  return { ok: true };
+  return {
+    ok: true,
+    ...(resourceTransition ? { resource_transition: resourceTransition } : {}),
+  };
 }
 
 const server = http.createServer((req, res) => {
@@ -1549,7 +1659,7 @@ const server = http.createServer((req, res) => {
         else if (method === "voice.import_tts_adapter") result = handleImportTtsAdapter(params);
         else if (method === "voice.build_directive") result = handleBuildDirective(params);
         else if (method === "voice.read_role_profile") result = handleReadRoleProfile(params);
-        else if (method === "config_updated") result = handleConfigUpdated(params);
+        else if (method === "config_updated") result = await handleConfigUpdated(params);
         else {
           res.writeHead(200);
           res.end(jsonRpcError(id, -32601, `method not found: ${method}`));

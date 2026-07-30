@@ -358,6 +358,34 @@ impl ResourceCoordinator {
         before.saturating_sub(state.leases.len())
     }
 
+    /// Attach a stable operational reason to every current lease for one adapter.
+    ///
+    /// Returns the number of leases that gained the reason. Repeated reasons are
+    /// idempotent so retries do not grow diagnostics without bound.
+    pub fn record_adapter_reason(&self, adapter_id: &str, reason_code: &str) -> usize {
+        let reason_code = reason_code.trim();
+        if adapter_id.trim().is_empty() || reason_code.is_empty() {
+            return 0;
+        }
+        let mut state = self.state.lock();
+        let mut updated = 0;
+        for lease in state
+            .leases
+            .values_mut()
+            .filter(|lease| lease.adapter_id == adapter_id)
+        {
+            if !lease
+                .reason_codes
+                .iter()
+                .any(|existing| existing == reason_code)
+            {
+                lease.reason_codes.push(reason_code.to_string());
+                updated += 1;
+            }
+        }
+        updated
+    }
+
     #[must_use]
     pub fn has_active_priority(&self, minimum: ResourcePriority) -> bool {
         let now_ms = now_epoch_ms();
@@ -377,6 +405,18 @@ impl ResourceCoordinator {
         state.leases.values().any(|lease| {
             lease.state == ResourceLeaseState::Active && lease.adapter_id == adapter_id
         })
+    }
+
+    #[must_use]
+    /// Whether the adapter has a reserved or active lease after TTL pruning.
+    pub fn has_adapter_lease(&self, adapter_id: &str) -> bool {
+        let now_ms = now_epoch_ms();
+        let mut state = self.state.lock();
+        prune_expired(&mut state.leases, now_ms);
+        state
+            .leases
+            .values()
+            .any(|lease| lease.adapter_id == adapter_id)
     }
 
     #[must_use]
@@ -602,7 +642,18 @@ mod tests {
         );
         let first = coordinator.admit(request("voice", "cosy", 1792)).await;
         let lease = first.lease.expect("lease");
+        assert!(coordinator.has_adapter_lease("voice"));
+        assert!(!coordinator.has_active_adapter("voice"));
         assert!(coordinator.activate(&lease.lease_id, Some(1400)));
+        assert!(coordinator.has_active_adapter("voice"));
+        assert_eq!(
+            coordinator.record_adapter_reason("voice", "resource_release_unconfirmed"),
+            1
+        );
+        assert_eq!(
+            coordinator.record_adapter_reason("voice", "resource_release_unconfirmed"),
+            0
+        );
         let reused = coordinator.admit(request("voice", "cosy", 1792)).await;
         assert_eq!(reused.decision, ResourceAdmissionDecision::Reused);
         assert_eq!(
@@ -613,7 +664,12 @@ mod tests {
             reused.lease.as_ref().and_then(|item| item.expires_at_ms),
             None
         );
+        assert_eq!(
+            reused.lease.as_ref().expect("reused lease").reason_codes,
+            vec!["resource_release_unconfirmed"]
+        );
         assert!(coordinator.release(&lease.lease_id));
+        assert!(!coordinator.has_adapter_lease("voice"));
         assert!(coordinator.diagnostics_snapshot().leases.is_empty());
     }
 

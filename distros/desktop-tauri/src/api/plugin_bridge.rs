@@ -365,7 +365,7 @@ async fn dispatch_local_bridge_command(
             "set_plugin_settings_config",
         )?;
         let config = params.get("config").cloned().unwrap_or(Value::Null);
-        set_plugin_settings_config_impl(state, bridge_plugin_id, &config)?;
+        set_plugin_settings_config_impl(state, bridge_plugin_id, &config).await?;
         return Ok(json!({ "ok": true }));
     }
 

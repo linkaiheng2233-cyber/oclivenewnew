@@ -33,6 +33,16 @@ const syntax = spawnSync(process.execPath, ['--check', rpcServer], {
 if (syntax.status !== 0) {
   fail(syntax.stderr?.trim() || 'rpc_server.mjs syntax check failed')
 }
+const rpcServerSource = fs.readFileSync(rpcServer, 'utf8')
+if (
+  !rpcServerSource.includes(
+    'else if (method === "config_updated") result = await handleConfigUpdated(params);',
+  )
+) {
+  fail(
+    'Voice RPC must await the asynchronous config transition before serializing its confirmation',
+  )
+}
 
 const manifestPath = path.join(
   repoRoot,
@@ -49,6 +59,8 @@ const pySnippet = `
 import sys
 import os
 import tempfile
+import threading
+import time
 from pathlib import Path
 sys.path.insert(0, r'${voiceLoop.replace(/\\/g, '/')}')
 from tts.engines.registry import get_registry
@@ -140,6 +152,48 @@ sidecar._prime_failed_reason = 'prime_failed:test'
 sidecar._model_ready = lambda _path: (True, '')
 health = sidecar.health_payload()
 assert not health['ok'] and health['reason'] == 'prime_failed:test'
+
+with tempfile.TemporaryDirectory() as unload_dir, tempfile.TemporaryDirectory() as other_dir:
+    unload_cache_calls = []
+    old_empty_cuda_cache = sidecar._empty_cuda_cache
+    try:
+        resident = object()
+        sidecar._model = resident
+        sidecar._model_dir = Path(unload_dir)
+        sidecar._warmed = True
+        sidecar._primed = True
+        sidecar._prepared_speakers[('prompt', 1, 1, 'text')] = 'speaker'
+        sidecar._empty_cuda_cache = lambda: unload_cache_calls.append(True)
+        mismatch = sidecar.unload_cosyvoice_model(other_dir)
+        assert not mismatch['ok'] and not mismatch['released']
+        assert sidecar._model is resident, 'model mismatch must not unload another runtime'
+        released = sidecar.unload_cosyvoice_model(unload_dir)
+        assert released['ok'] and released['released']
+        assert not released['already_unloaded']
+        assert sidecar._model is None
+        assert not sidecar._warmed and not sidecar._primed
+        assert not sidecar._prepared_speakers
+        assert unload_cache_calls == [True]
+        repeated = sidecar.unload_cosyvoice_model(unload_dir)
+        assert repeated['ok'] and repeated['released'] and repeated['already_unloaded']
+
+        sidecar._model = object()
+        sidecar._warmed = True
+        transition_result = []
+        with sidecar._synth_lock:
+            worker = threading.Thread(
+                target=lambda: transition_result.append(
+                    sidecar.unload_cosyvoice_model(unload_dir)
+                )
+            )
+            worker.start()
+            time.sleep(0.05)
+            assert not transition_result, 'unload must wait for active synthesis'
+        worker.join(timeout=1.0)
+        assert not worker.is_alive()
+        assert transition_result[0]['released']
+    finally:
+        sidecar._empty_cuda_cache = old_empty_cuda_cache
 
 class PrecisionComponent:
     def __init__(self):

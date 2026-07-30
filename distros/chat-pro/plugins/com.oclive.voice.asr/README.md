@@ -35,6 +35,10 @@ Lists DLC metadata (`requires_pack`, `min_vram_gb_recommended`, `installed`).
 
 Start CosyVoice2 sidecar (if bundled) and preload model.
 
+### `config_updated` resource transition
+
+When the host leaves bundled CosyVoice, it may attach an internal `resource_transition` with `operation: "unload"`. The gateway waits for active synthesis, asks the loopback sidecar to unload the matching model (or stops its managed child), and returns a matching confirmation. The host retains its lease when release cannot be confirmed.
+
 ### `voice.speak`
 
 Requires `tts_expansion_enabled`. Params:

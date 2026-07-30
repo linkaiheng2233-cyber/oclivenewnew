@@ -3,6 +3,7 @@
 Endpoints:
   GET  /health   — { ok, engine, model_dir, warmed, message }
   POST /warm     — preload model (optional body: { model_dir })
+  POST /unload   — release the resident model after current synthesis completes
   POST /synthesize — { text, emo_text?, ref_audio?, ref_text?, speed? }
   POST /synthesize/stream — NDJSON stream of PCM chunks (lower time-to-first-sound)
 
@@ -995,6 +996,62 @@ def health_payload() -> dict[str, Any]:
     }
 
 
+def unload_cosyvoice_model(expected_model_dir: str = "") -> dict[str, Any]:
+    """Release the resident model after any current synthesis completes.
+
+    The synthesis lock prevents a streaming generator from losing the model it
+    is using. The model lock prevents a concurrent warm request from publishing
+    a new resident model halfway through this transition.
+    """
+
+    global _model, _warmed, _primed, _prime_failed_reason
+    global _precision_active, _precision_fallback_reason, _last_load_error
+    global _load_strategy, _load_admission_detail, _load_vram_probe
+    global _load_free_vram_before_mib, _load_total_vram_mib
+    global _load_min_free_vram_mib, _load_peak_allocated_mib
+    global _load_peak_reserved_mib
+
+    expected = Path(expected_model_dir).resolve() if expected_model_dir.strip() else None
+    with _synth_lock:
+        with _lock:
+            current = (_model_dir or _resolve_model_dir()).resolve()
+            if expected is not None and current != expected:
+                return {
+                    "ok": False,
+                    "released": False,
+                    "reason": "sidecar_model_mismatch",
+                    "model_dir": str(current),
+                }
+            already_unloaded = _model is None
+            resident_model = _model
+            _model = None
+            _prepared_speakers.clear()
+            _warmed = False
+            _primed = False
+            _prime_failed_reason = ""
+            _precision_active = _PRECISION_FP32
+            _precision_fallback_reason = ""
+            _last_load_error = ""
+            _load_strategy = "unloaded"
+            _load_admission_detail = ""
+            _load_vram_probe = "unavailable"
+            _load_free_vram_before_mib = 0
+            _load_total_vram_mib = 0
+            _load_min_free_vram_mib = 0
+            _load_peak_allocated_mib = 0
+            _load_peak_reserved_mib = 0
+        del resident_model
+        gc.collect()
+        _empty_cuda_cache()
+    return {
+        "ok": True,
+        "released": True,
+        "already_unloaded": already_unloaded,
+        "engine": _ENGINE,
+        "model_dir": str(current),
+    }
+
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format: str, *args: object) -> None:
         return
@@ -1053,6 +1110,13 @@ class Handler(BaseHTTPRequestHandler):
             body = json.loads(raw.decode("utf-8") or "{}")
         except json.JSONDecodeError:
             self._json(400, {"ok": False, "reason": "bad_json"})
+            return
+
+        if self.path.rstrip("/") == "/unload":
+            self._json(
+                200,
+                unload_cosyvoice_model(str(body.get("model_dir") or "")),
+            )
             return
 
         if self.path.rstrip("/") == "/warm":

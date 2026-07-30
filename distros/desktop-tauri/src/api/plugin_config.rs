@@ -94,7 +94,7 @@ pub(crate) fn get_plugin_settings_ui_impl(
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
-pub(crate) fn set_plugin_settings_config_impl(
+pub(crate) async fn set_plugin_settings_config_impl(
     state: &AppState,
     plugin_id: &str,
     config: &Value,
@@ -113,20 +113,43 @@ pub(crate) fn set_plugin_settings_config_impl(
         }
         .into());
     }
+    let transition =
+        oclive_kernel_host::service::prepare_directory_plugin_resource_config_transition(
+            state, pid, config,
+        )
+        .await;
     write_config_json(state, pid, config)?;
-    if let Ok(url) = state.directory_plugins.ensure_rpc_url(pid) {
+    let rpc_result = if let Ok(url) = state.directory_plugins.ensure_rpc_url(pid) {
         let timeout_ms = state
             .directory_plugins
             .rpc_timeout_override_ms(pid, "config_updated");
-        let _ = invoke_directory_plugin_rpc_blocking(
-            &url,
-            "config_updated",
-            json!({ "config": config }),
-            RemoteRpcChannel::Plugin,
-            timeout_ms,
-        );
-    }
-    oclive_kernel_host::service::release_directory_plugin_resources_for_config(state, pid, config);
+        let mut params = json!({ "config": config });
+        if let Some(resource_transition) = transition.rpc_payload() {
+            if let Some(object) = params.as_object_mut() {
+                object.insert("resource_transition".into(), resource_transition);
+            }
+        }
+        tokio::task::spawn_blocking(move || {
+            invoke_directory_plugin_rpc_blocking(
+                &url,
+                "config_updated",
+                params,
+                RemoteRpcChannel::Plugin,
+                timeout_ms,
+            )
+        })
+        .await
+        .ok()
+        .and_then(Result::ok)
+    } else {
+        None
+    };
+    oclive_kernel_host::service::finalize_directory_plugin_resource_config_transition(
+        state,
+        pid,
+        transition,
+        rpc_result.as_ref(),
+    );
     Ok(())
 }
 
@@ -145,10 +168,10 @@ pub fn get_plugin_settings_ui(
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
-pub fn set_plugin_settings_config(
+pub async fn set_plugin_settings_config(
     plugin_id: String,
     config: Value,
     state: State<'_, SharedAppState>,
 ) -> Result<(), CommandError> {
-    set_plugin_settings_config_impl(&state, &plugin_id, &config)
+    set_plugin_settings_config_impl(&state, &plugin_id, &config).await
 }

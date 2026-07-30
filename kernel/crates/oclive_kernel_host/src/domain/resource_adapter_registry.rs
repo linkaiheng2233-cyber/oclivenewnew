@@ -192,10 +192,17 @@ fn diagnostic_for_descriptor(
         .iter()
         .map(|profile| profile.profile_id.as_str())
         .collect::<BTreeSet<_>>();
-    let reason_codes = current_profile_id
+    let mut reason_codes = matching
+        .iter()
+        .flat_map(|lease| lease.reason_codes.iter().cloned())
+        .collect::<BTreeSet<_>>();
+    if current_profile_id
         .as_deref()
         .filter(|profile_id| !registered_profiles.contains(profile_id))
-        .map_or_else(Vec::new, |_| vec!["resource_profile_unregistered".into()]);
+        .is_some()
+    {
+        reason_codes.insert("resource_profile_unregistered".into());
+    }
 
     ResourceAdapterDiagnostic {
         descriptor,
@@ -205,7 +212,7 @@ fn diagnostic_for_descriptor(
             .into_iter()
             .map(|lease| lease.lease_id.clone())
             .collect(),
-        reason_codes,
+        reason_codes: reason_codes.into_iter().collect(),
     }
 }
 
@@ -291,7 +298,7 @@ mod tests {
                 state: ResourceLeaseState::Active,
                 granted_at_ms: 1,
                 expires_at_ms: None,
-                reason_codes: Vec::new(),
+                reason_codes: vec!["resource_release_unconfirmed".into()],
             },
         );
 
@@ -305,6 +312,10 @@ mod tests {
         assert_eq!(
             diagnostics[0].current_profile_id.as_deref(),
             Some("configured")
+        );
+        assert_eq!(
+            diagnostics[0].reason_codes,
+            vec!["resource_release_unconfirmed"]
         );
     }
 
