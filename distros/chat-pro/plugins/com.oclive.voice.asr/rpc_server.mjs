@@ -1217,7 +1217,7 @@ function ensureCosyvoiceSpeakDirective(directive, params) {
   };
 }
 
-async function handleSpeak(params) {
+async function handleSpeakCore(params) {
   const text = String(params?.text || "").trim();
   if (!text) {
     return { ok: false, reason: "empty_text", audio_base64: "" };
@@ -1312,6 +1312,39 @@ async function handleSpeak(params) {
       inFlightSpeakByKey.delete(key);
     }
   }
+}
+
+async function handleSpeak(params) {
+  const releaseAfterCall =
+    params?._oclive_resource_admission?.release_after_call === true;
+  if (!releaseAfterCall) {
+    return handleSpeakCore(params);
+  }
+  const profileId =
+    params?.directive?.synth_profile ||
+    params?.profile ||
+    pluginConfig?.tts_profile ||
+    readProfiles().default_tts_profile ||
+    DEFAULT_TTS_PROFILE;
+  let result;
+  try {
+    result = await handleSpeakCore(params);
+  } catch (error) {
+    result = {
+      ok: false,
+      reason: "synthesis_failed",
+      message: error instanceof Error ? error.message : String(error),
+      audio_base64: "",
+    };
+  }
+  return {
+    ...result,
+    resource_transition: {
+      adapter_id: COSYVOICE_RESOURCE_ADAPTER_ID,
+      operation: "unload",
+      ...(await releaseCosyvoiceSidecar(profileId)),
+    },
+  };
 }
 
 async function handleProbeTts(params) {

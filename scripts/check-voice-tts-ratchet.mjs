@@ -43,6 +43,17 @@ if (
     'Voice RPC must await the asynchronous config transition before serializing its confirmation',
   )
 }
+for (const required of [
+  'params?._oclive_resource_admission?.release_after_call === true',
+  'resource_transition: {',
+  '...(await releaseCosyvoiceSidecar(profileId))',
+]) {
+  if (!rpcServerSource.includes(required)) {
+    fail(
+      `coordinated voice.speak must confirm post-synthesis resource release: missing ${required}`,
+    )
+  }
+}
 
 const manifestPath = path.join(
   repoRoot,

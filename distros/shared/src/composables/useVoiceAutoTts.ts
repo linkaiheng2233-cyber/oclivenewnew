@@ -87,6 +87,8 @@ interface VoiceRuntimeConfig {
 interface SpeakOptions {
   /** Stream chunks normally hit the directive cache populated at message submit. */
   fastPath?: boolean
+  /** Low-headroom recovery retries through the host-coordinated RPC path. */
+  forceRpc?: boolean
 }
 
 interface SpeakJob {
@@ -96,6 +98,7 @@ interface SpeakJob {
   streamId?: string
   cfg: VoiceRuntimeConfig
   directive: Record<string, unknown>
+  forceRpc: boolean
 }
 
 interface RpcSpeakResult {
@@ -140,10 +143,12 @@ let activeRpcAudio: HTMLAudioElement | null = null
 let cancelActiveRpcPlayback: (() => void) | null = null
 let activeStreamLookahead: ActiveStreamLookahead | null = null
 let blockedSpeakGeneration = -1
+let deferredSpeakGeneration = -1
 
 function resetSpeakPipeline(): void {
   speakGeneration += 1
   blockedSpeakGeneration = -1
+  deferredSpeakGeneration = -1
   speakQueue.length = 0
   preparedRpcSpeak.clear()
   streamPrefetches.reset()
@@ -557,8 +562,12 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
     job: SpeakJob,
     generation: number,
   ): Promise<CosyvoiceStreamPrefetch | undefined> {
-    if (!shouldUseDirectSidecarStream(job.cfg.synth_provider, job.cfg.tts_engine))
+    if (
+      job.forceRpc
+      || !shouldUseDirectSidecarStream(job.cfg.synth_provider, job.cfg.tts_engine)
+    ) {
       return undefined
+    }
     const ready = streamPrefetches.readyFor(job.key)
     if (ready)
       return ready
@@ -618,6 +627,7 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
     const nextJob = speakQueue[1]
     if (
       !nextJob
+      || nextJob.forceRpc
       || !shouldUseDirectSidecarStream(
         nextJob.cfg.synth_provider,
         nextJob.cfg.tts_engine,
@@ -640,6 +650,15 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
     ) {
       return
     }
+    if (
+      deferredSpeakGeneration === generation
+      && job.streamId
+      && !job.forceRpc
+    ) {
+      speakDeduper.finish(job.key, false)
+      streamPlaybackFailed.add(job.streamId)
+      return
+    }
 
     let spoken = false
     try {
@@ -647,7 +666,8 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
       if (generation !== speakGeneration)
         return
 
-      const wantsStream = shouldUseDirectSidecarStream(job.cfg.synth_provider, job.cfg.tts_engine)
+      const wantsStream = !job.forceRpc
+        && shouldUseDirectSidecarStream(job.cfg.synth_provider, job.cfg.tts_engine)
       const endpoint = wantsStream ? await sidecarEndpointFor(job.cfg) : null
       if (endpoint) {
         if (generation !== speakGeneration)
@@ -744,6 +764,20 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
       if (!res.ok || !res.audio_base64) {
         if (res.reason === 'tts_expansion_disabled')
           return
+        if (
+          res.reason === 'gpu_admission_denied'
+          && job.streamId
+          && !job.forceRpc
+        ) {
+          if (deferredSpeakGeneration !== generation) {
+            options.showToast(
+              'info',
+              '显存调度正在等待本轮文本生成完成，稍后会自动重试语音',
+            )
+          }
+          deferredSpeakGeneration = generation
+          return
+        }
         console.warn('[voice-auto-tts] RPC speak failed', res)
         options.showToast('warning', formatVoiceSpeakFailure('rpc', res))
         if (res.reason === 'gpu_admission_denied')
@@ -792,8 +826,12 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
         const job = speakQueue[0]
         const next = speakQueue[1]
         if (next && generation === speakGeneration) {
-          if (!shouldUseDirectSidecarStream(next.cfg.synth_provider, next.cfg.tts_engine))
+          if (
+            next.forceRpc
+            || !shouldUseDirectSidecarStream(next.cfg.synth_provider, next.cfg.tts_engine)
+          ) {
             void prepareRpcSpeak(next)
+          }
         }
         await runSpeakJob(job, generation)
         if (generation !== speakGeneration)
@@ -833,6 +871,13 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
   ): Promise<void> {
     if (blockedSpeakGeneration === generation)
       return
+    if (
+      deferredSpeakGeneration === generation
+      && payload.stream_id?.trim()
+      && !speakOpts.forceRpc
+    ) {
+      return
+    }
     const rawDirective = await resolveDirective(payload, cfg, speakOpts)
     if (generation !== speakGeneration)
       return
@@ -861,6 +906,7 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
       streamId: payload.stream_id?.trim() || undefined,
       cfg: effectiveCfg,
       directive,
+      forceRpc: speakOpts.forceRpc === true,
     })
   }
 
@@ -995,6 +1041,9 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
       await waitForSpeakQueueIdle()
       if (generation !== speakGeneration)
         return
+      const wasDeferredForGpu = deferredSpeakGeneration === generation
+      if (wasDeferredForGpu)
+        deferredSpeakGeneration = -1
       // Only audio jobs that actually finished playback count as spoken. If any
       // streamed job failed, replay the final reply in full rather than dropping
       // text based on optimistic enqueue state.
@@ -1031,12 +1080,20 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
         return
       }
 
-      await scheduleVoiceExpansionWarm(id => pluginStore.isPluginDisabled(id))
+      if (!wasDeferredForGpu)
+        await scheduleVoiceExpansionWarm(id => pluginStore.isPluginDisabled(id))
       if (generation !== speakGeneration)
         return
-      await queueSpeakText(toSpeak, p, cfg, {}, generation)
+      const failedBeforeRetry = speakFailureSerial
+      await queueSpeakText(
+        toSpeak,
+        p,
+        cfg,
+        { forceRpc: wasDeferredForGpu },
+        generation,
+      )
       await waitForSpeakQueueIdle()
-      settlement = streamPlaybackFailed.has(streamId) || streamFailed
+      settlement = speakFailureSerial > failedBeforeRetry
         ? 'error'
         : 'complete'
     }

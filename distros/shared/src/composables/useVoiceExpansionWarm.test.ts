@@ -25,7 +25,7 @@ describe('useVoiceExpansionWarm', () => {
     }
   })
 
-  it('resolveVoiceSidecarEndpoint does not await long warm', async () => {
+  it('does not expose bundled sidecar until host-admitted warm completes', async () => {
     let warmResolve: ((value: unknown) => void) | null = null
     mocks.invoke.mockImplementation(async (_id: string, method: string) => {
       if (method === 'voice.warm') {
@@ -48,18 +48,27 @@ describe('useVoiceExpansionWarm', () => {
       () => false,
     )
 
-    await expect(endpointPromise).resolves.toBe('http://127.0.0.1:50001')
+    await expect(endpointPromise).resolves.toBeNull()
     expect(warmResolve).not.toBeNull()
     warmResolve?.({ ok: true, sidecar_endpoint: 'http://127.0.0.1:50099' })
+    await vi.waitFor(() => {
+      expect(mod.getVoiceSidecarEndpoint('bundled-cosyvoice2-zh'))
+        .toBe('http://127.0.0.1:50099')
+    })
   })
 
-  it('scheduleVoiceExpansionWarm skips warm when probe reports warmed', async () => {
+  it('re-admits a warmed bundled sidecar through the host coordinator', async () => {
     mocks.invoke.mockImplementation(async (_id: string, method: string) => {
       if (method === 'voice.probe_tts') {
         return { ok: true, warmed: true, sidecar_endpoint: 'http://127.0.0.1:50000' }
       }
       if (method === 'voice.warm') {
-        throw new Error('warm should not be called')
+        return {
+          ok: true,
+          warmed: true,
+          already_warmed: true,
+          sidecar_endpoint: 'http://127.0.0.1:50000',
+        }
       }
       return { ok: false }
     })
@@ -67,11 +76,14 @@ describe('useVoiceExpansionWarm', () => {
     const mod = await import('./useVoiceExpansionWarm')
     mod.resetVoiceExpansionWarmSchedule()
     await mod.scheduleVoiceExpansionWarm(() => false)
-    expect(mocks.invoke).not.toHaveBeenCalledWith(
-      expect.anything(),
-      'voice.warm',
-      expect.anything(),
-    )
+    await vi.waitFor(() => {
+      expect(mocks.invoke).toHaveBeenCalledWith(
+        expect.anything(),
+        'voice.warm',
+        expect.anything(),
+      )
+    })
+    expect(mod.getVoiceSidecarEndpoint()).toBe('http://127.0.0.1:50000')
   })
 
   it('prepares a role directive even when the model is already warmed', async () => {

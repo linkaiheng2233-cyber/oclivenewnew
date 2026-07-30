@@ -44,8 +44,17 @@ function warmKey(profile: string, directive?: VoiceWarmDirective): string {
   return `${profile}|${JSON.stringify(normalizeWarmDirective(directive) || {})}`
 }
 
-function rememberSidecarEndpoint(profile: string, result: unknown): void {
+function rememberSidecarEndpoint(
+  profile: string,
+  result: unknown,
+  hostAdmittedWarm = false,
+): void {
   const candidate = result as VoiceWarmResult | null
+  // The bundled sidecar may be reachable while its GPU warm request was denied.
+  // Expose it to direct browser streaming only after `voice.warm` passed through
+  // the host Resource Coordinator. External/custom profiles remain user-owned.
+  if (profile === DEFAULT_TTS_PROFILE && !hostAdmittedWarm)
+    return
   if (candidate?.ok !== true && candidate?.sidecar_ready !== true)
     return
   const ep = candidate.sidecar_endpoint?.trim()
@@ -110,13 +119,18 @@ function startBackgroundWarm(
     if (probe)
       rememberSidecarEndpoint(profile, probe)
     const roleDirective = normalizeWarmDirective(directive)
-    if (isSidecarAlreadyWarmed(probe) && !roleDirective)
+    if (
+      profile !== DEFAULT_TTS_PROFILE
+      && isSidecarAlreadyWarmed(probe)
+      && !roleDirective
+    ) {
       return
+    }
     const result = await directoryPluginInvoke(VOICE_ASR_PLUGIN_ID, 'voice.warm', {
       profile,
       ...(roleDirective ? { directive: roleDirective } : {}),
     })
-    rememberSidecarEndpoint(profile, result)
+    rememberSidecarEndpoint(profile, result, true)
   })().catch(() => {}).finally(() => {
     if (warmPromises.get(key) === promise)
       warmPromises.delete(key)
@@ -149,8 +163,13 @@ export async function scheduleVoiceExpansionWarm(
     if (probe)
       rememberSidecarEndpoint(profile, probe)
     const roleDirective = normalizeWarmDirective(options.directive)
-    if (isSidecarAlreadyWarmed(probe) && !roleDirective)
+    if (
+      profile !== DEFAULT_TTS_PROFILE
+      && isSidecarAlreadyWarmed(probe)
+      && !roleDirective
+    ) {
       return
+    }
     startBackgroundWarm(profile, roleDirective, probe)
     if (cachedSidecarEndpoints.has(profile))
       return

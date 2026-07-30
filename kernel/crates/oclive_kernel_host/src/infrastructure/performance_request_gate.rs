@@ -1,7 +1,9 @@
-//! Concurrency gate for Performance LLM's observe-only fallback.
+//! Concurrency gate for Performance LLM requests and resource transitions.
 //!
-//! Runtime process control stays in `performance_llm`; this module owns only
-//! fallback admission, in-flight draining, cancellation, and recovery races.
+//! Runtime process control stays in `performance_llm`; this module owns request
+//! admission, in-flight draining, cancellation, and recovery races. Counting
+//! the whole request lifetime prevents a resource transition from killing the
+//! managed primary between an external activity snapshot and the actual call.
 
 use std::sync::Arc;
 
@@ -9,17 +11,17 @@ use parking_lot::Mutex;
 
 use crate::error::{AppError, Result};
 
-pub(super) const FALLBACK_BLOCKED_RESOURCE_TRANSITION: &str =
-    "llm_fallback_blocked_resource_transition";
+pub(super) const REQUEST_BLOCKED_RESOURCE_TRANSITION: &str =
+    "llm_request_blocked_resource_transition";
 
 #[derive(Default)]
-struct FallbackAdmissionState {
-    block: Option<FallbackBlockState>,
+struct RequestAdmissionState {
+    block: Option<RequestBlockState>,
     active_requests: usize,
     next_block_generation: u64,
 }
 
-struct FallbackBlockState {
+struct RequestBlockState {
     generation: u64,
     reason: String,
     transitioning: bool,
@@ -27,32 +29,33 @@ struct FallbackBlockState {
 }
 
 #[derive(Default)]
-pub(super) struct FallbackAdmissionGate {
-    state: Mutex<FallbackAdmissionState>,
+pub(super) struct PerformanceRequestGate {
+    state: Mutex<RequestAdmissionState>,
     drained: tokio::sync::Notify,
+    opened: tokio::sync::Notify,
 }
 
-pub(super) struct FallbackRequestGuard {
-    gate: Arc<FallbackAdmissionGate>,
+pub(super) struct PerformanceRequestGuard {
+    gate: Arc<PerformanceRequestGate>,
 }
 
 #[derive(Clone, Copy)]
-struct FallbackBlockToken(u64);
+struct RequestBlockToken(u64);
 
-pub(super) struct FallbackBlockAttempt {
-    gate: Arc<FallbackAdmissionGate>,
-    token: FallbackBlockToken,
+pub(super) struct RequestBlockAttempt {
+    gate: Arc<PerformanceRequestGate>,
+    token: RequestBlockToken,
     finished: bool,
 }
 
-impl FallbackBlockAttempt {
+impl RequestBlockAttempt {
     pub(super) fn finish(mut self) -> bool {
         self.finished = true;
         self.gate.finish_block(self.token)
     }
 }
 
-impl Drop for FallbackBlockAttempt {
+impl Drop for RequestBlockAttempt {
     fn drop(&mut self) {
         if !self.finished {
             self.gate.abandon_block(self.token);
@@ -60,13 +63,13 @@ impl Drop for FallbackBlockAttempt {
     }
 }
 
-impl Drop for FallbackRequestGuard {
+impl Drop for PerformanceRequestGuard {
     fn drop(&mut self) {
         let drained = {
             let mut state = self.gate.state.lock();
             debug_assert!(
                 state.active_requests > 0,
-                "fallback request guard must match one admission"
+                "Performance request guard must match one admission"
             );
             if state.active_requests > 0 {
                 state.active_requests -= 1;
@@ -79,19 +82,19 @@ impl Drop for FallbackRequestGuard {
     }
 }
 
-impl FallbackAdmissionGate {
-    pub(super) fn try_enter(self: &Arc<Self>) -> Result<FallbackRequestGuard> {
+impl PerformanceRequestGate {
+    pub(super) fn try_enter(self: &Arc<Self>) -> Result<PerformanceRequestGuard> {
         let mut state = self.state.lock();
         if let Some(block) = state.block.as_ref() {
             return Err(AppError::RemoteServiceUnavailable(format!(
-                "{FALLBACK_BLOCKED_RESOURCE_TRANSITION}: {}",
+                "{REQUEST_BLOCKED_RESOURCE_TRANSITION}: {}",
                 block.reason
             )));
         }
         state.active_requests = state.active_requests.checked_add(1).ok_or_else(|| {
-            AppError::RemoteServiceUnavailable("LLM fallback admission counter exhausted".into())
+            AppError::RemoteServiceUnavailable("Performance LLM request counter exhausted".into())
         })?;
-        Ok(FallbackRequestGuard {
+        Ok(PerformanceRequestGuard {
             gate: Arc::clone(self),
         })
     }
@@ -99,7 +102,7 @@ impl FallbackAdmissionGate {
     pub(super) fn begin_block(
         self: &Arc<Self>,
         reason: &str,
-    ) -> Result<(FallbackBlockAttempt, String)> {
+    ) -> Result<(RequestBlockAttempt, String)> {
         let reason = reason.trim();
         let normalized: String = if reason.is_empty() {
             "resource coordination transition is active".into()
@@ -114,8 +117,8 @@ impl FallbackAdmissionGate {
                 ));
             }
             state.next_block_generation = state.next_block_generation.wrapping_add(1);
-            let token = FallbackBlockToken(state.next_block_generation);
-            state.block = Some(FallbackBlockState {
+            let token = RequestBlockToken(state.next_block_generation);
+            state.block = Some(RequestBlockState {
                 generation: token.0,
                 reason: normalized.clone(),
                 transitioning: true,
@@ -124,7 +127,7 @@ impl FallbackAdmissionGate {
             token
         };
         Ok((
-            FallbackBlockAttempt {
+            RequestBlockAttempt {
                 gate: Arc::clone(self),
                 token,
                 finished: false,
@@ -142,6 +145,7 @@ impl FallbackAdmissionGate {
             block.reopen_requested = true;
         } else {
             state.block = None;
+            self.opened.notify_waiters();
         }
     }
 
@@ -149,7 +153,7 @@ impl FallbackAdmissionGate {
         self.state.lock().block.is_some()
     }
 
-    fn finish_block(&self, token: FallbackBlockToken) -> bool {
+    fn finish_block(&self, token: RequestBlockToken) -> bool {
         let mut state = self.state.lock();
         let Some(block) = state
             .block
@@ -160,6 +164,7 @@ impl FallbackAdmissionGate {
         };
         if block.reopen_requested {
             state.block = None;
+            self.opened.notify_waiters();
             false
         } else {
             block.transitioning = false;
@@ -167,7 +172,7 @@ impl FallbackAdmissionGate {
         }
     }
 
-    fn abandon_block(&self, token: FallbackBlockToken) {
+    fn abandon_block(&self, token: RequestBlockToken) {
         let mut state = self.state.lock();
         let Some(block) = state
             .block
@@ -178,6 +183,7 @@ impl FallbackAdmissionGate {
         };
         if block.reopen_requested {
             state.block = None;
+            self.opened.notify_waiters();
         } else {
             block.transitioning = false;
         }
@@ -187,6 +193,16 @@ impl FallbackAdmissionGate {
         loop {
             let notified = self.drained.notified();
             if self.state.lock().active_requests == 0 {
+                return;
+            }
+            notified.await;
+        }
+    }
+
+    pub(super) async fn wait_until_open(&self) {
+        loop {
+            let notified = self.opened.notified();
+            if !self.is_blocked() {
                 return;
             }
             notified.await;

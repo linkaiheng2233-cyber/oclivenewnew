@@ -38,6 +38,5 @@ export function shouldFallbackStreamToRpc(result: { ok?: boolean, reason?: strin
   return ![
     'tts_expansion_disabled',
     'empty_text',
-    'gpu_admission_denied',
   ].includes(reason)
 }

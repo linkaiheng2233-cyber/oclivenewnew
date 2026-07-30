@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   pluginDisabled: true,
   getSettings: vi.fn(),
   invokeFriendly: vi.fn(),
+  resolveSidecarEndpoint: vi.fn(),
 }))
 
 vi.mock('@oclive/shared/api', async (importOriginal) => {
@@ -35,7 +36,7 @@ vi.mock('@oclive/shared/api/helpers', async (importOriginal) => {
 
 vi.mock('@oclive/shared/composables/useVoiceExpansionWarm', () => ({
   resetVoiceExpansionWarmSchedule: vi.fn(),
-  resolveVoiceSidecarEndpoint: vi.fn(),
+  resolveVoiceSidecarEndpoint: (...args: unknown[]) => mocks.resolveSidecarEndpoint(...args),
   scheduleVoiceExpansionWarm: vi.fn(async () => undefined),
 }))
 
@@ -51,6 +52,16 @@ vi.mock('@oclive/shared/lib/hostEventBus', () => ({
 vi.mock('@oclive/shared/lib/voicePlaybackSettlement', () => ({
   markVoicePlaybackSettled: mocks.markSettled,
 }))
+
+vi.mock('@oclive/shared/utils/cosyvoiceStreamPlayback', async (importOriginal) => {
+  const actual = await importOriginal<
+    typeof import('@oclive/shared/utils/cosyvoiceStreamPlayback')
+  >()
+  return {
+    ...actual,
+    ensureVoiceAudioReady: vi.fn(async () => undefined),
+  }
+})
 
 vi.mock('@oclive/shared/stores/pluginStore', () => ({
   usePluginStore: () => ({
@@ -78,6 +89,7 @@ describe('voice auto TTS ownership', () => {
     mocks.pluginDisabled = true
     mocks.getSettings.mockResolvedValue({ config: {} })
     mocks.invokeFriendly.mockResolvedValue('')
+    mocks.resolveSidecarEndpoint.mockResolvedValue(null)
   })
 
   it('settles but never speaks a late message from the previous role', async () => {
@@ -168,6 +180,80 @@ describe('voice auto TTS ownership', () => {
     expect(methods).not.toContain('voice.warm')
     expect(methods).not.toContain('voice.speak')
     expect(mocks.showToast).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it('defers GPU-denied streamed speech and retries by RPC after final text', async () => {
+    mocks.pluginDisabled = false
+    mocks.roleStore.currentRoleId = 'mumu'
+    mocks.getSettings.mockResolvedValue({
+      config: {
+        tts_expansion_enabled: true,
+        auto_tts: true,
+        role_tts_enabled: { mumu: true },
+        tts_profile: 'bundled-cosyvoice2-zh',
+        synth_provider: 'bundled',
+      },
+    })
+    mocks.invokeFriendly.mockResolvedValue('D:/roles/mumu')
+    let speakAttempts = 0
+    mocks.directoryInvoke.mockImplementation(async (
+      _pluginId: string,
+      method: string,
+    ) => {
+      if (method === 'voice.list_profiles')
+        return { profiles: [] }
+      if (method === 'voice.read_role_profile') {
+        return {
+          ok: true,
+          profile: {
+            synth_profile: 'bundled-cosyvoice2-zh',
+          },
+        }
+      }
+      if (method === 'voice.build_directive') {
+        return {
+          ok: true,
+          directive: {
+            synth_profile: 'bundled-cosyvoice2-zh',
+          },
+        }
+      }
+      if (method === 'voice.speak') {
+        speakAttempts += 1
+        return speakAttempts === 1
+          ? { ok: false, reason: 'gpu_admission_denied' }
+          : { ok: false, reason: 'test_retry_observed' }
+      }
+      return { ok: true }
+    })
+
+    const wrapper = mount(Harness)
+    await vi.waitFor(() => expect(mocks.getSettings).toHaveBeenCalled())
+    mocks.handlers.get('message:submit')?.({
+      role_id: 'mumu',
+      stream_id: 'stream-gpu',
+    })
+    mocks.handlers.get('com.oclive.voice:stream-sentence')?.({
+      sentence: '第一段',
+      role_id: 'mumu',
+      stream_id: 'stream-gpu',
+    })
+    await vi.waitFor(() => expect(speakAttempts).toBe(1))
+
+    await mocks.handlers.get('message:sent')?.({
+      reply: '第一段，第二段。',
+      role_id: 'mumu',
+      stream_id: 'stream-gpu',
+      turn_id: 'turn-gpu',
+    })
+
+    expect(speakAttempts).toBe(2)
+    expect(mocks.showToast).toHaveBeenCalledWith(
+      'info',
+      expect.stringContaining('等待本轮文本生成完成'),
+    )
+    expect(mocks.markSettled).toHaveBeenCalledWith('turn-gpu', 'error')
     wrapper.unmount()
   })
 })
