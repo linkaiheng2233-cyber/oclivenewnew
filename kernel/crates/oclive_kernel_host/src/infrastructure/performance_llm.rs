@@ -9,6 +9,11 @@ use crate::domain::resource_coordinator::{configured_gpu_device_index, ResourceC
 use crate::error::{AppError, Result};
 use crate::infrastructure::ollama_client::OllamaClient;
 use crate::infrastructure::openai_compatible_llm::OpenAiCompatibleLlm;
+#[cfg(test)]
+use crate::infrastructure::performance_fallback_gate::FALLBACK_BLOCKED_RESOURCE_TRANSITION;
+use crate::infrastructure::performance_fallback_gate::{
+    FallbackAdmissionGate, FallbackRequestGuard,
+};
 use crate::infrastructure::resource_adapters::{
     llama_server_descriptor, ollama_descriptor, LLAMA_RUNTIME_ADAPTER_ID, LLAMA_RUNTIME_PROFILE_ID,
     OLLAMA_ADAPTER_ID,
@@ -105,6 +110,7 @@ pub struct PerformanceLlmClient {
     status: RwLock<PerformanceLlmStatus>,
     fallback_warned: AtomicBool,
     primary_enabled: AtomicBool,
+    fallback_gate: Arc<FallbackAdmissionGate>,
 }
 
 impl PerformanceLlmClient {
@@ -196,6 +202,7 @@ impl PerformanceLlmClient {
             status: RwLock::new(initial_status),
             fallback_warned: AtomicBool::new(false),
             primary_enabled: AtomicBool::new(true),
+            fallback_gate: Arc::new(FallbackAdmissionGate::default()),
         })
     }
 
@@ -209,6 +216,9 @@ impl PerformanceLlmClient {
 
     /// Probe the configured endpoint without starting a process.
     pub async fn inspect(&self) -> PerformanceLlmStatus {
+        if self.fallback_gate.is_blocked() {
+            return self.status_snapshot();
+        }
         if self.endpoint_ready().await {
             if let Ok(Some(selection)) = configured_runtime_selection() {
                 if selection.adapter_path.is_some() && !self.managed_process_matches(&selection) {
@@ -236,8 +246,7 @@ impl PerformanceLlmClient {
 
     /// Warm the managed primary in the background. Missing optional packs are non-fatal.
     pub fn schedule_warmup(self: &Arc<Self>) {
-        self.primary_enabled.store(true, Ordering::Release);
-        *self.retry_after.lock() = None;
+        self.enable_managed_runtime();
         let this = Arc::clone(self);
         tokio::spawn(async move {
             if let Err(error) = this.warmup_primary().await {
@@ -266,13 +275,14 @@ impl PerformanceLlmClient {
     ///
     /// Returns the runtime discovery, spawn, adapter-load, or readiness error.
     pub async fn apply_runtime_selection(&self) -> Result<()> {
-        self.primary_enabled.store(true, Ordering::Release);
-        *self.retry_after.lock() = None;
+        self.enable_managed_runtime();
         self.ensure_primary_ready().await
     }
 
-    /// Stop only the llama-server process owned by this host.
+    /// Stop only the llama-server process owned by this host while preserving
+    /// ordinary Ollama fallback semantics.
     pub fn suspend_managed_runtime(&self, reason: &str) {
+        self.fallback_gate.open();
         self.primary_enabled.store(false, Ordering::Release);
         self.process.lock().take();
         self.release_runtime_lease();
@@ -280,18 +290,49 @@ impl PerformanceLlmClient {
         self.set_status(false, "inactive", reason);
     }
 
+    /// Stop the managed llama-server and prevent Ollama from reclaiming its GPU
+    /// allocation during a coordinated resource transition.
+    ///
+    /// New fallback requests are rejected immediately. Existing fallback calls
+    /// drain before tracked Ollama models are unloaded, so the caller may start
+    /// another managed GPU runtime only after this future completes.
+    ///
+    /// Cancellation keeps the gate closed conservatively. A recovery path must
+    /// call [`Self::schedule_warmup`] or [`Self::apply_runtime_selection`] to
+    /// reopen fallback and re-enable the managed primary.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if an explicit provider/runtime recovery supersedes the
+    /// transition before fallback draining and model unload complete.
+    pub async fn suspend_managed_runtime_for_resource_pressure(&self, reason: &str) -> Result<()> {
+        let (block_attempt, reason) = self.fallback_gate.begin_block(reason)?;
+        self.primary_enabled.store(false, Ordering::Release);
+        self.process.lock().take();
+        self.release_runtime_lease();
+        *self.retry_after.lock() = None;
+        self.set_status(false, "inactive", &reason);
+        self.fallback_gate.wait_until_drained().await;
+        self.unload_tracked_ollama_models().await;
+        if !block_attempt.finish() {
+            return Err(AppError::RemoteServiceUnavailable(
+                "llm_resource_transition_superseded_by_recovery".into(),
+            ));
+        }
+        Ok(())
+    }
+
+    fn enable_managed_runtime(&self) {
+        self.fallback_gate.open();
+        self.primary_enabled.store(true, Ordering::Release);
+        *self.retry_after.lock() = None;
+    }
+
     pub fn record_fallback_model(&self, model: &str) {
         let model = model.trim();
         if !model.is_empty() {
             self.fallback_models.lock().insert(model.to_string());
         }
-    }
-
-    /// Unload only Ollama models that this OCLive runtime has used.
-    ///
-    /// The caller must first ensure that no foreground Ollama request is active.
-    pub async fn unload_fallback_models_for_resource_pressure(&self) {
-        self.unload_ollama_for_primary().await;
     }
 
     fn set_status(&self, ready: bool, active_backend: &str, detail: &str) {
@@ -493,7 +534,7 @@ impl PerformanceLlmClient {
             .activate(lease_id, Some(Self::runtime_reservation_mib(selection)));
     }
 
-    async fn unload_ollama_for_primary(&self) {
+    async fn unload_tracked_ollama_models(&self) {
         let Some(ollama) = self.ollama_runtime.as_ref() else {
             return;
         };
@@ -641,7 +682,7 @@ impl PerformanceLlmClient {
             }
             self.ensure_primary_enabled()?;
             if self.status.read().active_backend != "performance" {
-                self.unload_ollama_for_primary().await;
+                self.unload_tracked_ollama_models().await;
             }
             self.set_status(true, "performance", "llama-server is ready");
             return Ok(());
@@ -679,7 +720,7 @@ impl PerformanceLlmClient {
             }
             self.ensure_primary_enabled()?;
             if self.status.read().active_backend != "performance" {
-                self.unload_ollama_for_primary().await;
+                self.unload_tracked_ollama_models().await;
             }
             self.set_status(true, "performance", "llama-server is ready");
             return Ok(());
@@ -704,7 +745,7 @@ impl PerformanceLlmClient {
                     .into(),
             ));
         }
-        self.unload_ollama_for_primary().await;
+        self.unload_tracked_ollama_models().await;
         let runtime_lease_id = self.reserve_runtime_start(&selection).await?;
 
         {
@@ -803,10 +844,23 @@ impl PerformanceLlmClient {
         }
     }
 
+    fn admit_fallback(
+        &self,
+        operation: &str,
+        model: Option<&str>,
+        primary_error: &AppError,
+    ) -> Result<FallbackRequestGuard> {
+        let guard = self.fallback_gate.try_enter()?;
+        self.warn_fallback_once(operation, primary_error);
+        if let Some(model) = model {
+            self.record_fallback_model(model);
+        }
+        Ok(guard)
+    }
+
     async fn primary_or_fallback_generate(&self, model: &str, prompt: &str) -> Result<String> {
         if let Err(error) = self.ensure_primary_ready().await {
-            self.warn_fallback_once("generate", &error);
-            self.record_fallback_model(model);
+            let _fallback_guard = self.admit_fallback("generate", Some(model), &error)?;
             return self.fallback.generate(model, prompt).await;
         }
         match self
@@ -819,9 +873,8 @@ impl PerformanceLlmClient {
                 Ok(reply)
             }
             Err(error) => {
+                let _fallback_guard = self.admit_fallback("generate", Some(model), &error)?;
                 self.degrade_to_ollama("llama-server request failed");
-                self.warn_fallback_once("generate", &error);
-                self.record_fallback_model(model);
                 self.fallback.generate(model, prompt).await
             }
         }
@@ -901,8 +954,7 @@ impl LlmClient for PerformanceLlmClient {
 
     async fn generate_tag(&self, model: &str, prompt: &str) -> Result<String> {
         if let Err(error) = self.ensure_primary_ready().await {
-            self.warn_fallback_once("generate_tag", &error);
-            self.record_fallback_model(model);
+            let _fallback_guard = self.admit_fallback("generate_tag", Some(model), &error)?;
             return self.fallback.generate_tag(model, prompt).await;
         }
         match self
@@ -912,9 +964,8 @@ impl LlmClient for PerformanceLlmClient {
         {
             Ok(reply) => Ok(reply),
             Err(error) => {
+                let _fallback_guard = self.admit_fallback("generate_tag", Some(model), &error)?;
                 self.degrade_to_ollama("llama-server tag request failed");
-                self.warn_fallback_once("generate_tag", &error);
-                self.record_fallback_model(model);
                 self.fallback.generate_tag(model, prompt).await
             }
         }
@@ -927,8 +978,7 @@ impl LlmClient for PerformanceLlmClient {
         opts: Option<&LlmGenerateOpts>,
     ) -> Result<LlmGenerateOutcome> {
         if let Err(error) = self.ensure_primary_ready().await {
-            self.warn_fallback_once("generate_with_opts", &error);
-            self.record_fallback_model(model);
+            let _fallback_guard = self.admit_fallback("generate_with_opts", Some(model), &error)?;
             return self.fallback.generate_with_opts(model, prompt, opts).await;
         }
         match self
@@ -938,9 +988,9 @@ impl LlmClient for PerformanceLlmClient {
         {
             Ok(outcome) => Ok(outcome),
             Err(error) => {
+                let _fallback_guard =
+                    self.admit_fallback("generate_with_opts", Some(model), &error)?;
                 self.degrade_to_ollama("llama-server request failed");
-                self.warn_fallback_once("generate_with_opts", &error);
-                self.record_fallback_model(model);
                 self.fallback.generate_with_opts(model, prompt, opts).await
             }
         }
@@ -965,8 +1015,7 @@ impl LlmClient for PerformanceLlmClient {
         opts: Option<&LlmGenerateOpts>,
     ) -> Result<LlmGenerateOutcome> {
         if let Err(error) = self.ensure_primary_ready().await {
-            self.warn_fallback_once("generate_stream", &error);
-            self.record_fallback_model(model);
+            let _fallback_guard = self.admit_fallback("generate_stream", Some(model), &error)?;
             return self
                 .fallback
                 .generate_stream_with_opts(model, prompt, on_token, opts)
@@ -991,9 +1040,9 @@ impl LlmClient for PerformanceLlmClient {
                 Ok(outcome)
             }
             Err(error) if !emitted.load(Ordering::Acquire) => {
+                let _fallback_guard =
+                    self.admit_fallback("generate_stream", Some(model), &error)?;
                 self.degrade_to_ollama("llama-server stream failed before first token");
-                self.warn_fallback_once("generate_stream", &error);
-                self.record_fallback_model(model);
                 self.fallback
                     .generate_stream_with_opts(model, prompt, on_token, opts)
                     .await
@@ -1006,10 +1055,12 @@ impl LlmClient for PerformanceLlmClient {
     }
 
     async fn startup_probe(&self) -> Result<()> {
-        if self.ensure_primary_ready().await.is_ok() {
-            Ok(())
-        } else {
-            self.fallback.startup_probe().await
+        match self.ensure_primary_ready().await {
+            Ok(()) => Ok(()),
+            Err(error) => {
+                let _fallback_guard = self.admit_fallback("startup_probe", None, &error)?;
+                self.fallback.startup_probe().await
+            }
         }
     }
 }
@@ -1132,6 +1183,69 @@ mod tests {
         server.abort();
     }
 
+    #[tokio::test]
+    async fn resource_pressure_suspension_blocks_every_ollama_fallback_entrypoint() {
+        let fallback_calls = Arc::new(AtomicUsize::new(0));
+        let fallback: Arc<dyn LlmClient> = Arc::new(CountingFallback {
+            calls: Arc::clone(&fallback_calls),
+        });
+        let dir = tempdir().unwrap();
+        let client = PerformanceLlmClient::new(
+            profile("http://127.0.0.1:9".into()),
+            dir.path().to_path_buf(),
+            None,
+            fallback,
+            None,
+            "fallback-model".into(),
+        )
+        .unwrap();
+        client
+            .suspend_managed_runtime_for_resource_pressure(
+                "bundled voice runtime requires GPU headroom",
+            )
+            .await
+            .unwrap();
+
+        let errors = [
+            client
+                .generate("fallback-model", "hello")
+                .await
+                .unwrap_err(),
+            client
+                .generate_tag("fallback-model", "hello")
+                .await
+                .unwrap_err(),
+            client
+                .generate_with_opts("fallback-model", "hello", None)
+                .await
+                .unwrap_err(),
+            client
+                .generate_stream_with_opts("fallback-model", "hello", Arc::new(|_| {}), None)
+                .await
+                .unwrap_err(),
+            client.startup_probe().await.unwrap_err(),
+        ];
+        assert!(errors.iter().all(|error| error
+            .to_string()
+            .contains(FALLBACK_BLOCKED_RESOURCE_TRANSITION)));
+        assert_eq!(fallback_calls.load(Ordering::SeqCst), 0);
+        assert_eq!(client.status_snapshot().active_backend, "inactive");
+        assert_eq!(client.inspect().await.active_backend, "inactive");
+        assert!(client
+            .suspend_managed_runtime_for_resource_pressure("duplicate suspension")
+            .await
+            .unwrap_err()
+            .to_string()
+            .contains("llm_resource_transition_already_active"));
+
+        client.enable_managed_runtime();
+        assert_eq!(
+            client.generate("fallback-model", "hello").await.unwrap(),
+            "fallback"
+        );
+        assert_eq!(fallback_calls.load(Ordering::SeqCst), 1);
+    }
+
     #[test]
     fn runtime_manifest_cannot_escape_component_root() {
         let dir = tempdir().unwrap();
@@ -1195,6 +1309,158 @@ mod tests {
             self.calls.fetch_add(1, Ordering::SeqCst);
             Ok("fallback".into())
         }
+
+        async fn startup_probe(&self) -> Result<()> {
+            self.calls.fetch_add(1, Ordering::SeqCst);
+            Ok(())
+        }
+    }
+
+    struct BlockingFallback {
+        started: Arc<tokio::sync::Notify>,
+        release: Arc<tokio::sync::Semaphore>,
+    }
+
+    #[async_trait]
+    impl LlmClient for BlockingFallback {
+        async fn generate(&self, _model: &str, _prompt: &str) -> Result<String> {
+            self.started.notify_one();
+            let permit = self.release.acquire().await.map_err(|error| {
+                AppError::RemoteServiceUnavailable(format!(
+                    "test fallback release semaphore closed: {error}"
+                ))
+            })?;
+            permit.forget();
+            Ok("fallback".into())
+        }
+
+        async fn generate_tag(&self, model: &str, prompt: &str) -> Result<String> {
+            self.generate(model, prompt).await
+        }
+    }
+
+    #[tokio::test]
+    async fn resource_pressure_suspension_waits_for_inflight_fallback_to_drain() {
+        let started = Arc::new(tokio::sync::Notify::new());
+        let release = Arc::new(tokio::sync::Semaphore::new(0));
+        let fallback: Arc<dyn LlmClient> = Arc::new(BlockingFallback {
+            started: Arc::clone(&started),
+            release: Arc::clone(&release),
+        });
+        let dir = tempdir().unwrap();
+        let client = Arc::new(
+            PerformanceLlmClient::new(
+                profile("http://127.0.0.1:9".into()),
+                dir.path().to_path_buf(),
+                None,
+                fallback,
+                None,
+                "fallback-model".into(),
+            )
+            .unwrap(),
+        );
+
+        let started_wait = started.notified();
+        let request_client = Arc::clone(&client);
+        let request =
+            tokio::spawn(async move { request_client.generate("fallback-model", "hello").await });
+        started_wait.await;
+
+        let suspension_client = Arc::clone(&client);
+        let mut suspension = tokio::spawn(async move {
+            suspension_client
+                .suspend_managed_runtime_for_resource_pressure(
+                    "bundled voice runtime requires GPU headroom",
+                )
+                .await
+        });
+        assert!(
+            tokio::time::timeout(Duration::from_millis(50), &mut suspension)
+                .await
+                .is_err(),
+            "resource suspension must wait for the active fallback request"
+        );
+
+        release.add_permits(1);
+        assert_eq!(request.await.unwrap().unwrap(), "fallback");
+        suspension.await.unwrap().unwrap();
+        assert!(client
+            .generate("fallback-model", "blocked")
+            .await
+            .unwrap_err()
+            .to_string()
+            .contains(FALLBACK_BLOCKED_RESOURCE_TRANSITION));
+    }
+
+    #[tokio::test]
+    async fn explicit_recovery_supersedes_a_draining_resource_suspension_without_opening_early() {
+        let started = Arc::new(tokio::sync::Notify::new());
+        let release = Arc::new(tokio::sync::Semaphore::new(0));
+        let fallback: Arc<dyn LlmClient> = Arc::new(BlockingFallback {
+            started: Arc::clone(&started),
+            release: Arc::clone(&release),
+        });
+        let dir = tempdir().unwrap();
+        let client = Arc::new(
+            PerformanceLlmClient::new(
+                profile("http://127.0.0.1:9".into()),
+                dir.path().to_path_buf(),
+                None,
+                fallback,
+                None,
+                "fallback-model".into(),
+            )
+            .unwrap(),
+        );
+
+        let started_wait = started.notified();
+        let request_client = Arc::clone(&client);
+        let request =
+            tokio::spawn(async move { request_client.generate("fallback-model", "hello").await });
+        started_wait.await;
+
+        let suspension_client = Arc::clone(&client);
+        let suspension = tokio::spawn(async move {
+            suspension_client
+                .suspend_managed_runtime_for_resource_pressure(
+                    "bundled voice runtime requires GPU headroom",
+                )
+                .await
+        });
+        tokio::time::timeout(Duration::from_secs(1), async {
+            loop {
+                if client.status_snapshot().active_backend == "inactive" {
+                    break;
+                }
+                tokio::task::yield_now().await;
+            }
+        })
+        .await
+        .unwrap();
+        client.enable_managed_runtime();
+        assert!(
+            client.fallback_gate.is_blocked(),
+            "recovery must not reopen fallback while the suspension is still draining"
+        );
+
+        release.add_permits(1);
+        assert_eq!(request.await.unwrap().unwrap(), "fallback");
+        assert!(suspension
+            .await
+            .unwrap()
+            .unwrap_err()
+            .to_string()
+            .contains("llm_resource_transition_superseded_by_recovery"));
+        assert!(!client.fallback_gate.is_blocked());
+
+        release.add_permits(1);
+        assert_eq!(
+            client
+                .generate("fallback-model", "recovered")
+                .await
+                .unwrap(),
+            "fallback"
+        );
     }
 
     #[tokio::test]

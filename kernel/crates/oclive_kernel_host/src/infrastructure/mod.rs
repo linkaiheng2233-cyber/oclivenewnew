@@ -45,6 +45,7 @@ pub mod mcp_client;
 pub mod ollama_client;
 pub mod ollama_timeouts;
 pub mod openai_compatible_llm;
+mod performance_fallback_gate;
 pub mod performance_llm;
 pub mod plugin_data;
 pub mod plugin_installer;
