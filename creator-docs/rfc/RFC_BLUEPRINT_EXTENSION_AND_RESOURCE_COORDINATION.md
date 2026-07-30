@@ -234,8 +234,9 @@ flowchart TD
 - 冷启动准入按目标 GPU、当前空闲显存、并发 pending reservation 与 `gpu_safety_reserve_mib` 原子判断；`OCLIVE_GPU_DEVICE_INDEX` / `CUDA_VISIBLE_DEVICES` 可指定目标设备。
 - managed llama-server 启动前申请租约，模型切换、启动失败、超时、降级或停用时释放；外部 Ollama 只登记前台活动且不在 token 热路径启动 `nvidia-smi`。
 - 官方 `com.oclive.voice.asr` 的 bundled CosyVoice2 才接宿主准入。宿主租约只替代 mixed-fp16 的旧固定冷启动门槛；FP32 扩张继续走侧车更严格的二次门禁。
-- 取消/调用失败通过 RAII 释放 pending lease；关闭 TTS 或切换到非 bundled provider 会释放语音租约。同一适配器的冷启动 RPC 串行化，避免复用租约时的竞态。
+- 取消/调用失败通过 RAII 释放 pending lease；关闭 TTS 或切换到非 bundled provider 时，宿主下发带 adapter/runtime profile 的 `unload`，侧车等待当前合成结束、校验目标模型并释放模型，宿主仅在收到匹配成功确认后撤销语音租约；未确认时保守保留租约并写入 `resource_release_unconfirmed`。同一适配器的冷启动 RPC 与配置转换共用串行锁，避免卸载确认、租约复用及连续配置保存之间的竞态。
 - 当前不会为了加载语音强杀正在进行的 LLM 请求，也不会声称能卸载任意外部 Ollama。自动抢占、恢复与真实共享显存压力测仍是 K-RESOURCE-COORD-01 后续完成条件。
+- 暂不自动执行 llama-server → Voice 抢占：暂停 managed primary 后现有请求会回退到 observe-only Ollama，而宿主无法保证其不重新占用同一 GPU；须先补受协调的 fallback 门禁与恢复策略。
 - 宿主 Resource Adapter Registry 已登记 llama-server、Ollama、performance 活动观察器和 bundled CosyVoice2 的真实控制边界、档位、驻留与生命周期能力；observe-only 条目只能声明 `observe`。注册表通过现有资源诊断返回状态，但当前不下发通用 lifecycle/profile 切换。
 
 ### 6.3 资源描述不是角色包硬编码

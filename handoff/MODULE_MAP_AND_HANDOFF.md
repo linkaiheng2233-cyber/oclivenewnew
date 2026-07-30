@@ -1,6 +1,6 @@
 # 模块注册表（Module Registry）
 
-**最后更新**：2026-07-28
+**最后更新**：2026-07-30
 **SSOT 范围**：**模块定义 · 架构划分 · 槽位/设施/独立通道之间的联系 · 在边界内如何改**。  
 **非 SSOT**：发版进度 → [`TECHNICAL_DEBT_INVENTORY.md`](./TECHNICAL_DEBT_INVENTORY.md) · 版本快照 → [`PROJECT_CURRENT_STATUS.md`](../creator-docs/getting-started/PROJECT_CURRENT_STATUS.md) · 关键文件路径 → [`BUS_FACTOR_NOTES.md`](./BUS_FACTOR_NOTES.md) · 文档分责 → [`handoff/README.md`](./README.md) §文档分层。
 
@@ -288,9 +288,9 @@ Blueprint + HostProfile + user/session + Capability Registry
 
 资源协调是**无编号控制面设施**，不是第七后端模块、不是独立通道注册表项，也不是 [`resolve_kernel_action`](./KERNEL_SCHEDULER_RESCOPE.md) 的进程 attach/replace 调度。新扩展首先实现 Capability Provider；只有占用共享 GPU/内存/受管进程时才增加 Resource Adapter。完整字段、缺失语义和实施顺序只维护于 [蓝图扩展与资源协调 RFC](../creator-docs/rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md)。
 
-**当前实现边界（2026-07-29）**：宿主已能从 v4 `extensions`、有效六槽、`HostProfile`、目录插件 manifest、插件启停状态、依赖与高危授权编译**只读、进程内** `ExecutionPlan`；计划不会启动 Provider，也不会写回角色包。只有宿主登记了真实消费者的 capability 才可进入 ready，插件单独声明任意 `provides` 不构成可执行能力。首个登记项为 Chat Pro 的 `voice.asr`；其它发行版会对同一声明给出 `capability_consumer_unavailable`。
+**当前实现边界（2026-07-30）**：宿主已能从 v4 `extensions`、有效六槽、`HostProfile`、目录插件 manifest、插件启停状态、依赖与高危授权编译**只读、进程内** `ExecutionPlan`；计划不会启动 Provider，也不会写回角色包。只有宿主登记了真实消费者的 capability 才可进入 ready，插件单独声明任意 `provides` 不构成可执行能力。首个登记项为 Chat Pro 的 `voice.asr`；其它发行版会对同一声明给出 `capability_consumer_unavailable`。
 
-Resource Coordinator 已落地 NVIDIA 多设备 snapshot、admission、lease、priority、pressure 与诊断；宿主 Resource Adapter Registry 进一步登记 managed llama-server、observe-only Ollama、performance 活动观察器和官方 bundled CosyVoice2 的控制权、运行档位、驻留能力与真实生命周期动作，租约携带对应 `profile_id`。纯计划编译/CLI 不碰硬件，保留 `not_evaluated`；桌面诊断刷新为 `ready | degraded | blocked` 并返回适配器目录。云/社区 TTS 不被误管，token/PCM 仍走原数据通道。当前档位均未声明为协调器可自动选择；尚未落地的是第三方注册入口、公平队列/自动抢占恢复、真正的多档切换、RAM/CPU 与渲染适配器；状态见 `K-RESOURCE-COORD-01`。
+Resource Coordinator 已落地 NVIDIA 多设备 snapshot、admission、lease、priority、pressure 与诊断；宿主 Resource Adapter Registry 进一步登记 managed llama-server、observe-only Ollama、performance 活动观察器和官方 bundled CosyVoice2 的控制权、运行档位、驻留能力与真实生命周期动作，租约携带对应 `profile_id`。bundled CosyVoice 配置退出采用“请求卸载 → 侧车确认 → 撤销租约”，未确认时保留租约并暴露稳定原因码；配置转换与 warm/speak 共用适配器串行锁。纯计划编译/CLI 不碰硬件，保留 `not_evaluated`；桌面诊断刷新为 `ready | degraded | blocked` 并返回适配器目录。云/社区 TTS 不被误管，token/PCM 仍走原数据通道。当前档位均未声明为协调器可自动选择；在 observe-only Ollama 具备受协调 fallback 门禁前不启用 llama-server → Voice 自动抢占。尚未落地的是第三方注册入口、公平队列/自动抢占恢复、真正的多档切换、RAM/CPU 与渲染适配器；状态见 `K-RESOURCE-COORD-01`。
 
 实现锚点：[`execution_plan.rs`](../kernel/crates/oclive_kernel_host/src/domain/execution_plan.rs)（纯编译）· [`capability_registry.rs`](../kernel/crates/oclive_kernel_host/src/infrastructure/capability_registry.rs)（能力适配）· [`resource_adapter_registry.rs`](../kernel/crates/oclive_kernel_host/src/domain/resource_adapter_registry.rs) / [`resource_coordinator.rs`](../kernel/crates/oclive_kernel_host/src/domain/resource_coordinator.rs)（资源目录与决策）· [`service/execution_plan.rs`](../kernel/crates/oclive_kernel_host/src/service/execution_plan.rs)（激活门禁/只读查询）· [`models/execution_plan.rs`](../kernel/crates/oclive_kernel_types/src/models/execution_plan.rs) / [`models/resource_coordination.rs`](../kernel/crates/oclive_kernel_types/src/models/resource_coordination.rs)（公共诊断 DTO）。
 
