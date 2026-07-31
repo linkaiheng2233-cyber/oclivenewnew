@@ -208,7 +208,7 @@ fn lint_monolith(root: &Path, checks: &mut Vec<LintCheck>) {
             "monolith",
             "no monolith.toml (standard mode)",
             Some(
-                "cargo run -p oclive-cli -- init --monolith --monolith-preset latency -o .".into(),
+                "cargo run -p oclive-cli -- --experimental init --monolith --monolith-preset latency -o .".into(),
             ),
         ));
         return;

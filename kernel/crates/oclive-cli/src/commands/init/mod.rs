@@ -253,7 +253,7 @@ pub fn run(args: InitArgs) -> Result<()> {
             println!("  Monolith binary: target/release/{slug}-monolith");
             println!("  Config file: monolith.toml");
             println!(
-                "  After changing weld plan: run oclive build at project root (or cargo run -p oclive-cli -- build -o {})",
+                "  After changing weld plan: run oclive-cli --experimental build at project root (or cargo run -p oclive-cli -- --experimental build -o {})",
                 args.output.display()
             );
             println!(

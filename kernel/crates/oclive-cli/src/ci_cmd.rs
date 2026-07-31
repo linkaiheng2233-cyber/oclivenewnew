@@ -121,8 +121,8 @@ fn render_ci_yaml(kind: ProjectCiKind) -> String {
       - name: bench regression gate
         run: |
           cargo build -p oclive-cli --release 2>/dev/null || cargo build -p oclive-cli
-          cargo run -p oclive-cli -- bench --release -o . --runs 3 --save || true
-          cargo run -p oclive-cli -- bench --release -o . --regression --runs 5 || true
+          cargo run -p oclive-cli -- --experimental bench --release -o . --runs 3 --save || true
+          cargo run -p oclive-cli -- --experimental bench --release -o . --regression --runs 5 || true
         continue-on-error: true
 
   oocp:
@@ -181,7 +181,7 @@ fn render_ci_yaml(kind: ProjectCiKind) -> String {
     let extra_steps = if kind == ProjectCiKind::KernelServer {
         r#"
       - name: oclive test
-        run: cargo run -p oclive-cli -- test -o . --skip-oocp
+        run: cargo run -p oclive-cli -- --experimental test -o . --skip-oocp
         continue-on-error: true
 "#
     } else {
@@ -229,4 +229,18 @@ jobs:
 {oocp_job}
 "#
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{render_ci_yaml, ProjectCiKind};
+
+    #[test]
+    fn generated_kernel_ci_uses_the_global_experimental_gate() {
+        let workflow = render_ci_yaml(ProjectCiKind::KernelServer);
+        assert!(workflow.contains("-- --experimental bench"));
+        assert!(workflow.contains("-- --experimental test"));
+        assert!(!workflow.contains("oclive-cli -- bench"));
+        assert!(!workflow.contains("oclive-cli -- test"));
+    }
 }

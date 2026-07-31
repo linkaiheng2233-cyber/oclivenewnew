@@ -11,7 +11,7 @@ Use this worksheet to compare **standard** vs **Monolith welded** subprocess lat
 | Project | |
 | Date | |
 | `weld_modules` | |
-| Command | `cargo run -p oclive-cli -- bench --release --runs 20 -o <project root>` |
+| Command | `cargo run -p oclive-cli -- --experimental bench --release --runs 20 -o <project root>` |
 | Auto after init | `oclive init --monolith --monolith-bench-preset <latency\|memory\|embedded>` → `bench_results/report.json` |
 
 ## 2. Latency table (ms)
@@ -48,8 +48,8 @@ Use this worksheet to compare **standard** vs **Monolith welded** subprocess lat
 After editing `monolith.toml`:
 
 ```bash
-cargo run -p oclive-cli -- build -o .
-cargo run -p oclive-cli -- bench --release -o . --runs 20 --save
+cargo run -p oclive-cli -- --experimental build -o .
+cargo run -p oclive-cli -- --experimental bench --release -o . --runs 20 --save
 ```
 
 See **`BLUEPRINT_V2_POINTER.md`** and **`RFC_OCLIVE_MONOLITH_MODE.md`** in the oclivenewnew repo.

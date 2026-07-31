@@ -79,6 +79,6 @@ Monolith 生成物与 **`--monolith`** 流程见本目录 **`CONFIG_REFERENCE.md
 ## Monolith 焊接性能对比
 
 - 填写 **`docs/WELD_BENCH_REPORT.md`**（English: **`WELD_BENCH_REPORT.en.md`**）记录标准版 vs 焊接版延迟。
-- 采样命令：`cargo run -p oclive-cli -- bench --release --runs 20 -o .`（结果可写入 **`bench_results/report.json`**）。
+- 采样命令：`cargo run -p oclive-cli -- --experimental bench --release --runs 20 -o .`（结果可写入 **`bench_results/report.json`**）。
 - init 时若使用 **`--monolith-bench-preset`**，将自动跑 5 轮并写入 **`bench_results/`**。
 {{/if}}

@@ -30,7 +30,7 @@ pub fn try_post_init_monolith_bench(project_root: &Path) {
             e
         );
         eprintln!(
-            "  Run manually later: cargo run -p oclive-cli -- bench --release --runs 5 -o {}",
+            "  Run manually later: cargo run -p oclive-cli -- --experimental bench --release --runs 5 -o {}",
             root.display()
         );
         eprintln!("  Fill comparison report: docs/WELD_BENCH_REPORT.md");

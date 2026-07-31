@@ -29,7 +29,7 @@ cargo run -p oclive-cli -- init --non-interactive --preset minimal -o /tmp/my-ke
 
 预设：`minimal` | `full` | `mixed`。`init --help` 末尾有 **预设与 `plugin_backends` 矩阵**；生成项目根目录含 **`CONFIG_REFERENCE.md`**。
 
-**Monolith**：`--non-interactive` 下可加 **`--preset full --monolith`**（仅 **kernel_server**），生成 **`monolith.toml`**、`vendor/oclive_monolith_builtin/`、`process_message_monolith.rs` 与双 **`[[bin]]`**（`main.rs` / `main_monolith.rs`）。修改 `monolith.toml` 后：`cargo run -p oclive-cli -- build -o <项目根>`（默认双构建）；`cargo run -p oclive-cli -- bench --release -o <项目根>` 输出 JSON 报告（Schema：`schemas/oclive_bench_report.schema.json`）。
+**Monolith**：`--non-interactive` 下可加 **`--preset full --monolith`**（仅 **kernel_server**，须全局 `--experimental`），生成 **`monolith.toml`**、`vendor/oclive_monolith_builtin/`、`process_message_monolith.rs` 与双 **`[[bin]]`**（`main.rs` / `main_monolith.rs`）。修改 `monolith.toml` 后：`cargo run -p oclive-cli -- --experimental build -o <项目根>`（默认双构建）；`cargo run -p oclive-cli -- --experimental bench --release -o <项目根>` 输出 JSON 报告（Schema：`schemas/oclive_bench_report.schema.json`）。
 
 **快速上手**：`cargo run -p oclive-cli -- doctor` → `cargo run -p oclive-cli -- init --quick -o ./my-chat`（见 [KERNEL_FACTORY_VISION.md](../../creator-docs/getting-started/KERNEL_FACTORY_VISION.md)）。
 
