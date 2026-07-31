@@ -10,7 +10,7 @@ The three inputs have separate ownership:
 
 - `oclive.module.json` declares logical `runtime_requires`, physical `resource_claims`, additive `declared_affects`, and trusted `validation_profiles`; it cannot contain arbitrary commands or workflow triggers.
 - The central impact map owns path bindings, mandatory impact edges, high-risk overrides, supported extensions, and full-fallback policy. Third-party declarations may widen but never narrow it.
-- The trusted validation catalog owns tiers, gate strength, platforms, trust levels, and command IDs. Main-repository workflows retain control of commands, runners, secrets, caching, concurrency, and timeouts.
+- The trusted validation catalog owns tiers, gate strength, platforms, trust levels, finite local reproducer command IDs, and mappings to existing remote workflow jobs. Stage 1 reports these coordinates but executes neither commands nor jobs. Main-repository workflows retain control of runners, secrets, caching, concurrency, and timeouts.
 
 Stage 1 runs in shadow mode: it emits a stable `plan.json`, GitHub Job Summary, and artifact while every existing CI job still runs. Stage 2 compares proposed selections with full-CI results. Selective PR execution is allowed only after evidence establishes safe low-risk classes; merge gates remain pre-merge safeguards, while long-running hardware, soak, and performance work belongs to Nightly/Release.
 

@@ -8,7 +8,7 @@ use std::{
 
 use anyhow::{bail, Context, Result};
 use clap::{Parser, ValueEnum};
-use oclive_ci_plan::{CiPlan, PlanRequest, Planner};
+use oclive_ci_plan::{CiPlan, GateStrength, PlanRequest, Planner, ValidationTier};
 
 const DEFAULT_IMPACT_MAP: &str = "data/ci/impact-map.v1.json";
 const DEFAULT_CATALOG: &str = "data/ci/validation-catalog.v1.json";
@@ -266,10 +266,10 @@ fn render_markdown(plan: &CiPlan) -> String {
     } else {
         for validator in &plan.selected_validators {
             output.push_str(&format!(
-                "- `{}` — `{:?}` / `{:?}` — {}\n",
+                "- `{}` — `{}` / `{}` — {}\n",
                 markdown_code(&validator.id),
-                validator.tier,
-                validator.gate,
+                tier_label(validator.tier),
+                gate_label(validator.gate),
                 validator
                     .reasons
                     .iter()
@@ -322,6 +322,24 @@ fn markdown_code(value: &str) -> String {
     value.replace('`', "\\`").replace(['\r', '\n'], " ")
 }
 
+fn tier_label(tier: ValidationTier) -> &'static str {
+    match tier {
+        ValidationTier::Fast => "fast",
+        ValidationTier::Pr => "pr",
+        ValidationTier::Merge => "merge",
+        ValidationTier::Nightly => "nightly",
+        ValidationTier::Release => "release",
+    }
+}
+
+fn gate_label(gate: GateStrength) -> &'static str {
+    match gate {
+        GateStrength::Required => "required",
+        GateStrength::Advisory => "advisory",
+        GateStrength::Quarantined => "quarantined",
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use oclive_ci_plan::{FallbackDecision, ReasonedSelection, PLAN_SCHEMA_VERSION};
@@ -372,5 +390,11 @@ mod tests {
         let rendered = render_text(&sample_plan());
         assert!(rendered.contains("shadow, targeted"));
         assert!(rendered.contains("Direct modules: oclive.kernel"));
+    }
+
+    #[test]
+    fn enum_labels_match_contract_json() {
+        assert_eq!(tier_label(ValidationTier::Pr), "pr");
+        assert_eq!(gate_label(GateStrength::Required), "required");
     }
 }

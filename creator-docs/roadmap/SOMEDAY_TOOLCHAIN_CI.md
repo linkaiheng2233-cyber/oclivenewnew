@@ -56,9 +56,10 @@ Stage 1 先为仓内领域模块建立描述；既有模块允许渐进迁移，
 - `tier`：`fast`、`pr`、`merge`、`nightly`、`release`；
 - `gate`：`required`、`advisory`、`quarantined`；
 - 平台与信任级别；
-- 由主仓维护的 `command_id`。
+- 由主仓维护的本地复现 `command_id`；
+- 对应现有远端编排的 `workflow_jobs`。
 
-模块只能引用验证器坐标。命令、工作目录、secret、runner、缓存、并发和超时始终归主仓工作流/验证目录所有。第三方提交到主仓时，其自测只能通过已审核坐标受限执行；插件自带 `.github/workflows/*` 不参与主仓编排。Fork/二次发行可自行维护 CI，主仓不对其流水线负责。
+模块只能引用验证器坐标。`command_id` 是有限、可终止的本地复现入口，`workflow_jobs` 才是当前远端 CI 的实际编排映射；Stage 1 规划器只报告两者，不执行命令，也不调度 job。命令、工作目录、secret、runner、缓存、并发和超时始终归主仓工作流/验证目录所有。第三方提交到主仓时，其自测只能通过已审核坐标受限执行；插件自带 `.github/workflows/*` 不参与主仓编排。Fork/二次发行可自行维护 CI，主仓不对其流水线负责。
 
 ## 3. 规划输出与可解释性
 

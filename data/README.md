@@ -6,7 +6,7 @@
 |------|------|----------|
 | `plugins.json` | 社区目录插件索引草稿 | 插件市场清单；线上发布流程见下文 |
 | `ci/impact-map.v1.json` | changed path → 直接模块、中央强制影响边与高风险规则 | OCLive 维护者拥有；第三方不能缩小范围 |
-| `ci/validation-catalog.v1.json` | policy、profile、validator、workflow job 与受信命令坐标 | 只登记命令，不由模块自定义执行 |
+| `ci/validation-catalog.v1.json` | policy、profile、validator、workflow job 与受信本地复现坐标 | Stage 1 只选择、不执行；模块不能自定义命令 |
 | `ci/modules/*.oclive.module.json` | Stage 1 仓内领域描述 | 脚手架当前不生成；稳定后只作为生成/预检目标 |
 
 领域感知 CI 的契约、第三方隔离和影子阶段见 [`SOMEDAY_TOOLCHAIN_CI.md`](../creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md)。`data/ci` 的改动属于中央控制面高风险变更，规划器会 fail-safe 到当前 policy 全量；Stage 1 仍不会跳过任何现有 job。

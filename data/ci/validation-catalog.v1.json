@@ -89,7 +89,7 @@
     { "id": "test-frontend", "program": "npm", "args": ["run", "test:unit"] },
     { "id": "test-cross-host", "program": "node", "args": ["scripts/e2e-distro-kernel.mjs", "--scenario", "all"] },
     { "id": "test-oocp", "program": "node", "args": ["run.mjs", "--include-dual-core"], "working_directory": "examples/oocp-test-suite" },
-    { "id": "test-remote-plugin", "program": "python", "args": ["examples/remote_plugin_minimal/server.py"] },
+    { "id": "test-remote-plugin", "program": "python", "args": ["-m", "py_compile", "examples/remote_plugin_minimal/server.py"] },
     { "id": "test-dual-core", "program": "cargo", "args": ["test", "--locked", "-p", "oclive_kernel_host", "--features", "dual_core"] },
     { "id": "check-arm64", "program": "cargo", "args": ["check", "--locked", "-p", "oclive_kernel_server", "-p", "oclive_kernel_host", "-p", "oclive_kernel_runtime", "--target", "aarch64-unknown-linux-gnu"] },
     { "id": "test-loom", "program": "cargo", "args": ["test", "--locked", "--test", "loom_concurrency", "loom_tests_require_cfg_loom", "--", "--test-threads=1"], "working_directory": "distros/desktop-tauri" },
