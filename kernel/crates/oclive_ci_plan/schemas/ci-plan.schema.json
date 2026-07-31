@@ -13,11 +13,12 @@
     "selected_validators": {
       "type": "array", "items": {
         "type": "object", "additionalProperties": false,
-        "required": ["id", "tier", "gate", "platforms", "trust", "command_id", "reasons"],
+        "required": ["id", "tier", "gate", "platforms", "trust", "command_id", "workflow_jobs", "reasons"],
         "properties": {
           "id": { "$ref": "#/$defs/id" }, "tier": { "enum": ["fast", "pr", "merge", "nightly", "release"] },
           "gate": { "enum": ["required", "advisory", "quarantined"] }, "platforms": { "type": "array", "items": { "type": "string" } },
-          "trust": { "enum": ["untrusted_pr", "trusted"] }, "command_id": { "$ref": "#/$defs/id" }, "reasons": { "$ref": "#/$defs/strings" }
+          "trust": { "enum": ["untrusted_pr", "trusted"] }, "command_id": { "$ref": "#/$defs/id" },
+          "workflow_jobs": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/id" } }, "reasons": { "$ref": "#/$defs/strings" }
         }
       }
     },

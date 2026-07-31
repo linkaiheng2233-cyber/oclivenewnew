@@ -44,10 +44,10 @@ impl Fixture {
                     {"id": "release", "validators": ["release-package"]}
                 ],
                 "validators": [
-                    {"id": "rust-fmt", "tier": "fast", "gate": "required", "platforms": ["ubuntu"], "trust": "untrusted_pr", "command_id": "cargo-fmt"},
-                    {"id": "rust-test", "tier": "pr", "gate": "required", "platforms": ["windows", "ubuntu"], "trust": "untrusted_pr", "command_id": "cargo-test"},
-                    {"id": "frontend-unit", "tier": "pr", "gate": "required", "platforms": ["ubuntu"], "trust": "untrusted_pr", "command_id": "npm-unit"},
-                    {"id": "release-package", "tier": "release", "gate": "required", "platforms": ["windows"], "trust": "trusted", "command_id": "package"}
+                    {"id": "rust-fmt", "tier": "fast", "gate": "required", "platforms": ["ubuntu"], "trust": "untrusted_pr", "command_id": "cargo-fmt", "workflow_jobs": ["rust"]},
+                    {"id": "rust-test", "tier": "pr", "gate": "required", "platforms": ["windows", "ubuntu"], "trust": "untrusted_pr", "command_id": "cargo-test", "workflow_jobs": ["rust"]},
+                    {"id": "frontend-unit", "tier": "pr", "gate": "required", "platforms": ["ubuntu"], "trust": "untrusted_pr", "command_id": "npm-unit", "workflow_jobs": ["frontend"]},
+                    {"id": "release-package", "tier": "release", "gate": "required", "platforms": ["windows"], "trust": "trusted", "command_id": "package", "workflow_jobs": ["release"]}
                 ],
                 "commands": [
                     {"id": "cargo-fmt", "program": "cargo", "args": ["fmt", "--check"]},

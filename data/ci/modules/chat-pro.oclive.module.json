@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "module": { "id": "oclive.chat-pro", "kind": "distro" },
+  "provides": ["distro.chat-pro"],
+  "runtime_requires": ["frontend.api", "host.bridge", "kernel.runtime"],
+  "resource_claims": [],
+  "declared_affects": [],
+  "validation_profiles": ["chat-pro"],
+  "platforms": ["linux", "windows"],
+  "extensions": {}
+}

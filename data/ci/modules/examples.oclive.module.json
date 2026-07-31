@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "module": { "id": "oclive.examples", "kind": "example-suite" },
+  "provides": ["examples.integration"],
+  "runtime_requires": ["kernel.runtime", "kernel.validation"],
+  "resource_claims": [],
+  "declared_affects": [],
+  "validation_profiles": ["examples"],
+  "platforms": ["linux", "windows"],
+  "extensions": {}
+}

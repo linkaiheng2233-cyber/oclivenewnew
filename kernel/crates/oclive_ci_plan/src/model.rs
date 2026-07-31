@@ -133,6 +133,7 @@ pub struct Validator {
     pub platforms: Vec<String>,
     pub trust: TrustLevel,
     pub command_id: String,
+    pub workflow_jobs: Vec<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -216,6 +217,7 @@ pub struct PlannedValidator {
     pub platforms: Vec<String>,
     pub trust: TrustLevel,
     pub command_id: String,
+    pub workflow_jobs: Vec<String>,
     pub reasons: Vec<String>,
 }
 

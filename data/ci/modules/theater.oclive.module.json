@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "module": { "id": "oclive.theater", "kind": "distro" },
+  "provides": ["distro.theater"],
+  "runtime_requires": ["frontend.api", "host.bridge", "kernel.runtime"],
+  "resource_claims": [],
+  "declared_affects": [],
+  "validation_profiles": ["theater"],
+  "platforms": ["linux", "windows"],
+  "extensions": {}
+}

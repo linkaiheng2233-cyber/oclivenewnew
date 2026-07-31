@@ -280,7 +280,7 @@ cargo run -p oclive-cli -- registry pull my-kernel -o ./my-kernel
 | 能力 | 命令 |
 |------|------|
 | **Y3 配置** | `oclive config set/get/list/unset/init`（`~/.oclive/config.toml` / `.oclive.toml`） |
-| **Y1 CI** | `oclive ci init` / `oclive ci check`（模板含 **`cargo-audit`**、`cargo-deny`（licenses + bans）、**`loom`** job；audit/loom 为 `continue-on-error: true`） |
+| **Y1 CI** | `oclive ci init` / `ci check`；主仓另有 `ci plan` / `ci explain` 领域感知影子计划（只报告，不跳 job） |
 | **Y6 修复** | `oclive doctor --fix` / `--fix --yes` |
 | **Y2 回归门禁** | `oclive bench --regression` / `--regression-threshold 3` |
 | **Y5 跨版本** | `oclive bench --compare-versions v0.2.0` |
@@ -289,11 +289,15 @@ cargo run -p oclive-cli -- registry pull my-kernel -o ./my-kernel
 ```bash
 cargo run -p oclive-cli -- config set OCLIVE_REGISTRY_URL https://registry.example.com --global
 cargo run -p oclive-cli -- ci init -o ./my-kernel
+cargo run -p oclive-cli -- ci plan --shadow --base HEAD^ --head HEAD
+cargo run -p oclive-cli -- ci explain --format markdown
 cargo run -p oclive-cli -- doctor --fix --yes
 cargo run -p oclive-cli -- --experimental bench --release --save -o ./my-kernel
 cargo run -p oclive-cli -- --experimental bench --release --regression -o ./my-kernel
 cargo run -p oclive-cli -- template create my-team -o ./my-kernel
 ```
+
+`ci plan` 默认读取 `data/ci/impact-map.v1.json` 与 `validation-catalog.v1.json`，从 Git diff 或重复的 `--changed-file` 计算直接模块、影响闭包、验证 profile、建议 validator 和 fail-safe 全量原因，输出 `target/oclive-ci/plan.json`。`ci explain` 只解释这份 JSON，不重新计算、不执行命令。Stage 1 的 `ci-impact-plan` 为 `continue-on-error` 可见性 job；现有 CI 全部照常运行。契约、第三方隔离与脚手架辅助边界见 [OCLive 领域感知 CI](../roadmap/SOMEDAY_TOOLCHAIN_CI.md)。
 
 ---
 

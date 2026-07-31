@@ -15,6 +15,68 @@ permissions:
   contents: read
 
 jobs:
+  # Stage 1 shadow planner: reports what a future selective CI would run.
+  # It is deliberately non-blocking and does not control any existing job.
+  ci-impact-plan:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Resolve comparison base
+        id: comparison
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          base=""
+          if [ "$EVENT_NAME" = "pull_request" ] && [ -n "$PR_BASE_SHA" ]; then
+            base="$PR_BASE_SHA"
+          elif [ -n "$PUSH_BEFORE_SHA" ] && [ "$PUSH_BEFORE_SHA" != "0000000000000000000000000000000000000000" ] && git cat-file -e "${PUSH_BEFORE_SHA}^{commit}" 2>/dev/null; then
+            base="$PUSH_BEFORE_SHA"
+          elif git rev-parse --verify HEAD^ >/dev/null 2>&1; then
+            base="$(git rev-parse HEAD^)"
+          else
+            base="$(git rev-parse HEAD)"
+          fi
+          echo "base=$base" >> "$GITHUB_OUTPUT"
+      - name: Compute shadow impact plan
+        env:
+          BASE_SHA: ${{ steps.comparison.outputs.base }}
+          HEAD_SHA: ${{ github.sha }}
+        run: >-
+          cargo run --locked -p oclive-cli -- ci plan
+          --path .
+          --base "$BASE_SHA"
+          --head "$HEAD_SHA"
+          --policy pull_request
+          --shadow
+          --output target/oclive-ci/plan.json
+      - name: Render impact summary
+        run: |
+          cargo run --locked -p oclive-cli -- ci explain \
+            --path . \
+            --plan target/oclive-ci/plan.json \
+            --format markdown \
+            --output target/oclive-ci/summary.md
+          cat target/oclive-ci/summary.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload impact evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: oclive-ci-impact-plan-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            target/oclive-ci/plan.json
+            target/oclive-ci/summary.md
+          if-no-files-found: warn
+          retention-days: 14
+
   rust:
     strategy:
       fail-fast: false

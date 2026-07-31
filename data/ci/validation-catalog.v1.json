@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "policies": [
+    { "id": "pull_request", "included_tiers": ["fast", "pr"] },
+    { "id": "merge", "included_tiers": ["fast", "pr", "merge"] },
+    { "id": "nightly", "included_tiers": ["fast", "pr", "merge", "nightly"] },
+    { "id": "release", "included_tiers": ["fast", "pr", "merge", "nightly", "release"] }
+  ],
+  "profiles": [
+    {
+      "id": "repo-governance",
+      "validators": ["layering-ratchet", "dimension5-acceptance", "cargo-audit", "npm-audit", "plugins-index", "stale-paths"]
+    },
+    {
+      "id": "docs",
+      "validators": ["dimension5-acceptance", "stale-paths"]
+    },
+    {
+      "id": "kernel-contracts",
+      "validators": ["rust-workspace", "layering-ratchet", "dimension5-acceptance", "cargo-audit", "kernel-host-dual-core", "rust-arm64-cross", "cross-host-e2e", "oocp-test-suite", "loom", "fuzz"]
+    },
+    {
+      "id": "kernel-runtime",
+      "validators": ["rust-workspace", "layering-ratchet", "dimension5-acceptance", "cargo-audit", "kernel-host-dual-core", "rust-arm64-cross", "cross-host-e2e", "oocp-test-suite", "loom", "fuzz"]
+    },
+    {
+      "id": "cli",
+      "validators": ["rust-workspace", "dimension5-acceptance", "cli", "cross-host-e2e", "cli-bench"]
+    },
+    {
+      "id": "desktop",
+      "validators": ["rust-workspace", "dimension5-acceptance", "frontend", "cross-host-e2e", "oocp-test-suite", "e2e-tauri"]
+    },
+    {
+      "id": "shared-frontend",
+      "validators": ["dimension5-acceptance", "npm-audit", "frontend", "visual-presentation-smoke", "e2e-tauri"]
+    },
+    {
+      "id": "chat-pro",
+      "validators": ["dimension5-acceptance", "npm-audit", "frontend", "oocp-test-suite", "e2e-tauri"]
+    },
+    {
+      "id": "theater",
+      "validators": ["dimension5-acceptance", "npm-audit", "frontend", "oocp-test-suite"]
+    },
+    {
+      "id": "plugins",
+      "validators": ["dimension5-acceptance", "plugins-index", "frontend", "cross-host-e2e", "oocp-test-suite", "remote-plugin-demo"]
+    },
+    {
+      "id": "roles",
+      "validators": ["dimension5-acceptance", "frontend", "cross-host-e2e", "oocp-test-suite"]
+    },
+    {
+      "id": "examples",
+      "validators": ["rust-workspace", "dimension5-acceptance", "cross-host-e2e", "oocp-test-suite", "remote-plugin-demo"]
+    }
+  ],
+  "validators": [
+    { "id": "layering-ratchet", "tier": "fast", "gate": "required", "platforms": ["ubuntu"], "trust": "untrusted_pr", "command_id": "check-layering", "workflow_jobs": ["layering-ratchet"] },
+    { "id": "plugins-index", "tier": "fast", "gate": "required", "platforms": ["ubuntu"], "trust": "untrusted_pr", "command_id": "check-plugins-index", "workflow_jobs": ["plugins-index"] },
+    { "id": "stale-paths", "tier": "fast", "gate": "required", "platforms": ["ubuntu"], "trust": "untrusted_pr", "command_id": "check-stale-paths", "workflow_jobs": ["stale-paths"] },
+    { "id": "rust-workspace", "tier": "pr", "gate": "required", "platforms": ["ubuntu-22.04", "windows"], "trust": "untrusted_pr", "command_id": "check-release", "workflow_jobs": ["rust"] },
+    { "id": "dimension5-acceptance", "tier": "pr", "gate": "required", "platforms": ["ubuntu"], "trust": "untrusted_pr", "command_id": "check-dimension5", "workflow_jobs": ["dimension5-acceptance"] },
+    { "id": "cargo-audit", "tier": "pr", "gate": "required", "platforms": ["ubuntu"], "trust": "untrusted_pr", "command_id": "audit-cargo", "workflow_jobs": ["cargo-audit"] },
+    { "id": "npm-audit", "tier": "pr", "gate": "advisory", "platforms": ["ubuntu"], "trust": "untrusted_pr", "command_id": "audit-npm", "workflow_jobs": ["npm-audit"] },
+    { "id": "cli", "tier": "pr", "gate": "required", "platforms": ["ubuntu"], "trust": "untrusted_pr", "command_id": "test-cli", "workflow_jobs": ["cli"] },
+    { "id": "frontend", "tier": "pr", "gate": "required", "platforms": ["ubuntu", "windows"], "trust": "untrusted_pr", "command_id": "test-frontend", "workflow_jobs": ["frontend"] },
+    { "id": "cross-host-e2e", "tier": "pr", "gate": "required", "platforms": ["ubuntu-22.04"], "trust": "untrusted_pr", "command_id": "test-cross-host", "workflow_jobs": ["cross-host-e2e"] },
+    { "id": "oocp-test-suite", "tier": "pr", "gate": "required", "platforms": ["ubuntu-22.04"], "trust": "untrusted_pr", "command_id": "test-oocp", "workflow_jobs": ["oocp-test-suite"] },
+    { "id": "remote-plugin-demo", "tier": "pr", "gate": "required", "platforms": ["ubuntu"], "trust": "untrusted_pr", "command_id": "test-remote-plugin", "workflow_jobs": ["remote-plugin-demo"] },
+    { "id": "kernel-host-dual-core", "tier": "merge", "gate": "required", "platforms": ["ubuntu"], "trust": "untrusted_pr", "command_id": "test-dual-core", "workflow_jobs": ["kernel-host-dual-core"] },
+    { "id": "rust-arm64-cross", "tier": "merge", "gate": "required", "platforms": ["ubuntu"], "trust": "untrusted_pr", "command_id": "check-arm64", "workflow_jobs": ["rust-arm64-cross"] },
+    { "id": "loom", "tier": "nightly", "gate": "advisory", "platforms": ["ubuntu-22.04"], "trust": "trusted", "command_id": "test-loom", "workflow_jobs": ["loom"] },
+    { "id": "fuzz", "tier": "nightly", "gate": "quarantined", "platforms": ["ubuntu"], "trust": "trusted", "command_id": "test-fuzz", "workflow_jobs": ["fuzz"] },
+    { "id": "cli-bench", "tier": "nightly", "gate": "advisory", "platforms": ["ubuntu"], "trust": "trusted", "command_id": "bench-cli", "workflow_jobs": ["cli-bench"] },
+    { "id": "visual-presentation-smoke", "tier": "nightly", "gate": "advisory", "platforms": ["ubuntu"], "trust": "trusted", "command_id": "test-visual", "workflow_jobs": ["visual-presentation-smoke"] },
+    { "id": "e2e-tauri", "tier": "nightly", "gate": "advisory", "platforms": ["ubuntu-22.04"], "trust": "trusted", "command_id": "test-tauri-native", "workflow_jobs": ["e2e-tauri"] }
+  ],
+  "commands": [
+    { "id": "check-layering", "program": "node", "args": ["scripts/check-domain-layering.mjs"] },
+    { "id": "check-plugins-index", "program": "node", "args": ["scripts/validate-plugins-index.mjs"] },
+    { "id": "check-stale-paths", "program": "node", "args": ["scripts/check-stale-paths.mjs"] },
+    { "id": "check-release", "program": "npm", "args": ["run", "check:release"] },
+    { "id": "check-dimension5", "program": "node", "args": ["scripts/dimension5-acceptance.mjs", "--ci"] },
+    { "id": "audit-cargo", "program": "cargo", "args": ["audit"] },
+    { "id": "audit-npm", "program": "npm", "args": ["audit", "--omit=dev", "--audit-level=high"] },
+    { "id": "test-cli", "program": "cargo", "args": ["test", "--locked", "-p", "oclive-cli", "--", "--test-threads=1"] },
+    { "id": "test-frontend", "program": "npm", "args": ["run", "test:unit"] },
+    { "id": "test-cross-host", "program": "node", "args": ["scripts/e2e-distro-kernel.mjs", "--scenario", "all"] },
+    { "id": "test-oocp", "program": "node", "args": ["run.mjs", "--include-dual-core"], "working_directory": "examples/oocp-test-suite" },
+    { "id": "test-remote-plugin", "program": "python", "args": ["examples/remote_plugin_minimal/server.py"] },
+    { "id": "test-dual-core", "program": "cargo", "args": ["test", "--locked", "-p", "oclive_kernel_host", "--features", "dual_core"] },
+    { "id": "check-arm64", "program": "cargo", "args": ["check", "--locked", "-p", "oclive_kernel_server", "-p", "oclive_kernel_host", "-p", "oclive_kernel_runtime", "--target", "aarch64-unknown-linux-gnu"] },
+    { "id": "test-loom", "program": "cargo", "args": ["test", "--locked", "--test", "loom_concurrency", "loom_tests_require_cfg_loom", "--", "--test-threads=1"], "working_directory": "distros/desktop-tauri" },
+    { "id": "test-fuzz", "program": "cargo", "args": ["test", "--locked", "-p", "oclive_validation", "--test", "proptest_fuzz_parsing"] },
+    { "id": "bench-cli", "program": "cargo", "args": ["run", "-p", "oclive-cli", "--", "--experimental", "bench"] },
+    { "id": "test-visual", "program": "npm", "args": ["run", "test:unit", "--", "--run", "src/adapters/visual/index.test.ts"], "working_directory": "distros/shared" },
+    { "id": "test-tauri-native", "program": "bash", "args": ["scripts/e2e-tauri-native-ci.sh"] }
+  ]
+}

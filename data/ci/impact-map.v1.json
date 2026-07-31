@@ -1,0 +1,154 @@
+{
+  "schema_version": 1,
+  "supported_extensions": ["com.oclive.ci.v1"],
+  "module_bindings": [
+    {
+      "module_id": "oclive.repo-tooling",
+      "descriptor": "data/ci/modules/repo-tooling.oclive.module.json",
+      "selectors": [
+        { "kind": "prefix", "value": ".agents" }, { "kind": "prefix", "value": ".cargo" },
+        { "kind": "prefix", "value": ".continue" }, { "kind": "prefix", "value": ".cursor" },
+        { "kind": "prefix", "value": ".github" }, { "kind": "prefix", "value": ".sqlx" },
+        { "kind": "prefix", "value": ".vscode" }, { "kind": "prefix", "value": "crates" },
+        { "kind": "prefix", "value": "data" }, { "kind": "prefix", "value": "distributions" },
+        { "kind": "prefix", "value": "e2e-mock" }, { "kind": "prefix", "value": "scripts" },
+        { "kind": "prefix", "value": "tools" },
+        { "kind": "exact", "value": ".env.example" }, { "kind": "exact", "value": ".gitattributes" },
+        { "kind": "exact", "value": ".gitignore" }, { "kind": "exact", "value": ".nvmrc" },
+        { "kind": "exact", "value": ".prettierignore" }, { "kind": "exact", "value": ".prettierrc" },
+        { "kind": "exact", "value": "audit.toml" }, { "kind": "exact", "value": "Cargo.lock" },
+        { "kind": "exact", "value": "Cargo.toml" }, { "kind": "exact", "value": "deny.toml" },
+        { "kind": "exact", "value": "eslint.config.mjs" }, { "kind": "exact", "value": "package-lock.json" },
+        { "kind": "exact", "value": "package.json" }, { "kind": "exact", "value": "playwright.config.ts" },
+        { "kind": "exact", "value": "tsconfig.app.json" }, { "kind": "exact", "value": "tsconfig.json" },
+        { "kind": "exact", "value": "tsconfig.node.json" }, { "kind": "exact", "value": "vite.base.config.ts" },
+        { "kind": "exact", "value": "vite.config.ts" }, { "kind": "exact", "value": "vite.plugin-bridge.config.ts" }
+      ]
+    },
+    {
+      "module_id": "oclive.docs",
+      "descriptor": "data/ci/modules/docs.oclive.module.json",
+      "selectors": [
+        { "kind": "prefix", "value": "creator-docs" }, { "kind": "prefix", "value": "creator-docs-en" },
+        { "kind": "prefix", "value": "dev-notes" }, { "kind": "prefix", "value": "docs" },
+        { "kind": "prefix", "value": "handoff" }, { "kind": "prefix", "value": "human-docs" },
+        { "kind": "prefix", "value": "human-docs-en" },
+        { "kind": "exact", "value": "AGENTS.md" }, { "kind": "exact", "value": "CHANGELOG.md" },
+        { "kind": "exact", "value": "CHANGELOG.en.md" }, { "kind": "exact", "value": "CODE_OF_CONDUCT.md" },
+        { "kind": "exact", "value": "CONTRIBUTING.md" }, { "kind": "exact", "value": "CONTRIBUTING.en.md" },
+        { "kind": "exact", "value": "HARDWARE_INTEGRATION.md" }, { "kind": "exact", "value": "LICENSE" },
+        { "kind": "exact", "value": "NOTICE" }, { "kind": "exact", "value": "README.md" },
+        { "kind": "exact", "value": "README.en.md" }, { "kind": "exact", "value": "SECURITY.md" }
+      ]
+    },
+    {
+      "module_id": "oclive.kernel-contracts",
+      "descriptor": "data/ci/modules/kernel-contracts.oclive.module.json",
+      "selectors": [
+        { "kind": "prefix", "value": "kernel/crates/oclive_schema" },
+        { "kind": "prefix", "value": "kernel/crates/oclive_validation" },
+        { "kind": "prefix", "value": "kernel/crates/oclive_validation_wasm" },
+        { "kind": "prefix", "value": "kernel/crates/oclive_kernel_types" },
+        { "kind": "prefix", "value": "kernel/crates/oclive_kernel_contracts" }
+      ]
+    },
+    {
+      "module_id": "oclive.kernel-runtime",
+      "descriptor": "data/ci/modules/kernel-runtime.oclive.module.json",
+      "selectors": [
+        { "kind": "prefix", "value": "kernel/crates/oclive_kernel_runtime" },
+        { "kind": "prefix", "value": "kernel/crates/oclive_kernel_host" },
+        { "kind": "prefix", "value": "kernel/crates/oclive_kernel_server" },
+        { "kind": "prefix", "value": "kernel/crates/oclive_sqlx" },
+        { "kind": "prefix", "value": "kernel/fuzz" },
+        { "kind": "exact", "value": "kernel/crates/README.md" }
+      ]
+    },
+    {
+      "module_id": "oclive.ci-planner",
+      "descriptor": "data/ci/modules/ci-planner.oclive.module.json",
+      "selectors": [{ "kind": "prefix", "value": "kernel/crates/oclive_ci_plan" }]
+    },
+    {
+      "module_id": "oclive.cli",
+      "descriptor": "data/ci/modules/cli.oclive.module.json",
+      "selectors": [{ "kind": "prefix", "value": "kernel/crates/oclive-cli" }]
+    },
+    {
+      "module_id": "oclive.desktop",
+      "descriptor": "data/ci/modules/desktop.oclive.module.json",
+      "selectors": [{ "kind": "prefix", "value": "distros/desktop-tauri" }]
+    },
+    {
+      "module_id": "oclive.shared",
+      "descriptor": "data/ci/modules/shared.oclive.module.json",
+      "selectors": [{ "kind": "prefix", "value": "distros/shared" }]
+    },
+    {
+      "module_id": "oclive.chat-pro",
+      "descriptor": "data/ci/modules/chat-pro.oclive.module.json",
+      "selectors": [{ "kind": "prefix", "value": "distros/chat-pro" }]
+    },
+    {
+      "module_id": "oclive.theater",
+      "descriptor": "data/ci/modules/theater.oclive.module.json",
+      "selectors": [{ "kind": "prefix", "value": "distros/theater" }]
+    },
+    {
+      "module_id": "oclive.plugins",
+      "descriptor": "data/ci/modules/plugins.oclive.module.json",
+      "selectors": [{ "kind": "prefix", "value": "distros/chat-pro/plugins" }]
+    },
+    {
+      "module_id": "oclive.roles",
+      "descriptor": "data/ci/modules/roles.oclive.module.json",
+      "selectors": [{ "kind": "prefix", "value": "distros/chat-pro/roles" }]
+    },
+    {
+      "module_id": "oclive.examples",
+      "descriptor": "data/ci/modules/examples.oclive.module.json",
+      "selectors": [{ "kind": "prefix", "value": "examples" }]
+    }
+  ],
+  "policy_affects": {
+    "oclive.kernel-contracts": ["oclive.kernel-runtime", "oclive.cli", "oclive.desktop", "oclive.shared", "oclive.chat-pro", "oclive.theater", "oclive.plugins", "oclive.roles", "oclive.examples"],
+    "oclive.kernel-runtime": ["oclive.cli", "oclive.desktop", "oclive.chat-pro", "oclive.theater", "oclive.plugins", "oclive.roles", "oclive.examples"],
+    "oclive.desktop": ["oclive.shared", "oclive.chat-pro", "oclive.theater", "oclive.plugins", "oclive.roles"],
+    "oclive.shared": ["oclive.chat-pro", "oclive.theater", "oclive.plugins"],
+    "oclive.chat-pro": ["oclive.plugins", "oclive.roles"],
+    "oclive.plugins": ["oclive.chat-pro"],
+    "oclive.roles": ["oclive.chat-pro", "oclive.desktop"],
+    "oclive.ci-planner": ["oclive.cli", "oclive.repo-tooling"]
+  },
+  "risk_overrides": [
+    {
+      "id": "ci-control-plane",
+      "selectors": [
+        { "kind": "prefix", "value": ".github/workflows" },
+        { "kind": "prefix", "value": "data/ci" },
+        { "kind": "prefix", "value": "kernel/crates/oclive_ci_plan" },
+        { "kind": "exact", "value": "kernel/crates/oclive-cli/src/ci_impact_cmd.rs" }
+      ],
+      "full": true,
+      "reason": "CI selection logic or policy changed"
+    },
+    {
+      "id": "workspace-dependencies",
+      "selectors": [
+        { "kind": "exact", "value": "Cargo.toml" }, { "kind": "exact", "value": "Cargo.lock" },
+        { "kind": "exact", "value": "package.json" }, { "kind": "exact", "value": "package-lock.json" }
+      ],
+      "full": true,
+      "reason": "workspace membership or dependency graph changed"
+    },
+    {
+      "id": "release-governance",
+      "selectors": [
+        { "kind": "exact", "value": "scripts/dimension5-acceptance.mjs" },
+        { "kind": "exact", "value": "scripts/check-domain-layering.mjs" }
+      ],
+      "force_profiles": ["repo-governance"],
+      "reason": "central quality gate changed"
+    }
+  ]
+}

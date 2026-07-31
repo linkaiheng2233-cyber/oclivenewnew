@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "module": { "id": "oclive.plugins", "kind": "plugin-ecosystem" },
+  "provides": ["plugins.directory", "plugins.remote"],
+  "runtime_requires": ["host.bridge", "kernel.ports"],
+  "resource_claims": [],
+  "declared_affects": ["oclive.chat-pro"],
+  "validation_profiles": ["plugins"],
+  "platforms": ["linux", "windows"],
+  "extensions": {}
+}

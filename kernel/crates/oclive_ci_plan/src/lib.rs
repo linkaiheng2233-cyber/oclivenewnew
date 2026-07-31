@@ -329,6 +329,7 @@ impl Planner {
                     platforms: sorted_unique(validator.platforms.clone()),
                     trust: validator.trust,
                     command_id: validator.command_id.clone(),
+                    workflow_jobs: sorted_unique(validator.workflow_jobs.clone()),
                     reasons: reasons.iter().cloned().collect(),
                 });
             } else {
@@ -552,6 +553,13 @@ fn validate_catalog(catalog: &ValidationCatalog, path: &Path) -> Result<(), CiPl
                 ),
             );
         }
+        if validator.workflow_jobs.is_empty() {
+            return invalid(
+                path,
+                format!("validator `{}` has no workflow_jobs", validator.id),
+            );
+        }
+        unique_strings(path, "workflow job", &validator.workflow_jobs)?;
     }
     for command in &catalog.commands {
         if command.program.trim().is_empty() {

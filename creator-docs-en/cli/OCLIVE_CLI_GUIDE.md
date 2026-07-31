@@ -241,6 +241,15 @@ Canonical design: [RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.
 
 ## CI relationship
 
+The main repository also exposes a domain-aware **Stage 1 shadow plan**:
+
+```bash
+cargo run -p oclive-cli -- ci plan --shadow --base HEAD^ --head HEAD
+cargo run -p oclive-cli -- ci explain --format markdown
+```
+
+`ci plan` reads the centrally owned map, module descriptors, and trusted validation catalog under `data/ci/`. It emits `target/oclive-ci/plan.json`; `ci explain` renders that JSON without recomputing or executing validators. The `ci-impact-plan` workflow job is non-blocking and cannot skip existing jobs in Stage 1. See the [domain-aware CI baseline](../../creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md).
+
 Repo **`.github/workflows/ci.yml`** **`cli`** job runs `cargo test -p oclive-cli` (includes E2E: `init`, `build`, `bench` smoke). A lighter **`cli-bench`** job runs one round of `bench` (no perf threshold).
 
 ---

@@ -115,6 +115,13 @@ node -e "const fs=require('fs'),path=require('path');function walk(d,a=[]){for(c
 - 只有与报告中目标 **完整 SHA** 一致的成功 run 才是当前远端证据。后续实质提交必须重新验证；纯证据回写不应制造新的 HEAD。
 - 技术债需要仓库内证据时，优先随下一次实质提交一并回写；在此之前保持原状态并链接 PR 评论，不得用旧 SHA 冒充新 HEAD 已验证。
 
+#### 领域感知 CI 影子计划（Stage 1）
+
+- `ci-impact-plan` 标记 `continue-on-error`，只发布 `plan.json`、Job Summary 与 artifact；**不得**把它列为硬门禁或据此跳过现有 job。
+- `oclive ci plan` 的 `selected_validators` 是待观测建议，不是“已执行”证据；验收结论仍须引用实际 job 终态。
+- 未映射路径、损坏模块描述、未知 required 扩展及中央高风险规则会使当前 policy `full_fallback`；这代表规划器选择保守范围，不代表远端全量已经通过。
+- 规划 SSOT 与脚手架边界见 [`SOMEDAY_TOOLCHAIN_CI.md`](../creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md)。进入选择性执行前，必须先完成 Stage 2 漏选/过选对比并另行更新本协议。
+
 ---
 
 ### 2.5 文档与中英 parity

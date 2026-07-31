@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "module": { "id": "oclive.desktop", "kind": "desktop-host" },
+  "provides": ["host.tauri", "host.bridge"],
+  "runtime_requires": ["kernel.runtime"],
+  "resource_claims": [
+    { "resource": "render", "mode": "coordinated", "required": false }
+  ],
+  "declared_affects": ["oclive.shared", "oclive.chat-pro", "oclive.theater"],
+  "validation_profiles": ["desktop"],
+  "platforms": ["linux", "windows"],
+  "extensions": {}
+}

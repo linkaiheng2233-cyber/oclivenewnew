@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "module": { "id": "oclive.cli", "kind": "developer-tool" },
+  "provides": ["developer.cli", "developer.scaffold"],
+  "runtime_requires": ["kernel.runtime", "kernel.validation"],
+  "resource_claims": [],
+  "declared_affects": [],
+  "validation_profiles": ["cli"],
+  "platforms": ["linux", "windows"],
+  "extensions": {}
+}

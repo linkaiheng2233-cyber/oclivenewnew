@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "module": { "id": "oclive.kernel-contracts", "kind": "kernel-contract" },
+  "provides": ["kernel.dto", "kernel.validation", "kernel.ports"],
+  "runtime_requires": [],
+  "resource_claims": [],
+  "declared_affects": ["oclive.kernel-runtime"],
+  "validation_profiles": ["kernel-contracts"],
+  "platforms": ["linux", "windows"],
+  "extensions": {}
+}

@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "module": { "id": "oclive.kernel-runtime", "kind": "kernel-runtime" },
+  "provides": ["kernel.runtime", "kernel.host", "kernel.server"],
+  "runtime_requires": ["kernel.dto", "kernel.validation", "kernel.ports"],
+  "resource_claims": [
+    { "resource": "compute", "mode": "coordinated", "required": false }
+  ],
+  "declared_affects": ["oclive.desktop"],
+  "validation_profiles": ["kernel-runtime"],
+  "platforms": ["linux", "windows"],
+  "extensions": {}
+}
