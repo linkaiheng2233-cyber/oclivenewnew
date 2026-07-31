@@ -78,8 +78,8 @@ cargo run -p oclive-cli -- --experimental bench --release -o ./my-kernel --runs 
 **Prerequisite — scaffold a project with `monolith.toml`:**
 
 ```bash
-cargo run -p oclive-cli -- init --monolith --non-interactive --preset minimal --project-name bench-kernel -o ./my-kernel-monolith
-cargo run -p oclive-cli -- init --monolith --non-interactive --preset minimal --kernel-source . -o ./my-kernel-monolith
+cargo run -p oclive-cli -- --experimental init --monolith --non-interactive --preset minimal --project-name bench-kernel -o ./my-kernel-monolith
+cargo run -p oclive-cli -- --experimental init --monolith --non-interactive --preset minimal --kernel-source . -o ./my-kernel-monolith
 ```
 
 **Matrix run:**

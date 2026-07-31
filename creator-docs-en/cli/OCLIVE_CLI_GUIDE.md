@@ -22,9 +22,22 @@ The end of `init --help` lists **presets and the `plugin_backends` matrix** (sam
 
 **Role pack spec and validation**: [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md); **`pack`** subcommands are in section 6 of that doc and below.
 
-**Aligned with code**: top-level commands match `kernel/crates/oclive-cli/src/main.rs`. See the Chinese guide for the full **A / B / C** tier table, deprecated aliases, and **planned** (not yet implemented) items.
+**Aligned with code**: top-level commands match `kernel/crates/oclive-cli/src/main.rs`. Default help exposes 15 stable entries. The ten known experimental commands remain callable only with the global `--experimental` flag, while the legacy project-archive `template` command remains callable but hidden. Removed top-level `publish` is not an alias.
 
 **Planned CLI** (not shipped): `pack diff`/`update`, `kernel update`, `dev --inject`, `bench history clear`/`export`/`import` — [VISION_ROADMAP_MONTHLY.md](../../creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md#oclive-cli-脚手架计划中).
+
+---
+
+## `scaffold`: local package contracts and diagnostics
+
+```bash
+cargo run -p oclive-cli -- scaffold list -o .
+cargo run -p oclive-cli -- scaffold inspect com.oclive.scaffold.plugin -o .
+cargo run -p oclive-cli -- scaffold validate ./.oclive/scaffolds/example/oclive.scaffold.json
+cargo run -p oclive-cli -- scaffold resolve -o . --write-lock --json
+```
+
+Stage 2A discovers project, user, and compiled official declarations with configurable priority. It records source, maintainer, trust, permissions, namespace, compatibility, and SHA-256 in `.oclive/scaffold.lock.json`. It does **not** install from a network, execute third-party entries, resolve composition, or grant access to CI workflows, validators, runners, secrets, and gates. Only `resolve --write-lock` mutates disk. Contract SSOT: [RFC_SCAFFOLD_PACKAGE_V1.md](../rfc/RFC_SCAFFOLD_PACKAGE_V1.md).
 
 ---
 
@@ -146,7 +159,7 @@ cargo run -p oclive-cli -- init --non-interactive --quiet --preset minimal --ski
 Enable Monolith (non-interactive: add **`--monolith`**; **kernel_server** only):
 
 ```bash
-cargo run -p oclive-cli -- init --non-interactive --preset full --monolith -o /tmp/my-monolith-kernel
+cargo run -p oclive-cli -- --experimental init --non-interactive --preset full --monolith -o /tmp/my-monolith-kernel
 cargo build --release --manifest-path /tmp/my-monolith-kernel/Cargo.toml
 cargo build --release --features monolith --manifest-path /tmp/my-monolith-kernel/Cargo.toml
 ```
@@ -197,9 +210,9 @@ Non-interactive mode does **not** require any `--backend-*` flags; if passed, th
 From an **existing** Monolith project root (must contain `monolith.toml`):
 
 ```bash
-cargo run -p oclive-cli -- build -o /path/to/kernel-project
-cargo run -p oclive-cli -- build -o /path/to/kernel-project --release --features somefeat
-cargo run -p oclive-cli -- build -o /path/to/kernel-project --no-cargo
+cargo run -p oclive-cli -- --experimental build -o /path/to/kernel-project
+cargo run -p oclive-cli -- --experimental build -o /path/to/kernel-project --release --features somefeat
+cargo run -p oclive-cli -- --experimental build -o /path/to/kernel-project --no-cargo
 ```
 
 - **`--no-cargo`**: only regenerate `process_message_monolith.rs` and vendor, do not invoke `cargo`.
@@ -249,6 +262,8 @@ cargo run -p oclive-cli -- ci explain --format markdown
 ```
 
 `ci plan` reads the centrally owned map, module descriptors, and trusted validation catalog under `data/ci/`. It emits `target/oclive-ci/plan.json`; `ci explain` renders that JSON without recomputing or executing validators. The `ci-impact-plan` workflow job is non-blocking and cannot skip existing jobs in Stage 1. See the [domain-aware CI baseline](../../creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md).
+
+`oclive scaffold` is a separate developer-tool surface. It may help create or inspect standard metadata, but it cannot select CI validators or influence execution policy; CI always re-analyzes generated files independently.
 
 Repo **`.github/workflows/ci.yml`** **`cli`** job runs `cargo test -p oclive-cli` (includes E2E: `init`, `build`, `bench` smoke). A lighter **`cli-bench`** job runs one round of `bench` (no perf threshold).
 

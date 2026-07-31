@@ -24,15 +24,15 @@ Oclive 在工厂之上采用 **单核双态构建架构**：**单核** = 一套 
 
 ---
 
-## 能力分级（对外门面）
+## 官方命令面
 
-与 [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md) 一致；**以 `main.rs` 子命令为准**，下表为宣传结构。
+与 [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md) 一致；**以 `main.rs` 子命令为准**。默认帮助聚焦稳定入口，避免把试验工具与主轴混排。
 
-| 级别 | 范围 |
+| 分面 | 范围 |
 |------|------|
-| **A** | `init`、`build`、`bench`、`pack`、`plugin`（create/install/uninstall/test）、`doctor`、`config`、`test`、`lint`、`ci` |
-| **B** | `registry`、`compose`、`market`、`template`、`dev`、`debug`、`profile` |
-| **C** | `learn`、`dashboard`、`collab`、`blueprint`（experimental/legacy） |
+| **稳定可见** | `init`、`dev`、`pack`、`doctor`、`plugin`、`registry`、`lint`、`profile`、`config`、`ci`、`scaffold`、`kernel`、`explain`、`migrate-app-data`、`completions` |
+| **试验隐藏** | `build`、`bench`、`blueprint`、`compose`、`debug`、`dashboard`、`learn`、`test`、`market`、`collab`（均须全局 `--experimental`） |
+| **兼容隐藏** | `template`：仅旧 `.oclive-template.tar.gz` 工程归档，不等于 Scaffold Package |
 
 **计划中（未实现）**：`pack diff`/`update`、`kernel update`、`dev --inject`、`bench history` 导入导出 — [VISION_ROADMAP_MONTHLY.md](../roadmap/VISION_ROADMAP_MONTHLY.md#oclive-cli-脚手架计划中)。
 
@@ -174,9 +174,9 @@ curl -X POST http://127.0.0.1:8420/chat \
 | **T2** | 角色包协作 | `oclive collab` | `.oclive-collab.yml` + Git；多人编辑 `distros/chat-pro/roles/<id>/` |
 
 ```bash
-cargo run -p oclive-cli -- market browse
+cargo run -p oclive-cli -- --experimental market browse
 cargo run -p oclive-cli -- registry push my-team-kernel
-cargo run -p oclive-cli -- collab init --remote git@github.com:org/role-pack.git -o ./distros/chat-pro/roles/demo
+cargo run -p oclive-cli -- --experimental collab init --remote git@github.com:org/role-pack.git -o ./distros/chat-pro/roles/demo
 ```
 
 ---
@@ -331,9 +331,9 @@ Monolith 是工厂里的 **「性能档位」**：
 
 ---
 
-## 模板发布（`template pack` / `--template-url`）
+## 旧工程归档（`template pack` / `--template-url`）
 
-**`oclive template pack`** 打包为 **`.oclive-template.tar.gz`**（含 **`template.json`**）。**`oclive template create`** 反向生成并登记本地库。**`oclive init --template-url <url>`** 下载解压为新建工程。顶层 **`oclive publish`** 为 deprecated 别名。
+隐藏兼容入口 **`oclive template pack`** 打包为 **`.oclive-template.tar.gz`**（含 **`template.json`**）；**`template create`** 反向生成并登记本地库；**`init --template-url <url>`** 下载解压为新建工程。顶层 **`oclive publish` 已移除**。新版 Scaffold Package 是独立本地声明契约，见 [RFC_SCAFFOLD_PACKAGE_V1.md](../rfc/RFC_SCAFFOLD_PACKAGE_V1.md)。
 
 ---
 

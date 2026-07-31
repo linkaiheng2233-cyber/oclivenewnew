@@ -151,7 +151,7 @@
 
 **`compose`**：`oclive-compose.yml` + `.oclive-compose.pids.json`。
 
-**`template pack` / `--template-url`**：`.oclive-template.tar.gz` + `template.json`（`publish` 为 deprecated 别名）。
+**`template pack` / `--template-url`**：隐藏兼容的旧 `.oclive-template.tar.gz` + `template.json` 工程归档；顶层 `publish` 已移除，新 Scaffold Package 不复用这条链。
 
 **质量深耕**：`init --from-existing`、`bench --stress`、`test --ci-parity`、`lint --deps`、`doctor --watch`、`kernel info` — 见 [OCLIVE_CLI_GUIDE.md](OCLIVE_CLI_GUIDE.md)。
 
@@ -191,7 +191,7 @@
 
 ## 五、`monolith.toml`（编译期，非运行时）
 
-由 **`oclive-cli init`** 在启用 Monolith 时写入**项目根目录**；**仅编译期**消费（**`cargo run -p oclive-cli -- build`** 读取并再生成 `process_message_monolith.rs`；亦可仅用手动 **`cargo build --features monolith`**）。与 **`settings.json` → `plugin_backends`** 正交：角色包加载**不**读取本文件。
+由 **`oclive-cli init`** 在启用 Monolith 时写入**项目根目录**；**仅编译期**消费（**`cargo run -p oclive-cli -- --experimental build`** 读取并再生成 `process_message_monolith.rs`；亦可仅用手动 **`cargo build --features monolith`**）。与 **`settings.json` → `plugin_backends`** 正交：角色包加载**不**读取本文件。
 
 | 字段 | 说明 |
 |------|------|

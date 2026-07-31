@@ -80,7 +80,7 @@ node scripts/sync-plugins-index-github.mjs --write ../awesome-oclive-distros/cha
 
 1. 可选：`$env:OCLIVE_LOCAL_MONOREPO = "D:\oclivenewnew"`（GitHub 不可达时）
 2. 桌面：插件市场 → 粘贴主仓 `data/plugins.json` 的 raw 链接（或 awesome 默认目录）→ **加载** → 安装 `com.oclive.example.minimal`
-3. CLI：`cargo run -p oclive-cli -- market search minimal` → `market install com.oclive.example.minimal`
+3. CLI：`cargo run -p oclive-cli -- --experimental market search minimal` → `--experimental market install com.oclive.example.minimal`
 4. 已安装扫描：`cargo run -p oclive-cli -- plugin search --provides llm -o <plugins-dir>`
 
 ## 代码锚点

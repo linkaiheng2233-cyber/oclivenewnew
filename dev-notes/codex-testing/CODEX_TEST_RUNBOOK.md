@@ -171,7 +171,7 @@ target=$(cargo metadata --format-version=1 --no-deps | jq -r .target_directory)
 |--------|------|
 | F-L1 | `cargo test -p oclive-cli` |
 | F-L2 | `cargo test -p oclive_validation` |
-| F-L3 | `cargo run -p oclive-cli -- init --monolith --non-interactive --preset headless-api -o $env:TEMP\oclive-codex-monolith-smoke`（失败可 SKIP） |
+| F-L3 | `cargo run -p oclive-cli -- --experimental init --monolith --non-interactive --preset headless-api -o $env:TEMP\oclive-codex-monolith-smoke`（失败可 SKIP） |
 
 ---
 

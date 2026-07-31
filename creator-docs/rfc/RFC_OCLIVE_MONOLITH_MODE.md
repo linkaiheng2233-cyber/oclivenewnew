@@ -3,7 +3,7 @@
 | 元数据 | 值 |
 |--------|-----|
 | 状态 | **已落地**：`oclive-cli` 提供 **`init` / `build` / `bench`**、焊接计划校验、双入口 **`main.rs` + `main_monolith.rs`**；**七焊接键**静态入口以 **`vendor/oclive_monolith_builtin`**（模板见 `kernel/crates/oclive-cli/monolith_vendor/`）为权威来源，可替换为真实 `oclive_*_builtin`。 |
-| 入口 | **`oclive init`** 创建脚手架；**`cargo run -p oclive-cli -- build|bench`** 维护与对比 Monolith 产物 |
+| 入口 | **`oclive init`** 创建脚手架；**`cargo run -p oclive-cli -- --experimental build|bench`** 维护与对比 Monolith 产物 |
 | 编译配置 | **`monolith.toml`**：由 `init` 生成，**`oclive build`** 读取并再生成 `process_message_monolith.rs`；**不参与运行时**，与角色包/宿主加载路径无关 |
 | 与蓝图边界 | **`pipeline.ocblueprint`**（或 `*.ocblueprint`）描述 **运行时** 编排；**焊接范围不以蓝图字段承载**（避免与 `PIPELINE_SCHEMA` 运行时语义混淆）。Monolith 仅通过 **`monolith.toml` + Cargo feature** 生效。 |
 | 受众 | **仅开发者**；普通用户只使用开发者构建的发行版，不接触终端 |
@@ -11,7 +11,7 @@
 
 **相关文档**：[`OCLIVE_ARCHITECTURE_OVERVIEW.md`](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)（模块编号）、[`PLUGIN_V1.md`](../plugin-and-architecture/PLUGIN_V1.md)（第 1–6 模块与 `PluginHost`）、[`PIPELINE_SCHEMA.md`](../kernel/PIPELINE_SCHEMA.md)（蓝图运行时 Schema）、[`OCLIVE_CLI_GUIDE.md`](../cli/OCLIVE_CLI_GUIDE.md)（脚手架用法）。
 
-**与实现一致（仓库主分支）**：`cargo run -p oclive-cli -- init … --monolith`（非交互，且项目类型为 **kernel_server**）或交互选择 **高耦合** 时，生成 **`monolith.toml`**、`vendor/oclive_monolith_builtin/`、`src/process_message_monolith.rs`，并在 `Cargo.toml` 中声明 **`[features] monolith`** 与第二 **`[[bin]]`**。修改 `monolith.toml` 后执行 **`cargo run -p oclive-cli -- build -o <项目根>`** 可再生成焊接源码并默认连续执行两次 `cargo build`（若 `enabled = true` 则第二次带 **`monolith`** feature）。**`cargo run -p oclive-cli -- bench`** 输出 JSON 延迟报告（Schema：`kernel/crates/oclive-cli/schemas/oclive_bench_report.schema.json`）。嵌入式 **library** 忽略 `--monolith` 且不生成 `monolith.toml`。
+**与实现一致（仓库主分支）**：`cargo run -p oclive-cli -- --experimental init … --monolith`（非交互，且项目类型为 **kernel_server**）或交互选择 **高耦合** 时，生成 **`monolith.toml`**、`vendor/oclive_monolith_builtin/`、`src/process_message_monolith.rs`，并在 `Cargo.toml` 中声明 **`[features] monolith`** 与第二 **`[[bin]]`**。修改 `monolith.toml` 后执行 **`cargo run -p oclive-cli -- --experimental build -o <项目根>`** 可再生成焊接源码并默认连续执行两次 `cargo build`（若 `enabled = true` 则第二次带 **`monolith`** feature）。**`cargo run -p oclive-cli -- --experimental bench`** 输出 JSON 延迟报告（Schema：`kernel/crates/oclive-cli/schemas/oclive_bench_report.schema.json`）。嵌入式 **library** 忽略 `--monolith` 且不生成 `monolith.toml`。
 
 ## 1. 问题陈述
 
@@ -118,7 +118,7 @@ exclude = ["event", "agent", "complex_emotion"]
 ### 4.4 脚手架与构建行为
 
 - **`oclive init`**：在开发者选择高耦合时 **写入** `monolith.toml` 与 vendor 片段模板。
-- **`oclive build`**（`cargo run -p oclive-cli -- build`）：读取 `monolith.toml`，校验、生成 `process_message_monolith.rs` 与 `vendor/oclive_monolith_builtin`；默认再执行 **`cargo build`** 两次（若 `enabled = true` 则第二次带 **`monolith`** feature）。`--no-cargo` 仅生成；`--release` 与 `--features` 传给 `cargo build`。
+- **`oclive-cli --experimental build`**（`cargo run -p oclive-cli -- --experimental build`）：读取 `monolith.toml`，校验、生成 `process_message_monolith.rs` 与 `vendor/oclive_monolith_builtin`；默认再执行 **`cargo build`** 两次（若 `enabled = true` 则第二次带 **`monolith`** feature）。`--no-cargo` 仅生成；`--release` 与 `--features` 传给 `cargo build`。
 - **`oclive bench`**：再生成 + 双构建后，对两个二进制各跑 `--runs` 次子进程（子进程内 `OCLIVE_KERNEL_BENCH_ITERS` 次热循环），输出 JSON（见 Schema）。
 
 ---

@@ -120,9 +120,9 @@ cargo run -p oclive-cli -- --experimental bench --release -o ./my-kernel --runs 
 **前置：生成含 `monolith.toml` 的工程**（矩阵 / 冷启动 / 长稳均需在可 `cargo run --release -- --api` 的内核项目上执行）：
 
 ```bash
-cargo run -p oclive-cli -- init --monolith --non-interactive --preset minimal --project-name bench-kernel -o ./my-kernel-monolith
+cargo run -p oclive-cli -- --experimental init --monolith --non-interactive --preset minimal --project-name bench-kernel -o ./my-kernel-monolith
 # 可选：链接主仓 runtime（便于 HTTP 冷启动/长稳）
-cargo run -p oclive-cli -- init --monolith --non-interactive --preset minimal --kernel-source . -o ./my-kernel-monolith
+cargo run -p oclive-cli -- --experimental init --monolith --non-interactive --preset minimal --kernel-source . -o ./my-kernel-monolith
 ```
 
 **矩阵采样**：
