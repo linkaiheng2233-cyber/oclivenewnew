@@ -328,6 +328,25 @@ Resource Coordinator 已落地 NVIDIA 多设备、系统 RAM 与 CPU snapshot，
 
 ---
 
+## 12.7 CI 影响元数据与脚手架边界
+
+领域感知 CI 是**开发控制面设施**，不是运行时模块、第七槽、蓝图步骤或 Resource Coordinator。它复用模块边界来选择验证，但不改变生产编排。详细契约与阶段计划只维护于 [`SOMEDAY_TOOLCHAIN_CI.md`](../creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md)。
+
+| 元数据 | 谁拥有 | 语义边界 |
+|--------|--------|----------|
+| 路径绑定 | 主仓中央影响图 | 只把 changed path 定位到直接模块；未知路径 fail-safe 全量 |
+| `runtime_requires` | 模块描述 | 运行所需逻辑能力/服务；不是物理资源预算 |
+| `resource_claims` | 模块描述，运行时 schema 另有 SSOT | 声明 GPU/RAM/CPU/渲染等需求；CI 不据此直接调度生产资源 |
+| `declared_affects` | 模块维护者 | 可增加潜在下游；不能覆盖中央强制影响边 |
+| `validation_profiles` | 模块描述引用，主仓验证目录定义 | 只引用受信坐标；模块不得携带命令、runner、secret 或工作流编排 |
+| `extensions` | 命名空间所有者 | required 未支持时失败并全量回退；optional 保留并告警 |
+
+最终受影响集合为直接模块经“中央强制边 ∪ 合法声明边”计算的确定性闭包；中央高风险规则可强制附加 profile 或全量。规划结果只描述“为何选中”，实际门禁强度、命令和执行环境由主仓验证目录与工作流决定。
+
+脚手架只负责生成/校验 `oclive.module.json`、展示中央目录可选项并调用同一个规划器预检；它不生成主仓编排权，不执行任意第三方脚本，也不维护第二套影响算法。描述契约稳定前，脚手架模板保持不变。
+
+---
+
 ## 13. 一轮 co-present · 模块调用关系
 
 ```mermaid
