@@ -97,6 +97,6 @@
     "vite": "^6.0.3",
     "vitest": "^3.2.4",
     "vue3-sfc-loader": "^0.9.5",
-    "webdriverio": "^9.27.1"
+    "webdriverio": "^9.30.0"
   }
 }
