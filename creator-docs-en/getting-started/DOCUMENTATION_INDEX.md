@@ -30,6 +30,7 @@
 | llama.cpp LoRA GGUF / `.ocadapter` | [LORA_ADAPTER_PACKAGE](../plugin-and-architecture/LORA_ADAPTER_PACKAGE.md) |
 | Host profiles | [DISTRO_CAPABILITY_PROFILE](../kernel/DISTRO_CAPABILITY_PROFILE.md) |
 | Blueprint extension envelope / ExecutionPlan / resource coordination | [RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION](../rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md) |
+| Scaffold Package / custom scaffolds | [RFC_SCAFFOLD_PACKAGE_V1](../rfc/RFC_SCAFFOLD_PACKAGE_V1.md) |
 | Testing | [Testing overview](../testing/OVERVIEW.md) |
 | Security | [SECURITY_AUDIT_SCOPE](../security/SECURITY_AUDIT_SCOPE.md) |
 | Current version | [PROJECT_CURRENT_STATUS](PROJECT_CURRENT_STATUS.md) |

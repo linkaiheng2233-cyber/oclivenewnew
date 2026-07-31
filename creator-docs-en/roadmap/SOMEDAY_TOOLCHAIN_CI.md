@@ -14,6 +14,6 @@ The three inputs have separate ownership:
 
 Stage 1 runs in shadow mode: it emits a stable `plan.json`, GitHub Job Summary, and artifact while every existing CI job still runs. Stage 2 compares proposed selections with full-CI results. Selective PR execution is allowed only after evidence establishes safe low-risk classes; merge gates remain pre-merge safeguards, while long-running hardware, soak, and performance work belongs to Nightly/Release.
 
-The scaffold is only an assistant. Once the descriptor contract is stable, it may generate and validate module metadata, list catalog-approved profiles, and invoke the same planner. It may not own workflow orchestration, inject shell commands, approve secrets or self-hosted GPU runners, create a second impact/resource schema, or treat generation as CI success.
+The scaffold is only an assistant. Once the descriptor contract is stable, it may generate and validate module metadata, list catalog-approved profiles, and invoke the same planner. It may not own workflow orchestration, inject shell commands, approve secrets or self-hosted GPU runners, create a second impact/resource schema, or treat generation as CI success. Scaffold discovery, source locking, command namespaces, and compatibility are owned by [`RFC_SCAFFOLD_PACKAGE_V1.md`](../rfc/RFC_SCAFFOLD_PACKAGE_V1.md); this document owns only the CI boundary.
 
 In short: **the scaffold produces and preflights knowledge that CI understands; CI consumes that same knowledge in a trusted environment and produces evidence.**

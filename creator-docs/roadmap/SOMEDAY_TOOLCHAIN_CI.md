@@ -87,6 +87,8 @@ Stage 1 的成功条件不是“CI 变快”，而是规划结果确定、可解
 
 ## 5. 脚手架的辅助边界
 
+Scaffold Package 的发现、来源锁定、命令命名空间与兼容规则由 [`RFC_SCAFFOLD_PACKAGE_V1.md`](../rfc/RFC_SCAFFOLD_PACKAGE_V1.md) 单独维护；本文只规定它与 CI 的交界，避免脚手架契约反向扩张 CI 控制面。
+
 脚手架以后可以：
 
 - 询问模块类型、能力、依赖和资源需求；
