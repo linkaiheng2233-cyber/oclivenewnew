@@ -1,6 +1,6 @@
 # OCLive 领域感知 CI · 分阶段实施基线
 
-> **状态（2026-08-01）**：Stage 1 开发中。本文是 CI 影响规划的设计 SSOT；模块之间的职责边界只在 [`MODULE_MAP_AND_HANDOFF.md` §12.7](../../handoff/MODULE_MAP_AND_HANDOFF.md#127-ci-影响元数据与脚手架边界) 登记，执行证据仍以工作流和 [`AI_VERIFICATION_PROTOCOL.md`](../../handoff/AI_VERIFICATION_PROTOCOL.md) 为准。
+> **状态（2026-08-01）**：Stage 1 已实现并进入 Shadow 证据积累期；规划结果仍不控制或跳过现有 job。本文是 CI 影响规划的设计 SSOT；模块之间的职责边界只在 [`MODULE_MAP_AND_HANDOFF.md` §12.7](../../handoff/MODULE_MAP_AND_HANDOFF.md#127-ci-影响元数据与脚手架边界) 登记，执行证据仍以工作流和 [`AI_VERIFICATION_PROTOCOL.md`](../../handoff/AI_VERIFICATION_PROTOCOL.md) 为准。
 
 OCLive 采用成熟 CI 的分层、测试金字塔和合并门禁，并增加一层领域感知规划器。目标不是让模型猜测该跑什么，也不是立刻删除全量检查，而是先用确定性元数据回答：一次改动直接落在哪些模块、经哪些契约传播、需要哪些受信验证。
 

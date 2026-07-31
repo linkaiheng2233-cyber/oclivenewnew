@@ -1,6 +1,6 @@
 # OCLive Domain-Aware CI · Staged Baseline
 
-> **Status (2026-08-01):** Stage 1 is in development. The detailed design SSOT is the [Chinese document](../../creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md); module boundaries remain in [`MODULE_MAP_AND_HANDOFF.md` §12.7](../../handoff/MODULE_MAP_AND_HANDOFF.md#127-ci-影响元数据与脚手架边界).
+> **Status (2026-08-01):** Stage 1 is implemented and collecting shadow evidence; its plan still cannot control or skip existing jobs. The detailed design SSOT is the [Chinese document](../../creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md); module boundaries remain in [`MODULE_MAP_AND_HANDOFF.md` §12.7](../../handoff/MODULE_MAP_AND_HANDOFF.md#127-ci-影响元数据与脚手架边界).
 
 [中文](../../creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md)
 
