@@ -65,6 +65,7 @@ description: >-
 - [plan-template.md](plan-template.md) + 通用模板；必填 G 约束 · 场景路径 · 尺寸 · 验收勾选。
 - 用户已明确要求“实现/修复/优化”即为当前范围授权；只有产品取舍、外部写入或范围扩张才再次等待确认。
 - todo `completed` ≠ Done。
+- Plan 必填 **CI 节奏**：开发切片窄测、预计冻结点、里程碑全量门禁与是否需要远端 CI；不确定工作量时先按 M，触及契约/编排/权限/迁移/Done 再升级。
 
 ### ③ Implementer 硬约束（写入 dispatch）
 
@@ -100,7 +101,17 @@ description: >-
 | Chat Pro / 目录插件 / 插槽 | `npm run check:module-compat` + Vue/iframe/Bridge/RPC 受影响行为测 |
 | 门禁脚本/CI | 脚本自测 + `dimension5 --ci`；影响集成链时再跑 `check:ci-local` |
 | Cargo.lock/供应链 | `cargo audit` + KNOWN_VULNERABILITIES 中英 + applicable deny |
+| `oclive-cli` crate 全测 | `cargo test --locked -p oclive-cli -- --test-threads=1`；其 E2E 会嵌套 Cargo，禁止默认并行争抢 package cache |
 | L：发版/main 恢复/债 Done | 项目要求的全量本地门禁 + **目标提交远程 CI** |
+
+**CI 推送节奏（硬规则）：**
+
+1. 开发切片只跑受影响窄测并本地提交，不用远端 CI 发现本地可发现的问题。
+2. 多个关联切片完成后，在计划标记的里程碑统一跑全量本地门禁；通过后冻结 HEAD、一次推送。
+3. 未冻结但需要远端备份/协作时，优先推送无 ready PR 分支；若已有 PR，只推逻辑完整切片，不为每个小提交等待全量矩阵。
+4. 远端失败先读失败 job 并定点修复；禁止无代码变化反复 rerun 掩盖确定性失败。
+5. 远端已绿后不追加“只回写 CI run ID/状态”的证据提交；先记 PR 评论/交付报告，随下一次实质提交入账。
+6. 发版、main、L 结案和技术债 Done 的最终冻结 SHA 仍必须远端 CI 成功，不得以节奏优化为由跳过。
 
 ### ⑥
 - handoff/README §文档分责；G11；MODULE_MAP / PLUGIN_V1 不互拷  
@@ -109,7 +120,7 @@ description: >-
 ### ⑦ Ask
 对照：六槽/编排泄漏/记忆三套/错误码 SSOT/第二套解析/冻结项/姊妹仓/台账+远程 CI。Ask 不可用时在当前会话停止写入并只读总审。
 
-**L 结案状态**：未获 push/外部写权限时可交付 **Locally verified**，但 TECHNICAL_DEBT 保持 Partial/OPEN；只有目标提交远程 CI success 才是 **Done-eligible**。
+**L 结案状态**：未获 push/外部写权限时可交付 **Locally verified**，但 TECHNICAL_DEBT 保持 Partial/OPEN；只有冻结目标提交的远程 CI success 才是 **Done-eligible**。绿灯后证据先记 PR 评论/交付报告，不为回写编号制造第二个未验证 HEAD。
 
 ## 验收命令（Plan 只勾 applicable）
 

@@ -145,9 +145,9 @@ jobs:
       - name: clippy oclive-cli
         run: cargo clippy --locked -p oclive-cli --all-targets -- -D warnings
       - name: test oclive-cli
-        run: cargo test --locked -p oclive-cli
-      - name: kernel ensure plan snapshot
-        run: cargo test --locked -p oclive-cli --test kernel_ensure_plan_snapshot
+        # CLI E2E tests spawn nested Cargo builds. Serial test execution avoids package-cache
+        # lock contention; the full crate run already includes kernel_ensure_plan_snapshot.
+        run: cargo test --locked -p oclive-cli -- --test-threads=1
 
   # ARM64 Linux cross-compile smoke (no tests on target; catches arch-specific breakages)
   rust-arm64-cross:

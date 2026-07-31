@@ -66,6 +66,17 @@
 | `npm run check:release` | 发版级 |
 | `cargo test --workspace --doc` | G8 applicable |
 | `cargo clippy --workspace --all-targets --all-features -- -D warnings` | 发版或用户要求 |
+| `cargo test --locked -p oclive-cli -- --test-threads=1` | CLI crate 全测；E2E 嵌套 Cargo，串行避免 package-cache 锁竞争 |
+
+## CI 推送节奏
+
+| 检查 | PASS | FAIL |
+|------|------|------|
+| 开发期门禁 | 按变更面窄测，本地提交形成可审查切片 | 每个小改都推送并依赖远端全矩阵找错 |
+| 里程碑冻结 | applicable 本地门禁通过后冻结 HEAD，一次推送 | 本地未收口就反复推 ready PR |
+| 失败处理 | 读取失败 job、根因窄测、修复后再推 | 无变化重复 rerun 确定性失败 |
+| 绿灯证据 | PR 评论/交付报告先记，随下次实质提交入账 | 只为回写 run ID 追加提交并再触发全矩阵 |
+| Done 绑定 | 远端 success 对应报告中的完整 SHA | 用旧 SHA 的绿灯证明新 HEAD |
 
 ## Done 证据
 
@@ -75,6 +86,7 @@
 - 声称 main 恢复或债收口：须远程 `ci.yml` 对目标提交 **conclusion=success**（记 run URL/databaseId）
 - 没有 push/外部写权限：结论写 **Locally verified，等待维护者远程 CI**；台账保持 Partial/OPEN，不得把权限缺失包装成 Done
 - 台账回写：**HEAD SHA** · 日期 · 命令/CI 证据
+- 远端已绿后不得为台账回写单独制造新 HEAD；证据先记 PR 评论/交付报告，随下一次实质提交入账
 - dimension5：以脚本结尾为准；`--ci` 跳过 sample lib tests 但仍计入
 - invoke 条数：以 [`INVOKE_HOTPATH_MATRIX.md`](../../../handoff/INVOKE_HOTPATH_MATRIX.md) 为准
 - 禁止 L0 观察冒充 P0/P1 或 OPEN
