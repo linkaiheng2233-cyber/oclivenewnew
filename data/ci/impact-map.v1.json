@@ -70,6 +70,11 @@
       "selectors": [{ "kind": "prefix", "value": "kernel/crates/oclive_ci_plan" }]
     },
     {
+      "module_id": "oclive.scaffold",
+      "descriptor": "data/ci/modules/scaffold.oclive.module.json",
+      "selectors": [{ "kind": "prefix", "value": "kernel/crates/oclive_scaffold" }]
+    },
+    {
       "module_id": "oclive.cli",
       "descriptor": "data/ci/modules/cli.oclive.module.json",
       "selectors": [{ "kind": "prefix", "value": "kernel/crates/oclive-cli" }]
@@ -118,7 +123,8 @@
     "oclive.chat-pro": ["oclive.plugins", "oclive.roles"],
     "oclive.plugins": ["oclive.chat-pro"],
     "oclive.roles": ["oclive.chat-pro", "oclive.desktop"],
-    "oclive.ci-planner": ["oclive.cli", "oclive.repo-tooling"]
+    "oclive.ci-planner": ["oclive.cli", "oclive.repo-tooling"],
+    "oclive.scaffold": ["oclive.cli"]
   },
   "risk_overrides": [
     {

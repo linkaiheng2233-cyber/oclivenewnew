@@ -100,4 +100,26 @@ fn repository_rules_cover_targeted_and_fail_safe_examples() {
         .reasons
         .iter()
         .any(|reason| reason.starts_with("risk_override:workspace-dependencies:")));
+
+    let scaffold = planner
+        .plan(request(
+            "pull_request",
+            "kernel/crates/oclive_scaffold/src/validation.rs",
+        ))
+        .expect("scaffold contract plan");
+    assert!(!scaffold.fallback.full);
+    assert_eq!(scaffold.direct_modules[0].id, "oclive.scaffold");
+    assert!(scaffold
+        .affected_modules
+        .iter()
+        .any(|module| module.id == "oclive.cli"));
+    for validator in ["rust-workspace", "dimension5-acceptance", "cli"] {
+        assert!(
+            scaffold
+                .selected_validators
+                .iter()
+                .any(|selection| selection.id == validator),
+            "missing scaffold validator {validator}"
+        );
+    }
 }
