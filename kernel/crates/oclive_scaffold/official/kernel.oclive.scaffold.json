@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "package": {
+    "id": "com.oclive.scaffold.kernel",
+    "version": "1.0.0",
+    "display_name": "OCLive kernel project",
+    "description": "Official kernel/library project recipes backed by oclive init.",
+    "maintainer": "OCLive maintainers"
+  },
+  "compatibility": { "oclive_cli": ">=0.1.0, <1.0.0", "scaffold_contract": "^1.0" },
+  "command_namespace": "com.oclive.scaffold.kernel",
+  "generators": [
+    { "id": "kernel-project", "kind": "project", "driver": { "kind": "builtin", "target": "init" } }
+  ],
+  "commands": [],
+  "permissions": ["project.write"],
+  "defaults": {
+    "profiles": ["robot-soul", "robot-gateway", "dialogue-only", "headless-api", "library-embed"]
+  },
+  "dependencies": [],
+  "extends": [],
+  "composition": {},
+  "extensions": {}
+}

@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "package": {
+    "id": "com.oclive.scaffold.project-archive",
+    "version": "1.0.0",
+    "display_name": "Legacy OCLive project archive",
+    "description": "Compatibility declaration for .oclive-template.tar.gz create/pack flows.",
+    "maintainer": "OCLive maintainers"
+  },
+  "compatibility": { "oclive_cli": ">=0.1.0, <1.0.0", "scaffold_contract": "^1.0" },
+  "command_namespace": "com.oclive.scaffold.project-archive",
+  "generators": [
+    { "id": "create", "kind": "legacy_archive", "driver": { "kind": "builtin", "target": "template create" } },
+    { "id": "pack", "kind": "legacy_archive", "driver": { "kind": "builtin", "target": "template pack" } }
+  ],
+  "commands": [],
+  "permissions": ["project.read", "project.write"],
+  "defaults": { "deprecated": true },
+  "dependencies": [],
+  "extends": [],
+  "composition": {},
+  "extensions": {}
+}

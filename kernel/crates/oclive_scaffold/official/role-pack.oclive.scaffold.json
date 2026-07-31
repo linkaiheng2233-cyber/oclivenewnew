@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "package": {
+    "id": "com.oclive.scaffold.role-pack",
+    "version": "1.0.0",
+    "display_name": "OCLive role pack",
+    "description": "Official minimal role-pack generator backed by oclive pack create.",
+    "maintainer": "OCLive maintainers"
+  },
+  "compatibility": { "oclive_cli": ">=0.1.0, <1.0.0", "scaffold_contract": "^1.0" },
+  "command_namespace": "com.oclive.scaffold.role-pack",
+  "generators": [
+    { "id": "role-pack", "kind": "role_pack", "driver": { "kind": "builtin", "target": "pack create" } }
+  ],
+  "commands": [],
+  "permissions": ["project.write"],
+  "defaults": {},
+  "dependencies": [],
+  "extends": [],
+  "composition": {},
+  "extensions": {}
+}

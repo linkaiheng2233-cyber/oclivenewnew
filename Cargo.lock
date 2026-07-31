@@ -3352,6 +3352,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "oclive_scaffold"
+version = "0.1.0"
+dependencies = [
+ "semver",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "oclive_schema"
 version = "0.1.0"
 dependencies = [

@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "package": {
+    "id": "com.oclive.scaffold.plugin",
+    "version": "1.0.0",
+    "display_name": "OCLive plugin",
+    "description": "Official directory, remote, and UI-slot plugin generators.",
+    "maintainer": "OCLive maintainers"
+  },
+  "compatibility": { "oclive_cli": ">=0.1.0, <1.0.0", "scaffold_contract": "^1.0" },
+  "command_namespace": "com.oclive.scaffold.plugin",
+  "generators": [
+    { "id": "directory", "kind": "plugin", "driver": { "kind": "builtin", "target": "plugin create --type directory" } },
+    { "id": "remote", "kind": "plugin", "driver": { "kind": "builtin", "target": "plugin create --type remote" } },
+    { "id": "ui-slot", "kind": "plugin", "driver": { "kind": "builtin", "target": "scripts/scaffold-ui-slot-plugin.mjs" } }
+  ],
+  "commands": [],
+  "permissions": ["project.write"],
+  "defaults": {},
+  "dependencies": [],
+  "extends": [],
+  "composition": {},
+  "extensions": {}
+}
