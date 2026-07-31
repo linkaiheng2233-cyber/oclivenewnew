@@ -17,6 +17,10 @@ pub enum CiCommands {
     Init(CiInitArgs),
     /// Check whether CI matches the latest template
     Check(CiCheckArgs),
+    /// Compute a deterministic domain-aware CI impact plan
+    Plan(crate::ci_impact_cmd::CiPlanArgs),
+    /// Explain an existing CI impact plan without recomputing it
+    Explain(crate::ci_impact_cmd::CiExplainArgs),
 }
 
 #[derive(Parser, Debug)]
@@ -43,6 +47,8 @@ pub fn run(cli: CiCli) -> Result<()> {
     match cli.command {
         CiCommands::Init(a) => run_init(a),
         CiCommands::Check(a) => run_check(a),
+        CiCommands::Plan(a) => crate::ci_impact_cmd::run_plan(a),
+        CiCommands::Explain(a) => crate::ci_impact_cmd::run_explain(a),
     }
 }
 

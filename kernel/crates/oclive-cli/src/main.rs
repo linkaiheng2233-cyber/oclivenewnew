@@ -19,6 +19,7 @@ mod blueprint_v3_init;
 mod build_cmd;
 mod cargo_hints;
 mod ci_cmd;
+mod ci_impact_cmd;
 mod cli_english_init;
 mod collab_cmd;
 mod completions_cmd;
