@@ -41,12 +41,18 @@ auto_start = true
 startup_timeout_ms = 90000
 retry_cooldown_ms = 30000
 model_alias = "oclive-performance"
+performance_profile = "gpu_balanced"
 
 [resource_coordination]
 gpu_safety_reserve_mib = 768
+system_memory_safety_reserve_mib = 1024
+cpu_safety_reserve_threads = 1
 pending_lease_ttl_ms = 120000
 active_lease_ttl_ms = 1800000
 allow_unverified_admission = true
+admission_queue_timeout_ms = 30000
+queue_aging_quantum_ms = 2000
+automatic_preemption = true
 
 [turn_thinking]
 default = "auto"

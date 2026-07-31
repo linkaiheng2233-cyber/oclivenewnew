@@ -55,6 +55,7 @@ futures-util = "0.3"
 tokio-stream = "0.1"
 sha2 = { workspace = true }
 indexmap = { workspace = true }
+sysinfo = "0.33"
 
 [dev-dependencies]
 tower = { workspace = true, features = ["util"] }

@@ -1,9 +1,10 @@
 //! Resource Coordinator diagnostics and official runtime-adapter hooks.
 
 use oclive_kernel_types::{
+    AppError, ResourceAdapterTransitionRequest, ResourceAdapterTransitionResponse,
     ResourceAdmissionDecision, ResourceAdmissionMode, ResourceAdmissionRequest,
     ResourceAdmissionResult, ResourceControlMode, ResourceCoordinationDiagnostics,
-    ResourcePriority,
+    ResourcePreemptionRecord, ResourcePriority,
 };
 use serde_json::{json, Value};
 use std::sync::Arc;
@@ -19,11 +20,55 @@ use crate::state::AppState;
 const OFFICIAL_VOICE_PLUGIN_ID: &str = "com.oclive.voice.asr";
 const BUNDLED_COSYVOICE_PROFILE_ID: &str = "bundled-cosyvoice2-zh";
 const COSYVOICE_WORKLOAD_ID: &str = "bundled-runtime";
+const EXTERNAL_PERFORMANCE_PREEMPTED_REASON: &str = "external_performance_preempted";
 
 pub enum DirectoryPluginResourceAdmission {
     NotApplicable,
     Admitted(DirectoryPluginResourceLease, u64),
     Denied(Box<ResourceAdmissionResult>),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DirectoryPluginResourceFinalization {
+    NotApplicable,
+    Released,
+    Retained,
+    Active,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DirectoryPluginResourceConfigFinalization {
+    NotApplicable,
+    Released {
+        external_performance_preempted: bool,
+    },
+    Retained,
+}
+
+impl DirectoryPluginResourceAdmission {
+    #[must_use]
+    pub fn external_performance_preemption_active(&self) -> bool {
+        matches!(
+            self,
+            Self::Admitted(lease, _) if lease.external_performance_preempted
+        )
+    }
+
+    /// Mark an admission as owned by an authoritative kernel-process
+    /// preemption. The directory plugin must unload after this RPC; recovery is
+    /// completed by the thin desktop host only after release confirmation.
+    pub fn mark_external_performance_preemption(&mut self, params: &mut Value) -> bool {
+        let Self::Admitted(lease, reservation_mib) = self else {
+            return false;
+        };
+        lease.external_performance_preempted = true;
+        lease.release_after_call = true;
+        lease
+            .coordinator
+            .record_adapter_reason(COSYVOICE_ADAPTER_ID, EXTERNAL_PERFORMANCE_PREEMPTED_REASON);
+        inject_resource_admission(params, &lease.lease_id, *reservation_mib, true);
+        true
+    }
 }
 
 /// Host-to-directory-plugin control transition prepared from one config change.
@@ -41,6 +86,7 @@ enum DirectoryPluginResourceConfigAction {
 
 pub struct DirectoryPluginResourceConfigTransition {
     action: DirectoryPluginResourceConfigAction,
+    external_performance_preempted: bool,
     _operation_guard: Option<tokio::sync::OwnedMutexGuard<()>>,
 }
 
@@ -67,7 +113,9 @@ pub struct DirectoryPluginResourceLease {
     reservation_mib: u64,
     release_on_drop: bool,
     release_after_call: bool,
+    external_performance_preempted: bool,
     preempted_performance: Option<Arc<PerformanceLlmClient>>,
+    automatic_preemptions: Vec<ResourcePreemptionRecord>,
     _operation_guard: tokio::sync::OwnedMutexGuard<()>,
 }
 
@@ -77,6 +125,27 @@ impl DirectoryPluginResourceLease {
     }
 
     fn recover_performance(&mut self, local_provider_selected: bool) {
+        let automatic_preemptions = std::mem::take(&mut self.automatic_preemptions);
+        if !automatic_preemptions.is_empty() {
+            let coordinator = Arc::clone(&self.coordinator);
+            tokio::spawn(async move {
+                if let Err(error) = coordinator
+                    .restore_preempted_adapters(COSYVOICE_ADAPTER_ID, &automatic_preemptions)
+                    .await
+                {
+                    coordinator.record_adapter_reason(
+                        COSYVOICE_ADAPTER_ID,
+                        "resource_preemption_restore_failed",
+                    );
+                    tracing::error!(
+                        target: "oclive_resource",
+                        %error,
+                        "automatic resource recovery after bundled voice failed"
+                    );
+                }
+            });
+            return;
+        }
         let Some(performance) = self.preempted_performance.take() else {
             return;
         };
@@ -133,6 +202,8 @@ fn bundled_voice_resource_request(
         profile_id: Some(COSYVOICE_PROFILE_ID.into()),
         gpu_device_index: configured_gpu_device_index(),
         reservation_mib,
+        ram_reservation_mib: 2_048,
+        cpu_thread_reservation: 2,
         priority: if method == "voice.speak" {
             ResourcePriority::ForegroundMedia
         } else {
@@ -157,6 +228,22 @@ fn denied_for_gpu_headroom(admission: &ResourceAdmissionResult) -> bool {
             .reason_codes
             .iter()
             .any(|reason| reason == "insufficient_gpu_headroom")
+}
+
+#[must_use]
+pub fn directory_plugin_resource_rpc_needs_kernel_preemption(
+    plugin_id: &str,
+    method: &str,
+    params: &Value,
+    admission: &DirectoryPluginResourceAdmission,
+) -> bool {
+    method == "voice.speak"
+        && bundled_voice_resource_request(plugin_id, method, params).is_some()
+        && matches!(
+            admission,
+            DirectoryPluginResourceAdmission::Denied(result)
+                if denied_for_gpu_headroom(result)
+        )
 }
 
 fn should_preempt_performance_for_voice(
@@ -261,14 +348,23 @@ pub async fn prepare_directory_plugin_resource_rpc(
     let Some(lease_id) = admission.lease.as_ref().map(|lease| lease.lease_id.clone()) else {
         return DirectoryPluginResourceAdmission::Denied(Box::new(admission));
     };
-    if preempted_performance.is_none() {
+    let external_performance_preempted = admission.lease.as_ref().is_some_and(|lease| {
+        lease
+            .reason_codes
+            .iter()
+            .any(|reason| reason == EXTERNAL_PERFORMANCE_PREEMPTED_REASON)
+    });
+    let automatic_preemptions = admission.preempted_adapters.clone();
+    if preempted_performance.is_none() && automatic_preemptions.is_empty() {
         preempted_performance = performance
             .filter(|performance| {
                 method == "voice.speak" && performance.resource_suspension_active()
             })
             .map(Arc::clone);
     }
-    let release_after_call = preempted_performance.is_some();
+    let release_after_call = preempted_performance.is_some()
+        || external_performance_preempted
+        || !automatic_preemptions.is_empty();
     inject_resource_admission(params, &lease_id, reservation_mib, release_after_call);
     DirectoryPluginResourceAdmission::Admitted(
         DirectoryPluginResourceLease {
@@ -277,7 +373,9 @@ pub async fn prepare_directory_plugin_resource_rpc(
             reservation_mib,
             release_on_drop: admission.decision != ResourceAdmissionDecision::Reused,
             release_after_call,
+            external_performance_preempted,
             preempted_performance,
+            automatic_preemptions,
             _operation_guard: operation_guard,
         },
         reservation_mib,
@@ -288,9 +386,9 @@ pub fn finalize_directory_plugin_resource_rpc(
     state: &AppState,
     admission: DirectoryPluginResourceAdmission,
     response: Option<&Value>,
-) {
+) -> DirectoryPluginResourceFinalization {
     let DirectoryPluginResourceAdmission::Admitted(mut lease, reservation_mib) = admission else {
-        return;
+        return DirectoryPluginResourceFinalization::NotApplicable;
     };
     if lease.release_after_call {
         if resource_release_confirmed(COSYVOICE_ADAPTER_ID, response) {
@@ -298,6 +396,7 @@ pub fn finalize_directory_plugin_resource_rpc(
             lease.release_on_drop = false;
             lease.release_after_call = false;
             lease.recover_performance(is_local_llm_provider(state));
+            return DirectoryPluginResourceFinalization::Released;
         } else {
             state
                 .resource_coordinator
@@ -314,15 +413,15 @@ pub fn finalize_directory_plugin_resource_rpc(
                 adapter_id = COSYVOICE_ADAPTER_ID,
                 "bundled voice lease retained; Performance LLM remains suspended"
             );
+            return DirectoryPluginResourceFinalization::Retained;
         }
-        return;
     }
     let succeeded = response.and_then(Value::as_object).is_some_and(|result| {
         result.get("ok").and_then(Value::as_bool) == Some(true)
             && result.get("skipped").and_then(Value::as_bool) != Some(true)
     });
     if !succeeded {
-        return;
+        return DirectoryPluginResourceFinalization::Released;
     }
     let actual_mib = response
         .and_then(|value| value.get("load_peak_reserved_mib"))
@@ -333,6 +432,25 @@ pub fn finalize_directory_plugin_resource_rpc(
         .resource_coordinator
         .activate(&lease.lease_id, Some(actual_mib));
     lease.commit();
+    DirectoryPluginResourceFinalization::Active
+}
+
+/// Apply an adapter lifecycle transition in the authoritative kernel process.
+///
+/// This is the cross-process control-plane counterpart to desktop-owned
+/// directory-plugin RPC. Every caller/target/operation combination must have an
+/// explicit coordinator grant; registering either adapter does not grant control.
+///
+/// # Errors
+///
+/// Returns [`AppError::InvalidParameter`] when identifiers, grants, lifecycle
+/// support, or profile selection fail. Stale revisions and controller failures
+/// preserve their stable unavailable errors.
+pub async fn transition_resource_adapter_impl(
+    state: &AppState,
+    request: &ResourceAdapterTransitionRequest,
+) -> Result<ResourceAdapterTransitionResponse, AppError> {
+    state.resource_coordinator.transition_adapter(request).await
 }
 
 #[must_use]
@@ -359,8 +477,14 @@ pub async fn prepare_directory_plugin_resource_config_transition(
     {
         action = DirectoryPluginResourceConfigAction::NotApplicable;
     }
+    let external_performance_preempted =
+        !matches!(action, DirectoryPluginResourceConfigAction::NotApplicable)
+            && state
+                .resource_coordinator
+                .adapter_has_reason(COSYVOICE_ADAPTER_ID, EXTERNAL_PERFORMANCE_PREEMPTED_REASON);
     DirectoryPluginResourceConfigTransition {
         action,
+        external_performance_preempted,
         _operation_guard: operation_guard,
     }
 }
@@ -396,9 +520,9 @@ pub fn finalize_directory_plugin_resource_config_transition(
     plugin_id: &str,
     transition: DirectoryPluginResourceConfigTransition,
     response: Option<&Value>,
-) {
+) -> DirectoryPluginResourceConfigFinalization {
     let DirectoryPluginResourceConfigAction::Unload { adapter_id, .. } = transition.action else {
-        return;
+        return DirectoryPluginResourceConfigFinalization::NotApplicable;
     };
     let confirmed = resource_release_confirmed(adapter_id, response);
     if confirmed {
@@ -419,6 +543,9 @@ pub fn finalize_directory_plugin_resource_config_transition(
             released,
             "directory plugin confirmed resource release"
         );
+        DirectoryPluginResourceConfigFinalization::Released {
+            external_performance_preempted: transition.external_performance_preempted,
+        }
     } else {
         state
             .resource_coordinator
@@ -430,6 +557,7 @@ pub fn finalize_directory_plugin_resource_config_transition(
             adapter_id,
             "directory plugin resource lease retained because runtime release was not confirmed"
         );
+        DirectoryPluginResourceConfigFinalization::Retained
     }
 }
 
@@ -549,6 +677,7 @@ mod tests {
                 adapter_id: COSYVOICE_ADAPTER_ID,
                 runtime_profile_id: BUNDLED_COSYVOICE_PROFILE_ID,
             },
+            external_performance_preempted: false,
             _operation_guard: None,
         }
         .rpc_payload()
@@ -620,6 +749,8 @@ mod tests {
             lease: None,
             snapshot: ResourceSnapshot::unavailable("test", "insufficient_gpu_headroom"),
             pressure: oclive_kernel_types::ResourcePressureLevel::Critical,
+            queue_wait_ms: 0,
+            preempted_adapters: Vec::new(),
             reason_codes: vec!["insufficient_gpu_headroom".into()],
         };
         assert!(should_preempt_performance_for_voice(
@@ -652,6 +783,37 @@ mod tests {
             false,
             false,
             true,
+        ));
+    }
+
+    #[test]
+    fn kernel_preemption_is_requested_only_for_denied_bundled_foreground_speech() {
+        let denied = DirectoryPluginResourceAdmission::Denied(Box::new(ResourceAdmissionResult {
+            decision: ResourceAdmissionDecision::Denied,
+            lease: None,
+            snapshot: ResourceSnapshot::unavailable("test", "insufficient_gpu_headroom"),
+            pressure: oclive_kernel_types::ResourcePressureLevel::Critical,
+            queue_wait_ms: 0,
+            preempted_adapters: Vec::new(),
+            reason_codes: vec!["insufficient_gpu_headroom".into()],
+        }));
+        assert!(directory_plugin_resource_rpc_needs_kernel_preemption(
+            OFFICIAL_VOICE_PLUGIN_ID,
+            "voice.speak",
+            &json!({"profile": BUNDLED_COSYVOICE_PROFILE_ID}),
+            &denied,
+        ));
+        assert!(!directory_plugin_resource_rpc_needs_kernel_preemption(
+            OFFICIAL_VOICE_PLUGIN_ID,
+            "voice.warm",
+            &json!({"profile": BUNDLED_COSYVOICE_PROFILE_ID}),
+            &denied,
+        ));
+        assert!(!directory_plugin_resource_rpc_needs_kernel_preemption(
+            "com.user.voice",
+            "voice.speak",
+            &json!({"profile": BUNDLED_COSYVOICE_PROFILE_ID}),
+            &denied,
         ));
     }
 
@@ -696,7 +858,9 @@ mod tests {
                 reservation_mib,
                 release_on_drop: true,
                 release_after_call: false,
+                external_performance_preempted: false,
                 preempted_performance: None,
+                automatic_preemptions: Vec::new(),
                 _operation_guard: operation_guard,
             };
         }
@@ -727,7 +891,9 @@ mod tests {
                 reservation_mib: request.reservation_mib,
                 release_on_drop: true,
                 release_after_call: true,
+                external_performance_preempted: true,
                 preempted_performance: None,
+                automatic_preemptions: Vec::new(),
                 _operation_guard: operation_guard,
             };
         }
@@ -741,5 +907,51 @@ mod tests {
             .reason_codes
             .iter()
             .any(|reason| reason == "resource_transition_abandoned"));
+    }
+
+    #[tokio::test]
+    async fn external_preemption_marker_survives_an_unconfirmed_voice_call() {
+        let coordinator = Arc::new(ResourceCoordinator::new(
+            ResourceCoordinatorPolicy::default(),
+            Arc::new(UnavailableSnapshot),
+        ));
+        let request = bundled_voice_resource_request(
+            OFFICIAL_VOICE_PLUGIN_ID,
+            "voice.speak",
+            &json!({"profile": BUNDLED_COSYVOICE_PROFILE_ID}),
+        )
+        .unwrap();
+        let first = coordinator.admit(request.clone()).await;
+        let lease_id = first.lease.expect("voice lease").lease_id;
+        let operation_guard = coordinator
+            .lock_adapter_operation(COSYVOICE_ADAPTER_ID)
+            .await;
+        let mut admission = DirectoryPluginResourceAdmission::Admitted(
+            DirectoryPluginResourceLease {
+                coordinator: Arc::clone(&coordinator),
+                lease_id,
+                reservation_mib: request.reservation_mib,
+                release_on_drop: true,
+                release_after_call: false,
+                external_performance_preempted: false,
+                preempted_performance: None,
+                automatic_preemptions: Vec::new(),
+                _operation_guard: operation_guard,
+            },
+            request.reservation_mib,
+        );
+        let mut params = json!({});
+        assert!(admission.mark_external_performance_preemption(&mut params));
+        assert!(admission.external_performance_preemption_active());
+        drop(admission);
+
+        let reused = coordinator.admit(request).await;
+        assert_eq!(reused.decision, ResourceAdmissionDecision::Reused);
+        assert!(reused
+            .lease
+            .expect("reused voice lease")
+            .reason_codes
+            .iter()
+            .any(|reason| reason == EXTERNAL_PERFORMANCE_PREEMPTED_REASON));
     }
 }

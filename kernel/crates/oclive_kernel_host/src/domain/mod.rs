@@ -24,6 +24,7 @@ pub mod relation_transition;
 pub mod reply_post_processor;
 pub mod resource_adapter_registry;
 pub mod resource_coordinator;
+pub mod resource_plan;
 pub mod role_manifest_validate;
 pub mod role_runtime_snapshot;
 pub mod role_snapshot;

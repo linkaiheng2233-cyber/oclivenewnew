@@ -6,8 +6,9 @@
 use serde::{Deserialize, Serialize};
 
 use super::plugin_backends::PluginBackends;
+use super::resource_coordination::ResourceCandidatePlan;
 
-pub const EXECUTION_PLAN_DIAGNOSTIC_SCHEMA_VERSION: u32 = 1;
+pub const EXECUTION_PLAN_DIAGNOSTIC_SCHEMA_VERSION: u32 = 2;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct GetExecutionPlanDiagnosticsRequest {
@@ -164,6 +165,8 @@ pub struct ExecutionPlan {
     pub extensions: Vec<ExecutionPlanExtension>,
     pub activatable: bool,
     pub resource_coordination: ResourceCoordinationDiagnosticState,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub resource_plan: Option<ResourceCandidatePlan>,
     #[serde(default)]
     pub diagnostics: Vec<ExecutionPlanDiagnostic>,
 }

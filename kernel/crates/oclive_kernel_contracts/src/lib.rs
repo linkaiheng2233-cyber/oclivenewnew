@@ -72,7 +72,10 @@ pub use repository::{
     ComplexEmotionHintStore, FavorabilityRepository, MemoryRepository, MutablePersonalityStore,
     RelationIdentityStore, VirtualTimeStore,
 };
-pub use resource_coordination::ResourceSnapshotSource;
+pub use resource_coordination::{
+    ResourceAdapterController, ResourceAdapterControllerOutcome, ResourceAdapterRegistrar,
+    ResourceSnapshotSource,
+};
 pub use slot_backend_factory::SlotBackendFactoryPort;
 pub use slot_resolver::SlotRegistryResolver;
 pub use theater_director::{

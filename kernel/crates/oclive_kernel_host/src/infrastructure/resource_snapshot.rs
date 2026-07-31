@@ -5,7 +5,8 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use async_trait::async_trait;
 use oclive_kernel_contracts::ResourceSnapshotSource;
-use oclive_kernel_types::{GpuDeviceSnapshot, ResourceSnapshot};
+use oclive_kernel_types::{CpuSnapshot, GpuDeviceSnapshot, ResourceSnapshot, SystemMemorySnapshot};
+use sysinfo::System;
 
 const NVIDIA_SMI_TIMEOUT: Duration = Duration::from_secs(2);
 
@@ -14,12 +15,49 @@ pub struct NvidiaSmiResourceSnapshotSource;
 #[async_trait]
 impl ResourceSnapshotSource for NvidiaSmiResourceSnapshotSource {
     async fn snapshot(&self) -> ResourceSnapshot {
-        tokio::task::spawn_blocking(snapshot_with_nvidia_smi)
+        tokio::task::spawn_blocking(snapshot_with_system_telemetry)
             .await
             .unwrap_or_else(|_| {
                 ResourceSnapshot::unavailable("nvidia_smi", "gpu_snapshot_task_failed")
             })
     }
+}
+
+fn snapshot_with_system_telemetry() -> ResourceSnapshot {
+    let mut snapshot = snapshot_with_nvidia_smi();
+    let mut system = System::new();
+    system.refresh_memory();
+    system.refresh_cpu_all();
+    let total_mib = system.total_memory() / (1024 * 1024);
+    let available_mib = system.available_memory() / (1024 * 1024);
+    if total_mib > 0 {
+        snapshot.system_memory = Some(SystemMemorySnapshot {
+            total_mib,
+            available_mib,
+            used_mib: total_mib.saturating_sub(available_mib),
+        });
+    } else {
+        snapshot
+            .reason_codes
+            .push("system_memory_snapshot_unavailable".into());
+    }
+    let logical_cores = u16::try_from(system.cpus().len()).unwrap_or(u16::MAX);
+    if logical_cores > 0 {
+        snapshot.cpu = Some(CpuSnapshot {
+            logical_cores,
+            physical_cores: system
+                .physical_core_count()
+                .and_then(|count| u16::try_from(count).ok()),
+        });
+    } else {
+        snapshot
+            .reason_codes
+            .push("cpu_snapshot_unavailable".into());
+    }
+    if snapshot.captured_at_ms == 0 {
+        snapshot.captured_at_ms = captured_at_ms();
+    }
+    snapshot
 }
 
 fn snapshot_with_nvidia_smi() -> ResourceSnapshot {
@@ -79,14 +117,20 @@ fn parse_nvidia_smi_output(raw: &str) -> ResourceSnapshot {
         return ResourceSnapshot::unavailable("nvidia_smi", "nvidia_smi_no_devices");
     }
     ResourceSnapshot {
-        captured_at_ms: SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map_or(0, |duration| duration.as_millis() as u64),
+        captured_at_ms: captured_at_ms(),
         source: "nvidia_smi".into(),
         available: true,
         gpu_devices,
+        system_memory: None,
+        cpu: None,
         reason_codes: Vec::new(),
     }
+}
+
+fn captured_at_ms() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_or(0, |duration| duration.as_millis() as u64)
 }
 
 fn parse_nvidia_smi_line(line: &str) -> Option<GpuDeviceSnapshot> {

@@ -6,17 +6,16 @@
 //!   `manifest.type == "ocliveplugin"` and the request from **`shell.entry`** HTML or **`shell.vueEntry`** host Vue entry (not `ui_slots` pages).
 
 use crate::api::chat_backend::ChatBackend;
-use crate::api::directory_plugin::directory_plugin_bootstrap_dto;
-use crate::api::error::{map_directory_rpc_url_error, ApiError, CommandError};
+use crate::api::directory_plugin::{
+    directory_plugin_bootstrap_dto, invoke_directory_plugin_rpc_with_resources,
+};
+use crate::api::error::{ApiError, CommandError};
 use crate::api::plugin_config::{get_plugin_settings_ui_impl, set_plugin_settings_config_impl};
 use crate::kernel_attach::{role_dir_for_id, KernelHttpClient};
 use oclive_kernel_host::infrastructure::directory_plugins::{
     normalize_plugin_rel, OclivePluginManifest,
 };
 use oclive_kernel_host::infrastructure::import_role_pack;
-use oclive_kernel_host::infrastructure::remote_plugin::{
-    invoke_directory_plugin_rpc_blocking, RemoteRpcChannel,
-};
 use oclive_kernel_host::infrastructure::role_pack::validate_bridge_import_role_source;
 use oclive_kernel_host::service::role::list_roles_impl;
 use oclive_kernel_host::service::{
@@ -219,6 +218,7 @@ fn validate_rpc_method_for_manifest(
 
 async fn dispatch_plugin_rpc_invoke(
     shared: SharedAppState,
+    kernel: Option<crate::kernel_lifecycle::SharedKernelConnection>,
     plugin_id: &str,
     params: Value,
 ) -> Result<Value, CommandError> {
@@ -231,63 +231,16 @@ async fn dispatch_plugin_rpc_invoke(
     if method.is_empty() {
         return Err(bridge_invalid("plugin_rpc_invoke: method required"));
     }
-    let mut rpc_params = params.get("params").cloned().unwrap_or(Value::Null);
+    let rpc_params = params.get("params").cloned().unwrap_or(Value::Null);
     validate_plugin_rpc_method(shared.as_ref(), plugin_id, &method)?;
-    let resource_admission =
-        match oclive_kernel_host::service::prepare_directory_plugin_resource_rpc(
-            shared.as_ref(),
-            plugin_id,
-            &method,
-            &mut rpc_params,
-        )
-        .await
-        {
-            oclive_kernel_host::service::DirectoryPluginResourceAdmission::Denied(admission) => {
-                return Ok(json!({
-                    "ok": false,
-                    "reason": "gpu_admission_denied",
-                    "retryable": true,
-                    "message": "Resource Coordinator denied the bundled voice runtime because GPU headroom is below the active safety policy",
-                    "resource_admission": admission,
-                }));
-            }
-            admission => admission,
-        };
-    let pid = plugin_id.trim().to_string();
-    let rpc_state = Arc::clone(&shared);
-    let rpc_result = match tokio::task::spawn_blocking(move || {
-        let url = rpc_state
-            .directory_plugins
-            .ensure_rpc_url(&pid)
-            .map_err(|e| map_directory_rpc_url_error(&pid, e))?;
-        let timeout_ms = rpc_state
-            .directory_plugins
-            .rpc_timeout_override_ms(&pid, &method);
-        invoke_directory_plugin_rpc_blocking(
-            &url,
-            &method,
-            rpc_params,
-            RemoteRpcChannel::Plugin,
-            timeout_ms,
-        )
-        .map_err(Into::into)
-    })
+    invoke_directory_plugin_rpc_with_resources(
+        shared,
+        kernel,
+        plugin_id.trim().to_string(),
+        method,
+        rpc_params,
+    )
     .await
-    {
-        Ok(result) => result,
-        Err(error) => Err(CommandError::from(
-            ApiError::Io {
-                message: format!("plugin_rpc_invoke join: {error}"),
-            }
-            .to_string(),
-        )),
-    };
-    oclive_kernel_host::service::finalize_directory_plugin_resource_rpc(
-        shared.as_ref(),
-        resource_admission,
-        rpc_result.as_ref().ok(),
-    );
-    rpc_result
 }
 
 async fn dispatch_local_bridge_command(
@@ -365,7 +318,11 @@ async fn dispatch_local_bridge_command(
             "set_plugin_settings_config",
         )?;
         let config = params.get("config").cloned().unwrap_or(Value::Null);
-        set_plugin_settings_config_impl(state, bridge_plugin_id, &config).await?;
+        let kernel = match backend {
+            ChatBackend::Http(connection) => Some(Arc::clone(connection)),
+            ChatBackend::Local(_) => None,
+        };
+        set_plugin_settings_config_impl(state, kernel, bridge_plugin_id, &config).await?;
         return Ok(json!({ "ok": true }));
     }
 
@@ -449,7 +406,12 @@ async fn dispatch_bridge_command_routed(
     bridge_plugin_id: &str,
 ) -> Result<Value, CommandError> {
     if command == "plugin_rpc_invoke" {
-        return dispatch_plugin_rpc_invoke(Arc::clone(state), bridge_plugin_id, params).await;
+        let kernel = match backend {
+            ChatBackend::Http(connection) => Some(Arc::clone(connection)),
+            ChatBackend::Local(_) => None,
+        };
+        return dispatch_plugin_rpc_invoke(Arc::clone(state), kernel, bridge_plugin_id, params)
+            .await;
     }
     if let ChatBackend::Http(conn) = backend {
         if bridge_command_needs_kernel_writer(command) {

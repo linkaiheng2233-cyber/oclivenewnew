@@ -15,6 +15,18 @@ const rpcServer = path.join(
   'distros/chat-pro/plugins/com.oclive.voice.asr/rpc_server.mjs',
 )
 const voiceLoop = path.join(repoRoot, 'examples/voice-loop-minimal')
+const directoryPluginApi = path.join(
+  repoRoot,
+  'distros/desktop-tauri/src/api/directory_plugin.rs',
+)
+const pluginConfigApi = path.join(
+  repoRoot,
+  'distros/desktop-tauri/src/api/plugin_config.rs',
+)
+const kernelHttpClient = path.join(
+  repoRoot,
+  'distros/desktop-tauri/src/kernel_attach.rs',
+)
 const MIN_ENGINES = 9
 
 function fail(msg) {
@@ -51,6 +63,53 @@ for (const required of [
   if (!rpcServerSource.includes(required)) {
     fail(
       `coordinated voice.speak must confirm post-synthesis resource release: missing ${required}`,
+    )
+  }
+}
+
+const directoryPluginApiSource = fs.readFileSync(directoryPluginApi, 'utf8')
+for (const required of [
+  'invoke_directory_plugin_rpc_with_resources(',
+  'prepare_directory_plugin_resource_rpc(',
+  'finalize_directory_plugin_resource_rpc(',
+  'transition_resource_adapter_via_http(',
+  'mark_external_performance_preemption(',
+  'request_kernel_performance_resume(',
+]) {
+  if (!directoryPluginApiSource.includes(required)) {
+    fail(
+      `native directory_plugin_invoke must share bundled voice resource coordination: missing ${required}`,
+    )
+  }
+}
+const coordinatedNativeInvokeCount = (
+  directoryPluginApiSource.match(
+    /invoke_directory_plugin_rpc_with_resources\(/g,
+  ) || []
+).length
+if (coordinatedNativeInvokeCount < 2) {
+  fail(
+    'native directory_plugin_invoke must call the shared resource-coordinated RPC helper',
+  )
+}
+if (
+  !fs
+    .readFileSync(kernelHttpClient, 'utf8')
+    .includes('/resources/adapter/transition')
+) {
+  fail(
+    'desktop resource coordination must transition the authoritative kernel adapter over HTTP',
+  )
+}
+const pluginConfigApiSource = fs.readFileSync(pluginConfigApi, 'utf8')
+for (const required of [
+  'DirectoryPluginResourceConfigFinalization::Released',
+  'external_performance_preempted: true',
+  'request_kernel_performance_resume(kernel).await',
+]) {
+  if (!pluginConfigApiSource.includes(required)) {
+    fail(
+      `disabling bundled voice must recover externally preempted Performance LLM: missing ${required}`,
     )
   }
 }

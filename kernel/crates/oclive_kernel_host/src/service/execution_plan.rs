@@ -99,6 +99,7 @@ pub async fn get_execution_plan_diagnostics_impl(
     let mut diagnostics =
         build_execution_plan_diagnostics_for_role(state, &role, request.session_id.as_deref());
     diagnostics.plan.resource_coordination = resource_diagnostics.state;
+    diagnostics.plan.resource_plan = Some(resource_diagnostics.candidate_plan);
     Ok(diagnostics)
 }
 
@@ -194,6 +195,12 @@ mod tests {
         assert_eq!(
             report.plan.extensions[0].reason_codes,
             vec!["capability_consumer_unavailable"]
+        );
+        let resource_plan = report.plan.resource_plan.as_ref().expect("resource plan");
+        assert_ne!(resource_plan.compiled_from_revision, 0);
+        assert_eq!(
+            resource_plan.state,
+            oclive_kernel_types::ResourceCandidatePlanState::Ready
         );
 
         let error = load_role_impl(&state, "blocked", false)

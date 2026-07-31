@@ -13,6 +13,7 @@ mod chat;
 mod health;
 mod llm;
 mod mcp;
+mod resource;
 mod role;
 mod theater;
 
@@ -192,6 +193,10 @@ pub fn api_router_with_auth(app_state: Arc<AppState>, api_token: Option<String>)
         .route("/mcp/tools", get(mcp::list_mcp_tools_route))
         .route("/mcp/call", post(mcp::call_mcp_tool_route))
         .route("/bridge/dispatch", post(bridge::bridge_dispatch_route))
+        .route(
+            "/resources/adapter/transition",
+            post(resource::resource_adapter_transition_route),
+        )
         .route("/llm/reload", post(llm::llm_reload_route))
         .route(
             "/llm/user_settings",

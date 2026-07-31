@@ -103,8 +103,9 @@ export type ResourcePriority
 export type ResourceControlMode = 'managed' | 'observe_only'
 export type ResourceLeaseState = 'reserved' | 'active'
 export type ResourceAdapterKind = 'runtime' | 'activity_observer'
-export type ResourceAdapterDomain = 'llm' | 'voice'
-export type ResourceExecutionTarget = 'gpu' | 'cpu' | 'external'
+export type ResourceAdapterDomain = 'llm' | 'voice' | 'render' | 'compute'
+export type ResourceExecutionTarget = 'gpu' | 'cpu' | 'hybrid' | 'external'
+export type ResourceAdapterRegistrationSource = 'builtin' | 'host_extension' | 'directory_plugin'
 export type ResourceAdapterOperation
   = | 'observe'
     | 'start'
@@ -114,6 +115,8 @@ export type ResourceAdapterOperation
     | 'release'
 export type ResourceResidencyMode = 'resident' | 'on_demand' | 'suspended' | 'unloaded' | 'external'
 export type ResourceAdapterRuntimeState = 'unknown' | 'inactive' | 'reserved' | 'active'
+export type ResourceCandidatePlanState = 'not_evaluated' | 'ready' | 'degraded' | 'blocked'
+export type ResourceProfileSelectionSource = 'current' | 'strategy' | 'fallback'
 
 export interface CapabilityConsumerDiagnostic {
   capability: string
@@ -187,6 +190,7 @@ export interface ExecutionPlanDiagnostics {
     extensions: ExecutionPlanExtension[]
     activatable: boolean
     resource_coordination: ResourceCoordinationState
+    resource_plan?: ResourceCandidatePlan | null
     diagnostics: ExecutionPlanDiagnostic[]
   }
   capability_registry: CapabilityRegistryDiagnostic
@@ -205,14 +209,92 @@ export interface ResourceSnapshot {
   source: string
   available: boolean
   gpu_devices: GpuDeviceSnapshot[]
+  system_memory?: {
+    total_mib: number
+    available_mib: number
+    used_mib: number
+  } | null
+  cpu?: {
+    logical_cores: number
+    physical_cores?: number | null
+  } | null
   reason_codes: string[]
 }
 
 export interface ResourceCoordinatorPolicy {
   gpu_safety_reserve_mib: number
+  system_memory_safety_reserve_mib: number
+  cpu_safety_reserve_threads: number
   pending_lease_ttl_ms: number
   active_lease_ttl_ms: number
   allow_unverified_admission: boolean
+  admission_queue_timeout_ms: number
+  queue_aging_quantum_ms: number
+  automatic_preemption: boolean
+  scheduling: ResourceSchedulingIntent
+}
+
+export type ResourceSchedulingStrategy = 'compatibility_first'
+  | 'primary_first'
+  | 'latency_first'
+  | 'custom'
+
+export type ResourceResidencyPreference = 'resident' | 'on_demand'
+
+export type ResourceSchedulingCommand = { kind: 'require', adapter_id: string }
+  | {
+    kind: 'residency'
+    adapter_id: string
+    mode: ResourceResidencyPreference
+  }
+  | { kind: 'coexist', adapter_ids: string[] }
+  | { kind: 'exclusive', adapter_ids: string[] }
+  | {
+    kind: 'yield_then_run'
+    yielding_adapter_id: string
+    target_adapter_id: string
+  }
+  | { kind: 'fallback', adapter_id: string, profile_ids: string[] }
+
+export interface ResourceSchedulingIntent {
+  strategy: ResourceSchedulingStrategy
+  primary_adapter_id?: string | null
+  commands: ResourceSchedulingCommand[]
+}
+
+export interface ResourceSchedulingIntentDiagnostics {
+  state: 'ready' | 'degraded' | 'blocked'
+  intent: ResourceSchedulingIntent
+  reason_codes: string[]
+}
+
+export interface ResourceProfileSelection {
+  adapter_id: string
+  profile_id: string
+  source: ResourceProfileSelectionSource
+  estimated_reservation_mib?: number | null
+  estimated_ram_mib?: number | null
+  estimated_cpu_threads?: number | null
+}
+
+export interface ResourceCandidateTransition {
+  adapter_id: string
+  operation: ResourceAdapterOperation
+  profile_id?: string | null
+  rollback_operation?: ResourceAdapterOperation | null
+  rollback_profile_id?: string | null
+  requested_by_adapter_id?: string | null
+  reason_codes: string[]
+}
+
+export interface ResourceCandidatePlan {
+  plan_id: string
+  compiled_from_revision: number
+  state: ResourceCandidatePlanState
+  executable: boolean
+  selections: ResourceProfileSelection[]
+  transitions: ResourceCandidateTransition[]
+  reason_codes: string[]
 }
 
 export interface ResourceOperatingProfile {
@@ -221,6 +303,8 @@ export interface ResourceOperatingProfile {
   quality_rank: number
   execution_target: ResourceExecutionTarget
   estimated_reservation_mib?: number | null
+  estimated_ram_mib?: number | null
+  estimated_cpu_threads?: number | null
   requires_restart: boolean
   coordinator_selectable: boolean
 }
@@ -234,10 +318,13 @@ export interface ResourceAdapterDescriptor {
   profiles: ResourceOperatingProfile[]
   lifecycle_operations: ResourceAdapterOperation[]
   residency_modes: ResourceResidencyMode[]
+  automatic_preemption?: ResourceAdapterOperation | null
 }
 
 export interface ResourceAdapterDiagnostic {
   descriptor: ResourceAdapterDescriptor
+  registration_source: ResourceAdapterRegistrationSource
+  registration_source_id: string
   runtime_state: ResourceAdapterRuntimeState
   current_profile_id?: string | null
   lease_ids: string[]
@@ -252,6 +339,10 @@ export interface ResourceLeaseDiagnostic {
   gpu_device_index?: number | null
   reservation_mib: number
   actual_mib: number
+  ram_reservation_mib: number
+  actual_ram_mib: number
+  cpu_thread_reservation: number
+  actual_cpu_threads: number
   priority: ResourcePriority
   control_mode: ResourceControlMode
   state: ResourceLeaseState
@@ -261,14 +352,31 @@ export interface ResourceLeaseDiagnostic {
   reason_codes: string[]
 }
 
+export interface ResourceAdmissionQueueItem {
+  ticket_id: number
+  adapter_id: string
+  workload_id: string
+  priority: ResourcePriority
+  enqueued_at_ms: number
+}
+
+export interface ResourceAdmissionQueueDiagnostics {
+  active_ticket_id?: number | null
+  queued: ResourceAdmissionQueueItem[]
+}
+
 export interface ResourceCoordinationDiagnostics {
   schema_version: number
+  state_revision: number
   state: ResourceCoordinationState
   pressure: ResourcePressureLevel
   policy: ResourceCoordinatorPolicy
   snapshot: ResourceSnapshot
   adapters: ResourceAdapterDiagnostic[]
   leases: ResourceLeaseDiagnostic[]
+  scheduling: ResourceSchedulingIntentDiagnostics
+  candidate_plan: ResourceCandidatePlan
+  admission_queue: ResourceAdmissionQueueDiagnostics
   reason_codes: string[]
 }
 

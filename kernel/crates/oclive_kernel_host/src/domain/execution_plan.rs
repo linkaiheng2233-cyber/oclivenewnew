@@ -284,6 +284,7 @@ pub fn compile_execution_plan(input: &CompileExecutionPlanInput<'_>) -> Executio
         extensions,
         activatable,
         resource_coordination: ResourceCoordinationDiagnosticState::NotEvaluated,
+        resource_plan: None,
         diagnostics,
     }
 }

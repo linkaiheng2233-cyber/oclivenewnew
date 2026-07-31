@@ -23,6 +23,7 @@ use oclive_kernel_types::models::dto::{
 use oclive_kernel_types::models::{
     ActivateLocalLoraAdapterRequest, DeleteLocalLoraAdapterRequest, LocalLoraAdapterDto,
 };
+use oclive_kernel_types::{ResourceAdapterTransitionRequest, ResourceAdapterTransitionResponse};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -737,6 +738,43 @@ impl KernelHttpClient {
         }
         serde_json::from_str(&text)
             .map_err(|e| AppError::OllamaError(format!("chat/sessions JSON: {e}")))
+    }
+
+    /// Ask the authoritative kernel process to apply one registered resource
+    /// adapter lifecycle transition.
+    pub async fn transition_resource_adapter_via_http(
+        conn: &KernelConnection,
+        request: &ResourceAdapterTransitionRequest,
+    ) -> Result<ResourceAdapterTransitionResponse, AppError> {
+        if !Self::ensure_healthy(conn).await {
+            return Err(Self::offline_err());
+        }
+        let response = conn
+            .http_client()
+            .post(format!(
+                "{}/resources/adapter/transition",
+                conn.base_url.trim_end_matches('/')
+            ))
+            .json(request)
+            .send()
+            .await
+            .map_err(|error| {
+                Self::map_send_err(
+                    &conn.base_url,
+                    "resources/adapter/transition request",
+                    error,
+                )
+            })?;
+        let status = response.status();
+        let text = response.text().await.map_err(|error| {
+            AppError::OllamaError(format!("resources/adapter/transition body: {error}"))
+        })?;
+        if !status.is_success() {
+            return Err(app_error_from_http_response(status.as_u16(), &text));
+        }
+        serde_json::from_str(&text).map_err(|error| {
+            AppError::OllamaError(format!("resources/adapter/transition JSON: {error}"))
+        })
     }
 
     /// Tell the kernel process to re-read LLM settings from canonical DB.

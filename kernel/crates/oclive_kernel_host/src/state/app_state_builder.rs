@@ -192,6 +192,9 @@ impl AppStateBuilder {
                     ) {
                         Ok(performance) => {
                             let performance = Arc::new(performance);
+                            resource_coordinator
+                                .register_adapter_controller(performance.resource_controller())
+                                .map_err(AppError::InvalidParameter)?;
                             let performance_client: Arc<dyn LlmClient> = performance.clone();
                             let llm: Arc<dyn LlmClient> = Arc::new(CoordinatedExternalLlm::new(
                                 performance_client,
@@ -216,7 +219,11 @@ impl AppStateBuilder {
         };
         let mut resource_adapters =
             vec![crate::infrastructure::resource_adapters::cosyvoice_descriptor()];
-        if ollama.is_some() {
+        // PerformanceLlmClient already registers the Ollama fallback beside
+        // its managed llama-server descriptor. Register it here only for the
+        // standalone Ollama path so diagnostics do not gain a redundant
+        // revision during startup.
+        if ollama.is_some() && performance_llm.is_none() {
             resource_adapters.push(crate::infrastructure::resource_adapters::ollama_descriptor());
         }
         if performance_llm.is_some() {
@@ -226,6 +233,18 @@ impl AppStateBuilder {
         for descriptor in resource_adapters {
             resource_coordinator
                 .register_adapter(descriptor)
+                .map_err(AppError::InvalidParameter)?;
+        }
+        if performance_llm.is_some() {
+            resource_coordinator
+                .register_adapter_transition_grant(
+                    crate::infrastructure::resource_adapters::COSYVOICE_ADAPTER_ID,
+                    crate::infrastructure::resource_adapters::LLAMA_RUNTIME_ADAPTER_ID,
+                    [
+                        oclive_kernel_types::ResourceAdapterOperation::Suspend,
+                        oclive_kernel_types::ResourceAdapterOperation::Resume,
+                    ],
+                )
                 .map_err(AppError::InvalidParameter)?;
         }
 

@@ -13,15 +13,20 @@ use crate::infrastructure::performance_request_gate::PerformanceRequestGate;
 #[cfg(test)]
 use crate::infrastructure::performance_request_gate::REQUEST_BLOCKED_RESOURCE_TRANSITION;
 use crate::infrastructure::resource_adapters::{
-    llama_server_descriptor, ollama_descriptor, COSYVOICE_ADAPTER_ID, LLAMA_RUNTIME_ADAPTER_ID,
-    LLAMA_RUNTIME_PROFILE_ID, OLLAMA_ADAPTER_ID,
+    configured_llama_tier_with_default, llama_server_descriptor, llama_tier, llama_tiers_from,
+    ollama_descriptor, LlamaRuntimeTier, COSYVOICE_ADAPTER_ID, LLAMA_RUNTIME_ADAPTER_ID,
+    LLAMA_RUNTIME_PROFILE_FULL, OLLAMA_ADAPTER_ID,
 };
 use crate::infrastructure::resource_snapshot::NvidiaSmiResourceSnapshotSource;
 use async_trait::async_trait;
-use oclive_kernel_contracts::{LlmGenerateOpts, LlmGenerateOutcome, LlmTokenSink};
+use oclive_kernel_contracts::{
+    LlmGenerateOpts, LlmGenerateOutcome, LlmTokenSink, ResourceAdapterController,
+    ResourceAdapterControllerOutcome,
+};
+use oclive_kernel_runtime::{find_listener_pids, process_command_line, terminate_process_tree};
 use oclive_kernel_types::{
-    ResourceAdmissionDecision, ResourceAdmissionMode, ResourceAdmissionRequest,
-    ResourceControlMode, ResourceCoordinatorPolicy, ResourcePriority,
+    ResourceAdapterOperation, ResourceAdmissionDecision, ResourceAdmissionMode,
+    ResourceAdmissionRequest, ResourceControlMode, ResourceCoordinatorPolicy, ResourcePriority,
 };
 use parking_lot::{Mutex, RwLock};
 use serde::{Deserialize, Serialize};
@@ -67,6 +72,7 @@ struct RuntimePackManifest {
 struct SpawnedRuntime {
     child: Child,
     selection: RuntimeSelection,
+    tier: LlamaRuntimeTier,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -80,6 +86,52 @@ fn append_runtime_selection_args(command: &mut Command, selection: &RuntimeSelec
     if let Some(adapter_path) = selection.adapter_path.as_ref() {
         command.arg("--lora").arg(adapter_path);
     }
+}
+
+fn normalize_process_command(value: &str) -> String {
+    value
+        .replace('"', "")
+        .replace('/', "\\")
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+        .to_lowercase()
+}
+
+fn normalized_command_has_pair(command_line: &str, flag: &str, value: &str) -> bool {
+    let padded_command = format!(" {command_line} ");
+    let pair = format!(
+        " {} {} ",
+        normalize_process_command(flag),
+        normalize_process_command(value)
+    );
+    padded_command.contains(&pair)
+}
+
+fn command_line_matches_managed_runtime(
+    command_line: &str,
+    binary: &Path,
+    selection: &RuntimeSelection,
+    model_alias: &str,
+    port: u16,
+    tier: LlamaRuntimeTier,
+) -> bool {
+    let command_line = normalize_process_command(command_line);
+    let required = [
+        normalize_process_command(&binary.display().to_string()),
+        normalize_process_command(&selection.model_path.display().to_string()),
+    ];
+    required.iter().all(|part| command_line.contains(part))
+        && normalized_command_has_pair(&command_line, "--alias", model_alias)
+        && normalized_command_has_pair(&command_line, "--port", &port.to_string())
+        && normalized_command_has_pair(
+            &command_line,
+            "--n-gpu-layers",
+            &tier.gpu_layers.to_string(),
+        )
+        && selection.adapter_path.as_ref().is_none_or(|adapter| {
+            command_line.contains(&normalize_process_command(&adapter.display().to_string()))
+        })
 }
 
 impl Drop for SpawnedRuntime {
@@ -104,11 +156,100 @@ pub struct PerformanceLlmClient {
     start_lock: tokio::sync::Mutex<()>,
     process: Mutex<Option<SpawnedRuntime>>,
     selected_runtime: Mutex<Option<RuntimeSelection>>,
+    active_tier: RwLock<LlamaRuntimeTier>,
     retry_after: Mutex<Option<Instant>>,
     status: RwLock<PerformanceLlmStatus>,
     fallback_warned: AtomicBool,
     primary_enabled: AtomicBool,
     request_gate: Arc<PerformanceRequestGate>,
+}
+
+struct PerformanceLlmResourceController {
+    client: Arc<PerformanceLlmClient>,
+}
+
+#[async_trait]
+impl ResourceAdapterController for PerformanceLlmResourceController {
+    fn adapter_id(&self) -> &str {
+        LLAMA_RUNTIME_ADAPTER_ID
+    }
+
+    async fn transition(
+        &self,
+        operation: ResourceAdapterOperation,
+        profile_id: Option<&str>,
+        reason: Option<&str>,
+    ) -> Result<ResourceAdapterControllerOutcome> {
+        let requested_tier = profile_id
+            .map(|profile_id| {
+                llama_tier(profile_id).ok_or_else(|| {
+                    AppError::InvalidParameter("resource_profile_unregistered".into())
+                })
+            })
+            .transpose()?;
+        match operation {
+            ResourceAdapterOperation::Suspend => {
+                let already_in_state = self.client.resource_suspension_active();
+                if !already_in_state {
+                    self.client
+                        .suspend_managed_runtime_for_resource_pressure(
+                            reason.unwrap_or("resource coordinator requested suspension"),
+                        )
+                        .await?;
+                }
+                Ok(ResourceAdapterControllerOutcome {
+                    already_in_state,
+                    recovery_scheduled: false,
+                })
+            }
+            ResourceAdapterOperation::Resume => {
+                let profile_changed =
+                    requested_tier.is_some_and(|tier| tier != self.client.active_runtime_tier());
+                if let Some(tier) = requested_tier {
+                    self.client.set_active_runtime_tier(tier);
+                }
+                let already_in_state =
+                    !self.client.resource_suspension_active() && !profile_changed;
+                let recovery_scheduled = if already_in_state {
+                    false
+                } else {
+                    self.client.resume_managed_runtime_after_resource_pressure()
+                };
+                if !already_in_state && !recovery_scheduled {
+                    return Err(AppError::RemoteServiceUnavailable(
+                        "llm_recovery_blocked_by_voice_residency".into(),
+                    ));
+                }
+                Ok(ResourceAdapterControllerOutcome {
+                    already_in_state,
+                    recovery_scheduled,
+                })
+            }
+            ResourceAdapterOperation::Start => {
+                let already_in_state = requested_tier.is_none_or(|tier| {
+                    tier == self.client.active_runtime_tier()
+                        && !self.client.resource_suspension_active()
+                        && self.client.status_snapshot().ready
+                });
+                if !already_in_state {
+                    self.client
+                        .apply_runtime_profile(
+                            requested_tier.unwrap_or_else(|| self.client.active_runtime_tier()),
+                        )
+                        .await?;
+                }
+                Ok(ResourceAdapterControllerOutcome {
+                    already_in_state,
+                    recovery_scheduled: false,
+                })
+            }
+            ResourceAdapterOperation::Observe
+            | ResourceAdapterOperation::Unload
+            | ResourceAdapterOperation::Release => Err(AppError::InvalidParameter(
+                "resource_transition_operation_unsupported".into(),
+            )),
+        }
+    }
 }
 
 struct ResourceSuspensionCancellationGuard<'a> {
@@ -138,6 +279,13 @@ impl Drop for ResourceSuspensionCancellationGuard<'_> {
 }
 
 impl PerformanceLlmClient {
+    #[must_use]
+    pub fn resource_controller(self: &Arc<Self>) -> Arc<dyn ResourceAdapterController> {
+        Arc::new(PerformanceLlmResourceController {
+            client: Arc::clone(self),
+        })
+    }
+
     /// Build the performance-mode client. The endpoint is rejected unless it is loopback.
     ///
     /// # Errors
@@ -208,6 +356,7 @@ impl PerformanceLlmClient {
                 .register_adapter(ollama_descriptor())
                 .map_err(AppError::InvalidParameter)?;
         }
+        let initial_tier = configured_llama_tier_with_default(&profile.performance_profile);
         Ok(Self {
             profile,
             app_data_dir,
@@ -222,6 +371,7 @@ impl PerformanceLlmClient {
             start_lock: tokio::sync::Mutex::new(()),
             process: Mutex::new(None),
             selected_runtime: Mutex::new(configured_runtime_selection().ok().flatten()),
+            active_tier: RwLock::new(initial_tier),
             retry_after: Mutex::new(None),
             status: RwLock::new(initial_status),
             fallback_warned: AtomicBool::new(false),
@@ -245,6 +395,15 @@ impl PerformanceLlmClient {
     #[must_use]
     pub(crate) fn resource_suspension_active(&self) -> bool {
         self.request_gate.is_blocked()
+    }
+
+    #[must_use]
+    pub(crate) fn active_runtime_tier(&self) -> LlamaRuntimeTier {
+        *self.active_tier.read()
+    }
+
+    fn set_active_runtime_tier(&self, tier: LlamaRuntimeTier) {
+        *self.active_tier.write() = tier;
     }
 
     /// Whether this client has a runtime class it can actually release before a
@@ -337,6 +496,40 @@ impl PerformanceLlmClient {
         self.ensure_primary_ready().await
     }
 
+    async fn apply_runtime_profile(&self, tier: LlamaRuntimeTier) -> Result<()> {
+        let current = self.active_runtime_tier();
+        let running = self.process.lock().is_some();
+        if current != tier && running {
+            self.suspend_managed_runtime_for_resource_pressure(
+                "resource coordinator requested llama-server profile switch",
+            )
+            .await?;
+        }
+        self.set_active_runtime_tier(tier);
+        if !self.enable_managed_runtime() {
+            return Err(AppError::RemoteServiceUnavailable(
+                "llm_recovery_blocked_by_voice_residency".into(),
+            ));
+        }
+        self.request_gate.wait_until_open().await;
+        if let Err(error) = self.ensure_primary_ready().await {
+            self.set_active_runtime_tier(current);
+            return Err(error);
+        }
+        let selection = configured_runtime_selection()?.ok_or_else(|| {
+            AppError::RemoteServiceUnavailable(
+                "no GGUF model is selected for performance mode".into(),
+            )
+        })?;
+        if !self.managed_process_matches(&selection) {
+            self.set_active_runtime_tier(current);
+            return Err(AppError::RemoteServiceUnavailable(
+                "resource_profile_external_runtime_uncontrolled".into(),
+            ));
+        }
+        Ok(())
+    }
+
     /// Stop only the llama-server process owned by this host while preserving
     /// ordinary Ollama fallback semantics.
     pub fn suspend_managed_runtime(&self, reason: &str) {
@@ -385,6 +578,18 @@ impl PerformanceLlmClient {
             ));
         }
         Ok(())
+    }
+
+    /// Re-open request admission after a coordinated external runtime confirms
+    /// that it released GPU residency, then warm the managed primary in the
+    /// background.
+    #[must_use]
+    pub fn resume_managed_runtime_after_resource_pressure(self: &Arc<Self>) -> bool {
+        if !self.enable_managed_runtime() {
+            return false;
+        }
+        self.schedule_warmup();
+        true
     }
 
     fn enable_managed_runtime(&self) -> bool {
@@ -518,75 +723,126 @@ impl PerformanceLlmClient {
         }
     }
 
-    fn runtime_reservation_mib(selection: &RuntimeSelection) -> u64 {
-        if let Ok(value) = std::env::var(ENV_LLAMA_GPU_RESERVATION_MIB) {
-            if let Ok(value) = value.trim().parse::<u64>() {
-                return value.min(65_536);
-            }
-        }
-        let gpu_layers = std::env::var("OCLIVE_LLAMA_GPU_LAYERS")
-            .ok()
-            .and_then(|value| value.trim().parse::<i64>().ok())
-            .unwrap_or(0);
-        if gpu_layers <= 0 {
+    fn runtime_reservation_mib(selection: &RuntimeSelection, tier: LlamaRuntimeTier) -> u64 {
+        if tier.gpu_layers <= 0 {
             return 0;
+        }
+        if tier.profile_id == LLAMA_RUNTIME_PROFILE_FULL {
+            if let Some(configured) = std::env::var(ENV_LLAMA_GPU_RESERVATION_MIB)
+                .ok()
+                .and_then(|value| value.trim().parse::<u64>().ok())
+            {
+                return configured.min(65_536);
+            }
         }
         let model_mib = std::fs::metadata(&selection.model_path)
             .map(|metadata| metadata.len().saturating_add(1024 * 1024 - 1) / (1024 * 1024))
             .unwrap_or(0);
         let estimated_layer_share = model_mib
-            .saturating_mul((gpu_layers as u64).min(32))
+            .saturating_mul((tier.gpu_layers as u64).min(32))
             .saturating_add(31)
             / 32;
         estimated_layer_share.saturating_add(512).min(65_536)
     }
 
-    async fn reserve_runtime_start(&self, selection: &RuntimeSelection) -> Result<String> {
-        let reservation_mib = Self::runtime_reservation_mib(selection);
-        let admission = self
-            .resource_coordinator
-            .admit(ResourceAdmissionRequest {
-                adapter_id: LLAMA_RUNTIME_ADAPTER_ID.into(),
-                workload_id: LLAMA_RUNTIME_WORKLOAD_ID.into(),
-                profile_id: Some(LLAMA_RUNTIME_PROFILE_ID.into()),
-                gpu_device_index: configured_gpu_device_index(),
-                reservation_mib,
-                priority: ResourcePriority::BackgroundWarmup,
-                control_mode: ResourceControlMode::Managed,
-                admission_mode: if reservation_mib == 0 {
-                    ResourceAdmissionMode::ObserveOnly
-                } else {
-                    ResourceAdmissionMode::Enforced
-                },
+    fn runtime_ram_reservation_mib(selection: &RuntimeSelection) -> u64 {
+        std::fs::metadata(&selection.model_path)
+            .map(|metadata| {
+                metadata
+                    .len()
+                    .saturating_add(1024 * 1024 - 1)
+                    .checked_div(1024 * 1024)
+                    .unwrap_or(0)
+                    .saturating_add(512)
+                    .min(65_536)
             })
-            .await;
-        if admission.decision == ResourceAdmissionDecision::Denied {
-            return Err(AppError::RemoteServiceUnavailable(format!(
-                "llama-server resource admission denied: {}",
-                admission.reason_codes.join(",")
-            )));
+            .unwrap_or(512)
+    }
+
+    async fn reserve_runtime_start(&self, selection: &RuntimeSelection) -> Result<String> {
+        let requested_tier = self.active_runtime_tier();
+        let mut last_reasons = Vec::new();
+        for tier in llama_tiers_from(requested_tier) {
+            self.set_active_runtime_tier(tier);
+            let reservation_mib = Self::runtime_reservation_mib(selection, tier);
+            let admission = self
+                .resource_coordinator
+                .admit(ResourceAdmissionRequest {
+                    adapter_id: LLAMA_RUNTIME_ADAPTER_ID.into(),
+                    workload_id: LLAMA_RUNTIME_WORKLOAD_ID.into(),
+                    profile_id: Some(tier.profile_id.into()),
+                    gpu_device_index: (tier.gpu_layers > 0)
+                        .then(configured_gpu_device_index)
+                        .flatten(),
+                    reservation_mib,
+                    ram_reservation_mib: Self::runtime_ram_reservation_mib(selection),
+                    cpu_thread_reservation: if tier.gpu_layers > 0 { 2 } else { 4 },
+                    priority: ResourcePriority::BackgroundWarmup,
+                    control_mode: ResourceControlMode::Managed,
+                    admission_mode: ResourceAdmissionMode::Enforced,
+                })
+                .await;
+            if admission.decision == ResourceAdmissionDecision::Denied {
+                let capacity_denial = admission.reason_codes.iter().any(|reason| {
+                    matches!(
+                        reason.as_str(),
+                        "insufficient_gpu_headroom"
+                            | "gpu_device_unavailable"
+                            | "gpu_snapshot_unavailable"
+                            | "insufficient_cpu_thread_headroom"
+                    )
+                });
+                last_reasons = admission.reason_codes;
+                if capacity_denial {
+                    continue;
+                }
+                self.set_active_runtime_tier(requested_tier);
+                return Err(AppError::RemoteServiceUnavailable(format!(
+                    "llama-server resource admission denied: {}",
+                    last_reasons.join(",")
+                )));
+            }
+            let lease_id = admission.lease.map(|lease| lease.lease_id).ok_or_else(|| {
+                AppError::RemoteServiceUnavailable(
+                    "llama-server resource admission returned no lease".into(),
+                )
+            })?;
+            if tier != requested_tier {
+                tracing::info!(
+                    target: "oclive_resource",
+                    requested_profile = requested_tier.profile_id,
+                    selected_profile = tier.profile_id,
+                    gpu_layers = tier.gpu_layers,
+                    "llama-server admission selected a lower resource tier"
+                );
+            }
+            *self.runtime_lease_id.lock() = Some(lease_id.clone());
+            return Ok(lease_id);
         }
-        let lease_id = admission.lease.map(|lease| lease.lease_id).ok_or_else(|| {
-            AppError::RemoteServiceUnavailable(
-                "llama-server resource admission returned no lease".into(),
-            )
-        })?;
-        *self.runtime_lease_id.lock() = Some(lease_id.clone());
-        Ok(lease_id)
+        self.set_active_runtime_tier(requested_tier);
+        Err(AppError::RemoteServiceUnavailable(format!(
+            "llama-server resource admission denied for every tier: {}",
+            last_reasons.join(",")
+        )))
     }
 
     async fn track_ready_managed_runtime(&self, selection: &RuntimeSelection) {
         if self.runtime_lease_id.lock().is_some() {
             return;
         }
+        let tier = self.active_runtime_tier();
         let admission = self
             .resource_coordinator
             .admit(ResourceAdmissionRequest {
                 adapter_id: LLAMA_RUNTIME_ADAPTER_ID.into(),
                 workload_id: LLAMA_RUNTIME_WORKLOAD_ID.into(),
-                profile_id: Some(LLAMA_RUNTIME_PROFILE_ID.into()),
-                gpu_device_index: configured_gpu_device_index(),
+                profile_id: Some(tier.profile_id.into()),
+                gpu_device_index: (tier.gpu_layers > 0)
+                    .then(configured_gpu_device_index)
+                    .flatten(),
                 reservation_mib: 0,
+                ram_reservation_mib: Self::runtime_ram_reservation_mib(selection),
+                cpu_thread_reservation: if tier.gpu_layers > 0 { 2 } else { 4 },
                 priority: ResourcePriority::Resident,
                 control_mode: ResourceControlMode::Managed,
                 admission_mode: ResourceAdmissionMode::ObserveOnly,
@@ -595,15 +851,18 @@ impl PerformanceLlmClient {
         if let Some(lease) = admission.lease {
             self.resource_coordinator.activate(
                 &lease.lease_id,
-                Some(Self::runtime_reservation_mib(selection)),
+                Some(Self::runtime_reservation_mib(selection, tier)),
             );
             *self.runtime_lease_id.lock() = Some(lease.lease_id);
         }
     }
 
     fn activate_runtime_lease(&self, lease_id: &str, selection: &RuntimeSelection) {
-        self.resource_coordinator
-            .activate(lease_id, Some(Self::runtime_reservation_mib(selection)));
+        let tier = self.active_runtime_tier();
+        self.resource_coordinator.activate(
+            lease_id,
+            Some(Self::runtime_reservation_mib(selection, tier)),
+        );
     }
 
     async fn unload_tracked_ollama_models(&self) {
@@ -671,9 +930,56 @@ impl PerformanceLlmClient {
     }
 
     fn managed_process_matches(&self, selection: &RuntimeSelection) -> bool {
+        let tier = self.active_runtime_tier();
         self.process.lock().as_mut().is_some_and(|running| {
-            running.selection == *selection && running.child.try_wait().ok().flatten().is_none()
+            running.selection == *selection
+                && running.tier == tier
+                && running.child.try_wait().ok().flatten().is_none()
         })
+    }
+
+    fn endpoint_port(&self) -> Option<u16> {
+        reqwest::Url::parse(&self.profile.endpoint)
+            .ok()
+            .and_then(|url| url.port_or_known_default())
+    }
+
+    fn stop_stale_managed_runtime(&self, selection: &RuntimeSelection) -> bool {
+        if !self.profile.auto_start {
+            return false;
+        }
+        let Some(binary) = self.discover_runtime_binary() else {
+            return false;
+        };
+        let Some(port) = self.endpoint_port() else {
+            return false;
+        };
+        let mut matched = false;
+        for pid in find_listener_pids(port) {
+            let Some(command_line) = process_command_line(pid) else {
+                continue;
+            };
+            if !command_line_matches_managed_runtime(
+                &command_line,
+                &binary,
+                selection,
+                &self.profile.model_alias,
+                port,
+                self.active_runtime_tier(),
+            ) {
+                continue;
+            }
+            matched = true;
+            let terminated = terminate_process_tree(pid);
+            tracing::warn!(
+                target: "oclive_llm",
+                pid,
+                port,
+                terminated,
+                "reclaimed stale OCLive-managed llama-server runtime"
+            );
+        }
+        matched
     }
 
     async fn wait_for_stopped_endpoint(&self) {
@@ -683,6 +989,22 @@ impl PerformanceLlmClient {
             }
             tokio::time::sleep(Duration::from_millis(100)).await;
         }
+    }
+
+    async fn accept_ready_endpoint(&self, selection: Option<&RuntimeSelection>) -> Result<()> {
+        if let Some(selection) = selection {
+            if self.managed_process_matches(selection) {
+                self.track_ready_managed_runtime(selection).await;
+            } else {
+                self.release_runtime_lease();
+            }
+        }
+        self.ensure_primary_enabled()?;
+        if self.status.read().active_backend != "performance" {
+            self.unload_tracked_ollama_models().await;
+        }
+        self.set_status(true, "performance", "llama-server is ready");
+        Ok(())
     }
 
     fn spawn_runtime(&self, binary: &Path, selection: &RuntimeSelection) -> Result<Child> {
@@ -704,6 +1026,7 @@ impl PerformanceLlmClient {
             .map_or_else(Stdio::null, Stdio::from);
         let stderr = log_file.map_or_else(Stdio::null, Stdio::from);
         let mut command = Command::new(binary);
+        let tier = self.active_runtime_tier();
         append_runtime_selection_args(&mut command, selection);
         command
             .arg("--host")
@@ -712,14 +1035,11 @@ impl PerformanceLlmClient {
             .arg(port.to_string())
             .arg("--alias")
             .arg(&self.profile.model_alias)
+            .arg("--n-gpu-layers")
+            .arg(tier.gpu_layers.to_string())
             .stdin(Stdio::null())
             .stdout(stdout)
             .stderr(stderr);
-        if let Ok(layers) = std::env::var("OCLIVE_LLAMA_GPU_LAYERS") {
-            if layers.trim().parse::<i32>().is_ok() {
-                command.arg("--n-gpu-layers").arg(layers.trim());
-            }
-        }
         #[cfg(target_os = "windows")]
         {
             use std::os::windows::process::CommandExt;
@@ -740,24 +1060,45 @@ impl PerformanceLlmClient {
             self.wait_for_stopped_endpoint().await;
         }
         if self.endpoint_ready().await {
-            if let Some(selection) = selection.as_ref() {
-                if selection.adapter_path.is_some() && !self.managed_process_matches(selection) {
+            let requires_managed_lora = selection.as_ref().is_some_and(|selection| {
+                selection.adapter_path.is_some() && !self.managed_process_matches(selection)
+            });
+            if !requires_managed_lora {
+                return self.accept_ready_endpoint(selection.as_ref()).await;
+            }
+        }
+
+        let _guard = self.start_lock.lock().await;
+        self.ensure_primary_enabled()?;
+        let (selection, stopped_managed_runtime) = self.reconcile_selected_runtime()?;
+        if stopped_managed_runtime {
+            self.wait_for_stopped_endpoint().await;
+        }
+        if self.endpoint_ready().await {
+            let requires_managed_lora = selection.as_ref().is_some_and(|selection| {
+                selection.adapter_path.is_some() && !self.managed_process_matches(selection)
+            });
+            if requires_managed_lora {
+                let selection = selection.as_ref().ok_or_else(|| {
+                    AppError::RemoteServiceUnavailable(
+                        "selected runtime disappeared during stale process recovery".into(),
+                    )
+                })?;
+                if !self.stop_stale_managed_runtime(selection) {
                     return Err(AppError::RemoteServiceUnavailable(
                         "selected LoRA cannot be applied to an external llama-server; stop it so OCLive can start the managed runtime".into(),
                     ));
                 }
-                if self.managed_process_matches(selection) {
-                    self.track_ready_managed_runtime(selection).await;
-                } else {
-                    self.release_runtime_lease();
+                self.wait_for_stopped_endpoint().await;
+                if self.endpoint_ready().await {
+                    return Err(AppError::RemoteServiceUnavailable(
+                        "stale OCLive-managed llama-server did not stop before restart".into(),
+                    ));
                 }
+                *self.retry_after.lock() = None;
+            } else {
+                return self.accept_ready_endpoint(selection.as_ref()).await;
             }
-            self.ensure_primary_enabled()?;
-            if self.status.read().active_backend != "performance" {
-                self.unload_tracked_ollama_models().await;
-            }
-            self.set_status(true, "performance", "llama-server is ready");
-            return Ok(());
         }
         if self.retry_is_cooling_down() {
             return Err(AppError::RemoteServiceUnavailable(
@@ -769,33 +1110,6 @@ impl PerformanceLlmClient {
             return Err(AppError::RemoteServiceUnavailable(
                 "llama-server is not running".into(),
             ));
-        }
-
-        let _guard = self.start_lock.lock().await;
-        self.ensure_primary_enabled()?;
-        let (selection, stopped_managed_runtime) = self.reconcile_selected_runtime()?;
-        if stopped_managed_runtime {
-            self.wait_for_stopped_endpoint().await;
-        }
-        if self.endpoint_ready().await {
-            if let Some(selection) = selection.as_ref() {
-                if selection.adapter_path.is_some() && !self.managed_process_matches(selection) {
-                    return Err(AppError::RemoteServiceUnavailable(
-                        "selected LoRA cannot be applied to an external llama-server; stop it so OCLive can start the managed runtime".into(),
-                    ));
-                }
-                if self.managed_process_matches(selection) {
-                    self.track_ready_managed_runtime(selection).await;
-                } else {
-                    self.release_runtime_lease();
-                }
-            }
-            self.ensure_primary_enabled()?;
-            if self.status.read().active_backend != "performance" {
-                self.unload_tracked_ollama_models().await;
-            }
-            self.set_status(true, "performance", "llama-server is ready");
-            return Ok(());
         }
         let binary = self.discover_runtime_binary().ok_or_else(|| {
             self.mark_retry_cooldown("llama-server runtime pack is not installed");
@@ -824,7 +1138,9 @@ impl PerformanceLlmClient {
             let mut process = self.process.lock();
             self.ensure_primary_enabled()?;
             let reuse = process.as_mut().is_some_and(|running| {
-                running.selection == selection && running.child.try_wait().ok().flatten().is_none()
+                running.selection == selection
+                    && running.tier == self.active_runtime_tier()
+                    && running.child.try_wait().ok().flatten().is_none()
             });
             if !reuse {
                 *process = None;
@@ -839,6 +1155,7 @@ impl PerformanceLlmClient {
                 *process = Some(SpawnedRuntime {
                     child,
                     selection: selection.clone(),
+                    tier: self.active_runtime_tier(),
                 });
                 tracing::info!(
                     target: "oclive_llm",
@@ -923,11 +1240,27 @@ impl PerformanceLlmClient {
         }
     }
 
+    fn fallback_error_with_primary(primary_error: &AppError, fallback_error: AppError) -> AppError {
+        let fallback_detail = match fallback_error {
+            AppError::OllamaError(detail) => detail,
+            other => other.to_string(),
+        };
+        AppError::OllamaError(format!(
+            "Performance LLM primary unavailable: {primary_error}; Ollama fallback unavailable: {fallback_detail}"
+        ))
+    }
+
     async fn primary_or_fallback_generate(&self, model: &str, prompt: &str) -> Result<String> {
         let _request_guard = self.request_gate.try_enter()?;
         if let Err(error) = self.ensure_primary_ready().await {
             self.record_fallback("generate", Some(model), &error);
-            return self.fallback.generate(model, prompt).await;
+            return self
+                .fallback
+                .generate(model, prompt)
+                .await
+                .map_err(|fallback_error| {
+                    Self::fallback_error_with_primary(&error, fallback_error)
+                });
         }
         match self
             .primary
@@ -941,7 +1274,12 @@ impl PerformanceLlmClient {
             Err(error) => {
                 self.record_fallback("generate", Some(model), &error);
                 self.degrade_to_ollama("llama-server request failed");
-                self.fallback.generate(model, prompt).await
+                self.fallback
+                    .generate(model, prompt)
+                    .await
+                    .map_err(|fallback_error| {
+                        Self::fallback_error_with_primary(&error, fallback_error)
+                    })
             }
         }
     }
@@ -1022,7 +1360,13 @@ impl LlmClient for PerformanceLlmClient {
         let _request_guard = self.request_gate.try_enter()?;
         if let Err(error) = self.ensure_primary_ready().await {
             self.record_fallback("generate_tag", Some(model), &error);
-            return self.fallback.generate_tag(model, prompt).await;
+            return self
+                .fallback
+                .generate_tag(model, prompt)
+                .await
+                .map_err(|fallback_error| {
+                    Self::fallback_error_with_primary(&error, fallback_error)
+                });
         }
         match self
             .primary
@@ -1033,7 +1377,12 @@ impl LlmClient for PerformanceLlmClient {
             Err(error) => {
                 self.record_fallback("generate_tag", Some(model), &error);
                 self.degrade_to_ollama("llama-server tag request failed");
-                self.fallback.generate_tag(model, prompt).await
+                self.fallback
+                    .generate_tag(model, prompt)
+                    .await
+                    .map_err(|fallback_error| {
+                        Self::fallback_error_with_primary(&error, fallback_error)
+                    })
             }
         }
     }
@@ -1047,7 +1396,13 @@ impl LlmClient for PerformanceLlmClient {
         let _request_guard = self.request_gate.try_enter()?;
         if let Err(error) = self.ensure_primary_ready().await {
             self.record_fallback("generate_with_opts", Some(model), &error);
-            return self.fallback.generate_with_opts(model, prompt, opts).await;
+            return self
+                .fallback
+                .generate_with_opts(model, prompt, opts)
+                .await
+                .map_err(|fallback_error| {
+                    Self::fallback_error_with_primary(&error, fallback_error)
+                });
         }
         match self
             .primary
@@ -1058,7 +1413,12 @@ impl LlmClient for PerformanceLlmClient {
             Err(error) => {
                 self.record_fallback("generate_with_opts", Some(model), &error);
                 self.degrade_to_ollama("llama-server request failed");
-                self.fallback.generate_with_opts(model, prompt, opts).await
+                self.fallback
+                    .generate_with_opts(model, prompt, opts)
+                    .await
+                    .map_err(|fallback_error| {
+                        Self::fallback_error_with_primary(&error, fallback_error)
+                    })
             }
         }
     }
@@ -1087,7 +1447,10 @@ impl LlmClient for PerformanceLlmClient {
             return self
                 .fallback
                 .generate_stream_with_opts(model, prompt, on_token, opts)
-                .await;
+                .await
+                .map_err(|fallback_error| {
+                    Self::fallback_error_with_primary(&error, fallback_error)
+                });
         }
         let emitted = Arc::new(AtomicBool::new(false));
         let emitted_for_sink = Arc::clone(&emitted);
@@ -1113,6 +1476,9 @@ impl LlmClient for PerformanceLlmClient {
                 self.fallback
                     .generate_stream_with_opts(model, prompt, on_token, opts)
                     .await
+                    .map_err(|fallback_error| {
+                        Self::fallback_error_with_primary(&error, fallback_error)
+                    })
             }
             Err(error) => {
                 self.degrade_to_ollama("llama-server stream failed after emitting content");
@@ -1127,7 +1493,12 @@ impl LlmClient for PerformanceLlmClient {
             Ok(()) => Ok(()),
             Err(error) => {
                 self.record_fallback("startup_probe", None, &error);
-                self.fallback.startup_probe().await
+                self.fallback
+                    .startup_probe()
+                    .await
+                    .map_err(|fallback_error| {
+                        Self::fallback_error_with_primary(&error, fallback_error)
+                    })
             }
         }
     }
@@ -1145,6 +1516,10 @@ mod tests {
         Router,
     };
     use futures_util::StreamExt;
+    use oclive_kernel_contracts::ResourceSnapshotSource;
+    use oclive_kernel_types::{
+        CpuSnapshot, GpuDeviceSnapshot, ResourceSnapshot, SystemMemorySnapshot,
+    };
     use std::convert::Infallible;
     use std::sync::atomic::{AtomicU64, AtomicUsize};
     use tempfile::tempdir;
@@ -1157,6 +1532,16 @@ mod tests {
             startup_timeout_ms: 1_000,
             retry_cooldown_ms: 1_000,
             model_alias: "test-performance".into(),
+            performance_profile: "gpu_balanced".into(),
+        }
+    }
+
+    struct FixedResourceSnapshot(ResourceSnapshot);
+
+    #[async_trait]
+    impl ResourceSnapshotSource for FixedResourceSnapshot {
+        async fn snapshot(&self) -> ResourceSnapshot {
+            self.0.clone()
         }
     }
 
@@ -1173,6 +1558,137 @@ mod tests {
             .map(|arg| arg.to_string_lossy().into_owned())
             .collect::<Vec<_>>();
         assert_eq!(args, ["-m", "base.gguf", "--lora", "adapter.gguf"]);
+    }
+
+    #[test]
+    fn stale_runtime_signature_requires_every_owned_argument() {
+        let binary = PathBuf::from(r"D:\OCLive\components\llama.cpp\llama-server.exe");
+        let selection = RuntimeSelection {
+            model_path: PathBuf::from(r"D:\OCLive\models\qwen.gguf"),
+            adapter_path: Some(PathBuf::from(r"D:\OCLive\models\mumu-adapter.gguf")),
+        };
+        let tier = llama_tier("gpu_balanced").expect("balanced tier");
+        let command_line = format!(
+            r#""D:\OCLive\components\llama.cpp\llama-server.exe" -m "D:\OCLive\models\qwen.gguf" --lora "D:\OCLive\models\mumu-adapter.gguf" --host 127.0.0.1 --port 8421 --alias oclive-performance --n-gpu-layers {}"#,
+            tier.gpu_layers
+        );
+
+        assert!(command_line_matches_managed_runtime(
+            &command_line,
+            &binary,
+            &selection,
+            "oclive-performance",
+            8421,
+            tier,
+        ));
+        assert!(!command_line_matches_managed_runtime(
+            &command_line.replace("--alias oclive-performance", "--alias user-server"),
+            &binary,
+            &selection,
+            "oclive-performance",
+            8421,
+            tier,
+        ));
+        assert!(!command_line_matches_managed_runtime(
+            &command_line.replace("mumu-adapter.gguf", "other-adapter.gguf"),
+            &binary,
+            &selection,
+            "oclive-performance",
+            8421,
+            tier,
+        ));
+        assert!(!command_line_matches_managed_runtime(
+            &command_line.replace("--port 8421", "--port 8422"),
+            &binary,
+            &selection,
+            "oclive-performance",
+            8421,
+            tier,
+        ));
+        assert!(!command_line_matches_managed_runtime(
+            &command_line.replace("--port 8421", "--port 84210"),
+            &binary,
+            &selection,
+            "oclive-performance",
+            8421,
+            tier,
+        ));
+        assert!(!command_line_matches_managed_runtime(
+            &command_line.replace(
+                "--alias oclive-performance",
+                "--alias oclive-performance-user",
+            ),
+            &binary,
+            &selection,
+            "oclive-performance",
+            8421,
+            tier,
+        ));
+    }
+
+    #[tokio::test]
+    async fn managed_runtime_admission_falls_from_balanced_gpu_to_cpu() {
+        let dir = tempdir().unwrap();
+        let model_path = dir.path().join("test-model.gguf");
+        std::fs::write(&model_path, vec![0_u8; 4 * 1024 * 1024]).unwrap();
+        let coordinator = Arc::new(ResourceCoordinator::new(
+            ResourceCoordinatorPolicy::default(),
+            Arc::new(FixedResourceSnapshot(ResourceSnapshot {
+                captured_at_ms: 1,
+                source: "test".into(),
+                available: true,
+                gpu_devices: vec![GpuDeviceSnapshot {
+                    device_index: 0,
+                    name: "constrained".into(),
+                    total_mib: 8192,
+                    free_mib: 1000,
+                    used_mib: 7192,
+                }],
+                system_memory: Some(SystemMemorySnapshot {
+                    total_mib: 16_384,
+                    available_mib: 4_000,
+                    used_mib: 12_384,
+                }),
+                cpu: Some(CpuSnapshot {
+                    logical_cores: 8,
+                    physical_cores: Some(4),
+                }),
+                reason_codes: Vec::new(),
+            })),
+        ));
+        let client = PerformanceLlmClient::new_with_resource_coordinator(
+            profile("http://127.0.0.1:9".into()),
+            dir.path().to_path_buf(),
+            None,
+            Arc::new(MockLlmClient {
+                reply: "fallback".into(),
+            }),
+            None,
+            "fallback-model".into(),
+            Arc::clone(&coordinator),
+        )
+        .unwrap();
+        client.set_active_runtime_tier(llama_tier("gpu_balanced").unwrap());
+        let lease_id = client
+            .reserve_runtime_start(&RuntimeSelection {
+                model_path,
+                adapter_path: None,
+            })
+            .await
+            .unwrap();
+
+        assert_eq!(client.active_runtime_tier().profile_id, "cpu_compatibility");
+        let lease = coordinator
+            .diagnostics_snapshot()
+            .leases
+            .into_iter()
+            .find(|lease| lease.lease_id == lease_id)
+            .unwrap();
+        assert_eq!(lease.profile_id.as_deref(), Some("cpu_compatibility"));
+        assert_eq!(lease.reservation_mib, 0);
+        assert_eq!(lease.cpu_thread_reservation, 4);
+        assert!(lease.ram_reservation_mib >= 512);
+        client.release_runtime_lease();
     }
 
     #[tokio::test]
@@ -1201,6 +1717,32 @@ mod tests {
             "fallback-ok"
         );
         assert_eq!(client.status_snapshot().active_backend, "ollama");
+    }
+
+    #[tokio::test]
+    async fn unavailable_primary_and_fallback_report_both_causes() {
+        let dir = tempdir().unwrap();
+        let fallback: Arc<dyn LlmClient> = Arc::new(FailingFallback);
+        let client = PerformanceLlmClient::new(
+            profile("http://127.0.0.1:9".into()),
+            dir.path().to_path_buf(),
+            None,
+            fallback,
+            None,
+            "fallback-model".into(),
+        )
+        .unwrap();
+
+        let error = client
+            .generate("fallback-model", "hello")
+            .await
+            .unwrap_err();
+        let AppError::OllamaError(detail) = error else {
+            panic!("expected LLM_ERROR-compatible OllamaError");
+        };
+        assert!(detail.contains("Performance LLM primary unavailable"));
+        assert!(detail.contains("Ollama fallback unavailable"));
+        assert!(detail.contains("fallback transport offline"));
     }
 
     #[tokio::test]
@@ -1398,6 +1940,19 @@ mod tests {
 
     struct CountingFallback {
         calls: Arc<AtomicUsize>,
+    }
+
+    struct FailingFallback;
+
+    #[async_trait]
+    impl LlmClient for FailingFallback {
+        async fn generate(&self, _model: &str, _prompt: &str) -> Result<String> {
+            Err(AppError::OllamaError("fallback transport offline".into()))
+        }
+
+        async fn generate_tag(&self, model: &str, prompt: &str) -> Result<String> {
+            self.generate(model, prompt).await
+        }
     }
 
     #[async_trait]

@@ -3279,6 +3279,7 @@ dependencies = [
  "serde_json",
  "serde_yaml_ng",
  "sha2",
+ "sysinfo",
  "tauri",
  "tempfile",
  "thiserror 1.0.69",

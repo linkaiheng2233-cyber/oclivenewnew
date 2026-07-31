@@ -58,6 +58,7 @@ pub struct LocalLlmRuntimeProfile {
     pub startup_timeout_ms: u64,
     pub retry_cooldown_ms: u64,
     pub model_alias: String,
+    pub performance_profile: String,
 }
 
 impl Default for LocalLlmRuntimeProfile {
@@ -69,6 +70,7 @@ impl Default for LocalLlmRuntimeProfile {
             startup_timeout_ms: 90_000,
             retry_cooldown_ms: 30_000,
             model_alias: "oclive-performance".into(),
+            performance_profile: "gpu_balanced".into(),
         }
     }
 }
@@ -476,10 +478,30 @@ fn host_profile_from_distro_file(
                 profile.llm_runtime.model_alias = alias.to_string();
             }
         }
+        if let Some(ref performance_profile) = llm.performance_profile {
+            let performance_profile = performance_profile.trim();
+            if !matches!(
+                performance_profile,
+                "gpu_full" | "gpu_balanced" | "cpu_compatibility"
+            ) {
+                return Err(AppError::InvalidParameter(format!(
+                    "unknown llm_runtime performance_profile: {performance_profile}"
+                )));
+            }
+            profile.llm_runtime.performance_profile = performance_profile.to_string();
+        }
     }
     if let Some(ref resources) = file.resource_coordination {
         if let Some(value) = resources.gpu_safety_reserve_mib {
             profile.resource_coordination.gpu_safety_reserve_mib = value.min(65_536);
+        }
+        if let Some(value) = resources.system_memory_safety_reserve_mib {
+            profile
+                .resource_coordination
+                .system_memory_safety_reserve_mib = value.min(1_048_576);
+        }
+        if let Some(value) = resources.cpu_safety_reserve_threads {
+            profile.resource_coordination.cpu_safety_reserve_threads = value.min(1_024);
         }
         if let Some(value) = resources.pending_lease_ttl_ms {
             profile.resource_coordination.pending_lease_ttl_ms = value.clamp(1_000, 3_600_000);
@@ -490,6 +512,21 @@ fn host_profile_from_distro_file(
         if let Some(value) = resources.allow_unverified_admission {
             profile.resource_coordination.allow_unverified_admission = value;
         }
+        if let Some(value) = resources.admission_queue_timeout_ms {
+            profile.resource_coordination.admission_queue_timeout_ms = value.clamp(100, 600_000);
+        }
+        if let Some(value) = resources.queue_aging_quantum_ms {
+            profile.resource_coordination.queue_aging_quantum_ms = value.clamp(10, 60_000);
+        }
+        if let Some(value) = resources.automatic_preemption {
+            profile.resource_coordination.automatic_preemption = value;
+        }
+        if let Some(strategy) = resources.strategy {
+            profile.resource_coordination.scheduling.strategy = strategy;
+        }
+        profile.resource_coordination.scheduling.primary_adapter_id =
+            resources.primary_adapter_id.clone();
+        profile.resource_coordination.scheduling.commands = resources.commands.clone();
     }
     Ok(profile)
 }
@@ -821,7 +858,62 @@ mod tests {
         assert_eq!(p.llm_runtime.mode, LocalLlmRuntimeMode::Performance);
         assert_eq!(p.llm_runtime.endpoint, "http://127.0.0.1:8421");
         assert!(p.llm_runtime.auto_start);
+        assert_eq!(p.llm_runtime.performance_profile, "gpu_balanced");
         assert!(p.backends_ceiling.is_none());
+    }
+
+    #[test]
+    fn resource_scheduling_intent_flows_from_distro_profile() {
+        let dir =
+            std::env::temp_dir().join(format!("oclive_resource_policy_{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let file = dir.join("distro.oclive.toml");
+        let raw = r#"
+distro_id = "desktop"
+[resource_coordination]
+strategy = "primary_first"
+primary_adapter_id = "builtin.llm.llama_server"
+system_memory_safety_reserve_mib = 2048
+cpu_safety_reserve_threads = 2
+admission_queue_timeout_ms = 45000
+queue_aging_quantum_ms = 1500
+automatic_preemption = false
+
+[[resource_coordination.commands]]
+kind = "yield_then_run"
+yielding_adapter_id = "builtin.llm.llama_server"
+target_adapter_id = "builtin.voice.cosyvoice2"
+"#;
+        let mut handle = std::fs::File::create(&file).unwrap();
+        handle.write_all(raw.as_bytes()).unwrap();
+        let profile = load_host_profile_file(&file).unwrap();
+        assert_eq!(
+            profile.resource_coordination.scheduling.strategy,
+            oclive_kernel_types::ResourceSchedulingStrategy::PrimaryFirst
+        );
+        assert_eq!(
+            profile
+                .resource_coordination
+                .scheduling
+                .primary_adapter_id
+                .as_deref(),
+            Some("builtin.llm.llama_server")
+        );
+        assert_eq!(profile.resource_coordination.scheduling.commands.len(), 1);
+        assert_eq!(
+            profile
+                .resource_coordination
+                .system_memory_safety_reserve_mib,
+            2_048
+        );
+        assert_eq!(profile.resource_coordination.cpu_safety_reserve_threads, 2);
+        assert_eq!(
+            profile.resource_coordination.admission_queue_timeout_ms,
+            45_000
+        );
+        assert_eq!(profile.resource_coordination.queue_aging_quantum_ms, 1_500);
+        assert!(!profile.resource_coordination.automatic_preemption);
+        let _ = std::fs::remove_dir_all(dir);
     }
 
     #[test]

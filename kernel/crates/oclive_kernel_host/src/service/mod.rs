@@ -45,10 +45,13 @@ pub use portable_state::{
     import_portable_persona_impl,
 };
 pub use resource_coordination::{
+    directory_plugin_resource_rpc_needs_kernel_preemption,
     finalize_directory_plugin_resource_config_transition, finalize_directory_plugin_resource_rpc,
     get_resource_coordination_diagnostics_impl,
     prepare_directory_plugin_resource_config_transition, prepare_directory_plugin_resource_rpc,
-    DirectoryPluginResourceAdmission, DirectoryPluginResourceConfigTransition,
+    transition_resource_adapter_impl, DirectoryPluginResourceAdmission,
+    DirectoryPluginResourceConfigFinalization, DirectoryPluginResourceConfigTransition,
+    DirectoryPluginResourceFinalization,
 };
 pub use role::{
     delete_role_impl, get_display_metrics_impl, get_role_info_impl, get_user_identity_state_impl,
