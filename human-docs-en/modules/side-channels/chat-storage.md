@@ -1,7 +1,7 @@
 # Side channel pack · chat storage (EN summary)
 
-> Full checklist (ZH): [`human-docs/modules/side-channels/chat-storage.md`](../../human-docs/modules/side-channels/chat-storage.md)  
-> Architecture SSOT: [CHAT_STORAGE_ARCHITECTURE](../../handoff/CHAT_STORAGE_ARCHITECTURE.md) · [MODULE_MAP §11](../../handoff/MODULE_MAP_AND_HANDOFF.md)
+> Full checklist (ZH): [`human-docs/modules/side-channels/chat-storage.md`](../../../human-docs/modules/side-channels/chat-storage.md)
+> Architecture SSOT: [CHAT_STORAGE_ARCHITECTURE](../../../handoff/CHAT_STORAGE_ARCHITECTURE.md) · [MODULE_MAP §11](../../../handoff/MODULE_MAP_AND_HANDOFF.md)
 
 **You plug in**: Independent channel (**not** slot `memory`) · `HybridConversationStore` · `chat_sessions` / `chat_messages` tables.
 

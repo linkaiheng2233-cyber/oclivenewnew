@@ -1,4 +1,5 @@
-//! Blueprint `runtime_config` section (v3 target SSOT; v2 presence is non-fatal—host still reads transitional `meta` fields).
+//! Blueprint `runtime_config` section (Stable v4 SSOT; frozen v3 keeps the
+//! dual-core Beta field; v2 presence is non-fatal and ignored by its load path).
 
 use serde::{Deserialize, Serialize};
 
@@ -8,6 +9,7 @@ use crate::validate::validate_interaction_mode_pack_setting;
 
 /// Dual-core toggle (blueprint only; off by default).
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
 pub struct DualCoreConfig {
     #[serde(default)]
     pub enabled: bool,
@@ -15,6 +17,7 @@ pub struct DualCoreConfig {
 
 /// System runtime configuration (blueprint-only; not the role-pack creator view).
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct RuntimeConfig {
     #[serde(default)]
     pub interaction_mode: Option<String>,
@@ -31,7 +34,7 @@ pub struct RuntimeConfig {
     pub identity_binding: Option<crate::manifest::IdentityBinding>,
     #[serde(default)]
     pub evolution: Option<EvolutionConfigDisk>,
-    #[serde(default, alias = "model")]
+    #[serde(default)]
     pub ollama_model: Option<String>,
     #[serde(default)]
     pub remote_presence: Option<RemotePresenceConfig>,

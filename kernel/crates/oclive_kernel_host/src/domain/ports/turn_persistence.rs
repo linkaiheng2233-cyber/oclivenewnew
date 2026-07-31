@@ -13,6 +13,8 @@ pub struct ChatTurnAtomicInput<'a> {
     pub user_relation_key: &'a str,
     pub favor_delta: f64,
     pub memory_content: &'a str,
+    /// `ordinary` for universal turns; `adult` for gated Chat Pro turns.
+    pub memory_scope: &'a str,
     pub memory_importance: f64,
     pub memory_fifo_limit: i32,
     pub memory_similarity_threshold: f64,

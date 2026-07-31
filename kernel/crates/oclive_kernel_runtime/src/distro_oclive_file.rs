@@ -1,6 +1,8 @@
 //! Shared `distro.oclive.toml` serde model — single parse entry (K-PROFILE-01).
 
-use oclive_kernel_types::DistroProfileRequirements;
+use oclive_kernel_types::{
+    DistroProfileRequirements, ResourceSchedulingCommand, ResourceSchedulingStrategy,
+};
 use serde::Deserialize;
 use std::path::Path;
 
@@ -24,6 +26,60 @@ pub struct DistroOcliveFile {
     pub visual_presentation: Option<VisualPresentationToml>,
     pub theater: Option<TheaterToml>,
     pub turn_thinking: Option<TurnThinkingToml>,
+    pub llm_runtime: Option<LlmRuntimeToml>,
+    pub resource_coordination: Option<ResourceCoordinationToml>,
+}
+
+/// Distro ceilings and compatibility policy for the host Resource Coordinator.
+#[derive(Debug, Default, Clone, Deserialize)]
+pub struct ResourceCoordinationToml {
+    /// GPU memory kept outside new OCLive reservations.
+    pub gpu_safety_reserve_mib: Option<u64>,
+    /// Host RAM kept outside new OCLive reservations.
+    pub system_memory_safety_reserve_mib: Option<u64>,
+    /// Logical CPU threads kept available to the host and foreground work.
+    pub cpu_safety_reserve_threads: Option<u16>,
+    /// Maximum age of an admission that has not reported runtime activation.
+    pub pending_lease_ttl_ms: Option<u64>,
+    /// Heartbeat window for an active adapter lease.
+    pub active_lease_ttl_ms: Option<u64>,
+    /// Compatibility fallback when no supported device telemetry is available.
+    pub allow_unverified_admission: Option<bool>,
+    /// Maximum time an admission may wait in the fair queue.
+    pub admission_queue_timeout_ms: Option<u64>,
+    /// Waiting interval that raises an older request by one priority class.
+    pub queue_aging_quantum_ms: Option<u64>,
+    /// Whether lower-priority explicitly controllable adapters may yield.
+    pub automatic_preemption: Option<bool>,
+    /// Distro default optimization objective; hardware safety remains authoritative.
+    pub strategy: Option<ResourceSchedulingStrategy>,
+    /// Adapter protected by `primary_first`.
+    pub primary_adapter_id: Option<String>,
+    /// Finite declarative constraints validated before the host compiles runtime decisions.
+    #[serde(default)]
+    pub commands: Vec<ResourceSchedulingCommand>,
+}
+
+/// Distro-owned local LLM runtime policy.
+///
+/// This is deliberately separate from role-pack `plugin_backends.llm`: roles select the
+/// logical LLM slot while the distro selects how its builtin local slot is implemented.
+#[derive(Debug, Default, Clone, Deserialize)]
+pub struct LlmRuntimeToml {
+    /// `ollama` | `performance`.
+    pub mode: Option<String>,
+    /// OpenAI-compatible llama-server root URL.
+    pub endpoint: Option<String>,
+    /// Whether the host may start an installed llama-server runtime pack.
+    pub auto_start: Option<bool>,
+    /// Maximum wait for a newly spawned runtime to become healthy.
+    pub startup_timeout_ms: Option<u64>,
+    /// Cooldown after an unavailable primary before probing it again.
+    pub retry_cooldown_ms: Option<u64>,
+    /// Model alias sent to llama-server's OpenAI-compatible endpoint.
+    pub model_alias: Option<String>,
+    /// Preferred managed llama-server resource tier.
+    pub performance_profile: Option<String>,
 }
 
 #[derive(Debug, Default, Clone, Deserialize)]
@@ -231,6 +287,64 @@ mod tests {
         assert_eq!(ix.default_mode.as_deref(), Some("pure_chat"));
         assert_eq!(ix.allow_mode_switch, Some(true));
         assert_eq!(ix.immersive_unlock_hint_after_turns, Some(10));
+    }
+
+    #[test]
+    fn parse_desktop_performance_llm_runtime() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../examples/distro-profiles");
+        let file = parse_distro_oclive_file(&root.join("desktop.oclive.toml")).unwrap();
+        let runtime = file.llm_runtime.as_ref().expect("llm_runtime");
+        assert_eq!(runtime.mode.as_deref(), Some("performance"));
+        assert_eq!(runtime.endpoint.as_deref(), Some("http://127.0.0.1:8421"));
+        assert_eq!(runtime.auto_start, Some(true));
+        assert_eq!(runtime.performance_profile.as_deref(), Some("gpu_balanced"));
+        let resources = file
+            .resource_coordination
+            .as_ref()
+            .expect("resource_coordination");
+        assert_eq!(resources.gpu_safety_reserve_mib, Some(768));
+        assert_eq!(resources.allow_unverified_admission, Some(true));
+    }
+
+    #[test]
+    fn parse_finite_resource_scheduling_commands() {
+        let parsed: DistroOcliveFile = toml::from_str(
+            r#"
+                schema_version = 1
+                distro_id = "test"
+
+                [resource_coordination]
+                strategy = "primary_first"
+                primary_adapter_id = "builtin.llm.llama_server"
+                system_memory_safety_reserve_mib = 2048
+                cpu_safety_reserve_threads = 2
+                admission_queue_timeout_ms = 45000
+                queue_aging_quantum_ms = 1500
+                automatic_preemption = false
+
+                [[resource_coordination.commands]]
+                kind = "residency"
+                adapter_id = "builtin.voice.cosyvoice2"
+                mode = "on_demand"
+
+                [[resource_coordination.commands]]
+                kind = "yield_then_run"
+                yielding_adapter_id = "builtin.llm.llama_server"
+                target_adapter_id = "builtin.voice.cosyvoice2"
+            "#,
+        )
+        .expect("parse finite resource schedule");
+        let resources = parsed.resource_coordination.expect("resource coordination");
+        assert_eq!(
+            resources.strategy,
+            Some(ResourceSchedulingStrategy::PrimaryFirst)
+        );
+        assert_eq!(resources.commands.len(), 2);
+        assert_eq!(resources.system_memory_safety_reserve_mib, Some(2_048));
+        assert_eq!(resources.cpu_safety_reserve_threads, Some(2));
+        assert_eq!(resources.admission_queue_timeout_ms, Some(45_000));
+        assert_eq!(resources.queue_aging_quantum_ms, Some(1_500));
+        assert_eq!(resources.automatic_preemption, Some(false));
     }
 
     #[test]

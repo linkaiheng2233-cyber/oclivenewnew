@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
 import { VOICE_ASR_PLUGIN_ID } from '@oclive/shared/lib/voiceAsrEvents'
+import { useI18n } from 'vue-i18n'
 import PluginSettingsPanelSlots from '../PluginSettingsPanelSlots.vue'
 import HelpHint from '../shared/HelpHint.vue'
 import UiButton from '../ui/UiButton.vue'

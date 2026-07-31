@@ -1706,7 +1706,7 @@ pub(crate) async fn resolve_cast_persona(state: &AppState, role_id: &str) -> Str
 }
 
 fn read_role_prompt_snippet(state: &AppState, role_id: &str) -> Option<String> {
-    let role_dir = state.storage.roles_dir().join(role_id);
+    let role_dir = state.storage.role_dir_path(role_id).ok()?;
     for rel in [
         "prompts/identity.md",
         "prompts/character.md",

@@ -27,8 +27,8 @@ Lazy-loaded at `/create`: edit packs, validate, export to roles root, **trial ch
 
 ### Editing workflow (Create mode)
 
-1. **Pick or create a role pack** under `distros/chat-pro/roles/<roleId>/` with a **v2** skeleton (**`pipeline.ocblueprint`** + assets per [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)). **Legacy v1 (deprecated):** `manifest.json` / `settings.json` — [V1_TO_V2_MIGRATION.md](../role-pack/V1_TO_V2_MIGRATION.md).
-2. **Edit blueprint** — `meta` and **`slot_registry`** (`type` + `backend` per instance); run **Validate** (`oclive pack validate`, v2 default).
+1. **Pick or create a role pack** under `distros/chat-pro/roles/<roleId>/` with **`pipeline.ocblueprint`** plus assets per [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md). New packs use Stable v4; v2 remains compatible. **Legacy v1 (deprecated):** `manifest.json` / `settings.json` — [V1_TO_V2_MIGRATION.md](../role-pack/V1_TO_V2_MIGRATION.md).
+2. **Edit blueprint** — `meta` and **`slot_registry`** (`type` + `backend` per instance); run **Validate** (`oclive pack validate`, exact v2 / v3 / v4 dispatch).
 3. **Resources & scenes** — `core_personality.txt`, scene folders; **architecture graph** shows `slot_registry` and optional **`groups`** (read-only grouping).
 4. **Save** to the configured roles root; optional hot reload when `ocliveProjectRoot` is set.
 

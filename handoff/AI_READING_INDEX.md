@@ -25,11 +25,11 @@
 
 | 序 | 文档 | 何时 |
 |----|------|------|
-| 1 | [`AI_CHANGE_BOUNDARIES.md`](./AI_CHANGE_BOUNDARIES.md) | **G1–G16** · 代码 + 文档纪律 |
+| 1 | [`AI_CHANGE_BOUNDARIES.md`](./AI_CHANGE_BOUNDARIES.md) | **G1–G17** · 代码 + 关联改动 + 文档纪律 |
 | 2 | [`MODULE_MAP_AND_HANDOFF.md`](./MODULE_MAP_AND_HANDOFF.md) | 六槽 / 设施 / 独立通道 **定义与关系** |
 | 3 | [`NAMING_CONVENTIONS.md`](../creator-docs/NAMING_CONVENTIONS.md) §4.2 | canonical import · 禁止别名 |
 | 4 | [`BUS_FACTOR_NOTES.md`](./BUS_FACTOR_NOTES.md) | `process_message` · DB · 错误码 **文件锚点** |
-| 5 | [`.cursor/rules/oclivenewnew.mdc`](../.cursor/rules/oclivenewnew.mdc) | 7 条硬约束镜像 |
+| 5 | [`.cursor/rules/oclivenewnew.mdc`](../.cursor/rules/oclivenewnew.mdc) | 10 条硬约束镜像 |
 
 **必背常量（勿查错字段）**：回复 DTO 字段 **`reply`**（不是 `response`）· 六槽键 `plugin_backends` / `slot_registry` · 蓝图 **`steps[]` 不参与首轮调度**。
 
@@ -97,6 +97,7 @@ Vue invoke / HTTP --api
 | 六槽 backend 24 格真值 | [`SLOT_BACKEND_REALITY_MATRIX.md`](./SLOT_BACKEND_REALITY_MATRIX.md) |
 | 角色包磁盘格式 | [`ROLE_PACK_SPEC.md`](../creator-docs/role-pack/ROLE_PACK_SPEC.md) |
 | 蓝图 settings / `slot_registry` | [`SETTINGS_REFERENCE.md`](../creator-docs/cli/SETTINGS_REFERENCE.md) |
+| 蓝图扩展外壳 / `ExecutionPlan` / 统一资源协调 | [`RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md`](../creator-docs/rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md) |
 | Remote JSON-RPC | [`REMOTE_PLUGIN_PROTOCOL.md`](../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) |
 | 目录插件 · bridge · 权限 | [`DIRECTORY_PLUGINS.md`](../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md) · [`BRIDGE_API_REFERENCE.md`](../creator-docs/plugin-and-architecture/BRIDGE_API_REFERENCE.md) |
 | 插件放置决策 | [`PLUGIN_PLACEMENT_GUIDE.md`](../creator-docs/plugin-and-architecture/PLUGIN_PLACEMENT_GUIDE.md) |
@@ -150,7 +151,7 @@ Vue invoke / HTTP --api
 | **产品 / 定位** | OCLIVE_POSITIONING · THREE_DISTRO_KERNEL_CLOSURE · PRODUCT_LINE_TASK_BUCKETS |
 | **发行版子目录** | [theater/](./theater/) · [vscode/](./vscode/) · [launcher/](./launcher/) · [pack-editor/](./pack-editor/) |
 
-**禁止当 truth**：[`handoff/archive/`](../handoff/archive/) · [`04_4.6_PROJECT_TRUTH_CHECKLIST.md`](./04_4.6_PROJECT_TRUTH_CHECKLIST.md)（G3）
+**禁止当 truth**：[`handoff/archive/`](./archive/)（含历史 `04_4.6_PROJECT_TRUTH_CHECKLIST.md`，G3）
 
 ---
 

@@ -1,14 +1,14 @@
 # 计划书覆盖审计（对照 TECHNICAL_DEBT）
 
-**更新日期：** 2026-07-16  
-**结论：** 活跃 OPEN/Partial/Observe/Deferred/冻结项均有 `long-plans/` 条目；§4 长期 Deferred 已于本轮补 stub。  
+**更新日期：** 2026-07-27
+**结论：** 活跃 OPEN/Partial/Observe/Deferred/冻结项均有 `long-plans/` 条目；P1 `V-MODULE-QUALITY-01` 已补齐 Full 分阶段计划。
 **详略：** `auto` 书 = Minimal 可执行分阶 + `oclive-marathon-contract`；`skip`/`human` = stub + 触发条件。`npm run check:debt-marathon` 强制校验所有 auto 书的文件范围、验收理由、产出、回退与父债处置。**深度细则以 [`AI_AND_PIPELINE_GATES.md`](./AI_AND_PIPELINE_GATES.md) + 七阶段 Skill 为准**（不在每本 stub 重复）。
 
 ## 覆盖矩阵
 
 | 台账状态类 | 覆盖 | 注 |
 |------------|------|-----|
-| OPEN 主仓可 Minimal | ✓ auto 书 | T-DOC-02 · D-ROLEVER · RESILIENCE · CROSS/DIST/MARKET · VOICE-06/07 · SUPPLY-05-Full · FOLLOWUP-PR123 |
+| OPEN / Partial 主仓可施工 | ✓ auto 书 | V-MODULE-QUALITY-01 · K-PLUGIN-SEC-01 · T-DOC-02 · D-ROLEVER · RESILIENCE · CROSS/DIST/MARKET · VOICE-06/07 · SUPPLY-05-Full · FOLLOWUP-PR123 |
 | OPEN 跨仓/人工 | ✓ human stub | VSCODE · PE-* · P0-STRANGER-EXT |
 | Partial | ✓ | K-PERF-10 skip |
 | Observe | ✓ skip stub | SLOT/TRAIT/PORT/POLICY/ORPHAN · F4 · SUPPLY-04/08 · VOICE-05 等 |

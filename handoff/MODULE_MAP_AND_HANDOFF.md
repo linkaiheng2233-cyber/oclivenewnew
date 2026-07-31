@@ -1,14 +1,14 @@
 # 模块注册表（Module Registry）
 
-**最后更新**：2026-07-05  
+**最后更新**：2026-07-30
 **SSOT 范围**：**模块定义 · 架构划分 · 槽位/设施/独立通道之间的联系 · 在边界内如何改**。  
-**非 SSOT**：发版进度 → [`TECHNICAL_DEBT_INVENTORY.md`](./TECHNICAL_DEBT_INVENTORY.md) · 版本快照 → [`PROJECT_STATUS_AND_ALIGNMENT.md`](../creator-docs/getting-started/PROJECT_STATUS_AND_ALIGNMENT.md) · 关键文件路径 → [`BUS_FACTOR_NOTES.md`](./BUS_FACTOR_NOTES.md) · 文档分责 → [`handoff/README.md`](./README.md) §文档分责。
+**非 SSOT**：发版进度 → [`TECHNICAL_DEBT_INVENTORY.md`](./TECHNICAL_DEBT_INVENTORY.md) · 版本快照 → [`PROJECT_CURRENT_STATUS.md`](../creator-docs/getting-started/PROJECT_CURRENT_STATUS.md) · 关键文件路径 → [`BUS_FACTOR_NOTES.md`](./BUS_FACTOR_NOTES.md) · 文档分责 → [`handoff/README.md`](./README.md) §文档分层。
 
 **改本文的条件**：新增/重命名模块或设施、变更六槽合并规则、新增编排行能力（非六槽）、或术语混淆需补对照表。**禁止**在本文堆进度叙事或复制 PLUGIN_V1 全文。
 
 ---
 
-## 0. 四条铁律（关系骨架）
+## 0. 五条铁律（关系骨架）
 
 | # | 铁律 | 一句话 |
 |---|------|--------|
@@ -16,6 +16,7 @@
 | 2 | **六槽** | `slot_registry` → `PluginBackends` → `PluginHost::resolve_for_role`；键 **`memory` · `emotion` · `event` · `prompt` · `llm` · `agent`**。 |
 | 3 | **记忆三套存储** | 聊天日志 **`chat_messages`** ≠ **`short_term_memory`** ≠ **`long_term_memory`**；删聊天 **不清** 记忆表。 |
 | 4 | **配置四层** | 角色包 → 蓝图 → 发行版 `HostProfile` → 会话 DB；分责 [`ROLE_PACK_BOUNDARY.md`](./ROLE_PACK_BOUNDARY.md)。 |
+| 5 | **图纸 ≠ 资源执行** | 蓝图只声明能力意图；宿主编译内部 `ExecutionPlan`；Resource Coordinator 根据真实设备和策略发放资源租约。 |
 
 ---
 
@@ -41,6 +42,8 @@
 | **后端模块插件** | 挂在某槽 `backend` | 无独立号 | [`DIRECTORY_PLUGINS.md`](../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md) · [`SLOT_BACKEND_REALITY_MATRIX.md`](./SLOT_BACKEND_REALITY_MATRIX.md) |
 
 **对外叙述**（产品文案、编号脚注）：[`OCLIVE_ARCHITECTURE_OVERVIEW.md`](../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) — **不**在此重复长文。
+
+**蓝图 `extensions` 不是第五类模块**：它是跨上述分类的声明/装配外壳。扩展声明的 Capability 必须解析为已有六槽实现、设施、独立通道或宿主 UI/硬件消费者；仅出现一个未知 JSON 节点不构成新模块。目标契约见 [`RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md`](../creator-docs/rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md)。
 
 ---
 
@@ -112,6 +115,7 @@
 | **主链 hook** | `turn_pipeline/pre.rs` 检索 · `post_llm` 写入 STM/LTM |
 | **与聊天存储** | **无关** — `chat_messages` 不进 MemoryEngine；回放见 `replay_memory_extraction` |
 | **合并** | 多 memory 实例 → 去重合并 |
+| **可移植边界** | `.ocmemory` 只携带 `memory_seed` + LTM；STM 是可重建缓存，临时局面状态不属于 memory/persona 迁移 |
 | **`none`** | `NoopMemoryRetrieval`；共景路径通常 **禁止** none（见 MODULE_NONE_SEMANTICS） |
 | **允许改** | 检索算法、decay、archive 阈值、remote/directory 协议 |
 | **禁止** | 用聊天记录表当记忆真源；角色任务改 `slot_registry` |
@@ -170,7 +174,7 @@
 | **Tier0 人设真源** | **`core_personality.txt`**（非 `prompts/system.md`） |
 | **页脚** | `reply_quality_anchor`（包级 **可替**）+ **`KERNEL_DIALOGUE_GUARDRAILS`**（**不可替**） |
 | **主链 hook** | `co_present` `BuildPrompt` · `PromptInput` |
-| **Wave D 预留** | Deep **`prompts/deep_capsule.txt`** — [`DEEP_PROMPT_DISTILLATION.md`](./DEEP_PROMPT_DISTILLATION.md) · **Small+Deep 已接线** |
+| **Wave D persona capsule** | **`prompts/deep_capsule.txt`**（兼容文件名）— [`DEEP_PROMPT_DISTILLATION.md`](./DEEP_PROMPT_DISTILLATION.md) · **Small 模型 Fast/Deep 已接线** |
 | **允许改** | 段落公式 `sections.rs`、overlay（concise profile） |
 | **禁止** | 运行时 LLM 压缩 prompt；用 capsule 替换 guardrails |
 
@@ -184,9 +188,12 @@
 | **键** | `llm` |
 | **Trait** | `LlmClient` |
 | **Backend** | `ollama` · `remote` · `directory` · `none`（共景 **禁止** none） |
+| **发行版 builtin 实现** | `[llm_runtime].mode=performance`：`llama-server/GGUF → Ollama`；不新增角色包 backend 枚举 |
 | **合并** | 多 llm 实例 → **last-wins** |
 | **主链 hook** | `co_present` generate / stream |
-| **允许改** | Ollama 适配、directory RPC、TTFT 客户端选项 |
+| **性能闭环** | `performance_llm.rs` 管理 runtime pack/进程/熔断；`openai_compatible_llm.rs` 解析 SSE；GGUF 路径与 Ollama fallback model 分开保存 |
+| **流式回退规则** | 首 token 前失败可回退 Ollama；已产生 token 后必须返回错误，不得重跑造成重复文本/语音 |
+| **允许改** | Ollama 适配、llama-server builtin 适配、directory RPC、TTFT 客户端选项 |
 | **禁止** | UI 内二次调 LLM 选立绘 |
 
 ---
@@ -212,9 +219,9 @@
 | # | 名称 | 输入 / 输出 | 主链锚点 | 默认 | 改动 SSOT |
 |---|------|-------------|----------|------|-----------|
 | **1** | 复杂情感 | emotion + 上下文 → `narrative_hint` | `pre.rs` → 下一轮 `PromptInput.previous_complex_emotion_narrative_hint` | on（可 skip） | `complex_emotion.rs` |
-| **2** | 专家模型 | 条件 → 专家子流程 | `expert_routing.json` · `dual_core` | **冻结关** | TECHNICAL_DEBT §2 |
-| **3** | 立绘 | 封闭 catalog → `visual_state_id` | `post_llm` · 表现导演 LLM | **关** | RFC_PORTRAIT |
-| **4** | 视觉表现 | `visual_state_id` → `performance_directive` | 宿主 UI 帧循环 · **无** AI 选图 | **关** | RFC_VISUAL_PRESENTATION |
+| **2** | 专家模型 | 条件 → 专家子流程；`slot.lora.apply` 选择预声明的 directory LLM adapter | `expert_routing.json` · `dual_core` · `post::run_main_llm*` | **可选启用；默认关** | TECHNICAL_DEBT §2 |
+| **3** | 立绘 | 封闭 catalog → `visual_state_id` | `post_llm` · 表现导演 LLM | **平台默认关；角色包可 opt in** | RFC_PORTRAIT |
+| **4** | 视觉表现 | `visual_state_id` → `performance_directive` | 宿主 UI 帧循环 · **无** AI 选图 | **平台默认关；角色包可 opt in** | RFC_VISUAL_PRESENTATION |
 
 **禁止**：上述任一写入 `plugin_backends` 六键或蓝图六键别名。
 
@@ -231,9 +238,9 @@
 | **`voice.director`** | 人设 → **`voice_directive`**（`rules-v1` · `emo_text` · `ref_map`） | 插件 RPC **`voice.build_directive`** | **否** |
 | **`voice.synth`** | `reply` + directive → 音频（CosyVoice2 / cloud） | **`voice.speak`** · `voice.probe_tts` · `voice.warm` · 模型 DLC | **否** |
 
-**`voice.asr` 插件 SSOT**：[`distros/chat-pro/plugins/com.oclive.voice.asr/`](../distros/chat-pro/plugins/com.oclive.voice.asr/) · **v0.4** · `provides: ["voice.asr"]` · RPC 见插件 README · 开发烟测 [`examples/voice-loop-minimal/`](../examples/voice-loop-minimal/)（Piper 仅 `--tts-sherpa` dev 路径）。导演 + 发声器已合入同插件，见 [`ARCHITECTURE_DECOUPLING_PANORAMA.md`](../human-docs/team/ARCHITECTURE_DECOUPLING_PANORAMA.md) §6–§7。
+**`voice.asr` 插件 SSOT**：[`distros/chat-pro/plugins/com.oclive.voice.asr/`](../distros/chat-pro/plugins/com.oclive.voice.asr/) · **v0.5** · `provides: ["voice.asr"]` · RPC 见插件 README · 开发烟测 [`examples/voice-loop-minimal/`](../examples/voice-loop-minimal/)（Piper 仅 `--tts-sherpa` dev 路径）。导演 + 发声器已合入同插件，见 [`ARCHITECTURE_DECOUPLING_PANORAMA.md`](../human-docs/team/ARCHITECTURE_DECOUPLING_PANORAMA.md) §6–§7。
 
-RFC：[`RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md`](../creator-docs/rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md) · Phase2：[`USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md`](./USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md)（**已交付**，勿当待办）。
+RFC：[`RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md`](../creator-docs/rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md) · 现行行为以源码与本注册表为准；Phase 2 过程记录已归档。
 
 ---
 
@@ -244,8 +251,9 @@ RFC：[`RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md`](../creator-docs/rfc/RFC_SI
 | **Turn Thinking** Fast/Deep/Auto | HostProfile 策略 | `[turn_thinking]` · `distro.oclive.toml` | `turn_thinking.rs` |
 | **Turn Thinking 持久化分流** `fast_persistence` | HostProfile · `legacy` \| `strong_only` | `[turn_thinking].fast_persistence` | `turn_thinking.rs` · `co_present` / `post` · RFC [`RFC_TURN_THINKING_PERSISTENCE.md`](../creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md) |
 | **Turn Thinking 包级路由** OR/AND · latch · ephemeral | 角色包 `config.json` → `turn_thinking` | 合并 Host OR + pack OR/AND | `turn_thinking.rs` · `035_turn_thinking_runtime.sql` · RFC §8–12 |
+| **叙事连续性微状态机** | 场景内编排行状态（不属于人格档案或第七槽） | `scenes/{scene_id}/scene.json` → `continuity`；旧包缺省关闭 | `narrative_continuity.rs` · `036_narrative_continuity.sql` · `co_present` 动态 `extra_sections` → `post` 最终可见回复显式标记迁移 |
 | **`ModelTier`** Small/Large | 编排行 · Ollama 模型启发式 | — | `model_tier.rs` |
-| **`PersonaSource`** FullCore/DeepCapsule | 编排行 · Deep Tier0 选择 | 角色 `meta.deep_capsule_enabled` + `prompts/deep_capsule.txt` | `model_tier.rs` · `co_present` |
+| **`PersonaSource`** FullCore/PersonaCapsule | 编排行 · Small 模型 Tier0 选择 | 角色 `meta.deep_capsule_enabled` + `prompts/deep_capsule.txt` | `model_tier.rs` · `co_present` |
 | **`event_impact_llm`** | HostProfile 开关 | `[host_flags]` | `event_impact_ai.rs` |
 | **`prompt.profile` concise** | HostProfile overlay | `[prompt]` | `DISTRO_CONCISE_PROMPT_OVERLAY` |
 | **PersonalityEngine / 好感（legacy 数值）** | 无编号设施 · **目标废弃** | 角色 `evolution` · `role_runtime` | `personality_engine.rs` · 见 [RFC_MODULE_MVL_AND_AFFECT_ARCHITECTURE.md](../creator-docs/rfc/RFC_MODULE_MVL_AND_AFFECT_ARCHITECTURE.md) §6 |
@@ -256,17 +264,67 @@ TTFT / Deep capsule：**设计** [`DEEP_PROMPT_DISTILLATION.md`](./DEEP_PROMPT_D
 
 ---
 
+## 12.1 蓝图扩展、执行计划与资源协调
+
+| 概念 | 职责 | 禁止 |
+|------|------|------|
+| 蓝图扩展外壳 | `capability`、可选 `provider`、`required`、外置 `config_ref` | 携带卸载进程、固定显存或任意脚本命令 |
+| Capability Provider | 实现业务能力并声明权限/兼容性 | 仅有配置、没有生产者或消费者便宣称交付 |
+| `ExecutionPlan` | 合并蓝图、`HostProfile`、用户设置、能力注册表与设备状态；进程内使用 | 落盘进角色包或允许第三方直接写 |
+| Resource Coordinator | 集中预算、租约、优先级、压力和降级决策 | 传输 token/PCM/渲染帧或包含各模块业务逻辑 |
+| Resource Adapter | LLM、语音、渲染等领域的探测与 start/suspend/unload/degrade 执行 | 自行绕过中央租约偷偷预热 |
+
+```text
+Blueprint + HostProfile + user/session + Capability Registry
+                          ↓
+                     Plan Compiler
+                          ↓
+                     ExecutionPlan
+                          ↓
+                 Resource Coordinator
+                    ↓       ↓       ↓
+               LLM adapter Voice adapter Render adapter
+```
+
+资源协调是**无编号控制面设施**，不是第七后端模块、不是独立通道注册表项，也不是 [`resolve_kernel_action`](./KERNEL_SCHEDULER_RESCOPE.md) 的进程 attach/replace 调度。新扩展首先实现 Capability Provider；只有占用共享 GPU/内存/受管进程时才增加 Resource Adapter。完整字段、缺失语义和实施顺序只维护于 [蓝图扩展与资源协调 RFC](../creator-docs/rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md)。
+
+**当前实现边界（2026-07-31）**：宿主已能从 v4 `extensions`、有效六槽、`HostProfile`、目录插件 manifest、插件启停状态、依赖与高危授权编译**只读、进程内** `ExecutionPlan`；计划不会启动 Provider，也不会写回角色包。只有宿主登记了真实消费者的 capability 才可进入 ready，插件单独声明任意 `provides` 不构成可执行能力。首个登记项为 Chat Pro 的 `voice.asr`；其它发行版会对同一声明给出 `capability_consumer_unavailable`。
+
+Resource Coordinator 已落地 NVIDIA 多设备、系统 RAM 与 CPU snapshot，原子 admission/lease/priority/pressure，以及带超时、取消清理和老化防饥饿的公平准入队列。宿主 Resource Adapter Registry 登记 managed llama-server、observe-only Ollama、performance 活动观察器和官方 bundled CosyVoice2 的控制权、运行档位、驻留能力与真实生命周期动作；资源诊断 v5 同时返回注册来源、队列和租约状态。`HostProfile` 的 `require` / `residency` / `coexist` / `exclusive` / `yield_then_run` / `fallback` 仍先经注册表静态校验，再由实时租约、GPU/RAM/CPU 容量和真实控制器编译只读 `candidate_plan`；查看诊断不会执行。Performance llama 的 `gpu_full`、`gpu_balanced`、`cpu_compatibility` 三档会改变实际 `--n-gpu-layers` 并在准入拒绝后逐档回退。自动抢占只选择优先级更低、明确声明可逆动作且拥有精确 requester → target → operation 授权的 managed 适配器；失败逆序回滚，工作完成后逆序恢复，observe-only 外部进程不会被假装卸载。第三方扩展可经所有者命名空间约束的进程内 `ResourceAdapterRegistrar` 登记 adapter facts 与单写者控制器，但目录插件 manifest 尚无资源声明/自动注册字段，登记也不会自动取得跨适配器控制权。通用契约已加入 `render` / `compute` / `hybrid` 资源域并覆盖渲染适配器容量与抢占恢复测试；Chat Pro 当前仍由 `Live2DStageAdapter` 明确回退 PNG，没有 bundled Live2D runtime，不能宣称 Live2D 已接管资源。bundled CosyVoice 仍采用“请求卸载 → 侧车确认 → 撤销租约”，未确认时保留状态；Performance LLM 暂停仍通过统一请求门排空在途 primary/fallback。桌面保持 thin shell，真实生命周期操作由内核单写者执行；纯计划编译/CLI 不碰硬件，保留 `not_evaluated`。尚未落地的是外部批量计划 API、目录 manifest 资源声明、实际 bundled Live2D runtime、长时间真实进程/硬件 soak 与远端 CI；状态见 `K-RESOURCE-COORD-01`。
+
+实现锚点：[`execution_plan.rs`](../kernel/crates/oclive_kernel_host/src/domain/execution_plan.rs)（能力纯编译）· [`resource_plan.rs`](../kernel/crates/oclive_kernel_host/src/domain/resource_plan.rs)（资源候选计划纯编译）· [`capability_registry.rs`](../kernel/crates/oclive_kernel_host/src/infrastructure/capability_registry.rs)（能力适配）· [`resource_adapter_registry.rs`](../kernel/crates/oclive_kernel_host/src/domain/resource_adapter_registry.rs) / [`resource_coordinator.rs`](../kernel/crates/oclive_kernel_host/src/domain/resource_coordinator.rs)（资源目录、控制授权与批量执行基础）· [`resource_coordination.rs`](../kernel/crates/oclive_kernel_contracts/src/resource_coordination.rs)（快照/单写者控制器端口）· [`performance_request_gate.rs`](../kernel/crates/oclive_kernel_host/src/infrastructure/performance_request_gate.rs)（Performance LLM 请求准入/排空/恢复竞态）· [`service/resource_coordination.rs`](../kernel/crates/oclive_kernel_host/src/service/resource_coordination.rs)（Voice 准入/抢占/确认恢复）· [`service/execution_plan.rs`](../kernel/crates/oclive_kernel_host/src/service/execution_plan.rs)（激活门禁/只读查询）· [`models/execution_plan.rs`](../kernel/crates/oclive_kernel_types/src/models/execution_plan.rs) / [`models/resource_coordination.rs`](../kernel/crates/oclive_kernel_types/src/models/resource_coordination.rs)（公共诊断 DTO）。
+
+---
+
 ## 12.5 前端 ↔ 内核契约边界（2026-07-13）
 
 | 主题 | SSOT | 消费方 | 不变式 |
 |------|------|--------|--------|
-| **错误码** | [`AppError::code`](../../kernel/crates/oclive_kernel_types/src/error.rs) + `http_chat_codes` | `distros/shared/src/api/generated/kernelErrorCodes.ts` · [`ERROR_CODES.md`](../creator-docs/getting-started/ERROR_CODES.md) · `scripts/check-error-codes-drift.mjs` | 前端 **禁止** 解析 `message` 文本分支（legacy `[CODE]` 除外）；用 `code` + 可选 `context.kind` |
-| **错误 JSON** | [`KernelErrorBody`](../../kernel/crates/oclive_kernel_types/src/error.rs) | Tauri `invoke` · HTTP `/chat` · `helpers.ts` | 字段名与形状内核权威；发行版只做 i18n 映射 |
-| **热路径 DTO** | [`oclive_kernel_types::models::dto`](../../kernel/crates/oclive_kernel_types/src/models/dto.rs) | `distros/shared/src/api/*.ts`（过渡期为手写镜像） | 回复字段为 **`reply`**；六槽键为 `plugin_backends` / `slot_registry.type` |
+| **错误码** | [`AppError::code`](../kernel/crates/oclive_kernel_types/src/error.rs) + `http_chat_codes` | `distros/shared/src/api/generated/kernelErrorCodes.ts` · [`ERROR_CODES.md`](../creator-docs/getting-started/ERROR_CODES.md) · `scripts/check-error-codes-drift.mjs` | 前端 **禁止** 解析 `message` 文本分支（legacy `[CODE]` 除外）；用 `code` + 可选 `context.kind` |
+| **错误 JSON** | [`KernelErrorBody`](../kernel/crates/oclive_kernel_types/src/error.rs) | Tauri `invoke` · HTTP `/chat` · `helpers.ts` | 字段名与形状内核权威；发行版只做 i18n 映射 |
+| **热路径 DTO** | [`oclive_kernel_types::models::dto`](../kernel/crates/oclive_kernel_types/src/models/dto.rs) | `distros/shared/src/api/*.ts`（过渡期为手写镜像） | 回复字段为 **`reply`**；六槽键为 `plugin_backends` / `slot_registry.type` |
 | **六槽清单** | 内核 resolver + `PluginBackends` | `slotRegistry.ts`（待导出替换硬编码） | 前端不得假设 Chat Pro 为唯一宿主 |
 | **invoke 矩阵** | [`INVOKE_HOTPATH_MATRIX.md`](./INVOKE_HOTPATH_MATRIX.md) | Tauri `api/*.rs` ↔ 前端 `invoke` | 命令签名变更须同步矩阵与契约测 |
 
 **第一切片（已落地）**：错误码三方一致门禁（dimension5 **`kernel error codes drift`**）。**后续切片**：DTO `ts-rs`/`typeshare` 试点 · 六槽枚举导出 · invoke 签名 ratchet。
+
+---
+
+## 12.6 跨模块能力闭环与兼容边界
+
+模块能力以**完整消费链**为单位演进，不能把 Chat Pro、共享前端、桌面宿主、内核和官方插件当作互不相关的版本孤岛。AI 改动纪律见 [`AI_CHANGE_BOUNDARIES.md`](./AI_CHANGE_BOUNDARIES.md) G17；跨产物版本规则见 [`COMPATIBILITY.md`](../creator-docs/COMPATIBILITY.md)。
+
+| 层 | 兼容职责 | 不变式 |
+|----|----------|--------|
+| 角色包 / 编写器 | 产出 schema、可选能力与资源 | 旧包缺新键可加载或明确拒载；编写器新增导出须核对宿主 loader/validation |
+| 内核 types/runtime/host | 定义 DTO、能力语义、编排与持久化 | 新字段优先可选/有默认；`api_version`/schema/Breaking 变更显式迁移 |
+| Desktop Tauri | 命令封装、ACL、插件 Bridge、资源协议 | snake_case ↔ camelCase、invoke 注册、Bridge 分发与权限白名单同步 |
+| `distros/shared` | API 镜像、store/composable、通用插槽与状态归属 | 不假设 Chat Pro 是唯一消费者；异步结果须绑定 role/scene/generation |
+| Chat Pro / Theater | 壳、页面挂载、发行版策略 | 明确能力适用发行版；Chat Pro 的 Fluent/Tool 不得只更新一壳 |
+| 目录插件 | manifest、Vue 入口、iframe 回退、RPC/事件声明 | `entry` 与 `vueComponent` 均可解析；Bridge/RPC 声明与宿主实现对齐；失败可降级且可诊断 |
+| Chat Pro staged beat | `types::dto` → `domain/adult_stage.rs` → `db/adult_stage.rs` → HTTP/Tauri → `adultBeatQueue.ts` | stage 只生成并持久化结构化文本，不得触发正式 turn 的聊天/记忆/关系/事件/人格写入；commit 按 generation+sequence 有序且幂等，cancel 删除未提交拍；其他发行版无需实现此 Chat Pro 扩展 |
+
+**仓内结构门禁**：`npm run check:module-compat` 对拍内核/前端 10 个嵌入插槽、官方插件 manifest、Vue/iframe 资源、RPC timeout 声明与插件索引版本。它证明结构兼容，**不替代**行为集成测或跨版本能力协商。
 
 ---
 
@@ -349,7 +407,7 @@ Agent 短路、异地 stub：**并列**于上链，见 `process_message.rs`。
 | 层 | 典型内容 | 谁改 | AI 任务边界 |
 |----|----------|------|-------------|
 | 角色包 | `core_personality.txt` · scenes · prompts | 创作者 | **不改** slot_registry |
-| 蓝图 | `slot_registry` · `runtime_config` | 管理员 | 须 validation |
+| 蓝图 | `slot_registry` · `runtime_config` · 目标 `extensions` 外壳 | 管理员 / 集成方 | 须 validation；扩展载荷由对应作者维护 |
 | 发行版 | `distro.oclive.toml` → HostProfile | 产品 | **不改**角色人设任务 |
 | 会话 | `role_runtime` · slot override | 运行时 | override 不写盘 |
 
@@ -364,7 +422,9 @@ Agent 短路、异地 stub：**并列**于上链，见 `process_message.rs`。
 | 改 Prompt 段落 | 第 4 模块 + 角色锚点 | prompt_builder · G7 `reply` |
 | 改发行版延迟 | HostProfile · Turn Thinking | DISTRO_CAPABILITY_PROFILE |
 | 新设施子模块 | RFC + 本文 §10 登记 | 禁止 silent 第七槽 |
+| 新蓝图扩展 / GPU 能力 | RFC + 本文 §12.1 + 完整 G17 链 | 蓝图只声明；资源敏感项必须接统一协调 |
 | 新 handoff 文档 | **关键决策 / RFC 仅** | [`AI_CHANGE_BOUNDARIES.md`](./AI_CHANGE_BOUNDARIES.md) G10–G12 |
+| 改 Chat Pro / 插件 / 角色能力 | §12.5–§12.6 全链核对 | G17 · `npm run check:module-compat` · 行为集成测 |
 
 ---
 

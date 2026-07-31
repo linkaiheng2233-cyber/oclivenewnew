@@ -25,7 +25,7 @@
 | 身份文件格式 · pre 注入逻辑 | 写入 `plugin_backends` 冒充六槽 |
 | [RFC_SIDE_CHANNEL](../../../creator-docs/rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md) 范围 | 与 MCP user 混淆（属 agent 授权域） |
 
-Phase2 已交付 — 见 [USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2](../../../handoff/USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md)（史料，勿当待办）。
+现行边界见 [用户身份与回复后处理 RFC](../../../creator-docs/rfc/RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md) 与 [MODULE_MAP](../../../handoff/MODULE_MAP_AND_HANDOFF.md)。
 
 ---
 

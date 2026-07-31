@@ -68,7 +68,7 @@ python loop.py
 | **VX-4** | 角色 ref | `voice_profile` v2 · `ref_map` · `emo_text` |
 | **VX-4b** | 人设 → 风格指令 | 无 `emo_text_template` 时从 `core_personality.txt` 规则派生 · 显式 `voice_profile.json` 优先 |
 | **VX-5** | 云端并列 | `synth_provider: cloud` · OpenAI-compatible · `edge-tts-zh` |
-| **VX-6** | 延迟 | 流式首句 `voice:stream-sentence`（旁白过滤 · 首块更早）· 侧车 `/warm` **prime** dummy 合成 · 角色切换预热 |
+| **VX-6** | 延迟 | 流式首句 `voice:stream-sentence`（旁白过滤 · 首块更早）· 侧车真实 PCM 分块 · `/warm` 安全 prime + 角色参考音频特征缓存 · CUDA 默认 `mixed_fp16`（LLM + flow；HiFT 保持 FP32）且 prime 失败自动恢复 FP32 · 发送/角色切换预热 · submit→首文本→首音遥测 |
 | **VX-7** | 引擎契约统一 | `TtsEngine` 协议 + `tts/engines/registry.py` · profile 驱动 `synth_provider` · 非 `cosyvoice2` 不启侧车 · `shouldUseDirectSidecarStream(engine, provider)` |
 | **VX-8** | 主流 TTS adapter | Tier-1：`gpt-sovits-http` · `qwen3-tts-http` · `edge-tts` · `cloud-tts-openai` · `fish-speech-http` · `indextts-http` |
 | **VX-9** | 通用 HTTP 适配包 | `voice_tts_adapter.schema.json` · `generic-http-adapter` · `voice.import_tts_adapter` · 设置页导入 UI |
@@ -104,9 +104,9 @@ node distros/chat-pro/plugins/com.oclive.voice.asr/rpc_server.mjs
 # 另开终端对 /rpc POST voice.build_directive，params 含 role_path + bot_emotion
 ```
 
-期望示例（2026-07 · rules-v1）：`mumu` 用手写 `voice_profile`；`shimeng` 偏清冷毒舌少女；`枫侵月` 偏温和少年感；仅一句人设的 `polish-dev` 得泛角色 + 嘴硬修饰。
+期望示例（2026-07 · rules-v1）：`mumu` 用手写 `voice_profile`；测试期间动态生成的 sharp persona fixture 偏清冷毒舌；`枫侵月` 偏温和少年感；仅一句人设的 `polish-dev` 得泛角色 + 嘴硬修饰。
 
-**自动化矩阵（2026-07-15 · L1 · VX-11）**：`node scripts/test-voice-build-directive.mjs` → 四角色 × neutral/happy/shy **PASS**，并断言全局 TTS 固定后 `mumu` `synth_profile` 覆盖、其余角色继承全局；`node scripts/test-voice-speak-path.mjs --probe-only` → bundled CosyVoice **ok** · GPT-SoVITS **probe ok**（本地 :9880 在线时）· 离线 engine 诚实 `endpoint_unreachable` / `engine_not_installed`。
+**自动化矩阵（2026-07-24 · L1 · VX-6/VX-11）**：`node scripts/test-voice-build-directive.mjs` → 三个发行角色 + 一个动态 fixture × neutral/happy/shy **PASS**，并断言全局 TTS 固定后 `mumu` `synth_profile` 覆盖、其余角色继承全局；`node scripts/test-voice-speak-path.mjs --probe-only` → bundled CosyVoice **ok** · GPT-SoVITS **probe ok**（本地 :9880 在线时）· 离线 engine 诚实 `endpoint_unreachable` / `engine_not_installed`；带 `--role-path ... --runs N --stream-only --max-ttfc-ms N` 可在同一台实机上形成 warm TTFC P50/P95 可回归基线。`python scripts/stress-voice-gpu-runtime.py --gpu-layers 24 --voice-runs N` 覆盖 LLM 先驻留、TTS 冷加载与双流压力；`--gpu-layers 99 --expect-admission-denied` 覆盖拒绝后 LLM 存活。
 
 **不在本轨道：** Live2D、Chat Pro Vue、`kernel/crates/` 内核、**Chat Pro UI 流式打字机**（见 [CHAT_PRO §2 延迟/stream](./CHAT_PRO_VERTICAL_HANDOFF.md) · 组长或视觉线）。
 
@@ -139,6 +139,7 @@ node distros/chat-pro/plugins/com.oclive.voice.asr/rpc_server.mjs
 | `npm run test:theater:smoke` | Theater 提示词/单元 | 语音 |
 | `node scripts/test-voice-build-directive.mjs` | director / `synth_profile` 路由 | 三 OS 设备 |
 | `node scripts/test-voice-speak-path.mjs --probe-only` | TTS probe 路径诚实失败 | 三 OS 实机出声 |
+| `node scripts/test-voice-speak-path.mjs --role-path distros/chat-pro/roles/mumu --runs 5 --stream-only --max-ttfc-ms 2500` | 当前机器 warm TTFC 分位数、角色参考音频预热与真实 PCM stream | 跨机器统一性能承诺 |
 | `node scripts/check-voice-tts-ratchet.mjs` | TTS 契约棘轮 | 三 OS |
 
 | **human-only** | 说明 |
@@ -445,10 +446,15 @@ v1 可用 **按住空格录音、松开识别**（`loop.py --mic`），或 Chat 
 | `role_path not found` | `OCLIVE_ROLE_PATH` 或 `--role-path` 指向真实目录 |
 | `unsupported bridge command: get_plugin_settings_ui` | 见 [DEV_ENVIRONMENT §10](./DEV_ENVIRONMENT.md)；桌面 `plugin_bridge.rs` 须分发插件设置命令 |
 | `vueCompileFailed` / 插槽加载失败（`audioCapture` 等） | **`ui_slots` 的 `.vue` 勿 `import` 同级 `.ts`**（`vue3-sfc-loader` 经 `read_plugin_asset_text` 常请求 `.js` 而磁盘仅有 `.ts`）。逻辑内联进 `.vue` 或仅 `import "vue"`；见 [DIRECTORY_PLUGINS §4.3.1](../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md) |
+| 侧栏 / 语音插槽显示 `PLUGIN_ASSET_URI_INVALID` | 查看 `oclive_plugin` 日志中的 `request_uri`；宿主仅接受 `ocliveplugin://localhost/<id>/<entry>` 与 `http(s)://ocliveplugin.localhost/<id>/<entry>`，不要把外部 URL 或查询参数中的伪地址作为插件入口 |
+| 流式朗读提示 `Failed to fetch` 后回退 RPC | 新版仅对 `voice.probe_tts` 确认可用的侧车直连；若仍出现，检查插件进程日志中的 `PLUGIN_CONFIG_INVALID` / `PLUGIN_CONFIG_READ_FAILED`，以及持久化 `config.json` 是否为 JSON 对象 |
 | Chat Pro 切模式 DB_ERROR | 勿留测试用 `oclive-kernel-server` 占 `:8420`；见 [DEV_ENVIRONMENT §10](./DEV_ENVIRONMENT.md) |
 | directive 一直 null | 正常（mumu 无 catalog）；联调用 `distros/chat-pro/roles/demo-doll` |
-| 预热成功但发消息无声 / 首句卡住数分钟 | CosyVoice2 `stream=True` 在 Windows 会死锁；侧车 `_collect_synthesis_tensors` 默认已改**非流式**（`OCLIVE_COSYVOICE_STREAM=1` 才尝试流式）。整句合成 ~3s 出声属正常 |
+| 预热成功但发消息无声 / 首句卡住数分钟 | 新版先用安全完整短句 prime，再默认走真实 PCM 流式，并保证上游 worker 异常能结束等待；先结束残留侧车并重启应用。仅诊断旧驱动/模型兼容问题时设 `OCLIVE_COSYVOICE_STREAM=0` 回退整句缓冲；`speed != 1.0` 为保持语速语义也会自动缓冲 |
+| 已配置系统代理时本地 TTS 错报 `http_unreachable` / `http_error` | 新版 Python HTTP adapter 会对 `127.0.0.1` / `localhost` / `::1` 自动绕过 `HTTP_PROXY`；若仍出现，先确认使用的是新插件进程并重启应用，再检查目标端口 |
 | `/health` 返回 `not_warmed` 或 `model_dir` 不对 | ① 模型包 `iic/CosyVoice2-0.5B` 是否已导入 `%APPDATA%/OCLive/models/tts/cosyvoice2-0.5b`（且含 `MANIFEST.json`）；② 是否有**残留/重复的 cosyvoice_sidecar 进程**占用 50000（全部结束后由 app 重新拉起，避免带旧 env/旧代码） |
+| CosyVoice 显存仍接近旧版或混合精度异常 | 查看 `/health` / `/warm` 的 `precision_requested`、`precision_active`、`precision_fallback_reason`；CUDA 默认 `auto → mixed_fp16`，仅转换 LLM + flow，HiFT 为兼容性保持 FP32。需要复现旧路径时设 `OCLIVE_COSYVOICE_PRECISION=fp32`；自动回退不应被当作混合精度成功 |
+| `/warm` 返回 `gpu_admission_denied` | 这是可重试的冷峰值保护，不是模型损坏。查看 `load_vram_probe`、`load_free_vram_before_mib` 与 `load_min_free_vram_mib`；先降低/结束占卡任务或让 llama-server 使用较少 GPU layers，再重新预热。只在受控诊断中用 `OCLIVE_COSYVOICE_MIN_FREE_VRAM_MIB=0` 禁用门槛 |
 | webview 直连侧车流式 CORS / preflight 失败 | 侧车须回 CORS 头 + 处理 `OPTIONS`（`cosyvoice_sidecar.py` 已加）；`tauri.conf.json` CSP `connect-src` 须含侧车端口（默认 `http://127.0.0.1:50000`） |
 | 合成成功却仍无声（无报错） | 浏览器自动播放限制：先用鼠标点一下聊天区域（产生用户手势）再发消息；发送时会解锁 Web Audio |
 | 选对 TTS 档案仍指向旧模型 | 插件进程内存态残留：整体重启 app；`voice.asr` 配置在 `%LOCALAPPDATA%/OCLive/data/plugin-data/com.oclive.voice.asr/config.json` |

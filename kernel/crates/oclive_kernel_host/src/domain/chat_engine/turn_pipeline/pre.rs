@@ -182,21 +182,17 @@ async fn prefetch_context(
 }
 
 async fn apply_time_evolution(
-    state: &crate::state::AppState,
-    role: &Role,
-    srid: &str,
-    immersive: bool,
-    virtual_time_ms: i64,
+    ctx: &TurnContext<'_>,
     mut personality: PersonalityVector,
     mut mutable_for_prompt: String,
 ) -> TurnResult<(PersonalityVector, String)> {
-    if immersive && virtual_time_ms > 0 {
+    if !ctx.is_staged() && ctx.immersive && ctx.virtual_time_ms > 0 {
         let time_evo = crate::domain::time_driven_evolution::check_and_evolve_by_time(
-            state,
-            role,
-            srid,
-            virtual_time_ms,
-            immersive,
+            ctx.state,
+            ctx.role,
+            ctx.srid,
+            ctx.virtual_time_ms,
+            ctx.immersive,
         )
         .await
         .map_err(|e| super::super::turn_error::TurnError::wrap("time_driven_evolution", e))?;
@@ -261,10 +257,17 @@ async fn load_memories_and_relation_key(
     let immersive = ctx.immersive;
     let virtual_time_ms = ctx.virtual_time_ms;
     let resolved_identity = ctx.prefetch.resolved_identity.clone();
+    let include_adult_memory = ctx
+        .req
+        .adult
+        .as_ref()
+        .is_some_and(crate::models::dto::AdultInteractionRequest::gates_open);
     let mut memories = STAGES
         .stage(
             ChatStage::LoadMemories,
-            state.memory_repo.load_memories(srid, 10),
+            state
+                .memory_repo
+                .load_memories_for_context(srid, 10, include_adult_memory),
         )
         .await?;
     let scene_m = role
@@ -297,6 +300,27 @@ async fn load_memories_and_relation_key(
         );
     }
     memories = MemoryEngine::filter_for_prompt_threshold(memories, cfg);
+
+    // Creator seeds are immutable role-pack evidence. They participate in retrieval but are
+    // appended after decay/filtering, so runtime forgetting never rewrites or suppresses them.
+    let now = chrono::Utc::now();
+    let mut seed_memories: Vec<Memory> = role
+        .memory_seed
+        .iter()
+        .map(|seed| Memory {
+            id: format!("seed:{}", seed.id),
+            role_id: srid.to_string(),
+            content: seed.content.clone(),
+            importance: seed.importance,
+            weight: 1.0,
+            created_at: now,
+            scene_id: seed.scene_id.clone(),
+            mention_count: 1,
+            accessed_at: None,
+        })
+        .collect();
+    weight_memories_for_scene(&mut seed_memories, scene_id, scene_m);
+    memories.extend(seed_memories);
     Ok((memories, resolved_identity))
 }
 
@@ -310,6 +334,7 @@ async fn apply_memory_reinforcement(
     event_runtime: f64,
     mut personality: PersonalityVector,
     mut mutable_for_prompt: String,
+    persist: bool,
 ) -> TurnResult<(PersonalityVector, String)> {
     let mem_cfg = &role.pack_memory_config;
     if role.evolution_config.personality_source != PersonalitySource::Profile {
@@ -352,7 +377,7 @@ async fn apply_memory_reinforcement(
                     );
             }
         }
-        if important_memory_archive_dirty {
+        if important_memory_archive_dirty && persist {
             let trimmed =
                 crate::domain::profile_personality::trim_mutable_storage(&mutable_for_prompt);
             STAGES
@@ -376,15 +401,13 @@ async fn apply_memory_reinforcement(
 }
 
 async fn rank_relevant_memories(
-    state: &crate::state::AppState,
-    srid: &str,
+    ctx: &TurnContext<'_>,
     pl: &crate::domain::plugin_host::ResolvedRolePlugins,
     memories: &[Memory],
     user_message: &str,
-    scene_id: &str,
     decay_source: &[Memory],
 ) -> TurnResult<Vec<Memory>> {
-    let limit = state.host_profile.memory_retrieval.retrieval_limit();
+    let limit = ctx.state.host_profile.memory_retrieval.retrieval_limit();
     let mut relevant = STAGES
         .stage(ChatStage::MemoryRank, async {
             SlotRunner::rank_memories(
@@ -392,7 +415,7 @@ async fn rank_relevant_memories(
                 MemoryRetrievalInput {
                     memories,
                     user_query: user_message,
-                    scene_id: Some(scene_id),
+                    scene_id: Some(ctx.scene_id),
                     limit,
                 },
             )
@@ -402,17 +425,20 @@ async fn rank_relevant_memories(
     for m in &mut relevant {
         m.accessed_at = Some(now);
     }
-    if let Err(e) = state
-        .db_manager
-        .persist_memory_decay_batch(srid, decay_source, &relevant)
-        .await
-    {
-        tracing::warn!(
-            target: "oclive_memory",
-            role_id = %srid,
-            error = %e,
-            "persist_memory_decay_batch failed"
-        );
+    if !ctx.is_staged() {
+        if let Err(e) = ctx
+            .state
+            .db_manager
+            .persist_memory_decay_batch(ctx.srid, decay_source, &relevant)
+            .await
+        {
+            tracing::warn!(
+                target: "oclive_memory",
+                role_id = %ctx.srid,
+                error = %e,
+                "persist_memory_decay_batch failed"
+            );
+        }
     }
     Ok(relevant)
 }
@@ -425,7 +451,17 @@ async fn resolve_relation_before_turn(
     user_relation_key: &str,
     immersive: bool,
     runtime_snapshot: &crate::domain::role_runtime_snapshot::RoleRuntimeSnapshot,
+    persist: bool,
 ) -> TurnResult<(String, f64)> {
+    if !persist {
+        let snapshot = STAGES
+            .stage(
+                ChatStage::RelationStateForIdentity,
+                load_relation_snapshot(state, srid, user_relation_key, Some(runtime_snapshot)),
+            )
+            .await?;
+        return Ok((snapshot.relation_state, snapshot.favorability));
+    }
     let seed_favor = role.initial_favorability_for_relation(user_relation_key);
     STAGES
         .stage(
@@ -459,10 +495,10 @@ pub(crate) async fn pre_llm(ctx: &TurnContext<'_>) -> TurnResult<PreLlmOutput> {
     let state = ctx.state;
     let req = ctx.req;
     let role = ctx.role;
-    let scene_id = ctx.scene_id;
     let srid = ctx.srid;
     let user_message = req.user_message.as_str();
     let pl = &ctx.pl;
+    let persist = !ctx.is_staged();
 
     let wave1_start = std::time::Instant::now();
     let (
@@ -499,16 +535,8 @@ pub(crate) async fn pre_llm(ctx: &TurnContext<'_>) -> TurnResult<PreLlmOutput> {
         "pre_llm wave1 parallel prefetch complete"
     );
 
-    (personality, mutable_for_prompt) = apply_time_evolution(
-        state,
-        role,
-        srid,
-        ctx.immersive,
-        ctx.virtual_time_ms,
-        personality,
-        mutable_for_prompt,
-    )
-    .await?;
+    (personality, mutable_for_prompt) =
+        apply_time_evolution(ctx, personality, mutable_for_prompt).await?;
     if role.evolution_config.personality_source != PersonalitySource::Profile {
         personality = PersonalityEngine::adjust_by_user_emotion(
             personality,
@@ -526,18 +554,10 @@ pub(crate) async fn pre_llm(ctx: &TurnContext<'_>) -> TurnResult<PreLlmOutput> {
         event_runtime,
         personality,
         mutable_for_prompt,
+        persist,
     )
     .await?;
-    let relevant = rank_relevant_memories(
-        state,
-        srid,
-        pl,
-        &memories,
-        user_message,
-        scene_id,
-        &memories,
-    )
-    .await?;
+    let relevant = rank_relevant_memories(ctx, pl, &memories, user_message, &memories).await?;
     let (relation_before, favorability_before) = resolve_relation_before_turn(
         state,
         role,
@@ -545,16 +565,24 @@ pub(crate) async fn pre_llm(ctx: &TurnContext<'_>) -> TurnResult<PreLlmOutput> {
         user_relation_key.as_str(),
         ctx.immersive,
         &ctx.runtime_snapshot,
+        persist,
     )
     .await?;
-    let transition = crate::domain::relation_transition::consume_relation_transition_at_turn_start(
-        &state.session_cache,
-        state.db_manager.as_ref(),
-        role,
-        srid,
-    )
-    .await
-    .map_err(|e| super::super::turn_error::TurnError::wrap("relation_transition", e))?;
+    let transition = if persist {
+        crate::domain::relation_transition::consume_relation_transition_at_turn_start(
+            &state.session_cache,
+            state.db_manager.as_ref(),
+            role,
+            srid,
+        )
+        .await
+        .map_err(|e| super::super::turn_error::TurnError::wrap("relation_transition", e))?
+    } else {
+        crate::domain::relation_transition::RelationTransitionConsume {
+            hint: String::new(),
+            profile_strip_needed: false,
+        }
+    };
     if transition.profile_strip_needed
         && role.evolution_config.personality_source == PersonalitySource::Profile
     {

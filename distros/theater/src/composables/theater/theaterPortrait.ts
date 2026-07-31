@@ -66,15 +66,15 @@ export function inferLineEmotion(line: ScriptLine): string {
   const text = line.text
   const blob = `${hint}${text}`
 
-  if (/笑|呵呵|哈|稳/.test(blob))
+  if (/[笑哈稳]|呵呵/.test(blob))
     return 'happy'
-  if (/脸红|别过脸|耳朵|很小|谢|埋|轻声|轻/.test(blob))
+  if (/脸红|别过脸|耳朵|很小|[谢埋]|轻声|轻/.test(blob))
     return 'shy'
   if (/皱|灾难|惩罚|哼|闭嘴|啰嗦|捂嘴|舌头/.test(blob))
     return 'angry'
-  if (/弹|猛|快|跑|拽/.test(blob))
+  if (/[弹猛快跑拽]/.test(blob))
     return 'excited'
-  if (/愣|？|\?|什么|糟/.test(blob))
+  if (/[愣？?糟]|什么/.test(blob))
     return 'confused'
   if (/……|…/.test(text))
     return 'shy'

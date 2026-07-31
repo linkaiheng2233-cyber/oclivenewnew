@@ -6,11 +6,13 @@
 #![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 
 pub mod agent_backend;
+pub mod blueprint_dispatch;
 pub mod blueprint_includes;
 pub mod blueprint_migrate;
 pub mod blueprint_v2;
 mod blueprint_v2_slot_registry;
 pub mod blueprint_v3;
+pub mod blueprint_v4;
 pub mod chat_storage;
 pub mod creator_profile;
 pub mod deep_capsule;
@@ -26,11 +28,13 @@ pub mod plugin_backends;
 pub mod plugin_dependencies;
 pub mod plugin_permissions;
 pub mod plugin_slot_attachment;
+pub mod portable_state;
 pub mod portrait_catalog;
 pub mod protocol_boundary;
 pub mod reply_post_processor;
 pub mod role_pack;
 pub mod runtime_config;
+pub mod scene_continuity;
 pub mod turn_thinking;
 pub mod user_identities;
 pub mod validate;
@@ -38,6 +42,10 @@ pub mod validate;
 pub use agent_backend::{
     sanitize_unimplemented_agent_backend, validate_agent_slot_backends,
     validate_implemented_agent_backend, AgentBackendSanitizeResult,
+};
+pub use blueprint_dispatch::{
+    blueprint_schema_version_from_raw, load_blueprint_slot_registry_for_role_dir,
+    validate_blueprint_json_by_schema_version,
 };
 pub use blueprint_includes::{
     merge_blueprint_includes_lenient, merge_blueprint_includes_strict, validate_includes,
@@ -57,10 +65,14 @@ pub use blueprint_v2::{
     SlotRegistryEntry, BLUEPRINT_V2_SCHEMA_VERSION, GROUP_SLOT_TYPES, PIPELINE_BLUEPRINT_FILENAME,
 };
 pub use blueprint_v3::{
-    blueprint_schema_version_from_raw, load_blueprint_v3_for_role_dir,
-    validate_blueprint_json_by_schema_version, validate_blueprint_v3_json,
+    load_blueprint_v3_for_role_dir, slot_registry_entry_in_zone, validate_blueprint_v3_json,
     validate_role_pack_blueprint_v3_directory, BlueprintV3LoadResult, DualPipelineDef,
     PipelineStep, BLUEPRINT_V3_SCHEMA_VERSION, PLUGIN_HOST_SLOT_TYPES,
+};
+pub use blueprint_v4::{
+    load_blueprint_v4_for_role_dir, validate_blueprint_v4_json,
+    validate_role_pack_blueprint_v4_directory, BlueprintExtensionDecl, BlueprintV4LoadResult,
+    BLUEPRINT_V4_SCHEMA_VERSION,
 };
 pub use creator_profile::validate_role_pack_creator_directory;
 pub use disk_role_settings::{
@@ -110,7 +122,14 @@ pub use plugin_slot_attachment::{
     apply_slot_attachments_to_registry, parse_slot_attachments_from_manifest_json,
     validate_slot_attachment_decl, SlotAttachmentDecl,
 };
-pub use portrait_catalog::validate_portrait_catalog_files;
+pub use portable_state::{
+    parse_memory_seed, parse_portable_memory, parse_portable_persona, MemorySeedEntry,
+    MemorySeedFile, PortableLongTermMemoryEntry, PortableMemoryFile, PortablePersonaFile,
+    MEMORY_SEED_SCHEMA_VERSION, PORTABLE_MEMORY_SCHEMA_VERSION, PORTABLE_PERSONA_SCHEMA_VERSION,
+};
+pub use portrait_catalog::{
+    validate_portable_core_files, validate_portrait_catalog_files, PORTABLE_CORE_PORTRAIT_IDS,
+};
 pub use protocol_boundary::{
     assert_layers_do_not_overlap, validate_jsonrpc_error_response, validate_kernel_error_body,
     ProtocolValidationError,
@@ -119,19 +138,25 @@ pub use reply_post_processor::{
     validate_reply_post_processor_config, validate_reply_post_processor_config_file,
 };
 pub use role_pack::{
-    merge_role_pack_scene_ids, validate_default_personality_vector, validate_role_pack_directory,
+    merge_role_pack_scene_ids, validate_default_personality_vector,
+    validate_role_pack_blueprint_directory, validate_role_pack_directory,
     validate_role_pack_directory_with_profile, validate_role_pack_loaded,
     validate_role_pack_loaded_with_profile, validate_role_pack_manifest_settings_core,
     validate_role_pack_tail, RolePackValidationProfile,
 };
 pub use runtime_config::{DualCoreConfig, RuntimeConfig};
+pub use scene_continuity::{
+    validate_scene_continuity_config, validate_scene_continuity_directory, SceneContinuityConfig,
+    SceneContinuityInitialState, SceneContinuityTimeWindow, SceneContinuityTransition,
+};
 pub use user_identities::validate_user_identities_directory;
 #[doc(hidden)]
 pub use user_identities::validate_user_identities_index;
 pub use validate::{
     parse_hhmm, validate_disk_manifest, validate_interaction_mode_pack_setting,
     validate_knowledge_manifest_disk, validate_min_runtime_version,
-    validate_min_runtime_version_for_local_plugin, validate_settings_schema_version,
+    validate_min_runtime_version_for_local_plugin, validate_role_id, validate_scene_id,
+    validate_settings_schema_version,
 };
 
 #[cfg(all(feature = "wasm", target_arch = "wasm32"))]

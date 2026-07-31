@@ -1,10 +1,12 @@
 import type { ToastType } from '@oclive/shared/composables/useAppToast'
-import { ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { setUserPresenceScene, switchScene } from '@oclive/shared/api'
+import { useAdultInteractionStore } from '@oclive/shared/stores/adultInteractionStore'
 import { useChatStore } from '@oclive/shared/stores/chatStore'
 import { useDebugStore } from '@oclive/shared/stores/debugStore'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
+import { useUiStore } from '@oclive/shared/stores/uiStore'
+import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const SCENE_TRANSITION_MS = 520
 
@@ -21,6 +23,8 @@ export function useSceneDestination(showToast: ShowToast) {
   const { t } = useI18n()
   const roleStore = useRoleStore()
   const chatStore = useChatStore()
+  const adultStore = useAdultInteractionStore()
+  const uiStore = useUiStore()
   const debugStore = useDebugStore()
 
   const sceneTransition = ref({ visible: false, label: '' })
@@ -45,17 +49,25 @@ export function useSceneDestination(showToast: ShowToast) {
       return
     }
     const label = sceneLabelForId(id)
+    const previousSceneId = uiStore.sceneId || 'default'
     if (together) {
       sceneTransition.value = { visible: true, label }
     }
     try {
+      const endedAdultInteraction
+        = adultStore.sessionFor(roleStore.currentRoleId, previousSceneId).active
+          ? await chatStore.clearAdultInteractionForContextChange(
+              roleStore.currentRoleId,
+              previousSceneId,
+            )
+          : false
       if (together) {
         const res = await switchScene(roleStore.currentRoleId, id, true)
         await sleep(SCENE_TRANSITION_MS)
         sceneTransition.value = { visible: false, label: '' }
         roleStore.applyRoleInfo(res)
         const narrative = res.user_presence_scene ?? id
-        chatStore.applySceneChange(narrative)
+        await chatStore.applySceneChange(narrative)
         if (res.scene_welcome) {
           chatStore.addSystemMessage(res.scene_welcome, narrative)
         }
@@ -65,7 +77,7 @@ export function useSceneDestination(showToast: ShowToast) {
         const info = await setUserPresenceScene(roleStore.currentRoleId, id)
         roleStore.applyRoleInfo(info)
         const narrative = info.user_presence_scene ?? id
-        chatStore.applySceneChange(narrative)
+        await chatStore.applySceneChange(narrative)
         chatStore.addSystemMessage(
           t('app.scene.systemLine', {
             narrative: label,
@@ -74,6 +86,14 @@ export function useSceneDestination(showToast: ShowToast) {
           narrative,
         )
         showToast('success', t('app.scene.toastNarrativeOnly'))
+      }
+      if (endedAdultInteraction) {
+        const narrative = roleStore.roleInfo.userPresenceScene ?? id
+        await chatStore.sendAdultAction(
+          'exit',
+          narrative,
+          `用户已经进入“${label}”场景。旧场景中的互动已经结束；请从普通聊天状态开始，按照角色人设和新场景自然回应这次变化。`,
+        )
       }
       await debugStore.loadDebugData()
     }

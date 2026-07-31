@@ -136,6 +136,7 @@ mod tests {
                 display_name: "同学".to_string(),
                 template_body: Arc::from("【用户身份说明】模板正文"),
                 maps_to_relation_id: Some("classmate".to_string()),
+                adult_eligible: true,
             },
         );
         role.user_identity_catalog = Some(Arc::new(UserIdentityCatalog {
@@ -159,6 +160,7 @@ mod tests {
             display_name: "x".to_string(),
             template_file: "x.md".to_string(),
             maps_to_relation_id: None,
+            adult_eligible: true,
         };
         let id = "friend";
         let relation_key = entry

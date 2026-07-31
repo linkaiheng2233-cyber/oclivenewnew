@@ -11,7 +11,7 @@ use std::path::PathBuf;
 use tauri::State;
 
 fn expert_routing_path(state: &AppState, role_id: &str) -> Result<PathBuf, CommandError> {
-    let role_dir = state.storage.roles_dir().join(role_id.trim());
+    let role_dir = state.storage.role_dir_path(role_id.trim())?;
     if !role_dir.is_dir() {
         return Err(AppError::RoleNotFound(format!("角色目录不存在: {role_id}")).into());
     }
@@ -30,8 +30,7 @@ pub fn list_blueprint_includes(
 ) -> Result<Vec<String>, CommandError> {
     let includes_dir = state
         .storage
-        .roles_dir()
-        .join(role_id.trim())
+        .role_dir_path(role_id.trim())?
         .join("blueprint/includes");
     if !includes_dir.is_dir() {
         return Ok(Vec::new());

@@ -1,9 +1,9 @@
-import type { ComputedRef } from 'vue'
 import type { JumpTimeResponse } from '@oclive/shared/api'
-import { computed, nextTick, ref } from 'vue'
+import type { ComputedRef } from 'vue'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
 import { useUiStore } from '@oclive/shared/stores/uiStore'
 import { PURE_CHAT_DEFAULT_SCENE_ID } from '@oclive/shared/utils/pureChatScene'
+import { computed, nextTick, ref } from 'vue'
 
 export interface UseSceneTravelBarsOptions {
   applySceneDestination: (sceneId: string, together: boolean) => Promise<void>

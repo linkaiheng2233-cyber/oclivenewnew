@@ -44,7 +44,7 @@
 
 | 组成部分 | 说明 |
 |----------|------|
-| **角色包（v2 SSOT）** | **`pipeline.ocblueprint`**（`meta` + `slot_registry`）· `core_personality.txt` · 场景/知识等（见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)） |
+| **角色包（Stable v4 canonical；v2 兼容）** | **`pipeline.ocblueprint`**（`meta` + `slot_registry` + 可选 `runtime_config` / `extensions`）· `core_personality.txt` · 场景/知识等（见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)） |
 | **有效后端** | 蓝图 `slot_registry` 折叠为六槽 + **`set_session_slot_override`** 会话覆盖 + 环境变量（见 [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)） |
 | **关系与记忆** | `role_runtime`、长期记忆等由内核经 Repository 读写；策略由 `memory` 等槽实现 |
 
@@ -104,6 +104,6 @@
 
 - 实施计划：[KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md)
 - 平台开发者单线：[KERNEL_PLATFORM_DEVELOPER_PATH.md](KERNEL_PLATFORM_DEVELOPER_PATH.md)
-- 差距清单：[PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](../../handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) §B
+- 当前工程债务：[TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md) 与 [PRODUCT_LINE_TASK_BUCKETS.md](../../handoff/PRODUCT_LINE_TASK_BUCKETS.md)
 - 校企玩偶交付：与主仓并列的 **oclive doll core** 目录（settings 模板、硬件插件示例、打包说明）；契约以本仓为准。
 - Monolith RFC：[RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md)

@@ -1,6 +1,6 @@
+import type { ScriptLine } from './theaterLogic'
 import { describe, expect, it } from 'vitest'
 import { buildCastRoster, inferLineEmotion, resolveCastPortraitState, rosterBySide } from './theaterPortrait'
-import type { ScriptLine } from './theaterLogic'
 
 describe('theaterPortrait', () => {
   it('inferLineEmotion prefers explicit tag', () => {

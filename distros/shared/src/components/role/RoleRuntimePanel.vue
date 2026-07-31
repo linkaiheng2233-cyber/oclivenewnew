@@ -1,22 +1,25 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 import {
   OCLIVE_DEFAULT_RELATION_SENTINEL,
   setEvolutionFactor,
-  setUserRelation,
 } from '@oclive/shared/api'
 import { useAppToast } from '@oclive/shared/composables/useAppToast'
 import { hostEventBus } from '@oclive/shared/lib/hostEventBus'
+import { useAdultInteractionStore } from '@oclive/shared/stores/adultInteractionStore'
+import { useChatStore } from '@oclive/shared/stores/chatStore'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
 import { useUiStore } from '@oclive/shared/stores/uiStore'
 import { buildRelationDropdownOptions } from '@oclive/shared/utils/relationOptions'
+import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import HelpHint from '../shared/HelpHint.vue'
 import RoleIdentityControls from './RoleIdentityControls.vue'
 
 const { t } = useI18n()
 const { showToast } = useAppToast()
 const roleStore = useRoleStore()
+const chatStore = useChatStore()
+const adultStore = useAdultInteractionStore()
 const uiStore = useUiStore()
 const localFactor = ref(roleStore.roleInfo.eventImpactFactor)
 const busy = ref(false)
@@ -49,6 +52,12 @@ async function onRelationChange(ev: Event) {
     return
   busy.value = true
   try {
+    const roleId = roleStore.currentRoleId
+    const sceneId = uiStore.sceneId || 'default'
+    const relationName
+      = relationRows.value.find(row => row.id === next)?.name ?? next
+    const endedAdultInteraction
+      = adultStore.sessionFor(roleId, sceneId).active
     const perScene = roleStore.roleInfo.identityBinding === 'per_scene'
     if (next === OCLIVE_DEFAULT_RELATION_SENTINEL) {
       if (perScene)
@@ -59,8 +68,16 @@ async function onRelationChange(ev: Event) {
       await roleStore.setSceneUserRelation(uiStore.sceneId, next)
     }
     else {
-      const info = await setUserRelation(roleStore.currentRoleId, next)
-      roleStore.applyRoleInfo(info)
+      await roleStore.setGlobalUserRelation(next, sceneId)
+    }
+    if (roleStore.currentRoleId !== roleId)
+      return
+    if (endedAdultInteraction) {
+      await chatStore.sendAdultAction(
+        'exit',
+        sceneId,
+        `用户身份已经切换为“${relationName}”。原身份下的互动已经结束；请从普通聊天状态开始，按照角色人设自然回应这次身份变化。`,
+      )
     }
   }
   catch (err) {

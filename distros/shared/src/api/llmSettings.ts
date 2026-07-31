@@ -1,10 +1,36 @@
-import { invokeWithFriendlyError } from './helpers'
 import type { RoleInfo } from './role'
+import { invokeWithFriendlyError } from './helpers'
 
 export interface LocalModelFile {
   name: string
   path: string
   sizeBytes: number
+  contentRating: LocalContentRating
+  description: string | null
+  license: string | null
+  source: string | null
+  sha256: string | null
+}
+
+export type LocalContentRating = 'general' | 'adult'
+export type LoraContentRating = LocalContentRating
+
+export interface LocalLoraAdapter {
+  id: string
+  name: string
+  version: string
+  format: string
+  contentRating: LoraContentRating
+  fileName: string
+  sizeBytes: number
+  sha256: string
+  baseModel: string | null
+  architecture: string | null
+  description: string | null
+  license: string | null
+  source: string | null
+  installedAt: string
+  active: boolean
 }
 
 export interface LlmUserSettings {
@@ -16,6 +42,16 @@ export interface LlmUserSettings {
   ollamaDetail: string
   localModelsDir: string
   localModelFiles: LocalModelFile[]
+  localModelPath: string
+  localLoraAdapters: LocalLoraAdapter[]
+  activeLocalLoraAdapterId: string | null
+  localRuntimeMode: 'performance' | 'ollama' | string
+  performanceEndpoint: string
+  performanceRuntimeAvailable: boolean
+  performanceModelConfigured: boolean
+  performanceReady: boolean
+  performanceActiveBackend: 'performance' | 'ollama' | 'pending' | string
+  performanceDetail: string
   packOllamaModel: string | null
   sessionOllamaModel: string | null
   effectiveModel: string
@@ -34,10 +70,46 @@ export interface SaveLlmUserSettingsRequest {
   cloudApiStyle?: 'openai' | 'oclive_jsonrpc'
   ollamaBaseUrl?: string
   localModelsDir?: string
+  localModelPath?: string
+  adultContentAcknowledged?: boolean
   ollamaModel?: string
   remoteUrl?: string
   remoteToken?: string
   remoteModel?: string
+}
+
+export async function importLocalLoraAdapter(opts: {
+  sourcePath: string
+  name?: string
+  baseModel?: string
+  contentRating: LoraContentRating
+  replaceExisting?: boolean
+}): Promise<LocalLoraAdapter> {
+  return invokeWithFriendlyError<LocalLoraAdapter>('import_local_lora_adapter', {
+    req: {
+      sourcePath: opts.sourcePath,
+      name: opts.name?.trim() || null,
+      baseModel: opts.baseModel?.trim() || null,
+      contentRating: opts.contentRating,
+      replaceExisting: opts.replaceExisting ?? false,
+    },
+  })
+}
+
+export async function activateLocalLoraAdapter(
+  adapterId: string | null,
+  adultContentAcknowledged = false,
+): Promise<LocalLoraAdapter | null> {
+  return invokeWithFriendlyError<LocalLoraAdapter | null>('activate_local_lora_adapter', {
+    adapterId: adapterId?.trim() || null,
+    adultContentAcknowledged,
+  })
+}
+
+export async function deleteLocalLoraAdapter(adapterId: string): Promise<void> {
+  return invokeWithFriendlyError<void>('delete_local_lora_adapter', {
+    req: { adapterId: adapterId.trim() },
+  })
 }
 
 export async function getGlobalOllamaModel(): Promise<{ model: string }> {
@@ -125,6 +197,8 @@ export async function saveLlmUserSettings(
       cloudApiStyle: req.cloudApiStyle,
       ollamaBaseUrl: req.ollamaBaseUrl,
       localModelsDir: req.localModelsDir,
+      localModelPath: req.localModelPath,
+      adultContentAcknowledged: req.adultContentAcknowledged ?? false,
       ollamaModel: req.ollamaModel,
       remoteUrl: req.remoteUrl,
       remoteToken: req.remoteToken,

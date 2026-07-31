@@ -1,8 +1,8 @@
-import { onMounted, onUnmounted, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { useAppToast } from '@oclive/shared/composables/useAppToast'
 import { readHostAppearance } from '@oclive/shared/lib/hostAppearance'
 import { hostEventBus } from '@oclive/shared/lib/hostEventBus'
+import { onMounted, onUnmounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const SKIN_STORAGE_KEY = 'oclive-runtime-skin'
 const UNLOCK_STORAGE_KEY = 'oclive-easteregg-unlocked'

@@ -10,6 +10,13 @@ static OLLAMA_HTTP_CLIENT: LazyLock<Client> = LazyLock::new(|| {
         .build()
         .expect("ollama reqwest client")
 });
+static OLLAMA_LOOPBACK_HTTP_CLIENT: LazyLock<Client> = LazyLock::new(|| {
+    Client::builder()
+        .no_proxy()
+        .pool_max_idle_per_host(4)
+        .build()
+        .expect("ollama loopback reqwest client")
+});
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
@@ -50,15 +57,23 @@ impl OllamaGenerateOpts {
 /// Timing fields from Ollama `/api/generate` (nanoseconds).
 #[derive(Debug, Clone, Default)]
 pub struct OllamaGenerateMetrics {
+    pub total_duration_ns: Option<u64>,
+    pub load_duration_ns: Option<u64>,
     pub prompt_eval_duration_ns: Option<u64>,
     pub prompt_eval_count: Option<u64>,
     pub eval_duration_ns: Option<u64>,
+    pub eval_count: Option<u64>,
 }
 
 impl OllamaGenerateMetrics {
     #[must_use]
     pub fn prompt_eval_ms(&self) -> Option<u64> {
         self.prompt_eval_duration_ns.map(|ns| ns / 1_000_000)
+    }
+
+    #[must_use]
+    pub fn load_ms(&self) -> Option<u64> {
+        self.load_duration_ns.map(|ns| ns / 1_000_000)
     }
 }
 
@@ -76,11 +91,17 @@ pub struct OllamaResponse {
     pub created_at: String,
     pub done: bool,
     #[serde(default)]
+    pub total_duration: Option<u64>,
+    #[serde(default)]
+    pub load_duration: Option<u64>,
+    #[serde(default)]
     pub prompt_eval_duration: Option<u64>,
     #[serde(default)]
     pub prompt_eval_count: Option<u64>,
     #[serde(default)]
     pub eval_duration: Option<u64>,
+    #[serde(default)]
+    pub eval_count: Option<u64>,
 }
 
 /// Ollama HTTP client.
@@ -97,11 +118,59 @@ fn normalize_base_url(url: String) -> String {
 impl OllamaClient {
     /// Creates a new Ollama client.
     pub fn new(base_url: impl Into<String>) -> Self {
+        let base_url = normalize_base_url(base_url.into());
+        let client = if crate::infrastructure::is_loopback_endpoint(&base_url) {
+            OLLAMA_LOOPBACK_HTTP_CLIENT.clone()
+        } else {
+            OLLAMA_HTTP_CLIENT.clone()
+        };
         Self {
-            base_url: normalize_base_url(base_url.into()),
-            client: OLLAMA_HTTP_CLIENT.clone(),
+            base_url,
+            client,
             timeout: ollama_timeouts::http_client_timeout(),
         }
+    }
+
+    /// Load a model into Ollama memory without generating user-visible text.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when Ollama is unreachable or rejects the model.
+    pub async fn preload(&self, model: &str, keep_alive: &str) -> Result<()> {
+        let url = format!("{}/api/generate", self.base_url);
+        let response = self
+            .client
+            .post(&url)
+            .json(&OllamaRequest {
+                model: model.to_string(),
+                prompt: String::new(),
+                stream: false,
+                temperature: None,
+                top_p: None,
+                keep_alive: Some(keep_alive.to_string()),
+            })
+            .timeout(self.timeout)
+            .send()
+            .await
+            .map_err(|e| AppError::OllamaError(format!("preload request failed: {e}")))?;
+        if !response.status().is_success() {
+            let status = response.status();
+            let body = response.text().await.unwrap_or_default();
+            return Err(AppError::OllamaError(format!(
+                "preload HTTP {status}: {}",
+                body.chars().take(400).collect::<String>()
+            )));
+        }
+        Ok(())
+    }
+
+    /// Ask Ollama to unload one model immediately.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when Ollama is unreachable or rejects the request.
+    pub async fn unload(&self, model: &str) -> Result<()> {
+        self.preload(model, "0").await
     }
 
     /// Sets the request timeout.
@@ -237,9 +306,12 @@ impl OllamaClient {
 
         let metrics = if opts.is_some_and(|o| o.want_metrics) {
             OllamaGenerateMetrics {
+                total_duration_ns: ollama_response.total_duration,
+                load_duration_ns: ollama_response.load_duration,
                 prompt_eval_duration_ns: ollama_response.prompt_eval_duration,
                 prompt_eval_count: ollama_response.prompt_eval_count,
                 eval_duration_ns: ollama_response.eval_duration,
+                eval_count: ollama_response.eval_count,
             }
         } else {
             OllamaGenerateMetrics::default()
@@ -343,9 +415,12 @@ impl OllamaClient {
                     }
                     if json.done {
                         final_metrics = OllamaGenerateMetrics {
+                            total_duration_ns: json.total_duration,
+                            load_duration_ns: json.load_duration,
                             prompt_eval_duration_ns: json.prompt_eval_duration,
                             prompt_eval_count: json.prompt_eval_count,
                             eval_duration_ns: json.eval_duration,
+                            eval_count: json.eval_count,
                         };
                     }
                 } else {
@@ -366,9 +441,12 @@ impl OllamaClient {
                     }
                     if json.done {
                         final_metrics = OllamaGenerateMetrics {
+                            total_duration_ns: json.total_duration,
+                            load_duration_ns: json.load_duration,
                             prompt_eval_duration_ns: json.prompt_eval_duration,
                             prompt_eval_count: json.prompt_eval_count,
                             eval_duration_ns: json.eval_duration,
+                            eval_count: json.eval_count,
                         };
                     }
                 }
@@ -471,13 +549,14 @@ mod tests {
             stream: false,
             temperature: Some(0.7),
             top_p: None,
-            keep_alive: None,
+            keep_alive: Some("30m".to_string()),
         };
 
         let json = serde_json::to_string(&request).unwrap();
         assert!(json.contains("\"model\":\"llama2\""));
         assert!(json.contains("\"prompt\":\"Hello\""));
         assert!(json.contains("\"temperature\":0.7"));
+        assert!(json.contains("\"keep_alive\":\"30m\""));
         assert!(!json.contains("\"top_p\"")); // should be omitted
     }
 
@@ -487,13 +566,19 @@ mod tests {
             "response": "Hello there!",
             "model": "llama2",
             "created_at": "2024-01-01T00:00:00Z",
-            "done": true
+            "done": true,
+            "load_duration": 12000000,
+            "prompt_eval_duration": 34000000,
+            "eval_count": 12
         }"#;
 
         let response: OllamaResponse = serde_json::from_str(json).unwrap();
         assert_eq!(response.response, "Hello there!");
         assert_eq!(response.model, "llama2");
         assert!(response.done);
+        assert_eq!(response.load_duration, Some(12_000_000));
+        assert_eq!(response.prompt_eval_duration, Some(34_000_000));
+        assert_eq!(response.eval_count, Some(12));
     }
 
     #[tokio::test]

@@ -151,7 +151,7 @@ flowchart TB
 | 发行版 **允许/禁止** Agent / CE | `[host_flags]` / `[slots]` | 发行版作者 |
 | Prompt 简洁度 / 记忆条数 / 后处理链 | `[prompt]` / `[memory]` / `[post_process]` | 发行版作者 |
 | 单角色 LLM 模型名 | 蓝图 `slot_registry.llm.model` | 蓝图（theater 官方包） |
-| 场景锚点 / 禁 OOC | `meta.reply_quality_anchor` + `core_personality.txt` | 角色包 |
+| 场景锚点 / 禁 OOC | 蓝图有效 `reply_quality_anchor`（v4 `runtime_config`；v2 `meta`）+ `core_personality.txt` | 角色包 / 蓝图 |
 | 回复后处理 / 场景校验 | `config.json` → `reply_post_processor` | 角色包（**独立通道** `reply_post_process`） |
 | 渗透 / IDE 能力 | 独立 vsix + penetration profile | VS Code 插件 |
 

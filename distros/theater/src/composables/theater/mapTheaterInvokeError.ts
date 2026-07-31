@@ -1,11 +1,11 @@
 import { ApiInvokeError } from '@oclive/shared/api/helpers'
 import { SceneGenTimeoutError } from './theaterLogic'
 
-export type TheaterInvokeErrorKind =
-  | 'client_timeout'
-  | 'kernel_offline'
-  | 'kernel_stale_cast_rewrite'
-  | 'invoke_error'
+export type TheaterInvokeErrorKind
+  = | 'client_timeout'
+    | 'kernel_offline'
+    | 'kernel_stale_cast_rewrite'
+    | 'invoke_error'
 
 export interface TheaterInvokeErrorMapping {
   kind: TheaterInvokeErrorKind

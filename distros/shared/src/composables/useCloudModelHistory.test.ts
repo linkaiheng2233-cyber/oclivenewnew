@@ -1,10 +1,10 @@
-// @vitest-environment jsdom
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import {
   getCloudModelHistory,
   mergeCloudModelOptions,
   rememberCloudModel,
 } from '@oclive/shared/composables/useCloudModelHistory'
+// @vitest-environment jsdom
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 describe('useCloudModelHistory', () => {
   beforeEach(() => {

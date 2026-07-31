@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { useKernelConnectionStore } from '@oclive/shared/stores/kernelConnectionStore'
 import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useKernelConnectionStore } from '@oclive/shared/stores/kernelConnectionStore'
 
 const { t } = useI18n()
 const kernelStore = useKernelConnectionStore()

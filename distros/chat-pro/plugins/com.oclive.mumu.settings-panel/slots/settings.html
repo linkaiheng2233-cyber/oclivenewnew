@@ -3,33 +3,66 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Mumu Settings Panel</title>
+    <title>Mumu 设置</title>
     <style>
-      body {
-        margin: 0;
-        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-        background: transparent;
-      }
-      .fallback {
-        box-sizing: border-box;
-        width: 100%;
-        min-height: 140px;
-        padding: 14px;
-        border-radius: 14px;
-        border: 1px solid rgba(150, 140, 126, 0.26);
-        background: rgba(252, 247, 240, 0.75);
-        backdrop-filter: blur(14px);
-        -webkit-backdrop-filter: blur(14px);
-        color: #4b443b;
-        font-size: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-      }
+      * { box-sizing: border-box; }
+      body { margin: 0; font: 13px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; color: #4b443b; background: transparent; }
+      .panel { min-height: 180px; padding: 14px; border: 1px solid #ddd2c4; border-radius: 14px; background: #faf6ef; }
+      header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; } h3 { margin: 0; font-size: 15px; } header small { color: #81776a; }
+      .row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid #e3d9cb; }
+      .copy { display: flex; flex-direction: column; } .copy small { color: #81776a; }
+      button, select { min-height: 30px; border: 1px solid #d8cdbc; border-radius: 7px; padding: 4px 9px; color: inherit; background: #fffaf3; font: inherit; }
+      button { cursor: pointer; } input { width: 18px; height: 18px; } #error { color: #a33; }
     </style>
   </head>
   <body>
-    <div class="fallback">mumu 设置面板（iframe 回退）</div>
+    <section class="panel" aria-label="mumu 外观与互动设置">
+      <header><div><h3 id="name">mumu 设置</h3><small id="role">正在读取角色…</small></div><button id="refresh" type="button">刷新</button></header>
+      <div class="row"><span class="copy"><strong>异地心声</strong><small>异地时启用生活轨迹风格回复</small></span><input id="remote" type="checkbox" disabled /></div>
+      <div class="row"><span class="copy"><strong>互动模式</strong><small>沉浸包含场景时间；纯聊仅保留对话</small></span><select id="mode" disabled><option value="immersive">沉浸</option><option value="pure_chat">纯聊</option></select></div>
+      <div class="row"><span class="copy"><strong>主题外观</strong><small>循环：跟随系统 / 浅色 / 深色</small></span><button id="theme" type="button">切换主题</button></div>
+      <p id="error" role="status"></p>
+    </section>
+    <script>
+      (() => {
+        const bridge = window.OclivePluginBridge
+        const remote = document.querySelector('#remote')
+        const mode = document.querySelector('#mode')
+        const text = (id, value) => { document.querySelector(id).textContent = value }
+        let activeRoleId = ''
+        let refreshGeneration = 0
+        async function refresh(preferredRoleId) {
+          const generation = ++refreshGeneration
+          text('#error', '')
+          try {
+            const roles = await bridge.invoke('list_roles', {})
+            if (generation !== refreshGeneration) return
+            const roleId = String(preferredRoleId || activeRoleId || roles?.[0]?.id || '').trim()
+            if (!roleId) throw new Error('未找到当前角色')
+            activeRoleId = roleId
+            const info = await bridge.invoke('get_role_info', { role_id: roleId, session_id: null })
+            if (generation !== refreshGeneration) return
+            text('#name', `${String(info?.role_name || roles[0]?.name || roleId)} 设置`)
+            text('#role', roleId)
+            remote.checked = info?.remote_life_enabled === true
+            mode.value = info?.interaction_mode === 'pure_chat' ? 'pure_chat' : 'immersive'
+            remote.disabled = false; mode.disabled = false
+          } catch (reason) {
+            if (generation !== refreshGeneration) return
+            text('#error', reason instanceof Error ? reason.message : String(reason))
+          }
+        }
+        remote.addEventListener('change', () => void bridge.emit('com.oclive.mumu.settings-panel:set_remote_life', { enabled: remote.checked }))
+        mode.addEventListener('change', () => void bridge.emit('com.oclive.mumu.settings-panel:set_interaction_mode', { mode: mode.value }))
+        document.querySelector('#theme').addEventListener('click', () => void bridge.emit('com.oclive.mumu.settings-panel:cycle_theme', {}))
+        document.querySelector('#refresh').addEventListener('click', () => void refresh())
+        if (!bridge) text('#error', '宿主桥接不可用')
+        else {
+          for (const event of ['role:switched', 'role:info:updated', 'message:sent', 'appearance:changed'])
+            void bridge.listen(event, payload => void refresh(payload?.roleId)).catch(reason => text('#error', String(reason)))
+          void refresh()
+        }
+      })()
+    </script>
   </body>
 </html>

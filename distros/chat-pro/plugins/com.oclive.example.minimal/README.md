@@ -27,7 +27,7 @@
 }
 ```
 
-重启应用后，若内置 UI 被整壳替换：默认在 **`force_iframe_mode` 关闭**且 **`shell.vueEntry`** 指向存在的 `.vue` 时，宿主用 **Vue** 渲染整壳（`inject('oclive')` 与插槽一致）；否则会打开 **`shell.entry`** HTML。HTML 页会经 **`OclivePluginBridge`** 调用 `get_directory_plugin_bootstrap` 并打印 JSON。`manifest.json` 含 **`"type": "ocliveplugin"`** 与 **`shell.bridge.invoke`**（含 `send_message`、`read:conversation`、`get_current_role` 等权限示例），用于接管主对话能力。
+重启应用后，发行构建会把 **`shell.entry`** HTML 挂载到不透明源全屏 iframe；HTML 页经 parent broker 提供的 **`OclivePluginBridge`** 调用 `get_directory_plugin_bootstrap` 并打印 JSON。只有 Vite DEV + `VITE_OCLIVE_UNSAFE_INLINE_PLUGIN_VUE=1` + `force_iframe_mode=false` 同时成立时才会在宿主页内执行 `shell.vueEntry`。`manifest.json` 含 **`"type": "ocliveplugin"`** 与 **`shell.bridge.invoke`**（含 `send_message`、`read:conversation`、`get_current_role` 等权限示例），用于接管主对话能力。
 
 ## 与 `plugin_backends` 联调
 

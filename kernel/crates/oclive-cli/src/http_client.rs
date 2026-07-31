@@ -1,10 +1,40 @@
 //! Blocking HTTP helpers for oclive-cli (reqwest-backed; replaces ureq for supply-chain dedup).
 
 use std::io::{Cursor, Read};
+use std::sync::OnceLock;
 use std::time::Duration;
 
 use reqwest::blocking::Client;
 use reqwest::Method;
+
+const ENV_API_TOKEN: &str = "OCLIVE_API_TOKEN";
+const API_TOKEN_HEADER: &str = "x-oclive-api-token";
+static API_TOKEN: OnceLock<String> = OnceLock::new();
+
+pub fn configured_api_token() -> Option<String> {
+    std::env::var(ENV_API_TOKEN)
+        .ok()
+        .filter(|token| !token.trim().is_empty())
+}
+
+/// Reuse an operator-provided token, or generate one for CLI-managed kernel children.
+pub fn api_token() -> &'static str {
+    API_TOKEN
+        .get_or_init(|| configured_api_token().unwrap_or_else(|| uuid::Uuid::new_v4().to_string()))
+}
+
+fn is_loopback_url(url: &str) -> bool {
+    reqwest::Url::parse(url)
+        .ok()
+        .and_then(|url| url.host_str().map(str::to_string))
+        .is_some_and(|host| {
+            let host = host.trim_start_matches('[').trim_end_matches(']');
+            host.eq_ignore_ascii_case("localhost")
+                || host
+                    .parse::<std::net::IpAddr>()
+                    .is_ok_and(|address| address.is_loopback())
+        })
+}
 
 #[derive(Debug)]
 pub struct HttpError(pub String);
@@ -94,11 +124,16 @@ impl Agent {
 
 impl Request {
     fn new(client: Client, method: Method, url: &str) -> Self {
+        let headers = if is_loopback_url(url) {
+            vec![(API_TOKEN_HEADER.to_string(), api_token().to_string())]
+        } else {
+            Vec::new()
+        };
         Self {
             client,
             method,
             url: url.to_string(),
-            headers: Vec::new(),
+            headers,
             timeout: None,
             body: None,
         }

@@ -84,7 +84,7 @@ async fn legacy_persistence_writes_stm_and_ltm() {
     let srid = conversation_state_role_id(role_id, Some(session_id));
     let stm = state
         .db_manager
-        .list_short_term_recent_turns(&srid, 10)
+        .list_short_term_recent_turns(&srid, 10, false)
         .await
         .expect("stm");
     assert_eq!(stm.len(), 1, "STM should record the co-present turn");
@@ -96,6 +96,7 @@ async fn legacy_persistence_writes_stm_and_ltm() {
             role_id: srid.clone(),
             limit: 10,
             offset: 0,
+            content_scope: None,
         },
     )
     .await
@@ -126,7 +127,7 @@ async fn strong_only_fast_skips_ltm_but_keeps_stm() {
     let srid = conversation_state_role_id(role_id, Some(session_id));
     let stm = state
         .db_manager
-        .list_short_term_recent_turns(&srid, 10)
+        .list_short_term_recent_turns(&srid, 10, false)
         .await
         .expect("stm");
     assert_eq!(
@@ -141,6 +142,7 @@ async fn strong_only_fast_skips_ltm_but_keeps_stm() {
             role_id: srid.clone(),
             limit: 10,
             offset: 0,
+            content_scope: None,
         },
     )
     .await
@@ -167,7 +169,7 @@ async fn second_turn_reads_prior_stm_turn_pair() {
     let srid = conversation_state_role_id(role_id, Some(session_id));
     let stm = state
         .db_manager
-        .list_short_term_recent_turns(&srid, 10)
+        .list_short_term_recent_turns(&srid, 10, false)
         .await
         .expect("stm");
     assert_eq!(stm.len(), 2, "two turns should yield two STM rows");
@@ -260,6 +262,7 @@ async fn strong_only_persistence_gate_allows_ltm_on_quarrel_event() {
             user_relation_key: "friend",
             favor_delta: -0.1,
             memory_content: "quarrel memory line",
+            memory_scope: "ordinary",
             memory_importance: plan.memory_importance_after_policy(
                 &state.host_profile,
                 &EventType::Quarrel,

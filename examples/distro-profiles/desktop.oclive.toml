@@ -34,6 +34,26 @@ retrieval = "default"
 [post_process]
 chain = "standard"
 
+[llm_runtime]
+mode = "performance"
+endpoint = "http://127.0.0.1:8421"
+auto_start = true
+startup_timeout_ms = 90000
+retry_cooldown_ms = 30000
+model_alias = "oclive-performance"
+performance_profile = "gpu_balanced"
+
+[resource_coordination]
+gpu_safety_reserve_mib = 768
+system_memory_safety_reserve_mib = 1024
+cpu_safety_reserve_threads = 1
+pending_lease_ttl_ms = 120000
+active_lease_ttl_ms = 1800000
+allow_unverified_admission = true
+admission_queue_timeout_ms = 30000
+queue_aging_quantum_ms = 2000
+automatic_preemption = true
+
 [turn_thinking]
 default = "auto"
 fast_skip_complex_emotion = true
@@ -41,4 +61,4 @@ auto_deep_min_chars = 80
 fast_knowledge_limit = 4
 fast_memory_cap = 4
 fast_persistence = "strong_only"
-# prompt_prefix_cache = false  # Wave D-T3：bench 通过后可在正式 profile 开启
+prompt_prefix_cache = true

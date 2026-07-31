@@ -13,6 +13,7 @@ mod chat;
 mod health;
 mod llm;
 mod mcp;
+mod resource;
 mod role;
 mod theater;
 
@@ -23,7 +24,10 @@ use crate::infrastructure::MockLlmClient;
 use crate::models::dto::SendMessageResponse;
 use crate::models::role::PersonalitySource;
 use crate::state::AppState;
-use axum::http::Method;
+use axum::body::Body;
+use axum::http::{Method, Request, StatusCode};
+use axum::middleware::{self, Next};
+use axum::response::Response;
 use axum::routing::{get, post};
 use axum::Router;
 use oclive_kernel_runtime::{
@@ -34,7 +38,13 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::net::TcpListener;
-use tower_http::cors::{Any, CorsLayer};
+use tower_http::cors::{AllowOrigin, CorsLayer};
+
+/// Environment variable used by headless API hosts to provide API-token authentication.
+pub const ENV_API_TOKEN: &str = "OCLIVE_API_TOKEN";
+/// Explicit local-development escape hatch for running protected routes without a token.
+pub const ENV_API_ALLOW_UNAUTHENTICATED: &str = "OCLIVE_API_ALLOW_UNAUTHENTICATED";
+const API_TOKEN_HEADER: &str = "x-oclive-api-token";
 
 #[derive(Debug, Deserialize)]
 pub struct ChatApiRequest {
@@ -47,6 +57,8 @@ pub struct ChatApiRequest {
     pub scene_id: Option<String>,
     #[serde(default)]
     pub include_raw_reply: Option<bool>,
+    #[serde(default)]
+    pub adult: Option<crate::models::dto::AdultInteractionRequest>,
 }
 
 /// Mirrors the `SendMessageResponse` fields and additionally echoes back `session_id` and `personality_source`; used by the pack editor's try-chat to display a status bar.
@@ -100,15 +112,49 @@ pub(crate) fn kernel_http_error(
 
 /// The same route tree as [`serve_api`], for integration tests to use via `tower::ServiceExt::oneshot` (no port binding required).
 pub fn api_router(app_state: Arc<AppState>) -> Router {
-    let cors = CorsLayer::new()
-        .allow_origin(Any)
-        .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
-        .allow_headers(Any);
+    api_router_with_auth(app_state, None)
+}
 
-    Router::new()
-        .route("/health", get(health::health_route))
+/// Build the HTTP API route tree with optional bearer-like header authentication.
+///
+/// `/health` intentionally remains public so supervisors can probe readiness without
+/// needing to know the application token. All other routes are protected when a
+/// non-empty token is supplied.
+pub fn api_router_with_auth(app_state: Arc<AppState>, api_token: Option<String>) -> Router {
+    let cors = CorsLayer::new()
+        .allow_origin(AllowOrigin::predicate(|origin, _| {
+            is_allowed_api_origin(origin)
+        }))
+        .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
+        .allow_headers([
+            axum::http::header::ACCEPT,
+            axum::http::header::CONTENT_TYPE,
+            axum::http::HeaderName::from_static(API_TOKEN_HEADER),
+        ]);
+
+    let protected = Router::new()
         .route("/chat", post(chat::chat))
         .route("/chat/stream", post(chat::chat_stream))
+        .route(
+            "/chat/adult-stage/begin",
+            post(chat::begin_adult_stage_route),
+        )
+        .route(
+            "/chat/adult-stage/beat",
+            post(chat::generate_adult_staged_beat_route),
+        )
+        .route(
+            "/chat/adult-stage/commit",
+            post(chat::commit_adult_staged_beat_route),
+        )
+        .route(
+            "/chat/adult-stage/cancel",
+            post(chat::cancel_adult_stage_route),
+        )
+        .route(
+            "/chat/adult-stage/list",
+            post(chat::list_adult_staged_beats_route),
+        )
         .route("/role_info", get(role::role_info_route))
         .route("/role_snapshot", get(role::role_snapshot_route))
         .route("/display_metrics", get(role::display_metrics_route))
@@ -147,12 +193,18 @@ pub fn api_router(app_state: Arc<AppState>) -> Router {
         .route("/mcp/tools", get(mcp::list_mcp_tools_route))
         .route("/mcp/call", post(mcp::call_mcp_tool_route))
         .route("/bridge/dispatch", post(bridge::bridge_dispatch_route))
+        .route(
+            "/resources/adapter/transition",
+            post(resource::resource_adapter_transition_route),
+        )
         .route("/llm/reload", post(llm::llm_reload_route))
         .route(
             "/llm/user_settings",
             get(llm::llm_user_settings_get_route).post(llm::llm_user_settings_post_route),
         )
         .route("/llm/probe_cloud", post(llm::llm_probe_cloud_route))
+        .route("/llm/lora/activate", post(llm::llm_lora_activate_route))
+        .route("/llm/lora/delete", post(llm::llm_lora_delete_route))
         .route("/llm/ollama_models", get(llm::llm_ollama_models_route))
         .route("/llm/cloud_models", post(llm::llm_cloud_models_route))
         .route("/llm/session_model", post(llm::llm_session_model_route))
@@ -162,8 +214,76 @@ pub fn api_router(app_state: Arc<AppState>) -> Router {
                 .post(llm::llm_global_ollama_model_post_route),
         )
         .route("/theater/scene", post(theater::scene_route))
+        .layer(middleware::from_fn(
+            move |request: Request<Body>, next: Next| {
+                let expected = api_token.clone();
+                async move { authorize_api_request(expected.as_deref(), request, next).await }
+            },
+        ));
+
+    Router::new()
+        .route("/health", get(health::health_route))
+        .merge(protected)
         .layer(cors)
         .with_state(app_state)
+}
+
+fn is_allowed_api_origin(origin: &axum::http::HeaderValue) -> bool {
+    let Ok(origin) = origin.to_str() else {
+        return false;
+    };
+    if matches!(
+        origin,
+        "https://tauri.localhost" | "https://ocliveplugin.localhost" | "ocliveplugin://localhost"
+    ) {
+        return true;
+    }
+    let Ok(url) = reqwest::Url::parse(origin) else {
+        return false;
+    };
+    if !matches!(url.scheme(), "http" | "https" | "tauri") {
+        return false;
+    }
+    crate::infrastructure::is_loopback_endpoint(origin)
+}
+
+fn validate_api_auth_configuration(
+    api_token: Option<&str>,
+    allow_unauthenticated: bool,
+) -> Result<(), String> {
+    if api_token.is_some_and(|token| !token.trim().is_empty()) || allow_unauthenticated {
+        return Ok(());
+    }
+    Err(format!(
+        "{ENV_API_TOKEN} is required for HTTP API protected routes; set a strong random token, or explicitly set {ENV_API_ALLOW_UNAUTHENTICATED}=1 for isolated local development"
+    ))
+}
+
+async fn authorize_api_request(
+    expected: Option<&str>,
+    request: Request<Body>,
+    next: Next,
+) -> Response {
+    if request.method() == Method::OPTIONS {
+        return next.run(request).await;
+    }
+    let Some(expected) = expected.filter(|token| !token.trim().is_empty()) else {
+        return next.run(request).await;
+    };
+
+    let actual = request
+        .headers()
+        .get(API_TOKEN_HEADER)
+        .and_then(|value| value.to_str().ok());
+    if actual == Some(expected) {
+        return next.run(request).await;
+    }
+
+    Response::builder()
+        .status(StatusCode::UNAUTHORIZED)
+        .header("www-authenticate", "OCLive-API-Token")
+        .body(Body::from("missing or invalid x-oclive-api-token"))
+        .unwrap_or_else(|_| Response::new(Body::from("unauthorized")))
 }
 
 /// Build [`AppState`] for headless `--api` / `oclive-kernel-server` (single DB writer).
@@ -228,7 +348,21 @@ pub async fn build_api_app_state(port: u16) -> Result<Arc<AppState>, String> {
 /// Returns [`Err`] when listen or serve fails.
 pub async fn serve_api_with_state(app_state: Arc<AppState>, port: u16) -> Result<(), String> {
     let plugins = Arc::clone(&app_state.directory_plugins);
-    let app = api_router(app_state);
+    let api_token = std::env::var(ENV_API_TOKEN)
+        .ok()
+        .filter(|token| !token.trim().is_empty());
+    let allow_unauthenticated = std::env::var(ENV_API_ALLOW_UNAUTHENTICATED)
+        .ok()
+        .is_some_and(|value| value == "1" || value.eq_ignore_ascii_case("true"));
+    validate_api_auth_configuration(api_token.as_deref(), allow_unauthenticated)?;
+    if allow_unauthenticated && api_token.is_none() {
+        tracing::warn!(
+            target: "oclive_api",
+            "{} explicitly enabled; HTTP API protected routes are unauthenticated",
+            ENV_API_ALLOW_UNAUTHENTICATED
+        );
+    }
+    let app = api_router_with_auth(app_state, api_token);
     let addr = format!("127.0.0.1:{port}");
     let listener = TcpListener::bind(&addr)
         .await

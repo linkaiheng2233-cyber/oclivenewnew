@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "suite_id": "core-behavior-v1",
+  "description": "Fixed multilingual behavior cases for comparing memory, emotion, prompt and LLM modules without conflating quality with latency.",
+  "cases": [
+    {
+      "id": "remember-food-safety",
+      "role_id": "mumu",
+      "scene_id": "home",
+      "replay": [
+        {
+          "speaker": "user",
+          "text": "我对草莓过敏，请记住。"
+        },
+        {
+          "speaker": "assistant",
+          "text": "记住了，之后给你推荐吃的会避开草莓。"
+        },
+        {
+          "speaker": "user",
+          "text": "今天早餐吃什么？"
+        }
+      ],
+      "expectations": {
+        "memory": {
+          "required": ["草莓过敏"],
+          "forbidden": ["喜欢草莓"]
+        },
+        "emotion": {
+          "allowed": ["neutral"]
+        },
+        "prompt": {
+          "required": ["草莓过敏", "不要代替用户说话"],
+          "forbidden": ["把用户输入原样复述"]
+        },
+        "llm": {
+          "required_any": ["避开草莓", "不放草莓"],
+          "forbidden": ["你最喜欢草莓", "今天早餐吃什么"],
+          "max_user_echo_ratio": 0.55
+        }
+      }
+    },
+    {
+      "id": "preserve-role-voice",
+      "role_id": "phoebe-chubi",
+      "scene_id": "default",
+      "replay": [
+        {
+          "speaker": "user",
+          "text": "项目终于跑通了"
+        }
+      ],
+      "expectations": {
+        "memory": {
+          "required": ["项目跑通"],
+          "forbidden": ["项目失败"]
+        },
+        "emotion": {
+          "allowed": ["happy", "excited"]
+        },
+        "prompt": {
+          "required": ["菲比啾比", "不替用户宣布结果"],
+          "forbidden": ["忽略角色口头禅"]
+        },
+        "llm": {
+          "required_any": ["菲比啾比！", "菲比啾比～"],
+          "forbidden": ["我终于把项目跑通了"],
+          "max_user_echo_ratio": 0.6
+        }
+      }
+    },
+    {
+      "id": "respect-conversation-boundary",
+      "role_id": "doro",
+      "scene_id": "default",
+      "replay": [
+        {
+          "speaker": "assistant",
+          "text": "人～要和 doro 再聊一会儿吗？"
+        },
+        {
+          "speaker": "user",
+          "text": "我想安静坐一会儿，先别继续追问。"
+        }
+      ],
+      "expectations": {
+        "memory": {
+          "required": ["想安静", "不要追问"],
+          "forbidden": ["希望被追问"]
+        },
+        "emotion": {
+          "allowed": ["neutral"]
+        },
+        "prompt": {
+          "required": ["尊重拒绝", "称呼用户为人"],
+          "forbidden": ["必须继续推进"]
+        },
+        "llm": {
+          "required_any": ["安静陪你", "陪人坐着"],
+          "forbidden": ["你必须回答", "为什么不说话"],
+          "max_user_echo_ratio": 0.45
+        }
+      }
+    }
+  ]
+}

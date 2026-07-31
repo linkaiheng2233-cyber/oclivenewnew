@@ -24,13 +24,15 @@
 //! **Key decision**: does not execute `pipeline.stable`; stable core is always hard-coded `co_present`.
 
 use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
 
 use crate::domain::chat_engine::message_error::ProcessMessageError;
 use crate::domain::chat_engine::turn_context::TurnContext;
-use crate::domain::chat_engine::turn_pipeline::{execute_turn, TurnMode};
+use crate::domain::chat_engine::turn_pipeline::{execute_turn, execute_turn_stream, TurnMode};
 use crate::domain::dual_pipeline_steps::{ExperimentalStepCtx, StepOutcome};
 use crate::models::dto::SendMessageResponse;
 use crate::state::AppState;
+use oclive_kernel_contracts::LlmTokenSink;
 use oclive_validation::{parse_pipeline_action_kind, PipelineActionKind, PipelineStep};
 
 /// Experimental core failure (triggers graceful degradation).
@@ -52,6 +54,11 @@ pub struct TurnRollbackSnapshot {
 }
 
 pub struct DualPipelineRunner;
+
+enum ExperimentalDispatch {
+    StableCompletion,
+    Complete(Box<SendMessageResponse>),
+}
 
 impl DualPipelineRunner {
     /// Call before any experimental step; used by [`rollback`](Self::rollback) to restore state.
@@ -111,12 +118,54 @@ impl DualPipelineRunner {
             .map_err(ProcessMessageError::from)
     }
 
+    /// Stable completion using the caller's token sink.
+    ///
+    /// # Errors
+    ///
+    /// Propagates [`ProcessMessageError`] from the Stable turn pipeline.
+    pub async fn run_stable_stream(
+        ctx: &TurnContext<'_>,
+        on_token: LlmTokenSink,
+    ) -> Result<SendMessageResponse, ProcessMessageError> {
+        execute_turn_stream(ctx, TurnMode::CoPresent, on_token)
+            .await
+            .map_err(ProcessMessageError::from)
+    }
+
     /// # Errors
     ///
     /// Returns on blueprint DAG / action parse / experimental step / final `co_present` failure; caught by [`run_with_fallback`] for degradation.
     pub async fn run_experimental(
         turn: &TurnContext<'_>,
     ) -> Result<SendMessageResponse, ProcessMessageError> {
+        match Self::prepare_experimental(turn).await? {
+            ExperimentalDispatch::StableCompletion => Self::run_stable(turn).await,
+            ExperimentalDispatch::Complete(response) => Ok(*response),
+        }
+    }
+
+    /// Experimental routing followed by a genuinely streaming Stable
+    /// completion. Agent short-circuits still emit their completed reply once.
+    ///
+    /// # Errors
+    ///
+    /// Same as [`Self::run_experimental`].
+    pub async fn run_experimental_stream(
+        turn: &TurnContext<'_>,
+        on_token: LlmTokenSink,
+    ) -> Result<SendMessageResponse, ProcessMessageError> {
+        match Self::prepare_experimental(turn).await? {
+            ExperimentalDispatch::StableCompletion => Self::run_stable_stream(turn, on_token).await,
+            ExperimentalDispatch::Complete(response) => {
+                on_token(response.reply.as_str());
+                Ok(*response)
+            }
+        }
+    }
+
+    async fn prepare_experimental(
+        turn: &TurnContext<'_>,
+    ) -> Result<ExperimentalDispatch, ProcessMessageError> {
         let role = turn.role;
         let srid = turn.srid;
         let steps = role.pipeline_experimental.as_ref().ok_or_else(|| {
@@ -177,7 +226,7 @@ impl DualPipelineRunner {
                         session_ns = %srid,
                         "实验核执行成功"
                     );
-                    return Ok(*resp);
+                    return Ok(ExperimentalDispatch::Complete(resp));
                 }
                 Ok(StepOutcome::Failed(msg)) => {
                     tracing::warn!(
@@ -221,7 +270,7 @@ impl DualPipelineRunner {
             "实验核执行成功"
         );
 
-        Self::run_stable(turn).await
+        Ok(ExperimentalDispatch::StableCompletion)
     }
 
     /// # Errors
@@ -244,6 +293,34 @@ impl DualPipelineRunner {
                     "稳定核执行完成（降级模式）"
                 );
                 Ok(resp)
+            }
+        }
+    }
+
+    /// Streaming counterpart of [`Self::run_with_fallback`].
+    ///
+    /// # Errors
+    ///
+    /// Returns an error only when both the experimental path and the Stable
+    /// streaming fallback cannot complete.
+    pub async fn run_with_fallback_stream(
+        turn: &TurnContext<'_>,
+        on_token: LlmTokenSink,
+    ) -> Result<SendMessageResponse, ProcessMessageError> {
+        let snapshot = Self::take_snapshot(turn.state, turn.srid).await;
+        match Self::run_experimental_stream(turn, Arc::clone(&on_token)).await {
+            Ok(response) => Ok(response),
+            Err(error) => {
+                Self::rollback(turn.state, turn.srid, snapshot).await;
+                let response = Self::run_stable_stream(turn, on_token).await?;
+                tracing::info!(
+                    target: "oclive_dual_core",
+                    session_ns = %turn.srid,
+                    degraded_from = "experimental",
+                    prior_error = %error,
+                    "稳定核流式执行完成（降级模式）"
+                );
+                Ok(response)
             }
         }
     }

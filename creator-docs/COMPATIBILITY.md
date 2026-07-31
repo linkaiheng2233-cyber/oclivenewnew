@@ -40,6 +40,28 @@
 
 ---
 
+## 仓内模块兼容契约
+
+OCLive 的能力上限取决于整条模块链，而不是某一个组件的最新版。功能更新须同时核对：
+
+```text
+角色包/插件资源 → 内核契约与编排 → Tauri/Bridge → distros/shared → Chat Pro/Theater → Vue/iframe/legacy 回退
+```
+
+| 边界 | 当前兼容机制 | 限制 / 开发要求 |
+|------|--------------|-----------------|
+| 角色包 ↔ 内核 | `schema_version`、`min_runtime_version`、`oclive_validation` | 新键优先可选并有默认；Breaking 留至少一个发布周期读兼容 |
+| 内核 ↔ 前端 | `api_version`、Rust DTO、`distros/shared/src/api` 镜像、错误码 drift | DTO/命令变化必须同步消费者与契约测，不能只保证 Rust 编译 |
+| Tauri ↔ 目录插件 | manifest `schema_version: 1`、插槽名、`bridge.invoke`、事件与 `rpcMethods` 白名单 | 插件 `version` 仅标识插件自身，**不代表宿主兼容范围**；无法表达的新宿主依赖须保留回退或走 Breaking/RFC |
+| Chat Pro ↔ 插件 UI | `entry` iframe + 可选 `vueComponent`、共享 `PluginSlotEmbed` | 两种入口都存在时必须同能力；不能只更新 Vue 后让 iframe 落后 |
+| Chat Pro 壳 ↔ shared | Fluent / Tool 共用 shared store/composable | 壳特有布局可分叉，契约、状态归属、事件与取消语义不可分叉 |
+
+**结构门禁**：`npm run check:module-compat` 对拍内核与前端插槽注册表、官方插件 manifest、Vue/iframe 文件、RPC timeout 声明和插件索引版本。该门禁不证明 sidecar、音频设备或真实 WebView 行为，相关功能仍须定向集成/烟测。
+
+关联改动与完成声明遵循 [`AI_CHANGE_BOUNDARIES.md`](../handoff/AI_CHANGE_BOUNDARIES.md) G17；破坏性变化遵循 [`BREAKING_CHANGE_PROCESS.md`](../handoff/BREAKING_CHANGE_PROCESS.md)。
+
+---
+
 ## 对外兼容一页表（主程序 / 编写器 / 启动器 / 包 / 内核 / CLI）
 
 | 组件 | 版本来源 | 与主程序关系 | 备注 |
@@ -51,15 +73,17 @@
 | **oclive-vscode（VS Code 扩展）** | 另仓 `package.json` | spawn/attach **`kernel_server --api`**；`distro.oclive.toml` 镜像主仓 `examples/distro-profiles/vscode.oclive.toml` | 当前 **0.4.1**；推荐主程序 **0.5.0** |
 | **oclive-launcher（启动器）** | 另仓 `package.json` | 注入 **`OCLIVE_ROLES_DIR`**、可选模型名与 zip 安装；**不替代**主程序契约 | [启动器 README](https://github.com/linkaiheng2233-cyber/oclive-launcher/blob/main/README.md) |
 | **角色包** | `manifest.json`（`schema_version`、`min_runtime_version`） | 低版本主程序可能拒载或降级能力 | [PACK_VERSIONING.md](role-pack/PACK_VERSIONING.md)、`RoleStorage::load_role` |
-| **宿主 SQLite** | `distros/desktop-tauri/migrations/*.sql` | 仅随 **主程序** 发版迁移；**不可**用旧主程序打开新迁移写过的 DB 再降级（除非 CHANGELOG 明确支持） | 破坏性迁移须在 **CHANGELOG 双语** + 本表「破坏性」段写明 |
+| **宿主 SQLite** | `kernel/crates/oclive_kernel_host/migrations/*.sql` | 仅随 **主程序** 发版迁移；**不可**用旧主程序打开新迁移写过的 DB 再降级（除非 CHANGELOG 明确支持） | 破坏性迁移须在 **CHANGELOG 双语** + 本表「破坏性」段写明 |
 
 破坏性变更时：同步 **`CHANGELOG.md` / `CHANGELOG.en.md`**、上文「兼容性表」、**`oclive_validation`**（若 touched 键）、及姊妹仓 README 中的最低版本说明。
 
 ### 发版审阅（维护者自检）
 
 1. 核对本节「快照」三处 semver：**根 `package.json`**、**`distros/desktop-tauri/Cargo.toml`**、**`oclive_kernel_runtime`**（发版 bump 时常需同改）。  
-2. 打开 [handoff/archive/PRODUCT_RELEASE_CHECKLIST.md](../handoff/archive/PRODUCT_RELEASE_CHECKLIST.md) **「对外说明」**：若 bump 了契约或姊妹仓依赖，更新本页表格或快照句。  
+2. 按 [CONTRIBUTING](../CONTRIBUTING.md) 与 [版本规则](development/RELEASE_VERSIONING.md) 更新 **对外说明**：若 bump 了契约或姊妹仓依赖，更新本页表格或快照句。
 3. **HTTP / OOCP**：若 `API_VERSION` 或 `RUNTIME_API_VERSION` 变更，必须同步测试套件与文档（见 `creator-docs/testing/OOCP_TEST_SUITE.md`）。
+
+无头 HTTP 的认证属于宿主启动契约：`--api` 默认要求 `OCLIVE_API_TOKEN`，调用方在除 `/health` 外的请求发送 `x-oclive-api-token`；不得把 `OCLIVE_API_ALLOW_UNAUTHENTICATED=1` 用于生产或持久化数据目录。
 
 ---
 

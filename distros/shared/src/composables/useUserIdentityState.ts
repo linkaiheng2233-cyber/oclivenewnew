@@ -1,40 +1,57 @@
 import type { UserIdentityStateResponse } from '@oclive/shared/api'
-import { computed, onMounted, ref, watch } from 'vue'
 import {
   getUserIdentityState,
   OCLIVE_DEFAULT_IDENTITY_SENTINEL,
   setSceneUserIdentity,
   setUserIdentity,
 } from '@oclive/shared/api'
+import { useAdultInteractionStore } from '@oclive/shared/stores/adultInteractionStore'
+import { useChatStore } from '@oclive/shared/stores/chatStore'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
 import { useUiStore } from '@oclive/shared/stores/uiStore'
+import { computed, onMounted, ref, watch } from 'vue'
 
 const identityState = ref<UserIdentityStateResponse | null>(null)
 const loading = ref(false)
 let watchersBound = false
+let identityRefreshGeneration = 0
+let identitySetGeneration = 0
 
 async function refreshIdentityState(): Promise<void> {
   const roleStore = useRoleStore()
   const uiStore = useUiStore()
   const roleId = roleStore.currentRoleId
+  const sceneId = uiStore.sceneId
+  const identityBinding = roleStore.roleInfo.identityBinding
+  const generation = ++identityRefreshGeneration
   if (!roleId) {
     identityState.value = null
     return
   }
   try {
-    identityState.value = await getUserIdentityState(
+    const next = await getUserIdentityState(
       roleId,
-      roleStore.roleInfo.identityBinding === 'per_scene' ? uiStore.sceneId : null,
+      identityBinding === 'per_scene' ? sceneId : null,
     )
+    if (generation !== identityRefreshGeneration
+      || roleStore.currentRoleId !== roleId
+      || uiStore.sceneId !== sceneId
+      || roleStore.roleInfo.identityBinding !== identityBinding) {
+      return
+    }
+    identityState.value = next
   }
   catch {
-    identityState.value = null
+    if (generation === identityRefreshGeneration && roleStore.currentRoleId === roleId)
+      identityState.value = null
   }
 }
 
 /** Shared User Identity catalog state (Settings SSOT + compact / StatusBar consumers). */
 export function useUserIdentityState() {
   const roleStore = useRoleStore()
+  const chatStore = useChatStore()
+  const adultStore = useAdultInteractionStore()
   const uiStore = useUiStore()
 
   if (!watchersBound) {
@@ -85,16 +102,55 @@ export function useUserIdentityState() {
     if (!roleId || nextId === identitySelectValue.value)
       return identityState.value
     loading.value = true
+    const sceneId = uiStore.sceneId || 'default'
+    const identityBinding = roleStore.roleInfo.identityBinding
+    const generation = ++identitySetGeneration
+    identityRefreshGeneration += 1
     try {
-      const perScene = roleStore.roleInfo.identityBinding === 'per_scene'
-      identityState.value = perScene
-        ? await setSceneUserIdentity(roleId, uiStore.sceneId, nextId)
+      const identityName = identityState.value?.identities
+        .find(identity => identity.id === nextId)
+        ?.display_name ?? nextId
+      const endedAdultInteraction
+        = adultStore.sessionFor(roleId, sceneId).active
+          ? await chatStore.clearAdultInteractionForContextChange(
+              roleId,
+              sceneId,
+            )
+          : false
+      if (generation !== identitySetGeneration
+        || roleStore.currentRoleId !== roleId
+        || uiStore.sceneId !== sceneId
+        || roleStore.roleInfo.identityBinding !== identityBinding) {
+        return identityState.value
+      }
+      const next = identityBinding === 'per_scene'
+        ? await setSceneUserIdentity(roleId, sceneId, nextId)
         : await setUserIdentity(roleId, nextId)
+      if (generation !== identitySetGeneration
+        || roleStore.currentRoleId !== roleId
+        || uiStore.sceneId !== sceneId
+        || roleStore.roleInfo.identityBinding !== identityBinding) {
+        return identityState.value
+      }
+      identityState.value = next
       await roleStore.refreshRoleInfo()
+      if (generation !== identitySetGeneration
+        || roleStore.currentRoleId !== roleId
+        || uiStore.sceneId !== sceneId) {
+        return identityState.value
+      }
+      if (endedAdultInteraction) {
+        await chatStore.sendAdultAction(
+          'exit',
+          sceneId,
+          `用户身份已经切换为“${identityName}”。原身份下的互动已经结束；请从普通聊天状态开始，按照角色人设自然回应这次身份变化。`,
+        )
+      }
       return identityState.value
     }
     finally {
-      loading.value = false
+      if (generation === identitySetGeneration)
+        loading.value = false
     }
   }
 

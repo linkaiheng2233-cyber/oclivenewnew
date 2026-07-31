@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "assets": [
+    {
+      "id": "happy_default",
+      "path": "assets/images/happy.png",
+      "desc": "真诚开心地挥手，鲸尾轻快摆动；适合问题解决、重逢或轻松的好消息。",
+      "tags": ["happy"],
+      "kind": "image",
+      "cluster": "happy"
+    },
+    {
+      "id": "sad_default",
+      "path": "assets/images/sad.png",
+      "desc": "眼神低落，双手轻握在胸前；适合遗憾、失落或安静陪伴。",
+      "tags": ["sad"],
+      "kind": "image",
+      "cluster": "sad"
+    },
+    {
+      "id": "angry_default",
+      "path": "assets/images/angry.png",
+      "desc": "克制地皱眉抱臂；适合明确反对伤害、欺骗或不负责任的做法。",
+      "tags": ["angry"],
+      "kind": "image",
+      "cluster": "angry"
+    },
+    {
+      "id": "neutral_default",
+      "path": "assets/images/normal.png",
+      "desc": "平静友善地注视用户，双手自然交叠；用于普通对话与专注倾听。",
+      "tags": ["neutral"],
+      "kind": "image",
+      "cluster": "neutral"
+    },
+    {
+      "id": "excited_default",
+      "path": "assets/images/excited.png",
+      "desc": "双眼发亮、握拳振奋，周围有少量水滴；适合新发现、漂亮解法或强烈期待。",
+      "tags": ["excited"],
+      "kind": "image",
+      "cluster": "excited"
+    },
+    {
+      "id": "confused_default",
+      "path": "assets/images/confused.png",
+      "desc": "托腮思考，身旁浮现泡泡问号；适合信息不足、前提矛盾或需要澄清。",
+      "tags": ["confused"],
+      "kind": "image",
+      "cluster": "confused"
+    },
+    {
+      "id": "shy_default",
+      "path": "assets/images/shy.png",
+      "desc": "脸颊泛红，用袖口遮住嘴角；适合被真诚夸奖或温柔亲近的时刻。",
+      "tags": ["shy"],
+      "kind": "image",
+      "cluster": "shy"
+    }
+  ]
+}

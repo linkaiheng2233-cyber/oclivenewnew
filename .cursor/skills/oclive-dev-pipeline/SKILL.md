@@ -1,7 +1,7 @@
 ---
 name: oclive-dev-pipeline
 description: >-
-  OCLive/oclivenewnew project layer for the seven-phase pipeline: G1–G16, SSOT
+  OCLive/oclivenewnew project layer for the seven-phase pipeline: G1–G17, SSOT
   routing, S/M/L sizing, check scripts, remote CI Done evidence. Use for
   oclivenewnew, A.I.Live, kernel/, distros/, pack-editor, vscode. Triggers:
   按 oclive 开发流水线, 按 oclive 流程, oclive dev pipeline, 技术债收口, 小改跳过 Plan.
@@ -48,7 +48,7 @@ description: >-
 ## 项目规则（全程）
 
 - Rules：`.cursor/rules/oclivenewnew.mdc`
-- G1–G16：[`AI_CHANGE_BOUNDARIES.md`](../../../handoff/AI_CHANGE_BOUNDARIES.md)
+- G1–G17：[`AI_CHANGE_BOUNDARIES.md`](../../../handoff/AI_CHANGE_BOUNDARIES.md)
 - 模块：[`MODULE_MAP_AND_HANDOFF.md`](../../../handoff/MODULE_MAP_AND_HANDOFF.md)
 - 关键路径：[`BUS_FACTOR_NOTES.md`](../../../handoff/BUS_FACTOR_NOTES.md)
 - 数字核实：[`AI_VERIFICATION_PROTOCOL.md`](../../../handoff/AI_VERIFICATION_PROTOCOL.md)
@@ -77,6 +77,7 @@ description: >-
 - Cargo.lock → cargo audit + KNOWN_VULNERABILITIES（中英）
 - 新 AppError → generate-kernel-error-codes + check-error-codes-drift + apiErrors + ERROR_CODES
 - 六槽禁止第二套 parser；集成测用临时夹具，不改官方 slot_registry
+- G17：先列生产者→契约→适配/权限→消费者→状态/回退→测试；逐项核对 kernel/Tauri/shared/发行版/插件/角色包/姊妹仓
 ```
 
 ### ④
@@ -96,6 +97,7 @@ description: >-
 | creator-docs 中英契约 | 上述 + `check-doc-mirror` |
 | Rust 内核/分层 | 定向测试或 `check:rust` + `check-domain-layering` |
 | 公开 DTO/trait/re-export | Rust 验收 + `cargo test --workspace --doc`；错误码另跑 drift |
+| Chat Pro / 目录插件 / 插槽 | `npm run check:module-compat` + Vue/iframe/Bridge/RPC 受影响行为测 |
 | 门禁脚本/CI | 脚本自测 + `dimension5 --ci`；影响集成链时再跑 `check:ci-local` |
 | Cargo.lock/供应链 | `cargo audit` + KNOWN_VULNERABILITIES 中英 + applicable deny |
 | L：发版/main 恢复/债 Done | 项目要求的全量本地门禁 + **目标提交远程 CI** |
@@ -124,6 +126,7 @@ description: >-
 | `node scripts/check-markdown-links.mjs` | **仅** `human-docs/modules` 默认范围 |
 | `node scripts/check-doc-mirror.mjs` | 中英文 |
 | `npm run test:unit` | shared / chat-pro |
+| `npm run check:module-compat` | Chat Pro / 目录插件 / 插槽注册表 / Vue 与 iframe 入口 |
 | Tauri `--test …` | 定向集成 |
 | **远程 `ci.yml` success** | L：有 push 授权后 · 台账 Done · main 恢复；无授权则报告 Locally verified |
 
@@ -143,6 +146,7 @@ description: >-
 | G6 | 编排仅 `process_message` / `turn_pipeline/` |
 | G7 | `reply` · 错误码 SSOT（checklist G7b） |
 | G11 | 无擅自新顶层 `.md` |
+| G17 | 无只改生产者或消费者；汇报列已改、无需改、回退和跨边界测试 |
 
 ## 技术债马拉松（长计划书 · 分阶段子 Agent）
 

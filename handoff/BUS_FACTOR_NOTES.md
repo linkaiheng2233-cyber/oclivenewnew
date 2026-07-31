@@ -5,7 +5,7 @@
 
 **模块关系与进度总览（先扫一眼）**：[`MODULE_MAP_AND_HANDOFF.md`](./MODULE_MAP_AND_HANDOFF.md) — **模块注册表**（定义 · 六槽/设施关系 · 改动约束；进度 → TECHNICAL_DEBT）。
 
-约定：路径以仓库根 **`oclivenewnew`** 为准；`src-tauri` 为桌面宿主内核与 Tauri 命令。
+约定：路径以仓库根 **`oclivenewnew`** 为准；桌面宿主与 Tauri 命令在 `distros/desktop-tauri/src`，内核编排在 `kernel/crates/oclive_kernel_host`。
 
 ---
 
@@ -16,10 +16,10 @@
 | **`oclive_kernel_types`** | `kernel/crates/oclive_kernel_types/` | DTO、`AppError`、纯数据结构 |
 | **`oclive_kernel_contracts`** | `kernel/crates/oclive_kernel_contracts/` | `LlmClient`、`PluginHostPort`、`EventEstimator`、`AgentProvider` 等 trait |
 | **`oclive_kernel_runtime`** | `kernel/crates/oclive_kernel_runtime/` | 策略、Prompt、kernel discovery；**编排实现**在 `oclive_kernel_host` |
-| **`oclive_validation`** | `kernel/crates/oclive_validation/` | manifest / **`pipeline.ocblueprint` v2** 校验 |
+| **`oclive_validation`** | `kernel/crates/oclive_validation/` | manifest / **`pipeline.ocblueprint` v2/v3/v4** 分派与校验 |
 | **`oclive-cli`** | `kernel/crates/oclive-cli/` | 脚手架、`bench` / `test` / `doctor` / `ci init` |
 
-**`distros/desktop-tauri/domain/ports/`** 仅 re-export trait + 本地 `impl`；编排应依赖 **`dyn`** 端口，见 [`ARCHITECTURE_LAYERING.md`](./ARCHITECTURE_LAYERING.md)。
+**`kernel/crates/oclive_kernel_host/src/domain/ports/`** 放宿主侧编排端口；跨 crate trait 的权威定义在 `kernel/crates/oclive_kernel_contracts/src/`。编排应依赖 **`dyn`** 端口，见 [`ARCHITECTURE_LAYERING.md`](./ARCHITECTURE_LAYERING.md)。
 
 ---
 
@@ -31,7 +31,7 @@
 | **蓝图** | 同文件 `pipeline.ocblueprint` 内 **`slot_registry`**、**`groups`**、（目标）**`runtime_config`** | 管理员 / `oclive plugin manage` / `save_role_slot_registry` | [SETTINGS_REFERENCE.md](../creator-docs/cli/SETTINGS_REFERENCE.md) §零 |
 | **边界 SSOT** | — | — | **[ROLE_PACK_BOUNDARY.md](./ROLE_PACK_BOUNDARY.md)** |
 
-**今日实现**：引擎字段（如 `meta.interaction_mode`）仍在 `meta`，与边界文档「目标迁至 `runtime_config`」并存；改边界时同步 `oclive_validation` 与 `RoleStorage::load_role_from_dir`。
+**今日实现**：Stable v4 以顶层 `runtime_config` 为引擎字段 SSOT；v2 继续从 `meta.*` 兼容读取，v3 只服务冻结的双核 Beta。改边界时同步 `oclive_validation` 与 `RoleStorage::load_role_from_dir`。
 
 **双核**：`dual_core.enabled` 仅蓝图（[DUAL_CORE_CURSOR_HANDOFF.md](./DUAL_CORE_CURSOR_HANDOFF.md)）；非创作者字段。
 
@@ -46,13 +46,13 @@
 | 项目 | 说明 |
 |------|------|
 | **对外入口** | `kernel/crates/oclive_kernel_host/src/domain/chat_engine/mod.rs` 再导出 `process_message`；实现主体在 **`kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs`**。 |
-| **HTTP / Tauri** | 与 OOCP / `invoke` 对齐的请求体见 `oclive_kernel_runtime` DTO（宿主经 `kernel/crates/oclive_kernel_types/src/models/mod.rs` 再导出）。 |
+| **HTTP / Tauri** | 与 OOCP / `invoke` 对齐的请求体与回复 DTO 以 `oclive_kernel_types` 为准；`oclive_kernel_runtime` 只承载运行时策略/Prompt 类型。 |
 | **主语义（概念六段）** | 文件头注释：**分析情绪 → 检测事件 → 演化性格 → 构建 Prompt → 调用 LLM → 持久化**；实际执行会根据 **Agent 短路**、**异地 / 远程人生** 分支到 `process_remote_stub` / `process_remote_life`，否则进入 **`co_present::process_co_present`**。 |
 | **阶段标注** | `ProcessMessageError` / `pm!` 宏带 `stage` 字符串（如 `ensure_role_loaded`、`startup_health`），日志检索用 `target: "oclive_chat"`。 |
 
 ### 从用户输入到 LLM 返回（追踪顺序）
 
-1. **API 层**：Tauri `generate_handler` 注册的命令或 `http_api.rs` 路由 → 调用 `domain::process_message`（同一代码路径意图）。
+1. **API 层**：Tauri `generate_handler` 注册的命令或 `kernel/crates/oclive_kernel_host/src/http_api/*.rs` 路由 → 调用 `domain::process_message`（同一代码路径意图）。
 2. **`process_message::run`**：校验场景、`ensure_role_runtime`、加载 `Role`、`effective_plugin_backends_for_session`、`startup_health::ensure_once`。
 3. **Agent 分支**：若 `pl.agent.process` 返回 `handled`，则走短路径组装 `SendMessageResponse` 并返回。
 4. **异地**：`user_is_remote_from_character` + `remote_life_enabled` → `process_remote_stub` 或 `process_remote_life`。
@@ -70,7 +70,7 @@
 | **配置来源** | v2：**`pipeline.ocblueprint` → `slot_registry`**（折叠六槽）+ DB 会话覆盖；legacy：`settings.json` → `plugin_backends`。有效值：`effective_plugin_backends_for_session`（`AppState`）。 |
 | **模块编号与枚举** | **[`OCLIVE_ARCHITECTURE_OVERVIEW.md`](../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)**、**[`SETTINGS_REFERENCE.md`](../creator-docs/cli/SETTINGS_REFERENCE.md)**、**[`PLUGIN_V1.md`](../creator-docs/plugin-and-architecture/PLUGIN_V1.md)**。 |
 | **降级策略** | 目录插件 / Remote 失败时主对话路径尽量 **记日志 + 回退内置或 Ollama**（具体分支见 `co_present`、remote 子模块与插件运行时；错误码见 ERROR_CODES）。 |
-| **目录插件运行时** | `kernel/crates/oclive_kernel_host/src/infrastructure/directory_plugins/`（manifest 校验、`runtime` 等）；与 **`high_risk_grants`**、**`mcp_client`** 联动见 [`A4_CLOSURE_SUMMARY.md`](./A4_CLOSURE_SUMMARY.md)。 |
+| **目录插件运行时** | `kernel/crates/oclive_kernel_host/src/infrastructure/directory_plugins/`（manifest 校验、`runtime` 等）；权限三面一致性与用户授权见 [`PLUGIN_V1.md`](../creator-docs/plugin-and-architecture/PLUGIN_V1.md) §权限规范。 |
 
 **设计意图**：编译期内置实现 + 运行时解析目录/Remote，使同一编排代码不随插件数量重新编译（Monolith 模式另见 §7）。
 
@@ -97,7 +97,7 @@
 | **迁移位置** | **`kernel/crates/oclive_kernel_host/migrations/*.sql`**，按序号递增；**勿虚构表名**（以迁移文件为准）。 |
 | **`role_runtime`** | 在 **`001_init.sql`** 创建；后续迁移追加列（如 `relation_state`、`virtual_time_ms`、`interaction_mode`、`mutable_personality` **`013`**、Wave F `ephemeral_personality` / `ephemeral_ttl_turns` / `deep_latch_active` **`035_turn_thinking_runtime.sql`** 等）。 per-role 会话与立绘情绪等核心运行时态多在此表。 |
 | **`app_settings`** | **`011_app_settings.sql`**：`key` / `value` 文本键值；应用级（非角色包）如 `interaction_mode`、`remote_fallback_to_builtin`。 |
-| **新迁移步骤** | 新增 `0NN_*.sql` → 若需 ORM/仓库层映射，改 **`distros/desktop-tauri/src/infrastructure`** 与 **`domain/repository`** trait → 跑 `cargo test` 与相关集成测 → 文档若暴露给用户则更新 ERROR_CODES / FAQ。 |
+| **新迁移步骤** | 新增 `0NN_*.sql` → 若需仓库层映射，改 **`kernel/crates/oclive_kernel_host/src/infrastructure`** 与 `kernel/crates/oclive_kernel_contracts/src/repository.rs` → 跑 workspace Rust 测试与相关集成测 → 文档若暴露给用户则更新 ERROR_CODES / FAQ。 |
 
 **设计意图**：SQLite 单文件、显式迁移版本链，避免「隐式自动建表」与生产数据分叉。
 
@@ -109,7 +109,7 @@
 |------|------|
 | **Trait / 类型** | **`kernel/crates/oclive_kernel_runtime/src/domain/complex_emotion.rs`** 再导出内核 `ComplexEmotionInput` / `ComplexEmotionOutput` 等；内置 **`BuiltinKeywordComplexEmotionProvider`**。 |
 | **Remote 可选** | **`kernel/crates/oclive_kernel_host/src/infrastructure/remote_plugin/complex_emotion_http.rs`**。 |
-| **注入 Prompt 链路** | **[`turn_pipeline/`](../../kernel/crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/)**：在 **`load_recent_context` 之后、`build_prompt` 之前** 调用解析；上一轮 hint 缓存在 **`AppState`**（按会话 `srid`）；经 **`PromptInput::previous_complex_emotion_narrative_hint`** 传入 **`PromptBuilder::build_prompt`**（`prompt_builder/mod.rs`）。 |
+| **注入 Prompt 链路** | **[`turn_pipeline/`](../kernel/crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/)**：在 **`load_recent_context` 之后、`build_prompt` 之前** 调用解析；上一轮 hint 缓存在 **`AppState`**（按会话 `srid`）；经 **`PromptInput::previous_complex_emotion_narrative_hint`** 传入 **`PromptBuilder::build_prompt`**（`prompt_builder/mod.rs`）。 |
 | **测试** | **`distros/desktop-tauri/tests/narrative_hint_prompt_roundtrip.rs`**。 |
 
 **设计意图**：复杂情感是「回合间状态」，不能只在 UI 层拼接；必须进入 Prompt 构造输入才能保证模型侧一致。
@@ -132,7 +132,7 @@
 
 | 项目 | 说明 |
 |------|------|
-| **磁盘格式权威** | **`creator-docs/role-pack/ROLE_PACK_SPEC.md`** ↔ 加载逻辑 **`RoleStorage::load_role`**（`src-tauri` infrastructure 层搜索 `load_role`）。 |
+| **磁盘格式权威** | **`creator-docs/role-pack/ROLE_PACK_SPEC.md`** ↔ 加载逻辑 **`RoleStorage::load_role`**（`kernel/crates/oclive_kernel_host/src/infrastructure/storage/role.rs` 搜索 `load_role`）。 |
 | **manifest 与 README** | 根目录 **`distros/chat-pro/roles/README_MANIFEST.md`**。 |
 | **校验 crate** | **`kernel/crates/oclive_validation`**：与宿主、编写器共享；顶层键等见 crate 内 `json_keys` / manifest 校验模块。 |
 | **编写器 wasm** | **oclive-pack-editor**：`npm run wasm:build` 指向相邻克隆的 **`oclivenewnew/kernel/crates/oclive_validation`**，详见该仓 **README / CONTRIBUTING**；未构建 wasm 时 TypeScript 子集回退。 |
@@ -149,8 +149,9 @@
 | **CI job `oocp-test-suite`** | **`.github/workflows/ci.yml`** | 构建 `oclivenewnew-tauri`、`--api` 拉起、健康检查后跑 OOCP + **`scripts/e2e-core-api-restart.mjs`**。 |
 | **`invoke` 热路径** | **`distros/desktop-tauri/tests/invoke_hotpath_matrix.rs`**；矩阵 **`handoff/INVOKE_HOTPATH_MATRIX.md`**。 |
 | **Vue 组件 / E2E** | **oclive-pack-editor** 仓（本仓不重复维护全量 UI 树）；本仓 **`npm run test:unit`** + **Ubuntu `frontend` job** 上 **Playwright + vite preview**（见 CONTRIBUTING）。 |
-| **Rust 全量** | **`rust` job**：fmt、clippy `-D warnings`、`cargo test`（`src-tauri` 目录）。 |
-| **`cargo-audit`** | **`continue-on-error: true`** | 可见性优先；失败不挡合入但应跟踪 **`KNOWN_VULNERABILITIES.md`**。 |
+| **Rust 全量** | **`rust` job**：fmt、clippy `-D warnings`、workspace `cargo test`。 |
+| **`cargo-audit`** | `.github/workflows/ci.yml` 的硬门禁（job 未设置 `continue-on-error`） | `.cargo/audit.toml` 的每个 ignore 都必须有 `KNOWN_VULNERABILITIES.md` 解释。 |
+| **`npm audit`** | `.github/workflows/ci.yml` 的 `npm-audit` 可见性 job（`continue-on-error: true`） | `npm audit --omit=dev --audit-level=high` 结果必须记录；当前不阻断合入，升格条件见 TECHNICAL_DEBT K-SUPPLY-04。 |
 
 **失败处理策略**：先读 job 日志区分 **fmt/clippy/unit/OOCP/frontend**；OOCP 失败常与环境变量、mock LLM、端口占用有关；Windows 不跑 Playwright 时勿忽略 Ubuntu `frontend` 红。
 
@@ -168,7 +169,7 @@
 | 蓝图加载 | `kernel/crates/oclive_kernel_host/src/infrastructure/storage.rs` | `load_blueprint_v2_for_role_dir` | 校验失败看 `oclive_validation` 报错拼接 |
 | 端口 trait | `kernel/crates/oclive_kernel_contracts/src/` | `LlmClient`、`MemoryRetrieval`… | 插件作者实现 trait，见各文件 **When to implement** |
 | 纯类型 | `kernel/crates/oclive_kernel_types/` | DTO、`AppError` | 无 I/O；契约变更同步 validation |
-| 蓝图校验 | `kernel/crates/oclive_validation/` | v2 schema、`slot_registry` | 改 JSON 形状必跑 `pack validate` + 单测 |
+| 蓝图校验 | `kernel/crates/oclive_validation/` | v2/v3/v4 分派、`slot_registry`、`runtime_config`、v4 `extensions` | 改 JSON 形状必跑 `pack validate` + 单测 |
 | 前端架构图 | `distros/shared/src/composables/useArchitectureGraphModel.ts` | `buildBlueprintEdges`、`groups` | 边只读派生，勿写回 blueprint |
 
 ---
@@ -176,7 +177,7 @@
 ## 10. 建议的「第一次读代码」顺序（半天内）
 
 1. `DOCUMENTATION_INDEX.md` → `KERNEL_AND_MODULES_ARCHITECTURE.md`（总图）  
-2. `process_message.rs` 全文 skim + `turn_pipeline.rs` 前 120 行  
+2. `process_message.rs` 全文 skim + `turn_pipeline/mod.rs` 前 120 行
 3. `plugin_host.rs` 的 `resolve_for_role` 签名与返回类型  
 4. `error.rs` + `KERNEL_ERROR_CODE_CONVENTION.md` 一页  
 5. `migrations/001_init.sql` + 最新序号迁移扫一眼  

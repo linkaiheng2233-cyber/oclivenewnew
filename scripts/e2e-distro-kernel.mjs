@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 /**
  * Distro kernel e2e — spawn / attach / role_snapshot scenarios.
- * Usage: node scripts/e2e-distro-kernel.mjs [--scenario spawn|attach|role-snapshot|bundled-first|theater|all]
+ * Usage: node scripts/e2e-distro-kernel.mjs [--scenario spawn|attach|role-snapshot|bundled-first|theater|role-portability|all]
  */
 import { spawn, spawnSync } from 'child_process';
+import { randomUUID } from 'crypto';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -16,6 +17,7 @@ const repoRoot = resolveRepoRoot();
 const port = Number(process.env.OCLIVE_E2E_PORT || 18421);
 const appData = path.join(os.tmpdir(), `oclive_distro_e2e_${Date.now()}`);
 const rolesDir = chatProRolesDir(repoRoot);
+const apiToken = process.env.OCLIVE_API_TOKEN?.trim() || randomUUID();
 
 const scenario = (() => {
   const i = process.argv.indexOf('--scenario');
@@ -26,9 +28,15 @@ function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+function apiFetch(url, init) {
+  const headers = new Headers(init?.headers || {});
+  headers.set('x-oclive-api-token', apiToken);
+  return fetch(url, { ...init, headers });
+}
+
 async function healthOk(p = port) {
   try {
-    const res = await fetch(`http://127.0.0.1:${p}/health`, { signal: AbortSignal.timeout(2000) });
+    const res = await apiFetch(`http://127.0.0.1:${p}/health`, { signal: AbortSignal.timeout(2000) });
     return res.ok;
   } catch {
     return false;
@@ -47,6 +55,7 @@ function spawnKernel(extraEnv = {}) {
       OCLIVE_APP_DATA: appData,
       OCLIVE_USE_CANONICAL_APP_DATA: '1',
       OCLIVE_HTTP_API_MOCK_LLM: '1',
+      OCLIVE_API_TOKEN: apiToken,
       OCLIVE_ROLES_DIR: rolesDir,
       ...extraEnv,
     },
@@ -71,7 +80,7 @@ async function scenarioSpawn() {
   const { child } = spawnKernel();
   try {
     await waitReady();
-    const res = await fetch(`http://127.0.0.1:${port}/chat`, {
+    const res = await apiFetch(`http://127.0.0.1:${port}/chat`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
@@ -111,12 +120,12 @@ async function scenarioRoleSnapshot() {
   const { child } = spawnKernel();
   try {
     await waitReady();
-    await fetch(`http://127.0.0.1:${port}/role/load`, {
+    await apiFetch(`http://127.0.0.1:${port}/role/load`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ role_id: 'mumu' }),
     });
-    const snapRes = await fetch(`http://127.0.0.1:${port}/role_snapshot?role_id=mumu&scene_id=desktop`);
+    const snapRes = await apiFetch(`http://127.0.0.1:${port}/role_snapshot?role_id=mumu&scene_id=desktop`);
     const text = await snapRes.text();
     const snap = text ? JSON.parse(text) : null;
     if (!snapRes.ok || typeof snap.current_favorability !== 'number') {
@@ -192,7 +201,7 @@ async function scenarioTheater() {
   });
   try {
     await waitReady();
-    const res = await fetch(`http://127.0.0.1:${port}/health`, {
+    const res = await apiFetch(`http://127.0.0.1:${port}/health`, {
       headers: { Accept: 'application/json' },
     });
     const body = await res.json();
@@ -209,13 +218,69 @@ async function scenarioTheater() {
   }
 }
 
+async function stopKernel(child) {
+  if (child.exitCode !== null || child.signalCode !== null) return;
+  const exited = new Promise((resolve) => child.once('exit', resolve));
+  child.kill();
+  await exited;
+}
+
+async function scenarioRolePortability() {
+  console.log('[e2e-distro] scenario: role-portability');
+  const rolePath = path.join(rolesDir, 'mumu');
+  const profiles = [
+    { distroId: 'desktop', profile: 'desktop.oclive.toml', sceneId: 'home' },
+    { distroId: 'vscode', profile: 'vscode.oclive.toml', sceneId: 'vscode' },
+    { distroId: 'theater', profile: 'theater.oclive.toml', sceneId: 'home' },
+  ];
+
+  for (const entry of profiles) {
+    const profile = path.join(repoRoot, 'examples', 'distro-profiles', entry.profile);
+    if (!fs.existsSync(profile)) {
+      throw new Error(`missing distro profile: ${profile}`);
+    }
+    const { child } = spawnKernel({
+      OCLIVE_DISTRO_ID: entry.distroId,
+      OCLIVE_DISTRO_PROFILE: profile,
+    });
+    try {
+      await waitReady();
+      const loadRes = await apiFetch(`http://127.0.0.1:${port}/role/load`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ role_id: 'mumu' }),
+      });
+      if (!loadRes.ok) {
+        throw new Error(`${entry.distroId} role load failed: ${await loadRes.text()}`);
+      }
+      const chatRes = await apiFetch(`http://127.0.0.1:${port}/chat`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          role_path: rolePath,
+          message: `role portability e2e (${entry.distroId})`,
+          session_id: `e2e-portability-${entry.distroId}`,
+          scene_id: entry.sceneId,
+        }),
+      });
+      const body = await chatRes.json();
+      if (!chatRes.ok || !body.reply) {
+        throw new Error(`${entry.distroId} chat failed: ${JSON.stringify(body)}`);
+      }
+      console.log(`[e2e-distro] role-portability ${entry.distroId} ok`);
+    } finally {
+      await stopKernel(child);
+    }
+  }
+}
+
 async function main() {
   if (!findKernelBinary(repoRoot)) {
     console.warn('[e2e-distro] skip: build oclive-kernel-server first');
     process.exit(0);
   }
   const run = scenario === 'all'
-    ? ['spawn', 'attach', 'role-snapshot', 'bundled-first', 'theater']
+    ? ['spawn', 'attach', 'role-snapshot', 'bundled-first', 'theater', 'role-portability']
     : [scenario];
   for (const s of run) {
     if (s === 'spawn') await scenarioSpawn();
@@ -223,6 +288,7 @@ async function main() {
     else if (s === 'role-snapshot') await scenarioRoleSnapshot();
     else if (s === 'bundled-first') await scenarioBundledFirst();
     else if (s === 'theater') await scenarioTheater();
+    else if (s === 'role-portability') await scenarioRolePortability();
     else {
       console.error(`unknown scenario: ${s}`);
       process.exit(1);

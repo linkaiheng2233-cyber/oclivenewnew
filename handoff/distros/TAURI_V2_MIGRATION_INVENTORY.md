@@ -43,7 +43,7 @@
 | `global-shortcut` | `tauri-plugin-global-shortcut` + register/unregister 权限 | |
 | deep-link `oclive://` | `tauri-plugin-deep-link` v2 + `plugins.deep-link.desktop.schemes` + `deep-link:default` | |
 | `ocliveplugin` 自定义协议 | `register_uri_scheme_protocol`（v2 `UriSchemeContext`） | |
-| `dangerousRemoteDomainIpcAccess` `plugins: ["*"]` | **`capabilities/plugin-shell-remote.json`**：`remote.urls` = `https://ocliveplugin.localhost/**` + **窄** `core:default` / `core:event:default`（**禁止** `*`） | |
+| `dangerousRemoteDomainIpcAccess` `plugins: ["*"]` | 已删除 custom-protocol remote IPC capability；发行版整壳在不透明源全屏 iframe 中运行，经 source-bound parent broker 调用 `plugin_bridge_invoke` | |
 
 主窗 ACL：[`capabilities/main.json`](../../distros/desktop-tauri/capabilities/main.json)。
 
@@ -103,7 +103,6 @@
 
 | 项 | 说明 |
 |----|------|
-| [`scripts/split-tauri-api.mjs`](../../scripts/split-tauri-api.mjs) | 模板已改为 `@tauri-apps/api/core`（避免再生成脏码） |
 | [`helpers.test.ts`](../../distros/shared/src/api/helpers.test.ts) | 注释已改为「Tauri v2 IPC」 |
 | `@tauri-apps/plugin-shell`（npm） | `distros/shared/package.json` 仍声明；**生产 TS/Vue 零 import** → **Observe**（卸载另波，非 01b） |
 | `e2e-mock` / vite `--mode e2e` alias | preview 硬门禁所需；**非**生产路径 |

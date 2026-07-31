@@ -455,12 +455,16 @@ impl DbManager {
                 Option<String>,
                 Option<i64>,
                 Option<i64>,
+                Option<String>,
+                Option<String>,
+                i64,
             ),
         >(
             "SELECT current_favorability, current_emotion, relation_state, current_scene,
                     interaction_mode, COALESCE(remote_life_enabled, 0), mutable_personality,
                     event_impact_factor, ephemeral_personality, ephemeral_ttl_turns,
-                    COALESCE(deep_latch_active, 0)
+                    COALESCE(deep_latch_active, 0), continuity_scene_id,
+                    continuity_state_id, continuity_revision
              FROM role_runtime WHERE role_id = ?",
         )
         .bind(role_id)
@@ -480,6 +484,9 @@ impl DbManager {
             ephemeral_personality,
             ephemeral_ttl_turns,
             deep_latch_active,
+            continuity_scene_id,
+            continuity_state_id,
+            continuity_revision,
         )) = row
         else {
             return Err(AppError::RoleRuntimeNotReady);
@@ -497,6 +504,9 @@ impl DbManager {
             ephemeral_personality,
             ephemeral_ttl_turns: ephemeral_ttl_turns.map(|v| v.max(0) as u32),
             deep_latch_active: deep_latch_active.map(|v| v != 0),
+            continuity_scene_id,
+            continuity_state_id,
+            continuity_revision: continuity_revision.max(0) as u64,
         };
 
         if seed_interaction_mode && interaction_mode_raw.is_none() {
@@ -555,12 +565,16 @@ impl DbManager {
                 Option<String>,
                 Option<i64>,
                 Option<i64>,
+                Option<String>,
+                Option<String>,
+                i64,
             ),
         >(
             "SELECT current_favorability, current_emotion, relation_state, current_scene,
                     interaction_mode, COALESCE(remote_life_enabled, 0), mutable_personality,
                     event_impact_factor, ephemeral_personality, ephemeral_ttl_turns,
-                    COALESCE(deep_latch_active, 0)
+                    COALESCE(deep_latch_active, 0), continuity_scene_id,
+                    continuity_state_id, continuity_revision
              FROM role_runtime WHERE role_id = ?",
         )
         .bind(role_id)
@@ -580,6 +594,9 @@ impl DbManager {
                 ephemeral_personality,
                 ephemeral_ttl_turns,
                 deep_latch_active,
+                continuity_scene_id,
+                continuity_state_id,
+                continuity_revision,
             )| RoleRuntimeSnapshot {
                 favorability: Some(favorability),
                 emotion,
@@ -592,6 +609,9 @@ impl DbManager {
                 ephemeral_personality,
                 ephemeral_ttl_turns: ephemeral_ttl_turns.map(|v| v.max(0) as u32),
                 deep_latch_active: deep_latch_active.map(|v| v != 0),
+                continuity_scene_id,
+                continuity_state_id,
+                continuity_revision: continuity_revision.max(0) as u64,
             },
         ))
     }
@@ -599,8 +619,20 @@ impl DbManager {
     pub async fn set_current_scene(&self, role_id: &str, scene_id: &str) -> Result<()> {
         let now = Utc::now().to_rfc3339();
         let n = sqlx::query(
-            "UPDATE role_runtime SET current_scene = ?, updated_at = ? WHERE role_id = ?",
+            "UPDATE role_runtime
+             SET continuity_scene_id = CASE WHEN current_scene = ? THEN continuity_scene_id ELSE NULL END,
+                 continuity_state_id = CASE WHEN current_scene = ? THEN continuity_state_id ELSE NULL END,
+                 continuity_revision = CASE
+                     WHEN current_scene = ? THEN continuity_revision
+                     ELSE continuity_revision + 1
+                 END,
+                 current_scene = ?,
+                 updated_at = ?
+             WHERE role_id = ?",
         )
+        .bind(scene_id)
+        .bind(scene_id)
+        .bind(scene_id)
         .bind(scene_id)
         .bind(&now)
         .bind(role_id)
@@ -612,6 +644,90 @@ impl DbManager {
             return Err(AppError::RoleRuntimeNotReady);
         }
         Ok(())
+    }
+
+    pub async fn get_narrative_continuity_state(
+        &self,
+        role_id: &str,
+    ) -> Result<Option<(String, String, u64)>> {
+        let row: Option<(Option<String>, Option<String>, i64)> = sqlx::query_as(
+            "SELECT continuity_scene_id, continuity_state_id, continuity_revision
+             FROM role_runtime WHERE role_id = ?",
+        )
+        .bind(role_id)
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(row.and_then(|(scene_id, state_id, revision)| {
+            scene_id
+                .zip(state_id)
+                .map(|(scene_id, state_id)| (scene_id, state_id, revision.max(0) as u64))
+        }))
+    }
+
+    pub async fn set_narrative_continuity_state(
+        &self,
+        role_id: &str,
+        scene_id: &str,
+        state_id: &str,
+        expected_revision: u64,
+    ) -> Result<Option<u64>> {
+        let expected_revision = i64::try_from(expected_revision).unwrap_or(i64::MAX);
+        let now = Utc::now().to_rfc3339();
+        let revision: Option<i64> = sqlx::query_scalar(
+            "UPDATE role_runtime
+             SET continuity_scene_id = ?,
+                 continuity_state_id = ?,
+                 continuity_revision = continuity_revision + 1,
+                 updated_at = ?
+             WHERE role_id = ?
+               AND continuity_revision = ?
+               AND (current_scene IS NULL OR current_scene = ?)
+             RETURNING continuity_revision",
+        )
+        .bind(scene_id)
+        .bind(state_id)
+        .bind(&now)
+        .bind(role_id)
+        .bind(expected_revision)
+        .bind(scene_id)
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(revision.map(|value| value.max(0) as u64))
+    }
+
+    pub async fn transition_narrative_continuity_state(
+        &self,
+        role_id: &str,
+        scene_id: &str,
+        from_state_id: &str,
+        expected_revision: u64,
+        to_state_id: &str,
+    ) -> Result<bool> {
+        let expected_revision = i64::try_from(expected_revision).unwrap_or(i64::MAX);
+        let now = Utc::now().to_rfc3339();
+        let changed = sqlx::query(
+            "UPDATE role_runtime
+             SET continuity_state_id = ?,
+                 continuity_revision = continuity_revision + 1,
+                 updated_at = ?
+             WHERE role_id = ?
+               AND continuity_scene_id = ?
+               AND continuity_state_id = ?
+               AND continuity_revision = ?",
+        )
+        .bind(to_state_id)
+        .bind(&now)
+        .bind(role_id)
+        .bind(scene_id)
+        .bind(from_state_id)
+        .bind(expected_revision)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?
+        .rows_affected();
+        Ok(changed == 1)
     }
 
     pub async fn get_user_presence_scene(&self, role_id: &str) -> Result<Option<String>> {
@@ -816,5 +932,78 @@ mod profile_evolution_atomic_tests {
             db.get_mutable_personality(role_id).await.expect("read"),
             "before"
         );
+    }
+}
+
+#[cfg(test)]
+mod narrative_continuity_db_tests {
+    use super::*;
+    use crate::infrastructure::test_db;
+
+    #[tokio::test]
+    async fn continuity_transition_rejects_a_stale_revision() {
+        let db = test_db::mem_db_manager().await;
+        let role_id = "continuity_cas";
+        db.ensure_role_runtime(role_id).await.expect("ensure");
+        let revision = db
+            .set_narrative_continuity_state(role_id, "home", "sofa", 0)
+            .await
+            .expect("initialize")
+            .expect("revision");
+        assert_eq!(revision, 1);
+        assert_eq!(
+            db.get_narrative_continuity_state(role_id)
+                .await
+                .expect("read"),
+            Some(("home".into(), "sofa".into(), 1))
+        );
+        assert!(db
+            .transition_narrative_continuity_state(role_id, "home", "sofa", revision, "bedroom")
+            .await
+            .expect("transition"));
+        assert!(!db
+            .transition_narrative_continuity_state(role_id, "home", "sofa", revision, "kitchen")
+            .await
+            .expect("stale transition"));
+    }
+
+    #[tokio::test]
+    async fn changing_scene_clears_state_but_reselecting_same_scene_preserves_it() {
+        let db = test_db::mem_db_manager().await;
+        let role_id = "continuity_scene";
+        db.ensure_role_runtime(role_id).await.expect("ensure");
+        db.set_current_scene(role_id, "home")
+            .await
+            .expect("set scene");
+        let revision = db
+            .set_narrative_continuity_state(role_id, "home", "sofa", 1)
+            .await
+            .expect("initialize")
+            .expect("revision");
+        db.set_current_scene(role_id, "home")
+            .await
+            .expect("same scene");
+        assert_eq!(
+            db.get_narrative_continuity_state(role_id)
+                .await
+                .expect("read"),
+            Some(("home".into(), "sofa".into(), revision))
+        );
+
+        db.set_current_scene(role_id, "school")
+            .await
+            .expect("switch scene");
+        assert_eq!(
+            db.get_narrative_continuity_state(role_id)
+                .await
+                .expect("read"),
+            None
+        );
+        let snapshot = db
+            .get_role_runtime_snapshot(role_id)
+            .await
+            .expect("snapshot")
+            .expect("row");
+        assert_eq!(snapshot.continuity_revision, revision + 1);
     }
 }

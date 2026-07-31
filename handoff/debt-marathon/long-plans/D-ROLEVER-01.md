@@ -10,15 +10,15 @@
 | **尺寸** | L（文档契约） |
 | **Minimal / Full** | Minimal：SPEC 章节 + 链 INDEX；不做自动迁移工具 |
 | **Owner** | main-repo |
-| **状态** | Ready |
-| **更新** | 2026-07-16 |
+| **状态** | Closed（PR #125 merged · 后续硬门禁 success） |
+| **更新** | 2026-07-18 |
 
 <!-- oclive-marathon-contract
 {
   "version": 1,
   "id": "D-ROLEVER-01",
   "runner": "auto",
-  "planStatus": "ready",
+  "planStatus": "closed",
   "parentDebtDisposition": "done-eligible",
   "currentStage": 2,
   "prerequisites": [],

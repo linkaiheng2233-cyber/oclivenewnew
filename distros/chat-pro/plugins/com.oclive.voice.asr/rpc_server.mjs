@@ -12,6 +12,7 @@ import { fileURLToPath } from "node:url";
 
 const PROTOCOL_HEADER = "x-oclive-remote-protocol";
 const PROTOCOL_VALUE = "oclive-remote-jsonrpc-v1";
+const COSYVOICE_RESOURCE_ADAPTER_ID = "builtin.voice.cosyvoice2";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PLATFORM = process.platform;
 const DEFAULT_TTS_PROFILE = "bundled-cosyvoice2-zh";
@@ -19,8 +20,25 @@ const DEFAULT_TTS_PROFILE = "bundled-cosyvoice2-zh";
 const COSYVOICE_SYNTH_TIMEOUT_MS = 600_000;
 const COSYVOICE_WARM_TIMEOUT_MS = 900_000;
 
+function readInitialPluginConfig() {
+  const raw = String(
+    process.env.OCLIVE_PLUGIN_CONFIG || process.env.OCLIVE_DEBUG_PLUGIN_CONFIG || "",
+  ).trim();
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) return parsed;
+    console.error("[PLUGIN_CONFIG_INVALID] startup config must be a JSON object");
+  } catch (error) {
+    console.error(
+      `[PLUGIN_CONFIG_INVALID] startup config parse failed: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+  return null;
+}
+
 /** @type {Record<string, unknown> | null} */
-let pluginConfig = null;
+let pluginConfig = readInitialPluginConfig();
 
 /** @type {import("node:child_process").ChildProcess | null} */
 let cosyvoiceSidecarChild = null;
@@ -193,13 +211,112 @@ function stopCosyvoiceSidecar() {
   }
 }
 
-async function ensureCosyvoiceSidecarWarmed(profileId, sidecarEndpoint) {
-  if (cosyvoiceSidecarWarmed) {
+function waitForChildClose(child, timeoutMs = 5000) {
+  return new Promise((resolve) => {
+    if (!child || child.exitCode !== null || child.signalCode !== null) {
+      resolve(true);
+      return;
+    }
+    let settled = false;
+    let timer = null;
+    const finish = (closed) => {
+      if (settled) return;
+      settled = true;
+      if (timer) clearTimeout(timer);
+      child.off("close", onClose);
+      resolve(closed);
+    };
+    const onClose = () => finish(true);
+    child.once("close", onClose);
+    timer = setTimeout(() => finish(false), timeoutMs);
+  });
+}
+
+async function releaseCosyvoiceSidecar(profileId) {
+  const modelDir = resolveTtsModelDir(profileId);
+  const profileRec = resolveTtsProfileRecord(profileId);
+  const port = Number(profileRec.profile?.sidecar_port || 50000) || 50000;
+  const endpoint = cosyvoiceSidecarUrl || `http://127.0.0.1:${port}`;
+  let remoteRelease = null;
+  let endpointRefusedConnection = false;
+  try {
+    const response = await fetch(`${endpoint.replace(/\/+$/, "")}/unload`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model_dir: modelDir }),
+      signal: AbortSignal.timeout(15_000),
+    });
+    remoteRelease = response.ok ? await response.json() : {
+      ok: false,
+      released: false,
+      reason: `unload_http_${response.status}`,
+    };
+  } catch (error) {
+    const causeCode =
+      error && typeof error === "object" && error.cause && typeof error.cause === "object"
+        ? String(error.cause.code || "")
+        : "";
+    endpointRefusedConnection = causeCode === "ECONNREFUSED";
+    remoteRelease = {
+      ok: false,
+      released: false,
+      reason: "unload_unreachable",
+      message: error instanceof Error ? error.message : String(error),
+    };
+  }
+
+  const child = cosyvoiceSidecarChild;
+  let managedChildStopped = false;
+  if (child) {
+    try {
+      const signaled = child.kill("SIGTERM");
+      managedChildStopped = signaled && await waitForChildClose(child);
+    } catch {
+      managedChildStopped = false;
+    }
+  }
+  const alreadyStopped = !child && endpointRefusedConnection;
+  if (remoteRelease?.released === true || managedChildStopped || alreadyStopped) {
+    if (managedChildStopped || alreadyStopped) {
+      cosyvoiceSidecarChild = null;
+      cosyvoiceSidecarUrl = null;
+    }
+    cosyvoiceSidecarWarmed = false;
+    return {
+      ok: true,
+      released: true,
+      release_mode: managedChildStopped
+        ? "managed_process_stopped"
+        : alreadyStopped
+          ? "already_stopped"
+          : "model_unloaded",
+      sidecar_endpoint: endpoint,
+      model_dir: modelDir,
+    };
+  }
+  return {
+    ok: false,
+    released: false,
+    reason: remoteRelease?.reason || "resource_release_unconfirmed",
+    message: remoteRelease?.message || "CosyVoice2 resource release was not confirmed",
+    sidecar_endpoint: endpoint,
+    model_dir: modelDir,
+  };
+}
+
+async function ensureCosyvoiceSidecarWarmed(
+  profileId,
+  sidecarEndpoint,
+  directive = null,
+  hostResourceAdmission = null,
+) {
+  const hasRolePrompt = directiveHasCosyvoiceInput(directive);
+  if (cosyvoiceSidecarWarmed && !hasRolePrompt) {
     return { ok: true, already_warmed: true, warmed: true };
   }
   const modelDir = resolveTtsModelDir(profileId);
   const health = await probeSidecarEndpoint(sidecarEndpoint, modelDir);
-  if (health.ok && health.warmed) {
+  if (health.ok && health.warmed && !hasRolePrompt) {
     cosyvoiceSidecarWarmed = true;
     return {
       ok: true,
@@ -209,18 +326,22 @@ async function ensureCosyvoiceSidecarWarmed(profileId, sidecarEndpoint) {
       model_dir: modelDir,
     };
   }
-  if (cosyvoiceWarmInFlight) {
-    return cosyvoiceWarmInFlight;
-  }
-  cosyvoiceWarmInFlight = runCosyvoiceWarm(profileId, sidecarEndpoint, modelDir);
-  try {
-    return await cosyvoiceWarmInFlight;
-  } finally {
-    cosyvoiceWarmInFlight = null;
-  }
+  return runCosyvoiceWarmSerialized(
+    profileId,
+    sidecarEndpoint,
+    modelDir,
+    directive,
+    hostResourceAdmission,
+  );
 }
 
-async function runCosyvoiceWarm(profileId, sidecarEndpoint, modelDir) {
+async function runCosyvoiceWarm(
+  profileId,
+  sidecarEndpoint,
+  modelDir,
+  directive = null,
+  hostResourceAdmission = null,
+) {
   const warm = await spawnPythonJson(
     "tts.synthesize",
     {
@@ -229,6 +350,10 @@ async function runCosyvoiceWarm(profileId, sidecarEndpoint, modelDir) {
       model_dir: modelDir,
       engine: "cosyvoice2",
       sidecar_endpoint: sidecarEndpoint,
+      ...(hostResourceAdmission && typeof hostResourceAdmission === "object"
+        ? { host_resource_admission: hostResourceAdmission }
+        : {}),
+      ...(directiveHasCosyvoiceInput(directive) ? { directive } : {}),
     },
     COSYVOICE_WARM_TIMEOUT_MS,
   );
@@ -241,6 +366,34 @@ async function runCosyvoiceWarm(profileId, sidecarEndpoint, modelDir) {
     model_dir: modelDir,
     profile: profileId,
   };
+}
+
+async function runCosyvoiceWarmSerialized(
+  profileId,
+  sidecarEndpoint,
+  modelDir,
+  directive = null,
+  hostResourceAdmission = null,
+) {
+  const previous = cosyvoiceWarmInFlight;
+  const promise = (previous ? previous.catch(() => {}) : Promise.resolve())
+    .then(() =>
+      runCosyvoiceWarm(
+        profileId,
+        sidecarEndpoint,
+        modelDir,
+        directive,
+        hostResourceAdmission,
+      ),
+    );
+  cosyvoiceWarmInFlight = promise;
+  try {
+    return await promise;
+  } finally {
+    if (cosyvoiceWarmInFlight === promise) {
+      cosyvoiceWarmInFlight = null;
+    }
+  }
 }
 
 function startCosyvoiceSidecar(modelDir, port = 50000) {
@@ -347,10 +500,25 @@ async function probeSidecarEndpoint(endpoint, expectedModelDir) {
       };
     }
     return {
-      ok: true,
+      ok: body.ok === true,
       sidecar_endpoint: base,
       model_dir: actual,
       warmed: body.warmed === true,
+      primed: body.primed === true,
+      precision_requested: body.precision_requested || "auto",
+      precision_active: body.precision_active || "fp32",
+      precision_fallback_reason: body.precision_fallback_reason || "",
+      load_strategy: body.load_strategy || "unknown",
+      load_admission_detail: body.load_admission_detail || "",
+      load_vram_probe: body.load_vram_probe || "unavailable",
+      load_free_vram_before_mib: Number(body.load_free_vram_before_mib) || 0,
+      load_total_vram_mib: Number(body.load_total_vram_mib) || 0,
+      load_min_free_vram_mib: Number(body.load_min_free_vram_mib) || 0,
+      load_peak_allocated_mib: Number(body.load_peak_allocated_mib) || 0,
+      load_peak_reserved_mib: Number(body.load_peak_reserved_mib) || 0,
+      retryable: body.retryable === true,
+      reason: body.reason || "",
+      message: body.message || "",
     };
   } catch (err) {
     return {
@@ -1049,7 +1217,7 @@ function ensureCosyvoiceSpeakDirective(directive, params) {
   };
 }
 
-async function handleSpeak(params) {
+async function handleSpeakCore(params) {
   const text = String(params?.text || "").trim();
   if (!text) {
     return { ok: false, reason: "empty_text", audio_base64: "" };
@@ -1086,7 +1254,12 @@ async function handleSpeak(params) {
       };
     }
     sidecarEndpoint = sidecar.sidecar_endpoint || sidecarEndpoint;
-    const warm = await ensureCosyvoiceSidecarWarmed(profileId, sidecarEndpoint);
+    const warm = await ensureCosyvoiceSidecarWarmed(
+      profileId,
+      sidecarEndpoint,
+      null,
+      params?._oclive_resource_admission,
+    );
     if (!warm.ok) {
       return {
         ok: false,
@@ -1141,6 +1314,39 @@ async function handleSpeak(params) {
   }
 }
 
+async function handleSpeak(params) {
+  const releaseAfterCall =
+    params?._oclive_resource_admission?.release_after_call === true;
+  if (!releaseAfterCall) {
+    return handleSpeakCore(params);
+  }
+  const profileId =
+    params?.directive?.synth_profile ||
+    params?.profile ||
+    pluginConfig?.tts_profile ||
+    readProfiles().default_tts_profile ||
+    DEFAULT_TTS_PROFILE;
+  let result;
+  try {
+    result = await handleSpeakCore(params);
+  } catch (error) {
+    result = {
+      ok: false,
+      reason: "synthesis_failed",
+      message: error instanceof Error ? error.message : String(error),
+      audio_base64: "",
+    };
+  }
+  return {
+    ...result,
+    resource_transition: {
+      adapter_id: COSYVOICE_RESOURCE_ADAPTER_ID,
+      operation: "unload",
+      ...(await releaseCosyvoiceSidecar(profileId)),
+    },
+  };
+}
+
 async function handleProbeTts(params) {
   const profileId =
     params?.profile ||
@@ -1150,10 +1356,12 @@ async function handleProbeTts(params) {
   const profileRec = resolveTtsProfileRecord(profileId);
   const routing = synthRoutingFromConfig(profileRec);
   let sidecarEndpoint = routing.localEndpoint;
+  let sidecarReady = false;
   if (shouldRunBundledSidecar(profileRec) && pluginConfig?.tts_expansion_enabled === true) {
     const sidecar = await ensureCosyvoiceSidecar(profileId);
     if (sidecar.ok) {
       sidecarEndpoint = sidecar.sidecar_endpoint || sidecarEndpoint;
+      sidecarReady = true;
     }
   }
   const modelDir = resolveTtsModelDir(profileId);
@@ -1184,6 +1392,7 @@ async function handleProbeTts(params) {
     supports_stream: engineSupportsStream(engine, routing.provider),
     supports_warm: engineSupportsWarm(engine),
     expansion_enabled: pluginConfig?.tts_expansion_enabled === true,
+    sidecar_ready: sidecarReady || probe.ok === true,
   };
 }
 
@@ -1196,6 +1405,10 @@ async function handleWarm(params) {
   const profileRec = resolveTtsProfileRecord(profileId);
   const routing = synthRoutingFromConfig(profileRec);
   const engine = routing.engine || profileRec.profile?.engine;
+  const directive =
+    params?.directive && typeof params.directive === "object"
+      ? ensureCosyvoiceSpeakDirective(params.directive, params)
+      : null;
   if (!engineSupportsWarm(engine)) {
     return {
       ok: true,
@@ -1220,7 +1433,7 @@ async function handleWarm(params) {
   }
   const modelDir = resolveTtsModelDir(profileId);
   const endpoint = sidecar.sidecar_endpoint;
-  if (cosyvoiceSidecarWarmed) {
+  if (cosyvoiceSidecarWarmed && !directiveHasCosyvoiceInput(directive)) {
     return {
       ok: true,
       already_warmed: true,
@@ -1232,7 +1445,7 @@ async function handleWarm(params) {
     };
   }
   const health = await probeSidecarEndpoint(endpoint, modelDir);
-  if (health.ok && health.warmed) {
+  if (health.ok && health.warmed && !directiveHasCosyvoiceInput(directive)) {
     cosyvoiceSidecarWarmed = true;
     return {
       ok: true,
@@ -1244,15 +1457,13 @@ async function handleWarm(params) {
       message: "CosyVoice2 sidecar already warmed",
     };
   }
-  if (cosyvoiceWarmInFlight) {
-    return cosyvoiceWarmInFlight;
-  }
-  cosyvoiceWarmInFlight = runCosyvoiceWarm(profileId, endpoint, modelDir);
-  try {
-    return await cosyvoiceWarmInFlight;
-  } finally {
-    cosyvoiceWarmInFlight = null;
-  }
+  return runCosyvoiceWarmSerialized(
+    profileId,
+    endpoint,
+    modelDir,
+    directive,
+    params?._oclive_resource_admission,
+  );
 }
 
 function handleBuildDirective(params) {
@@ -1403,32 +1614,39 @@ function handleImportTtsAdapter(params) {
   };
 }
 
-function handleConfigUpdated(params) {
+async function handleConfigUpdated(params) {
+  let resourceTransition = null;
   if (params?.config && typeof params.config === "object") {
     const prev = pluginConfig;
     pluginConfig = params.config;
     const profileId =
       pluginConfig.tts_profile || readProfiles().default_tts_profile || DEFAULT_TTS_PROFILE;
     const profileRec = resolveTtsProfileRecord(profileId);
+    const requestedTransition =
+      params?.resource_transition &&
+      typeof params.resource_transition === "object" &&
+      params.resource_transition.adapter_id === COSYVOICE_RESOURCE_ADAPTER_ID &&
+      params.resource_transition.operation === "unload";
+    const leavingBundledRuntime =
+      pluginConfig.tts_expansion_enabled !== true || !shouldRunBundledSidecar(profileRec);
     if (
-      pluginConfig.tts_expansion_enabled === true &&
-      shouldRunBundledSidecar(profileRec)
+      leavingBundledRuntime &&
+      (requestedTransition || prev?.tts_expansion_enabled === true)
     ) {
-      void ensureCosyvoiceSidecar(profileId).then((sidecar) => {
-        if (sidecar.ok) {
-          void ensureCosyvoiceSidecarWarmed(profileId, sidecar.sidecar_endpoint);
-        }
-      });
-    } else if (prev?.tts_expansion_enabled === true && pluginConfig.tts_expansion_enabled !== true) {
-      stopCosyvoiceSidecar();
-    } else if (
-      prev?.tts_expansion_enabled === true &&
-      !shouldRunBundledSidecar(profileRec)
-    ) {
-      stopCosyvoiceSidecar();
+      const releaseProfileId = requestedTransition
+        ? String(params.resource_transition.runtime_profile_id || DEFAULT_TTS_PROFILE)
+        : String(prev?.tts_profile || DEFAULT_TTS_PROFILE);
+      resourceTransition = {
+        adapter_id: COSYVOICE_RESOURCE_ADAPTER_ID,
+        operation: "unload",
+        ...(await releaseCosyvoiceSidecar(releaseProfileId)),
+      };
     }
   }
-  return { ok: true };
+  return {
+    ok: true,
+    ...(resourceTransition ? { resource_transition: resourceTransition } : {}),
+  };
 }
 
 const server = http.createServer((req, res) => {
@@ -1474,7 +1692,7 @@ const server = http.createServer((req, res) => {
         else if (method === "voice.import_tts_adapter") result = handleImportTtsAdapter(params);
         else if (method === "voice.build_directive") result = handleBuildDirective(params);
         else if (method === "voice.read_role_profile") result = handleReadRoleProfile(params);
-        else if (method === "config_updated") result = handleConfigUpdated(params);
+        else if (method === "config_updated") result = await handleConfigUpdated(params);
         else {
           res.writeHead(200);
           res.end(jsonRpcError(id, -32601, `method not found: ${method}`));

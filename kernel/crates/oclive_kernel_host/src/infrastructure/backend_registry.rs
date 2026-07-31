@@ -28,6 +28,7 @@ use crate::infrastructure::remote_plugin::{
     self, agent_remote_backend, AgentRpcProvider, DirectoryComplexEmotionHttp, PluginRemoteGroup,
     RemoteComplexEmotionHttp, RemoteEventEstimatorHttp, RemoteLlmHttp, RemoteMemoryRetrievalHttp,
     RemotePluginHttpConfig, RemotePromptAssemblerHttp, RemoteUserEmotionAnalyzerHttp,
+    METHOD_LLM_GENERATE_STREAM,
 };
 use crate::models::{
     AgentBackend, EmotionBackend, EventBackend, LlmBackend, MemoryBackend, PluginBackends,
@@ -340,14 +341,20 @@ impl BackendRegistry {
             &self.directory_llm_cache,
             |s| &s.llm,
             self.llm_ollama.clone(),
-            |reg, _pid, url| {
+            |reg, pid, url| {
                 let cfg = RemotePluginHttpConfig::for_directory_plugin_rpc(url.to_string(), true);
-                Arc::new(RemoteLlmHttp::new(
-                    reg.remote_http_client.clone(),
-                    cfg,
-                    reg.high_risk_grants.clone(),
-                    None,
-                ))
+                let native_stream = reg.directory_runtime_for_slots().is_some_and(|runtime| {
+                    runtime.manifest_declares_rpc_method(pid, METHOD_LLM_GENERATE_STREAM)
+                });
+                Arc::new(
+                    RemoteLlmHttp::new(
+                        reg.remote_http_client.clone(),
+                        cfg,
+                        reg.high_risk_grants.clone(),
+                        None,
+                    )
+                    .with_native_stream(native_stream),
+                )
             },
         )
     }

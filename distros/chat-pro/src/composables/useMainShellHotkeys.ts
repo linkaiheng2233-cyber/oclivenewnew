@@ -1,8 +1,8 @@
 import type { ComputedRef, Ref } from 'vue'
-import { computed } from 'vue'
+import type { MainShellSettingsTab } from './useMainShellWindows'
 import { useGlobalHotkeys } from '@oclive/shared/composables/useGlobalHotkeys'
 import { hostEventBus } from '@oclive/shared/lib/hostEventBus'
-import type { MainShellSettingsTab } from './useMainShellWindows'
+import { computed } from 'vue'
 
 export function useMainShellHotkeys(options: {
   simplePluginManagerOpen: Ref<boolean>

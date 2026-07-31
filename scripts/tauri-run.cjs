@@ -1,7 +1,7 @@
 /**
  * 转发到同目录下的 `tauri-npm.cjs`（dev|build）。
- * 在仓库根执行 `npm run tauri:dev` 时，Tauri beforeDevCommand 的 cwd 为 `distros/`，应使用：
- *   node ../scripts/tauri-run.cjs dev
+ * 在仓库根执行 `npm run tauri:dev` 时，Tauri beforeDevCommand 的 cwd 为仓库根，应使用：
+ *   node scripts/tauri-run.cjs dev
  */
 const fs = require("fs");
 const path = require("path");

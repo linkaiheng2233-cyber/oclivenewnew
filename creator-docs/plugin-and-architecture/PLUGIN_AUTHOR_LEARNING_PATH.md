@@ -25,7 +25,7 @@
 |------|--------|
 | **目录插件** | [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)（manifest、`process`、整壳 / 插槽、`directory_plugin_invoke`、开发者模式） |
 | **Remote 侧车** | [REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md)（JSON-RPC 形状与示例） |
-| **权限与授权** | [PLUGIN_V1.md §权限规范](PLUGIN_V1.md) · 运行时与 grant：[handoff/A4_CLOSURE_SUMMARY.md](../../handoff/A4_CLOSURE_SUMMARY.md) |
+| **权限与授权** | [PLUGIN_V1.md §权限规范](PLUGIN_V1.md)；历史落地记录见 [A4_CLOSURE_SUMMARY.md](../../handoff/archive/A4_CLOSURE_SUMMARY.md) |
 | **桥接 `invoke`** | [BRIDGE_API_REFERENCE.md](BRIDGE_API_REFERENCE.md) |
 
 **验收**：能列出自己的插件需要哪些 `permissions`，以及用户未授权时宿主会怎样降级/报错码。

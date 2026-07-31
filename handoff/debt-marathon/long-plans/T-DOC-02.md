@@ -10,15 +10,15 @@
 | **尺寸** | L（文档债升 Done） |
 | **Minimal / Full** | Minimal |
 | **Owner / runner** | main-repo / **auto** |
-| **状态** | Ready · pr-open（等合入后 Stage 3） |
-| **最后更新** | 2026-07-16 |
+| **状态** | Closed（PR #124 merged · CI success） |
+| **最后更新** | 2026-07-18 |
 
 <!-- oclive-marathon-contract
 {
   "version": 1,
   "id": "T-DOC-02",
   "runner": "auto",
-  "planStatus": "ready",
+  "planStatus": "closed",
   "parentDebtDisposition": "done-eligible",
   "currentStage": 3,
   "prerequisites": [],

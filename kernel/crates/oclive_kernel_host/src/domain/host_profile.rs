@@ -8,16 +8,71 @@ use crate::models::plugin_backends::{
 use oclive_kernel_runtime::distro_oclive_file::{
     parse_distro_oclive_file, DistroOcliveFile, PluginBackendsToml,
 };
+use oclive_kernel_types::ResourceCoordinatorPolicy;
 use std::path::{Path, PathBuf};
 
 pub const ENV_DISTRO_ID: &str = "OCLIVE_DISTRO_ID";
 pub const ENV_DISTRO_PROFILE: &str = "OCLIVE_DISTRO_PROFILE";
 pub const ENV_THEATER_DIRECTOR_PLUGIN: &str = "OCLIVE_THEATER_DIRECTOR_PLUGIN";
+pub const ENV_GPU_SAFETY_RESERVE_MIB: &str = "OCLIVE_GPU_SAFETY_RESERVE_MIB";
+pub const ENV_RESOURCE_ALLOW_UNVERIFIED: &str = "OCLIVE_RESOURCE_ALLOW_UNVERIFIED";
 
 /// Distro theater scene director directory plugin id.
 #[derive(Debug, Clone, Default)]
 pub struct TheaterProfile {
     pub director_plugin: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum LocalLlmRuntimeMode {
+    #[default]
+    Ollama,
+    Performance,
+}
+
+impl LocalLlmRuntimeMode {
+    #[must_use]
+    pub fn parse(value: &str) -> Option<Self> {
+        match value.trim().to_ascii_lowercase().as_str() {
+            "ollama" => Some(Self::Ollama),
+            "performance" => Some(Self::Performance),
+            _ => None,
+        }
+    }
+
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Ollama => "ollama",
+            Self::Performance => "performance",
+        }
+    }
+}
+
+/// Distro policy for the builtin local LLM implementation.
+#[derive(Debug, Clone)]
+pub struct LocalLlmRuntimeProfile {
+    pub mode: LocalLlmRuntimeMode,
+    pub endpoint: String,
+    pub auto_start: bool,
+    pub startup_timeout_ms: u64,
+    pub retry_cooldown_ms: u64,
+    pub model_alias: String,
+    pub performance_profile: String,
+}
+
+impl Default for LocalLlmRuntimeProfile {
+    fn default() -> Self {
+        Self {
+            mode: LocalLlmRuntimeMode::Ollama,
+            endpoint: "http://127.0.0.1:8421".into(),
+            auto_start: true,
+            startup_timeout_ms: 90_000,
+            retry_cooldown_ms: 30_000,
+            model_alias: "oclive-performance".into(),
+            performance_profile: "gpu_balanced".into(),
+        }
+    }
 }
 
 /// Distro default User Identity Prompt Template id (when session has no explicit choice).
@@ -113,6 +168,8 @@ pub struct HostProfile {
     pub visual_presentation_mode: Option<String>,
     pub theater: TheaterProfile,
     pub turn_thinking: TurnThinkingProfile,
+    pub llm_runtime: LocalLlmRuntimeProfile,
+    pub resource_coordination: ResourceCoordinatorPolicy,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -173,7 +230,8 @@ pub struct TurnThinkingProfile {
     pub auto_deep_keywords: Vec<String>,
     pub fast_knowledge_limit: usize,
     pub fast_memory_cap: usize,
-    /// When `Some(true)`, force Deep capsule on Small+Deep when file exists; `Some(false)` blocks.
+    /// When `Some(true)`, force the offline persona capsule for Small models when the file exists;
+    /// `Some(false)` blocks it. The field name remains `deep_capsule` for profile compatibility.
     pub deep_capsule: Option<bool>,
     /// When `Some(true)`, Deep+Ollama uses `build_prompt_segments` for llama.cpp prefix reuse.
     pub prompt_prefix_cache: Option<bool>,
@@ -393,6 +451,83 @@ fn host_profile_from_distro_file(
             profile.turn_thinking.deep_profile_update_every_n_turns = n.max(1);
         }
     }
+    if let Some(ref llm) = file.llm_runtime {
+        if let Some(ref mode) = llm.mode {
+            profile.llm_runtime.mode = LocalLlmRuntimeMode::parse(mode).ok_or_else(|| {
+                AppError::InvalidParameter(format!("unknown llm_runtime mode: {mode}"))
+            })?;
+        }
+        if let Some(ref endpoint) = llm.endpoint {
+            let endpoint = endpoint.trim().trim_end_matches('/');
+            if !endpoint.is_empty() {
+                profile.llm_runtime.endpoint = endpoint.to_string();
+            }
+        }
+        if let Some(auto_start) = llm.auto_start {
+            profile.llm_runtime.auto_start = auto_start;
+        }
+        if let Some(ms) = llm.startup_timeout_ms {
+            profile.llm_runtime.startup_timeout_ms = ms.clamp(1_000, 600_000);
+        }
+        if let Some(ms) = llm.retry_cooldown_ms {
+            profile.llm_runtime.retry_cooldown_ms = ms.clamp(250, 600_000);
+        }
+        if let Some(ref alias) = llm.model_alias {
+            let alias = alias.trim();
+            if !alias.is_empty() {
+                profile.llm_runtime.model_alias = alias.to_string();
+            }
+        }
+        if let Some(ref performance_profile) = llm.performance_profile {
+            let performance_profile = performance_profile.trim();
+            if !matches!(
+                performance_profile,
+                "gpu_full" | "gpu_balanced" | "cpu_compatibility"
+            ) {
+                return Err(AppError::InvalidParameter(format!(
+                    "unknown llm_runtime performance_profile: {performance_profile}"
+                )));
+            }
+            profile.llm_runtime.performance_profile = performance_profile.to_string();
+        }
+    }
+    if let Some(ref resources) = file.resource_coordination {
+        if let Some(value) = resources.gpu_safety_reserve_mib {
+            profile.resource_coordination.gpu_safety_reserve_mib = value.min(65_536);
+        }
+        if let Some(value) = resources.system_memory_safety_reserve_mib {
+            profile
+                .resource_coordination
+                .system_memory_safety_reserve_mib = value.min(1_048_576);
+        }
+        if let Some(value) = resources.cpu_safety_reserve_threads {
+            profile.resource_coordination.cpu_safety_reserve_threads = value.min(1_024);
+        }
+        if let Some(value) = resources.pending_lease_ttl_ms {
+            profile.resource_coordination.pending_lease_ttl_ms = value.clamp(1_000, 3_600_000);
+        }
+        if let Some(value) = resources.active_lease_ttl_ms {
+            profile.resource_coordination.active_lease_ttl_ms = value.clamp(10_000, 86_400_000);
+        }
+        if let Some(value) = resources.allow_unverified_admission {
+            profile.resource_coordination.allow_unverified_admission = value;
+        }
+        if let Some(value) = resources.admission_queue_timeout_ms {
+            profile.resource_coordination.admission_queue_timeout_ms = value.clamp(100, 600_000);
+        }
+        if let Some(value) = resources.queue_aging_quantum_ms {
+            profile.resource_coordination.queue_aging_quantum_ms = value.clamp(10, 60_000);
+        }
+        if let Some(value) = resources.automatic_preemption {
+            profile.resource_coordination.automatic_preemption = value;
+        }
+        if let Some(strategy) = resources.strategy {
+            profile.resource_coordination.scheduling.strategy = strategy;
+        }
+        profile.resource_coordination.scheduling.primary_adapter_id =
+            resources.primary_adapter_id.clone();
+        profile.resource_coordination.scheduling.commands = resources.commands.clone();
+    }
     Ok(profile)
 }
 
@@ -414,8 +549,29 @@ impl Default for HostProfile {
             visual_presentation_mode: None,
             theater: TheaterProfile::default(),
             turn_thinking: TurnThinkingProfile::default(),
+            llm_runtime: LocalLlmRuntimeProfile::default(),
+            resource_coordination: ResourceCoordinatorPolicy::default(),
         }
     }
+}
+
+#[must_use]
+pub fn effective_resource_coordination_policy(profile: &HostProfile) -> ResourceCoordinatorPolicy {
+    let mut policy = profile.resource_coordination.clone();
+    if let Ok(raw) = std::env::var(ENV_GPU_SAFETY_RESERVE_MIB) {
+        if let Ok(value) = raw.trim().parse::<u64>() {
+            policy.gpu_safety_reserve_mib = value.min(65_536);
+        }
+    }
+    if let Ok(raw) = std::env::var(ENV_RESOURCE_ALLOW_UNVERIFIED) {
+        let normalized = raw.trim().to_ascii_lowercase();
+        if matches!(normalized.as_str(), "1" | "true" | "yes" | "on") {
+            policy.allow_unverified_admission = true;
+        } else if matches!(normalized.as_str(), "0" | "false" | "no" | "off") {
+            policy.allow_unverified_admission = false;
+        }
+    }
+    policy
 }
 
 /// Whether theater director plugins should be indexed for the active host profile.
@@ -692,6 +848,72 @@ mod tests {
         assert_eq!(p.distro_id, "desktop-chat");
         assert!(!p.interaction.default_mode.is_immersive());
         assert_eq!(p.interaction.immersive_unlock_hint_after_turns, 10);
+    }
+
+    #[test]
+    fn desktop_profile_uses_performance_runtime_without_changing_llm_backend_enum() {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../examples/distro-profiles");
+        let p = load_host_profile_file(&root.join("desktop.oclive.toml")).unwrap();
+        assert_eq!(p.llm_runtime.mode, LocalLlmRuntimeMode::Performance);
+        assert_eq!(p.llm_runtime.endpoint, "http://127.0.0.1:8421");
+        assert!(p.llm_runtime.auto_start);
+        assert_eq!(p.llm_runtime.performance_profile, "gpu_balanced");
+        assert!(p.backends_ceiling.is_none());
+    }
+
+    #[test]
+    fn resource_scheduling_intent_flows_from_distro_profile() {
+        let dir =
+            std::env::temp_dir().join(format!("oclive_resource_policy_{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let file = dir.join("distro.oclive.toml");
+        let raw = r#"
+distro_id = "desktop"
+[resource_coordination]
+strategy = "primary_first"
+primary_adapter_id = "builtin.llm.llama_server"
+system_memory_safety_reserve_mib = 2048
+cpu_safety_reserve_threads = 2
+admission_queue_timeout_ms = 45000
+queue_aging_quantum_ms = 1500
+automatic_preemption = false
+
+[[resource_coordination.commands]]
+kind = "yield_then_run"
+yielding_adapter_id = "builtin.llm.llama_server"
+target_adapter_id = "builtin.voice.cosyvoice2"
+"#;
+        let mut handle = std::fs::File::create(&file).unwrap();
+        handle.write_all(raw.as_bytes()).unwrap();
+        let profile = load_host_profile_file(&file).unwrap();
+        assert_eq!(
+            profile.resource_coordination.scheduling.strategy,
+            oclive_kernel_types::ResourceSchedulingStrategy::PrimaryFirst
+        );
+        assert_eq!(
+            profile
+                .resource_coordination
+                .scheduling
+                .primary_adapter_id
+                .as_deref(),
+            Some("builtin.llm.llama_server")
+        );
+        assert_eq!(profile.resource_coordination.scheduling.commands.len(), 1);
+        assert_eq!(
+            profile
+                .resource_coordination
+                .system_memory_safety_reserve_mib,
+            2_048
+        );
+        assert_eq!(profile.resource_coordination.cpu_safety_reserve_threads, 2);
+        assert_eq!(
+            profile.resource_coordination.admission_queue_timeout_ms,
+            45_000
+        );
+        assert_eq!(profile.resource_coordination.queue_aging_quantum_ms, 1_500);
+        assert!(!profile.resource_coordination.automatic_preemption);
+        let _ = std::fs::remove_dir_all(dir);
     }
 
     #[test]

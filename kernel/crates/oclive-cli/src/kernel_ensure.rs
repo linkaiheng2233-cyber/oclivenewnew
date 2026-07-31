@@ -4,10 +4,10 @@ use anyhow::{Context, Result};
 use clap::Parser;
 use oclive_kernel_runtime::{
     apply_promote_to_candidate, build_resolve_plan, discover_spawn_kernel_candidates,
-    ensure_app_data_dir, find_app_data_dir_for_host, promote_with_backup,
-    terminate_listeners_on_port, ActiveProfileSummary, DistroProfileRequirements, KernelActionKind,
-    KernelBinaryManifest, KernelCandidate, KernelHealthJson, PolicyContext, ProfileCompat,
-    DEFAULT_API_PORT, ENV_DISTRO_ID, ENV_DISTRO_PROFILE, ENV_HTTP_API_MOCK_LLM, ENV_ROLES_DIR,
+    ensure_app_data_dir, find_app_data_dir_for_host, terminate_listeners_on_port,
+    ActiveProfileSummary, DistroProfileRequirements, KernelActionKind, KernelBinaryManifest,
+    KernelCandidate, KernelHealthJson, PolicyContext, ProfileCompat, DEFAULT_API_PORT,
+    ENV_DISTRO_ID, ENV_DISTRO_PROFILE, ENV_HTTP_API_MOCK_LLM, ENV_ROLES_DIR,
 };
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
@@ -162,11 +162,6 @@ fn execute_plan(
         .context("candidate binary not in discovery list")?;
 
     if sel.promote_to_shared {
-        if let Some(m) = KernelBinaryManifest::read_sidecar(&candidate.binary) {
-            let _ = promote_with_backup(&candidate.binary, Some(&m));
-        } else {
-            let _ = promote_with_backup(&candidate.binary, None);
-        }
         apply_promote_to_candidate(&mut candidate);
     }
 
@@ -214,6 +209,9 @@ fn spawn_kernel(
     distro_profile: Option<&Path>,
     mock_llm: bool,
 ) -> Result<()> {
+    let api_token = crate::http_client::configured_api_token().context(
+        "OCLIVE_API_TOKEN is required when `oclive kernel ensure` spawns a long-lived HTTP kernel",
+    )?;
     let app_data = find_app_data_dir_for_host();
     ensure_app_data_dir(&app_data).map_err(|e| anyhow::anyhow!(e.to_string()))?;
 
@@ -227,6 +225,7 @@ fn spawn_kernel(
         .env("OCLIVE_API_PORT", port.to_string())
         .env("OCLIVE_APP_DATA", app_data)
         .env("OCLIVE_USE_CANONICAL_APP_DATA", "1")
+        .env("OCLIVE_API_TOKEN", api_token)
         .env(ENV_ROLES_DIR, roles_dir);
 
     if mock_llm {

@@ -1,11 +1,11 @@
+import type { AppToastFn } from '@oclive/shared/composables/useAppToast'
 import type { Ref } from 'vue'
 import type { ComposerTranslation } from 'vue-i18n'
+import { useNarrativeScene } from '@oclive/shared/composables/useNarrativeScene'
 import { useChatStore } from '@oclive/shared/stores/chatStore'
 import { useDebugStore } from '@oclive/shared/stores/debugStore'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
 import { useUiStore } from '@oclive/shared/stores/uiStore'
-import { useNarrativeScene } from '@oclive/shared/composables/useNarrativeScene'
-import type { AppToastFn } from '@oclive/shared/composables/useAppToast'
 import { effectiveChatSceneId } from '@oclive/shared/utils/pureChatScene'
 
 export function useChatSend(options: {
@@ -61,5 +61,26 @@ export function useChatSend(options: {
     }
   }
 
-  return { onSend }
+  async function onAdultAction(payload: { action: 'exit' }) {
+    options.clearSceneBarsBeforeSend()
+    try {
+      const sceneId = effectiveChatSceneId(
+        roleStore.roleInfo.interactionMode,
+        uiStore.sceneId,
+      )
+      const res = await chatStore.sendAdultAction(payload.action, sceneId)
+      if (!res)
+        return
+      await roleStore.refreshRoleInfo()
+      await debugStore.loadDebugData()
+    }
+    catch (err) {
+      options.showToast('error', err instanceof Error ? err.message : String(err))
+    }
+    finally {
+      options.chatInputRef.value?.focusInput?.()
+    }
+  }
+
+  return { onSend, onAdultAction }
 }

@@ -204,7 +204,7 @@
 | `oclive test --oocp` | 已落实 |
 | `oclive explain` 与 `ERROR_CODES.md` | 已补全 `AppError` 静态变体 |
 | CLI 废弃蓝图模板文档 | 已删除；生成 `BLUEPRINT_V2_POINTER.md` |
-| `oclive doctor` v2 蓝图三项检查 | 已落实 |
+| `oclive doctor` 蓝图版本精确分派与三项基础检查 | 已落实 |
 | 性能基线文档（v2 / matrix 说明） | 已更新 PERFORMANCE / LIGHTWEIGHT_PROFILE |
 
 ### 验证（2026-05-22，第三批 + 精修）

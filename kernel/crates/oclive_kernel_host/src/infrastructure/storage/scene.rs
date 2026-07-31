@@ -40,7 +40,7 @@ impl RoleStorage {
     /// Read `scenes/{scene_id}/scene.json` from disk (no caching; for the API cold path).
     #[must_use]
     pub fn load_scene_config(&self, role_id: &str, scene_id: &str) -> Option<DiskSceneConfig> {
-        let path = self.scene_json_path(role_id, scene_id);
+        let path = self.scene_json_path(role_id, scene_id)?;
         let raw = fs::read_to_string(path).ok()?;
         serde_json::from_str::<DiskSceneConfig>(&raw).ok()
     }
@@ -221,34 +221,28 @@ impl RoleStorage {
         }
     }
 
-    fn scene_json_path(&self, role_id: &str, scene_id: &str) -> PathBuf {
-        self.roles_dir
-            .join(role_id)
-            .join("scenes")
-            .join(scene_id)
-            .join("scene.json")
+    fn scene_file_path(&self, role_id: &str, scene_id: &str, filename: &str) -> Option<PathBuf> {
+        oclive_validation::validate_scene_id(scene_id).ok()?;
+        self.role_asset_path(role_id, &format!("scenes/{scene_id}/{filename}"))
+            .ok()
     }
 
-    fn scene_description_path(&self, role_id: &str, scene_id: &str) -> PathBuf {
-        self.roles_dir
-            .join(role_id)
-            .join("scenes")
-            .join(scene_id)
-            .join("description.txt")
+    fn scene_json_path(&self, role_id: &str, scene_id: &str) -> Option<PathBuf> {
+        self.scene_file_path(role_id, scene_id, "scene.json")
     }
 
-    fn away_life_txt_path(&self, role_id: &str, scene_id: &str) -> PathBuf {
-        self.roles_dir
-            .join(role_id)
-            .join("scenes")
-            .join(scene_id)
-            .join("away_life.txt")
+    fn scene_description_path(&self, role_id: &str, scene_id: &str) -> Option<PathBuf> {
+        self.scene_file_path(role_id, scene_id, "description.txt")
+    }
+
+    fn away_life_txt_path(&self, role_id: &str, scene_id: &str) -> Option<PathBuf> {
+        self.scene_file_path(role_id, scene_id, "away_life.txt")
     }
 
     /// `scenes/<scene_id>/away_life.txt` (long-form remote-presence life material for when the character is in this scene)
     #[must_use]
     pub fn away_life_txt_file(&self, role_id: &str, scene_id: &str) -> Option<String> {
-        let path = self.away_life_txt_path(role_id, scene_id);
+        let path = self.away_life_txt_path(role_id, scene_id)?;
         let raw = fs::read_to_string(path).ok()?;
         let t = raw.trim();
         if t.is_empty() {
@@ -261,7 +255,7 @@ impl RoleStorage {
     /// Full text of `scenes/<scene_id>/description.txt` (creators can add or remove content freely, without changing the program).
     #[must_use]
     pub fn scene_description_file(&self, role_id: &str, scene_id: &str) -> Option<String> {
-        let path = self.scene_description_path(role_id, scene_id);
+        let path = self.scene_description_path(role_id, scene_id)?;
         let raw = fs::read_to_string(path).ok()?;
         let t = raw.trim();
         if t.is_empty() {

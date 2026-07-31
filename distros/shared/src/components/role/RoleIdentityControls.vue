@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { OCLIVE_DEFAULT_IDENTITY_SENTINEL } from '@oclive/shared/api'
 import { useAppToast } from '@oclive/shared/composables/useAppToast'
 import { useUserIdentityState } from '@oclive/shared/composables/useUserIdentityState'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import UiFieldRow from '../ui/UiFieldRow.vue'
 import UiSelect from '../ui/UiSelect.vue'
 

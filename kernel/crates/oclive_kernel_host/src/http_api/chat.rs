@@ -2,6 +2,11 @@ use super::{api_error, kernel_http_error, ApiError, ChatApiRequest, ChatApiRespo
 use crate::domain::chat_engine::{process_message, process_message_stream};
 use crate::error::{http_chat_codes, AppError};
 use crate::infrastructure::chat_storage::{SessionMeta, StoredMessage};
+use crate::models::dto::{
+    AdultStagedBeatDto, BeginAdultStageGenerationRequest, BeginAdultStageGenerationResponse,
+    CancelAdultStageGenerationRequest, CommitAdultStagedBeatRequest, ListAdultStagedBeatsRequest,
+    ListAdultStagedBeatsResponse, StageAdultBeatRequest,
+};
 use crate::models::dto::{SendMessageRequest, SendMessageResponse};
 use crate::service::{execute_chat_storage_proxy, ChatStorageProxyOp};
 use crate::state::AppState;
@@ -23,6 +28,65 @@ use tokio_stream::StreamExt as _;
 enum ChatRoleLoadError {
     NotDirectory(String),
     Load(crate::error::AppError),
+}
+
+fn adult_stage_api_error(error: AppError) -> ApiError {
+    let status = if matches!(error, AppError::InvalidParameter(_)) {
+        axum::http::StatusCode::BAD_REQUEST
+    } else {
+        axum::http::StatusCode::INTERNAL_SERVER_ERROR
+    };
+    api_error(status, error.kernel_error_body())
+}
+
+pub(crate) async fn begin_adult_stage_route(
+    State(state): State<Arc<AppState>>,
+    Json(request): Json<BeginAdultStageGenerationRequest>,
+) -> Result<Json<BeginAdultStageGenerationResponse>, ApiError> {
+    crate::domain::adult_stage::begin_adult_stage_generation(state.as_ref(), request)
+        .await
+        .map(Json)
+        .map_err(adult_stage_api_error)
+}
+
+pub(crate) async fn generate_adult_staged_beat_route(
+    State(state): State<Arc<AppState>>,
+    Json(request): Json<StageAdultBeatRequest>,
+) -> Result<Json<AdultStagedBeatDto>, ApiError> {
+    crate::domain::adult_stage::generate_adult_staged_beat(state.as_ref(), request)
+        .await
+        .map(Json)
+        .map_err(adult_stage_api_error)
+}
+
+pub(crate) async fn commit_adult_staged_beat_route(
+    State(state): State<Arc<AppState>>,
+    Json(request): Json<CommitAdultStagedBeatRequest>,
+) -> Result<Json<SendMessageResponse>, ApiError> {
+    crate::domain::adult_stage::commit_adult_staged_beat(state.as_ref(), request)
+        .await
+        .map(Json)
+        .map_err(adult_stage_api_error)
+}
+
+pub(crate) async fn cancel_adult_stage_route(
+    State(state): State<Arc<AppState>>,
+    Json(request): Json<CancelAdultStageGenerationRequest>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    crate::domain::adult_stage::cancel_adult_stage_generation(state.as_ref(), request)
+        .await
+        .map(|()| Json(serde_json::json!({ "ok": true })))
+        .map_err(adult_stage_api_error)
+}
+
+pub(crate) async fn list_adult_staged_beats_route(
+    State(state): State<Arc<AppState>>,
+    Json(request): Json<ListAdultStagedBeatsRequest>,
+) -> Result<Json<ListAdultStagedBeatsResponse>, ApiError> {
+    crate::domain::adult_stage::list_adult_staged_beats(state.as_ref(), request)
+        .await
+        .map(Json)
+        .map_err(adult_stage_api_error)
 }
 
 #[derive(Debug, Deserialize)]
@@ -99,6 +163,16 @@ pub(crate) async fn chat(
 
     let personality_source = role.evolution_config.personality_source;
     let role = Arc::new(role);
+    crate::service::execution_plan::ensure_role_execution_plan_activatable(
+        state.as_ref(),
+        role.as_ref(),
+    )
+    .map_err(|error| {
+        api_error(
+            axum::http::StatusCode::BAD_REQUEST,
+            error.kernel_error_body(),
+        )
+    })?;
 
     state.invalidate_personality_cache_for_role(role.id.as_str());
 
@@ -110,6 +184,7 @@ pub(crate) async fn chat(
         scene_id: body.scene_id,
         session_id: body.session_id,
         include_raw_reply: body.include_raw_reply,
+        adult: body.adult,
     };
 
     let res: SendMessageResponse = process_message(&state, &req).await.map_err(|e: AppError| {
@@ -184,6 +259,16 @@ pub(crate) async fn chat_stream(
 
     let personality_source = role.evolution_config.personality_source;
     let role = Arc::new(role);
+    crate::service::execution_plan::ensure_role_execution_plan_activatable(
+        state.as_ref(),
+        role.as_ref(),
+    )
+    .map_err(|error| {
+        api_error(
+            axum::http::StatusCode::BAD_REQUEST,
+            error.kernel_error_body(),
+        )
+    })?;
 
     state.invalidate_personality_cache_for_role(role.id.as_str());
     state.insert_http_api_role(role.id.clone(), Arc::clone(&role));
@@ -194,6 +279,7 @@ pub(crate) async fn chat_stream(
         scene_id: body.scene_id,
         session_id: body.session_id,
         include_raw_reply: body.include_raw_reply,
+        adult: body.adult,
     };
 
     let (tx, rx) = mpsc::unbounded_channel();

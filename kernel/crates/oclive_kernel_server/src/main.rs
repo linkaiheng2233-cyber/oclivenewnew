@@ -5,15 +5,17 @@
 //!
 //! **Dual-core**: this crate does not enable `oclive_kernel_host/dual_core`. Experimental
 //! blueprint scheduling requires the desktop host built with `oclivenewnew-tauri --features dual_core`.
-//! See `crates/oclive_kernel_host/src/domain/dual_pipeline.rs` and `dual_pipeline_registry.rs`.
+//! See `kernel/crates/oclive_kernel_host/src/domain/dual_pipeline.rs` and `dual_pipeline_registry.rs`.
 
-use oclive_kernel_runtime::{resolve_api_port, KernelBinaryManifest, RUNTIME_API_VERSION};
+use oclive_kernel_runtime::{
+    parse_api_port_arg, resolve_api_port, KernelBinaryManifest, RUNTIME_API_VERSION,
+};
 
 fn print_usage() {
     eprintln!(
         "oclive-kernel-server {RUNTIME_API_VERSION}\n\
          Usage: oclive-kernel-server [--api] [--port PORT] [--version-json]\n\
-         Env: OCLIVE_API_PORT, OCLIVE_HTTP_API_MOCK_LLM, OCLIVE_ROLES_DIR,\n\
+         Env: OCLIVE_API_PORT, OCLIVE_API_TOKEN, OCLIVE_HTTP_API_MOCK_LLM, OCLIVE_ROLES_DIR,\n\
          OCLIVE_APP_DATA, OCLIVE_USE_CANONICAL_APP_DATA, OCLIVE_API_USE_TEMP_APP_DATA, RUST_LOG"
     );
 }
@@ -36,37 +38,42 @@ fn main() {
         return;
     }
 
-    let mut cli_port: Option<u16> = None;
-    let mut api = false;
-    let mut i = 1usize;
-    while i < args.len() {
-        match args[i].as_str() {
-            "--api" => api = true,
-            "--port" if i + 1 < args.len() => {
-                cli_port = args[i + 1].parse().ok();
-                i += 1;
-            }
-            "--version-json" => {}
-            _ => {}
-        }
-        i += 1;
-    }
-
-    if !api {
-        api = true;
-    }
-
-    if api {
-        let port = resolve_api_port(cli_port);
-        tracing::info!(
+    let cli_port = parse_api_port_arg(&args).unwrap_or_else(|error| {
+        tracing::error!(
             target: "oclive_kernel_server",
-            version = RUNTIME_API_VERSION,
-            port,
-            "starting headless HTTP API"
+            error_code = "OCLIVE_CLI_INVALID_ARGUMENT",
+            error = %error,
+            "invalid command-line argument"
         );
-        oclive_kernel_host::run_api_server(port);
-    } else {
         print_usage();
         std::process::exit(2);
+    });
+    let port = resolve_api_port(cli_port);
+    tracing::info!(
+        target: "oclive_kernel_server",
+        version = RUNTIME_API_VERSION,
+        port,
+        "starting headless HTTP API"
+    );
+    oclive_kernel_host::run_api_server(port);
+}
+
+#[cfg(test)]
+mod tests {
+    use oclive_kernel_runtime::parse_api_port_arg;
+
+    fn args(values: &[&str]) -> Vec<String> {
+        values.iter().map(|value| (*value).to_string()).collect()
+    }
+
+    #[test]
+    fn parses_port_and_rejects_invalid_values() {
+        assert_eq!(
+            parse_api_port_arg(&args(&["oclive-kernel-server", "--port", "9123"])).unwrap(),
+            Some(9123)
+        );
+        assert!(parse_api_port_arg(&args(&["oclive-kernel-server", "--port"])).is_err());
+        assert!(parse_api_port_arg(&args(&["oclive-kernel-server", "--port", "invalid"])).is_err());
+        assert!(parse_api_port_arg(&args(&["oclive-kernel-server", "--port", "0"])).is_err());
     }
 }

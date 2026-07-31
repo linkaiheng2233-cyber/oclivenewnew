@@ -1,21 +1,33 @@
 # 内核调度系统 — 范围重划（Rescope · 2026-06-11）
 
 **状态**：架构决策 · **不删代码** · 产品面 **收窄 + 封存扩展**  
+**最后更新**：2026-07-29（统一资源协调首个 LLM/Voice 切片已实现）
 **关联**：[DISTRO_DEFAULT_PLUGINS.md](../creator-docs/kernel/DISTRO_DEFAULT_PLUGINS.md) · [DISTRO_KERNEL_LIFECYCLE.md](../creator-docs/kernel/DISTRO_KERNEL_LIFECYCLE.md)
 
 ---
 
-## 1. 问题：三层机制被混为一谈
+## 1. 问题：四类机制被混为一谈
 
-用户体感「调度鸡肋」，常因把下面三件事当成同一套「上下级内核」：
+用户体感「调度鸡肋」，常因把下面四件事当成同一套「上下级内核」：
 
 | 层 | 机制 | 调度对象 | 是否仍需要 |
 |----|------|----------|------------|
 | **A · 进程调度** | `resolve_kernel_action` · promote · attach/replace | **哪个 `oclive-kernel-server` 进程**、是否重启 | **要，但应收窄** |
 | **B · 发行版策略** | `HostProfile` · `distro.oclive.toml` · 蓝图 `slot_registry` | **同一进程内**有效六槽 + prompt/memory | **要 — 新主战场** |
 | **C · 槽位降级** | remote/directory → builtin · Agent fallback · Theater 前端 Ollama fallback | **单回合**模块失败时的备选实现 | **要 — 可靠性，不是层级** |
+| **D · 资源协调** | `ExecutionPlan` · Resource Coordinator · LLM/语音/渲染适配器 | **同一设备上** GPU/内存/进程预算、租约、优先级与降级 | **要 — Partial；LLM/Voice 首切片已接，不能塞进 A/B/C** |
 
-**结论**：发行版差异应主要在 **B（插件矩阵）** 解决；**A 不应再承担「为每个发行版裁剪不同内核能力」**；**C 不是上下级，是 fail-open**。
+**结论**：发行版差异应主要在 **B（插件矩阵）** 解决；**A 不应再承担「为每个发行版裁剪不同内核能力」**；**C 不是上下级，是 fail-open**；**D 根据 B 编译出的意图和真实设备状态落实资源，但不得反向把硬件决策写死进蓝图**。
+
+### 1.1 D 层与蓝图的边界
+
+- 蓝图声明 Capability、Provider 偏好、required/optional 和允许的质量降级，是**设计图纸**。
+- 宿主把蓝图、`HostProfile`、用户设置、能力注册表与设备快照编译为内部 `ExecutionPlan`。
+- Resource Coordinator 统一决策；Ollama、llama-server、CosyVoice、Live2D 等 Resource Adapter 各自探测和执行。
+- 资源控制面共享 snapshot/admission/lease/pressure/state；token、PCM 和渲染数据不进入总线。
+- 现有 `resolve_kernel_action` 只决定内核进程 attach/spawn/replace，禁止扩成显存调度“上帝对象”。
+
+完整目标契约见 [RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md](../creator-docs/rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md)；实现状态只记于 [TECHNICAL_DEBT_INVENTORY.md](./TECHNICAL_DEBT_INVENTORY.md)。
 
 ---
 
@@ -112,7 +124,7 @@ flowchart TB
 
 ### 3.3 与专利的关系
 
-[handoff/PATENT_SUBMISSION_PRIORITY.md](./PATENT_SUBMISSION_PRIORITY.md) A 类交底仍覆盖 **profile-aware attach/replace**。**封存的是产品扩展面**，不是删 Rust 模块。
+历史 [PATENT_SUBMISSION_PRIORITY.md](./archive/PATENT_SUBMISSION_PRIORITY.md) A 类交底仍覆盖 **profile-aware attach/replace**。**封存的是产品扩展面**，不是删 Rust 模块。
 
 ---
 
@@ -248,5 +260,6 @@ flowchart TD
 ## Related
 
 - [DISTRO_DEFAULT_PLUGINS.md](../creator-docs/kernel/DISTRO_DEFAULT_PLUGINS.md)
+- [RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md](../creator-docs/rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md)
 - [theater/DEVELOPMENT_ROADMAP.md](./theater/DEVELOPMENT_ROADMAP.md)
 - [TECHNICAL_DEBT_INVENTORY.md](./TECHNICAL_DEBT_INVENTORY.md)

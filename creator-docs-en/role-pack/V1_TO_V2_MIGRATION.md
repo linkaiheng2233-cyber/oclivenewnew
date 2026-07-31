@@ -84,7 +84,7 @@ cargo run -p oclive-cli -- pack migrate-to-blueprint distros/chat-pro/roles/my_r
 |------|---------|---------|
 | `path` | positional | role root with `manifest.json` |
 | `--remove-legacy` | **true** | delete `manifest.json` and `settings.json` after write |
-| `--no-remove-legacy` | — | keep legacy files (not recommended; default v2 validate rejects dual on-disk shapes) |
+| `--no-remove-legacy` | — | keep legacy files (not recommended; the default blueprint profile rejects dual on-disk shapes) |
 
 ---
 
@@ -122,7 +122,7 @@ Removed from the runtime hot path; use plugins and `slot_registry` instead.
 |-----|--------|
 | 0–2 | backup; skim §2 |
 | 2–4 | `pack migrate-to-blueprint` |
-| 4–6 | `pack validate` (default v2) |
+| 4–6 | `pack validate` (default blueprint profile; this migration emits v2) |
 | 6–8 | editor: `meta` + `slot_registry` (≥1 `llm`) |
 | 8–10 | `load_role` + test chat |
 

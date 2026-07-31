@@ -37,8 +37,30 @@ This page explains how **`ui.json` in role packs** relates to the **desktop host
 2. **Editor older than host**  
    - New host slots / theme keys may be uneditable in the old editor; **edit `ui.json` manually** against [ui.json.schema.json](role-pack/ui.json.schema.json).
 
-3. **Pack `settings.json` and `plugin_backends`**  
+3. **Pack `settings.json` and `plugin_backends`**
    - Governed by **`min_runtime_version`** and host `load_role`; see [PACK_VERSIONING.md](role-pack/PACK_VERSIONING.md) and [CHANGELOG.en.md](../../CHANGELOG.en.md).
+
+---
+
+## In-repository module compatibility contract
+
+OCLive capability is bounded by the complete module chain, not by the newest individual component. Every capability update must check:
+
+```text
+pack/plugin assets → kernel contract and orchestration → Tauri/Bridge → distros/shared → Chat Pro/Theater → Vue/iframe/legacy fallback
+```
+
+| Boundary | Current mechanism | Constraint |
+|----------|-------------------|------------|
+| Pack ↔ kernel | `schema_version`, `min_runtime_version`, `oclive_validation` | Prefer optional fields with defaults; Breaking changes keep read compatibility for at least one release cycle |
+| Kernel ↔ frontend | `api_version`, Rust DTOs, `distros/shared/src/api` mirrors, error-code drift gate | DTO/command changes must update consumers and contract tests; Rust compilation alone is insufficient |
+| Tauri ↔ directory plugin | manifest `schema_version: 1`, slot names, `bridge.invoke`, events, and `rpcMethods` allowlists | Plugin `version` identifies the plugin only; it is **not a host compatibility range**. Unexpressed host requirements need a fallback or the Breaking/RFC process |
+| Chat Pro ↔ plugin UI | iframe `entry` plus optional `vueComponent`, shared `PluginSlotEmbed` | When both entries exist, they must expose the same capability; updating Vue alone is incomplete |
+| Chat Pro shells ↔ shared | Fluent and Tool consume shared stores/composables | Layout may differ, but contracts, state ownership, events, and cancellation semantics must not drift |
+
+**Structural gate**: `npm run check:module-compat` compares kernel/frontend slot registries, bundled manifests, Vue/iframe files, RPC timeout declarations, and plugin-index versions. It does not prove sidecar, device, or real-WebView behavior; those still require targeted integration/smoke tests.
+
+Follow [`AI_CHANGE_BOUNDARIES.md`](../../handoff/AI_CHANGE_BOUNDARIES.md) G17 for associated changes and completion claims, and [`BREAKING_CHANGE_PROCESS.md`](../../handoff/BREAKING_CHANGE_PROCESS.md) for incompatible changes.
 
 ---
 
@@ -53,15 +75,17 @@ This page explains how **`ui.json` in role packs** relates to the **desktop host
 | **oclive-vscode** | sister `package.json` | spawn/attach **`kernel_server --api`**; `distro.oclive.toml` mirrors `examples/distro-profiles/vscode.oclive.toml` | **0.4.1** today; host **0.5.0** recommended |
 | **oclive-launcher** | sister `package.json` | sets **`OCLIVE_ROLES_DIR`**, optional model name, zip install; **does not** replace host contract | [launcher README](https://github.com/linkaiheng2233-cyber/oclive-launcher/blob/main/README.md) |
 | **role packs** | `manifest.json` (`schema_version`, `min_runtime_version`) | older hosts may refuse load or degrade | [PACK_VERSIONING.md](role-pack/PACK_VERSIONING.md) |
-| **host SQLite** | `distros/desktop-tauri/migrations/*.sql` | ships only with **host** releases; do not downgrade DB after a forward migration unless `CHANGELOG` says so | breaking migrations need bilingual `CHANGELOG` + this table |
+| **host SQLite** | `kernel/crates/oclive_kernel_host/migrations/*.sql` | ships only with **host** releases; do not downgrade DB after a forward migration unless `CHANGELOG` says so | breaking migrations need bilingual `CHANGELOG` + this table |
 
 On breaking changes: update **`CHANGELOG.md` / `CHANGELOG.en.md`**, this matrix, **`oclive_validation`** (if touched keys), and sister-repo README minimum versions.
 
 ### Release review (maintainers)
 
 1. Verify snapshot semver: root **`package.json`**, **`distros/desktop-tauri/Cargo.toml`**, **`oclive_kernel_runtime`**.  
-2. [PRODUCT_RELEASE_CHECKLIST.md](../../handoff/archive/PRODUCT_RELEASE_CHECKLIST.md) **“External notes”** if contracts or sister deps changed.  
+2. Follow [CONTRIBUTING](../CONTRIBUTING.en.md) and [release versioning](development/RELEASE_VERSIONING.md) for external notes when contracts or sister dependencies change.
 3. **HTTP / OOCP**: if `API_VERSION` or `RUNTIME_API_VERSION` changes, sync tests and docs (`creator-docs/testing/OOCP_TEST_SUITE.md`).
+
+Headless HTTP authentication is part of the host launch contract: `--api` requires `OCLIVE_API_TOKEN` by default, and callers send `x-oclive-api-token` on every route except `/health`. Never use `OCLIVE_API_ALLOW_UNAUTHENTICATED=1` with production or persistent data.
 
 ---
 

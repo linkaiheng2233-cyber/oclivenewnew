@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, toRef } from 'vue'
-import { useI18n } from 'vue-i18n'
 import SimplePluginManager from '@oclive/shared/components/plugin-manager/SimplePluginManager.vue'
 import { useModalFocusRestore } from '@oclive/shared/composables/useModalFocusRestore'
+import { ref, toRef } from 'vue'
+import { useI18n } from 'vue-i18n'
 import MarketView from './MarketView.vue'
 
 export type PluginsPanelSubview = 'list' | 'market'

@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { scheduleVoiceExpansionWarm } from '@oclive/shared/composables/useVoiceExpansionWarm'
 import { VOICE_ASR_PLUGIN_ID } from '@oclive/shared/lib/voiceAsrEvents'
 import { usePluginStore } from '@oclive/shared/stores/pluginStore'
+import { onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import PluginSettingsPanelSlots from '../PluginSettingsPanelSlots.vue'
 
 defineProps<{

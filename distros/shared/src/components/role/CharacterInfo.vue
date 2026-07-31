@@ -1,12 +1,12 @@
 <script setup lang="ts">
+import { readRoleAssetBytes, resolveRoleAssetPath } from '@oclive/shared/api'
+import {
+  emotionAssetCandidates,
+  emotionToEmoji,
+} from '@oclive/shared/utils/emotion-assets'
 import { convertFileSrc } from '@tauri-apps/api/core'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { readRoleAssetBytes, resolveRoleAssetPath } from '@oclive/shared/api'
-import {
-  emotionToAssetFilename,
-  emotionToEmoji,
-} from '@oclive/shared/utils/emotion-assets'
 
 const props = withDefaults(
   defineProps<{
@@ -50,34 +50,6 @@ const emotionDisplayLabel = computed(() => {
   const path = `emotionUi.${key}`
   return te(path) ? t(path) : props.emotion.trim() || key
 })
-
-function emotionAssetCandidates(key: string): string[] {
-  const primary = emotionToAssetFilename(key)
-  const out = new Set<string>()
-
-  const pushExpanded = (file: string) => {
-    const idx = file.lastIndexOf('.')
-    const base = idx >= 0 ? file.slice(0, idx) : file
-    for (const ext of ['png', 'jpg', 'jpeg', 'webp']) {
-      out.add(`${base}.${ext}`)
-    }
-  }
-
-  pushExpanded(primary)
-  // Common compatibility: role packs may use alternate filenames (e.g. neutral.png)
-  if (key === 'neutral') {
-    pushExpanded('neutral.png')
-  }
-  if (key.startsWith('disgust')) {
-    pushExpanded('disgust_light.png')
-    pushExpanded('disgust_mid.png')
-    pushExpanded('disgust_heavy.png')
-  }
-  // Final fallbacks
-  pushExpanded('normal.png')
-  pushExpanded('neutral.png')
-  return Array.from(out)
-}
 
 async function tryLoadRelativeAsset(rel: string, gen: number): Promise<void> {
   let path: string | null

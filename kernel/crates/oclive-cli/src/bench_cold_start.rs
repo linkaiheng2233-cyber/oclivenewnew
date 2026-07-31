@@ -98,6 +98,7 @@ fn one_cold_start_round(
         ])
         .current_dir(root)
         .env("OCLIVE_HTTP_API_MOCK_LLM", "1")
+        .env("OCLIVE_API_TOKEN", crate::http_client::api_token())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
 

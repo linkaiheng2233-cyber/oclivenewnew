@@ -6,7 +6,8 @@
 
 本文档描述 **与 A.I.Live 主宿主加载逻辑一致** 的磁盘角色包形状，便于 **多发行版**（桌面 Tauri、无头 `kernel_server`、未来启动器）共用同一包。权威细节仍以源码与既有文档为准：
 
-- 创作者门面与字段语义：[README_MANIFEST.md](../../distros/chat-pro/roles/README_MANIFEST.md)
+- 发行角色目录说明：[README_MANIFEST.md](../../distros/chat-pro/roles/README_MANIFEST.md)
+- 创作者门面与字段语义：[CREATOR_ROLE_PACK_CUSTOMIZATION.md](CREATOR_ROLE_PACK_CUSTOMIZATION.md)
 - 六宿主槽与编排：[PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)、[SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)
 - 以内核为中心的模块图：[KERNEL_AND_MODULES_ARCHITECTURE.md](../getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md)
 
@@ -21,9 +22,9 @@
 | **角色包** | 身份、七维人格、关系、**`core_personality.txt`** 人设真源、场景文案 | — |
 | **蓝图** | **不要改**（除非你是集成方） | **`slot_registry`**、**`groups`**、后端 **`backend`**、**`model`**、**`interaction_mode`**、**`memory_config`**、远程/自主场景策略、**`dual_core.enabled`**（RFC）等 |
 
-v2 磁盘上常为 **同一蓝图文件 `pipeline.ocblueprint`**（**不以** `steps[]` 作主路径调度）：`meta` 中仅上表「角色包」字段由编写器默认暴露；**`slot_registry` 及引擎向 `meta` 键** 归蓝图（见 [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md) §零）。
+所有支持版本共用 **同一蓝图入口 `pipeline.ocblueprint`**（**不以** `steps[]` 作主路径调度）：`meta` 中仅上表「角色包」字段由编写器默认暴露；**`slot_registry` 与 Stable v4 `runtime_config`** 归高级蓝图视图。v2 的引擎向 `meta` 键仅作兼容（见 [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md) §零）。
 
-**创作者可编辑（`meta` 子集）**：`id`、`name`、`version`、`author`、`description`、`personality`、`relations`、`default_relation`、`scenes`；可选剧情向 `life_*`、`evolution.personality_source`。
+**创作者可编辑（`meta` 子集）**：`id`、`name`、`version`、`author`、`description`、`personality`、`relations`、`default_relation`、`scenes`；可选剧情向 `life_*`。人格来源由高级运行时视图配置：Stable v4 写 `runtime_config.evolution.personality_source`，v2 仅兼容 `meta.evolution.personality_source`。
 
 **创作者不应接触**：`slot_registry`、`groups`、`runtime_config`、`pipeline`、各实例 `backend` / `model` / `plugin` 等（见 [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md) §零 `runtime_config`）。
 
@@ -31,20 +32,21 @@ v2 磁盘上常为 **同一蓝图文件 `pipeline.ocblueprint`**（**不以** `s
 
 ## 1. 目录结构（推荐）
 
-角色包根目录通常命名为 **`distros/chat-pro/roles/{角色id}/`**（v2 时 `{角色id}` 与 `meta.id` 一致）。
+角色包根目录通常命名为 **`distros/chat-pro/roles/{角色id}/`**（所有蓝图版本均要求 `{角色id}` 与 `meta.id` 一致）。
 
 ```text
 distros/chat-pro/roles/{role_id}/
-├── pipeline.ocblueprint    # **蓝图文件（v2 SSOT · 瘦）**：meta + slot_registry + includes；**不以** steps[] 调度；见 [BLUEPRINT_FOLDER_LAYOUT.md](../../handoff/BLUEPRINT_FOLDER_LAYOUT.md)
+├── pipeline.ocblueprint    # **蓝图文件（Stable v4 canonical · v2 兼容 · 瘦）**：meta + slot_registry + runtime_config/includes；**不以** steps[] 调度；见 [BLUEPRINT_FOLDER_LAYOUT.md](../../handoff/BLUEPRINT_FOLDER_LAYOUT.md)
 ├── blueprint/              # 可选：includes/、overlays/、revisions/、docs/（卫星，不替代本体路径）
 ├── config.json             # 可选；遗忘曲线、虚拟时间（沉浸模式）；见 §9
 ├── prompts/                # **可选创作辅助**（非 Tier0）：`reply_quality_anchor.md` 镜像等；`deep_capsule.txt`（Wave D · Deep 离线蒸馏胶囊）；`system.md` **非宿主必需、不参与 PromptBuilder**
 ├── user_identities/        # **可选**：User Identity Prompt Template（`index.json` + `*.md` 模板；见 RFC）
 │   ├── index.json
 │   └── {identity_id}.md
-├── manifest.json           # **已废弃（legacy）**：勿与 v2 蓝图并存
-├── settings.json           # **已废弃（legacy）**：勿与 v2 蓝图并存
+├── manifest.json           # **已废弃（legacy）**：勿与 pipeline.ocblueprint 并存
+├── settings.json           # **已废弃（legacy）**：勿与 pipeline.ocblueprint 并存
 ├── core_personality.txt    # **人设真源**（Tier0）；profile 模式长文；`prompts/system.md` 不替代本文件
+├── memory_seed.json        # 可选：创作者预置、只读的初始记忆；与用户运行时 LTM 分离
 ├── ui.json                 # 可选；前端布局
 ├── author.json             # 可选；作者元数据
 ├── scenes/
@@ -54,11 +56,11 @@ distros/chat-pro/roles/{role_id}/
 └── assets/                 # 可选
 ```
 
-**说明**：v2 包 **不得** 同时存在 `manifest.json` / `settings.json` 与 `pipeline.ocblueprint`。七维人格在 v2 写入 **`meta.personality`**（对象或 7 元数组）。**人设 Tier0** 只读 **`core_personality.txt`**；`prompts/*.md` 为可选创作辅助（编写器 / creator profile 校验），**不参与** `PromptBuilder` Tier0。**回复质量锚点**运行时读 **`meta.reply_quality_anchor`**（或蓝图 `runtime_config.reply_quality_anchor`）或内核 **`DEFAULT_REPLY_QUALITY_ANCHOR`**；`prompts/reply_quality_anchor.md` 仅为人类可读镜像。
+**说明**：蓝图包 **不得** 同时存在 `manifest.json` / `settings.json` 与 `pipeline.ocblueprint`。七维人格写入 **`meta.personality`**（对象或 7 元数组）。**人设 Tier0** 只读 **`core_personality.txt`**；`prompts/*.md` 为可选创作辅助（编写器 / creator profile 校验），**不参与** `PromptBuilder` Tier0。Stable v4 的**回复质量锚点**只写 **`runtime_config.reply_quality_anchor`**；宿主仍兼容 v2 的 `meta.reply_quality_anchor`，否则使用内核 **`DEFAULT_REPLY_QUALITY_ANCHOR`**。`prompts/reply_quality_anchor.md` 仅为人类可读镜像。
 
 **锚点 vs guardrails 分工**：包级 `reply_quality_anchor` **整段替换**内核默认锚点，但**不替换**引擎 **`KERNEL_DIALOGUE_GUARDRAILS`**（含状态延续、倾诉优先、禁止复读开场、篇幅随输入等通用纪律，每轮恒追加）。创作者宜在包级锚点只写**人设差异**，勿重复 guardrails 已覆盖的通用句。
 
-**Deep persona capsule（Wave D · 可选）**：`prompts/deep_capsule.txt` 为 **Turn Thinking Deep** 轮准备的 **离线蒸馏** 短人设（≤ **2500** 汉字）；**Small 模型 + Deep 轮**且 `meta.deep_capsule_enabled=true` 时替代 Tier0 全量 `core_personality.txt` 注入，Fast 轮仍读全文。蒸馏流程与 KV 前缀延续见 [`handoff/DEEP_PROMPT_DISTILLATION.md`](../../handoff/DEEP_PROMPT_DISTILLATION.md)。**禁止**运行时 LLM 动态压缩。
+**Persona capsule（Wave D · 可选，沿用 `deep_capsule` 文件名）**：`prompts/deep_capsule.txt` 是 **离线蒸馏** 的短人设（≤ **2500** 汉字）；Small 模型且 `meta.deep_capsule_enabled=true` 时，Fast/Deep 轮均可用它替代 Tier0 全量 `core_personality.txt` 注入。Large 模型与未启用角色仍读全文。蒸馏流程与 KV 前缀延续见 [`handoff/DEEP_PROMPT_DISTILLATION.md`](../../handoff/DEEP_PROMPT_DISTILLATION.md)。**禁止**运行时 LLM 动态压缩。
 
 ### 1.1 `user_identities/`（User Identity Prompt Template · 可选）
 
@@ -84,6 +86,7 @@ distros/chat-pro/roles/{role_id}/
 | `display_name` | string | 是 | UI 下拉展示名 |
 | `template_file` | string | 是 | 相对 `user_identities/` 的 `*.md` 文件名 |
 | `maps_to_relation_id` | string | 否 | 映射到 `meta.relations` 键，用于好感初值与关系阶段 |
+| `adult_eligible` | boolean | 否 | 默认 `true`；仅作为旧角色包兼容与创作者提示元数据保留，不参与 Chat Pro 成人功能授权。运行时只认本机成年确认、全局开关与角色开关 |
 
 **兼容层**：无 `user_identities/` 时，宿主仍可使用蓝图 **`meta.relations`** 中各关系的 **`prompt_hint`**（legacy）。有 catalog 时以 catalog 模板为准；发行版可通过 `distro.oclive.toml` → `[user_identity].default_id` 覆盖会话默认（见 [DISTRO_CAPABILITY_PROFILE.md](../kernel/DISTRO_CAPABILITY_PROFILE.md)）。
 
@@ -98,19 +101,57 @@ distros/chat-pro/roles/{role_id}/
 - **整个 `user_identities/` 目录缺失** → legacy 回退（`meta.relations` 的 `prompt_hint`），不阻塞 `load_role`。
 - **目录存在且含 `index.json`** → 每条 `template_file` 指向的 `*.md` **必须可读**；`oclive pack validate` 与 `load_role` 均会 **失败**（非 warn）。
 
+### 1.2 `scenes/{scene_id}/scene.json` 叙事连续性（可选）
+
+场景可以声明独立于核心人格、可变人格和短期情绪档案的 `continuity`。它只描述角色在一个大场景内的微观位置与动作连续性；旧角色包不含该字段时保持原行为。
+
+```json
+{
+  "continuity": {
+    "default_state_id": "sofa_lounge",
+    "initial_states": [
+      {
+        "id": "sofa_lounge",
+        "weight": 3,
+        "time_windows": [{ "start": "18:00", "end": "23:00" }],
+        "sub_location": "客厅",
+        "anchor": "沙发和茶几",
+        "posture": "坐在沙发一角",
+        "activity": "和用户聊天"
+      }
+    ],
+    "transitions": [
+      {
+        "from": ["sofa_lounge"],
+        "to": "bedroom_wind_down",
+        "assistant_reply_markers": ["走进卧室", "来到床边"]
+      }
+    ]
+  }
+}
+```
+
+- `initial_states`：**1～8** 项；`id` 在本场景内唯一；`weight` 为 **1～100**，默认 `1`。`time_windows` 可省略，支持跨午夜的 `HH:mm` 区间。
+- `default_state_id`：可选，必须引用已有状态。运行时优先在符合虚拟时间的候选中做按会话、场景与虚拟日期稳定的加权选择。
+- `sub_location` / `anchor` / `posture` / `activity`：均为必填创作事实；运行时数据库只保存状态 ID 与修订号，正文始终从当前角色包解析。
+- `transitions`：最多 **32** 项；`from` 省略或为空表示任意来源，`to` 必须引用已有状态；`assistant_reply_markers` 在本场景内不得重复。状态只在**最终可见的角色回复**包含其中的显式动作时迁移；普通聊天保持原状态。
+
+宿主把当前状态作为动态 `PromptInput.extra_sections` 同时提供给 Fast / Deep，不额外调用 LLM，且场景切换会使旧状态失效。编写器的 3～8 个候选生成与审核界面见技术债 `PE-CONTINUITY-01`，运行时不临场生成候选。
+
 ---
 
-## 2. `pipeline.ocblueprint`（v2 SSOT）
+## 2. `pipeline.ocblueprint`（Stable v4 canonical；v2 兼容；v3 双核 Beta）
 
 | 顶层键 | 归属 | 必填 | 说明 |
 |--------|------|------|------|
-| `schema_version` | 蓝图 | 是 | 固定 **2**（双核扩展见 RFC **3**） |
-| `meta` | **角色包** + 过渡期引擎字段 | 是 | 创作者子集见 §0；引擎键目标迁至 `runtime_config` |
+| `schema_version` | 蓝图 | 是 | 新包固定 **4**；兼容 **2**；冻结双核 Beta 为 **3** |
+| `meta` | **角色包** + v2 兼容字段 | 是 | 创作者子集见 §0；Stable v4 引擎键只写 `runtime_config` |
 | `slot_registry` | **蓝图** | 是 | 至少一个 `type: llm` |
 | `groups` | **蓝图** | 否 | 架构图分组 |
 | `includes` | **蓝图** | 否 | 卫星 JSON 拉取清单（加载时 merge/replace）；见 §2.6 |
 | `expert_overlay` | **蓝图** | 否 | 专家设施指针（`routing_path`、`active_revision` 等，≤ 少量字段） |
-| `runtime_config` | **蓝图** | 否 | **目标 SSOT**（`interaction_mode`、`dual_core` 等；v3 草案） |
+| `runtime_config` | **蓝图** | 否 | **Stable v4 SSOT**（v3 允许 `dual_core`；v2 出现时警告并忽略） |
+| `extensions` | **蓝图** | 否 | **仅 Stable v4**；命名空间声明与安全 `config_ref`，载荷由扩展作者维护 |
 
 ### 2.1 `meta`（角色包 · 创作者）
 
@@ -121,9 +162,9 @@ distros/chat-pro/roles/{role_id}/
 | `relations`, `default_relation` | 是 | 用户关系 |
 | `scenes` | 是 | 与 `scenes/` 合并 |
 | `life_trajectory` / `life_schedule` | 可选 | 剧情/异地文案 |
-| `evolution.personality_source` | 可选 | `vector` \| `profile` |
+| `evolution.personality_source` | v2 兼容 | Stable v4 写入 `runtime_config.evolution.personality_source` |
 
-**过渡期**：上述引擎字段若仍写在 `meta`，宿主 v2 加载器可读；**目标**迁至 **`runtime_config`**。
+**兼容期**：v2 引擎字段仍从 `meta` 读取；Stable v4 只写 **`runtime_config`**，不得在 `meta` 双写。
 
 ### 2.2 运行时配置（`runtime_config` · 蓝图）
 
@@ -133,7 +174,7 @@ distros/chat-pro/roles/{role_id}/
 
 ### 2.3 系统配置（蓝图 · 槽位）
 
-含 **`slot_registry`**、**`groups`**、各实例 **`backend` / `model` / `plugin`**，以及（目标）**`runtime_config`** 中的交互模式、记忆策略、**`dual_core.enabled`** 等。主应用 **`save_role_slot_registry`** / CLI **`oclive plugin manage`** 写回蓝图段。
+含 **`slot_registry`**、**`groups`**、各实例 **`backend` / `model` / `plugin`**，以及 **`runtime_config`** 中的交互模式、记忆策略等；冻结 v3 还允许 **`dual_core.enabled`**。主应用 **`save_role_slot_registry`** / CLI **`oclive plugin manage`** 写回蓝图段。
 
 ### 2.4 `slot_registry`（蓝图 · 开放多实例）
 
@@ -179,21 +220,21 @@ distros/chat-pro/roles/{role_id}/
 
 ### 2.6 `includes[]`（蓝图 · 卫星拉取）
 
-加载角色包时，宿主按数组顺序将卫星文件合并进蓝图内存态（`oclive_validation::resolve_blueprint_includes_*`）。
+加载角色包时，宿主按数组顺序将卫星文件合并进蓝图内存态（`oclive_validation::merge_blueprint_includes_strict`）。
 
 | 字段 | 说明 |
 |------|------|
-| `path` | 相对 **`distros/chat-pro/roles/{role_id}/`** 的正斜杠路径；禁止 `..` |
-| `target` | 点分路径，如 `meta.personality`、`expert_routing`、`runtime_config.expert_hints`、`slot_registry.<key>` |
+| `path` | 相对 **`distros/chat-pro/roles/{role_id}/`** 的可移植正斜杠路径；只允许 ASCII 字母、数字、`_`、`.`、`/`、`-`，禁止 `..`、绝对路径、反斜杠和空路径段 |
+| `target` | 严格白名单：`meta.personality`、`meta.life_trajectory`、`meta.life_schedule`、`expert_overlay` 或 `slot_registry.<key>` |
 | `mode` | `merge`（JSON 深合并）或 `replace`（整段替换） |
 
-缺失或非法卫星文件：**warn 并跳过**，不阻塞 `load_role`。**第 2 设施子模块**（**专家模型设施子模块**）默认文件：**`blueprint/includes/expert_routing.json`**（专家路由）；实验核 pipeline 可使用 action **`slot.expert.invoke`**（须 `dual_core` + v3 `pipeline.experimental`）。命名见 [OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md#设施模块命名规范规定)。
+缺失、越界、不可读或非法 JSON 卫星文件会让 **`pack validate` 与 `load_role` 失败**；合并后的蓝图还会再次执行完整契约校验。best-effort merge 只供不激活的预览使用。**第 2 设施子模块**（**专家模型设施子模块**）默认文件 **`blueprint/includes/expert_routing.json`** 由专家设施 loader 独立读取，不作为通用 `includes.target`；实验核 pipeline 可使用 action **`slot.expert.invoke`**（须 `dual_core` + v3 `pipeline.experimental`）。命名见 [OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md#设施模块命名规范规定)。
 
 ### 2.7 `module_relations`（仅运行时）
 
 **禁止**在 `pipeline.ocblueprint` 文件中出现 `module_relations`、`steps`、`entry`（校验报错）。运行时由 `slot_registry` **派生**模块间示意关系，供架构图只读连线。
 
-JSON Schema：`kernel/crates/oclive-cli/schemas/pipeline.ocblueprint.v2.schema.json`。
+JSON Schema：`kernel/crates/oclive-cli/schemas/pipeline.ocblueprint.v2.schema.json`、`pipeline.ocblueprint.v3.schema.json`、`pipeline.ocblueprint.v4.schema.json`。
 
 ---
 
@@ -210,10 +251,10 @@ JSON Schema：`kernel/crates/oclive-cli/schemas/pipeline.ocblueprint.v2.schema.j
 | `scenes` | string[] | 否 | 场景 id；可与 `scenes/` 子目录合并（见 `merge_role_pack_scene_ids`） |
 | `user_relations` | object | 是 | 键为关系 id；值含 `initial_favorability`（0～100）、`favor_multiplier`（正数）等 |
 | `default_relation` | string | 否 | 须在 `user_relations` 中存在；可空则加载时回退 |
-| `evolution` | object | 否 | 见 README_MANIFEST；`personality_source`：`vector` \| `profile` |
+| `evolution` | object | 否 | `personality_source`：`vector` \| `profile`；人格语义见 [`personality-archive-notes.md`](../../docs/personality-archive-notes.md) |
 | `memory_config` | object | 否 | `topic_weights` 的键须为已声明场景 |
 | `identity_binding` | string | 否 | `global` \| `per_scene` |
-| `life_trajectory` / `life_schedule` / `knowledge` / … | 可选块 | 否 | 见 README_MANIFEST |
+| `life_trajectory` / `life_schedule` / `knowledge` / … | 可选块 | 否 | legacy 兼容字段；迁移时写入蓝图 `meta` |
 | `min_runtime_version` | string | 否 | semver；与校验时传入的宿主版本比较 |
 | `dev_only` | bool | 否 | 调试包标记 |
 
@@ -226,13 +267,13 @@ JSON Schema：`kernel/crates/oclive-cli/schemas/pipeline.ocblueprint.v2.schema.j
 | `schema_version` | u32 | 是 | 当前宿主支持 **1**（见 `CURRENT_SETTINGS_SCHEMA_VERSION`） |
 | `plugin_backends` | object | 否 | **六宿主槽** + `directory_plugins` + `local_memory_provider_id`；与 `PluginBackends` 一致（见 SETTINGS_REFERENCE）。脚手架可写 **`complex_emotion`** 扩展键，**宿主反序列化时忽略** |
 | `interaction_mode` | string | 否 | `immersive` \| `pure_chat` |
-| `evolution` / `memory_config` / `ollama_model` / `remote_presence` / `autonomous_scene` / `knowledge` / `reply_quality_anchor` | 可选 | 否 | 合并进 manifest 后再校验；见 README_MANIFEST |
+| `evolution` / `memory_config` / `ollama_model` / `remote_presence` / `autonomous_scene` / `knowledge` / `reply_quality_anchor` | 可选 | 否 | 合并进 manifest 后再校验；新包写入蓝图 `meta` |
 
 ---
 
 ## 5. 与内核概念对齐
 
-| 概念 | 磁盘落点（v2 蓝图） | legacy |
+| 概念 | 磁盘落点（蓝图） | legacy |
 |------|---------------------|--------|
 | `PluginBackends`（memory…agent） | `pipeline.ocblueprint` → `slot_registry`（同 `type` 多实例，折叠为六槽时 **last-wins**） | `settings.json` → `plugin_backends` |
 | 七维人格（vector 模式） | `meta.personality`（对象或 7 元数组） | `manifest.json` → `default_personality` |
@@ -241,7 +282,7 @@ JSON Schema：`kernel/crates/oclive-cli/schemas/pipeline.ocblueprint.v2.schema.j
 | 会话槽覆盖 | 内存 overlay；架构图改包默认经 `save_role_slot_registry` 写盘 | `set_session_plugin_backend` |
 | Monolith 焊接 | **仅** 脚手架 `monolith.toml` / `process_message_monolith.rs`，**不**随角色包分发 | 同左 |
 
-校验：`cargo run -p oclive-cli -- pack validate <dir>`（**默认 v2**）；legacy 包用 `--profile legacy`。另：`blueprint validate <dir>`。路线图 [`handoff/BLUEPRINT_V2_IMPLEMENTATION_PLAN.md`](../../handoff/BLUEPRINT_V2_IMPLEMENTATION_PLAN.md)。
+校验：`cargo run -p oclive-cli -- pack validate <dir>`（按声明精确分派 **v2/v3/v4**）；legacy 包用 `--profile legacy`。另：`blueprint validate <dir>`。历史实施路线图见 [`BLUEPRINT_V2_IMPLEMENTATION_PLAN.md`](../../handoff/archive/BLUEPRINT_V2_IMPLEMENTATION_PLAN.md)。
 
 ---
 
@@ -255,6 +296,100 @@ cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/mumu --host-ve
 - 通过时输出：`✓ 角色包验证通过`；失败时逐条列出错误。
 
 **JSON Schema**（IDE 提示 / 外部校验器）：`kernel/crates/oclive-cli/schemas/role_pack_manifest.schema.json`、`role_pack_settings.schema.json`。
+
+### Portable Core（`--profile portable-core`）
+
+Portable Core 是跨发行版的**最低通用契约**，不是发行版功能上限。它要求角色包使用 v2/v3/v4 `pipeline.ocblueprint`，并携带所有合规宿主都能理解的基础人格 Prompt 与七张默认情绪图：
+
+| 规则 | 说明 |
+|------|------|
+| `core_personality.txt` | 必须存在且非空；这是 Portable Core 的基础人格 Prompt 真源 |
+| `config.json` | 必须设置 `portrait_catalog.enabled = true` |
+| `portrait_catalog.json` | 必须存在并通过路径安全校验 |
+| 七个固定资源 | `happy_default`、`sad_default`、`angry_default`、`neutral_default`、`excited_default`、`confused_default`、`shy_default`；每项 `kind` 必须为 `image` |
+| 发行版扩展 | UI、语音、Live2D/3D、Agent、硬件与高级模块由发行版 `HostProfile` / 扩展命名空间决定，不属于 Portable Core 必需项 |
+
+合规宿主至少应能加载人格并运行基础对话；有视觉能力时显示对应基础图，没有视觉能力时安全忽略图片。高级资源可以追加，不能改变七个固定 ID 的语义。校验命令：
+
+```bash
+cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/mumu --profile portable-core
+```
+
+`portable-core` 只验证包的通用底座，不宣称各发行版的 UI、语音、视觉、插件或硬件能力完全等价；这些能力应由发行版自己的 capability-conformance 验收负责。
+
+### Chat Pro 成人角色扩展（`adult_extension.json` · 可选）
+
+成人能力是**同一角色包中的发行版可选扩展**，不是 Portable Core 或通用基础角色包的必需部分。文件位于角色包根目录；不支持该能力的发行版必须能够忽略它，并继续以 `core_personality.txt`、基础场景和身份文件运行普通聊天。成人状态人设、成人对话指导和成人场景走向不得反向复制到基础文件，否则关闭扩展后仍会污染普通 Prompt。
+
+```json
+{
+  "schema_version": 1,
+  "character_is_adult": true,
+  "persona": "仅在成人功能启用时叠加的人设增量。",
+  "dialogue_guidance": "角色成人状态下的对话、边界与风格指导。",
+  "pacing": {
+    "mode": "ai",
+    "suggested_interval_ms": 4000
+  },
+  "scenes": {
+    "default": {
+      "direction": "基础场景可自然发展的成人走向。",
+      "action_flow": "动作连续性与每拍推进建议。",
+      "dialogue_guidance": "该场景专用的对话建议。"
+    }
+  }
+}
+```
+
+| 字段 | 规则 |
+|------|------|
+| `schema_version` | 当前固定为 **1** |
+| `character_is_adult` | 必须为 `true`；无需填写具体年龄 |
+| `persona` / `dialogue_guidance` | 只作为基础人设之上的成人增量 |
+| `pacing.mode` | `creator` 或 `ai` |
+| `pacing.suggested_interval_ms` | 正整数；Chat Pro 全局用户覆盖值拥有最终优先级 |
+| `scenes` | 键必须引用基础角色包已声明的场景 id |
+
+Chat Pro 只有在本机成年确认、全局成人开关和当前角色开关同时成立时才注入扩展。响应通过 `SendMessageResponse.schema` **16** 的 `adult_beat` 返回 `dialogue`、静音 `narration`、`interaction_state` 与可选节拍间隔；基础 `reply` 保持对话兼容值。结构化输出异常必须使用安全兜底，不能把 JSON 字段或 Prompt 残片显示给用户。
+
+当前互动状态按角色与聊天场景持久化；关闭任一级开关立即清除互动状态，场景或身份切换先自然收束。成人记忆写入独立 `content_scope=adult` 分区；普通聊天只读取普通记忆和非露骨关系桥接摘要，关闭扩展不会删除成人记忆。编写器只能在完整基础包通过校验后进入独立成人扩展页，导出时仍生成一个合并角色包。
+
+Chat Pro 的“后台连续预生成”是宿主运行时能力，不增加 `adult_extension.json` 字段，也不改变 Portable Core。启用后，模型生成的未来拍先进入可取消的 staged beat 存储；此时不得写入聊天记录、记忆、关系、事件、人格或叙事连续性。只有该聊天回到前台、节拍与上一段语音门均满足后，宿主才按序 commit 一拍并渲染；旁白保持静音。用户新输入、退出、关闭开关或切换身份会取消在途生成并丢弃尚未 commit 的拍。队列容量是所有角色与聊天共享的 Chat Pro 本机全局正整数设置；降低容量只暂停新生成，不删除已经暂存的拍。
+
+### Persona / Memory 独立迁移契约
+
+跨发行版搬运使用两个互不嵌套的 JSON 产物：
+
+| 产物 | 内容 | 明确排除 |
+|------|------|----------|
+| `.ocpersona` | 角色 id/版本、只读核心人设、七维基础值、可选可变人设快照 | 聊天记录、STM、LTM、临时局面状态 |
+| `.ocmemory` | 可选 `memory_seed` 与用户长期记忆（含场景、权重、强化次数） | 核心/可变人设、聊天记录、STM、临时局面状态 |
+
+导入 `.ocpersona` 时，宿主必须校验 `role_id` 与核心人设一致，且**只能恢复可变人设**；不得覆盖已安装角色包的 `core_personality.txt`。导入 `.ocmemory` 使用合并语义，不重复插入相同内容。短期记忆是可从聊天恢复的宿主缓存，临时人设实际语义是数轮有效的**临时局面状态**，两者均不进入默认迁移产物。
+
+包内可选 `memory_seed.json`：
+
+```json
+{
+  "schema_version": 1,
+  "memories": [
+    {
+      "id": "first_meeting",
+      "content": "角色记得与用户初次见面的背景事件。",
+      "importance": 0.8,
+      "scene_id": "default"
+    }
+  ],
+  "extensions": {}
+}
+```
+
+`memory_seed` 由创作者/编写器维护，运行时只读：可参与相关记忆检索，但不受遗忘衰减、不被模型覆写，也不会因为导入 `.ocmemory` 写入用户 LTM。发行版扩展只能写入顶层 `extensions`，不得改变上述基础字段语义。格式校验：
+
+```bash
+oclive-cli pack validate-persona ./mumu.ocpersona
+oclive-cli pack validate-memory ./mumu.ocmemory
+```
 
 ### RobotSoulPack（`--profile robot-soul`）
 
@@ -281,11 +416,14 @@ cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/my-role --host
 
 | 命令 | 作用 |
 |------|------|
-| `pack validate <dir>` | **默认** v2 蓝图目录校验 |
+| `pack validate <dir>` | 按 `schema_version` 精确分派 v2/v3/v4 蓝图目录校验 |
+| `pack validate <dir> --profile portable-core` | v2/v3/v4 + Portable Core（基础人格 + 七张默认情绪图） |
+| `pack validate-persona <file>` | 校验 `.ocpersona` Persona 迁移文件 |
+| `pack validate-memory <file>` | 校验 `.ocmemory` Memory 迁移文件 |
 | `pack validate <dir> --profile legacy` | legacy manifest/settings |
 | `pack validate <dir> --profile robot-soul` | legacy + RobotSoulPack（见 §6） |
 | `pack create -o <out> --id <id> [--flat]` | 生成最小可校验包（`--flat` 时 `<out>` 即为角色根） |
-| `pack publish <dir> [-o file.oclivepack]` | ZIP 打包；根目录为 `manifest.id` |
+| `pack publish <dir> [-o file.oclivepack]` | ZIP 打包；唯一顶层目录名为 `meta.id`（v2/v3/v4）或 `manifest.id`（legacy） |
 | `init … --skip-role-pack` | 生成内核工程时不创建 `distros/chat-pro/roles/` |
 
 详见 [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md)。
@@ -446,11 +584,11 @@ auto_sync: false
 }
 ```
 
-**可选文件**：`polish_prompt.md`（包根）— 若存在，directory 润色插件 `reply-post-process-polish` 将其整段作为 system preset，覆盖自动从 `core_personality.txt` + `meta.reply_quality_anchor` 生成的 preset。不在 `slot_registry` 中配置。
+**可选文件**：`polish_prompt.md`（包根）— 若存在，directory 润色插件 `reply-post-process-polish` 将其整段作为 system preset，覆盖自动从 `core_personality.txt` + 蓝图有效 `reply_quality_anchor`（v4 `runtime_config`；v2 `meta`）生成的 preset。不在 `slot_registry` 中配置。
 
 **校验**：`oclive pack validate` 在 `enabled=true` 且 `backend=remote` 时要求非空 `remote.url`；directory 要求非空 `plugin_id`。
 
-**DTO**：请求 `include_raw_reply: true` 且后处理改变文本时，响应可选 `raw_reply`（`SendMessageResponse.schema` **14**）。
+**DTO**：请求 `include_raw_reply: true` 且后处理改变文本时，响应可选 `raw_reply`（`SendMessageResponse.schema` **16**）。
 
 编排与 RPC 见 [RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md](../rfc/RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md) · [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) `reply_post_process` 能力。
 
@@ -554,7 +692,7 @@ auto_sync: false
 
 > **架构**：独立通道 `voice.asr` / 导演 / synth profile 与主链正交；详见 [ARCHITECTURE_DECOUPLING_PANORAMA.md §11.2](../../human-docs/team/ARCHITECTURE_DECOUPLING_PANORAMA.md) · [TRACK_VOICE_RECOGNITION.md](../../human-docs/team/TRACK_VOICE_RECOGNITION.md)。
 
-角色包根目录可选 **`voice_profile.json`**（**不**写入 `slot_registry` · **不**进 `process_message`）。插件 `voice.build_directive` 在收到 `role_path` 时读取并覆盖默认 synth / director / baseline `speed`。
+角色包根目录可选 **`voice_profile.json`**（**不**写入 `slot_registry` · **不**进 `process_message`）。插件 `voice.build_directive` 在收到 `role_path` 时读取并覆盖默认 synth / director / baseline `speed`。Chat Pro 自动朗读还要求用户先开启全局 TTS，再在角色列表中单独启用该角色；缺少本文件的角色不可启用自动朗读，也不会静默复用其他角色的参考音。
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
@@ -570,7 +708,7 @@ auto_sync: false
 | `ref_map` | object | 否 | v2：emotion → ref 相对路径 |
 | `emo_text_template` | string | 否 | v2：含 `{tone}` 占位符的 instruct 模板 |
 
-**缺省派生**：未提供 `voice_profile.json`，或其中未写 `emo_text_template` / `speed` / `energy` 时，插件 `voice.build_directive` 会从同包 **`core_personality.txt`** 按 rules-v1 关键词规则自动派生 baseline 风格（显式字段始终优先）。详情与合规见 [TRACK_VOICE_RECOGNITION.md §1 VX-4b](../../human-docs/team/TRACK_VOICE_RECOGNITION.md)。
+**缺省派生**：对显式调用 `voice.build_directive` 的工具路径，未提供 `voice_profile.json`，或其中未写 `emo_text_template` / `speed` / `energy` 时，插件仍可从同包 **`core_personality.txt`** 按 rules-v1 关键词规则派生 baseline 风格（显式字段始终优先）。这不等于 Chat Pro 自动朗读授权：自动朗读必须存在 `voice_profile.json` 并通过全局 + 角色两级开关。详情与合规见 [TRACK_VOICE_RECOGNITION.md §1 VX-4b](../../human-docs/team/TRACK_VOICE_RECOGNITION.md)。
 
 示例见 [`distros/chat-pro/roles/mumu/voice_profile.json`](../../distros/chat-pro/roles/mumu/voice_profile.json)。契约 **`voice_directive` v1** 由插件 RPC 产出（可含 `ref_audio` · `ref_text` · `emo_text`），不进 `SendMessageResponse`。
 
@@ -582,7 +720,7 @@ auto_sync: false
 
 | 层 | 落点 | 期望 |
 |----|------|------|
-| **包发布版本** | `meta.version`（v2 蓝图）或 legacy `manifest.version` | **semver 字符串**（如 `1.2.0`）；创作者发布节奏的对外版本号 |
+| **包发布版本** | 蓝图 `meta.version` 或 legacy `manifest.version` | **semver 字符串**（如 `1.2.0`）；创作者发布节奏的对外版本号 |
 | **格式 / 契约版本** | 蓝图 `schema_version`；legacy `settings.schema_version`；可选 `manifest.min_runtime_version` | 决定宿主如何解析与是否拒绝加载；细则见 [PACK_VERSIONING.md](PACK_VERSIONING.md) |
 
 **与 schema / manifest 的关系**
@@ -593,7 +731,7 @@ auto_sync: false
 
 **破坏性字段（迁移时须改写，不可默默忽略）**
 
-- 蓝图升档：`schema_version` 变更（2→3）；v3 将引擎/系统配置收敛到顶层 **`runtime_config`**（见迁移指南）。
+- 蓝图升档选择显式契约：v2 的引擎字段留在 `meta`；Stable v4 以顶层 **`runtime_config`** 为唯一引擎配置源；v3 只保留冻结双核 Beta。
 - Legacy → v2：双文件须折叠进蓝图 **`meta`** + **`slot_registry`**；**不得**与 legacy 双文件并存；蓝图中 **禁止** 写 `steps[]` / `entry` / `module_relations`（首轮仍由 `process_message` → `co_present` 编排，不按旧 DSL 调度）。
 - 顶层未知键、错误枚举后端值可导致校验失败；`plugin_backends` / 槽位键名须对齐 PLUGIN_V1（`plugin_backends` · `slot_registry.type`）。
 
@@ -601,7 +739,7 @@ auto_sync: false
 
 1. 备份角色包目录；确认当前是 legacy 双文件还是已有 `pipeline.ocblueprint`。
 2. **Legacy → v2**：按 [V1_TO_V2_MIGRATION.md](V1_TO_V2_MIGRATION.md) 映射字段并写出蓝图，再 `pack validate`。
-3. **v2 → v3**（需要 `runtime_config` / 可选双核时）：按 [V2_TO_V3_MIGRATION.md](V2_TO_V3_MIGRATION.md) 调整 `schema_version` 与配置落点，再校验与试聊。
+3. 既有 v2 包无需被动升级。只有冻结双核 Beta 才走 [V2_TO_V3_MIGRATION.md](V2_TO_V3_MIGRATION.md)；其余新建或迁移使用 Stable v4，把引擎字段移至 `runtime_config` 且不在 `meta` 双写，再校验与试聊。
 4. 需要声明最低宿主时，对齐 [PACK_VERSIONING.md](PACK_VERSIONING.md) 的 `min_runtime_version` / `--host-version`。
 
 > **非目标**：本仓不提供批量自动迁移 CLI；手改 + 校验即可。全库索引见 [DOCUMENTATION_INDEX.md](../getting-started/DOCUMENTATION_INDEX.md)。

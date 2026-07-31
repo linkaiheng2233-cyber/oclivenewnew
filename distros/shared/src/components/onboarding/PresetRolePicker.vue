@@ -1,10 +1,9 @@
 <script setup lang="ts">
+import type { PresetRoleOption } from '@oclive/shared/utils/presetRolePicker'
+import { useModalFocusRestore } from '@oclive/shared/composables/useModalFocusRestore'
+import { presetGalleryRoles } from '@oclive/shared/utils/presetRolePicker'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useModalFocusRestore } from '@oclive/shared/composables/useModalFocusRestore'
-import type { PresetRoleOption } from '@oclive/shared/utils/presetRolePicker'
-import { presetGalleryRoles } from '@oclive/shared/utils/presetRolePicker'
-import UiButton from '../ui/UiButton.vue'
 
 const props = defineProps<{
   visible: boolean

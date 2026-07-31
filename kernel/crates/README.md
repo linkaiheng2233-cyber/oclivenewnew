@@ -2,7 +2,7 @@
 
 Rust 贡献者与 Agent：各 kernel crate 职责、依赖方向、改 X 去哪。
 
-**Schema 例外**：槽位/蓝图校验类型以 `oclive_validation` 为磁盘 SSOT；`oclive_kernel_types` 的 re-export 仅为 ergonomic。见 [NAMING_CONVENTIONS.md §3.1](../creator-docs/NAMING_CONVENTIONS.md#31-schema-类型例外oclive_validation-vs-oclive_kernel_types)。
+**Schema 例外**：槽位/蓝图校验类型以 `oclive_validation` 为磁盘 SSOT；`oclive_kernel_types` 的 re-export 仅为 ergonomic。见 [NAMING_CONVENTIONS.md §3.1](../../creator-docs/NAMING_CONVENTIONS.md#31-schema-类型例外oclive_validation-vs-oclive_kernel_types)。
 
 ## 依赖方向
 
@@ -38,7 +38,7 @@ flowchart BT
 
 ## Canonical import 路径
 
-命名 SSOT 与禁止别名见 **[creator-docs/NAMING_CONVENTIONS.md §4.2](../creator-docs/NAMING_CONVENTIONS.md#42-canonical-import-路径)**。
+命名 SSOT 与禁止别名见 **[creator-docs/NAMING_CONVENTIONS.md §4.2](../../creator-docs/NAMING_CONVENTIONS.md#42-canonical-import-路径)**。
 
 - **DTO / 错误**：`oclive_kernel_types::…`（host 内可用 `crate::models::`）
 - **Trait 端口**：`oclive_kernel_contracts::…`（host 经 `domain::ports` re-export）
@@ -48,12 +48,12 @@ flowchart BT
 
 - 单条消息流程 → `oclive_kernel_host/.../process_message.rs`
 - Prompt 段落 → `oclive_kernel_runtime/.../prompt_builder/mod.rs`（段落公式 `sections.rs`）
-- Tauri 命令 → `src-tauri/src/api/*.rs` + `lib.rs` 注册
+- Tauri 命令 → `../../distros/desktop-tauri/src/api/*.rs` + `lib.rs` 注册
 - 角色包校验 → `oclive_validation`
-- 分层纪律 → [handoff/ARCHITECTURE_LAYERING.md](../handoff/ARCHITECTURE_LAYERING.md) + [oclive_kernel_host/src/domain/README.md](oclive_kernel_host/src/domain/README.md)
+- 分层纪律 → [handoff/ARCHITECTURE_LAYERING.md](../../handoff/ARCHITECTURE_LAYERING.md) + [oclive_kernel_host/src/domain/README.md](oclive_kernel_host/src/domain/README.md)
 
 ## 延伸阅读
 
-- [handoff/ARCHITECTURE_LAYERING.md](../handoff/ARCHITECTURE_LAYERING.md)
-- [handoff/BUS_FACTOR_NOTES.md](../handoff/BUS_FACTOR_NOTES.md)
-- [creator-docs/getting-started/DOCUMENTATION_INDEX.md](../creator-docs/getting-started/DOCUMENTATION_INDEX.md)
+- [handoff/ARCHITECTURE_LAYERING.md](../../handoff/ARCHITECTURE_LAYERING.md)
+- [handoff/BUS_FACTOR_NOTES.md](../../handoff/BUS_FACTOR_NOTES.md)
+- [creator-docs/getting-started/DOCUMENTATION_INDEX.md](../../creator-docs/getting-started/DOCUMENTATION_INDEX.md)

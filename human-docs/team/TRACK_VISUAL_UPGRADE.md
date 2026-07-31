@@ -100,9 +100,9 @@ props 来源：`useMainShell.ts` 的 `portraitAssetRelPath`（来自 `roleStore.
 | 3 | `distros/shared/src/composables/useMainShell.ts` | `portraitAssetRelPath` |
 | 4 | `distros/chat-pro/src/views/RoleDetailView.vue` | 立绘容器 |
 | 5 | `distros/shared/src/components/role/CharacterInfo.vue` | PNG 加载 |
-| 6 | `handoff/LIVE2D_CUBISM_DEFER.md` | Live2D 为何 defer |
+| 6 | `handoff/archive/LIVE2D_CUBISM_DEFER.md` | Live2D 为何 defer（历史决策） |
 
-**Week 2+：** `handoff/PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md`（Phase 1–4）
+**Week 2+：** 现行边界见 `creator-docs/rfc/RFC_PORTRAIT_FACILITY.md` 与 `RFC_VISUAL_PRESENTATION_FACILITY.md`；旧 Phase 计划已归档。
 
 **Live2D 参考（只读抄结构）：**
 
@@ -236,7 +236,7 @@ mode = "image_only"
 | Web Cubism 4 vs WASM vs 原生 | |
 | SDK 许可与包体（MB） | |
 | 复用 `Live2DStageAdapter.vue` / Theater 的方式 | |
-| 是否满足解冻 [LIVE2D_CUBISM_DEFER.md](../../handoff/LIVE2D_CUBISM_DEFER.md) 条件 | |
+| 是否满足解冻 [LIVE2D_CUBISM_DEFER.md](../../handoff/archive/LIVE2D_CUBISM_DEFER.md) 条件 | |
 
 ### 任务 A8 · Cubism spike（memo 批准后 · 可选）
 

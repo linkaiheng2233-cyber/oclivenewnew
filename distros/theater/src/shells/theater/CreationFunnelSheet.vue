@@ -1,12 +1,9 @@
 <script setup lang="ts">
+import UiButton from '@oclive/shared/components/ui/UiButton.vue'
 
 import { onMounted, onUnmounted } from 'vue'
 
 import { useI18n } from 'vue-i18n'
-
-import UiButton from '@oclive/shared/components/ui/UiButton.vue'
-
-
 
 const props = defineProps<{
   visible: boolean
@@ -20,19 +17,11 @@ const emit = defineEmits<{
 
 }>()
 
-
-
 const { t } = useI18n()
 
-
-
 function onBackdrop() {
-
   emit('dismiss')
-
 }
-
-
 
 function onKeydown(e: KeyboardEvent) {
   if (!props.visible)
@@ -41,30 +30,17 @@ function onKeydown(e: KeyboardEvent) {
     emit('dismiss')
 }
 
-
-
 onMounted(() => {
-
   window.addEventListener('keydown', onKeydown)
-
 })
-
-
 
 onUnmounted(() => {
-
   window.removeEventListener('keydown', onKeydown)
-
 })
-
 </script>
 
-
-
 <template>
-
   <Teleport to="body">
-
     <div
 
       v-if="visible"
@@ -74,9 +50,7 @@ onUnmounted(() => {
       role="presentation"
 
       @click.self="onBackdrop"
-
     >
-
       <div
 
         class="creation-funnel-sheet"
@@ -88,43 +62,26 @@ onUnmounted(() => {
         :aria-label="t('theater.funnel.title')"
 
         @click.stop
-
       >
-
         <p class="creation-funnel-sheet__title">
-
           {{ t('theater.funnel.title') }}
-
         </p>
 
         <div class="creation-funnel-sheet__actions">
-
           <UiButton size="sm" variant="secondary" @click="emit('create')">
-
             {{ t('theater.funnel.create') }}
-
           </UiButton>
 
           <UiButton size="sm" variant="ghost" @click="emit('dismiss')">
-
             {{ t('theater.funnel.keep') }}
-
           </UiButton>
-
         </div>
-
       </div>
-
     </div>
-
   </Teleport>
-
 </template>
 
-
-
 <style scoped>
-
 .creation-funnel-backdrop {
 
   position: fixed;
@@ -145,8 +102,6 @@ onUnmounted(() => {
 
 }
 
-
-
 .creation-funnel-sheet {
 
   width: min(92vw, 420px);
@@ -165,8 +120,6 @@ onUnmounted(() => {
 
 }
 
-
-
 .creation-funnel-sheet__title {
 
   margin: 0 0 var(--tool-space-3, 12px);
@@ -179,8 +132,6 @@ onUnmounted(() => {
 
 }
 
-
-
 .creation-funnel-sheet__actions {
 
   display: flex;
@@ -190,6 +141,4 @@ onUnmounted(() => {
   gap: var(--tool-space-2, 8px);
 
 }
-
 </style>
-

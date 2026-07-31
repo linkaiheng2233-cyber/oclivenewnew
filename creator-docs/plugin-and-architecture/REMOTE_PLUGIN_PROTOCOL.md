@@ -362,6 +362,12 @@ OCLIVE_LLM_BACKEND=remote（或包内 llm=remote）
 - `personality`、`memories`、`user_input`、`user_emotion`、`user_relation_id`、`relation_hint`、`relation_before`、`favorability_before`、`relation_preview`、`favorability_preview`  
 - `event_type`（`EventType`）、`impact_factor`  
 - `scene_label`、`scene_detail`、`topic_hint_line`、`life_context_line`  
+- `worldview_snippet`、`mutable_personality`、`ephemeral_personality`、`reply_quality_anchor`
+- `previous_complex_emotion_narrative_hint`、`user_identity_template`、`user_identity_id`、`host_prompt_overlay`、`host_state_expression_hint`、`relation_transition_hint`
+- `extra_sections`：有序数组，每项为 `{ "title": string, "body": string }`；宿主动态能力（例如场景叙事连续性）通过此字段注入
+- `persona_override`：字符串或 `null`；`previous_assistant_reply`：上一轮角色回复或空字符串
+
+以上字段均按当前 `PromptInput` 扁平序列化。侧车应忽略不认识的新增字段，以保持与后续宿主的向前兼容；不得假定 `extra_sections` 只包含某一种能力。
 
 **result**
 
@@ -386,7 +392,7 @@ OCLIVE_LLM_BACKEND=remote（或包内 llm=remote）
 
 ---
 
-### 4.6 `llm.generate` / `llm.generate_tag`
+### 4.6 `llm.generate` / `llm.generate_tag` / `llm.generate_stream`
 
 **params**
 
@@ -401,6 +407,46 @@ OCLIVE_LLM_BACKEND=remote（或包内 llm=remote）
 - **或** `result` **本身为字符串**  
 
 `generate_tag` 用于低温度短输出（立绘标签、位移意图等）。
+
+`llm.generate_stream` 是可选的 NDJSON 扩展。directory 插件只有在 manifest 的
+`rpcMethods` 显式声明该方法时，宿主才会调用；未声明的旧插件继续使用
+`llm.generate`，并在完成后回调一次。
+
+流式 HTTP 响应须使用 `application/x-ndjson`，每行均为带有原请求 `id` 的 JSON-RPC
+envelope：
+
+```json
+{"jsonrpc":"2.0","id":1,"result":{"event":"token","text":"你"}}
+{"jsonrpc":"2.0","id":1,"result":{"event":"token","text":"好"}}
+{"jsonrpc":"2.0","id":1,"result":{"event":"done","prompt_eval_ms":12}}
+```
+
+- `token.text` 按到达顺序立即交给宿主 token sink。
+- 流必须以且只能以一个 `done` 结束；错误仍使用标准 JSON-RPC `error` envelope。
+- 宿主以已收到 token 拼接最终 `reply`，不接受 `done` 偷换整段文本。
+- LoRA 流在首 token 前失败会清除选择并重试普通 LLM；已有 token 后失败则保留部分
+  回复、记录 `LORA_ADAPTER_STREAM_PARTIAL`，不追加普通模型回复造成重复/混合。
+
+#### LoRA 专家插件
+
+`slot.lora.apply` 不把权重路径或框架私有参数塞进 `llm.generate`。它选择一个已经在
+角色有效 `slot_registry` 中预声明的 `type=llm`、`backend=directory` 实例；随后
+Stable completion 把同样的 `model` / `prompt` 请求发送给该插件。目录插件负责把
+`model` 映射到自己已经加载的 LoRA adapter（例如 llama.cpp / vLLM 模型别名）。
+
+- 路由参数 `params.plugin_id` 必须与该槽的 `plugin` 完全一致，而且一个角色中只能
+  唯一匹配一个 LLM 槽。
+- 插件 manifest 必须声明 `provides: ["llm"]`，并通过已有进程与网络授权。
+- 选择按会话保存；槽被删除或配置失效时清除选择并回退普通 LLM。
+- 插件不可用时记录 `LORA_ADAPTER_UNAVAILABLE`；生成失败时记录
+  `LORA_ADAPTER_GENERATE_FAILED`、清除会话选择，并在同一轮重试普通 LLM。
+- 该能力仍要求宿主以 `dual_core` feature 构建、blueprint v3 显式启用 dual core，
+  且实验管线调用 `slot.expert.invoke`。
+- manifest 声明 `llm.generate_stream` 时，双核 Stable completion 会直接消费上述逐 token
+  协议；未声明时保持 v1 整段兼容行为。
+
+参考实现见
+[`examples/directory-plugin-llamacpp`](../../examples/directory-plugin-llamacpp/)。
 
 ---
 

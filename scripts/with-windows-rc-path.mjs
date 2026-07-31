@@ -7,8 +7,21 @@ import { spawn, spawnSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { resolveChatProDevRuntimeEnv } from './lib/dev-performance-runtime.mjs'
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+const [cmd, ...args] = process.argv.slice(2)
+
+if (!cmd) {
+  console.error('[with-windows-rc-path] missing command')
+  process.exit(1)
+}
+
+function isChatProDevLaunch(command, commandArgs) {
+  if (path.basename(command).toLowerCase() === 'tauri' && commandArgs[0] === 'dev')
+    return true
+  return commandArgs.some(arg => path.basename(arg).toLowerCase() === 'tauri-dev-split.mjs')
+}
 
 function findWindowsRcBinDir() {
   if (process.platform !== 'win32')
@@ -92,7 +105,15 @@ function pathHasExecutable(pathEnv, name) {
 
 const rcBin = findWindowsRcBinDir()
 const msvcBin = findMsvcLinkBinDir()
-const env = { ...process.env }
+const devRuntime = isChatProDevLaunch(cmd, args)
+  ? resolveChatProDevRuntimeEnv(repoRoot)
+  : { env: { ...process.env }, inferredRuntimePath: null }
+const env = devRuntime.env
+if (devRuntime.inferredRuntimePath) {
+  console.info(
+    `[with-windows-rc-path] using workspace llama-server: ${devRuntime.inferredRuntimePath}`,
+  )
+}
 const pathPrefix = [path.dirname(process.execPath)]
 prependCargoBin(pathPrefix)
 const localBin = path.join(repoRoot, 'node_modules', '.bin')
@@ -122,12 +143,6 @@ if (process.platform === 'win32') {
     )
     process.exit(1)
   }
-}
-
-const [cmd, ...args] = process.argv.slice(2)
-if (!cmd) {
-  console.error('[with-windows-rc-path] missing command')
-  process.exit(1)
 }
 
 const child = spawn(cmd, args, {

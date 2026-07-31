@@ -11,9 +11,12 @@ use oclive_kernel_runtime::{
 use std::path::Path;
 use std::process::{Command, Stdio};
 use std::time::Duration;
+use uuid::Uuid;
 
 const HEALTH_POLL_MS: u64 = 500;
-const HEALTH_POLL_MAX: u32 = 30;
+// Cold Windows starts can spend more than 15 seconds in SQLite verification
+// and DLL initialization before the loopback listener is available.
+const HEALTH_POLL_MAX: u32 = 60;
 const ATTACH_PROBE_MS: u64 = 300;
 const ATTACH_PROBE_MAX: u32 = 6;
 const ATTACH_POLL_MS: u64 = 100;
@@ -45,11 +48,25 @@ pub async fn wait_for_health(base_url: &str) -> bool {
     false
 }
 
+async fn wait_for_spawn_health(conn: &KernelConnection) -> bool {
+    for _ in 0..HEALTH_POLL_MAX {
+        if crate::kernel_attach::KernelHttpClient::probe_health(&conn.base_url).await {
+            return true;
+        }
+        if conn.try_wait_spawned_child() {
+            return false;
+        }
+        tokio::time::sleep(Duration::from_millis(HEALTH_POLL_MS)).await;
+    }
+    false
+}
+
 fn spawn_env(
     port: u16,
     roles_dir: &Path,
     app_data: &Path,
     profile_override: Option<&Path>,
+    api_token: Option<&str>,
 ) -> Vec<(String, String)> {
     let mut pairs = vec![
         ("OCLIVE_API_PORT".into(), port.to_string()),
@@ -63,6 +80,12 @@ fn spawn_env(
             roles_dir.to_string_lossy().into_owned(),
         ),
     ];
+    if let Some(token) = api_token.filter(|token| !token.trim().is_empty()) {
+        pairs.push((
+            oclive_kernel_host::http_api::ENV_API_TOKEN.into(),
+            token.to_string(),
+        ));
+    }
     if std::env::var(ENV_HTTP_API_MOCK_LLM)
         .ok()
         .is_some_and(|v| v == "1" || v.eq_ignore_ascii_case("true"))
@@ -122,6 +145,12 @@ pub async fn spawn_kernel(
     )
     .map_err(|e| e.to_string())?;
 
+    let api_token = conn.api_token_snapshot().unwrap_or_else(|| {
+        let token = Uuid::new_v4().to_string();
+        conn.set_api_token(token.clone());
+        token
+    });
+
     let mut cmd = Command::new(&candidate.binary);
     cmd.args(&candidate.extra_args)
         .arg("--api")
@@ -130,7 +159,13 @@ pub async fn spawn_kernel(
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null());
-    for (k, v) in spawn_env(port, roles_dir, &app_data, distro_profile_override) {
+    for (k, v) in spawn_env(
+        port,
+        roles_dir,
+        &app_data,
+        distro_profile_override,
+        Some(&api_token),
+    ) {
         cmd.env(k, v);
     }
 
@@ -144,7 +179,7 @@ pub async fn spawn_kernel(
         child,
     );
 
-    if wait_for_health(&conn.base_url).await {
+    if wait_for_spawn_health(conn).await {
         Ok(())
     } else {
         conn.kill_spawned_child();

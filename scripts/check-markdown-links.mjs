@@ -2,8 +2,9 @@
 /**
  * Validate local Markdown links relative to the file that contains them.
  *
- * The default scope is the human module start packs: they are a high-traffic
- * onboarding surface and should never send a contributor to a missing SSOT.
+ * The default scope is the human module start packs plus the critical AI/SSOT
+ * anchors: these are high-traffic surfaces and should never send a contributor
+ * to a missing SSOT.
  * Additional files/directories may be passed as positional arguments.
  *
  * Usage:
@@ -17,7 +18,18 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const DEFAULT_TARGETS = ['human-docs/modules'];
+const DEFAULT_TARGETS = [
+  'human-docs/modules',
+  'human-docs-en/modules',
+  'AGENTS.md',
+  'handoff/AI_READING_INDEX.md',
+  'handoff/AI_CHANGE_BOUNDARIES.md',
+  'handoff/MODULE_MAP_AND_HANDOFF.md',
+  'handoff/BUS_FACTOR_NOTES.md',
+  'handoff/README.md',
+  'creator-docs/NAMING_CONVENTIONS.md',
+  'creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md',
+];
 const SKIPPED_SCHEMES = /^(?:https?:|mailto:|data:|app:|vscode:|file:)/i;
 
 function listMarkdownFiles(targets, root = repoRoot) {
@@ -33,7 +45,14 @@ function listMarkdownFiles(targets, root = repoRoot) {
       return;
     }
     for (const entry of fs.readdirSync(absolutePath, { withFileTypes: true })) {
-      if (entry.name === 'archive' || entry.name === 'node_modules') continue;
+      if (
+        entry.name === 'archive' ||
+        entry.name === 'node_modules' ||
+        entry.name === 'target' ||
+        entry.name === 'dist' ||
+        entry.name === '.git' ||
+        entry.name.startsWith('.venv')
+      ) continue;
       visit(path.join(absolutePath, entry.name));
     }
   }

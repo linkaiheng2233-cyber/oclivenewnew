@@ -1,10 +1,10 @@
 <script setup lang="ts">
+import { useModalFocusRestore } from '@oclive/shared/composables/useModalFocusRestore'
+import { describeBindingOrUnbound, getPrimaryEffectiveAcceleratorForAction, loadUnifiedBindingsFile } from '@oclive/shared/lib/keybindings'
+import { SLOT_LAUNCHER_PALETTE } from '@oclive/shared/stores/pluginStore'
+import { useRoleStore } from '@oclive/shared/stores/roleStore'
 import { computed, ref, toRef } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useModalFocusRestore } from '@oclive/shared/composables/useModalFocusRestore'
-import { useRoleStore } from '@oclive/shared/stores/roleStore'
-import { SLOT_LAUNCHER_PALETTE } from '@oclive/shared/stores/pluginStore'
-import { describeBindingOrUnbound, getPrimaryEffectiveAcceleratorForAction, loadUnifiedBindingsFile } from '@oclive/shared/lib/keybindings'
 import PluginSlotEmbed from './PluginSlotEmbed.vue'
 
 const props = withDefaults(

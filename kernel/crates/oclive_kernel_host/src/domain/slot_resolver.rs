@@ -26,7 +26,8 @@ use crate::domain::user_emotion_analyzer::UserEmotionAnalyzer;
 use crate::models::PluginBackends;
 use oclive_kernel_contracts::SlotBackendFactoryPort;
 use oclive_validation::{
-    plugin_backends_for_slot_entry, slot_registry_instances_sorted, SlotRegistryEntry,
+    plugin_backends_for_slot_entry, slot_registry_entry_in_zone, slot_registry_instances_sorted,
+    SlotRegistryEntry,
 };
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -107,6 +108,11 @@ impl SlotResolver {
                 .push((key, registry.prompt_assembler_for_backends(&pb)));
         }
         for (key, entry) in slot_registry_instances_sorted(slot_registry, "llm") {
+            // Experimental-only LLMs are expert/adapter candidates, not members
+            // of Stable's normal multi-instance merge.
+            if !slot_registry_entry_in_zone(&entry, "stable") {
+                continue;
+            }
             out.llm_merge_policy = LlmMergePolicy::parse(entry.policy.as_deref());
             let mut pb = plugin_backends_for_slot_entry(&entry);
             if let Some(eff) = session_effective_backends {

@@ -1,17 +1,20 @@
 <script setup lang="ts">
-import { inject } from 'vue'
 import ChatInput from '@oclive/shared/components/chat/ChatInput.vue'
 import ChatMessageList from '@oclive/shared/components/chat/ChatMessageList.vue'
 import ChatPluginToolbarSlots from '@oclive/shared/components/ChatPluginToolbarSlots.vue'
 import HotkeyHost from '@oclive/shared/components/hotkey/HotkeyHost.vue'
 import KernelStatusBar from '@oclive/shared/components/KernelStatusBar.vue'
-import StartupWarningsBanner from '@oclive/shared/components/StartupWarningsBanner.vue'
+import ImmersiveModeIntro from '@oclive/shared/components/onboarding/ImmersiveModeIntro.vue'
+import ImmersiveUnlockBanner from '@oclive/shared/components/onboarding/ImmersiveUnlockBanner.vue'
+import InteractionModeBar from '@oclive/shared/components/onboarding/InteractionModeBar.vue'
+import PresetRolePicker from '@oclive/shared/components/onboarding/PresetRolePicker.vue'
 import PluginChatHeaderSlots from '@oclive/shared/components/PluginChatHeaderSlots.vue'
 import PluginSidebarSlots from '@oclive/shared/components/PluginSidebarSlots.vue'
 import PluginSlotEmbed from '@oclive/shared/components/PluginSlotEmbed.vue'
 import RoleSelector from '@oclive/shared/components/role/RoleSelector.vue'
 import TopBarSceneModeDialog from '@oclive/shared/components/scene/TopBarSceneModeDialog.vue'
 import ShortcutHelp from '@oclive/shared/components/ShortcutHelp.vue'
+import StartupWarningsBanner from '@oclive/shared/components/StartupWarningsBanner.vue'
 import Toast from '@oclive/shared/components/Toast.vue'
 import UiResizeHandle from '@oclive/shared/components/ui/UiResizeHandle.vue'
 import Win98TitleBar from '@oclive/shared/components/win98/Win98TitleBar.vue'
@@ -20,19 +23,16 @@ import {
   getLayoutWidths,
   setLeftRailWidth,
 } from '@oclive/shared/composables/useLayoutWidths'
-import ImmersiveModeIntro from '@oclive/shared/components/onboarding/ImmersiveModeIntro.vue'
-import ImmersiveUnlockBanner from '@oclive/shared/components/onboarding/ImmersiveUnlockBanner.vue'
-import InteractionModeBar from '@oclive/shared/components/onboarding/InteractionModeBar.vue'
-import PresetRolePicker from '@oclive/shared/components/onboarding/PresetRolePicker.vue'
+import { inject } from 'vue'
 import {
+  AutonomousSceneNotice,
   DebugPanel,
   MarketView,
   ModelManagerPanel,
-  SettingsView,
-  AutonomousSceneNotice,
   RoleDetailView,
   RoleplayAsidePanel,
   SceneTravelBars,
+  SettingsView,
   SimplePluginManagerPanel,
   TopBarMorePanel,
 } from '../../composables/useMainShell'
@@ -102,6 +102,7 @@ const {
   statusHeart,
   progressive,
   onSend,
+  onAdultAction,
   onSwitchRole,
   onChangeRelation,
   onPackImported,
@@ -148,7 +149,7 @@ function onLeftRailResize(deltaX: number) {
               :current-relation="roleStore.relationSelectValue"
               :roles="roleStore.roles"
               :relations="relationOptions"
-              :loading="chatListLoading"
+              :loading="chatListLoading || roleSwitching"
               @change-role="onSwitchRole"
               @change-relation="onChangeRelation"
             />
@@ -288,7 +289,12 @@ function onLeftRailResize(deltaX: number) {
                 @dismiss-post-reply="dismissPostReplySceneBar"
               />
               <InteractionModeBar />
-              <ChatInput ref="chatInputRef" :loading="chatStore.isLoading" @send="onSend" />
+              <ChatInput
+                ref="chatInputRef"
+                :loading="chatStore.isLoading"
+                @send="onSend"
+                @adult-action="onAdultAction"
+              />
             </section>
           </div>
         </div>

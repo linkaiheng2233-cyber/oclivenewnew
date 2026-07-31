@@ -1,11 +1,11 @@
 <script setup lang="ts">
+import { resolveVisualAdapter } from '@oclive/shared/adapters/visual'
+import CharacterInfo from '@oclive/shared/components/role/CharacterInfo.vue'
 /**
  * Sprint E placeholder: inner narrative visual shell (catalog `context: inner`).
  * Consumes the same `performance_directive` as social hero; no second LLM.
  */
 import { computed } from 'vue'
-import CharacterInfo from '@oclive/shared/components/role/CharacterInfo.vue'
-import { resolveVisualAdapter } from '@oclive/shared/adapters/visual'
 
 const props = defineProps<{
   roleId: string

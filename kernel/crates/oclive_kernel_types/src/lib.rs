@@ -3,7 +3,7 @@
 //! **Role**: kernel-shared **DTOs, error types, and config structs** (`Role`, `SendMessageRequest`, `AppError`, etc.); **contains no business logic or I/O**.
 //!
 //! **Upstream**: [`oclive_validation`](https://docs.rs/oclive_validation) (blueprint / manifest validation types such as `SlotRegistryEntry`).
-//! **Downstream**: `oclive_kernel_contracts`, `oclive_kernel_runtime`, and `src-tauri` model re-exports.
+//! **Downstream**: `oclive_kernel_contracts`, `oclive_kernel_runtime`, and `distros/desktop-tauri` model re-exports.
 //!
 //! **Decoupling note**: `oclive_validation` is a path dependency today; some manifest/blueprint types are
 //! re-exported for convenience. A future split may move validation-only types behind a narrower boundary
@@ -55,31 +55,54 @@ pub use policy::{EmotionPolicyConfig, MemoryPolicyConfig, PolicyConfig, PolicyCo
 pub use prompt::{PromptExtraSection, PromptInput};
 pub use slot_extension::SlotExtension;
 
-pub use oclive_validation::{SlotGroupEntry, SlotRegistryEntry};
+pub use oclive_validation::{
+    MemorySeedEntry, MemorySeedFile, PortableLongTermMemoryEntry, PortableMemoryFile,
+    PortablePersonaFile, SlotGroupEntry, SlotRegistryEntry, MEMORY_SEED_SCHEMA_VERSION,
+    PORTABLE_MEMORY_SCHEMA_VERSION, PORTABLE_PERSONA_SCHEMA_VERSION,
+};
 
 pub use models::{
+    adult_role::{
+        AdultPacingConfig, AdultRoleExtension, AdultSceneDirection,
+        ADULT_ROLE_EXTENSION_SCHEMA_VERSION,
+    },
     author_pack::{AuthorPackFile, AuthorRecommendedPlugin},
     chat::{ChatRequest, ChatResponse},
+    content_rating::ContentRating,
     dto::{
-        ClearAllSessionSlotOverridesRequest, ClearSessionSlotOverrideRequest, CreateEventRequest,
-        CreateEventResponse, DetectedEventDto, EmotionDto, ExportChatLogsRequest,
-        ExportChatLogsResponse, GenerateMonologueRequest, GenerateMonologueResponse,
-        GetPluginResolutionDebugRequest, GetRoleInfoRequest, GetUserIdentityStateRequest,
-        ImportProgress, JumpTimeRequest, JumpTimeResponse, LifeStateDto, MemoryItem,
-        PluginResolutionDebugInfo, PresenceMode, QueryEventsRequest, QueryMemoriesRequest,
-        RoleData, RoleInfo, RoleSummary, SaveRoleSlotRegistryRequest, SceneLabelEntry,
-        SendMessageRequest, SendMessageResponse, SetEvolutionFactorRequest,
+        AdultBeatDto, AdultInteractionAction, AdultInteractionRequest, AdultInteractionState,
+        AdultStageDirective, AdultStagedBeatDto, BeginAdultStageGenerationRequest,
+        BeginAdultStageGenerationResponse, CancelAdultStageGenerationRequest,
+        ClearAllSessionSlotOverridesRequest, ClearSessionSlotOverrideRequest,
+        CommitAdultStagedBeatRequest, CreateEventRequest, CreateEventResponse, DetectedEventDto,
+        EmotionDto, ExportChatLogsRequest, ExportChatLogsResponse, GenerateMonologueRequest,
+        GenerateMonologueResponse, GetPluginResolutionDebugRequest, GetRoleInfoRequest,
+        GetUserIdentityStateRequest, ImportProgress, JumpTimeRequest, JumpTimeResponse,
+        LifeStateDto, ListAdultStagedBeatsRequest, ListAdultStagedBeatsResponse, MemoryItem,
+        PluginResolutionDebugInfo, PortableStateExportResponse, PortableStateImportRequest,
+        PortableStateImportResponse, PortableStateRequest, PresenceMode, QueryEventsRequest,
+        QueryMemoriesRequest, RoleData, RoleInfo, RoleSummary, SaveRoleSlotRegistryRequest,
+        SceneLabelEntry, SendMessageRequest, SendMessageResponse, SetEvolutionFactorRequest,
         SetRemoteLifeEnabledRequest, SetRoleInteractionModeRequest, SetSceneUserIdentityRequest,
         SetSceneUserRelationRequest, SetSessionPluginBackendRequest, SetSessionSlotOverrideRequest,
         SetUserIdentityRequest, SetUserPresenceSceneRequest, SetUserRelationRequest,
-        SwitchSceneRequest, SwitchSceneResponse, TheaterCastRef, TheaterForkTemplate,
-        TheaterSceneRequest, TheaterSceneResponse, TheaterScriptLine, TheaterTweak,
-        TimeStateResponse, UserIdentityDto, UserIdentityStateResponse, UserRelationDto,
-        API_VERSION, OCLIVE_DEFAULT_IDENTITY_SENTINEL, OCLIVE_DEFAULT_RELATION_SENTINEL,
-        SCHEMA_VERSION,
+        StageAdultBeatRequest, SwitchSceneRequest, SwitchSceneResponse, TheaterCastRef,
+        TheaterForkTemplate, TheaterSceneRequest, TheaterSceneResponse, TheaterScriptLine,
+        TheaterTweak, TimeStateResponse, UserIdentityDto, UserIdentityStateResponse,
+        UserRelationDto, API_VERSION, OCLIVE_DEFAULT_IDENTITY_SENTINEL,
+        OCLIVE_DEFAULT_RELATION_SENTINEL, SCHEMA_VERSION,
     },
     emotion::Emotion,
     event::{Event, EventType},
+    execution_plan::{
+        CapabilityConsumerDiagnostic, CapabilityConsumerKind, CapabilityPermissionDiagnostic,
+        CapabilityProviderAvailability, CapabilityProviderDiagnostic, CapabilityProviderSource,
+        CapabilityRegistryDiagnostic, ExecutionPlan, ExecutionPlanCoreNode,
+        ExecutionPlanDiagnostic, ExecutionPlanDiagnosticSeverity, ExecutionPlanDiagnostics,
+        ExecutionPlanExtension, ExecutionPlanFlowTemplate, ExtensionPlanStatus,
+        GetExecutionPlanDiagnosticsRequest, ResourceCoordinationDiagnosticState,
+        EXECUTION_PLAN_DIAGNOSTIC_SCHEMA_VERSION,
+    },
     favorability::Favorability,
     interaction_mode::InteractionMode,
     kernel::{
@@ -87,9 +110,34 @@ pub use models::{
         ProfileCompat, ReplaceReason,
     },
     knowledge::{KnowledgeChunk, KnowledgeEventAugment, KnowledgeIndex, KnowledgePackConfigDisk},
+    local_model::{
+        LocalModelFileDto, LocalModelManifest, LOCAL_MODEL_MANIFEST_KIND,
+        LOCAL_MODEL_MANIFEST_SCHEMA_VERSION, LOCAL_MODEL_MANIFEST_SUFFIX,
+    },
+    lora_adapter::{
+        ActivateLocalLoraAdapterRequest, DeleteLocalLoraAdapterRequest,
+        ImportLocalLoraAdapterRequest, LocalLoraAdapterDto, LoraContentRating,
+    },
     memory::{Memory, MemoryContext},
     personality::PersonalityVector,
     plugin_backends::*,
+    resource_coordination::{
+        CpuSnapshot, GpuDeviceSnapshot, ResourceAdapterDescriptor, ResourceAdapterDiagnostic,
+        ResourceAdapterDomain, ResourceAdapterKind, ResourceAdapterOperation,
+        ResourceAdapterRegistration, ResourceAdapterRegistrationSource,
+        ResourceAdapterRuntimeState, ResourceAdapterTransitionRequest,
+        ResourceAdapterTransitionResponse, ResourceAdmissionDecision, ResourceAdmissionMode,
+        ResourceAdmissionQueueDiagnostics, ResourceAdmissionQueueItem, ResourceAdmissionRequest,
+        ResourceAdmissionResult, ResourceCandidatePlan, ResourceCandidatePlanState,
+        ResourceCandidateTransition, ResourceControlMode, ResourceCoordinationDiagnostics,
+        ResourceCoordinatorPolicy, ResourceExecutionTarget, ResourceLeaseDiagnostic,
+        ResourceLeaseState, ResourceOperatingProfile, ResourcePreemptionRecord,
+        ResourcePressureLevel, ResourcePriority, ResourceProfileSelection,
+        ResourceProfileSelectionSource, ResourceResidencyMode, ResourceResidencyPreference,
+        ResourceSchedulingCommand, ResourceSchedulingIntent, ResourceSchedulingIntentDiagnostics,
+        ResourceSchedulingIntentState, ResourceSchedulingStrategy, ResourceSnapshot,
+        SystemMemorySnapshot, RESOURCE_COORDINATION_SCHEMA_VERSION,
+    },
     role::{
         EvolutionBounds, EvolutionConfig, LifeState, MemoryConfig, PersonalityDefaults,
         PersonalitySource, Role, UserRelation,
@@ -102,4 +150,6 @@ pub use models::{
     role_settings_disk::{disk_role_settings_from_role, DiskRoleSettings},
     scene_disk::{DiskSceneConfig, DiskSceneTimeWindow},
     ui_config::{LayoutConfig, SlotConfig, ThemeConfig, UiConfig, UiSlots},
+    SceneContinuityConfig, SceneContinuityInitialState, SceneContinuityTimeWindow,
+    SceneContinuityTransition,
 };

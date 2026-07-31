@@ -15,9 +15,7 @@ pub fn save_role_chat_storage_config(
     config: &RolePackChatStorageConfig,
 ) -> Result<()> {
     let rid = role_id.trim();
-    if rid.is_empty() {
-        return Err(AppError::InvalidParameter("role_id empty".into()));
-    }
+    oclive_validation::validate_role_id(rid).map_err(AppError::InvalidParameter)?;
     let config_path = roles_dir.join(rid).join("config.json");
     if !config_path.is_file() {
         return Err(AppError::RoleNotFound(format!(

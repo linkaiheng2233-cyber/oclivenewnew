@@ -79,7 +79,7 @@ npm run build
 | **Flash profile 镜像** | **`cd oclive-vscode && npm run test:distro-profile-mirror`**（需姊妹仓路径） |
 | **Web 预览壳 E2E（A1.1b）** | **`npm run build && npm run test:e2e:preview`**（Playwright + `vite preview`；**CI 仅 Ubuntu `frontend`**）。**Windows 本地**：若内置 `webServer` 超时，请先 **`npm run preview -- --host 127.0.0.1 --port 4180 --strictPort`**，再在另一终端 **`$env:PW_TEST_USE_EXTERNAL='1'`**（PowerShell）后执行 **`npm run test:e2e:preview`** |
 
-**CI 对齐（重要）**：**`npm run check:release`** 已链 **`npm run test:unit`** 与 **`npm run verify:ui`**（见根 `package.json`）；**Playwright（`npm run test:e2e:preview`）不在 `check:release` 内**，仅在 Ubuntu **`frontend`** job 执行（见 `.github/workflows/ci.yml`）。有前端改动时，在 **Linux/macOS** 可另跑 **`npm run build && npm run test:e2e:preview`**，或确认 **Actions → frontend（ubuntu）** 已绿。完整发版勾选见 [handoff/archive/PRODUCT_RELEASE_CHECKLIST.md](handoff/archive/PRODUCT_RELEASE_CHECKLIST.md)。
+**CI 对齐（重要）**：**`npm run check:release`** 已链 **`npm run test:unit`** 与 **`npm run verify:ui`**（见根 `package.json`）；**Playwright（`npm run test:e2e:preview`）不在 `check:release` 内**，仅在 Ubuntu **`frontend`** job 执行（见 `.github/workflows/ci.yml`）。有前端改动时，在 **Linux/macOS** 可另跑 **`npm run build && npm run test:e2e:preview`**，或确认 **Actions → frontend（ubuntu）** 已绿。发版同时核对 CI、CHANGELOG、[兼容表](creator-docs/COMPATIBILITY.md) 与 [版本规则](creator-docs/development/RELEASE_VERSIONING.md)。
 
 **依赖审计**：`cargo udeps` 需 **nightly** toolchain。最近一次全 workspace 扫描（**2026-05-22**，`rustup run nightly cargo udeps --workspace --all-targets`）：**无未使用依赖**（`All deps seem to have been used`）。复现：`rustup toolchain install nightly` 后执行上述命令。
 
@@ -146,7 +146,7 @@ npm run build
 
 ### Dimension 5 基线（PR / 发版前）
 
-与 [`handoff/DIMENSION5_CLOSURE_SIGNOFF.md`](handoff/DIMENSION5_CLOSURE_SIGNOFF.md) 一致；**改动下列路径时须复跑**：
+Dimension 5 以 `node scripts/dimension5-acceptance.mjs --ci` 为准；**改动下列路径时须复跑**：
 
 | 路径 | 关联 ID | 建议命令 |
 |------|---------|----------|
@@ -182,20 +182,20 @@ cargo test -p oclive-cli --test kernel_ensure_plan_snapshot
 
 ## 破坏性变更（Breaking changes）
 
-**完整流程、兼容层要求、PR/迁移模板**：必读 **[`handoff/BREAKING_CHANGE_PROCESS.md`](handoff/BREAKING_CHANGE_PROCESS.md)**（§C2 工程纪律；与 [`PRODUCT_AND_KERNEL_GAP_CHECKLIST.md`](handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) 对齐）。
+**完整流程、兼容层要求、PR/迁移模板**：必读 **[`handoff/BREAKING_CHANGE_PROCESS.md`](handoff/BREAKING_CHANGE_PROCESS.md)**（§C2 工程纪律；产品执行项见 [`handoff/PRODUCT_LINE_TASK_BUCKETS.md`](handoff/PRODUCT_LINE_TASK_BUCKETS.md)）。
 
 摘要：
 
 1. **先开 issue**（或对大面变更开 RFC），说明对角色包、`plugin_backends`、HTTP OOCP / `invoke` DTO 的迁移影响；PR 描述中显式标注 **BREAKING**。  
 2. **PR 须带**：`kernel/crates/oclive_validation` 更新（若 manifest / `settings` 键变更）、**`PLUGIN_V1.md` / `ERROR_CODES.md` / `COMPATIBILITY.md`** 等触及项、**`creator-docs/`** / **`creator-docs-en/`** 镜像，以及 **`CHANGELOG.md` / `CHANGELOG.en.md`** 双语条目。  
-3. **审阅**：至少一名维护者确认 **兼容层与迁移路径**、CI 与 [PRODUCT_RELEASE_CHECKLIST.md](handoff/archive/PRODUCT_RELEASE_CHECKLIST.md) P0 行。
+3. **审阅**：至少一名维护者确认 **兼容层与迁移路径**、CI、CHANGELOG 与兼容表。
 
 ## 文档约定
 
 - **用户可见文案**：避免多处硬编码漂移（参见 [AGENTS.md](AGENTS.md) 中插件管理入口说明）。
 - **契约与表名**：以 `distros/chat-pro/roles/README_MANIFEST.md`、`RoleStorage::load_role` 及 **`kernel/crates/oclive_validation`** 为准；**禁止**虚构数据库表名。
 - **创作者文档索引**：[creator-docs/getting-started/DOCUMENTATION_INDEX.md](creator-docs/getting-started/DOCUMENTATION_INDEX.md)。
-- **发版与兼容**：semver bump 或契约变更时，核对 [`creator-docs/COMPATIBILITY.md`](creator-docs/COMPATIBILITY.md) 快照与一页表，并过 [handoff/archive/PRODUCT_RELEASE_CHECKLIST.md](handoff/archive/PRODUCT_RELEASE_CHECKLIST.md)「对外说明」；角色包版本规则见 [PACK_VERSIONING.md](creator-docs/role-pack/PACK_VERSIONING.md)。
+- **发版与兼容**：semver bump 或契约变更时，核对 [`creator-docs/COMPATIBILITY.md`](creator-docs/COMPATIBILITY.md)、[RELEASE_VERSIONING](creator-docs/development/RELEASE_VERSIONING.md) 与 CHANGELOG；角色包版本规则见 [PACK_VERSIONING.md](creator-docs/role-pack/PACK_VERSIONING.md)。
 
 ## 不要提交
 

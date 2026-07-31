@@ -72,7 +72,25 @@ fn serve_ocliveplugin_asset(
     };
     let uri = request.uri().to_string();
     let Some((plugin_id, rel)) = plugin_asset_from_request_uri(&uri) else {
-        return http_text(404, b"unknown uri".to_vec(), "text/plain; charset=utf-8");
+        let safe_uri = uri
+            .split(['?', '#'])
+            .next()
+            .unwrap_or_default()
+            .chars()
+            .filter(|c| !c.is_control())
+            .take(256)
+            .collect::<String>();
+        tracing::warn!(
+            target: "oclive_plugin",
+            error_code = "PLUGIN_ASSET_URI_INVALID",
+            request_uri = %safe_uri,
+            "plugin asset request URI rejected"
+        );
+        return http_text(
+            404,
+            b"PLUGIN_ASSET_URI_INVALID: see oclive_plugin logs".to_vec(),
+            "text/plain; charset=utf-8",
+        );
     };
     if state
         .directory_plugins
@@ -203,13 +221,12 @@ pub fn run() {
                 roles_for_watcher.clone(),
                 resource_dir,
             );
-            let roles_bg = roles_for_watcher.clone();
             let directory_plugins = app
                 .state::<state::SharedAppState>()
                 .directory_plugins
                 .clone();
             tauri::async_runtime::spawn(async move {
-                directory_plugins.rescan_plugin_roots(roles_bg.as_path());
+                directory_plugins.ensure_plugin_roots_scanned();
             });
             let hk = oclive_kernel_host::infrastructure::hotkey_bindings::HotkeyBindingsFile::load(
                 app.state::<state::SharedAppState>()
@@ -248,6 +265,9 @@ pub fn run() {
             api::llm_settings::list_ollama_models,
             api::llm_settings::list_cloud_models,
             api::llm_settings::save_llm_user_settings,
+            api::llm_settings::import_local_lora_adapter,
+            api::llm_settings::activate_local_lora_adapter,
+            api::llm_settings::delete_local_lora_adapter,
             api::llm_settings::get_global_ollama_model,
             api::llm_settings::set_global_ollama_model,
             api::llm_settings::probe_cloud_llm,
@@ -259,6 +279,11 @@ pub fn run() {
             api::settings::set_remote_fallback_to_builtin,
             // ?? chat ??
             api::chat::send_message,
+            api::chat::begin_adult_stage_generation,
+            api::chat::generate_adult_staged_beat,
+            api::chat::commit_adult_staged_beat,
+            api::chat::cancel_adult_stage_generation,
+            api::chat::list_adult_staged_beats,
             api::chat::get_role_pack_path,
             api::chat::list_chat_sessions,
             api::chat::fetch_chat_messages,
@@ -302,6 +327,8 @@ pub fn run() {
             api::role::slot_session::save_role_slot_registry,
             api::role::slot_session::apply_author_suggested_plugin_backends,
             api::role::slot_session::get_plugin_resolution_debug,
+            api::execution_plan::get_execution_plan_diagnostics,
+            api::resource_coordination::get_resource_coordination_diagnostics,
             api::role::find_role_asset_path,
             api::role::read_role_asset_bytes,
             api::role::expert::list_blueprint_includes,
@@ -311,6 +338,10 @@ pub fn run() {
             api::desktop_fs::write_user_text_file,
             // ?? role pack import/export ??
             api::role_pack::export_role_pack_command,
+            api::portable_state::export_portable_persona,
+            api::portable_state::import_portable_persona,
+            api::portable_state::export_portable_memory,
+            api::portable_state::import_portable_memory,
             api::role_pack::peek_role_pack_command,
             api::role_pack::import_role_pack_command,
             // ?? scene / presence ??

@@ -4,8 +4,23 @@ use super::config::RemotePluginHttpConfig;
 use super::jsonrpc::{self, RemoteRpcChannel};
 use crate::error::{AppError, Result};
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
+use oclive_kernel_contracts::LlmTokenSink;
 use serde_json::Value;
 use std::sync::Arc;
+
+fn client_for_endpoint(
+    client: Arc<reqwest::Client>,
+    cfg: &RemotePluginHttpConfig,
+) -> Arc<reqwest::Client> {
+    if !cfg.is_loopback_endpoint() {
+        return client;
+    }
+    let local = reqwest::Client::builder()
+        .no_proxy()
+        .build()
+        .unwrap_or_else(|_| client.as_ref().clone());
+    Arc::new(local)
+}
 
 /// Plugin sidecar (`OCLIVE_REMOTE_PLUGIN_URL`) shared endpoint — sync API over async reqwest.
 pub struct RemoteHttpClientBlocking {
@@ -23,6 +38,7 @@ impl RemoteHttpClientBlocking {
         grants: Arc<HighRiskGrantStore>,
         network_grant_id: Option<String>,
     ) -> Self {
+        let client = client_for_endpoint(client, &cfg);
         Self {
             client,
             cfg,
@@ -41,9 +57,11 @@ impl RemoteHttpClientBlocking {
         grants: Arc<HighRiskGrantStore>,
         network_grant_id: Option<String>,
     ) -> std::result::Result<Self, reqwest::Error> {
-        let client = reqwest::Client::builder()
-            .connect_timeout(cfg.connect_timeout())
-            .build()?;
+        let mut builder = reqwest::Client::builder().connect_timeout(cfg.connect_timeout());
+        if cfg.is_loopback_endpoint() {
+            builder = builder.no_proxy();
+        }
+        let client = builder.build()?;
         Ok(Self::new(Arc::new(client), cfg, grants, network_grant_id))
     }
 
@@ -125,6 +143,7 @@ impl RemoteHttpClientAsync {
         grants: Arc<HighRiskGrantStore>,
         network_grant_id: Option<String>,
     ) -> Self {
+        let client = client_for_endpoint(client, &cfg);
         Self {
             client,
             cfg,
@@ -168,6 +187,31 @@ impl RemoteHttpClientAsync {
     /// Same as [`Self::call`] with [`RemoteRpcChannel::Llm`].
     pub async fn call_llm(&self, method: &str, params: Value) -> Result<Value> {
         self.call(RemoteRpcChannel::Llm, method, params).await
+    }
+
+    /// Incremental JSON-RPC-over-NDJSON call on the LLM channel.
+    ///
+    /// # Errors
+    ///
+    /// Propagates authorization, transport, framing, and remote JSON-RPC errors.
+    pub async fn call_llm_stream(
+        &self,
+        method: &str,
+        params: Value,
+        on_token: LlmTokenSink,
+    ) -> Result<Value> {
+        jsonrpc::call_async_stream(
+            RemoteRpcChannel::Llm,
+            self.client.as_ref(),
+            &self.cfg.endpoint,
+            method,
+            params,
+            self.cfg.bearer_token.as_deref(),
+            self.network_grant(),
+            self.cfg.timeout,
+            on_token.as_ref(),
+        )
+        .await
     }
 
     /// # Errors

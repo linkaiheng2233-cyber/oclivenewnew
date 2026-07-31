@@ -1,6 +1,6 @@
 {
   "name": "家",
-  "welcome_message": "哦，你回来啦。我刚好缩在沙发上……才不是专门等你呢，别多想。你吃了没呀？",
+  "welcome_message": "哦，你回来啦……才不是专门等你呢。你吃了没呀？",
   "keywords": [
     "回家",
     "家里",
@@ -34,5 +34,76 @@
     "school": "锚点：用户还在学校/路上；她在家。可写课业、空调、发呆、嘴硬不想显得黏——具体情节每轮现编，勿套固定一句。",
     "company": "锚点：用户在公司；她在家。可写作息反差、嘴硬「你很闲吗」、其实偷偷看消息——勿重复相同酸度。",
     "park": "锚点：用户在外玩；她在家。可写羡慕/吐槽/假装不在意、或真的在忙自己的事——每次换切入点。"
+  },
+  "continuity": {
+    "default_state_id": "sofa_lounge",
+    "initial_states": [
+      {
+        "id": "sofa_lounge",
+        "weight": 3,
+        "sub_location": "客厅",
+        "anchor": "柔软的沙发和茶几",
+        "posture": "缩在沙发一角坐着",
+        "activity": "一边休息一边和你聊天"
+      },
+      {
+        "id": "kitchen_breakfast",
+        "weight": 2,
+        "time_windows": [{ "start": "06:00", "end": "10:00" }],
+        "sub_location": "厨房",
+        "anchor": "灶台上冒着热气的粥锅",
+        "posture": "站在灶台前",
+        "activity": "准备清淡的早餐"
+      },
+      {
+        "id": "dining_meal",
+        "weight": 2,
+        "time_windows": [{ "start": "17:00", "end": "21:00" }],
+        "sub_location": "餐桌旁",
+        "anchor": "餐桌上的碗筷和温热饭菜",
+        "posture": "拉开椅子坐着",
+        "activity": "慢慢吃饭并等你一起聊"
+      },
+      {
+        "id": "bedroom_wind_down",
+        "weight": 2,
+        "time_windows": [{ "start": "22:00", "end": "02:00" }],
+        "sub_location": "卧室",
+        "anchor": "床头暖灯和叠好的被子",
+        "posture": "靠在床头",
+        "activity": "准备休息"
+      },
+      {
+        "id": "balcony_breeze",
+        "weight": 1,
+        "time_windows": [{ "start": "18:00", "end": "23:30" }],
+        "sub_location": "阳台",
+        "anchor": "栏杆外的夜色和微风",
+        "posture": "靠着栏杆站着",
+        "activity": "吹风放空"
+      }
+    ],
+    "transitions": [
+      {
+        "to": "sofa_lounge",
+        "assistant_reply_markers": ["走到客厅沙发旁", "回到客厅沙发边", "在沙发上坐下"]
+      },
+      {
+        "to": "kitchen_breakfast",
+        "assistant_reply_markers": ["走进厨房", "来到厨房灶台前", "站到灶台前"]
+      },
+      {
+        "to": "dining_meal",
+        "assistant_reply_markers": ["走到餐桌旁", "来到餐桌边", "在餐桌旁坐下"]
+      },
+      {
+        "to": "bedroom_wind_down",
+        "assistant_reply_markers": ["走进卧室", "来到床边", "靠到床头"]
+      },
+      {
+        "to": "balcony_breeze",
+        "assistant_reply_markers": ["走到阳台", "来到阳台栏杆边", "靠在阳台栏杆上"]
+      }
+    ]
   }
 }

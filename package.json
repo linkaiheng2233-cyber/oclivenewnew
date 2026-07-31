@@ -34,31 +34,32 @@
     "tauri:build:theater": "node scripts/with-windows-rc-path.mjs node scripts/theater-env.mjs build",
     "bundle-kernel:tauri": "node scripts/bundle-kernel-for-tauri.mjs",
     "check:rust:fmt": "cargo fmt --all -- --check",
-    "check:rust:clippy": "cargo clippy --workspace --all-targets --all-features -- -D warnings",
-    "check:rust:test": "cargo test --workspace --lib",
-    "check:rust:integration": "node scripts/ensure-tauri-dist.mjs && cargo test --locked --workspace --tests",
-    "check:rust:test:all": "cargo test --workspace",
+    "check:rust:clippy": "cargo clippy --workspace --all-targets --all-features -j 1 -- -D warnings",
+    "check:rust:test": "cargo test --workspace --lib -j 1",
+    "check:rust:integration": "node scripts/ensure-tauri-dist.mjs && cargo test --locked --workspace --tests -j 1",
+    "check:rust:test:all": "cargo test --workspace -j 1",
     "check:rust": "node scripts/ensure-tauri-dist.mjs && node scripts/check-domain-layering.mjs && node scripts/check-changelog-parity.mjs && node scripts/check-doc-mirror.mjs && npm run check:rust:fmt && npm run check:rust:clippy && npm run check:rust:test",
     "check:license": "node scripts/check-license-readiness.mjs",
     "check:debt-marathon": "node scripts/check-debt-marathon.mjs",
+    "check:module-compat": "node scripts/check-module-compat.mjs && node scripts/validate-plugins-index.mjs",
     "test:cursor-marathon-hook": "node scripts/test-cursor-marathon-hook.mjs",
-    "check": "npm run build && npm run check:rust",
-    "check:release": "npm run build && npm run test:unit && npm run verify:ui && npm run verify:shared-i18n && npm run check:rust:fmt && npm run check:rust:clippy && npm run check:rust:test:all",
+    "check": "npm run lint && npm run build && npm run check:rust",
+    "check:release": "npm run lint && npm run build && npm run test:unit && npm run verify:ui && npm run verify:shared-i18n && npm run check:rust:fmt && npm run check:rust:clippy && npm run check:rust:test:all",
     "check:ci-local": "node scripts/dimension5-acceptance.mjs --ci && npm run check && npm run check:rust:integration",
     "verify:shared-i18n": "node scripts/verify-shared-i18n.mjs",
     "test:distro-profile-mirror": "node scripts/diff-vscode-distro-profile.mjs",
     "test:distro:smoke": "npm run test:distro-profile-mirror && npm run test:e2e:distro-kernel && npm run test:e2e:tauri-bundled-kernel",
     "scaffold:ui-plugin": "node scripts/scaffold-ui-slot-plugin.mjs",
     "test:unit": "npm run test:unit -w @oclive/desktop-shared && npm run test:unit -w @oclive/chat-pro",
-    "lint": "eslint distros/chat-pro/src distros/shared/src vite.base.config.ts",
+    "lint": "eslint distros/chat-pro/src distros/chat-pro/e2e distros/shared/src distros/theater/src distros/chat-pro/vite.config.ts distros/shared/vitest.config.ts distros/theater/vite.config.ts playwright.config.ts vite.base.config.ts vite.config.ts vite.plugin-bridge.config.ts",
     "format": "prettier --write .",
     "test:e2e:core-api-restart": "node scripts/e2e-core-api-restart.mjs",
     "test:e2e:cross-host": "node scripts/e2e-cross-host-memory.mjs",
     "test:e2e:distro-kernel": "node scripts/e2e-distro-kernel.mjs --scenario all",
     "test:theater:smoke": "node scripts/theater-prompt-drift.mjs && node scripts/theater-stranger-proxy.mjs && npm run test:unit -w @oclive/theater",
     "test:e2e:tauri-bundled-kernel": "node scripts/e2e-tauri-bundled-kernel.mjs",
-    "test:e2e:preview": "playwright test",
-    "test:e2e:tauri-native": "playwright test distros/chat-pro/e2e/tauri-native.spec.ts"
+    "test:e2e:preview": "npm run build:e2e && playwright test",
+    "test:e2e:tauri-native": "playwright test tauri-native.spec.ts"
   },
   "dependencies": {
     "@sentry/vue": "^10.47.0",
@@ -73,8 +74,7 @@
     "pinia": "^3.0.4",
     "pinia-plugin-persistedstate": "^4.7.1",
     "vue": "^3.5.13",
-    "vue-i18n": "^11.4.2",
-    "vue3-sfc-loader": "^0.9.5"
+    "vue-i18n": "^11.4.2"
   },
   "overrides": {
     "defu": "6.1.5",
@@ -96,6 +96,7 @@
     "typescript": "~5.8.0",
     "vite": "^6.0.3",
     "vitest": "^3.2.4",
+    "vue3-sfc-loader": "^0.9.5",
     "webdriverio": "^9.27.1"
   }
 }

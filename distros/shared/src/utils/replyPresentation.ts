@@ -1,5 +1,5 @@
 /**
- * Reply presentation aligned with Rust `SendMessageResponse` (`src-tauri/src/models/dto.rs`).
+ * Reply presentation aligned with Rust `SendMessageResponse` (`kernel/crates/oclive_kernel_types/src/models/dto.rs`).
  * Primary text field is **`reply`** (not `response`).
  * Knowledge pack hits this turn: `knowledge_chunks_in_prompt` (dev panel via `debugStore`).
  */

@@ -11,14 +11,14 @@ const ROLES_DIR = path.resolve(__dirname, "../../distros/chat-pro/roles");
 
 test("getPresetForRole caches by role pack mtime", () => {
   clearPresetCache();
-  const first = getPresetForRole(ROLES_DIR, "shimeng");
-  const second = getPresetForRole(ROLES_DIR, "shimeng");
+  const first = getPresetForRole(ROLES_DIR, "枫侵月");
+  const second = getPresetForRole(ROLES_DIR, "枫侵月");
   assert.equal(first, second);
-  assert.match(first, /诗梦|柳木/);
+  assert.match(first, /枫侵月/);
 });
 
 test("rolePackMtimeMs reflects tracked files", () => {
-  const mtime = rolePackMtimeMs(path.join(ROLES_DIR, "shimeng"));
+  const mtime = rolePackMtimeMs(path.join(ROLES_DIR, "枫侵月"));
   assert.ok(mtime > 0);
 });
 

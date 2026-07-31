@@ -1,12 +1,88 @@
-import { invokeWithFriendlyError } from './helpers'
 import type { DisplayMetricsDto, RoleInfo } from './role'
+import { invokeWithFriendlyError, toFriendlyErrorMessage } from './helpers'
 
 export interface SendMessageRequest {
   role_id: string
   user_message: string
   scene_id?: string | null
+  session_id?: string | null
+  adult?: AdultInteractionRequest | null
 }
 
+export type AdultInteractionAction = 'message' | 'continue' | 'exit'
+export type AdultInteractionState = 'inactive' | 'active' | 'ended'
+
+export interface AdultInteractionRequest {
+  confirmed_adult: boolean
+  global_enabled: boolean
+  role_enabled: boolean
+  interaction_active: boolean
+  action?: AdultInteractionAction
+  stage?: AdultStageDirective | null
+}
+
+export interface AdultStageDirective {
+  generation_id: string
+  sequence: number
+}
+
+export interface AdultBeatDto {
+  dialogue: string
+  narration: string
+  interaction_state: AdultInteractionState
+  next_beat_interval_ms?: number | null
+}
+
+export interface BeginAdultStageGenerationRequest {
+  role_id: string
+  scene_id?: string | null
+  session_id?: string | null
+  adult: AdultInteractionRequest
+}
+
+export interface BeginAdultStageGenerationResponse {
+  generation_id: string
+  next_sequence: number
+}
+
+export interface StageAdultBeatRequest {
+  role_id: string
+  scene_id?: string | null
+  session_id?: string | null
+  generation_id: string
+  sequence: number
+  adult: AdultInteractionRequest
+}
+
+export interface AdultStagedBeatDto {
+  generation_id: string
+  sequence: number
+  response: SendMessageResponse
+}
+
+export interface CommitAdultStagedBeatRequest {
+  role_id: string
+  scene_id?: string | null
+  session_id?: string | null
+  generation_id: string
+  sequence: number
+}
+
+export interface CancelAdultStageGenerationRequest {
+  role_id: string
+  scene_id?: string | null
+  session_id?: string | null
+  generation_id: string
+}
+
+export type ListAdultStagedBeatsRequest = CancelAdultStageGenerationRequest
+
+export interface ListAdultStagedBeatsResponse {
+  generation_id: string
+  active: boolean
+  next_sequence: number
+  beats: AdultStagedBeatDto[]
+}
 
 export interface EmotionDto {
   joy: number
@@ -18,12 +94,10 @@ export interface EmotionDto {
   neutral: number
 }
 
-
 export interface DetectedEventDto {
   event_type: string
   confidence: number
 }
-
 
 export type PresenceMode = 'co_present' | 'remote_stub' | 'remote_life'
 
@@ -36,6 +110,7 @@ export interface SendMessageResponse {
   /** @deprecated prefer `display_metrics.relation_summary` */
   relation_state: string
   reply: string
+  adult_beat?: AdultBeatDto | null
   emotion: EmotionDto
   /** Bot emotion label (lowercase) for this turn */
   bot_emotion: string
@@ -83,12 +158,10 @@ export type SwitchSceneResponse = RoleInfo & {
   scene_welcome?: string | null
 }
 
-
 export interface TimeStateResponse {
   virtual_time_ms: number
   iso_datetime: string
 }
-
 
 export interface JumpTimeResponse {
   virtual_time_ms: number
@@ -101,19 +174,17 @@ export interface JumpTimeResponse {
   autonomous_scene_to?: string | null
 }
 
-
 export interface ExportChatLogsResponse {
   content: string
   suggested_filename: string
 }
 
-
 export interface QueryMemoriesRequest {
   role_id: string
   limit: number
   offset: number
+  content_scope?: 'ordinary' | 'adult' | null
 }
-
 
 export interface MemoryItem {
   id: string
@@ -122,15 +193,14 @@ export interface MemoryItem {
   memory_type: string
   timestamp: string
   importance: number
+  content_scope: 'ordinary' | 'adult'
 }
-
 
 export interface QueryEventsRequest {
   role_id: string
   limit: number
   offset: number
 }
-
 
 export interface EventItem {
   id: number
@@ -142,13 +212,11 @@ export interface EventItem {
   description?: string | null
 }
 
-
 export interface CreateEventRequest {
   role_id: string
   event_type: string
   description?: string | null
 }
-
 
 export interface CreateEventResponse {
   id: number
@@ -158,11 +226,52 @@ export interface CreateEventResponse {
   description?: string | null
 }
 
-
 export async function sendMessage(
   req: SendMessageRequest,
 ): Promise<SendMessageResponse> {
   return invokeWithFriendlyError<SendMessageResponse>('send_message', { req })
+}
+
+export async function beginAdultStageGeneration(
+  req: BeginAdultStageGenerationRequest,
+): Promise<BeginAdultStageGenerationResponse> {
+  return invokeWithFriendlyError<BeginAdultStageGenerationResponse>(
+    'begin_adult_stage_generation',
+    { req },
+  )
+}
+
+export async function generateAdultStagedBeat(
+  req: StageAdultBeatRequest,
+): Promise<AdultStagedBeatDto> {
+  return invokeWithFriendlyError<AdultStagedBeatDto>(
+    'generate_adult_staged_beat',
+    { req },
+  )
+}
+
+export async function commitAdultStagedBeat(
+  req: CommitAdultStagedBeatRequest,
+): Promise<SendMessageResponse> {
+  return invokeWithFriendlyError<SendMessageResponse>(
+    'commit_adult_staged_beat',
+    { req },
+  )
+}
+
+export async function cancelAdultStageGeneration(
+  req: CancelAdultStageGenerationRequest,
+): Promise<void> {
+  return invokeWithFriendlyError<void>('cancel_adult_stage_generation', { req })
+}
+
+export async function listAdultStagedBeats(
+  req: ListAdultStagedBeatsRequest,
+): Promise<ListAdultStagedBeatsResponse> {
+  return invokeWithFriendlyError<ListAdultStagedBeatsResponse>(
+    'list_adult_staged_beats',
+    { req },
+  )
 }
 
 function parseSseBlock(block: string): { eventName: string, data: string } {
@@ -199,12 +308,14 @@ export async function sendMessageStream(
     method: 'POST',
     headers: {
       'content-type': 'application/json',
-      accept: 'text/event-stream',
+      'accept': 'text/event-stream',
     },
     body: JSON.stringify({
       role_path: rolePath,
       message: req.user_message,
       scene_id: req.scene_id ?? null,
+      session_id: req.session_id ?? null,
+      adult: req.adult ?? null,
     }),
     signal: options.signal,
   })
@@ -254,7 +365,7 @@ export async function sendMessageStream(
         }
       }
       else if (eventName === 'error') {
-        throw new Error(data.slice(0, 400))
+        throw new Error(toFriendlyErrorMessage(data.slice(0, 400)))
       }
     }
   }
@@ -263,18 +374,15 @@ export async function sendMessageStream(
   return finalResponse
 }
 
-
 export async function queryMemories(
   req: QueryMemoriesRequest,
 ): Promise<MemoryItem[]> {
   return invokeWithFriendlyError<MemoryItem[]>('query_memories', { req })
 }
 
-
 export async function queryEvents(req: QueryEventsRequest): Promise<EventItem[]> {
   return invokeWithFriendlyError<EventItem[]>('query_events', { req })
 }
-
 
 export async function createEvent(
   req: CreateEventRequest,
@@ -282,11 +390,9 @@ export async function createEvent(
   return invokeWithFriendlyError<CreateEventResponse>('create_event', { req })
 }
 
-
 export async function reloadPolicyPlugins(): Promise<string> {
   return invokeWithFriendlyError<string>('reload_policy_plugins', {})
 }
-
 
 export async function switchScene(
   roleId: string,
@@ -299,7 +405,6 @@ export async function switchScene(
   })
 }
 
-
 export async function setUserPresenceScene(
   roleId: string,
   sceneId: string,
@@ -309,13 +414,11 @@ export async function setUserPresenceScene(
   })
 }
 
-
 export async function getTimeState(roleId: string): Promise<TimeStateResponse> {
   return invokeWithFriendlyError<TimeStateResponse>('get_time_state', {
     roleId,
   })
 }
-
 
 export async function jumpTime(
   roleId: string,
@@ -326,7 +429,6 @@ export async function jumpTime(
     req: { role_id: roleId, timestamp_ms: timestampMs ?? null, preset: preset ?? null },
   })
 }
-
 
 export async function generateMonologue(roleId: string): Promise<string> {
   const res = await invokeWithFriendlyError<{ text: string }>(
@@ -366,4 +468,3 @@ export interface PluginBridgeSendMessageParams {
   /** Alias for `user_message` */
   text?: string
 }
-

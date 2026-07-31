@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import type { PluginVueCompileError } from '@oclive/shared/utils/compilePluginVueSfc'
-import { storeToRefs } from 'pinia'
-import { onMounted, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 import AsyncPluginVue from '@oclive/shared/components/AsyncPluginVue.vue'
 import PluginErrorPlaceholder from '@oclive/shared/components/PluginErrorPlaceholder.vue'
 import { useSinglePluginError } from '@oclive/shared/composables/usePluginError'
 import { usePluginStore } from '@oclive/shared/stores/pluginStore'
+import { storeToRefs } from 'pinia'
+import { onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const props = defineProps<{
   pluginId: string

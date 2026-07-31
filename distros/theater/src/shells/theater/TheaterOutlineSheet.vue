@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import UiButton from '@oclive/shared/components/ui/UiButton.vue'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import UiButton from '@oclive/shared/components/ui/UiButton.vue'
 import { getStoredOutline, setStoredOutline } from '../../composables/theater/useTheaterOutlineMode'
 
 const props = defineProps<{
@@ -43,8 +43,12 @@ function onSubmit() {
     <div class="outline-sheet__panel">
       <header class="outline-sheet__head">
         <h2>{{ t('theater.outline.title') }}</h2>
-        <p v-if="castLabel" class="outline-sheet__cast">{{ castLabel }}</p>
-        <p class="outline-sheet__lead">{{ t('theater.outline.lead') }}</p>
+        <p v-if="castLabel" class="outline-sheet__cast">
+          {{ castLabel }}
+        </p>
+        <p class="outline-sheet__lead">
+          {{ t('theater.outline.lead') }}
+        </p>
       </header>
       <textarea
         v-model="draft"

@@ -4,7 +4,7 @@
 >
 > **核心信条**：保证地基稳固才能走得远。但**地基是为了承载"惊喜"（官方剧场 demo / 发行版），不是为了自身完美**——见文末「§9 元纪律」。
 >
-> **创建**：2026-06-09 · **最后更新**：2026-07-14 · **维护者**：内核作者本人 · **状态**：活跃手册（§8 仅保留最近五轮，完整历史见 Git）
+> **创建**：2026-06-09 · **最后更新**：2026-07-18 · **维护者**：内核作者本人 · **状态**：活跃手册（§8 仅保留最近五轮，完整历史见 Git）
 
 ---
 
@@ -76,7 +76,7 @@
 
 ### 项目分量（一句话量级）
 
-12 个 Rust crate / 489 源文件 / 34 迁移 / 38 后端集成测试 / 180 核心单测全绿 / 6 关联仓库 / 150+ 文档;独立 AI 审查综合评级 **A−**。（实时：`node scripts/project-scale.mjs`）**由一人完成通常需要团队的工作量。**
+12 个 Rust crate；源码、迁移、测试和文档规模均以 `node scripts/project-scale.mjs` 的实时输出为准；门禁与质量结论必须引用本轮命令输出，不在本手册硬编码会漂移的数量或评级。**由一人完成通常需要团队的工作量。**
 
 ---
 
@@ -182,7 +182,7 @@ git status                                      # 确认工作树状态 / 与 or
 
 **正确性 checklist**
 - [ ] D-PORT-02：`PluginBackendRegistryPort` god-port 现状（22 方法 / 纯转发）
-- [ ] D-SLOT-01：各槽 `BuiltinV1/V2/Placeholder` 并行 + 选择逻辑散落 `BackendRegistry`
+- [ ] D-SLOT-01 防回退：`builtin_v2` 仍仅为读兼容 alias，不得重新长出独立 V2 / Placeholder 实现
 - [ ] 错误模型一致性（`AppError / TurnError / ProcessMessageError`）
 - [ ] 单实现 trait 普查（~24 contracts trait）：保留为 DI 端口 / 降级具体类型
 - [ ] `resolve_*` 命名混淆度 + rustdoc 覆盖率
@@ -336,11 +336,11 @@ npm run check:rust                               # fmt + clippy(-D warnings) + t
 
 | 轮次 | 日期 | 档位 | 基线 | 综合评分 | 关键发现 / 新增债 | 备注 |
 |------|------|------|------|----------|-------------------|------|
-| 19 | 2026-06-24 | 快 | PASS | A− | CI 全红修复(ripgrep/advisory-db/rustfmt/plugins-index/cli)+ bundle kernel/role 路径/quinn-proto 0.11.15; **新增维度七「条理与边界」**(防 AI 脱轨:路径 SSOT/AI 入口时效/边界明确/门禁纯度);修手册 dimension5 9·11→12 计数 | 发现待入账:`D-ORDER-*`(27 测仍 `../roles`、`cd fuzz`、Playwright testDir、check:license)、`D-DOC-*`(04_4.6 归档矛盾、THREE_DISTRO 导演状态、invoke 条数) |
 | 20 | 2026-06-25 | 半 | PASS* | A− | **新增** [`AI_VERIFICATION_PROTOCOL.md`](./AI_VERIFICATION_PROTOCOL.md)+AGENTS/BOUNDARIES/Playbook 挂链; DeepSeek 质量报告逐条核实(unwrap/scene_director 单测/dependabot 数等多处误报); 本地 dimension5 十三检绿; **GitHub CI main 仍红**(`cargo test --workspace`); 入账 D-MAINT-01·D-DOC-EN-01·D-ORDER-05/06 | *`gh run` 28118002153; 未跑全仓 `cargo test`; 冻结项未动; §9 不追覆盖率数字 |
 | 21 | 2026-06-25 | 快 | PASS | A− | **轮次 20 P0 根因定位+修复**: CI `rust` 硬门禁红 = **3 处 doctest 漂移**(`AgentInput` 加 5 字段后 contracts 示例缺字段; `RoleStorage`/`EmotionAnalyzer` doctest 引旧 crate 名 `oclivenewnew_tauri`),被「首个 doctest 失败即 abort」逐个掩盖; `--lib`/`check:rust` 不跑 doctest 是本地绿≠远程绿根因 → 新增 **G8** + 协议 §2.1 doctest 行 + Playbook doctest 盲区警示 | `cargo test --workspace --doc` 全绿; dimension5 十三检/layering/stale-paths/host lib 241 绿; 冻结项未动 |
 | 22 | 2026-06-25 | 半 | PASS | A− | **BUILD-TAURI-01** `beforeBuildCommand` 仓根路径修复 + dimension5 十四检 ratchet; **模式 2** playtest 5 轮 + prompt 人设纪律回流; **mapTheaterInvokeError**; **D-MAINT-01** dependabot 分支清理; **K-SUPPLY-02** Done; push main 验 CI | `tauri-run.cjs` chat-pro/theater 绿; MEGA-SD/TS 仍 §2 冻结 |
 | 23 | 2026-06-29 | 快 | PASS | A− | **D-DOC-LINK-01** 活跃区 archive 断链修复（A3/PRODUCT_RELEASE/GAP）+ dimension5 十三检口径统一 + BOUNDARIES 文档纪律节 + `check-stale-paths` closure ratchet | `node scripts/check-stale-paths.mjs --docs-only` 绿; 冻结项未动 |
+| 24 | 2026-07-18 | 全（工程收尾） | PASS（local） | A− | **D-QUALITY-LINT-01 Done**：补齐 Theater / Playwright / 配置 lint 范围并接入 `check` / `check:release`；清理死代码；修错误码生成器与漂移门禁兼容；固化 preview E2E 构建与 loopback proxy 绕行；文档 SSOT 对账并新增 **K-I18N-HTML-01 Deferred** | Dimension 5 **PASS (24 checks)**；shared **70** + Chat Pro/Theater **83** 前端测试；preview E2E **6**；workspace Rust integration 通过；文档镜像/路径/注册表/链接全绿；未声称远端 CI / 原生 WebView E2E |
 
 ---
 

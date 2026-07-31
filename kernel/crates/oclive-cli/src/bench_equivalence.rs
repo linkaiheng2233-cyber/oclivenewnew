@@ -98,6 +98,7 @@ fn chat_once(bin: &Path, port: u16, message: &str) -> Result<String> {
     child
         .args(["--api", "--port", &port.to_string()])
         .env("OCLIVE_HTTP_API_MOCK_LLM", "1")
+        .env("OCLIVE_API_TOKEN", crate::http_client::api_token())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
     let spawn_at = Instant::now();

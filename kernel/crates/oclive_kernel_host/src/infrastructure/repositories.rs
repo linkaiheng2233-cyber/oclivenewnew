@@ -29,6 +29,17 @@ impl MemoryRepository for SqliteMemoryRepository {
         self.inner.load_memories(role_id, limit).await
     }
 
+    async fn load_memories_for_context(
+        &self,
+        role_id: &str,
+        limit: i32,
+        include_adult: bool,
+    ) -> Result<Vec<Memory>> {
+        self.inner
+            .load_memories_for_context(role_id, limit, include_adult)
+            .await
+    }
+
     async fn count_memories(&self, role_id: &str) -> Result<i64> {
         self.inner.count_memories(role_id).await
     }
@@ -40,6 +51,18 @@ impl MemoryRepository for SqliteMemoryRepository {
         offset: i32,
     ) -> Result<Vec<Memory>> {
         self.inner.load_memories_paged(role_id, limit, offset).await
+    }
+
+    async fn load_memories_paged_for_scope(
+        &self,
+        role_id: &str,
+        limit: i32,
+        offset: i32,
+        scope: Option<&str>,
+    ) -> Result<Vec<(Memory, String)>> {
+        self.inner
+            .load_memories_paged_for_scope(role_id, limit, offset, scope)
+            .await
     }
 
     async fn save_memory_merged(

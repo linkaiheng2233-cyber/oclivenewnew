@@ -54,6 +54,7 @@ pub fn run_soak(root: &Path, args: &BenchArgs) -> Result<()> {
         ])
         .current_dir(root)
         .env("OCLIVE_HTTP_API_MOCK_LLM", "1")
+        .env("OCLIVE_API_TOKEN", crate::http_client::api_token())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
     let spawn_at = Instant::now();

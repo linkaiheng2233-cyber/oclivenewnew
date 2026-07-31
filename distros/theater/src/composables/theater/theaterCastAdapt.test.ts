@@ -1,3 +1,4 @@
+import type { TheaterSkeleton } from './theaterLogic'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   applyAdaptedToSkeleton,
@@ -16,7 +17,6 @@ import {
   skeletonToForkTemplates,
 } from './theaterCastAdapt'
 import { DEFAULT_THEATER_CAST_CONFIG } from './theaterCastConfig'
-import type { TheaterSkeleton } from './theaterLogic'
 
 const canonicalSkeleton: TheaterSkeleton = {
   scene: 'breakfast',

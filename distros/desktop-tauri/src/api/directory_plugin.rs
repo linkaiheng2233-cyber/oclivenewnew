@@ -2,6 +2,8 @@
 
 use crate::api::error::ApiError;
 use crate::api::error::{map_directory_rpc_url_error, CommandError};
+use crate::kernel_attach::KernelHttpClient;
+use crate::kernel_lifecycle::SharedKernelConnection;
 use oclive_kernel_host::infrastructure::directory_plugins::{
     bootstrap_dto::{self, collect_subscribed_host_events},
     dependency_report, find_plugin_asset_path, normalize_plugin_rel,
@@ -11,12 +13,16 @@ use oclive_kernel_host::infrastructure::plugin_state::{PluginStateFile, RolePlug
 use oclive_kernel_host::infrastructure::remote_plugin::{
     invoke_directory_plugin_rpc_blocking, RemoteRpcChannel,
 };
+use oclive_kernel_host::infrastructure::resource_adapters::{
+    COSYVOICE_ADAPTER_ID, LLAMA_RUNTIME_ADAPTER_ID,
+};
 use oclive_kernel_host::state::{AppState, SharedAppState};
+use oclive_kernel_types::{ResourceAdapterOperation, ResourceAdapterTransitionRequest};
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use semver::Version;
 use serde::Serialize;
-use serde_json::Value;
+use serde_json::{json, Value};
 use std::collections::hash_map::DefaultHasher;
 use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
@@ -126,32 +132,98 @@ pub struct DirectoryPluginInvokeDto {
     #[serde(default)]
     pub params: Value,
 }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
-#[tauri::command]
-pub async fn directory_plugin_invoke(
-    req: DirectoryPluginInvokeDto,
-    state: State<'_, SharedAppState>,
+
+pub(crate) async fn invoke_directory_plugin_rpc_with_resources(
+    shared: SharedAppState,
+    kernel: Option<SharedKernelConnection>,
+    plugin_id: String,
+    method: String,
+    mut params: Value,
 ) -> Result<Value, CommandError> {
-    let pid = req.plugin_id.trim().to_string();
-    if pid.is_empty() {
-        return Err(ApiError::InvalidParameter {
-            message: "plugin_id required".into(),
+    let mut resource_admission =
+        oclive_kernel_host::service::prepare_directory_plugin_resource_rpc(
+            shared.as_ref(),
+            &plugin_id,
+            &method,
+            &mut params,
+        )
+        .await;
+    let needs_kernel_preemption =
+        oclive_kernel_host::service::directory_plugin_resource_rpc_needs_kernel_preemption(
+            &plugin_id,
+            &method,
+            &params,
+            &resource_admission,
+        );
+    let mut kernel_preempted = resource_admission.external_performance_preemption_active();
+    if needs_kernel_preemption {
+        if let Some(kernel) = kernel.as_ref() {
+            let request = ResourceAdapterTransitionRequest {
+                adapter_id: LLAMA_RUNTIME_ADAPTER_ID.into(),
+                operation: ResourceAdapterOperation::Suspend,
+                requested_by_adapter_id: COSYVOICE_ADAPTER_ID.into(),
+                profile_id: None,
+                expected_revision: None,
+                reason: Some("bundled CosyVoice foreground speech requested GPU ownership".into()),
+            };
+            match KernelHttpClient::transition_resource_adapter_via_http(kernel, &request).await {
+                Ok(_) => {
+                    for attempt in 0..20 {
+                        if attempt > 0 {
+                            tokio::time::sleep(Duration::from_millis(100)).await;
+                        }
+                        resource_admission =
+                            oclive_kernel_host::service::prepare_directory_plugin_resource_rpc(
+                                shared.as_ref(),
+                                &plugin_id,
+                                &method,
+                                &mut params,
+                            )
+                            .await;
+                        if !matches!(
+                            resource_admission,
+                            oclive_kernel_host::service::DirectoryPluginResourceAdmission::Denied(
+                                _
+                            )
+                        ) {
+                            break;
+                        }
+                    }
+                    kernel_preempted =
+                        resource_admission.mark_external_performance_preemption(&mut params);
+                    if !kernel_preempted {
+                        request_kernel_performance_resume(kernel).await;
+                    }
+                }
+                Err(error) => tracing::warn!(
+                    target: "oclive_resource",
+                    error_code = "KERNEL_RESOURCE_PREEMPTION_FAILED",
+                    %error,
+                    "authoritative kernel could not yield Performance LLM to bundled voice"
+                ),
+            }
         }
-        .into());
     }
-    let method = req.method.trim().to_string();
-    let params = req.params;
-    let shared = state.inner().clone();
-    tokio::task::spawn_blocking(move || {
-        let url = shared
+    if let oclive_kernel_host::service::DirectoryPluginResourceAdmission::Denied(admission) =
+        resource_admission
+    {
+        return Ok(json!({
+            "ok": false,
+            "reason": "gpu_admission_denied",
+            "retryable": true,
+            "message": "Resource Coordinator denied the bundled voice runtime because GPU headroom is below the active safety policy",
+            "resource_admission": admission,
+        }));
+    }
+    let rpc_state = shared.clone();
+    let rpc_result = match tokio::task::spawn_blocking(move || {
+        let url = rpc_state
             .directory_plugins
-            .ensure_rpc_url(&pid)
-            .map_err(|e| map_directory_rpc_url_error(&pid, e))?;
-        let timeout_ms = shared
+            .ensure_rpc_url(&plugin_id)
+            .map_err(|e| map_directory_rpc_url_error(&plugin_id, e))?;
+        let timeout_ms = rpc_state
             .directory_plugins
-            .rpc_timeout_override_ms(&pid, &method);
+            .rpc_timeout_override_ms(&plugin_id, &method);
         invoke_directory_plugin_rpc_blocking(
             &url,
             &method,
@@ -162,7 +234,79 @@ pub async fn directory_plugin_invoke(
         .map_err(Into::into)
     })
     .await
-    .map_err(|e| crate::error::AppError::Unknown(format!("directory_plugin_invoke join: {e}")))?
+    {
+        Ok(result) => result,
+        Err(error) => Err(CommandError::from(
+            ApiError::Io {
+                message: format!("directory_plugin_invoke join: {error}"),
+            }
+            .to_string(),
+        )),
+    };
+    let finalization = oclive_kernel_host::service::finalize_directory_plugin_resource_rpc(
+        shared.as_ref(),
+        resource_admission,
+        rpc_result.as_ref().ok(),
+    );
+    if kernel_preempted
+        && finalization
+            == oclive_kernel_host::service::DirectoryPluginResourceFinalization::Released
+    {
+        if let Some(kernel) = kernel.as_ref() {
+            request_kernel_performance_resume(kernel).await;
+        }
+    }
+    rpc_result
+}
+
+pub(crate) async fn request_kernel_performance_resume(
+    kernel: &crate::kernel_lifecycle::KernelConnection,
+) {
+    let request = ResourceAdapterTransitionRequest {
+        adapter_id: LLAMA_RUNTIME_ADAPTER_ID.into(),
+        operation: ResourceAdapterOperation::Resume,
+        requested_by_adapter_id: COSYVOICE_ADAPTER_ID.into(),
+        profile_id: None,
+        expected_revision: None,
+        reason: Some("bundled CosyVoice confirmed GPU resource release".into()),
+    };
+    if let Err(error) =
+        KernelHttpClient::transition_resource_adapter_via_http(kernel, &request).await
+    {
+        tracing::warn!(
+            target: "oclive_resource",
+            error_code = "KERNEL_RESOURCE_RECOVERY_FAILED",
+            %error,
+            "authoritative kernel could not recover Performance LLM after bundled voice"
+        );
+    }
+}
+
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
+#[tauri::command]
+pub async fn directory_plugin_invoke(
+    req: DirectoryPluginInvokeDto,
+    state: State<'_, SharedAppState>,
+    kernel: State<'_, SharedKernelConnection>,
+) -> Result<Value, CommandError> {
+    let pid = req.plugin_id.trim().to_string();
+    if pid.is_empty() {
+        return Err(ApiError::InvalidParameter {
+            message: "plugin_id required".into(),
+        }
+        .into());
+    }
+    let method = req.method.trim().to_string();
+    invoke_directory_plugin_rpc_with_resources(
+        state.inner().clone(),
+        Some(kernel.inner().clone()),
+        pid,
+        method,
+        req.params,
+    )
+    .await
 }
 
 #[derive(Debug, Clone, Serialize)]

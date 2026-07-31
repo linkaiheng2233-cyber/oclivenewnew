@@ -24,6 +24,7 @@ cargo build -p oclivenewnew-tauri
 
 ```powershell
 $env:OCLIVE_HTTP_API_MOCK_LLM = "1"
+$env:OCLIVE_API_TOKEN = "replace-with-a-long-random-token"
 $env:RUST_LOG = "info"
 .\target\debug\oclivenewnew-tauri.exe --api
 ```
@@ -32,6 +33,7 @@ $env:RUST_LOG = "info"
 
 ```bash
 export OCLIVE_HTTP_API_MOCK_LLM=1
+export OCLIVE_API_TOKEN="replace-with-a-long-random-token"
 export RUST_LOG=info
 ./target/debug/oclivenewnew-tauri --api
 ```
@@ -40,6 +42,13 @@ export RUST_LOG=info
 
 ```bash
 curl -s http://127.0.0.1:8420/health
+```
+
+`/health` 始终可公开探活；无头宿主默认必须设置 `OCLIVE_API_TOKEN`，其余路由调用时带 `x-oclive-api-token` 请求头。只有隔离的本地开发环境才能显式设置 `OCLIVE_API_ALLOW_UNAUTHENTICATED=1` 跳过认证。OOCP 与重启烟测脚本会读取同名变量并自动附加请求头。
+
+```powershell
+$env:OCLIVE_API_TOKEN = "replace-with-a-long-random-token"
+curl -H "x-oclive-api-token: $env:OCLIVE_API_TOKEN" http://127.0.0.1:8420/role_info
 ```
 
 ### 2. OOCP 黑盒套件（推荐）
@@ -88,6 +97,7 @@ cargo build -p oclivenewnew-tauri
 
 ```powershell
 $env:OCLIVE_HTTP_API_MOCK_LLM = "1"
+$env:OCLIVE_API_TOKEN = "replace-with-a-long-random-token"
 $env:RUST_LOG = "info"
 .\target\debug\oclivenewnew-tauri.exe --api
 ```
@@ -96,6 +106,7 @@ $env:RUST_LOG = "info"
 
 ```bash
 export OCLIVE_HTTP_API_MOCK_LLM=1
+export OCLIVE_API_TOKEN="replace-with-a-long-random-token"
 export RUST_LOG=info
 ./target/debug/oclivenewnew-tauri --api
 ```
@@ -104,6 +115,13 @@ Default **`http://127.0.0.1:8420`** (`OCLIVE_API_PORT` or `--port` to override):
 
 ```bash
 curl -s http://127.0.0.1:8420/health
+```
+
+`/health` is always public for readiness probes. Headless hosts must set `OCLIVE_API_TOKEN` by default and send it as `x-oclive-api-token` to every other route. Only isolated local development may explicitly bypass authentication with `OCLIVE_API_ALLOW_UNAUTHENTICATED=1`. The OOCP and restart smoke scripts read the same variable and attach the header automatically.
+
+```bash
+export OCLIVE_API_TOKEN="replace-with-a-long-random-token"
+curl -H "x-oclive-api-token: $OCLIVE_API_TOKEN" http://127.0.0.1:8420/role_info
 ```
 
 ### 2. OOCP black-box suite (recommended)

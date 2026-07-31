@@ -3,29 +3,69 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>mumu role detail card</title>
+    <title>Mumu 角色详情</title>
     <style>
-      :root {
-        color-scheme: light dark;
-        font-family: "Segoe UI", system-ui, sans-serif;
-      }
-      body {
-        margin: 0;
-        padding: 12px;
-        font-size: 13px;
-        line-height: 1.45;
-      }
-      .card {
-        border: 1px solid #d9d9d9;
-        border-radius: 12px;
-        padding: 10px;
-      }
+      * { box-sizing: border-box; }
+      body { margin: 0; font: 12px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; color: #4b443b; background: transparent; }
+      .card { min-height: 170px; padding: 11px; border: 1px solid #ddd2c4; border-radius: 12px; background: #faf6ef; }
+      header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; } h3 { margin: 0; font-size: 14px; } header p { margin: 1px 0 0; color: #81776a; }
+      button { border: 1px solid #d8cdbc; border-radius: 7px; padding: 4px 8px; color: inherit; background: #fffaf3; cursor: pointer; }
+      dl { margin: 0; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 7px; } dl div { padding: 6px; border: 1px solid #e3d9cb; border-radius: 8px; background: #fffaf5; }
+      dt { color: #81776a; } dd { margin: 2px 0 0; overflow-wrap: anywhere; } .wide { grid-column: 1/-1; } #error { color: #a33; }
     </style>
   </head>
   <body>
-    <div class="card">
-      <strong>mumu role.detail</strong>
-      <p>当前运行于 iframe 回退模式；请启用 Vue 组件以获得完整卡片展示。</p>
-    </div>
+    <section class="card" aria-label="mumu 角色详情扩展卡片">
+      <header><div><h3 id="name">mumu</h3><p id="version">正在读取角色资料…</p></div><button id="refresh" type="button">刷新</button></header>
+      <dl>
+        <div><dt>关系</dt><dd id="relation">—</dd></div><div><dt>阶段</dt><dd id="stage">—</dd></div>
+        <div><dt>模式</dt><dd id="mode">—</dd></div><div><dt>异地心声</dt><dd id="remote">—</dd></div>
+        <div class="wide"><dt>场景</dt><dd id="scene">—</dd></div><div class="wide"><dt>此刻状态</dt><dd id="life">—</dd></div>
+      </dl>
+      <p id="error" role="status"></p>
+    </section>
+    <script>
+      (() => {
+        const bridge = window.OclivePluginBridge
+        const text = (id, value) => { document.querySelector(id).textContent = value }
+        let activeRoleId = ''
+        let refreshGeneration = 0
+        async function refresh(preferredRoleId) {
+          const generation = ++refreshGeneration
+          text('#error', '')
+          try {
+            const roles = await bridge.invoke('list_roles', {})
+            if (generation !== refreshGeneration) return
+            const roleId = String(preferredRoleId || activeRoleId || roles?.[0]?.id || '').trim()
+            if (!roleId) throw new Error('未找到当前角色')
+            activeRoleId = roleId
+            const info = await bridge.invoke('get_role_info', { role_id: roleId, session_id: null })
+            if (generation !== refreshGeneration) return
+            text('#name', String(info?.role_name || roles[0]?.name || roleId))
+            text('#version', `${roleId} · v${String(info?.version || '—')}`)
+            const relId = String(info?.current_user_relation || info?.default_relation || '')
+            const rel = (Array.isArray(info?.user_relations) ? info.user_relations : []).find(x => x?.id === relId)
+            text('#relation', String(rel?.name || relId || '—'))
+            text('#stage', String(info?.display_metrics?.relation_summary || info?.relation_state || '—'))
+            text('#mode', info?.interaction_mode === 'pure_chat' ? '纯聊' : '沉浸')
+            const userScene = String(info?.user_presence_scene || '')
+            const roleScene = String(info?.current_scene || '')
+            text('#remote', info?.remote_life_enabled === true ? (userScene && roleScene && userScene !== roleScene ? '开（异地）' : '开（同地）') : '关')
+            text('#scene', userScene && roleScene && userScene !== roleScene ? `${userScene}（你） / ${roleScene}（角色）` : (userScene || roleScene || '—'))
+            text('#life', String(info?.current_life?.label || '暂无日程'))
+          } catch (reason) {
+            if (generation !== refreshGeneration) return
+            text('#error', reason instanceof Error ? reason.message : String(reason))
+          }
+        }
+        document.querySelector('#refresh').addEventListener('click', () => void refresh())
+        if (!bridge) text('#error', '宿主桥接不可用')
+        else {
+          for (const event of ['role:switched', 'role:info:updated', 'message:sent', 'appearance:changed'])
+            void bridge.listen(event, payload => void refresh(payload?.roleId)).catch(reason => text('#error', String(reason)))
+          void refresh()
+        }
+      })()
+    </script>
   </body>
 </html>

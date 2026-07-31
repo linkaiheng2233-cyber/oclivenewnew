@@ -1,12 +1,12 @@
+import type { TheaterSceneRequest, TheaterScriptLine } from '@oclive/shared/api/theater'
 import type { TheaterCastConfig } from './theaterCastConfig'
 import type { TheaterScenePreset } from './theaterSceneCatalog'
 import {
   generateTheaterScene,
-  type TheaterSceneRequest,
-  type TheaterScriptLine,
+
 } from '@oclive/shared/api/theater'
-import { normalizePairRelationId, resolvePairRelationHint } from './theaterPairRelation'
 import { SCENE_GEN_TIMEOUT_MS, timeoutReject } from './theaterLogic'
+import { normalizePairRelationId, resolvePairRelationHint } from './theaterPairRelation'
 
 export const OUTLINE_STORAGE_KEY = 'oclive.theater.outline.v1'
 
@@ -53,7 +53,7 @@ export async function requestOutlineScene(
   outline: string,
   cast: TheaterCastConfig,
   preset: TheaterScenePreset,
-): Promise<{ beats: TheaterScriptLine[]; source: string; failureReason?: string }> {
+): Promise<{ beats: TheaterScriptLine[], source: string, failureReason?: string }> {
   const trimmed = outline.trim()
   if (!trimmed)
     throw new Error('outline_empty')

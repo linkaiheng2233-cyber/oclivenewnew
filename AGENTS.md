@@ -14,17 +14,19 @@
 
 | 优先级 | 文档 | 用途 |
 |--------|------|------|
-| 1 | [handoff/AI_CHANGE_BOUNDARIES.md](handoff/AI_CHANGE_BOUNDARIES.md) | **G1–G16** · 代码编写纪律 · **文档编写纪律** |
+| 1 | [handoff/AI_CHANGE_BOUNDARIES.md](handoff/AI_CHANGE_BOUNDARIES.md) | **G1–G17** · 代码编写纪律 · 关联改动闭环 · **文档编写纪律** |
 | 2 | [handoff/MODULE_MAP_AND_HANDOFF.md](handoff/MODULE_MAP_AND_HANDOFF.md) | 模块定义 · 六槽/设施/独立通道 · **逐槽关系** |
 | 3 | [creator-docs/NAMING_CONVENTIONS.md](creator-docs/NAMING_CONVENTIONS.md) §4.2 | canonical import |
 | 4 | [handoff/BUS_FACTOR_NOTES.md](handoff/BUS_FACTOR_NOTES.md) | `process_message` · DB · 错误码 **文件锚点** |
 | 5 | [handoff/AI_VERIFICATION_PROTOCOL.md](handoff/AI_VERIFICATION_PROTOCOL.md) | 带数字的审查 / 汇报 **须核实** |
 | 6 | [handoff/README.md](handoff/README.md) §文档分责 | 动文档前查 SSOT · **禁止冗余新建** |
-| 7 | [`.cursor/rules/oclivenewnew.mdc`](.cursor/rules/oclivenewnew.mdc) | 7 条硬约束镜像 |
+| 7 | [`.cursor/rules/oclivenewnew.mdc`](.cursor/rules/oclivenewnew.mdc) | 10 条硬约束镜像 |
 | — | [`.cursor/skills/oclive-dev-pipeline/SKILL.md`](.cursor/skills/oclive-dev-pipeline/SKILL.md) | **七阶段开发流水线（OCLive 定制层）**；通用框架 `~/.cursor/skills/dev-pipeline/` |
 | — | [`.cursor/skills/oclive-debt-marathon/SKILL.md`](.cursor/skills/oclive-debt-marathon/SKILL.md) · [`handoff/debt-marathon/`](handoff/debt-marathon/README.md) | **债偿还马拉松**：长流程计划书 · 分阶段子 Agent · 波次日志 |
 
 **文档纪律摘要（G10–G16）**：模块关系 **只**改 MODULE_MAP；无 RFC/关键决策 **不新建**顶层 `.md`；**先读**关联 SSOT 再写（可以慢）；**链接代替复制**；人类长文在 `human-docs/` / `creator-docs/`，本文 **不**堆架构长节。
+
+**关联改动摘要（G17）**：按能力核对生产者 → 契约 → 适配/权限 → 消费者 → 状态/回退 → 测试；最小改动面不等于只改单端。涉及 Chat Pro / 目录插件 / 插槽时跑 `npm run check:module-compat`。
 
 ---
 
@@ -86,4 +88,4 @@
 - **Remotion 演示**：独立仓 `oclive-remotion-demo`，勿在主仓根跑 `npm run preview`
 - **姊妹仓**：`oclive-pack-editor` · `oclive-launcher` · `oclive-plugin-market` · `oclive-vscode`（各仓 `AGENTS.md` 指回本索引）
 
-**禁止当 truth**：`handoff/archive/*` · `handoff/04_4.6_PROJECT_TRUTH_CHECKLIST.md`（G3）
+**禁止当 truth**：`handoff/archive/*`（含已归档的 `04_4.6_PROJECT_TRUTH_CHECKLIST.md`，G3）

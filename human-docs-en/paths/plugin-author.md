@@ -2,7 +2,7 @@
 
 > **Audience**: Engineers building directory plugins or Remote backends.  
 > **Time**: ~1–2 days to onboard.  
-> **Chinese SSOT**: [`human-docs/paths/plugin-author.md`](../human-docs/paths/plugin-author.md)  
+> **Chinese SSOT**: [`human-docs/paths/plugin-author.md`](../../human-docs/paths/plugin-author.md)
 > **Next**: Pick a slot → [modules/slots/](../modules/slots/)
 
 ---
@@ -16,8 +16,8 @@
    - LLM backend → [modules/slots/llm.md](../modules/slots/llm.md)
    - Agent / MCP → [modules/slots/agent.md](../modules/slots/agent.md)
    - Memory backend → [modules/slots/memory.md](../modules/slots/memory.md)
-5. [PLUGIN_AUTHOR_LEARNING_PATH](../creator-docs/plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)
-6. Example [`examples/directory-plugin-minimal/`](../examples/directory-plugin-minimal/)
+5. [PLUGIN_AUTHOR_LEARNING_PATH](../../creator-docs/plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)
+6. Example [`examples/directory-plugin-minimal/`](../../examples/directory-plugin-minimal/)
 
 ---
 
@@ -25,11 +25,11 @@
 
 | Topic | Doc |
 |-------|-----|
-| manifest | [PLUGIN_V1](../creator-docs/plugin-and-architecture/PLUGIN_V1.md) |
+| manifest | [PLUGIN_V1](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md) |
 | permissions | `process:spawn`, `network:*` require user grant |
 | six-slot wiring | blueprint `slot_registry` or legacy `plugin_backends` |
 | packaging | `pack_plugin` Tauri command → `.oclive-plugin` |
-| module definitions SSOT | [MODULE_MAP](../handoff/MODULE_MAP_AND_HANDOFF.md) — **do not copy tables into human-docs** |
+| module definitions SSOT | [MODULE_MAP](../../handoff/MODULE_MAP_AND_HANDOFF.md) — **do not copy tables into human-docs** |
 
 ---
 
@@ -44,5 +44,5 @@
 ## Deep links
 
 - [modules/ picker](../modules/README.md)
-- [DIRECTORY_PLUGINS](../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md)
-- [REMOTE_PLUGIN_PROTOCOL](../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)
+- [DIRECTORY_PLUGINS](../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md)
+- [REMOTE_PLUGIN_PROTOCOL](../../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)

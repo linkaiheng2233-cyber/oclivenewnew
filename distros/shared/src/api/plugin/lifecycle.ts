@@ -1,5 +1,5 @@
-import { invokeWithFriendlyError } from '../helpers'
 import type { PackUiConfig, PackUiSlotConfig, PackUiSlots } from '../role'
+import { invokeWithFriendlyError } from '../helpers'
 
 export const OCLIVE_DEFAULT_RELATION_SENTINEL = '__oclive_default__'
 
@@ -65,6 +65,8 @@ export interface PluginUiSlotInfo {
   entry: string
   /** manifest `vueComponent`; host compiles Vue when set; on failure falls back to `url` iframe */
   vueComponent?: string | null
+  /** Host events declared by this slot's manifest `bridge.events`. */
+  bridgeEvents: string[]
   url: string
 }
 
@@ -83,9 +85,9 @@ export async function readPluginAssetText(
 export interface DirectoryPluginBootstrap {
   shellUrl?: string | null
   shellPluginId?: string | null
-  /** Shell `manifest.shell.vueEntry`, path relative to plugin root; skipped when `forceIframeMode` */
+  /** Dev-only shell Vue entry; release builds always use `shellUrl` HTML. */
   shellVueEntry?: string | null
-  /** From `plugin_state.force_iframe_mode`; when true, skip Vue shell and use iframe */
+  /** Persisted preference; release builds enforce HTML regardless of false. */
   forceIframeMode?: boolean
   pluginIds: string[]
   developerMode: boolean
@@ -130,7 +132,7 @@ export interface PluginStateFile {
   disabled_slot_contributions: Record<string, string[]>
   /** `plugin_id` → `slot` → `appearance_id` */
   slot_appearance?: Record<string, Record<string, string>>
-  /** When true, ignore `vueComponent` and force iframe for all slot embeds */
+  /** Persisted preference; release builds force HTML/iframe regardless of false. */
   force_iframe_mode?: boolean
 }
 

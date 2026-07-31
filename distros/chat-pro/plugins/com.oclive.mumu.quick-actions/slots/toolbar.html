@@ -3,29 +3,71 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Mumu Quick Actions</title>
+    <title>Mumu 快捷动作</title>
     <style>
-      body {
-        margin: 0;
-        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-        background: transparent;
-        color: #5c564c;
-        font-size: 12px;
-      }
-      .fallback {
-        box-sizing: border-box;
-        width: 100%;
-        min-height: 34px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 1px solid #ddd2c4;
-        border-radius: 8px;
-        background: #f7f2ea;
-      }
+      * { box-sizing: border-box; }
+      body { margin: 0; font: 12px system-ui, -apple-system, "Segoe UI", sans-serif; color: #514a40; background: transparent; }
+      .actions { min-height: 34px; display: flex; align-items: center; gap: 6px; padding: 2px; }
+      select, button { min-height: 30px; border: 1px solid #d8cdbc; border-radius: 7px; color: inherit; background: #fffaf3; font: inherit; }
+      select { min-width: 118px; padding: 4px 7px; }
+      button { padding: 4px 10px; cursor: pointer; }
+      button.primary { background: #eee0ca; border-color: #cdbb9d; }
+      button:disabled, select:disabled { opacity: .55; cursor: default; }
+      #error { color: #a33; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     </style>
   </head>
   <body>
-    <div class="fallback">mumu 快捷动作（iframe 回退）</div>
+    <div class="actions" aria-label="场景位移">
+      <select id="scene" aria-label="目标场景" disabled><option>正在读取场景…</option></select>
+      <button id="solo" type="button" disabled>仅我过去</button>
+      <button id="together" class="primary" type="button" disabled>同行前往</button>
+      <span id="error" role="status"></span>
+    </div>
+    <script>
+      (() => {
+        const bridge = window.OclivePluginBridge
+        const scene = document.querySelector('#scene')
+        const solo = document.querySelector('#solo')
+        const together = document.querySelector('#together')
+        const error = document.querySelector('#error')
+        const setReady = ready => { scene.disabled = !ready; solo.disabled = !ready; together.disabled = !ready }
+          let activeRoleId = ''
+          let loadGeneration = 0
+          async function load(preferredRoleId) {
+            const generation = ++loadGeneration
+            try {
+              const roles = await bridge.invoke('list_roles', {})
+              if (generation !== loadGeneration) return
+              const roleId = String(preferredRoleId || activeRoleId || roles?.[0]?.id || '').trim()
+              if (!roleId) throw new Error('未找到当前角色')
+              activeRoleId = roleId
+            const info = await bridge.invoke('get_role_info', { role_id: roleId, session_id: null })
+            if (generation !== loadGeneration) return
+            const labels = Array.isArray(info?.scene_labels) && info.scene_labels.length
+              ? info.scene_labels
+              : (Array.isArray(info?.scenes) ? info.scenes.map(id => ({ id, label: id })) : [])
+            scene.replaceChildren(...labels.filter(x => x?.id).map(x => new Option(x.label || x.id, x.id)))
+            const preferred = String(info?.user_presence_scene || '')
+            if ([...scene.options].some(x => x.value === preferred)) scene.value = preferred
+            if (!scene.options.length) throw new Error('当前角色没有可用场景')
+            setReady(true)
+          } catch (reason) {
+            if (generation !== loadGeneration) return
+            error.textContent = reason instanceof Error ? reason.message : String(reason)
+          }
+        }
+        function travel(togetherValue) {
+          if (scene.value) void bridge.emit('com.oclive.mumu.quick-actions:travel', { sceneId: scene.value, together: togetherValue })
+        }
+        solo.addEventListener('click', () => travel(false))
+        together.addEventListener('click', () => travel(true))
+        if (!bridge) error.textContent = '宿主桥接不可用'
+        else {
+          for (const event of ['role:switched', 'role:info:updated'])
+            void bridge.listen(event, payload => void load(payload?.roleId)).catch(reason => { error.textContent = String(reason) })
+          void load()
+        }
+      })()
+    </script>
   </body>
 </html>

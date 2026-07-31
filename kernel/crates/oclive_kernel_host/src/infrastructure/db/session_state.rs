@@ -10,17 +10,31 @@ impl DbManager {
         &self,
         role_id: &str,
         limit: i64,
+        include_adult: bool,
     ) -> Result<Vec<(String, String)>> {
-        let rows = sqlx::query_as::<_, (String, String)>(
-            "SELECT user_input, bot_reply FROM short_term_memory
-             WHERE role_id = ?
-             ORDER BY datetime(created_at) DESC
-             LIMIT ?",
-        )
-        .bind(role_id)
-        .bind(limit)
-        .fetch_all(&self.pool)
-        .await
+        let rows = if include_adult {
+            sqlx::query_as::<_, (String, String)>(
+                "SELECT user_input, bot_reply FROM short_term_memory
+                 WHERE role_id = ?
+                 ORDER BY datetime(created_at) DESC
+                 LIMIT ?",
+            )
+            .bind(role_id)
+            .bind(limit)
+            .fetch_all(&self.pool)
+            .await
+        } else {
+            sqlx::query_as::<_, (String, String)>(
+                "SELECT user_input, bot_reply FROM short_term_memory
+                 WHERE role_id = ? AND content_scope = 'ordinary'
+                 ORDER BY datetime(created_at) DESC
+                 LIMIT ?",
+            )
+            .bind(role_id)
+            .bind(limit)
+            .fetch_all(&self.pool)
+            .await
+        }
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(rows.into_iter().rev().collect())
     }

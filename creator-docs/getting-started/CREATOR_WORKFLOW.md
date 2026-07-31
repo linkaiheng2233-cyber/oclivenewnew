@@ -10,7 +10,7 @@
 - **唯一接口**：磁盘上的 **`distros/chat-pro/roles/{角色id}/`** 包结构；契约以本仓库 **`creator-docs/`** 与 **`distros/chat-pro/roles/README_MANIFEST.md`** 为准。  
 - **已退役**：**oclive-launcher**（归档）；长期统一入口见 [oclive-studio](https://github.com/linkaiheng2233-cyber/oclive-studio)，当前发版与文档以 **编写器 + 本运行时** 为准。
 
-**在 oclive 中安装包**：除把目录放进 `distros/chat-pro/roles/` 或设置 **`OCLIVE_ROLES_DIR`** 外，可在应用内 **导入 `.ocpak`、`.zip`（与 `.ocpak` 同为 ZIP）或已解压的包目录**（结构须与 `distros/chat-pro/roles/{角色id}/` 一致）。详见 [distros/chat-pro/roles/README_MANIFEST.md](../../distros/chat-pro/roles/README_MANIFEST.md) 中「在 oclive 中导入角色包」。
+**在 oclive 中安装包**：除把目录放进 `distros/chat-pro/roles/` 或设置 **`OCLIVE_ROLES_DIR`** 外，可在应用内 **导入 `.ocpak`、`.zip`（与 `.ocpak` 同为 ZIP）或已解压的包目录**（结构须与 `distros/chat-pro/roles/{角色id}/` 一致）。入口摘要见 [distros/chat-pro/roles/README_MANIFEST.md](../../distros/chat-pro/roles/README_MANIFEST.md)，完整契约见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)。
 
 **使用工作室（推荐）**：[oclive-studio](https://github.com/linkaiheng2233-cyber/oclive-studio) 在启动模式中提供 **从 zip 安装角色包** 到 `OCLIVE_ROLES_DIR`、**Ollama / Remote LLM** 配置（注入 **`OCLIVE_LLM_BACKEND`** 与 **`OCLIVE_REMOTE_*`**，运行时**覆盖**角色包中的 `plugin_backends.llm`，见 [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)）及一键拉起 **`oclivenewnew --api`** 供创作模式试聊。配置权威文件为 **`studio-config.json`**（见 [工作室用户指南](../../handoff/studio/USER_GUIDE.md)）。协议见 [REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)。
 
@@ -18,15 +18,15 @@
 
 ## 目录布局
 
-每个角色一个文件夹 **`distros/chat-pro/roles/{角色id}/`**。**v2 SSOT** 为 **`pipeline.ocblueprint`**（`meta` + `slot_registry` + 可选 `groups`）。**v1（已废弃）** 的 `manifest.json` / `settings.json` 仅作迁移，见 [V1_TO_V2_MIGRATION.md](../role-pack/V1_TO_V2_MIGRATION.md)。规范：[ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)。
+每个角色一个文件夹 **`distros/chat-pro/roles/{角色id}/`**。蓝图 SSOT 为 **`pipeline.ocblueprint`**；新包使用 **Stable v4**（`meta` + `slot_registry` + 可选 `runtime_config` / `groups` / `extensions`），v2 继续兼容，v3 仅保留双核 Beta。**v1（已废弃）** 的 `manifest.json` / `settings.json` 仅作迁移，见 [V1_TO_V2_MIGRATION.md](../role-pack/V1_TO_V2_MIGRATION.md)。规范：[ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)。
 
-**`OCLIVE_ROLES_DIR`**：指向 **roles 根**。v2 包须存在 **`$OCLIVE_ROLES_DIR/<角色id>/pipeline.ocblueprint`**。
+**`OCLIVE_ROLES_DIR`**：指向 **roles 根**。蓝图包须存在 **`$OCLIVE_ROLES_DIR/<角色id>/pipeline.ocblueprint`**。
 
-## 编写方式（当前 · v2）
+## 编写方式（当前 · Stable v4 / v2 兼容）
 
-1. 复制 v2 示例包（如 `distros/chat-pro/roles/mumu/`）或 `oclive pack create` / 工作室创作模式导出。
+1. 复制兼容示例包（如当前仍为 v2 的 `distros/chat-pro/roles/mumu/`），或用编写器创建默认 Stable v4 包。
 2. 编辑 **`pipeline.ocblueprint`**、`core_personality.txt`、场景与可选资源。  
-   - **`meta.personality`**：七维；**`meta.evolution.personality_source`** 为 **`profile`** 时可变档案仅存 DB。详见 [personality-archive-notes.md](../../docs/personality-archive-notes.md)。
+   - **`meta.personality`**：七维；Stable v4 的 **`runtime_config.evolution.personality_source`**（v2 兼容 `meta.evolution.personality_source`）为 **`profile`** 时，可变档案仅存 DB。详见 [personality-archive-notes.md](../../docs/personality-archive-notes.md)。
 3. 设置环境变量 **`OCLIVE_ROLES_DIR`** 指向含 `distros/chat-pro/roles/` 的父目录，或把包放在项目/应用资源约定的 `distros/chat-pro/roles/` 下。
 4. 启动应用，**加载角色**后对话验证。
 
@@ -34,7 +34,7 @@
 
 ## 校验
 
-- v2 包由 **`oclive_validation`** 校验 `pipeline.ocblueprint`（含 `groups`）；`oclive pack validate` / 加载角色时报错见界面提示。
+- 蓝图包由 **`oclive_validation`** 按 `schema_version` 精确分派 v2 / v3 / v4 校验；`oclive pack validate` / 加载角色时报错见界面提示。
 - 插件后端见 [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) 与 [PACK_VERSIONING.md](../role-pack/PACK_VERSIONING.md)。
 - **主应用**：**Ctrl+Shift+F** 仅为「已安装插件」列表；`ui_slots` 插件启用时弹出位置选择。**无**架构图面板。
 - **CLI**：manifest **`slot_attachment`** + **`oclive plugin install <id> --role distros/chat-pro/roles/<pack>`** 自动写入蓝图；多槽位 / 架构总览：**`oclive plugin manage`**（`--tui` 可选）。记忆 / 情绪 / 事件 / Prompt 槽 **`builtin_v2` 为已废弃 wire alias**（serde 读入等同 `builtin`），详见 [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) 各枚举表。

@@ -297,11 +297,61 @@ Both **`event.estimate`** and **`prompt.build_prompt`** include top‑level **`p
 **params**: `role`, `scene_id`  
 **result**: `{ "hint": "..." }` / `null`, or raw string.
 
-### 4.6 `llm.generate` / `llm.generate_tag`
+### 4.6 `llm.generate` / `llm.generate_tag` / `llm.generate_stream`
 
 **params**: `model`, `prompt` (strings)  
 **result**: `{ "text": "..." }` or raw string.  
 `generate_tag` — low temperature short outputs (sprites, travel intent, …).
+
+`llm.generate_stream` is an optional NDJSON extension. The host calls it only
+when a directory manifest explicitly lists the method in `rpcMethods`.
+Undeclared legacy plugins keep `llm.generate` and emit once after completion.
+
+The streaming response uses `application/x-ndjson`; every line is a JSON-RPC
+envelope carrying the original request `id`:
+
+```json
+{"jsonrpc":"2.0","id":1,"result":{"event":"token","text":"hel"}}
+{"jsonrpc":"2.0","id":1,"result":{"event":"token","text":"lo"}}
+{"jsonrpc":"2.0","id":1,"result":{"event":"done","prompt_eval_ms":12}}
+```
+
+- `token.text` is delivered to the host token sink in arrival order.
+- Exactly one `done` event terminates the stream. Failures use a normal JSON-RPC
+  `error` envelope.
+- The host builds the final `reply` from received tokens; `done` cannot replace
+  it with a different full response.
+- A LoRA failure before the first token clears the selection and retries the
+  normal LLM. After emission starts, the host preserves the partial reply,
+  records `LORA_ADAPTER_STREAM_PARTIAL`, and does not append duplicate fallback
+  output.
+
+#### LoRA expert plugins
+
+`slot.lora.apply` does not put weight paths or framework-specific loader
+parameters into `llm.generate`. It selects one predeclared
+`type=llm`, `backend=directory` instance from the role's effective
+`slot_registry`; Stable completion then sends the normal `model` / `prompt`
+request to that plugin. The plugin maps `model` to a LoRA adapter already
+loaded by its inference service, such as a llama.cpp or vLLM model alias.
+
+- `params.plugin_id` must equal the slot's `plugin` and resolve to exactly one
+  LLM slot in the role.
+- The manifest must declare `provides: ["llm"]` and pass normal process/network
+  grants.
+- Selection is session-scoped. Removing or invalidating the slot clears it and
+  falls back to the normal LLM.
+- An unavailable plugin logs `LORA_ADAPTER_UNAVAILABLE`. Generation failure
+  logs `LORA_ADAPTER_GENERATE_FAILED`, clears the session selection, and retries
+  the normal LLM in the same turn.
+- The host still requires the `dual_core` feature, an explicitly enabled
+  blueprint v3 dual core, and `slot.expert.invoke` in the experimental pipeline.
+- When the manifest declares `llm.generate_stream`, dual-core Stable completion
+  consumes the token stream directly. Undeclared plugins retain v1
+  full-response compatibility.
+
+See
+[`examples/directory-plugin-llamacpp`](../../examples/directory-plugin-llamacpp/).
 
 ---
 

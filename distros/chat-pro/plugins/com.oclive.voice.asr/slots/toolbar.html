@@ -3,21 +3,24 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Voice ASR toolbar fallback</title>
+    <title>OCLive 语音输入</title>
     <style>
-      body {
-        margin: 0;
-        font: 12px system-ui, sans-serif;
-        color: #444;
-      }
-      .fallback {
-        padding: 6px 10px;
-        border: 1px solid #ccc;
-        border-radius: 6px;
-      }
+      :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+      body { margin: 0; background: transparent; color: CanvasText; font-size: 12px; }
+      .voice-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+      button { min-height: 30px; padding: 3px 9px; border: 1px solid GrayText; border-radius: 6px; background: Canvas; color: CanvasText; cursor: pointer; touch-action: none; user-select: none; }
+      button.recording { border-color: #c33; background: color-mix(in srgb, #c33 12%, Canvas); }
+      button:disabled { opacity: .55; cursor: not-allowed; }
+      .status { color: GrayText; max-width: 14rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .error { color: #d33; max-width: 16rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     </style>
   </head>
   <body>
-    <div class="fallback">语音输入（iframe 回退）</div>
+    <section class="voice-bar" aria-label="语音输入">
+      <button id="record" type="button" disabled>🎤 按住说话</button>
+      <span id="status" class="status" aria-live="polite"></span>
+      <span id="error" class="error" role="alert"></span>
+    </section>
+    <script src="voice-toolbar.js"></script>
   </body>
 </html>

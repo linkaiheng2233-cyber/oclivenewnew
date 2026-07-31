@@ -1,12 +1,30 @@
 {
   "schema_version": 1,
   "id": "com.oclive.example.llamacpp_llm",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "provides": ["llm"],
-  "rpcMethods": ["llm.generate", "llm.generate_tag"],
+  "rpcMethods": ["llm.generate", "llm.generate_tag", "llm.generate_stream"],
   "process": {
     "command": "node",
     "args": ["rpc_server.mjs"]
   },
-  "permissions": ["process:spawn", "network:*"]
+  "permissions": ["process:spawn", "network:*"],
+  "ui_schema": {
+    "fields": [
+      {
+        "key": "base_url",
+        "label": "llama.cpp / OpenAI-compatible URL",
+        "type": "text",
+        "required": true,
+        "default": "http://127.0.0.1:8080"
+      },
+      {
+        "key": "adapter_model",
+        "label": "LoRA adapter model alias",
+        "type": "text",
+        "required": false,
+        "default": ""
+      }
+    ]
+  }
 }

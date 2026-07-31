@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 /**
- * Smoke-test voice.build_directive persona derivation for four roles.
+ * Smoke-test voice.build_directive persona derivation for three shipped roles plus one fixture.
  * Spawns rpc_server.mjs unless OCLIVE_VOICE_RPC_URL is set.
  */
 import { spawn } from 'child_process'
 import fs from 'fs'
+import os from 'os'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
@@ -14,9 +15,21 @@ const rpcScript = path.join(
   'distros/chat-pro/plugins/com.oclive.voice.asr/rpc_server.mjs',
 )
 
+const sharpFixtureDir = fs.mkdtempSync(path.join(os.tmpdir(), 'oclive-voice-sharp-'))
+fs.writeFileSync(
+  path.join(sharpFixtureDir, 'core_personality.txt'),
+  '你是清冷、克制、说话毒舌又带刺的少女；表达锋利，但不恶意伤人。\n',
+)
+process.on('exit', () => fs.rmSync(sharpFixtureDir, { recursive: true, force: true }))
+
 const ROLES = [
-  { id: 'mumu', dir: 'distros/chat-pro/roles/mumu', expectHandwritten: true },
-  { id: 'shimeng', dir: 'distros/chat-pro/roles/shimeng', expectSharp: true },
+  {
+    id: 'mumu',
+    dir: 'distros/chat-pro/roles/mumu',
+    expectHandwritten: true,
+    expectReference: true,
+  },
+  { id: 'sharp-fixture', dir: sharpFixtureDir, expectSharp: true },
   { id: '枫侵月', dir: 'distros/chat-pro/roles/枫侵月', expectMasculine: true },
   { id: 'polish-dev', dir: 'distros/chat-pro/roles/polish-dev', expectGeneric: true },
 ]
@@ -92,7 +105,7 @@ async function main() {
       },
     })
     for (const role of ROLES) {
-      const rolePath = path.join(repoRoot, role.dir)
+      const rolePath = path.isAbsolute(role.dir) ? role.dir : path.join(repoRoot, role.dir)
       assert(fs.existsSync(rolePath), `missing role dir ${rolePath}`)
       for (const botEmotion of EMOTIONS) {
         const result = await rpcCall(rpcUrl, 'voice.build_directive', {
@@ -122,6 +135,16 @@ async function main() {
             `${role.id}: expected handwritten voice_profile emo_text`,
           )
         }
+        if (role.expectReference) {
+          const refAudio = result.directive?.ref_audio || ''
+          assert(refAudio.endsWith('ref_neutral.wav'), `${role.id}: expected neutral ref audio`)
+          assert(fs.existsSync(refAudio), `${role.id}: missing resolved ref audio ${refAudio}`)
+          assert(
+            result.directive?.ref_text
+              === '早上好呀，我是沐沐。今天也会陪着你，所以不用一个人硬撑啦。慢慢来就好，我一直都在这里。',
+            `${role.id}: reference transcript drift`,
+          )
+        }
         if (role.expectSharp && botEmotion === 'neutral') {
           assert(/清冷|冷淡|锋利|毒舌/.test(emo), `${role.id}: expected sharp/cool tone in emo_text`)
         }
@@ -144,7 +167,7 @@ async function main() {
     console.error(`build_directive matrix: ${failed} failures`)
     process.exit(1)
   }
-  console.log('build_directive matrix: PASS (4 roles × 3 emotions)')
+  console.log('build_directive matrix: PASS (3 shipped roles + 1 fixture × 3 emotions)')
 }
 
 main().catch((err) => {

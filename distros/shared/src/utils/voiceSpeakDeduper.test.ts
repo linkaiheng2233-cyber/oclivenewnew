@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { VoiceSpeakDeduper } from './voiceSpeakDeduper'
 
-describe('VoiceSpeakDeduper', () => {
+describe('voiceSpeakDeduper', () => {
   it('rejects duplicate queueing while a key is pending', () => {
     const deduper = new VoiceSpeakDeduper()
     expect(deduper.markQueued('role|neutral|tts|你好')).toBe(true)

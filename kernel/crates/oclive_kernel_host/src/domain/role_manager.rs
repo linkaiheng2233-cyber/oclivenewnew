@@ -240,6 +240,7 @@ mod tests {
 
     fn create_test_role() -> Role {
         Role {
+            memory_seed: Vec::new(),
             id: "test".to_string(),
             name: "TestBot".to_string(),
             description: "A test bot".to_string(),
@@ -290,8 +291,10 @@ mod tests {
             pack_visual_presentation_config: Default::default(),
             pack_turn_thinking_config: None,
             pack_prompt_extra_sections: Vec::new(),
+            adult_extension: None,
             runtime_config: None,
             pipeline_experimental: None,
+            blueprint_extensions: std::collections::BTreeMap::new(),
             scene_ids: std::sync::Arc::from(Vec::<String>::new()),
             scene_config_cache: std::sync::Arc::new(parking_lot::RwLock::new(
                 std::collections::HashMap::new(),

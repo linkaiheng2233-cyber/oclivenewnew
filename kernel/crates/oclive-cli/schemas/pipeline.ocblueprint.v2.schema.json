@@ -70,7 +70,9 @@
         },
         "interaction_mode": { "type": "string" },
         "ollama_model": { "type": "string" },
-        "min_runtime_version": { "type": "string" }
+        "min_runtime_version": { "type": "string" },
+        "life_trajectory": { "type": ["object", "null"] },
+        "life_schedule": { "type": ["object", "null"] }
       },
       "additionalProperties": true
     },
@@ -78,34 +80,10 @@
       "type": "object",
       "minProperties": 1,
       "additionalProperties": {
-        "type": "object",
-        "required": ["type", "label", "backend", "position"],
-        "properties": {
-          "type": {
-            "type": "string",
-            "enum": [
-              "memory",
-              "emotion",
-              "event",
-              "prompt",
-              "llm",
-              "agent",
-              "complex_emotion"
-            ]
-          },
-          "label": { "type": "string", "minLength": 1 },
-          "backend": { "type": "string" },
-          "position": { "type": "integer", "minimum": 0 },
-          "plugin": { "type": "string" },
-          "plugins": {
-            "type": "array",
-            "items": { "type": "string" }
-          },
-          "model": { "type": "string" },
-          "url": { "type": "string" },
-          "local_memory_provider_id": { "type": "string" }
-        },
-        "additionalProperties": false
+        "allOf": [
+          { "$ref": "#/$defs/slotRegistryEntry" }
+        ],
+        "unevaluatedProperties": false
       }
     },
     "includes": {
@@ -119,9 +97,24 @@
           "id": { "type": "string" },
           "path": {
             "type": "string",
-            "pattern": "^(?!.*\\.\\.)[a-zA-Z0-9_./-]+$"
+            "pattern": "^(?!/)(?!.*\\.\\.)(?!.*//)[a-zA-Z0-9_./-]+$"
           },
-          "target": { "type": "string", "minLength": 1 },
+          "target": {
+            "oneOf": [
+              {
+                "enum": [
+                  "meta.personality",
+                  "meta.life_trajectory",
+                  "meta.life_schedule",
+                  "expert_overlay"
+                ]
+              },
+              {
+                "type": "string",
+                "pattern": "^slot_registry\\.[^.]+(?:\\.[^.]+)*$"
+              }
+            ]
+          },
           "mode": { "type": "string", "enum": ["merge", "replace"] }
         }
       }
@@ -155,7 +148,7 @@
     },
     "runtime_config": {
       "type": "object",
-      "description": "v3 system configuration SSOT. Present on v2 files: ignored at load with pack validate warning; use schema_version 3 for hosts.",
+      "description": "Present on v2 files only for read compatibility: ignored at load with a pack validate warning. Use Stable schema_version 4; schema_version 3 is reserved for the frozen dual-core Beta.",
       "additionalProperties": false,
       "properties": {
         "interaction_mode": { "type": "string", "enum": ["immersive", "pure_chat"] },
@@ -175,6 +168,192 @@
         "remote_presence": { "type": "object" },
         "autonomous_scene": { "type": "object" }
       }
+    }
+  },
+  "$defs": {
+    "slotRegistryEntry": {
+      "type": "object",
+      "required": ["type", "label", "backend", "position"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "memory",
+            "emotion",
+            "event",
+            "prompt",
+            "llm",
+            "agent",
+            "complex_emotion"
+          ]
+        },
+        "label": { "type": "string", "minLength": 1 },
+        "backend": { "type": "string" },
+        "position": { "type": "integer", "minimum": 0 },
+        "plugin": { "type": ["string", "null"] },
+        "plugins": {
+          "type": ["array", "null"],
+          "items": { "type": "string" }
+        },
+        "model": { "type": ["string", "null"] },
+        "url": { "type": ["string", "null"] },
+        "local_memory_provider_id": { "type": ["string", "null"] }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "type": { "const": "memory" } },
+            "required": ["type"]
+          },
+          "then": {
+            "properties": {
+              "backend": {
+                "enum": ["builtin", "remote", "directory", "local", "none"]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "enum": ["emotion", "event", "prompt"]
+              }
+            },
+            "required": ["type"]
+          },
+          "then": {
+            "properties": {
+              "backend": {
+                "enum": ["builtin", "remote", "directory", "none"]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "llm" } },
+            "required": ["type"]
+          },
+          "then": {
+            "properties": {
+              "backend": {
+                "enum": ["ollama", "remote", "directory", "none"]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "agent" } },
+            "required": ["type"]
+          },
+          "then": {
+            "properties": {
+              "backend": {
+                "enum": ["builtin", "remote", "directory", "none"]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "complex_emotion" } },
+            "required": ["type"]
+          },
+          "then": {
+            "properties": {
+              "backend": {
+                "enum": ["builtin", "remote", "directory"]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "backend": { "const": "directory" } },
+            "required": ["backend"]
+          },
+          "then": {
+            "anyOf": [
+              {
+                "required": ["plugin"],
+                "properties": {
+                  "plugin": { "type": "string", "pattern": "\\S" }
+                }
+              },
+              {
+                "required": ["plugins"],
+                "properties": {
+                  "plugins": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": { "type": "string", "pattern": "\\S" }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": { "not": { "const": "agent" } }
+            },
+            "required": ["type"]
+          },
+          "then": {
+            "not": {
+              "required": ["plugin", "plugins"],
+              "properties": {
+                "plugin": { "type": "string", "pattern": "\\S" },
+                "plugins": {
+                  "type": "array",
+                  "minItems": 1
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": { "const": "agent" },
+              "backend": { "not": { "const": "directory" } }
+            },
+            "required": ["type", "backend"]
+          },
+          "then": {
+            "properties": {
+              "plugins": {
+                "oneOf": [
+                  { "type": "null" },
+                  { "type": "array", "maxItems": 0 }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": { "const": "llm" },
+              "backend": { "const": "ollama" }
+            },
+            "required": ["type", "backend"]
+          },
+          "then": {
+            "properties": {
+              "model": {
+                "oneOf": [
+                  { "type": "null" },
+                  { "type": "string", "pattern": "\\S" }
+                ]
+              }
+            }
+          }
+        }
+      ]
     }
   }
 }

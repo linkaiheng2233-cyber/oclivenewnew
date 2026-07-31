@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
 import { messageHintsUserIdentity } from '@oclive/shared/utils/identitySurpriseTriggers'
+import { describe, expect, it } from 'vitest'
 
 describe('identitySurpriseTriggers', () => {
   it('detects Chinese identity hints', () => {

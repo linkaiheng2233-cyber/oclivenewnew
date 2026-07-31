@@ -48,6 +48,7 @@ pub async fn load_role_impl(
     state
         .directory_plugins
         .ensure_role_plugin_state(role_id, role.plugin_state_ui_baseline());
+    crate::service::execution_plan::ensure_role_execution_plan_activatable(state, role.as_ref())?;
 
     state.invalidate_personality_cache_for_role(role_id);
 
@@ -141,6 +142,7 @@ pub async fn list_roles_impl(state: &AppState) -> Result<Vec<RoleSummary>, Comma
             featured: r.featured,
             preset_order: r.preset_order,
             interaction_mode_suggestion: r.interaction_mode.clone(),
+            adult_extension_available: r.adult_extension.is_some(),
         })
         .collect();
     summaries.sort_by(|a, b| {

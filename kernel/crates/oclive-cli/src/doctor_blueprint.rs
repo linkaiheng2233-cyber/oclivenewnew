@@ -1,11 +1,12 @@
-//! `oclive doctor` blueprint-specific checks (`roles/*/pipeline.ocblueprint`, routed by `schema_version` to v2 / v3).
+//! `oclive doctor` blueprint-specific checks (`roles/*/pipeline.ocblueprint`,
+//! routed by exact `schema_version` to v2 / v3 / v4).
 
 use crate::doctor_cmd::DoctorCheck;
 use oclive_kernel_runtime::resolve_project_roles_dir;
 use oclive_validation::{
-    validate_blueprint_v2_json, validate_blueprint_v3_json,
-    validate_role_pack_blueprint_v2_directory, validate_role_pack_blueprint_v3_directory,
-    BLUEPRINT_V3_SCHEMA_VERSION, PIPELINE_BLUEPRINT_FILENAME,
+    blueprint_schema_version_from_raw, validate_blueprint_json_by_schema_version,
+    validate_role_pack_blueprint_directory, BLUEPRINT_V2_SCHEMA_VERSION,
+    BLUEPRINT_V3_SCHEMA_VERSION, BLUEPRINT_V4_SCHEMA_VERSION, PIPELINE_BLUEPRINT_FILENAME,
 };
 use std::collections::{HashMap, HashSet};
 use std::fs;
@@ -38,18 +39,45 @@ pub fn blueprint_checks(root: &Path) -> Vec<DoctorCheck> {
         ];
     }
 
-    let v2: Vec<_> = packs
-        .iter()
-        .filter(|p| p.schema_version != BLUEPRINT_V3_SCHEMA_VERSION)
-        .collect();
-    let v3: Vec<_> = packs
-        .iter()
-        .filter(|p| p.schema_version == BLUEPRINT_V3_SCHEMA_VERSION)
-        .collect();
-
     let mut out = Vec::new();
-    out.extend(run_v2_checks(&v2));
-    out.extend(run_v3_checks(&v3));
+    for version in [
+        BLUEPRINT_V2_SCHEMA_VERSION,
+        BLUEPRINT_V3_SCHEMA_VERSION,
+        BLUEPRINT_V4_SCHEMA_VERSION,
+    ] {
+        let version_packs: Vec<_> = packs
+            .iter()
+            .filter(|pack| pack.schema_version == version)
+            .collect();
+        out.extend(run_version_checks(version, &version_packs));
+    }
+    let unsupported: Vec<_> = packs
+        .iter()
+        .filter(|pack| {
+            !matches!(
+                pack.schema_version,
+                BLUEPRINT_V2_SCHEMA_VERSION
+                    | BLUEPRINT_V3_SCHEMA_VERSION
+                    | BLUEPRINT_V4_SCHEMA_VERSION
+            )
+        })
+        .collect();
+    if !unsupported.is_empty() {
+        out.push(DoctorCheck::fail(
+            "blueprint_unsupported_schema_version",
+            format!(
+                "{} pack(s) use an unsupported schema version",
+                unsupported.len()
+            ),
+            Some(
+                unsupported
+                    .iter()
+                    .map(|pack| format!("{}: schema_version {}", pack.name, pack.schema_version))
+                    .collect::<Vec<_>>()
+                    .join("\n    "),
+            ),
+        ));
+    }
     out
 }
 
@@ -79,9 +107,9 @@ fn collect_blueprint_packs(roles: &Path) -> Vec<PackDir> {
             .to_string();
         let schema_version = fs::read_to_string(&bp)
             .ok()
-            .and_then(|raw| serde_json::from_str::<serde_json::Value>(&raw).ok())
-            .and_then(|v| v.get("schema_version").and_then(|x| x.as_u64()))
-            .unwrap_or(2) as u32;
+            .as_deref()
+            .and_then(blueprint_schema_version_from_raw)
+            .unwrap_or(0);
         out.push(PackDir {
             path: p,
             name,
@@ -91,15 +119,19 @@ fn collect_blueprint_packs(roles: &Path) -> Vec<PackDir> {
     out
 }
 
-fn run_v2_checks(packs: &[&PackDir]) -> Vec<DoctorCheck> {
+fn run_version_checks(version: u32, packs: &[&PackDir]) -> Vec<DoctorCheck> {
+    let (format_id, llm_id, position_id) = check_ids(version);
     if packs.is_empty() {
         return vec![
             DoctorCheck::ok(
-                "blueprint_file_format",
-                "no v2 blueprint packs under roles/",
+                format_id,
+                format!("no v{version} blueprint packs under roles/"),
             ),
-            DoctorCheck::ok("slot_registry_llm", "skipped (no v2 blueprint packs)"),
-            DoctorCheck::ok("slot_position_unique", "skipped (no v2 blueprint packs)"),
+            DoctorCheck::ok(llm_id, format!("skipped (no v{version} blueprint packs)")),
+            DoctorCheck::ok(
+                position_id,
+                format!("skipped (no v{version} blueprint packs)"),
+            ),
         ];
     }
 
@@ -116,11 +148,11 @@ fn run_v2_checks(packs: &[&PackDir]) -> Vec<DoctorCheck> {
                 continue;
             }
         };
-        if let Err(errs) = validate_blueprint_v2_json(&raw) {
+        if let Err(errs) = validate_blueprint_json_by_schema_version(&raw, Some(&pack.name)) {
             format_errs.push(format!("{}: {}", pack.name, errs.join("; ")));
         }
         if let Err(errs) =
-            validate_role_pack_blueprint_v2_directory(&pack.path, env!("CARGO_PKG_VERSION"))
+            validate_role_pack_blueprint_directory(&pack.path, env!("CARGO_PKG_VERSION"))
         {
             for e in errs {
                 if e.contains("llm") || e.contains("LLM") {
@@ -137,62 +169,31 @@ fn run_v2_checks(packs: &[&PackDir]) -> Vec<DoctorCheck> {
     }
 
     vec![
-        format_check("blueprint_file_format", "v2", packs.len(), &format_errs),
-        llm_check("slot_registry_llm", &llm_errs),
-        position_check("slot_position_unique", &pos_errs),
+        format_check(format_id, &format!("v{version}"), packs.len(), &format_errs),
+        llm_check(llm_id, &llm_errs),
+        position_check(position_id, &pos_errs),
     ]
 }
 
-fn run_v3_checks(packs: &[&PackDir]) -> Vec<DoctorCheck> {
-    if packs.is_empty() {
-        return vec![
-            DoctorCheck::ok(
-                "blueprint_v3_file_format",
-                "no v3 blueprint packs under roles/",
-            ),
-            DoctorCheck::ok("slot_registry_v3_llm", "skipped (no v3 blueprint packs)"),
-            DoctorCheck::ok("slot_position_v3_unique", "skipped (no v3 blueprint packs)"),
-        ];
+fn check_ids(version: u32) -> (&'static str, &'static str, &'static str) {
+    match version {
+        BLUEPRINT_V2_SCHEMA_VERSION => (
+            "blueprint_file_format",
+            "slot_registry_llm",
+            "slot_position_unique",
+        ),
+        BLUEPRINT_V3_SCHEMA_VERSION => (
+            "blueprint_v3_file_format",
+            "slot_registry_v3_llm",
+            "slot_position_v3_unique",
+        ),
+        BLUEPRINT_V4_SCHEMA_VERSION => (
+            "blueprint_v4_file_format",
+            "slot_registry_v4_llm",
+            "slot_position_v4_unique",
+        ),
+        _ => unreachable!("check ids are defined only for supported blueprint versions"),
     }
-
-    let mut format_errs = Vec::new();
-    let mut llm_errs = Vec::new();
-    let mut pos_errs = Vec::new();
-
-    for pack in packs {
-        let path = pack.path.join(PIPELINE_BLUEPRINT_FILENAME);
-        let raw = match fs::read_to_string(&path) {
-            Ok(s) => s,
-            Err(e) => {
-                format_errs.push(format!("{}: read failed: {e}", pack.name));
-                continue;
-            }
-        };
-        if let Err(errs) = validate_blueprint_v3_json(&raw, Some(&pack.name)) {
-            format_errs.push(format!("{}: {}", pack.name, errs.join("; ")));
-        }
-        if let Err(errs) =
-            validate_role_pack_blueprint_v3_directory(&pack.path, env!("CARGO_PKG_VERSION"))
-        {
-            for e in errs {
-                if e.contains("llm") || e.contains("LLM") {
-                    llm_errs.push(format!("{}: {e}", pack.name));
-                } else if e.contains("position") {
-                    pos_errs.push(format!("{}: {e}", pack.name));
-                } else if !format_errs.iter().any(|x| x.contains(&pack.name)) {
-                    format_errs.push(format!("{}: {e}", pack.name));
-                }
-            }
-        } else {
-            check_llm_and_position_local(&raw, &pack.name, &mut llm_errs, &mut pos_errs);
-        }
-    }
-
-    vec![
-        format_check("blueprint_v3_file_format", "v3", packs.len(), &format_errs),
-        llm_check("slot_registry_v3_llm", &llm_errs),
-        position_check("slot_position_v3_unique", &pos_errs),
-    ]
 }
 
 fn format_check(id: &str, label: &str, count: usize, errs: &[String]) -> DoctorCheck {
@@ -286,6 +287,53 @@ mod tests {
         fs::write(dir.join("core_personality.txt"), "test").unwrap();
     }
 
+    fn write_v4_pack(dir: &Path) {
+        let role_id = dir.file_name().unwrap().to_string_lossy();
+        let extension_id = "com.example.live2d";
+        let extension_dir = dir.join("blueprint/extensions").join(extension_id);
+        fs::create_dir_all(&extension_dir).unwrap();
+        fs::write(extension_dir.join("config.json"), r#"{"enabled":true}"#).unwrap();
+        fs::write(
+            dir.join(PIPELINE_BLUEPRINT_FILENAME),
+            serde_json::json!({
+                "schema_version": 4,
+                "meta": {
+                    "id": role_id,
+                    "name": "V4",
+                    "version": "1.0.0",
+                    "author": "test",
+                    "description": "test",
+                    "relations": {
+                        "friend": {
+                            "initial_favorability": 50,
+                            "favor_multiplier": 1
+                        }
+                    },
+                    "default_relation": "friend"
+                },
+                "slot_registry": {
+                    "llm": {
+                        "type": "llm",
+                        "label": "LLM",
+                        "backend": "ollama",
+                        "position": 0
+                    }
+                },
+                "extensions": {
+                    extension_id: {
+                        "capability": extension_id,
+                        "config_schema_version": 1,
+                        "config_ref": format!(
+                            "blueprint/extensions/{extension_id}/config.json"
+                        )
+                    }
+                }
+            })
+            .to_string(),
+        )
+        .unwrap();
+    }
+
     #[test]
     fn doctor_v3_checks_pass_for_valid_fixture() {
         let tmp = tempfile::tempdir().unwrap();
@@ -328,5 +376,36 @@ mod tests {
         assert!(checks
             .iter()
             .any(|c| c.id == "blueprint_v3_file_format" && c.status == "ok"));
+    }
+
+    #[test]
+    fn doctor_v4_uses_stable_v4_checks() {
+        let tmp = tempfile::tempdir().unwrap();
+        write_v4_pack(&tmp.path().join("roles/v4role"));
+        let checks = blueprint_checks(tmp.path());
+        for id in [
+            "blueprint_v4_file_format",
+            "slot_registry_v4_llm",
+            "slot_position_v4_unique",
+        ] {
+            let check = checks.iter().find(|check| check.id == id).unwrap();
+            assert_eq!(check.status, "ok", "{id}: {}", check.message);
+        }
+    }
+
+    #[test]
+    fn doctor_does_not_route_unknown_version_as_v2() {
+        let tmp = tempfile::tempdir().unwrap();
+        let role_dir = tmp.path().join("roles/unknown");
+        fs::create_dir_all(&role_dir).unwrap();
+        fs::write(
+            role_dir.join(PIPELINE_BLUEPRINT_FILENAME),
+            r#"{"schema_version":99}"#,
+        )
+        .unwrap();
+        let checks = blueprint_checks(tmp.path());
+        assert!(checks.iter().any(|check| {
+            check.id == "blueprint_unsupported_schema_version" && check.status == "fail"
+        }));
     }
 }

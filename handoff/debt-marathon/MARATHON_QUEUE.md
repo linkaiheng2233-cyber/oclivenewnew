@@ -15,7 +15,7 @@
 3. 只跑 `runner=auto`；`human`/`skip` 禁止假装 Done。  
 4. runnable 仅 `auto + planStatus=ready + progress=pending|ready|implemented|locally-verified`；`pr-open` 等外部事件，不重复 claim；无 runnable → 停。
 5. 默认 **PR 不开合 main**；Done 要 CI 证据。  
-6. 严格七阶段与 G1–G16；`todo completed` ≠ Done。  
+6. 严格七阶段与 G1–G17；`todo completed` ≠ Done。
 7. 上下文将满 → 停并写续跑坐标。
 8. 父 Agent 是 QUEUE / Wave / session 单写者；子 Agent 禁止自行选下一债或改队列。
 9. Cursor IDE 必须使用 clean worktree；禁止用 `git stash`、切分支、reset/clean 隔离 dirty。
@@ -28,8 +28,10 @@
 | seq | 债 ID | runner | 计划书 | 进度 |
 |-----|-------|--------|--------|------|
 | 10 | FOLLOWUP-VOICE-04-PR123 | auto | [long-plans/FOLLOWUP-VOICE-04-PR123.md](./long-plans/FOLLOWUP-VOICE-04-PR123.md) | done |
-| 20 | T-DOC-02 | auto | [long-plans/T-DOC-02.md](./long-plans/T-DOC-02.md) | pr-open |
-| 30 | D-ROLEVER-01 | auto | [long-plans/D-ROLEVER-01.md](./long-plans/D-ROLEVER-01.md) | pr-open |
+| 14 | V-MODULE-QUALITY-01 | auto | [long-plans/V-MODULE-QUALITY-01.md](./long-plans/V-MODULE-QUALITY-01.md) | locally-verified |
+| 15 | K-PLUGIN-SEC-01 | auto | [long-plans/K-PLUGIN-SEC-01.md](./long-plans/K-PLUGIN-SEC-01.md) | implemented |
+| 20 | T-DOC-02 | auto | [long-plans/T-DOC-02.md](./long-plans/T-DOC-02.md) | done |
+| 30 | D-ROLEVER-01 | auto | [long-plans/D-ROLEVER-01.md](./long-plans/D-ROLEVER-01.md) | done |
 | 40 | K-RESILIENCE-01 | auto | [long-plans/K-RESILIENCE-01.md](./long-plans/K-RESILIENCE-01.md) | pr-open |
 | 50 | K-SUPPLY-05-Full | auto | [long-plans/K-SUPPLY-05-Full.md](./long-plans/K-SUPPLY-05-Full.md) | pr-open |
 | 60 | K-CROSS-01 | auto | [long-plans/K-CROSS-01.md](./long-plans/K-CROSS-01.md) | pr-open |

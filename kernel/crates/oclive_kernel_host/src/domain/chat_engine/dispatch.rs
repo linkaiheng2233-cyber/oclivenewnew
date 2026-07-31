@@ -53,7 +53,8 @@ pub(crate) async fn dispatch_turn(
     Ok(execute_turn(turn, TurnMode::CoPresent).await?)
 }
 
-/// Streaming variant: co-present path streams LLM tokens; other branches emit the full reply once.
+/// Streaming variant: co-present and dual-core Stable completion stream LLM
+/// tokens; remote/agent short-circuits emit the completed reply once.
 pub(crate) async fn dispatch_turn_stream(
     turn: &TurnContext<'_>,
     is_remote: bool,
@@ -72,9 +73,7 @@ pub(crate) async fn dispatch_turn_stream(
 
     #[cfg(feature = "dual_core")]
     if turn.role.dual_core_gated() {
-        let res = DualPipelineRunner::run_with_fallback(turn).await?;
-        on_token(res.reply.as_str());
-        return Ok(res);
+        return DualPipelineRunner::run_with_fallback_stream(turn, on_token).await;
     }
 
     Ok(execute_turn_stream(turn, TurnMode::CoPresent, on_token).await?)

@@ -20,6 +20,8 @@
 
 **开放实验场** 为产品主轴（见 [VISION_OPEN_LAB.md](../roadmap/VISION_OPEN_LAB.md)）。
 
+**蓝图扩展与资源协调（分阶段实现）**：蓝图只保存最小、命名空间化的能力声明；宿主已实现 Capability Registry、只读 `ExecutionPlan`，以及统一 Resource Coordinator（GPU/RAM/CPU、有限调度意图、公平准入、可逆自动抢占、真实 llama-server 档位与 owner-scoped 第三方注册入口）。通用契约已覆盖 `render` / `compute`，但具体 Live2D/3D runtime 仍由相应 Provider/发行版交付。扩展外壳不是第五类模块，资源协调也不是第七槽。详见 [RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md](../rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md)。
+
 ---
 
 ## 设施模块命名规范（规定）
@@ -186,7 +188,7 @@ flowchart TB
 | **与第 1 设施** | **消费** `narrative_hint`；**不**生成 hint |
 | **与第 4 设施** | 输出 `visual_state_id`；**唯一**允许 LLM 选表现状态的设施 |
 | **legacy** | 保留 `portrait_emotion` 七 tag；未启用 catalog 时行为与 v0.3 一致 |
-| **RFC** | [RFC_PORTRAIT_FACILITY.md](../rfc/RFC_PORTRAIT_FACILITY.md) · 计划 [PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md](../../handoff/PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md) |
+| **RFC** | [RFC_PORTRAIT_FACILITY.md](../rfc/RFC_PORTRAIT_FACILITY.md) · [RFC_VISUAL_PRESENTATION_FACILITY.md](../rfc/RFC_VISUAL_PRESENTATION_FACILITY.md) |
 
 ---
 
@@ -320,6 +322,7 @@ RFC 与验收：[RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md](../rfc/RFC_SIDE_CH
 | `plugin_backends` 与复杂情感键 | [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md) |
 | 专家路由文件与 includes | [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) · [BLUEPRINT_FOLDER_LAYOUT.md](../../handoff/BLUEPRINT_FOLDER_LAYOUT.md) |
 | 插件扩展方式 | [CREATOR_PLUGIN_ARCHITECTURE.md](../plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md) |
+| 蓝图扩展外壳 / Resource Coordinator | [RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md](../rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md) |
 | 内核工厂与配方三层 | [KERNEL_FACTORY_VISION.md](KERNEL_FACTORY_VISION.md) |
 | 总览图 | [KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md) |
 | 纯净内核边界 | [PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md) |

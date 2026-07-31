@@ -27,6 +27,7 @@ pub fn run_oocp_integration(repo_root: &Path) -> Result<()> {
                 .current_dir(repo_root)
                 .env("OCLIVE_API_BASE", &base_url)
                 .env("OCLIVE_HTTP_API_MOCK_LLM", "1")
+                .env("OCLIVE_API_TOKEN", crate::http_client::api_token())
                 .status()
                 .context("run OOCP suite")?;
             terminate_child(&mut child);
@@ -65,6 +66,7 @@ fn spawn_kernel_api(repo_root: &Path) -> Result<Child> {
         ])
         .current_dir(repo_root)
         .env("OCLIVE_HTTP_API_MOCK_LLM", "1")
+        .env("OCLIVE_API_TOKEN", crate::http_client::api_token())
         .env(
             "OCLIVE_ROLES_DIR",
             resolve_project_roles_dir(repo_root)

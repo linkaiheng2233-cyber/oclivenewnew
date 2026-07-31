@@ -6,18 +6,18 @@
 //!   `manifest.type == "ocliveplugin"` and the request from **`shell.entry`** HTML or **`shell.vueEntry`** host Vue entry (not `ui_slots` pages).
 
 use crate::api::chat_backend::ChatBackend;
-use crate::api::directory_plugin::directory_plugin_bootstrap_dto;
-use crate::api::error::{map_directory_rpc_url_error, ApiError, CommandError};
+use crate::api::directory_plugin::{
+    directory_plugin_bootstrap_dto, invoke_directory_plugin_rpc_with_resources,
+};
+use crate::api::error::{ApiError, CommandError};
 use crate::api::plugin_config::{get_plugin_settings_ui_impl, set_plugin_settings_config_impl};
 use crate::kernel_attach::{role_dir_for_id, KernelHttpClient};
 use oclive_kernel_host::infrastructure::directory_plugins::{
     normalize_plugin_rel, OclivePluginManifest,
 };
 use oclive_kernel_host::infrastructure::import_role_pack;
-use oclive_kernel_host::infrastructure::remote_plugin::{
-    invoke_directory_plugin_rpc_blocking, RemoteRpcChannel,
-};
 use oclive_kernel_host::infrastructure::role_pack::validate_bridge_import_role_source;
+use oclive_kernel_host::service::role::list_roles_impl;
 use oclive_kernel_host::service::{
     bridge_command_needs_kernel_writer, dispatch_bridge_command, parse_send_message_request,
 };
@@ -218,6 +218,7 @@ fn validate_rpc_method_for_manifest(
 
 async fn dispatch_plugin_rpc_invoke(
     shared: SharedAppState,
+    kernel: Option<crate::kernel_lifecycle::SharedKernelConnection>,
     plugin_id: &str,
     params: Value,
 ) -> Result<Value, CommandError> {
@@ -232,33 +233,14 @@ async fn dispatch_plugin_rpc_invoke(
     }
     let rpc_params = params.get("params").cloned().unwrap_or(Value::Null);
     validate_plugin_rpc_method(shared.as_ref(), plugin_id, &method)?;
-    let pid = plugin_id.trim().to_string();
-    tokio::task::spawn_blocking(move || {
-        let url = shared
-            .directory_plugins
-            .ensure_rpc_url(&pid)
-            .map_err(|e| map_directory_rpc_url_error(&pid, e))?;
-        let timeout_ms = shared
-            .directory_plugins
-            .rpc_timeout_override_ms(&pid, &method);
-        invoke_directory_plugin_rpc_blocking(
-            &url,
-            &method,
-            rpc_params,
-            RemoteRpcChannel::Plugin,
-            timeout_ms,
-        )
-        .map_err(Into::into)
-    })
+    invoke_directory_plugin_rpc_with_resources(
+        shared,
+        kernel,
+        plugin_id.trim().to_string(),
+        method,
+        rpc_params,
+    )
     .await
-    .map_err(|e| {
-        CommandError::from(
-            ApiError::Io {
-                message: format!("plugin_rpc_invoke join: {e}"),
-            }
-            .to_string(),
-        )
-    })?
 }
 
 async fn dispatch_local_bridge_command(
@@ -266,11 +248,11 @@ async fn dispatch_local_bridge_command(
     backend: &ChatBackend,
     command: &str,
     params: Value,
-    _bridge_plugin_id: &str,
+    bridge_plugin_id: &str,
 ) -> Result<Value, CommandError> {
     if command == "send_message" {
         let req = parse_send_message_request(&params)?;
-        let role_path = role_dir_for_id(state, &req.role_id);
+        let role_path = role_dir_for_id(state, &req.role_id)?;
         let res = backend
             .send_message(&role_path, &req)
             .await
@@ -303,12 +285,17 @@ async fn dispatch_local_bridge_command(
     }
 
     if command == "get_plugin_settings_ui" {
-        let plugin_id = params
+        let requested_plugin_id = params
             .get("pluginId")
             .or_else(|| params.get("plugin_id"))
             .and_then(|v| v.as_str())
             .ok_or_else(|| bridge_invalid("get_plugin_settings_ui: pluginId required"))?;
-        let dto = get_plugin_settings_ui_impl(state, plugin_id)?;
+        require_settings_plugin_identity(
+            bridge_plugin_id,
+            requested_plugin_id,
+            "get_plugin_settings_ui",
+        )?;
+        let dto = get_plugin_settings_ui_impl(state, bridge_plugin_id)?;
         return serde_json::to_value(dto).map_err(|e| {
             CommandError::from(
                 ApiError::Io {
@@ -320,13 +307,22 @@ async fn dispatch_local_bridge_command(
     }
 
     if command == "set_plugin_settings_config" {
-        let plugin_id = params
+        let requested_plugin_id = params
             .get("pluginId")
             .or_else(|| params.get("plugin_id"))
             .and_then(|v| v.as_str())
             .ok_or_else(|| bridge_invalid("set_plugin_settings_config: pluginId required"))?;
+        require_settings_plugin_identity(
+            bridge_plugin_id,
+            requested_plugin_id,
+            "set_plugin_settings_config",
+        )?;
         let config = params.get("config").cloned().unwrap_or(Value::Null);
-        set_plugin_settings_config_impl(state, plugin_id, &config)?;
+        let kernel = match backend {
+            ChatBackend::Http(connection) => Some(Arc::clone(connection)),
+            ChatBackend::Local(_) => None,
+        };
+        set_plugin_settings_config_impl(state, kernel, bridge_plugin_id, &config).await?;
         return Ok(json!({ "ok": true }));
     }
 
@@ -336,8 +332,20 @@ async fn dispatch_local_bridge_command(
             .or_else(|| params.get("role_id"))
             .and_then(|v| v.as_str())
             .ok_or_else(|| bridge_invalid("get_role_pack_path: roleId required"))?;
-        let path = role_dir_for_id(state, role_id.trim());
+        let path = role_dir_for_id(state, role_id.trim())?;
         return Ok(json!({ "role_path": path.to_string_lossy() }));
+    }
+
+    if command == "list_roles" {
+        let roles = list_roles_impl(state).await?;
+        return serde_json::to_value(roles).map_err(|e| {
+            CommandError::from(
+                ApiError::Io {
+                    message: format!("host json list_roles: {e}"),
+                }
+                .to_string(),
+            )
+        });
     }
 
     if command == "import_role" {
@@ -376,6 +384,20 @@ async fn dispatch_local_bridge_command(
     dispatch_bridge_command(state, command, params).await
 }
 
+fn require_settings_plugin_identity(
+    bridge_plugin_id: &str,
+    requested_plugin_id: &str,
+    command: &str,
+) -> Result<(), CommandError> {
+    if requested_plugin_id.trim() != bridge_plugin_id.trim() {
+        return Err(ApiError::PermissionDenied {
+            message: format!("{command}: pluginId must match the authenticated bridge plugin"),
+        }
+        .into());
+    }
+    Ok(())
+}
+
 async fn dispatch_bridge_command_routed(
     state: &SharedAppState,
     backend: &ChatBackend,
@@ -384,7 +406,12 @@ async fn dispatch_bridge_command_routed(
     bridge_plugin_id: &str,
 ) -> Result<Value, CommandError> {
     if command == "plugin_rpc_invoke" {
-        return dispatch_plugin_rpc_invoke(Arc::clone(state), bridge_plugin_id, params).await;
+        let kernel = match backend {
+            ChatBackend::Http(connection) => Some(Arc::clone(connection)),
+            ChatBackend::Local(_) => None,
+        };
+        return dispatch_plugin_rpc_invoke(Arc::clone(state), kernel, bridge_plugin_id, params)
+            .await;
     }
     if let ChatBackend::Http(conn) = backend {
         if bridge_command_needs_kernel_writer(command) {
@@ -491,6 +518,17 @@ mod rpc_validation_tests {
                 "whitelist rejected {method}"
             );
         }
+        let settings_bridge = manifest
+            .bridge_for_asset_rel("slots/settings.html")
+            .expect("voice settings bridge");
+        assert!(
+            invoke_list_allows(&settings_bridge.invoke, "list_roles"),
+            "voice settings must be able to list roles for per-role TTS policy"
+        );
+        assert!(
+            !requires_typed_shell("list_roles"),
+            "read-only role catalog must remain available to a settings slot"
+        );
     }
 
     fn path_from_manifest_dir() -> std::path::PathBuf {
@@ -540,5 +578,22 @@ mod rpc_validation_tests {
         let err =
             validate_rpc_method_for_manifest(&manifest, "voice.probe").expect_err("no process");
         assert!(err.to_string().contains("no process"));
+    }
+
+    #[test]
+    fn settings_commands_reject_cross_plugin_identity() {
+        assert!(require_settings_plugin_identity(
+            "com.example.a",
+            "com.example.a",
+            "get_plugin_settings_ui"
+        )
+        .is_ok());
+        let err = require_settings_plugin_identity(
+            "com.example.a",
+            "com.example.b",
+            "set_plugin_settings_config",
+        )
+        .expect_err("cross-plugin settings identity must fail");
+        assert!(err.to_string().contains("authenticated bridge plugin"));
     }
 }

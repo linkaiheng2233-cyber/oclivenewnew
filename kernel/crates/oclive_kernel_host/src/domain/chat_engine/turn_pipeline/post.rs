@@ -10,9 +10,11 @@ use crate::domain::slot_runner::SlotRunner;
 use crate::domain::turn_thinking::{
     effective_turn_thinking_policy, update_turn_thinking_runtime_state,
 };
-use crate::models::dto::{DisplayMetricsDto, SendMessageResponse};
+use crate::models::dto::{AdultBeatDto, DisplayMetricsDto, SendMessageResponse};
 use crate::models::{Event, PersonalitySource, Role};
 use std::sync::Arc;
+#[cfg(feature = "dual_core")]
+use std::sync::Mutex;
 use std::time::Instant;
 
 use super::super::emotion_to_dto;
@@ -21,7 +23,8 @@ use super::super::turn_context::TurnContext;
 use super::super::turn_error::TurnResult;
 use super::persistence::{
     append_turn_to_chat_storage, persist_atomic_movement_portrait,
-    persist_non_profile_personality_delta, ChatAppendIds, PostPersistOutcome, PostTurnPolicy,
+    persist_non_profile_personality_delta, resolve_visual_state_for_role, ChatAppendIds,
+    PostPersistOutcome, PostTurnPolicy,
 };
 use super::pre::{latest_recent_turn_pair, MainLlmOutput, MiddleOutput, PreLlmOutput, STAGES};
 use super::TurnMode;
@@ -29,6 +32,68 @@ use crate::domain::chat_engine::chat_stage::ChatStage;
 use crate::domain::reply_post_processor::resolve_reply_post_processor;
 use oclive_kernel_contracts::reply_post_processor::PostProcessInput;
 use oclive_kernel_contracts::LlmGenerateOpts;
+#[cfg(feature = "dual_core")]
+use oclive_validation::plugin_backends_for_slot_entry;
+
+#[cfg(feature = "dual_core")]
+fn selected_lora_llm(
+    ctx: &TurnContext<'_>,
+) -> Option<(String, String, Arc<dyn oclive_kernel_contracts::LlmClient>)> {
+    let plugin_id = ctx.state.session_cache.expert_lora_plugin_id(ctx.srid)?;
+    let registry = match ctx.session_config.slot_registry.as_ref() {
+        Some(registry) => registry,
+        None => {
+            tracing::warn!(
+                target: "oclive_expert",
+                error_code = "LORA_ADAPTER_INVALID",
+                session_ns = %ctx.srid,
+                plugin_id = %plugin_id,
+                "clearing LoRA selection because effective slot_registry is missing"
+            );
+            ctx.state
+                .session_cache
+                .set_expert_lora_plugin(ctx.srid, None);
+            return None;
+        }
+    };
+    let selection =
+        match crate::domain::expert_routing::resolve_lora_llm_selection(registry, &plugin_id) {
+            Ok(selection) => selection,
+            Err(message) => {
+                tracing::warn!(
+                    target: "oclive_expert",
+                    error_code = "LORA_ADAPTER_INVALID",
+                    session_ns = %ctx.srid,
+                    plugin_id = %plugin_id,
+                    reason = %message,
+                    "clearing invalid LoRA selection and using the normal LLM path"
+                );
+                ctx.state
+                    .session_cache
+                    .set_expert_lora_plugin(ctx.srid, None);
+                return None;
+            }
+        };
+    if let Err(message) = ctx
+        .state
+        .directory_plugins
+        .ensure_rpc_url(&selection.plugin_id)
+    {
+        tracing::warn!(
+            target: "oclive_expert",
+            error_code = "LORA_ADAPTER_UNAVAILABLE",
+            session_ns = %ctx.srid,
+            plugin_id = %selection.plugin_id,
+            slot_key = %selection.slot_key,
+            reason = %message,
+            "LoRA plugin unavailable; using the normal LLM path"
+        );
+        return None;
+    }
+    let backends = plugin_backends_for_slot_entry(&selection.entry);
+    let llm = ctx.state.plugins.llm_for_plugin_backends(&backends);
+    Some((selection.slot_key, selection.plugin_id, llm))
+}
 
 /// Artifacts produced during post-LLM orchestration, passed to response assembly.
 pub(crate) struct TurnArtifacts<'a> {
@@ -48,6 +113,7 @@ pub(crate) struct PostLlmCtx<'a> {
     pub role: &'a Role,
     pub user_message: &'a str,
     pub display_reply: String,
+    pub adult_beat: Option<AdultBeatDto>,
     pub raw_reply: Option<String>,
     pub dual_core_degraded: bool,
     pub distro_visual_mode: Option<&'a str>,
@@ -67,17 +133,72 @@ pub(crate) async fn run_main_llm(
     let t_main_llm = Instant::now();
     let mut main_llm_fallback = false;
     let mut llm_fallback_reason = None;
-    let ollama_opts = middle
-        .use_ollama_prefix_opts
-        .then(LlmGenerateOpts::deep_prefix_cache);
-    let reply_out = match SlotRunner::generate_llm(
+    let ollama_opts = Some(if middle.use_ollama_prefix_opts {
+        LlmGenerateOpts::deep_prefix_cache()
+    } else {
+        LlmGenerateOpts::interactive()
+    });
+    #[cfg(feature = "dual_core")]
+    let selected_lora = selected_lora_llm(ctx);
+    #[cfg(feature = "dual_core")]
+    let generation = async {
+        if let Some((slot_key, plugin_id, llm)) = selected_lora.as_ref() {
+            tracing::info!(
+                target: "oclive_expert",
+                session_ns = %ctx.srid,
+                plugin_id = %plugin_id,
+                slot_key = %slot_key,
+                "generating reply with selected LoRA directory LLM"
+            );
+            match SlotRunner::generate_llm_single(
+                llm,
+                pre.memory.ollama_model.as_str(),
+                &middle.prompt,
+                ollama_opts.as_ref(),
+            )
+            .await
+            {
+                Ok(out) => Ok(out),
+                Err(error) => {
+                    tracing::warn!(
+                        target: "oclive_expert",
+                        error_code = "LORA_ADAPTER_GENERATE_FAILED",
+                        session_ns = %ctx.srid,
+                        plugin_id = %plugin_id,
+                        slot_key = %slot_key,
+                        reason = %error,
+                        "LoRA generation failed; clearing selection and retrying the normal LLM"
+                    );
+                    ctx.state
+                        .session_cache
+                        .set_expert_lora_plugin(ctx.srid, None);
+                    SlotRunner::generate_llm(
+                        pl,
+                        pre.memory.ollama_model.as_str(),
+                        &middle.prompt,
+                        ollama_opts.as_ref(),
+                    )
+                    .await
+                }
+            }
+        } else {
+            SlotRunner::generate_llm(
+                pl,
+                pre.memory.ollama_model.as_str(),
+                &middle.prompt,
+                ollama_opts.as_ref(),
+            )
+            .await
+        }
+    };
+    #[cfg(not(feature = "dual_core"))]
+    let generation = SlotRunner::generate_llm(
         pl,
         pre.memory.ollama_model.as_str(),
         &middle.prompt,
         ollama_opts.as_ref(),
-    )
-    .await
-    {
+    );
+    let reply_out = match generation.await {
         Ok(out) => out,
         Err(e) => {
             let reason = e.to_frontend_error();
@@ -113,7 +234,7 @@ pub(crate) async fn run_main_llm(
             stable_len = len,
             cache_expected_hit = hit,
             prompt_eval_ms = ?reply_out.prompt_eval_ms,
-            "deep prefix cache llm metrics"
+            "prompt prefix cache llm metrics"
         );
     }
     let reply_raw = reply_out.reply;
@@ -149,18 +270,105 @@ pub(crate) async fn run_main_llm_stream(
     let t_main_llm = Instant::now();
     let mut main_llm_fallback = false;
     let mut llm_fallback_reason = None;
-    let ollama_opts = middle
-        .use_ollama_prefix_opts
-        .then(LlmGenerateOpts::deep_prefix_cache);
-    let reply_out = match SlotRunner::generate_llm_stream(
+    let ollama_opts = Some(if middle.use_ollama_prefix_opts {
+        LlmGenerateOpts::deep_prefix_cache()
+    } else {
+        LlmGenerateOpts::interactive()
+    });
+    #[cfg(feature = "dual_core")]
+    let selected_lora = selected_lora_llm(ctx);
+    #[cfg(feature = "dual_core")]
+    let generation = async {
+        if let Some((slot_key, plugin_id, llm)) = selected_lora.as_ref() {
+            tracing::info!(
+                target: "oclive_expert",
+                session_ns = %ctx.srid,
+                plugin_id = %plugin_id,
+                slot_key = %slot_key,
+                "streaming reply with selected LoRA directory LLM"
+            );
+            let streamed = Arc::new(Mutex::new(String::new()));
+            let streamed_for_sink = Arc::clone(&streamed);
+            let downstream = Arc::clone(&on_token);
+            let passthrough_sink: oclive_kernel_contracts::LlmTokenSink = Arc::new(move |token| {
+                if let Ok(mut output) = streamed_for_sink.lock() {
+                    output.push_str(token);
+                }
+                downstream(token);
+            });
+            match SlotRunner::generate_llm_stream_single(
+                llm,
+                pre.memory.ollama_model.as_str(),
+                &middle.prompt,
+                passthrough_sink,
+                ollama_opts.as_ref(),
+            )
+            .await
+            {
+                Ok(out) => Ok(out),
+                Err(error) => {
+                    let partial = streamed
+                        .lock()
+                        .map(|output| output.clone())
+                        .unwrap_or_default();
+                    ctx.state
+                        .session_cache
+                        .set_expert_lora_plugin(ctx.srid, None);
+                    if !partial.is_empty() {
+                        tracing::warn!(
+                            target: "oclive_expert",
+                            error_code = "LORA_ADAPTER_STREAM_PARTIAL",
+                            session_ns = %ctx.srid,
+                            plugin_id = %plugin_id,
+                            slot_key = %slot_key,
+                            emitted_bytes = partial.len(),
+                            reason = %error,
+                            "LoRA stream failed after emitting output; preserving the partial reply without duplicate fallback tokens"
+                        );
+                        return Ok(oclive_kernel_contracts::LlmGenerateOutcome {
+                            reply: partial,
+                            prompt_eval_ms: None,
+                        });
+                    }
+                    tracing::warn!(
+                        target: "oclive_expert",
+                        error_code = "LORA_ADAPTER_GENERATE_FAILED",
+                        session_ns = %ctx.srid,
+                        plugin_id = %plugin_id,
+                        slot_key = %slot_key,
+                        reason = %error,
+                        "LoRA stream failed before first token; retrying the normal LLM"
+                    );
+                    SlotRunner::generate_llm_stream(
+                        pl,
+                        pre.memory.ollama_model.as_str(),
+                        &middle.prompt,
+                        Arc::clone(&on_token),
+                        ollama_opts.as_ref(),
+                    )
+                    .await
+                }
+            }
+        } else {
+            SlotRunner::generate_llm_stream(
+                pl,
+                pre.memory.ollama_model.as_str(),
+                &middle.prompt,
+                Arc::clone(&on_token),
+                ollama_opts.as_ref(),
+            )
+            .await
+        }
+    };
+    #[cfg(not(feature = "dual_core"))]
+    let generation = SlotRunner::generate_llm_stream(
         pl,
         pre.memory.ollama_model.as_str(),
         &middle.prompt,
         Arc::clone(&on_token),
         ollama_opts.as_ref(),
-    )
-    .await
-    {
+    );
+    let reply_out = match generation.await {
         Ok(out) => out,
         Err(e) => {
             let reason = e.to_frontend_error();
@@ -335,6 +543,7 @@ fn assemble_send_message_response(ctx: &PostLlmCtx<'_>) -> SendMessageResponse {
         role,
         user_message,
         display_reply,
+        adult_beat,
         raw_reply,
         dual_core_degraded,
         distro_visual_mode,
@@ -376,6 +585,7 @@ fn assemble_send_message_response(ctx: &PostLlmCtx<'_>) -> SendMessageResponse {
         }),
         relation_state: middle.relation_after.as_str().to_string(),
         reply,
+        adult_beat: adult_beat.clone(),
         emotion: emotion_to_dto(&pre.hints.emotion_result),
         bot_emotion: policy.bot_emotion_str.clone(),
         portrait_emotion: persist.portrait_emotion_str.clone(),
@@ -474,6 +684,22 @@ pub(crate) async fn post_llm(
 
     let t_post_llm = Instant::now();
     let reply = llm.reply.clone();
+    let parsed_adult_beat = matches!(mode, TurnMode::CoPresent)
+        .then(|| {
+            crate::domain::adult_interaction::parse_reply(&reply, role, ctx.req.adult.as_ref())
+        })
+        .flatten();
+    let semantic_reply = parsed_adult_beat
+        .as_ref()
+        .map(crate::domain::adult_interaction::transcript_reply)
+        .unwrap_or_else(|| reply.clone());
+    let synthetic_adult_action = ctx.req.adult.as_ref().is_some_and(|adult| {
+        adult.gates_open()
+            && !matches!(
+                adult.action,
+                crate::models::dto::AdultInteractionAction::Message
+            )
+    });
 
     let policy = analyze_bot_emotion_and_policy(
         state,
@@ -481,24 +707,94 @@ pub(crate) async fn post_llm(
         scene_id,
         srid,
         user_message,
-        &reply,
+        &semantic_reply,
         pre,
         middle,
         ctx.runtime_snapshot.emotion.clone(),
     )
     .await?;
 
-    spawn_profile_evolution_after_llm(
-        state,
-        Arc::clone(&primary_llm),
-        Arc::clone(&ctx.role_arc),
-        srid,
-        path_label,
-        pre,
-        middle,
-        user_message,
-        &reply,
-    );
+    if ctx.is_staged() {
+        let (display_reply, raw_reply, adult_beat) =
+            if let Some(mut beat) = parsed_adult_beat.clone() {
+                let (dialogue, processed_raw) = apply_reply_post_processor(
+                    state,
+                    role,
+                    mrid,
+                    scene_id,
+                    srid,
+                    user_message,
+                    beat.dialogue.as_str(),
+                    ctx.req.include_raw_reply == Some(true),
+                );
+                beat.dialogue = dialogue.clone();
+                let raw = if ctx.req.include_raw_reply == Some(true) {
+                    Some(reply.clone())
+                } else {
+                    processed_raw
+                };
+                (dialogue, raw, Some(beat))
+            } else {
+                let (display, raw) = apply_reply_post_processor(
+                    state,
+                    role,
+                    mrid,
+                    scene_id,
+                    srid,
+                    user_message,
+                    &reply,
+                    ctx.req.include_raw_reply == Some(true),
+                );
+                (display, raw, None)
+            };
+        let persist = PostPersistOutcome {
+            favor_current: pre.relation.favorability_before,
+            movement: false,
+            portrait_emotion_str: policy.bot_emotion_str.clone(),
+            visual_state_id: resolve_visual_state_for_role(
+                role,
+                policy.bot_emotion_str.as_str(),
+                Some(middle.complex_emotion_out.intensity),
+                state.host_profile.visual_presentation_mode.as_deref(),
+            ),
+        };
+        let chat_ids = ChatAppendIds::default();
+        return Ok(assemble_send_message_response(&PostLlmCtx {
+            mode,
+            immersive,
+            scene_id,
+            role,
+            user_message,
+            display_reply,
+            adult_beat,
+            raw_reply,
+            dual_core_degraded: ctx.dual_core_degraded,
+            distro_visual_mode: ctx.state.host_profile.visual_presentation_mode.as_deref(),
+            movement: false,
+            artifacts: TurnArtifacts {
+                middle,
+                pre,
+                llm,
+                policy: &policy,
+                persist: &persist,
+                chat_ids: &chat_ids,
+            },
+        }));
+    }
+
+    if !synthetic_adult_action {
+        spawn_profile_evolution_after_llm(
+            state,
+            Arc::clone(&primary_llm),
+            Arc::clone(&ctx.role_arc),
+            srid,
+            path_label,
+            pre,
+            middle,
+            user_message,
+            &semantic_reply,
+        );
+    }
 
     let persist_out = persist_atomic_movement_portrait(
         state,
@@ -507,11 +803,25 @@ pub(crate) async fn post_llm(
         role,
         ctx.ids(),
         scenes,
-        user_message,
+        if synthetic_adult_action {
+            ""
+        } else {
+            user_message
+        },
         pre,
         middle,
         &policy,
-        &reply,
+        &semantic_reply,
+        if ctx
+            .req
+            .adult
+            .as_ref()
+            .is_some_and(crate::models::dto::AdultInteractionRequest::gates_open)
+        {
+            "adult"
+        } else {
+            "ordinary"
+        },
     )
     .await?;
 
@@ -525,16 +835,39 @@ pub(crate) async fn post_llm(
         }
     }
 
-    let (display_reply, raw_reply) = apply_reply_post_processor(
-        state,
-        role,
-        mrid,
-        scene_id,
-        srid,
-        user_message,
-        &reply,
-        ctx.req.include_raw_reply == Some(true),
-    );
+    let (display_reply, raw_reply, adult_beat, transcript_reply) =
+        if let Some(mut beat) = parsed_adult_beat {
+            let (dialogue, processed_raw) = apply_reply_post_processor(
+                state,
+                role,
+                mrid,
+                scene_id,
+                srid,
+                user_message,
+                beat.dialogue.as_str(),
+                ctx.req.include_raw_reply == Some(true),
+            );
+            beat.dialogue = dialogue.clone();
+            let transcript = crate::domain::adult_interaction::transcript_reply(&beat);
+            let raw = if ctx.req.include_raw_reply == Some(true) {
+                Some(reply.clone())
+            } else {
+                processed_raw
+            };
+            (dialogue, raw, Some(beat), transcript)
+        } else {
+            let (display, raw) = apply_reply_post_processor(
+                state,
+                role,
+                mrid,
+                scene_id,
+                srid,
+                user_message,
+                &reply,
+                ctx.req.include_raw_reply == Some(true),
+            );
+            (display.clone(), raw, None, display)
+        };
 
     let chat_ids = append_turn_to_chat_storage(
         state,
@@ -545,9 +878,30 @@ pub(crate) async fn post_llm(
         llm,
         &policy,
         user_message,
-        &display_reply,
+        &transcript_reply,
+        synthetic_adult_action,
     )
     .await;
+
+    if matches!(mode, TurnMode::CoPresent) {
+        if let Err(error) = crate::domain::narrative_continuity::update_after_reply(
+            state,
+            role,
+            srid,
+            scene_id,
+            transcript_reply.as_str(),
+        )
+        .await
+        {
+            tracing::warn!(
+                target: "oclive_continuity",
+                role_id = %srid,
+                scene_id,
+                error = %error,
+                "narrative continuity transition failed; preserving previous state"
+            );
+        }
+    }
 
     persist_non_profile_personality_delta(state, role, srid, middle).await;
 
@@ -578,6 +932,7 @@ pub(crate) async fn post_llm(
         role,
         user_message,
         display_reply,
+        adult_beat,
         raw_reply,
         dual_core_degraded: ctx.dual_core_degraded,
         distro_visual_mode: ctx.state.host_profile.visual_presentation_mode.as_deref(),

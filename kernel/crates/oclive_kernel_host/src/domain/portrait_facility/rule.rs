@@ -9,25 +9,92 @@ pub fn portrait_catalog_active(role: &Role) -> bool {
     role.pack_portrait_catalog.enabled && role.portrait_catalog.is_some()
 }
 
+/// Startup-resolved gate for the enhanced portrait route.
+///
+/// A catalog by itself is not enough: when visual presentation is disabled,
+/// running the catalog director would only add work without producing a
+/// directive. Such packs stay on the legacy filename fallback path.
+#[must_use]
+pub fn enhanced_portrait_active(role: &Role, distro_mode: Option<&str>) -> bool {
+    portrait_catalog_active(role)
+        && crate::domain::visual_presentation::effective_visual_presentation_enabled(
+            &role.pack_visual_presentation_config,
+            distro_mode,
+        )
+}
+
 #[must_use]
 pub fn resolve_visual_state_rule(
     catalog: &PortraitCatalogFile,
     emotion_tag: &str,
 ) -> Option<String> {
+    resolve_visual_state_rule_with_intensity(catalog, emotion_tag, None)
+}
+
+/// Resolve an emotion tag to the closest catalog intensity variant.
+/// Packs without intensity variants retain the legacy/default behavior.
+#[must_use]
+pub fn resolve_visual_state_rule_with_intensity(
+    catalog: &PortraitCatalogFile,
+    emotion_tag: &str,
+    intensity: Option<f64>,
+) -> Option<String> {
     let tag = emotion_tag.trim().to_ascii_lowercase();
     if tag.is_empty() {
         return default_neutral_id(catalog);
     }
-    for asset in &catalog.assets {
-        if asset
-            .tags
+    let family_assets = || {
+        catalog
+            .assets
             .iter()
-            .any(|t| t.trim().eq_ignore_ascii_case(&tag))
+            .filter(|asset| asset_belongs_to_family(asset, &tag))
+    };
+    if let Some(level) = intensity.and_then(intensity_level) {
+        if let Some(asset) = family_assets().find(|asset| asset.id.ends_with(&format!("_{level}")))
         {
             return Some(asset.id.clone());
         }
+        if let Some(asset) = family_assets().find(|asset| !asset.id.ends_with("_default")) {
+            return Some(asset.id.clone());
+        }
+    }
+    if let Some(asset) = family_assets().find(|asset| asset.id.ends_with("_default")) {
+        return Some(asset.id.clone());
+    }
+    if let Some(asset) = family_assets().next() {
+        return Some(asset.id.clone());
     }
     default_neutral_id(catalog)
+}
+
+fn asset_belongs_to_family(
+    asset: &oclive_kernel_types::models::PortraitCatalogAsset,
+    family: &str,
+) -> bool {
+    if let Some(cluster) = asset
+        .cluster
+        .as_deref()
+        .filter(|cluster| !cluster.trim().is_empty())
+    {
+        return cluster.trim().eq_ignore_ascii_case(family);
+    }
+    asset
+        .tags
+        .iter()
+        .any(|tag| tag.trim().eq_ignore_ascii_case(family))
+}
+
+fn intensity_level(intensity: f64) -> Option<&'static str> {
+    if !intensity.is_finite() {
+        return None;
+    }
+    Some(if intensity < 0.34 {
+        "mild"
+    } else if intensity < 0.67 {
+        "moderate"
+    } else {
+        "severe"
+    })
 }
 
 fn default_neutral_id(catalog: &PortraitCatalogFile) -> Option<String> {
@@ -108,6 +175,48 @@ mod tests {
         assert_eq!(
             resolve_visual_state_rule(&catalog, ""),
             Some("neutral_default".to_string())
+        );
+    }
+
+    #[test]
+    fn resolve_by_intensity_prefers_variant_and_falls_back() {
+        let mut catalog = sample_catalog();
+        catalog.assets.push(PortraitCatalogAsset {
+            id: "happy_mild".to_string(),
+            path: "assets/images/happy_mild.png".to_string(),
+            desc: "mild".to_string(),
+            tags: vec!["happy".to_string()],
+            kind: Default::default(),
+            cluster: None,
+            context: None,
+            resources: None,
+        });
+        assert_eq!(
+            resolve_visual_state_rule_with_intensity(&catalog, "happy", Some(0.2)),
+            Some("happy_mild".to_string())
+        );
+        assert_eq!(
+            resolve_visual_state_rule_with_intensity(&catalog, "sad", Some(0.9)),
+            Some("sad_default".to_string())
+        );
+    }
+
+    #[test]
+    fn cluster_is_the_emotion_family_even_when_tags_are_descriptive() {
+        let mut catalog = sample_catalog();
+        catalog.assets.push(PortraitCatalogAsset {
+            id: "warm_smile_moderate".to_string(),
+            path: "assets/images/warm.png".to_string(),
+            desc: "warm smile".to_string(),
+            tags: vec!["warm".to_string(), "smile".to_string()],
+            kind: Default::default(),
+            cluster: Some("happy".to_string()),
+            context: None,
+            resources: None,
+        });
+        assert_eq!(
+            resolve_visual_state_rule_with_intensity(&catalog, "happy", Some(0.5)),
+            Some("warm_smile_moderate".to_string())
         );
     }
 

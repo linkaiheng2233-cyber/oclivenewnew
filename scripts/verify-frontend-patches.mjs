@@ -14,6 +14,15 @@ if (process.env.OCLIVE_SKIP_VERIFY === '1') {
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const chatPro = join(root, 'distros', 'chat-pro', 'src')
 const shared = join(root, 'distros', 'shared', 'src')
+const embeddedPluginFrameHosts = [
+  'components/ChatPluginToolbarSlots.vue',
+  'components/PluginChatHeaderSlots.vue',
+  'components/PluginRoleDetailSlots.vue',
+  'components/PluginSettingsPanelSlots.vue',
+  'components/PluginSidebarSlots.vue',
+  'components/PluginSlotEmbed.vue',
+  'components/hotkey/HotkeyHost.vue',
+]
 
 const checks = [
   {
@@ -41,6 +50,110 @@ const checks = [
       readFileSync(join(shared, 'composables/useGlobalHotkeys.ts'), 'utf8').includes(
         'modelManagerOpen',
       ),
+  },
+  {
+    name: 'production directory plugin slots fail closed to iframe',
+    ok: () => {
+      const source = readFileSync(
+        join(shared, 'composables/useDirectoryPluginSlotEmbed.ts'),
+        'utf8',
+      )
+      return source.includes('!isUnsafeInlinePluginVueEnabled()')
+        && source.includes('return true')
+        && source.includes('return false')
+    },
+  },
+  {
+    name: 'production directory shell blocks same-process Vue',
+    ok: () => {
+      const source = readFileSync(
+        join(shared, 'utils/directoryShellBootstrap.ts'),
+        'utf8',
+      )
+      return source.includes('!isUnsafeInlinePluginVueEnabled()')
+    },
+  },
+  {
+    name: 'production directory shell uses opaque-origin parent-broker isolation',
+    ok: () => {
+      const source = readFileSync(
+        join(shared, 'utils/directoryShellBootstrap.ts'),
+        'utf8',
+      )
+      return source.includes("setAttribute('sandbox', 'allow-scripts')")
+        && source.includes('createPluginFrameBridge(pluginBridgeInvoke')
+        && source.includes('parseDirectoryShellIdentity(shellUrl, shellPid)')
+        && !source.includes('window.location.replace(shellUrl)')
+        && !existsSync(join(root, 'distros/desktop-tauri/capabilities/plugin-shell-remote.json'))
+    },
+  },
+  {
+    name: 'embedded plugin frames use opaque-origin script-only sandbox',
+    ok: () => embeddedPluginFrameHosts.every((relativePath) => {
+      const source = readFileSync(join(shared, relativePath), 'utf8')
+      return source.includes('sandbox="allow-scripts"')
+        && source.includes('bindPluginFrame')
+        && source.includes('onPluginFrameLoad')
+        && !source.includes('allow-same-origin')
+    }),
+  },
+  {
+    name: 'embedded plugin bridge binds calls in the parent host',
+    ok: () => {
+      const frameHost = readFileSync(
+        join(shared, 'composables/usePluginFrameBridge.ts'),
+        'utf8',
+      )
+      const broker = readFileSync(
+        join(shared, 'utils/pluginFrameBridge.ts'),
+        'utf8',
+      )
+      const injectedBridge = readFileSync(
+        join(root, 'kernel/crates/oclive_kernel_host/assets/plugin-bridge.iife.js'),
+        'utf8',
+      )
+      return frameHost.includes('frameBridge.register(value.contentWindow')
+        && broker.includes("event.origin !== 'null'")
+        && broker.includes('request.token !== registration.token')
+        && broker.includes('registration.activated')
+        && broker.includes('registration.seenRequestIds.has')
+        && injectedBridge.includes('oclive-plugin-frame-bridge-v1')
+        && injectedBridge.includes('kind==="bind"')
+        && injectedBridge.includes('parent.postMessage')
+    },
+  },
+  {
+    name: 'release compiler stays development-only and tree-shakeable',
+    ok: () => {
+      const rootPackage = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
+      const chatPackage = JSON.parse(readFileSync(join(root, 'distros/chat-pro/package.json'), 'utf8'))
+      const sharedPackage = JSON.parse(readFileSync(join(root, 'distros/shared/package.json'), 'utf8'))
+      const compiler = readFileSync(join(shared, 'utils/compilePluginVueSfc.ts'), 'utf8')
+      return !rootPackage.dependencies?.['vue3-sfc-loader']
+        && !chatPackage.dependencies?.['vue3-sfc-loader']
+        && !sharedPackage.dependencies?.['vue3-sfc-loader']
+        && rootPackage.devDependencies?.['vue3-sfc-loader']
+        && compiler.includes('if (!import.meta.env.DEV)')
+    },
+  },
+  {
+    name: 'official Voice HTML fallbacks expose functional isolated controls',
+    ok: () => {
+      const slots = join(root, 'distros/chat-pro/plugins/com.oclive.voice.asr/slots')
+      const toolbar = readFileSync(join(slots, 'voice-toolbar.js'), 'utf8')
+      const settings = readFileSync(join(slots, 'voice-settings.js'), 'utf8')
+      const frameHost = readFileSync(join(shared, 'composables/usePluginFrameBridge.ts'), 'utf8')
+      const capture = readFileSync(join(shared, 'utils/hostAudioCapture.ts'), 'utf8')
+      return toolbar.includes("rpc('voice.transcribe'")
+        && toolbar.includes('bridge.emit(submitEvent')
+        && toolbar.includes('bridge.audioCapture.start()')
+        && !toolbar.includes('navigator.mediaDevices.getUserMedia')
+        && settings.includes("bridge.invoke('set_plugin_settings_config'")
+        && settings.includes("rpc('voice.warm'")
+        && frameHost.includes("slot.pluginId === VOICE_ASR_PLUGIN_ID && slot.entry === 'slots/toolbar.html'")
+        && frameHost.includes('allowAudioCapture:')
+        && capture.includes('navigator.mediaDevices.getUserMedia')
+    },
   },
 ]
 

@@ -141,6 +141,17 @@ impl HighRiskGrantStore {
         self.grant_allowed(&self.inner.read().network, grant_id)
     }
 
+    #[must_use]
+    pub fn is_permission_granted(&self, permission: &str, id: &str) -> bool {
+        match permission.trim() {
+            PROCESS_SPAWN => self.is_process_spawn_granted(id),
+            NETWORK_WILDCARD => self.is_network_granted(id),
+            MCP_HTTP => self.is_mcp_http_granted(id),
+            MCP_STDIO => self.is_mcp_stdio_granted(id),
+            _ => false,
+        }
+    }
+
     /// Call before Remote / outbound HTTP; returns [`AppError::HighRiskCapabilityNotGranted`] when not granted.
     ///
     /// # Errors

@@ -11,6 +11,8 @@ const props = withDefaults(
     presenceVariant?: 'co_present' | 'remote_stub' | 'remote_life'
     /** Matches backend `reply_is_fallback` */
     replyIsFallback?: boolean
+    /** Silent narration/action bubble rendered after assistant dialogue. */
+    aside?: string
     /** True while SSE tokens are still arriving */
     streaming?: boolean
     /** When non-empty, highlight matching substrings in body (e.g. history search) */
@@ -85,6 +87,15 @@ function hhmm(ts: number): string {
         </div>
         <div v-if="props.replyIsFallback && props.role === 'assistant'" class="fallback-hint">
           {{ t("chat.fallbackBadge") }}
+        </div>
+      </div>
+      <div
+        v-if="props.role === 'assistant' && props.aside?.trim()"
+        class="bubble narration-bubble"
+        :aria-label="t('chat.narrationAria')"
+      >
+        <div class="content">
+          {{ props.aside }}
         </div>
       </div>
       <div class="bubble-meta">
@@ -215,6 +226,14 @@ function hhmm(ts: number): string {
   border-radius: var(--radius-bubble);
   background: var(--bubble-bot-bg);
   box-shadow: var(--shadow-bubble);
+}
+.narration-bubble {
+  border-radius: 16px 16px 16px 6px;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--bg-elevated) 82%, transparent);
+  border-style: dashed;
+  font-size: 13px;
+  line-height: 1.6;
 }
 /* Long replies: cap visible height; scroll inside bubble instead of filling the window */
 .content {

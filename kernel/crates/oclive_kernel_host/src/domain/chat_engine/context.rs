@@ -8,12 +8,13 @@ use std::sync::Arc;
 pub(crate) async fn load_recent_context(
     state: &AppState,
     role_id: &str,
+    include_adult: bool,
 ) -> Result<(Vec<(String, String)>, Vec<(String, String)>, Vec<Event>)> {
     let (recent_turns, recent_events_for_event) = tokio::try_join!(
         async {
             Ok(state
                 .db_manager
-                .list_short_term_recent_turns(role_id, 6)
+                .list_short_term_recent_turns(role_id, 6, include_adult)
                 .await
                 .unwrap_or_else(|e| {
                     tracing::warn!(
@@ -34,7 +35,7 @@ pub(crate) async fn load_recent_context(
     ))
 }
 
-pub(super) fn validate_scene_id(
+pub(crate) fn validate_scene_id(
     role_id: &str,
     scene_ids: &Arc<[String]>,
     requested_scene_id: String,

@@ -53,6 +53,7 @@ pub fn run(args: DebugArgs) -> Result<()> {
         .current_dir(&root)
         .env("OCLIVE_DEBUG_TRACE", "1")
         .env("OCLIVE_HTTP_API_MOCK_LLM", "1")
+        .env("OCLIVE_API_TOKEN", crate::http_client::api_token())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
 

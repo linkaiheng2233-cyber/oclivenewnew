@@ -63,7 +63,7 @@ export function splitRoleplayReply(raw: string): RoleplaySplit {
 
 /** Apply roleplay split to an assistant message (idempotent when `aside` already set). */
 export function applyAssistantSplit<
-  T extends { role: string; content: string; aside?: string },
+  T extends { role: string, content: string, aside?: string },
 >(msg: T): T {
   if (msg.role !== 'assistant' || msg.aside?.trim())
     return msg

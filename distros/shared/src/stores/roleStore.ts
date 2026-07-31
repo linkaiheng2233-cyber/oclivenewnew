@@ -1,7 +1,7 @@
-import type { AuthorPackFile, LifeStateDto, PackUiConfig, PluginBackends, PluginBackendsOverride, PluginBackendsSourceMap, RoleInfo, UserRelationDto, DisplayMetricsDto } from '@oclive/shared/api'
-import { normalizePluginBackends } from '@oclive/shared/api/settings'
-import { defineStore } from 'pinia'
-import { listen, type UnlistenFn } from '@tauri-apps/api/event'
+import type { AuthorPackFile, DisplayMetricsDto, LifeStateDto, PackUiConfig, PluginBackends, PluginBackendsOverride, PluginBackendsSourceMap, RoleInfo, UserRelationDto } from '@oclive/shared/api'
+import type { SlotRegistryMap } from '@oclive/shared/lib/slotRegistry'
+import type { PresetRoleOption } from '@oclive/shared/utils/presetRolePicker'
+import type { UnlistenFn } from '@tauri-apps/api/event'
 import {
 
   clearSceneUserRelation,
@@ -18,22 +18,27 @@ import {
 
   toastAsyncError,
 } from '@oclive/shared/api'
+import { normalizePluginBackends } from '@oclive/shared/api/settings'
 import { rt } from '@oclive/shared/i18n/runtimeT'
 import { hostEventBus } from '@oclive/shared/lib/hostEventBus'
-import { normalizeSlotBackendWire, type SlotRegistryMap } from '@oclive/shared/lib/slotRegistry'
+import { normalizeSlotBackendWire } from '@oclive/shared/lib/slotRegistry'
 import {
   normalizeInteractionMode,
   packDefaultFromApi,
 } from '@oclive/shared/utils/interactionMode'
 import {
+
   resolveDefaultRoleId,
   shouldShowPresetPicker,
-  type PresetRoleOption,
 } from '@oclive/shared/utils/presetRolePicker'
+import { listen } from '@tauri-apps/api/event'
+import { defineStore } from 'pinia'
+import { useAdultInteractionStore } from './adultInteractionStore'
 
 export interface RoleOption extends PresetRoleOption {
   id: string
   name: string
+  adultExtensionAvailable?: boolean
 }
 
 interface RoleInfoState {
@@ -41,6 +46,7 @@ interface RoleInfoState {
   version: string
   author: string
   description: string
+  adultExtensionAvailable: boolean
   favorability: number
   currentEmotion: string
   /** Latest catalog visual_state_id from send_message (optional). */
@@ -124,6 +130,7 @@ function mapRoleInfo(info: RoleInfo): RoleInfoState {
     version: info.version ?? '',
     author: info.author ?? '',
     description: info.description ?? '',
+    adultExtensionAvailable: info.adult_extension_available ?? false,
     favorability: metrics?.favor ?? info.current_favorability,
     currentEmotion: info.current_emotion,
     personality: metrics?.traits ?? info.personality_vector ?? [],
@@ -184,6 +191,7 @@ function mapRoleInfo(info: RoleInfo): RoleInfoState {
 
 let affectMetricsUnlisten: UnlistenFn | undefined
 let affectMetricsListenerBound = false
+let roleInfoGeneration = 0
 
 interface AffectMetricsChangedPayload {
   role_id: string
@@ -210,6 +218,8 @@ export async function bindAffectMetricsListener(): Promise<void> {
         const payload = event.payload
         if (!payload?.metrics)
           return
+        // The listener runs only after module initialization; the store declaration below is ready by then.
+        // eslint-disable-next-line ts/no-use-before-define
         const store = useRoleStore()
         if (!roleIdMatchesPayload(store.currentRoleId, payload.role_id))
           return
@@ -234,12 +244,15 @@ export const useRoleStore = defineStore(
   {
     state: () => ({
       currentRoleId: '',
+      /** Role owning the transient portrait state returned by the latest chat turn. */
+      portraitStateRoleId: '',
       roles: [] as RoleOption[],
       roleInfo: {
         name: rt('app.defaultRoleName'),
         version: '',
         author: '',
         description: '',
+        adultExtensionAvailable: false,
         favorability: 0,
         currentEmotion: 'neutral',
         personality: [],
@@ -314,6 +327,7 @@ export const useRoleStore = defineStore(
           featured: r.featured ?? false,
           preset_order: r.preset_order ?? 999,
           interaction_mode_suggestion: r.interaction_mode_suggestion ?? null,
+          adultExtensionAvailable: r.adult_extension_available ?? false,
         }))
         if (this.roles.length === 0) {
           this.currentRoleId = ''
@@ -329,13 +343,20 @@ export const useRoleStore = defineStore(
         return shouldShowPresetPicker(this.roles, this.currentRoleId)
       },
       async switchRole(roleId: string) {
+        const generation = ++roleInfoGeneration
         const info = await invokeSwitchRole(roleId)
+        if (generation !== roleInfoGeneration)
+          return
         this.currentRoleId = roleId
         this.applyRoleInfo(info)
       },
       async refreshRoleInfo() {
+        const roleId = this.currentRoleId
+        const generation = ++roleInfoGeneration
         try {
-          const info = await getRoleInfo(this.currentRoleId)
+          const info = await getRoleInfo(roleId)
+          if (generation !== roleInfoGeneration || this.currentRoleId !== roleId)
+            return
           this.applyRoleInfo(info)
         }
         catch (err) {
@@ -345,8 +366,18 @@ export const useRoleStore = defineStore(
       },
       /** Apply already-fetched `RoleInfo` (e.g. from `switch_scene`) to avoid an extra request */
       applyRoleInfo(info: RoleInfo) {
-        this.roleInfo = mapRoleInfo(info)
         const rid = (info.role_id ?? this.currentRoleId ?? '').trim()
+        const preservePortrait = !!rid && rid === this.portraitStateRoleId
+        const visualStateId = preservePortrait ? this.roleInfo.visualStateId : null
+        const portraitAssetPath = preservePortrait ? this.roleInfo.portraitAssetPath : null
+        this.roleInfo = mapRoleInfo(info)
+        if (preservePortrait) {
+          this.roleInfo.visualStateId = visualStateId
+          this.roleInfo.portraitAssetPath = portraitAssetPath
+        }
+        else {
+          this.portraitStateRoleId = ''
+        }
         if (rid) {
           hostEventBus.emitBuiltin('role:info:updated', { roleId: rid })
         }
@@ -370,16 +401,43 @@ export const useRoleStore = defineStore(
           this.roleInfo.visualStateId = visual.visualStateId
         if (visual?.portraitAssetPath !== undefined)
           this.roleInfo.portraitAssetPath = visual.portraitAssetPath
+        if (visual?.visualStateId !== undefined || visual?.portraitAssetPath !== undefined)
+          this.portraitStateRoleId = this.currentRoleId
       },
       updateRelationState(relationState: string) {
         this.roleInfo.relationState = relationState
       },
       async setSceneUserRelation(sceneId: string, relation: string) {
+        const roleId = this.currentRoleId
+        const { cancelAdultBeatQueue } = await import(
+          '@oclive/shared/lib/adultBeatQueue',
+        )
+        await cancelAdultBeatQueue(roleId, sceneId)
+        useAdultInteractionStore().clearSession(roleId, sceneId)
         const info = await invokeSetSceneUserRelation(
-          this.currentRoleId,
+          roleId,
           sceneId,
           relation,
         )
+        if (this.currentRoleId !== roleId)
+          return info
+        this.applyRoleInfo(info)
+        return info
+      },
+      async setGlobalUserRelation(relation: string, sceneId?: string) {
+        const roleId = this.currentRoleId
+        const sid = sceneId
+          ?? this.roleInfo.userPresenceScene
+          ?? this.roleInfo.currentScene
+          ?? 'default'
+        const { cancelAdultBeatQueue } = await import(
+          '@oclive/shared/lib/adultBeatQueue',
+        )
+        await cancelAdultBeatQueue(roleId, sid)
+        useAdultInteractionStore().clearSession(roleId, sid)
+        const info = await setUserRelation(roleId, relation)
+        if (this.currentRoleId !== roleId)
+          return info
         this.applyRoleInfo(info)
         return info
       },
@@ -388,13 +446,30 @@ export const useRoleStore = defineStore(
        * When `clearSceneId` is passed, remove per-scene relation override first.
        */
       async setManifestDefaultRelation(clearSceneId?: string) {
+        const roleId = this.currentRoleId
+        const sceneId = clearSceneId
+          ?? this.roleInfo.userPresenceScene
+          ?? this.roleInfo.currentScene
+          ?? 'default'
+        const { cancelAdultBeatQueue } = await import(
+          '@oclive/shared/lib/adultBeatQueue',
+        )
+        await cancelAdultBeatQueue(roleId, sceneId)
+        useAdultInteractionStore().clearSession(
+          roleId,
+          sceneId,
+        )
         if (clearSceneId) {
-          await clearSceneUserRelation(this.currentRoleId, clearSceneId)
+          await clearSceneUserRelation(roleId, clearSceneId)
+          if (this.currentRoleId !== roleId)
+            return
         }
         const info = await setUserRelation(
-          this.currentRoleId,
+          roleId,
           OCLIVE_DEFAULT_RELATION_SENTINEL,
         )
+        if (this.currentRoleId !== roleId)
+          return info
         this.applyRoleInfo(info)
         return info
       },

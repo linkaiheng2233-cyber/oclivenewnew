@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "assets": [
+    {
+      "id": "happy_default",
+      "path": "assets/images/happy.png",
+      "desc": "猫嘴笑起、短短双手张开；适合 doro 对「人~」表达开心、亲切和赞同。",
+      "tags": ["happy"],
+      "kind": "image",
+      "cluster": "happy"
+    },
+    {
+      "id": "sad_default",
+      "path": "assets/images/sad.png",
+      "desc": "紫色眼睛流泪、身体微微缩起；适合「人……」式的难过、内疚和安静陪伴。",
+      "tags": ["sad"],
+      "kind": "image",
+      "cluster": "sad"
+    },
+    {
+      "id": "angry_default",
+      "path": "assets/images/angry.png",
+      "desc": "抱起短短的双臂、眉头压低，带怒气符号；适合严肃反对危险、欺骗和伤害。",
+      "tags": ["angry"],
+      "kind": "image",
+      "cluster": "angry"
+    },
+    {
+      "id": "neutral_default",
+      "path": "assets/images/normal.png",
+      "desc": "圆滚滚地自然站立、平静注视用户；用于普通对话和专注倾听。",
+      "tags": ["neutral"],
+      "kind": "image",
+      "cluster": "neutral"
+    },
+    {
+      "id": "excited_default",
+      "path": "assets/images/excited.png",
+      "desc": "双手高举、眼睛发亮，头顶跳出感叹号；适合「人！doro 找到了！」式的惊喜。",
+      "tags": ["excited"],
+      "kind": "image",
+      "cluster": "excited"
+    },
+    {
+      "id": "confused_default",
+      "path": "assets/images/confused.png",
+      "desc": "歪头、头顶浮出问号；适合「人？」式的困惑、寻找和缺失条件。",
+      "tags": ["confused"],
+      "kind": "image",
+      "cluster": "confused"
+    },
+    {
+      "id": "shy_default",
+      "path": "assets/images/shy.png",
+      "desc": "脸颊发红、短手收在胸前，带一滴小汗；适合轻声「人~」和不好意思。",
+      "tags": ["shy"],
+      "kind": "image",
+      "cluster": "shy"
+    }
+  ]
+}

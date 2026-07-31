@@ -1,10 +1,11 @@
 import type { PokeChipId, ScriptLine, SkeletonFork, TheaterSkeleton } from './theaterLogic'
+import type { TheaterPairRelationId } from './theaterPairRelation'
 import {
   DEFAULT_PAIR_RELATION_ID,
   isBaselinePregenCast,
   isOfficialCastPair,
   normalizePairRelationId,
-  type TheaterPairRelationId,
+
 } from './theaterPairRelation'
 
 export interface TheaterCastSlot {
@@ -56,7 +57,9 @@ export function resolveCastTier(config: TheaterCastConfig): CastTier {
     config,
     OFFICIAL_CAST_ROLE_A,
     OFFICIAL_CAST_ROLE_B,
-  ) ? 'default' : 'applied'
+  )
+    ? 'default'
+    : 'applied'
 }
 
 /** Official pair with A/B slots reversed relative to skeleton side A/B. */

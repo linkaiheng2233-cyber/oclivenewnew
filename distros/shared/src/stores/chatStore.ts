@@ -1,29 +1,35 @@
 import type { PresenceMode, SendMessageResponse } from '@oclive/shared/api'
 import type { RoleSceneMessageMap } from '@oclive/shared/utils/chatMessageDb'
 import type { RoleplaySplit } from '@oclive/shared/utils/roleplayReplySplit'
-import { defineStore } from 'pinia'
 import {
   getChatStorageCapabilities,
 } from '@oclive/shared/api/chatStorage'
+import { cancelAdultBeatQueue } from '@oclive/shared/lib/adultBeatQueue'
 import {
   bucketMapKey,
   migrateMessageMapShape,
 
   saveDirtyBucketsToIdb,
 } from '@oclive/shared/utils/chatMessageDb'
-
 import { isChatStorageMigrated, runChatStorageMigrationIfNeeded } from '@oclive/shared/utils/chatStorageMigration'
+
 import {
   assistantDialogueFromSplit,
 
   splitRoleplayReply,
 } from '@oclive/shared/utils/roleplayReplySplit'
-import { loadRoleSceneMessages, loadRoleSceneMessagesWithSceneFallback } from './chatStoreLoad'
-import { sendChatStoreMessage } from './chatStoreSend'
-import { useRoleStore } from './roleStore'
-import { useUiStore } from './uiStore'
+import { defineStore } from 'pinia'
 import { resolveUserNarrativeSceneId } from '../composables/narrativeScene'
 import { PURE_CHAT_DEFAULT_SCENE_ID } from '../utils/pureChatScene'
+import { useAdultInteractionStore } from './adultInteractionStore'
+import { loadRoleSceneMessages, loadRoleSceneMessagesWithSceneFallback } from './chatStoreLoad'
+import {
+  cancelActiveChatSend,
+  resumeAdultBeatQueueForChat,
+  sendChatStoreMessage,
+} from './chatStoreSend'
+import { useRoleStore } from './roleStore'
+import { useUiStore } from './uiStore'
 
 export interface ChatMessage {
   id: string
@@ -96,20 +102,6 @@ function syncLastAssistantAside(
   messages: ChatMessage[],
 ): void {
   map[roleSceneAsideKey(roleId, sceneId)] = lastAssistantAsideFromMessages(messages)
-}
-
-function rebuildLastAssistantAsideMap(messageMap: RoleSceneMessageMap): Record<string, string> {
-  const out: Record<string, string> = {}
-  for (const [roleId, roleBucket] of Object.entries(messageMap)) {
-    if (isLegacyRoleBucket(roleBucket)) {
-      syncLastAssistantAside(out, roleId, 'default', roleBucket)
-      continue
-    }
-    for (const [sceneId, messages] of Object.entries(roleBucket)) {
-      syncLastAssistantAside(out, roleId, sceneId, messages)
-    }
-  }
-  return out
 }
 
 let persistMessagesTimer: ReturnType<typeof setTimeout> | null = null
@@ -295,6 +287,25 @@ export const useChatStore = defineStore(
         const bucket = roleSceneBucket(this.messageMap, roleId, sid)
         syncLastAssistantAside(this.lastAssistantAside, roleId, sid, bucket)
         sanitizeAllSceneHistorySplits(this.sceneHistorySplitIndex, this.messageMap)
+        resumeAdultBeatQueueForChat(
+          {
+            sceneHistorySplitIndex: this.sceneHistorySplitIndex,
+            setLoading: loading => (this.isLoading = loading),
+            getMessageCountForRoleScene: (rid, scene) =>
+              this.getMessageCountForRoleScene(rid, scene),
+            addMessage: (rid, scene, msg, options) =>
+              this.addMessage(rid, scene, msg, options),
+            patchMessageById: (rid, scene, localId, patch) =>
+              this.patchMessageById(rid, scene, localId, patch),
+            deleteMessage: (rid, scene, messageId) =>
+              this.deleteMessage(rid, scene, messageId),
+            addSystemMessage: (message, scene) =>
+              this.addSystemMessage(message, scene),
+            clampSceneHistorySplitForBucket,
+          },
+          roleId,
+          sid,
+        )
       },
 
       /** Daily chat: load `home` bucket and fold existing turns into collapsible history. */
@@ -315,11 +326,11 @@ export const useChatStore = defineStore(
 
         const primarySceneId = roleStore.interactionImmersive
           ? resolveUserNarrativeSceneId(
-            roleStore.roleInfo.userPresenceScene,
-            roleStore.roleInfo.currentScene,
-            roleStore.roleInfo.scenes,
-            uiStore.sceneId,
-          )
+              roleStore.roleInfo.userPresenceScene,
+              roleStore.roleInfo.currentScene,
+              roleStore.roleInfo.scenes,
+              uiStore.sceneId,
+            )
           : PURE_CHAT_DEFAULT_SCENE_ID
 
         const loadedSceneId = await loadRoleSceneMessagesWithSceneFallback(
@@ -377,15 +388,18 @@ export const useChatStore = defineStore(
         return roleSceneBucket(this.messageMap, roleId, sceneId).length
       },
 
-      applySceneChange(
+      async applySceneChange(
         nextSceneId: string,
         options?: { skipHistorySplit?: boolean },
-      ) {
+      ): Promise<void> {
         const uiStore = useUiStore()
         const roleStore = useRoleStore()
         const roleId = roleStore.currentRoleId
         const prev = uiStore.sceneId
         const next = nextSceneId || 'default'
+        if (prev !== next) {
+          useAdultInteractionStore().clearSession(roleId, prev || 'default')
+        }
         const loadKey = bucketMapKey(roleId, next)
         // `roleSceneBucket` auto-creates empty arrays; only treat a bucket as loaded after
         // `loadMessagesForRoleScene` completes (loadedBucketKeys), not merely when the key exists.
@@ -401,7 +415,7 @@ export const useChatStore = defineStore(
         if (shouldReload) {
           this.messagesLoadingKey = bucketMapKey(roleId, next)
           uiStore.setScene(next)
-          void this.loadMessagesForRoleScene(roleId, next)
+          await this.loadMessagesForRoleScene(roleId, next)
         }
         else {
           uiStore.setScene(next)
@@ -564,6 +578,64 @@ export const useChatStore = defineStore(
           content,
           sceneId,
         )
+      },
+      /**
+       * Stop the old context without generating a reply. Scene/identity
+       * transitions use the returned flag to decide whether the new context
+       * should produce one ordinary, character-aware transition response.
+       */
+      async clearAdultInteractionForContextChange(
+        roleId: string,
+        sceneId: string,
+      ): Promise<boolean> {
+        const sid = sceneId || 'default'
+        const adultStore = useAdultInteractionStore()
+        const wasActive = adultStore.sessionFor(roleId, sid).active
+        await cancelAdultBeatQueue(roleId, sid)
+        adultStore.clearSession(roleId, sid)
+        return wasActive
+      },
+      async sendAdultAction(
+        action: 'continue' | 'exit',
+        sceneId: string,
+        contextHint?: string,
+      ): Promise<SendMessageResponse | undefined> {
+        const defaultContent = action === 'exit'
+          ? '（系统：用户点击了“退出当前 R18 互动”。请自然收束当前互动并回到普通聊天，不要替用户说话。）'
+          : '（系统：继续当前互动的下一拍，不要虚构用户的发言、动作、选择或感受。）'
+        const content = contextHint?.trim()
+          ? `${defaultContent}\n（切换背景：${contextHint.trim()}）`
+          : defaultContent
+        const response = await sendChatStoreMessage(
+          {
+            sceneHistorySplitIndex: this.sceneHistorySplitIndex,
+            setLoading: loading => (this.isLoading = loading),
+            getMessageCountForRoleScene: (roleId, sid) => this.getMessageCountForRoleScene(roleId, sid),
+            addMessage: (roleId, sid, msg, options) => this.addMessage(roleId, sid, msg, options),
+            patchMessageById: (roleId, sid, localId, patch) =>
+              this.patchMessageById(roleId, sid, localId, patch),
+            deleteMessage: (roleId, sid, messageId) => this.deleteMessage(roleId, sid, messageId),
+            addSystemMessage: (message, sid) => this.addSystemMessage(message, sid),
+            clampSceneHistorySplitForBucket,
+          },
+          content,
+          sceneId,
+          {
+            adultAction: action,
+            hideUserMessage: true,
+          },
+        )
+        if (action === 'exit') {
+          useAdultInteractionStore().clearSession(
+            useRoleStore().currentRoleId,
+            sceneId || 'default',
+          )
+        }
+        return response
+      },
+      cancelPendingSend() {
+        cancelActiveChatSend()
+        this.isLoading = false
       },
     },
   },

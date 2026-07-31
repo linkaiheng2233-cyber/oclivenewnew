@@ -12,6 +12,7 @@ use crate::infrastructure::directory_plugins::DirectoryPluginRuntime;
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
 use crate::infrastructure::llm::LlmClient;
 use crate::infrastructure::ollama_client::OllamaClient;
+use crate::infrastructure::performance_llm::PerformanceLlmClient;
 use crate::infrastructure::policy_registry::{
     build_policy_sets_from_registry, load_policy_registry_from_path, PolicyRuntime, PolicySet,
 };
@@ -26,7 +27,7 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
-use tokio::sync::{Mutex, OnceCell};
+use tokio::sync::{Mutex, Notify, OnceCell};
 
 mod affect_sink;
 mod app_state_builder;
@@ -52,6 +53,40 @@ pub use session_cache::SessionCache;
 struct TurnLockEntry {
     lock: Arc<Mutex<()>>,
     last_touch_ms: AtomicU64,
+}
+
+pub struct AdultStageCancellation {
+    cancelled: AtomicBool,
+    notify: Notify,
+}
+
+impl AdultStageCancellation {
+    fn new() -> Self {
+        Self {
+            cancelled: AtomicBool::new(false),
+            notify: Notify::new(),
+        }
+    }
+
+    pub async fn cancelled(&self) {
+        loop {
+            let notified = self.notify.notified();
+            if self.cancelled.load(Ordering::Acquire) {
+                return;
+            }
+            notified.await;
+        }
+    }
+
+    #[must_use]
+    pub fn is_cancelled(&self) -> bool {
+        self.cancelled.load(Ordering::Acquire)
+    }
+
+    fn cancel(&self) {
+        self.cancelled.store(true, Ordering::Release);
+        self.notify.notify_waiters();
+    }
 }
 
 const TURN_LOCK_SOFT_CAP: usize = 512;
@@ -81,6 +116,10 @@ pub struct AppState {
     pub llm: Arc<dyn LlmClient>,
     /// Direct Ollama client for Deep prefix-cache metrics (`keep_alive`); `None` in mock-LLM tests.
     pub ollama: Option<Arc<OllamaClient>>,
+    /// Distro performance-mode runtime; absent for Ollama-only profiles and mock tests.
+    pub performance_llm: Option<Arc<PerformanceLlmClient>>,
+    /// Host-owned global resource budget, leases, pressure, and diagnostics.
+    pub resource_coordinator: Arc<crate::domain::resource_coordinator::ResourceCoordinator>,
     /// Hot-path lock layering:
     /// - `role_cache` / `role_load_inflight`: dedupe role reads;
     /// - `session_cache`: session overrides;
@@ -107,6 +146,8 @@ pub struct AppState {
     pub high_risk_grants: Arc<HighRiskGrantStore>,
     /// Per-session (`srid`) mutex: serializes concurrent turns on the same namespace (`--api` / parallel invoke).
     turn_locks: DashMap<String, TurnLockEntry>,
+    /// Cancellation signals for in-flight staged adult beat generation.
+    adult_stage_cancellations: DashMap<String, Arc<AdultStageCancellation>>,
     /// Startup self-check cache (success is permanent; failures retry per role with TTL).
     pub(crate) startup_health: parking_lot::RwLock<StartupHealthCache>,
     /// Read `OCLIVE_REMOTE_FALLBACK_TO_BUILTIN` once at startup; `sync_remote_fallback_from_db_value` does not re-read env.
@@ -161,6 +202,27 @@ impl AppState {
     ) -> Result<Self> {
         Self::new_in_memory_with_llm_and_policy_file(llm, roles_dir, None).await
     }
+
+    #[cfg(test)]
+    /// Builds a test state backed by a real SQLite file so restart recovery can
+    /// be exercised without contacting an external model service.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the database, migrations, role storage, or test
+    /// runtime cannot be initialized.
+    pub async fn new_file_test_with_llm(
+        db_path: impl AsRef<Path>,
+        llm: Arc<dyn LlmClient>,
+        roles_dir: impl AsRef<Path>,
+        app_data_dir: impl AsRef<Path>,
+    ) -> Result<Self> {
+        AppStateBuilder::in_memory_test(llm, roles_dir, None)
+            .with_test_db_path(db_path)
+            .with_app_data_dir(app_data_dir)
+            .build()
+            .await
+    }
     /// # Errors
     ///
     /// Returns [`Err`] with a human-readable message when the operation fails.
@@ -197,6 +259,49 @@ impl AppState {
 
     pub fn set_global_ollama_model_in_memory(&self, model: String) {
         *self.ollama_model.write() = model;
+    }
+
+    /// Preload the selected local model in the background. Failures are non-fatal.
+    pub fn schedule_ollama_preload(&self, model: String) {
+        if self.performance_llm.as_ref().is_some_and(|performance| {
+            let status = performance.status_snapshot();
+            status.ready || (status.runtime_installed && status.model_configured)
+        }) {
+            return;
+        }
+        let enabled = std::env::var("OCLIVE_OLLAMA_PRELOAD")
+            .map(|v| !matches!(v.trim().to_ascii_lowercase().as_str(), "0" | "false" | "no"))
+            .unwrap_or(true);
+        let remote_backend = std::env::var("OCLIVE_LLM_BACKEND")
+            .map(|v| v.trim().eq_ignore_ascii_case("remote"))
+            .unwrap_or(false);
+        if !enabled || remote_backend || self.user_llm_provider.read().as_str() == "cloud" {
+            return;
+        }
+        let Some(client) = self.ollama.as_ref().cloned() else {
+            return;
+        };
+        let keep_alive = std::env::var("OCLIVE_OLLAMA_KEEP_ALIVE")
+            .ok()
+            .filter(|v| !v.trim().is_empty())
+            .unwrap_or_else(|| "30m".to_string());
+        tokio::spawn(async move {
+            let started = std::time::Instant::now();
+            match client.preload(model.as_str(), keep_alive.as_str()).await {
+                Ok(()) => tracing::info!(
+                    target: "oclive_llm",
+                    model,
+                    preload_ms = started.elapsed().as_millis(),
+                    "Ollama model preloaded"
+                ),
+                Err(error) => tracing::warn!(
+                    target: "oclive_llm",
+                    model,
+                    %error,
+                    "Ollama preload failed; first chat will retry normally"
+                ),
+            }
+        });
     }
 
     /// Borrows [`DbManager`] as [`TurnThinkingStatePort`](crate::domain::ports::TurnThinkingStatePort).
@@ -329,6 +434,12 @@ impl AppState {
             }
         };
 
+        if let Err(error) =
+            crate::service::execution_plan::ensure_role_execution_plan_activatable(self, loaded)
+        {
+            self.role_load_inflight.remove(role_id);
+            return Err(error);
+        }
         self.insert_role_cache(role_id, loaded);
         self.role_load_inflight.remove(role_id);
         Ok(Arc::clone(loaded))
@@ -500,6 +611,50 @@ impl AppState {
         lock
     }
 
+    /// Serialize staged adult lifecycle operations for one session and scene.
+    ///
+    /// This lock is deliberately separate from the ordinary turn lock because
+    /// staged generation calls `process_message`, which acquires the turn lock
+    /// itself. Every adult begin/generate/commit/cancel path must take this
+    /// scope lock before touching durable staged state.
+    #[must_use]
+    pub fn adult_stage_lock_for(&self, srid: &str, scene_id: &str) -> Arc<Mutex<()>> {
+        let key = format!("__adult_stage_scope__:{}:{}{}", srid.len(), srid, scene_id);
+        self.turn_lock_for(key.as_str())
+    }
+
+    #[must_use]
+    pub fn register_adult_stage_generation(
+        &self,
+        generation_id: &str,
+    ) -> Arc<AdultStageCancellation> {
+        let signal = Arc::new(AdultStageCancellation::new());
+        if let Some((_, previous)) = self.adult_stage_cancellations.remove(generation_id) {
+            previous.cancel();
+        }
+        self.adult_stage_cancellations
+            .insert(generation_id.to_string(), Arc::clone(&signal));
+        signal
+    }
+
+    #[must_use]
+    pub fn adult_stage_cancellation(&self, generation_id: &str) -> Arc<AdultStageCancellation> {
+        self.adult_stage_cancellations
+            .get(generation_id)
+            .map(|entry| Arc::clone(entry.value()))
+            .unwrap_or_else(|| self.register_adult_stage_generation(generation_id))
+    }
+
+    pub fn cancel_adult_stage_generation_in_flight(&self, generation_id: &str) {
+        if let Some((_, signal)) = self.adult_stage_cancellations.remove(generation_id) {
+            signal.cancel();
+        }
+    }
+
+    pub fn finish_adult_stage_generation_in_flight(&self, generation_id: &str) {
+        self.adult_stage_cancellations.remove(generation_id);
+    }
+
     /// Drop idle `srid` locks with no external `Arc` holders when the map grows too large.
     fn prune_idle_turn_locks(&self) {
         if self.turn_locks.len() <= TURN_LOCK_SOFT_CAP {
@@ -613,6 +768,28 @@ mod tests {
         let tmp = TempDir::new().expect("temp");
         let state = AppState::new(":memory:", None, tmp.path()).await;
         assert!(state.is_ok());
+    }
+
+    #[tokio::test]
+    async fn injected_llm_state_registers_only_the_builtin_voice_resource_hook() {
+        let tmp = TempDir::new().expect("temp");
+        let state = AppState::new_in_memory_with_llm(
+            Arc::new(crate::infrastructure::llm::MockLlmClient {
+                reply: "ok".to_string(),
+            }),
+            tmp.path(),
+        )
+        .await
+        .expect("state");
+        let diagnostics = state.resource_coordinator.diagnostics_snapshot();
+        assert_eq!(
+            diagnostics
+                .adapters
+                .iter()
+                .map(|adapter| adapter.descriptor.adapter_id.as_str())
+                .collect::<Vec<_>>(),
+            vec![crate::infrastructure::resource_adapters::COSYVOICE_ADAPTER_ID]
+        );
     }
 
     #[tokio::test]

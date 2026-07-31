@@ -3,29 +3,58 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Mumu Header Status</title>
+    <title>Mumu 状态</title>
     <style>
-      body {
-        margin: 0;
-        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-        background: transparent;
-        color: #5c564c;
-        font-size: 12px;
-      }
-      .fallback {
-        box-sizing: border-box;
-        width: 100%;
-        min-height: 52px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 1px solid #ddd2c4;
-        border-radius: 10px;
-        background: #f7f2ea;
-      }
+      * { box-sizing: border-box; }
+      body { margin: 0; font: 12px system-ui, -apple-system, "Segoe UI", sans-serif; color: #514a40; background: transparent; }
+      .status { min-height: 52px; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; padding: 7px 10px; border: 1px solid #ddd2c4; border-radius: 10px; background: #f9f4ec; }
+      strong { font-size: 13px; } .detail { color: #756c60; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      button { border: 1px solid #d8cdbc; border-radius: 7px; padding: 4px 8px; color: inherit; background: #fffaf3; cursor: pointer; }
+      #error { color: #a33; }
     </style>
   </head>
   <body>
-    <div class="fallback">mumu 状态插件（iframe 回退）</div>
+    <section class="status" aria-label="mumu 当前状态">
+      <strong id="name">mumu</strong><span id="detail" class="detail">正在同步状态…</span><button id="refresh" type="button">刷新</button>
+    </section>
+    <script>
+      (() => {
+        const bridge = window.OclivePluginBridge
+        const name = document.querySelector('#name')
+        const detail = document.querySelector('#detail')
+        let activeRoleId = ''
+        let refreshGeneration = 0
+        async function refresh(preferredRoleId) {
+          const generation = ++refreshGeneration
+          detail.removeAttribute('id')
+          detail.textContent = '正在同步状态…'
+          try {
+            const roles = await bridge.invoke('list_roles', {})
+            if (generation !== refreshGeneration) return
+            const roleId = String(preferredRoleId || activeRoleId || roles?.[0]?.id || '').trim()
+            if (!roleId) throw new Error('未找到当前角色')
+            activeRoleId = roleId
+            const info = await bridge.invoke('get_role_info', { role_id: roleId, session_id: null })
+            if (generation !== refreshGeneration) return
+            name.textContent = String(info?.role_name || roles[0]?.name || roleId)
+            const relation = String(info?.display_metrics?.relation_summary || info?.relation_state || '关系未记录')
+            const scene = String(info?.user_presence_scene || info?.current_scene || '场景未记录')
+            const life = String(info?.current_life?.label || '暂无日程')
+            detail.textContent = `${relation} · ${scene} · ${life}`
+          } catch (reason) {
+            if (generation !== refreshGeneration) return
+            detail.id = 'error'
+            detail.textContent = reason instanceof Error ? reason.message : String(reason)
+          }
+        }
+        document.querySelector('#refresh').addEventListener('click', () => void refresh())
+        if (!bridge) { detail.id = 'error'; detail.textContent = '宿主桥接不可用' }
+        else {
+          for (const event of ['role:switched', 'role:info:updated', 'message:sent', 'appearance:changed'])
+            void bridge.listen(event, payload => void refresh(payload?.roleId)).catch(reason => { detail.textContent = String(reason) })
+          void refresh()
+        }
+      })()
+    </script>
   </body>
 </html>

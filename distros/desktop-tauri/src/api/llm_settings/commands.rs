@@ -12,12 +12,17 @@ use crate::kernel_attach::KernelHttpClient;
 use crate::kernel_lifecycle::SharedKernelConnection;
 use oclive_kernel_host::infrastructure::ollama_client::OllamaClient;
 use oclive_kernel_host::service::{
-    get_global_ollama_model_impl, get_llm_user_settings_impl, list_cloud_models_impl,
+    activate_local_lora_adapter_impl, delete_local_lora_adapter_impl, get_global_ollama_model_impl,
+    get_llm_user_settings_impl, import_local_lora_adapter_impl, list_cloud_models_impl,
     list_ollama_models_impl, probe_cloud_llm_impl, save_llm_user_settings_impl, session_namespace,
     set_global_ollama_model_impl, GlobalOllamaModelDto, SetGlobalOllamaModelRequest,
 };
 use oclive_kernel_host::state::SharedAppState;
 use oclive_kernel_types::models::dto::RoleInfo;
+use oclive_kernel_types::models::{
+    ActivateLocalLoraAdapterRequest, DeleteLocalLoraAdapterRequest, ImportLocalLoraAdapterRequest,
+    LocalLoraAdapterDto,
+};
 use serde::Deserialize;
 use std::path::{Path, PathBuf};
 use tauri::{AppHandle, Manager, State};
@@ -151,6 +156,70 @@ pub async fn import_gguf_to_ollama(
         .create_model_from_path(name.trim(), &path.to_string_lossy())
         .await?;
     Ok(name.trim().to_string())
+}
+
+/// # Errors
+///
+/// Returns validation, package, checksum, or filesystem errors.
+pub async fn import_local_lora_adapter(
+    state: State<'_, SharedAppState>,
+    req: ImportLocalLoraAdapterRequest,
+) -> Result<LocalLoraAdapterDto, CommandError> {
+    import_local_lora_adapter_impl(state.inner(), &req).await
+}
+
+/// # Errors
+///
+/// Returns validation or managed llama.cpp runtime errors. Attached desktop
+/// shells delegate to the canonical kernel single writer.
+pub async fn activate_local_lora_adapter(
+    app: AppHandle,
+    state: State<'_, SharedAppState>,
+    req: ActivateLocalLoraAdapterRequest,
+) -> Result<Option<LocalLoraAdapterDto>, CommandError> {
+    if let Some(conn) = app.try_state::<SharedKernelConnection>() {
+        let result = KernelHttpClient::activate_local_lora_adapter_via_http(&conn, &req)
+            .await
+            .map_err(CommandError::from)?;
+        let active_id = result
+            .as_ref()
+            .map(|adapter| adapter.id.as_str())
+            .unwrap_or_default();
+        if let Err(error) = state
+            .db_manager
+            .upsert_app_setting(
+                oclive_kernel_host::domain::user_llm_env::KEY_LOCAL_LORA_ADAPTER_ID,
+                active_id,
+            )
+            .await
+        {
+            tracing::warn!(
+                target: "oclive_lora",
+                %error,
+                "canonical LoRA activation succeeded but shell active-id mirror failed"
+            );
+        }
+        return Ok(result);
+    }
+    let result = activate_local_lora_adapter_impl(state.inner(), &req).await?;
+    sync_shell_llm_settings_to_canonical(state.inner()).await;
+    Ok(result)
+}
+
+/// # Errors
+///
+/// Returns an error when the adapter is active, invalid, missing, or cannot be removed.
+pub async fn delete_local_lora_adapter(
+    app: AppHandle,
+    state: State<'_, SharedAppState>,
+    req: DeleteLocalLoraAdapterRequest,
+) -> Result<(), CommandError> {
+    if let Some(conn) = app.try_state::<SharedKernelConnection>() {
+        return KernelHttpClient::delete_local_lora_adapter_via_http(&conn, &req)
+            .await
+            .map_err(Into::into);
+    }
+    delete_local_lora_adapter_impl(state.inner(), &req).await
 }
 
 /// # Errors

@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "com.oclive.voice.asr",
   "name": "OCLive Voice ASR (Official)",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Side-channel voice.asr + optional voice expansion (CosyVoice2 TTS) + voice.build_directive. ASR in base; emotional TTS requires expansion.",
   "provides": ["voice.asr"],
   "rpcMethods": [
@@ -21,6 +21,7 @@
     "voice.build_directive"
   ],
   "rpcTimeoutsMs": {
+    "config_updated": 30000,
     "voice.warm": 900000,
     "voice.speak": 600000,
     "voice.probe_tts": 120000,
@@ -51,9 +52,16 @@
       },
       {
         "key": "auto_tts",
-        "label": "自动朗读回复",
+        "label": "自动朗读已启用角色",
         "type": "boolean",
         "default": false,
+        "required": false
+      },
+      {
+        "key": "role_tts_enabled",
+        "label": "启用 TTS 的角色",
+        "type": "object",
+        "default": {},
         "required": false
       },
       {
@@ -129,7 +137,7 @@
       "label": "语音输入",
       "bridge": {
         "invoke": ["plugin_rpc_invoke", "get_plugin_settings_ui", "get_role_pack_path"],
-        "events": ["message:sent"]
+        "events": []
       }
     },
     {
@@ -138,7 +146,7 @@
       "vueComponent": "slots/VoiceSettings.vue",
       "label": "语音识别",
       "bridge": {
-        "invoke": ["plugin_rpc_invoke", "get_plugin_settings_ui", "set_plugin_settings_config", "get_role_pack_path"],
+        "invoke": ["plugin_rpc_invoke", "get_plugin_settings_ui", "set_plugin_settings_config", "get_role_pack_path", "list_roles"],
         "events": []
       }
     }

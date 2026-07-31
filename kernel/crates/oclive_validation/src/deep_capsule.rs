@@ -1,4 +1,4 @@
-//! Wave D · `prompts/deep_capsule.txt` validation.
+//! Wave D · offline persona capsule validation (`prompts/deep_capsule.txt`, legacy path).
 
 use std::fs;
 use std::path::Path;

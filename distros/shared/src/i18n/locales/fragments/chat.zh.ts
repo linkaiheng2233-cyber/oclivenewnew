@@ -14,6 +14,9 @@ export default {
   empty: '暂无消息，开始聊天吧~',
   thinking: '正在想...',
   fallbackBadge: '备用短回复',
+  narrationAria: '动作与旁白',
+  adultExit: '退出当前 R18 互动',
+  adultExited: '当前 R18 互动已结束，已回到普通聊天。',
   /** 旧版 / 内嵌演示 ChatPanel */
   demoTitle: '对话操作',
   demoPlaceholder: '输入消息',

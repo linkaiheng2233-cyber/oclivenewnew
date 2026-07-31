@@ -1,20 +1,13 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, nextTick, ref, Teleport, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { VOICE_ASR_PLUGIN_ID } from '@oclive/shared/lib/voiceAsrEvents'
 import {
   isPureChatPlatformPlugin,
   SLOT_SETTINGS_PANEL,
   usePluginStore,
 } from '@oclive/shared/stores/pluginStore'
-import { VOICE_ASR_PLUGIN_ID } from '@oclive/shared/lib/voiceAsrEvents'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
-
-const ChatStorageSettingsPanel = defineAsyncComponent(() => import('@oclive/shared/components/settings/ChatStorageSettingsPanel.vue'))
-const SettingsGeneralTab = defineAsyncComponent(() => import('@oclive/shared/components/settings/SettingsGeneralTab.vue'))
-const SettingsPluginsTab = defineAsyncComponent(() => import('@oclive/shared/components/settings/SettingsPluginsTab.vue'))
-const SettingsVoiceTab = defineAsyncComponent(() => import('@oclive/shared/components/settings/SettingsVoiceTab.vue'))
-
-export type SettingsTab = 'general' | 'voice' | 'plugins' | 'storage'
+import { computed, defineAsyncComponent, nextTick, ref, Teleport, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const props = withDefaults(
   defineProps<{
@@ -25,10 +18,16 @@ const props = withDefaults(
   }>(),
   { embedded: false, focusTab: null },
 )
-
 const emit = defineEmits<{
   close: []
 }>()
+const ChatStorageSettingsPanel = defineAsyncComponent(() => import('@oclive/shared/components/settings/ChatStorageSettingsPanel.vue'))
+const SettingsGeneralTab = defineAsyncComponent(() => import('@oclive/shared/components/settings/SettingsGeneralTab.vue'))
+const SettingsPluginsTab = defineAsyncComponent(() => import('@oclive/shared/components/settings/SettingsPluginsTab.vue'))
+const SettingsVoiceTab = defineAsyncComponent(() => import('@oclive/shared/components/settings/SettingsVoiceTab.vue'))
+const SettingsAdultTab = defineAsyncComponent(() => import('@oclive/shared/components/settings/SettingsAdultTab.vue'))
+
+export type SettingsTab = 'general' | 'voice' | 'plugins' | 'storage' | 'adult'
 
 const { t } = useI18n()
 const pluginStore = usePluginStore()
@@ -171,6 +170,14 @@ function openGeneralAdvancedKeybindings(): void {
           >
             {{ t("settings.tabStorage") }}
           </button>
+          <button
+            type="button"
+            class="sv-nav-btn"
+            :aria-current="tab === 'adult' ? 'page' : undefined"
+            @click="tab = 'adult'"
+          >
+            {{ t("settings.tabAdult") }}
+          </button>
         </nav>
 
         <SettingsGeneralTab
@@ -195,6 +202,8 @@ function openGeneralAdvancedKeybindings(): void {
         <div v-show="tab === 'storage'" class="sv-body">
           <ChatStorageSettingsPanel />
         </div>
+
+        <SettingsAdultTab v-show="tab === 'adult'" />
       </div>
     </div>
   </component>

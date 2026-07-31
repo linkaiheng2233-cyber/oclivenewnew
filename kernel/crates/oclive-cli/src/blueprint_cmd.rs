@@ -7,9 +7,9 @@ use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
 #[command(
-    about = "Validate pipeline.ocblueprint v2 (meta + slot_registry)",
-    long_about = "Validate pipeline.ocblueprint JSON (schema_version 2 only).\n\
-                  Legacy steps[] DSL is rejected. Desktop host uses process_message; this command does not change runtime."
+    about = "Validate pipeline.ocblueprint v2 / v3 / v4",
+    long_about = "Validate pipeline.ocblueprint JSON by exact schema_version.\n\
+                  v4 is Stable; v3 is the frozen dual-core Beta contract. Desktop host uses process_message; this command does not change runtime."
 )]
 pub struct BlueprintCli {
     #[command(subcommand)]
@@ -18,7 +18,7 @@ pub struct BlueprintCli {
 
 #[derive(Subcommand, Debug)]
 pub enum BlueprintCommand {
-    /// Validate `pipeline.ocblueprint` v2 (meta + slot_registry)
+    /// Validate `pipeline.ocblueprint` by its declared schema version
     Validate(BlueprintValidateArgs),
 }
 

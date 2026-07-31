@@ -5,6 +5,8 @@ use crate::error::{AppError, Result};
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
 use crate::infrastructure::llm_params;
 use async_trait::async_trait;
+use futures_util::StreamExt;
+use oclive_kernel_contracts::{LlmGenerateOpts, LlmGenerateOutcome, LlmTokenSink};
 use oclive_validation::NETWORK_GRANT_REMOTE_LLM;
 use reqwest::Client;
 use serde::Deserialize;
@@ -55,12 +57,25 @@ pub fn models_list_url(base: &str) -> String {
     format!("{b}/v1/models")
 }
 
+/// Clone the caller's client for normal remote traffic, but construct an explicit
+/// no-proxy client for loopback endpoints. `reqwest::Client::clone` is cheap and
+/// preserves connection pooling for the common cloud case.
+fn client_for_endpoint(client: &Client, endpoint: &str) -> Client {
+    if !crate::infrastructure::is_loopback_endpoint(endpoint) {
+        return client.clone();
+    }
+    Client::builder()
+        .no_proxy()
+        .build()
+        .unwrap_or_else(|_| client.clone())
+}
+
 pub struct OpenAiCompatibleLlm {
     chat_url: String,
     bearer_token: Option<String>,
     client: Client,
     timeout: Duration,
-    grants: Arc<HighRiskGrantStore>,
+    grants: Option<Arc<HighRiskGrantStore>>,
     network_grant_id: String,
 }
 
@@ -90,18 +105,52 @@ impl OpenAiCompatibleLlm {
             .ok()
             .and_then(|s| s.parse::<u64>().ok())
             .unwrap_or(120_000);
+        let client = client_for_endpoint(&http, &chat_url);
         Some(Self {
             chat_url,
             bearer_token,
-            client: http,
+            client,
             timeout: Duration::from_millis(timeout_ms.clamp(1_000, 600_000)),
-            grants,
+            grants: Some(grants),
             network_grant_id: NETWORK_GRANT_REMOTE_LLM.to_string(),
         })
     }
 
+    /// Construct a loopback-only OpenAI-compatible client for the distro's managed
+    /// llama-server runtime. Builtin local inference follows the same trust boundary as
+    /// Ollama and therefore does not use the remote-plugin network grant.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`AppError::InvalidParameter`] when `base` is not a loopback HTTP endpoint.
+    pub fn for_local_runtime(base: &str, timeout: Duration) -> Result<Self> {
+        let chat_url = chat_completions_url(base);
+        if chat_url.is_empty() || !crate::infrastructure::is_loopback_endpoint(&chat_url) {
+            return Err(AppError::InvalidParameter(
+                "local LLM runtime endpoint must use localhost/127.0.0.1/[::1]".into(),
+            ));
+        }
+        let client = Client::builder()
+            .no_proxy()
+            .connect_timeout(Duration::from_secs(2))
+            .pool_max_idle_per_host(4)
+            .build()
+            .map_err(|e| AppError::InvalidParameter(format!("local LLM HTTP client: {e}")))?;
+        Ok(Self {
+            chat_url,
+            bearer_token: None,
+            client,
+            timeout: timeout.clamp(Duration::from_secs(1), Duration::from_secs(600)),
+            grants: None,
+            network_grant_id: String::new(),
+        })
+    }
+
     fn ensure_network_grant(&self) -> Result<()> {
-        self.grants.require_network(&self.network_grant_id)
+        if let Some(ref grants) = self.grants {
+            grants.require_network(&self.network_grant_id)?;
+        }
+        Ok(())
     }
 
     async fn chat(
@@ -144,6 +193,134 @@ impl OpenAiCompatibleLlm {
         }
         parse_chat_response(&text)
     }
+
+    async fn chat_stream(
+        &self,
+        model: &str,
+        prompt: &str,
+        temperature: f32,
+        top_p: f32,
+        on_token: LlmTokenSink,
+    ) -> Result<String> {
+        self.ensure_network_grant()?;
+        let body = serde_json::json!({
+            "model": model,
+            "messages": [{ "role": "user", "content": prompt }],
+            "temperature": temperature,
+            "top_p": top_p,
+            "stream": true,
+        });
+        let mut req = self
+            .client
+            .post(&self.chat_url)
+            .timeout(self.timeout)
+            .header("Content-Type", "application/json")
+            .header("Accept", "text/event-stream");
+        if let Some(ref token) = self.bearer_token {
+            req = req.bearer_auth(token);
+        }
+        let response = req.json(&body).send().await.map_err(|e| {
+            AppError::RemoteServiceUnavailable(format!("OpenAI stream request: {e}"))
+        })?;
+        let status = response.status();
+        if !status.is_success() {
+            let text = response.text().await.unwrap_or_default();
+            return Err(AppError::RemoteServiceUnavailable(format!(
+                "OpenAI stream HTTP {status}: {}",
+                text.chars().take(600).collect::<String>()
+            )));
+        }
+
+        let mut stream = response.bytes_stream();
+        let mut pending = Vec::<u8>::new();
+        let mut reply = String::new();
+        let mut done = false;
+        while let Some(chunk) = stream.next().await {
+            let bytes = chunk.map_err(|e| {
+                AppError::RemoteServiceUnavailable(format!("OpenAI stream body: {e}"))
+            })?;
+            pending.extend_from_slice(&bytes);
+            while let Some(newline) = pending.iter().position(|byte| *byte == b'\n') {
+                let mut line: Vec<u8> = pending.drain(..=newline).collect();
+                line.pop();
+                if line.last() == Some(&b'\r') {
+                    line.pop();
+                }
+                let line = std::str::from_utf8(&line).map_err(|e| {
+                    AppError::RemoteServiceUnavailable(format!("OpenAI stream UTF-8: {e}"))
+                })?;
+                if consume_sse_line(line, &mut reply, on_token.as_ref())? {
+                    done = true;
+                    break;
+                }
+            }
+            if done {
+                break;
+            }
+        }
+        if !done && !pending.is_empty() {
+            if pending.last() == Some(&b'\r') {
+                pending.pop();
+            }
+            let line = std::str::from_utf8(&pending).map_err(|e| {
+                AppError::RemoteServiceUnavailable(format!("OpenAI stream UTF-8: {e}"))
+            })?;
+            if !line.trim().is_empty() {
+                let _ = consume_sse_line(line, &mut reply, on_token.as_ref())?;
+            }
+        }
+        if reply.is_empty() {
+            return Err(AppError::RemoteServiceUnavailable(
+                "OpenAI stream ended without assistant content".into(),
+            ));
+        }
+        Ok(reply)
+    }
+}
+
+fn consume_sse_line(
+    line: &str,
+    reply: &mut String,
+    on_token: &(dyn Fn(&str) + Send + Sync),
+) -> Result<bool> {
+    let line = line.trim();
+    if line.is_empty() || line.starts_with(':') {
+        return Ok(false);
+    }
+    let Some(data) = line.strip_prefix("data:") else {
+        return Ok(false);
+    };
+    let data = data.trim();
+    if data == "[DONE]" {
+        return Ok(true);
+    }
+    let chunk: ChatCompletionChunk = serde_json::from_str(data).map_err(|e| {
+        AppError::RemoteServiceUnavailable(format!("OpenAI stream JSON parse: {e}"))
+    })?;
+    for choice in chunk.choices.unwrap_or_default() {
+        if let Some(content) = choice.delta.and_then(|delta| delta.content) {
+            if !content.is_empty() {
+                reply.push_str(&content);
+                on_token(&content);
+            }
+        }
+    }
+    Ok(false)
+}
+
+#[derive(Debug, Deserialize)]
+struct ChatCompletionChunk {
+    choices: Option<Vec<ChatChunkChoice>>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ChatChunkChoice {
+    delta: Option<ChatDelta>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ChatDelta {
+    content: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -205,6 +382,7 @@ pub async fn list_openai_compatible_models(
     if models_url.is_empty() {
         return Err(AppError::InvalidParameter("云端 Base URL 为空".into()));
     }
+    let client = client_for_endpoint(client, &models_url);
     let mut req = client
         .get(&models_url)
         .timeout(timeout)
@@ -264,6 +442,44 @@ impl LlmClient for OpenAiCompatibleLlm {
             .await
     }
 
+    async fn generate_with_opts(
+        &self,
+        model: &str,
+        prompt: &str,
+        _opts: Option<&LlmGenerateOpts>,
+    ) -> Result<LlmGenerateOutcome> {
+        let reply = self.generate(model, prompt).await?;
+        Ok(LlmGenerateOutcome {
+            reply,
+            prompt_eval_ms: None,
+        })
+    }
+
+    async fn generate_stream(
+        &self,
+        model: &str,
+        prompt: &str,
+        on_token: LlmTokenSink,
+    ) -> Result<String> {
+        let (t, p) = llm_params::main_chat_options();
+        self.chat_stream(model, prompt, t.unwrap_or(0.8), p.unwrap_or(0.9), on_token)
+            .await
+    }
+
+    async fn generate_stream_with_opts(
+        &self,
+        model: &str,
+        prompt: &str,
+        on_token: LlmTokenSink,
+        _opts: Option<&LlmGenerateOpts>,
+    ) -> Result<LlmGenerateOutcome> {
+        let reply = self.generate_stream(model, prompt, on_token).await?;
+        Ok(LlmGenerateOutcome {
+            reply,
+            prompt_eval_ms: None,
+        })
+    }
+
     async fn startup_probe(&self) -> Result<()> {
         Ok(())
     }
@@ -302,9 +518,42 @@ mod tests {
     }
 
     #[test]
+    fn loopback_endpoint_detection_is_strict() {
+        assert!(crate::infrastructure::is_loopback_endpoint(
+            "http://localhost:1234/v1/chat/completions"
+        ));
+        assert!(crate::infrastructure::is_loopback_endpoint(
+            "http://127.0.0.1:1234/v1/chat/completions"
+        ));
+        assert!(crate::infrastructure::is_loopback_endpoint(
+            "http://[::1]:1234/v1/chat/completions"
+        ));
+        assert!(!crate::infrastructure::is_loopback_endpoint(
+            "https://api.openai.com/v1/chat/completions"
+        ));
+        assert!(!crate::infrastructure::is_loopback_endpoint("not a URL"));
+    }
+
+    #[test]
     fn parse_models_list_response_extracts_ids() {
         let body = r#"{"data":[{"id":"gpt-4o-mini"},{"id":"gpt-4o"}]}"#;
         let ids = parse_models_list_response(body).expect("parse");
         assert_eq!(ids, vec!["gpt-4o".to_string(), "gpt-4o-mini".to_string()]);
+    }
+
+    #[test]
+    fn sse_line_emits_incremental_content() {
+        let tokens = std::sync::Mutex::new(Vec::<String>::new());
+        let mut reply = String::new();
+        let done = consume_sse_line(
+            r#"data: {"choices":[{"delta":{"content":"hello"}}]}"#,
+            &mut reply,
+            &|token| tokens.lock().unwrap().push(token.to_string()),
+        )
+        .unwrap();
+        assert!(!done);
+        assert_eq!(reply, "hello");
+        assert_eq!(*tokens.lock().unwrap(), vec!["hello"]);
+        assert!(consume_sse_line("data: [DONE]", &mut reply, &|_| {}).unwrap());
     }
 }

@@ -1,6 +1,8 @@
 //! Co-present turn path: complex emotion, event estimate, prompt build.
 
-use crate::domain::complex_emotion::ComplexEmotionOutput;
+use crate::domain::complex_emotion::{
+    BuiltinKeywordComplexEmotionProvider, ComplexEmotionInput, ComplexEmotionOutput,
+};
 use crate::domain::event_impact_ai::estimate_event_impact_rules_only;
 use crate::domain::host_profile::{prompt_prefix_cache_effective, DISTRO_CONCISE_PROMPT_OVERLAY};
 use crate::domain::life_schedule::{format_life_prompt_line, pick_life_state};
@@ -15,7 +17,7 @@ use crate::domain::slot_runner::SlotRunner;
 use crate::domain::turn_thinking::{resolve_turn_thinking, TurnThinkingMode};
 use crate::models::knowledge::KnowledgeIndex;
 use crate::models::Memory;
-use crate::models::PersonalitySource;
+use crate::models::{PersonalitySource, PromptBackend};
 use oclive_kernel_types::PromptExtraSection;
 
 use super::super::turn_context::TurnContext;
@@ -26,6 +28,39 @@ use super::{
 };
 use crate::domain::chat_engine::chat_stage::ChatStage;
 use crate::state::SessionCache;
+
+fn resolve_fast_complex_emotion(input: &ComplexEmotionInput) -> ComplexEmotionOutput {
+    let inferred = BuiltinKeywordComplexEmotionProvider.resolve_turn_inner(input);
+    ComplexEmotionOutput {
+        source: "turn_thinking_fast_builtin_intensity".into(),
+        narrative_hint: String::new(),
+        labels: vec![],
+        pattern: None,
+        confidence: 0.0,
+        intensity: inferred.intensity,
+        dissonance_score: 0.0,
+        degraded_to_builtin: false,
+        extension: None,
+    }
+}
+
+fn should_use_stable_prompt_segments(
+    prompt_prefix_cache_enabled: bool,
+    llm_supports_prefix_cache: bool,
+    prompt_backend: PromptBackend,
+) -> bool {
+    prompt_prefix_cache_enabled
+        && llm_supports_prefix_cache
+        && matches!(prompt_backend, PromptBackend::Builtin)
+}
+
+fn apply_adult_output_boundary(mut prompt: String, adult_prompt: &str) -> String {
+    if !adult_prompt.is_empty() {
+        prompt.push_str("\n\n");
+        prompt.push_str(crate::domain::adult_interaction::output_boundary());
+    }
+    prompt
+}
 
 pub(crate) async fn run_middle(
     ctx: &TurnContext<'_>,
@@ -80,17 +115,10 @@ pub(crate) async fn run_middle(
     );
     let complex_emotion_out: ComplexEmotionOutput =
         if thinking.skip_complex_emotion(&state.host_profile) {
-            ComplexEmotionOutput {
-                source: "turn_thinking_fast".into(),
-                narrative_hint: String::new(),
-                labels: vec![],
-                pattern: None,
-                confidence: 0.0,
-                intensity: 0.0,
-                dissonance_score: 0.0,
-                degraded_to_builtin: false,
-                extension: None,
-            }
+            // Keep Fast turns local and deterministic, but do not erase the
+            // emotion signal: portrait intensity and other downstream users
+            // still need a meaningful mild/moderate value.
+            resolve_fast_complex_emotion(&complex_emotion_input)
         } else {
             STAGES
                 .stage(ChatStage::ComplexEmotionResolveTurn, async {
@@ -161,7 +189,14 @@ pub(crate) async fn run_middle(
         ai_event_confidence,
     );
     let favor_scale = thinking.favor_delta_scale(&state.host_profile, &ai_event_type);
-    let (favor_delta, relation_after) = if favor_scale == 0.0 {
+    let synthetic_adult_action = req.adult.as_ref().is_some_and(|adult| {
+        adult.gates_open()
+            && !matches!(
+                adult.action,
+                crate::models::dto::AdultInteractionAction::Message
+            )
+    });
+    let (favor_delta, relation_after) = if favor_scale == 0.0 || synthetic_adult_action {
         (
             0.0,
             oclive_kernel_runtime::domain::relation_engine::RelationState::parse(
@@ -226,7 +261,7 @@ pub(crate) async fn run_middle(
     // Prior-turn hint (pre_llm load) is independent of this turn's CE resolve (NARRATIVE_HINT_CONTRACT §2).
     let complex_hint = pre.hints.prev_stored_narrative_hint.as_str();
     let tier = resolve_model_tier(pre.memory.ollama_model.as_str());
-    let persona_source = resolve_persona_source(tier, thinking.mode, role, &state.host_profile);
+    let persona_source = resolve_persona_source(tier, role, &state.host_profile);
     let persona_override = persona_override_for_source(role, persona_source);
     let (_, previous_assistant_reply) = latest_recent_turn_pair(&pre.memory.recent_turns);
     tracing::debug!(
@@ -236,7 +271,53 @@ pub(crate) async fn run_middle(
         "persona_source resolved"
     );
 
-    let extra_sections: Vec<PromptExtraSection<'_>> = role
+    let continuity_prompt = match crate::domain::narrative_continuity::prompt_for_turn(
+        state,
+        role,
+        ctx.srid,
+        scene_id,
+        virtual_time_ms,
+        &ctx.runtime_snapshot,
+        !ctx.is_staged(),
+    )
+    .await
+    {
+        Ok(value) => value,
+        Err(error) => {
+            tracing::warn!(
+                target: "oclive_continuity",
+                role_id = %ctx.srid,
+                scene_id,
+                error = %error,
+                "narrative continuity prompt unavailable; continuing without it"
+            );
+            String::new()
+        }
+    };
+    let adult_prompt =
+        crate::domain::adult_interaction::prompt_section(role, scene_id, ctx.req.adult.as_ref())
+            .unwrap_or_default();
+    let staged_adult_continuity = if ctx.is_staged() {
+        let prior: Vec<&str> = pre
+            .memory
+            .recent_turns
+            .iter()
+            .filter(|(user, _)| user == crate::domain::adult_stage::ADULT_CONTINUATION_INPUT)
+            .map(|(_, assistant)| assistant.as_str())
+            .rev()
+            .take(8)
+            .collect();
+        prior
+            .into_iter()
+            .rev()
+            .enumerate()
+            .map(|(index, transcript)| format!("前一拍 {}：{}", index + 1, transcript.trim()))
+            .collect::<Vec<_>>()
+            .join("\n")
+    } else {
+        String::new()
+    };
+    let mut extra_sections: Vec<PromptExtraSection<'_>> = role
         .pack_prompt_extra_sections
         .iter()
         .map(|s| PromptExtraSection {
@@ -244,6 +325,24 @@ pub(crate) async fn run_middle(
             body: s.body.as_str(),
         })
         .collect();
+    if !continuity_prompt.is_empty() {
+        extra_sections.push(PromptExtraSection {
+            title: "行动连续性状态",
+            body: continuity_prompt.as_str(),
+        });
+    }
+    if !adult_prompt.is_empty() {
+        extra_sections.push(PromptExtraSection {
+            title: crate::domain::adult_interaction::prompt_title(),
+            body: adult_prompt.as_str(),
+        });
+    }
+    if !staged_adult_continuity.is_empty() {
+        extra_sections.push(PromptExtraSection {
+            title: "成人互动前拍连续性（只作为上下文，不得代写用户）",
+            body: staged_adult_continuity.as_str(),
+        });
+    }
 
     let prompt_input = PromptInput {
         role,
@@ -279,9 +378,11 @@ pub(crate) async fn run_middle(
     };
 
     let llm_supports_prefix_cache = SlotRunner::primary_llm(pl).supports_prefix_cache();
-    let use_prefix_segments = thinking.mode == TurnThinkingMode::Deep
-        && prompt_prefix_cache_effective(&state.host_profile)
-        && llm_supports_prefix_cache;
+    let use_prefix_segments = should_use_stable_prompt_segments(
+        prompt_prefix_cache_effective(&state.host_profile),
+        llm_supports_prefix_cache,
+        ctx.effective_backends.prompt,
+    );
 
     let (
         prompt,
@@ -297,13 +398,18 @@ pub(crate) async fn run_middle(
             .await?;
         let stable_hash = hash_stable_prefix(&segments.stable_prefix);
         let stable_len = segments.stable_len();
+        let mode_key = match thinking.mode {
+            TurnThinkingMode::Fast => "fast",
+            TurnThinkingMode::Deep => "deep",
+        };
+        let persona_key = match persona_source {
+            PersonaSource::PersonaCapsule => "persona_capsule",
+            PersonaSource::FullCore => "full_core",
+        };
         let cache_key = SessionCache::prefix_cache_key(
             ctx.srid,
             pre.memory.ollama_model.as_str(),
-            match persona_source {
-                PersonaSource::DeepCapsule => "deep_capsule",
-                PersonaSource::FullCore => "full_core",
-            },
+            format!("{mode_key}:{persona_key}").as_str(),
             scene_id,
             pre.relation.user_identity_id.as_str(),
         );
@@ -316,7 +422,8 @@ pub(crate) async fn run_middle(
             prefix_hash = stable_hash,
             stable_len,
             cache_expected_hit = expected_hit,
-            "deep prompt prefix cache"
+            mode = mode_key,
+            "prompt prefix cache"
         );
         (
             segments.full(),
@@ -333,6 +440,7 @@ pub(crate) async fn run_middle(
             .await?;
         (prompt, None, None, None, false)
     };
+    let prompt = apply_adult_output_boundary(prompt, adult_prompt.as_str());
 
     Ok(MiddleOutput {
         turn_thinking: thinking,
@@ -350,4 +458,76 @@ pub(crate) async fn run_middle(
         prefix_cache_expected_hit,
         use_ollama_prefix_opts,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn fast_input(message: &str) -> ComplexEmotionInput {
+        ComplexEmotionInput {
+            role_id: "mumu".into(),
+            scene_id: "home".into(),
+            user_message: message.into(),
+            bot_reply: String::new(),
+            recent_dialogue_summary: None,
+            previous_narrative_hint: String::new(),
+            user_valence: Some(0.0),
+            user_dominance: Some(0.0),
+            previous_user_message: None,
+        }
+    }
+
+    #[test]
+    fn fast_complex_emotion_keeps_a_mild_baseline() {
+        let output = resolve_fast_complex_emotion(&fast_input("你好"));
+        assert_eq!(output.source, "turn_thinking_fast_builtin_intensity");
+        assert!((output.intensity - 0.25).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn fast_complex_emotion_can_reach_moderate_for_known_patterns() {
+        let output = resolve_fast_complex_emotion(&fast_input("随便吧"));
+        assert!(output.pattern.is_none());
+        assert!((output.intensity - 0.5).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn stable_prompt_segments_require_builtin_prompt_and_cacheable_llm() {
+        assert!(should_use_stable_prompt_segments(
+            true,
+            true,
+            PromptBackend::Builtin
+        ));
+        assert!(!should_use_stable_prompt_segments(
+            false,
+            true,
+            PromptBackend::Builtin
+        ));
+        assert!(!should_use_stable_prompt_segments(
+            true,
+            false,
+            PromptBackend::Builtin
+        ));
+        assert!(!should_use_stable_prompt_segments(
+            true,
+            true,
+            PromptBackend::Directory
+        ));
+        assert!(!should_use_stable_prompt_segments(
+            true,
+            true,
+            PromptBackend::Remote
+        ));
+    }
+
+    #[test]
+    fn adult_output_contract_is_the_last_prompt_instruction() {
+        let prompt = apply_adult_output_boundary(
+            "【输出边界】只输出当前角色本人的这一轮台词。".to_string(),
+            "adult enabled",
+        );
+        assert!(prompt.ends_with(crate::domain::adult_interaction::output_boundary()));
+        assert!(prompt.find("只输出当前角色") < prompt.find("本轮最终输出契约"));
+    }
 }

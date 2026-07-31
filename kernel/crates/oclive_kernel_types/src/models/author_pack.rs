@@ -1,4 +1,4 @@
-//! Role pack `author.json`: creator notes, recommended plugins, and UI/backend suggestions (does not replace `settings.json`).
+//! Role pack `author.json`: creator notes, recommended plugins, and UI/backend suggestions (does not replace `pipeline.ocblueprint`).
 
 use super::plugin_backends::PluginBackends;
 use super::ui_config::UiConfig;

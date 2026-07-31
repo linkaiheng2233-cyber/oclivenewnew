@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { fetchKernelStartupWarnings } from '@oclive/shared/composables/useStartupHealthWarnings'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { fetchKernelStartupWarnings } from '@oclive/shared/composables/useStartupHealthWarnings'
 
 const { t } = useI18n()
 const warnings = ref<string[]>([])

@@ -136,6 +136,11 @@ impl AppError {
                     "kind": "plugin_backends_directory_slot"
                 }))
             }
+            Self::InvalidParameter(m) if m.starts_with("execution_plan:") => {
+                Some(serde_json::json!({
+                    "kind": "blueprint_capability_unavailable"
+                }))
+            }
             Self::OllamaError(m)
                 if m.contains("transport kind=timeout") && m.contains("method=voice.") =>
             {
@@ -316,6 +321,21 @@ mod tests {
                 .and_then(|c| c.get("kind"))
                 .and_then(|v| v.as_str()),
             Some("plugin_backends_directory_slot")
+        );
+    }
+
+    #[test]
+    fn invalid_parameter_execution_plan_context() {
+        let e = AppError::InvalidParameter(
+            "execution_plan: required blueprint capability unavailable".into(),
+        );
+        let j = e.kernel_error_body();
+        assert_eq!(
+            j.context
+                .as_ref()
+                .and_then(|context| context.get("kind"))
+                .and_then(|value| value.as_str()),
+            Some("blueprint_capability_unavailable")
         );
     }
 

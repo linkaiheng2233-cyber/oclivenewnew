@@ -1,10 +1,9 @@
 <script setup lang="ts">
-
 import type { LocalePreference } from '@oclive/shared/i18n'
 
-import { defineAsyncComponent, onMounted, onUnmounted, ref, watch } from 'vue'
+import type { TheaterCastConfig } from '../../composables/theater/theaterCastConfig'
 
-import { useI18n } from 'vue-i18n'
+import type { TheaterPokeMode } from '../../composables/useTheaterPokeSettings'
 
 import UiButton from '@oclive/shared/components/ui/UiButton.vue'
 
@@ -17,6 +16,21 @@ import UiSelect from '@oclive/shared/components/ui/UiSelect.vue'
 import { useAppToast } from '@oclive/shared/composables/useAppToast'
 
 import { useOcliveAppearance } from '@oclive/shared/composables/useOcliveAppearance'
+
+import { getLocalePreference, setLocalePreference } from '@oclive/shared/i18n'
+
+import { defineAsyncComponent, onMounted, onUnmounted, ref, watch } from 'vue'
+
+import { useI18n } from 'vue-i18n'
+import {
+  getTheaterCustomLeadCast,
+  getTheaterPokeMode,
+  getTheaterVariantSwipeEnabled,
+  setTheaterCustomLeadCast,
+  setTheaterPokeMode,
+  setTheaterVariantSwipeEnabled,
+
+} from '../../composables/useTheaterPokeSettings'
 
 import {
 
@@ -31,35 +45,7 @@ import {
   THEATER_PORTRAIT_LIMITS,
 
 } from '../../composables/useTheaterPortraitLayout'
-
-import { getLocalePreference, setLocalePreference } from '@oclive/shared/i18n'
-
-import {
-  getTheaterCustomLeadCast,
-  getTheaterPokeMode,
-  getTheaterVariantSwipeEnabled,
-  setTheaterCustomLeadCast,
-  setTheaterPokeMode,
-  setTheaterVariantSwipeEnabled,
-  type TheaterPokeMode,
-} from '../../composables/useTheaterPokeSettings'
-
-
-
 import TheaterCastPanel from './TheaterCastPanel.vue'
-import type { TheaterCastConfig } from '../../composables/theater/theaterCastConfig'
-
-
-
-const KernelConnectionSettingsPanel = defineAsyncComponent(
-  () => import('@oclive/shared/components/settings/KernelConnectionSettingsPanel.vue'),
-)
-
-const ModelManagerBody = defineAsyncComponent(
-  () => import('@oclive/shared/components/model/ModelManagerBody.vue'),
-)
-
-
 
 const props = defineProps<{
   visible: boolean
@@ -81,20 +67,22 @@ const props = defineProps<{
   castAdaptLastIssue?: import('../../composables/theater/theaterCastAdapt').CastAdaptIssue | null
 }>()
 
-
-
 const emit = defineEmits<{
-  close: []
+  'close': []
   'update:settingsTab': [tab: SettingsTab]
-  applyCast: [config: import('../../composables/theater/theaterCastConfig').TheaterCastConfig]
-  notify: [payload: { type: 'success' | 'error' | 'info' | 'warning', message: string }]
+  'applyCast': [config: import('../../composables/theater/theaterCastConfig').TheaterCastConfig]
+  'notify': [payload: { type: 'success' | 'error' | 'info' | 'warning', message: string }]
 }>()
 
+const KernelConnectionSettingsPanel = defineAsyncComponent(
+  () => import('@oclive/shared/components/settings/KernelConnectionSettingsPanel.vue'),
+)
 
+const ModelManagerBody = defineAsyncComponent(
+  () => import('@oclive/shared/components/model/ModelManagerBody.vue'),
+)
 
 type SettingsTab = 'general' | 'stage' | 'cast' | 'model'
-
-
 
 const { t } = useI18n()
 
@@ -127,8 +115,6 @@ watch(
   },
 )
 
-
-
 const portraitLayout = ref(getTheaterPortraitLayout())
 
 const pokeMode = ref<TheaterPokeMode>(getTheaterPokeMode())
@@ -153,110 +139,67 @@ function onCustomLeadChange(ev: Event) {
   customLeadCast.value = v
 }
 
-
-
 function onLocaleChange(ev: Event) {
-
   const v = (ev.target as HTMLSelectElement).value as LocalePreference
 
   setLocalePreference(v)
 
   localePreference.value = v
-
 }
 
-
-
 function onPortraitWidthInput(ev: Event) {
-
   const v = Number((ev.target as HTMLInputElement).value)
 
   portraitLayout.value.width = setTheaterPortraitWidth(v)
-
 }
 
-
-
 function onPortraitHeightInput(ev: Event) {
-
   const v = Number((ev.target as HTMLInputElement).value)
 
   portraitLayout.value.maxHeight = setTheaterPortraitMaxHeight(v)
-
 }
 
-
-
 function onResetPortraitLayout() {
-
   portraitLayout.value = resetTheaterPortraitLayout()
 
   showToast('success', t('theater.settings.portraitResetDone'))
-
 }
-
-
 
 function onBackdrop() {
-
   emit('close')
-
 }
-
-
 
 function onBack() {
-
   emit('close')
-
 }
 
-
-
 function onKeydown(e: KeyboardEvent) {
-
   if (!props.visible)
 
     return
 
   if (e.key === 'Escape') {
-
     e.preventDefault()
 
     e.stopPropagation()
 
     onBack()
-
   }
-
 }
 
-
-
 onMounted(() => {
-
   window.addEventListener('keydown', onKeydown)
 
   portraitLayout.value = getTheaterPortraitLayout()
-
 })
-
-
 
 onUnmounted(() => {
-
   window.removeEventListener('keydown', onKeydown)
-
 })
-
 </script>
 
-
-
 <template>
-
   <Teleport to="body">
-
     <div
 
       v-if="visible"
@@ -270,17 +213,11 @@ onUnmounted(() => {
       :aria-label="t('theater.settings.title')"
 
       @click.self="onBackdrop"
-
     >
-
       <div class="sv-dialog theater-settings-dialog" @click.stop>
-
         <header class="sv-head">
-
           <h2 class="sv-title">
-
             {{ t('theater.settings.title') }}
-
           </h2>
 
           <button
@@ -292,19 +229,12 @@ onUnmounted(() => {
             :aria-label="t('settings.closeAria')"
 
             @click="onBack"
-
           >
-
             ×
-
           </button>
-
         </header>
 
-
-
         <nav class="sv-nav" :aria-label="t('settings.ariaNav')">
-
           <button
 
             type="button"
@@ -314,11 +244,8 @@ onUnmounted(() => {
             :aria-current="tab === 'general' ? 'page' : undefined"
 
             @click="setTab('general')"
-
           >
-
             {{ t('settings.tabGeneral') }}
-
           </button>
 
           <button
@@ -330,11 +257,8 @@ onUnmounted(() => {
             :aria-current="tab === 'stage' ? 'page' : undefined"
 
             @click="setTab('stage')"
-
           >
-
             {{ t('theater.settings.tabStage') }}
-
           </button>
 
           <button
@@ -346,11 +270,8 @@ onUnmounted(() => {
             :aria-current="tab === 'cast' ? 'page' : undefined"
 
             @click="setTab('cast')"
-
           >
-
             {{ t('theater.settings.tabCast') }}
-
           </button>
 
           <button
@@ -362,25 +283,15 @@ onUnmounted(() => {
             :aria-current="tab === 'model' ? 'page' : undefined"
 
             @click="setTab('model')"
-
           >
-
             {{ t('theater.settings.tabModel') }}
-
           </button>
-
         </nav>
 
-
-
         <div class="sv-body">
-
           <template v-if="tab === 'general'">
-
             <p class="sv-lead">
-
               {{ t('theater.settings.lead') }}
-
             </p>
 
             <UiSection
@@ -388,81 +299,51 @@ onUnmounted(() => {
               :title="t('settings.appearanceSectionTitle')"
 
               :description="t('settings.appearanceSectionHelp')"
-
             >
-
               <UiFieldRow :label="t('app.locale.label')">
-
                 <UiSelect
 
                   :model-value="localePreference"
 
                   @change="onLocaleChange"
-
                 >
-
                   <option value="system">
-
                     {{ t('app.locale.system') }}
-
                   </option>
 
                   <option value="zh-CN">
-
                     {{ t('app.locale.zhCN') }}
-
                   </option>
 
                   <option value="en-US">
-
                     {{ t('app.locale.enUS') }}
-
                   </option>
-
                 </UiSelect>
-
               </UiFieldRow>
 
               <UiFieldRow :label="t('app.more.ui')" class="sv-appearance-row">
-
                 <div class="sv-appearance-controls">
-
                   <UiButton size="sm" variant="secondary" @click="bumpScale(-1)">
-
                     A−
-
                   </UiButton>
 
                   <span class="sv-appearance-scale">{{ scaleLabel }}</span>
 
                   <UiButton size="sm" variant="secondary" @click="bumpScale(1)">
-
                     A+
-
                   </UiButton>
 
                   <UiButton size="sm" variant="secondary" @click="cycleTheme">
-
                     {{ themeCycleLabel }}
-
                   </UiButton>
-
                 </div>
-
               </UiFieldRow>
-
             </UiSection>
-
           </template>
 
-
-
           <template v-else-if="tab === 'stage'">
-
             <p class="sv-lead">
-
               {{ t('theater.settings.stageLead') }}
-
             </p>
 
             <UiSection
@@ -470,13 +351,9 @@ onUnmounted(() => {
               :title="t('theater.settings.portraitSectionTitle')"
 
               :description="t('theater.settings.portraitSectionHelp')"
-
             >
-
               <UiFieldRow :label="t('theater.settings.portraitWidth')">
-
                 <div class="theater-range-row">
-
                   <input
 
                     type="range"
@@ -492,19 +369,14 @@ onUnmounted(() => {
                     :value="portraitLayout.width"
 
                     @input="onPortraitWidthInput"
-
                   >
 
                   <span class="sv-muted theater-range-val">{{ portraitLayout.width }}px</span>
-
                 </div>
-
               </UiFieldRow>
 
               <UiFieldRow :label="t('theater.settings.portraitMaxHeight')">
-
                 <div class="theater-range-row">
-
                   <input
 
                     type="range"
@@ -520,25 +392,17 @@ onUnmounted(() => {
                     :value="portraitLayout.maxHeight"
 
                     @input="onPortraitHeightInput"
-
                   >
 
                   <span class="sv-muted theater-range-val">{{ portraitLayout.maxHeight }}px</span>
-
                 </div>
-
               </UiFieldRow>
 
               <UiFieldRow :label="t('theater.settings.portraitReset')">
-
                 <UiButton size="sm" variant="secondary" @click="onResetPortraitLayout">
-
                   {{ t('theater.settings.portraitReset') }}
-
                 </UiButton>
-
               </UiFieldRow>
-
             </UiSection>
 
             <UiSection
@@ -584,13 +448,9 @@ onUnmounted(() => {
                 </UiSelect>
               </UiFieldRow>
             </UiSection>
-
           </template>
 
-
-
           <template v-else-if="tab === 'cast'">
-
             <TheaterCastPanel
               :active="visible && tab === 'cast'"
               :apply-cast="props.applyCast"
@@ -611,59 +471,34 @@ onUnmounted(() => {
               @apply="emit('applyCast', $event)"
               @notify="emit('notify', $event)"
             />
-
           </template>
 
-
-
           <template v-else-if="tab === 'model'">
-
             <p class="sv-lead">
-
               {{ t('theater.settings.modelLead') }}
-
             </p>
 
             <UiSection :title="t('modelManager.title')">
-
               <ModelManagerBody />
-
             </UiSection>
 
             <UiSection :title="t('kernel.diagnostics.title')">
-
               <KernelConnectionSettingsPanel :active="visible && tab === 'model'" />
-
             </UiSection>
-
           </template>
-
         </div>
 
-
-
         <footer class="theater-settings-foot">
-
           <UiButton size="sm" variant="primary" @click="onBack">
-
             {{ t('theater.settings.back') }}
-
           </UiButton>
-
         </footer>
-
       </div>
-
     </div>
-
   </Teleport>
-
 </template>
 
-
-
 <style scoped>
-
 .sv-backdrop {
 
   position: fixed;
@@ -683,8 +518,6 @@ onUnmounted(() => {
   background: color-mix(in srgb, #000 45%, transparent);
 
 }
-
-
 
 .theater-settings-dialog {
 
@@ -712,8 +545,6 @@ onUnmounted(() => {
 
 }
 
-
-
 .sv-head {
 
   display: flex;
@@ -726,8 +557,6 @@ onUnmounted(() => {
 
 }
 
-
-
 .sv-title {
 
   margin: 0;
@@ -735,8 +564,6 @@ onUnmounted(() => {
   font-size: 18px;
 
 }
-
-
 
 .sv-close {
 
@@ -760,15 +587,11 @@ onUnmounted(() => {
 
 }
 
-
-
 .sv-close:hover {
 
   background: color-mix(in srgb, var(--border-light) 60%, transparent);
 
 }
-
-
 
 .sv-nav {
 
@@ -781,8 +604,6 @@ onUnmounted(() => {
   padding-bottom: 8px;
 
 }
-
-
 
 .sv-nav-btn {
 
@@ -802,8 +623,6 @@ onUnmounted(() => {
 
 }
 
-
-
 .sv-nav-btn[aria-current='page'] {
 
   border-color: var(--border-light);
@@ -813,8 +632,6 @@ onUnmounted(() => {
   color: var(--text-primary);
 
 }
-
-
 
 .sv-body {
 
@@ -828,8 +645,6 @@ onUnmounted(() => {
 
 }
 
-
-
 .sv-lead {
 
   margin: 0 0 12px;
@@ -841,8 +656,6 @@ onUnmounted(() => {
   color: var(--text-secondary);
 
 }
-
-
 
 .sv-muted {
 
@@ -856,15 +669,11 @@ onUnmounted(() => {
 
 }
 
-
-
 .sv-appearance-row {
 
   align-items: center;
 
 }
-
-
 
 .sv-appearance-controls {
 
@@ -878,8 +687,6 @@ onUnmounted(() => {
 
 }
 
-
-
 .sv-appearance-scale {
 
   min-width: 2.5rem;
@@ -891,8 +698,6 @@ onUnmounted(() => {
   color: var(--text-secondary);
 
 }
-
-
 
 .theater-range-row {
 
@@ -906,8 +711,6 @@ onUnmounted(() => {
 
 }
 
-
-
 .theater-range {
 
   flex: 1;
@@ -917,8 +720,6 @@ onUnmounted(() => {
   accent-color: var(--tool-accent, var(--accent));
 
 }
-
-
 
 .theater-range-val {
 
@@ -931,8 +732,6 @@ onUnmounted(() => {
   font-variant-numeric: tabular-nums;
 
 }
-
-
 
 .theater-checkbox-row {
 
@@ -950,8 +749,6 @@ onUnmounted(() => {
 
 }
 
-
-
 .theater-checkbox-row input {
 
   margin-top: 2px;
@@ -959,8 +756,6 @@ onUnmounted(() => {
   accent-color: var(--tool-accent, var(--accent));
 
 }
-
-
 
 .theater-settings-foot {
 
@@ -977,6 +772,4 @@ onUnmounted(() => {
   background: var(--bg-secondary, var(--tool-chrome-status));
 
 }
-
 </style>
-

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
 import { useDirectoryPluginSlotEmbed } from '@oclive/shared/composables/useDirectoryPluginSlotEmbed'
 import { SLOT_SIDEBAR } from '@oclive/shared/stores/pluginStore'
+import { useI18n } from 'vue-i18n'
 import AsyncPluginVue from './AsyncPluginVue.vue'
 import PluginErrorPlaceholder from './PluginErrorPlaceholder.vue'
 
@@ -20,9 +20,11 @@ const {
   slots,
   frameErrors,
   frameErrorDetails,
+  bindPluginFrame,
+  framePermissions,
   reloadNonceFor,
   onFrameError,
-  onFrameLoad,
+  onPluginFrameLoad,
   onVueFailed,
   onVueCompileError,
   retrySlot,
@@ -53,12 +55,15 @@ const {
       <iframe
         v-if="showIframe(s)"
         :key="`if-${s.pluginId}-${s.appearanceId ?? ''}-${reloadNonceFor(s.pluginId)}`"
+        :ref="el => bindPluginFrame(s, el)"
         class="psb-frame"
         :src="s.url"
         :title="`plugin sidebar ${s.pluginId}`"
+        :allow="framePermissions(s)"
+        sandbox="allow-scripts"
         loading="lazy"
         referrerpolicy="no-referrer"
-        @load="onFrameLoad(s.pluginId)"
+        @load="onPluginFrameLoad(s, $event)"
         @error="onFrameError(s.pluginId)"
       />
       <PluginErrorPlaceholder

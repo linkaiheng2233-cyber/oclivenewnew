@@ -1,10 +1,10 @@
-import { invoke } from '@tauri-apps/api/core'
-import { invokeWithFriendlyError } from './helpers'
 import type {
   PluginBackends,
   PluginBackendsOverride,
   PluginBackendsSourceMap,
 } from './settings'
+import { invoke } from '@tauri-apps/api/core'
+import { invokeWithFriendlyError } from './helpers'
 
 /** UI-only affect metrics from kernel simulation (not injected into Prompt). */
 export interface DisplayMetricsDto {
@@ -18,7 +18,7 @@ export interface UserRelationDto {
   name: string
   prompt_hint: string
   favor_multiplier: number
-  /** Role pack configured initial favorability (0â€?00); switching top-bar identity re-seeds favorability */
+  /** Role pack configured initial favorability (0â€“100); switching top-bar identity re-seeds favorability */
   initial_favorability: number
 }
 
@@ -42,7 +42,6 @@ export interface PackUiSlotConfig {
   visible: string[]
 }
 
-
 export interface PackUiSlots {
   'chat_toolbar': PackUiSlotConfig
   'settings.panel': PackUiSlotConfig
@@ -51,19 +50,16 @@ export interface PackUiSlots {
   'chat.header': PackUiSlotConfig
 }
 
-
 export interface PackUiTheme {
   primaryColor?: string
   backgroundColor?: string
   fontFamily?: string
 }
 
-
 export interface PackUiLayout {
   sidebar?: string
   chatInput?: string
 }
-
 
 export interface PackUiConfig {
   shell: string
@@ -71,7 +67,6 @@ export interface PackUiConfig {
   layout: PackUiLayout
   slots: PackUiSlots
 }
-
 
 export interface AuthorRecommendedPlugin {
   id: string
@@ -82,7 +77,6 @@ export interface AuthorRecommendedPlugin {
   note?: string | null
 }
 
-
 export interface AuthorPackFile {
   schema_version: number
   summary?: string
@@ -92,13 +86,13 @@ export interface AuthorPackFile {
   suggested_plugin_backends?: PluginBackends | null
 }
 
-
 export interface RoleData {
   role_id: string
   name: string
   version: string
   author: string
   description: string
+  adult_extension_available?: boolean
   /** @deprecated prefer `display_metrics.traits` */
   personality_vector: number[]
   /** @deprecated prefer `display_metrics.favor` */
@@ -116,7 +110,7 @@ export interface RoleData {
   use_manifest_default: boolean
   /** Remote life enabled (DB) */
   remote_life_enabled: boolean
-  /** Role pack suggested default for remote life (`settings.json` â†?`remote_presence.default_enabled`) */
+  /** Role pack suggested default for remote life (`settings.json` â†’ `remote_presence.default_enabled`) */
   remote_life_pack_default: boolean | null
   event_impact_factor: number
   /** `evolution.personality_source`; defaults to vector */
@@ -152,7 +146,6 @@ export interface RoleData {
   blueprint_groups_pack?: import('@oclive/shared/lib/slotRegistry').SlotGroupsMap | null
 }
 
-
 export interface SceneLabelEntry {
   id: string
   label: string
@@ -166,6 +159,7 @@ export interface RoleInfo {
   version: string
   author: string
   description: string
+  adult_extension_available?: boolean
   /** @deprecated prefer `display_metrics.favor` */
   current_favorability: number
   current_emotion: string
@@ -293,17 +287,16 @@ export interface RoleSummaryDto {
   featured?: boolean
   preset_order?: number
   interaction_mode_suggestion?: string | null
+  adult_extension_available?: boolean
 }
 
 export async function listRoles(): Promise<RoleSummaryDto[]> {
   return invokeWithFriendlyError<RoleSummaryDto[]>('list_roles', {})
 }
 
-
 export async function switchRole(roleId: string): Promise<RoleInfo> {
   return invokeWithFriendlyError<RoleInfo>('switch_role', { roleId })
 }
-
 
 export async function setUserRelation(
   roleId: string,
@@ -314,7 +307,6 @@ export async function setUserRelation(
   })
 }
 
-
 export async function setEvolutionFactor(
   roleId: string,
   eventImpactFactor: number,
@@ -323,7 +315,6 @@ export async function setEvolutionFactor(
     req: { role_id: roleId, event_impact_factor: eventImpactFactor },
   })
 }
-
 
 export async function setRemoteLifeEnabled(
   roleId: string,
@@ -334,7 +325,6 @@ export async function setRemoteLifeEnabled(
   })
 }
 
-
 export async function setRoleInteractionMode(
   roleId: string,
   mode: 'immersive' | 'pure_chat',
@@ -343,7 +333,6 @@ export async function setRoleInteractionMode(
     req: { role_id: roleId, mode },
   })
 }
-
 
 export async function setSceneUserRelation(
   roleId: string,
@@ -373,6 +362,8 @@ export interface UserIdentityDto {
   id: string
   display_name: string
   maps_to_relation_id?: string | null
+  /** Legacy/advisory pack metadata; Chat Pro does not use it as an authorization gate. */
+  adult_eligible?: boolean
 }
 
 export interface UserIdentityStateResponse {
@@ -415,7 +406,6 @@ export async function setSceneUserIdentity(
   })
 }
 
-
 export async function exportRolePack(
   roleId: string,
   destPath: string,
@@ -426,6 +416,58 @@ export async function exportRolePack(
   })
 }
 
+export interface PortableStateExport {
+  content: string
+  suggested_filename: string
+}
+
+export interface PortableStateImportResult {
+  imported_long_term: number
+  skipped_memory_seed: number
+  mutable_profile_restored: boolean
+}
+
+function portableStateRequest(roleId: string, sessionId?: string) {
+  return { role_id: roleId, session_id: sessionId }
+}
+
+export async function exportPortablePersona(
+  roleId: string,
+  sessionId?: string,
+): Promise<PortableStateExport> {
+  return invokeWithFriendlyError<PortableStateExport>('export_portable_persona', {
+    req: portableStateRequest(roleId, sessionId),
+  })
+}
+
+export async function importPortablePersona(
+  roleId: string,
+  content: string,
+  sessionId?: string,
+): Promise<PortableStateImportResult> {
+  return invokeWithFriendlyError<PortableStateImportResult>('import_portable_persona', {
+    req: { ...portableStateRequest(roleId, sessionId), content },
+  })
+}
+
+export async function exportPortableMemory(
+  roleId: string,
+  sessionId?: string,
+): Promise<PortableStateExport> {
+  return invokeWithFriendlyError<PortableStateExport>('export_portable_memory', {
+    req: portableStateRequest(roleId, sessionId),
+  })
+}
+
+export async function importPortableMemory(
+  roleId: string,
+  content: string,
+  sessionId?: string,
+): Promise<PortableStateImportResult> {
+  return invokeWithFriendlyError<PortableStateImportResult>('import_portable_memory', {
+    req: { ...portableStateRequest(roleId, sessionId), content },
+  })
+}
 
 export interface RolePackPeek {
   id: string
@@ -452,4 +494,3 @@ export async function importRolePack(
     overwrite,
   })
 }
-

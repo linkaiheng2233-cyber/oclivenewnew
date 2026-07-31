@@ -3,7 +3,9 @@
 use crate::domain::portrait_emotion_engine::{
     apply_persona_event_overrides, fallback_base_from_emotion,
 };
-use crate::domain::portrait_facility::rule::{resolve_visual_state_rule, validate_asset_id};
+use crate::domain::portrait_facility::rule::{
+    resolve_visual_state_rule_with_intensity, validate_asset_id,
+};
 use crate::domain::ports::LlmClient;
 use crate::error::Result;
 use crate::models::{Emotion, Event, PersonalityVector, Role};
@@ -180,6 +182,7 @@ pub async fn pick_portrait_with_catalog(
     recent_events: &[Event],
     recent_turns: &[(String, String)],
     narrative_hint: Option<&str>,
+    intensity: f64,
 ) -> Result<(String, String)> {
     let mut visual_state_id = if portrait_director_enabled() {
         let prompt = build_director_prompt(
@@ -198,34 +201,64 @@ pub async fn pick_portrait_with_catalog(
         );
         match llm.generate_tag(ollama_model, &prompt).await {
             Ok(raw) => parse_asset_id(&raw, catalog).unwrap_or_else(|| {
-                resolve_visual_state_rule(catalog, &bot_emotion.to_string())
-                    .unwrap_or_else(|| "neutral_default".to_string())
+                resolve_visual_state_rule_with_intensity(
+                    catalog,
+                    &bot_emotion.to_string(),
+                    Some(intensity),
+                )
+                .unwrap_or_else(|| "neutral_default".to_string())
             }),
             Err(e) => {
                 tracing::warn!("portrait_director LLM failed, rule fallback: {}", e);
-                resolve_visual_state_rule(catalog, &bot_emotion.to_string())
-                    .unwrap_or_else(|| "neutral_default".to_string())
+                resolve_visual_state_rule_with_intensity(
+                    catalog,
+                    &bot_emotion.to_string(),
+                    Some(intensity),
+                )
+                .unwrap_or_else(|| "neutral_default".to_string())
             }
         }
     } else {
-        resolve_visual_state_rule(
+        resolve_visual_state_rule_with_intensity(
             catalog,
             &fallback_base_from_emotion(bot_emotion, recent_turns),
+            Some(intensity),
         )
         .unwrap_or_else(|| "neutral_default".to_string())
     };
 
-    if validate_asset_id(catalog, &visual_state_id).is_none() {
-        visual_state_id = resolve_visual_state_rule(catalog, &bot_emotion.to_string())
-            .unwrap_or_else(|| "neutral_default".to_string());
+    // The director may still choose a legacy/default id. If the catalog has
+    // an intensity sibling, prefer it so upgraded packs are visible even
+    // when the model returns a conservative default.
+    if visual_state_id.ends_with("_default") {
+        let tag = emotion_tag_from_visual_state(catalog, &visual_state_id);
+        if let Some(preferred) =
+            resolve_visual_state_rule_with_intensity(catalog, &tag, Some(intensity))
+        {
+            visual_state_id = preferred;
+        }
     }
 
-    let mut portrait_tag = emotion_tag_from_visual_state(catalog, &visual_state_id);
+    if validate_asset_id(catalog, &visual_state_id).is_none() {
+        visual_state_id = resolve_visual_state_rule_with_intensity(
+            catalog,
+            &bot_emotion.to_string(),
+            Some(intensity),
+        )
+        .unwrap_or_else(|| "neutral_default".to_string());
+    }
+
+    let selected_portrait_tag = emotion_tag_from_visual_state(catalog, &visual_state_id);
+    let mut portrait_tag = selected_portrait_tag.clone();
     portrait_tag =
         apply_persona_event_overrides(portrait_tag, user_emotion_str, recent_events, personality);
 
-    if let Some(rule_id) = resolve_visual_state_rule(catalog, &portrait_tag) {
-        visual_state_id = rule_id;
+    if !portrait_tag.eq_ignore_ascii_case(&selected_portrait_tag) {
+        if let Some(rule_id) =
+            resolve_visual_state_rule_with_intensity(catalog, &portrait_tag, Some(intensity))
+        {
+            visual_state_id = rule_id;
+        }
     }
 
     Ok((portrait_tag, visual_state_id))

@@ -4,24 +4,25 @@
 
 ## 零、蓝图专属字段（非角色包）
 
-### `runtime_config`（v3 目标 SSOT）
+### `runtime_config`（Stable v4 SSOT；v3 双核 Beta）
 
 顶层可选段 **`runtime_config`**（**仅蓝图**；角色包创作者视图不暴露）：
 
 | 子字段 | 类型 | 说明 |
 |--------|------|------|
 | `interaction_mode` | string | `immersive` \| `pure_chat` |
-| `memory_config` | object | 记忆策略（`topic_weights` 等，见 README_MANIFEST） |
+| `memory_config` | object | 记忆策略（`topic_weights` 等，见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)） |
 | `reply_quality_anchor` | string | 主对话质量锚点全文；非空则**仅替换**引擎默认锚点。通用对话纪律由 `KERNEL_DIALOGUE_GUARDRAILS` 每轮恒追加，包级不可覆盖，勿在锚点重复 |
 | `remote_fallback_to_builtin` | bool | 包级 Remote 降级建议（全局仍以 `app_settings` / 环境变量为准） |
 | `dual_core.enabled` | bool | 双核开关，默认 **`false`**（见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)） |
 | `identity_binding` | string | `global` \| `per_scene` |
-| `evolution` | object | 演化引擎参数（非 `personality_source` 门面） |
+| `evolution` | object | 演化引擎参数（含 `personality_source` 与数值策略） |
 | `ollama_model` | string | 默认 Ollama 模型（亦可写在 `slot_registry` llm 实例 `model`） |
 | `remote_presence` / `autonomous_scene` | object | 异地心声 / 虚拟时间换场景 |
 
 - **`schema_version: 2`** 文件若含 `runtime_config`：`pack validate` **警告**，宿主**忽略**该段。  
-- **`schema_version: 3`**：以 `runtime_config` 为准；`meta` 仅保留角色包字段（见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) §0）。
+- **`schema_version: 4`**：Stable 路径，以 `runtime_config` 为准；不接受 v3 专属 `dual_core`。
+- **`schema_version: 3`**：仅保留冻结的双核 Beta；以 `runtime_config` 为准，并允许 `dual_core`。
 
 ---
 
@@ -32,8 +33,8 @@
 | 槽位实例 | **`slot_registry`**（`type`、`backend`、`plugin`、`model`、`url`、`position`…） | 六槽路由与 directory 插件 id |
 | 架构图 | **`groups`** | 同 type 实例分组 |
 | 运行时派生 | **`module_relations`** | **禁止落盘**；由 `slot_registry` 派生 |
-| 交互与记忆 | **`interaction_mode`**、**`memory_config`**、**`identity_binding`** | 目标：`runtime_config.*`；今日多仍在 **`meta.*`** |
-| 演化引擎 | **`evolution`**（除 `personality_source` 外数值策略） | 蓝图 |
+| 交互与记忆 | **`interaction_mode`**、**`memory_config`**、**`identity_binding`** | Stable v4：`runtime_config.*`；v2 仅兼容 **`meta.*`** |
+| 演化引擎 | **`evolution`**（含 `personality_source` 与数值策略） | Stable v4 `runtime_config.evolution`；v2 兼容 `meta.evolution` |
 | 模型 | **`ollama_model`** 或 **`slot_registry` 内 `model`** | 蓝图 |
 | 远程 / 场景引擎 | **`remote_presence`**、**`autonomous_scene`** | 蓝图 |
 | 知识引擎块 | **`meta.knowledge`**（检索配置） | 蓝图，与 `knowledge/` 内容目录区分 |
@@ -47,13 +48,13 @@
 | **`remote_fallback_to_builtin`** | `app_settings` / **`OCLIVE_REMOTE_FALLBACK_TO_BUILTIN`** |
 | Monolith **`weld_modules`** | 工程 **`monolith.toml`** |
 
-**legacy `settings.json`**（已废弃，勿与 v2 蓝图并存）：下表 §一 的 `plugin_backends` 等价于今日 **`slot_registry`**。
+**legacy `settings.json`**（已废弃，勿与 `pipeline.ocblueprint` 并存）：下表 §一 的 `plugin_backends` 等价于今日 **`slot_registry`**。
 
 ---
 
 **校验**：`pack validate`（默认蓝图全量）· **`pack validate --profile creator`**（仅角色包，见 [ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md)）。
 
-**v2 角色包（当前）**：后端实例写在 **`pipeline.ocblueprint` → `slot_registry`**。CLI 总览 **`oclive plugin manage --tui`**。下文 §一 **`settings.json` → `plugin_backends`** 仅 **legacy** 对照。
+**当前蓝图包（新包 Stable v4，兼容 v2）**：后端实例写在 **`pipeline.ocblueprint` → `slot_registry`**。CLI 总览 **`oclive plugin manage --tui`**。下文 §一 **`settings.json` → `plugin_backends`** 仅 **legacy** 对照。
 
 本文档描述 **桌面宿主（Tauri）** 与 **`oclive-cli` 脚手架** 共用的配置语义。单一事实来源以源码为准：
 
@@ -129,6 +130,8 @@
 | `dialogue-only` | full | 关闭 | kernel_server |
 | `headless-api` | full | 关闭 | kernel_server |
 | `library-embed` | minimal | 关闭 | library |
+
+角色包跨发行版底座：`pack validate --profile portable-core`。它只检查 Portable Core（基础人格 Prompt + 七张默认情绪图片），不限制发行版自己的 HostProfile、UI、语音、视觉或硬件扩展。
 
 **`--monolith-preset`**（Monolith 启用时）：`latency` | `memory` | `embedded` — 预填 `weld_modules`（见生成工程 `CONFIG_REFERENCE.md`）。
 

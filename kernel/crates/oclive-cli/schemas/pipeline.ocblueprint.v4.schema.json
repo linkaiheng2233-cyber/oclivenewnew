@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oclive.dev/schemas/pipeline.ocblueprint.v4.schema.json",
+  "title": "pipeline.ocblueprint v4 (Stable)",
+  "description": "Stable v2 successor: runtime_config is active and extensions is a minimal declaration envelope. v3 pipeline/zone/dual_core fields are intentionally excluded.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "meta", "slot_registry"],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 4
+    },
+    "meta": {
+      "$ref": "pipeline.ocblueprint.v2.schema.json#/properties/meta"
+    },
+    "slot_registry": {
+      "$ref": "pipeline.ocblueprint.v2.schema.json#/properties/slot_registry"
+    },
+    "groups": {
+      "$ref": "pipeline.ocblueprint.v2.schema.json#/properties/groups"
+    },
+    "includes": {
+      "$ref": "pipeline.ocblueprint.v2.schema.json#/properties/includes"
+    },
+    "expert_overlay": {
+      "$ref": "pipeline.ocblueprint.v2.schema.json#/properties/expert_overlay"
+    },
+    "runtime_config": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "interaction_mode": {
+          "type": "string",
+          "enum": ["immersive", "pure_chat"]
+        },
+        "memory_config": {
+          "type": "object"
+        },
+        "reply_quality_anchor": {
+          "type": "string"
+        },
+        "remote_fallback_to_builtin": {
+          "type": "boolean"
+        },
+        "identity_binding": {
+          "type": "string"
+        },
+        "evolution": {
+          "type": "object"
+        },
+        "ollama_model": {
+          "type": "string"
+        },
+        "remote_presence": {
+          "type": "object"
+        },
+        "autonomous_scene": {
+          "type": "object"
+        }
+      }
+    },
+    "extensions": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "#/$defs/namespacedId"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/extensionDeclaration"
+      }
+    }
+  },
+  "$defs": {
+    "namespacedId": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 160,
+      "pattern": "^[a-z0-9_-]+(?:\\.[a-z0-9_-]+)+$"
+    },
+    "extensionDeclaration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "capability",
+        "config_schema_version",
+        "config_ref"
+      ],
+      "properties": {
+        "capability": {
+          "$ref": "#/$defs/namespacedId"
+        },
+        "provider": {
+          "$ref": "#/$defs/namespacedId"
+        },
+        "required": {
+          "type": "boolean",
+          "default": false
+        },
+        "config_schema_version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "config_ref": {
+          "type": "string",
+          "pattern": "^blueprint/extensions/[a-z0-9_.-]+/[a-zA-Z0-9_./-]+\\.json$"
+        }
+      }
+    }
+  }
+}

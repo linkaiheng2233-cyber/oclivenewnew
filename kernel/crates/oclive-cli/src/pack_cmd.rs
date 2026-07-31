@@ -3,6 +3,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use crate::role_pack::write_empty_memory_seed;
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use oclive_validation::{
@@ -21,7 +22,7 @@ pub struct PackArgs {
 
 #[derive(Subcommand, Debug)]
 pub enum PackCommands {
-    /// Validate role pack directory (default: pipeline.ocblueprint v2; --profile legacy: manifest+settings)
+    /// Validate role pack directory (default: exact blueprint v2/v3/v4 dispatch)
     Validate(PackValidateArgs),
     /// Generate a minimal valid role pack directory
     Create(PackCreateArgs),
@@ -29,6 +30,15 @@ pub enum PackCommands {
     Publish(PackPublishArgs),
     /// Migrate manifest.json + settings.json → pipeline.ocblueprint v2
     MigrateToBlueprint(MigrateToBlueprintArgs),
+    /// Validate a portable `.ocpersona` JSON document
+    ValidatePersona(PortableDocumentArgs),
+    /// Validate a portable `.ocmemory` JSON document
+    ValidateMemory(PortableDocumentArgs),
+}
+
+#[derive(Parser, Debug)]
+pub struct PortableDocumentArgs {
+    pub path: PathBuf,
 }
 
 #[derive(Parser, Debug)]
@@ -38,7 +48,7 @@ pub struct PackValidateArgs {
     /// Host semver for `manifest.min_runtime_version` (default: this CLI `CARGO_PKG_VERSION`)
     #[arg(long)]
     pub host_version: Option<String>,
-    /// Profile: `default` (blueprint v2/v3) | `legacy` | `creator` | `robot-soul` (see ROLE_PACK_SPEC)
+    /// Profile: `default` (blueprint v2/v3/v4) | `legacy` | `creator` | `robot-soul` | `portable-core` (see ROLE_PACK_SPEC)
     #[arg(long, default_value = "default")]
     pub profile: String,
 }
@@ -63,8 +73,11 @@ pub struct PackCreateArgs {
     #[arg(long, default_value_t = false)]
     pub flat: bool,
     /// Output v2 blueprint pack (`pipeline.ocblueprint` only) instead of manifest/settings
-    #[arg(long, default_value_t = false)]
+    #[arg(long, default_value_t = false, conflicts_with = "format_blueprint_v4")]
     pub format_blueprint_v2: bool,
+    /// Output Stable v4 blueprint pack (`pipeline.ocblueprint` only) instead of manifest/settings
+    #[arg(long, default_value_t = false, conflicts_with = "format_blueprint_v2")]
+    pub format_blueprint_v4: bool,
 }
 
 #[derive(Parser, Debug)]
@@ -91,7 +104,25 @@ pub fn run_pack(args: PackArgs) -> Result<()> {
         PackCommands::Create(a) => run_create(a),
         PackCommands::Publish(a) => run_publish(a),
         PackCommands::MigrateToBlueprint(a) => run_migrate_to_blueprint(a),
+        PackCommands::ValidatePersona(a) => run_validate_portable(a, true),
+        PackCommands::ValidateMemory(a) => run_validate_portable(a, false),
     }
+}
+
+fn run_validate_portable(args: PortableDocumentArgs, persona: bool) -> Result<()> {
+    let raw =
+        fs::read_to_string(&args.path).with_context(|| format!("read {}", args.path.display()))?;
+    let result = if persona {
+        oclive_validation::parse_portable_persona(&raw).map(|_| ())
+    } else {
+        oclive_validation::parse_portable_memory(&raw).map(|_| ())
+    };
+    result.map_err(|errors| anyhow::anyhow!(errors.join("\n")))?;
+    println!(
+        "Portable {} validation passed",
+        if persona { "persona" } else { "memory" }
+    );
+    Ok(())
 }
 
 fn run_validate(args: PackValidateArgs) -> Result<()> {
@@ -152,6 +183,23 @@ fn run_create(args: PackCreateArgs) -> Result<()> {
     };
     fs::create_dir_all(root.join("scenes").join("default"))
         .with_context(|| format!("create scenes/default under {}", root.display()))?;
+    write_empty_memory_seed(&root)?;
+    fs::write(
+        root.join("core_personality.txt"),
+        "# Core personality (UTF-8 text). Replace with the role's immutable identity and behavior boundaries.\n",
+    )
+    .context("write core_personality.txt")?;
+    let scene = json!({
+        "name": "Default",
+        "time_windows": [],
+        "keywords": [],
+        "events": []
+    });
+    fs::write(
+        root.join("scenes").join("default").join("scene.json"),
+        serde_json::to_string_pretty(&scene).context("scene.json")?,
+    )
+    .context("write scene.json")?;
 
     let manifest = json!({
         "id": id,
@@ -170,9 +218,10 @@ fn run_create(args: PackCreateArgs) -> Result<()> {
         },
         "default_relation": "friend"
     });
-    if args.format_blueprint_v2 {
-        let bp = serde_json::json!({
-            "schema_version": 2,
+    if args.format_blueprint_v2 || args.format_blueprint_v4 {
+        let schema_version = if args.format_blueprint_v4 { 4 } else { 2 };
+        let mut bp = serde_json::json!({
+            "schema_version": schema_version,
             "meta": {
                 "id": id,
                 "name": args.name,
@@ -183,8 +232,7 @@ fn run_create(args: PackCreateArgs) -> Result<()> {
                 "relations": {
                     "friend": { "initial_favorability": 50.0, "favor_multiplier": 1.0 }
                 },
-                "default_relation": "friend",
-                "interaction_mode": "immersive"
+                "default_relation": "friend"
             },
             "slot_registry": {
                 "memory": { "type": "memory", "label": "Memory", "backend": "builtin", "position": 0 },
@@ -196,12 +244,22 @@ fn run_create(args: PackCreateArgs) -> Result<()> {
                 "agent": { "type": "agent", "label": "Agent", "backend": "builtin", "position": 0 }
             }
         });
+        if args.format_blueprint_v4 {
+            bp["runtime_config"] = serde_json::json!({
+                "interaction_mode": "immersive"
+            });
+        } else {
+            bp["meta"]["interaction_mode"] = serde_json::json!("immersive");
+        }
         fs::write(
             root.join(PIPELINE_BLUEPRINT_FILENAME),
             serde_json::to_string_pretty(&bp).context("serialize blueprint")?,
         )
         .context("write pipeline.ocblueprint")?;
-        println!("Role pack directory created (v2): {}", root.display());
+        println!(
+            "Role pack directory created (v{schema_version}): {}",
+            root.display()
+        );
         return Ok(());
     }
 
@@ -228,24 +286,6 @@ fn run_create(args: PackCreateArgs) -> Result<()> {
         serde_json::to_string_pretty(&settings).context("serialize settings")?,
     )
     .context("write settings.json")?;
-
-    fs::write(
-        root.join("core_personality.txt"),
-        "# Core personality (UTF-8 text). Optional alongside manifest default_personality.\n",
-    )
-    .context("write core_personality.txt")?;
-
-    let scene = json!({
-        "name": "Default",
-        "time_windows": [],
-        "keywords": [],
-        "events": []
-    });
-    fs::write(
-        root.join("scenes").join("default").join("scene.json"),
-        serde_json::to_string_pretty(&scene).context("scene.json")?,
-    )
-    .context("write scene.json")?;
 
     println!("Role pack directory created: {}", root.display());
     Ok(())

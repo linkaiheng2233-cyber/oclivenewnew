@@ -172,6 +172,6 @@ distros/chat-pro/roles/{role_id}/
 
 ## 8. 相关链接
 
-- 实施分阶段：[../../handoff/PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md](../../handoff/PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md)
+- 历史分阶段计划已归档；现行状态查 [TECHNICAL_DEBT_INVENTORY](../../handoff/TECHNICAL_DEBT_INVENTORY.md)。
 - 编写器：[../../handoff/pack-editor/PACK_EDITOR_ROADMAP.md](../../handoff/pack-editor/PACK_EDITOR_ROADMAP.md)
 - 角色包 §9.9：[../role-pack/ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)

@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import type { KernelDiagnostics } from '@oclive/shared/api'
-import { computed, onMounted, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { getKernelDiagnostics } from '@oclive/shared/api'
 import { useAppToast } from '@oclive/shared/composables/useAppToast'
 import { useKernelConnectionStore } from '@oclive/shared/stores/kernelConnectionStore'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import UiButton from '../ui/UiButton.vue'
 
 const props = defineProps<{

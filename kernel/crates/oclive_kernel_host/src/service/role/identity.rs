@@ -38,6 +38,7 @@ fn identity_catalog_or_empty(role: &Role) -> Vec<UserIdentityDto> {
                     id: id.clone(),
                     display_name: e.display_name.clone(),
                     maps_to_relation_id: e.maps_to_relation_id.clone(),
+                    adult_eligible: e.adult_eligible,
                 })
                 .collect()
         })

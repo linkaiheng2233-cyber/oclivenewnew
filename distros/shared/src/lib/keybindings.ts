@@ -1,14 +1,14 @@
 export type KeybindingScope = 'app' | 'hold' | 'global'
 
-export type KeybindingActionId =
-  | 'app.openSettings'
-  | 'app.openPluginManager'
-  | 'app.openModelManager'
-  | 'app.toggleDebug'
-  | 'app.openShortcutHelp'
-  | 'voice.holdToTalk'
-  | 'plugin.openLauncher'
-  | 'plugin.openSlot'
+export type KeybindingActionId
+  = | 'app.openSettings'
+    | 'app.openPluginManager'
+    | 'app.openModelManager'
+    | 'app.toggleDebug'
+    | 'app.openShortcutHelp'
+    | 'voice.holdToTalk'
+    | 'plugin.openLauncher'
+    | 'plugin.openSlot'
 
 export interface KeybindingAction {
   id: KeybindingActionId
@@ -261,4 +261,3 @@ export function isValidHoldAccelerator(accel: string): boolean {
   // For hold-to-talk we only support single key (no modifiers) to avoid accidental grabs.
   return !a.includes('+') && a !== 'Ctrl' && a !== 'Shift' && a !== 'Alt' && a !== 'Meta'
 }
-

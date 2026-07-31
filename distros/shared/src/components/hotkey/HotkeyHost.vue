@@ -1,15 +1,17 @@
 <script setup lang="ts">
-import type { UnlistenFn } from '@tauri-apps/api/event'
 import type { HotkeyAction } from '@oclive/shared/api'
+import type { UnlistenFn } from '@tauri-apps/api/event'
+import { usePluginFrameBridge } from '@oclive/shared/composables/usePluginFrameBridge'
+import { usePluginStore } from '@oclive/shared/stores/pluginStore'
 import { listen } from '@tauri-apps/api/event'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { usePluginStore } from '@oclive/shared/stores/pluginStore'
 
 const { t } = useI18n()
 const pluginStore = usePluginStore()
 
 const launcherOpen = ref(false)
+const frameError = ref('')
 const hotkeyTarget = ref<{
   pluginId: string
   slot: string
@@ -28,6 +30,12 @@ const activeSlot = computed(() => {
       && (s.appearanceId ?? '') === (target.appearanceId ?? ''),
   )
 })
+
+const { bindPluginFrame, framePermissions, onPluginFrameLoad }
+  = usePluginFrameBridge({
+    onFrameError: () => { frameError.value = t('pluginWorkbench.slotEmbed.frameLoadFailed') },
+    onFrameLoad: () => { frameError.value = '' },
+  })
 
 let unlisten: UnlistenFn | undefined
 
@@ -57,6 +65,7 @@ onBeforeUnmount(() => {
 
 function closeHotkeyPlugin(): void {
   hotkeyTarget.value = null
+  frameError.value = ''
 }
 
 function closeLauncher(): void {
@@ -82,11 +91,19 @@ function closeLauncher(): void {
           </button>
         </header>
         <iframe
+          :ref="el => bindPluginFrame(activeSlot, el)"
           class="hk-frame"
           :src="activeSlot.url"
           :title="`plugin ${activeSlot.pluginId}`"
+          :allow="framePermissions(activeSlot)"
+          sandbox="allow-scripts"
           referrerpolicy="no-referrer"
+          @load="onPluginFrameLoad(activeSlot, $event)"
+          @error="frameError = t('pluginWorkbench.slotEmbed.frameLoadFailed')"
         />
+        <p v-if="frameError" class="hk-muted" role="status">
+          {{ frameError }}
+        </p>
       </div>
     </div>
     <div

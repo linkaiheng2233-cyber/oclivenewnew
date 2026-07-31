@@ -59,6 +59,27 @@ skip_agent = true
 skip_complex_emotion = true
 event_impact_llm = false
 
+[llm_runtime]
+mode = "performance"
+endpoint = "http://127.0.0.1:8421"
+auto_start = true
+startup_timeout_ms = 90000
+retry_cooldown_ms = 30000
+model_alias = "oclive-performance"
+performance_profile = "gpu_balanced"
+
+[resource_coordination]
+gpu_safety_reserve_mib = 768
+system_memory_safety_reserve_mib = 1024
+cpu_safety_reserve_threads = 1
+pending_lease_ttl_ms = 120000
+active_lease_ttl_ms = 1800000
+allow_unverified_admission = true
+admission_queue_timeout_ms = 30000
+queue_aging_quantum_ms = 2000
+automatic_preemption = true
+strategy = "compatibility_first"
+
 [turn_thinking]
 default = "auto"
 fast_skip_complex_emotion = true
@@ -100,6 +121,47 @@ Same as role pack (`snake_case`): memory, emotion, event, prompt, llm, agent —
 Fast / Deep per turn via `TurnThinkingRouter` in `co_present`. Fields: `default` (`fast`|`deep`|`auto`), `fast_skip_complex_emotion`, `auto_deep_min_chars`, `fast_knowledge_limit`, `fast_memory_cap`, `deep_capsule`, `prompt_prefix_cache`, `fast_persistence` (`legacy`|`strong_only`). RFC: [RFC_TURN_THINKING_PERSISTENCE_SUMMARY.md](../rfc/RFC_TURN_THINKING_PERSISTENCE_SUMMARY.md).
 
 **Chat Pro default (`desktop`)**: `default = auto`, `fast_persistence = strong_only`; streaming via `POST /chat/stream`; Deep capsule when pack enables it.
+
+### 3.2.2 `[resource_coordination]` (host control plane, not a blueprint field)
+
+The distro policy defaults are:
+
+| Field | Desktop default | Meaning |
+|-------|-----------------|---------|
+| `gpu_safety_reserve_mib` | `768` | VRAM that must remain after a newly admitted cold load |
+| `system_memory_safety_reserve_mib` | `1024` | system RAM that must remain after a newly admitted workload |
+| `cpu_safety_reserve_threads` | `1` | logical CPU threads held outside new workload allocations |
+| `pending_lease_ttl_ms` | `120000` | fallback expiry for an unactivated/cancelled reservation |
+| `active_lease_ttl_ms` | `1800000` | diagnostics TTL for observe-only activity; managed resident runtimes release explicitly |
+| `allow_unverified_admission` | `true` | permit a conservative built-in attempt when `nvidia-smi` is unavailable and report degraded state |
+| `admission_queue_timeout_ms` | `30000` | maximum admission wait before a stable timeout denial |
+| `queue_aging_quantum_ms` | `2000` | wait interval that raises effective priority to prevent starvation |
+| `automatic_preemption` | `true` | allow lower-priority reversible managed adapters with exact grants to be preempted on capacity denial |
+| `strategy` | `compatibility_first` | `compatibility_first`, `primary_first`, `latency_first`, or `custom` objective |
+| `primary_adapter_id` | unset | registered adapter protected by `primary_first` |
+| `commands` | `[]` | finite `[[resource_coordination.commands]]` constraints, not an executable script |
+
+Environment overrides: `OCLIVE_GPU_SAFETY_RESERVE_MIB`, `OCLIVE_RESOURCE_ALLOW_UNVERIFIED`; adapter estimates may be overridden with `OCLIVE_LLAMA_GPU_RESERVATION_MIB` and `OCLIVE_COSYVOICE_GPU_RESERVATION_MIB`. `OCLIVE_GPU_DEVICE_INDEX` (then `CUDA_VISIBLE_DEVICES`) selects the target device. These adapter controls are not role-pack fields.
+
+Example finite constraints:
+
+```toml
+[resource_coordination]
+strategy = "primary_first"
+primary_adapter_id = "builtin.llm.llama_server"
+
+[[resource_coordination.commands]]
+kind = "residency"
+adapter_id = "builtin.voice.cosyvoice2"
+mode = "on_demand"
+
+[[resource_coordination.commands]]
+kind = "yield_then_run"
+yielding_adapter_id = "builtin.llm.llama_server"
+target_adapter_id = "builtin.voice.cosyvoice2"
+```
+
+The implementation covers NVIDIA, system-RAM, and CPU snapshots; atomic pending reservations; a fair admission queue with timeout, cancellation cleanup, and anti-starvation aging; managed llama-server multi-tier cold start/release; observe-only Ollama activity; and official bundled CosyVoice2 admission. Performance llama exposes `gpu_full`, `gpu_balanced`, and `cpu_compatibility`; these tiers change the real `llama-server --n-gpu-layers` value and fall through on admission denial. `performance_profile` selects the distro default and `OCLIVE_LLAMA_PERFORMANCE_PROFILE` may override it. Automatic preemption considers only lower-priority managed adapters that declare a reversible operation and have an exact requester → target → operation grant; failures roll back and completed work restores victims in reverse order. Resource diagnostics v5 add registration provenance, queue/system-resource state, and the versioned read-only candidate plan. Third parties may register an owner-namespaced descriptor and authoritative controller through the in-process `ResourceAdapterRegistrar`; that is not directory-manifest auto-registration and grants no cross-adapter authority. Generic `render`, `compute`, and `hybrid` resource domains are represented and tested, while Chat Pro still uses the existing `Live2DStageAdapter` PNG fallback because no bundled Live2D runtime ships yet. Pure Plan Compiler / CLI diagnostics remain `not_evaluated`, while desktop diagnostics refresh runtime state. Long real process/hardware soak and directory-manifest resource declarations remain future work. See the [blueprint extension and resource coordination RFC](../rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md).
 
 ### 3.3 Prompt / memory / post_process mapping
 
@@ -157,5 +219,6 @@ See [DISTRO_KERNEL_LIFECYCLE.md](DISTRO_KERNEL_LIFECYCLE.md).
 - [DISTRO_KERNEL_LIFECYCLE.md](DISTRO_KERNEL_LIFECYCLE.md)
 - [DISTRO_DEFAULT_PLUGINS.md](DISTRO_DEFAULT_PLUGINS.md)
 - [KERNEL_SCHEDULER_RESCOPE.md](../../handoff/KERNEL_SCHEDULER_RESCOPE.md)
+- [Blueprint extension and resource coordination RFC](../rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md)
 - [CROSS_HOST_MEMORY.md](../role-pack/CROSS_HOST_MEMORY.md)
 - [OCLIVE_APP_DATA.md](OCLIVE_APP_DATA.md)

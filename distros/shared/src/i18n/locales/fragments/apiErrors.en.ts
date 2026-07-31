@@ -1,7 +1,8 @@
 /** Kernel `KernelErrorBody.code` → en-US copy. */
 export default {
   EMPTY_MESSAGE: 'Message must not be empty or whitespace-only. Type at least one visible character.',
-  INVALID_ROLE_PATH: 'role_path is not a valid directory. Pass an absolute path to a folder that contains manifest.json.',
+  INVALID_ROLE_PATH:
+    'role_path is not a valid directory. Pass an absolute path to a folder containing pipeline.ocblueprint (preferred) or a legacy manifest.json.',
   LOAD_ROLE_TASK_PANIC: 'The load-role task panicked. Check logs and retry; file an issue with repro if it persists.',
   TXN_BEGIN_FAILED: 'Transaction failed to start. Try again.',
   TXN_RUNTIME_ENSURE_FAILED: 'Role runtime state failed to initialize.',
@@ -41,7 +42,7 @@ export default {
   ROLE_RUNTIME_NOT_READY:
     'Role runtime is not initialized yet (call load_role / pick the role in the UI first).',
   STARTUP_HEALTH_FAILED:
-    'Startup health checks failed: {detail}. Verify manifest.json, plugin backend slots, DB writable; or set `OCLIVE_SKIP_STARTUP_HEALTH=1` temporarily for troubleshooting only.',
+    'Startup health checks failed: {detail}. Verify pipeline.ocblueprint (preferred) or a legacy manifest.json, plugin backend slots, and DB writability; or set `OCLIVE_SKIP_STARTUP_HEALTH=1` temporarily for troubleshooting only.',
   PLUGIN_BACKENDS_DIRECTORY_SLOT:
     'Plugin backend configuration is incomplete: when a slot uses a directory backend, `directory_plugins` must list a non-empty plugin id for that slot. Use Plugins & backends → Backends or edit pack settings.',
   ROLE_PACK_EXISTS: 'This role id already exists. Choose overwrite to replace the local copy.',

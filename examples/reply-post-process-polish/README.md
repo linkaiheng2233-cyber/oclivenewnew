@@ -29,7 +29,7 @@ In a **local** role pack `config.json` (see `roles/polish-dev/`):
 }
 ```
 
-Do **not** enable by default in shipped golden packs (mumu / shimeng / 枫侵月).
+Do **not** enable by default in shipped golden packs (mumu / 枫侵月).
 
 ## Environment
 
@@ -67,8 +67,8 @@ node --test examples/reply-post-process-polish/*.test.mjs
 | Role switch | preset rebuilt / cache hit per `role_id` |
 | `polish_prompt.md` present | overrides auto preset |
 
-See [handoff/REPLY_POST_PROCESSOR_DESIGN_REPORT.md](../../handoff/REPLY_POST_PROCESSOR_DESIGN_REPORT.md).
+See [RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR](../../creator-docs/rfc/RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md).
 
 ## Scope (Opus 4.8 — stop expanding)
 
-This plugin is **technical pre-research** for Theater v0 local beat patch only. **Not** the Theater product. Minimal loop is complete — do not add features until Theater v0 is validated. See [handoff/REPLY_POST_PROCESS_POLISH_SCOPE.md](../../handoff/REPLY_POST_PROCESS_POLISH_SCOPE.md).
+This plugin is **technical pre-research** for Theater v0 local beat patch only. **Not** the Theater product. Minimal loop is complete; current status lives in [TECHNICAL_DEBT_INVENTORY](../../handoff/TECHNICAL_DEBT_INVENTORY.md).

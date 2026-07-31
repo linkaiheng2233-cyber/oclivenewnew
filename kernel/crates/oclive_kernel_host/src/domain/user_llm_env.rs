@@ -15,6 +15,9 @@ pub const KEY_CLOUD_STYLE: &str = "user_llm_cloud_api_style";
 pub const KEY_CLOUD_VENDOR: &str = "user_llm_cloud_vendor";
 pub const KEY_LLM_PROVIDER: &str = "user_llm_provider";
 pub const KEY_LOCAL_MODELS_DIR: &str = "user_local_models_dir";
+pub const KEY_LOCAL_MODEL_PATH: &str = "user_local_llm_model_path";
+pub const KEY_LOCAL_LORA_ADAPTER_ID: &str = "user_local_lora_adapter_id";
+pub const KEY_LOCAL_LORA_ADAPTER_PATH: &str = "user_local_lora_adapter_path";
 pub const KEY_GLOBAL_OLLAMA_MODEL: &str = "global_ollama_model";
 
 pub const LLM_APP_SETTING_KEYS: &[&str] = &[
@@ -26,6 +29,9 @@ pub const LLM_APP_SETTING_KEYS: &[&str] = &[
     KEY_CLOUD_STYLE,
     KEY_CLOUD_VENDOR,
     KEY_LOCAL_MODELS_DIR,
+    KEY_LOCAL_MODEL_PATH,
+    KEY_LOCAL_LORA_ADAPTER_ID,
+    KEY_LOCAL_LORA_ADAPTER_PATH,
     KEY_GLOBAL_OLLAMA_MODEL,
 ];
 
@@ -64,6 +70,8 @@ pub async fn apply_user_llm_env_from_db(db: &impl AppSettingsPort) -> crate::err
         KEY_REMOTE_TOKEN,
         KEY_CLOUD_STYLE,
         KEY_LLM_PROVIDER,
+        KEY_LOCAL_MODEL_PATH,
+        KEY_LOCAL_LORA_ADAPTER_PATH,
     ];
     let settings = db.get_app_settings(LLM_ENV_KEYS).await?;
     let remote_url = settings
@@ -77,7 +85,7 @@ pub async fn apply_user_llm_env_from_db(db: &impl AppSettingsPort) -> crate::err
     if provider.is_empty() && !remote_url.is_empty() && cloud_api_token_configured(db, None).await?
     {
         provider = "cloud".to_string();
-        let _ = db.upsert_app_setting(KEY_LLM_PROVIDER, "cloud").await;
+        db.upsert_app_setting(KEY_LLM_PROVIDER, "cloud").await?;
     }
     let backend_env = match provider.as_str() {
         "cloud" if !remote_url.is_empty() => Some("remote"),
@@ -94,6 +102,8 @@ pub async fn apply_user_llm_env_from_db(db: &impl AppSettingsPort) -> crate::err
         (KEY_REMOTE_URL, "OCLIVE_REMOTE_LLM_URL"),
         (KEY_REMOTE_TOKEN, "OCLIVE_REMOTE_LLM_TOKEN"),
         (KEY_CLOUD_STYLE, "OCLIVE_LLM_CLOUD_API_STYLE"),
+        (KEY_LOCAL_MODEL_PATH, "OCLIVE_LOCAL_LLM_MODEL_PATH"),
+        (KEY_LOCAL_LORA_ADAPTER_PATH, "OCLIVE_LOCAL_LLM_LORA_PATH"),
     ];
     for (db_key, env_key) in env_pairs {
         if db_key == KEY_REMOTE_URL && provider_for_env == "local" {
@@ -153,7 +163,15 @@ pub async fn apply_user_llm_env(state: &AppState) -> crate::error::Result<()> {
             .db_manager
             .upsert_app_setting(KEY_REMOTE_TOKEN, t.trim())
             .await?;
-        let _ = secrets.write_token_file(app_data, t.trim());
+        if let Err(error) = secrets.write_token_file(app_data, t.trim()) {
+            tracing::warn!(
+                target: "oclive_llm",
+                error_code = "LLM_TOKEN_BACKUP_WRITE_FAILED",
+                app_data = %app_data.display(),
+                %error,
+                "cloud LLM token file backup could not be written"
+            );
+        }
     } else {
         secrets.set_cached_remote_llm_token(None);
     }

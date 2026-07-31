@@ -2,11 +2,33 @@
 //!
 //! Provides foundational services and data access.
 
+/// Return whether an HTTP endpoint resolves to the local machine.
+///
+/// Loopback traffic must bypass inherited proxy environment variables so local
+/// sidecars and test servers cannot be redirected to an external proxy.
+#[must_use]
+pub(crate) fn is_loopback_endpoint(endpoint: &str) -> bool {
+    let Ok(url) = reqwest::Url::parse(endpoint) else {
+        return false;
+    };
+    let Some(host) = url.host_str() else {
+        return false;
+    };
+    host.eq_ignore_ascii_case("localhost")
+        || host
+            .trim_start_matches('[')
+            .trim_end_matches(']')
+            .parse::<std::net::IpAddr>()
+            .is_ok_and(|address| address.is_loopback())
+}
+
 pub mod agent_mcp_bridge;
 pub mod app_data_migration;
 pub mod backend_registry;
 pub mod cache;
+pub mod capability_registry;
 pub mod chat_storage;
+pub mod coordinated_llm;
 pub mod db;
 pub mod db_ports;
 pub mod deep_link;
@@ -18,10 +40,13 @@ pub mod hotkey_bindings;
 pub mod llm;
 pub mod llm_models;
 pub mod llm_params;
+pub mod lora_adapters;
 pub mod mcp_client;
 pub mod ollama_client;
 pub mod ollama_timeouts;
 pub mod openai_compatible_llm;
+pub mod performance_llm;
+mod performance_request_gate;
 pub mod plugin_data;
 pub mod plugin_installer;
 pub mod plugin_protocol;
@@ -32,6 +57,8 @@ pub mod remote_fallback_policy;
 pub mod remote_plugin;
 pub mod reply_post_processor_wiring;
 pub mod repositories;
+pub mod resource_adapters;
+pub mod resource_snapshot;
 pub mod role_pack;
 pub mod slot_resolver_port;
 pub mod sql_migrate;

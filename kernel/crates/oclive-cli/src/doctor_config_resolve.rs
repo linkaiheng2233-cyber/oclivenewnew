@@ -15,7 +15,7 @@ use oclive_kernel_runtime::{
 };
 use oclive_kernel_types::models::dto::{PluginResolutionDebugInfo, API_VERSION, SCHEMA_VERSION};
 use oclive_validation::{
-    load_blueprint_v2_for_role_dir, slot_registry_to_plugin_backends, DiskRoleSettings,
+    load_blueprint_slot_registry_for_role_dir, slot_registry_to_plugin_backends, DiskRoleSettings,
     PluginBackends, SlotRegistryEntry, PIPELINE_BLUEPRINT_FILENAME,
 };
 use serde::Serialize;
@@ -61,17 +61,18 @@ struct RolePackResolutionSnapshot {
 fn load_role_pack_snapshot(role_dir: &Path) -> Result<RolePackResolutionSnapshot> {
     let blueprint_path = role_dir.join(PIPELINE_BLUEPRINT_FILENAME);
     if blueprint_path.is_file() {
-        let loaded = load_blueprint_v2_for_role_dir(role_dir, "0.0.0").map_err(|e| {
-            anyhow::anyhow!(
-                "load blueprint {}: {}",
-                blueprint_path.display(),
-                e.join("; ")
-            )
-        })?;
-        let pack_default = slot_registry_to_plugin_backends(&loaded.slot_registry);
+        let slot_registry =
+            load_blueprint_slot_registry_for_role_dir(role_dir, "0.0.0").map_err(|errors| {
+                anyhow::anyhow!(
+                    "load blueprint {}: {}",
+                    blueprint_path.display(),
+                    errors.join("; ")
+                )
+            })?;
+        let pack_default = slot_registry_to_plugin_backends(&slot_registry);
         return Ok(RolePackResolutionSnapshot {
             pack_default,
-            slot_registry: Some(loaded.slot_registry),
+            slot_registry: Some(slot_registry),
         });
     }
     let settings_path = role_dir.join("settings.json");

@@ -2,11 +2,14 @@
 
 pub mod chat_storage_proxy;
 pub mod conversation;
+pub mod execution_plan;
 pub mod export;
 pub mod high_risk;
 pub mod llm_settings;
 pub mod mcp;
 pub mod plugin_bridge;
+pub mod portable_state;
+pub mod resource_coordination;
 pub mod role;
 pub mod scene;
 pub mod settings_bridge;
@@ -14,16 +17,21 @@ pub mod time;
 
 pub use chat_storage_proxy::{execute_chat_storage_proxy, ChatStorageProxyOp};
 pub use conversation::get_conversation_list_impl;
+pub use execution_plan::{
+    build_execution_plan_diagnostics_for_role, ensure_role_execution_plan_activatable,
+    get_execution_plan_diagnostics_impl,
+};
 pub use export::export_chat_logs_impl;
 pub use high_risk::{
     grant_high_risk_capability_impl, list_high_risk_grants_impl, revoke_high_risk_capability_impl,
     MutateHighRiskGrantRequest,
 };
 pub use llm_settings::{
-    get_global_ollama_model_impl, get_llm_user_settings_impl, list_cloud_models_impl,
-    list_ollama_models_impl, probe_cloud_llm_impl, save_llm_user_settings_impl,
-    set_global_ollama_model_impl, set_session_llm_model_impl, GlobalOllamaModelDto,
-    ListCloudModelsRequest, LlmUserSettingsDto, SaveLlmUserSettingsRequest,
+    activate_local_lora_adapter_impl, delete_local_lora_adapter_impl, get_global_ollama_model_impl,
+    get_llm_user_settings_impl, import_local_lora_adapter_impl, list_cloud_models_impl,
+    list_ollama_models_impl, probe_cloud_llm_impl, reload_llm_user_env_impl,
+    save_llm_user_settings_impl, set_global_ollama_model_impl, set_session_llm_model_impl,
+    GlobalOllamaModelDto, ListCloudModelsRequest, LlmUserSettingsDto, SaveLlmUserSettingsRequest,
     SetGlobalOllamaModelRequest, SetSessionLlmModelRequest,
 };
 pub use mcp::{
@@ -31,6 +39,19 @@ pub use mcp::{
 };
 pub use plugin_bridge::{
     bridge_command_needs_kernel_writer, dispatch_bridge_command, parse_send_message_request,
+};
+pub use portable_state::{
+    export_portable_memory_impl, export_portable_persona_impl, import_portable_memory_impl,
+    import_portable_persona_impl,
+};
+pub use resource_coordination::{
+    directory_plugin_resource_rpc_needs_kernel_preemption,
+    finalize_directory_plugin_resource_config_transition, finalize_directory_plugin_resource_rpc,
+    get_resource_coordination_diagnostics_impl,
+    prepare_directory_plugin_resource_config_transition, prepare_directory_plugin_resource_rpc,
+    transition_resource_adapter_impl, DirectoryPluginResourceAdmission,
+    DirectoryPluginResourceConfigFinalization, DirectoryPluginResourceConfigTransition,
+    DirectoryPluginResourceFinalization,
 };
 pub use role::{
     delete_role_impl, get_display_metrics_impl, get_role_info_impl, get_user_identity_state_impl,

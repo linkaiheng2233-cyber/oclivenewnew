@@ -4,7 +4,31 @@
 
 ## [Unreleased]
 
-(none)
+### Added
+
+- **统一资源协调器、候选计划与适配器注册表**：桌面 Host 以单一协调器汇总 NVIDIA 显存、系统 RAM、CPU 拓扑、优先级、原子预留与租约诊断，并通过 HostProfile 表达安全余量、排队/老化策略、自动抢占开关和有限调度意图；托管 `llama-server`、外部 Ollama 活动、performance 活动观察器和官方 CosyVoice2 已接入 Resource Adapter Registry。资源诊断 v5 会区分控制权、注册来源、adapter-local 档位、驻留能力、生命周期动作和当前 `profile_id`，并从实时状态编译带版本、容量判断、建议转换与回滚信息的只读候选计划。Performance llama 已提供 `gpu_full`、`gpu_balanced`、`cpu_compatibility` 三个真实运行档，分别改变 `llama-server --n-gpu-layers`，准入不足时按档位降级。统一准入队列支持优先级、公平老化、超时与取消清理；自动抢占仅作用于低优先级、明确声明可逆抢占动作且具有精确授权的 managed 适配器，并逆序恢复。宿主还提供所有者命名空间约束的第三方 Resource Adapter/Controller 进程内注册端口，以及 `render` / `compute` / `hybrid` 资源描述；目录 manifest 自动注册和实际 bundled Live2D runtime 尚未实现。蓝图与角色包仍只声明能力和理想配置，不直接支配物理资源。
+- **Stable v4 蓝图扩展外壳**：`pipeline.ocblueprint` 新增严格、最小的 `extensions` 声明与安全外置 JSON 载荷，v4 作为 v2 的 Stable 后继并明确不继承冻结的 v3 双核字段。Host、CLI、doctor、插件槽位写回与角色包编写器均按 v2/v3/v4 精确分派；未知版本不再回落 v2。可选扩展会无损保留但暂不执行，必需扩展在 Capability Registry 落地前阻止角色激活；编写器新建包默认 v4，CLI 新增 `pack create --format-blueprint-v4`，旧 v2 保持兼容且不自动改写。
+- **llama.cpp LoRA GGUF 本地闭环**：Chat Pro 与 AI Theater 共用的“本地模型设置”现可导入原始 LoRA GGUF 或 `.ocadapter` v1；内核校验 ZIP 路径/大小、SHA-256、GGUF adapter 元数据与基础模型 architecture，采用暂存+原子替换管理本地副本，并以托管 `llama-server --lora` 启用。独立完整基座可用同名 `.ocmodel.json` 声明来源与成人分级；基座与 LoRA 不固定绑定，可自由选择通过兼容性验证的组合。成人基座和适配器均要求显式确认，切换基座会自动停用旧 LoRA，防止相同架构的错误适配器或消融 LoRA 串入新组合。启用失败恢复此前数据库、环境和进程选择；Hugging Face/PEFT 明确留给后续独立转换插件。
+- **DeepSeek 拟人示例角色包**：新增社区创作、非官方的 `deepseek` Portable Core 角色包，包含核心人设、空的只读记忆种子、三种用户身份、认知边界、默认场景与七张透明立绘；该角色包不代表 DeepSeek 官方授权或背书。
+- **Persona / Memory 跨发行版独立迁移**：新增 `.ocpersona` 与 `.ocmemory` JSON v1 契约、共享校验和桌面宿主导入导出 API；角色包可选 `memory_seed.json` 作为创作者只读初始记忆。Persona 导入只恢复可变人设且不得覆盖核心人设；Memory 使用合并导入，明确排除聊天记录、短期记忆缓存与临时局面状态。内置角色包、Robot Soul 示例与 CLI 新建/初始化脚手架已统一生成该 seed 容器。
+- **Chat Pro 成人角色扩展 v1**：角色包可选根文件 `adult_extension.json` 与 Portable Core 基础内容分离；Chat Pro 提供本机成年确认、全局与分角色两级开关、导入提示、独立管理页、结构化角色对话/静音旁白双气泡、自然退出与自动节拍。成人记忆按 `content_scope` 独立存储，普通聊天只保留非露骨关系桥接；语音只朗读角色对话，节拍同时等待展示间隔与当前语音完成，失败后仅本次互动降级文本。后台连续预生成使用可取消、可恢复的 staged beat：后台只缓存结构化文本，回到对应聊天后才逐拍提交、显示并生成语音；所有聊天共享用户可配置容量，用户输入会抢占并丢弃未展示拍。编写器新增依赖完整基础包校验的独立成人扩展页，并与基础包合并导入导出。
+
+- **本地 HTTP API 认证**：桌面宿主启动 kernel 时自动生成并注入随机 `OCLIVE_API_TOKEN`；无头 `--api` 现在也默认要求显式设置同名变量，除公开探活 `GET /health` 外的路由须发送 `x-oclive-api-token`。仅隔离的本地开发可显式设置 `OCLIVE_API_ALLOW_UNAUTHENTICATED=1` 逃生；CORS 收窄至本机开发/Tauri 来源，OOCP 与进程重启烟测自动附加 token。
+
+### Fixed
+
+- **成人分拍结构化输出与实机容量标定**：修复通用 Prompt 末尾“只输出角色台词”覆盖 Chat Pro 成人 JSON 契约的问题；成人请求现在以最终专用输出边界收尾，真实 Qwen2.5 7B GGUF 在缓存深度 1/2/4/8 下 15/15 拍完整结构化、零回退。新增 `scripts/measure-adult-stage.mjs` 复现脚本，并依据 RTX 5060 Laptop 8GB 与 CosyVoice2 共享显存测试把默认值保持为 2、建议范围标定为 2～4。
+- **工程路径与启动诊断收敛**：修复 `oclive-cli init --kernel-source` 仍生成旧 `src-tauri` / 根 `crates` 路径的问题，并加入真实仓库布局断言；桌面、无头服务与生成工程共享同一 `--port` 解析，缺失、零值或非法端口均给出稳定诊断并以退出码 2 终止；应用数据目录初始化、共享内核备份/回滚与云模型 token 文件备份失败不再静默，共享内核提升也不再重复执行。
+- **目录插件界面与语音侧车启动**：修复 Windows/WebView2 回传 `ocliveplugin://localhost/...` 时语音识别区和侧栏插件显示 `unknown uri`；整壳与全部 UI 插槽现在按平台生成协议地址——Linux/macOS/iOS 使用 `ocliveplugin://localhost/...`，Windows/Android 使用宿主映射的 `https://ocliveplugin.localhost/...`，避免非 Windows 发行版只挂载空 iframe。受限 iframe 统一在插件脚本执行前注入桥接并由父宿主注册 broker，修复语音识别 `OCLive bridge unavailable`；麦克风采集改由可信父宿主代理给官方语音工具栏，避免 opaque-origin iframe 报 `Invalid security origin`，且不放宽 `allow-same-origin`；采集启停采用串行状态机，授权途中取消不会遗留录音流。Voice v0.5 的转写提交带幂等 id，兼容旧插件的短窗重复事件，并恢复不受插件订阅白名单影响的宿主内部预热/流式朗读事件；流式 TTS 现在只按完整播放结束的音频扣除最终回复、首段不再切成三字碎片或等待额外 directive RPC，切换消息/角色会中止旧合成与已排程 PCM；正式 desktop profile 启用已通过基准的 Deep 前缀缓存。mumu 的安全回退卡片在 iframe 首次 load 时会补注册 broker，状态刷新保留旧内容并按角色/身份事件原位更新；插件 bootstrap、身份、轮询与卡片刷新均拒绝旧角色/旧代次结果回写。目录插件子进程启动即载入持久化 `config.json`，流式朗读只直连已确认可用的侧车，否则直接走 RPC；协议与配置失败写入带稳定标识的 `oclive_plugin` 日志。
+- **回复复读与模型错误呈现**：标准回复后处理器会安全移除模型输出开头对本轮用户原句的完整复读（保留“你好”→“你好呀”等自然接话）；SSE/IPC 携带的结构化 `LLM_ERROR` 统一映射为可操作的本地化提示，不再直接向聊天界面显示原始 JSON。
+- **纯蓝图角色包导入闭环**：Chat Pro 的 `.ocpak` / `.zip` / 已解压目录预览与安装现在原生识别 `pipeline.ocblueprint`，同层存在 legacy `manifest.json` 时以蓝图 `meta` 为准；运行时导出统一使用 `{role_id}/...` 顶层目录，修复编写器 v2 包无法经应用内入口导入的问题。
+- **本机端点代理兼容**：Remote 插件、Remote Agent 与 OpenAI-compatible LLM 的 IPv4/IPv6 回环端点不再继承用户 HTTP 代理，避免 `localhost` 请求被错误转发后出现 502/超时；测试 mock 同步校验并回显 JSON-RPC request id。
+- **活跃文档 truth 收敛**：产品执行与发版入口改链现行 SSOT；`check-stale-paths` 新增 G3/G12 守卫，禁止将 `handoff/archive/*` 产品清单重新写成现行依据。
+
+### Removed
+
+- **已完成使命的维护脚本**：移除已执行完毕的布局迁移、文件拆分、批量修复脚本，以及未形成受支持工作流的实验性本地 TTS 安装脚本；现行路径由 `check-stale-paths` / 文档链接门禁和正式 CLI 持续验证，历史仍可由 Git 恢复。
+- **官方角色包调整**：移除 `shimeng`（诗梦）角色包；依赖官方磁盘角色的测试与示例改用仍发行的角色包或独立测试夹具。
 
 ---
 
@@ -48,7 +72,7 @@
 - **AI 剧场 Patch 涟漪升级**：poke 默认 `mode=patch`（局部 prose 小剧情 + 保留 skeleton 尾部）；`patch_variant` 双候选后台生成 + `TheaterVariantBackdrop` 拖拽切换；设置 → 舞台 Tab 可选 ripple 降级与自定义 poke 主角。
 - **`CODE_OF_CONDUCT.md`**（Contributor Covenant）。
 - **`human-docs-en/`** 最小集（L0–L3 + 08/09/10 英文摘要）。
-- **`human-docs/08_PR_GATE_MATRIX.md`**、**`09_GLOSSARY.md`**、**`10_SETUP_WINDOWS.md`**。
+- **`human-docs/08_PR_GATE_MATRIX.md`**、**`03_GLOSSARY.md`**、**`10_SETUP_WINDOWS.md`**。
 - **`handoff/GOOD_FIRST_ISSUES.md`** 策展表。
 - **`npm run check:ci-local`**；`package.json` `engines.node >=20`、**`.nvmrc`**。
 - 前端：`distros/shared/src/api/plugin/*`、`useMainShell*`、`useChatStorageSettings`、`chatStoreSend`。
@@ -130,7 +154,7 @@
 - **立绘 catalog（A2/B1）**：`portrait_catalog.json` SSOT；7 固定槽 + 高级多条目；`visual_state_id` / `performance_directive` additive DTO。
 - **表现导演**：`pick_portrait_with_catalog` + 复杂情感 `narrative_hint` 闭环；legacy `portrait_emotion` 七 tag 零回归。
 - **视觉表现 v1**：`materialize_directive`（image/live2d/rig3d/procedural）；distro `[visual_presentation].mode` gating（`off` / `image_only` / `stage_full`）。
-- **OOCP S16**：catalog fixture 断言 `visual_state_id` + `performance_directive`；mumu 无字段。
+- **OOCP S16**：固定的关闭/开启 fixture 分别断言视觉字段省略，以及 `visual_state_id` + `performance_directive` 输出，避免官方角色配置演进使协议测试失真。
 - **编写器**：`PortraitCatalogEditor`、分级导出 profile（`desktop-full` / `vscode-lite` / `theater`）、`visual_presentation` UI。
 - **VS Code Flash**：HTTP 解析 `visual_state_id` / `performance_directive`；catalog 路径优先于 tag 文件名。
 - **Theater**：`TheaterStagePanel` + `Live2DStageAdapter` 接线（Cubism defer，PNG fallback）。
@@ -158,7 +182,7 @@
 
 ### Added
 
-- **User Identity & Reply Post-Processor Phase 2（收尾）**：HostProfile `[user_identity]` / `[post_process]` 合并；remote/directory 后处理后端；HTTP `/user_identity/*`；桌面与 VS Code 身份切换；`RoleInfo` / `GET /role_info` 后处理只读字段；调试面板后处理状态行。见 [handoff/USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md](handoff/USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md)。
+- **User Identity & Reply Post-Processor Phase 2（收尾）**：HostProfile `[user_identity]` / `[post_process]` 合并；remote/directory 后处理后端；HTTP `/user_identity/*`；桌面与 VS Code 身份切换；`RoleInfo` / `GET /role_info` 后处理只读字段；调试面板后处理状态行。见 [历史 Phase 2 记录](handoff/archive/USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md)。
 - **文档**：ROLE_PACK_SPEC §1.1 / §9.7、架构总览「正交能力单元」、USER_MANUAL §3.4–3.5、RFC Phase 2 验收勾选。
 - **遗忘曲线与关系演化（`config.json`）**：艾宾浩斯长期记忆衰减（`memory.decay_halflife_days`）；重复提及强化（`mention_count` + `reinforcement_factor`）；沉浸模式下亲密值疏远与关系阶段降级（`relation.*`）；虚拟时间流速（`time.speed`）与首次沉浸对齐 `life_schedule` 起点；强化记忆微幅推动七维人格 / 可变档案「记忆塑造」。规范见 [ROLE_PACK_SPEC §9](creator-docs/role-pack/ROLE_PACK_SPEC.md)。
 - **双核质量验收补强**：OOCP 新增可选 **S14**（experimental 合法 DAG 成功路径）；`oocp-test-suite` CI job 现以 `--features dual_core` 构建并执行 `run.mjs --include-dual-core`（覆盖 S13 降级 + S14 成功路径）；新增 `src-tauri/tests/dual_core_happy_path.rs` 集成测验证 `DualPipelineRunner::run_experimental` 成功路径。
@@ -181,7 +205,7 @@
 ### Breaking
 
 - **角色包 v2**：新包以 **`pipeline.ocblueprint`**（`schema_version: 2`）为唯一配置中枢；`oclive pack validate` **默认 v2**。旧包迁移：[V1_TO_V2_MIGRATION.md](creator-docs/role-pack/V1_TO_V2_MIGRATION.md)。
-- **CLI**：移除顶层 `publish`、`plugin search/update`、`registry login`（见 [DEPRECATED_COMMANDS.md](crates/oclive-cli/DEPRECATED_COMMANDS.md)）。
+- **CLI**：移除顶层 `publish`、`plugin search/update`、`registry login`（见 [DEPRECATED_COMMANDS.md](./kernel/crates/oclive-cli/DEPRECATED_COMMANDS.md)）。
 
 ### Added
 

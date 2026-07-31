@@ -42,10 +42,6 @@ const ROOT_MD = [
 /** Relative paths (posix) exempt from code-path ratchet. */
 const CODE_SKIP_REL = new Set([
   'scripts/check-stale-paths.mjs',
-  'scripts/migrate-doc-paths.mjs',
-  'scripts/split-db-rs.mjs',
-  'scripts/fix-empty-after-errors-doc.mjs',
-  'scripts/add-missing-errors-doc-tauri.mjs',
   'scripts/theater-env.mjs',
   'scripts/tauri-shell-dist.mjs',
   'kernel/crates/oclive_kernel_runtime/src/kernel_discovery.rs',
@@ -53,7 +49,6 @@ const CODE_SKIP_REL = new Set([
   'kernel/crates/oclive-cli/src/role_pack.rs',
   'kernel/crates/oclive-cli/src/market_cmd.rs',
   'kernel/crates/oclive-cli/src/pack_cmd.rs',
-  'kernel/crates/oclive-cli/src/generator.rs',
   'kernel/crates/oclive-cli/src/ci_cmd.rs',
   'kernel/crates/oclive-cli/src/templates/CONFIG_REFERENCE.md',
   'distros/desktop-tauri/tests/reply_post_processor_directory_roundtrip.rs',
@@ -62,8 +57,6 @@ const CODE_SKIP_REL = new Set([
   'kernel/crates/oclive-cli/tests/e2e_init_legacy.rs',
   'kernel/crates/oclive-cli/tests/e2e_init_templates.rs',
   'kernel/crates/oclive-cli/tests/e2e_init_minimal.rs',
-  'kernel/crates/oclive_kernel_runtime/src/lib.rs',
-  'kernel/crates/oclive_kernel_types/src/lib.rs',
   'kernel/crates/oclive_kernel_host/src/infrastructure/sql_migrate.rs',
   'kernel/crates/oclive-cli/src/doctor_kernel_contracts.rs',
   'distros/desktop-tauri/src/lib.rs',
@@ -260,7 +253,7 @@ function hasBareMonorepoRolesDoc(line, rel = '') {
   return false;
 }
 
-/** Active docs must link archived closure checklists under handoff/archive/. */
+/** Active docs may link archived closure checklists only through their archive path. */
 function lineHasStaleHandoffClosure(line, rel = '') {
   if (rel.startsWith('handoff/archive/')) return [];
   const checks = [
@@ -276,6 +269,18 @@ function lineHasStaleHandoffClosure(line, rel = '') {
     }
   }
   return hits;
+}
+
+/** G3/G12: archived product checklists may be cited as history, never as current truth. */
+function lineHasArchivedProductTruth(line, rel = '') {
+  if (rel.startsWith('handoff/archive/')) return [];
+  if (!/archive\/PRODUCT_(?:RELEASE_CHECKLIST|AND_KERNEL_GAP_CHECKLIST)\.md/.test(line)) {
+    return [];
+  }
+  if (/历史|归档|追溯|不作.*truth|historical|not current truth|history only/i.test(line)) {
+    return [];
+  }
+  return ['archived product checklist used as current truth (G3/G12)'];
 }
 
 function scanDocLine(line, rel = '') {
@@ -304,6 +309,7 @@ function scanDocLine(line, rel = '') {
     hits.push('bare roles/ path (use distros/chat-pro/roles/)');
   }
   hits.push(...lineHasStaleHandoffClosure(line, rel));
+  hits.push(...lineHasArchivedProductTruth(line, rel));
   return hits;
 }
 
@@ -322,6 +328,9 @@ function scanCodeLine(line, rel, ext) {
     if (!/legacy scaffold|generated scaffold|legacy_ws/i.test(line)) {
       hits.push('legacy src-tauri/ path (use distros/desktop-tauri/)');
     }
+  }
+  if (/\.join\(["']src-tauri["']\)/.test(line) && !/legacy/i.test(line)) {
+    hits.push('legacy .join("src-tauri") path (use distros/desktop-tauri)');
   }
   if (/\bcd fuzz\b/.test(line) && !/kernel\/fuzz/.test(line)) {
     hits.push('cd fuzz without kernel/fuzz prefix');
@@ -349,7 +358,11 @@ function scanCodeLine(line, rel, ext) {
       hits.push('monorepo .join("roles") without distros/chat-pro/roles');
     }
   }
-  if (/\.join\(["']plugins\//.test(line) && !/distros\/chat-pro\/plugins/.test(line)) {
+  if (
+    /\.join\(["']plugins\//.test(line)
+    && !/distros\/chat-pro\/plugins/.test(line)
+    && !/out\.join/.test(line)
+  ) {
     hits.push('bare plugins/ path (use distros/chat-pro/plugins/)');
   }
   return hits;
@@ -403,7 +416,7 @@ if (runCode) {
 
 if (violations === 0) {
   const scope = runDocs && runCode ? 'docs + code' : runDocs ? 'docs' : 'code';
-  console.log(`check-stale-paths: OK (${scope}; no legacy paths or banned aliases)`);
+  console.log(`check-stale-paths: OK (${scope}; no legacy paths, banned aliases, or archive truth)`);
 } else {
   console.error(`check-stale-paths: ${violations} violation(s) — see NAMING_CONVENTIONS.md`);
   process.exit(1);

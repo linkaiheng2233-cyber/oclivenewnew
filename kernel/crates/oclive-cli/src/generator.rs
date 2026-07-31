@@ -58,8 +58,8 @@ fn template_context(cfg: &ProjectConfig, out: &Path) -> serde_json::Value {
         "cargo_description": cfg.cargo_description.as_deref().unwrap_or(""),
     });
     if let Some(ref root) = cfg.kernel_source {
-        let path_tauri = relativize_path(out, &root.join("src-tauri"));
-        let path_runtime = relativize_path(out, &root.join("crates/oclive_kernel_runtime"));
+        let path_tauri = relativize_path(out, &root.join("distros/desktop-tauri"));
+        let path_runtime = relativize_path(out, &root.join("kernel/crates/oclive_kernel_runtime"));
         let lib_demo = cfg.project_type == ProjectType::Library;
         let http_entry = cfg.project_type == ProjectType::KernelServer;
         if let Some(obj) = ctx.as_object_mut() {
@@ -75,14 +75,14 @@ fn template_context(cfg: &ProjectConfig, out: &Path) -> serde_json::Value {
 
 /// `--kernel-source` must point to the oclivenewnew repository root.
 pub fn validate_kernel_source(root: &Path) -> Result<()> {
-    let tauri = root.join("src-tauri").join("Cargo.toml");
+    let tauri = root.join("distros/desktop-tauri").join("Cargo.toml");
     let runtime = root
-        .join("crates")
+        .join("kernel/crates")
         .join("oclive_kernel_runtime")
         .join("Cargo.toml");
     if !tauri.is_file() || !runtime.is_file() {
         anyhow::bail!(
-            "--kernel-source must point to oclivenewnew repo root (needs src-tauri/ and crates/oclive_kernel_runtime/)"
+            "--kernel-source must point to the oclivenewnew repo root (needs distros/desktop-tauri/ and kernel/crates/oclive_kernel_runtime/)"
         );
     }
     Ok(())
@@ -344,6 +344,7 @@ fn write_robot_gateway_extras(out: &Path) -> Result<()> {
 
     let role_root = out.join("roles/gateway");
     fs::create_dir_all(role_root.join("scenes").join("default")).context("create roles/gateway")?;
+    crate::role_pack::write_empty_memory_seed(&role_root)?;
 
     let mut settings: serde_json::Value =
         serde_json::from_str(&render_settings_json(&preset_gateway_config())?)
@@ -387,6 +388,11 @@ fn write_robot_gateway_extras(out: &Path) -> Result<()> {
         "# Gateway persona (OEM)\n\nCoordinate smart home devices via Agent + MCP.\n",
     )
     .context("write character.md")?;
+    fs::write(
+        role_root.join("core_personality.txt"),
+        "You are a smart-home gateway assistant. Coordinate authorized devices through Agent + MCP, confirm ambiguous or high-impact actions, and never claim an action succeeded without tool evidence.\n",
+    )
+    .context("write core_personality.txt")?;
     let scene = json!({
         "name": "Default",
         "time_windows": [],
@@ -631,6 +637,11 @@ mod tests {
         write_project(&cfg, dir.path()).unwrap();
         assert!(dir.path().join("mcp_servers/README.md").is_file());
         assert!(dir.path().join("roles/gateway/settings.json").is_file());
+        assert!(dir
+            .path()
+            .join("roles/gateway/core_personality.txt")
+            .is_file());
+        assert!(dir.path().join("roles/gateway/memory_seed.json").is_file());
     }
 
     #[test]
@@ -641,13 +652,20 @@ mod tests {
 
         let mut cfg = preset_config("linked-kernel", "minimal");
         cfg.project_type = ProjectType::KernelServer;
-        cfg.kernel_source = Some(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.."));
+        let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        validate_kernel_source(&repo_root).unwrap();
+        cfg.kernel_source = Some(repo_root);
         let out = tempdir().unwrap();
         write_project(&cfg, out.path()).unwrap();
         let cargo = std::fs::read_to_string(out.path().join("Cargo.toml")).unwrap();
         assert!(cargo.contains("oclivenewnew-tauri"));
         assert!(cargo.contains("oclive_kernel_runtime"));
+        assert!(cargo.contains("distros/desktop-tauri"));
+        assert!(cargo.contains("kernel/crates/oclive_kernel_runtime"));
+        assert!(!cargo.contains("src-tauri"));
         let main_rs = std::fs::read_to_string(out.path().join("src/main.rs")).unwrap();
         assert!(main_rs.contains("run_api_server"));
+        assert!(main_rs.contains("parse_api_port_arg"));
+        assert!(main_rs.contains("OCLIVE_CLI_INVALID_ARGUMENT"));
     }
 }

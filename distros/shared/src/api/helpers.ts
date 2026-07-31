@@ -1,11 +1,11 @@
-import { invoke } from '@tauri-apps/api/core'
-
-import { useAppToast } from '@oclive/shared/composables/useAppToast'
-import { i18n } from '@oclive/shared/i18n/index'
 import {
   KERNEL_ERROR_CONTEXT_KINDS,
   kernelErrorContextKind,
 } from '@oclive/shared/api/generated/kernelErrorCodes'
+
+import { useAppToast } from '@oclive/shared/composables/useAppToast'
+import { i18n } from '@oclive/shared/i18n/index'
+import { invoke } from '@tauri-apps/api/core'
 
 function translateApiError(code: string): string | undefined {
   const key = `apiErrors.${code}`
@@ -27,11 +27,26 @@ function parseBackendError(err: unknown): {
   raw: string
   kernel?: KernelErrorPayload
 } {
-  const raw = String(err ?? '')
+  const raw = err instanceof Error
+    ? err.message
+    : typeof err === 'string'
+      ? err
+      : (() => {
+          try {
+            return JSON.stringify(err ?? '')
+          }
+          catch {
+            return String(err ?? '')
+          }
+        })()
   const trimmed = raw.trim()
-  if (trimmed.startsWith('{')) {
+  const jsonStart = trimmed.indexOf('{')
+  if (jsonStart !== -1) {
     try {
-      const j = JSON.parse(trimmed) as Partial<KernelErrorPayload>
+      const parsed = JSON.parse(trimmed.slice(jsonStart)) as
+        | Partial<KernelErrorPayload>
+        | { error?: Partial<KernelErrorPayload> }
+      const j = 'error' in parsed && parsed.error ? parsed.error : parsed
       if (j && typeof j.code === 'string' && typeof j.message === 'string') {
         return { code: j.code, raw, kernel: j as KernelErrorPayload }
       }
@@ -97,7 +112,6 @@ export function toFriendlyErrorMessage(err: unknown): string {
   const { code, raw, kernel } = parseBackendError(err)
   if (!code)
     return raw
-  const text = kernel?.message ?? raw
   if (code === 'STARTUP_HEALTH_FAILED') {
     let detail = (kernel?.message ?? '').replace(/^Startup health failed:\s*/i, '').trim()
     if (!detail) {
@@ -226,7 +240,7 @@ export async function invokeWithFriendlyError<T>(
     throw new ApiInvokeError(friendly)
   }
 }
-/** snake_case â†?camelCase for a single key (Tauri IPC top-level args). */
+/** snake_case â†’ camelCase for a single key (Tauri IPC top-level args). */
 export function snakeToCamelKey(key: string): string {
   return key.replace(/_([a-z0-9])/g, (_, c) => c.toUpperCase())
 }

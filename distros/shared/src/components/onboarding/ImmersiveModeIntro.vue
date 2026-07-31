@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { useModalFocusRestore } from '@oclive/shared/composables/useModalFocusRestore'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useModalFocusRestore } from '@oclive/shared/composables/useModalFocusRestore'
 import UiButton from '../ui/UiButton.vue'
 
 const props = defineProps<{

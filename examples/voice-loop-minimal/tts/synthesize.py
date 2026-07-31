@@ -38,6 +38,7 @@ def main() -> int:
         )
         return 0
     if payload.get("warm"):
+        directive = payload.get("directive") if isinstance(payload.get("directive"), dict) else {}
         print(
             json.dumps(
                 warm_engine(
@@ -45,6 +46,10 @@ def main() -> int:
                     engine=engine,
                     sidecar_endpoint=payload.get("sidecar_endpoint"),
                     prime=bool(payload.get("prime", True)),
+                    emo_text=str(directive.get("emo_text") or ""),
+                    ref_audio=str(directive.get("ref_audio") or ""),
+                    ref_text=str(directive.get("ref_text") or ""),
+                    host_resource_admission=payload.get("host_resource_admission"),
                 ),
                 ensure_ascii=False,
             )

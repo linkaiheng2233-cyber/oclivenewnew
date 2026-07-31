@@ -1,6 +1,14 @@
-import { readFileSync, readdirSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
+
+import {
+  ApiInvokeError,
+  snakeToCamelKey,
+  toastAsyncError,
+  toCamelPayload,
+  toFriendlyError,
+} from './helpers'
 
 const { showToastMock } = vi.hoisted(() => ({
   showToastMock: vi.fn(),
@@ -19,25 +27,23 @@ vi.stubGlobal('window', {
   },
 })
 
-import { ApiInvokeError, snakeToCamelKey, toastAsyncError, toCamelPayload } from './helpers'
-
 const API_DIR = join(import.meta.dirname)
 
 /** Top-level invoke payload keys must be camelCase (Tauri v2 IPC via `@tauri-apps/api/core`). */
 function collectInvokeTopLevelKeys(filePath: string): string[] {
   const src = readFileSync(filePath, 'utf8')
   const keys: string[] = []
-  const re = /invokeWithFriendlyError(?:<[^>]*>)?\(\s*['"`][^'"`]+['"`]\s*,\s*\{([^}]*)\}/gs
+  const re = /invokeWithFriendlyError(?:<[^>]*>)?\(\s*['"`][^'"`]+['"`]\s*,\s*\{([^}]*)\}/g
   for (const m of src.matchAll(re)) {
     const body = m[1] ?? ''
-    for (const km of body.matchAll(/(?:^|[,{]\s*)(['"`])([a-zA-Z_][\w]*)\1\s*:/g)) {
+    for (const km of body.matchAll(/(?:^|[,{]\s*)(['"`])([a-z_]\w*)\1\s*:/gi)) {
       keys.push(km[2]!)
     }
   }
-  const bareRe = /invoke(?:WithFriendlyError)?(?:<[^>]*>)?\(\s*['"`][^'"`]+['"`]\s*,\s*\{([^}]*)\}/gs
+  const bareRe = /invoke(?:WithFriendlyError)?(?:<[^>]*>)?\(\s*['"`][^'"`]+['"`]\s*,\s*\{([^}]*)\}/g
   for (const m of src.matchAll(bareRe)) {
     const body = m[1] ?? ''
-    for (const km of body.matchAll(/(?:^|[,{]\s*)(['"`])([a-zA-Z_][\w]*)\1\s*:/g)) {
+    for (const km of body.matchAll(/(?:^|[,{]\s*)(['"`])([a-z_]\w*)\1\s*:/gi)) {
       keys.push(km[2]!)
     }
   }
@@ -78,5 +84,15 @@ describe('api/helpers', () => {
       code: 'ROLE_NOT_FOUND',
     }))
     expect(showToastMock).toHaveBeenCalledWith('error', 'role not found')
+  })
+
+  it('maps JSON kernel errors carried by stream Error objects', () => {
+    const friendly = toFriendlyError(new Error(JSON.stringify({
+      code: 'LLM_ERROR',
+      message: 'Ollama request failed',
+    })))
+
+    expect(friendly.code).toBe('LLM_ERROR')
+    expect(friendly.message).toContain('模型调用失败')
   })
 })

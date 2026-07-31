@@ -1,15 +1,16 @@
 import type { TheaterForkTemplate, TheaterScriptLine } from '@oclive/shared/api/theater'
+import type { TheaterCastConfig } from './theaterCastConfig'
 import type { PokeChipId, ScriptLine, TheaterSkeleton } from './theaterLogic'
-import {
-  isBaselinePregenCast,
-  normalizePairRelationId,
-} from './theaterPairRelation'
 import {
   DEFAULT_THEATER_CAST_CONFIG,
   isDefaultCastConfig,
   syncBeatSpeakerNames,
-  type TheaterCastConfig,
+
 } from './theaterCastConfig'
+import {
+  isBaselinePregenCast,
+  normalizePairRelationId,
+} from './theaterPairRelation'
 
 export const THEATER_ADAPTED_STORAGE_KEY = 'oclive.theater.adapted.v2'
 const LEGACY_ADAPTED_STORAGE_KEY = 'oclive.theater.adapted.v1'
@@ -93,8 +94,9 @@ export function resolveCastAdaptStatus(
     config,
     DEFAULT_THEATER_CAST_CONFIG.castA.roleId,
     DEFAULT_THEATER_CAST_CONFIG.castB.roleId,
-  ))
+  )) {
     return 'default'
+  }
   const cached = getAdaptedCache(config, presetId, skeletonHash)
   return cached ? 'cached' : 'renameOnly'
 }

@@ -4,7 +4,7 @@
 
 ## 0. Blueprint-only fields
 
-### `runtime_config` (v3 target SSOT)
+### `runtime_config` (Stable v4 SSOT; v3 dual-core Beta)
 
 | Field | Notes |
 |-------|--------|
@@ -15,6 +15,7 @@
 | `dual_core.enabled` | Dual-core switch; default **false** |
 
 On **schema_version 2**, `runtime_config` triggers a **pack validate warning** and is **ignored** at load.
+On **schema_version 4**, `runtime_config` is active on the Stable path and `dual_core` is rejected. Frozen **schema_version 3** remains only for the dual-core Beta.
 
 [中文](../cli/SETTINGS_REFERENCE.md)
 
@@ -26,7 +27,7 @@ On **schema_version 2**, `runtime_config` triggers a **pack validate warning** a
 |----------|--------|
 | Slots | **`slot_registry`** (`type`, `backend`, `plugin`, `model`, `url`, `position`, …) |
 | Graph | **`groups`**; **`module_relations`** must **not** be stored (derived at runtime) |
-| Engine | **`interaction_mode`**, **`memory_config`**, **`identity_binding`**, **`evolution`** (engine params), **`remote_presence`**, **`autonomous_scene`** — target: **`runtime_config.*`** (today often still under **`meta.*`**) |
+| Engine | **`interaction_mode`**, **`memory_config`**, **`identity_binding`**, **`evolution`**, **`remote_presence`**, **`autonomous_scene`** — Stable v4 uses **`runtime_config.*`** only; **`meta.*`** is a v2 compatibility fallback |
 | Dual-core (RFC) | **`runtime_config.dual_core.enabled`**, **`pipeline.*`**, **`zone`** — default off; creators must not enable alone |
 | Host app (not in pack) | **`remote_fallback_to_builtin`**, **`monolith.toml`** |
 

@@ -60,7 +60,7 @@ This page is the **naming SSOT** for OCLive. Key rules:
 | **用户身份 Prompt 模板** | **User Identity Prompt Template** | 否 | 独立通道 **`user_identity`**；角色包 `user_identities/`；pre-LLM 注入 |
 | **回复后处理插件** | **Reply Post-Processor Plugin** | 否 | 独立通道 **`reply_post_process`**；`config.json` → `reply_post_processor`；trait `ReplyPostProcessor` |
 | **剧场场景导演** | **Theater Scene Director** | 否 | 独立通道 **`theater_director`**；`generate_theater_scene` / `POST /theater/scene`；`provides: theater_director`（**已交付 2026-06**） |
-| **后处理链** | **post-process chain** | 否（策略枚举；**尚未全链落地**） | 发行版 `distro.oclive.toml` `[post_process].chain`；RFC 见 [RFC_OCLIVE_POST_PROCESS_CHAIN.md](rfc/RFC_OCLIVE_POST_PROCESS_CHAIN.md) |
+| **后处理链** | **post-process chain** | 否（发行版 `standard`/`minimal` 策略与 `reply_post_process` 钩子已落地；任意多步骤链仍为草案） | 发行版 `distro.oclive.toml` `[post_process].chain`；RFC 见 [RFC_OCLIVE_POST_PROCESS_CHAIN.md](rfc/RFC_OCLIVE_POST_PROCESS_CHAIN.md) |
 
 ### 1.3 六槽权威键名
 
@@ -127,7 +127,7 @@ This page is the **naming SSOT** for OCLive. Key rules:
 改一条消息的执行顺序/分支？      → oclive_kernel_host::process_message
 改 Tauri 命令名/前端 invoke？    → distros/desktop-tauri/src/api/*.rs
 改角色包 JSON 能否通过校验？     → oclive_validation
-改磁盘 blueprint 文件名/顶层键？ → 冻结（v2/v3）；仅 RFC 可动
+改磁盘 blueprint 文件名/顶层键？ → 冻结（v2/v3/v4）；仅 RFC 可动
 ```
 
 ### 3.1 Schema 类型例外（`oclive_validation` vs `oclive_kernel_types`）
@@ -232,7 +232,7 @@ This page is the **naming SSOT** for OCLive. Key rules:
 | **`load_*`** | 从 DB / 磁盘 / 远程读入数据 | `load_remote_token`、`load_memories` |
 | **`find_*`** | 在候选路径/目录中定位唯一目标 | `find_migrations_dir`、`find_roles_dir` |
 | **`pick_*`** | 从多个候选中选一个（含 env/配置默认） | `pick_mirror_enabled`、`pick_portrait_emotion`、`resolve_visual_state` |
-| **`visual_state_id`** | 立绘 catalog 条目 id（第 3 设施输出） | `SendMessageResponse`（草案） |
+| **`visual_state_id`** | 立绘 catalog 条目 id（第 3 设施输出） | `SendMessageResponse` 可选字段 |
 | **`performance_directive`** | 视觉表现渲染指令（第 4 设施输出） | JSON 体；非 `reply` |
 | **`build_*`** | 构造配置/URL/初始化产物 | `build_init_config`、`build_git_clone_url` |
 | **`merge_*`** | 合并 includes / 叠加配置 | `merge_blueprint_includes_lenient` |
@@ -272,7 +272,7 @@ This page is the **naming SSOT** for OCLive. Key rules:
 
 | 名称 | 是什么 | 不是什么 | 能否 rename |
 |------|--------|----------|-------------|
-| **`pipeline.ocblueprint`** | 角色包磁盘上的**蓝图文件**（v2 SSOT） | 调度 DSL 文件 | **文件名冻结** |
+| **`pipeline.ocblueprint`** | 角色包磁盘上的**蓝图文件**（Stable v4 canonical；v2 兼容） | 调度 DSL 文件 | **文件名冻结** |
 | **`slot_registry`** | 多实例后端配置总表 | 执行顺序表 | 键名冻结 |
 | **蓝图 JSON 键 `pipeline`** | v3 双核下的 `{ stable, experimental }` 步骤 DAG | 与文件名 `pipeline.` 前缀同义 | v3 冻结 |
 | **`dual_pipeline.rs`** | Rust 模块：`DualPipelineRunner` 运行时编排 | 蓝图文件 | 代码模块；见 §5.3 |
@@ -317,7 +317,7 @@ This page is the **naming SSOT** for OCLive. Key rules:
 | **`binary_upgrade`** | replace 原因枚举（Rust 保留） | 产品面 **Freeze** — 见 KERNEL_SCHEDULER_RESCOPE |
 | **logical seed** | 旧称 | 新文档写 **发行版 bundled 内核** |
 
-SSOT：[DISTRO_KERNEL_LIFECYCLE.md](../kernel/DISTRO_KERNEL_LIFECYCLE.md) · [KERNEL_SCHEDULER_RESCOPE.md](../../handoff/KERNEL_SCHEDULER_RESCOPE.md) · [DISTRO_DEFAULT_PLUGINS.md](../kernel/DISTRO_DEFAULT_PLUGINS.md)
+SSOT：[DISTRO_KERNEL_LIFECYCLE.md](kernel/DISTRO_KERNEL_LIFECYCLE.md) · [KERNEL_SCHEDULER_RESCOPE.md](../handoff/KERNEL_SCHEDULER_RESCOPE.md) · [DISTRO_DEFAULT_PLUGINS.md](kernel/DISTRO_DEFAULT_PLUGINS.md)
 
 ### 5.6 术语调整方案（文档层，不改冻结名）
 
@@ -349,16 +349,16 @@ SSOT：[DISTRO_KERNEL_LIFECYCLE.md](../kernel/DISTRO_KERNEL_LIFECYCLE.md) · [KE
 
 ---
 
-## 7. 预留概念：后处理链（post-process chain）
+## 7. 后处理链边界（post-process chain）
 
-**状态**：**尚未落地**为独立扩展点；仅见于 [DISTRO_CAPABILITY_PROFILE.md](kernel/DISTRO_CAPABILITY_PROFILE.md) P4 草案（`post_process.chain`）与 CLI 模板阶段名 `postprocess`。
+**状态**：发行版 `post_process.chain`（`standard` / `minimal`）与角色包 `reply_post_processor` 钩子已接线；可任意编排多个独立步骤的通用链仍未落地，详见 [RFC_OCLIVE_POST_PROCESS_CHAIN.md](rfc/RFC_OCLIVE_POST_PROCESS_CHAIN.md)。
 
 | 项 | 约定 |
 |----|------|
 | **定义** | LLM 生成 **`reply` 之后**、写入会话 / 返回用户 **之前** 的可插拔修饰链 |
 | **不是什么** | 不是六槽模块；不是设施子模块；**不是** Experimental 核 |
-| **与现有代码** | `turn_pipeline/post.rs` 是 **内置** Stable 后处理（好感、持久化等），不是插件扩展点 |
-| **落地前命名** | 英文 **post-process chain**；中文 **后处理链**；配置键预留 `post_process.*` |
+| **与现有代码** | `turn_pipeline/post.rs` 保留内置副作用；`resolve_reply_post_processor` 在显示回复写入前执行可选 builtin / remote / directory 后处理 |
+| **未落地部分** | 任意多阶段链的 step schema、独立 step 权限与逐步降级仍需 RFC 后续实现 |
 
 ---
 

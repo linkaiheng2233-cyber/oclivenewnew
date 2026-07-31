@@ -2,7 +2,7 @@
 
 This document breaks down the platform vision—**open platform + dual apps + role packs + swappable memory/emotion + optional multilingual plugins**—into **monthly, shippable milestones**. Order may shift with staffing, but **contracts before implementation, default implementations before real plugins** stays fixed.
 
-**Product launch (P0)**: desktop host gaps and task buckets live in **[`handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md`](../../handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md)** and **[`handoff/PRODUCT_LINE_TASK_BUCKETS.md`](../../handoff/PRODUCT_LINE_TASK_BUCKETS.md)**; release sign-off in **[`handoff/archive/PRODUCT_RELEASE_CHECKLIST.md`](../../handoff/archive/PRODUCT_RELEASE_CHECKLIST.md)**.
+**Product launch (P0)**: current desktop execution lives in **[`handoff/PRODUCT_LINE_TASK_BUCKETS.md`](../../handoff/PRODUCT_LINE_TASK_BUCKETS.md)** and **[`handoff/TECHNICAL_DEBT_INVENTORY.md`](../../handoff/TECHNICAL_DEBT_INVENTORY.md)**; release sign-off follows **[CONTRIBUTING](../../CONTRIBUTING.en.md)** and CI.
 
 [中文](../../creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md)
 
@@ -129,17 +129,18 @@ This document breaks down the platform vision—**open platform + dual apps + ro
 | **`slot.lora.apply`** | Expert step: session `plugin_id` to switch adapter (`dual_core` / Experimental; not Stable main path until thaw) |
 | **Module 5 `llm`** | Main chat stays on `plugin_backends.llm`; adapters default to expert sub-flow only |
 | **Pack editor** | Exports `.ocpak` / `distros/chat-pro/roles/`; workshop writes satellite files (contract TBD in RFC) |
+| **Local Model Settings** | Ships single llama.cpp LoRA GGUF / `.ocadapter` v1 import, validation, `--lora` activation, and rollback. This global local-runtime selection is not role/expert binding. |
 
 **Phased delivery (T0→T3)**:
 
 | Phase | Deliverable | Acceptance |
 |-------|-------------|------------|
-| **T0 · contract** | RFC: corpus/privacy, `lora_adapters` schema, links to `expert_routing` / `slot.lora.apply`, export profiles | Doc review; validation key draft |
+| **T0 · contract** | **Partial:** local llama.cpp `.ocadapter` v1 is frozen; role-pack satellite schema, expert references, and export profiles remain | v1 is in `LORA_ADAPTER_PACKAGE.md`; role-pack key review remains |
 | **T1 · workshop MVP** | Standalone Tauri tool: import transcripts/samples → single-base LoRA → export into role pack | Validates via `oclive_validation`; loads under `distros/chat-pro/roles/{id}/` |
-| **T2 · runtime** | Directory plugin or Ollama modelfile path; `slot.lora.apply` actually loads adapter | Observable diff on expert route hit (fixtures/logs) |
+| **T2 · runtime** | **Partial:** directory selection reaches Stable completion; local performance also manages one `llama-server --lora` adapter | Deterministic directory and local import/argument/rollback tests; real-model comparison remains |
 | **T3 · evaluation** | Extend bench/OOCP/replay: prompt-only vs LoRA vs LoRA+expert | Reproducible comparison report |
 
-**Discipline**: training stays in the workshop/sidecar; kernel stays thin. During **expert_routing / dual_core freeze**, only T0+T1 on branches—no Stable main-path wiring. Not P0 before Theater stranger test; see [RECURRING_OPTIMIZATION_PLAYBOOK.md](../../handoff/RECURRING_OPTIMIZATION_PLAYBOOK.md) §9.
+**Discipline**: training stays in the workshop/sidecar and the kernel stays thin. Local `.ocadapter` v1 is shipped, while training, role/expert binding, full compatibility fingerprints, PEFT conversion, and real-model evaluation remain separate follow-ups.
 
 Details: [BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md](BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md) §5 · scenario **S11** in [APPLICATION_SCENARIOS.md](../../creator-docs/roadmap/APPLICATION_SCENARIOS.md).
 

@@ -2,9 +2,9 @@
 
 use oclive_kernel_runtime::KernelCandidate;
 use oclive_kernel_runtime::{
-    find_listener_pids as runtime_find_pids, terminate_listeners_on_port as runtime_terminate,
+    find_listener_pids as runtime_find_pids, process_command_line,
+    terminate_listeners_on_port as runtime_terminate,
 };
-use std::process::Command;
 
 /// True when listeners look like OCLive-managed kernels (not ad-hoc shells).
 pub fn is_known_distribution_kernel(port: u16, candidates: &[KernelCandidate]) -> bool {
@@ -18,7 +18,7 @@ pub fn is_known_distribution_kernel(port: u16, candidates: &[KernelCandidate]) -
         .collect();
 
     for pid in pids {
-        let Some(cmd) = read_process_command_line(pid) else {
+        let Some(cmd) = process_command_line(pid) else {
             continue;
         };
         let lower = cmd.to_lowercase();
@@ -46,36 +46,3 @@ pub fn terminate_listeners_on_port(port: u16) {
 const MAIN_SEP: &str = "\\";
 #[cfg(not(windows))]
 const MAIN_SEP: &str = "/";
-
-fn read_process_command_line(pid: u32) -> Option<String> {
-    #[cfg(windows)]
-    {
-        let output = Command::new("powershell")
-            .args([
-                "-NoProfile",
-                "-Command",
-                &format!("(Get-CimInstance Win32_Process -Filter \"ProcessId={pid}\").CommandLine"),
-            ])
-            .output()
-            .ok()?;
-        let s = String::from_utf8_lossy(&output.stdout).trim().to_string();
-        if s.is_empty() {
-            None
-        } else {
-            Some(s)
-        }
-    }
-    #[cfg(not(windows))]
-    {
-        let output = Command::new("ps")
-            .args(["-p", &pid.to_string(), "-o", "command="])
-            .output()
-            .ok()?;
-        let s = String::from_utf8_lossy(&output.stdout).trim().to_string();
-        if s.is_empty() {
-            None
-        } else {
-            Some(s)
-        }
-    }
-}

@@ -22,6 +22,9 @@ pub mod effective_llm_model;
 pub mod relation_estrangement;
 pub mod relation_transition;
 pub mod reply_post_processor;
+pub mod resource_adapter_registry;
+pub mod resource_coordinator;
+pub mod resource_plan;
 pub mod role_manifest_validate;
 pub mod role_runtime_snapshot;
 pub mod role_snapshot;
@@ -45,12 +48,14 @@ pub mod dual_pipeline_registry;
 pub mod dual_pipeline_steps;
 pub mod event_estimator;
 pub mod event_impact_ai;
+pub mod execution_plan;
 #[cfg(feature = "dual_core")]
 pub mod expert_routing;
 pub mod fallback_agent;
 pub mod host_profile;
 pub mod model_tier;
 pub mod mutable_profile_llm;
+pub mod narrative_continuity;
 pub mod noop_slot_backends;
 pub mod plugin_host;
 pub mod portrait_emotion_engine;
@@ -93,3 +98,5 @@ pub use role_manager::RoleManager;
 pub use user_emotion_analyzer::{
     BuiltinUserEmotionAnalyzer, RemoteUserEmotionAnalyzerPlaceholder, UserEmotionAnalyzer,
 };
+pub mod adult_interaction;
+pub mod adult_stage;

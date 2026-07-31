@@ -4,16 +4,18 @@ use super::session_cache::SessionCache;
 use super::{AffectSinkHandle, AppState};
 use crate::domain::host_profile::{self, HostProfile};
 use crate::domain::repository::{FavorabilityRepository, MemoryRepository};
-use crate::error::Result;
+use crate::error::{AppError, Result};
 use crate::infrastructure::chat_storage::{
     build_conversation_store, pick_chat_storage_backend_kind, set_persisted_storage_root,
     ReplayTaskRegistry, APP_SETTING_CHAT_STORAGE_ROOT,
 };
+use crate::infrastructure::coordinated_llm::CoordinatedExternalLlm;
 use crate::infrastructure::db::DbManager;
 use crate::infrastructure::directory_plugins::DirectoryPluginRuntime;
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
 use crate::infrastructure::llm::{LlmClient, SharedOllamaClient};
 use crate::infrastructure::ollama_client::OllamaClient;
+use crate::infrastructure::performance_llm::PerformanceLlmClient;
 use crate::infrastructure::policy_registry::{
     build_policy_sets_from_registry, load_policy_registry_from_path, PolicyRegistryFile,
 };
@@ -21,6 +23,7 @@ use crate::infrastructure::remote_fallback_policy::{
     new_remote_fallback_switch, remote_fallback_env_override, remote_fallback_from_db_value,
 };
 use crate::infrastructure::repositories::{SqliteFavorabilityRepository, SqliteMemoryRepository};
+use crate::infrastructure::resource_snapshot::NvidiaSmiResourceSnapshotSource;
 use crate::infrastructure::sqlite_pool;
 use crate::infrastructure::storage::RoleStorage;
 use arc_swap::ArcSwap;
@@ -96,6 +99,13 @@ impl AppStateBuilder {
         self
     }
 
+    #[cfg(test)]
+    #[must_use]
+    pub fn with_test_db_path(mut self, path: impl AsRef<Path>) -> Self {
+        self.db_path = path.as_ref().to_path_buf();
+        self
+    }
+
     /// # Errors
     ///
     /// Database connect/migrate, policy load, or plugin bootstrap failures.
@@ -126,23 +136,21 @@ impl AppStateBuilder {
         let db_manager = Arc::new(DbManager::new(db));
         let user_llm_provider = parking_lot::RwLock::new(String::new());
         let remote_fallback_allowed = remote_fallback_switch(&db_manager).await?;
+        let host_profile = Arc::new(
+            self.host_profile
+                .unwrap_or_else(host_profile::load_host_profile_from_env),
+        );
+        let resource_coordinator = Arc::new(
+            crate::domain::resource_coordinator::ResourceCoordinator::new(
+                host_profile::effective_resource_coordination_policy(host_profile.as_ref()),
+                Arc::new(NvidiaSmiResourceSnapshotSource),
+            ),
+        );
 
         let memory_repo: Arc<dyn MemoryRepository> =
             Arc::new(SqliteMemoryRepository::new(db_manager.clone()));
         let favorability_repo: Arc<dyn FavorabilityRepository> =
             Arc::new(SqliteFavorabilityRepository::new(db_manager.clone()));
-
-        let (llm, ollama) = match self.llm {
-            Some(l) => (l, None),
-            None => {
-                let client = Arc::new(OllamaClient::new(
-                    std::env::var("OLLAMA_BASE_URL")
-                        .unwrap_or_else(|_| "http://localhost:11434".to_string()),
-                ));
-                let llm: Arc<dyn LlmClient> = Arc::new(SharedOllamaClient(Arc::clone(&client)));
-                (llm, Some(client))
-            }
-        };
 
         let ollama_model = match self.ollama_model {
             Some(m) => m,
@@ -151,6 +159,94 @@ impl AppStateBuilder {
                 crate::domain::user_llm_env::global_ollama_model_from_db_or_env(&settings).await
             }
         };
+
+        let (llm, ollama, performance_llm) = match self.llm {
+            Some(l) => (l, None, None),
+            None => {
+                let client = Arc::new(OllamaClient::new(
+                    std::env::var("OLLAMA_BASE_URL")
+                        .unwrap_or_else(|_| "http://localhost:11434".to_string()),
+                ));
+                let raw_fallback: Arc<dyn LlmClient> =
+                    Arc::new(SharedOllamaClient(Arc::clone(&client)));
+                let fallback: Arc<dyn LlmClient> =
+                    Arc::new(CoordinatedExternalLlm::new_with_profile(
+                        raw_fallback,
+                        Arc::clone(&resource_coordinator),
+                        crate::infrastructure::resource_adapters::OLLAMA_ADAPTER_ID,
+                        Some(crate::infrastructure::resource_adapters::OLLAMA_PROFILE_ID.into()),
+                    ));
+                if matches!(
+                    host_profile.llm_runtime.mode,
+                    crate::domain::host_profile::LocalLlmRuntimeMode::Performance
+                ) {
+                    let resource_root = self.roles_dir.parent().map(Path::to_path_buf);
+                    match PerformanceLlmClient::new_with_resource_coordinator(
+                        host_profile.llm_runtime.clone(),
+                        self.app_data_dir.clone(),
+                        resource_root,
+                        fallback.clone(),
+                        Some(client.clone()),
+                        ollama_model.clone(),
+                        Arc::clone(&resource_coordinator),
+                    ) {
+                        Ok(performance) => {
+                            let performance = Arc::new(performance);
+                            resource_coordinator
+                                .register_adapter_controller(performance.resource_controller())
+                                .map_err(AppError::InvalidParameter)?;
+                            let performance_client: Arc<dyn LlmClient> = performance.clone();
+                            let llm: Arc<dyn LlmClient> = Arc::new(CoordinatedExternalLlm::new(
+                                performance_client,
+                                Arc::clone(&resource_coordinator),
+                                crate::infrastructure::resource_adapters::PERFORMANCE_ACTIVITY_ADAPTER_ID,
+                            ));
+                            (llm, Some(client), Some(performance))
+                        }
+                        Err(error) => {
+                            tracing::warn!(
+                                target: "oclive_llm",
+                                %error,
+                                "invalid performance LLM profile; using Ollama"
+                            );
+                            (fallback, Some(client), None)
+                        }
+                    }
+                } else {
+                    (fallback, Some(client), None)
+                }
+            }
+        };
+        let mut resource_adapters =
+            vec![crate::infrastructure::resource_adapters::cosyvoice_descriptor()];
+        // PerformanceLlmClient already registers the Ollama fallback beside
+        // its managed llama-server descriptor. Register it here only for the
+        // standalone Ollama path so diagnostics do not gain a redundant
+        // revision during startup.
+        if ollama.is_some() && performance_llm.is_none() {
+            resource_adapters.push(crate::infrastructure::resource_adapters::ollama_descriptor());
+        }
+        if performance_llm.is_some() {
+            resource_adapters
+                .push(crate::infrastructure::resource_adapters::performance_activity_descriptor());
+        }
+        for descriptor in resource_adapters {
+            resource_coordinator
+                .register_adapter(descriptor)
+                .map_err(AppError::InvalidParameter)?;
+        }
+        if performance_llm.is_some() {
+            resource_coordinator
+                .register_adapter_transition_grant(
+                    crate::infrastructure::resource_adapters::COSYVOICE_ADAPTER_ID,
+                    crate::infrastructure::resource_adapters::LLAMA_RUNTIME_ADAPTER_ID,
+                    [
+                        oclive_kernel_types::ResourceAdapterOperation::Suspend,
+                        oclive_kernel_types::ResourceAdapterOperation::Resume,
+                    ],
+                )
+                .map_err(AppError::InvalidParameter)?;
+        }
 
         let policy_runtime = Arc::new(ArcSwap::from_pointee(build_policy_sets_from_registry(
             PolicyRegistryFile::with_defaults(),
@@ -169,10 +265,6 @@ impl AppStateBuilder {
         }
         let storage = RoleStorage::new(self.roles_dir);
         let _ = fs::create_dir_all(&self.app_data_dir);
-        let host_profile = Arc::new(
-            self.host_profile
-                .unwrap_or_else(host_profile::load_host_profile_from_env),
-        );
         if let Some(parent) = storage.roles_dir().parent() {
             if host_profile::theater_director_enabled(host_profile.as_ref()) {
                 crate::infrastructure::theater_director_plugin_seed::seed_official_theater_director_plugin(
@@ -262,6 +354,8 @@ impl AppStateBuilder {
             user_llm_secrets,
             llm,
             ollama,
+            performance_llm,
+            resource_coordinator,
             role_cache: Arc::new(RwLock::new(indexmap::IndexMap::new())),
             role_load_inflight: DashMap::new(),
             http_api_roles: DashMap::new(),
@@ -274,6 +368,7 @@ impl AppStateBuilder {
             directory_plugins,
             high_risk_grants,
             turn_locks: dashmap::DashMap::new(),
+            adult_stage_cancellations: dashmap::DashMap::new(),
             startup_health: parking_lot::RwLock::new(
                 crate::domain::startup_health::StartupHealthCache::default(),
             ),
@@ -291,6 +386,33 @@ impl AppStateBuilder {
         };
         if let Err(e) = crate::domain::user_llm_env::apply_user_llm_env(&state).await {
             tracing::warn!(target: "oclive_llm", "apply user llm settings: {e}");
+        }
+        if state.user_llm_provider.read().as_str() == "cloud" {
+            if let Some(performance) = state.performance_llm.as_ref() {
+                performance.suspend_managed_runtime("cloud provider is active");
+            }
+            tracing::debug!(
+                target: "oclive_llm",
+                "cloud provider active; skip local LLM warmup"
+            );
+        } else if let Some(performance) = state.performance_llm.as_ref().cloned() {
+            let ollama = state.ollama.as_ref().cloned();
+            let fallback_model = state.global_ollama_model();
+            let keep_alive = std::env::var("OCLIVE_OLLAMA_KEEP_ALIVE")
+                .ok()
+                .filter(|value| !value.trim().is_empty())
+                .unwrap_or_else(|| "30m".to_string());
+            tokio::spawn(async move {
+                if performance.warmup_primary().await.is_err() {
+                    if let Some(ollama) = ollama {
+                        let _ = ollama
+                            .preload(fallback_model.as_str(), keep_alive.as_str())
+                            .await;
+                    }
+                }
+            });
+        } else {
+            state.schedule_ollama_preload(state.global_ollama_model());
         }
         Ok(state)
     }

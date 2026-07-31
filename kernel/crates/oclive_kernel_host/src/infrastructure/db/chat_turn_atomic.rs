@@ -7,8 +7,8 @@
 
 #![allow(clippy::too_many_arguments)]
 
-use super::memory_merge::{merge_in_tx, MergeOutcome};
-use super::{log_txn_finish, ChatTurnTxInput, DbManager};
+use super::memory_merge::MergeOutcome;
+use super::{log_txn_finish, merge_in_tx_scoped, ChatTurnTxInput, DbManager};
 use crate::error::{AppError, Result};
 use crate::models::PersonalityVector;
 use chrono::Utc;
@@ -167,6 +167,7 @@ async fn record_memory_and_event(
     tx: &mut Transaction<'_, Sqlite>,
     role_id: &str,
     memory_content: &str,
+    memory_scope: &str,
     memory_importance: f64,
     memory_fifo_limit: i32,
     memory_similarity_threshold: f64,
@@ -182,13 +183,14 @@ async fn record_memory_and_event(
         tracing::info!(role_id = role_id, reason = "low_value", "tx memory skipped");
         false
     } else {
-        let merge_outcome = merge_in_tx(
+        let merge_outcome = merge_in_tx_scoped(
             tx,
             role_id,
             scene_id,
             memory_content,
             memory_importance,
             memory_similarity_threshold,
+            memory_scope,
         )
         .await
         .map_err(|e| AppError::TransactionError {
@@ -196,6 +198,34 @@ async fn record_memory_and_event(
             message: e.to_string(),
         })?;
         merge_outcome == MergeOutcome::New
+    };
+
+    let bridge_inserted = if memory_scope == "adult" {
+        let bridge = "与用户曾有过双方同意的亲密互动，关系仍然延续；普通聊天只保留这一概括。";
+        let result = sqlx::query(
+            "INSERT INTO long_term_memory
+             (role_id, content, importance, weight, created_at, scene_id, mention_count, content_scope)
+             SELECT ?, ?, 0.35, 1.0, ?, ?, 1, 'ordinary'
+             WHERE NOT EXISTS (
+               SELECT 1 FROM long_term_memory
+               WHERE role_id = ? AND content_scope = 'ordinary' AND content = ?
+             )",
+        )
+        .bind(role_id)
+        .bind(bridge)
+        .bind(now)
+        .bind(scene_id)
+        .bind(role_id)
+        .bind(bridge)
+        .execute(tx.as_mut())
+        .await
+        .map_err(|e| AppError::TransactionError {
+            code: "TXN_MEMORY_BRIDGE_FAILED",
+            message: e.to_string(),
+        })?;
+        result.rows_affected() > 0
+    } else {
+        false
     };
 
     let mut memory_count = db
@@ -215,6 +245,9 @@ async fn record_memory_and_event(
                 })?;
     }
     if inserted_new_memory {
+        memory_count += 1;
+    }
+    if bridge_inserted {
         memory_count += 1;
     }
     // Compute the final count but defer the in-memory cache write until after the
@@ -268,6 +301,7 @@ async fn record_short_term(
     role_id: &str,
     user_message: &str,
     bot_reply: &str,
+    memory_scope: &str,
     current_emotion: &str,
     scene_id: &str,
     memory_fifo_limit: i32,
@@ -280,8 +314,9 @@ async fn record_short_term(
         "TXN_SHORT_TERM_INSERT_FAILED",
         "insert_short_term_memory",
         sqlx::query(
-            "INSERT INTO short_term_memory (role_id, user_input, bot_reply, emotion, scene, created_at)
-             VALUES (?, ?, ?, ?, ?, ?)",
+            "INSERT INTO short_term_memory
+             (role_id, user_input, bot_reply, emotion, scene, created_at, content_scope)
+             VALUES (?, ?, ?, ?, ?, ?, ?)",
         )
         .bind(role_id)
         .bind(user_message)
@@ -289,6 +324,7 @@ async fn record_short_term(
         .bind(current_emotion)
         .bind(scene_id)
         .bind(now)
+        .bind(memory_scope)
         .execute(tx.as_mut())
     );
 
@@ -402,6 +438,7 @@ pub async fn apply_chat_turn_atomic(db: &DbManager, input: ChatTurnTxInput<'_>) 
         &mut tx,
         role_id,
         input.memory_content,
+        input.memory_scope,
         input.memory_importance,
         input.memory_fifo_limit,
         input.memory_similarity_threshold,
@@ -417,6 +454,7 @@ pub async fn apply_chat_turn_atomic(db: &DbManager, input: ChatTurnTxInput<'_>) 
         role_id,
         input.user_message,
         input.bot_reply,
+        input.memory_scope,
         input.current_emotion,
         input.scene_id,
         input.memory_fifo_limit,

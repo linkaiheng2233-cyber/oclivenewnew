@@ -12,7 +12,7 @@ models:
   - name: Claude Opus 4.6
     provider: openai                     # N1N 兼容 OpenAI 格式
     model: claude-opus-4-6               # 你提供的模型名称
-    apiKey: sk-1bIRI0tNjQFB1Euj8kvaqfdzTUu5KYB5CJsKOERMsr9AWhoa
+    apiKey: ${{ secrets.N1N_API_KEY }}
     apiBase: https://api.n1n.ai/v1       # N1N 的 API 端点
     roles: [chat, edit, apply]           # 承担主要任务
 
@@ -20,7 +20,7 @@ models:
   # - name: N1N-DeepSeek
   #   provider: openai
   #   model: deepseek-chat
-  #   apiKey: sk-1bIRI0tNjQFB1Euj8kvaqfdzTUu5KYB5CJsKOERMsr9AWhoa
+  #   apiKey: ${{ secrets.N1N_API_KEY }}
   #   apiBase: https://api.n1n.ai/v1
   #   roles: [chat]
 
@@ -30,7 +30,7 @@ tabAutocompleteModel:
   name: Claude Opus 4.6 (Auto)
   provider: openai
   model: claude-opus-4-6
-  apiKey: sk-1bIRI0tNjQFB1Euj8kvaqfdzTUu5KYB5CJsKOERMsr9AWhoa
+  apiKey: ${{ secrets.N1N_API_KEY }}
   apiBase: https://api.n1n.ai/v1
 
 # MCP Servers that Continue can access（可选，暂时留空）

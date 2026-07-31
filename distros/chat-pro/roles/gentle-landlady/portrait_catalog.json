@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "assets": [
+    {
+      "id": "happy_default",
+      "path": "assets/images/happy.png",
+      "desc": "眯眼开朗地笑着，双手抬起欢迎；适合用户来访、轻松聊天和普通好消息。",
+      "tags": ["happy"],
+      "kind": "image",
+      "cluster": "happy"
+    },
+    {
+      "id": "sad_default",
+      "path": "assets/images/sad.png",
+      "desc": "肩膀稍微低下，眼角落泪，双手轻握；适合遗憾、失落和需要安静陪伴。",
+      "tags": ["sad"],
+      "kind": "image",
+      "cluster": "sad"
+    },
+    {
+      "id": "angry_default",
+      "path": "assets/images/angry.png",
+      "desc": "克制地皱眉抱臂，身旁有小型怒气符号；适合反对强迫、危险和侵犯隐私。",
+      "tags": ["angry"],
+      "kind": "image",
+      "cluster": "angry"
+    },
+    {
+      "id": "neutral_default",
+      "path": "assets/images/normal.png",
+      "desc": "平静地眯眼微笑，双手自然垂下；用于日常串门、倾听和随和的普通对话。",
+      "tags": ["neutral"],
+      "kind": "image",
+      "cluster": "neutral"
+    },
+    {
+      "id": "excited_default",
+      "path": "assets/images/excited.png",
+      "desc": "双手轻握成拳、笑容明显，身旁有蓝金色兴奋光线；适合期待见面和特别开心。",
+      "tags": ["excited"],
+      "kind": "image",
+      "cluster": "excited"
+    },
+    {
+      "id": "confused_default",
+      "path": "assets/images/confused.png",
+      "desc": "歪头托腮，一只眼睛微微睁开，身旁浮出问号；适合没听明白、家电故障和需要确认。",
+      "tags": ["confused"],
+      "kind": "image",
+      "cluster": "confused"
+    },
+    {
+      "id": "shy_default",
+      "path": "assets/images/shy.png",
+      "desc": "脸颊发红，双手交叠，身旁有小汗滴；适合喜欢被看穿、轻微撒娇和坦率邀请前的害羞。",
+      "tags": ["shy"],
+      "kind": "image",
+      "cluster": "shy"
+    }
+  ]
+}

@@ -14,4 +14,15 @@ describe('voiceSpeakErrors', () => {
     expect(shouldFallbackStreamToRpc({ ok: true })).toBe(false)
     expect(shouldFallbackStreamToRpc({ ok: false, reason: 'tts_expansion_disabled' })).toBe(false)
   })
+
+  it('routes stream GPU denial through the coordinated RPC fallback', () => {
+    expect(shouldFallbackStreamToRpc({
+      ok: false,
+      reason: 'gpu_admission_denied',
+    })).toBe(true)
+    expect(formatVoiceSpeakFailure('rpc', {
+      reason: 'gpu_admission_denied',
+      message: 'headroom below threshold',
+    })).toContain('显存安全余量不足')
+  })
 })

@@ -72,7 +72,15 @@ pub(super) async fn ensure_kernel_ready_legacy_on_conn(
     let mut candidate = best.clone();
     apply_promote_to_candidate(&mut candidate);
 
-    match spawn_kernel(&conn, &candidate, opts.port, &opts.roles_dir, None).await {
+    match spawn_kernel(
+        &conn,
+        &candidate,
+        opts.port,
+        &opts.roles_dir,
+        opts.distro_profile_path.as_deref(),
+    )
+    .await
+    {
         Ok(()) => {
             conn.set_mode(DesktopKernelMode::Spawned);
             Ok(conn)

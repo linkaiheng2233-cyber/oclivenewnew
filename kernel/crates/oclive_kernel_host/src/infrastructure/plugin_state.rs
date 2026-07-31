@@ -18,7 +18,8 @@ pub struct PluginStateFile {
     /// Appearance selected per plugin and slot: `plugin_id` → `slot` → `appearance_id` (consistent with `appearance_id` in the manifest).
     #[serde(default)]
     pub slot_appearance: HashMap<String, HashMap<String, String>>,
-    /// When true, ignore `vueComponent` and use iframe only for all slots (users can enable this in settings).
+    /// Persisted iframe preference. Release frontends enforce iframe/HTML even
+    /// when this legacy field is false; false can affect unsafe dev builds only.
     #[serde(default)]
     pub force_iframe_mode: bool,
 }

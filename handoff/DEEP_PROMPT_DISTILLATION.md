@@ -30,7 +30,7 @@
 
 | model_tier | Fast 轮 | Deep 轮 |
 |------------|---------|---------|
-| **Small**（≤13B · `7b`/`8b`/`13b` 启发式） | 全量 `core_personality.txt` + 现 co-present Fast 裁剪 | **`deep_capsule`**（2–3k 字离线蒸馏）替代 Tier0 全量注入 |
+| **Small**（≤13B · `7b`/`8b`/`13b` 启发式） | **persona capsule**（沿用 `deep_capsule` 文件名）替代 Tier0 全量注入 | **persona capsule** + Deep enrichment |
 | **Large**（34B+ 启发式） | 全量 `core_personality` | 全量 `core_personality` + 全 enrichment（**KV 前缀延续**见 §4 · 第 7 月+ backlog） |
 
 编排行 SSOT：`ModelTier` / `PersonaSource` — [`MODULE_MAP_AND_HANDOFF.md`](MODULE_MAP_AND_HANDOFF.md) §12 · 实现 `model_tier.rs` + `resolve_persona_source`。
@@ -39,8 +39,8 @@
 
 | 字段 | 位置 | 说明 |
 |------|------|------|
-| `prompts/deep_capsule.txt` | 包内可选文件 | **Deep 专用**；≤ **2500** 汉字人格胶囊；**替换** Tier0 中全量 `core_personality.txt` 注入，**不**删磁盘上的 `core_personality.txt`（Fast 与编写器仍读全文） |
-| `meta.deep_capsule_enabled` | blueprint `meta` | 默认 `false`；`true` 且文件存在且 Small+Deep 时启用 |
+| `prompts/deep_capsule.txt` | 包内可选文件 | ≤ **2500** 汉字离线人格胶囊；Small 模型 Fast/Deep 均可**替换** Tier0 全量 `core_personality.txt` 注入；**不**删除磁盘上的 `core_personality.txt`（Large 模型与编写器仍读全文） |
+| `meta.deep_capsule_enabled` | blueprint `meta` | 默认 `false`；`true` 且文件存在且模型为 Small 时启用（字段名为兼容保留） |
 | 镜像 | `prompts/deep_capsule.md` | 编写器人类可读镜像（不参与运行时） |
 
 **不变量**：
@@ -76,19 +76,19 @@
 ### 3.4 运行时接线（T2 · Stable 主链）
 
 ```text
-resolve_turn_thinking → Deep
-  → resolve_model_tier(ollama_model) + resolve_persona_source(tier, mode, role, host)
-  → co_present: 全量 enrichment（与今一致）
+resolve_turn_thinking → Fast / Deep
+  → resolve_model_tier(ollama_model) + resolve_persona_source(tier, role, host)
+  → co_present: 按 Fast / Deep 保持各自 enrichment 策略
   → PromptInput { persona_override: Option<&str> } + HostProfile
   → PromptBuilder:
-       if PersonaSource::DeepCapsule:
+       if PersonaSource::PersonaCapsule:
          build_core_hard_constraint ← deep_capsule（短）
        else:
          build_core_hard_constraint ← core_personality（全文）
   → LLM generate（见 §4 前缀延续）
 ```
 
-`resolve_persona_source`：**仅** `Small + Deep + deep_capsule_enabled + 文件存在` → `DeepCapsule`；发行版 `[turn_thinking] deep_capsule` 可强制开/关（见 DISTRO_CAPABILITY_PROFILE）。
+`resolve_persona_source`：`Small + deep_capsule_enabled + 文件存在` → `PersonaCapsule`，Fast/Deep 共用；Large 模型保持 `FullCore`。发行版 `[turn_thinking] deep_capsule` 可强制开/关（字段名兼容保留，见 DISTRO_CAPABILITY_PROFILE）。
 
 ---
 
@@ -103,7 +103,7 @@ Deep 路径 prompt 长、prefill 重；除缩短 capsule 外，应 **最大化�
 | **stable_prefix** | Tier0（capsule/core）· 世界观 · `reply_quality_anchor` · `KERNEL_DIALOGUE_GUARDRAILS` · 场景约束 | 同角色同场景同 persona **不变** |
 | **dynamic_suffix** | 人格补充 · 状态/关系/事件 · CE hint · 记忆 · 用户身份 · 日程 · 用户句 | **每轮**变 |
 
-**运行时开关**：`[turn_thinking] prompt_prefix_cache = true` 或 `OCLIVE_PROMPT_PREFIX_CACHE=1`；且 `TurnThinkingMode::Deep`；且有效 LLM 为 Ollama。`SessionCache` 键 `srid:model:persona:scene:user_identity` 仅用于遥测「预期命中」，**不**存 Ollama context。
+**运行时开关**：`[turn_thinking] prompt_prefix_cache = true` 或 `OCLIVE_PROMPT_PREFIX_CACHE=1`；Fast/Deep 均可；且有效 LLM 为 Ollama、prompt 后端为内置实现。目录/远程 prompt 后端继续走自身 `build_prompt`，不得为缓存绕过插件契约。`SessionCache` 键 `srid:model:mode:persona:scene:user_identity` 仅用于遥测「预期命中」，**不**存 Ollama context。
 
 **P0 禁令**：stable 段内不得含虚拟时间戳、轮次号、随机 token。
 

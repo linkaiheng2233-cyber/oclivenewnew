@@ -171,6 +171,7 @@ async fn apply_immersive_virtual_time(
     scene_id: &str,
     runtime_snapshot: &crate::domain::role_runtime_snapshot::RoleRuntimeSnapshot,
     preflight_started_at: Instant,
+    staged: bool,
 ) -> std::result::Result<ImmersiveVirtualTimeState, ProcessMessageError> {
     let current_scene = runtime_snapshot.scene.clone();
     let interaction_mode = runtime_snapshot
@@ -178,7 +179,7 @@ async fn apply_immersive_virtual_time(
         .unwrap_or(crate::models::InteractionMode::Immersive);
     let remote_life_enabled = runtime_snapshot.remote_life_enabled.unwrap_or(false);
     let immersive = interaction_mode.is_immersive();
-    if immersive {
+    if immersive && !staged {
         process_message_stage(
             ChatStage::IdlePersonalityDecay,
             crate::domain::virtual_time_sync::apply_idle_personality_decay(state, role, srid),
@@ -189,16 +190,25 @@ async fn apply_immersive_virtual_time(
     let preflight_ms = preflight_started_at.elapsed().as_millis() as u64;
     let character_scene_id =
         is_remote.then(|| current_scene.as_deref().unwrap_or("default").to_string());
-    let virtual_time_ms = process_message_stage(
-        ChatStage::VirtualTimeMs,
-        crate::domain::virtual_time_sync::sync_and_persist_virtual_time(
-            state.db_manager.as_ref(),
-            role,
-            srid,
-            immersive,
-        ),
-    )
-    .await?;
+    let virtual_time_ms = if staged {
+        process_message_stage(
+            ChatStage::VirtualTimeMs,
+            state.db_manager.get_virtual_time_ms(srid),
+        )
+        .await?
+        .unwrap_or_default()
+    } else {
+        process_message_stage(
+            ChatStage::VirtualTimeMs,
+            crate::domain::virtual_time_sync::sync_and_persist_virtual_time(
+                state.db_manager.as_ref(),
+                role,
+                srid,
+                immersive,
+            ),
+        )
+        .await?
+    };
     Ok(ImmersiveVirtualTimeState {
         remote_life_enabled,
         immersive,
@@ -210,6 +220,9 @@ async fn apply_immersive_virtual_time(
 }
 
 struct PreflightOutput {
+    // Keep the per-session mutex alive for the complete turn. A plain
+    // `MutexGuard` scoped inside `preflight_turn` used to release here.
+    _turn_guard: tokio::sync::OwnedMutexGuard<()>,
     state_rid: String,
     scene_id: String,
     role: Arc<crate::models::Role>,
@@ -234,6 +247,11 @@ async fn preflight_turn(
         .clone()
         .unwrap_or_else(|| "default".to_string());
     let t0 = Instant::now();
+    let staged = req
+        .adult
+        .as_ref()
+        .and_then(|adult| adult.stage.as_ref())
+        .is_some();
 
     let (_, role) = tokio::try_join!(
         async {
@@ -254,7 +272,7 @@ async fn preflight_turn(
 
     let scene_id = validate_scene_id(mrid, &role.scene_ids, requested_scene_id);
     let turn_lock = state.turn_lock_for(srid);
-    let _turn_guard = turn_lock.lock().await;
+    let turn_guard = turn_lock.lock_owned().await;
     tracing::debug!(
         target: "oclive_chat",
         role_id = %mrid,
@@ -295,12 +313,38 @@ async fn preflight_turn(
         session_config.slot_registry.as_ref(),
     );
 
-    let prefetch = build_turn_prefetch(state, role.as_ref(), srid, scene_id.as_str())
-        .await
-        .map_err(|source| ProcessMessageError::Stage {
-            stage: ChatStage::LoadRecentContext.as_str(),
-            source,
-        })?;
+    let include_adult_memory = req
+        .adult
+        .as_ref()
+        .is_some_and(crate::models::dto::AdultInteractionRequest::gates_open);
+    let mut prefetch = build_turn_prefetch(
+        state,
+        role.as_ref(),
+        srid,
+        scene_id.as_str(),
+        include_adult_memory,
+    )
+    .await
+    .map_err(|source| ProcessMessageError::Stage {
+        stage: ChatStage::LoadRecentContext.as_str(),
+        source,
+    })?;
+    if let Some(stage) = req.adult.as_ref().and_then(|adult| adult.stage.as_ref()) {
+        let staged_transcripts = state
+            .db_manager
+            .pending_adult_stage_transcripts_before(stage.generation_id.as_str(), stage.sequence)
+            .await
+            .map_err(|source| ProcessMessageError::Stage {
+                stage: ChatStage::LoadRecentContext.as_str(),
+                source,
+            })?;
+        for transcript in staged_transcripts {
+            prefetch.recent_turns.push((
+                crate::domain::adult_stage::ADULT_CONTINUATION_INPUT.to_string(),
+                transcript,
+            ));
+        }
+    }
 
     let runtime_snapshot = load_turn_runtime_snapshot(state, srid, scene_id.as_str()).await?;
     let immersive_virtual_time = apply_immersive_virtual_time(
@@ -310,10 +354,12 @@ async fn preflight_turn(
         scene_id.as_str(),
         &runtime_snapshot,
         t0,
+        staged,
     )
     .await?;
 
     Ok(PreflightOutput {
+        _turn_guard: turn_guard,
         state_rid,
         scene_id,
         role,
@@ -337,24 +383,33 @@ async fn run(
     let srid = pre.state_rid.as_str();
     let scene_id = pre.scene_id.as_str();
 
-    if let Some(response) = try_agent_shortcut(
-        state,
-        req,
-        pre.role.as_ref(),
-        srid,
-        scene_id,
-        mrid,
-        &pre.effective_backends,
-        &pre.pl,
-        &pre.prefetch,
-        on_token.as_ref(),
-    )
-    .await?
-    {
-        return Ok(response);
+    let staged = req
+        .adult
+        .as_ref()
+        .and_then(|adult| adult.stage.as_ref())
+        .is_some();
+    if !staged {
+        if let Some(response) = try_agent_shortcut(
+            state,
+            req,
+            pre.role.as_ref(),
+            srid,
+            scene_id,
+            mrid,
+            &pre.effective_backends,
+            &pre.pl,
+            &pre.prefetch,
+            on_token.as_ref(),
+        )
+        .await?
+        {
+            return Ok(response);
+        }
     }
 
-    let is_remote = pre.immersive_virtual_time.is_remote;
+    // Staged adult continuation is a co-present structured beat. It must not
+    // enter remote-life or agent branches that do not understand staged commit.
+    let is_remote = !staged && pre.immersive_virtual_time.is_remote;
     let scenes = Arc::clone(&pre.role.scene_ids);
     let dual_core_degraded = resolve_dual_core_degraded(pre.role.as_ref());
     let turn = TurnContext {

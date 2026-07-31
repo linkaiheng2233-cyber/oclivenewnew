@@ -1,3 +1,6 @@
+import type { TheaterSceneRequest, TheaterScriptLine, TheaterTweak } from '@oclive/shared/api/theater'
+import type { CastAdaptIssue } from './theater/theaterCastAdapt'
+import type { TheaterCastConfig } from './theater/theaterCastConfig'
 import type {
   AppliedTweak,
   PokeChipId,
@@ -7,20 +10,21 @@ import type {
   TheaterSourceKind,
   TheaterStageState,
 } from './theater/theaterLogic'
-import type { TheaterCastConfig } from './theater/theaterCastConfig'
-import type { CastAdaptIssue } from './theater/theaterCastAdapt'
-import { computed, inject, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
+import type { TheaterScenePreset, TheaterScenePresetId } from './theater/theaterSceneCatalog'
 import { loadRole, setRoleInteractionMode } from '@oclive/shared/api/role'
 import {
-  bindCastToSkeleton,
-  castConfigChanged,
-  DEFAULT_THEATER_CAST_CONFIG,
-  enrichCastConfigFromRoles,
-  getTheaterCastConfig,
-  resolveCastTier,
-  setTheaterCastConfig,
-} from './theater/theaterCastConfig'
+  generateTheaterScene,
+
+} from '@oclive/shared/api/theater'
+import { MAIN_SHELL_KEY } from '@oclive/shared/composables/mainShellKey'
+import { hostEventBus } from '@oclive/shared/lib/hostEventBus'
+import { useRoleStore } from '@oclive/shared/stores/roleStore'
+import { computed, inject, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import {
+  mapTheaterInvokeError,
+  mapTheaterOutlineInvokeError,
+} from './theater/mapTheaterInvokeError'
 import {
   buildRuntimeFromRewrite,
   clearAdaptedCacheForCast,
@@ -36,21 +40,17 @@ import {
   pickCastRewritePreviewLine,
 } from './theater/theaterCastAdaptPasses'
 import {
-  normalizePairRelationId,
-  resolvePairRelationHint,
-} from './theater/theaterPairRelation'
+  bindCastToSkeleton,
+  castConfigChanged,
+  DEFAULT_THEATER_CAST_CONFIG,
+  enrichCastConfigFromRoles,
+  getTheaterCastConfig,
+  resolveCastTier,
+  setTheaterCastConfig,
+} from './theater/theaterCastConfig'
 import {
-  generateTheaterScene,
-  type TheaterSceneRequest,
-  type TheaterScriptLine,
-  type TheaterTweak,
-} from '@oclive/shared/api/theater'
-import { useRoleStore } from '@oclive/shared/stores/roleStore'
-import { hostEventBus } from '@oclive/shared/lib/hostEventBus'
-import { MAIN_SHELL_KEY } from '@oclive/shared/composables/mainShellKey'
-import {
-  buildWorkingScript,
   beatsAfterInsert,
+  buildWorkingScript,
   cloneScriptLines,
   defaultInsertAnchor,
   fetchSkeletonForPreset,
@@ -63,10 +63,9 @@ import {
   timeoutReject,
 } from './theater/theaterLogic'
 import {
-  getTheaterCustomLeadCast,
-  getTheaterPokeMode,
-  getTheaterVariantSwipeEnabled,
-} from './useTheaterPokeSettings'
+  normalizePairRelationId,
+  resolvePairRelationHint,
+} from './theater/theaterPairRelation'
 import {
   getPokeChipsForPreset,
   getTheaterScenePreset,
@@ -75,14 +74,14 @@ import {
   resolveActivePokeChips,
   setTheaterScenePresetId,
   THEATER_RUNTIME_SCENE_ID,
-  type TheaterScenePreset,
-  type TheaterScenePresetId,
+
 } from './theater/theaterSceneCatalog'
 import { requestOutlineScene } from './theater/useTheaterOutlineMode'
 import {
-  mapTheaterInvokeError,
-  mapTheaterOutlineInvokeError,
-} from './theater/mapTheaterInvokeError'
+  getTheaterCustomLeadCast,
+  getTheaterPokeMode,
+  getTheaterVariantSwipeEnabled,
+} from './useTheaterPokeSettings'
 
 const LINE_REVEAL_MS = 720
 const THINK_STEP_MS = 650
@@ -995,7 +994,7 @@ export function useTheaterShell() {
     pendingVariantContext.value = ctx
   }
 
-  type SceneGenOutcome = {
+  interface SceneGenOutcome {
     beats: ScriptLine[]
     source: TheaterSourceKind
     applied: boolean

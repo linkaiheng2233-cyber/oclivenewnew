@@ -57,7 +57,9 @@ watch(
       :emotion="emotion"
       :portrait-asset-rel-path="portraitAssetRelPath"
     />
-    <p v-if="loadError" class="live2d-hint">{{ loadError }}</p>
+    <p v-if="loadError" class="live2d-hint">
+      {{ loadError }}
+    </p>
   </div>
 </template>
 

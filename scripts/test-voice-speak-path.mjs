@@ -4,6 +4,8 @@
  *   node scripts/test-voice-speak-path.mjs [--rpc-url URL] [--skip-warm] [--text TEXT]
  *   node scripts/test-voice-speak-path.mjs --probe-only
  *   node scripts/test-voice-speak-path.mjs --profile local-gpt-sovits-http
+ *   node scripts/test-voice-speak-path.mjs --role-path distros/chat-pro/roles/mumu
+ *   node scripts/test-voice-speak-path.mjs --role-path distros/chat-pro/roles/mumu --runs 10 --stream-only
  *
  * RPC URL resolution: --rpc-url > OCLIVE_VOICE_RPC_URL > spawn rpc_server.mjs (ephemeral port).
  */
@@ -51,6 +53,8 @@ async function resolveRpcUrl(cliUrl) {
   })
   const url = await waitForRpcUrl(child)
   child.unref?.()
+  child.stdout.unref?.()
+  child.stderr.unref?.()
   process.on('exit', () => child.kill('SIGTERM'))
   return url
 }
@@ -77,14 +81,21 @@ async function rpcCall(base, method, params) {
   return { ms: Math.round(performance.now() - t0), body }
 }
 
-async function streamSpeak(endpoint, text) {
+async function streamSpeak(endpoint, text, directive = {}) {
   const t0 = performance.now()
   let ttfc = null
   let chunks = 0
+  let doneMeta = null
   const res = await fetch(`${endpoint.replace(/\/+$/, '')}/synthesize/stream`, {
     method: 'POST',
     headers: { 'content-type': 'application/json; charset=utf-8' },
-    body: JSON.stringify({ text, emo_text: '用自然平静的语气', speed: 1 }),
+    body: JSON.stringify({
+      text,
+      emo_text: directive.emo_text || '用自然平静的语气',
+      ref_audio: directive.ref_audio || '',
+      ref_text: directive.ref_text || '',
+      speed: directive.speed || 1,
+    }),
     signal: AbortSignal.timeout(45_000),
   })
   if (!res.ok || !res.body)
@@ -108,6 +119,8 @@ async function streamSpeak(endpoint, text) {
         ttfc = Math.round(performance.now() - t0)
       if (ev.event === 'chunk')
         chunks += 1
+      if (ev.event === 'done')
+        doneMeta = ev
     }
   }
   return {
@@ -115,15 +128,40 @@ async function streamSpeak(endpoint, text) {
     ms: Math.round(performance.now() - t0),
     ttfc_ms: ttfc,
     chunks,
+    sidecar_ttfc_ms: doneMeta?.ttfc_ms,
+    sidecar_total_ms: doneMeta?.elapsed_ms,
+    stream_mode: doneMeta?.stream_mode,
   }
+}
+
+function positiveIntArg(name, fallback) {
+  const parsed = Number.parseInt(arg(name, String(fallback)), 10)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback
+}
+
+function percentile(values, fraction) {
+  if (values.length === 0)
+    return null
+  const sorted = [...values].sort((a, b) => a - b)
+  const index = Math.max(0, Math.ceil(sorted.length * fraction) - 1)
+  return sorted[index]
 }
 
 const cliRpcUrl = arg('--rpc-url', null)
 const text = arg('--text', '你好呀，')
 const profile = arg('--profile', 'bundled-cosyvoice2-zh')
+const rolePathArg = arg('--role-path', '')
+const emotion = arg('--emotion', 'neutral')
+const runs = positiveIntArg('--runs', 1)
+const warmupRuns = positiveIntArg('--warmup-runs', runs > 1 ? 1 : 0)
+const maxTtfcMs = Number.parseInt(arg('--max-ttfc-ms', '0'), 10)
 const skipWarm = process.argv.includes('--skip-warm')
 const probeOnly = process.argv.includes('--probe-only')
+const streamOnly = process.argv.includes('--stream-only')
 const rpcUrl = await resolveRpcUrl(cliRpcUrl)
+const rolePath = rolePathArg
+  ? path.resolve(repoRoot, rolePathArg).replace(/\\/g, '/')
+  : ''
 
 const MULTI_ENGINE_PROFILES = [
   'bundled-cosyvoice2-zh',
@@ -136,7 +174,16 @@ const MULTI_ENGINE_PROFILES = [
   'local-indextts-http',
 ]
 
-console.log('voice speak path smoke', { rpcUrl, text, profile, skipWarm, probeOnly })
+console.log('voice speak path smoke', {
+  rpcUrl,
+  text,
+  profile,
+  skipWarm,
+  probeOnly,
+  runs,
+  warmupRuns,
+  streamOnly,
+})
 
 // Push minimal config so probe_tts respects expansion flag
 await rpcCall(rpcUrl, 'config_updated', {
@@ -148,7 +195,10 @@ await rpcCall(rpcUrl, 'config_updated', {
   },
 })
 
-for (const pid of MULTI_ENGINE_PROFILES) {
+// A targeted speak/latency run must not be blocked by unrelated, optional
+// adapters. The full adapter matrix remains available through --probe-only.
+const profilesToProbe = probeOnly ? MULTI_ENGINE_PROFILES : [profile]
+for (const pid of profilesToProbe) {
   const probe = await rpcCall(rpcUrl, 'voice.probe_tts', { profile: pid })
   const result = probe.body?.result ?? probe.body
   console.log('probe_tts', pid, probe.ms, 'ms', JSON.stringify({
@@ -166,27 +216,89 @@ if (probeOnly) {
 }
 
 const warmProfile = profile
-const warm = await rpcCall(rpcUrl, 'voice.warm', { profile: warmProfile })
-console.log('warm', warm.ms, 'ms', JSON.stringify({
-  ok: warm.body?.result?.ok,
-  skipped: warm.body?.result?.skipped,
-  sidecar_endpoint: warm.body?.result?.sidecar_endpoint,
-  reason: warm.body?.result?.reason,
-}))
+let directive = { emo_text: '用自然平静的语气', speed: 1 }
+if (rolePath) {
+  const built = await rpcCall(rpcUrl, 'voice.build_directive', {
+    role_path: rolePath,
+    bot_emotion: emotion,
+  })
+  const result = built.body?.result ?? built.body
+  if (!result?.ok || !result.directive)
+    throw new Error(`voice.build_directive failed: ${JSON.stringify(result)}`)
+  directive = result.directive
+  console.log('directive', JSON.stringify({
+    emotion_tag: directive.emotion_tag,
+    speed: directive.speed,
+    synth_profile: directive.synth_profile,
+    has_ref_audio: Boolean(directive.ref_audio),
+    has_ref_text: Boolean(directive.ref_text),
+  }))
+}
+
+if (!skipWarm) {
+  const warm = await rpcCall(rpcUrl, 'voice.warm', {
+    profile: warmProfile,
+    directive,
+  })
+  console.log('warm', warm.ms, 'ms', JSON.stringify({
+    ok: warm.body?.result?.ok,
+    skipped: warm.body?.result?.skipped,
+    sidecar_endpoint: warm.body?.result?.sidecar_endpoint,
+    prompt_prepared: warm.body?.result?.prompt_prepared,
+    prompt_cache_hit: warm.body?.result?.prompt_cache_hit,
+    precision_requested: warm.body?.result?.precision_requested,
+    precision_active: warm.body?.result?.precision_active,
+    precision_fallback_reason: warm.body?.result?.precision_fallback_reason,
+    load_strategy: warm.body?.result?.load_strategy,
+    load_vram_probe: warm.body?.result?.load_vram_probe,
+    load_free_vram_before_mib: warm.body?.result?.load_free_vram_before_mib,
+    load_min_free_vram_mib: warm.body?.result?.load_min_free_vram_mib,
+    load_peak_reserved_mib: warm.body?.result?.load_peak_reserved_mib,
+    reason: warm.body?.result?.reason,
+  }))
+}
 
 const mainProbe = await rpcCall(rpcUrl, 'voice.probe_tts', { profile: warmProfile })
 const sidecar = mainProbe.body?.result?.sidecar_endpoint || 'http://127.0.0.1:50000'
 
 if (!skipWarm && warmProfile === 'bundled-cosyvoice2-zh') {
-  const stream = await streamSpeak(sidecar, text)
-  console.log('stream', stream)
+  for (let i = 0; i < warmupRuns; i += 1)
+    await streamSpeak(sidecar, text, directive)
+  const samples = []
+  for (let i = 0; i < runs; i += 1) {
+    const stream = await streamSpeak(sidecar, text, directive)
+    samples.push(stream)
+    console.log(`stream ${i + 1}/${runs}`, stream)
+  }
+  const ttfcValues = samples
+    .map(sample => sample.ttfc_ms)
+    .filter(value => Number.isFinite(value))
+  const summary = {
+    runs: samples.length,
+    ok: samples.filter(sample => sample.ok).length,
+    ttfc_ms: {
+      min: ttfcValues.length ? Math.min(...ttfcValues) : null,
+      p50: percentile(ttfcValues, 0.5),
+      p95: percentile(ttfcValues, 0.95),
+      max: ttfcValues.length ? Math.max(...ttfcValues) : null,
+    },
+    modes: [...new Set(samples.map(sample => sample.stream_mode).filter(Boolean))],
+  }
+  console.log('stream summary', JSON.stringify(summary))
+  if (Number.isFinite(maxTtfcMs) && maxTtfcMs > 0 && summary.ttfc_ms.p95 > maxTtfcMs) {
+    process.exitCode = 1
+    console.error(`FAIL: stream TTFC p95 ${summary.ttfc_ms.p95}ms > ${maxTtfcMs}ms`)
+  }
 }
+
+if (streamOnly)
+  process.exit(process.exitCode || 0)
 
 const speak = await rpcCall(rpcUrl, 'voice.speak', {
   text,
   profile: warmProfile,
-  bot_emotion: 'neutral',
-  directive: { emo_text: '用自然平静的语气', speed: 1 },
+  bot_emotion: emotion,
+  directive,
 })
 const audioLen = speak.body?.result?.audio_base64?.length ?? 0
 console.log('rpc speak', speak.ms, 'ms', JSON.stringify({

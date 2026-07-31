@@ -1,0 +1,229 @@
+{
+  "schema_version": 1,
+  "assets": [
+    {
+      "id": "happy_default",
+      "path": "assets/images/happy_mild.png",
+      "desc": "Stable happy fallback when the scene has no clear intensity cue.",
+      "tags": ["happy"],
+      "kind": "image",
+      "cluster": "happy"
+    },
+    {
+      "id": "sad_default",
+      "path": "assets/images/sad_mild.png",
+      "desc": "Stable sad fallback when the scene has no clear intensity cue.",
+      "tags": ["sad"],
+      "kind": "image",
+      "cluster": "sad"
+    },
+    {
+      "id": "angry_default",
+      "path": "assets/images/angry_mild.png",
+      "desc": "Stable angry fallback when the scene has no clear intensity cue.",
+      "tags": ["angry"],
+      "kind": "image",
+      "cluster": "angry"
+    },
+    {
+      "id": "neutral_default",
+      "path": "assets/images/normal-v2.png",
+      "desc": "Stable neutral fallback for ordinary calm conversation.",
+      "tags": ["neutral"],
+      "kind": "image",
+      "cluster": "neutral"
+    },
+    {
+      "id": "excited_default",
+      "path": "assets/images/excited_mild.png",
+      "desc": "Stable excited fallback when the scene has no clear intensity cue.",
+      "tags": ["excited"],
+      "kind": "image",
+      "cluster": "excited"
+    },
+    {
+      "id": "confused_default",
+      "path": "assets/images/confused_mild.png",
+      "desc": "Stable confused fallback when the scene has no clear intensity cue.",
+      "tags": ["confused"],
+      "kind": "image",
+      "cluster": "confused"
+    },
+    {
+      "id": "shy_default",
+      "path": "assets/images/shy_mild.png",
+      "desc": "Stable shy fallback when the scene has no clear intensity cue.",
+      "tags": ["shy"],
+      "kind": "image",
+      "cluster": "shy"
+    },
+    {
+      "id": "happy_mild",
+      "path": "assets/images/happy_mild.png",
+      "desc": "Mild happiness: a small warm smile for everyday good moments.",
+      "tags": ["happy"],
+      "kind": "image",
+      "cluster": "happy"
+    },
+    {
+      "id": "happy_moderate",
+      "path": "assets/images/happy_moderate.png",
+      "desc": "Moderate happiness: bright eyes and a clear sincere smile.",
+      "tags": ["happy"],
+      "kind": "image",
+      "cluster": "happy"
+    },
+    {
+      "id": "happy_severe",
+      "path": "assets/images/happy_severe.png",
+      "desc": "Strong happiness: open delight for a surprise or joyful reunion.",
+      "tags": ["happy"],
+      "kind": "image",
+      "cluster": "happy"
+    },
+    {
+      "id": "sad_moderate",
+      "path": "assets/images/sad_moderate.png",
+      "desc": "Moderate sadness: visibly tearful and in need of comfort.",
+      "tags": ["sad"],
+      "kind": "image",
+      "cluster": "sad"
+    },
+    {
+      "id": "sad_severe",
+      "path": "assets/images/sad_severe.png",
+      "desc": "Strong sadness: tears fall while the expression remains natural and restrained.",
+      "tags": ["sad"],
+      "kind": "image",
+      "cluster": "sad"
+    },
+    {
+      "id": "angry_mild",
+      "path": "assets/images/angry_mild.png",
+      "desc": "Mild anger: a small pout and restrained displeasure.",
+      "tags": ["angry"],
+      "kind": "image",
+      "cluster": "angry"
+    },
+    {
+      "id": "angry_moderate",
+      "path": "assets/images/angry_moderate.png",
+      "desc": "Moderate anger: tightened brows and clearly expressed displeasure.",
+      "tags": ["angry"],
+      "kind": "image",
+      "cluster": "angry"
+    },
+    {
+      "id": "angry_severe",
+      "path": "assets/images/angry_severe.png",
+      "desc": "Strong anger: firm intense focus without violence or grotesque exaggeration.",
+      "tags": ["angry"],
+      "kind": "image",
+      "cluster": "angry"
+    },
+    {
+      "id": "neutral_mild",
+      "path": "assets/images/neutral_mild.png",
+      "desc": "Mild calm: relaxed, friendly and responsive during ordinary conversation.",
+      "tags": ["neutral"],
+      "kind": "image",
+      "cluster": "neutral"
+    },
+    {
+      "id": "neutral_severe",
+      "path": "assets/images/neutral_severe.png",
+      "desc": "Deep calm: especially quiet and still for reflective companionship.",
+      "tags": ["neutral"],
+      "kind": "image",
+      "cluster": "neutral"
+    },
+    {
+      "id": "sad_mild",
+      "path": "assets/images/sad_mild.png",
+      "desc": "Mild sadness: a small downcast expression with restrained emotion.",
+      "tags": ["sad"],
+      "kind": "image",
+      "cluster": "sad"
+    },
+    {
+      "id": "neutral_moderate",
+      "path": "assets/images/neutral_moderate.png",
+      "desc": "Moderate calm: attentive and composed with a quiet, thoughtful gaze.",
+      "tags": ["neutral"],
+      "kind": "image",
+      "cluster": "neutral"
+    },
+    {
+      "id": "excited_mild",
+      "path": "assets/images/excited_mild.png",
+      "desc": "Mild excitement: bright eyes and a gently lifted, eager expression.",
+      "tags": ["excited"],
+      "kind": "image",
+      "cluster": "excited"
+    },
+    {
+      "id": "excited_moderate",
+      "path": "assets/images/excited_moderate.png",
+      "desc": "Moderate excitement: an open, energetic expression with lively eyes.",
+      "tags": ["excited"],
+      "kind": "image",
+      "cluster": "excited"
+    },
+    {
+      "id": "excited_severe",
+      "path": "assets/images/excited_severe.png",
+      "desc": "Strong excitement: exuberant delight while keeping the character natural.",
+      "tags": ["excited"],
+      "kind": "image",
+      "cluster": "excited"
+    },
+    {
+      "id": "confused_mild",
+      "path": "assets/images/confused_mild.png",
+      "desc": "Mild confusion: a curious, slightly uncertain look while staying engaged.",
+      "tags": ["confused"],
+      "kind": "image",
+      "cluster": "confused"
+    },
+    {
+      "id": "confused_moderate",
+      "path": "assets/images/confused_moderate.png",
+      "desc": "Moderate confusion: visibly puzzled with an attentive, questioning gaze.",
+      "tags": ["confused"],
+      "kind": "image",
+      "cluster": "confused"
+    },
+    {
+      "id": "confused_severe",
+      "path": "assets/images/confused_severe.png",
+      "desc": "Strong confusion: deeply puzzled without becoming exaggerated or comedic.",
+      "tags": ["confused"],
+      "kind": "image",
+      "cluster": "confused"
+    },
+    {
+      "id": "shy_mild",
+      "path": "assets/images/shy_mild.png",
+      "desc": "Mild shyness: a gentle blush and soft smile during an affectionate moment.",
+      "tags": ["shy"],
+      "kind": "image",
+      "cluster": "shy"
+    },
+    {
+      "id": "shy_moderate",
+      "path": "assets/images/shy_moderate.png",
+      "desc": "Moderate shyness: a stronger blush with a bashful, slightly evasive gaze.",
+      "tags": ["shy"],
+      "kind": "image",
+      "cluster": "shy"
+    },
+    {
+      "id": "shy_severe",
+      "path": "assets/images/shy_severe.png",
+      "desc": "Strong shyness: intense blush, lowered gaze and a tightly restrained expression.",
+      "tags": ["shy"],
+      "kind": "image",
+      "cluster": "shy"
+    }
+  ]
+}

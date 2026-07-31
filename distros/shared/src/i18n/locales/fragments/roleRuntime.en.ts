@@ -24,5 +24,5 @@ export default {
     backendRemote: 'remote',
     backendDirectory: 'directory',
     currentIdentity: 'Identity: {name}',
-  }
+  },
 }

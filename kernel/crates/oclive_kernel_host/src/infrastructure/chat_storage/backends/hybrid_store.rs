@@ -197,11 +197,42 @@ impl ConversationStore for HybridConversationStore {
             .upsert_chat_session(&input.session_id, &input.role_id, &scene_id)
             .await?;
 
+        let deterministic_ids = input.idempotency_key.as_deref().map(|key| {
+            (
+                format!("adult-stage:{key}:user"),
+                format!("adult-stage:{key}:assistant"),
+            )
+        });
+        if let Some((user_id, assistant_id)) = deterministic_ids.as_ref() {
+            let user = self.db.get_chat_message(user_id).await?;
+            let assistant = self.db.get_chat_message(assistant_id).await?;
+            match (user, assistant) {
+                (Some(user), Some(assistant))
+                    if user.session_id == input.session_id
+                        && assistant.session_id == input.session_id =>
+                {
+                    return Ok(AppendTurnResult {
+                        user_message_id: user_id.clone(),
+                        assistant_message_id: assistant_id.clone(),
+                        user_message_timestamp: user.created_at,
+                        assistant_message_timestamp: assistant.created_at,
+                    });
+                }
+                (None, None) => {}
+                _ => {
+                    return Err(crate::error::AppError::DatabaseError(
+                        "idempotent chat turn is only partially present".to_string(),
+                    ));
+                }
+            }
+        }
+
         let user_ts = Utc::now().to_rfc3339();
         let assistant_ts = Utc::now().to_rfc3339();
 
         let user_meta = serde_json::json!({
             "user_emotion": input.user_emotion,
+            "hidden": input.user_message_hidden,
         });
         let assistant_meta = serde_json::json!({
             "model": input.model_name,
@@ -212,8 +243,8 @@ impl ConversationStore for HybridConversationStore {
         let user_meta_str = user_meta.to_string();
         let assistant_meta_str = assistant_meta.to_string();
 
-        let user_id = Uuid::new_v4().to_string();
-        let assistant_id = Uuid::new_v4().to_string();
+        let (user_id, assistant_id) = deterministic_ids
+            .unwrap_or_else(|| (Uuid::new_v4().to_string(), Uuid::new_v4().to_string()));
 
         let turn = NewTurnMessages {
             user_id: user_id.clone(),
@@ -647,10 +678,12 @@ mod tests {
         let store = store().await;
         store
             .append_turn(TurnPersistInput {
+                idempotency_key: None,
                 session_id: "mumu".into(),
                 role_id: "mumu".into(),
                 scene_id: "default".into(),
                 user_message: "你好".into(),
+                user_message_hidden: false,
                 assistant_reply: "嗯".into(),
                 reply_is_fallback: false,
                 model_name: Some("test".into()),
@@ -665,6 +698,37 @@ mod tests {
             .expect("append");
         let msgs = store.fetch_messages("mumu", 10, 0).await.expect("fetch");
         assert_eq!(msgs.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn append_turn_idempotency_key_reuses_the_same_pair() {
+        let store = store().await;
+        let input = TurnPersistInput {
+            idempotency_key: Some("generation:0".into()),
+            session_id: "stage-session".into(),
+            role_id: "mumu".into(),
+            scene_id: "default".into(),
+            user_message: "continue".into(),
+            user_message_hidden: true,
+            assistant_reply: "next beat".into(),
+            reply_is_fallback: false,
+            model_name: Some("test".into()),
+            response_ms: 10,
+            user_emotion: None,
+            bot_emotion: Some("neutral".into()),
+            max_messages_per_session: None,
+            auto_cleanup_config: Default::default(),
+            chat_storage_location: "global".into(),
+        };
+        let first = store.append_turn(input.clone()).await.expect("first");
+        let second = store.append_turn(input).await.expect("retry");
+        assert_eq!(first.user_message_id, second.user_message_id);
+        assert_eq!(first.assistant_message_id, second.assistant_message_id);
+        let messages = store
+            .fetch_messages("stage-session", 10, 0)
+            .await
+            .expect("messages");
+        assert_eq!(messages.len(), 2);
     }
 
     #[tokio::test]
@@ -683,10 +747,12 @@ mod tests {
         );
         store
             .append_turn(TurnPersistInput {
+                idempotency_key: None,
                 session_id: "sess-mirror-fail".into(),
                 role_id: "mumu".into(),
                 scene_id: "default".into(),
                 user_message: "hi".into(),
+                user_message_hidden: false,
                 assistant_reply: "ok".into(),
                 reply_is_fallback: false,
                 model_name: None,

@@ -49,4 +49,4 @@ Chat log rows are **always** written. No player Fast/Deep toggle. Details: [RFC 
 | `srid` | Session namespace id |
 | `reply` | Response field name (not `response`) |
 
-Glossary: [09_GLOSSARY.md](09_GLOSSARY.md)
+Glossary: [03_GLOSSARY.md](03_GLOSSARY.md)

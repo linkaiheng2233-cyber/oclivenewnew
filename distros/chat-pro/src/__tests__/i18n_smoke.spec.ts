@@ -1,17 +1,17 @@
 // @vitest-environment jsdom
 
 import type { DirectoryPluginCatalogEntry } from '@oclive/shared/api'
-import { mount } from '@vue/test-utils'
-import { createPinia, setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { defineComponent, h, nextTick } from 'vue'
-
-import { useI18n } from 'vue-i18n'
 import PmSlotRow from '@oclive/shared/components/PmSlotRow.vue'
 import { i18n, LOCALE_PREF_KEY, setLocalePreference } from '@oclive/shared/i18n/index'
 import enUS from '@oclive/shared/i18n/locales/en-US'
 import zhCN from '@oclive/shared/i18n/locales/zh-CN'
+
 import { usePluginStore } from '@oclive/shared/stores/pluginStore'
+import { mount } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { defineComponent, h, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 import ChatPanel from './fixtures/ChatPanel.vue'
 
 const SettingsTitleProbe = defineComponent({

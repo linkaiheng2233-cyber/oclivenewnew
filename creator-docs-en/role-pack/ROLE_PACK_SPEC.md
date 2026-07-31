@@ -19,17 +19,28 @@ This specification describes on-disk role packs **aligned with the A.I.Live host
 | **Role pack** | `meta` identity, **`personality`**, **`relations`**, **`prompts/`**, scene prose | — |
 | **Blueprint** | **Do not edit** unless you integrate hosts | **`slot_registry`**, **`groups`**, **`backend`**, **`model`**, **`interaction_mode`**, **`memory_config`**, **`runtime_config.dual_core.enabled`** (RFC), … |
 
-On disk, v2 often uses **one file** `pipeline.ocblueprint` with both **`meta`** (creator slice) and **`slot_registry`** (blueprint). Editors should expose a **role** view vs an **advanced blueprint** view.
+On disk, every supported blueprint version uses **one entry file** `pipeline.ocblueprint`. New packs use Stable v4; v2 remains compatible, while v3 is the frozen dual-core Beta. Editors should expose a **role** view vs an **advanced blueprint** view.
 
-**Creator `meta` fields:** `id`, `name`, `version`, `author`, `description`, `personality`, `relations`, `default_relation`, `scenes`, `reply_quality_anchor`.
+**Creator `meta` fields:** `id`, `name`, `version`, `author`, `description`, `personality`, `relations`, `default_relation`, and `scenes`.
 
-**Not for creators:** `slot_registry`, `groups`, **`runtime_config`**, **`pipeline`**, backends/models, enabling dual-core. **`reply_quality_anchor`** lives in **`runtime_config`** (see SETTINGS_REFERENCE §0).
+**Not for creators:** `slot_registry`, `groups`, **`runtime_config`**, **`pipeline`**, backends/models, enabling dual-core. Stable v4 writes engine settings such as **`reply_quality_anchor`** only under **`runtime_config`**; `meta.*` remains a v2 compatibility fallback (see SETTINGS_REFERENCE §0).
 
 ---
 
 ## 1–8. Full specification
 
-See the [Chinese ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) for directory layout, legacy manifest/settings, validation, and `oclive collab`.
+See the [Chinese ROLE_PACK_SPEC.md](../../creator-docs/role-pack/ROLE_PACK_SPEC.md) for directory layout, legacy manifest/settings, validation, and `oclive collab`.
+
+### Optional scene narrative continuity
+
+`scenes/{scene_id}/scene.json` may contain a `continuity` object. It is separate from core, mutable, and ephemeral personality data, and old packs without it keep legacy behavior.
+
+- `initial_states` contains 1–8 creator-authored states with a unique `id`, `weight` (1–100), optional `time_windows` (`HH:mm`, including overnight windows), and required `sub_location`, `anchor`, `posture`, and `activity`.
+- `default_state_id`, when present, references one initial state. The host makes a stable weighted selection from time-eligible states using the session, scene, and virtual day.
+- `transitions` contains at most 32 explicit edges. `from` may be empty for any source; `to` references a state; `assistant_reply_markers` are scene-unique explicit action phrases in the final visible assistant reply.
+- The host stores only scene/state IDs plus a CAS revision, injects the resolved state through dynamic `PromptInput.extra_sections` for Fast and Deep turns, and does not add a runtime LLM call. Scene switches invalidate the previous state.
+
+The canonical schema example and validation semantics are in [Chinese §1.2](../../creator-docs/role-pack/ROLE_PACK_SPEC.md#12-scenesscene_idscenejson-叙事连续性可选). Editor-side generation of 3–8 reviewable candidates remains tracked as `PE-CONTINUITY-01`.
 
 ---
 
@@ -148,7 +159,7 @@ Optional post-LLM reply shaping in **`config.json`**. **Independent channel** �
 
 **Validation:** `oclive pack validate` requires non-empty `remote.url` when `enabled=true` and `backend=remote`; directory requires non-empty `plugin_id`.
 
-**DTO:** `include_raw_reply: true` may surface `raw_reply` when post-processing changes text (`SendMessageResponse` schema **15**).
+**DTO:** `include_raw_reply: true` may surface `raw_reply` when post-processing changes text (`SendMessageResponse` schema **16**).
 
 ### 9.8 `meta_action_templates` (break-wall meta actions · optional)
 
@@ -170,18 +181,35 @@ Role packs have two version layers — do not mix them:
 
 | Layer | Where | Expectation |
 |-------|--------|-------------|
-| **Pack release version** | `meta.version` (v2 blueprint) or legacy `manifest.version` | **semver string** (e.g. `1.2.0`); creator-facing release id |
+| **Pack release version** | Blueprint `meta.version` or legacy `manifest.version` | **semver string** (e.g. `1.2.0`); creator-facing release id |
 | **Format / contract version** | Blueprint `schema_version`; legacy `settings.schema_version`; optional `manifest.min_runtime_version` | Controls parse path and load rejection; detail in [PACK_VERSIONING.md](PACK_VERSIONING.md) |
 
 **Relation to schema / manifest**
 
-- **Authoritative v2+ shape** is `pipeline.ocblueprint` (`schema_version` **2** or **3**) plus `slot_registry`; pack layout and validation follow the [Chinese ROLE_PACK_SPEC](../../creator-docs/role-pack/ROLE_PACK_SPEC.md) §§1–2 / §6.
+- **Canonical shape** is `pipeline.ocblueprint`: new packs use Stable `schema_version` **4**, existing **2** remains compatible, and **3** is reserved for the frozen dual-core Beta. Pack layout and validation follow the [Chinese ROLE_PACK_SPEC](../../creator-docs/role-pack/ROLE_PACK_SPEC.md) §§1–2 / §6.
+- Declared `includes[]` are strict activation dependencies: paths use portable ASCII letters/digits plus `_` `.` `/` `-`; missing, escaping, unreadable, malformed, or contract-invalid merged fragments fail both `pack validate` and role loading. Best-effort merging is preview-only; expert routing uses its dedicated loader rather than a generic include target.
 - **Legacy** still uses `manifest.json` + `settings.json`; key whitelist, `min_runtime_version` (host semver gate), and unknown-key policy live in [PACK_VERSIONING.md](PACK_VERSIONING.md) — do not restate those tables here.
 - JSON Schema / CLI: `oclive pack validate`; implementation SSOT is `oclive_validation`.
 
+### Portable Core (`--profile portable-core`)
+
+Portable Core is the cross-distro minimum, not a ceiling on distro features. A v2/v3/v4 pack validated with this profile must provide a non-empty `core_personality.txt`, enable `config.json` → `portrait_catalog.enabled`, and include local `image` assets for the seven stable IDs: `happy_default`, `sad_default`, `angry_default`, `neutral_default`, `excited_default`, `confused_default`, and `shy_default`. Hosts must be able to load the persona and run a basic turn; visual, voice, UI, agent, and hardware extensions remain distro `HostProfile` concerns. Validate with `oclive pack validate <role-dir> --profile portable-core`. Full capability parity is a separate distro conformance test.
+
+Portable state is split into two JSON documents. `.ocpersona` carries the immutable core identity plus an optional mutable-profile snapshot; import may restore only the mutable profile after matching the installed role id and core. `.ocmemory` carries optional creator-authored `memory_seed` entries and runtime long-term memories. Chat logs, short-term cache, and ephemeral situation state are excluded from both. Optional role-pack `memory_seed.json` is read-only at runtime, participates in retrieval without decay, and is never merged into user LTM. Validate with `oclive-cli pack validate-persona` and `validate-memory`; extension data belongs under the top-level `extensions` object.
+
+### Chat Pro adult role extension (`adult_extension.json`, optional)
+
+Adult behavior is an optional distro extension inside the same role pack, not a Portable Core requirement. Unsupported distros must ignore the root-level file and continue to run the base persona, scenes, and identities. Adult persona, dialogue guidance, and scene directions belong only in this file and must not be copied into base prompt files.
+
+The v1 object requires `character_is_adult: true`; `pacing.mode` is `creator` or `ai`, `suggested_interval_ms` is positive, and every `scenes` key must reference a base scene id. Chat Pro injects it only after local adult confirmation plus the global and per-role gates. Legacy user-identity `adult_eligible` metadata remains readable for pack compatibility and creator guidance, but is not a hidden fourth authorization gate. `SendMessageResponse.schema` **16** returns `adult_beat` with dialogue, silent narration, interaction state, and an optional interval while retaining dialogue in the base `reply` compatibility field. Malformed envelopes use a prompt-safe fallback.
+
+Interaction state persists by role/chat scene. Disabling either gate clears active state immediately; scene or identity changes first request a natural ending. Adult memories use a separate `content_scope=adult`; ordinary chat only reads ordinary memory plus a non-explicit relationship bridge. The pack editor exposes an independent adult-extension page only after the complete base pack validates, and exports one combined pack.
+
+Chat Pro background pre-generation is a host runtime capability; it adds no `adult_extension.json` field and does not change Portable Core. Future model beats first enter cancellable staged-beat storage and must not update chat history, memory, relationship, events, personality, or narrative continuity. Only after that chat is foreground and both pacing and prior-voice gates are satisfied does the host commit and render one beat in order; narration remains silent. New user input, exit, gate shutdown, or identity change cancels in-flight work and discards beats not yet committed. Queue capacity is one positive-integer Chat Pro setting shared across all roles and chats; lowering it pauses new generation without deleting staged beats.
+
 **Breaking fields (must rewrite on migration; silent ignore is wrong)**
 
-- Blueprint bump: `schema_version` change (2→3); v3 consolidates engine/system config under top-level **`runtime_config`** (see migration guides).
+- Blueprint bumps select explicit contracts: v2 keeps legacy engine fields under `meta`; Stable v4 makes top-level **`runtime_config`** the single engine-settings source; v3 remains the opt-in dual-core Beta.
 - Legacy → v2: fold dual files into blueprint **`meta`** + **`slot_registry`**; **must not** coexist with legacy dual files; blueprints **must not** carry `steps[]` / `entry` / `module_relations` (first-turn path remains `process_message` → `co_present`, not old DSL scheduling).
 - Unknown top-level keys or invalid backend enum values fail validation; slot/backend names must match PLUGIN_V1 (`plugin_backends` · `slot_registry.type`).
 
@@ -189,7 +217,7 @@ Role packs have two version layers — do not mix them:
 
 1. Back up the pack; confirm whether you have legacy dual files or an existing `pipeline.ocblueprint`.
 2. **Legacy → v2**: follow [V1_TO_V2_MIGRATION.md](V1_TO_V2_MIGRATION.md), then `pack validate`.
-3. **v2 → v3** (when you need `runtime_config` / optional dual-core): follow [V2_TO_V3_MIGRATION.md](V2_TO_V3_MIGRATION.md), then validate and smoke-chat.
+3. Keep existing v2 packs on v2 unless intentionally migrating. Use v3 only for the frozen dual-core Beta ([V2_TO_V3_MIGRATION.md](V2_TO_V3_MIGRATION.md)); otherwise create or migrate to Stable v4 and move engine fields to `runtime_config` without duplicating them in `meta`.
 4. When declaring a minimum host, align `min_runtime_version` / `--host-version` with [PACK_VERSIONING.md](PACK_VERSIONING.md).
 
 > **Non-goal:** no batch auto-migration CLI in-tree; hand-edit + validate. Index: [DOCUMENTATION_INDEX.md](../getting-started/DOCUMENTATION_INDEX.md). Full Chinese §11: [ROLE_PACK_SPEC §11](../../creator-docs/role-pack/ROLE_PACK_SPEC.md#11-版本与迁移).

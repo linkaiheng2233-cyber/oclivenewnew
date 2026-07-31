@@ -4,8 +4,9 @@ use crate::blueprint_v3_init::build_blueprint_v3_value;
 use crate::generator::render_settings_json;
 use crate::init::{ChatStorageBackend, ProjectConfig, RolePackKind};
 use anyhow::{Context, Result};
-use oclive_validation::PIPELINE_BLUEPRINT_FILENAME;
+use oclive_validation::{MemorySeedFile, MEMORY_SEED_SCHEMA_VERSION, PIPELINE_BLUEPRINT_FILENAME};
 use serde_json::json;
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
 
@@ -15,6 +16,20 @@ pub fn write_role_pack(cfg: &ProjectConfig, out: &Path) -> Result<()> {
         RolePackKind::DefaultExample => write_default_example(cfg, out),
         RolePackKind::RobotSoulMinimal => write_robot_soul_minimal(cfg, out),
     }
+}
+
+pub(crate) fn write_empty_memory_seed(role_root: &Path) -> Result<()> {
+    let seed = MemorySeedFile {
+        schema_version: MEMORY_SEED_SCHEMA_VERSION,
+        memories: Vec::new(),
+        extensions: BTreeMap::new(),
+    };
+    fs::write(
+        role_root.join("memory_seed.json"),
+        serde_json::to_string_pretty(&seed).context("memory_seed.json")?,
+    )
+    .context("write memory_seed.json")?;
+    Ok(())
 }
 
 fn chat_storage_backend_token(b: ChatStorageBackend) -> &'static str {
@@ -50,6 +65,7 @@ fn write_default_example(cfg: &ProjectConfig, out: &Path) -> Result<()> {
     let role_root = out.join("roles").join("default");
     fs::create_dir_all(role_root.join("scenes").join("default"))
         .context("create roles/default/scenes/default")?;
+    write_empty_memory_seed(&role_root)?;
     if cfg.dual_core_enabled {
         return write_dual_core_v3_role(cfg, &role_root, "default", "Example role (dual-core)");
     }
@@ -83,7 +99,7 @@ fn write_default_example(cfg: &ProjectConfig, out: &Path) -> Result<()> {
     .context("write manifest.json")?;
     fs::write(
         role_root.join("core_personality.txt"),
-        "# Core personality text (optional).\n",
+        "# Core personality (Tier0). Replace with the role's immutable identity and behavior boundaries.\n",
     )
     .context("write core_personality.txt")?;
     let scene = json!({
@@ -106,6 +122,7 @@ fn write_robot_soul_minimal(cfg: &ProjectConfig, out: &Path) -> Result<()> {
     fs::create_dir_all(role_root.join("prompts")).context("create prompts")?;
     fs::create_dir_all(role_root.join("scenes").join("default"))
         .context("create scenes/default")?;
+    write_empty_memory_seed(&role_root)?;
     if cfg.dual_core_enabled {
         write_dual_core_v3_role(cfg, &role_root, "default", "Robot Soul Minimal (dual-core)")?;
         fs::write(
@@ -192,6 +209,13 @@ fn write_dual_core_v3_role(
         )),
     )
     .context("write character.md")?;
+    fs::write(
+        role_root.join("core_personality.txt"),
+        format!(
+            "You are {name}. Replace this scaffold with the role's immutable identity and behavior boundaries.\n"
+        ),
+    )
+    .context("write core_personality.txt")?;
     let scene = json!({
         "name": "Default",
         "time_windows": [],
@@ -222,6 +246,8 @@ mod tests {
         write_default_example(&cfg, dir.path()).unwrap();
         let raw = fs::read_to_string(dir.path().join("roles/default/config.json")).unwrap();
         assert!(raw.contains("\"backend\": \"file\""));
+        let seed = fs::read_to_string(dir.path().join("roles/default/memory_seed.json")).unwrap();
+        assert!(oclive_validation::parse_memory_seed(&seed).is_ok());
     }
 
     #[test]
@@ -245,6 +271,11 @@ mod tests {
         let bp = dir.path().join("roles/default/pipeline.ocblueprint");
         assert!(bp.is_file());
         assert!(!dir.path().join("roles/default/manifest.json").exists());
+        assert!(dir
+            .path()
+            .join("roles/default/core_personality.txt")
+            .is_file());
+        assert!(dir.path().join("roles/default/memory_seed.json").is_file());
         let raw = fs::read_to_string(bp).unwrap();
         let v: serde_json::Value = serde_json::from_str(&raw).unwrap();
         assert_eq!(v["schema_version"], 3);

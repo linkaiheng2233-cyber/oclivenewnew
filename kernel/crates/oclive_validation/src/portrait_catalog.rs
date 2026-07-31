@@ -1,8 +1,9 @@
 //! `portrait_catalog.json` + `config.json` → `portrait_catalog.enabled` validation.
 
-use std::path::Path;
+use std::{fs, path::Path};
 
-const SIMPLE_PORTRAIT_SLOT_IDS: &[&str] = &[
+/// Stable seven-slot image baseline shared by the `portable-core` role-pack profile.
+pub const PORTABLE_CORE_PORTRAIT_IDS: &[&str] = &[
     "happy_default",
     "sad_default",
     "angry_default",
@@ -70,7 +71,7 @@ pub fn validate_portrait_catalog_files(role_dir: &Path) -> Result<(), Vec<String
     validate_catalog_assets(role_dir, &catalog, &mut errs);
 
     if enabled {
-        for slot_id in SIMPLE_PORTRAIT_SLOT_IDS {
+        for slot_id in PORTABLE_CORE_PORTRAIT_IDS {
             if !catalog_assets(&catalog)
                 .iter()
                 .any(|a| asset_id(a) == Some(*slot_id))
@@ -79,6 +80,88 @@ pub fn validate_portrait_catalog_files(role_dir: &Path) -> Result<(), Vec<String
                     "portrait_catalog 启用时缺少简单包固定 id「{slot_id}」"
                 ));
             }
+        }
+    }
+
+    if errs.is_empty() {
+        Ok(())
+    } else {
+        Err(errs)
+    }
+}
+
+/// Validate the mandatory visual baseline for a Portable Core role pack.
+///
+/// Unlike the optional portrait facility, Portable Core requires an explicitly
+/// enabled catalog with one local `image` asset for each stable emotion id.
+///
+/// # Errors
+///
+/// Returns validation messages when the baseline files or assets are missing or invalid.
+pub fn validate_portable_core_files(role_dir: &Path) -> Result<(), Vec<String>> {
+    let mut errs = Vec::new();
+    let config_path = role_dir.join("config.json");
+    let catalog_path = role_dir.join("portrait_catalog.json");
+
+    let config = fs::read_to_string(&config_path)
+        .map_err(|e| vec![format!("portable-core：读取 config.json 失败: {e}")])?;
+    let config_value: serde_json::Value = serde_json::from_str(&config)
+        .map_err(|e| vec![format!("portable-core：config.json 解析失败: {e}")])?;
+    let enabled = config_value
+        .get("portrait_catalog")
+        .and_then(|v| v.get("enabled"))
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false);
+    if !enabled {
+        errs.push("portable-core：config.json 须启用 portrait_catalog.enabled=true".into());
+    }
+
+    let personality = role_dir.join("core_personality.txt");
+    match fs::read_to_string(&personality) {
+        Ok(text) if !text.trim().is_empty() => {}
+        Ok(_) => errs.push("portable-core：core_personality.txt 不得为空".into()),
+        Err(e) => errs.push(format!(
+            "portable-core：须存在非空 core_personality.txt（{e}）"
+        )),
+    }
+
+    let catalog_raw = match fs::read_to_string(&catalog_path) {
+        Ok(raw) => raw,
+        Err(e) => {
+            errs.push(format!(
+                "portable-core：须存在 portrait_catalog.json（{e}）"
+            ));
+            return Err(errs);
+        }
+    };
+    let catalog: serde_json::Value = match serde_json::from_str(&catalog_raw) {
+        Ok(value) => value,
+        Err(e) => {
+            errs.push(format!(
+                "portable-core：portrait_catalog.json 解析失败: {e}"
+            ));
+            return Err(errs);
+        }
+    };
+    if let Err(catalog_errs) = validate_portrait_catalog_files(role_dir) {
+        errs.extend(catalog_errs);
+    }
+    let assets = catalog
+        .get("assets")
+        .and_then(|v| v.as_array())
+        .cloned()
+        .unwrap_or_default();
+    for id in PORTABLE_CORE_PORTRAIT_IDS {
+        match assets.iter().find(|asset| asset_id(asset) == Some(*id)) {
+            None => errs.push(format!(
+                "portable-core：portrait_catalog 缺少基础情绪 id「{id}」"
+            )),
+            Some(asset) if asset.get("kind").and_then(|v| v.as_str()) != Some("image") => {
+                errs.push(format!(
+                    "portable-core：基础情绪 id「{id}」的 kind 须为 image"
+                ));
+            }
+            Some(_) => {}
         }
     }
 

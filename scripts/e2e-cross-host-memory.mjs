@@ -5,6 +5,7 @@
  * Usage (from repo root): node scripts/e2e-cross-host-memory.mjs
  */
 import { spawn } from 'child_process';
+import { randomUUID } from 'crypto';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -18,14 +19,21 @@ const port = Number(process.env.OCLIVE_E2E_PORT || 18420);
 const appData = path.join(os.tmpdir(), `oclive_e2e_${Date.now()}`);
 const rolesDir = chatProRolesDir(repoRoot);
 const wantChat = process.env.OCLIVE_E2E_CHAT === '1';
+const apiToken = process.env.OCLIVE_API_TOKEN?.trim() || randomUUID();
 
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+function apiFetch(url, init) {
+  const headers = new Headers(init?.headers || {});
+  headers.set('x-oclive-api-token', apiToken);
+  return fetch(url, { ...init, headers });
+}
+
 async function healthOk() {
   try {
-    const res = await fetch(`http://127.0.0.1:${port}/health`, { signal: AbortSignal.timeout(2000) });
+    const res = await apiFetch(`http://127.0.0.1:${port}/health`, { signal: AbortSignal.timeout(2000) });
     return res.ok;
   } catch {
     return false;
@@ -44,6 +52,7 @@ async function main() {
     OCLIVE_APP_DATA: appData,
     OCLIVE_USE_CANONICAL_APP_DATA: '1',
     OCLIVE_ROLES_DIR: rolesDir,
+    OCLIVE_API_TOKEN: apiToken,
   };
   if (wantChat && process.env.OCLIVE_HTTP_API_MOCK_LLM) {
     spawnEnv.OCLIVE_HTTP_API_MOCK_LLM = process.env.OCLIVE_HTTP_API_MOCK_LLM;
@@ -77,7 +86,7 @@ async function main() {
 
   if (wantChat) {
     const rolePath = path.join(rolesDir, 'mumu');
-    const res = await fetch(`http://127.0.0.1:${port}/chat`, {
+    const res = await apiFetch(`http://127.0.0.1:${port}/chat`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({

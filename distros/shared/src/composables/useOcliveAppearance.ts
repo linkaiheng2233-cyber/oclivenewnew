@@ -1,7 +1,7 @@
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { readHostAppearance } from '@oclive/shared/lib/hostAppearance'
 import { hostEventBus } from '@oclive/shared/lib/hostEventBus'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const THEME_STORAGE_KEY = 'oclive-runtime-theme'
 const SCALE_STORAGE_KEY = 'oclive-runtime-ui-scale'

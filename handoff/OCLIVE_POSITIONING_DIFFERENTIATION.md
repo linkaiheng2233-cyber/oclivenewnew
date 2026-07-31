@@ -142,6 +142,16 @@
 
 **诚实缺口（已据实收窄）：** 无头 `oclive_kernel_server` **确实存在且可跑**——之前误判"不存在"为搜索假象（目录名 `oclive_kernel_server`，非 `kernel_server`），已更正。`oclive_kernel_server` 仅依赖 **`oclive_kernel_host` + `oclive_kernel_runtime`**（`Cargo.toml`，**不**再依赖 `oclivenewnew-tauri`），编排经 `oclive_kernel_host::run_api_server`。**真正的窄缺口**：编排（`process_message`）仍内嵌在 `oclive_kernel_host`，与该 crate 的 `infrastructure` 模块耦合；**host-independent 的纯内核 `library` API 才是被推迟项**（见 [TECHNICAL_DEBT_INVENTORY §3.1](./TECHNICAL_DEBT_INVENTORY.md)）。**准确表述**："一份格式 + 一份校验，已被桌面 / 无头服务 / CLI / 编写器（WASM）四端共用；无头发行版已存在（链接 `oclive_kernel_host` 编排，非 Tauri host），**完全解耦的纯内核 library 是下一步**；启动器消费为未来。"
 
+#### 2026-07-18 愿景实现对标
+
+| 愿景 | 当前可证明的部分 | 尚不能宣称的部分 | 台账 |
+|------|------------------|------------------|------|
+| **上限取决于模块上限** | 六槽已有 builtin / remote / directory / none 契约与真实解析链，第三方实现可替换主链组件 | 缺跨实现的质量/行为评测台；“能插”尚未充分证明“容易比较并选出更好模块” | `V-MODULE-QUALITY-01` |
+| **跨平台 / 硬件通用** | 无头 HTTP、CLI 脚手架、ARM64 cross 与 HostProfile 已存在 | macOS / Linux 产品实机、完整 host-independent library、真实硬件资源预算未闭环 | `V-EMBED-01` · `K-CROSS-01` · `K-DIST-01` |
+| **角色包跨发行版通用** | 同一 `mumu` 包已在 desktop / vscode / theater profile 下完成 load + mock chat 黑盒测试 | UI、语音、视觉与插件能力受宿主 profile/表面限制，尚无 Full capability-conformance | `V-PORTABLE-01` |
+
+契约边界与测试说明只在 [`CROSS_HOST_MEMORY.md`](../creator-docs/role-pack/CROSS_HOST_MEMORY.md) 维护；实现状态只在 [`TECHNICAL_DEBT_INVENTORY.md`](./TECHNICAL_DEBT_INVENTORY.md) 维护，本表仅保留产品结论。
+
 ### 2.7 对外主线叙事：同一个 OC，全天候跨设备陪你
 
 > 早上语音闹钟叫醒 → 上班在 VSCode 陪你摸鱼 → 下班手机里聊天 → 晚上电脑上下象棋 → 最后提醒睡觉。
@@ -184,8 +194,8 @@
 - **1 个惊艳样板应用**（现有聊天 App 不是包袱，是招牌——打磨它）；
 - 争取 **第 2 个非聊天真实应用** 验证契约。
 
-**重新定性（叙事与代码冻结对齐，2026-06-08）：**
-- **双核双态 / blueprint v3 / expert_routing**：代码**保持冻结、默认关闭**；对外表述为 **机制已预埋**，解冻条件见 [TECHNICAL_DEBT_INVENTORY.md](./TECHNICAL_DEBT_INVENTORY.md) §冻结决定；勿在文档中暗示「即将可用」。
+**重新定性（叙事与代码对齐，2026-07-24）：**
+- **双核双态 / blueprint v3 / expert_routing**：仍为 **可选 feature、默认关闭**。`slot.lora.apply` 已接通「预声明 directory LLM → 会话选择 → Stable completion」运行时切片；本地 performance 的 llama.cpp GGUF / `.ocadapter` v1 已交付，但训练工坊、角色/专家绑定、完整兼容指纹和真实模型评测仍未交付。准确状态见 [TECHNICAL_DEBT_INVENTORY.md](./TECHNICAL_DEBT_INVENTORY.md) §2 与 V-LORA-WORKSHOP-01。
 - **bench**：维持性能基准；扩展为「组件质量评测台」为可选升级方向，非阻塞项。
 
 **降级维护 / 别再投入（学习产物，非护城河）：**
@@ -206,4 +216,4 @@
 3. [ ] 把 **bench 升级为"组件质量评测台"**：定义场景集 + 可复现对比指标（召回/连贯/行为），复用 OOCP / replay / MOCK_LLM；**含微调工坊 T3**（prompt-only vs LoRA vs LoRA+专家路由）；
 4. [ ] 选定并打磨 1 个样板应用；物色第 2 个非聊天应用；
 5. [ ] 定位定稿后，再谈宣传（样板 + DX + 一句话三者齐备前不宣传）。
-6. [ ] **三发行版结项后**：微调工坊 T0 契约（adapter 卫星文件 + `expert_routing` / `slot.lora.apply`）→ T1 独立创作者工具 MVP；冻结期内不接 Stable 主链，见 [VISION_ROADMAP_MONTHLY.md](../creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md)「微调工坊」。
+6. [ ] **LoRA 后续**：在已交付的本地 `.ocadapter` v1 与 directory LLM 运行时切片上，补角色/专家绑定与完整指纹 → 独立 PEFT 转换插件 / 创作者工具 → T3 真实模型评测，见 [VISION_ROADMAP_MONTHLY.md](../creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md)「微调工坊」。

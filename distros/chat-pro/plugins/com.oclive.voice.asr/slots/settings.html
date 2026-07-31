@@ -2,9 +2,87 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <title>Voice ASR settings fallback</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OCLive 语音设置</title>
+    <style>
+      :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+      body { margin: 0; background: transparent; color: CanvasText; font-size: 13px; line-height: 1.45; }
+      .panel { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+      h3, p { margin: 0; } .lede, .hint { color: GrayText; font-size: 11px; }
+      fieldset { display: flex; flex-direction: column; gap: 9px; margin: 0; padding: 10px; border: 1px solid GrayText; border-radius: 8px; }
+      legend { font-weight: 650; padding: 0 5px; }
+      label { display: flex; flex-direction: column; gap: 4px; }
+      label.row { flex-direction: row; align-items: center; }
+      input, select, button { min-height: 30px; border: 1px solid GrayText; border-radius: 6px; background: Canvas; color: CanvasText; padding: 3px 7px; }
+      button { cursor: pointer; } button:disabled { opacity: .55; cursor: not-allowed; }
+      .actions { display: flex; flex-wrap: wrap; gap: 7px; }
+      .hidden { display: none !important; } .error { color: #d33; } .ok { color: #16844b; }
+      pre { max-height: 150px; overflow: auto; white-space: pre-wrap; padding: 8px; border: 1px solid GrayText; border-radius: 6px; font-size: 11px; }
+      ul { margin: 0; padding-left: 20px; } .footer { position: sticky; bottom: 0; padding: 8px 0; background: Canvas; border-top: 1px solid GrayText; }
+      .role-policy { display: flex; flex-direction: column; gap: 7px; padding: 9px; border: 1px solid GrayText; border-radius: 7px; }
+      .role-policy__head, .role-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+      .role-list { display: flex; flex-direction: column; gap: 5px; padding: 0; list-style: none; }
+      .role-row { padding: 6px 7px; border: 1px solid GrayText; border-radius: 6px; }
+      .role-row label { flex: 1; flex-direction: row; align-items: center; min-width: 0; }
+      .role-row__name { display: flex; flex-direction: column; min-width: 0; }
+      .role-row__status { flex-shrink: 0; color: GrayText; font-size: 11px; }
+      .role-row__status.ready { color: #16844b; }
+    </style>
   </head>
   <body>
-    <p>语音识别设置（iframe 回退）</p>
+    <section class="panel voice-asr-settings" aria-label="语音识别设置">
+      <h3>语音识别（voice.asr）</h3>
+      <p class="lede">发行版 HTML 安全界面：配置、环境检测、模型导入与 TTS 扩展均通过受控桥接执行。</p>
+
+      <fieldset>
+        <legend>语音输入</legend>
+        <label>识别结果
+          <select id="submit-mode"><option value="send">直接发送</option><option value="fill">填入输入框</option></select>
+        </label>
+        <label>ASR profile<select id="asr-profile"></select></label>
+        <label>导入 ASR 模型目录<input id="asr-import" type="text" placeholder="解压后的模型目录" /></label>
+        <div class="actions"><button id="import-asr" type="button">导入 ASR 模型</button></div>
+        <details><summary>ASR 环境检测</summary><pre id="asr-probe"></pre></details>
+      </fieldset>
+
+      <fieldset>
+        <legend>语音扩展（TTS）</legend>
+        <label class="row"><input id="tts-enabled" type="checkbox" />启用情感 TTS</label>
+        <label class="row"><input id="auto-tts" type="checkbox" />自动朗读已启用角色</label>
+        <section id="role-policy" class="role-policy">
+          <div class="role-policy__head">
+            <strong>角色语音</strong>
+            <span id="role-count" class="hint"></span>
+          </div>
+          <p class="hint">只有带 voice_profile.json 的角色可以启用；未配置角色不会共用其他角色声线。</p>
+          <ul id="role-list" class="role-list"></ul>
+        </section>
+        <label>发声提供方
+          <select id="synth-provider"><option value="bundled">本地 bundled</option><option value="local_http">本地 HTTP</option><option value="cloud">云端 API</option></select>
+        </label>
+        <label id="local-endpoint-row">本地 HTTP endpoint<input id="local-endpoint" type="text" /></label>
+        <div id="cloud-fields">
+          <label>云端 TTS URL<input id="cloud-url" type="url" /></label>
+          <label>API Token<input id="cloud-token" type="password" autocomplete="off" /></label>
+          <label>Voice ID<input id="cloud-voice" type="text" /></label>
+          <label>Model<input id="cloud-model" type="text" /></label>
+        </div>
+        <label>TTS profile<select id="tts-profile"></select></label>
+        <p id="compliance" class="hint"></p>
+        <label>声音导演<select id="director-profile"><option value="none">无（仅 synth）</option></select></label>
+        <div><strong>模型包</strong><ul id="model-packs"></ul></div>
+        <label>导入 TTS 模型包目录<input id="tts-import" type="text" /></label>
+        <div class="actions"><button id="import-tts" type="button">导入 TTS 模型</button></div>
+        <div><strong>已导入 TTS 适配包</strong><ul id="adapters"></ul></div>
+        <label>导入 TTS 适配包目录<input id="adapter-import" type="text" /></label>
+        <div class="actions"><button id="import-adapter" type="button">导入 TTS 适配包</button><button id="warm" type="button">检测 / 预热 TTS</button></div>
+        <details><summary>TTS 环境检测</summary><pre id="tts-probe"></pre></details>
+      </fieldset>
+
+      <p id="ok" class="ok" aria-live="polite"></p>
+      <p id="error" class="error" role="alert"></p>
+      <footer class="footer actions"><button id="save" type="button">保存设置</button><button id="reload" type="button">重新检测</button></footer>
+    </section>
+    <script src="voice-settings.js"></script>
   </body>
 </html>

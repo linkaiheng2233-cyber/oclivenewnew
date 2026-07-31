@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { usePluginStore } from '@oclive/shared/stores/pluginStore'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { usePluginStore } from '@oclive/shared/stores/pluginStore'
 
 const props = defineProps<{
   pluginId: string

@@ -81,6 +81,7 @@ mod tests {
         );
 
         let role = Role {
+            memory_seed: Vec::new(),
             id: "test_role".to_string(),
             name: "Test Role".to_string(),
             description: "A test role".to_string(),
@@ -144,10 +145,12 @@ mod tests {
             pack_visual_presentation_config: Default::default(),
             pack_turn_thinking_config: None,
             pack_prompt_extra_sections: Vec::new(),
+            adult_extension: None,
             slot_registry: None,
             slot_groups: None,
             runtime_config: None,
             pipeline_experimental: None,
+            blueprint_extensions: std::collections::BTreeMap::new(),
             scene_ids: std::sync::Arc::from(Vec::<String>::new()),
             scene_config_cache: std::sync::Arc::new(parking_lot::RwLock::new(
                 std::collections::HashMap::new(),

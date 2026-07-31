@@ -1,7 +1,5 @@
 <script setup lang="ts">
 import type { JumpTimeResponse } from '@oclive/shared/api'
-import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 import VirtualTimeBar from '@oclive/shared/components/scene/VirtualTimeBar.vue'
 import HelpHint from '@oclive/shared/components/shared/HelpHint.vue'
 import UiButton from '@oclive/shared/components/ui/UiButton.vue'
@@ -11,6 +9,8 @@ import { useSceneDestination } from '@oclive/shared/composables/useSceneDestinat
 import { useDebugStore } from '@oclive/shared/stores/debugStore'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
 import { useUiStore } from '@oclive/shared/stores/uiStore'
+import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 defineProps<{
   allSceneOptions: Array<{ id: string, label: string }>

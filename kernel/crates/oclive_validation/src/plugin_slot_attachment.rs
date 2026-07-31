@@ -5,7 +5,9 @@ use std::collections::BTreeMap;
 use serde::Deserialize;
 use serde_json::Value;
 
-use crate::blueprint_v2::{default_slot_key_for_module, SlotRegistryEntry};
+use crate::blueprint_v2::{
+    allowed_backends_for_type, default_slot_key_for_module, SlotRegistryEntry,
+};
 
 const SLOT_ATTACHMENT_TYPES: &[&str] = &[
     "memory",
@@ -19,6 +21,7 @@ const SLOT_ATTACHMENT_TYPES: &[&str] = &[
 
 /// One slot attachment declaration (`manifest.slot_attachment` object or array element).
 #[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
 pub struct SlotAttachmentDecl {
     #[serde(rename = "type")]
     pub slot_type: String,
@@ -84,22 +87,23 @@ pub fn validate_slot_attachment_decl(decl: &SlotAttachmentDecl) -> Result<(), St
             SLOT_ATTACHMENT_TYPES.join(", ")
         ));
     }
-    if let Some(ref b) = decl.backend {
-        let b = b.trim();
-        if !b.is_empty() && !is_allowed_backend(b) {
-            return Err(format!(
-                "unsupported backend {b:?}; allowed: builtin, remote, directory, ollama"
-            ));
-        }
+    let backend = decl
+        .backend
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .unwrap_or("directory");
+    let allowed = allowed_backends_for_type(t);
+    if !allowed.contains(&backend) {
+        return Err(format!(
+            "unsupported backend {backend:?} for type {t:?}; allowed: {}",
+            allowed.join(", ")
+        ));
+    }
+    if decl.position.is_some_and(|position| position < 0) {
+        return Err("position must be a non-negative integer".into());
     }
     Ok(())
-}
-
-fn is_allowed_backend(b: &str) -> bool {
-    matches!(
-        b,
-        "builtin" | "remote" | "directory" | "ollama" | "openai_compatible"
-    )
 }
 
 /// Merges plugin `slot_attachment` entries into role pack `slot_registry` (match by `type` or create instance key).
@@ -150,8 +154,11 @@ pub fn apply_slot_attachments_to_registry(
         entry.label = label.clone();
         entry.backend = backend.clone();
         entry.position = position;
-        entry.plugin = Some(pid.to_string());
-        notes.push(format!("{key} ({slot_type}) → directory plugin {pid}"));
+        entry.plugin = (backend == "directory").then(|| pid.to_string());
+        if backend != "directory" {
+            entry.plugins = None;
+        }
+        notes.push(format!("{key} ({slot_type}) → {backend}"));
     }
     notes
 }
@@ -201,6 +208,21 @@ mod tests {
     }
 
     #[test]
+    fn rejects_backend_that_cannot_survive_blueprint_validation() {
+        let openai = r#"{"slot_attachment":{"type":"llm","backend":"openai_compatible"}}"#;
+        let openai_error = parse_slot_attachments_from_manifest_json(openai).unwrap_err();
+        assert!(openai_error.contains("openai_compatible"));
+
+        let wrong_type = r#"{"slot_attachment":{"type":"memory","backend":"ollama"}}"#;
+        let wrong_type_error = parse_slot_attachments_from_manifest_json(wrong_type).unwrap_err();
+        assert!(wrong_type_error.contains("memory"));
+
+        let negative = r#"{"slot_attachment":{"type":"llm","position":-1}}"#;
+        let negative_error = parse_slot_attachments_from_manifest_json(negative).unwrap_err();
+        assert!(negative_error.contains("non-negative"));
+    }
+
+    #[test]
     fn apply_attachment_updates_llm_slot() {
         let mut reg = BTreeMap::new();
         reg.insert(
@@ -232,5 +254,37 @@ mod tests {
             Some("com.test.llm")
         );
         assert_eq!(reg.get("llm").unwrap().backend, "directory");
+    }
+
+    #[test]
+    fn non_directory_attachment_clears_stale_plugin_references() {
+        let mut registry = BTreeMap::from([(
+            "agent".into(),
+            SlotRegistryEntry {
+                slot_type: "agent".into(),
+                label: "Old".into(),
+                backend: "directory".into(),
+                position: 0,
+                plugin: Some("old.single".into()),
+                plugins: Some(vec!["old.multi".into()]),
+                model: None,
+                url: None,
+                local_memory_provider_id: None,
+                zone: None,
+                policy: None,
+            },
+        )]);
+        let attachments = vec![SlotAttachmentDecl {
+            slot_type: "agent".into(),
+            backend: Some("builtin".into()),
+            label: None,
+            position: Some(0),
+        }];
+
+        apply_slot_attachments_to_registry(&mut registry, "p.agent", &attachments);
+
+        assert_eq!(registry["agent"].backend, "builtin");
+        assert_eq!(registry["agent"].plugin, None);
+        assert_eq!(registry["agent"].plugins, None);
     }
 }

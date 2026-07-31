@@ -194,8 +194,8 @@ invoke camelCase 等细节：视觉同学读 [paths/frontend.md](../paths/fronte
 | **工作区与边界（优先）** | [SCOPE_AND_BOUNDARIES.md](./SCOPE_AND_BOUNDARIES.md) |
 | **开发环境配置** | [DEV_ENVIRONMENT.md](./DEV_ENVIRONMENT.md) |
 | 硬件接入 SSOT | [HARDWARE_INTEGRATION.md](../../HARDWARE_INTEGRATION.md) |
-| 立绘实施计划 | [handoff/PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md](../../handoff/PORTRAIT_VISUAL_PRESENTATION_IMPLEMENTATION_PLAN.md) |
-| Live2D 冻结决策 | [handoff/LIVE2D_CUBISM_DEFER.md](../../handoff/LIVE2D_CUBISM_DEFER.md) |
+| 立绘与视觉表现边界 | [立绘 RFC](../../creator-docs/rfc/RFC_PORTRAIT_FACILITY.md) · [视觉表现 RFC](../../creator-docs/rfc/RFC_VISUAL_PRESENTATION_FACILITY.md) |
+| Live2D 冻结决策（历史） | [archive/LIVE2D_CUBISM_DEFER.md](../../handoff/archive/LIVE2D_CUBISM_DEFER.md) |
 | 无头联调 | [examples/headless-kernel-minimal/README.md](../../examples/headless-kernel-minimal/README.md) |
 | 语音 loop 起点 | [examples/voice-loop-minimal/README.md](../../examples/voice-loop-minimal/README.md) |
 | 架构简图 | [01 简架构](../01_ARCHITECTURE_SIMPLE.md) |

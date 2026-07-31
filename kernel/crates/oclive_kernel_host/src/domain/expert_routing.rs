@@ -1,18 +1,18 @@
 //! Expert routing match and step execution (`slot.expert.invoke`).
 //!
-//! FROZEN (2026-06-01, see the freeze-decision section in
-//! handoff/TECHNICAL_DEBT_INVENTORY.md): gated behind `dual_core`, not compiled
-//! by default. Do not extend until a real "route-by-intent to expert models"
-//! need appears (unfreezes together with dual_core).
+//! OPTIONAL (2026-07-24): still gated behind `dual_core` and not compiled by
+//! default. The LoRA path is active only for role-predeclared, authorized LLM
+//! directory plugins; other expert actions retain their existing behavior.
 
 #![cfg(feature = "dual_core")]
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 use chrono::Timelike;
 use oclive_validation::{
-    parse_expert_step_action, select_expert_route, ExpertFallback, ExpertMatchContext, ExpertRoute,
-    ExpertRouteStep, ExpertRoutingDoc, ExpertStepActionKind, PipelineStep,
+    parse_expert_step_action, select_expert_route, slot_registry_entry_in_zone, ExpertFallback,
+    ExpertMatchContext, ExpertRoute, ExpertRouteStep, ExpertRoutingDoc, ExpertStepActionKind,
+    PipelineStep, SlotRegistryEntry,
 };
 
 use crate::domain::chat_engine::message_error::ProcessMessageError;
@@ -30,6 +30,63 @@ fn map_db_err(e: AppError) -> ProcessMessageError {
 /// Trigger miss: no route matched; skip silently (not an execution failure).
 #[derive(Debug, Clone)]
 pub struct ExpertTriggerMiss;
+
+/// Predeclared directory-backed LLM instance selected by `slot.lora.apply`.
+///
+/// The plugin owns framework-specific LoRA loading (llama.cpp, vLLM, PEFT,
+/// etc.); expert routing only selects an authorized, role-declared instance.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct LoraLlmSelection {
+    pub slot_key: String,
+    pub plugin_id: String,
+    pub entry: SlotRegistryEntry,
+}
+
+/// Resolve one LoRA plugin id to exactly one effective `llm` directory slot.
+///
+/// # Errors
+///
+/// Returns an error when the plugin is not declared by the role/session,
+/// is not an LLM directory slot, or is declared ambiguously.
+pub(crate) fn resolve_lora_llm_selection(
+    registry: &BTreeMap<String, SlotRegistryEntry>,
+    plugin_id: &str,
+) -> Result<LoraLlmSelection, String> {
+    let plugin_id = plugin_id.trim();
+    if plugin_id.is_empty() {
+        return Err("slot.lora.apply requires params.plugin_id".into());
+    }
+
+    let mut matches = registry
+        .iter()
+        .filter(|(_, entry)| {
+            entry.slot_type.trim() == "llm"
+                && entry.backend.trim() == "directory"
+                && slot_registry_entry_in_zone(entry, "experimental")
+                && !slot_registry_entry_in_zone(entry, "stable")
+                && entry
+                    .plugin
+                    .as_deref()
+                    .is_some_and(|id| id.trim() == plugin_id)
+        })
+        .map(|(slot_key, entry)| LoraLlmSelection {
+            slot_key: slot_key.clone(),
+            plugin_id: plugin_id.to_string(),
+            entry: entry.clone(),
+        });
+
+    let selected = matches.next().ok_or_else(|| {
+        format!(
+            "LoRA plugin `{plugin_id}` must be predeclared as one experimental-only type=llm, backend=directory slot"
+        )
+    })?;
+    if matches.next().is_some() {
+        return Err(format!(
+            "LoRA plugin `{plugin_id}` is declared by multiple llm slots; use one unique slot"
+        ));
+    }
+    Ok(selected)
+}
 
 /// Snapshot before expert step execution (rollback on failure).
 #[derive(Debug, Clone, Default)]
@@ -366,6 +423,38 @@ async fn run_lora_apply(
             "slot.lora.apply 需要 params.plugin_id".into(),
         ));
     }
+    let effective_registry = ctx
+        .state
+        .effective_slot_registry_for_session(ctx.role, ctx.srid)
+        .ok_or_else(|| {
+            ProcessMessageError::dual_core_invalid(
+                "slot.lora.apply requires an effective slot_registry",
+            )
+        })?;
+    let selection = match resolve_lora_llm_selection(&effective_registry, &plugin_id) {
+        Ok(selection) => selection,
+        Err(message) => return Ok(StepOutcome::Failed(message)),
+    };
+    if !ctx
+        .state
+        .directory_plugins
+        .manifest_provides_capability(&selection.plugin_id, "llm")
+    {
+        return Ok(StepOutcome::Failed(format!(
+            "LoRA plugin `{}` must declare provides=[\"llm\"]",
+            selection.plugin_id
+        )));
+    }
+    if let Err(message) = ctx
+        .state
+        .directory_plugins
+        .ensure_rpc_url(&selection.plugin_id)
+    {
+        return Ok(StepOutcome::Failed(format!(
+            "LoRA plugin `{}` unavailable: {message}",
+            selection.plugin_id
+        )));
+    }
     if snap.lora_plugin_id.is_none() {
         snap.lora_plugin_id = ctx.state.session_cache.expert_lora_plugin_id(ctx.srid);
     }
@@ -375,7 +464,8 @@ async fn run_lora_apply(
     tracing::info!(
         target: "oclive_expert",
         session_ns = %ctx.srid,
-        plugin_id = %plugin_id,
+        plugin_id = %selection.plugin_id,
+        slot_key = %selection.slot_key,
         "专家 LoRA 标记已应用（directory 插件）"
     );
     Ok(StepOutcome::Continue)
@@ -452,5 +542,66 @@ async fn apply_expert_fallback(
                 other => Ok(other),
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod lora_tests {
+    use super::*;
+
+    fn entry(slot_type: &str, backend: &str, plugin: Option<&str>) -> SlotRegistryEntry {
+        SlotRegistryEntry {
+            slot_type: slot_type.into(),
+            label: "test".into(),
+            backend: backend.into(),
+            position: 0,
+            plugin: plugin.map(str::to_string),
+            plugins: None,
+            model: None,
+            url: None,
+            local_memory_provider_id: None,
+            zone: (backend == "directory").then(|| serde_json::json!("experimental")),
+            policy: None,
+        }
+    }
+
+    #[test]
+    fn lora_selection_requires_one_predeclared_directory_llm_slot() {
+        let mut registry = BTreeMap::new();
+        registry.insert(
+            "lora_mumu".into(),
+            entry("llm", "directory", Some("com.example.mumu-lora")),
+        );
+
+        let selected =
+            resolve_lora_llm_selection(&registry, "com.example.mumu-lora").expect("selection");
+        assert_eq!(selected.slot_key, "lora_mumu");
+        assert_eq!(selected.plugin_id, "com.example.mumu-lora");
+    }
+
+    #[test]
+    fn lora_selection_rejects_builtin_or_ambiguous_slots() {
+        let mut registry = BTreeMap::new();
+        registry.insert(
+            "not_directory".into(),
+            entry("llm", "ollama", Some("com.example.mumu-lora")),
+        );
+        assert!(resolve_lora_llm_selection(&registry, "com.example.mumu-lora").is_err());
+
+        let mut dual_zone = entry("llm", "directory", Some("com.example.mumu-lora"));
+        dual_zone.zone = Some(serde_json::json!(["stable", "experimental"]));
+        registry.insert("not_isolated".into(), dual_zone);
+        assert!(resolve_lora_llm_selection(&registry, "com.example.mumu-lora").is_err());
+
+        registry.remove("not_isolated");
+        registry.insert(
+            "lora_a".into(),
+            entry("llm", "directory", Some("com.example.mumu-lora")),
+        );
+        registry.insert(
+            "lora_b".into(),
+            entry("llm", "directory", Some("com.example.mumu-lora")),
+        );
+        assert!(resolve_lora_llm_selection(&registry, "com.example.mumu-lora").is_err());
     }
 }

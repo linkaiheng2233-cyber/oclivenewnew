@@ -5,7 +5,8 @@
 mod common;
 
 use oclive_kernel_host::domain::portrait_facility::{
-    portrait_catalog_active, resolve_visual_state_rule,
+    enhanced_portrait_active, portrait_catalog_active, resolve_visual_state_rule,
+    resolve_visual_state_rule_with_intensity,
 };
 use oclive_kernel_host::infrastructure::storage::RoleStorage;
 use oclive_kernel_types::models::{
@@ -15,11 +16,68 @@ use std::fs;
 use std::io::Write;
 
 #[test]
-fn mumu_has_no_portrait_catalog_active() {
+fn mumu_catalog_resolves_intensity_variants() {
     let storage = RoleStorage::new(common::roles_dir());
     let role = storage.load_role("mumu").expect("mumu");
-    assert!(!portrait_catalog_active(&role));
-    assert!(role.portrait_catalog.is_none());
+    assert!(portrait_catalog_active(&role));
+    let catalog = role.portrait_catalog.as_ref().expect("mumu catalog");
+    assert_eq!(
+        resolve_visual_state_rule_with_intensity(catalog, "shy", Some(0.2)),
+        Some("shy_mild".to_string())
+    );
+    assert_eq!(
+        resolve_visual_state_rule_with_intensity(catalog, "shy", Some(0.5)),
+        Some("shy_moderate".to_string())
+    );
+    assert_eq!(
+        resolve_visual_state_rule_with_intensity(catalog, "shy", Some(0.9)),
+        Some("shy_severe".to_string())
+    );
+}
+
+#[test]
+fn mumu_catalog_has_complete_upgraded_emotion_families() {
+    let storage = RoleStorage::new(common::roles_dir());
+    let role = storage.load_role("mumu").expect("mumu");
+    let catalog = role.portrait_catalog.as_ref().expect("mumu catalog");
+    for family in [
+        "happy", "sad", "angry", "neutral", "excited", "confused", "shy",
+    ] {
+        let default_id = format!("{family}_default");
+        let default_asset = catalog
+            .assets
+            .iter()
+            .find(|asset| asset.id == default_id)
+            .expect("default asset");
+        assert!(
+            default_asset.path.contains("_mild") || default_asset.path.ends_with("normal-v2.png")
+        );
+        for level in ["mild", "moderate", "severe"] {
+            let expected = format!("{family}_{level}");
+            assert_eq!(
+                resolve_visual_state_rule_with_intensity(
+                    catalog,
+                    family,
+                    Some(match level {
+                        "mild" => 0.2,
+                        "moderate" => 0.5,
+                        _ => 0.9,
+                    })
+                ),
+                Some(expected),
+            );
+        }
+    }
+}
+
+#[test]
+fn visual_disabled_uses_fallback_route_gate() {
+    let storage = RoleStorage::new(common::roles_dir());
+    let mut role = storage.load_role("mumu").expect("mumu");
+    assert!(enhanced_portrait_active(&role, None));
+    assert!(!enhanced_portrait_active(&role, Some("off")));
+    role.pack_visual_presentation_config.enabled = false;
+    assert!(!enhanced_portrait_active(&role, None));
 }
 
 #[test]

@@ -26,6 +26,8 @@ SQLite 真源：`{OCLIVE_APP_DATA}/app.db`（或通过 `resolve_db_path`）。
 | `OCLIVE_USE_CANONICAL_APP_DATA=1` | headless `--api` 使用品牌目录（未设 `OCLIVE_APP_DATA` 时） |
 | `OCLIVE_API_USE_TEMP_APP_DATA=1` | 强制 temp 库（**CI / OOCP 默认**） |
 | `OCLIVE_SKIP_APP_DATA_MIGRATION=1` | 跳过 Tauri 旧目录 → canonical 一次性复制（测试） |
+| `OCLIVE_API_TOKEN` | 无头 HTTP API 必需的访问令牌；仅 `/health` 不校验 |
+| `OCLIVE_API_ALLOW_UNAUTHENTICATED=1` | 仅隔离本地开发使用的显式无认证逃生阀；生产/持久化数据禁止 |
 
 ---
 

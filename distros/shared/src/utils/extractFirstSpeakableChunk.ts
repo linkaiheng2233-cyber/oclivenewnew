@@ -1,17 +1,51 @@
 /** Minimum graphemes before emitting a speakable chunk (avoid "嗯" alone). */
 const MIN_CHUNK_CHARS = 3
 
-/** If no punctuation yet, cap wait — start TTS after this many chars. */
-const MAX_CHARS_WITHOUT_BREAK = 12
+/**
+ * Speech boundaries shared by CJK, Latin, Arabic and Indic writing systems.
+ * Punctuation remains attached to the preceding chunk so the TTS model can
+ * render the intended prosody.
+ */
+const BREAK_CHARS = '。！？!?；;，、：:,.…\n؟؛،۔।॥｡､'
 
-/** First chunk: emit sooner to reduce time-to-first-sound. */
-const FIRST_MAX_CHARS_WITHOUT_BREAK = 8
+function isAsciiDigit(char: string | undefined): boolean {
+  return char != null && char >= '0' && char <= '9'
+}
 
-const STRONG_BREAK = /^[\s\S]*?[。！？!?；;\n]/
-const WEAK_BREAK = /^[\s\S]*?[，、：:]/
+function isNaturalBreak(text: string, index: number): boolean {
+  const char = text[index]
+  if (!BREAK_CHARS.includes(char))
+    return false
+  // Do not split decimal/grouped numbers. When the right-hand digit has not
+  // arrived yet, wait for one more streaming token before deciding.
+  if (
+    (char === '.' || char === ',')
+    && isAsciiDigit(text[index - 1])
+    && (text[index + 1] == null || isAsciiDigit(text[index + 1]))
+  ) {
+    return false
+  }
+  return true
+}
 
-export type SpeakableChunkOptions = {
-  /** First streaming chunk: lower char cap, weak punctuation exits earlier. */
+function firstValidBreak(text: string): string | null {
+  for (let index = 0; index < text.length; index++) {
+    if (!isNaturalBreak(text, index))
+      continue
+    let end = index + 1
+    while (end < text.length && isNaturalBreak(text, end))
+      end += 1
+    const chunk = text.slice(0, end).trim()
+    // Skip a leading one- or two-character clause ("喂，") and keep looking
+    // for the next delimiter instead of splitting inside the following word.
+    if (chunk.length >= MIN_CHUNK_CHARS)
+      return chunk
+  }
+  return null
+}
+
+export interface SpeakableChunkOptions {
+  /** Kept for source compatibility; all chunks now use natural boundaries. */
   isFirst?: boolean
 }
 
@@ -21,43 +55,13 @@ export type SpeakableChunkOptions = {
  */
 export function extractFirstSpeakableChunk(
   accumulated: string,
-  options?: SpeakableChunkOptions,
+  _options?: SpeakableChunkOptions,
 ): string | null {
-  const isFirst = options?.isFirst ?? false
   const text = accumulated.trimStart()
   if (text.length < MIN_CHUNK_CHARS)
     return null
 
-  const maxWithoutBreak = isFirst
-    ? FIRST_MAX_CHARS_WITHOUT_BREAK
-    : MAX_CHARS_WITHOUT_BREAK
-
-  const candidates: string[] = []
-  const strong = text.match(STRONG_BREAK)
-  if (strong) {
-    const chunk = strong[0].trim()
-    if (chunk.length >= MIN_CHUNK_CHARS)
-      candidates.push(chunk)
-  }
-  const weak = text.match(WEAK_BREAK)
-  if (weak) {
-    const chunk = weak[0].trim()
-    if (isFirst && chunk.length >= MIN_CHUNK_CHARS) {
-      return chunk
-    }
-    if (chunk.length >= MIN_CHUNK_CHARS)
-      candidates.push(chunk)
-  }
-  if (candidates.length > 0)
-    return candidates.reduce((shortest, cur) => (cur.length < shortest.length ? cur : shortest))
-
-  if (text.length >= maxWithoutBreak)
-    return text.slice(0, maxWithoutBreak).trim()
-
-  if (text.length >= MIN_CHUNK_CHARS)
-    return text
-
-  return null
+  return firstValidBreak(text)
 }
 
 /**
@@ -111,6 +115,5 @@ export function remainderAfterSpokenPrefix(fullText: string, spokenPrefix: strin
 
 /** @deprecated Use extractFirstSpeakableChunk; kept for grep/back-compat. */
 export function extractFirstSentence(accumulated: string): string | null {
-  const m = accumulated.match(STRONG_BREAK)
-  return m ? m[0].trim() : null
+  return firstValidBreak(accumulated)
 }

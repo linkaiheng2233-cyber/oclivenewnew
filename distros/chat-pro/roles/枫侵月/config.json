@@ -3,5 +3,12 @@
     "decay_on_jump": true,
     "decay_per_day": 2,
     "speed": 6.0
+  },
+  "portrait_catalog": {
+    "enabled": true
+  },
+  "visual_presentation": {
+    "enabled": true,
+    "backend": "image"
   }
 }

@@ -7,6 +7,19 @@ import json
 from typing import Any
 from urllib import error as urlerror
 from urllib import request as urlrequest
+from urllib.parse import urlsplit
+
+
+_LOOPBACK_HOSTS = {"127.0.0.1", "localhost", "::1"}
+_DIRECT_OPENER = urlrequest.build_opener(urlrequest.ProxyHandler({}))
+
+
+def _open_request(req: urlrequest.Request, timeout: float):
+    """Keep local TTS traffic local even when the desktop has a system proxy."""
+    host = (urlsplit(req.full_url).hostname or "").lower()
+    if host in _LOOPBACK_HOSTS:
+        return _DIRECT_OPENER.open(req, timeout=timeout)
+    return urlrequest.urlopen(req, timeout=timeout)
 
 
 def http_json(
@@ -23,7 +36,7 @@ def http_json(
         data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
     req = urlrequest.Request(url, data=data, headers=req_headers, method=method)
     try:
-        with urlrequest.urlopen(req, timeout=timeout) as resp:
+        with _open_request(req, timeout) as resp:
             body = resp.read()
             ctype = resp.headers.get("Content-Type", "")
             if "json" in ctype:
@@ -58,7 +71,7 @@ def http_audio(
         data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
     req = urlrequest.Request(url, data=data, headers=req_headers, method=method)
     try:
-        with urlrequest.urlopen(req, timeout=timeout) as resp:
+        with _open_request(req, timeout) as resp:
             audio = resp.read()
             if not audio:
                 return {"ok": False, "reason": "empty_audio", "audio_base64": ""}

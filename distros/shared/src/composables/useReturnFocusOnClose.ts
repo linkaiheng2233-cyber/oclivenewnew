@@ -1,4 +1,5 @@
-import { nextTick, ref, watch, type Ref } from 'vue'
+import type { Ref } from 'vue'
+import { nextTick, ref, watch } from 'vue'
 
 /**
  * After a dialog / panel closes (including Escape), restore focus to the element active before open.

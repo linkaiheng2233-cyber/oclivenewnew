@@ -1,8 +1,8 @@
-import { ref, watch } from 'vue'
+import { useOverlayWindow } from '@oclive/shared/composables/useOverlayWindow'
 import { ensurePluginWorkbenchI18n } from '@oclive/shared/i18n/loadPluginWorkbench'
 import { usePluginMarketStore } from '@oclive/shared/stores/pluginMarketStore'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
-import { useOverlayWindow } from '@oclive/shared/composables/useOverlayWindow'
+import { ref, watch } from 'vue'
 import { resolveOcliveShell } from './useOcliveShell'
 
 export type PluginsPanelSubview = 'list' | 'market'

@@ -65,7 +65,7 @@ export default {
       pluginMarket: 'Plugin market',
       modelManager: 'Model management',
       settingsTileHelp:
-        'Shortcuts, settings, plugins, and models in one place. Ctrl+Shift+S settings; '
+        'Shortcuts, settings, plugins, and models in one place.\n\nCtrl+Shift+S settings; '
         + 'Ctrl+Shift+F installed plugins; Ctrl+Shift+M model management; Ctrl+Shift+D debug panel.',
     },
     toast: {
@@ -122,6 +122,7 @@ export default {
       noPlugins: 'No directory plugins scanned.',
     },
     helpHintAria: 'View help',
+    helpHintCloseAria: 'Close help',
     roleSelector: {
       role: '🎭 Role',
       identity: '👤 Identity',

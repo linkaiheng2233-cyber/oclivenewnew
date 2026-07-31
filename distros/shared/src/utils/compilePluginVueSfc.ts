@@ -1,8 +1,8 @@
 import type { Component } from 'vue'
-import * as Vue from 'vue'
-import { i18n } from '@oclive/shared/i18n'
 import { readPluginAssetText } from '@oclive/shared/api'
 import { ApiInvokeError } from '@oclive/shared/api/helpers'
+import { i18n } from '@oclive/shared/i18n'
+import * as Vue from 'vue'
 
 const SCHEME = 'oclive-plugin://'
 
@@ -151,7 +151,7 @@ export interface LoadPluginVueOptions {
 }
 
 /**
- * Compile and load `.vue` from directory plugin root (runtime `vue3-sfc-loader`).
+ * Compile and load `.vue` from a directory plugin root for explicit unsafe DEV mode.
  * Compile failure throws {@link PluginVueCompileError}; disk/network issues return `null` for iframe fallback.
  */
 export async function loadPluginVueComponent(
@@ -159,6 +159,8 @@ export async function loadPluginVueComponent(
   vueRel: string,
   opts?: LoadPluginVueOptions,
 ): Promise<Component | null> {
+  if (!import.meta.env.DEV)
+    return null
   const rel0 = vueRel.replace(/\\/g, '/').replace(/^\/+/, '')
   const entry = uri(pluginId, rel0)
   const pre = opts?.preloadedEntrySource
@@ -171,6 +173,8 @@ export async function loadPluginVueComponent(
     const p = String(path)
     const rel = resolvePluginAssetRel(pluginId, rel0, p)
     if (import.meta.env.DEV) {
+      // Useful only while diagnosing third-party SFC asset resolution.
+      // eslint-disable-next-line no-console
       console.debug('[compilePluginVueSfc.getFile]', { pluginId, request: p, rel })
     }
     if (pre !== undefined && pre.length > 0 && stripQuery(p) === stripQuery(entry)) {

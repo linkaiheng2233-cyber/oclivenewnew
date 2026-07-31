@@ -1,7 +1,7 @@
+import { resolveUserNarrativeSceneId } from '@oclive/shared/composables/narrativeScene'
 import { useChatStore } from '@oclive/shared/stores/chatStore'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
 import { useUiStore } from '@oclive/shared/stores/uiStore'
-import { resolveUserNarrativeSceneId } from '@oclive/shared/composables/narrativeScene'
 
 /** After `refreshRoleInfo` etc., align `uiStore.sceneId` with `user_presence_scene`. */
 export function useNarrativeScene() {

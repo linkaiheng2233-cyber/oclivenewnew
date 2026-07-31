@@ -4,7 +4,7 @@ use parking_lot::{Mutex, RwLock};
 use serde::Serialize;
 use std::collections::{HashMap, VecDeque};
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 
 use dashmap::DashMap;
@@ -12,6 +12,7 @@ use dashmap::DashMap;
 use super::manifest::{normalize_ui_slot_appearance_id, OclivePluginManifest};
 use crate::domain::host_profile::{self, HostProfile};
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
+use crate::infrastructure::plugin_protocol::plugin_asset_url;
 use crate::infrastructure::plugin_state::{PluginStateFile, PluginStateStore, RolePluginState};
 use crate::models::ui_config::UiConfig;
 
@@ -85,6 +86,9 @@ pub struct DirectoryPluginRuntime {
     active_role_id: Arc<RwLock<Option<String>>>,
     /// Tied to `get_directory_plugin_catalog` short cache; incremented on `rescan_plugin_roots` to invalidate.
     catalog_invalidate_gen: AtomicU64,
+    /// Guards the deferred startup scan so the first frontend bootstrap cannot observe an empty registry.
+    initial_scan_complete: AtomicBool,
+    initial_scan_lock: Mutex<()>,
     high_risk_grants: Arc<HighRiskGrantStore>,
     /// Roles root injected into directory plugin child env as `OCLIVE_ROLES_DIR`.
     roles_dir: PathBuf,
@@ -107,7 +111,7 @@ impl DirectoryPluginRuntime {
         )
     }
 
-    /// Skip directory scan; background [`Self::rescan_plugin_roots`] lazy-loads after startup.
+    /// Skip directory scan; [`Self::ensure_plugin_roots_scanned`] completes it on first demand.
     pub fn bootstrap_deferred_scan(
         roles_dir: &Path,
         app_data: &Path,
@@ -180,6 +184,8 @@ impl DirectoryPluginRuntime {
             plugin_state_store,
             active_role_id: Arc::new(RwLock::new(None)),
             catalog_invalidate_gen: AtomicU64::new(0),
+            initial_scan_complete: AtomicBool::new(scan_now),
+            initial_scan_lock: Mutex::new(()),
             high_risk_grants,
             roles_dir,
             manifest_cache: DashMap::new(),
@@ -532,8 +538,7 @@ impl DirectoryPluginRuntime {
         self.debug_log_rings.lock().remove(id);
     }
 
-    /// Rescan `plugins/` and other roots and replace in-memory `plugin_roots`.
-    pub fn rescan_plugin_roots(&self, roles_dir: &Path) {
+    fn scan_plugin_roots_locked(&self, roles_dir: &Path) {
         for id in self.rpc_urls.lock().keys().cloned().collect::<Vec<_>>() {
             self.clear_plugin_process(&id);
         }
@@ -547,11 +552,30 @@ impl DirectoryPluginRuntime {
         );
         let n = scan.roots.len();
         *self.plugin_roots.write() = plugin_roots_from_scan(scan.roots);
+        self.initial_scan_complete.store(true, Ordering::Release);
         tracing::info!(
             target: "oclive_plugin",
             "plugin roots rescanned count={}",
             n
         );
+    }
+
+    /// Complete the deferred startup scan once. Concurrent callers wait for the same scan.
+    pub fn ensure_plugin_roots_scanned(&self) {
+        if self.initial_scan_complete.load(Ordering::Acquire) {
+            return;
+        }
+        let _scan_guard = self.initial_scan_lock.lock();
+        if self.initial_scan_complete.load(Ordering::Acquire) {
+            return;
+        }
+        self.scan_plugin_roots_locked(&self.roles_dir);
+    }
+
+    /// Rescan `plugins/` and other roots and replace in-memory `plugin_roots`.
+    pub fn rescan_plugin_roots(&self, roles_dir: &Path) {
+        let _scan_guard = self.initial_scan_lock.lock();
+        self.scan_plugin_roots_locked(roles_dir);
     }
 
     /// Whether directory plugin manifest `provides` declares a capability (e.g. `complex_emotion`).
@@ -571,6 +595,28 @@ impl DirectoryPluginRuntime {
             .is_some_and(|m| m.provides.iter().any(|p| p.trim() == cap))
     }
 
+    /// Whether a directory plugin explicitly opts into one RPC method.
+    #[must_use]
+    pub fn manifest_declares_rpc_method(&self, plugin_id: &str, method: &str) -> bool {
+        let id = plugin_id.trim();
+        let method = method.trim();
+        if id.is_empty() || method.is_empty() {
+            return false;
+        }
+        let root = match self.plugin_roots.read().get(id) {
+            Some(entry) => entry.root.clone(),
+            None => return false,
+        };
+        self.load_manifest_cached(id, &root)
+            .ok()
+            .is_some_and(|manifest| {
+                manifest
+                    .rpc_methods
+                    .iter()
+                    .any(|declared| declared.trim() == method)
+            })
+    }
+
     pub fn shell_url_for(&self, plugin_id: &str, entry: &str) -> Option<String> {
         let roots = self.plugin_roots.read();
         if !roots.contains_key(plugin_id) {
@@ -580,11 +626,7 @@ impl DirectoryPluginRuntime {
         if entry.is_empty() {
             return None;
         }
-        // Windows WebView2 uses https://scheme.localhost/…
-        Some(format!(
-            "https://ocliveplugin.localhost/{}/{}",
-            plugin_id, entry
-        ))
+        Some(plugin_asset_url(plugin_id, entry))
     }
 }
 
@@ -596,7 +638,8 @@ impl Drop for DirectoryPluginRuntime {
 
 #[cfg(test)]
 mod asset_path_tests {
-    use super::{find_plugin_asset_path, PluginRootEntry};
+    use super::{find_plugin_asset_path, DirectoryPluginRuntime, PluginRootEntry};
+    use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
     use std::fs;
     use std::path::PathBuf;
     use tempfile::TempDir;
@@ -661,6 +704,33 @@ mod asset_path_tests {
         let entry = PluginRootEntry::from_root(root);
         let path = find_plugin_asset_path(&entry, "slots/audioCapture.js").expect("js->ts");
         assert!(path.to_string_lossy().ends_with("audioCapture.ts"));
+    }
+
+    #[test]
+    fn deferred_plugin_scan_is_completed_on_first_demand() {
+        let tmp = TempDir::new().expect("temp");
+        let roles = tmp.path().join("distros/chat-pro/roles");
+        let plugin = tmp
+            .path()
+            .join("distros/chat-pro/plugins/com.example.deferred");
+        let app_data = tmp.path().join("app-data");
+        fs::create_dir_all(&roles).expect("roles");
+        fs::create_dir_all(&plugin).expect("plugin");
+        fs::create_dir_all(&app_data).expect("app data");
+        fs::write(
+            plugin.join("manifest.json"),
+            r#"{"schema_version":1,"type":"ocliveplugin","id":"com.example.deferred","version":"1.0.0"}"#,
+        )
+        .expect("manifest");
+        let grants = HighRiskGrantStore::load(app_data.clone(), false);
+        let runtime = DirectoryPluginRuntime::bootstrap_deferred_scan(&roles, &app_data, grants);
+
+        assert!(runtime.plugin_roots.read().is_empty());
+        runtime.ensure_plugin_roots_scanned();
+        assert!(runtime
+            .plugin_roots
+            .read()
+            .contains_key("com.example.deferred"));
     }
 
     /// Monorepo dev: `VoiceToolbar.vue` imports `./audioCapture` without `.ts` suffix.

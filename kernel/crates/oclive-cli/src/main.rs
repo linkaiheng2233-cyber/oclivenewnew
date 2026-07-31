@@ -31,6 +31,7 @@ mod doctor_blueprint;
 mod doctor_cmd;
 mod doctor_config_resolve;
 pub use doctor_config_resolve::{resolve_report, ConfigResolveArgs, ConfigResolveReport};
+mod doctor_execution_plan;
 mod doctor_kernel_contracts;
 mod doctor_sbom;
 mod env_probe;

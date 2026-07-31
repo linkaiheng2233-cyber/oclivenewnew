@@ -1,7 +1,7 @@
-import { ref, watch } from 'vue'
-import { usePluginMarketStore } from '@oclive/shared/stores/pluginMarketStore'
+import type { usePluginMarketStore } from '@oclive/shared/stores/pluginMarketStore'
 import { useModelManagerWindow } from '@oclive/shared/composables/useModelManagerWindow'
 import { usePluginManagerWindow } from '@oclive/shared/composables/usePluginManagerWindow'
+import { ref, watch } from 'vue'
 
 export type MainShellSettingsTab = 'general' | 'plugins' | 'storage'
 

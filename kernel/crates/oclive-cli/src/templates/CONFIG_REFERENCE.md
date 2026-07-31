@@ -82,7 +82,7 @@
 **高耦合编译模式（Monolith）**：在编译期增加 **`Cargo` feature `monolith`** 与第二二进制 **`{package名}-monolith`**；`src/process_message_monolith.rs` 与 **`vendor/oclive_monolith_builtin/`** 由 **`oclive init`** 或 **`cargo run -p oclive-cli -- build`** 生成。**仅 `kernel_server` 项目**会生成 **`monolith.toml`**；嵌入式 **library** 忽略 Monolith。
 
 - **非交互**：`cargo run -p oclive-cli -- init --preset full --monolith --monolith-preset latency -o ./out`（勿与 `--project-type library` 同用）。
-- **蓝图校验**：`cargo run -p oclive-cli -- pack validate <角色根>`（默认 v2；见 `docs/BLUEPRINT_V2_POINTER.md`）。
+- **蓝图校验**：`cargo run -p oclive-cli -- pack validate <角色根>`（按 `schema_version` 精确分派 v2/v3/v4；见 `docs/BLUEPRINT_V2_POINTER.md`）。
 - **交互**：流程末尾「是否启用开发者编译选项？」→「编译模式」（标准 / 全槽焊接 / 自定义焊接范围）。
 - **再生成**：`cargo run -p oclive-cli -- build -o ./out`（默认继续两次 `cargo build`；`--no-cargo` 仅写源码与 vendor）。
 - **构建**：亦可手动 `cargo build --release`（标准）、`cargo build --release --features monolith`（焊接产物）。

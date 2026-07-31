@@ -13,12 +13,13 @@
       "minProperties": 1,
       "additionalProperties": {
         "allOf": [
-          { "$ref": "pipeline.ocblueprint.v2.schema.json#/properties/slot_registry/additionalProperties" },
+          { "$ref": "pipeline.ocblueprint.v2.schema.json#/$defs/slotRegistryEntry" },
           {
             "type": "object",
             "properties": {
               "zone": {
                 "oneOf": [
+                  { "type": "null" },
                   { "type": "string", "enum": ["stable", "experimental"] },
                   {
                     "type": "array",
@@ -29,7 +30,8 @@
               }
             }
           }
-        ]
+        ],
+        "unevaluatedProperties": false
       }
     },
     "includes": { "$ref": "pipeline.ocblueprint.v2.schema.json#/properties/includes" },

@@ -31,6 +31,7 @@ const kinds = [
   'HOST_JSON: \'host_json\'',
   'VOICE_RPC_TIMEOUT: \'voice_rpc_timeout\'',
 ];
+const renderedCodes = codes.map(code => `  '${code}',`).join('\n');
 
 const body = `/**
  * Auto-generated SSOT for kernel static error codes.
@@ -38,7 +39,9 @@ const body = `/**
  * Regenerate: \`node scripts/generate-kernel-error-codes.mjs\`
  * Gate: \`node scripts/check-error-codes-drift.mjs\`
  */
-export const KERNEL_STATIC_ERROR_CODES = ${JSON.stringify(codes, null, 2)} as const
+export const KERNEL_STATIC_ERROR_CODES = [
+${renderedCodes}
+] as const
 
 export type KernelStaticErrorCode = (typeof KERNEL_STATIC_ERROR_CODES)[number]
 
@@ -47,8 +50,8 @@ export const KERNEL_ERROR_CONTEXT_KINDS = {
   ${kinds.join(',\n  ')},
 } as const
 
-export type KernelErrorContextKind =
-  (typeof KERNEL_ERROR_CONTEXT_KINDS)[keyof typeof KERNEL_ERROR_CONTEXT_KINDS]
+export type KernelErrorContextKind
+  = (typeof KERNEL_ERROR_CONTEXT_KINDS)[keyof typeof KERNEL_ERROR_CONTEXT_KINDS]
 
 export function isKernelStaticErrorCode(code: string): code is KernelStaticErrorCode {
   return (KERNEL_STATIC_ERROR_CODES as readonly string[]).includes(code)

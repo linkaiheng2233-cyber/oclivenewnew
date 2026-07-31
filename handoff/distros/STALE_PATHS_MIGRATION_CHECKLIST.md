@@ -53,7 +53,7 @@
 | `crates/README.md` | `kernel/crates/README.md`（根留 redirect） |
 | CI `working-directory: src-tauri` | `distros/desktop-tauri` |
 | `AGENTS.md` / `.cursor/rules` 编排路径 | `kernel/crates/oclive_kernel_host/...` |
-| normative docs 机械迁移 | `node scripts/migrate-doc-paths.mjs`（194 文件） |
+| normative docs 机械迁移 | 一次性脚本 `migrate-doc-paths.mjs` 完成 194 文件迁移后已删除；历史实现见 Git |
 | `check-stale-paths.mjs` | 硬门禁 + dimension5 第 11 检 |
 
 ## 6. CI ratchet（迁移完成后禁止）

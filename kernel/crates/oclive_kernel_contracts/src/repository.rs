@@ -37,6 +37,22 @@ pub trait MemoryRepository: Send + Sync {
     /// Does not panic.
     async fn load_memories(&self, role_id: &str, limit: i32) -> Result<Vec<Memory>>;
 
+    /// Loads memories for a prompt while respecting an optional private
+    /// content scope. Universal callers keep the default ordinary-only view.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err` on database query or row deserialization failure.
+    async fn load_memories_for_context(
+        &self,
+        role_id: &str,
+        limit: i32,
+        include_adult: bool,
+    ) -> Result<Vec<Memory>> {
+        let _ = include_adult;
+        self.load_memories(role_id, limit).await
+    }
+
     /// Counts the number of memories under a role.
     ///
     /// # Errors
@@ -63,6 +79,24 @@ pub trait MemoryRepository: Send + Sync {
         limit: i32,
         offset: i32,
     ) -> Result<Vec<Memory>>;
+
+    /// Loads paged memories together with their persisted content scope.
+    ///
+    /// `scope=None` returns both scopes; supported explicit values are owned by
+    /// the host (`ordinary` and `adult` in the SQLite implementation).
+    async fn load_memories_paged_for_scope(
+        &self,
+        role_id: &str,
+        limit: i32,
+        offset: i32,
+        _scope: Option<&str>,
+    ) -> Result<Vec<(Memory, String)>> {
+        let memories = self.load_memories_paged(role_id, limit, offset).await?;
+        Ok(memories
+            .into_iter()
+            .map(|memory| (memory, "ordinary".to_string()))
+            .collect())
+    }
 
     /// Merge-save with keyword dedupe (same semantics as turn pipeline / bridge `update_memory`).
     ///

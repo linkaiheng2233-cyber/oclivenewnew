@@ -110,7 +110,7 @@ runStep('debt marathon stop-hook self-test', () => {
   sh('node', ['scripts/test-cursor-marathon-hook.mjs']);
 });
 
-runStep('human module Markdown links', () => {
+runStep('human module and critical SSOT Markdown links', () => {
   sh('node', ['scripts/check-markdown-links.mjs', '--self-test']);
   sh('node', ['scripts/check-markdown-links.mjs']);
 });
@@ -140,6 +140,18 @@ runStep('stale code paths ratchet', () => {
   sh('node', ['scripts/check-stale-paths.mjs', '--code-only']);
 });
 
+runStep('runtime state is not tracked', () => {
+  const tracked = sh('git', [
+    'ls-files',
+    'distros/chat-pro/roles/.oclive_directory_plugin_data',
+  ]).trim();
+  if (tracked) {
+    throw new Error(
+      'runtime state under roles/.oclive_directory_plugin_data must stay ignored and untracked',
+    );
+  }
+});
+
 runStep('host runtime re-export ratchet', () => {
   sh('node', ['scripts/check-host-reexport-imports.mjs']);
 });
@@ -159,6 +171,11 @@ runStep('theater prompt drift', () => {
 
 runStep('frontend verify:ui anchors', () => {
   sh('node', ['scripts/verify-frontend-patches.mjs']);
+});
+
+runStep('module compatibility ratchet', () => {
+  sh('node', ['scripts/check-module-compat.mjs']);
+  sh('node', ['scripts/validate-plugins-index.mjs']);
 });
 
 runStep('tauri major 2 + docs narrative (K-PLATFORM-01c)', () => {
@@ -184,16 +201,13 @@ runStep('tauri major 2 + docs narrative (K-PLATFORM-01c)', () => {
 runStep('tauri beforeBuildCommand path ratchet', () => {
   const confPath = path.join(repoRoot, 'distros', 'desktop-tauri', 'tauri.conf.json');
   const conf = fs.readFileSync(confPath, 'utf8');
-  if (/\.\.\/\.\.\/scripts/.test(conf)) {
-    throw new Error(
-      'tauri.conf.json must use distros-relative paths (node ../scripts/tauri-run.cjs), not ../../scripts',
-    );
-  }
   const parsed = JSON.parse(conf);
   const build = parsed.build?.beforeBuildCommand ?? '';
   const dev = parsed.build?.beforeDevCommand ?? '';
-  if (!build.includes('tauri-run.cjs') || !dev.includes('tauri-run.cjs')) {
-    throw new Error('tauri.conf.json beforeBuildCommand/beforeDevCommand must invoke tauri-run.cjs');
+  if (build !== 'node scripts/tauri-run.cjs build' || dev !== 'node scripts/tauri-run.cjs dev') {
+    throw new Error(
+      'tauri.conf.json beforeBuildCommand/beforeDevCommand must invoke scripts/tauri-run.cjs from the repository root',
+    );
   }
   const resources = parsed.bundle?.resources ?? parsed.tauri?.bundle?.resources;
   if (!Array.isArray(resources)) {

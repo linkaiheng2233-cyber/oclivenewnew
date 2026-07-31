@@ -5,8 +5,8 @@
   "identifier": "com.oclivenewnew.app",
   "mainBinaryName": "OCLive Chat Pro",
   "build": {
-    "beforeBuildCommand": "node ../scripts/tauri-run.cjs build",
-    "beforeDevCommand": "node ../scripts/tauri-run.cjs dev",
+    "beforeBuildCommand": "node scripts/tauri-run.cjs build",
+    "beforeDevCommand": "node scripts/tauri-run.cjs dev",
     "devUrl": "http://localhost:1420",
     "frontendDist": "../chat-pro/dist"
   },
@@ -23,10 +23,12 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self' tauri: https://ocliveplugin.localhost; connect-src 'self' tauri: https://ocliveplugin.localhost http://127.0.0.1:50000 ws://127.0.0.1:50000",
+      "csp": "default-src 'self' tauri: ocliveplugin: https://ocliveplugin.localhost; connect-src 'self' tauri: http://127.0.0.1:50000 ws://127.0.0.1:50000",
       "assetProtocol": {
         "enable": true,
-        "scope": ["$RESOURCE/**"]
+        "scope": [
+          "$RESOURCE/**"
+        ]
       }
     }
   },
@@ -53,7 +55,9 @@
   "plugins": {
     "deep-link": {
       "desktop": {
-        "schemes": ["oclive"]
+        "schemes": [
+          "oclive"
+        ]
       }
     }
   }

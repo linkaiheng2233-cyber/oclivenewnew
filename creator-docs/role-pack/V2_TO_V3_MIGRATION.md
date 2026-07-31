@@ -133,7 +133,7 @@ cargo run -p oclive-cli -- doctor
 ## 5. FAQ
 
 **Q：必须升到 v3 吗？**  
-A：否。v2 仍是今日默认交付基线；v3 面向需要 `runtime_config` SSOT 或双核的集成方。
+A：否。Stable 新包应使用 v4；只有明确启用双核 Beta 时才升 v3。现有 v2 包继续兼容且不会自动改写。
 
 **Q：v2 里的 `meta.memory_config` 不迁会怎样？**  
 A：v3 校验优先 `runtime_config`；仅留 `meta` 时宿主可能仍兼容读，但 `pack validate` 与编写器目标视图会以 `runtime_config` 为准。

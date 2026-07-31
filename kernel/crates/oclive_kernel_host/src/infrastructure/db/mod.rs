@@ -1,11 +1,15 @@
 #![allow(clippy::missing_errors_doc)]
 
+mod adult_stage;
 mod chat_turn_atomic;
 pub mod memory_merge;
 #[macro_use]
 mod helpers;
 
-pub use memory_merge::{merge_in_tx, merge_long_term_memory_line, MergeOutcome, TxOrPool};
+pub use memory_merge::{
+    merge_in_tx, merge_in_tx_scoped, merge_long_term_memory_line,
+    merge_long_term_memory_line_scoped, MergeOutcome, TxOrPool,
+};
 
 use crate::error::{AppError, Result};
 use crate::infrastructure::chat_storage::manifest_sess_glob_pattern;
@@ -70,6 +74,7 @@ pub struct ChatTurnTxInput<'a> {
     pub user_relation_key: &'a str,
     pub favor_delta: f64,
     pub memory_content: &'a str,
+    pub memory_scope: &'a str,
     pub memory_importance: f64,
     pub memory_fifo_limit: i32,
     pub memory_similarity_threshold: f64,
@@ -682,6 +687,7 @@ mod tests {
                 user_relation_key: "friend",
                 favor_delta: 0.2,
                 memory_content: "chat line",
+                memory_scope: "ordinary",
                 memory_importance: 0.5,
                 memory_fifo_limit: 500,
                 memory_similarity_threshold: 0.6,
@@ -712,6 +718,74 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn adult_turn_memory_is_private_but_keeps_an_ordinary_bridge() {
+        let pool = setup_test_db().await.unwrap();
+        let db = DbManager::new(pool);
+        let personality = PersonalityVector::zero();
+        let event = Event {
+            event_type: EventType::Ignore,
+            user_emotion: "neutral".to_string(),
+            bot_emotion: "neutral".to_string(),
+        };
+
+        db.apply_chat_turn_atomic(ChatTurnTxInput {
+            role_id: "test_role",
+            personality: &personality,
+            current_emotion: "Neutral",
+            relation_state: "Friend",
+            user_relation_key: "friend",
+            favor_delta: 0.0,
+            memory_content: "private adult detail",
+            memory_scope: "adult",
+            memory_importance: 0.8,
+            memory_fifo_limit: 500,
+            memory_similarity_threshold: 0.6,
+            event: &event,
+            user_message: "private user turn",
+            bot_reply: "private role reply",
+            scene_id: "home",
+        })
+        .await
+        .unwrap();
+
+        let ordinary = db
+            .load_memories_for_context("test_role", 10, false)
+            .await
+            .unwrap();
+        assert_eq!(ordinary.len(), 1);
+        assert!(ordinary[0].content.contains("概括"));
+        let gated = db
+            .load_memories_for_context("test_role", 10, true)
+            .await
+            .unwrap();
+        assert_eq!(gated.len(), 2);
+        let adult_inspection = db
+            .load_memories_paged_for_scope("test_role", 10, 0, Some("adult"))
+            .await
+            .unwrap();
+        assert_eq!(adult_inspection.len(), 1);
+        assert_eq!(adult_inspection[0].1, "adult");
+        assert_eq!(adult_inspection[0].0.content, "private adult detail");
+        let ordinary_inspection = db
+            .load_memories_paged_for_scope("test_role", 10, 0, Some("ordinary"))
+            .await
+            .unwrap();
+        assert_eq!(ordinary_inspection.len(), 1);
+        assert!(ordinary_inspection[0].0.content.contains("概括"));
+
+        let ordinary_recent = db
+            .list_short_term_recent_turns("test_role", 6, false)
+            .await
+            .unwrap();
+        assert!(ordinary_recent.is_empty());
+        let gated_recent = db
+            .list_short_term_recent_turns("test_role", 6, true)
+            .await
+            .unwrap();
+        assert_eq!(gated_recent.len(), 1);
+    }
+
+    #[tokio::test]
     async fn test_memory_fifo_trim_to_500_per_role() {
         let pool = setup_test_db().await.unwrap();
         let db = DbManager::new(pool);
@@ -739,6 +813,7 @@ mod tests {
                 user_relation_key: "friend",
                 favor_delta: 0.0,
                 memory_content: &format!("m{}", i),
+                memory_scope: "ordinary",
                 memory_importance: 0.5,
                 memory_fifo_limit: 500,
                 memory_similarity_threshold: 0.6,
@@ -782,6 +857,7 @@ mod tests {
                 user_relation_key: "stranger",
                 favor_delta: 0.0,
                 memory_content: &format!("casual line {}", i),
+                memory_scope: "ordinary",
                 memory_importance: 0.0,
                 memory_fifo_limit: 500,
                 memory_similarity_threshold: 0.6,
@@ -809,6 +885,7 @@ mod tests {
             user_relation_key: "stranger",
             favor_delta: -0.1,
             memory_content: "quarrel line",
+            memory_scope: "ordinary",
             memory_importance: 0.6,
             memory_fifo_limit: 500,
             memory_similarity_threshold: 0.6,

@@ -28,6 +28,7 @@
 - **Default implementations** are the built-in Rust paths; switching backend **does not rename API fields** (especially **`SendMessageResponse.reply`**).
 - **Remote:** the host speaks **HTTP JSON-RPC** ([REMOTE_PLUGIN_PROTOCOL.md](../../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)). Missing `OCLIVE_REMOTE_*` URLs → fall back to builtin / in-process LLM with logs.
 - **Directory:** `distros/chat-pro/plugins/*/manifest.json` child processes; same JSON-RPC wire as Remote; slot ids in `plugin_backends.directory_plugins` ([DIRECTORY_PLUGINS.md](../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md)).
+- **Auto-attachment:** `slot_attachment.backend` must be legal for its declared slot type and survive the same final-blueprint validation. OpenAI-compatible LLMs use the `remote` backend; `openai_compatible` is an implementation mode, not a blueprint backend token.
 
 ---
 
@@ -138,6 +139,16 @@ Directory / remote plugins may declare **`provides`** beyond the six slots. Host
 | **`com.user.tts.*`** | Community TTS sidecar | Same **`voice.*` RPC namespace** as official voice; **not** K-VOICE-02 productization; **no** new runtime permissions — see below |
 | `complex_emotion` | Slot type (v2) | Blueprint `type: complex_emotion` when `backend: directory` |
 
+#### Capability Registry v1 (blueprint v4, read-only plan)
+
+- A manifest may advertise a namespaced v4 capability in `provides`, but the Plan Compiler selects it only when the host has registered a real consumer. An arbitrary string does not expand kernel behavior.
+- A directory Provider must pass manifest `schema_version: 1` validation, declare the capability, have an executable `process`, and satisfy dependencies, per-role enablement, and high-risk grants. Legacy process manifests without `permissions` still require `process:spawn`.
+- Provider `version` is reported for diagnostics. The v4 envelope currently has no Provider API semver range, so the displayed version is not an API-compatibility promise.
+- The first registered v4 consumer is Chat Pro `voice.asr`; other capabilities degrade or block until their consumer and call path exist.
+- Neither entry point spawns a Provider or rewrites a role pack. `oclive doctor execution-plan` / pure Plan Compiler diagnostics do not probe devices, report `resource_coordination: not_evaluated`, and omit `resource_plan`; desktop `get_execution_plan_diagnostics` refreshes the Resource Coordinator and attaches a read-only candidate plan without executing transitions or starting a model.
+
+DTO and implementation anchors: [`models/execution_plan.rs`](../../kernel/crates/oclive_kernel_types/src/models/execution_plan.rs) · [`capability_registry.rs`](../../kernel/crates/oclive_kernel_host/src/infrastructure/capability_registry.rs) · [`execution_plan.rs`](../../kernel/crates/oclive_kernel_host/src/domain/execution_plan.rs).
+
 #### Community TTS (`com.user.tts.*`)
 
 Community directory TTS plugins share the official **`voice.*` method namespace** and the same per-plugin authorization path. This documents the allowed RPC surface; it does **not** broaden host-global whitelists or implement ChatTTS/XTTS (K-VOICE-02).
@@ -150,7 +161,7 @@ Community directory TTS plugins share the official **`voice.*` method namespace*
 | **`provides`** | **No** separate `voice.tts` token. TTS-only sidecars **need not** declare `voice.asr`; plugins that also serve the ASR UI channel **may** declare **`voice.asr`** (same token as official; **no** new permission surface) |
 | **Recommended minimal `rpcMethods`** | at least **`voice.speak`**; typical sidecars also declare **`voice.probe_tts`**, **`voice.warm`**, **`voice.list_tts_adapters`**. Full `voice.*` list: [RFC §4.1 (ZH SSOT)](../../creator-docs/rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md#41-voiceasr-插件通道windows-已交付--宿主侧) — each method must be listed in **this** manifest to be invocable |
 
-Host UI / `ui_slots` call declared methods via **`plugin_rpc_invoke`**; undeclared methods are rejected (same as official voice plugins).
+Host UI / `ui_slots` call declared methods via **`plugin_rpc_invoke`**; undeclared methods are rejected (same as official voice plugins). Unified resource coordination currently recognizes only official `com.oclive.voice.asr` with `bundled-cosyvoice2-zh`. Community `com.user.tts.*`, user-hosted HTTP, and cloud TTS are not treated as host-managed GPU runtimes merely because they share `voice.*` method names.
 
 Full Chinese normative section: **[PLUGIN_V1 §社区 TTS](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md)**.
 

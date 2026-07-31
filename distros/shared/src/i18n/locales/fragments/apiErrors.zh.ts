@@ -1,7 +1,8 @@
 /** 内核 `KernelErrorBody.code`（`SCREAMING_SNAKE_CASE`）→ 文案（见 `toFriendlyErrorMessage`）。 */
 export default {
   EMPTY_MESSAGE: '消息不能为空或仅含空格/换行，请输入至少一个可见字符。',
-  INVALID_ROLE_PATH: '角色路径不是有效目录。请传入包含 manifest.json 的角色目录绝对路径。',
+  INVALID_ROLE_PATH:
+    '角色路径不是有效目录。请传入包含 pipeline.ocblueprint（推荐）或 legacy manifest.json 的角色目录绝对路径。',
   LOAD_ROLE_TASK_PANIC: '加载角色时后台任务异常，请查看日志并重试；若可稳定复现请提 issue。',
   TXN_BEGIN_FAILED: '事务启动失败，请稍后重试。',
   TXN_RUNTIME_ENSURE_FAILED: '角色运行时状态初始化失败。',
@@ -41,7 +42,7 @@ export default {
   ROLE_RUNTIME_NOT_READY:
     '尚未建立本角色的运行时会话（未 load_role 或数据库无 role_runtime）。请先在本界面选择/重新加载该角色后再试。',
   STARTUP_HEALTH_FAILED:
-    '启动健康检查未通过：{detail}。可检查角色目录是否含 manifest.json、插件槽配置、数据库是否可写；或暂时设置环境变量 `OCLIVE_SKIP_STARTUP_HEALTH=1` 以跳过（仅排障）。',
+    '启动健康检查未通过：{detail}。可检查角色目录是否含 pipeline.ocblueprint（推荐）或 legacy manifest.json、插件槽配置、数据库是否可写；或暂时设置环境变量 `OCLIVE_SKIP_STARTUP_HEALTH=1` 以跳过（仅排障）。',
   PLUGIN_BACKENDS_DIRECTORY_SLOT:
     '后端槽位配置不完整：使用 directory 类后端时，必须在 `directory_plugins` 中为对应槽填写非空插件 id。请打开插件工作台 → 后端模块或编辑角色包 settings。',
   ROLE_PACK_EXISTS: '该角色 ID 已存在。若要替换本地版本，请选择覆盖。',

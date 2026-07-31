@@ -15,7 +15,7 @@ pub struct TurnPrefetch {
     pub resolved_identity: ResolvedUserIdentity,
 }
 
-/// Load recent dialogue and active user identity in parallel.
+/// Load the active identity and recent context once before dialogue.
 ///
 /// # Errors
 ///
@@ -25,11 +25,10 @@ pub async fn build_turn_prefetch(
     role: &Role,
     srid: &str,
     scene_id: &str,
+    include_adult: bool,
 ) -> Result<TurnPrefetch> {
-    let (context, resolved_identity) = tokio::try_join!(
-        load_recent_context(state, srid),
-        resolve_active_user_identity(state, role, srid, Some(scene_id)),
-    )?;
+    let resolved_identity = resolve_active_user_identity(state, role, srid, Some(scene_id)).await?;
+    let context = load_recent_context(state, srid, include_adult).await?;
     let (recent_turns, recent_turns_for_event, recent_events) = context;
     Ok(TurnPrefetch {
         recent_turns,

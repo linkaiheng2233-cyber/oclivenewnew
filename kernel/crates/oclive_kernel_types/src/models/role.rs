@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
 
+use super::adult_role::AdultRoleExtension;
 use super::author_pack::AuthorPackFile;
 use super::knowledge::KnowledgeIndex;
 use super::plugin_backends::PluginBackends;
@@ -16,9 +17,9 @@ use super::ui_config::UiConfig;
 use super::user_identity::UserIdentityCatalog;
 use super::visual_presentation_config::RolePackVisualPresentationConfig;
 pub use oclive_validation::{
-    AutonomousSceneConfig, AutonomousSceneRule, IdentityBinding, LifeAvailability,
-    LifeScheduleDisk, LifeScheduleEntryDisk, LifeTrajectoryDisk, PersonalitySource, PipelineStep,
-    RemotePresenceConfig, RuntimeConfig,
+    AutonomousSceneConfig, AutonomousSceneRule, BlueprintExtensionDecl, IdentityBinding,
+    LifeAvailability, LifeScheduleDisk, LifeScheduleEntryDisk, LifeTrajectoryDisk,
+    PersonalitySource, PipelineStep, RemotePresenceConfig, RuntimeConfig,
 };
 use parking_lot::RwLock;
 use std::path::PathBuf;
@@ -153,6 +154,9 @@ pub struct Role {
     pub author: String,
     /// **Core personality profile**: the fixed persona set by the creator and user; the **AI must not rewrite** it at runtime (see `mutable_profile_llm`), and together with the mutable profile it forms the complete persona.
     pub core_personality: String,
+    /// Creator-authored read-only memories from optional `memory_seed.json`.
+    #[serde(skip)]
+    pub memory_seed: Vec<oclive_validation::MemorySeedEntry>,
     pub default_personality: PersonalityDefaults,
     pub evolution_bounds: EvolutionBounds,
     pub user_relations: Vec<UserRelation>,
@@ -192,10 +196,11 @@ pub struct Role {
     /// Blueprint `meta.featured`: show in first-run preset gallery.
     #[serde(default)]
     pub featured: bool,
-    /// Blueprint `meta.deep_capsule_enabled`: use `prompts/deep_capsule.txt` on Small+Deep when true.
+    /// Blueprint `meta.deep_capsule_enabled`: allow Small models to use the offline persona capsule.
+    /// The field name and `prompts/deep_capsule.txt` path are retained for role-pack compatibility.
     #[serde(default)]
     pub deep_capsule_enabled: bool,
-    /// Wave D: offline-distilled Deep persona (`prompts/deep_capsule.txt`; in-memory only).
+    /// Wave D: offline-distilled persona (`prompts/deep_capsule.txt`; in-memory only).
     #[serde(skip)]
     pub deep_capsule: Option<String>,
     /// Blueprint `meta.preset_order`: gallery sort (lower first).
@@ -258,6 +263,9 @@ pub struct Role {
     /// `config.json` → `prompt_extra_sections` (generic prompt blocks before quality anchor).
     #[serde(default)]
     pub pack_prompt_extra_sections: Vec<RolePackPromptExtraSection>,
+    /// Optional Chat Pro-only `adult_extension.json`; universal runtimes may ignore it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub adult_extension: Option<AdultRoleExtension>,
     /// `user_identities/` catalog (in-memory only; populated by [`RoleStorage::finish_role_pack_load`]).
     #[serde(skip)]
     pub user_identity_catalog: Option<Arc<UserIdentityCatalog>>,
@@ -267,6 +275,10 @@ pub struct Role {
     /// v3 blueprint `pipeline.experimental` (`pipeline.stable` does not participate in runtime execution).
     #[serde(default)]
     pub pipeline_experimental: Option<Vec<PipelineStep>>,
+    /// Stable v4 extension declarations. Optional declarations are preserved even
+    /// when this host has no matching capability provider.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub blueprint_extensions: BTreeMap<String, BlueprintExtensionDecl>,
     /// Scene id list (manifest `scenes` + the `scenes/` subdirectory); populated by [`RoleStorage::finish_role_pack_load`].
     #[serde(skip)]
     pub scene_ids: Arc<[String]>,
@@ -317,6 +329,7 @@ impl Default for Role {
             version: String::new(),
             author: String::new(),
             core_personality: String::new(),
+            memory_seed: Vec::new(),
             default_personality: PersonalityDefaults {
                 stubbornness: 0.5,
                 clinginess: 0.5,
@@ -362,9 +375,11 @@ impl Default for Role {
             pack_visual_presentation_config: RolePackVisualPresentationConfig::default(),
             pack_turn_thinking_config: None,
             pack_prompt_extra_sections: Vec::new(),
+            adult_extension: None,
             user_identity_catalog: None,
             runtime_config: None,
             pipeline_experimental: None,
+            blueprint_extensions: BTreeMap::new(),
             scene_ids: Arc::from(Vec::<String>::new()),
             scene_config_cache: Arc::new(RwLock::new(HashMap::new())),
             scene_text_cache: Arc::new(RwLock::new(HashMap::new())),

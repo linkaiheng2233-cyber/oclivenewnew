@@ -4,6 +4,10 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 
+fn default_adult_eligible() -> bool {
+    true
+}
+
 /// On-disk `user_identities/index.json` (before template files are read).
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct UserIdentityIndex {
@@ -19,6 +23,12 @@ pub struct UserIdentityIndexEntry {
     pub template_file: String,
     #[serde(default)]
     pub maps_to_relation_id: Option<String>,
+    /// Legacy/advisory author metadata retained for role-pack compatibility.
+    ///
+    /// Chat Pro authorization is determined by local adult confirmation plus
+    /// the global and per-role switches; this field is not a hidden fourth gate.
+    #[serde(default = "default_adult_eligible")]
+    pub adult_eligible: bool,
 }
 
 /// Loaded catalog: index metadata + template bodies (host-populated after disk load).
@@ -35,4 +45,5 @@ pub struct UserIdentityCatalogEntry {
     pub display_name: String,
     pub template_body: Arc<str>,
     pub maps_to_relation_id: Option<String>,
+    pub adult_eligible: bool,
 }

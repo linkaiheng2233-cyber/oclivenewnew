@@ -1,9 +1,10 @@
-import type { Ref } from 'vue'
-import { computed, type ComputedRef, onBeforeUnmount, onMounted, ref } from 'vue'
+import type { HoldRuntimeAction } from '@oclive/shared/composables/useUnifiedKeybindings'
+import type { ComputedRef, Ref } from 'vue'
+import { useUnifiedKeybindings } from '@oclive/shared/composables/useUnifiedKeybindings'
 import { hostEventBus } from '@oclive/shared/lib/hostEventBus'
-import { resolveOcliveShell } from './useOcliveShell'
 import { getPrimaryEffectiveAcceleratorForAction, loadUnifiedBindingsFile } from '@oclive/shared/lib/keybindings'
-import { type HoldRuntimeAction, useUnifiedKeybindings } from '@oclive/shared/composables/useUnifiedKeybindings'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { resolveOcliveShell } from './useOcliveShell'
 
 export interface UseGlobalHotkeysOptions {
   simplePluginManagerOpen: Ref<boolean>

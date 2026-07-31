@@ -1,11 +1,9 @@
 <script setup lang="ts">
-import CharacterInfo from '@oclive/shared/components/role/CharacterInfo.vue'
 import PluginRoleDetailSlots from '@oclive/shared/components/PluginRoleDetailSlots.vue'
+import CharacterInfo from '@oclive/shared/components/role/CharacterInfo.vue'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
 
-const roleStore = useRoleStore()
-
-  defineProps<{
+defineProps<{
   roleId: string
   name: string
   emotion: string
@@ -13,6 +11,8 @@ const roleStore = useRoleStore()
   layout: 'stack' | 'sidebar'
   bootstrapEpoch: number
 }>()
+
+const roleStore = useRoleStore()
 </script>
 
 <template>

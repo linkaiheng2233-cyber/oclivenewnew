@@ -1,7 +1,7 @@
 import type { PackUiTheme } from '@oclive/shared/api'
-import { onBeforeUnmount, watch } from 'vue'
 import { hostEventBus } from '@oclive/shared/lib/hostEventBus'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
+import { onBeforeUnmount, watch } from 'vue'
 
 /**
  * Map role pack `ui.json` → `theme` to Fluent / oclive CSS variables; remove inline overrides on role switch or cleared fields to fall back to built-in theme.

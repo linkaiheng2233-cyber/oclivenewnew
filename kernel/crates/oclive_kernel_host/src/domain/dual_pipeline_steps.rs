@@ -176,7 +176,14 @@ impl<'a> ExperimentalStepCtx<'a> {
         let mut memories = self
             .state
             .memory_repo
-            .load_memories(self.srid, 10)
+            .load_memories_for_context(
+                self.srid,
+                10,
+                self.req
+                    .adult
+                    .as_ref()
+                    .is_some_and(crate::models::dto::AdultInteractionRequest::gates_open),
+            )
             .await
             .map_err(map_db_err)?;
         let scene_m = self
@@ -211,10 +218,16 @@ impl<'a> ExperimentalStepCtx<'a> {
         let ollama_model = self
             .role
             .resolve_ollama_model(self.state.global_ollama_model().as_str());
-        let (_turns, recent_turns_for_event, recent_events_for_event) =
-            load_recent_context(self.state, self.srid)
-                .await
-                .map_err(map_db_err)?;
+        let (_turns, recent_turns_for_event, recent_events_for_event) = load_recent_context(
+            self.state,
+            self.srid,
+            self.req
+                .adult
+                .as_ref()
+                .is_some_and(crate::models::dto::AdultInteractionRequest::gates_open),
+        )
+        .await
+        .map_err(map_db_err)?;
         let knowledge_augment_opt = self
             .role
             .knowledge_index
@@ -250,7 +263,14 @@ impl<'a> ExperimentalStepCtx<'a> {
             let mut mem = self
                 .state
                 .memory_repo
-                .load_memories(self.srid, 10)
+                .load_memories_for_context(
+                    self.srid,
+                    10,
+                    self.req
+                        .adult
+                        .as_ref()
+                        .is_some_and(crate::models::dto::AdultInteractionRequest::gates_open),
+                )
                 .await
                 .map_err(map_db_err)?;
             let scene_m = self
@@ -413,9 +433,16 @@ impl<'a> ExperimentalStepCtx<'a> {
             .state
             .session_cache
             .stored_complex_emotion_narrative_hint(self.srid);
-        let (recent_turns, _a, _b) = load_recent_context(self.state, self.srid)
-            .await
-            .map_err(map_db_err)?;
+        let (recent_turns, _a, _b) = load_recent_context(
+            self.state,
+            self.srid,
+            self.req
+                .adult
+                .as_ref()
+                .is_some_and(crate::models::dto::AdultInteractionRequest::gates_open),
+        )
+        .await
+        .map_err(map_db_err)?;
         let ce_input = build_complex_emotion_turn_input(
             self.mrid,
             self.scene_id.as_str(),
@@ -514,6 +541,7 @@ impl<'a> ExperimentalStepCtx<'a> {
             }),
             relation_state,
             reply: agent_out.reply,
+            adult_beat: None,
             emotion: crate::domain::chat_engine::emotion_to_dto(&emotion_result),
             bot_emotion: portrait_emotion.clone(),
             portrait_emotion,

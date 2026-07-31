@@ -44,20 +44,47 @@ pub async fn merge_in_tx(
     importance: f64,
     similarity_threshold: f64,
 ) -> Result<MergeOutcome> {
+    merge_in_tx_scoped(
+        tx,
+        role_id,
+        scene_id,
+        trimmed,
+        importance,
+        similarity_threshold,
+        "ordinary",
+    )
+    .await
+}
+
+pub async fn merge_in_tx_scoped(
+    tx: &mut Transaction<'_, Sqlite>,
+    role_id: &str,
+    scene_id: &str,
+    trimmed: &str,
+    importance: f64,
+    similarity_threshold: f64,
+    content_scope: &str,
+) -> Result<MergeOutcome> {
     let candidates: Vec<(i64, String)> = sqlx::query_as(
-        "SELECT id, content FROM long_term_memory WHERE role_id = ? ORDER BY created_at DESC LIMIT 40",
+        "SELECT id, content FROM long_term_memory
+         WHERE role_id = ? AND content_scope = ?
+         ORDER BY created_at DESC LIMIT 40",
     )
     .bind(role_id)
+    .bind(content_scope)
     .fetch_all(&mut **tx)
     .await
     .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
     if let Some(id) = matching_memory_id(&candidates, trimmed, similarity_threshold) {
         sqlx::query(
-            "UPDATE long_term_memory SET mention_count = mention_count + 1 WHERE id = ? AND role_id = ?",
+            "UPDATE long_term_memory
+             SET mention_count = mention_count + 1
+             WHERE id = ? AND role_id = ? AND content_scope = ?",
         )
         .bind(id)
         .bind(role_id)
+        .bind(content_scope)
         .execute(&mut **tx)
         .await
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
@@ -66,8 +93,9 @@ pub async fn merge_in_tx(
 
     let now = Utc::now().to_rfc3339();
     sqlx::query(
-        "INSERT INTO long_term_memory (role_id, content, importance, weight, created_at, scene_id, mention_count)
-         VALUES (?, ?, ?, ?, ?, ?, 1)",
+        "INSERT INTO long_term_memory
+         (role_id, content, importance, weight, created_at, scene_id, mention_count, content_scope)
+         VALUES (?, ?, ?, ?, ?, ?, 1, ?)",
     )
     .bind(role_id)
     .bind(trimmed)
@@ -75,6 +103,7 @@ pub async fn merge_in_tx(
     .bind(1.0)
     .bind(&now)
     .bind(scene_id)
+    .bind(content_scope)
     .execute(&mut **tx)
     .await
     .map_err(|e| AppError::DatabaseError(e.to_string()))?;
@@ -88,18 +117,20 @@ async fn merge_in_pool(
     trimmed: &str,
     importance: f64,
     similarity_threshold: f64,
+    content_scope: &str,
 ) -> Result<MergeOutcome> {
     let mut tx = pool
         .begin()
         .await
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-    let outcome = merge_in_tx(
+    let outcome = merge_in_tx_scoped(
         &mut tx,
         role_id,
         scene_id,
         trimmed,
         importance,
         similarity_threshold,
+        content_scope,
     )
     .await?;
     tx.commit()
@@ -124,13 +155,14 @@ pub async fn merge_long_term_memory_line(
 
     match conn {
         TxOrPool::Tx(tx) => {
-            merge_in_tx(
+            merge_in_tx_scoped(
                 tx,
                 role_id,
                 scene_id,
                 trimmed,
                 importance,
                 similarity_threshold,
+                "ordinary",
             )
             .await
         }
@@ -142,6 +174,50 @@ pub async fn merge_long_term_memory_line(
                 trimmed,
                 importance,
                 similarity_threshold,
+                "ordinary",
+            )
+            .await
+        }
+    }
+}
+
+/// Scoped variant used by Chat Pro adult turns. The universal memory API keeps
+/// writing to `ordinary`.
+pub async fn merge_long_term_memory_line_scoped(
+    conn: TxOrPool<'_>,
+    role_id: &str,
+    scene_id: &str,
+    content: &str,
+    importance: f64,
+    similarity_threshold: f64,
+    content_scope: &str,
+) -> Result<MergeOutcome> {
+    let trimmed = content.trim();
+    if importance <= 0.0 || trimmed.is_empty() {
+        return Ok(MergeOutcome::Skipped);
+    }
+    match conn {
+        TxOrPool::Tx(tx) => {
+            merge_in_tx_scoped(
+                tx,
+                role_id,
+                scene_id,
+                trimmed,
+                importance,
+                similarity_threshold,
+                content_scope,
+            )
+            .await
+        }
+        TxOrPool::Pool(pool) => {
+            merge_in_pool(
+                pool,
+                role_id,
+                scene_id,
+                trimmed,
+                importance,
+                similarity_threshold,
+                content_scope,
             )
             .await
         }

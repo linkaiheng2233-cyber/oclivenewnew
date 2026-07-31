@@ -1,9 +1,9 @@
-// @vitest-environment jsdom
-import { afterEach, describe, expect, it } from 'vitest'
 import {
   isChatStreamEnabled,
   setChatStreamEnabled,
 } from '@oclive/shared/utils/chatStreamSettings'
+// @vitest-environment jsdom
+import { afterEach, describe, expect, it } from 'vitest'
 
 describe('chatStreamSettings', () => {
   afterEach(() => {

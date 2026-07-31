@@ -1,12 +1,12 @@
 <script setup lang="ts">
+import { readRoleAssetBytes, resolveRoleAssetPath } from '@oclive/shared/api'
+import {
+  emotionAssetCandidates,
+  emotionToEmoji,
+} from '@oclive/shared/utils/emotion-assets'
 import { convertFileSrc } from '@tauri-apps/api/core'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { readRoleAssetBytes, resolveRoleAssetPath } from '@oclive/shared/api'
-import {
-  emotionToAssetFilename,
-  emotionToEmoji,
-} from '@oclive/shared/utils/emotion-assets'
 
 const props = defineProps<{
   roleId: string
@@ -37,24 +37,6 @@ function revokeBlob(): void {
     URL.revokeObjectURL(portraitBlobUrl.value)
     portraitBlobUrl.value = null
   }
-}
-
-function emotionAssetCandidates(key: string): string[] {
-  const primary = emotionToAssetFilename(key)
-  const out = new Set<string>()
-  const pushExpanded = (file: string) => {
-    const idx = file.lastIndexOf('.')
-    const base = idx >= 0 ? file.slice(0, idx) : file
-    for (const ext of ['png', 'jpg', 'jpeg', 'webp'])
-      out.add(`${base}.${ext}`)
-  }
-  pushExpanded(primary)
-  if (key === 'neutral') {
-    pushExpanded('neutral.png')
-  }
-  pushExpanded('normal.png')
-  pushExpanded('neutral.png')
-  return Array.from(out)
 }
 
 async function tryLoadBytes(roleId: string, rel: string, filename: string, gen: number): Promise<boolean> {
@@ -149,7 +131,9 @@ onBeforeUnmount(() => {
       >
       <span v-else class="cast-portrait__emoji" aria-hidden="true">{{ fallbackEmoji }}</span>
     </div>
-    <p class="cast-portrait__name">{{ name }}</p>
+    <p class="cast-portrait__name">
+      {{ name }}
+    </p>
   </aside>
 </template>
 

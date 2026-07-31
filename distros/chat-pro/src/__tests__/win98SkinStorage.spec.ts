@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 const SKIN_KEY = 'oclive-runtime-skin'
 const UNLOCK_KEY = 'oclive-easteregg-unlocked'
 
-describe('Win98 skin storage contract', () => {
+describe('win98 skin storage contract', () => {
   afterEach(() => {
     localStorage.removeItem(SKIN_KEY)
     localStorage.removeItem(UNLOCK_KEY)
@@ -18,7 +18,7 @@ describe('Win98 skin storage contract', () => {
     expect(document.documentElement.getAttribute('data-skin')).toBe('win98')
   })
 
-  it('Konami unlock flag is separate from skin enabled', () => {
+  it('konami unlock flag is separate from skin enabled', () => {
     localStorage.setItem(UNLOCK_KEY, '1')
     expect(localStorage.getItem(UNLOCK_KEY)).toBe('1')
     expect(localStorage.getItem(SKIN_KEY)).toBeNull()

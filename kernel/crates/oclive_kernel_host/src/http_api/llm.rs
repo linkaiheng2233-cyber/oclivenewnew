@@ -1,8 +1,9 @@
 use super::{api_error, ApiError};
 use crate::models::dto::RoleInfo;
 use crate::service::{
-    get_global_ollama_model_impl, get_llm_user_settings_impl, list_cloud_models_impl,
-    list_ollama_models_impl, probe_cloud_llm_impl, save_llm_user_settings_impl,
+    activate_local_lora_adapter_impl, delete_local_lora_adapter_impl, get_global_ollama_model_impl,
+    get_llm_user_settings_impl, list_cloud_models_impl, list_ollama_models_impl,
+    probe_cloud_llm_impl, reload_llm_user_env_impl, save_llm_user_settings_impl,
     set_global_ollama_model_impl, set_session_llm_model_impl, GlobalOllamaModelDto,
     ListCloudModelsRequest, LlmUserSettingsDto, SaveLlmUserSettingsRequest,
     SetGlobalOllamaModelRequest, SetSessionLlmModelRequest,
@@ -10,6 +11,9 @@ use crate::service::{
 use crate::state::AppState;
 use axum::extract::{Query, State};
 use axum::Json;
+use oclive_kernel_types::models::{
+    ActivateLocalLoraAdapterRequest, DeleteLocalLoraAdapterRequest, LocalLoraAdapterDto,
+};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
@@ -38,14 +42,12 @@ pub(crate) struct OllamaModelsQuery {
 pub(crate) async fn llm_reload_route(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<LlmReloadResponse>, ApiError> {
-    state.mark_user_llm_env_dirty();
-    crate::domain::user_llm_env::apply_user_llm_env(state.as_ref())
+    let provider = reload_llm_user_env_impl(state.as_ref())
         .await
         .map_err(|e| {
             let k = e.kernel_error_body();
             api_error(axum::http::StatusCode::INTERNAL_SERVER_ERROR, k)
         })?;
-    let provider = state.user_llm_provider.read().clone();
     Ok(Json(LlmReloadResponse { ok: true, provider }))
 }
 
@@ -73,6 +75,32 @@ pub(crate) async fn llm_user_settings_post_route(
             api_error(axum::http::StatusCode::BAD_REQUEST, k)
         })?;
     Ok(Json(info))
+}
+
+pub(crate) async fn llm_lora_activate_route(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<ActivateLocalLoraAdapterRequest>,
+) -> Result<Json<Option<LocalLoraAdapterDto>>, ApiError> {
+    activate_local_lora_adapter_impl(state.as_ref(), &req)
+        .await
+        .map(Json)
+        .map_err(|error| {
+            let body = error.kernel_error_body();
+            api_error(axum::http::StatusCode::BAD_REQUEST, body)
+        })
+}
+
+pub(crate) async fn llm_lora_delete_route(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<DeleteLocalLoraAdapterRequest>,
+) -> Result<Json<LlmProbeResponse>, ApiError> {
+    delete_local_lora_adapter_impl(state.as_ref(), &req)
+        .await
+        .map(|_| Json(LlmProbeResponse { ok: true }))
+        .map_err(|error| {
+            let body = error.kernel_error_body();
+            api_error(axum::http::StatusCode::BAD_REQUEST, body)
+        })
 }
 
 pub(crate) async fn llm_probe_cloud_route(

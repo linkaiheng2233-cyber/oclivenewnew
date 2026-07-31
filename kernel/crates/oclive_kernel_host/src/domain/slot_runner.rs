@@ -282,7 +282,10 @@ impl SlotRunner {
         )
     }
 
-    /// Deep prefix-cache segment builder (builtin only; directory/remote prompt backends use [`build_prompt`](Self::build_prompt)).
+    /// Stable prefix-cache segment builder for Fast/Deep turns.
+    ///
+    /// This is builtin-only; orchestration must keep directory/remote prompt backends on
+    /// [`build_prompt`](Self::build_prompt) so plugin prompt contracts are not bypassed.
     pub fn build_prompt_segments(
         pl: &ResolvedRolePlugins,
         input: &PromptInput<'_>,
@@ -296,7 +299,7 @@ impl SlotRunner {
         )
     }
 
-    async fn generate_llm_single(
+    pub(crate) async fn generate_llm_single(
         llm: &Arc<dyn LlmClient>,
         ollama_model: &str,
         prompt: &str,
@@ -305,7 +308,7 @@ impl SlotRunner {
         llm.generate_with_opts(ollama_model, prompt, opts).await
     }
 
-    async fn generate_llm_stream_single(
+    pub(crate) async fn generate_llm_stream_single(
         llm: &Arc<dyn LlmClient>,
         ollama_model: &str,
         prompt: &str,

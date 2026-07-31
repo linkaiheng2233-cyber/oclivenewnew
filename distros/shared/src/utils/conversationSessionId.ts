@@ -10,7 +10,7 @@ export function conversationSessionId(
   if (!sid)
     return manifestRoleId.slice(0, MAX_TOTAL_CHARS)
   const safe = sid
-    .replace(/[^a-zA-Z0-9_-]/g, '_')
+    .replace(/[^\w-]/g, '_')
     .slice(0, MAX_SUFFIX_CHARS)
   const out = `${manifestRoleId}__sess__${safe}`
   return out.slice(0, MAX_TOTAL_CHARS)

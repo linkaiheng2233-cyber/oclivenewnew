@@ -24,9 +24,9 @@
 |------|------|
 | 润色规则 · remote 后处理器 | 把响应用 `response` 字段（须 **`reply`**） |
 | `config.json` 已文档化开关 | 在 Vue 层二次改写绕过内核 |
-| Phase2 已交付行为扩展 | 复制 [REPLY_POST_PROCESSOR_DESIGN_REPORT](../../../handoff/REPLY_POST_PROCESSOR_DESIGN_REPORT.md) 全文进 PR |
+| 现行行为以 RFC、MODULE_MAP 与源码为准 | 复制历史 Phase 报告全文进 PR |
 
-设计史料：[USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2](../../../handoff/USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md) · [REPLY_POST_PROCESS_POLISH_SCOPE](../../../handoff/REPLY_POST_PROCESS_POLISH_SCOPE.md)。
+契约：[RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR](../../../creator-docs/rfc/RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md) · [MODULE_MAP](../../../handoff/MODULE_MAP_AND_HANDOFF.md)。
 
 ---
 

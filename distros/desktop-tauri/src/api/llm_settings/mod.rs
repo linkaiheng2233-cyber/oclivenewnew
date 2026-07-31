@@ -17,6 +17,10 @@ pub use oclive_kernel_host::service::{
     GlobalOllamaModelDto, LlmUserSettingsDto, SaveLlmUserSettingsRequest,
     SetGlobalOllamaModelRequest,
 };
+pub use oclive_kernel_types::models::{
+    ActivateLocalLoraAdapterRequest, DeleteLocalLoraAdapterRequest, ImportLocalLoraAdapterRequest,
+    LocalLoraAdapterDto,
+};
 
 #[tauri::command]
 pub async fn get_llm_user_settings(
@@ -68,6 +72,37 @@ pub async fn import_gguf_to_ollama(
     req: ImportGgufToOllamaRequest,
 ) -> Result<String, crate::api::error::CommandError> {
     commands::import_gguf_to_ollama(state, req).await
+}
+
+#[tauri::command]
+pub async fn import_local_lora_adapter(
+    state: tauri::State<'_, oclive_kernel_host::state::SharedAppState>,
+    req: ImportLocalLoraAdapterRequest,
+) -> Result<LocalLoraAdapterDto, crate::api::error::CommandError> {
+    commands::import_local_lora_adapter(state, req).await
+}
+
+#[tauri::command]
+pub async fn activate_local_lora_adapter(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, oclive_kernel_host::state::SharedAppState>,
+    adapter_id: Option<String>,
+    adult_content_acknowledged: bool,
+) -> Result<Option<LocalLoraAdapterDto>, crate::api::error::CommandError> {
+    let req = ActivateLocalLoraAdapterRequest {
+        adapter_id,
+        adult_content_acknowledged,
+    };
+    commands::activate_local_lora_adapter(app, state, req).await
+}
+
+#[tauri::command]
+pub async fn delete_local_lora_adapter(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, oclive_kernel_host::state::SharedAppState>,
+    req: DeleteLocalLoraAdapterRequest,
+) -> Result<(), crate::api::error::CommandError> {
+    commands::delete_local_lora_adapter(app, state, req).await
 }
 
 #[tauri::command]

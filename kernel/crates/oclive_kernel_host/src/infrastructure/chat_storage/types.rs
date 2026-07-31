@@ -12,11 +12,17 @@ pub struct AppendTurnResult {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TurnPersistInput {
+    /// Stable key for retry-safe appends. Omitted for ordinary foreground turns.
+    #[serde(default)]
+    pub idempotency_key: Option<String>,
     /// SQLite / session namespace (`srid`: manifest id or `role__sess__*`).
     pub session_id: String,
     pub role_id: String,
     pub scene_id: String,
     pub user_message: String,
+    /// Internal continuation/exit input; persisted for turn integrity but not rendered.
+    #[serde(default)]
+    pub user_message_hidden: bool,
     pub assistant_reply: String,
     pub reply_is_fallback: bool,
     pub model_name: Option<String>,

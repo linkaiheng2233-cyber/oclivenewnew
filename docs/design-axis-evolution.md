@@ -2,7 +2,7 @@
 
 本文记录 **性格与人设相关设计思路的演进**，方便后来者与协作者理解「为什么现在这样设计」。
 
-**原则**：旧交接、路线图、`handoff/` 等材料 **不删**；若与当前产品语义不一致，以 **[personality-archive-notes.md](./personality-archive-notes.md)**、**[roles/README_MANIFEST.md](../roles/README_MANIFEST.md)** 与 **源码** 为准，旧文仅作历史参考。
+**原则**：旧交接、路线图、`handoff/` 等材料 **不删**；若与当前产品语义不一致，以 **[personality-archive-notes.md](./personality-archive-notes.md)**、**[ROLE_PACK_SPEC.md](../creator-docs/role-pack/ROLE_PACK_SPEC.md)** 与 **源码** 为准，旧文仅作历史参考。
 
 ---
 
@@ -27,5 +27,5 @@
 ## 相关入口
 
 - [personality-archive-notes.md](./personality-archive-notes.md) — 轴心定义与三应用分工  
-- [roles/README_MANIFEST.md](../roles/README_MANIFEST.md) — `default_personality`、`evolution` 字段说明  
+- [ROLE_PACK_SPEC.md](../creator-docs/role-pack/ROLE_PACK_SPEC.md) — `meta.personality`、`evolution` 与迁移字段说明
 - [creator-docs/getting-started/CREATOR_WORKFLOW.md](../creator-docs/getting-started/CREATOR_WORKFLOW.md) — 创作者工作流中的档案说明  

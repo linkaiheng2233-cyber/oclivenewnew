@@ -12,10 +12,12 @@ mod tests {
 
     fn sample_turn(session: &str) -> TurnPersistInput {
         TurnPersistInput {
+            idempotency_key: None,
             session_id: session.into(),
             role_id: "trait-test".into(),
             scene_id: "default".into(),
             user_message: "hello".into(),
+            user_message_hidden: false,
             assistant_reply: "hi there".into(),
             reply_is_fallback: false,
             model_name: None,

@@ -8,10 +8,10 @@ import {
   uninstallPluginFromMarket,
   updatePluginFromMarket,
 } from '@oclive/shared/api'
-import { showPluginInstallReviewHint } from '@oclive/shared/composables/usePluginInstallReviewHint'
 import { useAppToast } from '@oclive/shared/composables/useAppToast'
-import { useUiStore } from '../uiStore'
+import { showPluginInstallReviewHint } from '@oclive/shared/composables/usePluginInstallReviewHint'
 import { usePluginStore } from '../pluginStore'
+import { useUiStore } from '../uiStore'
 
 const SHARE_URL_STORAGE_KEY = 'oclive-plugin-market-share-url'
 

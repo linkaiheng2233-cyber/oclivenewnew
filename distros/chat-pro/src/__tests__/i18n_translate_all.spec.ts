@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 
-import { createI18n } from 'vue-i18n'
-import { describe, expect, it } from 'vitest'
 import enUS from '@oclive/shared/i18n/locales/en-US'
 import zhCN from '@oclive/shared/i18n/locales/zh-CN'
+import { describe, expect, it } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
 function collectPaths(value: unknown, path: string, out: string[]): void {
   if (typeof value === 'string') {
@@ -13,6 +13,18 @@ function collectPaths(value: unknown, path: string, out: string[]): void {
   if (value && typeof value === 'object' && !Array.isArray(value)) {
     for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
       collectPaths(v, path ? `${path}.${k}` : k, out)
+    }
+  }
+}
+
+function collectMessages(value: unknown, path: string, out: Array<[string, string]>): void {
+  if (typeof value === 'string') {
+    out.push([path, value])
+    return
+  }
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      collectMessages(v, path ? `${path}.${k}` : k, out)
     }
   }
 }
@@ -41,6 +53,15 @@ describe('i18n translate all keys', () => {
         }
       }
       expect(failures, failures.join('\n')).toEqual([])
+    })
+
+    it(`keeps ${locale} messages free of HTML-like markup`, () => {
+      const messages: Array<[string, string]> = []
+      collectMessages(catalog, '', messages)
+      const htmlMessages = messages
+        .filter(([, message]) => /<\/?[a-z][^>]*>/i.test(message))
+        .map(([path, message]) => `${path}: ${message}`)
+      expect(htmlMessages, htmlMessages.join('\n')).toEqual([])
     })
   }
 })

@@ -1,7 +1,7 @@
 import type { DirectoryPluginCatalogEntry } from '@oclive/shared/api'
+import { usePluginStore } from '@oclive/shared/stores/pluginStore'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { usePluginStore } from '@oclive/shared/stores/pluginStore'
 
 export interface UiSlotChoice {
   id: string

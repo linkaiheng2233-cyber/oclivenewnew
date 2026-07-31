@@ -1,10 +1,10 @@
 <script setup lang="ts">
+import { MAIN_SHELL_KEY } from '@oclive/shared/composables/mainShellKey'
+import { useDistroUxProfile } from '@oclive/shared/composables/useDistroUxProfile'
+import { useRoleStore } from '@oclive/shared/stores/roleStore'
 import { inject, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import HelpHint from '../shared/HelpHint.vue'
-import { useDistroUxProfile } from '@oclive/shared/composables/useDistroUxProfile'
-import { MAIN_SHELL_KEY } from '@oclive/shared/composables/mainShellKey'
-import { useRoleStore } from '@oclive/shared/stores/roleStore'
 
 const { t } = useI18n()
 const roleStore = useRoleStore()

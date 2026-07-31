@@ -307,7 +307,7 @@ cargo run -p oclive-cli -- doctor --fix
 cargo run -p oclive-cli -- doctor --fix --yes
 ```
 
-检查 Rust/Cargo、C++ 工具链、系统内存、磁盘剩余、Ollama（`http://127.0.0.1:11434/api/tags`）、GitHub 连通、工作区可写。在 **oclivenewnew 根**且存在 `distros/chat-pro/roles/*/pipeline.ocblueprint` 时，额外三项 v2 蓝图检查：**`blueprint_file_format`**（文件存在且 JSON 合法）、**`slot_registry_llm`**（至少一个 `type: llm`）、**`slot_position_unique`**（同 type 下 `position` 不重复）。`--fix` 可对 Rust（`rustup update stable`）、Ollama（尝试启动 serve）等项自动修复。存在 **fail** 项时退出码非 0。JSON Schema：`kernel/crates/oclive-cli/schemas/oclive_doctor_report.schema.json`。
+检查 Rust/Cargo、C++ 工具链、系统内存、磁盘剩余、Ollama（`http://127.0.0.1:11434/api/tags`）、GitHub 连通、工作区可写。在 **oclivenewnew 根**且存在 `distros/chat-pro/roles/*/pipeline.ocblueprint` 时，按 `schema_version` 精确分派 v2/v3/v4，并额外执行三项蓝图检查：**`blueprint_file_format`**（文件存在且 JSON 合法）、**`slot_registry_llm`**（至少一个 `type: llm`）、**`slot_position_unique`**（同 type 下 `position` 不重复）。`--fix` 可对 Rust（`rustup update stable`）、Ollama（尝试启动 serve）等项自动修复。存在 **fail** 项时退出码非 0。JSON Schema：`kernel/crates/oclive-cli/schemas/oclive_doctor_report.schema.json`。
 
 **`doctor config-resolve`**（六槽有效 backends + 来源链；**默认**走 `oclive_kernel_runtime::resolve_session_plugin_backends` 纯解析 + 磁盘角色包，**无** SQLite / Axum / Tauri）：
 
@@ -320,6 +320,19 @@ cargo run -p oclive-cli --features diagnostics-host -- doctor config-resolve mum
 ```
 
 `--json` 时 **stdout 仅输出一个 JSON 文档**；人类可读模式的标题行走 stderr。依赖边界见 [COMPATIBILITY.md](../COMPATIBILITY.md) · [`doctor_config_resolve.rs`](../../kernel/crates/oclive-cli/src/doctor_config_resolve.rs) · runtime SSOT [`plugin_resolution.rs`](../../kernel/crates/oclive_kernel_runtime/src/domain/plugin_resolution.rs)。
+
+**`doctor execution-plan`**（v4 扩展、Provider 候选、权限/依赖和跨发行版降级；只读，不启动插件）：
+
+```bash
+cargo run -p oclive-cli --features diagnostics-host -- doctor execution-plan mumu --json
+cargo run -p oclive-cli --features diagnostics-host -- doctor execution-plan my-role \
+  -o ./distros/chat-pro/roles \
+  --app-data-dir ./tmp/app-data \
+  --distro-profile ./distros/desktop-tauri/resources/distro-profiles/theater.oclive.toml \
+  --json
+```
+
+该命令因复用宿主角色解析、Capability Registry 与 Plan Compiler 而显式要求 `diagnostics-host` feature；默认 CLI 依赖面保持轻量。输出中的 `ExecutionPlan` 只存在于内存，不写回 `pipeline.ocblueprint`；`resource_coordination: not_evaluated` 且省略 `resource_plan` 表示纯编译没有探测设备。桌面诊断才会刷新 Resource Coordinator 并附上只读候选资源计划。无 Provider 或权限时，必需扩展为 `blocked`，可选扩展为 `degraded`。
 
 ### `test --oocp`（本地 OOCP 闭环）
 
@@ -338,7 +351,7 @@ cargo run -p oclive-cli -- test --oocp -o .
 在仓库根目录：
 
 ```bash
-# 默认：v2 蓝图（pipeline.ocblueprint schema_version 2）
+# 蓝图角色包（按 schema_version 精确分派）
 cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/mumu --host-version 0.2.0
 # legacy manifest/settings 包
 cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/legacy-example --profile legacy
@@ -346,18 +359,23 @@ cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/legacy-example
 cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/legacy-example --profile robot-soul
 # 创作者 profile：仅 meta 子集 + prompts/（不校验 slot_registry / runtime_config）
 cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/mumu --profile creator
-cargo run -p oclive-cli -- pack create -o ./out/my-role --flat --id com.example.demo --name Demo --format-blueprint-v2
+# Portable Core：跨发行版基础人格 + 七张默认情绪图
+cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/mumu --profile portable-core
+cargo run -p oclive-cli -- pack validate-persona ./exports/mumu.ocpersona
+cargo run -p oclive-cli -- pack validate-memory ./exports/mumu.ocmemory
+cargo run -p oclive-cli -- pack create -o ./out/my-role --flat --id com.example.demo --name Demo --format-blueprint-v4
 cargo run -p oclive-cli -- pack publish ./out/my-role -o ./dist/com.example.demo-0.1.0.oclivepack
 ```
 
-- **`validate`（默认 v2/v3）**：校验 `pipeline.ocblueprint`（`meta`、`slot_registry`、至少一个 `type: llm` 等）；**v3** 含 `runtime_config` / `pipeline`；**v2** 含 `runtime_config` 时仅警告。见 [`ROLE_PACK_SPEC.md`](../role-pack/ROLE_PACK_SPEC.md)。
+- **`validate`（精确 v2/v3/v4 分派）**：校验 `pipeline.ocblueprint`（`meta`、`slot_registry`、至少一个 `type: llm` 等）；**v4** 是 Stable，**v3** 为冻结的双核 Beta，**v2** 含 `runtime_config` 时仅警告。见 [`ROLE_PACK_SPEC.md`](../role-pack/ROLE_PACK_SPEC.md)。
 - **`validate --profile creator`**：仅角色包（`meta` 创作者子集 + **`prompts/`**）；不校验 `slot_registry` / `runtime_config`。见 [ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md)。
 - **`validate --profile legacy`**：校验 `manifest.json` / `settings.json` 合并、`plugin_backends`、`min_runtime_version` 与 `--host-version` 等（旧包路径）。
 - **`validate --profile robot-soul`**：在 **legacy** 校验通过后追加 RobotSoulPack 规则（见 ROLE_PACK_SPEC §6）。
-- **`create`**：生成最小可校验目录；推荐 **`--format-blueprint-v2`**（写入 `pipeline.ocblueprint`）；`--flat` 时 `-o` 即为角色根。
-- **`publish`**：将角色目录打成 **ZIP**，扩展名 **`.oclivepack`**；ZIP 内顶层文件夹名为包内 **`meta.id`**（v2）或 **`manifest.id`**（legacy）。
+- **`validate --profile portable-core`**：校验 v2/v3/v4 蓝图，以及非空 `core_personality.txt`、启用的 `portrait_catalog` 和七个固定默认情绪图片 ID；发行版增强能力不在此 profile 内。
+- **`create`**：生成最小可校验目录；Stable 新包推荐 **`--format-blueprint-v4`**，`--format-blueprint-v2` 仅保留兼容；`--flat` 时 `-o` 即为角色根。
+- **`publish`**：将角色目录打成 **ZIP**，扩展名 **`.oclivepack`**；ZIP 内顶层文件夹名为包内 **`meta.id`**（v2/v3/v4）或 **`manifest.id`**（legacy）。
 
-**JSON Schema**（IDE / `ajv` 等）：`kernel/crates/oclive-cli/schemas/pipeline.ocblueprint.v2.schema.json`（v2）；legacy 见 `role_pack_manifest.schema.json`、`role_pack_settings.schema.json`、`role_pack_index.schema.json`。
+**JSON Schema**（IDE / `ajv` 等）：`kernel/crates/oclive-cli/schemas/pipeline.ocblueprint.v2.schema.json`、`pipeline.ocblueprint.v3.schema.json`、`pipeline.ocblueprint.v4.schema.json`；legacy 见 `role_pack_manifest.schema.json`、`role_pack_settings.schema.json`、`role_pack_index.schema.json`。
 
 ---
 

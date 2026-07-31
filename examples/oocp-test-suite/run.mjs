@@ -48,8 +48,19 @@ function defaultRolePath() {
   return join(chatRolesRoot(), 'mumu')
 }
 
+function withApiToken(init = {}) {
+  const headers = new Headers(init.headers || {})
+  const token = env('OCLIVE_API_TOKEN', '')
+  if (token) headers.set('x-oclive-api-token', token)
+  return { ...init, headers }
+}
+
+function apiFetch(url, init) {
+  return fetch(url, withApiToken(init))
+}
+
 async function fetchJson(url, init) {
-  const res = await fetch(url, init)
+  const res = await apiFetch(url, init)
   const text = await res.text()
   let body
   try {
@@ -66,7 +77,7 @@ async function scenarioHandlers(base, rolePath) {
 
   return {
     S0: async () => {
-      const r = await fetch(`${base}/health`)
+      const r = await apiFetch(`${base}/health`)
       const t = await r.text()
       if (!r.ok) throw new Error(`health status ${r.status}`)
       if (t.trim() !== 'ok') throw new Error(`health body expected ok, got ${JSON.stringify(t)}`)
@@ -247,14 +258,20 @@ async function scenarioHandlers(base, rolePath) {
       if (typeof body?.timestamp !== 'number') throw new Error(`S11 timestamp`)
     },
     S16_visual_presentation_fields: async () => {
-      const { res: mumuRes, body: mumuBody } = await fetchJson(`${base}/chat`, {
+      const visualDisabledRole = join(__dirname, 'fixtures', 'visual-disabled')
+      const { res: disabledRes, body: disabledBody } = await fetchJson(`${base}/chat`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ role_path: mumu, message: 'OOCP S16 legacy mumu' }),
+        body: JSON.stringify({
+          role_path: visualDisabledRole,
+          message: 'OOCP S16 visual disabled',
+        }),
       })
-      if (!mumuRes.ok) throw new Error(`S16 mumu status ${mumuRes.status}`)
-      if (mumuBody?.visual_state_id != null) {
-        throw new Error(`S16 mumu should omit visual_state_id, got ${JSON.stringify(mumuBody?.visual_state_id)}`)
+      if (!disabledRes.ok) {
+        throw new Error(`S16 disabled status ${disabledRes.status} ${JSON.stringify(disabledBody)}`)
+      }
+      if (disabledBody?.visual_state_id != null || disabledBody?.performance_directive != null) {
+        throw new Error(`S16 disabled fixture should omit visual fields: ${JSON.stringify(disabledBody).slice(0, 300)}`)
       }
       const catalogRole = join(__dirname, 'fixtures', 'portrait-catalog')
       const { res: catRes, body: catBody } = await fetchJson(`${base}/chat`, {
@@ -274,7 +291,7 @@ async function scenarioHandlers(base, rolePath) {
       }
     },
     S15_chat_stream_sse: async () => {
-      const res = await fetch(`${base}/chat/stream`, {
+      const res = await apiFetch(`${base}/chat/stream`, {
         method: 'POST',
         headers: {
           'content-type': 'application/json',

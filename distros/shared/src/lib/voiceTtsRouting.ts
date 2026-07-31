@@ -1,10 +1,10 @@
-export type VoiceTtsProfileRouting = {
+export interface VoiceTtsProfileRouting {
   engine?: string
   synth_provider?: string
   sidecar_endpoint?: string
 }
 
-export type VoiceTtsRuntimeRouting = {
+export interface VoiceTtsRuntimeRouting {
   tts_profile: string
   tts_engine: string
   synth_provider: string

@@ -7,9 +7,6 @@ import type {
   SessionMeta,
   StoredMessage,
 } from '@oclive/shared/api/chatStorage'
-import { open } from '@tauri-apps/plugin-dialog'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 import {
   deleteChatMessage,
   deleteRoleChats,
@@ -34,6 +31,9 @@ import { listRoles } from '@oclive/shared/api/role'
 import { formatStorageBytes } from '@oclive/shared/components/settings/chat-storage/chatStorageFormat'
 import { useAppToast } from '@oclive/shared/composables/useAppToast'
 import { downloadBase64File, downloadTextFile } from '@oclive/shared/utils/download'
+import { open } from '@tauri-apps/plugin-dialog'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 type Level = 'roles' | 'scenes' | 'sessions' | 'messages'
 

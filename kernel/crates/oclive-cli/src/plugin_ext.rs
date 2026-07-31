@@ -4,7 +4,7 @@ use anyhow::{bail, Context, Result};
 use clap::Parser;
 use oclive_validation::{
     apply_slot_attachments_to_registry, compute_plugin_install_order,
-    load_blueprint_v2_for_role_dir, parse_plugin_dependencies,
+    load_blueprint_slot_registry_for_role_dir, parse_plugin_dependencies,
     parse_slot_attachments_from_manifest_json, write_role_pack_blueprint_slot_registry,
     PIPELINE_BLUEPRINT_FILENAME,
 };
@@ -137,9 +137,8 @@ fn auto_assemble_slot_attachment(role_dir: &Path, manifest_raw: &str) -> Result<
     if attachments.is_empty() {
         return Ok(vec![]);
     }
-    let loaded = load_blueprint_v2_for_role_dir(role_dir, ASSEMBLE_HOST_VERSION)
+    let mut reg = load_blueprint_slot_registry_for_role_dir(role_dir, ASSEMBLE_HOST_VERSION)
         .map_err(|e| anyhow::anyhow!(e.join("; ")))?;
-    let mut reg = loaded.slot_registry;
     let notes = apply_slot_attachments_to_registry(&mut reg, plugin_id, &attachments);
     write_role_pack_blueprint_slot_registry(role_dir, &reg, ASSEMBLE_HOST_VERSION)
         .map_err(|e| anyhow::anyhow!(e.join("; ")))?;

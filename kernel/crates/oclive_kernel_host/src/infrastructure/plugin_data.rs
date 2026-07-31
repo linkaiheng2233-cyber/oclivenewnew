@@ -1,21 +1,24 @@
 //! Plugin private configuration: `{app_data}/plugin-data/{plugin_id}/config.json`.
 
-use crate::infrastructure::directory_plugins::{OclivePluginManifest, UiSchemaField};
+use crate::infrastructure::directory_plugins::{
+    validate_plugin_id, OclivePluginManifest, UiSchemaField,
+};
 use crate::state::AppState;
 use serde_json::{json, Map, Value};
 use std::fs;
 use std::path::PathBuf;
 
-fn plugin_data_dir(state: &AppState, plugin_id: &str) -> PathBuf {
-    state
+fn plugin_data_dir(state: &AppState, plugin_id: &str) -> Result<PathBuf, String> {
+    validate_plugin_id(plugin_id)?;
+    Ok(state
         .directory_plugins
         .app_data_dir()
         .join("plugin-data")
-        .join(plugin_id.trim())
+        .join(plugin_id))
 }
 
-fn config_path(state: &AppState, plugin_id: &str) -> PathBuf {
-    plugin_data_dir(state, plugin_id).join("config.json")
+fn config_path(state: &AppState, plugin_id: &str) -> Result<PathBuf, String> {
+    Ok(plugin_data_dir(state, plugin_id)?.join("config.json"))
 }
 
 fn default_object_from_schema(fields: &[UiSchemaField]) -> Value {
@@ -51,7 +54,9 @@ pub fn ensure_default_config_for_manifest(state: &AppState, manifest: &OclivePlu
     if schema.fields.is_empty() {
         return;
     }
-    let p = config_path(state, pid);
+    let Ok(p) = config_path(state, pid) else {
+        return;
+    };
     if p.exists() {
         return;
     }
@@ -67,7 +72,7 @@ pub fn ensure_default_config_for_manifest(state: &AppState, manifest: &OclivePlu
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 pub fn read_config_json(state: &AppState, plugin_id: &str) -> Result<Value, String> {
-    let p = config_path(state, plugin_id);
+    let p = config_path(state, plugin_id)?;
     if !p.is_file() {
         return Ok(json!({}));
     }
@@ -78,7 +83,7 @@ pub fn read_config_json(state: &AppState, plugin_id: &str) -> Result<Value, Stri
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 pub fn write_config_json(state: &AppState, plugin_id: &str, value: &Value) -> Result<(), String> {
-    let p = config_path(state, plugin_id);
+    let p = config_path(state, plugin_id)?;
     if let Some(parent) = p.parent() {
         fs::create_dir_all(parent).map_err(|e| e.to_string())?;
     }

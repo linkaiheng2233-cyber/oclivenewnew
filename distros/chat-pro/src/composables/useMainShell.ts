@@ -1,36 +1,36 @@
 import type { LocalePreference } from '@oclive/shared/i18n'
-import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 import {
   loadRole,
   OCLIVE_DEFAULT_RELATION_SENTINEL,
-  setUserRelation,
 } from '@oclive/shared/api'
+import { useAppToast } from '@oclive/shared/composables/useAppToast'
+import { useInteractionModeSettings } from '@oclive/shared/composables/useInteractionModeSettings'
+import { useRoleSnapshotPoll } from '@oclive/shared/composables/useKernelStatus'
+import { resolveOcliveShell } from '@oclive/shared/composables/useOcliveShell'
+import { usePluginEvents } from '@oclive/shared/composables/usePluginEvents'
+import { useProgressiveDisclosure } from '@oclive/shared/composables/useProgressiveDisclosure'
+import { useReturnFocusOnClose } from '@oclive/shared/composables/useReturnFocusOnClose'
+import { useSceneDestination } from '@oclive/shared/composables/useSceneDestination'
+import { useSceneTravelBars } from '@oclive/shared/composables/useSceneTravelBars'
+import { usePackUiTheme } from '@oclive/shared/composables/useTheme'
+import { useVoiceAutoTts } from '@oclive/shared/composables/useVoiceAutoTts'
 import { getLocalePreference } from '@oclive/shared/i18n'
 import { hostEventBus } from '@oclive/shared/lib/hostEventBus'
+import { useAdultInteractionStore } from '@oclive/shared/stores/adultInteractionStore'
 import { useChatStore } from '@oclive/shared/stores/chatStore'
 import { useDebugStore } from '@oclive/shared/stores/debugStore'
 import { usePluginMarketStore } from '@oclive/shared/stores/pluginMarketStore'
 import { usePluginStore } from '@oclive/shared/stores/pluginStore'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
 import { useUiStore } from '@oclive/shared/stores/uiStore'
+import { markPresetPickerDone } from '@oclive/shared/utils/presetRolePicker'
 import { buildRelationDropdownOptions } from '@oclive/shared/utils/relationOptions'
+import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useAppBootstrap } from './useAppBootstrap'
-import { useAppToast } from '@oclive/shared/composables/useAppToast'
-import { useRoleSnapshotPoll } from '@oclive/shared/composables/useKernelStatus'
 import { useMainShellChat } from './useMainShellChat'
 import { useMainShellHotkeys } from './useMainShellHotkeys'
 import { useMainShellWindows } from './useMainShellWindows'
-import { usePluginEvents } from '@oclive/shared/composables/usePluginEvents'
-import { useVoiceAutoTts } from '@oclive/shared/composables/useVoiceAutoTts'
-import { useReturnFocusOnClose } from '@oclive/shared/composables/useReturnFocusOnClose'
-import { useSceneDestination } from '@oclive/shared/composables/useSceneDestination'
-import { useSceneTravelBars } from '@oclive/shared/composables/useSceneTravelBars'
-import { usePackUiTheme } from '@oclive/shared/composables/useTheme'
-import { useProgressiveDisclosure } from '@oclive/shared/composables/useProgressiveDisclosure'
-import { useInteractionModeSettings } from '@oclive/shared/composables/useInteractionModeSettings'
-import { markPresetPickerDone } from '@oclive/shared/utils/presetRolePicker'
-import { resolveOcliveShell } from '@oclive/shared/composables/useOcliveShell'
 
 export const DebugPanel = defineAsyncComponent(() => import('@oclive/shared/components/dev-tools/DebugPanel.vue'))
 export const MarketView = defineAsyncComponent(() => import('../views/MarketView.vue'))
@@ -45,6 +45,7 @@ export const AutonomousSceneNotice = defineAsyncComponent(() => import('@oclive/
 
 export function useMainShell() {
   const roleStore = useRoleStore()
+  const adultStore = useAdultInteractionStore()
   usePackUiTheme()
   const chatStore = useChatStore()
   const debugStore = useDebugStore()
@@ -298,6 +299,7 @@ export function useMainShell() {
     latestRoleplayAside,
     sceneHistorySplitIndex,
     onSend,
+    onAdultAction,
   } = useMainShellChat({
     roleStore,
     uiStore,
@@ -319,6 +321,8 @@ export function useMainShell() {
         hostEventBus.emit('chat:set_input_draft', { text: text.trim() })
         return
       }
+      if (chatListLoading.value)
+        return
       void onSend({ content: text.trim() })
     },
   })
@@ -326,9 +330,12 @@ export function useMainShell() {
   useVoiceAutoTts({ showToast })
 
   async function onSwitchRole(nextRoleId: string) {
+    if (roleSwitching.value || !nextRoleId.trim() || nextRoleId === roleStore.currentRoleId)
+      return
     const savedLeftScroll = leftPaneRef.value?.scrollTop ?? 0
     try {
       roleSwitching.value = true
+      chatStore.cancelPendingSend()
       await roleStore.switchRole(nextRoleId)
       await chatStore.bootstrapChatForRole(nextRoleId)
       await pluginStore.syncDirectoryPluginBootstrap()
@@ -352,7 +359,13 @@ export function useMainShell() {
   }
 
   async function onChangeRelation(nextRelation: string) {
+    const roleId = roleStore.currentRoleId
     try {
+      const relationName
+        = relationOptions.value.find(r => r.id === nextRelation)?.name ?? nextRelation
+      const sceneId = uiStore.sceneId || 'default'
+      const endedAdultInteraction
+        = adultStore.sessionFor(roleId, sceneId).active
       const perScene = roleStore.roleInfo.identityBinding === 'per_scene'
       if (nextRelation === OCLIVE_DEFAULT_RELATION_SENTINEL) {
         if (perScene)
@@ -364,11 +377,17 @@ export function useMainShell() {
         await roleStore.setSceneUserRelation(uiStore.sceneId, nextRelation)
       }
       else {
-        const info = await setUserRelation(roleStore.currentRoleId, nextRelation)
-        roleStore.applyRoleInfo(info)
+        await roleStore.setGlobalUserRelation(nextRelation, sceneId)
       }
-      const relationName
-        = relationOptions.value.find(r => r.id === nextRelation)?.name ?? nextRelation
+      if (roleStore.currentRoleId !== roleId)
+        return
+      if (endedAdultInteraction) {
+        await chatStore.sendAdultAction(
+          'exit',
+          sceneId,
+          `用户身份已经切换为“${relationName}”。原身份下的互动已经结束；请从普通聊天状态开始，按照角色人设自然回应这次身份变化。`,
+        )
+      }
       const scopeKey = perScene ? 'app.toast.relationSetPerScene' : 'app.toast.relationSetGlobal'
       showToast('success', t(scopeKey, { name: relationName }))
     }
@@ -386,6 +405,17 @@ export function useMainShell() {
       await roleStore.loadRoles()
       await chatStore.bootstrapChatForRole(roleId)
       await debugStore.loadDebugData()
+      if (roleStore.roleInfo.adultExtensionAvailable) {
+        const accepted = window.confirm(
+          adultStore.confirmedAdult
+            ? String(t('settings.adult.importPrompt'))
+            : `${String(t('settings.adult.legalTitle'))}\n\n${String(t('settings.adult.legalBody'))}\n\n${String(t('settings.adult.importPrompt'))}`,
+        )
+        if (accepted) {
+          adultStore.confirmAndEnableGlobal()
+          adultStore.setRoleEnabled(roleId, true)
+        }
+      }
     }
     catch (err) {
       showToast('error', err instanceof Error ? err.message : String(err))
@@ -548,6 +578,7 @@ export function useMainShell() {
     progressive,
     onInteractionModeChange,
     onSend,
+    onAdultAction,
     onSwitchRole,
     onChangeRelation,
     onPackImported,

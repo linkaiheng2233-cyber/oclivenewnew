@@ -1,6 +1,6 @@
 import type { UserRelationDto } from '@oclive/shared/api'
-import { i18n } from '@oclive/shared/i18n/index'
 import { OCLIVE_DEFAULT_RELATION_SENTINEL } from '@oclive/shared/api'
+import { i18n } from '@oclive/shared/i18n/index'
 
 export interface RelationOptionRow { id: string, name: string }
 

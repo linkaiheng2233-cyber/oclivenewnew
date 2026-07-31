@@ -1,9 +1,9 @@
 import type { DesktopKernelMode } from '@oclive/shared/api/kernel'
-import { onBeforeUnmount, onMounted } from 'vue'
 import { fetchRoleSnapshot } from '@oclive/shared/api/kernel'
+import { useChatStore } from '@oclive/shared/stores/chatStore'
 import { useKernelConnectionStore } from '@oclive/shared/stores/kernelConnectionStore'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
-import { useChatStore } from '@oclive/shared/stores/chatStore'
+import { onBeforeUnmount, onMounted } from 'vue'
 
 const POLL_MS_VISIBLE = 8000
 const POLL_MS_HIDDEN = 60000
@@ -20,6 +20,7 @@ export function useRoleSnapshotPoll() {
   const chatStore = useChatStore()
   const kernelConn = useKernelConnectionStore()
   let timer: ReturnType<typeof setInterval> | undefined
+  let pollGeneration = 0
 
   async function tick() {
     if (chatStore.isLoading) {
@@ -32,10 +33,14 @@ export function useRoleSnapshotPoll() {
     if (!kernelConn.status?.healthy) {
       return
     }
-    const snap = await fetchRoleSnapshot(
-      roleId,
-      roleStore.roleInfo.userPresenceScene ?? roleStore.roleInfo.currentScene ?? undefined,
-    )
+    const sceneId = roleStore.roleInfo.userPresenceScene ?? roleStore.roleInfo.currentScene ?? undefined
+    const generation = ++pollGeneration
+    const snap = await fetchRoleSnapshot(roleId, sceneId)
+    if (generation !== pollGeneration
+      || roleStore.currentRoleId !== roleId
+      || (roleStore.roleInfo.userPresenceScene ?? roleStore.roleInfo.currentScene ?? undefined) !== sceneId) {
+      return
+    }
     if (!snap) {
       if (kernelConn.status?.healthy) {
         console.warn('[useKernelStatus] role snapshot poll returned empty', { roleId })
@@ -57,7 +62,9 @@ export function useRoleSnapshotPoll() {
     if (timer) {
       clearInterval(timer)
     }
-    timer = setInterval(() => { void tick() }, pollIntervalMs())
+    timer = setInterval(() => {
+      void tick()
+    }, pollIntervalMs())
   }
 
   function start() {
@@ -68,6 +75,7 @@ export function useRoleSnapshotPoll() {
   }
 
   function stop() {
+    pollGeneration += 1
     if (timer) {
       clearInterval(timer)
       timer = undefined

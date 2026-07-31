@@ -96,8 +96,8 @@ Optional text shaping after the LLM reply (`config.json` → `reply_post_process
 |---------|--------|
 | **Hold to talk** | Chat toolbar mic; default **V hold** when the window is focused and the input is not |
 | **ASR result** | Settings → Voice: send immediately or fill the input draft |
-| **TTS playback** | Enable voice expansion for auto-read; pick engine/profile in settings |
-| **Role voice hints** | Every role inherits the global TTS from settings; an optional pack `synth_profile` overrides only that role's speak jobs and must not rewrite global settings on role switch |
+| **TTS playback** | Enable global voice expansion and auto-read, then enable individual roles in the role list; pick engine/profile in settings |
+| **Role voice hints** | Auto-read requires both a per-role user toggle and that pack's `voice_profile.json`; an optional `synth_profile` overrides only that role's speak jobs and must not rewrite global settings on role switch |
 | **Platform** | Windows product path shipped; Linux/macOS profiles may return `unsupported_platform` |
 
 ---
@@ -133,7 +133,7 @@ Optional text shaping after the LLM reply (`config.json` → `reply_post_process
 ### 5.2 I switched to English but still see Chinese
 
 - **Plugins / packs** ship their own strings.  
-- **Residual UI** may still be tracked under checklist §A6 ([PRODUCT_AND_KERNEL_GAP_CHECKLIST](../../handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md)).  
+- **Residual UI** is tracked in the active [PRODUCT_LINE_TASK_BUCKETS.md](../../handoff/PRODUCT_LINE_TASK_BUCKETS.md) and debt inventory.
 - File an issue with **screenshot + version** for host UI gaps.
 
 ### 5.3 How do I remove a plugin?

@@ -2,7 +2,7 @@
 
 **A.I.Live — Pluggable Role Artery Loom** (engineering codename **oclive**). **Kernel integrator learning path:** [KERNEL_INTEGRATOR_LEARNING_PATH.md](KERNEL_INTEGRATOR_LEARNING_PATH.md)
 
-This page uses a **kernel-in-the-center** diagram. **v2** role packs use **`pipeline.ocblueprint`** (`meta`, **`slot_registry`**, optional **`groups`** for the architecture graph). Authoritative detail: **[PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)**, **[ROLE_PACK_SPEC.md](../../creator-docs/role-pack/ROLE_PACK_SPEC.md)**, **[RFC_ROLE_BLUEPRINT_V2.md](../../handoff/RFC_ROLE_BLUEPRINT_V2.md)**.
+This page uses a **kernel-in-the-center** diagram. **v2** role packs use **`pipeline.ocblueprint`** (`meta`, **`slot_registry`**, optional **`groups`** for the architecture graph). Authoritative detail: **[PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)** and **[ROLE_PACK_SPEC.md](../../creator-docs/role-pack/ROLE_PACK_SPEC.md)**. The historical v2 design record is archived as [RFC_ROLE_BLUEPRINT_V2.md](../../handoff/archive/RFC_ROLE_BLUEPRINT_V2.md).
 
 ---
 

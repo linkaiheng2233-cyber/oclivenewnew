@@ -4,6 +4,7 @@ import type {
   PluginUiSlotInfo,
   PluginUpdateInfo,
 } from '@oclive/shared/api'
+import type { InstalledSliceStore } from './installedSlice'
 import {
   checkPluginUpdates,
   extractPluginZip,
@@ -11,16 +12,27 @@ import {
   getDirectoryPluginCatalog,
   getPluginState,
 } from '@oclive/shared/api'
-import { setHostEventSubscribedEvents } from '@oclive/shared/lib/hostEventBus'
 import { useRoleStore } from '../roleStore'
 import {
   catalogEqual,
   clonePluginState,
-  refreshPromise,
+  getRefreshPromise,
   rolePluginStateEqual,
   setRefreshPromise,
 } from './constants'
-import type { InstalledSliceStore } from './installedSlice'
+
+const bootstrapRequestGenerationByRole = new Map<string, number>()
+let activeRefreshCount = 0
+
+function nextBootstrapGeneration(roleId: string): number {
+  const next = (bootstrapRequestGenerationByRole.get(roleId) ?? 0) + 1
+  bootstrapRequestGenerationByRole.set(roleId, next)
+  return next
+}
+
+function isCurrentBootstrapGeneration(roleId: string, generation: number): boolean {
+  return bootstrapRequestGenerationByRole.get(roleId) === generation
+}
 
 export function directoryState() {
   return {
@@ -45,44 +57,44 @@ export function directoryState() {
 }
 
 export const directoryActions = {
-  /** Update host event subscriptions and developer mode from bootstrap DTO (shared by slots, `refresh`, `sync`) */
+  /** Update developer mode and slot descriptors from bootstrap DTO (shared by slots, `refresh`, `sync`). */
   applyDirectoryBootstrap(this: DirectorySliceStore, boot: DirectoryPluginBootstrap) {
-    setHostEventSubscribedEvents(boot.subscribedHostEvents ?? [])
     this.developerMode = boot.developerMode ?? false
     this.bootstrapUiSlots = boot.uiSlots ?? []
   },
   /** After role switch or plugin enable change: update host events and developer mode (no catalog fetch) */
   async syncDirectoryPluginBootstrap(this: DirectorySliceStore) {
     const roleId = useRoleStore().currentRoleId
+    const generation = nextBootstrapGeneration(roleId)
+    // A bootstrap sync supersedes an older full refresh for the same role.
+    setRefreshPromise(roleId, null)
     try {
       const boot = await getDirectoryPluginBootstrap(roleId)
+      if (!isCurrentBootstrapGeneration(roleId, generation) || useRoleStore().currentRoleId !== roleId)
+        return
       this.applyDirectoryBootstrap(boot)
     }
     catch (e) {
-      this.error = e instanceof Error ? e.message : String(e)
+      if (isCurrentBootstrapGeneration(roleId, generation) && useRoleStore().currentRoleId === roleId)
+        this.error = e instanceof Error ? e.message : String(e)
     }
   },
   async refresh(this: DirectorySliceStore) {
-    if (refreshPromise) {
-      return refreshPromise
-    }
+    const roleId = useRoleStore().currentRoleId
+    const existing = getRefreshPromise(roleId)
+    if (existing)
+      return existing
+    const generation = nextBootstrapGeneration(roleId)
+    activeRefreshCount += 1
     this.loading = true
     this.error = null
     const promise = (async () => {
       try {
-        const roleId = useRoleStore().currentRoleId
         const [cat, bundle, boot] = await Promise.all([
           getDirectoryPluginCatalog(),
           getPluginState(roleId),
           getDirectoryPluginBootstrap(roleId),
         ])
-        this.pluginStateBundle = {
-          role: clonePluginState(bundle.role),
-          globalDefaults: clonePluginState(bundle.globalDefaults),
-        }
-        const st
-          = this.persistScope === 'role' ? bundle.role : bundle.globalDefaults
-        const nextState = clonePluginState(st)
         if (!catalogEqual(this.catalog, cat)) {
           this.catalog = cat
           this.slotOrderMemoBySlot = {}
@@ -101,20 +113,32 @@ export const directoryActions = {
           }
           this.catalogCandidatesBySlot = bySlot
         }
+        if (!isCurrentBootstrapGeneration(roleId, generation) || useRoleStore().currentRoleId !== roleId)
+          return
+        this.pluginStateBundle = {
+          role: clonePluginState(bundle.role),
+          globalDefaults: clonePluginState(bundle.globalDefaults),
+        }
+        const st
+          = this.persistScope === 'role' ? bundle.role : bundle.globalDefaults
+        const nextState = clonePluginState(st)
         if (!rolePluginStateEqual(this.pluginState, nextState)) {
           this.pluginState = nextState
         }
         this.applyDirectoryBootstrap(boot)
       }
       catch (e) {
-        this.error = e instanceof Error ? e.message : String(e)
+        if (isCurrentBootstrapGeneration(roleId, generation) && useRoleStore().currentRoleId === roleId)
+          this.error = e instanceof Error ? e.message : String(e)
       }
       finally {
-        this.loading = false
-        setRefreshPromise(null)
+        activeRefreshCount = Math.max(0, activeRefreshCount - 1)
+        this.loading = activeRefreshCount > 0
+        if (getRefreshPromise(roleId) === promise)
+          setRefreshPromise(roleId, null)
       }
     })()
-    setRefreshPromise(promise)
+    setRefreshPromise(roleId, promise)
     return promise
   },
   async checkPluginUpdatesFromRegistry(this: DirectorySliceStore) {
@@ -177,10 +201,10 @@ export interface DirectorySliceStore extends InstalledSliceStore {
   bootstrapUiSlots: PluginUiSlotInfo[]
   bootstrapEpoch: number
   slotReloadByPluginId: Record<string, number>
-  bumpPluginSlotReload(pluginIds?: readonly string[]): void
+  bumpPluginSlotReload: (pluginIds?: readonly string[]) => void
   pluginUpdateById: Record<string, PluginUpdateInfo>
   pluginUpdatesCheckLoading: boolean
   extractingPluginId: string | null
-  applyDirectoryBootstrap(boot: DirectoryPluginBootstrap): void
-  syncDirectoryPluginBootstrap(): Promise<void>
+  applyDirectoryBootstrap: (boot: DirectoryPluginBootstrap) => void
+  syncDirectoryPluginBootstrap: () => Promise<void>
 }

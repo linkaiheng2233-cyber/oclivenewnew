@@ -42,7 +42,7 @@
 
 ## 2. `ui.json`（角色包）
 
-- **位置**：角色包根目录，与 **`settings.json`**、**`manifest.json`** 并列（见 [distros/chat-pro/roles/README_MANIFEST.md](../../distros/chat-pro/roles/README_MANIFEST.md)）。
+- **位置**：角色包根目录，与 **`pipeline.ocblueprint`** 并列（见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)）。
 - **用途**：创作者定义 **推荐前端布局**：整壳插件、各官方插槽的插件顺序与可见性、主题与布局等。
 - **格式**：JSON，**机器可读 schema** 见 **[role-pack/ui.json.schema.json](../role-pack/ui.json.schema.json)**。
 
@@ -84,7 +84,16 @@
 
 ---
 
-## 6. `oclive_host_plugins.json`（可选）
+## 6. `adult_extension.json`（角色包可选 · Chat Pro）
+
+- **位置**：角色包根目录，与 `pipeline.ocblueprint` 并列。
+- **用途**：保存仅在成年确认、Chat Pro 全局开关和当前角色开关同时开启时加载的成人状态人设、对话指导、基础场景成人走向与节奏建议。
+- **兼容性**：不是通用基础角色包必需文件；其他发行版可以忽略。基础人设、身份与场景必须在缺少该文件时独立运行。
+- **校验**：`schema_version` 当前为 `1`，`character_is_adult` 必须为 `true`，场景键必须引用基础包场景。完整字段见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md#chat-pro-成人角色扩展adult_extensionjson--可选)。
+
+---
+
+## 7. `oclive_host_plugins.json`（可选）
 
 - **位置**：`{app_data}/oclive_host_plugins.json`
 - **用途**：开发者模式、额外插件扫描根、默认整壳插件 id 等（见 [DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md) §1 与 §「oclive_host_plugins.json」表）。

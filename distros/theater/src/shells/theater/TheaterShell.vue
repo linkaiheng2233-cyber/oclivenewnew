@@ -3,7 +3,6 @@ import type { TheaterCastConfig } from '../../composables/theater/theaterCastCon
 import Toast from '@oclive/shared/components/Toast.vue'
 import { useAppToast } from '@oclive/shared/composables/useAppToast'
 import { useTheaterShell } from '../../composables/useTheaterShell'
-import { useI18n } from 'vue-i18n'
 import PokeDock from './PokeDock.vue'
 import TheaterFooter from './TheaterFooter.vue'
 import TheaterHeader from './TheaterHeader.vue'
@@ -73,7 +72,6 @@ const {
 } = useTheaterShell()
 
 const { toast } = useAppToast()
-const { t } = useI18n()
 
 async function onApplyCast(config: TheaterCastConfig) {
   await applyCastConfig(config)
@@ -156,7 +154,6 @@ async function onApplyDefaultCast() {
     <TheaterSettingsSheet
       :visible="settingsOpen"
       :settings-tab="settingsTab"
-      @update:settings-tab="settingsTab = $event"
       :apply-cast="onApplyCast"
       :apply-default-cast="onApplyDefaultCast"
       :clear-cast-adapt-cache="clearCastAdaptCache"
@@ -172,6 +169,7 @@ async function onApplyDefaultCast() {
       :cast-adapt-preset-id="castAdaptPresetId"
       :cast-skeleton-ready="castSkeletonReady"
       :cast-adapt-last-issue="castAdaptLastIssue"
+      @update:settings-tab="settingsTab = $event"
       @close="closeSettings()"
       @apply-cast="onApplyCast"
       @notify="(p) => showToast?.(p.type, p.message)"
