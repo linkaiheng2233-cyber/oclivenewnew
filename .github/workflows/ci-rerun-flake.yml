@@ -16,10 +16,11 @@ jobs:
       github.event.workflow_run.event != 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - name: Rerun failed rust / e2e-tauri jobs (once)
+      - name: Rerun failed rust matrix once
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          set -euo pipefail
           RUN_ID="${{ github.event.workflow_run.id }}"
           ATTEMPT="${{ github.event.workflow_run.run_attempt }}"
           if [ "$ATTEMPT" -gt 1 ]; then
@@ -27,14 +28,28 @@ jobs:
             exit 0
           fi
           FAILED=$(gh run view "$RUN_ID" --json jobs --jq '.jobs[] | select(.conclusion=="failure") | .name')
+          if [ -z "$FAILED" ]; then
+            echo "Skip rerun: no failed jobs found"
+            exit 0
+          fi
+          unexpected=""
           echo "$FAILED" | while read -r job; do
             case "$job" in
-              rust|e2e-tauri)
-                echo "Rerunning failed job: $job"
-                gh run rerun "$RUN_ID" --failed --job "$job" || true
+              rust\ \(*\))
+                echo "Allowlisted rust matrix failure: $job"
                 ;;
               *)
-                echo "Skip job (not in flake allowlist): $job"
+                echo "$job" >> /tmp/oclive-ci-unexpected-failures.txt
                 ;;
             esac
           done
+          if [ -f /tmp/oclive-ci-unexpected-failures.txt ]; then
+            unexpected="$(cat /tmp/oclive-ci-unexpected-failures.txt)"
+          fi
+          if [ -n "$unexpected" ]; then
+            echo "Skip rerun: deterministic or non-allowlisted failures must be investigated"
+            echo "$unexpected"
+            exit 0
+          fi
+          echo "Rerunning failed rust matrix jobs for run $RUN_ID"
+          gh run rerun "$RUN_ID" --failed
