@@ -45,17 +45,24 @@ jobs:
           else
             base="$(git rev-parse HEAD)"
           fi
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            policy="pull_request"
+          else
+            policy="merge"
+          fi
           echo "base=$base" >> "$GITHUB_OUTPUT"
+          echo "policy=$policy" >> "$GITHUB_OUTPUT"
       - name: Compute shadow impact plan
         env:
           BASE_SHA: ${{ steps.comparison.outputs.base }}
           HEAD_SHA: ${{ github.sha }}
+          PLAN_POLICY: ${{ steps.comparison.outputs.policy }}
         run: >-
           cargo run --locked -p oclive-cli -- ci plan
           --path .
           --base "$BASE_SHA"
           --head "$HEAD_SHA"
-          --policy pull_request
+          --policy "$PLAN_POLICY"
           --shadow
           --output target/oclive-ci/plan.json
       - name: Render impact summary

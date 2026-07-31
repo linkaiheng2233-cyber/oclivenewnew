@@ -314,6 +314,30 @@ fn malformed_module_descriptor_is_a_full_fallback_issue() {
 }
 
 #[test]
+fn missing_module_descriptor_is_a_full_fallback_issue() {
+    let fixture = Fixture::new();
+    fixture.write_standard_contracts();
+    fs::remove_file(
+        fixture
+            .root
+            .path()
+            .join("data/ci/modules/kernel.oclive.module.json"),
+    )
+    .expect("remove descriptor");
+    let plan = fixture
+        .planner()
+        .plan(request(&["kernel/src/lib.rs"]))
+        .expect("plan");
+
+    assert!(plan.fallback.full);
+    assert!(plan
+        .fallback
+        .reasons
+        .iter()
+        .any(|reason| reason.contains("descriptor_read_error:NotFound")));
+}
+
+#[test]
 fn fixture_paths_are_repository_relative() {
     let fixture = Fixture::new();
     fixture.write_standard_contracts();

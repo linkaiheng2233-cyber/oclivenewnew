@@ -730,7 +730,18 @@ fn resolve_path(repo_root: &Path, path: &Path) -> PathBuf {
 
 fn resolve_repo_relative(repo_root: &Path, value: &str) -> Result<PathBuf, String> {
     let normalized = normalize_repo_path(value)?;
-    Ok(repo_root.join(normalized.replace('/', std::path::MAIN_SEPARATOR_STR)))
+    let joined = repo_root.join(normalized.replace('/', std::path::MAIN_SEPARATOR_STR));
+    let Ok(canonical) = fs::canonicalize(&joined) else {
+        // Missing descriptors remain module metadata issues so the planner can emit a
+        // reproducible full-fallback plan instead of losing all diagnostic output.
+        return Ok(joined);
+    };
+    let canonical_root = fs::canonicalize(repo_root)
+        .map_err(|error| format!("cannot resolve repository root: {error}"))?;
+    if !canonical.starts_with(&canonical_root) {
+        return Err("descriptor symlink escapes repository root".to_owned());
+    }
+    Ok(canonical)
 }
 
 fn normalize_repo_path(value: &str) -> Result<String, String> {
