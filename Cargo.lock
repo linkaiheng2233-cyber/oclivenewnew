@@ -3243,6 +3243,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "oclive_ci_plan"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "oclive_kernel_contracts"
 version = "0.2.0"
 dependencies = [

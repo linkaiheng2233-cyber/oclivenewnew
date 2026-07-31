@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oclive.dev/schemas/ci/oclive.module.v1.json",
+  "title": "OCLive CI module descriptor v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "module", "validation_profiles"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "module": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "kind": { "type": "string", "minLength": 1 }
+      }
+    },
+    "provides": { "$ref": "#/$defs/uniqueStrings" },
+    "runtime_requires": { "$ref": "#/$defs/uniqueStrings" },
+    "resource_claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["resource", "mode"],
+        "properties": {
+          "resource": { "type": "string", "minLength": 1 },
+          "mode": { "type": "string", "minLength": 1 },
+          "required": { "type": "boolean", "default": false }
+        }
+      }
+    },
+    "declared_affects": { "$ref": "#/$defs/uniqueIds" },
+    "validation_profiles": { "$ref": "#/$defs/uniqueIds" },
+    "platforms": { "$ref": "#/$defs/uniqueStrings" },
+    "extensions": {
+      "type": "object",
+      "propertyNames": { "pattern": "^[a-z0-9][a-z0-9._-]*\\.[a-z0-9._-]+$" },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "required": { "type": "boolean", "default": false },
+          "config": {}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$" },
+    "uniqueStrings": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+    "uniqueIds": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/id" } }
+  }
+}

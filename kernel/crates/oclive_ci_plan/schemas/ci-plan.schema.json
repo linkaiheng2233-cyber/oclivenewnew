@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oclive.dev/schemas/ci/ci-plan.v1.json",
+  "title": "OCLive CI impact plan v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "base_sha", "head_sha", "policy", "shadow", "changed_files", "direct_modules", "affected_modules", "selected_profiles", "selected_validators", "skipped_validators", "fallback", "warnings", "impact_map_sha256", "validation_catalog_sha256"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "base_sha": { "type": "string" }, "head_sha": { "type": "string" }, "policy": { "$ref": "#/$defs/id" }, "shadow": { "type": "boolean" },
+    "changed_files": { "type": "array", "items": { "type": "string" } },
+    "direct_modules": { "$ref": "#/$defs/reasonedList" }, "affected_modules": { "$ref": "#/$defs/reasonedList" }, "selected_profiles": { "$ref": "#/$defs/reasonedList" },
+    "selected_validators": {
+      "type": "array", "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["id", "tier", "gate", "platforms", "trust", "command_id", "reasons"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" }, "tier": { "enum": ["fast", "pr", "merge", "nightly", "release"] },
+          "gate": { "enum": ["required", "advisory", "quarantined"] }, "platforms": { "type": "array", "items": { "type": "string" } },
+          "trust": { "enum": ["untrusted_pr", "trusted"] }, "command_id": { "$ref": "#/$defs/id" }, "reasons": { "$ref": "#/$defs/strings" }
+        }
+      }
+    },
+    "skipped_validators": {
+      "type": "array", "items": {
+        "type": "object", "additionalProperties": false, "required": ["id", "reason"],
+        "properties": { "id": { "$ref": "#/$defs/id" }, "reason": { "type": "string" } }
+      }
+    },
+    "fallback": {
+      "type": "object", "additionalProperties": false, "required": ["full", "reasons"],
+      "properties": { "full": { "type": "boolean" }, "reasons": { "$ref": "#/$defs/strings" } }
+    },
+    "warnings": { "$ref": "#/$defs/strings" },
+    "impact_map_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "validation_catalog_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$" },
+    "strings": { "type": "array", "items": { "type": "string" } },
+    "reasonedList": {
+      "type": "array", "items": {
+        "type": "object", "additionalProperties": false, "required": ["id", "reasons"],
+        "properties": { "id": { "$ref": "#/$defs/id" }, "reasons": { "$ref": "#/$defs/strings" } }
+      }
+    }
+  }
+}
