@@ -14,7 +14,9 @@ use std::time::Duration;
 use uuid::Uuid;
 
 const HEALTH_POLL_MS: u64 = 500;
-const HEALTH_POLL_MAX: u32 = 30;
+// Cold Windows starts can spend more than 15 seconds in SQLite verification
+// and DLL initialization before the loopback listener is available.
+const HEALTH_POLL_MAX: u32 = 60;
 const ATTACH_PROBE_MS: u64 = 300;
 const ATTACH_PROBE_MAX: u32 = 6;
 const ATTACH_POLL_MS: u64 = 100;
@@ -40,6 +42,19 @@ pub async fn wait_for_health(base_url: &str) -> bool {
     for _ in 0..HEALTH_POLL_MAX {
         if crate::kernel_attach::KernelHttpClient::probe_health(base_url).await {
             return true;
+        }
+        tokio::time::sleep(Duration::from_millis(HEALTH_POLL_MS)).await;
+    }
+    false
+}
+
+async fn wait_for_spawn_health(conn: &KernelConnection) -> bool {
+    for _ in 0..HEALTH_POLL_MAX {
+        if crate::kernel_attach::KernelHttpClient::probe_health(&conn.base_url).await {
+            return true;
+        }
+        if conn.try_wait_spawned_child() {
+            return false;
         }
         tokio::time::sleep(Duration::from_millis(HEALTH_POLL_MS)).await;
     }
@@ -164,7 +179,7 @@ pub async fn spawn_kernel(
         child,
     );
 
-    if wait_for_health(&conn.base_url).await {
+    if wait_for_spawn_health(conn).await {
         Ok(())
     } else {
         conn.kill_spawned_child();

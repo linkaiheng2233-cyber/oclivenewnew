@@ -67,7 +67,9 @@ pub use kernel_distro_profile::{
 };
 pub use kernel_manifest::{KernelBinaryManifest, KernelBuildProfile};
 pub use kernel_policy_input::{build_resolve_plan, PolicyContext, PolicyResolution};
-pub use kernel_port_ops::{find_listener_pids, terminate_listeners_on_port};
+pub use kernel_port_ops::{
+    find_listener_pids, process_command_line, terminate_listeners_on_port, terminate_process_tree,
+};
 pub use kernel_runtime_health::{
     distro_health_snapshot, profile_file_sha256_hex, DistroHealthSnapshot, ENV_DISTRO_ID,
     ENV_DISTRO_PROFILE,

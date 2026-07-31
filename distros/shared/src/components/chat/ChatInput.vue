@@ -54,8 +54,11 @@ function focusInput(): void {
 
 function submit() {
   const value = text.value.trim()
-  if (!value || props.loading)
+  if (!value)
     return
+  // A new turn deliberately supersedes the active stream in chatStoreSend.
+  // Keep the composer usable so voice-first users can immediately correct or
+  // extend their message instead of waiting for the whole reply.
   emit('send', { content: value })
   text.value = ''
   focusInput()
@@ -108,14 +111,13 @@ onBeforeUnmount(() => {
         rows="2"
         autocomplete="off"
         :placeholder="placeholder"
-        :disabled="loading"
         @keydown="onKeydown"
       />
     </div>
     <button
       type="button"
       class="send"
-      :disabled="loading || !text.trim()"
+      :disabled="!text.trim()"
       @click="submit"
     >
       {{ t("common.send") }}

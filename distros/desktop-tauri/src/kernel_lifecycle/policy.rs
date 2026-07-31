@@ -233,22 +233,22 @@ async fn spawn_from_plan(
     Ok(())
 }
 
-/// Resolve desktop `distro.oclive.toml` for policy + spawn env.
-///
-/// Priority: `OCLIVE_DISTRO_PROFILE` → bundled `{anchor}/distro-profiles/desktop.oclive.toml`
-/// → `{anchor}/distro.oclive.toml` → monorepo example.
-#[must_use]
-pub fn find_desktop_distro_profile_path(anchors: &[PathBuf]) -> Option<PathBuf> {
-    if let Ok(p) = std::env::var(ENV_DISTRO_PROFILE) {
-        let path = PathBuf::from(p.trim());
-        if path.is_file() {
-            return Some(path);
-        }
-    }
+fn find_desktop_distro_profile_path_from_anchors(anchors: &[PathBuf]) -> Option<PathBuf> {
     for anchor in anchors {
         let bundled = anchor.join("distro-profiles").join("desktop.oclive.toml");
         if bundled.is_file() {
             return Some(bundled);
+        }
+        // In Tauri development builds `resource_dir()` resolves to the target
+        // directory while copied resources remain under its `resources/`
+        // child. Release layouts may resolve directly to that child, so both
+        // shapes are supported.
+        let nested_bundled = anchor
+            .join("resources")
+            .join("distro-profiles")
+            .join("desktop.oclive.toml");
+        if nested_bundled.is_file() {
+            return Some(nested_bundled);
         }
     }
     for anchor in anchors {
@@ -258,16 +258,35 @@ pub fn find_desktop_distro_profile_path(anchors: &[PathBuf]) -> Option<PathBuf> 
         }
     }
     for anchor in anchors {
-        let dev_chat = anchor.join("examples/distro-profiles/desktop-chat.oclive.toml");
-        if dev_chat.is_file() {
-            return Some(dev_chat);
-        }
         let dev = anchor.join("examples/distro-profiles/desktop.oclive.toml");
         if dev.is_file() {
             return Some(dev);
         }
     }
+    // `desktop-chat` is the Ollama-only development lab. Keep it as a legacy
+    // fallback, but never let it shadow Chat Pro's performance profile.
+    for anchor in anchors {
+        let dev_chat = anchor.join("examples/distro-profiles/desktop-chat.oclive.toml");
+        if dev_chat.is_file() {
+            return Some(dev_chat);
+        }
+    }
     None
+}
+
+/// Resolve desktop `distro.oclive.toml` for policy + spawn env.
+///
+/// Priority: `OCLIVE_DISTRO_PROFILE` -> bundled profile -> distro-root profile
+/// -> Chat Pro monorepo profile -> Ollama-only legacy development profile.
+#[must_use]
+pub fn find_desktop_distro_profile_path(anchors: &[PathBuf]) -> Option<PathBuf> {
+    if let Ok(p) = std::env::var(ENV_DISTRO_PROFILE) {
+        let path = PathBuf::from(p.trim());
+        if path.is_file() {
+            return Some(path);
+        }
+    }
+    find_desktop_distro_profile_path_from_anchors(anchors)
 }
 
 /// Policy-first bring-up; graded fallback on failure.
@@ -325,5 +344,55 @@ pub async fn reconnect_with_policy(
         Ok(())
     } else {
         Err("kernel policy reconnect: /health not ready".into())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::find_desktop_distro_profile_path_from_anchors;
+
+    #[test]
+    fn monorepo_prefers_chat_pro_profile_over_ollama_only_lab() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let profiles = temp.path().join("examples").join("distro-profiles");
+        std::fs::create_dir_all(&profiles).expect("create profiles");
+        let performance = profiles.join("desktop.oclive.toml");
+        let ollama_only = profiles.join("desktop-chat.oclive.toml");
+        std::fs::write(&performance, "id = 'performance'").expect("write performance");
+        std::fs::write(&ollama_only, "id = 'ollama-only'").expect("write ollama");
+
+        let selected = find_desktop_distro_profile_path_from_anchors(&[temp.path().to_path_buf()]);
+
+        assert_eq!(selected.as_deref(), Some(performance.as_path()));
+    }
+
+    #[test]
+    fn tauri_development_resource_layout_resolves_bundled_profile() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let profile = temp
+            .path()
+            .join("resources")
+            .join("distro-profiles")
+            .join("desktop.oclive.toml");
+        std::fs::create_dir_all(profile.parent().expect("profile parent"))
+            .expect("create profiles");
+        std::fs::write(&profile, "id = 'performance'").expect("write performance");
+
+        let selected = find_desktop_distro_profile_path_from_anchors(&[temp.path().to_path_buf()]);
+
+        assert_eq!(selected.as_deref(), Some(profile.as_path()));
+    }
+
+    #[test]
+    fn monorepo_uses_ollama_only_lab_as_legacy_fallback() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let profiles = temp.path().join("examples").join("distro-profiles");
+        std::fs::create_dir_all(&profiles).expect("create profiles");
+        let ollama_only = profiles.join("desktop-chat.oclive.toml");
+        std::fs::write(&ollama_only, "id = 'ollama-only'").expect("write ollama");
+
+        let selected = find_desktop_distro_profile_path_from_anchors(&[temp.path().to_path_buf()]);
+
+        assert_eq!(selected.as_deref(), Some(ollama_only.as_path()));
     }
 }

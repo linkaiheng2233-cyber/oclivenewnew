@@ -2,7 +2,7 @@
 
 use super::reconnect::AutoReconnectPolicy;
 use super::status::build_ui_status;
-use oclive_kernel_runtime::KernelTier;
+use oclive_kernel_runtime::{terminate_process_tree, KernelTier};
 use parking_lot::{Mutex, RwLock};
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use serde::Serialize;
@@ -134,7 +134,9 @@ impl KernelConnection {
     /// Kill only a child this host spawned; never touch an external daemon.
     pub fn kill_spawned_child(&self) {
         if let Some(mut child) = self.spawned_child.lock().take() {
-            let _ = child.kill();
+            if !terminate_process_tree(child.id()) {
+                let _ = child.kill();
+            }
             let _ = child.wait();
         }
     }

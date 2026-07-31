@@ -51,22 +51,53 @@ pub fn profile_file_sha256_hex(path: &Path) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::ffi::OsString;
+    use std::sync::Mutex;
+
+    static ENV_TEST_LOCK: Mutex<()> = Mutex::new(());
+
+    struct EnvRestore {
+        key: &'static str,
+        previous: Option<OsString>,
+    }
+
+    impl EnvRestore {
+        fn capture(key: &'static str) -> Self {
+            Self {
+                key,
+                previous: std::env::var_os(key),
+            }
+        }
+    }
+
+    impl Drop for EnvRestore {
+        fn drop(&mut self) {
+            match self.previous.take() {
+                Some(value) => std::env::set_var(self.key, value),
+                None => std::env::remove_var(self.key),
+            }
+        }
+    }
 
     #[test]
     fn profile_hash_stable_for_same_file() {
+        let _lock = ENV_TEST_LOCK.lock().unwrap();
+        let _profile_restore = EnvRestore::capture(ENV_DISTRO_PROFILE);
         let dir = tempfile::tempdir().unwrap();
         let profile = dir.path().join("distro.oclive.toml");
         std::fs::write(&profile, b"distro_id = \"vscode\"\n").unwrap();
         std::env::set_var(ENV_DISTRO_PROFILE, profile.display().to_string());
         let a = distro_health_snapshot();
         let b = distro_health_snapshot();
-        std::env::remove_var(ENV_DISTRO_PROFILE);
         assert_eq!(a.distro_profile_hash, b.distro_profile_hash);
         assert!(a.distro_profile_hash.is_some());
     }
 
     #[test]
     fn empty_distro_id_omitted() {
+        let _lock = ENV_TEST_LOCK.lock().unwrap();
+        let _id_restore = EnvRestore::capture(ENV_DISTRO_ID);
+        let _profile_restore = EnvRestore::capture(ENV_DISTRO_PROFILE);
         std::env::remove_var(ENV_DISTRO_ID);
         std::env::remove_var(ENV_DISTRO_PROFILE);
         let snap = distro_health_snapshot();
