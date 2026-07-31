@@ -12,10 +12,10 @@
 | 项 | 值 |
 |----|-----|
 | **cargo-audit 版本** | **0.22.1**（建议固定该主版本以便报告可比） |
-| **最近扫描日期** | **2026-07-14**（本地 `cargo audit`；K-PLATFORM-01a Full Tauri 2 bump） |
+| **最近扫描日期** | **2026-07-31**（本地 `cargo audit`；K-RESOURCE-COORD-01 将锁图已有的 `sysinfo 0.33` 提升为 Host 直接依赖） |
 | **扫描路径** | 工作区根目录 `Cargo.lock` |
 | **漏洞级命中数** | **0**（`cargo audit` 退出码 **0**） |
-| **警告级命中数** | **约 8**（gtk/webkit Linux 簇仍 ignored · `glib` · `unic-*` unmaintained · `spin` yanked；**`fxhash` / `rand` 0.7 已随 Tauri 2 清出**） |
+| **警告级命中数** | **8**（gtk/webkit Linux 簇仍 ignored · `glib` · `unic-*` unmaintained · `spin` yanked；**`fxhash` / `rand` 0.7 已随 Tauri 2 清出**） |
 
 > 若 CI 或本机无法拉取 advisory-db，可使用：`cargo audit --no-fetch --stale`（依赖本地已 fetch 的数据库）。
 

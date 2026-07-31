@@ -193,6 +193,8 @@ python scripts/stress-voice-gpu-runtime.py --gpu-layers 24 --voice-runs 5
 
 2026-07-28 关联竞态与恢复修复后的复验：Ollama `qwen2.5:7b` 深度 1/2/4 共 **7/7** 拍结构化成功、零回退，热态总体 p50 **1047ms**，显存稳定 **5523MiB**；另以深度 8 连跑三轮共 **24/24** 拍，p50 为 **896/893/942ms**，内核工作集 **38.9→39.6MiB** 后稳定、句柄 **242→243** 后稳定。`--gpu-layers 24 --voice-runs 20` 共存压力中峰值 **6657/8151MiB**、余量 **1494MiB**、稳态增长 **0MiB**，热态 LLM TTFT p50 **145ms**、语音 TTFC p50 **3927ms**。同次普通聊天 7 轮真实流式 TTFT p50 **209ms**（直连 Ollama p50 **123ms**）。
 
+2026-07-30 Resource Coordinator Stage 2.3 复验（HEAD `d43f5cf8`，RTX 5060 Laptop **8151MiB**）：`--gpu-layers 24 --voice-runs 10` 的 direct runtime 共存短压测通过，峰值 **6759/8151MiB**、最小余量 **1392MiB**、稳态增长 **17MiB**，未见 OOM、泄漏趋势或残留模型进程；LLM TTFT p50 **179ms**、p95 **1659ms**，语音 TTFC p50 **5008ms**、p95 **6288ms**。全 GPU `--gpu-layers 99 --expect-admission-denied` 在 CosyVoice 分配显存前以 `gpu_admission_denied` 安全拒绝（语音峰值分配 **0MiB**），同时 LLM 仍可用，TTFT **1062ms**。单独语音对照中，短句 TTFC p50/p95 为 **1918/2158ms**，与压力脚本相同的较长片段为 **5538/6254ms**；另一次三轮共存样本出现 **8995ms** 最大值，说明当前 8 秒绝对上限易受长片段和冷抖动影响。以上是适配器直连与短时压力证据，不替代完整 Tauri 宿主 `LLM suspend → Voice → confirmed unload → LLM recover` 实机闭环和长时间 soak。
+
 ## Related
 
 - [`DEEP_PROMPT_DISTILLATION.md`](DEEP_PROMPT_DISTILLATION.md)

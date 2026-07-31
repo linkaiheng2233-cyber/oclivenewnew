@@ -62,7 +62,7 @@ cargo run -p oclive-cli --features diagnostics-host -- doctor execution-plan my-
   --json
 ```
 
-The command explicitly requires `diagnostics-host` because it reuses the host role parser, Capability Registry, and Plan Compiler; the default CLI dependency surface remains lightweight. The `ExecutionPlan` is in memory only. `resource_coordination: not_evaluated` means the unified coordinator did not run. An unavailable required extension is `blocked`; an unavailable optional extension is `degraded`.
+The command explicitly requires `diagnostics-host` because it reuses the host role parser, Capability Registry, and Plan Compiler; the default CLI dependency surface remains lightweight. The `ExecutionPlan` is in memory only. `resource_coordination: not_evaluated` with no `resource_plan` means pure compilation did not probe devices. Desktop diagnostics refresh the Resource Coordinator and attach a read-only candidate resource plan. An unavailable required extension is `blocked`; an unavailable optional extension is `degraded`.
 
 ---
 

@@ -12,10 +12,10 @@ This file records **vulnerability-level** hits from **`cargo audit`** on the **w
 | Item | Value |
 |------|-----|
 | **cargo-audit version** | **0.22.1** (pin this major line for comparable reports) |
-| **Last scan date** | **2026-07-14** (local `cargo audit`; K-PLATFORM-01a Full Tauri 2 bump) |
+| **Last scan date** | **2026-07-31** (local `cargo audit`; K-RESOURCE-COORD-01 promoted lockfile-existing `sysinfo 0.33` to a direct Host dependency) |
 | **Scan path** | Workspace root `Cargo.lock` |
 | **Vulnerability-level count** | **0** (`cargo audit` exit code **0**; `sqlx-mysql` / `rsa` removed from lockfile graph) |
-| **Warning-level count** | **~8** (gtk/webkit Linux cluster still ignored · `glib` · `unic-*` unmaintained · `spin` yanked; **`fxhash` / `rand` 0.7 cleared with Tauri 2**) |
+| **Warning-level count** | **8** (gtk/webkit Linux cluster still ignored · `glib` · `unic-*` unmaintained · `spin` yanked; **`fxhash` / `rand` 0.7 cleared with Tauri 2**) |
 
 > If CI or your machine cannot fetch advisory-db: `cargo audit --no-fetch --stale` (requires a previously fetched local DB).
 

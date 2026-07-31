@@ -332,7 +332,7 @@ cargo run -p oclive-cli --features diagnostics-host -- doctor execution-plan my-
   --json
 ```
 
-该命令因复用宿主角色解析、Capability Registry 与 Plan Compiler 而显式要求 `diagnostics-host` feature；默认 CLI 依赖面保持轻量。输出中的 `ExecutionPlan` 只存在于内存，不写回 `pipeline.ocblueprint`；`resource_coordination: not_evaluated` 表示本轮未执行统一资源协调。无 Provider 或权限时，必需扩展为 `blocked`，可选扩展为 `degraded`。
+该命令因复用宿主角色解析、Capability Registry 与 Plan Compiler 而显式要求 `diagnostics-host` feature；默认 CLI 依赖面保持轻量。输出中的 `ExecutionPlan` 只存在于内存，不写回 `pipeline.ocblueprint`；`resource_coordination: not_evaluated` 且省略 `resource_plan` 表示纯编译没有探测设备。桌面诊断才会刷新 Resource Coordinator 并附上只读候选资源计划。无 Provider 或权限时，必需扩展为 `blocked`，可选扩展为 `degraded`。
 
 ### `test --oocp`（本地 OOCP 闭环）
 

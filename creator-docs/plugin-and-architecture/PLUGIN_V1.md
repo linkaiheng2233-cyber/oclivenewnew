@@ -375,7 +375,7 @@ TypeScript 侧 `SendMessageResponse`（`distros/shared/src/api/`）必须与 `mo
 - 当前目录 Provider 必须通过 manifest `schema_version: 1` 校验、声明目标 capability、包含可执行 `process`，并满足插件依赖、角色级启停状态与高危授权；旧 manifest 省略 `permissions` 但含 `process` 时仍按 `process:spawn` 授权处理。
 - Provider `version` 会进入诊断快照；v4 外壳当前没有 Provider API semver range，不能把版本显示误当成 API 兼容承诺。未来新增兼容字段时须先扩展本契约。
 - 首个已登记的 v4 消费者是 Chat Pro `voice.asr`。其它 capability 在有真实消费者与调用链之前会结构化降级/阻断。
-- 两个入口都不会 spawn Provider 或改写角色包。`oclive doctor execution-plan` / 纯 Plan Compiler 不探测设备，返回 `resource_coordination: not_evaluated`；桌面 `get_execution_plan_diagnostics` 会刷新只读 Resource Coordinator 诊断，但不会因查看诊断而启动模型。
+- 两个入口都不会 spawn Provider 或改写角色包。`oclive doctor execution-plan` / 纯 Plan Compiler 不探测设备，返回 `resource_coordination: not_evaluated` 且省略 `resource_plan`；桌面 `get_execution_plan_diagnostics` 会刷新 Resource Coordinator 并附上只读候选计划，但不会因查看诊断而执行转换或启动模型。
 
 公共 DTO 与实现锚点见 [`models/execution_plan.rs`](../../kernel/crates/oclive_kernel_types/src/models/execution_plan.rs) · [`capability_registry.rs`](../../kernel/crates/oclive_kernel_host/src/infrastructure/capability_registry.rs) · [`execution_plan.rs`](../../kernel/crates/oclive_kernel_host/src/domain/execution_plan.rs)。
 

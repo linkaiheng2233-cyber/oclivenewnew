@@ -16,7 +16,7 @@ This page is the **authoritative public narrative** and **module numbering & tax
 
 **Open lab** product axis: [VISION_OPEN_LAB.md](../../creator-docs/roadmap/VISION_OPEN_LAB.md).
 
-**Blueprint extensions and resource coordination (phased implementation):** a blueprint keeps only a small namespaced capability declaration. The host now implements a Capability Registry, read-only `ExecutionPlan`, and the first unified Resource Coordinator slice for managed llama-server, observe-only Ollama/LLM activity, and official bundled CosyVoice2. Third-party adapter registration, automatic preemption/recovery, and Live2D/3D remain future work. The extension envelope is not a fifth module category, and resource coordination is not a seventh slot. See [RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md](../rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md).
+**Blueprint extensions and resource coordination (phased implementation):** a blueprint keeps only a small namespaced capability declaration. The host now implements a Capability Registry, read-only `ExecutionPlan`, and a unified Resource Coordinator for GPU/RAM/CPU, finite scheduling intent, fair admission, reversible automatic preemption, real llama-server tiers, and owner-scoped third-party registration. The generic contract covers `render` / `compute`; concrete Live2D/3D runtimes remain Provider/distribution deliverables. The extension envelope is not a fifth module category, and resource coordination is not a seventh slot. See [RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md](../rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md).
 
 ---
 

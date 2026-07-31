@@ -2,8 +2,8 @@
 
 | 元数据 | 值 |
 |--------|-----|
-| 状态 | **边界已确认 · v4 外壳与 Capability/Plan 诊断已实现 · Resource Adapter Registry 与首个 LLM/Voice 切片已实现** |
-| 最后更新 | 2026-07-29 |
+| 状态 | **边界已确认 · v4 蓝图外壳已实现 · 资源诊断 v5 与通用协调控制面已实现** |
+| 最后更新 | 2026-07-31 |
 | 受众 | 内核、编写器、发行版、目录插件与商业扩展开发者 |
 | 维护范围 | 蓝图扩展最小外壳、能力解析、`ExecutionPlan`、资源协调器与适配器分责 |
 | 非维护范围 | 第三方扩展载荷内部格式、具体 GPU 分配算法、现有 v3 双核 DSL |
@@ -104,15 +104,18 @@ role/
 
 编写器、CLI 和宿主保存蓝图时必须原样保留自己不认识的可选扩展及其文件。只有用户明确删除扩展时才能移除。
 
-**当前实现边界（2026-07-29）**：
+**当前实现边界（2026-07-31）**：
 
 - Rust/JSON Schema、CLI/doctor、Host 与角色包编写器已支持 v4 外壳、路径安全和未知载荷 round-trip。
 - 宿主已实现目录 Provider 的 Capability Registry、确定性 Provider 选择、权限/依赖/启停检查、required/optional 激活门禁，以及 Tauri/CLI 只读结构化诊断；同一角色包可按 `HostProfile` 得到不同计划。
 - 计划只有在宿主已登记真实消费者时才将 capability 标为 active。首个登记项为 Chat Pro `voice.asr`；任意 manifest `provides` 不能自行扩张内核。
-- `ExecutionPlan` 仍只解析能力与有效六槽，不启动 Provider、不写回角色包；纯编译与 CLI doctor 明确保留 `resource_coordination: not_evaluated`。桌面 Tauri 诊断会刷新宿主 Resource Coordinator，并返回 `ready | degraded | blocked`。
-- 宿主已提供 NVIDIA 多设备快照、准入、租约、优先级、压力和资源诊断 v2；`HostProfile` 提供全局安全余量与租约 TTL。Resource Adapter Registry 登记控制模式、adapter-local 档位、驻留能力、生命周期动作和当前租约，注册表本身不调度。
+- `ExecutionPlan` 仍只解析能力与有效六槽，不启动 Provider、不写回角色包；纯编译与 CLI doctor 明确保留 `resource_coordination: not_evaluated` 且不生成设备计划。桌面 Tauri 诊断会刷新宿主 Resource Coordinator，把同一份只读 `candidate_plan` 接入 `ExecutionPlan.resource_plan`。
+- 宿主已提供 NVIDIA 多设备、系统 RAM 与 CPU 快照，以及原子准入、租约、优先级、压力和资源诊断 v5；`HostProfile` 提供各资源安全余量、租约 TTL、排队/老化、自动抢占和有限调度意图。Resource Adapter Registry 登记控制模式、注册来源、adapter-local 档位、驻留能力、生命周期动作和当前租约，并只读校验调度意图；注册表本身不调度。
 - 首个资源适配闭环覆盖宿主管理的 llama-server 冷启动、只能观测的 Ollama/LLM 前台活动，以及官方 bundled CosyVoice2 的 `voice.warm` / `voice.speak`。租约携带 `profile_id`，已登记适配器的未知档位会被拒绝；云 TTS、用户自建 HTTP TTS 与社区插件不被误认为宿主可控资源。
-- 当前仍是有限闭环：所有现有档位保持 `coordinator_selectable=false`，不冒充通用自动切档；官方 bundled CosyVoice 前台朗读已经能在低显存下受控暂停本机 Performance LLM、确认释放后恢复，但第三方注册入口、公平队列、任意适配器自动抢占、真正的多档切换、系统内存/CPU、渲染适配器及共享显存实机压力/soak 仍待后续验证。
+- 候选计划编译器会把有效意图、当前档位/租约、最新 GPU/RAM/CPU 容量和控制器可用性编译为确定性的档位选择、建议转换、回滚动作与稳定原因码；输出携带 `compiled_from_revision`，只读查看不会执行任何 lifecycle。
+- 通用执行基础已登记单写者 `ResourceAdapterController`、所有者命名空间约束的第三方 `ResourceAdapterRegistrar`、精确的“请求方 → 目标 → 动作”授权、适配器串行锁、过期计划拒绝和逆序回滚。进程内注册入口不加载插件、不解释未信任 manifest，也不自动授予跨适配器控制权；目录 manifest 资源声明仍未实现。
+- Performance llama 已提供 `gpu_full` / `gpu_balanced` / `cpu_compatibility` 三个真实运行档，实际改变 `llama-server --n-gpu-layers` 并在准入拒绝时向低档回退。统一准入队列支持优先级、公平老化、超时和取消清理；自动抢占仅作用于低优先级、可逆且精确授权的 managed 适配器，并在失败或使用结束后逆序恢复。
+- 通用契约已支持 `render` / `compute` / `hybrid`，并通过第三方 Render 适配器容量与抢占恢复测试验证没有把协调器写死为 LLM/Voice。Chat Pro 尚未捆绑 Live2D runtime，现有 `Live2DStageAdapter` 继续明确回退 PNG。适配器直连共享显存短压测和内核内并发/故障/10,000 次转换 soak 已完成；长时间真实进程/硬件 soak 与远端 CI 留在最终里程碑。
 
 ---
 
@@ -131,7 +134,8 @@ Capability Provider 是业务能力的实现边界，不等于 Resource Adapter�
 Provider manifest 的职责：
 
 - **当前 `schema_version: 1`**：`provides`、Provider `version`、目录 `process`、插件依赖与 `permissions` 已进入 Registry 诊断；字段和权限语义以 [`PLUGIN_V1`](../plugin-and-architecture/PLUGIN_V1.md) 为准。
-- **尚未实现**：宿主/API semver range、第三方 Resource Adapter 注册入口及 manifest 资源声明。当前内置 LLM/Voice 适配不扩大目录插件 schema；显示 Provider 版本仍不代表 API 兼容性已协商。
+- **已实现的代码入口**：第三方宿主扩展可通过进程内 `ResourceAdapterRegistrar`，以自己的 canonical owner namespace 登记资源描述和可选的单写者控制器；重复同一登记幂等，跨 owner、冒用 `builtin.*` 或不具备可逆性的自动抢占声明会被拒绝。
+- **尚未实现的磁盘/加载入口**：宿主/API semver range、目录 manifest 资源声明与从 manifest 自动装配 Resource Adapter。当前内置 LLM/Voice 适配不扩大目录插件 schema；显示 Provider 版本仍不代表 API 兼容性已协商。
 
 本 RFC 不提前把尚未实现的字段写成现行插件契约。
 
@@ -228,18 +232,41 @@ flowchart TD
 
 外部 Ollama、外部 llama-server 或第三方渲染进程可能只可观察、不可控制。适配器必须显式报告 `managed` / `observe_only`，协调器不得假设自己拥有所有 GPU 进程。
 
-### 6.2.1 当前首期实现边界
+### 6.2.1 有限调度意图
 
-- `NvidiaSmiResourceSnapshotSource` 最佳努力读取设备快照；不可用时显式返回 unavailable，不伪造 0 MiB。
-- 冷启动准入按目标 GPU、当前空闲显存、并发 pending reservation 与 `gpu_safety_reserve_mib` 原子判断；`OCLIVE_GPU_DEVICE_INDEX` / `CUDA_VISIBLE_DEVICES` 可指定目标设备。
-- managed llama-server 启动前申请租约，模型切换、启动失败、超时、降级或停用时释放；外部 Ollama 只登记前台活动且不在 token 热路径启动 `nvidia-smi`。
+调度自由度使用小型、可组合、可静态校验的词汇表，不接受任意 DAG、脚本或显存数值命令。发行版当前可在 `HostProfile` 的 `[resource_coordination]` 中声明：
+
+| 类型 | 值 / 命令 | 语义 |
+|------|-----------|------|
+| 策略 | `compatibility_first` | 默认；优先维持现有可运行路径 |
+| 策略 | `primary_first` | 保护 `primary_adapter_id` 指定的主适配器 |
+| 策略 | `latency_first` | 表达低首响偏好；实际档位仍由协调器决定 |
+| 策略 | `custom` | 要求至少提供一条有限命令 |
+| 命令 | `require(adapter)` | 该适配器必须已注册 |
+| 命令 | `residency(adapter, resident/on_demand)` | 声明常驻或按需驻留偏好 |
+| 命令 | `coexist(adapters)` | 允许一组适配器并存 |
+| 命令 | `exclusive(adapters)` | 要求一组受管适配器不并存 |
+| 命令 | `yield_then_run(yielding, target)` | 声明先让出资源、再运行目标的偏序 |
+| 命令 | `fallback(adapter, profiles)` | 给出同一适配器内部的档位回退顺序 |
+
+这些“命令”是**声明式约束与偏好**，不是直接下发给进程的 lifecycle 操作。物理安全与已确认的设备状态 > 适配器 `managed` / `observe_only` 控制边界 > HostProfile/用户策略 > 蓝图意图；任何下层意图都不能越过上层事实。
+
+资源诊断 v5 分成两层：`scheduling.state = ready | degraded | blocked` 只回答“声明是否能被当前注册表接受”；`candidate_plan.state` 再把声明与当前租约、GPU/RAM/CPU 容量、真实可选档位、控制器和回滚能力合并，给出只读候选计划。`candidate_plan.executable=true` 只表示当前计划完成了所需档位选择，且每个转换都有已登记控制器和回滚动作，仍不表示计划已经运行。执行时必须再次核对 `compiled_from_revision`，并由最终适配器准入复核物理容量。
+
+蓝图未来只引用宿主登记的有限模板或表达同等级约束，不直接写入 `HostProfile`、显存数值、`start` / `unload` 等动作。当前没有为角色包新增资源调度字段，避免在执行器尚未完成时固化又一套磁盘 schema。
+
+### 6.2.2 当前首期实现边界
+
+- `NvidiaSmiResourceSnapshotSource` 最佳努力读取 GPU 快照，不可用时显式返回 unavailable；同一快照通过 `sysinfo` 补充系统可用/总 RAM 与逻辑/物理 CPU 数，不把 GPU 探测失败伪造成整机 0 容量。
+- 冷启动准入在一个公平队列后按目标 GPU、系统 RAM、CPU、安全余量和并发 pending reservation 原子判断。队列按优先级排序并通过等待老化避免饥饿，支持超时与取消安全清理；`OCLIVE_GPU_DEVICE_INDEX` / `CUDA_VISIBLE_DEVICES` 可指定目标设备。
+- managed llama-server 启动前从 HostProfile/环境选取 `gpu_full`、`gpu_balanced` 或 `cpu_compatibility`，并在容量拒绝时向后续档位回退；每档实际改变 `--n-gpu-layers`。模型切换、启动失败、超时、降级或停用时释放租约；外部 Ollama 只登记前台活动且不在 token 热路径启动 `nvidia-smi`。
 - 官方 `com.oclive.voice.asr` 的 bundled CosyVoice2 才接宿主准入。宿主租约只替代 mixed-fp16 的旧固定冷启动门槛；FP32 扩张继续走侧车更严格的二次门禁。
 - 取消/调用失败通过 RAII 释放 pending lease；关闭 TTS 或切换到非 bundled provider 时，宿主下发带 adapter/runtime profile 的 `unload`，侧车等待当前合成结束、校验目标模型并释放模型，宿主仅在收到匹配成功确认后撤销语音租约；未确认时保守保留租约并写入 `resource_release_unconfirmed`。同一适配器的冷启动 RPC 与配置转换共用串行锁，避免卸载确认、租约复用及连续配置保存之间的竞态。
-- 当前不会为了加载语音强杀正在进行的 LLM 请求，也不会声称能卸载任意外部 Ollama。通用抢占、公平队列与真实共享显存压力测仍是 K-RESOURCE-COORD-01 后续完成条件。
+- 当前不会为了加载语音强杀正在进行的 LLM 请求，也不会声称能卸载任意外部 Ollama。自动抢占只在 GPU/RAM/CPU 容量不足时考虑低优先级 active managed 租约，目标适配器必须显式声明 `automatic_preemption` 可逆动作、登记对应恢复动作，并拥有精确 requester → target 授权；同级/高优先级和 observe-only 资源不动。执行失败时逆序回滚，成功完成后由调用链逆序恢复。批量执行器仍不对角色包、插件或 HTTP 客户端开放。适配器直连共享显存短压测结果见 [`handoff/TTFT_BENCHMARK.md`](../../handoff/TTFT_BENCHMARK.md)。
 - Performance LLM 已提供统一请求门禁：资源转换先拒绝新的生成/探针请求，等待已经进入的 primary 或 Ollama fallback 请求自然排空，再停止宿主管理的 llama-server 并卸载仅由本 OCLive 运行时追踪的 Ollama 模型；普通 primary 故障与云 provider 切换仍保留原有降级语义。`generate`、标签生成、opts、流式生成和启动探针共用同一门禁；并发到达的显式预热/模型应用只登记为 supersede，排空与卸载完成前不会提前开门，恢复预热也会等待门禁真正开放。
 - 官方 bundled CosyVoice 的 `voice.warm` 不抢占 LLM；`voice.speak` 仅在本地 provider、显存余量拒绝、没有活动 Performance 请求且存在可控驻留资源时尝试抢占。文本仍在生成时，Chat Pro 延后本轮语音；最终文本完成后强制走宿主 RPC。RPC 合成返回完整音频前，插件完成匹配的 CosyVoice `unload`；宿主仅在确认后撤销 Voice 租约并恢复 Performance LLM。卸载未确认或调用被取消时保留/提升 Voice 租约与暂停状态并记录稳定原因，避免双模型同时重新占用显存；后续语音或配置退出确认可完成恢复，模型恢复也会拒绝越过尚未释放的 Voice 驻留。bundled 直连流式端点只在宿主准入的 `voice.warm` 成功后暴露，高显存设备继续保留原低延迟流式路径。
-- 暂不自动执行 llama-server → Voice 抢占：门禁只是安全前置条件，Voice 准入尚未负责发起 managed llama 暂停、失败回滚和 Voice 释放后的恢复；取消资源暂停会保守保持门禁关闭，后续编排必须显式恢复，不能依赖隐式超时。
-- 宿主 Resource Adapter Registry 已登记 llama-server、Ollama、performance 活动观察器和 bundled CosyVoice2 的真实控制边界、档位、驻留与生命周期能力；observe-only 条目只能声明 `observe`。注册表通过现有资源诊断返回状态，但当前不下发通用 lifecycle/profile 切换。
+- 宿主 Resource Adapter Registry 已登记 llama-server、Ollama、performance 活动观察器和 bundled CosyVoice2 的真实控制边界、档位、驻留与生命周期能力；observe-only 条目只能声明 `observe`。只有带真实宿主控制器的三个 llama 档位声明为 `coordinator_selectable=true`，不把外部 Ollama 或桌面侧 CosyVoice 冒充为内核可控。
+- `ResourceAdapterRegistrar` 允许 HostExtension / 目录插件桥接层按 owner namespace 登记第三方 adapter facts 与控制器；当前入口是进程内契约，不代表目录 manifest 已新增资源字段或能自动加载任意插件。`render` / `compute` / `hybrid` 资源域和第三方 Render 适配器测试已经存在，但 bundled Live2D Provider/runtime 尚未实现。
 
 ### 6.3 资源描述不是角色包硬编码
 
@@ -255,7 +282,7 @@ flowchart TD
 
 ## 7. 共通控制消息
 
-公共 DTO 已在 `oclive_kernel_types::resource_coordination` 收敛 snapshot、adapter descriptor/profile、admission、lease、priority、pressure 与 diagnostics；设备采集端口为 `oclive_kernel_contracts::ResourceSnapshotSource`。下表后两类主动控制消息仍待后续适配器协议：
+公共 DTO 已在 `oclive_kernel_types::resource_coordination` 收敛 GPU/RAM/CPU snapshot、adapter descriptor/profile/registration、有限 scheduling intent、candidate plan、admission queue、lease、priority、pressure、preemption、带乐观版本的 transition 与 diagnostics；`oclive_kernel_contracts` 提供 `ResourceSnapshotSource`、宿主单写者 `ResourceAdapterController` 和所有者约束的 `ResourceAdapterRegistrar`。批量候选计划执行保持宿主内部能力，未成为插件或角色包协议。
 
 | 消息语义 | 用途 |
 |----------|------|

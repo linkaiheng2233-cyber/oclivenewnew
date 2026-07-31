@@ -145,7 +145,7 @@ Directory / remote plugins may declare **`provides`** beyond the six slots. Host
 - A directory Provider must pass manifest `schema_version: 1` validation, declare the capability, have an executable `process`, and satisfy dependencies, per-role enablement, and high-risk grants. Legacy process manifests without `permissions` still require `process:spawn`.
 - Provider `version` is reported for diagnostics. The v4 envelope currently has no Provider API semver range, so the displayed version is not an API-compatibility promise.
 - The first registered v4 consumer is Chat Pro `voice.asr`; other capabilities degrade or block until their consumer and call path exist.
-- Neither entry point spawns a Provider or rewrites a role pack. `oclive doctor execution-plan` / pure Plan Compiler diagnostics do not probe devices and report `resource_coordination: not_evaluated`; desktop `get_execution_plan_diagnostics` refreshes read-only Resource Coordinator state without starting a model.
+- Neither entry point spawns a Provider or rewrites a role pack. `oclive doctor execution-plan` / pure Plan Compiler diagnostics do not probe devices, report `resource_coordination: not_evaluated`, and omit `resource_plan`; desktop `get_execution_plan_diagnostics` refreshes the Resource Coordinator and attaches a read-only candidate plan without executing transitions or starting a model.
 
 DTO and implementation anchors: [`models/execution_plan.rs`](../../kernel/crates/oclive_kernel_types/src/models/execution_plan.rs) · [`capability_registry.rs`](../../kernel/crates/oclive_kernel_host/src/infrastructure/capability_registry.rs) · [`execution_plan.rs`](../../kernel/crates/oclive_kernel_host/src/domain/execution_plan.rs).
 

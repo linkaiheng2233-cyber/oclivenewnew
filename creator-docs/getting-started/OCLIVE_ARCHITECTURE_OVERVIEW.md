@@ -20,7 +20,7 @@
 
 **开放实验场** 为产品主轴（见 [VISION_OPEN_LAB.md](../roadmap/VISION_OPEN_LAB.md)）。
 
-**蓝图扩展与资源协调（分阶段实现）**：蓝图只保存最小、命名空间化的能力声明；宿主已实现 Capability Registry、只读 `ExecutionPlan`，以及首个统一 Resource Coordinator 切片（managed llama-server、observe-only Ollama/LLM 活动、官方 bundled CosyVoice2）。第三方适配器注册、自动抢占/恢复与 Live2D/3D 仍待后续。扩展外壳不是第五类模块，资源协调也不是第七槽。详见 [RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md](../rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md)。
+**蓝图扩展与资源协调（分阶段实现）**：蓝图只保存最小、命名空间化的能力声明；宿主已实现 Capability Registry、只读 `ExecutionPlan`，以及统一 Resource Coordinator（GPU/RAM/CPU、有限调度意图、公平准入、可逆自动抢占、真实 llama-server 档位与 owner-scoped 第三方注册入口）。通用契约已覆盖 `render` / `compute`，但具体 Live2D/3D runtime 仍由相应 Provider/发行版交付。扩展外壳不是第五类模块，资源协调也不是第七槽。详见 [RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md](../rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md)。
 
 ---
 
