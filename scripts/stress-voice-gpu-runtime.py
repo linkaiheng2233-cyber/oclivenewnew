@@ -96,6 +96,18 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--gpu-index", default="0")
     parser.add_argument("--gpu-layers", type=int, default=24)
     parser.add_argument("--voice-runs", type=int, default=5)
+    parser.add_argument(
+        "--duration-minutes",
+        type=float,
+        default=0.0,
+        help="Run real wall-clock minutes after warmup; 0 keeps --voice-runs mode",
+    )
+    parser.add_argument(
+        "--gpu-sample-interval-seconds",
+        type=float,
+        default=1.0,
+    )
+    parser.add_argument("--max-gpu-sample-failures", type=int, default=0)
     parser.add_argument("--llm-max-tokens", type=int, default=64)
     parser.add_argument("--min-headroom-mib", type=int, default=768)
     parser.add_argument("--max-voice-ttfc-ms", type=int, default=8000)
@@ -169,10 +181,14 @@ def gpu_memory_mib(gpu_index: str) -> tuple[int, int]:
 
 
 class GpuSampler:
-    def __init__(self, gpu_index: str) -> None:
+    def __init__(self, gpu_index: str, interval_seconds: float) -> None:
         self.gpu_index = gpu_index
+        self.interval_seconds = interval_seconds
         self.peak_used_mib = 0
         self.total_mib = 0
+        self.sample_count = 0
+        self.sample_failures = 0
+        self.thread_joined = False
         self._stop = threading.Event()
         self._thread = threading.Thread(target=self._sample, daemon=True)
 
@@ -182,31 +198,46 @@ class GpuSampler:
                 used, total = gpu_memory_mib(self.gpu_index)
                 self.peak_used_mib = max(self.peak_used_mib, used)
                 self.total_mib = total
+                self.sample_count += 1
             except (OSError, subprocess.SubprocessError, ValueError, IndexError):
-                pass
-            self._stop.wait(0.05)
+                self.sample_failures += 1
+            self._stop.wait(self.interval_seconds)
 
     def start(self) -> None:
         used, total = gpu_memory_mib(self.gpu_index)
         self.peak_used_mib = used
         self.total_mib = total
+        self.sample_count = 1
         self._thread.start()
 
     def stop(self) -> None:
         self._stop.set()
         self._thread.join(timeout=5)
+        self.thread_joined = not self._thread.is_alive()
 
 
-def terminate(process: subprocess.Popen[Any] | None) -> None:
+def terminate(process: subprocess.Popen[Any] | None) -> dict[str, Any]:
     if process is None:
-        return
-    if process.poll() is None:
-        process.terminate()
+        return {"started": False, "pid": None, "returncode": None, "reaped": True}
+    pid = process.pid
     try:
+        if process.poll() is None:
+            process.terminate()
         process.wait(timeout=10)
     except subprocess.TimeoutExpired:
-        process.kill()
-        process.wait(timeout=5)
+        try:
+            process.kill()
+            process.wait(timeout=5)
+        except (OSError, subprocess.SubprocessError):
+            pass
+    except OSError:
+        pass
+    return {
+        "started": True,
+        "pid": pid,
+        "returncode": process.returncode,
+        "reaped": process.poll() is not None,
+    }
 
 
 def run_llm(
@@ -362,6 +393,12 @@ def validate_inputs(args: argparse.Namespace) -> None:
             raise FileNotFoundError(f"{label} not found: {path}")
     if args.voice_runs < 1:
         raise ValueError("--voice-runs must be at least 1")
+    if not (args.duration_minutes >= 0 and args.duration_minutes < float("inf")):
+        raise ValueError("--duration-minutes must be finite and at least 0")
+    if args.gpu_sample_interval_seconds <= 0:
+        raise ValueError("--gpu-sample-interval-seconds must be greater than 0")
+    if args.max_gpu_sample_failures < 0:
+        raise ValueError("--max-gpu-sample-failures must be at least 0")
 
 
 def main() -> int:
@@ -375,8 +412,10 @@ def main() -> int:
     voice_endpoint = f"http://127.0.0.1:{voice_port}"
     llm_process = None
     voice_process = None
-    sampler = GpuSampler(args.gpu_index)
+    sampler = GpuSampler(args.gpu_index, args.gpu_sample_interval_seconds)
     failures: list[str] = []
+    summary: dict[str, Any] | None = None
+    cleanup: dict[str, Any] = {}
     baseline_used, total_mib = gpu_memory_mib(args.gpu_index)
     sampler.start()
     try:
@@ -474,7 +513,26 @@ def main() -> int:
                     f"precision={warm.get('precision_active')} "
                     f"strategy={warm.get('load_strategy')}"
                 )
-            for _ in range(args.voice_runs):
+            load_started = time.monotonic()
+            deadline = (
+                load_started + (args.duration_minutes * 60)
+                if args.duration_minutes > 0
+                else None
+            )
+            while True:
+                if deadline is not None:
+                    if llm_samples and time.monotonic() >= deadline:
+                        break
+                elif len(llm_samples) >= args.voice_runs:
+                    break
+                if llm_process.poll() is not None:
+                    raise RuntimeError(
+                        f"llama-server exited early with {llm_process.returncode}"
+                    )
+                if voice_process.poll() is not None:
+                    raise RuntimeError(
+                        f"CosyVoice sidecar exited early with {voice_process.returncode}"
+                    )
                 llm_result, voice_result = run_pair(
                     llm_endpoint,
                     voice_endpoint,
@@ -487,6 +545,7 @@ def main() -> int:
                 steady_after_pair_mib.append(steady_used_mib)
                 if voice_result["chunks"] < 1 or voice_result["errors"]:
                     failures.append(f"voice stream failed: {voice_result}")
+            load_elapsed_seconds = round(time.monotonic() - load_started, 3)
 
         llm_ttft = [
             int(sample["ttft_ms"])
@@ -523,14 +582,27 @@ def main() -> int:
                 f"{args.max_steady_growth_mib} MiB"
             )
 
+        if sampler.sample_count < 1:
+            failures.append("GPU sampler produced no samples")
+
         summary = {
+            "schema_version": 2,
             "ok": not failures,
             "scenario": (
                 "admission_denied"
                 if args.expect_admission_denied
-                else "cold_load_and_concurrency"
+                else (
+                    "real_time_hardware_soak"
+                    if args.duration_minutes > 0
+                    else "cold_load_and_concurrency"
+                )
             ),
             "gpu_layers": args.gpu_layers,
+            "requested_duration_minutes": args.duration_minutes,
+            "actual_load_seconds": (
+                load_elapsed_seconds if not args.expect_admission_denied else 0
+            ),
+            "pairs_completed": len(voice_samples),
             "gpu_mib": {
                 "baseline": baseline_used,
                 "llm_loaded": llm_loaded_mib,
@@ -573,12 +645,49 @@ def main() -> int:
             "voice_chunks": [sample["chunks"] for sample in voice_samples],
             "failures": failures,
         }
-        print(json.dumps(summary, ensure_ascii=False, indent=2))
-        return 0 if not failures else 1
+    except Exception as exc:  # noqa: BLE001
+        failures.append(f"runtime exception: {type(exc).__name__}: {exc}")
     finally:
         sampler.stop()
-        terminate(voice_process)
-        terminate(llm_process)
+        cleanup = {
+            "voice": terminate(voice_process),
+            "llm": terminate(llm_process),
+        }
+
+    if not sampler.thread_joined:
+        failures.append("GPU sampler thread did not stop")
+    if sampler.sample_failures > args.max_gpu_sample_failures:
+        failures.append(
+            f"GPU sampler failures {sampler.sample_failures} > "
+            f"{args.max_gpu_sample_failures}"
+        )
+    for label, state in cleanup.items():
+        if state["started"] and not state["reaped"]:
+            failures.append(f"{label} process was not reaped")
+    if summary is None:
+        summary = {
+            "schema_version": 2,
+            "scenario": "startup_or_runtime_failure",
+            "gpu_layers": args.gpu_layers,
+            "requested_duration_minutes": args.duration_minutes,
+            "pairs_completed": 0,
+        }
+    summary.update(
+        {
+            "ok": not failures,
+            "gpu_sampler": {
+                "interval_seconds": args.gpu_sample_interval_seconds,
+                "samples": sampler.sample_count,
+                "failures": sampler.sample_failures,
+                "max_failures": args.max_gpu_sample_failures,
+                "thread_joined": sampler.thread_joined,
+            },
+            "cleanup": cleanup,
+            "failures": failures,
+        }
+    )
+    print(json.dumps(summary, ensure_ascii=False, indent=2))
+    return 0 if not failures else 1
 
 
 if __name__ == "__main__":
