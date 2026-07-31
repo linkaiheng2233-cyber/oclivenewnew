@@ -9,6 +9,7 @@ pub use commands::init;
 pub use commands::lint as lint_cmd;
 mod bench_cold_start;
 mod bench_equivalence;
+mod bench_http;
 mod bench_metrics;
 mod bench_soak;
 mod bench_stress;

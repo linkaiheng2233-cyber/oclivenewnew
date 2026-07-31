@@ -12,6 +12,7 @@
 - **DeepSeek 拟人示例角色包**：新增社区创作、非官方的 `deepseek` Portable Core 角色包，包含核心人设、空的只读记忆种子、三种用户身份、认知边界、默认场景与七张透明立绘；该角色包不代表 DeepSeek 官方授权或背书。
 - **Persona / Memory 跨发行版独立迁移**：新增 `.ocpersona` 与 `.ocmemory` JSON v1 契约、共享校验和桌面宿主导入导出 API；角色包可选 `memory_seed.json` 作为创作者只读初始记忆。Persona 导入只恢复可变人设且不得覆盖核心人设；Memory 使用合并导入，明确排除聊天记录、短期记忆缓存与临时局面状态。内置角色包、Robot Soul 示例与 CLI 新建/初始化脚手架已统一生成该 seed 容器。
 - **Chat Pro 成人角色扩展 v1**：角色包可选根文件 `adult_extension.json` 与 Portable Core 基础内容分离；Chat Pro 提供本机成年确认、全局与分角色两级开关、导入提示、独立管理页、结构化角色对话/静音旁白双气泡、自然退出与自动节拍。成人记忆按 `content_scope` 独立存储，普通聊天只保留非露骨关系桥接；语音只朗读角色对话，节拍同时等待展示间隔与当前语音完成，失败后仅本次互动降级文本。后台连续预生成使用可取消、可恢复的 staged beat：后台只缓存结构化文本，回到对应聊天后才逐拍提交、显示并生成语音；所有聊天共享用户可配置容量，用户输入会抢占并丢弃未展示拍。编写器新增依赖完整基础包校验的独立成人扩展页，并与基础包合并导入导出。
+- **可核验的真实时长 soak**：`oclive bench --soak` 明确区分 8～120 秒的加速冒烟与显式 `--soak-real-time` 真墙钟模式，支持小数小时和可配置采样间隔；一次热身后再建立稳态 RSS 基线，聊天负载与采样时钟并行。schema v2 直接记录 Release 内核 PID 的 RSS/CPU、请求失败、提前退出、工作线程 join 与进程回收，失败时非零退出，避免把冷加载、Cargo 包装进程或名义 72h 冒烟误作泄漏证据。CLI 本机 HTTP 请求统一绕过系统代理，脚手架跨 Windows 盘符链接 `--kernel-source` 时保留正确绝对路径。
 
 - **本地 HTTP API 认证**：桌面宿主启动 kernel 时自动生成并注入随机 `OCLIVE_API_TOKEN`；无头 `--api` 现在也默认要求显式设置同名变量，除公开探活 `GET /health` 外的路由须发送 `x-oclive-api-token`。仅隔离的本地开发可显式设置 `OCLIVE_API_ALLOW_UNAUTHENTICATED=1` 逃生；CORS 收窄至本机开发/Tauri 来源，OOCP 与进程重启烟测自动附加 token。
 

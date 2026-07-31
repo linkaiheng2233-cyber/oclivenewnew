@@ -104,9 +104,17 @@ pub struct BenchArgs {
     #[arg(long)]
     pub soak: bool,
 
-    /// Soak duration in hours (default 72)
-    #[arg(long, default_value_t = 72)]
-    pub soak_duration: u64,
+    /// Soak duration in hours; fractional hours are accepted (default 72)
+    #[arg(long, default_value_t = 72.0)]
+    pub soak_duration: f64,
+
+    /// Use actual wall-clock hours instead of the accelerated local smoke clock
+    #[arg(long)]
+    pub soak_real_time: bool,
+
+    /// Resource sample interval in seconds for --soak-real-time (default 60)
+    #[arg(long, default_value_t = 60)]
+    pub soak_sample_interval: u64,
 
     /// Cold-start latency: spawn kernel --api and measure first /chat reply
     #[arg(long)]

@@ -115,7 +115,7 @@ role/
 - 候选计划编译器会把有效意图、当前档位/租约、最新 GPU/RAM/CPU 容量和控制器可用性编译为确定性的档位选择、建议转换、回滚动作与稳定原因码；输出携带 `compiled_from_revision`，只读查看不会执行任何 lifecycle。
 - 通用执行基础已登记单写者 `ResourceAdapterController`、所有者命名空间约束的第三方 `ResourceAdapterRegistrar`、精确的“请求方 → 目标 → 动作”授权、适配器串行锁、过期计划拒绝和逆序回滚。进程内注册入口不加载插件、不解释未信任 manifest，也不自动授予跨适配器控制权；目录 manifest 资源声明仍未实现。
 - Performance llama 已提供 `gpu_full` / `gpu_balanced` / `cpu_compatibility` 三个真实运行档，实际改变 `llama-server --n-gpu-layers` 并在准入拒绝时向低档回退。统一准入队列支持优先级、公平老化、超时和取消清理；自动抢占仅作用于低优先级、可逆且精确授权的 managed 适配器，并在失败或使用结束后逆序恢复。
-- 通用契约已支持 `render` / `compute` / `hybrid`，并通过第三方 Render 适配器容量与抢占恢复测试验证没有把协调器写死为 LLM/Voice。Chat Pro 尚未捆绑 Live2D runtime，现有 `Live2DStageAdapter` 继续明确回退 PNG。适配器直连共享显存短压测和内核内并发/故障/10,000 次转换 soak 已完成；长时间真实进程/硬件 soak 与远端 CI 留在最终里程碑。
+- 通用契约已支持 `render` / `compute` / `hybrid`，并通过第三方 Render 适配器容量与抢占恢复测试验证没有把协调器写死为 LLM/Voice。Chat Pro 尚未捆绑 Live2D runtime，现有 `Live2DStageAdapter` 继续明确回退 PNG。适配器直连共享显存短压测和内核内并发/故障/10,000 次转换 soak 已完成；CLI 真实墙钟内核进程 harness 已完成短时校准，长时间 bundled LLM/CosyVoice/未来 Live2D 共享硬件 soak 与本里程碑远端 CI 仍待收口。
 
 ---
 

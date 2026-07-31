@@ -21,7 +21,7 @@ fn kernel_bench_iterations() -> u32 {
 }
 
 fn main() {
-    oclivenewnew_tauri::init_tracing();
+    let _ = oclivenewnew_tauri::init_tracing();
     let bench_iters = kernel_bench_iterations();
     if bench_iters > 0 {
         for _ in 0..bench_iters {

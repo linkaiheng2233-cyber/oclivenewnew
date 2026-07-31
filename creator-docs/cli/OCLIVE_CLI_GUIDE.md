@@ -72,15 +72,15 @@ cargo run -p oclive-cli -- init --help
 | **AB3** | `bench --equivalence` | 标准 vs Monolith `/chat` 回复逐条对比（MOCK_LLM） |
 | **AB4** | `test --loom` | `cargo-loom` 模型检查（CI `loom` job，`continue-on-error`） |
 | **AB5** | 模糊测试 | [FUZZING.md](../testing/FUZZING.md)；`kernel/fuzz/` + proptest |
-| **AB6** | `bench --soak` | 长稳 RSS 趋势（`--soak-duration` 小时） |
+| **AB6** | `bench --soak` | 加速冒烟或显式 `--soak-real-time` 真长稳；采样内核 PID 的 RSS/CPU、请求与回收状态 |
 
 ```bash
 cargo test -p oclivenewnew-tauri --test narrative_hint_contract_audit
 cargo test -p oclivenewnew-tauri --test protocol_boundary_sidecar
-cargo run -p oclive-cli -- bench --equivalence --release -o ./my-kernel
+cargo run -p oclive-cli -- --experimental bench --equivalence --release -o ./my-kernel
 cargo run -p oclive-cli -- test --loom
 cargo test -p oclive_validation --test proptest_fuzz_parsing
-cargo run -p oclive-cli -- bench --soak --soak-duration 24 -o ./my-kernel
+cargo run -p oclive-cli -- --experimental bench --soak --soak-real-time --soak-duration 24 --soak-sample-interval 60 -o ./my-kernel
 cargo run -p oclive-cli -- test --equivalence-check -o ./my-kernel
 ```
 
@@ -101,7 +101,7 @@ cargo run -p oclive-cli -- test --equivalence-check -o ./my-kernel
 | **AA9** | `completions <shell>` | `bash` / `zsh` / `fish` / `powershell`（或 `power-shell`） |
 
 ```bash
-cargo run -p oclive-cli -- bench --cold-start --cold-start-runs 3 -o ./my-kernel
+cargo run -p oclive-cli -- --experimental bench --cold-start --cold-start-runs 3 -o ./my-kernel
 cargo run -p oclive-cli -- test --coverage -o .
 cargo run -p oclive-cli -- test --miri -o .
 cargo run -p oclive-cli -- explain LLM_ERROR
@@ -135,7 +135,7 @@ cargo run -p oclive-cli -- completions bash > oclive.bash
 
 ```bash
 cargo run -p oclive-cli -- init --from-existing ./my-kernel --json
-cargo run -p oclive-cli -- bench --stress --stress-concurrency 5 --stress-duration 10 -o ./my-kernel
+cargo run -p oclive-cli -- --experimental bench --stress --stress-concurrency 5 --stress-duration 10 -o ./my-kernel
 cargo run -p oclive-cli -- test --ci-parity -o ./my-kernel --skip-oocp
 cargo run -p oclive-cli -- lint --deps -o ./my-kernel
 cargo run -p oclive-cli -- lint --deny -o .
@@ -169,7 +169,7 @@ cargo run -p oclive-cli -- kernel info -o ./my-kernel --json
 
 ```bash
 cargo run -p oclive-cli -- dashboard
-cargo run -p oclive-cli -- bench --live --release -o ./my-kernel
+cargo run -p oclive-cli -- --experimental bench --live --release -o ./my-kernel
 cargo run -p oclive-cli -- learn -o ./oclive-learn-demo
 ```
 
@@ -186,8 +186,8 @@ cargo run -p oclive-cli -- learn -o ./oclive-learn-demo
 | `lint` | 目录结构、`Cargo.toml` 元数据、`settings.json` 第 1–6 模块、`monolith.toml`、Git 脏检查 |
 
 ```bash
-cargo run -p oclive-cli -- bench --matrix --release -o ./my-kernel
-cargo run -p oclive-cli -- bench --matrix --json -o ./my-kernel
+cargo run -p oclive-cli -- --experimental bench --matrix --release -o ./my-kernel
+cargo run -p oclive-cli -- --experimental bench --matrix --json -o ./my-kernel
 cargo run -p oclive-cli -- test -o ./my-kernel
 cargo run -p oclive-cli -- lint -o ./my-kernel --json
 ```
@@ -290,8 +290,8 @@ cargo run -p oclive-cli -- registry pull my-kernel -o ./my-kernel
 cargo run -p oclive-cli -- config set OCLIVE_REGISTRY_URL https://registry.example.com --global
 cargo run -p oclive-cli -- ci init -o ./my-kernel
 cargo run -p oclive-cli -- doctor --fix --yes
-cargo run -p oclive-cli -- bench --release --save -o ./my-kernel
-cargo run -p oclive-cli -- bench --release --regression -o ./my-kernel
+cargo run -p oclive-cli -- --experimental bench --release --save -o ./my-kernel
+cargo run -p oclive-cli -- --experimental bench --release --regression -o ./my-kernel
 cargo run -p oclive-cli -- template create my-team -o ./my-kernel
 ```
 
@@ -651,11 +651,13 @@ cargo run -p oclive-cli -- build -o /path/to/kernel-project --no-cargo
 
 ### `bench` 子命令
 
+`bench` 当前仍在实验门内，命令必须在子命令前加全局 **`--experimental`**；以下示例均已包含。
+
 再生成源码、双构建后，对两个二进制各跑 `--runs` 次子进程；子进程内通过环境变量 **`OCLIVE_KERNEL_BENCH_ITERS`** 做热循环。输出 **JSON**（`schema_version: 2`），除延迟分位数外含 **`binary_size`**（字节）、**`peak_memory`**（MiB）、**`build_time`**（秒）。Schema：`kernel/crates/oclive-cli/schemas/oclive_bench_report.schema.json`。
 
 ```bash
-cargo run -p oclive-cli -- bench --release -o /path/to/kernel-project --runs 30 --inner-iters 500 --output ./bench-report.json
-cargo run -p oclive-cli -- bench --release -o /path/to/kernel-project --json
+cargo run -p oclive-cli -- --experimental bench --release -o /path/to/kernel-project --runs 30 --inner-iters 500 --output ./bench-report.json
+cargo run -p oclive-cli -- --experimental bench --release -o /path/to/kernel-project --json
 ```
 
 - **`--save`**：将本次报告追加到项目根 **`bench_history.json`**（本地文件，勿提交）。
@@ -664,14 +666,17 @@ cargo run -p oclive-cli -- bench --release -o /path/to/kernel-project --json
 - **`--compare-versions <git-ref>`**：当前工作区 vs 指定 Git 引用各跑多轮，输出矩阵表。
 - **`--live`**：终端 sparkline 实时仪表盘（`q` 退出）。**勿与** 顶层 Web **`oclive dashboard`** 混淆；`--dashboard` 为 deprecated 别名。
 - **`--history`**：打印 **`bench_history.json`** 全部记录的趋势表；可加 **`--json`**。
+- **`--soak --soak-duration <小时>`**：默认走 8～120s 的加速冒烟时钟；支持小数小时，但不构成长时间泄漏证据。
+- **`--soak-real-time`**：将 `--soak-duration` 解释为真实墙钟小时；`--soak-sample-interval <秒>` 控制资源采样间隔（默认 60）。soak 先完成一次 `warmup_chats`，再启动时钟并取得稳态 RSS 基线；之后直接采样 Release 内核 PID。schema v2 同时记录 RSS/CPU、请求失败、提前退出、工作线程 join 与 `process_reaped`；任何验收失败均非零退出。
 
 **未实现**：`bench history clear` / `export` / `import` 子命令（见路线图「计划中」）。
 
 ```bash
-cargo run -p oclive-cli -- bench --release -o ./my-kernel --save
-cargo run -p oclive-cli -- bench --history -o ./my-kernel
-cargo run -p oclive-cli -- bench --history -o ./my-kernel --json
-cargo run -p oclive-cli -- bench --watch -o ./my-kernel
+cargo run -p oclive-cli -- --experimental bench --release -o ./my-kernel --save
+cargo run -p oclive-cli -- --experimental bench --history -o ./my-kernel
+cargo run -p oclive-cli -- --experimental bench --history -o ./my-kernel --json
+cargo run -p oclive-cli -- --experimental bench --watch -o ./my-kernel
+cargo run -p oclive-cli -- --experimental bench --soak --soak-real-time --soak-duration 0.01 --soak-sample-interval 5 -o ./my-kernel --json
 ```
 
 - **`--watch`**：监听 **`src/`** 与 **`Cargo.toml`**（2s 防抖），自动 release 构建 + **3 轮** bench 并 **`--save`**，打印相对上一轮 **↑/↓/→**。

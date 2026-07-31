@@ -32,6 +32,7 @@ pub fn run_cold_start(root: &Path, args: &BenchArgs) -> Result<()> {
         .and_then(|p| p.parse().ok())
         .unwrap_or(DEFAULT_API_PORT);
     let pkg = crate::bench_cmd::read_package_name(root)?;
+    let role_path = crate::bench_http::resolve_bench_role_path(root)?;
     let warm_n = args.cold_start_warm_messages.max(1);
     let mut cold_samples = Vec::new();
     let mut all_warm = Vec::new();
@@ -48,7 +49,8 @@ pub fn run_cold_start(root: &Path, args: &BenchArgs) -> Result<()> {
         if runs > 1 && !args.json {
             eprintln!("\n--- cold-start run {}/{} ---", run_idx + 1, runs);
         }
-        let (cold_ms, warmup_ms, warm_ms) = one_cold_start_round(root, &pkg, port, warm_n)?;
+        let (cold_ms, warmup_ms, warm_ms) =
+            one_cold_start_round(root, &pkg, port, warm_n, &role_path)?;
         cold_samples.push(cold_ms);
         last_warmup = Some(warmup_ms);
         all_warm.extend(warm_ms);
@@ -83,6 +85,7 @@ fn one_cold_start_round(
     bin_name: &str,
     port: u16,
     warm_n: u32,
+    role_path: &Path,
 ) -> Result<(f64, f64, Vec<f64>)> {
     let mut child = Command::new("cargo");
     child
@@ -121,8 +124,13 @@ fn one_cold_start_round(
         if spawn_at.elapsed() > Duration::from_secs(180) {
             bail!("kernel did not respond to /chat within 180s (is --kernel-source linked?)");
         }
-        match post_chat(port, "cold-start probe message") {
-            Ok(()) => break spawn_at.elapsed().as_secs_f64() * 1000.0,
+        match crate::bench_http::post_chat(
+            port,
+            role_path,
+            "cold-start probe message",
+            Duration::from_secs(120),
+        ) {
+            Ok(_) => break spawn_at.elapsed().as_secs_f64() * 1000.0,
             Err(_) => std::thread::sleep(Duration::from_millis(500)),
         }
     };
@@ -130,7 +138,12 @@ fn one_cold_start_round(
     let mut warm = Vec::new();
     for i in 0..warm_n {
         let t0 = Instant::now();
-        post_chat(port, &format!("warm message {i}"))?;
+        crate::bench_http::post_chat(
+            port,
+            role_path,
+            &format!("warm message {i}"),
+            Duration::from_secs(120),
+        )?;
         warm.push(t0.elapsed().as_secs_f64() * 1000.0);
     }
 
@@ -152,25 +165,6 @@ fn wait_tcp_listen(port: u16, since: Instant, timeout: Duration) -> Result<f64> 
         "kernel API port {port} did not accept connections within {:?}",
         timeout
     );
-}
-
-fn post_chat(port: u16, message: &str) -> Result<()> {
-    let url = format!("http://127.0.0.1:{port}/chat");
-    let body = serde_json::json!({
-        "message": message,
-        "role_id": "default",
-        "scene_id": "default"
-    });
-    let resp = crate::http_client::post(&url)
-        .set("Content-Type", "application/json")
-        .timeout(Duration::from_secs(120))
-        .send_string(&body.to_string())
-        .with_context(|| format!("POST {url}"))?;
-    if resp.status() >= 400 {
-        bail!("chat HTTP {}", resp.status());
-    }
-    let _text = resp.into_string().unwrap_or_default();
-    Ok(())
 }
 
 fn print_human(r: &ColdStartReport) {

@@ -49,12 +49,14 @@ impl std::error::Error for HttpError {}
 
 pub struct Agent {
     client: Client,
+    loopback_client: Client,
 }
 
 impl Clone for Agent {
     fn clone(&self) -> Self {
         Self {
             client: self.client.clone(),
+            loopback_client: self.loopback_client.clone(),
         }
     }
 }
@@ -74,12 +76,19 @@ impl AgentBuilder {
     }
 
     pub fn build(self) -> Agent {
-        let mut builder = Client::builder();
-        if let Some(timeout) = self.timeout {
-            builder = builder.timeout(timeout);
-        }
+        let build_client = |no_proxy: bool| {
+            let mut builder = Client::builder();
+            if let Some(timeout) = self.timeout {
+                builder = builder.timeout(timeout);
+            }
+            if no_proxy {
+                builder = builder.no_proxy();
+            }
+            builder.build().unwrap_or_else(|_| Client::new())
+        };
         Agent {
-            client: builder.build().unwrap_or_else(|_| Client::new()),
+            client: build_client(false),
+            loopback_client: build_client(true),
         }
     }
 }
@@ -114,23 +123,34 @@ impl Response {
 
 impl Agent {
     pub fn get(&self, url: &str) -> Request {
-        Request::new(self.client.clone(), Method::GET, url)
+        Request::new(
+            self.client.clone(),
+            self.loopback_client.clone(),
+            Method::GET,
+            url,
+        )
     }
 
     pub fn post(&self, url: &str) -> Request {
-        Request::new(self.client.clone(), Method::POST, url)
+        Request::new(
+            self.client.clone(),
+            self.loopback_client.clone(),
+            Method::POST,
+            url,
+        )
     }
 }
 
 impl Request {
-    fn new(client: Client, method: Method, url: &str) -> Self {
-        let headers = if is_loopback_url(url) {
+    fn new(client: Client, loopback_client: Client, method: Method, url: &str) -> Self {
+        let loopback = is_loopback_url(url);
+        let headers = if loopback {
             vec![(API_TOKEN_HEADER.to_string(), api_token().to_string())]
         } else {
             Vec::new()
         };
         Self {
-            client,
+            client: if loopback { loopback_client } else { client },
             method,
             url: url.to_string(),
             headers,
@@ -192,4 +212,17 @@ pub fn get(url: &str) -> Request {
 
 pub fn post(url: &str) -> Request {
     default_agent().post(url)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_loopback_url;
+
+    #[test]
+    fn loopback_detection_covers_localhost_ipv4_and_ipv6() {
+        assert!(is_loopback_url("http://localhost:11434/api/tags"));
+        assert!(is_loopback_url("http://127.0.0.1:18400/chat"));
+        assert!(is_loopback_url("http://[::1]:18400/chat"));
+        assert!(!is_loopback_url("https://example.com/chat"));
+    }
 }

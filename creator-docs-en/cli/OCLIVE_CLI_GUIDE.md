@@ -210,20 +210,25 @@ cargo run -p oclive-cli -- build -o /path/to/kernel-project --no-cargo
 
 ### `bench` subcommand
 
+`bench` remains behind the experimental gate, so commands must place the global **`--experimental`** flag before the subcommand; the examples below already do so.
+
 After regenerating sources and dual builds, runs each binary `--runs` times as subprocesses; inside the subprocess **`OCLIVE_KERNEL_BENCH_ITERS`** controls the hot loop. Output is **JSON** (`schema_version: 2`, includes `binary_size`, `peak_memory`, `build_time`); schema at **`kernel/crates/oclive-cli/schemas/oclive_bench_report.schema.json`**.
 
 ```bash
-cargo run -p oclive-cli -- bench --release -o /path/to/kernel-project --runs 30 --inner-iters 500 --output ./bench-report.json
-cargo run -p oclive-cli -- bench --release -o /path/to/kernel-project --json
+cargo run -p oclive-cli -- --experimental bench --release -o /path/to/kernel-project --runs 30 --inner-iters 500 --output ./bench-report.json
+cargo run -p oclive-cli -- --experimental bench --release -o /path/to/kernel-project --json
 ```
 
 - **`--save`**: append this report to project root **`bench_history.json`** (local file, do not commit).
 - **`--compare`**: do not run sampling; read **last two** entries from **`bench_history.json`** and print comparison (needs at least two history rows).
 - **`--history`**: print a trend table of all saved runs; with ≥2 rows, shows **↑/↓/→** vs previous. Use **`--json`** for tooling.
+- **`--soak --soak-duration <hours>`**: uses an 8–120s accelerated smoke clock by default. Fractional hours are accepted, but accelerated output is not long-duration leak evidence.
+- **`--soak-real-time`**: interprets the requested duration as actual wall-clock hours; `--soak-sample-interval <seconds>` controls resource sampling (default 60). Soak completes one `warmup_chats` request before starting the clock and steady-state RSS baseline, then directly samples the Release kernel PID. Schema v2 records RSS/CPU, request failures, early exit, worker join, and `process_reaped`, and any failed criterion returns a non-zero exit.
 
 ```bash
-cargo run -p oclive-cli -- bench --release -o ./my-kernel --save
-cargo run -p oclive-cli -- bench --history -o ./my-kernel
+cargo run -p oclive-cli -- --experimental bench --release -o ./my-kernel --save
+cargo run -p oclive-cli -- --experimental bench --history -o ./my-kernel
+cargo run -p oclive-cli -- --experimental bench --soak --soak-real-time --soak-duration 0.01 --soak-sample-interval 5 -o ./my-kernel --json
 ```
 
 `--json`: print report JSON to **stdout** only (progress on **stderr**) for piping and schema checks.

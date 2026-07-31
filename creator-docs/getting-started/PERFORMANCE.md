@@ -36,8 +36,8 @@
 **常用示例**（详见 [OCLIVE_CLI_GUIDE.md § `bench`](../cli/OCLIVE_CLI_GUIDE.md)）：
 
 ```bash
-cargo run -p oclive-cli -- bench --release -o /path/to/kernel-project --runs 30 --inner-iters 500 --output ./bench-report.json
-cargo run -p oclive-cli -- bench --release -o /path/to/kernel-project --json
+cargo run -p oclive-cli -- --experimental bench --release -o /path/to/kernel-project --runs 30 --inner-iters 500 --output ./bench-report.json
+cargo run -p oclive-cli -- --experimental bench --release -o /path/to/kernel-project --json
 ```
 
 - **`--save`** / **`--compare`**：写入/对比项目根 **`bench_history.json`**（本地文件，勿提交仓库）。  
@@ -101,7 +101,7 @@ $env:OCLIVE_HTTP_API_MOCK_LLM='1'
 ### 5.1 建立本地基线（`--save`）
 
 ```bash
-cargo run -p oclive-cli -- bench --release -o ./my-kernel --runs 30 --inner-iters 500 --save
+cargo run -p oclive-cli -- --experimental bench --release -o ./my-kernel --runs 30 --inner-iters 500 --save
 ```
 
 每次 `--save` 会向项目根 **`bench_history.json`** 追加一条采样（勿提交 Git）。后续用 `--compare` 或 `--history` 查看趋势。
@@ -109,8 +109,8 @@ cargo run -p oclive-cli -- bench --release -o ./my-kernel --runs 30 --inner-iter
 ### 5.2 回归门禁（`--regression`）
 
 ```bash
-cargo run -p oclive-cli -- bench --release -o ./my-kernel --runs 20 --save
-cargo run -p oclive-cli -- bench --release -o ./my-kernel --runs 20 --regression --regression-threshold 5
+cargo run -p oclive-cli -- --experimental bench --release -o ./my-kernel --runs 20 --save
+cargo run -p oclive-cli -- --experimental bench --release -o ./my-kernel --runs 20 --regression --regression-threshold 5
 ```
 
 与最近一条历史对比；超出阈值时进程 **exit 1**，可接入本地 pre-push 或 CI（自建 job）。
@@ -128,7 +128,7 @@ cargo run -p oclive-cli -- init --monolith --non-interactive --preset minimal --
 **矩阵采样**：
 
 ```bash
-cargo run -p oclive-cli -- bench --matrix --release -o ./my-kernel-monolith --json > matrix.json
+cargo run -p oclive-cli -- --experimental bench --matrix --release -o ./my-kernel-monolith --json > matrix.json
 ```
 
 对 **档位 × preset** 组合各跑少量轮次（**4×3=12**），用于挑选嵌入式/低延迟预设下的最优焊接组合；须在含 **`monolith.toml`** 的内核脚手架工程上执行（主应用仓无该文件时用 `oclive init --monolith` 工程）。参考样例角色包：**`distros/chat-pro/roles/mumu`**（v2 蓝图）。结论以本机 JSON 为准。
@@ -147,9 +147,9 @@ cargo run -p oclive-cli -- bench --matrix --release -o ./my-kernel-monolith --js
 **可复制命令**（将 `./my-kernel-monolith` 换为含 `monolith.toml` 的目录）：
 
 ```bash
-cargo run -p oclive-cli -- bench --matrix --release -o ./my-kernel-monolith --json > matrix.json
-cargo run -p oclive-cli -- bench --cold-start --cold-start-runs 5 --release -o ./my-kernel-monolith
-cargo run -p oclive-cli -- bench --soak --soak-duration 72 --release -o ./my-kernel-monolith --json > soak.json
+cargo run -p oclive-cli -- --experimental bench --matrix --release -o ./my-kernel-monolith --json > matrix.json
+cargo run -p oclive-cli -- --experimental bench --cold-start --cold-start-runs 5 --release -o ./my-kernel-monolith
+cargo run -p oclive-cli -- --experimental bench --soak --soak-real-time --soak-duration 72 --soak-sample-interval 60 --release -o ./my-kernel-monolith --json > soak.json
 ```
 
 **预期**：终端或 `matrix.json` 含 **12 组**（4 档位 × 3 preset）的 `standard_ms` / `monolith_ms` 采样；将 p50 毫秒数填入上表。总耗时约 **2–4 小时**（含多次 Release 编译）。
@@ -157,7 +157,7 @@ cargo run -p oclive-cli -- bench --soak --soak-duration 72 --release -o ./my-ker
 ### 5.4 冷启动（`--cold-start`）
 
 ```bash
-cargo run -p oclive-cli -- bench --cold-start --cold-start-runs 5 --release -o ./my-kernel-monolith
+cargo run -p oclive-cli -- --experimental bench --cold-start --cold-start-runs 5 --release -o ./my-kernel-monolith
 ```
 
 **预期**：每轮重启内核 `--api` 后打印 **首条 `/chat` 延迟**、**热启动平均**、**端口就绪时间**；5 轮结束后可将中位数填入本地记录或 `bench_history.json`（勿提交 Git）。
@@ -184,12 +184,16 @@ cargo run -p oclive-cli -- profile -o ./my-kernel
 ### 5.7 长稳运行（`bench --soak`）
 
 ```bash
-cargo run -p oclive-cli -- bench --soak --soak-duration 72 --release -o ./my-kernel-monolith --json > soak.json
+# 日常加速冒烟：名义 72h，墙钟最多 120s
+cargo run -p oclive-cli -- --experimental bench --soak --soak-duration 72 --release -o ./my-kernel-monolith --json > soak-smoke.json
+
+# 真长稳：72 个真实墙钟小时，每 60s 采样
+cargo run -p oclive-cli -- --experimental bench --soak --soak-real-time --soak-duration 72 --soak-sample-interval 60 --release -o ./my-kernel-monolith --json > soak-72h.json
 ```
 
-**预期**：JSON 含周期性 **RSS** 与 **聊天次数**；验收标准为 **最终 RSS ≤ 首样本 × 1.2**（超出时终端 ⚠️）。CLI 本地为加速采样（墙钟约 **2s × 小时数**，上限 120s）；真机 **72h** 请在专用环境运行同一命令并保留 `--json` 报告。
+**预期**：schema v2 JSON 记录直接启动的真实内核 PID、实际墙钟/采样间隔、一次不计入正式负载的 `warmup_chats`、周期性 **RSS / CPU**、成功与失败聊天数、提前退出及进程回收结果。RSS 首样本在热身后取得，验收要求 **最终 RSS ≤ 稳态首样本 × 1.2**、零请求/采样失败、无提前退出且子进程已回收；任一项失败时命令非零退出。
 
-在工程根启动 `cargo run --release -- --api`（`OCLIVE_HTTP_API_MOCK_LLM=1`），按**名义小时**采样 RSS 与聊天次数。
+不带 `--soak-real-time` 时仍为加速冒烟（墙钟约 **2s × 名义小时数**，最短 8s、上限 120s），不得作为 72h 泄漏证据。真长稳必须显式使用 `--soak-real-time`；支持小数小时，例如 `--soak-duration 0.01 --soak-sample-interval 5` 可做 36s 的真实时钟校准。构建、API 冷启动和一次基线热身不计入请求的 soak 时长。
 
 若 **最终 RSS > 首样本 × 1.2**，终端输出 ⚠️ 警告。
 
