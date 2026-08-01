@@ -24,40 +24,31 @@ cargo run -p oclive-cli -- init --help
 
 **5 分钟上手**（`doctor` → `init --quick` → `cargo run`）：[KERNEL_FACTORY_VISION.md](../getting-started/KERNEL_FACTORY_VISION.md#5-分钟从零到对话纯内核脚手架)。
 
-**与实现对齐**：顶层子命令以 `kernel/crates/oclive-cli/src/main.rs` 的 `Commands` 枚举为准；下列分级为对外门面，**不**把未实现的 CLI 算作「已完成能力」。
+**与实现对齐**：顶层子命令以 `kernel/crates/oclive-cli/src/main.rs` 的 `Commands` 枚举为准。默认帮助只展示稳定入口；试验命令仍可通过已知名称调用，但必须显式传全局 `--experimental`。旧工程归档 `template` 保持兼容可调用但默认隐藏。
 
 ---
 
-## 能力分级（A / B / C）
+## 官方命令面
 
-### A 级 — 核心工厂主轴
+### 默认可见的稳定入口
 
 | 域 | 命令 | 说明 |
 |----|------|------|
-| 项目初始化 | `init` | 模板、`--preset`、`--monolith`、`--smart`（环境推荐）、`--with-role-pack`、`--kernel-source`、`--quick` 等 |
-| 构建与基准 | `build`、`bench` | 标准版 + 焊接版；`--save`、`--regression`、`--compare-versions` |
+| 项目初始化 | `init` | 配方、`--preset`、`--smart`（环境推荐）、`--with-role-pack`、`--kernel-source`、`--quick` 等；`--monolith` 仍属试验能力 |
 | 角色包 | `pack create` / `validate` / `publish` | 创建、校验、`.oclivepack` 打包 |
-| 插件 | `plugin create` / `install` / `uninstall` / `test` / `manage` | 脚手架与工程内安装；**manage** 为高级槽位/蓝图（发现安装见 **market**） |
+| 插件 | `plugin create` / `install` / `uninstall` / `test` / `manage` | 脚手架与工程内安装；**manage** 为高级槽位/蓝图 |
 | 环境 | `doctor`（`--fix`）、`config` | 诊断与 `~/.oclive/config.toml` |
-| 质量 | `test`、`lint`、`ci init` / `ci check` | 回归（彩色摘要 / 通过率 / 耗时）；`lint` 人类输出同风格（`lint result: ok. N passed. 0 failed.`）；CI 模板含 audit / deny / loom |
+| 质量与 CI | `lint`、`ci init/check/plan/explain` | 静态检查、CI 模板与领域感知影子规划；第三方脚手架不能扩展 `ci` |
+| 脚手架工具 | `scaffold list/inspect/validate/resolve/generate` | 本地声明发现、信任提示、确定性解析与锁后声明式生成；不执行第三方命令 |
+| 本地开发 | `dev`、`registry`、`profile` | 角色监听、工程注册表、依赖/体积画像 |
+| 契约与迁移 | `kernel`、`explain`、`migrate-app-data`、`completions` | 运行时信息、错误解释、数据迁移与补全 |
 
-### B 级 — 增强工具
+### 默认隐藏但保留调用兼容
 
-| 域 | 命令 | 说明 |
-|----|------|------|
-| 本地管理 | `registry`、`compose` | 多工程注册表与编排 |
-| 市场 | `market` | `browse` / `search` / `install` / `info`（**推荐**统一发现入口） |
-| 模板 | `template pack` / `create`，`init --template-url` | 打包与反向生成（`publish` 已 deprecated） |
-| 开发 | `dev`、`debug`、`profile` | 监听、追踪、依赖/体积画像 |
+- **试验命令**：`build`、`bench`、`blueprint`、`compose`、`debug`、`dashboard`、`learn`、`test`、`market`、`collab`；使用时在子命令前传全局 `--experimental`。
+- **旧工程归档**：`template create/pack` 与 `init --template-url` 只表示 `.oclive-template.tar.gz` 兼容流，不是 Scaffold Package；顶层 `publish` 已移除，没有 deprecated 别名。
 
-### C 级 — 开发者体验（不计入工厂能力数）
-
-| 命令 | 说明 |
-|------|------|
-| `learn` | 交互式教程 |
-| `dashboard` | Web 仪表盘（默认 `:8420`） |
-| `collab` | 角色包 Git 薄封装（需远程仓库） |
-| `blueprint` | `[experimental/legacy]` `pipeline.ocblueprint` 校验 |
+Scaffold Package 的发现、版本、命名空间、来源锁定和 CI 隔离以 [RFC_SCAFFOLD_PACKAGE_V1.md](../rfc/RFC_SCAFFOLD_PACKAGE_V1.md) 为准。
 
 **计划中（未实现，勿写入「已完成」）**：`pack diff` / `pack update`、`oclive kernel update`、`dev --inject`、`bench history clear` / `export` / `import` — 见 [VISION_ROADMAP_MONTHLY.md](../roadmap/VISION_ROADMAP_MONTHLY.md#oclive-cli-脚手架计划中)。
 
@@ -70,18 +61,18 @@ cargo run -p oclive-cli -- init --help
 | **AB1** | `narrative_hint` 契约 | 集成测 + [NARRATIVE_HINT_CONTRACT.md](../testing/NARRATIVE_HINT_CONTRACT.md) |
 | **AB2** | 侧车 / 内核错误分层 | `oclive_validation::protocol_boundary`；OOCP **S12** |
 | **AB3** | `bench --equivalence` | 标准 vs Monolith `/chat` 回复逐条对比（MOCK_LLM） |
-| **AB4** | `test --loom` | `cargo-loom` 模型检查（CI `loom` job，`continue-on-error`） |
+| **AB4** | `test --loom` | 通过包级 `loom-tests` feature 运行 Loom 模型检查（Nightly `loom` job；失败可见但不阻塞 main） |
 | **AB5** | 模糊测试 | [FUZZING.md](../testing/FUZZING.md)；`kernel/fuzz/` + proptest |
-| **AB6** | `bench --soak` | 长稳 RSS 趋势（`--soak-duration` 小时） |
+| **AB6** | `bench --soak` | 加速冒烟或显式 `--soak-real-time` 真长稳；采样内核 PID 的 RSS/CPU、请求与回收状态 |
 
 ```bash
 cargo test -p oclivenewnew-tauri --test narrative_hint_contract_audit
 cargo test -p oclivenewnew-tauri --test protocol_boundary_sidecar
-cargo run -p oclive-cli -- bench --equivalence --release -o ./my-kernel
-cargo run -p oclive-cli -- test --loom
+cargo run -p oclive-cli -- --experimental bench --equivalence --release -o ./my-kernel
+cargo run -p oclive-cli -- --experimental test --loom
 cargo test -p oclive_validation --test proptest_fuzz_parsing
-cargo run -p oclive-cli -- bench --soak --soak-duration 24 -o ./my-kernel
-cargo run -p oclive-cli -- test --equivalence-check -o ./my-kernel
+cargo run -p oclive-cli -- --experimental bench --soak --soak-real-time --soak-duration 24 --soak-sample-interval 60 -o ./my-kernel
+cargo run -p oclive-cli -- --experimental test --equivalence-check -o ./my-kernel
 ```
 
 ---
@@ -101,9 +92,9 @@ cargo run -p oclive-cli -- test --equivalence-check -o ./my-kernel
 | **AA9** | `completions <shell>` | `bash` / `zsh` / `fish` / `powershell`（或 `power-shell`） |
 
 ```bash
-cargo run -p oclive-cli -- bench --cold-start --cold-start-runs 3 -o ./my-kernel
-cargo run -p oclive-cli -- test --coverage -o .
-cargo run -p oclive-cli -- test --miri -o .
+cargo run -p oclive-cli -- --experimental bench --cold-start --cold-start-runs 3 -o ./my-kernel
+cargo run -p oclive-cli -- --experimental test --coverage -o .
+cargo run -p oclive-cli -- --experimental test --miri -o .
 cargo run -p oclive-cli -- explain LLM_ERROR
 cargo run -p oclive-cli -- init --dry-run --template robot-soul -o ./preview
 cargo run -p oclive-cli -- init --check --template robot-soul --kernel-source . -o ./out
@@ -114,7 +105,7 @@ cargo run -p oclive-cli -- completions bash > oclive.bash
 
 **Shell 补全安装（bash 示例）**：`eval "$(cargo run -p oclive-cli -- completions bash)"` 或写入 `~/.bash_completion.d/oclive` 后 `source`。
 
-补全由 **`clap_complete` 从当前 `Cli` 派生**（约 **24** 个顶层子命令：`init`、`build`、`bench`、`pack`、`doctor`、`test`、`explain` 等）。已移除的顶层 **`publish`**、**`plugin search`/`update`**、**`registry login`** **不会**出现在补全中；角色包分发请用 **`pack publish`**。
+补全由 **`clap_complete` 从当前 `Cli` 派生**；默认帮助与补全聚焦 **15** 个稳定顶层入口。隐藏的试验/兼容命令不计入默认认知面。已移除的顶层 **`publish`**、**`plugin search`/`update`**、**`registry login`** 不会重新出现；角色包分发请用 **`pack publish`**。
 
 调优闭环见 [PERFORMANCE.md §5](../getting-started/PERFORMANCE.md#5-用-oclive-bench-做性能调优实战闭环)。
 
@@ -135,11 +126,11 @@ cargo run -p oclive-cli -- completions bash > oclive.bash
 
 ```bash
 cargo run -p oclive-cli -- init --from-existing ./my-kernel --json
-cargo run -p oclive-cli -- bench --stress --stress-concurrency 5 --stress-duration 10 -o ./my-kernel
-cargo run -p oclive-cli -- test --ci-parity -o ./my-kernel --skip-oocp
+cargo run -p oclive-cli -- --experimental bench --stress --stress-concurrency 5 --stress-duration 10 -o ./my-kernel
+cargo run -p oclive-cli -- --experimental test --ci-parity -o ./my-kernel --skip-oocp
 cargo run -p oclive-cli -- lint --deps -o ./my-kernel
 cargo run -p oclive-cli -- lint --deny -o .
-cargo run -p oclive-cli -- test -o ./my-kernel --json
+cargo run -p oclive-cli -- --experimental test -o ./my-kernel --json
 cargo run -p oclive-cli -- doctor --watch
 cargo run -p oclive-cli -- kernel info -o ./my-kernel --json
 ```
@@ -152,7 +143,7 @@ cargo run -p oclive-cli -- kernel info -o ./my-kernel --json
 |------|------|
 | `registry` | 本地工程注册表 `~/.oclive/registry.json`（`init` 后自动注册） |
 | `compose` | 多内核 `oclive-compose.yml` 编排 `up` / `down` / `ps` |
-| `template pack` | 打包 `.oclive-template.tar.gz`（`publish` 为 deprecated 别名） |
+| `template pack` | 隐藏兼容入口：打包旧 `.oclive-template.tar.gz` 工程归档 |
 | `init --tui` | ratatui 模板选择器（TTY 不可用时回退） |
 | `bench --watch` | 源码变更触发自动 bench + 历史对比 |
 | `debug` | `OCLIVE_DEBUG_TRACE` 逐步骤追踪 |
@@ -168,9 +159,9 @@ cargo run -p oclive-cli -- kernel info -o ./my-kernel --json
 | `learn` | 五步交互教程（`doctor` → 模板说明 → `init` → `cargo build` → curl 提示） |
 
 ```bash
-cargo run -p oclive-cli -- dashboard
-cargo run -p oclive-cli -- bench --live --release -o ./my-kernel
-cargo run -p oclive-cli -- learn -o ./oclive-learn-demo
+cargo run -p oclive-cli -- --experimental dashboard
+cargo run -p oclive-cli -- --experimental bench --live --release -o ./my-kernel
+cargo run -p oclive-cli -- --experimental learn -o ./oclive-learn-demo
 ```
 
 > **端口**：`dashboard` 与内核 HTTP API 默认均可能占用 **8420**；请勿同时启动。教程 HTTP 示例使用 **8421**。
@@ -186,9 +177,9 @@ cargo run -p oclive-cli -- learn -o ./oclive-learn-demo
 | `lint` | 目录结构、`Cargo.toml` 元数据、`settings.json` 第 1–6 模块、`monolith.toml`、Git 脏检查 |
 
 ```bash
-cargo run -p oclive-cli -- bench --matrix --release -o ./my-kernel
-cargo run -p oclive-cli -- bench --matrix --json -o ./my-kernel
-cargo run -p oclive-cli -- test -o ./my-kernel
+cargo run -p oclive-cli -- --experimental bench --matrix --release -o ./my-kernel
+cargo run -p oclive-cli -- --experimental bench --matrix --json -o ./my-kernel
+cargo run -p oclive-cli -- --experimental test -o ./my-kernel
 cargo run -p oclive-cli -- lint -o ./my-kernel --json
 ```
 
@@ -238,9 +229,9 @@ cargo run -p oclive-cli -- profile -o ./my-kernel --json
 离线缓存：`~/.oclive/plugin_index_cache.json`（在线拉取失败时自动回退）。默认索引与桌面一致：`awesome-oclive-plugins` 的 `plugins.json`；官方示例草稿见主仓 `data/plugins.json`（可用 `OCLIVE_PLUGIN_INDEX_URL` 指向其 raw URL）。
 
 ```bash
-cargo run -p oclive-cli -- market browse
-cargo run -p oclive-cli -- market search llm
-cargo run -p oclive-cli -- market install template:dialogue-only --template-output ./from-market
+cargo run -p oclive-cli -- --experimental market browse
+cargo run -p oclive-cli -- --experimental market search llm
+cargo run -p oclive-cli -- --experimental market install template:dialogue-only --template-output ./from-market
 ```
 
 ### `registry` 云端同步
@@ -280,7 +271,7 @@ cargo run -p oclive-cli -- registry pull my-kernel -o ./my-kernel
 | 能力 | 命令 |
 |------|------|
 | **Y3 配置** | `oclive config set/get/list/unset/init`（`~/.oclive/config.toml` / `.oclive.toml`） |
-| **Y1 CI** | `oclive ci init` / `oclive ci check`（模板含 **`cargo-audit`**、`cargo-deny`（licenses + bans）、**`loom`** job；audit/loom 为 `continue-on-error: true`） |
+| **Y1 CI** | `oclive ci init` / `ci check`；主仓另有 `ci plan` / `ci explain` 领域感知影子计划（只报告，不跳 job） |
 | **Y6 修复** | `oclive doctor --fix` / `--fix --yes` |
 | **Y2 回归门禁** | `oclive bench --regression` / `--regression-threshold 3` |
 | **Y5 跨版本** | `oclive bench --compare-versions v0.2.0` |
@@ -289,11 +280,36 @@ cargo run -p oclive-cli -- registry pull my-kernel -o ./my-kernel
 ```bash
 cargo run -p oclive-cli -- config set OCLIVE_REGISTRY_URL https://registry.example.com --global
 cargo run -p oclive-cli -- ci init -o ./my-kernel
+cargo run -p oclive-cli -- ci plan --shadow --base HEAD^ --head HEAD
+cargo run -p oclive-cli -- ci explain --format markdown
 cargo run -p oclive-cli -- doctor --fix --yes
-cargo run -p oclive-cli -- bench --release --save -o ./my-kernel
-cargo run -p oclive-cli -- bench --release --regression -o ./my-kernel
+cargo run -p oclive-cli -- --experimental bench --release --save -o ./my-kernel
+cargo run -p oclive-cli -- --experimental bench --release --regression -o ./my-kernel
 cargo run -p oclive-cli -- template create my-team -o ./my-kernel
 ```
+
+`ci plan` 默认读取 `data/ci/impact-map.v1.json` 与 `validation-catalog.v1.json`，从 Git diff 或重复的 `--changed-file` 计算直接模块、影响闭包、验证 profile、建议 validator 和 fail-safe 全量原因，输出 `target/oclive-ci/plan.json`。`ci explain` 只解释这份 JSON，不重新计算、不执行命令。Stage 1 的 `ci-impact-plan` 为 `continue-on-error` 可见性 job；它不跳过任何主 CI 硬门禁。目录中标为 `nightly` 的验证器由独立 Nightly/手动工作流执行，不属于选择性 PR。契约、第三方隔离与脚手架辅助边界见 [OCLive 领域感知 CI](../roadmap/SOMEDAY_TOOLCHAIN_CI.md)。
+
+---
+
+## `scaffold`：本地声明发现、锁定与受限生成
+
+```bash
+cargo run -p oclive-cli -- scaffold list -o .
+cargo run -p oclive-cli -- scaffold inspect com.oclive.scaffold.plugin -o .
+cargo run -p oclive-cli -- scaffold validate ./.oclive/scaffolds/example/oclive.scaffold.json
+cargo run -p oclive-cli -- scaffold resolve -o . --write-lock --json
+cargo run -p oclive-cli -- scaffold generate dev.example.scaffold project \
+  -o . --output ../generated --set project_name=demo --accept-untrusted
+cargo run -p oclive-cli -- scaffold generate dev.example.scaffold project \
+  -o . --output ../preview --set project_name=demo --accept-untrusted --dry-run --json
+```
+
+Stage 2A 按配置解析 project、user、编译内置 official 三类来源，并在 `.oclive/scaffold.lock.json` 记录来源、维护者、信任分类、权限、命名空间、兼容范围与 SHA-256。Stage 2B 只允许已选中的本地 `instruction` 生成器把文件物化到**不存在的新目录**：包必须声明 `project.write`，清单固定指令 SHA-256，指令固定每个源文件 SHA-256；项目/用户包还须与当前 lock 完全一致，并为每次调用传 `--accept-untrusted`。`--set` 只传字符串，`--dry-run` 完成相同校验但零写入；成功时 `.oclive/scaffold.provenance.json` 记录来源与产物摘要，不记录变量值。
+
+修改包清单后，应先审查差异，再重新运行 `scaffold resolve --write-lock`。缺少指令摘要的 v1.0 包仍能被发现，但 `generate` 会拒绝，并提示把包的 `scaffold_contract` 范围提高到 `>=1.1,<2` 后补摘要。官方 `builtin` 生成器不在此处复制实现，命令会提示继续使用 `oclive init`、`oclive plugin create` 或 `oclive pack create` 等领域入口。
+
+Scaffold Package 仍**不**联网安装、不执行 `commands[].entry`、脚本或 hook，不解析组合，也不能控制 CI workflow、验证器、Runner、Secret 或门禁。完整契约见 [RFC_SCAFFOLD_PACKAGE_V1.md](../rfc/RFC_SCAFFOLD_PACKAGE_V1.md)。
 
 ---
 
@@ -339,7 +355,7 @@ cargo run -p oclive-cli --features diagnostics-host -- doctor execution-plan my-
 在 **oclivenewnew 仓库根**执行（需已能 `cargo build -p oclivenewnew-tauri --release`）：
 
 ```bash
-cargo run -p oclive-cli -- test --oocp -o .
+cargo run -p oclive-cli -- --experimental test --oocp -o .
 ```
 
 流程：启动 `cargo run --release -p oclivenewnew-tauri -- --api`（`OCLIVE_HTTP_API_MOCK_LLM=1`）→ 轮询 `GET /health`（默认 `http://127.0.0.1:8420`，**30s** 超时）→ `node examples/oocp-test-suite/run.mjs` → 终止内核进程。可设 **`OCLIVE_API_BASE`** 覆盖探活 URL。
@@ -503,7 +519,7 @@ cargo run -p oclive-cli -- init --smart --non-interactive -o ./out --project-nam
 cargo run -p oclive-cli -- init --non-interactive --quiet --template robot-soul -o ./out/doll
 cargo run -p oclive-cli -- init --non-interactive --template robot-gateway -o ./out/gateway
 cargo run -p oclive-cli -- init --non-interactive --template dialogue-only -o ./out/chat
-cargo run -p oclive-cli -- init --non-interactive --template headless-api --monolith -o ./out/api-weld
+cargo run -p oclive-cli -- --experimental init --non-interactive --template headless-api --monolith -o ./out/api-weld
 cargo run -p oclive-cli -- init --non-interactive --template library-embed --kernel-source . -o ./out/embed
 ```
 
@@ -516,14 +532,14 @@ cargo run -p oclive-cli -- init --non-interactive --template library-embed --ker
 **蓝图校验**（`[experimental/legacy]`，不改变桌面宿主主路径；新工程优先 `init --pipeline`）：
 
 ```bash
-cargo run -p oclive-cli -- blueprint validate ./distros/chat-pro/roles/myrole/pipeline.ocblueprint
-cargo run -p oclive-cli -- blueprint validate ./path.json --json
+cargo run -p oclive-cli -- --experimental blueprint validate ./distros/chat-pro/roles/myrole/pipeline.ocblueprint
+cargo run -p oclive-cli -- --experimental blueprint validate ./path.json --json
 ```
 
 启用 Monolith（`--non-interactive` 下加 **`--monolith`**；仅 **kernel_server**）：
 
 ```bash
-cargo run -p oclive-cli -- init --non-interactive --preset full --monolith --monolith-preset latency -o /tmp/my-monolith-kernel
+cargo run -p oclive-cli -- --experimental init --non-interactive --preset full --monolith --monolith-preset latency -o /tmp/my-monolith-kernel
 cargo build --release --manifest-path /tmp/my-monolith-kernel/Cargo.toml
 cargo build --release --features monolith --manifest-path /tmp/my-monolith-kernel/Cargo.toml
 ```
@@ -582,17 +598,17 @@ cargo run -p oclive-cli -- registry switch my-kernel
 ## `compose`：多内核编排
 
 ```bash
-cargo run -p oclive-cli -- compose init
-cargo run -p oclive-cli -- compose up
-cargo run -p oclive-cli -- compose down
-cargo run -p oclive-cli -- compose ps
+cargo run -p oclive-cli -- --experimental compose init
+cargo run -p oclive-cli -- --experimental compose up
+cargo run -p oclive-cli -- --experimental compose down
+cargo run -p oclive-cli -- --experimental compose ps
 ```
 
 见项目根 **`oclive-compose.yml`**（`services.<id>.path` / `port` / `env` / `depends_on`）。**`up`** 按依赖顺序启动，日志带 **`[服务名]`** 前缀；状态写入 **`.oclive-compose.pids.json`**。
 
 ---
 
-## `template`：模板打包与复用
+## `template`：旧工程归档兼容
 
 ```bash
 cargo run -p oclive-cli -- template pack -o ./my-kernel -O ./my-kernel.oclive-template.tar.gz
@@ -602,15 +618,15 @@ cargo run -p oclive-cli -- init --template-url https://example.com/template.tar.
 
 - **`template pack`**：将工程打包为 **`.oclive-template.tar.gz`**（排除 `target/`、`.git/` 等；含 `template.json`）。
 - **`template create`**：反向分析工程并注册 `~/.oclive/templates/`。
-- **`publish --type template`**：**deprecated** 别名，行为同 `template pack` 并打印迁移提示。
+- 顶层 **`publish` 已移除**；旧归档不参与 `oclive scaffold` 的 v1 发现链，不能携带 CI 控制配置。
 
 ---
 
 ## `debug`：逐步骤追踪
 
 ```bash
-cargo run -p oclive-cli -- debug -o ./my-kernel --kernel-source  # 工程须已接主仓内核
-cargo run -p oclive-cli -- debug -o . --step build_prompt --json
+cargo run -p oclive-cli -- --experimental debug -o ./my-kernel --kernel-source  # 工程须已接主仓内核
+cargo run -p oclive-cli -- --experimental debug -o . --step build_prompt --json
 ```
 
 设置 **`OCLIVE_DEBUG_TRACE=1`** 并启动 **`--api`**（默认 Mock LLM）。详见生成工程 **`docs/DEBUG_REFERENCE.md`**。
@@ -638,9 +654,9 @@ cargo run -p oclive-cli -- debug -o . --step build_prompt --json
 在**已存在**的 Monolith 项目根执行（须含 `monolith.toml`）：
 
 ```bash
-cargo run -p oclive-cli -- build -o /path/to/kernel-project
-cargo run -p oclive-cli -- build -o /path/to/kernel-project --release --features somefeat
-cargo run -p oclive-cli -- build -o /path/to/kernel-project --no-cargo
+cargo run -p oclive-cli -- --experimental build -o /path/to/kernel-project
+cargo run -p oclive-cli -- --experimental build -o /path/to/kernel-project --release --features somefeat
+cargo run -p oclive-cli -- --experimental build -o /path/to/kernel-project --no-cargo
 ```
 
 - **`--no-cargo`**：仅再生成 `process_message_monolith.rs` 与 vendor，不调用 `cargo`。
@@ -651,11 +667,13 @@ cargo run -p oclive-cli -- build -o /path/to/kernel-project --no-cargo
 
 ### `bench` 子命令
 
+`bench` 当前仍在实验门内，命令必须在子命令前加全局 **`--experimental`**；以下示例均已包含。
+
 再生成源码、双构建后，对两个二进制各跑 `--runs` 次子进程；子进程内通过环境变量 **`OCLIVE_KERNEL_BENCH_ITERS`** 做热循环。输出 **JSON**（`schema_version: 2`），除延迟分位数外含 **`binary_size`**（字节）、**`peak_memory`**（MiB）、**`build_time`**（秒）。Schema：`kernel/crates/oclive-cli/schemas/oclive_bench_report.schema.json`。
 
 ```bash
-cargo run -p oclive-cli -- bench --release -o /path/to/kernel-project --runs 30 --inner-iters 500 --output ./bench-report.json
-cargo run -p oclive-cli -- bench --release -o /path/to/kernel-project --json
+cargo run -p oclive-cli -- --experimental bench --release -o /path/to/kernel-project --runs 30 --inner-iters 500 --output ./bench-report.json
+cargo run -p oclive-cli -- --experimental bench --release -o /path/to/kernel-project --json
 ```
 
 - **`--save`**：将本次报告追加到项目根 **`bench_history.json`**（本地文件，勿提交）。
@@ -664,19 +682,22 @@ cargo run -p oclive-cli -- bench --release -o /path/to/kernel-project --json
 - **`--compare-versions <git-ref>`**：当前工作区 vs 指定 Git 引用各跑多轮，输出矩阵表。
 - **`--live`**：终端 sparkline 实时仪表盘（`q` 退出）。**勿与** 顶层 Web **`oclive dashboard`** 混淆；`--dashboard` 为 deprecated 别名。
 - **`--history`**：打印 **`bench_history.json`** 全部记录的趋势表；可加 **`--json`**。
+- **`--soak --soak-duration <小时>`**：默认走 8～120s 的加速冒烟时钟；支持小数小时，但不构成长时间泄漏证据。
+- **`--soak-real-time`**：将 `--soak-duration` 解释为真实墙钟小时；`--soak-sample-interval <秒>` 控制资源采样间隔（默认 60）。soak 先完成一次 `warmup_chats`，再启动时钟并取得稳态 RSS 基线；之后直接采样 Release 内核 PID。schema v2 同时记录 RSS/CPU、请求失败、提前退出、工作线程 join 与 `process_reaped`；任何验收失败均非零退出。
 
 **未实现**：`bench history clear` / `export` / `import` 子命令（见路线图「计划中」）。
 
 ```bash
-cargo run -p oclive-cli -- bench --release -o ./my-kernel --save
-cargo run -p oclive-cli -- bench --history -o ./my-kernel
-cargo run -p oclive-cli -- bench --history -o ./my-kernel --json
-cargo run -p oclive-cli -- bench --watch -o ./my-kernel
+cargo run -p oclive-cli -- --experimental bench --release -o ./my-kernel --save
+cargo run -p oclive-cli -- --experimental bench --history -o ./my-kernel
+cargo run -p oclive-cli -- --experimental bench --history -o ./my-kernel --json
+cargo run -p oclive-cli -- --experimental bench --watch -o ./my-kernel
+cargo run -p oclive-cli -- --experimental bench --soak --soak-real-time --soak-duration 0.01 --soak-sample-interval 5 -o ./my-kernel --output ./soak.json
 ```
 
 - **`--watch`**：监听 **`src/`** 与 **`Cargo.toml`**（2s 防抖），自动 release 构建 + **3 轮** bench 并 **`--save`**，打印相对上一轮 **↑/↓/→**。
 
-`--json`：仅将报告 JSON 打印到 **stdout**（进度走 **stderr**），便于管道与 Schema 校验。
+`--json`：仅将报告 JSON 打印到 **stdout**（进度走 **stderr**），便于管道与 Schema 校验。`--output <文件>`：为普通基准、`--stress` 与 `--soak` 在目标目录原子保存 JSON，适合长稳与破坏性测试证据；两者同时出现时保持 `--json` 的 stdout 语义。
 
 **风险**：占位工程 **无** 真实 `PluginHost` 行为。
 
@@ -686,7 +707,7 @@ cargo run -p oclive-cli -- bench --watch -o ./my-kernel
 
 ## 与 CI 的关系
 
-仓库 **`.github/workflows/ci.yml`** 的 **`cli`** job 会 `cargo test -p oclive-cli`（含端到端：`init`、`build`、`bench` smoke）。另有轻量 **`cli-bench`** job 跑一轮 `bench`（不设性能阈值）。
+仓库 **`.github/workflows/ci.yml`** 的 **`cli`** job 会 `cargo test -p oclive-cli`（含端到端：`init`、`build`、`bench` smoke）。独立 **`.github/workflows/nightly-advisory.yml`** 的 **`cli-bench`** job 跑一轮 `bench`（不设性能阈值）并上传 JSON 证据。
 
 ---
 

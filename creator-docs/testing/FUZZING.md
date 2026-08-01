@@ -4,7 +4,7 @@
 
 对 **OOCP 形 JSON**、**manifest.json**、**settings.json** 等外部输入做随机变异，确保解析路径**不 panic**。
 
-## 方式 A：`proptest`（默认，CI `fuzz` job）
+## 方式 A：`proptest`（默认，Nightly `fuzz` job）
 
 ```bash
 cargo test -p oclive_validation --test proptest_fuzz_parsing
@@ -17,7 +17,7 @@ cargo test -p oclive_validation --test proptest_fuzz_parsing
 ```bash
 rustup toolchain install nightly
 cargo install cargo-fuzz
-cd fuzz
+cd kernel/fuzz
 cargo fuzz list
 cargo fuzz run fuzz_manifest_load -- -runs=100000
 cargo fuzz run fuzz_settings_parse -- -runs=100000
@@ -41,11 +41,11 @@ cargo fuzz run fuzz_role_pack_loader -- -runs=100000
 将随机字节写入临时文件并调用 **`peek_role_pack_manifest`**（ZIP / 损坏输入），断言不 panic。
 
 ```bash
-cd fuzz
+cd kernel/fuzz
 cargo fuzz run fuzz_blueprint_v2 -- -runs=100000
 ```
 
-CI **`fuzz`** job 在 proptest 之后会尝试 **256 轮** libFuzzer 冒烟（`continue-on-error`）。
+独立 **`.github/workflows/nightly-advisory.yml`** 的 **`fuzz`** job 在 proptest 之后运行 **256 轮** libFuzzer 冒烟。失败会使 Nightly 自身变红并上传最小化 failure artifact，但不阻塞 main 合并门禁。
 
 ## 复现崩溃
 

@@ -186,14 +186,39 @@ node scripts/measure-adult-stage.mjs `
 语音共存使用：
 
 ```powershell
-python scripts/stress-voice-gpu-runtime.py --gpu-layers 24 --voice-runs 5
+python scripts/stress-voice-gpu-runtime.py --gpu-layers 22 --voice-runs 5
+
+# 真实墙钟硬件 soak（热身后持续 30 分钟；固定轮次模式仍兼容）
+python scripts/stress-voice-gpu-runtime.py `
+  --gpu-layers 22 `
+  --duration-minutes 30 `
+  --gpu-sample-interval-seconds 1 `
+  --max-gpu-sample-failures 0 `
+  --output target/oclive-ci/destructive-evidence/gpu-soak.json
+
+# 72 小时候选运行；先在 30 分钟矩阵通过后使用
+python scripts/stress-voice-gpu-runtime.py `
+  --gpu-layers 22 `
+  --duration-minutes 4320 `
+  --checkpoint-interval-seconds 60 `
+  --output target/oclive-ci/destructive-evidence/gpu-soak-72h.json
 ```
+
+固定轮次与真实时长模式都并发运行 LLM/TTS；真实时长从 CosyVoice 热身完成后计时，保证至少完成一组。schema v3 除 `requested_duration_minutes` / `actual_load_seconds` / `pairs_completed`、GPU 采样与清理证据外，还报告 Sidecar 首块、客户端交付开销、prompt cache，以及 `pre_token2wav_wait` / `first_token2wav` 等分段分布。`--voice-text` 可做首个短分句与较长片段矩阵；warm 与实测使用同一 emotion/ref 文本，证据只记录字符数。`--output` 原子替换最终报告，并按 `--checkpoint-interval-seconds` 刷新同目录 `*.checkpoint.json`；checkpoint 保持有界，只记录最近一次请求、进度、GPU 采样、子进程 PID/存活和最终 cleanup。Ctrl+C 会写 `interrupted` 与退出码 130；断电/强杀仍只能保留最后一次已落盘 checkpoint。任一进程提前退出、未回收或性能/余量门禁失败均非零退出。
 
 同机 CosyVoice2 mixed-fp16 结果：峰值 **6751/8151MiB**、峰值余量 **1400MiB**、稳态增长 **0MiB**；LLM 热态 TTFT p50 **142ms**，语音 TTFC p50 **4293ms**。后台队列只缓存文本，不预生成语音；返回前台后仍按单拍顺序合成。
 
 2026-07-28 关联竞态与恢复修复后的复验：Ollama `qwen2.5:7b` 深度 1/2/4 共 **7/7** 拍结构化成功、零回退，热态总体 p50 **1047ms**，显存稳定 **5523MiB**；另以深度 8 连跑三轮共 **24/24** 拍，p50 为 **896/893/942ms**，内核工作集 **38.9→39.6MiB** 后稳定、句柄 **242→243** 后稳定。`--gpu-layers 24 --voice-runs 20` 共存压力中峰值 **6657/8151MiB**、余量 **1494MiB**、稳态增长 **0MiB**，热态 LLM TTFT p50 **145ms**、语音 TTFC p50 **3927ms**。同次普通聊天 7 轮真实流式 TTFT p50 **209ms**（直连 Ollama p50 **123ms**）。
 
 2026-07-30 Resource Coordinator Stage 2.3 复验（HEAD `d43f5cf8`，RTX 5060 Laptop **8151MiB**）：`--gpu-layers 24 --voice-runs 10` 的 direct runtime 共存短压测通过，峰值 **6759/8151MiB**、最小余量 **1392MiB**、稳态增长 **17MiB**，未见 OOM、泄漏趋势或残留模型进程；LLM TTFT p50 **179ms**、p95 **1659ms**，语音 TTFC p50 **5008ms**、p95 **6288ms**。全 GPU `--gpu-layers 99 --expect-admission-denied` 在 CosyVoice 分配显存前以 `gpu_admission_denied` 安全拒绝（语音峰值分配 **0MiB**），同时 LLM 仍可用，TTFT **1062ms**。单独语音对照中，短句 TTFC p50/p95 为 **1918/2158ms**，与压力脚本相同的较长片段为 **5538/6254ms**；另一次三轮共存样本出现 **8995ms** 最大值，说明当前 8 秒绝对上限易受长片段和冷抖动影响。以上是适配器直连与短时压力证据，不替代完整 Tauri 宿主 `LLM suspend → Voice → confirmed unload → LLM recover` 实机闭环和长时间 soak。
+
+2026-07-31 schema v2 / 真实时钟模式校准（RTX 5060 Laptop **8151MiB**）：兼容固定轮次 1 组通过，峰值 **6759MiB**、余量 **1392MiB**、GPU 采样 **161** 次零失败；`--duration-minutes 0.2` 从热身后请求 12 秒，实际完成 **14.141s / 2 组**，峰值 **6747MiB**、余量 **1404MiB**、稳态增长 **0MiB**，GPU 采样 **93** 次零失败。两轮采样线程均已 join，报告中的四个子进程 PID 均 `reaped=true`，轮后系统复查相关 `llama-server` / CosyVoice 进程为 **0**，显存回落至约 **1155MiB**。该结果只证明真实分钟分支与清理证据有效，不冒充长时间硬件 soak。
+
+2026-08-01 破坏性验证（测试源 HEAD `a39a987c`，修复 `ec4ce67b`，RTX 5060 Laptop **8151MiB**）：真实内核进程 soak 运行 **299.999s**，完成 **60/60** 次 `/chat`、**61** 个 RSS 样本、零请求/采样失败；RSS **16.37→17.85MiB**（+**1.48MiB / 9.1%**），worker 已 join、子进程已 reap，未作为 72 小时认证。全 GPU 99 层场景在峰值 **6047MiB** 时以 retryable `gpu_admission_denied` 拒绝语音冷载，现有 LLM 仍以 **1036ms** TTFT 完成请求，65 次 GPU 采样零失败。24 层真实五分钟场景在 warm 时出现 **2559MiB < 2560MiB** 的 1MiB 临界拒绝，随后第六次请求才完成冷载，首个有效 TTFC **34964ms**；这是档位余量问题而非 OOM。22 层复测完成 mixed-FP16 warm 与 **46** 对 LLM/TTS，峰值 **6781MiB**、余量 **1370MiB**、稳态增长 **74MiB**，LLM TTFT p50/p95/max **252/282/1943ms**，语音 TTFC **6271/7475/9514ms**，318 次 GPU 采样零失败且进程全回收。该轮资源/回收通过，但因一次 TTFC **9514ms > 8000ms**，整体性能门禁仍为失败；没有调宽阈值。由此将 `gpu_balanced` 保守上限改为 22 层，并把语音尾延迟独立留在 **K-VOICE-09**。
+
+2026-08-02 K-VOICE-09 分段定位（实现基线 HEAD `4ee5e8d1`，RTX 5060 Laptop **8151MiB**）：旧流式状态会把 CosyVoice2 的实例级首块 hop 从 25 累积到 50/100；每次请求恢复模型初值后，同样 5 组长句并发样本的 TTFC p95 **6690→6133ms**，最大值同步下降 **557ms**，流块数由常见 1～2 恢复为 2～3。内部计时显示，长句语音独占 TTFC p50 **2781ms**（首块前等待 **1707ms**、首个 token2wav **1058ms**），同卡并发 TTFC p50 **5231ms**（对应 **3222/1723ms**）；短句独占/并发 TTFC p50 **1669/3082ms**。PCM 编码 p50 约 **6～16ms**，浏览器/本地传输约 **4～5ms**，不是当前优化重点。试验性的 JIT flow encoder 反而把 4 字并发 TTFC 最大值拉到 **11582ms**，已撤回且不作为产品开关。1 组 checkpoint smoke 生成最终报告及 `completed` checkpoint，41 次 GPU 采样零失败、两个子进程均回收；只证明 72 小时证据基础可运行，不代表完成 72 小时认证。资源调度是否采用“语音首块优先”仍待维护者决策，之后须复跑 30 分钟矩阵。
+
+本机原始 JSON（ignored，不作跨机共享基线）位于 `target/oclive-ci/destructive-evidence/`；2026-08-01 对应 SHA-256：`kernel-soak-5m.json` = `EA3D0B085A4CE90FCAC116AD5C9FC6B2B6AD6E326B4367BA66E91A586134843E`，`gpu-admission-denied.json` = `1A2ABAE27ED51B7AE86ED79117971D0D43BB9F2C6E7E724EC8BBBDADD01DB6D0`，24 层失败样本 = `68739E2781FC4ABFC383398CDAF70DE57CD466B5DE4E58EF261F044AFD595FA4`，22 层复测 = `0EC8E19A0F4DD2477F50353C917C6705E629ED608FCC6732596082FC623ED68F`。2026-08-02 分段证据：修复前 5 组 = `3BABC367FF52F0FF9FC3100E08608CB2E554B8D1266951108F695026D179704A`，hop 恢复 5 组 = `623B97CA5144E36D10DAAD435B51A1F860A292E0A0DBE156DB20AC53602121A5`，长句内部计时 3 组 = `28EC92BC6E5CCA0AA621BD87DB7A919EA3AA632FEFC5AB5C931E164617187FEA`，短句并发 3 组 = `0F87A58C00EDBF898AE262D9E78BFDF40A94271E6067844BC9C7A087B1E045F8`，JIT 负向样本 = `653896E9F075C855464B1B3E4E49E454EBC5BE9AF583940C1FD71FA9A2ABFFBC`，checkpoint smoke 最终/进度 = `F90E2402F6F9481A7B5D65BEE2401169A40193143D9B1BC8C1B8C496FBD96E25` / `56674FA84D0889405D0918A92A817D60D134FBB817B2035C5BA95531827A14F3`。
 
 ## Related
 

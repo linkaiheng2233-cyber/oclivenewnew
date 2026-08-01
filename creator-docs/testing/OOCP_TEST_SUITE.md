@@ -4,7 +4,7 @@
 
 ## A1.1 PoC：核心 HTTP 进程重启烟测
 
-- **脚本**：根目录 **`scripts/e2e-core-api-restart.mjs`**（Node 20+ 内置 `fetch`，无额外 npm 依赖）。  
+- **脚本**：根目录 **`scripts/e2e-core-api-restart.mjs`**（仓库 Node 22+ 基线内置 `fetch`，无额外 npm 依赖）。
 - **行为**：在同一端口上 **启动 `--api` → `/health` → `POST /chat` → 终止进程 → 再次启动 → 再 `/health` + `/chat`**；两轮均须成功。默认 **`OCLIVE_HTTP_API_MOCK_LLM=1`**，**无需 Ollama**。  
 - **本地**：`cargo build -p oclivenewnew-tauri` 后，仓库根目录执行 **`npm run test:e2e:core-api-restart`**（或手动设置 `OCLIVE_ROLES_DIR` / `OCLIVE_E2E_PORT` / `OCLIVE_E2E_BINARY`）。  
 - **说明**：覆盖 **「关开恢复」** 的 **HTTP 宿主进程** 维度；**`vite build` + `vite preview` + Playwright** 首屏烟测见下文 **A1.1b**，CI 在 **`frontend`** job。**安装包 / Tauri 原生窗 / WebDriver 全屋** 仍作为独立工程项，见 [PRODUCT_LINE_TASK_BUCKETS.md](../../handoff/PRODUCT_LINE_TASK_BUCKETS.md) **§四**。

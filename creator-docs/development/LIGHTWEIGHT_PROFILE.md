@@ -24,22 +24,22 @@
 
 ### §6.1 `cargo audit` 工具链
 
-- **固定版本**：**cargo-audit 0.22.1**（与 CI `cargo-audit` job 一致，便于报告对齐）。
-- **本地执行**：`cd src-tauri && cargo audit`  
+- **固定版本**：**cargo-audit 0.22.1**（与 CI `dimension5-acceptance` 内的审计步骤一致，便于报告对齐）。
+- **本地执行**：仓库根目录运行 `cargo audit`
   离线：`cargo audit --no-fetch --stale`（需本机曾成功 fetch `advisory-db`）。
 
 ### §6.4 审计结果状态（当前）
 
-**漏洞级已清零**（**2026-05-20**）；**警告级仍跟踪**。详情见 **[KNOWN_VULNERABILITIES.md](../security/KNOWN_VULNERABILITIES.md)**。
+**漏洞级当前为 0**（最近复核 **2026-08-01**）；**警告级仍跟踪**。详情见 **[KNOWN_VULNERABILITIES.md](../security/KNOWN_VULNERABILITIES.md)**。
 
-摘要（**2026-05-20**，工作区根 `Cargo.lock`，`cargo audit --no-fetch --stale`）：
+摘要（**2026-08-01**，工作区根 `Cargo.lock`，`cargo audit`）：
 
-- **漏洞级（error）**：**0**（`sqlx` 0.8.6 + 仅 `sqlite` 特性；运行时 `sql_migrate`，无 `sqlx-mysql` / `rsa` 解析链）。
-- **警告级（warning）**：**3** 条未忽略（`fxhash`、`glib` unsound、`rand` 0.7）；**11** 条 gtk-rs GTK3 *unmaintained* 已在 [`.cargo/audit.toml`](../../.cargo/audit.toml) 记录忽略。发版评审时运行 `cargo audit` 并核对 [KNOWN_VULNERABILITIES.md](../security/KNOWN_VULNERABILITIES.md)。
+- **漏洞级（error）**：**0**（无 `sqlx-mysql` / `rsa` 解析链；`event-listener` 已升级至修复版 5.4.2）。
+- **警告级（warning）**：**8** 条已允许/跟踪，主要为 gtk/webkit Linux 簇、`glib`、`unic-*` 与 yanked `spin`；发版评审时运行 `cargo audit` 并核对 [KNOWN_VULNERABILITIES.md](../security/KNOWN_VULNERABILITIES.md)。
 
 **许可证合规**（**2026-06-09**）：根目录 `deny.toml` + `cargo deny check licenses` 退出码 **0**（允许表含 `Apache-2.0`、`MIT`、`CDLA-Permissive-2.0`、`NCSA` 等；工作区 crate 统一 SPDX `Apache-2.0`）。
 
-CI：三层 **cargo-audit 0.22.1** 硬门禁——**`dimension5-acceptance`**（`scripts/dimension5-acceptance.mjs --ci`，含 **`cargo deny` licenses+bans**）、**`cargo-audit`** job（`ci.yml`）、**`cargo-audit-lockfile.yml`**（`Cargo.lock` / `.cargo/audit.toml` PR）；`npm-audit` 为 `continue-on-error: true` 可见性。供应链策略见 [security/SUPPLY_CHAIN.md](../security/SUPPLY_CHAIN.md)。
+CI：**`dimension5-acceptance`** 唯一持有主工作流的 `cargo audit` + `cargo deny licenses+bans`，**`cargo-audit-lockfile.yml`** 对 `Cargo.lock` / `.cargo/audit.toml` PR 补充锁文件审计；独立重复 `cargo-audit` job 已移除。`npm-audit` 同时硬门禁生产依赖与完整开发依赖图；K-SUPPLY-12 已完成本地收口，远端里程碑证据待冻结。供应链策略见 [security/SUPPLY_CHAIN.md](../security/SUPPLY_CHAIN.md)。
 
 ### §6.5 未使用 / 可选依赖（审查结论）
 

@@ -53,12 +53,25 @@ pub fn run_equivalence(root: &Path, args: &BenchArgs) -> Result<()> {
     let std_bin = crate::bench_cmd::release_bin_path(root, &pkg, args.release);
     let mono_bin =
         crate::bench_cmd::release_bin_path(root, &format!("{pkg}-monolith"), args.release);
+    let role_path = crate::bench_http::resolve_bench_role_path(root)?;
 
     let mut exact = 0u32;
     let mut diffs = Vec::new();
     for (i, msg) in DEFAULT_MESSAGES.iter().enumerate() {
-        let std_reply = chat_once(&std_bin, 18420u16.wrapping_add(i as u16), msg)?;
-        let mono_reply = chat_once(&mono_bin, 19420u16.wrapping_add(i as u16), msg)?;
+        let std_reply = chat_once(
+            root,
+            &role_path,
+            &std_bin,
+            18420u16.wrapping_add(i as u16),
+            msg,
+        )?;
+        let mono_reply = chat_once(
+            root,
+            &role_path,
+            &mono_bin,
+            19420u16.wrapping_add(i as u16),
+            msg,
+        )?;
         if std_reply == mono_reply {
             exact += 1;
         } else {
@@ -93,10 +106,17 @@ pub fn run_equivalence(root: &Path, args: &BenchArgs) -> Result<()> {
     Ok(())
 }
 
-fn chat_once(bin: &Path, port: u16, message: &str) -> Result<String> {
+fn chat_once(
+    root: &Path,
+    role_path: &Path,
+    bin: &Path,
+    port: u16,
+    message: &str,
+) -> Result<String> {
     let mut child = Command::new(bin);
     child
         .args(["--api", "--port", &port.to_string()])
+        .current_dir(root)
         .env("OCLIVE_HTTP_API_MOCK_LLM", "1")
         .env("OCLIVE_API_TOKEN", crate::http_client::api_token())
         .stdout(Stdio::piped())
@@ -114,7 +134,7 @@ fn chat_once(bin: &Path, port: u16, message: &str) -> Result<String> {
         });
     }
     wait_tcp(port, spawn_at, Duration::from_secs(180))?;
-    let reply = post_chat_extract(port, message)?;
+    let reply = crate::bench_http::post_chat(port, role_path, message, Duration::from_secs(120))?;
     let _ = proc.kill();
     let _ = proc.wait();
     Ok(reply)
@@ -129,26 +149,6 @@ fn wait_tcp(port: u16, since: Instant, timeout: Duration) -> Result<()> {
         std::thread::sleep(Duration::from_millis(200));
     }
     bail!("port {port} not ready");
-}
-
-fn post_chat_extract(port: u16, message: &str) -> Result<String> {
-    let url = format!("http://127.0.0.1:{port}/chat");
-    let body = serde_json::json!({
-        "message": message,
-        "role_id": "default",
-        "scene_id": "default"
-    });
-    let resp = crate::http_client::post(&url)
-        .set("Content-Type", "application/json")
-        .timeout(Duration::from_secs(120))
-        .send_string(&body.to_string())?;
-    let text = resp.into_string().unwrap_or_default();
-    if let Ok(v) = serde_json::from_str::<serde_json::Value>(&text) {
-        if let Some(r) = v.get("reply").and_then(|x| x.as_str()) {
-            return Ok(r.to_string());
-        }
-    }
-    Ok(text)
 }
 
 fn print_human(r: &EquivalenceReport) {

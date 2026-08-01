@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [main, master]
   workflow_dispatch:
+    inputs:
+      base_sha:
+        description: Optional comparison base for the shadow impact plan
+        required: false
+        type: string
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -15,6 +20,82 @@ permissions:
   contents: read
 
 jobs:
+  # Stage 1 shadow planner: reports what a future selective CI would run.
+  # It is deliberately non-blocking and does not control any existing job.
+  ci-impact-plan:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Resolve comparison base
+        id: comparison
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE_SHA: ${{ github.event.before }}
+          MANUAL_BASE_SHA: ${{ inputs.base_sha }}
+        run: |
+          set -euo pipefail
+          base=""
+          if [ "$EVENT_NAME" = "workflow_dispatch" ] && [ -n "$MANUAL_BASE_SHA" ]; then
+            if ! git cat-file -e "${MANUAL_BASE_SHA}^{commit}" 2>/dev/null; then
+              echo "manual base_sha is not an available commit: $MANUAL_BASE_SHA" >&2
+              exit 1
+            fi
+            base="$(git rev-parse "$MANUAL_BASE_SHA")"
+          elif [ "$EVENT_NAME" = "pull_request" ] && [ -n "$PR_BASE_SHA" ]; then
+            base="$PR_BASE_SHA"
+          elif [ -n "$PUSH_BEFORE_SHA" ] && [ "$PUSH_BEFORE_SHA" != "0000000000000000000000000000000000000000" ] && git cat-file -e "${PUSH_BEFORE_SHA}^{commit}" 2>/dev/null; then
+            base="$PUSH_BEFORE_SHA"
+          elif git rev-parse --verify HEAD^ >/dev/null 2>&1; then
+            base="$(git rev-parse HEAD^)"
+          else
+            base="$(git rev-parse HEAD)"
+          fi
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            policy="pull_request"
+          else
+            policy="merge"
+          fi
+          echo "base=$base" >> "$GITHUB_OUTPUT"
+          echo "policy=$policy" >> "$GITHUB_OUTPUT"
+      - name: Compute shadow impact plan
+        env:
+          BASE_SHA: ${{ steps.comparison.outputs.base }}
+          HEAD_SHA: ${{ github.sha }}
+          PLAN_POLICY: ${{ steps.comparison.outputs.policy }}
+        run: >-
+          cargo run --locked -p oclive-cli -- ci plan
+          --path .
+          --base "$BASE_SHA"
+          --head "$HEAD_SHA"
+          --policy "$PLAN_POLICY"
+          --shadow
+          --output target/oclive-ci/plan.json
+      - name: Render impact summary
+        run: |
+          cargo run --locked -p oclive-cli -- ci explain \
+            --path . \
+            --plan target/oclive-ci/plan.json \
+            --format markdown \
+            --output target/oclive-ci/summary.md
+          cat target/oclive-ci/summary.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload impact evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: oclive-ci-impact-plan-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            target/oclive-ci/plan.json
+            target/oclive-ci/summary.md
+          if-no-files-found: warn
+          retention-days: 14
+
   rust:
     strategy:
       fail-fast: false
@@ -25,7 +106,7 @@ jobs:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
-          node-version: "20"
+          node-version-file: ".nvmrc"
           cache: npm
       - name: Build frontend (Tauri generate_context)
         run: npm ci && npm run build
@@ -42,11 +123,11 @@ jobs:
       - name: rustfmt
         run: cargo fmt --all -- --check
       - name: clippy (workspace)
-        run: cargo clippy --locked --workspace --all-targets --all-features -- -D warnings
+        run: cargo clippy --locked --workspace --exclude oclive-cli --all-targets --all-features -- -D warnings
       - name: tests (workspace)
         env:
           CARGO_BUILD_JOBS: "1"
-        run: cargo test --locked --workspace
+        run: cargo test --locked --workspace --exclude oclive-cli
 
   layering-ratchet:
     runs-on: ubuntu-latest
@@ -63,7 +144,7 @@ jobs:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
-          node-version: "20"
+          node-version-file: ".nvmrc"
           cache: npm
       - uses: actions/setup-python@v6
         with:
@@ -77,34 +158,24 @@ jobs:
         run: cargo install cargo-audit --version 0.22.1 --locked
       - name: Install cargo-deny
         run: cargo install cargo-deny --locked
-      - name: Prime cargo advisory-db
-        run: cargo audit
+      - name: Fetch cargo advisory-db
+        run: |
+          mkdir -p "$HOME/.cargo"
+          git clone --depth 1 https://github.com/RustSec/advisory-db.git "$HOME/.cargo/advisory-db"
       - name: Dimension 5 acceptance gate (--ci)
         run: node scripts/dimension5-acceptance.mjs --ci
 
-  cargo-audit:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - uses: dtolnay/rust-toolchain@stable
-      - name: Install cargo-audit
-        run: cargo install cargo-audit --version 0.22.1 --locked
-      - name: cargo audit
-        working-directory: .
-        run: cargo audit
-
   npm-audit:
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
-          node-version: "20"
+          node-version-file: ".nvmrc"
           cache: npm
       - run: npm ci
-      - name: npm audit (production deps visibility)
-        run: npm audit --omit=dev --audit-level=high
+      - name: npm audit (production and development dependency gates)
+        run: npm run audit:dependencies
 
   plugins-index:
     runs-on: ubuntu-latest
@@ -112,7 +183,7 @@ jobs:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
-          node-version: "20"
+          node-version-file: ".nvmrc"
       - name: Validate data/plugins.json
         run: node scripts/validate-plugins-index.mjs
 
@@ -122,7 +193,7 @@ jobs:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
-          node-version: "20"
+          node-version-file: ".nvmrc"
       - name: Legacy doc paths / banned aliases (hard gate)
         run: node scripts/check-stale-paths.mjs
 
@@ -140,14 +211,13 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
-      - name: fmt oclive-cli
-        run: cargo fmt -p oclive-cli -- --check
+      - uses: Swatinem/rust-cache@v2
       - name: clippy oclive-cli
         run: cargo clippy --locked -p oclive-cli --all-targets -- -D warnings
       - name: test oclive-cli
-        run: cargo test --locked -p oclive-cli
-      - name: kernel ensure plan snapshot
-        run: cargo test --locked -p oclive-cli --test kernel_ensure_plan_snapshot
+        # CLI E2E tests spawn nested Cargo builds. Serial test execution avoids package-cache
+        # lock contention; the full crate run already includes kernel_ensure_plan_snapshot.
+        run: cargo test --locked -p oclive-cli -- --test-threads=1
 
   # ARM64 Linux cross-compile smoke (no tests on target; catches arch-specific breakages)
   rust-arm64-cross:
@@ -167,58 +237,6 @@ jobs:
           CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
         run: cargo check --locked -p oclive_kernel_server -p oclive_kernel_host -p oclive_kernel_runtime --target aarch64-unknown-linux-gnu
 
-  loom:
-    runs-on: ubuntu-22.04
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v5
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - name: Ensure Tauri dist stub (loom test compile)
-        run: node scripts/ensure-tauri-dist.mjs
-      - name: Bundle kernel server for Tauri resources (loom compile)
-        run: node scripts/bundle-kernel-for-tauri.mjs
-      - name: Install Linux dependencies (Tauri 2 / webkit2gtk-4.1 for loom)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libsoup-3.0-dev build-essential curl wget \
-            libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf
-      - name: "loom cfg smoke (full model tests: RUSTFLAGS='--cfg loom' locally)"
-        working-directory: distros/desktop-tauri
-        run: cargo test --locked --test loom_concurrency loom_tests_require_cfg_loom -- --test-threads=1
-
-  fuzz:
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v5
-      - uses: dtolnay/rust-toolchain@stable
-      - name: proptest fuzz harness
-        run: cargo test --locked -p oclive_validation --test proptest_fuzz_parsing
-      - name: cargo-fuzz smoke (blueprint + validation + parsers)
-        continue-on-error: true
-        run: |
-          rustup toolchain install nightly -y
-          cargo install cargo-fuzz --locked -q
-          cd kernel/fuzz
-          for t in fuzz_blueprint_v2 fuzz_oclive_validation fuzz_function_call_parser fuzz_role_pack_loader; do
-            cargo +nightly fuzz run "$t" -- -runs=256
-          done
-
-  cli-bench:
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v5
-      - uses: dtolnay/rust-toolchain@stable
-      - name: oclive bench smoke (no hard thresholds)
-        run: |
-          set -euo pipefail
-          tmp="$(mktemp -d)"
-          cargo run -p oclive-cli --quiet -- --experimental init --non-interactive --quiet --preset full --monolith -o "$tmp/k"
-          cargo run -p oclive-cli --quiet -- --experimental bench --release -o "$tmp/k" --runs 2 --inner-iters 20 --output "$tmp/report.json"
-          test -s "$tmp/report.json"
-
   frontend:
     strategy:
       fail-fast: false
@@ -229,9 +247,11 @@ jobs:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
-          node-version: "20"
+          node-version-file: ".nvmrc"
           cache: npm
       - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
       - run: npm run test:unit
       - run: npm run test:theater:smoke
       - run: npm run build:e2e
@@ -275,7 +295,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - uses: actions/setup-node@v5
         with:
-          node-version: "20"
+          node-version-file: ".nvmrc"
       - name: Build oclive-kernel-server and oclive-cli
         run: cargo build --locked -p oclive_kernel_server -p oclive-cli
       - name: Cross-host memory + distro kernel + profile smoke
@@ -310,7 +330,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - uses: actions/setup-node@v5
         with:
-          node-version: "20"
+          node-version-file: ".nvmrc"
       - name: Install Linux dependencies (Tauri 2 / webkit2gtk-4.1)
         run: |
           sudo apt-get update
@@ -364,64 +384,6 @@ jobs:
           if [ -f /tmp/oocp_api.pid ]; then
             kill "$(cat /tmp/oocp_api.pid)" || true
           fi
-
-  visual-presentation-smoke:
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
-        with:
-          node-version: "20"
-          cache: npm
-      - run: npm ci
-      - name: Visual presentation adapter unit smoke
-        working-directory: distros/shared
-        run: npm run test:unit -- --run src/adapters/visual/index.test.ts
-
-  e2e-tauri:
-    runs-on: ubuntu-22.04
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
-        with:
-          node-version: "20"
-          cache: npm
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - name: Install Linux dependencies (Tauri 2 + WebDriver)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libsoup-3.0-dev build-essential curl wget \
-            libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf \
-            webkit2gtk-driver xvfb dbus-x11
-      - name: Install tauri-driver
-        run: cargo install tauri-driver --locked
-      - run: npm ci
-      - run: npm run build
-      - name: Bundle kernel server for Tauri resources
-        run: node scripts/bundle-kernel-for-tauri.mjs --profile debug
-      - name: Build debug Tauri binary
-        working-directory: distros/desktop-tauri
-        run: cargo build --locked -p oclivenewnew-tauri
-      - name: Native window smoke — A1.1c (WebDriver)
-        id: e2e_tauri_smoke
-        run: |
-          chmod +x scripts/e2e-tauri-native-ci.sh
-          xvfb-run -a bash scripts/e2e-tauri-native-ci.sh
-      - name: Upload e2e-tauri driver logs
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: e2e-tauri-driver-logs-${{ github.run_id }}
-          path: |
-            /tmp/tauri-driver.log
-            /tmp/webkit-webdriver.log
-            /tmp/e2e-tauri-diagnostics.txt
-            /tmp/e2e-tauri-diagnostics/**
-          if-no-files-found: warn
-          retention-days: 14
 
   remote-plugin-demo:
     runs-on: ubuntu-latest

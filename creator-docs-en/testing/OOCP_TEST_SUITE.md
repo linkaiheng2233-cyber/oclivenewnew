@@ -4,7 +4,7 @@
 
 ## A1.1 PoC: core HTTP restart smoke
 
-- **Script:** repo root **`scripts/e2e-core-api-restart.mjs`** (Node 20+ `fetch`, no extra npm deps).  
+- **Script:** repo root **`scripts/e2e-core-api-restart.mjs`** (built-in `fetch` on the repository Node 22+ baseline, no extra npm deps).
 - **Behaviour:** **start `--api` → `/health` → `POST /chat` → terminate → start again → `/health` + `POST /chat`** on the same port; both cycles must pass. Defaults to **`OCLIVE_HTTP_API_MOCK_LLM=1`** (**no Ollama**).  
 - **Local:** after `cargo build -p oclivenewnew-tauri`, from repo root **`npm run test:e2e:core-api-restart`** (or set `OCLIVE_ROLES_DIR` / `OCLIVE_E2E_PORT` / `OCLIVE_E2E_BINARY`).  
 - **Scope:** **host process** “restart and recover” for HTTP (**A1.1a**); **`vite build` + `vite preview` + Playwright** first-screen smoke is **A1.1b** below (CI **`frontend`** job). **Installer / native Tauri window / full WebDriver** remains a separate engineering item in [PRODUCT_LINE_TASK_BUCKETS.md](../../handoff/PRODUCT_LINE_TASK_BUCKETS.md) **§四**.

@@ -69,7 +69,9 @@ function collapseHistoryPreview() {
   historyPreviewChunks.value = 0
 }
 
-const scrollerRef = ref<InstanceType<typeof VirtualScrollContainer> | null>(null)
+const scrollerRef = ref<{
+  scrollToBottom: (force?: boolean) => Promise<void>
+} | null>(null)
 
 async function scrollToBottom(force = false): Promise<void> {
   await scrollerRef.value?.scrollToBottom(force)

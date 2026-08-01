@@ -17,6 +17,10 @@ pub enum CiCommands {
     Init(CiInitArgs),
     /// Check whether CI matches the latest template
     Check(CiCheckArgs),
+    /// Compute a deterministic domain-aware CI impact plan
+    Plan(crate::ci_impact_cmd::CiPlanArgs),
+    /// Explain an existing CI impact plan without recomputing it
+    Explain(crate::ci_impact_cmd::CiExplainArgs),
 }
 
 #[derive(Parser, Debug)]
@@ -43,6 +47,8 @@ pub fn run(cli: CiCli) -> Result<()> {
     match cli.command {
         CiCommands::Init(a) => run_init(a),
         CiCommands::Check(a) => run_check(a),
+        CiCommands::Plan(a) => crate::ci_impact_cmd::run_plan(a),
+        CiCommands::Explain(a) => crate::ci_impact_cmd::run_explain(a),
     }
 }
 
@@ -115,8 +121,8 @@ fn render_ci_yaml(kind: ProjectCiKind) -> String {
       - name: bench regression gate
         run: |
           cargo build -p oclive-cli --release 2>/dev/null || cargo build -p oclive-cli
-          cargo run -p oclive-cli -- bench --release -o . --runs 3 --save || true
-          cargo run -p oclive-cli -- bench --release -o . --regression --runs 5 || true
+          cargo run -p oclive-cli -- --experimental bench --release -o . --runs 3 --save || true
+          cargo run -p oclive-cli -- --experimental bench --release -o . --regression --runs 5 || true
         continue-on-error: true
 
   oocp:
@@ -127,7 +133,7 @@ fn render_ci_yaml(kind: ProjectCiKind) -> String {
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
       - uses: dtolnay/rust-toolchain@stable
       - name: OOCP test suite (enable when kernel linked to oclivenewnew)
         run: echo "skipped — link --kernel-source in scaffold to enable"
@@ -139,7 +145,6 @@ fn render_ci_yaml(kind: ProjectCiKind) -> String {
     let audit_job = r#"
   cargo-audit:
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -160,22 +165,12 @@ fn render_ci_yaml(kind: ProjectCiKind) -> String {
           command: check
           arguments: licenses bans
 
-  loom:
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - name: loom cfg smoke (full model tests: RUSTFLAGS='--cfg loom' locally)
-        working-directory: distros/desktop-tauri
-        run: cargo test --test loom_concurrency loom_tests_require_cfg_loom -- --test-threads=1
 "#;
 
     let extra_steps = if kind == ProjectCiKind::KernelServer {
         r#"
       - name: oclive test
-        run: cargo run -p oclive-cli -- test -o . --skip-oocp
+        run: cargo run -p oclive-cli -- --experimental test -o . --skip-oocp
         continue-on-error: true
 "#
     } else {
@@ -223,4 +218,32 @@ jobs:
 {oocp_job}
 "#
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{render_ci_yaml, ProjectCiKind};
+    use crate::lint_audit_ci::inspect_audit_ci;
+
+    #[test]
+    fn generated_kernel_ci_uses_the_global_experimental_gate() {
+        let workflow = render_ci_yaml(ProjectCiKind::KernelServer);
+        assert!(workflow.contains("-- --experimental bench"));
+        assert!(workflow.contains("-- --experimental test"));
+        assert!(!workflow.contains("oclive-cli -- bench"));
+        assert!(!workflow.contains("oclive-cli -- test"));
+    }
+
+    #[test]
+    fn generated_kernel_ci_uses_current_node_and_required_audit_policy() {
+        let workflow = render_ci_yaml(ProjectCiKind::KernelServer);
+        assert!(workflow.contains("node-version: \"22\""));
+        assert!(!workflow.contains("node-version: \"20\""));
+        assert!(!workflow.contains("loom:"));
+        assert!(!workflow.contains("loom_concurrency"));
+
+        let audit = inspect_audit_ci(&workflow).expect("generated workflow should parse");
+        assert_eq!(audit.owners, ["cargo-audit"]);
+        assert!(audit.soft_owners.is_empty());
+    }
 }

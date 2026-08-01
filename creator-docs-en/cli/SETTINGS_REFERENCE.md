@@ -122,7 +122,7 @@ When any slot is **`directory`**, fill **`manifest.id`** (string) for that slot 
 
 ## V. `monolith.toml` (compile-time, not runtime)
 
-Written by **`oclive-cli init`** when Monolith is enabled at **project root**; consumed **only at compile time** (**`cargo run -p oclive-cli -- build`** reads it and regenerates `process_message_monolith.rs`; you may also use **`cargo build --features monolith`** alone). **Orthogonal** to **`settings.json` → `plugin_backends`**: role pack load **does not** read this file.
+Written by **`oclive-cli init`** when Monolith is enabled at **project root**; consumed **only at compile time** (**`cargo run -p oclive-cli -- --experimental build`** reads it and regenerates `process_message_monolith.rs`; you may also use **`cargo build --features monolith`** alone). **Orthogonal** to **`settings.json` → `plugin_backends`**: role pack load **does not** read this file.
 
 | Field | Meaning |
 |-------|---------|

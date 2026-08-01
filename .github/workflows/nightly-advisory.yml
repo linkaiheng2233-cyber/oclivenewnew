@@ -1,0 +1,193 @@
+name: Nightly advisory
+
+on:
+  schedule:
+    # 02:30 Asia/Shanghai. Scheduled runs use the default branch.
+    - cron: "30 18 * * *"
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: Advisory suite to run
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - loom
+          - fuzz
+          - cli-bench
+          - visual-presentation-smoke
+          - e2e-tauri
+
+concurrency:
+  group: nightly-advisory-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  # These validators are intentionally outside the merge-gating CI workflow.
+  # A failure must remain visible here; do not restore continue-on-error.
+  loom:
+    if: github.event_name == 'schedule' || inputs.suite == 'all' || inputs.suite == 'loom'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: ".nvmrc"
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Ensure Tauri dist stub (loom test compile)
+        run: node scripts/ensure-tauri-dist.mjs
+      - name: Bundle kernel server for Tauri resources (loom compile)
+        run: node scripts/bundle-kernel-for-tauri.mjs
+      - name: Install Linux dependencies (Tauri 2 / webkit2gtk-4.1 for loom)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libsoup-3.0-dev build-essential curl wget \
+            libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+      - name: Loom concurrency model exploration
+        working-directory: distros/desktop-tauri
+        run: cargo test --locked --release --features loom-tests --test loom_concurrency -- --test-threads=1
+
+  fuzz:
+    if: github.event_name == 'schedule' || inputs.suite == 'all' || inputs.suite == 'fuzz'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+      - name: proptest fuzz harness
+        run: cargo test --locked -p oclive_validation --test proptest_fuzz_parsing
+      - name: cargo-fuzz smoke (blueprint + validation + parsers)
+        run: |
+          rustup toolchain install nightly -y
+          cargo install cargo-fuzz --locked -q
+          cd kernel/fuzz
+          for t in fuzz_blueprint_v2 fuzz_oclive_validation fuzz_function_call_parser fuzz_role_pack_loader; do
+            cargo +nightly fuzz run "$t" -- -runs=256
+          done
+      - name: Upload minimized fuzz failures
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-fuzz-artifacts-${{ github.run_id }}-${{ github.run_attempt }}
+          path: kernel/fuzz/artifacts/**
+          if-no-files-found: warn
+          retention-days: 14
+
+  cli-bench:
+    if: github.event_name == 'schedule' || inputs.suite == 'all' || inputs.suite == 'cli-bench'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+      - name: oclive bench smoke (no hard thresholds)
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"
+          report="$GITHUB_WORKSPACE/target/oclive-ci/nightly/cli-bench.json"
+          mkdir -p "$(dirname "$report")"
+          cargo run --locked -p oclive-cli --quiet -- --experimental init --non-interactive --quiet --preset full --monolith -o "$tmp/k"
+          cargo run --locked -p oclive-cli --quiet -- --experimental bench --release -o "$tmp/k" --runs 2 --inner-iters 20 --output "$report"
+          test -s "$report"
+      - name: Upload CLI benchmark evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-cli-bench-${{ github.run_id }}-${{ github.run_attempt }}
+          path: target/oclive-ci/nightly/cli-bench.json
+          if-no-files-found: warn
+          retention-days: 30
+
+  visual-presentation-smoke:
+    if: github.event_name == 'schedule' || inputs.suite == 'all' || inputs.suite == 'visual-presentation-smoke'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: ".nvmrc"
+          cache: npm
+      - run: npm ci
+      - name: Visual presentation adapter unit smoke
+        working-directory: distros/shared
+        run: npm run test:unit -- --run src/adapters/visual/index.test.ts
+
+  e2e-tauri:
+    if: github.event_name == 'schedule' || inputs.suite == 'all' || inputs.suite == 'e2e-tauri'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: ".nvmrc"
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Install Linux dependencies (Tauri 2 + WebDriver)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libsoup-3.0-dev build-essential curl wget \
+            libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf \
+            webkit2gtk-driver xvfb dbus-x11
+      - name: Install tauri-driver
+        run: cargo install tauri-driver --locked
+      - run: npm ci
+      - run: npm run build
+      - name: Bundle kernel server for Tauri resources
+        run: node scripts/bundle-kernel-for-tauri.mjs --profile debug
+      - name: Build debug Tauri binary
+        working-directory: distros/desktop-tauri
+        run: cargo build --locked -p oclivenewnew-tauri
+      - name: Native window smoke — A1.1c (WebDriver)
+        id: e2e_tauri_smoke
+        run: |
+          chmod +x scripts/e2e-tauri-native-ci.sh
+          xvfb-run -a bash scripts/e2e-tauri-native-ci.sh
+      - name: Upload e2e-tauri driver logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-tauri-driver-logs-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            /tmp/tauri-driver.log
+            /tmp/webkit-webdriver.log
+            /tmp/e2e-tauri-diagnostics.txt
+            /tmp/e2e-tauri-diagnostics/**
+          if-no-files-found: warn
+          retention-days: 14
+
+  nightly-summary:
+    if: always()
+    needs: [loom, fuzz, cli-bench, visual-presentation-smoke, e2e-tauri]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Publish advisory results
+        env:
+          LOOM_RESULT: ${{ needs.loom.result }}
+          FUZZ_RESULT: ${{ needs.fuzz.result }}
+          CLI_BENCH_RESULT: ${{ needs['cli-bench'].result }}
+          VISUAL_RESULT: ${{ needs['visual-presentation-smoke'].result }}
+          E2E_TAURI_RESULT: ${{ needs['e2e-tauri'].result }}
+        run: |
+          {
+            echo "## Nightly advisory evidence"
+            echo
+            echo "| Validator | Result |"
+            echo "|---|---|"
+            echo "| loom | $LOOM_RESULT |"
+            echo "| fuzz | $FUZZ_RESULT |"
+            echo "| cli-bench | $CLI_BENCH_RESULT |"
+            echo "| visual-presentation-smoke | $VISUAL_RESULT |"
+            echo "| e2e-tauri | $E2E_TAURI_RESULT |"
+            echo
+            echo "Nightly failures are evidence, not merge gates; skipped rows reflect a targeted manual dispatch."
+          } >> "$GITHUB_STEP_SUMMARY"

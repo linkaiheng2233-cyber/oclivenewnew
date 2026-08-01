@@ -81,7 +81,7 @@ export async function sendChatStoreMessage(
   content: string,
   sceneId: string,
   options: ChatStoreSendOptions = {},
-): Promise<SendMessageResponse | void> {
+): Promise<SendMessageResponse | undefined> {
   const roleStore = useRoleStore()
   const adultStore = useAdultInteractionStore()
   const uiStore = useUiStore()

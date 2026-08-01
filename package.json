@@ -10,7 +10,7 @@
     "distros/theater"
   ],
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "scripts": {
     "dev": "npm run dev -w @oclive/chat-pro",
@@ -36,15 +36,21 @@
     "check:rust:fmt": "cargo fmt --all -- --check",
     "check:rust:clippy": "cargo clippy --workspace --all-targets --all-features -j 1 -- -D warnings",
     "check:rust:test": "cargo test --workspace --lib -j 1",
-    "check:rust:integration": "node scripts/ensure-tauri-dist.mjs && cargo test --locked --workspace --tests -j 1",
+    "check:rust:integration:workspace": "node scripts/ensure-tauri-dist.mjs && cargo test --locked --workspace --exclude oclive-cli --tests -j 1",
+    "check:rust:integration:cli": "cargo test --locked -p oclive-cli --tests -- --test-threads=1",
+    "check:rust:integration": "npm run check:rust:integration:workspace && npm run check:rust:integration:cli",
     "check:rust:test:all": "cargo test --workspace -j 1",
     "check:rust": "node scripts/ensure-tauri-dist.mjs && node scripts/check-domain-layering.mjs && node scripts/check-changelog-parity.mjs && node scripts/check-doc-mirror.mjs && npm run check:rust:fmt && npm run check:rust:clippy && npm run check:rust:test",
     "check:license": "node scripts/check-license-readiness.mjs",
+    "audit:dependencies": "npm audit --omit=dev --audit-level=high && npm audit --audit-level=high",
+    "ci:shadow-samples": "node scripts/collect-ci-shadow-samples.mjs",
     "check:debt-marathon": "node scripts/check-debt-marathon.mjs",
     "check:module-compat": "node scripts/check-module-compat.mjs && node scripts/validate-plugins-index.mjs",
     "test:cursor-marathon-hook": "node scripts/test-cursor-marathon-hook.mjs",
-    "check": "npm run lint && npm run build && npm run check:rust",
-    "check:release": "npm run lint && npm run build && npm run test:unit && npm run verify:ui && npm run verify:shared-i18n && npm run check:rust:fmt && npm run check:rust:clippy && npm run check:rust:test:all",
+    "typecheck": "vue-tsc --noEmit -p tsconfig.app.json",
+    "check:frontend": "npm run lint && npm run typecheck && npm run test:unit && npm run test:theater:smoke && npm run build:e2e",
+    "check": "npm run lint && npm run typecheck && npm run build && npm run check:rust",
+    "check:release": "npm run lint && npm run typecheck && npm run build && npm run test:unit && npm run verify:ui && npm run verify:shared-i18n && npm run check:rust:fmt && npm run check:rust:clippy && npm run check:rust:test:all",
     "check:ci-local": "node scripts/dimension5-acceptance.mjs --ci && npm run check && npm run check:rust:integration",
     "verify:shared-i18n": "node scripts/verify-shared-i18n.mjs",
     "test:distro-profile-mirror": "node scripts/diff-vscode-distro-profile.mjs",
@@ -81,22 +87,25 @@
     "@tauri-apps/api": "^2.11.1"
   },
   "devDependencies": {
-    "@antfu/eslint-config": "^9.0.0",
+    "@antfu/eslint-config": "^9.2.0",
+    "@babel/standalone": "^7.29.8",
     "@playwright/test": "^1.52.0",
     "@tauri-apps/cli": "^2.11.4",
+    "@types/babel__standalone": "^7.1.9",
     "@types/node": "^24.12.2",
     "@vitejs/plugin-vue": "^5.2.1",
+    "@vue/compiler-sfc": "3.5.39",
     "@vue/test-utils": "^2.4.10",
     "@vue/tsconfig": "^0.9.1",
     "concurrently": "^9.2.1",
-    "eslint": "^9.39.0",
+    "eslint": "^10.8.0",
     "jsdom": "^29.1.1",
     "prettier": "^3.8.3",
     "rollup-plugin-visualizer": "^7.0.1",
     "typescript": "~5.8.0",
     "vite": "^6.0.3",
     "vitest": "^3.2.4",
-    "vue3-sfc-loader": "^0.9.5",
-    "webdriverio": "^9.27.1"
+    "vue-tsc": "^3.3.9",
+    "webdriverio": "^9.30.0"
   }
 }

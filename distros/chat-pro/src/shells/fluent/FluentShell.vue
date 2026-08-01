@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { useMainShell } from '../../composables/useMainShell'
 import ChatInput from '@oclive/shared/components/chat/ChatInput.vue'
 import ChatMessageList from '@oclive/shared/components/chat/ChatMessageList.vue'
 import ChatPluginToolbarSlots from '@oclive/shared/components/ChatPluginToolbarSlots.vue'
@@ -37,7 +38,7 @@ import {
   TopBarMorePanel,
 } from '../../composables/useMainShell'
 
-const shell = inject(MAIN_SHELL_KEY)
+const shell = inject(MAIN_SHELL_KEY) as ReturnType<typeof useMainShell> | undefined
 if (!shell) {
   throw new Error('FluentShell requires MAIN_SHELL_KEY provider')
 }

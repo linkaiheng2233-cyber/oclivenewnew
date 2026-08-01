@@ -5,9 +5,9 @@
 ## 用法
 
 ```bash
-cargo run -p oclive-cli -- debug -o .
-cargo run -p oclive-cli -- debug -o . --step user_emotion_analyze
-cargo run -p oclive-cli -- debug -o . --json --message "测试"
+cargo run -p oclive-cli -- --experimental debug -o .
+cargo run -p oclive-cli -- --experimental debug -o . --step user_emotion_analyze
+cargo run -p oclive-cli -- --experimental debug -o . --json --message "测试"
 ```
 
 - 设置环境变量 **`OCLIVE_DEBUG_TRACE=1`** 并启动 **`--api`** HTTP 服务（默认 Mock LLM）。

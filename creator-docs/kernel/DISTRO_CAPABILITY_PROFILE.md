@@ -162,7 +162,7 @@ favor_low  = "…"              # optional; favor < 40
 | `ollama` | 现有 `OllamaClient` | 无第二本地运行时 |
 | `performance` | loopback OpenAI-compatible `llama-server` 真流式接口 | 仅在首个 token 尚未发出时回退 Ollama；已输出部分内容后禁止重跑，避免重复回复 |
 
-`performance_profile` 只适用于 `performance`：`gpu_full` 使用配置的完整 GPU layers；当完整值大于 24 时，`gpu_balanced` 使用 24 层，否则使用完整值的一半（至少 1 层）；`cpu_compatibility` 使用 0 GPU layers。协调器会从首选档依次尝试更低档位；`OCLIVE_LLAMA_PERFORMANCE_PROFILE` 可覆盖发行版默认。三档会改变实际 `llama-server --n-gpu-layers`，不是只改诊断标签。
+`performance_profile` 只适用于 `performance`：`gpu_full` 使用配置的完整 GPU layers；当完整值大于 22 时，`gpu_balanced` 使用 22 层，否则使用完整值的一半（至少 1 层）；`cpu_compatibility` 使用 0 GPU layers。22 层是 RTX 5060 Laptop 8GB + Qwen2.5 7B Q4_K_M + CosyVoice2 mixed-FP16 五分钟共存复测后的保守默认，避免 24 层在系统显存波动下贴住语音冷加载安全线；它不是所有 GPU 的性能上限。协调器会从首选档依次尝试更低档位；`OCLIVE_LLAMA_PERFORMANCE_PROFILE` 可覆盖发行版默认。三档会改变实际 `llama-server --n-gpu-layers`，不是只改诊断标签。
 
 性能模式的可选组件边界：
 
@@ -214,7 +214,7 @@ yielding_adapter_id = "builtin.llm.llama_server"
 target_adapter_id = "builtin.voice.cosyvoice2"
 ```
 
-当前统一协调器已覆盖 NVIDIA 设备、系统 RAM 与 CPU 快照，并发 pending reservation，带超时/取消清理/老化防饥饿的公平准入队列，managed llama-server 三档冷启动/释放，observe-only Ollama 前台活动和官方 bundled CosyVoice2 准入。Performance LLM 的资源暂停会关闭统一请求门、排空在途 primary/fallback 请求并卸载本运行时追踪的模型；普通故障降级不受影响，显式预热/应用模型选择负责恢复。容量不足时，自动抢占只选择优先级更低、声明可逆动作且拥有精确 requester → target → operation 授权的 managed 适配器，失败时逆序回滚，成功工作结束后逆序恢复。资源诊断 v5 除注册表和 `scheduling.state` 外，还返回注册来源、队列、系统资源与带 `compiled_from_revision` 的只读 `candidate_plan`；查看诊断不会执行计划。第三方可通过所有者命名空间约束的进程内 `ResourceAdapterRegistrar` 登记描述与单写者控制器；这不等于目录 manifest 已能自动注册，也不授予跨适配器控制权。通用 `render` / `compute` / `hybrid` 资源域已进入契约和容量/抢占测试，但 Chat Pro 仍使用现有 `Live2DStageAdapter` PNG 回退，尚未捆绑真实 Live2D runtime。纯 Plan Compiler / CLI doctor 不探测硬件，返回 `not_evaluated`；桌面 `get_execution_plan_diagnostics` 与 `get_resource_coordination_diagnostics` 刷新运行态。长时间真实进程/硬件 soak 和目录 manifest 资源声明仍是后续验证/债务。
+当前统一协调器已覆盖 NVIDIA 设备、系统 RAM 与 CPU 快照，并发 pending reservation，带超时/取消清理/老化防饥饿的公平准入队列，managed llama-server 三档冷启动/释放，observe-only Ollama 前台活动和官方 bundled CosyVoice2 准入。Performance LLM 的资源暂停会关闭统一请求门、排空在途 primary/fallback 请求并卸载本运行时追踪的模型；普通故障降级不受影响，显式预热/应用模型选择负责恢复。容量不足时，自动抢占只选择优先级更低、声明可逆动作且拥有精确 requester → target → operation 授权的 managed 适配器，失败时逆序回滚，成功工作结束后逆序恢复。资源诊断 v5 除注册表和 `scheduling.state` 外，还返回注册来源、队列、系统资源与带 `compiled_from_revision` 的只读 `candidate_plan`；查看诊断不会执行计划。第三方可通过所有者命名空间约束的进程内 `ResourceAdapterRegistrar` 登记描述与单写者控制器；这不等于目录 manifest 已能自动注册，也不授予跨适配器控制权。通用 `render` / `compute` / `hybrid` 资源域已进入契约和容量/抢占测试，但 Chat Pro 仍使用现有 `Live2DStageAdapter` PNG 回退，尚未捆绑真实 Live2D runtime。纯 Plan Compiler / CLI doctor 不探测硬件，返回 `not_evaluated`；桌面 `get_execution_plan_diagnostics` 与 `get_resource_coordination_diagnostics` 刷新运行态。CLI 已具备真实墙钟、实际内核 PID 与回收证据的进程 soak；目录 manifest 资源声明、长时间 bundled LLM/CosyVoice/未来 Live2D 共享硬件 soak 仍是后续验证/债务。
 
 ### 3.2.3 `[turn_thinking]`（编排行 · 非六槽）
 

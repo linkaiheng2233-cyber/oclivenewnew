@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oclive.dev/schemas/ci/validation-catalog.v1.json",
+  "title": "OCLive trusted validation catalog v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "policies", "profiles", "validators", "commands"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "policies": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["id", "included_tiers"],
+        "properties": { "id": { "$ref": "#/$defs/id" }, "included_tiers": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/tier" } } }
+      }
+    },
+    "profiles": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["id", "validators"],
+        "properties": { "id": { "$ref": "#/$defs/id" }, "validators": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/id" } } }
+      }
+    },
+    "validators": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["id", "tier", "gate", "trust", "command_id", "workflow_jobs"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" }, "tier": { "$ref": "#/$defs/tier" },
+          "gate": { "enum": ["required", "advisory", "quarantined"] },
+          "platforms": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+          "trust": { "enum": ["untrusted_pr", "trusted"] }, "command_id": { "$ref": "#/$defs/id" },
+          "workflow_jobs": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/id" } }
+        }
+      }
+    },
+    "commands": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["id", "program"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" }, "program": { "type": "string", "minLength": 1 },
+          "args": { "type": "array", "items": { "type": "string" } },
+          "working_directory": { "type": ["string", "null"] }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$" },
+    "tier": { "enum": ["fast", "pr", "merge", "nightly", "release"] }
+  }
+}

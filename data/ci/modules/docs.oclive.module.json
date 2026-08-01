@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "module": { "id": "oclive.docs", "kind": "documentation" },
+  "provides": ["documentation"],
+  "runtime_requires": [],
+  "resource_claims": [],
+  "declared_affects": [],
+  "validation_profiles": ["docs"],
+  "platforms": ["all"],
+  "extensions": {}
+}

@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oclive.dev/schemas/ci/shadow-scenarios.v1.json",
+  "title": "OCLive CI shadow simulation scenarios v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "evidence_kind", "authoritative_ci_comparison", "scenarios"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "evidence_kind": { "const": "planner_contract_simulation" },
+    "authoritative_ci_comparison": { "const": false },
+    "scenarios": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "policy", "changed_files", "expected", "review_note"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "policy": { "$ref": "#/$defs/id" },
+          "changed_files": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "expected": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["direct_modules", "affected_modules", "selected_validators", "workflow_jobs", "fallback_full", "fallback_reason_prefixes"],
+            "properties": {
+              "direct_modules": { "$ref": "#/$defs/ids" },
+              "affected_modules": { "$ref": "#/$defs/ids" },
+              "selected_validators": { "$ref": "#/$defs/ids" },
+              "workflow_jobs": { "$ref": "#/$defs/ids" },
+              "fallback_full": { "type": "boolean" },
+              "fallback_reason_prefixes": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": { "type": "string", "minLength": 1 }
+              }
+            }
+          },
+          "review_note": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$" },
+    "ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/id" }
+    }
+  }
+}

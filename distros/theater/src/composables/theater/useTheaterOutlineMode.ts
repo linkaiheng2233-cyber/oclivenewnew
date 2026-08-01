@@ -59,14 +59,14 @@ export async function requestOutlineScene(
     throw new Error('outline_empty')
 
   const req: TheaterSceneRequest = {
-    cast_a: { role_id: cast.a.roleId, name: cast.a.name },
-    cast_b: { role_id: cast.b.roleId, name: cast.b.name },
+    cast_a: { role_id: cast.castA.roleId, name: cast.castA.displayName },
+    cast_b: { role_id: cast.castB.roleId, name: cast.castB.displayName },
     scene_id: preset.runtimeSceneId,
     base_beats: [],
     applied_tweaks: [],
     fallback_beats: FALLBACK_OUTLINE_BEATS.map(b => ({
       ...b,
-      name: b.cast === 'a' ? cast.a.name : cast.b.name,
+      name: b.cast === 'a' ? cast.castA.displayName : cast.castB.displayName,
     })),
     mode: 'outline_rewrite',
     script_outline: trimmed,

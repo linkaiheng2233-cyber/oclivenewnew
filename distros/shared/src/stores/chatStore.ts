@@ -55,7 +55,7 @@ const FALLBACK_MAX_MESSAGES_PER_CONVERSATION = 500
 export type SceneHistorySplitIndex = Record<string, Record<string, number>>
 
 function isLegacyRoleBucket(
-  bucket: RoleSceneMessageMap[string] | undefined,
+  bucket: unknown,
 ): bucket is ChatMessage[] {
   return Array.isArray(bucket)
 }

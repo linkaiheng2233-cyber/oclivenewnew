@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oclive.dev/schemas/ci/impact-map.v1.json",
+  "title": "OCLive central CI impact map v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "module_bindings"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "supported_extensions": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
+    "module_bindings": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["module_id", "descriptor", "selectors"],
+        "properties": {
+          "module_id": { "$ref": "#/$defs/id" },
+          "descriptor": { "$ref": "#/$defs/path" },
+          "selectors": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/selector" } }
+        }
+      }
+    },
+    "policy_affects": {
+      "type": "object",
+      "additionalProperties": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/id" } }
+    },
+    "risk_overrides": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "selectors", "reason"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "selectors": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/selector" } },
+          "full": { "type": "boolean", "default": false },
+          "force_profiles": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/id" } },
+          "reason": { "type": "string", "minLength": 1 }
+        },
+        "anyOf": [
+          { "properties": { "full": { "const": true } }, "required": ["full"] },
+          { "properties": { "force_profiles": { "minItems": 1 } }, "required": ["force_profiles"] }
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$" },
+    "path": { "type": "string", "minLength": 1, "not": { "pattern": "(^[A-Za-z]:|^/|(^|/)\\.\\.(/|$))" } },
+    "selector": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "value"],
+      "properties": {
+        "kind": { "enum": ["exact", "prefix"] },
+        "value": { "$ref": "#/$defs/path" }
+      }
+    }
+  }
+}

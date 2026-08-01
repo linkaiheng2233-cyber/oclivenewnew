@@ -13,7 +13,7 @@ English: **`WELD_BENCH_REPORT.en.md`**
 | 项目名 | |
 | 日期 | |
 | `monolith.toml` weld_modules | |
-| 命令 | `cargo run -p oclive-cli -- bench --release --runs 20 -o <项目根>` |
+| 命令 | `cargo run -p oclive-cli -- --experimental bench --release --runs 20 -o <项目根>` |
 | 或 init 自动 | `oclive init --monolith --monolith-bench-preset <latency\|memory\|embedded>` → `bench_results/report.json` |
 
 ## 2. 延迟对比（单位：ms，子进程 wall time）
@@ -52,8 +52,8 @@ English: **`WELD_BENCH_REPORT.en.md`**
 调整 `monolith.toml` 后执行：
 
 ```bash
-cargo run -p oclive-cli -- build -o .
-cargo run -p oclive-cli -- bench --release -o . --runs 20 --save
+cargo run -p oclive-cli -- --experimental build -o .
+cargo run -p oclive-cli -- --experimental bench --release -o . --runs 20 --save
 ```
 
 蓝图 v2 见 **`BLUEPRINT_V2_POINTER.md`**；RFC 见主仓 **`RFC_OCLIVE_MONOLITH_MODE.md`**。

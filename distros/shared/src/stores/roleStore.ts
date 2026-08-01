@@ -38,6 +38,8 @@ import { useAdultInteractionStore } from './adultInteractionStore'
 export interface RoleOption extends PresetRoleOption {
   id: string
   name: string
+  version?: string
+  author?: string
   adultExtensionAvailable?: boolean
 }
 
@@ -323,6 +325,8 @@ export const useRoleStore = defineStore(
         this.roles = rows.map(r => ({
           id: r.id,
           name: r.name,
+          version: r.version,
+          author: r.author,
           description: r.description ?? '',
           featured: r.featured ?? false,
           preset_order: r.preset_order ?? 999,

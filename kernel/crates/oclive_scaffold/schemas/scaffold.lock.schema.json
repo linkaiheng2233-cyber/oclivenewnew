@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.oclive.dev/scaffold/v1/scaffold.lock.schema.json",
+  "title": "OCLive Scaffold Resolution Lock v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "scaffold_contract",
+    "reader_version",
+    "source_order",
+    "packages"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "scaffold_contract": { "type": "string", "minLength": 1 },
+    "reader_version": { "type": "string", "minLength": 1 },
+    "source_order": {
+      "type": "array",
+      "items": { "enum": ["project", "user", "official"] },
+      "minItems": 3,
+      "maxItems": 3,
+      "uniqueItems": true
+    },
+    "packages": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/package" }
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/issue" },
+      "default": []
+    }
+  },
+  "$defs": {
+    "namespace": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]{0,63}(\\.[a-z][a-z0-9_-]{0,63}){2,}$"
+    },
+    "source": { "enum": ["project", "user", "official"] },
+    "reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": { "$ref": "#/$defs/namespace" },
+        "version": { "type": "string", "minLength": 1 }
+      }
+    },
+    "issue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "message"],
+      "properties": {
+        "code": { "type": "string", "minLength": 1 },
+        "message": { "type": "string", "minLength": 1 }
+      }
+    },
+    "package": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "source",
+        "locator",
+        "manifest_sha256",
+        "maintainer",
+        "trust",
+        "command_namespace",
+        "permissions",
+        "composition_declared"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/namespace" },
+        "version": { "type": "string", "minLength": 1 },
+        "source": { "$ref": "#/$defs/source" },
+        "locator": { "type": "string", "minLength": 1 },
+        "manifest_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "maintainer": { "type": "string", "minLength": 1 },
+        "trust": { "enum": ["official", "untrusted_local"] },
+        "command_namespace": { "$ref": "#/$defs/namespace" },
+        "permissions": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "unresolved_dependencies": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/reference" },
+          "default": []
+        },
+        "unresolved_extends": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/reference" },
+          "default": []
+        },
+        "composition_declared": { "type": "boolean" }
+      }
+    }
+  }
+}

@@ -99,6 +99,14 @@ fn canonicalize_for_cargo(path: &Path) -> PathBuf {
 fn relativize_path(from: &Path, to: &Path) -> String {
     let from = canonicalize_for_cargo(from);
     let to = canonicalize_for_cargo(to);
+    let from_prefix = path_prefix(&from);
+    let to_prefix = path_prefix(&to);
+    if from_prefix != to_prefix {
+        // Windows cannot express a relative path between drive letters (or distinct UNC
+        // shares). Cargo accepts an absolute forward-slash path, so preserve it instead of
+        // manufacturing a relative path that resolves on the output drive.
+        return cargo_path(&to);
+    }
     let from_c: Vec<_> = from
         .components()
         .filter(|c| !matches!(c, std::path::Component::Prefix(_)))
@@ -108,7 +116,10 @@ fn relativize_path(from: &Path, to: &Path) -> String {
         .filter(|c| !matches!(c, std::path::Component::Prefix(_)))
         .collect();
     let mut shared = 0usize;
-    while shared < from_c.len() && shared < to_c.len() && from_c[shared] == to_c[shared] {
+    while shared < from_c.len()
+        && shared < to_c.len()
+        && components_equal(from_c[shared], to_c[shared])
+    {
         shared += 1;
     }
     let mut rel = PathBuf::new();
@@ -118,7 +129,30 @@ fn relativize_path(from: &Path, to: &Path) -> String {
     for c in &to_c[shared..] {
         rel.push(c.as_os_str());
     }
-    rel.to_string_lossy().replace('\\', "/")
+    cargo_path(&rel)
+}
+
+fn path_prefix(path: &Path) -> Option<String> {
+    path.components().find_map(|component| match component {
+        std::path::Component::Prefix(prefix) => {
+            Some(prefix.as_os_str().to_string_lossy().to_ascii_lowercase())
+        }
+        _ => None,
+    })
+}
+
+fn components_equal(left: std::path::Component<'_>, right: std::path::Component<'_>) -> bool {
+    if cfg!(windows) {
+        left.as_os_str()
+            .to_string_lossy()
+            .eq_ignore_ascii_case(&right.as_os_str().to_string_lossy())
+    } else {
+        left == right
+    }
+}
+
+fn cargo_path(path: &Path) -> String {
+    path.to_string_lossy().replace('\\', "/")
 }
 
 const COMMENT_PLUGIN_BACKENDS: &str = "七条编排槽位（与 PLUGIN_V1 / plugin_host 对齐）。主应用当前反序列化 6 个标准槽；complex_emotion 为扩展键，宿主会忽略未知字段。可选值以各槽枚举为准（见 SETTINGS_REFERENCE.md）。";
@@ -625,6 +659,26 @@ mod tests {
         );
     }
 
+    #[cfg(windows)]
+    #[test]
+    fn cargo_paths_stay_absolute_across_windows_volumes() {
+        let path = relativize_path(
+            Path::new("C:/Users/test/AppData/Local/Temp/generated"),
+            Path::new("D:/OCLive/oclivenewnew/kernel/crates/oclive_kernel_runtime"),
+        );
+        assert_eq!(
+            path,
+            "D:/OCLive/oclivenewnew/kernel/crates/oclive_kernel_runtime"
+        );
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn cargo_paths_are_relative_on_the_same_windows_volume() {
+        let path = relativize_path(Path::new("C:/Work/generated"), Path::new("c:/work/runtime"));
+        assert_eq!(path, "../runtime");
+    }
+
     #[test]
     fn robot_gateway_writes_mcp_and_gateway_role() {
         use crate::init::{preset_config, InitTemplateArg};
@@ -664,6 +718,7 @@ mod tests {
         assert!(cargo.contains("kernel/crates/oclive_kernel_runtime"));
         assert!(!cargo.contains("src-tauri"));
         let main_rs = std::fs::read_to_string(out.path().join("src/main.rs")).unwrap();
+        assert!(main_rs.contains("let _ = oclivenewnew_tauri::init_tracing()"));
         assert!(main_rs.contains("run_api_server"));
         assert!(main_rs.contains("parse_api_port_arg"));
         assert!(main_rs.contains("OCLIVE_CLI_INVALID_ARGUMENT"));

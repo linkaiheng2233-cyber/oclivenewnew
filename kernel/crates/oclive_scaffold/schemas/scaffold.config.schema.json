@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.oclive.dev/scaffold/v1/scaffold.config.schema.json",
+  "title": "OCLive Scaffold Discovery Config v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "source_order": {
+      "type": ["array", "null"],
+      "items": { "enum": ["project", "user", "official"] },
+      "minItems": 3,
+      "maxItems": 3,
+      "uniqueItems": true
+    },
+    "package_sources": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9_-]{0,63}(\\.[a-z][a-z0-9_-]{0,63}){2,}$"
+      },
+      "additionalProperties": { "enum": ["project", "user", "official"] },
+      "default": {}
+    },
+    "package_enabled": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9_-]{0,63}(\\.[a-z][a-z0-9_-]{0,63}){2,}$"
+      },
+      "additionalProperties": { "type": "boolean" },
+      "default": {}
+    }
+  }
+}

@@ -1,25 +1,23 @@
-# Someday · toolchain & CI (cost/benefit memo)
+# OCLive Domain-Aware CI · Staged Baseline
 
-> **Nature**: pacing reminders—not urgent “tech debt.” Touch when capacity allows; delete rows you decide not to pursue.
+> **Status (2026-08-01):** Stage 1 is implemented and collecting shadow evidence; its plan still cannot control or skip required main-CI jobs. The five validators already catalogued as `nightly` now run in a separate scheduled/manual workflow; this is execution-lane alignment, not selective PR execution. The detailed design SSOT is the [Chinese document](../../creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md); module boundaries remain in [`MODULE_MAP_AND_HANDOFF.md` §12.7](../../handoff/MODULE_MAP_AND_HANDOFF.md#127-ci-影响元数据与脚手架边界).
 
 [中文](../../creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md)
 
----
+OCLive keeps conventional layered CI, test pyramids, and merge gates, then adds a deterministic domain-aware planner. It uses paths only to locate directly changed modules and uses versioned metadata plus a centrally owned impact graph to propagate semantic effects. Unknown paths, invalid metadata, and unsupported required extensions fail safe to the full validation set for the active policy.
 
-## Three one-line rules
+The three inputs have separate ownership:
 
-1. **Contracts**: when **oclivenewnew** release changes pack contracts or validation crate, run **oclive-pack-editor** `npm run contract:json-keys` and align **`HOST_RUNTIME_VERSION`**.
-2. **Automation**: add CI/E2E only when failures would surface **late** or blast radius is **large**; skip automating issues you catch quickly by hand.
-3. **Matrix**: Windows + Linux CI covers most cases; add **macOS CI** when you ship Mac packages or Mac feedback grows.
+- `oclive.module.json` declares logical `runtime_requires`, physical `resource_claims`, additive `declared_affects`, and trusted `validation_profiles`; it cannot contain arbitrary commands or workflow triggers.
+- The central impact map owns path bindings, mandatory impact edges, high-risk overrides, supported extensions, and full-fallback policy. Third-party declarations may widen but never narrow it.
+- The trusted validation catalog owns tiers, gate strength, platforms, trust levels, finite local reproducer command IDs, and mappings to existing remote workflow jobs. Stage 1 reports these coordinates but executes neither commands nor jobs. Main-repository workflows retain control of runners, secrets, caching, concurrency, and timeouts.
 
----
+Expensive validation also has a single execution owner. The general Rust job covers the non-CLI workspace, the CLI job exclusively owns serial nested-Cargo E2E, Dimension 5 owns `cargo audit`, and the frontend job explicitly owns lint, Vue/TypeScript type checking, unit tests, and its build. Multiple validator coordinates may map to the same trusted job; they must not duplicate an identical command merely to preserve a one-coordinate/one-job shape. This ownership split does not enable selective CI: every required main-CI responsibility group still runs while Stage 1 remains shadow-only, and `tier=nightly` groups run separately on schedule or explicit dispatch.
 
-## Optional later items
+Stage 1 runs in shadow mode: it emits a stable `plan.json`, GitHub Job Summary, and artifact while every required main-CI job still runs. Stage 2 compares proposed selections with those authoritative results. `.github/workflows/nightly-advisory.yml` owns Loom, fuzz, native-window, visual-smoke, and threshold-free performance evidence; failures turn that workflow red and retain relevant artifacts without gating main. Selective PR execution is allowed only after evidence establishes safe low-risk classes; merge gates remain pre-merge safeguards, while long-running hardware, soak, and performance work belongs to Nightly/Release.
 
-| Item | When it’s worth it |
-|------|---------------------|
-| Heavier E2E (multi-browser, real Tauri window) | Frequent UI/export churn or stronger quality promise |
-| macOS-specific CI | Mac installer or Mac user base |
-| Automated `HOST_RUNTIME_VERSION` vs host version check | Frequent releases or past alignment incidents |
+Shadow evidence has two distinct levels. `data/ci/shadow-scenarios.v1.json` and `npm run ci:shadow-samples` provide deterministic routing simulations only; they execute no validator and cannot prove zero false negatives. A real Compare sample must bind one actual diff and its `plan.json` to every remote job result at the same frozen SHA. The current simulation baseline contains **11** passing scenarios: **8** targeted and **3** fail-safe. Shared frontend, role-pack, and directory-plugin scenarios each select eight validators, including Rust, because of the conservative frontend impact cycle; that is tracked as over-selection evidence rather than silently narrowed.
 
-**Related**: [BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md](BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md)
+The scaffold is only an assistant. Once the descriptor contract is stable, it may generate and validate module metadata, list catalog-approved profiles, and invoke the same planner. It may not own workflow orchestration, inject shell commands, approve secrets or self-hosted GPU runners, create a second impact/resource schema, or treat generation as CI success. Scaffold discovery, source locking, command namespaces, and compatibility are owned by [`RFC_SCAFFOLD_PACKAGE_V1.md`](../rfc/RFC_SCAFFOLD_PACKAGE_V1.md); this document owns only the CI boundary.
+
+In short: **the scaffold produces and preflights knowledge that CI understands; CI consumes that same knowledge in a trusted environment and produces evidence.**

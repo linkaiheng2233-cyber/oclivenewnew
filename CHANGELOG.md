@@ -6,17 +6,27 @@
 
 ### Added
 
+- **Scaffold Package v1、受限生成与 CLI 命令面收口**：新增独立 `oclive_scaffold` 契约 crate、严格 JSON Schema、project/user/official 本地发现、可配置优先级、版本拒绝、来源与 SHA-256 锁定、路径逃逸检查和原子 `.oclive/scaffold.lock.json`；四个官方兜底包只描述现有生成器。Stage 2B 新增 `oclive scaffold generate`，只物化摘要固定的本地声明式 text/copy 文件到全新目录，要求精确 lock、逐次不可信确认、`project.write` 声明、事务式落位和不含变量值的 provenance；dry-run 零写入，官方 builtin 只返回领域命令委托。它仍不联网、不执行第三方 command/script/hook、不解析组合，且硬拒绝 `ci.*` 能力与第三方 `com.oclive.*` 命名空间。默认帮助收口为 15 个稳定入口，10 个试验命令与旧工程归档 `template` 保持可调用但隐藏；领域感知 CI 新增独立 `oclive.scaffold` 模块并只向 `oclive.cli` 传播影响。
+- **领域感知 CI Stage 1 影子规划**：新增严格版本化的 `oclive.module.json`、中央影响图与受信验证目录，并由纯 Rust 规划器以“路径定位直接模块 + 语义影响闭包”生成稳定、可解释的 `plan.json`；未知路径、损坏描述、未知 required 扩展及中央高风险规则均 fail-safe 到当前策略全量。`oclive ci plan/explain` 支持 Git diff、显式路径和 Markdown 摘要，GitHub `ci-impact-plan` 仅上传 Job Summary/artifact，标记 `continue-on-error` 且不跳过任何现有 job；脚手架暂不改动，后续只负责生成/预检相同元数据。
 - **统一资源协调器、候选计划与适配器注册表**：桌面 Host 以单一协调器汇总 NVIDIA 显存、系统 RAM、CPU 拓扑、优先级、原子预留与租约诊断，并通过 HostProfile 表达安全余量、排队/老化策略、自动抢占开关和有限调度意图；托管 `llama-server`、外部 Ollama 活动、performance 活动观察器和官方 CosyVoice2 已接入 Resource Adapter Registry。资源诊断 v5 会区分控制权、注册来源、adapter-local 档位、驻留能力、生命周期动作和当前 `profile_id`，并从实时状态编译带版本、容量判断、建议转换与回滚信息的只读候选计划。Performance llama 已提供 `gpu_full`、`gpu_balanced`、`cpu_compatibility` 三个真实运行档，分别改变 `llama-server --n-gpu-layers`，准入不足时按档位降级。统一准入队列支持优先级、公平老化、超时与取消清理；自动抢占仅作用于低优先级、明确声明可逆抢占动作且具有精确授权的 managed 适配器，并逆序恢复。宿主还提供所有者命名空间约束的第三方 Resource Adapter/Controller 进程内注册端口，以及 `render` / `compute` / `hybrid` 资源描述；目录 manifest 自动注册和实际 bundled Live2D runtime 尚未实现。蓝图与角色包仍只声明能力和理想配置，不直接支配物理资源。
 - **Stable v4 蓝图扩展外壳**：`pipeline.ocblueprint` 新增严格、最小的 `extensions` 声明与安全外置 JSON 载荷，v4 作为 v2 的 Stable 后继并明确不继承冻结的 v3 双核字段。Host、CLI、doctor、插件槽位写回与角色包编写器均按 v2/v3/v4 精确分派；未知版本不再回落 v2。可选扩展会无损保留但暂不执行，必需扩展在 Capability Registry 落地前阻止角色激活；编写器新建包默认 v4，CLI 新增 `pack create --format-blueprint-v4`，旧 v2 保持兼容且不自动改写。
 - **llama.cpp LoRA GGUF 本地闭环**：Chat Pro 与 AI Theater 共用的“本地模型设置”现可导入原始 LoRA GGUF 或 `.ocadapter` v1；内核校验 ZIP 路径/大小、SHA-256、GGUF adapter 元数据与基础模型 architecture，采用暂存+原子替换管理本地副本，并以托管 `llama-server --lora` 启用。独立完整基座可用同名 `.ocmodel.json` 声明来源与成人分级；基座与 LoRA 不固定绑定，可自由选择通过兼容性验证的组合。成人基座和适配器均要求显式确认，切换基座会自动停用旧 LoRA，防止相同架构的错误适配器或消融 LoRA 串入新组合。启用失败恢复此前数据库、环境和进程选择；Hugging Face/PEFT 明确留给后续独立转换插件。
 - **DeepSeek 拟人示例角色包**：新增社区创作、非官方的 `deepseek` Portable Core 角色包，包含核心人设、空的只读记忆种子、三种用户身份、认知边界、默认场景与七张透明立绘；该角色包不代表 DeepSeek 官方授权或背书。
 - **Persona / Memory 跨发行版独立迁移**：新增 `.ocpersona` 与 `.ocmemory` JSON v1 契约、共享校验和桌面宿主导入导出 API；角色包可选 `memory_seed.json` 作为创作者只读初始记忆。Persona 导入只恢复可变人设且不得覆盖核心人设；Memory 使用合并导入，明确排除聊天记录、短期记忆缓存与临时局面状态。内置角色包、Robot Soul 示例与 CLI 新建/初始化脚手架已统一生成该 seed 容器。
 - **Chat Pro 成人角色扩展 v1**：角色包可选根文件 `adult_extension.json` 与 Portable Core 基础内容分离；Chat Pro 提供本机成年确认、全局与分角色两级开关、导入提示、独立管理页、结构化角色对话/静音旁白双气泡、自然退出与自动节拍。成人记忆按 `content_scope` 独立存储，普通聊天只保留非露骨关系桥接；语音只朗读角色对话，节拍同时等待展示间隔与当前语音完成，失败后仅本次互动降级文本。后台连续预生成使用可取消、可恢复的 staged beat：后台只缓存结构化文本，回到对应聊天后才逐拍提交、显示并生成语音；所有聊天共享用户可配置容量，用户输入会抢占并丢弃未展示拍。编写器新增依赖完整基础包校验的独立成人扩展页，并与基础包合并导入导出。
+- **可核验的真实时长 soak**：`oclive bench --soak` 明确区分 8～120 秒的加速冒烟与显式 `--soak-real-time` 真墙钟模式，支持小数小时和可配置采样间隔；一次热身后再建立稳态 RSS 基线，聊天负载与采样时钟并行。schema v2 直接记录 Release 内核 PID 的 RSS/CPU、请求失败、提前退出、工作线程 join 与进程回收，失败时非零退出，避免把冷加载、Cargo 包装进程或名义 72h 冒烟误作泄漏证据。CLI 本机 HTTP 请求统一绕过系统代理，脚手架跨 Windows 盘符链接 `--kernel-source` 时保留正确绝对路径。
 
 - **本地 HTTP API 认证**：桌面宿主启动 kernel 时自动生成并注入随机 `OCLIVE_API_TOKEN`；无头 `--api` 现在也默认要求显式设置同名变量，除公开探活 `GET /health` 外的路由须发送 `x-oclive-api-token`。仅隔离的本地开发可显式设置 `OCLIVE_API_ALLOW_UNAUTHENTICATED=1` 逃生；CORS 收窄至本机开发/Tauri 来源，OOCP 与进程重启烟测自动附加 token。
 
 ### Fixed
 
+- **CosyVoice2 流式首块状态与分段诊断**：每次合成前恢复上游模型的初始 `token_hop_len`，避免前一轮流式增长到 50/100 后污染后续请求，造成流块减少并推高 TTFC；Sidecar、共享播放层和压力工具现贯通版本化分段计时、prompt cache 与客户端交付开销，72 小时硬件测试候选流程会原子刷新有界 checkpoint 并在中断后保留最后进度。现有 8 秒语音门禁与显存安全线均未放宽。
+- **8GB 语音共存档位留足冷加载余量**：`gpu_balanced` 与共享 GPU 压力工具默认上限由 24 层调整为 22 层。RTX 5060 Laptop 8GB 实测中，24 层因系统波动使 CosyVoice 冷加载余量以 **2559MiB < 2560MiB** 被安全拒绝；22 层可完成 mixed-FP16 warm，并在五分钟 LLM/TTS 共存中保持峰值余量 **1370MiB**。`gpu_full` 与显式环境覆盖仍保留。
+- **Loom Nightly 真模型恢复**：将会污染全部依赖的全局 `cfg(loom)` 改为桌面宿主包级 `loom-tests` feature；`oclive test --loom`、验证目录与 Nightly 现统一运行两个真实且有界的 Loom 交错模型，不再把未启用模型的占位 smoke 当作并发证据。面向独立生成项目的 `oclive ci init` 不再输出依赖主仓桌面路径的无效 Loom job。
+- **npm 开发工具链供应链收口**：升级 ESLint 10 / Antfu 9.2 与 WebDriverIO 9.30，修复 `brace-expansion`、`fast-xml-parser` 命中和 Unicorn peer 契约冲突；移除捆绑 Vue 2/PostCSS 的 `vue3-sfc-loader`，改用仅在显式不安全 DEV 模式动态加载的官方 Vue SFC 编译器，并将目录插件脚本导入限制为 `vue`。完整与生产 npm audit 均成为硬门禁，仓库内全部官方/示例目录插件 SFC 进入编译回归测试。
+- **CI 执行通道分流**：将 `loom`、`fuzz`、`cli-bench`、`visual-presentation-smoke` 与原生 `e2e-tauri` 从 PR/Push 主工作流迁至独立 `nightly-advisory.yml`，支持每日定时与按验证器手动触发。Nightly 失败在自身工作流真实变红但不阻塞 main，并为 CLI 性能与 fuzz/E2E 失败保留 artifact；主 CI 只保留硬门禁及非阻塞的 Stage 1 影子规划器。
+- **影子规划样本契约**：新增严格版本化的 11 场景模拟语料与 `ci:shadow-samples` 证据收集器，覆盖文档、shared、角色包、目录插件、内核契约、脚手架、examples、Nightly 分层、CI 控制面、依赖锁和未知路径。仓库契约测试锁定模块闭包、验证器、工作流坐标及 fail-safe 原因；生成证据明确标记“仅模拟、未执行验证器、不能证明零漏选”。
+- **官方 CI 脚手架与审计诊断对齐**：`oclive ci init` 生成的工作流改用 Node 22，Cargo 审计默认失败即红，并修复 Loom step 名含未引号冒号导致的无效 YAML；`oclive lint --audit-ci` 现在按 YAML job/step 语义识别独立 `cargo audit` 或 Dimension 5 唯一所有权，只对审计所属 job/step 判断 `continue-on-error`，不会再被其他 soft job 误导。
 - **成人分拍结构化输出与实机容量标定**：修复通用 Prompt 末尾“只输出角色台词”覆盖 Chat Pro 成人 JSON 契约的问题；成人请求现在以最终专用输出边界收尾，真实 Qwen2.5 7B GGUF 在缓存深度 1/2/4/8 下 15/15 拍完整结构化、零回退。新增 `scripts/measure-adult-stage.mjs` 复现脚本，并依据 RTX 5060 Laptop 8GB 与 CosyVoice2 共享显存测试把默认值保持为 2、建议范围标定为 2～4。
 - **工程路径与启动诊断收敛**：修复 `oclive-cli init --kernel-source` 仍生成旧 `src-tauri` / 根 `crates` 路径的问题，并加入真实仓库布局断言；桌面、无头服务与生成工程共享同一 `--port` 解析，缺失、零值或非法端口均给出稳定诊断并以退出码 2 终止；应用数据目录初始化、共享内核备份/回滚与云模型 token 文件备份失败不再静默，共享内核提升也不再重复执行。
 - **目录插件界面与语音侧车启动**：修复 Windows/WebView2 回传 `ocliveplugin://localhost/...` 时语音识别区和侧栏插件显示 `unknown uri`；整壳与全部 UI 插槽现在按平台生成协议地址——Linux/macOS/iOS 使用 `ocliveplugin://localhost/...`，Windows/Android 使用宿主映射的 `https://ocliveplugin.localhost/...`，避免非 Windows 发行版只挂载空 iframe。受限 iframe 统一在插件脚本执行前注入桥接并由父宿主注册 broker，修复语音识别 `OCLive bridge unavailable`；麦克风采集改由可信父宿主代理给官方语音工具栏，避免 opaque-origin iframe 报 `Invalid security origin`，且不放宽 `allow-same-origin`；采集启停采用串行状态机，授权途中取消不会遗留录音流。Voice v0.5 的转写提交带幂等 id，兼容旧插件的短窗重复事件，并恢复不受插件订阅白名单影响的宿主内部预热/流式朗读事件；流式 TTS 现在只按完整播放结束的音频扣除最终回复、首段不再切成三字碎片或等待额外 directive RPC，切换消息/角色会中止旧合成与已排程 PCM；正式 desktop profile 启用已通过基准的 Deep 前缀缓存。mumu 的安全回退卡片在 iframe 首次 load 时会补注册 broker，状态刷新保留旧内容并按角色/身份事件原位更新；插件 bootstrap、身份、轮询与卡片刷新均拒绝旧角色/旧代次结果回写。目录插件子进程启动即载入持久化 `config.json`，流式朗读只直连已确认可用的侧车，否则直接走 RPC；协议与配置失败写入带稳定标识的 `oclive_plugin` 日志。
@@ -56,7 +66,7 @@
 - **独立通道 `voice.asr`（Windows 已交付 · v0.2–0.3）**：官方目录插件 [`distros/chat-pro/plugins/com.oclive.voice.asr/`](distros/chat-pro/plugins/com.oclive.voice.asr/) · `provides: voice.asr` · **不进**六槽 / `process_message`；`chat_toolbar` 按住说话 + `plugin_rpc_invoke`（`voice.probe` / `voice.transcribe` / `voice.import_model` / `voice.list_profiles` / `voice.speak` / **`voice.build_directive`**) → `com.oclive.voice.asr:submit` → `send_message` 或 `chat:set_input_draft`（`mode: fill`）；**v0.3** 增 TTS `tts_profile` · `auto_tts` · `rules-v1` 导演 · 角色包可选 `voice_profile.json`；sherpa-onnx 引擎 SSOT 在 [`examples/voice-loop-minimal/asr/`](examples/voice-loop-minimal/asr/) · [`tts/`](examples/voice-loop-minimal/tts/) 经 `rpc_server.mjs` spawn；实验 synth：`edge-tts` · `pilot-tts` · `cosyvoice` adapter；官方角色包 `ui.json` 默认启用工具栏/设置插槽；Win98 覆写见 `win98/component-plugin-toolbar.css` / `component-voice-settings.css`；`plugin_bridge` RPC 白名单单测；Linux/macOS profile 返回 `unsupported_platform`；注册表见 [`RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md`](creator-docs/rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md) §4.1。
 - **Domain layering ports（#101 解阻塞）**：`LlmClient::supports_prefix_cache` / `generate_with_opts` / `generate_stream_with_opts`；`TurnThinkingStatePort`；`co_present` / `slot_runner` / `post` 去除 domain→infra 直连；`npm run check:rust` 前置 layering + CHANGELOG parity 守门。
 - **Affect 展示通道 `display_metrics`**：`RoleData` / `RoleInfo` / `SendMessageResponse` 增 UI-only 指标（`favor` / `traits[7]` / `relation_summary`）；旧标量字段标 deprecated；前端 `roleStore` 优先读新字段。
-- **CI flake 自动重跑**：`.github/workflows/ci-rerun-flake.yml` 对 `rust` / `e2e-tauri` 失败限次 `gh run rerun --failed`。
+- **CI flake 自动重跑**：`.github/workflows/ci-rerun-flake.yml` 正确识别 `rust (<matrix-os>)`，仅当全部失败项均属 rust 矩阵时限次执行一次 `gh run rerun --failed`；混入其他失败会保留现场而非用重跑掩盖。
 - **Affect WS4.2–4.4（情感解耦）**：`apply_profile_evolution_atomic` 档案+七维同事务；深度档案 LLM 门控（强事件 OR 每 N 轮 OR 雷达 `radar_deep_pending`，默认 N=3）；`get_display_metrics` GET-only（Tauri + HTTP `/display_metrics`）；Tauri `affect:metricsChanged` 推送 + `roleStore` listen。
 - **RFC affect 漂移闸**：`scripts/check-rfc-affect-drift.mjs` 接入 dimension5。
 - **Wave E · Turn Thinking 持久化分流**：`[turn_thinking] fast_persistence = "strong_only"`（默认 `legacy`）；Fast 闲聊不写 long_term / favor / evolution；**Quarrel / Apology / Confession / Praise** 仍正常写入；RFC [`creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md`](creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md)。
@@ -74,11 +84,12 @@
 - **`human-docs-en/`** 最小集（L0–L3 + 08/09/10 英文摘要）。
 - **`human-docs/08_PR_GATE_MATRIX.md`**、**`03_GLOSSARY.md`**、**`10_SETUP_WINDOWS.md`**。
 - **`handoff/GOOD_FIRST_ISSUES.md`** 策展表。
-- **`npm run check:ci-local`**；`package.json` `engines.node >=20`、**`.nvmrc`**。
+- **`npm run check:ci-local`**；`package.json` `engines.node >=22`、**`.nvmrc`**。
 - 前端：`distros/shared/src/api/plugin/*`、`useMainShell*`、`useChatStorageSettings`、`chatStoreSend`。
 
 ### Changed
 
+- **Node 运行时基线 20 → 22**：当前 ESLint/Vue i18n 工具链已要求 Node 22；`.nvmrc` 成为 GitHub Actions `setup-node` 的单一版本来源，仓库契约测试阻止 workflow、`package.json` 与开发文档再次漂移。
 - **Voice ASR v0.2.1（识别质量）**：聊天栏录音 WebM/Opus 经 `audioCapture.ts` 解码并重采样为 **16 kHz mono WAV** 再送 sherpa（修复此前误当 PCM 导致的识别极差）；麦克风约束启用 echoCancellation / noiseSuppression / autoGainControl；最短录音 350ms；引擎侧识别器缓存、过静音门控（`audio_too_quiet`）、可选 **ffmpeg** 压缩音频回退；新增 **medium** ASR profile 占位（设置里切换，需自行导入模型）。
 
 - **Win98 皮肤 CSS 分层重构**：单体 `theme-win98.css` 拆为 `distros/shared/src/styles/win98/`（L0 tokens · L1 primitives · L2 壳 · L3 面板/组件 co-locate unscoped import）；最大化满框无青绿边、主窗 2px 圆角、对话框 navy 标题条贴边；见 [`MODULE_MAP_AND_HANDOFF.md`](handoff/MODULE_MAP_AND_HANDOFF.md) §13.2 样式依赖表。

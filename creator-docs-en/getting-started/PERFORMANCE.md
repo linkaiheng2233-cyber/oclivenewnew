@@ -36,13 +36,13 @@ The **`oclive-cli`** crate exposes **`bench`**: after `init`/`build` produces tw
 **Examples** (see [OCLIVE_CLI_GUIDE.md § `bench`](../cli/OCLIVE_CLI_GUIDE.md)):
 
 ```bash
-cargo run -p oclive-cli -- bench --release -o /path/to/kernel-project --runs 30 --inner-iters 500 --output ./bench-report.json
-cargo run -p oclive-cli -- bench --release -o /path/to/kernel-project --json
+cargo run -p oclive-cli -- --experimental bench --release -o /path/to/kernel-project --runs 30 --inner-iters 500 --output ./bench-report.json
+cargo run -p oclive-cli -- --experimental bench --release -o /path/to/kernel-project --json
 ```
 
 - **`--save`** / **`--compare`**: append/compare **`bench_history.json`** at the project root (local only; do not commit).  
 - **JSON Schema**: **`kernel/crates/oclive-cli/schemas/oclive_bench_report.schema.json`**.  
-- **CI**: `.github/workflows/ci.yml` includes a lightweight **`cli-bench`** job (smoke; no perf threshold).
+- **CI**: `.github/workflows/nightly-advisory.yml` includes a lightweight **`cli-bench`** job (smoke, no performance threshold, report retained as an artifact).
 
 ---
 
@@ -64,13 +64,13 @@ Run from a kernel project root (`-o` points at the generated tree). See [OCLIVE_
 ### Baseline (`--save`)
 
 ```bash
-cargo run -p oclive-cli -- bench --release -o ./my-kernel --runs 30 --inner-iters 500 --save
+cargo run -p oclive-cli -- --experimental bench --release -o ./my-kernel --runs 30 --inner-iters 500 --save
 ```
 
 ### Regression gate (`--regression`)
 
 ```bash
-cargo run -p oclive-cli -- bench --release -o ./my-kernel --runs 20 --regression --regression-threshold 5
+cargo run -p oclive-cli -- --experimental bench --release -o ./my-kernel --runs 20 --regression --regression-threshold 5
 ```
 
 ### Monolith matrix (`--matrix`)
@@ -78,22 +78,22 @@ cargo run -p oclive-cli -- bench --release -o ./my-kernel --runs 20 --regression
 **Prerequisite — scaffold a project with `monolith.toml`:**
 
 ```bash
-cargo run -p oclive-cli -- init --monolith --non-interactive --preset minimal --project-name bench-kernel -o ./my-kernel-monolith
-cargo run -p oclive-cli -- init --monolith --non-interactive --preset minimal --kernel-source . -o ./my-kernel-monolith
+cargo run -p oclive-cli -- --experimental init --monolith --non-interactive --preset minimal --project-name bench-kernel -o ./my-kernel-monolith
+cargo run -p oclive-cli -- --experimental init --monolith --non-interactive --preset minimal --kernel-source . -o ./my-kernel-monolith
 ```
 
 **Matrix run:**
 
 ```bash
-cargo run -p oclive-cli -- bench --matrix --release -o ./my-kernel-monolith --json > matrix.json
+cargo run -p oclive-cli -- --experimental bench --matrix --release -o ./my-kernel-monolith --json > matrix.json
 ```
 
 **Copy-paste suite** (matrix + cold-start + soak):
 
 ```bash
-cargo run -p oclive-cli -- bench --matrix --release -o ./my-kernel-monolith --json > matrix.json
-cargo run -p oclive-cli -- bench --cold-start --cold-start-runs 5 --release -o ./my-kernel-monolith
-cargo run -p oclive-cli -- bench --soak --soak-duration 72 --release -o ./my-kernel-monolith --json > soak.json
+cargo run -p oclive-cli -- --experimental bench --matrix --release -o ./my-kernel-monolith --json > matrix.json
+cargo run -p oclive-cli -- --experimental bench --cold-start --cold-start-runs 5 --release -o ./my-kernel-monolith
+cargo run -p oclive-cli -- --experimental bench --soak --soak-real-time --soak-duration 72 --soak-sample-interval 60 --release -o ./my-kernel-monolith --output soak.json
 ```
 
 **Expected:** JSON with **12** tier×preset samples (`standard_ms` / `monolith_ms`); copy p50 values into the matrix table in the Chinese [PERFORMANCE.md](../../creator-docs/getting-started/PERFORMANCE.md) §5.3. Budget **2–4 hours** including Release builds.
@@ -101,7 +101,7 @@ cargo run -p oclive-cli -- bench --soak --soak-duration 72 --release -o ./my-ker
 ### Cold start (`--cold-start`)
 
 ```bash
-cargo run -p oclive-cli -- bench --cold-start --cold-start-runs 5 --release -o ./my-kernel-monolith
+cargo run -p oclive-cli -- --experimental bench --cold-start --cold-start-runs 5 --release -o ./my-kernel-monolith
 ```
 
 **Expected:** Per-run **first `/chat` latency**, warm average, and API ready time; median over 5 runs should be stable (~**30 minutes** total).
@@ -109,10 +109,16 @@ cargo run -p oclive-cli -- bench --cold-start --cold-start-runs 5 --release -o .
 ### Soak (`--soak`)
 
 ```bash
-cargo run -p oclive-cli -- bench --soak --soak-duration 72 --release -o ./my-kernel-monolith --json > soak.json
+# Accelerated development smoke: nominal 72h, at most 120s wall clock
+cargo run -p oclive-cli -- --experimental bench --soak --soak-duration 72 --release -o ./my-kernel-monolith --output soak-smoke.json
+
+# True soak: 72 wall-clock hours, sampled every 60 seconds
+cargo run -p oclive-cli -- --experimental bench --soak --soak-real-time --soak-duration 72 --soak-sample-interval 60 --release -o ./my-kernel-monolith --output soak-72h.json
 ```
 
-**Expected:** Periodic **RSS** in JSON; pass when **final RSS ≤ first sample × 1.2** (CLI warns otherwise). Local runs may use accelerated wall clock; use a dedicated host for real **72h**.
+**Expected:** schema-v2 JSON identifies the directly spawned kernel PID and records actual timing, one `warmup_chats` request outside the measured load, periodic **RSS / CPU**, successful and failed chats, early exit, and child reaping. The first RSS sample is taken after warmup. It passes only when **final RSS ≤ steady-state first sample × 1.2**, requests and samples have no failures, the kernel does not exit early, and the child is reaped; otherwise the command exits non-zero.
+
+Without `--soak-real-time`, the command remains an accelerated smoke (about **2s per nominal hour**, minimum 8s, capped at 120s) and is not 72h leak evidence. Real soak requires the explicit flag and accepts fractional hours; `--soak-duration 0.01 --soak-sample-interval 5` is a 36s wall-clock calibration. Build, API cold start, and one baseline warmup do not shorten the requested soak interval.
 
 ### Compile profile (`oclive profile`)
 

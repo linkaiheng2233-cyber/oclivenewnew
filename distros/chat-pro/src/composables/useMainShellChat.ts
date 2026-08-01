@@ -15,7 +15,7 @@ export function useMainShellChat(options: {
   t: ComposerTranslation
   clearSceneBarsBeforeSend: () => void
   offerSceneBarsAfterReply: (together: boolean, destination: boolean) => void
-  onTurnRecorded: () => void
+  onTurnRecorded: (userText: string) => void
 }) {
   const chatStore = useChatStore()
   const chatListRef = ref<InstanceType<typeof ChatMessageList> | null>(null)

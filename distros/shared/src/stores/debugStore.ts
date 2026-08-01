@@ -1,4 +1,4 @@
-import type { PresenceMode, SendMessageResponse } from '@oclive/shared/api'
+import type { EventItem, MemoryItem, PresenceMode, SendMessageResponse } from '@oclive/shared/api'
 import {
 
   getDisplayMetrics,
@@ -14,8 +14,8 @@ import { useRoleStore } from './roleStore'
 export const useDebugStore = defineStore('debug', {
   state: () => ({
     visible: false,
-    events: [] as unknown[],
-    memories: [] as unknown[],
+    events: [] as EventItem[],
+    memories: [] as MemoryItem[],
     /** Knowledge chunks injected into Prompt on last `send_message` */
     lastKnowledgeChunksInPrompt: 0,
     /** Presence from the same response as above (co-present vs remote-presence) */

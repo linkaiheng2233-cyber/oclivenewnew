@@ -506,7 +506,7 @@ async function toggleLora(adapter: LocalLoraAdapter): Promise<void> {
       t('modelManager.loraAdultConfirm', { name: adapter.name }),
       {
         title: t('modelManager.loraTitle'),
-        type: 'warning',
+        kind: 'warning',
       },
     )
     if (!adultAcknowledged)
@@ -538,7 +538,7 @@ async function removeLora(adapter: LocalLoraAdapter): Promise<void> {
     t('modelManager.loraDeleteConfirm', { name: adapter.name }),
     {
       title: t('modelManager.loraTitle'),
-      type: 'warning',
+      kind: 'warning',
     },
   )) {
     return
@@ -628,7 +628,7 @@ async function onSave(): Promise<void> {
           t('modelManager.baseAdultConfirm', { name: selectedLocalModelFile.value.name }),
           {
             title: t('modelManager.baseAdultTitle'),
-            type: 'warning',
+            kind: 'warning',
           },
         )
         if (!adultContentAcknowledged)

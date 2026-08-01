@@ -9,15 +9,18 @@ pub fn run_loom(root: &Path) -> Result<()> {
     let st = Command::new("cargo")
         .args([
             "test",
+            "--locked",
+            "--release",
             "-p",
             "oclivenewnew-tauri",
             "--test",
             "loom_concurrency",
-            "loom_tests_require_cfg_loom",
+            "--features",
+            "loom-tests",
             "--",
             "--test-threads=1",
         ])
-        .current_dir(root.join("distros/desktop-tauri"))
+        .current_dir(root)
         .status()?;
     if st.success() {
         println!("Loom: PASS");

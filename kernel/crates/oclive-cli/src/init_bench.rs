@@ -30,7 +30,7 @@ pub fn try_post_init_monolith_bench(project_root: &Path) {
             e
         );
         eprintln!(
-            "  Run manually later: cargo run -p oclive-cli -- bench --release --runs 5 -o {}",
+            "  Run manually later: cargo run -p oclive-cli -- --experimental bench --release --runs 5 -o {}",
             root.display()
         );
         eprintln!("  Fill comparison report: docs/WELD_BENCH_REPORT.md");
@@ -64,7 +64,9 @@ fn run_post_init_bench_inner(root: &Path, bench_dir: &Path) -> Result<()> {
         stress_duration: 30,
         equivalence: false,
         soak: false,
-        soak_duration: 72,
+        soak_duration: 72.0,
+        soak_real_time: false,
+        soak_sample_interval: 60,
         cold_start: false,
         cold_start_runs: 1,
         cold_start_warm_messages: 5,

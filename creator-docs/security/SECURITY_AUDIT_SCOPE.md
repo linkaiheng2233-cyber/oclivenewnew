@@ -23,9 +23,10 @@
 ## 本轮未覆盖（已知局限）
 
 - **第三方供应链**：crate **作者信誉、发布历史、构建可重复性** 等未做系统审计。
+- **npm 开发工具链**：K-SUPPLY-12 修复树的完整与生产扫描均为 0，peer 树合法，主 CI 已同时持有两类高危门禁；冻结提交远端通过前仍只算本地验证，且自动扫描不等于依赖作者信誉或可重复构建审计。
 - **Miri**：未对全部 `unsafe` 做 **Miri 全量**；仅在关键路径评估可行性。
-- **模糊测试（fuzzing）**：已建立 **`kernel/fuzz/`**（libFuzzer）与 **`oclive_validation` proptest** harness（见 [FUZZING.md](../testing/FUZZING.md)）；CI `fuzz` job 为 `continue-on-error` 烟测。
-- **Loom 并发模型**：`distros/desktop-tauri/tests/loom_concurrency.rs`（JSON-RPC 请求 ID、`narrative_hint` 缓存 RwLock 模型）；`oclive test --loom` / CI `loom` job（`continue-on-error`）。主仓 **无 `unsafe` 块**；Loom 覆盖逻辑并发而非 FFI。
+- **模糊测试（fuzzing）**：已建立 **`kernel/fuzz/`**（libFuzzer）与 **`oclive_validation` proptest** harness（见 [FUZZING.md](../testing/FUZZING.md)）；独立 Nightly `fuzz` job 失败会真实变红并保留 artifact，但不阻塞 main。
+- **Loom 并发模型**：`distros/desktop-tauri/tests/loom_concurrency.rs`（JSON-RPC 请求 ID、`narrative_hint` 缓存 RwLock 模型）；`oclive test --loom` / 独立 Nightly `loom` job。主仓 **无 `unsafe` 块**；Loom 覆盖逻辑并发而非 FFI，Nightly 失败不替代人工根因判断。
 - **侧信道**：**未**分析时序、功耗等侧信道风险。
 - **威胁建模（STRIDE 等）**：**未**对全产品做完整建模；仅对 **对话主编排链路** 做并发与取消向审查。
 - **插件强隔离**：HTML fallback 仍共享 `https://ocliveplugin.localhost` origin，尚未完成每插件独立 origin / iframe 原生 E2E；签名严格模式仍是 opt-in。发行版禁 inline Vue 是最小止血，不等于插件沙箱已经完成。
@@ -45,6 +46,7 @@
 2. **Miri**：引入 **允许失败** 的 Miri CI job，从 **最小 `unsafe` 闭包** 起扩大覆盖。
 3. **模糊测试**：持续扩展 `kernel/fuzz/` 目标与 proptest 属性；对发现 crash 建立最小复现入库。
 4. **Tauri / gtk-rs 警告链**：跟踪 [KNOWN_VULNERABILITIES.md](./KNOWN_VULNERABILITIES.md) 中的 *unmaintained* 集群，随 **Tauri 大版本** 升级收敛。
+5. **npm 开发工具链**：先做可达性与受支持版本矩阵，再升级 ESLint/WebDriver/目录插件编译链；禁止用强制安装掩盖 peer 冲突。
 
 ---
 
@@ -52,6 +54,8 @@
 
 | 日期 | 说明 |
 |------|------|
+| 2026-08-01 | K-SUPPLY-12 本地修复后完整 npm 图为 0，并把 full dev audit 升为硬门禁；远端结论待冻结提交。 |
+| 2026-08-01 | 区分生产 npm 硬门禁与完整 dev graph 风险，登记 K-SUPPLY-12。 |
 | 2026-07-17 | 增补 HTTP 鉴权、路径 containment、插件 inline Vue fail-closed、历史凭据与共享 origin 局限。 |
 | 2026-05-15 | 增加「第三方风险」小节，链至 `legal/DISCLAIMER.md`。 |
 | 2026-05-13 | 初版：定义已完成范围与已知局限。 |

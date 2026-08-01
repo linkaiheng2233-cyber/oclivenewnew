@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "module": { "id": "oclive.ci-planner", "kind": "developer-control-plane" },
+  "provides": ["ci.impact-plan"],
+  "runtime_requires": [],
+  "resource_claims": [],
+  "declared_affects": ["oclive.cli", "oclive.repo-tooling"],
+  "validation_profiles": ["repo-governance", "cli"],
+  "platforms": ["linux", "windows"],
+  "extensions": {}
+}

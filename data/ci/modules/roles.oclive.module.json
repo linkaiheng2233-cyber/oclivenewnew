@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "module": { "id": "oclive.roles", "kind": "role-pack" },
+  "provides": ["roles.official"],
+  "runtime_requires": ["kernel.validation", "distro.chat-pro"],
+  "resource_claims": [],
+  "declared_affects": ["oclive.chat-pro"],
+  "validation_profiles": ["roles"],
+  "platforms": ["all"],
+  "extensions": {}
+}

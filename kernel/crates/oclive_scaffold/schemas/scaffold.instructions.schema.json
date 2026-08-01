@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.oclive.dev/scaffold/v1/scaffold.instructions.schema.json",
+  "title": "OCLive Scaffold Declarative Instructions v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "files"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "variables": {
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/component" },
+      "additionalProperties": { "$ref": "#/$defs/variable" },
+      "default": {}
+    },
+    "files": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/file" }
+    }
+  },
+  "$defs": {
+    "component": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+    },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "not": { "pattern": "(^[\\\\/]|^[A-Za-z]:|(^|[\\\\/])\\.\\.([\\\\/]|$))" }
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "variable": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["description"],
+      "properties": {
+        "description": { "type": "string", "minLength": 1 },
+        "required": { "type": "boolean", "default": false },
+        "default": { "type": "string" }
+      }
+    },
+    "file": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "target", "mode", "sha256"],
+      "properties": {
+        "source": { "$ref": "#/$defs/relativePath" },
+        "target": { "$ref": "#/$defs/relativePath" },
+        "mode": { "enum": ["text", "copy"] },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    }
+  }
+}

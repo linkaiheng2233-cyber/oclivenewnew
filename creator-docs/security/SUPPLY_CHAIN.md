@@ -66,10 +66,12 @@ sha256sum oclive-kernel-server
 |----|-----|--------|------|
 | **K-SUPPLY-02** | GitHub Release 挂 `SHA256SUMS` asset | P1 | workflow 已入库；**首次 Release 挂 asset = 维护者** |
 | **K-SUPPLY-03** | 插件安装审源码提示 | P2 | **Done** |
-| **K-SUPPLY-04** | `npm-audit` 升格 | P2 | **Observe** — 连续 2 周期 high/critical 再硬红 |
+| **K-SUPPLY-04** | `npm-audit` 升格 | P2 | **Done · remote verified** — 两周期生产扫描均为 0，`continue-on-error` 已移除；远端 CI [`30692428026`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30692428026) 硬门禁通过 |
 | **K-SUPPLY-05** | `deny.toml` multiple-versions → deny | P2 | **Done**（Minimal · 2026-07-15）— `deny` + 有理由 skip；剩余族见 [LIGHTWEIGHT_PROFILE §6.6](../development/LIGHTWEIGHT_PROFILE.md)；Full 零 skip 另战役 |
 | **K-SUPPLY-09** | 插件签名严格模式默认关闭 | P1 | **OPEN** — 当前只有显式 `OCLIVE_PLUGIN_SIGNATURE_STRICT=1` 才校验 sidecar SHA-256；源码审查提示不是签名证明，官方/市场默认签名与撤销流程仍待落地 |
 | **K-SUPPLY-10** | GitHub Actions 固定完整 commit SHA | P2 | **OPEN** — 当前 workflow 使用可变 `@v*` / `@stable` tag |
+| **K-SUPPLY-11** | `event-listener` 5.4.1 unsound warning | P1 | **Done · remote verified** — 锁文件已升级 5.4.2，SQLx 与 zbus/Tauri 均解析到修复版；`cargo audit` 警告 9→8，远端 Dimension 5 通过 |
+| **K-SUPPLY-12** | npm 开发工具链漏洞与 peer 契约漂移 | **P1** | **Locally verified · remote pending** — 完整与生产 `npm audit` 均为 0，ESLint/Unicorn peer 树合法；WebDriver XML 解析器已修复，旧 Vue 2/PostCSS SFC loader 已移除。待冻结提交 Linux/Windows CI 后关闭 |
 | **K-PLUGIN-SEC-01** | 每插件独立 origin / 原生隔离 E2E | P1 | **Partial** — 发行版已禁 inline Vue；HTML fallback 仍共享 `ocliveplugin.localhost`，不能宣称完整沙箱 |
 | **K-SECRET-01** | 历史 API 密钥撤销与历史处置 | **P0** | **Done（2026-07-17）** — 工作树已改 secrets 引用；维护者确认旧密钥已由 N1N 提供商彻底销毁，Git 历史按决定保留 |
 | **K-SUPPLY-06** | 位级可重复构建 | — | Deferred |
@@ -82,7 +84,7 @@ sha256sum oclive-kernel-server
 1. **`Cargo.lock` 变更的 PR**：`dimension5 --ci` 绿 + 更新 [KNOWN_VULNERABILITIES.md](./KNOWN_VULNERABILITIES.md) 扫描日期。
 2. **发版前**：`cargo audit` · `cargo deny check licenses bans` · `oclive lint --deny`（本地与 CI 一致）。
 3. **功能周期**：复查 [SECURITY_AUDIT_SCOPE.md](./SECURITY_AUDIT_SCOPE.md) 局限是否需收窄。
-4. **`npm-audit`**：CI job 当前 `continue-on-error: true`（可见性）；升格条件见 §4 K-SUPPLY-04。
+4. **`npm-audit`**：主 CI 同时执行生产依赖与完整开发图高危硬门禁；两者必须分别保持成功，不能用生产 0 代替完整依赖图证据。
 5. **插件安装**：在签名默认开启前，不把第三方插件视为可信代码；`process:spawn`、MCP、网络等高风险能力仍必须经过授权表和用户授予。发行版禁 inline Vue 只是止血，不能替代签名与独立 origin。
 
 ---
@@ -99,6 +101,8 @@ sha256sum oclive-kernel-server
 
 | 日期 | 说明 |
 |------|------|
+| 2026-08-01 | K-SUPPLY-12 本地收口：完整 npm audit 为 0、peer 树合法，移除旧 Vue 2/PostCSS SFC loader；等待冻结提交远端 CI。 |
+| 2026-08-01 | 记录远端生产 npm 硬门禁证据，并把开发图 6 项命中与 ESLint peer 漂移纳入 K-SUPPLY-12。 |
 | 2026-07-17 | 记录历史密钥 P0、发行版 inline Vue fail-closed、共享插件 origin 与 Actions SHA pin 债务。 |
 | 2026-07-15 | K-SUPPLY-05 Minimal：`multiple-versions = deny` + documented `[bans.skip]`；族分类链 LIGHTWEIGHT §6.6 |
 | 2026-06-24 | Wave 1–2：SHA256 workflow、插件 installPath + 审源码 toast |

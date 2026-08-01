@@ -1,0 +1,210 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.oclive.dev/scaffold/v1/oclive.scaffold.schema.json",
+  "title": "OCLive Scaffold Package v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "package", "compatibility", "command_namespace"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "package": { "$ref": "#/$defs/package" },
+    "compatibility": { "$ref": "#/$defs/compatibility" },
+    "command_namespace": { "$ref": "#/$defs/namespace" },
+    "generators": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/generator" },
+      "default": []
+    },
+    "commands": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/command" },
+      "default": []
+    },
+    "permissions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/permission" },
+      "uniqueItems": true,
+      "default": []
+    },
+    "defaults": { "type": "object", "default": {} },
+    "dependencies": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/packageReference" },
+      "default": []
+    },
+    "extends": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/packageReference" },
+      "default": []
+    },
+    "composition": { "$ref": "#/$defs/composition" },
+    "extensions": {
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/namespace" },
+      "additionalProperties": { "$ref": "#/$defs/extension" },
+      "default": {}
+    }
+  },
+  "$defs": {
+    "namespace": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]{0,63}(\\.[a-z][a-z0-9_-]{0,63}){2,}$"
+    },
+    "component": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+    },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "not": { "pattern": "(^[\\\\/]|^[A-Za-z]:|(^|[\\\\/])\\.\\.([\\\\/]|$))" }
+    },
+    "permission": {
+      "enum": [
+        "project.read",
+        "project.write",
+        "user_config.read",
+        "environment.read",
+        "process.spawn",
+        "network.connect"
+      ]
+    },
+    "package": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "display_name", "description", "maintainer"],
+      "properties": {
+        "id": { "$ref": "#/$defs/namespace" },
+        "version": { "type": "string", "minLength": 1 },
+        "display_name": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "minLength": 1 },
+        "maintainer": { "type": "string", "minLength": 1 }
+      }
+    },
+    "compatibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["oclive_cli", "scaffold_contract"],
+      "properties": {
+        "oclive_cli": { "type": "string", "minLength": 1 },
+        "scaffold_contract": { "type": "string", "minLength": 1 }
+      }
+    },
+    "generator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "driver"],
+      "properties": {
+        "id": { "$ref": "#/$defs/component" },
+        "kind": { "$ref": "#/$defs/component" },
+        "driver": { "$ref": "#/$defs/generatorDriver" }
+      }
+    },
+    "generatorDriver": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "target"],
+          "properties": {
+            "kind": { "const": "builtin" },
+            "target": { "type": "string", "minLength": 1 }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "path"],
+          "properties": {
+            "kind": { "const": "instruction" },
+            "path": { "$ref": "#/$defs/relativePath" },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$",
+              "description": "Optional for v1.0 discovery compatibility; required by Stage 2B generation."
+            }
+          }
+        }
+      ]
+    },
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "description", "entry"],
+      "properties": {
+        "name": { "$ref": "#/$defs/component" },
+        "description": { "type": "string", "minLength": 1 },
+        "entry": { "$ref": "#/$defs/commandEntry" },
+        "permissions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/permission" },
+          "uniqueItems": true,
+          "default": []
+        }
+      }
+    },
+    "commandEntry": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "target"],
+          "properties": {
+            "kind": { "const": "builtin" },
+            "target": { "type": "string", "minLength": 1 }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "path", "runtime"],
+          "properties": {
+            "kind": { "const": "script" },
+            "path": { "$ref": "#/$defs/relativePath" },
+            "runtime": { "enum": ["node", "python", "native"] }
+          }
+        }
+      ]
+    },
+    "packageReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": { "$ref": "#/$defs/namespace" },
+        "version": { "type": "string", "minLength": 1 }
+      }
+    },
+    "composition": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "order_before": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/namespace" },
+          "default": []
+        },
+        "order_after": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/namespace" },
+          "default": []
+        },
+        "conflict_groups": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/component" },
+          "uniqueItems": true,
+          "default": []
+        }
+      },
+      "default": {}
+    },
+    "extension": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "required": { "type": "boolean", "default": false },
+        "config": { "default": null }
+      }
+    }
+  }
+}

@@ -25,20 +25,20 @@ This document records **Release settings, dependency slimming, audits, and binar
 
 ### §6.1 `cargo audit` toolchain
 
-- **Pinned version**: **cargo-audit 0.22.1** (matches CI `cargo-audit` job for comparable reports).
-- **Local run**: `cargo audit` from repo root (lockfile: `distros/desktop-tauri/Cargo.lock`)  
+- **Pinned version**: **cargo-audit 0.22.1** (matches the audit step owned by CI `dimension5-acceptance`).
+- **Local run**: `cargo audit` from repo root (workspace-root `Cargo.lock`)
   Offline: `cargo audit --no-fetch --stale` (requires a successful prior fetch of `advisory-db`).
 
 ### §6.4 Audit status (current)
 
-**Known vulnerabilities under tracking**; **do not claim zero vulns**. Vulnerability-level hits and roadmap: **[KNOWN_VULNERABILITIES.md](../../creator-docs/security/KNOWN_VULNERABILITIES.md)** (see that file for last update date).
+**Current vulnerability-level count is 0** (last reviewed **2026-08-01**); warning-level findings remain tracked. Do not turn this measured result into an unconditional “zero vulnerabilities” claim. See **[KNOWN_VULNERABILITIES.md](../security/KNOWN_VULNERABILITIES.md)**.
 
-Summary (**2026-05-12**, `cargo audit --no-fetch --stale`, `distros/desktop-tauri/Cargo.lock`; matches that CLI run):
+Summary (**2026-08-01**, workspace-root `Cargo.lock`, `cargo audit`):
 
-- **Vulnerability level (error)**: **5** (`rsa`, `rustls-webpki` ×3 advisories, `sqlx`).
-- **Warning level (warning)**: **17** (includes gtk-rs *unmaintained*, `rustls-pemfile` *unmaintained*, `glib` *unsound*, etc.); **not** listed in the KNOWN table, but release review should read full `cargo audit` output.
+- **Vulnerability level (error)**: **0** (`sqlx-mysql` / `rsa` are absent; `event-listener` resolves to fixed 5.4.2).
+- **Warning level (warning)**: **8** allowed/tracked findings, mainly the gtk/webkit Linux cluster, `glib`, `unic-*`, and yanked `spin`.
 
-CI: `.github/workflows/ci.yml` **`cargo-audit`** job uses **`continue-on-error: true`** for visibility without blocking merges; tighten to fail-on-red after dependency upgrades.
+CI: **`dimension5-acceptance`** uniquely owns the main workflow's `cargo audit` plus `cargo deny licenses+bans`; `cargo-audit-lockfile.yml` covers lockfile/audit-policy PRs, and the duplicate standalone job is removed. `npm-audit` hard-gates both production dependencies and the full development graph; K-SUPPLY-12 is locally closed and awaits frozen remote milestone evidence.
 
 ### §6.5 Unused / optional dependencies (review conclusion)
 

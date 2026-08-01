@@ -10,9 +10,9 @@ For integrators running **v2 blueprint / Monolith** benchmarks locally. Run comm
 
 | Type | Goal | Command (replace paths) | Duration | Pass criteria |
 |------|------|-------------------------|----------|---------------|
-| **Monolith matrix** | **4×3** tier × preset weld combos | `cargo run -p oclive-cli -- bench --matrix --release -o <monolith-project> --json > matrix.json` | **2–4 h** | `matrix.json` has 12 combos; fill p50 ms into [PERFORMANCE.md](../getting-started/PERFORMANCE.md) table |
-| **Cold start** | First `/chat` after process spawn | `cargo run -p oclive-cli -- bench --cold-start --cold-start-runs 5 -o <project>` | **~30 min** | 5 runs without timeout; kernel exposes `--api` with `OCLIVE_HTTP_API_MOCK_LLM=1` |
-| **Soak** | RSS / leak trend over time | `cargo run -p oclive-cli -- bench --soak --soak-duration 72 -o <project> --json` | **72h nominal** (CLI may accelerate locally) | **Final RSS ≤ first sample × 1.2** |
+| **Monolith matrix** | **4×3** tier × preset weld combos | `cargo run -p oclive-cli -- --experimental bench --matrix --release -o <monolith-project> --json > matrix.json` | **2–4 h** | `matrix.json` has 12 combos; fill p50 ms into [PERFORMANCE.md](../getting-started/PERFORMANCE.md) table |
+| **Cold start** | First `/chat` after process spawn | `cargo run -p oclive-cli -- --experimental bench --cold-start --cold-start-runs 5 -o <project>` | **~30 min** | 5 runs without timeout; kernel exposes `--api` with `OCLIVE_HTTP_API_MOCK_LLM=1` |
+| **Soak** | RSS/leak trend and child cleanup | `cargo run -p oclive-cli -- --experimental bench --soak --soak-real-time --soak-duration 72 --soak-sample-interval 60 -o <project> --output <soak.json>` | **72 real hours** | RSS growth ≤20%; zero request/sample failures; no early exit; `process_reaped=true` |
 
 ---
 
@@ -28,7 +28,9 @@ For integrators running **v2 blueprint / Monolith** benchmarks locally. Run comm
 
 1. Cold start (fast wiring check)  
 2. Matrix (Monolith tuning)  
-3. Soak (dedicated machine; shorten `--soak-duration` for local smoke)
+3. Soak (dedicated machine; first calibrate with accelerated mode or `--soak-real-time --soak-duration 0.01`)
+
+The default is an accelerated nominal clock (about 2s per hour, minimum 8s, capped at 120s). A real leak run must explicitly pass `--soak-real-time` and atomically preserve evidence with `--output <file>`; `--json` remains the stdout-pipeline mode. Both modes sample the built kernel PID rather than a `cargo run` wrapper. One successful warmup precedes the clock and RSS baseline so lazy first-chat allocation is not misclassified as a leak. Schema v2 also fails on request/sample errors, early process exit, or an unreaped child.
 
 ---
 

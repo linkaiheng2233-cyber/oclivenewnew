@@ -10,9 +10,9 @@
 
 | 测试类型 | 目的 | 命令（复制后替换 `<工程>` / `<monolith工程>`） | 预计耗时 | 验收标准 |
 |----------|------|-----------------------------------------------|----------|----------|
-| **高耦合矩阵** | Monolith **4×3** 档位×preset 组合性能 | `cargo run -p oclive-cli -- bench --matrix --release -o <monolith工程> --json > matrix.json` | **2–4 小时** | `matrix.json` 含 12 组数据；将 p50 填入 [PERFORMANCE.md](../getting-started/PERFORMANCE.md) 矩阵表 |
-| **冷启动** | 进程冷启到首条 `/chat` 可回复 | `cargo run -p oclive-cli -- bench --cold-start --cold-start-runs 5 -o <工程>` | **约 30 分钟** | 5 轮冷启/热启延迟稳定；无超时（工程须 `--api` + `OCLIVE_HTTP_API_MOCK_LLM=1`） |
-| **长稳运行** | 长时间 RSS / 泄漏趋势 | `cargo run -p oclive-cli -- bench --soak --soak-duration 72 -o <工程> --json` | **名义 72h**（本地加速见 PERFORMANCE §5.7） | **最终 RSS ≤ 首样本 × 1.2**；`--json` 可归档 |
+| **高耦合矩阵** | Monolith **4×3** 档位×preset 组合性能 | `cargo run -p oclive-cli -- --experimental bench --matrix --release -o <monolith工程> --json > matrix.json` | **2–4 小时** | `matrix.json` 含 12 组数据；将 p50 填入 [PERFORMANCE.md](../getting-started/PERFORMANCE.md) 矩阵表 |
+| **冷启动** | 进程冷启到首条 `/chat` 可回复 | `cargo run -p oclive-cli -- --experimental bench --cold-start --cold-start-runs 5 -o <工程>` | **约 30 分钟** | 5 轮冷启/热启延迟稳定；无超时（工程须 `--api` + `OCLIVE_HTTP_API_MOCK_LLM=1`） |
+| **长稳运行** | 长时间 RSS / 泄漏与子进程回收 | `cargo run -p oclive-cli -- --experimental bench --soak --soak-real-time --soak-duration 72 --soak-sample-interval 60 -o <工程> --output <soak.json>` | **真实 72h**（本地加速见 PERFORMANCE §5.7） | RSS 增长不超过 20%；零请求/采样失败；无提前退出；`process_reaped=true` |
 
 ---
 
@@ -28,7 +28,7 @@
 
 1. 先 **冷启动**（快速发现 API / 链接问题）  
 2. 再 **矩阵**（调 Monolith 焊接组合）  
-3. 最后 **长稳**（专用机器过夜；本地可用较短 `--soak-duration` 冒烟）
+3. 最后 **长稳**（专用机器过夜；本地先用加速模式或 `--soak-real-time --soak-duration 0.01` 校准）
 
 ---
 
@@ -60,10 +60,12 @@
 | 指标 | 告警阈值 | 解读 |
 |------|----------|------|
 | RSS 终值 vs 首样本 | **终值 ≤ 首样本 × 1.2** | 超出则可能存在泄漏或缓存未释放 |
-| 聊天任务计数 | 周期内应 **线性增长**、无异常停滞 | 若计数不增但 RSS 涨 → 查子进程僵死 |
-| 任务数 | **不应无界累积**（同进程内重复调度失败） | 持续增长且 RSS 同步涨 → 优先查 HTTP 客户端 / DB 连接 |
+| `warmup_chats` | **1** | 热身在计时与 RSS 基线之前完成，避免把首聊懒加载误判为泄漏 |
+| `successful_chats` / `failed_chats` | 成功数持续增长且失败为 **0** | 失败不会再被伪计为成功；先查 HTTP、内核错误和 DB 连接 |
+| `sampling_failures` | **0** | 非零表示无法取得实际内核 PID 的资源样本，报告不能作为泄漏证据 |
+| `process_early_exit` / `process_reaped` | `null` / **`true`** | 分别验证长稳期间未提前退出、结束后子进程已被 wait 回收 |
 
-CLI 本地 `--soak-duration` 为加速采样（墙钟约 2s×小时数，上限 120s）；**72h 真长稳**须在专用机跑同名命令并保留 `--json`。
+默认 `--soak-duration` 是名义时长的加速采样（墙钟约 2s×小时数，最短 8s、上限 120s）；**72h 真长稳必须显式加 `--soak-real-time`** 并使用 `--output <文件>` 原子保存证据；`--json` 仍专用于 stdout 管道。两种模式均直接采样构建后的内核 PID，而不是 `cargo run` 包装进程；正式时长与 RSS 基线从一次成功热身后开始。
 
 ### 与 `oclive test` 报告
 

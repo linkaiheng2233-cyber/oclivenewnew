@@ -24,15 +24,15 @@ Full narrative and characteristics: **[OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_A
 
 ---
 
-## Capability tiers (public surface)
+## Official command surface
 
-Aligned with [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md); **source of truth** is `kernel/crates/oclive-cli/src/main.rs`.
+Aligned with [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md); **source of truth** is `kernel/crates/oclive-cli/src/main.rs`. Default help focuses on stable entries instead of mixing experiments into the main path.
 
-| Tier | Scope |
-|------|--------|
-| **A** | `init`, `build`, `bench`, `pack`, `plugin` (create/install/uninstall/test), `doctor`, `config`, `test`, `lint`, `ci` |
-| **B** | `registry`, `compose`, `market`, `template`, `dev`, `debug`, `profile` |
-| **C** | `learn`, `dashboard`, `collab`, `blueprint` (experimental/legacy) |
+| Surface | Scope |
+|---------|-------|
+| **Stable visible** | `init`, `dev`, `pack`, `doctor`, `plugin`, `registry`, `lint`, `profile`, `config`, `ci`, `scaffold`, `kernel`, `explain`, `migrate-app-data`, `completions` |
+| **Experimental hidden** | `build`, `bench`, `blueprint`, `compose`, `debug`, `dashboard`, `learn`, `test`, `market`, `collab` (all require global `--experimental`) |
+| **Compatibility hidden** | `template`: legacy `.oclive-template.tar.gz` project archives, not Scaffold Packages |
 
 **Planned (not shipped)**: `pack diff`/`update`, `kernel update`, `dev --inject`, `bench history` import/export — [VISION_ROADMAP_MONTHLY.md](../../creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md#oclive-cli-脚手架计划中).
 
@@ -290,9 +290,9 @@ After multiple **`bench --save`** runs, **`bench --history`** prints a terminal 
 
 ---
 
-## Template publish (`publish` / `--template-url`)
+## Legacy project archives (`template` / `--template-url`)
 
-**`oclive publish --type template`** → **`.oclive-template.tar.gz`**. **`oclive init --template-url`** downloads and unpacks.
+Hidden compatibility commands **`oclive template create/pack`** produce **`.oclive-template.tar.gz`** archives; **`oclive init --template-url`** downloads and unpacks them. Top-level **`oclive publish` has been removed**. The separate local Scaffold Package contract is documented in [RFC_SCAFFOLD_PACKAGE_V1.md](../rfc/RFC_SCAFFOLD_PACKAGE_V1.md).
 
 ---
 

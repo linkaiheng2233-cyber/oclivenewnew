@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "module": { "id": "oclive.shared", "kind": "frontend-library" },
+  "provides": ["frontend.api", "frontend.adapters", "frontend.styles"],
+  "runtime_requires": ["host.bridge"],
+  "resource_claims": [],
+  "declared_affects": ["oclive.chat-pro", "oclive.theater", "oclive.plugins"],
+  "validation_profiles": ["shared-frontend"],
+  "platforms": ["linux", "windows"],
+  "extensions": {}
+}

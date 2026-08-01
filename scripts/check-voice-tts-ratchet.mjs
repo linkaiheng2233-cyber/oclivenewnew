@@ -128,10 +128,13 @@ for (const method of ['voice.import_tts_adapter', 'voice.list_tts_adapters']) {
 const pySnippet = `
 import sys
 import os
+import importlib.util
+import json
 import tempfile
 import threading
 import time
 from pathlib import Path
+from types import SimpleNamespace
 sys.path.insert(0, r'${voiceLoop.replace(/\\/g, '/')}')
 from tts.engines.registry import get_registry
 from tts.engines import _http
@@ -199,10 +202,42 @@ lines = sidecar._stream_synthesis_lines(
 )
 first = next(lines)
 assert '"event": "chunk"' in first
+first_event = json.loads(first)
+assert first_event['timings_schema_version'] == 1
+first_timings = first_event['timings_ms']
+for timing_key in (
+    'request_preprocess',
+    'response_setup',
+    'synth_lock_wait',
+    'prompt_prepare',
+    'inference_open',
+    'first_tensor_wait',
+    'pre_token2wav_wait',
+    'first_token2wav',
+    'first_pcm_encode',
+    'server_first_tensor',
+    'server_payload_ready',
+):
+    assert isinstance(first_timings[timing_key], int) and first_timings[timing_key] >= 0
+assert first_timings['server_payload_ready'] >= first_timings['server_first_tensor']
 assert stream_fake.stream is True, 'default sidecar path must request real streaming'
 assert stream_steps == ['first'], 'first PCM must be yielded before full inference completes'
 remaining = list(lines)
 assert any('"stream_mode": "streaming"' in line for line in remaining)
+done_event = next(json.loads(line) for line in remaining if '"event": "done"' in line)
+assert done_event['timings_schema_version'] == 1
+assert done_event['timings_ms']['total'] >= done_event['timings_ms']['server_payload_ready']
+assert done_event['timings_ms']['speech_token_job_total'] >= 0
+
+class FakeRuntime:
+    token_hop_len = 100
+    _oclive_initial_stream_hop_len = 25
+
+class FakeModel:
+    model = FakeRuntime()
+
+sidecar._reset_stream_hop_len(FakeModel())
+assert FakeModel.model.token_hop_len == 25
 
 buffered_fake = StreamingFake()
 buffered_lines = list(sidecar._stream_synthesis_lines(
@@ -444,6 +479,32 @@ try:
         assert probe['load_peak_reserved_mib'] == 1500
 finally:
     cosyvoice_engine.http_json = old_http_json
+
+stress_path = Path(r'${path.join(repoRoot, 'scripts/stress-voice-gpu-runtime.py').replace(/\\/g, '/')}')
+stress_spec = importlib.util.spec_from_file_location('oclive_voice_gpu_stress', stress_path)
+stress = importlib.util.module_from_spec(stress_spec)
+stress_spec.loader.exec_module(stress)
+with tempfile.TemporaryDirectory() as temp_dir:
+    output = Path(temp_dir) / 'soak.json'
+    args = SimpleNamespace(output=output, duration_minutes=72.0, gpu_layers=22)
+    sampler = SimpleNamespace(sample_count=3, sample_failures=0, peak_used_mib=6400)
+    stress.emit_progress_checkpoint(
+        output,
+        status='running',
+        started_at='2026-08-01T00:00:00+00:00',
+        elapsed_seconds=60.0,
+        args=args,
+        llm_samples=[{'ttft_ms': 250}],
+        voice_samples=[{'ttfc_ms': 1800, 'timings_ms': {'first_token2wav': 900}, 'chunks': 1}],
+        sampler=sampler,
+        llm_process=None,
+        voice_process=None,
+        failures=[],
+    )
+    checkpoint = json.loads((Path(temp_dir) / 'soak.checkpoint.json').read_text(encoding='utf-8'))
+    assert checkpoint['status'] == 'running'
+    assert checkpoint['pairs_completed'] == 1
+    assert checkpoint['latest']['voice_timings_ms']['first_token2wav'] == 900
 print('engines', n, 'prime-safe', ok)
 `
 const customPy = process.env.OCLIVE_VOICE_PYTHON?.trim()

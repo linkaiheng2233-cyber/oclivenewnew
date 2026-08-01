@@ -20,7 +20,7 @@
 
 ## 开发环境
 
-- **本仓库**：**Node.js**（**≥ 20**，见根 `package.json` `engines`；可选 `.nvmrc`）、**npm**、**Rust** stable、**Ollama**（本地对话默认路径，可选）。
+- **本仓库**：**Node.js**（**≥ 22**，见根 `package.json` `engines`；可选 `.nvmrc`）、**npm**、**Rust** stable、**Ollama**（本地对话默认路径，可选）。
 - **Windows**：需 **Visual Studio Build Tools**（MSVC 链接器）。快速检查脚本：[`scripts/setup-dev.ps1`](scripts/setup-dev.ps1)；详解 [`human-docs/10_SETUP_WINDOWS.md`](human-docs/10_SETUP_WINDOWS.md)。
 - **克隆后**：在仓库根目录执行 **`npm install`**；首次 **`npm run tauri:dev`** 会拉取前端依赖并由 Tauri 驱动 `src-tauri` 构建。
 - **仅验证 Rust workspace**（含 `oclive_validation`、`oclive-cli`、`oclivenewnew-tauri`）：在根目录执行 **`cargo test --workspace`**，或 **`cargo test --manifest-path distros/desktop-tauri/Cargo.toml`** 仅桌面宿主。
@@ -83,7 +83,7 @@ npm run build
 
 **依赖审计**：`cargo udeps` 需 **nightly** toolchain。最近一次全 workspace 扫描（**2026-05-22**，`rustup run nightly cargo udeps --workspace --all-targets`）：**无未使用依赖**（`All deps seem to have been used`）。复现：`rustup toolchain install nightly` 后执行上述命令。
 
-**CI 对齐**：**`.github/workflows/ci.yml`** 在 **Ubuntu 22.04** / Windows 上跑 **`rust`**（fmt / clippy / test）；**`rust` job 在 clippy 前先 `npm ci && npm run build`**（Tauri 2 `generate_context!` 需要仓库根 `dist/`）。Linux 构建 `oclivenewnew-tauri` 需 **`libwebkit2gtk-4.1-dev`** 等（**Tauri 2**，与 CI apt 一致）。**`frontend`** 跑 **`npm run test:unit`** 与 **`npm run build`**；**Ubuntu `frontend`** 另跑 **`npm run test:e2e:preview`**。**`oocp-test-suite`** 与 **`cli` / `cli-bench`** 在 Ubuntu 22.04。详见根目录 [README.md](README.md)「测试与检查」。
+**CI 对齐**：**`.github/workflows/ci.yml`** 在 **Ubuntu 22.04** / Windows 上跑 **`rust`**（fmt / clippy / test）；**`rust` job 在 clippy 前先 `npm ci && npm run build`**（Tauri 2 `generate_context!` 需要仓库根 `dist/`）。Linux 构建 `oclivenewnew-tauri` 需 **`libwebkit2gtk-4.1-dev`** 等（**Tauri 2**，与 CI apt 一致）。**`frontend`** 跑 **`npm run test:unit`** 与 **`npm run build`**；**Ubuntu `frontend`** 另跑 **`npm run test:e2e:preview`**。**`oocp-test-suite`** 与 **`cli`** 是主工作流硬门禁；`cli-bench` 等长时/可见性验证在 [`.github/workflows/nightly-advisory.yml`](.github/workflows/nightly-advisory.yml) 定时或按项手动运行。详见根目录 [README.md](README.md)「测试与检查」。
 
 ## 模块负责人（当前维护者）
 
@@ -140,9 +140,9 @@ npm run build
 
 1. **Fork / 功能分支**，一条 PR 聚焦一类变更；契约（manifest、DTO、`PLUGIN_V1`）变更需 **同步文档** 与 **`kernel/crates/oclive_validation`**（若适用）。
 2. **描述**：说明动机、行为变化、风险与手动验证步骤；关联 issue（若有）。
-3. **自检**：至少 **`npm run check`**；触及持久化 / HTTP / 编排时建议 **`npm run check:release`**；内核工程可加 **`cargo run -p oclive-cli -- test -o . --json`**。
+3. **自检**：至少 **`npm run check`**；触及持久化 / HTTP / 编排时建议 **`npm run check:release`**；内核工程可加 **`cargo run -p oclive-cli -- --experimental test -o . --json`**。
 4. **审阅**：由 **模块负责人**（上表）或受邀维护者 Review；关注 CI、安全、i18n 与契约文档是否同步。
-5. **合并条件**：CI 相关 job 绿（或已知 `continue-on-error` 项已登记）；Breaking 变更走 [`BREAKING_CHANGE_PROCESS.md`](handoff/BREAKING_CHANGE_PROCESS.md)；无未解决的 **P0** 发版阻塞项。
+5. **合并条件**：主 CI 硬门禁全部绿；`ci-impact-plan` 只提供影子证据，独立 Nightly 的失败不直接阻塞合并但必须跟踪处理。Breaking 变更走 [`BREAKING_CHANGE_PROCESS.md`](handoff/BREAKING_CHANGE_PROCESS.md)；无未解决的 **P0** 发版阻塞项。
 
 ### Dimension 5 基线（PR / 发版前）
 
@@ -176,8 +176,8 @@ cargo test -p oclive-cli --test kernel_ensure_plan_snapshot
 | `cargo test`（Windows 集成） | 以 **Ubuntu CI** 为准；本机可 `cargo test --workspace --lib` |
 | `frontend` / Vitest | `npm run test:unit` |
 | `oocp-test-suite` | 确认 `OCLIVE_HTTP_API_MOCK_LLM=1`、端口空闲；见 [OOCP_TEST_SUITE.md](creator-docs/testing/OOCP_TEST_SUITE.md) |
-| `cargo-audit` | 仓库根目录运行 `cargo audit`（自动读取 [`.cargo/audit.toml`](.cargo/audit.toml)）；离线复现：`cargo audit --no-fetch --stale`。跟踪 [KNOWN_VULNERABILITIES.md](creator-docs/security/KNOWN_VULNERABILITIES.md)；**`Cargo.lock` 变更的 PR 须同步更新 KNOWN_VULNERABILITIES 扫描日期**；锁文件专用 job 失败即红 |
-| `npm-audit` | 可见性 job（`continue-on-error`）；本地：`npm audit --omit=dev`；摘要见 [KNOWN_VULNERABILITIES.md](creator-docs/security/KNOWN_VULNERABILITIES.md) |
+| `dimension5-acceptance` 中的 `cargo audit` | 仓库根目录运行 `cargo audit`（自动读取 [`.cargo/audit.toml`](.cargo/audit.toml)）；离线复现：`cargo audit --no-fetch --stale`。跟踪 [KNOWN_VULNERABILITIES.md](creator-docs/security/KNOWN_VULNERABILITIES.md)；**`Cargo.lock` 变更的 PR 须同步更新 KNOWN_VULNERABILITIES 扫描日期**；锁文件专用 workflow 失败即红 |
+| `npm-audit` | 生产依赖与完整开发依赖图均为高危硬门禁；本地依次运行 `npm audit --omit=dev --audit-level=high`、`npm audit --audit-level=high`，并用 `npm ls` 核对 peer 关系。当前基线见 [KNOWN_VULNERABILITIES.md](creator-docs/security/KNOWN_VULNERABILITIES.md) |
 | 契约 / 角色包 | `cargo run -p oclive-cli -- pack validate <role>` |
 
 ## 破坏性变更（Breaking changes）

@@ -1,6 +1,6 @@
-# Known vulnerability tracking (`cargo-audit`)
+# Known vulnerability tracking (Cargo / npm)
 
-This file records **vulnerability-level** hits from **`cargo audit`** on the **workspace root `Cargo.lock`**, as the single source of truth for supply-chain risk and upgrade planning. It **does not** include `cargo audit` entries reported only as *warning* (*unmaintained* / *unsound*; see full `cargo audit` output and [SECURITY_AUDIT_SCOPE.md](./SECURITY_AUDIT_SCOPE.md)).
+This file treats **vulnerability-level** hits from `cargo audit` on the workspace-root **`Cargo.lock`** as the single source of truth for supply-chain risk and upgrade planning. Warning-only *unmaintained*, *unsound*, and *yanked* entries do not count as vulnerabilities, but the appendix tracks their current exposure and upstream blockers; the current `cargo audit` output and [SECURITY_AUDIT_SCOPE.md](./SECURITY_AUDIT_SCOPE.md) remain authoritative for detail.
 
 **Full doc index**: [../getting-started/DOCUMENTATION_INDEX.md](../getting-started/DOCUMENTATION_INDEX.md)  
 **Lightweight profile & audit flow**: [../development/LIGHTWEIGHT_PROFILE.md](../development/LIGHTWEIGHT_PROFILE.md) §6.4
@@ -12,10 +12,10 @@ This file records **vulnerability-level** hits from **`cargo audit`** on the **w
 | Item | Value |
 |------|-----|
 | **cargo-audit version** | **0.22.1** (pin this major line for comparable reports) |
-| **Last scan date** | **2026-07-31** (local `cargo audit`; K-RESOURCE-COORD-01 promoted lockfile-existing `sysinfo 0.33` to a direct Host dependency) |
+| **Last scan date** | **2026-08-01** (repository-wide audit, local `cargo audit`) |
 | **Scan path** | Workspace root `Cargo.lock` |
 | **Vulnerability-level count** | **0** (`cargo audit` exit code **0**; `sqlx-mysql` / `rsa` removed from lockfile graph) |
-| **Warning-level count** | **8** (gtk/webkit Linux cluster still ignored · `glib` · `unic-*` unmaintained · `spin` yanked; **`fxhash` / `rand` 0.7 cleared with Tauri 2**) |
+| **Warning-level count** | **8** (gtk/webkit Linux cluster · `glib` · `unic-*` · `spin` yanked; `event-listener` is fixed, and **`fxhash` / `rand` 0.7 were cleared with Tauri 2**) |
 
 > If CI or your machine cannot fetch advisory-db: `cargo audit --no-fetch --stale` (requires a previously fetched local DB).
 
@@ -43,7 +43,7 @@ This file records **vulnerability-level** hits from **`cargo audit`** on the **w
 
 - **sqlx ≥ 0.8.6**, `default-features = false`, features: `runtime-tokio-rustls`, `sqlite` (no umbrella `migrate`).
 - Runtime migrations: `kernel/crates/oclive_kernel_host/src/infrastructure/sql_migrate.rs`.
-- **CI**: `cargo-audit` job fails on vulnerability-level hits; `Cargo.lock` PRs use `cargo-audit-lockfile.yml`.
+- **CI**: `dimension5-acceptance` uniquely owns the main workflow's required `cargo audit`; `Cargo.lock` PRs use `cargo-audit-lockfile.yml`.
 
 ### Maintenance rules
 
@@ -53,19 +53,30 @@ This file records **vulnerability-level** hits from **`cargo audit`** on the **w
 
 ---
 
-## Warning-level tracking (2026-05-20 batch three)
+## Warning-level tracking (rolling)
 
 | RUSTSEC / category | Crate | Status | Reason |
 |--------------------|-------|--------|--------|
 | **RUSTSEC-2026-0002** | `lru` | **Fixed** | `oclive-cli` upgraded **ratatui 0.30** → `lru` ≥ 0.16 |
 | **RUSTSEC-2025-0134** | `rustls-pemfile` | **Fixed** | `reqwest` **0.12** chain no longer depends on this crate |
 | gtk-rs GTK3 cluster (11 IDs) | `gtk`/`gdk`/… | **Recorded + audit.toml ignore** | Linux WebView (wry/webkit2gtk) still pulls GTK3; ignore remains after Tauri 2 until upstream shifts |
+| **RUSTSEC-2025-0075 / 0080 / 0081 / 0098 / 0100** | `unic-*` 0.9 | **Open** | Transitively pulled by Tauri `urlpattern`; wait for upstream removal of the unmaintained family |
+| **RUSTSEC-2026-0221** | `event-listener` 5.4.1 | **Fixed · K-SUPPLY-11** | Lockfile upgraded to **5.4.2** on 2026-08-01; both SQLx and zbus/Tauri paths now resolve to the fixed release, without an ignore |
 | **RUSTSEC-2025-0057** | `fxhash` | **Cleared** | 2026-07-14 K-PLATFORM-01a Full · no `fxhash` in Tauri 2 lock graph |
 | **RUSTSEC-2024-0429** | `glib` | **Open** | `VariantStrIter` path; host does not use (Linux wry) |
+| yanked | `spin` 0.9.8 | **Open** | Pulled through `flume` → `sqlx-sqlite`; follow SQLx/Flume upstream upgrades |
 | **RUSTSEC-2026-0097** | `rand` 0.7 | **Cleared** | 2026-07-14 K-PLATFORM-01a Full · no `rand` 0.7 after Tauri 2 |
 | **RUSTSEC-2026-0190** | `anyhow` | **Fixed** — lockfile **1.0.103** | 2026-07-14 K-SUPPLY-05 `cargo update` |
 
 See [`.cargo/audit.toml`](../../.cargo/audit.toml) and [SECURITY_AUDIT_SCOPE.md](./SECURITY_AUDIT_SCOPE.md).
+
+---
+
+## npm dependency status (2026-08-01)
+
+The required CI `npm-audit` job runs `npm audit --omit=dev --audit-level=high`; remote run [`30692428026`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30692428026) reported **0 production vulnerabilities**.
+
+On the K-SUPPLY-12 repair tree, full `npm audit` and the production scan both report **0 vulnerabilities**, while `npm ls eslint eslint-plugin-unicorn` exits successfully. ESLint 10.8.0 / Antfu 9.2.0 satisfy Unicorn 72's peer contract, WebDriverIO 9.30.0 resolves fixed `fast-xml-parser` 5.10.1, and the legacy `vue3-sfc-loader` Vue 2/PostCSS chain is removed in favor of a restricted official-compiler DEV path. This is still **locally verified** until Linux/Windows remote CI passes the frozen commit; it is a measured result, not a permanent zero-risk claim.
 
 ---
 

@@ -9,6 +9,7 @@ pub use commands::init;
 pub use commands::lint as lint_cmd;
 mod bench_cold_start;
 mod bench_equivalence;
+mod bench_http;
 mod bench_metrics;
 mod bench_soak;
 mod bench_stress;
@@ -18,6 +19,7 @@ mod blueprint_v3_init;
 mod build_cmd;
 mod cargo_hints;
 mod ci_cmd;
+mod ci_impact_cmd;
 mod cli_english_init;
 mod collab_cmd;
 mod completions_cmd;
@@ -70,6 +72,7 @@ mod registry;
 mod registry_cmd;
 mod registry_remote;
 mod role_pack;
+mod scaffold_cmd;
 mod template_catalog;
 mod template_cmd;
 mod test_ci_parity;
@@ -92,7 +95,7 @@ use clap::{Parser, Subcommand};
     about = "Oclive official kernel project scaffolding"
 )]
 pub struct Cli {
-    /// Enable experimental / unstable subcommands (`build`, `bench`, `market`, `collab`, `dashboard`, `init --monolith`).
+    /// Enable hidden experimental / unstable subcommands; run `--help` on a known command for details.
     #[arg(long, global = true)]
     experimental: bool,
 
@@ -110,14 +113,17 @@ enum Commands {
     #[command(after_long_help = commands::init::PRESET_MATRIX_HELP)]
     Init(commands::init::InitArgs),
     /// Regenerate Monolith artifacts and build standard + monolith binaries
+    #[command(hide = true)]
     Build(build_cmd::BuildArgs),
     /// Benchmark standard vs monolith binaries (JSON report)
+    #[command(hide = true)]
     Bench(commands::bench::BenchArgs),
     /// Watch role pack manifest/settings changes
     Dev(dev_cmd::DevArgs),
     /// Role pack validate, create, publish (.oclivepack)
     Pack(pack_cmd::PackArgs),
     /// [experimental/legacy] Validate pipeline.ocblueprint JSON
+    #[command(hide = true)]
     Blueprint(blueprint_cmd::BlueprintCli),
     /// Environment diagnostics (Rust, disk, Ollama, network)
     Doctor(doctor_cmd::DoctorArgs),
@@ -126,28 +132,38 @@ enum Commands {
     /// Local kernel project registry
     Registry(registry_cmd::RegistryCli),
     /// Multi-kernel compose orchestration
+    #[command(hide = true)]
     Compose(compose_cmd::ComposeCli),
     /// Step trace debug for process_message
+    #[command(hide = true)]
     Debug(debug_cmd::DebugArgs),
     /// Local web dashboard (default 127.0.0.1:8420)
+    #[command(hide = true)]
     Dashboard(dashboard_cmd::DashboardArgs),
     /// Interactive onboarding tutorial
+    #[command(hide = true)]
     Learn(learn_cmd::LearnArgs),
     /// Project regression checks
+    #[command(hide = true)]
     Test(test_cmd::TestArgs),
     /// Static project health lint
     Lint(commands::lint::LintArgs),
     /// Build size and dependency profile
     Profile(profile_cmd::ProfileArgs),
     /// Browse and install from market index
+    #[command(hide = true)]
     Market(market_cmd::MarketCli),
     /// Role pack Git collaboration helpers
+    #[command(hide = true)]
     Collab(collab_cmd::CollabCli),
     /// Global / project config (~/.oclive/config.toml)
     Config(config_cmd::ConfigCli),
     /// Generate or check GitHub Actions CI
     Ci(ci_cmd::CiCli),
-    /// Template pack / create from existing project
+    /// Discover and validate local Scaffold Packages (declarations only)
+    Scaffold(scaffold_cmd::ScaffoldCli),
+    /// Legacy project archive pack/create compatibility
+    #[command(hide = true)]
     Template(template_cmd::TemplateCli),
     /// Kernel runtime dependency info
     Kernel(kernel_cmd::KernelCli),
@@ -239,6 +255,7 @@ fn main() -> Result<()> {
         }
         Commands::Config(cli) => config_cmd::run(cli),
         Commands::Ci(cli) => ci_cmd::run(cli),
+        Commands::Scaffold(cli) => scaffold_cmd::run(cli),
         Commands::Template(cli) => template_cmd::run(cli),
         Commands::Kernel(cli) => kernel_cmd::run(cli),
         Commands::Explain(args) => explain_cmd::run(args),
@@ -249,6 +266,8 @@ fn main() -> Result<()> {
 
 #[cfg(test)]
 mod tests {
+    use clap::CommandFactory;
+
     #[test]
     fn init_after_long_help_mentions_monolith_rfc() {
         assert!(
@@ -270,6 +289,64 @@ mod tests {
         assert!(
             crate::commands::init::PRESET_MATRIX_HELP.contains("--monolith-bench-preset"),
             "init --help footer should mention --monolith-bench-preset"
+        );
+    }
+
+    #[test]
+    fn default_help_only_exposes_stable_command_surface() {
+        let command = crate::Cli::command();
+        let mut visible = command
+            .get_subcommands()
+            .filter(|command| !command.is_hide_set())
+            .map(|command| command.get_name().to_string())
+            .collect::<Vec<_>>();
+        visible.sort();
+        assert_eq!(
+            visible,
+            vec![
+                "ci",
+                "completions",
+                "config",
+                "dev",
+                "doctor",
+                "explain",
+                "init",
+                "kernel",
+                "lint",
+                "migrate-app-data",
+                "pack",
+                "plugin",
+                "profile",
+                "registry",
+                "scaffold",
+            ]
+        );
+    }
+
+    #[test]
+    fn experimental_and_legacy_commands_remain_registered_but_hidden() {
+        let command = crate::Cli::command();
+        let mut hidden = command
+            .get_subcommands()
+            .filter(|command| command.is_hide_set())
+            .map(|command| command.get_name().to_string())
+            .collect::<Vec<_>>();
+        hidden.sort();
+        assert_eq!(
+            hidden,
+            vec![
+                "bench",
+                "blueprint",
+                "build",
+                "collab",
+                "compose",
+                "dashboard",
+                "debug",
+                "learn",
+                "market",
+                "template",
+                "test",
+            ]
         );
     }
 }

@@ -4,9 +4,7 @@ import { ApiInvokeError } from '@oclive/shared/api/helpers'
 import { i18n } from '@oclive/shared/i18n'
 import * as Vue from 'vue'
 
-const SCHEME = 'oclive-plugin://'
-
-/** Human-readable error when `vue3-sfc-loader` compile fails (for slot UI). */
+/** Human-readable error when the development-only SFC compiler fails (for slot UI). */
 export class PluginVueCompileError extends Error {
   readonly pluginId: string
   readonly componentPath: string
@@ -26,69 +24,6 @@ export class PluginVueCompileError extends Error {
     this.friendlyMessage = friendlyMessage
     this.rawMessage = rawMessage
   }
-}
-
-function uri(pluginId: string, rel: string): string {
-  const r = rel.replace(/\\/g, '/').replace(/^\/+/, '')
-  return `${SCHEME}${pluginId}/${r}`
-}
-
-function dirname(rel: string): string {
-  const i = rel.lastIndexOf('/')
-  return i === -1 ? '' : rel.slice(0, i)
-}
-
-function joinUnder(baseDir: string, rel: string): string {
-  const parts = `${baseDir}/${rel}`.split('/').filter(Boolean)
-  const stack: string[] = []
-  for (const p of parts) {
-    if (p === '..')
-      stack.pop()
-    else if (p !== '.')
-      stack.push(p)
-  }
-  return stack.join('/')
-}
-
-function stripQuery(rel: string): string {
-  return rel.split('?')[0]?.split('#')[0] ?? rel
-}
-
-/** Extract plugin-root-relative path from loader URL, if present. */
-function pluginRelFromUrl(pluginId: string, url: string): string | null {
-  const p = stripQuery(String(url).replace(/\\/g, '/'))
-  if (p.startsWith(SCHEME)) {
-    const body = p.slice(SCHEME.length)
-    const slash = body.indexOf('/')
-    if (slash === -1 || body.slice(0, slash) !== pluginId)
-      return null
-    return stripQuery(body.slice(slash + 1))
-  }
-  const needle = `/plugins/${pluginId}/`
-  const idx = p.lastIndexOf(needle)
-  if (idx !== -1)
-    return stripQuery(p.slice(idx + needle.length))
-  return null
-}
-
-/** Map vue3-sfc-loader request paths to plugin-root-relative paths. */
-function resolvePluginAssetRel(
-  pluginId: string,
-  entryRel: string,
-  requestPath: string,
-): string {
-  const fromUrl = pluginRelFromUrl(pluginId, requestPath)
-  if (fromUrl)
-    return fromUrl
-
-  const baseDir = dirname(entryRel)
-  const raw = stripQuery(String(requestPath).replace(/\\/g, '/'))
-  // Already plugin-root-relative (avoid slots/ + slots/foo → slots/slots/foo).
-  if (baseDir && (raw === baseDir || raw.startsWith(`${baseDir}/`)))
-    return raw
-  if (raw.includes('/') && !raw.startsWith('./') && !raw.startsWith('../'))
-    return raw.replace(/^\/+/, '')
-  return joinUnder(baseDir, raw)
 }
 
 async function readPluginAssetWithExtensions(
@@ -150,6 +85,144 @@ export interface LoadPluginVueOptions {
   preloadedEntrySource?: string
 }
 
+interface CompilePluginVueSourceOptions {
+  addStyle?: (css: string) => void
+}
+
+type CommonJsExports = Record<string, unknown> & { default?: Component }
+
+function stableScopeId(pluginId: string, vueRel: string): string {
+  const input = `${pluginId}/${vueRel}`
+  let hash = 2166136261
+  for (let index = 0; index < input.length; index += 1) {
+    hash ^= input.charCodeAt(index)
+    hash = Math.imul(hash, 16777619)
+  }
+  return (hash >>> 0).toString(16).padStart(8, '0')
+}
+
+function formatCompilerErrors(errors: Array<Error | string>): string {
+  return errors
+    .map(error => error instanceof Error ? error.message : String(error))
+    .join('\n')
+}
+
+function requirePluginModule(moduleId: string): unknown {
+  if (moduleId === 'vue')
+    return Vue
+  throw new Error(
+    `Inline directory-plugin Vue may import only "vue"; unsupported import: ${moduleId}`,
+  )
+}
+
+/**
+ * Compile one self-contained Vue SFC for explicitly enabled unsafe DEV mode.
+ * Relative script imports and preprocessors stay unsupported by contract so the
+ * host never grows a second package resolver for untrusted directory plugins.
+ */
+export async function compilePluginVueSource(
+  pluginId: string,
+  vueRel: string,
+  source: string,
+  options: CompilePluginVueSourceOptions = {},
+): Promise<Component> {
+  const [compiler, babel] = await Promise.all([
+    import('@vue/compiler-sfc'),
+    import('@babel/standalone'),
+  ])
+  const filename = `${pluginId}/${vueRel}`
+  const parsed = compiler.parse(source, { filename })
+  if (parsed.errors.length > 0)
+    throw new Error(formatCompilerErrors(parsed.errors))
+
+  const { descriptor } = parsed
+  if (descriptor.script?.src || descriptor.scriptSetup?.src || descriptor.template?.src)
+    throw new Error('External <script src> and <template src> blocks are not supported')
+  if (descriptor.template?.lang && descriptor.template.lang !== 'html')
+    throw new Error(`Template preprocessor is not supported: ${descriptor.template.lang}`)
+  const unsupportedStyle = descriptor.styles.find(style => style.src || (style.lang && style.lang !== 'css'))
+  if (unsupportedStyle)
+    throw new Error('External styles and style preprocessors are not supported')
+
+  const id = stableScopeId(pluginId, vueRel)
+  const hasScopedStyles = descriptor.styles.some(style => style.scoped)
+  let moduleCode: string
+  if (descriptor.script || descriptor.scriptSetup) {
+    const script = compiler.compileScript(descriptor, {
+      id,
+      inlineTemplate: Boolean(descriptor.template),
+      templateOptions: {
+        id,
+        filename,
+        scoped: hasScopedStyles,
+        compilerOptions: {
+          scopeId: hasScopedStyles ? `data-v-${id}` : undefined,
+        },
+      },
+    })
+    moduleCode = script.content
+  }
+  else if (descriptor.template) {
+    const template = compiler.compileTemplate({
+      source: descriptor.template.content,
+      filename,
+      id,
+      scoped: hasScopedStyles,
+      compilerOptions: {
+        scopeId: hasScopedStyles ? `data-v-${id}` : undefined,
+      },
+    })
+    if (template.errors.length > 0)
+      throw new Error(formatCompilerErrors(template.errors))
+    moduleCode = `${template.code}\nexport default { render }`
+  }
+  else {
+    moduleCode = 'export default {}'
+  }
+
+  const transformed = babel.transform(moduleCode, {
+    filename,
+    sourceType: 'module',
+    plugins: ['transform-typescript', 'transform-modules-commonjs'],
+  })
+  if (!transformed?.code)
+    throw new Error('SFC module transform produced no output')
+
+  const module = { exports: {} as CommonJsExports }
+  // Same-process Vue is already explicitly unsafe DEV-only. Keep the evaluator
+  // constrained to the `vue` module instead of exposing a package resolver.
+  // eslint-disable-next-line no-new-func
+  const evaluate = new Function('require', 'module', 'exports', transformed.code)
+  evaluate(requirePluginModule, module, module.exports)
+  const component = module.exports.default ?? module.exports
+  if (!component || (typeof component !== 'object' && typeof component !== 'function'))
+    throw new Error('SFC module did not export a Vue component')
+
+  if (hasScopedStyles && typeof component === 'object')
+    Object.assign(component, { __scopeId: `data-v-${id}` })
+
+  for (const style of descriptor.styles) {
+    const result = compiler.compileStyle({
+      source: style.content,
+      filename,
+      id: `data-v-${id}`,
+      scoped: style.scoped,
+    })
+    if (result.errors.length > 0)
+      throw new Error(formatCompilerErrors(result.errors))
+    if (options.addStyle) {
+      options.addStyle(result.code)
+    }
+    else {
+      const element = document.createElement('style')
+      element.textContent = result.code
+      document.head.appendChild(element)
+    }
+  }
+
+  return component as Component
+}
+
 /**
  * Compile and load `.vue` from a directory plugin root for explicit unsafe DEV mode.
  * Compile failure throws {@link PluginVueCompileError}; disk/network issues return `null` for iframe fallback.
@@ -162,63 +235,21 @@ export async function loadPluginVueComponent(
   if (!import.meta.env.DEV)
     return null
   const rel0 = vueRel.replace(/\\/g, '/').replace(/^\/+/, '')
-  const entry = uri(pluginId, rel0)
   const pre = opts?.preloadedEntrySource
-
-  const moduleCache = Object.assign(Object.create(null), {
-    vue: Vue,
-  })
-
-  const getFile = async (path: { toString: () => string }) => {
-    const p = String(path)
-    const rel = resolvePluginAssetRel(pluginId, rel0, p)
-    if (import.meta.env.DEV) {
-      // Useful only while diagnosing third-party SFC asset resolution.
-      // eslint-disable-next-line no-console
-      console.debug('[compilePluginVueSfc.getFile]', { pluginId, request: p, rel })
-    }
-    if (pre !== undefined && pre.length > 0 && stripQuery(p) === stripQuery(entry)) {
-      const text = pre
-      return {
-        getContentData: (asBinary: boolean) =>
-          asBinary
-            ? Promise.resolve(new TextEncoder().encode(text).buffer)
-            : Promise.resolve(text),
-      }
-    }
-    const text = await readPluginAssetWithExtensions(pluginId, rel)
-    return {
-      getContentData: (asBinary: boolean) =>
-        asBinary
-          ? Promise.resolve(new TextEncoder().encode(text).buffer)
-          : Promise.resolve(text),
-    }
-  }
-
+  let source: string
   try {
-    const { loadModule } = await import('vue3-sfc-loader')
-    try {
-      const mod = await loadModule(entry, {
-        moduleCache,
-        getFile,
-        addStyle(styleText: string) {
-          const el = document.createElement('style')
-          el.textContent = styleText
-          document.head.appendChild(el)
-        },
-      } as never)
-      const m = mod as { default?: Component }
-      return (m.default ?? (mod as Component)) ?? null
-    }
-    catch (e) {
-      throw buildCompileError(pluginId, rel0, e)
-    }
+    source = pre !== undefined && pre.length > 0
+      ? pre
+      : await readPluginAssetWithExtensions(pluginId, rel0)
   }
   catch (e) {
-    if (e instanceof PluginVueCompileError) {
-      throw e
-    }
     console.warn('[loadPluginVueComponent]', pluginId, vueRel, e)
     return null
+  }
+  try {
+    return await compilePluginVueSource(pluginId, rel0, source)
+  }
+  catch (e) {
+    throw buildCompileError(pluginId, rel0, e)
   }
 }

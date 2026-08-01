@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.oclive.dev/scaffold/v1/scaffold.provenance.schema.json",
+  "title": "OCLive Scaffold Generation Provenance v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "package",
+    "generator_id",
+    "instruction_path",
+    "instruction_sha256",
+    "variable_names",
+    "files"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "package": { "$ref": "#/$defs/package" },
+    "generator_id": { "$ref": "#/$defs/component" },
+    "instruction_path": { "type": "string", "minLength": 1 },
+    "instruction_sha256": { "$ref": "#/$defs/sha256" },
+    "variable_names": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/component" },
+      "uniqueItems": true
+    },
+    "files": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/file" }
+    }
+  },
+  "$defs": {
+    "component": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+    },
+    "namespace": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]{0,63}(\\.[a-z][a-z0-9_-]{0,63}){2,}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "package": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "source",
+        "locator",
+        "trust",
+        "maintainer",
+        "manifest_sha256"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/namespace" },
+        "version": { "type": "string", "minLength": 1 },
+        "source": { "enum": ["project", "user", "official"] },
+        "locator": { "type": "string", "minLength": 1 },
+        "trust": { "enum": ["official", "untrusted_local"] },
+        "maintainer": { "type": "string", "minLength": 1 },
+        "manifest_sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "file": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "mode", "source_sha256", "output_sha256", "bytes"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "mode": { "enum": ["text", "copy"] },
+        "source_sha256": { "$ref": "#/$defs/sha256" },
+        "output_sha256": { "$ref": "#/$defs/sha256" },
+        "bytes": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

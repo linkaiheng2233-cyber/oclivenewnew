@@ -3,6 +3,12 @@
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
     "types": ["vite/client"],
+    "baseUrl": ".",
+    "paths": {
+      "@oclive/shared/*": ["distros/shared/src/*"],
+      "@oclive/theater/*": ["distros/theater/src/*"],
+      "@oclive/chat-pro/*": ["distros/chat-pro/src/*"]
+    },
     "allowJs": true,
     "checkJs": false,
     "noEmit": true

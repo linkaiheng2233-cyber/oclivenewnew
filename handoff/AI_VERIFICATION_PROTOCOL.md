@@ -83,7 +83,8 @@ node -e "const fs=require('fs'),path=require('path');function walk(d,a=[]){for(c
 |------|------|------|
 | Rust 漏洞级 | [KNOWN_VULNERABILITIES.md](../creator-docs/security/KNOWN_VULNERABILITIES.md) + `cargo audit` | 用模型记忆代替本地 audit |
 | GTK3 等 warning 忽略 | [.cargo/audit.toml](../.cargo/audit.toml)（**11** 条） | 称为「未文档化」 |
-| npm | `npm audit --omit=dev`；CI `npm-audit` 为 **continue-on-error** | 将可见性 job 红 X 当作 main 阻塞 |
+| npm 生产依赖 | `npm audit --omit=dev --audit-level=high`；CI `npm-audit` 中为**硬门禁** | 把完整 dev graph 命中误报为生产暴露，或把生产 0 扩写成全依赖 0 |
+| npm 开发工具链 | `npm audit --audit-level=high` + `npm ls`；CI `npm-audit` 中同为**硬门禁**，当前基线见 **K-SUPPLY-12** | 用 `--force` / 无证据 override 掩盖 peer 或审计冲突 |
 
 **英文安全文档**：`creator-docs-en/security/KNOWN_VULNERABILITIES.md` **存在**；汇报「无英文版」前须 `glob` 核实。可报告「英文扫描日期滞后于中文」。
 
@@ -95,11 +96,33 @@ node -e "const fs=require('fs'),path=require('path');function walk(d,a=[]){for(c
 |------|----------|
 | dependabot 分支数 | `gh api repos/<owner>/<repo>/branches --paginate` 过滤 `dependabot`（**禁止**沿用旧帖数字） |
 | main 是否可合 | `gh run list --limit 5` + 失败 job 逐步日志 |
-| 硬门禁 vs 可见性 | 读 `.github/workflows/ci.yml` 的 `continue-on-error` |
+| 硬门禁 vs Nightly | 同时读 `.github/workflows/ci.yml` 与 `.github/workflows/nightly-advisory.yml`；不要仅凭 job 名称判断 |
 
-**硬门禁（红 = 不能合）**：`rust`、`oocp-test-suite`、`frontend`（ubuntu Playwright）、`cross-host-e2e`、`dimension5-acceptance`、`cargo-audit`、`stale-paths`、`layering-ratchet` 等 **未**标 `continue-on-error` 的 job。
+**硬门禁（红 = 不能合）**：主工作流的 `rust`、`oocp-test-suite`、`frontend`（ubuntu Playwright）、`cross-host-e2e`、`dimension5-acceptance`（唯一持有主工作流 `cargo audit`）、`npm-audit`、`stale-paths`、`layering-ratchet` 等 required job。
 
-**可见性（红 X 可存在）**：`npm-audit`、`loom`、`fuzz`、`e2e-tauri`、`cli-bench`、`visual-presentation-smoke` 等。
+**Nightly/手动证据（不挡 main，但失败不可吞）**：`loom`、`fuzz`、`e2e-tauri`、`cli-bench`、`visual-presentation-smoke` 位于 `nightly-advisory.yml`；它们失败会让该工作流变红并按项保留日志/artifact，不能汇报成通过。主工作流仅 `ci-impact-plan` 允许 `continue-on-error`，因为它是 Stage 1 影子报告而非验证门禁。
+
+#### CI 推送节奏与证据绑定
+
+| 阶段 | 默认动作 | 远端全量 CI |
+|------|----------|-------------|
+| 开发切片 | 受影响窄测 + 本地提交；未知范围先按 M，触及契约/编排/权限再升档 | 不作为日常调试循环 |
+| 协作同步 | 推送逻辑完整提交；未冻结时优先保持无 ready PR 的远端分支 | 不等待、不声称 Done |
+| 里程碑 / L 结案 | applicable 本地全量门禁 → 冻结 HEAD → 一次推送 | 必须绑定目标 SHA 并等待终态 |
+| 远端失败 | 读取失败 job 日志 → 根因窄测 → 修复 | 修复完成后再推；禁止无改动反复重跑掩盖确定性失败 |
+| 远端已绿 | 保持 HEAD 不变；run URL 先记 PR 评论/交付报告 | 禁止为回写证据单独追加提交而再次触发全矩阵 |
+
+- `concurrency.cancel-in-progress` 只会取消旧 run，不能收回已经消耗的 runner 时间；因此“频繁推送后靠自动取消”不算合理节奏。
+- 只有与报告中目标 **完整 SHA** 一致的成功 run 才是当前远端证据。后续实质提交必须重新验证；纯证据回写不应制造新的 HEAD。
+- 技术债需要仓库内证据时，优先随下一次实质提交一并回写；在此之前保持原状态并链接 PR 评论，不得用旧 SHA 冒充新 HEAD 已验证。
+
+#### 领域感知 CI 影子计划（Stage 1）
+
+- `ci-impact-plan` 标记 `continue-on-error`，只发布 `plan.json`、Job Summary 与 artifact；**不得**把它列为硬门禁或据此跳过现有 job。
+- `oclive ci plan` 的 `selected_validators` 是待观测建议，不是“已执行”证据；验收结论仍须引用实际 job 终态。
+- `npm run ci:shadow-samples` 的 JSON/Markdown 是**规划模拟**：只能证明固定样本仍按当前规则路由；不得把 11/11 模拟通过汇报成 11 次远端 CI、零漏选或 validator 已执行。
+- 未映射路径、损坏模块描述、未知 required 扩展及中央高风险规则会使当前 policy `full_fallback`；这代表规划器选择保守范围，不代表远端全量已经通过。
+- 规划 SSOT 与脚手架边界见 [`SOMEDAY_TOOLCHAIN_CI.md`](../creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md)。进入选择性执行前，必须先完成 Stage 2 漏选/过选对比并另行更新本协议。
 
 ---
 

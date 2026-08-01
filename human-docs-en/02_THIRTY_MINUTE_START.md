@@ -4,7 +4,7 @@
 
 ## Prerequisites
 
-- **Node.js ≥ 20** (see root `package.json` `engines`)
+- **Node.js ≥ 22** (see root `package.json` `engines`)
 - **Rust** stable
 - **Windows:** MSVC Build Tools — [10_SETUP_WINDOWS.md](10_SETUP_WINDOWS.md)
 

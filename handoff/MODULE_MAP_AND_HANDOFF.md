@@ -1,6 +1,6 @@
 # 模块注册表（Module Registry）
 
-**最后更新**：2026-07-30
+**最后更新**：2026-08-01
 **SSOT 范围**：**模块定义 · 架构划分 · 槽位/设施/独立通道之间的联系 · 在边界内如何改**。  
 **非 SSOT**：发版进度 → [`TECHNICAL_DEBT_INVENTORY.md`](./TECHNICAL_DEBT_INVENTORY.md) · 版本快照 → [`PROJECT_CURRENT_STATUS.md`](../creator-docs/getting-started/PROJECT_CURRENT_STATUS.md) · 关键文件路径 → [`BUS_FACTOR_NOTES.md`](./BUS_FACTOR_NOTES.md) · 文档分责 → [`handoff/README.md`](./README.md) §文档分层。
 
@@ -288,9 +288,9 @@ Blueprint + HostProfile + user/session + Capability Registry
 
 资源协调是**无编号控制面设施**，不是第七后端模块、不是独立通道注册表项，也不是 [`resolve_kernel_action`](./KERNEL_SCHEDULER_RESCOPE.md) 的进程 attach/replace 调度。新扩展首先实现 Capability Provider；只有占用共享 GPU/内存/受管进程时才增加 Resource Adapter。完整字段、缺失语义和实施顺序只维护于 [蓝图扩展与资源协调 RFC](../creator-docs/rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md)。
 
-**当前实现边界（2026-07-31）**：宿主已能从 v4 `extensions`、有效六槽、`HostProfile`、目录插件 manifest、插件启停状态、依赖与高危授权编译**只读、进程内** `ExecutionPlan`；计划不会启动 Provider，也不会写回角色包。只有宿主登记了真实消费者的 capability 才可进入 ready，插件单独声明任意 `provides` 不构成可执行能力。首个登记项为 Chat Pro 的 `voice.asr`；其它发行版会对同一声明给出 `capability_consumer_unavailable`。
+**当前实现边界（2026-08-01）**：宿主已能从 v4 `extensions`、有效六槽、`HostProfile`、目录插件 manifest、插件启停状态、依赖与高危授权编译**只读、进程内** `ExecutionPlan`；计划不会启动 Provider，也不会写回角色包。只有宿主登记了真实消费者的 capability 才可进入 ready，插件单独声明任意 `provides` 不构成可执行能力。首个登记项为 Chat Pro 的 `voice.asr`；其它发行版会对同一声明给出 `capability_consumer_unavailable`。
 
-Resource Coordinator 已落地 NVIDIA 多设备、系统 RAM 与 CPU snapshot，原子 admission/lease/priority/pressure，以及带超时、取消清理和老化防饥饿的公平准入队列。宿主 Resource Adapter Registry 登记 managed llama-server、observe-only Ollama、performance 活动观察器和官方 bundled CosyVoice2 的控制权、运行档位、驻留能力与真实生命周期动作；资源诊断 v5 同时返回注册来源、队列和租约状态。`HostProfile` 的 `require` / `residency` / `coexist` / `exclusive` / `yield_then_run` / `fallback` 仍先经注册表静态校验，再由实时租约、GPU/RAM/CPU 容量和真实控制器编译只读 `candidate_plan`；查看诊断不会执行。Performance llama 的 `gpu_full`、`gpu_balanced`、`cpu_compatibility` 三档会改变实际 `--n-gpu-layers` 并在准入拒绝后逐档回退。自动抢占只选择优先级更低、明确声明可逆动作且拥有精确 requester → target → operation 授权的 managed 适配器；失败逆序回滚，工作完成后逆序恢复，observe-only 外部进程不会被假装卸载。第三方扩展可经所有者命名空间约束的进程内 `ResourceAdapterRegistrar` 登记 adapter facts 与单写者控制器，但目录插件 manifest 尚无资源声明/自动注册字段，登记也不会自动取得跨适配器控制权。通用契约已加入 `render` / `compute` / `hybrid` 资源域并覆盖渲染适配器容量与抢占恢复测试；Chat Pro 当前仍由 `Live2DStageAdapter` 明确回退 PNG，没有 bundled Live2D runtime，不能宣称 Live2D 已接管资源。bundled CosyVoice 仍采用“请求卸载 → 侧车确认 → 撤销租约”，未确认时保留状态；Performance LLM 暂停仍通过统一请求门排空在途 primary/fallback。桌面保持 thin shell，真实生命周期操作由内核单写者执行；纯计划编译/CLI 不碰硬件，保留 `not_evaluated`。尚未落地的是外部批量计划 API、目录 manifest 资源声明、实际 bundled Live2D runtime、长时间真实进程/硬件 soak 与远端 CI；状态见 `K-RESOURCE-COORD-01`。
+Resource Coordinator 已落地 NVIDIA 多设备、系统 RAM 与 CPU snapshot，原子 admission/lease/priority/pressure，以及带超时、取消清理和老化防饥饿的公平准入队列。宿主 Resource Adapter Registry 登记 managed llama-server、observe-only Ollama、performance 活动观察器和官方 bundled CosyVoice2 的控制权、运行档位、驻留能力与真实生命周期动作；资源诊断 v5 同时返回注册来源、队列和租约状态。`HostProfile` 的 `require` / `residency` / `coexist` / `exclusive` / `yield_then_run` / `fallback` 仍先经注册表静态校验，再由实时租约、GPU/RAM/CPU 容量和真实控制器编译只读 `candidate_plan`；查看诊断不会执行。Performance llama 的 `gpu_full`、`gpu_balanced`、`cpu_compatibility` 三档会改变实际 `--n-gpu-layers` 并在准入拒绝后逐档回退。自动抢占只选择优先级更低、明确声明可逆动作且拥有精确 requester → target → operation 授权的 managed 适配器；失败逆序回滚，工作完成后逆序恢复，observe-only 外部进程不会被假装卸载。第三方扩展可经所有者命名空间约束的进程内 `ResourceAdapterRegistrar` 登记 adapter facts 与单写者控制器，但目录插件 manifest 尚无资源声明/自动注册字段，登记也不会自动取得跨适配器控制权。通用契约已加入 `render` / `compute` / `hybrid` 资源域并覆盖渲染适配器容量与抢占恢复测试；Chat Pro 当前仍由 `Live2DStageAdapter` 明确回退 PNG，没有 bundled Live2D runtime，不能宣称 Live2D 已接管资源。bundled CosyVoice 仍采用“请求卸载 → 侧车确认 → 撤销租约”，未确认时保留状态；Performance LLM 暂停仍通过统一请求门排空在途 primary/fallback。桌面保持 thin shell，真实生命周期操作由内核单写者执行；纯计划编译/CLI 不碰硬件，保留 `not_evaluated`。本里程碑远端主 CI 与严格审计已在 PR #147 对应实现上通过；尚未落地的是外部批量计划 API、目录 manifest 资源声明、实际 bundled Live2D runtime、不可控外部进程完整故障矩阵与长时间真实进程/硬件 soak，状态见 `K-RESOURCE-COORD-01`。
 
 实现锚点：[`execution_plan.rs`](../kernel/crates/oclive_kernel_host/src/domain/execution_plan.rs)（能力纯编译）· [`resource_plan.rs`](../kernel/crates/oclive_kernel_host/src/domain/resource_plan.rs)（资源候选计划纯编译）· [`capability_registry.rs`](../kernel/crates/oclive_kernel_host/src/infrastructure/capability_registry.rs)（能力适配）· [`resource_adapter_registry.rs`](../kernel/crates/oclive_kernel_host/src/domain/resource_adapter_registry.rs) / [`resource_coordinator.rs`](../kernel/crates/oclive_kernel_host/src/domain/resource_coordinator.rs)（资源目录、控制授权与批量执行基础）· [`resource_coordination.rs`](../kernel/crates/oclive_kernel_contracts/src/resource_coordination.rs)（快照/单写者控制器端口）· [`performance_request_gate.rs`](../kernel/crates/oclive_kernel_host/src/infrastructure/performance_request_gate.rs)（Performance LLM 请求准入/排空/恢复竞态）· [`service/resource_coordination.rs`](../kernel/crates/oclive_kernel_host/src/service/resource_coordination.rs)（Voice 准入/抢占/确认恢复）· [`service/execution_plan.rs`](../kernel/crates/oclive_kernel_host/src/service/execution_plan.rs)（激活门禁/只读查询）· [`models/execution_plan.rs`](../kernel/crates/oclive_kernel_types/src/models/execution_plan.rs) / [`models/resource_coordination.rs`](../kernel/crates/oclive_kernel_types/src/models/resource_coordination.rs)（公共诊断 DTO）。
 
@@ -325,6 +325,25 @@ Resource Coordinator 已落地 NVIDIA 多设备、系统 RAM 与 CPU snapshot，
 | Chat Pro staged beat | `types::dto` → `domain/adult_stage.rs` → `db/adult_stage.rs` → HTTP/Tauri → `adultBeatQueue.ts` | stage 只生成并持久化结构化文本，不得触发正式 turn 的聊天/记忆/关系/事件/人格写入；commit 按 generation+sequence 有序且幂等，cancel 删除未提交拍；其他发行版无需实现此 Chat Pro 扩展 |
 
 **仓内结构门禁**：`npm run check:module-compat` 对拍内核/前端 10 个嵌入插槽、官方插件 manifest、Vue/iframe 资源、RPC timeout 声明与插件索引版本。它证明结构兼容，**不替代**行为集成测或跨版本能力协商。
+
+---
+
+## 12.7 CI 影响元数据与脚手架边界
+
+领域感知 CI 是**开发控制面设施**，不是运行时模块、第七槽、蓝图步骤或 Resource Coordinator。它复用模块边界来选择验证，但不改变生产编排。详细契约与阶段计划只维护于 [`SOMEDAY_TOOLCHAIN_CI.md`](../creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md)。
+
+| 元数据 | 谁拥有 | 语义边界 |
+|--------|--------|----------|
+| 路径绑定 | 主仓中央影响图 | 只把 changed path 定位到直接模块；未知路径 fail-safe 全量 |
+| `runtime_requires` | 模块描述 | 运行所需逻辑能力/服务；不是物理资源预算 |
+| `resource_claims` | 模块描述，运行时 schema 另有 SSOT | 声明 GPU/RAM/CPU/渲染等需求；CI 不据此直接调度生产资源 |
+| `declared_affects` | 模块维护者 | 可增加潜在下游；不能覆盖中央强制影响边 |
+| `validation_profiles` | 模块描述引用，主仓验证目录定义 | 只引用受信坐标；模块不得携带命令、runner、secret 或工作流编排 |
+| `extensions` | 命名空间所有者 | required 未支持时失败并全量回退；optional 保留并告警 |
+
+最终受影响集合为直接模块经“中央强制边 ∪ 合法声明边”计算的确定性闭包；中央高风险规则可强制附加 profile 或全量。规划结果只描述“为何选中”，实际门禁强度、命令和执行环境由主仓验证目录与工作流决定。
+
+脚手架只负责生成/校验标准结构、展示可选项并调用既有解析器预检；它不生成主仓编排权，不执行任意第三方脚本，也不维护第二套影响算法。Scaffold Package 的项目/用户/官方发现、来源锁定、命令命名空间和兼容边界见 [`RFC_SCAFFOLD_PACKAGE_V1.md`](../creator-docs/rfc/RFC_SCAFFOLD_PACKAGE_V1.md)；该契约不得反向取得 CI 控制权。
 
 ---
 

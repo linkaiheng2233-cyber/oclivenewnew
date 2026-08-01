@@ -18,7 +18,7 @@ After merges to the default branch, **Dependabot** opens PRs per [`.github/depen
 
 ## Development environment
 
-- **This repo:** **Node.js** (18+ recommended), **npm**, **Rust** stable, **Ollama** (optional for local dialogue).
+- **This repo:** **Node.js ≥ 22** (see root `package.json` engines; optional `.nvmrc`), **npm**, **Rust** stable, **Ollama** (optional for local dialogue).
 - **Windows:** **Visual Studio Build Tools** (MSVC linker).
 - **After clone:** run **`npm install`** at the repo root; **`npm run tauri:dev`** drives the Tauri + `src-tauri` build.
 - **Rust workspace only** (`oclive_validation`, `oclive-cli`, `oclivenewnew-tauri`): **`cargo test --workspace`** from the root, or **`cargo test --manifest-path distros/desktop-tauri/Cargo.toml`** for the desktop crate only.
@@ -103,9 +103,9 @@ See **[`handoff/BUS_FACTOR_NOTES.md`](handoff/BUS_FACTOR_NOTES.md)** for entry p
 
 1. **Fork / feature branch**; one PR per concern. Contract changes (manifest, DTO, PLUGIN_V1) need **docs** + **`kernel/crates/oclive_validation`** when applicable.
 2. **Description:** motivation, behavior change, risks, manual verification; link issues if any.
-3. **Self-check:** at least **`npm run check`**; for persistence / HTTP / orchestration, prefer **`npm run check:release`**; kernel scaffolds may add **`cargo run -p oclive-cli -- test -o . --json`**.
+3. **Self-check:** at least **`npm run check`**; for persistence / HTTP / orchestration, prefer **`npm run check:release`**; kernel scaffolds may add **`cargo run -p oclive-cli -- --experimental test -o . --json`**.
 4. **Review:** module owner (table above) or delegate; CI, security, i18n, and contract docs must stay aligned.
-5. **Merge bar:** required CI jobs green (or documented `continue-on-error`); breaking changes follow [`BREAKING_CHANGE_PROCESS.md`](handoff/BREAKING_CHANGE_PROCESS.md).
+5. **Merge bar:** every required main-CI job is green. `ci-impact-plan` is shadow evidence only; failures in the separate Nightly workflow do not directly block merging but must be tracked. Breaking changes follow [`BREAKING_CHANGE_PROCESS.md`](handoff/BREAKING_CHANGE_PROCESS.md).
 
 ### Dimension 5 baseline (before PR / release)
 
@@ -131,7 +131,8 @@ Dimension 5 is defined by `node scripts/dimension5-acceptance.mjs --ci`. **Re-ru
 | `cargo test` (Windows integration) | Trust **Ubuntu CI**; locally try `cargo test --workspace --lib` |
 | `frontend` | `npm run test:unit` |
 | `oocp-test-suite` | `OCLIVE_HTTP_API_MOCK_LLM=1`, free port; see [OOCP_TEST_SUITE.md](creator-docs/testing/OOCP_TEST_SUITE.md) |
-| `cargo-audit` | Track [KNOWN_VULNERABILITIES.md](creator-docs/security/KNOWN_VULNERABILITIES.md); non-blocking |
+| `cargo audit` inside `dimension5-acceptance` | Run `cargo audit` at repo root and track [KNOWN_VULNERABILITIES.md](creator-docs/security/KNOWN_VULNERABILITIES.md); this is a required gate |
+| `npm-audit` | Required high-severity gates cover both production dependencies and the full development graph: run `npm audit --omit=dev --audit-level=high`, `npm audit --audit-level=high`, and use `npm ls` to verify peer relationships. See [KNOWN_VULNERABILITIES.md](creator-docs-en/security/KNOWN_VULNERABILITIES.md) for the current baseline |
 | Role packs | `cargo run -p oclive-cli -- pack validate <role>` |
 
 ## Breaking changes

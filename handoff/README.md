@@ -1,7 +1,7 @@
 # handoff · 维护者与 AI 工程入口
 
 **SSOT 范围**：本文只登记活跃 handoff 的职责、分层和归档规则。
-**最后更新**：2026-07-19。
+**最后更新**：2026-08-01。
 **新人开发者**从 [human-docs](../human-docs/README.md) 开始；**创作者**从 [创作者黄金路径](../creator-docs/getting-started/CREATOR_GOLDEN_PATH.md) 开始。
 
 ## 文档分层

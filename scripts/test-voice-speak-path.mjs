@@ -86,6 +86,7 @@ async function streamSpeak(endpoint, text, directive = {}) {
   let ttfc = null
   let chunks = 0
   let doneMeta = null
+  let firstChunkMeta = null
   const res = await fetch(`${endpoint.replace(/\/+$/, '')}/synthesize/stream`, {
     method: 'POST',
     headers: { 'content-type': 'application/json; charset=utf-8' },
@@ -115,14 +116,18 @@ async function streamSpeak(endpoint, text, directive = {}) {
       if (!line)
         continue
       const ev = JSON.parse(line)
-      if (ev.event === 'chunk' && ttfc === null)
+      if (ev.event === 'chunk' && ttfc === null) {
         ttfc = Math.round(performance.now() - t0)
+        firstChunkMeta = ev
+      }
       if (ev.event === 'chunk')
         chunks += 1
       if (ev.event === 'done')
         doneMeta = ev
     }
   }
+  const timings = doneMeta?.timings_ms || firstChunkMeta?.timings_ms || null
+  const serverPayloadReady = timings?.server_payload_ready
   return {
     ok: chunks > 0,
     ms: Math.round(performance.now() - t0),
@@ -131,6 +136,15 @@ async function streamSpeak(endpoint, text, directive = {}) {
     sidecar_ttfc_ms: doneMeta?.ttfc_ms,
     sidecar_total_ms: doneMeta?.elapsed_ms,
     stream_mode: doneMeta?.stream_mode,
+    timings_schema_version:
+      doneMeta?.timings_schema_version || firstChunkMeta?.timings_schema_version,
+    timings_ms: timings,
+    prompt_cache_hit:
+      doneMeta?.prompt_cache_hit ?? firstChunkMeta?.prompt_cache_hit ?? null,
+    client_delivery_overhead_ms:
+      Number.isFinite(ttfc) && Number.isFinite(serverPayloadReady)
+        ? Math.max(0, ttfc - serverPayloadReady)
+        : null,
   }
 }
 
@@ -145,6 +159,16 @@ function percentile(values, fraction) {
   const sorted = [...values].sort((a, b) => a - b)
   const index = Math.max(0, Math.ceil(sorted.length * fraction) - 1)
   return sorted[index]
+}
+
+function distribution(values) {
+  const numeric = values.filter(value => Number.isFinite(value))
+  return {
+    samples: numeric,
+    p50: percentile(numeric, 0.5),
+    p95: percentile(numeric, 0.95),
+    max: numeric.length ? Math.max(...numeric) : null,
+  }
 }
 
 const cliRpcUrl = arg('--rpc-url', null)
@@ -273,6 +297,7 @@ if (!skipWarm && warmProfile === 'bundled-cosyvoice2-zh') {
   const ttfcValues = samples
     .map(sample => sample.ttfc_ms)
     .filter(value => Number.isFinite(value))
+  const stageNames = [...new Set(samples.flatMap(sample => Object.keys(sample.timings_ms || {})))]
   const summary = {
     runs: samples.length,
     ok: samples.filter(sample => sample.ok).length,
@@ -281,6 +306,21 @@ if (!skipWarm && warmProfile === 'bundled-cosyvoice2-zh') {
       p50: percentile(ttfcValues, 0.5),
       p95: percentile(ttfcValues, 0.95),
       max: ttfcValues.length ? Math.max(...ttfcValues) : null,
+    },
+    sidecar_ttfc_ms: distribution(samples.map(sample => sample.sidecar_ttfc_ms)),
+    client_delivery_overhead_ms: distribution(
+      samples.map(sample => sample.client_delivery_overhead_ms),
+    ),
+    stage_timings_ms: Object.fromEntries(
+      stageNames.map(stage => [
+        stage,
+        distribution(samples.map(sample => sample.timings_ms?.[stage])),
+      ]),
+    ),
+    prompt_cache: {
+      hits: samples.filter(sample => sample.prompt_cache_hit === true).length,
+      misses: samples.filter(sample => sample.prompt_cache_hit === false).length,
+      unknown: samples.filter(sample => sample.prompt_cache_hit == null).length,
     },
     modes: [...new Set(samples.map(sample => sample.stream_mode).filter(Boolean))],
   }

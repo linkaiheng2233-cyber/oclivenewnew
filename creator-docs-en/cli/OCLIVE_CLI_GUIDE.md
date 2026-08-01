@@ -22,9 +22,30 @@ The end of `init --help` lists **presets and the `plugin_backends` matrix** (sam
 
 **Role pack spec and validation**: [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md); **`pack`** subcommands are in section 6 of that doc and below.
 
-**Aligned with code**: top-level commands match `kernel/crates/oclive-cli/src/main.rs`. See the Chinese guide for the full **A / B / C** tier table, deprecated aliases, and **planned** (not yet implemented) items.
+**Aligned with code**: top-level commands match `kernel/crates/oclive-cli/src/main.rs`. Default help exposes 15 stable entries. The ten known experimental commands remain callable only with the global `--experimental` flag, while the legacy project-archive `template` command remains callable but hidden. Removed top-level `publish` is not an alias.
 
 **Planned CLI** (not shipped): `pack diff`/`update`, `kernel update`, `dev --inject`, `bench history clear`/`export`/`import` — [VISION_ROADMAP_MONTHLY.md](../../creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md#oclive-cli-脚手架计划中).
+
+---
+
+## `scaffold`: local discovery, locking, and bounded generation
+
+```bash
+cargo run -p oclive-cli -- scaffold list -o .
+cargo run -p oclive-cli -- scaffold inspect com.oclive.scaffold.plugin -o .
+cargo run -p oclive-cli -- scaffold validate ./.oclive/scaffolds/example/oclive.scaffold.json
+cargo run -p oclive-cli -- scaffold resolve -o . --write-lock --json
+cargo run -p oclive-cli -- scaffold generate dev.example.scaffold project \
+  -o . --output ../generated --set project_name=demo --accept-untrusted
+cargo run -p oclive-cli -- scaffold generate dev.example.scaffold project \
+  -o . --output ../preview --set project_name=demo --accept-untrusted --dry-run --json
+```
+
+Stage 2A discovers project, user, and compiled official declarations with configurable priority and records their source, maintainer, trust, permissions, namespace, compatibility, and SHA-256 in `.oclive/scaffold.lock.json`. Stage 2B only lets a selected local `instruction` generator materialize files into a **new, absent directory**. The package declares `project.write`, the manifest pins the instruction SHA-256, and the instruction pins every source SHA-256. Project/user packages also need an exact current lock match and per-invocation `--accept-untrusted`. `--set` accepts string values, while `--dry-run` performs the same checks with no writes. A successful run records source and output digests—but no variable values—in `.oclive/scaffold.provenance.json`.
+
+After changing a manifest, inspect the change and rerun `scaffold resolve --write-lock`. V1.0 packages without an instruction digest remain discoverable, but `generate` refuses them and gives the `>=1.1,<2` migration range. Official `builtin` generators remain owned by domain commands such as `oclive init`, `oclive plugin create`, and `oclive pack create`; `scaffold generate` only returns their delegation guidance.
+
+Scaffold Packages still cannot install from a network, execute `commands[].entry`, scripts, or hooks, resolve composition, or control CI workflows, validators, runners, secrets, and gates. Contract SSOT: [RFC_SCAFFOLD_PACKAGE_V1.md](../rfc/RFC_SCAFFOLD_PACKAGE_V1.md).
 
 ---
 
@@ -146,7 +167,7 @@ cargo run -p oclive-cli -- init --non-interactive --quiet --preset minimal --ski
 Enable Monolith (non-interactive: add **`--monolith`**; **kernel_server** only):
 
 ```bash
-cargo run -p oclive-cli -- init --non-interactive --preset full --monolith -o /tmp/my-monolith-kernel
+cargo run -p oclive-cli -- --experimental init --non-interactive --preset full --monolith -o /tmp/my-monolith-kernel
 cargo build --release --manifest-path /tmp/my-monolith-kernel/Cargo.toml
 cargo build --release --features monolith --manifest-path /tmp/my-monolith-kernel/Cargo.toml
 ```
@@ -197,9 +218,9 @@ Non-interactive mode does **not** require any `--backend-*` flags; if passed, th
 From an **existing** Monolith project root (must contain `monolith.toml`):
 
 ```bash
-cargo run -p oclive-cli -- build -o /path/to/kernel-project
-cargo run -p oclive-cli -- build -o /path/to/kernel-project --release --features somefeat
-cargo run -p oclive-cli -- build -o /path/to/kernel-project --no-cargo
+cargo run -p oclive-cli -- --experimental build -o /path/to/kernel-project
+cargo run -p oclive-cli -- --experimental build -o /path/to/kernel-project --release --features somefeat
+cargo run -p oclive-cli -- --experimental build -o /path/to/kernel-project --no-cargo
 ```
 
 - **`--no-cargo`**: only regenerate `process_message_monolith.rs` and vendor, do not invoke `cargo`.
@@ -210,23 +231,28 @@ cargo run -p oclive-cli -- build -o /path/to/kernel-project --no-cargo
 
 ### `bench` subcommand
 
+`bench` remains behind the experimental gate, so commands must place the global **`--experimental`** flag before the subcommand; the examples below already do so.
+
 After regenerating sources and dual builds, runs each binary `--runs` times as subprocesses; inside the subprocess **`OCLIVE_KERNEL_BENCH_ITERS`** controls the hot loop. Output is **JSON** (`schema_version: 2`, includes `binary_size`, `peak_memory`, `build_time`); schema at **`kernel/crates/oclive-cli/schemas/oclive_bench_report.schema.json`**.
 
 ```bash
-cargo run -p oclive-cli -- bench --release -o /path/to/kernel-project --runs 30 --inner-iters 500 --output ./bench-report.json
-cargo run -p oclive-cli -- bench --release -o /path/to/kernel-project --json
+cargo run -p oclive-cli -- --experimental bench --release -o /path/to/kernel-project --runs 30 --inner-iters 500 --output ./bench-report.json
+cargo run -p oclive-cli -- --experimental bench --release -o /path/to/kernel-project --json
 ```
 
 - **`--save`**: append this report to project root **`bench_history.json`** (local file, do not commit).
 - **`--compare`**: do not run sampling; read **last two** entries from **`bench_history.json`** and print comparison (needs at least two history rows).
 - **`--history`**: print a trend table of all saved runs; with ≥2 rows, shows **↑/↓/→** vs previous. Use **`--json`** for tooling.
+- **`--soak --soak-duration <hours>`**: uses an 8–120s accelerated smoke clock by default. Fractional hours are accepted, but accelerated output is not long-duration leak evidence.
+- **`--soak-real-time`**: interprets the requested duration as actual wall-clock hours; `--soak-sample-interval <seconds>` controls resource sampling (default 60). Soak completes one `warmup_chats` request before starting the clock and steady-state RSS baseline, then directly samples the Release kernel PID. Schema v2 records RSS/CPU, request failures, early exit, worker join, and `process_reaped`, and any failed criterion returns a non-zero exit.
 
 ```bash
-cargo run -p oclive-cli -- bench --release -o ./my-kernel --save
-cargo run -p oclive-cli -- bench --history -o ./my-kernel
+cargo run -p oclive-cli -- --experimental bench --release -o ./my-kernel --save
+cargo run -p oclive-cli -- --experimental bench --history -o ./my-kernel
+cargo run -p oclive-cli -- --experimental bench --soak --soak-real-time --soak-duration 0.01 --soak-sample-interval 5 -o ./my-kernel --output ./soak.json
 ```
 
-`--json`: print report JSON to **stdout** only (progress on **stderr**) for piping and schema checks.
+`--json`: print report JSON to **stdout** only (progress on **stderr**) for piping and schema checks. `--output <file>` atomically preserves JSON for regular benchmarks, `--stress`, and `--soak`; when both are present, the stdout-only `--json` contract wins.
 
 **Risk**: placeholder project has **no** real `PluginHost` behavior.
 
@@ -236,7 +262,18 @@ Canonical design: [RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.
 
 ## CI relationship
 
-Repo **`.github/workflows/ci.yml`** **`cli`** job runs `cargo test -p oclive-cli` (includes E2E: `init`, `build`, `bench` smoke). A lighter **`cli-bench`** job runs one round of `bench` (no perf threshold).
+The main repository also exposes a domain-aware **Stage 1 shadow plan**:
+
+```bash
+cargo run -p oclive-cli -- ci plan --shadow --base HEAD^ --head HEAD
+cargo run -p oclive-cli -- ci explain --format markdown
+```
+
+`ci plan` reads the centrally owned map, module descriptors, and trusted validation catalog under `data/ci/`. It emits `target/oclive-ci/plan.json`; `ci explain` renders that JSON without recomputing or executing validators. The `ci-impact-plan` workflow job is non-blocking and cannot skip required main-CI jobs in Stage 1. Validators catalogued as `nightly` run in the separate scheduled/manual lane and are not selective PR execution. See the [domain-aware CI baseline](../../creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md).
+
+`oclive scaffold` is a separate developer-tool surface. It may help create or inspect standard metadata, but it cannot select CI validators or influence execution policy; CI always re-analyzes generated files independently.
+
+Repo **`.github/workflows/ci.yml`** **`cli`** job runs `cargo test -p oclive-cli` (includes E2E: `init`, `build`, `bench` smoke). The separate **`.github/workflows/nightly-advisory.yml`** **`cli-bench`** job runs one round of `bench` (no perf threshold) and uploads its JSON evidence.
 
 ---
 

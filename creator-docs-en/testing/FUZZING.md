@@ -6,7 +6,7 @@
 
 Randomly mutate **OOCP-shaped JSON**, **manifest.json**, **settings.json**, and other external inputs so parsing paths **never panic**.
 
-## Method A: `proptest` (default, CI `fuzz` job)
+## Method A: `proptest` (default, Nightly `fuzz` job)
 
 ```bash
 cargo test -p oclive_validation --test proptest_fuzz_parsing
@@ -19,7 +19,7 @@ Each property case defaults to **2048** mutations (raise `ProptestConfig::with_c
 ```bash
 rustup toolchain install nightly
 cargo install cargo-fuzz
-cd fuzz
+cd kernel/fuzz
 cargo fuzz list
 cargo fuzz run fuzz_manifest_load -- -runs=100000
 cargo fuzz run fuzz_settings_parse -- -runs=100000
@@ -42,7 +42,7 @@ Random strings through **`parse_from_llm_response`** (OpenAI `tool_calls` / `fun
 
 Random bytes to temp file → **`peek_role_pack_manifest`** (ZIP / corrupt input) — assert no panic.
 
-CI **`fuzz`** job runs proptest then **256** libFuzzer smoke rounds (`continue-on-error`).
+The **`fuzz`** job in **`.github/workflows/nightly-advisory.yml`** runs proptest and then **256** libFuzzer smoke rounds. A failure turns the Nightly workflow red and uploads minimized failure artifacts, but does not gate main.
 
 ## Reproducing crashes
 

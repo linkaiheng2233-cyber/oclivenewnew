@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "module": { "id": "oclive.repo-tooling", "kind": "tooling" },
+  "provides": ["repository.quality-gates"],
+  "runtime_requires": [],
+  "resource_claims": [],
+  "declared_affects": [],
+  "validation_profiles": ["repo-governance"],
+  "platforms": ["linux", "windows"],
+  "extensions": {}
+}

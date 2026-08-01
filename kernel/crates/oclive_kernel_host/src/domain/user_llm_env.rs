@@ -4,8 +4,8 @@ use crate::domain::ports::AppSettingsPort;
 use crate::state::AppState;
 use oclive_kernel_contracts::UserLlmSecretsPort;
 use once_cell::sync::Lazy;
-use parking_lot::Mutex;
-use std::sync::atomic::Ordering;
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use tokio::sync::Mutex;
 
 pub const KEY_OLLAMA_BASE: &str = "user_ollama_base_url";
 pub const KEY_REMOTE_URL: &str = "user_remote_llm_url";
@@ -48,7 +48,10 @@ pub async fn global_ollama_model_from_db_or_env(db: &impl AppSettingsPort) -> St
     std::env::var("OLLAMA_MODEL").unwrap_or_else(|_| DEFAULT_GLOBAL_OLLAMA_MODEL.to_string())
 }
 
-static USER_LLM_ENV: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
+// Process environment is global. Serialize the complete DB -> cache -> env
+// transaction, including its async reads, so an older caller cannot overwrite
+// a newer settings snapshot after merely waiting for the final env-write lock.
+static USER_LLM_ENV_APPLY: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
 
 pub async fn ollama_base_from_db_or_env(state: &AppState) -> String {
     if let Ok(Some(v)) = state.db_manager.get_app_setting(KEY_OLLAMA_BASE).await {
@@ -60,10 +63,9 @@ pub async fn ollama_base_from_db_or_env(state: &AppState) -> String {
     std::env::var("OLLAMA_BASE_URL").unwrap_or_else(|_| "http://localhost:11434".to_string())
 }
 
-/// # Errors
-///
-/// Returns [`crate::error::AppError`] when app settings cannot be read from the database.
-pub async fn apply_user_llm_env_from_db(db: &impl AppSettingsPort) -> crate::error::Result<String> {
+async fn apply_user_llm_env_from_db_unlocked(
+    db: &impl AppSettingsPort,
+) -> crate::error::Result<String> {
     const LLM_ENV_KEYS: &[&str] = &[
         KEY_OLLAMA_BASE,
         KEY_REMOTE_URL,
@@ -92,7 +94,6 @@ pub async fn apply_user_llm_env_from_db(db: &impl AppSettingsPort) -> crate::err
         "local" => Some("ollama"),
         _ => None,
     };
-    let _guard = USER_LLM_ENV.lock();
     let provider_for_env = settings
         .get(KEY_LLM_PROVIDER)
         .map(|s| s.trim().to_ascii_lowercase())
@@ -127,6 +128,17 @@ pub async fn apply_user_llm_env_from_db(db: &impl AppSettingsPort) -> crate::err
     Ok(provider)
 }
 
+/// Applies DB-backed LLM settings to the process environment without updating
+/// the full [`AppState`] cache.
+///
+/// # Errors
+///
+/// Returns [`crate::error::AppError`] when app settings cannot be read from the database.
+pub async fn apply_user_llm_env_from_db(db: &impl AppSettingsPort) -> crate::error::Result<String> {
+    let _guard = USER_LLM_ENV_APPLY.lock().await;
+    apply_user_llm_env_from_db_unlocked(db).await
+}
+
 /// # Errors
 ///
 /// Database or settings read failures propagate as [`crate::error::AppError`].
@@ -146,6 +158,7 @@ pub async fn load_remote_token(
 ///
 /// Returns [`crate::error::AppError`] when settings or token resolution fails.
 pub async fn apply_user_llm_env(state: &AppState) -> crate::error::Result<()> {
+    let _guard = USER_LLM_ENV_APPLY.lock().await;
     let start_version = state.user_llm_env_version.load(Ordering::Acquire);
     if !state.user_llm_env_dirty.load(Ordering::Acquire)
         && state.user_llm_env_applied_version.load(Ordering::Acquire) == start_version
@@ -175,7 +188,7 @@ pub async fn apply_user_llm_env(state: &AppState) -> crate::error::Result<()> {
     } else {
         secrets.set_cached_remote_llm_token(None);
     }
-    let provider = apply_user_llm_env_from_db(&settings).await?;
+    let provider = apply_user_llm_env_from_db_unlocked(&settings).await?;
     tracing::info!(
         target: "oclive_llm",
         provider = %provider,
@@ -186,12 +199,29 @@ pub async fn apply_user_llm_env(state: &AppState) -> crate::error::Result<()> {
         "apply_user_llm_env"
     );
     *state.user_llm_provider.write() = provider;
-    let end_version = state.user_llm_env_version.load(Ordering::Acquire);
-    state
-        .user_llm_env_applied_version
-        .store(end_version, Ordering::Release);
-    state.user_llm_env_dirty.store(false, Ordering::Release);
+    complete_user_llm_env_apply(
+        &state.user_llm_env_version,
+        &state.user_llm_env_applied_version,
+        &state.user_llm_env_dirty,
+        start_version,
+    );
     Ok(())
+}
+
+fn complete_user_llm_env_apply(
+    version: &AtomicU64,
+    applied_version: &AtomicU64,
+    dirty: &AtomicBool,
+    start_version: u64,
+) {
+    // Only the snapshot actually read by this transaction is considered
+    // applied. Clearing dirty first and re-checking the version prevents a
+    // concurrent marker from being lost between the version check and store.
+    applied_version.store(start_version, Ordering::Release);
+    dirty.store(false, Ordering::Release);
+    if version.load(Ordering::Acquire) != start_version {
+        dirty.store(true, Ordering::Release);
+    }
 }
 
 /// # Errors
@@ -208,4 +238,34 @@ pub async fn cloud_api_token_configured(
         .get_app_setting(KEY_REMOTE_TOKEN)
         .await?
         .is_some_and(|s| !s.trim().is_empty()))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::complete_user_llm_env_apply;
+    use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+
+    #[test]
+    fn stable_snapshot_is_marked_clean() {
+        let version = AtomicU64::new(7);
+        let applied = AtomicU64::new(0);
+        let dirty = AtomicBool::new(true);
+
+        complete_user_llm_env_apply(&version, &applied, &dirty, 7);
+
+        assert_eq!(applied.load(Ordering::Acquire), 7);
+        assert!(!dirty.load(Ordering::Acquire));
+    }
+
+    #[test]
+    fn newer_snapshot_remains_dirty_for_the_waiting_caller() {
+        let version = AtomicU64::new(8);
+        let applied = AtomicU64::new(0);
+        let dirty = AtomicBool::new(true);
+
+        complete_user_llm_env_apply(&version, &applied, &dirty, 7);
+
+        assert_eq!(applied.load(Ordering::Acquire), 7);
+        assert!(dirty.load(Ordering::Acquire));
+    }
 }
