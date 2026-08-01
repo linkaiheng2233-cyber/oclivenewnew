@@ -1,4 +1,4 @@
-# 已知漏洞跟踪（cargo-audit）
+# 已知漏洞跟踪（Cargo / npm）
 
 本文件以工作区根 **`Cargo.lock`** 上 `cargo audit` 的**漏洞级（vulnerability）**命中作为供应链风险与升级路线的单一事实来源；警告级 *unmaintained* / *unsound* / *yanked* 不计入漏洞数，但在文末附表维护当前风险与上游阻塞，详情仍以本轮 `cargo audit` 输出和 [SECURITY_AUDIT_SCOPE.md](./SECURITY_AUDIT_SCOPE.md) 为准。
 
@@ -43,7 +43,7 @@
 
 - **sqlx ≥ 0.8.6**，`default-features = false`，features：`runtime-tokio-rustls`、`sqlite`（无 umbrella `migrate`）。
 - 迁移：`kernel/crates/oclive_kernel_host/src/infrastructure/sql_migrate.rs` 运行时应用 `migrations/*.sql`，与既有 `_sqlx_migrations` 表兼容。
-- **CI**：主 `cargo-audit` job **失败即红**（2026-06-08）；`Cargo.lock` PR 另走 `cargo-audit-lockfile.yml`。
+- **CI**：主工作流由 `dimension5-acceptance` 唯一持有 `cargo audit`，失败即红；`Cargo.lock` PR 另走 `cargo-audit-lockfile.yml`。
 
 ### 维护约定
 
@@ -74,14 +74,14 @@
 
 ---
 
-## npm / 版本号复核（2026-05-20）
+## npm / 版本号复核（2026-08-01）
 
 | 项 | 原状 | 修正 |
 |----|------|------|
-| `eslint` | `^10.4.0`（npm 未发布） | **`^9.39.0`**（与 `@antfu/eslint-config@^9` 对齐） |
+| `eslint` | 根依赖 **9.39.5**，但 `@antfu/eslint-config` 9.1.0 已解析到 `eslint-plugin-unicorn` 68.0.0，后者要求 ESLint **≥10.4** | **OPEN · K-SUPPLY-12**：当前 lint 在 Node 22 可执行，但 `npm ls eslint eslint-plugin-unicorn` 以 peer 契约冲突退出；须在独立工具链波次对齐受支持主版本，不用 `--force` 或无证据 override 掩盖 |
 | `vue-virtual-scroller` | 首屏全局 `app.use`，但 UI 已改用 `VirtualScrollContainer` | **移除依赖**；首屏不再同步加载 |
 | `sha2`（`src-tauri`） | `0.11.0`（crates.io 无稳定 0.11 线） | **`0.10`**（`sha2 0.10.9`） |
-| `@antfu/eslint-config` | `^9.0.0` | 保持不变（与 ESLint 9 兼容） |
+| `@antfu/eslint-config` | `^9.0.0` | 当前解析版 9.1.0 的传递依赖已越过 ESLint 9 peer 范围；与上一行一起处理 |
 | `serde_yaml` | `0.9`（crate archived，维护停止） | **`serde_yaml_ng 0.10`**（workspace 全量替换 `use serde_yaml_ng::`） |
 | `zip`（`src-tauri`） | `0.6`（RUSTSEC 跟踪中） | **`2.x`**（`role_pack` / `plugin_pack` API 已适配） |
 
@@ -91,7 +91,9 @@
 
 ## npm 供应链（2026-08-01）
 
-CI **`npm-audit`** job 以硬门禁运行 `npm audit --omit=dev --audit-level=high`；生产依赖高危命中会使流水线失败。本地复现：仓库根目录运行同一命令。
+CI **`npm-audit`** job 以硬门禁运行 `npm audit --omit=dev --audit-level=high`；远端 CI [`30692428026`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30692428026) 的生产依赖扫描为 **0 vulnerabilities**。本地复现：仓库根目录运行同一命令。
+
+完整开发依赖图不是零风险：同一锁文件运行 `npm audit` 为 **6 项（3 moderate / 3 high）**，当前可达链包括 ESLint/`brace-expansion`、WebDriver/`fast-xml-parser`，以及 dev-only `vue3-sfc-loader` 的旧 Vue 编译/PostCSS 链。它们不进入发行版生产依赖图，但会处理仓库源码、测试输入或目录插件开发资产，因此以 **K-SUPPLY-12** 跟踪；不得把“生产 0”扩写成“全依赖 0”。
 
 ---
 

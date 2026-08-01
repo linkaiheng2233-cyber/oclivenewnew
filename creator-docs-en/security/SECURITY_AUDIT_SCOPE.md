@@ -11,6 +11,7 @@ This document states **what security-related work exists in this repo today** an
 - **`unsafe` blocks**: full inventory with comments (concurrency and invariants); see `# Safety` / module headers in `distros/desktop-tauri/src/**/*.rs`.
 - **Cancellation and concurrency**: `process_message` path, `PluginHost` resolution, **cancellable LLM** (e.g. `llm_cancelable` modules)—**lock ordering**, `.await` boundaries, and cancel semantics are documented in source comments and key module headers.
 - **`cargo audit`**: run regularly; **vulnerability-level** hits are tracked in [KNOWN_VULNERABILITIES.md](./KNOWN_VULNERABILITIES.md).
+- **`cargo deny`**: root `deny.toml`, the Dimension 5 licenses/bans gate, and `oclive lint --deny`; policy lives in [SUPPLY_CHAIN.md](./SUPPLY_CHAIN.md).
 - **Concurrency review**: targeted review (not formal verification) of **`Arc` / `Mutex` / `JoinHandle`** and **async cancellation** on the main orchestration path.
 - **Local HTTP API**: every route except `/health` requires `OCLIVE_API_TOKEN` by default; startup fails closed without a token unless `OCLIVE_API_ALLOW_UNAUTHENTICATED=1` is explicit.
 - **Untrusted paths**: role/scene/directory-plugin IDs, role asset paths, and role-pack ZIP extraction now use single-segment validation, containment, and Windows-path regression tests.
@@ -22,8 +23,10 @@ This document states **what security-related work exists in this repo today** an
 ## Not covered (known gaps)
 
 - **Third-party supply chain**: no systematic audit of crate **author reputation, release history, reproducible builds**, etc.
+- **npm development toolchain**: the required production scan is currently clean, but the full dev graph still has six audit findings and one ESLint peer-contract conflict. K-SUPPLY-12 tracks this; it is not valid to claim the whole dependency graph is clean.
 - **Miri**: not full Miri over all `unsafe`; feasibility assessed only on critical paths.
-- **Fuzzing**: no `cargo-fuzz` / `proptest` infrastructure.
+- **Fuzzing**: `kernel/fuzz/` (libFuzzer) and `oclive_validation` proptest harnesses exist; CI `fuzz` is an advisory smoke, not complete coverage.
+- **Loom concurrency model**: `distros/desktop-tauri/tests/loom_concurrency.rs` covers selected request-id and cache-lock models through `oclive test --loom` / advisory CI `loom`; it is logical concurrency coverage, not FFI or whole-program proof.
 - **Side channels**: no timing/power side-channel analysis.
 - **Threat modeling (STRIDE, etc.)**: no full-product model; only concurrency/cancel-oriented review on the **main dialogue orchestration** path.
 - **Strong plugin isolation**: HTML fallbacks still share the `https://ocliveplugin.localhost` origin; per-plugin origins and native iframe E2E are not complete, and signature strict mode remains opt-in. Disabling inline Vue in releases is containment, not a completed sandbox.
@@ -41,8 +44,9 @@ Engineering work above does **not** cover licensing of user-downloaded model wei
 
 1. **Each feature cycle**: run `cargo audit` and update [KNOWN_VULNERABILITIES.md](./KNOWN_VULNERABILITIES.md).
 2. **Miri**: introduce an **allow-fail** Miri CI job, expanding from the **smallest `unsafe` closures** outward.
-3. **Fuzzing**: evaluate `proptest` or `cargo-fuzz` for **protocol parsing**, **prompt assembly edges**, **untrusted JSON**, etc.
+3. **Fuzzing**: expand the existing libFuzzer/proptest targets for **protocol parsing**, **prompt assembly edges**, **untrusted JSON**, etc.; check in a minimal reproducer for each discovered crash.
 4. **Tauri / gtk-rs warning cluster**: track *unmaintained* items in [KNOWN_VULNERABILITIES.md](./KNOWN_VULNERABILITIES.md); converge with **major Tauri** upgrades.
+5. **npm development toolchain**: establish reachability and a supported-version matrix before upgrading ESLint, WebDriver, and the directory-plugin compiler chain; do not force-install through peer conflicts.
 
 ---
 
@@ -50,6 +54,7 @@ Engineering work above does **not** cover licensing of user-downloaded model wei
 
 | Date | Notes |
 |------|--------|
+| 2026-08-01 | Distinguished the required production npm gate from full dev-graph risk and recorded K-SUPPLY-12. |
 | 2026-07-17 | Added HTTP auth, path containment, inline-Vue fail-closed behavior, historical credential incident, and shared-origin limitation. |
 | 2026-05-15 | Added “Third-party risk” section linking to `legal/DISCLAIMER.md`. |
 | 2026-05-13 | First version: defined completed scope and known gaps. |

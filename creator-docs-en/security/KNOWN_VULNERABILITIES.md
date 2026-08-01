@@ -1,4 +1,4 @@
-# Known vulnerability tracking (`cargo-audit`)
+# Known vulnerability tracking (Cargo / npm)
 
 This file treats **vulnerability-level** hits from `cargo audit` on the workspace-root **`Cargo.lock`** as the single source of truth for supply-chain risk and upgrade planning. Warning-only *unmaintained*, *unsound*, and *yanked* entries do not count as vulnerabilities, but the appendix tracks their current exposure and upstream blockers; the current `cargo audit` output and [SECURITY_AUDIT_SCOPE.md](./SECURITY_AUDIT_SCOPE.md) remain authoritative for detail.
 
@@ -43,7 +43,7 @@ This file treats **vulnerability-level** hits from `cargo audit` on the workspac
 
 - **sqlx ≥ 0.8.6**, `default-features = false`, features: `runtime-tokio-rustls`, `sqlite` (no umbrella `migrate`).
 - Runtime migrations: `kernel/crates/oclive_kernel_host/src/infrastructure/sql_migrate.rs`.
-- **CI**: `cargo-audit` job fails on vulnerability-level hits; `Cargo.lock` PRs use `cargo-audit-lockfile.yml`.
+- **CI**: `dimension5-acceptance` uniquely owns the main workflow's required `cargo audit`; `Cargo.lock` PRs use `cargo-audit-lockfile.yml`.
 
 ### Maintenance rules
 
@@ -69,6 +69,14 @@ This file treats **vulnerability-level** hits from `cargo audit` on the workspac
 | **RUSTSEC-2026-0190** | `anyhow` | **Fixed** — lockfile **1.0.103** | 2026-07-14 K-SUPPLY-05 `cargo update` |
 
 See [`.cargo/audit.toml`](../../.cargo/audit.toml) and [SECURITY_AUDIT_SCOPE.md](./SECURITY_AUDIT_SCOPE.md).
+
+---
+
+## npm dependency status (2026-08-01)
+
+The required CI `npm-audit` job runs `npm audit --omit=dev --audit-level=high`; remote run [`30692428026`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30692428026) reported **0 production vulnerabilities**.
+
+That production result does not mean the full development graph is clean. Full `npm audit` reports **6 findings (3 moderate / 3 high)** through ESLint/`brace-expansion`, WebDriver/`fast-xml-parser`, and the dev-only `vue3-sfc-loader` legacy Vue/PostCSS compiler chain. In addition, root ESLint 9.39.5 does not satisfy `eslint-plugin-unicorn` 68.0.0's ESLint ≥10.4 peer contract. **K-SUPPLY-12** tracks supported-version alignment and the development-tool reachability review; do not hide it with `--force` or an unverified override.
 
 ---
 

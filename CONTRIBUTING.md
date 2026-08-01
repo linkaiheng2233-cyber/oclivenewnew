@@ -176,8 +176,8 @@ cargo test -p oclive-cli --test kernel_ensure_plan_snapshot
 | `cargo test`（Windows 集成） | 以 **Ubuntu CI** 为准；本机可 `cargo test --workspace --lib` |
 | `frontend` / Vitest | `npm run test:unit` |
 | `oocp-test-suite` | 确认 `OCLIVE_HTTP_API_MOCK_LLM=1`、端口空闲；见 [OOCP_TEST_SUITE.md](creator-docs/testing/OOCP_TEST_SUITE.md) |
-| `cargo-audit` | 仓库根目录运行 `cargo audit`（自动读取 [`.cargo/audit.toml`](.cargo/audit.toml)）；离线复现：`cargo audit --no-fetch --stale`。跟踪 [KNOWN_VULNERABILITIES.md](creator-docs/security/KNOWN_VULNERABILITIES.md)；**`Cargo.lock` 变更的 PR 须同步更新 KNOWN_VULNERABILITIES 扫描日期**；锁文件专用 job 失败即红 |
-| `npm-audit` | 可见性 job（`continue-on-error`）；本地：`npm audit --omit=dev`；摘要见 [KNOWN_VULNERABILITIES.md](creator-docs/security/KNOWN_VULNERABILITIES.md) |
+| `dimension5-acceptance` 中的 `cargo audit` | 仓库根目录运行 `cargo audit`（自动读取 [`.cargo/audit.toml`](.cargo/audit.toml)）；离线复现：`cargo audit --no-fetch --stale`。跟踪 [KNOWN_VULNERABILITIES.md](creator-docs/security/KNOWN_VULNERABILITIES.md)；**`Cargo.lock` 变更的 PR 须同步更新 KNOWN_VULNERABILITIES 扫描日期**；锁文件专用 workflow 失败即红 |
+| `npm-audit` | 生产依赖高危硬门禁；本地：`npm audit --omit=dev --audit-level=high`。完整开发图另跑 `npm audit` + `npm ls`，风险见 K-SUPPLY-12 与 [KNOWN_VULNERABILITIES.md](creator-docs/security/KNOWN_VULNERABILITIES.md) |
 | 契约 / 角色包 | `cargo run -p oclive-cli -- pack validate <role>` |
 
 ## 破坏性变更（Breaking changes）

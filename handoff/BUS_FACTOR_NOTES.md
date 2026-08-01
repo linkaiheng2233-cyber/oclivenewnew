@@ -150,8 +150,8 @@
 | **`invoke` 热路径** | **`distros/desktop-tauri/tests/invoke_hotpath_matrix.rs`**；矩阵 **`handoff/INVOKE_HOTPATH_MATRIX.md`**。 |
 | **Vue 组件 / E2E** | **oclive-pack-editor** 仓（本仓不重复维护全量 UI 树）；本仓 **`npm run test:unit`** + **Ubuntu `frontend` job** 上 **Playwright + vite preview**（见 CONTRIBUTING）。 |
 | **Rust 全量** | **`rust` job**：fmt、clippy `-D warnings`、workspace `cargo test`。 |
-| **`cargo-audit`** | `.github/workflows/ci.yml` 的硬门禁（job 未设置 `continue-on-error`） | `.cargo/audit.toml` 的每个 ignore 都必须有 `KNOWN_VULNERABILITIES.md` 解释。 |
-| **`npm audit`** | `.github/workflows/ci.yml` 的 `npm-audit` 可见性 job（`continue-on-error: true`） | `npm audit --omit=dev --audit-level=high` 结果必须记录；当前不阻断合入，升格条件见 TECHNICAL_DEBT K-SUPPLY-04。 |
+| **`cargo audit`** | `.github/workflows/ci.yml` 的 `dimension5-acceptance` 硬门禁唯一持有；锁文件另有 `cargo-audit-lockfile.yml` | `.cargo/audit.toml` 的每个 ignore 都必须有 `KNOWN_VULNERABILITIES.md` 解释。 |
+| **`npm audit`** | `.github/workflows/ci.yml` 的 `npm-audit` 生产依赖硬门禁 | `npm audit --omit=dev --audit-level=high` 为 required；完整 dev graph 另以 K-SUPPLY-12 跟踪，不能用生产 0 代替。 |
 
 **失败处理策略**：先读 job 日志区分 **fmt/clippy/unit/OOCP/frontend**；OOCP 失败常与环境变量、mock LLM、端口占用有关；Windows 不跑 Playwright 时勿忽略 Ubuntu `frontend` 红。
 

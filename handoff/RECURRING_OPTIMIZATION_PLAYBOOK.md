@@ -253,7 +253,7 @@ git status                                      # 确认工作树状态 / 与 or
 
 **4. 门禁语义纯度（全档）**
 - [ ] CI job 只分两类：**硬门禁（红=不能合）** 与 **nightly/可见性（不挡 main）**；无第三种「红了也不拦但看着像在测」的伪门禁
-- [ ] `continue-on-error: true` 的 job（loom / fuzz / e2e-tauri / npm-audit / visual-smoke）逐个裁决：修通去掉软标 **或** 迁出 `ci.yml` 改 nightly
+- [ ] `continue-on-error: true` 的 job（loom / fuzz / e2e-tauri / cli-bench / visual-smoke）逐个裁决：修通去掉软标 **或** 迁出 `ci.yml` 改 nightly；`npm-audit` 已升为生产依赖硬门禁
 - [ ] 本地 `check:release` 与 CI 全集差距已知并记录(不假装等价)
 
 **愿景拷问**
@@ -336,12 +336,11 @@ npm run check:rust                               # fmt + clippy(-D warnings) + t
 
 | 轮次 | 日期 | 档位 | 基线 | 综合评分 | 关键发现 / 新增债 | 备注 |
 |------|------|------|------|----------|-------------------|------|
-| 21 | 2026-06-25 | 快 | PASS | A− | **轮次 20 P0 根因定位+修复**: CI `rust` 硬门禁红 = **3 处 doctest 漂移**(`AgentInput` 加 5 字段后 contracts 示例缺字段; `RoleStorage`/`EmotionAnalyzer` doctest 引旧 crate 名 `oclivenewnew_tauri`),被「首个 doctest 失败即 abort」逐个掩盖; `--lib`/`check:rust` 不跑 doctest 是本地绿≠远程绿根因 → 新增 **G8** + 协议 §2.1 doctest 行 + Playbook doctest 盲区警示 | `cargo test --workspace --doc` 全绿; dimension5 十三检/layering/stale-paths/host lib 241 绿; 冻结项未动 |
-| 22 | 2026-06-25 | 半 | PASS | A− | **BUILD-TAURI-01** `beforeBuildCommand` 仓根路径修复 + dimension5 十四检 ratchet; **模式 2** playtest 5 轮 + prompt 人设纪律回流; **mapTheaterInvokeError**; **D-MAINT-01** dependabot 分支清理; **K-SUPPLY-02** Done; push main 验 CI | `tauri-run.cjs` chat-pro/theater 绿; MEGA-SD/TS 仍 §2 冻结 |
 | 23 | 2026-06-29 | 快 | PASS | A− | **D-DOC-LINK-01** 活跃区 archive 断链修复（A3/PRODUCT_RELEASE/GAP）+ dimension5 十三检口径统一 + BOUNDARIES 文档纪律节 + `check-stale-paths` closure ratchet | `node scripts/check-stale-paths.mjs --docs-only` 绿; 冻结项未动 |
 | 24 | 2026-07-18 | 全（工程收尾） | PASS（local） | A− | **D-QUALITY-LINT-01 Done**：补齐 Theater / Playwright / 配置 lint 范围并接入 `check` / `check:release`；清理死代码；修错误码生成器与漂移门禁兼容；固化 preview E2E 构建与 loopback proxy 绕行；文档 SSOT 对账并新增 **K-I18N-HTML-01 Deferred** | Dimension 5 **PASS (24 checks)**；shared **70** + Chat Pro/Theater **83** 前端测试；preview E2E **6**；workspace Rust integration 通过；文档镜像/路径/注册表/链接全绿；未声称远端 CI / 原生 WebView E2E |
 | 25 | 2026-08-01 | 全 | PASS（现有门禁） | B+ | 新增 **K-LLM-ENV-02**、**K-FRONTEND-TYPECHECK-01**、**D-CI-EXECUTION-02**、**K-SUPPLY-11**、**D-DEBT-LEDGER-01**、**D-ASSET-FOOTPRINT-01**；确认 3 个前端运行时分支错误可穿透 Vite/ESLint/Vitest；修正文档中的 crate、资源协调远端证据、供应链 warning 与历史待 CI 状态 | Dimension 5 **PASS (26 checks)**；Host lib **431/431**、前端 **269/269**、doctest **6/6**；`check:ci-local` exit 0；远端 Stage 2B CI **22/22**；`cargo audit` 漏洞级 **0**、warning **9**；本轮只修文档与入债，不顺手改生产代码 |
 | 26 | 2026-08-01 | 全（整改） | PASS（local） | A− | 修复 **K-LLM-ENV-02** 完整事务竞态与 **K-FRONTEND-TYPECHECK-01**；清除前端真实类型错误并补 3 条行为回归；修复 **K-SUPPLY-11**，将 npm audit 升为硬门禁；按唯一所有权处理 **D-CI-EXECUTION-02** 的 workspace/CLI/audit 重复执行 | 前端 shared+Chat Pro **272**、Theater **53**；非 CLI workspace 集成 **592.6s**、CLI 集成 **157.3s**；Dimension 5 **PASS (26 checks)**；`check:release` exit 0 / **1230.8s**；`cargo audit` 漏洞级 **0**、warning **8**；本轮状态均为 Locally verified，远端 CI 证据未声明 |
+| 27 | 2026-08-01 | 远端验收 + 文档对账 | PASS（remote） | A− | 远端首轮暴露 Node 20 与新前端工具链不兼容，统一 `.nvmrc` / engines / workflows 至 Node 22；第二轮暴露测试依赖 runner 默认语言，改为显式中英 locale 并恢复现场。终轮 [`30692428026`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30692428026) 在 HEAD `b0253cbe` **21/21** success；首个 Shadow Compare 样本的两次真实失败均在已选 `frontend`，未发现漏选。关联复核进一步修复 `oclive lint --audit-ci` 仍只认旧独立 job、错误扫描全 workflow soft 标记，以及 `ci init` 模板 Node 20 / audit soft / Loom 名称无效 YAML。同步修正 CONTRIBUTING、Bus Factor、安全与轻量化文档旧口径 | 总 job-seconds **10491→8586（−18.2%）**；Linux Rust **−25.3%**、Windows Rust **−32.1%**、CLI **−11.8%**。影子计划选 10 / 跳 10 个验证 job，建议跳过部分实跑合计 **2238s**，但 Rust 仍是关键路径。生产 npm **0 vulnerabilities**；完整 dev graph **3 moderate / 3 high** + ESLint peer 冲突入 **K-SUPPLY-12**，未粉饰为全依赖清零。后续 CLI 关联提交 `cb3ba201` 本地全量 bin 单测 **74/74**、Clippy 与当前 workflow 诊断通过；未重复触发全量远端 CI |
 
 ---
 

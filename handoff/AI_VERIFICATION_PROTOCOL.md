@@ -83,7 +83,8 @@ node -e "const fs=require('fs'),path=require('path');function walk(d,a=[]){for(c
 |------|------|------|
 | Rust 漏洞级 | [KNOWN_VULNERABILITIES.md](../creator-docs/security/KNOWN_VULNERABILITIES.md) + `cargo audit` | 用模型记忆代替本地 audit |
 | GTK3 等 warning 忽略 | [.cargo/audit.toml](../.cargo/audit.toml)（**11** 条） | 称为「未文档化」 |
-| npm | `npm audit --omit=dev`；CI `npm-audit` 为 **continue-on-error** | 将可见性 job 红 X 当作 main 阻塞 |
+| npm 生产依赖 | `npm audit --omit=dev --audit-level=high`；CI `npm-audit` 为**硬门禁** | 把完整 dev graph 命中误报为生产暴露，或把生产 0 扩写成全依赖 0 |
+| npm 开发工具链 | 完整 `npm audit` + `npm ls`；当前风险见 **K-SUPPLY-12** | 用 `--force` / 无证据 override 掩盖 peer 或审计冲突 |
 
 **英文安全文档**：`creator-docs-en/security/KNOWN_VULNERABILITIES.md` **存在**；汇报「无英文版」前须 `glob` 核实。可报告「英文扫描日期滞后于中文」。
 
@@ -97,9 +98,9 @@ node -e "const fs=require('fs'),path=require('path');function walk(d,a=[]){for(c
 | main 是否可合 | `gh run list --limit 5` + 失败 job 逐步日志 |
 | 硬门禁 vs 可见性 | 读 `.github/workflows/ci.yml` 的 `continue-on-error` |
 
-**硬门禁（红 = 不能合）**：`rust`、`oocp-test-suite`、`frontend`（ubuntu Playwright）、`cross-host-e2e`、`dimension5-acceptance`、`cargo-audit`、`stale-paths`、`layering-ratchet` 等 **未**标 `continue-on-error` 的 job。
+**硬门禁（红 = 不能合）**：`rust`、`oocp-test-suite`、`frontend`（ubuntu Playwright）、`cross-host-e2e`、`dimension5-acceptance`（唯一持有主工作流 `cargo audit`）、`npm-audit`、`stale-paths`、`layering-ratchet` 等 **未**标 `continue-on-error` 的 job。
 
-**可见性（红 X 可存在）**：`npm-audit`、`loom`、`fuzz`、`e2e-tauri`、`cli-bench`、`visual-presentation-smoke` 等。
+**可见性（红 X 可存在）**：`loom`、`fuzz`、`e2e-tauri`、`cli-bench`、`visual-presentation-smoke` 等。主工作流已无独立 `cargo-audit` job，不能沿用旧 job 清单判断门禁。
 
 #### CI 推送节奏与证据绑定
 

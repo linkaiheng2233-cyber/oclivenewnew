@@ -23,6 +23,7 @@
 ## 本轮未覆盖（已知局限）
 
 - **第三方供应链**：crate **作者信誉、发布历史、构建可重复性** 等未做系统审计。
+- **npm 开发工具链**：生产依赖高危扫描已是硬门禁且当前为 0；完整 dev graph 仍有 6 项 audit 命中与一处 ESLint peer 契约冲突，按 K-SUPPLY-12 跟踪，不能宣称全依赖清零。
 - **Miri**：未对全部 `unsafe` 做 **Miri 全量**；仅在关键路径评估可行性。
 - **模糊测试（fuzzing）**：已建立 **`kernel/fuzz/`**（libFuzzer）与 **`oclive_validation` proptest** harness（见 [FUZZING.md](../testing/FUZZING.md)）；CI `fuzz` job 为 `continue-on-error` 烟测。
 - **Loom 并发模型**：`distros/desktop-tauri/tests/loom_concurrency.rs`（JSON-RPC 请求 ID、`narrative_hint` 缓存 RwLock 模型）；`oclive test --loom` / CI `loom` job（`continue-on-error`）。主仓 **无 `unsafe` 块**；Loom 覆盖逻辑并发而非 FFI。
@@ -45,6 +46,7 @@
 2. **Miri**：引入 **允许失败** 的 Miri CI job，从 **最小 `unsafe` 闭包** 起扩大覆盖。
 3. **模糊测试**：持续扩展 `kernel/fuzz/` 目标与 proptest 属性；对发现 crash 建立最小复现入库。
 4. **Tauri / gtk-rs 警告链**：跟踪 [KNOWN_VULNERABILITIES.md](./KNOWN_VULNERABILITIES.md) 中的 *unmaintained* 集群，随 **Tauri 大版本** 升级收敛。
+5. **npm 开发工具链**：先做可达性与受支持版本矩阵，再升级 ESLint/WebDriver/目录插件编译链；禁止用强制安装掩盖 peer 冲突。
 
 ---
 
@@ -52,6 +54,7 @@
 
 | 日期 | 说明 |
 |------|------|
+| 2026-08-01 | 区分生产 npm 硬门禁与完整 dev graph 风险，登记 K-SUPPLY-12。 |
 | 2026-07-17 | 增补 HTTP 鉴权、路径 containment、插件 inline Vue fail-closed、历史凭据与共享 origin 局限。 |
 | 2026-05-15 | 增加「第三方风险」小节，链至 `legal/DISCLAIMER.md`。 |
 | 2026-05-13 | 初版：定义已完成范围与已知局限。 |

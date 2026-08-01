@@ -66,11 +66,12 @@ Local dev: `npm run bundle-kernel:tauri` writes `distros/desktop-tauri/resources
 |----|------|----------|--------|
 | **K-SUPPLY-02** | Attach `SHA256SUMS` to GitHub Release | P1 | Workflow in repo; first Release asset = maintainer |
 | **K-SUPPLY-03** | Plugin install review prompt | P2 | **Done** |
-| **K-SUPPLY-04** | Elevate `npm-audit` | P2 | **Locally verified** — two production scans were clean and `continue-on-error` is removed; close after remote hard-gate evidence |
+| **K-SUPPLY-04** | Elevate `npm-audit` | P2 | **Done · remote verified** — two production scans were clean, `continue-on-error` is removed, and remote CI [`30692428026`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30692428026) passed the required gate |
 | **K-SUPPLY-05** | `deny.toml` multiple-versions → deny | P2 | **Done** (Minimal · 2026-07-15) — `deny` + documented skips; remaining families in [LIGHTWEIGHT_PROFILE §6.6](../development/LIGHTWEIGHT_PROFILE.md); Full zero-skip is a separate campaign |
 | **K-SUPPLY-09** | Plugin signature strict mode is opt-in | P1 | **OPEN** — sidecar SHA-256 is checked only with explicit `OCLIVE_PLUGIN_SIGNATURE_STRICT=1`; source-review prompts are not signature proof, and official/market signing plus revocation remain pending |
 | **K-SUPPLY-10** | Pin GitHub Actions to full commit SHAs | P2 | **OPEN** — workflows currently use mutable `@v*` / `@stable` tags |
-| **K-SUPPLY-11** | `event-listener` 5.4.1 unsound warning | P1 | **Locally verified** — lockfile uses 5.4.2 and both SQLx and zbus/Tauri resolve to the fixed release; `cargo audit` warnings fell from 9 to 8, pending remote evidence |
+| **K-SUPPLY-11** | `event-listener` 5.4.1 unsound warning | P1 | **Done · remote verified** — lockfile uses 5.4.2, both SQLx and zbus/Tauri resolve to it, warnings fell from 9 to 8, and remote Dimension 5 passed |
+| **K-SUPPLY-12** | npm development-tool vulnerabilities and peer-contract drift | **P1** | **OPEN · remote measured** — production is clean, but the full dev graph has 6 findings (3 moderate / 3 high), and ESLint 9.39.5 conflicts with `eslint-plugin-unicorn` 68's ≥10.4 peer requirement. Align supported versions and restore a clean `npm ls`; do not force overrides |
 | **K-PLUGIN-SEC-01** | Per-plugin origin and native isolation E2E | P1 | **Partial** — inline Vue is blocked in releases; HTML fallbacks still share `ocliveplugin.localhost`, so this is not a complete sandbox |
 | **K-SECRET-01** | Revoke historical API credential and decide history handling | **P0** | **Done (2026-07-17)** — the working tree uses a secret reference; the maintainer confirms N1N destroyed the old credential provider-side, and history is retained by decision |
 | **K-SUPPLY-06** | Bit-identical reproducible builds | — | Deferred |
@@ -83,7 +84,7 @@ Local dev: `npm run bundle-kernel:tauri` writes `distros/desktop-tauri/resources
 1. PRs touching **`Cargo.lock`**: dimension5 `--ci` green + update KNOWN_VULN scan date.
 2. Before release: `cargo audit` · `cargo deny` · `oclive lint --deny`.
 3. Each feature cycle: revisit [SECURITY_AUDIT_SCOPE.md](SECURITY_AUDIT_SCOPE.md) limits.
-4. **`npm-audit`**: runs as a hard gate for high-severity production dependency findings; the local scan is clean, with one remote success still required before debt closure.
+4. **`npm-audit`**: the high-severity production-dependency gate is remotely verified. Keep full `npm audit` as development-tool visibility as well; a clean production scan is not a clean dev graph.
 5. **Plugin installation**: until signing is the default, do not treat third-party plugins as trusted code; `process:spawn`, MCP, and network capabilities still require grants and user authorization. Blocking inline Vue in releases is containment, not a substitute for signing and per-plugin origins.
 
 ---

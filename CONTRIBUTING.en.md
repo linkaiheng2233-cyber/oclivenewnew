@@ -131,7 +131,8 @@ Dimension 5 is defined by `node scripts/dimension5-acceptance.mjs --ci`. **Re-ru
 | `cargo test` (Windows integration) | Trust **Ubuntu CI**; locally try `cargo test --workspace --lib` |
 | `frontend` | `npm run test:unit` |
 | `oocp-test-suite` | `OCLIVE_HTTP_API_MOCK_LLM=1`, free port; see [OOCP_TEST_SUITE.md](creator-docs/testing/OOCP_TEST_SUITE.md) |
-| `cargo-audit` | Track [KNOWN_VULNERABILITIES.md](creator-docs/security/KNOWN_VULNERABILITIES.md); non-blocking |
+| `cargo audit` inside `dimension5-acceptance` | Run `cargo audit` at repo root and track [KNOWN_VULNERABILITIES.md](creator-docs/security/KNOWN_VULNERABILITIES.md); this is a required gate |
+| `npm-audit` | Required production gate: `npm audit --omit=dev --audit-level=high`; also run full `npm audit` + `npm ls` for K-SUPPLY-12 development-tool risk |
 | Role packs | `cargo run -p oclive-cli -- pack validate <role>` |
 
 ## Breaking changes
