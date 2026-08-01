@@ -113,7 +113,7 @@ fn prepare_generation(
         path: instruction_file.clone(),
         source,
     })?;
-    let instruction_sha256 = sha256_hex(&instruction_bytes);
+    let instruction_sha256 = scaffold_sha256_hex(&instruction_bytes);
     if instruction_sha256 != expected_instruction_sha {
         return Err(generation_error(format!(
             "instruction_digest_mismatch: `{instruction_path}` expected {expected_instruction_sha} but found {instruction_sha256}; update the package intentionally and rewrite the scaffold lock"
@@ -147,7 +147,7 @@ fn prepare_generation(
             path: source_path,
             source,
         })?;
-        let source_sha256 = sha256_hex(&source_bytes);
+        let source_sha256 = scaffold_sha256_hex(&source_bytes);
         if source_sha256 != declaration.sha256 {
             return Err(generation_error(format!(
                 "source_digest_mismatch: `{}` expected {} but found {}; update the instruction digest intentionally",
@@ -175,7 +175,7 @@ fn prepare_generation(
             path: target_string,
             mode: declaration.mode,
             source_sha256,
-            output_sha256: sha256_hex(&output_bytes),
+            output_sha256: scaffold_sha256_hex(&output_bytes),
             bytes,
         });
         prepared_files.push(PreparedFile {
@@ -620,7 +620,9 @@ fn write_file(path: &Path, bytes: &[u8]) -> Result<(), ScaffoldError> {
         })
 }
 
-fn sha256_hex(bytes: &[u8]) -> String {
+/// Return the lowercase SHA-256 representation used by scaffold integrity fields.
+#[must_use]
+pub fn scaffold_sha256_hex(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
 }
 
