@@ -3,8 +3,8 @@ use std::{collections::BTreeMap, fs, path::Path};
 use oclive_scaffold::{
     build_scaffold_lock, merge_scaffold_configs, project_scaffold_lock_path,
     resolve_scaffold_catalog, scan_scaffold_catalog, validate_manifest, write_scaffold_lock_atomic,
-    CompositionDeclaration, ScaffoldCompatibility, ScaffoldConfig, ScaffoldManifest,
-    ScaffoldPackageIdentity, ScaffoldSource, ScaffoldTrust,
+    CompositionDeclaration, GeneratorDeclaration, GeneratorDriver, ScaffoldCompatibility,
+    ScaffoldConfig, ScaffoldManifest, ScaffoldPackageIdentity, ScaffoldSource, ScaffoldTrust,
 };
 use semver::Version;
 use tempfile::TempDir;
@@ -161,6 +161,35 @@ fn unsupported_schema_is_rejected_with_migration_evidence() {
 }
 
 #[test]
+fn instruction_digest_is_optional_for_discovery_but_strict_when_present() {
+    let mut legacy = custom_manifest("dev.example.legacy", "1.0.0");
+    legacy.generators.push(GeneratorDeclaration {
+        id: "project".to_string(),
+        kind: "project".to_string(),
+        driver: GeneratorDriver::Instruction {
+            path: "instructions.json".to_string(),
+            sha256: None,
+        },
+    });
+    let legacy_validation = validate_manifest(&legacy, ScaffoldSource::Project, &reader_version());
+    assert!(legacy_validation.is_valid());
+    assert!(legacy_validation.warnings.iter().any(|issue| {
+        issue.code == "instruction_digest_required_for_generation"
+            && issue.message.contains(">=1.1,<2")
+    }));
+
+    let GeneratorDriver::Instruction { sha256, .. } = &mut legacy.generators[0].driver else {
+        panic!("fixture instruction driver")
+    };
+    *sha256 = Some("ABC".to_string());
+    let invalid = validate_manifest(&legacy, ScaffoldSource::Project, &reader_version());
+    assert!(invalid
+        .errors
+        .iter()
+        .any(|issue| issue.code == "invalid_instruction_digest"));
+}
+
+#[test]
 fn duplicate_id_within_one_source_fails_closed() {
     let temp = TempDir::new().expect("tempdir");
     let project = temp.path().join("project");
@@ -229,6 +258,8 @@ fn published_json_schemas_are_well_formed_json() {
         include_str!("../schemas/oclive.scaffold.schema.json"),
         include_str!("../schemas/scaffold.config.schema.json"),
         include_str!("../schemas/scaffold.lock.schema.json"),
+        include_str!("../schemas/scaffold.instructions.schema.json"),
+        include_str!("../schemas/scaffold.provenance.schema.json"),
     ] {
         let parsed =
             serde_json::from_str::<serde_json::Value>(document).expect("valid schema JSON");
