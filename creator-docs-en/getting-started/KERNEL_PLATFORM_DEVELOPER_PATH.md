@@ -51,7 +51,7 @@ Set `plugin_backends.llm = "remote"` and `OCLIVE_REMOTE_LLM_URL` ([SETTINGS_REFE
 ## 5. Embedded `library` shape
 
 - **`oclive-cli init --project-type library --kernel-source <repo root>`** → **`lib`** depending on **`oclive_kernel_runtime`** (no Tauri).
-- Use **`oclive_kernel_runtime::`** DTOs and pure `domain` in your process; **full turn orchestration** (`process_message`, `AppState`) stays in **`oclivenewnew-tauri`**—link or call via HTTP as needed.
+- Use **`oclive_kernel_runtime::`** DTOs, pure resolution, and validation in your process. **Full turn orchestration** (`process_message`, persistence, and `PluginHost`) lives in **`oclive_kernel_host`**, shared by `oclive_kernel_server` and `distros/desktop-tauri`; the pure-library shape does not expose that complete host API yet.
 
 ---
 

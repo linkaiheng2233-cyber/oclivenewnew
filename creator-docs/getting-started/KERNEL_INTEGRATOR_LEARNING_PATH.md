@@ -44,4 +44,4 @@
 ## 与主应用仓库的关系
 
 - **契约**（DTO、`KernelErrorBody`）以 **`oclive_kernel_runtime`** 与 [KERNEL_ERROR_CODE_CONVENTION.md](KERNEL_ERROR_CODE_CONVENTION.md) 为准。  
-- **桌面宿主** 本仓库 `src-tauri` 是最完整参考实现；嵌入式可裁剪但应保持 **错误 JSON 形状** 一致，便于共用 FAQ 与编写器。
+- **完整宿主编排**以 `kernel/crates/oclive_kernel_host` 为参考实现，桌面薄壳位于 `distros/desktop-tauri`；嵌入式可裁剪但应保持 **错误 JSON 形状** 一致，便于共用 FAQ 与编写器。仅链接 `oclive_kernel_runtime` 还不等于获得完整 `process_message`。

@@ -6,7 +6,7 @@
 
 | Artifact | Current version (`main`, 2026-07-10) | Release cadence | Notes |
 |----------|-----------------------------------------------|-----------------|-------|
-| **Desktop Tauri** (`package.json` / `src-tauri`) | **0.5.0** | User-visible features and installers | Changes in [CHANGELOG.md](../../CHANGELOG.md) `[0.5.0]` |
+| **Desktop Tauri** (`package.json` / `distros/desktop-tauri`) | **0.5.0** | User-visible features and installers | Changes in [CHANGELOG.md](../../CHANGELOG.md) `[0.5.0]` |
 | **`oclive-cli`** | **0.1.0** | Scaffolding and toolchain | CLI breaking changes: [DEPRECATED_COMMANDS.md](../../kernel/crates/oclive-cli/DEPRECATED_COMMANDS.md) |
 | **`oclive_kernel_runtime`** | **0.2.0** (semver crate) | HTTP / `--api` contract | See [COMPATIBILITY.md](../COMPATIBILITY.md) |
 | **`oclive_validation`** | **0.1.0** | Role pack / blueprint validation | Aligned with pack-editor wasm |

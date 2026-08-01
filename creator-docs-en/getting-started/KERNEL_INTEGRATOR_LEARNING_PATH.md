@@ -46,4 +46,4 @@ For **headless HTTP**, **embedded**, and **hardware** teams shipping an oclive-c
 ## Relation to this repo
 
 - **Contracts** (`KernelErrorBody`, DTOs) live in **`oclive_kernel_runtime`** + [KERNEL_ERROR_CODE_CONVENTION.md](KERNEL_ERROR_CODE_CONVENTION.md).  
-- **`src-tauri`** is the fullest reference host; trim for embedded but keep **error JSON shape** compatible with shared docs/tools.
+- **`kernel/crates/oclive_kernel_host`** is the complete orchestration reference, with the thin desktop shell under `distros/desktop-tauri`. Embedded hosts may trim it, but should keep the **error JSON shape** compatible with shared docs/tools. Linking only `oclive_kernel_runtime` does not provide the full `process_message`.

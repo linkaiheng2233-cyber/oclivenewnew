@@ -1,6 +1,6 @@
 # `narrative_hint` 全链路契约（AB1）
 
-**状态**：与 `src-tauri` 共景路径、`oclive_kernel_runtime::PromptBuilder` 实现一致。
+**状态**：与 `oclive_kernel_host` 共景路径、`oclive_kernel_runtime::PromptBuilder` 实现一致。
 
 ## 1. 数据形状
 

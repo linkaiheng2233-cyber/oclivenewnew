@@ -96,7 +96,7 @@ flowchart TB
 |-------|----------|-------------------|--------------|
 | **Recipe** | Platform / hardware devs | `oclive init --template …` | Project type, slot presets, Monolith on/off, sample `distros/chat-pro/roles/` |
 | **Implementation** | Integrators + authors | `settings.json`, `monolith.toml`, `distros/chat-pro/plugins/` | Per-slot **builtin / remote / directory / ollama**; which slots to weld |
-| **Code** | Kernel maintainers | `chat_engine` in `src-tauri` / `oclive_kernel_runtime` | **Atomic step order** per turn (memory → emotion → event → prompt → LLM → …) |
+| **Code** | Kernel maintainers | `chat_engine` in `oclive_kernel_host` (`oclive_kernel_runtime` provides DTOs and pure resolution) | **Atomic step order** per turn (memory → emotion → event → prompt → LLM → …) |
 
 ---
 

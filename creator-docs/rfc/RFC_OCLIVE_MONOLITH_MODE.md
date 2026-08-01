@@ -200,7 +200,7 @@ my-fast-npc/
 | **第一阶段（脚手架）** | **已完成**：`oclive-cli init` 支持 **`--monolith`**（非交互）与交互「开发者编译选项」；生成 **`monolith.toml`**、**`vendor/oclive_monolith_builtin/`**（七焊接键静态入口的**权威来源**）、**`process_message_monolith.rs`**；**双 `[[bin]]`** 且 **标准入口 `src/main.rs` / Monolith 入口 `src/main_monolith.rs`**（避免 Cargo 同路径警告）；`cargo test -p oclive-cli` 含 release 双构建 E2E。 |
 | **第二阶段（自定义焊接）** | **已完成**：**`weld_modules` / `exclude`** 互斥校验、部分焊接代码生成；**`oclive build`** 读取 `monolith.toml` 再生成焊接源码并可选双构建。 |
 | **第三阶段（`oclive bench`）** | **已完成**：**`oclive bench`** 对比标准与 **`-monolith`** 二进制，输出 JSON（Schema：`kernel/crates/oclive-cli/schemas/oclive_bench_report.schema.json`）。 |
-| **第四阶段（真实符号）** | **已完成（vendor 路径）**：已焊接键静态链接 **`oclive_monolith_builtin`**；主仓 **不** 在 `src-tauri` 另起一套焊接桩。后续若拆分 **`oclive_*_builtin`** crate，仅替换生成项目的依赖与调用点，脚手架 **仍** 以 `kernel/crates/oclive-cli/monolith_vendor/oclive_monolith_builtin/` 为模板权威来源。 |
+| **第四阶段（真实符号）** | **已完成（vendor 路径）**：已焊接键静态链接 **`oclive_monolith_builtin`**；主仓 **不** 在 `distros/desktop-tauri` 另起一套焊接桩。后续若拆分 **`oclive_*_builtin`** crate，仅替换生成项目的依赖与调用点，脚手架 **仍** 以 `kernel/crates/oclive-cli/monolith_vendor/oclive_monolith_builtin/` 为模板权威来源。 |
 
 ---
 

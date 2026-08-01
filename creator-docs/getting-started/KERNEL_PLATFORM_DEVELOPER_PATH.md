@@ -51,7 +51,7 @@
 ## 5. 嵌入式 `library` 形态
 
 - **`oclive-cli init --project-type library --kernel-source <oclivenewnew根>`** 生成 **`lib`**，依赖 **`oclive_kernel_runtime`**（无 Tauri）。
-- 在自有进程中使用 **`oclive_kernel_runtime::`** 的 DTO、纯 `domain` 逻辑与校验；**完整对话编排**（`process_message`、`AppState`）仍在 **`oclivenewnew-tauri`**，需 HTTP 或进程内集成时再接宿主 crate。
+- 在自有进程中使用 **`oclive_kernel_runtime::`** 的 DTO、纯解析逻辑与校验；**完整对话编排**（`process_message`、持久化与 `PluginHost`）位于 **`oclive_kernel_host`**，由 `oclive_kernel_server` 与 `distros/desktop-tauri` 复用。纯 library 形态尚未对称暴露这套完整宿主 API。
 
 ---
 

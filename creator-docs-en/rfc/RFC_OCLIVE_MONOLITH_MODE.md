@@ -200,7 +200,7 @@ Concrete numbers come from **`oclive bench`** (section 9); this RFC **makes no p
 | **Phase 1 (scaffold)** | **Done**: `oclive-cli init` supports **`--monolith`** (non-interactive) and interactive “developer compile options”; generates **`monolith.toml`**, **`vendor/oclive_monolith_builtin/`** (**canonical** for seven weld-key static entry), **`process_message_monolith.rs`**; **dual `[[bin]]`** with **`src/main.rs`** / **`src/main_monolith.rs`**; `cargo test -p oclive-cli` includes release dual-build E2E. |
 | **Phase 2 (custom weld)** | **Done**: **`weld_modules` / `exclude`** mutual exclusion validation, partial weld codegen; **`oclive build`** reads `monolith.toml`, regenerates weld sources, optional dual build. |
 | **Phase 3 (`oclive bench`)** | **Done**: **`oclive bench`** compares standard vs **`-monolith`** binaries, JSON output (schema: `kernel/crates/oclive-cli/schemas/oclive_bench_report.schema.json`). |
-| **Phase 4 (real symbols)** | **Done (vendor path)**: welded keys statically link **`oclive_monolith_builtin`**; the main repo does **not** duplicate weld stubs inside `src-tauri`. If **`oclive_*_builtin`** crates are split later, only generated project deps and call sites change; scaffold **still** treats `kernel/crates/oclive-cli/monolith_vendor/oclive_monolith_builtin/` as template canonical source. |
+| **Phase 4 (real symbols)** | **Done (vendor path)**: welded keys statically link **`oclive_monolith_builtin`**; the main repo does **not** duplicate weld stubs inside `distros/desktop-tauri`. If **`oclive_*_builtin`** crates are split later, only generated project deps and call sites change; scaffold **still** treats `kernel/crates/oclive-cli/monolith_vendor/oclive_monolith_builtin/` as template canonical source. |
 
 ---
 

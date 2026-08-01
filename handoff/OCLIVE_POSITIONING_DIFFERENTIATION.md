@@ -132,9 +132,9 @@
 
 ### 2.6 角色包可移植性：核实结论（含诚实缺口）
 
-**已核实为真（硬证据）：** 角色包的格式定义、加载、校验**不在桌面 App 内**，而抽到共享 workspace crate：`oclive_validation`（`load_blueprint_v2_for_role_dir`、`slot_registry_to_plugin_backends` 等）、`oclive_kernel_types`（`role`/`dto`/`manifest` 类型）、`oclive_kernel_runtime`。**同一套校验被四端消费**：
-- **桌面** `src-tauri`（`RoleStorage` → `oclive_validation`）；
-- **无头服务** `oclive_kernel_server`（`[[bin]] oclive-kernel-server`，`main.rs` 调 `oclivenewnew_tauri::run_api_server`，与桌面 `--api` 同一套编排，给机器人/网关/CI）；
+**已核实为真（硬证据）：** 角色包的格式定义、加载、校验**不在桌面 App 内**，而抽到共享 workspace crate：`oclive_validation`（`load_blueprint_v2_for_role_dir`、`slot_registry_to_plugin_backends` 等）、`oclive_kernel_types`（`role`/`dto`/`manifest` 类型）、`oclive_kernel_runtime`，并由 `oclive_kernel_host::RoleStorage` 统一消费。**同一套校验被四端消费**：
+- **桌面** `distros/desktop-tauri`（复用 `oclive_kernel_host::RoleStorage`）；
+- **无头服务** `oclive_kernel_server`（`[[bin]] oclive-kernel-server`，`main.rs` 调 `oclive_kernel_host::run_api_server`，与桌面 `--api` 同一套编排，给机器人/网关/CI）；
 - **CLI** `oclive-cli`；
 - **编写器** `oclive-pack-editor`（将同一 Rust crate 编译为 WASM 校验：`wasmValidation.ts` / `wasm-pack-build.mjs`）。
 

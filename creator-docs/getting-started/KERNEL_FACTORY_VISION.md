@@ -117,7 +117,7 @@ flowchart TB
 |----|------|-------------|--------|
 | **配方层** | 平台 / 硬件开发者 | `oclive init --template …` | 工程类型、预设第 1–6 模块、是否 Monolith、是否带示例 `distros/chat-pro/roles/` |
 | **实现层** | 集成方 + 创作者 | `settings.json`、`monolith.toml`、`distros/chat-pro/plugins/` | 各槽 **builtin / remote / directory / ollama**；编译期焊哪些槽 |
-| **代码层** | 内核维护者 | `src-tauri` / `oclive_kernel_runtime` 的 `chat_engine` | **一轮对话的原子步骤顺序**（记忆→情绪→事件→Prompt→LLM→…） |
+| **代码层** | 内核维护者 | `oclive_kernel_host` 的 `chat_engine`（`oclive_kernel_runtime` 提供 DTO / 纯解析基础） | **一轮对话的原子步骤顺序**（记忆→情绪→事件→Prompt→LLM→…） |
 
 ---
 
