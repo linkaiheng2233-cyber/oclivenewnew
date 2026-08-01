@@ -9,7 +9,7 @@
 ## 1. 准备
 
 1. 克隆 **[oclivenewnew](https://github.com/linkaiheng2233-cyber/oclivenewnew)**（本仓库）。
-2. 安装 **Rust**、**Node 20+**（跑 OOCP 黑盒时）。
+2. 安装 **Rust**、**Node 22+**（跑 OOCP 黑盒时）。
 3. 可选：与主仓并列克隆 **oclive doll core**（校企玩偶交付模板），见该目录 `README.md` 与下文互链。
 
 ---

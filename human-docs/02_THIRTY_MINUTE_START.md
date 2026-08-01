@@ -11,7 +11,7 @@
 
 | 项 | 要求 |
 |----|------|
-| **Node.js** | **≥ 20**、`npm`（以根 `package.json` `engines` 为准） |
+| **Node.js** | **≥ 22**、`npm`（以根 `package.json` `engines` 为准） |
 | **Rust** | stable toolchain |
 | **Windows** | **Visual Studio Build Tools**（MSVC 链接器） |
 | **Ollama** | 可选；未安装时对话可能失败，但 **编译与 `npm run check` 不依赖** |

@@ -10,7 +10,7 @@
     "distros/theater"
   ],
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "scripts": {
     "dev": "npm run dev -w @oclive/chat-pro",

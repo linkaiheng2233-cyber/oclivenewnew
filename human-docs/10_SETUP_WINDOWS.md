@@ -6,7 +6,7 @@
 
 | 组件 | 说明 |
 |------|------|
-| **Node.js ≥ 20** | 见根 `package.json` `engines`；可选 `.nvmrc` |
+| **Node.js ≥ 22** | 见根 `package.json` `engines`；可选 `.nvmrc` |
 | **Rust stable** | `rustup` 默认 toolchain |
 | **Visual Studio Build Tools** | 勾选 **「使用 C++ 的桌面开发」**（MSVC 链接器） |
 | **Windows SDK** | 含 **rc.exe**（资源编译器）；`npm run tauri:dev` 会自动把 SDK `bin/.../x64` 加入 PATH。未安装时：`winget install Microsoft.WindowsSDK.10.0.26100` |

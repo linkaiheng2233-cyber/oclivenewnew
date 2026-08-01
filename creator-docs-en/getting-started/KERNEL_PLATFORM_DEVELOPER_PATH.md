@@ -9,7 +9,7 @@ One minimal path for **integrators / hardware / gateways**, aligned with [PURE_K
 ## 1. Prereqs
 
 1. Clone **[oclivenewnew](https://github.com/linkaiheng2233-cyber/oclivenewnew)**.
-2. **Rust** + **Node 20+** (for OOCP black-box).
+2. **Rust** + **Node 22+** (for OOCP black-box).
 3. Optional: **oclive doll core** pack next to this repo (school/industry doll delivery template); cross-linked from its `README.md`.
 
 ---

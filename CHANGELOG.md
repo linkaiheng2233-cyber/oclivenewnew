@@ -77,11 +77,12 @@
 - **`human-docs-en/`** 最小集（L0–L3 + 08/09/10 英文摘要）。
 - **`human-docs/08_PR_GATE_MATRIX.md`**、**`03_GLOSSARY.md`**、**`10_SETUP_WINDOWS.md`**。
 - **`handoff/GOOD_FIRST_ISSUES.md`** 策展表。
-- **`npm run check:ci-local`**；`package.json` `engines.node >=20`、**`.nvmrc`**。
+- **`npm run check:ci-local`**；`package.json` `engines.node >=22`、**`.nvmrc`**。
 - 前端：`distros/shared/src/api/plugin/*`、`useMainShell*`、`useChatStorageSettings`、`chatStoreSend`。
 
 ### Changed
 
+- **Node 运行时基线 20 → 22**：当前 ESLint/Vue i18n 工具链已要求 Node 22；`.nvmrc` 成为 GitHub Actions `setup-node` 的单一版本来源，仓库契约测试阻止 workflow、`package.json` 与开发文档再次漂移。
 - **Voice ASR v0.2.1（识别质量）**：聊天栏录音 WebM/Opus 经 `audioCapture.ts` 解码并重采样为 **16 kHz mono WAV** 再送 sherpa（修复此前误当 PCM 导致的识别极差）；麦克风约束启用 echoCancellation / noiseSuppression / autoGainControl；最短录音 350ms；引擎侧识别器缓存、过静音门控（`audio_too_quiet`）、可选 **ffmpeg** 压缩音频回退；新增 **medium** ASR profile 占位（设置里切换，需自行导入模型）。
 
 - **Win98 皮肤 CSS 分层重构**：单体 `theme-win98.css` 拆为 `distros/shared/src/styles/win98/`（L0 tokens · L1 primitives · L2 壳 · L3 面板/组件 co-locate unscoped import）；最大化满框无青绿边、主窗 2px 圆角、对话框 navy 标题条贴边；见 [`MODULE_MAP_AND_HANDOFF.md`](handoff/MODULE_MAP_AND_HANDOFF.md) §13.2 样式依赖表。

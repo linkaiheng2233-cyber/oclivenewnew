@@ -20,7 +20,7 @@
 
 ## 开发环境
 
-- **本仓库**：**Node.js**（**≥ 20**，见根 `package.json` `engines`；可选 `.nvmrc`）、**npm**、**Rust** stable、**Ollama**（本地对话默认路径，可选）。
+- **本仓库**：**Node.js**（**≥ 22**，见根 `package.json` `engines`；可选 `.nvmrc`）、**npm**、**Rust** stable、**Ollama**（本地对话默认路径，可选）。
 - **Windows**：需 **Visual Studio Build Tools**（MSVC 链接器）。快速检查脚本：[`scripts/setup-dev.ps1`](scripts/setup-dev.ps1)；详解 [`human-docs/10_SETUP_WINDOWS.md`](human-docs/10_SETUP_WINDOWS.md)。
 - **克隆后**：在仓库根目录执行 **`npm install`**；首次 **`npm run tauri:dev`** 会拉取前端依赖并由 Tauri 驱动 `src-tauri` 构建。
 - **仅验证 Rust workspace**（含 `oclive_validation`、`oclive-cli`、`oclivenewnew-tauri`）：在根目录执行 **`cargo test --workspace`**，或 **`cargo test --manifest-path distros/desktop-tauri/Cargo.toml`** 仅桌面宿主。

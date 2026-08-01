@@ -2,7 +2,7 @@
 
 | Component | Notes |
 |-----------|--------|
-| **Node.js ≥ 20** | Root `package.json` `engines`; optional `.nvmrc` |
+| **Node.js ≥ 22** | Root `package.json` `engines`; optional `.nvmrc` |
 | **Rust stable** | via `rustup` |
 | **VS Build Tools** | “Desktop development with C++” (MSVC linker) |
 | **WebView2** | Usually preinstalled on Win10/11 |

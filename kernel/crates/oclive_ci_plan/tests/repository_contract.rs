@@ -88,6 +88,40 @@ fn repository_workflow_keeps_expensive_validation_ownership_disjoint() {
 }
 
 #[test]
+fn repository_workflows_share_the_node_runtime_baseline() {
+    let root = repo_root();
+    let nvmrc = fs::read_to_string(root.join(".nvmrc")).expect("read .nvmrc");
+    assert_eq!(nvmrc.trim(), "22");
+
+    let package = fs::read_to_string(root.join("package.json")).expect("read package.json");
+    assert!(package.contains(r#""node": ">=22""#));
+
+    let workflows = root.join(".github/workflows");
+    for entry in fs::read_dir(workflows).expect("read workflows") {
+        let path = entry.expect("workflow entry").path();
+        if path.extension().and_then(|extension| extension.to_str()) != Some("yml") {
+            continue;
+        }
+        let workflow = fs::read_to_string(&path).expect("read workflow");
+        let setup_count = workflow.matches("actions/setup-node@").count();
+        if setup_count == 0 {
+            continue;
+        }
+        assert_eq!(
+            workflow.matches("node-version-file: \".nvmrc\"").count(),
+            setup_count,
+            "{} must source every setup-node version from .nvmrc",
+            path.display()
+        );
+        assert!(
+            !workflow.contains("node-version:"),
+            "{} must not duplicate the Node version literal",
+            path.display()
+        );
+    }
+}
+
+#[test]
 fn repository_rules_cover_targeted_and_fail_safe_examples() {
     let root = repo_root();
     let planner = Planner::load(

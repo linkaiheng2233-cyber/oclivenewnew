@@ -34,7 +34,7 @@
 | 组件 | 视觉线 | 语音线 |
 |------|:------:|:------:|
 | Git | ✅ | ✅ |
-| Node.js ≥ 20 | ✅ | ❌ 默认不需要 |
+| Node.js ≥ 22 | ✅ | ❌ 默认不需要 |
 | Rust + MSVC | ✅（`tauri:dev`） | ⭕ 仅 `cargo build -p oclive-kernel-server` 一次 |
 | `npm install` / `tauri:dev` | ✅ | ❌ 可用无头内核 + 他人编译的 exe |
 | Python 3.10+ | ❌ | ✅ |
@@ -61,7 +61,7 @@
 | # | 软件 | 版本 / 选项 | 验证命令 |
 |---|------|-------------|----------|
 | 1 | **Git** | 最新 stable | `git --version` |
-| 2 | **Node.js** | **≥ 20**（仓库 [`.nvmrc`](../../.nvmrc) 为 `20`） | `node -v` |
+| 2 | **Node.js** | **≥ 22**（仓库 [`.nvmrc`](../../.nvmrc) 为 `22`） | `node -v` |
 | 3 | **Rust** | stable（rustup 默认） | `rustc --version` · `cargo --version` |
 | 4 | **VS Build Tools** | 工作负载：**使用 C++ 的桌面开发** | 能成功 `cargo build` |
 | 5 | **WebView2** | Win10/11 通常已有 | Tauri 窗口能打开 |
@@ -231,7 +231,7 @@ curl.exe -s http://127.0.0.1:8420/health
 
 | 项 | 说明 |
 |----|------|
-| Node ≥ 20、Rust stable | 同 Windows |
+| Node ≥ 22、Rust stable | 同 Windows |
 | macOS | Xcode CLT；Linux 需 `build-essential` 等 |
 | Tauri 依赖 | 见 [Tauri 官方 prerequisites](https://tauri.app/v1/guides/getting-started/prerequisites) |
 | 文档 | [02 三十分钟跑通](../02_THIRTY_MINUTE_START.md) · [CONTRIBUTING.md](../../CONTRIBUTING.md) |

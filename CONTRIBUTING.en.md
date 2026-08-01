@@ -18,7 +18,7 @@ After merges to the default branch, **Dependabot** opens PRs per [`.github/depen
 
 ## Development environment
 
-- **This repo:** **Node.js** (18+ recommended), **npm**, **Rust** stable, **Ollama** (optional for local dialogue).
+- **This repo:** **Node.js ≥ 22** (see root `package.json` engines; optional `.nvmrc`), **npm**, **Rust** stable, **Ollama** (optional for local dialogue).
 - **Windows:** **Visual Studio Build Tools** (MSVC linker).
 - **After clone:** run **`npm install`** at the repo root; **`npm run tauri:dev`** drives the Tauri + `src-tauri` build.
 - **Rust workspace only** (`oclive_validation`, `oclive-cli`, `oclivenewnew-tauri`): **`cargo test --workspace`** from the root, or **`cargo test --manifest-path distros/desktop-tauri/Cargo.toml`** for the desktop crate only.

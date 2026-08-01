@@ -12,7 +12,7 @@
 
 | 必装 | 验证 |
 |------|------|
-| Node ≥ 20 · Rust · MSVC · WebView2 | `.\scripts\setup-dev.ps1` |
+| Node ≥ 22 · Rust · MSVC · WebView2 | `.\scripts\setup-dev.ps1` |
 | Ollama + `hermes3:3b` 或 `qwen2.5:3b` | `ollama list` |
 | 磁盘 ≥ 30GB 空闲 | [DEV_ENVIRONMENT.md §1](./DEV_ENVIRONMENT.md) |
 

@@ -72,11 +72,12 @@
 - **`human-docs-en/`** minimal set (L0–L3 + 08/09/10 English summaries).
 - **`human-docs/08_PR_GATE_MATRIX.md`**, **`03_GLOSSARY.md`**, **`10_SETUP_WINDOWS.md`**.
 - **`handoff/GOOD_FIRST_ISSUES.md`** curated issue table.
-- **`npm run check:ci-local`**; `package.json` `engines.node >=20`, **`.nvmrc`**.
+- **`npm run check:ci-local`**; `package.json` `engines.node >=22`, **`.nvmrc`**.
 - Frontend: `distros/shared/src/api/plugin/*`, `useMainShell*`, `useChatStorageSettings`, `chatStoreSend`.
 
 ### Changed
 
+- **Node runtime baseline 20 → 22**: the current ESLint/Vue i18n toolchain requires Node 22; `.nvmrc` is now the single version source for GitHub Actions `setup-node`, and a repository contract test prevents workflow, `package.json`, and developer-documentation drift.
 - **Voice ASR v0.2.1 (recognition quality)**: chat toolbar WebM/Opus is decoded and resampled to **16 kHz mono WAV** via `audioCapture.ts` before sherpa (fixes mis-decoded PCM garbage); mic constraints use echoCancellation / noiseSuppression / autoGainControl; minimum hold 350ms; engine caches recognizers, rejects too-quiet audio (`audio_too_quiet`), optional **ffmpeg** compressed-audio fallback; **medium** ASR profile stub (switch in settings after importing models).
 
 - **Win98 skin CSS layered refactor**: monolithic `theme-win98.css` split into `distros/shared/src/styles/win98/` (L0 tokens · L1 primitives · L2 shells · L3 panel/component co-located unscoped imports); maximize edge-to-edge (no teal gap), 2px main-window radius, dialog navy caption bars flush to frame; see [`MODULE_MAP_AND_HANDOFF.md`](handoff/MODULE_MAP_AND_HANDOFF.md) §13.2 dependency table.
