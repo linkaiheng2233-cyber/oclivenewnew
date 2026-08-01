@@ -186,11 +186,11 @@ node scripts/measure-adult-stage.mjs `
 语音共存使用：
 
 ```powershell
-python scripts/stress-voice-gpu-runtime.py --gpu-layers 24 --voice-runs 5
+python scripts/stress-voice-gpu-runtime.py --gpu-layers 22 --voice-runs 5
 
 # 真实墙钟硬件 soak（热身后持续 30 分钟；固定轮次模式仍兼容）
 python scripts/stress-voice-gpu-runtime.py `
-  --gpu-layers 24 `
+  --gpu-layers 22 `
   --duration-minutes 30 `
   --gpu-sample-interval-seconds 1 `
   --max-gpu-sample-failures 0 `
@@ -206,6 +206,10 @@ python scripts/stress-voice-gpu-runtime.py `
 2026-07-30 Resource Coordinator Stage 2.3 复验（HEAD `d43f5cf8`，RTX 5060 Laptop **8151MiB**）：`--gpu-layers 24 --voice-runs 10` 的 direct runtime 共存短压测通过，峰值 **6759/8151MiB**、最小余量 **1392MiB**、稳态增长 **17MiB**，未见 OOM、泄漏趋势或残留模型进程；LLM TTFT p50 **179ms**、p95 **1659ms**，语音 TTFC p50 **5008ms**、p95 **6288ms**。全 GPU `--gpu-layers 99 --expect-admission-denied` 在 CosyVoice 分配显存前以 `gpu_admission_denied` 安全拒绝（语音峰值分配 **0MiB**），同时 LLM 仍可用，TTFT **1062ms**。单独语音对照中，短句 TTFC p50/p95 为 **1918/2158ms**，与压力脚本相同的较长片段为 **5538/6254ms**；另一次三轮共存样本出现 **8995ms** 最大值，说明当前 8 秒绝对上限易受长片段和冷抖动影响。以上是适配器直连与短时压力证据，不替代完整 Tauri 宿主 `LLM suspend → Voice → confirmed unload → LLM recover` 实机闭环和长时间 soak。
 
 2026-07-31 schema v2 / 真实时钟模式校准（RTX 5060 Laptop **8151MiB**）：兼容固定轮次 1 组通过，峰值 **6759MiB**、余量 **1392MiB**、GPU 采样 **161** 次零失败；`--duration-minutes 0.2` 从热身后请求 12 秒，实际完成 **14.141s / 2 组**，峰值 **6747MiB**、余量 **1404MiB**、稳态增长 **0MiB**，GPU 采样 **93** 次零失败。两轮采样线程均已 join，报告中的四个子进程 PID 均 `reaped=true`，轮后系统复查相关 `llama-server` / CosyVoice 进程为 **0**，显存回落至约 **1155MiB**。该结果只证明真实分钟分支与清理证据有效，不冒充长时间硬件 soak。
+
+2026-08-01 破坏性验证（测试源 HEAD `a39a987c`，修复 `ec4ce67b`，RTX 5060 Laptop **8151MiB**）：真实内核进程 soak 运行 **299.999s**，完成 **60/60** 次 `/chat`、**61** 个 RSS 样本、零请求/采样失败；RSS **16.37→17.85MiB**（+**1.48MiB / 9.1%**），worker 已 join、子进程已 reap，未作为 72 小时认证。全 GPU 99 层场景在峰值 **6047MiB** 时以 retryable `gpu_admission_denied` 拒绝语音冷载，现有 LLM 仍以 **1036ms** TTFT 完成请求，65 次 GPU 采样零失败。24 层真实五分钟场景在 warm 时出现 **2559MiB < 2560MiB** 的 1MiB 临界拒绝，随后第六次请求才完成冷载，首个有效 TTFC **34964ms**；这是档位余量问题而非 OOM。22 层复测完成 mixed-FP16 warm 与 **46** 对 LLM/TTS，峰值 **6781MiB**、余量 **1370MiB**、稳态增长 **74MiB**，LLM TTFT p50/p95/max **252/282/1943ms**，语音 TTFC **6271/7475/9514ms**，318 次 GPU 采样零失败且进程全回收。该轮资源/回收通过，但因一次 TTFC **9514ms > 8000ms**，整体性能门禁仍为失败；没有调宽阈值。由此将 `gpu_balanced` 保守上限改为 22 层，并把语音尾延迟独立留在 **K-VOICE-09**。
+
+本机原始 JSON（ignored，不作跨机共享基线）位于 `target/oclive-ci/destructive-evidence/`；对应 SHA-256：`kernel-soak-5m.json` = `EA3D0B085A4CE90FCAC116AD5C9FC6B2B6AD6E326B4367BA66E91A586134843E`，`gpu-admission-denied.json` = `1A2ABAE27ED51B7AE86ED79117971D0D43BB9F2C6E7E724EC8BBBDADD01DB6D0`，24 层失败样本 = `68739E2781FC4ABFC383398CDAF70DE57CD466B5DE4E58EF261F044AFD595FA4`，22 层复测 = `0EC8E19A0F4DD2477F50353C917C6705E629ED608FCC6732596082FC623ED68F`。
 
 ## Related
 
