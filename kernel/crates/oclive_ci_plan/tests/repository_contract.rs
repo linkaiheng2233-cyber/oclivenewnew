@@ -1,6 +1,6 @@
 use std::{fs, path::PathBuf};
 
-use oclive_ci_plan::{PlanRequest, Planner};
+use oclive_ci_plan::{GateStrength, PlanRequest, Planner};
 
 fn repo_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -47,6 +47,44 @@ fn repository_catalog_maps_every_declared_workflow_job() {
             );
         }
     }
+}
+
+#[test]
+fn repository_workflow_keeps_expensive_validation_ownership_disjoint() {
+    let root = repo_root();
+    let planner = Planner::load(
+        &root,
+        "data/ci/impact-map.v1.json",
+        "data/ci/validation-catalog.v1.json",
+    )
+    .expect("load repository contracts");
+    let plan = planner
+        .plan(request("release", "unmapped/fail-safe.txt"))
+        .expect("release fallback plan");
+
+    let cargo_audit = plan
+        .selected_validators
+        .iter()
+        .find(|validator| validator.id == "cargo-audit")
+        .expect("cargo-audit validator");
+    assert_eq!(cargo_audit.workflow_jobs, ["dimension5-acceptance"]);
+
+    let npm_audit = plan
+        .selected_validators
+        .iter()
+        .find(|validator| validator.id == "npm-audit")
+        .expect("npm-audit validator");
+    assert_eq!(npm_audit.gate, GateStrength::Required);
+
+    let workflow =
+        fs::read_to_string(root.join(".github/workflows/ci.yml")).expect("read main workflow");
+    assert!(workflow.contains(
+        "cargo clippy --locked --workspace --exclude oclive-cli --all-targets --all-features"
+    ));
+    assert!(workflow.contains("cargo test --locked --workspace --exclude oclive-cli"));
+    assert!(workflow.contains("cargo test --locked -p oclive-cli -- --test-threads=1"));
+    assert!(workflow.contains("npm run typecheck"));
+    assert!(!workflow.contains("\n  cargo-audit:"));
 }
 
 #[test]
