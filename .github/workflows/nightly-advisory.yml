@@ -49,9 +49,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libsoup-3.0-dev build-essential curl wget \
             libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf
-      - name: "loom cfg smoke (full model tests: RUSTFLAGS='--cfg loom' locally)"
+      - name: Loom concurrency model exploration
         working-directory: distros/desktop-tauri
-        run: cargo test --locked --test loom_concurrency loom_tests_require_cfg_loom -- --test-threads=1
+        run: cargo test --locked --release --features loom-tests --test loom_concurrency -- --test-threads=1
 
   fuzz:
     if: github.event_name == 'schedule' || inputs.suite == 'all' || inputs.suite == 'fuzz'

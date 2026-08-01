@@ -165,16 +165,6 @@ fn render_ci_yaml(kind: ProjectCiKind) -> String {
           command: check
           arguments: licenses bans
 
-  loom:
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - name: "loom cfg smoke (full model tests: RUSTFLAGS='--cfg loom' locally)"
-        working-directory: distros/desktop-tauri
-        run: cargo test --test loom_concurrency loom_tests_require_cfg_loom -- --test-threads=1
 "#;
 
     let extra_steps = if kind == ProjectCiKind::KernelServer {
@@ -249,6 +239,8 @@ mod tests {
         let workflow = render_ci_yaml(ProjectCiKind::KernelServer);
         assert!(workflow.contains("node-version: \"22\""));
         assert!(!workflow.contains("node-version: \"20\""));
+        assert!(!workflow.contains("loom:"));
+        assert!(!workflow.contains("loom_concurrency"));
 
         let audit = inspect_audit_ci(&workflow).expect("generated workflow should parse");
         assert_eq!(audit.owners, ["cargo-audit"]);

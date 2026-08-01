@@ -42,7 +42,7 @@ pub struct TestArgs {
     #[arg(long = "miri-only")]
     pub miri_only: Option<String>,
 
-    /// Loom concurrency model tests (`cargo-loom` required)
+    /// Loom concurrency model tests (enables the repository `loom-tests` feature)
     #[arg(long)]
     pub loom: bool,
 

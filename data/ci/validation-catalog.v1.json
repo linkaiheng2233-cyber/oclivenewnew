@@ -92,7 +92,7 @@
     { "id": "test-remote-plugin", "program": "python", "args": ["-m", "py_compile", "examples/remote_plugin_minimal/server.py"] },
     { "id": "test-dual-core", "program": "cargo", "args": ["test", "--locked", "-p", "oclive_kernel_host", "--features", "dual_core"] },
     { "id": "check-arm64", "program": "cargo", "args": ["check", "--locked", "-p", "oclive_kernel_server", "-p", "oclive_kernel_host", "-p", "oclive_kernel_runtime", "--target", "aarch64-unknown-linux-gnu"] },
-    { "id": "test-loom", "program": "cargo", "args": ["test", "--locked", "--test", "loom_concurrency", "loom_tests_require_cfg_loom", "--", "--test-threads=1"], "working_directory": "distros/desktop-tauri" },
+    { "id": "test-loom", "program": "cargo", "args": ["test", "--locked", "--release", "--features", "loom-tests", "--test", "loom_concurrency", "--", "--test-threads=1"], "working_directory": "distros/desktop-tauri" },
     { "id": "test-fuzz", "program": "cargo", "args": ["test", "--locked", "-p", "oclive_validation", "--test", "proptest_fuzz_parsing"] },
     { "id": "bench-cli", "program": "cargo", "args": ["run", "-p", "oclive-cli", "--", "--experimental", "bench"] },
     { "id": "test-visual", "program": "npm", "args": ["run", "test:unit", "--", "--run", "src/adapters/visual/index.test.ts"], "working_directory": "distros/shared" },

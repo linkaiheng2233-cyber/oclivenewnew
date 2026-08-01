@@ -20,6 +20,7 @@
 
 ### Fixed
 
+- **Loom Nightly 真模型恢复**：将会污染全部依赖的全局 `cfg(loom)` 改为桌面宿主包级 `loom-tests` feature；`oclive test --loom`、验证目录与 Nightly 现统一运行两个真实且有界的 Loom 交错模型，不再把未启用模型的占位 smoke 当作并发证据。面向独立生成项目的 `oclive ci init` 不再输出依赖主仓桌面路径的无效 Loom job。
 - **npm 开发工具链供应链收口**：升级 ESLint 10 / Antfu 9.2 与 WebDriverIO 9.30，修复 `brace-expansion`、`fast-xml-parser` 命中和 Unicorn peer 契约冲突；移除捆绑 Vue 2/PostCSS 的 `vue3-sfc-loader`，改用仅在显式不安全 DEV 模式动态加载的官方 Vue SFC 编译器，并将目录插件脚本导入限制为 `vue`。完整与生产 npm audit 均成为硬门禁，仓库内全部官方/示例目录插件 SFC 进入编译回归测试。
 - **CI 执行通道分流**：将 `loom`、`fuzz`、`cli-bench`、`visual-presentation-smoke` 与原生 `e2e-tauri` 从 PR/Push 主工作流迁至独立 `nightly-advisory.yml`，支持每日定时与按验证器手动触发。Nightly 失败在自身工作流真实变红但不阻塞 main，并为 CLI 性能与 fuzz/E2E 失败保留 artifact；主 CI 只保留硬门禁及非阻塞的 Stage 1 影子规划器。
 - **影子规划样本契约**：新增严格版本化的 11 场景模拟语料与 `ci:shadow-samples` 证据收集器，覆盖文档、shared、角色包、目录插件、内核契约、脚手架、examples、Nightly 分层、CI 控制面、依赖锁和未知路径。仓库契约测试锁定模块闭包、验证器、工作流坐标及 fail-safe 原因；生成证据明确标记“仅模拟、未执行验证器、不能证明零漏选”。

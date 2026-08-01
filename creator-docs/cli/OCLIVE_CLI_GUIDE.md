@@ -61,7 +61,7 @@ Scaffold Package 的发现、版本、命名空间、来源锁定和 CI 隔离�
 | **AB1** | `narrative_hint` 契约 | 集成测 + [NARRATIVE_HINT_CONTRACT.md](../testing/NARRATIVE_HINT_CONTRACT.md) |
 | **AB2** | 侧车 / 内核错误分层 | `oclive_validation::protocol_boundary`；OOCP **S12** |
 | **AB3** | `bench --equivalence` | 标准 vs Monolith `/chat` 回复逐条对比（MOCK_LLM） |
-| **AB4** | `test --loom` | `cargo-loom` 模型检查（Nightly `loom` job；失败可见但不阻塞 main） |
+| **AB4** | `test --loom` | 通过包级 `loom-tests` feature 运行 Loom 模型检查（Nightly `loom` job；失败可见但不阻塞 main） |
 | **AB5** | 模糊测试 | [FUZZING.md](../testing/FUZZING.md)；`kernel/fuzz/` + proptest |
 | **AB6** | `bench --soak` | 加速冒烟或显式 `--soak-real-time` 真长稳；采样内核 PID 的 RSS/CPU、请求与回收状态 |
 

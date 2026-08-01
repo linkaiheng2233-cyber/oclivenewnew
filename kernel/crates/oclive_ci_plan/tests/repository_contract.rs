@@ -107,6 +107,11 @@ fn repository_catalog_maps_every_validator_to_its_execution_lane() {
         !nightly_workflow.contains("    continue-on-error: true"),
         "nightly failures must remain visible in their own workflow",
     );
+    assert!(
+        nightly_workflow.contains("--release --features loom-tests --test loom_concurrency"),
+        "nightly Loom must execute the model tests, not only compile the disabled fixture",
+    );
+    assert!(!nightly_workflow.contains("loom_tests_require_cfg_loom"));
 }
 
 #[test]
