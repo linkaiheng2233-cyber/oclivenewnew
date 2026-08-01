@@ -1,6 +1,37 @@
-use std::{fs, path::PathBuf};
+use std::{collections::BTreeSet, fs, path::PathBuf};
 
 use oclive_ci_plan::{GateStrength, PlanRequest, Planner, ValidationTier};
+use serde::Deserialize;
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ShadowScenarioCorpus {
+    schema_version: u32,
+    evidence_kind: String,
+    authoritative_ci_comparison: bool,
+    scenarios: Vec<ShadowScenario>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ShadowScenario {
+    id: String,
+    policy: String,
+    changed_files: Vec<String>,
+    expected: ShadowExpectation,
+    review_note: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ShadowExpectation {
+    direct_modules: Vec<String>,
+    affected_modules: Vec<String>,
+    selected_validators: Vec<String>,
+    workflow_jobs: Vec<String>,
+    fallback_full: bool,
+    fallback_reason_prefixes: Vec<String>,
+}
 
 fn repo_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -224,5 +255,117 @@ fn repository_rules_cover_targeted_and_fail_safe_examples() {
                 .any(|selection| selection.id == validator),
             "missing scaffold validator {validator}"
         );
+    }
+}
+
+#[test]
+fn repository_shadow_scenario_corpus_matches_planner_contract() {
+    let root = repo_root();
+    let planner = Planner::load(
+        &root,
+        "data/ci/impact-map.v1.json",
+        "data/ci/validation-catalog.v1.json",
+    )
+    .expect("load repository contracts");
+    let corpus: ShadowScenarioCorpus = serde_json::from_str(
+        &fs::read_to_string(root.join("data/ci/shadow-scenarios.v1.json"))
+            .expect("read shadow scenario corpus"),
+    )
+    .expect("parse shadow scenario corpus");
+
+    assert_eq!(corpus.schema_version, 1);
+    assert_eq!(corpus.evidence_kind, "planner_contract_simulation");
+    assert!(!corpus.authoritative_ci_comparison);
+    assert!(corpus.scenarios.len() >= 10);
+
+    for scenario in corpus.scenarios {
+        assert!(!scenario.review_note.trim().is_empty(), "{}", scenario.id);
+        let expects_unmapped = scenario
+            .expected
+            .fallback_reason_prefixes
+            .iter()
+            .any(|prefix| prefix.starts_with("unmapped_changed_path:"));
+        if !expects_unmapped {
+            for changed_file in &scenario.changed_files {
+                assert!(
+                    root.join(changed_file).is_file(),
+                    "{} references missing sample path `{changed_file}`",
+                    scenario.id
+                );
+            }
+        }
+        let plan = planner
+            .plan(PlanRequest {
+                base_sha: "simulated-parent".to_owned(),
+                head_sha: "simulated-head".to_owned(),
+                policy: scenario.policy,
+                shadow: true,
+                changed_files: scenario.changed_files,
+            })
+            .unwrap_or_else(|error| panic!("{} failed to plan: {error}", scenario.id));
+        let direct_modules = plan
+            .direct_modules
+            .iter()
+            .map(|selection| selection.id.clone())
+            .collect::<Vec<_>>();
+        let affected_modules = plan
+            .affected_modules
+            .iter()
+            .map(|selection| selection.id.clone())
+            .collect::<Vec<_>>();
+        let selected_validators = plan
+            .selected_validators
+            .iter()
+            .map(|validator| validator.id.clone())
+            .collect::<Vec<_>>();
+        let workflow_jobs = plan
+            .selected_validators
+            .iter()
+            .flat_map(|validator| validator.workflow_jobs.iter().cloned())
+            .collect::<BTreeSet<_>>()
+            .into_iter()
+            .collect::<Vec<_>>();
+
+        assert_eq!(
+            direct_modules, scenario.expected.direct_modules,
+            "{}",
+            scenario.id
+        );
+        assert_eq!(
+            affected_modules, scenario.expected.affected_modules,
+            "{}",
+            scenario.id
+        );
+        assert_eq!(
+            selected_validators, scenario.expected.selected_validators,
+            "{}",
+            scenario.id
+        );
+        assert_eq!(
+            workflow_jobs, scenario.expected.workflow_jobs,
+            "{}",
+            scenario.id
+        );
+        assert_eq!(
+            plan.fallback.full, scenario.expected.fallback_full,
+            "{}",
+            scenario.id
+        );
+        assert_eq!(
+            plan.fallback.reasons.len(),
+            scenario.expected.fallback_reason_prefixes.len(),
+            "{}",
+            scenario.id
+        );
+        for prefix in scenario.expected.fallback_reason_prefixes {
+            assert!(
+                plan.fallback
+                    .reasons
+                    .iter()
+                    .any(|reason| reason.starts_with(&prefix)),
+                "{} missing fallback reason prefix `{prefix}`",
+                scenario.id
+            );
+        }
     }
 }

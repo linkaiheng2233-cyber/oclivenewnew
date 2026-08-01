@@ -120,6 +120,7 @@ node -e "const fs=require('fs'),path=require('path');function walk(d,a=[]){for(c
 
 - `ci-impact-plan` 标记 `continue-on-error`，只发布 `plan.json`、Job Summary 与 artifact；**不得**把它列为硬门禁或据此跳过现有 job。
 - `oclive ci plan` 的 `selected_validators` 是待观测建议，不是“已执行”证据；验收结论仍须引用实际 job 终态。
+- `npm run ci:shadow-samples` 的 JSON/Markdown 是**规划模拟**：只能证明固定样本仍按当前规则路由；不得把 11/11 模拟通过汇报成 11 次远端 CI、零漏选或 validator 已执行。
 - 未映射路径、损坏模块描述、未知 required 扩展及中央高风险规则会使当前 policy `full_fallback`；这代表规划器选择保守范围，不代表远端全量已经通过。
 - 规划 SSOT 与脚手架边界见 [`SOMEDAY_TOOLCHAIN_CI.md`](../creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md)。进入选择性执行前，必须先完成 Stage 2 漏选/过选对比并另行更新本协议。
 

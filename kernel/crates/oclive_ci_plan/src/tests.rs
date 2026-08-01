@@ -352,6 +352,7 @@ fn bundled_json_schemas_are_valid_json_objects() {
         include_str!("../schemas/impact-map.schema.json"),
         include_str!("../schemas/validation-catalog.schema.json"),
         include_str!("../schemas/ci-plan.schema.json"),
+        include_str!("../schemas/shadow-scenarios.schema.json"),
     ] {
         let value: Value = serde_json::from_str(schema).expect("schema must parse");
         assert_eq!(

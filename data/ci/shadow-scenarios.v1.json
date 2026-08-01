@@ -1,0 +1,161 @@
+{
+  "schema_version": 1,
+  "evidence_kind": "planner_contract_simulation",
+  "authoritative_ci_comparison": false,
+  "scenarios": [
+    {
+      "id": "docs-pr",
+      "policy": "pull_request",
+      "changed_files": ["creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md"],
+      "expected": {
+        "direct_modules": ["oclive.docs"],
+        "affected_modules": ["oclive.docs"],
+        "selected_validators": ["dimension5-acceptance", "stale-paths"],
+        "workflow_jobs": ["dimension5-acceptance", "stale-paths"],
+        "fallback_full": false,
+        "fallback_reason_prefixes": []
+      },
+      "review_note": "Narrow documentation ownership remains targeted."
+    },
+    {
+      "id": "shared-frontend-pr",
+      "policy": "pull_request",
+      "changed_files": ["distros/shared/src/utils/compilePluginVueSfc.ts"],
+      "expected": {
+        "direct_modules": ["oclive.shared"],
+        "affected_modules": ["oclive.chat-pro", "oclive.desktop", "oclive.plugins", "oclive.roles", "oclive.shared", "oclive.theater"],
+        "selected_validators": ["cross-host-e2e", "dimension5-acceptance", "frontend", "npm-audit", "oocp-test-suite", "plugins-index", "remote-plugin-demo", "rust-workspace"],
+        "workflow_jobs": ["cross-host-e2e", "dimension5-acceptance", "frontend", "npm-audit", "oocp-test-suite", "plugins-index", "remote-plugin-demo", "rust"],
+        "fallback_full": false,
+        "fallback_reason_prefixes": []
+      },
+      "review_note": "The frontend impact cycle is conservative and selects Rust plus plugin/host checks; retain as over-selection evidence."
+    },
+    {
+      "id": "role-pack-pr",
+      "policy": "pull_request",
+      "changed_files": ["distros/chat-pro/roles/mumu/config.json"],
+      "expected": {
+        "direct_modules": ["oclive.chat-pro", "oclive.roles"],
+        "affected_modules": ["oclive.chat-pro", "oclive.desktop", "oclive.plugins", "oclive.roles", "oclive.shared", "oclive.theater"],
+        "selected_validators": ["cross-host-e2e", "dimension5-acceptance", "frontend", "npm-audit", "oocp-test-suite", "plugins-index", "remote-plugin-demo", "rust-workspace"],
+        "workflow_jobs": ["cross-host-e2e", "dimension5-acceptance", "frontend", "npm-audit", "oocp-test-suite", "plugins-index", "remote-plugin-demo", "rust"],
+        "fallback_full": false,
+        "fallback_reason_prefixes": []
+      },
+      "review_note": "Nested path selectors intentionally record both the Chat Pro parent and role-pack domain; the resulting frontend cycle is conservative."
+    },
+    {
+      "id": "directory-plugin-pr",
+      "policy": "pull_request",
+      "changed_files": ["distros/chat-pro/plugins/com.oclive.voice.asr/manifest.json"],
+      "expected": {
+        "direct_modules": ["oclive.chat-pro", "oclive.plugins"],
+        "affected_modules": ["oclive.chat-pro", "oclive.desktop", "oclive.plugins", "oclive.roles", "oclive.shared", "oclive.theater"],
+        "selected_validators": ["cross-host-e2e", "dimension5-acceptance", "frontend", "npm-audit", "oocp-test-suite", "plugins-index", "remote-plugin-demo", "rust-workspace"],
+        "workflow_jobs": ["cross-host-e2e", "dimension5-acceptance", "frontend", "npm-audit", "oocp-test-suite", "plugins-index", "remote-plugin-demo", "rust"],
+        "fallback_full": false,
+        "fallback_reason_prefixes": []
+      },
+      "review_note": "Plugin changes propagate through the host-facing Chat Pro cycle; retain the broad selection until real samples justify a narrower edge."
+    },
+    {
+      "id": "kernel-contract-pr",
+      "policy": "pull_request",
+      "changed_files": ["kernel/crates/oclive_kernel_types/src/lib.rs"],
+      "expected": {
+        "direct_modules": ["oclive.kernel-contracts"],
+        "affected_modules": ["oclive.chat-pro", "oclive.cli", "oclive.desktop", "oclive.examples", "oclive.kernel-contracts", "oclive.kernel-runtime", "oclive.plugins", "oclive.roles", "oclive.shared", "oclive.theater"],
+        "selected_validators": ["cargo-audit", "cli", "cross-host-e2e", "dimension5-acceptance", "frontend", "layering-ratchet", "npm-audit", "oocp-test-suite", "plugins-index", "remote-plugin-demo", "rust-workspace"],
+        "workflow_jobs": ["cli", "cross-host-e2e", "dimension5-acceptance", "frontend", "layering-ratchet", "npm-audit", "oocp-test-suite", "plugins-index", "remote-plugin-demo", "rust"],
+        "fallback_full": false,
+        "fallback_reason_prefixes": []
+      },
+      "review_note": "Kernel contracts reach every runtime consumer and correctly approach the full PR gate without using fail-safe fallback."
+    },
+    {
+      "id": "scaffold-pr",
+      "policy": "pull_request",
+      "changed_files": ["kernel/crates/oclive_scaffold/src/lib.rs"],
+      "expected": {
+        "direct_modules": ["oclive.scaffold"],
+        "affected_modules": ["oclive.cli", "oclive.scaffold"],
+        "selected_validators": ["cli", "cross-host-e2e", "dimension5-acceptance", "rust-workspace"],
+        "workflow_jobs": ["cli", "cross-host-e2e", "dimension5-acceptance", "rust"],
+        "fallback_full": false,
+        "fallback_reason_prefixes": []
+      },
+      "review_note": "Scaffold changes stay bounded to the scaffold/CLI contract and its cross-host generator evidence."
+    },
+    {
+      "id": "example-pr",
+      "policy": "pull_request",
+      "changed_files": ["examples/oocp-test-suite/run.mjs"],
+      "expected": {
+        "direct_modules": ["oclive.examples"],
+        "affected_modules": ["oclive.examples"],
+        "selected_validators": ["cross-host-e2e", "dimension5-acceptance", "oocp-test-suite", "remote-plugin-demo", "rust-workspace"],
+        "workflow_jobs": ["cross-host-e2e", "dimension5-acceptance", "oocp-test-suite", "remote-plugin-demo", "rust"],
+        "fallback_full": false,
+        "fallback_reason_prefixes": []
+      },
+      "review_note": "Examples are isolated as a domain while retaining their executable host and OOCP checks."
+    },
+    {
+      "id": "kernel-runtime-nightly",
+      "policy": "nightly",
+      "changed_files": ["kernel/crates/oclive_kernel_host/src/lib.rs"],
+      "expected": {
+        "direct_modules": ["oclive.kernel-runtime"],
+        "affected_modules": ["oclive.chat-pro", "oclive.cli", "oclive.desktop", "oclive.examples", "oclive.kernel-runtime", "oclive.plugins", "oclive.roles", "oclive.shared", "oclive.theater"],
+        "selected_validators": ["cargo-audit", "cli", "cli-bench", "cross-host-e2e", "dimension5-acceptance", "e2e-tauri", "frontend", "fuzz", "kernel-host-dual-core", "layering-ratchet", "loom", "npm-audit", "oocp-test-suite", "plugins-index", "remote-plugin-demo", "rust-arm64-cross", "rust-workspace", "visual-presentation-smoke"],
+        "workflow_jobs": ["cli", "cli-bench", "cross-host-e2e", "dimension5-acceptance", "e2e-tauri", "frontend", "fuzz", "kernel-host-dual-core", "layering-ratchet", "loom", "npm-audit", "oocp-test-suite", "plugins-index", "remote-plugin-demo", "rust", "rust-arm64-cross", "visual-presentation-smoke"],
+        "fallback_full": false,
+        "fallback_reason_prefixes": []
+      },
+      "review_note": "Nightly policy adds all five advisory lanes while preserving required lower-tier validators."
+    },
+    {
+      "id": "ci-control-pr",
+      "policy": "pull_request",
+      "changed_files": [".github/workflows/ci.yml"],
+      "expected": {
+        "direct_modules": ["oclive.repo-tooling"],
+        "affected_modules": ["oclive.chat-pro", "oclive.ci-planner", "oclive.cli", "oclive.desktop", "oclive.docs", "oclive.examples", "oclive.kernel-contracts", "oclive.kernel-runtime", "oclive.plugins", "oclive.repo-tooling", "oclive.roles", "oclive.scaffold", "oclive.shared", "oclive.theater"],
+        "selected_validators": ["cargo-audit", "cli", "cross-host-e2e", "dimension5-acceptance", "frontend", "layering-ratchet", "npm-audit", "oocp-test-suite", "plugins-index", "remote-plugin-demo", "rust-workspace", "stale-paths"],
+        "workflow_jobs": ["cli", "cross-host-e2e", "dimension5-acceptance", "frontend", "layering-ratchet", "npm-audit", "oocp-test-suite", "plugins-index", "remote-plugin-demo", "rust", "stale-paths"],
+        "fallback_full": true,
+        "fallback_reason_prefixes": ["risk_override:ci-control-plane:"]
+      },
+      "review_note": "CI control-plane edits must fail safe to the complete PR policy."
+    },
+    {
+      "id": "workspace-dependency-pr",
+      "policy": "pull_request",
+      "changed_files": ["package-lock.json"],
+      "expected": {
+        "direct_modules": ["oclive.repo-tooling"],
+        "affected_modules": ["oclive.chat-pro", "oclive.ci-planner", "oclive.cli", "oclive.desktop", "oclive.docs", "oclive.examples", "oclive.kernel-contracts", "oclive.kernel-runtime", "oclive.plugins", "oclive.repo-tooling", "oclive.roles", "oclive.scaffold", "oclive.shared", "oclive.theater"],
+        "selected_validators": ["cargo-audit", "cli", "cross-host-e2e", "dimension5-acceptance", "frontend", "layering-ratchet", "npm-audit", "oocp-test-suite", "plugins-index", "remote-plugin-demo", "rust-workspace", "stale-paths"],
+        "workflow_jobs": ["cli", "cross-host-e2e", "dimension5-acceptance", "frontend", "layering-ratchet", "npm-audit", "oocp-test-suite", "plugins-index", "remote-plugin-demo", "rust", "stale-paths"],
+        "fallback_full": true,
+        "fallback_reason_prefixes": ["risk_override:workspace-dependencies:"]
+      },
+      "review_note": "Workspace dependency graph edits must fail safe regardless of direct module ownership."
+    },
+    {
+      "id": "unknown-path-pr",
+      "policy": "pull_request",
+      "changed_files": ["future-module/custom.txt"],
+      "expected": {
+        "direct_modules": [],
+        "affected_modules": ["oclive.chat-pro", "oclive.ci-planner", "oclive.cli", "oclive.desktop", "oclive.docs", "oclive.examples", "oclive.kernel-contracts", "oclive.kernel-runtime", "oclive.plugins", "oclive.repo-tooling", "oclive.roles", "oclive.scaffold", "oclive.shared", "oclive.theater"],
+        "selected_validators": ["cargo-audit", "cli", "cross-host-e2e", "dimension5-acceptance", "frontend", "layering-ratchet", "npm-audit", "oocp-test-suite", "plugins-index", "remote-plugin-demo", "rust-workspace", "stale-paths"],
+        "workflow_jobs": ["cli", "cross-host-e2e", "dimension5-acceptance", "frontend", "layering-ratchet", "npm-audit", "oocp-test-suite", "plugins-index", "remote-plugin-demo", "rust", "stale-paths"],
+        "fallback_full": true,
+        "fallback_reason_prefixes": ["unmapped_changed_path:"]
+      },
+      "review_note": "Unknown future paths must never become an accidental zero-test plan."
+    }
+  ]
+}

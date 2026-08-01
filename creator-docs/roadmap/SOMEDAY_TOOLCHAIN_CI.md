@@ -91,12 +91,20 @@ Stage 1 先为仓内领域模块建立描述；既有模块允许渐进迁移，
 | 阶段 | 行为 | 权威性 |
 |------|------|--------|
 | **Stage 1 · Shadow** | 计算建议范围、输出报告；主 CI 硬门禁全部照常运行 | 只观察，禁止据此跳 job |
-| **Stage 2 · Compare** | 对比“规划器本会跳过的验证”和全量结果，积累漏选/过选数据 | 全量仍权威 |
+| **Stage 2 · Compare** | 对比“规划器本会跳过的验证”和全量结果，积累漏选/过选数据；模拟语料只做路由回归 | 实际远端结果仍权威 |
 | **Stage 3 · PR selective** | 只对低风险且有足够证据的 PR 启用选择性验证 | 高风险规则与未知路径仍全量 |
 | **Stage 4 · Merge/Nightly split** | 合并门禁保留跨模块/高风险全量；长时 soak、GPU、性能移至 Nightly/Release | Nightly 不替代合并前硬门禁 |
 | **Stage 5 · Ecosystem** | 脚手架生成/校验模块描述，外部模块复用规划与契约检查 | 外部流水线自行负责 |
 
 Stage 1 的成功条件不是“CI 变快”，而是规划结果确定、可解释、fail-safe，且能用全量 CI 的事实验证没有漏选。只有积累过多个真实改动类别后，才能讨论 Stage 3 的跳过策略。
+
+### 4.1 Shadow 证据分级
+
+- **规划模拟**：`data/ci/shadow-scenarios.v1.json` 固定代表性 changed paths、期望模块闭包、validator/job 坐标和 fail-safe 原因；`npm run ci:shadow-samples` 生成 JSON + Markdown 到 `target/oclive-ci/shadow-samples/`，但不执行任何 validator。
+- **真实 Compare**：把某次实际 diff 的 `plan.json` 与同一冻结 SHA 的全部远端 job 终态绑定，才可记录漏选/过选；失败后修复重跑不能被合并成“从未失败”。
+- **当前模拟基线（2026-08-01）**：**11** 场景全部契约一致，其中 **8** 个靶向、**3** 个 fail-safe；docs 为 2 个 validator，scaffold 为 4 个，内核 Nightly 为 18 个（12 个主 job 坐标 + 5 个 Nightly 坐标，其中两个 validator 共享 Dimension 5）。shared / 角色包 / 目录插件均因当前前端影响环选中 8 个 validator（含 Rust），作为过选候选保留，不能仅凭模拟擅自删边。
+
+模拟通过只能证明规划器按**当前规则**稳定工作；它不能证明规则本身没有遗漏，也不能替代真实进程、硬件或远端平台证据。
 
 ## 5. 脚手架的辅助边界
 
