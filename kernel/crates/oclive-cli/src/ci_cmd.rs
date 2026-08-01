@@ -133,7 +133,7 @@ fn render_ci_yaml(kind: ProjectCiKind) -> String {
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
       - uses: dtolnay/rust-toolchain@stable
       - name: OOCP test suite (enable when kernel linked to oclivenewnew)
         run: echo "skipped — link --kernel-source in scaffold to enable"
@@ -145,7 +145,6 @@ fn render_ci_yaml(kind: ProjectCiKind) -> String {
     let audit_job = r#"
   cargo-audit:
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -173,7 +172,7 @@ fn render_ci_yaml(kind: ProjectCiKind) -> String {
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - name: loom cfg smoke (full model tests: RUSTFLAGS='--cfg loom' locally)
+      - name: "loom cfg smoke (full model tests: RUSTFLAGS='--cfg loom' locally)"
         working-directory: distros/desktop-tauri
         run: cargo test --test loom_concurrency loom_tests_require_cfg_loom -- --test-threads=1
 "#;
@@ -234,6 +233,7 @@ jobs:
 #[cfg(test)]
 mod tests {
     use super::{render_ci_yaml, ProjectCiKind};
+    use crate::lint_audit_ci::inspect_audit_ci;
 
     #[test]
     fn generated_kernel_ci_uses_the_global_experimental_gate() {
@@ -242,5 +242,16 @@ mod tests {
         assert!(workflow.contains("-- --experimental test"));
         assert!(!workflow.contains("oclive-cli -- bench"));
         assert!(!workflow.contains("oclive-cli -- test"));
+    }
+
+    #[test]
+    fn generated_kernel_ci_uses_current_node_and_required_audit_policy() {
+        let workflow = render_ci_yaml(ProjectCiKind::KernelServer);
+        assert!(workflow.contains("node-version: \"22\""));
+        assert!(!workflow.contains("node-version: \"20\""));
+
+        let audit = inspect_audit_ci(&workflow).expect("generated workflow should parse");
+        assert_eq!(audit.owners, ["cargo-audit"]);
+        assert!(audit.soft_owners.is_empty());
     }
 }

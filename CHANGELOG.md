@@ -20,6 +20,7 @@
 
 ### Fixed
 
+- **官方 CI 脚手架与审计诊断对齐**：`oclive ci init` 生成的工作流改用 Node 22，Cargo 审计默认失败即红，并修复 Loom step 名含未引号冒号导致的无效 YAML；`oclive lint --audit-ci` 现在按 YAML job/step 语义识别独立 `cargo audit` 或 Dimension 5 唯一所有权，只对审计所属 job/step 判断 `continue-on-error`，不会再被其他 soft job 误导。
 - **成人分拍结构化输出与实机容量标定**：修复通用 Prompt 末尾“只输出角色台词”覆盖 Chat Pro 成人 JSON 契约的问题；成人请求现在以最终专用输出边界收尾，真实 Qwen2.5 7B GGUF 在缓存深度 1/2/4/8 下 15/15 拍完整结构化、零回退。新增 `scripts/measure-adult-stage.mjs` 复现脚本，并依据 RTX 5060 Laptop 8GB 与 CosyVoice2 共享显存测试把默认值保持为 2、建议范围标定为 2～4。
 - **工程路径与启动诊断收敛**：修复 `oclive-cli init --kernel-source` 仍生成旧 `src-tauri` / 根 `crates` 路径的问题，并加入真实仓库布局断言；桌面、无头服务与生成工程共享同一 `--port` 解析，缺失、零值或非法端口均给出稳定诊断并以退出码 2 终止；应用数据目录初始化、共享内核备份/回滚与云模型 token 文件备份失败不再静默，共享内核提升也不再重复执行。
 - **目录插件界面与语音侧车启动**：修复 Windows/WebView2 回传 `ocliveplugin://localhost/...` 时语音识别区和侧栏插件显示 `unknown uri`；整壳与全部 UI 插槽现在按平台生成协议地址——Linux/macOS/iOS 使用 `ocliveplugin://localhost/...`，Windows/Android 使用宿主映射的 `https://ocliveplugin.localhost/...`，避免非 Windows 发行版只挂载空 iframe。受限 iframe 统一在插件脚本执行前注入桥接并由父宿主注册 broker，修复语音识别 `OCLive bridge unavailable`；麦克风采集改由可信父宿主代理给官方语音工具栏，避免 opaque-origin iframe 报 `Invalid security origin`，且不放宽 `allow-same-origin`；采集启停采用串行状态机，授权途中取消不会遗留录音流。Voice v0.5 的转写提交带幂等 id，兼容旧插件的短窗重复事件，并恢复不受插件订阅白名单影响的宿主内部预热/流式朗读事件；流式 TTS 现在只按完整播放结束的音频扣除最终回复、首段不再切成三字碎片或等待额外 directive RPC，切换消息/角色会中止旧合成与已排程 PCM；正式 desktop profile 启用已通过基准的 Deep 前缀缓存。mumu 的安全回退卡片在 iframe 首次 load 时会补注册 broker，状态刷新保留旧内容并按角色/身份事件原位更新；插件 bootstrap、身份、轮询与卡片刷新均拒绝旧角色/旧代次结果回写。目录插件子进程启动即载入持久化 `config.json`，流式朗读只直连已确认可用的侧车，否则直接走 RPC；协议与配置失败写入带稳定标识的 `oclive_plugin` 日志。

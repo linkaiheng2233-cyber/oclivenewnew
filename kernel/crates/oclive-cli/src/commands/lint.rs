@@ -21,7 +21,7 @@ pub struct LintArgs {
     #[arg(long)]
     pub deps: bool,
 
-    /// Check `.github/workflows/ci.yml` for cargo-audit job configuration
+    /// Check `.github/workflows/ci.yml` for required cargo-audit ownership
     #[arg(long = "audit-ci")]
     pub audit_ci: bool,
 
