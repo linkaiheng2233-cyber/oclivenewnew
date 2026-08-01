@@ -1,14 +1,18 @@
-//! Read-only Scaffold Package discovery and contract diagnostics.
+//! Scaffold Package discovery, diagnostics, locking, and bounded declarative generation.
 
-use std::path::{Path, PathBuf};
+use std::{
+    collections::BTreeMap,
+    path::{Path, PathBuf},
+};
 
 use anyhow::{bail, Context, Result};
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use oclive_scaffold::{
-    build_scaffold_lock, load_scaffold_manifest, merge_scaffold_configs,
+    build_scaffold_lock, generate_scaffold, load_scaffold_manifest, merge_scaffold_configs,
     project_scaffold_config_path, project_scaffold_lock_path, read_optional_scaffold_config,
-    resolve_scaffold_catalog, scan_scaffold_catalog, user_scaffold_config_path,
-    write_scaffold_lock_atomic, CatalogScan, ResolvedCatalog, ScaffoldConfig, ScaffoldSource,
+    read_scaffold_lock, resolve_scaffold_catalog, scan_scaffold_catalog, user_scaffold_config_path,
+    write_scaffold_lock_atomic, CatalogScan, ResolvedCatalog, ResolvedPackage, ScaffoldConfig,
+    ScaffoldGenerationRequest, ScaffoldSource, ScaffoldTrust,
 };
 use semver::Version;
 
@@ -28,6 +32,8 @@ pub enum ScaffoldCommands {
     Validate(ScaffoldValidateArgs),
     /// Resolve sources deterministically; optionally persist the project lock
     Resolve(ScaffoldResolveArgs),
+    /// Materialize one locked declarative generator into a new directory
+    Generate(ScaffoldGenerateArgs),
 }
 
 #[derive(Args, Debug, Clone)]
@@ -72,6 +78,28 @@ pub struct ScaffoldResolveArgs {
     pub write_lock: bool,
 }
 
+#[derive(Args, Debug)]
+pub struct ScaffoldGenerateArgs {
+    /// Reverse-domain package ID
+    pub id: String,
+    /// Generator ID declared by the selected package
+    pub generator: String,
+    /// New output directory; it must not already exist
+    #[arg(long)]
+    pub output: PathBuf,
+    /// String variable override in key=value form (repeatable)
+    #[arg(long = "set", value_name = "KEY=VALUE")]
+    pub variables: Vec<String>,
+    /// Acknowledge the selected project/user package for this invocation only
+    #[arg(long)]
+    pub accept_untrusted: bool,
+    /// Validate, verify digests, and render the plan without writing files
+    #[arg(long)]
+    pub dry_run: bool,
+    #[command(flatten)]
+    pub catalog: ScaffoldCatalogArgs,
+}
+
 #[derive(Debug, Clone, Copy, ValueEnum)]
 #[clap(rename_all = "snake_case")]
 pub enum ScaffoldSourceArg {
@@ -112,6 +140,7 @@ pub fn run(cli: ScaffoldCli) -> Result<()> {
         ScaffoldCommands::Inspect(args) => run_inspect(args),
         ScaffoldCommands::Validate(args) => run_validate(args),
         ScaffoldCommands::Resolve(args) => run_resolve(args),
+        ScaffoldCommands::Generate(args) => run_generate(args),
     }
 }
 
@@ -257,8 +286,81 @@ fn run_resolve(args: ScaffoldResolveArgs) -> Result<()> {
     Ok(())
 }
 
+fn run_generate(args: ScaffoldGenerateArgs) -> Result<()> {
+    let context = resolve_context(&args.catalog)?;
+    let package = selected_package(&context.resolved, &args.id)?;
+    let variables = parse_variable_overrides(&args.variables)?;
+    let lock_path = project_scaffold_lock_path(&context.project_root);
+    let lock = if package.trust == ScaffoldTrust::UntrustedLocal
+        && lock_path
+            .try_exists()
+            .with_context(|| format!("inspect scaffold lock {}", lock_path.display()))?
+    {
+        Some(
+            read_scaffold_lock(&lock_path)
+                .with_context(|| format!("read scaffold lock {}", lock_path.display()))?,
+        )
+    } else {
+        None
+    };
+    if package.trust == ScaffoldTrust::UntrustedLocal {
+        eprintln!(
+            "UNTRUSTED SCAFFOLD: {}@{} from {}:{} is maintained by `{}`.",
+            package.manifest.package.id,
+            package.manifest.package.version,
+            package.source.as_str(),
+            package.locator,
+            package.manifest.package.maintainer
+        );
+        eprintln!(
+            "This invocation only permits bounded project.write materialization; requested process, network, environment, user-config, and CI capabilities are not granted."
+        );
+    }
+    let package_root = package_root(&context, package);
+    let plan = generate_scaffold(&ScaffoldGenerationRequest {
+        package,
+        package_root: &package_root,
+        generator_id: &args.generator,
+        output: &args.output,
+        variables: &variables,
+        lock: lock.as_ref(),
+        accept_untrusted: args.accept_untrusted,
+        dry_run: args.dry_run,
+    })
+    .with_context(|| {
+        format!(
+            "generate scaffold {}:{}",
+            package.manifest.package.id, args.generator
+        )
+    })?;
+    if args.catalog.json {
+        println!("{}", serde_json::to_string_pretty(&plan)?);
+    } else {
+        let action = if args.dry_run {
+            "Validated generation plan for"
+        } else {
+            "Generated"
+        };
+        println!(
+            "{action} {}:{} -> {} ({} files)",
+            package.manifest.package.id,
+            args.generator,
+            plan.output,
+            plan.provenance.files.len()
+        );
+        if !args.dry_run {
+            println!(
+                "Provenance: {}/.oclive/scaffold.provenance.json",
+                plan.output.trim_end_matches('/')
+            );
+        }
+    }
+    Ok(())
+}
+
 struct ResolutionContext {
     project_root: PathBuf,
+    oclive_home: PathBuf,
     scan: CatalogScan,
     resolved: ResolvedCatalog,
 }
@@ -288,9 +390,58 @@ fn resolve_context(args: &ScaffoldCatalogArgs) -> Result<ResolutionContext> {
     let resolved = resolve_scaffold_catalog(&scan, &config, &reader_version)?;
     Ok(ResolutionContext {
         project_root,
+        oclive_home,
         scan,
         resolved,
     })
+}
+
+fn selected_package<'a>(catalog: &'a ResolvedCatalog, id: &str) -> Result<&'a ResolvedPackage> {
+    catalog
+        .packages
+        .iter()
+        .find(|package| package.manifest.package.id == id)
+        .with_context(|| {
+            let available = catalog
+                .packages
+                .iter()
+                .map(|package| package.manifest.package.id.as_str())
+                .collect::<Vec<_>>()
+                .join(", ");
+            format!("scaffold package `{id}` is not selected; available: {available}")
+        })
+}
+
+fn package_root(context: &ResolutionContext, package: &ResolvedPackage) -> PathBuf {
+    match package.source {
+        ScaffoldSource::Project => context
+            .project_root
+            .join(".oclive")
+            .join("scaffolds")
+            .join(&package.locator),
+        ScaffoldSource::User => context.oclive_home.join("scaffolds").join(&package.locator),
+        // Built-in generators return delegation guidance before reading this placeholder.
+        ScaffoldSource::Official => context.project_root.clone(),
+    }
+}
+
+fn parse_variable_overrides(values: &[String]) -> Result<BTreeMap<String, String>> {
+    let mut variables = BTreeMap::new();
+    for value in values {
+        let (name, resolved_value) = value
+            .split_once('=')
+            .with_context(|| format!("invalid --set `{value}`; expected KEY=VALUE"))?;
+        if name.is_empty() {
+            bail!("invalid --set `{value}`; KEY cannot be empty");
+        }
+        if variables
+            .insert(name.to_string(), resolved_value.to_string())
+            .is_some()
+        {
+            bail!("duplicate --set for `{name}`");
+        }
+    }
+    Ok(variables)
 }
 
 fn apply_source_order_override(
