@@ -25,6 +25,25 @@ export interface CosyvoiceStreamResult {
   ttfc_ms?: number
   elapsed_ms?: number
   stream_mode?: string
+  timings_schema_version?: number
+  timings_ms?: CosyvoiceStreamTimings
+  prompt_cache_hit?: boolean
+}
+
+export interface CosyvoiceStreamTimings {
+  request_preprocess?: number
+  response_setup?: number
+  synth_lock_wait?: number
+  prompt_prepare?: number
+  inference_open?: number
+  first_tensor_wait?: number
+  pre_token2wav_wait?: number
+  first_token2wav?: number
+  speech_token_job_total?: number
+  first_pcm_encode?: number
+  server_first_tensor?: number
+  server_payload_ready?: number
+  total?: number
 }
 
 export interface CosyvoicePlaybackObserver {
@@ -43,6 +62,8 @@ function logVoiceStreamTelemetry(result: CosyvoiceStreamResult): void {
     elapsed_ms: result.elapsed_ms,
     chunks: result.chunks,
     stream_mode: result.stream_mode,
+    timings_ms: result.timings_ms,
+    prompt_cache_hit: result.prompt_cache_hit,
   })
 }
 
@@ -62,6 +83,9 @@ interface NdjsonEvent {
   ttfc_ms?: number
   elapsed_ms?: number
   stream_mode?: string
+  timings_schema_version?: number
+  timings_ms?: CosyvoiceStreamTimings
+  prompt_cache_hit?: boolean
 }
 
 let sharedAudioContext: AudioContext | null = null
@@ -394,6 +418,9 @@ export function startCosyvoiceSidecarPrefetch(
   let ttfc_ms: number | undefined
   let elapsed_ms: number | undefined
   let stream_mode: string | undefined
+  let timings_schema_version: number | undefined
+  let timings_ms: CosyvoiceStreamTimings | undefined
+  let prompt_cache_hit: boolean | undefined
   let errorResult: CosyvoiceStreamResult | undefined
   let chunkWaiters: Array<(value: void) => void> = []
 
@@ -452,6 +479,9 @@ export function startCosyvoiceSidecarPrefetch(
           ttfc_ms = evt.ttfc_ms
           elapsed_ms = evt.elapsed_ms
           stream_mode = evt.stream_mode
+          timings_schema_version = evt.timings_schema_version
+          timings_ms = evt.timings_ms
+          prompt_cache_hit = evt.prompt_cache_hit
           totalChunks = evt.chunks ?? totalChunks
           notifyChunk()
         }
@@ -472,7 +502,16 @@ export function startCosyvoiceSidecarPrefetch(
         return errorResult
       if (chunks.length === 0)
         return { ok: false, reason: 'cosyvoice_empty', message: 'No audio chunks received' }
-      return { ok: true, chunks: totalChunks, ttfc_ms, elapsed_ms, stream_mode }
+      return {
+        ok: true,
+        chunks: totalChunks,
+        ttfc_ms,
+        elapsed_ms,
+        stream_mode,
+        timings_schema_version,
+        timings_ms,
+        prompt_cache_hit,
+      }
     }
     catch (err) {
       if (errorResult)
@@ -559,6 +598,9 @@ async function playBufferedOrLiveStreamCore(
           ttfc_ms: meta.ttfc_ms,
           elapsed_ms: meta.elapsed_ms,
           stream_mode: meta.stream_mode,
+          timings_schema_version: meta.timings_schema_version,
+          timings_ms: meta.timings_ms,
+          prompt_cache_hit: meta.prompt_cache_hit,
         }
         logVoiceStreamTelemetry(out)
         return out
@@ -592,6 +634,9 @@ async function playBufferedOrLiveStreamCore(
           ttfc_ms: evt.ttfc_ms,
           elapsed_ms: evt.elapsed_ms,
           stream_mode: evt.stream_mode,
+          timings_schema_version: evt.timings_schema_version,
+          timings_ms: evt.timings_ms,
+          prompt_cache_hit: evt.prompt_cache_hit,
         }
       }
       else if (evt.ok === false) {
@@ -620,6 +665,9 @@ async function playBufferedOrLiveStreamCore(
     ttfc_ms: meta.ttfc_ms,
     elapsed_ms: meta.elapsed_ms,
     stream_mode: meta.stream_mode,
+    timings_schema_version: meta.timings_schema_version,
+    timings_ms: meta.timings_ms,
+    prompt_cache_hit: meta.prompt_cache_hit,
   }
   logVoiceStreamTelemetry(out)
   return out

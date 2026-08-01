@@ -132,8 +132,28 @@ describe('cosyvoiceStreamPlayback', () => {
 
     chunks.push({ pcm_base64: 'AA==', sample_rate: 22050 })
     releaseChunkWait()
-    finishStream({ ok: true, chunks: 2 })
+    finishStream({
+      ok: true,
+      chunks: 2,
+      timings_schema_version: 1,
+      timings_ms: {
+        synth_lock_wait: 7,
+        first_tensor_wait: 123,
+        server_payload_ready: 145,
+      },
+      prompt_cache_hit: true,
+    })
 
-    await expect(playback).resolves.toMatchObject({ ok: true, chunks: 2 })
+    await expect(playback).resolves.toMatchObject({
+      ok: true,
+      chunks: 2,
+      timings_schema_version: 1,
+      timings_ms: {
+        synth_lock_wait: 7,
+        first_tensor_wait: 123,
+        server_payload_ready: 145,
+      },
+      prompt_cache_hit: true,
+    })
   })
 })

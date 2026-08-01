@@ -9,6 +9,7 @@ without disturbing the already-running LLM.
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timezone
 import json
 import os
 import socket
@@ -109,7 +110,28 @@ def parse_args() -> argparse.Namespace:
         default=1.0,
     )
     parser.add_argument("--max-gpu-sample-failures", type=int, default=0)
+    parser.add_argument(
+        "--checkpoint-interval-seconds",
+        type=float,
+        default=60.0,
+        help="Atomically refresh bounded progress evidence when --output is set",
+    )
     parser.add_argument("--llm-max-tokens", type=int, default=64)
+    parser.add_argument(
+        "--voice-text",
+        default="爸爸，今天辛苦啦。先喝口水，我们慢慢来。",
+        help="Static TTS probe text; evidence records only its character count",
+    )
+    parser.add_argument(
+        "--voice-emo-text",
+        default="用温暖、自然、关心的语气",
+        help="CosyVoice instruction used by warmup and measured requests",
+    )
+    parser.add_argument(
+        "--voice-ref-text",
+        default="早上好呀，我是沐沐。",
+        help="Reference transcript paired with --ref-audio",
+    )
     parser.add_argument("--min-headroom-mib", type=int, default=768)
     parser.add_argument("--max-voice-ttfc-ms", type=int, default=8000)
     parser.add_argument("--max-llm-ttft-ms", type=int, default=5000)
@@ -118,7 +140,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output",
         type=Path,
-        help="Atomically write the schema-v2 JSON evidence to this path",
+        help="Atomically write the schema-v3 JSON evidence to this path",
     )
     return parser.parse_args()
 
@@ -294,14 +316,15 @@ def run_voice(
     endpoint: str,
     gate: threading.Event,
     ref_audio: Path,
+    text: str,
+    emo_text: str,
+    ref_text: str,
 ) -> dict[str, Any]:
     payload = {
-        "text": "\u7238\u7238\uff0c\u4eca\u5929\u8f9b\u82e6\u5566\u3002"
-        "\u5148\u559d\u53e3\u6c34\uff0c\u6211\u4eec\u6162\u6162\u6765\u3002",
-        "emo_text": "\u7528\u6e29\u6696\u3001\u81ea\u7136\u3001"
-        "\u5173\u5fc3\u7684\u8bed\u6c14",
+        "text": text,
+        "emo_text": emo_text,
         "ref_audio": str(ref_audio),
-        "ref_text": "\u65e9\u4e0a\u597d\u5440\uff0c\u6211\u662f\u6c90\u6c90\u3002",
+        "ref_text": ref_text,
         "speed": 1.0,
     }
     gate.wait()
@@ -309,6 +332,7 @@ def run_voice(
     first = None
     chunks = 0
     done: dict[str, Any] = {}
+    first_chunk_meta: dict[str, Any] = {}
     errors: list[dict[str, Any]] = []
     with open_json(
         f"{endpoint}/synthesize/stream",
@@ -318,7 +342,9 @@ def run_voice(
         for raw in response:
             event = json.loads(raw.decode("utf-8"))
             if event.get("event") == "chunk":
-                first = first or time.perf_counter()
+                if first is None:
+                    first = time.perf_counter()
+                    first_chunk_meta = event
                 chunks += 1
             elif event.get("event") == "done":
                 done = event
@@ -331,12 +357,32 @@ def run_voice(
                     }
                 )
     ended = time.perf_counter()
+    client_ttfc_ms = round((first - started) * 1000) if first else None
+    timings_ms = done.get("timings_ms") or first_chunk_meta.get("timings_ms") or {}
+    server_payload_ready_ms = timings_ms.get("server_payload_ready")
+    client_delivery_overhead_ms = None
+    if client_ttfc_ms is not None and isinstance(server_payload_ready_ms, int):
+        client_delivery_overhead_ms = max(
+            0,
+            client_ttfc_ms - server_payload_ready_ms,
+        )
     return {
-        "ttfc_ms": round((first - started) * 1000) if first else None,
+        "ttfc_ms": client_ttfc_ms,
         "total_ms": round((ended - started) * 1000),
         "chunks": chunks,
         "sidecar_ttfc_ms": done.get("ttfc_ms"),
         "stream_mode": done.get("stream_mode"),
+        "timings_schema_version": (
+            done.get("timings_schema_version")
+            or first_chunk_meta.get("timings_schema_version")
+        ),
+        "timings_ms": timings_ms,
+        "prompt_cache_hit": (
+            done.get("prompt_cache_hit")
+            if "prompt_cache_hit" in done
+            else first_chunk_meta.get("prompt_cache_hit")
+        ),
+        "client_delivery_overhead_ms": client_delivery_overhead_ms,
         "errors": errors,
     }
 
@@ -346,6 +392,9 @@ def run_pair(
     voice_endpoint: str,
     ref_audio: Path,
     max_tokens: int,
+    voice_text: str,
+    voice_emo_text: str,
+    voice_ref_text: str,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     gate = threading.Event()
     results: dict[str, dict[str, Any]] = {}
@@ -364,7 +413,16 @@ def run_pair(
         ),
         threading.Thread(
             target=collect,
-            args=("voice", run_voice, voice_endpoint, gate, ref_audio),
+            args=(
+                "voice",
+                run_voice,
+                voice_endpoint,
+                gate,
+                ref_audio,
+                voice_text,
+                voice_emo_text,
+                voice_ref_text,
+            ),
         ),
     ]
     for thread in threads:
@@ -387,6 +445,15 @@ def percentile(values: list[int], fraction: float) -> int | None:
     return ordered[index]
 
 
+def timing_distribution(values: list[int]) -> dict[str, Any]:
+    return {
+        "samples": values,
+        "p50": percentile(values, 0.5),
+        "p95": percentile(values, 0.95),
+        "max": max(values) if values else None,
+    }
+
+
 def validate_inputs(args: argparse.Namespace) -> None:
     for label, path in (
         ("voice python", args.voice_python),
@@ -405,6 +472,12 @@ def validate_inputs(args: argparse.Namespace) -> None:
         raise ValueError("--gpu-sample-interval-seconds must be greater than 0")
     if args.max_gpu_sample_failures < 0:
         raise ValueError("--max-gpu-sample-failures must be at least 0")
+    if args.checkpoint_interval_seconds <= 0:
+        raise ValueError("--checkpoint-interval-seconds must be greater than 0")
+    if not args.voice_text.strip():
+        raise ValueError("--voice-text must not be empty")
+    if not args.voice_emo_text.strip():
+        raise ValueError("--voice-emo-text must not be empty")
 
 
 def emit_summary(summary: dict[str, Any], output: Path | None) -> None:
@@ -430,6 +503,73 @@ def emit_summary(summary: dict[str, Any], output: Path | None) -> None:
             temporary_path.unlink(missing_ok=True)
 
 
+def checkpoint_path(output: Path | None) -> Path | None:
+    if output is None:
+        return None
+    suffix = output.suffix or ".json"
+    return output.with_name(f"{output.stem}.checkpoint{suffix}")
+
+
+def process_checkpoint(process: subprocess.Popen | None) -> dict[str, Any]:
+    return {
+        "started": process is not None,
+        "pid": process.pid if process is not None else None,
+        "alive": process is not None and process.poll() is None,
+    }
+
+
+def emit_progress_checkpoint(
+    output: Path | None,
+    *,
+    status: str,
+    started_at: str,
+    elapsed_seconds: float,
+    args: argparse.Namespace,
+    llm_samples: list[dict[str, Any]],
+    voice_samples: list[dict[str, Any]],
+    sampler: "GpuSampler",
+    llm_process: subprocess.Popen | None,
+    voice_process: subprocess.Popen | None,
+    failures: list[str],
+    cleanup: dict[str, Any] | None = None,
+) -> None:
+    path = checkpoint_path(output)
+    if path is None:
+        return
+    latest_llm = llm_samples[-1] if llm_samples else {}
+    latest_voice = voice_samples[-1] if voice_samples else {}
+    checkpoint = {
+        "schema_version": 1,
+        "status": status,
+        "started_at": started_at,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "elapsed_seconds": round(max(0.0, elapsed_seconds), 3),
+        "requested_duration_minutes": args.duration_minutes,
+        "gpu_layers": args.gpu_layers,
+        "pairs_completed": len(voice_samples),
+        "latest": {
+            "llm_ttft_ms": latest_llm.get("ttft_ms"),
+            "voice_ttfc_ms": latest_voice.get("ttfc_ms"),
+            "voice_timings_ms": latest_voice.get("timings_ms") or {},
+            "voice_chunks": latest_voice.get("chunks"),
+        },
+        "gpu_sampler": {
+            "samples": sampler.sample_count,
+            "failures": sampler.sample_failures,
+            "peak_used_mib": sampler.peak_used_mib,
+        },
+        "processes": {
+            "llm": process_checkpoint(llm_process),
+            "voice": process_checkpoint(voice_process),
+        },
+        "failure_count": len(failures),
+        "last_failure": failures[-1] if failures else None,
+    }
+    if cleanup is not None:
+        checkpoint["cleanup"] = cleanup
+    emit_summary(checkpoint, path)
+
+
 def main() -> int:
     args = parse_args()
     validate_inputs(args)
@@ -445,6 +585,14 @@ def main() -> int:
     failures: list[str] = []
     summary: dict[str, Any] | None = None
     cleanup: dict[str, Any] = {}
+    llm_samples: list[dict[str, Any]] = []
+    voice_samples: list[dict[str, Any]] = []
+    steady_after_pair_mib: list[int] = []
+    run_started = time.monotonic()
+    run_started_at = datetime.now(timezone.utc).isoformat()
+    load_started: float | None = None
+    run_status = "starting"
+    interrupted = False
     baseline_used, total_mib = gpu_memory_mib(args.gpu_index)
     sampler.start()
     try:
@@ -499,8 +647,8 @@ def main() -> int:
             "model_dir": str(args.voice_model_dir),
             "prime": not args.expect_admission_denied,
             "ref_audio": str(args.ref_audio),
-            "ref_text": "\u65e9\u4e0a\u597d\u5440\uff0c\u6211\u662f\u6c90\u6c90\u3002",
-            "emo_text": "\u7528\u6e29\u6696\u81ea\u7136\u7684\u8bed\u6c14",
+            "ref_text": args.voice_ref_text,
+            "emo_text": args.voice_emo_text,
         }
         with open_json(
             f"{voice_endpoint}/warm",
@@ -509,10 +657,20 @@ def main() -> int:
         ) as response:
             warm = json.load(response)
         after_warm_mib, _ = gpu_memory_mib(args.gpu_index)
-
-        llm_samples: list[dict[str, Any]] = []
-        voice_samples: list[dict[str, Any]] = []
-        steady_after_pair_mib: list[int] = []
+        run_status = "running"
+        emit_progress_checkpoint(
+            args.output,
+            status=run_status,
+            started_at=run_started_at,
+            elapsed_seconds=time.monotonic() - run_started,
+            args=args,
+            llm_samples=llm_samples,
+            voice_samples=voice_samples,
+            sampler=sampler,
+            llm_process=llm_process,
+            voice_process=voice_process,
+            failures=failures,
+        )
         if args.expect_admission_denied:
             if (
                 warm.get("reason") != "gpu_admission_denied"
@@ -543,6 +701,7 @@ def main() -> int:
                     f"strategy={warm.get('load_strategy')}"
                 )
             load_started = time.monotonic()
+            next_checkpoint = load_started + args.checkpoint_interval_seconds
             deadline = (
                 load_started + (args.duration_minutes * 60)
                 if args.duration_minutes > 0
@@ -567,6 +726,9 @@ def main() -> int:
                     voice_endpoint,
                     args.ref_audio,
                     args.llm_max_tokens,
+                    args.voice_text,
+                    args.voice_emo_text,
+                    args.voice_ref_text,
                 )
                 llm_samples.append(llm_result)
                 voice_samples.append(voice_result)
@@ -574,6 +736,23 @@ def main() -> int:
                 steady_after_pair_mib.append(steady_used_mib)
                 if voice_result["chunks"] < 1 or voice_result["errors"]:
                     failures.append(f"voice stream failed: {voice_result}")
+                if time.monotonic() >= next_checkpoint:
+                    emit_progress_checkpoint(
+                        args.output,
+                        status=run_status,
+                        started_at=run_started_at,
+                        elapsed_seconds=time.monotonic() - run_started,
+                        args=args,
+                        llm_samples=llm_samples,
+                        voice_samples=voice_samples,
+                        sampler=sampler,
+                        llm_process=llm_process,
+                        voice_process=voice_process,
+                        failures=failures,
+                    )
+                    next_checkpoint = (
+                        time.monotonic() + args.checkpoint_interval_seconds
+                    )
             load_elapsed_seconds = round(time.monotonic() - load_started, 3)
 
         llm_ttft = [
@@ -586,6 +765,43 @@ def main() -> int:
             for sample in voice_samples
             if sample.get("ttfc_ms") is not None
         ]
+        sidecar_ttfc = [
+            int(sample["sidecar_ttfc_ms"])
+            for sample in voice_samples
+            if sample.get("sidecar_ttfc_ms") is not None
+        ]
+        client_delivery_overhead = [
+            int(sample["client_delivery_overhead_ms"])
+            for sample in voice_samples
+            if sample.get("client_delivery_overhead_ms") is not None
+        ]
+        stage_names = sorted(
+            {
+                key
+                for sample in voice_samples
+                for key, value in (sample.get("timings_ms") or {}).items()
+                if isinstance(value, int) and not isinstance(value, bool)
+            }
+        )
+        voice_stage_timings = {
+            stage: timing_distribution(
+                [
+                    int(sample["timings_ms"][stage])
+                    for sample in voice_samples
+                    if isinstance((sample.get("timings_ms") or {}).get(stage), int)
+                    and not isinstance(
+                        (sample.get("timings_ms") or {}).get(stage), bool
+                    )
+                ]
+            )
+            for stage in stage_names
+        }
+        prompt_cache_hits = sum(
+            1 for sample in voice_samples if sample.get("prompt_cache_hit") is True
+        )
+        prompt_cache_misses = sum(
+            1 for sample in voice_samples if sample.get("prompt_cache_hit") is False
+        )
         peak_headroom = total_mib - sampler.peak_used_mib
         if peak_headroom < args.min_headroom_mib:
             failures.append(
@@ -615,7 +831,7 @@ def main() -> int:
             failures.append("GPU sampler produced no samples")
 
         summary = {
-            "schema_version": 2,
+            "schema_version": 3,
             "ok": not failures,
             "scenario": (
                 "admission_denied"
@@ -632,6 +848,12 @@ def main() -> int:
                 load_elapsed_seconds if not args.expect_admission_denied else 0
             ),
             "pairs_completed": len(voice_samples),
+            "voice_input": {
+                "text_chars": len(args.voice_text),
+                "emotion_chars": len(args.voice_emo_text),
+                "reference_text_chars": len(args.voice_ref_text),
+                "warm_prompt_aligned": True,
+            },
             "gpu_mib": {
                 "baseline": baseline_used,
                 "llm_loaded": llm_loaded_mib,
@@ -671,10 +893,40 @@ def main() -> int:
                 "p95": percentile(voice_ttfc, 0.95),
                 "max": max(voice_ttfc) if voice_ttfc else None,
             },
+            "voice_sidecar_ttfc_ms": timing_distribution(sidecar_ttfc),
+            "voice_client_delivery_overhead_ms": timing_distribution(
+                client_delivery_overhead
+            ),
+            "voice_stage_timings_ms": voice_stage_timings,
+            "voice_prompt_cache": {
+                "hits": prompt_cache_hits,
+                "misses": prompt_cache_misses,
+                "unknown": len(voice_samples)
+                - prompt_cache_hits
+                - prompt_cache_misses,
+            },
+            "voice_request_samples": [
+                {
+                    "client_ttfc_ms": sample.get("ttfc_ms"),
+                    "sidecar_ttfc_ms": sample.get("sidecar_ttfc_ms"),
+                    "client_delivery_overhead_ms": sample.get(
+                        "client_delivery_overhead_ms"
+                    ),
+                    "prompt_cache_hit": sample.get("prompt_cache_hit"),
+                    "timings_ms": sample.get("timings_ms") or {},
+                }
+                for sample in voice_samples
+            ],
             "voice_chunks": [sample["chunks"] for sample in voice_samples],
             "failures": failures,
         }
+        run_status = "completed"
+    except KeyboardInterrupt:
+        interrupted = True
+        run_status = "interrupted"
+        failures.append("run interrupted by user")
     except Exception as exc:  # noqa: BLE001
+        run_status = "failed"
         failures.append(f"runtime exception: {type(exc).__name__}: {exc}")
     finally:
         sampler.stop()
@@ -694,15 +946,26 @@ def main() -> int:
         if state["started"] and not state["reaped"]:
             failures.append(f"{label} process was not reaped")
     if summary is None:
+        partial_load_seconds = (
+            round(max(0.0, time.monotonic() - load_started), 3)
+            if load_started is not None
+            else 0
+        )
         summary = {
-            "schema_version": 2,
-            "scenario": "startup_or_runtime_failure",
+            "schema_version": 3,
+            "scenario": (
+                "interrupted" if interrupted else "startup_or_runtime_failure"
+            ),
             "gpu_layers": args.gpu_layers,
             "requested_duration_minutes": args.duration_minutes,
-            "pairs_completed": 0,
+            "actual_load_seconds": partial_load_seconds,
+            "pairs_completed": len(voice_samples),
         }
     summary.update(
         {
+            "status": run_status,
+            "started_at": run_started_at,
+            "completed_at": datetime.now(timezone.utc).isoformat(),
             "ok": not failures,
             "gpu_sampler": {
                 "interval_seconds": args.gpu_sample_interval_seconds,
@@ -716,6 +979,22 @@ def main() -> int:
         }
     )
     emit_summary(summary, args.output)
+    emit_progress_checkpoint(
+        args.output,
+        status=run_status,
+        started_at=run_started_at,
+        elapsed_seconds=time.monotonic() - run_started,
+        args=args,
+        llm_samples=llm_samples,
+        voice_samples=voice_samples,
+        sampler=sampler,
+        llm_process=llm_process,
+        voice_process=voice_process,
+        failures=failures,
+        cleanup=cleanup,
+    )
+    if interrupted:
+        return 130
     return 0 if not failures else 1
 
 

@@ -566,15 +566,26 @@ def _load_cosyvoice_model(
                 model = CosyVoice2(str(path), fp16=False)
             _record_cuda_load_peak()
             runtime_model = getattr(model, "model", None)
+            initial_stream_hop_len = getattr(runtime_model, "token_hop_len", None)
+            if isinstance(initial_stream_hop_len, int) and initial_stream_hop_len > 0:
+                # CosyVoice2 grows token_hop_len while streaming but does not
+                # restore it for the next request. Remember the model's own
+                # initial value so later requests do not inherit a 50/100-token
+                # first-chunk threshold and regress TTFC over time.
+                runtime_model._oclive_initial_stream_hop_len = initial_stream_hop_len
             original_llm_job = getattr(runtime_model, "llm_job", None)
             if callable(original_llm_job) and not getattr(
                 original_llm_job, "_oclive_guarded", False
             ):
                 def guarded_llm_job(*args: Any, **kwargs: Any) -> Any:
                     request_id = kwargs.get("uuid") or (args[-1] if args else "")
+                    job_started = time.perf_counter()
                     try:
                         return original_llm_job(*args, **kwargs)
                     finally:
+                        runtime_model._oclive_speech_token_job_ms = int(
+                            (time.perf_counter() - job_started) * 1000
+                        )
                         # Upstream streaming waits on this flag. If its worker
                         # raises, setting it here turns an infinite wait into a
                         # normal synthesis error that the host can recover from.
@@ -584,6 +595,25 @@ def _load_cosyvoice_model(
 
                 guarded_llm_job._oclive_guarded = True  # type: ignore[attr-defined]
                 runtime_model.llm_job = guarded_llm_job
+            original_token2wav = getattr(runtime_model, "token2wav", None)
+            if callable(original_token2wav) and not getattr(
+                original_token2wav, "_oclive_measured", False
+            ):
+                def measured_token2wav(*args: Any, **kwargs: Any) -> Any:
+                    decode_started = time.perf_counter()
+                    try:
+                        return original_token2wav(*args, **kwargs)
+                    finally:
+                        decode_ms = int((time.perf_counter() - decode_started) * 1000)
+                        call_count = int(
+                            getattr(runtime_model, "_oclive_token2wav_calls", 0)
+                        )
+                        if call_count == 0:
+                            runtime_model._oclive_first_token2wav_ms = decode_ms
+                        runtime_model._oclive_token2wav_calls = call_count + 1
+
+                measured_token2wav._oclive_measured = True  # type: ignore[attr-defined]
+                runtime_model.token2wav = measured_token2wav
             _prepared_speakers.clear()
             _model = model
             _model_dir = path
@@ -624,6 +654,29 @@ def _tensor_to_pcm_base64(audio_tensor: Any, sample_rate: int) -> tuple[str, int
     return base64.b64encode(pcm).decode("ascii"), sample_rate
 
 
+def _reset_stream_hop_len(model: Any) -> None:
+    """Reset upstream CosyVoice2's request-leaking stream hop state."""
+    runtime_model = getattr(model, "model", None)
+    initial_hop_len = getattr(runtime_model, "_oclive_initial_stream_hop_len", None)
+    if isinstance(initial_hop_len, int) and initial_hop_len > 0:
+        runtime_model.token_hop_len = initial_hop_len
+
+
+def _reset_stream_runtime_metrics(model: Any) -> None:
+    runtime_model = getattr(model, "model", None)
+    if runtime_model is None:
+        return
+    runtime_model._oclive_first_token2wav_ms = None
+    runtime_model._oclive_token2wav_calls = 0
+    runtime_model._oclive_speech_token_job_ms = None
+
+
+def _stream_runtime_metric(model: Any, name: str) -> int:
+    runtime_model = getattr(model, "model", None)
+    value = getattr(runtime_model, name, None)
+    return value if isinstance(value, int) and value >= 0 else 0
+
+
 def _open_synthesis_iterator(
     model: Any,
     *,
@@ -633,12 +686,20 @@ def _open_synthesis_iterator(
     ref_text: str,
     speed: float,
     stream: bool,
-) -> tuple[Any | None, str, str]:
-    """Return (iterator, error_reason, error_message)."""
+) -> tuple[Any | None, str, str, dict[str, Any]]:
+    """Return the iterator, any error, and additive preparation telemetry."""
+    telemetry: dict[str, Any] = {
+        "prompt_prepare_ms": 0,
+        "prompt_cache_hit": False,
+        "inference_open_ms": 0,
+    }
     cleaned = text.strip()
     if not cleaned:
-        return None, "empty_text", ""
+        return None, "empty_text", "", telemetry
     speed = max(0.5, min(2.0, float(speed or 1.0)))
+    if stream:
+        _reset_stream_hop_len(model)
+        _reset_stream_runtime_metrics(model)
     prompt_text = ref_text.strip() or cleaned[:32]
     if emo_text.strip():
         prompt_path = _resolve_prompt_wav(ref_audio)
@@ -647,16 +708,23 @@ def _open_synthesis_iterator(
                 None,
                 "prompt_wav_missing",
                 "Provide ref_audio or install CosyVoice asset/zero_shot_prompt.wav",
+                telemetry,
             )
         instruct_text = _format_instruct_text(emo_text)
-        speaker_id, _cache_hit, prepare_error = _prepare_speaker(
+        prepare_started = time.perf_counter()
+        speaker_id, cache_hit, prepare_error = _prepare_speaker(
             model,
             prompt_path,
             instruct_text,
         )
+        telemetry["prompt_prepare_ms"] = int(
+            (time.perf_counter() - prepare_started) * 1000
+        )
+        telemetry["prompt_cache_hit"] = cache_hit
         if prepare_error:
             sys.stderr.write(f"cosyvoice2 prompt cache fallback reason={prepare_error}\n")
             sys.stderr.flush()
+        inference_started = time.perf_counter()
         iterator = model.inference_instruct2(
             cleaned,
             instruct_text,
@@ -665,17 +733,26 @@ def _open_synthesis_iterator(
             stream=stream,
             speed=speed,
         )
-        return iterator, "", ""
+        telemetry["inference_open_ms"] = int(
+            (time.perf_counter() - inference_started) * 1000
+        )
+        return iterator, "", "", telemetry
     if ref_audio and Path(ref_audio).is_file():
         prompt_path = Path(ref_audio)
-        speaker_id, _cache_hit, prepare_error = _prepare_speaker(
+        prepare_started = time.perf_counter()
+        speaker_id, cache_hit, prepare_error = _prepare_speaker(
             model,
             prompt_path,
             prompt_text,
         )
+        telemetry["prompt_prepare_ms"] = int(
+            (time.perf_counter() - prepare_started) * 1000
+        )
+        telemetry["prompt_cache_hit"] = cache_hit
         if prepare_error:
             sys.stderr.write(f"cosyvoice2 prompt cache fallback reason={prepare_error}\n")
             sys.stderr.flush()
+        inference_started = time.perf_counter()
         iterator = model.inference_zero_shot(
             cleaned,
             prompt_text,
@@ -684,8 +761,16 @@ def _open_synthesis_iterator(
             stream=stream,
             speed=speed,
         )
-        return iterator, "", ""
-    return None, "ref_audio_missing", "Place role-pack ref wav or set emo_text"
+        telemetry["inference_open_ms"] = int(
+            (time.perf_counter() - inference_started) * 1000
+        )
+        return iterator, "", "", telemetry
+    return (
+        None,
+        "ref_audio_missing",
+        "Place role-pack ref wav or set emo_text",
+        telemetry,
+    )
 
 
 def _normalize_synthesis_inputs(
@@ -725,7 +810,7 @@ def _collect_synthesis_tensors(
 ) -> tuple[list[Any], str, str]:
     """Run the reliable whole-utterance path. Caller holds _synth_lock."""
     tensors: list[Any] = []
-    iterator, err, msg = _open_synthesis_iterator(
+    iterator, err, msg, _telemetry = _open_synthesis_iterator(
         model,
         text=text,
         emo_text=emo_text,
@@ -764,7 +849,7 @@ def _prime_cosyvoice_model(
         if _primed:
             return True, 0, ""
         try:
-            iterator, err, msg = _open_synthesis_iterator(
+            iterator, err, msg, _telemetry = _open_synthesis_iterator(
                 model,
                 text="你好呀，今天也会陪着你。",
                 emo_text=emo_text or "用自然平静的语气",
@@ -852,12 +937,15 @@ def _stream_synthesis_lines(
     ref_audio: str,
     ref_text: str,
     speed: float,
+    request_started: float | None = None,
+    request_preprocess_ms: int = 0,
 ):
     cleaned = text.strip()
     if not cleaned:
         yield json.dumps({"ok": False, "reason": "empty_text", "event": "error"}, ensure_ascii=False)
         return
-    started = time.perf_counter()
+    started = request_started if request_started is not None else time.perf_counter()
+    generator_started = time.perf_counter()
     sample_rate = int(getattr(model, "sample_rate", 22050))
     stream_enabled = os.environ.get("OCLIVE_COSYVOICE_STREAM", "1").strip().lower() not in {
         "0",
@@ -867,8 +955,11 @@ def _stream_synthesis_lines(
     # Upstream CosyVoice2 ignores speed in its streaming branch. Preserve the
     # voice-director contract by using the buffered path for non-default speed.
     use_stream = stream_enabled and abs(speed - 1.0) < 0.001
+    lock_wait_started = time.perf_counter()
     with _synth_lock:
-        iterator, err, msg = _open_synthesis_iterator(
+        lock_acquired = time.perf_counter()
+        synth_lock_wait_ms = int((lock_acquired - lock_wait_started) * 1000)
+        iterator, err, msg, open_telemetry = _open_synthesis_iterator(
             model,
             text=cleaned,
             emo_text=emo_text,
@@ -885,24 +976,72 @@ def _stream_synthesis_lines(
             return
         chunk_index = 0
         first_chunk_ms: int | None = None
+        first_tensor_wait_ms: int | None = None
+        first_pcm_encode_ms: int | None = None
+        server_payload_ready_ms: int | None = None
+        first_tensor_wait_started = time.perf_counter()
         try:
             for item in iterator:
                 tensor = _chunk_tensor_from_item(item)
                 if tensor is None:
                     continue
                 if first_chunk_ms is None:
-                    first_chunk_ms = int((time.perf_counter() - started) * 1000)
+                    first_tensor_at = time.perf_counter()
+                    first_chunk_ms = int((first_tensor_at - started) * 1000)
+                    first_tensor_wait_ms = int(
+                        (first_tensor_at - first_tensor_wait_started) * 1000
+                    )
+                encode_started = time.perf_counter()
                 pcm_b64, sr = _tensor_to_pcm_base64(tensor, sample_rate)
-                yield json.dumps(
-                    {
-                        "ok": True,
-                        "event": "chunk",
-                        "chunk_index": chunk_index,
-                        "pcm_base64": pcm_b64,
-                        "sample_rate": sr,
-                    },
-                    ensure_ascii=False,
-                )
+                encode_ms = int((time.perf_counter() - encode_started) * 1000)
+                chunk_payload: dict[str, Any] = {
+                    "ok": True,
+                    "event": "chunk",
+                    "chunk_index": chunk_index,
+                    "pcm_base64": pcm_b64,
+                    "sample_rate": sr,
+                }
+                if first_pcm_encode_ms is None:
+                    first_pcm_encode_ms = encode_ms
+                    server_payload_ready_ms = int(
+                        (time.perf_counter() - started) * 1000
+                    )
+                    first_token2wav_ms = _stream_runtime_metric(
+                        model, "_oclive_first_token2wav_ms"
+                    )
+                    chunk_payload.update(
+                        {
+                            "timings_schema_version": 1,
+                            "timings_ms": {
+                                "request_preprocess": max(0, request_preprocess_ms),
+                                "response_setup": max(
+                                    0,
+                                    int((generator_started - started) * 1000)
+                                    - max(0, request_preprocess_ms),
+                                ),
+                                "synth_lock_wait": synth_lock_wait_ms,
+                                "prompt_prepare": int(
+                                    open_telemetry.get("prompt_prepare_ms") or 0
+                                ),
+                                "inference_open": int(
+                                    open_telemetry.get("inference_open_ms") or 0
+                                ),
+                                "first_tensor_wait": first_tensor_wait_ms or 0,
+                                "pre_token2wav_wait": max(
+                                    0,
+                                    (first_tensor_wait_ms or 0) - first_token2wav_ms,
+                                ),
+                                "first_token2wav": first_token2wav_ms,
+                                "first_pcm_encode": first_pcm_encode_ms,
+                                "server_first_tensor": first_chunk_ms,
+                                "server_payload_ready": server_payload_ready_ms,
+                            },
+                            "prompt_cache_hit": bool(
+                                open_telemetry.get("prompt_cache_hit")
+                            ),
+                        }
+                    )
+                yield json.dumps(chunk_payload, ensure_ascii=False)
                 chunk_index += 1
         except Exception as exc:  # noqa: BLE001
             yield json.dumps(
@@ -928,6 +1067,32 @@ def _stream_synthesis_lines(
         return
     elapsed_ms = int((time.perf_counter() - started) * 1000)
     stream_mode = "streaming" if use_stream else "buffered"
+    first_token2wav_ms = _stream_runtime_metric(
+        model, "_oclive_first_token2wav_ms"
+    )
+    timings_ms = {
+        "request_preprocess": max(0, request_preprocess_ms),
+        "response_setup": max(
+            0,
+            int((generator_started - started) * 1000)
+            - max(0, request_preprocess_ms),
+        ),
+        "synth_lock_wait": synth_lock_wait_ms,
+        "prompt_prepare": int(open_telemetry.get("prompt_prepare_ms") or 0),
+        "inference_open": int(open_telemetry.get("inference_open_ms") or 0),
+        "first_tensor_wait": first_tensor_wait_ms or 0,
+        "pre_token2wav_wait": max(
+            0, (first_tensor_wait_ms or 0) - first_token2wav_ms
+        ),
+        "first_token2wav": first_token2wav_ms,
+        "speech_token_job_total": _stream_runtime_metric(
+            model, "_oclive_speech_token_job_ms"
+        ),
+        "first_pcm_encode": first_pcm_encode_ms or 0,
+        "server_first_tensor": first_chunk_ms or elapsed_ms,
+        "server_payload_ready": server_payload_ready_ms or elapsed_ms,
+        "total": elapsed_ms,
+    }
     sys.stderr.write(
         f"cosyvoice2 stream ok elapsed_ms={elapsed_ms} ttfc_ms={first_chunk_ms or elapsed_ms} "
         f"chunks={chunk_index} text_len={len(cleaned)} mode={stream_mode}\n"
@@ -943,6 +1108,9 @@ def _stream_synthesis_lines(
             "sample_rate": sample_rate,
             "engine": _ENGINE,
             "stream_mode": stream_mode,
+            "timings_schema_version": 1,
+            "timings_ms": timings_ms,
+            "prompt_cache_hit": bool(open_telemetry.get("prompt_cache_hit")),
         },
         ensure_ascii=False,
     )
@@ -1104,6 +1272,7 @@ class Handler(BaseHTTPRequestHandler):
         self._json(404, {"ok": False, "reason": "not_found"})
 
     def do_POST(self) -> None:
+        request_started = time.perf_counter()
         length = int(self.headers.get("Content-Length", "0") or "0")
         raw = self.rfile.read(length) if length else b"{}"
         try:
@@ -1273,6 +1442,9 @@ class Handler(BaseHTTPRequestHandler):
                 ref_text=str(body.get("ref_text") or ""),
                 speed=float(body.get("speed") or 1.0),
             )
+            request_preprocess_ms = int(
+                (time.perf_counter() - request_started) * 1000
+            )
             self._ndjson_stream(
                 _stream_synthesis_lines(
                     model,
@@ -1281,6 +1453,8 @@ class Handler(BaseHTTPRequestHandler):
                     ref_audio=ref,
                     ref_text=ref_t,
                     speed=spd,
+                    request_started=request_started,
+                    request_preprocess_ms=request_preprocess_ms,
                 ),
             )
             return

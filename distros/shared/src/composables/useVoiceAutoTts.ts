@@ -728,6 +728,9 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
               sidecar_total_ms: streamRes.elapsed_ms,
               stream_mode: streamRes.stream_mode,
               chunks: streamRes.chunks,
+              timings_schema_version: streamRes.timings_schema_version,
+              timings_ms: streamRes.timings_ms,
+              prompt_cache_hit: streamRes.prompt_cache_hit,
             })
             voiceLatencyByStreamId.delete(job.streamId)
           }
