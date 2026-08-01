@@ -57,7 +57,7 @@ zip = { version = "2", default-features = false, features = ["deflate"] }
 axum = "0.7"
 tower = "0.5"
 tower-http = { version = "0.6", features = ["cors"] }
-sha2 = "0.10"
+sha2 = "0.11"
 indexmap = "2"
 arc-swap = "1.7"
 dashmap = "6"
