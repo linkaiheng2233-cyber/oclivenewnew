@@ -1,6 +1,6 @@
 # Known vulnerability tracking (`cargo-audit`)
 
-This file records **vulnerability-level** hits from **`cargo audit`** on the **workspace root `Cargo.lock`**, as the single source of truth for supply-chain risk and upgrade planning. It **does not** include `cargo audit` entries reported only as *warning* (*unmaintained* / *unsound*; see full `cargo audit` output and [SECURITY_AUDIT_SCOPE.md](./SECURITY_AUDIT_SCOPE.md)).
+This file treats **vulnerability-level** hits from `cargo audit` on the workspace-root **`Cargo.lock`** as the single source of truth for supply-chain risk and upgrade planning. Warning-only *unmaintained*, *unsound*, and *yanked* entries do not count as vulnerabilities, but the appendix tracks their current exposure and upstream blockers; the current `cargo audit` output and [SECURITY_AUDIT_SCOPE.md](./SECURITY_AUDIT_SCOPE.md) remain authoritative for detail.
 
 **Full doc index**: [../getting-started/DOCUMENTATION_INDEX.md](../getting-started/DOCUMENTATION_INDEX.md)  
 **Lightweight profile & audit flow**: [../development/LIGHTWEIGHT_PROFILE.md](../development/LIGHTWEIGHT_PROFILE.md) §6.4
@@ -12,10 +12,10 @@ This file records **vulnerability-level** hits from **`cargo audit`** on the **w
 | Item | Value |
 |------|-----|
 | **cargo-audit version** | **0.22.1** (pin this major line for comparable reports) |
-| **Last scan date** | **2026-07-31** (local `cargo audit`; K-RESOURCE-COORD-01 promoted lockfile-existing `sysinfo 0.33` to a direct Host dependency) |
+| **Last scan date** | **2026-08-01** (repository-wide audit, local `cargo audit`) |
 | **Scan path** | Workspace root `Cargo.lock` |
 | **Vulnerability-level count** | **0** (`cargo audit` exit code **0**; `sqlx-mysql` / `rsa` removed from lockfile graph) |
-| **Warning-level count** | **8** (gtk/webkit Linux cluster still ignored · `glib` · `unic-*` unmaintained · `spin` yanked; **`fxhash` / `rand` 0.7 cleared with Tauri 2**) |
+| **Warning-level count** | **9** (gtk/webkit Linux cluster · `glib` · `unic-*` · new `event-listener` unsound warning · `spin` yanked; **`fxhash` / `rand` 0.7 cleared with Tauri 2**) |
 
 > If CI or your machine cannot fetch advisory-db: `cargo audit --no-fetch --stale` (requires a previously fetched local DB).
 
@@ -53,15 +53,18 @@ This file records **vulnerability-level** hits from **`cargo audit`** on the **w
 
 ---
 
-## Warning-level tracking (2026-05-20 batch three)
+## Warning-level tracking (rolling)
 
 | RUSTSEC / category | Crate | Status | Reason |
 |--------------------|-------|--------|--------|
 | **RUSTSEC-2026-0002** | `lru` | **Fixed** | `oclive-cli` upgraded **ratatui 0.30** → `lru` ≥ 0.16 |
 | **RUSTSEC-2025-0134** | `rustls-pemfile` | **Fixed** | `reqwest` **0.12** chain no longer depends on this crate |
 | gtk-rs GTK3 cluster (11 IDs) | `gtk`/`gdk`/… | **Recorded + audit.toml ignore** | Linux WebView (wry/webkit2gtk) still pulls GTK3; ignore remains after Tauri 2 until upstream shifts |
+| **RUSTSEC-2025-0075 / 0080 / 0081 / 0098 / 0100** | `unic-*` 0.9 | **Open** | Transitively pulled by Tauri `urlpattern`; wait for upstream removal of the unmaintained family |
+| **RUSTSEC-2026-0221** | `event-listener` 5.4.1 | **Open · K-SUPPLY-11** | `StackSlot` can carry a `!Send` tag across threads; both SQLx and zbus/Tauri paths are present, so upgrade or document reachability rather than silently ignoring it |
 | **RUSTSEC-2025-0057** | `fxhash` | **Cleared** | 2026-07-14 K-PLATFORM-01a Full · no `fxhash` in Tauri 2 lock graph |
 | **RUSTSEC-2024-0429** | `glib` | **Open** | `VariantStrIter` path; host does not use (Linux wry) |
+| yanked | `spin` 0.9.8 | **Open** | Pulled through `flume` → `sqlx-sqlite`; follow SQLx/Flume upstream upgrades |
 | **RUSTSEC-2026-0097** | `rand` 0.7 | **Cleared** | 2026-07-14 K-PLATFORM-01a Full · no `rand` 0.7 after Tauri 2 |
 | **RUSTSEC-2026-0190** | `anyhow` | **Fixed** — lockfile **1.0.103** | 2026-07-14 K-SUPPLY-05 `cargo update` |
 

@@ -1,6 +1,6 @@
 # Technical debt inventory
 
-**Last updated:** 2026-08-01（领域感知 CI Stage 1 进入 Shadow 证据积累期；Stable v4 能力计划与统一资源协调 Stage 3 已完成本地及远端门禁）
+**Last updated:** 2026-08-01（全库巡检轮次 25：Stage 2C 进入使用观察期；新增前端类型门禁、LLM 配置竞态、CI 执行效率与供应链 warning 债）
 
 **Product freeze (Theater v0):** **Lifted** — 朋友 cohort 产品门通过（7/10 卧槽）；模式 2 playtest 扩展中；**模式 3 仍冻结**。见 [theater/MODE2_UNFREEZE.md](./theater/MODE2_UNFREEZE.md)。
 
@@ -68,12 +68,12 @@
 | **D-DOC-RELOC-01** | 三份名实不符文档仍在 `creator-docs/`（VS Code 契约 / Studio 指南 / mumu 验收） | P2 | 物理迁至 `handoff/{vscode,studio,distros}/` + 原位 stub + 入链更新 | **Done**（轮次 18） |
 | **K-SUPPLY-02** | Release 预编译内核 **SHA256SUMS**（防换包） | P1 | workflow + `bundle-kernel-for-tauri.mjs` 钩子已入库；tag `oclivenewnew-v*` 触发 CI artifact | **Done**（轮次 22） |
 | **K-SUPPLY-03** | 插件安装后「请审本地源码」固定提示 | P2 | 市场/git/zip + CLI | **Done**（轮次 19） |
-| **K-SUPPLY-04** | 前端 `npm-audit` 仅可见性（`continue-on-error`） | P2 | 连续 2 个复核周期生产依赖零漏洞，或出现高危时升格硬门禁 / 文档豁免 | **Observe**（2026-07-18：`npm audit --omit=dev --audit-level=high` **0 vulnerabilities**；旧 `vue3-sfc-loader` 已移至 dev-only，生产依赖图已清出。仍需下一周期复核，不提前关账） |
+| **K-SUPPLY-04** | 前端 `npm-audit` 仅可见性（`continue-on-error`） | P2 | 连续 2 个复核周期生产依赖零漏洞，或出现高危时升格硬门禁 / 文档豁免 | **Ready to close after gate hardening**（2026-07-18 与 2026-08-01 两轮 `npm audit --omit=dev --audit-level=high` 均为 **0 vulnerabilities**；验收证据已满足，下一步移除 `continue-on-error` 并以远端硬门禁收口） |
 | **K-SUPPLY-05** | `deny.toml` `multiple-versions` warn→deny | P2 | Minimal：`deny` + 有理由 `[bans.skip]`；Full 零 skip 另战役 | **Done**（Minimal · 2026-07-15）· **Full Partial**（2026-07-16 · workspace `toml` 0.8→1 · ratchet **75**；`[bans.skip]` 仍须保留 · 不准假 Full Done · PR [#126](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/126)） |
 | **K-SECRET-01** | 已跟踪 N1N API 密钥进入 Git 历史 | **P0** | 服务端撤销旧密钥；新密钥只进 Continue secrets；维护者已明确接受保留历史的残余可见性 | **Done · owner confirmed**（2026-07-17：维护者确认已在 N1N 提供商侧彻底销毁旧密钥；Git 历史按决定保留） |
 | **K-PLUGIN-SEC-01** | 目录插件 UI 信任边界：同进程 Vue / 共享 custom-protocol origin | **P1** | Minimal：发行构建禁 inline Vue；Full：每插件独立 origin 或等价强隔离 + 原生 E2E + 可信签名绑定 + 官方 HTML fallback 功能对等，并将 `vue3-sfc-loader` 移出发行依赖图 | **Partial**（Stage 0–3 已实现：发行禁 inline Vue；embedded / full-shell 使用 opaque iframe sandbox + parent broker；能力令牌绑定插件并在导航时撤销；Voice HTML fallback 已补功能对等；`vue3-sfc-loader` 已移至 dev-only。仍缺 Windows `tauri-driver` 原生实跑证据、可信签名/身份绑定与远端 CI，见 [`K-PLUGIN-SEC-01` 计划](./debt-marathon/long-plans/K-PLUGIN-SEC-01.md)） |
 | **D-QUALITY-LINT-01** | 根 lint 曾漏扫 Theater / Playwright / 配置文件，且未进入 `check` / `check:release`，长期积压可自动修复与少量死代码 | P1 | 全维护面 lint 绿；生成器与漂移门禁兼容；日常 / 发版检查强制执行 | **Done**（2026-07-18：扩展 lint 范围并接入两级门禁；移除未使用聊天重建函数与无效局部变量；修复错误码生成器单引号输出和漂移解析兼容） |
-| **K-I18N-HTML-01** | 静态本地化文案含 `<strong>` / `<code>` 并经受控 `v-html` 渲染，Vitest 全键翻译测试持续输出 vue-i18n HTML 警告 | P2 | 将富文本拆为组件插槽，或建立只允许静态受信 key 的集中 allowlist + 注入拒绝测试；不得直接全局关闭 HTML 警告掩盖新增入口 | **Implemented · locally verified**（2026-07-18：移除 settings `v-html`，强调/代码样式改为组件模板；全 locale 增 HTML-like 标记拒绝测试；待远端 CI 后转 Done） |
+| **K-I18N-HTML-01** | 静态本地化文案含 `<strong>` / `<code>` 并经受控 `v-html` 渲染，Vitest 全键翻译测试持续输出 vue-i18n HTML 警告 | P2 | 将富文本拆为组件插槽，或建立只允许静态受信 key 的集中 allowlist + 注入拒绝测试；不得直接全局关闭 HTML 警告掩盖新增入口 | **Done**（2026-07-18 本地实现；后续远端 CI [`30683169339`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30683169339) 在包含该实现的 HEAD 上 **22/22** jobs success） |
 | **CI-E2E-TAURI-01** | e2e-tauri WebDriver smoke（sidebar/title） | P2 | 远程 `e2e-tauri` 过；勿弱化断言 | **Done**（2026-07-14 · CI [`29311703046`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29311703046) / HEAD `8988f49d` · session+title+sidebar 全绿；仍 soft gate） |
 | **K-CHATPRO-01** | Chat Pro 流式取消 UX | P2 | `AbortController` 打断上一轮 + 清理 `streaming` 气泡；设置可关流式 | **Done**（Chat Pro 正式启用 · 2026-06-26） |
 | **D-ORDER-01** | monorepo `roles` 路径 SSOT（27 集成测 + oclive-cli `join("roles")`） | P0 | `chat_pro_roles_dir()` / `tests/common` / `resolve_project_roles_dir()` | **Done**（条理优化 Wave A · 2026-06-24） |
@@ -99,7 +99,7 @@
 | **D-PORT-02** | `PluginBackendRegistryPort` 拆窄 trait | P1 | `MemoryBackendPort` phase 1 | **Done**（`memory_backend_port.rs` + `SlotBackendFactoryPort` 组合 · 2026-07-10） |
 | **D-SLOT-01** | BuiltinV1/V2 选择收敛到 resolver | P2 | 四槽不再保留双实现；`builtin_v2` 仅作读兼容 alias 并统一归一为 `builtin` | **Done**（现行源码 + `plugin_backends_v2_resolve` / `slot_resolver_v3`；已由 CI [`29465172205`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29465172205) 覆盖） |
 | **D-TRAIT-01** | 单实现 trait 合并 | P3 | 仅明显 DI 噪音 | **Observe** |
-| **K-VOICE-01** | CosyVoice2 `stream=True` 在部分 Windows/模型组合曾因上游 worker 异常无限等待 | P2 | 继续实机 soak；worker 必须在异常时结束等待，安全完整短句 prime 后才走真实流式；`OCLIVE_COSYVOICE_STREAM=0` 保留诊断回退 | **Implemented · locally verified，继续 Observe**（2026-07-24：默认真实 PCM 流式 + worker 结束态保护 + 安全 prime；CPU 分阶段混合 FP16 冷加载 + driver-wide VRAM admission，失败回退 FP32 也须再次准入；待远端 CI 与长时间 soak 后关闭。排查见 [`TRACK_VOICE_RECOGNITION.md`](../human-docs/team/TRACK_VOICE_RECOGNITION.md) §10） |
+| **K-VOICE-01** | CosyVoice2 `stream=True` 在部分 Windows/模型组合曾因上游 worker 异常无限等待 | P2 | 继续实机 soak；worker 必须在异常时结束等待，安全完整短句 prime 后才走真实流式；`OCLIVE_COSYVOICE_STREAM=0` 保留诊断回退 | **Implemented，继续 Observe**（2026-07-24：默认真实 PCM 流式 + worker 结束态保护 + 安全 prime；CPU 分阶段混合 FP16 冷加载 + driver-wide VRAM admission，失败回退 FP32 也须再次准入；通用远端 CI 已通过，仍须长时间真实硬件 soak。排查见 [`TRACK_VOICE_RECOGNITION.md`](../human-docs/team/TRACK_VOICE_RECOGNITION.md) §10） |
 | **K-VOICE-02** | Tier-2 TTS（ChatTTS · XTTS · Bark · VITS · 国内云 API · Piper 产品化） | P3 | VX-9 generic pack 模板或社区 adapter | **OPEN** |
 | **K-VOICE-03** | Linux/macOS CosyVoice2 产品 profile | P2 | 随上游 CosyVoice 跨平台稳定后解冻 `asr_profiles.json` platforms | **OPEN** |
 | **K-VOICE-04** | 角色包可选 TTS 覆盖与全局配置冲突 | P3 | 全局 profile 必须服务所有角色；角色 `synth_profile` 只覆盖播报任务，不得在切换角色时改写设置 | **Done**（Minimal · VX-11 · `2d5123af` · CI [`29408795870`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29408795870) · PR [#122](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/122)；inherit-provider 跟随 [#123](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/123) → `262c9ac4`） |
@@ -132,6 +132,11 @@
 | **D-SCAFFOLD-CONTRACT-02** | 官方配方、旧 template 归档和自定义脚手架缺少统一发现、命名空间、来源锁定与兼容边界 | **P1** | Stage 2A：Scaffold Package v1 schema；project/user/official 可配置发现；第三方命令仅声明且必须 namespace；`ci.*` 硬拒绝；确定性 lock/source record；组合字段只预留 | **Done · Stage 2A implemented**（2026-08-01：完成 25 个旧顶层命令与 5 条生成路径审查；新增严格 schema、四个编译内置官方兜底包、本地发现/配置覆盖/版本拒绝/路径逃逸检查/确定性 SHA 与原子 lock；`oclive scaffold list/inspect/validate/resolve` 只诊断，Stage 2A 不联网、不执行第三方 entry、不解析组合；默认帮助收口为 15 个稳定入口，10 个试验命令与旧 `template` 保持可调用但隐藏。SSOT：[`RFC_SCAFFOLD_PACKAGE_V1.md`](../creator-docs/rfc/RFC_SCAFFOLD_PACKAGE_V1.md)） |
 | **D-SCAFFOLD-GENERATION-03** | 已发现的第三方脚手架缺少可审计、可回滚且不升级为任意代码执行的生成闭环 | **P1** | Stage 2B：摘要固定的声明式 text/copy；精确 lock + 逐次确认；只写全新目录；内存预渲染、同父目录暂存与一次落位；value-free provenance；官方 builtin 委托既有领域命令 | **Done · Stage 2B remote verified**（2026-08-01：scaffold contract 升至 1.1.0，旧 v1.0 无摘要包保持可发现并获得迁移提示；`scaffold generate` 覆盖成功、dry-run、不可信确认、缺失/陈旧 lock、指令/源文件摘要漂移、变量错误、已有输出保护和官方委托。未开放市场、联网安装、第三方 command/script/hook、组合执行或 CI 控制；远端 CI [`30683169339`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30683169339) 在实现 HEAD `7d3d1eca` 上完成并通过。SSOT：[`RFC_SCAFFOLD_PACKAGE_V1.md`](../creator-docs/rfc/RFC_SCAFFOLD_PACKAGE_V1.md)） |
 | **D-SCAFFOLD-EVOLUTION-04** | Stage 2A/2B 已冻结发现与声明式生成边界，但测试期后的下一项脚手架能力尚未完成需求证据、兼容策略与信任边界决策 | **P1** | Stage 2C 先经历实际使用与问题收集，再以单独决策门冻结一个有界目标、schema/min-reader 迁移、来源/权限/沙箱、回滚与契约测试；组合/依赖解析、namespace 命令执行、离线包生命周期、资源配置诊断只能作为候选方向逐项取舍，不得合并成一次无界扩张 | **OPEN · testing/decision gate**（2026-08-01：当前进入使用观察期，不实现 Stage 2C。`D-SCAFFOLD-RESOURCE-01` 保持独立；市场、联网安装、第三方 CI 编排权、Runner/Secret/门禁控制继续是非目标，除非维护者另行授权并冻结新契约） |
+| **K-LLM-ENV-02** | `apply_user_llm_env` 在 DB snapshot 读取后才取得进程环境锁，并把调用结束时的最新版本直接标记为已应用；并发旧调用可能覆盖新环境却清除 dirty 标记 | **P1** | 串行化完整的“读设置 → token/cache → env/provider → 版本提交”事务，或改为不可变配置快照；版本变化时必须重试而非误报已应用；用可控交错测试证明 last-writer-wins，覆盖保存设置、chat、theater 与 canonical sync 调用链 | **OPEN · audit confirmed**（2026-08-01：静态审查确认锁只包围 `std::env` 写入，读盘和版本提交均在锁外；现有原子 version/dirty 无法阻止 stale snapshot 覆盖） |
+| **K-FRONTEND-TYPECHECK-01** | Vite/ESLint/Vitest 均不执行 Vue/TypeScript 类型检查，CI 可在真实分支错误存在时保持全绿 | **P1** | 引入 `vue-tsc` 与正确的 shared/chat-pro/theater project/alias 边界；先修零或建立只降不升 ratchet，再接 `check`/PR 硬门禁；为插件分享、协议安装与 Theater 大纲生成补行为测试 | **OPEN · audit confirmed**（2026-08-01：仓库无 `vue-tsc`/`typecheck`；只读 `tsc --noEmit` 暴露 shared **75**、Chat Pro **41**、Theater **20** 条诊断（含跨项目 `.vue` 声明噪音），并确认 3 个运行时缺陷：`classifyPluginShareUrl` 与 `showPluginInstallReviewHint` 未导入、`TheaterCastConfig` 仍访问旧 `a/b` 字段；`mainShellKey.ts` 还从 shared 指向不存在的 Chat Pro 类型） |
+| **D-CI-EXECUTION-02** | Stage 1 影子规划器尚未减少现有全量 job，通用 Rust job 又重复 CLI 嵌套 Cargo E2E；可见性 job 与硬门禁混居主 workflow | **P1** | 先按所有权去重 workspace/CLI/audit，串行或离线化嵌套 Cargo build 并稳定缓存；再把 soft visibility job 明确迁至 nightly/dispatch 或升为硬门禁；选择性执行仍须等待 Shadow 漏选/过选证据 | **OPEN · measured**（远端 CI [`30683169339`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30683169339)：Windows Rust **3722s**、Ubuntu Rust **2068s**；本地全量测出现 crates.io index 与 package-cache lock 等待。独立 CLI job 已 `--test-threads=1`，但 workspace Rust job仍再次默认并发执行 CLI tests；Dimension 5 与独立 job 也重复 `cargo audit`） |
+| **D-DEBT-LEDGER-01** | 技术债 SSOT 同时承担活跃清单、完成历史与长验证日志，重复 ID 和状态复述增加漂移概率 | P2 | 每个 ID 只保留一个权威状态行；历史验证移入归档/波次记录并以链接引用；增加重复 ID/冲突状态检查，允许显式 cross-reference 但禁止双写状态 | **OPEN · measured**（2026-08-01 本轮入债后：表格 **146** 行、**126** 个唯一 ID、**18** 个重复 ID，文首另有 **20** 段 `Verification`；本轮已发现多处“远端已过、状态仍待 CI”语义漂移） |
+| **D-ASSET-FOOTPRINT-01** | 官方角色图片直接进入 Git 与发行资源，资产体积已成为仓库主要组成 | P2 | 先建立视觉质量/解码兼容基线，再按角色包格式、loader、CSP、编写器与模块兼容链评估 WebP/AVIF 或 PNG 量化；不得只改单端后缀；发版体积和冷加载有实测收益才迁移 | **OPEN · measured**（2026-08-01：tracked working tree **98.9 MiB**；角色图片 **71** 张 / **85.7 MiB**，占 **86.6%**。这是优化候选，不等于立即引入 Git LFS） |
 
 **K-PLATFORM-01 子项**
 
@@ -185,7 +190,7 @@
 | **K-SUPPLY-01** | `cargo deny` 进 dimension5 / CI 硬门禁 | P1 | **Done**（轮次 19） |
 | **K-SUPPLY-02** | Release SHA256SUMS | P1 | **Done** — `generate-sha256sums.mjs` · `release-kernel-checksums.yml` · `bundle-kernel-for-tauri.mjs` |
 | **K-SUPPLY-03** | 插件安装审源码提示 | P2 | **Done**（轮次 19） |
-| **K-SUPPLY-04** | npm-audit 升格策略 | P2 | **Observe** — 2026-07-18 生产依赖 `npm audit --omit=dev --audit-level=high` **0 vulnerabilities**；`vue3-sfc-loader` 已为 dev-only；下复核 **2026-08**，满两个复核周期后再决定关闭或升格 |
+| **K-SUPPLY-04** | npm-audit 升格策略 | P2 | **Ready to close after gate hardening** — 2026-07-18 与 2026-08-01 两轮生产依赖扫描均为 **0 vulnerabilities**；下一步取消 `continue-on-error` 并取远端证据 |
 | **K-SUPPLY-05** | deny 重复依赖 warn→deny | P2 | **Done**（Minimal · 2026-07-15）— `multiple-versions = deny` + documented `[bans.skip]` · ratchet **80** · **Full Partial**（2026-07-16 · toml workspace→1 · ratchet **75** · 零 skip 仍 blocked:needs-ecosystem） |
 | **K-SUPPLY-06** | 位级可重复构建（reproducible） | — | **Deferred** · 见 SECURITY_AUDIT_SCOPE 局限 |
 | **K-SUPPLY-07** | SBOM（CycloneDX/SPDX） | — | **Deferred** · 政企/校企采购需求触发 |
@@ -194,10 +199,11 @@
 | **K-SUPPLY-08** | crate 作者信誉 / 发布历史系统审计 | — | **Observe** · 无成熟自动化方案 |
 | **K-SUPPLY-09** | 插件签名严格模式默认关闭 | **P1** | 官方/市场安装默认要求可验证签名；本地开发保留显式 opt-out，并补签名轮换/撤销流程 | **OPEN**（当前仅 `OCLIVE_PLUGIN_SIGNATURE_STRICT=1` 时校验 sidecar SHA-256；不能把源码提示当供应链证明） |
 | **K-SUPPLY-10** | GitHub Actions 仅固定可变 tag（`@v*` / `@stable`） | P2 | 所有外部 action 固定完整 commit SHA，并由 Dependabot/Renovate 维护升级 | **OPEN**（`actions/*`、`dtolnay/rust-toolchain`、`Swatinem/rust-cache` 均未 pin SHA） |
+| **K-SUPPLY-11** | `event-listener 5.4.1` 命中 RUSTSEC-2026-0221（`StackSlot` 可跨线程携带 `!Send` tag） | **P1** | 追踪 SQLx 与 zbus/Tauri 两条传递路径，优先升级到修复版本；若上游暂时阻塞，记录实际可达性与版本约束，不得仅加入 ignore；更新中英 KNOWN_VULNERABILITIES | **OPEN**（2026-08-01：`cargo audit` 漏洞级仍 **0**、退出码 0，但 allowed warnings **8→9**；该 unsound 条目同时进入 `sqlx-core/sqlx-sqlite` 与 `zbus/tauri-plugin-opener` 依赖链） |
 
 **现在就能做（低成本）**：维持 dimension5 全检绿（项数以脚本输出为准）· `Cargo.lock` PR 更新 KNOWN_VULN · 发版前本地 `oclive lint --deny` · 校企仓要求组员 `npm ci && cargo build` 从源码跑通。
 
-**下一工程动作（P1）**：K-SUPPLY-02 Release 哈希清单（与 `kernel_manifest` / bundled kernel 发版对齐）。
+**下一工程动作**：优先调查 **K-SUPPLY-11**；随后把已满足双周期证据的 **K-SUPPLY-04** 升为硬门禁。插件发布信任仍以 **K-SUPPLY-09** 为主要 P1。
 
 ---
 
@@ -235,9 +241,9 @@
 | **K-TURN-F1** | Wave F · 角色包 `turn_thinking` 策略（Deep 路由 + Deep latch 直到和解） | P1 | RFC 定稿 + `config.json` schema + 内核 merge HostProfile；**无 UI 开关** | **Done** |
 | **PE-TURN-01** | 编写器 · Turn Thinking / 对话节奏编辑（阈值、关键词、latch、可选 AND 规则） | P2 | 依赖 K-TURN-F1 schema · 简单/高级分档 | **OPEN**（姊妹仓 `oclive-pack-editor`） |
 | **PE-UID-01** | 编写器 · `user_identities/` 可视化编辑（模板正文、`maps_to_relation_id`、与 `meta.relations.prompt_hint` 对齐预览） | P2 | ROLE_PACK_SPEC §1.1 · mumu `father.md` 手写 SSOT 已落地 | **OPEN**（姊妹仓 `oclive-pack-editor`） |
-| **K-CONTINUITY-01** | 运行时叙事连续性微状态机 | 与核心 / 可变 / 短期情绪档案彻底分离；数据库按 `srid` 保存 `scene_id + state_id + revision`，位置、锚点、姿态、活动从角色包解析。运行时默认保持，仅在最终可见回复命中显式动作标记时转移，并通过动态 Prompt 段服务 Fast / Deep，不在热路径临时调用 LLM 生成状态 | **Partial**（2026-07-23：schema / validation / loader / CAS 持久化 / Prompt / 回复后迁移 / 场景失效 / Mumu 23 个候选已实现；workspace fmt/clippy/lib tests/doctest、pack validate、module-compat、Dimension 5 **26 checks** 本地通过；待提交后 CI 与 playtest） | 实测同场景多轮保持、显式动作迁移与切场景重选，再以 CI 证据关闭 |
+| **K-CONTINUITY-01** | 运行时叙事连续性微状态机 | 与核心 / 可变 / 短期情绪档案彻底分离；数据库按 `srid` 保存 `scene_id + state_id + revision`，位置、锚点、姿态、活动从角色包解析。运行时默认保持，仅在最终可见回复命中显式动作标记时转移，并通过动态 Prompt 段服务 Fast / Deep，不在热路径临时调用 LLM 生成状态 | **Partial**（2026-07-23：schema / validation / loader / CAS 持久化 / Prompt / 回复后迁移 / 场景失效 / Mumu 23 个候选已实现；本地门禁通过，后续远端 CI [`30683169339`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30683169339) **22/22**；仍待同场景保持、显式动作迁移与切场景重选的人工 playtest） | 完成三类 playtest 并记录可复现证据后关闭 |
 | **PE-CONTINUITY-01** | 编写器 · 场景初始状态候选生成 | 在**创作期**让模型根据场景描述生成 **3～8** 个候选初始状态，由创作者审核、修改、排序并写入角色包；运行期不临场生成，避免首字延迟和世界事实漂移 | **K-CONTINUITY-01** 可选 schema 冻结并进入编写器更新批次 | 增加生成 / 审核 / 默认项 / 条件与权重编辑；补 import-export roundtrip、非法锚点校验及旧角色包无字段兼容；姊妹仓 `oclive-pack-editor` 实施 |
-| **K-ADULT-01** | R18 角色扩展 · 运行时成人链契约 | 角色成人表现、普通场景的 R18 走向、成人对话、动作流程、边界与会话状态需要一条独立于基础场景 Prompt 和模型/LoRA `ContentRating` 的正式契约；须按 G17 覆盖生产者、schema/validation、权限与确认、Prompt 适配、运行时状态/回退、角色/身份/场景切换及测试 | **Locally Done · v1 主链与 D25～D29 已实现并实机验证（2026-07-27）**：除既有三重门、结构化双气泡、成人记忆分区与自动节拍外，现已增加 durable staged beat、显式 begin/stage/commit/cancel/list、提交幂等键、进程内取消令牌、全局有界公平队列、后台只缓存文本、前台逐拍提交/语音、重启恢复及用户输入抢占。预生成阶段不写聊天、短期记忆、关系、事件或人格；只有前台 commit 才写入。真实 7B GGUF 深度 1/2/4/8 与共享显存语音矩阵均通过；跨硬件档位与远端 CI 证据继续保留为发布验证，不回退本地主链状态 |
+| **K-ADULT-01** | R18 角色扩展 · 运行时成人链契约 | 角色成人表现、普通场景的 R18 走向、成人对话、动作流程、边界与会话状态需要一条独立于基础场景 Prompt 和模型/LoRA `ContentRating` 的正式契约；须按 G17 覆盖生产者、schema/validation、权限与确认、Prompt 适配、运行时状态/回退、角色/身份/场景切换及测试 | **v1 主链与 D25～D29 已实现并实机验证（2026-07-27；远端 CI 2026-08-01）**：除既有三重门、结构化双气泡、成人记忆分区与自动节拍外，现已增加 durable staged beat、显式 begin/stage/commit/cancel/list、提交幂等键、进程内取消令牌、全局有界公平队列、后台只缓存文本、前台逐拍提交/语音、重启恢复及用户输入抢占。预生成阶段不写聊天、短期记忆、关系、事件或人格；只有前台 commit 才写入。真实 7B GGUF 深度 1/2/4/8 与共享显存语音矩阵均通过；远端通用门禁已过，跨硬件档位与更长 soak 继续保留为发布验证，不回退本地主链状态 |
 | **PE-ADULT-01** | 编写器 · R18 角色包额外拓展编写 | 在编写器空余更新中为成人角色表现、场景成人走向、成人对话与动作流程等提供独立创作面；不得退化为把长成人 Prompt 塞进现有 `scenePrompt`，也不得先于运行时契约自行发明第二套格式 | **Done（2026-07-27）**：姊妹仓已提供独立成人扩展页；完整基础包校验通过后方可进入，简单/高级/成人页共享同一草稿与导入导出链，扩展按 v1 校验并随完整角色包合并导出；旧包无扩展时保持兼容 |
 | **K-UID-POST-01** | mumu 可选 `reply_post_processor` profile（care-package 句级裁剪 · remote/builtin） | P3 | 主链已用 `trim_template_repeat_reply` + Prompt 上一轮约束兜底；见历史 [Phase 2 记录](./archive/USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md) | **Deferred**（不默认开启 post-processor） |
 | **K-PERF-10** | Chat chrome 懒加载 | **Partial** — overlay 已 lazy；chat chrome 仍 eager | 真人 playtest 归因首屏慢 **或** perf mark 超阈值 | 激活 chat chrome lazy PR |
@@ -279,7 +285,7 @@
 - **D33 · 地点与成人题材不作为本地运行时审查开关（已确认 · 2026-07-27）：** 对通过成年确认且两级开关均开启的成人虚构创作，OCLive / Chat Pro 编排层不因场景位于公园、图书馆等公开地点，也不因具体成人题材类别而额外阻断、改写或降级；地点风险、第三方反应、隐蔽程度与现实后果属于角色包创作者的叙事空间。第三方本地角色包的导入校验聚焦结构、版本、成人声明与安全解析，不对其成人剧情做官方发行标准式的语义审核。此决定不撤销 D3～D6 已确认的成年确认与两级开关流程，也不要求底层模型绕过其自身能力或策略。
 - **D34 · 本地创作自由与官方发布责任分层（已确认 · 2026-07-27）：** OCLive 的完全本地运行能力与官方宣传、第一方角色包、演示内容、文档及官方分发渠道必须分层治理：本地运行时以用户控制和创作自由为主；官方渠道则清楚声明成人功能边界、第三方内容归属、启用责任和适用规则，并只对官方实际发布的内容执行相应选材与审查。不得把官方渠道规则伪装成对全部本地创作的技术封锁，也不得宣传“本地运行即可当然免责”或保证任何用法均合法；正式发布文案仍需按目标地区做法律复核。
 - **D35 · 独立 R18 扩展页、完整基础包前置与简单/高级编辑解耦（已确认 · 2026-07-27）：** 编写器在角色包工程内提供独立的“R18 扩展”页面，页面分为成人状态人设与对话、各基础场景对应的 R18 走向、动作节拍与节奏建议三个主要区域；不得把这些字段混塞进通用基础人设或基础场景表单。创作者只有在导入或完成一份完整且通过基础校验的角色包后，才能进入 R18 扩展编写流程；不提供脱离基础角色包的独立 R18 包创作与导出。现有简单编辑和高级编辑在界面、操作流程与职责上解耦：简单编辑提供受约束的引导式常用字段，高级编辑负责完整结构和精细控制；二者必须共享同一规范化领域模型、校验器和导入导出链路，不得复制数据或形成两套不兼容格式。最终产物仍按 D1 将基础内容与 R18 扩展合并为同一角色包。
-- **实施收口（2026-07-28）：** D1～D35 的 v1 运行时/角色包/编写器链已实现并完成本地验证。D25～D28 的前置条件不再借用正式 turn：迁移 `038_adult_staged_beats.sql` 持久保存未展示结构化文本，stage 路径跳过聊天、短期记忆、关系、事件、人格与叙事连续性写入；前台按序 commit 后才进入历史与成人短期记忆，重复 commit 使用稳定幂等键。取消与新 generation 会删除未提交拍，生成完成和取消竞态经压力用例验证不残留 pending；Chat Pro 以所有角色/聊天共享的正整数容量暂停/恢复生成，降低上限不丢已有拍，重启后可恢复或取消。D29 的参考机真实模型、队列深度与共享显存语音矩阵已完成，默认值继续为 `2`；其他硬件档位、远端 CI 与更长时间 soak 仍是发布验证项，不回退本地主链状态。
+- **实施收口（2026-07-28；远端证据 2026-08-01）：** D1～D35 的 v1 运行时/角色包/编写器链已实现并完成本地验证。D25～D28 的前置条件不再借用正式 turn：迁移 `038_adult_staged_beats.sql` 持久保存未展示结构化文本，stage 路径跳过聊天、短期记忆、关系、事件、人格与叙事连续性写入；前台按序 commit 后才进入历史与成人短期记忆，重复 commit 使用稳定幂等键。取消与新 generation 会删除未提交拍，生成完成和取消竞态经压力用例验证不残留 pending；Chat Pro 以所有角色/聊天共享的正整数容量暂停/恢复生成，降低上限不丢已有拍，重启后可恢复或取消。D29 的参考机真实模型、队列深度与共享显存语音矩阵已完成，默认值继续为 `2`；后续远端 CI 已通过，其他硬件档位与更长时间 soak 仍是发布验证项，不回退本地主链状态。
 
 ### K-PERF-10 条件门（2026-06-18）
 

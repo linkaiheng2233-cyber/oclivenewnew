@@ -3,7 +3,7 @@
 [中文](../../creator-docs/getting-started/DOCUMENTATION_INDEX.md)
 
 **Scope**: routing only. Architecture, contracts, status, and test facts stay in their topic SSOTs.
-**Last updated**: 2026-07-28.
+**Last updated**: 2026-08-01.
 
 ## Choose your role
 

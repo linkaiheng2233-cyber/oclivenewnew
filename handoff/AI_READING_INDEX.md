@@ -1,7 +1,7 @@
 # AI 深读索引（Agent Reading Index）
 
 > **SSOT 范围**：**分类目录与阅读路径**；各主题事实以链出文档为准。  
-> **最后更新**：2026-07-10  
+> **最后更新**：2026-08-01
 > **读者**：Cursor / Codex / 自动化 Agent / 维护者用 AI 改代码。  
 > **GitHub 首页 [`README.md`](../README.md) 面向人类**；五层文档分工见 [`handoff/README.md`](./README.md) §文档分层。  
 > **快速约束**：[`AGENTS.md`](../AGENTS.md) · **人类阶梯**：[`human-docs/README.md`](../human-docs/README.md)

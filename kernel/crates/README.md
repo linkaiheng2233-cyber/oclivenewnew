@@ -31,7 +31,10 @@ flowchart BT
 | `oclive_kernel_server` | 无头二进制 `oclive-kernel-server --api` | 是 | 仅 CLI/发行版入口 |
 | `oclive_validation` / `_wasm` | 角色包/蓝图校验 | 是 | 改 manifest 规则 |
 | `oclive_schema` | 纯 serde schema（blueprint） | 是 | 磁盘形状增量迁移 |
+| `oclive_ci_plan` | 领域感知 CI 的确定性影响规划器 | 是 | 改 impact map、validation catalog、plan/explain 语义 |
+| `oclive_scaffold` | Scaffold Package 契约、发现、锁定与声明式生成核心 | 是 | 改 schema、来源信任、生成事务与兼容策略 |
 | `oclive-cli` | 脚手架 init/build/bench | 是 | 模板与 CLI 命令 |
+| `oclive-fuzz`（`kernel/fuzz`） | validation / blueprint / parser fuzz harness | 是 | 仅 fuzz 靶与语料；不承载生产逻辑 |
 | `distros/desktop-tauri` | 桌面 IPC 薄壳、`kernel_attach` | 是 | Tauri 命令、attach/spawn |
 
 > 历史：实验 scheduler 代理 `oclive_runtimed` 已于 2026-06-10 删除（D-ORPHAN-01）；恢复见 `git log --diff-filter=D -- crates/oclive_runtimed`。

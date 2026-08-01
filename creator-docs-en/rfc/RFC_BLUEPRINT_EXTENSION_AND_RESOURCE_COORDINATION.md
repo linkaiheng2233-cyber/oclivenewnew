@@ -5,7 +5,7 @@
 | Metadata | Value |
 |----------|-------|
 | Status | **Boundary accepted · v4 blueprint envelope implemented · resource diagnostics v5 and the generic coordination control plane implemented** |
-| Last updated | 2026-07-31 |
+| Last updated | 2026-08-01 |
 | Audience | Kernel, editor, distro, directory-plugin, and commercial extension developers |
 | Scope | Minimal blueprint extension envelope, capability resolution, `ExecutionPlan`, Resource Coordinator, and adapter ownership |
 
@@ -53,7 +53,7 @@ Current implementation boundary (2026-07-31):
 - The candidate-plan compiler deterministically derives profile selections, proposed transitions, capacity results, rollback actions, and stable reasons from intent plus current GPU/RAM/CPU facts. The result carries `compiled_from_revision`; reading it never dispatches lifecycle operations.
 - The generic execution foundation registers one authoritative `ResourceAdapterController`, an owner-namespaced third-party `ResourceAdapterRegistrar`, exact requester → target → operation grants, per-adapter locks, stale-plan rejection, and reverse rollback. The in-process registration port does not load plugins, interpret untrusted manifests, or grant cross-adapter authority; directory-manifest resource declarations remain unimplemented.
 - Performance llama exposes three real tiers—`gpu_full`, `gpu_balanced`, and `cpu_compatibility`—that change `llama-server --n-gpu-layers` and fall through after admission denial. The admission queue provides priority ordering, fair aging, timeout, and cancellation cleanup. Automatic preemption touches only lower-priority, reversible, exactly authorized managed adapters and restores them in reverse order.
-- Generic `render`, `compute`, and `hybrid` resource domains plus a third-party Render adapter capacity/preemption test prove that the control plane is not hard-coded for LLM/voice. Chat Pro does not yet bundle a Live2D runtime; `Live2DStageAdapter` continues to statefully fall back to PNG. Direct-adapter shared-VRAM short stress and deterministic failure/concurrency plus a 10,000-transition in-process soak have been exercised. The CLI real-wall-clock kernel-process harness has completed short calibration; long bundled LLM/CosyVoice/future-Live2D shared-hardware soak and this milestone's remote CI remain to be closed.
+- Generic `render`, `compute`, and `hybrid` resource domains plus a third-party Render adapter capacity/preemption test prove that the control plane is not hard-coded for LLM/voice. Chat Pro does not yet bundle a Live2D runtime; `Live2DStageAdapter` continues to statefully fall back to PNG. Direct-adapter shared-VRAM short stress and deterministic failure/concurrency plus a 10,000-transition in-process soak have been exercised. The CLI real-wall-clock kernel-process harness has completed short calibration, and PR #147's remote main CI plus strict audit both passed. Long bundled LLM/CosyVoice/future-Live2D shared-hardware soak, the full failure matrix for uncontrollable external processes, and a real bundled Live2D runtime remain open.
 
 ## Capability Provider versus Resource Adapter
 
