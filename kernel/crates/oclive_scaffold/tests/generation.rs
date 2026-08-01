@@ -227,6 +227,25 @@ fn integrity_failure_leaves_no_partial_output() {
 }
 
 #[test]
+fn instruction_digest_drift_is_rejected_before_parsing_or_writes() {
+    let fixture = fixture();
+    let output = fixture.project.join("instruction-failure");
+    let variables = BTreeMap::from([("project_name".to_string(), "preview".to_string())]);
+    fs::write(
+        fixture.package_root.join("instructions.json"),
+        br#"{"schema_version":1,"files":[]}"#,
+    )
+    .expect("change instruction");
+
+    let error_value =
+        generate_scaffold(&request(&fixture, &output, &variables)).expect_err("digest mismatch");
+    assert!(error_value
+        .to_string()
+        .contains("instruction_digest_mismatch"));
+    assert!(!output.exists());
+}
+
+#[test]
 fn unknown_and_missing_variables_fail_before_writes() {
     let fixture = fixture();
     let output = fixture.project.join("variable-failure");
