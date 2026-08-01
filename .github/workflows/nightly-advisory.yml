@@ -66,9 +66,8 @@ jobs:
         run: |
           rustup toolchain install nightly --profile minimal --no-self-update
           cargo install cargo-fuzz --locked -q
-          cd kernel/fuzz
           for t in fuzz_blueprint_v2 fuzz_oclive_validation fuzz_function_call_parser fuzz_role_pack_loader; do
-            cargo +nightly fuzz run "$t" -- -runs=256
+            cargo +nightly fuzz run --fuzz-dir kernel/fuzz "$t" -- -runs=256
           done
       - name: Upload minimized fuzz failures
         if: failure()

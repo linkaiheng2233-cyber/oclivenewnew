@@ -3240,7 +3240,6 @@ dependencies = [
  "libfuzzer-sys",
  "oclive_kernel_host",
  "oclive_validation",
- "oclivenewnew-tauri",
  "serde_json",
 ]
 
