@@ -1,6 +1,6 @@
 # RFC：OCLive Scaffold Package v1
 
-> **状态（2026-08-01）**：Stage 2A 契约冻结；实现必须保持 CI 与脚手架相互独立。本文是 Scaffold Package、发现顺序、来源锁定、命令命名空间和兼容策略的 SSOT。CI 影响规划仍以 [`SOMEDAY_TOOLCHAIN_CI.md`](../roadmap/SOMEDAY_TOOLCHAIN_CI.md) 为准。
+> **状态（2026-08-01）**：Stage 2A 发现契约已冻结，Stage 2B 受限声明式生成契约已冻结；实现必须保持 CI 与脚手架相互独立。本文是 Scaffold Package、发现顺序、来源锁定、命令命名空间、生成事务和兼容策略的 SSOT。CI 影响规划仍以 [`SOMEDAY_TOOLCHAIN_CI.md`](../roadmap/SOMEDAY_TOOLCHAIN_CI.md) 为准。
 
 ## 1. 定位与硬边界
 
@@ -12,7 +12,7 @@ CI 是治理层。任何 Scaffold Package 均不得声明、覆盖或修改：
 - 主仓 workflow、验证器坐标、Runner、Secret、缓存、并发、超时或门禁强度；
 - CI 影响传播算法或“跳过哪些 Job”的决策。
 
-脚手架生成的文件仍由 CI 重新分析。Stage 2A 不执行第三方命令，也不开放市场、联网安装或组合运行时。
+脚手架生成的文件仍由 CI 重新分析。Stage 2B 只执行本文定义的本地声明式文件物化，不执行第三方脚本或内置命令代理，也不开放市场、联网安装或组合运行时。
 
 ## 2. 现状审查与命令收口
 
@@ -60,7 +60,7 @@ CI 是治理层。任何 Scaffold Package 均不得声明、覆盖或修改：
 - `package`：反向域名 ID、独立 SemVer、显示名、说明与维护者；
 - `compatibility`：支持的 `oclive-cli` 与 scaffold contract 版本范围；
 - `command_namespace`：命令声明的唯一命名空间；
-- `generators`：内置驱动或本地指令/生成规则入口的声明；
+- `generators`：内置驱动或本地指令/生成规则入口的声明；Stage 2B 可执行的本地 `instruction` 必须同时固定指令文件 SHA-256；
 - `commands`：名称、说明、入口和请求权限；Stage 2A 只展示，不执行；
 - `defaults`：包级默认配置；
 - `dependencies`、`extends`、`composition`：为以后组合预留，Stage 2A 保留并诊断，不解析或运行；
@@ -93,11 +93,11 @@ CI 是治理层。任何 Scaffold Package 均不得声明、覆盖或修改：
 项目级和用户级包统一视为 `untrusted_local`。列出、检查或解析时必须显示来源、维护者、作用域、请求权限及以下事实：
 
 - 第三方自行开发和维护，OCLive 不为其行为或兼容性背书；
-- Stage 2A 不执行其命令；未来执行也必须另行确认；
+- Stage 2B 仍不执行其命令；受限生成也必须逐次显式确认不可信来源；
 - 包不能控制 CI、Runner、Secret 或门禁；
 - 官方包是兜底，不会因第三方包存在而被删除。
 
-## 8. Stage 2A CLI 与非目标
+## 8. Stage 2A CLI
 
 `oclive scaffold` 首轮只提供：
 
@@ -106,4 +106,19 @@ CI 是治理层。任何 Scaffold Package 均不得声明、覆盖或修改：
 - `validate <path>`：严格校验单个 v1 清单；
 - `resolve`：生成确定性解析报告；仅 `--write-lock` 时写锁文件。
 
-本轮不提供 `add/remove/update/install/run`，不联网，不执行第三方 entrypoint，不解析组合图，也不替换 `init` / `plugin create` / `pack create`。下一阶段必须先有权限确认、执行沙箱与迁移 UX，才能讨论命令运行或组合。
+Stage 2A 不提供 `add/remove/update/install/run`，不联网，不执行第三方 entrypoint，不解析组合图，也不替换 `init` / `plugin create` / `pack create`。
+
+## 9. Stage 2B 受限声明式生成
+
+Stage 2B 新增 `oclive scaffold generate <package-id> <generator-id> --output <new-directory>`，但它不是通用命令执行器。生成链只接受本地 `instruction` 驱动，并遵守以下硬边界：
+
+1. 清单中的 `instruction.path` 必须是包内相对路径，`instruction.sha256` 必须是该指令文档的 64 位小写 SHA-256；缺失摘要的旧 v1 包仍可发现，但不能生成，并提示把兼容范围提高到 `>=1.1,<2` 后补摘要。
+2. 指令文档使用独立 `schema_version: 1`，只声明字符串变量和文件映射。每个源文件必须声明 SHA-256；`text` 模式只支持精确 `{{variable}}` 替换，`copy` 模式逐字节复制。没有条件、循环、表达式、include、shell、网络或生命周期 hook。
+3. 变量优先级为 `--set key=value` > 清单 `defaults` 中的字符串值 > 指令变量默认值。未知变量、非字符串清单默认值、未提供的必填变量和未知占位符均硬失败；生成凭据只记录变量名，不记录值。
+4. 包必须声明 `project.write`。项目级和用户级包还必须同时满足：当前 `.oclive/scaffold.lock.json` 与已解析包的 ID、版本、来源、locator 和清单摘要完全一致；本次命令显式传入 `--accept-untrusted`。该确认只授权本次受限文件写入，不授予包声明的进程、网络、环境或用户配置能力。
+5. 包根、指令和所有源文件都必须规范化后仍位于已选包根内；符号链接逃逸、绝对路径、`..`、重复目标及文件/目录冲突全部拒绝。
+6. 输出目录必须不存在，父目录必须已经存在。实现先完成全部读取、摘要验证、变量解析和内存渲染，再写入同一父目录内的临时树，最后用目录重命名一次落位；任何失败都不能留下半成品。Stage 2B 不提供 `--force`，不修改已有工程。
+7. `--dry-run` 完成同等校验和渲染规划但不写盘。成功落位时自动写入 `.oclive/scaffold.provenance.json`，记录包来源、维护者、清单/指令摘要、生成器 ID、使用的变量名以及每个产物的路径与摘要，不记录时间戳或变量值。
+8. 官方 `builtin` 驱动继续指向既有 `init` / `plugin create` / `pack create` 等领域入口；`scaffold generate` 只返回准确的委托提示，不重复实现官方生成逻辑。
+
+Stage 2B 仍不提供 `add/remove/update/install/run`，不执行 `commands[].entry`，不解析 `dependencies` / `extends` / `composition`，不联网，也不允许 Scaffold Package 控制 CI。`scaffold generate` 的产物必须继续通过普通 CI/本地验证，生成凭据不是质量证明。

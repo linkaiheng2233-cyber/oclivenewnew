@@ -2,13 +2,13 @@
 
 [中文](../../creator-docs/rfc/RFC_SCAFFOLD_PACKAGE_V1.md)
 
-> **Status (2026-08-01):** Stage 2A contract frozen. CI and scaffolding remain independent. This document is the SSOT for package discovery, source locking, command namespaces, trust notices, and compatibility. CI impact planning remains owned by [`SOMEDAY_TOOLCHAIN_CI.md`](../roadmap/SOMEDAY_TOOLCHAIN_CI.md).
+> **Status (2026-08-01):** the Stage 2A discovery contract and Stage 2B bounded declarative-generation contract are frozen. CI and scaffolding remain independent. This document is the SSOT for package discovery, source locking, command namespaces, generation transactions, trust notices, and compatibility. CI impact planning remains owned by [`SOMEDAY_TOOLCHAIN_CI.md`](../roadmap/SOMEDAY_TOOLCHAIN_CI.md).
 
 ## Boundary
 
 A Scaffold Package is a local developer instruction and generation-declaration package. It may describe instructions, generators, defaults, and namespaced commands. It does not prove that generated output is correct.
 
-No package may define or override `oclive ci`, workflows, validator coordinates, runners, secrets, caches, concurrency, timeouts, gate strength, the impact algorithm, or job-skipping policy. CI always re-analyzes generated files. Stage 2A does not execute third-party commands and has no marketplace, network installation, or composition runtime.
+No package may define or override `oclive ci`, workflows, validator coordinates, runners, secrets, caches, concurrency, timeouts, gate strength, the impact algorithm, or job-skipping policy. CI always re-analyzes generated files. Stage 2B only materializes the local declarative file contract below: it does not execute third-party scripts or proxy built-in commands and has no marketplace, network installation, or composition runtime.
 
 ## Audit and command surface
 
@@ -41,3 +41,18 @@ The lock is neither authorization nor CI evidence. Project and user packages alw
 ## Stage 2A CLI
 
 `oclive scaffold` provides `list`, `inspect`, `validate`, and `resolve`; only `resolve --write-lock` mutates disk. Stage 2A does not provide install, update, market, run, network, or composition execution and does not replace the existing domain generators.
+
+## Stage 2B bounded declarative generation
+
+Stage 2B adds `oclive scaffold generate <package-id> <generator-id> --output <new-directory>`, subject to these hard boundaries:
+
+1. A local `instruction` generator must pin its package-relative instruction document with a 64-character lowercase `sha256`. Older v1 packages without the digest remain discoverable but cannot generate; migration raises the compatibility range to `>=1.1,<2` and adds the digest.
+2. The strict instruction document uses `schema_version: 1` and declares only string variables plus file mappings. Every source pins its SHA-256. `text` supports exact `{{variable}}` replacement and `copy` performs byte-for-byte copying. There are no conditions, loops, expressions, includes, shells, networks, or lifecycle hooks.
+3. Variable precedence is `--set key=value`, then string values in manifest `defaults`, then instruction defaults. Unknown variables, non-string manifest defaults used by the instruction, missing required variables, and unknown placeholders fail closed. Provenance records variable names, never values.
+4. The package must declare `project.write`. Project and user packages additionally require an exact current `.oclive/scaffold.lock.json` match for ID, version, source, locator, and manifest digest, plus per-invocation `--accept-untrusted`. This acknowledgement only grants the bounded write; it never grants declared process, network, environment, or user-config capabilities.
+5. The package root, instruction, and every source must canonicalize inside the selected package root. Symlink escapes, absolute or parent paths, duplicate targets, and file/directory conflicts are rejected.
+6. The output must not exist and its parent must already exist. Validation, digest checks, variable resolution, and in-memory rendering finish before a temporary tree is written beside the destination and atomically renamed once. Failures leave no partial destination. There is no `--force` and no existing-project mutation in Stage 2B.
+7. `--dry-run` performs the same validation and render planning without writes. Success writes `.oclive/scaffold.provenance.json` with package source, maintainer, manifest/instruction digests, generator ID, variable names, and each output path/digest; it contains no timestamp or variable value.
+8. Official `builtin` drivers continue to delegate to existing domain commands such as `init`, `plugin create`, and `pack create`; `scaffold generate` only prints the precise delegation guidance and does not duplicate those generators.
+
+Stage 2B still provides no `add/remove/update/install/run`, never executes `commands[].entry`, never resolves `dependencies` / `extends` / `composition`, has no network access, and grants no CI control. Generated output still needs ordinary CI or local validation; provenance is not quality evidence.
