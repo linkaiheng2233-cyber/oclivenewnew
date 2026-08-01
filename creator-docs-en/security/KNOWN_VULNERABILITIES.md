@@ -76,7 +76,7 @@ See [`.cargo/audit.toml`](../../.cargo/audit.toml) and [SECURITY_AUDIT_SCOPE.md]
 
 The required CI `npm-audit` job runs `npm audit --omit=dev --audit-level=high`; remote run [`30692428026`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30692428026) reported **0 production vulnerabilities**.
 
-On the K-SUPPLY-12 repair tree, full `npm audit` and the production scan both report **0 vulnerabilities**, while `npm ls eslint eslint-plugin-unicorn` exits successfully. ESLint 10.8.0 / Antfu 9.2.0 satisfy Unicorn 72's peer contract, WebDriverIO 9.30.0 resolves fixed `fast-xml-parser` 5.10.1, and the legacy `vue3-sfc-loader` Vue 2/PostCSS chain is removed in favor of a restricted official-compiler DEV path. This is still **locally verified** until Linux/Windows remote CI passes the frozen commit; it is a measured result, not a permanent zero-risk claim.
+On frozen implementation `728219e7`, full `npm audit` and the production scan both report **0 vulnerabilities**, while `npm ls eslint eslint-plugin-unicorn` exits successfully. ESLint 10.8.0 / Antfu 9.2.0 satisfy Unicorn 72's peer contract, WebDriverIO 9.30.0 resolves fixed `fast-xml-parser` 5.10.1, and the legacy `vue3-sfc-loader` Vue 2/PostCSS chain is removed in favor of a restricted official-compiler DEV path. Remote CI [`30714475985`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30714475985) passed npm audit and the Linux/Windows frontend gates. This is a measured point-in-time result, not a permanent zero-risk claim.
 
 ---
 

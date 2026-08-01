@@ -1,6 +1,6 @@
 # OCLive Domain-Aware CI · Staged Baseline
 
-> **Status (2026-08-01):** Stage 1 is implemented and collecting shadow evidence; its plan still cannot control or skip required main-CI jobs. The five validators already catalogued as `nightly` now run in a separate scheduled/manual workflow; this is execution-lane alignment, not selective PR execution. The detailed design SSOT is the [Chinese document](../../creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md); module boundaries remain in [`MODULE_MAP_AND_HANDOFF.md` §12.7](../../handoff/MODULE_MAP_AND_HANDOFF.md#127-ci-影响元数据与脚手架边界).
+> **Status (2026-08-02):** Stage 1 remains shadow-only, and Stage 2 Compare now contains **two** real samples; the plan still cannot control or skip required main-CI jobs. The five `nightly` responsibility groups run in the separate scheduled/manual workflow, whose full run [`30714480898`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30714480898) passed **6/6** jobs at frozen implementation `728219e7`. This is execution-lane alignment, not selective PR execution. The detailed design SSOT is the [Chinese document](../../creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md); module boundaries remain in [`MODULE_MAP_AND_HANDOFF.md` §12.7](../../handoff/MODULE_MAP_AND_HANDOFF.md#127-ci-影响元数据与脚手架边界).
 
 [中文](../../creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md)
 

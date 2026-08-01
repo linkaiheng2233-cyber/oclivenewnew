@@ -1,6 +1,6 @@
 # OCLive 领域感知 CI · 分阶段实施基线
 
-> **状态（2026-08-01）**：Stage 1 已实现并保持 Shadow；Stage 2 Compare 已收录第一个真实对照样本，但规划结果仍不控制或跳过主 CI 硬门禁。验证目录中既有的五个 `nightly` 责任组已与实际执行通道对齐到独立定时/手动工作流；这是执行分流，不是 PR 选择性启用。本文是 CI 影响规划的设计 SSOT；模块之间的职责边界只在 [`MODULE_MAP_AND_HANDOFF.md` §12.7](../../handoff/MODULE_MAP_AND_HANDOFF.md#127-ci-影响元数据与脚手架边界) 登记，执行证据见 [`TECHNICAL_DEBT_INVENTORY.md` K-CI-IMPACT-01](../../handoff/TECHNICAL_DEBT_INVENTORY.md) 与工作流，验证口径以 [`AI_VERIFICATION_PROTOCOL.md`](../../handoff/AI_VERIFICATION_PROTOCOL.md) 为准。
+> **状态（2026-08-02）**：Stage 1 已实现并保持 Shadow；Stage 2 Compare 已收录 **2 个**真实对照样本，但规划结果仍不控制或跳过主 CI 硬门禁。验证目录中既有的五个 `nightly` 责任组已与独立定时/手动工作流对齐，冻结实现 `728219e7` 的完整 Nightly [`30714480898`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30714480898) **6/6** job 成功；这是执行分流，不是 PR 选择性启用。本文是 CI 影响规划的设计 SSOT；模块之间的职责边界只在 [`MODULE_MAP_AND_HANDOFF.md` §12.7](../../handoff/MODULE_MAP_AND_HANDOFF.md#127-ci-影响元数据与脚手架边界) 登记，执行证据见 [`TECHNICAL_DEBT_INVENTORY.md` K-CI-IMPACT-01](../../handoff/TECHNICAL_DEBT_INVENTORY.md) 与工作流，验证口径以 [`AI_VERIFICATION_PROTOCOL.md`](../../handoff/AI_VERIFICATION_PROTOCOL.md) 为准。
 
 OCLive 采用成熟 CI 的分层、测试金字塔和合并门禁，并增加一层领域感知规划器。目标不是让模型猜测该跑什么，也不是立刻删除全量检查，而是先用确定性元数据回答：一次改动直接落在哪些模块、经哪些契约传播、需要哪些受信验证。
 

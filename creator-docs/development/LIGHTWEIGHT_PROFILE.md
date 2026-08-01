@@ -39,14 +39,14 @@
 
 **许可证合规**（**2026-06-09**）：根目录 `deny.toml` + `cargo deny check licenses` 退出码 **0**（允许表含 `Apache-2.0`、`MIT`、`CDLA-Permissive-2.0`、`NCSA` 等；工作区 crate 统一 SPDX `Apache-2.0`）。
 
-CI：**`dimension5-acceptance`** 唯一持有主工作流的 `cargo audit` + `cargo deny licenses+bans`，**`cargo-audit-lockfile.yml`** 对 `Cargo.lock` / `.cargo/audit.toml` PR 补充锁文件审计；独立重复 `cargo-audit` job 已移除。`npm-audit` 同时硬门禁生产依赖与完整开发依赖图；K-SUPPLY-12 已完成本地收口，远端里程碑证据待冻结。供应链策略见 [security/SUPPLY_CHAIN.md](../security/SUPPLY_CHAIN.md)。
+CI：**`dimension5-acceptance`** 唯一持有主工作流的 `cargo audit` + `cargo deny licenses+bans`，**`cargo-audit-lockfile.yml`** 对 `Cargo.lock` / `.cargo/audit.toml` PR 补充锁文件审计；独立重复 `cargo-audit` job 已移除。`npm-audit` 同时硬门禁生产依赖与完整开发依赖图；K-SUPPLY-12 已在冻结实现 `728219e7` 的远端 CI [`30714475985`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30714475985) 完成 npm audit 与 Linux/Windows 前端验证。供应链策略见 [security/SUPPLY_CHAIN.md](../security/SUPPLY_CHAIN.md)。
 
 ### §6.5 未使用 / 可选依赖（审查结论）
 
 | 项 | 状态 |
 |----|------|
-| **`reqwest` features（D-OPUS-01）** | **2026-06-08**：workspace 与 `src-tauri` / `oclive_kernel_host` 均为 `default-features = false`，仅 **`json`** + **`rustls-tls`**；无 `fs-*` / `blocking`。 |
-| **`sqlx` 默认 features** | 当前 `distros/desktop-tauri/Cargo.toml` 使用 **`sqlx = { version = "0.7", features = [...] }`** 显式列表；若锁文件仍含 **`sqlx-mysql` / `sqlx-postgres`**，多为 **macros / compile-time** 或历史解析路径引入——**中期**应结合 **sqlx 0.8+** 与 **仅 sqlite** 特征再压一刀。 |
+| **`reqwest` features（D-OPUS-01）** | **2026-06-08**：workspace 与 `distros/desktop-tauri` / `oclive_kernel_host` 均为 `default-features = false`，仅 **`json`** + **`rustls-tls`**；无 `fs-*` / `blocking`。 |
+| **`sqlx` SQLite 边界** | `distros/desktop-tauri/Cargo.toml` 通过 workspace alias 使用 `oclive_sqlx`；该薄封装只直引 **`sqlx-core` 0.8.6** 与 **`sqlx-sqlite` 0.8.6**，不再依赖 umbrella `sqlx`。锁文件中的 `sqlx-mysql` / `sqlx-postgres` / `rsa` 回潮由 Dimension 5 ratchet 拒绝。 |
 | **仅 dev / 工具向依赖** | 以 `cargo machete` / `cargo udeps`（可选）周期性核对；移除前须 `cargo test` 全绿。 |
 
 > 已移除依赖的**历史列表**不永久驻留本文；以 `git log -p -- distros/desktop-tauri/Cargo.toml` 为准。
@@ -83,7 +83,7 @@ CI：**`dimension5-acceptance`** 唯一持有主工作流的 `cargo audit` + `ca
 **采样命令**（仓库根外置 `target-dir` 时路径以本机为准）：
 
 ```bash
-cd src-tauri
+cd distros/desktop-tauri
 cargo bloat --release -n 8
 ```
 
@@ -114,6 +114,7 @@ cargo bloat --release -n 8
 
 | 日期 | 说明 |
 |------|------|
+| 2026-08-02 | 对齐 K-SUPPLY-12 远端状态，并修正已迁移的桌面 Tauri 采样路径。 |
 | 2026-07-15 | §6.6：K-SUPPLY-05 Minimal gate（deny + skip 族分类） |
 | 2026-05-12 | §6.4 / §6.7：`cargo audit` 与 `cargo bloat --release -n 8` 复测，更新摘要日期与 bloat 数值（`.text` 7.6 MiB、PE 12.0 MiB）。 |
 | 2026-05-13 | 初版：与当前 `main` 锁文件、`cargo audit` / `cargo bloat` 采样对齐；链接 KNOWN_VULNERABILITIES。 |

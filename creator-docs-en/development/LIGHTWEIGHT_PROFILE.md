@@ -12,10 +12,11 @@ This document records **Release settings, dependency slimming, audits, and binar
 
 | Key | Current value | Notes |
 |-----|----------------|-------|
-| `profile.release.opt-level` | `"z"` | Size-first |
-| `profile.release.lto` | `true` | Full-crate LTO at link time; equivalent to **fat LTO** (`true` semantics since Rust 1.46+) |
-| `profile.release.strip` | *(unset)* | Optionally add `strip = "debuginfo"` or `"symbols"` to shrink release artifacts further (validate crash symbol needs per release) |
-| `profile.release.codegen-units` | *(unset)* | Optionally `codegen-units = 1` for smaller binary and more reproducible perf (slower compile) |
+| `profile.release.opt-level` | `3` | Runtime performance first (workspace default) |
+| `profile.release.lto` | `"thin"` | Thin LTO; dependency crates use `codegen-units = 16` under `[profile.release.package."*"]` |
+| `profile.release.codegen-units` | `1` | One CGU for workspace crates; slower compilation with more stable release performance |
+| `profile.release.strip` | `"symbols"` | Strip symbols from release artifacts |
+| `profile.release.panic` | `"abort"` | Abort the release process on panic |
 
 **`target-dir`**: see repo root [`.cargo/config.toml`](../../.cargo/config.toml); build output can live outside the tree under `../oclive-dev-artifacts/oclivenewnew-cargo-target/`.
 
@@ -38,13 +39,14 @@ Summary (**2026-08-01**, workspace-root `Cargo.lock`, `cargo audit`):
 - **Vulnerability level (error)**: **0** (`sqlx-mysql` / `rsa` are absent; `event-listener` resolves to fixed 5.4.2).
 - **Warning level (warning)**: **8** allowed/tracked findings, mainly the gtk/webkit Linux cluster, `glib`, `unic-*`, and yanked `spin`.
 
-CI: **`dimension5-acceptance`** uniquely owns the main workflow's `cargo audit` plus `cargo deny licenses+bans`; `cargo-audit-lockfile.yml` covers lockfile/audit-policy PRs, and the duplicate standalone job is removed. `npm-audit` hard-gates both production dependencies and the full development graph; K-SUPPLY-12 is locally closed and awaits frozen remote milestone evidence.
+CI: **`dimension5-acceptance`** uniquely owns the main workflow's `cargo audit` plus `cargo deny licenses+bans`; `cargo-audit-lockfile.yml` covers lockfile/audit-policy PRs, and the duplicate standalone job is removed. `npm-audit` hard-gates both production dependencies and the full development graph. K-SUPPLY-12 passed npm audit and the Linux/Windows frontend gates in remote CI [`30714475985`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30714475985) at frozen implementation `728219e7`.
 
 ### §6.5 Unused / optional dependencies (review conclusion)
 
 | Item | Status |
 |------|--------|
-| **`sqlx` default features** | Current `distros/desktop-tauri/Cargo.toml` uses **`sqlx = { version = "0.7", features = [...] }`** explicit list; if the lockfile still contains **`sqlx-mysql` / `sqlx-postgres`**, it is often from **macros / compile-time** or historical resolution—**mid-term** should combine **sqlx 0.8+** and **sqlite-only** features for another trim pass. |
+| **`reqwest` features (D-OPUS-01)** | Since 2026-06-08, workspace and desktop-host declarations use `default-features = false` with only **`json`** + **`rustls-tls`**; no `fs-*` or `blocking`. |
+| **`sqlx` SQLite boundary** | `distros/desktop-tauri/Cargo.toml` consumes `oclive_sqlx` through the workspace alias. That thin facade depends directly on **`sqlx-core` 0.8.6** and **`sqlx-sqlite` 0.8.6**, not the umbrella `sqlx` crate. Dimension 5 rejects any `sqlx-mysql`, `sqlx-postgres`, or `rsa` lockfile regression. |
 | **Dev-only / tooling deps** | Periodically check with `cargo machete` / `cargo udeps` (optional); never remove without full `cargo test` green. |
 
 > Historical lists of removed deps are **not** kept here permanently; use `git log -p -- distros/desktop-tauri/Cargo.toml`.
@@ -79,7 +81,7 @@ cd distros/desktop-tauri
 cargo bloat --release -n 8
 ```
 
-**Last sample**: **2026-05-12**, `oclivenewnew-tauri.exe` (`--release`, profile §1; `cargo bloat --release -n 8`, path under external `target-dir` as on your machine).
+**Last sample**: **2026-05-20**, `oclivenewnew-tauri.exe` (`--release`, profile §1; `cargo bloat --release -n 8`, path under external `target-dir` as on your machine). The values remained in the same range as the 2026-05-12 sample.
 
 | Metric | Value |
 |--------|-------|
@@ -106,5 +108,6 @@ cargo bloat --release -n 8
 
 | Date | Notes |
 |------|--------|
+| 2026-08-02 | Aligned the Release profile with root `Cargo.toml`, recorded K-SUPPLY-12 remote closure, restored the reqwest feature row, and aligned the latest bloat sample date with the Chinese canonical document. |
 | 2026-05-12 | §6.4 / §6.7: re-ran `cargo audit` and `cargo bloat --release -n 8`, refreshed summary date and bloat numbers (`.text` 7.6 MiB, PE 12.0 MiB). |
 | 2026-05-13 | First version: aligned with `main` lockfile, `cargo audit` / `cargo bloat` sampling; linked KNOWN_VULNERABILITIES. |

@@ -78,14 +78,14 @@
 
 | 项 | 原状 | 修正 |
 |----|------|------|
-| `eslint` | 根依赖 9.39.5 不满足 Unicorn 68 的 ESLint ≥10.4 peer 契约 | **本地已修复 · K-SUPPLY-12**：ESLint **10.8.0** + Antfu **9.2.0** + Unicorn **72.0.0**，`npm ls eslint eslint-plugin-unicorn` 退出 0 |
+| `eslint` | 根依赖 9.39.5 不满足 Unicorn 68 的 ESLint ≥10.4 peer 契约 | **已修复并远端验证 · K-SUPPLY-12**：ESLint **10.8.0** + Antfu **9.2.0** + Unicorn **72.0.0**，`npm ls eslint eslint-plugin-unicorn` 退出 0 |
 | `webdriverio` | 9.29.1 经 `edgedriver` 解析到命中审计的 `fast-xml-parser` 5.10.0 | 升级 **9.30.0** 并解析到修复版 `fast-xml-parser` **5.10.1** |
 | 开发模式 SFC 编译 | `vue3-sfc-loader` 0.9.5 捆绑 Vue 2 compiler 与旧 PostCSS | 移除旧 loader；改用官方 `@vue/compiler-sfc` + 受限 DEV-only 转换，只允许导入 `vue`，发行 bundle 编译器标记为 0 |
 | `vue-virtual-scroller` | 首屏全局 `app.use`，但 UI 已改用 `VirtualScrollContainer` | **移除依赖**；首屏不再同步加载 |
-| `sha2`（`src-tauri`） | `0.11.0`（crates.io 无稳定 0.11 线） | **`0.10`**（`sha2 0.10.9`） |
+| `sha2`（`distros/desktop-tauri`） | `0.11.0`（crates.io 无稳定 0.11 线） | **`0.10`**（`sha2 0.10.9`） |
 | `@antfu/eslint-config` | `^9.0.0` | 当前解析版 9.1.0 的传递依赖已越过 ESLint 9 peer 范围；与上一行一起处理 |
 | `serde_yaml` | `0.9`（crate archived，维护停止） | **`serde_yaml_ng 0.10`**（workspace 全量替换 `use serde_yaml_ng::`） |
-| `zip`（`src-tauri`） | `0.6`（RUSTSEC 跟踪中） | **`2.x`**（`role_pack` / `plugin_pack` API 已适配） |
+| `zip`（`distros/desktop-tauri`） | `0.6`（RUSTSEC 跟踪中） | **`2.x`**（`role_pack` / `plugin_pack` API 已适配） |
 
 复核命令：`npm outdated`（根目录）、`cargo tree -p oclivenewnew-tauri -i sha2`、`cargo tree -p oclivenewnew-tauri -i serde_yaml`（应为空）。
 
@@ -95,7 +95,7 @@
 
 CI **`npm-audit`** job 以硬门禁运行 `npm audit --omit=dev --audit-level=high`；远端 CI [`30692428026`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30692428026) 的生产依赖扫描为 **0 vulnerabilities**。本地复现：仓库根目录运行同一命令。
 
-K-SUPPLY-12 修复工作树上，完整 `npm audit` 与生产扫描均为 **0 vulnerabilities**，`npm ls eslint eslint-plugin-unicorn` 退出 0；旧 Vue 2/PostCSS 编译链已经退出 lockfile。此结论仍是**本地验证**，需 Linux/Windows 远端 CI 对冻结提交全绿后才能把台账升为 Done；未来扫描结果仍以命令实测为准，不把本次 0 扩写成永久保证。
+K-SUPPLY-12 冻结实现 `728219e7` 上，完整 `npm audit` 与生产扫描均为 **0 vulnerabilities**，`npm ls eslint eslint-plugin-unicorn` 退出 0；旧 Vue 2/PostCSS 编译链已经退出 lockfile。远端 CI [`30714475985`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30714475985) 的 npm audit 与 Linux/Windows 前端门禁全部成功，台账据此升为 Done；未来扫描结果仍以命令实测为准，不把本次 0 扩写成永久保证。
 
 ---
 
