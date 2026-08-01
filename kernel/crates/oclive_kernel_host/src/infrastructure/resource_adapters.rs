@@ -21,6 +21,7 @@ pub const COSYVOICE_ADAPTER_ID: &str = "builtin.voice.cosyvoice2";
 pub const COSYVOICE_PROFILE_ID: &str = "bundled_auto_precision";
 
 pub const ENV_COSYVOICE_GPU_RESERVATION_MIB: &str = "OCLIVE_COSYVOICE_GPU_RESERVATION_MIB";
+const DEFAULT_LLAMA_BALANCED_GPU_LAYERS: i32 = 22;
 /// Cold-load reservation measured against the bundled mixed-FP16 staged loader.
 /// The sidecar reports roughly 1.3 GiB peak on the supported Windows profile;
 /// keep headroom above that peak instead of treating the steady-state footprint
@@ -53,8 +54,8 @@ pub fn configured_llama_tiers() -> [LlamaRuntimeTier; 3] {
         // Keep `gpu_full`, `gpu_balanced`, and `cpu_compatibility` materially
         // distinct even when a development environment supplies a tiny value.
         .clamp(2, 999);
-    let balanced_layers = if full_layers > 24 {
-        24
+    let balanced_layers = if full_layers > DEFAULT_LLAMA_BALANCED_GPU_LAYERS {
+        DEFAULT_LLAMA_BALANCED_GPU_LAYERS
     } else {
         (full_layers / 2).max(1)
     };
@@ -296,6 +297,7 @@ mod tests {
         let tiers = configured_llama_tiers();
         assert!(tiers[0].gpu_layers > tiers[1].gpu_layers);
         assert!(tiers[1].gpu_layers > tiers[2].gpu_layers);
+        assert!(tiers[1].gpu_layers <= DEFAULT_LLAMA_BALANCED_GPU_LAYERS);
         assert_eq!(tiers[2].gpu_layers, 0);
     }
 }

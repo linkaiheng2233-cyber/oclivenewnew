@@ -134,7 +134,7 @@ Shared-GPU cold-load and concurrency stress (llama-server first, then voice):
 
 ```powershell
 .\examples\voice-loop-minimal\.venv-cosyvoice\Scripts\python.exe `
-  scripts\stress-voice-gpu-runtime.py --gpu-layers 24 --voice-runs 10
+  scripts\stress-voice-gpu-runtime.py --gpu-layers 22 --voice-runs 10
 
 .\examples\voice-loop-minimal\.venv-cosyvoice\Scripts\python.exe `
   scripts\stress-voice-gpu-runtime.py --gpu-layers 99 --expect-admission-denied

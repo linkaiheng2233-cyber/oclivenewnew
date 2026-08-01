@@ -95,7 +95,7 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument("--gpu-index", default="0")
-    parser.add_argument("--gpu-layers", type=int, default=24)
+    parser.add_argument("--gpu-layers", type=int, default=22)
     parser.add_argument("--voice-runs", type=int, default=5)
     parser.add_argument(
         "--duration-minutes",

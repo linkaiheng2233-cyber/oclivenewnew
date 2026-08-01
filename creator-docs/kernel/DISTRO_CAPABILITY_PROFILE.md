@@ -162,7 +162,7 @@ favor_low  = "…"              # optional; favor < 40
 | `ollama` | 现有 `OllamaClient` | 无第二本地运行时 |
 | `performance` | loopback OpenAI-compatible `llama-server` 真流式接口 | 仅在首个 token 尚未发出时回退 Ollama；已输出部分内容后禁止重跑，避免重复回复 |
 
-`performance_profile` 只适用于 `performance`：`gpu_full` 使用配置的完整 GPU layers；当完整值大于 24 时，`gpu_balanced` 使用 24 层，否则使用完整值的一半（至少 1 层）；`cpu_compatibility` 使用 0 GPU layers。协调器会从首选档依次尝试更低档位；`OCLIVE_LLAMA_PERFORMANCE_PROFILE` 可覆盖发行版默认。三档会改变实际 `llama-server --n-gpu-layers`，不是只改诊断标签。
+`performance_profile` 只适用于 `performance`：`gpu_full` 使用配置的完整 GPU layers；当完整值大于 22 时，`gpu_balanced` 使用 22 层，否则使用完整值的一半（至少 1 层）；`cpu_compatibility` 使用 0 GPU layers。22 层是 RTX 5060 Laptop 8GB + Qwen2.5 7B Q4_K_M + CosyVoice2 mixed-FP16 五分钟共存复测后的保守默认，避免 24 层在系统显存波动下贴住语音冷加载安全线；它不是所有 GPU 的性能上限。协调器会从首选档依次尝试更低档位；`OCLIVE_LLAMA_PERFORMANCE_PROFILE` 可覆盖发行版默认。三档会改变实际 `llama-server --n-gpu-layers`，不是只改诊断标签。
 
 性能模式的可选组件边界：
 

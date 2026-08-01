@@ -20,6 +20,7 @@
 
 ### Fixed
 
+- **8GB 语音共存档位留足冷加载余量**：`gpu_balanced` 与共享 GPU 压力工具默认上限由 24 层调整为 22 层。RTX 5060 Laptop 8GB 实测中，24 层因系统波动使 CosyVoice 冷加载余量以 **2559MiB < 2560MiB** 被安全拒绝；22 层可完成 mixed-FP16 warm，并在五分钟 LLM/TTS 共存中保持峰值余量 **1370MiB**。`gpu_full` 与显式环境覆盖仍保留。
 - **Loom Nightly 真模型恢复**：将会污染全部依赖的全局 `cfg(loom)` 改为桌面宿主包级 `loom-tests` feature；`oclive test --loom`、验证目录与 Nightly 现统一运行两个真实且有界的 Loom 交错模型，不再把未启用模型的占位 smoke 当作并发证据。面向独立生成项目的 `oclive ci init` 不再输出依赖主仓桌面路径的无效 Loom job。
 - **npm 开发工具链供应链收口**：升级 ESLint 10 / Antfu 9.2 与 WebDriverIO 9.30，修复 `brace-expansion`、`fast-xml-parser` 命中和 Unicorn peer 契约冲突；移除捆绑 Vue 2/PostCSS 的 `vue3-sfc-loader`，改用仅在显式不安全 DEV 模式动态加载的官方 Vue SFC 编译器，并将目录插件脚本导入限制为 `vue`。完整与生产 npm audit 均成为硬门禁，仓库内全部官方/示例目录插件 SFC 进入编译回归测试。
 - **CI 执行通道分流**：将 `loom`、`fuzz`、`cli-bench`、`visual-presentation-smoke` 与原生 `e2e-tauri` 从 PR/Push 主工作流迁至独立 `nightly-advisory.yml`，支持每日定时与按验证器手动触发。Nightly 失败在自身工作流真实变红但不阻塞 main，并为 CLI 性能与 fuzz/E2E 失败保留 artifact；主 CI 只保留硬门禁及非阻塞的 Stage 1 影子规划器。
