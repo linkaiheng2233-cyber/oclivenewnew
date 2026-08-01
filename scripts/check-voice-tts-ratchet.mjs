@@ -334,6 +334,99 @@ class PrecisionModel:
         self.model = PrecisionRuntime()
         self.fp16 = False
 
+priority_events = []
+class PriorityStream:
+    def __init__(self, device=None, priority=0):
+        self.device = device
+        self.priority = priority
+
+class PriorityStreamContext:
+    def __init__(self, stream):
+        self.stream = stream
+    def __enter__(self):
+        priority_events.append(('enter', self.stream.priority))
+    def __exit__(self, *_args):
+        priority_events.append(('exit', self.stream.priority))
+
+class PriorityCurrentStream:
+    def wait_stream(self, stream):
+        priority_events.append(('wait', stream.priority))
+
+class PriorityCuda:
+    @staticmethod
+    def is_available():
+        return True
+    Stream = PriorityStream
+    @staticmethod
+    def stream(stream):
+        return PriorityStreamContext(stream)
+    @staticmethod
+    def current_stream(device=None):
+        priority_events.append(('current', device))
+        return PriorityCurrentStream()
+
+class PriorityTorch:
+    cuda = PriorityCuda
+
+old_priority_env = os.environ.get('OCLIVE_COSYVOICE_FIRST_CHUNK_PRIORITY')
+try:
+    os.environ['OCLIVE_COSYVOICE_FIRST_CHUNK_PRIORITY'] = '1'
+    priority_runtime = SimpleNamespace(
+        device='cuda',
+        llm_context=None,
+        token_hop_len=25,
+    )
+    sidecar._configure_first_chunk_priority(
+        priority_runtime,
+        torch_module=PriorityTorch,
+    )
+    assert sidecar._first_chunk_priority_requested is True
+    assert sidecar._first_chunk_priority_active is True
+    assert priority_runtime._oclive_first_chunk_priority_active is True
+    assert isinstance(priority_runtime.llm_context, PriorityStreamContext)
+    assert priority_runtime.token_hop_len == 20
+    assert sidecar._first_chunk_hop_tokens == 20
+    fake_priority_model = SimpleNamespace(model=priority_runtime)
+    sidecar._reset_stream_hop_len(fake_priority_model, '短句，')
+    assert priority_runtime.token_hop_len == 25
+    assert priority_runtime._oclive_first_chunk_priority_active is False
+    sidecar._reset_stream_hop_len(fake_priority_model, '这是一个足够长的首段文本。')
+    assert priority_runtime.token_hop_len == 20
+    assert priority_runtime._oclive_first_chunk_priority_active is True
+    original_torch = sys.modules.get('torch')
+    sys.modules['torch'] = PriorityTorch
+    try:
+        result = sidecar._run_first_waveform_with_priority(
+            priority_runtime,
+            lambda: 'first-waveform',
+        )
+    finally:
+        if original_torch is None:
+            sys.modules.pop('torch', None)
+        else:
+            sys.modules['torch'] = original_torch
+    assert result == 'first-waveform'
+    assert priority_events[-4:] == [
+        ('enter', -1),
+        ('exit', -1),
+        ('current', 'cuda'),
+        ('wait', -1),
+    ]
+    os.environ['OCLIVE_COSYVOICE_FIRST_CHUNK_PRIORITY'] = '0'
+    sidecar._configure_first_chunk_priority(
+        priority_runtime,
+        torch_module=PriorityTorch,
+    )
+    assert sidecar._first_chunk_priority_requested is False
+    assert sidecar._first_chunk_priority_active is False
+    assert priority_runtime._oclive_first_chunk_priority_active is False
+    assert priority_runtime.token_hop_len == 25
+finally:
+    if old_priority_env is None:
+        os.environ.pop('OCLIVE_COSYVOICE_FIRST_CHUNK_PRIORITY', None)
+    else:
+        os.environ['OCLIVE_COSYVOICE_FIRST_CHUNK_PRIORITY'] = old_priority_env
+
 old_precision = os.environ.get('OCLIVE_COSYVOICE_PRECISION')
 old_min_free = os.environ.get('OCLIVE_COSYVOICE_MIN_FREE_VRAM_MIB')
 old_cuda_available = sidecar._cuda_available
