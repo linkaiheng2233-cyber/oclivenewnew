@@ -565,8 +565,8 @@ fn push_sample(
 }
 
 fn emit_report(args: &BenchArgs, report: &SoakReport) -> Result<()> {
-    if args.json {
-        println!("{}", serde_json::to_string_pretty(report)?);
+    if args.json || args.output != "-" {
+        crate::bench_cmd::emit_json_report(args, report)?;
         return Ok(());
     }
 

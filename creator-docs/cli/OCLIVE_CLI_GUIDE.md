@@ -692,12 +692,12 @@ cargo run -p oclive-cli -- --experimental bench --release -o ./my-kernel --save
 cargo run -p oclive-cli -- --experimental bench --history -o ./my-kernel
 cargo run -p oclive-cli -- --experimental bench --history -o ./my-kernel --json
 cargo run -p oclive-cli -- --experimental bench --watch -o ./my-kernel
-cargo run -p oclive-cli -- --experimental bench --soak --soak-real-time --soak-duration 0.01 --soak-sample-interval 5 -o ./my-kernel --json
+cargo run -p oclive-cli -- --experimental bench --soak --soak-real-time --soak-duration 0.01 --soak-sample-interval 5 -o ./my-kernel --output ./soak.json
 ```
 
 - **`--watch`**：监听 **`src/`** 与 **`Cargo.toml`**（2s 防抖），自动 release 构建 + **3 轮** bench 并 **`--save`**，打印相对上一轮 **↑/↓/→**。
 
-`--json`：仅将报告 JSON 打印到 **stdout**（进度走 **stderr**），便于管道与 Schema 校验。
+`--json`：仅将报告 JSON 打印到 **stdout**（进度走 **stderr**），便于管道与 Schema 校验。`--output <文件>`：为普通基准、`--stress` 与 `--soak` 在目标目录原子保存 JSON，适合长稳与破坏性测试证据；两者同时出现时保持 `--json` 的 stdout 语义。
 
 **风险**：占位工程 **无** 真实 `PluginHost` 行为。
 

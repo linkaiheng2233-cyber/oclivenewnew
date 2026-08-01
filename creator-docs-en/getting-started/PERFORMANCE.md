@@ -93,7 +93,7 @@ cargo run -p oclive-cli -- --experimental bench --matrix --release -o ./my-kerne
 ```bash
 cargo run -p oclive-cli -- --experimental bench --matrix --release -o ./my-kernel-monolith --json > matrix.json
 cargo run -p oclive-cli -- --experimental bench --cold-start --cold-start-runs 5 --release -o ./my-kernel-monolith
-cargo run -p oclive-cli -- --experimental bench --soak --soak-real-time --soak-duration 72 --soak-sample-interval 60 --release -o ./my-kernel-monolith --json > soak.json
+cargo run -p oclive-cli -- --experimental bench --soak --soak-real-time --soak-duration 72 --soak-sample-interval 60 --release -o ./my-kernel-monolith --output soak.json
 ```
 
 **Expected:** JSON with **12** tier×preset samples (`standard_ms` / `monolith_ms`); copy p50 values into the matrix table in the Chinese [PERFORMANCE.md](../../creator-docs/getting-started/PERFORMANCE.md) §5.3. Budget **2–4 hours** including Release builds.
@@ -110,10 +110,10 @@ cargo run -p oclive-cli -- --experimental bench --cold-start --cold-start-runs 5
 
 ```bash
 # Accelerated development smoke: nominal 72h, at most 120s wall clock
-cargo run -p oclive-cli -- --experimental bench --soak --soak-duration 72 --release -o ./my-kernel-monolith --json > soak-smoke.json
+cargo run -p oclive-cli -- --experimental bench --soak --soak-duration 72 --release -o ./my-kernel-monolith --output soak-smoke.json
 
 # True soak: 72 wall-clock hours, sampled every 60 seconds
-cargo run -p oclive-cli -- --experimental bench --soak --soak-real-time --soak-duration 72 --soak-sample-interval 60 --release -o ./my-kernel-monolith --json > soak-72h.json
+cargo run -p oclive-cli -- --experimental bench --soak --soak-real-time --soak-duration 72 --soak-sample-interval 60 --release -o ./my-kernel-monolith --output soak-72h.json
 ```
 
 **Expected:** schema-v2 JSON identifies the directly spawned kernel PID and records actual timing, one `warmup_chats` request outside the measured load, periodic **RSS / CPU**, successful and failed chats, early exit, and child reaping. The first RSS sample is taken after warmup. It passes only when **final RSS ≤ steady-state first sample × 1.2**, requests and samples have no failures, the kernel does not exit early, and the child is reaped; otherwise the command exits non-zero.

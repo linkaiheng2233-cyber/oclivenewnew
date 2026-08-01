@@ -8,6 +8,7 @@ pub use bench_core::{
     release_bin_path, resolve_project_root, stats, BenchReport, SampleStats, StandardMonolithPair,
     BENCH_REPORT_SCHEMA_VERSION,
 };
+pub(crate) use bench_runner::emit_json_report;
 
 use super::bench_history::{append_history, compare_history, history_path, print_bench_history};
 use super::bench_stress::{

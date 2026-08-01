@@ -152,14 +152,14 @@ pub fn run_stress(root: &std::path::Path, args: &BenchArgs) -> Result<()> {
         peak_memory_mib: probe_peak_memory_mib(root),
     };
 
-    if !args.json {
+    if !args.json && args.output == "-" {
         eprintln!();
         print_stress_human(&report, &url);
         if err_n > 0 && n == 0 {
             eprintln!("\nHint: start the kernel HTTP API first (e.g. cargo run --release in the project).");
         }
     } else {
-        println!("{}", serde_json::to_string_pretty(&report)?);
+        crate::bench_cmd::emit_json_report(args, &report)?;
     }
 
     if err_n > tot / 2 {

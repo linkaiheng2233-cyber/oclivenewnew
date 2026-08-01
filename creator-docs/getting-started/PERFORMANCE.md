@@ -149,7 +149,7 @@ cargo run -p oclive-cli -- --experimental bench --matrix --release -o ./my-kerne
 ```bash
 cargo run -p oclive-cli -- --experimental bench --matrix --release -o ./my-kernel-monolith --json > matrix.json
 cargo run -p oclive-cli -- --experimental bench --cold-start --cold-start-runs 5 --release -o ./my-kernel-monolith
-cargo run -p oclive-cli -- --experimental bench --soak --soak-real-time --soak-duration 72 --soak-sample-interval 60 --release -o ./my-kernel-monolith --json > soak.json
+cargo run -p oclive-cli -- --experimental bench --soak --soak-real-time --soak-duration 72 --soak-sample-interval 60 --release -o ./my-kernel-monolith --output soak.json
 ```
 
 **预期**：终端或 `matrix.json` 含 **12 组**（4 档位 × 3 preset）的 `standard_ms` / `monolith_ms` 采样；将 p50 毫秒数填入上表。总耗时约 **2–4 小时**（含多次 Release 编译）。
@@ -185,10 +185,10 @@ cargo run -p oclive-cli -- profile -o ./my-kernel
 
 ```bash
 # 日常加速冒烟：名义 72h，墙钟最多 120s
-cargo run -p oclive-cli -- --experimental bench --soak --soak-duration 72 --release -o ./my-kernel-monolith --json > soak-smoke.json
+cargo run -p oclive-cli -- --experimental bench --soak --soak-duration 72 --release -o ./my-kernel-monolith --output soak-smoke.json
 
 # 真长稳：72 个真实墙钟小时，每 60s 采样
-cargo run -p oclive-cli -- --experimental bench --soak --soak-real-time --soak-duration 72 --soak-sample-interval 60 --release -o ./my-kernel-monolith --json > soak-72h.json
+cargo run -p oclive-cli -- --experimental bench --soak --soak-real-time --soak-duration 72 --soak-sample-interval 60 --release -o ./my-kernel-monolith --output soak-72h.json
 ```
 
 **预期**：schema v2 JSON 记录直接启动的真实内核 PID、实际墙钟/采样间隔、一次不计入正式负载的 `warmup_chats`、周期性 **RSS / CPU**、成功与失败聊天数、提前退出及进程回收结果。RSS 首样本在热身后取得，验收要求 **最终 RSS ≤ 稳态首样本 × 1.2**、零请求/采样失败、无提前退出且子进程已回收；任一项失败时命令非零退出。

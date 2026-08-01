@@ -13,6 +13,7 @@ import json
 import os
 import socket
 import subprocess
+import tempfile
 import threading
 import time
 import urllib.request
@@ -114,6 +115,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-llm-ttft-ms", type=int, default=5000)
     parser.add_argument("--max-steady-growth-mib", type=int, default=256)
     parser.add_argument("--expect-admission-denied", action="store_true")
+    parser.add_argument(
+        "--output",
+        type=Path,
+        help="Atomically write the schema-v2 JSON evidence to this path",
+    )
     return parser.parse_args()
 
 
@@ -401,6 +407,29 @@ def validate_inputs(args: argparse.Namespace) -> None:
         raise ValueError("--max-gpu-sample-failures must be at least 0")
 
 
+def emit_summary(summary: dict[str, Any], output: Path | None) -> None:
+    encoded = (json.dumps(summary, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+    if output is None:
+        print(encoded.decode("utf-8"), end="")
+        return
+
+    output.parent.mkdir(parents=True, exist_ok=True)
+    temporary_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="wb", dir=output.parent, prefix=f".{output.name}.", delete=False
+        ) as temporary:
+            temporary_path = Path(temporary.name)
+            temporary.write(encoded)
+            temporary.flush()
+            os.fsync(temporary.fileno())
+        os.replace(temporary_path, output)
+        temporary_path = None
+    finally:
+        if temporary_path is not None:
+            temporary_path.unlink(missing_ok=True)
+
+
 def main() -> int:
     args = parse_args()
     validate_inputs(args)
@@ -686,7 +715,7 @@ def main() -> int:
             "failures": failures,
         }
     )
-    print(json.dumps(summary, ensure_ascii=False, indent=2))
+    emit_summary(summary, args.output)
     return 0 if not failures else 1
 
 

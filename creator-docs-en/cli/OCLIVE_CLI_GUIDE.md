@@ -249,10 +249,10 @@ cargo run -p oclive-cli -- --experimental bench --release -o /path/to/kernel-pro
 ```bash
 cargo run -p oclive-cli -- --experimental bench --release -o ./my-kernel --save
 cargo run -p oclive-cli -- --experimental bench --history -o ./my-kernel
-cargo run -p oclive-cli -- --experimental bench --soak --soak-real-time --soak-duration 0.01 --soak-sample-interval 5 -o ./my-kernel --json
+cargo run -p oclive-cli -- --experimental bench --soak --soak-real-time --soak-duration 0.01 --soak-sample-interval 5 -o ./my-kernel --output ./soak.json
 ```
 
-`--json`: print report JSON to **stdout** only (progress on **stderr**) for piping and schema checks.
+`--json`: print report JSON to **stdout** only (progress on **stderr**) for piping and schema checks. `--output <file>` atomically preserves JSON for regular benchmarks, `--stress`, and `--soak`; when both are present, the stdout-only `--json` contract wins.
 
 **Risk**: placeholder project has **no** real `PluginHost` behavior.
 

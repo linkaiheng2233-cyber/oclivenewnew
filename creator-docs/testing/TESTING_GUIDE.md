@@ -12,7 +12,7 @@
 |----------|------|-----------------------------------------------|----------|----------|
 | **高耦合矩阵** | Monolith **4×3** 档位×preset 组合性能 | `cargo run -p oclive-cli -- --experimental bench --matrix --release -o <monolith工程> --json > matrix.json` | **2–4 小时** | `matrix.json` 含 12 组数据；将 p50 填入 [PERFORMANCE.md](../getting-started/PERFORMANCE.md) 矩阵表 |
 | **冷启动** | 进程冷启到首条 `/chat` 可回复 | `cargo run -p oclive-cli -- --experimental bench --cold-start --cold-start-runs 5 -o <工程>` | **约 30 分钟** | 5 轮冷启/热启延迟稳定；无超时（工程须 `--api` + `OCLIVE_HTTP_API_MOCK_LLM=1`） |
-| **长稳运行** | 长时间 RSS / 泄漏与子进程回收 | `cargo run -p oclive-cli -- --experimental bench --soak --soak-real-time --soak-duration 72 --soak-sample-interval 60 -o <工程> --json` | **真实 72h**（本地加速见 PERFORMANCE §5.7） | RSS 增长不超过 20%；零请求/采样失败；无提前退出；`process_reaped=true` |
+| **长稳运行** | 长时间 RSS / 泄漏与子进程回收 | `cargo run -p oclive-cli -- --experimental bench --soak --soak-real-time --soak-duration 72 --soak-sample-interval 60 -o <工程> --output <soak.json>` | **真实 72h**（本地加速见 PERFORMANCE §5.7） | RSS 增长不超过 20%；零请求/采样失败；无提前退出；`process_reaped=true` |
 
 ---
 
@@ -65,7 +65,7 @@
 | `sampling_failures` | **0** | 非零表示无法取得实际内核 PID 的资源样本，报告不能作为泄漏证据 |
 | `process_early_exit` / `process_reaped` | `null` / **`true`** | 分别验证长稳期间未提前退出、结束后子进程已被 wait 回收 |
 
-默认 `--soak-duration` 是名义时长的加速采样（墙钟约 2s×小时数，最短 8s、上限 120s）；**72h 真长稳必须显式加 `--soak-real-time`** 并保留 `--json`。两种模式均直接采样构建后的内核 PID，而不是 `cargo run` 包装进程；正式时长与 RSS 基线从一次成功热身后开始。
+默认 `--soak-duration` 是名义时长的加速采样（墙钟约 2s×小时数，最短 8s、上限 120s）；**72h 真长稳必须显式加 `--soak-real-time`** 并使用 `--output <文件>` 原子保存证据；`--json` 仍专用于 stdout 管道。两种模式均直接采样构建后的内核 PID，而不是 `cargo run` 包装进程；正式时长与 RSS 基线从一次成功热身后开始。
 
 ### 与 `oclive test` 报告
 

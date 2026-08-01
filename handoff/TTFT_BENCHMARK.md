@@ -193,10 +193,11 @@ python scripts/stress-voice-gpu-runtime.py `
   --gpu-layers 24 `
   --duration-minutes 30 `
   --gpu-sample-interval-seconds 1 `
-  --max-gpu-sample-failures 0
+  --max-gpu-sample-failures 0 `
+  --output target/oclive-ci/destructive-evidence/gpu-soak.json
 ```
 
-固定轮次与真实时长模式都并发运行 LLM/TTS；真实时长从 CosyVoice 热身完成后计时，保证至少完成一组。schema v2 报告 `requested_duration_minutes` / `actual_load_seconds` / `pairs_completed`、GPU 采样次数与失败数，并在停止采样线程、终止且 wait 两个子进程后写入 `cleanup.*.pid/reaped`；任一进程提前退出、未回收或性能/余量门禁失败均非零退出。
+固定轮次与真实时长模式都并发运行 LLM/TTS；真实时长从 CosyVoice 热身完成后计时，保证至少完成一组。schema v2 报告 `requested_duration_minutes` / `actual_load_seconds` / `pairs_completed`、GPU 采样次数与失败数，并在停止采样线程、终止且 wait 两个子进程后写入 `cleanup.*.pid/reaped`；`--output` 在同目录原子替换证据文件；任一进程提前退出、未回收或性能/余量门禁失败均非零退出。
 
 同机 CosyVoice2 mixed-fp16 结果：峰值 **6751/8151MiB**、峰值余量 **1400MiB**、稳态增长 **0MiB**；LLM 热态 TTFT p50 **142ms**，语音 TTFC p50 **4293ms**。后台队列只缓存文本，不预生成语音；返回前台后仍按单拍顺序合成。
 
