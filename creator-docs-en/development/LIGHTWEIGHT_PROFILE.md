@@ -38,7 +38,7 @@ Summary (**2026-08-01**, workspace-root `Cargo.lock`, `cargo audit`):
 - **Vulnerability level (error)**: **0** (`sqlx-mysql` / `rsa` are absent; `event-listener` resolves to fixed 5.4.2).
 - **Warning level (warning)**: **8** allowed/tracked findings, mainly the gtk/webkit Linux cluster, `glib`, `unic-*`, and yanked `spin`.
 
-CI: **`dimension5-acceptance`** uniquely owns the main workflow's `cargo audit` plus `cargo deny licenses+bans`; `cargo-audit-lockfile.yml` covers lockfile/audit-policy PRs, and the duplicate standalone job is removed. `npm-audit` is a required high-severity production-dependency gate; full dev-graph risk is tracked separately as K-SUPPLY-12.
+CI: **`dimension5-acceptance`** uniquely owns the main workflow's `cargo audit` plus `cargo deny licenses+bans`; `cargo-audit-lockfile.yml` covers lockfile/audit-policy PRs, and the duplicate standalone job is removed. `npm-audit` hard-gates both production dependencies and the full development graph; K-SUPPLY-12 is locally closed and awaits frozen remote milestone evidence.
 
 ### §6.5 Unused / optional dependencies (review conclusion)
 

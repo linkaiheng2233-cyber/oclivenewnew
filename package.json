@@ -85,15 +85,18 @@
     "@tauri-apps/api": "^2.11.1"
   },
   "devDependencies": {
-    "@antfu/eslint-config": "^9.0.0",
+    "@antfu/eslint-config": "^9.2.0",
+    "@babel/standalone": "^7.29.8",
     "@playwright/test": "^1.52.0",
     "@tauri-apps/cli": "^2.11.4",
+    "@types/babel__standalone": "^7.1.9",
     "@types/node": "^24.12.2",
     "@vitejs/plugin-vue": "^5.2.1",
+    "@vue/compiler-sfc": "3.5.39",
     "@vue/test-utils": "^2.4.10",
     "@vue/tsconfig": "^0.9.1",
     "concurrently": "^9.2.1",
-    "eslint": "^9.39.0",
+    "eslint": "^10.8.0",
     "jsdom": "^29.1.1",
     "prettier": "^3.8.3",
     "rollup-plugin-visualizer": "^7.0.1",
@@ -101,7 +104,6 @@
     "vite": "^6.0.3",
     "vitest": "^3.2.4",
     "vue-tsc": "^3.3.9",
-    "vue3-sfc-loader": "^0.9.5",
-    "webdriverio": "^9.27.1"
+    "webdriverio": "^9.30.0"
   }
 }

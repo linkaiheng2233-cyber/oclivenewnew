@@ -83,8 +83,8 @@ node -e "const fs=require('fs'),path=require('path');function walk(d,a=[]){for(c
 |------|------|------|
 | Rust 漏洞级 | [KNOWN_VULNERABILITIES.md](../creator-docs/security/KNOWN_VULNERABILITIES.md) + `cargo audit` | 用模型记忆代替本地 audit |
 | GTK3 等 warning 忽略 | [.cargo/audit.toml](../.cargo/audit.toml)（**11** 条） | 称为「未文档化」 |
-| npm 生产依赖 | `npm audit --omit=dev --audit-level=high`；CI `npm-audit` 为**硬门禁** | 把完整 dev graph 命中误报为生产暴露，或把生产 0 扩写成全依赖 0 |
-| npm 开发工具链 | 完整 `npm audit` + `npm ls`；当前风险见 **K-SUPPLY-12** | 用 `--force` / 无证据 override 掩盖 peer 或审计冲突 |
+| npm 生产依赖 | `npm audit --omit=dev --audit-level=high`；CI `npm-audit` 中为**硬门禁** | 把完整 dev graph 命中误报为生产暴露，或把生产 0 扩写成全依赖 0 |
+| npm 开发工具链 | `npm audit --audit-level=high` + `npm ls`；CI `npm-audit` 中同为**硬门禁**，当前基线见 **K-SUPPLY-12** | 用 `--force` / 无证据 override 掩盖 peer 或审计冲突 |
 
 **英文安全文档**：`creator-docs-en/security/KNOWN_VULNERABILITIES.md` **存在**；汇报「无英文版」前须 `glob` 核实。可报告「英文扫描日期滞后于中文」。
 

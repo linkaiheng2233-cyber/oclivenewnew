@@ -24,7 +24,6 @@
     "@vue/test-utils": "^2.4.10",
     "jsdom": "^29.1.1",
     "typescript": "~5.8.0",
-    "vitest": "^3.2.4",
-    "vue3-sfc-loader": "^0.9.5"
+    "vitest": "^3.2.4"
   }
 }

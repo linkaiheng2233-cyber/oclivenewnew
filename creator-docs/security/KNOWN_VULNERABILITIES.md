@@ -78,7 +78,9 @@
 
 | 项 | 原状 | 修正 |
 |----|------|------|
-| `eslint` | 根依赖 **9.39.5**，但 `@antfu/eslint-config` 9.1.0 已解析到 `eslint-plugin-unicorn` 68.0.0，后者要求 ESLint **≥10.4** | **OPEN · K-SUPPLY-12**：当前 lint 在 Node 22 可执行，但 `npm ls eslint eslint-plugin-unicorn` 以 peer 契约冲突退出；须在独立工具链波次对齐受支持主版本，不用 `--force` 或无证据 override 掩盖 |
+| `eslint` | 根依赖 9.39.5 不满足 Unicorn 68 的 ESLint ≥10.4 peer 契约 | **本地已修复 · K-SUPPLY-12**：ESLint **10.8.0** + Antfu **9.2.0** + Unicorn **72.0.0**，`npm ls eslint eslint-plugin-unicorn` 退出 0 |
+| `webdriverio` | 9.29.1 经 `edgedriver` 解析到命中审计的 `fast-xml-parser` 5.10.0 | 升级 **9.30.0** 并解析到修复版 `fast-xml-parser` **5.10.1** |
+| 开发模式 SFC 编译 | `vue3-sfc-loader` 0.9.5 捆绑 Vue 2 compiler 与旧 PostCSS | 移除旧 loader；改用官方 `@vue/compiler-sfc` + 受限 DEV-only 转换，只允许导入 `vue`，发行 bundle 编译器标记为 0 |
 | `vue-virtual-scroller` | 首屏全局 `app.use`，但 UI 已改用 `VirtualScrollContainer` | **移除依赖**；首屏不再同步加载 |
 | `sha2`（`src-tauri`） | `0.11.0`（crates.io 无稳定 0.11 线） | **`0.10`**（`sha2 0.10.9`） |
 | `@antfu/eslint-config` | `^9.0.0` | 当前解析版 9.1.0 的传递依赖已越过 ESLint 9 peer 范围；与上一行一起处理 |
@@ -93,7 +95,7 @@
 
 CI **`npm-audit`** job 以硬门禁运行 `npm audit --omit=dev --audit-level=high`；远端 CI [`30692428026`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30692428026) 的生产依赖扫描为 **0 vulnerabilities**。本地复现：仓库根目录运行同一命令。
 
-完整开发依赖图不是零风险：同一锁文件运行 `npm audit` 为 **6 项（3 moderate / 3 high）**，当前可达链包括 ESLint/`brace-expansion`、WebDriver/`fast-xml-parser`，以及 dev-only `vue3-sfc-loader` 的旧 Vue 编译/PostCSS 链。它们不进入发行版生产依赖图，但会处理仓库源码、测试输入或目录插件开发资产，因此以 **K-SUPPLY-12** 跟踪；不得把“生产 0”扩写成“全依赖 0”。
+K-SUPPLY-12 修复工作树上，完整 `npm audit` 与生产扫描均为 **0 vulnerabilities**，`npm ls eslint eslint-plugin-unicorn` 退出 0；旧 Vue 2/PostCSS 编译链已经退出 lockfile。此结论仍是**本地验证**，需 Linux/Windows 远端 CI 对冻结提交全绿后才能把台账升为 Done；未来扫描结果仍以命令实测为准，不把本次 0 扩写成永久保证。
 
 ---
 

@@ -76,7 +76,7 @@ See [`.cargo/audit.toml`](../../.cargo/audit.toml) and [SECURITY_AUDIT_SCOPE.md]
 
 The required CI `npm-audit` job runs `npm audit --omit=dev --audit-level=high`; remote run [`30692428026`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30692428026) reported **0 production vulnerabilities**.
 
-That production result does not mean the full development graph is clean. Full `npm audit` reports **6 findings (3 moderate / 3 high)** through ESLint/`brace-expansion`, WebDriver/`fast-xml-parser`, and the dev-only `vue3-sfc-loader` legacy Vue/PostCSS compiler chain. In addition, root ESLint 9.39.5 does not satisfy `eslint-plugin-unicorn` 68.0.0's ESLint ≥10.4 peer contract. **K-SUPPLY-12** tracks supported-version alignment and the development-tool reachability review; do not hide it with `--force` or an unverified override.
+On the K-SUPPLY-12 repair tree, full `npm audit` and the production scan both report **0 vulnerabilities**, while `npm ls eslint eslint-plugin-unicorn` exits successfully. ESLint 10.8.0 / Antfu 9.2.0 satisfy Unicorn 72's peer contract, WebDriverIO 9.30.0 resolves fixed `fast-xml-parser` 5.10.1, and the legacy `vue3-sfc-loader` Vue 2/PostCSS chain is removed in favor of a restricted official-compiler DEV path. This is still **locally verified** until Linux/Windows remote CI passes the frozen commit; it is a measured result, not a permanent zero-risk claim.
 
 ---
 

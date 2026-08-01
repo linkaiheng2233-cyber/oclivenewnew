@@ -123,16 +123,19 @@ const checks = [
     },
   },
   {
-    name: 'release compiler stays development-only and tree-shakeable',
+    name: 'release SFC compiler stays development-only and legacy-loader-free',
     ok: () => {
       const rootPackage = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
       const chatPackage = JSON.parse(readFileSync(join(root, 'distros/chat-pro/package.json'), 'utf8'))
       const sharedPackage = JSON.parse(readFileSync(join(root, 'distros/shared/package.json'), 'utf8'))
       const compiler = readFileSync(join(shared, 'utils/compilePluginVueSfc.ts'), 'utf8')
-      return !rootPackage.dependencies?.['vue3-sfc-loader']
-        && !chatPackage.dependencies?.['vue3-sfc-loader']
-        && !sharedPackage.dependencies?.['vue3-sfc-loader']
-        && rootPackage.devDependencies?.['vue3-sfc-loader']
+      return !rootPackage.dependencies?.['@vue/compiler-sfc']
+        && !chatPackage.dependencies?.['@vue/compiler-sfc']
+        && !sharedPackage.dependencies?.['@vue/compiler-sfc']
+        && rootPackage.devDependencies?.['@vue/compiler-sfc']
+        && !rootPackage.devDependencies?.['vue3-sfc-loader']
+        && !sharedPackage.devDependencies?.['vue3-sfc-loader']
+        && compiler.includes("import('@vue/compiler-sfc')")
         && compiler.includes('if (!import.meta.env.DEV)')
     },
   },

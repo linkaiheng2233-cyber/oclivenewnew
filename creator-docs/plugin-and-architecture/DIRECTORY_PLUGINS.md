@@ -198,9 +198,9 @@
 
 只有 unsafe inline Vue 已显式启用时该扫描才有意义；它用于提示 `fetch`、`eval`、`document.cookie`、`localStorage`、`window.__TAURI__` 等模式，**可绕过且不是沙箱**。
 
-**编译失败提示**：`vue3-sfc-loader` 报错时，插槽 UI 展示 **插件 id、组件路径、可读摘要**；可通过 **「查看详情」** 展开原始堆栈。
+**编译失败提示**：开发专用 SFC 编译器报错时，插槽 UI 展示 **插件 id、组件路径、可读摘要**；可通过 **「查看详情」** 展开原始堆栈。编译器只在 Vite DEV + 显式不安全开关同时满足时动态加载，不进入发行 bundle。
 
-**`ui_slots` 脚本纪律**：插槽 `.vue` **勿** `import` 同级或子目录的 **`.ts` / `.js` 模块**（宿主经 `read_plugin_asset_text` 按请求路径解析，loader 常将 `./foo.ts` 解析为 `foo.js` 导致 `not found`）。可复用逻辑请 **内联进 `.vue`**，或仅保留 `import "vue"`（与 mumu 其它 toolbar 插件一致）。语音侧车踩坑记录见 [TRACK_VOICE_RECOGNITION §10](../../human-docs/team/TRACK_VOICE_RECOGNITION.md)。
+**`ui_slots` 脚本纪律**：插槽 `.vue` 只允许从 **`vue`** 导入；相对/第三方脚本 import、外部 `script/template/style src` 与 CSS 预处理器会被明确拒绝。可复用逻辑请 **内联进 `.vue`**。这保持本地调试能力，同时避免宿主为目录插件再实现一套包解析器。语音侧车踩坑记录见 [TRACK_VOICE_RECOGNITION §10](../../human-docs/team/TRACK_VOICE_RECOGNITION.md)。
 
 ### 4.3.2 发行版隔离 / 强制 iframe 模式
 

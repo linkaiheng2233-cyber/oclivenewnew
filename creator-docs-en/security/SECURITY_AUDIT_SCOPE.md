@@ -23,7 +23,7 @@ This document states **what security-related work exists in this repo today** an
 ## Not covered (known gaps)
 
 - **Third-party supply chain**: no systematic audit of crate **author reputation, release history, reproducible builds**, etc.
-- **npm development toolchain**: the required production scan is currently clean, but the full dev graph still has six audit findings and one ESLint peer-contract conflict. K-SUPPLY-12 tracks this; it is not valid to claim the whole dependency graph is clean.
+- **npm development toolchain**: the K-SUPPLY-12 repair tree has clean full and production scans plus a valid peer tree, and main CI now owns both high-severity gates. This remains local evidence until the frozen commit passes remotely; automated scanning still does not establish author reputation or reproducible builds.
 - **Miri**: not full Miri over all `unsafe`; feasibility assessed only on critical paths.
 - **Fuzzing**: `kernel/fuzz/` (libFuzzer) and `oclive_validation` proptest harnesses exist; CI `fuzz` is an advisory smoke, not complete coverage.
 - **Loom concurrency model**: `distros/desktop-tauri/tests/loom_concurrency.rs` covers selected request-id and cache-lock models through `oclive test --loom` / advisory CI `loom`; it is logical concurrency coverage, not FFI or whole-program proof.
@@ -54,6 +54,7 @@ Engineering work above does **not** cover licensing of user-downloaded model wei
 
 | Date | Notes |
 |------|--------|
+| 2026-08-01 | Locally cleared K-SUPPLY-12 and promoted the full development audit to a hard gate; frozen remote evidence remains pending. |
 | 2026-08-01 | Distinguished the required production npm gate from full dev-graph risk and recorded K-SUPPLY-12. |
 | 2026-07-17 | Added HTTP auth, path containment, inline-Vue fail-closed behavior, historical credential incident, and shared-origin limitation. |
 | 2026-05-15 | Added “Third-party risk” section linking to `legal/DISCLAIMER.md`. |

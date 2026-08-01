@@ -183,6 +183,8 @@ You may use host CSS variables (`--fluent-accent`, `--bg-primary`, … — `dist
 
 This scan matters only after unsafe inline Vue is explicitly enabled. It warns about patterns such as `fetch`, `eval`, `document.cookie`, `localStorage`, and `window.__TAURI__`; it is bypassable and is not a sandbox.
 
+The development-only SFC compiler is dynamically loaded only in that same explicit unsafe DEV mode and is absent from release bundles. Inline plugin SFCs may import only **`vue`**; relative/third-party script imports, external `script/template/style src` blocks, and CSS preprocessors are rejected so the host does not grow a second package resolver. Compile failures retain the plugin id, component path, readable summary, and expandable raw stack.
+
 ### 4.3.2 Release isolation / force iframe mode
 
 Release builds always apply the effective semantics of **`force_iframe_mode=true`**, and Settings shows the control locked. The disk field only affects inline Vue when Vite DEV and `VITE_OCLIVE_UNSAFE_INLINE_PLUGIN_VUE=1` are both active.

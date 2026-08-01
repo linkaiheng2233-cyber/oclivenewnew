@@ -132,7 +132,7 @@ Dimension 5 is defined by `node scripts/dimension5-acceptance.mjs --ci`. **Re-ru
 | `frontend` | `npm run test:unit` |
 | `oocp-test-suite` | `OCLIVE_HTTP_API_MOCK_LLM=1`, free port; see [OOCP_TEST_SUITE.md](creator-docs/testing/OOCP_TEST_SUITE.md) |
 | `cargo audit` inside `dimension5-acceptance` | Run `cargo audit` at repo root and track [KNOWN_VULNERABILITIES.md](creator-docs/security/KNOWN_VULNERABILITIES.md); this is a required gate |
-| `npm-audit` | Required production gate: `npm audit --omit=dev --audit-level=high`; also run full `npm audit` + `npm ls` for K-SUPPLY-12 development-tool risk |
+| `npm-audit` | Required high-severity gates cover both production dependencies and the full development graph: run `npm audit --omit=dev --audit-level=high`, `npm audit --audit-level=high`, and use `npm ls` to verify peer relationships. See [KNOWN_VULNERABILITIES.md](creator-docs-en/security/KNOWN_VULNERABILITIES.md) for the current baseline |
 | Role packs | `cargo run -p oclive-cli -- pack validate <role>` |
 
 ## Breaking changes

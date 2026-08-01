@@ -39,7 +39,7 @@
 
 **许可证合规**（**2026-06-09**）：根目录 `deny.toml` + `cargo deny check licenses` 退出码 **0**（允许表含 `Apache-2.0`、`MIT`、`CDLA-Permissive-2.0`、`NCSA` 等；工作区 crate 统一 SPDX `Apache-2.0`）。
 
-CI：**`dimension5-acceptance`** 唯一持有主工作流的 `cargo audit` + `cargo deny licenses+bans`，**`cargo-audit-lockfile.yml`** 对 `Cargo.lock` / `.cargo/audit.toml` PR 补充锁文件审计；独立重复 `cargo-audit` job 已移除。`npm-audit` 是生产依赖高危硬门禁；完整 dev graph 风险另见 K-SUPPLY-12。供应链策略见 [security/SUPPLY_CHAIN.md](../security/SUPPLY_CHAIN.md)。
+CI：**`dimension5-acceptance`** 唯一持有主工作流的 `cargo audit` + `cargo deny licenses+bans`，**`cargo-audit-lockfile.yml`** 对 `Cargo.lock` / `.cargo/audit.toml` PR 补充锁文件审计；独立重复 `cargo-audit` job 已移除。`npm-audit` 同时硬门禁生产依赖与完整开发依赖图；K-SUPPLY-12 已完成本地收口，远端里程碑证据待冻结。供应链策略见 [security/SUPPLY_CHAIN.md](../security/SUPPLY_CHAIN.md)。
 
 ### §6.5 未使用 / 可选依赖（审查结论）
 

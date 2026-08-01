@@ -71,7 +71,7 @@ sha256sum oclive-kernel-server
 | **K-SUPPLY-09** | 插件签名严格模式默认关闭 | P1 | **OPEN** — 当前只有显式 `OCLIVE_PLUGIN_SIGNATURE_STRICT=1` 才校验 sidecar SHA-256；源码审查提示不是签名证明，官方/市场默认签名与撤销流程仍待落地 |
 | **K-SUPPLY-10** | GitHub Actions 固定完整 commit SHA | P2 | **OPEN** — 当前 workflow 使用可变 `@v*` / `@stable` tag |
 | **K-SUPPLY-11** | `event-listener` 5.4.1 unsound warning | P1 | **Done · remote verified** — 锁文件已升级 5.4.2，SQLx 与 zbus/Tauri 均解析到修复版；`cargo audit` 警告 9→8，远端 Dimension 5 通过 |
-| **K-SUPPLY-12** | npm 开发工具链漏洞与 peer 契约漂移 | **P1** | **OPEN · remote measured** — 生产依赖为 0，但完整开发图仍有 6 项（3 moderate / 3 high）；ESLint 9.39.5 与 `eslint-plugin-unicorn` 68 的 ≥10.4 peer 要求不一致。下一波须按可达链升级/移除并让 `npm ls` 恢复一致，不得强制覆盖 |
+| **K-SUPPLY-12** | npm 开发工具链漏洞与 peer 契约漂移 | **P1** | **Locally verified · remote pending** — 完整与生产 `npm audit` 均为 0，ESLint/Unicorn peer 树合法；WebDriver XML 解析器已修复，旧 Vue 2/PostCSS SFC loader 已移除。待冻结提交 Linux/Windows CI 后关闭 |
 | **K-PLUGIN-SEC-01** | 每插件独立 origin / 原生隔离 E2E | P1 | **Partial** — 发行版已禁 inline Vue；HTML fallback 仍共享 `ocliveplugin.localhost`，不能宣称完整沙箱 |
 | **K-SECRET-01** | 历史 API 密钥撤销与历史处置 | **P0** | **Done（2026-07-17）** — 工作树已改 secrets 引用；维护者确认旧密钥已由 N1N 提供商彻底销毁，Git 历史按决定保留 |
 | **K-SUPPLY-06** | 位级可重复构建 | — | Deferred |
@@ -84,7 +84,7 @@ sha256sum oclive-kernel-server
 1. **`Cargo.lock` 变更的 PR**：`dimension5 --ci` 绿 + 更新 [KNOWN_VULNERABILITIES.md](./KNOWN_VULNERABILITIES.md) 扫描日期。
 2. **发版前**：`cargo audit` · `cargo deny check licenses bans` · `oclive lint --deny`（本地与 CI 一致）。
 3. **功能周期**：复查 [SECURITY_AUDIT_SCOPE.md](./SECURITY_AUDIT_SCOPE.md) 局限是否需收窄。
-4. **`npm-audit`**：生产依赖高危硬门禁已经远端验证；同时保留完整 `npm audit` 的开发工具链可见性，生产扫描为 0 不代表 dev graph 为 0。
+4. **`npm-audit`**：主 CI 同时执行生产依赖与完整开发图高危硬门禁；两者必须分别保持成功，不能用生产 0 代替完整依赖图证据。
 5. **插件安装**：在签名默认开启前，不把第三方插件视为可信代码；`process:spawn`、MCP、网络等高风险能力仍必须经过授权表和用户授予。发行版禁 inline Vue 只是止血，不能替代签名与独立 origin。
 
 ---
@@ -101,6 +101,7 @@ sha256sum oclive-kernel-server
 
 | 日期 | 说明 |
 |------|------|
+| 2026-08-01 | K-SUPPLY-12 本地收口：完整 npm audit 为 0、peer 树合法，移除旧 Vue 2/PostCSS SFC loader；等待冻结提交远端 CI。 |
 | 2026-08-01 | 记录远端生产 npm 硬门禁证据，并把开发图 6 项命中与 ESLint peer 漂移纳入 K-SUPPLY-12。 |
 | 2026-07-17 | 记录历史密钥 P0、发行版 inline Vue fail-closed、共享插件 origin 与 Actions SHA pin 债务。 |
 | 2026-07-15 | K-SUPPLY-05 Minimal：`multiple-versions = deny` + documented `[bans.skip]`；族分类链 LIGHTWEIGHT §6.6 |

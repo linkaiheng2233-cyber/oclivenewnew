@@ -23,7 +23,7 @@
 ## 本轮未覆盖（已知局限）
 
 - **第三方供应链**：crate **作者信誉、发布历史、构建可重复性** 等未做系统审计。
-- **npm 开发工具链**：生产依赖高危扫描已是硬门禁且当前为 0；完整 dev graph 仍有 6 项 audit 命中与一处 ESLint peer 契约冲突，按 K-SUPPLY-12 跟踪，不能宣称全依赖清零。
+- **npm 开发工具链**：K-SUPPLY-12 修复树的完整与生产扫描均为 0，peer 树合法，主 CI 已同时持有两类高危门禁；冻结提交远端通过前仍只算本地验证，且自动扫描不等于依赖作者信誉或可重复构建审计。
 - **Miri**：未对全部 `unsafe` 做 **Miri 全量**；仅在关键路径评估可行性。
 - **模糊测试（fuzzing）**：已建立 **`kernel/fuzz/`**（libFuzzer）与 **`oclive_validation` proptest** harness（见 [FUZZING.md](../testing/FUZZING.md)）；CI `fuzz` job 为 `continue-on-error` 烟测。
 - **Loom 并发模型**：`distros/desktop-tauri/tests/loom_concurrency.rs`（JSON-RPC 请求 ID、`narrative_hint` 缓存 RwLock 模型）；`oclive test --loom` / CI `loom` job（`continue-on-error`）。主仓 **无 `unsafe` 块**；Loom 覆盖逻辑并发而非 FFI。
@@ -54,6 +54,7 @@
 
 | 日期 | 说明 |
 |------|------|
+| 2026-08-01 | K-SUPPLY-12 本地修复后完整 npm 图为 0，并把 full dev audit 升为硬门禁；远端结论待冻结提交。 |
 | 2026-08-01 | 区分生产 npm 硬门禁与完整 dev graph 风险，登记 K-SUPPLY-12。 |
 | 2026-07-17 | 增补 HTTP 鉴权、路径 containment、插件 inline Vue fail-closed、历史凭据与共享 origin 局限。 |
 | 2026-05-15 | 增加「第三方风险」小节，链至 `legal/DISCLAIMER.md`。 |

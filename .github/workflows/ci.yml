@@ -174,8 +174,10 @@ jobs:
           node-version-file: ".nvmrc"
           cache: npm
       - run: npm ci
-      - name: npm audit (production dependency gate)
-        run: npm audit --omit=dev --audit-level=high
+      - name: npm audit (production and development dependency gates)
+        run: |
+          npm audit --omit=dev --audit-level=high
+          npm audit --audit-level=high
 
   plugins-index:
     runs-on: ubuntu-latest
