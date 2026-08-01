@@ -39,7 +39,7 @@ cargo run -p oclive-cli -- init --help
 | 插件 | `plugin create` / `install` / `uninstall` / `test` / `manage` | 脚手架与工程内安装；**manage** 为高级槽位/蓝图 |
 | 环境 | `doctor`（`--fix`）、`config` | 诊断与 `~/.oclive/config.toml` |
 | 质量与 CI | `lint`、`ci init/check/plan/explain` | 静态检查、CI 模板与领域感知影子规划；第三方脚手架不能扩展 `ci` |
-| 脚手架诊断 | `scaffold list/inspect/validate/resolve` | 本地声明发现、信任提示、确定性解析；仅 `resolve --write-lock` 写锁，不执行第三方命令 |
+| 脚手架工具 | `scaffold list/inspect/validate/resolve/generate` | 本地声明发现、信任提示、确定性解析与锁后声明式生成；不执行第三方命令 |
 | 本地开发 | `dev`、`registry`、`profile` | 角色监听、工程注册表、依赖/体积画像 |
 | 契约与迁移 | `kernel`、`explain`、`migrate-app-data`、`completions` | 运行时信息、错误解释、数据迁移与补全 |
 
@@ -292,16 +292,24 @@ cargo run -p oclive-cli -- template create my-team -o ./my-kernel
 
 ---
 
-## `scaffold`：本地声明发现与诊断
+## `scaffold`：本地声明发现、锁定与受限生成
 
 ```bash
 cargo run -p oclive-cli -- scaffold list -o .
 cargo run -p oclive-cli -- scaffold inspect com.oclive.scaffold.plugin -o .
 cargo run -p oclive-cli -- scaffold validate ./.oclive/scaffolds/example/oclive.scaffold.json
 cargo run -p oclive-cli -- scaffold resolve -o . --write-lock --json
+cargo run -p oclive-cli -- scaffold generate dev.example.scaffold project \
+  -o . --output ../generated --set project_name=demo --accept-untrusted
+cargo run -p oclive-cli -- scaffold generate dev.example.scaffold project \
+  -o . --output ../preview --set project_name=demo --accept-untrusted --dry-run --json
 ```
 
-Stage 2A 按配置解析 project、user、编译内置 official 三类来源，并在 `.oclive/scaffold.lock.json` 记录来源、维护者、信任分类、权限、命名空间、兼容范围与 SHA-256。它**不**联网安装、不执行第三方 entry、不解析组合，也不能控制 CI workflow、验证器、Runner、Secret 或门禁；仅 `resolve --write-lock` 会写盘。完整契约见 [RFC_SCAFFOLD_PACKAGE_V1.md](../rfc/RFC_SCAFFOLD_PACKAGE_V1.md)。
+Stage 2A 按配置解析 project、user、编译内置 official 三类来源，并在 `.oclive/scaffold.lock.json` 记录来源、维护者、信任分类、权限、命名空间、兼容范围与 SHA-256。Stage 2B 只允许已选中的本地 `instruction` 生成器把文件物化到**不存在的新目录**：包必须声明 `project.write`，清单固定指令 SHA-256，指令固定每个源文件 SHA-256；项目/用户包还须与当前 lock 完全一致，并为每次调用传 `--accept-untrusted`。`--set` 只传字符串，`--dry-run` 完成相同校验但零写入；成功时 `.oclive/scaffold.provenance.json` 记录来源与产物摘要，不记录变量值。
+
+修改包清单后，应先审查差异，再重新运行 `scaffold resolve --write-lock`。缺少指令摘要的 v1.0 包仍能被发现，但 `generate` 会拒绝，并提示把包的 `scaffold_contract` 范围提高到 `>=1.1,<2` 后补摘要。官方 `builtin` 生成器不在此处复制实现，命令会提示继续使用 `oclive init`、`oclive plugin create` 或 `oclive pack create` 等领域入口。
+
+Scaffold Package 仍**不**联网安装、不执行 `commands[].entry`、脚本或 hook，不解析组合，也不能控制 CI workflow、验证器、Runner、Secret 或门禁。完整契约见 [RFC_SCAFFOLD_PACKAGE_V1.md](../rfc/RFC_SCAFFOLD_PACKAGE_V1.md)。
 
 ---
 

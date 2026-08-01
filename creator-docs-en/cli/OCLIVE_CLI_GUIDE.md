@@ -28,16 +28,24 @@ The end of `init --help` lists **presets and the `plugin_backends` matrix** (sam
 
 ---
 
-## `scaffold`: local package contracts and diagnostics
+## `scaffold`: local discovery, locking, and bounded generation
 
 ```bash
 cargo run -p oclive-cli -- scaffold list -o .
 cargo run -p oclive-cli -- scaffold inspect com.oclive.scaffold.plugin -o .
 cargo run -p oclive-cli -- scaffold validate ./.oclive/scaffolds/example/oclive.scaffold.json
 cargo run -p oclive-cli -- scaffold resolve -o . --write-lock --json
+cargo run -p oclive-cli -- scaffold generate dev.example.scaffold project \
+  -o . --output ../generated --set project_name=demo --accept-untrusted
+cargo run -p oclive-cli -- scaffold generate dev.example.scaffold project \
+  -o . --output ../preview --set project_name=demo --accept-untrusted --dry-run --json
 ```
 
-Stage 2A discovers project, user, and compiled official declarations with configurable priority. It records source, maintainer, trust, permissions, namespace, compatibility, and SHA-256 in `.oclive/scaffold.lock.json`. It does **not** install from a network, execute third-party entries, resolve composition, or grant access to CI workflows, validators, runners, secrets, and gates. Only `resolve --write-lock` mutates disk. Contract SSOT: [RFC_SCAFFOLD_PACKAGE_V1.md](../rfc/RFC_SCAFFOLD_PACKAGE_V1.md).
+Stage 2A discovers project, user, and compiled official declarations with configurable priority and records their source, maintainer, trust, permissions, namespace, compatibility, and SHA-256 in `.oclive/scaffold.lock.json`. Stage 2B only lets a selected local `instruction` generator materialize files into a **new, absent directory**. The package declares `project.write`, the manifest pins the instruction SHA-256, and the instruction pins every source SHA-256. Project/user packages also need an exact current lock match and per-invocation `--accept-untrusted`. `--set` accepts string values, while `--dry-run` performs the same checks with no writes. A successful run records source and output digests—but no variable values—in `.oclive/scaffold.provenance.json`.
+
+After changing a manifest, inspect the change and rerun `scaffold resolve --write-lock`. V1.0 packages without an instruction digest remain discoverable, but `generate` refuses them and gives the `>=1.1,<2` migration range. Official `builtin` generators remain owned by domain commands such as `oclive init`, `oclive plugin create`, and `oclive pack create`; `scaffold generate` only returns their delegation guidance.
+
+Scaffold Packages still cannot install from a network, execute `commands[].entry`, scripts, or hooks, resolve composition, or control CI workflows, validators, runners, secrets, and gates. Contract SSOT: [RFC_SCAFFOLD_PACKAGE_V1.md](../rfc/RFC_SCAFFOLD_PACKAGE_V1.md).
 
 ---
 
