@@ -84,7 +84,7 @@
     { "id": "check-release", "program": "npm", "args": ["run", "check:release"] },
     { "id": "check-dimension5", "program": "node", "args": ["scripts/dimension5-acceptance.mjs", "--ci"] },
     { "id": "audit-cargo", "program": "cargo", "args": ["audit"] },
-    { "id": "audit-npm", "program": "npm", "args": ["audit", "--omit=dev", "--audit-level=high"] },
+    { "id": "audit-npm", "program": "npm", "args": ["run", "audit:dependencies"] },
     { "id": "test-cli", "program": "cargo", "args": ["test", "--locked", "-p", "oclive-cli", "--", "--test-threads=1"] },
     { "id": "test-frontend", "program": "npm", "args": ["run", "check:frontend"] },
     { "id": "test-cross-host", "program": "node", "args": ["scripts/e2e-distro-kernel.mjs", "--scenario", "all"] },

@@ -25,8 +25,8 @@ This document states **what security-related work exists in this repo today** an
 - **Third-party supply chain**: no systematic audit of crate **author reputation, release history, reproducible builds**, etc.
 - **npm development toolchain**: the K-SUPPLY-12 repair tree has clean full and production scans plus a valid peer tree, and main CI now owns both high-severity gates. This remains local evidence until the frozen commit passes remotely; automated scanning still does not establish author reputation or reproducible builds.
 - **Miri**: not full Miri over all `unsafe`; feasibility assessed only on critical paths.
-- **Fuzzing**: `kernel/fuzz/` (libFuzzer) and `oclive_validation` proptest harnesses exist; CI `fuzz` is an advisory smoke, not complete coverage.
-- **Loom concurrency model**: `distros/desktop-tauri/tests/loom_concurrency.rs` covers selected request-id and cache-lock models through `oclive test --loom` / advisory CI `loom`; it is logical concurrency coverage, not FFI or whole-program proof.
+- **Fuzzing**: `kernel/fuzz/` (libFuzzer) and `oclive_validation` proptest harnesses exist; the separate Nightly `fuzz` job turns red and retains artifacts on failure without gating main. It remains smoke coverage, not completeness proof.
+- **Loom concurrency model**: `distros/desktop-tauri/tests/loom_concurrency.rs` covers selected request-id and cache-lock models through `oclive test --loom` / the separate Nightly `loom` job; it is logical concurrency coverage, not FFI or whole-program proof.
 - **Side channels**: no timing/power side-channel analysis.
 - **Threat modeling (STRIDE, etc.)**: no full-product model; only concurrency/cancel-oriented review on the **main dialogue orchestration** path.
 - **Strong plugin isolation**: HTML fallbacks still share the `https://ocliveplugin.localhost` origin; per-plugin origins and native iframe E2E are not complete, and signature strict mode remains opt-in. Disabling inline Vue in releases is containment, not a completed sandbox.

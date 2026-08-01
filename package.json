@@ -42,6 +42,7 @@
     "check:rust:test:all": "cargo test --workspace -j 1",
     "check:rust": "node scripts/ensure-tauri-dist.mjs && node scripts/check-domain-layering.mjs && node scripts/check-changelog-parity.mjs && node scripts/check-doc-mirror.mjs && npm run check:rust:fmt && npm run check:rust:clippy && npm run check:rust:test",
     "check:license": "node scripts/check-license-readiness.mjs",
+    "audit:dependencies": "npm audit --omit=dev --audit-level=high && npm audit --audit-level=high",
     "check:debt-marathon": "node scripts/check-debt-marathon.mjs",
     "check:module-compat": "node scripts/check-module-compat.mjs && node scripts/validate-plugins-index.mjs",
     "test:cursor-marathon-hook": "node scripts/test-cursor-marathon-hook.mjs",

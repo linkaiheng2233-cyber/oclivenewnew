@@ -269,11 +269,11 @@ cargo run -p oclive-cli -- ci plan --shadow --base HEAD^ --head HEAD
 cargo run -p oclive-cli -- ci explain --format markdown
 ```
 
-`ci plan` reads the centrally owned map, module descriptors, and trusted validation catalog under `data/ci/`. It emits `target/oclive-ci/plan.json`; `ci explain` renders that JSON without recomputing or executing validators. The `ci-impact-plan` workflow job is non-blocking and cannot skip existing jobs in Stage 1. See the [domain-aware CI baseline](../../creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md).
+`ci plan` reads the centrally owned map, module descriptors, and trusted validation catalog under `data/ci/`. It emits `target/oclive-ci/plan.json`; `ci explain` renders that JSON without recomputing or executing validators. The `ci-impact-plan` workflow job is non-blocking and cannot skip required main-CI jobs in Stage 1. Validators catalogued as `nightly` run in the separate scheduled/manual lane and are not selective PR execution. See the [domain-aware CI baseline](../../creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md).
 
 `oclive scaffold` is a separate developer-tool surface. It may help create or inspect standard metadata, but it cannot select CI validators or influence execution policy; CI always re-analyzes generated files independently.
 
-Repo **`.github/workflows/ci.yml`** **`cli`** job runs `cargo test -p oclive-cli` (includes E2E: `init`, `build`, `bench` smoke). A lighter **`cli-bench`** job runs one round of `bench` (no perf threshold).
+Repo **`.github/workflows/ci.yml`** **`cli`** job runs `cargo test -p oclive-cli` (includes E2E: `init`, `build`, `bench` smoke). The separate **`.github/workflows/nightly-advisory.yml`** **`cli-bench`** job runs one round of `bench` (no perf threshold) and uploads its JSON evidence.
 
 ---
 

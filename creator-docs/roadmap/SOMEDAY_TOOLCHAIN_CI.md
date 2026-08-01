@@ -1,6 +1,6 @@
 # OCLive 领域感知 CI · 分阶段实施基线
 
-> **状态（2026-08-01）**：Stage 1 已实现并保持 Shadow；Stage 2 Compare 已收录第一个真实对照样本，但规划结果仍不控制或跳过现有 job。本文是 CI 影响规划的设计 SSOT；模块之间的职责边界只在 [`MODULE_MAP_AND_HANDOFF.md` §12.7](../../handoff/MODULE_MAP_AND_HANDOFF.md#127-ci-影响元数据与脚手架边界) 登记，执行证据见 [`TECHNICAL_DEBT_INVENTORY.md` K-CI-IMPACT-01](../../handoff/TECHNICAL_DEBT_INVENTORY.md) 与工作流，验证口径以 [`AI_VERIFICATION_PROTOCOL.md`](../../handoff/AI_VERIFICATION_PROTOCOL.md) 为准。
+> **状态（2026-08-01）**：Stage 1 已实现并保持 Shadow；Stage 2 Compare 已收录第一个真实对照样本，但规划结果仍不控制或跳过主 CI 硬门禁。验证目录中既有的五个 `nightly` 责任组已与实际执行通道对齐到独立定时/手动工作流；这是执行分流，不是 PR 选择性启用。本文是 CI 影响规划的设计 SSOT；模块之间的职责边界只在 [`MODULE_MAP_AND_HANDOFF.md` §12.7](../../handoff/MODULE_MAP_AND_HANDOFF.md#127-ci-影响元数据与脚手架边界) 登记，执行证据见 [`TECHNICAL_DEBT_INVENTORY.md` K-CI-IMPACT-01](../../handoff/TECHNICAL_DEBT_INVENTORY.md) 与工作流，验证口径以 [`AI_VERIFICATION_PROTOCOL.md`](../../handoff/AI_VERIFICATION_PROTOCOL.md) 为准。
 
 OCLive 采用成熟 CI 的分层、测试金字塔和合并门禁，并增加一层领域感知规划器。目标不是让模型猜测该跑什么，也不是立刻删除全量检查，而是先用确定性元数据回答：一次改动直接落在哪些模块、经哪些契约传播、需要哪些受信验证。
 
@@ -65,7 +65,14 @@ Stage 1 先为仓内领域模块建立描述；既有模块允许渐进迁移，
 
 影响规划回答“应验证什么”，但不能用重复执行换取表面安全。主工作流为高成本验证分配唯一所有者：通用 Rust job 覆盖非 CLI workspace，CLI job 独占需要嵌套 Cargo build 的串行 E2E，Dimension 5 独占 `cargo audit`，前端 job 显式持有 lint、Vue/TypeScript 类型检查、单测与构建。验证目录可以让多个验证器坐标映射到同一个受信 job，但不得为了坐标一一对应而重复运行同一命令。
 
-这项去重不等于选择性 CI：Stage 1 仍只产 Shadow 计划，所有现有责任组仍照常运行。每次调整执行所有权都必须同时更新工作流、验证目录、本地复现命令和仓库契约测试；在远端证据确认前，不以本地冷/热缓存耗时推断最终收益。
+这项去重不等于选择性 CI：Stage 1 仍只产 Shadow 计划，所有主 CI required 责任组仍照常运行；目录中 `tier=nightly` 的责任组按既有分层进入独立 Nightly/手动通道。每次调整执行所有权都必须同时更新工作流、验证目录、本地复现命令和仓库契约测试；在远端证据确认前，不以本地冷/热缓存耗时推断最终收益。
+
+### 2.5 执行通道约定
+
+- `.github/workflows/ci.yml`：PR/Push 硬门禁，加唯一的非阻塞 `ci-impact-plan` 影子报告；
+- `.github/workflows/nightly-advisory.yml`：目录中 `tier=nightly` 的 Loom、fuzz、原生窗口、视觉冒烟和无阈值性能证据；支持每日全跑与按 validator 手动复现；
+- Nightly 失败不会阻塞 main，但在 Nightly 内不得 `continue-on-error`；失败日志或 artifact 是待处理证据，不能粉饰为绿；
+- 同一 `workflow_jobs` 坐标按 validator 的 `tier` 落入对应受信通道，仓库契约测试防止 job 漂回错误工作流。
 
 ## 3. 规划输出与可解释性
 
@@ -83,7 +90,7 @@ Stage 1 先为仓内领域模块建立描述；既有模块允许渐进迁移，
 
 | 阶段 | 行为 | 权威性 |
 |------|------|--------|
-| **Stage 1 · Shadow** | 计算建议范围、输出报告；原 CI 全部照常运行 | 只观察，禁止据此跳 job |
+| **Stage 1 · Shadow** | 计算建议范围、输出报告；主 CI 硬门禁全部照常运行 | 只观察，禁止据此跳 job |
 | **Stage 2 · Compare** | 对比“规划器本会跳过的验证”和全量结果，积累漏选/过选数据 | 全量仍权威 |
 | **Stage 3 · PR selective** | 只对低风险且有足够证据的 PR 启用选择性验证 | 高风险规则与未知路径仍全量 |
 | **Stage 4 · Merge/Nightly split** | 合并门禁保留跨模块/高风险全量；长时 soak、GPU、性能移至 Nightly/Release | Nightly 不替代合并前硬门禁 |

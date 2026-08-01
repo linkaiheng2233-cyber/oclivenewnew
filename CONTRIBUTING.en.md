@@ -105,7 +105,7 @@ See **[`handoff/BUS_FACTOR_NOTES.md`](handoff/BUS_FACTOR_NOTES.md)** for entry p
 2. **Description:** motivation, behavior change, risks, manual verification; link issues if any.
 3. **Self-check:** at least **`npm run check`**; for persistence / HTTP / orchestration, prefer **`npm run check:release`**; kernel scaffolds may add **`cargo run -p oclive-cli -- --experimental test -o . --json`**.
 4. **Review:** module owner (table above) or delegate; CI, security, i18n, and contract docs must stay aligned.
-5. **Merge bar:** required CI jobs green (or documented `continue-on-error`); breaking changes follow [`BREAKING_CHANGE_PROCESS.md`](handoff/BREAKING_CHANGE_PROCESS.md).
+5. **Merge bar:** every required main-CI job is green. `ci-impact-plan` is shadow evidence only; failures in the separate Nightly workflow do not directly block merging but must be tracked. Breaking changes follow [`BREAKING_CHANGE_PROCESS.md`](handoff/BREAKING_CHANGE_PROCESS.md).
 
 ### Dimension 5 baseline (before PR / release)
 

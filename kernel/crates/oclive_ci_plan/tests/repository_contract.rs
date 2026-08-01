@@ -1,6 +1,6 @@
 use std::{fs, path::PathBuf};
 
-use oclive_ci_plan::{GateStrength, PlanRequest, Planner};
+use oclive_ci_plan::{GateStrength, PlanRequest, Planner, ValidationTier};
 
 fn repo_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -22,7 +22,7 @@ fn request(policy: &str, path: &str) -> PlanRequest {
 }
 
 #[test]
-fn repository_catalog_maps_every_declared_workflow_job() {
+fn repository_catalog_maps_every_validator_to_its_execution_lane() {
     let root = repo_root();
     let planner = Planner::load(
         &root,
@@ -36,17 +36,46 @@ fn repository_catalog_maps_every_declared_workflow_job() {
     assert!(plan.fallback.full);
     assert_eq!(plan.selected_validators.len(), 19);
 
-    let workflow =
+    let main_workflow =
         fs::read_to_string(root.join(".github/workflows/ci.yml")).expect("read main workflow");
+    let nightly_workflow = fs::read_to_string(root.join(".github/workflows/nightly-advisory.yml"))
+        .expect("read nightly workflow");
     for validator in &plan.selected_validators {
+        let (workflow, lane) = if validator.tier == ValidationTier::Nightly {
+            (&nightly_workflow, "nightly")
+        } else {
+            (&main_workflow, "main")
+        };
         for job in &validator.workflow_jobs {
             assert!(
                 workflow.contains(&format!("\n  {job}:")),
-                "validator `{}` references missing workflow job `{job}`",
-                validator.id
+                "validator `{}` references missing {lane} workflow job `{job}`",
+                validator.id,
             );
         }
     }
+
+    for job in [
+        "loom",
+        "fuzz",
+        "cli-bench",
+        "visual-presentation-smoke",
+        "e2e-tauri",
+    ] {
+        assert!(
+            !main_workflow.contains(&format!("\n  {job}:")),
+            "nightly job `{job}` must not run in the merge-gating workflow",
+        );
+    }
+    assert_eq!(
+        main_workflow.matches("    continue-on-error: true").count(),
+        1,
+        "only the Stage 1 shadow planner may remain non-blocking in main CI",
+    );
+    assert!(
+        !nightly_workflow.contains("    continue-on-error: true"),
+        "nightly failures must remain visible in their own workflow",
+    );
 }
 
 #[test]
@@ -75,6 +104,7 @@ fn repository_workflow_keeps_expensive_validation_ownership_disjoint() {
         .find(|validator| validator.id == "npm-audit")
         .expect("npm-audit validator");
     assert_eq!(npm_audit.gate, GateStrength::Required);
+    assert_eq!(npm_audit.command_id, "audit-npm");
 
     let workflow =
         fs::read_to_string(root.join(".github/workflows/ci.yml")).expect("read main workflow");
@@ -84,6 +114,7 @@ fn repository_workflow_keeps_expensive_validation_ownership_disjoint() {
     assert!(workflow.contains("cargo test --locked --workspace --exclude oclive-cli"));
     assert!(workflow.contains("cargo test --locked -p oclive-cli -- --test-threads=1"));
     assert!(workflow.contains("npm run typecheck"));
+    assert!(workflow.contains("npm run audit:dependencies"));
     assert!(!workflow.contains("\n  cargo-audit:"));
 }
 

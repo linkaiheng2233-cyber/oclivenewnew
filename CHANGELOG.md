@@ -21,6 +21,7 @@
 ### Fixed
 
 - **npm 开发工具链供应链收口**：升级 ESLint 10 / Antfu 9.2 与 WebDriverIO 9.30，修复 `brace-expansion`、`fast-xml-parser` 命中和 Unicorn peer 契约冲突；移除捆绑 Vue 2/PostCSS 的 `vue3-sfc-loader`，改用仅在显式不安全 DEV 模式动态加载的官方 Vue SFC 编译器，并将目录插件脚本导入限制为 `vue`。完整与生产 npm audit 均成为硬门禁，仓库内全部官方/示例目录插件 SFC 进入编译回归测试。
+- **CI 执行通道分流**：将 `loom`、`fuzz`、`cli-bench`、`visual-presentation-smoke` 与原生 `e2e-tauri` 从 PR/Push 主工作流迁至独立 `nightly-advisory.yml`，支持每日定时与按验证器手动触发。Nightly 失败在自身工作流真实变红但不阻塞 main，并为 CLI 性能与 fuzz/E2E 失败保留 artifact；主 CI 只保留硬门禁及非阻塞的 Stage 1 影子规划器。
 - **官方 CI 脚手架与审计诊断对齐**：`oclive ci init` 生成的工作流改用 Node 22，Cargo 审计默认失败即红，并修复 Loom step 名含未引号冒号导致的无效 YAML；`oclive lint --audit-ci` 现在按 YAML job/step 语义识别独立 `cargo audit` 或 Dimension 5 唯一所有权，只对审计所属 job/step 判断 `continue-on-error`，不会再被其他 soft job 误导。
 - **成人分拍结构化输出与实机容量标定**：修复通用 Prompt 末尾“只输出角色台词”覆盖 Chat Pro 成人 JSON 契约的问题；成人请求现在以最终专用输出边界收尾，真实 Qwen2.5 7B GGUF 在缓存深度 1/2/4/8 下 15/15 拍完整结构化、零回退。新增 `scripts/measure-adult-stage.mjs` 复现脚本，并依据 RTX 5060 Laptop 8GB 与 CosyVoice2 共享显存测试把默认值保持为 2、建议范围标定为 2～4。
 - **工程路径与启动诊断收敛**：修复 `oclive-cli init --kernel-source` 仍生成旧 `src-tauri` / 根 `crates` 路径的问题，并加入真实仓库布局断言；桌面、无头服务与生成工程共享同一 `--port` 解析，缺失、零值或非法端口均给出稳定诊断并以退出码 2 终止；应用数据目录初始化、共享内核备份/回滚与云模型 token 文件备份失败不再静默，共享内核提升也不再重复执行。

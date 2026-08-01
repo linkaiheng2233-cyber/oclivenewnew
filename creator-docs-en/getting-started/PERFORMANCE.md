@@ -42,7 +42,7 @@ cargo run -p oclive-cli -- --experimental bench --release -o /path/to/kernel-pro
 
 - **`--save`** / **`--compare`**: append/compare **`bench_history.json`** at the project root (local only; do not commit).  
 - **JSON Schema**: **`kernel/crates/oclive-cli/schemas/oclive_bench_report.schema.json`**.  
-- **CI**: `.github/workflows/ci.yml` includes a lightweight **`cli-bench`** job (smoke; no perf threshold).
+- **CI**: `.github/workflows/nightly-advisory.yml` includes a lightweight **`cli-bench`** job (smoke, no performance threshold, report retained as an artifact).
 
 ---
 

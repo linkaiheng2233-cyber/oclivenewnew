@@ -83,7 +83,7 @@ npm run build
 
 **依赖审计**：`cargo udeps` 需 **nightly** toolchain。最近一次全 workspace 扫描（**2026-05-22**，`rustup run nightly cargo udeps --workspace --all-targets`）：**无未使用依赖**（`All deps seem to have been used`）。复现：`rustup toolchain install nightly` 后执行上述命令。
 
-**CI 对齐**：**`.github/workflows/ci.yml`** 在 **Ubuntu 22.04** / Windows 上跑 **`rust`**（fmt / clippy / test）；**`rust` job 在 clippy 前先 `npm ci && npm run build`**（Tauri 2 `generate_context!` 需要仓库根 `dist/`）。Linux 构建 `oclivenewnew-tauri` 需 **`libwebkit2gtk-4.1-dev`** 等（**Tauri 2**，与 CI apt 一致）。**`frontend`** 跑 **`npm run test:unit`** 与 **`npm run build`**；**Ubuntu `frontend`** 另跑 **`npm run test:e2e:preview`**。**`oocp-test-suite`** 与 **`cli` / `cli-bench`** 在 Ubuntu 22.04。详见根目录 [README.md](README.md)「测试与检查」。
+**CI 对齐**：**`.github/workflows/ci.yml`** 在 **Ubuntu 22.04** / Windows 上跑 **`rust`**（fmt / clippy / test）；**`rust` job 在 clippy 前先 `npm ci && npm run build`**（Tauri 2 `generate_context!` 需要仓库根 `dist/`）。Linux 构建 `oclivenewnew-tauri` 需 **`libwebkit2gtk-4.1-dev`** 等（**Tauri 2**，与 CI apt 一致）。**`frontend`** 跑 **`npm run test:unit`** 与 **`npm run build`**；**Ubuntu `frontend`** 另跑 **`npm run test:e2e:preview`**。**`oocp-test-suite`** 与 **`cli`** 是主工作流硬门禁；`cli-bench` 等长时/可见性验证在 [`.github/workflows/nightly-advisory.yml`](.github/workflows/nightly-advisory.yml) 定时或按项手动运行。详见根目录 [README.md](README.md)「测试与检查」。
 
 ## 模块负责人（当前维护者）
 
@@ -142,7 +142,7 @@ npm run build
 2. **描述**：说明动机、行为变化、风险与手动验证步骤；关联 issue（若有）。
 3. **自检**：至少 **`npm run check`**；触及持久化 / HTTP / 编排时建议 **`npm run check:release`**；内核工程可加 **`cargo run -p oclive-cli -- --experimental test -o . --json`**。
 4. **审阅**：由 **模块负责人**（上表）或受邀维护者 Review；关注 CI、安全、i18n 与契约文档是否同步。
-5. **合并条件**：CI 相关 job 绿（或已知 `continue-on-error` 项已登记）；Breaking 变更走 [`BREAKING_CHANGE_PROCESS.md`](handoff/BREAKING_CHANGE_PROCESS.md)；无未解决的 **P0** 发版阻塞项。
+5. **合并条件**：主 CI 硬门禁全部绿；`ci-impact-plan` 只提供影子证据，独立 Nightly 的失败不直接阻塞合并但必须跟踪处理。Breaking 变更走 [`BREAKING_CHANGE_PROCESS.md`](handoff/BREAKING_CHANGE_PROCESS.md)；无未解决的 **P0** 发版阻塞项。
 
 ### Dimension 5 基线（PR / 发版前）
 

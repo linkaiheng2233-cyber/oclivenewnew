@@ -25,8 +25,8 @@
 - **第三方供应链**：crate **作者信誉、发布历史、构建可重复性** 等未做系统审计。
 - **npm 开发工具链**：K-SUPPLY-12 修复树的完整与生产扫描均为 0，peer 树合法，主 CI 已同时持有两类高危门禁；冻结提交远端通过前仍只算本地验证，且自动扫描不等于依赖作者信誉或可重复构建审计。
 - **Miri**：未对全部 `unsafe` 做 **Miri 全量**；仅在关键路径评估可行性。
-- **模糊测试（fuzzing）**：已建立 **`kernel/fuzz/`**（libFuzzer）与 **`oclive_validation` proptest** harness（见 [FUZZING.md](../testing/FUZZING.md)）；CI `fuzz` job 为 `continue-on-error` 烟测。
-- **Loom 并发模型**：`distros/desktop-tauri/tests/loom_concurrency.rs`（JSON-RPC 请求 ID、`narrative_hint` 缓存 RwLock 模型）；`oclive test --loom` / CI `loom` job（`continue-on-error`）。主仓 **无 `unsafe` 块**；Loom 覆盖逻辑并发而非 FFI。
+- **模糊测试（fuzzing）**：已建立 **`kernel/fuzz/`**（libFuzzer）与 **`oclive_validation` proptest** harness（见 [FUZZING.md](../testing/FUZZING.md)）；独立 Nightly `fuzz` job 失败会真实变红并保留 artifact，但不阻塞 main。
+- **Loom 并发模型**：`distros/desktop-tauri/tests/loom_concurrency.rs`（JSON-RPC 请求 ID、`narrative_hint` 缓存 RwLock 模型）；`oclive test --loom` / 独立 Nightly `loom` job。主仓 **无 `unsafe` 块**；Loom 覆盖逻辑并发而非 FFI，Nightly 失败不替代人工根因判断。
 - **侧信道**：**未**分析时序、功耗等侧信道风险。
 - **威胁建模（STRIDE 等）**：**未**对全产品做完整建模；仅对 **对话主编排链路** 做并发与取消向审查。
 - **插件强隔离**：HTML fallback 仍共享 `https://ocliveplugin.localhost` origin，尚未完成每插件独立 origin / iframe 原生 E2E；签名严格模式仍是 opt-in。发行版禁 inline Vue 是最小止血，不等于插件沙箱已经完成。

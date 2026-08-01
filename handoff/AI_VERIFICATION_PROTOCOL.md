@@ -96,11 +96,11 @@ node -e "const fs=require('fs'),path=require('path');function walk(d,a=[]){for(c
 |------|----------|
 | dependabot 分支数 | `gh api repos/<owner>/<repo>/branches --paginate` 过滤 `dependabot`（**禁止**沿用旧帖数字） |
 | main 是否可合 | `gh run list --limit 5` + 失败 job 逐步日志 |
-| 硬门禁 vs 可见性 | 读 `.github/workflows/ci.yml` 的 `continue-on-error` |
+| 硬门禁 vs Nightly | 同时读 `.github/workflows/ci.yml` 与 `.github/workflows/nightly-advisory.yml`；不要仅凭 job 名称判断 |
 
-**硬门禁（红 = 不能合）**：`rust`、`oocp-test-suite`、`frontend`（ubuntu Playwright）、`cross-host-e2e`、`dimension5-acceptance`（唯一持有主工作流 `cargo audit`）、`npm-audit`、`stale-paths`、`layering-ratchet` 等 **未**标 `continue-on-error` 的 job。
+**硬门禁（红 = 不能合）**：主工作流的 `rust`、`oocp-test-suite`、`frontend`（ubuntu Playwright）、`cross-host-e2e`、`dimension5-acceptance`（唯一持有主工作流 `cargo audit`）、`npm-audit`、`stale-paths`、`layering-ratchet` 等 required job。
 
-**可见性（红 X 可存在）**：`loom`、`fuzz`、`e2e-tauri`、`cli-bench`、`visual-presentation-smoke` 等。主工作流已无独立 `cargo-audit` job，不能沿用旧 job 清单判断门禁。
+**Nightly/手动证据（不挡 main，但失败不可吞）**：`loom`、`fuzz`、`e2e-tauri`、`cli-bench`、`visual-presentation-smoke` 位于 `nightly-advisory.yml`；它们失败会让该工作流变红并按项保留日志/artifact，不能汇报成通过。主工作流仅 `ci-impact-plan` 允许 `continue-on-error`，因为它是 Stage 1 影子报告而非验证门禁。
 
 #### CI 推送节奏与证据绑定
 

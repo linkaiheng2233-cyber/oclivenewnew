@@ -252,8 +252,8 @@ git status                                      # 确认工作树状态 / 与 or
 - [ ] AI 硬约束清单存在且最新（建议 `AI_CHANGE_BOUNDARIES.md` 或 AGENTS「禁止区」：不在角色任务改 `slot_registry`、不把 RFC Draft 当未实现而删 wiring、不引归档当 truth、改锁文件必跑 `cargo audit` 并更新 `KNOWN_VULNERABILITIES.md`）
 
 **4. 门禁语义纯度（全档）**
-- [ ] CI job 只分两类：**硬门禁（红=不能合）** 与 **nightly/可见性（不挡 main）**；无第三种「红了也不拦但看着像在测」的伪门禁
-- [ ] `continue-on-error: true` 的 job（loom / fuzz / e2e-tauri / cli-bench / visual-smoke）逐个裁决：修通去掉软标 **或** 迁出 `ci.yml` 改 nightly；`npm-audit` 已升为生产依赖硬门禁
+- [x] CI job 只分两类：**硬门禁（红=不能合）** 与 **nightly/可见性（不挡 main）**；Stage 1 `ci-impact-plan` 是唯一非阻塞影子报告，不冒充验证 job
+- [x] loom / fuzz / e2e-tauri / cli-bench / visual-smoke 已迁出 `ci.yml` 进入独立 Nightly/手动工作流；Nightly 内不吞失败，`npm-audit` 对生产与完整开发图均为硬门禁
 - [ ] 本地 `check:release` 与 CI 全集差距已知并记录(不假装等价)
 
 **愿景拷问**

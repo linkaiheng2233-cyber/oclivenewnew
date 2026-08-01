@@ -61,7 +61,7 @@ Scaffold Package 的发现、版本、命名空间、来源锁定和 CI 隔离�
 | **AB1** | `narrative_hint` 契约 | 集成测 + [NARRATIVE_HINT_CONTRACT.md](../testing/NARRATIVE_HINT_CONTRACT.md) |
 | **AB2** | 侧车 / 内核错误分层 | `oclive_validation::protocol_boundary`；OOCP **S12** |
 | **AB3** | `bench --equivalence` | 标准 vs Monolith `/chat` 回复逐条对比（MOCK_LLM） |
-| **AB4** | `test --loom` | `cargo-loom` 模型检查（CI `loom` job，`continue-on-error`） |
+| **AB4** | `test --loom` | `cargo-loom` 模型检查（Nightly `loom` job；失败可见但不阻塞 main） |
 | **AB5** | 模糊测试 | [FUZZING.md](../testing/FUZZING.md)；`kernel/fuzz/` + proptest |
 | **AB6** | `bench --soak` | 加速冒烟或显式 `--soak-real-time` 真长稳；采样内核 PID 的 RSS/CPU、请求与回收状态 |
 
@@ -288,7 +288,7 @@ cargo run -p oclive-cli -- --experimental bench --release --regression -o ./my-k
 cargo run -p oclive-cli -- template create my-team -o ./my-kernel
 ```
 
-`ci plan` 默认读取 `data/ci/impact-map.v1.json` 与 `validation-catalog.v1.json`，从 Git diff 或重复的 `--changed-file` 计算直接模块、影响闭包、验证 profile、建议 validator 和 fail-safe 全量原因，输出 `target/oclive-ci/plan.json`。`ci explain` 只解释这份 JSON，不重新计算、不执行命令。Stage 1 的 `ci-impact-plan` 为 `continue-on-error` 可见性 job；现有 CI 全部照常运行。契约、第三方隔离与脚手架辅助边界见 [OCLive 领域感知 CI](../roadmap/SOMEDAY_TOOLCHAIN_CI.md)。
+`ci plan` 默认读取 `data/ci/impact-map.v1.json` 与 `validation-catalog.v1.json`，从 Git diff 或重复的 `--changed-file` 计算直接模块、影响闭包、验证 profile、建议 validator 和 fail-safe 全量原因，输出 `target/oclive-ci/plan.json`。`ci explain` 只解释这份 JSON，不重新计算、不执行命令。Stage 1 的 `ci-impact-plan` 为 `continue-on-error` 可见性 job；它不跳过任何主 CI 硬门禁。目录中标为 `nightly` 的验证器由独立 Nightly/手动工作流执行，不属于选择性 PR。契约、第三方隔离与脚手架辅助边界见 [OCLive 领域感知 CI](../roadmap/SOMEDAY_TOOLCHAIN_CI.md)。
 
 ---
 
@@ -707,7 +707,7 @@ cargo run -p oclive-cli -- --experimental bench --soak --soak-real-time --soak-d
 
 ## 与 CI 的关系
 
-仓库 **`.github/workflows/ci.yml`** 的 **`cli`** job 会 `cargo test -p oclive-cli`（含端到端：`init`、`build`、`bench` smoke）。另有轻量 **`cli-bench`** job 跑一轮 `bench`（不设性能阈值）。
+仓库 **`.github/workflows/ci.yml`** 的 **`cli`** job 会 `cargo test -p oclive-cli`（含端到端：`init`、`build`、`bench` smoke）。独立 **`.github/workflows/nightly-advisory.yml`** 的 **`cli-bench`** job 跑一轮 `bench`（不设性能阈值）并上传 JSON 证据。
 
 ---
 
