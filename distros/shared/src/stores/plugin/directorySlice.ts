@@ -134,11 +134,14 @@ export const directoryActions = {
       finally {
         activeRefreshCount = Math.max(0, activeRefreshCount - 1)
         this.loading = activeRefreshCount > 0
-        if (getRefreshPromise(roleId) === promise)
-          setRefreshPromise(roleId, null)
       }
     })()
     setRefreshPromise(roleId, promise)
+    const clearCurrentRefresh = () => {
+      if (getRefreshPromise(roleId) === promise)
+        setRefreshPromise(roleId, null)
+    }
+    void promise.then(clearCurrentRefresh, clearCurrentRefresh)
     return promise
   },
   async checkPluginUpdatesFromRegistry(this: DirectorySliceStore) {

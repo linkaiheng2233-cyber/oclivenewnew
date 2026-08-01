@@ -1337,8 +1337,10 @@ export function useTheaterShell() {
     }
   }
 
-  function onTheaterSettingsEvent(payload?: { action?: string }) {
-    const action = payload?.action
+  function onTheaterSettingsEvent(payload: unknown) {
+    const action = payload && typeof payload === 'object' && 'action' in payload
+      ? String(payload.action)
+      : undefined
     if (action === 'close' || action === 'escape') {
       if (funnelVisible.value) {
         dismissFunnel()

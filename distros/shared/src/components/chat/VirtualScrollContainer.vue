@@ -1,4 +1,4 @@
-<script setup lang="ts" generic="T extends Record<string, unknown>">
+<script setup lang="ts" generic="T">
 import type { CSSProperties } from 'vue'
 import {
   computed,
@@ -47,7 +47,7 @@ const resizeObservers = new Map<number, ResizeObserver>()
 
 function keyOf(item: T, index: number): string | number {
   const k = props.itemKey
-  const v = item[k]
+  const v = (item as Record<string, unknown>)[k]
   if (typeof v === 'string' || typeof v === 'number')
     return v
   return index

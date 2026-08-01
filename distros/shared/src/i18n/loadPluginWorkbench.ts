@@ -1,10 +1,9 @@
-import type { I18n } from 'vue-i18n'
 import { i18n as appI18n } from './index'
 
 let pluginWorkbenchI18nLoaded = false
 
 /** Plugin workbench i18n fragments; loaded only when opening plugin manager/market (keeps first-screen bundle lean). */
-export async function ensurePluginWorkbenchI18n(i18n: I18n = appI18n): Promise<void> {
+export async function ensurePluginWorkbenchI18n(i18n: typeof appI18n = appI18n): Promise<void> {
   if (pluginWorkbenchI18nLoaded)
     return
   const [zhMod, enMod] = await Promise.all([

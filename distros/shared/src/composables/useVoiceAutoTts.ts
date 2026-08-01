@@ -967,6 +967,7 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
     if (
       generation !== speakGeneration
       || (payloadRoleId && payloadRoleId !== roleStore.currentRoleId)
+      || !cfg
       || !await canAutoSpeakRole(cfg, payloadRoleId || roleStore.currentRoleId)
     ) {
       return
@@ -987,6 +988,7 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
     if (
       generation !== speakGeneration
       || (payloadRoleId && payloadRoleId !== roleStore.currentRoleId)
+      || !cfg
       || !await canAutoSpeakRole(cfg, payloadRoleId || roleStore.currentRoleId)
     ) {
       return
@@ -1064,6 +1066,7 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
       const cfg = await loadVoiceRuntimeConfig(id => pluginStore.isPluginDisabled(id))
       if (
         generation !== speakGeneration
+        || !cfg
         || !await canAutoSpeakRole(cfg, payloadRoleId || roleStore.currentRoleId)
       ) {
         return

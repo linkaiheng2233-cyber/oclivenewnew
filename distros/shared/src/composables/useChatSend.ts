@@ -14,7 +14,7 @@ export function useChatSend(options: {
   chatInputRef: Ref<{ focusInput?: () => void } | null>
   clearSceneBarsBeforeSend: () => void
   offerSceneBarsAfterReply: (together: boolean, destination: boolean) => void
-  onTurnRecorded?: () => void
+  onTurnRecorded?: (userText: string) => void
 }) {
   const chatStore = useChatStore()
   const roleStore = useRoleStore()

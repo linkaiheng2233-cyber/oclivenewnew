@@ -23,7 +23,8 @@ function onPointerDown(e: PointerEvent): void {
   dragging = true
   startX = e.clientX
   emit('resizeStart')
-  e.currentTarget?.setPointerCapture(e.pointerId)
+  if (e.currentTarget instanceof HTMLElement)
+    e.currentTarget.setPointerCapture(e.pointerId)
   document.body.style.cursor = 'col-resize'
   document.body.style.userSelect = 'none'
 }
@@ -42,7 +43,8 @@ function endDrag(e: PointerEvent): void {
     return
   dragging = false
   try {
-    e.currentTarget?.releasePointerCapture(e.pointerId)
+    if (e.currentTarget instanceof HTMLElement)
+      e.currentTarget.releasePointerCapture(e.pointerId)
   }
   catch {
     /* ignore */

@@ -8,6 +8,7 @@ import {
   setErrorReporter,
 } from '@oclive/shared/api'
 import { resolveOcliveShell } from '@oclive/shared/composables/useOcliveShell'
+import { showPluginInstallReviewHint } from '@oclive/shared/composables/usePluginInstallReviewHint'
 import { startVoiceExpansionWarmOnStartup } from '@oclive/shared/composables/useVoiceExpansionWarm'
 import { hostEventBus } from '@oclive/shared/lib/hostEventBus'
 import { useChatStore } from '@oclive/shared/stores/chatStore'
@@ -34,6 +35,43 @@ async function disposeTauriListener(
   }
   catch {
     // Registration failed before an unlisten handle existed.
+  }
+}
+
+export async function installPendingProtocolPlugins(options: {
+  showToast: AppToastFn
+  t: ComposerTranslation
+  refreshPlugins: () => Promise<void>
+  openPluginManagerPanel: () => void
+}): Promise<void> {
+  try {
+    const pending = await consumePendingProtocolInstalls()
+    for (const item of pending) {
+      const git = item.gitUrl?.trim()
+      if (!git)
+        continue
+      try {
+        const result = await installPluginFromGit(git)
+        options.showToast(
+          'success',
+          options.t('app.toast.pluginInstalledFromWeb', {
+            id: result.installedPluginId,
+          }),
+        )
+        showPluginInstallReviewHint(options.showToast, result)
+        await options.refreshPlugins()
+        options.openPluginManagerPanel()
+      }
+      catch (error) {
+        options.showToast(
+          'error',
+          error instanceof Error ? error.message : String(error),
+        )
+      }
+    }
+  }
+  catch (error) {
+    console.warn('consume_pending_protocol_installs', error)
   }
 }
 
@@ -106,27 +144,12 @@ export function useAppBootstrap(options: {
   }
 
   async function runPendingProtocolInstallsFromQueue() {
-    try {
-      const pending = await consumePendingProtocolInstalls()
-      for (const p of pending) {
-        const git = p.gitUrl?.trim()
-        if (!git)
-          continue
-        try {
-          const r = await installPluginFromGit(git)
-          options.showToast('success', options.t('app.toast.pluginInstalledFromWeb', { id: r.installedPluginId }))
-          showPluginInstallReviewHint(options.showToast, r)
-          await pluginStore.refresh()
-          options.openPluginManagerPanel()
-        }
-        catch (e) {
-          options.showToast('error', e instanceof Error ? e.message : String(e))
-        }
-      }
-    }
-    catch (e) {
-      console.warn('consume_pending_protocol_installs', e)
-    }
+    await installPendingProtocolPlugins({
+      showToast: options.showToast,
+      t: options.t,
+      refreshPlugins: () => pluginStore.refresh(),
+      openPluginManagerPanel: options.openPluginManagerPanel,
+    })
   }
 
   onMounted(() => {

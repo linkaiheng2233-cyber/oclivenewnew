@@ -19,7 +19,7 @@ defineProps<{
 const emit = defineEmits<{
   openShortcutHelp: []
   sceneChange: [ev: Event]
-  notify: [payload: { type: 'success' | 'error' | 'info', message: string }]
+  notify: [payload: { type: 'success' | 'error' | 'info' | 'warning', message: string }]
   virtualTimeJumpComplete: [res: JumpTimeResponse]
 }>()
 

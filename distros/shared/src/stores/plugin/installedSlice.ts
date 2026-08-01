@@ -286,4 +286,7 @@ export interface InstalledSliceStore {
   syncDirectoryPluginBootstrap: () => Promise<void>
   checkPluginUpdatesFromRegistry: () => Promise<void>
   pluginsOrderedForSlot: (slot: string) => string[]
+  movePluginInSlotOrder: (slot: string, fromIndex: number, toIndex: number) => void
+  isSlotContributionDisabled: (slot: string, pluginId: string) => boolean
+  setSlotContributionDisabled: (slot: string, pluginId: string, disabled: boolean) => void
 }

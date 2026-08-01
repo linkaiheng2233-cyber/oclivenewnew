@@ -33,7 +33,7 @@ const emit = defineEmits<{
   sceneChange: [ev: Event]
   changeRole: [roleId: string]
   changeRelation: [relation: string]
-  notify: [payload: { type: 'success' | 'error' | 'info', message: string }]
+  notify: [payload: { type: 'success' | 'error' | 'info' | 'warning', message: string }]
   virtualTimeJumpComplete: [res: JumpTimeResponse]
 }>()
 

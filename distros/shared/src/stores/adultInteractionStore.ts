@@ -237,12 +237,16 @@ export const useAdultInteractionStore = defineStore('adult-interaction', {
     },
     setBackgroundQueue(
       enabled: boolean,
-      cap: number = this.backgroundQueueCap,
-      warningAccepted: boolean = this.backgroundQueueWarningAccepted,
+      cap?: number,
+      warningAccepted?: boolean,
     ) {
       this.backgroundQueueEnabled = enabled
-      this.backgroundQueueCap = positiveInteger(cap, this.backgroundQueueCap)
-      this.backgroundQueueWarningAccepted = warningAccepted
+      this.backgroundQueueCap = positiveInteger(
+        cap ?? this.backgroundQueueCap,
+        this.backgroundQueueCap,
+      )
+      this.backgroundQueueWarningAccepted
+        = warningAccepted ?? this.backgroundQueueWarningAccepted
       this.persist()
     },
     setSessionGeneration(roleId: string, sceneId: string, generationId?: string) {
@@ -251,9 +255,9 @@ export const useAdultInteractionStore = defineStore('adult-interaction', {
       if (!current && !generationId)
         return
       this.sessions[key] = {
+        ...current,
         active: current?.active ?? false,
         voiceTextOnly: current?.voiceTextOnly ?? false,
-        ...current,
         roleId: roleId.trim(),
         sceneId: sceneId.trim() || 'default',
         ...(generationId ? { generationId } : {}),

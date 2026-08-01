@@ -43,8 +43,9 @@
     "check:debt-marathon": "node scripts/check-debt-marathon.mjs",
     "check:module-compat": "node scripts/check-module-compat.mjs && node scripts/validate-plugins-index.mjs",
     "test:cursor-marathon-hook": "node scripts/test-cursor-marathon-hook.mjs",
-    "check": "npm run lint && npm run build && npm run check:rust",
-    "check:release": "npm run lint && npm run build && npm run test:unit && npm run verify:ui && npm run verify:shared-i18n && npm run check:rust:fmt && npm run check:rust:clippy && npm run check:rust:test:all",
+    "typecheck": "vue-tsc --noEmit -p tsconfig.app.json",
+    "check": "npm run lint && npm run typecheck && npm run build && npm run check:rust",
+    "check:release": "npm run lint && npm run typecheck && npm run build && npm run test:unit && npm run verify:ui && npm run verify:shared-i18n && npm run check:rust:fmt && npm run check:rust:clippy && npm run check:rust:test:all",
     "check:ci-local": "node scripts/dimension5-acceptance.mjs --ci && npm run check && npm run check:rust:integration",
     "verify:shared-i18n": "node scripts/verify-shared-i18n.mjs",
     "test:distro-profile-mirror": "node scripts/diff-vscode-distro-profile.mjs",
@@ -96,6 +97,7 @@
     "typescript": "~5.8.0",
     "vite": "^6.0.3",
     "vitest": "^3.2.4",
+    "vue-tsc": "^3.3.9",
     "vue3-sfc-loader": "^0.9.5",
     "webdriverio": "^9.27.1"
   }

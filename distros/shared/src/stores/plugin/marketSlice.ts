@@ -10,6 +10,7 @@ import {
 } from '@oclive/shared/api'
 import { useAppToast } from '@oclive/shared/composables/useAppToast'
 import { showPluginInstallReviewHint } from '@oclive/shared/composables/usePluginInstallReviewHint'
+import { classifyPluginShareUrl } from '@oclive/shared/lib/pluginShareUrl'
 import { usePluginStore } from '../pluginStore'
 import { useUiStore } from '../uiStore'
 
@@ -168,4 +169,6 @@ export interface MarketSliceStore {
   pluginMarketError: string | null
   shareCatalogUrl: string
   pendingGitShareUrl: string | null
+  loadCachedPluginMarket: () => Promise<void>
+  syncPluginMarket: (indexUrl?: string | null) => Promise<void>
 }

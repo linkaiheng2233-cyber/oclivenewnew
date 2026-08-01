@@ -29,17 +29,15 @@ export interface PluginBackends {
   directory_plugins?: DirectoryPluginSlots
 }
 
-const SLOT_BACKEND_KEYS = ['memory', 'emotion', 'event', 'prompt'] as const
-
 /** Normalize legacy `builtin_v2` wire values to `builtin` for display. */
 export function normalizePluginBackends<T extends PluginBackends | PluginBackendsOverride>(backends: T): T {
-  const next = { ...backends }
-  for (const key of SLOT_BACKEND_KEYS) {
+  const next: Record<string, unknown> = { ...(backends ?? {}) }
+  for (const key of ['memory', 'emotion', 'event', 'prompt']) {
     const value = next[key]
     if (typeof value === 'string')
-      next[key] = normalizeSlotBackendWire(value) as T[typeof key]
+      next[key] = normalizeSlotBackendWire(value)
   }
-  return next
+  return next as T
 }
 
 export interface PluginBackendsOverride {

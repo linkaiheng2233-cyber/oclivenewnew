@@ -28,7 +28,7 @@ const activeSlot = computed(() => {
       s.pluginId === target.pluginId
       && s.slot === target.slot
       && (s.appearanceId ?? '') === (target.appearanceId ?? ''),
-  )
+  ) ?? null
 })
 
 const { bindPluginFrame, framePermissions, onPluginFrameLoad }
@@ -71,6 +71,12 @@ function closeHotkeyPlugin(): void {
 function closeLauncher(): void {
   launcherOpen.value = false
 }
+
+function bindActiveSlot(value: unknown): void {
+  const slot = activeSlot.value
+  if (slot)
+    bindPluginFrame(slot, value)
+}
 </script>
 
 <template>
@@ -91,7 +97,7 @@ function closeLauncher(): void {
           </button>
         </header>
         <iframe
-          :ref="el => bindPluginFrame(activeSlot, el)"
+          :ref="bindActiveSlot"
           class="hk-frame"
           :src="activeSlot.url"
           :title="`plugin ${activeSlot.pluginId}`"

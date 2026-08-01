@@ -99,7 +99,7 @@ watch(
           const list = warnings.map(w => `- ${w}`).join('\n')
           const ok = await confirm(t('devTools.pluginVueSecurity.confirmBody', { list }), {
             title: t('devTools.pluginVueSecurity.confirmTitle'),
-            type: 'warning',
+            kind: 'warning',
           })
           if (!ok) {
             emit('failed')

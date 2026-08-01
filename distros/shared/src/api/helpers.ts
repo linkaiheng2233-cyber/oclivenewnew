@@ -46,7 +46,10 @@ function parseBackendError(err: unknown): {
       const parsed = JSON.parse(trimmed.slice(jsonStart)) as
         | Partial<KernelErrorPayload>
         | { error?: Partial<KernelErrorPayload> }
-      const j = 'error' in parsed && parsed.error ? parsed.error : parsed
+      const candidate = parsed as Partial<KernelErrorPayload> & {
+        error?: Partial<KernelErrorPayload>
+      }
+      const j = candidate.error ?? candidate
       if (j && typeof j.code === 'string' && typeof j.message === 'string') {
         return { code: j.code, raw, kernel: j as KernelErrorPayload }
       }
