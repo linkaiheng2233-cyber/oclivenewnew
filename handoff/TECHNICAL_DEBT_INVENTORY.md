@@ -107,7 +107,7 @@
 | **K-VOICE-06** | 社区 directory 插件 `com.user.tts.*`（自带 sidecar/RPC） | P2 | VX-10 · `plugin_rpc_invoke` 白名单 | **Done**（Minimal · 2026-07-16 · `b8cb0c48` · CI [`29465172205`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29465172205) · PR [#126](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/126)） |
 | **K-VOICE-07** | `voice_directive` v2 + `engine_extras` 透传 bag | P2 | RFC §4.1 小节后实现 | **OPEN** |
 | **K-VOICE-08** | 全引擎统一流式 playback contract | P2 | 非 CosyVoice chunked audio 抽象 | **Deferred** |
-| **K-VOICE-09** | 共享 GPU 下 CosyVoice2 语音 TTFC 长尾仍会越过 8 秒门禁 | **P2** | 分离 warm、首个热请求与稳态片段，剖析文本前端/推理/首块编码；保留 8 秒绝对门禁并同时跟踪 p50/p95/max，不以放宽阈值或降低显存安全线掩盖；优化后复跑至少 30 分钟实机矩阵 | **OPEN · measured**（2026-08-01，RTX 5060 Laptop 8GB + Qwen2.5 7B Q4_K_M + 22 GPU layers：mixed-FP16 warm 成功，五分钟完成 **46** 对生成，TTFC p50/p95/max **6271/7475/9514ms**，唯一门禁失败为 **9514ms > 8000ms**；峰值余量 **1370MiB**、稳态增长 **74MiB**、零 GPU 采样失败、进程全回收，故不归因为 OOM/泄漏。原始证据与复现命令见 [`TTFT_BENCHMARK.md`](./TTFT_BENCHMARK.md)） |
+| **K-VOICE-09** | 共享 GPU 下 CosyVoice2 语音 TTFC 长尾仍会越过 8 秒门禁 | **P2** | 分离 warm、首个热请求与稳态片段，剖析文本前端/推理/首块编码；保留 8 秒绝对门禁并同时跟踪 p50/p95/max，不以放宽阈值或降低显存安全线掩盖；优化后复跑至少 30 分钟实机矩阵 | **In progress · segmented**（2026-08-02：Sidecar/浏览器/压力报告已贯通 schema v1 分段计时；发现上游 CosyVoice2 将实例级 `token_hop_len` 由 25 扩至 50/100 后跨请求残留，OCLive 适配层现于每次流请求恢复模型初值，5 组同机 A/B 的 TTFC p95 **6690→6133ms**，且常见流块由 1～2 恢复为 2～3。长句语音独占 TTFC p50 **2781ms**，与 22 层 LLM 同卡并发为 **5231ms**；短句分别为 **1669/3082ms**，瓶颈在语音 token 等待与首个 flow/HiFT 解码受同卡竞争放大，PCM 编码/传输仅约 **10/5ms**。现有 8 秒门禁不变；是否采用语音首块优先属于资源调度策略决策，须维护者确认，确认后仍需 30 分钟真实矩阵。2026-08-01 五分钟 46 对旧基线 TTFC p50/p95/max **6271/7475/9514ms**、峰值余量 **1370MiB**、稳态增长 **74MiB**、零采样失败且进程全回收，仍保留为长尾问题证据；详见 [`TTFT_BENCHMARK.md`](./TTFT_BENCHMARK.md)） |
 
 
 ---

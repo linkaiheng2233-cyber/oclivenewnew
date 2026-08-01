@@ -20,6 +20,7 @@
 
 ### Fixed
 
+- **CosyVoice2 流式首块状态与分段诊断**：每次合成前恢复上游模型的初始 `token_hop_len`，避免前一轮流式增长到 50/100 后污染后续请求，造成流块减少并推高 TTFC；Sidecar、共享播放层和压力工具现贯通版本化分段计时、prompt cache 与客户端交付开销，72 小时硬件测试候选流程会原子刷新有界 checkpoint 并在中断后保留最后进度。现有 8 秒语音门禁与显存安全线均未放宽。
 - **8GB 语音共存档位留足冷加载余量**：`gpu_balanced` 与共享 GPU 压力工具默认上限由 24 层调整为 22 层。RTX 5060 Laptop 8GB 实测中，24 层因系统波动使 CosyVoice 冷加载余量以 **2559MiB < 2560MiB** 被安全拒绝；22 层可完成 mixed-FP16 warm，并在五分钟 LLM/TTS 共存中保持峰值余量 **1370MiB**。`gpu_full` 与显式环境覆盖仍保留。
 - **Loom Nightly 真模型恢复**：将会污染全部依赖的全局 `cfg(loom)` 改为桌面宿主包级 `loom-tests` feature；`oclive test --loom`、验证目录与 Nightly 现统一运行两个真实且有界的 Loom 交错模型，不再把未启用模型的占位 smoke 当作并发证据。面向独立生成项目的 `oclive ci init` 不再输出依赖主仓桌面路径的无效 Loom job。
 - **npm 开发工具链供应链收口**：升级 ESLint 10 / Antfu 9.2 与 WebDriverIO 9.30，修复 `brace-expansion`、`fast-xml-parser` 命中和 Unicorn peer 契约冲突；移除捆绑 Vue 2/PostCSS 的 `vue3-sfc-loader`，改用仅在显式不安全 DEV 模式动态加载的官方 Vue SFC 编译器，并将目录插件脚本导入限制为 `vue`。完整与生产 npm audit 均成为硬门禁，仓库内全部官方/示例目录插件 SFC 进入编译回归测试。
