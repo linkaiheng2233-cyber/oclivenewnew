@@ -68,7 +68,7 @@
 | **D-DOC-RELOC-01** | 三份名实不符文档仍在 `creator-docs/`（VS Code 契约 / Studio 指南 / mumu 验收） | P2 | 物理迁至 `handoff/{vscode,studio,distros}/` + 原位 stub + 入链更新 | **Done**（轮次 18） |
 | **K-SUPPLY-02** | Release 预编译内核 **SHA256SUMS**（防换包） | P1 | workflow + `bundle-kernel-for-tauri.mjs` 钩子已入库；tag `oclivenewnew-v*` 触发 CI artifact | **Done**（轮次 22） |
 | **K-SUPPLY-03** | 插件安装后「请审本地源码」固定提示 | P2 | 市场/git/zip + CLI | **Done**（轮次 19） |
-| **K-SUPPLY-04** | 前端 `npm-audit` 仅可见性（`continue-on-error`） | P2 | 连续 2 个复核周期生产依赖零漏洞，或出现高危时升格硬门禁 / 文档豁免 | **Ready to close after gate hardening**（2026-07-18 与 2026-08-01 两轮 `npm audit --omit=dev --audit-level=high` 均为 **0 vulnerabilities**；验收证据已满足，下一步移除 `continue-on-error` 并以远端硬门禁收口） |
+| **K-SUPPLY-04** | 前端 `npm-audit` 仅可见性（`continue-on-error`） | P2 | 连续 2 个复核周期生产依赖零漏洞，或出现高危时升格硬门禁 / 文档豁免 | **Locally verified**（2026-08-01：两轮生产扫描均为 **0 vulnerabilities**，CI `continue-on-error` 已移除并升为高危硬门禁；待远端成功证据后关闭） |
 | **K-SUPPLY-05** | `deny.toml` `multiple-versions` warn→deny | P2 | Minimal：`deny` + 有理由 `[bans.skip]`；Full 零 skip 另战役 | **Done**（Minimal · 2026-07-15）· **Full Partial**（2026-07-16 · workspace `toml` 0.8→1 · ratchet **75**；`[bans.skip]` 仍须保留 · 不准假 Full Done · PR [#126](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/126)） |
 | **K-SECRET-01** | 已跟踪 N1N API 密钥进入 Git 历史 | **P0** | 服务端撤销旧密钥；新密钥只进 Continue secrets；维护者已明确接受保留历史的残余可见性 | **Done · owner confirmed**（2026-07-17：维护者确认已在 N1N 提供商侧彻底销毁旧密钥；Git 历史按决定保留） |
 | **K-PLUGIN-SEC-01** | 目录插件 UI 信任边界：同进程 Vue / 共享 custom-protocol origin | **P1** | Minimal：发行构建禁 inline Vue；Full：每插件独立 origin 或等价强隔离 + 原生 E2E + 可信签名绑定 + 官方 HTML fallback 功能对等，并将 `vue3-sfc-loader` 移出发行依赖图 | **Partial**（Stage 0–3 已实现：发行禁 inline Vue；embedded / full-shell 使用 opaque iframe sandbox + parent broker；能力令牌绑定插件并在导航时撤销；Voice HTML fallback 已补功能对等；`vue3-sfc-loader` 已移至 dev-only。仍缺 Windows `tauri-driver` 原生实跑证据、可信签名/身份绑定与远端 CI，见 [`K-PLUGIN-SEC-01` 计划](./debt-marathon/long-plans/K-PLUGIN-SEC-01.md)） |
@@ -190,7 +190,7 @@
 | **K-SUPPLY-01** | `cargo deny` 进 dimension5 / CI 硬门禁 | P1 | **Done**（轮次 19） |
 | **K-SUPPLY-02** | Release SHA256SUMS | P1 | **Done** — `generate-sha256sums.mjs` · `release-kernel-checksums.yml` · `bundle-kernel-for-tauri.mjs` |
 | **K-SUPPLY-03** | 插件安装审源码提示 | P2 | **Done**（轮次 19） |
-| **K-SUPPLY-04** | npm-audit 升格策略 | P2 | **Ready to close after gate hardening** — 2026-07-18 与 2026-08-01 两轮生产依赖扫描均为 **0 vulnerabilities**；下一步取消 `continue-on-error` 并取远端证据 |
+| **K-SUPPLY-04** | npm-audit 升格策略 | P2 | **Locally verified** — 2026-07-18 与 2026-08-01 两轮生产依赖扫描均为 **0 vulnerabilities**，硬门禁已落地；待远端成功证据后关闭 |
 | **K-SUPPLY-05** | deny 重复依赖 warn→deny | P2 | **Done**（Minimal · 2026-07-15）— `multiple-versions = deny` + documented `[bans.skip]` · ratchet **80** · **Full Partial**（2026-07-16 · toml workspace→1 · ratchet **75** · 零 skip 仍 blocked:needs-ecosystem） |
 | **K-SUPPLY-06** | 位级可重复构建（reproducible） | — | **Deferred** · 见 SECURITY_AUDIT_SCOPE 局限 |
 | **K-SUPPLY-07** | SBOM（CycloneDX/SPDX） | — | **Deferred** · 政企/校企采购需求触发 |
@@ -199,11 +199,11 @@
 | **K-SUPPLY-08** | crate 作者信誉 / 发布历史系统审计 | — | **Observe** · 无成熟自动化方案 |
 | **K-SUPPLY-09** | 插件签名严格模式默认关闭 | **P1** | 官方/市场安装默认要求可验证签名；本地开发保留显式 opt-out，并补签名轮换/撤销流程 | **OPEN**（当前仅 `OCLIVE_PLUGIN_SIGNATURE_STRICT=1` 时校验 sidecar SHA-256；不能把源码提示当供应链证明） |
 | **K-SUPPLY-10** | GitHub Actions 仅固定可变 tag（`@v*` / `@stable`） | P2 | 所有外部 action 固定完整 commit SHA，并由 Dependabot/Renovate 维护升级 | **OPEN**（`actions/*`、`dtolnay/rust-toolchain`、`Swatinem/rust-cache` 均未 pin SHA） |
-| **K-SUPPLY-11** | `event-listener 5.4.1` 命中 RUSTSEC-2026-0221（`StackSlot` 可跨线程携带 `!Send` tag） | **P1** | 追踪 SQLx 与 zbus/Tauri 两条传递路径，优先升级到修复版本；若上游暂时阻塞，记录实际可达性与版本约束，不得仅加入 ignore；更新中英 KNOWN_VULNERABILITIES | **OPEN**（2026-08-01：`cargo audit` 漏洞级仍 **0**、退出码 0，但 allowed warnings **8→9**；该 unsound 条目同时进入 `sqlx-core/sqlx-sqlite` 与 `zbus/tauri-plugin-opener` 依赖链） |
+| **K-SUPPLY-11** | `event-listener 5.4.1` 命中 RUSTSEC-2026-0221（`StackSlot` 可跨线程携带 `!Send` tag） | **P1** | 追踪 SQLx 与 zbus/Tauri 两条传递路径，优先升级到修复版本；若上游暂时阻塞，记录实际可达性与版本约束，不得仅加入 ignore；更新中英 KNOWN_VULNERABILITIES | **Locally verified**（2026-08-01：锁文件升级至 **5.4.2**，SQLx 与 zbus/Tauri 均解析到修复版；`cargo audit` 漏洞级 **0**、allowed warnings **9→8**；待远端证据后关闭） |
 
 **现在就能做（低成本）**：维持 dimension5 全检绿（项数以脚本输出为准）· `Cargo.lock` PR 更新 KNOWN_VULN · 发版前本地 `oclive lint --deny` · 校企仓要求组员 `npm ci && cargo build` 从源码跑通。
 
-**下一工程动作**：优先调查 **K-SUPPLY-11**；随后把已满足双周期证据的 **K-SUPPLY-04** 升为硬门禁。插件发布信任仍以 **K-SUPPLY-09** 为主要 P1。
+**下一工程动作**：以远端 CI 证据关闭 **K-SUPPLY-04 / K-SUPPLY-11**；插件发布信任仍以 **K-SUPPLY-09** 为主要 P1。
 
 ---
 

@@ -15,7 +15,7 @@ This file treats **vulnerability-level** hits from `cargo audit` on the workspac
 | **Last scan date** | **2026-08-01** (repository-wide audit, local `cargo audit`) |
 | **Scan path** | Workspace root `Cargo.lock` |
 | **Vulnerability-level count** | **0** (`cargo audit` exit code **0**; `sqlx-mysql` / `rsa` removed from lockfile graph) |
-| **Warning-level count** | **9** (gtk/webkit Linux cluster · `glib` · `unic-*` · new `event-listener` unsound warning · `spin` yanked; **`fxhash` / `rand` 0.7 cleared with Tauri 2**) |
+| **Warning-level count** | **8** (gtk/webkit Linux cluster · `glib` · `unic-*` · `spin` yanked; `event-listener` is fixed, and **`fxhash` / `rand` 0.7 were cleared with Tauri 2**) |
 
 > If CI or your machine cannot fetch advisory-db: `cargo audit --no-fetch --stale` (requires a previously fetched local DB).
 
@@ -61,7 +61,7 @@ This file treats **vulnerability-level** hits from `cargo audit` on the workspac
 | **RUSTSEC-2025-0134** | `rustls-pemfile` | **Fixed** | `reqwest` **0.12** chain no longer depends on this crate |
 | gtk-rs GTK3 cluster (11 IDs) | `gtk`/`gdk`/… | **Recorded + audit.toml ignore** | Linux WebView (wry/webkit2gtk) still pulls GTK3; ignore remains after Tauri 2 until upstream shifts |
 | **RUSTSEC-2025-0075 / 0080 / 0081 / 0098 / 0100** | `unic-*` 0.9 | **Open** | Transitively pulled by Tauri `urlpattern`; wait for upstream removal of the unmaintained family |
-| **RUSTSEC-2026-0221** | `event-listener` 5.4.1 | **Open · K-SUPPLY-11** | `StackSlot` can carry a `!Send` tag across threads; both SQLx and zbus/Tauri paths are present, so upgrade or document reachability rather than silently ignoring it |
+| **RUSTSEC-2026-0221** | `event-listener` 5.4.1 | **Fixed · K-SUPPLY-11** | Lockfile upgraded to **5.4.2** on 2026-08-01; both SQLx and zbus/Tauri paths now resolve to the fixed release, without an ignore |
 | **RUSTSEC-2025-0057** | `fxhash` | **Cleared** | 2026-07-14 K-PLATFORM-01a Full · no `fxhash` in Tauri 2 lock graph |
 | **RUSTSEC-2024-0429** | `glib` | **Open** | `VariantStrIter` path; host does not use (Linux wry) |
 | yanked | `spin` 0.9.8 | **Open** | Pulled through `flume` → `sqlx-sqlite`; follow SQLx/Flume upstream upgrades |
