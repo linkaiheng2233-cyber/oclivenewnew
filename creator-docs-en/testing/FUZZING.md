@@ -19,16 +19,17 @@ Each property case defaults to **2048** mutations (raise `ProptestConfig::with_c
 ```bash
 rustup toolchain install nightly
 cargo install cargo-fuzz
-cd kernel/fuzz
-cargo fuzz list
-cargo fuzz run fuzz_manifest_load -- -runs=100000
-cargo fuzz run fuzz_settings_parse -- -runs=100000
-cargo fuzz run fuzz_oocp_message -- -runs=100000
-cargo fuzz run fuzz_blueprint_v2 -- -runs=100000
-cargo fuzz run fuzz_oclive_validation -- -runs=100000
-cargo fuzz run fuzz_function_call_parser -- -runs=100000
-cargo fuzz run fuzz_role_pack_loader -- -runs=100000
+cargo fuzz list --fuzz-dir kernel/fuzz
+cargo fuzz run --fuzz-dir kernel/fuzz fuzz_manifest_load -- -runs=100000
+cargo fuzz run --fuzz-dir kernel/fuzz fuzz_settings_parse -- -runs=100000
+cargo fuzz run --fuzz-dir kernel/fuzz fuzz_oocp_message -- -runs=100000
+cargo fuzz run --fuzz-dir kernel/fuzz fuzz_blueprint_v2 -- -runs=100000
+cargo fuzz run --fuzz-dir kernel/fuzz fuzz_oclive_validation -- -runs=100000
+cargo fuzz run --fuzz-dir kernel/fuzz fuzz_function_call_parser -- -runs=100000
+cargo fuzz run --fuzz-dir kernel/fuzz fuzz_role_pack_loader -- -runs=100000
 ```
+
+Run these commands from the repository root. The explicit `--fuzz-dir kernel/fuzz` prevents the Cargo workspace from resolving the fuzz manifest as `fuzz/Cargo.toml` at the repository root.
 
 ### `fuzz_oclive_validation`
 

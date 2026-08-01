@@ -50,6 +50,11 @@ _load_total_vram_mib = 0
 _load_min_free_vram_mib = 0
 _load_peak_allocated_mib = 0
 _load_peak_reserved_mib = 0
+_first_chunk_priority_requested = True
+_first_chunk_priority_active = False
+_first_chunk_priority_detail = "not_configured"
+_first_chunk_hop_tokens = 0
+_first_chunk_min_text_chars = 10
 _lock = threading.Lock()
 _synth_lock = threading.Lock()
 _prepared_speakers: dict[tuple[str, int, int, str], str] = {}
@@ -168,6 +173,145 @@ def _cuda_available() -> bool:
         return bool(torch.cuda.is_available())
     except ImportError:
         return False
+
+
+def _env_enabled(name: str, *, default: bool) -> bool:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() not in {"0", "false", "no", "off"}
+
+
+def _configure_first_chunk_priority(
+    runtime_model: Any,
+    *,
+    torch_module: Any | None = None,
+) -> None:
+    """Give speech-token work and the first waveform chunk CUDA priority.
+
+    This is deliberately an adapter policy rather than an upstream CosyVoice
+    patch. It never cancels the concurrently streaming text LLM, and it can be
+    disabled for diagnostics through OCLIVE_COSYVOICE_FIRST_CHUNK_PRIORITY=0.
+    """
+
+    global _first_chunk_priority_requested, _first_chunk_priority_active
+    global _first_chunk_priority_detail, _first_chunk_hop_tokens
+    global _first_chunk_min_text_chars
+
+    requested = _env_enabled(
+        "OCLIVE_COSYVOICE_FIRST_CHUNK_PRIORITY",
+        default=True,
+    )
+    _first_chunk_priority_requested = requested
+    _first_chunk_priority_active = False
+    _first_chunk_priority_detail = "disabled" if not requested else "not_configured"
+    _first_chunk_hop_tokens = 0
+    raw_min_chars = os.environ.get(
+        "OCLIVE_COSYVOICE_FIRST_CHUNK_MIN_TEXT_CHARS",
+        "10",
+    ).strip()
+    try:
+        _first_chunk_min_text_chars = max(3, int(raw_min_chars))
+    except ValueError:
+        _first_chunk_min_text_chars = 10
+    if runtime_model is not None:
+        runtime_model._oclive_first_chunk_priority_active = False
+        runtime_model._oclive_first_chunk_priority_configured = False
+    if not requested or runtime_model is None:
+        if requested and runtime_model is None:
+            _first_chunk_priority_detail = "runtime_model_missing"
+        elif runtime_model is not None:
+            upstream_hop = getattr(
+                runtime_model,
+                "_oclive_upstream_stream_hop_len",
+                None,
+            )
+            if isinstance(upstream_hop, int) and upstream_hop > 0:
+                runtime_model.token_hop_len = upstream_hop
+        return
+    current_hop = getattr(runtime_model, "token_hop_len", None)
+    upstream_hop = getattr(
+        runtime_model,
+        "_oclive_upstream_stream_hop_len",
+        current_hop,
+    )
+    if isinstance(upstream_hop, int) and upstream_hop > 0:
+        runtime_model._oclive_upstream_stream_hop_len = upstream_hop
+        raw_hop = os.environ.get(
+            "OCLIVE_COSYVOICE_FIRST_HOP_TOKENS",
+            "20",
+        ).strip()
+        try:
+            requested_hop = int(raw_hop)
+        except ValueError:
+            requested_hop = upstream_hop
+        first_hop = max(8, min(upstream_hop, requested_hop))
+        runtime_model.token_hop_len = first_hop
+        runtime_model._oclive_priority_stream_hop_len = first_hop
+        _first_chunk_hop_tokens = first_hop
+    try:
+        torch = torch_module
+        if torch is None:
+            import torch as imported_torch
+
+            torch = imported_torch
+        if not torch.cuda.is_available():
+            _first_chunk_priority_detail = "cuda_unavailable"
+            return
+        device = getattr(runtime_model, "device", None)
+        speech_token_stream = torch.cuda.Stream(device=device, priority=-1)
+        first_waveform_stream = torch.cuda.Stream(device=device, priority=-1)
+        default_llm_context = getattr(runtime_model, "llm_context", None)
+        priority_llm_context = torch.cuda.stream(speech_token_stream)
+        runtime_model._oclive_default_llm_context = default_llm_context
+        runtime_model._oclive_priority_llm_context = priority_llm_context
+        runtime_model.llm_context = priority_llm_context
+        runtime_model._oclive_first_waveform_stream = first_waveform_stream
+        runtime_model._oclive_first_chunk_priority_configured = True
+        runtime_model._oclive_first_chunk_priority_active = True
+        _first_chunk_priority_active = True
+        _first_chunk_priority_detail = (
+            f"hop_tokens={_first_chunk_hop_tokens};"
+            f"min_text_chars={_first_chunk_min_text_chars};"
+            "cuda_stream_priority:"
+            f"speech={getattr(speech_token_stream, 'priority', -1)},"
+            f"waveform={getattr(first_waveform_stream, 'priority', -1)}"
+        )
+    except Exception as exc:  # noqa: BLE001
+        runtime_model._oclive_first_chunk_priority_active = False
+        _first_chunk_priority_detail = (
+            f"hop_tokens={_first_chunk_hop_tokens};"
+            f"cuda_stream_priority_unavailable:{exc}"
+        )
+
+
+def _run_first_waveform_with_priority(
+    runtime_model: Any,
+    operation: Any,
+    *args: Any,
+    **kwargs: Any,
+) -> Any:
+    priority_stream = getattr(
+        runtime_model,
+        "_oclive_first_waveform_stream",
+        None,
+    )
+    if (
+        not getattr(runtime_model, "_oclive_first_chunk_priority_active", False)
+        or priority_stream is None
+    ):
+        return operation(*args, **kwargs)
+
+    import torch
+
+    with torch.cuda.stream(priority_stream):
+        result = operation(*args, **kwargs)
+    # The caller moves the tensor to CPU immediately after token2wav. Establish
+    # an explicit dependency instead of relying on implicit cross-stream sync.
+    torch.cuda.current_stream(
+        device=getattr(runtime_model, "device", None)
+    ).wait_stream(priority_stream)
+    return result
 
 
 def _empty_cuda_cache() -> None:
@@ -566,6 +710,7 @@ def _load_cosyvoice_model(
                 model = CosyVoice2(str(path), fp16=False)
             _record_cuda_load_peak()
             runtime_model = getattr(model, "model", None)
+            _configure_first_chunk_priority(runtime_model)
             initial_stream_hop_len = getattr(runtime_model, "token_hop_len", None)
             if isinstance(initial_stream_hop_len, int) and initial_stream_hop_len > 0:
                 # CosyVoice2 grows token_hop_len while streaming but does not
@@ -601,13 +746,20 @@ def _load_cosyvoice_model(
             ):
                 def measured_token2wav(*args: Any, **kwargs: Any) -> Any:
                     decode_started = time.perf_counter()
+                    call_count = int(
+                        getattr(runtime_model, "_oclive_token2wav_calls", 0)
+                    )
                     try:
+                        if call_count == 0:
+                            return _run_first_waveform_with_priority(
+                                runtime_model,
+                                original_token2wav,
+                                *args,
+                                **kwargs,
+                            )
                         return original_token2wav(*args, **kwargs)
                     finally:
                         decode_ms = int((time.perf_counter() - decode_started) * 1000)
-                        call_count = int(
-                            getattr(runtime_model, "_oclive_token2wav_calls", 0)
-                        )
                         if call_count == 0:
                             runtime_model._oclive_first_token2wav_ms = decode_ms
                         runtime_model._oclive_token2wav_calls = call_count + 1
@@ -654,12 +806,53 @@ def _tensor_to_pcm_base64(audio_tensor: Any, sample_rate: int) -> tuple[str, int
     return base64.b64encode(pcm).decode("ascii"), sample_rate
 
 
-def _reset_stream_hop_len(model: Any) -> None:
-    """Reset upstream CosyVoice2's request-leaking stream hop state."""
+def _reset_stream_hop_len(model: Any, text: str = "") -> None:
+    """Reset stream state and select the bounded per-request priority tier."""
     runtime_model = getattr(model, "model", None)
+    if runtime_model is None:
+        return
     initial_hop_len = getattr(runtime_model, "_oclive_initial_stream_hop_len", None)
-    if isinstance(initial_hop_len, int) and initial_hop_len > 0:
-        runtime_model.token_hop_len = initial_hop_len
+    upstream_hop_len = getattr(
+        runtime_model,
+        "_oclive_upstream_stream_hop_len",
+        initial_hop_len,
+    )
+    priority_hop_len = getattr(
+        runtime_model,
+        "_oclive_priority_stream_hop_len",
+        initial_hop_len,
+    )
+    apply_priority = (
+        getattr(
+            runtime_model,
+            "_oclive_first_chunk_priority_configured",
+            False,
+        )
+        and len(text.strip()) >= _first_chunk_min_text_chars
+    )
+    runtime_model._oclive_first_chunk_priority_active = apply_priority
+    if apply_priority:
+        priority_context = getattr(
+            runtime_model,
+            "_oclive_priority_llm_context",
+            None,
+        )
+        if priority_context is not None:
+            runtime_model.llm_context = priority_context
+        selected_hop = priority_hop_len
+    else:
+        default_context = getattr(
+            runtime_model,
+            "_oclive_default_llm_context",
+            None,
+        )
+        if default_context is not None:
+            runtime_model.llm_context = default_context
+        selected_hop = upstream_hop_len
+    if isinstance(selected_hop, int) and selected_hop > 0:
+        runtime_model.token_hop_len = selected_hop
+        runtime_model._oclive_request_first_hop_tokens = selected_hop
+    runtime_model._oclive_request_first_chunk_priority_applied = apply_priority
 
 
 def _reset_stream_runtime_metrics(model: Any) -> None:
@@ -692,14 +885,27 @@ def _open_synthesis_iterator(
         "prompt_prepare_ms": 0,
         "prompt_cache_hit": False,
         "inference_open_ms": 0,
+        "first_chunk_priority_applied": False,
+        "first_chunk_hop_tokens": 0,
     }
     cleaned = text.strip()
     if not cleaned:
         return None, "empty_text", "", telemetry
     speed = max(0.5, min(2.0, float(speed or 1.0)))
     if stream:
-        _reset_stream_hop_len(model)
+        _reset_stream_hop_len(model, cleaned)
         _reset_stream_runtime_metrics(model)
+        runtime_model = getattr(model, "model", None)
+        telemetry["first_chunk_priority_applied"] = bool(
+            getattr(
+                runtime_model,
+                "_oclive_request_first_chunk_priority_applied",
+                False,
+            )
+        )
+        telemetry["first_chunk_hop_tokens"] = int(
+            getattr(runtime_model, "_oclive_request_first_hop_tokens", 0) or 0
+        )
     prompt_text = ref_text.strip() or cleaned[:32]
     if emo_text.strip():
         prompt_path = _resolve_prompt_wav(ref_audio)
@@ -1039,6 +1245,12 @@ def _stream_synthesis_lines(
                             "prompt_cache_hit": bool(
                                 open_telemetry.get("prompt_cache_hit")
                             ),
+                            "first_chunk_priority_applied": bool(
+                                open_telemetry.get("first_chunk_priority_applied")
+                            ),
+                            "first_chunk_hop_tokens": int(
+                                open_telemetry.get("first_chunk_hop_tokens") or 0
+                            ),
                         }
                     )
                 yield json.dumps(chunk_payload, ensure_ascii=False)
@@ -1111,6 +1323,12 @@ def _stream_synthesis_lines(
             "timings_schema_version": 1,
             "timings_ms": timings_ms,
             "prompt_cache_hit": bool(open_telemetry.get("prompt_cache_hit")),
+            "first_chunk_priority_applied": bool(
+                open_telemetry.get("first_chunk_priority_applied")
+            ),
+            "first_chunk_hop_tokens": int(
+                open_telemetry.get("first_chunk_hop_tokens") or 0
+            ),
         },
         ensure_ascii=False,
     )
@@ -1126,6 +1344,11 @@ def _load_telemetry_payload() -> dict[str, Any]:
         "load_min_free_vram_mib": _load_min_free_vram_mib,
         "load_peak_allocated_mib": _load_peak_allocated_mib,
         "load_peak_reserved_mib": _load_peak_reserved_mib,
+        "first_chunk_priority_requested": _first_chunk_priority_requested,
+        "first_chunk_priority_active": _first_chunk_priority_active,
+        "first_chunk_priority_detail": _first_chunk_priority_detail,
+        "first_chunk_hop_tokens": _first_chunk_hop_tokens,
+        "first_chunk_min_text_chars": _first_chunk_min_text_chars,
     }
 
 
@@ -1178,6 +1401,8 @@ def unload_cosyvoice_model(expected_model_dir: str = "") -> dict[str, Any]:
     global _load_free_vram_before_mib, _load_total_vram_mib
     global _load_min_free_vram_mib, _load_peak_allocated_mib
     global _load_peak_reserved_mib
+    global _first_chunk_priority_requested, _first_chunk_priority_active
+    global _first_chunk_priority_detail, _first_chunk_hop_tokens
 
     expected = Path(expected_model_dir).resolve() if expected_model_dir.strip() else None
     with _synth_lock:
@@ -1208,6 +1433,13 @@ def unload_cosyvoice_model(expected_model_dir: str = "") -> dict[str, Any]:
             _load_min_free_vram_mib = 0
             _load_peak_allocated_mib = 0
             _load_peak_reserved_mib = 0
+            _first_chunk_priority_requested = _env_enabled(
+                "OCLIVE_COSYVOICE_FIRST_CHUNK_PRIORITY",
+                default=True,
+            )
+            _first_chunk_priority_active = False
+            _first_chunk_priority_detail = "unloaded"
+            _first_chunk_hop_tokens = 0
         del resident_model
         gc.collect()
         _empty_cuda_cache()

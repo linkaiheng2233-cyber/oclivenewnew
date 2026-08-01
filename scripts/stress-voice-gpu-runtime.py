@@ -97,6 +97,33 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--gpu-index", default="0")
     parser.add_argument("--gpu-layers", type=int, default=22)
+    parser.add_argument(
+        "--llm-priority",
+        type=int,
+        choices=(-1, 0, 1, 2, 3),
+        default=None,
+        help="Optional llama.cpp --prio override used by scheduling benchmarks",
+    )
+    parser.add_argument(
+        "--llm-poll",
+        type=int,
+        choices=range(0, 101),
+        default=None,
+        metavar="0..100",
+        help="Optional llama.cpp --poll override used by scheduling benchmarks",
+    )
+    parser.add_argument(
+        "--voice-first-chunk-priority",
+        choices=("on", "off"),
+        default="on",
+        help="Enable or disable the CosyVoice first-chunk CUDA priority policy",
+    )
+    parser.add_argument(
+        "--voice-first-hop-tokens",
+        type=int,
+        default=20,
+        help="Initial CosyVoice stream hop when first-chunk priority is enabled",
+    )
     parser.add_argument("--voice-runs", type=int, default=5)
     parser.add_argument(
         "--duration-minutes",
@@ -382,6 +409,16 @@ def run_voice(
             if "prompt_cache_hit" in done
             else first_chunk_meta.get("prompt_cache_hit")
         ),
+        "first_chunk_priority_applied": (
+            done.get("first_chunk_priority_applied")
+            if "first_chunk_priority_applied" in done
+            else first_chunk_meta.get("first_chunk_priority_applied")
+        ),
+        "first_chunk_hop_tokens": (
+            done.get("first_chunk_hop_tokens")
+            or first_chunk_meta.get("first_chunk_hop_tokens")
+            or 0
+        ),
         "client_delivery_overhead_ms": client_delivery_overhead_ms,
         "errors": errors,
     }
@@ -466,6 +503,8 @@ def validate_inputs(args: argparse.Namespace) -> None:
             raise FileNotFoundError(f"{label} not found: {path}")
     if args.voice_runs < 1:
         raise ValueError("--voice-runs must be at least 1")
+    if args.voice_first_hop_tokens < 1:
+        raise ValueError("--voice-first-hop-tokens must be at least 1")
     if not (args.duration_minutes >= 0 and args.duration_minutes < float("inf")):
         raise ValueError("--duration-minutes must be finite and at least 0")
     if args.gpu_sample_interval_seconds <= 0:
@@ -596,24 +635,29 @@ def main() -> int:
     baseline_used, total_mib = gpu_memory_mib(args.gpu_index)
     sampler.start()
     try:
+        llm_command = [
+            str(args.llama_server),
+            "-m",
+            str(args.llm_model),
+            "--host",
+            "127.0.0.1",
+            "--port",
+            str(llm_port),
+            "-ngl",
+            str(args.gpu_layers),
+            "-c",
+            "4096",
+            "-np",
+            "1",
+            "-fa",
+            "on",
+        ]
+        if args.llm_priority is not None:
+            llm_command.extend(["--prio", str(args.llm_priority)])
+        if args.llm_poll is not None:
+            llm_command.extend(["--poll", str(args.llm_poll)])
         llm_process = subprocess.Popen(
-            [
-                str(args.llama_server),
-                "-m",
-                str(args.llm_model),
-                "--host",
-                "127.0.0.1",
-                "--port",
-                str(llm_port),
-                "-ngl",
-                str(args.gpu_layers),
-                "-c",
-                "4096",
-                "-np",
-                "1",
-                "-fa",
-                "on",
-            ],
+            llm_command,
             stdin=subprocess.DEVNULL,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
@@ -628,6 +672,12 @@ def main() -> int:
                 "OCLIVE_COSYVOICE_MODEL_DIR": str(args.voice_model_dir),
                 "OCLIVE_COSYVOICE_PORT": str(voice_port),
                 "OCLIVE_COSYVOICE_PRECISION": "auto",
+                "OCLIVE_COSYVOICE_FIRST_CHUNK_PRIORITY": (
+                    "1" if args.voice_first_chunk_priority == "on" else "0"
+                ),
+                "OCLIVE_COSYVOICE_FIRST_HOP_TOKENS": str(
+                    args.voice_first_hop_tokens
+                ),
                 "PYTHONPATH": str(voice_root),
                 "PYTHONIOENCODING": "utf-8",
                 "PYTHONUTF8": "1",
@@ -843,6 +893,10 @@ def main() -> int:
                 )
             ),
             "gpu_layers": args.gpu_layers,
+            "llm_priority": args.llm_priority,
+            "llm_poll": args.llm_poll,
+            "voice_first_chunk_priority": args.voice_first_chunk_priority,
+            "voice_first_hop_tokens": args.voice_first_hop_tokens,
             "requested_duration_minutes": args.duration_minutes,
             "actual_load_seconds": (
                 load_elapsed_seconds if not args.expect_admission_denied else 0
@@ -879,6 +933,11 @@ def main() -> int:
                     "load_min_free_vram_mib",
                     "load_peak_allocated_mib",
                     "load_peak_reserved_mib",
+                    "first_chunk_priority_requested",
+                    "first_chunk_priority_active",
+                    "first_chunk_priority_detail",
+                    "first_chunk_hop_tokens",
+                    "first_chunk_min_text_chars",
                 )
             },
             "llm_ttft_ms": {
@@ -913,6 +972,12 @@ def main() -> int:
                         "client_delivery_overhead_ms"
                     ),
                     "prompt_cache_hit": sample.get("prompt_cache_hit"),
+                    "first_chunk_priority_applied": sample.get(
+                        "first_chunk_priority_applied"
+                    ),
+                    "first_chunk_hop_tokens": sample.get(
+                        "first_chunk_hop_tokens"
+                    ),
                     "timings_ms": sample.get("timings_ms") or {},
                 }
                 for sample in voice_samples

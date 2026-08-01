@@ -17,15 +17,14 @@ cargo test -p oclive_validation --test proptest_fuzz_parsing
 ```bash
 rustup toolchain install nightly
 cargo install cargo-fuzz
-cd kernel/fuzz
-cargo fuzz list
-cargo fuzz run fuzz_manifest_load -- -runs=100000
-cargo fuzz run fuzz_settings_parse -- -runs=100000
-cargo fuzz run fuzz_oocp_message -- -runs=100000
-cargo fuzz run fuzz_blueprint_v2 -- -runs=100000
-cargo fuzz run fuzz_oclive_validation -- -runs=100000
-cargo fuzz run fuzz_function_call_parser -- -runs=100000
-cargo fuzz run fuzz_role_pack_loader -- -runs=100000
+cargo fuzz list --fuzz-dir kernel/fuzz
+cargo fuzz run --fuzz-dir kernel/fuzz fuzz_manifest_load -- -runs=100000
+cargo fuzz run --fuzz-dir kernel/fuzz fuzz_settings_parse -- -runs=100000
+cargo fuzz run --fuzz-dir kernel/fuzz fuzz_oocp_message -- -runs=100000
+cargo fuzz run --fuzz-dir kernel/fuzz fuzz_blueprint_v2 -- -runs=100000
+cargo fuzz run --fuzz-dir kernel/fuzz fuzz_oclive_validation -- -runs=100000
+cargo fuzz run --fuzz-dir kernel/fuzz fuzz_function_call_parser -- -runs=100000
+cargo fuzz run --fuzz-dir kernel/fuzz fuzz_role_pack_loader -- -runs=100000
 ```
 
 ### `fuzz_oclive_validation`
@@ -40,10 +39,7 @@ cargo fuzz run fuzz_role_pack_loader -- -runs=100000
 
 将随机字节写入临时文件并调用 **`peek_role_pack_manifest`**（ZIP / 损坏输入），断言不 panic。
 
-```bash
-cd kernel/fuzz
-cargo fuzz run fuzz_blueprint_v2 -- -runs=100000
-```
+以上命令统一从仓库根目录运行；显式指定 `--fuzz-dir kernel/fuzz`，避免 Cargo 工作区将 fuzz 清单误解析为根目录下的 `fuzz/Cargo.toml`。
 
 独立 **`.github/workflows/nightly-advisory.yml`** 的 **`fuzz`** job 在 proptest 之后运行 **256 轮** libFuzzer 冒烟。失败会使 Nightly 自身变红并上传最小化 failure artifact，但不阻塞 main 合并门禁。
 
