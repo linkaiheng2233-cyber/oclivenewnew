@@ -4,12 +4,14 @@
 //! executor, network installer, marketplace client, or CI orchestration authority.
 
 mod discovery;
+mod generation;
 mod lockfile;
 mod model;
 mod official;
 mod validation;
 
 pub use discovery::*;
+pub use generation::*;
 pub use lockfile::*;
 pub use model::*;
 pub use official::*;
@@ -40,6 +42,14 @@ pub enum ScaffoldError {
     Resolution { issues: String },
     #[error("failed to write scaffold lock {path}: {source}")]
     WriteLock {
+        path: PathBuf,
+        #[source]
+        source: std::io::Error,
+    },
+    #[error("scaffold generation refused: {issues}")]
+    Generation { issues: String },
+    #[error("failed to materialize scaffold output {path}: {source}")]
+    WriteGeneration {
         path: PathBuf,
         #[source]
         source: std::io::Error,

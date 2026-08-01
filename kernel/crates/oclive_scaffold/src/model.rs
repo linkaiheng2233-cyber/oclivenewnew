@@ -6,12 +6,15 @@ use serde_json::Value;
 /// Current JSON manifest schema understood by this reader.
 pub const SCAFFOLD_SCHEMA_VERSION: u32 = 1;
 /// Semantic version of the contract represented by schema v1.
-pub const SCAFFOLD_CONTRACT_VERSION: &str = "1.0.0";
+pub const SCAFFOLD_CONTRACT_VERSION: &str = "1.1.0";
 pub const SCAFFOLD_CONFIG_SCHEMA_VERSION: u32 = 1;
 pub const SCAFFOLD_LOCK_SCHEMA_VERSION: u32 = 1;
+pub const SCAFFOLD_INSTRUCTION_SCHEMA_VERSION: u32 = 1;
+pub const SCAFFOLD_PROVENANCE_SCHEMA_VERSION: u32 = 1;
 pub const SCAFFOLD_MANIFEST_FILENAME: &str = "oclive.scaffold.json";
 pub const SCAFFOLD_CONFIG_FILENAME: &str = "scaffold.config.json";
 pub const SCAFFOLD_LOCK_FILENAME: &str = "scaffold.lock.json";
+pub const SCAFFOLD_PROVENANCE_FILENAME: &str = "scaffold.provenance.json";
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -69,7 +72,47 @@ pub enum GeneratorDriver {
     /// Existing official CLI/script driver. Custom packages cannot claim this kind.
     Builtin { target: String },
     /// Local declarative instruction or generation-rule document.
-    Instruction { path: String },
+    Instruction {
+        path: String,
+        /// Optional for v1.0 discovery compatibility; required before Stage 2B generation.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        sha256: Option<String>,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ScaffoldInstructionDocument {
+    pub schema_version: u32,
+    #[serde(default)]
+    pub variables: BTreeMap<String, ScaffoldInstructionVariable>,
+    pub files: Vec<ScaffoldInstructionFile>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ScaffoldInstructionVariable {
+    pub description: String,
+    #[serde(default)]
+    pub required: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub default: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ScaffoldInstructionFile {
+    pub source: String,
+    pub target: String,
+    pub mode: ScaffoldInstructionFileMode,
+    pub sha256: String,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ScaffoldInstructionFileMode {
+    Text,
+    Copy,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -306,4 +349,46 @@ pub struct ScaffoldLockPackage {
     #[serde(default)]
     pub unresolved_extends: Vec<PackageReference>,
     pub composition_declared: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ScaffoldGenerationPlan {
+    pub output: String,
+    pub dry_run: bool,
+    pub provenance: ScaffoldGenerationProvenance,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ScaffoldGenerationProvenance {
+    pub schema_version: u32,
+    pub package: ScaffoldGenerationPackage,
+    pub generator_id: String,
+    pub instruction_path: String,
+    pub instruction_sha256: String,
+    pub variable_names: Vec<String>,
+    pub files: Vec<ScaffoldGeneratedFile>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ScaffoldGenerationPackage {
+    pub id: String,
+    pub version: String,
+    pub source: ScaffoldSource,
+    pub locator: String,
+    pub trust: ScaffoldTrust,
+    pub maintainer: String,
+    pub manifest_sha256: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ScaffoldGeneratedFile {
+    pub path: String,
+    pub mode: ScaffoldInstructionFileMode,
+    pub source_sha256: String,
+    pub output_sha256: String,
+    pub bytes: u64,
 }

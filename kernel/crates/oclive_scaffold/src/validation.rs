@@ -115,8 +115,27 @@ pub fn validate_manifest(
                 }
                 validate_builtin_target(target, &mut result);
             }
-            GeneratorDriver::Instruction { path } => {
+            GeneratorDriver::Instruction { path, sha256 } => {
                 validate_relative_path(path, "generator instruction", &mut result);
+                match sha256 {
+                    Some(value) if !valid_sha256(value) => error(
+                        &mut result,
+                        "invalid_instruction_digest",
+                        format!(
+                            "generator `{}` instruction.sha256 must be 64 lowercase hexadecimal characters",
+                            generator.id
+                        ),
+                    ),
+                    None => warning(
+                        &mut result,
+                        "instruction_digest_required_for_generation",
+                        format!(
+                            "generator `{}` remains discoverable but cannot run in Stage 2B until instruction.sha256 is added and scaffold_contract is raised to >=1.1,<2",
+                            generator.id
+                        ),
+                    ),
+                    Some(_) => {}
+                }
             }
         }
     }
@@ -289,8 +308,17 @@ fn validate_compatibility(
             format!("invalid oclive_cli requirement: {error_value}"),
         ),
     }
-    let contract_version = Version::parse(SCAFFOLD_CONTRACT_VERSION)
-        .expect("constant scaffold contract version must be valid SemVer");
+    let contract_version = match Version::parse(SCAFFOLD_CONTRACT_VERSION) {
+        Ok(version) => version,
+        Err(error_value) => {
+            error(
+                result,
+                "invalid_reader_contract_version",
+                format!("compiled scaffold contract version is invalid: {error_value}"),
+            );
+            return;
+        }
+    };
     match VersionReq::parse(&manifest.compatibility.scaffold_contract) {
         Ok(requirement) if requirement.matches(&contract_version) => {}
         Ok(_) => error(
@@ -440,7 +468,7 @@ fn valid_namespace(value: &str) -> bool {
     parts.len() >= 3 && parts.iter().all(|part| valid_component_id(part))
 }
 
-fn valid_component_id(value: &str) -> bool {
+pub(crate) fn valid_component_id(value: &str) -> bool {
     !value.is_empty()
         && value.len() <= 64
         && value
@@ -450,6 +478,13 @@ fn valid_component_id(value: &str) -> bool {
         && value.bytes().all(|byte| {
             byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'-' || byte == b'_'
         })
+}
+
+pub(crate) fn valid_sha256(value: &str) -> bool {
+    value.len() == 64
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
 }
 
 fn error(result: &mut ManifestValidation, code: &str, message: impl Into<String>) {

@@ -591,6 +591,8 @@ fn error_code(error_value: &ScaffoldError) -> &'static str {
         ScaffoldError::InvalidContract { .. } => "manifest_contract_invalid",
         ScaffoldError::Resolution { .. } => "manifest_resolution_failed",
         ScaffoldError::WriteLock { .. } => "manifest_lock_write_failed",
+        ScaffoldError::Generation { .. } => "scaffold_generation_failed",
+        ScaffoldError::WriteGeneration { .. } => "scaffold_generation_write_failed",
     }
 }
 

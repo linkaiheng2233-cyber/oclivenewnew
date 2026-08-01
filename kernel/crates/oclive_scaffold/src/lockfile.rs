@@ -61,6 +61,23 @@ pub fn project_scaffold_lock_path(project_root: &Path) -> PathBuf {
     project_root.join(".oclive").join(SCAFFOLD_LOCK_FILENAME)
 }
 
+/// Read a strict scaffold resolution lock.
+///
+/// # Errors
+///
+/// Returns [`ScaffoldError::Read`] when the lock cannot be read and
+/// [`ScaffoldError::Parse`] when it is not valid v1 JSON.
+pub fn read_scaffold_lock(path: &Path) -> Result<ScaffoldLock, ScaffoldError> {
+    let bytes = fs::read(path).map_err(|source| ScaffoldError::Read {
+        path: path.to_path_buf(),
+        source,
+    })?;
+    serde_json::from_slice(&bytes).map_err(|source| ScaffoldError::Parse {
+        path: path.to_path_buf(),
+        source,
+    })
+}
+
 /// Atomically replace a scaffold lock document using a temporary file in the same directory.
 ///
 /// # Errors

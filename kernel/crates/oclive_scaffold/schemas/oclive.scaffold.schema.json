@@ -117,7 +117,12 @@
           "required": ["kind", "path"],
           "properties": {
             "kind": { "const": "instruction" },
-            "path": { "$ref": "#/$defs/relativePath" }
+            "path": { "$ref": "#/$defs/relativePath" },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$",
+              "description": "Optional for v1.0 discovery compatibility; required by Stage 2B generation."
+            }
           }
         }
       ]
