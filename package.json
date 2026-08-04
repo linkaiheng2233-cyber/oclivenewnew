@@ -68,7 +68,7 @@
     "test:e2e:tauri-native": "playwright test tauri-native.spec.ts"
   },
   "dependencies": {
-    "@sentry/vue": "^10.47.0",
+    "@sentry/vue": "^10.69.0",
     "@tauri-apps/api": "^2.11.1",
     "@tauri-apps/plugin-dialog": "^2.7.1",
     "@tauri-apps/plugin-opener": "^2.5.4",
