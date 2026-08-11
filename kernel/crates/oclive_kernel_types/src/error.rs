@@ -92,6 +92,12 @@ pub enum AppError {
     #[error("Kernel is offline")]
     KernelOffline,
 
+    /// **When**: the caller's `x-oclive-api-token` does not match the kernel (typically a
+    /// stale kernel left by a previous session). **Show**: the host rebuilds the kernel
+    /// connection; do **not** point the user at Ollama/remote LLM settings.
+    #[error("Kernel API authentication failed: {0}")]
+    KernelAuthRequired(String),
+
     /// **When**: an unclassified internal error. **Show**: report with `code`; avoid exposing the stack.
     #[error("Unknown error: {0}")]
     Unknown(String),
@@ -122,6 +128,7 @@ impl AppError {
             AppError::RemoteServiceUnavailable(_) => "REMOTE_SERVICE_UNAVAILABLE",
             AppError::SerializationError(_) => "SERDE_ERROR",
             AppError::KernelOffline => "KERNEL_OFFLINE",
+            AppError::KernelAuthRequired(_) => "KERNEL_AUTH_REQUIRED",
             AppError::Unknown(_) => "UNKNOWN_ERROR",
             AppError::TransactionError { code, .. } => code,
         }
@@ -221,6 +228,9 @@ impl AppError {
             }
             Self::SerializationError(e) => Self::SerializationError(e),
             Self::KernelOffline => Self::KernelOffline,
+            Self::KernelAuthRequired(m) => {
+                Self::KernelAuthRequired(format!("send_message[{stage}]: {m}"))
+            }
             Self::Unknown(m) => Self::Unknown(format!("send_message[{stage}]: {m}")),
             Self::TransactionError { code, message } => Self::TransactionError {
                 code,

@@ -49,14 +49,24 @@ pub(super) async fn ensure_kernel_ready_legacy_on_conn(
         return Ok(conn);
     }
     if probe_existing_kernel(&base_url).await {
-        conn.set_mode(DesktopKernelMode::Attached);
-        conn.clear_status_hint();
-        tracing::info!(
+        if super::policy::attach_auth_ok(&conn, &base_url).await {
+            conn.set_mode(DesktopKernelMode::Attached);
+            conn.clear_status_hint();
+            tracing::info!(
+                target: "oclive_desktop",
+                port = opts.port,
+                "legacy attach-first: attached to existing kernel"
+            );
+            return Ok(conn);
+        }
+        tracing::warn!(
             target: "oclive_desktop",
             port = opts.port,
-            "legacy attach-first: attached to existing kernel"
+            "existing kernel rejected our token; replacing stale kernel"
         );
-        return Ok(conn);
+        if super::policy::replace_stale_kernel(&conn, &opts).await {
+            return Ok(conn);
+        }
     }
 
     let candidates =

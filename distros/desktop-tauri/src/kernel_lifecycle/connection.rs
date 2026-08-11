@@ -60,7 +60,8 @@ impl KernelConnection {
         let api_token = std::env::var(oclive_kernel_host::http_api::ENV_API_TOKEN)
             .ok()
             .map(|token| token.trim().to_string())
-            .filter(|token| !token.is_empty());
+            .filter(|token| !token.is_empty())
+            .or_else(read_persisted_api_token);
         Self {
             mode: RwLock::new(DesktopKernelMode::Offline),
             base_url: base_url.into().trim_end_matches('/').to_string(),
@@ -167,11 +168,24 @@ impl KernelConnection {
     }
 }
 
+/// Reuse the token persisted by the session that spawned the (possibly stale) kernel,
+/// so a fresh app instance can authenticate when attaching to a leftover daemon.
+fn read_persisted_api_token() -> Option<String> {
+    let path = oclive_kernel_runtime::shared_runtime_dir().join("api-token");
+    std::fs::read_to_string(path)
+        .ok()
+        .map(|token| token.trim().to_string())
+        .filter(|token| !token.is_empty())
+}
+
 fn build_http_client(api_token: Option<&str>) -> reqwest::Client {
     let mut headers = HeaderMap::new();
     if let Some(token) = api_token {
         if let Ok(value) = HeaderValue::from_str(token) {
-            headers.insert(HeaderName::from_static("x-oclive-api-token"), value);
+            headers.insert(
+                HeaderName::from_static(oclive_kernel_host::http_api::API_TOKEN_HEADER),
+                value,
+            );
         }
     }
     reqwest::Client::builder()

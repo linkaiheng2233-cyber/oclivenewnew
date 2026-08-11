@@ -96,6 +96,20 @@ fn spawn_env(
     pairs
 }
 
+/// Best-effort persistence of the loopback API token next to the shared kernel binary.
+/// A later app session that attaches to a leftover kernel reads it back instead of
+/// failing every protected call with 401.
+pub(super) fn persist_api_token(token: &str) {
+    let dir = oclive_kernel_runtime::shared_runtime_dir();
+    if let Err(e) = std::fs::create_dir_all(&dir) {
+        tracing::warn!(target: "oclive_desktop", error = %e, "cannot create shared runtime dir for api token");
+        return;
+    }
+    if let Err(e) = std::fs::write(dir.join("api-token"), token) {
+        tracing::warn!(target: "oclive_desktop", error = %e, "failed to persist kernel api token");
+    }
+}
+
 fn append_distro_env(
     pairs: &mut Vec<(String, String)>,
     host: &HostProfile,
@@ -150,6 +164,7 @@ pub async fn spawn_kernel(
         conn.set_api_token(token.clone());
         token
     });
+    persist_api_token(&api_token);
 
     let mut cmd = Command::new(&candidate.binary);
     cmd.args(&candidate.extra_args)

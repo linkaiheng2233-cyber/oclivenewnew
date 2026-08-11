@@ -44,7 +44,7 @@ use tower_http::cors::{AllowOrigin, CorsLayer};
 pub const ENV_API_TOKEN: &str = "OCLIVE_API_TOKEN";
 /// Explicit local-development escape hatch for running protected routes without a token.
 pub const ENV_API_ALLOW_UNAUTHENTICATED: &str = "OCLIVE_API_ALLOW_UNAUTHENTICATED";
-const API_TOKEN_HEADER: &str = "x-oclive-api-token";
+pub const API_TOKEN_HEADER: &str = "x-oclive-api-token";
 
 #[derive(Debug, Deserialize)]
 pub struct ChatApiRequest {
@@ -197,6 +197,7 @@ pub fn api_router_with_auth(app_state: Arc<AppState>, api_token: Option<String>)
             "/resources/adapter/transition",
             post(resource::resource_adapter_transition_route),
         )
+        .route("/auth/check", get(auth_check_route))
         .route("/llm/reload", post(llm::llm_reload_route))
         .route(
             "/llm/user_settings",
@@ -259,6 +260,12 @@ fn validate_api_auth_configuration(
     ))
 }
 
+/// Lightweight protected probe: verifies the caller's API token without touching
+/// the DB or LLM stack. Hosts use it after attach to detect stale kernels.
+async fn auth_check_route() -> axum::Json<serde_json::Value> {
+    axum::Json(serde_json::json!({ "ok": true }))
+}
+
 async fn authorize_api_request(
     expected: Option<&str>,
     request: Request<Body>,
@@ -279,10 +286,25 @@ async fn authorize_api_request(
         return next.run(request).await;
     }
 
+    let payload = ApiErrorResponse {
+        error: KernelErrorBody {
+            code: "KERNEL_AUTH_REQUIRED".to_string(),
+            message: "missing or invalid x-oclive-api-token".to_string(),
+            hint: Some(
+                "The local kernel is stale or its token changed; the app rebuilds the kernel connection automatically."
+                    .to_string(),
+            ),
+            context: None,
+        },
+    };
+    let text = serde_json::to_string(&payload).unwrap_or_else(|_| {
+        "{\"error\":{\"code\":\"KERNEL_AUTH_REQUIRED\",\"message\":\"unauthorized\"}}".to_string()
+    });
     Response::builder()
         .status(StatusCode::UNAUTHORIZED)
         .header("www-authenticate", "OCLive-API-Token")
-        .body(Body::from("missing or invalid x-oclive-api-token"))
+        .header(axum::http::header::CONTENT_TYPE, "application/json")
+        .body(Body::from(text))
         .unwrap_or_else(|_| Response::new(Body::from("unauthorized")))
 }
 

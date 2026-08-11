@@ -33,6 +33,8 @@ export default {
   API_PERMISSION_DENIED: 'Insufficient plugin permissions. Declare required permissions in manifest.json.',
   API_INVALID_MANIFEST: 'Invalid plugin manifest. Check manifest.json.',
   PLUGIN_MANIFEST_INVALID: 'Invalid plugin manifest. Check manifest.json against PLUGIN_V1.',
+  KERNEL_AUTH_REQUIRED:
+    'Local kernel authentication failed (usually a stale kernel left by a previous session, or a rotated kernel token). The app rebuilds the kernel connection automatically; no Ollama/API changes are needed. Restart the app if this persists.',
   LLM_ERROR:
     'Model call failed. Check: (1) If `OCLIVE_LLM_BACKEND=ollama` (default): Ollama is running, `ollama list` / `ollama pull` matches `OLLAMA_MODEL`, and `OLLAMA_BASE_URL` is correct; (2) If **remote**: `OCLIVE_REMOTE_LLM_URL` is reachable, timeouts (`OCLIVE_REMOTE_LLM_TIMEOUT_MS`) are reasonable, and upstream is healthy. Settings → General → Environment check probes local Ollama.',
   VOICE_RPC_TIMEOUT:

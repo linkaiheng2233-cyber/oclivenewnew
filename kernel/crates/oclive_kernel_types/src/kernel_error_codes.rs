@@ -30,6 +30,7 @@ pub fn app_error_codes_sampled() -> Vec<&'static str> {
         )
         .code(),
         AppError::KernelOffline.code(),
+        AppError::KernelAuthRequired(String::new()).code(),
         AppError::Unknown(String::new()).code(),
     ]
 }

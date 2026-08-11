@@ -119,6 +119,22 @@ impl KernelHttpClient {
         Self::probe_health_timeout(base_url, Duration::from_secs(3)).await
     }
 
+    /// Verify the caller's token against the running kernel (`GET /auth/check`).
+    /// `false` means the kernel is stale (token mismatch) and should be replaced.
+    pub async fn probe_authenticated(base_url: &str, api_token: &str) -> bool {
+        let url = format!("{}/auth/check", base_url.trim_end_matches('/'));
+        let Ok(res) = probe_http_client()
+            .get(&url)
+            .header(oclive_kernel_host::http_api::API_TOKEN_HEADER, api_token)
+            .timeout(Duration::from_secs(3))
+            .send()
+            .await
+        else {
+            return false;
+        };
+        res.status().is_success()
+    }
+
     pub async fn probe_health_timeout(base_url: &str, timeout: Duration) -> bool {
         let url = format!("{}/health", base_url.trim_end_matches('/'));
         let Ok(res) = probe_http_client().get(&url).timeout(timeout).send().await else {

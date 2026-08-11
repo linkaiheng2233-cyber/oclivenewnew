@@ -6,13 +6,15 @@ use super::spawn::{spawn_kernel, wait_for_health};
 use crate::kernel_attach::{KernelHealthJson, KernelHttpClient};
 use oclive_kernel_runtime::{
     apply_promote_to_candidate, build_resolve_plan, discover_spawn_kernel_candidates,
-    KernelActionKind, KernelActionPlan, PolicyContext, ReplaceReason, ENV_DISTRO_PROFILE,
+    pick_best_for_spawn, KernelActionKind, KernelActionPlan, PolicyContext, ReplaceReason,
+    ENV_DISTRO_PROFILE,
 };
 use oclive_kernel_types::AttachReason;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::time::sleep;
+use uuid::Uuid;
 
 /// Shared inputs for policy-based bring-up (desktop + reconnect).
 #[derive(Debug, Clone)]
@@ -139,6 +141,10 @@ pub(super) async fn try_profile_aware_attach(
         compat = ?resolution.profile_compat,
         "profile-aware attach fallback"
     );
+    if !attach_auth_ok(conn, &conn.base_url).await {
+        tracing::warn!(target: "oclive_desktop", "profile-aware attach rejected by kernel auth; replacing stale kernel");
+        return replace_stale_kernel(conn, opts).await;
+    }
     true
 }
 
@@ -289,6 +295,57 @@ pub fn find_desktop_distro_profile_path(anchors: &[PathBuf]) -> Option<PathBuf> 
     find_desktop_distro_profile_path_from_anchors(anchors)
 }
 
+/// Whether the running kernel accepts our token. `None` token (unauthenticated mode)
+/// means there is nothing to verify.
+pub(super) async fn attach_auth_ok(conn: &KernelConnection, base_url: &str) -> bool {
+    let Some(token) = conn.api_token_snapshot() else {
+        return true;
+    };
+    KernelHttpClient::probe_authenticated(base_url, &token).await
+}
+
+/// Attach auth check failed (stale kernel): terminate the old listener and respawn
+/// with the rotated token. Returns `true` when a fresh kernel serves the port.
+pub(super) async fn replace_stale_kernel(
+    conn: &KernelConnection,
+    opts: &KernelBringUpOptions,
+) -> bool {
+    // Rotate to a fresh token: the persisted one is by definition invalid for this
+    // (stale) kernel; reusing it would make every future attach fail again.
+    let fresh = Uuid::new_v4().to_string();
+    conn.set_api_token(fresh.clone());
+    super::spawn::persist_api_token(&fresh);
+
+    conn.kill_spawned_child();
+    terminate_listeners_on_port(opts.port);
+    sleep(Duration::from_millis(400)).await;
+    let candidates =
+        discover_spawn_kernel_candidates(&opts.anchors, None, opts.bundled_binary.as_deref());
+    let Some(mut candidate) = pick_best_for_spawn(&candidates).cloned() else {
+        conn.set_mode(DesktopKernelMode::Offline);
+        return false;
+    };
+    apply_promote_to_candidate(&mut candidate);
+    match spawn_kernel(
+        conn,
+        &candidate,
+        opts.port,
+        &opts.roles_dir,
+        opts.distro_profile_path.as_deref(),
+    )
+    .await
+    {
+        Ok(()) => {
+            conn.set_mode(DesktopKernelMode::Spawned);
+            true
+        }
+        Err(e) => {
+            tracing::warn!(target: "oclive_desktop", error = %e, "stale kernel replacement spawn failed");
+            false
+        }
+    }
+}
+
 /// Policy-first bring-up; graded fallback on failure.
 pub async fn ensure_kernel_with_policy(
     opts: KernelBringUpOptions,
@@ -313,6 +370,13 @@ pub async fn ensure_kernel_with_policy(
             return Ok(conn);
         }
         return super::ensure::ensure_kernel_ready_legacy_on_conn(conn, opts).await;
+    }
+
+    if matches!(plan.action, KernelActionKind::Attach) && !attach_auth_ok(&conn, &base_url).await {
+        tracing::warn!(target: "oclive_desktop", "kernel attach rejected by kernel auth; replacing stale kernel");
+        if replace_stale_kernel(&conn, &opts).await {
+            return Ok(conn);
+        }
     }
 
     if !wait_for_health(&base_url).await && !matches!(plan.action, KernelActionKind::Attach) {

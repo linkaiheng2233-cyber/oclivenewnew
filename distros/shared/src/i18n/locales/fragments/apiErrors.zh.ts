@@ -33,6 +33,8 @@ export default {
   API_PERMISSION_DENIED: '插件权限不足，请在 manifest 中声明所需权限。',
   API_INVALID_MANIFEST: '插件 manifest 无效，请检查 manifest.json。',
   PLUGIN_MANIFEST_INVALID: '插件 manifest 无效，请对照 PLUGIN_V1 检查 manifest.json。',
+  KERNEL_AUTH_REQUIRED:
+    '本地内核鉴权失败（通常是上一次会话残留的旧内核，或内核 token 已更换）。应用会自动重建内核连接，无需修改 Ollama/API 设置；若持续出现请重启应用。',
   LLM_ERROR:
     '模型调用失败。请确认：① 若 `OCLIVE_LLM_BACKEND=ollama`（默认）：本机已安装并启动 Ollama，`ollama list` / `ollama pull` 与 `OLLAMA_MODEL` 一致，`OLLAMA_BASE_URL` 端口正确；② 若为 **remote**：`OCLIVE_REMOTE_LLM_URL` 可达、超时 `OCLIVE_REMOTE_LLM_TIMEOUT_MS` 合理且上游可用。设置 → 常规 → 环境自检可探测本机 Ollama。',
   VOICE_RPC_TIMEOUT:

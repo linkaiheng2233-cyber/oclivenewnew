@@ -62,6 +62,8 @@
 | `UNKNOWN_ERROR` | 未分类内部错误 | 兜底路径 | 带完整日志提 issue；前端可能显示 `UNKNOWN_WITH_CODE` |
 <!-- code:KERNEL_OFFLINE -->
 | `KERNEL_OFFLINE` | 共享内核 HTTP 不可达 | 桌面 / VS Code attach 模式内核未启动 | 启动内核进程或检查 `:8420` 端口 |
+<!-- code:KERNEL_AUTH_REQUIRED -->
+| `KERNEL_AUTH_REQUIRED` | 本地内核鉴权失败（token 不匹配，通常是上次会话残留的旧内核） | 应用被强杀/终端被关后内核残留，新会话 attach 时无旧 token | 应用会自动重建内核连接（替换残留内核）；若持续出现请重启应用 |
 <!-- code:THEATER_SCENE_GEN_FAILED -->
 | `THEATER_SCENE_GEN_FAILED` | 剧场场景生成失败 | 导演插件 RPC / LLM 超时 | 检查 theater 插件与日志 |
 
