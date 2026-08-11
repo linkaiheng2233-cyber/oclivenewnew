@@ -32,7 +32,7 @@
 | **llm** | `generate` 返回 `InvalidParameter` | **禁止**（启动健康检查拦截） |
 | **agent** | `process` 返回 `handled: false` | 允许（跳过 Agent 短路） |
 
-**complex_emotion** 不在六槽枚举内；关闭方式仍为发行版 `[slots] complex_emotion = "off"` / `skip_complex_emotion`。
+**complex_emotion** 不在六槽枚举内；关闭方式：发行版 `[slots] complex_emotion = "off"` / `skip_complex_emotion`（distro 级）与角色包级 `slot_registry` `backend: none` 或省略条目（2026-08-12 起，B 阶段 M1 落地）**并存、互不替代**；显式 `builtin` 才启用。
 
 ---
 

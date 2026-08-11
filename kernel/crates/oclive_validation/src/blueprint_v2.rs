@@ -849,7 +849,7 @@ pub(crate) fn allowed_backends_for_type(slot_type: &str) -> &'static [&'static s
         "emotion" | "event" | "prompt" => &["builtin", "remote", "directory", "none"],
         "llm" => &["ollama", "remote", "directory", "none"],
         "agent" => &["builtin", "remote", "directory", "none"],
-        "complex_emotion" => &["builtin", "remote", "directory"],
+        "complex_emotion" => &["builtin", "remote", "directory", "none"],
         _ => &[],
     }
 }
@@ -902,5 +902,19 @@ fn personality_to_vector(value: &Value) -> Option<Vec<f32>> {
             Some(out)
         }
         _ => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn complex_emotion_allows_none_backend() {
+        let allowed = allowed_backends_for_type("complex_emotion");
+        assert!(allowed.contains(&"none"));
+        assert!(allowed.contains(&"builtin"));
+        assert!(allowed.contains(&"remote"));
+        assert!(allowed.contains(&"directory"));
     }
 }

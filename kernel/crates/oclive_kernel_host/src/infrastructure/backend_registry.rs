@@ -73,6 +73,27 @@ impl ComplexEmotionProvider for RemoteComplexEmotionArc {
     }
 }
 
+struct NoopComplexEmotionArc;
+
+impl ComplexEmotionProvider for NoopComplexEmotionArc {
+    fn resolve_turn(
+        &self,
+        _input: &ComplexEmotionInput,
+    ) -> crate::error::Result<ComplexEmotionOutput> {
+        Ok(ComplexEmotionOutput {
+            source: "none".into(),
+            narrative_hint: String::new(),
+            labels: vec![],
+            pattern: None,
+            confidence: 0.0,
+            intensity: 0.0,
+            dissonance_score: 0.0,
+            degraded_to_builtin: false,
+            extension: None,
+        })
+    }
+}
+
 /// Backend registry: manages builtin / remote slots and provides a scaffold for local provider registration.
 pub struct BackendRegistry {
     memory_builtin: Arc<dyn MemoryRetrieval>,
@@ -601,7 +622,7 @@ impl BackendRegistry {
         slot_registry_instances_sorted(slot_registry, "complex_emotion")
             .last()
             .map(|(_, e)| self.pick_complex_emotion_for_entry(e))
-            .unwrap_or_else(|| Arc::new(BuiltinComplexEmotionArc))
+            .unwrap_or_else(|| Arc::new(NoopComplexEmotionArc))
     }
 
     pub fn pick_complex_emotion_for_entry(
@@ -611,6 +632,7 @@ impl BackendRegistry {
         let remote_fb = self.remote_fallback_allowed.clone();
         match entry.backend.trim() {
             "builtin" => Arc::new(BuiltinComplexEmotionArc),
+            "none" => Arc::new(NoopComplexEmotionArc),
             "remote" => {
                 let cfg = entry
                     .url
@@ -833,5 +855,32 @@ impl AgentMcpRegistryPort for BackendRegistry {
 
     fn remote_fallback_allowed(&self) -> Arc<AtomicBool> {
         BackendRegistry::remote_fallback_allowed(self)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn noop_complex_emotion_returns_zero_signal() {
+        let provider = NoopComplexEmotionArc;
+        let input = ComplexEmotionInput {
+            role_id: "role".into(),
+            scene_id: "scene".into(),
+            user_message: "hi".into(),
+            bot_reply: "hi".into(),
+            recent_dialogue_summary: None,
+            previous_narrative_hint: String::new(),
+            user_valence: None,
+            user_dominance: None,
+            previous_user_message: None,
+        };
+        let out = provider.resolve_turn(&input).unwrap();
+        assert_eq!(out.source, "none");
+        assert_eq!(out.intensity, 0.0);
+        assert!(out.narrative_hint.is_empty());
+        assert!(out.labels.is_empty());
+        assert!(!out.degraded_to_builtin);
     }
 }

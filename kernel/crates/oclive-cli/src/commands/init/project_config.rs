@@ -18,7 +18,7 @@ pub enum ProjectTypeArg {
 /// Scaffolding-internal representation aligned with `settings.json` → `plugin_backends`.
 ///
 /// - **`Ollama`**: used only for the **`llm`** slot, serialized as the JSON string **`ollama`** (the main app's default local LLM backend).
-/// - **`None`**: for **`agent`** means "do not write the agent key in JSON"; for **`complex_emotion`** writes **`none`** (the host ignores this extension key when deserializing the six-slot structure).
+/// - **`None`**: writes **`none`** for the slot (host maps it to a no-op backend: agent → NoopAgentProvider, complex_emotion → NoopComplexEmotionProvider).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, clap::ValueEnum, Default)]
 #[serde(rename_all = "snake_case")]
 #[clap(rename_all = "snake_case")]

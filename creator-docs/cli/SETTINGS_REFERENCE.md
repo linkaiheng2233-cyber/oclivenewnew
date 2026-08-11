@@ -106,7 +106,7 @@
 
 **架构定位**：**第 1 设施子模块**（规范全名：**复杂情感设施子模块**）。编号与命名见 **[OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)**（[English](../../creator-docs-en/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)）。**专家模型**专名仅指 **第 2 设施子模块**（专家模型设施子模块 / 专家路由），见同文档 § 第 2 设施子模块。
 
-**当前 `PluginBackends` 不含 `complex_emotion` 字段。** `oclive-cli` 将 `complex_emotion` 写在 **`plugin_backends` 对象内** 便于工厂预设与文档对齐；宿主 Serde **忽略**该键，不影响 `load_role`。主路径在 `co_present` 内经 **`PluginHost` / `SlotRunner`** 解析：默认 `BuiltinKeywordComplexEmotionProvider`；蓝图 **`slot_registry`** 中 `type: complex_emotion` + `backend: builtin|remote|directory` 时 **last-wins**（`resolve_complex_emotion_winner`）。
+**当前 `PluginBackends` 不含 `complex_emotion` 字段。** `oclive-cli` 将 `complex_emotion` 写在 **`plugin_backends` 对象内** 便于工厂预设与文档对齐；宿主 Serde **忽略**该键，不影响 `load_role`。主路径在 `co_present` 内经 **`PluginHost` / `SlotRunner`** 解析：蓝图 **`slot_registry`** 中 `type: complex_emotion` + `backend: builtin|remote|directory|none` 时 **last-wins**（`resolve_complex_emotion_winner`）。**省略（无条目）= 不启用**（跳过 provider、不产 hint）；显式 `builtin` = 开启；显式 `none` = 明确关闭（与省略等价）。
 
 | 项 | 说明 |
 |----|------|

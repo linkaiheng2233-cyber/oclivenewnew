@@ -21,7 +21,7 @@ fn slot_backend_token(b: BackendImpl) -> &'static str {
         BackendImpl::Remote => "remote",
         BackendImpl::Directory => "directory",
         BackendImpl::Ollama => "ollama",
-        BackendImpl::None => "builtin",
+        BackendImpl::None => "none",
     }
 }
 
@@ -74,4 +74,28 @@ pub fn build_blueprint_v3_value(
             "experimental": stable
         }
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::commands::init::preset_config;
+
+    #[test]
+    fn minimal_preset_writes_none_for_agent_and_complex_emotion() {
+        let cfg = preset_config("demo", "minimal");
+        let blueprint = build_blueprint_v3_value(&cfg, "demo_role", "Demo");
+        let slots = &blueprint["slot_registry"];
+        assert_eq!(slots["agent"]["backend"], "none");
+        assert_eq!(slots["complex_emotion"]["backend"], "none");
+        assert_eq!(slots["memory"]["backend"], "builtin");
+        assert_eq!(slots["emotion"]["backend"], "builtin");
+    }
+
+    #[test]
+    fn none_backend_tokens_round_trip() {
+        assert_eq!(slot_backend_token(BackendImpl::None), "none");
+        assert_eq!(slot_backend_token(BackendImpl::Builtin), "builtin");
+        assert_eq!(llm_backend_token(BackendImpl::None), "none");
+    }
 }

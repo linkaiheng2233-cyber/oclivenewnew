@@ -87,7 +87,7 @@ When any slot is **`directory`**, fill **`manifest.id`** (string) for that slot 
 
 **Architecture:** **facility submodule 1** (normative name: **complex-emotion facility submodule**). Naming and **facility submodule 2** (expert-model facility submodule / expert routing): **[OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)** ([中文](../../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)).
 
-**`PluginBackends` has no `complex_emotion` field.** `oclive-cli` writes the key inside **`plugin_backends`** for factory presets; the host **ignores** it on deserialize. The hot path uses `BuiltinKeywordComplexEmotionProvider` in `co_present`—**not** `PluginHost`.
+**`PluginBackends` has no `complex_emotion` field.** `oclive-cli` writes the key inside **`plugin_backends`** for factory presets; the host **ignores** it on deserialize. The hot path resolves via `slot_registry` in `co_present`—**not** `PluginHost`: `type: complex_emotion` + `backend: builtin|remote|directory|none`, last-wins. **Omitted (no entry) = disabled** (provider skipped, no hint produced); explicit `builtin` = enabled; explicit `none` = explicitly disabled (equivalent to omitted).
 
 | Item | Detail |
 |------|--------|
