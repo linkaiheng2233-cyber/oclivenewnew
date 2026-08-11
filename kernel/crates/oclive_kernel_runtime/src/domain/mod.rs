@@ -10,6 +10,7 @@ pub mod complex_emotion;
 pub mod emotion_analyzer;
 pub mod event_detector;
 pub mod knowledge_loader;
+pub mod lexicon;
 pub mod life_schedule;
 pub mod local_plugin_bridge;
 pub mod local_plugin_memory_pick;
