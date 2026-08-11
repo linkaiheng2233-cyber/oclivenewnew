@@ -1,12 +1,12 @@
 # Technical debt inventory
 
-**Last updated:** 2026-08-02（全库巡检轮次 29：冻结实现 `728219e7` 的主 CI 与完整 Nightly 已远端收口；K-SUPPLY-12、D-CI-EXECUTION-02 升 Done，K-VOICE-09 保持 In progress）
+**Last updated:** 2026-08-11（轮次 29 延续：deepseek 角色包 v1.3.0 已提交 `b47db127`；B 组内核打包资源化与 C 组语音门禁脚本按维护者决策暂存 stash 并记账 K-DISTRO-01 / K-VOICE-10；情绪词表全量审查完成，结构设计待维护者主导开工）
 
 **Product freeze (Theater v0):** **Lifted** — 朋友 cohort 产品门通过（7/10 卧槽）；模式 2 playtest 扩展中；**模式 3 仍冻结**。见 [theater/MODE2_UNFREEZE.md](./theater/MODE2_UNFREEZE.md)。
 
 **综合评分：** A− · 冻结实现 `728219e7` 的主 CI [`30714475985`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30714475985) **16/16 success** · 完整 Nightly [`30714480898`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30714480898) **6/6 success** · 审查数字 SSOT：[AI_VERIFICATION_PROTOCOL.md](./AI_VERIFICATION_PROTOCOL.md)
 
-**下一动作：** 先完成 **K-VOICE-09** 的 30 分钟真实矩阵与人工听感验收，并为 **K-RESOURCE-COORD-01** 的不可控进程/长时硬件 soak 打基础；随后按愿景验证顺序推进 **V-MODULE-QUALITY-01 → V-PORTABLE-01 Full → V-EMBED-01**。发行版仍需 **V-VSCODE-PERF-05** 的姊妹仓 F5 / `.vsix` 实机证据；**K-PLUGIN-SEC-01、K-SUPPLY-09、K-SUPPLY-10 仍须保持显式 OPEN / Partial，不因排期后移而降格或消失。**
+**下一动作：** 先完成 **K-VOICE-09** 的 30 分钟真实矩阵与人工听感验收，并为 **K-RESOURCE-COORD-01** 的不可控进程/长时硬件 soak 打基础；随后按愿景验证顺序推进 **V-MODULE-QUALITY-01 → V-PORTABLE-01 Full → V-EMBED-01**。发行版仍需 **V-VSCODE-PERF-05** 的姊妹仓 F5 / `.vsix` 实机证据；**K-PLUGIN-SEC-01、K-SUPPLY-09、K-SUPPLY-10 仍须保持显式 OPEN / Partial，不因排期后移而降格或消失。** 短期动作：**情绪词表结构设计（2026-08-12 维护者主导开工，词表=种类辅助建议、复杂情绪层=程度、LLM 主生成零额外调用、降级规则引擎兜底）**；B/C 组按 K-DISTRO-01 / K-VOICE-10 解冻条件恢复。
 
 **马拉松计划书：** [`debt-marathon/`](./debt-marathon/README.md) · 总索引 [`MARATHON_QUEUE.md`](./debt-marathon/MARATHON_QUEUE.md) · **AI+流水线硬门禁** [`AI_AND_PIPELINE_GATES.md`](./debt-marathon/AI_AND_PIPELINE_GATES.md) · 覆盖 [`COVERAGE.md`](./debt-marathon/COVERAGE.md)；Skill：`oclive-debt-marathon`。
 
@@ -108,6 +108,8 @@
 | **K-VOICE-07** | `voice_directive` v2 + `engine_extras` 透传 bag | P2 | RFC §4.1 小节后实现 | **OPEN** |
 | **K-VOICE-08** | 全引擎统一流式 playback contract | P2 | 非 CosyVoice chunked audio 抽象 | **Deferred** |
 | **K-VOICE-09** | 共享 GPU 下 CosyVoice2 语音 TTFC 长尾仍会越过 8 秒门禁 | **P2** | 分离 warm、首个热请求与稳态片段，剖析文本前端/推理/首块编码；保留 8 秒绝对门禁并同时跟踪 p50/p95/max，不以放宽阈值或降低显存安全线掩盖；优化后复跑至少 30 分钟实机矩阵 | **In progress · bounded first-chunk policy implemented**（2026-08-02：分段计时与跨请求 hop 恢复已落地；维护者确认首声优先后，有限策略只对不少于 10 字符的首段采用高优先级 CUDA streams + 20-token 初始 hop，短句保持上游 25-token 路径。长段 10 组 TTFC p50/p95(max) **4135/4473→3643/3826ms**，峰值余量 **1394MiB**、稳态增长 **0MiB**、进程全回收；4 字短句 10/10 保持单块路径。CUDA-only、降低 llama 层数/进程优先级/poll 与 8-token 短句档均无可靠收益或构成负优化，未作为默认捷径。8 秒门禁不变；仍欠 **30 分钟真实矩阵 + 用户听感验收**，历史五分钟 46 对的 **9514ms** 最大值继续作为未清尾延迟证据；详见 [`TTFT_BENCHMARK.md`](./TTFT_BENCHMARK.md)） |
+| **K-DISTRO-01** | 内核打包资源化（B 组暂存）：`kernel_lifecycle/spawn.rs` 内核旁迁移目录发现 + spawn env 注入 + Windows PATH 大小写修复 + `bundle-kernel-for-tauri.mjs` / `e2e-tauri-bundled-kernel.mjs` / `with-windows-rc-path.mjs` 扩展 + `sql_migrate.rs` 迁移源 + `.gitignore` | **P1** | 解冻 stash 后按开发流水线收口并整体提交；`distros/desktop-tauri/resources/migrations/` 为 bundle 可再生产物，恢复时重新生成即可 | **OPEN · stashed**（2026-08-11：维护者决策暂存；B/C 组修改在 `stash@{1}`，migrations 产物在 `stash@{0}`，恢复时 `git stash pop` 两次，先 pop `stash@{0}`） |
+| **K-VOICE-10** | 语音/门禁脚本未定稿（C 组暂存）：`check-voice-tts-ratchet.mjs` / `stress-voice-gpu-runtime.py` / `dimension5-acceptance.mjs` / `compilePluginVueSfc.test.ts` 调整 | **P2** | 解冻 stash 后按开发流水线收口：评审语音 ratchet、GPU stress 与 dimension5 调整，与 K-VOICE-09 的 30 分钟矩阵/听感验收节奏对齐 | **OPEN · stashed**（2026-08-11：维护者决策暂存，与 B 组同在 `stash@{1}`） |
 
 
 ---
