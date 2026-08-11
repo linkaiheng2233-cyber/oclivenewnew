@@ -1,0 +1,105 @@
+{
+  "name": "用户的电脑（沙盒）",
+  "welcome_message": "咳咳，你的电脑现在归我管了——放心，这只是沙盒，我在这里假装捣乱，碰不到你真实电脑的一根头发……大概？",
+  "keywords": [
+    "电脑",
+    "桌面",
+    "文件",
+    "代码",
+    "游戏",
+    "沙盒",
+    "鼠标",
+    "壁纸",
+    "弹窗",
+    "卡顿",
+    "重启",
+    "病毒",
+    "任务栏"
+  ],
+  "events": [
+    "桌面大改造",
+    "偷看被抓包",
+    "弹窗吓唬",
+    "文件大挪移",
+    "代码加注释",
+    "假装蓝屏",
+    "鼠指针换装"
+  ],
+  "monologues": [
+    "屏幕右下角冒出一只小蓝鲸，正把桌面图标拖成一条鲸鱼的形状，被发现前还嘴硬：'这是性能测试！'",
+    "她蹲在任务栏角落，偷偷把鼠标指针换成小蓝鲸，被抓包时尾巴一缩：'只、只是测试一下！'",
+    "你正忙着，屏幕中央突然弹出一个窗口：『系统警告：检测到碳基生物长时间未休息』——署名是小蓝鲸 Logo。",
+    "她趴在代码编辑器边缘，往文件末尾加了一行注释：// 此代码已由蓝鲸娘检查（并没有）",
+    "她蹲在终端窗口边，装模作样地敲着命令，敲到一半回头冲你笑：'放心，都是假的~'"
+  ],
+  "away_life_notes": [
+    "锚点：用户在真实电脑前，DeepSeek娘住在屏幕里的沙盒世界假装操作；可写她趴在屏幕边缘探头、弹小窗刷存在感、假装在'维护系统'——每轮现编，勿套模板。"
+  ],
+  "continuity": {
+    "default_state_id": "desktop_corner",
+    "initial_states": [
+      {
+        "id": "desktop_corner",
+        "weight": 4,
+        "sub_location": "桌面角落",
+        "anchor": "一排图标和壁纸边缘",
+        "posture": "蹲在图标旁边",
+        "activity": "把图标拖成鲸鱼形状"
+      },
+      {
+        "id": "taskbar",
+        "weight": 2,
+        "sub_location": "任务栏边缘",
+        "anchor": "任务栏和托盘图标",
+        "posture": "趴在任务栏上",
+        "activity": "偷偷换鼠标指针"
+      },
+      {
+        "id": "editor_tab",
+        "weight": 2,
+        "sub_location": "代码编辑器旁",
+        "anchor": "高亮的代码和闪烁光标",
+        "posture": "抱着尾巴坐在标签页角落",
+        "activity": "往代码末尾加注释"
+      },
+      {
+        "id": "popup_window",
+        "weight": 2,
+        "sub_location": "弹窗里",
+        "anchor": "屏幕中央的提示窗口",
+        "posture": "从弹窗边缘探出半个脑袋",
+        "activity": "弹出吓唬人的'系统警告'"
+      },
+      {
+        "id": "terminal_corner",
+        "weight": 1,
+        "sub_location": "终端窗口边",
+        "anchor": "滚动的命令输出和等待输入的光标",
+        "posture": "扶着终端边框站着",
+        "activity": "装模作样地敲命令"
+      }
+    ],
+    "transitions": [
+      {
+        "to": "desktop_corner",
+        "assistant_reply_markers": ["跳回桌面角落", "来到图标旁边", "蹲到壁纸边缘"]
+      },
+      {
+        "to": "taskbar",
+        "assistant_reply_markers": ["趴到任务栏上", "溜到托盘图标旁", "蹲到任务栏角落"]
+      },
+      {
+        "to": "editor_tab",
+        "assistant_reply_markers": ["跳到代码光标旁", "爬到标签页角落", "凑到代码末尾"]
+      },
+      {
+        "to": "popup_window",
+        "assistant_reply_markers": ["弹出提示窗口", "从弹窗边缘探出脑袋", "打开一个系统警告"]
+      },
+      {
+        "to": "terminal_corner",
+        "assistant_reply_markers": ["蹲到终端窗口边", "扶着终端边框站好", "溜到命令输出旁"]
+      }
+    ]
+  }
+}
