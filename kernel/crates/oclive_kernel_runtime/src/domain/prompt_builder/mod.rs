@@ -37,6 +37,8 @@ pub const KERNEL_DIALOGUE_GUARDRAILS: &str = "【对话硬约束】（引擎预�
 const REPLY_OUTPUT_BOUNDARY: &str =
     "【输出边界】只输出当前角色本人的这一轮台词；不要替用户发言或补写用户的回答，角色说完这一轮就停止。";
 
+const EMO_OUTPUT_INSTRUCTION: &str = "【内部情绪标记】台词结束后，另起一行附加一条仅供内部使用的情绪标记，不要向用户提及或解释它：\n[EMO]{\"labels\":[\"joy\",\"surprise\"],\"intensity\":0.8,\"narrative_hint\":\"简短叙事提示\"}[/EMO]\n字段说明：labels：1~3 个主情绪（按主次排列，第一个为主情绪），只能从 joy/sadness/anger/fear/surprise/disgust/neutral 中选择；intensity：0~1 之间的数字；narrative_hint：不超过 150 字的情绪叙事提示，可省略。";
+
 const PROMPT_BLOCK_GUIDE: &str = "以下为语气/内容层次，请按序理解";
 
 #[must_use]
@@ -304,6 +306,8 @@ impl PromptBuilder {
         prompt.push_str(&format!("用户说: {}", input.user_input));
         prompt.push_str("\n\n请以角色身份自然地回复，保持一致的性格和语气。\n\n");
         prompt.push_str(REPLY_OUTPUT_BOUNDARY);
+        prompt.push_str("\n\n");
+        prompt.push_str(EMO_OUTPUT_INSTRUCTION);
         prompt
     }
 
@@ -399,6 +403,8 @@ impl PromptBuilder {
         dynamic_suffix.push_str(&format!("用户说: {}", input.user_input));
         dynamic_suffix.push_str("\n\n请以角色身份自然地回复，保持一致的性格和语气。\n\n");
         dynamic_suffix.push_str(REPLY_OUTPUT_BOUNDARY);
+        dynamic_suffix.push_str("\n\n");
+        dynamic_suffix.push_str(EMO_OUTPUT_INSTRUCTION);
 
         PromptSegments {
             stable_prefix,

@@ -24,7 +24,7 @@ use super::super::turn_context::TurnContext;
 use super::super::turn_error::TurnResult;
 use super::{
     build_complex_emotion_turn_input, compute_turn_favor, latest_recent_turn_pair,
-    worldview_snippet_from_chunks, MiddleOutput, PreLlmOutput, STAGES,
+    skipped_complex_emotion, worldview_snippet_from_chunks, MiddleOutput, PreLlmOutput, STAGES,
 };
 use crate::domain::chat_engine::chat_stage::ChatStage;
 use crate::state::SessionCache;
@@ -120,11 +120,10 @@ pub(crate) async fn run_middle(
             // still need a meaningful mild/moderate value.
             resolve_fast_complex_emotion(&complex_emotion_input)
         } else {
-            STAGES
-                .stage(ChatStage::ComplexEmotionResolveTurn, async {
-                    SlotRunner::resolve_complex_emotion(pl, &complex_emotion_input)
-                })
-                .await?
+            // B M1 slice 1: complex emotion resolution moved to post-LLM.
+            // The main LLM declares [EMO]{...}[/EMO] in its reply; post_llm
+            // parses it (plugin-chain / keep fallback when the marker is absent).
+            skipped_complex_emotion()
         };
 
     let knowledge_limit = thinking.knowledge_retrieve_limit(&state.host_profile);

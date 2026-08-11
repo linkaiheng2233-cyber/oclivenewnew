@@ -51,6 +51,7 @@ pub(crate) async fn persist_atomic_movement_portrait(
     user_message: &str,
     pre: &PreLlmOutput,
     middle: &MiddleOutput,
+    complex_emotion_out: &crate::domain::complex_emotion::ComplexEmotionOutput,
     policy: &PostTurnPolicy,
     reply: &str,
     memory_scope: &str,
@@ -103,7 +104,7 @@ pub(crate) async fn persist_atomic_movement_portrait(
                         return Ok((tag, None));
                     };
                     let narrative_hint_owned = {
-                        let current = middle.complex_emotion_out.narrative_hint.trim();
+                        let current = complex_emotion_out.narrative_hint.trim();
                         if !current.is_empty() {
                             Some(current.to_string())
                         } else {
@@ -133,7 +134,7 @@ pub(crate) async fn persist_atomic_movement_portrait(
                         &policy.recent_events,
                         &pre.memory.recent_turns,
                         narrative_hint_owned.as_deref(),
-                        middle.complex_emotion_out.intensity,
+                        complex_emotion_out.intensity,
                     )
                     .await?;
                     Ok((tag, Some(vsid)))
@@ -229,7 +230,7 @@ pub(crate) async fn persist_atomic_movement_portrait(
             visual_state_id: resolve_visual_state_for_role(
                 role,
                 policy.bot_emotion_str.as_str(),
-                Some(middle.complex_emotion_out.intensity),
+                Some(complex_emotion_out.intensity),
                 state.host_profile.visual_presentation_mode.as_deref(),
             ),
         })

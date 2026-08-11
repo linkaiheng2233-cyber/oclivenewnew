@@ -1357,3 +1357,33 @@ fn build_prompt_injects_previous_reply_constraint_with_care_package() {
     let prev_pos = prompt.find("【上一轮回复约束】").unwrap();
     assert!(prev_pos < anchor_pos);
 }
+#[test]
+fn emo_marker_instruction_appears_after_output_boundary_in_both_paths() {
+    let role = create_test_role();
+    let personality = create_test_personality();
+    let input = sample_prompt_input(&role, &personality, &[], "你好", "", "", None);
+
+    let prompt = PromptBuilder::build_prompt(&input);
+    let boundary = prompt
+        .find("【输出边界】")
+        .expect("output boundary present");
+    let emo = prompt.find("[EMO]").expect("[EMO] instruction present");
+    assert!(
+        boundary < emo,
+        "[EMO] instruction must follow the output boundary"
+    );
+    assert!(prompt.contains("[/EMO]"));
+    assert!(prompt.contains("joy"));
+    assert!(prompt.contains("narrative_hint"));
+
+    let segments = PromptBuilder::build_prompt_segments(&input);
+    let suffix = segments.dynamic_suffix.as_str();
+    let seg_boundary = suffix
+        .find("【输出边界】")
+        .expect("boundary in dynamic suffix");
+    let seg_emo = suffix
+        .find("[EMO]")
+        .expect("[EMO] instruction in dynamic suffix");
+    assert!(seg_boundary < seg_emo);
+    assert!(suffix.contains("[/EMO]"));
+}

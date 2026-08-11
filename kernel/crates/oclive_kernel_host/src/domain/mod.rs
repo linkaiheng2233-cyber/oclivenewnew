@@ -1,5 +1,6 @@
 pub mod ports;
 
+pub mod emo_marker;
 pub mod error_helpers;
 
 /// Kernel domain modules re-exported from `oclive_kernel_runtime` for legacy `crate::domain::*` paths.

@@ -11,7 +11,7 @@ use crate::domain::turn_thinking::{
     effective_turn_thinking_policy, update_turn_thinking_runtime_state,
 };
 use crate::models::dto::{AdultBeatDto, DisplayMetricsDto, SendMessageResponse};
-use crate::models::{Event, PersonalitySource, Role};
+use crate::models::{Emotion, Event, PersonalitySource, Role};
 use std::sync::Arc;
 #[cfg(feature = "dual_core")]
 use std::sync::Mutex;
@@ -26,15 +26,20 @@ use super::persistence::{
     persist_non_profile_personality_delta, resolve_visual_state_for_role, ChatAppendIds,
     PostPersistOutcome, PostTurnPolicy,
 };
-use super::pre::{latest_recent_turn_pair, MainLlmOutput, MiddleOutput, PreLlmOutput, STAGES};
+use super::pre::{
+    build_complex_emotion_turn_input, latest_recent_turn_pair, MainLlmOutput, MiddleOutput,
+    PreLlmOutput, STAGES,
+};
 use super::TurnMode;
 use crate::domain::chat_engine::chat_stage::ChatStage;
+use crate::domain::complex_emotion::ComplexEmotionOutput;
+use crate::domain::emo_marker::EmoMarker;
 use crate::domain::reply_post_processor::resolve_reply_post_processor;
 use oclive_kernel_contracts::reply_post_processor::PostProcessInput;
 use oclive_kernel_contracts::LlmGenerateOpts;
 #[cfg(feature = "dual_core")]
 use oclive_validation::plugin_backends_for_slot_entry;
-
+use oclive_validation::slot_registry_instances_sorted;
 #[cfg(feature = "dual_core")]
 fn selected_lora_llm(
     ctx: &TurnContext<'_>,
@@ -425,26 +430,33 @@ async fn analyze_bot_emotion_and_policy(
     pre: &PreLlmOutput,
     middle: &MiddleOutput,
     snapshot_emotion: Option<String>,
+    emo_dominant: Option<Emotion>,
 ) -> TurnResult<PostTurnPolicy> {
     let policies = state.policies_for_scene(Some(scene_id));
-    let bot_emotion_result = STAGES
-        .stage(ChatStage::BotReplyEmotionAnalyze, async {
-            SlotRunner::analyze_emotion(pl, reply)
-        })
-        .await?;
-    let previous_emotion = if let Some(emotion) = snapshot_emotion {
-        Some(emotion)
+    let bot_emotion = if let Some(dominant) = emo_dominant {
+        // The main LLM declared its own emotion via [EMO]; authoritative —
+        // no lexicon re-analysis and no policy hold (v1.5 §11.1 / B M1 slice 1).
+        dominant
     } else {
-        STAGES
-            .stage(
-                ChatStage::GetCurrentEmotion,
-                state.db_manager.get_current_emotion(srid),
-            )
-            .await?
+        let previous_emotion = if let Some(emotion) = snapshot_emotion {
+            Some(emotion)
+        } else {
+            STAGES
+                .stage(
+                    ChatStage::GetCurrentEmotion,
+                    state.db_manager.get_current_emotion(srid),
+                )
+                .await?
+        };
+        let bot_emotion_result = STAGES
+            .stage(ChatStage::BotReplyEmotionAnalyze, async {
+                SlotRunner::analyze_emotion(pl, reply)
+            })
+            .await?;
+        policies
+            .emotion
+            .resolve_current_emotion(previous_emotion.as_deref(), &bot_emotion_result)
     };
-    let bot_emotion = policies
-        .emotion
-        .resolve_current_emotion(previous_emotion.as_deref(), &bot_emotion_result);
     let bot_emotion_str = bot_emotion.to_string();
     let event = Event {
         event_type: middle.ai_event_type,
@@ -660,6 +672,72 @@ fn apply_reply_post_processor(
     (display_reply, raw_reply)
 }
 
+/// Effective complex emotion output for this turn.
+///
+/// Priority (B M1 slice 1 + v1.8):
+/// 1. Parsed `[EMO]` marker from the main LLM reply (authoritative).
+/// 2. Fast / distro-skip turns keep the deterministic keyword intensity.
+/// 3. Explicit remote/directory backends run the plugin chain on degradation.
+/// 4. builtin / none / absent backends keep the previous state (no hint write).
+async fn resolve_effective_complex_emotion(
+    ctx: &TurnContext<'_>,
+    mode: TurnMode,
+    pre: &PreLlmOutput,
+    middle: &MiddleOutput,
+    emo_marker: Option<&EmoMarker>,
+) -> TurnResult<ComplexEmotionOutput> {
+    if !matches!(mode, TurnMode::CoPresent) {
+        return Ok(middle.complex_emotion_out.clone());
+    }
+    if let Some(marker) = emo_marker {
+        return Ok(marker.to_complex_emotion_output());
+    }
+    if middle.complex_emotion_out.source == "turn_thinking_fast_builtin_intensity" {
+        return Ok(middle.complex_emotion_out.clone());
+    }
+    if role_complex_emotion_backend_is_plugin(ctx.session_config.slot_registry.as_ref()) {
+        let input = build_complex_emotion_turn_input(
+            ctx.mrid,
+            ctx.scene_id,
+            ctx.req.user_message.as_str(),
+            &pre.hints.emotion_result,
+            pre.hints.prev_stored_narrative_hint.clone(),
+            &pre.memory.recent_turns,
+        );
+        return STAGES
+            .stage(ChatStage::ComplexEmotionResolveTurn, async {
+                SlotRunner::resolve_complex_emotion(&ctx.pl, &input)
+            })
+            .await;
+    }
+    Ok(ComplexEmotionOutput {
+        source: crate::domain::emo_marker::DEGRADED_KEEP_SOURCE.to_string(),
+        narrative_hint: String::new(),
+        labels: vec![],
+        pattern: None,
+        confidence: 0.0,
+        intensity: 0.0,
+        dissonance_score: 0.0,
+        degraded_to_builtin: false,
+        extension: None,
+    })
+}
+
+/// True when the role explicitly configures a remote/directory `complex_emotion`
+/// backend: degradation falls back to the plugin chain, while builtin/none keep.
+fn role_complex_emotion_backend_is_plugin(
+    slot_registry: Option<
+        &std::collections::BTreeMap<String, oclive_validation::SlotRegistryEntry>,
+    >,
+) -> bool {
+    let Some(registry) = slot_registry else {
+        return false;
+    };
+    slot_registry_instances_sorted(registry, "complex_emotion")
+        .iter()
+        .any(|(_, entry)| matches!(entry.backend.trim(), "remote" | "directory"))
+}
+
 pub(crate) async fn post_llm(
     ctx: &TurnContext<'_>,
     mode: TurnMode,
@@ -684,15 +762,22 @@ pub(crate) async fn post_llm(
 
     let t_post_llm = Instant::now();
     let reply = llm.reply.clone();
+    let (clean_reply, emo_marker) = crate::domain::emo_marker::parse_and_strip(&reply);
+    let effective_complex_emotion =
+        resolve_effective_complex_emotion(ctx, mode, pre, middle, emo_marker.as_ref()).await?;
     let parsed_adult_beat = matches!(mode, TurnMode::CoPresent)
         .then(|| {
-            crate::domain::adult_interaction::parse_reply(&reply, role, ctx.req.adult.as_ref())
+            crate::domain::adult_interaction::parse_reply(
+                &clean_reply,
+                role,
+                ctx.req.adult.as_ref(),
+            )
         })
         .flatten();
     let semantic_reply = parsed_adult_beat
         .as_ref()
         .map(crate::domain::adult_interaction::transcript_reply)
-        .unwrap_or_else(|| reply.clone());
+        .unwrap_or_else(|| clean_reply.clone());
     let synthetic_adult_action = ctx.req.adult.as_ref().is_some_and(|adult| {
         adult.gates_open()
             && !matches!(
@@ -711,6 +796,7 @@ pub(crate) async fn post_llm(
         pre,
         middle,
         ctx.runtime_snapshot.emotion.clone(),
+        emo_marker.as_ref().map(EmoMarker::dominant_emotion),
     )
     .await?;
 
@@ -729,7 +815,7 @@ pub(crate) async fn post_llm(
                 );
                 beat.dialogue = dialogue.clone();
                 let raw = if ctx.req.include_raw_reply == Some(true) {
-                    Some(reply.clone())
+                    Some(clean_reply.clone())
                 } else {
                     processed_raw
                 };
@@ -742,7 +828,7 @@ pub(crate) async fn post_llm(
                     scene_id,
                     srid,
                     user_message,
-                    &reply,
+                    &clean_reply,
                     ctx.req.include_raw_reply == Some(true),
                 );
                 (display, raw, None)
@@ -754,7 +840,7 @@ pub(crate) async fn post_llm(
             visual_state_id: resolve_visual_state_for_role(
                 role,
                 policy.bot_emotion_str.as_str(),
-                Some(middle.complex_emotion_out.intensity),
+                Some(effective_complex_emotion.intensity),
                 state.host_profile.visual_presentation_mode.as_deref(),
             ),
         };
@@ -810,6 +896,7 @@ pub(crate) async fn post_llm(
         },
         pre,
         middle,
+        &effective_complex_emotion,
         &policy,
         &semantic_reply,
         if ctx
@@ -826,12 +913,20 @@ pub(crate) async fn post_llm(
     .await?;
 
     if matches!(mode, TurnMode::CoPresent)
-        && !middle.complex_emotion_out.source.eq("turn_thinking_fast")
+        && !effective_complex_emotion.source.eq("turn_thinking_fast")
     {
-        let hint = middle.complex_emotion_out.narrative_hint.clone();
+        let hint = effective_complex_emotion.narrative_hint.clone();
         if !hint.trim().is_empty() {
             crate::domain::complex_emotion_store::persist_stored_narrative_hint(state, srid, hint)
                 .await;
+        } else if emo_marker.is_some() {
+            // v1.8 补充①（分支 2）：有 [EMO] 但 narrative_hint 缺失/空 → 清空 store
+            crate::domain::complex_emotion_store::persist_stored_narrative_hint(
+                state,
+                srid,
+                String::new(),
+            )
+            .await;
         }
     }
 
@@ -850,7 +945,7 @@ pub(crate) async fn post_llm(
             beat.dialogue = dialogue.clone();
             let transcript = crate::domain::adult_interaction::transcript_reply(&beat);
             let raw = if ctx.req.include_raw_reply == Some(true) {
-                Some(reply.clone())
+                Some(clean_reply.clone())
             } else {
                 processed_raw
             };
@@ -863,7 +958,7 @@ pub(crate) async fn post_llm(
                 scene_id,
                 srid,
                 user_message,
-                &reply,
+                &clean_reply,
                 ctx.req.include_raw_reply == Some(true),
             );
             (display.clone(), raw, None, display)
