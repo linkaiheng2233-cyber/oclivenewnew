@@ -80,12 +80,19 @@ function findMsvcLinkBinDir() {
 }
 
 function prependCargoBin(prefix) {
+  const candidates = []
+  if (process.env.CARGO_HOME)
+    candidates.push(process.env.CARGO_HOME)
   const home = process.env.USERPROFILE || process.env.HOME
-  if (!home)
-    return
-  const cargoBin = path.join(home, '.cargo', 'bin')
-  if (fs.existsSync(path.join(cargoBin, 'cargo.exe')) || fs.existsSync(path.join(cargoBin, 'cargo')))
-    prefix.push(cargoBin)
+  if (home)
+    candidates.push(path.join(home, '.cargo'))
+  for (const cargoHome of candidates) {
+    const cargoBin = path.join(cargoHome, 'bin')
+    if (fs.existsSync(path.join(cargoBin, 'cargo.exe')) || fs.existsSync(path.join(cargoBin, 'cargo'))) {
+      prefix.push(cargoBin)
+      return
+    }
+  }
 }
 
 function pathHasExecutable(pathEnv, name) {
@@ -123,8 +130,13 @@ if (msvcBin)
   pathPrefix.push(msvcBin)
 if (rcBin)
   pathPrefix.push(rcBin)
-if (pathPrefix.length)
-  env.PATH = `${pathPrefix.join(path.delimiter)}${path.delimiter}${env.PATH || ''}`
+if (pathPrefix.length) {
+  // Windows keeps the system variable as `Path`; the env spread preserves the
+  // original key casing, so read either spelling and normalize to a single `PATH`.
+  const existingPath = env.PATH ?? env.Path ?? ''
+  delete env.Path
+  env.PATH = `${pathPrefix.join(path.delimiter)}${path.delimiter}${existingPath}`
+}
 
 if (process.platform === 'win32') {
   if (!rcBin) {
