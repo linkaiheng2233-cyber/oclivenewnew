@@ -186,10 +186,18 @@ mod tests {
     use crate::domain::chat_turn_rules::{
         avoid_fast_promote_score, smooth_favor_delta_for_short_streak, soft_append_guard,
     };
+    use crate::error::{AppError, Result};
+    use crate::models::dto::SendMessageRequest;
+    use crate::models::role_manifest_disk::disk_manifest_from_role;
     use crate::models::{
-        EmotionBackend, Event, EventBackend, EventType, LlmBackend, MemoryBackend,
-        PluginBackendSource, PluginBackends, PluginBackendsSourceMap, PromptBackend,
+        disk_role_settings_from_role, EmotionBackend, Event, EventBackend, EventType, LlmBackend,
+        MemoryBackend, PluginBackendSource, PluginBackends, PluginBackendsSourceMap, PromptBackend,
+        Role, UserRelation,
     };
+    use crate::state::AppState;
+    use async_trait::async_trait;
+    use oclive_kernel_contracts::LlmClient;
+    use std::sync::Arc;
 
     #[test]
     fn conversation_state_role_id_none_matches_manifest_id() {
@@ -364,5 +372,115 @@ mod tests {
         let out = smooth_favor_delta_for_short_streak(-0.1, &recent);
         assert!(out > -0.1);
         assert!(out < -0.08);
+    }
+
+    /// LLM backend that always fails; drives the graceful-degradation path
+    /// (fallback reply + previous-emotion keep) for the M1 error-injection case.
+    struct FailingLlmClient;
+
+    #[async_trait]
+    impl LlmClient for FailingLlmClient {
+        async fn generate(&self, _model: &str, _prompt: &str) -> Result<String> {
+            Err(AppError::RemoteServiceUnavailable(
+                "injected failure for fallback test".to_string(),
+            ))
+        }
+
+        async fn generate_tag(&self, _model: &str, _prompt: &str) -> Result<String> {
+            Err(AppError::RemoteServiceUnavailable(
+                "injected failure for fallback test".to_string(),
+            ))
+        }
+    }
+
+    #[tokio::test]
+    async fn main_llm_failure_returns_fallback_reply_and_keeps_previous_emotion() {
+        let tmp = tempfile::tempdir().expect("roles tempdir");
+        let role_dir = tmp.path().join("fail_role");
+        std::fs::create_dir_all(&role_dir).expect("role dir");
+
+        let role = Role {
+            id: "fail_role".to_string(),
+            name: "Fail Role".to_string(),
+            description: "role used to verify LLM failure fallback".to_string(),
+            version: "1.0.0".to_string(),
+            author: "kernel-test".to_string(),
+            core_personality: "test role".to_string(),
+            user_relations: vec![UserRelation {
+                id: "friend".to_string(),
+                name: "friend".to_string(),
+                prompt_hint: String::new(),
+                favor_multiplier: 1.0,
+                initial_favorability: 50.0,
+            }],
+            default_relation: "friend".to_string(),
+            ollama_model: Some("test-model:latest".to_string()),
+            ..Role::default()
+        };
+
+        std::fs::write(
+            role_dir.join("manifest.json"),
+            serde_json::to_string_pretty(&disk_manifest_from_role(&role)).expect("manifest json"),
+        )
+        .expect("write manifest");
+        std::fs::write(
+            role_dir.join("settings.json"),
+            serde_json::to_string_pretty(&disk_role_settings_from_role(&role))
+                .expect("settings json"),
+        )
+        .expect("write settings");
+
+        let state = AppState::new_in_memory_with_llm(Arc::new(FailingLlmClient), tmp.path())
+            .await
+            .expect("test app state");
+
+        let srid = "fail_role";
+        state
+            .db_manager
+            .ensure_role_runtime(srid)
+            .await
+            .expect("role runtime");
+        state
+            .db_manager
+            .set_current_emotion(srid, "sad")
+            .await
+            .expect("baseline emotion");
+
+        let response = super::process_message(
+            &state,
+            &SendMessageRequest {
+                role_id: srid.to_string(),
+                user_message: "Hello there".to_string(),
+                scene_id: None,
+                session_id: None,
+                include_raw_reply: None,
+                adult: None,
+            },
+        )
+        .await
+        .expect("turn must degrade gracefully instead of erroring");
+
+        assert!(
+            response.reply_is_fallback,
+            "LLM failure must be reported via reply_is_fallback"
+        );
+        assert!(
+            response.llm_fallback_reason.is_some(),
+            "LLM failure must carry a fallback reason"
+        );
+        assert!(
+            !response.reply.trim().is_empty(),
+            "fallback reply must not be empty"
+        );
+        assert_ne!(response.reply, "Hello there");
+        assert_eq!(
+            state
+                .db_manager
+                .get_current_emotion(srid)
+                .await
+                .expect("read emotion"),
+            Some("sad".to_string()),
+            "degraded turn must keep the previous emotion (B M1 slice 2)"
+        );
     }
 }
