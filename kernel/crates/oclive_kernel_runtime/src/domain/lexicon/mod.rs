@@ -431,6 +431,30 @@ mod tests {
         }
     }
 
+    /// Structural invariants mirroring the collection rules (v1.3 four-layer
+    /// 收录原则): single-char words may only stay at the lowest weight, so a
+    /// future expansion must consciously justify any single-char entry.
+    #[test]
+    fn test_embedded_lexicon_four_layer_rules() {
+        let lexicon = Lexicon::load(LEXICON_JSON).expect("embedded lexicon must parse");
+        assert!(!lexicon.entries.is_empty(), "lexicon must not be empty");
+        for entry in &lexicon.entries {
+            assert!(!entry.word.trim().is_empty(), "empty word in lexicon");
+            assert!(
+                !entry.labels.is_empty(),
+                "entry without labels: {:?}",
+                entry.word
+            );
+            if entry.word.chars().count() == 1 {
+                assert_eq!(
+                    entry.weight, 1,
+                    "single-char {:?} must stay at weight 1 (layer 4)",
+                    entry.word
+                );
+            }
+        }
+    }
+
     /// Positive examples: the stated dimension must be top-1.
     #[test]
     fn test_positive_examples_top1() {
