@@ -252,6 +252,16 @@ fn archival_emotion_source(source: &str) -> Option<String> {
     }
 }
 
+/// Empty hints are archived as None so the metadata key is omitted
+/// (v1.4 decision: null / empty values write no key).
+fn archival_hint(hint: &str) -> Option<String> {
+    if hint.is_empty() {
+        None
+    } else {
+        Some(hint.to_string())
+    }
+}
+
 async fn append_turn_inner(
     state: &crate::state::AppState,
     srid: &str,
@@ -303,10 +313,35 @@ pub(crate) async fn append_turn_to_chat_storage(
     if !matches!(mode, TurnMode::CoPresent) || reply.trim().is_empty() {
         return ChatAppendIds::default();
     }
-    let (bot_emotion_source, bot_emotion_labels) = match complex_emotion {
-        Some(out) => (archival_emotion_source(&out.source), out.labels.clone()),
-        None => (None, vec![]),
+    let (
+        bot_emotion_source,
+        bot_emotion_labels,
+        emotion_pattern,
+        emotion_confidence,
+        emotion_intensity,
+        emotion_dissonance,
+        emotion_hint,
+    ) = match complex_emotion {
+        Some(out) => (
+            archival_emotion_source(&out.source),
+            out.labels.clone(),
+            out.pattern.clone(),
+            Some(out.confidence),
+            Some(out.intensity),
+            Some(out.dissonance_score),
+            archival_hint(&out.narrative_hint),
+        ),
+        None => (None, vec![], None, None, None, None, None),
     };
+    let user_emotion_scores = serde_json::json!({
+        "joy": pre.hints.emotion_result.joy,
+        "sadness": pre.hints.emotion_result.sadness,
+        "anger": pre.hints.emotion_result.anger,
+        "fear": pre.hints.emotion_result.fear,
+        "surprise": pre.hints.emotion_result.surprise,
+        "disgust": pre.hints.emotion_result.disgust,
+        "neutral": pre.hints.emotion_result.neutral,
+    });
     let persist = TurnPersistRequest {
         idempotency_key: None,
         session_id: srid.to_string(),
@@ -322,6 +357,12 @@ pub(crate) async fn append_turn_to_chat_storage(
         bot_emotion: Some(policy.bot_emotion_str.clone()),
         bot_emotion_source,
         bot_emotion_labels,
+        user_emotion_scores: Some(user_emotion_scores),
+        emotion_pattern,
+        emotion_confidence,
+        emotion_intensity,
+        emotion_dissonance,
+        emotion_hint,
         max_messages_per_session: role.pack_chat_storage_config.max_messages_per_session,
         auto_cleanup_config: TurnAutoCleanupConfig::from_role_config(
             &role.pack_chat_storage_config,
@@ -363,6 +404,12 @@ pub(crate) async fn append_agent_turn_to_chat_storage(
         bot_emotion: Some(bot_emotion.to_string()),
         bot_emotion_source: None,
         bot_emotion_labels: vec![],
+        user_emotion_scores: None,
+        emotion_pattern: None,
+        emotion_confidence: None,
+        emotion_intensity: None,
+        emotion_dissonance: None,
+        emotion_hint: None,
         max_messages_per_session: role.pack_chat_storage_config.max_messages_per_session,
         auto_cleanup_config: TurnAutoCleanupConfig::from_role_config(
             &role.pack_chat_storage_config,

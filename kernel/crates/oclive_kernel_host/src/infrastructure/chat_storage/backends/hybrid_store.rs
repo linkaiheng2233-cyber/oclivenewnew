@@ -231,17 +231,37 @@ impl ConversationStore for HybridConversationStore {
         let user_ts = Utc::now().to_rfc3339();
         let assistant_ts = Utc::now().to_rfc3339();
 
-        let user_meta = serde_json::json!({
+        let mut user_meta = serde_json::json!({
             "user_emotion": input.user_emotion,
             "hidden": input.user_message_hidden,
         });
-        let assistant_meta = serde_json::json!({
+        if let Some(scores) = input.user_emotion_scores {
+            user_meta["user_emotion_scores"] = scores;
+        }
+        let mut assistant_meta = serde_json::json!({
             "model": input.model_name,
             "response_ms": input.response_ms,
             "reply_is_fallback": input.reply_is_fallback,
             "bot_emotion": input.bot_emotion,
             "emotion_labels": input.bot_emotion_labels,
         });
+        if let Some(pattern) = input.emotion_pattern {
+            assistant_meta["emotion_pattern"] = serde_json::json!(pattern);
+        }
+        if let Some(confidence) = input.emotion_confidence {
+            assistant_meta["emotion_confidence"] = serde_json::json!(confidence);
+        }
+        if let Some(intensity) = input.emotion_intensity {
+            assistant_meta["emotion_intensity"] = serde_json::json!(intensity);
+        }
+        if let Some(dissonance) = input.emotion_dissonance {
+            assistant_meta["emotion_dissonance"] = serde_json::json!(dissonance);
+        }
+        if let Some(hint) = input.emotion_hint {
+            if !hint.is_empty() {
+                assistant_meta["emotion_hint"] = serde_json::json!(hint);
+            }
+        }
         let user_meta_str = user_meta.to_string();
         let assistant_meta_str = assistant_meta.to_string();
 
@@ -695,6 +715,12 @@ mod tests {
                 bot_emotion: None,
                 bot_emotion_source: None,
                 bot_emotion_labels: vec![],
+                user_emotion_scores: None,
+                emotion_pattern: None,
+                emotion_confidence: None,
+                emotion_intensity: None,
+                emotion_dissonance: None,
+                emotion_hint: None,
                 max_messages_per_session: None,
                 auto_cleanup_config: Default::default(),
                 chat_storage_location: "global".into(),
@@ -723,6 +749,12 @@ mod tests {
             bot_emotion: Some("neutral".into()),
             bot_emotion_source: None,
             bot_emotion_labels: vec![],
+            user_emotion_scores: None,
+            emotion_pattern: None,
+            emotion_confidence: None,
+            emotion_intensity: None,
+            emotion_dissonance: None,
+            emotion_hint: None,
             max_messages_per_session: None,
             auto_cleanup_config: Default::default(),
             chat_storage_location: "global".into(),
@@ -770,6 +802,20 @@ mod tests {
                 bot_emotion: Some("angry".into()),
                 bot_emotion_source: Some("llm".into()),
                 bot_emotion_labels: vec!["anger".into(), "sadness".into()],
+                user_emotion_scores: Some(serde_json::json!({
+                    "joy": 0.1,
+                    "sadness": 0.3,
+                    "anger": 0.8,
+                    "fear": 0.2,
+                    "surprise": 0.1,
+                    "disgust": 0.2,
+                    "neutral": 0.1,
+                })),
+                emotion_pattern: Some("escalation".into()),
+                emotion_confidence: Some(0.87),
+                emotion_intensity: Some(0.64),
+                emotion_dissonance: Some(0.21),
+                emotion_hint: Some("anger is rising".into()),
                 max_messages_per_session: None,
                 auto_cleanup_config: Default::default(),
                 chat_storage_location: "global".into(),
@@ -813,6 +859,15 @@ mod tests {
             serde_json::json!(["anger", "sadness"])
         );
         assert_eq!(asst_meta["bot_emotion"], "angry");
+        assert_eq!(
+            asst_meta["emotion_pattern"],
+            serde_json::json!("escalation")
+        );
+        assert_eq!(asst_meta["emotion_confidence"], serde_json::json!(0.87));
+        assert_eq!(asst_meta["emotion_intensity"], serde_json::json!(0.64));
+        assert_eq!(asst_meta["emotion_dissonance"], serde_json::json!(0.21));
+        assert_eq!(asst_meta["emotion_hint"], "anger is rising");
+        assert!(asst_meta.get("user_emotion_scores").is_none());
         let user_meta: serde_json::Value = serde_json::from_str(
             user_row
                 .get::<Option<String>, _>("metadata")
@@ -821,6 +876,84 @@ mod tests {
         )
         .expect("user metadata json");
         assert!(user_meta.get("emotion_labels").is_none());
+        assert_eq!(
+            user_meta["user_emotion_scores"]["anger"],
+            serde_json::json!(0.8)
+        );
+        assert_eq!(
+            user_meta["user_emotion_scores"]["joy"],
+            serde_json::json!(0.1)
+        );
+        assert_eq!(
+            user_meta["user_emotion_scores"]["neutral"],
+            serde_json::json!(0.1)
+        );
+        assert!(user_meta.get("emotion_pattern").is_none());
+    }
+
+    #[tokio::test]
+    async fn emotion_decision_package_keys_omitted_when_absent() {
+        use sqlx::Row;
+
+        let pool = test_db::connect_memory_migrated().await;
+        let dir = tempfile::tempdir().expect("dir");
+        let app_data = dir.path().to_path_buf();
+        let roles_dir = app_data.join("roles");
+        let _ = std::fs::create_dir_all(&roles_dir);
+        let store = Arc::new(HybridConversationStore::new(
+            Arc::new(DbManager::new(pool.clone())),
+            app_data,
+            roles_dir,
+            Arc::new(ReplayTaskRegistry::new()),
+            false,
+        ));
+        store
+            .append_turn(TurnPersistInput {
+                idempotency_key: None,
+                session_id: "emo-omitted".into(),
+                role_id: "mumu".into(),
+                scene_id: "default".into(),
+                user_message: "hi".into(),
+                user_message_hidden: false,
+                assistant_reply: "hello".into(),
+                reply_is_fallback: false,
+                model_name: None,
+                response_ms: 1,
+                user_emotion: None,
+                bot_emotion: Some("neutral".into()),
+                bot_emotion_source: Some("degraded".into()),
+                bot_emotion_labels: vec![],
+                user_emotion_scores: None,
+                emotion_pattern: None,
+                emotion_confidence: None,
+                emotion_intensity: None,
+                emotion_dissonance: None,
+                emotion_hint: Some(String::new()),
+                max_messages_per_session: None,
+                auto_cleanup_config: Default::default(),
+                chat_storage_location: "global".into(),
+            })
+            .await
+            .expect("append");
+
+        let rows = sqlx::query(
+            "SELECT sender, metadata FROM chat_messages WHERE session_id = 'emo-omitted'",
+        )
+        .fetch_all(&pool)
+        .await
+        .expect("rows");
+        assert_eq!(rows.len(), 2);
+        for row in &rows {
+            let meta: serde_json::Value =
+                serde_json::from_str(row.get::<Option<String>, _>("metadata").as_deref().unwrap())
+                    .expect("metadata json");
+            assert!(meta.get("user_emotion_scores").is_none());
+            assert!(meta.get("emotion_pattern").is_none());
+            assert!(meta.get("emotion_confidence").is_none());
+            assert!(meta.get("emotion_intensity").is_none());
+            assert!(meta.get("emotion_dissonance").is_none());
+            assert!(meta.get("emotion_hint").is_none());
+        }
     }
 
     #[tokio::test]
@@ -853,6 +986,12 @@ mod tests {
                 bot_emotion: None,
                 bot_emotion_source: None,
                 bot_emotion_labels: vec![],
+                user_emotion_scores: None,
+                emotion_pattern: None,
+                emotion_confidence: None,
+                emotion_intensity: None,
+                emotion_dissonance: None,
+                emotion_hint: None,
                 max_messages_per_session: None,
                 auto_cleanup_config: Default::default(),
                 chat_storage_location: "global".into(),

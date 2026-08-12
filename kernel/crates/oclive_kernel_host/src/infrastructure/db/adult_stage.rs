@@ -1393,6 +1393,12 @@ mod tests {
                 bot_emotion: stored.bot_emotion.clone(),
                 bot_emotion_source: None,
                 bot_emotion_labels: vec![],
+                user_emotion_scores: None,
+                emotion_pattern: None,
+                emotion_confidence: None,
+                emotion_intensity: None,
+                emotion_dissonance: None,
+                emotion_hint: None,
                 max_messages_per_session: role.pack_chat_storage_config.max_messages_per_session,
                 auto_cleanup_config: TurnAutoCleanupConfig::from_role_config(
                     &role.pack_chat_storage_config,

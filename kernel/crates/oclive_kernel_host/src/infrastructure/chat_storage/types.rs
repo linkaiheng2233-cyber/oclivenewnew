@@ -35,6 +35,20 @@ pub struct TurnPersistInput {
     /// Archival seven-dimension labels for the bot complex emotion (metadata `emotion_labels`).
     #[serde(default)]
     pub bot_emotion_labels: Vec<String>,
+    /// Archival seven-dimension user-emotion scores (metadata `user_emotion_scores`).
+    #[serde(default)]
+    pub user_emotion_scores: Option<serde_json::Value>,
+    /// Archival emotion decision package snapshot (assistant metadata keys).
+    #[serde(default)]
+    pub emotion_pattern: Option<String>,
+    #[serde(default)]
+    pub emotion_confidence: Option<f64>,
+    #[serde(default)]
+    pub emotion_intensity: Option<f64>,
+    #[serde(default)]
+    pub emotion_dissonance: Option<f64>,
+    #[serde(default)]
+    pub emotion_hint: Option<String>,
     /// Per-role cap; `None` uses [`super::config::DEFAULT_MAX_MESSAGES`].
     #[serde(default)]
     pub max_messages_per_session: Option<u32>,

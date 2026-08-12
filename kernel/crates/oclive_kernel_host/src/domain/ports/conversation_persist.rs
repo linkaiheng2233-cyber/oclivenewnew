@@ -51,6 +51,14 @@ pub struct TurnPersistRequest {
     pub bot_emotion_source: Option<String>,
     /// Archival seven-dimension labels for the bot complex emotion (metadata `emotion_labels`).
     pub bot_emotion_labels: Vec<String>,
+    /// Archival seven-dimension user-emotion scores (metadata `user_emotion_scores`).
+    pub user_emotion_scores: Option<serde_json::Value>,
+    /// Archival emotion decision package snapshot (assistant metadata keys).
+    pub emotion_pattern: Option<String>,
+    pub emotion_confidence: Option<f64>,
+    pub emotion_intensity: Option<f64>,
+    pub emotion_dissonance: Option<f64>,
+    pub emotion_hint: Option<String>,
     pub max_messages_per_session: Option<u32>,
     pub auto_cleanup_config: TurnAutoCleanupConfig,
     pub chat_storage_location: String,
