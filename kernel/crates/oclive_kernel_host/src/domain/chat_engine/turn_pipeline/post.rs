@@ -971,6 +971,7 @@ pub(crate) async fn post_llm(
         user_message,
         &transcript_reply,
         synthetic_adult_action,
+        Some(&effective_complex_emotion),
     )
     .await;
 

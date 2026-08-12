@@ -266,6 +266,7 @@ mod tests {
                 assistant_content: "hi".into(),
                 user_metadata: None,
                 assistant_metadata: None,
+                assistant_emotion_source: None,
                 user_created_at: Utc::now().to_rfc3339(),
                 assistant_created_at: Utc::now().to_rfc3339(),
             },

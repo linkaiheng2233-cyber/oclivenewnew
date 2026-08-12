@@ -160,6 +160,7 @@ impl HybridConversationStore {
                     assistant_content: msg.content.clone(),
                     user_metadata: None,
                     assistant_metadata: None,
+                    assistant_emotion_source: None,
                     user_created_at: user_ts,
                     assistant_created_at: assistant_ts,
                 };
@@ -239,6 +240,7 @@ impl ConversationStore for HybridConversationStore {
             "response_ms": input.response_ms,
             "reply_is_fallback": input.reply_is_fallback,
             "bot_emotion": input.bot_emotion,
+            "emotion_labels": input.bot_emotion_labels,
         });
         let user_meta_str = user_meta.to_string();
         let assistant_meta_str = assistant_meta.to_string();
@@ -253,6 +255,7 @@ impl ConversationStore for HybridConversationStore {
             assistant_content: input.assistant_reply.clone(),
             user_metadata: Some(user_meta_str.clone()),
             assistant_metadata: Some(assistant_meta_str.clone()),
+            assistant_emotion_source: input.bot_emotion_source,
             user_created_at: user_ts.clone(),
             assistant_created_at: assistant_ts.clone(),
         };
@@ -690,6 +693,8 @@ mod tests {
                 response_ms: 10,
                 user_emotion: None,
                 bot_emotion: None,
+                bot_emotion_source: None,
+                bot_emotion_labels: vec![],
                 max_messages_per_session: None,
                 auto_cleanup_config: Default::default(),
                 chat_storage_location: "global".into(),
@@ -716,6 +721,8 @@ mod tests {
             response_ms: 10,
             user_emotion: None,
             bot_emotion: Some("neutral".into()),
+            bot_emotion_source: None,
+            bot_emotion_labels: vec![],
             max_messages_per_session: None,
             auto_cleanup_config: Default::default(),
             chat_storage_location: "global".into(),
@@ -729,6 +736,91 @@ mod tests {
             .await
             .expect("messages");
         assert_eq!(messages.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn emotion_source_and_labels_archived_end_to_end() {
+        use sqlx::Row;
+
+        let pool = test_db::connect_memory_migrated().await;
+        let dir = tempfile::tempdir().expect("dir");
+        let app_data = dir.path().to_path_buf();
+        let roles_dir = app_data.join("roles");
+        let _ = std::fs::create_dir_all(&roles_dir);
+        let store = Arc::new(HybridConversationStore::new(
+            Arc::new(DbManager::new(pool.clone())),
+            app_data,
+            roles_dir,
+            Arc::new(ReplayTaskRegistry::new()),
+            false,
+        ));
+        store
+            .append_turn(TurnPersistInput {
+                idempotency_key: None,
+                session_id: "emo-e2e".into(),
+                role_id: "mumu".into(),
+                scene_id: "default".into(),
+                user_message: "hi".into(),
+                user_message_hidden: false,
+                assistant_reply: "hello".into(),
+                reply_is_fallback: false,
+                model_name: None,
+                response_ms: 1,
+                user_emotion: None,
+                bot_emotion: Some("angry".into()),
+                bot_emotion_source: Some("llm".into()),
+                bot_emotion_labels: vec!["anger".into(), "sadness".into()],
+                max_messages_per_session: None,
+                auto_cleanup_config: Default::default(),
+                chat_storage_location: "global".into(),
+            })
+            .await
+            .expect("append");
+
+        let rows = sqlx::query(
+            "SELECT sender, emotion_source, metadata FROM chat_messages WHERE session_id = 'emo-e2e'",
+        )
+        .fetch_all(&pool)
+        .await
+        .expect("rows");
+        assert_eq!(rows.len(), 2);
+        let user_row = rows
+            .iter()
+            .find(|r| r.get::<String, _>("sender") == "user")
+            .unwrap();
+        let asst_row = rows
+            .iter()
+            .find(|r| r.get::<String, _>("sender") == "assistant")
+            .unwrap();
+        assert!(user_row
+            .get::<Option<String>, _>("emotion_source")
+            .is_none());
+        assert_eq!(
+            asst_row
+                .get::<Option<String>, _>("emotion_source")
+                .as_deref(),
+            Some("llm")
+        );
+        let asst_meta: serde_json::Value = serde_json::from_str(
+            asst_row
+                .get::<Option<String>, _>("metadata")
+                .as_deref()
+                .unwrap(),
+        )
+        .expect("assistant metadata json");
+        assert_eq!(
+            asst_meta["emotion_labels"],
+            serde_json::json!(["anger", "sadness"])
+        );
+        assert_eq!(asst_meta["bot_emotion"], "angry");
+        let user_meta: serde_json::Value = serde_json::from_str(
+            user_row
+                .get::<Option<String>, _>("metadata")
+                .as_deref()
+                .unwrap(),
+        )
+        .expect("user metadata json");
+        assert!(user_meta.get("emotion_labels").is_none());
     }
 
     #[tokio::test]
@@ -759,6 +851,8 @@ mod tests {
                 response_ms: 1,
                 user_emotion: None,
                 bot_emotion: None,
+                bot_emotion_source: None,
+                bot_emotion_labels: vec![],
                 max_messages_per_session: None,
                 auto_cleanup_config: Default::default(),
                 chat_storage_location: "global".into(),

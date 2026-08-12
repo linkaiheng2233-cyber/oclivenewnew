@@ -24,6 +24,8 @@ mod tests {
             response_ms: 1,
             user_emotion: None,
             bot_emotion: None,
+            bot_emotion_source: None,
+            bot_emotion_labels: vec![],
             max_messages_per_session: Some(500),
             auto_cleanup_config: AutoCleanupConfig::default(),
             chat_storage_location: "global".to_string(),

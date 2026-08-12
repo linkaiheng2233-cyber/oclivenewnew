@@ -1391,6 +1391,8 @@ mod tests {
                 response_ms: stored.response_ms,
                 user_emotion: Some("neutral".to_string()),
                 bot_emotion: stored.bot_emotion.clone(),
+                bot_emotion_source: None,
+                bot_emotion_labels: vec![],
                 max_messages_per_session: role.pack_chat_storage_config.max_messages_per_session,
                 auto_cleanup_config: TurnAutoCleanupConfig::from_role_config(
                     &role.pack_chat_storage_config,

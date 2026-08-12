@@ -353,4 +353,85 @@ mod tests {
         let digest = migration_checksum(sql);
         assert_eq!(digest.len(), 32);
     }
+
+    async fn emotion_source_column_count(pool: &sqlx::SqlitePool) -> i64 {
+        sqlx::query_scalar(
+            "SELECT COUNT(*) FROM pragma_table_info('chat_messages') WHERE name = 'emotion_source'",
+        )
+        .fetch_one(pool)
+        .await
+        .expect("pragma table_info")
+    }
+
+    #[tokio::test]
+    async fn migration_039_adds_emotion_source_on_fresh_db() {
+        let pool = crate::infrastructure::sqlite_pool::connect_memory()
+            .await
+            .expect("in-memory pool");
+        let dir = find_migrations_dir().expect("migrations dir");
+        run_sql_migrations(&pool, &dir).await.expect("apply all");
+        assert_eq!(emotion_source_column_count(&pool).await, 1);
+    }
+
+    #[tokio::test]
+    async fn migration_039_upgrades_db_from_038_keeping_old_rows_null() {
+        let pool = crate::infrastructure::sqlite_pool::connect_memory()
+            .await
+            .expect("in-memory pool");
+        let full_dir = find_migrations_dir().expect("migrations dir");
+        let tmp = tempfile::tempdir().expect("temp dir");
+        for entry in std::fs::read_dir(&full_dir).expect("read dir") {
+            let path = entry.expect("entry").path();
+            let name = path
+                .file_name()
+                .expect("name")
+                .to_string_lossy()
+                .into_owned();
+            if !name.ends_with(".sql") || name.starts_with("039_") {
+                continue;
+            }
+            std::fs::copy(&path, tmp.path().join(&name)).expect("copy migration");
+        }
+        run_sql_migrations(&pool, tmp.path())
+            .await
+            .expect("apply 001-038");
+        assert_eq!(emotion_source_column_count(&pool).await, 0);
+
+        // simulate a pre-039 row
+        sqlx::query(
+            "INSERT INTO chat_sessions (session_id, role_id, scene_id, created_at, updated_at)
+             VALUES ('old', 'old', 'default', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')",
+        )
+        .execute(&pool)
+        .await
+        .expect("insert old session");
+        sqlx::query(
+            "INSERT INTO chat_messages (id, session_id, turn_index, sender, content, created_at)
+             VALUES ('old-msg', 'old', 0, 'assistant', 'hi', '2026-01-01T00:00:00Z')",
+        )
+        .execute(&pool)
+        .await
+        .expect("insert old message");
+
+        run_sql_migrations(&pool, &full_dir)
+            .await
+            .expect("apply 039");
+        assert_eq!(emotion_source_column_count(&pool).await, 1);
+        let applied: i64 = sqlx::query_scalar(
+            "SELECT COUNT(*) FROM _sqlx_migrations WHERE version = 39 AND success = 1",
+        )
+        .fetch_one(&pool)
+        .await
+        .expect("migration row");
+        assert_eq!(applied, 1);
+        let old_source: Option<String> =
+            sqlx::query_scalar("SELECT emotion_source FROM chat_messages WHERE id = 'old-msg'")
+                .fetch_one(&pool)
+                .await
+                .expect("old row");
+        assert!(
+            old_source.is_none(),
+            "pre-039 rows keep NULL emotion_source"
+        );
+    }
 }

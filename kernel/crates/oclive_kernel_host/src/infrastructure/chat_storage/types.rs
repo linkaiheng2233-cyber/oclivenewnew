@@ -29,6 +29,12 @@ pub struct TurnPersistInput {
     pub response_ms: u64,
     pub user_emotion: Option<String>,
     pub bot_emotion: Option<String>,
+    /// Archival provenance for the bot complex-emotion source (`llm` / `degraded` / raw provider source).
+    #[serde(default)]
+    pub bot_emotion_source: Option<String>,
+    /// Archival seven-dimension labels for the bot complex emotion (metadata `emotion_labels`).
+    #[serde(default)]
+    pub bot_emotion_labels: Vec<String>,
     /// Per-role cap; `None` uses [`super::config::DEFAULT_MAX_MESSAGES`].
     #[serde(default)]
     pub max_messages_per_session: Option<u32>,

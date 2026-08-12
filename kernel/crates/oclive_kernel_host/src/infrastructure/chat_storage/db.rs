@@ -70,6 +70,8 @@ pub struct NewTurnMessages {
     pub assistant_content: String,
     pub user_metadata: Option<String>,
     pub assistant_metadata: Option<String>,
+    /// Archival provenance for the bot complex-emotion source; NULL for user rows.
+    pub assistant_emotion_source: Option<String>,
     pub user_created_at: String,
     pub assistant_created_at: String,
 }

@@ -1,5 +1,6 @@
 //! Post-LLM persistence: atomic DB writes, chat storage, profile evolution.
 
+use crate::domain::complex_emotion::ComplexEmotionOutput;
 use crate::domain::portrait_emotion_engine::pick_portrait_emotion;
 use crate::domain::portrait_facility::{enhanced_portrait_active, pick_portrait_with_catalog};
 use crate::domain::ports::conversation_persist::{TurnAutoCleanupConfig, TurnPersistRequest};
@@ -237,6 +238,20 @@ pub(crate) async fn persist_atomic_movement_portrait(
     }
 }
 
+/// Maps a `ComplexEmotionOutput.source` to the archival `emotion_source` column value.
+///
+/// Marker-derived output is archived as `llm`, the degraded keep branch as
+/// `degraded`; fast / plugin / unknown sources are archived as-is. Empty
+/// sources are not archived (NULL). User rows and pre-039 rows stay NULL.
+fn archival_emotion_source(source: &str) -> Option<String> {
+    match source {
+        crate::domain::emo_marker::EMO_MARKER_SOURCE => Some("llm".to_string()),
+        crate::domain::emo_marker::DEGRADED_KEEP_SOURCE => Some("degraded".to_string()),
+        other if other.trim().is_empty() => None,
+        other => Some(other.to_string()),
+    }
+}
+
 async fn append_turn_inner(
     state: &crate::state::AppState,
     srid: &str,
@@ -278,6 +293,7 @@ pub(crate) async fn append_turn_to_chat_storage(
     user_message: &str,
     reply: &str,
     user_message_hidden: bool,
+    complex_emotion: Option<&ComplexEmotionOutput>,
 ) -> ChatAppendIds {
     let TurnIds {
         mrid,
@@ -287,6 +303,10 @@ pub(crate) async fn append_turn_to_chat_storage(
     if !matches!(mode, TurnMode::CoPresent) || reply.trim().is_empty() {
         return ChatAppendIds::default();
     }
+    let (bot_emotion_source, bot_emotion_labels) = match complex_emotion {
+        Some(out) => (archival_emotion_source(&out.source), out.labels.clone()),
+        None => (None, vec![]),
+    };
     let persist = TurnPersistRequest {
         idempotency_key: None,
         session_id: srid.to_string(),
@@ -300,6 +320,8 @@ pub(crate) async fn append_turn_to_chat_storage(
         response_ms: llm.main_llm_ms,
         user_emotion: Some(pre.hints.user_emotion_str.clone()),
         bot_emotion: Some(policy.bot_emotion_str.clone()),
+        bot_emotion_source,
+        bot_emotion_labels,
         max_messages_per_session: role.pack_chat_storage_config.max_messages_per_session,
         auto_cleanup_config: TurnAutoCleanupConfig::from_role_config(
             &role.pack_chat_storage_config,
@@ -339,6 +361,8 @@ pub(crate) async fn append_agent_turn_to_chat_storage(
         response_ms: 0,
         user_emotion: Some(user_emotion.to_string()),
         bot_emotion: Some(bot_emotion.to_string()),
+        bot_emotion_source: None,
+        bot_emotion_labels: vec![],
         max_messages_per_session: role.pack_chat_storage_config.max_messages_per_session,
         auto_cleanup_config: TurnAutoCleanupConfig::from_role_config(
             &role.pack_chat_storage_config,
@@ -574,5 +598,30 @@ mod persist_non_profile_tests {
             resolve_visual_state_for_role(&role, "happy", None, None),
             None
         );
+    }
+
+    #[test]
+    fn archival_emotion_source_maps_known_sources() {
+        use crate::domain::emo_marker::{DEGRADED_KEEP_SOURCE, EMO_MARKER_SOURCE};
+
+        assert_eq!(
+            archival_emotion_source(EMO_MARKER_SOURCE).as_deref(),
+            Some("llm")
+        );
+        assert_eq!(
+            archival_emotion_source(DEGRADED_KEEP_SOURCE).as_deref(),
+            Some("degraded")
+        );
+        // fast / plugin / unknown sources are archived as-is
+        assert_eq!(
+            archival_emotion_source("turn_thinking_fast_builtin_intensity").as_deref(),
+            Some("turn_thinking_fast_builtin_intensity")
+        );
+        assert_eq!(
+            archival_emotion_source("builtin_keyword_v1").as_deref(),
+            Some("builtin_keyword_v1")
+        );
+        // empty source is not archived (NULL)
+        assert_eq!(archival_emotion_source(""), None);
     }
 }

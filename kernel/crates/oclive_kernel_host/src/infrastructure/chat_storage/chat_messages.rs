@@ -60,14 +60,15 @@ impl DbManager {
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
         sqlx::query(
-            "INSERT INTO chat_messages (id, session_id, turn_index, sender, content, metadata, created_at)
-             VALUES (?, ?, ?, 'assistant', ?, ?, ?)",
+            "INSERT INTO chat_messages (id, session_id, turn_index, sender, content, metadata, emotion_source, created_at)
+             VALUES (?, ?, ?, 'assistant', ?, ?, ?, ?)",
         )
         .bind(&turn.assistant_id)
         .bind(session_id)
         .bind(turn_index)
         .bind(&turn.assistant_content)
         .bind(&turn.assistant_metadata)
+        .bind(&turn.assistant_emotion_source)
         .bind(&turn.assistant_created_at)
         .execute(&mut *tx)
         .await
@@ -309,6 +310,7 @@ mod tests {
                     assistant_content: "hello".into(),
                     user_metadata: None,
                     assistant_metadata: Some(r#"{"reply_is_fallback":false}"#.into()),
+                    assistant_emotion_source: None,
                     user_created_at: Utc::now().to_rfc3339(),
                     assistant_created_at: Utc::now().to_rfc3339(),
                 },
@@ -322,6 +324,71 @@ mod tests {
         assert_eq!(msgs.len(), 2);
         assert_eq!(msgs[0].sender, "user");
         assert_eq!(msgs[1].sender, "assistant");
+    }
+
+    #[tokio::test]
+    async fn emotion_source_and_labels_persist_on_assistant_row() {
+        use sqlx::Row;
+
+        let db = mem_db().await;
+        db.upsert_chat_session("emo", "emo", "default")
+            .await
+            .expect("session");
+        db.insert_chat_turn_messages(
+            "emo",
+            NewTurnMessages {
+                user_id: uuid::Uuid::new_v4().to_string(),
+                assistant_id: uuid::Uuid::new_v4().to_string(),
+                user_content: "hi".into(),
+                assistant_content: "hello".into(),
+                user_metadata: None,
+                assistant_metadata: Some(
+                    r#"{"bot_emotion":"angry","emotion_labels":["anger","sadness"]}"#.into(),
+                ),
+                assistant_emotion_source: Some("llm".into()),
+                user_created_at: Utc::now().to_rfc3339(),
+                assistant_created_at: Utc::now().to_rfc3339(),
+            },
+            DEFAULT_MAX_MESSAGES,
+        )
+        .await
+        .expect("insert");
+
+        let rows = sqlx::query(
+            "SELECT sender, emotion_source, metadata FROM chat_messages WHERE session_id = 'emo'",
+        )
+        .fetch_all(&db.pool)
+        .await
+        .expect("fetch rows");
+        assert_eq!(rows.len(), 2);
+        let user_row = rows
+            .iter()
+            .find(|r| r.get::<String, _>("sender") == "user")
+            .unwrap();
+        let asst_row = rows
+            .iter()
+            .find(|r| r.get::<String, _>("sender") == "assistant")
+            .unwrap();
+        assert!(user_row
+            .get::<Option<String>, _>("emotion_source")
+            .is_none());
+        assert_eq!(
+            asst_row
+                .get::<Option<String>, _>("emotion_source")
+                .as_deref(),
+            Some("llm")
+        );
+        let meta: serde_json::Value = serde_json::from_str(
+            asst_row
+                .get::<Option<String>, _>("metadata")
+                .as_deref()
+                .unwrap(),
+        )
+        .expect("metadata json");
+        assert_eq!(
+            meta["emotion_labels"],
+            serde_json::json!(["anger", "sadness"])
+        );
     }
 
     fn assert_messages_paired(msgs: &[MessageRow]) {
@@ -365,6 +432,7 @@ mod tests {
                     assistant_content: format!("assistant turn {i}"),
                     user_metadata: None,
                     assistant_metadata: None,
+                    assistant_emotion_source: None,
                     user_created_at: Utc::now().to_rfc3339(),
                     assistant_created_at: Utc::now().to_rfc3339(),
                 },
