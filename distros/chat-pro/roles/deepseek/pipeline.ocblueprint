@@ -51,7 +51,7 @@
       "default",
       "user_pc"
     ],
-    "version": "1.4.0",
+    "version": "1.4.1",
     "deep_capsule_enabled": true
   },
   "schema_version": 2,
