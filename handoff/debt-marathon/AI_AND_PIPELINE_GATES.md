@@ -55,6 +55,7 @@ Implementer 常量：`reply` · `plugin_backends` / `slot_registry.type` · 蓝�
 - grep 复用；NAMING_CONVENTIONS §4.2
 - DTO→oclive_kernel_types；trait→oclive_kernel_contracts
 - 禁生产 unwrap/expect；build_prompt 返回 String（非 Result）
+- 中文文件：禁管道传中文 / `-Encoding Ascii`；写盘只用 apply_patch 或 .NET UTF-8 无 BOM；写后自查（§7）
 - Cargo.lock → cargo audit + KNOWN_VULNERABILITIES 中英
 - 新 AppError → generate-kernel-error-codes + drift + apiErrors + ERROR_CODES
 - 六槽禁止第二套 parser；集成测用临时夹具
@@ -109,3 +110,24 @@ Plan/Stage 勾选的命令必须有「因何 applicable」。欠债默认参考�
 - [ ] 父 controller 未合 main（除非授权）
 - [ ] 父 controller 已更新 MARATHON_QUEUE、Wave 与 checkpoint
 - [ ] Wave 已记录 claim、base/head SHA、changed files、最后命令、下一条精确命令与 retry_safe
+
+---
+
+## 7. 中文编码红线（2026-08-13 · 4 起事故：K-EMO-01 词表乱码 / 台账 CJK 行 / M2 Plan / deepseek 蓝图锚点）
+
+**根因**：Windows PowerShell 5.1 默认 `$OutputEncoding` = US-ASCII。中文经管道传给原生进程（`@'...'@ | python -` 等）时，每个非 ASCII 字符在到达目标前被替换为字面 `?`；`-Encoding Ascii` / .NET `Encoding.ASCII` 同理。结果文件仍是合法 UTF-8（`?` 是 ASCII），JSON 可解析、git diff 正常、现有门禁查不出 → 静默损坏。
+
+**红线**（任何 AI 会话写含中文的文件）：
+
+1. 禁止中文经管道传给解释器执行或写盘：`@'...'@ | python -`、`python -c "中文"`、`node -e "中文"`、`... | node -`。
+2. 写中文文件只用两种方式：`apply_patch`；或 `[System.IO.File]::WriteAllText($path, $text, [System.Text.UTF8Encoding]::new($false))`（UTF-8 无 BOM）。禁止 `>` / `Out-File`（UTF-16 BOM）与 `-Encoding Ascii`。
+3. Python/Node 读写显式 `encoding='utf-8'`；含中文的脚本先落盘 UTF-8 `.py` 再执行。
+
+**写后必检**（含中文的文件写完必须自查，作为该提交的验收项）：
+
+- 汉字数 > 0：`[\u4e00-\u9fff]` 匹配计数
+- 连续问号串 = 0：`\?{3,}` 匹配计数
+- 无 BOM：首 3 字节 ≠ `EF BB BF`
+- JSON 文件须能正常解析
+
+**已发生时**：先找干净源（git 历史提交 / 备份副本）恢复，再按本红线重写；不得把 `?` 当原文猜测回填。

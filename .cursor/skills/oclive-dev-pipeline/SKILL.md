@@ -54,6 +54,7 @@ description: >-
 - 数字核实：[`AI_VERIFICATION_PROTOCOL.md`](../../../handoff/AI_VERIFICATION_PROTOCOL.md)
 
 **常量**：回复字段 **`reply`** · 六槽 `plugin_backends` / `slot_registry.type` · 蓝图 **`steps[]` 不调度首轮**。
+- **中文编码红线**（写中文文件前必读）：[AI_AND_PIPELINE_GATES §7](../../../handoff/debt-marathon/AI_AND_PIPELINE_GATES.md) —— 禁管道传中文 / `-Encoding Ascii`；只走 apply_patch 或 .NET UTF-8 无 BOM；写后自查汉字数>0 且无 `\?{3,}`。
 
 ## 场景路由（① 必做）
 

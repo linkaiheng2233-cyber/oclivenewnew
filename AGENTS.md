@@ -83,6 +83,7 @@
 
 ## 仅本文保留的易漏点
 
+- **中文写入红线**：禁管道/`-Encoding Ascii` 传中文；写中文文件只用 apply_patch 或 .NET UTF-8 无 BOM；写后自查汉字数>0、无 `\?{3,}`、无 BOM（SSOT：[handoff/debt-marathon/AI_AND_PIPELINE_GATES.md](handoff/debt-marathon/AI_AND_PIPELINE_GATES.md) §7）
 - **Tauri invoke**：Rust `snake_case` → 前端 **camelCase**（`distros/shared/src/api/`）
 - **权限**：directory 插件 / MCP / remote env 须用户授权（`network:*` · `process:spawn`）
 - **Remotion 演示**：独立仓 `oclive-remotion-demo`，勿在主仓根跑 `npm run preview`
