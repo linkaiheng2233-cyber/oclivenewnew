@@ -1,4 +1,4 @@
-//! E05：上一轮内置复杂情感的 `narrative_hint` 注入下一轮主对话 Prompt（共景路径）。
+//! E05：上一轮 [EMO] 派生的 `narrative_hint` 注入下一轮主对话 Prompt（共景路径）。
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
@@ -38,9 +38,14 @@ impl LlmClient for CapturePromptLlm {
 #[tokio::test]
 async fn prior_narrative_hint_injected_into_second_turn_main_prompt() {
     let prompts = Arc::new(Mutex::new(Vec::<String>::new()));
+    // B M1 producer: the hint comes from the main LLM reply [EMO] marker.
+    let hint_snippet = "用户可能缺乏兴致";
     let llm: Arc<dyn LlmClient> = Arc::new(CapturePromptLlm {
         prompts: prompts.clone(),
-        reply: "mock".to_string(),
+        reply: format!(
+            "好呀\n\n[EMO]{{\"labels\":[\"neutral\"],\"intensity\":0.4,\"narrative_hint\":\"{}\"}}[/EMO]",
+            hint_snippet
+        ),
     });
     let mut host = HostProfile::default();
     host.turn_thinking.fast_skip_complex_emotion = false;
@@ -76,7 +81,6 @@ async fn prior_narrative_hint_injected_into_second_turn_main_prompt() {
     .await
     .expect("turn2");
 
-    let hint_snippet = "用户可能缺乏兴致";
     let p2_owned = {
         let guard = prompts.lock();
         guard

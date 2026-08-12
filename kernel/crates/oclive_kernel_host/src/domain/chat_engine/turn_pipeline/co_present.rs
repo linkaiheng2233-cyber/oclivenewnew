@@ -491,6 +491,22 @@ mod tests {
         assert!(output.pattern.is_none());
         assert!((output.intensity - 0.5).abs() < f64::EPSILON);
     }
+    #[test]
+    fn fast_complex_emotion_full_field_shape_matches_noop_baseline() {
+        // M2 slice 2: the fast path must fill every ComplexEmotionOutput field
+        // deterministically - narrative/label fields stay empty (Noop defaults
+        // in backend_registry are the field baseline), only intensity carries
+        // the turn signal, and the source marks the fast producer.
+        let output = resolve_fast_complex_emotion(&fast_input("你好"));
+        assert!(output.narrative_hint.is_empty());
+        assert!(output.labels.is_empty());
+        assert_eq!(output.pattern, None);
+        assert_eq!(output.confidence, 0.0);
+        assert!((output.intensity - 0.25).abs() < f64::EPSILON);
+        assert_eq!(output.dissonance_score, 0.0);
+        assert!(!output.degraded_to_builtin);
+        assert_eq!(output.extension, None);
+    }
 
     #[test]
     fn stable_prompt_segments_require_builtin_prompt_and_cacheable_llm() {
