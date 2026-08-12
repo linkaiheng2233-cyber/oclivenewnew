@@ -640,4 +640,189 @@ mod tests {
         assert_eq!(t, EventType::Apology);
         assert!(impact >= 0.1);
     }
+
+    #[test]
+    fn parse_event_type_ai_token_invalid_inputs_are_none() {
+        // Contract (M2 slice 0): unknown tokens must yield None so callers walk
+        // the rules-only fallback instead of panicking on LLM drift.
+        for raw in [
+            "",
+            "   ",
+            "not-an-event",
+            "Quarrel.",
+            "quarrel!",
+            "！？",
+            "随机文本",
+        ] {
+            assert_eq!(parse_event_type_ai_token(raw), None, "token: {raw:?}");
+        }
+    }
+
+    #[test]
+    fn parse_event_type_ai_token_trims_and_ignores_case() {
+        assert_eq!(
+            parse_event_type_ai_token("  QUARREL  "),
+            Some(EventType::Quarrel)
+        );
+        assert_eq!(parse_event_type_ai_token("joke"), Some(EventType::Joke));
+    }
+
+    #[test]
+    fn parse_event_type_ai_token_chinese_fallback_covers_all_seven() {
+        // The prompt contract is written in English (event_impact_ai prompt);
+        // Chinese tokens are a lenient fallback and must map 1:1 to the same
+        // seven event types, never to a divergent semantic.
+        let cases = [
+            ("争吵", EventType::Quarrel),
+            ("吵架", EventType::Quarrel),
+            ("道歉", EventType::Apology),
+            ("抱歉", EventType::Apology),
+            ("表扬", EventType::Praise),
+            ("称赞", EventType::Praise),
+            ("抱怨", EventType::Complaint),
+            ("不满", EventType::Complaint),
+            ("表白", EventType::Confession),
+            ("告白", EventType::Confession),
+            ("笑话", EventType::Joke),
+            ("玩笑", EventType::Joke),
+            ("忽略", EventType::Ignore),
+            ("无视", EventType::Ignore),
+        ];
+        for (token, expected) in cases {
+            assert_eq!(
+                parse_event_type_ai_token(token),
+                Some(expected),
+                "token: {token}"
+            );
+        }
+    }
+
+    #[test]
+    fn rules_and_ai_paths_agree_on_event_semantics() {
+        // Rules path (EventDetector keyword+emotion gates) and AI path (prompt
+        // contract tokens) must classify representative inputs identically.
+        let cases: [(&str, Emotion, Emotion, EventType, &str); 7] = [
+            (
+                "我们吵架了",
+                Emotion::Angry,
+                Emotion::Angry,
+                EventType::Quarrel,
+                "Quarrel",
+            ),
+            (
+                "对不起，我错了",
+                Emotion::Sad,
+                Emotion::Happy,
+                EventType::Apology,
+                "Apology",
+            ),
+            (
+                "你真棒",
+                Emotion::Happy,
+                Emotion::Happy,
+                EventType::Praise,
+                "Praise",
+            ),
+            (
+                "我很难受",
+                Emotion::Sad,
+                Emotion::Neutral,
+                EventType::Complaint,
+                "Complaint",
+            ),
+            (
+                "我喜欢你",
+                Emotion::Excited,
+                Emotion::Happy,
+                EventType::Confession,
+                "Confession",
+            ),
+            (
+                "哈哈",
+                Emotion::Happy,
+                Emotion::Happy,
+                EventType::Joke,
+                "Joke",
+            ),
+            (
+                "嗯",
+                Emotion::Neutral,
+                Emotion::Neutral,
+                EventType::Ignore,
+                "Ignore",
+            ),
+        ];
+        for (text, user_emotion, bot_emotion, expected_type, ai_token) in cases {
+            let event = EventDetector::detect(text, &user_emotion, &bot_emotion)
+                .expect("rules detection must not fail");
+            assert_eq!(event.event_type, expected_type, "rules path: {text}");
+            assert_eq!(
+                parse_event_type_ai_token(ai_token),
+                Some(expected_type),
+                "AI token must agree with rules semantics: {ai_token}"
+            );
+        }
+    }
+
+    #[test]
+    fn rules_only_fallback_handles_unmatched_input_without_panicking() {
+        // Unknown input + neutral emotions: rules path defaults to Ignore
+        // instead of erroring, so parse failures never kill the turn.
+        let estimate =
+            estimate_event_impact_rules_only("随机无关键词文本", &Emotion::Neutral, None)
+                .expect("rules-only must not error on unmatched input");
+        assert_eq!(estimate.event_type, EventType::Ignore);
+        assert_eq!(estimate.impact_factor, 0.0);
+    }
+
+    #[tokio::test]
+    async fn estimate_event_impact_accepts_chinese_event_token() {
+        // LLM answers with a Chinese token (lenient fallback): parser maps it
+        // back to the canonical event type without falling back to rules.
+        let llm: Arc<dyn LlmClient> = Arc::new(MockLlmClient {
+            reply: r#"{"event_type":"吵架","impact_factor":-0.6,"confidence":0.9}"#.to_string(),
+        });
+        let p = p_with_sensitivity(0.2);
+        let estimate = estimate_event_impact(
+            &llm,
+            "mock-model",
+            "我们吵架了",
+            &Emotion::Angry,
+            &p,
+            &[],
+            &[],
+            None,
+            true,
+        )
+        .await
+        .unwrap();
+        assert_eq!(estimate.event_type, EventType::Quarrel);
+        assert!(estimate.impact_factor < 0.0);
+        assert_eq!(estimate.confidence, 0.9);
+    }
+
+    #[tokio::test]
+    async fn unknown_ai_event_token_falls_back_to_rules_without_panicking() {
+        let llm: Arc<dyn LlmClient> = Arc::new(MockLlmClient {
+            reply: r#"{"event_type":"invalid_token","impact_factor":-0.9}"#.to_string(),
+        });
+        let p = p_with_sensitivity(0.2);
+        let estimate = estimate_event_impact(
+            &llm,
+            "mock-model",
+            "我们吵架了",
+            &Emotion::Angry,
+            &p,
+            &[],
+            &[],
+            None,
+            true,
+        )
+        .await
+        .unwrap();
+        // Rules fallback uses the neutral bot placeholder, so the quarrel
+        // emotion gates cannot fire and the unmatched turn defaults to Ignore.
+        assert_eq!(estimate.event_type, EventType::Ignore);
+        assert_eq!(estimate.impact_factor, 0.0);
+    }
 }

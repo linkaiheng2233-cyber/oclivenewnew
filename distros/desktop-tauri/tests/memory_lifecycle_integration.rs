@@ -286,6 +286,17 @@ async fn strong_only_persistence_gate_allows_ltm_on_quarrel_event() {
         count, 1,
         "strong_only gate must allow LTM write when importance > 0 on Quarrel"
     );
+    // M2 slice 0: the same turn must persist the six-slot emotion dimensions on
+    // the events row — events stay six-slot, no complex-emotion leakage.
+    let events = state
+        .db_manager
+        .get_events(&srid, 10)
+        .await
+        .expect("events list");
+    assert_eq!(events.len(), 1, "single turn should persist one event row");
+    assert_eq!(events[0].event_type, EventType::Quarrel);
+    assert_eq!(events[0].user_emotion, "angry");
+    assert_eq!(events[0].bot_emotion, "sad");
 }
 
 #[tokio::test]
