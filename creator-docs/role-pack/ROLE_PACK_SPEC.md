@@ -308,6 +308,37 @@ Portable Core 是跨发行版的**最低通用契约**，不是发行版功能�
 | `portrait_catalog.json` | 必须存在并通过路径安全校验 |
 | 七个固定资源 | `happy_default`、`sad_default`、`angry_default`、`neutral_default`、`excited_default`、`confused_default`、`shy_default`；每项 `kind` 必须为 `image` |
 | 发行版扩展 | UI、语音、Live2D/3D、Agent、硬件与高级模块由发行版 `HostProfile` / 扩展命名空间决定，不属于 Portable Core 必需项 |
+#### 最小蓝图壳（"七图 + 一段人设"的落地形态）
+
+宿主按目录扫描只把 `pipeline.ocblueprint`（或 legacy `manifest.json`）识别为角色入口，因此"七张情绪图 + `core_personality.txt`"本身不会被识别为角色——还必须挂一个最小的蓝图壳（v2 是最省字段的兼容版本；v3/v4 亦可）：
+
+```json
+{
+  "schema_version": 2,
+  "meta": {
+    "id": "my_role",
+    "name": "My Role",
+    "version": "1.0.0",
+    "author": "you",
+    "description": "一句话描述",
+    "relations": {
+      "friend": { "initial_favorability": 50, "favor_multiplier": 1.0 }
+    },
+    "default_relation": "friend"
+  },
+  "slot_registry": {
+    "llm": { "type": "llm", "label": "LLM", "backend": "ollama", "position": 0 }
+  }
+}
+```
+
+要点：
+
+- `meta` 的强制项只有 `id`（须等于角色目录名）、`name`、`version`、`author`、`description` 与至少一种 `relations`；`personality`、`scenes`、`default_relation` 均可省略并通过校验（`default_relation` 若填写须存在于 `relations`）。
+- `slot_registry` **不能省略、也不能为空**：当前校验强制"非空 + 至少一个 `type: llm`"（`validate_slot_registry_contract`），`{}` 会被 `pack validate` 与宿主加载直接拒绝。llm 后端允许 `ollama` / `remote` / `directory` / `none`。
+- 除 llm 外，六槽中的 `memory` / `emotion` / `event` / `prompt` / `agent` 均可省略——运行时从 `PluginBackends::default()` 回落为内置（builtin）实现，即"省略 = 五槽默认 builtin"。`complex_emotion` 是独立设施（**非六槽**），语义与六槽不同：**省略（无条目）= 不启用复杂情绪**（跳过 provider、不产 hint）；显式 `builtin` = 开启；显式 `none` = 明确关闭（与省略等价，消除隐性歧义）。此语义随情绪引擎 B 阶段 M1 落地（当前代码尚无 `none` 载体，省略仍走 builtin 兜底）。
+- 仓库内现有角色包（如 `deepseek`、`mumu`）的 `slot_registry` 写满 agent / complex_emotion / ollama 等条目，那是 **chatpro 发行版的功能需求**（远程模型、情绪引擎、Agent 等），**不是**最小格式的必需项；新创作者不必照抄填满开关。`pack create --format-blueprint-v2` 生成的七槽模板同样只是"更完整的默认脚手架"。
+- 配上 Portable Core 要求的 `core_personality.txt`、`config.json`、`portrait_catalog.json` 与七张默认情绪图，就是"七图 + 一段人设 prompt"的完整最小角色包。若未来想让"空 `slot_registry` = 全 builtin"成为合法最小格式，需先放宽 `validate_slot_registry_contract`（当前是校验硬约束）。
 
 合规宿主至少应能加载人格并运行基础对话；有视觉能力时显示对应基础图，没有视觉能力时安全忽略图片。高级资源可以追加，不能改变七个固定 ID 的语义。校验命令：
 
