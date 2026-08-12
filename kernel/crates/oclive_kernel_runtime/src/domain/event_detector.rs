@@ -101,7 +101,19 @@ impl EventDetector {
     }
 
     fn contains_quarrel_keywords(text: &str, extra: Option<&[String]>) -> bool {
-        let keywords = ["吵", "架", "生气", "讨厌", "烦", "滚", "别理我", "气死"];
+        // B M1 slice 4: single chars 吵/架/烦/滚 removed (衣架/麻烦/滚动 false positives);
+        // multi-char forms added so real quarrels are still caught.
+        let keywords = [
+            "吵架",
+            "生气",
+            "讨厌",
+            "别烦",
+            "烦死",
+            "别理我",
+            "气死",
+            "滚开",
+            "滚蛋",
+        ];
         Self::matches_keywords(text, &keywords, extra)
     }
 
@@ -183,6 +195,30 @@ mod tests {
         let event =
             EventDetector::detect("你太坏了，我生气了", &Emotion::Angry, &Emotion::Angry).unwrap();
         assert_eq!(event.event_type, EventType::Quarrel);
+    }
+
+    #[test]
+    fn quarrel_single_char_false_positives_gone() {
+        for msg in ["帮我拿个衣架", "麻烦你了", "我刚滚动了一下页面"] {
+            let event = EventDetector::detect(msg, &Emotion::Angry, &Emotion::Angry).unwrap();
+            assert_ne!(
+                event.event_type,
+                EventType::Quarrel,
+                "false positive: {msg}"
+            );
+        }
+    }
+
+    #[test]
+    fn quarrel_multi_char_true_positives_kept() {
+        for msg in ["我们吵架了", "别烦我", "烦死了", "滚开", "滚蛋"] {
+            let event = EventDetector::detect(msg, &Emotion::Angry, &Emotion::Angry).unwrap();
+            assert_eq!(
+                event.event_type,
+                EventType::Quarrel,
+                "true positive missed: {msg}"
+            );
+        }
     }
 
     #[test]
