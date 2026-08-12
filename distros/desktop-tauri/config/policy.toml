@@ -2,15 +2,15 @@
 default_profile = "default"
 
 [default]
-emotion = { neutral_hold_enabled = true, low_confidence_hold_threshold = 0.6 }
+emotion = {}
 memory = { ignore_single_char_filter = true, default_importance = 0.5, fifo_limit = 500 }
 
 [profiles.conservative]
-emotion = { neutral_hold_enabled = true, low_confidence_hold_threshold = 0.7 }
+emotion = {}
 memory = { ignore_single_char_filter = true, default_importance = 0.45, fifo_limit = 500 }
 
 [profiles.exploratory]
-emotion = { neutral_hold_enabled = false, low_confidence_hold_threshold = 0.5 }
+emotion = {}
 memory = { ignore_single_char_filter = false, default_importance = 0.55, fifo_limit = 700 }
 
 [scene_bindings]

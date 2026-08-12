@@ -1,8 +1,8 @@
 //! Policy registry file loading and runtime policy set construction.
 
 use crate::domain::{
-    DefaultEmotionPolicy, DefaultEventPolicy, DefaultMemoryPolicy, EmotionPolicy,
-    EmotionPolicyConfig, EventPolicy, MemoryPolicy, MemoryPolicyConfig, PolicyConfig,
+    DefaultEmotionPolicy, DefaultEventPolicy, DefaultMemoryPolicy, EmotionPolicy, EventPolicy,
+    MemoryPolicy, MemoryPolicyConfig, PolicyConfig,
 };
 use crate::error::Result;
 use serde::Deserialize;
@@ -78,16 +78,8 @@ fn env_i32(key: &str, default: i32) -> i32 {
 }
 
 fn apply_policy_config_env_overrides(config: &mut PolicyConfig) {
-    config.emotion = EmotionPolicyConfig {
-        neutral_hold_enabled: env_bool(
-            "POLICY_EMOTION_NEUTRAL_HOLD_ENABLED",
-            config.emotion.neutral_hold_enabled,
-        ),
-        low_confidence_hold_threshold: env_f64(
-            "POLICY_EMOTION_LOW_CONFIDENCE_HOLD_THRESHOLD",
-            config.emotion.low_confidence_hold_threshold,
-        ),
-    };
+    // B M1 slice 2: emotion hold env overrides removed with the policy hold
+    // fields (POLICY_EMOTION_NEUTRAL_HOLD_ENABLED / _LOW_CONFIDENCE_HOLD_THRESHOLD).
     config.memory = MemoryPolicyConfig {
         ignore_single_char_filter: env_bool(
             "POLICY_MEMORY_IGNORE_SINGLE_CHAR_FILTER",

@@ -6,6 +6,12 @@ pub use oclive_kernel_types::{ComplexEmotionInput, ComplexEmotionOutput};
 
 pub use oclive_kernel_contracts::ComplexEmotionProvider;
 
+/// `ComplexEmotionOutput.source` produced by the fast (turn-thinking) path.
+///
+/// Declared once here so `co_present.rs` (producer) and `post.rs` (consumer
+/// gate) stay in sync (B M1 slice 2).
+pub const FAST_INTENSITY_SOURCE: &str = "turn_thinking_fast_builtin_intensity";
+
 /// Derives approximate valence / dominance ([-1, 1]) from seven-dimension scores when the host does not pass `user_valence`/`user_dominance`.
 #[must_use]
 pub fn affect_metrics_from_seven_dim(er: &EmotionResult) -> (f64, f64) {

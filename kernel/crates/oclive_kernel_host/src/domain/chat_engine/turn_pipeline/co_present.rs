@@ -2,6 +2,7 @@
 
 use crate::domain::complex_emotion::{
     BuiltinKeywordComplexEmotionProvider, ComplexEmotionInput, ComplexEmotionOutput,
+    FAST_INTENSITY_SOURCE,
 };
 use crate::domain::event_impact_ai::estimate_event_impact_rules_only;
 use crate::domain::host_profile::{prompt_prefix_cache_effective, DISTRO_CONCISE_PROMPT_OVERLAY};
@@ -32,7 +33,7 @@ use crate::state::SessionCache;
 fn resolve_fast_complex_emotion(input: &ComplexEmotionInput) -> ComplexEmotionOutput {
     let inferred = BuiltinKeywordComplexEmotionProvider.resolve_turn_inner(input);
     ComplexEmotionOutput {
-        source: "turn_thinking_fast_builtin_intensity".into(),
+        source: FAST_INTENSITY_SOURCE.into(),
         narrative_hint: String::new(),
         labels: vec![],
         pattern: None,

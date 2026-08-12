@@ -8,60 +8,25 @@ pub use oclive_kernel_types::{
 
 pub use oclive_kernel_contracts::{EmotionPolicy, EventPolicy, MemoryPolicy};
 
-pub struct DefaultEmotionPolicy {
-    config: EmotionPolicyConfig,
-}
+pub struct DefaultEmotionPolicy;
 
 impl DefaultEmotionPolicy {
     #[must_use]
-    pub fn new(config: EmotionPolicyConfig) -> Self {
-        Self { config }
-    }
-}
-
-fn parse_emotion(s: &str) -> Option<Emotion> {
-    match s {
-        "happy" => Some(Emotion::Happy),
-        "sad" => Some(Emotion::Sad),
-        "angry" => Some(Emotion::Angry),
-        "neutral" => Some(Emotion::Neutral),
-        "excited" => Some(Emotion::Excited),
-        "confused" => Some(Emotion::Confused),
-        "shy" => Some(Emotion::Shy),
-        _ => None,
-    }
-}
-
-fn dominant_score(result: &EmotionResult, emotion: &Emotion) -> f64 {
-    match emotion {
-        Emotion::Happy => result.joy,
-        Emotion::Sad => result.sadness,
-        Emotion::Angry => result.anger,
-        Emotion::Excited => result.surprise,
-        Emotion::Confused => result.fear.max(result.disgust),
-        Emotion::Shy => result.sadness.min(0.6),
-        Emotion::Neutral => result.neutral,
+    pub fn new(_config: EmotionPolicyConfig) -> Self {
+        Self
     }
 }
 
 impl EmotionPolicy for DefaultEmotionPolicy {
-    fn resolve_current_emotion(&self, previous: Option<&str>, analyzed: &EmotionResult) -> Emotion {
-        let current = analyzed.to_emotion();
-        let Some(prev) = previous.and_then(parse_emotion) else {
-            return current;
-        };
-        if current == prev {
-            return current;
-        }
-        if self.config.neutral_hold_enabled && current == Emotion::Neutral {
-            return prev;
-        }
-        let score = dominant_score(analyzed, &current);
-        if score < self.config.low_confidence_hold_threshold {
-            prev
-        } else {
-            current
-        }
+    fn resolve_current_emotion(
+        &self,
+        _previous: Option<&str>,
+        analyzed: &EmotionResult,
+    ) -> Emotion {
+        // B M1 slice 2: the main LLM is the sole arbiter of complex emotion;
+        // hold / low-confidence logic removed (v1.5 §11.2). Degraded turns
+        // keep the previous emotion at the call site (post_llm), not here.
+        analyzed.to_emotion()
     }
 }
 
@@ -135,10 +100,24 @@ mod tests {
     }
 
     #[test]
-    fn default_emotion_policy_keeps_previous_on_neutral() {
+    fn default_emotion_policy_returns_analyzed_directly() {
         let policy = DefaultEmotionPolicy::new(EmotionPolicyConfig::default());
+        // Previous value no longer participates: neutral_result() wins even
+        // though the previous displayed emotion was happy (B M1 slice 2).
         let resolved = policy.resolve_current_emotion(Some("happy"), &neutral_result());
-        assert_eq!(resolved, Emotion::Happy);
+        assert_eq!(resolved, Emotion::Neutral);
+    }
+
+    #[test]
+    fn default_emotion_policy_ignores_previous_when_analyzed_differs() {
+        let policy = DefaultEmotionPolicy::new(EmotionPolicyConfig::default());
+        let mut result = neutral_result();
+        result.joy = 0.9;
+        result.neutral = 0.1;
+        assert_eq!(
+            policy.resolve_current_emotion(Some("sad"), &result),
+            Emotion::Happy
+        );
     }
 
     #[test]

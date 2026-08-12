@@ -32,7 +32,7 @@ use super::pre::{
 };
 use super::TurnMode;
 use crate::domain::chat_engine::chat_stage::ChatStage;
-use crate::domain::complex_emotion::ComplexEmotionOutput;
+use crate::domain::complex_emotion::{ComplexEmotionOutput, FAST_INTENSITY_SOURCE};
 use crate::domain::emo_marker::EmoMarker;
 use crate::domain::reply_post_processor::resolve_reply_post_processor;
 use oclive_kernel_contracts::reply_post_processor::PostProcessInput;
@@ -422,7 +422,6 @@ pub(crate) async fn run_main_llm_stream(
 #[allow(clippy::too_many_arguments)]
 async fn analyze_bot_emotion_and_policy(
     state: &crate::state::AppState,
-    pl: &crate::domain::plugin_host::ResolvedRolePlugins,
     scene_id: &str,
     srid: &str,
     user_message: &str,
@@ -448,14 +447,12 @@ async fn analyze_bot_emotion_and_policy(
                 )
                 .await?
         };
-        let bot_emotion_result = STAGES
-            .stage(ChatStage::BotReplyEmotionAnalyze, async {
-                SlotRunner::analyze_emotion(pl, reply)
-            })
-            .await?;
-        policies
-            .emotion
-            .resolve_current_emotion(previous_emotion.as_deref(), &bot_emotion_result)
+        // B M1 slice 2: bot emotion no longer goes through the lexicon (G9);
+        // degraded turns keep the previous emotion (v1.8 §10.2).
+        previous_emotion
+            .as_deref()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(Emotion::Neutral)
     };
     let bot_emotion_str = bot_emotion.to_string();
     let event = Event {
@@ -692,7 +689,7 @@ async fn resolve_effective_complex_emotion(
     if let Some(marker) = emo_marker {
         return Ok(marker.to_complex_emotion_output());
     }
-    if middle.complex_emotion_out.source == "turn_thinking_fast_builtin_intensity" {
+    if middle.complex_emotion_out.source == FAST_INTENSITY_SOURCE {
         return Ok(middle.complex_emotion_out.clone());
     }
     if role_complex_emotion_backend_is_plugin(ctx.session_config.slot_registry.as_ref()) {
@@ -788,7 +785,6 @@ pub(crate) async fn post_llm(
 
     let policy = analyze_bot_emotion_and_policy(
         state,
-        pl,
         scene_id,
         srid,
         user_message,
@@ -913,7 +909,7 @@ pub(crate) async fn post_llm(
     .await?;
 
     if matches!(mode, TurnMode::CoPresent)
-        && !effective_complex_emotion.source.eq("turn_thinking_fast")
+        && !effective_complex_emotion.source.eq(FAST_INTENSITY_SOURCE)
     {
         let hint = effective_complex_emotion.narrative_hint.clone();
         if !hint.trim().is_empty() {

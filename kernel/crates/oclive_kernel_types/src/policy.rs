@@ -3,22 +3,14 @@
 use crate::models::Event;
 use serde::Deserialize;
 
-/// Settings for emotion hold/neutral behavior in the emotion policy port.
-#[derive(Debug, Clone, Deserialize)]
+/// Emotion policy configuration.
+///
+/// B M1 slice 2: hold fields removed — the main LLM is the sole arbiter of
+/// complex emotion (v1.5 §11.1). Kept as an empty config type so the public
+/// `PolicyConfig.emotion` contract stays stable.
+#[derive(Debug, Clone, Default, Deserialize)]
 #[serde(default, deny_unknown_fields)]
-pub struct EmotionPolicyConfig {
-    pub neutral_hold_enabled: bool,
-    pub low_confidence_hold_threshold: f64,
-}
-
-impl Default for EmotionPolicyConfig {
-    fn default() -> Self {
-        Self {
-            neutral_hold_enabled: true,
-            low_confidence_hold_threshold: 0.6,
-        }
-    }
-}
+pub struct EmotionPolicyConfig {}
 
 /// Settings for memory filtering, importance, and FIFO cap in memory policy.
 #[derive(Debug, Clone, Deserialize)]
