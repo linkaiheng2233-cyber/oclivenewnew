@@ -65,8 +65,8 @@ enum MatchMode {
     /// Plain substring match (default; used by Chinese entries).
     #[default]
     Substring,
-    /// Space-boundary match; the matcher pads the lowercased text with
-    /// spaces, mirroring the previous `padded_en` logic to avoid false hits
+    /// English word/phrase match with ASCII identifier boundaries. This
+    /// accepts punctuation and Unicode whitespace while avoiding false hits
     /// like `glove -> love`.
     SpaceBoundary,
 }
@@ -193,18 +193,13 @@ impl Lexicon {
     /// Runs the weighted multi-label analysis over `text`.
     pub(crate) fn analyze(&self, text: &str) -> LexiconSuggestion {
         let text_lower = text.to_lowercase();
-        let padded_en = format!(" {text_lower} ");
         let mut acc = [0.0_f64; 7];
         let mut hits = Vec::with_capacity(self.entries.len().min(32));
         for entry in &self.entries {
-            let Some(match_start) = self.match_start(&text_lower, &padded_en, entry) else {
+            let Some(match_start) = self.match_start(&text_lower, entry) else {
                 continue;
             };
-            let haystack = match entry.match_mode {
-                MatchMode::Substring => text_lower.as_str(),
-                MatchMode::SpaceBoundary => padded_en.as_str(),
-            };
-            let negated = is_negated(haystack, match_start);
+            let negated = is_negated(&text_lower, match_start);
             if !negated {
                 for label in &entry.labels {
                     acc[label.index()] += f64::from(entry.weight);
@@ -253,19 +248,12 @@ impl Lexicon {
         }
     }
 
-    /// Byte offset of the first match in the haystack (lowercased text for
-    /// `substring`, padded text for `space_boundary`).
-    fn match_start(
-        &self,
-        text_lower: &str,
-        padded_en: &str,
-        entry: &LexiconEntry,
-    ) -> Option<usize> {
+    /// Byte offset of the first match in the lowercased input.
+    fn match_start(&self, text_lower: &str, entry: &LexiconEntry) -> Option<usize> {
         match entry.match_mode {
             MatchMode::Substring => text_lower.find(&entry.word),
             MatchMode::SpaceBoundary => {
-                let needle = format!(" {} ", entry.word.to_lowercase());
-                padded_en.find(&needle)
+                match_ascii_word_boundary(text_lower, &entry.word.to_lowercase())
             }
         }
     }
@@ -300,12 +288,33 @@ impl Lexicon {
 /// True when one of the negation markers appears in the 5-char window right
 /// before `match_start` (simple version; no segmentation involved).
 fn is_negated(haystack: &str, match_start: usize) -> bool {
-    let window: String = haystack[..match_start]
-        .chars()
-        .rev()
-        .take(NEGATION_WINDOW_CHARS)
-        .collect();
-    window.chars().any(|ch| NEGATION_MARKERS.contains(&ch))
+    let prefix = &haystack[..match_start];
+    let window: String = prefix.chars().rev().take(NEGATION_WINDOW_CHARS).collect();
+    window.chars().any(|ch| NEGATION_MARKERS.contains(&ch)) || english_negation_before(prefix)
+}
+
+fn match_ascii_word_boundary(haystack: &str, needle: &str) -> Option<usize> {
+    haystack.match_indices(needle).find_map(|(start, _)| {
+        let before = haystack[..start].chars().next_back();
+        let end = start + needle.len();
+        let after = haystack[end..].chars().next();
+        let is_identifier = |ch: char| ch.is_ascii_alphanumeric() || ch == '_';
+        if before.is_none_or(|ch| !is_identifier(ch)) && after.is_none_or(|ch| !is_identifier(ch)) {
+            Some(start)
+        } else {
+            None
+        }
+    })
+}
+
+fn english_negation_before(prefix: &str) -> bool {
+    let trimmed =
+        prefix.trim_end_matches(|ch: char| !ch.is_ascii_alphanumeric() && ch != '\'' && ch != '’');
+    let token_start = trimmed
+        .rfind(|ch: char| !ch.is_ascii_alphanumeric() && ch != '\'' && ch != '’')
+        .map_or(0, |index| index + 1);
+    let token = &trimmed[token_start..];
+    matches!(token, "no" | "not" | "never") || token.ends_with("n't") || token.ends_with("n’t")
 }
 
 #[cfg(test)]
@@ -391,6 +400,30 @@ mod tests {
         assert_eq!(score(&suggestion, EmotionDimension::Sadness), 0.0);
         let suggestion = analyze("i am happy");
         assert_eq!(score(&suggestion, EmotionDimension::Joy), 1.0);
+    }
+
+    #[test]
+    fn test_space_boundary_accepts_punctuation_and_unicode_whitespace() {
+        let suggestion = analyze("I'm HAPPY!\nso sad.\tangry?");
+        assert_eq!(score(&suggestion, EmotionDimension::Joy), 1.0);
+        assert_eq!(score(&suggestion, EmotionDimension::Sadness), 1.0);
+        assert_eq!(score(&suggestion, EmotionDimension::Anger), 1.0);
+    }
+
+    #[test]
+    fn test_english_negation_suppresses_direct_emotion_word() {
+        for text in ["not happy", "never sad", "isn't angry", "isn’t afraid"] {
+            let suggestion = analyze(text);
+            assert_eq!(
+                top1(&suggestion),
+                EmotionDimension::Neutral,
+                "negated input must stay neutral: {text:?}"
+            );
+            assert!(
+                suggestion.hits.iter().any(|hit| hit.negated),
+                "negated keyword should remain visible in audit hits: {text:?}"
+            );
+        }
     }
 
     #[test]
