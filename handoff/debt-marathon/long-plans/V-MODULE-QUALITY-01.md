@@ -11,8 +11,8 @@
 | **Minimal / Full** | 本书推进 Full；各 Stage 必须保持可独立回滚 |
 | **Owner** | main-repo |
 | **runner** | auto |
-| **状态** | Ready · Stage 1 Locally verified；Stage 2 待实施 |
-| **更新** | 2026-07-27 |
+| **状态** | Ready · Stage 2 Locally verified；Stage 3 待实施 |
+| **更新** | 2026-08-14 |
 
 ## AI + OCLive
 
@@ -29,7 +29,7 @@
   "runner": "auto",
   "planStatus": "ready",
   "parentDebtDisposition": "keep-open",
-  "currentStage": 2,
+  "currentStage": 3,
   "prerequisites": [],
   "stages": [
     {
@@ -129,6 +129,14 @@
 - 当前 replay 主要服务会话/记忆恢复；后续适配必须复用它或调用同一公开链路，不复制 `process_message` 编排。
 - 第一阶段先冻结“输入、观察、评分、报告”合同，并用离线 fixture 证明确定性；这一步不需要启动模型，也不改生产行为。
 
+## Stage 2 结论
+
+- `scripts/module-quality-runner.mjs` 通过既有 HTTP `/chat`、`/chat/storage`、`/llm/user_settings` 与 `oclive_jsonrpc` remote slot 链采集观察，不复制 `process_message` 编排、不修改生产 DTO。
+- 固定 replay 只把 suite 声明的历史导入临时会话；sidecar 只读取 `mq-*` fixture memory，非 fixture 记忆与完整生产 Prompt 不进入质量报告。
+- 运行器使用独立临时角色包、应用数据目录、本地测试令牌与本地 sidecar，退出时回收内核进程树和临时目录。
+- 三个固定用例稳定通过：memory 7/7、emotion 3/3、prompt 9/9、LLM 11/11；suite digest `6fb61a37b1fa19e772350fe174d8d075de558f125ab65106e2b1181e5fe7e900`，observation digest `d1296ac84d7ae71d90b99310d7a6cad9c7934a730911702593e2b530bc223996`。
+- 入口与采集实现按合同、fixture、sidecar、内核客户端、编排拆分，单文件 57–225 行，没有新增脚本级上帝文件。
+
 ## 目标
 
 - 同一份固定角色、场景和多轮 replay 输入可被不同 memory、emotion、prompt、LLM 模块组合重复消费。
@@ -153,4 +161,4 @@
 
 ## 下一跳
 
-Stage 2：通过既有 HTTP / OOCP 与 mock-provider 链路采集同一套观察合同；不得复制聊天编排，也不得向普通响应泄露 prompt 或私密记忆。
+Stage 3：让同一 suite 比较至少两套显式模块配置，分别报告行为质量与性能，并补中英文创作者文档及发布级调用入口；父债在 Stage 4 精确提交远程 CI 前继续保持 OPEN。
