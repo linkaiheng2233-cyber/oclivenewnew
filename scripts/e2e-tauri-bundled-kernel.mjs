@@ -35,7 +35,7 @@ function freePort() {
   });
 }
 
-async function portableRuntimeSmoke(bundled, migrations) {
+async function portableRuntimeSmoke(bundled, manifest, migrations) {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'oclive-bundled-runtime-'));
   const binary = path.join(temp, kernelExeName());
   const roles = path.join(temp, 'roles');
@@ -73,14 +73,26 @@ async function portableRuntimeSmoke(bundled, migrations) {
     let ready = false;
     for (let attempt = 0; attempt < 80; attempt += 1) {
       if (child.exitCode !== null) break;
+      let health;
       try {
-        const health = await fetch(`${base}/health`);
-        if (health.ok) {
-          ready = true;
-          break;
-        }
+        health = await fetch(`${base}/health`, {
+          headers: { accept: 'application/json' },
+        });
       } catch {
         // Keep polling while the copied binary initializes its temporary database.
+        await new Promise((resolve) => setTimeout(resolve, 125));
+        continue;
+      }
+      if (health.ok) {
+        const body = await health.json();
+        const expectedManifest = JSON.parse(fs.readFileSync(manifest, 'utf8'));
+        if (JSON.stringify(body.kernel_manifest) !== JSON.stringify(expectedManifest)) {
+          throw new Error(
+            `runtime kernel manifest drifted from sidecar: ${JSON.stringify(body.kernel_manifest)}`,
+          );
+        }
+        ready = true;
+        break;
       }
       await new Promise((resolve) => setTimeout(resolve, 125));
     }
@@ -163,5 +175,5 @@ if (report.plan?.degraded) {
 }
 
 console.log('[e2e-tauri-bundled] bundled-first plan ok');
-await portableRuntimeSmoke(bundled, migrations);
+await portableRuntimeSmoke(bundled, manifest, migrations);
 console.log('[e2e-tauri-bundled] portable resources kernel + roles + migrations ok');
