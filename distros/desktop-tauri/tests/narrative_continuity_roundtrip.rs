@@ -121,7 +121,7 @@ async fn continuity_keeps_transitions_and_reselects_state_across_turns() {
         .await
         .expect("scene-switch turn");
 
-    let captured = prompts.lock();
+    let captured = prompts.lock().clone();
     assert_eq!(captured.len(), 4, "expected one main prompt per turn");
     assert!(
         captured[0].contains("当前子地点：客厅")
