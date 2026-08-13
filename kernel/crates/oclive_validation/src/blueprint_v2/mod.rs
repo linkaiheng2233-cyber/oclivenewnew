@@ -1,6 +1,19 @@
 //! `pipeline.ocblueprint` schema_version 2 validation (role pack SSOT).
 
-use std::collections::{BTreeMap, HashMap, HashSet};
+pub use crate::blueprint_v2_slot_registry::{
+    apply_slot_override, default_slot_key_for_module, effective_slot_registry,
+    merged_agent_directory_plugin_ids, plugin_backends_for_slot_entry,
+    slot_registry_instances_sorted, slot_registry_to_plugin_backends, SlotOverridePatch,
+};
+
+mod meta;
+mod slots;
+
+pub use meta::{meta_to_disk_manifest, validate_blueprint_meta_core, validate_meta_personality};
+pub use slots::write_role_pack_blueprint_slot_registry;
+pub(crate) use slots::{allowed_backends_for_type, validate_slot_registry_contract};
+
+use std::collections::{BTreeMap, HashMap};
 use std::fs;
 use std::path::Path;
 
@@ -8,17 +21,12 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::blueprint_includes::validate_includes;
-pub use crate::blueprint_v2_slot_registry::{
-    apply_slot_override, default_slot_key_for_module, effective_slot_registry,
-    merged_agent_directory_plugin_ids, plugin_backends_for_slot_entry,
-    slot_registry_instances_sorted, slot_registry_to_plugin_backends, SlotOverridePatch,
-};
 use crate::disk_role_settings::{AutonomousSceneConfig, RemotePresenceConfig};
 use crate::manifest::{
     DiskRoleManifest, EvolutionConfigDisk, IdentityBinding, KnowledgePackConfigDisk,
     LifeScheduleDisk, LifeTrajectoryDisk, MemoryConfigDisk, UserRelationDisk,
 };
-use crate::role_pack::{merge_role_pack_scene_ids, validate_default_personality_vector};
+use crate::role_pack::merge_role_pack_scene_ids;
 use crate::runtime_config::RuntimeConfig;
 use crate::validate::{
     validate_disk_manifest, validate_interaction_mode_pack_setting,
@@ -419,89 +427,6 @@ pub fn validate_role_pack_blueprint_v2_directory(
     )
 }
 
-/// Writes `slot_registry` back to a supported `pipeline.ocblueprint` version
-/// while preserving all other fields; validates the matching v2/v3/v4
-/// contract before write.
-///
-/// # Errors
-///
-/// Returns `Err(Vec<String>)` when blueprint is missing, JSON is invalid, or validation fails.
-pub fn write_role_pack_blueprint_slot_registry(
-    role_dir: &Path,
-    slot_registry: &BTreeMap<String, SlotRegistryEntry>,
-    host_version: &str,
-) -> Result<(), Vec<String>> {
-    let blueprint_path = role_dir.join(PIPELINE_BLUEPRINT_FILENAME);
-    if !blueprint_path.is_file() {
-        return Err(vec![format!(
-            "缺少 {}：{}",
-            PIPELINE_BLUEPRINT_FILENAME,
-            blueprint_path.display()
-        )]);
-    }
-    let raw = fs::read_to_string(&blueprint_path)
-        .map_err(|e| vec![format!("读取 {} 失败: {}", PIPELINE_BLUEPRINT_FILENAME, e)])?;
-    let version = crate::blueprint_dispatch::blueprint_schema_version_from_raw(&raw).unwrap_or(0);
-    let mut root: Value = serde_json::from_str(&raw).map_err(|e| {
-        vec![format!(
-            "{} JSON 解析失败: {}",
-            PIPELINE_BLUEPRINT_FILENAME, e
-        )]
-    })?;
-    let obj = root
-        .as_object_mut()
-        .ok_or_else(|| vec![format!("{} 根节点须为对象", PIPELINE_BLUEPRINT_FILENAME)])?;
-    let reg_val = serde_json::to_value(slot_registry)
-        .map_err(|e| vec![format!("slot_registry 序列化失败: {e}")])?;
-    obj.insert("slot_registry".to_string(), reg_val);
-    let out = serde_json::to_string_pretty(&root)
-        .map_err(|e| vec![format!("{} 序列化失败: {e}", PIPELINE_BLUEPRINT_FILENAME)])?;
-    let folder_name = role_dir.file_name().and_then(|s| s.to_str()).unwrap_or("");
-    validate_blueprint_for_slot_registry_write(&out, version, folder_name, role_dir, host_version)?;
-    let resolved = crate::blueprint_includes::merge_blueprint_includes_strict(role_dir, &out)?;
-    validate_blueprint_for_slot_registry_write(
-        &resolved,
-        version,
-        folder_name,
-        role_dir,
-        host_version,
-    )?;
-    fs::write(&blueprint_path, format!("{out}\n"))
-        .map_err(|e| vec![format!("写入 {} 失败: {e}", blueprint_path.display())])?;
-    Ok(())
-}
-
-fn validate_blueprint_for_slot_registry_write(
-    raw: &str,
-    version: u32,
-    folder_name: &str,
-    role_dir: &Path,
-    host_version: &str,
-) -> Result<(), Vec<String>> {
-    match version {
-        BLUEPRINT_V2_SCHEMA_VERSION => validate_blueprint_v2_json_with_context(
-            raw,
-            BlueprintV2ValidateContext {
-                folder_name: Some(folder_name),
-                role_dir: Some(role_dir),
-                host_version: Some(host_version),
-            },
-        ),
-        crate::blueprint_v3::BLUEPRINT_V3_SCHEMA_VERSION => {
-            crate::blueprint_v3::validate_blueprint_v3_json(raw, Some(folder_name))
-        }
-        crate::blueprint_v4::BLUEPRINT_V4_SCHEMA_VERSION => {
-            crate::blueprint_v4::validate_blueprint_v4_json(raw, Some(folder_name))?;
-            crate::blueprint_v4::validate_blueprint_v4_extension_payloads_for_raw(role_dir, raw)
-        }
-        unsupported => Err(vec![format!(
-            "pipeline.ocblueprint：不支持的 schema_version {unsupported}（支持 {BLUEPRINT_V2_SCHEMA_VERSION}、{} 或 {}）",
-            crate::blueprint_v3::BLUEPRINT_V3_SCHEMA_VERSION,
-            crate::blueprint_v4::BLUEPRINT_V4_SCHEMA_VERSION
-        )]),
-    }
-}
-
 /// Reads and validates v2 blueprint in role pack directory; returns host load structure.
 ///
 /// # Errors
@@ -528,61 +453,6 @@ pub fn load_blueprint_v2_for_role_dir(
     Ok(blueprint_v2_file_to_load_result(&bp))
 }
 
-fn validate_blueprint_groups(
-    groups: &BTreeMap<String, SlotGroupEntry>,
-    registry: &BTreeMap<String, SlotRegistryEntry>,
-) -> Vec<String> {
-    let mut errs = Vec::new();
-    let mut member_owner: HashMap<&str, &str> = HashMap::new();
-
-    for (group_id, group) in groups {
-        if group_id.trim().is_empty() {
-            errs.push("groups 键名不能为空".into());
-            continue;
-        }
-        if group.label.trim().is_empty() {
-            errs.push(format!("groups[{group_id}].label 不能为空"));
-        }
-        let gt = group.group_type.trim();
-        if !GROUP_SLOT_TYPES.contains(&gt) {
-            errs.push(format!(
-                "groups[{group_id}].type「{gt}」非法（允许: {}）",
-                GROUP_SLOT_TYPES.join(", ")
-            ));
-            continue;
-        }
-        if group.members.is_empty() {
-            errs.push(format!("groups[{group_id}].members 不能为空"));
-            continue;
-        }
-        for member in &group.members {
-            let m = member.trim();
-            if m.is_empty() {
-                errs.push(format!("groups[{group_id}].members 含空键名"));
-                continue;
-            }
-            let Some(slot) = registry.get(m) else {
-                errs.push(format!(
-                    "groups[{group_id}].members 引用未知 slot_registry 键「{m}」"
-                ));
-                continue;
-            };
-            if slot.slot_type.trim() != gt {
-                errs.push(format!(
-                    "groups[{group_id}].members「{m}」的 type 为「{}」，与 groups.type「{gt}」不一致",
-                    slot.slot_type.trim()
-                ));
-            }
-            if let Some(prev) = member_owner.insert(m, group_id.as_str()) {
-                errs.push(format!(
-                    "slot_registry 键「{m}」同时属于 groups「{prev}」与「{group_id}」"
-                ));
-            }
-        }
-    }
-    errs
-}
-
 fn blueprint_v2_file_to_load_result(bp: &BlueprintV2File) -> BlueprintV2LoadResult {
     BlueprintV2LoadResult {
         disk: meta_to_disk_manifest(&bp.meta),
@@ -595,42 +465,6 @@ fn blueprint_v2_file_to_load_result(bp: &BlueprintV2File) -> BlueprintV2LoadResu
         remote_presence: bp.meta.remote_presence.clone(),
         autonomous_scene: bp.meta.autonomous_scene.clone(),
         reply_quality_anchor: bp.meta.reply_quality_anchor.clone(),
-    }
-}
-
-/// Shared meta.id / name / relations / personality checks for blueprint v2 and v3.
-pub fn validate_blueprint_meta_core(
-    meta: &BlueprintMeta,
-    folder_name: Option<&str>,
-    errs: &mut Vec<String>,
-) {
-    if let Err(e) = crate::validate::validate_role_id(&meta.id) {
-        errs.push(format!("meta.id 非法：{e}"));
-    }
-    if let Some(dir) = folder_name {
-        if meta.id.trim() != dir {
-            errs.push(format!(
-                "meta.id「{}」与角色包目录名「{}」不一致（R4：ERROR）",
-                meta.id.trim(),
-                dir
-            ));
-        }
-    }
-    if let Some(ref p) = meta.personality {
-        if let Err(e) = validate_meta_personality(p) {
-            errs.push(e);
-        }
-    }
-    for scene_id in &meta.scenes {
-        if let Err(e) = crate::validate::validate_scene_id(scene_id) {
-            errs.push(format!("meta.scenes 中的「{scene_id}」非法：{e}"));
-        }
-    }
-    if meta.relations.is_empty() {
-        errs.push("meta.relations 至少需要配置一种用户身份".into());
-    }
-    if meta.name.trim().is_empty() {
-        errs.push("meta.name 不能为空".into());
     }
 }
 
@@ -665,243 +499,6 @@ fn validate_blueprint_v2_parsed(
         Ok(())
     } else {
         Err(errs)
-    }
-}
-
-pub(crate) fn validate_slot_registry_contract(
-    registry: &BTreeMap<String, SlotRegistryEntry>,
-    groups: &BTreeMap<String, SlotGroupEntry>,
-    allow_zone: bool,
-) -> Vec<String> {
-    let mut errs = Vec::new();
-    if registry.is_empty() {
-        errs.push("slot_registry 不能为空".into());
-    }
-
-    let mut llm_count = 0usize;
-    let mut positions_by_type: HashMap<&str, HashSet<i64>> = HashMap::new();
-
-    for (key, slot) in registry {
-        if key.trim().is_empty() {
-            errs.push("slot_registry 键名不能为空".into());
-            continue;
-        }
-        if slot.label.trim().is_empty() {
-            errs.push(format!("slot_registry[{key}].label 不能为空"));
-        }
-
-        let t = slot.slot_type.trim();
-        if !SLOT_TYPES.contains(&t) {
-            errs.push(format!(
-                "slot_registry[{key}].type「{t}」非法（允许: {}）",
-                SLOT_TYPES.join(", ")
-            ));
-            continue;
-        }
-
-        if slot.position < 0 {
-            errs.push(format!("slot_registry[{key}].position 须为非负整数"));
-        }
-
-        if !positions_by_type
-            .entry(t)
-            .or_default()
-            .insert(slot.position)
-        {
-            errs.push(format!(
-                "slot_registry：type「{t}」下 position {} 重复（B5）",
-                slot.position
-            ));
-        }
-
-        if t == "llm" {
-            llm_count += 1;
-        }
-
-        if !allow_zone && slot.zone.is_some() {
-            errs.push(format!(
-                "slot_registry[{key}].zone 仅属于冻结 v3，v2 不接受该字段"
-            ));
-        }
-        if slot.policy.is_some() {
-            errs.push(format!(
-                "slot_registry[{key}].policy 未进入 v2/v3/v4 磁盘契约；当前公开语义保持按 position 的既定合并策略"
-            ));
-        }
-
-        if let Err(e) = validate_slot_backend_and_fields(key, slot) {
-            errs.push(e);
-        }
-    }
-
-    if llm_count == 0 {
-        errs.push("slot_registry 须至少包含一个 type: llm 的实例".into());
-    }
-
-    errs.extend(validate_blueprint_groups(groups, registry));
-    errs
-}
-
-/// Validates `meta.personality` object or seven-dimensional array.
-///
-/// # Errors
-///
-/// Returns an `Err` message when a dimension is invalid or outside 0.0–1.0.
-pub fn validate_meta_personality(value: &Value) -> Result<(), String> {
-    match value {
-        Value::Array(arr) => {
-            let floats: Result<Vec<f32>, _> = arr
-                .iter()
-                .map(|v| {
-                    v.as_f64()
-                        .ok_or_else(|| "personality 数组元素须为数字".to_string())
-                        .map(|x| x as f32)
-                })
-                .collect();
-            let floats = floats?;
-            validate_default_personality_vector(&floats)
-                .map_err(|e| e.replace("manifest：", "meta.personality："))
-        }
-        Value::Object(map) => {
-            let mut vec = Vec::with_capacity(7);
-            for key in PERSONALITY_OBJECT_KEYS {
-                let Some(v) = map.get(*key) else {
-                    return Err(format!(
-                        "meta.personality 对象缺少键「{key}」（须含七维: {}）",
-                        PERSONALITY_OBJECT_KEYS.join(", ")
-                    ));
-                };
-                let Some(n) = v.as_f64() else {
-                    return Err(format!("meta.personality.{key} 须为数字"));
-                };
-                vec.push(n as f32);
-            }
-            validate_default_personality_vector(&vec)
-                .map_err(|e| e.replace("manifest：", "meta.personality："))
-        }
-        _ => Err("meta.personality 须为七键对象或长度 7 的数组".into()),
-    }
-}
-
-fn validate_slot_backend_and_fields(key: &str, slot: &SlotRegistryEntry) -> Result<(), String> {
-    let t = slot.slot_type.trim();
-    let b = slot.backend.trim();
-
-    let allowed = allowed_backends_for_type(t);
-    if !allowed.contains(&b) {
-        return Err(format!(
-            "slot_registry[{key}]：type「{t}」的 backend「{b}」非法（允许: {}）",
-            allowed.join(", ")
-        ));
-    }
-
-    let has_plugin = slot
-        .plugin
-        .as_ref()
-        .map(|s| !s.trim().is_empty())
-        .unwrap_or(false);
-    let plugins: Vec<&str> = slot
-        .plugins
-        .as_ref()
-        .map(|ps| {
-            ps.iter()
-                .map(|s| s.as_str())
-                .filter(|s| !s.trim().is_empty())
-                .collect()
-        })
-        .unwrap_or_default();
-    let has_plugins = !plugins.is_empty();
-
-    if t != "agent" && has_plugin && has_plugins {
-        return Err(format!(
-            "slot_registry[{key}]：非 agent 槽位不得同时包含 plugin 与 plugins（S4）"
-        ));
-    }
-
-    if t == "agent" && b != "directory" && has_plugins {
-        return Err(format!(
-            "slot_registry[{key}]：agent backend 为「{b}」时不得包含 plugins（S3）"
-        ));
-    }
-
-    if b == "directory" && !has_plugin && !has_plugins {
-        return Err(format!(
-            "slot_registry[{key}]：backend 为 directory 时须指定 plugin 或 plugins"
-        ));
-    }
-
-    if t == "llm" && b == "ollama" {
-        if let Some(ref m) = slot.model {
-            if m.trim().is_empty() {
-                return Err(format!(
-                    "slot_registry[{key}]：ollama 槽位的 model 若存在则不得为空"
-                ));
-            }
-        }
-    }
-
-    Ok(())
-}
-
-pub(crate) fn allowed_backends_for_type(slot_type: &str) -> &'static [&'static str] {
-    match slot_type {
-        "memory" => &["builtin", "remote", "directory", "local", "none"],
-        "emotion" | "event" | "prompt" => &["builtin", "remote", "directory", "none"],
-        "llm" => &["ollama", "remote", "directory", "none"],
-        "agent" => &["builtin", "remote", "directory", "none"],
-        "complex_emotion" => &["builtin", "remote", "directory", "none"],
-        _ => &[],
-    }
-}
-
-/// Converts blueprint `meta` to disk manifest (shared by v2/v3/v4).
-#[must_use]
-pub fn meta_to_disk_manifest(meta: &BlueprintMeta) -> DiskRoleManifest {
-    let default_personality = meta
-        .personality
-        .as_ref()
-        .and_then(personality_to_vector)
-        .unwrap_or_default();
-
-    DiskRoleManifest {
-        id: meta.id.clone(),
-        name: meta.name.clone(),
-        version: meta.version.clone(),
-        author: meta.author.clone(),
-        description: meta.description.clone(),
-        ollama_model: meta.ollama_model.clone(),
-        default_personality,
-        evolution: meta.evolution.clone(),
-        scenes: meta.scenes.clone(),
-        user_relations: meta.relations.clone(),
-        default_relation: meta.default_relation.clone(),
-        memory_config: meta.memory_config.clone(),
-        identity_binding: meta.identity_binding,
-        life_trajectory: meta.life_trajectory.clone(),
-        life_schedule: meta.life_schedule.clone(),
-        dev_only: meta.dev_only,
-        knowledge: meta.knowledge.clone(),
-        min_runtime_version: meta.min_runtime_version.clone(),
-    }
-}
-
-fn personality_to_vector(value: &Value) -> Option<Vec<f32>> {
-    match value {
-        Value::Array(arr) => {
-            let mut out = Vec::new();
-            for v in arr {
-                out.push(v.as_f64()? as f32);
-            }
-            Some(out)
-        }
-        Value::Object(map) => {
-            let mut out = Vec::with_capacity(7);
-            for key in PERSONALITY_OBJECT_KEYS {
-                out.push(map.get(*key)?.as_f64()? as f32);
-            }
-            Some(out)
-        }
-        _ => None,
     }
 }
 
