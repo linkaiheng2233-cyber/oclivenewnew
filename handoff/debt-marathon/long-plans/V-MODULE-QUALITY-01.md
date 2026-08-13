@@ -11,7 +11,7 @@
 | **Minimal / Full** | 本书推进 Full；各 Stage 必须保持可独立回滚 |
 | **Owner** | main-repo |
 | **runner** | auto |
-| **状态** | Ready · Stage 3 Locally verified；Stage 4 待目标提交远程 CI |
+| **状态** | Ready · Stage 4 local evidence recorded；待 exact-head 远程 CI |
 | **更新** | 2026-08-14 |
 
 ## AI + OCLive
@@ -145,6 +145,13 @@
 - 新增 `npm run test:module-quality` 离线合同门禁、`npm run quality:modules` 本地采集入口，并注册到 Dimension 5；发布级门禁 27/27 PASS。
 - 中英文 `MODULE_QUALITY_HARNESS.md` 与 `TEST_OUTPUT_SCHEMA.md` 已说明适用边界、隐私隔离、输入合同、报告解释和维护者命令。
 
+## Stage 4 本地结论
+
+- Action Node 24 运行时与兼容依赖锁已完成分类更新；npm audit 为 0 vulnerabilities，Cargo audit/deny/重复依赖阈值门禁通过。
+- 质量台、Dimension 5、前端 lint/typecheck/build、全工作区 clippy、818 项 Rust library tests、workspace + CLI integration targets 均已分别明确成功。
+- `npm run check:ci-local` 的外层本机执行窗口在最后重复 monolith release build 处到达 10 分钟上限，因此不伪记统一命令 exit 0；其组成门禁均已独立取得 exit 0。Stage 4 仍需 exact-head 远程 CI 才能关闭父债。
+- 长时硬件 soak、30 分钟 voice 矩阵与人工听感按维护者决策延期到新电脑，不混作本次 CI 缺陷。
+
 ## 目标
 
 - 同一份固定角色、场景和多轮 replay 输入可被不同 memory、emotion、prompt、LLM 模块组合重复消费。
@@ -169,4 +176,4 @@
 
 ## 下一跳
 
-Stage 4：在本分支全部依赖收口后跑完整本地 CI，推送并记录目标提交远程 CI。参考 fixture 与 deterministic remote-slot 配置已满足“至少两套显式配置”的机械门槛，但它们不是两套真实生产模型抽样；关闭父债时必须在 Wave 中保留这一解释边界，不得宣称模型普适优劣。
+Stage 4 remote：推送并记录 exact-head 远程 CI。参考 fixture 与 deterministic remote-slot 配置已满足“至少两套显式配置”的机械门槛，但它们不是两套真实生产模型抽样；关闭父债时必须在 Wave 中保留这一解释边界，不得宣称模型普适优劣。
