@@ -32,6 +32,15 @@
 | `oclive bench --json` | `oclive_bench_report.schema.json` |
 | `oclive doctor --json` | `oclive_doctor_report.schema.json` |
 
+## Module behavior-quality reports
+
+[`MODULE_QUALITY_HARNESS.md`](./MODULE_QUALITY_HARNESS.md) defines separate fixture observations, single-configuration `report` output, and multi-configuration `comparison` output:
+
+- `report.dimensions.memory|emotion|prompt|llm` each contain `passed`, `total`, and `score`; no aggregate score is emitted.
+- `comparison.quality.configurations[]` retains each four-module identity set, observation digest, case summary, and four dimension scores.
+- `comparison.performance.status` is currently `not_measured` and `metrics` is empty; behavior quality never masquerades as a performance report.
+- SHA-256 digests bind the suite, observations, and comparison. Compared suite digests must match exactly.
+
 ---
 
 [中文](../../creator-docs/testing/TEST_OUTPUT_SCHEMA.md)

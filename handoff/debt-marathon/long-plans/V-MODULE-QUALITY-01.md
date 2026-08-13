@@ -5,14 +5,14 @@
 | 字段 | 值 |
 |------|-----|
 | **债 ID** | V-MODULE-QUALITY-01 |
-| **台账** | `TECHNICAL_DEBT_INVENTORY.md` · V-MODULE-QUALITY-01 OPEN |
+| **台账** | `TECHNICAL_DEBT_INVENTORY.md` · V-MODULE-QUALITY-01 Done-eligible |
 | **标题** | 固定角色、场景与 replay 的 memory / emotion / prompt / LLM 质量对比 harness |
 | **尺寸** | L |
 | **Minimal / Full** | 本书推进 Full；各 Stage 必须保持可独立回滚 |
 | **Owner** | main-repo |
 | **runner** | auto |
-| **状态** | Ready · Stage 1 Locally verified；Stage 2 待实施 |
-| **更新** | 2026-07-27 |
+| **状态** | Closed · Stage 4 exact-head remote CI success；等待普通合并 |
+| **更新** | 2026-08-14 |
 
 ## AI + OCLive
 
@@ -27,9 +27,9 @@
   "version": 1,
   "id": "V-MODULE-QUALITY-01",
   "runner": "auto",
-  "planStatus": "ready",
-  "parentDebtDisposition": "keep-open",
-  "currentStage": 2,
+  "planStatus": "closed",
+  "parentDebtDisposition": "done-eligible",
+  "currentStage": 4,
   "prerequisites": [],
   "stages": [
     {
@@ -129,6 +129,35 @@
 - 当前 replay 主要服务会话/记忆恢复；后续适配必须复用它或调用同一公开链路，不复制 `process_message` 编排。
 - 第一阶段先冻结“输入、观察、评分、报告”合同，并用离线 fixture 证明确定性；这一步不需要启动模型，也不改生产行为。
 
+## Stage 2 结论
+
+- `scripts/module-quality-runner.mjs` 通过既有 HTTP `/chat`、`/chat/storage`、`/llm/user_settings` 与 `oclive_jsonrpc` remote slot 链采集观察，不复制 `process_message` 编排、不修改生产 DTO。
+- 固定 replay 只把 suite 声明的历史导入临时会话；sidecar 只读取 `mq-*` fixture memory，非 fixture 记忆与完整生产 Prompt 不进入质量报告。
+- 运行器使用独立临时角色包、应用数据目录、本地测试令牌与本地 sidecar，退出时回收内核进程树和临时目录。
+- 三个固定用例稳定通过：memory 7/7、emotion 3/3、prompt 9/9、LLM 11/11；suite digest `6fb61a37b1fa19e772350fe174d8d075de558f125ab65106e2b1181e5fe7e900`，observation digest `d1296ac84d7ae71d90b99310d7a6cad9c7934a730911702593e2b530bc223996`。
+- 入口与采集实现按合同、fixture、sidecar、内核客户端、编排拆分，单文件 57–225 行，没有新增脚本级上帝文件。
+
+## Stage 3 结论
+
+- 对比器拒绝少于两套配置、重复 `run_id`、重复四模块身份组合和不同 suite digest，防止只改标签伪造比较。
+- 参考 fixture 配置与内核 remote-slot 配置已在同一 suite 上并列通过；四维结果独立呈现，不生成总分。
+- `comparison.performance.status` 显式为 `not_measured`，不会把行为采集耗时误写成延迟、吞吐或硬件结论。
+- 新增 `npm run test:module-quality` 离线合同门禁、`npm run quality:modules` 本地采集入口，并注册到 Dimension 5；发布级门禁 27/27 PASS。
+- 中英文 `MODULE_QUALITY_HARNESS.md` 与 `TEST_OUTPUT_SCHEMA.md` 已说明适用边界、隐私隔离、输入合同、报告解释和维护者命令。
+
+## Stage 4 本地结论
+
+- Action Node 24 运行时与兼容依赖锁已完成分类更新；npm audit 为 0 vulnerabilities，Cargo audit/deny/重复依赖阈值门禁通过。
+- 质量台、Dimension 5、前端 lint/typecheck/build、全工作区 clippy、818 项 Rust library tests、workspace + CLI integration targets 均已分别明确成功。
+- `npm run check:ci-local` 的外层本机执行窗口在最后重复 monolith release build 处到达 10 分钟上限，因此不伪记统一命令 exit 0；其组成门禁均已独立取得 exit 0。Stage 4 仍需 exact-head 远程 CI 才能关闭父债。
+- 长时硬件 soak、30 分钟 voice 矩阵与人工听感按维护者决策延期到新电脑，不混作本次 CI 缺陷。
+
+## Stage 4 远程结论
+
+- 实现与本地证据 head `4944fdf51b7313ed84a7e069073644b571912355` 的主 CI [`31739849579`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/31739849579) **16/16 success**；严格审计 [`31739849550`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/31739849550) **success**。
+- Windows/Linux Rust、ARM64、dual-core、CLI、前端双平台、OOCP、cross-host、Dimension 5、依赖与仓库治理门禁均成功；Action Node 24 代际已由真实 CI 证明兼容。
+- 父债可记 Done-eligible；仍保留“可复现合同基线，不代表真实模型普适主观排名”的解释边界。
+
 ## 目标
 
 - 同一份固定角色、场景和多轮 replay 输入可被不同 memory、emotion、prompt、LLM 模块组合重复消费。
@@ -153,4 +182,4 @@
 
 ## 下一跳
 
-Stage 2：通过既有 HTTP / OOCP 与 mock-provider 链路采集同一套观察合同；不得复制聊天编排，也不得向普通响应泄露 prompt 或私密记忆。
+普通合并 PR #156；合并后确认 merge exact-head 主 CI。随后进入 R18 配置只读审计，参考 fixture 与 deterministic remote-slot 的证据不得被改写为真实生产模型的主观排名。

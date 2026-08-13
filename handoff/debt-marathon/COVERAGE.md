@@ -1,7 +1,7 @@
 # 计划书覆盖审计（对照 TECHNICAL_DEBT）
 
-**更新日期：** 2026-07-27
-**结论：** 活跃 OPEN/Partial/Observe/Deferred/冻结项均有 `long-plans/` 条目；P1 `V-MODULE-QUALITY-01` 已补齐 Full 分阶段计划。
+**更新日期：** 2026-08-14
+**结论：** 活跃 OPEN/Partial/Observe/Deferred/冻结项均有 `long-plans/` 条目；P1 `V-MODULE-QUALITY-01` Full 计划已取得 Stage 4 exact-head 远程 CI 与严格审计成功证据，进入 Done-eligible / 合并收口。
 **详略：** `auto` 书 = Minimal 可执行分阶 + `oclive-marathon-contract`；`skip`/`human` = stub + 触发条件。`npm run check:debt-marathon` 强制校验所有 auto 书的文件范围、验收理由、产出、回退与父债处置。**深度细则以 [`AI_AND_PIPELINE_GATES.md`](./AI_AND_PIPELINE_GATES.md) + 七阶段 Skill 为准**（不在每本 stub 重复）。
 
 ## 覆盖矩阵
