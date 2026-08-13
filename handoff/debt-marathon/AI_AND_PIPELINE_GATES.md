@@ -146,5 +146,6 @@ Plan/Stage 勾选的命令必须有「因何 applicable」。欠债默认参考�
 4. **机械拆分（行号切片）允许，但必须**：切片前对每个边界行做 `startsWith` 断言；原文件被覆盖后用 `git show HEAD:<path>` 恢复干净源再重切；拆分后依次跑 eslint --fix → typecheck → 对应 workspace 单测（缺 export 会被 TS2459 批量暴露，属于级联而非新 bug）。
 5. **每条 shell 命令开头 `Set-Location` 到仓库根**；跑工具用仓库 `npm run` 脚本或已安装本地 bin，禁止在错误 cwd 裸 `npx`（会按错误 package.json 临时安装新版工具）。
 6. **PowerShell 原生进程 stderr 回显为 `NativeCommandError` 是假错误**（如 vitest 日志）；成败判定只看 `$LASTEXITCODE` 与工具自身的 PASS / `test result` 行。
+7. **Vue SFC 拆分后不得只靠全 stub 测试验收模板**：逐项核对 template 内组件标签仍有局部 import 或明确的全局注册；组件单测至少保留一条不 stub 生产子组件的挂载路径，并断言最终原生交互节点，防止“stub 能渲染、真实组件解析失败”漏检。
 
-**拆完必检**（每个文件拆完的提交级验收）：eslint 0 error · typecheck 0 · 对应 workspace `test:unit` 全绿 · 一次拆分 = 一个独立提交（提交后 worktree 干净）。
+**拆完必检**（每个文件拆完的提交级验收）：eslint 0 error · typecheck 0 · 对应 workspace `test:unit` 全绿 · 至少一条真实模板组件解析测试 · 一次拆分 = 一个独立提交（提交后 worktree 干净）。

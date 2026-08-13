@@ -20,6 +20,7 @@
 
 ### Fixed
 
+- **近期情绪引擎与巨文件拆分巡检修复**：恢复 `ModelManagerBody` 拆分时遗漏的共享按钮与帮助组件导入，并用真实子组件挂载回归测试阻止 stub 掩盖模板解析错误；复杂情感后端现严格按角色有效槽位执行，省略或 `none` 不再读取、注入或写入叙事 hint，但主 LLM 的有效情绪标签仍会更新机器人六槽。remote / directory 降级输出的标签同样驱动当前情绪与事件；标记和插件 hint 统一按 Unicode 字符硬限 200，持久化层再次防御性截断；尾随未闭合 `[EMO]` 内容会完整剥离。英文情绪词表现支持标点、换行、制表符与 `no` / `not` / `never` / `n't` 否定，同时避免 `unhappy`、`glove` 等嵌词误判。
 - **CosyVoice2 流式首块状态与分段诊断**：每次合成前恢复上游模型的初始 `token_hop_len`，避免前一轮流式增长到 50/100 后污染后续请求，造成流块减少并推高 TTFC；Sidecar、共享播放层和压力工具现贯通版本化分段计时、prompt cache 与客户端交付开销，72 小时硬件测试候选流程会原子刷新有界 checkpoint 并在中断后保留最后进度。现有 8 秒语音门禁与显存安全线均未放宽。
 - **8GB 语音共存档位留足冷加载余量**：`gpu_balanced` 与共享 GPU 压力工具默认上限由 24 层调整为 22 层。RTX 5060 Laptop 8GB 实测中，24 层因系统波动使 CosyVoice 冷加载余量以 **2559MiB < 2560MiB** 被安全拒绝；22 层可完成 mixed-FP16 warm，并在五分钟 LLM/TTS 共存中保持峰值余量 **1370MiB**。`gpu_full` 与显式环境覆盖仍保留。
 - **Loom Nightly 真模型恢复**：将会污染全部依赖的全局 `cfg(loom)` 改为桌面宿主包级 `loom-tests` feature；`oclive test --loom`、验证目录与 Nightly 现统一运行两个真实且有界的 Loom 交错模型，不再把未启用模型的占位 smoke 当作并发证据。面向独立生成项目的 `oclive ci init` 不再输出依赖主仓桌面路径的无效 Loom job。
