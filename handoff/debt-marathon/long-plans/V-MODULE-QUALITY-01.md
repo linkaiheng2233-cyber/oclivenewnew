@@ -11,7 +11,7 @@
 | **Minimal / Full** | 本书推进 Full；各 Stage 必须保持可独立回滚 |
 | **Owner** | main-repo |
 | **runner** | auto |
-| **状态** | Ready · Stage 2 Locally verified；Stage 3 待实施 |
+| **状态** | Ready · Stage 3 Locally verified；Stage 4 待目标提交远程 CI |
 | **更新** | 2026-08-14 |
 
 ## AI + OCLive
@@ -29,7 +29,7 @@
   "runner": "auto",
   "planStatus": "ready",
   "parentDebtDisposition": "keep-open",
-  "currentStage": 3,
+  "currentStage": 4,
   "prerequisites": [],
   "stages": [
     {
@@ -137,6 +137,14 @@
 - 三个固定用例稳定通过：memory 7/7、emotion 3/3、prompt 9/9、LLM 11/11；suite digest `6fb61a37b1fa19e772350fe174d8d075de558f125ab65106e2b1181e5fe7e900`，observation digest `d1296ac84d7ae71d90b99310d7a6cad9c7934a730911702593e2b530bc223996`。
 - 入口与采集实现按合同、fixture、sidecar、内核客户端、编排拆分，单文件 57–225 行，没有新增脚本级上帝文件。
 
+## Stage 3 结论
+
+- 对比器拒绝少于两套配置、重复 `run_id`、重复四模块身份组合和不同 suite digest，防止只改标签伪造比较。
+- 参考 fixture 配置与内核 remote-slot 配置已在同一 suite 上并列通过；四维结果独立呈现，不生成总分。
+- `comparison.performance.status` 显式为 `not_measured`，不会把行为采集耗时误写成延迟、吞吐或硬件结论。
+- 新增 `npm run test:module-quality` 离线合同门禁、`npm run quality:modules` 本地采集入口，并注册到 Dimension 5；发布级门禁 27/27 PASS。
+- 中英文 `MODULE_QUALITY_HARNESS.md` 与 `TEST_OUTPUT_SCHEMA.md` 已说明适用边界、隐私隔离、输入合同、报告解释和维护者命令。
+
 ## 目标
 
 - 同一份固定角色、场景和多轮 replay 输入可被不同 memory、emotion、prompt、LLM 模块组合重复消费。
@@ -161,4 +169,4 @@
 
 ## 下一跳
 
-Stage 3：让同一 suite 比较至少两套显式模块配置，分别报告行为质量与性能，并补中英文创作者文档及发布级调用入口；父债在 Stage 4 精确提交远程 CI 前继续保持 OPEN。
+Stage 4：在本分支全部依赖收口后跑完整本地 CI，推送并记录目标提交远程 CI。参考 fixture 与 deterministic remote-slot 配置已满足“至少两套显式配置”的机械门槛，但它们不是两套真实生产模型抽样；关闭父债时必须在 Wave 中保留这一解释边界，不得宣称模型普适优劣。
