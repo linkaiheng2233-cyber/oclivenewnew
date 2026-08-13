@@ -21,7 +21,9 @@ const RUNTIME_MODULES =
   'personality_engine|policy|profile_personality|prompt_assembler|prompt_builder|' +
   'relation_engine|remote_life_prompt|repository|user_emotion_analyzer';
 
-const pattern = `use crate::domain::(?:${RUNTIME_MODULES})`;
+// Require a complete module segment so a host-owned sibling such as
+// `complex_emotion_store` is not mistaken for the `complex_emotion` re-export.
+const pattern = `use crate::domain::(?:${RUNTIME_MODULES})(?:::|\\s*;)`;
 
 function countHostReexportImports() {
   const domainMod = path.join(hostCrate, 'src', 'domain', 'mod.rs');

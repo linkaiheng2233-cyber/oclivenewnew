@@ -109,7 +109,7 @@ async fn state_with_reply(roles: &Path, reply: &str) -> (AppState, Arc<Mutex<Vec
         },
         ..HostProfile::default()
     };
-    let state = AppStateBuilder::in_memory_test(llm, roles.to_path_buf(), None)
+    let state = AppStateBuilder::in_memory_test(llm, roles, None)
         .with_host_profile(host)
         .build()
         .await
