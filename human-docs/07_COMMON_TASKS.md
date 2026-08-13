@@ -89,7 +89,7 @@ let state = AppState::new_in_memory_with_llm(/* … */).await;
 | 步骤 | 位置 |
 |------|------|
 | 路由 | `oclive_kernel_host/src/http_api/` |
-| DTO | `oclive_kernel_types/src/models/dto.rs` |
+| DTO | `oclive_kernel_types/src/models/dto/mod.rs` |
 | 错误码 | [KERNEL_ERROR_CODE_CONVENTION](../creator-docs/getting-started/KERNEL_ERROR_CODE_CONVENTION.md) |
 | 黑盒 | `examples/oocp-test-suite/` |
 

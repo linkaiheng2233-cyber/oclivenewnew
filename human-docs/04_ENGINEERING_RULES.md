@@ -36,7 +36,7 @@
 
 ## 4. DTO 契约
 
-**规则**：前后端以 [`oclive_kernel_types/src/models/dto.rs`](../kernel/crates/oclive_kernel_types/src/models/dto.rs) 为准；回复字段 **`reply`**，不是 `response`；`Emotion` 以 [`emotion.rs`](../kernel/crates/oclive_kernel_types/src/models/emotion.rs) 为准（无未定义变体）。
+**规则**：前后端以 [`oclive_kernel_types/src/models/dto/mod.rs`](../kernel/crates/oclive_kernel_types/src/models/dto/mod.rs) 为准；回复字段 **`reply`**，不是 `response`；`Emotion` 以 [`emotion.rs`](../kernel/crates/oclive_kernel_types/src/models/emotion.rs) 为准（无未定义变体）。
 
 **违反时**：「请改为 `reply`」「`Joy`/`Fearful` 不在契约枚举内」。
 
@@ -117,7 +117,7 @@
 
 - [ ] 能说出 7 条代码约束各对应哪类 PR 失误  
 - [ ] 能说出「改六槽定义去 MODULE_MAP，改 human 入门去 01/06」  
-- [ ] 改 DTO 时知道先打开 `dto.rs`
+- [ ] 改 DTO 时知道先打开 `dto/`
 
 ---
 

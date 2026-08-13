@@ -265,7 +265,7 @@ flowchart TB
 
 ## 会话级 `plugin_backends` 覆盖（Tauri）
 
-宿主命令 **`set_session_plugin_backend`**（实现见 [`distros/desktop-tauri/src/api/role/mod.rs`](../../distros/desktop-tauri/src/api/role/mod.rs)），请求体 **`SetSessionPluginBackendRequest`**（[`kernel/crates/oclive_kernel_types/src/models/dto.rs`](../../kernel/crates/oclive_kernel_types/src/models/dto.rs)）。覆盖按 **`role_id` + 可选 `session_id`** 对应的会话命名空间持久化，**不写回角色包**；`load_role` / **`get_role_info`**（请求体 **`GetRoleInfoRequest`**，可选 **`session_id`**，与 `send_message` 同命名空间）返回中的 **`plugin_backends_effective`**、**`plugin_backends_effective_sources`** 等为包默认与会话覆盖合并后的快照。
+宿主命令 **`set_session_plugin_backend`**（实现见 [`distros/desktop-tauri/src/api/role/mod.rs`](../../distros/desktop-tauri/src/api/role/mod.rs)），请求体 **`SetSessionPluginBackendRequest`**（[`kernel/crates/oclive_kernel_types/src/models/dto`](../../kernel/crates/oclive_kernel_types/src/models/dto/mod.rs)）。覆盖按 **`role_id` + 可选 `session_id`** 对应的会话命名空间持久化，**不写回角色包**；`load_role` / **`get_role_info`**（请求体 **`GetRoleInfoRequest`**，可选 **`session_id`**，与 `send_message` 同命名空间）返回中的 **`plugin_backends_effective`**、**`plugin_backends_effective_sources`** 等为包默认与会话覆盖合并后的快照。
 
 ### 请求字段（摘要）
 
@@ -296,7 +296,7 @@ flowchart TB
 
 ## 前端对齐
 
-TypeScript 侧 `SendMessageResponse`（`distros/shared/src/api/`）必须与 `models/dto.rs` 一致：**回复字段名为 `reply`**；`presence_mode`、`reply_is_fallback`、`schema`、`api_version` 用于展示策略（见 `distros/shared/src/utils/replyPresentation.ts`）。
+TypeScript 侧 `SendMessageResponse`（`distros/shared/src/api/`）必须与 `models/dto/` 一致：**回复字段名为 `reply`**；`presence_mode`、`reply_is_fallback`、`schema`、`api_version` 用于展示策略（见 `distros/shared/src/utils/replyPresentation.ts`）。
 
 ---
 
@@ -455,7 +455,7 @@ TypeScript 侧 `SendMessageResponse`（`distros/shared/src/api/`）必须与 `mo
 
 ### `RoleInfo` / `RoleData` 与本地 HTTP `POST /chat`
 
-- Tauri **`get_role_info`**（`GetRoleInfoRequest`，可选 **`session_id`**）、**`load_role`** 返回体含 **`personality_source`**：JSON 字符串 **`vector`** | **`profile`**，与角色包 **`evolution.personality_source`** 一致（见 `kernel/crates/oclive_kernel_types/src/models/dto.rs`）。
+- Tauri **`get_role_info`**（`GetRoleInfoRequest`，可选 **`session_id`**）、**`load_role`** 返回体含 **`personality_source`**：JSON 字符串 **`vector`** | **`profile`**，与角色包 **`evolution.personality_source`** 一致（见 `kernel/crates/oclive_kernel_types/src/models/dto/`）。
 - 启动参数 **`--api`** 时，**`POST /chat`** 成功响应在扁平化的 `SendMessageResponse` 字段之外另含 **`personality_source`**（同上），便于编写器试聊等工具区分人格模式；实现见 `kernel/crates/oclive_kernel_host/src/http_api.rs`。
 - Remote **`prompt.build_prompt`**：`params` 中含完整 **`role`**（其 `evolution_config.personality_source` 亦可读），并另含顶层 **`personality_source`** 与 `personality` 并列，侧车无需仅从嵌套 `role` 解析（`kernel/crates/oclive_kernel_host/src/infrastructure/remote_plugin/prompt_http.rs`）。
 

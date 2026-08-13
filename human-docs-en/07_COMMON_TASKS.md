@@ -90,7 +90,7 @@ References: `distros/desktop-tauri/tests/invoke_hotpath_matrix.rs`, `narrative_h
 | Step | Location |
 |------|----------|
 | Routes | `oclive_kernel_host/src/http_api/` |
-| DTO | `oclive_kernel_types/src/models/dto.rs` |
+| DTO | `oclive_kernel_types/src/models/dto/mod.rs` |
 | Error codes | [KERNEL_ERROR_CODE_CONVENTION](../creator-docs-en/getting-started/KERNEL_ERROR_CODE_CONVENTION.md) |
 | Black-box | `examples/oocp-test-suite/` |
 

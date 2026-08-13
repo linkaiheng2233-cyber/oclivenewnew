@@ -25,7 +25,7 @@
 
 ### 3.1 `POST /theater/scene` · `generate_theater_scene`
 
-在现有 [`TheaterSceneRequest`](../../kernel/crates/oclive_kernel_types/src/models/dto.rs) 上扩展：
+在现有 [`TheaterSceneRequest`](../../kernel/crates/oclive_kernel_types/src/models/dto/mod.rs) 上扩展：
 
 | 字段 | 必填 | 说明 |
 |------|------|------|
@@ -39,7 +39,7 @@
 | `pair_relation_id` / `pair_relation_hint` | 否 | 与 cast_rewrite 一致 |
 | `theater_scene` / `scene_brief` / `scene_setting_hint` | 否 | 场景语境增强 |
 
-响应：现有 [`TheaterSceneResponse`](../../kernel/crates/oclive_kernel_types/src/models/dto.rs)（`beats` · `source` · `model` · 可选 `failure_reason`）。
+响应：现有 [`TheaterSceneResponse`](../../kernel/crates/oclive_kernel_types/src/models/dto/mod.rs)（`beats` · `source` · `model` · 可选 `failure_reason`）。
 
 ### 3.2 Prompt 输入（目录插件 `theater.build_prompt`）
 

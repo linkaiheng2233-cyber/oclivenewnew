@@ -31,7 +31,7 @@
 | 文档 | 用途 |
 |------|------|
 | [NAMING_CONVENTIONS](../creator-docs/NAMING_CONVENTIONS.md) | 权威名、import、禁止别名 |
-| [dto.rs](../kernel/crates/oclive_kernel_types/src/models/dto.rs) | HTTP/IPC 字段 |
+| [dto/mod.rs](../kernel/crates/oclive_kernel_types/src/models/dto/mod.rs) | HTTP/IPC 字段 |
 | [KERNEL_ERROR_CODE_CONVENTION](../creator-docs/getting-started/KERNEL_ERROR_CODE_CONVENTION.md) | 错误 JSON |
 | [COMPATIBILITY](../creator-docs/COMPATIBILITY.md) | 版本兼容表 |
 | [BREAKING_CHANGE_PROCESS](../handoff/BREAKING_CHANGE_PROCESS.md) | Breaking 流程 |

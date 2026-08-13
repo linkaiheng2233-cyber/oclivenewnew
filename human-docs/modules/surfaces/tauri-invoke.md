@@ -43,7 +43,7 @@
 - [ ] 在 `api/<topic>.rs` 实现 · `*_impl` 委托  
 - [ ] `lib.rs` 注册一行  
 - [ ] `distros/shared/src/api/` 加 camelCase 函数  
-- [ ] 若改 DTO → `dto.rs` + 前端类型  
+- [ ] 若改 DTO → `dto/` + 前端类型  
 - [ ] `cargo test -p oclivenewnew-tauri` 相关用例
 
 ---

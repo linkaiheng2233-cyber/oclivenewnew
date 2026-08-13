@@ -31,7 +31,7 @@
 | Doc | Purpose |
 |-----|---------|
 | [NAMING_CONVENTIONS](../creator-docs-en/NAMING_CONVENTIONS.md) | Canonical names, imports |
-| [dto.rs](../kernel/crates/oclive_kernel_types/src/models/dto.rs) | HTTP/IPC fields |
+| [dto/mod.rs](../kernel/crates/oclive_kernel_types/src/models/dto/mod.rs) | HTTP/IPC fields |
 | [KERNEL_ERROR_CODE_CONVENTION](../creator-docs-en/getting-started/KERNEL_ERROR_CODE_CONVENTION.md) | Error JSON |
 | [COMPATIBILITY](../creator-docs-en/COMPATIBILITY.md) | Version compatibility |
 | [BREAKING_CHANGE_PROCESS](../handoff/BREAKING_CHANGE_PROCESS.md) | Breaking workflow |

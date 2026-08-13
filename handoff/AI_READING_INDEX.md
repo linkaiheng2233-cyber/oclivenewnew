@@ -80,7 +80,7 @@ Vue invoke / HTTP --api
 | 主编排 SSOT | `kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs` |
 | 回合流水线 | `kernel/crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/` |
 | Prompt 公式 | `kernel/crates/oclive_kernel_runtime/src/domain/prompt_builder/mod.rs`（**不是 Result**） |
-| DTO | `kernel/crates/oclive_kernel_types/src/models/dto.rs` |
+| DTO | `kernel/crates/oclive_kernel_types/src/models/dto/mod.rs` |
 | DB 迁移 SSOT | `kernel/crates/oclive_kernel_host/migrations/001_init.sql` |
 | Tauri 命令注册 | `distros/desktop-tauri/src/lib.rs`（仅 `generate_handler!`） |
 | 前端 invoke 封装 | `distros/shared/src/api/`（**camelCase**） |

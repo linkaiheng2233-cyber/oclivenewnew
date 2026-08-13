@@ -13,7 +13,7 @@ const repoRoot = path.resolve(__dirname, '..');
 const checks = [
   {
     label: 'DTO display_metrics struct',
-    file: path.join(repoRoot, 'kernel/crates/oclive_kernel_types/src/models/dto.rs'),
+    file: path.join(repoRoot, 'kernel/crates/oclive_kernel_types/src/models/dto/chat.rs'),
     pattern: 'pub struct DisplayMetricsDto',
     expect: true,
   },

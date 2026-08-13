@@ -102,7 +102,7 @@ This page is the **naming SSOT** for OCLive. Key rules:
 
 | 层级 | Crate | 一句话职责 | 我要改… | 典型路径 |
 |------|-------|-----------|---------|----------|
-| L0 契约 | `oclive_kernel_types` | DTO、`AppError`、`SendMessageRequest/Response` | API 字段、错误码体 | `src/models/dto.rs` |
+| L0 契约 | `oclive_kernel_types` | DTO、`AppError`、`SendMessageRequest/Response` | API 字段、错误码体 | `src/models/dto/mod.rs` |
 | L0 契约 | `oclive_kernel_contracts` | 可替换后端 trait 端口 | 新增 trait 方法 | `src/llm.rs`, `plugin_host.rs` … |
 | L0 校验 | `oclive_validation` | 角色包 / 蓝图校验规则 | manifest / blueprint 规则 | `src/blueprint_v2.rs` |
 | L0 校验 | `oclive_schema` | blueprint serde schema | 磁盘形状增量 | — |
@@ -210,7 +210,7 @@ This page is the **naming SSOT** for OCLive. Key rules:
 | Host 内编排 | `crate::domain::…` / `crate::domain::ports::…` | 跨 crate 直接 `use oclive_kernel_runtime::domain::chat_engine` |
 | Host 外消费编排 | `oclive_kernel_host::domain::process_message` | 假设仍在 `distros/desktop-tauri` 内编排（**已迁出至 host**） |
 | Tauri 命令 impl | `oclive_kernel_host::service::*_impl` | 在 `api/` 重复业务逻辑 |
-| 前端 TS 类型 | 与 `dto.rs` 对齐的手写类型 / 生成类型 | 字段名 `response`（应为 **`reply`**） |
+| 前端 TS 类型 | 与 `dto/` 对齐的手写类型 / 生成类型 | 字段名 `response`（应为 **`reply`**） |
 
 ### 4.3 过渡期结束计划（文档级，无代码承诺日期）
 
@@ -465,4 +465,4 @@ Tauri 将 Rust **`snake_case` 形参** 映射为前端 **`camelCase` 键**。权
 
 ---
 
-**维护**：架构或 crate 拆分变更时，同步更新 §3、§4、§6；发版前检查 §8 与 `dto.rs` 一致。
+**维护**：架构或 crate 拆分变更时，同步更新 §3、§4、§6；发版前检查 §8 与 `dto/` 一致。
