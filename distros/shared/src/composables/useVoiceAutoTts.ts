@@ -1,8 +1,13 @@
 import type { AppToastFn } from '@oclive/shared/composables/useAppToast'
-import type { VoiceTtsProfileRouting } from '@oclive/shared/lib/voiceTtsRouting'
 import type { CosyvoiceStreamPrefetch } from '@oclive/shared/utils/cosyvoiceStreamPlayback'
-import { directoryPluginInvoke, getPluginSettingsUi } from '@oclive/shared/api'
-import { invokeWithFriendlyError } from '@oclive/shared/api/helpers'
+import type { VoiceRuntimeConfig } from './voiceAutoTtsConfig'
+import type {
+  ActiveStreamLookahead,
+  RpcSpeakResult,
+  SpeakJob,
+  VoiceLatencyTrace,
+} from './voiceAutoTtsRuntime'
+import { directoryPluginInvoke } from '@oclive/shared/api'
 import {
   resetVoiceExpansionWarmSchedule,
   resolveVoiceSidecarEndpoint,
@@ -15,14 +20,7 @@ import {
   VOICE_STREAM_SENTENCE_EVENT,
 } from '@oclive/shared/lib/voiceAsrEvents'
 import { markVoicePlaybackSettled } from '@oclive/shared/lib/voicePlaybackSettlement'
-import {
-  explicitVoiceRoleTtsDecision,
-  hasExplicitVoiceRoleTtsPolicy,
-  normalizeVoiceRoleTtsEnabled,
-} from '@oclive/shared/lib/voiceRolePolicy'
-import {
-  resolveVoiceTtsRouting,
-} from '@oclive/shared/lib/voiceTtsRouting'
+import { resolveVoiceTtsRouting } from '@oclive/shared/lib/voiceTtsRouting'
 import { usePluginStore } from '@oclive/shared/stores/pluginStore'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
 import {
@@ -42,8 +40,24 @@ import { voiceDialogueFromRaw } from '@oclive/shared/utils/voiceDialogueFromRaw'
 import { VoiceSpeakDeduper } from '@oclive/shared/utils/voiceSpeakDeduper'
 import { formatVoiceSpeakFailure, shouldFallbackStreamToRpc } from '@oclive/shared/utils/voiceSpeakErrors'
 import { onBeforeUnmount, onMounted } from 'vue'
+import {
+  canAutoSpeakRole,
+  directiveCache,
+  directiveCacheKey,
+  directivePending,
+  invalidateVoiceRuntimeConfig,
+  loadTtsProfiles,
+  loadVoiceRuntimeConfig,
+  prefetchVoiceDirective,
+  resolveRolePackPath,
+  roleVoiceProfileConfiguredCache,
+} from './voiceAutoTtsConfig'
+import {
+  resolveRoleTtsProfile,
+  speakJobKey,
+} from './voiceAutoTtsRuntime'
 
-const DEFAULT_TTS_PROFILE = 'bundled-cosyvoice2-zh'
+export { invalidateVoiceRuntimeConfig } from './voiceAutoTtsConfig'
 
 interface MessageSentPayload {
   reply?: string
@@ -65,25 +79,6 @@ interface StreamSentencePayload {
   stream_id?: string
 }
 
-interface VoiceLatencyTrace {
-  submittedAtMs: number
-  firstTextAtMs?: number
-  firstSynthesisAtMs?: number
-  firstAudioAtMs?: number
-}
-
-interface VoiceRuntimeConfig {
-  tts_expansion_enabled: boolean
-  auto_tts: boolean
-  role_tts_enabled: Record<string, true>
-  role_tts_policy_explicit: boolean
-  tts_profile: string
-  tts_engine: string
-  director_profile: string
-  synth_provider: string
-  local_synth_endpoint: string
-}
-
 interface SpeakOptions {
   /** Stream chunks normally hit the directive cache populated at message submit. */
   fastPath?: boolean
@@ -91,45 +86,10 @@ interface SpeakOptions {
   forceRpc?: boolean
 }
 
-interface SpeakJob {
-  key: string
-  text: string
-  payload: { bot_emotion?: string, role_id?: string }
-  streamId?: string
-  cfg: VoiceRuntimeConfig
-  directive: Record<string, unknown>
-  forceRpc: boolean
-}
-
-interface RpcSpeakResult {
-  ok?: boolean
-  audio_base64?: string
-  audio_mime?: string
-  reason?: string
-  message?: string
-}
-
-interface ActiveStreamLookahead {
-  currentJobKey: string
-  generation: number
-}
-
-let cachedConfig: VoiceRuntimeConfig | null = null
-let cachedConfigAt = 0
-let loadingConfig: Promise<VoiceRuntimeConfig | null> | null = null
-let loadingTtsProfiles: Promise<Map<string, VoiceTtsProfileRouting>> | null = null
-let configRevision = 0
-const CONFIG_TTL_MS = 30_000
-
 const streamSpokenPrefixById = new Map<string, string>()
 const streamPendingById = new Map<string, Promise<void>>()
 const streamPlaybackFailed = new Set<string>()
-const rolePathCache = new Map<string, string>()
-const roleVoiceProfileConfiguredCache = new Map<string, boolean>()
-const directiveCache = new Map<string, Record<string, unknown>>()
-const directivePending = new Map<string, Promise<Record<string, unknown> | undefined>>()
 const voiceLatencyByStreamId = new Map<string, VoiceLatencyTrace>()
-
 const speakQueue: SpeakJob[] = []
 const preparedRpcSpeak = new Map<string, Promise<RpcSpeakResult>>()
 const streamPrefetches = new CosyvoiceStreamPrefetchRegistry()
@@ -138,7 +98,6 @@ let drainingSpeakQueue = false
 let speakIdleWaiters: Array<() => void> = []
 let speakGeneration = 0
 let speakFailureSerial = 0
-let cachedTtsProfiles: Map<string, VoiceTtsProfileRouting> | null = null
 let activeRpcAudio: HTMLAudioElement | null = null
 let cancelActiveRpcPlayback: (() => void) | null = null
 let activeStreamLookahead: ActiveStreamLookahead | null = null
@@ -172,259 +131,10 @@ function resetSpeakPipeline(): void {
     resolve()
 }
 
-function resolveRoleTtsProfile(
-  directive: Record<string, unknown> | undefined,
-  globalProfile: string,
-): string {
-  const stamped = typeof directive?.synth_profile === 'string'
-    ? directive.synth_profile.trim()
-    : ''
-  return stamped && stamped !== globalProfile ? stamped : globalProfile
-}
-
 function waitForSpeakQueueIdle(): Promise<void> {
   if (!drainingSpeakQueue && speakQueue.length === 0)
     return Promise.resolve()
   return new Promise(resolve => speakIdleWaiters.push(resolve))
-}
-
-function directiveCacheKey(roleId: string, director: string, emotion: string): string {
-  return `${roleId}|${director}|${emotion}`
-}
-
-function speakJobKey(text: string, payload: SpeakJob['payload'], cfg: VoiceRuntimeConfig): string {
-  return `${payload.role_id || ''}|${payload.bot_emotion || ''}|${cfg.tts_profile}|${text}`
-}
-
-export function invalidateVoiceRuntimeConfig(): void {
-  configRevision += 1
-  cachedConfig = null
-  cachedConfigAt = 0
-  loadingConfig = null
-  cachedTtsProfiles = null
-  loadingTtsProfiles = null
-  rolePathCache.clear()
-  roleVoiceProfileConfiguredCache.clear()
-}
-
-async function loadTtsProfiles(): Promise<Map<string, VoiceTtsProfileRouting>> {
-  if (cachedTtsProfiles)
-    return cachedTtsProfiles
-  if (loadingTtsProfiles)
-    return loadingTtsProfiles
-  const revision = configRevision
-  const promise = (async (): Promise<Map<string, VoiceTtsProfileRouting>> => {
-    try {
-      const list = (await directoryPluginInvoke(
-        VOICE_ASR_PLUGIN_ID,
-        'voice.list_profiles',
-        {},
-      )) as {
-        profiles?: Array<{
-          id: string
-          engine?: string
-          synth_provider?: string
-          sidecar_endpoint?: string
-        }>
-      }
-      const map = new Map<string, VoiceTtsProfileRouting>()
-      for (const row of list.profiles || []) {
-        if (row.id) {
-          map.set(row.id, {
-            engine: row.engine,
-            synth_provider: row.synth_provider,
-            sidecar_endpoint: row.sidecar_endpoint,
-          })
-        }
-      }
-      if (revision === configRevision)
-        cachedTtsProfiles = map
-      return map
-    }
-    catch {
-      return new Map()
-    }
-  })()
-  loadingTtsProfiles = promise
-  try {
-    return await promise
-  }
-  finally {
-    if (loadingTtsProfiles === promise)
-      loadingTtsProfiles = null
-  }
-}
-
-async function loadVoiceRuntimeConfig(
-  isPluginDisabled: (id: string) => boolean,
-): Promise<VoiceRuntimeConfig | null> {
-  if (isPluginDisabled(VOICE_ASR_PLUGIN_ID))
-    return null
-  const now = Date.now()
-  if (cachedConfig && now - cachedConfigAt < CONFIG_TTL_MS)
-    return cachedConfig
-  if (loadingConfig)
-    return loadingConfig
-  const revision = configRevision
-  const promise = (async (): Promise<VoiceRuntimeConfig | null> => {
-    try {
-      const [ui, profiles] = await Promise.all([
-        getPluginSettingsUi(VOICE_ASR_PLUGIN_ID),
-        loadTtsProfiles(),
-      ])
-      const cfg = ui.config ?? {}
-      const ttsProfile
-        = typeof cfg.tts_profile === 'string' && cfg.tts_profile.trim()
-          ? cfg.tts_profile.trim()
-          : DEFAULT_TTS_PROFILE
-      const loaded: VoiceRuntimeConfig = {
-        tts_expansion_enabled: cfg.tts_expansion_enabled === true,
-        auto_tts: cfg.auto_tts === true,
-        role_tts_enabled: normalizeVoiceRoleTtsEnabled(cfg.role_tts_enabled),
-        role_tts_policy_explicit: hasExplicitVoiceRoleTtsPolicy(cfg),
-        tts_profile: ttsProfile,
-        tts_engine: profiles.get(ttsProfile)?.engine || 'cosyvoice2',
-        director_profile:
-          typeof cfg.director_profile === 'string'
-            ? cfg.director_profile.trim() || 'none'
-            : 'rules-v1',
-        synth_provider:
-          typeof cfg.synth_provider === 'string' ? cfg.synth_provider.trim() : 'bundled',
-        local_synth_endpoint:
-          typeof cfg.local_synth_endpoint === 'string'
-            ? cfg.local_synth_endpoint.trim()
-            : '',
-      }
-      if (revision === configRevision) {
-        cachedConfig = loaded
-        cachedConfigAt = Date.now()
-      }
-      return loaded
-    }
-    catch {
-      return null
-    }
-  })()
-  loadingConfig = promise
-  try {
-    return await promise
-  }
-  finally {
-    if (loadingConfig === promise)
-      loadingConfig = null
-  }
-}
-
-async function resolveRolePackPath(roleId: string): Promise<string> {
-  const rid = roleId.trim()
-  if (!rid)
-    return ''
-  const cached = rolePathCache.get(rid)
-  if (cached !== undefined)
-    return cached
-  try {
-    const path = (await invokeWithFriendlyError<string>('get_role_pack_path', {
-      roleId: rid,
-    })).trim()
-    rolePathCache.set(rid, path)
-    return path
-  }
-  catch {
-    rolePathCache.set(rid, '')
-    return ''
-  }
-}
-
-async function roleHasVoiceProfile(roleId: string): Promise<boolean> {
-  const rid = roleId.trim()
-  if (!rid)
-    return false
-  const cached = roleVoiceProfileConfiguredCache.get(rid)
-  if (cached !== undefined)
-    return cached
-  const rolePath = await resolveRolePackPath(rid)
-  if (!rolePath) {
-    roleVoiceProfileConfiguredCache.set(rid, false)
-    return false
-  }
-  try {
-    const result = (await directoryPluginInvoke(
-      VOICE_ASR_PLUGIN_ID,
-      'voice.read_role_profile',
-      { role_path: rolePath },
-    )) as { profile?: unknown }
-    const configured = typeof result.profile === 'object' && result.profile !== null
-    roleVoiceProfileConfiguredCache.set(rid, configured)
-    return configured
-  }
-  catch {
-    roleVoiceProfileConfiguredCache.set(rid, false)
-    return false
-  }
-}
-
-async function canAutoSpeakRole(
-  cfg: VoiceRuntimeConfig | null,
-  roleId: string,
-): Promise<boolean> {
-  if (!cfg?.tts_expansion_enabled || !cfg.auto_tts)
-    return false
-  const rid = roleId.trim()
-  if (!rid)
-    return false
-  if (cfg.role_tts_policy_explicit) {
-    const enabled = explicitVoiceRoleTtsDecision(
-      { role_tts_enabled: cfg.role_tts_enabled },
-      rid,
-    ) === true
-    return enabled && await roleHasVoiceProfile(rid)
-  }
-  // Compatibility for configs saved before the role map existed: only packs
-  // that actually contain voice_profile.json remain eligible.
-  return roleHasVoiceProfile(rid)
-}
-
-async function prefetchVoiceDirective(
-  roleId: string,
-  director: string,
-  emotion: string,
-): Promise<Record<string, unknown> | undefined> {
-  const cacheKey = directiveCacheKey(roleId, director, emotion)
-  const cached = directiveCache.get(cacheKey)
-  if (cached)
-    return cached
-  const pending = directivePending.get(cacheKey)
-  if (pending)
-    return pending
-  const promise = (async () => {
-    const rolePath = roleId ? await resolveRolePackPath(roleId) : ''
-    try {
-      const built = (await directoryPluginInvoke(
-        VOICE_ASR_PLUGIN_ID,
-        'voice.build_directive',
-        {
-          profile: director,
-          bot_emotion: emotion,
-          role_path: rolePath,
-        },
-      )) as { ok?: boolean, directive?: Record<string, unknown> }
-      return built.ok ? built.directive : undefined
-    }
-    catch {
-      return undefined
-    }
-  })()
-  directivePending.set(cacheKey, promise)
-  try {
-    const directive = await promise
-    if (directivePending.get(cacheKey) === promise && directive)
-      directiveCache.set(cacheKey, directive)
-    return directive
-  }
-  finally {
-    if (directivePending.get(cacheKey) === promise)
-      directivePending.delete(cacheKey)
-  }
 }
 
 /**
