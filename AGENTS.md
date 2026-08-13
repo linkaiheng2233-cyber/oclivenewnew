@@ -84,6 +84,7 @@
 ## 仅本文保留的易漏点
 
 - **中文写入红线**：禁管道/`-Encoding Ascii` 传中文；写中文文件只用 apply_patch 或 .NET UTF-8 无 BOM；写后自查汉字数>0、无 `\?{3,}`、无 BOM（SSOT：[handoff/debt-marathon/AI_AND_PIPELINE_GATES.md](handoff/debt-marathon/AI_AND_PIPELINE_GATES.md) §7）
+- **大文件拆分红线**：前端验收以 ESLint 为准（禁 `prettier --write`）；拆 TS 模块先 grep 每个符号的读/赋值/调用点（ES 导入 `let` 不可重赋值，TS2632）；公共 API 用再导出保持原路径；机械拆分行号断言 + `git show HEAD:<path>` 恢复 + eslint --fix/typecheck/单测；每条命令先 `Set-Location`，禁错误 cwd 裸 `npx`（SSOT：[handoff/debt-marathon/AI_AND_PIPELINE_GATES.md](handoff/debt-marathon/AI_AND_PIPELINE_GATES.md) §8）
 - **Tauri invoke**：Rust `snake_case` → 前端 **camelCase**（`distros/shared/src/api/`）
 - **权限**：directory 插件 / MCP / remote env 须用户授权（`network:*` · `process:spawn`）
 - **Remotion 演示**：独立仓 `oclive-remotion-demo`，勿在主仓根跑 `npm run preview`

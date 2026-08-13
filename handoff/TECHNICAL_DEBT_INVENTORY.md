@@ -1,6 +1,6 @@
 # Technical debt inventory
 
-**Last updated:** 2026-08-13（M2 收口：切片 0–3 本地提交 `9ae378ea` / `410a1faa` / `cddefd63` / `3611c994`；切片 4 情绪决策包存档（assistant metadata `emotion_pattern`/`emotion_confidence`/`emotion_intensity`/`emotion_dissonance`/`emotion_hint` + user metadata `user_emotion_scores`，空值省略写键、不动读路径/前端 API，host lib 463/463 · runtime 186/186 · M2 集成 2/2/6/8/1 全绿）+ K-EMO-05/06 登记；`emotion_source` 双语义（llm / degraded / fast·plugin raw source）为 039 迁移设计，已文档化于桌面对接文档 v1.22；收口推送哈希见同文档；轮次 29 收口：B M1 切片 0–4 已本地提交 `60d90d5b` / `1fe96cff` / `906ddf7a` / `a6984d9f` / `3cb6806b`，遵循「切片窄测本地提交、里程碑冻结再推送」；LLM 错误注入回归测试落地（`FailingLlmClient` → 兜底回复 + 情绪保持，host lib 454/454、clippy `-D warnings`、fmt 全绿）；K-EMO-02 更新为「M1 完成 · 待应用内验收」；K-EMO-03 登记（builtin 词表 provider 降级出口，多引用非单引用）；**轮次 29 收口完成（2026-08-12）**：应用内 playtest 通过（turn 23/24 `bot_emotion=happy` + `emotion_source=llm` 落库 + narrative hint 更新）→ K-EMO-02 标记已验收；release 内核重建（`3cb6806b` 全切片）替换 runtime shared + bundled resources，旧内核备份至 `runtime/backups/`；新增 K-EMO-04（dev bundled 路径解析 + manifest builtAt 恒空）；**降级模拟已执行（2026-08-12，API 端到端）**——llama-server 未运行 + 无 Ollama = LLM 整体不可用（形态 2）：POST /chat × 2 走临时 DB 零污染，兜底回复 + 情绪保持 + 无 [EMO] 残渣，正式 DB happy 未动；上轮 2026-08-11 记录见历史）
+**Last updated:** 2026-08-13（M2 收口：切片 0–3 本地提交 `9ae378ea` / `410a1faa` / `cddefd63` / `3611c994`；切片 4 情绪决策包存档（assistant metadata `emotion_pattern`/`emotion_confidence`/`emotion_intensity`/`emotion_dissonance`/`emotion_hint` + user metadata `user_emotion_scores`，空值省略写键、不动读路径/前端 API，host lib 463/463 · runtime 186/186 · M2 集成 2/2/6/8/1 全绿）+ K-EMO-05/06 登记；`emotion_source` 双语义（llm / degraded / fast·plugin raw source）为 039 迁移设计，已文档化于桌面对接文档 v1.22；收口推送哈希见同文档；轮次 29 收口：B M1 切片 0–4 已本地提交 `60d90d5b` / `1fe96cff` / `906ddf7a` / `a6984d9f` / `3cb6806b`，遵循「切片窄测本地提交、里程碑冻结再推送」；LLM 错误注入回归测试落地（`FailingLlmClient` → 兜底回复 + 情绪保持，host lib 454/454、clippy `-D warnings`、fmt 全绿）；K-EMO-02 更新为「M1 完成 · 待应用内验收」；K-EMO-03 登记（builtin 词表 provider 降级出口，多引用非单引用）；**轮次 29 收口完成（2026-08-12）**：应用内 playtest 通过（turn 23/24 `bot_emotion=happy` + `emotion_source=llm` 落库 + narrative hint 更新）→ K-EMO-02 标记已验收；release 内核重建（`3cb6806b` 全切片）替换 runtime shared + bundled resources，旧内核备份至 `runtime/backups/`；新增 K-EMO-04（dev bundled 路径解析 + manifest builtAt 恒空）；**降级模拟已执行（2026-08-12，API 端到端）**——llama-server 未运行 + 无 Ollama = LLM 整体不可用（形态 2）：POST /chat × 2 走临时 DB 零污染，兜底回复 + 情绪保持 + 无 [EMO] 残渣，正式 DB happy 未动；上轮 2026-08-11 记录见历史）；**轮次 29 上帝文件拆分收口（2026-08-13 · codex/docs-closeout-round29）**：Rust `kernel_attach` / `post` / `co_present` / `dto` / `blueprint_v2` / `role_runtime` db / `resource_coordinator` / `performance_llm` / `llm_settings` / `backend_registry` 十处子模块化，前端 `ModelManagerBody` / `useVoiceAutoTts` / `useTheaterShell` 三处拆分（theater 仅外移纯辅助至 `useTheaterShellUtil.ts`，主体拆分仍冻结）；全部零语义变更、独立提交；dimension5 `--ci` 26 项全 PASS，推至 `5231da63`；拆分红线已入 [AI_AND_PIPELINE_GATES §8](./debt-marathon/AI_AND_PIPELINE_GATES.md)）
 
 **Product freeze (Theater v0):** **Lifted** — 朋友 cohort 产品门通过（7/10 卧槽）；模式 2 playtest 扩展中；**模式 3 仍冻结**。见 [theater/MODE2_UNFREEZE.md](./theater/MODE2_UNFREEZE.md)。
 
@@ -207,7 +207,7 @@
 | **K-SUPPLY-06** | 位级可重复构建（reproducible） | — | **Deferred** · 见 SECURITY_AUDIT_SCOPE 局限 |
 | **K-SUPPLY-07** | SBOM（CycloneDX/SPDX） | — | **Deferred** · 政企/校企采购需求触发 |
 | **MEGA-SD-01** | `scene_director.rs` 巨无霸拆分 | 见 §2 解冻条件；零语义变更 PR |
-| **MEGA-TS-01** | `useTheaterShell.ts` 巨无霸拆分 | 见 §2；`mapTheaterInvokeError` 已先行减负（轮次 22） |
+| **MEGA-TS-01** | `useTheaterShell.ts` 巨无霸拆分 | 见 §2；`mapTheaterInvokeError` 已先行减负（轮次 22）；轮次 29（2026-08-13）已外移脚本辅助与 DTO 映射至 `useTheaterShellUtil.ts`（零行为变更），poke/cast/outline 主体拆分仍按 §2 冻结 |
 | **K-SUPPLY-08** | crate 作者信誉 / 发布历史系统审计 | — | **Observe** · 无成熟自动化方案 |
 | **K-SUPPLY-09** | 插件签名严格模式默认关闭 | **P1** | 官方/市场安装默认要求可验证签名；本地开发保留显式 opt-out，并补签名轮换/撤销流程 | **OPEN**（当前仅 `OCLIVE_PLUGIN_SIGNATURE_STRICT=1` 时校验 sidecar SHA-256；不能把源码提示当供应链证明） |
 | **K-SUPPLY-10** | GitHub Actions 仅固定可变 tag（`@v*` / `@stable`） | P2 | 所有外部 action 固定完整 commit SHA，并由 Dependabot/Renovate 维护升级 | **OPEN**（`actions/*`、`dtolnay/rust-toolchain`、`Swatinem/rust-cache` 均未 pin SHA） |
@@ -231,7 +231,7 @@
 | **§3.1** | 纯 library API 对称化 | 历史 [`RFC_OCLIVE_KERNEL_LIBRARY.md`](./archive/RFC_OCLIVE_KERNEL_LIBRARY.md) T0 |
 | **模式 3** | 用户大纲演绎 / Mode 3 `send_message` 长对话 | 模式 2 playtest 扩展后另开计划 |
 | **MEGA-SD-01** | `scene_director.rs` 拆 `theater/parse/` + `theater/modes/` | 模式 2 playtest 稳定 **或** 生产段 >2500 行 **或** 第二 remote 剧场插件 |
-| **MEGA-TS-01** | `useTheaterShell.ts` 拆 poke/cast/outline composable | 同上；Shell 仅编排 |
+| **MEGA-TS-01** | `useTheaterShell.ts` 拆 poke/cast/outline composable | 同上；Shell 仅编排。轮次 29 已先行外移纯辅助函数（`useTheaterShellUtil.ts`），主体拆分仍冻结 |
 | ~~**模式 2**~~ | — | **已解冻** · [`MODE2_RFC.md`](./theater/MODE2_RFC.md) · `outline_rewrite` |
 
 **Phase 5 结论（2026-06-25 更新）：** 朋友 cohort 产品门通过 → **模式 2 开工**；`dual_core` / `expert_routing` **机制可选、默认关**。详见 [`theater/DEVELOPMENT_ROADMAP.md`](./theater/DEVELOPMENT_ROADMAP.md) §5.5。
@@ -243,7 +243,7 @@
 | ID | 项 | 说明 | 触发条件 | 下一动作 |
 |----|-----|------|----------|----------|
 | **D-PORT-03** | `BackendRegistry` UFCS 转发层 | D-PORT-02 已拆窄；collapse 等 remote policy RFC | 第二 remote 插件后端落地 or D-PORT-02 解冻 | 起草 remote policy RFC；评估 UFCS 层删除 |
-| **D-READ-05** | `backend_registry` directory 子模块 | 机械拆文件；810 行可接受 | 文件 >1200 行 or 新 directory 后端类型 | 按子目录拆 `directory/` 模块 |
+| **D-READ-05** | `backend_registry` directory 子模块 | 机械拆文件；810 行可接受 | 文件 >1200 行 or 新 directory 后端类型 | **已执行**（轮次 29 · `backend_registry/{agent,directory,mcp,slots}` 子模块，零语义变更）；新触发：再度 >1200 行或新增 directory 后端类型 |
 | **D-TRAIT-01** | 28 trait 单实现裁决 | 已裁决表保留；Repository 五件套合并等长期 | 外部贡献者要求合并 trait | 单 PR 合并一对 trait + 文档 |
 | **D-POLICY-01** | Policy 三 trait 第二实现 | 等 remote policy RFC | remote policy RFC 合并 | 实现第二 `Policy*` 后端 |
 | **D-ORPHAN-02** | `oclive_schema` 微型 crate | wasm 边界评估后再定 | wasm 宿主立项 | 评估合并进 `oclive_kernel_types` |
