@@ -60,6 +60,31 @@ impl EmoLabel {
             Self::Neutral => "neutral",
         }
     }
+
+    /// Maps a seven-dimension label to the persisted six-slot emotion graph.
+    #[must_use]
+    const fn as_emotion(self) -> Emotion {
+        match self {
+            Self::Joy => Emotion::Happy,
+            Self::Sadness => Emotion::Sad,
+            Self::Anger => Emotion::Angry,
+            Self::Surprise => Emotion::Excited,
+            Self::Fear | Self::Disgust => Emotion::Confused,
+            Self::Neutral => Emotion::Neutral,
+        }
+    }
+}
+
+/// Maps the first recognized complex-emotion label to the six-slot graph.
+///
+/// Marker and plugin outputs share this consumer so archived labels, events,
+/// current emotion, and portrait selection cannot diverge by producer.
+#[must_use]
+pub(crate) fn dominant_emotion_from_labels(labels: &[String]) -> Option<Emotion> {
+    labels
+        .first()
+        .and_then(|label| EmoLabel::parse(label))
+        .map(EmoLabel::as_emotion)
 }
 
 /// Parsed marker payload after validation.
@@ -80,14 +105,7 @@ impl EmoMarker {
     /// surprise -> Excited); Shy intentionally does not participate.
     #[must_use]
     pub fn dominant_emotion(&self) -> Emotion {
-        match self.labels[0] {
-            EmoLabel::Joy => Emotion::Happy,
-            EmoLabel::Sadness => Emotion::Sad,
-            EmoLabel::Anger => Emotion::Angry,
-            EmoLabel::Surprise => Emotion::Excited,
-            EmoLabel::Fear | EmoLabel::Disgust => Emotion::Confused,
-            EmoLabel::Neutral => Emotion::Neutral,
-        }
+        self.labels[0].as_emotion()
     }
 
     /// Deterministic pattern for common two-label combos (order-insensitive);

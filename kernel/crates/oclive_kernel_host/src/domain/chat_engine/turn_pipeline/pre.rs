@@ -522,9 +522,15 @@ pub(crate) async fn pre_llm(ctx: &TurnContext<'_>) -> TurnResult<PreLlmOutput> {
                 .map_err(|e| super::super::turn_error::TurnError::wrap("resolve_llm_model", e))
         },
         async {
-            Ok::<String, super::super::turn_error::TurnError>(
-                load_prev_narrative_hint(state, srid).await,
+            let hint_enabled = crate::domain::complex_emotion_store::role_complex_emotion_backend(
+                ctx.session_config.slot_registry.as_ref(),
             )
+            .persists_hint();
+            Ok::<String, super::super::turn_error::TurnError>(if hint_enabled {
+                load_prev_narrative_hint(state, srid).await
+            } else {
+                String::new()
+            })
         },
         load_memories_and_relation_key(ctx),
     )?;

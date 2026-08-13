@@ -18,7 +18,10 @@ use super::super::pre::{
 use super::super::TurnMode;
 use crate::domain::chat_engine::chat_stage::ChatStage;
 use crate::domain::complex_emotion::{ComplexEmotionOutput, FAST_INTENSITY_SOURCE};
-use crate::domain::emo_marker::EmoMarker;
+use crate::domain::complex_emotion_store::{
+    role_complex_emotion_backend, RoleComplexEmotionBackend,
+};
+use crate::domain::emo_marker::{dominant_emotion_from_labels, EmoMarker};
 use crate::domain::host_profile::bench_telemetry_enabled;
 use crate::domain::policy::PolicyContext;
 use crate::domain::reply_post_processor::resolve_reply_post_processor;
@@ -29,7 +32,6 @@ use crate::domain::turn_thinking::{
 use crate::models::dto::{AdultBeatDto, DisplayMetricsDto, SendMessageResponse};
 use crate::models::{Emotion, Event, PersonalitySource, Role};
 use oclive_kernel_contracts::reply_post_processor::PostProcessInput;
-use oclive_validation::slot_registry_instances_sorted;
 
 /// Artifacts produced during post-LLM orchestration, passed to response assembly.
 pub(super) struct TurnArtifacts<'a> {
@@ -329,7 +331,10 @@ async fn resolve_effective_complex_emotion(
     if middle.complex_emotion_out.source == FAST_INTENSITY_SOURCE {
         return Ok(middle.complex_emotion_out.clone());
     }
-    if role_complex_emotion_backend_is_plugin(ctx.session_config.slot_registry.as_ref()) {
+    if matches!(
+        role_complex_emotion_backend(ctx.session_config.slot_registry.as_ref()),
+        RoleComplexEmotionBackend::Plugin
+    ) {
         let input = build_complex_emotion_turn_input(
             ctx.mrid,
             ctx.scene_id,
@@ -355,21 +360,6 @@ async fn resolve_effective_complex_emotion(
         degraded_to_builtin: false,
         extension: None,
     })
-}
-
-/// True when the role explicitly configures a remote/directory `complex_emotion`
-/// backend: degradation falls back to the plugin chain, while builtin/none keep.
-fn role_complex_emotion_backend_is_plugin(
-    slot_registry: Option<
-        &std::collections::BTreeMap<String, oclive_validation::SlotRegistryEntry>,
-    >,
-) -> bool {
-    let Some(registry) = slot_registry else {
-        return false;
-    };
-    slot_registry_instances_sorted(registry, "complex_emotion")
-        .iter()
-        .any(|(_, entry)| matches!(entry.backend.trim(), "remote" | "directory"))
 }
 
 pub(crate) async fn post_llm(
@@ -429,7 +419,7 @@ pub(crate) async fn post_llm(
         pre,
         middle,
         ctx.runtime_snapshot.emotion.clone(),
-        emo_marker.as_ref().map(EmoMarker::dominant_emotion),
+        dominant_emotion_from_labels(&effective_complex_emotion.labels),
     )
     .await?;
 
@@ -547,6 +537,7 @@ pub(crate) async fn post_llm(
 
     if matches!(mode, TurnMode::CoPresent)
         && !effective_complex_emotion.source.eq(FAST_INTENSITY_SOURCE)
+        && role_complex_emotion_backend(ctx.session_config.slot_registry.as_ref()).persists_hint()
     {
         let hint = effective_complex_emotion.narrative_hint.clone();
         if !hint.trim().is_empty() {

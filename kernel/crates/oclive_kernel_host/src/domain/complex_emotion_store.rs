@@ -4,9 +4,46 @@ use crate::domain::repository::ComplexEmotionHintStore;
 use crate::error::Result;
 use crate::state::{AppState, SessionCache};
 use chrono::{DateTime, Duration, Utc};
+use oclive_validation::{slot_registry_instances_sorted, SlotRegistryEntry};
+use std::collections::BTreeMap;
 
 /// Clear `narrative_hint` on read when it has not been updated within this many hours. May move to role pack / settings later.
 pub const COMPLEX_EMOTION_HINT_TTL_HOURS: i64 = 24;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum RoleComplexEmotionBackend {
+    Disabled,
+    Builtin,
+    Plugin,
+}
+
+impl RoleComplexEmotionBackend {
+    #[must_use]
+    pub(crate) const fn persists_hint(self) -> bool {
+        matches!(self, Self::Builtin | Self::Plugin)
+    }
+}
+
+/// Returns the effective last-wins `complex_emotion` backend for this role.
+/// Omitted and explicit `none` entries both disable hint reads and writes.
+#[must_use]
+pub(crate) fn role_complex_emotion_backend(
+    slot_registry: Option<&BTreeMap<String, SlotRegistryEntry>>,
+) -> RoleComplexEmotionBackend {
+    let Some(registry) = slot_registry else {
+        return RoleComplexEmotionBackend::Disabled;
+    };
+    slot_registry_instances_sorted(registry, "complex_emotion")
+        .last()
+        .map_or(
+            RoleComplexEmotionBackend::Disabled,
+            |(_, entry)| match entry.backend.trim() {
+                "builtin" => RoleComplexEmotionBackend::Builtin,
+                "remote" | "directory" => RoleComplexEmotionBackend::Plugin,
+                _ => RoleComplexEmotionBackend::Disabled,
+            },
+        )
+}
 
 fn parse_updated_at(raw: &str) -> Option<DateTime<Utc>> {
     DateTime::parse_from_rfc3339(raw)
