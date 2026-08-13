@@ -5,13 +5,13 @@
 | 字段 | 值 |
 |------|-----|
 | **债 ID** | V-MODULE-QUALITY-01 |
-| **台账** | `TECHNICAL_DEBT_INVENTORY.md` · V-MODULE-QUALITY-01 OPEN |
+| **台账** | `TECHNICAL_DEBT_INVENTORY.md` · V-MODULE-QUALITY-01 Done-eligible |
 | **标题** | 固定角色、场景与 replay 的 memory / emotion / prompt / LLM 质量对比 harness |
 | **尺寸** | L |
 | **Minimal / Full** | 本书推进 Full；各 Stage 必须保持可独立回滚 |
 | **Owner** | main-repo |
 | **runner** | auto |
-| **状态** | Ready · Stage 4 local evidence recorded；待 exact-head 远程 CI |
+| **状态** | Closed · Stage 4 exact-head remote CI success；等待普通合并 |
 | **更新** | 2026-08-14 |
 
 ## AI + OCLive
@@ -27,8 +27,8 @@
   "version": 1,
   "id": "V-MODULE-QUALITY-01",
   "runner": "auto",
-  "planStatus": "ready",
-  "parentDebtDisposition": "keep-open",
+  "planStatus": "closed",
+  "parentDebtDisposition": "done-eligible",
   "currentStage": 4,
   "prerequisites": [],
   "stages": [
@@ -152,6 +152,12 @@
 - `npm run check:ci-local` 的外层本机执行窗口在最后重复 monolith release build 处到达 10 分钟上限，因此不伪记统一命令 exit 0；其组成门禁均已独立取得 exit 0。Stage 4 仍需 exact-head 远程 CI 才能关闭父债。
 - 长时硬件 soak、30 分钟 voice 矩阵与人工听感按维护者决策延期到新电脑，不混作本次 CI 缺陷。
 
+## Stage 4 远程结论
+
+- 实现与本地证据 head `4944fdf51b7313ed84a7e069073644b571912355` 的主 CI [`31739849579`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/31739849579) **16/16 success**；严格审计 [`31739849550`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/31739849550) **success**。
+- Windows/Linux Rust、ARM64、dual-core、CLI、前端双平台、OOCP、cross-host、Dimension 5、依赖与仓库治理门禁均成功；Action Node 24 代际已由真实 CI 证明兼容。
+- 父债可记 Done-eligible；仍保留“可复现合同基线，不代表真实模型普适主观排名”的解释边界。
+
 ## 目标
 
 - 同一份固定角色、场景和多轮 replay 输入可被不同 memory、emotion、prompt、LLM 模块组合重复消费。
@@ -176,4 +182,4 @@
 
 ## 下一跳
 
-Stage 4 remote：推送并记录 exact-head 远程 CI。参考 fixture 与 deterministic remote-slot 配置已满足“至少两套显式配置”的机械门槛，但它们不是两套真实生产模型抽样；关闭父债时必须在 Wave 中保留这一解释边界，不得宣称模型普适优劣。
+普通合并 PR #156；合并后确认 merge exact-head 主 CI。随后进入 R18 配置只读审计，参考 fixture 与 deterministic remote-slot 的证据不得被改写为真实生产模型的主观排名。
