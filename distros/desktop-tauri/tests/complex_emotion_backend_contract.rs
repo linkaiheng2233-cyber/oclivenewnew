@@ -177,6 +177,7 @@ async fn none_backend_updates_emotion_but_neither_reads_nor_writes_hint() {
 
 async fn remote_complex_emotion(Json(body): Json<Value>) -> Json<Value> {
     let id = body.get("id").cloned().unwrap_or(json!(1));
+    let oversized_hint = "R".repeat(205);
     assert_eq!(
         body.get("method").and_then(Value::as_str),
         Some("complex_emotion.resolve_turn")
@@ -186,7 +187,7 @@ async fn remote_complex_emotion(Json(body): Json<Value>) -> Json<Value> {
         "id": id,
         "result": {
             "source": "remote_contract_test",
-            "narrative_hint": "remote hint",
+            "narrative_hint": oversized_hint,
             "labels": ["anger", "sadness"],
             "pattern": "resentful_sad",
             "confidence": 0.9,
@@ -240,7 +241,8 @@ async fn remote_fallback_labels_drive_current_and_event_emotion() {
         load_stored_narrative_hint(&state, &srid)
             .await
             .expect("stored hint"),
-        "remote hint"
+        "R".repeat(200),
+        "plugin output must cross the same hard hint boundary as marker output"
     );
 
     sidecar_task.abort();

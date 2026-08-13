@@ -1,5 +1,6 @@
 //! Complex emotion `narrative_hint` persistence and session cache (injected into main Prompt one turn later).
 
+use crate::domain::emo_marker::truncate_narrative_hint;
 use crate::domain::repository::ComplexEmotionHintStore;
 use crate::error::Result;
 use crate::state::{AppState, SessionCache};
@@ -115,6 +116,7 @@ pub(crate) async fn persist_stored_narrative_hint_to_parts(
     srid: &str,
     hint: String,
 ) {
+    let hint = truncate_narrative_hint(&hint);
     session_cache.set_stored_complex_emotion_narrative_hint(srid, hint.clone());
     let trimmed = hint.trim();
     if trimmed.is_empty() {
@@ -194,5 +196,32 @@ mod tests {
             .await
             .expect("get")
             .is_none());
+    }
+
+    #[tokio::test]
+    async fn persistence_defensively_caps_oversized_hint() {
+        let db = mem_db().await;
+        let cache = SessionCache::new();
+        let srid = "role_c";
+        let oversized = format!(
+            "{}{}",
+            "情".repeat(crate::domain::emo_marker::MAX_NARRATIVE_HINT_CHARS),
+            "🙂".repeat(5)
+        );
+
+        persist_stored_narrative_hint_to_parts(&cache, &db, srid, oversized).await;
+        cache.clear_complex_emotion_narrative_hint_cache(srid);
+        let stored = load_stored_narrative_hint_from_parts(&cache, &db, srid)
+            .await
+            .expect("load");
+
+        assert_eq!(
+            stored.chars().count(),
+            crate::domain::emo_marker::MAX_NARRATIVE_HINT_CHARS
+        );
+        assert_eq!(
+            stored,
+            "情".repeat(crate::domain::emo_marker::MAX_NARRATIVE_HINT_CHARS)
+        );
     }
 }

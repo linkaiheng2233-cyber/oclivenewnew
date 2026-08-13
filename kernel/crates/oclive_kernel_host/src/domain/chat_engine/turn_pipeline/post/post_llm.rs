@@ -21,7 +21,7 @@ use crate::domain::complex_emotion::{ComplexEmotionOutput, FAST_INTENSITY_SOURCE
 use crate::domain::complex_emotion_store::{
     role_complex_emotion_backend, RoleComplexEmotionBackend,
 };
-use crate::domain::emo_marker::{dominant_emotion_from_labels, EmoMarker};
+use crate::domain::emo_marker::{dominant_emotion_from_labels, truncate_narrative_hint, EmoMarker};
 use crate::domain::host_profile::bench_telemetry_enabled;
 use crate::domain::policy::PolicyContext;
 use crate::domain::reply_post_processor::resolve_reply_post_processor;
@@ -387,8 +387,10 @@ pub(crate) async fn post_llm(
     let t_post_llm = Instant::now();
     let reply = llm.reply.clone();
     let (clean_reply, emo_marker) = crate::domain::emo_marker::parse_and_strip(&reply);
-    let effective_complex_emotion =
+    let mut effective_complex_emotion =
         resolve_effective_complex_emotion(ctx, mode, pre, middle, emo_marker.as_ref()).await?;
+    effective_complex_emotion.narrative_hint =
+        truncate_narrative_hint(&effective_complex_emotion.narrative_hint);
     let parsed_adult_beat = matches!(mode, TurnMode::CoPresent)
         .then(|| {
             crate::domain::adult_interaction::parse_reply(

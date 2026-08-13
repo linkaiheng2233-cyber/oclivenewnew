@@ -19,6 +19,14 @@ pub const EMO_MARKER_CLOSE: &str = "[/EMO]";
 pub const EMO_MARKER_SOURCE: &str = "llm_emo_marker";
 /// `ComplexEmotionOutput.source` for the degraded keep branch (no marker, non-plugin backend).
 pub const DEGRADED_KEEP_SOURCE: &str = "degraded_keep";
+/// Hard upper bound for model/plugin-generated narrative hints.
+pub const MAX_NARRATIVE_HINT_CHARS: usize = 200;
+
+/// Applies the contract limit without splitting UTF-8 code points.
+#[must_use]
+pub(crate) fn truncate_narrative_hint(raw: &str) -> String {
+    raw.chars().take(MAX_NARRATIVE_HINT_CHARS).collect()
+}
 
 /// Seven-dimension emotion labels accepted by the `[EMO]` contract (v1.5 §11.1).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -174,11 +182,13 @@ impl EmoMarker {
 #[must_use]
 pub fn parse_and_strip(reply: &str) -> (String, Option<EmoMarker>) {
     let mut blocks = Vec::new();
+    let mut unclosed_start = None;
     let mut scan = 0;
     while let Some(rel_start) = reply[scan..].find(EMO_MARKER_OPEN) {
         let start = scan + rel_start;
         let body_start = start + EMO_MARKER_OPEN.len();
         let Some(rel_close) = reply[body_start..].find(EMO_MARKER_CLOSE) else {
+            unclosed_start = Some(start);
             break;
         };
         let body_end = body_start + rel_close;
@@ -187,12 +197,23 @@ pub fn parse_and_strip(reply: &str) -> (String, Option<EmoMarker>) {
         scan = close_end;
     }
 
-    let Some((_, body_start, body_end, _)) = blocks.last().copied() else {
-        return (reply.to_string(), None);
+    let marker = if unclosed_start.is_some() {
+        None
+    } else {
+        blocks
+            .last()
+            .copied()
+            .and_then(|(_, body_start, body_end, _)| parse_marker(&reply[body_start..body_end]))
     };
-    let marker = parse_marker(&reply[body_start..body_end]);
+
+    if blocks.is_empty() && unclosed_start.is_none() {
+        return (reply.to_string(), None);
+    }
 
     let mut cleaned = reply.to_string();
+    if let Some(start) = unclosed_start {
+        cleaned.replace_range(start.., "");
+    }
     for (start, _, _, close_end) in blocks.into_iter().rev() {
         cleaned.replace_range(start..close_end, "");
     }
@@ -220,7 +241,10 @@ fn parse_marker(raw: &str) -> Option<EmoMarker> {
     Some(EmoMarker {
         labels,
         intensity,
-        narrative_hint: parsed.narrative_hint,
+        narrative_hint: parsed
+            .narrative_hint
+            .as_deref()
+            .map(truncate_narrative_hint),
     })
 }
 
@@ -315,10 +339,18 @@ mod tests {
     }
 
     #[test]
-    fn unclosed_marker_degrades_without_stripping() {
+    fn unclosed_marker_degrades_and_strips_internal_tail() {
         let reply = "台词[EMO]{\"labels\":[\"joy\"]}";
         let (cleaned, parsed) = parse_and_strip(reply);
-        assert_eq!(cleaned, reply);
+        assert_eq!(cleaned, "台词");
+        assert!(parsed.is_none());
+    }
+
+    #[test]
+    fn trailing_unclosed_marker_invalidates_last_attempt_and_strips_all_markers() {
+        let reply = "台词[EMO]{\"labels\":[\"joy\"]}[/EMO]中间[EMO]{\"labels\":[\"anger\"]}";
+        let (cleaned, parsed) = parse_and_strip(reply);
+        assert_eq!(cleaned, "台词中间");
         assert!(parsed.is_none());
     }
 
@@ -341,6 +373,22 @@ mod tests {
             parse_and_strip(empty).1.unwrap().narrative_hint,
             Some(String::new())
         );
+    }
+
+    #[test]
+    fn narrative_hint_is_hard_capped_by_unicode_characters() {
+        let hint = format!(
+            "{}{}",
+            "情".repeat(MAX_NARRATIVE_HINT_CHARS),
+            "🙂".repeat(5)
+        );
+        let reply = format!(
+            "台词[EMO]{{\"labels\":[\"joy\"],\"intensity\":0.5,\"narrative_hint\":\"{hint}\"}}[/EMO]"
+        );
+        let parsed = parse_and_strip(&reply).1.expect("marker parsed");
+        let stored = parsed.narrative_hint.expect("hint");
+        assert_eq!(stored.chars().count(), MAX_NARRATIVE_HINT_CHARS);
+        assert_eq!(stored, "情".repeat(MAX_NARRATIVE_HINT_CHARS));
     }
 
     #[test]
