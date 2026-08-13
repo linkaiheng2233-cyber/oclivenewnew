@@ -46,6 +46,8 @@
     "ci:shadow-samples": "node scripts/collect-ci-shadow-samples.mjs",
     "check:debt-marathon": "node scripts/check-debt-marathon.mjs",
     "check:module-compat": "node scripts/check-module-compat.mjs && node scripts/validate-plugins-index.mjs",
+    "test:module-quality": "node scripts/module-quality-harness.mjs --self-test && node scripts/module-quality-runner.mjs --self-test && node scripts/module-quality-compare.mjs --self-test",
+    "quality:modules": "node scripts/module-quality-runner.mjs --compare-with examples/module-quality-harness/fixtures/observations.reference.v1.json --output target/oclive-module-quality/observations.current.json",
     "test:cursor-marathon-hook": "node scripts/test-cursor-marathon-hook.mjs",
     "typecheck": "vue-tsc --noEmit -p tsconfig.app.json",
     "check:frontend": "npm run lint && npm run typecheck && npm run test:unit && npm run test:theater:smoke && npm run build:e2e",

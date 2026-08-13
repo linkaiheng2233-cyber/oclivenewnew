@@ -51,6 +51,15 @@
 | `oclive bench --json` | [`oclive_bench_report.schema.json`](../../kernel/crates/oclive-cli/schemas/oclive_bench_report.schema.json) |
 | `oclive doctor --json` | [`oclive_doctor_report.schema.json`](../../kernel/crates/oclive-cli/schemas/oclive_doctor_report.schema.json) |
 
+## 模块行为质量报告
+
+[`MODULE_QUALITY_HARNESS.md`](./MODULE_QUALITY_HARNESS.md) 定义独立的 fixture observation、单配置 `report` 与多配置 `comparison`：
+
+- `report.dimensions.memory|emotion|prompt|llm` 分别包含 `passed`、`total`、`score`；不生成总分。
+- `comparison.quality.configurations[]` 保留每套四模块身份、观察 digest、用例摘要与四维分数。
+- `comparison.performance.status` 当前为 `not_measured`，`metrics` 为空；行为质量报告不冒充性能报告。
+- suite、observation 与 comparison 都由 SHA-256 digest 绑定，比较时 suite digest 必须一致。
+
 ---
 
 [English](../../creator-docs-en/testing/TEST_OUTPUT_SCHEMA.md)

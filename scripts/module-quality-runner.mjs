@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 
 import { resolveRepoRoot } from "./lib/chat-pro-roles-dir.mjs";
 import { captureObservations } from "./lib/module-quality/capture.mjs";
+import { compareObservationFiles } from "./lib/module-quality/comparison.mjs";
 import {
   assert,
   buildFixtureReply,
@@ -95,6 +96,7 @@ async function main() {
   }
   const suitePath = resolve(valueAfter(args, "--suite") ?? DEFAULT_SUITE);
   const outputPath = valueAfter(args, "--output");
+  const compareWithPath = valueAfter(args, "--compare-with");
   const suite = readJson(suitePath, "suite");
   assert(
     suite?.schema_version === 1 && Array.isArray(suite.cases),
@@ -110,7 +112,21 @@ async function main() {
   const observationsPath = writeJson(outputPath ?? tempOutput, observations);
   try {
     const report = runScorer(suitePath, observationsPath);
-    console.log(JSON.stringify({ observations, report }, null, 2));
+    const comparison = compareWithPath
+      ? compareObservationFiles({
+          harnessPath: join(SCRIPT_DIR, "module-quality-harness.mjs"),
+          suitePath,
+          observationPaths: [resolve(compareWithPath), observationsPath],
+          repoRoot: REPO_ROOT,
+        })
+      : undefined;
+    console.log(
+      JSON.stringify(
+        comparison ? { observations, report, comparison } : { observations, report },
+        null,
+        2,
+      ),
+    );
   } finally {
     if (tempOutput) {
       rmSync(dirname(tempOutput), { recursive: true, force: true });

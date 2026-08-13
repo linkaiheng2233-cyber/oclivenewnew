@@ -106,6 +106,12 @@ runStep('debt marathon contracts', () => {
   sh('node', ['scripts/check-debt-marathon.mjs']);
 });
 
+runStep('module quality contracts', () => {
+  sh('node', ['scripts/module-quality-harness.mjs', '--self-test']);
+  sh('node', ['scripts/module-quality-runner.mjs', '--self-test']);
+  sh('node', ['scripts/module-quality-compare.mjs', '--self-test']);
+});
+
 runStep('debt marathon stop-hook self-test', () => {
   sh('node', ['scripts/test-cursor-marathon-hook.mjs']);
 });
