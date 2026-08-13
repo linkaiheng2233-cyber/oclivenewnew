@@ -28,14 +28,18 @@ fn discovery_anchors(resource_dir: Option<&std::path::Path>) -> Vec<PathBuf> {
 }
 
 fn bundled_kernel_binary(resource_dir: Option<&std::path::Path>) -> Option<PathBuf> {
-    resource_dir.map(|res| {
-        let name = if cfg!(windows) {
-            "oclive-kernel-server.exe"
-        } else {
-            "oclive-kernel-server"
-        };
-        res.join(name)
-    })
+    let resource_dir = resource_dir?;
+    let name = if cfg!(windows) {
+        "oclive-kernel-server.exe"
+    } else {
+        "oclive-kernel-server"
+    };
+    [
+        resource_dir.join(name),
+        resource_dir.join("resources").join(name),
+    ]
+    .into_iter()
+    .find(|candidate| candidate.is_file())
 }
 
 /// Run [`bootstrap_desktop`] on a dedicated Tokio runtime (safe inside Tauri `.setup`).
@@ -143,4 +147,42 @@ pub fn finish_desktop_setup(
         anchors,
         bundled,
     );
+}
+
+#[cfg(test)]
+mod tests {
+    use super::bundled_kernel_binary;
+
+    fn kernel_name() -> &'static str {
+        if cfg!(windows) {
+            "oclive-kernel-server.exe"
+        } else {
+            "oclive-kernel-server"
+        }
+    }
+
+    #[test]
+    fn bundled_kernel_resolves_release_resource_layout() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let binary = temp.path().join(kernel_name());
+        std::fs::write(&binary, b"kernel").expect("write binary");
+
+        assert_eq!(
+            bundled_kernel_binary(Some(temp.path())).as_deref(),
+            Some(binary.as_path())
+        );
+    }
+
+    #[test]
+    fn bundled_kernel_resolves_tauri_development_resource_layout() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let binary = temp.path().join("resources").join(kernel_name());
+        std::fs::create_dir_all(binary.parent().expect("binary parent")).expect("create resources");
+        std::fs::write(&binary, b"kernel").expect("write binary");
+
+        assert_eq!(
+            bundled_kernel_binary(Some(temp.path())).as_deref(),
+            Some(binary.as_path())
+        );
+    }
 }

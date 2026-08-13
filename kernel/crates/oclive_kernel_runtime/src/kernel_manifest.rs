@@ -131,7 +131,7 @@ impl KernelBinaryManifest {
         match semver_cmp(&self.version, &other.version) {
             Ordering::Greater => Ordering::Greater,
             Ordering::Less => Ordering::Less,
-            Ordering::Equal => self.built_at.cmp(&other.built_at),
+            Ordering::Equal => build_timestamp_cmp(&self.built_at, &other.built_at),
         }
     }
 
@@ -181,6 +181,13 @@ fn semver_cmp(a: &str, b: &str) -> std::cmp::Ordering {
     std::cmp::Ordering::Equal
 }
 
+fn build_timestamp_cmp(a: &str, b: &str) -> std::cmp::Ordering {
+    match (a.parse::<u64>(), b.parse::<u64>()) {
+        (Ok(a), Ok(b)) => a.cmp(&b),
+        _ => a.cmp(b),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -222,5 +229,42 @@ mod tests {
             ..a.clone()
         };
         assert_eq!(a.cmp_for_promote(&b), std::cmp::Ordering::Greater);
+    }
+
+    #[test]
+    fn newer_build_timestamp_breaks_equal_version_ties() {
+        let old = KernelBinaryManifest {
+            version: "0.2.0".into(),
+            build_profile: "full".into(),
+            feature_set: default_feature_set("full"),
+            built_at: "1786500000".into(),
+            git_commit: Some("old".into()),
+            runtime_api_version: "0.2.0".into(),
+        };
+        let new = KernelBinaryManifest {
+            built_at: "1786500001".into(),
+            git_commit: Some("new".into()),
+            ..old.clone()
+        };
+
+        assert_eq!(new.cmp_for_promote(&old), std::cmp::Ordering::Greater);
+    }
+
+    #[test]
+    fn numeric_build_timestamps_do_not_compare_lexically() {
+        assert_eq!(build_timestamp_cmp("10", "9"), std::cmp::Ordering::Greater);
+    }
+
+    #[test]
+    fn compile_time_manifest_contains_build_identity() {
+        let manifest = KernelBinaryManifest::from_compile_time_env();
+        assert!(manifest.built_at.parse::<u64>().is_ok());
+        assert!(!manifest.built_at.is_empty());
+        if option_env!("OCLIVE_KERNEL_GIT_COMMIT").is_some() {
+            assert!(manifest
+                .git_commit
+                .as_ref()
+                .is_some_and(|value| value.len() >= 7));
+        }
     }
 }

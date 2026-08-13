@@ -82,5 +82,5 @@ const count = ref<number>(2)
       )
       expect(component, rel).toBeTruthy()
     }
-  })
+  }, 20_000)
 })

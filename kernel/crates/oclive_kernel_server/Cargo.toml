@@ -7,7 +7,6 @@ description = "Headless oclive kernel HTTP server (no Tauri window)"
 repository = "https://github.com/linkaiheng2233-cyber/oclivenewnew"
 keywords = ["oclive", "kernel", "headless", "http"]
 categories = ["command-line-utilities"]
-build = "build.rs"
 
 [lints]
 workspace = true
