@@ -101,7 +101,7 @@ async function flushMicrotasks(rounds = 12): Promise<void> {
   await nextTick()
 }
 
-function mountManager() {
+function mountManager(useRealSharedComponents = false) {
   const i18n = createI18n({
     legacy: false,
     locale: 'en',
@@ -112,10 +112,12 @@ function mountManager() {
   return mount(ModelManagerBody, {
     global: {
       plugins: [i18n],
-      stubs: {
-        HelpHint: true,
-        UiButton: true,
-      },
+      stubs: useRealSharedComponents
+        ? {}
+        : {
+            HelpHint: true,
+            UiButton: true,
+          },
     },
   })
 }
@@ -249,6 +251,19 @@ describe('model manager async ownership', () => {
     await flushMicrotasks()
 
     expect(useRoleStore().applyRoleInfo).not.toHaveBeenCalled()
+
+    wrapper.unmount()
+  })
+
+  it('renders the real shared controls used by the production template', async () => {
+    const settings = settingsFor('http://role.test')
+    settings.localRuntimeMode = 'performance'
+    mocks.getSettings.mockResolvedValue(settings)
+    const wrapper = mountManager(true)
+    await flushMicrotasks()
+
+    expect(wrapper.find('.mm-lora-route .help-hint').exists()).toBe(true)
+    expect(wrapper.findAll('.mm-footer button.ui-btn')).toHaveLength(2)
 
     wrapper.unmount()
   })

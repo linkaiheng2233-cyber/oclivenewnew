@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import HelpHint from '../shared/HelpHint.vue'
+import UiButton from '../ui/UiButton.vue'
 import { useModelManagerBody } from './useModelManagerBody'
 
 const emit = defineEmits<{
