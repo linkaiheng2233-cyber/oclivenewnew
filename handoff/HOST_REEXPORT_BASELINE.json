@@ -1,7 +1,7 @@
 {
   "description": "Max `use crate::domain::<runtime_engine>` lines under crates/oclive_kernel_host (excluding domain/mod.rs re-export block). Ratchet down only.",
-  "host_runtime_reexport_imports": 76,
-  "updated": "2026-06-11",
-  "note": "D-OPUS-05 Wave 3: pre.rs MemoryEngine → oclive_kernel_runtime::domain",
+  "host_runtime_reexport_imports": 75,
+  "updated": "2026-08-13",
+  "note": "MEGA split: backend_registry children import oclive_kernel_runtime::domain directly (76 -> 75)",
   "check_command": "node scripts/check-host-reexport-imports.mjs"
 }
