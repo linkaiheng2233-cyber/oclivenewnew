@@ -23,6 +23,7 @@ from typing import Any
 
 
 CREATE_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+IS_WINDOWS = os.name == "nt"
 
 
 def parse_args() -> argparse.Namespace:
@@ -273,11 +274,48 @@ class GpuSampler:
 
 def terminate(process: subprocess.Popen[Any] | None) -> dict[str, Any]:
     if process is None:
-        return {"started": False, "pid": None, "returncode": None, "reaped": True}
+        return {
+            "started": False,
+            "pid": None,
+            "returncode": None,
+            "reaped": True,
+            "tree_termination": {
+                "attempted": False,
+                "method": "none",
+                "returncode": None,
+                "succeeded": True,
+            },
+        }
     pid = process.pid
+    tree_termination = {
+        "attempted": False,
+        "method": "single_process",
+        "returncode": None,
+        "succeeded": True,
+    }
     try:
         if process.poll() is None:
-            process.terminate()
+            if IS_WINDOWS:
+                tree_termination.update(
+                    {
+                        "attempted": True,
+                        "method": "taskkill_tree",
+                    }
+                )
+                result = subprocess.run(
+                    ["taskkill", "/PID", str(pid), "/T", "/F"],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                    timeout=15,
+                    creationflags=CREATE_NO_WINDOW,
+                )
+                tree_termination["returncode"] = result.returncode
+                tree_termination["succeeded"] = result.returncode == 0
+                if result.returncode != 0 and process.poll() is None:
+                    process.terminate()
+            else:
+                process.terminate()
         process.wait(timeout=10)
     except subprocess.TimeoutExpired:
         try:
@@ -292,6 +330,7 @@ def terminate(process: subprocess.Popen[Any] | None) -> dict[str, Any]:
         "pid": pid,
         "returncode": process.returncode,
         "reaped": process.poll() is not None,
+        "tree_termination": tree_termination,
     }
 
 

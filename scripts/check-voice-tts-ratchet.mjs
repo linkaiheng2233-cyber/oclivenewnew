@@ -135,6 +135,7 @@ import threading
 import time
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import patch
 sys.path.insert(0, r'${voiceLoop.replace(/\\/g, '/')}')
 from tts.engines.registry import get_registry
 from tts.engines import _http
@@ -577,6 +578,38 @@ stress_path = Path(r'${path.join(repoRoot, 'scripts/stress-voice-gpu-runtime.py'
 stress_spec = importlib.util.spec_from_file_location('oclive_voice_gpu_stress', stress_path)
 stress = importlib.util.module_from_spec(stress_spec)
 stress_spec.loader.exec_module(stress)
+
+class FakeStressProcess:
+    def __init__(self):
+        self.pid = 43210
+        self.returncode = None
+    def poll(self):
+        return self.returncode
+    def terminate(self):
+        self.returncode = 1
+    def kill(self):
+        self.returncode = 1
+    def wait(self, timeout):
+        self.returncode = 1
+        return self.returncode
+
+fake_process = FakeStressProcess()
+with patch.object(stress, 'IS_WINDOWS', True), patch.object(
+    stress.subprocess,
+    'run',
+    return_value=SimpleNamespace(returncode=0),
+) as taskkill:
+    cleanup = stress.terminate(fake_process)
+taskkill.assert_called_once()
+assert taskkill.call_args.args[0] == ['taskkill', '/PID', '43210', '/T', '/F']
+assert cleanup['reaped'] is True
+assert cleanup['tree_termination'] == {
+    'attempted': True,
+    'method': 'taskkill_tree',
+    'returncode': 0,
+    'succeeded': True,
+}
+
 with tempfile.TemporaryDirectory() as temp_dir:
     output = Path(temp_dir) / 'soak.json'
     args = SimpleNamespace(output=output, duration_minutes=72.0, gpu_layers=22)
