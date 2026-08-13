@@ -34,8 +34,8 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version-file: ".nvmrc"
       - uses: dtolnay/rust-toolchain@stable
@@ -58,7 +58,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - name: proptest fuzz harness
         run: cargo test --locked -p oclive_validation --test proptest_fuzz_parsing
@@ -71,7 +71,7 @@ jobs:
           done
       - name: Upload minimized fuzz failures
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: nightly-fuzz-artifacts-${{ github.run_id }}-${{ github.run_attempt }}
           path: kernel/fuzz/artifacts/**
@@ -83,7 +83,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - name: oclive bench smoke (no hard thresholds)
         run: |
@@ -96,7 +96,7 @@ jobs:
           test -s "$report"
       - name: Upload CLI benchmark evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: nightly-cli-bench-${{ github.run_id }}-${{ github.run_attempt }}
           path: target/oclive-ci/nightly/cli-bench.json
@@ -108,8 +108,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version-file: ".nvmrc"
           cache: npm
@@ -123,8 +123,8 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version-file: ".nvmrc"
           cache: npm
@@ -152,7 +152,7 @@ jobs:
           xvfb-run -a bash scripts/e2e-tauri-native-ci.sh
       - name: Upload e2e-tauri driver logs
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: e2e-tauri-driver-logs-${{ github.run_id }}-${{ github.run_attempt }}
           path: |

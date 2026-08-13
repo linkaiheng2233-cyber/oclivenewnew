@@ -26,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - uses: dtolnay/rust-toolchain@stable
@@ -87,7 +87,7 @@ jobs:
           cat target/oclive-ci/summary.md >> "$GITHUB_STEP_SUMMARY"
       - name: Upload impact evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: oclive-ci-impact-plan-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
@@ -103,8 +103,8 @@ jobs:
         os: [ubuntu-22.04, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version-file: ".nvmrc"
           cache: npm
@@ -132,7 +132,7 @@ jobs:
   layering-ratchet:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Install ripgrep
         run: sudo apt-get update && sudo apt-get install -y ripgrep
       - name: domain→infrastructure import ratchet
@@ -141,8 +141,8 @@ jobs:
   dimension5-acceptance:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version-file: ".nvmrc"
           cache: npm
@@ -168,8 +168,8 @@ jobs:
   npm-audit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version-file: ".nvmrc"
           cache: npm
@@ -180,8 +180,8 @@ jobs:
   plugins-index:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version-file: ".nvmrc"
       - name: Validate data/plugins.json
@@ -190,8 +190,8 @@ jobs:
   stale-paths:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version-file: ".nvmrc"
       - name: Legacy doc paths / banned aliases (hard gate)
@@ -200,7 +200,7 @@ jobs:
   kernel-host-dual-core:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: test oclive_kernel_host with dual_core feature
@@ -209,7 +209,7 @@ jobs:
   cli:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: clippy oclive-cli
@@ -223,7 +223,7 @@ jobs:
   rust-arm64-cross:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: Add aarch64-unknown-linux-gnu
@@ -244,8 +244,8 @@ jobs:
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version-file: ".nvmrc"
           cache: npm
@@ -290,10 +290,10 @@ jobs:
     runs-on: ubuntu-22.04
     continue-on-error: false
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version-file: ".nvmrc"
       - name: Build oclive-kernel-server and oclive-cli
@@ -325,10 +325,10 @@ jobs:
     runs-on: ubuntu-22.04
     continue-on-error: false
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version-file: ".nvmrc"
       - name: Install Linux dependencies (Tauri 2 / webkit2gtk-4.1)
@@ -388,7 +388,7 @@ jobs:
   remote-plugin-demo:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
