@@ -1,11 +1,11 @@
 //! Immersive-mode virtual clock sync, jumps, and forgetting gradient.
 
-use crate::domain::repository::VirtualTimeStore;
 use crate::error::Result;
 use crate::models::{PersonalitySource, PersonalityVector, Role};
 use crate::state::AppState;
 use chrono::Utc;
 use oclive_kernel_runtime::domain::life_schedule::virtual_start_ms_from_schedule;
+use oclive_kernel_runtime::domain::repository::VirtualTimeStore;
 use oclive_kernel_runtime::domain::time_decay::decay_personality_delta;
 use oclive_kernel_runtime::domain::virtual_time::{
     compute_virtual_now_ms, round_to_minute_ms, virtual_days_between_ms,

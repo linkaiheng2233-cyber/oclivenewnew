@@ -1,8 +1,5 @@
 //! Multi-turn relation transition frames (SessionCache + optional Profile archive).
 
-use crate::domain::prompt_builder::{
-    relation_rank, relation_transition_duration, relation_transition_hint,
-};
 use crate::domain::relation_estrangement::{
     replace_mutable_profile_section, strip_mutable_profile_section,
 };
@@ -10,6 +7,9 @@ use crate::error::Result;
 use crate::models::{PersonalitySource, Role};
 use crate::state::SessionCache;
 use oclive_kernel_contracts::MutablePersonalityStore;
+use oclive_kernel_runtime::domain::prompt_builder::{
+    relation_rank, relation_transition_duration, relation_transition_hint,
+};
 
 const PROFILE_SECTION_TITLE: &str = "关系过渡";
 

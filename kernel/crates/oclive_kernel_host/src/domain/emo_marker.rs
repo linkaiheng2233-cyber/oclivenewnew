@@ -6,8 +6,8 @@
 //! display reply, and derives the remaining `ComplexEmotionOutput` fields
 //! deterministically (no second LLM call).
 
-use crate::domain::complex_emotion::ComplexEmotionOutput;
 use crate::models::Emotion;
+use oclive_kernel_runtime::domain::complex_emotion::ComplexEmotionOutput;
 use serde::Deserialize;
 
 /// Opening marker. Keep in sync with the prompt instruction in
