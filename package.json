@@ -84,7 +84,10 @@
   },
   "overrides": {
     "defu": "6.1.5",
-    "@tauri-apps/api": "^2.11.1"
+    "@tauri-apps/api": "^2.11.1",
+    "@wdio/utils": {
+      "@puppeteer/browsers": "3.2.0"
+    }
   },
   "devDependencies": {
     "@antfu/eslint-config": "^9.2.0",
