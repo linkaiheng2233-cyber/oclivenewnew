@@ -25,7 +25,7 @@ const pluginConfigApi = path.join(
 )
 const kernelHttpClient = path.join(
   repoRoot,
-  'distros/desktop-tauri/src/kernel_attach.rs',
+  'distros/desktop-tauri/src/kernel_attach/resources.rs',
 )
 const MIN_ENGINES = 9
 

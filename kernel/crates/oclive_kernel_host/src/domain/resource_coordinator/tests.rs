@@ -1,4 +1,3 @@
-
 use async_trait::async_trait;
 use oclive_kernel_contracts::{ResourceAdapterController, ResourceAdapterControllerOutcome};
 use oclive_kernel_types::{
