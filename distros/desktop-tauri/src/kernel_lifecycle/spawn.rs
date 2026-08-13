@@ -65,6 +65,7 @@ fn spawn_env(
     port: u16,
     roles_dir: &Path,
     app_data: &Path,
+    kernel_binary: &Path,
     profile_override: Option<&Path>,
     api_token: Option<&str>,
 ) -> Vec<(String, String)> {
@@ -80,6 +81,15 @@ fn spawn_env(
             roles_dir.to_string_lossy().into_owned(),
         ),
     ];
+    if let Some(parent) = kernel_binary.parent() {
+        let migrations = parent.join("migrations");
+        if oclive_kernel_host::infrastructure::sql_migrate::is_migrations_dir(&migrations) {
+            pairs.push((
+                oclive_kernel_host::infrastructure::sql_migrate::ENV_MIGRATIONS_DIR.into(),
+                migrations.to_string_lossy().into_owned(),
+            ));
+        }
+    }
     if let Some(token) = api_token.filter(|token| !token.trim().is_empty()) {
         pairs.push((
             oclive_kernel_host::http_api::ENV_API_TOKEN.into(),
@@ -178,6 +188,7 @@ pub async fn spawn_kernel(
         port,
         roles_dir,
         &app_data,
+        &candidate.binary,
         distro_profile_override,
         Some(&api_token),
     ) {
@@ -214,5 +225,40 @@ pub fn tier_label(tier: KernelTier) -> &'static str {
         KernelTier::Bundled => "bundled",
         KernelTier::Settings => "settings",
         KernelTier::Env => "env",
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn spawn_env_includes_migrations_next_to_kernel() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let migrations = temp.path().join("migrations");
+        std::fs::create_dir_all(&migrations).expect("create migrations");
+        std::fs::write(migrations.join("001_init.sql"), "CREATE TABLE t (id INT);")
+            .expect("write migration");
+        let binary = temp.path().join(if cfg!(windows) {
+            "oclive-kernel-server.exe"
+        } else {
+            "oclive-kernel-server"
+        });
+
+        let env = spawn_env(
+            8420,
+            Path::new("roles"),
+            Path::new("app-data"),
+            &binary,
+            None,
+            None,
+        );
+        let configured = env
+            .iter()
+            .find(|(key, _)| {
+                key == oclive_kernel_host::infrastructure::sql_migrate::ENV_MIGRATIONS_DIR
+            })
+            .map(|(_, value)| value.as_str());
+        assert_eq!(configured, Some(migrations.to_string_lossy().as_ref()));
     }
 }

@@ -45,6 +45,21 @@ fs.mkdirSync(destDir, { recursive: true });
 const destBin = path.join(destDir, kernelExeName());
 fs.copyFileSync(srcBin, destBin);
 
+const migrationsSrc = path.join(
+  repoRoot,
+  'kernel',
+  'crates',
+  'oclive_kernel_host',
+  'migrations',
+);
+const migrationsDest = path.join(destDir, 'migrations');
+fs.mkdirSync(migrationsDest, { recursive: true });
+for (const entry of fs.readdirSync(migrationsDest)) {
+  if (entry !== '.gitkeep')
+    fs.rmSync(path.join(migrationsDest, entry), { recursive: true, force: true });
+}
+fs.cpSync(migrationsSrc, migrationsDest, { recursive: true });
+
 const manifestJson = sh(destBin, ['--version-json'], { cwd: repoRoot });
 const destManifest = path.join(destDir, manifestName());
 fs.writeFileSync(destManifest, `${manifestJson.trim()}\n`, 'utf8');
@@ -59,13 +74,20 @@ if (!fs.existsSync(stubPath)) {
 
 console.log(`[bundle-kernel-for-tauri] bundled -> ${destBin}`);
 console.log(`[bundle-kernel-for-tauri] manifest -> ${destManifest}`);
+console.log(`[bundle-kernel-for-tauri] migrations -> ${migrationsDest}`);
 
 const sumsOut = path.join(destDir, 'SHA256SUMS');
+const migrationFiles = fs
+  .readdirSync(migrationsDest)
+  .filter((name) => name.endsWith('.sql'))
+  .sort()
+  .map((name) => path.join(migrationsDest, name));
 sh('node', [
   path.join(repoRoot, 'scripts/generate-sha256sums.mjs'),
   '--out',
   sumsOut,
   destBin,
   destManifest,
+  ...migrationFiles,
 ], { cwd: repoRoot, stdio: 'inherit' });
 console.log(`[bundle-kernel-for-tauri] checksums -> ${sumsOut}`);

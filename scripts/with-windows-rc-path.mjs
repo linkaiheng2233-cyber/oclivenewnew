@@ -131,10 +131,14 @@ if (msvcBin)
 if (rcBin)
   pathPrefix.push(rcBin)
 if (pathPrefix.length) {
-  // Windows keeps the system variable as `Path`; the env spread preserves the
-  // original key casing, so read either spelling and normalize to a single `PATH`.
-  const existingPath = env.PATH ?? env.Path ?? ''
-  delete env.Path
+  // Windows env blocks may hold PATH under arbitrary casing. Normalize to one
+  // key without clobbering the inherited toolchain path.
+  const pathKeys = Object.keys(env).filter(key => key.toLowerCase() === 'path')
+  const existingPath = pathKeys
+    .map(key => env[key])
+    .find(value => typeof value === 'string' && value.length > 0) ?? ''
+  for (const key of pathKeys)
+    delete env[key]
   env.PATH = `${pathPrefix.join(path.delimiter)}${path.delimiter}${existingPath}`
 }
 

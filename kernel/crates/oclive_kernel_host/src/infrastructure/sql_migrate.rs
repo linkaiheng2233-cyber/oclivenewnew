@@ -49,9 +49,32 @@ fn migration_discovery_anchors() -> Vec<PathBuf> {
     anchors
 }
 
+fn bundled_migration_candidates(anchors: &[PathBuf]) -> Vec<PathBuf> {
+    let mut candidates = Vec::new();
+    for anchor in anchors {
+        let mut nearby = vec![
+            anchor.join("migrations"),
+            anchor.join("resources").join("migrations"),
+        ];
+        if anchor.file_name().is_some_and(|name| name == "roles") {
+            let Some(parent) = anchor.parent() else {
+                continue;
+            };
+            nearby.push(parent.join("migrations"));
+        }
+        for candidate in nearby {
+            if !candidates.contains(&candidate) {
+                candidates.push(candidate);
+            }
+        }
+    }
+    candidates
+}
+
 /// Resolve migrations directory for runtime apply.
 ///
-/// Order: `OCLIVE_MIGRATIONS_DIR` → compile-time embed → monorepo
+/// Order: `OCLIVE_MIGRATIONS_DIR` → compile-time crate directory →
+/// executable/cwd-relative bundle → monorepo
 /// `kernel/crates/oclive_kernel_host/migrations` (via `find_monorepo_root`) → legacy
 /// `crates/oclive_kernel_host/migrations` → `src-tauri/migrations`.
 ///
@@ -87,6 +110,18 @@ pub fn find_migrations_dir() -> Result<PathBuf, String> {
     ));
 
     let anchors = migration_discovery_anchors();
+    for candidate in bundled_migration_candidates(&anchors) {
+        if is_migrations_dir(&candidate) {
+            tracing::info!(
+                target: "oclive_migrate",
+                dir = %candidate.display(),
+                "using bundled migrations near executable/cwd"
+            );
+            return Ok(candidate);
+        }
+        tried.push(format!("{} (missing or no .sql)", candidate.display()));
+    }
+
     if let Some(repo) = find_monorepo_root(&anchors) {
         for rel in [
             HOST_MIGRATIONS_REL,
@@ -313,6 +348,21 @@ mod tests {
             "expected .../migrations, got {}",
             dir.display()
         );
+    }
+
+    #[test]
+    fn bundled_migrations_are_discovered_without_a_monorepo() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let migrations = temp.path().join("resources").join("migrations");
+        std::fs::create_dir_all(&migrations).expect("create migrations");
+        std::fs::write(migrations.join("001_init.sql"), "CREATE TABLE t (id INT);")
+            .expect("write migration");
+
+        let candidates = bundled_migration_candidates(&[temp.path().to_path_buf()]);
+        let found = candidates
+            .into_iter()
+            .find(|candidate| is_migrations_dir(candidate));
+        assert_eq!(found.as_deref(), Some(migrations.as_path()));
     }
 
     #[test]

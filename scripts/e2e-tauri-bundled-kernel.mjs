@@ -2,8 +2,10 @@
 /**
  * Tauri bundled kernel smoke — bundle into resources/ and verify K-SCHED-05 plan picks bundled.
  */
-import { spawnSync } from 'child_process';
+import { spawn, spawnSync } from 'child_process';
 import fs from 'fs';
+import net from 'net';
+import os from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -21,6 +23,90 @@ function sh(cmd, args, opts = {}) {
   return (r.stdout || '').trim();
 }
 
+function freePort() {
+  return new Promise((resolve, reject) => {
+    const server = net.createServer();
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', () => {
+      const address = server.address();
+      const port = typeof address === 'object' && address ? address.port : 0;
+      server.close((error) => (error ? reject(error) : resolve(port)));
+    });
+  });
+}
+
+async function portableRuntimeSmoke(bundled, migrations) {
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'oclive-bundled-runtime-'));
+  const binary = path.join(temp, kernelExeName());
+  const roles = path.join(temp, 'roles');
+  const portableMigrations = path.join(temp, 'migrations');
+  fs.copyFileSync(bundled, binary);
+  fs.cpSync(chatProRolesDir(repoRoot), roles, { recursive: true });
+  fs.cpSync(migrations, portableMigrations, { recursive: true });
+
+  const port = await freePort();
+  const token = `oclive-bundled-smoke-${process.pid}`;
+  const env = {
+    ...process.env,
+    OCLIVE_API_PORT: String(port),
+    OCLIVE_API_TOKEN: token,
+    OCLIVE_HTTP_API_MOCK_LLM: '1',
+    OCLIVE_API_USE_TEMP_APP_DATA: '1',
+    OCLIVE_MIGRATIONS_DIR: portableMigrations,
+  };
+  delete env.OCLIVE_APP_DATA;
+  delete env.OCLIVE_LOCAL_MONOREPO;
+  delete env.OCLIVE_ROLES_DIR;
+
+  const child = spawn(binary, ['--api', '--port', String(port)], {
+    cwd: temp,
+    env,
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  let stdout = '';
+  let stderr = '';
+  child.stdout.on('data', (chunk) => { stdout += chunk; });
+  child.stderr.on('data', (chunk) => { stderr += chunk; });
+
+  try {
+    const base = `http://127.0.0.1:${port}`;
+    let ready = false;
+    for (let attempt = 0; attempt < 80; attempt += 1) {
+      if (child.exitCode !== null) break;
+      try {
+        const health = await fetch(`${base}/health`);
+        if (health.ok) {
+          ready = true;
+          break;
+        }
+      } catch {
+        // Keep polling while the copied binary initializes its temporary database.
+      }
+      await new Promise((resolve) => setTimeout(resolve, 125));
+    }
+    if (!ready) {
+      throw new Error(`portable bundled kernel did not become ready\n${stderr || stdout}`);
+    }
+    const role = await fetch(`${base}/role_info?role_id=mumu`, {
+      headers: { 'x-oclive-api-token': token },
+    });
+    const body = await role.json();
+    if (!role.ok || body.role_id !== 'mumu') {
+      throw new Error(`portable role discovery failed: ${JSON.stringify(body)}`);
+    }
+  } finally {
+    if (child.exitCode === null) {
+      const exited = new Promise((resolve) => child.once('exit', resolve));
+      child.kill();
+      await Promise.race([
+        exited,
+        new Promise((resolve) => setTimeout(resolve, 2_000)),
+      ]);
+    }
+    fs.rmSync(temp, { recursive: true, force: true });
+  }
+}
+
 console.log('[e2e-tauri-bundled] bundling kernel into Tauri resources...');
 sh(process.execPath, ['scripts/bundle-kernel-for-tauri.mjs', '--profile', 'debug'], {
   stdio: 'inherit',
@@ -28,11 +114,15 @@ sh(process.execPath, ['scripts/bundle-kernel-for-tauri.mjs', '--profile', 'debug
 
 const bundled = path.join(repoRoot, 'distros/desktop-tauri', 'resources', kernelExeName());
 const manifest = path.join(repoRoot, 'distros/desktop-tauri', 'resources', 'oclive-kernel-server.oclive-manifest.json');
+const migrations = path.join(repoRoot, 'distros/desktop-tauri', 'resources', 'migrations');
 if (!fs.existsSync(bundled)) {
   throw new Error(`missing bundled kernel: ${bundled}`);
 }
 if (!fs.existsSync(manifest)) {
   throw new Error(`missing manifest sidecar: ${manifest}`);
+}
+if (!fs.existsSync(migrations)) {
+  throw new Error(`missing bundled migrations: ${migrations}`);
 }
 
 const targetDir = JSON.parse(
@@ -73,4 +163,5 @@ if (report.plan?.degraded) {
 }
 
 console.log('[e2e-tauri-bundled] bundled-first plan ok');
-console.log('[e2e-tauri-bundled] resources kernel + manifest present');
+await portableRuntimeSmoke(bundled, migrations);
+console.log('[e2e-tauri-bundled] portable resources kernel + roles + migrations ok');
