@@ -7,6 +7,13 @@ import { defineStore } from 'pinia'
 
 const STORAGE_KEY = 'oclive-chat-pro-adult-settings-v1'
 
+export const ADULT_PACING_INTERVAL_DEFAULT_MS = 4_000
+export const ADULT_PACING_INTERVAL_MIN_MS = 500
+export const ADULT_PACING_INTERVAL_MAX_MS = 60_000
+export const ADULT_BACKGROUND_QUEUE_CAP_DEFAULT = 2
+export const ADULT_BACKGROUND_QUEUE_CAP_MIN = 1
+export const ADULT_BACKGROUND_QUEUE_CAP_MAX = 8
+
 export interface AdultSessionState {
   active: boolean
   voiceTextOnly: boolean
@@ -35,17 +42,51 @@ function defaults(): AdultPersistedState {
     globalEnabled: false,
     roleEnabled: {},
     pacingOverrideEnabled: false,
-    pacingIntervalMs: 4_000,
+    pacingIntervalMs: ADULT_PACING_INTERVAL_DEFAULT_MS,
     backgroundQueueEnabled: false,
-    backgroundQueueCap: 2,
+    backgroundQueueCap: ADULT_BACKGROUND_QUEUE_CAP_DEFAULT,
     backgroundQueueWarningAccepted: false,
     sessions: {},
   }
 }
 
-function positiveInteger(value: unknown, fallback: number): number {
+function integerInRange(
+  value: unknown,
+  min: number,
+  max: number,
+): number | undefined {
   const n = Number(value)
-  return Number.isSafeInteger(n) && n > 0 ? n : fallback
+  return Number.isSafeInteger(n) && n >= min && n <= max ? n : undefined
+}
+
+function boundedInteger(
+  value: unknown,
+  fallback: number,
+  min: number,
+  max: number,
+): number {
+  const n = Number(value)
+  if (!Number.isSafeInteger(n))
+    return fallback
+  return Math.min(max, Math.max(min, n))
+}
+
+export function boundedAdultPacingInterval(value: unknown): number {
+  return boundedInteger(
+    value,
+    ADULT_PACING_INTERVAL_DEFAULT_MS,
+    ADULT_PACING_INTERVAL_MIN_MS,
+    ADULT_PACING_INTERVAL_MAX_MS,
+  )
+}
+
+export function boundedAdultBackgroundQueueCap(value: unknown): number {
+  return boundedInteger(
+    value,
+    ADULT_BACKGROUND_QUEUE_CAP_DEFAULT,
+    ADULT_BACKGROUND_QUEUE_CAP_MIN,
+    ADULT_BACKGROUND_QUEUE_CAP_MAX,
+  )
 }
 
 function readPersisted(): AdultPersistedState {
@@ -54,6 +95,26 @@ function readPersisted(): AdultPersistedState {
     return base
   try {
     const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}') as Partial<AdultPersistedState>
+    const pacingIntervalMs = boundedAdultPacingInterval(parsed.pacingIntervalMs)
+    const backgroundQueueCap = boundedAdultBackgroundQueueCap(parsed.backgroundQueueCap)
+    if (
+      parsed.pacingIntervalMs !== undefined
+      && Number(parsed.pacingIntervalMs) !== pacingIntervalMs
+    ) {
+      console.warn('[adult-settings] persisted pacing interval was clamped', {
+        previous: parsed.pacingIntervalMs,
+        bounded: pacingIntervalMs,
+      })
+    }
+    if (
+      parsed.backgroundQueueCap !== undefined
+      && Number(parsed.backgroundQueueCap) !== backgroundQueueCap
+    ) {
+      console.warn('[adult-settings] persisted queue cap was clamped', {
+        previous: parsed.backgroundQueueCap,
+        bounded: backgroundQueueCap,
+      })
+    }
     return {
       confirmedAdult: parsed.confirmedAdult === true,
       globalEnabled: parsed.globalEnabled === true && parsed.confirmedAdult === true,
@@ -61,12 +122,9 @@ function readPersisted(): AdultPersistedState {
         ? { ...parsed.roleEnabled }
         : {},
       pacingOverrideEnabled: parsed.pacingOverrideEnabled === true,
-      pacingIntervalMs: positiveInteger(parsed.pacingIntervalMs, base.pacingIntervalMs),
+      pacingIntervalMs,
       backgroundQueueEnabled: parsed.backgroundQueueEnabled === true,
-      backgroundQueueCap: positiveInteger(
-        parsed.backgroundQueueCap,
-        base.backgroundQueueCap,
-      ),
+      backgroundQueueCap,
       backgroundQueueWarningAccepted: parsed.backgroundQueueWarningAccepted === true,
       sessions: parsed.sessions && typeof parsed.sessions === 'object'
         ? { ...parsed.sessions }
@@ -105,9 +163,9 @@ export const useAdultInteractionStore = defineStore('adult-interaction', {
         globalEnabled: this.globalEnabled,
         roleEnabled: this.roleEnabled,
         pacingOverrideEnabled: this.pacingOverrideEnabled,
-        pacingIntervalMs: positiveInteger(this.pacingIntervalMs, 4_000),
+        pacingIntervalMs: boundedAdultPacingInterval(this.pacingIntervalMs),
         backgroundQueueEnabled: this.backgroundQueueEnabled,
-        backgroundQueueCap: positiveInteger(this.backgroundQueueCap, 2),
+        backgroundQueueCap: boundedAdultBackgroundQueueCap(this.backgroundQueueCap),
         backgroundQueueWarningAccepted: this.backgroundQueueWarningAccepted,
         sessions: this.sessions,
       } satisfies AdultPersistedState))
@@ -230,23 +288,59 @@ export const useAdultInteractionStore = defineStore('adult-interaction', {
         action,
       }
     },
-    setPacingOverride(enabled: boolean, intervalMs: number) {
+    setPacingOverride(enabled: boolean, intervalMs: number): boolean {
+      const accepted = integerInRange(
+        intervalMs,
+        ADULT_PACING_INTERVAL_MIN_MS,
+        ADULT_PACING_INTERVAL_MAX_MS,
+      )
+      if (accepted === undefined)
+        return false
       this.pacingOverrideEnabled = enabled
-      this.pacingIntervalMs = positiveInteger(intervalMs, this.pacingIntervalMs)
+      this.pacingIntervalMs = accepted
       this.persist()
+      return true
     },
     setBackgroundQueue(
       enabled: boolean,
       cap?: number,
       warningAccepted?: boolean,
-    ) {
-      this.backgroundQueueEnabled = enabled
-      this.backgroundQueueCap = positiveInteger(
+    ): boolean {
+      const acceptedCap = integerInRange(
         cap ?? this.backgroundQueueCap,
-        this.backgroundQueueCap,
+        ADULT_BACKGROUND_QUEUE_CAP_MIN,
+        ADULT_BACKGROUND_QUEUE_CAP_MAX,
       )
+      if (acceptedCap === undefined)
+        return false
+      this.backgroundQueueEnabled = enabled
+      this.backgroundQueueCap = acceptedCap
       this.backgroundQueueWarningAccepted
         = warningAccepted ?? this.backgroundQueueWarningAccepted
+      this.persist()
+      return true
+    },
+    resetAdultSettings() {
+      const reset = defaults()
+      const cancellationTombstones = Object.fromEntries(
+        Object.entries(this.sessions)
+          .filter(([, session]) => Boolean(session.generationId))
+          .map(([key, session]) => [key, {
+            ...session,
+            active: false,
+            voiceTextOnly: false,
+            updatedAt: Date.now(),
+          }]),
+      )
+      this.confirmedAdult = reset.confirmedAdult
+      this.globalEnabled = reset.globalEnabled
+      this.roleEnabled = reset.roleEnabled
+      this.pacingOverrideEnabled = reset.pacingOverrideEnabled
+      this.pacingIntervalMs = reset.pacingIntervalMs
+      this.backgroundQueueEnabled = reset.backgroundQueueEnabled
+      this.backgroundQueueCap = reset.backgroundQueueCap
+      this.backgroundQueueWarningAccepted = reset.backgroundQueueWarningAccepted
+      this.sessions = cancellationTombstones
       this.persist()
     },
     setSessionGeneration(roleId: string, sceneId: string, generationId?: string) {

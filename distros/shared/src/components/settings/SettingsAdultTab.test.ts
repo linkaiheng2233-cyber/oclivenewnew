@@ -20,6 +20,7 @@ const mocks = vi.hoisted(() => ({
     roleInfo: {
       name: 'Gentle Landlady',
       adultExtensionAvailable: true,
+      adultExtensionError: null as string | null,
     },
     roles: [{
       id: 'gentle-landlady',
@@ -80,6 +81,18 @@ describe('adult settings controlled toggles', () => {
       toJSON: () => ({}),
     })
     setActivePinia(createPinia())
+    mocks.roleStore.currentRoleId = 'gentle-landlady'
+    mocks.roleStore.roleInfo = {
+      name: 'Gentle Landlady',
+      adultExtensionAvailable: true,
+      adultExtensionError: null,
+    }
+    mocks.roleStore.roles = [{
+      id: 'gentle-landlady',
+      name: 'Gentle Landlady',
+      adultExtensionAvailable: true,
+      adultExtensionError: undefined,
+    }]
   })
 
   afterEach(() => {
@@ -91,7 +104,7 @@ describe('adult settings controlled toggles', () => {
     const wrapper = mountTab()
     const sections = wrapper.findAll('.ui-section')
 
-    expect(sections).toHaveLength(4)
+    expect(sections).toHaveLength(5)
     for (const section of sections) {
       expect(section.get('.ui-section__title').text().trim()).not.toBe('')
       expect(section.get('.ui-section__desc').text().trim()).not.toBe('')
@@ -181,5 +194,54 @@ describe('adult settings controlled toggles', () => {
     )).toMatchObject({
       pacingOverrideEnabled: true,
     })
+  })
+
+  it('rejects out-of-range pacing and queue inputs without changing settings', async () => {
+    const store = useAdultInteractionStore()
+    const wrapper = mountTab()
+    const inputs = wrapper.findAll<HTMLInputElement>('.adult-number-control input')
+
+    await inputs[0]!.setValue(499)
+    await wrapper.findAll('button').find(button => button.text().includes('Save pacing'))!.trigger('click')
+    expect(store.pacingIntervalMs).toBe(4_000)
+    expect(wrapper.text()).toContain('500 through 60000')
+
+    await inputs[1]!.setValue(9)
+    await wrapper.findAll('button').find(button => button.text().includes('Save cache'))!.trigger('click')
+    expect(store.backgroundQueueCap).toBe(2)
+    expect(wrapper.text()).toContain('1 through 8')
+  })
+
+  it('shows a prominent error while keeping an invalid-extension role available ordinarily', () => {
+    mocks.roleStore.roles = [{
+      id: 'broken-role',
+      name: 'Broken Role',
+      adultExtensionAvailable: false,
+      adultExtensionError: 'adult_extension.json parse failed at line 1',
+    }]
+    mocks.roleStore.currentRoleId = ''
+    const wrapper = mountTab()
+
+    expect(wrapper.get('[role="alert"]').text()).toContain('Some adult extensions were disabled')
+    expect(wrapper.get('[role="alert"]').text()).toContain('Broken Role')
+    expect(wrapper.text()).toContain('No manageable roles yet')
+  })
+
+  it('cancels active generation before resetting confirmation and R18 settings', async () => {
+    const store = useAdultInteractionStore()
+    store.confirmAndEnableGlobal()
+    store.setRoleEnabled('gentle-landlady', true)
+    store.setBackgroundQueue(true, 4, true)
+    const wrapper = mountTab()
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+
+    await wrapper.get('.adult-reset-button').trigger('click')
+    await nextTick()
+
+    expect(mocks.cancelAll).toHaveBeenCalledTimes(1)
+    expect(store.confirmedAdult).toBe(false)
+    expect(store.globalEnabled).toBe(false)
+    expect(store.roleEnabled).toEqual({})
+    expect(store.backgroundQueueCap).toBe(2)
   })
 })

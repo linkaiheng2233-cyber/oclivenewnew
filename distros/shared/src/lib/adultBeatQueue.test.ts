@@ -59,6 +59,8 @@ vi.mock('@oclive/shared/api', () => ({
   listAdultStagedBeats: mocks.list,
 }))
 vi.mock('@oclive/shared/stores/adultInteractionStore', () => ({
+  boundedAdultBackgroundQueueCap: (value: unknown) => Math.min(8, Math.max(1, Number(value) || 2)),
+  boundedAdultPacingInterval: (value: unknown) => Math.min(60_000, Math.max(500, Number(value) || 4_000)),
   useAdultInteractionStore: () => mocks.adultStore,
 }))
 vi.mock('@oclive/shared/stores/roleStore', () => ({
@@ -163,7 +165,7 @@ describe('adult beat background queue', () => {
     await flushMicrotasks()
     expect(mocks.generate).toHaveBeenCalledTimes(1)
 
-    await vi.advanceTimersByTimeAsync(10)
+    await vi.advanceTimersByTimeAsync(500)
     await flushMicrotasks()
 
     expect(mocks.commit).toHaveBeenCalledWith(expect.objectContaining({
@@ -213,7 +215,7 @@ describe('adult beat background queue', () => {
       { display },
     )
     await flushMicrotasks()
-    await vi.advanceTimersByTimeAsync(10)
+    await vi.advanceTimersByTimeAsync(500)
     await flushMicrotasks()
     expect(mocks.commit).toHaveBeenCalledTimes(1)
 
@@ -322,7 +324,7 @@ describe('adult beat background queue', () => {
     )
     await flushMicrotasks()
 
-    await vi.advanceTimersByTimeAsync(10)
+    await vi.advanceTimersByTimeAsync(500)
     await flushMicrotasks()
 
     expect(reportError).toHaveBeenCalledWith('display failed')
@@ -375,7 +377,7 @@ describe('adult beat background queue', () => {
       { display },
     )
     await flushMicrotasks()
-    await vi.advanceTimersByTimeAsync(10)
+    await vi.advanceTimersByTimeAsync(500)
     await flushMicrotasks()
     mocks.roleStore.currentRoleId = 'other-role'
     committed.resolve(response(0))
@@ -425,7 +427,7 @@ describe('adult beat background queue', () => {
     expect(mocks.generate).toHaveBeenCalledTimes(1)
     expect(mocks.generate.mock.calls[0]?.[0].role_id).toBe('role')
 
-    await vi.advanceTimersByTimeAsync(10)
+    await vi.advanceTimersByTimeAsync(500)
     await flushMicrotasks()
     expect(mocks.generate).toHaveBeenCalledTimes(2)
     expect(mocks.generate.mock.calls[1]?.[0].role_id).toBe('role-b')
@@ -445,7 +447,7 @@ describe('adult beat background queue', () => {
       { display: vi.fn() },
     )
     await flushMicrotasks()
-    await vi.advanceTimersByTimeAsync(10)
+    await vi.advanceTimersByTimeAsync(500)
     await flushMicrotasks()
 
     expect(mocks.adultStore.markVoiceTextOnly)
@@ -478,7 +480,7 @@ describe('adult beat background queue', () => {
 
     await queue.resumeAdultBeatQueue('role', 'home', { display })
     await flushMicrotasks()
-    await vi.advanceTimersByTimeAsync(1)
+    await vi.advanceTimersByTimeAsync(500)
     await flushMicrotasks()
 
     expect(mocks.list).toHaveBeenCalledWith({
