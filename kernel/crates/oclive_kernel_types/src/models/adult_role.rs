@@ -8,13 +8,24 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 pub const ADULT_ROLE_EXTENSION_SCHEMA_VERSION: u32 = 1;
+pub const ADULT_PACING_INTERVAL_DEFAULT_MS: u64 = 4_000;
+pub const ADULT_PACING_INTERVAL_MIN_MS: u64 = 500;
+pub const ADULT_PACING_INTERVAL_MAX_MS: u64 = 60_000;
+pub const ADULT_BACKGROUND_QUEUE_CAP_MIN: usize = 1;
+pub const ADULT_BACKGROUND_QUEUE_CAP_MAX: usize = 8;
 
 fn default_schema_version() -> u32 {
     ADULT_ROLE_EXTENSION_SCHEMA_VERSION
 }
 
 fn default_suggested_interval_ms() -> u64 {
-    4_000
+    ADULT_PACING_INTERVAL_DEFAULT_MS
+}
+
+/// Clamp persisted or model-suggested pacing to the runtime safety envelope.
+#[must_use]
+pub fn clamp_adult_pacing_interval_ms(value: u64) -> u64 {
+    value.clamp(ADULT_PACING_INTERVAL_MIN_MS, ADULT_PACING_INTERVAL_MAX_MS)
 }
 
 /// Creator pacing recommendation. Chat Pro may apply a global user override.
@@ -108,9 +119,12 @@ impl AdultRoleExtension {
         if !matches!(self.pacing.mode.trim(), "creator" | "ai") {
             errors.push("adult_extension.pacing.mode must be creator or ai".to_string());
         }
-        if self.pacing.suggested_interval_ms == 0 {
-            errors
-                .push("adult_extension.pacing.suggested_interval_ms must be positive".to_string());
+        if !(ADULT_PACING_INTERVAL_MIN_MS..=ADULT_PACING_INTERVAL_MAX_MS)
+            .contains(&self.pacing.suggested_interval_ms)
+        {
+            errors.push(format!(
+                "adult_extension.pacing.suggested_interval_ms must be between {ADULT_PACING_INTERVAL_MIN_MS} and {ADULT_PACING_INTERVAL_MAX_MS}"
+            ));
         }
         for scene_id in self.scenes.keys() {
             if scene_id.trim().is_empty() {
@@ -151,5 +165,35 @@ mod tests {
             ..AdultRoleExtension::default()
         };
         assert!(extension.validate(&["home".into()]).is_ok());
+    }
+
+    #[test]
+    fn enforces_inclusive_adult_pacing_bounds() {
+        for interval in [ADULT_PACING_INTERVAL_MIN_MS, ADULT_PACING_INTERVAL_MAX_MS] {
+            let extension = AdultRoleExtension {
+                character_is_adult: true,
+                pacing: AdultPacingConfig {
+                    suggested_interval_ms: interval,
+                    ..AdultPacingConfig::default()
+                },
+                ..AdultRoleExtension::default()
+            };
+            assert!(extension.validate(&[]).is_ok(), "interval {interval}");
+        }
+
+        for interval in [
+            ADULT_PACING_INTERVAL_MIN_MS - 1,
+            ADULT_PACING_INTERVAL_MAX_MS + 1,
+        ] {
+            let extension = AdultRoleExtension {
+                character_is_adult: true,
+                pacing: AdultPacingConfig {
+                    suggested_interval_ms: interval,
+                    ..AdultPacingConfig::default()
+                },
+                ..AdultRoleExtension::default()
+            };
+            assert!(extension.validate(&[]).is_err(), "interval {interval}");
+        }
     }
 }

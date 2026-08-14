@@ -63,8 +63,10 @@ pub use oclive_validation::{
 
 pub use models::{
     adult_role::{
-        AdultPacingConfig, AdultRoleExtension, AdultSceneDirection,
-        ADULT_ROLE_EXTENSION_SCHEMA_VERSION,
+        clamp_adult_pacing_interval_ms, AdultPacingConfig, AdultRoleExtension, AdultSceneDirection,
+        ADULT_BACKGROUND_QUEUE_CAP_MAX, ADULT_BACKGROUND_QUEUE_CAP_MIN,
+        ADULT_PACING_INTERVAL_DEFAULT_MS, ADULT_PACING_INTERVAL_MAX_MS,
+        ADULT_PACING_INTERVAL_MIN_MS, ADULT_ROLE_EXTENSION_SCHEMA_VERSION,
     },
     author_pack::{AuthorPackFile, AuthorRecommendedPlugin},
     chat::{ChatRequest, ChatResponse},

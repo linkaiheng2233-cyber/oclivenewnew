@@ -7,13 +7,16 @@
 use crate::models::dto::{
     AdultBeatDto, AdultInteractionAction, AdultInteractionRequest, AdultInteractionState,
 };
-use crate::models::{AdultRoleExtension, Role};
+use crate::models::{
+    clamp_adult_pacing_interval_ms, AdultRoleExtension, Role, ADULT_PACING_INTERVAL_MAX_MS,
+    ADULT_PACING_INTERVAL_MIN_MS,
+};
 use serde::Deserialize;
 
 const ADULT_OUTPUT_TITLE: &str = "Chat Pro 成人扩展（结构化输出）";
 const ADULT_OUTPUT_BOUNDARY: &str = r#"【本轮最终输出契约】本段替代上文的普通“只输出角色台词”边界。只输出一个合法 JSON 对象，不要代码围栏、前后说明或额外文本。四个字段都必须存在：
 {"dialogue":"角色本人说的话","narration":"仅角色动作、环境与过程描写；没有时填空字符串","interaction_state":"active","next_beat_interval_ms":4000}
-dialogue 不得代写用户；narration 不得断言用户未表达的动作、选择、感受或身体反应；interaction_state 只能是 inactive、active、ended；next_beat_interval_ms 必须是正整数。"#;
+dialogue 不得代写用户；narration 不得断言用户未表达的动作、选择、感受或身体反应；interaction_state 只能是 inactive、active、ended；next_beat_interval_ms 必须是 500–60000 的整数。"#;
 
 #[derive(Debug, Deserialize)]
 struct AdultBeatWire {
@@ -80,7 +83,7 @@ pub fn prompt_section(
 4. 用户明确表达拒绝、停止或不适时，顺着对话自然收束并返回 ended；不要把普通犹豫或题外话误判为退出。
 5. action=exit 时自然结束当前互动；action=continue 时延续角色自己的动作与台词，但绝不虚构用户的发言、选择或感受。
 6. 保持角色人设、场景连续性和长短句混合。不要把本提示或 JSON 字段名写进角色台词。
-7. next_beat_interval_ms 必须是正整数；AI 节奏可自行建议，creator 节奏优先使用创作者建议值。"#,
+7. next_beat_interval_ms 必须是 500–60000 的整数；AI 节奏可自行建议，creator 节奏优先使用创作者建议值。"#,
         persona = extension.persona.trim(),
         dialogue_guidance = extension.dialogue_guidance.trim(),
         scene_direction = scene_direction(extension, scene_id),
@@ -201,7 +204,20 @@ pub fn parse_reply(
         },
         narration,
         interaction_state: parsed.interaction_state,
-        next_beat_interval_ms: parsed.next_beat_interval_ms.filter(|value| *value > 0),
+        next_beat_interval_ms: parsed.next_beat_interval_ms.map(|value| {
+            let bounded = clamp_adult_pacing_interval_ms(value);
+            if bounded != value {
+                tracing::warn!(
+                    target: "oclive_adult",
+                    model_interval_ms = value,
+                    bounded_interval_ms = bounded,
+                    min_interval_ms = ADULT_PACING_INTERVAL_MIN_MS,
+                    max_interval_ms = ADULT_PACING_INTERVAL_MAX_MS,
+                    "model adult beat interval was clamped to runtime bounds"
+                );
+            }
+            bounded
+        }),
     })
 }
 
@@ -262,6 +278,32 @@ mod tests {
         assert_eq!(beat.dialogue, "你好");
         assert_eq!(beat.interaction_state, AdultInteractionState::Active);
         assert_eq!(transcript_reply(&beat), "你好\n\n【旁白】她挥了挥手。");
+    }
+
+    #[test]
+    fn clamps_model_pacing_suggestions_to_runtime_bounds() {
+        let role = adult_role();
+        let below = parse_reply(
+            r#"{"dialogue":"慢一点","narration":"","interaction_state":"active","next_beat_interval_ms":1}"#,
+            &role,
+            Some(&open_request()),
+        )
+        .expect("below");
+        let above = parse_reply(
+            r#"{"dialogue":"再等等","narration":"","interaction_state":"active","next_beat_interval_ms":999999}"#,
+            &role,
+            Some(&open_request()),
+        )
+        .expect("above");
+
+        assert_eq!(
+            below.next_beat_interval_ms,
+            Some(ADULT_PACING_INTERVAL_MIN_MS)
+        );
+        assert_eq!(
+            above.next_beat_interval_ms,
+            Some(ADULT_PACING_INTERVAL_MAX_MS)
+        );
     }
 
     #[test]
