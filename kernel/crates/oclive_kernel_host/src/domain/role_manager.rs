@@ -292,6 +292,7 @@ mod tests {
             pack_turn_thinking_config: None,
             pack_prompt_extra_sections: Vec::new(),
             adult_extension: None,
+            adult_extension_error: None,
             runtime_config: None,
             pipeline_experimental: None,
             blueprint_extensions: std::collections::BTreeMap::new(),

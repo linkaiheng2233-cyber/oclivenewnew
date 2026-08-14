@@ -547,6 +547,7 @@ mod persist_non_profile_tests {
             pack_turn_thinking_config: None,
             pack_prompt_extra_sections: Vec::new(),
             adult_extension: None,
+            adult_extension_error: None,
             source_dir: None,
         }
     }

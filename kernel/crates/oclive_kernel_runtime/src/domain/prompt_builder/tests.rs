@@ -8,6 +8,7 @@ fn create_test_role() -> Role {
     Role {
         memory_seed: Vec::new(),
         adult_extension: None,
+        adult_extension_error: None,
         id: "test".to_string(),
         name: "Test Role".to_string(),
         description: "A test role".to_string(),

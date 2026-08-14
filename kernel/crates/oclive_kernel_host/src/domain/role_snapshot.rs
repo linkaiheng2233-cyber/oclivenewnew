@@ -221,6 +221,8 @@ pub async fn assemble_role_data(
         version: role.version.clone(),
         author: role.author.clone(),
         description: role.description.clone(),
+        adult_extension_available: role.adult_extension.is_some(),
+        adult_extension_error: role.adult_extension_error.clone(),
         personality_vector: personality.to_vec7(),
         current_favorability,
         display_metrics: Some(build_display_metrics(
@@ -346,6 +348,7 @@ pub async fn assemble_role_info(
         author: role.author.clone(),
         description: role.description.clone(),
         adult_extension_available: role.adult_extension.is_some(),
+        adult_extension_error: role.adult_extension_error.clone(),
         current_favorability,
         display_metrics: Some(build_display_metrics(
             current_favorability,

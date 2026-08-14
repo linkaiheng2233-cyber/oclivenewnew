@@ -13,6 +13,7 @@ use crate::models::dto::{
     CancelAdultStageGenerationRequest, CommitAdultStagedBeatRequest, ListAdultStagedBeatsRequest,
     ListAdultStagedBeatsResponse, SendMessageRequest, SendMessageResponse, StageAdultBeatRequest,
 };
+use crate::models::ADULT_BACKGROUND_QUEUE_CAP_MAX;
 use crate::state::AppState;
 
 pub const ADULT_CONTINUATION_INPUT: &str =
@@ -136,6 +137,15 @@ pub async fn generate_adult_staged_beat(
         return Err(AppError::InvalidParameter(
             "adult stage generation is inactive or sequence is no longer current".to_string(),
         ));
+    }
+    let buffered = state
+        .db_manager
+        .buffered_adult_stage_beat_count(request.generation_id.as_str())
+        .await?;
+    if buffered >= ADULT_BACKGROUND_QUEUE_CAP_MAX {
+        return Err(AppError::InvalidParameter(format!(
+            "adult staged beat buffer reached the hard limit of {ADULT_BACKGROUND_QUEUE_CAP_MAX}"
+        )));
     }
 
     let signal = state.adult_stage_cancellation(request.generation_id.as_str());

@@ -134,6 +134,19 @@ impl DbManager {
         Ok(active.is_some())
     }
 
+    pub async fn buffered_adult_stage_beat_count(&self, generation_id: &str) -> Result<usize> {
+        let count: i64 = sqlx::query_scalar(
+            "SELECT COUNT(*) FROM adult_staged_beats
+             WHERE generation_id = ? AND status IN ('pending', 'memory_committed')",
+        )
+        .bind(generation_id)
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        usize::try_from(count)
+            .map_err(|_| AppError::DatabaseError("negative adult stage count".to_string()))
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub async fn store_adult_staged_beat(
         &self,
@@ -566,6 +579,24 @@ mod tests {
         }
     }
 
+    struct CountingAdultLlm {
+        calls: AtomicUsize,
+    }
+
+    #[async_trait]
+    impl LlmClient for CountingAdultLlm {
+        async fn generate(&self, _model: &str, _prompt: &str) -> Result<String> {
+            let sequence = self.calls.fetch_add(1, AtomicOrdering::SeqCst);
+            Ok(format!(
+                r#"{{"dialogue":"beat-{sequence}","narration":"","interaction_state":"active","next_beat_interval_ms":4000}}"#
+            ))
+        }
+
+        async fn generate_tag(&self, _model: &str, _prompt: &str) -> Result<String> {
+            Ok("neutral".to_string())
+        }
+    }
+
     fn open_adult_request() -> AdultInteractionRequest {
         AdultInteractionRequest {
             confirmed_adult: true,
@@ -899,6 +930,61 @@ mod tests {
         .await
         .expect("short after");
         assert_eq!(short_after, 1);
+    }
+
+    #[tokio::test]
+    async fn ninth_buffered_beat_is_rejected_before_another_model_call() {
+        let llm = Arc::new(CountingAdultLlm {
+            calls: AtomicUsize::new(0),
+        });
+        let state = AppState::new_in_memory_with_llm(llm.clone(), roles_dir())
+            .await
+            .expect("state");
+        let begun = begin_adult_stage_generation(
+            &state,
+            BeginAdultStageGenerationRequest {
+                role_id: "gentle-landlady".to_string(),
+                scene_id: Some("default".to_string()),
+                session_id: None,
+                adult: open_adult_request(),
+            },
+        )
+        .await
+        .expect("begin");
+
+        for sequence in 0..8 {
+            generate_adult_staged_beat(
+                &state,
+                StageAdultBeatRequest {
+                    role_id: "gentle-landlady".to_string(),
+                    scene_id: Some("default".to_string()),
+                    session_id: None,
+                    generation_id: begun.generation_id.clone(),
+                    sequence,
+                    adult: open_adult_request(),
+                },
+            )
+            .await
+            .expect("within hard cap");
+        }
+        assert_eq!(llm.calls.load(AtomicOrdering::SeqCst), 8);
+
+        let error = generate_adult_staged_beat(
+            &state,
+            StageAdultBeatRequest {
+                role_id: "gentle-landlady".to_string(),
+                scene_id: Some("default".to_string()),
+                session_id: None,
+                generation_id: begun.generation_id,
+                sequence: 8,
+                adult: open_adult_request(),
+            },
+        )
+        .await
+        .expect_err("hard cap");
+
+        assert!(error.to_string().contains("hard limit of 8"), "{error}");
+        assert_eq!(llm.calls.load(AtomicOrdering::SeqCst), 8);
     }
 
     #[tokio::test]

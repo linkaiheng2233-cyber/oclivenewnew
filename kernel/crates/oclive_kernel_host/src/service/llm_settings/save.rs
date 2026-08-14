@@ -30,6 +30,20 @@ use oclive_kernel_types::models::{ContentRating, PluginBackendsOverride};
 use oclive_validation::NETWORK_GRANT_REMOTE_LLM;
 use std::path::PathBuf;
 
+fn require_adult_base_model_acknowledgement(
+    base_changed: bool,
+    content_rating: &ContentRating,
+    acknowledged: bool,
+) -> Result<(), CommandError> {
+    if base_changed && *content_rating == ContentRating::Adult && !acknowledged {
+        return Err(AppError::InvalidParameter(
+            "selecting an adult-only local base model requires explicit acknowledgement".into(),
+        )
+        .into());
+    }
+    Ok(())
+}
+
 async fn apply_session_model_override(
     state: &AppState,
     ns: &str,
@@ -105,16 +119,11 @@ pub async fn save_llm_user_settings_impl(
             } else {
                 describe_local_model_file(&base_path)?
             };
-            if base_changed
-                && descriptor.content_rating == ContentRating::Adult
-                && !req.adult_content_acknowledged
-            {
-                return Err(AppError::InvalidParameter(
-                    "selecting an adult-only local base model requires explicit acknowledgement"
-                        .into(),
-                )
-                .into());
-            }
+            require_adult_base_model_acknowledgement(
+                base_changed,
+                &descriptor.content_rating,
+                req.adult_content_acknowledged,
+            )?;
 
             // A base switch never carries the old adapter implicitly. When the
             // path is unchanged, keep validating the active pair so corrupt or
@@ -382,4 +391,20 @@ pub async fn set_session_llm_model_impl(
     state.db_manager.ensure_role_runtime(ns.as_str()).await?;
     apply_session_model_override(state, ns.as_str(), req.model.as_deref()).await?;
     get_role_info_impl(state, &req.role_id, req.session_id.as_deref()).await
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn adult_base_model_change_is_rejected_without_its_own_acknowledgement() {
+        let error = require_adult_base_model_acknowledgement(true, &ContentRating::Adult, false)
+            .expect_err("adult base acknowledgement");
+
+        assert!(error.to_string().contains("explicit acknowledgement"));
+        assert!(
+            require_adult_base_model_acknowledgement(true, &ContentRating::Adult, true,).is_ok()
+        );
+    }
 }

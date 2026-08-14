@@ -266,6 +266,9 @@ pub struct Role {
     /// Optional Chat Pro-only `adult_extension.json`; universal runtimes may ignore it.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub adult_extension: Option<AdultRoleExtension>,
+    /// Runtime-only diagnostic when a present adult extension was isolated.
+    #[serde(skip)]
+    pub adult_extension_error: Option<String>,
     /// `user_identities/` catalog (in-memory only; populated by [`RoleStorage::finish_role_pack_load`]).
     #[serde(skip)]
     pub user_identity_catalog: Option<Arc<UserIdentityCatalog>>,
@@ -376,6 +379,7 @@ impl Default for Role {
             pack_turn_thinking_config: None,
             pack_prompt_extra_sections: Vec::new(),
             adult_extension: None,
+            adult_extension_error: None,
             user_identity_catalog: None,
             runtime_config: None,
             pipeline_experimental: None,

@@ -143,6 +143,7 @@ pub async fn list_roles_impl(state: &AppState) -> Result<Vec<RoleSummary>, Comma
             preset_order: r.preset_order,
             interaction_mode_suggestion: r.interaction_mode.clone(),
             adult_extension_available: r.adult_extension.is_some(),
+            adult_extension_error: r.adult_extension_error.clone(),
         })
         .collect();
     summaries.sort_by(|a, b| {

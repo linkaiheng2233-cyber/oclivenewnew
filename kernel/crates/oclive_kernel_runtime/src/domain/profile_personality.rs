@@ -356,6 +356,7 @@ mod tests {
         Role {
             memory_seed: Vec::new(),
             adult_extension: None,
+            adult_extension_error: None,
             id: "r".into(),
             name: "n".into(),
             description: "".into(),

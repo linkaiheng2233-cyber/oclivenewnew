@@ -378,14 +378,16 @@ cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/mumu --profile
 | `character_is_adult` | 必须为 `true`；无需填写具体年龄 |
 | `persona` / `dialogue_guidance` | 只作为基础人设之上的成人增量 |
 | `pacing.mode` | `creator` 或 `ai` |
-| `pacing.suggested_interval_ms` | 正整数；Chat Pro 全局用户覆盖值拥有最终优先级 |
+| `pacing.suggested_interval_ms` | **500–60000** 的整数；Chat Pro 全局用户覆盖值拥有最终优先级 |
 | `scenes` | 键必须引用基础角色包已声明的场景 id |
 
-Chat Pro 只有在本机成年确认、全局成人开关和当前角色开关同时成立时才注入扩展。响应通过 `SendMessageResponse.schema` **16** 的 `adult_beat` 返回 `dialogue`、静音 `narration`、`interaction_state` 与可选节拍间隔；基础 `reply` 保持对话兼容值。结构化输出异常必须使用安全兜底，不能把 JSON 字段或 Prompt 残片显示给用户。
+Chat Pro 只有在本机成年自我声明、全局成人开关和当前角色开关同时成立时才注入扩展；该本地声明不依赖在线身份验证。成年确认会持久化，但设置页必须提供“重置成年确认与 R18 设置”入口；重置会先停止在途成人生成，再恢复本机开关、角色选择、节拍和队列默认值，但不会删除已有对话或记忆。响应通过 `SendMessageResponse.schema` **16** 的 `adult_beat` 返回 `dialogue`、静音 `narration`、`interaction_state` 与可选节拍间隔；基础 `reply` 保持对话兼容值。结构化输出异常必须使用安全兜底，不能把 JSON 字段或 Prompt 残片显示给用户。模型返回的间隔会收敛到 500–60000 毫秒。
+
+存在但无法读取、解析或通过校验的 `adult_extension.json` 必须被隔离：宿主禁用该成人扩展、记录诊断并把醒目错误传给 Chat Pro，但仍将基础角色列出并允许普通模式加载。成人扩展错误不得拖垮整个角色或角色列表。
 
 当前互动状态按角色与聊天场景持久化；关闭任一级开关立即清除互动状态，场景或身份切换先自然收束。成人记忆写入独立 `content_scope=adult` 分区；普通聊天只读取普通记忆和非露骨关系桥接摘要，关闭扩展不会删除成人记忆。编写器只能在完整基础包通过校验后进入独立成人扩展页，导出时仍生成一个合并角色包。
 
-Chat Pro 的“后台连续预生成”是宿主运行时能力，不增加 `adult_extension.json` 字段，也不改变 Portable Core。启用后，模型生成的未来拍先进入可取消的 staged beat 存储；此时不得写入聊天记录、记忆、关系、事件、人格或叙事连续性。只有该聊天回到前台、节拍与上一段语音门均满足后，宿主才按序 commit 一拍并渲染；旁白保持静音。用户新输入、退出、关闭开关或切换身份会取消在途生成并丢弃尚未 commit 的拍。队列容量是所有角色与聊天共享的 Chat Pro 本机全局正整数设置；降低容量只暂停新生成，不删除已经暂存的拍。
+Chat Pro 的“后台连续预生成”是宿主运行时能力，不增加 `adult_extension.json` 字段，也不改变 Portable Core。启用后，模型生成的未来拍先进入可取消的 staged beat 存储；此时不得写入聊天记录、记忆、关系、事件、人格或叙事连续性。只有该聊天回到前台、节拍与上一段语音门均满足后，宿主才按序 commit 一拍并渲染；旁白保持静音。用户新输入、退出、关闭开关或切换身份会取消在途生成并丢弃尚未 commit 的拍。队列容量是所有角色与聊天共享的 Chat Pro 本机全局 **1–8** 整数设置；前端拒绝新的越界输入，旧持久化值会安全收敛，内核同时拒绝同一 generation 中第 9 个尚未消费的 staged beat。降低容量只暂停新生成，不删除已经暂存的拍。
 
 ### Persona / Memory 独立迁移契约
 

@@ -10,7 +10,11 @@ import {
   generateAdultStagedBeat,
   listAdultStagedBeats,
 } from '@oclive/shared/api'
-import { useAdultInteractionStore } from '@oclive/shared/stores/adultInteractionStore'
+import {
+  boundedAdultBackgroundQueueCap,
+  boundedAdultPacingInterval,
+  useAdultInteractionStore,
+} from '@oclive/shared/stores/adultInteractionStore'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
 import { useUiStore } from '@oclive/shared/stores/uiStore'
 import { waitForVoicePlaybackSettled } from './voicePlaybackSettlement'
@@ -257,7 +261,7 @@ async function pumpGeneration(): Promise<void> {
       const adultStore = useAdultInteractionStore()
       if (!adultStore.backgroundQueueEnabled)
         return
-      const cap = Math.max(1, Math.trunc(adultStore.backgroundQueueCap))
+      const cap = boundedAdultBackgroundQueueCap(adultStore.backgroundQueueCap)
       if (globalBufferedCount() >= cap)
         return
       const queue = selectQueueForGeneration()
@@ -373,9 +377,11 @@ async function displayLoop(queue: AdultBeatQueueRuntime): Promise<void> {
       )
       const turnId = `adult-stage-${queue.generationId}-${committedSequence}`
       queue.previousVoiceTurnId = turnId
-      queue.previousIntervalMs = useAdultInteractionStore().pacingOverrideEnabled
-        ? useAdultInteractionStore().pacingIntervalMs
-        : (committed.adult_beat?.next_beat_interval_ms ?? 4_000)
+      queue.previousIntervalMs = boundedAdultPacingInterval(
+        useAdultInteractionStore().pacingOverrideEnabled
+          ? useAdultInteractionStore().pacingIntervalMs
+          : committed.adult_beat?.next_beat_interval_ms,
+      )
       if (committed.adult_beat?.interaction_state !== 'active') {
         queue.generationDone = true
         finishQueue(queue)
@@ -464,9 +470,11 @@ export async function startAdultBeatQueue(
       displaying: false,
       commitSettled: null,
       previousVoiceTurnId: firstVoiceTurnId,
-      previousIntervalMs: adultStore.pacingOverrideEnabled
-        ? adultStore.pacingIntervalMs
-        : (firstResponse.adult_beat.next_beat_interval_ms ?? 4_000),
+      previousIntervalMs: boundedAdultPacingInterval(
+        adultStore.pacingOverrideEnabled
+          ? adultStore.pacingIntervalMs
+          : firstResponse.adult_beat.next_beat_interval_ms,
+      ),
       hooks,
     }
     queues.set(key, queue)
@@ -544,7 +552,7 @@ export async function resumeAdultBeatQueue(
         displaying: false,
         commitSettled: null,
         previousVoiceTurnId: null,
-        previousIntervalMs: 1,
+        previousIntervalMs: boundedAdultPacingInterval(1),
         hooks,
       }
       queues.set(key, queue)

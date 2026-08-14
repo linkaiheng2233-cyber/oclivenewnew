@@ -4,7 +4,13 @@ import {
   cancelAllAdultBeatQueues,
   notifyAdultBeatQueueCapacityChanged,
 } from '@oclive/shared/lib/adultBeatQueue'
-import { useAdultInteractionStore } from '@oclive/shared/stores/adultInteractionStore'
+import {
+  ADULT_BACKGROUND_QUEUE_CAP_MAX,
+  ADULT_BACKGROUND_QUEUE_CAP_MIN,
+  ADULT_PACING_INTERVAL_MAX_MS,
+  ADULT_PACING_INTERVAL_MIN_MS,
+  useAdultInteractionStore,
+} from '@oclive/shared/stores/adultInteractionStore'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -22,6 +28,8 @@ const confirmOpen = ref(false)
 const pendingRoleId = ref<string | null>(null)
 const intervalDraft = ref(adultStore.pacingIntervalMs)
 const queueCapDraft = ref(adultStore.backgroundQueueCap)
+const pacingError = ref('')
+const queueError = ref('')
 
 const adultRoles = computed(() => {
   const roles = roleStore.roles.filter(role => role.adultExtensionAvailable)
@@ -42,6 +50,28 @@ const adultRoles = computed(() => {
 const enabledRoleCount = computed(() =>
   adultRoles.value.filter(role => adultStore.roleIsEnabled(role.id)).length,
 )
+
+const invalidAdultExtensions = computed(() => {
+  const errors = roleStore.roles
+    .filter(role => role.adultExtensionError)
+    .map(role => ({
+      id: role.id,
+      name: role.name,
+      error: role.adultExtensionError,
+    }))
+  if (
+    roleStore.currentRoleId
+    && roleStore.roleInfo.adultExtensionError
+    && !errors.some(role => role.id === roleStore.currentRoleId)
+  ) {
+    errors.push({
+      id: roleStore.currentRoleId,
+      name: roleStore.roleInfo.name,
+      error: roleStore.roleInfo.adultExtensionError,
+    })
+  }
+  return errors
+})
 
 function roleStatus(roleId: string): string {
   if (!adultStore.roleIsEnabled(roleId))
@@ -112,46 +142,81 @@ function onRoleToggle(roleId: string, event: Event) {
 }
 
 function savePacing() {
-  adultStore.setPacingOverride(adultStore.pacingOverrideEnabled, intervalDraft.value)
+  const accepted = adultStore.setPacingOverride(
+    adultStore.pacingOverrideEnabled,
+    intervalDraft.value,
+  )
+  pacingError.value = accepted
+    ? ''
+    : String(t('settings.adult.intervalRangeError'))
   intervalDraft.value = adultStore.pacingIntervalMs
 }
 
 function onPacingOverrideToggle(event: Event) {
   const enabled = (event.target as HTMLInputElement).checked
-  adultStore.setPacingOverride(enabled, intervalDraft.value)
+  const accepted = adultStore.setPacingOverride(
+    enabled,
+    enabled ? intervalDraft.value : adultStore.pacingIntervalMs,
+  )
+  pacingError.value = accepted
+    ? ''
+    : String(t('settings.adult.intervalRangeError'))
   syncToggle(event, adultStore.pacingOverrideEnabled)
 }
 
 function onQueueToggle(event: Event) {
   const enabled = (event.target as HTMLInputElement).checked
+  let accepted = false
   if (enabled && !adultStore.backgroundQueueWarningAccepted) {
-    const accepted = window.confirm(String(t('settings.adult.queueWarning')))
-    if (!accepted) {
+    const warningAccepted = window.confirm(String(t('settings.adult.queueWarning')))
+    if (!warningAccepted) {
       syncToggle(event, adultStore.backgroundQueueEnabled)
       return
     }
-    adultStore.setBackgroundQueue(true, queueCapDraft.value, true)
+    accepted = adultStore.setBackgroundQueue(true, queueCapDraft.value, true)
   }
   else {
-    adultStore.setBackgroundQueue(
+    accepted = adultStore.setBackgroundQueue(
       enabled,
-      queueCapDraft.value,
+      enabled ? queueCapDraft.value : adultStore.backgroundQueueCap,
       adultStore.backgroundQueueWarningAccepted,
     )
   }
+  queueError.value = accepted
+    ? ''
+    : String(t('settings.adult.queueCapRangeError'))
   if (!enabled)
     void cancelAllAdultBeatQueues()
   syncToggle(event, adultStore.backgroundQueueEnabled)
-  notifyAdultBeatQueueCapacityChanged()
+  if (accepted)
+    notifyAdultBeatQueueCapacityChanged()
 }
 
 function saveQueueSettings() {
-  adultStore.setBackgroundQueue(
+  const accepted = adultStore.setBackgroundQueue(
     adultStore.backgroundQueueEnabled,
     queueCapDraft.value,
     adultStore.backgroundQueueWarningAccepted,
   )
+  queueError.value = accepted
+    ? ''
+    : String(t('settings.adult.queueCapRangeError'))
   queueCapDraft.value = adultStore.backgroundQueueCap
+  if (accepted)
+    notifyAdultBeatQueueCapacityChanged()
+}
+
+async function resetAdultSettings() {
+  if (!window.confirm(String(t('settings.adult.resetConfirm'))))
+    return
+  await cancelAllAdultBeatQueues()
+  adultStore.resetAdultSettings()
+  intervalDraft.value = adultStore.pacingIntervalMs
+  queueCapDraft.value = adultStore.backgroundQueueCap
+  pacingError.value = ''
+  queueError.value = ''
+  pendingRoleId.value = null
+  confirmOpen.value = false
   notifyAdultBeatQueueCapacityChanged()
 }
 </script>
@@ -177,6 +242,20 @@ function saveQueueSettings() {
         }}
       </span>
     </header>
+
+    <div
+      v-if="invalidAdultExtensions.length > 0"
+      class="adult-extension-errors"
+      role="alert"
+    >
+      <strong>{{ t("settings.adult.extensionErrorTitle") }}</strong>
+      <p>{{ t("settings.adult.extensionErrorHelp") }}</p>
+      <ul>
+        <li v-for="role in invalidAdultExtensions" :key="role.id">
+          <strong>{{ role.name }}</strong> ({{ role.id }}): {{ role.error }}
+        </li>
+      </ul>
+    </div>
 
     <UiSection
       :title="t('settings.adult.accessTitle')"
@@ -298,13 +377,17 @@ function saveQueueSettings() {
             v-model.number="intervalDraft"
             class="ui-input"
             type="number"
-            min="1"
+            :min="ADULT_PACING_INTERVAL_MIN_MS"
+            :max="ADULT_PACING_INTERVAL_MAX_MS"
             step="100"
             inputmode="numeric"
           >
           <span>{{ t("settings.adult.millisecondsUnit") }}</span>
         </div>
       </UiFieldRow>
+      <p v-if="pacingError" class="adult-field-error" role="alert">
+        {{ pacingError }}
+      </p>
       <div class="adult-section-footer">
         <span>{{ t("settings.adult.intervalCurrent", { value: adultStore.pacingIntervalMs }) }}</span>
         <UiButton type="button" size="sm" variant="primary" @click="savePacing">
@@ -353,13 +436,17 @@ function saveQueueSettings() {
             v-model.number="queueCapDraft"
             class="ui-input"
             type="number"
-            min="1"
+            :min="ADULT_BACKGROUND_QUEUE_CAP_MIN"
+            :max="ADULT_BACKGROUND_QUEUE_CAP_MAX"
             step="1"
             inputmode="numeric"
           >
           <span>{{ t("settings.adult.beatsUnit") }}</span>
         </div>
       </UiFieldRow>
+      <p v-if="queueError" class="adult-field-error" role="alert">
+        {{ queueError }}
+      </p>
       <div class="adult-note">
         <span class="adult-note__mark" aria-hidden="true">i</span>
         <span>{{ t("settings.adult.queueRecommendation") }}</span>
@@ -368,6 +455,24 @@ function saveQueueSettings() {
         <span>{{ t("settings.adult.queueCurrent", { value: adultStore.backgroundQueueCap }) }}</span>
         <UiButton type="button" size="sm" variant="primary" @click="saveQueueSettings">
           {{ t("settings.adult.saveQueue") }}
+        </UiButton>
+      </div>
+    </UiSection>
+
+    <UiSection
+      :title="t('settings.adult.resetTitle')"
+      :description="t('settings.adult.resetHelp')"
+    >
+      <div class="adult-section-footer adult-section-footer--reset">
+        <span>{{ t("settings.adult.resetMemoryNote") }}</span>
+        <UiButton
+          class="adult-reset-button"
+          type="button"
+          size="sm"
+          variant="secondary"
+          @click="resetAdultSettings"
+        >
+          {{ t("settings.adult.resetButton") }}
         </UiButton>
       </div>
     </UiSection>
@@ -519,6 +624,26 @@ function saveQueueSettings() {
   background: color-mix(in srgb, var(--tool-accent, var(--accent)) 9%, transparent);
 }
 
+.adult-extension-errors {
+  padding: var(--tool-space-3, 12px);
+  border: 1px solid color-mix(in srgb, var(--danger, #c33) 58%, transparent);
+  border-left-width: 4px;
+  border-radius: var(--tool-radius, 6px);
+  color: var(--tool-text, var(--text-primary));
+  background: color-mix(in srgb, var(--danger, #c33) 10%, transparent);
+  font-size: var(--tool-fs-sm, 12px);
+  line-height: 1.5;
+}
+
+.adult-extension-errors p {
+  margin: 4px 0;
+}
+
+.adult-extension-errors ul {
+  margin: 6px 0 0;
+  padding-left: 20px;
+}
+
 .adult-empty {
   display: flex;
   align-items: flex-start;
@@ -639,6 +764,12 @@ function saveQueueSettings() {
   font-variant-numeric: tabular-nums;
 }
 
+.adult-field-error {
+  margin: 0;
+  color: var(--danger, #c33);
+  font-size: var(--tool-fs-sm, 12px);
+}
+
 .adult-section-footer {
   display: flex;
   align-items: center;
@@ -649,6 +780,11 @@ function saveQueueSettings() {
   border-top: 1px solid var(--tool-divider, var(--border-light));
   color: var(--tool-text-muted, var(--text-secondary));
   font-size: var(--tool-fs-sm, 12px);
+}
+
+.adult-section-footer--reset {
+  padding-top: 0;
+  border-top: 0;
 }
 
 .adult-note {
