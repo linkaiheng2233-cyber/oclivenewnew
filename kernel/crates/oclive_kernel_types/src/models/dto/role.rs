@@ -20,6 +20,12 @@ pub struct RoleData {
     pub version: String,
     pub author: String,
     pub description: String,
+    /// Whether this role pack contains a valid `adult_extension.json`.
+    #[serde(default)]
+    pub adult_extension_available: bool,
+    /// Present when an invalid adult extension was disabled during load.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub adult_extension_error: Option<String>,
     #[deprecated(note = "use display_metrics.traits")]
     pub personality_vector: Vec<f64>,
     #[deprecated(note = "use display_metrics.favor")]
@@ -111,6 +117,9 @@ pub struct RoleSummary {
     /// Whether this role pack contains a valid `adult_extension.json`.
     #[serde(default)]
     pub adult_extension_available: bool,
+    /// Present when an invalid adult extension was disabled during load.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub adult_extension_error: Option<String>,
 }
 
 fn default_preset_order() -> u32 {
@@ -155,6 +164,9 @@ pub struct RoleInfo {
     /// Whether this role pack contains a valid `adult_extension.json`.
     #[serde(default)]
     pub adult_extension_available: bool,
+    /// Present when an invalid adult extension was disabled during load.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub adult_extension_error: Option<String>,
     #[deprecated(note = "use display_metrics.favor")]
     pub current_favorability: f64,
     pub current_emotion: String,

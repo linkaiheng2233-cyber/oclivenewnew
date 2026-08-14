@@ -41,6 +41,7 @@ export interface RoleOption extends PresetRoleOption {
   version?: string
   author?: string
   adultExtensionAvailable?: boolean
+  adultExtensionError?: string
 }
 
 interface RoleInfoState {
@@ -49,6 +50,7 @@ interface RoleInfoState {
   author: string
   description: string
   adultExtensionAvailable: boolean
+  adultExtensionError: string | null
   favorability: number
   currentEmotion: string
   /** Latest catalog visual_state_id from send_message (optional). */
@@ -133,6 +135,7 @@ function mapRoleInfo(info: RoleInfo): RoleInfoState {
     author: info.author ?? '',
     description: info.description ?? '',
     adultExtensionAvailable: info.adult_extension_available ?? false,
+    adultExtensionError: info.adult_extension_error ?? null,
     favorability: metrics?.favor ?? info.current_favorability,
     currentEmotion: info.current_emotion,
     personality: metrics?.traits ?? info.personality_vector ?? [],
@@ -255,6 +258,7 @@ export const useRoleStore = defineStore(
         author: '',
         description: '',
         adultExtensionAvailable: false,
+        adultExtensionError: null,
         favorability: 0,
         currentEmotion: 'neutral',
         personality: [],
@@ -332,6 +336,7 @@ export const useRoleStore = defineStore(
           preset_order: r.preset_order ?? 999,
           interaction_mode_suggestion: r.interaction_mode_suggestion ?? null,
           adultExtensionAvailable: r.adult_extension_available ?? false,
+          adultExtensionError: r.adult_extension_error ?? undefined,
         }))
         if (this.roles.length === 0) {
           this.currentRoleId = ''

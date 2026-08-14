@@ -79,6 +79,7 @@ mod tests {
         Role {
             memory_seed: Vec::new(),
             adult_extension: None,
+            adult_extension_error: None,
             id: "r".to_string(),
             name: "测试".to_string(),
             description: String::new(),

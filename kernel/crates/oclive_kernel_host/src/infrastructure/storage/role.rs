@@ -513,20 +513,34 @@ impl RoleStorage {
         let scene_list = Self::merge_scene_ids(role_dir, &disk.scenes)?;
         let adult_extension_path = role_dir.join("adult_extension.json");
         if adult_extension_path.is_file() {
-            let raw = fs::read_to_string(&adult_extension_path).map_err(AppError::IoError)?;
-            let extension: AdultRoleExtension = serde_json::from_str(&raw).map_err(|error| {
-                AppError::InvalidParameter(format!(
-                    "adult_extension.json parse failed: {} — {error}",
-                    adult_extension_path.display()
-                ))
-            })?;
-            extension.validate(&scene_list).map_err(|errors| {
-                AppError::InvalidParameter(format!(
-                    "adult_extension.json invalid: {}",
-                    errors.join("; ")
-                ))
-            })?;
-            role.adult_extension = Some(extension);
+            let extension = fs::read_to_string(&adult_extension_path)
+                .map_err(|error| format!("adult_extension.json could not be read: {error}"))
+                .and_then(|raw| {
+                    serde_json::from_str::<AdultRoleExtension>(&raw)
+                        .map_err(|error| format!("adult_extension.json parse failed: {error}"))
+                })
+                .and_then(|extension| {
+                    extension
+                        .validate(&scene_list)
+                        .map_err(|errors| {
+                            format!("adult_extension.json invalid: {}", errors.join("; "))
+                        })
+                        .map(|()| extension)
+                });
+            match extension {
+                Ok(extension) => role.adult_extension = Some(extension),
+                Err(error) => {
+                    tracing::warn!(
+                        target: "oclive_role",
+                        role_id = %role.id,
+                        path = %adult_extension_path.display(),
+                        error = %error,
+                        "adult extension disabled; ordinary role remains available"
+                    );
+                    role.adult_extension = None;
+                    role.adult_extension_error = Some(error);
+                }
+            }
         }
         role.scene_ids = Arc::from(scene_list.into_boxed_slice());
 
@@ -740,6 +754,27 @@ mod tests {
             .load_role_from_dir(&role_dir)
             .unwrap();
         assert!(role.blueprint_extensions["com.example.live2d"].required);
+    }
+
+    #[test]
+    fn invalid_adult_extension_is_isolated_from_ordinary_role_loading() {
+        let roles = tempdir().unwrap();
+        let role_dir = roles.path().join("broken-adult-extension");
+        write_v4_pack(&role_dir, false);
+        fs::write(role_dir.join("adult_extension.json"), "{not-json").unwrap();
+
+        let loaded = RoleStorage::new(roles.path()).load_all_roles().unwrap();
+        let role = loaded
+            .iter()
+            .find(|role| role.id == "broken-adult-extension")
+            .expect("ordinary role remains listed");
+
+        assert_eq!(role.name, "V4");
+        assert!(role.adult_extension.is_none());
+        assert!(role
+            .adult_extension_error
+            .as_deref()
+            .is_some_and(|error| error.contains("parse failed")));
     }
 
     #[test]
