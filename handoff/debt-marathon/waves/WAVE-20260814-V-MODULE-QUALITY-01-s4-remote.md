@@ -12,7 +12,7 @@
 | **日期** | 2026-08-14 |
 | **远程验证 Head** | `4944fdf51b7313ed84a7e069073644b571912355` |
 | **PR** | [#156](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/156) |
-| **状态三态** | **Done-eligible** · exact-head 远程 CI 成功；等待普通合并 |
+| **状态三态** | **Done** · PR #156 merged；merge exact-head 主 CI success |
 
 ## Exact-head remote evidence
 
@@ -24,6 +24,8 @@
 | Product paths | frontend Windows/Ubuntu、OOCP、cross-host e2e、remote plugin demo success |
 | Governance | Dimension 5、impact plan、npm audit、layering、plugin index、stale paths success |
 | Action runtime | `checkout@v7`、`setup-node@v7` 与 `upload-artifact@v7` 在实际远程工作流成功运行 |
+| Merge | `af82c75875b738a8f5c88f82ff8540e2e00a4dfb` · PR #156 ordinary merge |
+| Merge exact-head CI | [`31744282812`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/31744282812) · **16/16 success** |
 
 ## Closure boundary
 
@@ -34,6 +36,6 @@
 
 ## Next
 
-- 当前证据提交仅更新 Wave / queue / inventory；等待该文档 head 的增量门禁后普通合并 PR #156。
-- 合并后确认 merge exact-head 主 CI，并开始 R18 配置只读审计。
+- PR #156 已普通合并，merge exact-head 主 CI 已成功；本债结束，不再保留待合并动作。
+- R18 配置只读审计已完成，后续由维护者确认与应用内/真实模型测试。
 - **retry_safe：** yes；若文档 head 门禁失败，只修证据一致性，不改写已成功的实现 head 历史。
