@@ -20,6 +20,19 @@ use oclive_kernel_types::models::{
 };
 use std::path::PathBuf;
 
+fn require_adult_lora_acknowledgement(
+    content_rating: &LoraContentRating,
+    acknowledged: bool,
+) -> Result<(), CommandError> {
+    if *content_rating == LoraContentRating::Adult && !acknowledged {
+        return Err(AppError::InvalidParameter(
+            "adult-rated LoRA activation requires explicit acknowledgement".into(),
+        )
+        .into());
+    }
+    Ok(())
+}
+
 async fn persist_local_lora_selection(
     state: &AppState,
     adapter_id: Option<&str>,
@@ -171,14 +184,10 @@ pub async fn activate_local_lora_adapter_impl(
                 .into());
             }
         }
-        if resolved.dto.content_rating == LoraContentRating::Adult
-            && !request.adult_content_acknowledged
-        {
-            return Err(AppError::InvalidParameter(
-                "adult-rated LoRA activation requires explicit acknowledgement".into(),
-            )
-            .into());
-        }
+        require_adult_lora_acknowledgement(
+            &resolved.dto.content_rating,
+            request.adult_content_acknowledged,
+        )?;
         Some(resolved)
     } else {
         None
@@ -262,4 +271,18 @@ pub async fn delete_local_lora_adapter_impl(
             "LoRA delete worker failed: {error}"
         )))
     })?
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn adult_lora_is_rejected_without_its_own_acknowledgement() {
+        let error = require_adult_lora_acknowledgement(&LoraContentRating::Adult, false)
+            .expect_err("adult LoRA acknowledgement");
+
+        assert!(error.to_string().contains("explicit acknowledgement"));
+        assert!(require_adult_lora_acknowledgement(&LoraContentRating::Adult, true,).is_ok());
+    }
 }
