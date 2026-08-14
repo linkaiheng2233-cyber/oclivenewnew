@@ -5,13 +5,13 @@
 | 字段 | 值 |
 |------|-----|
 | **债 ID** | V-MODULE-QUALITY-01 |
-| **台账** | `TECHNICAL_DEBT_INVENTORY.md` · V-MODULE-QUALITY-01 Done-eligible |
+| **台账** | `TECHNICAL_DEBT_INVENTORY.md` · V-MODULE-QUALITY-01 Done |
 | **标题** | 固定角色、场景与 replay 的 memory / emotion / prompt / LLM 质量对比 harness |
 | **尺寸** | L |
 | **Minimal / Full** | 本书推进 Full；各 Stage 必须保持可独立回滚 |
 | **Owner** | main-repo |
 | **runner** | auto |
-| **状态** | Closed · Stage 4 exact-head remote CI success；等待普通合并 |
+| **状态** | Closed · PR #156 merged；merge exact-head main CI success |
 | **更新** | 2026-08-14 |
 
 ## AI + OCLive
@@ -156,7 +156,7 @@
 
 - 实现与本地证据 head `4944fdf51b7313ed84a7e069073644b571912355` 的主 CI [`31739849579`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/31739849579) **16/16 success**；严格审计 [`31739849550`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/31739849550) **success**。
 - Windows/Linux Rust、ARM64、dual-core、CLI、前端双平台、OOCP、cross-host、Dimension 5、依赖与仓库治理门禁均成功；Action Node 24 代际已由真实 CI 证明兼容。
-- 父债可记 Done-eligible；仍保留“可复现合同基线，不代表真实模型普适主观排名”的解释边界。
+- 父债已在 PR #156 普通合并并由 merge exact-head 主 CI 验证为 Done；仍保留“可复现合同基线，不代表真实模型普适主观排名”的解释边界。
 
 ## 目标
 
@@ -182,4 +182,4 @@
 
 ## 下一跳
 
-普通合并 PR #156；合并后确认 merge exact-head 主 CI。随后进入 R18 配置只读审计，参考 fixture 与 deterministic remote-slot 的证据不得被改写为真实生产模型的主观排名。
+R18 配置只读审计已完成，等待维护者确认与应用内/真实模型测试；参考 fixture 与 deterministic remote-slot 的证据不得被改写为真实生产模型的主观排名。
