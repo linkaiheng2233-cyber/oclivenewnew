@@ -33,10 +33,15 @@ jobs:
             exit 0
           fi
           unexpected=""
+          rm -f /tmp/oclive-ci-rust-failure.txt /tmp/oclive-ci-unexpected-failures.txt
           echo "$FAILED" | while read -r job; do
             case "$job" in
               rust\ \(*\))
                 echo "Allowlisted rust matrix failure: $job"
+                touch /tmp/oclive-ci-rust-failure.txt
+                ;;
+              ci-gate)
+                echo "Expected aggregate failure while an allowlisted rust job is red: $job"
                 ;;
               *)
                 echo "$job" >> /tmp/oclive-ci-unexpected-failures.txt
@@ -45,6 +50,10 @@ jobs:
           done
           if [ -f /tmp/oclive-ci-unexpected-failures.txt ]; then
             unexpected="$(cat /tmp/oclive-ci-unexpected-failures.txt)"
+          fi
+          if [ ! -f /tmp/oclive-ci-rust-failure.txt ]; then
+            echo "Skip rerun: ci-gate alone is not an allowlisted flake"
+            exit 0
           fi
           if [ -n "$unexpected" ]; then
             echo "Skip rerun: deterministic or non-allowlisted failures must be investigated"

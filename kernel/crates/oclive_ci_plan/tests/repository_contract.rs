@@ -52,6 +52,24 @@ fn request(policy: &str, path: &str) -> PlanRequest {
     }
 }
 
+fn workflow_job_block<'a>(workflow: &'a str, job: &str) -> &'a str {
+    let marker = format!("\n  {job}:");
+    let start = workflow
+        .find(&marker)
+        .unwrap_or_else(|| panic!("missing workflow job `{job}`"));
+    let tail = &workflow[start + marker.len()..];
+    let end = tail
+        .match_indices("\n  ")
+        .find(|(offset, _)| {
+            tail.as_bytes()
+                .get(offset + 3)
+                .is_some_and(|byte| !byte.is_ascii_whitespace())
+        })
+        .map(|(offset, _)| start + marker.len() + offset)
+        .unwrap_or(workflow.len());
+    &workflow[start..end]
+}
+
 #[test]
 fn repository_catalog_maps_every_validator_to_its_execution_lane() {
     let root = repo_root();
@@ -71,6 +89,8 @@ fn repository_catalog_maps_every_validator_to_its_execution_lane() {
         fs::read_to_string(root.join(".github/workflows/ci.yml")).expect("read main workflow");
     let nightly_workflow = fs::read_to_string(root.join(".github/workflows/nightly-advisory.yml"))
         .expect("read nightly workflow");
+    let flake_workflow = fs::read_to_string(root.join(".github/workflows/ci-rerun-flake.yml"))
+        .expect("read CI flake workflow");
     for validator in &plan.selected_validators {
         let (workflow, lane) = if validator.tier == ValidationTier::Nightly {
             (&nightly_workflow, "nightly")
@@ -100,9 +120,53 @@ fn repository_catalog_maps_every_validator_to_its_execution_lane() {
     }
     assert_eq!(
         main_workflow.matches("    continue-on-error: true").count(),
-        1,
-        "only the Stage 1 shadow planner may remain non-blocking in main CI",
+        0,
+        "the active planner and every main CI responsibility must fail closed",
     );
+    let planner_block = workflow_job_block(&main_workflow, "ci-impact-plan");
+    assert!(planner_block.contains("run_full: ${{ steps.execution.outputs.run_full }}"));
+    assert!(planner_block.contains("selected_jobs: ${{ steps.execution.outputs.selected_jobs }}"));
+    assert!(planner_block.contains("trusted_sha: ${{ steps.comparison.outputs.base }}"));
+    assert!(planner_block.contains("Checkout trusted CI control plane"));
+    assert!(planner_block.contains("--manifest-path \"$TRUSTED_ROOT/Cargo.toml\""));
+    assert!(planner_block.contains("--changed-files-from"));
+    assert!(planner_block.contains("--force-full-reason trusted_policy_bootstrap"));
+    assert!(!planner_block.contains("--shadow"));
+
+    let main_jobs = plan
+        .selected_validators
+        .iter()
+        .filter(|validator| validator.tier != ValidationTier::Nightly)
+        .flat_map(|validator| validator.workflow_jobs.iter().cloned())
+        .collect::<BTreeSet<_>>();
+    for job in &main_jobs {
+        let block = workflow_job_block(&main_workflow, job);
+        assert!(
+            block.contains("needs: ci-impact-plan"),
+            "main workflow job `{job}` must depend on the impact planner"
+        );
+        assert!(
+            block.contains("needs.ci-impact-plan.outputs.run_full == 'true'"),
+            "main workflow job `{job}` must honor full fallback"
+        );
+        assert!(
+            block.contains(&format!("'\"{job}\"'")),
+            "main workflow job `{job}` must honor its selected_jobs coordinate"
+        );
+    }
+
+    let gate_block = workflow_job_block(&main_workflow, "ci-gate");
+    assert!(gate_block.contains("name: ci-gate"));
+    assert!(gate_block.contains("if: ${{ always() }}"));
+    assert!(gate_block.contains("ref: ${{ needs.ci-impact-plan.outputs.trusted_sha }}"));
+    assert!(gate_block.contains("target/oclive-ci/trusted/scripts/ci-execution-policy.mjs"));
+    assert!(gate_block.contains("node \"$POLICY_SCRIPT\" verify --needs-env NEEDS_JSON"));
+    for job in &main_jobs {
+        assert!(
+            gate_block.contains(&format!("      - {job}\n")),
+            "ci-gate must aggregate `{job}`"
+        );
+    }
     assert!(
         !nightly_workflow.contains("    continue-on-error: true"),
         "nightly failures must remain visible in their own workflow",
@@ -112,6 +176,8 @@ fn repository_catalog_maps_every_validator_to_its_execution_lane() {
         "nightly Loom must execute the model tests, not only compile the disabled fixture",
     );
     assert!(!nightly_workflow.contains("loom_tests_require_cfg_loom"));
+    assert!(flake_workflow.contains("              ci-gate)"));
+    assert!(flake_workflow.contains("/tmp/oclive-ci-rust-failure.txt"));
 }
 
 #[test]
@@ -261,6 +327,16 @@ fn repository_rules_cover_targeted_and_fail_safe_examples() {
             "missing scaffold validator {validator}"
         );
     }
+
+    let execution_policy = planner
+        .plan(request("pull_request", "scripts/ci-execution-policy.mjs"))
+        .expect("execution policy plan");
+    assert!(execution_policy.fallback.full);
+    assert!(execution_policy
+        .fallback
+        .reasons
+        .iter()
+        .any(|reason| reason.starts_with("risk_override:ci-control-plane:")));
 }
 
 #[test]
