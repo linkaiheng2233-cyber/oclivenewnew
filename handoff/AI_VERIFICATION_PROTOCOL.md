@@ -96,11 +96,12 @@ node -e "const fs=require('fs'),path=require('path');function walk(d,a=[]){for(c
 |------|----------|
 | dependabot 分支数 | `gh api repos/<owner>/<repo>/branches --paginate` 过滤 `dependabot`（**禁止**沿用旧帖数字） |
 | main 是否可合 | `gh run list --limit 5` + 失败 job 逐步日志 |
+| main 是否强制 CI | 分支保护 / ruleset API 中 required context 必须包含稳定 `ci-gate`；仅看到 Actions 在跑不等于门禁生效 |
 | 硬门禁 vs Nightly | 同时读 `.github/workflows/ci.yml` 与 `.github/workflows/nightly-advisory.yml`；不要仅凭 job 名称判断 |
 
-**硬门禁（红 = 不能合）**：主工作流的 `rust`、`oocp-test-suite`、`frontend`（ubuntu Playwright）、`cross-host-e2e`、`dimension5-acceptance`（唯一持有主工作流 `cargo audit`）、`npm-audit`、`stale-paths`、`layering-ratchet` 等 required job。
+**硬门禁（红 = 不能合）**：GitHub 分支保护绑定稳定 `ci-gate`。该汇总 job 检查 `ci-impact-plan` 成功，并核对全量模式的全部责任组成功，或选择模式的 selected job 成功且 unselected job 确为 skipped。`rust`、`oocp-test-suite`、`frontend`（Ubuntu Playwright）、`cross-host-e2e`、`dimension5-acceptance`（唯一持有主工作流 `cargo audit`）、`npm-audit`、`stale-paths`、`layering-ratchet` 等仍是受信责任组，但不单独配置成可能永远等待的 required context。
 
-**Nightly/手动证据（不挡 main，但失败不可吞）**：`loom`、`fuzz`、`e2e-tauri`、`cli-bench`、`visual-presentation-smoke` 位于 `nightly-advisory.yml`；它们失败会让该工作流变红并按项保留日志/artifact，不能汇报成通过。主工作流仅 `ci-impact-plan` 允许 `continue-on-error`，因为它是 Stage 1 影子报告而非验证门禁。
+**Nightly/手动证据（不挡 main，但失败不可吞）**：`loom`、`fuzz`、`e2e-tauri`、`cli-bench`、`visual-presentation-smoke` 位于 `nightly-advisory.yml`；它们失败会让该工作流变红并按项保留日志/artifact，不能汇报成通过。主工作流不再允许 `continue-on-error: true`；规划器失败会触发全量执行并让 `ci-gate` 失败。
 
 #### CI 推送节奏与证据绑定
 
@@ -116,13 +117,16 @@ node -e "const fs=require('fs'),path=require('path');function walk(d,a=[]){for(c
 - 只有与报告中目标 **完整 SHA** 一致的成功 run 才是当前远端证据。后续实质提交必须重新验证；纯证据回写不应制造新的 HEAD。
 - 技术债需要仓库内证据时，优先随下一次实质提交一并回写；在此之前保持原状态并链接 PR 评论，不得用旧 SHA 冒充新 HEAD 已验证。
 
-#### 领域感知 CI 影子计划（Stage 1）
+#### 领域感知 CI 选择性执行（Stage 3 · docs PR Canary）
 
-- `ci-impact-plan` 标记 `continue-on-error`，只发布 `plan.json`、Job Summary 与 artifact；**不得**把它列为硬门禁或据此跳过现有 job。
-- `oclive ci plan` 的 `selected_validators` 是待观测建议，不是“已执行”证据；验收结论仍须引用实际 job 终态。
+- `ci-impact-plan` 发布 `plan.json`、`execution.json`、Job Summary 与 artifact；只有 `docs-pr-canary-v1` 条件全部满足时，`selected_validators[].workflow_jobs` 才控制既有主 CI job。
+- PR 选择结果必须由 comparison base 中的受信规划器、影响契约与执行策略生成，`ci-gate` 也使用该基线校验；若基线尚无策略脚本（首次上线 bootstrap），必须全量。
+- 纯文档 Canary 要求：事件为 PR、plan 非 shadow、policy 为 `pull_request`、无 warning/full fallback、直接与受影响模块均且仅为 `oclive.docs`、selected job 非空。任一不满足即全量。
+- `oclive ci plan` 的 `selected_validators` 仍不是“已执行”证据；验收必须引用 `ci-gate` 及实际 job 终态。手动 `--shadow` 计划禁止用于跳 job。
 - `npm run ci:shadow-samples` 的 JSON/Markdown 是**规划模拟**：只能证明固定样本仍按当前规则路由；不得把 11/11 模拟通过汇报成 11 次远端 CI、零漏选或 validator 已执行。
-- 未映射路径、损坏模块描述、未知 required 扩展及中央高风险规则会使当前 policy `full_fallback`；这代表规划器选择保守范围，不代表远端全量已经通过。
-- 规划 SSOT 与脚手架边界见 [`SOMEDAY_TOOLCHAIN_CI.md`](../creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md)。进入选择性执行前，必须先完成 Stage 2 漏选/过选对比并另行更新本协议。
+- 未映射路径、损坏模块描述、未知 required 扩展及中央高风险规则会使当前 policy `full_fallback`；这代表必须执行全量，不代表全量已经通过。
+- 规划器异常时所有责任组通过 fail-safe 条件运行，但 `ci-gate` 仍须失败；修复规划器后重新验证，不能把降级运行粉饰成绿。
+- 其他模块类别仍处 Stage 2 Compare；扩大选择面前必须更新 [`SOMEDAY_TOOLCHAIN_CI.md`](../creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md) 和本协议。
 
 ---
 
