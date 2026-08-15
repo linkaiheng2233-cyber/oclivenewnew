@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       base_sha:
-        description: Optional comparison base for the shadow impact plan
+        description: Optional comparison base for the impact plan
         required: false
         type: string
 
@@ -20,15 +20,23 @@ permissions:
   contents: read
 
 jobs:
-  # Stage 1 shadow planner: reports what a future selective CI would run.
-  # It is deliberately non-blocking and does not control any existing job.
+  # Stage 3 canary: pure documentation PRs use the planner-selected jobs.
+  # Every other event/change and every planner failure stays fail-safe full.
   ci-impact-plan:
     runs-on: ubuntu-latest
-    continue-on-error: true
+    outputs:
+      run_full: ${{ steps.execution.outputs.run_full }}
+      selected_jobs: ${{ steps.execution.outputs.selected_jobs }}
+      mode: ${{ steps.execution.outputs.mode }}
+      reason: ${{ steps.execution.outputs.reason }}
+      trusted_sha: ${{ steps.comparison.outputs.base }}
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: ".nvmrc"
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: Resolve comparison base
@@ -64,27 +72,63 @@ jobs:
           fi
           echo "base=$base" >> "$GITHUB_OUTPUT"
           echo "policy=$policy" >> "$GITHUB_OUTPUT"
-      - name: Compute shadow impact plan
+      - name: Capture changed paths
+        env:
+          BASE_SHA: ${{ steps.comparison.outputs.base }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          mkdir -p target/oclive-ci
+          git diff --name-only "$BASE_SHA" "$HEAD_SHA" > target/oclive-ci/changed-files.txt
+      - name: Checkout trusted CI control plane
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ steps.comparison.outputs.base }}
+          path: target/oclive-ci/trusted
+          fetch-depth: 1
+      - name: Compute impact plan
         env:
           BASE_SHA: ${{ steps.comparison.outputs.base }}
           HEAD_SHA: ${{ github.sha }}
           PLAN_POLICY: ${{ steps.comparison.outputs.policy }}
-        run: >-
-          cargo run --locked -p oclive-cli -- ci plan
-          --path .
-          --base "$BASE_SHA"
-          --head "$HEAD_SHA"
-          --policy "$PLAN_POLICY"
-          --shadow
-          --output target/oclive-ci/plan.json
+        run: |
+          set -euo pipefail
+          TRUSTED_ROOT="$GITHUB_WORKSPACE/target/oclive-ci/trusted"
+          cargo run --locked --manifest-path "$TRUSTED_ROOT/Cargo.toml" -p oclive-cli -- ci plan \
+            --path "$TRUSTED_ROOT" \
+            --base "$BASE_SHA" \
+            --head "$HEAD_SHA" \
+            --policy "$PLAN_POLICY" \
+            --changed-files-from "$GITHUB_WORKSPACE/target/oclive-ci/changed-files.txt" \
+            --output "$GITHUB_WORKSPACE/target/oclive-ci/plan.json"
       - name: Render impact summary
         run: |
-          cargo run --locked -p oclive-cli -- ci explain \
-            --path . \
-            --plan target/oclive-ci/plan.json \
+          TRUSTED_ROOT="$GITHUB_WORKSPACE/target/oclive-ci/trusted"
+          cargo run --locked --manifest-path "$TRUSTED_ROOT/Cargo.toml" -p oclive-cli -- ci explain \
+            --path "$TRUSTED_ROOT" \
+            --plan "$GITHUB_WORKSPACE/target/oclive-ci/plan.json" \
             --format markdown \
-            --output target/oclive-ci/summary.md
+            --output "$GITHUB_WORKSPACE/target/oclive-ci/summary.md"
           cat target/oclive-ci/summary.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Resolve execution policy
+        id: execution
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          POLICY_SCRIPT="$GITHUB_WORKSPACE/target/oclive-ci/trusted/scripts/ci-execution-policy.mjs"
+          POLICY_ARGS=()
+          if [ ! -f "$POLICY_SCRIPT" ]; then
+            echo "Trusted base predates the execution policy; bootstrap stays full."
+            POLICY_SCRIPT="$GITHUB_WORKSPACE/scripts/ci-execution-policy.mjs"
+            POLICY_ARGS=(--force-full-reason trusted_policy_bootstrap)
+          fi
+          node "$POLICY_SCRIPT" resolve \
+            --plan target/oclive-ci/plan.json \
+            --event "$EVENT_NAME" \
+            --output target/oclive-ci/execution.json \
+            --github-output "$GITHUB_OUTPUT" \
+            --github-summary "$GITHUB_STEP_SUMMARY" \
+            "${POLICY_ARGS[@]}"
       - name: Upload impact evidence
         if: always()
         uses: actions/upload-artifact@v7
@@ -93,10 +137,14 @@ jobs:
           path: |
             target/oclive-ci/plan.json
             target/oclive-ci/summary.md
+            target/oclive-ci/execution.json
+            target/oclive-ci/changed-files.txt
           if-no-files-found: warn
           retention-days: 14
 
   rust:
+    needs: ci-impact-plan
+    if: ${{ always() && (needs.ci-impact-plan.result != 'success' || needs.ci-impact-plan.outputs.run_full == 'true' || contains(needs.ci-impact-plan.outputs.selected_jobs, '"rust"')) }}
     strategy:
       fail-fast: false
       matrix:
@@ -130,6 +178,8 @@ jobs:
         run: cargo test --locked --workspace --exclude oclive-cli
 
   layering-ratchet:
+    needs: ci-impact-plan
+    if: ${{ always() && (needs.ci-impact-plan.result != 'success' || needs.ci-impact-plan.outputs.run_full == 'true' || contains(needs.ci-impact-plan.outputs.selected_jobs, '"layering-ratchet"')) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -139,6 +189,8 @@ jobs:
         run: node scripts/check-domain-layering.mjs
 
   dimension5-acceptance:
+    needs: ci-impact-plan
+    if: ${{ always() && (needs.ci-impact-plan.result != 'success' || needs.ci-impact-plan.outputs.run_full == 'true' || contains(needs.ci-impact-plan.outputs.selected_jobs, '"dimension5-acceptance"')) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -166,6 +218,8 @@ jobs:
         run: node scripts/dimension5-acceptance.mjs --ci
 
   npm-audit:
+    needs: ci-impact-plan
+    if: ${{ always() && (needs.ci-impact-plan.result != 'success' || needs.ci-impact-plan.outputs.run_full == 'true' || contains(needs.ci-impact-plan.outputs.selected_jobs, '"npm-audit"')) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -178,6 +232,8 @@ jobs:
         run: npm run audit:dependencies
 
   plugins-index:
+    needs: ci-impact-plan
+    if: ${{ always() && (needs.ci-impact-plan.result != 'success' || needs.ci-impact-plan.outputs.run_full == 'true' || contains(needs.ci-impact-plan.outputs.selected_jobs, '"plugins-index"')) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -188,6 +244,8 @@ jobs:
         run: node scripts/validate-plugins-index.mjs
 
   stale-paths:
+    needs: ci-impact-plan
+    if: ${{ always() && (needs.ci-impact-plan.result != 'success' || needs.ci-impact-plan.outputs.run_full == 'true' || contains(needs.ci-impact-plan.outputs.selected_jobs, '"stale-paths"')) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -198,6 +256,8 @@ jobs:
         run: node scripts/check-stale-paths.mjs
 
   kernel-host-dual-core:
+    needs: ci-impact-plan
+    if: ${{ always() && (needs.ci-impact-plan.result != 'success' || needs.ci-impact-plan.outputs.run_full == 'true' || contains(needs.ci-impact-plan.outputs.selected_jobs, '"kernel-host-dual-core"')) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -207,6 +267,8 @@ jobs:
         run: cargo test --locked -p oclive_kernel_host --features dual_core
 
   cli:
+    needs: ci-impact-plan
+    if: ${{ always() && (needs.ci-impact-plan.result != 'success' || needs.ci-impact-plan.outputs.run_full == 'true' || contains(needs.ci-impact-plan.outputs.selected_jobs, '"cli"')) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -221,6 +283,8 @@ jobs:
 
   # ARM64 Linux cross-compile smoke (no tests on target; catches arch-specific breakages)
   rust-arm64-cross:
+    needs: ci-impact-plan
+    if: ${{ always() && (needs.ci-impact-plan.result != 'success' || needs.ci-impact-plan.outputs.run_full == 'true' || contains(needs.ci-impact-plan.outputs.selected_jobs, '"rust-arm64-cross"')) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -238,6 +302,8 @@ jobs:
         run: cargo check --locked -p oclive_kernel_server -p oclive_kernel_host -p oclive_kernel_runtime --target aarch64-unknown-linux-gnu
 
   frontend:
+    needs: ci-impact-plan
+    if: ${{ always() && (needs.ci-impact-plan.result != 'success' || needs.ci-impact-plan.outputs.run_full == 'true' || contains(needs.ci-impact-plan.outputs.selected_jobs, '"frontend"')) }}
     strategy:
       fail-fast: false
       matrix:
@@ -287,6 +353,8 @@ jobs:
           fi
 
   cross-host-e2e:
+    needs: ci-impact-plan
+    if: ${{ always() && (needs.ci-impact-plan.result != 'success' || needs.ci-impact-plan.outputs.run_full == 'true' || contains(needs.ci-impact-plan.outputs.selected_jobs, '"cross-host-e2e"')) }}
     runs-on: ubuntu-22.04
     continue-on-error: false
     steps:
@@ -322,6 +390,8 @@ jobs:
           node scripts/diff-vscode-distro-profile.mjs
 
   oocp-test-suite:
+    needs: ci-impact-plan
+    if: ${{ always() && (needs.ci-impact-plan.result != 'success' || needs.ci-impact-plan.outputs.run_full == 'true' || contains(needs.ci-impact-plan.outputs.selected_jobs, '"oocp-test-suite"')) }}
     runs-on: ubuntu-22.04
     continue-on-error: false
     steps:
@@ -386,6 +456,8 @@ jobs:
           fi
 
   remote-plugin-demo:
+    needs: ci-impact-plan
+    if: ${{ always() && (needs.ci-impact-plan.result != 'success' || needs.ci-impact-plan.outputs.run_full == 'true' || contains(needs.ci-impact-plan.outputs.selected_jobs, '"remote-plugin-demo"')) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -448,3 +520,43 @@ jobs:
           if [ -f /tmp/remote_plugin_demo.pid ]; then
             kill "$(cat /tmp/remote_plugin_demo.pid)" || true
           fi
+
+  ci-gate:
+    name: ci-gate
+    if: ${{ always() }}
+    needs:
+      - ci-impact-plan
+      - rust
+      - layering-ratchet
+      - dimension5-acceptance
+      - npm-audit
+      - plugins-index
+      - stale-paths
+      - kernel-host-dual-core
+      - cli
+      - rust-arm64-cross
+      - frontend
+      - cross-host-e2e
+      - oocp-test-suite
+      - remote-plugin-demo
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Checkout trusted CI control plane
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.ci-impact-plan.outputs.trusted_sha }}
+          path: target/oclive-ci/trusted
+          fetch-depth: 1
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: ".nvmrc"
+      - name: Verify selected CI responsibilities
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        run: |
+          POLICY_SCRIPT="$GITHUB_WORKSPACE/target/oclive-ci/trusted/scripts/ci-execution-policy.mjs"
+          if [ ! -f "$POLICY_SCRIPT" ]; then
+            POLICY_SCRIPT="$GITHUB_WORKSPACE/scripts/ci-execution-policy.mjs"
+          fi
+          node "$POLICY_SCRIPT" verify --needs-env NEEDS_JSON

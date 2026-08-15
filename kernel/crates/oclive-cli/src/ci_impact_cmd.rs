@@ -40,7 +40,7 @@ pub struct CiPlanArgs {
     /// Read newline-delimited changed paths from a file.
     #[arg(long = "changed-files-from")]
     pub changed_files_from: Option<PathBuf>,
-    /// Mark the plan as observational; Stage 1 never skips existing jobs.
+    /// Mark the plan as observational; consumers must not skip jobs from a shadow plan.
     #[arg(long)]
     pub shadow: bool,
     /// JSON output path, relative to the repository root unless absolute.

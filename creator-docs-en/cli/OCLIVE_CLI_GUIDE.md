@@ -262,14 +262,15 @@ Canonical design: [RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.
 
 ## CI relationship
 
-The main repository also exposes a domain-aware **Stage 1 shadow plan**:
+The main repository also exposes a domain-aware plan; `--shadow` explicitly requests observation-only output:
 
 ```bash
+cargo run -p oclive-cli -- ci plan --base HEAD^ --head HEAD
 cargo run -p oclive-cli -- ci plan --shadow --base HEAD^ --head HEAD
 cargo run -p oclive-cli -- ci explain --format markdown
 ```
 
-`ci plan` reads the centrally owned map, module descriptors, and trusted validation catalog under `data/ci/`. It emits `target/oclive-ci/plan.json`; `ci explain` renders that JSON without recomputing or executing validators. The `ci-impact-plan` workflow job is non-blocking and cannot skip required main-CI jobs in Stage 1. Validators catalogued as `nightly` run in the separate scheduled/manual lane and are not selective PR execution. See the [domain-aware CI baseline](../../creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md).
+`ci plan` reads the centrally owned map, module descriptors, and trusted validation catalog under `data/ci/`. It emits `target/oclive-ci/plan.json`; `ci explain` renders that JSON without recomputing or executing validators. The main repository's Stage 3 policy only uses warning-free, non-fallback, docs-only PR plans to select existing jobs. Non-document PRs, pushes, control-plane changes, and planner failures remain full, and a stable `ci-gate` verifies the actual results. A plan marked `--shadow` must never skip jobs. Validators catalogued as `nightly` remain in the separate scheduled/manual lane. See the [domain-aware CI baseline](../../creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md).
 
 `oclive scaffold` is a separate developer-tool surface. It may help create or inspect standard metadata, but it cannot select CI validators or influence execution policy; CI always re-analyzes generated files independently.
 

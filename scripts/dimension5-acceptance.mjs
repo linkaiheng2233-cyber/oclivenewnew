@@ -112,6 +112,10 @@ runStep('module quality contracts', () => {
   sh('node', ['scripts/module-quality-compare.mjs', '--self-test']);
 });
 
+runStep('CI execution policy contracts', () => {
+  sh('node', ['scripts/ci-execution-policy.mjs', '--self-test']);
+});
+
 runStep('debt marathon stop-hook self-test', () => {
   sh('node', ['scripts/test-cursor-marathon-hook.mjs']);
 });

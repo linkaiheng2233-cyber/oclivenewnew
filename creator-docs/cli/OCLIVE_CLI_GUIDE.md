@@ -38,7 +38,7 @@ cargo run -p oclive-cli -- init --help
 | 角色包 | `pack create` / `validate` / `publish` | 创建、校验、`.oclivepack` 打包 |
 | 插件 | `plugin create` / `install` / `uninstall` / `test` / `manage` | 脚手架与工程内安装；**manage** 为高级槽位/蓝图 |
 | 环境 | `doctor`（`--fix`）、`config` | 诊断与 `~/.oclive/config.toml` |
-| 质量与 CI | `lint`、`ci init/check/plan/explain` | 静态检查、CI 模板与领域感知影子规划；第三方脚手架不能扩展 `ci` |
+| 质量与 CI | `lint`、`ci init/check/plan/explain` | 静态检查、CI 模板与领域感知规划；第三方脚手架不能扩展 `ci` |
 | 脚手架工具 | `scaffold list/inspect/validate/resolve/generate` | 本地声明发现、信任提示、确定性解析与锁后声明式生成；不执行第三方命令 |
 | 本地开发 | `dev`、`registry`、`profile` | 角色监听、工程注册表、依赖/体积画像 |
 | 契约与迁移 | `kernel`、`explain`、`migrate-app-data`、`completions` | 运行时信息、错误解释、数据迁移与补全 |
@@ -271,7 +271,7 @@ cargo run -p oclive-cli -- registry pull my-kernel -o ./my-kernel
 | 能力 | 命令 |
 |------|------|
 | **Y3 配置** | `oclive config set/get/list/unset/init`（`~/.oclive/config.toml` / `.oclive.toml`） |
-| **Y1 CI** | `oclive ci init` / `ci check`；主仓另有 `ci plan` / `ci explain` 领域感知影子计划（只报告，不跳 job） |
+| **Y1 CI** | `oclive ci init` / `ci check`；主仓另有 `ci plan` / `ci explain` 领域感知计划，`--shadow` 明确标记只观察 |
 | **Y6 修复** | `oclive doctor --fix` / `--fix --yes` |
 | **Y2 回归门禁** | `oclive bench --regression` / `--regression-threshold 3` |
 | **Y5 跨版本** | `oclive bench --compare-versions v0.2.0` |
@@ -280,6 +280,7 @@ cargo run -p oclive-cli -- registry pull my-kernel -o ./my-kernel
 ```bash
 cargo run -p oclive-cli -- config set OCLIVE_REGISTRY_URL https://registry.example.com --global
 cargo run -p oclive-cli -- ci init -o ./my-kernel
+cargo run -p oclive-cli -- ci plan --base HEAD^ --head HEAD
 cargo run -p oclive-cli -- ci plan --shadow --base HEAD^ --head HEAD
 cargo run -p oclive-cli -- ci explain --format markdown
 cargo run -p oclive-cli -- doctor --fix --yes
@@ -288,7 +289,7 @@ cargo run -p oclive-cli -- --experimental bench --release --regression -o ./my-k
 cargo run -p oclive-cli -- template create my-team -o ./my-kernel
 ```
 
-`ci plan` 默认读取 `data/ci/impact-map.v1.json` 与 `validation-catalog.v1.json`，从 Git diff 或重复的 `--changed-file` 计算直接模块、影响闭包、验证 profile、建议 validator 和 fail-safe 全量原因，输出 `target/oclive-ci/plan.json`。`ci explain` 只解释这份 JSON，不重新计算、不执行命令。Stage 1 的 `ci-impact-plan` 为 `continue-on-error` 可见性 job；它不跳过任何主 CI 硬门禁。目录中标为 `nightly` 的验证器由独立 Nightly/手动工作流执行，不属于选择性 PR。契约、第三方隔离与脚手架辅助边界见 [OCLive 领域感知 CI](../roadmap/SOMEDAY_TOOLCHAIN_CI.md)。
+`ci plan` 默认读取 `data/ci/impact-map.v1.json` 与 `validation-catalog.v1.json`，从 Git diff 或重复的 `--changed-file` 计算直接模块、影响闭包、验证 profile、建议 validator 和 fail-safe 全量原因，输出 `target/oclive-ci/plan.json`。`ci explain` 只解释这份 JSON，不重新计算、不执行命令。主仓 Stage 3 只对无 warning/full fallback 的纯文档 PR 使用计划选择既有 job；非文档 PR、Push、控制面改动和规划异常仍全量，并由稳定 `ci-gate` 汇总。手动加 `--shadow` 的计划不得用于跳过 job。目录中标为 `nightly` 的验证器仍由独立 Nightly/手动工作流执行。契约、第三方隔离与脚手架辅助边界见 [OCLive 领域感知 CI](../roadmap/SOMEDAY_TOOLCHAIN_CI.md)。
 
 ---
 
