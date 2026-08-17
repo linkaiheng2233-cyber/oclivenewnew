@@ -253,7 +253,7 @@ onBeforeUnmount(() => {
 .avatar {
   display: block;
   max-width: 100%;
-  max-height: min(38vh, min(400px, 55vw));
+  max-height: min(50vh, min(620px, 62vw));
   width: auto;
   height: auto;
   object-fit: contain;
@@ -318,7 +318,7 @@ onBeforeUnmount(() => {
   margin-bottom: 8px;
 }
 .hero--sidebar .avatar {
-  max-height: min(48vh, 340px);
+  max-height: min(72vh, 880px);
   max-width: 100%;
 }
 .hero--sidebar .avatar-fallback {

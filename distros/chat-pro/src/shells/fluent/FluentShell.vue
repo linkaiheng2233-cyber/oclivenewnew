@@ -492,7 +492,6 @@ function onLeftRailResize(deltaX: number) {
 .left-pane {
   flex: 0 0 var(--tool-left-rail-w, 220px);
   width: var(--tool-left-rail-w, 220px);
-  max-width: 40%;
   min-width: 160px;
   display: flex;
   flex-direction: column;

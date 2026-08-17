@@ -2,12 +2,12 @@ const LEFT_RAIL_KEY = 'oclive-layout-left-rail-w'
 const SIDEPANEL_KEY = 'oclive-layout-sidepanel-w'
 
 export const LAYOUT_WIDTH_DEFAULTS = {
-  leftRail: 220,
+  leftRail: 260,
   sidePanel: 400,
 } as const
 
 export const LAYOUT_WIDTH_LIMITS = {
-  leftRail: { min: 160, max: 360 },
+  leftRail: { min: 160, max: 720 },
   sidePanel: { min: 280, max: 560 },
 } as const
 
