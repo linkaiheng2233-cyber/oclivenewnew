@@ -53,12 +53,36 @@ fn push_segment(segments: &mut Vec<String>, current: &mut String) {
     current.clear();
 }
 
+/// True when a line is a segment boundary: its trimmed content either equals the
+/// separator exactly, or is the separator followed only by trailing punctuation
+/// (small models often append 。 / . / ! to a standalone marker line).
+fn is_separator_boundary(line: &str, separator: &str) -> bool {
+    let t = line.trim();
+    if t == separator {
+        return true;
+    }
+    if let Some(rest) = t.strip_prefix(separator) {
+        if !rest.is_empty()
+            && rest.chars().all(|c| {
+                matches!(
+                    c,
+                    '。' | '，' | '！' | '？' | '…' | '、' | '.' | ',' | '!' | '?' | ';' | '~'
+                )
+            })
+        {
+            return true;
+        }
+    }
+    false
+}
+
 /// Split one model reply into presentation segments on standalone separator lines.
 ///
-/// Only a line whose trimmed content exactly equals `separator` is a boundary.
-/// Extra segments beyond `max_segments` are merged into the last segment, and
-/// empty segments are dropped. An invalid separator or `max_segments <= 1`
-/// returns the whole trimmed reply as one segment.
+/// A line whose trimmed content exactly equals `separator` (or the separator
+/// followed only by trailing punctuation) is a boundary. Extra segments beyond
+/// `max_segments` are merged into the last segment, and empty segments are
+/// dropped. An invalid separator or `max_segments <= 1` returns the whole
+/// trimmed reply as one segment.
 #[must_use]
 pub fn split_reply_segments(raw: &str, separator: &str, max_segments: usize) -> Vec<String> {
     if max_segments <= 1 || !valid_reply_separator(separator) {
@@ -76,7 +100,7 @@ pub fn split_reply_segments(raw: &str, separator: &str, max_segments: usize) -> 
     let mut current = String::new();
 
     for line in normalized.split('\n') {
-        if line.trim() == separator {
+        if is_separator_boundary(line, separator) {
             push_segment(&mut segments, &mut current);
         } else {
             if !current.is_empty() {
@@ -122,10 +146,14 @@ pub fn present_reply(cfg: &RolePackReplyModeConfig, raw: &str) -> ReplyModePrese
 
 /// Generic output-format instruction appended to the prompt when a reply mode
 /// asks the model for multiple segments.
+///
+/// Small local models follow "absolute prohibition" phrasing more reliably than
+/// gentle phrasing or worked examples, so the instruction states the rule twice
+/// and never invites the model to reason about the protocol.
 #[must_use]
 pub fn reply_output_format_instruction(segments: usize, separator: &str) -> String {
     format!(
-        "本次回复需要分成 {segments} 段。每段之间，单独输出一行分隔符：\n{separator}\n分隔符前后不要添加任何文字、标点或解释。"
+        "你的回复必须分成 {segments} 段。每一段写完后必须换行，单独输出一行分隔符（这一行只有分隔符本身，不允许添加任何文字或标点）：\n{separator}\n然后再换行写下一段。绝对不允许把各段连成一段，绝对不允许省略分隔符这一行。"
     )
 }
 
@@ -202,6 +230,29 @@ mod tests {
     }
 
     #[test]
+    fn splits_on_separator_with_trailing_punctuation() {
+        let raw = "第一发\n\n+++。\n\n第二发";
+        assert_eq!(
+            split_reply_segments(raw, "+++", 2),
+            vec!["第一发", "第二发"]
+        );
+        let raw2 = "第一发\n+++!\n第二发";
+        assert_eq!(
+            split_reply_segments(raw2, "+++", 2),
+            vec!["第一发", "第二发"]
+        );
+    }
+
+    #[test]
+    fn does_not_split_on_separator_with_non_punctuation_suffix() {
+        let raw = "C+++代码\n\n+++abc\n\n正文";
+        assert_eq!(
+            split_reply_segments(raw, "+++", 2),
+            vec!["C+++代码\n\n+++abc\n\n正文"]
+        );
+    }
+
+    #[test]
     fn rejects_invalid_separators() {
         assert!(!valid_reply_separator(""));
         assert!(!valid_reply_separator("   "));
@@ -219,5 +270,6 @@ mod tests {
         let instruction = reply_output_format_instruction(2, "|||");
         assert!(instruction.contains("分成 2 段"));
         assert!(instruction.contains("|||"));
+        assert!(instruction.contains("绝对不允许省略分隔符"));
     }
 }

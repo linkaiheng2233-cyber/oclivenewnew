@@ -93,7 +93,7 @@ pre / build_prompt
 Input `raw`, `separator`, `segments`:
 
 1. Normalize `\r\n` to `\n`.
-2. A line is a boundary only when its trimmed content exactly equals `separator`; other content (including `C+++`, `a +++ b`) is not a boundary.
+2. A line is a boundary when its trimmed content exactly equals `separator`, or equals the separator followed only by trailing punctuation (`。` / `.` / `!` etc.); other content (including `C+++`, `a +++ b`, `+++abc`) is not a boundary.
 3. Trim each segment; drop empty segments.
 4. Segments beyond `segments` merge into the last one.
 5. No boundary → one segment (the whole reply); this is the natural degradation for "the second burst was late" and similar cases.
