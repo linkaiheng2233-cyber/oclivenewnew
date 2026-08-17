@@ -156,6 +156,8 @@ export interface SceneLabelEntry {
 
 export interface RoleInfo {
   role_id: string
+  /** Reply-mode presentation snapshot; present when the pack enables segmented replies */
+  pack_reply_mode?: ReplyModeInfoDto | null
   role_name: string
   version: string
   author: string
@@ -223,6 +225,14 @@ export interface RoleInfo {
   reply_post_processor_enabled?: boolean
   reply_post_processor_backend?: string
   reply_post_processor_profile?: string | null
+}
+
+export interface ReplyModeInfoDto {
+  mode: 'single' | 'burst'
+  segments: number
+  separator: string
+  delays_ms: number[]
+  streaming: 'live' | 'batch'
 }
 
 /** `switch_scene` flattened `RoleInfo` fields plus optional scene welcome line */

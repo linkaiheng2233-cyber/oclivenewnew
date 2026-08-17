@@ -233,6 +233,7 @@
 |------|------|------|------------------------|
 | `user_identity` | 用户是谁 | `user_identities/` · pre | **是**（pre 段落） |
 | `reply_post_process` | 回复润色/改写 | `config.json` · post_llm | **是**（post） |
+| `reply_mode` | 回复分段与展示节奏 | `config.json` · post_llm（`reply_post_process` 之后） | **是**（post） |
 | `theater_director` | 剧场场景生成 | `POST /theater/scene` | **否**（圈外 API） |
 | **`voice.asr`** | 麦克风 → 文本（ASR，基础）+ 可选情感 TTS（扩展 · 默认关） | 宿主 `chat_toolbar` + **`plugin_rpc_invoke`** → [`VOICE_ASR_SUBMIT_EVENT`](../distros/shared/src/lib/voiceAsrEvents.ts) → `send_message`；`message:sent` / 流式首句 → **`voice.speak`**（须 `tts_expansion_enabled`） | **否** |
 | **`voice.director`** | 人设 → **`voice_directive`**（`rules-v1` · `emo_text` · `ref_map`） | 插件 RPC **`voice.build_directive`** | **否** |

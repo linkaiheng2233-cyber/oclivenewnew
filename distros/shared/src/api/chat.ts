@@ -101,6 +101,11 @@ export interface DetectedEventDto {
 
 export type PresenceMode = 'co_present' | 'remote_stub' | 'remote_life'
 
+export interface ReplyPresentationDto {
+  segments: string[]
+  delays_ms: number[]
+}
+
 export interface SendMessageResponse {
   api_version: number
   schema: number
@@ -111,6 +116,8 @@ export interface SendMessageResponse {
   relation_state: string
   reply: string
   adult_beat?: AdultBeatDto | null
+  /** Optional segmented presentation for the `reply_mode` side channel */
+  reply_presentation?: ReplyPresentationDto | null
   emotion: EmotionDto
   /** Bot emotion label (lowercase) for this turn */
   bot_emotion: string

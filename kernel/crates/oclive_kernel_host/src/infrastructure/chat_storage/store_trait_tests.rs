@@ -32,6 +32,8 @@ mod tests {
             emotion_intensity: None,
             emotion_dissonance: None,
             emotion_hint: None,
+            reply_segments: None,
+            reply_segment_delays_ms: None,
             max_messages_per_session: Some(500),
             auto_cleanup_config: AutoCleanupConfig::default(),
             chat_storage_location: "global".to_string(),

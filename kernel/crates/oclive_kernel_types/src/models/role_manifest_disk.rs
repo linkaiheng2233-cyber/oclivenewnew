@@ -155,6 +155,7 @@ pub fn disk_manifest_to_role(d: &DiskRoleManifest) -> Role {
         pack_chat_storage_config: super::role_pack_config::RolePackChatStorageConfig::default(),
         pack_reply_post_processor_config:
             super::reply_post_processor_config::RolePackReplyPostProcessorConfig::default(),
+        pack_reply_mode_config: super::reply_mode_config::RolePackReplyModeConfig::default(),
         pack_portrait_catalog: super::portrait_catalog_config::PortraitCatalogToggle::default(),
         portrait_catalog: None,
         pack_visual_presentation_config:

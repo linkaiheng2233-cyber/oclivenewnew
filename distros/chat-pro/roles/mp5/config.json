@@ -1,0 +1,101 @@
+{
+    "time": {
+        "decay_on_jump": true,
+        "decay_per_day": 2,
+        "speed": 5
+    },
+    "memory": {
+        "decay_halflife_days": 7,
+        "reinforcement_factor": 0.3,
+        "min_strength_for_prompt": 0.1,
+        "similarity_threshold": 0.6,
+        "reinforced_mention_threshold": 3
+    },
+    "relation": {
+        "decay_halflife_days": 30,
+        "estrangement_threshold": 0.3,
+        "interaction_recovery": 0.12
+    },
+    "evolution": {
+        "personality_evolution_interval_hours": 6
+    },
+    "chat_storage": {
+        "location": "global"
+    },
+    "portrait_catalog": {
+        "enabled": true
+    },
+    "visual_presentation": {
+        "enabled": true,
+        "backend": "image"
+    },
+    "meta_action_templates": {
+        "undo": {
+            "enabled": true,
+            "attitude_text": "（用户撤回了上一轮对话，请自然回应这一变化。）"
+        },
+        "regenerate": {
+            "enabled": true,
+            "attitude_text": "（用户希望重新生成上一轮回复。）"
+        },
+        "edit": {
+            "enabled": true,
+            "attitude_text": "（用户修改了先前发送的内容并重新发送。）"
+        },
+        "delete": {
+            "enabled": true,
+            "attitude_text": "（用户删除了一条聊天记录。）"
+        }
+    },
+    "turn_thinking": {
+        "deep_when": {
+            "or": [
+                {
+                    "signal": "long_message",
+                    "min_chars": 60
+                },
+                {
+                    "signal": "this_turn_event",
+                    "events": [
+                        "Confession",
+                        "Complaint"
+                    ]
+                }
+            ],
+            "and": [
+                {
+                    "all": [
+                        {
+                            "signal": "long_message",
+                            "min_chars": 30
+                        },
+                        {
+                            "signal": "high_sadness"
+                        }
+                    ]
+                }
+            ]
+        },
+        "latch": {
+            "enter_on": [
+                "Confession",
+                "Complaint"
+            ],
+            "exit_on": [
+                "Praise",
+                "Joke"
+            ]
+        },
+        "ephemeral_archive": {
+            "enabled": true,
+            "ttl_turns": 3,
+            "max_chars": 200,
+            "update_on_events": [
+                "Quarrel",
+                "Apology",
+                "Confession",
+                "Praise"
+            ]
+        }
+    }
+}

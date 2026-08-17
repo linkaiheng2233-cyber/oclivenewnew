@@ -305,6 +305,7 @@ mod tests {
             )),
             user_identity_catalog: None,
             pack_reply_post_processor_config: Default::default(),
+            pack_reply_mode_config: Default::default(),
             source_dir: None,
         }
     }

@@ -143,7 +143,7 @@ onBeforeUnmount(() => {
   flex-direction: column;
   align-items: center;
   flex-shrink: 0;
-  width: var(--theater-portrait-w, 96px);
+  width: var(--theater-portrait-w, 160px);
   padding: var(--tool-space-2, 8px) var(--tool-space-1, 4px);
   opacity: 0.72;
   transition: opacity 0.28s ease, transform 0.28s ease;
@@ -190,8 +190,8 @@ onBeforeUnmount(() => {
   align-items: flex-end;
   justify-content: center;
   width: 100%;
-  min-height: calc(var(--theater-portrait-max-h, 200px) * 0.44);
-  max-height: var(--theater-portrait-max-h, 200px);
+  min-height: calc(var(--theater-portrait-max-h, 360px) * 0.44);
+  max-height: min(var(--theater-portrait-max-h, 360px), calc(100vh - 120px));
   border-radius: var(--tool-radius-lg, 12px);
   background: color-mix(in srgb, var(--tool-elevated) 92%, var(--tool-accent) 8%);
   overflow: hidden;
@@ -201,7 +201,7 @@ onBeforeUnmount(() => {
 .cast-portrait__img {
   display: block;
   max-width: 100%;
-  max-height: var(--theater-portrait-max-h, 200px);
+  max-height: min(var(--theater-portrait-max-h, 360px), calc(100vh - 120px));
   width: auto;
   height: auto;
   object-fit: contain;
@@ -214,8 +214,8 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   width: 100%;
-  min-height: calc(var(--theater-portrait-max-h, 200px) * 0.36);
-  font-size: clamp(1.6rem, calc(var(--theater-portrait-w, 96px) * 0.28), 3rem);
+  min-height: calc(var(--theater-portrait-max-h, 360px) * 0.36);
+  font-size: clamp(1.6rem, calc(var(--theater-portrait-w, 160px) * 0.28), 3rem);
   line-height: 1;
   animation: castPortraitIn 0.32s ease both;
 }

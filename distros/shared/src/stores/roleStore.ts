@@ -1,4 +1,4 @@
-import type { AuthorPackFile, DisplayMetricsDto, LifeStateDto, PackUiConfig, PluginBackends, PluginBackendsOverride, PluginBackendsSourceMap, RoleInfo, UserRelationDto } from '@oclive/shared/api'
+import type { AuthorPackFile, DisplayMetricsDto, LifeStateDto, PackUiConfig, PluginBackends, PluginBackendsOverride, PluginBackendsSourceMap, ReplyModeInfoDto, RoleInfo, UserRelationDto } from '@oclive/shared/api'
 import type { SlotRegistryMap } from '@oclive/shared/lib/slotRegistry'
 import type { PresetRoleOption } from '@oclive/shared/utils/presetRolePicker'
 import type { UnlistenFn } from '@tauri-apps/api/event'
@@ -46,6 +46,8 @@ export interface RoleOption extends PresetRoleOption {
 
 interface RoleInfoState {
   name: string
+  /** Active reply presentation mode from `get_role_info` (null = ordinary single reply). */
+  replyMode: ReplyModeInfoDto | null
   version: string
   author: string
   description: string
@@ -191,6 +193,7 @@ function mapRoleInfo(info: RoleInfo): RoleInfoState {
     replyPostProcessorEnabled: info.reply_post_processor_enabled ?? false,
     replyPostProcessorBackend: info.reply_post_processor_backend ?? 'off',
     replyPostProcessorProfile: info.reply_post_processor_profile ?? null,
+    replyMode: info.pack_reply_mode ?? null,
   }
 }
 
@@ -321,6 +324,7 @@ export const useRoleStore = defineStore(
         replyPostProcessorEnabled: false,
         replyPostProcessorBackend: 'off',
         replyPostProcessorProfile: null,
+        replyMode: null,
       } as RoleInfoState,
     }),
     actions: {

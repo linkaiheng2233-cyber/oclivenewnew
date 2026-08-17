@@ -54,6 +54,33 @@ export function storedMessageToChatMessage(m: StoredMessage): ChatMessage {
   }
 }
 
+/** Convert durable rows into UI messages, expanding `reply_segments` metadata into sibling bubbles. */
+export function storedMessagesToChatMessages(messages: StoredMessage[]): ChatMessage[] {
+  const out: ChatMessage[] = []
+  for (const stored of messages) {
+    const base = storedMessageToChatMessage(stored)
+    let segments: string[] | undefined
+    if (stored.sender === 'assistant' && stored.metadata) {
+      try {
+        const meta = JSON.parse(stored.metadata) as Record<string, unknown>
+        if (Array.isArray(meta.reply_segments) && meta.reply_segments.length > 1)
+          segments = meta.reply_segments.filter((item): item is string => typeof item === 'string')
+      }
+      catch {
+        /* ignore */
+      }
+    }
+    if (!segments || segments.length <= 1) {
+      out.push(base)
+      continue
+    }
+    segments.forEach((text, index) => {
+      out.push({ ...base, id: `${base.id}#s${index}`, content: text, timestamp: base.timestamp + index })
+    })
+  }
+  return out
+}
+
 export function storedMessageIsHidden(m: StoredMessage): boolean {
   if (!m.metadata)
     return false
@@ -253,12 +280,12 @@ export async function loadRoleSceneMessages(
   }
   try {
     const stored = await fetchChatMessages(sessionId, 500, 0)
-    const serverMessages = stored
-      .filter(m =>
+    const serverMessages = storedMessagesToChatMessages(
+      stored.filter(m =>
         (m.sender === 'user' || m.sender === 'assistant')
         && !storedMessageIsHidden(m),
-      )
-      .map(storedMessageToChatMessage)
+      ),
+    )
     const messages = splitAssistantMessages(
       mergeMessagesFromServer(serverMessages, previousLocal),
     )

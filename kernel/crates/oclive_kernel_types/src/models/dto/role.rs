@@ -11,6 +11,7 @@ use super::super::ui_config::UiConfig;
 use serde::{Deserialize, Serialize};
 
 use super::{DisplayMetricsDto, UserRelationDto};
+use crate::models::ReplyModeInfoDto;
 
 /// Full role runtime snapshot for settings and plugin panels (`get_role_info`).
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -266,4 +267,7 @@ pub struct RoleInfo {
     /// Effective builtin profile (`standard` | `minimal`) when enabled.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reply_post_processor_profile: Option<String>,
+    /// Effective reply presentation mode; present when the role pack enables segmented replies.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pack_reply_mode: Option<ReplyModeInfoDto>,
 }

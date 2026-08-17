@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "default_identity_id": "cadet",
+  "identities": {
+    "cadet": {
+      "display_name": "年轻军官学员",
+      "template_file": "cadet.md",
+      "maps_to_relation_id": "mentee"
+    },
+    "researcher": {
+      "display_name": "研究者",
+      "template_file": "researcher.md",
+      "maps_to_relation_id": "researcher"
+    },
+    "veteran": {
+      "display_name": "同袍老兵",
+      "template_file": "veteran.md",
+      "maps_to_relation_id": "comrade"
+    }
+  }
+}

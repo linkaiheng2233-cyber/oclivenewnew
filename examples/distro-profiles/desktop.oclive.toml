@@ -45,7 +45,7 @@ performance_profile = "gpu_balanced"
 
 [resource_coordination]
 gpu_safety_reserve_mib = 768
-system_memory_safety_reserve_mib = 1024
+system_memory_safety_reserve_mib = 256
 cpu_safety_reserve_threads = 1
 pending_lease_ttl_ms = 120000
 active_lease_ttl_ms = 1800000

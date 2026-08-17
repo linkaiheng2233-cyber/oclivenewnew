@@ -262,6 +262,16 @@ impl ConversationStore for HybridConversationStore {
                 assistant_meta["emotion_hint"] = serde_json::json!(hint);
             }
         }
+        if let Some(segments) = input.reply_segments {
+            if segments.len() > 1 {
+                assistant_meta["reply_segments"] = serde_json::json!(segments);
+            }
+        }
+        if let Some(delays) = input.reply_segment_delays_ms {
+            if delays.len() > 1 {
+                assistant_meta["reply_segment_delays_ms"] = serde_json::json!(delays);
+            }
+        }
         let user_meta_str = user_meta.to_string();
         let assistant_meta_str = assistant_meta.to_string();
 
@@ -721,6 +731,8 @@ mod tests {
                 emotion_intensity: None,
                 emotion_dissonance: None,
                 emotion_hint: None,
+                reply_segments: None,
+                reply_segment_delays_ms: None,
                 max_messages_per_session: None,
                 auto_cleanup_config: Default::default(),
                 chat_storage_location: "global".into(),
@@ -755,6 +767,8 @@ mod tests {
             emotion_intensity: None,
             emotion_dissonance: None,
             emotion_hint: None,
+            reply_segments: None,
+            reply_segment_delays_ms: None,
             max_messages_per_session: None,
             auto_cleanup_config: Default::default(),
             chat_storage_location: "global".into(),
@@ -816,6 +830,8 @@ mod tests {
                 emotion_intensity: Some(0.64),
                 emotion_dissonance: Some(0.21),
                 emotion_hint: Some("anger is rising".into()),
+                reply_segments: None,
+                reply_segment_delays_ms: None,
                 max_messages_per_session: None,
                 auto_cleanup_config: Default::default(),
                 chat_storage_location: "global".into(),
@@ -929,6 +945,8 @@ mod tests {
                 emotion_intensity: None,
                 emotion_dissonance: None,
                 emotion_hint: Some(String::new()),
+                reply_segments: None,
+                reply_segment_delays_ms: None,
                 max_messages_per_session: None,
                 auto_cleanup_config: Default::default(),
                 chat_storage_location: "global".into(),
@@ -992,6 +1010,8 @@ mod tests {
                 emotion_intensity: None,
                 emotion_dissonance: None,
                 emotion_hint: None,
+                reply_segments: None,
+                reply_segment_delays_ms: None,
                 max_messages_per_session: None,
                 auto_cleanup_config: Default::default(),
                 chat_storage_location: "global".into(),

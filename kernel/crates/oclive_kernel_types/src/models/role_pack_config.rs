@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use super::meta_action_templates_config::RolePackMetaActionTemplatesConfig;
 use super::portrait_catalog_config::PortraitCatalogToggle;
+use super::reply_mode_config::RolePackReplyModeConfig;
 use super::reply_post_processor_config::RolePackReplyPostProcessorConfig;
 use super::role_time_config::RoleTimeConfig;
 use super::visual_presentation_config::RolePackVisualPresentationConfig;
@@ -289,6 +290,8 @@ pub struct RolePackConfigFile {
     pub chat_storage: RolePackChatStorageConfig,
     #[serde(default)]
     pub reply_post_processor: RolePackReplyPostProcessorConfig,
+    #[serde(default)]
+    pub reply_mode: RolePackReplyModeConfig,
     #[serde(default)]
     pub portrait_catalog: PortraitCatalogToggle,
     #[serde(default)]

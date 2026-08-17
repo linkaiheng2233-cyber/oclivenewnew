@@ -2,8 +2,8 @@
 
 > **Readers**: Engineers who finished L0–L3 and work on **one module**, not the full `process_message` chain.  
 > **SSOT**: Chinese full packs → [`human-docs/modules/README.md`](../../human-docs/modules/README.md) · definitions → [MODULE_MAP](../../handoff/MODULE_MAP_AND_HANDOFF.md).  
-> **Coverage**: **≥80%** — all 19 module packs mirrored (EN summary + ZH checklist link).  
-> **Last updated**: 2026-07-10
+> **Coverage**: **≥80%** — all 20 module packs mirrored (EN summary + ZH checklist link).  
+> **Last updated**: 2026-08-16
 
 ---
 
@@ -34,6 +34,7 @@
 | **Side channels** | `chat-storage` | [ZH](../../human-docs/modules/side-channels/chat-storage.md) | [EN](side-channels/chat-storage.md) |
 | | `user-identity` | [ZH](../../human-docs/modules/side-channels/user-identity.md) | [EN](side-channels/user-identity.md) |
 | | `reply-post-process` | [ZH](../../human-docs/modules/side-channels/reply-post-process.md) | [EN](side-channels/reply-post-process.md) |
+| | `reply-mode` | [ZH](../../human-docs/modules/side-channels/reply-mode.md) | [EN](side-channels/reply-mode.md) |
 | **Orchestration** | `turn-thinking` | [ZH](../../human-docs/modules/orchestration/turn-thinking.md) | [EN](orchestration/turn-thinking.md) |
 | | `model-tier` | [ZH](../../human-docs/modules/orchestration/model-tier.md) | [EN](orchestration/model-tier.md) |
 | **Surfaces** | `frontend-chat-pro` | [ZH](../../human-docs/modules/surfaces/frontend-chat-pro.md) | [EN](surfaces/frontend-chat-pro.md) |

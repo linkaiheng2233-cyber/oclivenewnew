@@ -53,6 +53,13 @@ pub struct DetectedEventDto {
     pub confidence: f32,
 }
 
+/// Optional segmented presentation of one assistant reply (`reply_mode` side channel).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ReplyPresentationDto {
+    pub segments: Vec<String>,
+    pub delays_ms: Vec<u32>,
+}
+
 /// `send_message` co-present / remote-presence stub / remote inner-voice modes (for UI styling and debugging).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -79,6 +86,9 @@ pub struct SendMessageResponse {
     /// Structured adult beat. `reply` remains the dialogue-only compatibility field.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub adult_beat: Option<AdultBeatDto>,
+    /// Optional reply presentation segments (absent for ordinary single replies).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reply_presentation: Option<ReplyPresentationDto>,
     /// User-input emotion analysis (seven dimensions); for debugging or advanced UI display.
     pub emotion: EmotionDto,
     /// Bot emotion label parsed this turn (lowercase English; matches `Emotion::Display`).

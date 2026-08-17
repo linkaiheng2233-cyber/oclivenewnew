@@ -12,6 +12,7 @@ import { waitForVoicePlaybackSettled } from '@oclive/shared/lib/voicePlaybackSet
 import { isChatStreamEnabled } from '@oclive/shared/utils/chatStreamSettings'
 import { getRelationUpgradeMessage } from '@oclive/shared/utils/relation'
 import { presentationFromSendResponse } from '@oclive/shared/utils/replyPresentation'
+import { draftsFromPresentation, segmentMessageIds, splitReplyBySeparatorLine } from '@oclive/shared/utils/replySegments'
 import {
   assistantDialogueFromSplit,
   splitRoleplayReply,
@@ -125,7 +126,11 @@ export async function sendChatStoreMessage(
     submitted_at_ms: Date.now(),
   })
   const relationBefore = roleStore.roleInfo.relationState
+  const replyMode = roleStore.roleInfo.replyMode
+  const replySeparator = replyMode?.separator ?? ''
+  const replySegmentsCap = replyMode?.segments ?? 2
   let streamBubbleActive = false
+  let secondStreamBubbleActive = false
   let streamSpokenPrefix = ''
   let lastStreamAccumulated = ''
   const voiceChunker = new StreamingVoiceChunker()
@@ -169,9 +174,36 @@ export async function sendChatStoreMessage(
               if (isStale())
                 return
               lastStreamAccumulated = accumulated
-              context.patchMessageById(roleId, sid, assistantLocalId, {
-                content: accumulated,
-              })
+              if (!replyMode || !replySeparator) {
+                context.patchMessageById(roleId, sid, assistantLocalId, {
+                  content: accumulated,
+                })
+              }
+              else {
+                const segments = splitReplyBySeparatorLine(
+                  accumulated,
+                  replySeparator,
+                  replySegmentsCap,
+                )
+                context.patchMessageById(roleId, sid, assistantLocalId, {
+                  content: segments[0] ?? '',
+                })
+                if (segments.length > 1 && !secondStreamBubbleActive) {
+                  context.addMessage(roleId, sid, {
+                    id: `${assistantLocalId}#s1`,
+                    role: 'assistant',
+                    content: '',
+                    timestamp: Date.now(),
+                    streaming: true,
+                  }, { persistIdbCache: false })
+                  secondStreamBubbleActive = true
+                }
+                if (secondStreamBubbleActive) {
+                  context.patchMessageById(roleId, sid, `${assistantLocalId}#s1`, {
+                    content: segments[1] ?? '',
+                  })
+                }
+              }
               emitStreamVoiceChunks(voiceChunker.push(accumulated))
             },
           },
@@ -182,12 +214,18 @@ export async function sendChatStoreMessage(
         if (isAbortError(streamErr, streamAbort.signal) || isStale()) {
           if (streamBubbleActive)
             context.deleteMessage(roleId, sid, assistantLocalId)
+          if (secondStreamBubbleActive)
+            context.deleteMessage(roleId, sid, `${assistantLocalId}#s1`)
           return
         }
         console.warn('[chat] stream failed, fallback to /chat', streamErr)
         if (streamBubbleActive) {
           context.deleteMessage(roleId, sid, assistantLocalId)
           streamBubbleActive = false
+        }
+        if (secondStreamBubbleActive) {
+          context.deleteMessage(roleId, sid, `${assistantLocalId}#s1`)
+          secondStreamBubbleActive = false
         }
         res = await sendMessage({
           role_id: roleId,
@@ -224,24 +262,38 @@ export async function sendChatStoreMessage(
         }
       : splitRoleplayReply(pres.replyText)
     const aside = preSplit.aside.trim()
-    const dialogue = assistantDialogueFromSplit(pres.replyText, preSplit)
-    const assistantMsg: ChatMessage = {
-      id: res.assistant_message_id
-        ?? assistantLocalId,
-      role: 'assistant',
-      content: dialogue,
-      timestamp: parseMessageTimestamp(res.assistant_message_timestamp),
-      emotion: pres.assistantEmotionLabel,
-      presenceVariant: pres.presenceVariant,
-      replyIsFallback: pres.replyIsFallback,
-      streaming: false,
-      ...(aside.length > 0 ? { aside } : {}),
-    }
+    const drafts = res.adult_beat
+      ? [{ text: preSplit.dialogue, delayMs: 0 }]
+      : draftsFromPresentation(pres.replyText, res.reply_presentation)
 
     if (streamBubbleActive) {
       context.deleteMessage(roleId, sid, assistantLocalId)
     }
-    context.addMessage(roleId, sid, assistantMsg, { persistIdbCache: false })
+    if (secondStreamBubbleActive)
+      context.deleteMessage(roleId, sid, `${assistantLocalId}#s1`)
+    const baseId = res.assistant_message_id ?? assistantLocalId
+    const baseTimestamp = parseMessageTimestamp(res.assistant_message_timestamp)
+    const segmentIds = segmentMessageIds(baseId, drafts.length)
+    for (let i = 0; i < drafts.length; i++) {
+      const delayMs = i === 0 ? 0 : drafts[i].delayMs
+      if (delayMs > 0)
+        await new Promise<void>(resolve => window.setTimeout(resolve, delayMs))
+      if (isStale())
+        return
+      const segmentSplit = splitRoleplayReply(drafts[i].text)
+      const segmentDialogue = assistantDialogueFromSplit(drafts[i].text, segmentSplit)
+      context.addMessage(roleId, sid, {
+        id: segmentIds[i],
+        role: 'assistant',
+        content: segmentDialogue,
+        timestamp: baseTimestamp + i,
+        emotion: pres.assistantEmotionLabel,
+        presenceVariant: pres.presenceVariant,
+        replyIsFallback: pres.replyIsFallback,
+        streaming: false,
+        ...(i === drafts.length - 1 && aside.length > 0 ? { aside } : {}),
+      }, { persistIdbCache: false })
+    }
     const voiceTextOnlyForTurn = adultStore.sessionFor(roleId, sid).voiceTextOnly
     if (res.adult_beat) {
       adultStore.updateSession(
@@ -311,12 +363,16 @@ export async function sendChatStoreMessage(
     if (isAbortError(err, streamAbort.signal) || isStale()) {
       if (streamBubbleActive)
         context.deleteMessage(roleId, sid, assistantLocalId)
+      if (secondStreamBubbleActive)
+        context.deleteMessage(roleId, sid, `${assistantLocalId}#s1`)
       return
     }
     if (!options.hideUserMessage)
       context.deleteMessage(roleId, sid, userLocalId)
     if (streamBubbleActive)
       context.deleteMessage(roleId, sid, assistantLocalId)
+    if (secondStreamBubbleActive)
+      context.deleteMessage(roleId, sid, `${assistantLocalId}#s1`)
     throw err
   }
   finally {

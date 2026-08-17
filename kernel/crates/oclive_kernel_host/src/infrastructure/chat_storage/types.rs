@@ -49,6 +49,12 @@ pub struct TurnPersistInput {
     pub emotion_dissonance: Option<f64>,
     #[serde(default)]
     pub emotion_hint: Option<String>,
+    /// Reply-mode presentation segments stored in assistant metadata (None = single reply).
+    #[serde(default)]
+    pub reply_segments: Option<Vec<String>>,
+    /// Per-segment frontend display delays aligned with `reply_segments`.
+    #[serde(default)]
+    pub reply_segment_delays_ms: Option<Vec<u32>>,
     /// Per-role cap; `None` uses [`super::config::DEFAULT_MAX_MESSAGES`].
     #[serde(default)]
     pub max_messages_per_session: Option<u32>,

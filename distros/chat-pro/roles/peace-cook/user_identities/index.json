@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "default_identity_id": "trainee",
+  "identities": {
+    "trainee": {
+      "display_name": "新兵后辈",
+      "template_file": "trainee.md",
+      "maps_to_relation_id": "trainee"
+    },
+    "reporter": {
+      "display_name": "随队记者",
+      "template_file": "reporter.md",
+      "maps_to_relation_id": "reporter"
+    }
+  }
+}

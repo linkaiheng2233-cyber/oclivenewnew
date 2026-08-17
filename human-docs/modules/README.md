@@ -27,7 +27,7 @@
 | **六槽** | [`slots/`](slots/) | memory · emotion · event · prompt · llm · agent | **Done** |
 | **设施** | [`facilities/`](facilities/) | complex-emotion · portrait · visual-stage | **Done** |
 | **角色包** | [`packs/`](packs/) | role-pack-content · role-pack-config | **Done** |
-| **独立通道** | [`side-channels/`](side-channels/) | user-identity · reply-post-process · chat-storage | **Done** |
+| **独立通道** | [`side-channels/`](side-channels/) | user-identity · reply-post-process · reply-mode · chat-storage | **Done** |
 | **全景索引** | — | [ARCHITECTURE_DECOUPLING_PANORAMA.md](../team/ARCHITECTURE_DECOUPLING_PANORAMA.md)（**§1 六槽/独立通道/正交** + 插件清单 + 正交轴） | **Done** |
 | **编排行** | [`orchestration/`](orchestration/) | turn-thinking · model-tier（摘要链） | **Done** |
 | **宿主面** | [`surfaces/`](surfaces/) | frontend-chat-pro · tauri-invoke · distro-hostprofile | **Done** |

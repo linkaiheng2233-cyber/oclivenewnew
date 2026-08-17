@@ -21,6 +21,7 @@ Full RFC (Chinese SSOT): [RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md](../../cre
 |------|--------------|--------------|--------|------------|--------|
 | **`user_identity`** | User Identity Prompt Template | `turn_pipeline/pre` → `resolve_active_user_identity` → `PromptBuilder` (**pre-LLM**) | Role pack `user_identities/`; distro `[user_identity]` | None (pack content) | **Delivered** |
 | **`reply_post_process`** | Reply Post-Processor Plugin | After built-in `post_llm` → `resolve_reply_post_processor` → `process_reply` | Pack `config.json` → `reply_post_processor`; distro `[post_process].chain` | **`reply_post_process`** · RPC `reply_post_process.process` | **Delivered** |
+| **`reply_mode`** | Reply Mode | After built-in `post_llm` (post `reply_post_process`) → split/strip separator → segment metadata | Pack `config.json` → `reply_mode`; no v1 distro override | None (v1 built-in `single`/`burst`; directory plugin `provides` reserved) | **Draft v1 (implemented** · [RFC_REPLY_MODE.md](RFC_REPLY_MODE.md)**)** |
 | **`theater_director`** | Theater Scene Director | **`generate_theater_scene`** / **`POST /theater/scene`** (**outside** `process_message`) | `distro.oclive.toml` → `[theater].director_plugin`; env override | **`theater_director`** · RPC `theater.build_prompt` | **Delivered** |
 | **`voice.asr`** | Voice ASR Input | **`chat_toolbar`** + **`plugin_rpc_invoke`** → `send_message` (**outside** turn hooks) | Plugin `models/` + settings | **`voice.asr`** | **Windows delivered** (v0.4) |
 

@@ -140,6 +140,7 @@ mod tests {
             pack_relation_config: crate::models::RolePackRelationConfig::default(),
             pack_evolution_config: crate::models::RolePackEvolutionConfig::default(),
             pack_chat_storage_config: crate::models::RolePackChatStorageConfig::default(),
+            pack_reply_mode_config: Default::default(),
             pack_portrait_catalog: Default::default(),
             portrait_catalog: None,
             pack_visual_presentation_config: Default::default(),

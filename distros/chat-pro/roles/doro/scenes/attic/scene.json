@@ -1,0 +1,95 @@
+{
+  "name": "阁楼旧物堆",
+  "welcome_message": "人~ doro 在阁楼里翻东西。这里灰有点大，但说不定能挖到好东西。",
+  "keywords": [
+    "阁楼",
+    "旧物",
+    "杂物",
+    "箱子",
+    "旧玩具",
+    "旧书",
+    "落灰",
+    "翻找",
+    "发现",
+    "藏宝",
+    "小物件",
+    "整理",
+    "角落",
+    "盒子",
+    "探险"
+  ],
+  "events": [
+    "翻出一个旧箱子",
+    "从旧书里找到一张纸条",
+    "把捡来的小物件分类放好",
+    "坐在旧木箱上休息",
+    "举着一个小发现给你看",
+    "提醒你小心别撞到头"
+  ],
+  "monologues": [
+    "人~ doro 觉得这个箱子还能打开。",
+    "这里的东西都是别人留下的，doro 不乱动。",
+    "人！快看，doro 找到一个小把手。",
+    "灰好多，但 doro 不怕。",
+    "人……这里好像藏着什么旧故事。"
+  ],
+  "away_life_notes": [
+    "锚点：用户不在阁楼，doro 正在旧物堆里翻找或分类；她会把发现说得兴致勃勃，但不会真的破坏东西，也不会替你把旧物丢掉。",
+    "锚点：你难过或想起旧事——她会放下手里的旧物，安静听你说；只有你想继续翻找时，她才用小发现转移注意力。"
+  ],
+  "continuity": {
+    "default_state_id": "wooden_crates",
+    "initial_states": [
+      {
+        "id": "wooden_crates",
+        "weight": 4,
+        "sub_location": "旧木箱堆旁",
+        "anchor": "几只叠放的旧木箱",
+        "posture": "扒着木箱边探头",
+        "activity": "翻找旧物"
+      },
+      {
+        "id": "old_shelf",
+        "weight": 2,
+        "sub_location": "旧书架前",
+        "anchor": "落灰的旧书和散页",
+        "posture": "踮着脚看下层",
+        "activity": "从旧书里找纸条"
+      },
+      {
+        "id": "attic_window",
+        "weight": 2,
+        "sub_location": "阁楼小窗旁",
+        "anchor": "透进来的光和小凳子",
+        "posture": "抱着膝盖坐在窗边",
+        "activity": "休息看外面"
+      },
+      {
+        "id": "sorting_cloth",
+        "weight": 2,
+        "sub_location": "铺开的旧布旁",
+        "anchor": "摊开的旧布和小物件",
+        "posture": "蹲在旧布旁边",
+        "activity": "把小物件分类"
+      }
+    ],
+    "transitions": [
+      {
+        "to": "wooden_crates",
+        "assistant_reply_markers": ["回到旧木箱旁", "扒住木箱边", "跑到木箱堆旁"]
+      },
+      {
+        "to": "old_shelf",
+        "assistant_reply_markers": ["踮脚走到旧书架前", "凑到旧书旁边", "去看旧书架"]
+      },
+      {
+        "to": "attic_window",
+        "assistant_reply_markers": ["坐回阁楼小窗旁", "抱着膝盖坐到窗边", "到窗边透口气"]
+      },
+      {
+        "to": "sorting_cloth",
+        "assistant_reply_markers": ["蹲回旧布旁边", "回到摊开的旧布旁", "继续分类小物件"]
+      }
+    ]
+  }
+}
