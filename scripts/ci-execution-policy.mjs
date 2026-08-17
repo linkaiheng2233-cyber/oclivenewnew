@@ -3,8 +3,12 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-const POLICY_ID = 'docs-pr-canary-v1';
+const POLICY_ID = 'domain-aware-pr-v2';
 const PLAN_JOB = 'ci-impact-plan';
+const PROMOTED_READY_DIRECT_MODULES = new Set([
+  'oclive.docs',
+]);
+const SELECTIVE_REASONS = new Set(['draft_pr_selective', 'promoted_domain_canary']);
 
 function uniqueSorted(values) {
   return [...new Set(values)].sort();
@@ -69,11 +73,11 @@ function selectedWorkflowJobs(plan) {
   );
 }
 
-function isOnlyDocs(values) {
-  return values.length === 1 && values[0] === 'oclive.docs';
+function isPromotedReadyScope(values) {
+  return values.length > 0 && values.every((value) => PROMOTED_READY_DIRECT_MODULES.has(value));
 }
 
-function resolveExecution(plan, eventName, forceFullReason = null) {
+function resolveExecution(plan, eventName, forceFullReason = null, prDraft = false) {
   if (!plan || typeof plan !== 'object') {
     throw new Error('plan must be an object');
   }
@@ -88,7 +92,7 @@ function resolveExecution(plan, eventName, forceFullReason = null) {
   const affectedModules = moduleIds(plan.affected_modules, 'affected_modules');
   const selectedJobs = selectedWorkflowJobs(plan);
 
-  let reason = forceFullReason ?? 'docs_pr_canary';
+  let reason = forceFullReason ?? 'promoted_domain_canary';
   if (forceFullReason !== null) {
     if (!/^[a-z0-9_]+$/.test(forceFullReason)) {
       throw new Error('force-full reason must use lowercase snake_case');
@@ -103,17 +107,22 @@ function resolveExecution(plan, eventName, forceFullReason = null) {
     reason = 'planner_full_fallback';
   } else if (plan.warnings.length > 0) {
     reason = 'planner_warning';
-  } else if (!isOnlyDocs(directModules) || !isOnlyDocs(affectedModules)) {
-    reason = 'change_not_docs_only';
   } else if (selectedJobs.length === 0) {
     reason = 'no_selected_workflow_jobs';
+  } else if (directModules.length === 0 || affectedModules.length === 0) {
+    reason = 'planner_empty_module_scope';
+  } else if (prDraft) {
+    reason = 'draft_pr_selective';
+  } else if (!isPromotedReadyScope(directModules)) {
+    reason = 'ready_pr_domain_not_promoted';
   }
 
-  const runFull = reason !== 'docs_pr_canary';
+  const runFull = !SELECTIVE_REASONS.has(reason);
   return {
     schema_version: 1,
     policy: POLICY_ID,
     event: eventName,
+    pr_draft: prDraft,
     mode: runFull ? 'full' : 'selective',
     run_full: runFull,
     reason,
@@ -214,6 +223,7 @@ function basePlan(overrides = {}) {
 function runSelfTest() {
   const selective = resolveExecution(basePlan(), 'pull_request');
   assert.equal(selective.mode, 'selective');
+  assert.equal(selective.reason, 'promoted_domain_canary');
   assert.deepEqual(selective.selected_jobs, ['dimension5-acceptance', 'stale-paths']);
 
   assert.equal(resolveExecution(basePlan(), 'push').reason, 'event_not_pull_request');
@@ -228,11 +238,41 @@ function runSelfTest() {
     'planner_full_fallback',
   );
   assert.equal(
+    resolveExecution(basePlan({ warnings: ['unknown optional extension'] }), 'pull_request', null, true)
+      .reason,
+    'planner_warning',
+  );
+  assert.equal(
     resolveExecution(
-      basePlan({ direct_modules: [{ id: 'oclive.docs' }, { id: 'oclive.cli' }] }),
+      basePlan({ fallback: { full: true, reasons: ['risk'] } }),
       'pull_request',
-    ).reason,
-    'change_not_docs_only',
+      null,
+      true,
+    ).mode,
+    'full',
+  );
+  const readyCodePlan = basePlan({
+    direct_modules: [{ id: 'oclive.cli' }],
+    affected_modules: [{ id: 'oclive.cli' }],
+  });
+  assert.equal(
+    resolveExecution(readyCodePlan, 'pull_request').reason,
+    'ready_pr_domain_not_promoted',
+  );
+  assert.equal(resolveExecution(readyCodePlan, 'pull_request', null, true).reason, 'draft_pr_selective');
+  assert.equal(resolveExecution(readyCodePlan, 'pull_request', null, true).mode, 'selective');
+
+  const unpromotedLowRiskPlan = basePlan({
+    direct_modules: [{ id: 'oclive.docs' }, { id: 'oclive.scaffold' }],
+    affected_modules: [
+      { id: 'oclive.cli' },
+      { id: 'oclive.docs' },
+      { id: 'oclive.scaffold' },
+    ],
+  });
+  assert.equal(
+    resolveExecution(unpromotedLowRiskPlan, 'pull_request').reason,
+    'ready_pr_domain_not_promoted',
   );
   assert.equal(
     resolveExecution(basePlan({ selected_validators: [] }), 'pull_request').reason,
@@ -283,7 +323,11 @@ function runResolve(options) {
   if (forceFullReason !== null && typeof forceFullReason !== 'string') {
     throw new Error('--force-full-reason requires a value');
   }
-  const execution = resolveExecution(plan, eventName, forceFullReason);
+  const prDraftValue = options.get('--pr-draft') ?? 'false';
+  if (prDraftValue !== 'true' && prDraftValue !== 'false') {
+    throw new Error('--pr-draft must be true or false');
+  }
+  const execution = resolveExecution(plan, eventName, forceFullReason, prDraftValue === 'true');
   fs.writeFileSync(outputPath, `${JSON.stringify(execution, null, 2)}\n`, 'utf8');
   writeExecutionOutputs(execution, githubOutputPath);
   const githubSummaryPath = options.get('--github-summary');

@@ -17,6 +17,7 @@ struct ShadowScenarioCorpus {
 struct ShadowScenario {
     id: String,
     policy: String,
+    input_mode: Option<String>,
     changed_files: Vec<String>,
     expected: ShadowExpectation,
     review_note: String,
@@ -130,8 +131,13 @@ fn repository_catalog_maps_every_validator_to_its_execution_lane() {
     assert!(planner_block.contains("Checkout trusted CI control plane"));
     assert!(planner_block.contains("--manifest-path \"$TRUSTED_ROOT/Cargo.toml\""));
     assert!(planner_block.contains("--changed-files-from"));
+    assert!(planner_block.contains("--diff-filter=ACMRD -z"));
+    assert!(planner_block.contains("changed-files.zlist"));
+    assert!(planner_block.contains("--pr-draft \"$PR_DRAFT\""));
     assert!(planner_block.contains("--force-full-reason trusted_policy_bootstrap"));
     assert!(!planner_block.contains("--shadow"));
+    assert!(main_workflow
+        .contains("types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]"));
 
     let main_jobs = plan
         .selected_validators
@@ -156,11 +162,15 @@ fn repository_catalog_maps_every_validator_to_its_execution_lane() {
     }
 
     let gate_block = workflow_job_block(&main_workflow, "ci-gate");
-    assert!(gate_block.contains("name: ci-gate"));
+    assert!(gate_block.contains("'ci-draft-gate' || 'ci-gate'"));
     assert!(gate_block.contains("if: ${{ always() }}"));
     assert!(gate_block.contains("ref: ${{ needs.ci-impact-plan.outputs.trusted_sha }}"));
     assert!(gate_block.contains("target/oclive-ci/trusted/scripts/ci-execution-policy.mjs"));
     assert!(gate_block.contains("node \"$POLICY_SCRIPT\" verify --needs-env NEEDS_JSON"));
+    assert!(gate_block.contains("actions/download-artifact@v7"));
+    assert!(gate_block.contains("collect-ci-compare-evidence.mjs"));
+    assert!(gate_block.contains("oclive-ci-compare-${{ github.run_id }}-${{ github.run_attempt }}"));
+    assert!(gate_block.contains("retention-days: 90"));
     for job in &main_jobs {
         assert!(
             gate_block.contains(&format!("      - {job}\n")),
@@ -176,6 +186,10 @@ fn repository_catalog_maps_every_validator_to_its_execution_lane() {
         "nightly Loom must execute the model tests, not only compile the disabled fixture",
     );
     assert!(!nightly_workflow.contains("loom_tests_require_cfg_loom"));
+    assert!(flake_workflow.contains("workflow_dispatch:"));
+    assert!(flake_workflow.contains("run_id:"));
+    assert!(!flake_workflow.contains("workflow_run:"));
+    assert!(flake_workflow.contains("--repo \"$GITHUB_REPOSITORY\""));
     assert!(flake_workflow.contains("              ci-gate)"));
     assert!(flake_workflow.contains("/tmp/oclive-ci-rust-failure.txt"));
 }
@@ -337,6 +351,19 @@ fn repository_rules_cover_targeted_and_fail_safe_examples() {
         .reasons
         .iter()
         .any(|reason| reason.starts_with("risk_override:ci-control-plane:")));
+
+    let compare_collector = planner
+        .plan(request(
+            "pull_request",
+            "scripts/collect-ci-compare-evidence.mjs",
+        ))
+        .expect("Compare evidence collector plan");
+    assert!(compare_collector.fallback.full);
+    assert!(compare_collector
+        .fallback
+        .reasons
+        .iter()
+        .any(|reason| reason.starts_with("risk_override:ci-control-plane:")));
 }
 
 #[test]
@@ -357,10 +384,18 @@ fn repository_shadow_scenario_corpus_matches_planner_contract() {
     assert_eq!(corpus.schema_version, 1);
     assert_eq!(corpus.evidence_kind, "planner_contract_simulation");
     assert!(!corpus.authoritative_ci_comparison);
-    assert!(corpus.scenarios.len() >= 10);
+    assert!(corpus.scenarios.len() >= 20);
 
     for scenario in corpus.scenarios {
         assert!(!scenario.review_note.trim().is_empty(), "{}", scenario.id);
+        assert!(
+            matches!(
+                scenario.input_mode.as_deref(),
+                None | Some("arguments") | Some("nul_file")
+            ),
+            "{} uses an unsupported input mode",
+            scenario.id
+        );
         let expects_unmapped = scenario
             .expected
             .fallback_reason_prefixes
