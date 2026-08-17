@@ -542,6 +542,7 @@ impl<'a> ExperimentalStepCtx<'a> {
             relation_state,
             reply: agent_out.reply,
             adult_beat: None,
+            reply_presentation: None,
             emotion: crate::domain::chat_engine::emotion_to_dto(&emotion_result),
             bot_emotion: portrait_emotion.clone(),
             portrait_emotion,
