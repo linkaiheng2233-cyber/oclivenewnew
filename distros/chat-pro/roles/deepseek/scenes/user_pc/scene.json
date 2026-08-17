@@ -82,24 +82,47 @@
     "transitions": [
       {
         "to": "desktop_corner",
-        "assistant_reply_markers": ["跳回桌面角落", "来到图标旁边", "蹲到壁纸边缘"]
+        "assistant_reply_markers": [
+          "跳回桌面角落",
+          "来到图标旁边",
+          "蹲到壁纸边缘"
+        ]
       },
       {
         "to": "taskbar",
-        "assistant_reply_markers": ["趴到任务栏上", "溜到托盘图标旁", "蹲到任务栏角落"]
+        "assistant_reply_markers": [
+          "趴到任务栏上",
+          "溜到托盘图标旁",
+          "蹲到任务栏角落"
+        ]
       },
       {
         "to": "editor_tab",
-        "assistant_reply_markers": ["跳到代码光标旁", "爬到标签页角落", "凑到代码末尾"]
+        "assistant_reply_markers": [
+          "跳到代码光标旁",
+          "爬到标签页角落",
+          "凑到代码末尾"
+        ]
       },
       {
         "to": "popup_window",
-        "assistant_reply_markers": ["弹出提示窗口", "从弹窗边缘探出脑袋", "打开一个系统警告"]
+        "assistant_reply_markers": [
+          "弹出提示窗口",
+          "从弹窗边缘探出脑袋",
+          "打开一个系统警告"
+        ]
       },
       {
         "to": "terminal_corner",
-        "assistant_reply_markers": ["蹲到终端窗口边", "扶着终端边框站好", "溜到命令输出旁"]
+        "assistant_reply_markers": [
+          "蹲到终端窗口边",
+          "扶着终端边框站好",
+          "溜到命令输出旁"
+        ]
       }
     ]
+  },
+  "away_life_by_user_scene": {
+    "default": "锚点：用户在深海休息舱，DeepSeek娘在电脑沙盒里——可写她趴在屏幕边缘往那边喊话、把两个空间比来比去、或催促「别只顾着摸鱼，也来看看我这边」。"
   }
 }

@@ -16,7 +16,14 @@
       }
     },
     "default_relation": "friend",
-    "scenes": ["default"],
+    "scenes": ["default", "release"],    "memory_config": {
+      "scene_weight_multiplier": 1.0,
+      "topic_weights": {
+        "default": { "检查": 0.5, "润色": 0.3, "发布": 0.2 },
+        "release": { "发布": 0.55, "检查": 0.3, "润色": 0.15 }
+      }
+    },
+
     "reply_quality_anchor": "【回复质量锚点】禁止复述用户起笔；只输出角色台词；保持口语自然。"
   },
   "slot_registry": {
@@ -28,3 +35,4 @@
     }
   }
 }
+

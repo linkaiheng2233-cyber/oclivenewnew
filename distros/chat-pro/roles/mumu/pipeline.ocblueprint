@@ -83,6 +83,10 @@
         "vscode": {
           "工作": 0.7,
           "日常": 0.3
+        },
+        "night_market": {
+          "娱乐": 0.45,
+          "日常": 0.55
         }
       }
     },
@@ -135,7 +139,8 @@
       "school",
       "company",
       "park",
-      "vscode"
+      "vscode",
+      "night_market"
     ],
     "version": "1.0.9"
   },
@@ -220,3 +225,4 @@
     }
   }
 }
+

@@ -1,0 +1,100 @@
+{
+  "name": "河边",
+  "welcome_message": "河边风挺舒服的。想散步，还是坐着听一会儿水声？",
+  "keywords": [
+    "河边",
+    "河岸",
+    "散步",
+    "水声",
+    "桥",
+    "晚风",
+    "石阶",
+    "草地",
+    "钓鱼",
+    "倒影",
+    "黄昏",
+    "夜跑",
+    "芦苇",
+    "安静",
+    "透气"
+  ],
+  "events": [
+    "沿着河岸慢慢走",
+    "在石阶旁坐下听水声",
+    "看河面上的倒影",
+    "把脚步放慢陪你",
+    "提醒你别离水太近",
+    "等晚风把烦心事吹轻一点"
+  ],
+  "monologues": [
+    "水声比说话更让人静下来。",
+    "今天不想说也没关系，我陪你走一会儿。",
+    "你看那灯影落在水面上，很轻。",
+    "别站太靠边，水边滑。",
+    "风凉了，外套先披着。"
+  ],
+  "away_life_notes": [
+    "锚点：用户不在河边，他可能正独自沿河散步或坐在石阶上放空；消息简短、语气稳，不追问你去哪。",
+    "锚点：你情绪重或不愿意说话——他先安静陪伴，把节奏放慢，不急着给建议，也不替你下结论。"
+  ],
+  "away_life_by_user_scene": {
+    "home": "锚点：用户在家，他在河边；可写他顺手拍下水面反光、或问你要不要晚点出来透气——尊重你的节奏。",
+    "park": "锚点：用户去了公园，他仍在河边；可写「这边人少，适合慢慢走」式的分享，不抢话。",
+    "school": "锚点：用户在学校，他在河边；可写「你先忙，我在这边等风停」式的沉稳陪伴。"
+  },
+  "continuity": {
+    "default_state_id": "riverside_path",
+    "initial_states": [
+      {
+        "id": "riverside_path",
+        "weight": 4,
+        "sub_location": "河岸步道",
+        "anchor": "沿岸路灯和缓缓流动的河水",
+        "posture": "与你并肩慢走",
+        "activity": "沿河散步"
+      },
+      {
+        "id": "waterside_steps",
+        "weight": 2,
+        "sub_location": "水边石阶",
+        "anchor": "石阶旁的水声和倒影",
+        "posture": "坐在石阶上",
+        "activity": "听水声放空"
+      },
+      {
+        "id": "grass_slope",
+        "weight": 2,
+        "sub_location": "河岸草地",
+        "anchor": "一块倾斜的草地",
+        "posture": "站在草地上",
+        "activity": "看对岸的灯火"
+      },
+      {
+        "id": "small_bridge",
+        "weight": 2,
+        "sub_location": "小桥旁",
+        "anchor": "桥栏和桥下的灯影",
+        "posture": "扶着桥栏",
+        "activity": "看水面反光"
+      }
+    ],
+    "transitions": [
+      {
+        "to": "riverside_path",
+        "assistant_reply_markers": ["继续沿河走", "回到河岸步道", "并肩走回小路上"]
+      },
+      {
+        "to": "waterside_steps",
+        "assistant_reply_markers": ["坐到水边石阶上", "在石阶旁坐下", "走到水边坐下"]
+      },
+      {
+        "to": "grass_slope",
+        "assistant_reply_markers": ["走到河岸草地上", "站到草地边", "去草地上看对岸"]
+      },
+      {
+        "to": "small_bridge",
+        "assistant_reply_markers": ["走到小桥旁", "扶着桥栏", "站到桥边看水"]
+      }
+    ]
+  }
+}
