@@ -37,7 +37,7 @@ pub struct CiPlanArgs {
     /// Explicit changed path; repeat to avoid invoking Git.
     #[arg(long = "changed-file")]
     pub changed_files: Vec<String>,
-    /// Read newline-delimited changed paths from a file.
+    /// Read newline- or NUL-delimited changed paths from a file.
     #[arg(long = "changed-files-from")]
     pub changed_files_from: Option<PathBuf>,
     /// Mark the plan as observational; consumers must not skip jobs from a shadow plan.
@@ -116,15 +116,9 @@ fn resolve_plan_input(root: &Path, args: &CiPlanArgs) -> Result<(String, String,
     let mut changed_files = args.changed_files.clone();
     if let Some(input) = &args.changed_files_from {
         let input = resolve_path(root, input);
-        let contents = fs::read_to_string(&input)
+        let contents = fs::read(&input)
             .with_context(|| format!("read changed paths from {}", input.display()))?;
-        changed_files.extend(
-            contents
-                .lines()
-                .map(str::trim)
-                .filter(|line| !line.is_empty())
-                .map(ToOwned::to_owned),
-        );
+        changed_files.extend(parse_changed_files(&contents)?);
     }
 
     let base_sha = git_rev_parse(root, &args.base)?;
@@ -133,6 +127,28 @@ fn resolve_plan_input(root: &Path, args: &CiPlanArgs) -> Result<(String, String,
         changed_files = git_changed_files(root, &base_sha, &head_sha)?;
     }
     Ok((base_sha, head_sha, changed_files))
+}
+
+fn parse_changed_files(contents: &[u8]) -> Result<Vec<String>> {
+    if contents.contains(&0) {
+        return contents
+            .split(|byte| *byte == 0)
+            .filter(|value| !value.is_empty())
+            .map(|value| {
+                String::from_utf8(value.to_vec())
+                    .context("NUL-delimited changed path is not valid UTF-8")
+            })
+            .collect();
+    }
+
+    let text = std::str::from_utf8(contents)
+        .context("newline-delimited changed path list is not valid UTF-8")?;
+    Ok(text
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty())
+        .map(ToOwned::to_owned)
+        .collect())
 }
 
 fn git_rev_parse(root: &Path, revision: &str) -> Result<String> {
@@ -396,5 +412,25 @@ mod tests {
     fn enum_labels_match_contract_json() {
         assert_eq!(tier_label(ValidationTier::Pr), "pr");
         assert_eq!(gate_label(GateStrength::Required), "required");
+    }
+
+    #[test]
+    fn changed_file_input_accepts_legacy_newline_lists() {
+        assert_eq!(
+            parse_changed_files(b"docs/README.md\n\nkernel/src/lib.rs\r\n").unwrap(),
+            ["docs/README.md", "kernel/src/lib.rs"]
+        );
+    }
+
+    #[test]
+    fn changed_file_input_accepts_nul_delimited_unicode_and_newlines() {
+        let input = "distros/chat-pro/roles/\u{67ab}\u{4fb5}\u{6708}/config.json\0odd\nname.txt\0";
+        assert_eq!(
+            parse_changed_files(input.as_bytes()).unwrap(),
+            [
+                "distros/chat-pro/roles/\u{67ab}\u{4fb5}\u{6708}/config.json",
+                "odd\nname.txt"
+            ]
+        );
     }
 }

@@ -19,6 +19,7 @@
         "properties": {
           "id": { "$ref": "#/$defs/id" },
           "policy": { "$ref": "#/$defs/id" },
+          "input_mode": { "enum": ["arguments", "nul_file"] },
           "changed_files": {
             "type": "array",
             "minItems": 1,

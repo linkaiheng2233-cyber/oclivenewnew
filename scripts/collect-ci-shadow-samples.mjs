@@ -78,6 +78,9 @@ const headSha = run('git', ['rev-parse', 'HEAD'])
 const baseSha = run('git', ['rev-parse', 'HEAD^'])
 const results = []
 for (const scenario of corpus.scenarios) {
+  const inputMode = scenario.input_mode ?? 'arguments'
+  if (!['arguments', 'nul_file'].includes(inputMode))
+    throw new Error(`${scenario.id} uses unsupported input_mode ${inputMode}`)
   const expectsUnmapped = scenario.expected.fallback_reason_prefixes
     .some(prefix => prefix.startsWith('unmapped_changed_path:'))
   if (!expectsUnmapped) {
@@ -97,8 +100,15 @@ for (const scenario of corpus.scenarios) {
     '--shadow',
     '--output', planPath,
   ]
-  for (const changedFile of scenario.changed_files)
-    args.push('--changed-file', changedFile)
+  if (inputMode === 'nul_file') {
+    const changedFilesPath = join(outputDir, `${scenario.id}.changed-files.zlist`)
+    writeFileSync(changedFilesPath, Buffer.from(`${scenario.changed_files.join('\0')}\0`, 'utf8'))
+    args.push('--changed-files-from', changedFilesPath)
+  }
+  else {
+    for (const changedFile of scenario.changed_files)
+      args.push('--changed-file', changedFile)
+  }
   run(process.env.CARGO ?? 'cargo', args)
 
   const plan = JSON.parse(readFileSync(planPath, 'utf8'))
@@ -133,6 +143,7 @@ for (const scenario of corpus.scenarios) {
   results.push({
     id: scenario.id,
     policy: scenario.policy,
+    input_mode: inputMode,
     changed_files: scenario.changed_files,
     outcome: 'pass',
     review_note: scenario.review_note,
@@ -192,9 +203,9 @@ const markdown = [
   `- Scenarios: **${results.length}** (${targeted.length} targeted / ${failSafe.length} fail-safe)`,
   '- Authority: **simulation only** — no validator or remote CI outcome was executed by this collector.',
   '',
-  '| Scenario | Policy | Validators | Main jobs | Nightly jobs | Fallback |',
-  '|---|---:|---:|---:|---:|---|',
-  ...results.map(result => `| ${result.id} | ${result.policy} | ${result.selected_validator_count} | ${result.main_workflow_jobs.length} | ${result.nightly_workflow_jobs.length} | ${result.fallback_full ? 'full' : 'targeted'} |`),
+  '| Scenario | Policy | Input | Validators | Main jobs | Nightly jobs | Fallback |',
+  '|---|---:|---:|---:|---:|---:|---|',
+  ...results.map(result => `| ${result.id} | ${result.policy} | ${result.input_mode} | ${result.selected_validator_count} | ${result.main_workflow_jobs.length} | ${result.nightly_workflow_jobs.length} | ${result.fallback_full ? 'full' : 'targeted'} |`),
   '',
   '## Review notes',
   '',

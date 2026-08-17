@@ -117,16 +117,18 @@ node -e "const fs=require('fs'),path=require('path');function walk(d,a=[]){for(c
 - 只有与报告中目标 **完整 SHA** 一致的成功 run 才是当前远端证据。后续实质提交必须重新验证；纯证据回写不应制造新的 HEAD。
 - 技术债需要仓库内证据时，优先随下一次实质提交一并回写；在此之前保持原状态并链接 PR 评论，不得用旧 SHA 冒充新 HEAD 已验证。
 
-#### 领域感知 CI 选择性执行（Stage 3 · docs PR Canary）
+#### 领域感知 CI 选择性执行（Stage 3.1 · draft development）
 
-- `ci-impact-plan` 发布 `plan.json`、`execution.json`、Job Summary 与 artifact；只有 `docs-pr-canary-v1` 条件全部满足时，`selected_validators[].workflow_jobs` 才控制既有主 CI job。
-- PR 选择结果必须由 comparison base 中的受信规划器、影响契约与执行策略生成，`ci-gate` 也使用该基线校验；若基线尚无策略脚本（首次上线 bootstrap），必须全量。
-- 纯文档 Canary 要求：事件为 PR、plan 非 shadow、policy 为 `pull_request`、无 warning/full fallback、直接与受影响模块均且仅为 `oclive.docs`、selected job 非空。任一不满足即全量。
-- `oclive ci plan` 的 `selected_validators` 仍不是“已执行”证据；验收必须引用 `ci-gate` 及实际 job 终态。手动 `--shadow` 计划禁止用于跳 job。
-- `npm run ci:shadow-samples` 的 JSON/Markdown 是**规划模拟**：只能证明固定样本仍按当前规则路由；不得把 11/11 模拟通过汇报成 11 次远端 CI、零漏选或 validator 已执行。
+- `ci-impact-plan` 发布 `plan.json`、`execution.json`、Job Summary 与 artifact；`domain-aware-pr-v2` 只有在 PR plan 非 shadow、policy 为 `pull_request`、无 warning/full fallback、直接/受影响模块和 selected job 均非空时才允许选择性执行。
+- PR 选择结果必须由 comparison base 中的受信规划器、影响契约与执行策略生成，gate 也使用该基线校验；若基线尚无策略脚本（首次上线 bootstrap），必须全量。
+- 满足安全条件的草稿 PR 可按 `selected_validators[].workflow_jobs` 执行，但结果名是 `ci-draft-gate`，不得把它配置为 main required context，也不得汇报成最终可合并证据。
+- `ready_for_review` 必须在当前提交上重新触发 CI。ready 时只有直接模块为 `oclive.docs` 的既有 Canary 可继续选择性执行；其他 ready PR、Push、未知/高风险路径和规划异常全部全量，并由正式 `ci-gate` 验收。
+- `oclive ci plan` 的 `selected_validators` 仍不是“已执行”证据；验收必须引用对应 gate 及实际 job 终态。手动 `--shadow` 计划禁止用于跳 job。
+- `npm run ci:shadow-samples` 的 JSON/Markdown 是**规划模拟**：当前基线为 20/20（17 targeted / 3 fail-safe），只能证明固定样本仍按当前规则路由；不得把它汇报成 20 次远端 CI、零漏选或 validator 已执行。
+- 全量 run 自动上传 90 天 `oclive-ci-compare-*`：只有 plan/execution、同一 workflow SHA、完整终态 job 快照和完整结果同时成立时，`authoritative_ci_comparison` 才可为 true。选择性 run、快照缺失或未终态只算 observational；`false_negative_candidates` 还需维护者裁决，不能自动删改影响边。
 - 未映射路径、损坏模块描述、未知 required 扩展及中央高风险规则会使当前 policy `full_fallback`；这代表必须执行全量，不代表全量已经通过。
-- 规划器异常时所有责任组通过 fail-safe 条件运行，但 `ci-gate` 仍须失败；修复规划器后重新验证，不能把降级运行粉饰成绿。
-- 其他模块类别仍处 Stage 2 Compare；扩大选择面前必须更新 [`SOMEDAY_TOOLCHAIN_CI.md`](../creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md) 和本协议。
+- 规划器异常时所有责任组通过 fail-safe 条件运行，但 gate 仍须失败；修复规划器后重新验证，不能把降级运行粉饰成绿。
+- 新 ready 类别仍处 Stage 2 Compare；扩大 ready 选择面前必须更新 [`SOMEDAY_TOOLCHAIN_CI.md`](../creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md) 和本协议。
 
 ---
 

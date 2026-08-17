@@ -116,6 +116,133 @@
       "review_note": "Nightly policy adds all five advisory lanes while preserving required lower-tier validators."
     },
     {
+      "id": "unicode-role-pack-pr",
+      "policy": "pull_request",
+      "input_mode": "nul_file",
+      "changed_files": ["distros/chat-pro/roles/枫侵月/config.json"],
+      "expected": {
+        "direct_modules": ["oclive.chat-pro", "oclive.roles"],
+        "affected_modules": ["oclive.chat-pro", "oclive.desktop", "oclive.plugins", "oclive.roles", "oclive.shared", "oclive.theater"],
+        "selected_validators": ["cross-host-e2e", "dimension5-acceptance", "frontend", "npm-audit", "oocp-test-suite", "plugins-index", "remote-plugin-demo", "rust-workspace"],
+        "workflow_jobs": ["cross-host-e2e", "dimension5-acceptance", "frontend", "npm-audit", "oocp-test-suite", "plugins-index", "remote-plugin-demo", "rust"],
+        "fallback_full": false,
+        "fallback_reason_prefixes": []
+      },
+      "review_note": "A real non-ASCII role path must survive the workflow's NUL-delimited changed-file transport without becoming an unmapped octal path."
+    },
+    {
+      "id": "docs-scaffold-pr",
+      "policy": "pull_request",
+      "changed_files": ["creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md", "kernel/crates/oclive_scaffold/src/lib.rs"],
+      "expected": {
+        "direct_modules": ["oclive.docs", "oclive.scaffold"],
+        "affected_modules": ["oclive.cli", "oclive.docs", "oclive.scaffold"],
+        "selected_validators": ["cli", "cross-host-e2e", "dimension5-acceptance", "rust-workspace", "stale-paths"],
+        "workflow_jobs": ["cli", "cross-host-e2e", "dimension5-acceptance", "rust", "stale-paths"],
+        "fallback_full": false,
+        "fallback_reason_prefixes": []
+      },
+      "review_note": "Documentation accompanying scaffold code must retain both the narrow generator checks and documentation path validation."
+    },
+    {
+      "id": "docs-examples-pr",
+      "policy": "pull_request",
+      "changed_files": ["handoff/AI_VERIFICATION_PROTOCOL.md", "examples/oocp-test-suite/run.mjs"],
+      "expected": {
+        "direct_modules": ["oclive.docs", "oclive.examples"],
+        "affected_modules": ["oclive.docs", "oclive.examples"],
+        "selected_validators": ["cross-host-e2e", "dimension5-acceptance", "oocp-test-suite", "remote-plugin-demo", "rust-workspace", "stale-paths"],
+        "workflow_jobs": ["cross-host-e2e", "dimension5-acceptance", "oocp-test-suite", "remote-plugin-demo", "rust", "stale-paths"],
+        "fallback_full": false,
+        "fallback_reason_prefixes": []
+      },
+      "review_note": "Executable examples plus their handoff notes retain a compact draft-feedback route and accumulate evidence before any ready-PR promotion."
+    },
+    {
+      "id": "cli-pr",
+      "policy": "pull_request",
+      "changed_files": ["kernel/crates/oclive-cli/src/build_cmd.rs"],
+      "expected": {
+        "direct_modules": ["oclive.cli"],
+        "affected_modules": ["oclive.cli"],
+        "selected_validators": ["cli", "cross-host-e2e", "dimension5-acceptance", "rust-workspace"],
+        "workflow_jobs": ["cli", "cross-host-e2e", "dimension5-acceptance", "rust"],
+        "fallback_full": false,
+        "fallback_reason_prefixes": []
+      },
+      "review_note": "Ordinary CLI implementation changes stay isolated from the CI control-plane override and form a future promotion candidate."
+    },
+    {
+      "id": "desktop-pr",
+      "policy": "pull_request",
+      "changed_files": ["distros/desktop-tauri/src/api/settings.rs"],
+      "expected": {
+        "direct_modules": ["oclive.desktop"],
+        "affected_modules": ["oclive.chat-pro", "oclive.desktop", "oclive.plugins", "oclive.roles", "oclive.shared", "oclive.theater"],
+        "selected_validators": ["cross-host-e2e", "dimension5-acceptance", "frontend", "npm-audit", "oocp-test-suite", "plugins-index", "remote-plugin-demo", "rust-workspace"],
+        "workflow_jobs": ["cross-host-e2e", "dimension5-acceptance", "frontend", "npm-audit", "oocp-test-suite", "plugins-index", "remote-plugin-demo", "rust"],
+        "fallback_full": false,
+        "fallback_reason_prefixes": []
+      },
+      "review_note": "Desktop changes exercise the conservative host/frontend/plugin closure used for draft feedback."
+    },
+    {
+      "id": "theater-pr",
+      "policy": "pull_request",
+      "changed_files": ["distros/theater/src/main.ts"],
+      "expected": {
+        "direct_modules": ["oclive.theater"],
+        "affected_modules": ["oclive.theater"],
+        "selected_validators": ["dimension5-acceptance", "frontend", "npm-audit", "oocp-test-suite"],
+        "workflow_jobs": ["dimension5-acceptance", "frontend", "npm-audit", "oocp-test-suite"],
+        "fallback_full": false,
+        "fallback_reason_prefixes": []
+      },
+      "review_note": "Theater-only work has a compact frontend/OCCP route and should accumulate Compare samples before ready-PR promotion."
+    },
+    {
+      "id": "cross-domain-reply-mode-pr",
+      "policy": "pull_request",
+      "changed_files": ["kernel/crates/oclive_kernel_host/src/domain/reply_mode.rs", "distros/shared/src/utils/replySegments.ts"],
+      "expected": {
+        "direct_modules": ["oclive.kernel-runtime", "oclive.shared"],
+        "affected_modules": ["oclive.chat-pro", "oclive.cli", "oclive.desktop", "oclive.examples", "oclive.kernel-runtime", "oclive.plugins", "oclive.roles", "oclive.shared", "oclive.theater"],
+        "selected_validators": ["cargo-audit", "cli", "cross-host-e2e", "dimension5-acceptance", "frontend", "layering-ratchet", "npm-audit", "oocp-test-suite", "plugins-index", "remote-plugin-demo", "rust-workspace"],
+        "workflow_jobs": ["cli", "cross-host-e2e", "dimension5-acceptance", "frontend", "layering-ratchet", "npm-audit", "oocp-test-suite", "plugins-index", "remote-plugin-demo", "rust"],
+        "fallback_full": false,
+        "fallback_reason_prefixes": []
+      },
+      "review_note": "A representative kernel-plus-shared feature diff records the broad but still non-fallback route used during draft development."
+    },
+    {
+      "id": "docs-merge",
+      "policy": "merge",
+      "changed_files": ["creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md"],
+      "expected": {
+        "direct_modules": ["oclive.docs"],
+        "affected_modules": ["oclive.docs"],
+        "selected_validators": ["dimension5-acceptance", "stale-paths"],
+        "workflow_jobs": ["dimension5-acceptance", "stale-paths"],
+        "fallback_full": false,
+        "fallback_reason_prefixes": []
+      },
+      "review_note": "Merge-policy planning remains deterministic even while push execution intentionally stays full in this rollout."
+    },
+    {
+      "id": "scaffold-merge",
+      "policy": "merge",
+      "changed_files": ["kernel/crates/oclive_scaffold/src/lib.rs"],
+      "expected": {
+        "direct_modules": ["oclive.scaffold"],
+        "affected_modules": ["oclive.cli", "oclive.scaffold"],
+        "selected_validators": ["cli", "cross-host-e2e", "dimension5-acceptance", "rust-workspace"],
+        "workflow_jobs": ["cli", "cross-host-e2e", "dimension5-acceptance", "rust"],
+        "fallback_full": false,
+        "fallback_reason_prefixes": []
+      },
+      "review_note": "Scaffold merge planning is captured now so Stage 4 can later reduce duplicate main validation using real Compare evidence."
+    },
+    {
       "id": "ci-control-pr",
       "policy": "pull_request",
       "changed_files": [".github/workflows/ci.yml"],

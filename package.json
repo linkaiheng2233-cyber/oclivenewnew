@@ -44,6 +44,7 @@
     "check:license": "node scripts/check-license-readiness.mjs",
     "audit:dependencies": "npm audit --omit=dev --audit-level=high && npm audit --audit-level=high",
     "ci:shadow-samples": "node scripts/collect-ci-shadow-samples.mjs",
+    "ci:compare-evidence:test": "node scripts/collect-ci-compare-evidence.mjs --self-test",
     "check:debt-marathon": "node scripts/check-debt-marathon.mjs",
     "check:module-compat": "node scripts/check-module-compat.mjs && node scripts/validate-plugins-index.mjs",
     "test:module-quality": "node scripts/module-quality-harness.mjs --self-test && node scripts/module-quality-runner.mjs --self-test && node scripts/module-quality-compare.mjs --self-test",

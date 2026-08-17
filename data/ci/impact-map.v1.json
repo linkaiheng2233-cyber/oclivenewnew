@@ -134,7 +134,8 @@
         { "kind": "prefix", "value": "data/ci" },
         { "kind": "prefix", "value": "kernel/crates/oclive_ci_plan" },
         { "kind": "exact", "value": "kernel/crates/oclive-cli/src/ci_impact_cmd.rs" },
-        { "kind": "exact", "value": "scripts/ci-execution-policy.mjs" }
+        { "kind": "exact", "value": "scripts/ci-execution-policy.mjs" },
+        { "kind": "exact", "value": "scripts/collect-ci-compare-evidence.mjs" }
       ],
       "full": true,
       "reason": "CI selection logic or policy changed"

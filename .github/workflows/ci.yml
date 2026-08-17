@@ -5,6 +5,7 @@ on:
     branches: [main, master]
   pull_request:
     branches: [main, master]
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
   workflow_dispatch:
     inputs:
       base_sha:
@@ -17,11 +18,12 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
+  actions: read
   contents: read
 
 jobs:
-  # Stage 3 canary: pure documentation PRs use the planner-selected jobs.
-  # Every other event/change and every planner failure stays fail-safe full.
+  # Stage 3.1: safe draft PRs use the trusted plan for development feedback.
+  # Ready docs-only PRs remain the promoted canary; every unsafe plan stays full.
   ci-impact-plan:
     runs-on: ubuntu-latest
     outputs:
@@ -78,7 +80,8 @@ jobs:
           HEAD_SHA: ${{ github.sha }}
         run: |
           mkdir -p target/oclive-ci
-          git diff --name-only "$BASE_SHA" "$HEAD_SHA" > target/oclive-ci/changed-files.txt
+          git diff --name-only --diff-filter=ACMRD -z "$BASE_SHA" "$HEAD_SHA" -- \
+            > target/oclive-ci/changed-files.zlist
       - name: Checkout trusted CI control plane
         uses: actions/checkout@v7
         with:
@@ -98,7 +101,7 @@ jobs:
             --base "$BASE_SHA" \
             --head "$HEAD_SHA" \
             --policy "$PLAN_POLICY" \
-            --changed-files-from "$GITHUB_WORKSPACE/target/oclive-ci/changed-files.txt" \
+            --changed-files-from "$GITHUB_WORKSPACE/target/oclive-ci/changed-files.zlist" \
             --output "$GITHUB_WORKSPACE/target/oclive-ci/plan.json"
       - name: Render impact summary
         run: |
@@ -113,6 +116,7 @@ jobs:
         id: execution
         env:
           EVENT_NAME: ${{ github.event_name }}
+          PR_DRAFT: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft || false }}
         run: |
           set -euo pipefail
           POLICY_SCRIPT="$GITHUB_WORKSPACE/target/oclive-ci/trusted/scripts/ci-execution-policy.mjs"
@@ -128,6 +132,7 @@ jobs:
             --output target/oclive-ci/execution.json \
             --github-output "$GITHUB_OUTPUT" \
             --github-summary "$GITHUB_STEP_SUMMARY" \
+            --pr-draft "$PR_DRAFT" \
             "${POLICY_ARGS[@]}"
       - name: Upload impact evidence
         if: always()
@@ -138,9 +143,9 @@ jobs:
             target/oclive-ci/plan.json
             target/oclive-ci/summary.md
             target/oclive-ci/execution.json
-            target/oclive-ci/changed-files.txt
+            target/oclive-ci/changed-files.zlist
           if-no-files-found: warn
-          retention-days: 14
+          retention-days: 90
 
   rust:
     needs: ci-impact-plan
@@ -522,7 +527,7 @@ jobs:
           fi
 
   ci-gate:
-    name: ci-gate
+    name: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft && 'ci-draft-gate' || 'ci-gate' }}
     if: ${{ always() }}
     needs:
       - ci-impact-plan
@@ -551,6 +556,12 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version-file: ".nvmrc"
+      - name: Download impact evidence
+        if: ${{ always() && needs.ci-impact-plan.result == 'success' }}
+        uses: actions/download-artifact@v7
+        with:
+          name: oclive-ci-impact-plan-${{ github.run_id }}-${{ github.run_attempt }}
+          path: target/oclive-ci/impact
       - name: Verify selected CI responsibilities
         env:
           NEEDS_JSON: ${{ toJSON(needs) }}
@@ -560,3 +571,59 @@ jobs:
             POLICY_SCRIPT="$GITHUB_WORKSPACE/scripts/ci-execution-policy.mjs"
           fi
           node "$POLICY_SCRIPT" verify --needs-env NEEDS_JSON
+      - name: Snapshot terminal workflow jobs
+        if: ${{ always() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p target/oclive-ci/compare
+          for attempt in 1 2 3; do
+            if gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/jobs?filter=all&per_page=100" \
+              > target/oclive-ci/compare/jobs.json.tmp; then
+              mv target/oclive-ci/compare/jobs.json.tmp target/oclive-ci/compare/jobs.json
+              exit 0
+            fi
+            sleep $((attempt * 2))
+          done
+          rm -f target/oclive-ci/compare/jobs.json.tmp
+          echo "::warning::Remote job snapshot was unavailable; Compare evidence will remain observational."
+      - name: Collect same-SHA Compare evidence
+        if: ${{ always() && needs.ci-impact-plan.result == 'success' }}
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          SOURCE_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          COLLECTOR="$GITHUB_WORKSPACE/target/oclive-ci/trusted/scripts/collect-ci-compare-evidence.mjs"
+          if [ ! -f "$COLLECTOR" ]; then
+            COLLECTOR="$GITHUB_WORKSPACE/scripts/collect-ci-compare-evidence.mjs"
+          fi
+          PR_ARGS=()
+          if [ -n "$PR_NUMBER" ]; then
+            PR_ARGS=(--pull-request "$PR_NUMBER")
+          fi
+          node "$COLLECTOR" collect \
+            --plan target/oclive-ci/impact/plan.json \
+            --execution target/oclive-ci/impact/execution.json \
+            --jobs target/oclive-ci/compare/jobs.json \
+            --needs-env NEEDS_JSON \
+            --repository "$GITHUB_REPOSITORY" \
+            --event "$GITHUB_EVENT_NAME" \
+            --run-id "$GITHUB_RUN_ID" \
+            --run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --run-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --ref "$GITHUB_REF" \
+            --workflow-sha "$GITHUB_SHA" \
+            --source-head-sha "$SOURCE_HEAD_SHA" \
+            --output target/oclive-ci/compare/compare.evidence.json \
+            --summary-output target/oclive-ci/compare/compare.summary.md \
+            --github-summary "$GITHUB_STEP_SUMMARY" \
+            "${PR_ARGS[@]}"
+      - name: Upload Compare evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: oclive-ci-compare-${{ github.run_id }}-${{ github.run_attempt }}
+          path: target/oclive-ci/compare/
+          if-no-files-found: warn
+          retention-days: 90
