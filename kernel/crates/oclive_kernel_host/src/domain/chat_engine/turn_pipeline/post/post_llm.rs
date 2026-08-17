@@ -410,6 +410,20 @@ pub(crate) async fn post_llm(
         .as_ref()
         .map(crate::domain::adult_interaction::transcript_reply)
         .unwrap_or_else(|| clean_reply.clone());
+    // `reply_mode` is a presentation protocol for ordinary co-present turns.
+    // Resolve it before any policy/profile/memory consumer so protocol markers
+    // never become durable semantic state. Adult envelopes, staged beats, and
+    // RemoteLife keep their own single-message contracts.
+    let reply_mode_config =
+        if matches!(mode, TurnMode::CoPresent) && parsed_adult_beat.is_none() && !ctx.is_staged() {
+            effective_reply_mode(role)
+        } else {
+            None
+        };
+    let semantic_reply_for_state = reply_mode_config
+        .as_ref()
+        .map(|cfg| present_reply(cfg, &semantic_reply).joined)
+        .unwrap_or_else(|| semantic_reply.clone());
     let synthetic_adult_action = ctx.req.adult.as_ref().is_some_and(|adult| {
         adult.gates_open()
             && !matches!(
@@ -423,7 +437,7 @@ pub(crate) async fn post_llm(
         scene_id,
         srid,
         user_message,
-        &semantic_reply,
+        &semantic_reply_for_state,
         pre,
         middle,
         ctx.runtime_snapshot.emotion.clone(),
@@ -510,7 +524,7 @@ pub(crate) async fn post_llm(
             pre,
             middle,
             user_message,
-            &semantic_reply,
+            &semantic_reply_for_state,
         );
     }
 
@@ -530,7 +544,7 @@ pub(crate) async fn post_llm(
         middle,
         &effective_complex_emotion,
         &policy,
-        &semantic_reply,
+        &semantic_reply_for_state,
         if ctx
             .req
             .adult
@@ -594,7 +608,9 @@ pub(crate) async fn post_llm(
                 &clean_reply,
                 ctx.req.include_raw_reply == Some(true),
             );
-            let presentation = effective_reply_mode(role).map(|cfg| present_reply(&cfg, &display));
+            let presentation = reply_mode_config
+                .as_ref()
+                .map(|cfg| present_reply(cfg, &display));
             let joined = presentation
                 .as_ref()
                 .map(|p| p.joined.clone())
