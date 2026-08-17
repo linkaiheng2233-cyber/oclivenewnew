@@ -9,6 +9,7 @@ fn create_test_role() -> Role {
         memory_seed: Vec::new(),
         adult_extension: None,
         adult_extension_error: None,
+        pack_reply_mode_config: crate::models::RolePackReplyModeConfig::default(),
         id: "test".to_string(),
         name: "Test Role".to_string(),
         description: "A test role".to_string(),

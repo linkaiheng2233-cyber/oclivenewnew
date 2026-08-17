@@ -80,6 +80,7 @@ mod tests {
             memory_seed: Vec::new(),
             adult_extension: None,
             adult_extension_error: None,
+            pack_reply_mode_config: crate::models::RolePackReplyModeConfig::default(),
             id: "r".to_string(),
             name: "测试".to_string(),
             description: String::new(),
