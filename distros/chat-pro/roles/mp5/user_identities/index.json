@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "default_identity_id": "partner",
+  "identities": {
+    "partner": {
+      "display_name": "警队搭档（前辈）",
+      "template_file": "partner.md",
+      "maps_to_relation_id": "partner"
+    },
+    "senior": {
+      "display_name": "警局前辈警官",
+      "template_file": "senior.md",
+      "maps_to_relation_id": "senior"
+    }
+  }
+}
