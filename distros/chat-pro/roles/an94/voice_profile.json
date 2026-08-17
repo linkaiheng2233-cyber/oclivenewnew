@@ -1,0 +1,10 @@
+{
+  "schema_version": 2,
+  "director_profile": "rules-v1",
+  "preferred_tts_profile": "bundled-cosyvoice2-zh",
+  "synth_profile": "bundled-cosyvoice2-zh",
+  "speed": 0.95,
+  "energy": "soft",
+  "emo_text_template": "使用 AN-94 固定的年轻但沉稳、温和的声线：语调平缓从容，带一丝岁月磨出来的沙哑；语气亲近自然，情绪克制，苦笑转瞬即逝，不演苦情、不幼态、不播音腔；{tone}",
+  "engine_family": ["cosyvoice2", "local_http"]
+}
