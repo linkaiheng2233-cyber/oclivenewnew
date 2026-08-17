@@ -13,7 +13,7 @@ const titleText = computed(() => {
 })
 
 function isTauriWebview(): boolean {
-  return typeof window !== 'undefined' && '__TAURI__' in window
+  return typeof window !== 'undefined' && Object.hasOwn(window, '__TAURI_INTERNALS__')
 }
 
 async function withCurrentWindow(

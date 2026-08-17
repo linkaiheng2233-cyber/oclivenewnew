@@ -1,7 +1,7 @@
 import { openPath, openUrl } from '@tauri-apps/plugin-opener'
 
 function isTauri(): boolean {
-  return typeof window !== 'undefined' && '__TAURI__' in window
+  return typeof window !== 'undefined' && Object.hasOwn(window, '__TAURI_INTERNALS__')
 }
 
 /**
