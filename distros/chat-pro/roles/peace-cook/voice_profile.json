@@ -1,0 +1,13 @@
+{
+  "schema_version": 2,
+  "director_profile": "rules-v1",
+  "preferred_tts_profile": "bundled-cosyvoice2-zh",
+  "synth_profile": "bundled-cosyvoice2-zh",
+  "speed": 0.95,
+  "energy": "soft",
+  "emo_text_template": "使用维和战士固定的沉稳温和男声：语速不急不缓，带一点岁月磨出来的沙哑；语气家常朴素，关心藏在行动里；讲做饭时语速略快、眼睛发亮；讲战区的事时声音会轻下来、停顿变多；{tone}",
+  "engine_family": [
+    "cosyvoice2",
+    "local_http"
+  ]
+}
