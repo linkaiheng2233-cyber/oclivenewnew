@@ -46,9 +46,10 @@ Classification mirrors `reply_post_process`: both are "after LLM output, before 
 |-------|------|---------|-------|
 | `mode` | `"single"` \| `"burst"` | `single` | v1 supports two modes |
 | `segments` | uint | `2` | Expected segment count; 1 equals single; `burst` capped at 8 |
-| `separator` | string | `"+++"` | Protocol marker between segments; matches only a line whose trimmed content equals it exactly |
+| `separator` | string | `"+++"` | Protocol marker between segments; matches a line whose trimmed content equals it exactly (or equals it plus trailing punctuation only) |
 | `delays_ms` | uint[] | `[0, 0]` | Visual delay before each segment; first must be 0; short arrays pad with 0, long arrays truncate |
 | `streaming` | `"live"` \| `"batch"` | `live` | Frontend splits live during streaming, or shows all segments after generation |
+| `fallback_leads` | string[] | `[]` | Natural burst lead-in phrases for degradation splitting on weak local models (e.g. `——`, `而且`); used only when the model never emits the separator protocol; never injected into prompts or exposed to the frontend |
 
 **Separator validation**:
 
@@ -65,9 +66,9 @@ The separator protocol is **injected by the host**, never written into the perso
 
 ```text
 【输出格式要求】
-本次回复需要分成 N 段。每段之间，单独输出一行分隔符：
+你的回复必须分成 N 段。每一段写完后必须换行，单独输出一行分隔符（这一行只有分隔符本身，不允许添加任何文字或标点）：
 <separator>
-分隔符前后不要添加任何文字、标点或解释。
+然后再换行写下一段。绝对不允许把各段连成一段，绝对不允许省略分隔符这一行。
 ```
 
 Any pack enabling the mode gets the protocol automatically; changing `separator` never requires editing persona files. Persona text may describe the "two-burst" tone and rhythm and may say "separate them with the system-provided separator", but must not carry the separator value itself.
@@ -90,14 +91,15 @@ pre / build_prompt
 
 ## 5. Split semantics (pure function)
 
-Input `raw`, `separator`, `segments`:
+Input `raw`, `separator`, `segments`, `fallback_leads`:
 
 1. Normalize `\r\n` to `\n`.
 2. A line is a boundary when its trimmed content exactly equals `separator`, or equals the separator followed only by trailing punctuation (`。` / `.` / `!` etc.); other content (including `C+++`, `a +++ b`, `+++abc`) is not a boundary.
 3. Trim each segment; drop empty segments.
 4. Segments beyond `segments` merge into the last one.
-5. No boundary → one segment (the whole reply); this is the natural degradation for "the second burst was late" and similar cases.
-6. Empty `raw` → empty list.
+5. When no separator boundary exists, a degradation chain applies (weak local models often omit the protocol): split on blank-line paragraphs first; if still one paragraph, split before a pack-declared `fallback_leads` phrase sitting right after a sentence-terminal punctuation or a line start; otherwise keep one segment.
+6. No boundary and no degradation hit → one segment (the whole reply); this is the natural degradation for "the second burst was late" and similar cases.
+7. Empty `raw` → empty list.
 
 ## 6. Storage and DTO
 

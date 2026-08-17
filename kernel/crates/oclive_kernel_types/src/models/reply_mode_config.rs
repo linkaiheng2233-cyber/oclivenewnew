@@ -50,6 +50,11 @@ pub struct RolePackReplyModeConfig {
     pub delays_ms: Vec<u32>,
     #[serde(default)]
     pub streaming: ReplyModeStreaming,
+    /// Natural burst lead-in phrases declared by the pack (e.g. `——`, `而且`).
+    /// Used only as a degradation split hint when the model never emits the
+    /// separator protocol; never injected into prompts or exposed to frontend.
+    #[serde(default)]
+    pub fallback_leads: Vec<String>,
 }
 
 /// Read-only role info snapshot for frontend presentation.
@@ -82,6 +87,7 @@ impl Default for RolePackReplyModeConfig {
             separator: DEFAULT_REPLY_SEPARATOR.to_string(),
             delays_ms: default_reply_mode_delays(),
             streaming: ReplyModeStreaming::Live,
+            fallback_leads: Vec::new(),
         }
     }
 }
@@ -105,6 +111,26 @@ impl RolePackReplyModeConfig {
     pub fn delay_for(&self, index: usize) -> u32 {
         self.delays_ms.get(index).copied().unwrap_or(0)
     }
+
+    /// Trimmed, deduplicated lead list capped for safety; empty and oversized
+    /// leads are dropped. At most 8 leads survive.
+    #[must_use]
+    pub fn sanitized_leads(&self) -> Vec<String> {
+        let mut out: Vec<String> = Vec::new();
+        for lead in &self.fallback_leads {
+            let t = lead.trim().to_string();
+            if t.is_empty() || t.chars().count() > MAX_REPLY_SEPARATOR_CHARS {
+                continue;
+            }
+            if !out.contains(&t) {
+                out.push(t);
+            }
+            if out.len() >= 8 {
+                break;
+            }
+        }
+        out
+    }
 }
 
 #[cfg(test)]
@@ -127,6 +153,7 @@ mod tests {
             separator: "【二发】".to_string(),
             delays_ms: vec![0, 300, 900],
             streaming: ReplyModeStreaming::Batch,
+            fallback_leads: vec![" 而且 ".to_string(), "而且".to_string(), "".to_string()],
         };
         assert!(cfg.enabled());
         assert_eq!(cfg.effective_segments(), MAX_REPLY_SEGMENTS);
@@ -134,5 +161,6 @@ mod tests {
         assert_eq!(cfg.delay_for(1), 300);
         assert_eq!(cfg.delay_for(2), 900);
         assert_eq!(cfg.delay_for(9), 0);
+        assert_eq!(cfg.sanitized_leads(), vec!["而且".to_string()]);
     }
 }
