@@ -3,11 +3,13 @@
 import type { SendMessageResponse } from '@oclive/shared/api'
 import type { ChatMessage } from './chatStore'
 import type { ChatStoreSendContext } from './chatStoreSend'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { sendChatStoreMessage } from './chatStoreSend'
 
 const mocks = vi.hoisted(() => ({
   sendMessage: vi.fn(),
+  sendMessageStream: vi.fn(),
+  streamEnabled: false,
   startQueue: vi.fn(),
   cancelQueue: vi.fn(),
   emitBuiltin: vi.fn(),
@@ -23,6 +25,13 @@ const mocks = vi.hoisted(() => ({
     roleInfo: {
       adultExtensionAvailable: true,
       relationState: 'Friend',
+      replyMode: null as null | {
+        mode: 'burst'
+        segments: number
+        separator: string
+        delays_ms: number[]
+        streaming: 'live' | 'batch'
+      },
     },
     updateLocalAfterMessage: vi.fn(),
     updateRelationState: vi.fn(),
@@ -50,7 +59,7 @@ vi.mock('@oclive/shared/api', async (importOriginal) => {
   return {
     ...actual,
     sendMessage: mocks.sendMessage,
-    sendMessageStream: vi.fn(),
+    sendMessageStream: mocks.sendMessageStream,
     toastAsyncError: vi.fn(),
   }
 })
@@ -66,7 +75,7 @@ vi.mock('@oclive/shared/lib/hostEventBus', () => ({
 }))
 
 vi.mock('@oclive/shared/utils/chatStreamSettings', () => ({
-  isChatStreamEnabled: () => false,
+  isChatStreamEnabled: () => mocks.streamEnabled,
 }))
 
 vi.mock('./adultInteractionStore', () => ({
@@ -125,23 +134,56 @@ function response(): SendMessageResponse {
   }
 }
 
+function segmentedResponse(): SendMessageResponse {
+  return {
+    ...response(),
+    reply: 'first burst\nsecond burst\nthird burst',
+    adult_beat: null,
+    reply_presentation: {
+      segments: ['first burst', 'second burst', 'third burst'],
+      delays_ms: [0, 100, 100],
+    },
+  }
+}
+
+function ordinaryResponse(reply = 'ordinary stream.'): SendMessageResponse {
+  return {
+    ...response(),
+    reply,
+    adult_beat: null,
+    reply_presentation: null,
+  }
+}
+
 function context(messages: ChatMessage[]): ChatStoreSendContext {
   return {
     sceneHistorySplitIndex: {},
     setLoading: vi.fn(),
     getMessageCountForRoleScene: () => messages.length,
     addMessage: (_roleId, _sceneId, message) => messages.push(message),
-    patchMessageById: vi.fn(),
-    deleteMessage: vi.fn(),
+    patchMessageById: vi.fn((_roleId, _sceneId, localId, patch) => {
+      const message = messages.find(item => item.id === localId)
+      if (message)
+        Object.assign(message, patch)
+    }),
+    deleteMessage: vi.fn((_roleId, _sceneId, messageId) => {
+      const index = messages.findIndex(item => item.id === messageId)
+      if (index >= 0)
+        messages.splice(index, 1)
+    }),
     addSystemMessage: vi.fn(),
     clampSceneHistorySplitForBucket: vi.fn(),
   }
 }
 
-describe('chat store structured adult presentation', () => {
+describe('chat store send presentation', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mocks.sendMessageStream.mockReset()
+    mocks.streamEnabled = false
     mocks.roleStore.currentRoleId = 'role'
+    mocks.roleStore.roleInfo.adultExtensionAvailable = true
+    mocks.roleStore.roleInfo.replyMode = null
     mocks.uiStore.sceneId = 'home'
     mocks.roleStore.updateLocalAfterMessage = mocks.updateLocal
     mocks.roleStore.updateRelationState = mocks.updateRelation
@@ -149,6 +191,10 @@ describe('chat store structured adult presentation', () => {
     mocks.sendMessage.mockResolvedValue(response())
     mocks.cancelQueue.mockResolvedValue(undefined)
     mocks.startQueue.mockResolvedValue(undefined)
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   it('renders dialogue and narration separately and emits only dialogue for TTS', async () => {
@@ -199,5 +245,172 @@ describe('chat store structured adult presentation', () => {
     )
     expect(mocks.updateLocal).not.toHaveBeenCalled()
     expect(mocks.updateRelation).not.toHaveBeenCalled()
+  })
+
+  it('reveals every live reply-mode segment in order and defers voice to the clean final reply', async () => {
+    vi.useFakeTimers()
+    mocks.streamEnabled = true
+    mocks.roleStore.roleInfo.adultExtensionAvailable = false
+    mocks.roleStore.roleInfo.replyMode = {
+      mode: 'burst',
+      segments: 3,
+      separator: '+++',
+      delays_ms: [0, 100, 100],
+      streaming: 'live',
+    }
+    let resolveStream: ((value: SendMessageResponse) => void) | undefined
+    mocks.sendMessageStream.mockImplementation((
+      _request: unknown,
+      handlers: { onToken: (token: string, accumulated: string) => void },
+    ) => {
+      handlers.onToken('', 'first burst\n+++\nsecond burst\n+++\nthird burst')
+      return new Promise<SendMessageResponse>((resolve) => {
+        resolveStream = resolve
+      })
+    })
+    const messages: ChatMessage[] = []
+
+    const pending = sendChatStoreMessage(context(messages), 'hello', 'home')
+    await vi.advanceTimersByTimeAsync(0)
+    expect(messages.filter(message => message.role === 'assistant')).toHaveLength(1)
+
+    await vi.advanceTimersByTimeAsync(100)
+    expect(messages.filter(message => message.role === 'assistant')).toHaveLength(2)
+    await vi.advanceTimersByTimeAsync(100)
+    expect(messages.filter(message => message.role === 'assistant')).toHaveLength(3)
+
+    expect(resolveStream).toBeTypeOf('function')
+    resolveStream!(segmentedResponse())
+    await vi.advanceTimersByTimeAsync(0)
+    await pending
+
+    const assistants = messages.filter(message => message.role === 'assistant')
+    expect(assistants.map(message => message.id)).toEqual([
+      'assistant-1#s0',
+      'assistant-1#s1',
+      'assistant-1#s2',
+    ])
+    expect(assistants.map(message => message.content)).toEqual([
+      'first burst',
+      'second burst',
+      'third burst',
+    ])
+    expect(mocks.emitBuiltin).not.toHaveBeenCalledWith(
+      'com.oclive.voice:stream-sentence',
+      expect.anything(),
+    )
+    const sentEvent = mocks.emitBuiltin.mock.calls.find(call => call[0] === 'message:sent')
+    expect(sentEvent?.[1]).toMatchObject({
+      reply: 'first burst\nsecond burst\nthird burst',
+      stream_id: undefined,
+    })
+  })
+
+  it('withholds batch reply-mode bubbles until the final presentation arrives', async () => {
+    mocks.streamEnabled = true
+    mocks.roleStore.roleInfo.adultExtensionAvailable = false
+    mocks.roleStore.roleInfo.replyMode = {
+      mode: 'burst',
+      segments: 3,
+      separator: '+++',
+      delays_ms: [0, 0, 0],
+      streaming: 'batch',
+    }
+    let resolveStream: ((value: SendMessageResponse) => void) | undefined
+    mocks.sendMessageStream.mockImplementation((
+      _request: unknown,
+      handlers: { onToken: (token: string, accumulated: string) => void },
+    ) => {
+      handlers.onToken('', 'first burst\n+++\nsecond burst\n+++\nthird burst')
+      return new Promise<SendMessageResponse>((resolve) => {
+        resolveStream = resolve
+      })
+    })
+    const messages: ChatMessage[] = []
+
+    const pending = sendChatStoreMessage(context(messages), 'hello', 'home')
+    await vi.waitFor(() => expect(mocks.sendMessageStream).toHaveBeenCalledTimes(1))
+    expect(messages.filter(message => message.role === 'assistant')).toHaveLength(0)
+
+    expect(resolveStream).toBeTypeOf('function')
+    resolveStream!({
+      ...segmentedResponse(),
+      reply_presentation: {
+        segments: ['first burst', 'second burst', 'third burst'],
+        delays_ms: [0, 0, 0],
+      },
+    })
+    await pending
+
+    expect(messages.filter(message => message.role === 'assistant')).toHaveLength(3)
+    expect(mocks.emitBuiltin).not.toHaveBeenCalledWith(
+      'com.oclive.voice:stream-sentence',
+      expect.anything(),
+    )
+  })
+
+  it('restarts final reply-mode delays after a failed live stream falls back', async () => {
+    vi.useFakeTimers()
+    mocks.streamEnabled = true
+    mocks.roleStore.roleInfo.adultExtensionAvailable = false
+    mocks.roleStore.roleInfo.replyMode = {
+      mode: 'burst',
+      segments: 3,
+      separator: '+++',
+      delays_ms: [0, 100, 100],
+      streaming: 'live',
+    }
+    let rejectStream: ((reason: Error) => void) | undefined
+    mocks.sendMessageStream.mockImplementation((
+      _request: unknown,
+      handlers: { onToken: (token: string, accumulated: string) => void },
+    ) => {
+      handlers.onToken('', 'first attempt\n+++\nsecond attempt\n+++\nthird attempt')
+      return new Promise<SendMessageResponse>((_resolve, reject) => {
+        rejectStream = reject
+      })
+    })
+    mocks.sendMessage.mockResolvedValue(segmentedResponse())
+    const messages: ChatMessage[] = []
+
+    const pending = sendChatStoreMessage(context(messages), 'hello', 'home')
+    await vi.advanceTimersByTimeAsync(100)
+    expect(messages.filter(message => message.role === 'assistant')).toHaveLength(2)
+
+    expect(rejectStream).toBeTypeOf('function')
+    rejectStream!(new Error('stream disconnected'))
+    await vi.advanceTimersByTimeAsync(0)
+    expect(messages.filter(message => message.role === 'assistant')).toHaveLength(1)
+
+    await vi.advanceTimersByTimeAsync(100)
+    expect(messages.filter(message => message.role === 'assistant')).toHaveLength(2)
+    await vi.advanceTimersByTimeAsync(100)
+    await pending
+
+    expect(messages.filter(message => message.role === 'assistant')).toHaveLength(3)
+    expect(mocks.sendMessage).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps low-latency stream voice for ordinary single replies', async () => {
+    mocks.streamEnabled = true
+    mocks.roleStore.roleInfo.adultExtensionAvailable = false
+    mocks.roleStore.roleInfo.replyMode = null
+    mocks.sendMessageStream.mockImplementation(async (
+      _request: unknown,
+      handlers: { onToken: (token: string, accumulated: string) => void },
+    ) => {
+      handlers.onToken('', 'ordinary stream.')
+      return ordinaryResponse()
+    })
+    const messages: ChatMessage[] = []
+
+    await sendChatStoreMessage(context(messages), 'hello', 'home')
+
+    expect(mocks.emitBuiltin).toHaveBeenCalledWith(
+      'com.oclive.voice:stream-sentence',
+      expect.objectContaining({ sentence: 'ordinary stream.' }),
+    )
+    const sentEvent = mocks.emitBuiltin.mock.calls.find(call => call[0] === 'message:sent')
+    expect(sentEvent?.[1]?.stream_id).toEqual(expect.any(String))
   })
 })

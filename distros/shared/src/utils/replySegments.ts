@@ -21,7 +21,42 @@ export interface ReplySegmentDraft {
   delayMs: number
 }
 
-/** Mirror the backend line-only separator rule so live streaming and history stay identical. */
+const SEPARATOR_TRAILING_PUNCTUATION = new Set([
+  '。',
+  '，',
+  '！',
+  '？',
+  '…',
+  '、',
+  '.',
+  ',',
+  '!',
+  '?',
+  ';',
+  '~',
+])
+const TRAILING_MARKER_PRECEDERS = new Set(['。', '！', '？', '!', '?', '…', '；', ';'])
+
+function isSeparatorBoundary(line: string, separator: string): boolean {
+  const trimmed = line.trim()
+  if (trimmed === separator)
+    return true
+  if (!trimmed.startsWith(separator))
+    return false
+  const suffix = trimmed.slice(separator.length)
+  return suffix.length > 0 && [...suffix].every(char => SEPARATOR_TRAILING_PUNCTUATION.has(char))
+}
+
+function trailingMarkerPrefix(line: string, separator: string): string | null {
+  const trimmedEnd = line.trimEnd()
+  if (!trimmedEnd.endsWith(separator))
+    return null
+  const prefix = trimmedEnd.slice(0, -separator.length).trimEnd()
+  const last = prefix[prefix.length - 1]
+  return prefix && last && TRAILING_MARKER_PRECEDERS.has(last) ? prefix : null
+}
+
+/** Mirror the backend's primary separator protocol for safe live presentation. */
 export function splitReplyBySeparatorLine(
   raw: string,
   separator: string,
@@ -36,7 +71,15 @@ export function splitReplyBySeparatorLine(
   const segments: string[] = []
   let current = ''
   for (const line of normalized.split('\n')) {
-    if (line.trim() === sep) {
+    const prefix = trailingMarkerPrefix(line, sep)
+    if (prefix !== null) {
+      current += (current ? '\n' : '') + prefix
+      const segment = current.trim()
+      if (segment)
+        segments.push(segment)
+      current = ''
+    }
+    else if (isSeparatorBoundary(line, sep)) {
       const segment = current.trim()
       if (segment)
         segments.push(segment)

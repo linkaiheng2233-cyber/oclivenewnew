@@ -129,11 +129,98 @@ export async function sendChatStoreMessage(
   const replyMode = roleStore.roleInfo.replyMode
   const replySeparator = replyMode?.separator ?? ''
   const replySegmentsCap = replyMode?.segments ?? 2
-  let streamBubbleActive = false
-  let secondStreamBubbleActive = false
+  const liveReplyMode = Boolean(replyMode && replyMode.streaming === 'live' && replySeparator)
+  const streamBubbleIds = new Set<string>()
+  const revealedStreamSegmentIndexes = new Set<number>()
+  const pendingStreamSegmentText = new Map<number, string>()
+  const streamSegmentTimers = new Map<number, number>()
+  const streamSegmentDueAt = new Map<number, number>()
+  let streamVoiceActive = false
   let streamSpokenPrefix = ''
   let lastStreamAccumulated = ''
   const voiceChunker = new StreamingVoiceChunker()
+
+  const streamSegmentId = (index: number) =>
+    index === 0 ? assistantLocalId : `${assistantLocalId}#s${index}`
+
+  function revealStreamSegment(index: number): void {
+    const id = streamSegmentId(index)
+    const content = pendingStreamSegmentText.get(index) ?? ''
+    if (streamBubbleIds.has(id)) {
+      context.patchMessageById(roleId, sid, id, { content })
+      return
+    }
+    context.addMessage(roleId, sid, {
+      id,
+      role: 'assistant',
+      content,
+      timestamp: Date.now() + index,
+      streaming: true,
+    }, { persistIdbCache: false })
+    streamBubbleIds.add(id)
+    revealedStreamSegmentIndexes.add(index)
+  }
+
+  function scheduleStreamSegment(index: number, text: string): void {
+    pendingStreamSegmentText.set(index, text)
+    const id = streamSegmentId(index)
+    if (streamBubbleIds.has(id)) {
+      context.patchMessageById(roleId, sid, id, { content: text })
+      return
+    }
+    if (streamSegmentTimers.has(index))
+      return
+    const previousDueAt = index > 1
+      ? (streamSegmentDueAt.get(index - 1) ?? Date.now())
+      : Date.now()
+    const delayMs = Math.max(0, replyMode?.delays_ms[index] ?? 0)
+    const dueAt = Math.max(Date.now(), previousDueAt) + delayMs
+    streamSegmentDueAt.set(index, dueAt)
+    const waitMs = Math.max(0, dueAt - Date.now())
+    if (waitMs === 0) {
+      revealStreamSegment(index)
+      return
+    }
+    const timer = window.setTimeout(() => {
+      streamSegmentTimers.delete(index)
+      if (!isStale())
+        revealStreamSegment(index)
+    }, waitMs)
+    streamSegmentTimers.set(index, timer)
+  }
+
+  function renderReplyModeStream(accumulated: string): void {
+    const segments = splitReplyBySeparatorLine(
+      accumulated,
+      replySeparator,
+      replySegmentsCap,
+    )
+    segments.forEach((text, index) => scheduleStreamSegment(index, text))
+  }
+
+  function clearStreamSegmentTimers(): void {
+    for (const timer of streamSegmentTimers.values())
+      window.clearTimeout(timer)
+    streamSegmentTimers.clear()
+  }
+
+  function removeStreamBubbles(): void {
+    for (const id of streamBubbleIds)
+      context.deleteMessage(roleId, sid, id)
+    streamBubbleIds.clear()
+  }
+
+  function cleanupStreamPresentation(): void {
+    clearStreamSegmentTimers()
+    removeStreamBubbles()
+  }
+
+  function resetStreamPresentation(): void {
+    cleanupStreamPresentation()
+    revealedStreamSegmentIndexes.clear()
+    pendingStreamSegmentText.clear()
+    streamSegmentDueAt.clear()
+  }
 
   function emitStreamVoiceChunks(chunks: string[]): void {
     for (const chunk of chunks) {
@@ -153,14 +240,12 @@ export async function sendChatStoreMessage(
     const streamEnabled = isChatStreamEnabled() && !adultRequest
     if (streamEnabled) {
       try {
-        context.addMessage(roleId, sid, {
-          id: assistantLocalId,
-          role: 'assistant',
-          content: '',
-          timestamp: Date.now(),
-          streaming: true,
-        }, { persistIdbCache: false })
-        streamBubbleActive = true
+        // `batch` still uses the SSE transport, but intentionally withholds all
+        // assistant bubbles until the authoritative final presentation arrives.
+        if (!replyMode || liveReplyMode) {
+          pendingStreamSegmentText.set(0, '')
+          revealStreamSegment(0)
+        }
         res = await sendMessageStream(
           {
             role_id: roleId,
@@ -179,54 +264,31 @@ export async function sendChatStoreMessage(
                   content: accumulated,
                 })
               }
-              else {
-                const segments = splitReplyBySeparatorLine(
-                  accumulated,
-                  replySeparator,
-                  replySegmentsCap,
-                )
-                context.patchMessageById(roleId, sid, assistantLocalId, {
-                  content: segments[0] ?? '',
-                })
-                if (segments.length > 1 && !secondStreamBubbleActive) {
-                  context.addMessage(roleId, sid, {
-                    id: `${assistantLocalId}#s1`,
-                    role: 'assistant',
-                    content: '',
-                    timestamp: Date.now(),
-                    streaming: true,
-                  }, { persistIdbCache: false })
-                  secondStreamBubbleActive = true
-                }
-                if (secondStreamBubbleActive) {
-                  context.patchMessageById(roleId, sid, `${assistantLocalId}#s1`, {
-                    content: segments[1] ?? '',
-                  })
-                }
+              else if (liveReplyMode) {
+                renderReplyModeStream(accumulated)
               }
-              emitStreamVoiceChunks(voiceChunker.push(accumulated))
+              // Reply-mode voice waits for the kernel's final separator-free
+              // reply. Ordinary single replies retain low-latency stream TTS.
+              if (!replyMode)
+                emitStreamVoiceChunks(voiceChunker.push(accumulated))
             },
           },
         )
-        emitStreamVoiceChunks(voiceChunker.flush(lastStreamAccumulated))
+        if (!replyMode) {
+          emitStreamVoiceChunks(voiceChunker.flush(lastStreamAccumulated))
+          streamVoiceActive = true
+        }
       }
       catch (streamErr) {
         if (isAbortError(streamErr, streamAbort.signal) || isStale()) {
-          if (streamBubbleActive)
-            context.deleteMessage(roleId, sid, assistantLocalId)
-          if (secondStreamBubbleActive)
-            context.deleteMessage(roleId, sid, `${assistantLocalId}#s1`)
+          cleanupStreamPresentation()
           return
         }
         console.warn('[chat] stream failed, fallback to /chat', streamErr)
-        if (streamBubbleActive) {
-          context.deleteMessage(roleId, sid, assistantLocalId)
-          streamBubbleActive = false
-        }
-        if (secondStreamBubbleActive) {
-          context.deleteMessage(roleId, sid, `${assistantLocalId}#s1`)
-          secondStreamBubbleActive = false
-        }
+        // The blocking retry is a new authoritative response. Do not reuse
+        // reveal progress or deadlines from the failed SSE attempt.
+        resetStreamPresentation()
+        streamVoiceActive = false
         res = await sendMessage({
           role_id: roleId,
           user_message: content,
@@ -244,8 +306,10 @@ export async function sendChatStoreMessage(
       })
     }
 
-    if (isStale())
+    if (isStale()) {
+      cleanupStreamPresentation()
       return
+    }
 
     if (res.user_message_id && !options.hideUserMessage) {
       context.patchMessageById(roleId, sid, userLocalId, {
@@ -266,16 +330,22 @@ export async function sendChatStoreMessage(
       ? [{ text: preSplit.dialogue, delayMs: 0 }]
       : draftsFromPresentation(pres.replyText, res.reply_presentation)
 
-    if (streamBubbleActive) {
-      context.deleteMessage(roleId, sid, assistantLocalId)
-    }
-    if (secondStreamBubbleActive)
-      context.deleteMessage(roleId, sid, `${assistantLocalId}#s1`)
+    const revealedBeforeFinal = new Set(revealedStreamSegmentIndexes)
+    const dueAtBeforeFinal = new Map(streamSegmentDueAt)
+    cleanupStreamPresentation()
     const baseId = res.assistant_message_id ?? assistantLocalId
     const baseTimestamp = parseMessageTimestamp(res.assistant_message_timestamp)
     const segmentIds = segmentMessageIds(baseId, drafts.length)
     for (let i = 0; i < drafts.length; i++) {
-      const delayMs = i === 0 ? 0 : drafts[i].delayMs
+      let delayMs = i === 0 ? 0 : drafts[i].delayMs
+      if (i > 0 && liveReplyMode) {
+        if (revealedBeforeFinal.has(i)) {
+          delayMs = 0
+        }
+        else if (dueAtBeforeFinal.has(i)) {
+          delayMs = Math.max(0, dueAtBeforeFinal.get(i)! - Date.now())
+        }
+      }
       if (delayMs > 0)
         await new Promise<void>(resolve => window.setTimeout(resolve, delayMs))
       if (isStale())
@@ -332,10 +402,10 @@ export async function sendChatStoreMessage(
       scene_id: sid,
       turn_id: streamId,
       skip_auto_tts: voiceTextOnlyForTurn,
-      stream_id: streamBubbleActive ? streamId : undefined,
-      stream_spoken_prefix: streamBubbleActive ? streamSpokenPrefix : undefined,
-      stream_full_raw: streamBubbleActive ? lastStreamAccumulated : undefined,
-      stream_spoken_end_index: streamBubbleActive ? voiceChunker.rawEndIndex : undefined,
+      stream_id: streamVoiceActive ? streamId : undefined,
+      stream_spoken_prefix: streamVoiceActive ? streamSpokenPrefix : undefined,
+      stream_full_raw: streamVoiceActive ? lastStreamAccumulated : undefined,
+      stream_spoken_end_index: streamVoiceActive ? voiceChunker.rawEndIndex : undefined,
     })
     const countAfterTurn = context.getMessageCountForRoleScene(roleId, sid)
     context.clampSceneHistorySplitForBucket(
@@ -361,21 +431,16 @@ export async function sendChatStoreMessage(
   }
   catch (err) {
     if (isAbortError(err, streamAbort.signal) || isStale()) {
-      if (streamBubbleActive)
-        context.deleteMessage(roleId, sid, assistantLocalId)
-      if (secondStreamBubbleActive)
-        context.deleteMessage(roleId, sid, `${assistantLocalId}#s1`)
+      cleanupStreamPresentation()
       return
     }
     if (!options.hideUserMessage)
       context.deleteMessage(roleId, sid, userLocalId)
-    if (streamBubbleActive)
-      context.deleteMessage(roleId, sid, assistantLocalId)
-    if (secondStreamBubbleActive)
-      context.deleteMessage(roleId, sid, `${assistantLocalId}#s1`)
+    cleanupStreamPresentation()
     throw err
   }
   finally {
+    clearStreamSegmentTimers()
     if (!isStale())
       context.setLoading(false)
     if (inFlightStreamAbort === streamAbort)
