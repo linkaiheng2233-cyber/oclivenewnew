@@ -4,7 +4,7 @@
 
 | Metadata | Value |
 |----------|-------|
-| Status | **Draft v1** (design confirmed, implementation complete; real-machine separator hit-rate pending manual verification) |
+| Status | **Draft v1** (design confirmed and locally regression-tested; real-machine UX and separator hit-rate still require manual verification) |
 | Audience | Kernel / frontend / pack editor / role pack authors |
 | Prerequisites | [RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md](../../creator-docs/rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md) · [MODULE_MAP_AND_HANDOFF.md](../../handoff/MODULE_MAP_AND_HANDOFF.md) · [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) |
 | Authoritative Chinese name | **回复模式** |
@@ -80,14 +80,16 @@ pre / build_prompt
   → host appends 【输出格式要求】 per reply_mode
   → six-slot LLM generation
   → emo/adult parsing
+  → ordinary co-present turns split and strip protocol markers early
+  → emotion policy / profile evolution / short_term_memory consume marker-free text
   → reply_post_process polish
-  → reply_mode split + strip separator       ← new channel
-  → persist (one assistant message + segment metadata)
+  → reply_mode authoritatively splits the final display text again
+  → persist chat (one assistant message + segment metadata)
   → SendMessageResponse
   → frontend renders segments / voice reads in order
 ```
 
-`reply_mode` runs after `reply_post_process`: the polisher sees the un-split full text, the splitter sees the final user text — the two channels stay decoupled.
+Final presentation splitting still runs after `reply_post_process`: the polisher sees the complete text and the user sees only the final segmented result. In parallel, the kernel derives marker-free semantic text before emotion policy, profile evolution, and short-term-memory consumers run, so `+++` cannot leak through an earlier persistence stage into durable state or next-turn context.
 
 ## 5. Split semantics (pure function)
 
@@ -101,12 +103,15 @@ Input `raw`, `separator`, `segments`, `fallback_leads`:
 6. No boundary and no degradation hit → one segment (the whole reply); this is the natural degradation for "the second burst was late" and similar cases.
 7. Empty `raw` → empty list.
 
+The live frontend mirrors only primary protocol boundaries (standalone marker lines, marker-plus-trailing-punctuation lines, and markers immediately following sentence-terminal punctuation). Blank-paragraph and `fallback_leads` degradation remains authoritative on the backend after the complete reply is available, avoiding premature live splits of ordinary prose.
+
 ## 6. Storage and DTO
 
 **Storage**: still one assistant message.
 
 - `chat_messages.content`: the full reply with separators stripped, segments joined by a newline — used by search, export, memory and the next-turn context.
-- `chat_messages.metadata.reply_segments`: `[{ "text": "...", "delay_ms": 0 }, ...]` — lets frontend history loading rebuild bubbles.
+- `chat_messages.metadata.reply_segments`: `["first burst", "second burst"]`; `reply_segment_delays_ms`: `[0, 300]`. The former rebuilds history bubbles and the latter preserves the turn's presentation-rhythm snapshot.
+- `short_term_memory.bot_reply`: ordinary co-present turns use marker-free semantic text before any atomic persistence; adult and remote branches do not enable `reply_mode`.
 - `message_count`, undo, regenerate, delete still treat the turn as one unit; no new table.
 
 **DTO**:
@@ -125,11 +130,11 @@ Input `raw`, `separator`, `segments`, `fallback_leads`:
 
 ## 7. Frontend
 
-- `streaming = "live"`: the first bubble streams normally; when the accumulated text contains a standalone separator line, strip the marker and open the next bubble, honoring `delays_ms`.
-- `streaming = "batch"`: render all segments at once after the full response, still honoring per-segment delays.
+- `streaming = "live"`: the first bubble streams normally; once the accumulated text contains a valid separator boundary, strip the marker and reveal subsequent bubbles in order (up to 8), honoring `delays_ms`.
+- `streaming = "batch"`: the transport may still use SSE, but no assistant bubble appears before the complete response; the frontend then renders from authoritative `reply_presentation` with per-segment delays.
 - History loading: expand `chat_messages.metadata.reply_segments` into bubbles keyed by base message id plus segment index.
 - Narration: split into segments first, then run the existing dialogue/narration split per segment; dialogue stays in its bubble, narration aggregates into the turn's narration strip.
-- Voice: read the full separator-stripped reply; the first-segment delay only affects visual bubbles, not reading.
+- Voice: ordinary single replies retain low-latency stream speech. With `reply_mode`, raw SSE chunks are never spoken; TTS waits for the authoritative host response and reads only the complete separator-free text, preventing both spoken `+++` and full-reply replay after a prefix mismatch.
 - When streaming falls back to the blocking `/chat` path, render from `reply_presentation` — same behavior.
 
 ## 8. Degradation and non-goals
@@ -149,13 +154,14 @@ Input `raw`, `separator`, `segments`, `fallback_leads`:
 
 ## 10. Acceptance
 
-- [x] Packs without `reply_mode` behave exactly as today
-- [x] `burst` + `+++` output splits correctly and the separator never appears in bubbles or memory
+- [x] Ordinary packs without `reply_mode` retain the existing streaming bubble and low-latency stream voice path
+- [x] `burst` + `+++` output splits correctly and the separator never appears in the response, chat log, or short-term memory
 - [x] Missing separator, overflow segments, empty segments, CRLF and custom/full-width separators have pure-function unit tests
-- [x] One assistant message persists and `metadata.reply_segments` round-trips
-- [x] Streaming and blocking paths both render two bubbles; history reload matches
-- [x] Undo / regenerate / delete treat the turn as one unit
-- [x] Narration aggregates into the narration strip; voice reads the joined text
+- [x] One assistant message persists and `metadata.reply_segments` restores any 2–8 sibling bubbles
+- [x] `live`, `batch`, and blocking fallback converge on final `reply_presentation`; three-segment live ordering and history reload are tested
+- [ ] Manual real-machine confirmation remains for undo / regenerate / delete as one turn (storage is still one assistant row)
+- [x] Reply-mode stream voice is suppressed and `message:sent.reply` carries only host-cleaned text; ordinary stream voice remains enabled
+- [ ] Manual real-machine confirmation remains for narration aggregation when multiple segments all contain narration
 - [x] `RoleInfo.pack_reply_mode` is read-only passthrough; frontend never hard-codes role ids
 - [x] MODULE_MAP §11 and the RFC_SIDE_CHANNEL registry list `reply_mode`
 
