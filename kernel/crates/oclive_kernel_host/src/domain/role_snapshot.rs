@@ -11,6 +11,7 @@ use crate::models::plugin_backends::{
     PromptBackend,
 };
 use crate::models::role::Role;
+use crate::models::ReplyModeInfoDto;
 use crate::models::ReplyPostProcessorBackendKind;
 use crate::service::role::interaction::resolve_interaction_ui_snapshot;
 use crate::service::role::runtime::{
@@ -341,6 +342,11 @@ pub async fn assemble_role_info(
     let (reply_post_processor_enabled, reply_post_processor_backend, reply_post_processor_profile) =
         reply_post_processor_role_info_fields(state, role);
 
+    let pack_reply_mode = role
+        .pack_reply_mode_config
+        .enabled()
+        .then(|| ReplyModeInfoDto::from(&role.pack_reply_mode_config));
+
     Ok(RoleInfo {
         role_id: role_id.to_string(),
         role_name: role.name.clone(),
@@ -403,5 +409,6 @@ pub async fn assemble_role_info(
         reply_post_processor_enabled,
         reply_post_processor_backend,
         reply_post_processor_profile,
+        pack_reply_mode,
     })
 }

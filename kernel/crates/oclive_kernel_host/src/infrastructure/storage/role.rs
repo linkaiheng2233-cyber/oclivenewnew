@@ -454,6 +454,7 @@ impl RoleStorage {
                         role.pack_evolution_config = cfg.evolution;
                         role.pack_chat_storage_config = cfg.chat_storage;
                         role.pack_reply_post_processor_config = cfg.reply_post_processor;
+                        role.pack_reply_mode_config = cfg.reply_mode;
                         role.pack_portrait_catalog = cfg.portrait_catalog;
                         role.pack_visual_presentation_config = cfg.visual_presentation;
                         role.pack_turn_thinking_config = cfg.turn_thinking;

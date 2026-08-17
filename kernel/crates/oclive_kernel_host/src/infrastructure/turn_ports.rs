@@ -119,6 +119,8 @@ impl ConversationPersistPort for StoreConversationPersistPort {
                 emotion_intensity: input.emotion_intensity,
                 emotion_dissonance: input.emotion_dissonance,
                 emotion_hint: input.emotion_hint,
+                reply_segments: input.reply_segments,
+                reply_segment_delays_ms: input.reply_segment_delays_ms,
                 max_messages_per_session: input.max_messages_per_session,
                 auto_cleanup_config: to_infra_cleanup(&input.auto_cleanup_config),
                 chat_storage_location: input.chat_storage_location,

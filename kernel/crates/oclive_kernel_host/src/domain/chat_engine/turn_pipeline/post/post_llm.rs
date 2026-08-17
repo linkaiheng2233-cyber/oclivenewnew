@@ -24,12 +24,15 @@ use crate::domain::complex_emotion_store::{
 use crate::domain::emo_marker::{dominant_emotion_from_labels, truncate_narrative_hint, EmoMarker};
 use crate::domain::host_profile::bench_telemetry_enabled;
 use crate::domain::policy::PolicyContext;
+use crate::domain::reply_mode::{effective_reply_mode, present_reply};
 use crate::domain::reply_post_processor::resolve_reply_post_processor;
 use crate::domain::slot_runner::SlotRunner;
 use crate::domain::turn_thinking::{
     effective_turn_thinking_policy, update_turn_thinking_runtime_state,
 };
-use crate::models::dto::{AdultBeatDto, DisplayMetricsDto, SendMessageResponse};
+use crate::models::dto::{
+    AdultBeatDto, DisplayMetricsDto, ReplyPresentationDto, SendMessageResponse,
+};
 use crate::models::{Emotion, Event, PersonalitySource, Role};
 use oclive_kernel_contracts::reply_post_processor::PostProcessInput;
 
@@ -53,6 +56,7 @@ pub(super) struct PostLlmCtx<'a> {
     pub display_reply: String,
     pub adult_beat: Option<AdultBeatDto>,
     pub raw_reply: Option<String>,
+    pub reply_presentation: Option<ReplyPresentationDto>,
     pub dual_core_degraded: bool,
     pub distro_visual_mode: Option<&'a str>,
     pub movement: bool,
@@ -193,6 +197,7 @@ fn assemble_send_message_response(ctx: &PostLlmCtx<'_>) -> SendMessageResponse {
         display_reply,
         adult_beat,
         raw_reply,
+        reply_presentation,
         dual_core_degraded,
         distro_visual_mode,
         movement,
@@ -263,6 +268,7 @@ fn assemble_send_message_response(ctx: &PostLlmCtx<'_>) -> SendMessageResponse {
         chat_persist_error: chat_ids.chat_persist_error.clone(),
         dual_core_degraded: (*dual_core_degraded).then_some(true),
         raw_reply: raw_reply.clone(),
+        reply_presentation: reply_presentation.clone(),
         llm_prompt_eval_ms: if bench_telemetry_enabled() {
             llm.llm_prompt_eval_ms
         } else {
@@ -479,6 +485,7 @@ pub(crate) async fn post_llm(
             display_reply,
             adult_beat,
             raw_reply,
+            reply_presentation: None,
             dual_core_degraded: ctx.dual_core_degraded,
             distro_visual_mode: ctx.state.host_profile.visual_presentation_mode.as_deref(),
             movement: false,
@@ -556,7 +563,7 @@ pub(crate) async fn post_llm(
         }
     }
 
-    let (display_reply, raw_reply, adult_beat, transcript_reply) =
+    let (display_reply, raw_reply, adult_beat, transcript_reply, reply_presentation) =
         if let Some(mut beat) = parsed_adult_beat {
             let (dialogue, processed_raw) = apply_reply_post_processor(
                 state,
@@ -575,7 +582,7 @@ pub(crate) async fn post_llm(
             } else {
                 processed_raw
             };
-            (dialogue, raw, Some(beat), transcript)
+            (dialogue, raw, Some(beat), transcript, None)
         } else {
             let (display, raw) = apply_reply_post_processor(
                 state,
@@ -587,7 +594,18 @@ pub(crate) async fn post_llm(
                 &clean_reply,
                 ctx.req.include_raw_reply == Some(true),
             );
-            (display.clone(), raw, None, display)
+            let presentation = effective_reply_mode(role).map(|cfg| present_reply(&cfg, &display));
+            let joined = presentation
+                .as_ref()
+                .map(|p| p.joined.clone())
+                .unwrap_or_else(|| display.clone());
+            let dto = presentation
+                .filter(|p| p.segments.len() > 1)
+                .map(|p| ReplyPresentationDto {
+                    segments: p.segments,
+                    delays_ms: p.delays_ms,
+                });
+            (joined.clone(), raw, None, joined, dto)
         };
 
     let chat_ids = append_turn_to_chat_storage(
@@ -602,6 +620,8 @@ pub(crate) async fn post_llm(
         &transcript_reply,
         synthetic_adult_action,
         Some(&effective_complex_emotion),
+        reply_presentation.as_ref().map(|p| p.segments.as_slice()),
+        reply_presentation.as_ref().map(|p| p.delays_ms.as_slice()),
     )
     .await;
 
@@ -611,7 +631,7 @@ pub(crate) async fn post_llm(
             role,
             srid,
             scene_id,
-            transcript_reply.as_str(),
+            &transcript_reply,
         )
         .await
         {
@@ -656,6 +676,7 @@ pub(crate) async fn post_llm(
         display_reply,
         adult_beat,
         raw_reply,
+        reply_presentation,
         dual_core_degraded: ctx.dual_core_degraded,
         distro_visual_mode: ctx.state.host_profile.visual_presentation_mode.as_deref(),
         movement: persist_out.movement,

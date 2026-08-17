@@ -657,6 +657,7 @@ mod tests {
             chat_persist_error: None,
             dual_core_degraded: None,
             raw_reply: None,
+            reply_presentation: None,
             llm_prompt_eval_ms: None,
         }
     }
@@ -1485,6 +1486,8 @@ mod tests {
                 emotion_intensity: None,
                 emotion_dissonance: None,
                 emotion_hint: None,
+                reply_segments: None,
+                reply_segment_delays_ms: None,
                 max_messages_per_session: role.pack_chat_storage_config.max_messages_per_session,
                 auto_cleanup_config: TurnAutoCleanupConfig::from_role_config(
                     &role.pack_chat_storage_config,

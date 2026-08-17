@@ -59,6 +59,9 @@ pub struct TurnPersistRequest {
     pub emotion_intensity: Option<f64>,
     pub emotion_dissonance: Option<f64>,
     pub emotion_hint: Option<String>,
+    /// Reply-mode presentation segments stored in assistant metadata (None = single reply).
+    pub reply_segments: Option<Vec<String>>,
+    pub reply_segment_delays_ms: Option<Vec<u32>>,
     pub max_messages_per_session: Option<u32>,
     pub auto_cleanup_config: TurnAutoCleanupConfig,
     pub chat_storage_location: String,

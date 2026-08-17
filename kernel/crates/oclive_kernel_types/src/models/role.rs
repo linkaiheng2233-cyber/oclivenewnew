@@ -6,6 +6,7 @@ use super::author_pack::AuthorPackFile;
 use super::knowledge::KnowledgeIndex;
 use super::plugin_backends::PluginBackends;
 use super::portrait_catalog_config::{PortraitCatalogFile, PortraitCatalogToggle};
+use super::reply_mode_config::RolePackReplyModeConfig;
 use super::reply_post_processor_config::RolePackReplyPostProcessorConfig;
 use super::role_pack_config::{
     RolePackChatStorageConfig, RolePackEvolutionConfig, RolePackMemoryConfig,
@@ -248,6 +249,9 @@ pub struct Role {
     /// `config.json` → `reply_post_processor` (builtin post-LLM text polish; default disabled).
     #[serde(default)]
     pub pack_reply_post_processor_config: RolePackReplyPostProcessorConfig,
+    /// `config.json` → `reply_mode` (side-channel reply segmentation; default single).
+    #[serde(default)]
+    pub pack_reply_mode_config: RolePackReplyModeConfig,
     /// `config.json` → `portrait_catalog.enabled` (assets in `portrait_catalog.json`).
     #[serde(default)]
     pub pack_portrait_catalog: PortraitCatalogToggle,
@@ -373,6 +377,7 @@ impl Default for Role {
             pack_evolution_config: RolePackEvolutionConfig::default(),
             pack_chat_storage_config: RolePackChatStorageConfig::default(),
             pack_reply_post_processor_config: RolePackReplyPostProcessorConfig::default(),
+            pack_reply_mode_config: RolePackReplyModeConfig::default(),
             pack_portrait_catalog: PortraitCatalogToggle::default(),
             portrait_catalog: None,
             pack_visual_presentation_config: RolePackVisualPresentationConfig::default(),

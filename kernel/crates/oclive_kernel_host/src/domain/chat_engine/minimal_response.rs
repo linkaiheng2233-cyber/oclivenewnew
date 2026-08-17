@@ -96,6 +96,7 @@ pub(crate) async fn build_minimal_response(
         relation_state: snapshot.relation_state,
         reply,
         adult_beat: None,
+        reply_presentation: None,
         emotion: emotion_to_dto(&emotion_result),
         bot_emotion: snapshot.portrait_emotion.clone(),
         portrait_emotion: snapshot.portrait_emotion,

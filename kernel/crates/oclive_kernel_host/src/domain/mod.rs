@@ -22,6 +22,7 @@ pub mod complex_emotion_store;
 pub mod effective_llm_model;
 pub mod relation_estrangement;
 pub mod relation_transition;
+pub mod reply_mode;
 pub mod reply_post_processor;
 pub mod resource_adapter_registry;
 pub mod resource_coordinator;

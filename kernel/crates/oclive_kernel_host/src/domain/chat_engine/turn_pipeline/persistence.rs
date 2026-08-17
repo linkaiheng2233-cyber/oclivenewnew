@@ -304,6 +304,8 @@ pub(crate) async fn append_turn_to_chat_storage(
     reply: &str,
     user_message_hidden: bool,
     complex_emotion: Option<&ComplexEmotionOutput>,
+    reply_segments: Option<&[String]>,
+    reply_segment_delays_ms: Option<&[u32]>,
 ) -> ChatAppendIds {
     let TurnIds {
         mrid,
@@ -363,6 +365,8 @@ pub(crate) async fn append_turn_to_chat_storage(
         emotion_intensity,
         emotion_dissonance,
         emotion_hint,
+        reply_segments: reply_segments.map(<[String]>::to_vec),
+        reply_segment_delays_ms: reply_segment_delays_ms.map(<[u32]>::to_vec),
         max_messages_per_session: role.pack_chat_storage_config.max_messages_per_session,
         auto_cleanup_config: TurnAutoCleanupConfig::from_role_config(
             &role.pack_chat_storage_config,
@@ -410,6 +414,8 @@ pub(crate) async fn append_agent_turn_to_chat_storage(
         emotion_intensity: None,
         emotion_dissonance: None,
         emotion_hint: None,
+        reply_segments: None,
+        reply_segment_delays_ms: None,
         max_messages_per_session: role.pack_chat_storage_config.max_messages_per_session,
         auto_cleanup_config: TurnAutoCleanupConfig::from_role_config(
             &role.pack_chat_storage_config,
@@ -531,6 +537,7 @@ mod persist_non_profile_tests {
             pack_relation_config: crate::models::RolePackRelationConfig::default(),
             pack_evolution_config: crate::models::RolePackEvolutionConfig::default(),
             pack_chat_storage_config: crate::models::RolePackChatStorageConfig::default(),
+            pack_reply_mode_config: Default::default(),
             runtime_config: None,
             pipeline_experimental: None,
             blueprint_extensions: std::collections::BTreeMap::new(),

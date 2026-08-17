@@ -10,6 +10,7 @@ use crate::domain::personality_engine::PersonalityEngine;
 use crate::domain::prompt_builder::{
     effective_reply_quality_anchor, hash_stable_prefix, PromptInput,
 };
+use crate::domain::reply_mode::{effective_reply_mode, reply_output_format_instruction};
 use crate::domain::slot_runner::SlotRunner;
 use crate::domain::turn_thinking::{resolve_turn_thinking, TurnThinkingMode};
 use crate::models::knowledge::KnowledgeIndex;
@@ -292,6 +293,14 @@ pub(crate) async fn run_middle(
             body: s.body.as_str(),
         })
         .collect();
+    let reply_mode_instruction = effective_reply_mode(role)
+        .map(|cfg| reply_output_format_instruction(cfg.segments, cfg.separator.as_str()));
+    if let Some(body) = reply_mode_instruction.as_deref() {
+        extra_sections.push(PromptExtraSection {
+            title: "输出格式要求",
+            body,
+        });
+    }
     if !continuity_prompt.is_empty() {
         extra_sections.push(PromptExtraSection {
             title: "行动连续性状态",

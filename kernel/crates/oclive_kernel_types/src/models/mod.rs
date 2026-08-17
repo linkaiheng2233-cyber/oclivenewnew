@@ -17,6 +17,7 @@ pub mod meta_action_templates_config;
 pub mod personality;
 pub mod plugin_backends;
 pub mod portrait_catalog_config;
+pub mod reply_mode_config;
 pub mod reply_post_processor_config;
 pub mod resource_coordination;
 pub mod role;
@@ -70,6 +71,10 @@ pub use plugin_backends::*;
 pub use portrait_catalog_config::{
     PortraitAssetKind, PortraitAssetResources, PortraitCatalogAsset, PortraitCatalogFile,
     PortraitCatalogToggle, SIMPLE_PORTRAIT_SLOT_IDS,
+};
+pub use reply_mode_config::{
+    ReplyModeInfoDto, ReplyModeKind, ReplyModeStreaming, RolePackReplyModeConfig,
+    DEFAULT_REPLY_SEGMENTS, DEFAULT_REPLY_SEPARATOR, MAX_REPLY_SEGMENTS, MAX_REPLY_SEPARATOR_CHARS,
 };
 pub use reply_post_processor_config::{
     ReplyPostProcessorBackendKind, RolePackBuiltinReplyPostProcessorConfig,

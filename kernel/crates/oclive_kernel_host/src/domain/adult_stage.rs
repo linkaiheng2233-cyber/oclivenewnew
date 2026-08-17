@@ -265,6 +265,8 @@ pub async fn commit_adult_staged_beat(
             emotion_intensity: None,
             emotion_dissonance: None,
             emotion_hint: None,
+            reply_segments: None,
+            reply_segment_delays_ms: None,
             max_messages_per_session: role.pack_chat_storage_config.max_messages_per_session,
             auto_cleanup_config: TurnAutoCleanupConfig::from_role_config(
                 &role.pack_chat_storage_config,
