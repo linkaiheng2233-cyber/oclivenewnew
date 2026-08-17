@@ -94,7 +94,7 @@ pre / build_prompt
 Input `raw`, `separator`, `segments`, `fallback_leads`:
 
 1. Normalize `\r\n` to `\n`.
-2. A line is a boundary when its trimmed content exactly equals `separator`, or equals the separator followed only by trailing punctuation (`。` / `.` / `!` etc.); other content (including `C+++`, `a +++ b`, `+++abc`) is not a boundary.
+2. A line is a boundary when its trimmed content exactly equals `separator`, equals the separator followed only by trailing punctuation (`。` / `.` / `!` etc.), or ends with the separator right after a sentence-terminal character (the marker is stripped); other content (including `C+++`, `a +++ b`, `+++abc`) is not a boundary.
 3. Trim each segment; drop empty segments.
 4. Segments beyond `segments` merge into the last one.
 5. When no separator boundary exists, a degradation chain applies (weak local models often omit the protocol): split on blank-line paragraphs first; if still one paragraph, split before a pack-declared `fallback_leads` phrase sitting right after a sentence-terminal punctuation or a line start; otherwise keep one segment.

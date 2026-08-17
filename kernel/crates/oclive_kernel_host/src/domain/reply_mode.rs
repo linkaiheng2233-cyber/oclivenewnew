@@ -106,6 +106,27 @@ fn burst_lead_boundary(text: &str, leads: &[String]) -> Option<usize> {
     None
 }
 
+/// When a line ends with the separator right after a sentence-terminal
+/// character (weak models often append the marker to the end of the last burst
+/// line), return the prefix to keep so the marker can be stripped. C++-style
+/// text is untouched because its suffix is not preceded by a terminal.
+fn trailing_marker_prefix<'a>(line: &'a str, separator: &str) -> Option<&'a str> {
+    let t = line.trim_end();
+    if !t.ends_with(separator) {
+        return None;
+    }
+    let pre = t[..t.len() - separator.len()].trim_end();
+    if pre.is_empty() {
+        return None;
+    }
+    let last = pre.chars().last()?;
+    if BURST_LEAD_PRECEDERS.contains(&last) {
+        Some(pre)
+    } else {
+        None
+    }
+}
+
 /// Cap segment count by merging overflow into the last segment.
 fn cap_and_merge(mut segments: Vec<String>, max_segments: usize) -> Vec<String> {
     if segments.len() > max_segments {
@@ -149,7 +170,14 @@ pub fn split_reply_segments(
     let mut current = String::new();
     let mut saw_boundary = false;
     for line in normalized.split('\n') {
-        if is_separator_boundary(line, separator) {
+        if let Some(prefix) = trailing_marker_prefix(line, separator) {
+            if !current.is_empty() {
+                current.push('\n');
+            }
+            current.push_str(prefix);
+            saw_boundary = true;
+            push_segment(&mut segments, &mut current);
+        } else if is_separator_boundary(line, separator) {
             saw_boundary = true;
             push_segment(&mut segments, &mut current);
         } else {
@@ -363,6 +391,25 @@ mod tests {
         let raw = "射击而且配合很重要。";
         let leads = vec!["而且".to_string()];
         assert_eq!(split_reply_segments(raw, "+++", 2, &leads), vec![raw]);
+    }
+
+    #[test]
+    fn strips_trailing_marker_at_end_of_last_burst_line() {
+        let raw = "第一发\n——而且，第二发。+++\n——不过，第三发。";
+        let leads = vec!["——".to_string(), "而且".to_string()];
+        assert_eq!(
+            split_reply_segments(raw, "+++", 2, &leads),
+            vec!["第一发\n——而且，第二发。", "——不过，第三发。"]
+        );
+    }
+
+    #[test]
+    fn does_not_strip_cpp_style_suffix_as_marker() {
+        let raw = "C+++\n正文";
+        assert_eq!(
+            split_reply_segments(raw, "+++", 2, &no_leads()),
+            vec!["C+++\n正文"]
+        );
     }
 
     #[test]
