@@ -860,6 +860,10 @@ mod tests {
         assert!(p.llm_runtime.auto_start);
         assert_eq!(p.llm_runtime.performance_profile, "gpu_balanced");
         assert!(p.backends_ceiling.is_none());
+        assert_eq!(
+            p.resource_coordination.system_memory_safety_reserve_mib,
+            1_024
+        );
     }
 
     #[test]

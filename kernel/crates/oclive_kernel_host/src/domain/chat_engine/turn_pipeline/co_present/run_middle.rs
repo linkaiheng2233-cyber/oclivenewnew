@@ -293,8 +293,12 @@ pub(crate) async fn run_middle(
             body: s.body.as_str(),
         })
         .collect();
-    let reply_mode_instruction = effective_reply_mode(role)
-        .map(|cfg| reply_output_format_instruction(cfg.segments, cfg.separator.as_str()));
+    let reply_mode_instruction = if adult_prompt.is_empty() && !ctx.is_staged() {
+        effective_reply_mode(role)
+            .map(|cfg| reply_output_format_instruction(cfg.segments, cfg.separator.as_str()))
+    } else {
+        None
+    };
     if let Some(body) = reply_mode_instruction.as_deref() {
         extra_sections.push(PromptExtraSection {
             title: "输出格式要求",

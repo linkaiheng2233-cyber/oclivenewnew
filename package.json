@@ -86,6 +86,7 @@
   },
   "overrides": {
     "defu": "6.1.5",
+    "deepmerge-ts": "8.0.1",
     "@tauri-apps/api": "^2.11.1",
     "@wdio/utils": {
       "@puppeteer/browsers": "3.2.0"

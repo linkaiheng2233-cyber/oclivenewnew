@@ -34,7 +34,8 @@
         "segments": 2,
         "separator": "+++",
         "delays_ms": [0, 300],
-        "streaming": "live"
+        "streaming": "live",
+        "fallback_leads": ["——", "而且", "不过", "但是"]
     },
     "meta_action_templates": {
         "undo": {

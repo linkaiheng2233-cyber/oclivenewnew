@@ -36,6 +36,24 @@ describe('splitReplyBySeparatorLine', () => {
       '第二发',
     ])
   })
+
+  it('matches backend punctuation-tolerant separator boundaries', () => {
+    expect(splitReplyBySeparatorLine('第一发\n+++。\n第二发', '+++', 2)).toEqual([
+      '第一发',
+      '第二发',
+    ])
+    expect(splitReplyBySeparatorLine('第一发。+++\n第二发', '+++', 2)).toEqual([
+      '第一发。',
+      '第二发',
+    ])
+  })
+
+  it('does not treat inline or suffixed markers as boundaries', () => {
+    expect(splitReplyBySeparatorLine('C+++\n正文', '+++', 2)).toEqual(['C+++\n正文'])
+    expect(splitReplyBySeparatorLine('第一发\n+++abc\n第二发', '+++', 2)).toEqual([
+      '第一发\n+++abc\n第二发',
+    ])
+  })
 })
 
 describe('draftsFromPresentation', () => {
