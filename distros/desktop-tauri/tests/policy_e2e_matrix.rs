@@ -5,8 +5,9 @@
 mod common;
 
 use oclive_kernel_host::domain::chat_engine::process_message;
+use oclive_kernel_host::domain::host_profile::{FastPersistenceMode, HostProfile};
 use oclive_kernel_host::infrastructure::MockLlmClient;
-use oclive_kernel_host::state::AppState;
+use oclive_kernel_host::state::AppStateBuilder;
 use oclive_kernel_types::models::dto::SendMessageRequest;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -40,13 +41,17 @@ async fn run_scene(scene_id: &str) -> RunMetrics {
     let llm = Arc::new(MockLlmClient {
         reply: "嗯".to_string(),
     });
-    let state = AppState::new_in_memory_with_llm_and_policy_file(
-        llm,
-        common::roles_dir(),
-        Some(Path::new(&policy_file())),
-    )
-    .await
-    .expect("state");
+    // This matrix isolates scene memory policies. Keep Fast-turn persistence in
+    // legacy mode so the newer StrongOnly host gate does not suppress every
+    // neutral sample before the scene policy can be observed.
+    let mut host_profile = HostProfile::default();
+    host_profile.turn_thinking.fast_persistence = FastPersistenceMode::Legacy;
+    let state =
+        AppStateBuilder::in_memory_test(llm, common::roles_dir(), Some(Path::new(&policy_file())))
+            .with_host_profile(host_profile)
+            .build()
+            .await
+            .expect("state");
     assert!(
         state.scene_policy_count() > 0,
         "scene policy bindings should be loaded"
@@ -160,11 +165,15 @@ async fn policy_e2e_matrix_home_vs_school() {
     // school -> exploratory: 过滤更宽松，应更多落库
     assert!(
         school.memory_count > home.memory_count,
-        "exploratory should persist more memories than conservative"
+        "exploratory should persist more memories than conservative: school={} home={}",
+        school.memory_count,
+        home.memory_count
     );
     assert!(
         company.memory_count > park.memory_count,
-        "exploratory(company) should persist more memories than conservative(park)"
+        "exploratory(company) should persist more memories than conservative(park): company={} park={}",
+        company.memory_count,
+        park.memory_count
     );
 
     // exploratory 默认重要度更高（0.55）且置信度加成一致，平均重要度应更高
