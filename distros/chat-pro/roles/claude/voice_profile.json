@@ -1,0 +1,13 @@
+{
+  "schema_version": 2,
+  "director_profile": "rules-v1",
+  "preferred_tts_profile": "bundled-cosyvoice2-zh",
+  "synth_profile": "bundled-cosyvoice2-zh",
+  "speed": 0.95,
+  "energy": "soft",
+  "emo_text_template": "使用 Claude 娘固定的冷静知性女声：语速适中、干脆利落、不甜不油；怼人时语气平稳有力不失控；温柔藏在放轻的尾音里；忧郁时语速放缓、停顿变多，像在看着窗外；{tone}",
+  "engine_family": [
+    "cosyvoice2",
+    "local_http"
+  ]
+}

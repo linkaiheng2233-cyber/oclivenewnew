@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "assets": [
+    {
+      "id": "happy_default",
+      "path": "assets/images/happy_mild.png",
+      "desc": "Stable happy fallback when the scene has no clear intensity cue.",
+      "tags": [
+        "happy"
+      ],
+      "kind": "image",
+      "cluster": "happy"
+    },
+    {
+      "id": "sad_default",
+      "path": "assets/images/sad_mild.png",
+      "desc": "Stable sad fallback when the scene has no clear intensity cue.",
+      "tags": [
+        "sad"
+      ],
+      "kind": "image",
+      "cluster": "sad"
+    },
+    {
+      "id": "angry_default",
+      "path": "assets/images/angry_mild.png",
+      "desc": "Stable angry fallback when the scene has no clear intensity cue.",
+      "tags": [
+        "angry"
+      ],
+      "kind": "image",
+      "cluster": "angry"
+    },
+    {
+      "id": "neutral_default",
+      "path": "assets/images/neutral.png",
+      "desc": "Stable neutral fallback when the scene has no clear intensity cue.",
+      "tags": [
+        "neutral"
+      ],
+      "kind": "image",
+      "cluster": "neutral"
+    },
+    {
+      "id": "excited_default",
+      "path": "assets/images/excited_mild.png",
+      "desc": "Stable excited fallback when the scene has no clear intensity cue.",
+      "tags": [
+        "excited"
+      ],
+      "kind": "image",
+      "cluster": "excited"
+    },
+    {
+      "id": "confused_default",
+      "path": "assets/images/confused_mild.png",
+      "desc": "Stable confused fallback when the scene has no clear intensity cue.",
+      "tags": [
+        "confused"
+      ],
+      "kind": "image",
+      "cluster": "confused"
+    },
+    {
+      "id": "shy_default",
+      "path": "assets/images/shy_mild.png",
+      "desc": "Stable shy fallback when the scene has no clear intensity cue.",
+      "tags": [
+        "shy"
+      ],
+      "kind": "image",
+      "cluster": "shy"
+    }
+  ]
+}

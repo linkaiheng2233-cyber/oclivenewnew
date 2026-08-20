@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "default_identity_id": "child",
+  "identities": {
+    "child": {
+      "display_name": "看着长大的孩子",
+      "template_file": "child.md",
+      "maps_to_relation_id": "child"
+    }
+  }
+}

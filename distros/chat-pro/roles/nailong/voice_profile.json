@@ -1,0 +1,13 @@
+{
+  "schema_version": 2,
+  "director_profile": "rules-v1",
+  "preferred_tts_profile": "bundled-cosyvoice2-zh",
+  "synth_profile": "bundled-cosyvoice2-zh",
+  "speed": 0.9,
+  "energy": "soft",
+  "emo_text_template": "使用奶龙娘固定的软软糯糯声线：语速不快、语气乐呵呵的、尾音上扬带笑；迟钝时先顿一下再慢悠悠接上；对用户说话要认真清晰（特殊待遇）；罕见认真时笑意收起来、语速放稳；{tone}",
+  "engine_family": [
+    "cosyvoice2",
+    "local_http"
+  ]
+}
