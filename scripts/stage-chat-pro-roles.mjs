@@ -50,6 +50,7 @@ if (trackedLocalState) {
 
 fs.rmSync(destinationRoot, { recursive: true, force: true })
 fs.mkdirSync(destinationRoot, { recursive: true })
+fs.writeFileSync(path.join(destinationRoot, '.gitkeep'), '')
 
 for (const trackedFile of trackedFiles) {
   const normalized = trackedFile.replaceAll('\\', '/')
