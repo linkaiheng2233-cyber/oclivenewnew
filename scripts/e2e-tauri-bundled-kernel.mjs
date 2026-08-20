@@ -35,13 +35,13 @@ function freePort() {
   });
 }
 
-async function portableRuntimeSmoke(bundled, manifest, migrations) {
+async function portableRuntimeSmoke(bundled, manifest, migrations, bundledRoles) {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'oclive-bundled-runtime-'));
   const binary = path.join(temp, kernelExeName());
   const roles = path.join(temp, 'roles');
   const portableMigrations = path.join(temp, 'migrations');
   fs.copyFileSync(bundled, binary);
-  fs.cpSync(chatProRolesDir(repoRoot), roles, { recursive: true });
+  fs.cpSync(bundledRoles, roles, { recursive: true });
   fs.cpSync(migrations, portableMigrations, { recursive: true });
 
   const port = await freePort();
@@ -120,6 +120,9 @@ async function portableRuntimeSmoke(bundled, manifest, migrations) {
 }
 
 console.log('[e2e-tauri-bundled] bundling kernel into Tauri resources...');
+sh(process.execPath, ['scripts/stage-chat-pro-roles.mjs'], {
+  stdio: 'inherit',
+});
 sh(process.execPath, ['scripts/bundle-kernel-for-tauri.mjs', '--profile', 'debug'], {
   stdio: 'inherit',
 });
@@ -127,6 +130,7 @@ sh(process.execPath, ['scripts/bundle-kernel-for-tauri.mjs', '--profile', 'debug
 const bundled = path.join(repoRoot, 'distros/desktop-tauri', 'resources', kernelExeName());
 const manifest = path.join(repoRoot, 'distros/desktop-tauri', 'resources', 'oclive-kernel-server.oclive-manifest.json');
 const migrations = path.join(repoRoot, 'distros/desktop-tauri', 'resources', 'migrations');
+const bundledRoles = path.join(repoRoot, 'distros/desktop-tauri', 'resources', 'roles');
 if (!fs.existsSync(bundled)) {
   throw new Error(`missing bundled kernel: ${bundled}`);
 }
@@ -135,6 +139,12 @@ if (!fs.existsSync(manifest)) {
 }
 if (!fs.existsSync(migrations)) {
   throw new Error(`missing bundled migrations: ${migrations}`);
+}
+if (!fs.existsSync(bundledRoles)) {
+  throw new Error(`missing bundled roles: ${bundledRoles}`);
+}
+if (fs.existsSync(path.join(bundledRoles, '.oclive_directory_plugin_data'))) {
+  throw new Error('bundled roles must not contain ignored local role state');
 }
 
 const targetDir = JSON.parse(
@@ -175,5 +185,5 @@ if (report.plan?.degraded) {
 }
 
 console.log('[e2e-tauri-bundled] bundled-first plan ok');
-await portableRuntimeSmoke(bundled, manifest, migrations);
+await portableRuntimeSmoke(bundled, manifest, migrations, bundledRoles);
 console.log('[e2e-tauri-bundled] portable resources kernel + roles + migrations ok');

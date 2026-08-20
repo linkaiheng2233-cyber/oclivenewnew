@@ -35,8 +35,13 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "windows": {
+      "wix": {
+        "language": "zh-CN"
+      }
+    },
     "resources": [
-      "../chat-pro/roles",
+      "resources/roles",
       "resources/distro-profiles",
       "resources/theater",
       "resources/plugins",

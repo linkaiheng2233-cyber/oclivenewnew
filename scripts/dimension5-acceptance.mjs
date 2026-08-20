@@ -227,14 +227,14 @@ runStep('tauri beforeBuildCommand path ratchet', () => {
   const rolesResourceCount = resources.filter((e) => e === 'resources/roles').length;
   const chatProRolesCount = resources.filter((e) => e === '../chat-pro/roles').length;
   const migrationsResourceCount = resources.filter((e) => e === 'resources/migrations').length;
-  if (rolesResourceCount !== 0) {
+  if (rolesResourceCount !== 1) {
     throw new Error(
-      `tauri.conf.json must not commit resources/roles (found ${rolesResourceCount}); use runtime shell-dist only`,
+      `tauri.conf.json must have exactly one sanitized resources/roles entry (found ${rolesResourceCount})`,
     );
   }
-  if (chatProRolesCount !== 1) {
+  if (chatProRolesCount !== 0) {
     throw new Error(
-      `tauri.conf.json must have exactly one ../chat-pro/roles entry (found ${chatProRolesCount})`,
+      `tauri.conf.json must not bundle the mutable ../chat-pro/roles tree directly (found ${chatProRolesCount})`,
     );
   }
   if (migrationsResourceCount !== 1) {

@@ -30,7 +30,7 @@
     "tauri:dev": "node scripts/with-windows-rc-path.mjs tauri dev --config distros/desktop-tauri/tauri.conf.json",
     "tauri:dev:split": "node scripts/with-windows-rc-path.mjs node scripts/tauri-dev-split.mjs",
     "tauri:dev:theater": "node scripts/with-windows-rc-path.mjs node scripts/theater-env.mjs dev",
-    "tauri:build": "node scripts/bundle-kernel-for-tauri.mjs && node scripts/with-windows-rc-path.mjs tauri build --config distros/desktop-tauri/tauri.conf.json",
+    "tauri:build": "node scripts/stage-chat-pro-roles.mjs && node scripts/bundle-kernel-for-tauri.mjs && node scripts/with-windows-rc-path.mjs tauri build --config distros/desktop-tauri/tauri.conf.json",
     "tauri:build:theater": "node scripts/with-windows-rc-path.mjs node scripts/theater-env.mjs build",
     "bundle-kernel:tauri": "node scripts/bundle-kernel-for-tauri.mjs",
     "check:rust:fmt": "cargo fmt --all -- --check",
