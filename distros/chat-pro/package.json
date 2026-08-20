@@ -16,7 +16,7 @@
     "@oclive/desktop-shared": "*",
     "@sentry/vue": "^10.47.0",
     "@tauri-apps/api": "^2.11.1",
-    "pinia": "^3.0.4",
+    "pinia": "^4.0.3",
     "pinia-plugin-persistedstate": "^4.7.1",
     "vue": "^3.5.13",
     "vue-i18n": "^11.4.2"
