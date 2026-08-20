@@ -26,7 +26,7 @@
 
 **创作者可编辑（`meta` 子集）**：`id`、`name`、`version`、`author`、`description`、`personality`、`relations`、`default_relation`、`scenes`；可选剧情向 `life_*`。人格来源由高级运行时视图配置：Stable v4 写 `runtime_config.evolution.personality_source`，v2 仅兼容 `meta.evolution.personality_source`。
 
-**创作者不应接触**：`slot_registry`、`groups`、`runtime_config`、`pipeline`、各实例 `backend` / `model` / `plugin` 等（见 [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md) §零 `runtime_config`）。
+**创作者不应接触**：`slot_registry`、`groups`、`pipeline`、各实例 `backend` / `model` / `plugin` 及机器相关运行参数。唯一的创作者向 `runtime_config` 例外是 Stable v4 **`inference_profile` 理想配置蓝图**：它只表达可移植生成意图，实际模型、GGUF 与后端仍由 Chat Pro 设置页决定（见 [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md) §零）。
 
 ---
 
@@ -170,7 +170,7 @@ distros/chat-pro/roles/{role_id}/
 
 **权威清单**：[SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md) §零 **`runtime_config`**。
 
-含 `interaction_mode`、`memory_config`、`reply_quality_anchor`、`remote_fallback_to_builtin`、`dual_core.enabled` 等。**创作者校验**（`pack validate --profile creator`）**不**检查本段。
+含 `interaction_mode`、`memory_config`、`reply_quality_anchor`、`remote_fallback_to_builtin`、Stable v4 `inference_profile`、v3 `dual_core.enabled` 等。编写器可用非技术界面编辑 `inference_profile`，但不得在其中写入模型或机器参数；完整字段表见权威设置参考。**创作者校验**（`pack validate --profile creator`）**不**检查本段。
 
 ### 2.3 系统配置（蓝图 · 槽位）
 

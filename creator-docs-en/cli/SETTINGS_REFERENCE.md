@@ -1,6 +1,6 @@
 # Blueprint and system configuration (SETTINGS_REFERENCE)
 
-> **`pipeline.ocblueprint` is the single source of system configuration.** Fields below are **blueprint / host admin** only — not entry-level role-pack edits. Creator-facing fields: **[ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) §0** · **[ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md)**.
+> **`pipeline.ocblueprint` is the single source of system configuration.** Fields below are normally **blueprint / host admin** only. Stable v4 `inference_profile` is the sole exception that an editor may expose through a non-technical creator form. Creator-facing fields: **[ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) §0** · **[ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md)**.
 
 ## 0. Blueprint-only fields
 
@@ -13,9 +13,32 @@
 | `reply_quality_anchor` | Quality anchor prose |
 | `remote_fallback_to_builtin` | Pack-level hint (host `app_settings` still authoritative) |
 | `dual_core.enabled` | Dual-core switch; default **false** |
+| `inference_profile` | Stable v4 portable ideal generation behavior; never selects a model, GGUF file, local runtime, or machine-specific values |
 
 On **schema_version 2**, `runtime_config` triggers a **pack validate warning** and is **ignored** at load.
 On **schema_version 4**, `runtime_config` is active on the Stable path and `dual_core` is rejected. Frozen **schema_version 3** remains only for the dual-core Beta.
+
+#### `runtime_config.inference_profile` (Stable v4)
+
+The pack editor may expose this as a creator-facing “ideal configuration blueprint.” It expresses how a role would like replies to be generated. The host still makes the final decision and may clamp values to user settings, installed-model limits, device capacity, and kernel safety limits. **Chat Pro settings continue to own the actual backend and model.** This object must not contain Ollama/llama.cpp paths, model names, GGUF files, GPU-layer counts, or thread counts.
+
+| Path | Type / range | Meaning |
+|------|--------------|---------|
+| `generation.temperature` | number, `0.0–2.0` | Sampling temperature preference |
+| `generation.top_p` | number, `>0.0–1.0` | Nucleus-sampling preference |
+| `generation.preferred_output_tokens` | integer, `1–32768` | Ideal response budget |
+| `generation.maximum_output_tokens` | integer, `1–32768` | Hard response limit; not below preferred when both are set |
+| `context.minimum_tokens` | integer, `1–262144` | Smallest acceptable context intent |
+| `context.preferred_tokens` | integer, `1–262144` | Ideal context window; not below minimum when both are set |
+| `reasoning.mode` | `instant` \| `adaptive` \| `deep` | Model-independent reasoning-mode intent |
+| `reasoning.effort` | number, `0.0–1.0` | Reasoning-effort intent |
+| `performance_intent.priority` | `latency` \| `balanced` \| `quality` | Latency, balanced, or quality priority |
+| `performance_intent.prefer_prefix_cache` | boolean | Prefer stable-prefix cache reuse |
+| `performance_intent.prefer_model_residency` | boolean | Prefer model residency; `false` makes the current Ollama adapter explicitly request unload after the response (`keep_alive: 0`) |
+| `performance_intent.allow_context_reduction` | boolean | Permit context reduction on constrained devices |
+| `performance_intent.allow_output_reduction` | boolean | Permit output-budget reduction on constrained devices |
+
+The current kernel forwards `temperature`, `top_p`, the output limit, and preferred context to supported main-LLM adapters. Other fields remain stable forward-compatible intent. A host may leave a hint unsupported, but must never reinterpret it as local model selection.
 
 [中文](../cli/SETTINGS_REFERENCE.md)
 

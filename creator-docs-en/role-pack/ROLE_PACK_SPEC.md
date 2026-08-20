@@ -23,7 +23,7 @@ On disk, every supported blueprint version uses **one entry file** `pipeline.ocb
 
 **Creator `meta` fields:** `id`, `name`, `version`, `author`, `description`, `personality`, `relations`, `default_relation`, and `scenes`.
 
-**Not for creators:** `slot_registry`, `groups`, **`runtime_config`**, **`pipeline`**, backends/models, enabling dual-core. Stable v4 writes engine settings such as **`reply_quality_anchor`** only under **`runtime_config`**; `meta.*` remains a v2 compatibility fallback (see SETTINGS_REFERENCE §0).
+**Not for creators:** `slot_registry`, `groups`, **`pipeline`**, backend/model selection, machine-specific runtime values, and enabling dual-core. The sole creator-facing `runtime_config` exception is Stable v4 **`inference_profile`**, a portable ideal-behavior blueprint; Chat Pro settings still own the backend, model, and GGUF selection. Other Stable v4 engine settings such as **`reply_quality_anchor`** remain under **`runtime_config`**; `meta.*` is a v2 compatibility fallback (see SETTINGS_REFERENCE §0).
 
 ---
 

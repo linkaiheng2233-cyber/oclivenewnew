@@ -18,7 +18,7 @@
 | 组件 | 职责 | 面向 |
 |------|------|------|
 | **角色包** | 角色身份、人格、关系、提示词与场景**内容** | **初级创作者** |
-| **蓝图** | 槽位实例、后端路由、模型名、交互/记忆/远程策略、双核开关等**系统配置** | **高级开发者 / 宿主管理员** |
+| **蓝图** | 槽位实例、后端路由、模型名、交互/记忆/远程策略、双核开关等**系统配置** | **高级开发者 / 宿主管理员**；仅 `inference_profile` 可由编写器以受限表单向创作者开放 |
 
 **物理落盘（今日）**：v2/v3/v4 均以 **`distros/chat-pro/roles/{id}/pipeline.ocblueprint`** 为宿主加载入口；新包 canonical 格式为 **Stable v4**。**逻辑上**分责；外置片段、扩展载荷、专家修订与说明放入 **`distros/chat-pro/roles/{id}/blueprint/`**，经 `includes` 或 v4 `extensions.*.config_ref` 引用（见 [BLUEPRINT_FOLDER_LAYOUT.md](./BLUEPRINT_FOLDER_LAYOUT.md)），**禁止**把长文与向导结果搅进蓝图 JSON。
 
@@ -63,12 +63,14 @@
 | `ui.json` | **前端布局**（非后端；见 CONFIGURATION_FILES） |
 | `author.json` | 作者元数据、推荐插件（须用户确认才生效） |
 
-### 2.3 创作者不应直接改（属蓝图）
+### 2.3 创作者不应直接改（属蓝图；理想推理表单除外）
 
 v2 兼容包可能把系统配置写在 **`meta`**；Stable v4 必须只写 **`runtime_config`**，宿主对 `meta.*` 的读取仅用于旧包回退：
 
 - 已迁至 **`runtime_config.*`**（见 §3.3）：`interaction_mode`、`memory_config`、`reply_quality_anchor`、`remote_fallback_to_builtin`（包级建议）、`dual_core` 等
 - 过渡期仍可能出现在 **`meta.*`**（宿主只读兼容）
+
+**唯一受限例外**：Stable v4 `runtime_config.inference_profile` 可由角色包编写器以非技术表单编辑，用于表达采样、输出/上下文预算、推理强度与性能优先级等**可移植理想意图**。表单不得暴露或写入模型名、GGUF、本地路径、GPU 层数、线程数或实际后端；这些仍由 Chat Pro 设置页与宿主决定。字段真源见 [`SETTINGS_REFERENCE`](../creator-docs/cli/SETTINGS_REFERENCE.md#runtime_configinference_profilestable-v4)。
 
 **禁止**创作者包内单独开启双核（见 §5.1）。
 
@@ -116,6 +118,7 @@ v2 兼容包可能把系统配置写在 **`meta`**；Stable v4 必须只写 **`r
 | `remote_fallback_to_builtin` | 包级 Remote 降级建议（宿主全局仍以 `app_settings` 为准） |
 | `dual_core.enabled` | 双核开关，默认 **`false`** |
 | `identity_binding` / `evolution` / `ollama_model` / `remote_presence` / `autonomous_scene` | 引擎策略（可选） |
+| `inference_profile` | Stable v4 可移植理想推理意图；编写器受限表单可编辑，实际模型与机器参数不属于本段 |
 
 v2 文件若含 `runtime_config`：`pack validate` **警告并忽略**；稳定蓝图请升 **`schema_version: 4`**，只有双核 Beta 使用 v3。
 

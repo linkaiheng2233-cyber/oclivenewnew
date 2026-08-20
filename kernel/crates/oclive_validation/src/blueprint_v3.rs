@@ -154,6 +154,11 @@ fn validate_blueprint_v3_parsed(
         if let Err(e) = validate_runtime_config(rc) {
             errs.extend(e);
         }
+        if rc.inference_profile.is_some() {
+            errs.push(
+                "runtime_config.inference_profile 仅属于 Stable v4；冻结 v3 不接受该字段".into(),
+            );
+        }
         if rc.dual_core.as_ref().is_some_and(|d| d.enabled) && bp.pipeline.is_none() {
             errs.push(
                 "runtime_config.dual_core.enabled 为 true 时须提供 pipeline.stable 和/或 pipeline.experimental"
@@ -643,6 +648,16 @@ mod tests {
             validate_blueprint_v3_json(&legacy_runtime_alias.to_string(), Some("test"))
                 .unwrap_err();
         assert!(alias_errors.iter().any(|error| error.contains("model")));
+
+        let mut stable_v4_only: Value = serde_json::from_str(&minimal_v3_json()).unwrap();
+        stable_v4_only["runtime_config"]["inference_profile"] = serde_json::json!({
+            "generation": { "temperature": 0.8 }
+        });
+        let stable_v4_only_errors =
+            validate_blueprint_v3_json(&stable_v4_only.to_string(), Some("test")).unwrap_err();
+        assert!(stable_v4_only_errors
+            .iter()
+            .any(|error| error.contains("Stable v4")));
 
         let mut invalid_overlay: Value = serde_json::from_str(&minimal_v3_json()).unwrap();
         invalid_overlay["expert_overlay"] = Value::Null;
