@@ -2,6 +2,10 @@
 
 > **English mirror**: [CHANGELOG.en.md](CHANGELOG.en.md) — 用户可见变更请与中英两份同步维护。
 
+## [Unreleased]
+
+当前没有未发布变更。
+
 ## [0.5.0] - 2026-08-20
 
 ### Added

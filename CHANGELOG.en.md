@@ -2,6 +2,10 @@
 
 > **Chinese mirror**: [CHANGELOG.md](CHANGELOG.md) — keep user-facing entries in sync between both files.
 
+## [Unreleased]
+
+There are currently no unreleased changes.
+
 ## [0.5.0] - 2026-08-20
 
 ### Added
