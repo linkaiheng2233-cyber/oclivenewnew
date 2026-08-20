@@ -9,7 +9,7 @@ const roleStore = useRoleStore()
 const titleText = computed(() => {
   const role = roleStore.roles.find(r => r.id === roleStore.currentRoleId)
   const roleName = role?.name?.trim()
-  return roleName ? `OCLive Chat Pro - ${roleName}` : 'OCLive Chat Pro'
+  return roleName ? `A.I.Live Chat Pro - ${roleName}` : 'A.I.Live Chat Pro'
 })
 
 function isTauriWebview(): boolean {

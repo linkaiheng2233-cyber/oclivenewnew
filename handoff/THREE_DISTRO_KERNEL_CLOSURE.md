@@ -9,7 +9,7 @@
 
 | 发行版 | `distro_id` | Hero / 定位 | Profile SSOT |
 |--------|-------------|-------------|--------------|
-| **OCLive Chat Pro** | `desktop` | 桌面 Release hero | [`distros/desktop-tauri/resources/distro-profiles/desktop.oclive.toml`](../distros/desktop-tauri/resources/distro-profiles/desktop.oclive.toml) |
+| **A.I.Live Chat Pro** | `desktop` | 桌面 Release hero | [`distros/desktop-tauri/resources/distro-profiles/desktop.oclive.toml`](../distros/desktop-tauri/resources/distro-profiles/desktop.oclive.toml) |
 | **VS Code Flash** | `vscode` | 姊妹仓 VSIX | [`examples/distro-profiles/vscode.oclive.toml`](../examples/distro-profiles/vscode.oclive.toml) · 镜像 [`oclive-vscode/distro.oclive.toml`](../../oclive-vscode/distro.oclive.toml) |
 | **dev lab** | `desktop-chat` | 实验场 only | [`examples/distro-profiles/desktop-chat.oclive.toml`](../examples/distro-profiles/desktop-chat.oclive.toml) |
 | **AI Theater** | `theater` | Phase 4 打包预埋 | [`examples/distro-profiles/theater.oclive.toml`](../examples/distro-profiles/theater.oclive.toml) |

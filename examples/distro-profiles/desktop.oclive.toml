@@ -1,4 +1,4 @@
-# OCLive Chat Pro — capability profile (聊天基础发行版 · Pro · open ceiling)
+# A.I.Live Chat Pro — capability profile (聊天基础发行版 · Pro · open ceiling)
 # Omit [plugin_backends]: role blueprints + directory plugins retain full six-slot surface.
 # Copy beside install root or set OCLIVE_DISTRO_PROFILE to this path.
 # Bundled mirror: src-tauri/resources/distro-profiles/desktop.oclive.toml
@@ -6,7 +6,7 @@
 
 schema_version = 1
 distro_id = "desktop"
-display_name = "OCLive Chat Pro"
+display_name = "A.I.Live Chat Pro"
 
 [interaction]
 default_mode = "pure_chat"
