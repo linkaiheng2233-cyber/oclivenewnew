@@ -677,7 +677,18 @@ mod tests {
                     }
                 },
                 "runtime_config": {
-                    "interaction_mode": "pure_chat"
+                    "interaction_mode": "pure_chat",
+                    "inference_profile": {
+                        "generation": {
+                            "temperature": 0.72,
+                            "top_p": 0.91,
+                            "maximum_output_tokens": 1024
+                        },
+                        "context": {
+                            "minimum_tokens": 4096,
+                            "preferred_tokens": 8192
+                        }
+                    }
                 },
                 "extensions": {
                     extension_id: {
@@ -742,6 +753,25 @@ mod tests {
             .unwrap();
         assert_eq!(role.interaction_mode.as_deref(), Some("pure_chat"));
         assert_eq!(role.ollama_model.as_deref(), Some("qwen:test"));
+        let inference = role
+            .runtime_config
+            .as_ref()
+            .and_then(|config| config.inference_profile.as_ref())
+            .expect("v4 inference profile");
+        assert_eq!(
+            inference
+                .generation
+                .as_ref()
+                .and_then(|generation| generation.maximum_output_tokens),
+            Some(1024)
+        );
+        assert_eq!(
+            inference
+                .context
+                .as_ref()
+                .and_then(|context| context.preferred_tokens),
+            Some(8192)
+        );
         assert!(role.blueprint_extensions.contains_key("com.example.live2d"));
         assert!(role.pipeline_experimental.is_none());
     }

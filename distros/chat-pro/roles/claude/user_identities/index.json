@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "default_identity_id": "colleague",
+  "identities": {
+    "colleague": {
+      "display_name": "同事/后辈",
+      "template_file": "colleague.md",
+      "maps_to_relation_id": "colleague"
+    }
+  }
+}

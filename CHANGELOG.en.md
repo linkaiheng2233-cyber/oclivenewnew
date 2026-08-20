@@ -4,7 +4,13 @@
 
 ## [Unreleased]
 
+There are currently no unreleased changes.
+
+## [0.5.0] - 2026-08-20
+
 ### Added
+
+- **A.I.Live Chat Pro 0.5.0 internal debut lineup**: the desktop installer, window, and distro display name now consistently use `A.I.Live Chat Pro`, while the kernel and technical positioning retain “A.I.Live — the role-artery loom.” Three community-created, unofficial packs—`claude`, `gpt-dragon`, and `nailong`—are now tracked in Git and bundled with the desktop distribution; repository names, internal protocols, and application identifiers remain compatible.
 
 - **Role-pack reply-mode side channel v1**: added the `reply_mode` side channel with v1 `single` and `burst` modes; role packs configure segment count, separator (default `+++`), inter-segment display delays, and streaming policy in `config.json`. The host splits on standalone separator lines after `post_llm` and strips the marker, persists one assistant row with `reply_segments` metadata, and the frontend renders segment bubbles with delays while voice reads the joined text. The AN-94 pack enables burst and updates its persona plus quality anchor; a missing separator degrades to one segment, and undo/delete/regenerate still treat the turn as a whole.
 
@@ -49,7 +55,7 @@
 
 ---
 
-## [0.5.0] - 2026-07-10
+## [0.5.0-preview.1] - 2026-07-10
 
 **Desktop host `0.5.0`** · **Pack editor `0.5.0`** · voice side-channel v0.4 · Turn Thinking E/F · Fluent default shell · Apache-2.0
 

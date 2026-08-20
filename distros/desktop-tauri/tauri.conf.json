@@ -1,9 +1,9 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "OCLive Chat Pro",
+  "productName": "A.I.Live Chat Pro",
   "version": "0.5.0",
   "identifier": "com.oclivenewnew.app",
-  "mainBinaryName": "OCLive Chat Pro",
+  "mainBinaryName": "A.I.Live Chat Pro",
   "build": {
     "beforeBuildCommand": "node scripts/tauri-run.cjs build",
     "beforeDevCommand": "node scripts/tauri-run.cjs dev",
@@ -17,7 +17,7 @@
         "fullscreen": false,
         "height": 600,
         "resizable": true,
-        "title": "OCLive Chat Pro",
+        "title": "A.I.Live Chat Pro",
         "width": 800,
         "useHttpsScheme": true
       }
@@ -35,8 +35,13 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "windows": {
+      "wix": {
+        "language": "zh-CN"
+      }
+    },
     "resources": [
-      "../chat-pro/roles",
+      "resources/roles",
       "resources/distro-profiles",
       "resources/theater",
       "resources/plugins",

@@ -7,11 +7,18 @@ use std::sync::Arc;
 /// Incremental token callback for [`LlmClient::generate_stream`].
 pub type LlmTokenSink = Arc<dyn Fn(&str) + Send + Sync>;
 
-/// Optional knobs for Deep prefix-cache sessions (Ollama-only; ignored by default trait impls).
+/// Optional per-request generation preferences.
+///
+/// Backends consume only the fields they support. Model/runtime selection stays
+/// outside this structure and remains owned by the host application.
 #[derive(Debug, Clone, Default)]
 pub struct LlmGenerateOpts {
     pub keep_alive: Option<String>,
     pub want_metrics: bool,
+    pub temperature: Option<f32>,
+    pub top_p: Option<f32>,
+    pub max_output_tokens: Option<u32>,
+    pub preferred_context_tokens: Option<u32>,
 }
 
 impl LlmGenerateOpts {
@@ -24,6 +31,7 @@ impl LlmGenerateOpts {
                 .filter(|s| !s.trim().is_empty())
                 .or_else(|| Some("30m".to_string())),
             want_metrics: true,
+            ..Self::default()
         }
     }
 

@@ -159,15 +159,19 @@ impl OpenAiCompatibleLlm {
         prompt: &str,
         temperature: f32,
         top_p: f32,
+        max_tokens: Option<u32>,
     ) -> Result<String> {
         self.ensure_network_grant()?;
-        let body = serde_json::json!({
+        let mut body = serde_json::json!({
             "model": model,
             "messages": [{ "role": "user", "content": prompt }],
             "temperature": temperature,
             "top_p": top_p,
             "stream": false,
         });
+        if let Some(max_tokens) = max_tokens {
+            body["max_tokens"] = serde_json::json!(max_tokens);
+        }
         let mut req = self
             .client
             .post(&self.chat_url)
@@ -200,16 +204,20 @@ impl OpenAiCompatibleLlm {
         prompt: &str,
         temperature: f32,
         top_p: f32,
+        max_tokens: Option<u32>,
         on_token: LlmTokenSink,
     ) -> Result<String> {
         self.ensure_network_grant()?;
-        let body = serde_json::json!({
+        let mut body = serde_json::json!({
             "model": model,
             "messages": [{ "role": "user", "content": prompt }],
             "temperature": temperature,
             "top_p": top_p,
             "stream": true,
         });
+        if let Some(max_tokens) = max_tokens {
+            body["max_tokens"] = serde_json::json!(max_tokens);
+        }
         let mut req = self
             .client
             .post(&self.chat_url)
@@ -432,13 +440,13 @@ fn parse_models_list_response(body: &str) -> Result<Vec<String>> {
 impl LlmClient for OpenAiCompatibleLlm {
     async fn generate(&self, model: &str, prompt: &str) -> Result<String> {
         let (t, p) = llm_params::main_chat_options();
-        self.chat(model, prompt, t.unwrap_or(0.8), p.unwrap_or(0.9))
+        self.chat(model, prompt, t.unwrap_or(0.8), p.unwrap_or(0.9), None)
             .await
     }
 
     async fn generate_tag(&self, model: &str, prompt: &str) -> Result<String> {
         let (t, p) = llm_params::tag_task_options();
-        self.chat(model, prompt, t.unwrap_or(0.28), p.unwrap_or(0.85))
+        self.chat(model, prompt, t.unwrap_or(0.28), p.unwrap_or(0.85), None)
             .await
     }
 
@@ -446,9 +454,20 @@ impl LlmClient for OpenAiCompatibleLlm {
         &self,
         model: &str,
         prompt: &str,
-        _opts: Option<&LlmGenerateOpts>,
+        opts: Option<&LlmGenerateOpts>,
     ) -> Result<LlmGenerateOutcome> {
-        let reply = self.generate(model, prompt).await?;
+        let (temperature, top_p) = llm_params::main_chat_options();
+        let reply = self
+            .chat(
+                model,
+                prompt,
+                opts.and_then(|opts| opts.temperature)
+                    .or(temperature)
+                    .unwrap_or(0.8),
+                opts.and_then(|opts| opts.top_p).or(top_p).unwrap_or(0.9),
+                opts.and_then(|opts| opts.max_output_tokens),
+            )
+            .await?;
         Ok(LlmGenerateOutcome {
             reply,
             prompt_eval_ms: None,
@@ -462,8 +481,15 @@ impl LlmClient for OpenAiCompatibleLlm {
         on_token: LlmTokenSink,
     ) -> Result<String> {
         let (t, p) = llm_params::main_chat_options();
-        self.chat_stream(model, prompt, t.unwrap_or(0.8), p.unwrap_or(0.9), on_token)
-            .await
+        self.chat_stream(
+            model,
+            prompt,
+            t.unwrap_or(0.8),
+            p.unwrap_or(0.9),
+            None,
+            on_token,
+        )
+        .await
     }
 
     async fn generate_stream_with_opts(
@@ -471,9 +497,21 @@ impl LlmClient for OpenAiCompatibleLlm {
         model: &str,
         prompt: &str,
         on_token: LlmTokenSink,
-        _opts: Option<&LlmGenerateOpts>,
+        opts: Option<&LlmGenerateOpts>,
     ) -> Result<LlmGenerateOutcome> {
-        let reply = self.generate_stream(model, prompt, on_token).await?;
+        let (temperature, top_p) = llm_params::main_chat_options();
+        let reply = self
+            .chat_stream(
+                model,
+                prompt,
+                opts.and_then(|opts| opts.temperature)
+                    .or(temperature)
+                    .unwrap_or(0.8),
+                opts.and_then(|opts| opts.top_p).or(top_p).unwrap_or(0.9),
+                opts.and_then(|opts| opts.max_output_tokens),
+                on_token,
+            )
+            .await?;
         Ok(LlmGenerateOutcome {
             reply,
             prompt_eval_ms: None,

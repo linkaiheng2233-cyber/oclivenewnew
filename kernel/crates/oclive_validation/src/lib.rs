@@ -144,7 +144,11 @@ pub use role_pack::{
     validate_role_pack_loaded_with_profile, validate_role_pack_manifest_settings_core,
     validate_role_pack_tail, RolePackValidationProfile,
 };
-pub use runtime_config::{DualCoreConfig, RuntimeConfig};
+pub use runtime_config::{
+    DualCoreConfig, InferenceContextConfig, InferenceGenerationConfig,
+    InferencePerformanceIntentConfig, InferencePerformancePriority, InferenceProfileConfig,
+    InferenceReasoningConfig, InferenceReasoningMode, RuntimeConfig,
+};
 pub use scene_continuity::{
     validate_scene_continuity_config, validate_scene_continuity_directory, SceneContinuityConfig,
     SceneContinuityInitialState, SceneContinuityTimeWindow, SceneContinuityTransition,

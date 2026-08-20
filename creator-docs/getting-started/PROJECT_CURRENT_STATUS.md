@@ -4,7 +4,7 @@
 
 [English](../../creator-docs-en/getting-started/PROJECT_CURRENT_STATUS.md)
 
-**快照日期**：2026-07-10（随大里程碑或版本号 bump 时应更新本页首段与日期）
+**快照日期**：2026-08-20（随大里程碑或版本号 bump 时应更新本页首段与日期）
 
 ---
 

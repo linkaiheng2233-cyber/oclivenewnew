@@ -9,8 +9,9 @@
 mod common;
 
 use oclive_kernel_host::domain::chat_engine::process_message;
+use oclive_kernel_host::domain::host_profile::{FastPersistenceMode, HostProfile};
 use oclive_kernel_host::infrastructure::MockLlmClient;
-use oclive_kernel_host::state::AppState;
+use oclive_kernel_host::state::{AppState, AppStateBuilder};
 use oclive_kernel_types::models::dto::{
     CreateEventRequest, ExportChatLogsRequest, GetPluginResolutionDebugRequest, QueryEventsRequest,
     QueryMemoriesRequest, SendMessageRequest, SetEvolutionFactorRequest,
@@ -455,7 +456,14 @@ async fn week3_004_query_memories_and_events() {
     let llm = Arc::new(MockLlmClient {
         reply: "模拟".to_string(),
     });
-    let state = AppState::new_in_memory_with_llm(llm, common::roles_dir())
+    // This API contract needs one persisted memory to query. Opt into legacy
+    // Fast-turn persistence explicitly instead of weakening the StrongOnly
+    // product default or relying on incidental event classification.
+    let mut host_profile = HostProfile::default();
+    host_profile.turn_thinking.fast_persistence = FastPersistenceMode::Legacy;
+    let state = AppStateBuilder::in_memory_test(llm, common::roles_dir(), None)
+        .with_host_profile(host_profile)
+        .build()
         .await
         .expect("state");
 

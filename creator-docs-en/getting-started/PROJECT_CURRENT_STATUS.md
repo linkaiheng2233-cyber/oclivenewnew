@@ -4,7 +4,7 @@
 
 [中文](../../creator-docs/getting-started/PROJECT_CURRENT_STATUS.md)
 
-**Snapshot date**: 2026-07-10 (update this page’s opening paragraph and date on major milestones or version bumps)
+**Snapshot date**: 2026-08-20 (update this page’s opening paragraph and date on major milestones or version bumps)
 
 ---
 

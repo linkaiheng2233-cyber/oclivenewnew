@@ -71,7 +71,7 @@ flowchart TB
 
 | 维度 | 策略 |
 |------|------|
-| **产品** | **OCLive Chat Pro** — 独立桌面 · 最强插件面 · Tauri 默认 spawn profile |
+| **产品** | **A.I.Live Chat Pro** — 独立桌面 · 最强插件面 · Tauri 默认 spawn profile |
 | **`[plugin_backends]`** | **省略**（open ceiling；角色蓝图 + directory 插件说了算） |
 | **`host_flags`** | agent / complex_emotion **开启** |
 | **`prompt.profile`** | `full` |

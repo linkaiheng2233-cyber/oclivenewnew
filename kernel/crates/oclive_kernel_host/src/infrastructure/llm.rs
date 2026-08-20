@@ -55,10 +55,21 @@ impl LlmClient for OllamaClient {
             |o| crate::infrastructure::ollama_client::OllamaGenerateOpts {
                 keep_alive: o.keep_alive.clone(),
                 want_metrics: o.want_metrics,
+                max_output_tokens: o.max_output_tokens,
+                preferred_context_tokens: o.preferred_context_tokens,
             },
         );
-        let out = OllamaClient::generate_with_opts(self, model, prompt, t, p, ollama_opts.as_ref())
-            .await?;
+        let temperature = opts.and_then(|opts| opts.temperature).or(t);
+        let top_p = opts.and_then(|opts| opts.top_p).or(p);
+        let out = OllamaClient::generate_with_opts(
+            self,
+            model,
+            prompt,
+            temperature,
+            top_p,
+            ollama_opts.as_ref(),
+        )
+        .await?;
         log_ollama_metrics(model, &out.metrics);
         Ok(LlmGenerateOutcome {
             reply: out.response,
@@ -88,14 +99,18 @@ impl LlmClient for OllamaClient {
             |o| crate::infrastructure::ollama_client::OllamaGenerateOpts {
                 keep_alive: o.keep_alive.clone(),
                 want_metrics: o.want_metrics,
+                max_output_tokens: o.max_output_tokens,
+                preferred_context_tokens: o.preferred_context_tokens,
             },
         );
+        let temperature = opts.and_then(|opts| opts.temperature).or(t);
+        let top_p = opts.and_then(|opts| opts.top_p).or(p);
         let out = OllamaClient::generate_stream_with_callback_and_opts(
             self,
             model,
             prompt,
-            t,
-            p,
+            temperature,
+            top_p,
             on_token,
             ollama_opts.as_ref(),
         )

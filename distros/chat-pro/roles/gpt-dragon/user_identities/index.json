@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "default_identity_id": "scholar",
+  "identities": {
+    "scholar": {
+      "display_name": "令人尊重的学者",
+      "template_file": "scholar.md",
+      "maps_to_relation_id": "scholar"
+    }
+  }
+}

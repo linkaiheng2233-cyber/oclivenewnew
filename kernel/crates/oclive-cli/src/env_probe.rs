@@ -85,42 +85,40 @@ pub struct InitPresetRecommendation {
 }
 
 pub fn recommend_init(probe: &EnvironmentProbe, project_name: &str) -> InitPresetRecommendation {
-    let preset;
-    let monolith;
-    let monolith_preset;
-    let rationale;
-
-    if probe.total_memory_mib < 4096 {
-        preset = "minimal";
-        monolith = false;
-        monolith_preset = None;
-        rationale = "系统内存 < 4 GiB：建议 minimal、关闭 Monolith，降低编译与运行时占用";
+    let (preset, monolith, monolith_preset, rationale) = if probe.total_memory_mib < 4096 {
+        (
+            "minimal",
+            false,
+            None,
+            "系统内存 < 4 GiB：建议 minimal、关闭 Monolith，降低编译与运行时占用",
+        )
     } else if probe.ollama == OllamaProbe::Running && probe.ollama_models > 0 {
-        preset = "mixed";
-        monolith = probe.gpu_nvidia;
-        monolith_preset = if probe.gpu_nvidia {
+        let monolith_preset = if probe.gpu_nvidia {
             Some("latency")
         } else {
             Some("memory")
         };
-        rationale = if probe.gpu_nvidia {
+        let rationale = if probe.gpu_nvidia {
             "检测到 Ollama 与 NVIDIA GPU：mixed 预设 + Monolith latency 档适合本地 LLM"
         } else {
             "检测到 Ollama（无 NVIDIA GPU）：mixed 预设；Monolith 建议 memory 档"
         };
+        ("mixed", probe.gpu_nvidia, monolith_preset, rationale)
     } else if probe.ollama == OllamaProbe::Running {
-        preset = "mixed";
-        monolith = false;
-        monolith_preset = None;
-        rationale =
-            "Ollama 在运行但尚未 pull 模型：mixed 预设；请先 ollama pull，或配置 remote LLM";
+        (
+            "mixed",
+            false,
+            None,
+            "Ollama 在运行但尚未 pull 模型：mixed 预设；请先 ollama pull，或配置 remote LLM",
+        )
     } else {
-        preset = "minimal";
-        monolith = false;
-        monolith_preset = None;
-        rationale =
-            "未检测到本机 Ollama：minimal 预设；远程 LLM 请设置 OCLIVE_REMOTE_* 或 init 后改 settings";
-    }
+        (
+            "minimal",
+            false,
+            None,
+            "未检测到本机 Ollama：minimal 预设；远程 LLM 请设置 OCLIVE_REMOTE_* 或 init 后改 settings",
+        )
+    };
 
     let mut example_cmd = format!(
         "cargo run -p oclive-cli -- init --non-interactive --preset {preset} --project-type kernel-server -o ./out --project-name {project_name}"

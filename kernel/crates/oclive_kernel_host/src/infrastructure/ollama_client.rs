@@ -27,11 +27,42 @@ pub struct OllamaRequest {
     pub prompt: String,
     pub stream: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub options: Option<OllamaRequestOptions>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub keep_alive: Option<String>,
+}
+
+/// Ollama `/api/generate` runtime parameters belong under `options`.
+#[derive(Debug, Clone, Default, Serialize)]
+pub struct OllamaRequestOptions {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub temperature: Option<f32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub top_p: Option<f32>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub keep_alive: Option<String>,
+    pub num_predict: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub num_ctx: Option<u32>,
+}
+
+impl OllamaRequestOptions {
+    fn from_generate(
+        temperature: Option<f32>,
+        top_p: Option<f32>,
+        opts: Option<&OllamaGenerateOpts>,
+    ) -> Option<Self> {
+        let value = Self {
+            temperature,
+            top_p,
+            num_predict: opts.and_then(|opts| opts.max_output_tokens),
+            num_ctx: opts.and_then(|opts| opts.preferred_context_tokens),
+        };
+        (value.temperature.is_some()
+            || value.top_p.is_some()
+            || value.num_predict.is_some()
+            || value.num_ctx.is_some())
+        .then_some(value)
+    }
 }
 
 /// Optional knobs for Deep prefix-cache sessions (Ollama-only; ignored by `LlmClient` trait).
@@ -39,6 +70,8 @@ pub struct OllamaRequest {
 pub struct OllamaGenerateOpts {
     pub keep_alive: Option<String>,
     pub want_metrics: bool,
+    pub max_output_tokens: Option<u32>,
+    pub preferred_context_tokens: Option<u32>,
 }
 
 impl OllamaGenerateOpts {
@@ -50,6 +83,7 @@ impl OllamaGenerateOpts {
                 .filter(|s| !s.trim().is_empty())
                 .or_else(|| Some("30m".to_string())),
             want_metrics: true,
+            ..Self::default()
         }
     }
 }
@@ -145,8 +179,7 @@ impl OllamaClient {
                 model: model.to_string(),
                 prompt: String::new(),
                 stream: false,
-                temperature: None,
-                top_p: None,
+                options: None,
                 keep_alive: Some(keep_alive.to_string()),
             })
             .timeout(self.timeout)
@@ -266,8 +299,7 @@ impl OllamaClient {
             model: model.to_string(),
             prompt: prompt.to_string(),
             stream: false,
-            temperature,
-            top_p,
+            options: OllamaRequestOptions::from_generate(temperature, top_p, opts),
             keep_alive: opts.and_then(|o| o.keep_alive.clone()),
         };
 
@@ -369,8 +401,7 @@ impl OllamaClient {
             model: model.to_string(),
             prompt: prompt.to_string(),
             stream: true,
-            temperature,
-            top_p,
+            options: OllamaRequestOptions::from_generate(temperature, top_p, opts),
             keep_alive: opts.and_then(|o| o.keep_alive.clone()),
         };
 
@@ -547,15 +578,21 @@ mod tests {
             model: "llama2".to_string(),
             prompt: "Hello".to_string(),
             stream: false,
-            temperature: Some(0.7),
-            top_p: None,
+            options: Some(OllamaRequestOptions {
+                temperature: Some(0.7),
+                top_p: None,
+                num_predict: Some(512),
+                num_ctx: Some(8192),
+            }),
             keep_alive: Some("30m".to_string()),
         };
 
         let json = serde_json::to_string(&request).unwrap();
         assert!(json.contains("\"model\":\"llama2\""));
         assert!(json.contains("\"prompt\":\"Hello\""));
-        assert!(json.contains("\"temperature\":0.7"));
+        assert!(json.contains("\"options\":{\"temperature\":0.7"));
+        assert!(json.contains("\"num_predict\":512"));
+        assert!(json.contains("\"num_ctx\":8192"));
         assert!(json.contains("\"keep_alive\":\"30m\""));
         assert!(!json.contains("\"top_p\"")); // should be omitted
     }

@@ -1,12 +1,12 @@
 # 蓝图与系统配置参考（SETTINGS_REFERENCE）
 
-> **蓝图文件 `pipeline.ocblueprint`** 是系统配置的唯一来源（**不以** `steps[]` 作主路径调度）。下列字段为**蓝图 / 宿主管理员**专属，**不应**由初级创作者在「角色包」视图中修改。角色身份与人格见 **[ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) §0** · 职责边界 **[handoff/ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md)**。
+> **蓝图文件 `pipeline.ocblueprint`** 是系统配置的唯一来源（**不以** `steps[]` 作主路径调度）。下列字段通常为**蓝图 / 宿主管理员**专属；Stable v4 `inference_profile` 是唯一可由编写器以非技术表单暴露的创作者向例外。角色身份与人格见 **[ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) §0** · 职责边界 **[handoff/ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md)**。
 
 ## 零、蓝图专属字段（非角色包）
 
 ### `runtime_config`（Stable v4 SSOT；v3 双核 Beta）
 
-顶层可选段 **`runtime_config`**（**仅蓝图**；角色包创作者视图不暴露）：
+顶层可选段 **`runtime_config`**（**仅蓝图**；角色包创作者视图除 `inference_profile` 理想配置表单外不暴露）：
 
 | 子字段 | 类型 | 说明 |
 |--------|------|------|
@@ -19,10 +19,57 @@
 | `evolution` | object | 演化引擎参数（含 `personality_source` 与数值策略） |
 | `ollama_model` | string | 默认 Ollama 模型（亦可写在 `slot_registry` llm 实例 `model`） |
 | `remote_presence` / `autonomous_scene` | object | 异地心声 / 虚拟时间换场景 |
+| `inference_profile` | object | **Stable v4 可移植理想推理配置**；只描述生成意图，不选择模型、GGUF、本地运行时或机器参数 |
 
 - **`schema_version: 2`** 文件若含 `runtime_config`：`pack validate` **警告**，宿主**忽略**该段。  
 - **`schema_version: 4`**：Stable 路径，以 `runtime_config` 为准；不接受 v3 专属 `dual_core`。
 - **`schema_version: 3`**：仅保留冻结的双核 Beta；以 `runtime_config` 为准，并允许 `dual_core`。
+
+#### `runtime_config.inference_profile`（Stable v4）
+
+角色包编写器可把这一段作为“理想配置蓝图”展示给创作者。它表达角色希望怎样生成回复；宿主仍拥有最终决定权，会按用户设置、已安装模型、设备能力与内核安全上限进行裁剪。**实际推理后端和模型继续由 Chat Pro 设置页管理**；本段不得包含 Ollama/llama.cpp 路径、模型名、GGUF 文件、GPU 层数或线程数。
+
+| 路径 | 类型 / 范围 | 语义 |
+|------|-------------|------|
+| `generation.temperature` | number，`0.0–2.0` | 采样温度偏好 |
+| `generation.top_p` | number，`>0.0–1.0` | nucleus sampling 偏好 |
+| `generation.preferred_output_tokens` | integer，`1–32768` | 理想回复 token 预算 |
+| `generation.maximum_output_tokens` | integer，`1–32768` | 回复 token 硬上限；同时填写时不得小于 preferred |
+| `context.minimum_tokens` | integer，`1–262144` | 角色可接受的最小上下文意图 |
+| `context.preferred_tokens` | integer，`1–262144` | 理想上下文窗口；同时填写时不得小于 minimum |
+| `reasoning.mode` | `instant` \| `adaptive` \| `deep` | 与具体模型无关的推理模式意图 |
+| `reasoning.effort` | number，`0.0–1.0` | 推理投入强度意图 |
+| `performance_intent.priority` | `latency` \| `balanced` \| `quality` | 延迟、均衡或质量优先 |
+| `performance_intent.prefer_prefix_cache` | boolean | 希望宿主复用稳定前缀缓存 |
+| `performance_intent.prefer_model_residency` | boolean | 希望模型尽量驻留；`false` 时当前 Ollama 适配会显式请求本轮后卸载（`keep_alive: 0`） |
+| `performance_intent.allow_context_reduction` | boolean | 设备受限时是否允许缩小上下文 |
+| `performance_intent.allow_output_reduction` | boolean | 设备受限时是否允许缩小输出预算 |
+
+当前内核会把 `temperature`、`top_p`、输出上限和理想上下文传给支持的主 LLM 适配器；其余字段先作为稳定、可前向扩展的意图保留。宿主可以不支持某项提示，但不得把它解释为本机模型选择。
+
+```json
+{
+  "runtime_config": {
+    "inference_profile": {
+      "generation": {
+        "temperature": 0.8,
+        "top_p": 0.9,
+        "preferred_output_tokens": 768,
+        "maximum_output_tokens": 1536
+      },
+      "context": { "minimum_tokens": 8192, "preferred_tokens": 16384 },
+      "reasoning": { "mode": "adaptive", "effort": 0.65 },
+      "performance_intent": {
+        "priority": "balanced",
+        "prefer_prefix_cache": true,
+        "prefer_model_residency": true,
+        "allow_context_reduction": true,
+        "allow_output_reduction": true
+      }
+    }
+  }
+}
+```
 
 ---
 

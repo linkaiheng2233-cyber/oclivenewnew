@@ -81,6 +81,51 @@ fn selected_lora_llm(
     Some((selection.slot_key, selection.plugin_id, llm))
 }
 
+fn main_llm_generate_opts(ctx: &TurnContext<'_>, middle: &MiddleOutput) -> LlmGenerateOpts {
+    let mut opts = if middle.use_ollama_prefix_opts {
+        LlmGenerateOpts::deep_prefix_cache()
+    } else {
+        LlmGenerateOpts::interactive()
+    };
+    let Some(profile) = ctx
+        .role
+        .runtime_config
+        .as_ref()
+        .and_then(|config| config.inference_profile.as_ref())
+    else {
+        return opts;
+    };
+
+    apply_inference_profile(&mut opts, profile);
+    opts
+}
+
+fn apply_inference_profile(
+    opts: &mut LlmGenerateOpts,
+    profile: &oclive_validation::InferenceProfileConfig,
+) {
+    if let Some(ref generation) = profile.generation {
+        opts.temperature = generation.temperature;
+        opts.top_p = generation.top_p;
+        opts.max_output_tokens = generation
+            .maximum_output_tokens
+            .or(generation.preferred_output_tokens);
+    }
+    if let Some(ref context) = profile.context {
+        opts.preferred_context_tokens = context.preferred_tokens;
+    }
+    if profile
+        .performance_intent
+        .as_ref()
+        .and_then(|intent| intent.prefer_model_residency)
+        == Some(false)
+    {
+        // Ollama treats an omitted keep_alive as its own residency default.
+        // An explicit zero asks it to unload the model after this request.
+        opts.keep_alive = Some("0".to_string());
+    }
+}
+
 pub(crate) async fn run_main_llm(
     ctx: &TurnContext<'_>,
     path_label: &str,
@@ -93,11 +138,7 @@ pub(crate) async fn run_main_llm(
     let t_main_llm = Instant::now();
     let mut main_llm_fallback = false;
     let mut llm_fallback_reason = None;
-    let ollama_opts = Some(if middle.use_ollama_prefix_opts {
-        LlmGenerateOpts::deep_prefix_cache()
-    } else {
-        LlmGenerateOpts::interactive()
-    });
+    let ollama_opts = Some(main_llm_generate_opts(ctx, middle));
     #[cfg(feature = "dual_core")]
     let selected_lora = selected_lora_llm(ctx);
     #[cfg(feature = "dual_core")]
@@ -230,11 +271,7 @@ pub(crate) async fn run_main_llm_stream(
     let t_main_llm = Instant::now();
     let mut main_llm_fallback = false;
     let mut llm_fallback_reason = None;
-    let ollama_opts = Some(if middle.use_ollama_prefix_opts {
-        LlmGenerateOpts::deep_prefix_cache()
-    } else {
-        LlmGenerateOpts::interactive()
-    });
+    let ollama_opts = Some(main_llm_generate_opts(ctx, middle));
     #[cfg(feature = "dual_core")]
     let selected_lora = selected_lora_llm(ctx);
     #[cfg(feature = "dual_core")]
@@ -372,4 +409,34 @@ pub(crate) async fn run_main_llm_stream(
         main_llm_ms,
         llm_prompt_eval_ms,
     })
+}
+
+#[cfg(test)]
+mod inference_profile_tests {
+    use super::*;
+
+    #[test]
+    fn portable_inference_profile_maps_to_request_options() {
+        let profile: oclive_validation::InferenceProfileConfig =
+            serde_json::from_value(serde_json::json!({
+                "generation": {
+                    "temperature": 0.7,
+                    "top_p": 0.85,
+                    "preferred_output_tokens": 512,
+                    "maximum_output_tokens": 1024
+                },
+                "context": { "preferred_tokens": 16384 },
+                "performance_intent": { "prefer_model_residency": false }
+            }))
+            .expect("valid inference profile");
+        let mut opts = LlmGenerateOpts::interactive();
+
+        apply_inference_profile(&mut opts, &profile);
+
+        assert_eq!(opts.temperature, Some(0.7));
+        assert_eq!(opts.top_p, Some(0.85));
+        assert_eq!(opts.max_output_tokens, Some(1024));
+        assert_eq!(opts.preferred_context_tokens, Some(16384));
+        assert_eq!(opts.keep_alive.as_deref(), Some("0"));
+    }
 }

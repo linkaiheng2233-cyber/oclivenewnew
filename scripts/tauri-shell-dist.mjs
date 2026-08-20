@@ -11,13 +11,14 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'
 const confPath = path.join(repoRoot, 'distros', 'desktop-tauri', 'tauri.conf.json')
 const shell = process.env.OCLIVE_TAURI_SHELL === 'theater' ? 'theater' : 'chat-pro'
 
-const productName = shell === 'theater' ? 'OCLive Theater' : 'OCLive Chat Pro'
+const productName = shell === 'theater' ? 'OCLive Theater' : 'A.I.Live Chat Pro'
 const frontendDist = shell === 'theater' ? '../theater/dist' : '../chat-pro/dist'
-const rolesResource = shell === 'theater' ? 'resources/roles' : '../chat-pro/roles'
+const rolesResource = 'resources/roles'
 
 const raw = fs.readFileSync(confPath, 'utf8')
 const parsed = JSON.parse(raw)
 parsed.productName = productName
+parsed.mainBinaryName = productName
 parsed.build = parsed.build || {}
 parsed.build.frontendDist = frontendDist
 if (parsed.build.distDir !== undefined) {
