@@ -95,7 +95,7 @@
   },
   "devDependencies": {
     "@antfu/eslint-config": "^9.3.0",
-    "@babel/standalone": "^7.29.8",
+    "@babel/standalone": "^8.0.4",
     "@playwright/test": "^1.62.1",
     "@tauri-apps/cli": "^2.11.4",
     "@types/babel__standalone": "^7.1.9",
