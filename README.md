@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/workflows/ci.yml/badge.svg)](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/workflows/ci.yml)
 
-**发版**：桌面宿主 **0.5.0** · 详见 [CHANGELOG.md](CHANGELOG.md)
+**发版**：桌面宿主 **0.5.1** · 详见 [CHANGELOG.md](CHANGELOG.md)
 
 ## 从哪里开始
 
@@ -91,7 +91,7 @@ fork `examples/directory-plugin-minimal` 或 `examples/voice-loop-minimal`，实
 
 | 发行版 | `distro_id` | 形态 | 状态 |
 |--------|-------------|------|------|
-| **A.I.Live Chat Pro** | `desktop` | 本仓 Tauri 桌面（Release hero） | **0.5.0** 主路径 |
+| **A.I.Live Chat Pro** | `desktop` | 本仓 Tauri 桌面（Release hero） | **0.5.1** 主路径 |
 | **VS Code Flash** | `vscode` | 姊妹仓 [oclive-vscode](https://github.com/linkaiheng2233-cyber/oclive-vscode) | 渗透能力 **插件化**；核心只做聊天平台 |
 | **AI Theater** | `theater` | `distros/theater/` + theater profile | 打包预埋；模式 2 playtest **已解冻** |
 | **dev lab** | `desktop-chat` | 实验场 profile | 日常开发 / 低延迟试验 |

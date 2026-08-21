@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/workflows/ci.yml/badge.svg)](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/workflows/ci.yml)
 
-**Release**: desktop host **0.5.0** · see [CHANGELOG.en.md](CHANGELOG.en.md)
+**Release**: desktop host **0.5.1** · see [CHANGELOG.en.md](CHANGELOG.en.md)
 
 ---
 
@@ -78,7 +78,7 @@ Orchestration is **one** (`process_message`); differences are **`distro.oclive.t
 
 | Distro | `distro_id` | Shape | Status |
 |--------|-------------|-------|--------|
-| **A.I.Live Chat Pro** | `desktop` | This repo Tauri desktop (Release hero) | **0.5.0** main path |
+| **A.I.Live Chat Pro** | `desktop` | This repo Tauri desktop (Release hero) | **0.5.1** main path |
 | **VS Code Flash** | `vscode` | Sister repo [oclive-vscode](https://github.com/linkaiheng2233-cyber/oclive-vscode) | Penetration **pluginized**; core = chat platform |
 | **AI Theater** | `theater` | `distros/theater/` + theater profile | Bundled; mode 2 playtest **unfrozen** |
 | **dev lab** | `desktop-chat` | Experimental profile | Daily dev / low-latency trials |

@@ -6,6 +6,22 @@
 
 There are currently no unreleased changes.
 
+## [0.5.1] - 2026-08-22
+
+### Added
+
+- **Installation self-repair and structured support reports**: Settings now exposes a conservative installation repair action, while the MSI/NSIS artifacts also ship standalone `Repair-AILiveChatPro.cmd` / `.ps1` wrappers. The repairer checks roles, directory plugins, the app-data directory, and Ollama reachability, then records every issue with stable codes, scope, category, and severity in a JSON report. It only restores missing resources/directories and never deletes user roles, plugins, chats, or settings.
+
+### Fixed
+
+- **Desktop release resource closure**: release builds now restage the seven production plugins from controlled source files and bundle roles, support scripts, and kernel resources together. Packaged-role discovery now covers the NSIS nested layout, fixing missing plugin-directory/scan and missing-role failures. Generated plugin copies are no longer tracked, preventing stale resources and post-build phantom diffs.
+- **Role portraits and real regression coverage**: the Tauri image CSP explicitly permits the `blob:`, `data:`, and asset sources used by role portraits. A mounted role-detail regression and release-resource E2E assertions prevent saved configuration from passing while the actual image remains invisible.
+- **Background processes on Windows**: the kernel sidecar, directory plugins, MCP stdio servers, llama-server, Git installation helper, and NVIDIA probe consistently use no-window process flags, eliminating repeated terminal popups during normal use.
+
+### Compatibility
+
+- **No breaking contract changes**: role-pack schemas, the kernel API, and database migration versions are unchanged; the 0.5.x pack/editor compatibility line remains valid.
+
 ## [0.5.0] - 2026-08-20
 
 ### Added

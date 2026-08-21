@@ -6,11 +6,11 @@
 
 **当前仓库快照（文档更新时 · 与发版审阅对齐）**：
 
-- **oclivenewnew**（主程序 / Tauri 宿主）：**`0.5.0`**（根 `package.json` `version` 与 `distros/desktop-tauri/Cargo.toml` `version` 须一致）
+- **oclivenewnew**（主程序 / Tauri 宿主）：**`0.5.1`**（根 `package.json` `version` 与 `distros/desktop-tauri/Cargo.toml` `version` 须一致）
 - **oclive_kernel_runtime**（共享契约 crate）：**`0.2.0`**（`kernel/crates/oclive_kernel_runtime/Cargo.toml`；DTO / `API_VERSION` 等见该 crate）
 - **oclive-cli**（脚手架 CLI）：**`0.1.0`**（`kernel/crates/oclive-cli/Cargo.toml`；**独立 semver**，不强制与桌面宿主同号；`init --kernel-source` 接主仓时以 path 依赖对齐契约）。**默认构建**仅依赖 `oclive_kernel_runtime` + `oclive_validation`（`cargo tree -p oclive-cli --no-default-features` **无** `libsqlite3-sys` / `axum`）。**`doctor config-resolve`** 默认走 runtime 纯解析；**`--via-host`**（feature `diagnostics-host`）可选 in-memory `AppState` 深度诊断。
-- **oclive-pack-editor**（编写器，姊妹仓）：**`0.5.0`**（该仓 `package.json`；与主程序 **0.5.x** 对拍 `ui.json`）
-- **oclive-vscode**（VS Code 扩展，姊妹仓）：**`0.4.1`**（独立 semver；spawn/attach 契约对齐主程序 **≥0.4.0**，推荐 **0.5.0**）
+- **oclive-pack-editor**（编写器，姊妹仓）：**`0.5.1`**（该仓 `package.json`；与主程序 **0.5.x** 对拍 `ui.json`）
+- **oclive-vscode**（VS Code 扩展，姊妹仓）：**`0.4.1`**（独立 semver；spawn/attach 契约对齐主程序 **≥0.4.0**，推荐 **0.5.1**）
 
 ---
 
@@ -66,11 +66,11 @@ OCLive 的能力上限取决于整条模块链，而不是某一个组件的最�
 
 | 组件 | 版本来源 | 与主程序关系 | 备注 |
 |------|----------|----------------|------|
-| **oclivenewnew（主程序）** | 根 `package.json` / `distros/desktop-tauri/Cargo.toml` | — | 当前快照 **0.5.0** |
+| **oclivenewnew（主程序）** | 根 `package.json` / `distros/desktop-tauri/Cargo.toml` | — | 当前快照 **0.5.1** |
 | **oclive_kernel_runtime** | `kernel/crates/oclive_kernel_runtime/Cargo.toml` | 宿主与无头 HTTP **path 依赖**；`SendMessageResponse.api_version`（`API_VERSION` **u32**，当前 **1**）、`RUNTIME_API_VERSION`（字符串 **0.2.0**） | OOCP / 黑盒脚本若断言载荷版本，以 `creator-docs/testing/OOCP_TEST_SUITE.md` 为准 |
 | **oclive-cli** | `kernel/crates/oclive-cli/Cargo.toml` | 生成 `kernel_server` / `library` 骨架；**不自带**桌面 `AppState` / SQLite 策略 | 与主程序契约对齐见 [OCLIVE_CLI_GUIDE.md](cli/OCLIVE_CLI_GUIDE.md)、模板 `CONFIG_REFERENCE.md` |
 | **oclive-pack-editor（编写器）** | 另仓 `package.json` | 产出 `distros/chat-pro/roles/{id}/`；**`ui.json`** 与主程序见上文「兼容性表」 | `HOST_RUNTIME_VERSION` 应对齐主程序 `version`（编写器 README） |
-| **oclive-vscode（VS Code 扩展）** | 另仓 `package.json` | spawn/attach **`kernel_server --api`**；`distro.oclive.toml` 镜像主仓 `examples/distro-profiles/vscode.oclive.toml` | 当前 **0.4.1**；推荐主程序 **0.5.0** |
+| **oclive-vscode（VS Code 扩展）** | 另仓 `package.json` | spawn/attach **`kernel_server --api`**；`distro.oclive.toml` 镜像主仓 `examples/distro-profiles/vscode.oclive.toml` | 当前 **0.4.1**；推荐主程序 **0.5.1** |
 | **oclive-launcher（启动器）** | 另仓 `package.json` | 注入 **`OCLIVE_ROLES_DIR`**、可选模型名与 zip 安装；**不替代**主程序契约 | [启动器 README](https://github.com/linkaiheng2233-cyber/oclive-launcher/blob/main/README.md) |
 | **角色包** | `manifest.json`（`schema_version`、`min_runtime_version`） | 低版本主程序可能拒载或降级能力 | [PACK_VERSIONING.md](role-pack/PACK_VERSIONING.md)、`RoleStorage::load_role` |
 | **宿主 SQLite** | `kernel/crates/oclive_kernel_host/migrations/*.sql` | 仅随 **主程序** 发版迁移；**不可**用旧主程序打开新迁移写过的 DB 再降级（除非 CHANGELOG 明确支持） | 破坏性迁移须在 **CHANGELOG 双语** + 本表「破坏性」段写明 |
