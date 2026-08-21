@@ -1,6 +1,7 @@
 use super::super::manifest::OclivePluginManifest;
 use super::transport::parse_ready_line;
 use super::{DebugLogRing, DirectoryPluginRuntime};
+use crate::infrastructure::background_process::configure_background_process;
 use parking_lot::Mutex;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
@@ -190,6 +191,7 @@ impl DirectoryPluginRuntime {
         cmd.stdin(Stdio::null());
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
+        configure_background_process(&mut cmd);
         if let Some(cfg) = config_json {
             let t = cfg.trim();
             if !t.is_empty() {

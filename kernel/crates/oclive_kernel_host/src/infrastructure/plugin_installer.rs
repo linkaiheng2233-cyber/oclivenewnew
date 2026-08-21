@@ -1,5 +1,6 @@
 use crate::env_flags;
 use crate::error::AppError;
+use crate::infrastructure::background_process::configure_background_process;
 use crate::infrastructure::directory_plugins::{parse_manifest_version, OclivePluginManifest};
 use crate::infrastructure::plugin_state::PluginStateStore;
 use crate::state::AppState;
@@ -156,6 +157,7 @@ fn run_git(args: &[&str], cwd: Option<&Path>) -> Result<(), AppError> {
     if let Some(dir) = cwd {
         cmd.current_dir(dir);
     }
+    configure_background_process(&mut cmd);
     let out = cmd
         .output()
         .map_err(|e| AppError::Unknown(format!("git command failed: {}", e)))?;

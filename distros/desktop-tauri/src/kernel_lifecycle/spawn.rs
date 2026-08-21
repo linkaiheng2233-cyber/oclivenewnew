@@ -8,12 +8,16 @@ use oclive_kernel_runtime::{
     ensure_app_data_dir, find_app_data_dir_for_host, parse_distro_requirements_file,
     KernelCandidate, KernelTier, ENV_HTTP_API_MOCK_LLM, ENV_ROLES_DIR,
 };
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
 use std::path::Path;
 use std::process::{Command, Stdio};
 use std::time::Duration;
 use uuid::Uuid;
 
 const HEALTH_POLL_MS: u64 = 500;
+#[cfg(windows)]
+const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 // Cold Windows starts can spend more than 15 seconds in SQLite verification
 // and DLL initialization before the loopback listener is available.
 const HEALTH_POLL_MAX: u32 = 60;
@@ -194,6 +198,8 @@ pub async fn spawn_kernel(
     ) {
         cmd.env(k, v);
     }
+    #[cfg(windows)]
+    cmd.creation_flags(CREATE_NO_WINDOW);
 
     let child = cmd
         .spawn()

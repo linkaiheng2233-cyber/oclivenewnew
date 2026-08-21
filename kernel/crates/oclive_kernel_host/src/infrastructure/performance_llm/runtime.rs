@@ -10,6 +10,7 @@ use super::{
 
 use crate::domain::resource_coordinator::configured_gpu_device_index;
 use crate::error::{AppError, Result};
+use crate::infrastructure::background_process::configure_background_process;
 use crate::infrastructure::resource_adapters::{
     llama_tiers_from, LlamaRuntimeTier, COSYVOICE_ADAPTER_ID, LLAMA_RUNTIME_ADAPTER_ID,
     LLAMA_RUNTIME_PROFILE_FULL, OLLAMA_ADAPTER_ID,
@@ -539,11 +540,7 @@ impl PerformanceLlmClient {
             .stdin(Stdio::null())
             .stdout(stdout)
             .stderr(stderr);
-        #[cfg(target_os = "windows")]
-        {
-            use std::os::windows::process::CommandExt;
-            command.creation_flags(0x0800_0000);
-        }
+        configure_background_process(&mut command);
         command.spawn().map_err(|e| {
             AppError::RemoteServiceUnavailable(format!(
                 "spawn llama-server {}: {e}",

@@ -5,6 +5,7 @@
 //! - transport=`stdio`: spawn a command, write request JSON to stdin, read response JSON from stdout
 
 use crate::error::{AppError, Result};
+use crate::infrastructure::background_process::configure_background_process;
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
 use oclive_validation::{MCP_HTTP, MCP_STDIO};
 use parking_lot::RwLock;
@@ -295,15 +296,16 @@ impl McpClient {
                 server.id
             )));
         };
-        let mut child = Command::new(cmd)
+        let mut command = Command::new(cmd);
+        command
             .args(&server.args)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()
-            .map_err(|e| {
-                AppError::Unknown(format!("spawn mcp stdio failed ({}): {}", server.id, e))
-            })?;
+            .stderr(Stdio::piped());
+        configure_background_process(&mut command);
+        let mut child = command.spawn().map_err(|e| {
+            AppError::Unknown(format!("spawn mcp stdio failed ({}): {}", server.id, e))
+        })?;
         if let Some(stdin) = child.stdin.as_mut() {
             let body = serde_json::to_vec(&payload)?;
             stdin.write_all(&body).map_err(|e| {

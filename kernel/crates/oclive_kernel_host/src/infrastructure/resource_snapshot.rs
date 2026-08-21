@@ -1,5 +1,6 @@
 //! Best-effort device telemetry for the Resource Coordinator.
 
+use crate::infrastructure::background_process::configure_background_process;
 use std::process::{Command, Stdio};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
@@ -61,16 +62,17 @@ fn snapshot_with_system_telemetry() -> ResourceSnapshot {
 }
 
 fn snapshot_with_nvidia_smi() -> ResourceSnapshot {
-    let mut child = match Command::new("nvidia-smi")
+    let mut command = Command::new("nvidia-smi");
+    command
         .args([
             "--query-gpu=index,name,memory.total,memory.free,memory.used",
             "--format=csv,noheader,nounits",
         ])
         .stdin(Stdio::null())
         .stderr(Stdio::null())
-        .stdout(Stdio::piped())
-        .spawn()
-    {
+        .stdout(Stdio::piped());
+    configure_background_process(&mut command);
+    let mut child = match command.spawn() {
         Ok(child) => child,
         Err(_) => {
             return ResourceSnapshot::unavailable("nvidia_smi", "nvidia_smi_unavailable");
