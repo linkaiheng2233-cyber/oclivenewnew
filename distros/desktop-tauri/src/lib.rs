@@ -7,6 +7,7 @@
 pub mod api;
 pub mod desktop_host;
 pub mod desktop_integration;
+pub mod installation_repair;
 pub mod kernel_attach;
 pub mod kernel_lifecycle;
 
@@ -258,6 +259,7 @@ pub fn run() {
             api::high_risk::revoke_high_risk_capability,
             // ?? diagnostics ??
             api::diagnostics::run_environment_diagnostics,
+            api::diagnostics::run_environment_repair,
             api::kernel::get_kernel_connection_status,
             api::kernel::get_kernel_diagnostics,
             api::kernel::reconnect_kernel,

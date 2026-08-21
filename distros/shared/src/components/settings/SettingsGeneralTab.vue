@@ -1,9 +1,16 @@
 <script setup lang="ts">
-import type { EnvironmentDiagnostics } from '@oclive/shared/api'
+import type {
+  EnvironmentDiagnostics,
+  InstallationRepairIssue,
+  InstallationRepairReport,
+  RepairIssueScope,
+} from '@oclive/shared/api'
 import type { LocalePreference } from '@oclive/shared/i18n'
 import {
   getRemoteFallbackAppSettings,
+  openPathInFileManager,
   runEnvironmentDiagnostics,
+  runEnvironmentRepair,
   setRemoteFallbackToBuiltin,
 } from '@oclive/shared/api'
 import { useAppToast } from '@oclive/shared/composables/useAppToast'
@@ -19,7 +26,7 @@ import { useRoleStore } from '@oclive/shared/stores/roleStore'
 import { isChatStreamEnabled, setChatStreamEnabled } from '@oclive/shared/utils/chatStreamSettings'
 import { isSentryOptOut, setSentryOptOut } from '@oclive/shared/utils/telemetrySentry'
 import { isUnsafeInlinePluginVueEnabled } from '@oclive/shared/utils/vueComponentSecurity'
-import { defineAsyncComponent, onMounted, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import KeybindingsSettingsSection from '../hotkey/KeybindingsSettingsSection.vue'
 import PluginSlotEmbed from '../PluginSlotEmbed.vue'
@@ -102,6 +109,17 @@ async function onSentryOptOutChange(e: Event) {
 
 const envDiagLoading = ref(false)
 const envDiag = ref<EnvironmentDiagnostics | null>(null)
+const envRepairLoading = ref(false)
+const envRepair = ref<InstallationRepairReport | null>(null)
+const groupedRepairIssues = computed(() => {
+  const groups = new Map<RepairIssueScope, InstallationRepairIssue[]>()
+  for (const issue of envRepair.value?.issues ?? []) {
+    const entries = groups.get(issue.scope) ?? []
+    entries.push(issue)
+    groups.set(issue.scope, entries)
+  }
+  return [...groups].map(([scope, issues]) => ({ scope, issues }))
+})
 
 const remoteFallbackLoading = ref(false)
 const remoteFallbackChecked = ref(true)
@@ -179,6 +197,38 @@ async function onRunEnvironmentDiagnostics() {
   }
   finally {
     envDiagLoading.value = false
+  }
+}
+
+async function onRunEnvironmentRepair() {
+  envRepairLoading.value = true
+  envRepair.value = null
+  try {
+    envRepair.value = await runEnvironmentRepair()
+    showToast(
+      envRepair.value.success ? 'success' : 'error',
+      envRepair.value.success
+        ? t('settings.envRepairDoneToast')
+        : t('settings.envRepairIssuesToast', { count: envRepair.value.issues.length }),
+    )
+  }
+  catch (err) {
+    showToast('error', err instanceof Error ? err.message : String(err))
+  }
+  finally {
+    envRepairLoading.value = false
+  }
+}
+
+async function onOpenRepairReport() {
+  const path = envRepair.value?.reportPath.trim()
+  if (!path)
+    return
+  try {
+    await openPathInFileManager(path)
+  }
+  catch (err) {
+    showToast('error', err instanceof Error ? err.message : String(err))
   }
 }
 
@@ -366,14 +416,24 @@ async function onToggleForceIframe(e: Event) {
       <p class="sv-muted sv-small">
         {{ t("settings.envCheckOllamaPullNote") }}
       </p>
-      <UiButton
-        size="sm"
-        variant="secondary"
-        :disabled="envDiagLoading"
-        @click="onRunEnvironmentDiagnostics"
-      >
-        {{ envDiagLoading ? t("settings.envCheckRunning") : t("settings.envCheckRun") }}
-      </UiButton>
+      <div class="ui-btn-group sv-env-actions">
+        <UiButton
+          size="sm"
+          variant="secondary"
+          :disabled="envDiagLoading || envRepairLoading"
+          @click="onRunEnvironmentDiagnostics"
+        >
+          {{ envDiagLoading ? t("settings.envCheckRunning") : t("settings.envCheckRun") }}
+        </UiButton>
+        <UiButton
+          size="sm"
+          variant="primary"
+          :disabled="envDiagLoading || envRepairLoading"
+          @click="onRunEnvironmentRepair"
+        >
+          {{ envRepairLoading ? t("settings.envRepairRunning") : t("settings.envRepairRun") }}
+        </UiButton>
+      </div>
       <div v-if="envDiag" class="sv-env-results" role="status">
         <p class="sv-env-line">
           <strong>{{ t("settings.envCheckOllama", { url: envDiag.ollamaBaseUrl }) }}</strong>
@@ -425,6 +485,78 @@ async function onToggleForceIframe(e: Event) {
           </span>
           <code class="sv-code">{{ envDiag.appDataDir }}</code>
         </p>
+      </div>
+      <div v-if="envRepair" class="sv-env-results" role="status">
+        <p class="sv-env-line">
+          <strong>{{ t("settings.envRepairResult") }}</strong>
+          —
+          <span :class="envRepair.success ? 'sv-ok' : 'sv-bad'">
+            {{
+              envRepair.success
+                ? t("settings.envRepairSuccess")
+                : t("settings.envRepairNeedsAttention")
+            }}
+          </span>
+        </p>
+        <p class="sv-muted sv-small">
+          {{
+            t("settings.envRepairCounts", {
+              roles: envRepair.roleCount,
+              plugins: envRepair.pluginCount,
+            })
+          }}
+        </p>
+        <ul class="sv-repair-list">
+          <li v-for="action in envRepair.actions" :key="action.code">
+            <code>{{ action.code }}</code>
+            <span :class="action.status === 'failed' ? 'sv-bad' : 'sv-ok'">
+              {{ t(`settings.envRepairActionStatus.${action.status}`) }}
+            </span>
+            <span>{{ action.summary }}</span>
+            <span v-if="action.detail" class="sv-muted sv-detail">{{ action.detail }}</span>
+          </li>
+        </ul>
+        <div v-if="envRepair.issues.length" class="sv-repair-issues">
+          <p class="sv-env-line sv-bad">
+            <strong>{{ t("settings.envRepairIssues", { count: envRepair.issues.length }) }}</strong>
+          </p>
+          <div
+            v-for="group in groupedRepairIssues"
+            :key="group.scope"
+            class="sv-repair-group"
+          >
+            <p class="sv-env-line">
+              <strong>{{ t(`settings.envRepairScope.${group.scope}`) }}</strong>
+            </p>
+            <ul class="sv-repair-list">
+              <li v-for="issue in group.issues" :key="`${issue.code}:${issue.path}`">
+                <code>{{ issue.code }}</code>
+                <span :class="issue.severity === 'error' ? 'sv-bad' : 'sv-warn'">
+                  {{ t(`settings.envRepairSeverity.${issue.severity}`) }}
+                </span>
+                <span class="sv-muted">
+                  {{ t(`settings.envRepairCategory.${issue.category}`) }}
+                </span>
+                <span>{{ issue.summary }}</span>
+                <span class="sv-muted">
+                  {{
+                    issue.repairable
+                      ? t("settings.envRepairCanRetry")
+                      : t("settings.envRepairManual")
+                  }}
+                </span>
+                <span v-if="issue.detail" class="sv-muted sv-detail">{{ issue.detail }}</span>
+                <code v-if="issue.path" class="sv-code">{{ issue.path }}</code>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div v-if="envRepair.reportPath" class="sv-report-row">
+          <code class="sv-code">{{ envRepair.reportPath }}</code>
+          <UiButton size="sm" variant="secondary" @click="onOpenRepairReport">
+            {{ t("settings.envRepairOpenReport") }}
+          </UiButton>
+        </div>
       </div>
     </UiSection>
 
@@ -689,6 +821,44 @@ async function onToggleForceIframe(e: Event) {
   gap: 8px;
 }
 
+.sv-env-actions,
+.sv-report-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.sv-report-row .sv-code {
+  flex: 1 1 18rem;
+}
+
+.sv-repair-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding-left: 18px;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.sv-repair-list li > :not(:last-child) {
+  margin-right: 6px;
+}
+
+.sv-repair-issues {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sv-repair-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .sv-env-line {
   margin: 0;
   font-size: 12px;
@@ -722,6 +892,10 @@ async function onToggleForceIframe(e: Event) {
 
 .sv-bad {
   color: var(--danger, #b91c1c);
+}
+
+.sv-warn {
+  color: var(--warning, #a16207);
 }
 
 .sv-appearance-row {

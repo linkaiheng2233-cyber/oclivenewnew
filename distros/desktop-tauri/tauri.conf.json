@@ -23,7 +23,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self' tauri: ocliveplugin: https://ocliveplugin.localhost; connect-src 'self' tauri: http://127.0.0.1:50000 ws://127.0.0.1:50000",
+      "csp": "default-src 'self' tauri: ocliveplugin: https://ocliveplugin.localhost; img-src 'self' blob: data: tauri: asset: http://asset.localhost https://asset.localhost ocliveplugin: https://ocliveplugin.localhost; connect-src 'self' tauri: http://127.0.0.1:50000 ws://127.0.0.1:50000",
       "assetProtocol": {
         "enable": true,
         "scope": [
@@ -45,6 +45,7 @@
       "resources/distro-profiles",
       "resources/theater",
       "resources/plugins",
+      "resources/support",
       "resources/migrations",
       "resources/oclive-kernel-server",
       "resources/oclive-kernel-server.exe",

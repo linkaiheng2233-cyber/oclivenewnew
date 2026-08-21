@@ -97,10 +97,20 @@ fn try_dev_roles_dir() -> Option<PathBuf> {
     None
 }
 
+fn find_bundled_roles_dir(resource_dir: &Path) -> Option<PathBuf> {
+    [
+        resource_dir.join("resources").join("roles"),
+        resource_dir.join("roles"),
+    ]
+    .into_iter()
+    .find(|candidate| candidate.is_dir() && roles_dir_has_any_role_pack(candidate))
+}
+
 /// Resolve `roles/` for dev, packaged, and headless runs.
 ///
-/// Priority: `OCLIVE_ROLES_DIR` → (debug) repo dev paths → `resource_dir/roles` when
-/// `resource_dir` is set → exe/cwd heuristics → relative `roles/`.
+/// Priority: `OCLIVE_ROLES_DIR` → (debug) repo dev paths → bundled roles under
+/// `resource_dir` (flat or NSIS nested `resources/roles`) → exe/cwd heuristics →
+/// relative `roles/`.
 pub fn find_roles_dir(resource_dir: Option<&Path>) -> PathBuf {
     if let Ok(custom) = std::env::var("OCLIVE_ROLES_DIR") {
         let p = PathBuf::from(&custom);
@@ -130,8 +140,7 @@ pub fn find_roles_dir(resource_dir: Option<&Path>) -> PathBuf {
             "find_roles_dir: tauri resource_dir -> {}",
             res.display()
         );
-        let bundled = res.join("roles");
-        if bundled.is_dir() {
+        if let Some(bundled) = find_bundled_roles_dir(res) {
             tracing::info!(
                 target: "oclive_roles",
                 "find_roles_dir: bundled -> {}",
@@ -141,8 +150,8 @@ pub fn find_roles_dir(resource_dir: Option<&Path>) -> PathBuf {
         }
         tracing::warn!(
             target: "oclive_roles",
-            "resource_dir/roles missing or not a directory: {}",
-            bundled.display()
+            "bundled roles missing under resource_dir: {}",
+            res.display()
         );
     }
 
@@ -157,4 +166,34 @@ pub fn find_roles_dir(resource_dir: Option<&Path>) -> PathBuf {
         fallback.display()
     );
     fallback
+}
+
+#[cfg(test)]
+mod tests {
+    use super::find_bundled_roles_dir;
+    use std::fs;
+
+    fn write_minimal_role(roles: &std::path::Path) {
+        let role = roles.join("mumu");
+        fs::create_dir_all(&role).expect("create role fixture");
+        fs::write(role.join("pipeline.ocblueprint"), "{}").expect("write role fixture");
+    }
+
+    #[test]
+    fn bundled_roles_support_nsis_nested_resources_layout() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let nested = temp.path().join("resources").join("roles");
+        write_minimal_role(&nested);
+        assert_eq!(find_bundled_roles_dir(temp.path()), Some(nested));
+    }
+
+    #[test]
+    fn bundled_roles_prefer_nested_release_layout_over_legacy_hotfix() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let flat = temp.path().join("roles");
+        let nested = temp.path().join("resources").join("roles");
+        write_minimal_role(&flat);
+        write_minimal_role(&nested);
+        assert_eq!(find_bundled_roles_dir(temp.path()), Some(nested));
+    }
 }

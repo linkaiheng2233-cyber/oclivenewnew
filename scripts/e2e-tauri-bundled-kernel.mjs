@@ -15,6 +15,22 @@ import { kernelExeName } from './lib/e2e-binary.mjs';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolveRepoRoot();
 
+function assertPortraitBlobAllowedByCsp() {
+  const configPath = path.join(repoRoot, 'distros', 'desktop-tauri', 'tauri.conf.json');
+  const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  const csp = config.app?.security?.csp;
+  if (typeof csp !== 'string') {
+    throw new Error('tauri.conf.json app.security.csp must be a string');
+  }
+  const imgDirective = csp
+    .split(';')
+    .map((directive) => directive.trim().split(/\s+/))
+    .find(([name]) => name === 'img-src');
+  if (!imgDirective?.includes('blob:')) {
+    throw new Error('tauri.conf.json img-src must allow blob: role portraits');
+  }
+}
+
 function sh(cmd, args, opts = {}) {
   const r = spawnSync(cmd, args, { encoding: 'utf8', cwd: repoRoot, ...opts });
   if (r.status !== 0) {
@@ -120,7 +136,11 @@ async function portableRuntimeSmoke(bundled, manifest, migrations, bundledRoles)
 }
 
 console.log('[e2e-tauri-bundled] bundling kernel into Tauri resources...');
+assertPortraitBlobAllowedByCsp();
 sh(process.execPath, ['scripts/stage-chat-pro-roles.mjs'], {
+  stdio: 'inherit',
+});
+sh(process.execPath, ['scripts/stage-chat-pro-plugins.mjs'], {
   stdio: 'inherit',
 });
 sh(process.execPath, ['scripts/bundle-kernel-for-tauri.mjs', '--profile', 'debug'], {
@@ -131,6 +151,11 @@ const bundled = path.join(repoRoot, 'distros/desktop-tauri', 'resources', kernel
 const manifest = path.join(repoRoot, 'distros/desktop-tauri', 'resources', 'oclive-kernel-server.oclive-manifest.json');
 const migrations = path.join(repoRoot, 'distros/desktop-tauri', 'resources', 'migrations');
 const bundledRoles = path.join(repoRoot, 'distros/desktop-tauri', 'resources', 'roles');
+const bundledPlugins = path.join(repoRoot, 'distros/desktop-tauri', 'resources', 'plugins');
+const bundledRepair = path.join(repoRoot, 'distros', 'desktop-tauri', 'resources', 'support', 'Repair-AILiveChatPro.ps1');
+if (!fs.existsSync(bundledRepair)) {
+  throw new Error(`missing bundled recovery wrapper: ${bundledRepair}`);
+}
 if (!fs.existsSync(bundled)) {
   throw new Error(`missing bundled kernel: ${bundled}`);
 }
@@ -142,6 +167,19 @@ if (!fs.existsSync(migrations)) {
 }
 if (!fs.existsSync(bundledRoles)) {
   throw new Error(`missing bundled roles: ${bundledRoles}`);
+}
+for (const pluginId of [
+  'com.oclive.mumu.chat-header-status',
+  'com.oclive.mumu.quick-actions',
+  'com.oclive.mumu.role-detail-card',
+  'com.oclive.mumu.settings-panel',
+  'com.oclive.mumu.sidebar-glance',
+  'com.oclive.theater_director_official',
+  'com.oclive.voice.asr',
+]) {
+  if (!fs.existsSync(path.join(bundledPlugins, pluginId, 'manifest.json'))) {
+    throw new Error(`missing bundled production plugin: ${pluginId}`);
+  }
 }
 if (fs.existsSync(path.join(bundledRoles, '.oclive_directory_plugin_data'))) {
   throw new Error('bundled roles must not contain ignored local role state');
