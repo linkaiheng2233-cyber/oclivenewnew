@@ -11,11 +11,11 @@
 
 | 项 | 值 |
 |----|-----|
-| **cargo-audit 版本** | **0.22.1**（建议固定该主版本以便报告可比） |
-| **最近扫描日期** | **2026-08-01**（全库巡检本地 `cargo audit`） |
+| **cargo-audit 版本** | **0.22.2**（建议固定该主版本以便报告可比） |
+| **最近扫描日期** | **2026-08-21**（兼容范围依赖更新后，本地 `cargo audit`；advisory-db 1225 条） |
 | **扫描路径** | 工作区根目录 `Cargo.lock` |
 | **漏洞级命中数** | **0**（`cargo audit` 退出码 **0**） |
-| **警告级命中数** | **8**（gtk/webkit Linux 簇 · `glib` · `unic-*` · `spin` yanked；`event-listener` 已升级修复，**`fxhash` / `rand` 0.7 已随 Tauri 2 清出**） |
+| **警告级命中数** | **7**（`gdkx11`/GTK3 · `glib` · 5 个 `unic-*`；`spin` 已升级至非 yanked 的 0.9.9，其他已登记警告仍按 ignore 策略跟踪） |
 
 > 若 CI 或本机无法拉取 advisory-db，可使用：`cargo audit --no-fetch --stale`（依赖本地已 fetch 的数据库）。
 
@@ -30,7 +30,7 @@
 | [RUSTSEC-2026-0099](https://rustsec.org/advisories/RUSTSEC-2026-0099) | rustls-webpki 0.101 | **已清零** | |
 | [RUSTSEC-2026-0104](https://rustsec.org/advisories/RUSTSEC-2026-0104) | rustls-webpki 0.101 | **已清零** | |
 | [RUSTSEC-2024-0363](https://rustsec.org/advisories/RUSTSEC-2024-0363) | sqlx 0.7.4 | **已清零** — 已升级至 **0.8.6** | |
-| [RUSTSEC-2026-0185](https://rustsec.org/advisories/RUSTSEC-2026-0185) | quinn-proto &lt; 0.11.15 | **已修复** — 锁文件 **0.11.15** | 2026-06-24 条理优化波次 A 升级 |
+| [RUSTSEC-2026-0185](https://rustsec.org/advisories/RUSTSEC-2026-0185) | quinn-proto &lt; 0.11.15 | **已修复** — 锁文件 **0.11.17** | 2026-08-21 兼容范围锁文件更新 |
 | [RUSTSEC-2026-0204](https://rustsec.org/advisories/RUSTSEC-2026-0204) | crossbeam-epoch 0.9.18 | **已修复** — **0.9.20** | 2026-07-09 PR #101 CI 供应链 |
 | [RUSTSEC-2026-0194](https://rustsec.org/advisories/RUSTSEC-2026-0194) | quick-xml 0.39.4 | **已修复** — **0.41.0**（经 plist 1.10） | 同上 |
 | [RUSTSEC-2026-0195](https://rustsec.org/advisories/RUSTSEC-2026-0195) | quick-xml 0.39.4 | **已修复** — **0.41.0** | 同上 |
@@ -61,20 +61,20 @@
 |----------------|-------|------|------|
 | **RUSTSEC-2026-0002** | `lru` | **已修复** | `oclive-cli` 升级 **ratatui 0.30** → `lru` ≥ 0.16 |
 | **RUSTSEC-2025-0134** | `rustls-pemfile` | **已修复** | `reqwest` **0.12** 链不再依赖该 crate |
-| gtk-rs GTK3 簇（11 ID） | `gtk`/`gdk`/… | **已记录 + audit.toml ignore** | Linux WebView（wry/webkit2gtk）仍拉 GTK3；Tauri 2 后仍需上游切换方可移除 ignore |
+| gtk-rs GTK3 簇（10 ID） | `gtk`/`gdk`/… | **已记录；9 条 audit.toml ignore，`gdkx11` 继续显示为警告** | Linux WebView（wry/webkit2gtk）仍拉 GTK3；Tauri 2 后仍需上游切换方可移除 ignore |
 | **RUSTSEC-2025-0075 / 0080 / 0081 / 0098 / 0100** | `unic-*` 0.9 | **开放** | 经 Tauri `urlpattern` 传递引入；等待上游移除未维护依赖 |
 | **RUSTSEC-2026-0221** | `event-listener` 5.4.1 | **已修复 · K-SUPPLY-11** | 2026-08-01 锁文件升级至 **5.4.2**；SQLx 与 zbus/Tauri 两条路径均已解析到修复版，未加入 ignore |
 | **RUSTSEC-2025-0057** | `fxhash` | **已清零** | 2026-07-14 K-PLATFORM-01a Full · Tauri 2 锁图无 `fxhash` |
 | **RUSTSEC-2024-0429** | `glib` | **开放** | `VariantStrIter` 路径；宿主未使用（Linux wry） |
-| yanked | `spin` 0.9.8 | **开放** | 经 `flume` → `sqlx-sqlite` 引入；跟随 SQLx/Flume 上游升级 |
+| yanked | `spin` 0.9.8 | **已修复** — 锁文件 **0.9.9** | 2026-08-21 兼容范围锁文件更新；仍经 `flume` → `sqlx-sqlite` 引入 |
 | **RUSTSEC-2026-0097** | `rand` 0.7 | **已清零** | 2026-07-14 K-PLATFORM-01a Full · Tauri 2 后无 `rand` 0.7 |
-| **RUSTSEC-2026-0190** | `anyhow` | **已修复** — 锁文件 **1.0.103** | 2026-07-14 K-SUPPLY-05 `cargo update` |
+| **RUSTSEC-2026-0190** | `anyhow` | **已修复** — 锁文件 **1.0.104** | 2026-08-21 锁文件复核 |
 
 忽略列表与理由见 [`.cargo/audit.toml`](../../.cargo/audit.toml) 与 [SECURITY_AUDIT_SCOPE.md](./SECURITY_AUDIT_SCOPE.md)。
 
 ---
 
-## npm / 版本号复核（2026-08-01）
+## npm / 版本号复核（2026-08-21）
 
 | 项 | 原状 | 修正 |
 |----|------|------|
@@ -91,11 +91,13 @@
 
 ---
 
-## npm 供应链（2026-08-01）
+## npm 供应链（2026-08-21）
 
 CI **`npm-audit`** job 以硬门禁运行 `npm audit --omit=dev --audit-level=high`；远端 CI [`30692428026`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30692428026) 的生产依赖扫描为 **0 vulnerabilities**。本地复现：仓库根目录运行同一命令。
 
 K-SUPPLY-12 冻结实现 `728219e7` 上，完整 `npm audit` 与生产扫描均为 **0 vulnerabilities**，`npm ls eslint eslint-plugin-unicorn` 退出 0；旧 Vue 2/PostCSS 编译链已经退出 lockfile。远端 CI [`30714475985`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30714475985) 的 npm audit 与 Linux/Windows 前端门禁全部成功，台账据此升为 Done；未来扫描结果仍以命令实测为准，不把本次 0 扩写成永久保证。
+
+2026-08-21 在不改变 `package.json` 声明范围的前提下刷新 `package-lock.json`：`rollup-plugin-visualizer` 解析到 7.1.1、`vue-tsc` 解析到 3.3.10、`webdriverio` 解析到 9.31.2。更新后本地生产依赖审计与完整 `npm audit` 均为 **0 vulnerabilities**，`npm ls --all` 退出 0；跨主版本候选保留为独立迁移任务，不混入本轮锁文件更新。
 
 ---
 
