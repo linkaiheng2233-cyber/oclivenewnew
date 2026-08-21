@@ -124,7 +124,7 @@ node -e "const fs=require('fs'),path=require('path');function walk(d,a=[]){for(c
 - 满足安全条件的草稿 PR 可按 `selected_validators[].workflow_jobs` 执行，但结果名是 `ci-draft-gate`，不得把它配置为 main required context，也不得汇报成最终可合并证据。
 - `ready_for_review` 必须在当前提交上重新触发 CI。ready 时只有直接模块为 `oclive.docs` 的既有 Canary 可继续选择性执行；其他 ready PR、Push、未知/高风险路径和规划异常全部全量，并由正式 `ci-gate` 验收。
 - `oclive ci plan` 的 `selected_validators` 仍不是“已执行”证据；验收必须引用对应 gate 及实际 job 终态。手动 `--shadow` 计划禁止用于跳 job。
-- `npm run ci:shadow-samples` 的 JSON/Markdown 是**规划模拟**：当前基线为 20/20（17 targeted / 3 fail-safe），只能证明固定样本仍按当前规则路由；不得把它汇报成 20 次远端 CI、零漏选或 validator 已执行。
+- `npm run ci:shadow-samples` 的 JSON/Markdown 是**规划模拟**：当前基线为 21/21（18 targeted / 3 fail-safe），只能证明固定样本仍按当前规则路由；不得把它汇报成 21 次远端 CI、零漏选或 validator 已执行。
 - 全量 run 自动上传 90 天 `oclive-ci-compare-*`：只有 plan/execution、同一 workflow SHA、完整终态 job 快照和完整结果同时成立时，`authoritative_ci_comparison` 才可为 true。选择性 run、快照缺失或未终态只算 observational；`false_negative_candidates` 还需维护者裁决，不能自动删改影响边。
 - 未映射路径、损坏模块描述、未知 required 扩展及中央高风险规则会使当前 policy `full_fallback`；这代表必须执行全量，不代表全量已经通过。
 - 规划器异常时所有责任组通过 fail-safe 条件运行，但 gate 仍须失败；修复规划器后重新验证，不能把降级运行粉饰成绿。

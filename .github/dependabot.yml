@@ -1,4 +1,5 @@
-# 依赖更新：每周开 PR，合并前请跑本地 npm run check:release（或至少 CI 绿）
+# 依赖更新：兼容范围按生态合并为单个 PR；主版本迁移由维护者单独规划。
+# Security updates 不受 version-update ignore / cooldown 约束，仍由 Dependabot 独立处理。
 # https://docs.github.com/en/code-security/dependabot/dependabot-version-updates
 version: 2
 updates:
@@ -6,13 +7,46 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 15
+      day: "tuesday"
+      time: "03:00"
+      timezone: "Asia/Shanghai"
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 3
+    groups:
+      npm-compatible:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
   - package-ecosystem: "cargo"
     directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 15
+      day: "thursday"
+      time: "03:00"
+      timezone: "Asia/Shanghai"
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 3
+    groups:
+      cargo-compatible:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
     ignore:
       - dependency-name: "tauri"
       - dependency-name: "tauri-build"
       - dependency-name: "tauri-*"
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"

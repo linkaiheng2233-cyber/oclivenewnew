@@ -243,6 +243,20 @@
       "review_note": "Scaffold merge planning is captured now so Stage 4 can later reduce duplicate main validation using real Compare evidence."
     },
     {
+      "id": "dependabot-cadence-pr",
+      "policy": "pull_request",
+      "changed_files": [".github/dependabot.yml"],
+      "expected": {
+        "direct_modules": ["oclive.repo-tooling"],
+        "affected_modules": ["oclive.repo-tooling"],
+        "selected_validators": ["cargo-audit", "dimension5-acceptance", "layering-ratchet", "npm-audit", "plugins-index", "stale-paths"],
+        "workflow_jobs": ["dimension5-acceptance", "layering-ratchet", "npm-audit", "plugins-index", "stale-paths"],
+        "fallback_full": false,
+        "fallback_reason_prefixes": []
+      },
+      "review_note": "Dependabot cadence is repository governance: draft planning stays targeted, while the ready PR policy still requires a full gate before the new automation can land."
+    },
+    {
       "id": "ci-control-pr",
       "policy": "pull_request",
       "changed_files": [".github/workflows/ci.yml"],
