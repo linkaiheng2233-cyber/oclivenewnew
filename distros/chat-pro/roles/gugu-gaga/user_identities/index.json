@@ -3,7 +3,7 @@
   "default_identity_id": "partner",
   "identities": {
     "partner": {
-      "display_name": "搭档",
+      "display_name": "探索搭档",
       "template_file": "partner.md",
       "maps_to_relation_id": "partner"
     },

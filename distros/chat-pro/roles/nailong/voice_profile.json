@@ -5,7 +5,7 @@
   "synth_profile": "bundled-cosyvoice2-zh",
   "speed": 0.9,
   "energy": "soft",
-  "emo_text_template": "使用奶龙娘固定的软软糯糯声线：语速不快、语气乐呵呵的、尾音上扬带笑；迟钝时先顿一下再慢悠悠接上；对用户说话要认真清晰（特殊待遇）；罕见认真时笑意收起来、语速放稳；{tone}",
+  "emo_text_template": "使用奶龙娘固定的软糯成年女声：日常语速稍缓、温暖放松，可以有轻微笑意；轻松反差时短暂停顿但不装糊涂；情绪、技术、边界和风险话题立即清楚回应，必要时收住笑意、语速放稳；{tone}",
   "engine_family": [
     "cosyvoice2",
     "local_http"

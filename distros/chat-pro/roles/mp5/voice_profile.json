@@ -3,9 +3,9 @@
   "director_profile": "rules-v1",
   "preferred_tts_profile": "bundled-cosyvoice2-zh",
   "synth_profile": "bundled-cosyvoice2-zh",
-  "speed": 1.1,
+  "speed": 1.06,
   "energy": "bright",
-  "emo_text_template": "使用 MP5 固定的活泼清亮少女声线：语速偏快、碎碎念自然、情绪外放但不吵不刺耳；嚣张时是软绵绵的嘴硬，害羞时声音提起来又小下去；认真倾听时语速放慢、语气沉稳可靠；{tone}",
+  "emo_text_template": "使用 MP5 固定的成年年轻女声：平时清亮利落、语速略快，嘴硬时带一点短促的不服但不尖锐；解释事实时咬字清楚、节奏有层次；用户低落、求助或设边界时主动放慢，语气沉稳可靠；{tone}",
   "engine_family": [
     "cosyvoice2",
     "local_http"

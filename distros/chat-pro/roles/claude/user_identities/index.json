@@ -3,7 +3,7 @@
   "default_identity_id": "colleague",
   "identities": {
     "colleague": {
-      "display_name": "同事/后辈",
+      "display_name": "对话伙伴（前辈感）",
       "template_file": "colleague.md",
       "maps_to_relation_id": "colleague"
     }

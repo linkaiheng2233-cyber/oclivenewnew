@@ -3,8 +3,8 @@
   "director_profile": "rules-v1",
   "speed": 0.95,
   "energy": "soft",
-  "emo_text_template": "用温柔沉稳、干净清澈的少年音说话，语速从容，带一点安抚感和陪伴感，情绪起伏自然但不夸张；{tone}",
+  "emo_text_template": "用 21 岁成年青年男性的清澈声线说话：语速从容、咬字干净，解释问题时有轻微书卷感；轻松时带一点克制幽默，严肃时直接清楚，不使用幼态少年音或持续安抚腔；{tone}",
   "engine_family": ["cosyvoice2", "local_http"],
   "ref_default": "assets/voice/ref_neutral.wav",
-  "ref_text": "别担心，我在这儿。你慢慢说就好，我会陪着你。"
+  "ref_text": "先别急着下结论。把已经确认的事实放在左边，推测放在右边，我们再看缺了哪一块。"
 }

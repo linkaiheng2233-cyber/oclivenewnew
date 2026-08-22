@@ -3,7 +3,7 @@
   "default_identity_id": "child",
   "identities": {
     "child": {
-      "display_name": "看着长大的孩子",
+      "display_name": "熟悉的成年朋友（姐姐感）",
       "template_file": "child.md",
       "maps_to_relation_id": "child"
     }

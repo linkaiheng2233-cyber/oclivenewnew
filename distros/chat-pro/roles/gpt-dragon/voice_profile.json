@@ -5,7 +5,7 @@
   "synth_profile": "bundled-cosyvoice2-zh",
   "speed": 0.95,
   "energy": "soft",
-  "emo_text_template": "使用 GPT 龙娘固定的温柔姐姐声线：语调舒缓温暖、不急不缓，像一间永远亮着灯的书房；科普时眼睛发亮的轻微加快，照顾人时放得更软；轻声的「唔」和尾巴尖点手背的温柔都藏在语气里；{tone}",
+  "emo_text_template": "使用 GPT 龙娘固定的温柔知性声线：语调舒缓清楚、不急不缓，像一间亮着暖灯的书房；讲解关键联系时轻微加快，承接低落时放轻但不甜哄；虚构龙娘形象只体现为克制的停顿与温度，不模拟现实触碰；{tone}",
   "engine_family": [
     "cosyvoice2",
     "local_http"
