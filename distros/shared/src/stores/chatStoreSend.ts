@@ -375,7 +375,7 @@ export async function sendChatStoreMessage(
 
     useDebugStore().recordKnowledgeFromSend(res)
     roleStore.updateLocalAfterMessage(
-      pres.assistantEmotionLabel,
+      pres.portraitEmotionLabel,
       res.favorability_current,
       {
         visualStateId: res.visual_state_id,
@@ -487,7 +487,7 @@ async function displayCommittedAdultBeat(
   }
   useDebugStore().recordKnowledgeFromSend(response)
   roleStore.updateLocalAfterMessage(
-    presentation.assistantEmotionLabel,
+    presentation.portraitEmotionLabel,
     response.favorability_current,
     {
       visualStateId: response.visual_state_id,

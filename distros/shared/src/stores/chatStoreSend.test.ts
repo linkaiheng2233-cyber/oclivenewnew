@@ -224,6 +224,26 @@ describe('chat store send presentation', () => {
     expect(String(sentEvent?.[1]?.reply)).not.toContain('她把杯子')
   })
 
+  it('uses portrait emotion for role state while keeping bot emotion on the bubble', async () => {
+    mocks.sendMessage.mockResolvedValue({
+      ...response(),
+      bot_emotion: 'happy',
+      portrait_emotion: 'angry',
+    })
+    const messages: ChatMessage[] = []
+
+    await sendChatStoreMessage(context(messages), '继续', 'home')
+
+    expect(messages.find(message => message.role === 'assistant')).toMatchObject({
+      emotion: 'happy',
+    })
+    expect(mocks.updateLocal).toHaveBeenCalledWith(
+      'angry',
+      1,
+      expect.any(Object),
+    )
+  })
+
   it('drops a late reply after the foreground scene changes', async () => {
     let resolveSend: ((value: SendMessageResponse) => void) | undefined
     mocks.sendMessage.mockReturnValueOnce(new Promise((resolve) => {

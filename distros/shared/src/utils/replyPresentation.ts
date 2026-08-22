@@ -21,6 +21,8 @@ export interface ReplyPresentation {
   presenceVariant: PresenceMode
   /** Assistant bubble emotion: remote_stub uses portrait emotion, else bot_emotion. */
   assistantEmotionLabel: string
+  /** Role portrait emotion chosen by the portrait pipeline. */
+  portraitEmotionLabel: string
 }
 
 export function presentationFromSendResponse(res: SendMessageResponse): ReplyPresentation {
@@ -39,5 +41,6 @@ export function presentationFromSendResponse(res: SendMessageResponse): ReplyPre
     replyIsFallback,
     presenceVariant: presenceMode,
     assistantEmotionLabel,
+    portraitEmotionLabel: res.portrait_emotion || assistantEmotionLabel,
   }
 }

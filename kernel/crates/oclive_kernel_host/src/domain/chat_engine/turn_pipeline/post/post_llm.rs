@@ -62,6 +62,32 @@ pub(super) struct PostLlmCtx<'a> {
     pub movement: bool,
     pub artifacts: TurnArtifacts<'a>,
 }
+
+fn resolve_bot_emotion(
+    emo_dominant: Option<Emotion>,
+    previous_emotion: Option<&str>,
+    emotion_source: &str,
+) -> Emotion {
+    if let Some(dominant) = emo_dominant {
+        return dominant;
+    }
+
+    // Fast turns intentionally skip the Deep complex-emotion slot. When the
+    // main LLM also omits [EMO], carrying the previous value forward would
+    // latch a transient expression indefinitely. Decay the coarse chat
+    // emotion to neutral; the portrait director can still choose a richer
+    // catalog expression from the actual reply and turn context.
+    if emotion_source == FAST_INTENSITY_SOURCE {
+        return Emotion::Neutral;
+    }
+
+    // A degraded Deep turn is different: preserving the previous emotion is
+    // safer than inventing a new state when the configured analyzer failed.
+    previous_emotion
+        .and_then(|value| value.parse().ok())
+        .unwrap_or(Emotion::Neutral)
+}
+
 #[allow(clippy::too_many_arguments)]
 async fn analyze_bot_emotion_and_policy(
     state: &crate::state::AppState,
@@ -73,13 +99,10 @@ async fn analyze_bot_emotion_and_policy(
     middle: &MiddleOutput,
     snapshot_emotion: Option<String>,
     emo_dominant: Option<Emotion>,
+    emotion_source: &str,
 ) -> TurnResult<PostTurnPolicy> {
     let policies = state.policies_for_scene(Some(scene_id));
-    let bot_emotion = if let Some(dominant) = emo_dominant {
-        // The main LLM declared its own emotion via [EMO]; authoritative —
-        // no lexicon re-analysis and no policy hold (v1.5 §11.1 / B M1 slice 1).
-        dominant
-    } else {
+    let previous_emotion = if emo_dominant.is_none() && emotion_source != FAST_INTENSITY_SOURCE {
         let previous_emotion = if let Some(emotion) = snapshot_emotion {
             Some(emotion)
         } else {
@@ -90,13 +113,14 @@ async fn analyze_bot_emotion_and_policy(
                 )
                 .await?
         };
-        // B M1 slice 2: bot emotion no longer goes through the lexicon (G9);
-        // degraded turns keep the previous emotion (v1.8 §10.2).
         previous_emotion
-            .as_deref()
-            .and_then(|s| s.parse().ok())
-            .unwrap_or(Emotion::Neutral)
+    } else {
+        None
     };
+    // The main LLM's [EMO] marker is authoritative. Otherwise fast turns
+    // decay to neutral while degraded Deep turns keep their previous state.
+    let bot_emotion =
+        resolve_bot_emotion(emo_dominant, previous_emotion.as_deref(), emotion_source);
     let bot_emotion_str = bot_emotion.to_string();
     let event = Event {
         event_type: middle.ai_event_type,
@@ -442,6 +466,7 @@ pub(crate) async fn post_llm(
         middle,
         ctx.runtime_snapshot.emotion.clone(),
         dominant_emotion_from_labels(&effective_complex_emotion.labels),
+        effective_complex_emotion.source.as_str(),
     )
     .await?;
 
@@ -731,4 +756,33 @@ pub(crate) async fn post_llm(
     );
 
     Ok(response)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn fast_turn_without_marker_does_not_latch_previous_emotion() {
+        assert_eq!(
+            resolve_bot_emotion(None, Some("happy"), FAST_INTENSITY_SOURCE),
+            Emotion::Neutral,
+        );
+    }
+
+    #[test]
+    fn declared_emotion_remains_authoritative_on_fast_turn() {
+        assert_eq!(
+            resolve_bot_emotion(Some(Emotion::Angry), Some("happy"), FAST_INTENSITY_SOURCE,),
+            Emotion::Angry,
+        );
+    }
+
+    #[test]
+    fn degraded_deep_turn_preserves_previous_emotion() {
+        assert_eq!(
+            resolve_bot_emotion(None, Some("sad"), "deep_builtin_degraded"),
+            Emotion::Sad,
+        );
+    }
 }
