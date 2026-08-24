@@ -1,22 +1,22 @@
 {
   "scenes": {
     "company": {
-      "memory_count": 5,
+      "memory_count": 1,
       "avg_memory_importance": 0.55,
       "avg_event_confidence": 0.35
     },
     "home": {
-      "memory_count": 4,
-      "avg_memory_importance": 0.45,
+      "memory_count": 0,
+      "avg_memory_importance": 0.0,
       "avg_event_confidence": 0.35
     },
     "park": {
-      "memory_count": 4,
-      "avg_memory_importance": 0.45,
+      "memory_count": 0,
+      "avg_memory_importance": 0.0,
       "avg_event_confidence": 0.35
     },
     "school": {
-      "memory_count": 5,
+      "memory_count": 1,
       "avg_memory_importance": 0.55,
       "avg_event_confidence": 0.35
     }

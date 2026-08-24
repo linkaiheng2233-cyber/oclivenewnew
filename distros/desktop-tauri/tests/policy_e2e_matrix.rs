@@ -161,8 +161,8 @@ async fn policy_e2e_matrix_home_vs_school() {
     let company = result_map.get("company").expect("company metrics");
     let park = result_map.get("park").expect("park metrics");
 
-    // home -> conservative: 对单字 ignore 更保守，应更少落库
-    // school -> exploratory: 过滤更宽松，应更多落库
+    // conservative 只保留用户事实/偏好，这组普通闲聊不会进入长期记忆；
+    // exploratory 接受全部样本，但相似记忆会合并为一条并累计 mention_count。
     assert!(
         school.memory_count > home.memory_count,
         "exploratory should persist more memories than conservative: school={} home={}",
