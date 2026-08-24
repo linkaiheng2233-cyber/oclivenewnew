@@ -6,6 +6,21 @@
 
 There are currently no unreleased changes.
 
+## [0.5.2] - 2026-08-24
+
+### Changed
+
+- **ChatPro application icon system**: the desktop icon now uses an Apple-style continuous-corner tile with a fixed light checkerboard behind the split smooth-illustration / cyber-pixel character. Artwork occupancy is raised to about 97%, with synchronized PNG, ICO, ICNS, and Windows Store sizes while the area outside the rounded tile remains genuinely transparent.
+- **Example-role presentation**: community example personas received further voice, relationship-boundary, and safety-guardrail refinement without changing the role-pack schema or runtime compatibility line.
+
+### Fixed
+
+- **Fast-turn emotion and portrait state**: short-lived emotion now decays across rapid turns, while bubble emotion and portrait emotion are tracked separately so a character no longer remains stuck on a single portrait such as happy.
+
+### Compatibility
+
+- **No breaking contract changes**: role-pack formats, the kernel API, database migrations, and plugin protocols are unchanged; existing 0.5.x role packs remain compatible.
+
 ## [0.5.1] - 2026-08-22
 
 ### Added

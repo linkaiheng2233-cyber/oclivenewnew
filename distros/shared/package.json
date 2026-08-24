@@ -1,14 +1,14 @@
 {
   "name": "@oclive/desktop-shared",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "private": true,
   "type": "module",
   "scripts": {
     "test:unit": "vitest run --config vitest.config.ts"
   },
   "dependencies": {
-    "@oclive/chat-pro": "^0.5.1",
-    "@oclive/theater": "^0.5.1",
+    "@oclive/chat-pro": "^0.5.2",
+    "@oclive/theater": "^0.5.2",
     "@tauri-apps/api": "^2.11.1",
     "@tauri-apps/plugin-dialog": "^2.7.1",
     "@tauri-apps/plugin-opener": "^2.5.4",
