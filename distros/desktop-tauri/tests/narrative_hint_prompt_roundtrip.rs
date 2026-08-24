@@ -1,4 +1,4 @@
-//! E05：上一轮 [EMO] 派生的 `narrative_hint` 注入下一轮主对话 Prompt（共景路径）。
+//! E05：上一轮 [EMO] 派生的 `narrative_hint` 触发下一轮去内容连续性信号（共景路径）。
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
@@ -36,7 +36,7 @@ impl LlmClient for CapturePromptLlm {
 }
 
 #[tokio::test]
-async fn prior_narrative_hint_injected_into_second_turn_main_prompt() {
+async fn prior_narrative_hint_emits_redacted_second_turn_continuity() {
     let prompts = Arc::new(Mutex::new(Vec::<String>::new()));
     // B M1 producer: the hint comes from the main LLM reply [EMO] marker.
     let hint_snippet = "用户可能缺乏兴致";
@@ -91,12 +91,16 @@ async fn prior_narrative_hint_injected_into_second_turn_main_prompt() {
     };
 
     assert!(
-        p2_owned.contains(hint_snippet),
-        "expected prior narrative hint in main prompt; excerpt={}",
+        !p2_owned.contains(hint_snippet),
+        "raw prior narrative hint must not be replayed in the main prompt; excerpt={}",
         &p2_owned[p2_owned.len().saturating_sub(800)..]
     );
     assert!(
-        p2_owned.contains("【复杂情感叙事提示】"),
-        "expected narrative hint section heading"
+        p2_owned.contains("【情绪连续性】"),
+        "expected redacted emotion-continuity section"
+    );
+    assert!(
+        p2_owned.contains("不复述任何旧话题、动作或台词"),
+        "expected an explicit no-replay rule"
     );
 }

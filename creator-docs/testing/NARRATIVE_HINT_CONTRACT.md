@@ -9,7 +9,7 @@
 | 主 LLM 输出 | `[EMO]...[/EMO]` | `labels[]` + 可选 `narrative_hint`；标记在返回用户前移除 |
 | 插件降级输出 | `ComplexEmotionOutput` | remote / directory 插件在标记缺失或无效时提供 `labels[]` 与 `narrative_hint` |
 | 持久化 | SQLite `complex_emotion_hint` + 会话缓存 | 按 `srid` 保存，24 小时 TTL；缓存不是唯一真相源 |
-| Prompt 输入 | `PromptInput::previous_complex_emotion_narrative_hint` | 只注入上一轮已持久化的 hint |
+| Prompt 输入 | `PromptInput::previous_complex_emotion_narrative_hint` | 只读取上一轮已持久化的 hint，并据此输出不含原文的连续性信号 |
 
 长度约束采用 Unicode 字符计数：Prompt 要求模型尽量不超过 150 字；host 对标记解析、插件输出和最终入库统一硬截断到 **200 字符**，不在多字节字符中间截断。
 
@@ -27,13 +27,13 @@
 
 1. 根据角色有效槽位确定复杂情感后端。
 2. 仅对 `builtin` / `remote` / `directory` 读取 `stored_complex_emotion_narrative_hint(srid)`；过期记录按空处理。
-3. `build_prompt` 注入步骤 2 的上一轮快照；省略或 `none` 始终传空。
+3. `build_prompt` 根据步骤 2 的上一轮快照决定是否输出去内容连续性信号；省略或 `none` 始终传空。
 4. 主对话 LLM 生成正文与可选 `[EMO]` 标记。
 5. 解析并从用户可见回复中移除全部情绪标记；未闭合标记从起始位置到回复末尾一并剥离，防止内部协议泄漏。
 6. 有效标记优先；否则 remote / directory 使用插件输出。最终 `labels[]` 驱动当前机器人情绪与事件，最终 hint 再执行 200 字符上限。
 7. 仅对启用后端持久化 hint；`none` / 省略不得读取、注入、清空或新增 hint。
 
-**跨轮不变量**：本轮 Prompt 只能使用上一轮已存 hint，不能使用本轮刚解析出的 hint。
+**跨轮不变量**：本轮 Prompt 只能使用上一轮已存 hint 判断是否存在情绪余韵，不能使用本轮刚解析出的 hint，也不得把 hint 原文重新注入 Prompt。
 
 ## 4. 解析与降级规则
 
@@ -41,19 +41,19 @@
 - 出现尾随未闭合标记时，该次标记尝试无效，并剥离未闭合尾部，避免 `[EMO]` 或 JSON 残渣进入用户回复。
 - 对启用后端：缺少或无效标记时保持上一轮 hint；有效标记中 `narrative_hint` 缺失或为空时清除已存 hint。
 - remote / directory 插件输出与主标记共用相同的最终长度与持久化边界。
-- Fast 路径不生成或写入新 hint；若后端启用，仍可在 Prompt 中使用已有 hint。
+- Fast 路径不生成或写入新 hint；若后端启用，已有 hint 仍可触发去内容连续性信号。
 
 ## 5. Prompt 注入规则（`PromptBuilder`）
 
-- `previous_complex_emotion_narrative_hint.trim().is_empty()` 时不输出【复杂情感叙事提示】段。
-- 非空时插入固定标题行、`trim()` 后正文和双换行，再接 `用户说:` 段。
-- 标题文案：`【复杂情感叙事提示】（上一回合内置分析输出；自然落实，勿向用户复述本段标题或元信息）`。
+- `previous_complex_emotion_narrative_hint.trim().is_empty()` 时不输出【情绪连续性】段。
+- 非空时只插入固定的去内容连续性指令，再接最新用户消息；不得插入 hint 原文，以免小模型重放旧话题、动作或台词。
+- 固定文案：`【情绪连续性】上一轮存在情绪余韵；只保持语气变化的连续，不复述任何旧话题、动作或台词。最新消息与旧情绪不匹配时，以最新消息为准。`
 
 ## 6. 自动化验证
 
 | 用例 | 位置 |
 |------|------|
-| 首轮无叙事段、次轮注入旧 hint、三轮传递、空值与特殊字符 | `distros/desktop-tauri/tests/narrative_hint_contract_audit.rs`、`narrative_hint_prompt_roundtrip.rs` |
+| 首轮无连续性段、次轮以旧 hint 触发去内容信号、三轮存储更新、空值与特殊字符不泄漏 | `distros/desktop-tauri/tests/narrative_hint_contract_audit.rs`、`narrative_hint_prompt_roundtrip.rs` |
 | `none` 不读不写但保留标签效果；remote 标签驱动六槽；插件 hint 截断 | `distros/desktop-tauri/tests/complex_emotion_backend_contract.rs` |
 | 未闭合标记剥离、最后有效标记、Unicode 200 字符上限 | `kernel/crates/oclive_kernel_host/src/domain/emo_marker.rs` 单元测试 |
 | SQLite + 会话缓存、24 小时 TTL、持久化层防御性截断 | `kernel/crates/oclive_kernel_host/src/domain/complex_emotion_store.rs` 单元测试 |

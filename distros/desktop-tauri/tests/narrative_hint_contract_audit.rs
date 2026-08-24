@@ -1,4 +1,4 @@
-//! AB1：`narrative_hint` 全链路边界与契约审计（见 `creator-docs/testing/NARRATIVE_HINT_CONTRACT.md`）。
+//! AB1：`narrative_hint` 全链路边界与去内容连续性契约审计（见 `creator-docs/testing/NARRATIVE_HINT_CONTRACT.md`）。
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
@@ -17,7 +17,8 @@ use parking_lot::Mutex;
 use std::collections::VecDeque;
 use std::sync::Arc;
 
-const SECTION: &str = "【复杂情感叙事提示】";
+const CONTINUITY_SECTION: &str = "【情绪连续性】";
+const REDACTION_RULE: &str = "不复述任何旧话题、动作或台词";
 const TURN1_HINT: &str = "用户可能缺乏兴致";
 const WANING_HINT: &str = "对话热度下降";
 
@@ -71,9 +72,13 @@ impl LlmClient for ScriptedLlm {
 /// narrative-hint producer since B M1 (the old builtin keyword producer is
 /// retired for the co-present chain).
 fn emo_reply(hint: &str) -> String {
+    emo_reply_with_body("好呀", hint)
+}
+
+fn emo_reply_with_body(body: &str, hint: &str) -> String {
     format!(
-        "好呀\n\n[EMO]{{\"labels\":[\"neutral\"],\"intensity\":0.4,\"narrative_hint\":\"{}\"}}[/EMO]",
-        hint
+        "{}\n\n[EMO]{{\"labels\":[\"neutral\"],\"intensity\":0.4,\"narrative_hint\":\"{}\"}}[/EMO]",
+        body, hint
     )
 }
 
@@ -137,20 +142,20 @@ fn main_prompt_for_user(prompts: &[String], user_line: &str) -> Option<String> {
 }
 
 #[tokio::test]
-async fn first_turn_main_prompt_omits_narrative_section() {
+async fn first_turn_main_prompt_omits_emotion_continuity_section() {
     let (state, prompts) = capture_state_async(false).await;
     run_turn(&state, "随便啦都行").await;
 
     let guard = prompts.lock();
     let p1 = main_prompt_for_user(&guard, "随便啦都行").expect("turn1 main prompt");
     assert!(
-        !p1.contains(SECTION),
-        "first turn must not inject prior narrative section"
+        !p1.contains(CONTINUITY_SECTION),
+        "first turn must not emit a prior-turn continuity section"
     );
 }
 
 #[tokio::test]
-async fn second_turn_injects_prior_turn_hint() {
+async fn second_turn_emits_prior_turn_continuity_without_raw_hint() {
     let (state, prompts) = scripted_state(vec![emo_reply(TURN1_HINT), "mock".to_string()]).await;
 
     run_turn(&state, "随便啦都行").await;
@@ -158,32 +163,44 @@ async fn second_turn_injects_prior_turn_hint() {
 
     let guard = prompts.lock();
     let p2 = main_prompt_for_user(&guard, "接着说正事").expect("turn2 main prompt");
-    assert!(p2.contains(SECTION));
+    assert!(p2.contains(CONTINUITY_SECTION));
     assert!(
-        p2.contains(TURN1_HINT),
-        "turn2 should carry turn1 [EMO] narrative_hint"
+        p2.contains(REDACTION_RULE),
+        "turn2 should explain that continuity must not replay old content"
+    );
+    assert!(
+        !p2.contains(TURN1_HINT),
+        "turn2 must not expose the raw turn1 narrative_hint"
     );
 }
 
 #[tokio::test]
-async fn third_turn_prompt_includes_updated_hint_not_stale_turn1() {
+async fn third_turn_uses_updated_hint_as_redacted_continuity() {
     let (state, prompts) = scripted_state(vec![
-        emo_reply(TURN1_HINT),
-        emo_reply(WANING_HINT),
+        emo_reply_with_body("这事我记下了。", TURN1_HINT),
+        emo_reply_with_body("那我就不催你了。", WANING_HINT),
         "mock".to_string(),
     ])
     .await;
 
     run_turn(&state, "好").await;
     run_turn(&state, "嗯").await;
+    let srid = conversation_state_role_id("mumu", Some("contract-audit"));
+    let stored = load_stored_narrative_hint(&state, &srid)
+        .await
+        .expect("load updated hint");
+    assert!(
+        stored.contains(WANING_HINT),
+        "turn2 should replace the stored hint before turn3"
+    );
     run_turn(&state, "第三轮继续聊").await;
 
     let guard = prompts.lock();
     let p3 = main_prompt_for_user(&guard, "第三轮继续聊").expect("turn3 main prompt");
-    assert!(p3.contains(SECTION));
+    assert!(p3.contains(CONTINUITY_SECTION));
     assert!(
-        p3.contains(WANING_HINT),
-        "turn3 should inject turn2 [EMO] waning_engagement hint, got: {p3}"
+        !p3.contains(WANING_HINT),
+        "turn3 must not expose the updated raw hint, got: {p3}"
     );
     assert!(
         !p3.contains(TURN1_HINT),
@@ -192,7 +209,7 @@ async fn third_turn_prompt_includes_updated_hint_not_stale_turn1() {
 }
 
 #[tokio::test]
-async fn fast_skip_does_not_persist_or_inject_narrative_hint() {
+async fn fast_skip_does_not_persist_or_emit_narrative_continuity() {
     let (state, prompts) = capture_state_async(true).await;
     run_turn(&state, "随便啦都行").await;
 
@@ -209,13 +226,13 @@ async fn fast_skip_does_not_persist_or_inject_narrative_hint() {
     let guard = prompts.lock();
     let p2 = main_prompt_for_user(&guard, "第二轮").expect("turn2 main prompt");
     assert!(
-        !p2.contains(SECTION),
-        "with fast_skip and no prior persist, turn2 must omit narrative section"
+        !p2.contains(CONTINUITY_SECTION),
+        "with fast_skip and no prior persist, turn2 must omit continuity section"
     );
 }
 
 #[tokio::test]
-async fn fast_skip_after_prior_hint_still_injects_stored_hint() {
+async fn fast_skip_after_prior_hint_still_emits_continuity_signal() {
     let (state, prompts) = capture_state_async(true).await;
     let srid = conversation_state_role_id("mumu", Some("contract-audit"));
     oclive_kernel_host::domain::complex_emotion_store::persist_stored_narrative_hint(
@@ -228,10 +245,10 @@ async fn fast_skip_after_prior_hint_still_injects_stored_hint() {
     run_turn(&state, "第二轮跟进").await;
     let guard = prompts.lock();
     let p2 = main_prompt_for_user(&guard, "第二轮跟进").expect("turn2 main prompt");
-    assert!(p2.contains(SECTION));
+    assert!(p2.contains(CONTINUITY_SECTION));
     assert!(
-        p2.contains(TURN1_HINT),
-        "fast_skip turn must still inject prior stored hint"
+        !p2.contains(TURN1_HINT),
+        "fast_skip turn must not expose the raw prior hint"
     );
 }
 
@@ -308,9 +325,9 @@ async fn degraded_turn_without_marker_keeps_prior_hint() {
     run_turn(&state, "第三轮继续聊").await;
     let guard = prompts.lock();
     let p3 = main_prompt_for_user(&guard, "第三轮继续聊").expect("turn3 main prompt");
-    assert!(p3.contains(SECTION));
+    assert!(p3.contains(CONTINUITY_SECTION));
     assert!(
-        p3.contains(TURN1_HINT),
-        "turn3 must still inject the kept hint after a degraded turn"
+        !p3.contains(TURN1_HINT),
+        "turn3 must use the kept hint only as a redacted continuity signal"
     );
 }
