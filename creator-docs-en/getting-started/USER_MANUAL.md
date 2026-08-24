@@ -2,7 +2,13 @@
 
 [中文](../../creator-docs/getting-started/USER_MANUAL.md)
 
-For people who **only use the app** (no role-pack authoring, no plugin development). Error triage: [ERROR_CODES.md](ERROR_CODES.md). Build/install from source: root [README.md](../../README.md).
+**SSOT scope:** installation, daily chat, settings, and self-service troubleshooting for people who use the app without authoring role packs or plugins.
+**Last updated:** 2026-08-24.
+**Audience:** A.I.Live Chat Pro users.
+
+Error triage: [ERROR_CODES.md](ERROR_CODES.md). Build/install from source: root [README.md](../../README.md).
+
+> **Experimental features (0.5.2):** **R18** and **voice (ASR/TTS)** are still under development and are provided only as optional experiments. Their UI, configuration, model compatibility, and runtime behavior may change between releases. Neither feature is required for normal text chat.
 
 ---
 
@@ -88,7 +94,9 @@ When a role pack includes **`user_identities/`** (e.g. `mumu`), open the **debug
 
 Optional text shaping after the LLM reply (`config.json` → `reply_post_processor`). **Disabled by default**; when enabled, the debug runtime panel shows a read-only status line. See [ROLE_PACK_SPEC §9.7](../role-pack/ROLE_PACK_SPEC.md).
 
-### 3.6 Voice (Windows · side-channel `voice.asr`)
+### 3.6 Voice (experimental · Windows · side-channel `voice.asr`)
+
+> **Still under development:** speech recognition, auto-read, model import, and streaming synthesis are experimental. Test with short phrases first and record your engine/profile choices before upgrading. Voice failures should fall back to text chat rather than block sending or reading text messages.
 
 > **Architecture:** voice does **not** enter six slots / main orchestration; it uses the official directory plugin [`com.oclive.voice.asr`](../../distros/chat-pro/plugins/com.oclive.voice.asr/). See [`TRACK_VOICE_RECOGNITION.md`](../../human-docs/team/TRACK_VOICE_RECOGNITION.md).
 
@@ -98,7 +106,17 @@ Optional text shaping after the LLM reply (`config.json` → `reply_post_process
 | **ASR result** | Settings → Voice: send immediately or fill the input draft |
 | **TTS playback** | Enable global voice expansion and auto-read, then enable individual roles in the role list; pick engine/profile in settings |
 | **Role voice hints** | Auto-read requires both a per-role user toggle and that pack's `voice_profile.json`; an optional `synth_profile` overrides only that role's speak jobs and must not rewrite global settings on role switch |
-| **Platform** | Windows product path shipped; Linux/macOS profiles may return `unsupported_platform` |
+| **Platform** | Current experiments focus on Windows; platform coverage and engine compatibility are still under development. Linux/macOS profiles may return `unsupported_platform` |
+
+### 3.7 R18 (experimental · adults only)
+
+> **Still under development:** R18 is an optional experiment, not a default chat capability. Content generation, beat queues, role-extension compatibility, and UI behavior may change. Keep it disabled when you do not need it.
+
+- Adults only. The current build uses a **local self-declaration** and does not perform online identity verification.
+- A role's adult extension is active only when the local adult confirmation, global R18 toggle, and current-role toggle are all enabled.
+- Settings provides **“Reset adult confirmation and R18 settings”** to revoke confirmation and reset related toggles and queue settings. It does not automatically delete existing chats or memories.
+- A broken or incompatible adult extension should be isolated with a visible error while the role remains available in normal mode.
+- R18 is independent from ordinary relationship and identity settings. Disabling it does not remove non-explicit relationship behavior or the base persona.
 
 ---
 
