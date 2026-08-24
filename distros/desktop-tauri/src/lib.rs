@@ -169,6 +169,27 @@ pub fn run() {
             serve_ocliveplugin_asset(ctx.app_handle(), &request)
         })
         .setup(|app| -> Result<(), Box<dyn std::error::Error>> {
+            #[cfg(windows)]
+            if let Some(window) = app.get_webview_window("main") {
+                match tauri::image::Image::from_bytes(include_bytes!("../icons/icon.png")) {
+                    Ok(icon) => {
+                        if let Err(error) = window.set_icon(icon) {
+                            tracing::warn!(
+                                target: "oclive_desktop",
+                                error = %error,
+                                "failed to apply the embedded Chat Pro icon to the main window"
+                            );
+                        }
+                    }
+                    Err(error) => {
+                        tracing::warn!(
+                            target: "oclive_desktop",
+                            error = %error,
+                            "failed to decode the embedded Chat Pro window icon"
+                        );
+                    }
+                }
+            }
             #[cfg(all(desktop, feature = "desktop"))]
             {
                 use tauri_plugin_deep_link::DeepLinkExt;

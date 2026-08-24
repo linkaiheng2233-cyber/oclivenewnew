@@ -2,6 +2,7 @@
 import { useEasterEggSkin } from '@oclive/shared/composables/useEasterEggSkin'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
 import { computed } from 'vue'
+import chatProIconUrl from '../../../../desktop-tauri/icons/32x32.png'
 
 const { win98Enabled } = useEasterEggSkin()
 const roleStore = useRoleStore()
@@ -58,7 +59,7 @@ function onCaptionDblClick(event: MouseEvent): void {
   >
     <img
       class="win98-titlebar__icon"
-      src="/oclive-icon.png"
+      :src="chatProIconUrl"
       alt=""
       width="16"
       height="16"

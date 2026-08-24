@@ -1,6 +1,6 @@
 [package]
 name = "oclivenewnew-tauri"
-version = "0.5.1"
+version = "0.5.2"
 edition = "2021"
 license = "Apache-2.0"
 description = "oclive desktop companion ? Tauri + Vue + Rust dialogue engine"
@@ -28,7 +28,7 @@ oclive_kernel_host = { path = "../../kernel/crates/oclive_kernel_host", features
 oclive_kernel_types = { path = "../../kernel/crates/oclive_kernel_types" }
 oclive_validation = { path = "../../kernel/crates/oclive_validation" }
 oclive_kernel_runtime = { path = "../../kernel/crates/oclive_kernel_runtime" }
-tauri = { version = "2", features = ["protocol-asset"] }
+tauri = { version = "2", features = ["protocol-asset", "image-png"] }
 tauri-plugin-shell = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-opener = "2"
