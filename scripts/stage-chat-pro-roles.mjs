@@ -35,22 +35,50 @@ if (listed.status !== 0) {
   )
 }
 
-const trackedFiles = listed.stdout.split('\0').filter(Boolean)
-if (trackedFiles.length === 0) {
+const listedFiles = listed.stdout.split('\0').filter(Boolean)
+if (listedFiles.length === 0) {
   throw new Error(`no tracked role files found under ${sourcePrefix}`)
 }
 
 const localStateSegment = '/.oclive_directory_plugin_data/'
-const trackedLocalState = trackedFiles.find((file) =>
+const trackedLocalState = listedFiles.find((file) =>
   `/${file.replaceAll('\\', '/')}`.includes(localStateSegment),
 )
 if (trackedLocalState) {
   throw new Error(`refusing to bundle local role state: ${trackedLocalState}`)
 }
 
+// `git ls-files` also reports tracked paths deleted in the current working
+// tree. Release staging follows the current source tree, including intentional
+// uncommitted deletions, instead of failing halfway through a copy.
+const existingTrackedFiles = listedFiles.filter((file) =>
+  fs.existsSync(path.join(repoRoot, ...file.replaceAll('\\', '/').split('/'))),
+)
+
+// Production role packs always have an immediate author.json. Root-level
+// templates/docs, blueprint/, and polish-dev/ are development inputs rather
+// than characters shipped to end users.
+const productionRoleIds = new Set(
+  existingTrackedFiles.flatMap((file) => {
+    const normalized = file.replaceAll('\\', '/')
+    const relative = path.posix.relative(sourcePrefix, normalized)
+    const parts = relative.split('/')
+    return parts.length === 2 && parts[1] === 'author.json' ? [parts[0]] : []
+  }),
+)
+if (productionRoleIds.size === 0) {
+  throw new Error(`no production role packs found under ${sourcePrefix}`)
+}
+
+const trackedFiles = existingTrackedFiles.filter((file) => {
+  const normalized = file.replaceAll('\\', '/')
+  const relative = path.posix.relative(sourcePrefix, normalized)
+  const roleId = relative.split('/')[0]
+  return productionRoleIds.has(roleId)
+})
+
 fs.rmSync(destinationRoot, { recursive: true, force: true })
 fs.mkdirSync(destinationRoot, { recursive: true })
-fs.writeFileSync(path.join(destinationRoot, '.gitkeep'), '')
 
 for (const trackedFile of trackedFiles) {
   const normalized = trackedFile.replaceAll('\\', '/')
@@ -68,5 +96,5 @@ for (const trackedFile of trackedFiles) {
 }
 
 console.log(
-  `[stage-chat-pro-roles] staged ${trackedFiles.length} tracked files -> ${destinationRoot}`,
+  `[stage-chat-pro-roles] staged ${trackedFiles.length} tracked files from ${productionRoleIds.size} production roles -> ${destinationRoot}`,
 )
