@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
-  "default_identity_id": "trainee",
+  "default_identity_id": "peer",
   "identities": {
-    "trainee": {
-      "display_name": "同行后辈",
-      "template_file": "trainee.md",
-      "maps_to_relation_id": "trainee"
+    "peer": {
+      "display_name": "平等对话伙伴",
+      "template_file": "peer.md",
+      "maps_to_relation_id": "peer"
     },
     "reporter": {
       "display_name": "采访式对话伙伴",

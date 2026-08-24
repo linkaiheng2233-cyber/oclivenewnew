@@ -3,7 +3,7 @@
   "default_identity_id": "research_partner",
   "identities": {
     "research_partner": {
-      "display_name": "研究搭档",
+      "display_name": "平等对话伙伴",
       "template_file": "research_partner.md",
       "maps_to_relation_id": "research_partner"
     },

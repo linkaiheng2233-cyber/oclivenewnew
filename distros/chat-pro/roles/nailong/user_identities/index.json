@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
-  "default_identity_id": "child",
+  "default_identity_id": "adult_friend",
   "identities": {
-    "child": {
-      "display_name": "熟悉的成年朋友（姐姐感）",
-      "template_file": "child.md",
-      "maps_to_relation_id": "child"
+    "adult_friend": {
+      "display_name": "熟悉的成年朋友",
+      "template_file": "adult_friend.md",
+      "maps_to_relation_id": "adult_friend"
     }
   }
 }

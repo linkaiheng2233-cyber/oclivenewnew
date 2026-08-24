@@ -25,5 +25,14 @@
   "visual_presentation": {
     "enabled": true,
     "backend": "image"
+  },
+  "reply_post_processor": {
+    "enabled": true,
+    "backend": "builtin",
+    "builtin": {
+      "profile": "standard",
+      "strip_leading_quote": false,
+      "dedupe_quoted_repetitions": true
+    }
   }
 }
