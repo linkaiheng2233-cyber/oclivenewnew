@@ -458,7 +458,8 @@ async fn week3_004_query_memories_and_events() {
     });
     // This API contract needs one persisted memory to query. Opt into legacy
     // Fast-turn persistence explicitly instead of weakening the StrongOnly
-    // product default or relying on incidental event classification.
+    // product default, and use an explicit durable preference so the memory
+    // relevance filter is exercised rather than bypassed.
     let mut host_profile = HostProfile::default();
     host_profile.turn_thinking.fast_persistence = FastPersistenceMode::Legacy;
     let state = AppStateBuilder::in_memory_test(llm, common::roles_dir(), None)
@@ -469,7 +470,7 @@ async fn week3_004_query_memories_and_events() {
 
     let req = SendMessageRequest {
         role_id: "mumu".to_string(),
-        user_message: "hi".to_string(),
+        user_message: "请记住我喜欢蓝色".to_string(),
         ..Default::default()
     };
     process_message(&state, &req).await.expect("send");
