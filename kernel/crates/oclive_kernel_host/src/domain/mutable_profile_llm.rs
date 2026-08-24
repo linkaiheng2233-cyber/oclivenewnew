@@ -12,7 +12,7 @@ use crate::error::Result;
 use crate::models::{EventType, EvolutionConfig};
 use std::sync::Arc;
 
-use super::profile_personality::trim_mutable_storage;
+use super::profile_personality::{sanitize_mutable_profile_for_prompt, trim_mutable_storage};
 
 pub struct MutableEvolutionInput<'a> {
     pub role_name: &'a str,
@@ -50,7 +50,8 @@ fn truncate_chars(s: &str, max: usize) -> String {
 
 fn build_prompt(input: &MutableEvolutionInput<'_>) -> String {
     let core = truncate_chars(input.core_personality.trim(), 3500);
-    let prev_raw = input.prev_mutable.trim();
+    let safe_prev = sanitize_mutable_profile_for_prompt(input.prev_mutable);
+    let prev_raw = safe_prev.trim();
     let prev = truncate_chars(prev_raw, 6000);
     let um = truncate_chars(input.user_message.trim(), 2000);
     let br = truncate_chars(input.bot_reply.trim(), 2000);
@@ -128,6 +129,36 @@ pub fn strip_wrapping_fences(text: &str) -> String {
     }
     inner.to_string()
 }
+
+fn contains_copied_turn_text(candidate: &str, turn_text: &str) -> bool {
+    let turn_text = turn_text.trim();
+    if turn_text.chars().count() >= 8 && candidate.contains(turn_text) {
+        return true;
+    }
+    turn_text
+        .split(['。', '！', '？', '!', '?', '\n'])
+        .map(str::trim)
+        .filter(|part| part.chars().count() >= 12)
+        .any(|part| candidate.contains(part))
+}
+
+fn invalid_mutable_archive(candidate: &str, input: &MutableEvolutionInput<'_>) -> bool {
+    const DIALOGUE_MARKERS: &[&str] = &[
+        "用户说",
+        "如果用户问",
+        "当用户问",
+        "角色回复",
+        "回答：",
+        "回复：",
+        "用户：",
+        "助手：",
+    ];
+    DIALOGUE_MARKERS
+        .iter()
+        .any(|marker| candidate.contains(marker))
+        || contains_copied_turn_text(candidate, input.user_message)
+        || contains_copied_turn_text(candidate, input.bot_reply)
+}
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
@@ -140,9 +171,14 @@ pub async fn evolve_mutable_personality_with_llm(
     let raw = llm.generate(model, &prompt).await?;
     let cleaned = strip_wrapping_fences(&raw);
     if cleaned.is_empty() {
-        return Ok(input.prev_mutable.to_string());
+        return Ok(sanitize_mutable_profile_for_prompt(input.prev_mutable));
     }
-    Ok(trim_mutable_storage(&cleaned))
+    if invalid_mutable_archive(&cleaned, &input) {
+        return Ok(sanitize_mutable_profile_for_prompt(input.prev_mutable));
+    }
+    Ok(trim_mutable_storage(&sanitize_mutable_profile_for_prompt(
+        &cleaned,
+    )))
 }
 
 #[cfg(test)]
@@ -179,5 +215,31 @@ mod tests {
         .await
         .unwrap();
         assert!(out.contains("信任") || out.contains("软"));
+    }
+
+    #[tokio::test]
+    async fn evolve_rejects_copied_dialogue_as_profile_content() {
+        let llm: Arc<dyn LlmClient> = Arc::new(MockLlmClient {
+            reply: "用户说“我想你了”时，回答：我也想你。".into(),
+        });
+        let evo = EvolutionConfig::default();
+        let out = evolve_mutable_personality_with_llm(
+            &llm,
+            "m",
+            MutableEvolutionInput {
+                role_name: "R",
+                core_personality: "内向",
+                prev_mutable: "关系仍然克制。",
+                user_message: "我想你了",
+                bot_reply: "我也想你。",
+                user_emotion: "happy",
+                event_type: &EventType::Confession,
+                impact_scaled: 0.3,
+                evolution: &evo,
+            },
+        )
+        .await
+        .unwrap();
+        assert_eq!(out, "关系仍然克制。");
     }
 }

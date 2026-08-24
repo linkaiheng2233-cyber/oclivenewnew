@@ -59,15 +59,66 @@ impl DefaultMemoryPolicy {
 
 impl MemoryPolicy for DefaultMemoryPolicy {
     fn build_memory_entry(&self, ctx: &PolicyContext<'_>) -> String {
-        format!("用户: {}\n助手: {}", ctx.user_message, ctx.reply)
+        // Chat storage already owns the verbatim transcript. Long-term memory
+        // must contain user-side facts/preferences, not an assistant answer
+        // that can be retrieved later and replayed as if it were a new reply.
+        format!("用户曾表达：{}", ctx.user_message.trim())
     }
 
     fn should_persist(&self, ctx: &PolicyContext<'_>) -> bool {
         if !self.config.ignore_single_char_filter {
             return true;
         }
-        !(matches!(ctx.event.event_type, EventType::Ignore)
-            && ctx.user_message.trim().chars().count() <= 1)
+        let message = ctx.user_message.trim();
+        if message.chars().count() <= 1 {
+            return false;
+        }
+
+        // Relationship-changing events are worth consolidating even when the
+        // wording is short. Ordinary questions and task instructions remain in
+        // chat history instead of polluting cross-turn memory.
+        if matches!(
+            ctx.event.event_type,
+            EventType::Quarrel
+                | EventType::Apology
+                | EventType::Praise
+                | EventType::Complaint
+                | EventType::Confession
+        ) {
+            return true;
+        }
+
+        if message.contains('？') || message.contains('?') {
+            return false;
+        }
+        const USER_FACT_SIGNALS: &[&str] = &[
+            "我叫",
+            "叫我",
+            "我的名字",
+            "我是",
+            "我住在",
+            "我来自",
+            "我的工作",
+            "我喜欢",
+            "我不喜欢",
+            "我讨厌",
+            "我偏好",
+            "我希望",
+            "我想要",
+            "我不想",
+            "我打算",
+            "我计划",
+            "我决定",
+            "请记住",
+            "记住我",
+            "别忘",
+            "以后不要",
+            "以后请",
+            "请叫我",
+        ];
+        USER_FACT_SIGNALS
+            .iter()
+            .any(|signal| message.contains(signal))
     }
 
     fn importance(&self, ctx: &PolicyContext<'_>) -> f64 {
@@ -148,7 +199,21 @@ mod tests {
                 "你好呀",
                 EventType::Ignore,
                 0.35_f32,
+                false,
+            ),
+            (
+                MemoryPolicyConfig::default(),
+                "我不喜欢每轮都被追问",
+                EventType::Ignore,
+                0.35_f32,
                 true,
+            ),
+            (
+                MemoryPolicyConfig::default(),
+                "我叫什么？",
+                EventType::Ignore,
+                0.35_f32,
+                false,
             ),
         ];
 
@@ -168,6 +233,26 @@ mod tests {
             };
             assert_eq!(policy.should_persist(&ctx), expected);
         }
+    }
+
+    #[test]
+    fn memory_entry_keeps_user_fact_but_not_assistant_transcript() {
+        let policy = DefaultMemoryPolicy::new(MemoryPolicyConfig::default());
+        let event = Event {
+            event_type: EventType::Ignore,
+            user_emotion: "neutral".to_string(),
+            bot_emotion: "neutral".to_string(),
+        };
+        let ctx = PolicyContext {
+            role_id: "mumu",
+            user_message: "我喜欢简洁回答",
+            reply: "好的，我会记住。",
+            event: &event,
+            event_confidence: 0.35,
+        };
+        let entry = policy.build_memory_entry(&ctx);
+        assert_eq!(entry, "用户曾表达：我喜欢简洁回答");
+        assert!(!entry.contains("好的"));
     }
 
     #[test]

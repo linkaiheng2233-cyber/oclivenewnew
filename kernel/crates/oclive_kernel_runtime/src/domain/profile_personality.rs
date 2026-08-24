@@ -160,6 +160,58 @@ fn join_mutable_sections(preamble: &str, sections: &[(String, String)]) -> Strin
     parts.join("\n\n")
 }
 
+fn mutable_line_is_dialogue_like(line: &str) -> bool {
+    let text = line.trim();
+    if text.is_empty() {
+        return false;
+    }
+    const DIALOGUE_MARKERS: &[&str] = &[
+        "用户说",
+        "如果用户问",
+        "当用户问",
+        "角色回复",
+        "用户：",
+        "用户:",
+        "助手：",
+        "助手:",
+        "回答：",
+        "回复：",
+    ];
+    DIALOGUE_MARKERS.iter().any(|marker| text.contains(marker))
+        || text.contains(['“', '”'])
+        || text.starts_with("今天")
+        || text.starts_with("我")
+        || text.starts_with("我们")
+        || text.contains("有没有什么想聊")
+        || text.contains("随时告诉我")
+}
+
+/// Removes dialogue snippets that an undersized profile-maintenance model may
+/// have copied into the mutable archive. Structured personality/relationship
+/// sections are retained, while user/assistant scripts and first-person reply
+/// templates are excluded from future main-chat prompts.
+#[must_use]
+pub fn sanitize_mutable_profile_for_prompt(text: &str) -> String {
+    let (preamble, sections) = split_mutable_sections(text);
+    let safe_preamble = preamble
+        .split("\n\n")
+        .filter(|part| !mutable_line_is_dialogue_like(part))
+        .collect::<Vec<_>>()
+        .join("\n\n");
+    let safe_sections = sections
+        .into_iter()
+        .map(|(title, body)| {
+            let body = body
+                .lines()
+                .filter(|line| !mutable_line_is_dialogue_like(line))
+                .collect::<Vec<_>>()
+                .join("\n");
+            (title, body)
+        })
+        .collect::<Vec<_>>();
+    join_mutable_sections(&safe_preamble, &safe_sections)
+}
+
 fn joined_char_count(preamble: &str, sections: &[(String, String)]) -> usize {
     join_mutable_sections(preamble, sections).chars().count()
 }
@@ -422,6 +474,15 @@ mod tests {
             )),
             source_dir: None,
         }
+    }
+
+    #[test]
+    fn mutable_prompt_sanitizer_drops_dialogue_templates_but_keeps_relationship_state() {
+        let polluted = "今天在整理书籍，随时告诉我。\n\n用户说“我想你了”时，回答：我也想你。\n\n## 社交关系\n- 她更愿意直接表达边界。";
+        let safe = sanitize_mutable_profile_for_prompt(polluted);
+        assert!(!safe.contains("整理书籍"));
+        assert!(!safe.contains("我想你"));
+        assert!(safe.contains("她更愿意直接表达边界"));
     }
 
     #[test]

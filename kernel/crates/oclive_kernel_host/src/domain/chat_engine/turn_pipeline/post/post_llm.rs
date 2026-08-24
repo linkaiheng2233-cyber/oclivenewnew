@@ -67,9 +67,18 @@ fn resolve_bot_emotion(
     emo_dominant: Option<Emotion>,
     previous_emotion: Option<&str>,
     emotion_source: &str,
+    preserve_previous: bool,
 ) -> Emotion {
     if let Some(dominant) = emo_dominant {
         return dominant;
+    }
+
+    // A generated fallback does not provide reliable new affect. Preserve the
+    // last persisted state even when this would otherwise be a fast turn.
+    if preserve_previous {
+        return previous_emotion
+            .and_then(|value| value.parse().ok())
+            .unwrap_or(Emotion::Neutral);
     }
 
     // Fast turns intentionally skip the Deep complex-emotion slot. When the
@@ -100,9 +109,12 @@ async fn analyze_bot_emotion_and_policy(
     snapshot_emotion: Option<String>,
     emo_dominant: Option<Emotion>,
     emotion_source: &str,
+    preserve_previous: bool,
 ) -> TurnResult<PostTurnPolicy> {
     let policies = state.policies_for_scene(Some(scene_id));
-    let previous_emotion = if emo_dominant.is_none() && emotion_source != FAST_INTENSITY_SOURCE {
+    let previous_emotion = if emo_dominant.is_none()
+        && (preserve_previous || emotion_source != FAST_INTENSITY_SOURCE)
+    {
         let previous_emotion = if let Some(emotion) = snapshot_emotion {
             Some(emotion)
         } else {
@@ -119,8 +131,12 @@ async fn analyze_bot_emotion_and_policy(
     };
     // The main LLM's [EMO] marker is authoritative. Otherwise fast turns
     // decay to neutral while degraded Deep turns keep their previous state.
-    let bot_emotion =
-        resolve_bot_emotion(emo_dominant, previous_emotion.as_deref(), emotion_source);
+    let bot_emotion = resolve_bot_emotion(
+        emo_dominant,
+        previous_emotion.as_deref(),
+        emotion_source,
+        preserve_previous,
+    );
     let bot_emotion_str = bot_emotion.to_string();
     let event = Event {
         event_type: middle.ai_event_type,
@@ -467,6 +483,7 @@ pub(crate) async fn post_llm(
         ctx.runtime_snapshot.emotion.clone(),
         dominant_emotion_from_labels(&effective_complex_emotion.labels),
         effective_complex_emotion.source.as_str(),
+        llm.main_llm_fallback,
     )
     .await?;
 
@@ -765,7 +782,7 @@ mod tests {
     #[test]
     fn fast_turn_without_marker_does_not_latch_previous_emotion() {
         assert_eq!(
-            resolve_bot_emotion(None, Some("happy"), FAST_INTENSITY_SOURCE),
+            resolve_bot_emotion(None, Some("happy"), FAST_INTENSITY_SOURCE, false),
             Emotion::Neutral,
         );
     }
@@ -773,7 +790,12 @@ mod tests {
     #[test]
     fn declared_emotion_remains_authoritative_on_fast_turn() {
         assert_eq!(
-            resolve_bot_emotion(Some(Emotion::Angry), Some("happy"), FAST_INTENSITY_SOURCE,),
+            resolve_bot_emotion(
+                Some(Emotion::Angry),
+                Some("happy"),
+                FAST_INTENSITY_SOURCE,
+                false,
+            ),
             Emotion::Angry,
         );
     }
@@ -781,7 +803,15 @@ mod tests {
     #[test]
     fn degraded_deep_turn_preserves_previous_emotion() {
         assert_eq!(
-            resolve_bot_emotion(None, Some("sad"), "deep_builtin_degraded"),
+            resolve_bot_emotion(None, Some("sad"), "deep_builtin_degraded", false),
+            Emotion::Sad,
+        );
+    }
+
+    #[test]
+    fn generated_fallback_preserves_previous_emotion_on_fast_turn() {
+        assert_eq!(
+            resolve_bot_emotion(None, Some("sad"), FAST_INTENSITY_SOURCE, true),
             Emotion::Sad,
         );
     }

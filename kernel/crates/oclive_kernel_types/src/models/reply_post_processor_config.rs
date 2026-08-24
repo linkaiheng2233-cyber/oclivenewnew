@@ -55,6 +55,10 @@ pub struct RolePackBuiltinReplyPostProcessorConfig {
     pub max_chars: Option<u32>,
     #[serde(default)]
     pub strip_leading_quote: Option<bool>,
+    /// Remove a later quoted/bracketed phrase when its punctuation-free text
+    /// already appeared earlier in the same reply.
+    #[serde(default)]
+    pub dedupe_quoted_repetitions: Option<bool>,
 }
 
 impl Default for RolePackBuiltinReplyPostProcessorConfig {
@@ -63,6 +67,7 @@ impl Default for RolePackBuiltinReplyPostProcessorConfig {
             profile: default_builtin_profile(),
             max_chars: None,
             strip_leading_quote: None,
+            dedupe_quoted_repetitions: None,
         }
     }
 }

@@ -15,12 +15,61 @@ use serde::Deserialize;
 pub const EMO_MARKER_OPEN: &str = "[EMO]";
 /// Closing marker.
 pub const EMO_MARKER_CLOSE: &str = "[/EMO]";
+/// Markdown-escaped malformed opener occasionally emitted by small local models.
+///
+/// These models may copy the internal contract as `\[EMO\][...]\]` instead of
+/// producing the required `[EMO]{...}[/EMO]` block.  The payload cannot be
+/// trusted as structured emotion, but it must never reach the visible reply.
+const ESCAPED_EMO_MARKER_OPEN: &str = r"\[EMO\]";
 /// `ComplexEmotionOutput.source` for marker-derived output.
 pub const EMO_MARKER_SOURCE: &str = "llm_emo_marker";
 /// `ComplexEmotionOutput.source` for the degraded keep branch (no marker, non-plugin backend).
 pub const DEGRADED_KEEP_SOURCE: &str = "degraded_keep";
 /// Hard upper bound for model/plugin-generated narrative hints.
 pub const MAX_NARRATIVE_HINT_CHARS: usize = 200;
+
+fn markerless_emo_tail_start(reply: &str) -> Option<usize> {
+    const LABEL_PREFIXES: [&str; 4] = [
+        r#""label":"#,
+        r#""labels":"#,
+        r#"\"label\":"#,
+        r#"\"labels\":"#,
+    ];
+    const EMOTION_VALUES: [&str; 7] = [
+        "joy", "sadness", "anger", "fear", "surprise", "disgust", "neutral",
+    ];
+
+    LABEL_PREFIXES
+        .into_iter()
+        .filter_map(|prefix| reply.find(prefix))
+        .filter(|start| {
+            let tail = &reply[*start..];
+            tail.len() <= 1_024
+                && tail.contains("intensity")
+                && tail.contains("narrative_hint")
+                && EMOTION_VALUES.iter().any(|value| tail.contains(value))
+        })
+        .min()
+}
+
+fn strip_internal_status_markers(reply: &str) -> String {
+    const INTERNAL_SUFFIXES: [&str; 8] = [
+        "[@思考中...]",
+        "[@思考中…]",
+        "[思考中...]",
+        "[思考中…]",
+        "（思考中...）",
+        "（思考中…）",
+        "[分析中...]",
+        "[生成中...]",
+    ];
+
+    let mut cleaned = reply.to_string();
+    for marker in INTERNAL_SUFFIXES {
+        cleaned = cleaned.replace(marker, "");
+    }
+    cleaned.trim_end().to_string()
+}
 
 /// Applies the contract limit without splitting UTF-8 code points.
 #[must_use]
@@ -197,27 +246,57 @@ pub fn parse_and_strip(reply: &str) -> (String, Option<EmoMarker>) {
         scan = close_end;
     }
 
-    let marker = if unclosed_start.is_some() {
-        None
-    } else {
-        blocks
-            .last()
-            .copied()
-            .and_then(|(_, body_start, body_end, _)| parse_marker(&reply[body_start..body_end]))
-    };
+    let escaped_start = [
+        ESCAPED_EMO_MARKER_OPEN,
+        r"\[EMO]",
+        r"[EMO\]",
+        "［EMO]",
+        "［EMO］",
+        "[EMO］",
+    ]
+    .into_iter()
+    .filter_map(|candidate| reply.find(candidate))
+    .min();
+    let markerless_start = markerless_emo_tail_start(reply).filter(|candidate| {
+        !blocks
+            .iter()
+            .any(|(start, _, _, close_end)| candidate >= start && candidate < close_end)
+    });
 
-    if blocks.is_empty() && unclosed_start.is_none() {
-        return (reply.to_string(), None);
+    let marker =
+        if unclosed_start.is_some() || escaped_start.is_some() || markerless_start.is_some() {
+            None
+        } else {
+            blocks
+                .last()
+                .copied()
+                .and_then(|(_, body_start, body_end, _)| parse_marker(&reply[body_start..body_end]))
+        };
+
+    if blocks.is_empty()
+        && unclosed_start.is_none()
+        && escaped_start.is_none()
+        && markerless_start.is_none()
+    {
+        return (strip_internal_status_markers(reply), None);
     }
 
     let mut cleaned = reply.to_string();
-    if let Some(start) = unclosed_start {
+    let malformed_tail_start = unclosed_start
+        .into_iter()
+        .chain(escaped_start)
+        .chain(markerless_start)
+        .min();
+    if let Some(start) = malformed_tail_start {
         cleaned.replace_range(start.., "");
     }
     for (start, _, _, close_end) in blocks.into_iter().rev() {
+        if malformed_tail_start.is_some_and(|tail_start| start >= tail_start) {
+            continue;
+        }
         cleaned.replace_range(start..close_end, "");
     }
-    let cleaned = cleaned.trim_end().to_string();
+    let cleaned = strip_internal_status_markers(&cleaned);
     (cleaned, marker)
 }
 
@@ -343,6 +422,67 @@ mod tests {
         let reply = "台词[EMO]{\"labels\":[\"joy\"]}";
         let (cleaned, parsed) = parse_and_strip(reply);
         assert_eq!(cleaned, "台词");
+        assert!(parsed.is_none());
+    }
+
+    #[test]
+    fn escaped_malformed_marker_degrades_and_strips_internal_tail() {
+        let reply = r#"菲比啾比！谢谢你。\[EMO\][\"labels\":[\"joy\",\"surprise\"],\"intensity\":0.8,\"narrative_hint\":\"内部字段\"]\]"#;
+        let (cleaned, parsed) = parse_and_strip(reply);
+        assert_eq!(cleaned, "菲比啾比！谢谢你。");
+        assert!(parsed.is_none());
+    }
+
+    #[test]
+    fn fullwidth_malformed_marker_never_reaches_visible_reply() {
+        for reply in [
+            "台词［EMO]{\"labels\":[\"joy\"],\"intensity\":0.3}[/EMO]",
+            "台词［EMO］{\"labels\":[\"joy\"],\"intensity\":0.3}［/EMO］",
+            "台词[EMO］{\"labels\":[\"joy\"],\"intensity\":0.3}[/EMO]",
+        ] {
+            let (cleaned, marker) = parse_and_strip(reply);
+            assert_eq!(cleaned, "台词");
+            assert!(marker.is_none());
+        }
+    }
+
+    #[test]
+    fn escaped_tail_before_complete_marker_never_leaks_or_panics() {
+        let reply = r#"台词\[EMO\][\"labels\":[\"joy\"]\][EMO]{\"labels\":[\"joy\"]}[/EMO]"#;
+        let (cleaned, parsed) = parse_and_strip(reply);
+        assert_eq!(cleaned, "台词");
+        assert!(parsed.is_none());
+    }
+
+    #[test]
+    fn markerless_internal_emotion_tail_is_stripped() {
+        let reply = r#"你好。\"label\":\"joy\",\"intensity\":0.7,\"narrative_hint\":\"轻快问候\""#;
+        let (cleaned, parsed) = parse_and_strip(reply);
+        assert_eq!(cleaned, "你好。");
+        assert!(parsed.is_none());
+    }
+
+    #[test]
+    fn ordinary_json_with_label_is_not_over_stripped() {
+        let reply = r#"字段示例：{\"label\":\"joy\",\"value\":1}"#;
+        let (cleaned, parsed) = parse_and_strip(reply);
+        assert_eq!(cleaned, reply);
+        assert!(parsed.is_none());
+    }
+
+    #[test]
+    fn internal_thinking_status_suffix_is_stripped_without_emo_marker() {
+        let reply = "直接回答。[@思考中...]";
+        let (cleaned, parsed) = parse_and_strip(reply);
+        assert_eq!(cleaned, "直接回答。");
+        assert!(parsed.is_none());
+    }
+
+    #[test]
+    fn internal_thinking_status_marker_is_stripped_in_the_middle() {
+        let reply = "直接回答。[@思考中...]继续正文。";
+        let (cleaned, parsed) = parse_and_strip(reply);
+        assert_eq!(cleaned, "直接回答。继续正文。");
         assert!(parsed.is_none());
     }
 

@@ -146,6 +146,39 @@ impl BuiltinReplyPostProcessor {
         }
         text.to_string()
     }
+
+    fn strip_duplicate_quoted_repetitions(text: &str) -> String {
+        let mut out = text.to_string();
+        for (open, close) in [('「', '」'), ('『', '』'), ('【', '】')] {
+            let mut scan = 0usize;
+            loop {
+                let Some(rel_start) = out[scan..].find(open) else {
+                    break;
+                };
+                let start = scan + rel_start;
+                let body_start = start + open.len_utf8();
+                let Some(rel_end) = out[body_start..].find(close) else {
+                    break;
+                };
+                let body_end = body_start + rel_end;
+                let close_end = body_end + close.len_utf8();
+                let needle = out[body_start..body_end].trim().trim_matches(|c: char| {
+                    matches!(
+                        c,
+                        '。' | '.' | '！' | '!' | '？' | '?' | '，' | ',' | '；' | ';'
+                    )
+                });
+                let already_seen = needle.chars().count() >= 2 && out[..start].contains(needle);
+                if already_seen {
+                    out.replace_range(start..close_end, "");
+                    scan = start;
+                } else {
+                    scan = close_end;
+                }
+            }
+        }
+        Self::normalize_whitespace(&out, false)
+    }
 }
 
 impl ReplyPostProcessor for BuiltinReplyPostProcessor {
@@ -157,6 +190,9 @@ impl ReplyPostProcessor for BuiltinReplyPostProcessor {
         }
         if !minimal {
             out = Self::strip_leading_user_echo(&out, input.user_message);
+        }
+        if self.config.dedupe_quoted_repetitions.unwrap_or(false) {
+            out = Self::strip_duplicate_quoted_repetitions(&out);
         }
         if let Some(max) = self.config.max_chars {
             if out.chars().count() > max as usize {
@@ -192,6 +228,7 @@ mod tests {
             profile: "minimal".to_string(),
             max_chars: None,
             strip_leading_quote: None,
+            dedupe_quoted_repetitions: None,
         });
         let out = p
             .process_reply(PostProcessInput {
@@ -212,6 +249,7 @@ mod tests {
             profile: "standard".to_string(),
             max_chars: Some(3),
             strip_leading_quote: Some(false),
+            dedupe_quoted_repetitions: None,
         });
         let out = p
             .process_reply(PostProcessInput {
@@ -232,6 +270,7 @@ mod tests {
             profile: "standard".to_string(),
             max_chars: None,
             strip_leading_quote: Some(false),
+            dedupe_quoted_repetitions: None,
         });
         for raw in [
             "晚上好哦沐沐。今天怎么突然这么乖？",
@@ -257,6 +296,7 @@ mod tests {
             profile: "standard".to_string(),
             max_chars: None,
             strip_leading_quote: Some(false),
+            dedupe_quoted_repetitions: None,
         });
         let out = p
             .process_reply(PostProcessInput {
@@ -269,5 +309,33 @@ mod tests {
             })
             .expect("ok");
         assert_eq!(out.display_reply, "你好呀，今天回来得挺早。");
+    }
+
+    #[test]
+    fn configured_dedupe_removes_later_quoted_repetition() {
+        let p = BuiltinReplyPostProcessor::new(RolePackBuiltinReplyPostProcessorConfig {
+            profile: "standard".to_string(),
+            max_chars: None,
+            strip_leading_quote: Some(false),
+            dedupe_quoted_repetitions: Some(true),
+        });
+        for raw in [
+            "菲比啾比！你好呀。「菲比啾比！」",
+            "菲比啾比。明白，只保留自然语言。【菲比啾比】",
+        ] {
+            let out = p
+                .process_reply(PostProcessInput {
+                    raw_reply: raw,
+                    user_message: "",
+                    role_id: "phoebe-chubi",
+                    scene_id: "default",
+                    srid: "phoebe-chubi",
+                    locale: "zh",
+                })
+                .expect("ok");
+            assert!(!out.display_reply.contains('「'));
+            assert!(!out.display_reply.contains('【'));
+            assert_eq!(out.display_reply.matches("菲比啾比").count(), 1);
+        }
     }
 }

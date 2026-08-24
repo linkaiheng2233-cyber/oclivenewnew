@@ -103,6 +103,15 @@ fn create_test_memory() -> Memory {
 }
 
 #[test]
+fn legacy_transcript_memory_does_not_reinject_assistant_reply() {
+    let mut memory = create_test_memory();
+    memory.content = "用户: 我喜欢简洁回答\n助手: 好的，我以后每轮都这样说。".to_string();
+    let context = PromptBuilder::build_memory_context(&[memory]);
+    assert!(context.contains("用户曾表达：我喜欢简洁回答"));
+    assert!(!context.contains("我以后每轮都这样说"));
+}
+
+#[test]
 fn test_build_prompt() {
     let role = create_test_role();
     let personality = create_test_personality();
@@ -557,6 +566,8 @@ fn default_reply_quality_anchor_and_guardrails_constants_present() {
     assert!(KERNEL_DIALOGUE_GUARDRAILS.contains("长短句交替"));
     assert!(KERNEL_DIALOGUE_GUARDRAILS.contains("状态延续"));
     assert!(KERNEL_DIALOGUE_GUARDRAILS.contains("倾诉优先"));
+    assert!(KERNEL_DIALOGUE_GUARDRAILS.contains("当前输入优先"));
+    assert!(KERNEL_DIALOGUE_GUARDRAILS.contains("成品去重与去元信息"));
 }
 
 #[test]
@@ -682,11 +693,11 @@ fn special_chars_in_narrative_hint_preserve_prompt_structure() {
         persona_override: None,
         previous_assistant_reply: "",
     });
-    assert!(prompt.contains("【复杂情感叙事提示】"));
-    assert!(prompt.contains("引号\""));
-    assert!(prompt.contains("**markdown**"));
+    assert!(prompt.contains("【情绪连续性】"));
+    assert!(!prompt.contains(hint));
+    assert!(prompt.contains("不复述任何旧话题、动作或台词"));
     let user_idx = prompt.find("用户说: after").expect("user section");
-    let section_idx = prompt.find("【复杂情感叙事提示】").expect("section");
+    let section_idx = prompt.find("【情绪连续性】").expect("section");
     assert!(
         section_idx < user_idx,
         "narrative section must precede user line"
@@ -1296,6 +1307,30 @@ fn build_prompt_segments_stable_is_full_prefix() {
     assert!(full.contains("世界观测试片段"));
     assert!(full.contains("【对话硬约束】"));
     assert!(full.contains("客厅灯暖洋洋"));
+    assert!(!segments.stable_prefix.contains("【对话硬约束】"));
+    assert!(segments.dynamic_suffix.contains("【对话硬约束】"));
+    let anchor = segments
+        .dynamic_suffix
+        .find("【回复质量锚点】")
+        .expect("quality anchor in per-turn suffix");
+    let user = segments
+        .dynamic_suffix
+        .find("用户说: Hello")
+        .expect("latest user input");
+    assert!(anchor < user);
+}
+
+#[test]
+fn conditional_reply_anchor_only_emits_matching_latest_message_block() {
+    let anchor = "【常驻锚点】\n只回答最新消息。\n【触发锚点：端口|PID】\n先查占用 PID。\n【触发锚点：想我吗|想念】\n回答角色自己的感受。";
+    let selected = select_reply_quality_anchor(anchor, "Windows 端口被占用");
+    assert!(selected.contains("只回答最新消息"));
+    assert!(selected.contains("先查占用 PID"));
+    assert!(!selected.contains("角色自己的感受"));
+    assert!(!selected.contains("触发锚点"));
+
+    let legacy = "【包级锚点】始终保留";
+    assert_eq!(select_reply_quality_anchor(legacy, "任意消息"), legacy);
 }
 
 #[test]
@@ -1360,19 +1395,25 @@ fn build_prompt_injects_previous_reply_constraint_with_care_package() {
     assert!(prev_pos < anchor_pos);
 }
 #[test]
-fn emo_marker_instruction_appears_after_output_boundary_in_both_paths() {
+fn latest_user_message_and_final_turn_instruction_follow_emo_schema_in_both_paths() {
     let role = create_test_role();
     let personality = create_test_personality();
     let input = sample_prompt_input(&role, &personality, &[], "你好", "", "", None);
 
     let prompt = PromptBuilder::build_prompt(&input);
+    let emo = prompt.find("[EMO]").expect("[EMO] instruction present");
+    let user = prompt
+        .find("【最新用户消息】")
+        .expect("latest user message present");
     let boundary = prompt
         .find("【输出边界】")
         .expect("output boundary present");
-    let emo = prompt.find("[EMO]").expect("[EMO] instruction present");
+    let final_turn = prompt
+        .find("【本轮最终指令】")
+        .expect("final turn instruction present");
     assert!(
-        boundary < emo,
-        "[EMO] instruction must follow the output boundary"
+        emo < user && user < boundary && boundary < final_turn,
+        "emotion schema must precede the latest user message and final recency instruction"
     );
     assert!(prompt.contains("[/EMO]"));
     assert!(prompt.contains("joy"));
@@ -1380,12 +1421,18 @@ fn emo_marker_instruction_appears_after_output_boundary_in_both_paths() {
 
     let segments = PromptBuilder::build_prompt_segments(&input);
     let suffix = segments.dynamic_suffix.as_str();
-    let seg_boundary = suffix
-        .find("【输出边界】")
-        .expect("boundary in dynamic suffix");
     let seg_emo = suffix
         .find("[EMO]")
         .expect("[EMO] instruction in dynamic suffix");
-    assert!(seg_boundary < seg_emo);
+    let seg_user = suffix
+        .find("【最新用户消息】")
+        .expect("latest user message in dynamic suffix");
+    let seg_boundary = suffix
+        .find("【输出边界】")
+        .expect("boundary in dynamic suffix");
+    let seg_final = suffix
+        .find("【本轮最终指令】")
+        .expect("final turn instruction in dynamic suffix");
+    assert!(seg_emo < seg_user && seg_user < seg_boundary && seg_boundary < seg_final);
     assert!(suffix.contains("[/EMO]"));
 }

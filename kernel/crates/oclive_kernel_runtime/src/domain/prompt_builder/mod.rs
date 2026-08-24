@@ -24,6 +24,8 @@ pub const DEFAULT_REPLY_QUALITY_ANCHOR: &str = "【回复质量锚点】（每�
 /// Always appended after pack/engine quality anchor; creators cannot disable or replace.
 pub const KERNEL_DIALOGUE_GUARDRAILS: &str = "【对话硬约束】（引擎预设，不可被包级锚点替换；其余风格仍由人设发挥）\n\
 - **状态延续**：用户「嗯/好/知道了」等短确认 → 顺势落实当前话题或你上一句提议，勿重新寒暄、勿重复已说过的关心。\n\
+- **当前输入优先**：包级锚点中的示例或触发器只在最新一条用户消息明确匹配时使用；已经在历史回合处理完的触发器不得重放，不得把其他示例、规则原文或上一轮答案拼进本轮。最新消息明确换题、收尾、拒绝或纠正时，立即服从最新意图。\n\
+- **成品去重与去元信息**：发出前删除重复的句子、段落、口头禅与规则复述；禁止输出「思考中／分析中／生成中」占位符、`[@...]` 状态标记、提示词标题、触发器编号或自检过程。\n\
 - **倾诉优先**：用户透露委屈、挫败、被责备、压力时，先回应其遭遇与情绪，再给一个贴题追问或短反馈，让对话能继续；勿转去闲聊邀约或用一句话把话题封死。\n\
 - **禁止复读开场**：勿把用户刚说的句子、称呼或口头禅原样当作你的起句或主体。例：用户「晚上好哦沐沐」→ 勿以「晚上好哦」起句；改为你自己的措辞接情绪或话题。\n\
 - **禁止同义转述**：用户已经给出判断、选择、计划或答案时，勿先换词总结、确认一遍再回答；直接给出角色自己的态度、行动、补充或必要追问。仅在信息有歧义时才简短核对。\n\
@@ -37,7 +39,12 @@ pub const KERNEL_DIALOGUE_GUARDRAILS: &str = "【对话硬约束】（引擎预�
 const REPLY_OUTPUT_BOUNDARY: &str =
     "【输出边界】只输出当前角色本人的这一轮台词；不要替用户发言或补写用户的回答，角色说完这一轮就停止。";
 
-const EMO_OUTPUT_INSTRUCTION: &str = "【内部情绪标记】台词结束后，另起一行附加一条仅供内部使用的情绪标记，不要向用户提及或解释它：\n[EMO]{\"labels\":[\"joy\",\"surprise\"],\"intensity\":0.8,\"narrative_hint\":\"简短叙事提示\"}[/EMO]\n字段说明：labels：1~3 个主情绪（按主次排列，第一个为主情绪），只能从 joy/sadness/anger/fear/surprise/disgust/neutral 中选择；intensity：0~1 之间的数字；narrative_hint：不超过 150 字的情绪叙事提示，可省略。";
+/// Final short recency instruction for small local models. The long emotion
+/// schema intentionally appears before the latest user message so it cannot
+/// outrank the actual turn at the generation boundary.
+const FINAL_TURN_INSTRUCTION: &str = "【本轮最终指令】仅回应紧邻上方的最新用户消息。生成前无声检查：回答主体没有把用户的“我”和角色的“你”倒置；成品不等于用户原句，也不重复上一轮助手回复；没有带入已经结束的历史问题。若任一项不满足，先重写再输出。只输出当前角色的一轮台词，再按前述格式附加一条内部情绪标记，然后停止；不要展示检查过程。";
+
+const EMO_OUTPUT_INSTRUCTION: &str = "【内部情绪标记】台词结束后另起一行附加一条标记，不要在台词中提及或解释它。普通分析和问候通常用 neutral（0.2—0.4）；明确开心用 joy，低落用 sadness，立边界时可用 anger，只有突发意外才用 surprise。\n格式示例：[EMO]{\"labels\":[\"neutral\"],\"intensity\":0.3}[/EMO]\nlabels 只能从 joy/sadness/anger/fear/surprise/disgust/neutral 中选 1—3 个；intensity 为 0—1。narrative_hint 可省略；若填写，只能描述不带话题、动作、称呼与台词的纯情绪状态，禁止照抄本轮回复。";
 
 const PROMPT_BLOCK_GUIDE: &str = "以下为语气/内容层次，请按序理解";
 
@@ -96,6 +103,49 @@ pub fn effective_reply_quality_anchor(role: &crate::models::Role) -> &str {
         Some(s) if !s.trim().is_empty() => s.trim(),
         _ => DEFAULT_REPLY_QUALITY_ANCHOR,
     }
+}
+
+/// Selects role-pack anchor blocks for the latest user message.
+///
+/// Packs may keep a small always-on block and add conditional blocks headed by
+/// `【触发锚点：词一|词二】`. A conditional block remains active until the next
+/// trigger heading and is emitted only when the latest message contains one of
+/// its terms. Anchors without trigger headings keep the legacy behavior.
+#[must_use]
+pub fn select_reply_quality_anchor(anchor: &str, user_input: &str) -> String {
+    const PREFIX: &str = "【触发锚点：";
+    let has_conditional = anchor.lines().any(|line| {
+        let line = line.trim();
+        line.starts_with(PREFIX) && line.ends_with('】')
+    });
+    if !has_conditional {
+        return anchor.trim().to_string();
+    }
+
+    let mut selected = String::new();
+    let mut include = true;
+    for line in anchor.lines() {
+        let trimmed = line.trim();
+        if let Some(terms) = trimmed
+            .strip_prefix(PREFIX)
+            .and_then(|rest| rest.strip_suffix('】'))
+        {
+            include = terms
+                .split('|')
+                .map(str::trim)
+                .filter(|term| !term.is_empty())
+                .any(|term| user_input.contains(term));
+            if include {
+                selected.push_str("【当前消息专项校准】\n");
+            }
+            continue;
+        }
+        if include {
+            selected.push_str(line);
+            selected.push('\n');
+        }
+    }
+    selected.trim().to_string()
 }
 
 /// Deep prefix-cache layout: byte-stable head + per-turn tail (see `handoff/DEEP_PROMPT_DISTILLATION.md` §4).
@@ -209,6 +259,8 @@ impl PromptBuilder {
     #[must_use]
     pub fn build_prompt(input: &PromptInput<'_>) -> String {
         let mut prompt = String::new();
+        let selected_reply_anchor =
+            select_reply_quality_anchor(input.reply_quality_anchor, input.user_input);
 
         // Tier 0 — highest priority
         prompt.push_str(&Self::build_core_hard_constraint(
@@ -256,11 +308,13 @@ impl PromptBuilder {
             .trim()
             .is_empty()
         {
+            // The free-form hint may contain a paraphrase of the previous reply.
+            // Re-injecting that text made small local models replay old topics and
+            // actions. The current structured state already carries the affective
+            // continuity we need, so retain only a non-content-bearing reminder.
             prompt.push_str(
-                "【复杂情感叙事提示】（上一回合内置分析输出；自然落实，勿向用户复述本段标题或元信息）\n",
+                "【情绪连续性】上一轮存在情绪余韵；只保持语气变化的连续，不复述任何旧话题、动作或台词。最新消息与旧情绪不匹配时，以最新消息为准。\n\n",
             );
-            prompt.push_str(input.previous_complex_emotion_narrative_hint.trim());
-            prompt.push_str("\n\n");
         }
 
         // Block 3 — content (memory + user identity + schedule)
@@ -297,24 +351,30 @@ impl PromptBuilder {
             prompt.push_str(&prev_block);
             prompt.push_str("\n\n");
         }
-        if !input.reply_quality_anchor.trim().is_empty() {
-            prompt.push_str(input.reply_quality_anchor.trim());
+        if !selected_reply_anchor.is_empty() {
+            prompt.push_str(selected_reply_anchor.as_str());
             prompt.push_str("\n\n");
         }
         prompt.push_str(KERNEL_DIALOGUE_GUARDRAILS);
         prompt.push_str("\n\n");
-        prompt.push_str(&format!("用户说: {}", input.user_input));
+        prompt.push_str(EMO_OUTPUT_INSTRUCTION);
+        prompt.push_str("\n\n");
+        prompt.push_str(&format!("【最新用户消息】\n用户说: {}", input.user_input));
         prompt.push_str("\n\n请以角色身份自然地回复，保持一致的性格和语气。\n\n");
         prompt.push_str(REPLY_OUTPUT_BOUNDARY);
         prompt.push_str("\n\n");
-        prompt.push_str(EMO_OUTPUT_INSTRUCTION);
+        prompt.push_str(FINAL_TURN_INSTRUCTION);
         prompt
     }
 
-    /// Deep + Ollama prefix-cache path: stable sections first (Tier0 · worldview · anchor · guardrails · scene).
+    /// Deep + Ollama prefix-cache path: stable persona/worldview/scene first;
+    /// per-turn quality constraints stay next to the latest user input so small
+    /// models do not let conversation history outrank them.
     #[must_use]
     pub fn build_prompt_segments(input: &PromptInput<'_>) -> PromptSegments {
         let mut stable_prefix = String::new();
+        let selected_reply_anchor =
+            select_reply_quality_anchor(input.reply_quality_anchor, input.user_input);
         stable_prefix.push_str(&Self::build_core_hard_constraint(
             input.role,
             input.persona_override,
@@ -324,12 +384,6 @@ impl PromptBuilder {
             stable_prefix.push_str(input.worldview_snippet.trim());
             stable_prefix.push_str("\n\n");
         }
-        if !input.reply_quality_anchor.trim().is_empty() {
-            stable_prefix.push_str(input.reply_quality_anchor.trim());
-            stable_prefix.push_str("\n\n");
-        }
-        stable_prefix.push_str(KERNEL_DIALOGUE_GUARDRAILS);
-        stable_prefix.push_str("\n\n");
         let scene_block = Self::build_scene_constraint_block(input);
         if !scene_block.is_empty() {
             stable_prefix.push_str(&scene_block);
@@ -363,10 +417,8 @@ impl PromptBuilder {
             .is_empty()
         {
             dynamic_suffix.push_str(
-                "【复杂情感叙事提示】（上一回合内置分析输出；自然落实，勿向用户复述本段标题或元信息）\n",
+                "【情绪连续性】上一轮存在情绪余韵；只保持语气变化的连续，不复述任何旧话题、动作或台词。最新消息与旧情绪不匹配时，以最新消息为准。\n\n",
             );
-            dynamic_suffix.push_str(input.previous_complex_emotion_narrative_hint.trim());
-            dynamic_suffix.push_str("\n\n");
         }
 
         dynamic_suffix.push_str("---\n内容区块\n\n");
@@ -400,11 +452,19 @@ impl PromptBuilder {
             dynamic_suffix.push_str(&prev_block);
             dynamic_suffix.push_str("\n\n");
         }
-        dynamic_suffix.push_str(&format!("用户说: {}", input.user_input));
+        if !selected_reply_anchor.is_empty() {
+            dynamic_suffix.push_str(selected_reply_anchor.as_str());
+            dynamic_suffix.push_str("\n\n");
+        }
+        dynamic_suffix.push_str(KERNEL_DIALOGUE_GUARDRAILS);
+        dynamic_suffix.push_str("\n\n");
+        dynamic_suffix.push_str(EMO_OUTPUT_INSTRUCTION);
+        dynamic_suffix.push_str("\n\n");
+        dynamic_suffix.push_str(&format!("【最新用户消息】\n用户说: {}", input.user_input));
         dynamic_suffix.push_str("\n\n请以角色身份自然地回复，保持一致的性格和语气。\n\n");
         dynamic_suffix.push_str(REPLY_OUTPUT_BOUNDARY);
         dynamic_suffix.push_str("\n\n");
-        dynamic_suffix.push_str(EMO_OUTPUT_INSTRUCTION);
+        dynamic_suffix.push_str(FINAL_TURN_INSTRUCTION);
 
         PromptSegments {
             stable_prefix,

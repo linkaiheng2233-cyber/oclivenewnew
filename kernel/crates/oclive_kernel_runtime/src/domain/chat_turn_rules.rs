@@ -192,6 +192,52 @@ pub fn strip_hallucination_tokens(reply: &str) -> String {
     lines.join("\n").trim().to_string()
 }
 
+/// Removes a leading speaker/role label while preserving legitimate content
+/// headings such as `【结论】`.
+#[must_use]
+pub fn strip_leading_role_label(reply: &str, role_name: &str) -> String {
+    let compact_label = |value: &str| {
+        value
+            .chars()
+            .filter(|ch| !ch.is_whitespace() && !matches!(ch, '-' | '_' | '·' | '・'))
+            .collect::<String>()
+            .to_lowercase()
+    };
+    let text = reply.trim_start();
+    if let Some(rest) = text.strip_prefix('【') {
+        if let Some(end) = rest.find('】') {
+            let label = rest[..end].trim();
+            let role = role_name.trim();
+            let normalized_label = compact_label(label);
+            let compact_role = compact_label(role);
+            let is_role_label = label.contains("角色")
+                || label.contains("台词")
+                || (!compact_role.is_empty()
+                    && (normalized_label == compact_role
+                        || compact_role.contains(&normalized_label)));
+            if is_role_label {
+                return rest[end + '】'.len_utf8()..]
+                    .trim_start_matches(['：', ':'])
+                    .trim_start()
+                    .to_string();
+            }
+        }
+    }
+    for label in [role_name.trim(), "助手", "Assistant"] {
+        if label.is_empty() {
+            continue;
+        }
+        if let Some(rest) = text.strip_prefix(label) {
+            if rest.starts_with('：') || rest.starts_with(':') {
+                return rest[rest.chars().next().map_or(0, char::len_utf8)..]
+                    .trim_start()
+                    .to_string();
+            }
+        }
+    }
+    reply.to_string()
+}
+
 const CARE_PACKAGE_KEYWORDS: &[&str] = &[
     "出门",
     "晒太阳",
@@ -290,7 +336,31 @@ pub fn trim_template_repeat_reply(previous: &str, reply: &str) -> String {
 
 #[cfg(test)]
 mod hallucination_tests {
-    use super::{strip_hallucination_tokens, trim_template_repeat_reply};
+    use super::{strip_hallucination_tokens, strip_leading_role_label, trim_template_repeat_reply};
+
+    #[test]
+    fn leading_role_labels_are_removed_without_stripping_content_headings() {
+        assert_eq!(
+            strip_leading_role_label("【GPT 龙娘】我也想你。", "GPT 龙娘"),
+            "我也想你。"
+        );
+        assert_eq!(
+            strip_leading_role_label("【GPT 龙娘】我也想你。", "GPT龙娘"),
+            "我也想你。"
+        );
+        assert_eq!(
+            strip_leading_role_label("【角色台词】\n好，我们停一下。", "小 G"),
+            "好，我们停一下。"
+        );
+        assert_eq!(
+            strip_leading_role_label("GPT 龙娘：先说结论。", "GPT 龙娘"),
+            "先说结论。"
+        );
+        assert_eq!(
+            strip_leading_role_label("【结论】先查 PID。", "GPT 龙娘"),
+            "【结论】先查 PID。"
+        );
+    }
 
     #[test]
     fn strip_removes_uppyuppy_variants() {
