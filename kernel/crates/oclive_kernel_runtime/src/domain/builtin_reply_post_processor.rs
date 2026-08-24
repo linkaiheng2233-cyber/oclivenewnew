@@ -151,10 +151,7 @@ impl BuiltinReplyPostProcessor {
         let mut out = text.to_string();
         for (open, close) in [('「', '」'), ('『', '』'), ('【', '】')] {
             let mut scan = 0usize;
-            loop {
-                let Some(rel_start) = out[scan..].find(open) else {
-                    break;
-                };
+            while let Some(rel_start) = out[scan..].find(open) {
                 let start = scan + rel_start;
                 let body_start = start + open.len_utf8();
                 let Some(rel_end) = out[body_start..].find(close) else {
