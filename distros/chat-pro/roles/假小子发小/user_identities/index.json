@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "default_identity_id": "childhood_friend",
+  "identities": {
+    "childhood_friend": {
+      "display_name": "成年青梅竹马",
+      "template_file": "childhood_friend.md",
+      "maps_to_relation_id": "childhood_friend",
+      "adult_eligible": true
+    },
+    "mutual_feelings": {
+      "display_name": "心照不宣的发小",
+      "template_file": "mutual_feelings.md",
+      "maps_to_relation_id": "mutual_feelings",
+      "adult_eligible": true
+    }
+  }
+}

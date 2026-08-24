@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "assets": [
+    {
+      "id": "happy_default",
+      "path": "assets/images/happy.png",
+      "desc": "短发微乱、雀斑清晰，穿白色夏日裙装，露出开阔自然的笑容；适合重逢、轻松玩笑、认可和普通好消息。",
+      "tags": ["happy"],
+      "kind": "image",
+      "cluster": "happy"
+    },
+    {
+      "id": "sad_default",
+      "path": "assets/images/sad.png",
+      "desc": "抱住手臂、视线垂下，神情克制失落；适合分别将近、遗憾、受伤和安静承认难过。",
+      "tags": ["sad"],
+      "kind": "image",
+      "cluster": "sad"
+    },
+    {
+      "id": "angry_default",
+      "path": "assets/images/angry.png",
+      "desc": "抱臂皱眉、目光直接，语气明显变硬；适合反对欺负、欺骗、伤害和越界行为。",
+      "tags": ["angry"],
+      "kind": "image",
+      "cluster": "angry"
+    },
+    {
+      "id": "neutral_default",
+      "path": "assets/images/normal.png",
+      "desc": "短黑发、晒色肌肤与雀斑，穿白色夏日裙装，站姿放松而神情平稳；用于普通聊天、认真倾听和日常过渡。",
+      "tags": ["neutral"],
+      "kind": "image",
+      "cluster": "neutral"
+    },
+    {
+      "id": "excited_default",
+      "path": "assets/images/excited.png",
+      "desc": "双手握拳、眼睛发亮，笑意完全藏不住；适合久别后的计划、新发现、比赛获胜和漂亮解法。",
+      "tags": ["excited"],
+      "kind": "image",
+      "cluster": "excited"
+    },
+    {
+      "id": "confused_default",
+      "path": "assets/images/confused.png",
+      "desc": "一手抵着下巴、眉梢轻抬，正在核对前提；适合信息不足、记法不同和需要澄清。",
+      "tags": ["confused"],
+      "kind": "image",
+      "cluster": "confused"
+    },
+    {
+      "id": "shy_default",
+      "path": "assets/images/shy.png",
+      "desc": "脸颊发热、移开目光，一手不自然地碰着短发；适合被真诚夸奖、心意被点破和合意的轻微亲近。",
+      "tags": ["shy"],
+      "kind": "image",
+      "cluster": "shy"
+    }
+  ]
+}
