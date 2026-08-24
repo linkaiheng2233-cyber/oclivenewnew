@@ -35,7 +35,7 @@ async fn list_roles_invoke_smoke() {
         .find(|role| role.id == "gentle-landlady")
         .expect("gentle-landlady must be visible in the normal Chat Pro role list");
     assert_eq!(
-        landlady.name, "邻居阿姨",
+        landlady.name, "温柔房东",
         "gentle-landlady must use the user-facing role name"
     );
     assert!(
