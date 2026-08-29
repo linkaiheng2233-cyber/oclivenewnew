@@ -254,7 +254,7 @@ Release 安装包 bundled [`resources/distro-profiles/desktop.oclive.toml`](../.
 |------|-------------------|---------------------------|
 | `prompt.profile` | 角色包 + 引擎锚点完整叠加 | 额外叠加「简洁回复」overlay，不删减包级人设 |
 | `memory.retrieval` | 默认 8 条相关记忆 | `light`：4 条（`HostProfile.memory_retrieval`） |
-| `post_process.chain` | `standard` | `minimal`（强制 builtin `profile=minimal`；`enabled=false` 仍关闭） |
+| `post_process.chain` | `standard` | `standard`（VS Code 也保留角色包启用的去引号、去用户原话回声清理；未启用后处理的角色包仍保持关闭） |
 | `visual_presentation.mode` | 未设（跟随角色包 `visual_presentation.enabled`） | `off` \| `image_only` \| `stage_full`（已接线；Theater 可用 `stage_full`） |
 | `user_identity.default_id` | 未设 | 会话无显式身份且非 sentinel 时作为默认 catalog id |
 | `user_identity.allowed_ids` | 未设（不限制） | API 层拒绝列表外 id |

@@ -833,11 +833,21 @@ mod tests {
         assert_eq!(summary.distro_id.as_deref(), Some("vscode"));
         assert!(summary.disabled_modules.contains(&"agent".to_string()));
         assert_eq!(summary.prompt_profile.as_deref(), Some("concise"));
+        assert_eq!(summary.post_process_profile.as_deref(), Some("standard"));
         assert_eq!(
             summary.default_interaction_mode.as_deref(),
             Some("pure_chat")
         );
         assert_eq!(summary.immersive_unlock_hint_after_turns, 10);
+        assert!(!p.event_impact_llm);
+        assert_eq!(p.turn_thinking.default, TurnThinkingDefault::Auto);
+        assert_eq!(p.turn_thinking.fast_knowledge_limit, 4);
+        assert_eq!(p.turn_thinking.fast_memory_cap, 4);
+        assert_eq!(
+            p.turn_thinking.fast_persistence,
+            FastPersistenceMode::StrongOnly
+        );
+        assert!(prompt_prefix_cache_effective(&p));
     }
 
     #[test]

@@ -94,7 +94,7 @@ profile = "concise"
 retrieval = "light"
 
 [post_process]
-chain = "minimal"
+chain = "standard"
 
 [user_identity]
 default_id = "classmate"
@@ -169,7 +169,7 @@ The implementation covers NVIDIA, system-RAM, and CPU snapshots; atomic pending 
 |-------|------------------|----------------------------|
 | `prompt.profile` | Full pack + engine anchors | Concise overlay |
 | `memory.retrieval` | 8 memories | `light`: 4 |
-| `post_process.chain` | `standard` | `minimal` (forces builtin `profile=minimal`) |
+| `post_process.chain` | `standard` | `standard` (VS Code keeps quote and leading user-echo cleanup when the role pack enables post-processing; packs that disable it stay disabled) |
 | `visual_presentation.mode` | Pack default | `off` / `image_only` / `stage_full` |
 | `[theater].director_plugin` | unset | official theater director plugin id |
 

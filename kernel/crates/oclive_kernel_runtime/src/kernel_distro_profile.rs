@@ -42,7 +42,7 @@ pub fn default_requirements_for_distro_id(distro_id: &str) -> DistroProfileRequi
             true,
             true,
             Some("concise".into()),
-            Some("minimal".into()),
+            Some("standard".into()),
         ),
         "desktop" => requirements_from_flags(
             "desktop",
@@ -189,5 +189,7 @@ mod tests {
         let req = parse_distro_requirements_file(&root.join("vscode.oclive.toml")).unwrap();
         assert_eq!(req.distro_id, "vscode");
         assert!(req.forbidden_modules.contains(&"agent".to_string()));
+        assert_eq!(req.prompt_profile.as_deref(), Some("concise"));
+        assert_eq!(req.post_process_profile.as_deref(), Some("standard"));
     }
 }

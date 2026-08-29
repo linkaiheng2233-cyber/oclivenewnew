@@ -14,6 +14,7 @@ allow_mode_switch = false
 [host_flags]
 skip_agent = true
 skip_complex_emotion = true
+event_impact_llm = false
 
 [slots]
 complex_emotion = "off"
@@ -30,7 +31,16 @@ favor_low  = "保持距离与礼貌"
 retrieval = "light"
 
 [post_process]
-chain = "minimal"
+chain = "standard"
+
+[turn_thinking]
+default = "auto"
+fast_skip_complex_emotion = true
+auto_deep_min_chars = 80
+fast_knowledge_limit = 4
+fast_memory_cap = 4
+fast_persistence = "strong_only"
+prompt_prefix_cache = true
 
 [user_identity]
 default_id = "classmate"
