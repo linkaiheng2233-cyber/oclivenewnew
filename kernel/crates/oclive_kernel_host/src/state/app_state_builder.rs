@@ -111,13 +111,30 @@ impl AppStateBuilder {
     /// Database connect/migrate, policy load, or plugin bootstrap failures.
     pub async fn build(self) -> Result<AppState> {
         let db = connect_db(&self.db_path).await?;
-        let backup = if self.db_path != Path::new(":memory:") && self.db_path.is_file() {
-            crate::infrastructure::sql_migrate::backup_db_file(&self.db_path, &self.app_data_dir)
-                .ok()
+        let migrations_dir = crate::infrastructure::sql_migrate::find_migrations_dir()
+            .map_err(|e| crate::error::AppError::DbMigrationFailed(e.to_string()))?;
+        let migrations_pending =
+            crate::infrastructure::sql_migrate::has_pending_sql_migrations(&db, &migrations_dir)
+                .await
+                .map_err(crate::error::AppError::DbMigrationFailed)?;
+        let backup = if migrations_pending
+            && self.db_path != Path::new(":memory:")
+            && self.db_path.is_file()
+        {
+            Some(
+                crate::infrastructure::sql_migrate::backup_db_file(
+                    &db,
+                    &self.db_path,
+                    &self.app_data_dir,
+                )
+                .await
+                .map_err(crate::error::AppError::DbMigrationFailed)?,
+            )
         } else {
             None
         };
-        if let Err(e) = run_migrations(&db).await {
+        if let Err(e) = run_migrations(&db, &migrations_dir).await {
+            db.close().await;
             if let Some(ref bak) = backup {
                 if bak.is_file() {
                     let _ = crate::infrastructure::sql_migrate::restore_db_from_backup(
@@ -435,10 +452,8 @@ async fn connect_db(db_path: &Path) -> Result<SqlitePool> {
     }
 }
 
-async fn run_migrations(db: &SqlitePool) -> Result<()> {
-    let migrations_dir = crate::infrastructure::sql_migrate::find_migrations_dir()
-        .map_err(|e| crate::error::AppError::DbMigrationFailed(e.to_string()))?;
-    crate::infrastructure::sql_migrate::run_sql_migrations(db, &migrations_dir)
+async fn run_migrations(db: &SqlitePool, migrations_dir: &Path) -> Result<()> {
+    crate::infrastructure::sql_migrate::run_sql_migrations(db, migrations_dir)
         .await
         .map_err(|e| crate::error::AppError::DbMigrationFailed(e.to_string()))
 }

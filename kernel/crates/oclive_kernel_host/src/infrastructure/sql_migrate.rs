@@ -3,7 +3,7 @@
 use oclive_kernel_runtime::{find_monorepo_root, ENV_ROLES_DIR};
 use sha2::{Digest, Sha256};
 use sqlx::sqlite::SqlitePool;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -152,24 +152,43 @@ pub fn find_migrations_dir() -> Result<PathBuf, String> {
     ))
 }
 
-/// Copy `db_file` to `app_data/app.db.bak.{unix_secs}` before migrations (file DB only).
+/// Create a transactionally consistent SQLite snapshot before migrations (file DB only).
+///
+/// `std::fs::copy` is not safe for a database in WAL mode because committed pages may still
+/// live only in `app.db-wal`. `VACUUM INTO` reads through SQLite and writes a standalone,
+/// integrity-checkable database that includes the committed WAL state.
 ///
 /// # Errors
 ///
-/// Returns an error when the backup copy fails.
-pub fn backup_db_file(db_file: &Path, app_data_dir: &Path) -> Result<PathBuf, String> {
+/// Returns an error when the snapshot cannot be created.
+pub async fn backup_db_file(
+    db: &SqlitePool,
+    db_file: &Path,
+    app_data_dir: &Path,
+) -> Result<PathBuf, String> {
     if !db_file.is_file() {
         return Ok(PathBuf::new());
     }
     let ts = SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_secs())
+        .map(|d| d.as_millis())
         .unwrap_or(0);
     let dest = app_data_dir.join(format!("app.db.bak.{ts}"));
     std::fs::create_dir_all(app_data_dir)
         .map_err(|e| format!("backup mkdir {}: {e}", app_data_dir.display()))?;
-    std::fs::copy(db_file, &dest)
-        .map_err(|e| format!("backup {} -> {}: {e}", db_file.display(), dest.display()))?;
+    let dest_text = dest.to_string_lossy().into_owned();
+    if let Err(error) = sqlx::query("VACUUM INTO ?")
+        .bind(dest_text)
+        .execute(db)
+        .await
+    {
+        let _ = std::fs::remove_file(&dest);
+        return Err(format!(
+            "backup {} -> {}: {error}",
+            db_file.display(),
+            dest.display()
+        ));
+    }
     tracing::info!(
         target: "oclive_migrate",
         from = %db_file.display(),
@@ -191,6 +210,15 @@ pub fn restore_db_from_backup(db_file: &Path, backup: &Path) -> Result<(), Strin
     if let Some(parent) = db_file.parent() {
         std::fs::create_dir_all(parent)
             .map_err(|e| format!("restore mkdir {}: {e}", parent.display()))?;
+    }
+    // The caller must close every pool first. A WAL belongs to the database image it was
+    // created from; retaining it while replacing the main file can replay incompatible pages.
+    for suffix in ["wal", "shm"] {
+        let sidecar = PathBuf::from(format!("{}-{suffix}", db_file.to_string_lossy()));
+        if sidecar.is_file() {
+            std::fs::remove_file(&sidecar)
+                .map_err(|e| format!("remove stale SQLite sidecar {}: {e}", sidecar.display()))?;
+        }
     }
     std::fs::copy(backup, db_file)
         .map_err(|e| format!("restore {} <- {}: {e}", db_file.display(), backup.display()))?;
@@ -219,6 +247,52 @@ fn migration_checksum(sql: &str) -> Vec<u8> {
     let mut hasher = Sha256::new();
     hasher.update(sql.as_bytes());
     hasher.finalize().to_vec()
+}
+
+/// Return whether at least one bundled migration has not been applied successfully.
+///
+/// # Errors
+///
+/// Returns an error when migration files or the migration ledger cannot be read.
+pub async fn has_pending_sql_migrations(
+    db: &SqlitePool,
+    migrations_dir: &Path,
+) -> Result<bool, String> {
+    let ledger_exists: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = '_sqlx_migrations'",
+    )
+    .fetch_one(db)
+    .await
+    .map_err(|e| e.to_string())?;
+    if ledger_exists == 0 {
+        return Ok(true);
+    }
+
+    let applied: HashSet<i64> =
+        sqlx::query_scalar::<_, i64>("SELECT version FROM _sqlx_migrations WHERE success = 1")
+            .fetch_all(db)
+            .await
+            .map_err(|e| e.to_string())?
+            .into_iter()
+            .collect();
+    let entries = std::fs::read_dir(migrations_dir)
+        .map_err(|e| format!("read migrations dir {}: {e}", migrations_dir.display()))?;
+    for entry in entries.filter_map(Result::ok) {
+        let path = entry.path();
+        if path.extension().is_none_or(|ext| ext != "sql") {
+            continue;
+        }
+        let file_name = entry.file_name().to_string_lossy().into_owned();
+        let version: i64 = file_name
+            .split('_')
+            .next()
+            .and_then(|part| part.parse().ok())
+            .ok_or_else(|| format!("migration file name must start with version: {file_name}"))?;
+        if !applied.contains(&version) {
+            return Ok(true);
+        }
+    }
+    Ok(false)
 }
 
 /// Apply `migrations/*.sql` in lexical order; compatible with existing `_sqlx_migrations` rows.
@@ -402,6 +476,72 @@ mod tests {
         let sql = "CREATE TABLE t (id INT);";
         let digest = migration_checksum(sql);
         assert_eq!(digest.len(), 32);
+    }
+
+    #[tokio::test]
+    async fn pending_migrations_are_detected_before_apply_only() {
+        let pool = crate::infrastructure::sqlite_pool::connect_memory()
+            .await
+            .expect("in-memory pool");
+        let dir = find_migrations_dir().expect("migrations dir");
+        assert!(has_pending_sql_migrations(&pool, &dir)
+            .await
+            .expect("pending before apply"));
+        run_sql_migrations(&pool, &dir).await.expect("apply all");
+        assert!(!has_pending_sql_migrations(&pool, &dir)
+            .await
+            .expect("pending after apply"));
+    }
+
+    #[tokio::test]
+    async fn backup_includes_committed_wal_rows_and_passes_integrity_check() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let db_path = temp.path().join("app.db");
+        let pool = crate::infrastructure::sqlite_pool::connect_file(&db_path)
+            .await
+            .expect("file pool");
+        sqlx::query("CREATE TABLE sample (id INTEGER PRIMARY KEY, value TEXT NOT NULL)")
+            .execute(&pool)
+            .await
+            .expect("create table");
+        sqlx::query("INSERT INTO sample (value) VALUES ('committed in WAL')")
+            .execute(&pool)
+            .await
+            .expect("insert row");
+
+        let backup = backup_db_file(&pool, &db_path, temp.path())
+            .await
+            .expect("consistent backup");
+        let backup_pool = crate::infrastructure::sqlite_pool::connect_file(&backup)
+            .await
+            .expect("backup pool");
+        let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM sample")
+            .fetch_one(&backup_pool)
+            .await
+            .expect("backup count");
+        let integrity: String = sqlx::query_scalar("PRAGMA integrity_check")
+            .fetch_one(&backup_pool)
+            .await
+            .expect("backup integrity");
+        assert_eq!(count, 1);
+        assert_eq!(integrity, "ok");
+    }
+
+    #[test]
+    fn restore_removes_stale_wal_sidecars() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let db_path = temp.path().join("app.db");
+        let backup = temp.path().join("clean.db");
+        std::fs::write(&db_path, b"old").expect("old db");
+        std::fs::write(&backup, b"clean").expect("clean backup");
+        std::fs::write(temp.path().join("app.db-wal"), b"stale wal").expect("wal");
+        std::fs::write(temp.path().join("app.db-shm"), b"stale shm").expect("shm");
+
+        restore_db_from_backup(&db_path, &backup).expect("restore");
+
+        assert_eq!(std::fs::read(&db_path).expect("restored db"), b"clean");
+        assert!(!temp.path().join("app.db-wal").exists());
+        assert!(!temp.path().join("app.db-shm").exists());
     }
 
     async fn emotion_source_column_count(pool: &sqlx::SqlitePool) -> i64 {
