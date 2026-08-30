@@ -560,6 +560,7 @@ fn validate_role_pack_optional_extensions(role_dir: &Path) -> Result<(), Vec<Str
     crate::turn_thinking::validate_turn_thinking_config_file(&role_dir.join("config.json"))?;
     crate::scene_continuity::validate_scene_continuity_directory(role_dir)?;
     crate::portrait_catalog::validate_portrait_catalog_files(role_dir)?;
+    validate_knowledge_front_matter_files(role_dir)?;
     let memory_seed_path = role_dir.join("memory_seed.json");
     if memory_seed_path.is_file() {
         let raw = fs::read_to_string(&memory_seed_path)
@@ -574,6 +575,84 @@ fn validate_role_pack_optional_extensions(role_dir: &Path) -> Result<(), Vec<Str
     Ok(())
 }
 
+fn validate_knowledge_front_matter_files(role_dir: &Path) -> Result<(), Vec<String>> {
+    fn visit(directory: &Path, errors: &mut Vec<String>) {
+        let entries = match fs::read_dir(directory) {
+            Ok(entries) => entries,
+            Err(error) => {
+                errors.push(format!(
+                    "读取 knowledge 目录失败 {}: {error}",
+                    directory.display()
+                ));
+                return;
+            }
+        };
+
+        for entry in entries {
+            let entry = match entry {
+                Ok(entry) => entry,
+                Err(error) => {
+                    errors.push(format!("遍历 knowledge 目录失败: {error}"));
+                    continue;
+                }
+            };
+            let path = entry.path();
+            let file_type = match entry.file_type() {
+                Ok(file_type) => file_type,
+                Err(error) => {
+                    errors.push(format!(
+                        "读取 knowledge 文件类型失败 {}: {error}",
+                        path.display()
+                    ));
+                    continue;
+                }
+            };
+            if file_type.is_dir() {
+                visit(&path, errors);
+                continue;
+            }
+            if !file_type.is_file()
+                || !path
+                    .extension()
+                    .and_then(|value| value.to_str())
+                    .is_some_and(|value| value.eq_ignore_ascii_case("md"))
+            {
+                continue;
+            }
+
+            let raw = match fs::read_to_string(&path) {
+                Ok(raw) => raw,
+                Err(error) => {
+                    errors.push(format!("读取知识文件失败 {}: {error}", path.display()));
+                    continue;
+                }
+            };
+            let raw = raw.strip_prefix('\u{feff}').unwrap_or(&raw);
+            let mut lines = raw.trim_start().lines();
+            let opening = lines.next().is_some_and(|line| line.trim_end() == "---");
+            let closing = opening && lines.any(|line| line.trim_end() == "---");
+            if !opening || !closing {
+                errors.push(format!(
+                    "知识文件须包含完整 YAML front matter（以独立的 --- 行开始和结束）: {}",
+                    path.display()
+                ));
+            }
+        }
+    }
+
+    let knowledge_dir = role_dir.join("knowledge");
+    if !knowledge_dir.is_dir() {
+        return Ok(());
+    }
+    let mut errors = Vec::new();
+    visit(&knowledge_dir, &mut errors);
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(errors)
+    }
+}
+
 fn print_pack_warnings(warnings: &[String]) {
     eprintln!("pack validate 警告:");
     for w in warnings {
@@ -585,6 +664,25 @@ fn print_pack_warnings(warnings: &[String]) {
 mod tests {
     use super::*;
     use std::io::Write;
+
+    #[test]
+    fn knowledge_markdown_requires_complete_front_matter() {
+        let dir = tempfile::tempdir().unwrap();
+        let knowledge = dir.path().join("knowledge");
+        fs::create_dir_all(&knowledge).unwrap();
+        let file = knowledge.join("facts.md");
+        fs::write(&file, "# Facts\n\nNo metadata.").unwrap();
+
+        let errors = validate_knowledge_front_matter_files(dir.path()).unwrap_err();
+        assert!(errors.iter().any(|error| error.contains("front matter")));
+
+        fs::write(
+            &file,
+            "---\nid: facts\ntags: []\nscenes: []\nweight: 1.0\nevent_hints: {}\n---\n\n# Facts\n",
+        )
+        .unwrap();
+        validate_knowledge_front_matter_files(dir.path()).unwrap();
+    }
 
     #[test]
     fn validate_minimal_role_pack_tmp() {

@@ -1,3 +1,18 @@
+---
+id: tomboy_childhood_friend_hometown_holiday
+tags:
+  - 老家
+  - 假期
+  - 青梅竹马
+  - 重逢
+scenes:
+  - seaside
+  - user_room
+  - her_room
+weight: 1.25
+event_hints: {}
+---
+
 # 老家假期设定
 
 - 当前故事发生在双方成年后的一次返乡假期。
