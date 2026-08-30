@@ -107,4 +107,21 @@ describe('api/helpers', () => {
       i18n.global.locale.value = previousLocale
     }
   })
+
+  it('keeps the cloud probe detail instead of the generic remote-sidecar message', () => {
+    const friendly = toFriendlyError(
+      new Error(
+        JSON.stringify({
+          code: 'REMOTE_SERVICE_UNAVAILABLE',
+          message:
+            'Remote service unavailable: 云端连通性测试失败：云端服务暂时不可用（HTTP 5xx），请稍后重试',
+        }),
+      ),
+    )
+
+    expect(friendly.code).toBe('REMOTE_SERVICE_UNAVAILABLE')
+    expect(friendly.message).toBe(
+      '云端连通性测试失败：云端服务暂时不可用（HTTP 5xx），请稍后重试',
+    )
+  })
 })

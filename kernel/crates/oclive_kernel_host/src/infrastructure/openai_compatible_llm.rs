@@ -8,7 +8,7 @@ use async_trait::async_trait;
 use futures_util::StreamExt;
 use oclive_kernel_contracts::{LlmGenerateOpts, LlmGenerateOutcome, LlmTokenSink};
 use oclive_validation::NETWORK_GRANT_REMOTE_LLM;
-use reqwest::Client;
+use reqwest::{Client, Response, StatusCode};
 use serde::Deserialize;
 use std::sync::Arc;
 use std::time::Duration;
@@ -79,6 +79,66 @@ pub struct OpenAiCompatibleLlm {
     network_grant_id: String,
 }
 
+#[derive(Debug, Clone, Copy, Default)]
+struct ChatSampling {
+    temperature: Option<f32>,
+    top_p: Option<f32>,
+}
+
+impl ChatSampling {
+    fn configured(temperature: f32, top_p: f32) -> Self {
+        Self {
+            temperature: Some(temperature),
+            top_p: Some(top_p),
+        }
+    }
+
+    fn neutral() -> Self {
+        Self::default()
+    }
+}
+
+fn chat_request_body(
+    model: &str,
+    prompt: &str,
+    sampling: ChatSampling,
+    max_tokens: Option<u32>,
+    stream: bool,
+) -> serde_json::Value {
+    let mut body = serde_json::json!({
+        "model": model,
+        "messages": [{ "role": "user", "content": prompt }],
+        "stream": stream,
+    });
+    if let Some(temperature) = sampling.temperature {
+        body["temperature"] = serde_json::json!(temperature);
+    }
+    if let Some(top_p) = sampling.top_p {
+        body["top_p"] = serde_json::json!(top_p);
+    }
+    if let Some(max_tokens) = max_tokens {
+        body["max_tokens"] = serde_json::json!(max_tokens);
+    }
+    body
+}
+
+fn openai_http_error(kind: &str, status: StatusCode, body: &str) -> AppError {
+    AppError::RemoteServiceUnavailable(format!(
+        "OpenAI {kind} HTTP {status}: {}",
+        body.chars().take(600).collect::<String>()
+    ))
+}
+
+fn sampling_retry_should_apply(status: StatusCode, body: &str) -> bool {
+    if !status.is_client_error() && !status.is_server_error() {
+        return false;
+    }
+    let lower = body.to_ascii_lowercase();
+    let mentions_sampling = ["temperature", "top_p", "top-p", "sampling"]
+        .iter()
+        .any(|needle| lower.contains(needle));
+    mentions_sampling && !(lower.contains("endpoint is unavailable") && !lower.contains("invalid"))
+}
 impl OpenAiCompatibleLlm {
     #[must_use]
     pub fn endpoint(&self) -> &str {
@@ -153,6 +213,25 @@ impl OpenAiCompatibleLlm {
         Ok(())
     }
 
+    async fn send_chat_request(&self, body: &serde_json::Value, stream: bool) -> Result<Response> {
+        let kind = if stream { "stream" } else { "API" };
+        let mut req = self
+            .client
+            .post(&self.chat_url)
+            .timeout(self.timeout)
+            .header("Content-Type", "application/json");
+        if stream {
+            req = req.header("Accept", "text/event-stream");
+        }
+        if let Some(ref token) = self.bearer_token {
+            req = req.bearer_auth(token);
+        }
+        req.json(body)
+            .send()
+            .await
+            .map_err(|e| AppError::RemoteServiceUnavailable(format!("OpenAI {kind} request: {e}")))
+    }
+
     async fn chat(
         &self,
         model: &str,
@@ -162,38 +241,41 @@ impl OpenAiCompatibleLlm {
         max_tokens: Option<u32>,
     ) -> Result<String> {
         self.ensure_network_grant()?;
-        let mut body = serde_json::json!({
-            "model": model,
-            "messages": [{ "role": "user", "content": prompt }],
-            "temperature": temperature,
-            "top_p": top_p,
-            "stream": false,
-        });
-        if let Some(max_tokens) = max_tokens {
-            body["max_tokens"] = serde_json::json!(max_tokens);
-        }
-        let mut req = self
-            .client
-            .post(&self.chat_url)
-            .timeout(self.timeout)
-            .header("Content-Type", "application/json");
-        if let Some(ref token) = self.bearer_token {
-            req = req.bearer_auth(token);
-        }
-        let response =
-            req.json(&body).send().await.map_err(|e| {
-                AppError::RemoteServiceUnavailable(format!("OpenAI API request: {e}"))
-            })?;
+        let body = chat_request_body(
+            model,
+            prompt,
+            ChatSampling::configured(temperature, top_p),
+            max_tokens,
+            false,
+        );
+        let response = self.send_chat_request(&body, false).await?;
         let status = response.status();
         let text = response
             .text()
             .await
             .map_err(|e| AppError::RemoteServiceUnavailable(format!("OpenAI API body: {e}")))?;
         if !status.is_success() {
-            return Err(AppError::RemoteServiceUnavailable(format!(
-                "OpenAI API HTTP {status}: {}",
-                text.chars().take(600).collect::<String>()
-            )));
+            if sampling_retry_should_apply(status, &text) {
+                tracing::warn!(
+                    target: "oclive_llm",
+                    model,
+                    status = %status,
+                    detail = %text.chars().take(240).collect::<String>(),
+                    "cloud LLM rejected sampling parameters; retrying with provider defaults"
+                );
+                let fallback_body =
+                    chat_request_body(model, prompt, ChatSampling::neutral(), None, false);
+                let response = self.send_chat_request(&fallback_body, false).await?;
+                let status = response.status();
+                let text = response.text().await.map_err(|e| {
+                    AppError::RemoteServiceUnavailable(format!("OpenAI API body: {e}"))
+                })?;
+                if !status.is_success() {
+                    return Err(openai_http_error("API", status, &text));
+                }
+                return parse_chat_response(&text);
+            }
+            return Err(openai_http_error("API", status, &text));
         }
         parse_chat_response(&text)
     }
@@ -208,82 +290,84 @@ impl OpenAiCompatibleLlm {
         on_token: LlmTokenSink,
     ) -> Result<String> {
         self.ensure_network_grant()?;
-        let mut body = serde_json::json!({
-            "model": model,
-            "messages": [{ "role": "user", "content": prompt }],
-            "temperature": temperature,
-            "top_p": top_p,
-            "stream": true,
-        });
-        if let Some(max_tokens) = max_tokens {
-            body["max_tokens"] = serde_json::json!(max_tokens);
-        }
-        let mut req = self
-            .client
-            .post(&self.chat_url)
-            .timeout(self.timeout)
-            .header("Content-Type", "application/json")
-            .header("Accept", "text/event-stream");
-        if let Some(ref token) = self.bearer_token {
-            req = req.bearer_auth(token);
-        }
-        let response = req.json(&body).send().await.map_err(|e| {
-            AppError::RemoteServiceUnavailable(format!("OpenAI stream request: {e}"))
-        })?;
+        let body = chat_request_body(
+            model,
+            prompt,
+            ChatSampling::configured(temperature, top_p),
+            max_tokens,
+            true,
+        );
+        let response = self.send_chat_request(&body, true).await?;
         let status = response.status();
         if !status.is_success() {
             let text = response.text().await.unwrap_or_default();
-            return Err(AppError::RemoteServiceUnavailable(format!(
-                "OpenAI stream HTTP {status}: {}",
-                text.chars().take(600).collect::<String>()
-            )));
-        }
-
-        let mut stream = response.bytes_stream();
-        let mut pending = Vec::<u8>::new();
-        let mut reply = String::new();
-        let mut done = false;
-        while let Some(chunk) = stream.next().await {
-            let bytes = chunk.map_err(|e| {
-                AppError::RemoteServiceUnavailable(format!("OpenAI stream body: {e}"))
-            })?;
-            pending.extend_from_slice(&bytes);
-            while let Some(newline) = pending.iter().position(|byte| *byte == b'\n') {
-                let mut line: Vec<u8> = pending.drain(..=newline).collect();
-                line.pop();
-                if line.last() == Some(&b'\r') {
-                    line.pop();
-                }
-                let line = std::str::from_utf8(&line).map_err(|e| {
-                    AppError::RemoteServiceUnavailable(format!("OpenAI stream UTF-8: {e}"))
-                })?;
-                if consume_sse_line(line, &mut reply, on_token.as_ref())? {
-                    done = true;
-                    break;
-                }
+            if !sampling_retry_should_apply(status, &text) {
+                return Err(openai_http_error("stream", status, &text));
             }
-            if done {
+            tracing::warn!(
+                target: "oclive_llm",
+                model,
+                status = %status,
+                detail = %text.chars().take(240).collect::<String>(),
+                "cloud stream rejected sampling parameters; retrying with provider defaults"
+            );
+            let fallback_body =
+                chat_request_body(model, prompt, ChatSampling::neutral(), None, true);
+            let response = self.send_chat_request(&fallback_body, true).await?;
+            let status = response.status();
+            if !status.is_success() {
+                let text = response.text().await.unwrap_or_default();
+                return Err(openai_http_error("stream", status, &text));
+            }
+            return consume_openai_stream(response, on_token).await;
+        }
+        consume_openai_stream(response, on_token).await
+    }
+}
+
+async fn consume_openai_stream(response: Response, on_token: LlmTokenSink) -> Result<String> {
+    let mut stream = response.bytes_stream();
+    let mut pending = Vec::<u8>::new();
+    let mut reply = String::new();
+    let mut done = false;
+    while let Some(chunk) = stream.next().await {
+        let bytes = chunk
+            .map_err(|e| AppError::RemoteServiceUnavailable(format!("OpenAI stream body: {e}")))?;
+        pending.extend_from_slice(&bytes);
+        while let Some(newline) = pending.iter().position(|byte| *byte == b'\n') {
+            let mut line: Vec<u8> = pending.drain(..=newline).collect();
+            line.pop();
+            if line.last() == Some(&b'\r') {
+                line.pop();
+            }
+            let line = std::str::from_utf8(&line).map_err(|e| {
+                AppError::RemoteServiceUnavailable(format!("OpenAI stream UTF-8: {e}"))
+            })?;
+            if consume_sse_line(line, &mut reply, on_token.as_ref())? {
+                done = true;
                 break;
             }
         }
-        if !done && !pending.is_empty() {
-            if pending.last() == Some(&b'\r') {
-                pending.pop();
-            }
-            let line = std::str::from_utf8(&pending).map_err(|e| {
-                AppError::RemoteServiceUnavailable(format!("OpenAI stream UTF-8: {e}"))
-            })?;
-            if !line.trim().is_empty() {
-                let _ = consume_sse_line(line, &mut reply, on_token.as_ref())?;
-            }
+        if done {
+            break;
         }
-        if reply.is_empty() {
-            return Err(AppError::RemoteServiceUnavailable(
-                "OpenAI stream ended without assistant content".into(),
-            ));
-        }
-        Ok(reply)
     }
+    if !done && !pending.is_empty() {
+        if pending.last() == Some(&b'\r') {
+            pending.pop();
+        }
+        let line = std::str::from_utf8(&pending)
+            .map_err(|e| AppError::RemoteServiceUnavailable(format!("OpenAI stream UTF-8: {e}")))?;
+        if !line.trim().is_empty() {
+            let _ = consume_sse_line(line, &mut reply, on_token.as_ref())?;
+        }
+    }
+    if reply.is_empty() {
+        return Err(AppError::RemoteServiceUnavailable(
+            "OpenAI stream ended without assistant content".into(),
+        ));
+    }
+    Ok(reply)
 }
 
 fn consume_sse_line(
@@ -526,6 +610,158 @@ impl LlmClient for OpenAiCompatibleLlm {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use axum::extract::Json;
+    use axum::http::StatusCode as AxumStatus;
+    use axum::response::IntoResponse;
+    use axum::{routing::post, Router};
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::Arc;
+
+    #[tokio::test]
+    async fn sampling_parameter_rejection_retries_with_provider_defaults() {
+        let calls = Arc::new(AtomicUsize::new(0));
+        let calls_for_route = Arc::clone(&calls);
+        let app = Router::new().route(
+            "/v1/chat/completions",
+            post(move |Json(body): Json<serde_json::Value>| {
+                let calls = Arc::clone(&calls_for_route);
+                async move {
+                    if calls.fetch_add(1, Ordering::SeqCst) == 0 {
+                        assert!((body["temperature"].as_f64().unwrap() - 0.8).abs() < 1e-6);
+                        assert!((body["top_p"].as_f64().unwrap() - 0.9).abs() < 1e-6);
+                        (
+                            AxumStatus::BAD_REQUEST,
+                            r#"{"error":{"type":"invalid_request_error","message":"invalid temperature: only 1 is allowed for this model"}}"#,
+                        )
+                            .into_response()
+                    } else {
+                        assert!(body.get("temperature").is_none());
+                        assert!(body.get("top_p").is_none());
+                        (
+                            AxumStatus::OK,
+                            r#"{"choices":[{"message":{"content":"好"}}]}"#,
+                        )
+                            .into_response()
+                    }
+                }
+            }),
+        );
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            axum::serve(listener, app).await.unwrap();
+        });
+        let client = OpenAiCompatibleLlm::for_local_runtime(
+            &format!("http://{addr}"),
+            Duration::from_secs(5),
+        )
+        .unwrap();
+
+        assert_eq!(
+            client
+                .generate("kimi-k3", "请只回复一个字：好")
+                .await
+                .unwrap(),
+            "好"
+        );
+        assert_eq!(calls.load(Ordering::SeqCst), 2);
+        server.abort();
+    }
+
+    #[tokio::test]
+    async fn generic_service_unavailable_is_not_masked_by_retry() {
+        let calls = Arc::new(AtomicUsize::new(0));
+        let calls_for_route = Arc::clone(&calls);
+        let app = Router::new().route(
+            "/v1/chat/completions",
+            post(move |Json(_): Json<serde_json::Value>| {
+                let calls = Arc::clone(&calls_for_route);
+                async move {
+                    calls.fetch_add(1, Ordering::SeqCst);
+                    (
+                        AxumStatus::SERVICE_UNAVAILABLE,
+                        r#"{"error":{"type":"server_error","message":"Endpoint is unavailable."}}"#,
+                    )
+                        .into_response()
+                }
+            }),
+        );
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            axum::serve(listener, app).await.unwrap();
+        });
+        let client = OpenAiCompatibleLlm::for_local_runtime(
+            &format!("http://{addr}"),
+            Duration::from_secs(5),
+        )
+        .unwrap();
+
+        let error = client.generate("grok-4.5", "hello").await.unwrap_err();
+        let AppError::RemoteServiceUnavailable(detail) = error else {
+            panic!("expected remote service error");
+        };
+        assert!(detail.contains("Endpoint is unavailable"));
+        assert_eq!(calls.load(Ordering::SeqCst), 1);
+        server.abort();
+    }
+
+    #[tokio::test]
+    async fn sampling_parameter_rejection_retries_stream_with_provider_defaults() {
+        let calls = Arc::new(AtomicUsize::new(0));
+        let calls_for_route = Arc::clone(&calls);
+        let app = Router::new().route(
+            "/v1/chat/completions",
+            post(move |Json(body): Json<serde_json::Value>| {
+                let calls = Arc::clone(&calls_for_route);
+                async move {
+                    if calls.fetch_add(1, Ordering::SeqCst) == 0 {
+                        assert!(body.get("temperature").is_some());
+                        assert!(body.get("top_p").is_some());
+                        (
+                            AxumStatus::BAD_REQUEST,
+                            r#"{"error":{"type":"invalid_request_error","message":"invalid top_p for this model"}}"#,
+                        )
+                            .into_response()
+                    } else {
+                        assert!(body.get("temperature").is_none());
+                        assert!(body.get("top_p").is_none());
+                        (
+                            AxumStatus::OK,
+                            [("content-type", "text/event-stream")],
+                            "data: {\"choices\":[{\"delta\":{\"content\":\"好\"}}]}\n\ndata: [DONE]\n\n",
+                        )
+                            .into_response()
+                    }
+                }
+            }),
+        );
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            axum::serve(listener, app).await.unwrap();
+        });
+        let client = OpenAiCompatibleLlm::for_local_runtime(
+            &format!("http://{addr}"),
+            Duration::from_secs(5),
+        )
+        .unwrap();
+        let tokens = Arc::new(std::sync::Mutex::new(String::new()));
+        let tokens_for_callback = Arc::clone(&tokens);
+        let reply = client
+            .generate_stream(
+                "kimi-k3",
+                "请只回复一个字：好",
+                Arc::new(move |token| tokens_for_callback.lock().unwrap().push_str(token)),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(reply, "好");
+        assert_eq!(*tokens.lock().unwrap(), "好");
+        assert_eq!(calls.load(Ordering::SeqCst), 2);
+        server.abort();
+    }
 
     #[test]
     fn chat_completions_url_normalizes_base() {

@@ -18,7 +18,7 @@
 |------|------|
 | **操作系统** | 以当前发行说明为准；**Windows** 与 **Linux** 为常见支持组合（详见仓库 CI 与发行页）。 |
 | **硬件** | 本地运行大语言模型对 **内存与磁盘** 有要求；若仅使用云端侧车，要求以侧车文档为准。 |
-| **Ollama** | 使用 **本地 Ollama** 对话时，需本机已安装 [Ollama](https://ollama.com/)，并已 **`ollama pull`** 至少一个聊天模型。具体模型名可在角色包或设置中配置。 |
+| **Ollama（可选）** | 仅在选择 **本地模型路线** 时需要。需本机安装 [Ollama](https://ollama.com/)，并已通过 **`ollama pull`** 获取至少一个聊天模型；使用云端 API 时无需安装。 |
 
 ### 1.2 安装应用
 
@@ -27,9 +27,10 @@
 
 ### 1.3 首次启动可以做什么
 
-1. 若界面为中文，想改为英文：见下文 **「设置 → 常规 → 语言」**。  
-2. 确认 **角色包** 已就绪：可使用应用内 **导入**，或事先用 [oclive-launcher](https://github.com/linkaiheng2233-cyber/oclive-launcher) 将 zip 安装到 `roles` 根（见 [CREATOR_WORKFLOW.md](CREATOR_WORKFLOW.md) 中普通用户相关小节）。  
-3. 打开 **设置 → 常规 → 环境自检**，确认本机 **Ollama 可达**、角色目录可读、应用数据可写。
+1. 按 **Ctrl+Shift+M** 打开 **模型管理**，从下文三条路线中选择一条并完成连接测试。
+2. 若界面为中文，想改为英文：见下文 **「设置 → 常规 → 语言」**。
+3. 确认 **角色包** 已就绪：可使用应用内 **导入**，或事先用 [oclive-launcher](https://github.com/linkaiheng2233-cyber/oclive-launcher) 将 zip 安装到 `roles` 根（见 [CREATOR_WORKFLOW.md](CREATOR_WORKFLOW.md) 中普通用户相关小节）。
+4. 本地路线再打开 **设置 → 常规 → 环境自检**，确认本机 **Ollama 可达**、角色目录可读、应用数据可写；云端路线使用模型管理中的 **测试云端连接**。
 
 ### 1.4 如果 Ollama 不可达
 
@@ -133,8 +134,25 @@
 
 ### 4.2 LLM 后端配置
 
-- 默认路径多为 **本机 Ollama**；若角色包或作者建议指定模型，请以 **环境自检** 与角色说明为准。  
-- 使用 **远端 HTTP 侧车** 或闭源 API 时，属于 **进阶配置**，见 [SIDECAR_LLM_USER_GUIDE.md](SIDECAR_LLM_USER_GUIDE.md)（用户向侧车指南）。
+按 **Ctrl+Shift+M** 打开 **模型管理**。三条路线只需完成一条；先理解自己选择了什么，再开始聊天。
+
+| 路线 | 适合谁 | 操作与验证 |
+|------|--------|------------|
+| **1 · 云端平台（BYOK）** | 希望快速体验，并愿意自行承担平台费用 | 去服务商控制台创建 **API Key**，同时查到 **API Base URL** 与 **模型 ID**；进入 **云端 API** 页填写三项，点 **保存并应用**，再点 **测试云端连接**。密钥只填入应用，不要发给测试组织者。 |
+| **2 · 本地 Ollama** | 重视隐私、希望离线使用，并愿意下载本地模型 | 安装 Ollama，重新打开 PowerShell，依次执行 `ollama --version`、`ollama pull qwen2.5`、`ollama list`；回到 **本地模型** 页刷新列表，选择模型并保存。最后在 **设置 → 常规 → 环境自检** 确认 Ollama 可达。 |
+| **3 · 自有 OpenAI 兼容地址** | 已有自建服务、中转服务或局域网推理端点 | 在 **云端 API** 页填写自己的 **API Base URL / API Key / 模型 ID**；应用可从根地址自动补全 `…/v1/chat/completions`，也接受完整路径。非本机地址优先使用 HTTPS，然后保存并执行 **测试云端连接**。 |
+
+**路线 2 的终端验收示例：**
+
+```powershell
+ollama --version
+ollama pull qwen2.5
+ollama list
+```
+
+**内测自助验收：**完成一条路线后，记录所选路线与模型 ID，确认连接测试成功，再完成至少 3 轮正常对话。反馈时附版本号、错误提示和必要截图；**不得提交 API Key、完整聊天隐私或个人身份信息**。
+
+只有在需要把 Chat Pro 的 JSON-RPC `remote` 槽接到自定义适配程序时，才需要 [SIDECAR_LLM_USER_GUIDE.md](SIDECAR_LLM_USER_GUIDE.md)；普通 OpenAI 兼容 API 直接使用模型管理页面即可。
 
 ### 4.3 兜底策略开关
 

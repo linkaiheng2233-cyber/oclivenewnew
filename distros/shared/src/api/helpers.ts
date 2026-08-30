@@ -153,6 +153,13 @@ export function toFriendlyErrorMessage(err: unknown): string {
       return String(i18n.global.t('apiErrors.INVALID_PARAMETER_DETAIL', { detail }))
     }
   }
+  if (code === 'REMOTE_SERVICE_UNAVAILABLE') {
+    const detail = (kernel?.message ?? '')
+      .replace(/^Remote service unavailable:\s*/i, '')
+      .trim()
+    if (detail.startsWith('云端连通性测试失败：'))
+      return detail
+  }
   if (code === 'ROLE_NOT_FOUND') {
     if (kernel?.message) {
       const km = kernel.message.trim()

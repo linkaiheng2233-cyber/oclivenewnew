@@ -84,6 +84,13 @@ pub async fn list_cloud_models_impl(
     .map_err(CommandError::from)
 }
 
+/// Cloud probes only retry transient gateway failures; provider-side model errors
+/// should fail fast so their specific message reaches the user.
+#[must_use]
+fn should_retry_cloud_probe(detail: &str) -> bool {
+    let lower = detail.to_ascii_lowercase();
+    lower.contains("502") || lower.contains("503") || lower.contains("504")
+}
 /// Map provider/HTTP failures to a short user-facing probe message (no nested JSON).
 fn humanize_cloud_probe_error(detail: &str) -> String {
     let lower = detail.to_ascii_lowercase();
@@ -103,6 +110,29 @@ fn humanize_cloud_probe_error(detail: &str) -> String {
     if lower.contains("high_risk") || lower.contains("not granted") {
         return "尚未授予云端 LLM 网络权限，请重新保存配置".to_string();
     }
+    if lower.contains("model is unavailable")
+        || lower.contains("model has been deprecated")
+        || lower.contains("not available in your country")
+        || lower.contains("endpoint is unavailable")
+    {
+        return "该云端模型当前不可用或已下架，请换用其他模型重试".to_string();
+    }
+    if lower.contains("temperature") || lower.contains("top_p") || lower.contains("sampling") {
+        return "云端模型拒绝了当前生成参数，兼容模式也未能通过".to_string();
+    }
+    if lower.contains("429") || lower.contains("rate limit") || lower.contains("too many requests")
+    {
+        return "云端请求过于频繁（HTTP 429），请稍后重试".to_string();
+    }
+    if lower.contains("503") || lower.contains("502") || lower.contains("504") {
+        return "云端服务暂时不可用（HTTP 5xx），请稍后重试".to_string();
+    }
+    if lower.contains("500") || lower.contains("internal server error") {
+        return "云端服务内部错误（HTTP 500），请稍后重试".to_string();
+    }
+    if lower.contains("400") || lower.contains("invalid_request_error") {
+        return "云端服务拒绝了请求，请检查模型 ID 与配置".to_string();
+    }
     let n = detail.chars().count();
     if n > 160 {
         format!("{}…", detail.chars().take(160).collect::<String>())
@@ -111,6 +141,43 @@ fn humanize_cloud_probe_error(detail: &str) -> String {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::{humanize_cloud_probe_error, should_retry_cloud_probe};
+
+    #[test]
+    fn maps_server_and_sampling_errors_to_short_messages() {
+        assert_eq!(
+            humanize_cloud_probe_error(
+                "Remote service unavailable: OpenAI API HTTP 503 Service Unavailable: {\"error\":{\"type\":\"server_error\",\"message\":\"Endpoint is unavailable.\"}}"
+            ),
+            "该云端模型当前不可用或已下架，请换用其他模型重试"
+        );
+        assert_eq!(
+            humanize_cloud_probe_error(
+                "OpenAI API HTTP 400 Bad Request: invalid temperature: only 1 is allowed for this model"
+            ),
+            "云端模型拒绝了当前生成参数，兼容模式也未能通过"
+        );
+    }
+
+    #[test]
+    fn retries_only_gateway_errors() {
+        assert!(should_retry_cloud_probe("OpenAI API HTTP 502 Bad Gateway"));
+        assert!(should_retry_cloud_probe(
+            "OpenAI API HTTP 503 Service Unavailable: Endpoint is unavailable."
+        ));
+        assert!(should_retry_cloud_probe(
+            "OpenAI API HTTP 504 Gateway Timeout"
+        ));
+        assert!(!should_retry_cloud_probe(
+            "OpenAI API HTTP 500 Internal Server Error"
+        ));
+        assert!(!should_retry_cloud_probe(
+            "OpenAI API HTTP 400 Bad Request: invalid temperature"
+        ));
+    }
+}
 /// Ping cloud LLM with current DB/env settings (after [`apply_user_llm_env`]).
 ///
 /// # Errors
@@ -158,11 +225,32 @@ pub async fn probe_cloud_llm_impl(
         .into());
     }
     let llm = state.plugins.llm_for_plugin_backends(backends.as_ref());
-    llm.generate(model.trim(), "请只回复一个字：好")
-        .await
-        .map(|_| ())
-        .map_err(|e| {
-            let detail = humanize_cloud_probe_error(e.to_frontend_error().as_str());
-            AppError::InvalidParameter(format!("云端连通性测试失败：{detail}")).into()
-        })
+    let mut last_detail = String::new();
+    for attempt in 1..=3 {
+        match llm.generate(model.trim(), "请只回复一个字：好").await {
+            Ok(_) => return Ok(()),
+            Err(e) => {
+                last_detail = e.to_frontend_error();
+                if !should_retry_cloud_probe(&last_detail) {
+                    break;
+                }
+                tracing::warn!(
+                    target: "oclive_llm",
+                    attempt,
+                    error = %last_detail,
+                    "cloud probe returned a retryable gateway error"
+                );
+                if attempt < 3 {
+                    tokio::time::sleep(std::time::Duration::from_millis(if attempt == 1 {
+                        350
+                    } else {
+                        700
+                    }))
+                    .await;
+                }
+            }
+        }
+    }
+    let detail = humanize_cloud_probe_error(&last_detail);
+    Err(AppError::RemoteServiceUnavailable(format!("云端连通性测试失败：{detail}")).into())
 }
