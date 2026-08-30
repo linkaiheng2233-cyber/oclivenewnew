@@ -20,6 +20,40 @@ const MIN_PROACTIVE_TURN_INFLUENCE_BPS: u16 = 5_000;
 const MAX_CONTEXT_ID_BYTES: usize = 160;
 const MAX_OBSERVATION_BYTES: usize = 2_048;
 
+/// One-shot host permit proving that the built-in Event decision module authorized a proposal.
+///
+/// Fields are private and the type is not cloneable or deserializable, so callers cannot forge or
+/// replay an authorization by constructing the public wire DTO directly.
+pub struct ProactiveTurnPermit {
+    authorization: ProactiveTurnAuthorization,
+    event_id: String,
+    correlation_id: String,
+}
+
+impl ProactiveTurnPermit {
+    /// Returns the admitted proposal and its computed reply influence for inspection.
+    #[must_use]
+    pub fn authorization(&self) -> &ProactiveTurnAuthorization {
+        &self.authorization
+    }
+
+    /// Event Ring identity of the authorization event.
+    #[must_use]
+    pub fn event_id(&self) -> &str {
+        self.event_id.as_str()
+    }
+
+    /// Correlation inherited from the source proposal and later reused by the Turn Engine.
+    #[must_use]
+    pub fn correlation_id(&self) -> &str {
+        self.correlation_id.as_str()
+    }
+
+    pub(crate) fn into_parts(self) -> (ProactiveTurnAuthorization, String, String) {
+        (self.authorization, self.event_id, self.correlation_id)
+    }
+}
+
 struct ProactiveTurnDecisionModule;
 
 #[async_trait]
@@ -78,7 +112,7 @@ pub async fn propose_proactive_turn(
     stream_key: &str,
     correlation_id: &str,
     proposal: ProactiveTurnProposal,
-) -> Result<Option<ProactiveTurnAuthorization>> {
+) -> Result<Option<ProactiveTurnPermit>> {
     let dispatched = emitter
         .emit(
             stream_key,
@@ -91,16 +125,25 @@ pub async fn propose_proactive_turn(
         )
         .await?;
 
-    dispatched
-        .emitted
-        .into_iter()
-        .find(|event| {
-            event.kind == PROACTIVE_TURN_AUTHORIZED_EVENT_KIND
-                && event.source == PROACTIVE_TURN_DECISION_EVENT_SOURCE
-                && event.causation_id.as_deref() == Some(dispatched.primary.event_id.as_str())
-        })
-        .map(|event| serde_json::from_value(event.payload).map_err(Into::into))
-        .transpose()
+    let Some(event) = dispatched.emitted.into_iter().find(|event| {
+        event.kind == PROACTIVE_TURN_AUTHORIZED_EVENT_KIND
+            && event.source == PROACTIVE_TURN_DECISION_EVENT_SOURCE
+            && event.causation_id.as_deref() == Some(dispatched.primary.event_id.as_str())
+    }) else {
+        return Ok(None);
+    };
+    let authorization: ProactiveTurnAuthorization = serde_json::from_value(event.payload)?;
+    validate_proposal(&authorization.proposal)?;
+    if !(MIN_PROACTIVE_TURN_INFLUENCE_BPS..=EVENT_INFLUENCE_WEIGHT_SCALE)
+        .contains(&authorization.reply_influence_bps)
+    {
+        return Err(invalid_proposal());
+    }
+    Ok(Some(ProactiveTurnPermit {
+        authorization,
+        event_id: event.event_id,
+        correlation_id: event.correlation_id,
+    }))
 }
 
 fn proposal_influence_bps(source_weight_bps: u16, proposal: &ProactiveTurnProposal) -> u16 {
@@ -220,7 +263,7 @@ mod tests {
         register_proactive_turn_decision_module(&ring).map_err(AppError::InvalidParameter)?;
         let emitter = source_emitter(&ring, 10_000)?;
 
-        let authorization = propose_proactive_turn(
+        let permit = propose_proactive_turn(
             emitter.as_ref(),
             "role:mumu:desktop",
             "proactive-1",
@@ -229,8 +272,9 @@ mod tests {
         .await?
         .expect("high-influence proposal should be authorized");
 
-        assert_eq!(authorization.reply_influence_bps, 8_333);
-        assert_eq!(authorization.proposal.role_id, "mumu");
+        assert_eq!(permit.authorization().reply_influence_bps, 8_333);
+        assert_eq!(permit.authorization().proposal.role_id, "mumu");
+        assert_eq!(permit.correlation_id(), "proactive-1");
         let events = ring.recent_events(2);
         assert_eq!(events.len(), 2);
         assert_eq!(events[0].schema_version, EVENT_RING_SCHEMA_VERSION);
@@ -249,7 +293,7 @@ mod tests {
         register_proactive_turn_decision_module(&ring).map_err(AppError::InvalidParameter)?;
         let emitter = source_emitter(&ring, 4_000)?;
 
-        let authorization = propose_proactive_turn(
+        let permit = propose_proactive_turn(
             emitter.as_ref(),
             "role:mumu:desktop",
             "proactive-low-weight",
@@ -257,7 +301,7 @@ mod tests {
         )
         .await?;
 
-        assert!(authorization.is_none());
+        assert!(permit.is_none());
         assert_eq!(ring.recent_events(2).len(), 1);
         Ok(())
     }

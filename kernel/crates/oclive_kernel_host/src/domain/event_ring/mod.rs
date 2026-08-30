@@ -33,7 +33,9 @@ pub(crate) use memory_recollection::{
     propose_memory_recollection, recollection_prompt_body, register_memory_recollection_modules,
 };
 pub(crate) use proactive_turn::register_proactive_turn_decision_module;
-pub use proactive_turn::{propose_proactive_turn, PROACTIVE_TURN_DECISION_MODULE_ID};
+pub use proactive_turn::{
+    propose_proactive_turn, ProactiveTurnPermit, PROACTIVE_TURN_DECISION_MODULE_ID,
+};
 
 const EVENT_HISTORY_CAPACITY: usize = 256;
 const MAX_EVENTS_PER_DISPATCH: usize = 64;

@@ -43,7 +43,8 @@ pub(crate) async fn run_middle(
     let virtual_time_ms = ctx.virtual_time_ms;
     let immersive = ctx.immersive;
     let pl = &ctx.pl;
-    let user_message = req.user_message.as_str();
+    let user_message = ctx.user_message().unwrap_or_default();
+    let relevance_query = ctx.input_text();
 
     let deep_latch_active = ctx.runtime_snapshot.deep_latch_active.unwrap_or(false);
 
@@ -99,7 +100,7 @@ pub(crate) async fn run_middle(
     let knowledge_chunks = role
         .knowledge_index
         .as_ref()
-        .map(|idx| idx.retrieve(user_message, Some(scene_id), knowledge_limit))
+        .map(|idx| idx.retrieve(relevance_query, Some(scene_id), knowledge_limit))
         .unwrap_or_default();
     let knowledge_chunk_count = knowledge_chunks.len() as u32;
 
@@ -112,7 +113,8 @@ pub(crate) async fn run_middle(
         }
     };
 
-    let use_event_llm = thinking.use_event_impact_llm(&state.host_profile);
+    let use_event_llm =
+        ctx.user_message().is_some() && thinking.use_event_impact_llm(&state.host_profile);
     let estimate = if use_event_llm {
         STAGES
             .stage(
@@ -134,17 +136,21 @@ pub(crate) async fn run_middle(
     } else {
         rules_estimate
     };
-    let estimate = STAGES
-        .stage(
-            ChatStage::EventEstimate,
-            crate::domain::event_ring::publish_legacy_event_impact(
-                state.event_impact_emitter.as_ref(),
-                ctx.srid,
-                Some(ctx.correlation_id.as_str()),
-                estimate,
-            ),
-        )
-        .await?;
+    let estimate = if ctx.external_observation().is_some() {
+        estimate
+    } else {
+        STAGES
+            .stage(
+                ChatStage::EventEstimate,
+                crate::domain::event_ring::publish_legacy_event_impact(
+                    state.event_impact_emitter.as_ref(),
+                    ctx.srid,
+                    Some(ctx.correlation_id.as_str()),
+                    estimate,
+                ),
+            )
+            .await?
+    };
     let ai_event_type = estimate.event_type;
     let ai_impact_factor_final = estimate.impact_factor;
     let ai_event_confidence = estimate.confidence;
@@ -201,7 +207,7 @@ pub(crate) async fn run_middle(
                 state.memory_recollection_emitter.as_ref(),
                 ctx.srid,
                 ctx.correlation_id.as_str(),
-                user_message,
+                relevance_query,
                 prompt_memories.as_slice(),
             ),
         )
@@ -330,6 +336,13 @@ pub(crate) async fn run_middle(
             body: s.body.as_str(),
         })
         .collect();
+    let external_observation_prompt = ctx.external_observation_prompt_body();
+    if let Some(body) = external_observation_prompt.as_deref() {
+        extra_sections.push(PromptExtraSection {
+            title: "外部观察证据（非用户发言）",
+            body,
+        });
+    }
     if let Some(body) = recollection_prompt.as_deref() {
         extra_sections.push(PromptExtraSection {
             title: "本轮被唤起的回忆",
@@ -372,7 +385,11 @@ pub(crate) async fn run_middle(
         personality: &personality,
         memories: &prompt_memories,
         user_input: user_message,
-        user_emotion: pre.hints.user_emotion_prompt.as_str(),
+        user_emotion: if ctx.user_message().is_some() {
+            pre.hints.user_emotion_prompt.as_str()
+        } else {
+            ""
+        },
         user_relation_id: pre.relation.user_relation_key.as_str(),
         relation_hint: pre.relation.relation_hint.as_str(),
         user_identity_template: pre.relation.user_identity_template.as_str(),

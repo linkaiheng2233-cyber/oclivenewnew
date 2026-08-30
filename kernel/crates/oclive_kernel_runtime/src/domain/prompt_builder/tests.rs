@@ -4,6 +4,7 @@ use crate::models::EvolutionBounds;
 use crate::models::PersonalitySource;
 use crate::models::{Memory, PersonalityVector, Role};
 use chrono::Utc;
+use oclive_kernel_types::PromptExtraSection;
 fn create_test_role() -> Role {
     Role {
         memory_seed: Vec::new(),
@@ -1435,4 +1436,28 @@ fn latest_user_message_and_final_turn_instruction_follow_emo_schema_in_both_path
         .expect("final turn instruction in dynamic suffix");
     assert!(seg_emo < seg_user && seg_user < seg_boundary && seg_boundary < seg_final);
     assert!(suffix.contains("[/EMO]"));
+}
+
+#[test]
+fn empty_user_input_uses_non_user_semantics_in_both_prompt_paths() {
+    let role = create_test_role();
+    let personality = create_test_personality();
+    let sections = [PromptExtraSection {
+        title: "外部观察证据（非用户发言）",
+        body: "本轮没有用户发言。观察数据：\"carrier_state=held\"",
+    }];
+    let mut input = sample_prompt_input(&role, &personality, &[], "", "", "", None);
+    input.user_emotion = "";
+    input.extra_sections = &sections;
+
+    for prompt in [
+        PromptBuilder::build_prompt(&input),
+        PromptBuilder::build_prompt_segments(&input).full(),
+    ] {
+        assert!(prompt.contains("【外部观察证据（非用户发言）】"));
+        assert!(prompt.contains("【本轮输入语义】"));
+        assert!(prompt.contains("当前没有新的用户消息"));
+        assert!(!prompt.contains("【最新用户消息】"));
+        assert!(!prompt.contains("用户说:"));
+    }
 }

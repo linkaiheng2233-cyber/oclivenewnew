@@ -396,7 +396,13 @@ impl PromptBuilder {
         prompt.push_str("\n\n");
         prompt.push_str(EMO_OUTPUT_INSTRUCTION);
         prompt.push_str("\n\n");
-        prompt.push_str(&format!("【最新用户消息】\n用户说: {}", input.user_input));
+        if input.user_input.trim().is_empty() {
+            prompt.push_str(
+                "【本轮输入语义】\n当前没有新的用户消息。请只依据上方已标明来源的上下文决定角色是否以及如何自然回应。",
+            );
+        } else {
+            prompt.push_str(&format!("【最新用户消息】\n用户说: {}", input.user_input));
+        }
         prompt.push_str("\n\n请以角色身份自然地回复，保持一致的性格和语气。\n\n");
         prompt.push_str(REPLY_OUTPUT_BOUNDARY);
         prompt.push_str("\n\n");
@@ -497,7 +503,13 @@ impl PromptBuilder {
         dynamic_suffix.push_str("\n\n");
         dynamic_suffix.push_str(EMO_OUTPUT_INSTRUCTION);
         dynamic_suffix.push_str("\n\n");
-        dynamic_suffix.push_str(&format!("【最新用户消息】\n用户说: {}", input.user_input));
+        if input.user_input.trim().is_empty() {
+            dynamic_suffix.push_str(
+                "【本轮输入语义】\n当前没有新的用户消息。请只依据上方已标明来源的上下文决定角色是否以及如何自然回应。",
+            );
+        } else {
+            dynamic_suffix.push_str(&format!("【最新用户消息】\n用户说: {}", input.user_input));
+        }
         dynamic_suffix.push_str("\n\n请以角色身份自然地回复，保持一致的性格和语气。\n\n");
         dynamic_suffix.push_str(REPLY_OUTPUT_BOUNDARY);
         dynamic_suffix.push_str("\n\n");

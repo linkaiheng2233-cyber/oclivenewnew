@@ -509,10 +509,10 @@ async fn resolve_relation_before_turn(
 
 pub(crate) async fn pre_llm(ctx: &TurnContext<'_>) -> TurnResult<PreLlmOutput> {
     let state = ctx.state;
-    let req = ctx.req;
     let role = ctx.role;
     let srid = ctx.srid;
-    let user_message = req.user_message.as_str();
+    let user_message = ctx.user_message().unwrap_or_default();
+    let relevance_query = ctx.input_text();
     let pl = &ctx.pl;
     let persist = ctx.persists_user_state();
 
@@ -579,7 +579,7 @@ pub(crate) async fn pre_llm(ctx: &TurnContext<'_>) -> TurnResult<PreLlmOutput> {
         persist,
     )
     .await?;
-    let relevant = rank_relevant_memories(ctx, pl, &memories, user_message, &memories).await?;
+    let relevant = rank_relevant_memories(ctx, pl, &memories, relevance_query, &memories).await?;
     let (relation_before, favorability_before) = resolve_relation_before_turn(
         state,
         role,

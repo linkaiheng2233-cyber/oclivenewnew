@@ -3,14 +3,14 @@
 
 use oclive_kernel_host::domain::chat_engine::plugin_resolve::resolve_plugins_for_session;
 use oclive_kernel_host::domain::chat_engine::process_message_stream;
-use oclive_kernel_host::domain::chat_engine::turn_context::TurnContext;
+use oclive_kernel_host::domain::chat_engine::turn_context::{TurnContext, TurnInput};
 use oclive_kernel_host::domain::chat_engine::turn_prefetch::build_turn_prefetch;
 use oclive_kernel_host::domain::dual_pipeline::DualPipelineRunner;
 use oclive_kernel_host::domain::process_message;
 use oclive_kernel_host::infrastructure::MockLlmClient;
 use oclive_kernel_host::service::role::session_namespace;
 use oclive_kernel_host::state::AppState;
-use oclive_kernel_types::models::dto::SendMessageRequest;
+use oclive_kernel_types::models::dto::{SendMessageRequest, TurnOrigin};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -85,6 +85,7 @@ async fn dual_pipeline_run_experimental_happy_path_returns_ok() {
     let turn = TurnContext {
         state: &state,
         req: &req,
+        correlation_id: "dual-core-happy-path".into(),
         role: role_for_turn.as_ref(),
         scene_id: scene_id.as_str(),
         scenes,
@@ -102,6 +103,8 @@ async fn dual_pipeline_run_experimental_happy_path_returns_ok() {
         runtime_snapshot,
         role_arc,
         prefetch,
+        origin: TurnOrigin::User,
+        input: TurnInput::UserMessage(req.user_message.as_str()),
     };
 
     let res = DualPipelineRunner::run_experimental(&turn)

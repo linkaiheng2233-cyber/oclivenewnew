@@ -22,12 +22,13 @@ use crate::domain::chat_engine::message_error::ProcessMessageError;
 use crate::domain::chat_engine::minimal_response::build_minimal_response;
 use crate::domain::chat_engine::presence::user_is_remote_from_character;
 use crate::domain::chat_engine::staged::{process_message_stage, stage_process_message};
-use crate::domain::chat_engine::turn_context::TurnContext;
+use crate::domain::chat_engine::turn_context::{TurnContext, TurnInput};
 use crate::domain::chat_engine::turn_prefetch::build_turn_prefetch;
 use crate::domain::chat_engine::{
     backend_resolution_summary, context::validate_scene_id, conversation_state_role_id,
     ensure_role_loaded,
 };
+use crate::domain::event_ring::ProactiveTurnPermit;
 use crate::domain::startup_health;
 use crate::error::Result;
 use crate::models::dto::{SendMessageRequest, SendMessageResponse, TurnOrigin};
@@ -63,7 +64,7 @@ pub async fn process_message_with_origin(
     req: &SendMessageRequest,
     origin: TurnOrigin,
 ) -> Result<SendMessageResponse> {
-    match run(state, req, None, origin).await {
+    match run_with_origin_boundary(state, req, None, origin).await {
         Ok(v) => Ok(v),
         Err(e) => {
             tracing::error!(target: "oclive_chat", "{}", e);
@@ -96,13 +97,98 @@ pub async fn process_message_stream_with_origin(
     on_token: LlmTokenSink,
     origin: TurnOrigin,
 ) -> Result<SendMessageResponse> {
-    match run(state, req, Some(on_token), origin).await {
+    match run_with_origin_boundary(state, req, Some(on_token), origin).await {
         Ok(v) => Ok(v),
         Err(e) => {
             tracing::error!(target: "oclive_chat", "{}", e);
             Err(e.into())
         }
     }
+}
+
+/// Executes one Event-authorized proactive turn.
+///
+/// Only an opaque [`ProactiveTurnPermit`] produced by the Event Ring is accepted. The external
+/// observation remains separate from `SendMessageRequest.user_message`, and the turn reuses the
+/// Event Ring correlation ID without dispatching from inside an Event handler.
+///
+/// # Errors
+///
+/// Returns the same role-loading, prompt, model, and post-processing errors as [`process_message`].
+pub async fn process_proactive_turn(
+    state: &AppState,
+    permit: ProactiveTurnPermit,
+) -> Result<SendMessageResponse> {
+    let (authorization, event_id, correlation_id) = permit.into_parts();
+    let proposal = authorization.proposal;
+    let req = SendMessageRequest {
+        role_id: proposal.role_id,
+        user_message: String::new(),
+        scene_id: proposal.scene_id,
+        session_id: proposal.session_id,
+        include_raw_reply: None,
+        adult: None,
+    };
+    tracing::debug!(
+        target: "oclive_proactive",
+        authorization_event_id = %event_id,
+        correlation_id = %correlation_id,
+        influence_bps = authorization.reply_influence_bps,
+        "executing Event-authorized proactive turn"
+    );
+    match run(
+        state,
+        &req,
+        None,
+        proposal.origin,
+        TurnInput::ExternalObservation(proposal.observation.as_str()),
+        Some(correlation_id.as_str()),
+    )
+    .await
+    {
+        Ok(response) => Ok(response),
+        Err(error) => {
+            tracing::error!(target: "oclive_chat", "{}", error);
+            Err(error.into())
+        }
+    }
+}
+
+async fn run_with_origin_boundary(
+    state: &AppState,
+    req: &SendMessageRequest,
+    on_token: Option<LlmTokenSink>,
+    origin: TurnOrigin,
+) -> std::result::Result<SendMessageResponse, ProcessMessageError> {
+    if origin == TurnOrigin::User {
+        return run(
+            state,
+            req,
+            on_token,
+            origin,
+            TurnInput::UserMessage(req.user_message.as_str()),
+            None,
+        )
+        .await;
+    }
+
+    let sanitized_req = SendMessageRequest {
+        role_id: req.role_id.clone(),
+        user_message: String::new(),
+        scene_id: req.scene_id.clone(),
+        session_id: req.session_id.clone(),
+        include_raw_reply: req.include_raw_reply,
+        adult: None,
+    };
+    run(
+        state,
+        &sanitized_req,
+        on_token,
+        origin,
+        TurnInput::ExternalObservation(req.user_message.as_str()),
+        None,
+    )
+    .await
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -424,11 +510,13 @@ async fn preflight_turn(
     })
 }
 
-async fn run(
-    state: &AppState,
-    req: &SendMessageRequest,
+async fn run<'a>(
+    state: &'a AppState,
+    req: &'a SendMessageRequest,
     on_token: Option<LlmTokenSink>,
     origin: TurnOrigin,
+    input: TurnInput<'a>,
+    correlation_id: Option<&str>,
 ) -> std::result::Result<SendMessageResponse, ProcessMessageError> {
     let mrid = req.role_id.as_str();
     let pre = preflight_turn(state, req, origin).await?;
@@ -461,13 +549,19 @@ async fn run(
 
     // Staged adult continuation is a co-present structured beat. It must not
     // enter remote-life or agent branches that do not understand staged commit.
-    let is_remote = !staged && pre.immersive_virtual_time.is_remote;
+    // Remote-life prompts currently model a user-addressed message. External observations stay on
+    // the co-present path until that prompt family receives the same origin-aware evidence shape.
+    let is_remote = !staged && input.is_user_message() && pre.immersive_virtual_time.is_remote;
     let scenes = Arc::clone(&pre.role.scene_ids);
     let dual_core_degraded = resolve_dual_core_degraded(pre.role.as_ref());
+    let correlation_id = match correlation_id {
+        Some(value) => value.to_string(),
+        None => uuid::Uuid::new_v4().to_string(),
+    };
     let turn = TurnContext {
         state,
         req,
-        correlation_id: uuid::Uuid::new_v4().to_string(),
+        correlation_id,
         role: pre.role.as_ref(),
         scene_id,
         scenes,
@@ -486,6 +580,7 @@ async fn run(
         role_arc: Arc::clone(&pre.role),
         prefetch: pre.prefetch,
         origin,
+        input,
     };
     if let Some(sink) = on_token {
         dispatch_turn_stream(
