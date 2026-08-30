@@ -141,43 +141,6 @@ fn humanize_cloud_probe_error(detail: &str) -> String {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::{humanize_cloud_probe_error, should_retry_cloud_probe};
-
-    #[test]
-    fn maps_server_and_sampling_errors_to_short_messages() {
-        assert_eq!(
-            humanize_cloud_probe_error(
-                "Remote service unavailable: OpenAI API HTTP 503 Service Unavailable: {\"error\":{\"type\":\"server_error\",\"message\":\"Endpoint is unavailable.\"}}"
-            ),
-            "该云端模型当前不可用或已下架，请换用其他模型重试"
-        );
-        assert_eq!(
-            humanize_cloud_probe_error(
-                "OpenAI API HTTP 400 Bad Request: invalid temperature: only 1 is allowed for this model"
-            ),
-            "云端模型拒绝了当前生成参数，兼容模式也未能通过"
-        );
-    }
-
-    #[test]
-    fn retries_only_gateway_errors() {
-        assert!(should_retry_cloud_probe("OpenAI API HTTP 502 Bad Gateway"));
-        assert!(should_retry_cloud_probe(
-            "OpenAI API HTTP 503 Service Unavailable: Endpoint is unavailable."
-        ));
-        assert!(should_retry_cloud_probe(
-            "OpenAI API HTTP 504 Gateway Timeout"
-        ));
-        assert!(!should_retry_cloud_probe(
-            "OpenAI API HTTP 500 Internal Server Error"
-        ));
-        assert!(!should_retry_cloud_probe(
-            "OpenAI API HTTP 400 Bad Request: invalid temperature"
-        ));
-    }
-}
 /// Ping cloud LLM with current DB/env settings (after [`apply_user_llm_env`]).
 ///
 /// # Errors
@@ -253,4 +216,42 @@ pub async fn probe_cloud_llm_impl(
     }
     let detail = humanize_cloud_probe_error(&last_detail);
     Err(AppError::RemoteServiceUnavailable(format!("云端连通性测试失败：{detail}")).into())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{humanize_cloud_probe_error, should_retry_cloud_probe};
+
+    #[test]
+    fn maps_server_and_sampling_errors_to_short_messages() {
+        assert_eq!(
+            humanize_cloud_probe_error(
+                "Remote service unavailable: OpenAI API HTTP 503 Service Unavailable: {\"error\":{\"type\":\"server_error\",\"message\":\"Endpoint is unavailable.\"}}"
+            ),
+            "该云端模型当前不可用或已下架，请换用其他模型重试"
+        );
+        assert_eq!(
+            humanize_cloud_probe_error(
+                "OpenAI API HTTP 400 Bad Request: invalid temperature: only 1 is allowed for this model"
+            ),
+            "云端模型拒绝了当前生成参数，兼容模式也未能通过"
+        );
+    }
+
+    #[test]
+    fn retries_only_gateway_errors() {
+        assert!(should_retry_cloud_probe("OpenAI API HTTP 502 Bad Gateway"));
+        assert!(should_retry_cloud_probe(
+            "OpenAI API HTTP 503 Service Unavailable: Endpoint is unavailable."
+        ));
+        assert!(should_retry_cloud_probe(
+            "OpenAI API HTTP 504 Gateway Timeout"
+        ));
+        assert!(!should_retry_cloud_probe(
+            "OpenAI API HTTP 500 Internal Server Error"
+        ));
+        assert!(!should_retry_cloud_probe(
+            "OpenAI API HTTP 400 Bad Request: invalid temperature"
+        ));
+    }
 }
