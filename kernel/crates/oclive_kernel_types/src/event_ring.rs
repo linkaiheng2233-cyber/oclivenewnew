@@ -87,12 +87,10 @@ pub struct EventDraft {
     pub metadata: BTreeMap<String, Value>,
 }
 
-/// Declarative registration supplied by an Event Ring module.
+/// Capabilities declared by an Event Ring module.
 ///
 /// Subscriptions and emissions are canonical dotted event kinds, a trailing namespace wildcard
 /// such as `kernel.chat.*`, or `*`. Lower priorities run first; ties use `module_id` ordering.
-/// `influence_weight_bps` is a registry-owned base input for downstream proposal decisions; it
-/// does not control dispatch order or invocation frequency.
 ///
 /// # Examples
 ///
@@ -104,29 +102,72 @@ pub struct EventDraft {
 ///     subscriptions: vec!["kernel.chat.*".into()],
 ///     emissions: vec!["kernel.memory.recall.candidate".into()],
 ///     priority: 100,
-///     influence_weight_bps: 7_500,
 /// };
 /// assert_eq!(declaration.subscriptions.len(), 1);
 /// ```
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
 pub struct EventModuleDeclaration {
     pub module_id: String,
     pub subscriptions: Vec<String>,
     pub emissions: Vec<String>,
     pub priority: i32,
+}
+
+/// Kernel-owned policy applied when a module is admitted to the Event Ring registry.
+///
+/// The module does not return this policy from [`EventModuleDeclaration`]. The trusted registrar
+/// supplies it separately, so an event producer cannot assign its own proposal influence.
+/// `influence_weight_bps` affects downstream proposal decisions only; it does not change dispatch
+/// order or invocation frequency.
+///
+/// # Examples
+///
+/// ```
+/// use oclive_kernel_types::EventModuleRegistryPolicy;
+///
+/// let policy = EventModuleRegistryPolicy {
+///     influence_weight_bps: 7_500,
+/// };
+/// assert_eq!(policy.influence_weight_bps, 7_500);
+/// ```
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct EventModuleRegistryPolicy {
     pub influence_weight_bps: u16,
 }
 
-impl Default for EventModuleDeclaration {
+impl Default for EventModuleRegistryPolicy {
     fn default() -> Self {
         Self {
-            module_id: String::new(),
-            subscriptions: Vec::new(),
-            emissions: Vec::new(),
-            priority: 0,
             influence_weight_bps: EVENT_INFLUENCE_WEIGHT_SCALE,
         }
     }
+}
+
+/// Read-only snapshot of one module admitted to the Event Ring registry.
+///
+/// # Examples
+///
+/// ```
+/// use oclive_kernel_types::{
+///     EventModuleDeclaration, EventModuleRegistryEntry, EventModuleRegistryPolicy,
+/// };
+///
+/// let entry = EventModuleRegistryEntry {
+///     declaration: EventModuleDeclaration {
+///         module_id: "builtin.memory.observe".into(),
+///         emissions: vec!["kernel.memory.recall.candidate".into()],
+///         ..Default::default()
+///     },
+///     policy: EventModuleRegistryPolicy {
+///         influence_weight_bps: 8_500,
+///     },
+/// };
+/// assert_eq!(entry.policy.influence_weight_bps, 8_500);
+/// ```
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct EventModuleRegistryEntry {
+    pub declaration: EventModuleDeclaration,
+    pub policy: EventModuleRegistryPolicy,
 }
 
 /// Compatibility name for child-event drafts used by the initial Event Ring slice.

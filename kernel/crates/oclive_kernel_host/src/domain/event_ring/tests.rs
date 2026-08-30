@@ -16,7 +16,6 @@ impl EventModule for SourceModule {
         EventModuleDeclaration {
             module_id: "test.source".into(),
             emissions: vec!["kernel.test.*".into()],
-            influence_weight_bps: 7_000,
             ..Default::default()
         }
     }
@@ -34,7 +33,6 @@ impl EventModule for LoopModule {
             subscriptions: vec!["kernel.test.loop".into()],
             emissions: vec!["kernel.test.loop".into()],
             priority: 0,
-            ..Default::default()
         }
     }
 
@@ -98,7 +96,6 @@ fn step_module(
                 Vec::new()
             },
             priority,
-            ..Default::default()
         },
         step,
         emit,
@@ -106,8 +103,13 @@ fn step_module(
 }
 
 fn source_emitter(ring: &EventRing) -> Result<Arc<dyn EventEmitter>> {
-    ring.register_event_module(Arc::new(SourceModule))
-        .map_err(AppError::InvalidParameter)
+    ring.register_event_module_with_policy(
+        Arc::new(SourceModule),
+        EventModuleRegistryPolicy {
+            influence_weight_bps: 7_000,
+        },
+    )
+    .map_err(AppError::InvalidParameter)
 }
 
 #[tokio::test]
@@ -249,6 +251,63 @@ fn registration_rejects_module_id_that_cannot_form_a_valid_event_source() {
         .expect("module source prefix must fit the canonical identifier limit");
 
     assert!(error.contains("module event source"));
+}
+
+#[test]
+fn registry_rejects_out_of_range_authority_weight() {
+    let ring = EventRing::new();
+
+    let error = ring
+        .register_event_module_with_policy(
+            step_module("test.weight", "kernel.test", 0, "weight", false),
+            EventModuleRegistryPolicy {
+                influence_weight_bps: EVENT_INFLUENCE_WEIGHT_SCALE + 1,
+            },
+        )
+        .err()
+        .expect("out-of-range registry weight must be rejected");
+
+    assert!(error.contains("event registry influence_weight_bps"));
+    assert!(ring.event_module_registry().is_empty());
+}
+
+#[test]
+fn registry_snapshot_exposes_authority_policy_separately_from_capabilities() -> Result<()> {
+    let ring = EventRing::new();
+    let _emitter = source_emitter(&ring)?;
+    ring.register_event_module(step_module(
+        "test.observer",
+        "kernel.test.*",
+        100,
+        "observer",
+        false,
+    ))
+    .map_err(AppError::InvalidParameter)?;
+
+    let entries = ring.event_module_registry();
+
+    assert_eq!(entries.len(), 2);
+    let source = entries
+        .iter()
+        .find(|entry| entry.declaration.module_id == "test.source")
+        .expect("source registry entry");
+    assert_eq!(source.policy.influence_weight_bps, 7_000);
+    let observer = entries
+        .iter()
+        .find(|entry| entry.declaration.module_id == "test.observer")
+        .expect("observer registry entry");
+    assert_eq!(
+        observer.policy.influence_weight_bps,
+        EVENT_INFLUENCE_WEIGHT_SCALE
+    );
+    assert_eq!(
+        ring.event_module_declarations(),
+        entries
+            .into_iter()
+            .map(|entry| entry.declaration)
+            .collect::<Vec<_>>()
+    );
+    Ok(())
 }
 
 #[tokio::test]

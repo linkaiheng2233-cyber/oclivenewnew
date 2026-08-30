@@ -6,7 +6,8 @@ use async_trait::async_trait;
 use oclive_kernel_contracts::{EventModule, EventModuleRegistrar};
 use oclive_kernel_host::domain::EventRing;
 use oclive_kernel_types::{
-    EventDraft, EventEnvelope, EventModuleDeclaration, EventModuleOutput, Result,
+    EventDraft, EventEnvelope, EventModuleDeclaration, EventModuleOutput,
+    EventModuleRegistryPolicy, Result,
 };
 
 struct PublicSource;
@@ -18,7 +19,6 @@ impl EventModule for PublicSource {
         EventModuleDeclaration {
             module_id: "test.public_source".into(),
             emissions: vec!["kernel.public.input".into()],
-            influence_weight_bps: 6_400,
             ..Default::default()
         }
     }
@@ -35,7 +35,6 @@ impl EventModule for PublicConsumer {
             module_id: "test.public_consumer".into(),
             subscriptions: vec!["kernel.public.input".into()],
             emissions: vec!["kernel.public.derived".into()],
-            influence_weight_bps: 8_200,
             ..Default::default()
         }
     }
@@ -56,10 +55,20 @@ impl EventModule for PublicConsumer {
 async fn exported_registry_emitter_and_envelope_form_a_complete_public_path() {
     let ring = EventRing::new();
     let source = ring
-        .register_event_module(Arc::new(PublicSource))
+        .register_event_module_with_policy(
+            Arc::new(PublicSource),
+            EventModuleRegistryPolicy {
+                influence_weight_bps: 6_400,
+            },
+        )
         .expect("register public source");
-    ring.register_event_module(Arc::new(PublicConsumer))
-        .expect("register public consumer");
+    ring.register_event_module_with_policy(
+        Arc::new(PublicConsumer),
+        EventModuleRegistryPolicy {
+            influence_weight_bps: 8_200,
+        },
+    )
+    .expect("register public consumer");
 
     let result = source
         .emit(
@@ -83,4 +92,10 @@ async fn exported_registry_emitter_and_envelope_form_a_complete_public_path() {
         result.emitted[0].causation_id.as_deref(),
         Some(result.primary.event_id.as_str())
     );
+    let registry = ring.event_module_registry();
+    assert_eq!(registry.len(), 2);
+    assert_eq!(registry[0].declaration.module_id, "test.public_consumer");
+    assert_eq!(registry[0].policy.influence_weight_bps, 8_200);
+    assert_eq!(registry[1].declaration.module_id, "test.public_source");
+    assert_eq!(registry[1].policy.influence_weight_bps, 6_400);
 }

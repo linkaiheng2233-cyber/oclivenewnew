@@ -232,7 +232,7 @@
 
 | `id` | 职责 | 锚点 | 进 `process_message`？ |
 |------|------|------|------------------------|
-| `event_ring` | 通用内核外环与事件流通权威：模块只提交 `EventDraft`；注册表声明订阅、允许发射的事件及基础影响权重，Ring 签发来源/权重/顺序/因果链后按 `(priority, module_id)` 路由；每个 `AppState` 独立、内存有界、无数据库写者，权重不控制执行顺序 | `oclive_kernel_types::EventDraft` / `EventEnvelope` · `oclive_kernel_contracts::EventEmitter` / `EventModule` / `EventModuleRegistrar` · `domain/event_ring/` | **是**（首个桥接点为 legacy `event.impact` 输出） |
+| `event_ring` | 通用内核外环与事件流通权威：模块通过 `EventModuleDeclaration` 只声明订阅、允许发射事件与优先级，并只提交 `EventDraft`；可信注册调用通过独立 `EventModuleRegistryPolicy` 分配基础影响权重，模块不能自报权重。Ring 签发来源/权重/顺序/因果链后按 `(priority, module_id)` 路由，并以 `EventModuleRegistryEntry` 提供确定性只读注册快照；每个 `AppState` 独立、内存有界、无数据库写者，权重不控制执行顺序 | `oclive_kernel_types::EventDraft` / `EventEnvelope` / `EventModuleRegistryPolicy` · `oclive_kernel_contracts::EventEmitter` / `EventModule` / `EventModuleRegistrar` · `domain/event_ring/` | **是**（首个桥接点为 legacy `event.impact` 输出） |
 | `user_identity` | 用户是谁 | `user_identities/` · pre | **是**（pre 段落） |
 | `reply_post_process` | 回复润色/改写 | `config.json` · post_llm | **是**（post） |
 | `reply_mode` | 回复分段与展示节奏 | `config.json` · post_llm（`reply_post_process` 之后） | **是**（post） |

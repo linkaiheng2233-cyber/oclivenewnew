@@ -5,10 +5,11 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use oclive_kernel_contracts::{EventEmitter, EventModule, EventModuleRegistrar};
 use oclive_kernel_types::{
-    AppError, EventDraft, EventEnvelope, EventModuleDeclaration, EventModuleOutput, Memory,
-    MemoryRecallCandidate, MemoryRecallReason, MemoryRecollectionActivated,
-    MemoryRecollectionExpressionMode, Result, EVENT_INFLUENCE_WEIGHT_SCALE,
-    MEMORY_RECALL_CANDIDATE_EVENT_KIND, MEMORY_RECOLLECTION_ACTIVATED_EVENT_KIND,
+    AppError, EventDraft, EventEnvelope, EventModuleDeclaration, EventModuleOutput,
+    EventModuleRegistryPolicy, Memory, MemoryRecallCandidate, MemoryRecallReason,
+    MemoryRecollectionActivated, MemoryRecollectionExpressionMode, Result,
+    EVENT_INFLUENCE_WEIGHT_SCALE, MEMORY_RECALL_CANDIDATE_EVENT_KIND,
+    MEMORY_RECOLLECTION_ACTIVATED_EVENT_KIND,
 };
 
 use crate::domain::{memory_evidence_text, MemoryEngine};
@@ -31,7 +32,6 @@ impl EventModule for MemoryRecollectionSource {
         EventModuleDeclaration {
             module_id: MEMORY_RECOLLECTION_SOURCE_MODULE_ID.into(),
             emissions: vec![MEMORY_RECALL_CANDIDATE_EVENT_KIND.into()],
-            influence_weight_bps: MEMORY_PROPOSAL_WEIGHT_BPS,
             ..Default::default()
         }
     }
@@ -51,7 +51,6 @@ impl EventModule for EventDecisionModule {
             subscriptions: vec![MEMORY_RECALL_CANDIDATE_EVENT_KIND.into()],
             emissions: vec![MEMORY_RECOLLECTION_ACTIVATED_EVENT_KIND.into()],
             priority: 100,
-            ..Default::default()
         }
     }
 
@@ -89,7 +88,12 @@ pub(crate) fn register_memory_recollection_modules(
     ring: &EventRing,
 ) -> std::result::Result<Arc<dyn EventEmitter>, String> {
     ring.register_event_module(Arc::new(EventDecisionModule))?;
-    ring.register_event_module(Arc::new(MemoryRecollectionSource))
+    ring.register_event_module_with_policy(
+        Arc::new(MemoryRecollectionSource),
+        EventModuleRegistryPolicy {
+            influence_weight_bps: MEMORY_PROPOSAL_WEIGHT_BPS,
+        },
+    )
 }
 
 /// Finds the strongest cue-related memory, submits it as a proposal, and returns an admitted
@@ -215,7 +219,6 @@ mod tests {
             EventModuleDeclaration {
                 module_id: "test.memory.low_weight".into(),
                 emissions: vec![MEMORY_RECALL_CANDIDATE_EVENT_KIND.into()],
-                influence_weight_bps: 2_000,
                 ..Default::default()
             }
         }
@@ -324,7 +327,12 @@ mod tests {
         ring.register_event_module(Arc::new(EventDecisionModule))
             .map_err(AppError::InvalidParameter)?;
         let emitter = ring
-            .register_event_module(Arc::new(LowWeightMemorySource))
+            .register_event_module_with_policy(
+                Arc::new(LowWeightMemorySource),
+                EventModuleRegistryPolicy {
+                    influence_weight_bps: 2_000,
+                },
+            )
             .map_err(AppError::InvalidParameter)?;
         let candidate = MemoryRecallCandidate {
             memory_id: "kite".into(),

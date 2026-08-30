@@ -16,7 +16,8 @@ use chrono::Utc;
 use oclive_kernel_contracts::{EventEmitter, EventModule, EventModuleRegistrar};
 use oclive_kernel_types::{
     AppError, EventDispatchResult, EventDraft, EventEnvelope, EventModuleDeclaration,
-    EventModuleOutput, Result, EVENT_INFLUENCE_WEIGHT_SCALE, EVENT_RING_SCHEMA_VERSION,
+    EventModuleOutput, EventModuleRegistryEntry, EventModuleRegistryPolicy, Result,
+    EVENT_INFLUENCE_WEIGHT_SCALE, EVENT_RING_SCHEMA_VERSION,
 };
 use parking_lot::{Mutex, RwLock};
 use serde_json::Value;
@@ -44,6 +45,7 @@ const MAX_MODULE_PRIORITY: i32 = 10_000;
 #[derive(Clone)]
 struct RegisteredModule {
     declaration: EventModuleDeclaration,
+    policy: EventModuleRegistryPolicy,
     module: Arc<dyn EventModule>,
 }
 
@@ -88,8 +90,8 @@ impl EventRing {
         correlation_id: Option<&str>,
         draft: EventDraft,
     ) -> Result<EventDispatchResult> {
-        let declaration = self.registered_declaration(module_id)?;
-        validate_declared_emission(&declaration, &draft.kind)?;
+        let registered = self.registered_module(module_id)?;
+        validate_declared_emission(&registered.declaration, &draft.kind)?;
         validate_event_draft(&draft)?;
         validate_stream_key(stream_key)?;
         if let Some(correlation_id) = correlation_id {
@@ -102,7 +104,7 @@ impl EventRing {
             event_id: event_id.clone(),
             kind: draft.kind,
             source: module_event_source(module_id),
-            source_weight_bps: declaration.influence_weight_bps,
+            source_weight_bps: registered.policy.influence_weight_bps,
             stream_key: stream_key.to_string(),
             correlation_id: correlation_id.unwrap_or(event_id.as_str()).to_string(),
             causation_id: None,
@@ -115,11 +117,11 @@ impl EventRing {
         self.dispatch(primary).await
     }
 
-    fn registered_declaration(&self, module_id: &str) -> Result<EventModuleDeclaration> {
+    fn registered_module(&self, module_id: &str) -> Result<RegisteredModule> {
         self.modules
             .read()
             .get(module_id)
-            .map(|registered| registered.declaration.clone())
+            .cloned()
             .ok_or_else(|| event_ring_error(format!("event module {module_id} is not registered")))
     }
 
@@ -146,7 +148,7 @@ impl EventRing {
                 let output = registered.module.handle(&event).await?;
                 apply_module_output(
                     self,
-                    &registered.declaration,
+                    &registered,
                     &mut event,
                     output,
                     &mut queue,
@@ -189,11 +191,11 @@ impl EventRing {
 
     fn child_envelope(
         &self,
-        declaration: &EventModuleDeclaration,
+        registered: &RegisteredModule,
         parent: &EventEnvelope,
         draft: EventDraft,
     ) -> Result<EventEnvelope> {
-        validate_declared_emission(declaration, &draft.kind)?;
+        validate_declared_emission(&registered.declaration, &draft.kind)?;
         validate_event_draft(&draft)?;
         let depth = parent
             .depth
@@ -206,8 +208,8 @@ impl EventRing {
             schema_version: EVENT_RING_SCHEMA_VERSION,
             event_id: Uuid::new_v4().to_string(),
             kind: draft.kind,
-            source: module_event_source(&declaration.module_id),
-            source_weight_bps: declaration.influence_weight_bps,
+            source: module_event_source(&registered.declaration.module_id),
+            source_weight_bps: registered.policy.influence_weight_bps,
             stream_key: parent.stream_key.clone(),
             correlation_id: parent.correlation_id.clone(),
             causation_id: Some(parent.event_id.clone()),
@@ -241,12 +243,24 @@ impl EventModuleRegistrar for EventRing {
         &self,
         module: Arc<dyn EventModule>,
     ) -> std::result::Result<Arc<dyn EventEmitter>, String> {
+        self.register_event_module_with_policy(module, EventModuleRegistryPolicy::default())
+    }
+
+    fn register_event_module_with_policy(
+        &self,
+        module: Arc<dyn EventModule>,
+        policy: EventModuleRegistryPolicy,
+    ) -> std::result::Result<Arc<dyn EventEmitter>, String> {
         let declaration = module.declaration();
         validate_declaration(&declaration)?;
+        validate_registry_policy(&policy)?;
         let module_id = declaration.module_id.clone();
         let mut modules = self.modules.write();
         if let Some(existing) = modules.get(&declaration.module_id) {
-            if existing.declaration == declaration && Arc::ptr_eq(&existing.module, &module) {
+            if existing.declaration == declaration
+                && existing.policy == policy
+                && Arc::ptr_eq(&existing.module, &module)
+            {
                 return Ok(Arc::new(BoundEventEmitter {
                     ring: self.clone(),
                     module_id,
@@ -261,6 +275,7 @@ impl EventModuleRegistrar for EventRing {
             declaration.module_id.clone(),
             RegisteredModule {
                 declaration,
+                policy,
                 module,
             },
         );
@@ -270,19 +285,30 @@ impl EventModuleRegistrar for EventRing {
         }))
     }
 
-    fn event_module_declarations(&self) -> Vec<EventModuleDeclaration> {
-        let mut declarations = self
+    fn event_module_registry(&self) -> Vec<EventModuleRegistryEntry> {
+        let mut entries = self
             .modules
             .read()
             .values()
-            .map(|registered| registered.declaration.clone())
+            .map(|registered| EventModuleRegistryEntry {
+                declaration: registered.declaration.clone(),
+                policy: registered.policy.clone(),
+            })
             .collect::<Vec<_>>();
-        declarations.sort_by(|left, right| {
-            left.priority
-                .cmp(&right.priority)
-                .then_with(|| left.module_id.cmp(&right.module_id))
+        entries.sort_by(|left, right| {
+            left.declaration
+                .priority
+                .cmp(&right.declaration.priority)
+                .then_with(|| left.declaration.module_id.cmp(&right.declaration.module_id))
         });
-        declarations
+        entries
+    }
+
+    fn event_module_declarations(&self) -> Vec<EventModuleDeclaration> {
+        self.event_module_registry()
+            .into_iter()
+            .map(|entry| entry.declaration)
+            .collect()
     }
 }
 
@@ -302,7 +328,7 @@ impl EventEmitter for BoundEventEmitter {
 
 fn apply_module_output(
     ring: &EventRing,
-    declaration: &EventModuleDeclaration,
+    registered: &RegisteredModule,
     event: &mut EventEnvelope,
     output: EventModuleOutput,
     queue: &mut VecDeque<EventEnvelope>,
@@ -328,7 +354,7 @@ fn apply_module_output(
         return Err(event_ring_error("dispatch event limit exceeded"));
     }
     for draft in output.emitted {
-        queue.push_back(ring.child_envelope(declaration, event, draft)?);
+        queue.push_back(ring.child_envelope(registered, event, draft)?);
     }
     Ok(())
 }
@@ -347,11 +373,6 @@ fn validate_declaration(declaration: &EventModuleDeclaration) -> std::result::Re
             "event module priority must be between {MIN_MODULE_PRIORITY} and {MAX_MODULE_PRIORITY}"
         ));
     }
-    if declaration.influence_weight_bps > EVENT_INFLUENCE_WEIGHT_SCALE {
-        return Err(format!(
-            "event module influence_weight_bps must be at most {EVENT_INFLUENCE_WEIGHT_SCALE}"
-        ));
-    }
     let mut unique = BTreeSet::new();
     for pattern in &declaration.subscriptions {
         validate_subscription(pattern)?;
@@ -365,6 +386,15 @@ fn validate_declaration(declaration: &EventModuleDeclaration) -> std::result::Re
         if !unique.insert(pattern) {
             return Err(format!("duplicate event emission: {pattern}"));
         }
+    }
+    Ok(())
+}
+
+fn validate_registry_policy(policy: &EventModuleRegistryPolicy) -> std::result::Result<(), String> {
+    if policy.influence_weight_bps > EVENT_INFLUENCE_WEIGHT_SCALE {
+        return Err(format!(
+            "event registry influence_weight_bps must be at most {EVENT_INFLUENCE_WEIGHT_SCALE}"
+        ));
     }
     Ok(())
 }
