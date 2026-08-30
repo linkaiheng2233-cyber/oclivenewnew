@@ -133,6 +133,12 @@ impl EventRing {
             .ok_or_else(|| event_ring_error(format!("event module {module_id} is not registered")))
     }
 
+    /// Removes a host-managed module registration. In-flight dispatches keep their cloned module
+    /// snapshot; later dispatches no longer match it.
+    pub(crate) fn unregister_event_module(&self, module_id: &str) -> bool {
+        self.modules.write().remove(module_id).is_some()
+    }
+
     /// Returns the newest `limit` successfully dispatched events in chronological order.
     #[must_use]
     pub fn recent_events(&self, limit: usize) -> Vec<EventEnvelope> {

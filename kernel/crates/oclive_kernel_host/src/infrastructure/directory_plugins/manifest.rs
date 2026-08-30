@@ -38,6 +38,23 @@ pub struct ProcessSection {
     pub cwd: Option<String>,
 }
 
+/// Untrusted Event Ring capability suggestions from a directory plugin.
+///
+/// The host reviews these values before registration. They are not the effective declaration or
+/// registry policy and cannot assign source identity, dispatch priority, or failure behavior.
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct EventRingSection {
+    /// Exact event kinds the plugin asks to observe. Wildcards are rejected by the host bridge.
+    #[serde(default)]
+    pub subscriptions: Vec<String>,
+    /// Event kinds or a namespace wildcard the plugin asks to emit.
+    #[serde(default)]
+    pub emissions: Vec<String>,
+    /// Suggested base proposal influence; the host applies its own default and upper bound.
+    #[serde(default, rename = "suggestedInfluenceWeightBps")]
+    pub suggested_influence_weight_bps: Option<u16>,
+}
+
 /// UI mounted in the main window when not in shell mode (official slot names: host `EMBEDDED_UI_SLOT_NAMES`).
 ///
 /// **Multiple declarations per `slot`**: each must have a unique `appearance_id` (empty string = default variant; at most one per `slot`).
@@ -96,6 +113,9 @@ pub struct OclivePluginManifest {
     pub provides: Vec<String>,
     #[serde(default)]
     pub process: Option<ProcessSection>,
+    /// Optional directory-process adapter for the kernel Event Ring (`event_ring.handle`).
+    #[serde(default, rename = "eventRing")]
+    pub event_ring: Option<EventRingSection>,
     /// stdout ready-line prefix, default `OCLIVE_READY`
     #[serde(default = "default_ready_prefix")]
     pub ready_prefix: String,
@@ -299,7 +319,8 @@ fn validate_ui_slot_appearance_ids(m: &OclivePluginManifest) -> Result<(), Strin
 
 #[cfg(test)]
 mod tests {
-    use super::validate_plugin_id;
+    use super::{validate_plugin_id, OclivePluginManifest};
+    use std::fs;
 
     #[test]
     fn plugin_id_accepts_existing_wire_shapes() {
@@ -327,5 +348,34 @@ mod tests {
         ] {
             assert!(validate_plugin_id(id).is_err(), "{id:?}");
         }
+    }
+
+    #[test]
+    fn manifest_parses_event_ring_suggestions_without_making_them_policy() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        fs::write(
+            temp.path().join("manifest.json"),
+            r#"{
+                "schema_version": 1,
+                "id": "com.example.events",
+                "version": "1.0.0",
+                "rpcMethods": ["event_ring.handle"],
+                "eventRing": {
+                    "subscriptions": ["kernel.memory.recollection.activated"],
+                    "emissions": ["plugin.com.example.events.*"],
+                    "suggestedInfluenceWeightBps": 9500
+                }
+            }"#,
+        )
+        .expect("manifest");
+
+        let manifest = OclivePluginManifest::load_from_dir(temp.path()).expect("valid manifest");
+        let event_ring = manifest.event_ring.expect("event ring section");
+        assert_eq!(
+            event_ring.subscriptions,
+            vec!["kernel.memory.recollection.activated"]
+        );
+        assert_eq!(event_ring.emissions, vec!["plugin.com.example.events.*"]);
+        assert_eq!(event_ring.suggested_influence_weight_bps, Some(9_500));
     }
 }

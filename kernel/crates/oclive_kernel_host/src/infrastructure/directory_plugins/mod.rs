@@ -4,14 +4,16 @@
 
 pub mod bootstrap_dto;
 mod dependency;
+mod event_ring;
 mod manifest;
 mod runtime;
 mod version;
 pub use dependency::dependency_report;
+pub(crate) use event_ring::wire_directory_event_ring;
 pub(crate) use manifest::validate_plugin_id;
 pub use manifest::{
-    normalize_plugin_rel, normalize_ui_slot_appearance_id, BridgeConfig, OclivePluginManifest,
-    ShellSection, UiSchemaField, UiSchemaSection, UiSlotDecl,
+    normalize_plugin_rel, normalize_ui_slot_appearance_id, BridgeConfig, EventRingSection,
+    OclivePluginManifest, ShellSection, UiSchemaField, UiSchemaSection, UiSlotDecl,
 };
 pub use runtime::{
     find_plugin_asset_path, plugin_scan_container_roots, DirectoryPluginRuntime, HostPluginsFile,

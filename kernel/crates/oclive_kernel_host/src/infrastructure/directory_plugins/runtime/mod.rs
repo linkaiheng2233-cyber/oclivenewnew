@@ -29,6 +29,8 @@ pub(crate) use transport::{
 
 pub(crate) const DEBUG_LOG_RING_CAP: usize = 1000;
 
+type PluginRootsChangedListener = Arc<dyn Fn() + Send + Sync>;
+
 #[derive(Debug, Default)]
 pub(crate) struct DebugLogRing {
     lines: VecDeque<String>,
@@ -94,6 +96,8 @@ pub struct DirectoryPluginRuntime {
     roles_dir: PathBuf,
     /// `plugin_id` → (`manifest.json` mtime ms, parsed manifest).
     manifest_cache: DashMap<String, (u64, Arc<OclivePluginManifest>)>,
+    /// Internal listeners used to synchronize registries after initial scan or rescan.
+    plugin_roots_changed_listeners: Mutex<Vec<PluginRootsChangedListener>>,
 }
 
 impl DirectoryPluginRuntime {
@@ -189,6 +193,7 @@ impl DirectoryPluginRuntime {
             high_risk_grants,
             roles_dir,
             manifest_cache: DashMap::new(),
+            plugin_roots_changed_listeners: Mutex::new(Vec::new()),
         })
     }
 
@@ -558,6 +563,15 @@ impl DirectoryPluginRuntime {
             "plugin roots rescanned count={}",
             n
         );
+        let listeners = self.plugin_roots_changed_listeners.lock().clone();
+        for listener in listeners {
+            listener();
+        }
+    }
+
+    /// Registers an in-process listener for completed plugin-root scans.
+    pub(crate) fn on_plugin_roots_changed(&self, listener: PluginRootsChangedListener) {
+        self.plugin_roots_changed_listeners.lock().push(listener);
     }
 
     /// Complete the deferred startup scan once. Concurrent callers wait for the same scan.
