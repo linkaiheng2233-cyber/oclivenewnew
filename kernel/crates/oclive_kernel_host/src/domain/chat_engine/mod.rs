@@ -20,7 +20,10 @@ pub(crate) mod turn_error;
 pub(crate) mod turn_pipeline;
 pub mod turn_prefetch;
 
-pub use process_message::{process_message, process_message_stream};
+pub use process_message::{
+    process_message, process_message_stream, process_message_stream_with_origin,
+    process_message_with_origin,
+};
 
 use turn_context::TurnContext;
 use turn_pipeline::{execute_turn, TurnMode};

@@ -60,6 +60,8 @@ pub(super) struct PostLlmCtx<'a> {
     pub dual_core_degraded: bool,
     pub distro_visual_mode: Option<&'a str>,
     pub movement: bool,
+    /// Whether the previewed relation/personality delta was committed to durable user state.
+    pub effects_persisted: bool,
     pub artifacts: TurnArtifacts<'a>,
 }
 
@@ -241,6 +243,7 @@ fn assemble_send_message_response(ctx: &PostLlmCtx<'_>) -> SendMessageResponse {
         dual_core_degraded,
         distro_visual_mode,
         movement,
+        effects_persisted,
         artifacts,
     } = ctx;
     let middle = artifacts.middle;
@@ -267,16 +270,31 @@ fn assemble_send_message_response(ctx: &PostLlmCtx<'_>) -> SendMessageResponse {
         ),
         TurnMode::RemoteLife => (PresenceMode::RemoteLife, vec![]),
     };
+    let relation_summary = if *effects_persisted {
+        middle.relation_after.as_str()
+    } else {
+        pre.relation.relation_before.as_str()
+    };
+    let favorability_delta = if *effects_persisted {
+        middle.favor_delta as f32
+    } else {
+        0.0
+    };
+    let traits = if *effects_persisted {
+        middle.personality.to_vec7()
+    } else {
+        pre.memory.personality.to_vec7()
+    };
     SendMessageResponse {
         api_version: API_VERSION,
         schema: SCHEMA_VERSION,
         presence_mode,
         display_metrics: Some(DisplayMetricsDto {
             favor: persist.favor_current,
-            relation_summary: middle.relation_after.as_str().to_string(),
-            traits: middle.personality.to_vec7(),
+            relation_summary: relation_summary.to_string(),
+            traits,
         }),
-        relation_state: middle.relation_after.as_str().to_string(),
+        relation_state: relation_summary.to_string(),
         reply,
         adult_beat: adult_beat.clone(),
         emotion: emotion_to_dto(&pre.hints.emotion_result),
@@ -290,7 +308,7 @@ fn assemble_send_message_response(ctx: &PostLlmCtx<'_>) -> SendMessageResponse {
                 *distro_visual_mode,
             )
         }),
-        favorability_delta: middle.favor_delta as f32,
+        favorability_delta,
         favorability_current: persist.favor_current as f32,
         events,
         scene_id: scene_id.to_string(),
@@ -487,7 +505,7 @@ pub(crate) async fn post_llm(
     )
     .await?;
 
-    if ctx.is_staged() {
+    if !ctx.persists_user_state() {
         let (display_reply, raw_reply, adult_beat) =
             if let Some(mut beat) = parsed_adult_beat.clone() {
                 let (dialogue, processed_raw) = apply_reply_post_processor(
@@ -545,6 +563,7 @@ pub(crate) async fn post_llm(
             dual_core_degraded: ctx.dual_core_degraded,
             distro_visual_mode: ctx.state.host_profile.visual_presentation_mode.as_deref(),
             movement: false,
+            effects_persisted: false,
             artifacts: TurnArtifacts {
                 middle,
                 pre,
@@ -738,6 +757,7 @@ pub(crate) async fn post_llm(
         dual_core_degraded: ctx.dual_core_degraded,
         distro_visual_mode: ctx.state.host_profile.visual_presentation_mode.as_deref(),
         movement: persist_out.movement,
+        effects_persisted: true,
         artifacts: TurnArtifacts {
             middle,
             pre,

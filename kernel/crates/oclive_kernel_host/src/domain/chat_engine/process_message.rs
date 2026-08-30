@@ -1,6 +1,9 @@
 //! # Main message processing entry
 //!
-//! **Role**: orchestration entry for a **single user message** from Tauri / HTTP API; Agent shortcut, remote-life, and other branches fan out here into [`turn_pipeline`](super::turn_pipeline) ([`TurnMode::CoPresent`](super::turn_pipeline::TurnMode::CoPresent), etc.).
+//! **Role**: orchestration entry for one semantic turn. Tauri / HTTP API use the user-origin wrapper;
+//! trusted embedded hosts may use an explicit non-user origin. Agent shortcut, remote-life, and
+//! other branches fan out here into [`turn_pipeline`](super::turn_pipeline)
+//! ([`TurnMode::CoPresent`](super::turn_pipeline::TurnMode::CoPresent), etc.).
 //!
 //! **Upstream**: `api` / `http_api` load `Role`, `plugin_backends`, and session-level `slot_registry` overrides via `AppState`.
 //! **Downstream**: enters the turn pipeline via [`turn_pipeline::execute_turn`](super::turn_pipeline::execute_turn) / `process_remote_*`; invokes plugins via [`PluginHostPort`](crate::domain::ports::PluginHostPort); **does not** use `pipeline.ocblueprint` DSL for first-turn scheduling.
@@ -27,7 +30,7 @@ use crate::domain::chat_engine::{
 };
 use crate::domain::startup_health;
 use crate::error::Result;
-use crate::models::dto::{SendMessageRequest, SendMessageResponse};
+use crate::models::dto::{SendMessageRequest, SendMessageResponse, TurnOrigin};
 use crate::models::plugin_backends::AgentBackend;
 use crate::state::AppState;
 use crate::state::EffectiveSessionConfig;
@@ -42,7 +45,25 @@ pub async fn process_message(
     state: &AppState,
     req: &SendMessageRequest,
 ) -> Result<SendMessageResponse> {
-    match run(state, req, None).await {
+    process_message_with_origin(state, req, TurnOrigin::User).await
+}
+
+/// Processes one message with an explicit semantic origin.
+///
+/// Embedded hosts use this entrypoint for sensor/system turns. Those origins may read role context
+/// and generate a role response, but they do not commit user-chat state. HTTP and Tauri chat
+/// transports intentionally keep calling [`process_message`] so external payloads cannot select a
+/// lower-persistence origin.
+///
+/// # Errors
+///
+/// Returns [`Err`] with the same failure modes as [`process_message`].
+pub async fn process_message_with_origin(
+    state: &AppState,
+    req: &SendMessageRequest,
+    origin: TurnOrigin,
+) -> Result<SendMessageResponse> {
+    match run(state, req, None, origin).await {
         Ok(v) => Ok(v),
         Err(e) => {
             tracing::error!(target: "oclive_chat", "{}", e);
@@ -61,7 +82,21 @@ pub async fn process_message_stream(
     req: &SendMessageRequest,
     on_token: LlmTokenSink,
 ) -> Result<SendMessageResponse> {
-    match run(state, req, Some(on_token)).await {
+    process_message_stream_with_origin(state, req, on_token, TurnOrigin::User).await
+}
+
+/// Streaming counterpart of [`process_message_with_origin`].
+///
+/// # Errors
+///
+/// Same failure modes as [`process_message_stream`].
+pub async fn process_message_stream_with_origin(
+    state: &AppState,
+    req: &SendMessageRequest,
+    on_token: LlmTokenSink,
+    origin: TurnOrigin,
+) -> Result<SendMessageResponse> {
+    match run(state, req, Some(on_token), origin).await {
         Ok(v) => Ok(v),
         Err(e) => {
             tracing::error!(target: "oclive_chat", "{}", e);
@@ -137,10 +172,21 @@ async fn load_turn_runtime_snapshot(
     state: &AppState,
     srid: &str,
     scene_id: &str,
+    persist_user_state: bool,
 ) -> std::result::Result<
     crate::domain::role_runtime_snapshot::RoleRuntimeSnapshot,
     ProcessMessageError,
 > {
+    if !persist_user_state {
+        return process_message_stage(ChatStage::GetRoleRuntimeSnapshot, async {
+            state
+                .db_manager
+                .get_role_runtime_snapshot(srid)
+                .await?
+                .ok_or(crate::error::AppError::RoleRuntimeNotReady)
+        })
+        .await;
+    }
     let seed_interaction_mode = !state.session_cache.is_interaction_mode_seeded(srid);
     let runtime_snapshot = process_message_stage(
         ChatStage::GetRoleRuntimeSnapshot,
@@ -171,7 +217,7 @@ async fn apply_immersive_virtual_time(
     scene_id: &str,
     runtime_snapshot: &crate::domain::role_runtime_snapshot::RoleRuntimeSnapshot,
     preflight_started_at: Instant,
-    staged: bool,
+    persist_user_state: bool,
 ) -> std::result::Result<ImmersiveVirtualTimeState, ProcessMessageError> {
     let current_scene = runtime_snapshot.scene.clone();
     let interaction_mode = runtime_snapshot
@@ -179,18 +225,20 @@ async fn apply_immersive_virtual_time(
         .unwrap_or(crate::models::InteractionMode::Immersive);
     let remote_life_enabled = runtime_snapshot.remote_life_enabled.unwrap_or(false);
     let immersive = interaction_mode.is_immersive();
-    if immersive && !staged {
+    if immersive && persist_user_state {
         process_message_stage(
             ChatStage::IdlePersonalityDecay,
             crate::domain::virtual_time_sync::apply_idle_personality_decay(state, role, srid),
         )
         .await?;
     }
-    let is_remote = immersive && user_is_remote_from_character(scene_id, current_scene.as_deref());
+    let is_remote = persist_user_state
+        && immersive
+        && user_is_remote_from_character(scene_id, current_scene.as_deref());
     let preflight_ms = preflight_started_at.elapsed().as_millis() as u64;
     let character_scene_id =
         is_remote.then(|| current_scene.as_deref().unwrap_or("default").to_string());
-    let virtual_time_ms = if staged {
+    let virtual_time_ms = if !persist_user_state {
         process_message_stage(
             ChatStage::VirtualTimeMs,
             state.db_manager.get_virtual_time_ms(srid),
@@ -238,6 +286,7 @@ struct PreflightOutput {
 async fn preflight_turn(
     state: &AppState,
     req: &SendMessageRequest,
+    origin: TurnOrigin,
 ) -> std::result::Result<PreflightOutput, ProcessMessageError> {
     let mrid = req.role_id.as_str();
     let state_rid = conversation_state_role_id(mrid, req.session_id.as_deref());
@@ -252,6 +301,7 @@ async fn preflight_turn(
         .as_ref()
         .and_then(|adult| adult.stage.as_ref())
         .is_some();
+    let persist_user_state = origin.persists_user_state() && !staged;
 
     let (_, role) = tokio::try_join!(
         async {
@@ -346,7 +396,8 @@ async fn preflight_turn(
         }
     }
 
-    let runtime_snapshot = load_turn_runtime_snapshot(state, srid, scene_id.as_str()).await?;
+    let runtime_snapshot =
+        load_turn_runtime_snapshot(state, srid, scene_id.as_str(), persist_user_state).await?;
     let immersive_virtual_time = apply_immersive_virtual_time(
         state,
         role.as_ref(),
@@ -354,7 +405,7 @@ async fn preflight_turn(
         scene_id.as_str(),
         &runtime_snapshot,
         t0,
-        staged,
+        persist_user_state,
     )
     .await?;
 
@@ -377,9 +428,10 @@ async fn run(
     state: &AppState,
     req: &SendMessageRequest,
     on_token: Option<LlmTokenSink>,
+    origin: TurnOrigin,
 ) -> std::result::Result<SendMessageResponse, ProcessMessageError> {
     let mrid = req.role_id.as_str();
-    let pre = preflight_turn(state, req).await?;
+    let pre = preflight_turn(state, req, origin).await?;
     let srid = pre.state_rid.as_str();
     let scene_id = pre.scene_id.as_str();
 
@@ -388,7 +440,7 @@ async fn run(
         .as_ref()
         .and_then(|adult| adult.stage.as_ref())
         .is_some();
-    if !staged {
+    if !staged && origin == TurnOrigin::User {
         if let Some(response) = try_agent_shortcut(
             state,
             req,
@@ -432,6 +484,7 @@ async fn run(
         runtime_snapshot: pre.runtime_snapshot,
         role_arc: Arc::clone(&pre.role),
         prefetch: pre.prefetch,
+        origin,
     };
     if let Some(sink) = on_token {
         dispatch_turn_stream(

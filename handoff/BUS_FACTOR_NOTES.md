@@ -49,6 +49,7 @@
 | **HTTP / Tauri** | 与 OOCP / `invoke` 对齐的请求体与回复 DTO 以 `oclive_kernel_types` 为准；`oclive_kernel_runtime` 只承载运行时策略/Prompt 类型。 |
 | **主语义（概念六段）** | 文件头注释：**分析情绪 → 检测事件 → 演化性格 → 构建 Prompt → 调用 LLM → 持久化**；实际执行会根据 **Agent 短路**、**异地 / 远程人生** 分支到 `process_remote_stub` / `process_remote_life`，否则进入 **`co_present::process_co_present`**。 |
 | **阶段标注** | `ProcessMessageError` / `pm!` 宏带 `stage` 字符串（如 `ensure_role_loaded`、`startup_health`），日志检索用 `target: "oclive_chat"`。 |
+| **回合来源** | 通用类型`oclive_kernel_types::models::dto::TurnOrigin`。HTTP/Tauri继续调用`process_message`并隐式固定为`user`；可信嵌入宿主可调用`process_message_with_origin`/stream变体。`sensor/system`可读取角色上下文并生成回复/视觉状态，但不提交用户聊天、记忆、事件、好感、关系、人格、连续性或虚拟时间，也不调用用户情绪插件。来源不放入`SendMessageRequest`，避免外部客户端自行选择低持久化策略。 |
 
 ### 从用户输入到 LLM 返回（追踪顺序）
 
@@ -59,6 +60,8 @@
 5. **共景主路径**：**`co_present::process_co_present`**（见下一节关联）。
 
 **设计意图**：单入口便于审计与测试；分支显式化避免「隐式 pipeline DSL」与运行时不一致（历史上去除 `pipeline.ocblueprint` 主路径的原因，见 `AGENTS.md` 内核架构小节）。
+
+`TurnOrigin`边界回归位于`distros/desktop-tauri/tests/turn_origin_sensor.rs`：同一会话先执行sensor回合并断言角色运行时与聊天/记忆/事件零变化，再执行普通user回合证明原持久化路径仍生效。枪械、IoT等宿主专用DeviceContext格式不属于本仓标准DTO，由各自composition root转换为中性消息体并传入类型化origin。
 
 ---
 

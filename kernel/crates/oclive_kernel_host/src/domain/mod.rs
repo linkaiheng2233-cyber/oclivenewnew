@@ -71,7 +71,7 @@ pub mod turn_thinking;
 pub mod visual_presentation;
 
 pub use agent::{AgentDebugTrace, AgentInput, AgentOutput, AgentProvider, BuiltinReActAgent};
-pub use chat_engine::process_message;
+pub use chat_engine::{process_message, process_message_with_origin};
 pub use event_detector::EventDetector;
 pub use event_estimator::{BuiltinEventEstimator, EventEstimator, RemoteEventEstimatorPlaceholder};
 pub use local_plugin_bridge::{

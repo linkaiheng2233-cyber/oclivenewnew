@@ -3,7 +3,7 @@
 use crate::domain::chat_engine::turn_prefetch::TurnPrefetch;
 use crate::domain::plugin_host::ResolvedRolePlugins;
 use crate::domain::role_runtime_snapshot::RoleRuntimeSnapshot;
-use crate::models::dto::SendMessageRequest;
+use crate::models::dto::{SendMessageRequest, TurnOrigin};
 use crate::models::{PluginBackends, Role};
 use crate::state::{AppState, EffectiveSessionConfig};
 use std::sync::Arc;
@@ -45,6 +45,9 @@ pub struct TurnContext<'a> {
     pub role_arc: Arc<Role>,
     /// Recent context + user identity shared by agent (when enabled) and `pre_llm`.
     pub prefetch: TurnPrefetch,
+    /// Semantic input source. This is kept outside `SendMessageRequest` so universal HTTP/Tauri
+    /// clients cannot select a lower-persistence execution policy.
+    pub origin: TurnOrigin,
 }
 
 impl<'a> TurnContext<'a> {
@@ -66,5 +69,11 @@ impl<'a> TurnContext<'a> {
             .as_ref()
             .and_then(|adult| adult.stage.as_ref())
             .is_some()
+    }
+
+    /// Whether this turn may commit user-chat state.
+    #[must_use]
+    pub fn persists_user_state(&self) -> bool {
+        !self.is_staged() && self.origin.persists_user_state()
     }
 }

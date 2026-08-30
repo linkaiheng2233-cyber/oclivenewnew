@@ -5,6 +5,39 @@ use serde::{Deserialize, Serialize};
 use super::AdultBeatDto;
 use super::AdultInteractionRequest;
 
+/// Semantic source of a kernel turn.
+///
+/// Universal chat transports keep using [`TurnOrigin::User`] implicitly. Embedded hosts may use
+/// [`TurnOrigin::Sensor`] or [`TurnOrigin::System`] through the Rust orchestration entrypoint so
+/// neutral device facts cannot accidentally acquire user-chat persistence semantics.
+///
+/// # Examples
+///
+/// ```
+/// use oclive_kernel_types::models::dto::TurnOrigin;
+///
+/// assert_eq!(TurnOrigin::default(), TurnOrigin::User);
+/// assert!(TurnOrigin::User.persists_user_state());
+/// assert!(!TurnOrigin::Sensor.persists_user_state());
+/// ```
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TurnOrigin {
+    #[default]
+    User,
+    Sensor,
+    System,
+}
+
+impl TurnOrigin {
+    /// Whether this turn may commit user-chat state such as memory, relation, personality, event,
+    /// narrative continuity, and chat-history rows.
+    #[must_use]
+    pub const fn persists_user_state(self) -> bool {
+        matches!(self, Self::User)
+    }
+}
+
 /// Primary chat invoke payload (`send_message`).
 #[derive(Debug, Default, Deserialize)]
 pub struct SendMessageRequest {
@@ -155,3 +188,28 @@ pub const OCLIVE_DEFAULT_RELATION_SENTINEL: &str = "__oclive_default__";
 
 /// Sentinel for User Identity Prompt Template picker "follow pack default" (same value as relation sentinel).
 pub const OCLIVE_DEFAULT_IDENTITY_SENTINEL: &str = "__oclive_default__";
+
+#[cfg(test)]
+mod turn_origin_tests {
+    use super::TurnOrigin;
+
+    #[test]
+    fn turn_origin_has_stable_wire_names_and_user_default() {
+        assert_eq!(TurnOrigin::default(), TurnOrigin::User);
+        assert_eq!(
+            serde_json::to_string(&TurnOrigin::User).unwrap(),
+            "\"user\""
+        );
+        assert_eq!(
+            serde_json::to_string(&TurnOrigin::Sensor).unwrap(),
+            "\"sensor\""
+        );
+        assert_eq!(
+            serde_json::to_string(&TurnOrigin::System).unwrap(),
+            "\"system\""
+        );
+        assert!(TurnOrigin::User.persists_user_state());
+        assert!(!TurnOrigin::Sensor.persists_user_state());
+        assert!(!TurnOrigin::System.persists_user_state());
+    }
+}

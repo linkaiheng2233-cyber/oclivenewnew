@@ -46,7 +46,7 @@ pub(crate) async fn dispatch_turn(
     }
 
     #[cfg(feature = "dual_core")]
-    if turn.role.dual_core_gated() {
+    if turn.origin.persists_user_state() && turn.role.dual_core_gated() {
         return DualPipelineRunner::run_with_fallback(turn).await;
     }
 
@@ -72,7 +72,7 @@ pub(crate) async fn dispatch_turn_stream(
     }
 
     #[cfg(feature = "dual_core")]
-    if turn.role.dual_core_gated() {
+    if turn.origin.persists_user_state() && turn.role.dual_core_gated() {
         return DualPipelineRunner::run_with_fallback_stream(turn, on_token).await;
     }
 

@@ -246,7 +246,7 @@ pub(crate) async fn run_middle(
         scene_id,
         virtual_time_ms,
         &ctx.runtime_snapshot,
-        !ctx.is_staged(),
+        ctx.persists_user_state(),
     )
     .await
     {

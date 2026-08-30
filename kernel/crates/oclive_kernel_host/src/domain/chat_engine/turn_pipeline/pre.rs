@@ -186,7 +186,7 @@ async fn apply_time_evolution(
     mut personality: PersonalityVector,
     mut mutable_for_prompt: String,
 ) -> TurnResult<(PersonalityVector, String)> {
-    if !ctx.is_staged() && ctx.immersive && ctx.virtual_time_ms > 0 {
+    if ctx.persists_user_state() && ctx.immersive && ctx.virtual_time_ms > 0 {
         let time_evo = crate::domain::time_driven_evolution::check_and_evolve_by_time(
             ctx.state,
             ctx.role,
@@ -210,12 +210,28 @@ async fn apply_time_evolution(
 async fn resolve_user_emotion_for_turn(
     pl: &crate::domain::plugin_host::ResolvedRolePlugins,
     user_message: &str,
+    analyze_user_input: bool,
 ) -> TurnResult<(EmotionResult, Emotion, String, String)> {
-    let emotion_result = STAGES
-        .stage(ChatStage::UserEmotionAnalyze, async {
-            SlotRunner::analyze_emotion(pl, user_message)
-        })
-        .await?;
+    let emotion_result = if analyze_user_input {
+        STAGES
+            .stage(ChatStage::UserEmotionAnalyze, async {
+                SlotRunner::analyze_emotion(pl, user_message)
+            })
+            .await?
+    } else {
+        // Sensor/system envelopes are neutral facts, not words spoken by the user. Keeping this
+        // neutral also avoids invoking a configured user-emotion plugin for non-user input.
+        EmotionResult {
+            joy: 0.0,
+            sadness: 0.0,
+            anger: 0.0,
+            fear: 0.0,
+            surprise: 0.0,
+            disgust: 0.0,
+            neutral: 1.0,
+            extension: None,
+        }
+    };
     let user_emotion = emotion_result.to_emotion();
     let user_emotion_str = user_emotion.to_string();
     let user_emotion_prompt =
@@ -425,7 +441,7 @@ async fn rank_relevant_memories(
     for m in &mut relevant {
         m.accessed_at = Some(now);
     }
-    if !ctx.is_staged() {
+    if ctx.persists_user_state() {
         if let Err(e) = ctx
             .state
             .db_manager
@@ -498,7 +514,7 @@ pub(crate) async fn pre_llm(ctx: &TurnContext<'_>) -> TurnResult<PreLlmOutput> {
     let srid = ctx.srid;
     let user_message = req.user_message.as_str();
     let pl = &ctx.pl;
-    let persist = !ctx.is_staged();
+    let persist = ctx.persists_user_state();
 
     let wave1_start = std::time::Instant::now();
     let (
@@ -515,7 +531,7 @@ pub(crate) async fn pre_llm(ctx: &TurnContext<'_>) -> TurnResult<PreLlmOutput> {
         (memories, resolved_identity),
     ) = tokio::try_join!(
         prefetch_context(ctx),
-        resolve_user_emotion_for_turn(pl, user_message),
+        resolve_user_emotion_for_turn(pl, user_message, ctx.origin.persists_user_state()),
         async {
             crate::domain::effective_llm_model::resolve_effective_ollama_model(state, role, srid)
                 .await
