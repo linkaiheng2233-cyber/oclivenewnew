@@ -3,7 +3,38 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use oclive_kernel_types::{EventEnvelope, EventModuleDeclaration, EventModuleOutput, Result};
+use oclive_kernel_types::{
+    EventDispatchResult, EventDraft, EventEnvelope, EventModuleDeclaration, EventModuleOutput,
+    Result,
+};
+
+/// A source-bound handle that submits drafts to the authoritative Event Ring.
+///
+/// The handle owns the registered source identity and weight. Callers supply only event content
+/// and turn/stream correlation, so a module cannot impersonate another registered source.
+///
+/// # Examples
+///
+/// ```
+/// use oclive_kernel_contracts::EventEmitter;
+///
+/// fn accepts_emitter(_emitter: &dyn EventEmitter) {}
+/// ```
+#[async_trait]
+pub trait EventEmitter: Send + Sync {
+    /// Submits one root event draft from the bound module.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the draft violates the module emission declaration or Event Ring
+    /// bounds, or when a subscribed module fails dispatch.
+    async fn emit(
+        &self,
+        stream_key: &str,
+        correlation_id: Option<&str>,
+        draft: EventDraft,
+    ) -> Result<EventDispatchResult>;
+}
 
 /// A module that declaratively joins the Event Ring.
 ///
@@ -27,6 +58,7 @@ use oclive_kernel_types::{EventEnvelope, EventModuleDeclaration, EventModuleOutp
 ///             module_id: "example.observer".into(),
 ///             subscriptions: vec!["kernel.chat.*".into()],
 ///             priority: 100,
+///             ..Default::default()
 ///         }
 ///     }
 ///
@@ -65,7 +97,7 @@ pub trait EventModule: Send + Sync {
 /// }
 /// ```
 pub trait EventModuleRegistrar: Send + Sync {
-    /// Registers one module declaration and implementation.
+    /// Registers one module declaration and implementation, returning its source-bound emitter.
     ///
     /// # Errors
     ///
@@ -73,7 +105,7 @@ pub trait EventModuleRegistrar: Send + Sync {
     fn register_event_module(
         &self,
         module: Arc<dyn EventModule>,
-    ) -> std::result::Result<(), String>;
+    ) -> std::result::Result<Arc<dyn EventEmitter>, String>;
 
     fn event_module_declarations(&self) -> Vec<EventModuleDeclaration>;
 }

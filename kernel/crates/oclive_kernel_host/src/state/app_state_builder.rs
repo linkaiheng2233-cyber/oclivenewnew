@@ -362,6 +362,11 @@ impl AppStateBuilder {
         let user_llm_secrets: Arc<dyn oclive_kernel_contracts::UserLlmSecretsPort> =
             Arc::new(crate::infrastructure::user_llm_secrets::BuiltinUserLlmSecrets);
 
+        let event_ring = Arc::new(crate::domain::event_ring::EventRing::new());
+        let event_impact_emitter =
+            crate::domain::event_ring::register_legacy_event_impact_source(event_ring.as_ref())
+                .map_err(AppError::InvalidParameter)?;
+
         let state = AppState {
             db_manager,
             conversation_store,
@@ -373,7 +378,8 @@ impl AppStateBuilder {
             ollama,
             performance_llm,
             resource_coordinator,
-            event_ring: Arc::new(crate::domain::event_ring::EventRing::new()),
+            event_ring,
+            event_impact_emitter,
             role_cache: Arc::new(RwLock::new(indexmap::IndexMap::new())),
             role_load_inflight: DashMap::new(),
             http_api_roles: DashMap::new(),

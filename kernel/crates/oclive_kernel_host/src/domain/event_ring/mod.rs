@@ -10,18 +10,20 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
+use async_trait::async_trait;
 use chrono::Utc;
-use oclive_kernel_contracts::{EventModule, EventModuleRegistrar};
+use oclive_kernel_contracts::{EventEmitter, EventModule, EventModuleRegistrar};
 use oclive_kernel_types::{
-    AppError, EventDispatchResult, EventEmission, EventEnvelope, EventModuleDeclaration,
-    EventModuleOutput, Result, EVENT_RING_SCHEMA_VERSION,
+    AppError, EventDispatchResult, EventDraft, EventEnvelope, EventModuleDeclaration,
+    EventModuleOutput, Result, EVENT_INFLUENCE_WEIGHT_SCALE, EVENT_RING_SCHEMA_VERSION,
 };
 use parking_lot::{Mutex, RwLock};
 use serde_json::Value;
 use uuid::Uuid;
 
+pub(crate) use legacy_event_impact::register_legacy_event_impact_source;
 pub use legacy_event_impact::{
-    publish_legacy_event_impact, LEGACY_EVENT_IMPACT_KIND, LEGACY_EVENT_IMPACT_SOURCE,
+    publish_legacy_event_impact, LEGACY_EVENT_IMPACT_KIND, LEGACY_EVENT_IMPACT_MODULE_ID,
 };
 
 const EVENT_HISTORY_CAPACITY: usize = 256;
@@ -44,20 +46,27 @@ struct RegisteredModule {
 /// Per-kernel Event Ring with a bounded ephemeral history and module registry.
 ///
 /// The ring owns no database writer and does not expose a distribution-specific protocol. A
-/// caller publishes one generic envelope; matching modules run sequentially by `(priority,
-/// module_id)`, then child events traverse the same bounded queue.
+/// registered module submits a draft through its source-bound emitter; the ring signs the
+/// envelope, then matching modules run sequentially by `(priority, module_id)` and child drafts
+/// traverse the same bounded queue.
+#[derive(Clone)]
 pub struct EventRing {
-    modules: RwLock<BTreeMap<String, RegisteredModule>>,
-    history: Mutex<VecDeque<EventEnvelope>>,
-    sequence: AtomicU64,
+    modules: Arc<RwLock<BTreeMap<String, RegisteredModule>>>,
+    history: Arc<Mutex<VecDeque<EventEnvelope>>>,
+    sequence: Arc<AtomicU64>,
+}
+
+struct BoundEventEmitter {
+    ring: EventRing,
+    module_id: String,
 }
 
 impl Default for EventRing {
     fn default() -> Self {
         Self {
-            modules: RwLock::new(BTreeMap::new()),
-            history: Mutex::new(VecDeque::with_capacity(EVENT_HISTORY_CAPACITY)),
-            sequence: AtomicU64::new(0),
+            modules: Arc::new(RwLock::new(BTreeMap::new())),
+            history: Arc::new(Mutex::new(VecDeque::with_capacity(EVENT_HISTORY_CAPACITY))),
+            sequence: Arc::new(AtomicU64::new(0)),
         }
     }
 }
@@ -68,27 +77,17 @@ impl EventRing {
         Self::default()
     }
 
-    /// Publishes and fully dispatches one primary event.
-    ///
-    /// When no modules are registered, the returned primary payload is unchanged. The ring still
-    /// assigns identity and records the envelope in its bounded in-memory history.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error for invalid identifiers, oversized payloads, module failures, or bounded
-    /// dispatch limits. No history entries are committed for a failed dispatch.
-    pub async fn publish(
+    async fn emit_from_registered(
         &self,
-        kind: &str,
-        source: &str,
+        module_id: &str,
         stream_key: &str,
         correlation_id: Option<&str>,
-        payload: Value,
+        draft: EventDraft,
     ) -> Result<EventDispatchResult> {
-        validate_event_kind(kind)?;
-        validate_canonical_id(source, "event source")?;
+        let declaration = self.registered_declaration(module_id)?;
+        validate_declared_emission(&declaration, &draft.kind)?;
+        validate_event_draft(&draft)?;
         validate_stream_key(stream_key)?;
-        validate_payload(&payload)?;
         if let Some(correlation_id) = correlation_id {
             validate_opaque_id(correlation_id, "correlation_id")?;
         }
@@ -97,18 +96,27 @@ impl EventRing {
         let primary = EventEnvelope {
             schema_version: EVENT_RING_SCHEMA_VERSION,
             event_id: event_id.clone(),
-            kind: kind.to_string(),
-            source: source.to_string(),
+            kind: draft.kind,
+            source: module_event_source(module_id),
+            source_weight_bps: declaration.influence_weight_bps,
             stream_key: stream_key.to_string(),
             correlation_id: correlation_id.unwrap_or(event_id.as_str()).to_string(),
             causation_id: None,
             sequence: self.next_sequence(),
             depth: 0,
             occurred_at: Utc::now(),
-            payload,
-            metadata: BTreeMap::new(),
+            payload: draft.payload,
+            metadata: draft.metadata,
         };
         self.dispatch(primary).await
+    }
+
+    fn registered_declaration(&self, module_id: &str) -> Result<EventModuleDeclaration> {
+        self.modules
+            .read()
+            .get(module_id)
+            .map(|registered| registered.declaration.clone())
+            .ok_or_else(|| event_ring_error(format!("event module {module_id} is not registered")))
     }
 
     /// Returns the newest `limit` successfully dispatched events in chronological order.
@@ -134,7 +142,7 @@ impl EventRing {
                 let output = registered.module.handle(&event).await?;
                 apply_module_output(
                     self,
-                    &registered.declaration.module_id,
+                    &registered.declaration,
                     &mut event,
                     output,
                     &mut queue,
@@ -177,13 +185,12 @@ impl EventRing {
 
     fn child_envelope(
         &self,
-        module_id: &str,
+        declaration: &EventModuleDeclaration,
         parent: &EventEnvelope,
-        emission: EventEmission,
+        draft: EventDraft,
     ) -> Result<EventEnvelope> {
-        validate_event_kind(&emission.kind)?;
-        validate_payload(&emission.payload)?;
-        validate_metadata(&emission.metadata)?;
+        validate_declared_emission(declaration, &draft.kind)?;
+        validate_event_draft(&draft)?;
         let depth = parent
             .depth
             .checked_add(1)
@@ -194,16 +201,17 @@ impl EventRing {
         Ok(EventEnvelope {
             schema_version: EVENT_RING_SCHEMA_VERSION,
             event_id: Uuid::new_v4().to_string(),
-            kind: emission.kind,
-            source: format!("module.{module_id}"),
+            kind: draft.kind,
+            source: module_event_source(&declaration.module_id),
+            source_weight_bps: declaration.influence_weight_bps,
             stream_key: parent.stream_key.clone(),
             correlation_id: parent.correlation_id.clone(),
             causation_id: Some(parent.event_id.clone()),
             sequence: self.next_sequence(),
             depth,
             occurred_at: Utc::now(),
-            payload: emission.payload,
-            metadata: emission.metadata,
+            payload: draft.payload,
+            metadata: draft.metadata,
         })
     }
 
@@ -228,13 +236,17 @@ impl EventModuleRegistrar for EventRing {
     fn register_event_module(
         &self,
         module: Arc<dyn EventModule>,
-    ) -> std::result::Result<(), String> {
+    ) -> std::result::Result<Arc<dyn EventEmitter>, String> {
         let declaration = module.declaration();
         validate_declaration(&declaration)?;
+        let module_id = declaration.module_id.clone();
         let mut modules = self.modules.write();
         if let Some(existing) = modules.get(&declaration.module_id) {
             if existing.declaration == declaration && Arc::ptr_eq(&existing.module, &module) {
-                return Ok(());
+                return Ok(Arc::new(BoundEventEmitter {
+                    ring: self.clone(),
+                    module_id,
+                }));
             }
             return Err(format!(
                 "event module {} already registered with a different declaration or implementation",
@@ -248,7 +260,10 @@ impl EventModuleRegistrar for EventRing {
                 module,
             },
         );
-        Ok(())
+        Ok(Arc::new(BoundEventEmitter {
+            ring: self.clone(),
+            module_id,
+        }))
     }
 
     fn event_module_declarations(&self) -> Vec<EventModuleDeclaration> {
@@ -267,9 +282,23 @@ impl EventModuleRegistrar for EventRing {
     }
 }
 
+#[async_trait]
+impl EventEmitter for BoundEventEmitter {
+    async fn emit(
+        &self,
+        stream_key: &str,
+        correlation_id: Option<&str>,
+        draft: EventDraft,
+    ) -> Result<EventDispatchResult> {
+        self.ring
+            .emit_from_registered(self.module_id.as_str(), stream_key, correlation_id, draft)
+            .await
+    }
+}
+
 fn apply_module_output(
     ring: &EventRing,
-    module_id: &str,
+    declaration: &EventModuleDeclaration,
     event: &mut EventEnvelope,
     output: EventModuleOutput,
     queue: &mut VecDeque<EventEnvelope>,
@@ -294,8 +323,8 @@ fn apply_module_output(
     {
         return Err(event_ring_error("dispatch event limit exceeded"));
     }
-    for emission in output.emitted {
-        queue.push_back(ring.child_envelope(module_id, event, emission)?);
+    for draft in output.emitted {
+        queue.push_back(ring.child_envelope(declaration, event, draft)?);
     }
     Ok(())
 }
@@ -303,15 +332,20 @@ fn apply_module_output(
 fn validate_declaration(declaration: &EventModuleDeclaration) -> std::result::Result<(), String> {
     validate_canonical_id_text(&declaration.module_id, "module_id")?;
     validate_canonical_id_text(
-        &format!("module.{}", declaration.module_id),
+        &module_event_source(&declaration.module_id),
         "module event source",
     )?;
-    if declaration.subscriptions.is_empty() {
-        return Err("event module subscriptions cannot be empty".into());
+    if declaration.subscriptions.is_empty() && declaration.emissions.is_empty() {
+        return Err("event module must declare at least one subscription or emission".into());
     }
     if !(MIN_MODULE_PRIORITY..=MAX_MODULE_PRIORITY).contains(&declaration.priority) {
         return Err(format!(
             "event module priority must be between {MIN_MODULE_PRIORITY} and {MAX_MODULE_PRIORITY}"
+        ));
+    }
+    if declaration.influence_weight_bps > EVENT_INFLUENCE_WEIGHT_SCALE {
+        return Err(format!(
+            "event module influence_weight_bps must be at most {EVENT_INFLUENCE_WEIGHT_SCALE}"
         ));
     }
     let mut unique = BTreeSet::new();
@@ -321,7 +355,35 @@ fn validate_declaration(declaration: &EventModuleDeclaration) -> std::result::Re
             return Err(format!("duplicate event subscription: {pattern}"));
         }
     }
+    unique.clear();
+    for pattern in &declaration.emissions {
+        validate_event_pattern(pattern, "event emission")?;
+        if !unique.insert(pattern) {
+            return Err(format!("duplicate event emission: {pattern}"));
+        }
+    }
     Ok(())
+}
+
+fn validate_declared_emission(declaration: &EventModuleDeclaration, kind: &str) -> Result<()> {
+    if declaration
+        .emissions
+        .iter()
+        .any(|pattern| event_pattern_matches(pattern, kind))
+    {
+        Ok(())
+    } else {
+        Err(event_ring_error(format!(
+            "module {} is not allowed to emit {kind}",
+            declaration.module_id
+        )))
+    }
+}
+
+fn validate_event_draft(draft: &EventDraft) -> Result<()> {
+    validate_event_kind(&draft.kind)?;
+    validate_payload(&draft.payload)?;
+    validate_metadata(&draft.metadata)
 }
 
 fn validate_envelope(event: &EventEnvelope) -> Result<()> {
@@ -331,6 +393,9 @@ fn validate_envelope(event: &EventEnvelope) -> Result<()> {
     validate_opaque_id(&event.event_id, "event_id")?;
     validate_event_kind(&event.kind)?;
     validate_canonical_id(&event.source, "event source")?;
+    if event.source_weight_bps > EVENT_INFLUENCE_WEIGHT_SCALE {
+        return Err(event_ring_error("event source weight exceeds scale"));
+    }
     validate_stream_key(&event.stream_key)?;
     validate_opaque_id(&event.correlation_id, "correlation_id")?;
     if let Some(causation_id) = event.causation_id.as_deref() {
@@ -371,21 +436,33 @@ fn validate_canonical_id_text(value: &str, label: &str) -> std::result::Result<(
 }
 
 fn validate_subscription(pattern: &str) -> std::result::Result<(), String> {
+    validate_event_pattern(pattern, "event subscription")
+}
+
+fn validate_event_pattern(pattern: &str, label: &str) -> std::result::Result<(), String> {
     if pattern == "*" {
         return Ok(());
     }
     if let Some(prefix) = pattern.strip_suffix(".*") {
-        return validate_canonical_id_text(prefix, "event subscription prefix");
+        return validate_canonical_id_text(prefix, &format!("{label} prefix"));
     }
-    validate_canonical_id_text(pattern, "event subscription")
+    validate_canonical_id_text(pattern, label)
 }
 
 fn subscription_matches(pattern: &str, kind: &str) -> bool {
+    event_pattern_matches(pattern, kind)
+}
+
+fn event_pattern_matches(pattern: &str, kind: &str) -> bool {
     pattern == "*"
         || pattern == kind
         || pattern
             .strip_suffix(".*")
             .is_some_and(|prefix| kind.starts_with(&format!("{prefix}.")))
+}
+
+fn module_event_source(module_id: &str) -> String {
+    format!("module.{module_id}")
 }
 
 fn validate_stream_key(stream_key: &str) -> Result<()> {

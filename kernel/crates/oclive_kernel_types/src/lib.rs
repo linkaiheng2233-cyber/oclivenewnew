@@ -48,8 +48,8 @@ pub use emotion::EmotionResult;
 pub use error::{http_chat_codes, AppError, KernelErrorBody, Result};
 pub use event_impact::EventImpactEstimate;
 pub use event_ring::{
-    EventDispatchResult, EventEmission, EventEnvelope, EventModuleDeclaration, EventModuleOutput,
-    EVENT_RING_SCHEMA_VERSION,
+    EventDispatchResult, EventDraft, EventEmission, EventEnvelope, EventModuleDeclaration,
+    EventModuleOutput, EVENT_INFLUENCE_WEIGHT_SCALE, EVENT_RING_SCHEMA_VERSION,
 };
 pub use local_plugin::{
     LocalPluginCapability, LocalPluginProviderDescriptor, LOCAL_PLUGIN_SCHEMA_VERSION,

@@ -55,7 +55,7 @@ pub use agent_mcp_registry_port::AgentMcpRegistryPort;
 pub use agent_provider::AgentProvider;
 pub use complex_emotion::ComplexEmotionProvider;
 pub use event_estimator::EventEstimator;
-pub use event_ring::{EventModule, EventModuleRegistrar};
+pub use event_ring::{EventEmitter, EventModule, EventModuleRegistrar};
 pub use function_calling_parser::FunctionCallingParserPort;
 pub use llm::{LlmClient, LlmGenerateOpts, LlmGenerateOutcome, LlmTokenSink};
 pub use local_plugin_bridge::LocalPluginBridge;

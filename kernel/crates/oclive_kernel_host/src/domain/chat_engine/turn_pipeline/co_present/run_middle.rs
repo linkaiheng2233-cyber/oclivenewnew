@@ -138,8 +138,9 @@ pub(crate) async fn run_middle(
         .stage(
             ChatStage::EventEstimate,
             crate::domain::event_ring::publish_legacy_event_impact(
-                state.event_ring.as_ref(),
+                state.event_impact_emitter.as_ref(),
                 ctx.srid,
+                None,
                 estimate,
             ),
         )

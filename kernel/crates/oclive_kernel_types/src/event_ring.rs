@@ -7,7 +7,10 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 /// Current wire schema for [`EventEnvelope`].
-pub const EVENT_RING_SCHEMA_VERSION: u16 = 1;
+pub const EVENT_RING_SCHEMA_VERSION: u16 = 2;
+
+/// Fixed-point scale used by Event Ring influence weights (`10_000 == 1.0`).
+pub const EVENT_INFLUENCE_WEIGHT_SCALE: u16 = 10_000;
 
 /// One immutable-identity event travelling through the kernel Event Ring.
 ///
@@ -18,13 +21,16 @@ pub const EVENT_RING_SCHEMA_VERSION: u16 = 1;
 ///
 /// ```
 /// use chrono::{TimeZone, Utc};
-/// use oclive_kernel_types::{EventEnvelope, EVENT_RING_SCHEMA_VERSION};
+/// use oclive_kernel_types::{
+///     EventEnvelope, EVENT_INFLUENCE_WEIGHT_SCALE, EVENT_RING_SCHEMA_VERSION,
+/// };
 ///
 /// let event = EventEnvelope {
 ///     schema_version: EVENT_RING_SCHEMA_VERSION,
 ///     event_id: "event-1".into(),
 ///     kind: "kernel.chat.message.received".into(),
-///     source: "kernel.chat".into(),
+///     source: "module.kernel.chat".into(),
+///     source_weight_bps: EVENT_INFLUENCE_WEIGHT_SCALE,
 ///     stream_key: "chat:mumu".into(),
 ///     correlation_id: "turn-1".into(),
 ///     causation_id: None,
@@ -34,7 +40,7 @@ pub const EVENT_RING_SCHEMA_VERSION: u16 = 1;
 ///     payload: serde_json::json!({"text": "hello"}),
 ///     metadata: Default::default(),
 /// };
-/// assert_eq!(event.schema_version, 1);
+/// assert_eq!(event.schema_version, 2);
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct EventEnvelope {
@@ -42,6 +48,8 @@ pub struct EventEnvelope {
     pub event_id: String,
     pub kind: String,
     pub source: String,
+    /// Registry-owned snapshot of the source module's base proposal influence.
+    pub source_weight_bps: u16,
     pub stream_key: String,
     pub correlation_id: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -54,10 +62,37 @@ pub struct EventEnvelope {
     pub metadata: BTreeMap<String, Value>,
 }
 
+/// Untrusted event content proposed by a registered module.
+///
+/// Modules create drafts, while the Event Ring supplies authoritative identity, source, weight,
+/// stream, correlation, causation, ordering, depth, and timestamp fields.
+///
+/// # Examples
+///
+/// ```
+/// use oclive_kernel_types::EventDraft;
+///
+/// let draft = EventDraft {
+///     kind: "kernel.memory.recall.candidate".into(),
+///     payload: serde_json::json!({"memory_id": "memory-1"}),
+///     metadata: Default::default(),
+/// };
+/// assert_eq!(draft.kind, "kernel.memory.recall.candidate");
+/// ```
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct EventDraft {
+    pub kind: String,
+    pub payload: Value,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub metadata: BTreeMap<String, Value>,
+}
+
 /// Declarative registration supplied by an Event Ring module.
 ///
-/// Subscriptions are canonical dotted event kinds, a trailing namespace wildcard such as
-/// `kernel.chat.*`, or `*`. Lower priorities run first; ties use `module_id` ordering.
+/// Subscriptions and emissions are canonical dotted event kinds, a trailing namespace wildcard
+/// such as `kernel.chat.*`, or `*`. Lower priorities run first; ties use `module_id` ordering.
+/// `influence_weight_bps` is a registry-owned base input for downstream proposal decisions; it
+/// does not control dispatch order or invocation frequency.
 ///
 /// # Examples
 ///
@@ -67,7 +102,9 @@ pub struct EventEnvelope {
 /// let declaration = EventModuleDeclaration {
 ///     module_id: "builtin.memory.observe".into(),
 ///     subscriptions: vec!["kernel.chat.*".into()],
+///     emissions: vec!["kernel.memory.recall.candidate".into()],
 ///     priority: 100,
+///     influence_weight_bps: 7_500,
 /// };
 /// assert_eq!(declaration.subscriptions.len(), 1);
 /// ```
@@ -75,32 +112,25 @@ pub struct EventEnvelope {
 pub struct EventModuleDeclaration {
     pub module_id: String,
     pub subscriptions: Vec<String>,
+    pub emissions: Vec<String>,
     pub priority: i32,
+    pub influence_weight_bps: u16,
 }
 
-/// Child event requested by a module while handling another event.
-///
-/// The ring supplies source, stream, correlation, causation, sequence, depth, and timestamp.
-///
-/// # Examples
-///
-/// ```
-/// use oclive_kernel_types::EventEmission;
-///
-/// let emission = EventEmission {
-///     kind: "kernel.memory.candidate".into(),
-///     payload: serde_json::json!({"importance": 0.8}),
-///     metadata: Default::default(),
-/// };
-/// assert_eq!(emission.kind, "kernel.memory.candidate");
-/// ```
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct EventEmission {
-    pub kind: String,
-    pub payload: Value,
-    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
-    pub metadata: BTreeMap<String, Value>,
+impl Default for EventModuleDeclaration {
+    fn default() -> Self {
+        Self {
+            module_id: String::new(),
+            subscriptions: Vec::new(),
+            emissions: Vec::new(),
+            priority: 0,
+            influence_weight_bps: EVENT_INFLUENCE_WEIGHT_SCALE,
+        }
+    }
 }
+
+/// Compatibility name for child-event drafts used by the initial Event Ring slice.
+pub type EventEmission = EventDraft;
 
 /// Deterministic contribution returned by one Event Ring module.
 ///
@@ -125,7 +155,7 @@ pub struct EventModuleOutput {
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub metadata: BTreeMap<String, Value>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub emitted: Vec<EventEmission>,
+    pub emitted: Vec<EventDraft>,
 }
 
 /// Completed bounded dispatch, including the transformed primary event and processed children.
@@ -135,7 +165,7 @@ pub struct EventModuleOutput {
 /// ```
 /// # use chrono::{TimeZone, Utc};
 /// use oclive_kernel_types::{EventDispatchResult, EventEnvelope, EVENT_RING_SCHEMA_VERSION};
-/// # let primary = EventEnvelope { schema_version: EVENT_RING_SCHEMA_VERSION, event_id: "e".into(), kind: "kernel.test".into(), source: "kernel.test".into(), stream_key: "test".into(), correlation_id: "c".into(), causation_id: None, sequence: 1, depth: 0, occurred_at: Utc.timestamp_opt(0, 0).single().expect("valid timestamp"), payload: serde_json::Value::Null, metadata: Default::default() };
+/// # let primary = EventEnvelope { schema_version: EVENT_RING_SCHEMA_VERSION, event_id: "e".into(), kind: "kernel.test".into(), source: "module.kernel.test".into(), source_weight_bps: 10_000, stream_key: "test".into(), correlation_id: "c".into(), causation_id: None, sequence: 1, depth: 0, occurred_at: Utc.timestamp_opt(0, 0).single().expect("valid timestamp"), payload: serde_json::Value::Null, metadata: Default::default() };
 /// let result = EventDispatchResult { primary, emitted: Vec::new() };
 /// assert!(result.emitted.is_empty());
 /// ```
