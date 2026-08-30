@@ -16,8 +16,9 @@ use chrono::Utc;
 use oclive_kernel_contracts::{EventEmitter, EventModule, EventModuleRegistrar};
 use oclive_kernel_types::{
     AppError, EventDispatchResult, EventDraft, EventEnvelope, EventModuleDeclaration,
-    EventModuleOutput, EventModuleRegistryEntry, EventModuleRegistryPolicy, Result,
-    EVENT_INFLUENCE_WEIGHT_SCALE, EVENT_RING_SCHEMA_VERSION,
+    EventModuleOutput, EventModuleRegistryEntry, EventModuleRegistryPolicy, EventRingDiagnostics,
+    EventRingEventDiagnostic, Result, EVENT_INFLUENCE_WEIGHT_SCALE,
+    EVENT_RING_DIAGNOSTICS_SCHEMA_VERSION, EVENT_RING_SCHEMA_VERSION,
 };
 use parking_lot::{Mutex, RwLock};
 use serde_json::Value;
@@ -132,6 +133,28 @@ impl EventRing {
         let limit = limit.min(EVENT_HISTORY_CAPACITY);
         let skip = history.len().saturating_sub(limit);
         history.iter().skip(skip).cloned().collect()
+    }
+
+    /// Returns privacy-minimized registry and bounded-history diagnostics.
+    ///
+    /// Event payloads, metadata values, and stream keys are excluded. `recent_limit` is capped by
+    /// the ring's history capacity, and summaries remain in chronological order.
+    #[must_use]
+    pub fn diagnostics_snapshot(&self, recent_limit: usize) -> EventRingDiagnostics {
+        let registry = self.event_module_registry();
+        let history = self.history.lock();
+        let last_allocated_sequence = self.sequence.load(Ordering::Relaxed);
+        let limit = recent_limit.min(EVENT_HISTORY_CAPACITY);
+        let skip = history.len().saturating_sub(limit);
+        let recent_events = history.iter().skip(skip).map(event_diagnostic).collect();
+        EventRingDiagnostics {
+            schema_version: EVENT_RING_DIAGNOSTICS_SCHEMA_VERSION,
+            registry,
+            history_len: usize_to_u64(history.len()),
+            history_capacity: usize_to_u64(EVENT_HISTORY_CAPACITY),
+            last_allocated_sequence,
+            recent_events,
+        }
     }
 
     async fn dispatch(&self, primary: EventEnvelope) -> Result<EventDispatchResult> {
@@ -540,6 +563,28 @@ fn validate_metadata(metadata: &BTreeMap<String, Value>) -> Result<()> {
 
 fn event_ring_error(message: impl Into<String>) -> AppError {
     AppError::InvalidParameter(format!("event_ring: {}", message.into()))
+}
+
+fn event_diagnostic(event: &EventEnvelope) -> EventRingEventDiagnostic {
+    let payload_bytes =
+        serde_json::to_vec(&event.payload).map_or(0, |encoded| usize_to_u64(encoded.len()));
+    EventRingEventDiagnostic {
+        event_id: event.event_id.clone(),
+        kind: event.kind.clone(),
+        source: event.source.clone(),
+        source_weight_bps: event.source_weight_bps,
+        correlation_id: event.correlation_id.clone(),
+        causation_id: event.causation_id.clone(),
+        sequence: event.sequence,
+        depth: event.depth,
+        occurred_at: event.occurred_at,
+        payload_bytes,
+        metadata_keys: event.metadata.keys().cloned().collect(),
+    }
+}
+
+fn usize_to_u64(value: usize) -> u64 {
+    u64::try_from(value).unwrap_or(u64::MAX)
 }
 
 #[cfg(test)]

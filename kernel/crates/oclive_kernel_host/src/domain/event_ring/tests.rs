@@ -311,6 +311,62 @@ fn registry_snapshot_exposes_authority_policy_separately_from_capabilities() -> 
 }
 
 #[tokio::test]
+async fn diagnostics_snapshot_redacts_content_and_keeps_routing_evidence() -> Result<()> {
+    let ring = EventRing::new();
+    let emitter = source_emitter(&ring)?;
+    let payload = serde_json::json!({"private_memory": "secret-memory-text"});
+    let mut metadata = BTreeMap::new();
+    metadata.insert(
+        "trace.label".into(),
+        Value::String("secret-metadata-value".into()),
+    );
+
+    let result = emitter
+        .emit(
+            "private-session-stream",
+            Some("turn-diagnostics"),
+            EventDraft {
+                kind: "kernel.test.diagnostics".into(),
+                payload: payload.clone(),
+                metadata,
+            },
+        )
+        .await?;
+
+    let diagnostics = ring.diagnostics_snapshot(1);
+    assert_eq!(
+        diagnostics.schema_version,
+        EVENT_RING_DIAGNOSTICS_SCHEMA_VERSION
+    );
+    assert_eq!(diagnostics.registry.len(), 1);
+    assert_eq!(diagnostics.history_len, 1);
+    assert_eq!(
+        diagnostics.history_capacity,
+        usize_to_u64(EVENT_HISTORY_CAPACITY)
+    );
+    assert_eq!(diagnostics.last_allocated_sequence, result.primary.sequence);
+    assert_eq!(diagnostics.recent_events.len(), 1);
+    let event = &diagnostics.recent_events[0];
+    assert_eq!(event.event_id, result.primary.event_id);
+    assert_eq!(event.kind, "kernel.test.diagnostics");
+    assert_eq!(event.correlation_id, "turn-diagnostics");
+    assert_eq!(event.metadata_keys, vec!["trace.label"]);
+    assert_eq!(
+        event.payload_bytes,
+        usize_to_u64(serde_json::to_vec(&payload)?.len())
+    );
+    let encoded = serde_json::to_string(&diagnostics)?;
+    assert!(!encoded.contains("secret-memory-text"));
+    assert!(!encoded.contains("secret-metadata-value"));
+    assert!(!encoded.contains("private-session-stream"));
+
+    let without_recent = ring.diagnostics_snapshot(0);
+    assert_eq!(without_recent.history_len, 1);
+    assert!(without_recent.recent_events.is_empty());
+    Ok(())
+}
+
+#[tokio::test]
 async fn recursive_emission_stops_without_committing_partial_history() {
     let ring = EventRing::new();
     let emitter = ring

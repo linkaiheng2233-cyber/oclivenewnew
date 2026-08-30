@@ -50,8 +50,9 @@ pub use error::{http_chat_codes, AppError, KernelErrorBody, Result};
 pub use event_impact::EventImpactEstimate;
 pub use event_ring::{
     EventDispatchResult, EventDraft, EventEmission, EventEnvelope, EventModuleDeclaration,
-    EventModuleOutput, EventModuleRegistryEntry, EventModuleRegistryPolicy,
-    EVENT_INFLUENCE_WEIGHT_SCALE, EVENT_RING_SCHEMA_VERSION,
+    EventModuleOutput, EventModuleRegistryEntry, EventModuleRegistryPolicy, EventRingDiagnostics,
+    EventRingEventDiagnostic, EVENT_INFLUENCE_WEIGHT_SCALE, EVENT_RING_DIAGNOSTICS_SCHEMA_VERSION,
+    EVENT_RING_SCHEMA_VERSION,
 };
 pub use local_plugin::{
     LocalPluginCapability, LocalPluginProviderDescriptor, LOCAL_PLUGIN_SCHEMA_VERSION,

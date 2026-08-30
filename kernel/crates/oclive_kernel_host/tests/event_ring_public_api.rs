@@ -98,4 +98,12 @@ async fn exported_registry_emitter_and_envelope_form_a_complete_public_path() {
     assert_eq!(registry[0].policy.influence_weight_bps, 8_200);
     assert_eq!(registry[1].declaration.module_id, "test.public_source");
     assert_eq!(registry[1].policy.influence_weight_bps, 6_400);
+    let diagnostics = ring.diagnostics_snapshot(2);
+    assert_eq!(diagnostics.registry, registry);
+    assert_eq!(diagnostics.history_len, 2);
+    assert_eq!(diagnostics.recent_events.len(), 2);
+    assert_eq!(
+        diagnostics.recent_events[1].causation_id.as_deref(),
+        Some(result.primary.event_id.as_str())
+    );
 }

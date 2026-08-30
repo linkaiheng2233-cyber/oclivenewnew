@@ -12,6 +12,9 @@ pub const EVENT_RING_SCHEMA_VERSION: u16 = 2;
 /// Fixed-point scale used by Event Ring influence weights (`10_000 == 1.0`).
 pub const EVENT_INFLUENCE_WEIGHT_SCALE: u16 = 10_000;
 
+/// Current wire schema for [`EventRingDiagnostics`].
+pub const EVENT_RING_DIAGNOSTICS_SCHEMA_VERSION: u16 = 1;
+
 /// One immutable-identity event travelling through the kernel Event Ring.
 ///
 /// Modules may replace `payload`, merge `metadata`, or emit child events, but the ring keeps
@@ -168,6 +171,79 @@ impl Default for EventModuleRegistryPolicy {
 pub struct EventModuleRegistryEntry {
     pub declaration: EventModuleDeclaration,
     pub policy: EventModuleRegistryPolicy,
+}
+
+/// Privacy-minimized summary of one successfully dispatched event.
+///
+/// Payload content, metadata values, and the stream key are intentionally omitted. Diagnostics
+/// retain only routing/causation identity, payload size, and metadata key names.
+///
+/// # Examples
+///
+/// ```
+/// use chrono::{TimeZone, Utc};
+/// use oclive_kernel_types::EventRingEventDiagnostic;
+///
+/// let event = EventRingEventDiagnostic {
+///     event_id: "event-1".into(),
+///     kind: "kernel.memory.recall.candidate".into(),
+///     source: "module.builtin.memory_recollection".into(),
+///     source_weight_bps: 8_500,
+///     correlation_id: "turn-1".into(),
+///     causation_id: None,
+///     sequence: 1,
+///     depth: 0,
+///     occurred_at: Utc.timestamp_opt(0, 0).single().expect("valid timestamp"),
+///     payload_bytes: 24,
+///     metadata_keys: vec!["trace.kind".into()],
+/// };
+/// assert_eq!(event.payload_bytes, 24);
+/// ```
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct EventRingEventDiagnostic {
+    pub event_id: String,
+    pub kind: String,
+    pub source: String,
+    pub source_weight_bps: u16,
+    pub correlation_id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub causation_id: Option<String>,
+    pub sequence: u64,
+    pub depth: u16,
+    pub occurred_at: DateTime<Utc>,
+    pub payload_bytes: u64,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub metadata_keys: Vec<String>,
+}
+
+/// Read-only Event Ring registry and bounded-history diagnostics.
+///
+/// A snapshot is eventually consistent when registration or dispatch happens concurrently; it
+/// never locks the registry and event history at the same time.
+///
+/// # Examples
+///
+/// ```
+/// use oclive_kernel_types::{EventRingDiagnostics, EVENT_RING_DIAGNOSTICS_SCHEMA_VERSION};
+///
+/// let diagnostics = EventRingDiagnostics {
+///     schema_version: EVENT_RING_DIAGNOSTICS_SCHEMA_VERSION,
+///     registry: Vec::new(),
+///     history_len: 0,
+///     history_capacity: 256,
+///     last_allocated_sequence: 0,
+///     recent_events: Vec::new(),
+/// };
+/// assert!(diagnostics.recent_events.is_empty());
+/// ```
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct EventRingDiagnostics {
+    pub schema_version: u16,
+    pub registry: Vec<EventModuleRegistryEntry>,
+    pub history_len: u64,
+    pub history_capacity: u64,
+    pub last_allocated_sequence: u64,
+    pub recent_events: Vec<EventRingEventDiagnostic>,
 }
 
 /// Compatibility name for child-event drafts used by the initial Event Ring slice.
