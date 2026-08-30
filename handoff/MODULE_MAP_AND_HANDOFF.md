@@ -13,7 +13,7 @@
 | # | 铁律 | 一句话 |
 |---|------|--------|
 | 1 | **编排** | [`process_message`](../kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs) → 共在 [`co_present`](../kernel/crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/co_present.rs)；蓝图 **`steps[]` 不调度**。 |
-| 2 | **六槽** | `slot_registry` → `PluginBackends` → `PluginHost::resolve_for_role`；键 **`memory` · `emotion` · `event` · `prompt` · `llm` · `agent`**。 |
+| 2 | **六槽** | `slot_registry` → `PluginBackends` → `PluginHost::resolve_for_role`；键 **`memory` · `emotion` · `event` · `prompt` · `llm` · `agent`**。其中 legacy `event` 只负责 `event.impact` 估计，结果进入通用 Event Ring。 |
 | 3 | **记忆三套存储** | 聊天日志 **`chat_messages`** ≠ **`short_term_memory`** ≠ **`long_term_memory`**；删聊天 **不清** 记忆表。 |
 | 4 | **配置四层** | 角色包 → 蓝图 → 发行版 `HostProfile` → 会话 DB；分责 [`ROLE_PACK_BOUNDARY.md`](./ROLE_PACK_BOUNDARY.md)。 |
 | 5 | **图纸 ≠ 资源执行** | 蓝图只声明能力意图；宿主编译内部 `ExecutionPlan`；Resource Coordinator 根据真实设备和策略发放资源租约。 |
@@ -151,13 +151,13 @@
 
 | 项 | 内容 |
 |----|------|
-| **定义** | 估计本回合 **事件类型** 与 **影响因子**，驱动性格演化与好感 |
+| **定义** | Event Ring 的 legacy `event.impact` 子槽：估计本回合 **事件类型** 与 **影响因子**，再以 `kernel.chat.event_impact.estimated` 信封进入外环，驱动后续性格演化与好感 |
 | **键** | `event` |
 | **Trait** | `EventEstimator` |
 | **Backend** | `builtin` · `remote` · `directory` · `none` |
 | **Builtin 双路径** | ① **规则** `EventDetector` / `estimate_event_impact_rules_only` ② **LLM** `estimate_event_impact`（`generate_tag`） |
 | **LLM 开关** | **`HostProfile.event_impact_llm`**（非六槽）；Fast 轮 Turn Thinking **不调** LLM 路径 |
-| **主链 hook** | `co_present` `EventEstimate` stage → `PersonalityEngine::evolve_by_event` |
+| **主链 hook** | `co_present` `EventEstimate` stage → `EventRing` 兼容桥 → `PersonalityEngine::evolve_by_event`；无注册事件模块时估计结果逐字段不变 |
 | **允许改** | 规则表、LLM 提示、remote |
 | **禁止** | 把 Turn Thinking 登记为第七槽 |
 
@@ -231,6 +231,7 @@
 
 | `id` | 职责 | 锚点 | 进 `process_message`？ |
 |------|------|------|------------------------|
+| `event_ring` | 通用内核外环：模块以声明订阅事件，按 `(priority, module_id)` 顺序替换 payload / 合并 metadata / 补发子事件；每个 `AppState` 独立、内存有界、无数据库写者 | `oclive_kernel_types::EventEnvelope` · `oclive_kernel_contracts::EventModule` / `EventModuleRegistrar` · `domain/event_ring/` | **是**（首个桥接点为 legacy `event.impact` 输出） |
 | `user_identity` | 用户是谁 | `user_identities/` · pre | **是**（pre 段落） |
 | `reply_post_process` | 回复润色/改写 | `config.json` · post_llm | **是**（post） |
 | `reply_mode` | 回复分段与展示节奏 | `config.json` · post_llm（`reply_post_process` 之后） | **是**（post） |
@@ -357,14 +358,16 @@ flowchart TB
   TT["TurnThinkingRouter"]
   PRE["pre"]
   EV["EventEstimate"]
+  ER["Event Ring"]
   BP["BuildPrompt"]
   GEN["llm generate"]
   PST["post_llm"]
 
-  PM --> CO --> TT --> PRE --> EV --> BP --> GEN --> PST
+  PM --> CO --> TT --> PRE --> EV --> ER --> BP --> GEN --> PST
 
   PRE --> M1["① memory"] & M2["② emotion"]
-  EV --> M3["③ event"]
+  EV --> M3["③ event.impact（legacy 子槽）"] --> ER
+  ER -.-> EM["声明式事件模块"]
   BP --> M4["④ prompt"]
   GEN --> M5["⑤ llm"]
   PRE -.-> F1["设施① complex_emotion"]

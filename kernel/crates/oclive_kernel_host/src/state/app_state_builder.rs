@@ -373,6 +373,7 @@ impl AppStateBuilder {
             ollama,
             performance_llm,
             resource_coordinator,
+            event_ring: Arc::new(crate::domain::event_ring::EventRing::new()),
             role_cache: Arc::new(RwLock::new(indexmap::IndexMap::new())),
             role_load_inflight: DashMap::new(),
             http_api_roles: DashMap::new(),

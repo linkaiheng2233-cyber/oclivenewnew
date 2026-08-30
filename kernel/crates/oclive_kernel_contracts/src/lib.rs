@@ -15,6 +15,7 @@
 //! | [`MemoryRetrieval`] | Recent memory ranking and filtering | Builtin, Remote |
 //! | [`UserEmotionAnalyzer`] | User message emotion | Builtin, Remote |
 //! | [`EventEstimator`] | Event type and impact | Builtin + LLM, Remote |
+//! | [`EventModule`] | Transform or supplement Event Ring envelopes | Builtin, host extension |
 //! | [`PromptAssembler`] | Prompt fragment assembly | Builtin, Remote |
 //! | [`ComplexEmotionProvider`] | `narrative_hint` resolution | Builtin keyword, Remote |
 //! | [`AgentProvider`] | Agent turn short-circuit | Builtin ReAct, directory |
@@ -29,6 +30,7 @@ pub(crate) mod agent_mcp_registry_port;
 pub(crate) mod agent_provider;
 pub(crate) mod complex_emotion;
 pub(crate) mod event_estimator;
+pub(crate) mod event_ring;
 pub(crate) mod function_calling_parser;
 pub(crate) mod llm;
 pub(crate) mod local_plugin_bridge;
@@ -53,6 +55,7 @@ pub use agent_mcp_registry_port::AgentMcpRegistryPort;
 pub use agent_provider::AgentProvider;
 pub use complex_emotion::ComplexEmotionProvider;
 pub use event_estimator::EventEstimator;
+pub use event_ring::{EventModule, EventModuleRegistrar};
 pub use function_calling_parser::FunctionCallingParserPort;
 pub use llm::{LlmClient, LlmGenerateOpts, LlmGenerateOutcome, LlmTokenSink};
 pub use local_plugin_bridge::LocalPluginBridge;

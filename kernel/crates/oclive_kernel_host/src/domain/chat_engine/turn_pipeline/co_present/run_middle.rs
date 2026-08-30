@@ -134,6 +134,16 @@ pub(crate) async fn run_middle(
     } else {
         rules_estimate
     };
+    let estimate = STAGES
+        .stage(
+            ChatStage::EventEstimate,
+            crate::domain::event_ring::publish_legacy_event_impact(
+                state.event_ring.as_ref(),
+                ctx.srid,
+                estimate,
+            ),
+        )
+        .await?;
     let ai_event_type = estimate.event_type;
     let ai_impact_factor_final = estimate.impact_factor;
     let ai_event_confidence = estimate.confidence;

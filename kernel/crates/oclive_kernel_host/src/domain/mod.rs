@@ -50,6 +50,7 @@ pub mod dual_pipeline_registry;
 pub mod dual_pipeline_steps;
 pub mod event_estimator;
 pub mod event_impact_ai;
+pub mod event_ring;
 pub mod execution_plan;
 #[cfg(feature = "dual_core")]
 pub mod expert_routing;
@@ -74,6 +75,7 @@ pub use agent::{AgentDebugTrace, AgentInput, AgentOutput, AgentProvider, Builtin
 pub use chat_engine::{process_message, process_message_with_origin};
 pub use event_detector::EventDetector;
 pub use event_estimator::{BuiltinEventEstimator, EventEstimator, RemoteEventEstimatorPlaceholder};
+pub use event_ring::EventRing;
 pub use local_plugin_bridge::{
     FileManifestLocalPluginBridge, LocalPluginBridge, LocalPluginCapability,
     LocalPluginProviderDescriptor, LocalPluginRegistry, LOCAL_PLUGIN_SCHEMA_VERSION,

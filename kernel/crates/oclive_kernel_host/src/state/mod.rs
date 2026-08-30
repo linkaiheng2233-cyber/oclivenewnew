@@ -120,6 +120,8 @@ pub struct AppState {
     pub performance_llm: Option<Arc<PerformanceLlmClient>>,
     /// Host-owned global resource budget, leases, pressure, and diagnostics.
     pub resource_coordinator: Arc<crate::domain::resource_coordinator::ResourceCoordinator>,
+    /// Generic per-kernel Event Ring and declarative module registry.
+    pub event_ring: Arc<crate::domain::event_ring::EventRing>,
     /// Hot-path lock layering:
     /// - `role_cache` / `role_load_inflight`: dedupe role reads;
     /// - `session_cache`: session overrides;
